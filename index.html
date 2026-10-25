@@ -339,7 +339,7 @@ footer p,footer a{display:block;font-size:15px;color:var(--mut);margin-bottom:3p
  <div class="grab"></div>
  <div class="sh2"><h3>বয়স যাচাই</h3><button class="x" data-close aria-label="বন্ধ করুন">✕</button></div>
  <p class="d" style="font-size:16px;color:var(--pi)">এই বিভাগের পণ্য শুধু ১৮ বছর বা তার বেশি বয়সীদের জন্য। আপনার বয়স কি ১৮ বা তার বেশি?</p>
- <div class="two" style="margin-top:16px"><button class="btn btn-ghost" id="aNo">না, ফিরে যাই</button><button class="btn btn-amber" id="aYes">হ্যাঁ, আমার বয়স ১৮+</button></div>
+ <div class="two" style="margin-top:16px"><button class="btn btn-ghost" id="aNo">না, ফিরে যাই</button><button class="btn btn-amber" id="aYes">হ্যাঁ</button></div>
 </div>
 
 <div class="toast" id="toast" role="status"></div>
@@ -357,8 +357,8 @@ const PRODUCTS=JSON.parse(document.getElementById('pdata').textContent);
 const BASE='https://dutyfreebd.com/public/storage/images/products/';
 const byId=new Map(PRODUCTS.map(p=>[p.i,p]));
 const GROUPS=[
- {k:'all',n:'সব'},{k:'perfume',n:'পারফিউম ও আতর'},{k:'skin',n:'স্কিন কেয়ার'},{k:'hair',n:'হেয়ার কেয়ার'},
- {k:'daily',n:'ডেইলি নিডস'},{k:'other',n:'অন্যান্য'},{k:'smoke',n:'সিগারেট ও ভেপ ১৮+',a:1},{k:'well',n:'পার্সোনাল ওয়েলনেস ১৮+',a:1}
+ {k:'all',n:'সব'},{k:'smoke',n:'সিগারেট ও ভেপ'},{k:'perfume',n:'পারফিউম ও আতর'},{k:'skin',n:'স্কিন কেয়ার'},{k:'hair',n:'হেয়ার কেয়ার'},
+ {k:'daily',n:'ডেইলি নিডস'},{k:'other',n:'অন্যান্য'},{k:'well',n:'পার্সোনাল ওয়েলনেস'}
 ];
 const SUBBN={'Men Perfume':'পুরুষের পারফিউম','Women Perfume':'নারীর পারফিউম','Atar':'আতর','Body Spray For Men':'বডি স্প্রে (পুরুষ)','Body Spray For Women':'বডি স্প্রে (নারী)','Face Wash':'ফেস ওয়াশ','Cream':'ক্রিম','Shampoo & Conditioner':'শ্যাম্পু ও কন্ডিশনার','Deodorant':'ডিওডোরেন্ট','Shower Gel':'শাওয়ার জেল','TOOTHPASTE':'টুথপেস্ট','Powder':'পাউডার','Hair cream & gel':'হেয়ার ক্রিম ও জেল','Hair Oil':'হেয়ার অয়েল','Serum':'সিরাম','Shave Gel':'শেভ জেল','Soap':'সাবান','HAIR CARE':'অন্যান্য হেয়ার কেয়ার','SKIN CARE':'অন্যান্য স্কিন কেয়ার','Chocolate':'চকলেট','Coffee':'কফি','Olive Oil':'অলিভ অয়েল','Baby food':'বেবি ফুড','Milk Powder':'গুঁড়া দুধ','Tang':'ট্যাং','Honey':'মধু','Noodles & Macaroni':'নুডলস ও ম্যাকারনি','Mayonnaise & Butter':'মেয়নেজ ও বাটার','Room Spray':'রুম স্প্রে','Pain Relief':'পেইন রিলিফ','Protection':'প্রোটেকশন'};
 const sb=s=>SUBBN[s]||s;
@@ -371,7 +371,7 @@ const PAGE=24;
 let cart=[];try{cart=JSON.parse(localStorage.getItem('dfb_cart2')||'[]').filter(i=>byId.has(i.id))}catch(e){}
 let grp='all',sub='',query='',sort='new',shown=PAGE,cur=null,curQty=1,lastFocus=null,pendingG=null;
 const find=id=>byId.get(id);
-const isAdult=p=>p.g==='smoke'||p.g==='well';
+const isAdult=p=>false;
 function ok18(){try{return localStorage.getItem('dfb_18')==='1'}catch(e){return false}}
 const PHURL='data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 140"><rect x="44" y="10" width="32" height="18" rx="3" fill="#b9a15c"/><rect x="52" y="28" width="16" height="10" fill="#a89050"/><rect x="26" y="38" width="68" height="92" rx="12" fill="#d9d6cc" stroke="#bdb9ac" stroke-width="2"/><rect x="38" y="68" width="44" height="34" rx="4" fill="#f4f2ea"/><rect x="44" y="78" width="32" height="4" rx="2" fill="#a7a396"/><rect x="48" y="87" width="24" height="3" rx="1.5" fill="#c4c0b3"/></svg>');
 const src=p=>p.m.indexOf('http')===0?p.m:BASE+p.m;
@@ -426,6 +426,7 @@ function filtered(){
   if(q&&!(p.n+' '+p.s+' '+sb(p.s)).toLowerCase().includes(q))return false;
   return true;
  });
+ if(sort==='new'&&grp==='all'&&!q)l=l.filter(p=>p.g==='smoke').concat(l.filter(p=>p.g!=='smoke'));
  if(sort==='lo')l=l.slice().sort((a,b)=>a.p-b.p);
  else if(sort==='hi')l=l.slice().sort((a,b)=>b.p-a.p);
  return l;
@@ -439,7 +440,7 @@ function renderGrid(){
   return '<article class="tk"><button class="tk-main" data-open="'+p.i+'" aria-label="'+esc(p.n)+' বিস্তারিত"><div class="tk-art'+(p.m?' ph':'')+'">'+(disc>0?'<span class="tag">-'+bn(disc)+'%</span>':'')+art(p)+'</div>'+
   '<div class="tk-info"><span class="tk-code">DF-'+p.i+'</span><span class="tk-name">'+esc(p.n)+'</span><span class="tk-cat">'+esc(sb(p.s))+'</span></div></button>'+
   '<div class="tk-stub">'+(p.o?'<s>'+tk(p.o)+'</s>':'')+'<b>'+tk(p.p)+'</b><button class="btn btn-wa" data-now="'+p.i+'">অর্ডার</button><button class="btn add" data-add="'+p.i+'">স্লিপে রাখুন</button></div></article>';
- }).join(''):'<p class="none" style="grid-column:1/-1">'+(query&&!ok18()?'কোনো পণ্য পাওয়া যায়নি। ১৮+ বিভাগের পণ্য দেখতে ওপর থেকে সেই বিভাগ বেছে বয়স নিশ্চিত করুন।':'কোনো পণ্য পাওয়া যায়নি। অন্য নামে খুঁজুন।')+'</p>';
+ }).join(''):'<p class="none" style="grid-column:1/-1">'+(false?'':'কোনো পণ্য পাওয়া যায়নি। অন্য নামে খুঁজুন।')+'</p>';
  $('#shown').textContent=l.length>shown?bn(Math.min(shown,l.length))+'টি দেখানো হচ্ছে, মোট '+bn(l.length)+'টি':'';
  $('#more').style.display=l.length>shown?'':'none';
 }
