@@ -12,7 +12,7 @@ class MotherSmoke extends Command {
     $user = \App\Models\User::where('role','super')->first();
     $kernel = app(Kernel::class);
     $oid = DB::table('orders')->value('id'); $pid = DB::table('products')->value('id');
-    $paths = ['/admin/login','/','/admin','/admin/orders','/admin/orders/new','/admin/staff-log','/admin/products','/admin/products/new','/admin/taxonomy','/admin/modules','/admin/discounts','/admin/orders-export.csv','/admin/products-export.csv','/admin/coupons-export.csv'];
+    $paths = ['/admin/login','/','/admin/site','/admin','/admin/orders','/admin/orders/new','/admin/staff-log','/admin/products','/admin/products/new','/admin/taxonomy','/admin/modules','/admin/discounts','/admin/orders-export.csv','/admin/products-export.csv','/admin/coupons-export.csv'];
     foreach (\App\Models\Res::all() as $slug => $c) { $paths[] = "/admin/m/$slug"; if (empty($c['ro']) && empty($c['noCreate'])) $paths[] = "/admin/m/$slug/new"; foreach (['csv','xls','doc','pdf'] as $fm) $paths[] = "/admin/m/$slug/export/$fm"; }
     $paths[] = '/admin/reports';
     if ($oid) $paths[] = "/admin/orders/$oid"; if ($pid) $paths[] = "/admin/products/$pid/edit";

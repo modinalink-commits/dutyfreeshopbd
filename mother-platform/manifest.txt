@@ -36,3 +36,5 @@ resources/views/panels/entries.blade.php
 resources/views/panels/accounts.blade.php
 resources/views/panels/suppliers.blade.php
 resources/views/panels/stock-log.blade.php
+app/Http/Controllers/SiteController.php
+resources/views/site.blade.php
