@@ -6,7 +6,6 @@ use App\Http\Controllers\DiscountController as D;
 use App\Http\Controllers\ModulesController as M;
 use App\Http\Controllers\ResController as R;
 use App\Http\Controllers\SiteController as S;
-Route::get('/', fn() => response()->view('coming', [], 503)->header('Retry-After','86400'));
 Route::get('/admin/login', [A::class,'loginForm'])->name('login');
 Route::post('/admin/login', [A::class,'login']);
 Route::post('/admin/logout', [A::class,'logout']);
@@ -58,4 +57,14 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::post('/discounts/coupons/{id}/toggle', [D::class,'couponToggle']);
   Route::get('/coupons-export.csv', [D::class,'couponsCsv']);
 });
-Route::fallback(fn() => response()->view('coming', [], 503)->header('Retry-After','86400'));
+// ---- Storefront: no session or CSRF (fast, cache-friendly); orders are rate limited per IP
+Route::withoutMiddleware([\Illuminate\Session\Middleware\StartSession::class, \Illuminate\View\Middleware\ShareErrorsFromSession::class, \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class, \Illuminate\Cookie\Middleware\EncryptCookies::class, \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class])->group(function () {
+  Route::get('/', [\App\Http\Controllers\StoreController::class,'home']);
+  Route::get('/sitemap.xml', [\App\Http\Controllers\StoreController::class,'sitemap']);
+  Route::get('/search', [\App\Http\Controllers\StoreController::class,'search']);
+  Route::get('/track', [\App\Http\Controllers\StoreController::class,'track']);
+  Route::post('/order', [\App\Http\Controllers\StoreController::class,'order'])->middleware('throttle:6,1');
+  Route::get('/p/{key}', [\App\Http\Controllers\StoreController::class,'product'])->where('key','[A-Za-z0-9\-]+');
+  Route::get('/{slug}', [\App\Http\Controllers\StoreController::class,'category'])->where('slug','[a-z0-9\-]+');
+  Route::fallback([\App\Http\Controllers\StoreController::class,'notFound']);
+});

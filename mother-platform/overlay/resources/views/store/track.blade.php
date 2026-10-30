@@ -1,0 +1,8 @@
+@extends('store.layout')
+@section('main')<h1>Order Tracking</h1>
+@if(request('new') && $o)<div class="box" style="border-color:#16A34A"><b style="color:#166534">ধন্যবাদ! আপনার অর্ডার নেওয়া হয়েছে।</b><p style="font-size:14px">ইনভয়েস: <b>{{ $o->invoice }}</b>। আমাদের টিম শিগগিরই ফোনে কনফার্ম করবে।</p></div>@endif
+<form class="box" style="display:flex;gap:8px;flex-wrap:wrap"><input name="invoice" value="{{ request('invoice') }}" placeholder="ইনভয়েস নম্বর (INV-...)" required style="flex:1;min-width:160px"><input name="phone" value="{{ request('phone') }}" placeholder="মোবাইল নম্বর" required style="flex:1;min-width:160px"><button class="btn">খুঁজুন</button></form>
+@if(request('invoice') && !$o)<p class="err">এই ইনভয়েস ও মোবাইল নম্বরে কোনো অর্ডার পাওয়া যায়নি।</p>@endif
+@if($o)<div class="box"><b>{{ $o->invoice }}</b> · স্ট্যাটাস: <b style="color:#FF5A00">{{ $o->status }}</b><table style="width:100%;margin-top:10px;font-size:14px;border-collapse:collapse">@foreach($items as $it)<tr><td style="padding:4px 0">{{ $it->name }} × {{ $it->qty }}</td><td style="text-align:right">৳{{ number_format($it->price * $it->qty) }}</td></tr>@endforeach<tr><td style="padding:4px 0">ডেলিভারি চার্জ</td><td style="text-align:right">৳{{ number_format($o->shipping) }}</td></tr><tr><td style="padding:4px 0"><b>মোট</b></td><td style="text-align:right"><b>৳{{ number_format($o->total) }}</b></td></tr></table>
+<div style="margin-top:12px">@foreach($logs as $l)<div style="font-size:13px;padding:4px 0;border-top:1px solid #FFE7D6">{{ \Carbon\Carbon::parse($l->created_at)->timezone('Asia/Dhaka')->format('d M, h:i A') }} — <b>{{ $l->to_status }}</b></div>@endforeach</div></div>@endif
+@endsection

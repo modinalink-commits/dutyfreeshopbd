@@ -1,0 +1,25 @@
+@extends('store.layout')
+@section('ld')<script type="application/ld+json">{!! json_encode([['@context'=>'https://schema.org','@type'=>'Product','name'=>$p->name,'image'=>[$p->image ?: url('/icon.png')],'sku'=>$p->sku ?: (string)$p->id,'description'=>$p->description ?: $p->name,'category'=>$c->name ?? '','brand'=>['@type'=>'Brand','name'=>explode(' ', $p->name)[0]],'offers'=>['@type'=>'Offer','url'=>$canon,'priceCurrency'=>'BDT','price'=>(string)(float)$p->price,'availability'=>$p->stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock','itemCondition'=>'https://schema.org/NewCondition','seller'=>['@type'=>'Organization','name'=>'DutyFree Shop BD']]],['@context'=>'https://schema.org','@type'=>'BreadcrumbList','itemListElement'=>[['@type'=>'ListItem','position'=>1,'name'=>'হোম','item'=>url('/').'/'],['@type'=>'ListItem','position'=>2,'name'=>$c->name ?? 'Shop','item'=>url('/'.($c->slug ?? '')).'/'],['@type'=>'ListItem','position'=>3,'name'=>$p->name,'item'=>$canon]]]], JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES|JSON_HEX_TAG) !!}</script>@endsection
+@section('main')
+@php $off = $p->compare_price && $p->compare_price > $p->price ? round(($p->compare_price - $p->price) / $p->compare_price * 100) : 0; $msg = 'আসসালামু আলাইকুম, আমি এই পণ্যটি অর্ডার করতে চাই: '.$p->name.' ('.($p->sku ?: $p->id).') – ৳ '.number_format($p->price).'। '.$canon; @endphp
+<nav style="font-size:12px;color:#6B7280;margin:10px 0"><a href="/">হোম</a> › @if($c)<a href="/{{ $c->slug }}/">{{ $c->name }}</a> › @endif{{ $p->name }}</nav>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px">
+<div class="box" style="margin:0;display:grid;place-items:center;position:relative"><img src="{{ $p->image ?: '/icon.png' }}" alt="{{ $p->name }}" width="480" height="480" fetchpriority="high" draggable="false" style="max-width:100%;height:auto;max-height:420px;object-fit:contain;pointer-events:none"><span style="position:absolute;bottom:10px;right:14px;font-size:11px;font-weight:700;color:rgba(11,18,32,.25)">DutyFree Shop BD</span></div>
+<div class="box" style="margin:0"><h1 style="margin-top:0">{{ $p->name }}</h1>
+<div style="display:flex;gap:10px;align-items:baseline;margin:6px 0 12px"><b style="font-size:28px;color:#FF5A00">৳{{ number_format($p->price) }}</b>@if($off > 0)<s style="color:#6B7280">৳{{ number_format($p->compare_price) }}</s><span style="background:#FF5A00;color:#fff;border-radius:6px;padding:2px 8px;font-size:12px;font-weight:700">-{{ $off }}%</span>@endif</div>
+<div style="display:flex;gap:8px"><a class="btn wa" style="flex:1" href="https://wa.me/{{ $wa }}?text={{ rawurlencode($msg) }}" rel="noopener">WhatsApp-এ অর্ডার</a><a class="btn n" style="flex:1" href="tel:{{ $s['pp_call'] }}">কল করুন</a></div>
+<p style="font-size:13px;color:#6B7280;margin-top:8px">কোড: {{ $p->sku ?: $p->id }} · @if($c)ক্যাটাগরি: <a href="/{{ $c->slug }}/" style="color:#FF5A00;font-weight:600">{{ $c->name }}</a> · @endif{{ $p->stock > 0 ? 'স্টকে আছে' : 'স্টক শেষ' }}</p>
+<form id="order" method="post" action="/order" style="margin-top:12px;border-top:1px solid #FFE7D6;padding-top:10px"><input type="hidden" name="product" value="{{ $p->id }}"><input name="website" value="" style="display:none" tabindex="-1" autocomplete="off">
+<b>সরাসরি অর্ডার করুন (ক্যাশ অন ডেলিভারি)</b>
+@if(request('e'))<p class="err">{{ request('e') }}</p>@endif
+<label>আপনার নাম</label><input name="name" value="" required maxlength="120">
+<label>মোবাইল নম্বর</label><input name="phone" value="" required inputmode="tel" placeholder="01XXXXXXXXX">
+<label>ঠিকানা</label><textarea name="address" rows="2" required maxlength="500"></textarea>
+<div style="display:flex;gap:8px"><div style="flex:2"><label>জেলা</label><select name="district"><option value="">জেলা বাছাই করুন</option>@foreach($districts as $d)<option value="{{ $d->name }}" >{{ $d->name }}{{ $d->delivery_charge > 0 ? ' (ডেলিভারি ৳'.number_format($d->delivery_charge).')' : '' }}</option>@endforeach</select></div><div style="flex:1"><label>পরিমাণ</label><input name="qty" type="number" min="1" max="50" value="{{ 1 }}"></div></div>
+<label>নোট (ঐচ্ছিক)</label><input name="note" value="" maxlength="500">
+<button class="btn" style="width:100%;margin-top:12px">অর্ডার কনফার্ম করুন</button></form></div></div>
+@if($p->description)<div class="box"><h2 style="margin-top:0">পণ্যের বিবরণ</h2><p style="font-size:14px;color:#374151;white-space:pre-line">{{ $p->description }}</p></div>@endif
+<div class="box"><h2 style="margin-top:0">অর্ডার ও ডেলিভারি</h2><p style="font-size:14px;color:#374151">অর্ডার দিলে আমাদের টিম ফোনে কনফার্ম করবে। সারা বাংলাদেশে হোম ডেলিভারি, ক্যাশ অন ডেলিভারি। যেকোনো প্রশ্নে WhatsApp বা কল করুন।</p></div>
+@if($s['pp_related']==='1' && $rel->count())<h2>আরও দেখুন</h2><div class="g">@foreach($rel as $q)@include('store.card')@endforeach</div>@endif
+@if($s['gtag_id'])<script>gtag("event","view_item",{currency:"BDT",value:{{ (float)$p->price }},items:[{item_id:@json((string)$p->id),item_name:@json($p->name),price:{{ (float)$p->price }}}]});</script>@endif
+@endsection

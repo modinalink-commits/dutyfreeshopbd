@@ -1,0 +1,9 @@
+@extends('store.layout')
+@section('ld')<script type="application/ld+json">{!! json_encode(['@context'=>'https://schema.org','@type'=>'BreadcrumbList','itemListElement'=>[['@type'=>'ListItem','position'=>1,'name'=>'হোম','item'=>url('/').'/'],['@type'=>'ListItem','position'=>2,'name'=>$c->name,'item'=>$canon]]], JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES|JSON_HEX_TAG) !!}</script>@endsection
+@section('main')
+<h1>{{ $c->name }}</h1>@if($c->meta_description)<p style="font-size:13px;color:#6B7280">{{ $c->meta_description }}</p>@endif
+<div style="display:flex;gap:8px;overflow-x:auto;margin:10px 0;scrollbar-width:none">@foreach($subs as $sb)<a href="?sub={{ urlencode($sb->sub) }}" style="flex:none;border:1px solid {{ request('sub')===$sb->sub ? '#FF5A00' : '#FDC2A5' }};background:{{ request('sub')===$sb->sub ? '#FF5A00' : '#fff' }};color:{{ request('sub')===$sb->sub ? '#fff' : 'inherit' }};border-radius:16px;padding:4px 12px;font-size:12px">{{ $sb->sub }} ({{ $sb->n }})</a>@endforeach</div>
+<form style="display:flex;justify-content:flex-end;margin-bottom:8px">@if(request('sub'))<input type="hidden" name="sub" value="{{ request('sub') }}">@endif<select name="sort" onchange="this.form.submit()" style="width:auto;padding:6px"><option value="newest">Newest</option><option value="price_asc" {{ request('sort')==='price_asc'?'selected':'' }}>Price low to high</option><option value="price_desc" {{ request('sort')==='price_desc'?'selected':'' }}>Price high to low</option></select></form>
+<div class="g">@forelse($items as $q)@include('store.card')@empty<p>No products yet.</p>@endforelse</div>
+@if($items->hasPages())<div class="pg">@if($items->previousPageUrl())<a href="{{ $items->previousPageUrl() }}">‹ আগের</a>@endif<span>{{ $items->currentPage() }} / {{ $items->lastPage() }}</span>@if($items->nextPageUrl())<a href="{{ $items->nextPageUrl() }}">পরের ›</a>@endif</div>@endif
+@endsection

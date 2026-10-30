@@ -2,7 +2,7 @@
 # Mother Commerce Platform bootstrap: installs Laravel once, overlays our code, migrates, serves.
 set -e
 R=https://raw.githubusercontent.com/modinalink-commits/dutyfreeshopbd/${REF:-main}/mother-platform
-echo "BOOTSTRAP v7 ref=${REF:-main}"
+echo "BOOTSTRAP v8 ref=${REF:-main}"
 cd /srv
 # Fast boot: reuse extensions and composer compiled on an earlier boot (same PHP version).
 EXT=/srv/.ext/$(php -r 'echo PHP_VERSION;'); ED=$(php -r 'echo ini_get("extension_dir");')
@@ -64,4 +64,6 @@ php artisan route:cache
 php artisan view:cache
 php artisan mother:smoke || true
 chown -R www-data:www-data storage bootstrap/cache
+# Product feed: import now and every hour (runs as www-data so cache files stay writable)
+( su -s /bin/sh www-data -c 'php artisan mother:sync-feed'; while true; do sleep 3600; su -s /bin/sh www-data -c 'php artisan mother:sync-feed'; done ) > /proc/1/fd/1 2>&1 &
 exec php-fpm

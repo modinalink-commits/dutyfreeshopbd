@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /search
+Disallow: /track
+Sitemap: https://dutyfreeshopbd.com/sitemap.xml

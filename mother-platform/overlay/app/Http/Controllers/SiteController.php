@@ -15,7 +15,7 @@ class SiteController extends Controller {
       ['co_cod','Cash on delivery','bool','1','Checkout and delivery'], ['co_card','Card payments (gateway)','bool','0','Checkout and delivery'], ['co_wallets','bKash, Nagad, Rocket','bool','0','Checkout and delivery'], ['co_coupon','Coupon box on checkout','bool','1','Checkout and delivery'], ['co_email_optional','Email optional on checkout','bool','1','Checkout and delivery'],
       ['footer_about','About text','textarea','','Footer and payment strip'], ['social_facebook','Facebook','text','','Footer and payment strip'], ['social_youtube','YouTube','text','','Footer and payment strip'], ['social_tiktok','TikTok','text','','Footer and payment strip'], ['social_instagram','Instagram','text','','Footer and payment strip'], ['footer_copyright','Copyright line','text','© DutyFreeBD','Footer and payment strip'],
       ['fab_side_cart','Side cart tab','bool','1','Floating buttons and chat'], ['fab_messenger','Messenger button','bool','1','Floating buttons and chat'], ['fab_call','Call button','bool','1','Floating buttons and chat'], ['whatsapp_number','WhatsApp button number','text','01871600600','Floating buttons and chat'], ['fab_ai_chat','AI chat bubble','bool','0','Floating buttons and chat'],
-      ['site_title','Site title','text','DutyFreeBD – Buy Cigarettes, Perfume and more','Cookie notice and SEO'], ['meta_description','Home meta description','textarea','','Cookie notice and SEO'], ['gtag_id','Google tag ID','text','','Cookie notice and SEO'], ['pixel_id','Meta pixel ID','text','','Cookie notice and SEO'], ['cookie_notice','Cookie notice','bool','1','Cookie notice and SEO'],
+      ['site_title','Site title','text','DutyFree Shop BD | ডিউটি ফ্রি দামে অরিজিনাল পারফিউম, সিগারেট ও স্কিন কেয়ার – চট্টগ্রাম ও সারা বাংলাদেশে','Cookie notice and SEO'], ['meta_description','Home meta description','textarea','','Cookie notice and SEO'], ['gtag_id','Google tag ID','text','G-8WB5RDDK4K','Cookie notice and SEO'], ['pixel_id','Meta pixel ID','text','27119431750984671','Cookie notice and SEO'], ['cookie_notice','Cookie notice','bool','1','Cookie notice and SEO'],
     ];
   }
   public function show() {
@@ -37,6 +37,7 @@ class SiteController extends Controller {
       DB::table('settings')->updateOrInsert(['key'=>$k], ['value'=>$v, 'updated_at'=>$now, 'created_at'=>$now]); $changed++;
     }
     DB::table('audit_logs')->insert(['user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'action'=>'site.publish','subject'=>"$changed settings",'meta'=>json_encode([]),'ip'=>$r->ip(),'created_at'=>$now,'updated_at'=>$now]);
+    \Illuminate\Support\Facades\Cache::forget('store.settings'); \Illuminate\Support\Facades\Cache::forget('store.home');
     return back()->with('ok','Changes published');
   }
 }

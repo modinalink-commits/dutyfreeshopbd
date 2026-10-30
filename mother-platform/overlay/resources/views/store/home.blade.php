@@ -1,0 +1,11 @@
+@extends('store.layout')
+@section('ld')<script type="application/ld+json">{!! json_encode([['@context'=>'https://schema.org','@type'=>'OnlineStore','name'=>'DutyFree Shop BD','url'=>url('/').'/','logo'=>url('/icon.png'),'telephone'=>'+880'.ltrim($s['call_number'],'0'),'areaServed'=>'BD'],['@context'=>'https://schema.org','@type'=>'WebSite','name'=>'DutyFree Shop BD','url'=>url('/').'/','inLanguage'=>'bn-BD','potentialAction'=>['@type'=>'SearchAction','target'=>url('/search').'?q={q}','query-input'=>'required name=q']]], JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES|JSON_HEX_TAG) !!}</script>@endsection
+@section('main')
+<h1>ডিউটি ফ্রি দামে অরিজিনাল ইমপোর্টেড পণ্য</h1>
+@if($s['home_hero']==='1')<div class="hero">@if($slides->count())<a href="{{ $slides[0]->link ?: '#' }}"><img src="{{ $slides[0]->image }}" alt="Offer" width="1568" height="555" fetchpriority="high"></a>@else<img src="/ban-sx555.webp" alt="DutyFree Shop BD" width="1568" height="555" fetchpriority="high">@endif</div>@endif
+@if($live->count())<div class="lv" aria-label="Recently ordered"><span class="dot"></span><b>Recently ordered:</b> @foreach($live->take(5) as $l){{ $l->masked }}{{ $l->district ? ' ('.$l->district.')' : '' }} — {{ \Illuminate\Support\Str::limit($l->name, 34) }} · {{ \Carbon\Carbon::parse($l->created_at)->diffForHumans() }}@if(!$loop->last) &nbsp;|&nbsp; @endif @endforeach</div>@endif
+@if($s['home_new']==='1' && $new->count())<h2>New Arrival</h2><div class="g">@foreach($new as $q)@include('store.card')@endforeach</div>@endif
+@if($s['home_top']==='1' && $top->count())<h2>Top Selling</h2><div class="g">@foreach($top as $q)@include('store.card')@endforeach</div>@endif
+@if($s['home_cat_sections']==='1')@foreach($sec as [$c,$items])@if($items->count())<h2>{{ $c->name }} <a href="/{{ $c->slug }}/">সব দেখুন ›</a></h2><div class="g">@foreach($items as $q)@include('store.card')@endforeach</div>@endif @endforeach @endif
+<div class="box" style="margin-top:20px"><h2 style="margin-top:0">DutyFree Shop BD – অরিজিনাল ইমপোর্টেড পণ্যের অনলাইন শপ</h2><p style="font-size:14px;color:#4B5563">চট্টগ্রামভিত্তিক অনলাইন শপ। পারফিউম, আতর, সিগারেট, ভেপ, স্কিন কেয়ার, হেয়ার কেয়ার ও ডেইলি নিডস — মোট {{ number_format($count) }}টি পণ্য। অর্ডার করুন, সারা বাংলাদেশে হোম ডেলিভারি।</p></div>
+@endsection
