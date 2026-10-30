@@ -13,7 +13,8 @@
 <select name="{{ $fn }}" style="max-width:190px"><option value="">{{ $ff['l'] }}: all</option>
 @if($ff['t']==='select')@foreach($ff['o'] as $ov=>$ol)<option value="{{ $ov }}" {{ request($fn)==(string)$ov?'selected':'' }}>{{ $ol }}</option>@endforeach
 @elseif($ff['t']==='fk')@foreach($lk[$fn] ?? [] as $ov=>$ol)<option value="{{ $ov }}" {{ request($fn)==(string)$ov?'selected':'' }}>{{ $ol }}</option>@endforeach
-@else@foreach(\App\Models\Mother::STAGES as $ol)<option value="{{ $ol }}" {{ request($fn)===$ol?'selected':'' }}>{{ $ol }}</option>@endforeach @endif</select>@endforeach
+@else
+@foreach(\App\Models\Mother::STAGES as $ol)<option value="{{ $ol }}" {{ request($fn)===$ol?'selected':'' }}>{{ $ol }}</option>@endforeach @endif</select>@endforeach
 <button>Filter</button></form>@endif
 <div class="card" style="overflow-x:auto"><table><thead><tr><th>#</th>@foreach($c['fields'] as $f)@if(($f['t']??'')!=='password' && empty($f['noList']))<th>{{ $f['l'] }}</th>@endif @endforeach<th></th></tr></thead><tbody>
 @forelse($rows as $row)<tr><td>{{ $row->id }}</td>
