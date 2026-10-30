@@ -16,7 +16,7 @@
 @else
 @foreach(\App\Models\Mother::STAGES as $ol)<option value="{{ $ol }}" {{ request($fn)===$ol?'selected':'' }}>{{ $ol }}</option>@endforeach @endif</select>@endforeach
 <button>Filter</button></form>@endif
-<div class="card" style="overflow-x:auto"><table><thead><tr><th>#</th>@foreach($c['fields'] as $f)@if(($f['t']??'')!=='password' && empty($f['noList']))<th>{{ $f['l'] }}</th>@endif @endforeach@foreach($c['extra'] ?? [] as [$xk,$xl])<th>{{ $xl }}</th>@endforeach<th></th></tr></thead><tbody>
+<div class="card" style="overflow-x:auto"><table><thead><tr><th>#</th>@foreach($c['fields'] as $f)@if(($f['t']??'')!=='password' && empty($f['noList']))<th>{{ $f['l'] }}</th>@endif @endforeach @foreach($c['extra'] ?? [] as [$xk,$xl])<th>{{ $xl }}</th>@endforeach<th></th></tr></thead><tbody>
 @forelse($rows as $row)<tr><td>{{ $row->id }}</td>
 @foreach($c['fields'] as $f)@if(($f['t']??'')!=='password' && empty($f['noList']))<td>@php $v = $ctl->cell($c,$row,$f,$lk); @endphp
 @if($f['t']==='bool')<span class="pill {{ $v==='Yes'?'ok':'' }}">{{ $v }}</span>@else{{ \Illuminate\Support\Str::limit($v, 70) }}@endif</td>@endif @endforeach
