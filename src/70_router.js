@@ -15,6 +15,8 @@ const server = http.createServer(async (req, res) => {
       { const m = /^\/webimg\/(\d+)$/.exec(path); if (m) { const p = get('SELECT image FROM web_products WHERE id=?', +m[1]); const mm = p && /^data:(image\/[a-z+]+);base64,(.*)$/s.exec(p.image); if (!mm) return send(res, 404, 'Not found', 'text/plain'); return send(res, 200, Buffer.from(mm[2], 'base64'), mm[1], { 'Cache-Control': 'public,max-age=86400' }); } }
       if (path === '/brand.jpg') return send(res, 200, BRAND, 'image/jpeg', { 'Cache-Control': 'public,max-age=86400' });
       if (path === '/panel.jpg') return send(res, 200, PANEL, 'image/jpeg', { 'Cache-Control': 'public,max-age=86400' });
+      if (path === '/wordmark.png') return send(res, 200, WORDMARK, 'image/png', { 'Cache-Control': 'public,max-age=86400' });
+      if (path === '/cyclist.png') return send(res, 200, CYCLIST, 'image/png', { 'Cache-Control': 'public,max-age=86400' });
       if (path === '/gcs.jpg') return send(res, 200, GCS, 'image/jpeg', { 'Cache-Control': 'public,max-age=86400' });
       if (path === '/') return send(res, 200, pageHome());
       if (path === '/shop') return send(res, 200, pageShop(q));
