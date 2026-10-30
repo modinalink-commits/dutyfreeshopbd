@@ -115,8 +115,24 @@ class AdminController extends Controller {
       fclose($f);
     }, 'orders.csv', ['Content-Type'=>'text/csv']);
   }
-  public function staffLog() {
-    $logs = DB::table('order_status_logs as l')->join('orders as o','o.id','=','l.order_id')->select('l.*','o.invoice')->orderByDesc('l.id')->paginate(100);
-    return view('stafflog', compact('logs'));
+  public function staffLog(Request $r) {
+    $d0 = now('Asia/Dhaka')->startOfDay()->utc();
+    $logs = DB::table('order_status_logs as l')->join('orders as o','o.id','=','l.order_id')->select('l.*','o.invoice')->when($r->filled('staff'), fn($q) => $q->where('l.user_name',$r->staff))->orderByDesc('l.id')->paginate(50)->withQueryString();
+    $today = DB::table('order_status_logs')->where('created_at','>=',$d0);
+    $conf = DB::selectOne("select avg(extract(epoch from (l.created_at - o.created_at))/60) m from order_status_logs l join orders o on o.id=l.order_id where l.to_status='Approved' and l.created_at >= ?", [$d0]);
+    $stuck = DB::table('orders')->whereIn('status',['New','Pending'])->where('updated_at','<',now()->subMinutes(30))->count();
+    $users = DB::table('users')->where('active',true)->get();
+    $kpi = [['Staff active today', (clone $today)->whereNotNull('user_id')->distinct()->count('user_id'), 'of '.$users->count().' staff'], ['Orders handled today', (clone $today)->distinct()->count('order_id'), 'by staff'], ['Average time to confirm', $conf && $conf->m !== null ? round($conf->m).' min' : '—', 'New → Approved, today'], ['Orders stuck over 30 min', $stuck, 'New or Pending'], ['Actions logged today', (clone $today)->count() + DB::table('audit_logs')->where('created_at','>=',$d0)->count(), 'all recorded']];
+    $live = [];
+    foreach ($users as $u) {
+      $last = DB::table('order_status_logs as l')->join('orders as o','o.id','=','l.order_id')->where('l.user_id',$u->id)->select('l.*','o.invoice')->orderByDesc('l.id')->first();
+      $cnt = (clone $today)->where('user_id',$u->id)->distinct()->count('order_id');
+      $mins = $last ? now()->diffInMinutes($last->created_at, true) : null;
+      $live[] = ['name'=>$u->name, 'role'=>$u->role, 'now'=>$last ? $last->invoice.' · '.$last->to_status : '—', 'since'=>$last ? \Carbon\Carbon::parse($last->created_at)->timezone('Asia/Dhaka')->format('H:i') : '—', 'today'=>$cnt, 'status'=>$mins === null ? 'Offline' : ($mins <= 15 ? 'Active' : ($mins <= 120 ? 'Idle' : 'Offline'))];
+    }
+    $perf = DB::select("select l.user_name, count(distinct l.order_id) n, avg(case when l.to_status='Approved' then extract(epoch from (l.created_at - o.created_at))/60 end) conf, sum(case when l.to_status='Cancel' then 1 else 0 end) cancels, sum(case when l.to_status in ('Returned','Return Pending') then 1 else 0 end) rets from order_status_logs l join orders o on o.id=l.order_id where l.created_at >= ? and l.user_name is not null group by l.user_name order by n desc", [$d0]);
+    $stages = DB::select("select from_status, to_status, avg(mins) av, count(*) n, max(mins) mx from (select l.from_status, l.to_status, extract(epoch from (l.created_at - coalesce(lag(l.created_at) over (partition by l.order_id order by l.id), o.created_at)))/60 mins from order_status_logs l join orders o on o.id=l.order_id where l.from_status is not null) t group by from_status, to_status order by n desc limit 20");
+    $staffNames = DB::table('order_status_logs')->whereNotNull('user_name')->distinct()->pluck('user_name');
+    return view('stafflog', compact('logs','kpi','live','perf','stages','staffNames'));
   }
 }
