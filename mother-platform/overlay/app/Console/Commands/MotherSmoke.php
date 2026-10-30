@@ -16,6 +16,7 @@ class MotherSmoke extends Command {
     foreach (\App\Models\Res::all() as $slug => $c) { $paths[] = "/admin/m/$slug"; if (empty($c['ro']) && empty($c['noCreate'])) $paths[] = "/admin/m/$slug/new"; foreach (['csv','xls','doc','pdf'] as $fm) $paths[] = "/admin/m/$slug/export/$fm"; }
     $paths[] = '/admin/reports';
     if ($oid) $paths[] = "/admin/orders/$oid"; if ($pid) $paths[] = "/admin/products/$pid/edit";
+    $shown = false;
     foreach ($paths as $path) {
       try {
         Auth::guard('web')->setUser($user);
@@ -23,6 +24,7 @@ class MotherSmoke extends Command {
         $status = $res->getStatusCode();
         if ($res instanceof \Symfony\Component\HttpFoundation\StreamedResponse) { ob_start(); $res->sendContent(); ob_end_clean(); }
         $this->line("SMOKE $status $path");
+        if ($status >= 500 && empty($shown)) { $shown = true; $lf = storage_path('logs/laravel.log'); if (is_file($lf)) { $tail = array_slice(file($lf), -6); foreach ($tail as $l) $this->line('LOG '.substr(trim($l),0,300)); } }
       } catch (\Throwable $e) { $this->line("SMOKE FAIL $path :: ".substr($e->getMessage(),0,200)); }
     }
   }
