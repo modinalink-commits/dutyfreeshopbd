@@ -22,6 +22,11 @@ Route::middleware('auth')->prefix('admin')->group(function () {
   Route::get('/staff-log', [A::class,'staffLog']);
   Route::get('/products', [C::class,'products']);
   Route::get('/products/new', [C::class,'productForm']);
+  Route::post('/products/bulk', [C::class,'productBulk']);
+  Route::post('/products/import', [C::class,'productImport']);
+  Route::get('/products-template.csv', [C::class,'importTemplate']);
+  Route::post('/categories/{id}/toggle', [C::class,'categoryToggle']);
+  Route::post('/brands/{id}/toggle', [C::class,'brandToggle']);
   Route::post('/products', [C::class,'productSave']);
   Route::get('/products/{id}/edit', [C::class,'productForm']);
   Route::post('/products/{id}', [C::class,'productSave']);

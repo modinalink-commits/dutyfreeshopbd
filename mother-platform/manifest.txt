@@ -28,3 +28,4 @@ resources/views/res_form.blade.php
 resources/views/reports.blade.php
 resources/views/sidebar.blade.php
 resources/views/coming.blade.php
+database/migrations/2026_10_31_000004_catalog_extra.php
