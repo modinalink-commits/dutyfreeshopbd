@@ -1,0 +1,3 @@
+@extends('layout')@section('title','Staff Tracking')
+@section('body')<h1>Staff Tracking</h1><div class="card" style="overflow-x:auto"><table><thead><tr><th>Time</th><th>Staff</th><th>Order</th><th>From</th><th>To</th><th>Note</th></tr></thead><tbody>
+@forelse($logs as $l)<tr><td>{{ $l->created_at }}</td><td>{{ $l->user_name }}</td><td><a href="/admin/orders/{{ $l->order_id }}">{{ $l->invoice }}</a></td><td>{{ $l->from_status ?: '—' }}</td><td>{{ $l->to_status }}</td><td>{{ $l->note }}</td></tr>@empty<tr><td colspan="6">Nothing yet.</td></tr>@endforelse</tbody></table>{{ $logs->links() }}</div>@endsection

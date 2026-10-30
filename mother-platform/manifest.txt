@@ -1,0 +1,12 @@
+database/migrations/2026_10_31_000001_mother_core.php
+routes/web.php
+app/Models/Mother.php
+app/Http/Controllers/AdminController.php
+app/Console/Commands/MotherInstall.php
+resources/views/layout.blade.php
+resources/views/login.blade.php
+resources/views/dashboard.blade.php
+resources/views/orders.blade.php
+resources/views/order_new.blade.php
+resources/views/order_show.blade.php
+resources/views/stafflog.blade.php
