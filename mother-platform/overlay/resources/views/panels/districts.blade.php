@@ -1,0 +1,1 @@
+<form class="card" method="post" action="/admin/m-districts/charge" style="display:flex;gap:8px;align-items:center;max-width:520px">@csrf<b style="white-space:nowrap">Set one charge for all</b><input name="charge" type="number" min="0" step="1" required><button>Apply</button></form>

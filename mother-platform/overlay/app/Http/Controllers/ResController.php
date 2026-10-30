@@ -53,12 +53,38 @@ class ResController extends Controller {
       $n = DB::table('reviews')->where('status','published')->count(); $avg = DB::table('reviews')->where('status','published')->avg('rating');
       $o = [['Published reviews',$n],['Real average',$n ? number_format($avg,1) : 'New'],['Verified buyers',DB::table('reviews')->where('verified_buyer',true)->count()]];
     }
+    elseif ($k==='customers') {
+      $tot = DB::table('customers')->count();
+      $rep = DB::table('orders')->select('phone')->groupBy('phone')->havingRaw('count(*) >= 2')->get()->count();
+      $buyers = DB::table('orders')->distinct()->count('phone');
+      $o = [['Customers', number_format($tot)], ['With email', number_format(DB::table('customers')->whereNotNull('email')->count())], ['New this week', DB::table('customers')->where('created_at','>=',now()->subWeek())->count()], ['Repeat buyers', $buyers ? round($rep/$buyers*100).'%' : '0%'], ['Open messages', DB::table('contact_messages')->where('status','new')->count()]];
+    } elseif ($k==='couriers') {
+      $def = DB::table('couriers')->where('is_default',true)->value('name') ?? 'None';
+      $act = DB::table('couriers')->where('active',true)->count(); $all = DB::table('couriers')->count();
+      $o = [['Active courier', $def.' (default)'], ['Couriers set up', $all.' ('.$act.' active, '.($all-$act).' off)'], ['Districts', DB::table('districts')->count()], ['Parcels today', DB::table('orders')->where('status','Shipment')->where('updated_at','>=',now('Asia/Dhaka')->startOfDay()->utc())->count()], ['Failed or returned', DB::table('orders')->whereIn('status',['Returned','Return Pending','Late Delivery'])->where('updated_at','>=',now()->subWeek())->count().' this week']];
+    }
     return $o;
+  }
+  public function extras($c, $rows) {
+    if ($c['slug'] !== 'customers') return [];
+    $ph = collect($rows->items())->pluck('phone')->filter()->all(); if (!$ph) return [];
+    $agg = DB::table('orders')->whereIn('phone',$ph)->whereNotIn('status',['Cancel'])->select('phone', DB::raw('count(*) n'), DB::raw('coalesce(sum(total),0) s'), DB::raw('max(created_at) l'))->groupBy('phone')->get()->keyBy('phone');
+    $lv = DB::table('membership_levels')->where('active',true)->orderByDesc('min_spent')->get();
+    $out = [];
+    foreach ($rows->items() as $r) { $a = $agg[$r->phone] ?? null; $s = $a ? (float)$a->s : 0;
+      $tier = $r->membership ?: (($a && $a->n > 1) ? (optional($lv->first(fn($l) => $s >= $l->min_spent))->name ?? 'Member') : ($a ? 'New' : '—'));
+      $out[$r->id] = ['orders'=>$a->n ?? 0, 'spent'=>'৳'.number_format($s), 'tier'=>$tier, 'last'=>$a ? \Carbon\Carbon::parse($a->l)->diffForHumans() : '—']; }
+    return $out;
+  }
+  public function districtCharge(Request $r) {
+    $d = $r->validate(['charge'=>'required|numeric|min:0|max:100000']);
+    DB::table('districts')->update(['delivery_charge'=>$d['charge'],'updated_at'=>now()]); $this->audit('update','districts.all_charge='.$d['charge']);
+    return back()->with('ok','Charge set for all districts');
   }
   public function index($slug, Request $r) {
     $c = $this->cfg($slug); $lk = $this->lookups($c);
     $rows = $this->query($c, $r)->paginate(50)->withQueryString();
-    return view('res_list', ['c'=>$c,'rows'=>$rows,'lk'=>$lk,'sum'=>$this->summary($c),'ctl'=>$this]);
+    return view('res_list', ['c'=>$c,'rows'=>$rows,'lk'=>$lk,'sum'=>$this->summary($c),'ctl'=>$this,'ex'=>$this->extras($c,$rows)]);
   }
   public function cell($c, $row, $f, $lk) { return $this->show($c, $row, $f, $lk); }
   public function form($slug, $id = null) {

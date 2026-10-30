@@ -37,6 +37,7 @@ Route::middleware('auth')->prefix('admin')->group(function () {
   Route::post('/brands', [C::class,'brandSave']);
   Route::get('/modules', [M::class,'index']);
   Route::get('/reports', [R::class,'reports']);
+  Route::post('/m-districts/charge', [R::class,'districtCharge']);
   Route::get('/m/{slug}', [R::class,'index']);
   Route::get('/m/{slug}/new', [R::class,'form']);
   Route::post('/m/{slug}', [R::class,'save']);
