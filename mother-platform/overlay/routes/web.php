@@ -3,6 +3,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AdminController as A;
 use App\Http\Controllers\CatalogController as C;
 use App\Http\Controllers\DiscountController as D;
+use App\Http\Controllers\ModulesController as M;
 Route::get('/', fn() => redirect('/admin'));
 Route::get('/login', [A::class,'loginForm'])->name('login');
 Route::post('/login', [A::class,'login']);
@@ -26,6 +27,7 @@ Route::middleware('auth')->prefix('admin')->group(function () {
   Route::get('/taxonomy', [C::class,'taxonomy']);
   Route::post('/categories', [C::class,'categorySave']);
   Route::post('/brands', [C::class,'brandSave']);
+  Route::get('/modules', [M::class,'index']);
   Route::get('/discounts', [D::class,'index']);
   Route::post('/discounts/rules/{id}', [D::class,'ruleSave']);
   Route::post('/discounts/coupons', [D::class,'couponSave']);

@@ -12,7 +12,7 @@ class MotherSmoke extends Command {
     $user = \App\Models\User::where('role','super')->first();
     $kernel = app(Kernel::class);
     $oid = DB::table('orders')->value('id'); $pid = DB::table('products')->value('id');
-    $paths = ['/login','/admin','/admin/orders','/admin/orders/new','/admin/staff-log','/admin/products','/admin/products/new','/admin/taxonomy','/admin/discounts','/admin/orders-export.csv','/admin/products-export.csv','/admin/coupons-export.csv'];
+    $paths = ['/login','/admin','/admin/orders','/admin/orders/new','/admin/staff-log','/admin/products','/admin/products/new','/admin/taxonomy','/admin/modules','/admin/discounts','/admin/orders-export.csv','/admin/products-export.csv','/admin/coupons-export.csv'];
     if ($oid) $paths[] = "/admin/orders/$oid"; if ($pid) $paths[] = "/admin/products/$pid/edit";
     foreach ($paths as $path) {
       try {

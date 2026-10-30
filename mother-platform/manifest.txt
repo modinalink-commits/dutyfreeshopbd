@@ -18,3 +18,6 @@ resources/views/product_form.blade.php
 resources/views/taxonomy.blade.php
 resources/views/discounts.blade.php
 app/Console/Commands/MotherSmoke.php
+database/migrations/2026_10_31_000003_all_modules_structure.php
+app/Http/Controllers/ModulesController.php
+resources/views/modules.blade.php

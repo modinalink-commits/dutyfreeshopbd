@@ -31,6 +31,13 @@ class MotherInstall extends Command {
       ];
       foreach ($rules as $i => $r) DB::table('discount_rules')->insert(['key'=>$r[0],'title'=>$r[1],'help'=>$r[2],'enabled'=>false,'config'=>json_encode($r[3]),'position'=>$i,'created_at'=>now(),'updated_at'=>now()]);
     }
+    if (!DB::table('couriers')->exists()) foreach ([['Pathao',1,1],['Steadfast',0,0],['RedX',0,0],['Sundarban Courier',0,0],['Delivery Tiger',0,0],['S A Paribahan',0,0]] as $c) DB::table('couriers')->insert(['name'=>$c[0],'active'=>(bool)$c[1],'is_default'=>(bool)$c[2],'created_at'=>now(),'updated_at'=>now()]);
+    if (!DB::table('order_sources')->exists()) foreach (['messenger','youtube','google','tiktok','instagram','Landing Page','Whatsapp','FB','Web Site'] as $s) DB::table('order_sources')->insert(['name'=>$s,'created_at'=>now(),'updated_at'=>now()]);
+    if (!DB::table('membership_levels')->exists()) foreach ([['Silver / Standard',0,2],['Gold / Premium',50000,4],['Platinum / VIP',150000,6],['Diamond',400000,8]] as $m) DB::table('membership_levels')->insert(['name'=>$m[0],'min_spent'=>$m[1],'discount_percent'=>$m[2],'created_at'=>now(),'updated_at'=>now()]);
+    if (!DB::table('expense_purposes')->exists()) foreach ([['Internet Bill',1],['Office Food',1],['Fund Transfer',0],['Boost / Advertising',1],['Website Service Charge',1],['Investment Return',0],['Bill Statement',1],['Courier Charge',1],['Salary',1],['Supplier Bill',0],['Travel Allowance',1],['Loan Paid',0],['Investor Profit',0],['Office Stationary',0],['Others',1]] as $p) DB::table('expense_purposes')->insert(['name'=>$p[0],'is_expense'=>(bool)$p[1],'created_at'=>now(),'updated_at'=>now()]);
+    if (!DB::table('attributes')->exists()) foreach (['Weight','Color','Size'] as $a) DB::table('attributes')->insert(['name'=>$a,'created_at'=>now(),'updated_at'=>now()]);
+    if (!DB::table('pages')->exists()) foreach ([['about-us','About Us'],['return-policy','Return Policy'],['privacy-policy','Privacy Policy'],['delivery-policy','Delivery policy'],['blog','Blog']] as $pg) DB::table('pages')->insert(['slug'=>$pg[0],'title'=>$pg[1],'created_at'=>now(),'updated_at'=>now()]);
+    if (!DB::table('roles')->exists()) foreach (['Order desk','Packing','Courier desk','Accounts','Manager'] as $r) DB::table('roles')->insert(['name'=>$r,'permissions'=>json_encode([]),'created_at'=>now(),'updated_at'=>now()]);
     if (!DB::table('stores')->exists()) DB::table('stores')->insert(['name'=>'DutyFreeBD','domain'=>'dutyfreebd.com','created_at'=>now(),'updated_at'=>now()]);
   }
 }
