@@ -1,0 +1,6 @@
+<!doctype html><html lang="bn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DutyFreeBD — শিগগিরই আসছে</title><meta name="robots" content="noindex">
+<style>:root{--o:#FF5A00;--n:#0B1220;--bg:#FFFBF8;--bd:#FDC2A5}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);color:var(--n);font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;padding:16px}
+.c{max-width:460px;text-align:center;background:#fff;border:1px solid var(--bd);border-radius:20px;padding:32px 24px}.l{width:56px;height:56px;border-radius:16px;background:var(--o);color:#fff;font-size:28px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+h1{margin:0 0 8px;font-size:22px}p{margin:0 0 18px;color:#4B5563;line-height:1.6}.b{display:inline-block;background:#16A34A;color:#fff;text-decoration:none;font-weight:600;border-radius:12px;padding:12px 20px}</style></head>
+<body><div class="c"><div class="l">D</div><h1>DutyFreeBD</h1><p>আমাদের নতুন ওয়েবসাইট তৈরি হচ্ছে, খুব শিগগিরই চালু হবে।<br>এর মধ্যে অর্ডার করতে সরাসরি WhatsApp করুন।</p>
+<a class="b" href="https://wa.me/8801871600600">WhatsApp: 01871600600</a></div></body></html>

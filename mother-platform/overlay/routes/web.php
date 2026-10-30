@@ -5,7 +5,7 @@ use App\Http\Controllers\CatalogController as C;
 use App\Http\Controllers\DiscountController as D;
 use App\Http\Controllers\ModulesController as M;
 use App\Http\Controllers\ResController as R;
-Route::get('/', fn() => redirect('/admin'));
+Route::get('/', fn() => response()->view('coming', [], 503)->header('Retry-After','86400'));
 Route::get('/admin/login', [A::class,'loginForm'])->name('login');
 Route::post('/admin/login', [A::class,'login']);
 Route::post('/admin/logout', [A::class,'logout']);

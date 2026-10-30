@@ -27,3 +27,4 @@ resources/views/res_list.blade.php
 resources/views/res_form.blade.php
 resources/views/reports.blade.php
 resources/views/sidebar.blade.php
+resources/views/coming.blade.php
