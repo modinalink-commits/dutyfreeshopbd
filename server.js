@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS cash(id INTEGER PRIMARY KEY,date TEXT,type TEXT,amoun
 CREATE TABLE IF NOT EXISTS orders(id INTEGER PRIMARY KEY,date TEXT,name TEXT,phone TEXT,address TEXT,city TEXT,payment TEXT,total REAL,status TEXT DEFAULT 'New',items TEXT,note TEXT DEFAULT '');
 CREATE TABLE IF NOT EXISTS web_products(id INTEGER PRIMARY KEY,name TEXT,category TEXT,price REAL DEFAULT 0,image TEXT DEFAULT '',description TEXT DEFAULT '',active INTEGER DEFAULT 1,created TEXT DEFAULT '');
 CREATE TABLE IF NOT EXISTS web_orders(id INTEGER PRIMARY KEY,date TEXT,name TEXT,phone TEXT,address TEXT,city TEXT,payment TEXT,total REAL,status TEXT DEFAULT 'New',items TEXT,note TEXT DEFAULT '');
+CREATE TABLE IF NOT EXISTS banks(id INTEGER PRIMARY KEY,name TEXT UNIQUE);
 CREATE TABLE IF NOT EXISTS settings(k TEXT PRIMARY KEY,v TEXT);
 CREATE TABLE IF NOT EXISTS purchase_orders(id INTEGER PRIMARY KEY,date TEXT,supplier_id INTEGER,status TEXT DEFAULT 'Ordered',total REAL DEFAULT 0,note TEXT DEFAULT '',expected TEXT DEFAULT '');
 CREATE TABLE IF NOT EXISTS po_items(id INTEGER PRIMARY KEY,po_id INTEGER,product_id INTEGER,qty REAL,cost REAL,received REAL DEFAULT 0);
@@ -85,6 +86,7 @@ run("UPDATE products SET image='/img/'||replace(replace(category,' ','%20'),'&',
 run("UPDATE sales SET ts=date||' 12:00:00' WHERE ts=''");
 run("UPDATE cash SET ts=date||' 12:00:00' WHERE ts=''");
 
+if (!get("SELECT 1 FROM settings WHERE k='banks_seeded'")) { setSetting('banks_seeded', 1); ['United Commercial Bank PLC (UCB)', 'Uttara Bank PLC', 'National Bank PLC (NBL)', 'Islami Bank Bangladesh PLC', 'Eastern Bank PLC (EBL)'].forEach(n => run('INSERT OR IGNORE INTO banks(name) VALUES(?)', n)); }
 /* website module: its own catalogue and orders, no link to inventory. Copied once from the old data, independent afterwards */
 if (!get("SELECT 1 FROM settings WHERE k='web_split'")) {
   setSetting('web_split', 1);
@@ -114,6 +116,7 @@ const CYCLIST = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAVEAAACvCAYAAABEme2fAAEAAEl
 
 /* ---------- business logic ---------- */
 const ACCTS = ['Cash', 'Bank', 'bKash', 'Nagad'];
+const refreshAccts = () => { ACCTS.length = 4; all('SELECT name FROM banks ORDER BY name').forEach(b => ACCTS.push(b.name)); }; refreshAccts();
 const bal = a => get("SELECT COALESCE(SUM(CASE WHEN type='in' THEN amount ELSE -amount END),0) b FROM cash WHERE acct=?", a).b;
 const cashAdd = (type, amount, head, note = '', acct = 'Cash', ref = '', rep_id = null, customer_id = null) =>
   run('INSERT INTO cash(date,type,amount,head,note,ts,acct,ref,rep_id,customer_id) VALUES(?,?,?,?,?,?,?,?,?,?)', today(), type, amount, head, note, nowTs(), ACCTS.includes(acct) ? acct : 'Cash', ref, rep_id || null, customer_id || null);
@@ -344,7 +347,7 @@ input,select,textarea{font:inherit;padding:9px 12px;border:1px solid #CBD6D0;bor
 @media(max-width:820px){.sh{display:block}aside.sb{width:auto;position:static;height:auto;flex-direction:row;flex-wrap:wrap;gap:4px}.sg{width:100%;padding:8px 6px 2px}main.mn{padding:20px 16px 50px}.me{width:100%}}
 @media print{aside.sb,.ac,.noprint{display:none!important}main.mn{padding:0}.pn{border:0}}`;
 const NAV = [
-  ['CORE', [['Dashboard', '/admin'], ['Sales / POS', '/admin/pos'], ['Purchase', '/admin/purchase'], ['Inventory', '/admin/inventory'], ['Accounts', '/admin/accounts'], ['Cash & Bank', '/admin/cash']]],
+  ['CORE', [['Dashboard', '/admin'], ['Sales / POS', '/admin/pos'], ['Purchase', '/admin/purchase'], ['Inventory', '/admin/inventory'], ['Accounts', '/admin/accounts'], ['Cash & Bank', '/admin/cash'], ['Our banks', '/admin/banks']]],
   ['CUSTOMERS & SALES', [['Customers', '/admin/customers'], ['Sales list', '/admin/sales'], ['Price Lists', '/admin/prices'], ['EMI / Installments', '/admin/emi'], ['Sales Reps', '/admin/reps'], ['Warranty & Service', '/admin/service']]],
   ['WEBSITE (SEPARATE)', [['Website products', '/admin/website'], ['Website orders', '/admin/orders']]],
   ['STOCK CONTROL', [['Stock Audit', '/admin/audit'], ['Damage & Returns', '/admin/damage'], ['Reorder Suggestions', '/admin/reorder']]],
@@ -848,6 +851,16 @@ GETS['/admin/orders'] = ({ role, q }) => {
     `<form method="post" action="/admin/orders" style="display:inline">${hid('id', o.id)}${['Contacted', 'Delivered', 'Cancelled'].filter(s => s !== o.status).map(s => `<button class="btn ${s === 'Cancelled' ? 'r' : 'o'} s" name="status" value="${s}">${s}</button>`).join(' ')}</form> <a class="btn o s" style="color:#128C7E" target="_blank" href="https://wa.me/${waPhone(o.phone)}">WhatsApp</a>`])), 'No website orders yet.')}</div>`, q);
 };
 POSTS['/admin/orders'] = f => { const s = f.get('status'); if (['Contacted', 'Delivered', 'Cancelled'].includes(s)) run('UPDATE web_orders SET status=? WHERE id=?', s, +f.get('id')); return go('/admin/orders', 'Updated'); };
+
+/* ---------- banks (shop's bankers, usable as cash accounts) ---------- */
+GETS['/admin/banks'] = ({ role, q }) => {
+  if (role !== 'owner') return null;
+  const bs = all('SELECT * FROM banks ORDER BY name');
+  return adminPage(role, '/admin/banks', 'Our banks', 'Shop bankers. Each bank works as an account in Cash & Bank, POS and payments', '', `<div class="pn"><h2>Add bank</h2><form method="post" action="/admin/banks" class="fr"><label>Bank name<input name="name" required style="width:320px" placeholder="e.g. Eastern Bank PLC"></label><button class="btn">Add</button></form></div>
+<div class="pn"><h2>Bank list (${bs.length})</h2>${tbl(['#', 'Bank', '>Balance', ''], bs.map((b, i) => tr([i + 1, `<b class="nm">${esc(b.name)}</b>`, R(money(bal(b.name))), confirmForm('/admin/banks/delete', hid('id', b.id), 'Remove this bank from the list? Past entries stay in the cash book.')])), 'No banks yet.')}</div>`, q);
+};
+POSTS['/admin/banks'] = (f, { role }) => { if (role !== 'owner') throw new Error('Owner only'); const n = (f.get('name') || '').trim(); if (!n) throw new Error('Enter a bank name'); if (['Cash', 'Bank', 'bKash', 'Nagad'].includes(n)) throw new Error('That name is already an account'); run('INSERT OR IGNORE INTO banks(name) VALUES(?)', n); refreshAccts(); return go('/admin/banks', 'Bank added'); };
+POSTS['/admin/banks/delete'] = (f, { role }) => { if (role !== 'owner') throw new Error('Owner only'); run('DELETE FROM banks WHERE id=?', +f.get('id')); refreshAccts(); return go('/admin/banks', 'Bank removed'); };
 /* ---------- invoice (public, signed link) ---------- */
 const invKey = id => sign('inv' + id).slice(0, 16);
 const waPhone = ph => { let d = String(ph || '').replace(/\D/g, ''); if (!d) return ''; if (d.startsWith('880')) return d; if (d.startsWith('0')) return '88' + d; return '880' + d; };

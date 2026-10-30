@@ -1,6 +1,7 @@
 
 /* ---------- business logic ---------- */
 const ACCTS = ['Cash', 'Bank', 'bKash', 'Nagad'];
+const refreshAccts = () => { ACCTS.length = 4; all('SELECT name FROM banks ORDER BY name').forEach(b => ACCTS.push(b.name)); }; refreshAccts();
 const bal = a => get("SELECT COALESCE(SUM(CASE WHEN type='in' THEN amount ELSE -amount END),0) b FROM cash WHERE acct=?", a).b;
 const cashAdd = (type, amount, head, note = '', acct = 'Cash', ref = '', rep_id = null, customer_id = null) =>
   run('INSERT INTO cash(date,type,amount,head,note,ts,acct,ref,rep_id,customer_id) VALUES(?,?,?,?,?,?,?,?,?,?)', today(), type, amount, head, note, nowTs(), ACCTS.includes(acct) ? acct : 'Cash', ref, rep_id || null, customer_id || null);

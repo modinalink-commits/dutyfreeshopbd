@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS cash(id INTEGER PRIMARY KEY,date TEXT,type TEXT,amoun
 CREATE TABLE IF NOT EXISTS orders(id INTEGER PRIMARY KEY,date TEXT,name TEXT,phone TEXT,address TEXT,city TEXT,payment TEXT,total REAL,status TEXT DEFAULT 'New',items TEXT,note TEXT DEFAULT '');
 CREATE TABLE IF NOT EXISTS web_products(id INTEGER PRIMARY KEY,name TEXT,category TEXT,price REAL DEFAULT 0,image TEXT DEFAULT '',description TEXT DEFAULT '',active INTEGER DEFAULT 1,created TEXT DEFAULT '');
 CREATE TABLE IF NOT EXISTS web_orders(id INTEGER PRIMARY KEY,date TEXT,name TEXT,phone TEXT,address TEXT,city TEXT,payment TEXT,total REAL,status TEXT DEFAULT 'New',items TEXT,note TEXT DEFAULT '');
+CREATE TABLE IF NOT EXISTS banks(id INTEGER PRIMARY KEY,name TEXT UNIQUE);
 CREATE TABLE IF NOT EXISTS settings(k TEXT PRIMARY KEY,v TEXT);
 CREATE TABLE IF NOT EXISTS purchase_orders(id INTEGER PRIMARY KEY,date TEXT,supplier_id INTEGER,status TEXT DEFAULT 'Ordered',total REAL DEFAULT 0,note TEXT DEFAULT '',expected TEXT DEFAULT '');
 CREATE TABLE IF NOT EXISTS po_items(id INTEGER PRIMARY KEY,po_id INTEGER,product_id INTEGER,qty REAL,cost REAL,received REAL DEFAULT 0);
@@ -85,6 +86,7 @@ run("UPDATE products SET image='/img/'||replace(replace(category,' ','%20'),'&',
 run("UPDATE sales SET ts=date||' 12:00:00' WHERE ts=''");
 run("UPDATE cash SET ts=date||' 12:00:00' WHERE ts=''");
 
+if (!get("SELECT 1 FROM settings WHERE k='banks_seeded'")) { setSetting('banks_seeded', 1); ['United Commercial Bank PLC (UCB)', 'Uttara Bank PLC', 'National Bank PLC (NBL)', 'Islami Bank Bangladesh PLC', 'Eastern Bank PLC (EBL)'].forEach(n => run('INSERT OR IGNORE INTO banks(name) VALUES(?)', n)); }
 /* website module: its own catalogue and orders, no link to inventory. Copied once from the old data, independent afterwards */
 if (!get("SELECT 1 FROM settings WHERE k='web_split'")) {
   setSetting('web_split', 1);

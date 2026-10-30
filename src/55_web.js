@@ -33,3 +33,13 @@ GETS['/admin/orders'] = ({ role, q }) => {
     `<form method="post" action="/admin/orders" style="display:inline">${hid('id', o.id)}${['Contacted', 'Delivered', 'Cancelled'].filter(s => s !== o.status).map(s => `<button class="btn ${s === 'Cancelled' ? 'r' : 'o'} s" name="status" value="${s}">${s}</button>`).join(' ')}</form> <a class="btn o s" style="color:#128C7E" target="_blank" href="https://wa.me/${waPhone(o.phone)}">WhatsApp</a>`])), 'No website orders yet.')}</div>`, q);
 };
 POSTS['/admin/orders'] = f => { const s = f.get('status'); if (['Contacted', 'Delivered', 'Cancelled'].includes(s)) run('UPDATE web_orders SET status=? WHERE id=?', s, +f.get('id')); return go('/admin/orders', 'Updated'); };
+
+/* ---------- banks (shop's bankers, usable as cash accounts) ---------- */
+GETS['/admin/banks'] = ({ role, q }) => {
+  if (role !== 'owner') return null;
+  const bs = all('SELECT * FROM banks ORDER BY name');
+  return adminPage(role, '/admin/banks', 'Our banks', 'Shop bankers. Each bank works as an account in Cash & Bank, POS and payments', '', `<div class="pn"><h2>Add bank</h2><form method="post" action="/admin/banks" class="fr"><label>Bank name<input name="name" required style="width:320px" placeholder="e.g. Eastern Bank PLC"></label><button class="btn">Add</button></form></div>
+<div class="pn"><h2>Bank list (${bs.length})</h2>${tbl(['#', 'Bank', '>Balance', ''], bs.map((b, i) => tr([i + 1, `<b class="nm">${esc(b.name)}</b>`, R(money(bal(b.name))), confirmForm('/admin/banks/delete', hid('id', b.id), 'Remove this bank from the list? Past entries stay in the cash book.')])), 'No banks yet.')}</div>`, q);
+};
+POSTS['/admin/banks'] = (f, { role }) => { if (role !== 'owner') throw new Error('Owner only'); const n = (f.get('name') || '').trim(); if (!n) throw new Error('Enter a bank name'); if (['Cash', 'Bank', 'bKash', 'Nagad'].includes(n)) throw new Error('That name is already an account'); run('INSERT OR IGNORE INTO banks(name) VALUES(?)', n); refreshAccts(); return go('/admin/banks', 'Bank added'); };
+POSTS['/admin/banks/delete'] = (f, { role }) => { if (role !== 'owner') throw new Error('Owner only'); run('DELETE FROM banks WHERE id=?', +f.get('id')); refreshAccts(); return go('/admin/banks', 'Bank removed'); };
