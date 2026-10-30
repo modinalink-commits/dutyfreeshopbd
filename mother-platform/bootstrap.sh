@@ -3,10 +3,14 @@
 set -e
 R=https://raw.githubusercontent.com/modinalink-commits/dutyfreeshopbd/main/mother-platform
 cd /srv
+if ! command -v composer >/dev/null; then
+  apk add --no-cache postgresql-dev git unzip >/dev/null
+  wget -qO /usr/local/bin/composer https://getcomposer.org/download/latest-stable/composer.phar && chmod +x /usr/local/bin/composer
+fi
 if [ ! -f /srv/app/artisan ]; then
   apk add --no-cache postgresql-dev git unzip >/dev/null
   docker-php-ext-install pdo_pgsql >/dev/null
-  composer create-project laravel/laravel app --no-interaction --prefer-dist
+  COMPOSER_ALLOW_SUPERUSER=1 composer create-project laravel/laravel app --no-interaction --prefer-dist
 fi
 cd /srv/app
 php -m | grep -q pdo_pgsql || { apk add --no-cache postgresql-dev >/dev/null; docker-php-ext-install pdo_pgsql >/dev/null; }
