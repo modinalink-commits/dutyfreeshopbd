@@ -25,13 +25,15 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': 
 const money = n => '৳ ' + Math.round(+n || 0).toLocaleString('en-US');
 const num = v => { const n = parseFloat(v); return isFinite(n) ? n : 0; };
 
-db.exec('CREATE TABLE IF NOT EXISTS meta(k TEXT PRIMARY KEY,v TEXT)');
-if (!get("SELECT 1 FROM meta WHERE k='demo_cleared'")) {
-  run('DELETE FROM products WHERE id NOT IN (SELECT product_id FROM sale_items) AND id NOT IN (SELECT product_id FROM purchase_items)');
-  run("INSERT INTO meta(k,v) VALUES('demo_cleared','1')");
+if (!get('SELECT 1 FROM products')) {
+  const seed = [['Mountain bike 26"', 'MTB-26', 'Bicycles', 38000, 33000, 12, 3], ['Road bike 700C', 'RD-700', 'Bicycles', 52000, 46000, 4, 2], ['Kids bike 16"', 'KID-16', 'Bicycles', 14500, 12000, 6, 2],
+    ['Safety helmet', 'HLM-01', 'Helmets', 1800, 1300, 24, 5], ['Tyre 26×2.1', 'TYR-26', 'Tyres & tubes', 1200, 900, 5, 8], ['Chain 8-speed', 'CHN-8', 'Chains & gears', 950, 700, 3, 6],
+    ['Brake pad set', 'BRK-01', 'Chains & gears', 650, 450, 2, 6], ['LED headlight', 'LGT-01', 'Lights & locks', 850, 600, 4, 6], ['Hand pump', 'PMP-01', 'Accessories', 350, 250, 30, 5],
+    ['Combination lock', 'LCK-01', 'Lights & locks', 450, 300, 18, 5], ['Rickshaw hub set', 'RKS-HUB', 'Rickshaw parts', 2400, 1900, 10, 3], ['Rickshaw wheel rim', 'RKS-RIM', 'Rickshaw parts', 1800, 1400, 14, 4]];
+  seed.forEach(p => run('INSERT INTO products(name,sku,category,price,cost,stock,reorder) VALUES(?,?,?,?,?,?,?)', ...p));
+  run("INSERT INTO customers(name,phone,type) VALUES('Walk-in customer','','Retail')");
+  run("INSERT INTO suppliers(name) VALUES('General supplier')");
 }
-if (!get('SELECT 1 FROM customers')) run("INSERT INTO customers(name,phone,type) VALUES('Walk-in customer','','Retail')");
-if (!get('SELECT 1 FROM suppliers')) run("INSERT INTO suppliers(name) VALUES('General supplier')");
 
 /* ---------- business logic ---------- */
 function createSale({ customer_id, items, discount = 0, paid = 0, note = '', source = 'POS' }) {
@@ -172,7 +174,7 @@ function pDash(q) {
   const sv = get('SELECT COALESCE(SUM(stock*cost),0) v FROM products').v, rec = get('SELECT COALESCE(SUM(balance),0) v FROM customers').v, pay = get('SELECT COALESCE(SUM(balance),0) v FROM suppliers').v;
   const low = all('SELECT * FROM products WHERE stock<=reorder ORDER BY stock LIMIT 10'), recent = all('SELECT s.*,c.name cn FROM sales s LEFT JOIN customers c ON c.id=s.customer_id ORDER BY s.id DESC LIMIT 8');
   const nw = get("SELECT COUNT(*) n FROM orders WHERE status='New'").n;
-  return adminPage('/admin', 'Dashboard', `<p class="sub">${today()}</p>
+  return adminPage('/admin', 'Dashboard', `<p class="sub">${today()} · demo products are included, edit or delete them under Products &amp; stock</p>
 <div class="kp">${kpi("Today's sales", money(ts.s) + ` <small style="font-size:13px;color:#5B6B64">(${ts.n})</small>`)}${kpi('This month', money(ms.s))}${kpi('Cash in hand', money(cashBal()))}${kpi('Stock value (cost)', money(sv))}${kpi('Customers owe', money(rec))}${kpi('You owe suppliers', money(pay))}${kpi('New web orders', nw)}</div>
 <div class="pn"><h2>Low stock</h2><table><tr><th>Product</th><th>SKU</th><th class="r">In stock</th><th class="r">Reorder level</th></tr>${low.map(p => `<tr><td>${esc(p.name)}</td><td>${esc(p.sku)}</td><td class="r"><span class="pill ${p.stock <= 0 ? 'bad' : 'warn'}">${p.stock}</span></td><td class="r">${p.reorder}</td></tr>`).join('') || '<tr><td colspan=4>All stock levels are fine.</td></tr>'}</table></div>
 <div class="pn"><h2>Recent sales</h2><table><tr><th>#</th><th>Date</th><th>Customer</th><th class="r">Total</th><th class="r">Paid</th></tr>${recent.map(s => `<tr><td>${s.id}</td><td>${s.date}</td><td>${esc(s.cn || '-')}</td><td class="r">${money(s.total)}</td><td class="r">${money(s.paid)}</td></tr>`).join('') || '<tr><td colspan=5>No sales yet.</td></tr>'}</table></div>`, q);
