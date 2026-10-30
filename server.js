@@ -35,6 +35,21 @@ if (!get('SELECT 1 FROM products')) {
   run("INSERT INTO suppliers(name) VALUES('General supplier')");
 }
 
+
+const ICONS = {
+  bicycles: '<circle cx="90" cy="190" r="55"/><circle cx="310" cy="190" r="55"/><path d="M90 190l70-90h120l30 90M160 100l60 90h-130M135 100h-30M280 100l-15-30h30"/>',
+  helmets: '<path d="M80 200a120 110 0 01240 0z"/><path d="M80 200h250v20H80zM140 110c-10 25-12 60-8 90M200 95v105M260 110c10 25 12 60 8 90"/>',
+  tyres: '<circle cx="200" cy="150" r="105"/><circle cx="200" cy="150" r="70"/><circle cx="200" cy="150" r="10"/><path d="M200 80v60M200 160v60M130 150h60M210 150h60M150 100l40 40M210 160l40 40M250 100l-40 40M190 160l-40 40"/>',
+  chains: '<circle cx="130" cy="150" r="60"/><circle cx="290" cy="150" r="35"/><circle cx="130" cy="150" r="14"/><circle cx="290" cy="150" r="9"/><path d="M130 90l160 25M130 210l160-25"/>',
+  lights: '<path d="M110 110h120l40-30v140l-40-30H110z"/><path d="M290 120l40-20M290 150h50M290 180l40 20"/>',
+  accessories: '<rect x="90" y="190" width="220" height="30" rx="8"/><rect x="90" y="70" width="220" height="30" rx="8"/><path d="M150 100v90M250 100v90M200 40v30"/>',
+  rickshaw: '<circle cx="200" cy="150" r="100"/><circle cx="200" cy="150" r="26"/><path d="M200 50v74M200 176v74M100 150h74M226 150h74M130 80l46 46M224 174l46 46M270 80l-46 46M176 174l-46 46"/>'
+};
+const iconFor = c => { c = (c || '').toLowerCase(); return ICONS[c.includes('bicycle') ? 'bicycles' : c.includes('helmet') ? 'helmets' : c.includes('tyre') ? 'tyres' : c.includes('chain') ? 'chains' : c.includes('light') ? 'lights' : c.includes('rickshaw') ? 'rickshaw' : 'accessories']; };
+const placeholderSvg = c => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><rect width="400" height="300" fill="#E7EEF8"/><g fill="none" stroke="#1F3F6E" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">${iconFor(c)}</g></svg>`;
+
+run("UPDATE products SET image='/img/'||replace(replace(category,' ','%20'),'&','and')||'.svg' WHERE image=''");
+
 /* ---------- business logic ---------- */
 function createSale({ customer_id, items, discount = 0, paid = 0, note = '', source = 'POS' }) {
   items = items.filter(i => i.pid && i.qty > 0);
@@ -244,6 +259,7 @@ const server = http.createServer(async (req, res) => {
   try {
     const u = new URL(req.url, 'http://x'), path = u.pathname.replace(/\/+$/, '') || '/', q = u.searchParams, post = req.method === 'POST';
     if (path === '/healthz') return send(res, 200, 'ok', 'text/plain');
+    if (path.startsWith('/img/') && path.endsWith('.svg')) return send(res, 200, placeholderSvg(decodeURIComponent(path.slice(5, -4))), 'image/svg+xml', { 'Cache-Control': 'public,max-age=86400' });
     if (path === '/logo.png') return send(res, 200, LOGO, 'image/png', { 'Cache-Control': 'public,max-age=86400' });
     if (path === '/robots.txt') return send(res, 200, 'User-agent: *\nDisallow: /admin\n', 'text/plain');
     if (!path.startsWith('/admin')) {
