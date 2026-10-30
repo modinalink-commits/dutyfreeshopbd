@@ -20,6 +20,9 @@ label{font-size:12px;color:#6B7280;display:block;margin:10px 0 4px}
 @auth<aside><div class="logo"><b>M</b>Mother Commerce</div>
 <a href="/admin" class="{{ request()->is('admin') ? 'on':'' }}">Dashboard</a>
 <a href="/admin/orders" class="{{ request()->is('admin/orders*') ? 'on':'' }}">Order Management</a>
+<a href="/admin/products" class="{{ request()->is('admin/products*') ? 'on':'' }}">Catalog</a>
+<a href="/admin/taxonomy" class="{{ request()->is('admin/taxonomy') ? 'on':'' }}">Categories &amp; Brands</a>
+<a href="/admin/discounts" class="{{ request()->is('admin/discounts') ? 'on':'' }}">Discount Center</a>
 <a href="/admin/staff-log" class="{{ request()->is('admin/staff-log') ? 'on':'' }}">Staff Tracking</a>
 <div style="margin-top:auto;font-size:12px">{{ auth()->user()->name }}<form method="post" action="/logout" style="margin-top:8px">@csrf<button class="g">Sign out</button></form></div></aside>@endauth
 <main>@yield('body')</main></body></html>

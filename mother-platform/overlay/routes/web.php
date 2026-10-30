@@ -1,6 +1,8 @@
 <?php
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AdminController as A;
+use App\Http\Controllers\CatalogController as C;
+use App\Http\Controllers\DiscountController as D;
 Route::get('/', fn() => redirect('/admin'));
 Route::get('/login', [A::class,'loginForm'])->name('login');
 Route::post('/login', [A::class,'login']);
@@ -14,4 +16,19 @@ Route::middleware('auth')->prefix('admin')->group(function () {
   Route::post('/orders/{id}/status', [A::class,'orderStatus']);
   Route::get('/orders-export.csv', [A::class,'ordersCsv']);
   Route::get('/staff-log', [A::class,'staffLog']);
+  Route::get('/products', [C::class,'products']);
+  Route::get('/products/new', [C::class,'productForm']);
+  Route::post('/products', [C::class,'productSave']);
+  Route::get('/products/{id}/edit', [C::class,'productForm']);
+  Route::post('/products/{id}', [C::class,'productSave']);
+  Route::post('/products/{id}/toggle', [C::class,'productToggle']);
+  Route::get('/products-export.csv', [C::class,'productsCsv']);
+  Route::get('/taxonomy', [C::class,'taxonomy']);
+  Route::post('/categories', [C::class,'categorySave']);
+  Route::post('/brands', [C::class,'brandSave']);
+  Route::get('/discounts', [D::class,'index']);
+  Route::post('/discounts/rules/{id}', [D::class,'ruleSave']);
+  Route::post('/discounts/coupons', [D::class,'couponSave']);
+  Route::post('/discounts/coupons/{id}/toggle', [D::class,'couponToggle']);
+  Route::get('/coupons-export.csv', [D::class,'couponsCsv']);
 });

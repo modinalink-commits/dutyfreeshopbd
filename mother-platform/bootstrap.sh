@@ -2,7 +2,7 @@
 # Mother Commerce Platform bootstrap: installs Laravel once, overlays our code, migrates, serves.
 set -e
 R=https://raw.githubusercontent.com/modinalink-commits/dutyfreeshopbd/${REF:-main}/mother-platform
-echo "BOOTSTRAP v3 ref=${REF:-main}"
+echo "BOOTSTRAP v4 ref=${REF:-main}"
 cd /srv
 if ! command -v composer >/dev/null; then
   apk add --no-cache postgresql-dev git unzip >/dev/null
@@ -51,5 +51,6 @@ COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader --cla
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
+php artisan mother:smoke || true
 chown -R www-data:www-data storage bootstrap/cache
 exec php-fpm

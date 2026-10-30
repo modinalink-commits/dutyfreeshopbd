@@ -1,0 +1,6 @@
+@extends('layout')@section('title','Categories & Brands')
+@section('body')<h1>Categories &amp; Brands</h1><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr))">
+<div class="card"><h3 style="margin-top:0">Categories</h3><table><tbody>@forelse($cats as $c)<tr><td>{{ $c->name }}</td></tr>@empty<tr><td>None yet.</td></tr>@endforelse</tbody></table>
+<form method="post" action="/admin/categories">@csrf<label>New category</label><input name="name" required><label>Parent</label><select name="parent_id"><option value="">-</option>@foreach($cats as $c)<option value="{{ $c->id }}">{{ $c->name }}</option>@endforeach</select><div style="margin-top:12px"><button>Add</button></div></form></div>
+<div class="card"><h3 style="margin-top:0">Brands</h3><table><thead><tr><th>Brand</th><th>Position</th></tr></thead><tbody>@forelse($brands as $b)<tr><td>{{ $b->name }}</td><td>{{ $b->position }}</td></tr>@empty<tr><td colspan="2">None yet.</td></tr>@endforelse</tbody></table>
+<form method="post" action="/admin/brands">@csrf<label>New brand</label><input name="name" required><label>Position</label><input name="position" type="number" value="0"><div style="margin-top:12px"><button>Add</button></div></form></div></div>@endsection

@@ -10,3 +10,11 @@ resources/views/orders.blade.php
 resources/views/order_new.blade.php
 resources/views/order_show.blade.php
 resources/views/stafflog.blade.php
+database/migrations/2026_10_31_000002_catalog_discounts.php
+app/Http/Controllers/CatalogController.php
+app/Http/Controllers/DiscountController.php
+resources/views/products.blade.php
+resources/views/product_form.blade.php
+resources/views/taxonomy.blade.php
+resources/views/discounts.blade.php
+app/Console/Commands/MotherSmoke.php
