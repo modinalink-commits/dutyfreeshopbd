@@ -44,8 +44,11 @@ class ResController extends Controller {
         $o[] = [$a->name.' balance', '৳'.number_format($a->opening + $in - $ex)];
       }
     } elseif ($k==='entries') {
-      $in = DB::table('account_entries')->where('direction','income')->sum('amount'); $ex = DB::table('account_entries')->where('direction','expense')->sum('amount');
-      $o = [['Total income','৳'.number_format($in)],['Total expense','৳'.number_format($ex)],['Net','৳'.number_format($in-$ex)]];
+      $m0 = now('Asia/Dhaka')->startOfMonth()->toDateString();
+      $in = DB::table('account_entries')->where('entry_date','>=',$m0)->where('direction','income')->sum('amount');
+      $opex = DB::table('account_entries as e')->join('expense_purposes as p','p.id','=','e.purpose_id')->where('e.entry_date','>=',$m0)->where('e.direction','expense')->where('p.is_expense',true)->sum('e.amount');
+      $moves = DB::table('account_entries')->where('entry_date','>=',$m0)->where('direction','expense')->sum('amount') - $opex;
+      $o = [['Income collected','৳'.number_format($in)],['Operating expenses','৳'.number_format($opex)],['Other money out (transfers, supplier bills)','৳'.number_format($moves)],['Net (income − operating expenses)','৳'.number_format($in-$opex)]];
     } elseif ($k==='purchases') {
       $t = DB::table('purchases')->sum('total'); $p = DB::table('purchases')->sum('paid');
       $o = [['Total purchase','৳'.number_format($t)],['Paid','৳'.number_format($p)],['Due','৳'.number_format($t-$p)]];
@@ -66,6 +69,14 @@ class ResController extends Controller {
     return $o;
   }
   public function extras($c, $rows) {
+    if ($c['slug'] === 'accounts') {
+      $d0 = now('Asia/Dhaka')->toDateString(); $out = [];
+      foreach ($rows->items() as $a) {
+        $in = DB::table('account_entries')->where('account_id',$a->id)->where('direction','income'); $ex = DB::table('account_entries')->where('account_id',$a->id)->where('direction','expense');
+        $out[$a->id] = ['bal'=>'৳'.number_format($a->opening + (clone $in)->sum('amount') - (clone $ex)->sum('amount')), 'in'=>'৳'.number_format((clone $in)->where('entry_date',$d0)->sum('amount')), 'out'=>'৳'.number_format((clone $ex)->where('entry_date',$d0)->sum('amount'))];
+      }
+      return $out;
+    }
     if ($c['slug'] !== 'customers') return [];
     $ph = collect($rows->items())->pluck('phone')->filter()->all(); if (!$ph) return [];
     $agg = DB::table('orders')->whereIn('phone',$ph)->whereNotIn('status',['Cancel'])->select('phone', DB::raw('count(*) n'), DB::raw('coalesce(sum(total),0) s'), DB::raw('max(created_at) l'))->groupBy('phone')->get()->keyBy('phone');

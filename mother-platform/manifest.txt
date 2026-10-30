@@ -32,3 +32,5 @@ database/migrations/2026_10_31_000004_catalog_extra.php
 resources/views/panels/customers.blade.php
 resources/views/panels/couriers.blade.php
 resources/views/panels/districts.blade.php
+resources/views/panels/entries.blade.php
+resources/views/panels/accounts.blade.php
