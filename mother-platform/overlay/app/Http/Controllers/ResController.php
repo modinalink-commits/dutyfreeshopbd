@@ -54,6 +54,12 @@ class ResController extends Controller {
       $due = DB::table('purchases')->select('supplier_id', DB::raw('sum(total-paid) d'))->groupBy('supplier_id')->havingRaw('sum(total-paid) > 0')->get();
       $loss = DB::table('damaged_products as d')->join('products as p','p.id','=','d.product_id')->where('d.created_at','>=',$m0)->sum(DB::raw('d.qty*p.cost'));
       $o = [['Suppliers', DB::table('suppliers')->where('active',true)->count().' active'], ['Purchases (month)', '৳'.number_format(DB::table('purchases')->where('purchase_date','>=',$m0)->sum('total')).' · '.DB::table('purchases')->where('purchase_date','>=',$m0)->count().' invoices'], ['Supplier due', '৳'.number_format($due->sum('d')).' · '.$due->count().' suppliers'], ['Damage loss (month)', '৳'.number_format($loss).' · '.DB::table('damaged_products')->where('created_at','>=',$m0)->sum('qty').' items']];
+    } elseif ($k==='hr') {
+      $m0 = now('Asia/Dhaka')->startOfMonth(); $mon = $m0->format('Y-m');
+      $o = [['Employees', DB::table('employees')->where('active',true)->count().' · '.DB::table('employees')->where('joined_at','>=',$m0->toDateString())->count().' new this month'], ['Departments', DB::table('employees')->where('active',true)->whereNotNull('department')->distinct()->count('department')], ['Monthly payroll', '৳'.number_format(DB::table('employees')->where('active',true)->sum('salary')).' gross'], [$m0->format('F').' payroll', DB::table('payroll_entries')->where('month',$mon)->where('status','paid')->count().' paid of '.DB::table('payroll_entries')->where('month',$mon)->count()]];
+    } elseif ($k==='marketing') {
+      $w = now()->subDays(7);
+      $o = [['Orders, last 7 days', DB::table('orders')->where('created_at','>=',$w)->count()], ['From Facebook / Messenger', DB::table('orders')->where('created_at','>=',$w)->whereIn('source',['FB','messenger','Landing Page'])->count()], ['From WhatsApp', DB::table('orders')->where('created_at','>=',$w)->where('source','Whatsapp')->count()], ['From website', DB::table('orders')->where('created_at','>=',$w)->where('source','Web Site')->count()], ['Campaigns', DB::table('campaigns')->count().' · '.DB::table('campaigns')->where('status','scheduled')->count().' scheduled']];
     } elseif ($k==='inventory') {
       $open = ['New','Incomplete','Pre Order','Assign','Pending','AI Order','Approved','Scheduled','WFP','Packaging'];
       $oh = DB::table('products')->sum('stock'); $rs = DB::table('order_items as i')->join('orders as o','o.id','=','i.order_id')->whereIn('o.status',$open)->sum('i.qty');
@@ -104,6 +110,15 @@ class ResController extends Controller {
       $tier = $r->membership ?: (($a && $a->n > 1) ? (optional($lv->first(fn($l) => $s >= $l->min_spent))->name ?? 'Member') : ($a ? 'New' : '—'));
       $out[$r->id] = ['orders'=>$a->n ?? 0, 'spent'=>'৳'.number_format($s), 'tier'=>$tier, 'last'=>$a ? \Carbon\Carbon::parse($a->l)->diffForHumans() : '—']; }
     return $out;
+  }
+  public function payrollGenerate() {
+    $mon = now('Asia/Dhaka')->format('Y-m'); $n = 0;
+    foreach (DB::table('employees')->where('active',true)->get() as $e) {
+      if (DB::table('payroll_entries')->where('employee_id',$e->id)->where('month',$mon)->exists()) continue;
+      DB::table('payroll_entries')->insert(['employee_id'=>$e->id,'month'=>$mon,'amount'=>$e->salary,'status'=>'unpaid','created_at'=>now(),'updated_at'=>now()]); $n++;
+    }
+    $this->audit('create','payroll.'.$mon.' x'.$n);
+    return back()->with('ok', "$n payroll rows created for $mon");
   }
   public function districtCharge(Request $r) {
     $d = $r->validate(['charge'=>'required|numeric|min:0|max:100000']);

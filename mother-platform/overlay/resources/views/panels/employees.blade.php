@@ -1,0 +1,10 @@
+@php $mon = now('Asia/Dhaka')->format('Y-m'); $dep = DB::table('employees')->where('active',true)->select(DB::raw("coalesce(department,'No department') d"), DB::raw('count(*) c'), DB::raw('sum(salary) s'))->groupBy('d')->orderByDesc('c')->get();
+$pr = DB::table('payroll_entries')->where('month',$mon); $tot = (clone $pr)->sum('amount'); $paid = (clone $pr)->where('status','paid')->sum('amount'); $rows = (clone $pr)->count(); @endphp
+<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr))">
+<div class="card" style="margin:0"><b>Departments</b><table><tbody>@forelse($dep as $d)<tr><td>{{ $d->d }}</td><td>{{ $d->c }} staff</td><td style="text-align:right">৳{{ number_format($d->s) }}</td></tr>@empty<tr><td>No employees yet.</td></tr>@endforelse</tbody></table></div>
+<div class="card" style="margin:0"><b>{{ now('Asia/Dhaka')->format('F Y') }} payroll</b>
+<div style="display:flex;gap:6px;margin:10px 0">@foreach([['Salary calculated', $rows > 0], ['Accounts approval', $rows > 0 && $paid > 0], ['Paid', $rows > 0 && $paid >= $tot]] as [$t,$on])<div style="flex:1"><div style="height:4px;border-radius:2px;background:{{ $on ? '#FF5A00' : '#FDC2A5' }}"></div><span style="font-size:11px;color:{{ $on ? '#FF5A00' : '#6B7280' }}">{{ $t }}</span></div>@endforeach</div>
+<table><tbody><tr><td>Gross payable</td><td style="text-align:right">৳{{ number_format($tot) }}</td></tr><tr><td>Paid</td><td style="text-align:right">৳{{ number_format($paid) }}</td></tr><tr><td><b>Remaining</b></td><td style="text-align:right"><b>৳{{ number_format($tot - $paid) }}</b></td></tr></tbody></table>
+<form method="post" action="/admin/m-payroll/generate" style="margin-top:10px">@csrf<button>Calculate this month's salary</button> <a class="btn g" href="/admin/m/payroll?q=">Review details</a></form>
+<p style="font-size:12px;color:#6B7280">Creates one unpaid row per active employee at their monthly salary (skips anyone already added). Mark rows Paid in Payroll. Attendance, overtime and advance recovery come with the attendance step.</p></div>
+</div>

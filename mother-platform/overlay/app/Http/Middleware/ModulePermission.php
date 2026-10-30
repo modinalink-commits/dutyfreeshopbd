@@ -19,6 +19,7 @@ class ModulePermission {
     if (preg_match('#^(discounts|coupons)#', $p)) return 'marketing';
     if (preg_match('#^(reports|modules)#', $p)) return 'reports';
     if (preg_match('#^m-districts#', $p)) return 'couriers';
+    if (preg_match('#^m-payroll#', $p)) return 'hr';
     if (str_starts_with($p, 'site')) return 'settings';
     if (str_starts_with($p, 'permissions')) return 'users';
     return 'users';

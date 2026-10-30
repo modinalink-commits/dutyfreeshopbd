@@ -41,3 +41,5 @@ resources/views/site.blade.php
 app/Http/Middleware/ModulePermission.php
 app/Http/Controllers/PermissionController.php
 resources/views/permissions.blade.php
+resources/views/panels/employees.blade.php
+resources/views/panels/campaigns.blade.php

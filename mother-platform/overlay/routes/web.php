@@ -43,6 +43,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::get('/site', [S::class,'show']);
   Route::post('/site', [S::class,'save']);
   Route::post('/m-districts/charge', [R::class,'districtCharge']);
+  Route::post('/m-payroll/generate', [R::class,'payrollGenerate']);
   Route::get('/m/{slug}', [R::class,'index']);
   Route::get('/m/{slug}/new', [R::class,'form']);
   Route::post('/m/{slug}', [R::class,'save']);
