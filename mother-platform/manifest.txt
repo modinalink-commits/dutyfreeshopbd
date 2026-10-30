@@ -43,3 +43,4 @@ app/Http/Controllers/PermissionController.php
 resources/views/permissions.blade.php
 resources/views/panels/employees.blade.php
 resources/views/panels/campaigns.blade.php
+resources/views/report_details.blade.php

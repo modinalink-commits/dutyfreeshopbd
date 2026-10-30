@@ -231,6 +231,24 @@ class ResController extends Controller {
     $byDay = DB::table('orders')->selectRaw("to_char(created_at,'YYYY-MM-DD') d, count(*) n, coalesce(sum(total),0) s")->where('created_at','>=',now()->subDays(30))->groupBy('d')->orderByDesc('d')->get();
     $byStatus = DB::table('orders')->select('status', DB::raw('count(*) n'), DB::raw('coalesce(sum(total),0) s'))->groupBy('status')->get();
     $top = DB::table('order_items')->select('name', DB::raw('sum(qty) q'), DB::raw('sum(qty*price) s'))->groupBy('name')->orderByDesc('q')->limit(10)->get();
-    return view('reports', compact('docs','byDay','byStatus','top'));
+    $dl = DB::table('audit_logs')->where('action','export')->orderByDesc('id')->limit(10)->get();
+    return view('reports', compact('docs','byDay','byStatus','top','dl'));
+  }
+  public function details(Request $r) {
+    $from = $r->date('from') ?? now('Asia/Dhaka')->startOfMonth(); $to = $r->date('to') ?? now('Asia/Dhaka');
+    $f0 = $from->copy()->startOfDay(); $t1 = $to->copy()->endOfDay();
+    $kp = [['Total stock', number_format(DB::table('products')->sum('stock')), 'units, all categories'], ['Stock value', '৳'.number_format(DB::table('products')->sum(DB::raw('greatest(stock,0)*cost'))), 'at cost'], ['Purchases', number_format(DB::table('purchases')->count()), 'all time'], ['Supplier due', '৳'.number_format(DB::table('purchases')->sum(DB::raw('total-paid'))), DB::table('suppliers')->count().' suppliers'], ['Categories', DB::table('categories')->whereNull('parent_id')->count(), 'top level']];
+    $pur = DB::table('purchases as p')->leftJoin('suppliers as s','s.id','=','p.supplier_id')->whereBetween('p.purchase_date',[$f0->toDateString(),$t1->toDateString()])->select('p.*','s.name as sname', DB::raw('(select coalesce(sum(qty),0) from purchase_items i where i.purchase_id=p.id) as qty'))->orderBy('s.name')->orderByDesc('p.purchase_date')->limit(500)->get();
+    $sup = DB::table('suppliers as s')->leftJoin('purchases as p','p.supplier_id','=','s.id')->select('s.name', DB::raw('count(p.id) n'), DB::raw('coalesce(sum(p.total),0) t'), DB::raw('coalesce(sum(p.paid),0) pd'))->groupBy('s.id','s.name')->orderByDesc('t')->limit(100)->get();
+    $cat = DB::table('categories as c')->leftJoin('products as p','p.category_id','=','c.id')->whereNull('c.parent_id')->select('c.name', DB::raw('coalesce(sum(p.stock),0) st'), DB::raw('coalesce(sum(greatest(p.stock,0)*p.cost),0) amt'))->groupBy('c.id','c.name')->orderBy('c.name')->get();
+    $sale = DB::table('order_items as i')->join('orders as o','o.id','=','i.order_id')->leftJoin('products as p','p.id','=','i.product_id')->leftJoin('categories as c','c.id','=','p.category_id')->whereBetween('o.created_at',[$f0->utc(),$t1->copy()->utc()])->whereNotIn('o.status',['Cancel','Returned'])->when($r->filled('category_id'), fn($q) => $q->where('p.category_id',(int)$r->category_id))->select('i.name', DB::raw('sum(i.qty) q'), DB::raw('sum(i.qty*i.price) v'))->groupBy('i.name')->orderBy('q', $r->input('order')==='asc' ? 'asc' : 'desc')->limit(100)->get();
+    $views = DB::table('product_views')->whereNotNull('term')->select('term', DB::raw('count(*) n'), DB::raw('max(day) d'))->groupBy('term')->orderByDesc('n')->limit(20)->get();
+    $days = ['today'=>0,'yesterday'=>1,'7'=>7,'30'=>30]; $d = $r->input('days','30');
+    $logq = DB::table('stock_logs as l')->leftJoin('products as p','p.id','=','l.product_id')->select('l.*','p.name as pname')->orderByDesc('l.id');
+    if (isset($days[$d])) $logq->where('l.created_at','>=', now('Asia/Dhaka')->startOfDay()->subDays($days[$d])->utc());
+    if ($r->filled('source')) $logq->where('l.source',$r->source);
+    $logs = $logq->limit(200)->get();
+    $sources = DB::table('stock_logs')->distinct()->pluck('source');
+    return view('report_details', compact('kp','pur','sup','cat','sale','views','logs','sources','from','to'));
   }
 }

@@ -38,6 +38,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::post('/brands', [C::class,'brandSave']);
   Route::get('/modules', [M::class,'index']);
   Route::get('/reports', [R::class,'reports']);
+  Route::get('/report-details', [R::class,'details']);
   Route::get('/permissions', [\App\Http\Controllers\PermissionController::class,'show']);
   Route::post('/permissions', [\App\Http\Controllers\PermissionController::class,'save']);
   Route::get('/site', [S::class,'show']);
