@@ -87,6 +87,7 @@ run("UPDATE sales SET ts=date||' 12:00:00' WHERE ts=''");
 run("UPDATE cash SET ts=date||' 12:00:00' WHERE ts=''");
 
 if (!get("SELECT 1 FROM settings WHERE k='banks_seeded'")) { setSetting('banks_seeded', 1); ['United Commercial Bank PLC (UCB)', 'Uttara Bank PLC', 'National Bank PLC (NBL)', 'Islami Bank Bangladesh PLC', 'Eastern Bank PLC (EBL)'].forEach(n => run('INSERT OR IGNORE INTO banks(name) VALUES(?)', n)); }
+if (!get("SELECT 1 FROM settings WHERE k='banks_seeded2'")) { setSetting('banks_seeded2', 1); run('INSERT OR IGNORE INTO banks(name) VALUES(?)', 'Rupali Bank PLC'); }
 /* website module: its own catalogue and orders, no link to inventory. Copied once from the old data, independent afterwards */
 if (!get("SELECT 1 FROM settings WHERE k='web_split'")) {
   setSetting('web_split', 1);
