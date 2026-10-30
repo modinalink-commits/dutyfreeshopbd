@@ -57,8 +57,8 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::post('/discounts/coupons/{id}/toggle', [D::class,'couponToggle']);
   Route::get('/coupons-export.csv', [D::class,'couponsCsv']);
 });
-// ---- Storefront: no session or CSRF (fast, cache-friendly); orders are rate limited per IP
-Route::withoutMiddleware([\Illuminate\Session\Middleware\StartSession::class, \Illuminate\View\Middleware\ShareErrorsFromSession::class, \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class, \Illuminate\Cookie\Middleware\EncryptCookies::class, \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class])->group(function () {
+// ---- Storefront: order form has no CSRF token (pages stay cacheable); orders are rate limited per IP and honeypot-protected
+Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class, \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])->group(function () {
   Route::get('/', [\App\Http\Controllers\StoreController::class,'home']);
   Route::get('/sitemap.xml', [\App\Http\Controllers\StoreController::class,'sitemap']);
   Route::get('/search', [\App\Http\Controllers\StoreController::class,'search']);

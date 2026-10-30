@@ -28,8 +28,26 @@ class MotherSyncFeed extends Command {
       if ($body && strlen($body) > 1000) { $xml = $body; $this->line("FEED ok $u ".strlen($body)); break; }
       $this->line("FEED fail $u");
     }
-    if (!$xml) { $this->line('FEED none reachable'); return 1; }
-    $doc = @simplexml_load_string($xml); if (!$doc) { $this->line('FEED parse error'); return 1; }
+    $rows = [];
+    if ($xml && ($doc = @simplexml_load_string($xml))) {
+      foreach ($doc->channel->item as $i) {
+        $g = $i->children('http://base.google.com/ns/1.0');
+        $pid = (int)$g->id; if (!$pid) continue;
+        $sale = (float)($g->sale_price ?: $g->price); $price = (float)$g->price; if ($sale <= 0) continue;
+        $a = array_map('trim', explode('>', (string)$g->product_type)); $top = strtoupper($a[0] ?? ''); $sec = $a[1] ?? ''; $third = $a[2] ?? '';
+        if (str_contains($top,'LIFESTYLE')) { if (in_array($sec, self::PERF)) [$grp,$sub] = ['perfume',$sec]; elseif ($sec==='SKIN CARE') [$grp,$sub] = ['skin',$third ?: 'SKIN CARE']; elseif ($sec==='HAIR CARE') [$grp,$sub] = ['hair',$third ?: 'HAIR CARE']; elseif ($sec==='Protection') [$grp,$sub] = ['well','Protection']; else [$grp,$sub] = ['other',$sec ?: 'Others']; }
+        elseif (str_contains($top,'DAILY')) [$grp,$sub] = ['daily',$sec ?: 'Daily'];
+        else [$grp,$sub] = ['smoke',$sec ?: ($a[0] ?? 'Smoke')];
+        $title = $this->clean((string)$g->title); if ($title === '') $title = $this->clean((string)$i->title);
+        $rows[] = [$pid, $title, $grp, $sub, $sale, $price > $sale ? $price : null, (string)$g->image_link ?: null, $this->clean((string)$g->description)];
+      }
+    } elseif (!DB::table('products')->whereNotNull('ext_id')->exists() && is_file(database_path('products-snapshot.json'))) {
+      $this->line('FEED unreachable: using saved snapshot for first import');
+      foreach (json_decode(file_get_contents(database_path('products-snapshot.json')), true) ?: [] as $x) {
+        $img = str_starts_with($x['m'] ?? '', 'http') ? $x['m'] : 'https://dutyfreebd.com/public/storage/images/products/'.($x['m'] ?? '');
+        $rows[] = [(int)$x['i'], $x['n'], $x['g'], $x['s'] ?? '', (float)$x['p'], !empty($x['o']) ? (float)$x['o'] : null, $img, $x['d'] ?? ''];
+      }
+    } else { $this->line('FEED none reachable, products unchanged'); return 1; }
     $catId = [];
     foreach (self::groups() as $k => [$slug,$name,$title,$desc]) {
       $id = DB::table('categories')->where('slug',$slug)->value('id');
@@ -37,17 +55,9 @@ class MotherSyncFeed extends Command {
       $catId[$k] = $id;
     }
     $n = 0; $now = now(); $seen = [];
-    foreach ($doc->channel->item as $i) {
-      $g = $i->children('http://base.google.com/ns/1.0');
-      $pid = (int)$g->id; if (!$pid) continue;
-      $sale = (float)($g->sale_price ?: $g->price); $price = (float)$g->price; if ($sale <= 0) continue;
-      $a = array_map('trim', explode('>', (string)$g->product_type)); $top = strtoupper($a[0] ?? ''); $sec = $a[1] ?? ''; $third = $a[2] ?? '';
-      if (str_contains($top,'LIFESTYLE')) { if (in_array($sec, self::PERF)) [$grp,$sub] = ['perfume',$sec]; elseif ($sec==='SKIN CARE') [$grp,$sub] = ['skin',$third ?: 'SKIN CARE']; elseif ($sec==='HAIR CARE') [$grp,$sub] = ['hair',$third ?: 'HAIR CARE']; elseif ($sec==='Protection') [$grp,$sub] = ['well','Protection']; else [$grp,$sub] = ['other',$sec ?: 'Others']; }
-      elseif (str_contains($top,'DAILY')) [$grp,$sub] = ['daily',$sec ?: 'Daily'];
-      else [$grp,$sub] = ['smoke',$sec ?: ($a[0] ?? 'Smoke')];
-      $title = $this->clean((string)$g->title); if ($title === '') $title = $this->clean((string)$i->title);
-      $desc = $this->clean((string)$g->description);
-      $data = ['name'=>mb_substr($title,0,200), 'price'=>$sale, 'compare_price'=>$price > $sale ? $price : null, 'image'=>(string)$g->image_link ?: null, 'group_key'=>$grp, 'sub'=>mb_substr($sub,0,120), 'category_id'=>$catId[$grp], 'description'=>mb_substr($desc,0,5000), 'published'=>true, 'synced_at'=>$now, 'updated_at'=>$now];
+    foreach ($rows as [$pid, $title, $grp, $sub, $sale, $cmp, $img, $desc]) {
+      if (!isset($catId[$grp])) $grp = 'other';
+      $data = ['name'=>mb_substr($title,0,200), 'price'=>$sale, 'compare_price'=>$cmp, 'image'=>$img, 'group_key'=>$grp, 'sub'=>mb_substr($sub,0,120), 'category_id'=>$catId[$grp], 'description'=>mb_substr($desc,0,5000), 'published'=>true, 'synced_at'=>$now, 'updated_at'=>$now];
       $ex = DB::table('products')->where('ext_id',$pid)->first();
       if ($ex) DB::table('products')->where('id',$ex->id)->update($data);
       else DB::table('products')->insert($data + ['ext_id'=>$pid, 'sku'=>'DF-'.$pid, 'slug'=>Str::slug($title) ?: 'product', 'stock'=>100, 'cost'=>0, 'created_at'=>$now]);
