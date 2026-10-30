@@ -24,7 +24,7 @@ class MotherSmoke extends Command {
         $status = $res->getStatusCode();
         if ($res instanceof \Symfony\Component\HttpFoundation\StreamedResponse) { ob_start(); $res->sendContent(); ob_end_clean(); }
         $this->line("SMOKE $status $path");
-        if ($status >= 500 && empty($shown)) { $shown = true; $lf = storage_path('logs/laravel.log'); if (is_file($lf)) { $tail = array_slice(file($lf), -6); foreach ($tail as $l) $this->line('LOG '.substr(trim($l),0,300)); } }
+        if ($status >= 500 && empty($shown)) { $shown = true; $lf = storage_path('logs/laravel.log'); if (is_file($lf)) { $ls = file($lf); for ($i = count($ls)-1; $i >= 0; $i--) if (preg_match('/^\[20\d\d-/', $ls[$i])) { $this->line('LOGERR '.substr(trim($ls[$i]),0,500)); break; } } }
       } catch (\Throwable $e) { $this->line("SMOKE FAIL $path :: ".substr($e->getMessage(),0,200)); }
     }
   }

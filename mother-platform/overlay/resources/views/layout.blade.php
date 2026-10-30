@@ -2,9 +2,16 @@
 <style>
 :root{--o:#FF5A00;--n:#0B1220;--bg:#FFFBF8;--bd:#FDC2A5}
 *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;background:var(--bg);color:var(--n);display:flex;min-height:100vh}
-aside{width:230px;background:var(--n);color:#D1D5DB;padding:20px 12px;display:flex;flex-direction:column;gap:6px;flex-shrink:0}
-aside .logo{display:flex;gap:10px;align-items:center;color:#fff;font-weight:600;margin-bottom:14px}aside .logo b{background:var(--o);color:var(--n);width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center}
-aside a{color:#D1D5DB;text-decoration:none;padding:10px 12px;border-radius:9px;font-size:14px}aside a:hover,aside a.on{background:rgba(255,255,255,.12);color:#fff}
+aside{width:240px;background:#0B1220;color:#C7CEDB;padding:16px 12px;display:flex;flex-direction:column;gap:6px;flex-shrink:0;overflow-y:auto;max-height:100vh;position:sticky;top:0}
+aside .brand{display:flex;gap:10px;align-items:center;color:#fff;font-weight:600;text-decoration:none;padding:4px 6px}aside .brand b{background:var(--o);color:#fff;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}aside .brand small{display:block;font-weight:400;font-size:12px;color:#9AA4B5}
+aside .viewing{background:#161E30;border:1px solid #232D44;border-radius:12px;padding:10px 12px;margin:8px 0}aside .viewing small{display:block;font-size:10px;letter-spacing:.08em;color:#8A94A8}aside .viewing strong{display:block;font-size:13px;color:#fff;margin-top:2px}
+aside nav{display:flex;flex-direction:column;gap:2px}
+aside a.nv,aside details summary{display:flex;align-items:center;gap:12px;color:#C7CEDB;text-decoration:none;padding:10px 12px;border-radius:10px;font-size:14px;cursor:pointer;list-style:none}aside a.nv:hover,aside details summary:hover{background:#161E30;color:#fff}
+aside a.nv.on{background:#232B3D;color:#fff}aside a.nv.on svg{color:var(--o)}aside a.nv svg,aside details summary svg{flex-shrink:0;opacity:.9}aside a.nv span,aside details summary span{flex:1}
+aside em{font-style:normal;background:var(--o);color:#fff;font-size:11px;font-weight:700;border-radius:20px;padding:1px 8px}
+aside .gh{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#7C879B;padding:10px 12px 2px}aside a.sub{display:block;color:#C7CEDB;text-decoration:none;padding:6px 12px 6px 42px;font-size:13px;border-radius:8px}aside a.sub:hover,aside a.sub.on{background:#161E30;color:#fff}
+aside .me{margin-top:auto;font-size:12px;padding:10px 6px;color:#C7CEDB}aside .me form{margin-top:8px}
+@media(max-width:800px){body{display:block}aside{width:auto;max-height:none;position:static}}
 main{flex:1;padding:24px;min-width:0}h1{margin:0 0 16px;font-size:22px}
 .card{background:#fff;border:1px solid var(--bd);border-radius:14px;padding:16px;margin-bottom:16px}
 table{width:100%;border-collapse:collapse;font-size:13px}th{text-align:left;color:#6B7280;font-size:12px;padding:8px 8px 8px 0}td{padding:9px 8px 9px 0;border-top:1px solid #FFE7D6}
@@ -16,18 +23,6 @@ label{font-size:12px;color:#6B7280;display:block;margin:10px 0 4px}
 .pill{font-size:11px;font-weight:600;border-radius:6px;padding:2px 8px;background:#FFE7D6;color:#C2410C}.pill.red{background:#FEE2E2;color:#B91C1C}.pill.ok{background:#DCFCE7;color:#166534}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}.k b{font-size:24px;display:block}.k span{font-size:12px;color:#6B7280}
 .err{color:#B91C1C;font-size:12px}
-aside{overflow-y:auto;max-height:100vh;position:sticky;top:0}aside details summary{cursor:pointer;color:#fff;padding:9px 12px;font-size:14px;list-style:none}aside details summary::after{content:' ▾';opacity:.6}aside a.sub{padding:7px 12px 7px 26px;font-size:13px;display:block}
-@media(max-width:800px){body{display:block}aside{width:auto;max-height:none;position:static}}
 </style></head><body>
-@auth<aside><div class="logo"><b>M</b>Mother Commerce</div>
-<a href="/admin" class="{{ request()->is('admin') ? 'on':'' }}">Dashboard</a>
-<a href="/admin/orders" class="{{ request()->is('admin/orders*') ? 'on':'' }}">Order Management</a>
-<a href="/admin/products" class="{{ request()->is('admin/products*') ? 'on':'' }}">Catalog</a>
-<a href="/admin/taxonomy" class="{{ request()->is('admin/taxonomy') ? 'on':'' }}">Categories &amp; Brands</a>
-<a href="/admin/discounts" class="{{ request()->is('admin/discounts') ? 'on':'' }}">Discount Center</a>
-<a href="/admin/reports" class="{{ request()->is('admin/reports') ? 'on':'' }}">Reports &amp; Documents</a>
-@foreach(\App\Models\Res::groups() as $g=>$items)@continue($g==='Documents')<details {{ collect($items)->contains(fn($i)=>request()->is('admin/m/'.$i[0].'*')) ? 'open':'' }}><summary>{{ $g }}</summary>@foreach($items as [$sl,$ti])<a class="sub {{ request()->is('admin/m/'.$sl) || request()->is('admin/m/'.$sl.'/*') ? 'on':'' }}" href="/admin/m/{{ $sl }}">{{ $ti }}</a>@endforeach</details>@endforeach
-<a href="/admin/modules" class="{{ request()->is('admin/modules') ? 'on':'' }}">Modules</a>
-<a href="/admin/staff-log" class="{{ request()->is('admin/staff-log') ? 'on':'' }}">Staff Tracking</a>
-<div style="margin-top:auto;font-size:12px">{{ auth()->user()->name }}<form method="post" action="/logout" style="margin-top:8px">@csrf<button class="g">Sign out</button></form></div></aside>@endauth
+@auth @include('sidebar') @endauth
 <main>@yield('body')</main></body></html>
