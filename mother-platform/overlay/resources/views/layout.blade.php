@@ -16,6 +16,8 @@ label{font-size:12px;color:#6B7280;display:block;margin:10px 0 4px}
 .pill{font-size:11px;font-weight:600;border-radius:6px;padding:2px 8px;background:#FFE7D6;color:#C2410C}.pill.red{background:#FEE2E2;color:#B91C1C}.pill.ok{background:#DCFCE7;color:#166534}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}.k b{font-size:24px;display:block}.k span{font-size:12px;color:#6B7280}
 .err{color:#B91C1C;font-size:12px}
+aside{overflow-y:auto;max-height:100vh;position:sticky;top:0}aside details summary{cursor:pointer;color:#fff;padding:9px 12px;font-size:14px;list-style:none}aside details summary::after{content:' ▾';opacity:.6}aside a.sub{padding:7px 12px 7px 26px;font-size:13px;display:block}
+@media(max-width:800px){body{display:block}aside{width:auto;max-height:none;position:static}}
 </style></head><body>
 @auth<aside><div class="logo"><b>M</b>Mother Commerce</div>
 <a href="/admin" class="{{ request()->is('admin') ? 'on':'' }}">Dashboard</a>
@@ -23,6 +25,8 @@ label{font-size:12px;color:#6B7280;display:block;margin:10px 0 4px}
 <a href="/admin/products" class="{{ request()->is('admin/products*') ? 'on':'' }}">Catalog</a>
 <a href="/admin/taxonomy" class="{{ request()->is('admin/taxonomy') ? 'on':'' }}">Categories &amp; Brands</a>
 <a href="/admin/discounts" class="{{ request()->is('admin/discounts') ? 'on':'' }}">Discount Center</a>
+<a href="/admin/reports" class="{{ request()->is('admin/reports') ? 'on':'' }}">Reports &amp; Documents</a>
+@foreach(\App\Models\Res::groups() as $g=>$items)@continue($g==='Documents')<details {{ collect($items)->contains(fn($i)=>request()->is('admin/m/'.$i[0].'*')) ? 'open':'' }}><summary>{{ $g }}</summary>@foreach($items as [$sl,$ti])<a class="sub {{ request()->is('admin/m/'.$sl) || request()->is('admin/m/'.$sl.'/*') ? 'on':'' }}" href="/admin/m/{{ $sl }}">{{ $ti }}</a>@endforeach</details>@endforeach
 <a href="/admin/modules" class="{{ request()->is('admin/modules') ? 'on':'' }}">Modules</a>
 <a href="/admin/staff-log" class="{{ request()->is('admin/staff-log') ? 'on':'' }}">Staff Tracking</a>
 <div style="margin-top:auto;font-size:12px">{{ auth()->user()->name }}<form method="post" action="/logout" style="margin-top:8px">@csrf<button class="g">Sign out</button></form></div></aside>@endauth

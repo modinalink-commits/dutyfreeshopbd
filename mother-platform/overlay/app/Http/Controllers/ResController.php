@@ -1,0 +1,166 @@
+<?php
+namespace App\Http\Controllers;
+use App\Models\Res;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+class ResController extends Controller {
+  private array $memo = [];
+  private function cfg($slug) {
+    $c = Res::all()[$slug] ?? abort(404);
+    if (!empty($c['admin']) && !in_array(Auth::user()->role, ['super','admin'])) abort(403);
+    return $c + ['slug'=>$slug];
+  }
+  private function lookups($c) {
+    $m = [];
+    foreach ($c['fields'] as $f) if ($f['t']==='fk') { [$t,$l] = $f['fk']; $m[$f['n']] = DB::table($t)->orderBy($l)->limit(1500)->pluck($l,'id')->all(); }
+    return $m;
+  }
+  private function show($c, $row, $f, $lk) {
+    $v = $row->{$f['n']} ?? null;
+    if ($f['t']==='fk') { if ($v===null) return ''; if (isset($lk[$f['n']][$v])) return $lk[$f['n']][$v]; $k = $f['fk'][0].':'.$v; return $this->memo[$k] ??= (DB::table($f['fk'][0])->where('id',$v)->value($f['fk'][1]) ?? "#$v"); }
+    if ($f['t']==='bool') return $v ? 'Yes' : 'No';
+    if ($f['t']==='select') return $f['o'][$v] ?? $v;
+    if ($f['t']==='perm') { $a = json_decode($v ?? '[]', true); return is_array($a) ? implode(', ', $a) : (string)$v; }
+    if ($f['t']==='json' && $v !== null && !is_string($v)) return json_encode($v);
+    return $v === null ? '' : (string)$v;
+  }
+  private function query($c, Request $r) {
+    $q = DB::table($c['table']);
+    if ($r->filled('q') && !empty($c['search'])) $q->where(function ($w) use ($c, $r) { foreach ($c['search'] as $col) $w->orWhere($col, 'ilike', '%'.$r->q.'%'); });
+    foreach ($c['filters'] ?? [] as $fn) if ($r->filled($fn)) $q->where($fn, $r->input($fn));
+    return $q->orderByDesc($c['order'] ?? 'id')->orderByDesc('id');
+  }
+  private function audit($act, $subject, $meta = []) {
+    DB::table('audit_logs')->insert(['user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'action'=>$act,'subject'=>$subject,'meta'=>json_encode($meta),'ip'=>request()->ip(),'created_at'=>now(),'updated_at'=>now()]);
+  }
+  private function summary($c) {
+    $k = $c['summary'] ?? null; $o = [];
+    if ($k==='accounts') {
+      foreach (DB::table('money_accounts')->get() as $a) {
+        $in = DB::table('account_entries')->where('account_id',$a->id)->where('direction','income')->sum('amount');
+        $ex = DB::table('account_entries')->where('account_id',$a->id)->where('direction','expense')->sum('amount');
+        $o[] = [$a->name.' balance', '৳'.number_format($a->opening + $in - $ex)];
+      }
+    } elseif ($k==='entries') {
+      $in = DB::table('account_entries')->where('direction','income')->sum('amount'); $ex = DB::table('account_entries')->where('direction','expense')->sum('amount');
+      $o = [['Total income','৳'.number_format($in)],['Total expense','৳'.number_format($ex)],['Net','৳'.number_format($in-$ex)]];
+    } elseif ($k==='purchases') {
+      $t = DB::table('purchases')->sum('total'); $p = DB::table('purchases')->sum('paid');
+      $o = [['Total purchase','৳'.number_format($t)],['Paid','৳'.number_format($p)],['Due','৳'.number_format($t-$p)]];
+    } elseif ($k==='reviews') {
+      $n = DB::table('reviews')->where('status','published')->count(); $avg = DB::table('reviews')->where('status','published')->avg('rating');
+      $o = [['Published reviews',$n],['Real average',$n ? number_format($avg,1) : 'New'],['Verified buyers',DB::table('reviews')->where('verified_buyer',true)->count()]];
+    }
+    return $o;
+  }
+  public function index($slug, Request $r) {
+    $c = $this->cfg($slug); $lk = $this->lookups($c);
+    $rows = $this->query($c, $r)->paginate(50)->withQueryString();
+    return view('res_list', ['c'=>$c,'rows'=>$rows,'lk'=>$lk,'sum'=>$this->summary($c),'ctl'=>$this]);
+  }
+  public function cell($c, $row, $f, $lk) { return $this->show($c, $row, $f, $lk); }
+  public function form($slug, $id = null) {
+    $c = $this->cfg($slug); if (!empty($c['ro'])) abort(403);
+    if ($id===null && !empty($c['noCreate'])) abort(403);
+    if ($id!==null && !empty($c['noEdit'])) abort(403);
+    $row = $id ? DB::table($c['table'])->where('id',$id)->first() : null;
+    if ($id && !$row) abort(404);
+    return view('res_form', ['c'=>$c,'row'=>$row,'lk'=>$this->lookups($c)]);
+  }
+  public function save($slug, Request $r, $id = null) {
+    $c = $this->cfg($slug); if (!empty($c['ro'])) abort(403);
+    if ($id===null && !empty($c['noCreate'])) abort(403);
+    if ($id!==null && !empty($c['noEdit'])) abort(403);
+    $rules = []; $data = [];
+    foreach ($c['fields'] as $f) {
+      if (!empty($f['auto'])) continue;
+      if ($id && !empty($c['editOnly']) && !in_array($f['n'], $c['editOnly'])) continue;
+      if ($f['t']==='password' && $r->input($f['n'])==='' && $id) continue;
+      $rule = [empty($f['req']) && !($f['t']==='password' && !$id) ? 'nullable' : 'required'];
+      $rule[] = match ($f['t']) { 'number'=>'numeric', 'date'=>'date', 'datetime'=>'date', 'bool'=>'boolean', 'fk'=>'integer', 'json'=>'json', 'select'=>'in:'.implode(',', array_keys($f['o'])), default=>'string' };
+      if (in_array($f['t'], ['text','textarea','password'])) $rule[] = 'max:5000';
+      $rules[$f['n']] = $rule;
+    }
+    if ($c['slug']==='users') { $rules['email'][] = 'email'; }
+    $in = $r->validate($rules);
+    foreach ($c['fields'] as $f) {
+      $n = $f['n']; if (!array_key_exists($n, $rules)) continue;
+      $v = $in[$n] ?? null;
+      if ($f['t']==='bool') $v = (bool)($r->input($n) ?? false);
+      if ($f['t']==='password') $v = Hash::make($v);
+      if ($f['t']==='perm') $v = json_encode(array_values(array_filter(array_map('trim', explode(',', (string)$v)))));
+      if ($f['t']==='json' && ($v===null || $v==='')) $v = null;
+      $data[$n] = $v;
+    }
+    $new = !$id; $slugName = $c['slug'];
+    try {
+      $id = DB::transaction(function () use ($c, $id, $data, $new, $slugName) {
+        $now = now(); $t = $c['table'];
+        if ($slugName==='pages' && empty($data['slug'])) $data['slug'] = \Illuminate\Support\Str::slug($data['title']) ?: 'page-'.time();
+        if ($slugName==='entries' && $new) { $data['reference'] = 'TMP'.uniqid(); $data['user_id'] = Auth::id(); $data['user_name'] = Auth::user()->name; }
+        if ($slugName==='purchases' && $new) { $data['invoice'] = 'TMP'.uniqid(); $data['user_id'] = Auth::id(); }
+        if ($slugName==='damaged' && $new) { $data['user_id'] = Auth::id(); }
+        if ($new) { $data['created_at'] = $now; $data['updated_at'] = $now; $id = DB::table($t)->insertGetId($data); }
+        else { $data['updated_at'] = $now; DB::table($t)->where('id',$id)->update($data); }
+        if ($slugName==='entries' && $new) DB::table($t)->where('id',$id)->update(['reference'=>($data['direction']==='income'?'INC-':'EXP-').str_pad($id,6,'0',STR_PAD_LEFT)]);
+        if ($slugName==='purchases' && $new) DB::table($t)->where('id',$id)->update(['invoice'=>'PUR-'.str_pad($id,6,'0',STR_PAD_LEFT)]);
+        if ($slugName==='couriers' && !empty($data['is_default'])) DB::table($t)->where('id','!=',$id)->update(['is_default'=>false]);
+        if ($slugName==='purchase-items' && $new) {
+          if (!empty($data['product_id'])) $this->stock($data['product_id'], (int)$data['qty'], 'purchase', 'PUR#'.$data['purchase_id']);
+          $tot = DB::table('purchase_items')->where('purchase_id',$data['purchase_id'])->selectRaw('coalesce(sum(qty*cost),0) s')->value('s');
+          DB::table('purchases')->where('id',$data['purchase_id'])->update(['total'=>$tot]);
+        }
+        if ($slugName==='damaged' && $new) $this->stock($data['product_id'], -(int)$data['qty'], 'damaged', 'DMG#'.$id);
+        if ($slugName==='points' && $new) DB::table('customers')->where('id',$data['customer_id'])->increment('points', (int)$data['points']);
+        $this->audit($new?'create':'update', $slugName.'#'.$id);
+        return $id;
+      });
+    } catch (\Illuminate\Database\QueryException $e) {
+      return back()->withInput()->withErrors(['db'=>'Could not save: '.(str_contains($e->getMessage(),'unique') ? 'this value already exists' : 'check the values')]);
+    }
+    return redirect('/admin/m/'.$slugName)->with('ok', 'Saved');
+  }
+  private function stock($pid, $delta, $source, $ref) {
+    $p = DB::table('products')->where('id',$pid)->lockForUpdate()->first(); if (!$p) return;
+    DB::table('products')->where('id',$pid)->update(['stock'=>$p->stock + $delta]);
+    DB::table('stock_logs')->insert(['product_id'=>$pid,'source'=>$source,'reference'=>$ref,'before_qty'=>$p->stock,'change_qty'=>$delta,'after_qty'=>$p->stock+$delta,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'created_at'=>now(),'updated_at'=>now()]);
+  }
+  public function destroy($slug, $id) {
+    $c = $this->cfg($slug); if (!empty($c['ro']) || !empty($c['noCreate'])) abort(403);
+    if ($slug==='users' && (int)$id === (int)Auth::id()) return back()->withErrors(['db'=>'You cannot delete your own account']);
+    DB::table($c['table'])->where('id',$id)->delete(); $this->audit('delete', $slug.'#'.$id);
+    return back()->with('ok','Deleted');
+  }
+  public function export($slug, $fmt, Request $r) {
+    $c = $this->cfg($slug); $lk = $this->lookups($c);
+    $fields = array_values(array_filter($c['fields'], fn($f) => ($f['t']??'') !== 'password'));
+    $head = array_map(fn($f) => $f['l'], $fields);
+    $gen = function () use ($c, $r, $fields, $lk) {
+      foreach ($this->query($c, $r)->cursor() as $row) yield array_map(fn($f) => $this->show($c, $row, $f, $lk), $fields);
+    };
+    $name = $slug.'-'.date('Ymd-His'); $title = $c['title'];
+    $this->audit('export', $slug.'.'.$fmt);
+    if ($fmt==='csv') {
+      return response()->streamDownload(function () use ($head, $gen) { $o = fopen('php://output','w'); fwrite($o, "\xEF\xBB\xBF"); fputcsv($o, $head); foreach ($gen() as $row) fputcsv($o, $row); fclose($o); }, "$name.csv", ['Content-Type'=>'text/csv; charset=utf-8']);
+    }
+    $table = function () use ($head, $gen) {
+      echo '<table border="1" cellspacing="0" cellpadding="4"><thead><tr>'; foreach ($head as $h) echo '<th style="background:#FF5A00;color:#fff">'.e($h).'</th>'; echo '</tr></thead><tbody>';
+      foreach ($gen() as $row) { echo '<tr>'; foreach ($row as $v) echo '<td>'.e($v).'</td>'; echo '</tr>'; }
+      echo '</tbody></table>';
+    };
+    $pre = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>'.e($title).'</title><style>body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}table{border-collapse:collapse;font-size:12px}h2{color:#0B1220}</style></head><body><h2>'.e($title).' — DutyFreeBD / Mother Commerce</h2><p>'.e(now()->format('d M Y H:i')).'</p>';
+    if ($fmt==='xls') return response()->streamDownload(function () use ($pre, $table) { echo $pre; $table(); echo '</body></html>'; }, "$name.xls", ['Content-Type'=>'application/vnd.ms-excel; charset=utf-8']);
+    if ($fmt==='doc') return response()->streamDownload(function () use ($pre, $table) { echo $pre; $table(); echo '</body></html>'; }, "$name.doc", ['Content-Type'=>'application/msword; charset=utf-8']);
+    if ($fmt==='pdf') return response()->stream(function () use ($pre, $table) { echo $pre; $table(); echo '<script>window.onload=function(){window.print()}</script></body></html>'; }, 200, ['Content-Type'=>'text/html; charset=utf-8']);
+    abort(404);
+  }
+  public function reports() {
+    $docs = []; foreach (Res::all() as $s => $c) if (empty($c['admin']) || in_array(Auth::user()->role,['super','admin'])) $docs[$c['group']][] = [$s, $c['title'], DB::table($c['table'])->count()];
+    $byDay = DB::table('orders')->selectRaw("to_char(created_at,'YYYY-MM-DD') d, count(*) n, coalesce(sum(total),0) s")->where('created_at','>=',now()->subDays(30))->groupBy('d')->orderByDesc('d')->get();
+    $byStatus = DB::table('orders')->select('status', DB::raw('count(*) n'), DB::raw('coalesce(sum(total),0) s'))->groupBy('status')->get();
+    $top = DB::table('order_items')->select('name', DB::raw('sum(qty) q'), DB::raw('sum(qty*price) s'))->groupBy('name')->orderByDesc('q')->limit(10)->get();
+    return view('reports', compact('docs','byDay','byStatus','top'));
+  }
+}

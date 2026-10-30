@@ -21,3 +21,8 @@ app/Console/Commands/MotherSmoke.php
 database/migrations/2026_10_31_000003_all_modules_structure.php
 app/Http/Controllers/ModulesController.php
 resources/views/modules.blade.php
+app/Models/Res.php
+app/Http/Controllers/ResController.php
+resources/views/res_list.blade.php
+resources/views/res_form.blade.php
+resources/views/reports.blade.php
