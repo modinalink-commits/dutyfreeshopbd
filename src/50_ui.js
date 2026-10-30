@@ -1,0 +1,59 @@
+
+/* ---------- admin: auth + UI kit ---------- */
+const makeToken = role => { const e = String(Date.now() + 7 * 864e5); return e + '.' + role + '.' + sign(e + '.' + role); };
+const roleOf = req => { const m = /(?:^|; )gcs=([^;]+)/.exec(req.headers.cookie || ''); if (!m) return null; const [e, r, s] = m[1].split('.'); return (e && r && s === sign(e + '.' + r) && +e > Date.now()) ? r : null; };
+const authed = req => !!roleOf(req);
+const A_CSS = `*{box-sizing:border-box}body{margin:0;background:#F4F6F4;color:#12201A;font:15px/1.5 Inter,system-ui,sans-serif}a{color:inherit;text-decoration:none}
+.sh{display:flex;min-height:100vh}aside.sb{width:240px;flex:none;background:#fff;border-right:1px solid #E3E9E5;padding:20px 14px;display:flex;flex-direction:column;gap:2px;position:sticky;top:0;height:100vh;overflow:auto}
+.br{display:flex;align-items:center;gap:10px;padding:0 6px 14px}.br img{width:42px;height:42px;border-radius:10px;object-fit:contain;background:#F6C32B}.br b{display:block;font-size:17px;line-height:1.2}.br small{color:#5B6B64;font-size:12px}
+.sg{font-size:11px;letter-spacing:.08em;font-weight:700;color:#5B6B64;padding:16px 10px 6px}.sb a.n{display:block;padding:8px 12px;border-radius:10px;font-weight:500;color:#14211C}.sb a.n:hover{background:#F0F5F2}.sb a.n.on{background:#E3F1EA;color:#0B6B45;font-weight:700}
+.me{margin-top:auto;background:#F4F6F4;border-radius:12px;padding:12px;font-size:14px}.me b{display:block}.me small{color:#5B6B64}.me a{color:#0B6B45;font-weight:600;font-size:13px}
+main.mn{flex:1;min-width:0;padding:30px 36px 60px}.ph2{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:22px}h1{margin:0;font:800 30px/1.15 Manrope,Inter,sans-serif}.sub{color:#5B6B64;margin:4px 0 0}.ac{display:flex;gap:10px;flex-wrap:wrap}
+.btn{display:inline-block;padding:11px 20px;border-radius:12px;background:#0B6B45;color:#fff;font:600 15px Inter,system-ui,sans-serif;border:1px solid #0B6B45;cursor:pointer;text-align:center}.btn:hover{background:#095a3a}.btn.o{background:#fff;color:#12201A;border-color:#D4DDD8}.btn.o:hover{background:#F4F6F4}.btn.s{padding:6px 12px;font-size:13px;border-radius:9px}.btn.r{background:#fff;color:#A12121;border-color:#E9C4C4}.btn.w{background:#25D366;border-color:#25D366}.btn.full{display:block;width:100%;padding:14px}
+.kp{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px;margin-bottom:20px}.k{background:#fff;border:1px solid #E3E9E5;border-radius:18px;padding:18px 20px}.k span{display:block;color:#4B5C54;font-size:14px}.k b{display:block;font:800 28px/1.2 Manrope,Inter,sans-serif;margin:4px 0 2px}.k small{color:#5B6B64;font-size:13px}
+.g2{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:18px;align-items:start;margin-bottom:18px}@media(max-width:1100px){.g2{grid-template-columns:1fr}}
+.pn{background:#fff;border:1px solid #E3E9E5;border-radius:20px;padding:22px 24px;margin-bottom:18px;overflow-x:auto}.pn h2{margin:0 0 12px;font:700 19px Manrope,Inter,sans-serif}.pn h3{margin:14px 0 8px;font-size:16px}
+table{width:100%;border-collapse:collapse}th{text-align:left;font-size:13px;color:#4B5C54;font-weight:600;padding:8px 10px;border-bottom:1px solid #E3E9E5;white-space:nowrap}td{padding:11px 10px;border-bottom:1px solid #EEF2EF;vertical-align:middle}tr:last-child td{border-bottom:0}td.r,th.r{text-align:right}td b.nm{font-weight:700}.mu{color:#5B6B64}
+.pill{display:inline-block;padding:3px 12px;border-radius:999px;font-size:13px;font-weight:600;white-space:nowrap}.pill.ok{background:#E3F1EA;color:#0B6B45}.pill.warn{background:#FDEFD9;color:#8A4B00}.pill.bad{background:#FDE3E3;color:#A12121}.pill.gr{background:#EEF2EF;color:#4B5C54}
+.row{display:flex;justify-content:space-between;gap:12px;padding:6px 0;color:#4B5C54}.row.t{border-top:1px solid #E3E9E5;margin-top:6px;padding-top:12px;color:#12201A;font:800 19px Manrope,Inter,sans-serif}.row.t span:last-child{font-weight:800}.note{color:#5B6B64;font-size:14px;margin:12px 0}
+input,select,textarea{font:inherit;padding:9px 12px;border:1px solid #CBD6D0;border-radius:11px;background:#fff;max-width:100%}input:focus,select:focus,textarea:focus{outline:2px solid #BFE0CF;border-color:#0B6B45}
+.fr{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-bottom:12px}.fr label,label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:#4B5C54;font-weight:600}.fr label input,.fr label select{font-weight:400;color:#12201A}
+.fl{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:flex-end}.fl label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:#4B5C54;font-weight:600;flex:1 1 180px}.fl input,.fl select{width:100%}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.chip{padding:8px 18px;border-radius:999px;border:1px solid #D4DDD8;background:#fff;font-weight:600;cursor:pointer;font-size:14px;color:#14211C}.chip.on{background:#0B6B45;border-color:#0B6B45;color:#fff}
+.msg{background:#E3F1EA;color:#0B6B45;padding:12px 16px;border-radius:12px;margin-bottom:16px;font-weight:600}.msg.err{background:#FDE3E3;color:#A12121}
+.bars{display:flex;align-items:flex-end;gap:14px;height:230px;padding-top:10px}.bars div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:6px;height:100%;font-size:13px}.bars i{display:block;width:100%;background:#0B6B45;border-radius:8px 8px 0 0;min-height:3px}.bars div:last-child i{background:#F2A63B}.bars b{font-size:13px}.bars span{color:#5B6B64}
+.li{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #EEF2EF}.li:last-child{border:0}.li small{display:block;color:#5B6B64}
+.pg{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:18px;align-items:start}@media(max-width:1000px){.pg{grid-template-columns:1fr}}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px}.pc{background:#fff;border:1px solid #E3E9E5;border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:6px}.pc .t{height:76px;border-radius:10px;background:#E3F1EA;color:#0B6B45;font:800 24px Manrope,sans-serif;display:flex;align-items:center;justify-content:center}.pc b{font-size:15px}.pc small{color:#5B6B64}.pc .pr{display:flex;justify-content:space-between;align-items:center;font:800 17px Manrope,sans-serif}.pc button{width:38px;height:38px;border-radius:10px;border:0;background:#0B6B45;color:#fff;font-size:22px;cursor:pointer}.pc.out{opacity:.5}
+.cl{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid #EEF2EF}.qb{display:flex;align-items:center;gap:8px}.qb button{width:34px;height:34px;border-radius:9px;border:1px solid #CBD6D0;background:#fff;font-size:18px;cursor:pointer}
+.big{font:800 26px Manrope,sans-serif}.warn{color:#8A4B00;font-weight:600;font-size:14px}.bad{color:#A12121}.ok{color:#0B6B45}
+@media(max-width:820px){.sh{display:block}aside.sb{width:auto;position:static;height:auto;flex-direction:row;flex-wrap:wrap;gap:4px}.sg{width:100%;padding:8px 6px 2px}main.mn{padding:20px 16px 50px}.me{width:100%}}
+@media print{aside.sb,.ac,.noprint{display:none!important}main.mn{padding:0}.pn{border:0}}`;
+const NAV = [
+  ['CORE', [['Dashboard', '/admin'], ['Sales / POS', '/admin/pos'], ['Purchase', '/admin/purchase'], ['Inventory', '/admin/inventory'], ['Accounts', '/admin/accounts'], ['Cash & Bank', '/admin/cash']]],
+  ['CUSTOMERS & SALES', [['Customers', '/admin/customers'], ['Sales list', '/admin/sales'], ['Web orders', '/admin/orders'], ['Price Lists', '/admin/prices'], ['EMI / Installments', '/admin/emi'], ['Sales Reps', '/admin/reps'], ['Warranty & Service', '/admin/service']]],
+  ['STOCK CONTROL', [['Stock Audit', '/admin/audit'], ['Damage & Returns', '/admin/damage'], ['Reorder Suggestions', '/admin/reorder']]],
+  ['FINANCE & COMPLIANCE', [['Approvals', '/admin/approvals'], ['Import & LC', '/admin/import'], ['VAT Reports', '/admin/vat'], ['Reports', '/admin/reports'], ['Settings', '/admin/settings']]]];
+const STAFF_PAGES = new Set(['/admin', '/admin/pos', '/admin/purchase', '/admin/inventory', '/admin/cash', '/admin/customers', '/admin/sales', '/admin/orders', '/admin/prices', '/admin/service', '/admin/product']);
+function adminPage(role, path, title, sub, actions, body, q) {
+  const msg = q && q.get ? (q.get('msg') ? `<div class="msg">${esc(q.get('msg'))}</div>` : q.get('err') ? `<div class="msg err">${esc(q.get('err'))}</div>` : '') : '';
+  const nav = NAV.map(([g, items]) => { const it = items.filter(i => role === 'owner' || STAFF_PAGES.has(i[1])); return it.length ? `<div class="sg">${g}</div>` + it.map(i => `<a class="n ${i[1] === path ? 'on' : ''}" href="${i[1]}">${i[0]}</a>`).join('') : ''; }).join('');
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>${esc(title)} — Green Cycle Manager</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;800&family=Inter:wght@400;500;600;700&display=swap"><style>${A_CSS}</style></head><body><div class="sh"><aside class="sb"><div class="br"><img src="/logo.png" alt=""><div><b>Cycle Manager</b><small>M/S. Green Cycle Store</small></div></div>${nav}<div class="me"><b>${role === 'owner' ? 'Admin' : 'Staff'}</b><small>Main showroom</small><br><a href="/" target="_blank">View website</a> · <a href="/admin/logout">Log out</a></div></aside>
+<main class="mn"><div class="ph2"><div><h1>${esc(title)}</h1>${sub ? `<p class="sub">${esc(sub)}</p>` : ''}</div><div class="ac">${actions || ''}</div></div>${msg}${body}</main></div></body></html>`;
+}
+const kpis = a => `<div class="kp">${a.map(([l, v, s]) => `<div class="k"><span>${l}</span><b>${v}</b>${s ? `<small>${s}</small>` : ''}</div>`).join('')}</div>`;
+const pill = (t, c = 'gr') => `<span class="pill ${c}">${esc(t)}</span>`;
+const tbl = (heads, rows, empty = 'Nothing here yet.') => `<table><tr>${heads.map(h => `<th${/^>/.test(h) ? ' class="r"' : ''}>${esc(h.replace(/^>/, ''))}</th>`).join('')}</tr>${rows.join('') || `<tr><td colspan="${heads.length}" class="mu">${empty}</td></tr>`}</table>`;
+const tr = (cells) => '<tr>' + cells.map(c => { const r = typeof c === 'object' && c && c.r; const v = r ? c.v : c; return `<td${r ? ' class="r"' : ''}>${v}</td>`; }).join('') + '</tr>';
+const R = v => ({ r: 1, v });
+const lnk = (href, t, cls = 'btn o') => `<a class="${cls}" href="${href}">${t}</a>`;
+const rowKV = (k, v, cls = '') => `<div class="row ${cls}"><span>${k}</span><span>${v}</span></div>`;
+const hid = (n, v) => `<input type="hidden" name="${n}" value="${esc(v)}">`;
+const opts = (arr, sel, valKey = 'id', txt = x => x.name) => arr.map(x => `<option value="${esc(x[valKey])}" ${String(x[valKey]) === String(sel) ? 'selected' : ''}>${esc(txt(x))}</option>`).join('');
+const sOpts = (arr, sel) => arr.map(x => `<option ${x === sel ? 'selected' : ''}>${esc(x)}</option>`).join('');
+const fmtDate = d => { if (!d) return '—'; const [y, m, dd] = d.slice(0, 10).split('-'); return `${+dd} ${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][+m - 1]} ${y}`; };
+const monthOf = d => d.slice(0, 7);
+const sum = (arr, f) => arr.reduce((a, x) => a + (+f(x) || 0), 0);
+const form = (action, inner, extra = '') => `<form method="post" action="${action}" ${extra}>${inner}</form>`;
+const confirmForm = (action, inner, msg, cls = 'btn r s', label = 'Delete') => `<form method="post" action="${action}" style="display:inline" onsubmit="return confirm('${esc(msg)}')">${inner}<button class="${cls}">${label}</button></form>`;
+const csvOut = (name, rows) => ({ csv: true, name, body: '﻿' + rows.map(r => r.map(c => { const s = String(c ?? ''); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }).join(',')).join('\r\n') });

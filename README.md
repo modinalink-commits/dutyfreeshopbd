@@ -1,4 +1,3 @@
-# Green Cycle Store (greencyclectg.com)
+# Green Cycle Store: website + Cycle Manager ERP
 
-Website + inventory ERP. Single-file Node 22 app (no npm dependencies, SQLite data in /data).
-Deployed with Docker Compose on the Hostinger VPS behind Traefik. Admin panel: /admin
+Single-file Node 22 app (no npm deps, `node:sqlite`). Source parts live in `src/`; `./build.sh` concatenates them into `server.js`, which is what the container downloads.
