@@ -1,7 +1,8 @@
 #!/bin/sh
 # Mother Commerce Platform bootstrap: installs Laravel once, overlays our code, migrates, serves.
 set -e
-R=https://raw.githubusercontent.com/modinalink-commits/dutyfreeshopbd/main/mother-platform
+R=https://raw.githubusercontent.com/modinalink-commits/dutyfreeshopbd/${REF:-main}/mother-platform
+echo "BOOTSTRAP v3 ref=${REF:-main}"
 cd /srv
 if ! command -v composer >/dev/null; then
   apk add --no-cache postgresql-dev git unzip >/dev/null
