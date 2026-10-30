@@ -13,10 +13,50 @@ class AdminController extends Controller {
   }
   public function logout(Request $r) { Auth::logout(); $r->session()->invalidate(); $r->session()->regenerateToken(); return redirect('/admin/login'); }
   public function dashboard() {
+    $tz = 'Asia/Dhaka'; $now = now($tz);
+    $d0 = $now->copy()->startOfDay()->utc(); $d1 = $now->copy()->endOfDay()->utc();
+    $w0 = $now->copy()->subWeek()->startOfDay()->utc(); $w1 = $now->copy()->subWeek()->endOfDay()->utc();
+    $live = fn($q) => $q->whereNotIn('status',['Cancel','Returned']);
+    $salesT = $live(DB::table('orders')->whereBetween('created_at',[$d0,$d1]))->sum('total');
+    $salesW = $live(DB::table('orders')->whereBetween('created_at',[$w0,$w1]))->sum('total');
+    $ordT = DB::table('orders')->whereBetween('created_at',[$d0,$d1])->count();
+    $ordW = DB::table('orders')->whereBetween('created_at',[$w0,$w1])->count();
+    $pct = fn($a,$b) => $b > 0 ? (($a-$b)/$b*100 >= 0 ? '+' : '').round(($a-$b)/$b*100).'% vs last '.$now->format('l') : 'No data for last '.$now->format('l');
+    $newQ = DB::table('orders')->where('status','New'); $newN = (clone $newQ)->count(); $oldest = (clone $newQ)->min('created_at');
+    $ready = DB::table('orders')->whereIn('status',['Packaging','WFP'])->count();
+    $s7 = now()->subDays(7);
+    $ret = DB::table('orders')->where('updated_at','>=',$s7)->whereIn('status',['Returned','Return Pending'])->count();
+    $done = DB::table('orders')->where('updated_at','>=',$s7)->whereIn('status',['Delivered','Partial Delivered','Returned','Return Pending','Late Delivery'])->count();
+    $kpis = [
+      ['Sales today', '৳'.number_format($salesT), $pct($salesT,$salesW), '#FF5A00'],
+      ['Orders today', number_format($ordT), $pct($ordT,$ordW), '#FF5A00'],
+      ['Awaiting confirmation', $newN, $oldest ? 'Oldest waiting '.\Carbon\Carbon::parse($oldest)->diffForHumans(null, true) : 'Nothing waiting', '#C2410C'],
+      ['Ready to ship', $ready, 'Packaging + WFP', '#6B7280'],
+      ['Return rate, 7 days', $done ? round($ret/$done*100,1).'%' : '0%', $ret.' of '.$done.' finished orders', '#FF5A00'],
+    ];
+    $byStore = $live(DB::table('orders')->whereBetween('orders.created_at',[$d0,$d1]))->leftJoin('stores','stores.id','=','orders.store_id')->select(DB::raw("coalesce(stores.name,'No store') as name"), DB::raw('sum(orders.total) s'))->groupBy('name')->get()->keyBy('name');
+    $stores = DB::table('stores')->where('active',true)->orderBy('id')->pluck('name')->map(fn($n) => [$n, (float)($byStore[$n]->s ?? 0)]);
+    foreach ($byStore as $n => $r) if (!$stores->contains(fn($x) => $x[0]===$n)) $stores->push([$n,(float)$r->s]);
+    $max = max(1, $stores->max(fn($x) => $x[1]));
     $counts = DB::table('orders')->select('status', DB::raw('count(*) c'))->groupBy('status')->pluck('c','status');
-    $today = DB::table('orders')->whereDate('created_at', today())->count();
-    $sales = DB::table('orders')->whereDate('created_at', today())->whereNotIn('status',['Cancel','Returned'])->sum('total');
-    return view('dashboard', compact('counts','today','sales'));
+    $orders = DB::table('orders')->leftJoin('stores','stores.id','=','orders.store_id')->select('orders.*','stores.name as store')->orderByDesc('orders.id')->limit(8)->get();
+    $bad = DB::table('orders')->whereIn('status',['Cancel','Returned'])->whereIn('phone',$orders->pluck('phone'))->select('phone',DB::raw('count(*) c'))->groupBy('phone')->pluck('c','phone');
+    $alerts = [];
+    $late = $counts['Late Delivery'] ?? 0; $rp = $counts['Return Pending'] ?? 0;
+    $stale = DB::table('orders')->where('status','New')->where('created_at','<',now()->subMinutes(30))->count();
+    if ($late) $alerts[] = ['CRITICAL', "$late orders are Late Delivery", 'Follow up with the courier today'];
+    if ($rp) $alerts[] = ['CRITICAL', "$rp orders are Return Pending", 'Receive the parcel and update stock'];
+    if ($stale) $alerts[] = ['WARNING', "$stale new orders waiting over 30 min", 'Confirm or call the customer'];
+    $low = DB::table('products')->where('published',true)->where('stock','<=',2)->count();
+    if ($low) $alerts[] = ['WARNING', "$low published products low on stock", '2 or fewer left'];
+    $bills = DB::table('bill_statements')->where('status','unpaid')->count();
+    if ($bills) $alerts[] = ['INFO', "$bills unpaid bills", 'See Accounts, Bill statements'];
+    $wd = DB::table('withdraw_requests')->where('status','pending')->count();
+    if ($wd) $alerts[] = ['INFO', "$wd withdraw requests pending", 'See Payments'];
+    $t = microtime(true); DB::select('select 1'); $dbms = round((microtime(true)-$t)*1000, 1);
+    $failed = \Illuminate\Support\Facades\Schema::hasTable('failed_jobs') ? DB::table('failed_jobs')->where('failed_at','>=',now()->subHour())->count() : 0;
+    $health = [['Database response', $dbms.' ms'], ['Failed jobs, 1 h', $failed], ['Stores online', DB::table('stores')->where('active',true)->count().' of '.DB::table('stores')->count()], ['Server time', $now->format('H:i')]];
+    return view('dashboard', compact('now','kpis','stores','max','counts','orders','bad','alerts','health'));
   }
   public function orders(Request $r) {
     $q = DB::table('orders')->orderByDesc('id');
