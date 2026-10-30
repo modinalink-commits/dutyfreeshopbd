@@ -45,3 +45,4 @@ Route::middleware('auth')->prefix('admin')->group(function () {
   Route::post('/discounts/coupons/{id}/toggle', [D::class,'couponToggle']);
   Route::get('/coupons-export.csv', [D::class,'couponsCsv']);
 });
+Route::fallback(fn() => response()->view('coming', [], 503)->header('Retry-After','86400'));
