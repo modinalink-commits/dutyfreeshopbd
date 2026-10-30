@@ -11,7 +11,7 @@ class AdminController extends Controller {
     if (Auth::attempt($c + ['active'=>true], false)) { $r->session()->regenerate(); return redirect('/admin'); }
     return back()->withErrors(['email'=>'Wrong email or password'])->onlyInput('email');
   }
-  public function logout(Request $r) { Auth::logout(); $r->session()->invalidate(); $r->session()->regenerateToken(); return redirect('/login'); }
+  public function logout(Request $r) { Auth::logout(); $r->session()->invalidate(); $r->session()->regenerateToken(); return redirect('/admin/login'); }
   public function dashboard() {
     $counts = DB::table('orders')->select('status', DB::raw('count(*) c'))->groupBy('status')->pluck('c','status');
     $today = DB::table('orders')->whereDate('created_at', today())->count();

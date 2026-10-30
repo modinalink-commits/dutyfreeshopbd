@@ -6,9 +6,10 @@ use App\Http\Controllers\DiscountController as D;
 use App\Http\Controllers\ModulesController as M;
 use App\Http\Controllers\ResController as R;
 Route::get('/', fn() => redirect('/admin'));
-Route::get('/login', [A::class,'loginForm'])->name('login');
-Route::post('/login', [A::class,'login']);
-Route::post('/logout', [A::class,'logout']);
+Route::get('/admin/login', [A::class,'loginForm'])->name('login');
+Route::post('/admin/login', [A::class,'login']);
+Route::post('/admin/logout', [A::class,'logout']);
+Route::get('/login', fn() => redirect('/admin/login'));
 Route::middleware('auth')->prefix('admin')->group(function () {
   Route::get('/', [A::class,'dashboard']);
   Route::get('/orders', [A::class,'orders']);
