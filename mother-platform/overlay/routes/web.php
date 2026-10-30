@@ -14,6 +14,7 @@ Route::middleware('auth')->prefix('admin')->group(function () {
   Route::get('/', [A::class,'dashboard']);
   Route::get('/orders', [A::class,'orders']);
   Route::get('/orders/new', [A::class,'orderNew']);
+  Route::post('/orders/bulk', [A::class,'orderBulk']);
   Route::post('/orders', [A::class,'orderStore']);
   Route::get('/orders/{id}', [A::class,'orderShow']);
   Route::post('/orders/{id}/status', [A::class,'orderStatus']);

@@ -62,9 +62,24 @@ class AdminController extends Controller {
     $q = DB::table('orders')->orderByDesc('id');
     if ($r->filled('status')) $q->where('status', $r->status);
     if ($r->filled('q')) $q->where(fn($w) => $w->where('invoice','like','%'.$r->q.'%')->orWhere('phone','like','%'.$r->q.'%')->orWhere('customer_name','ilike','%'.$r->q.'%'));
-    $orders = $q->paginate(50)->withQueryString();
+    $per = in_array((int)$r->input('per'), [25,50,100,200]) ? (int)$r->input('per') : 50;
+    $orders = $q->paginate($per)->withQueryString();
+    $items = DB::table('order_items')->whereIn('order_id', collect($orders->items())->pluck('id'))->get()->groupBy('order_id');
     $counts = DB::table('orders')->select('status', DB::raw('count(*) c'))->groupBy('status')->pluck('c','status');
-    return view('orders', compact('orders','counts'));
+    return view('orders', compact('orders','counts','items','per'));
+  }
+  public function orderBulk(Request $r) {
+    $d = $r->validate(['ids'=>'required|array|max:500','ids.*'=>'integer','status'=>'required|in:'.implode(',',Mother::STAGES)]);
+    $n = 0;
+    DB::transaction(function () use ($d, &$n) {
+      foreach (DB::table('orders')->whereIn('id',$d['ids'])->lockForUpdate()->get() as $o) {
+        if ($o->status === $d['status']) continue;
+        DB::table('orders')->where('id',$o->id)->update(['status'=>$d['status'],'updated_at'=>now()]);
+        DB::table('order_status_logs')->insert(['order_id'=>$o->id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'from_status'=>$o->status,'to_status'=>$d['status'],'note'=>'Bulk action','created_at'=>now(),'updated_at'=>now()]);
+        $n++;
+      }
+    });
+    return back()->with('ok', "$n orders moved to {$d['status']}");
   }
   public function orderNew() { return view('order_new'); }
   public function orderStore(Request $r) {
