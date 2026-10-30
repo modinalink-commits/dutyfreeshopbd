@@ -3,6 +3,7 @@ const http = require('http'), crypto = require('crypto'), fs = require('fs');
 const { DatabaseSync } = require('node:sqlite');
 const PORT = +process.env.PORT || 3000, DATA = process.env.DATA_DIR || '/data';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+const SITE = process.env.SITE || 'https://greencyclectg.com';
 const SECRET = process.env.SECRET || 'change-me';
 const WA = process.env.WHATSAPP || '8801611747299', PHONE = process.env.PHONE || '01711 747 299';
 const LOGO = fs.readFileSync(require('path').join(__dirname, 'logo.png'));
@@ -65,6 +66,16 @@ function createSale({ customer_id, items, discount = 0, paid = 0, note = '', sou
     if (customer_id) run('UPDATE customers SET balance=balance+? WHERE id=?', net - paid, customer_id);
     if (paid > 0) run("INSERT INTO cash(date,type,amount,head,note) VALUES(?,?,?,?,?)", today(), 'in', paid, 'Sale', 'Sale #' + id);
     return id;
+  });
+}
+
+function deleteSale(id) {
+  return tx(() => {
+    const s = get('SELECT * FROM sales WHERE id=?', id); if (!s) throw new Error('Sale not found');
+    all('SELECT * FROM sale_items WHERE sale_id=?', id).forEach(i => run('UPDATE products SET stock=stock+? WHERE id=?', i.qty, i.product_id));
+    if (s.customer_id) run('UPDATE customers SET balance=balance-? WHERE id=?', s.total - s.paid, s.customer_id);
+    run("DELETE FROM cash WHERE head='Sale' AND note=?", 'Sale #' + id);
+    run('DELETE FROM sale_items WHERE sale_id=?', id); run('DELETE FROM sales WHERE id=?', id);
   });
 }
 function createPurchase({ supplier_id, items, paid = 0, note = '' }) {
@@ -197,8 +208,11 @@ function pDash(q) {
 <div class="pn"><h2>Low stock</h2><table><tr><th>Product</th><th>SKU</th><th class="r">In stock</th><th class="r">Reorder level</th></tr>${low.map(p => `<tr><td>${esc(p.name)}</td><td>${esc(p.sku)}</td><td class="r"><span class="pill ${p.stock <= 0 ? 'bad' : 'warn'}">${p.stock}</span></td><td class="r">${p.reorder}</td></tr>`).join('') || '<tr><td colspan=4>All stock levels are fine.</td></tr>'}</table></div>
 <div class="pn"><h2>Recent sales</h2><table><tr><th>#</th><th>Date</th><th>Customer</th><th class="r">Total</th><th class="r">Paid</th></tr>${recent.map(s => `<tr><td>${s.id}</td><td>${s.date}</td><td>${esc(s.cn || '-')}</td><td class="r">${money(s.total)}</td><td class="r">${money(s.paid)}</td></tr>`).join('') || '<tr><td colspan=5>No sales yet.</td></tr>'}</table></div>`, q);
 }
-const lineJS = (mode, ps) => `<script>const OPTS=${JSON.stringify('<option value="">Select product</option>' + ps.map(p => `<option value="${p.id}" data-p="${p.price}" data-c="${p.cost}">${esc(p.name)} (stock ${p.stock})</option>`).join('')).replace(/</g, '\\u003c')};const MODE='${mode}';
-function addRow(){const d=document.createElement('div');d.className='fr';d.innerHTML='<label>Product<select name="pid" onchange="pick(this)" style="min-width:240px">'+OPTS+'</select></label><label>Qty<input name="qty" type="number" min="1" step="any" value="1" oninput="calc()" style="width:80px"></label><label>'+(MODE=='sale'?'Price':'Cost')+'<input name="price" type="number" step="any" oninput="calc()" style="width:110px"></label><button type="button" class="btn g s" onclick="this.parentNode.remove();calc()">Remove</button>';document.getElementById('rows').appendChild(d);calc()}
+const lineJS = (mode, ps) => `<script>const PS=${JSON.stringify(ps.map(p => ({ id: p.id, p: p.price, c: p.cost, l: p.name + (p.sku ? ' [' + p.sku + ']' : '') + ' (stock ' + p.stock + ')', s: (p.name + ' ' + (p.sku || '') + ' ' + (p.category || '')).toLowerCase() }))).replace(/</g, '\\u003c')};const MODE='${mode}';
+function fill(sel,q,keep){q=(q||'').toLowerCase().trim();const w=q.split(/\\s+/).filter(Boolean);sel.innerHTML='';const h=document.createElement('option');h.value='';h.textContent=q?'Select product':'Select product ('+PS.length+')';sel.appendChild(h);let n=0,first=null;PS.forEach(x=>{if(w.every(t=>x.s.includes(t))){const o=document.createElement('option');o.value=x.id;o.dataset.p=x.p;o.dataset.c=x.c;o.textContent=x.l;if(String(x.id)===String(keep))o.selected=true;sel.appendChild(o);n++;first=first||o}});return {n,first}}
+function find(inp){const sel=inp.closest('.fr').querySelector('select');const keep=sel.value;const r=fill(sel,inp.value,keep);const hint=inp.closest('.fr').querySelector('.hint');hint.textContent=inp.value?(r.n?r.n+' found':'No match'):'';if(inp.value&&r.n===1){sel.value=r.first.value;pick(sel)}else if(inp.value&&!sel.value&&r.n>1){sel.size=Math.min(r.n+1,6)}else{sel.size=1}}
+function addRow(){const d=document.createElement('div');d.className='fr';d.innerHTML='<label>Search product<input type="text" class="srch" placeholder="Type name or SKU" oninput="find(this)" onkeydown="if(event.key==\\'Enter\\'){event.preventDefault();pickFirst(this)}" style="width:200px"><small class="hint" style="color:#5B6B64;min-height:16px"></small></label><label>Product<select name="pid" onchange="this.size=1;pick(this)" style="min-width:240px"></select></label><label>Qty<input name="qty" type="number" min="1" step="any" value="1" oninput="calc()" style="width:80px"></label><label>'+(MODE=='sale'?'Price':'Cost')+'<input name="price" type="number" step="any" oninput="calc()" style="width:110px"></label><button type="button" class="btn g s" onclick="this.parentNode.remove();calc()">Remove</button>';const R=document.getElementById('rows');R.insertBefore(d,R.firstChild);fill(d.querySelector('select'),'');d.querySelector('.srch').focus();calc()}
+function pickFirst(inp){const sel=inp.closest('.fr').querySelector('select');const o=sel.options[1];if(o){sel.value=o.value;sel.size=1;pick(sel);inp.closest('.fr').querySelector('[name=qty]').focus()}}
 function pick(s){const o=s.selectedOptions[0];s.closest('.fr').querySelector('[name=price]').value=o?o.dataset[MODE=='sale'?'p':'c']||'':'';calc()}
 function calc(){let t=0;document.querySelectorAll('#rows .fr').forEach(r=>{t+=(+r.querySelector('[name=qty]').value||0)*(+r.querySelector('[name=price]').value||0)});const d=document.querySelector('[name=discount]');t-=d?(+d.value||0):0;document.getElementById('tot').textContent='৳ '+Math.round(t).toLocaleString('en-US')}addRow()</script>`;
 function pPos(q) {
@@ -207,9 +221,11 @@ function pPos(q) {
 <div class="fr" style="margin-top:16px"><label>Discount<input name="discount" type="number" step="any" value="0" oninput="calc()" style="width:110px"></label><label>Amount received<input name="paid" type="number" step="any" value="0" style="width:130px"></label><label>Note<input name="note"></label></div><p style="font-size:20px;font-weight:700">Total: <span id="tot">৳ 0</span></p><button class="btn">Complete sale</button></form>${lineJS('sale', ps)}`, q);
 }
 const lines = f => { const p = f.getAll('pid'), qn = f.getAll('qty'), pr = f.getAll('price'); return p.map((x, i) => ({ pid: +x, qty: num(qn[i]), price: num(pr[i]), cost: num(pr[i]) })); };
+const saleActions = s => { const k = invKey(s.id), l = `/invoice/${s.id}?k=${k}`, ph = waPhone(s.cp), txt = `Invoice #${s.id} from M/S. Green Cycle Store\nTotal: ${money(s.total)}${s.total - s.paid > 0 ? ' (Due ' + money(s.total - s.paid) + ')' : ' (Paid)'}\nView / download: ${SITE}${l}`;
+  return `<a class="btn g s" href="${l}" target="_blank">Invoice</a> <a class="btn g s" href="${l}&print=1" target="_blank">Download</a> <a class="btn g s" style="color:#128C7E" href="https://wa.me/${ph}?text=${encodeURIComponent(txt)}" target="_blank">WhatsApp</a> <form method="post" action="/admin/sale-delete" style="display:inline" onsubmit="return confirm('Delete sale #${s.id}? Stock, dues and cash will be reversed.')"><input type="hidden" name="id" value="${s.id}"><button class="btn g s" style="color:#B3261E">Delete</button></form>`; };
 function pSales(q) {
-  const rows = all('SELECT s.*,c.name cn FROM sales s LEFT JOIN customers c ON c.id=s.customer_id ORDER BY s.id DESC LIMIT 100');
-  return adminPage('/admin/sales', 'Sales', `<div class="pn"><table><tr><th>#</th><th>Date</th><th>Customer</th><th>Items</th><th>Source</th><th class="r">Total</th><th class="r">Paid</th><th class="r">Due</th></tr>${rows.map(s => { const it = all('SELECT p.name,i.qty FROM sale_items i JOIN products p ON p.id=i.product_id WHERE sale_id=?', s.id).map(i => esc(i.name) + ' ×' + i.qty).join(', '); return `<tr><td>${s.id}</td><td>${s.date}</td><td>${esc(s.cn || '-')}</td><td>${it}</td><td>${s.source}</td><td class="r">${money(s.total)}</td><td class="r">${money(s.paid)}</td><td class="r">${money(s.total - s.paid)}</td></tr>`; }).join('') || '<tr><td colspan=8>No sales yet.</td></tr>'}</table></div>`, q);
+  const rows = all('SELECT s.*,c.name cn,c.phone cp FROM sales s LEFT JOIN customers c ON c.id=s.customer_id ORDER BY s.id DESC LIMIT 100');
+  return adminPage('/admin/sales', 'Sales', `<div class="pn"><table><tr><th>#</th><th>Date</th><th>Customer</th><th>Items</th><th>Source</th><th class="r">Total</th><th class="r">Paid</th><th class="r">Due</th><th>Actions</th></tr>${rows.map(s => { const it = all('SELECT p.name,i.qty FROM sale_items i JOIN products p ON p.id=i.product_id WHERE sale_id=?', s.id).map(i => esc(i.name) + ' ×' + i.qty).join(', '); return `<tr><td>${s.id}</td><td>${s.date}</td><td>${esc(s.cn || '-')}</td><td>${it}</td><td>${s.source}</td><td class="r">${money(s.total)}</td><td class="r">${money(s.paid)}</td><td class="r">${money(s.total - s.paid)}</td><td style="white-space:nowrap">${saleActions(s)}</td></tr>`; }).join('') || '<tr><td colspan=9>No sales yet.</td></tr>'}</table></div>`, q);
 }
 function pOrders(q) {
   const rows = all('SELECT * FROM orders ORDER BY id DESC LIMIT 100');
@@ -257,6 +273,30 @@ function pReports(q) {
 }
 const loginPage = err => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Log in — Green Cycle ERP</title><style>${A_CSS}</style></head><body><main style="max-width:380px;margin:12vh auto"><div class="pn"><div class="br"><img src="/logo.png" alt="">Green Cycle ERP</div>${err ? '<div class="msg err">Wrong password</div>' : ''}<form method="post" action="/admin/login"><div class="fr"><label style="width:100%">Password<input type="password" name="password" autofocus style="width:100%"></label></div><button class="btn">Log in</button></form></div></main></body></html>`;
 
+
+/* ---------- invoice (public, signed link) ---------- */
+const invKey = id => sign('inv' + id).slice(0, 16);
+const waPhone = ph => { let d = String(ph || '').replace(/\D/g, ''); if (!d) return ''; if (d.startsWith('880')) return d; if (d.startsWith('0')) return '88' + d; return '880' + d; };
+function invoicePage(id, origin) {
+  const s = get('SELECT s.*,c.name cn,c.phone cp,c.address ca FROM sales s LEFT JOIN customers c ON c.id=s.customer_id WHERE s.id=?', id);
+  if (!s) return null;
+  const items = all('SELECT p.name,p.sku,i.qty,i.price FROM sale_items i JOIN products p ON p.id=i.product_id WHERE i.sale_id=?', id);
+  const sub = items.reduce((a, i) => a + i.qty * i.price, 0), link = `${origin}/invoice/${id}?k=${invKey(id)}`;
+  const text = `Invoice #${id} from M/S. Green Cycle Store\nTotal: ${money(s.total)}${s.total - s.paid > 0 ? ' (Due ' + money(s.total - s.paid) + ')' : ' (Paid)'}\nView / download: ${link}`;
+  const wa = `https://wa.me/${waPhone(s.cp)}?text=${encodeURIComponent(text)}`;
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Invoice #${id} — Green Cycle Store</title>
+<style>*{box-sizing:border-box}body{margin:0;background:#F6F8F4;color:#12201A;font:15px/1.5 Inter,system-ui,sans-serif}.bar{max-width:820px;margin:16px auto 0;padding:0 16px;display:flex;flex-wrap:wrap;gap:10px}.b{display:inline-block;padding:11px 18px;border-radius:10px;font-weight:600;text-decoration:none;border:1px solid #1F3F6E;color:#1F3F6E;background:#fff;cursor:pointer;font:600 15px Inter,system-ui,sans-serif}.b.p{background:#1F3F6E;color:#fff}.b.w{background:#25D366;border-color:#25D366;color:#fff}
+.sheet{max-width:820px;margin:16px auto;background:#fff;border:1px solid #DDE5DF;border-radius:16px;padding:32px}.hd{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;border-bottom:3px solid #F6C32B;padding-bottom:16px}.hd img{width:64px;height:64px;object-fit:contain;border-radius:10px}h1{margin:0;font-size:22px;color:#1F3F6E}table{width:100%;border-collapse:collapse;margin-top:20px}th{background:#1F3F6E;color:#fff;text-align:left;padding:9px 10px;font-size:13px}td{padding:9px 10px;border-bottom:1px solid #EEF2F0}.r{text-align:right}.tot{margin-left:auto;width:min(320px,100%);margin-top:16px}.tot div{display:flex;justify-content:space-between;padding:5px 0}.tot .g{font-weight:800;font-size:19px;border-top:2px solid #12201A;margin-top:6px;padding-top:9px}.m{color:#4B5C54;font-size:14px}
+@media print{body{background:#fff}.bar{display:none}.sheet{border:0;margin:0;padding:0;max-width:none}}</style></head><body>
+<div class="bar"><button class="b p" onclick="window.print()">Download / Print PDF</button><a class="b w" href="${esc(wa)}" target="_blank" rel="noopener">Share on WhatsApp</a><button class="b" onclick="navigator.clipboard&&navigator.clipboard.writeText('${link}').then(()=>this.textContent='Link copied')">Copy link</button></div>
+<div class="sheet"><div class="hd"><div style="display:flex;gap:14px;align-items:center"><img src="/logo.png" alt=""><div><h1>M/S. Green Cycle Store</h1><div class="m">458/P, Omar Chand Road (City College Mor), Chattogram<br>Call ${esc(PHONE)} · WhatsApp 01611 747 299</div></div></div><div style="text-align:right"><b style="font-size:20px">INVOICE #${id}</b><div class="m">Date: ${esc(s.date)}</div></div></div>
+<p style="margin:16px 0 0"><b>Bill to:</b> ${esc(s.cn || 'Walk-in customer')}${s.cp ? '<br>' + esc(s.cp) : ''}${s.ca ? '<br>' + esc(s.ca) : ''}</p>
+<table><tr><th>#</th><th>Product</th><th class="r">Qty</th><th class="r">Price</th><th class="r">Amount</th></tr>${items.map((i, n) => `<tr><td>${n + 1}</td><td>${esc(i.name)}${i.sku ? ' <span class="m">[' + esc(i.sku) + ']</span>' : ''}</td><td class="r">${i.qty}</td><td class="r">${money(i.price)}</td><td class="r">${money(i.qty * i.price)}</td></tr>`).join('')}</table>
+<div class="tot"><div><span>Subtotal</span><span>${money(sub)}</span></div>${s.discount ? `<div><span>Discount</span><span>- ${money(s.discount)}</span></div>` : ''}<div class="g"><span>Total</span><span>${money(s.total)}</span></div><div><span>Paid</span><span>${money(s.paid)}</span></div><div><span>Due</span><span>${money(s.total - s.paid)}</span></div></div>
+${s.note ? `<p class="m">Note: ${esc(s.note)}</p>` : ''}<p class="m" style="text-align:center;margin-top:28px">Thank you for shopping with Green Cycle Store.</p></div>
+<script>if(location.search.includes('print=1'))setTimeout(()=>window.print(),400)</script></body></html>`;
+}
+
 /* ---------- router ---------- */
 const server = http.createServer(async (req, res) => {
   try {
@@ -267,6 +307,7 @@ const server = http.createServer(async (req, res) => {
     if (path === '/logo.png') return send(res, 200, LOGO, 'image/png', { 'Cache-Control': 'public,max-age=86400' });
     if (path === '/robots.txt') return send(res, 200, 'User-agent: *\nDisallow: /admin\n', 'text/plain');
     if (!path.startsWith('/admin')) {
+      { const m = /^\/invoice\/(\d+)$/.exec(path); if (m) { const id = +m[1]; const k = q.get('k') || ''; if (k !== invKey(id) && !authed(req)) return send(res, 403, 'Invalid link', 'text/plain'); const h = invoicePage(id, (req.headers['x-forwarded-proto'] || 'https') + '://' + req.headers.host); return h ? send(res, 200, h) : send(res, 404, 'Not found', 'text/plain'); } }
       if (path === '/') return send(res, 200, pageHome());
       if (path === '/shop') return send(res, 200, pageShop(q));
       if (path === '/cart') return send(res, 200, pageCart());
@@ -299,7 +340,8 @@ const server = http.createServer(async (req, res) => {
     }
     const f = new URLSearchParams(await readBody(req));
     try {
-      if (path === '/admin/pos') { const id = createSale({ customer_id: +f.get('customer_id') || null, items: lines(f), discount: num(f.get('discount')), paid: num(f.get('paid')), note: f.get('note') || '' }); return back('/admin/sales', 'Sale #' + id + ' saved'); }
+      if (path === '/admin/sale-delete') { deleteSale(+f.get('id')); return back('/admin/sales', 'Sale deleted'); }
+      if (path === '/admin/pos') { const id = createSale({ customer_id: +f.get('customer_id') || null, items: lines(f), discount: num(f.get('discount')), paid: num(f.get('paid')), note: f.get('note') || '' }); return redirect(res, `/invoice/${id}?k=${invKey(id)}`); }
       if (path === '/admin/purchase') { const id = createPurchase({ supplier_id: +f.get('supplier_id') || null, items: lines(f).map(i => ({ ...i, cost: i.price })), paid: num(f.get('paid')), note: f.get('note') || '' }); return back('/admin/purchase', 'Purchase #' + id + ' saved, stock updated'); }
       if (path === '/admin/product') {
         const v = ['name', 'sku', 'category', 'image', 'description'].map(k => (f.get(k) || '').trim()); const n = ['price', 'cost', 'stock', 'reorder'].map(k => num(f.get(k))), web = f.get('web') ? 1 : 0, id = +f.get('id');
