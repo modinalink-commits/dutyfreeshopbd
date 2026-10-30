@@ -25,6 +25,16 @@ realpath_cache_size=4096K
 realpath_cache_ttl=600
 expose_php=0
 INI
+cat > /usr/local/etc/php-fpm.d/zz-pool.conf <<'POOL'
+[www]
+pm = dynamic
+pm.max_children = 60
+pm.start_servers = 12
+pm.min_spare_servers = 8
+pm.max_spare_servers = 24
+pm.max_requests = 1000
+request_terminate_timeout = 60s
+POOL
 php -m | grep -q pdo_pgsql || { apk add --no-cache postgresql-dev >/dev/null; docker-php-ext-install pdo_pgsql >/dev/null; }
 for f in $(wget -qO- $R/manifest.txt); do
   mkdir -p "$(dirname "$f")"; wget -q -O "$f" "$R/overlay/$f"
