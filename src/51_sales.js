@@ -25,7 +25,7 @@ GETS['/admin'] = ({ role, q }) => {
 /* ---- POS ---- */
 GETS['/admin/pos'] = ({ role, q }) => {
   const ps = all('SELECT * FROM products ORDER BY name').map(p => ({ id: p.id, n: p.name, s: p.sku, c: p.category, pr: p.price, dp: p.dealer_price, wp: p.wholesale_price, cost: p.cost, st: p.stock, mm: p.min_margin, bc: p.barcode }));
-  const cs = all("SELECT * FROM customers ORDER BY (name LIKE 'Walk-in%') DESC, name"), reps = all('SELECT * FROM reps WHERE active=1 ORDER BY name'), cats = [...new Set(ps.map(p => p.c))];
+  const cs = all("SELECT * FROM customers ORDER BY (name LIKE 'Walk-in%') DESC, name"), reps = all('SELECT * FROM reps WHERE active=1 ORDER BY name'), cats = allCats();
   const pre = Number(q.get('c')) || 0;
   const js = `const P=${JSON.stringify(ps).replace(/</g, '\\u003c')};let cart=[],cat='All',method='Cash',edited=false;const $=i=>document.getElementById(i),M=n=>'৳ '+Math.round(n).toLocaleString('en-US');
 const typ=()=>{const o=$('cust').selectedOptions[0];return o?o.dataset.t:'Retail'};const pr=p=>typ()=='Dealer'&&p.dp>0?p.dp:typ()=='Wholesale'&&p.wp>0?p.wp:p.pr;

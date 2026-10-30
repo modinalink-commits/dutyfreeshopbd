@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS damages(id INTEGER PRIMARY KEY,date TEXT,kind TEXT,pr
 CREATE TABLE IF NOT EXISTS approvals(id INTEGER PRIMARY KEY,ts TEXT,type TEXT,by TEXT,details TEXT,amount REAL DEFAULT 0,payload TEXT,status TEXT DEFAULT 'Pending',decided TEXT DEFAULT '',note TEXT DEFAULT '');
 CREATE TABLE IF NOT EXISTS shipments(id INTEGER PRIMARY KEY,date TEXT,supplier_id INTEGER,lc_no TEXT DEFAULT '',rate REAL DEFAULT 1,freight REAL DEFAULT 0,duty REAL DEFAULT 0,clearing REAL DEFAULT 0,arrival TEXT DEFAULT '',status TEXT DEFAULT 'At sea');
 CREATE TABLE IF NOT EXISTS ship_items(id INTEGER PRIMARY KEY,shipment_id INTEGER,product_id INTEGER,qty REAL,unit_usd REAL);
+CREATE TABLE IF NOT EXISTS categories(name TEXT PRIMARY KEY);
 CREATE TABLE IF NOT EXISTS closings(id INTEGER PRIMARY KEY,date TEXT,opening REAL,tin REAL,tout REAL,system REAL,counted REAL,diff REAL);`);
 const all = (s, ...a) => db.prepare(s).all(...a), get = (s, ...a) => db.prepare(s).get(...a), run = (s, ...a) => db.prepare(s).run(...a);
 let txd = 0;
@@ -81,3 +82,6 @@ if (!get("SELECT 1 FROM settings WHERE k='seeded'")) {
 run("UPDATE products SET image='/img/'||replace(replace(category,' ','%20'),'&','and')||'.svg' WHERE image=''");
 run("UPDATE sales SET ts=date||' 12:00:00' WHERE ts=''");
 run("UPDATE cash SET ts=date||' 12:00:00' WHERE ts=''");
+
+['Veloce', 'Prince', 'Reflex', 'Seventy One Bicycle'].forEach(n => run('INSERT OR IGNORE INTO categories(name) VALUES(?)', n));
+const allCats = () => [...new Set([...all('SELECT DISTINCT category c FROM products').map(x => x.c), ...all('SELECT name c FROM categories').map(x => x.c)])].filter(Boolean).sort();
