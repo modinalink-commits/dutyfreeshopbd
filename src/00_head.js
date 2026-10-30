@@ -19,6 +19,8 @@ CREATE TABLE IF NOT EXISTS purchases(id INTEGER PRIMARY KEY,date TEXT,supplier_i
 CREATE TABLE IF NOT EXISTS purchase_items(id INTEGER PRIMARY KEY,purchase_id INTEGER,product_id INTEGER,qty REAL,cost REAL);
 CREATE TABLE IF NOT EXISTS cash(id INTEGER PRIMARY KEY,date TEXT,type TEXT,amount REAL,head TEXT,note TEXT DEFAULT '');
 CREATE TABLE IF NOT EXISTS orders(id INTEGER PRIMARY KEY,date TEXT,name TEXT,phone TEXT,address TEXT,city TEXT,payment TEXT,total REAL,status TEXT DEFAULT 'New',items TEXT,note TEXT DEFAULT '');
+CREATE TABLE IF NOT EXISTS web_products(id INTEGER PRIMARY KEY,name TEXT,category TEXT,price REAL DEFAULT 0,image TEXT DEFAULT '',description TEXT DEFAULT '',active INTEGER DEFAULT 1,created TEXT DEFAULT '');
+CREATE TABLE IF NOT EXISTS web_orders(id INTEGER PRIMARY KEY,date TEXT,name TEXT,phone TEXT,address TEXT,city TEXT,payment TEXT,total REAL,status TEXT DEFAULT 'New',items TEXT,note TEXT DEFAULT '');
 CREATE TABLE IF NOT EXISTS settings(k TEXT PRIMARY KEY,v TEXT);
 CREATE TABLE IF NOT EXISTS purchase_orders(id INTEGER PRIMARY KEY,date TEXT,supplier_id INTEGER,status TEXT DEFAULT 'Ordered',total REAL DEFAULT 0,note TEXT DEFAULT '',expected TEXT DEFAULT '');
 CREATE TABLE IF NOT EXISTS po_items(id INTEGER PRIMARY KEY,po_id INTEGER,product_id INTEGER,qty REAL,cost REAL,received REAL DEFAULT 0);
@@ -55,7 +57,7 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': 
 const money = n => '৳ ' + Math.round(+n || 0).toLocaleString('en-US');
 const num = v => { const n = parseFloat(v); return isFinite(n) ? n : 0; };
 const pad = (n, w) => String(n).padStart(w, '0');
-const invNo = id => 'INV-' + (1000 + id), poNo = id => 'PO-' + (2000 + id), jobNo = id => 'JC-' + pad(id + 300, 4), audNo = id => 'AUD-' + pad(id, 2), shpNo = id => 'SHP-' + pad(id + 12, 3);
+const invNo = id => String(id), poNo = id => 'PO-' + (2000 + id), jobNo = id => 'JC-' + pad(id + 300, 4), audNo = id => 'AUD-' + pad(id, 2), shpNo = id => 'SHP-' + pad(id + 12, 3);
 
 /* settings */
 const DEFAULTS = { vat_rate: 15, late_fee_pct: 2, lead_days: 9, disc_pct: 5, disc_on: 1, po_amt: 100000, po_on: 1, exp_amt: 10000, exp_on: 1, credit_on: 1, price_on: 1 };
@@ -83,5 +85,11 @@ run("UPDATE products SET image='/img/'||replace(replace(category,' ','%20'),'&',
 run("UPDATE sales SET ts=date||' 12:00:00' WHERE ts=''");
 run("UPDATE cash SET ts=date||' 12:00:00' WHERE ts=''");
 
+/* website module: its own catalogue and orders, no link to inventory. Copied once from the old data, independent afterwards */
+if (!get("SELECT 1 FROM settings WHERE k='web_split'")) {
+  setSetting('web_split', 1);
+  if (!get('SELECT 1 FROM web_products')) run("INSERT INTO web_products(name,category,price,image,description,created) SELECT name,category,price,image,description,date('now') FROM products WHERE web=1 ORDER BY id");
+  if (!get('SELECT 1 FROM web_orders')) run("INSERT INTO web_orders(id,date,name,phone,address,city,payment,total,status,items,note) SELECT id,date,name,phone,address,city,payment,total,status,items,note FROM orders");
+}
 ['Veloce', 'Prince', 'Reflex', 'Seventy One Bicycle'].forEach(n => run('INSERT OR IGNORE INTO categories(name) VALUES(?)', n));
 const allCats = () => [...new Set([...all('SELECT DISTINCT category c FROM products').map(x => x.c), ...all('SELECT name c FROM categories').map(x => x.c)])].filter(Boolean).sort();

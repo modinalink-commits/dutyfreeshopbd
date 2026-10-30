@@ -12,18 +12,21 @@ const server = http.createServer(async (req, res) => {
     if (path === '/robots.txt') return send(res, 200, 'User-agent: *\nDisallow: /admin\n', 'text/plain');
     if (!path.startsWith('/admin')) {
       { const m = /^\/invoice\/(\d+)$/.exec(path); if (m) { const id = +m[1]; const k = q.get('k') || ''; if (k !== invKey(id) && !authed(req)) return send(res, 403, 'Invalid link', 'text/plain'); const h = invoicePage(id, (req.headers['x-forwarded-proto'] || 'https') + '://' + req.headers.host); return h ? send(res, 200, h) : send(res, 404, 'Not found', 'text/plain'); } }
+      { const m = /^\/webimg\/(\d+)$/.exec(path); if (m) { const p = get('SELECT image FROM web_products WHERE id=?', +m[1]); const mm = p && /^data:(image\/[a-z+]+);base64,(.*)$/s.exec(p.image); if (!mm) return send(res, 404, 'Not found', 'text/plain'); return send(res, 200, Buffer.from(mm[2], 'base64'), mm[1], { 'Cache-Control': 'public,max-age=86400' }); } }
+      if (path === '/brand.jpg') return send(res, 200, BRAND, 'image/jpeg', { 'Cache-Control': 'public,max-age=86400' });
+      if (path === '/gcs.jpg') return send(res, 200, GCS, 'image/jpeg', { 'Cache-Control': 'public,max-age=86400' });
       if (path === '/') return send(res, 200, pageHome());
       if (path === '/shop') return send(res, 200, pageShop(q));
       if (path === '/cart') return send(res, 200, pageCart());
       let m = /^\/product\/(\d+)$/.exec(path);
       if (m) { const h = pageProduct(+m[1]); return h ? send(res, 200, h) : send(res, 404, pubPage('Not found', '<main class="w sec"><h1>Product not found</h1></main>')); }
-      if (path === '/api/cart') { const ids = (q.get('ids') || '').split(',').map(Number).filter(Boolean); return send(res, 200, JSON.stringify(ids.length ? all(`SELECT id,name,price FROM products WHERE web=1 AND id IN (${ids.map(() => '?').join(',')})`, ...ids) : []), 'application/json'); }
+      if (path === '/api/cart') { const ids = (q.get('ids') || '').split(',').map(Number).filter(Boolean); return send(res, 200, JSON.stringify(ids.length ? all(`SELECT id,name,price FROM web_products WHERE active=1 AND id IN (${ids.map(() => '?').join(',')})`, ...ids) : []), 'application/json'); }
       if (path === '/api/order' && post) {
         const b = JSON.parse(await readBody(req) || '{}'); const items = [];
         let total = 0;
-        for (const i of b.items || []) { const p = get('SELECT * FROM products WHERE id=? AND web=1', +i.id), qty = Math.floor(+i.qty); if (p && qty > 0) { items.push({ id: p.id, name: p.name, qty, price: p.price }); total += qty * p.price; } }
+        for (const i of b.items || []) { const p = get('SELECT * FROM web_products WHERE id=? AND active=1', +i.id), qty = Math.floor(+i.qty); if (p && qty > 0) { items.push({ id: p.id, name: p.name, qty, price: p.price }); total += qty * p.price; } }
         if (!items.length || !b.name || !b.phone || !b.address) return send(res, 400, JSON.stringify({ ok: false, error: 'Please fill in all fields' }), 'application/json');
-        const id = run('INSERT INTO orders(date,name,phone,address,city,payment,total,items,note) VALUES(?,?,?,?,?,?,?,?,?)', today(), String(b.name).slice(0, 100), String(b.phone).slice(0, 30), String(b.address).slice(0, 300), String(b.city || '').slice(0, 80), String(b.payment || '').slice(0, 40), total, JSON.stringify(items), String(b.note || '').slice(0, 500)).lastInsertRowid;
+        const id = run('INSERT INTO web_orders(date,name,phone,address,city,payment,total,items,note) VALUES(?,?,?,?,?,?,?,?,?)', today(), String(b.name).slice(0, 100), String(b.phone).slice(0, 30), String(b.address).slice(0, 300), String(b.city || '').slice(0, 80), String(b.payment || '').slice(0, 40), total, JSON.stringify(items), String(b.note || '').slice(0, 500)).lastInsertRowid;
         return send(res, 200, JSON.stringify({ ok: true, no: +id }), 'application/json');
       }
       return send(res, 404, pubPage('Not found', '<main class="w sec"><h1>Page not found</h1><p><a class="btn" href="/">Go home</a></p></main>'));

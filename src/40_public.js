@@ -5,7 +5,7 @@ const send = (res, code, body, type = 'text/html; charset=utf-8', h = {}) => { r
 const redirect = (res, loc, extra = {}) => { res.writeHead(303, { Location: loc, ...extra }); res.end(); };
 
 /* ---------- public site ---------- */
-const PUB_CSS = `*{box-sizing:border-box}body{margin:0;background:#F6F8F4;color:#12201A;font:16px/1.5 Inter,system-ui,sans-serif}a{color:inherit;text-decoration:none}a:hover{opacity:.85}h1,h2,h3{font-family:Manrope,sans-serif;margin:0}
+const PUB_CSS = `*{box-sizing:border-box}body{margin:0;background:#F6F8F4;color:#12201A;font:16px/1.5 Inter,'Noto Sans Bengali',system-ui,sans-serif}a{color:inherit;text-decoration:none}a:hover{opacity:.85}h1,h2,h3{font-family:Manrope,sans-serif;margin:0}
 .w{max-width:1200px;margin:0 auto;padding:0 24px}.bar{background:#1F3F6E;color:#fff;font-size:14px;text-align:center;padding:10px 16px}
 header.top{background:#fff;border-bottom:1px solid #DDE5DF}.hd{display:flex;flex-wrap:wrap;align-items:center;gap:16px 32px;padding:16px 24px;max-width:1200px;margin:0 auto}
 .brand{display:flex;align-items:center;gap:10px;font:800 22px Manrope,sans-serif}.brand img{width:48px;height:48px;object-fit:contain}
@@ -22,27 +22,28 @@ function badge(){const n=Object.values(cart()).reduce((a,b)=>a+b,0);const e=docu
 function add(id,q){const c=cart();c[id]=(c[id]||0)+(q||1);save(c)}badge();
 document.addEventListener('click',e=>{const b=e.target.closest('[data-add]');if(b){e.preventDefault();const q=document.getElementById('q');add(b.dataset.add,q?+q.value||1:1);b.textContent='Added ✓';setTimeout(()=>b.textContent=b.dataset.label||'Add to cart',1200)}});`;
 function pubPage(title, body) {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title><link rel="icon" href="/logo.png"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Inter:wght@400;500;600&display=swap"><style>${PUB_CSS}</style></head><body>
-<div class="bar">Cycle and rickshaw parts · Retail and wholesale · 458/P, Omar Chand Road, Chattogram</div>
-<header class="top"><div class="hd"><a class="brand" href="/"><img src="/logo.png" alt="Green Cycle Store logo">Green Cycle Store</a>
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title><link rel="icon" href="/logo.png"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Inter:wght@400;500;600&family=Noto+Sans+Bengali:wght@400;600;700&display=swap"><style>${PUB_CSS}</style></head><body>
+<div class="bar">সকল প্রকার সাইকেল-রিক্সা পার্টস বিক্রেতা · Importer &amp; Dealer · ৪৫৮/পি, ওমর চাঁদ রোড (সিটি কলেজের মোড়), চট্টগ্রাম</div>
+<header class="top"><div class="hd"><a class="brand" href="/"><img src="/gcs.jpg" alt="GCS logo"><span>Green Cycle Store<small style="display:block;font:500 12px Inter,'Noto Sans Bengali';color:#4B5C54;letter-spacing:.02em">Importer &amp; Dealer</small></span></a>
 <nav class="m"><a href="/shop?cat=Bicycles">Bicycles</a><a href="/shop?cat=Rickshaw+parts">Rickshaw parts</a><a href="/shop">All parts</a><a href="/#about">About</a><a href="/#dealers">Dealers</a><a href="/#contact">Contact</a></nav>
 <a class="cartb" href="/cart">Cart (<span id="cc">0</span>)</a></div></header>
 ${body}
-<footer class="f" id="contact"><div class="w" style="padding-top:48px;padding-bottom:32px;display:flex;flex-wrap:wrap;gap:32px;justify-content:space-between"><div style="flex:1 1 280px"><div style="font:800 22px Manrope">M/S. Green Cycle Store</div><p style="color:#B8C7BF">458/P, Omar Chand Road (City College Mor), Chattogram<br>Call ${esc(PHONE)} · WhatsApp 01611 747 299<br>greencycle.ctg@gmail.com</p></div>
+<footer class="f" id="contact"><div class="w" style="padding-top:48px;padding-bottom:32px;display:flex;flex-wrap:wrap;gap:32px;justify-content:space-between"><div style="flex:1 1 280px"><div style="font:800 22px Manrope">M/S. Green Cycle Store</div><p style="color:#B8C7BF;line-height:1.8">৪৫৮/পি, ওমর চাঁদ রোড (সিটি কলেজের মোড়), চট্টগ্রাম<br>458/P, Omar Chand Road (City College Mor), Chattogram<br>Call ${esc(PHONE)}<br>WhatsApp / IMO: 01611 747 299 · 01554 313 833 · 01972 747 299<br>greencycle.ctg@gmail.com · omar.green.ctgbd@gmail.com · omourfaruq_ctg@yahoo.com</p></div>
 <div style="flex:1 1 160px;display:flex;flex-direction:column;gap:8px"><b>Shop</b><a href="/shop?cat=Bicycles">Bicycles</a><a href="/shop?cat=Rickshaw+parts">Rickshaw parts</a><a href="/shop">All parts</a></div></div>
 <div style="border-top:1px solid #2B3B33;text-align:center;padding:16px;color:#B8C7BF;font-size:14px">© M/S. Green Cycle Store. All rights reserved.</div></footer><script>${PUB_JS}</script></body></html>`;
 }
-const code = p => (p.sku || p.name).split('-')[0].slice(0, 4).toUpperCase();
-const pcard = p => `<a class="card" href="/product/${p.id}"><span class="ph">${p.image ? `<img src="${esc(p.image)}" alt="${esc(p.name)}">` : esc(code(p))}${p.stock <= 0 ? '<span class="tag" style="position:absolute;top:10px;left:10px">Out of stock</span>' : p.stock <= p.reorder ? '<span class="tag" style="position:absolute;top:10px;left:10px">Only few left</span>' : ''}</span>
+const imgSrc = p => (p.image || '').startsWith('data:') ? '/webimg/' + p.id + '?v=' + p.image.length : p.image;
+const code = p => p.name.slice(0, 4).toUpperCase();
+const pcard = p => `<a class="card" href="/product/${p.id}"><span class="ph">${p.image ? `<img src="${esc(imgSrc(p))}" alt="${esc(p.name)}">` : esc(code(p))}</span>
 <span><span class="muted" style="font-size:13px">${esc(p.category)}</span><br><b style="font-size:17px">${esc(p.name)}</b></span><span style="display:flex;justify-content:space-between;align-items:center"><span class="price">${money(p.price)}</span><span class="btn" style="padding:8px 16px;font-size:14px">View</span></span></a>`;
 function pageHome() {
-  const cats = all("SELECT category,COUNT(*) n FROM products WHERE web=1 GROUP BY category ORDER BY category");
-  const feat = all('SELECT * FROM products WHERE web=1 ORDER BY id LIMIT 8');
+  const cats = all("SELECT category,COUNT(*) n FROM web_products WHERE active=1 GROUP BY category ORDER BY category");
+  const feat = all('SELECT * FROM web_products WHERE active=1 ORDER BY id LIMIT 8');
   return pubPage('M/S. Green Cycle Store — Cycle and rickshaw parts, Chattogram', `
 <section class="w" style="padding-top:56px;display:flex;flex-wrap:wrap;gap:32px"><div style="flex:1 1 440px;display:flex;flex-direction:column;justify-content:center;gap:24px"><span style="align-self:flex-start;background:#E7EEF8;color:#1F3F6E;font-weight:600;font-size:14px;padding:6px 14px;border-radius:999px">Importer &amp; Dealer · Chattogram</span>
-<h1 style="font-size:54px;line-height:1.05;letter-spacing:-.02em">Cycle and rickshaw parts, all in one place.</h1><p class="muted" style="font-size:18px;margin:0;max-width:480px">All kinds of cycle and rickshaw parts seller. Visit our shop at City College Mor or order online.</p>
+<h1 style="font-size:54px;line-height:1.05;letter-spacing:-.02em">Cycle and rickshaw parts, all in one place.</h1><p class="muted" style="font-size:18px;margin:0;max-width:480px">সকল প্রকার সাইকেল-রিক্সা পার্টস বিক্রেতা। All kinds of cycle and rickshaw parts. Visit our shop at City College Mor or order online.</p>
 <div style="display:flex;flex-wrap:wrap;gap:12px"><a class="btn" href="/shop">Shop parts</a><a class="btn o" href="https://wa.me/${WA}">Order on WhatsApp</a></div></div>
-<div style="flex:1 1 440px;min-height:340px;border-radius:24px;background:#F6C32B;display:flex;align-items:center;justify-content:center"><img src="/logo.png" alt="" style="width:260px;height:260px;object-fit:contain;border-radius:24px"></div></section>
+<div style="flex:1 1 440px;min-height:340px;border-radius:24px;background:#F6C32B;display:flex;align-items:center;justify-content:center"><div style="background:#fff;border-radius:20px;padding:20px;max-width:440px;width:86%;box-shadow:0 10px 30px rgba(0,0,0,.12)"><img src="/brand.jpg" alt="M/S. Green Cycle Store" style="width:100%;display:block"></div></div></section>
 <section class="w sec"><h2 style="font-size:32px;margin-bottom:20px">Shop by category</h2><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">${cats.map(c => `<a class="card" href="/shop?cat=${encodeURIComponent(c.category)}"><span class="ph" style="height:90px;font-size:22px">${esc(c.category.slice(0, 4).toUpperCase())}</span><b>${esc(c.category)}</b><span class="muted" style="font-size:14px">${c.n} products</span></a>`).join('')}</div></section>
 <section class="w sec"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:20px"><h2 style="font-size:32px">Featured products</h2><a href="/shop" style="color:#1F3F6E;font-weight:600">See all</a></div><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(250px,1fr))">${feat.map(pcard).join('')}</div></section>
 <section class="w sec" id="about"><div class="card" style="border-radius:24px;padding:32px;flex-direction:row;flex-wrap:wrap;align-items:center;gap:36px"><img src="/owner.jpg" alt="Omar Faruk, Proprietor" style="width:220px;height:275px;object-fit:cover;border-radius:20px;border:4px solid #F6C32B"><div style="flex:1 1 360px"><span style="background:#E7EEF8;color:#1F3F6E;font-weight:600;font-size:14px;padding:6px 14px;border-radius:999px">Message from the proprietor</span><h2 style="font-size:32px;margin:14px 0 10px">Omar Faruk</h2><p class="muted" style="margin:0 0 12px;font-weight:600">Proprietor, M/S. Green Cycle Store</p><p style="font-size:18px;line-height:1.6;margin:0 0 12px">&ldquo;A bicycle is more than a vehicle. It is a companion on everyday journeys. For years we have supplied quality cycle and rickshaw parts, and now we are bringing in modern e-bikes, so getting around costs less and is kinder to the environment. Trust, honest prices and after-sales service are our promise to you.&rdquo;</p><p class="muted" style="margin:0 0 16px;line-height:1.7">&ldquo;সাইকেল শুধু একটি বাহন নয়, এটি মানুষের প্রতিদিনের পথচলার সঙ্গী। আমরা বছরের পর বছর মানসম্মত সাইকেল ও রিকশার পার্টস সরবরাহ করে আসছি, এখন আনছি আধুনিক ই-বাইক। বিশ্বাস, সঠিক দাম আর বিক্রয়োত্তর সেবা, এই আমাদের অঙ্গীকার।&rdquo;</p><a class="btn" href="https://wa.me/${WA}">Talk to us on WhatsApp</a></div></div></section>
@@ -50,25 +51,25 @@ function pageHome() {
 }
 function pageShop(q) {
   const cat = q.get('cat') || '', s = (q.get('q') || '').trim();
-  const cats = all('SELECT category,COUNT(*) n FROM products WHERE web=1 GROUP BY category ORDER BY category');
-  let sql = 'SELECT * FROM products WHERE web=1', a = [];
-  if (cat) { sql += ' AND category=?'; a.push(cat); } if (s) { sql += ' AND (name LIKE ? OR sku LIKE ?)'; a.push('%' + s + '%', '%' + s + '%'); }
+  const cats = all('SELECT category,COUNT(*) n FROM web_products WHERE active=1 GROUP BY category ORDER BY category');
+  let sql = 'SELECT * FROM web_products WHERE active=1', a = [];
+  if (cat) { sql += ' AND category=?'; a.push(cat); } if (s) { sql += ' AND name LIKE ?'; a.push('%' + s + '%'); }
   const ord = { low: 'price ASC', high: 'price DESC' }[q.get('sort')] || 'id ASC';
   const ps = all(sql + ' ORDER BY ' + ord, ...a);
   return pubPage('Shop — Green Cycle Store', `<main class="w" style="padding-top:32px"><h1 style="font-size:40px">${esc(cat || 'All products')}</h1><p class="muted">${ps.length} products</p>
-<div style="display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start;margin-top:20px"><form method="get" class="card" style="flex:1 1 240px;max-width:280px;border-radius:18px;padding:24px"><label>Search<input name="q" value="${esc(s)}" placeholder="Name or SKU"></label>
+<div style="display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start;margin-top:20px"><form method="get" class="card" style="flex:1 1 240px;max-width:280px;border-radius:18px;padding:24px"><label>Search<input name="q" value="${esc(s)}" placeholder="Product name"></label>
 <label>Category<select name="cat"><option value="">All</option>${cats.map(c => `<option ${c.category === cat ? 'selected' : ''} value="${esc(c.category)}">${esc(c.category)} (${c.n})</option>`).join('')}</select></label>
 <label>Sort by<select name="sort"><option value="">Featured</option><option value="low" ${q.get('sort') === 'low' ? 'selected' : ''}>Price: low to high</option><option value="high" ${q.get('sort') === 'high' ? 'selected' : ''}>Price: high to low</option></select></label><button class="btn">Apply</button></form>
 <section style="flex:999 1 560px;min-width:0"><div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))">${ps.map(pcard).join('') || '<p class="muted">No products found.</p>'}</div></section></div></main>`);
 }
 function pageProduct(id) {
-  const p = get('SELECT * FROM products WHERE id=? AND web=1', id); if (!p) return null;
-  const rel = all('SELECT * FROM products WHERE web=1 AND id<>? AND category=? LIMIT 4', p.id, p.category);
+  const p = get('SELECT * FROM web_products WHERE id=? AND active=1', id); if (!p) return null;
+  const rel = all('SELECT * FROM web_products WHERE active=1 AND id<>? AND category=? LIMIT 4', p.id, p.category);
   return pubPage(p.name + ' — Green Cycle Store', `<main class="w" style="padding-top:32px"><div class="muted" style="font-size:14px"><a href="/">Home</a> / <a href="/shop?cat=${encodeURIComponent(p.category)}">${esc(p.category)}</a> / ${esc(p.name)}</div>
-<div style="display:flex;flex-wrap:wrap;gap:40px;margin-top:20px;align-items:flex-start"><div class="ph" style="flex:1 1 440px;height:420px;border-radius:24px;font-size:56px">${p.image ? `<img src="${esc(p.image)}" alt="${esc(p.name)}">` : esc(code(p))}</div>
-<div style="flex:1 1 400px;display:flex;flex-direction:column;gap:18px"><span class="tag" style="align-self:flex-start;background:${p.stock > 0 ? '#E7EEF8' : '#FDE8E8'};color:${p.stock > 0 ? '#1F3F6E' : '#A32020'}">${p.stock > 0 ? 'In stock' : 'Out of stock'}</span><h1 style="font-size:40px;line-height:1.1">${esc(p.name)}</h1><span class="muted">SKU ${esc(p.sku)} · ${esc(p.category)}</span>
+<div style="display:flex;flex-wrap:wrap;gap:40px;margin-top:20px;align-items:flex-start"><div class="ph" style="flex:1 1 440px;height:420px;border-radius:24px;font-size:56px">${p.image ? `<img src="${esc(imgSrc(p))}" alt="${esc(p.name)}">` : esc(code(p))}</div>
+<div style="flex:1 1 400px;display:flex;flex-direction:column;gap:18px"><h1 style="font-size:40px;line-height:1.1">${esc(p.name)}</h1><span class="muted">${esc(p.category)}</span>
 <div class="price" style="font-size:36px">${money(p.price)}</div>${p.description ? `<p class="muted" style="margin:0">${esc(p.description)}</p>` : ''}
-<div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center"><input id="q" type="number" min="1" value="1" style="width:90px" aria-label="Quantity"><button class="btn" data-add="${p.id}" data-label="Add to cart" ${p.stock > 0 ? '' : 'disabled'}>Add to cart</button><a class="btn o" href="https://wa.me/${WA}?text=${encodeURIComponent('I want to order: ' + p.name)}">Order on WhatsApp</a></div>
+<div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center"><input id="q" type="number" min="1" value="1" style="width:90px" aria-label="Quantity"><button class="btn" data-add="${p.id}" data-label="Add to cart">Add to cart</button><a class="btn o" href="https://wa.me/${WA}?text=${encodeURIComponent('I want to order: ' + p.name)}">Order on WhatsApp</a></div>
 <div class="card" style="border-radius:18px;padding:8px 20px"><div style="padding:12px 0;display:flex;justify-content:space-between"><b>Pickup</b><span class="muted">458/P, Omar Chand Road, Chattogram</span></div><div style="padding:12px 0;border-top:1px solid #EEF2F0;display:flex;justify-content:space-between"><b>Call</b><span class="muted">${esc(PHONE)}</span></div></div></div></div>
 ${rel.length ? `<section class="sec"><h2 style="font-size:26px;margin-bottom:20px">Related products</h2><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">${rel.map(pcard).join('')}</div></section>` : ''}</main>`);
 }

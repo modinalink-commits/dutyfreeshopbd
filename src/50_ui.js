@@ -31,7 +31,8 @@ input,select,textarea{font:inherit;padding:9px 12px;border:1px solid #CBD6D0;bor
 @media print{aside.sb,.ac,.noprint{display:none!important}main.mn{padding:0}.pn{border:0}}`;
 const NAV = [
   ['CORE', [['Dashboard', '/admin'], ['Sales / POS', '/admin/pos'], ['Purchase', '/admin/purchase'], ['Inventory', '/admin/inventory'], ['Accounts', '/admin/accounts'], ['Cash & Bank', '/admin/cash']]],
-  ['CUSTOMERS & SALES', [['Customers', '/admin/customers'], ['Sales list', '/admin/sales'], ['Web orders', '/admin/orders'], ['Price Lists', '/admin/prices'], ['EMI / Installments', '/admin/emi'], ['Sales Reps', '/admin/reps'], ['Warranty & Service', '/admin/service']]],
+  ['CUSTOMERS & SALES', [['Customers', '/admin/customers'], ['Sales list', '/admin/sales'], ['Price Lists', '/admin/prices'], ['EMI / Installments', '/admin/emi'], ['Sales Reps', '/admin/reps'], ['Warranty & Service', '/admin/service']]],
+  ['WEBSITE (SEPARATE)', [['Website products', '/admin/website'], ['Website orders', '/admin/orders']]],
   ['STOCK CONTROL', [['Stock Audit', '/admin/audit'], ['Damage & Returns', '/admin/damage'], ['Reorder Suggestions', '/admin/reorder']]],
   ['FINANCE & COMPLIANCE', [['Approvals', '/admin/approvals'], ['Import & LC', '/admin/import'], ['VAT Reports', '/admin/vat'], ['Reports', '/admin/reports'], ['Settings', '/admin/settings']]]];
 const STAFF_PAGES = new Set(['/admin', '/admin/pos', '/admin/purchase', '/admin/inventory', '/admin/cash', '/admin/customers', '/admin/sales', '/admin/orders', '/admin/prices', '/admin/service', '/admin/product']);
