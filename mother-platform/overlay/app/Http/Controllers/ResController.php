@@ -49,9 +49,15 @@ class ResController extends Controller {
       $opex = DB::table('account_entries as e')->join('expense_purposes as p','p.id','=','e.purpose_id')->where('e.entry_date','>=',$m0)->where('e.direction','expense')->where('p.is_expense',true)->sum('e.amount');
       $moves = DB::table('account_entries')->where('entry_date','>=',$m0)->where('direction','expense')->sum('amount') - $opex;
       $o = [['Income collected','৳'.number_format($in)],['Operating expenses','৳'.number_format($opex)],['Other money out (transfers, supplier bills)','৳'.number_format($moves)],['Net (income − operating expenses)','৳'.number_format($in-$opex)]];
-    } elseif ($k==='purchases') {
-      $t = DB::table('purchases')->sum('total'); $p = DB::table('purchases')->sum('paid');
-      $o = [['Total purchase','৳'.number_format($t)],['Paid','৳'.number_format($p)],['Due','৳'.number_format($t-$p)]];
+    } elseif ($k==='purchase') {
+      $m0 = now('Asia/Dhaka')->startOfMonth()->toDateString();
+      $due = DB::table('purchases')->select('supplier_id', DB::raw('sum(total-paid) d'))->groupBy('supplier_id')->havingRaw('sum(total-paid) > 0')->get();
+      $loss = DB::table('damaged_products as d')->join('products as p','p.id','=','d.product_id')->where('d.created_at','>=',$m0)->sum(DB::raw('d.qty*p.cost'));
+      $o = [['Suppliers', DB::table('suppliers')->where('active',true)->count().' active'], ['Purchases (month)', '৳'.number_format(DB::table('purchases')->where('purchase_date','>=',$m0)->sum('total')).' · '.DB::table('purchases')->where('purchase_date','>=',$m0)->count().' invoices'], ['Supplier due', '৳'.number_format($due->sum('d')).' · '.$due->count().' suppliers'], ['Damage loss (month)', '৳'.number_format($loss).' · '.DB::table('damaged_products')->where('created_at','>=',$m0)->sum('qty').' items']];
+    } elseif ($k==='inventory') {
+      $open = ['New','Incomplete','Pre Order','Assign','Pending','AI Order','Approved','Scheduled','WFP','Packaging'];
+      $oh = DB::table('products')->sum('stock'); $rs = DB::table('order_items as i')->join('orders as o','o.id','=','i.order_id')->whereIn('o.status',$open)->sum('i.qty');
+      $o = [['On hand', number_format($oh)], ['Reserved', number_format($rs)], ['Available', number_format(max(0,$oh-$rs))], ['In transit', number_format(DB::table('order_items as i')->join('orders as o','o.id','=','i.order_id')->where('o.status','Shipment')->sum('i.qty'))], ['Returned, to inspect', number_format(DB::table('order_items as i')->join('orders as o','o.id','=','i.order_id')->where('o.status','Return Pending')->sum('i.qty'))], ['Damaged', number_format(DB::table('damaged_products')->sum('qty'))]];
     } elseif ($k==='reviews') {
       $n = DB::table('reviews')->where('status','published')->count(); $avg = DB::table('reviews')->where('status','published')->avg('rating');
       $o = [['Published reviews',$n],['Real average',$n ? number_format($avg,1) : 'New'],['Verified buyers',DB::table('reviews')->where('verified_buyer',true)->count()]];
@@ -75,6 +81,18 @@ class ResController extends Controller {
         $in = DB::table('account_entries')->where('account_id',$a->id)->where('direction','income'); $ex = DB::table('account_entries')->where('account_id',$a->id)->where('direction','expense');
         $out[$a->id] = ['bal'=>'৳'.number_format($a->opening + (clone $in)->sum('amount') - (clone $ex)->sum('amount')), 'in'=>'৳'.number_format((clone $in)->where('entry_date',$d0)->sum('amount')), 'out'=>'৳'.number_format((clone $ex)->where('entry_date',$d0)->sum('amount'))];
       }
+      return $out;
+    }
+    if ($c['slug'] === 'suppliers') {
+      $ids = collect($rows->items())->pluck('id'); $out = [];
+      $p = DB::table('purchases')->whereIn('supplier_id',$ids)->select('supplier_id', DB::raw('sum(total) t'), DB::raw('sum(paid) p'))->groupBy('supplier_id')->get()->keyBy('supplier_id');
+      $it = DB::table('purchase_items as i')->join('purchases as pu','pu.id','=','i.purchase_id')->whereIn('pu.supplier_id',$ids)->select('pu.supplier_id', DB::raw('count(distinct coalesce(i.product_id::text, i.name)) n'))->groupBy('pu.supplier_id')->pluck('n','supplier_id');
+      foreach ($ids as $id) { $t = (float)($p[$id]->t ?? 0); $pd = (float)($p[$id]->p ?? 0); $out[$id] = ['items'=>$it[$id] ?? 0, 'bought'=>'৳'.number_format($t), 'paid'=>'৳'.number_format($pd), 'due'=>'৳'.number_format($t-$pd)]; }
+      return $out;
+    }
+    if ($c['slug'] === 'purchases') {
+      $out = []; $n = DB::table('purchase_items')->whereIn('purchase_id', collect($rows->items())->pluck('id'))->select('purchase_id', DB::raw('count(*) n'))->groupBy('purchase_id')->pluck('n','purchase_id');
+      foreach ($rows->items() as $r) $out[$r->id] = ['items'=>$n[$r->id] ?? 0, 'state'=>$r->paid >= $r->total && $r->total > 0 ? 'Paid' : ($r->paid > 0 ? 'Part paid' : 'Unpaid')];
       return $out;
     }
     if ($c['slug'] !== 'customers') return [];

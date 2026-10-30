@@ -34,3 +34,5 @@ resources/views/panels/couriers.blade.php
 resources/views/panels/districts.blade.php
 resources/views/panels/entries.blade.php
 resources/views/panels/accounts.blade.php
+resources/views/panels/suppliers.blade.php
+resources/views/panels/stock-log.blade.php
