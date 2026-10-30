@@ -38,3 +38,6 @@ resources/views/panels/suppliers.blade.php
 resources/views/panels/stock-log.blade.php
 app/Http/Controllers/SiteController.php
 resources/views/site.blade.php
+app/Http/Middleware/ModulePermission.php
+app/Http/Controllers/PermissionController.php
+resources/views/permissions.blade.php

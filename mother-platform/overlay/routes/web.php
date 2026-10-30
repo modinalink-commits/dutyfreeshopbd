@@ -11,7 +11,7 @@ Route::get('/admin/login', [A::class,'loginForm'])->name('login');
 Route::post('/admin/login', [A::class,'login']);
 Route::post('/admin/logout', [A::class,'logout']);
 Route::get('/login', fn() => redirect('/admin/login'));
-Route::middleware('auth')->prefix('admin')->group(function () {
+Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefix('admin')->group(function () {
   Route::get('/', [A::class,'dashboard']);
   Route::get('/orders', [A::class,'orders']);
   Route::get('/orders/new', [A::class,'orderNew']);
@@ -38,6 +38,8 @@ Route::middleware('auth')->prefix('admin')->group(function () {
   Route::post('/brands', [C::class,'brandSave']);
   Route::get('/modules', [M::class,'index']);
   Route::get('/reports', [R::class,'reports']);
+  Route::get('/permissions', [\App\Http\Controllers\PermissionController::class,'show']);
+  Route::post('/permissions', [\App\Http\Controllers\PermissionController::class,'save']);
   Route::get('/site', [S::class,'show']);
   Route::post('/site', [S::class,'save']);
   Route::post('/m-districts/charge', [R::class,'districtCharge']);
