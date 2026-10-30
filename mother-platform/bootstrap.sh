@@ -57,7 +57,7 @@ sed -i "s|^APP_ENV=.*|APP_ENV=production|; s|^APP_DEBUG=.*|APP_DEBUG=false|; s|^
 grep -q '^APP_KEY=base64' .env || php artisan key:generate --force
 until php -r 'new PDO("pgsql:host=db;dbname=mother","mother",getenv("DB_PASSWORD"));' 2>/dev/null; do echo waiting for db; sleep 2; done
 php artisan migrate --force
-php artisan mother:install
+php artisan mother:install || echo "INSTALL STEP FAILED (site keeps running)"
 COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader --classmap-authoritative --no-interaction -q
 php artisan config:cache
 php artisan route:cache
