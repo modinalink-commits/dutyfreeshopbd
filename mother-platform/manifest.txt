@@ -110,3 +110,4 @@ resources/views/store/invoice.blade.php
 app/Http/Controllers/CheckoutLookupController.php
 app/Support/CustomerIntel.php
 resources/views/cust_intel.blade.php
+database/migrations/2026_10_31_000016_order_email_field.php

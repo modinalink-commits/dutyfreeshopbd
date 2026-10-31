@@ -52,5 +52,11 @@ class CustomerIntel {
     }
     return $out;
   }
+  /** Note column must never show an email address or an "Email:" fragment. */
+  public static function cleanNote(?string $n): string {
+    $n = preg_replace('/\s*\|?\s*E-?mail\s*:\s*\S+/i', '', (string)$n);
+    $n = preg_replace('/[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}/', '', $n);
+    return trim(preg_replace('/\s*\|\s*(\|\s*)+/', ' | ', $n), " |\t\n");
+  }
   public static function wa(string $phone): string { return '88'.ltrim(preg_replace('/\D/', '', $phone), '8'); }
 }

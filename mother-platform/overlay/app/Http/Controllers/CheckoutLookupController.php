@@ -35,7 +35,7 @@ class CheckoutLookupController extends Controller {
     if (!hash_equals($s['h'], hash('sha256', $code.$p.config('app.key')))) { $s['t']++; Cache::put("co.otp.$p", $s, 300); return response()->json(['ok'=>false]); }
     Cache::forget("co.otp.$p");
     $o = $this->last($p); if (!$o) return response()->json(['ok'=>false]);
-    $email = preg_match('/Email:\s*(\S+@\S+)/', (string)$o->note, $m) ? $m[1] : (DB::table('customers')->where('phone', $p)->value('email') ?: '');
+    $email = $o->email ?: (DB::table('customers')->where('phone', $p)->value('email') ?: '');
     return response()->json(['ok'=>true, 'd'=>['name'=>$o->customer_name, 'address'=>$o->address, 'district'=>$o->district, 'email'=>$email]]);
   }
 }
