@@ -23,7 +23,7 @@
 <div style="grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" type="submit">Save Account</button><button class="btn" type="button" id="bTest" style="background:#fff;color:#0B1F3A;border:1px solid #D1D5DB">Test Connection</button><button class="btn" type="button" id="bCon" style="background:#16A34A">Connect</button><button class="btn" type="button" id="bDis" style="background:#6B7280">Disconnect</button></div>
 </form><div id="tres" style="margin-top:10px;font-size:13px"></div></div>
 @verbatim
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jssip/3.10.0/jssip.min.js"></script>
+<script src="/js/jssip.min.js"></script>
 <script>
 (function(){
 var $=function(i){return document.getElementById(i)},ch=window.BroadcastChannel?new BroadcastChannel('dfphone'):null;

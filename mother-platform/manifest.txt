@@ -177,3 +177,4 @@ resources/views/softphone.blade.php
 resources/views/sip_account.blade.php
 resources/views/call_history.blade.php
 resources/views/softphone_fab.blade.php
+public/js/jssip.min.js

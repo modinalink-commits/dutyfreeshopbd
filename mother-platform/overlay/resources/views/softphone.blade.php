@@ -31,7 +31,7 @@ textarea{width:100%;border:1.5px solid var(--bd);border-radius:10px;padding:8px;
 <div class="ov" id="ovNote"><div class="card"><b>Add Call Note</b><div style="margin-top:6px">@foreach(['Customer confirmed','No answer','Call later','Order cancelled','WhatsApp follow-up required'] as $c)<span class="chip" data-c="{{ $c }}">{{ $c }}</span>@endforeach</div><textarea id="ntx" rows="3" maxlength="1000" placeholder="Write a note…"></textarea><div style="display:flex;gap:8px;margin-top:10px"><button class="pri" id="nSave">Save note</button><button class="sec" id="nSkip">Skip</button></div></div></div>
 <audio id="aud" autoplay></audio>
 @verbatim
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jssip/3.10.0/jssip.min.js"></script>
+<script src="/js/jssip.min.js"></script>
 <script>
 (function(){
 var $=function(i){return document.getElementById(i)},T=document.querySelector('meta[name=csrf]').content,ua=null,cfg=null,ses=null,logId=null,t0=0,tick=null,dir='out',held=false,muted=false,answered=false,cur='',ring=null,inCtx=null;
