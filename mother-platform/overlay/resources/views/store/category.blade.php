@@ -1,19 +1,32 @@
 @extends('store.layout')
 @section('ld')<script type="application/ld+json">{!! json_encode(['@context'=>'https://schema.org','@type'=>'BreadcrumbList','itemListElement'=>[['@type'=>'ListItem','position'=>1,'name'=>'হোম','item'=>url('/').'/'],['@type'=>'ListItem','position'=>2,'name'=>$c->name,'item'=>url('/'.$c->slug).'/']]], JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES|JSON_HEX_TAG) !!}</script>@endsection
 @section('main')
-<style>.bc{font-size:11px;display:flex;gap:8px;align-items:center;text-transform:uppercase}.bch{display:flex;gap:6px;flex-wrap:wrap}.bch a{background:var(--n);color:#fff;font-size:10px;font-weight:600;padding:5px 8px;text-transform:uppercase}.bch a.on{background:var(--o)}.grp{padding-top:18px;display:flex;flex-direction:column;gap:14px;align-items:center}.grp .gt{background:#14594A;color:#fff;font-size:11px;font-weight:700;padding:6px 16px;letter-spacing:.02em;text-transform:uppercase}.grp .gr{width:100%}
-@media (max-width:760px){.bc{font-size:10px;padding-top:8px}.bch a{font-size:9px;padding:4px 7px}.grp{padding-top:12px;gap:6px}.grp .gt{font-size:10px;padding:5px 14px}.pgn{padding-top:16px}}</style>
-<div class="w" style="padding-top:16px;display:flex;flex-direction:column;gap:12px">
-<div class="bc"><a href="/" aria-label="Home">⌂</a><span>›</span>@if(request('sub'))<a href="/{{ $c->slug }}/">{{ $c->name }}</a><span>›</span><h1 style="font-size:inherit;font-weight:inherit">{{ request('sub') }}</h1>@else<h1 style="font-size:inherit;font-weight:inherit">{{ $c->name }}</h1>@endif</div>
-@if(!empty($subs[$c->id]))<div class="bch">@foreach($subs[$c->id] as $sb)<a href="/{{ $c->slug }}/?sub={{ rawurlencode($sb->sub) }}" class="{{ request('sub')===$sb->sub ? 'on' : '' }}">{{ $sb->sub }}</a>@endforeach</div>@endif
-</div>
-<div class="w" style="padding-bottom:40px">
-@forelse($groups as $gname => $list)
-<div class="grp"><span class="gt">{{ $gname }}</span><div class="gr">@foreach($list as $q)@include('store.card', ['fd'=>true])@endforeach</div></div>
-@empty
-<p style="padding-top:20px;font-size:13px">No products yet.</p>
-@endforelse
-@include('store.pager', ['pg'=>$items])
-@if($c->intro && $items->currentPage() === 1 && !request('sub'))<div style="margin-top:30px;font-size:12px;line-height:1.8;color:#374151">{{ $c->intro }}</div>@endif
+@php
+  $sub = request('sub'); $title = $sub ?: $c->name; $base = '/'.$c->slug.'/';
+  $qs = fn(array $o) => $base.'?'.http_build_query(array_filter(array_merge(request()->only(['sub','min','max','sort']), $o), fn($v) => $v !== null && $v !== ''));
+  $ranges = [[null,1000,'Under ৳1,000'],[1000,5000,'৳1,000 – ৳5,000'],[5000,20000,'৳5,000 – ৳20,000'],[20000,50000,'৳20,000 – ৳50,000'],[50000,null,'Over ৳50,000']];
+  $sorts = [''=>'Newest','popular'=>'Most in stock','price_asc'=>'Price: low to high','price_desc'=>'Price: high to low'];
+@endphp
+<style>
+.cb{display:flex;gap:8px;align-items:center;font-size:13px;color:#6B7280;padding-top:16px}.cb a:hover{color:var(--o)}.cb b{color:var(--n);font-weight:600}
+.cbn{margin-top:14px;border-radius:24px;background:linear-gradient(120deg,#0B1220,#1B2540 65%,#3A2418);color:#fff;padding:36px 44px;display:flex;flex-direction:column;gap:12px}.cbn .tg{align-self:flex-start;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);border-radius:999px;padding:5px 13px;font-size:11px;letter-spacing:.1em;font-weight:700;text-transform:uppercase}.cbn h1{margin:0;font-size:40px;font-weight:800;line-height:1.1}.cbn p{margin:0;color:#D1D5DB;font-size:15px}.cbn .ch{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}.cbn .ch span{border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);border-radius:999px;padding:8px 14px;font-size:12.5px;font-weight:600}.cbn .ch span.n{background:var(--o);border-color:var(--o)}
+.rc{padding-top:26px}.rc h2{font-size:20px;font-weight:800;margin:0 0 12px;color:var(--n)}.rc h2 small{font-size:13px;color:#6B7280;font-weight:500;margin-left:6px}.rcl{display:flex;gap:12px;flex-wrap:wrap}.rcl a{display:flex;align-items:center;gap:10px;border:1px solid #EAEAEA;border-radius:14px;padding:12px 16px;background:#fff;font-weight:600;font-size:14px;min-width:200px}.rcl a i{font-style:normal;width:34px;height:34px;border-radius:10px;background:#F3F4F6;display:flex;align-items:center;justify-content:center;font-weight:700}.rcl a:hover,.rcl a.on{border-color:var(--o);color:var(--o)}.rcl a em{margin-left:auto;font-style:normal;color:#9CA3AF}
+.cl{display:grid;grid-template-columns:240px minmax(0,1fr);gap:24px;padding:26px 0 40px;align-items:start}.fl{border:1px solid #EAEAEA;border-radius:16px;padding:18px;background:#fff}.fl h3{margin:0 0 12px;font-size:17px}.fl h4{margin:16px 0 8px;font-size:11px;letter-spacing:.1em;color:#6B7280;text-transform:uppercase}.fl a.o{display:flex;align-items:center;gap:9px;padding:6px 0;font-size:14px;color:#374151}.fl a.o:before{content:"";width:16px;height:16px;border:1.5px solid #CBD5E1;border-radius:4px;flex:none}.fl a.o.on:before{background:var(--o);border-color:var(--o);box-shadow:inset 0 0 0 3px #fff}.fl a.o.on{color:var(--o);font-weight:600}.fl .clr{display:inline-block;margin-top:12px;font-size:12px;color:var(--o);font-weight:600}
+.tb2{display:flex;align-items:center;gap:12px;border:1px solid #EAEAEA;border-radius:14px;padding:12px 16px;background:#fff;margin-bottom:14px;font-size:14px;color:#4B5563}.tb2 .sp{flex:1}.tb2 select{border:1px solid #D1D5DB;border-radius:8px;padding:8px 10px;font-size:14px;background:#fff}
+.cl .gr{grid-template-columns:repeat(4,minmax(0,1fr))}.fm{display:none}
+@media(max-width:1200px){.cl .gr{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:900px){.cl{grid-template-columns:1fr}.fl{display:none}.fl.op{display:block}.fm{display:inline-block;border:1px solid #D1D5DB;background:#fff;border-radius:8px;padding:8px 12px;font-size:13px;font-weight:600}.cbn{padding:22px 18px;border-radius:18px}.cbn h1{font-size:26px}.cbn p{font-size:13px}.rcl a{min-width:0;flex:1 1 45%;padding:9px 12px}.cl .gr{grid-template-columns:repeat(3,minmax(0,1fr))}.tb2{font-size:12px;padding:8px 10px}}
+</style>
+<div class="w">
+<div class="cb"><a href="/">Home</a>›@if($sub)<a href="{{ $base }}">{{ $c->name }}</a>›<b>{{ $sub }}</b>@else<b>{{ $c->name }}</b>@endif</div>
+<div class="cbn"><span class="tg">{{ $sub ? $c->name : 'Category' }}</span><h1>{{ $title }}</h1><p>Browse {{ $title }} on DutyFree Shop BD — original imported products with fast delivery.</p><div class="ch"><span class="n">{{ number_format($items->total()) }} products</span><span>100% Cash on Delivery</span><span>Nationwide delivery</span><span>100% Original</span></div></div>
+@if(!empty($subs[$c->id]))<div class="rc"><h2>{{ $sub ? 'Other sections' : 'Related categories' }}<small>{{ count($subs[$c->id]) }} options</small></h2><div class="rcl">@foreach($subs[$c->id] as $sb)<a href="{{ $base }}?sub={{ rawurlencode($sb->sub) }}" class="{{ $sub===$sb->sub ? 'on' : '' }}"><i>{{ mb_strtoupper(mb_substr($sb->sub,0,1)) }}</i>{{ $sb->sub }}<em>→</em></a>@endforeach</div></div>@endif
+<div class="cl"><aside class="fl" id="fl"><h3>Filters</h3><h4>Price</h4>@foreach($ranges as [$a,$b,$lb])@php $on = (string)request('min')===(string)$a && (string)request('max')===(string)$b; @endphp<a class="o {{ $on ? 'on' : '' }}" href="{{ $on ? $qs(['min'=>null,'max'=>null,'page'=>null]) : $qs(['min'=>$a,'max'=>$b,'page'=>null]) }}" rel="nofollow">{{ $lb }}</a>@endforeach
+<h4>Section</h4><a class="o {{ !$sub ? 'on' : '' }}" href="{{ $base }}">All {{ $c->name }}</a>@foreach(array_slice($subs[$c->id] ?? [], 0, 12) as $sb)<a class="o {{ $sub===$sb->sub ? 'on' : '' }}" href="{{ $base }}?sub={{ rawurlencode($sb->sub) }}">{{ $sb->sub }}</a>@endforeach
+@if(request()->hasAny(['min','max','sub']))<a class="clr" href="{{ $base }}">Clear all filters</a>@endif</aside>
+<div><div class="tb2"><button type="button" class="fm" onclick="document.getElementById('fl').classList.toggle('op')">Filters</button><span>Showing <b>{{ $items->count() }}</b> of {{ number_format($items->total()) }}</span><span class="sp"></span><label for="so">Sort by</label><select id="so" onchange="location=this.value">@foreach($sorts as $k=>$lb)<option value="{{ $qs(['sort'=>$k ?: null,'page'=>null]) }}" {{ (string)request('sort')===(string)$k ? 'selected' : '' }}>{{ $lb }}</option>@endforeach</select></div>
+@if($items->count())<div class="gr">@foreach($items as $q)@include('store.card', ['fd'=>true])@endforeach</div>@else<div style="text-align:center;padding:60px 10px;color:#6B7280"><b style="display:block;font-size:18px;color:var(--n)">No products match</b>Try clearing a filter.</div>@endif
+@include('store.pager', ['pg'=>$items])</div></div>
+@if($c->intro && $items->currentPage() === 1 && !$sub)<div style="padding-bottom:30px;font-size:12px;line-height:1.8;color:#374151">{{ $c->intro }}</div>@endif
 </div>
 @endsection

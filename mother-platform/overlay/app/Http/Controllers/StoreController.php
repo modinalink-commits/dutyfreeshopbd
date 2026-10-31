@@ -87,6 +87,7 @@ class StoreController extends Controller {
     if (!$c) { $page = DB::table('pages')->where('slug',$slug)->where('active',true)->first(); if ($page) return $this->page($page); return $this->notFound(); }
     $s = self::set(); $per = max(12, (int)$s['per_page']);
     $q = $this->q()->where('category_id',$c->id); if ($r->filled('sub')) $q->where('sub',$r->sub);
+    if (is_numeric($r->min)) $q->where('price','>=',(float)$r->min); if (is_numeric($r->max)) $q->where('price','<=',(float)$r->max);
     $q = $q->orderByRaw('coalesce(sub, \'~\')');
     $items = $this->sorted($q, $r->input('sort', $s['default_sort']))->paginate($per)->withQueryString();
     return response()->view('store.category', $this->base(['c'=>$c, 'items'=>$items, 'groups'=>collect($items->items())->groupBy(fn($p) => $p->sub ?: $c->name), 'title'=>$c->title ?: $c->name.' | DutyFree Shop BD', 'desc'=>$c->meta_description, 'canon'=>url('/'.$slug).'/'.($r->filled('sub') ? '?sub='.rawurlencode($r->sub) : '')]))->header('Cache-Control','public, max-age=120');
