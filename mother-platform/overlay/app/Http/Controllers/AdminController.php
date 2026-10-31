@@ -164,7 +164,7 @@ class AdminController extends Controller {
     $items = DB::table('order_items as i')->leftJoin('products as p','p.id','=','i.product_id')->where('i.order_id',$id)->select('i.*','p.sku as sku', DB::raw('coalesce(p.image,(select pp.image from products pp where pp.name = i.name limit 1)) as image'))->get();
     $logs = DB::table('order_status_logs')->where('order_id',$id)->orderBy('id')->get();
     $ci = \App\Support\CustomerIntel::forOrders([$o])[$o->id];
-    $comments = DB::table('order_comments')->where('order_id',$id)->orderByDesc('id')->get();
+    $comments = DB::table('order_comments as c')->join('orders as oo','oo.id','=','c.order_id')->where(fn($w) => $w->where('c.order_id',$id)->orWhere(fn($x) => $x->where('oo.phone',$o->phone)->whereNotNull('oo.phone')->where('oo.phone','<>','')))->orderByDesc('c.id')->select('c.*','oo.invoice as inv')->get();
     return view('order_show', compact('o','items','logs','ci','comments'));
   }
   public function orderComment(Request $r, $id) {
