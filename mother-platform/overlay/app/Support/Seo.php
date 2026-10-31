@@ -32,7 +32,7 @@ class Seo {
     });
     $slugs = DB::table('products')->where(fn($q) => $q->whereNull('path_slug')->orWhere('path_slug', ''))->count();
     if ($slugs) Slugs::assignAll();
-    foreach (['store.home6', 'store.home4', 'store.home5', 'store.sitemap4'] as $k) Cache::forget($k);
+    foreach (['store.home6', 'store.home4', 'store.home5', 'store.sitemap5'] as $k) Cache::forget($k);
     return ['updated'=>$n, 'slugs'=>$slugs, 'total'=>DB::table('products')->count()];
   }
 }

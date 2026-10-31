@@ -105,7 +105,7 @@ class CatalogController extends Controller {
       if ($pub !== $was) DB::table('product_status_logs')->insert(['product_id'=>$id, 'user_id'=>Auth::id(), 'user_name'=>Auth::user()->name, 'action'=>$pub ? 'Published' : 'Unpublished', 'created_at'=>now(), 'updated_at'=>now()]);
     });
     if ((bool)($old->published ?? false) !== $pub && ($old || $pub)) $this->notifyStatus([$row['name']], $pub);
-    \Illuminate\Support\Facades\Cache::forget('store.home6'); \Illuminate\Support\Facades\Cache::forget('store.sitemap4');
+    \Illuminate\Support\Facades\Cache::forget('store.home6'); \Illuminate\Support\Facades\Cache::forget('store.sitemap5');
     if ($act === 'preview') return redirect('/admin/products/'.$id.'/preview');
     return redirect($act === 'draft' ? '/admin/products/'.$id.'/edit?saved=1' : '/admin/products/'.$id.'/edit?saved=1');
   }
