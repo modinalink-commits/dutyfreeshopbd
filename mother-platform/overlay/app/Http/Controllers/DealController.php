@@ -27,7 +27,7 @@ class DealController extends Controller {
       fclose($o);
     }, 'todays-deal-'.now()->format('Y-m-d').'.csv', ['Content-Type'=>'text/csv; charset=UTF-8']);
   }
-  private function bust() { foreach (['store.home4','store.home5','store.settings2'] as $k) Cache::forget($k); }
+  private function bust() { foreach (['store.home4','store.home6','store.home5','store.settings2'] as $k) Cache::forget($k); }
   public function flag(Request $r, $id, $mode) {
     abort_unless(in_array($mode, ['pin','exclude','clear'], true), 404);
     $p = DB::table('products')->find($id); abort_unless($p, 404);

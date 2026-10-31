@@ -76,7 +76,7 @@ class StoreController extends Controller {
   }
   public function home() {
     $s = self::set();
-    $data = self::rem('store.home5', 300, function () use ($s) {
+    $data = self::rem('store.home6', 300, function () use ($s) {
       $pub = fn() => DB::table('products')->where('published',true);
       $sold = DB::table('order_items as i')->join('orders as o','o.id','=','i.order_id')->where('o.status','!=','Cancel')->where('o.created_at','>=',now()->subDays(30))->groupBy('i.product_id')->selectRaw('i.product_id as pid, sum(i.qty) as q')->pluck('q','pid');
       $deals = self::dealBase((float)($s['deal_min_off'] ?? 0))->limit(max(1,(int)($s['deal_max'] ?? 12)))->get()
@@ -92,7 +92,7 @@ class StoreController extends Controller {
       $offers = [];
       foreach ($this->cats() as $c) { $mx = (int)$pub()->where('category_id',$c->id)->whereColumn('compare_price','>','price')->where('compare_price','>',0)->max(DB::raw('round((compare_price - price) / compare_price * 100)')); if ($mx > 0) $offers[] = [$c, $mx]; }
       usort($offers, fn($a, $b) => $b[1] <=> $a[1]);
-      return ['new'=>$pub()->orderByDesc('id')->limit(12)->get(), 'deals'=>$deals, 'top'=>$top, 'topLabel'=>$topLabel, 'sec'=>$sec, 'offers'=>array_slice($offers, 0, 2), 'slides'=>DB::table('sliders')->where('active',true)->whereNotNull('image')->orderBy('position')->get(), 'stores'=>DB::table('stores')->where('active',true)->orderBy('id')->get(['id','name','domain','scan_published'])->all(), 'best'=>DB::table('order_items as i')->join('orders as o','o.id','=','i.order_id')->join('products as p','p.id','=','i.product_id')->where('p.published',true)->where('o.status','!=','Cancel')->where('o.created_at','>=',now()->subDays(60))->select('p.*', DB::raw('sum(i.qty) q'))->groupBy('p.id')->orderByDesc('q')->limit(12)->get(), 'count'=>$pub()->count(), 'maxOff'=>$deals->count() ? self::off($deals[0]) : 0];
+      return ['new'=>$pub()->orderByDesc('id')->limit(12)->get(), 'deals'=>$deals, 'top'=>$top, 'topLabel'=>$topLabel, 'sec'=>$sec, 'offers'=>array_slice($offers, 0, 2), 'slides'=>DB::table('sliders')->where('active',true)->whereNotNull('image')->where(fn($q)=>$q->whereNull('type')->orWhere('type','main'))->orderBy('position')->get(), 'offerSlides'=>DB::table('sliders')->where('active',true)->whereNotNull('image')->where('type','offer')->orderBy('position')->get(), 'stores'=>DB::table('stores')->where('active',true)->orderBy('id')->get(['id','name','domain','scan_published'])->all(), 'best'=>DB::table('order_items as i')->join('orders as o','o.id','=','i.order_id')->join('products as p','p.id','=','i.product_id')->where('p.published',true)->where('o.status','!=','Cancel')->where('o.created_at','>=',now()->subDays(60))->select('p.*', DB::raw('sum(i.qty) q'))->groupBy('p.id')->orderByDesc('q')->limit(12)->get(), 'count'=>$pub()->count(), 'maxOff'=>$deals->count() ? self::off($deals[0]) : 0];
     });
     if ($data['count'] === 0) return response()->view('coming', [], 503)->header('Retry-After','3600');
     $live = $s['home_live_orders'] === '1' ? $this->liveOrders() : collect();
