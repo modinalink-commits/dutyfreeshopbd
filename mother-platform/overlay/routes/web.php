@@ -12,6 +12,7 @@ Route::post('/admin/logout', [A::class,'logout']);
 Route::get('/login', fn() => redirect('/admin/login'));
 Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefix('admin')->group(function () {
   Route::get('/', [A::class,'dashboard']);
+  Route::get('/error-log', [\App\Http\Controllers\UploadController::class,'errorLog']);
   Route::post('/upload-image', [\App\Http\Controllers\UploadController::class,'image']);
   Route::get('/orders', [A::class,'orders']);
   Route::get('/orders/new', [A::class,'orderNew']);
