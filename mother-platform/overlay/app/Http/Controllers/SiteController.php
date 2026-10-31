@@ -39,7 +39,7 @@ class SiteController extends Controller {
       DB::table('settings')->updateOrInsert(['key'=>$k], ['value'=>$v, 'updated_at'=>$now, 'created_at'=>$now]); $changed++;
     }
     DB::table('audit_logs')->insert(['user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'action'=>'site.publish','subject'=>"$changed settings",'meta'=>json_encode([]),'ip'=>$r->ip(),'created_at'=>$now,'updated_at'=>$now]);
-    \Illuminate\Support\Facades\Cache::forget('store.settings'); \Illuminate\Support\Facades\Cache::forget('store.home'); \Illuminate\Support\Facades\Cache::forget('store.subs');
+    \Illuminate\Support\Facades\Cache::forget('store.settings'); \Illuminate\Support\Facades\Cache::forget('store.home2'); \Illuminate\Support\Facades\Cache::forget('store.subs');
     return back()->with('ok','Changes published');
   }
 }

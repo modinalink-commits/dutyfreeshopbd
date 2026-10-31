@@ -51,7 +51,7 @@ class StoreController extends Controller {
   }
   public function home() {
     $s = self::set();
-    $data = self::rem('store.home', 300, function () {
+    $data = self::rem('store.home2', 300, function () {
       $pub = fn() => DB::table('products')->where('published',true);
       $sold = DB::table('order_items as i')->join('orders as o','o.id','=','i.order_id')->where('o.status','!=','Cancel')->where('o.created_at','>=',now()->subDays(30))->groupBy('i.product_id')->selectRaw('i.product_id as pid, sum(i.qty) as q')->pluck('q','pid');
       $deals = $pub()->whereColumn('compare_price','>','price')->where('compare_price','>',0)->orderByRaw('(compare_price - price) / compare_price desc')->orderByDesc('id')->limit(12)->get()
@@ -68,11 +68,11 @@ class StoreController extends Controller {
     });
     if ($data['count'] === 0) return response()->view('coming', [], 503)->header('Retry-After','3600');
     $live = $s['home_live_orders'] === '1' ? $this->liveOrders() : collect();
-    return response()->view('store.home', $this->base($data + ['live'=>$live, 'title'=>$s['site_title'], 'desc'=>$s['meta_description'] ?: 'ডিউটি ফ্রি দামে অরিজিনাল ইমপোর্টেড পারফিউম, আতর, সিগারেট, ভেপ, স্কিন কেয়ার ও ডেইলি নিডস। অর্ডার করুন, সারা বাংলাদেশে হোম ডেলিভারি।', 'canon'=>url('/').'/', 'home'=>true]))->header('Cache-Control','public, max-age=60');
+    return response()->view('store.home2', $this->base($data + ['live'=>$live, 'title'=>$s['site_title'], 'desc'=>$s['meta_description'] ?: 'ডিউটি ফ্রি দামে অরিজিনাল ইমপোর্টেড পারফিউম, আতর, সিগারেট, ভেপ, স্কিন কেয়ার ও ডেইলি নিডস। অর্ডার করুন, সারা বাংলাদেশে হোম ডেলিভারি।', 'canon'=>url('/').'/', 'home'=>true]))->header('Cache-Control','public, max-age=60');
   }
   /** Real recent orders, customer names masked (first letter + ***). */
   private function liveOrders() {
-    return self::rem('store.live', 60, fn() => DB::table('orders as o')->join('order_items as i','i.order_id','=','o.id')->leftJoin('products as p','p.id','=','i.product_id')->whereNotIn('o.status',['Cancel','Incomplete'])->where('o.created_at','>=',now()->subDays(3))
+    return self::rem('store.live2', 60, fn() => DB::table('orders as o')->join('order_items as i','i.order_id','=','o.id')->leftJoin('products as p','p.id','=','i.product_id')->whereNotIn('o.status',['Cancel','Incomplete'])->where('o.created_at','>=',now()->subDays(3))
       ->select('o.customer_name','o.district','o.shipping','o.created_at','i.name','i.qty','i.price','p.image','p.id as pid','p.ext_id','p.name as pname')->orderByDesc('o.id')->limit(6)->get()
       ->map(function ($r) { $r->masked = mb_strtoupper(mb_substr(trim($r->customer_name) ?: 'C', 0, 1)).'***'; return $r; }));
   }
@@ -167,7 +167,7 @@ class StoreController extends Controller {
       DB::table('order_status_logs')->insert(['order_id'=>$id,'user_id'=>null,'user_name'=>'Website','from_status'=>null,'to_status'=>'New','note'=>'Order placed on website','created_at'=>now(),'updated_at'=>now()]);
       return $id;
     });
-    Cache::forget('store.live');
+    Cache::forget('store.live2');
     $inv = DB::table('orders')->where('id',$id)->value('invoice');
     return redirect('/track?invoice='.$inv.'&new=1');
   }
