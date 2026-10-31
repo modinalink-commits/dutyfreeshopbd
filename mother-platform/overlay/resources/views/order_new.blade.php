@@ -3,6 +3,7 @@
 <style>.onw{display:grid;grid-template-columns:minmax(300px,1fr) 2fr;gap:16px;align-items:start}@media(max-width:900px){.onw{grid-template-columns:1fr}}.onw label{display:block;margin:10px 0 4px;font-size:13px}.onw .card{margin:0}.opt{position:absolute;left:0;right:0;top:100%;z-index:20;background:#fff;border:1px solid #E5E7EB;border-radius:8px;max-height:280px;overflow:auto;box-shadow:0 8px 24px rgba(0,0,0,.12)}.opt div{padding:8px 10px;cursor:pointer;display:flex;justify-content:space-between;gap:8px;font-size:13px}.opt div:hover{background:#F3F4F6}.itb{width:100%;border-collapse:collapse;font-size:13px}.itb th{text-align:left;background:#F3F4F6;padding:8px;color:#6B7280}.itb td{padding:6px 8px;border-top:1px solid #E5E7EB}.itb input{margin:0;padding:6px}</style>
 <a class="btn g" href="/admin/orders" style="margin-bottom:10px;display:inline-block">&larr; Back</a>
 <form method="post" action="/admin/orders" id="onf" class="onw">@csrf
+@if($pre)<input type="hidden" name="inc_id" value="{{ $pre['inc'] }}">@endif
 <div class="card"><h3 style="margin:0 0 4px;text-align:center">Customer Information</h3>
 <label>Customer Phone</label><input name="phone" id="onp" required inputmode="tel" autocomplete="off" value="{{ old('phone') }}" placeholder="Enter customer 11 digit mobile number">
 <div id="onx" style="display:none;margin-top:8px;border-radius:10px;padding:9px 12px;font-size:13px"></div>
@@ -28,6 +29,7 @@
 </form>
 @endsection
 @section('js')
+<script>window.PRE=@json($pre);</script>
 @verbatim
 <script>(function(){
 var p=document.getElementById('onp'),box=document.getElementById('onx'),F={name:document.getElementById('onn'),address:document.getElementById('ona')},D=document.getElementById('ond'),tm,last='';
@@ -89,6 +91,7 @@ function sched(){clearTimeout(dt);dt=setTimeout(calc,350)}
 function onPhone(){var d=p.value.replace(/\D/g,'');if(d!==lastP){lastP=d;resetOv();if(d.length<10){CP.value=''}sched()}}
 p.addEventListener('input',function(){clearTimeout(tm);tm=setTimeout(look,350);onPhone()});p.addEventListener('blur',look);if(p.value){look();onPhone()}
 render();
+if(window.PRE){var P0=window.PRE;p.value=P0.phone||'';document.getElementById('onn').value=P0.name||'';document.getElementById('ona').value=P0.address||'';var nt=document.querySelector('textarea[name=note]');if(nt&&P0.note)nt.value=P0.note;setSel(D,P0.district);(P0.items||[]).forEach(function(x){IT.push({id:x.id||null,name:x.name,sku:null,stock:null,qty:x.qty,price:x.price,custom:false})});render();look();onPhone()}
 })();</script>
 @endverbatim
 @endsection

@@ -1,0 +1,20 @@
+@extends('layout')@section('title','Incomplete Orders')
+@section('body')
+<h1 style="margin:0 0 4px">Incomplete Orders</h1><span style="font-size:13px;color:#6B7280">Customers who typed their mobile number at checkout but have not pressed Place Order. They are not orders: nothing is confirmed, no SMS is sent, stock and courier are untouched.</span>
+<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin:14px 0"><div class="card k" style="margin:0"><span style="font-size:13px">Open</span><b style="font-size:22px">{{ $counts['open'] ?? 0 }}</b></div><div class="card k" style="margin:0"><span style="font-size:13px">Open cart value</span><b style="font-size:22px">৳{{ number_format($openSum) }}</b></div><div class="card k" style="margin:0"><span style="font-size:13px">Turned into orders</span><b style="font-size:22px">{{ $counts['converted'] ?? 0 }}</b></div></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">@foreach($tabs as $k=>$l)<a href="?s={{ $k }}" style="padding:5px 12px;border:1px solid #E5E7EB;border-radius:8px;{{ $st===$k ? 'background:#111;color:#fff' : '' }}">{{ $l }} ({{ $counts[$k] ?? 0 }})</a>@endforeach<form method="get" style="margin-left:auto"><input type="hidden" name="s" value="{{ $st }}"><input name="q" value="{{ $q }}" placeholder="Phone or name" style="max-width:200px"> <button>Search</button></form></div>
+<div class="card" style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">
+<tr style="text-align:left;color:#6B7280"><th>Time</th><th>Customer</th><th>Mobile</th><th>Product</th><th>Cart value</th><th>Discount</th><th>Progress</th><th>Last activity</th><th>Action</th></tr>
+@forelse($rows as $o)
+@php $it = json_decode($o->items ?: '[]', true) ?: []; $mins = abs(now()->diffInMinutes(\Carbon\Carbon::parse($o->last_activity_at))); $aband = $st==='open' && $mins >= 30; @endphp
+<tr style="border-top:1px solid #E5E7EB;vertical-align:top"><td style="padding:6px">{{ \Carbon\Carbon::parse($o->created_at)->timezone('Asia/Dhaka')->format('d M, h:i A') }}</td>
+<td>{{ $o->name ?: '—' }}@if($o->customer_category)<br><small style="color:#6B7280">{{ $o->customer_category }}</small>@endif</td><td>{{ $o->phone }}</td>
+<td style="max-width:220px">{{ $it ? \Illuminate\Support\Str::limit($it[0]['name'], 40) : '—' }}@if(count($it) > 1)<small style="color:#6B7280"> +{{ count($it)-1 }} more</small>@endif<br><small style="color:#6B7280">Qty {{ $o->qty }}</small></td>
+<td>৳{{ number_format($o->total) }}</td><td>{{ $o->discount > 0 ? '-৳'.number_format($o->discount) : '—' }}</td>
+<td style="min-width:120px"><div style="height:6px;background:#E5E7EB;border-radius:4px"><div style="height:6px;width:{{ $o->progress }}%;background:{{ $o->progress >= 80 ? '#16A34A' : ($o->progress >= 60 ? '#F59E0B' : '#EF4444') }};border-radius:4px"></div></div><small>{{ $o->progress }}% · {{ $o->last_step }}@if($aband) · <b style="color:#B91C1C">Checkout abandoned</b>@endif</small></td>
+<td>{{ \Carbon\Carbon::parse($o->last_activity_at)->diffForHumans() }}</td>
+<td style="white-space:nowrap"><a href="/admin/incomplete/{{ $o->id }}">View</a> · <a href="tel:{{ $o->phone }}">Call</a> · <a href="https://wa.me/88{{ $o->phone }}" target="_blank" rel="noopener">WhatsApp</a>@if($st==='open' || $st==='recovered')<br><a href="/admin/orders/new?inc={{ $o->id }}">Convert to Order</a>@endif
+@if($st==='open')<form method="post" action="/admin/incomplete/{{ $o->id }}/recovered" style="display:inline">@csrf<button class="g" style="padding:2px 8px">Mark recovered</button></form> <form method="post" action="/admin/incomplete/{{ $o->id }}/archive" style="display:inline">@csrf<button class="g" style="padding:2px 8px">Archive</button></form>@elseif($st!=='converted')<form method="post" action="/admin/incomplete/{{ $o->id }}/reopen" style="display:inline">@csrf<button class="g" style="padding:2px 8px">Reopen</button></form>@endif</td></tr>
+@empty<tr><td colspan="9" style="padding:14px;color:#6B7280">Nothing here.</td></tr>@endforelse</table></div>
+<div style="margin-top:12px">{{ $rows->links() }}</div>
+@endsection

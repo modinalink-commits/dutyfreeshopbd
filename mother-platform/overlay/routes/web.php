@@ -17,6 +17,9 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::get('/orders', [A::class,'orders']);
   Route::get('/orders/new', [A::class,'orderNew']);
   Route::get('/orders/lookup', [A::class,'orderLookup']);
+  Route::get('/incomplete', [\App\Http\Controllers\IncompleteController::class,'index']);
+  Route::get('/incomplete/{id}', [\App\Http\Controllers\IncompleteController::class,'show']);
+  Route::post('/incomplete/{id}/{act}', [\App\Http\Controllers\IncompleteController::class,'act'])->where('act', 'recovered|archive|reopen');
   Route::get('/orders/products', [A::class,'orderProducts']);
   Route::get('/orders/discount', [A::class,'orderDiscount']);
   Route::post('/orders/bulk', [A::class,'orderBulk']);
@@ -176,6 +179,7 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\ValidateCsrfTok
   Route::post('/checkout/lookup', [\App\Http\Controllers\CheckoutLookupController::class,'lookup'])->middleware('throttle:15,1');
   Route::post('/checkout/otp', [\App\Http\Controllers\CheckoutLookupController::class,'otp'])->middleware('throttle:4,1');
   Route::post('/checkout/verify', [\App\Http\Controllers\CheckoutLookupController::class,'verify'])->middleware('throttle:10,1');
+  Route::post('/checkout/track', [\App\Http\Controllers\StoreController::class,'trackCheckout'])->middleware('throttle:120,1');
   Route::post('/order', [\App\Http\Controllers\StoreController::class,'order'])->middleware('throttle:20,1');
   Route::get('/p/{key}', [\App\Http\Controllers\StoreController::class,'product'])->where('key','[A-Za-z0-9\-]+');
   Route::get('/{slug}', [\App\Http\Controllers\StoreController::class,'category'])->where('slug','[a-z0-9\-]+');

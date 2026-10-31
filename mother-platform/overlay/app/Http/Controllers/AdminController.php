@@ -94,7 +94,10 @@ class AdminController extends Controller {
     });
     return back()->with('ok', "$n orders moved to {$d['status']}");
   }
-  public function orderNew() { return view('order_new'); }
+  public function orderNew(Request $r) {
+    $pre = null; if ($r->filled('inc') && ($row = DB::table('incomplete_orders')->find((int)$r->query('inc')))) $pre = ['inc'=>$row->id, 'phone'=>$row->phone, 'name'=>$row->name, 'address'=>$row->address, 'district'=>$row->district, 'note'=>$row->note, 'items'=>json_decode($row->items ?: '[]', true) ?: []];
+    return view('order_new', ['pre'=>$pre]);
+  }
   public function orderProducts(Request $r) {
     $q = trim((string)$r->query('q', '')); if (mb_strlen($q) < 1) return response()->json([]);
     $like = '%'.str_replace(['%', '_'], '', $q).'%';
@@ -122,7 +125,7 @@ class AdminController extends Controller {
     return response()->json(\App\Support\OrderDiscount::compute($p, $sub, $r->query('coupon'), ['qty'=>(int)$r->query('qty', 0)]) + ['can'=>$can]);
   }
   public function orderStore(Request $r) {
-    $d = $r->validate(['customer_name'=>'required|string|max:120','phone'=>'required|string|max:20','address'=>'nullable|string','district'=>'nullable|string|max:60','source'=>'nullable|string|max:40','shipping'=>'nullable|numeric|min:0','note'=>'nullable|string','courier'=>'nullable|string|max:60','assigned_admin'=>'nullable|string|max:80','sub_city'=>'nullable|string|max:80','items'=>'required|array|min:1|max:60','items.*.name'=>'required|string|max:200','items.*.product_id'=>'nullable|integer','items.*.qty'=>'required|integer|min:1|max:100000','items.*.price'=>'required|numeric|min:0','coupon'=>'nullable|string|max:40','disc_off'=>'nullable|array','disc_manual'=>'nullable|numeric|min:0','disc_extra'=>'nullable|numeric|min:0']);
+    $d = $r->validate(['customer_name'=>'required|string|max:120','phone'=>'required|string|max:20','address'=>'nullable|string','district'=>'nullable|string|max:60','source'=>'nullable|string|max:40','shipping'=>'nullable|numeric|min:0','note'=>'nullable|string','courier'=>'nullable|string|max:60','assigned_admin'=>'nullable|string|max:80','sub_city'=>'nullable|string|max:80','items'=>'required|array|min:1|max:60','items.*.name'=>'required|string|max:200','items.*.product_id'=>'nullable|integer','items.*.qty'=>'required|integer|min:1|max:100000','items.*.price'=>'required|numeric|min:0','inc_id'=>'nullable|integer','coupon'=>'nullable|string|max:40','disc_off'=>'nullable|array','disc_manual'=>'nullable|numeric|min:0','disc_extra'=>'nullable|numeric|min:0']);
     $d['phone'] = \App\Support\Chat::phone($d['phone']) ?: $d['phone'];
     if (!empty($d['sub_city'])) $d['address'] = trim(($d['address'] ?? '').' ('.$d['sub_city'].')');
     $sub = round(array_sum(array_map(fn($i) => $i['qty'] * $i['price'], $d['items'])), 2); if ($sub <= 0) return back()->withInput()->withErrors(['items'=>'Add at least one product with a price']); $auto = \App\Support\OrderDiscount::compute($d['phone'], $sub, $d['coupon'] ?? null, ['qty'=>array_sum(array_column($d['items'], 'qty'))]);
@@ -150,6 +153,8 @@ class AdminController extends Controller {
       DB::table('order_status_logs')->insert(['order_id'=>$id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'from_status'=>null,'to_status'=>'New','note'=>'Order created','created_at'=>now(),'updated_at'=>now()]);
       return $id;
     });
+    if (!empty($d['inc_id'])) DB::table('incomplete_orders')->where('id', (int)$d['inc_id'])->whereIn('status', ['open','recovered'])->update(['status'=>'converted', 'order_id'=>$id, 'updated_at'=>now()]);
+    DB::table('incomplete_orders')->where('status', 'open')->where('phone', $d['phone'])->update(['status'=>'converted', 'order_id'=>$id, 'updated_at'=>now()]);
     \App\Support\OrderSms::placed((int)$id);
     return redirect("/admin/orders/$id");
   }

@@ -154,3 +154,7 @@ app/Support/OrderSms.php
 database/migrations/2026_10_31_000030_sms_order_log.php
 app/Console/Commands/MotherImages.php
 database/migrations/2026_10_31_000031_media_sources.php
+app/Http/Controllers/IncompleteController.php
+resources/views/incomplete.blade.php
+resources/views/incomplete_show.blade.php
+database/migrations/2026_10_31_000032_incomplete_orders.php

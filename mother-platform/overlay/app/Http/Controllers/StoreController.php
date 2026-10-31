@@ -207,6 +207,32 @@ class StoreController extends Controller {
     $sp = \App\Support\OrderDiscount::sessionPhone($r);
     return response()->json($this->quote($this->parseItems($r->input('ids')), (int)$r->input('area', 1), trim(mb_substr((string)$r->input('code'), 0, 40)), $sp, (bool)$sp))->header('Cache-Control','no-store');
   }
+  /** Checkout progress tracking: one "incomplete order" per browser session, updated as the customer types. Never confirms, never sends SMS, never touches stock or courier. */
+  public function trackCheckout(Request $r) {
+    $in = json_decode((string)$r->getContent(), true); if (!is_array($in)) $in = $r->all();
+    $tok = (string)($in['token'] ?? ''); if (!preg_match('/^[A-Za-z0-9]{16,40}$/', $tok)) return response()->json(['ok'=>false]);
+    $phone = substr(preg_replace('/\D/', '', (string)($in['phone'] ?? '')), -11);
+    $row = DB::table('incomplete_orders')->where('token', $tok)->orderByDesc('id')->first();
+    if ($row && $row->status === 'converted') return response()->json(['ok'=>true, 'done'=>true]);
+    if (!preg_match('/^01[3-9]\d{8}$/', $phone)) return response()->json(['ok'=>false]);
+    if (DB::table('blocked_ips')->where('ip', $r->ip())->exists()) return response()->json(['ok'=>false]);
+    $want = $this->parseItems($in['items'] ?? ''); if (!$want) return response()->json(['ok'=>false]);
+    $area = (int)($in['area'] ?? 1); $sp = \App\Support\OrderDiscount::sessionPhone($r);
+    $qt = $this->quote($want, $area, trim(mb_substr((string)($in['coupon'] ?? ''), 0, 40)), $phone, $sp !== null && $sp === \App\Support\Chat::phone($phone));
+    if (!$qt['items']) return response()->json(['ok'=>false]);
+    $name = trim(mb_substr((string)($in['name'] ?? ''), 0, 120)); $addr = trim(mb_substr((string)($in['address'] ?? ''), 0, 500)); $pay = !empty($in['pay_touched']) && in_array($in['pay'] ?? '', ['cod','bank','bkash','nagad'], true) ? $in['pay'] : null;
+    $prog = 40 + ($name !== '' ? 20 : 0) + (mb_strlen($addr) >= 5 ? 20 : 0) + ($pay ? 20 : 0);
+    $step = $pay ? 'Payment selected' : (mb_strlen($addr) >= 5 ? 'Address entered' : ($name !== '' ? 'Name entered' : 'Phone entered'));
+    $pr = \App\Support\OrderDiscount::profile($phone); $b = $this->base();
+    $data = ['phone'=>$phone, 'name'=>$name ?: null, 'email'=>trim(mb_substr((string)($in['email'] ?? ''), 0, 120)) ?: null, 'address'=>$addr ?: null, 'district'=>($b['areas'][$area]['n'] ?? null),
+      'items'=>json_encode(array_map(fn($i) => ['id'=>$i['id'], 'name'=>$i['name'], 'qty'=>$i['qty'], 'price'=>$i['price']], $qt['items']), JSON_UNESCAPED_UNICODE), 'qty'=>array_sum(array_column($qt['items'], 'qty')),
+      'subtotal'=>$qt['sub'], 'discount'=>$qt['disc'], 'shipping'=>$qt['ship'], 'total'=>$qt['total'], 'discount_note'=>$qt['notes'] ? mb_substr(implode(', ', $qt['notes']), 0, 250) : null, 'pay_method'=>$pay,
+      'customer_category'=>$pr['category'], 'membership'=>$pr['membership'].($pr['membership_name'] ? ' – '.$pr['membership_name'] : ''), 'note'=>trim(mb_substr((string)($in['note'] ?? ''), 0, 200)) ?: null,
+      'last_step'=>$step, 'progress'=>$prog, 'last_activity_at'=>now(), 'updated_at'=>now()];
+    if ($row && $row->status !== 'converted') { if ($row->status !== 'open') $data['status'] = 'open'; DB::table('incomplete_orders')->where('id', $row->id)->update($data); }
+    else DB::table('incomplete_orders')->insert($data + ['token'=>$tok, 'status'=>'open', 'ip'=>$r->ip(), 'created_at'=>now()]);
+    return response()->json(['ok'=>true]);
+  }
   public function order(Request $r) {
     $ip = $r->ip();
     $want = $r->filled('product') ? [(int)$r->input('product') => max(1, min(50, (int)$r->input('qty', 1)))] : $this->parseItems($r->input('items', []));
@@ -244,6 +270,7 @@ class StoreController extends Controller {
     Cache::forget('store.live3'); Cache::forget('store.live4');
     $inv = DB::table('orders')->where('id',$id)->value('invoice');
     \App\Support\OrderSms::placed((int)$id);
+    try { DB::table('incomplete_orders')->where('status', 'open')->where(fn($q) => $q->where('token', (string)$r->input('inc'))->orWhere('phone', $phone))->update(['status'=>'converted', 'order_id'=>$id, 'updated_at'=>now()]); } catch (\Throwable $e) {}
     return redirect(\Illuminate\Support\Facades\URL::temporarySignedRoute('order.done', now()->addDays(3), ['invoice'=>$inv]));
   }
   private function pack(string $invoice): array {

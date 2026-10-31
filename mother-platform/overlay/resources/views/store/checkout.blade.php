@@ -25,7 +25,7 @@ body{background:#fff}.cf,.cc{border:1px solid #EAEAEA;border-radius:20px;box-sha
 .sbm{background:var(--o);border-radius:12px;font-size:15px;padding:15px 0}.sbm:hover{background:var(--n)}.cp button{border-radius:10px;font-size:12px;background:var(--n)}.th,.tr{font-size:12px}.sm{font-size:13px}.sm.tt{font-size:16px;color:var(--n)}.tr .pn img{width:44px;height:48px;border-radius:8px}.pm span{border-radius:8px}
 @media(max-width:760px){.cf,.cc{border-radius:16px}.cf .h{font-size:18px}.ip{height:42px}}
 </style>
-<form class="w co" id="cof" method="post" action="/order" enctype="multipart/form-data" novalidate>
+<form class="w co" id="cof" method="post" action="/order" enctype="multipart/form-data" novalidate><input type="hidden" name="inc" id="incTok">
 <div class="cf"><div class="h">Please Order Now</div>
 @if(request('e'))<div class="er">{{ request('e') }}</div>@endif
 <input name="website" value="" style="display:none" tabindex="-1" autocomplete="off"><input type="hidden" name="coupon" id="cpv"><div id="itf"></div>
@@ -104,5 +104,16 @@ P.addEventListener('input',run);P.addEventListener('change',run);setTimeout(run,
 document.getElementById('cof').addEventListener('submit',function(){try{var d=ph();if(/^01[3-9]\d{8}$/.test(d)&&document.getElementById('f-nm').value.trim()&&document.getElementById('f-ad').value.trim()){var a=document.querySelector('input[name=area]:checked'),l=a&&a.closest('label');localStorage.setItem('df_cust',JSON.stringify({p:d,n:document.getElementById('f-nm').value.trim(),e:document.getElementById('f-em').value.trim(),a:document.getElementById('f-ad').value.trim(),d:l?(l.childNodes[2]?l.childNodes[2].textContent.trim():''):''}))}}catch(e){}});
 })();
 load();})();
+
+/* checkout progress tracking (incomplete order) */
+(function(){var tok='';try{tok=localStorage.getItem('dfinc')||''}catch(e){}if(!/^[A-Za-z0-9]{16,40}$/.test(tok)){tok='';var a='abcdefghijklmnopqrstuvwxyz0123456789';for(var i=0;i<24;i++)tok+=a[Math.floor(Math.random()*a.length)];try{localStorage.setItem('dfinc',tok)}catch(e){}}
+document.getElementById('incTok').value=tok;var touched=false,t,ids=function(){var c=DF.cart();return Object.keys(c).map(function(k){return k+':'+c[k].q}).join(',')};
+function body(){var g=function(i){var e=document.getElementById(i);return e?e.value:''},pm=document.querySelector('input[name=pay]:checked');return JSON.stringify({token:tok,phone:g('f-ph'),name:g('f-nm'),email:g('f-em'),address:g('f-ad'),note:g('f-nt'),area:(document.querySelector('input[name=area]:checked')||{value:1}).value,items:ids(),coupon:(document.getElementById('cpv')||{value:''}).value,pay:pm?pm.value:'',pay_touched:touched})}
+function send(beacon){var ph=document.getElementById('f-ph').value.replace(/\D/g,'').slice(-11);if(!/^01[3-9]\d{8}$/.test(ph)||!ids())return;if(beacon&&navigator.sendBeacon){navigator.sendBeacon('/checkout/track',new Blob([body()],{type:'text/plain'}));return}fetch('/checkout/track',{method:'POST',headers:{'Content-Type':'application/json'},body:body(),keepalive:true}).then(function(r){return r.json()}).then(function(j){if(j&&j.done){tok='';try{localStorage.removeItem('dfinc')}catch(e){}}}).catch(function(){})}
+function later(){clearTimeout(t);t=setTimeout(function(){send(false)},1200)}
+['f-ph','f-nm','f-em','f-ad','f-nt'].forEach(function(i){var e=document.getElementById(i);if(e){e.addEventListener('input',later);e.addEventListener('change',later)}});
+document.querySelectorAll('input[name=pay]').forEach(function(r){r.addEventListener('change',function(){touched=true;later()})});document.querySelectorAll('input[name=area]').forEach(function(r){r.addEventListener('change',later)});
+document.getElementById('rows').addEventListener('click',function(){later()});document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')send(true)});window.addEventListener('pagehide',function(){send(true)});setTimeout(later,1500);
+})();
 </script>
 @endsection
