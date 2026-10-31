@@ -1,9 +1,19 @@
 @extends('store.layout')
-@section('ld')<script type="application/ld+json">{!! json_encode(['@context'=>'https://schema.org','@type'=>'BreadcrumbList','itemListElement'=>[['@type'=>'ListItem','position'=>1,'name'=>'হোম','item'=>url('/').'/'],['@type'=>'ListItem','position'=>2,'name'=>$c->name,'item'=>$canon]]], JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES|JSON_HEX_TAG) !!}</script>@endsection
+@section('ld')<script type="application/ld+json">{!! json_encode(['@context'=>'https://schema.org','@type'=>'BreadcrumbList','itemListElement'=>[['@type'=>'ListItem','position'=>1,'name'=>'হোম','item'=>url('/').'/'],['@type'=>'ListItem','position'=>2,'name'=>$c->name,'item'=>url('/'.$c->slug).'/']]], JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES|JSON_HEX_TAG) !!}</script>@endsection
 @section('main')
-<h1>{{ $c->name }}</h1>@if($c->meta_description)<p style="font-size:13px;color:#6B7280">{{ $c->meta_description }}</p>@endif
-<div style="display:flex;gap:8px;overflow-x:auto;margin:10px 0;scrollbar-width:none">@foreach($subs as $sb)<a href="?sub={{ urlencode($sb->sub) }}" style="flex:none;border:1px solid {{ request('sub')===$sb->sub ? '#FF5A00' : '#FDC2A5' }};background:{{ request('sub')===$sb->sub ? '#FF5A00' : '#fff' }};color:{{ request('sub')===$sb->sub ? '#fff' : 'inherit' }};border-radius:16px;padding:4px 12px;font-size:12px">{{ $sb->sub }} ({{ $sb->n }})</a>@endforeach</div>
-<form style="display:flex;justify-content:flex-end;margin-bottom:8px">@if(request('sub'))<input type="hidden" name="sub" value="{{ request('sub') }}">@endif<select name="sort" onchange="this.form.submit()" style="width:auto;padding:6px"><option value="newest">Newest</option><option value="price_asc" {{ request('sort')==='price_asc'?'selected':'' }}>Price low to high</option><option value="price_desc" {{ request('sort')==='price_desc'?'selected':'' }}>Price high to low</option></select></form>
-<div class="g">@forelse($items as $q)@include('store.card')@empty<p>No products yet.</p>@endforelse</div>
-@if($items->hasPages())<div class="pg">@if($items->previousPageUrl())<a href="{{ $items->previousPageUrl() }}">‹ আগের</a>@endif<span>{{ $items->currentPage() }} / {{ $items->lastPage() }}</span>@if($items->nextPageUrl())<a href="{{ $items->nextPageUrl() }}">পরের ›</a>@endif</div>@endif
+<style>.bc{font-size:11px;display:flex;gap:8px;align-items:center;text-transform:uppercase}.bch{display:flex;gap:6px;flex-wrap:wrap}.bch a{background:var(--n);color:#fff;font-size:10px;font-weight:600;padding:5px 8px;text-transform:uppercase}.bch a.on{background:var(--o)}.grp{padding-top:18px;display:flex;flex-direction:column;gap:14px;align-items:center}.grp .gt{background:#14594A;color:#fff;font-size:11px;font-weight:700;padding:6px 16px;letter-spacing:.02em;text-transform:uppercase}.grp .gr{width:100%}
+@media (max-width:760px){.bc{font-size:10px;padding-top:8px}.bch a{font-size:9px;padding:4px 7px}.grp{padding-top:12px;gap:6px}.grp .gt{font-size:10px;padding:5px 14px}.pgn{padding-top:16px}}</style>
+<div class="w" style="padding-top:16px;display:flex;flex-direction:column;gap:12px">
+<div class="bc"><a href="/" aria-label="Home">⌂</a><span>›</span>@if(request('sub'))<a href="/{{ $c->slug }}/">{{ $c->name }}</a><span>›</span><h1 style="font-size:inherit;font-weight:inherit">{{ request('sub') }}</h1>@else<h1 style="font-size:inherit;font-weight:inherit">{{ $c->name }}</h1>@endif</div>
+@if(!empty($subs[$c->id]))<div class="bch">@foreach($subs[$c->id] as $sb)<a href="/{{ $c->slug }}/?sub={{ rawurlencode($sb->sub) }}" class="{{ request('sub')===$sb->sub ? 'on' : '' }}">{{ $sb->sub }}</a>@endforeach</div>@endif
+</div>
+<div class="w" style="padding-bottom:40px">
+@forelse($groups as $gname => $list)
+<div class="grp"><span class="gt">{{ $gname }}</span><div class="gr">@foreach($list as $q)@include('store.card', ['fd'=>true])@endforeach</div></div>
+@empty
+<p style="padding-top:20px;font-size:13px">No products yet.</p>
+@endforelse
+@include('store.pager', ['pg'=>$items])
+@if($c->intro && $items->currentPage() === 1 && !request('sub'))<div style="margin-top:30px;font-size:12px;line-height:1.8;color:#374151">{{ $c->intro }}</div>@endif
+</div>
 @endsection

@@ -64,6 +64,9 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\ValidateCsrfTok
   Route::get('/sitemap.xml', [\App\Http\Controllers\StoreController::class,'sitemap']);
   Route::get('/search', [\App\Http\Controllers\StoreController::class,'search']);
   Route::get('/track', [\App\Http\Controllers\StoreController::class,'track']);
+  Route::get('/checkout', [\App\Http\Controllers\StoreController::class,'checkout']);
+  Route::get('/wishlist', [\App\Http\Controllers\StoreController::class,'wishlist']);
+  Route::get('/cart-items', [\App\Http\Controllers\StoreController::class,'cartItems'])->middleware('throttle:60,1');
   Route::post('/order', [\App\Http\Controllers\StoreController::class,'order'])->middleware('throttle:6,1');
   Route::get('/p/{key}', [\App\Http\Controllers\StoreController::class,'product'])->where('key','[A-Za-z0-9\-]+');
   Route::get('/{slug}', [\App\Http\Controllers\StoreController::class,'category'])->where('slug','[a-z0-9\-]+');

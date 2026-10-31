@@ -1,5 +1,10 @@
 @extends('store.layout')
-@section('main')<h1>{{ $t ? '"'.$t.'" এর ফলাফল' : 'পণ্য খুঁজুন' }}</h1>
-@if($t)<div class="g" style="margin-top:12px">@forelse($items as $q)@include('store.card')@empty<p>কোনো পণ্য পাওয়া যায়নি। অন্য নামে খুঁজুন বা WhatsApp করুন।</p>@endforelse</div>
-@if($items->hasPages())<div class="pg">@if($items->previousPageUrl())<a href="{{ $items->previousPageUrl() }}">‹ আগের</a>@endif<span>{{ $items->currentPage() }} / {{ $items->lastPage() }}</span>@if($items->nextPageUrl())<a href="{{ $items->nextPageUrl() }}">পরের ›</a>@endif</div>@endif @endif
+@section('main')
+<div class="w" style="padding-top:14px;padding-bottom:40px">
+<div style="font-size:13px;font-weight:600;margin-bottom:12px">@if($t)Search results for “{{ $t }}” <span style="color:#6B7280;font-weight:400">({{ $items->total() }} products)</span>@else Search products @endif</div>
+@if($t)
+<div class="gr" style="gap:12px">@forelse($items as $q)@include('store.card', ['fd'=>true, 'cls'=>'s170'])@empty<p style="grid-column:1/-1;font-size:13px">No products found. Try another name or message us on WhatsApp.</p>@endforelse</div>
+@include('store.pager', ['pg'=>$items])
+@endif
+</div>
 @endsection

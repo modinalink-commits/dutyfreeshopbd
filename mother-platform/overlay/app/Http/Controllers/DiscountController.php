@@ -12,6 +12,7 @@ class DiscountController extends Controller {
     $in = (array) $r->input('c', []);
     foreach ($cfg as $k => $v) if (array_key_exists($k, $in) && is_numeric($in[$k]) && $in[$k] >= 0) $cfg[$k] = $in[$k] + 0;
     DB::table('discount_rules')->where('id',$id)->update(['enabled'=>$r->boolean('enabled'),'config'=>json_encode($cfg),'updated_at'=>now()]);
+    \Illuminate\Support\Facades\Cache::forget('store.rules');
     return back();
   }
   public function couponSave(Request $r) {

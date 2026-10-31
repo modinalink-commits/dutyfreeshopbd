@@ -56,6 +56,9 @@ resources/views/store/search.blade.php
 resources/views/store/track.blade.php
 resources/views/store/page.blade.php
 resources/views/store/missing.blade.php
+resources/views/store/checkout.blade.php
+resources/views/store/wishlist.blade.php
+resources/views/store/pager.blade.php
 public/logo.webp
 public/icon.png
 public/og.png
