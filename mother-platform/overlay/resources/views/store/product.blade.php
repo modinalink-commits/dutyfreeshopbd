@@ -77,6 +77,7 @@
 <div class="gr">@foreach($bottom as $q)@include('store.card', ['fd'=>true])@endforeach</div>
 @endif
 </div>
+@include('store.zoom')
 @endsection
 @section('js')
 <script>
