@@ -18,6 +18,7 @@
 <b>Page and account tokens</b>
 <p style="font-size:12px;color:#6B7280;margin:4px 0 10px">Tokens are stored encrypted and never shown again. Leave a field blank to keep what is saved.</p>
 <label>Facebook Page access token {{ $has['fb'] ? '(saved)' : '' }}</label><input type="password" name="fb_token" autocomplete="off">
+<label>Facebook Page ID <span style="color:#6B7280">(optional, auto-detected)</span></label><input name="page_id" placeholder="Page ID" autocomplete="off"><button type="submit" formaction="/admin/chat-settings/fb-subscribe" formnovalidate class="g" style="margin:8px 0">Subscribe Facebook Page to this app (receive Messenger messages)</button>
 <label>Instagram token {{ $has['ig'] ? '(saved)' : '(optional; the Page token is used when blank)' }}</label><input type="password" name="ig_token" autocomplete="off">
 <label>WhatsApp Cloud API token {{ $has['wa'] ? '(saved)' : '' }}</label><input type="password" name="wa_token" autocomplete="off">
 <label>WhatsApp phone number ID</label><input name="wa_phone_id" value="{{ $wa_phone }}" autocomplete="off">

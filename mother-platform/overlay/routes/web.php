@@ -67,6 +67,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::post('/chat-settings/wa-subscribe', [\App\Http\Controllers\ChatController::class,'waSubscribe']);
   Route::post('/chat-settings/wa-register', [\App\Http\Controllers\ChatController::class,'waRegister']);
   Route::post('/chat-settings/wa-code', [\App\Http\Controllers\ChatController::class,'waCode']);
+  Route::post('/chat-settings/fb-subscribe', [\App\Http\Controllers\ChatController::class,'fbSubscribe']);
   Route::post('/chat-settings/quick', [\App\Http\Controllers\ChatController::class,'quickSave']);
   Route::post('/chat-settings/quick/{id}/delete', [\App\Http\Controllers\ChatController::class,'quickDelete']);
   Route::get('/analytics', [\App\Http\Controllers\AnalyticsController::class,'index']);

@@ -189,6 +189,26 @@ class ChatController extends Controller {
     $res = $h('post', $ph.'/request_code', ['code_method'=>$method, 'language'=>'en_US']);
     return !empty($res['success']) ? back()->with('ok', 'Verification code requested by '.$method.' to the number. Enter the 6-digit code below and press Verify.') : back()->with('err', 'Request failed: '.json_encode($res['error'] ?? $res));
   }
+  public function fbSubscribe(Request $r) {
+    $tok = Chat::sec('chat_fb_token');
+    if (!$tok) return back()->with('err', 'Save the Facebook Page access token first.');
+    $h = fn($m, $u, $q = []) => \Illuminate\Support\Facades\Http::timeout(25)->withToken($tok)->{$m}('https://graph.facebook.com/v21.0/'.$u, $q)->json();
+    $pages = $h('get', 'me/accounts', ['fields'=>'id,name,access_token', 'limit'=>25]);
+    $out = [];
+    foreach (($pages['data'] ?? []) as $pg) {
+      $pt = $pg['access_token'] ?? $tok;
+      $res = \Illuminate\Support\Facades\Http::timeout(25)->withToken($pt)->post('https://graph.facebook.com/v21.0/'.$pg['id'].'/subscribed_apps', ['subscribed_fields'=>'messages,messaging_postbacks,message_reads']);
+      $j = $res->json();
+      $out[] = ($pg['name'] ?? $pg['id']).' ('.$pg['id'].'): '.(!empty($j['success']) ? 'subscribed' : json_encode($j['error'] ?? $j));
+    }
+    if (!$out) {
+      $pid = trim((string)$r->input('page_id'));
+      if ($pid) { $j = \Illuminate\Support\Facades\Http::timeout(25)->withToken($tok)->post('https://graph.facebook.com/v21.0/'.$pid.'/subscribed_apps', ['subscribed_fields'=>'messages,messaging_postbacks,message_reads'])->json(); $out[] = $pid.': '.(!empty($j['success']) ? 'subscribed' : json_encode($j['error'] ?? $j)); }
+      else return back()->with('err', 'No pages found for this token: '.json_encode($pages['error'] ?? $pages).' Enter the Page ID below and try again.');
+    }
+    DB::table('audit_logs')->insert(['user_id'=>auth()->id(), 'user_name'=>auth()->user()->name, 'action'=>'chat.fb_subscribe', 'subject'=>'Facebook page subscribe', 'ip'=>$r->ip(), 'created_at'=>now(), 'updated_at'=>now()]);
+    return back()->with('ok', 'Facebook: '.implode(' | ', $out));
+  }
   public function saveSettings(Request $r) {
     $d = $r->validate(['fb_token'=>'nullable|string|max:600', 'ig_token'=>'nullable|string|max:600', 'wa_token'=>'nullable|string|max:600', 'wa_phone_id'=>'nullable|string|max:40', 'app_secret'=>'nullable|string|max:100']);
     foreach (['fb_token'=>'chat_fb_token', 'ig_token'=>'chat_ig_token', 'wa_token'=>'chat_wa_token', 'app_secret'=>'chat_app_secret', 'wa_phone_id'=>'chat_wa_phone_id'] as $k => $sk) if (!empty($d[$k])) Sms::setSecret($sk, trim($d[$k]));
