@@ -115,3 +115,4 @@ public/pay/shurjopay.png
 app/Support/Slugs.php
 database/migrations/2026_10_31_000017_product_path_slug.php
 public/pay/shurjopay-dark.png
+app/Http/Controllers/UploadController.php
