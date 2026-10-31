@@ -215,7 +215,7 @@ class StoreController extends Controller {
     $row = DB::table('incomplete_orders')->where('token', $tok)->orderByDesc('id')->first();
     if ($row && $row->status === 'converted') return response()->json(['ok'=>true, 'done'=>true]);
     if (!preg_match('/^01[3-9]\d{8}$/', $phone)) return response()->json(['ok'=>false]);
-    if (DB::table('blocked_ips')->where('ip', $r->ip())->exists()) return response()->json(['ok'=>false]);
+    if (DB::table('customers')->where('phone', $phone)->where('blocked', true)->exists()) return response()->json(['ok'=>false]); // blocked by phone, never by shared IP
     $want = $this->parseItems($in['items'] ?? ''); if (!$want) return response()->json(['ok'=>false]);
     $area = (int)($in['area'] ?? 1); $sp = \App\Support\OrderDiscount::sessionPhone($r);
     $qt = $this->quote($want, $area, trim(mb_substr((string)($in['coupon'] ?? ''), 0, 40)), $phone, $sp !== null && $sp === \App\Support\Chat::phone($phone));
@@ -238,7 +238,6 @@ class StoreController extends Controller {
     $want = $r->filled('product') ? [(int)$r->input('product') => max(1, min(50, (int)$r->input('qty', 1)))] : $this->parseItems($r->input('items', []));
     $back = fn($m) => redirect('/checkout?e='.rawurlencode($m));
     if (!$want) return $back('Your cart is empty');
-    if (DB::table('blocked_ips')->where('ip',$ip)->exists()) return $back('অনুগ্রহ করে কল করে অর্ডার করুন।');
     $v = \Illuminate\Support\Facades\Validator::make($r->all(), ['name'=>'required|string|max:120','phone'=>['required','regex:/^(\+?88)?01[3-9]\d{8}$/'],'email'=>'nullable|email|max:120','address'=>'required|string|max:500','area'=>'nullable|integer','district'=>'nullable|string|max:60','note'=>'nullable|string|max:500','coupon'=>'nullable|string|max:40','website'=>'max:0','pay'=>'nullable|in:cod,bank,bkash,nagad','pay_account'=>'nullable|string|max:80','pay_txn'=>['nullable','string','max:60','regex:/^[A-Za-z0-9\-_\/ ]+$/'],'pay_proof'=>'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:3072'], ['phone.regex'=>'সঠিক মোবাইল নম্বর লিখুন (01XXXXXXXXX)','required'=>'মোবাইল নম্বর, নাম ও ঠিকানা লিখুন।','email'=>'সঠিক ইমেইল লিখুন অথবা খালি রাখুন।']);
     if ($v->fails()) return $back($v->errors()->first());
     $d = $v->validated();
@@ -252,6 +251,9 @@ class StoreController extends Controller {
       $pm = ['label'=>PaymentController::KINDS[$pk],'txn'=>$tx,'acct'=>$d['pay_account'] ?? null,'proof'=>$r->hasFile('pay_proof') ? $r->file('pay_proof')->store('pay-proofs','local') : null,'status'=>'Verification Pending'];
     }
     $phone = substr(preg_replace('/\D/','',$d['phone']), -11);
+    // Protection is by customer phone, never by IP: many genuine customers share one WiFi / ISP NAT address.
+    if (DB::table('customers')->where('phone',$phone)->where('blocked',true)->exists()) return $back('অনুগ্রহ করে কল করে অর্ডার করুন।');
+    if (DB::table('orders')->where('phone',$phone)->where('created_at','>',now()->subMinutes(10))->count() >= 10) return $back('এই নম্বর থেকে অল্প সময়ে অনেকগুলো অর্ডার এসেছে। দয়া করে কল করে অর্ডার করুন।');
     $b = $this->base(); $area = (int)($d['area'] ?? 1);
     $sp = \App\Support\OrderDiscount::sessionPhone($r); $qt = $this->quote($want, $area, trim((string)($d['coupon'] ?? '')), $phone, $sp !== null && $sp === \App\Support\Chat::phone($phone));
     if (!$qt['items']) return $back('These products are no longer available');

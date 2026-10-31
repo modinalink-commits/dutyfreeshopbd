@@ -73,6 +73,8 @@ class AccountController extends StoreController {
     $hr = "ac.otp.hr.$p"; Cache::add($hr, 0, 3600);
     if ((int)Cache::get($hr, 0) >= 8) return response()->json(['sent'=>false, 'error'=>'এই নম্বরে অনেকবার কোড চাওয়া হয়েছে। ১ ঘণ্টা পরে আবার চেষ্টা করুন অথবা কল করুন'], 429);
     Cache::increment($hr);
+    Cache::add('sms.otp.day', 0, 86400); if ((int)Cache::get('sms.otp.day', 0) >= 3000) return response()->json(['sent'=>false, 'error'=>'এই মুহূর্তে SMS কোড পাঠানো যাচ্ছে না। পাসওয়ার্ড দিয়ে লগইন করুন অথবা কল করুন।'], 503);
+    Cache::increment('sms.otp.day');
     $c = (string)random_int(100000, 999999);
     Cache::put($this->otpKey($d['purpose'], $p), ['h'=>hash('sha256', $c.$p.config('app.key')), 't'=>0], 300); Cache::put("ac.otp.cool.$p", 1, 60);
     Sms::queue(Sms::number($p), "DutyFree Shop BD: আপনার কোড {$c} । কোডটি কাউকে দেবেন না।", 'account_otp');

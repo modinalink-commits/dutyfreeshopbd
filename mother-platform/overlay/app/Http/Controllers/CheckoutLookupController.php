@@ -22,6 +22,8 @@ class CheckoutLookupController extends Controller {
   public function otp(Request $r) {
     $p = $this->phone($r); if (!$p || !Sms::configured() || !$this->last($p)) return response()->json(['sent'=>false]);
     if (Cache::has("co.otp.cool.$p")) return response()->json(['sent'=>false, 'wait'=>true]);
+    Cache::add('sms.otp.day', 0, 86400); if ((int)Cache::get('sms.otp.day', 0) >= 3000) return response()->json(['sent'=>false]);
+    Cache::increment('sms.otp.day');
     $c = (string)random_int(1000, 9999);
     Cache::put("co.otp.$p", ['h'=>hash('sha256', $c.$p.config('app.key')), 't'=>0], 300);
     Cache::put("co.otp.cool.$p", 1, 60);
