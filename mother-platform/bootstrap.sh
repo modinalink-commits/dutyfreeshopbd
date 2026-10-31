@@ -69,4 +69,6 @@ php artisan mother:smoke || true
 chown -R www-data:www-data storage bootstrap/cache
 # Product feed: import now and every hour (runs as www-data so cache files stay writable)
 ( su -s /bin/sh www-data -c 'php artisan mother:sync-feed'; while true; do sleep 3600; su -s /bin/sh www-data -c 'php artisan mother:sync-feed'; done ) > /proc/1/fd/1 2>&1 &
+# Courier: check open parcels every 10 minutes so order stages update by themselves
+( sleep 120; while true; do su -s /bin/sh www-data -c 'php artisan mother:courier-sync'; sleep 600; done ) > /proc/1/fd/1 2>&1 &
 exec php-fpm

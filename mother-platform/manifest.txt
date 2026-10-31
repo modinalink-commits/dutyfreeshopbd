@@ -104,3 +104,4 @@ public/pay/ebl.png
 public/pay/mtb.png
 public/pay/bkash.png
 public/pay/nagad.png
+app/Console/Commands/MotherCourierSync.php
