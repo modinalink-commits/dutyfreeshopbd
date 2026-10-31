@@ -23,11 +23,12 @@ class MotherSyncFeed extends Command {
   public function handle() {
     $xml = null;
     foreach (self::FEEDS as $u) {
-      $ctx = stream_context_create(['http'=>['timeout'=>90,'header'=>"User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120 Safari/537.36\r\nAccept: application/xml,text/xml,*/*\r\n"],'ssl'=>['verify_peer'=>true]]);
+      $ctx = stream_context_create(['http'=>['timeout'=>20,'header'=>"User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120 Safari/537.36\r\nAccept: application/xml,text/xml,*/*\r\n"],'ssl'=>['verify_peer'=>true]]);
       $body = @file_get_contents($u, false, $ctx);
       if ($body && strlen($body) > 1000) { $xml = $body; $this->line("FEED ok $u ".strlen($body)); break; }
       $this->line("FEED fail $u");
     }
+    if (!$xml && is_file(database_path('products-feed.xml'))) { $xml = file_get_contents(database_path('products-feed.xml')); $this->line('FEED using uploaded products-feed.xml '.strlen($xml)); }
     $rows = [];
     if ($xml && ($doc = @simplexml_load_string($xml))) {
       foreach ($doc->channel->item as $i) {

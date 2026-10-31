@@ -63,3 +63,4 @@ public/ban-sx555.webp
 public/google9e6eea6fbe5e8eaa.html
 public/robots.txt
 database/products-snapshot.json
+database/products-feed.xml
