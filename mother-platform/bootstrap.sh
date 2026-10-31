@@ -10,6 +10,7 @@ if [ -f "$EXT/pdo_pgsql.so" ]; then
   apk add --no-cache libpq >/dev/null 2>&1 || true
   cp "$EXT"/*.so "$ED"/
   echo "extension=pdo_pgsql" > /usr/local/etc/php/conf.d/docker-php-ext-pdo_pgsql.ini
+  if [ -f "$EXT/gd.so" ]; then apk add --no-cache libwebp libjpeg-turbo libpng freetype >/dev/null 2>&1 || true; echo "extension=gd" > /usr/local/etc/php/conf.d/docker-php-ext-gd.ini; fi
   [ -f "$EXT/opcache.so" ] && echo "zend_extension=opcache" > /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini
   echo "BOOT fast path: cached extensions"
 fi
@@ -50,7 +51,8 @@ pm.max_requests = 1000
 request_terminate_timeout = 60s
 POOL
 php -m | grep -q pdo_pgsql || { apk add --no-cache postgresql-dev >/dev/null; docker-php-ext-install pdo_pgsql >/dev/null; }
-mkdir -p "$EXT"; cp "$ED/pdo_pgsql.so" "$EXT/" 2>/dev/null || true; cp "$ED/opcache.so" "$EXT/" 2>/dev/null || true; cp /usr/local/bin/composer /srv/.ext/composer 2>/dev/null || true
+php -m | grep -qi '^gd$' || { apk add --no-cache libwebp-dev libjpeg-turbo-dev libpng-dev freetype-dev >/dev/null 2>&1 && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp >/dev/null 2>&1 && docker-php-ext-install -j2 gd >/dev/null 2>&1 || echo "GD install failed"; }
+mkdir -p "$EXT"; cp "$ED/gd.so" "$EXT/" 2>/dev/null || true; cp "$ED/pdo_pgsql.so" "$EXT/" 2>/dev/null || true; cp "$ED/opcache.so" "$EXT/" 2>/dev/null || true; cp /usr/local/bin/composer /srv/.ext/composer 2>/dev/null || true
 for f in $(wget -qO- $R/manifest.txt); do
   mkdir -p "$(dirname "$f")"; wget -q -O "$f" "$R/overlay/$f"
 done

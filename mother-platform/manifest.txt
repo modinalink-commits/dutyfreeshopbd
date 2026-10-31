@@ -142,3 +142,7 @@ app/Http/Controllers/AccountController.php
 resources/views/store/account.blade.php
 resources/views/store/account_auth.blade.php
 database/migrations/2026_10_31_000025_customer_accounts.php
+app/Support/Img.php
+app/Http/Controllers/MediaController.php
+resources/views/media.blade.php
+database/migrations/2026_10_31_000026_media_images.php

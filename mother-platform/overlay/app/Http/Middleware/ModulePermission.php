@@ -23,7 +23,7 @@ class ModulePermission {
     if (preg_match('#^m-districts#', $p)) return 'couriers';
     if (preg_match('#^m-payroll#', $p)) return 'hr';
     if (preg_match('#^m-customers#', $p)) return 'customers';
-    if (str_starts_with($p, 'upload-image') || str_starts_with($p, 'site') || str_starts_with($p, 'sms') || str_starts_with($p, 'courier') || str_starts_with($p, 'ai-chat') || str_starts_with($p, 'stores')) return 'settings';
+    if (str_starts_with($p, 'upload-image') || str_starts_with($p, 'site') || str_starts_with($p, 'sms') || str_starts_with($p, 'courier') || str_starts_with($p, 'ai-chat') || str_starts_with($p, 'media') || str_starts_with($p, 'stores')) return 'settings';
     if (str_starts_with($p, 'permissions')) return 'users';
     return 'users';
   }

@@ -75,6 +75,10 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::post('/courier/settle', [\App\Http\Controllers\CourierController::class,'settle']);
   Route::get('/ai-chat', [\App\Http\Controllers\AiChatController::class,'show']);
   Route::post('/ai-chat', [\App\Http\Controllers\AiChatController::class,'save']);
+  Route::get('/media', [\App\Http\Controllers\MediaController::class,'index']);
+  Route::post('/media/optimize', [\App\Http\Controllers\MediaController::class,'batch']);
+  Route::post('/media/settings', [\App\Http\Controllers\MediaController::class,'settings']);
+  Route::post('/media/retry', [\App\Http\Controllers\MediaController::class,'retry']);
   Route::post('/ai-chat/test', [\App\Http\Controllers\AiChatController::class,'test']);
   Route::get('/courier', [\App\Http\Controllers\CourierController::class,'show']);
   Route::post('/courier', [\App\Http\Controllers\CourierController::class,'save']);
