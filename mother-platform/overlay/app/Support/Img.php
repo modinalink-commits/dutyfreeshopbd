@@ -68,4 +68,61 @@ class Img {
     foreach (self::THUMBS as $w) if (is_file(public_path(substr($rel, 1).'-'.$w.'.webp'))) $out[] = $rel.'-'.$w.'.webp '.$w.'w';
     return $out ? implode(', ', $out).', '.$url.' 600w' : '';
   }
+
+  /** Every uploaded original (relative to public/uploads, including the chat folder). */
+  public static function localFiles(): array {
+    $out = []; foreach (['' => self::dir(), 'chat/' => self::dir().'/chat'] as $pre => $d) {
+      if (!is_dir($d)) continue; foreach (scandir($d) as $f) if ($f[0] !== '.' && is_file($d.'/'.$f) && self::isOriginal($f)) $out[] = $pre.$f;
+    }
+    return $out;
+  }
+  public static function kindOfFile(string $f): string {
+    $u = '/uploads/'.$f;
+    if (DB::table('sliders')->where('image', $u)->exists()) return 'banner';
+    if (DB::table('sliders')->where('mobile_image', $u)->exists()) return 'mobile';
+    if (\Illuminate\Support\Facades\Schema::hasColumn('categories', 'image') && DB::table('categories')->where('image', $u)->exists()) return 'category';
+    if (DB::table('products')->where('image', $u)->exists() || DB::table('product_images')->where('path', $u)->exists()) return 'product';
+    return str_starts_with($f, 'chat/') || str_starts_with($f, 'c-') ? 'auto' : 'product';
+  }
+  /** Optimise up to $max not-yet-processed uploads within $sec seconds. @return array{processed:int,failed:int,saved:int,remaining:int} */
+  public static function runBatch(int $max = 12, int $sec = 35): array {
+    $t0 = microtime(true); $files = self::localFiles(); $done = DB::table('media_images')->whereIn('path', $files)->pluck('path')->all();
+    $todo = array_values(array_diff($files, $done)); $n = 0; $saved = 0; $fail = 0; $backup = self::backupOn();
+    foreach ($todo as $f) {
+      if ($n >= $max || microtime(true) - $t0 > $sec) break;
+      $abs = self::dir().'/'.$f; if ($backup) self::backup($abs);
+      try { $res = self::process($abs, self::kindOfFile($f)); } catch (\Throwable $e) { $res = ['ok'=>false, 'error'=>mb_substr($e->getMessage(), 0, 150)]; }
+      DB::table('media_images')->updateOrInsert(['path'=>$f], ['orig_bytes'=>$res['before'] ?? 0, 'opt_bytes'=>$res['after'] ?? ($res['before'] ?? 0), 'width'=>$res['w'] ?? null, 'height'=>$res['h'] ?? null, 'format'=>$res['format'] ?? null, 'status'=>$res['ok'] ? 'optimized' : 'failed', 'error'=>$res['ok'] ? null : mb_substr((string)$res['error'], 0, 150), 'optimized_at'=>now(), 'updated_at'=>now(), 'created_at'=>now()]);
+      if ($res['ok']) $saved += max(0, ($res['before'] ?? 0) - ($res['after'] ?? 0)); else $fail++;
+      $n++;
+    }
+    return ['processed'=>$n, 'failed'=>$fail, 'saved'=>$saved, 'remaining'=>max(0, count($todo) - $n)];
+  }
+  /** Local copy of an image that was hosted somewhere else, or null if it has not been copied yet. */
+  public static function mirrored(?string $url): ?string {
+    if (!$url || !preg_match('#^https?://#i', $url)) return null;
+    try { $p = DB::table('media_sources')->where('url_hash', sha1($url))->value('path'); return $p && is_file(public_path(ltrim($p, '/'))) ? $p : null; } catch (\Throwable $e) { return null; }
+  }
+  /** Download an external image into public/uploads and optimise it. @return string|null the local URL */
+  public static function mirror(string $url, string $kind): ?string {
+    $h = sha1($url); $row = DB::table('media_sources')->where('url_hash', $h)->first();
+    if ($row && $row->path && is_file(public_path(ltrim($row->path, '/')))) return $row->path;
+    if ($row && (int)$row->tries >= 3) return null;
+    $err = null; $path = null;
+    try {
+      $host = parse_url($url, PHP_URL_HOST); $ip = $host ? gethostbyname($host) : null;
+      if (!$host || !$ip || !filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) throw new \RuntimeException('blocked host');
+      $r = \Illuminate\Support\Facades\Http::timeout(12)->withHeaders(['User-Agent'=>'Mozilla/5.0 (DutyFreeShopBD image optimizer)', 'Accept'=>'image/*'])->get($url);
+      if (!$r->ok()) throw new \RuntimeException('HTTP '.$r->status());
+      $body = $r->body(); if (strlen($body) < 200 || strlen($body) > 12 * 1048576) throw new \RuntimeException('bad size');
+      $info = @getimagesizefromstring($body); $ext = [IMAGETYPE_JPEG=>'jpg', IMAGETYPE_PNG=>'png', IMAGETYPE_WEBP=>'webp', IMAGETYPE_GIF=>'gif'][$info[2] ?? 0] ?? null; if (!$ext) throw new \RuntimeException('not an image');
+      $name = 'm-'.substr($h, 0, 16).'.'.$ext; $abs = self::dir().'/'.$name; if (!is_dir(self::dir())) @mkdir(self::dir(), 0775, true);
+      file_put_contents($abs, $body); @chmod($abs, 0664); unset($body);
+      $res = self::process($abs, $kind); if (!$res['ok']) { @unlink($abs); throw new \RuntimeException($res['error'] ?? 'optimise failed'); }
+      DB::table('media_images')->updateOrInsert(['path'=>$name], ['orig_bytes'=>$res['before'] ?? 0, 'opt_bytes'=>$res['after'] ?? 0, 'width'=>$res['w'] ?? null, 'height'=>$res['h'] ?? null, 'format'=>$res['format'] ?? null, 'status'=>'optimized', 'error'=>null, 'optimized_at'=>now(), 'updated_at'=>now(), 'created_at'=>now()]);
+      $path = '/uploads/'.$name;
+    } catch (\Throwable $e) { $err = mb_substr($e->getMessage(), 0, 150); }
+    DB::table('media_sources')->updateOrInsert(['url_hash'=>$h], ['url'=>mb_substr($url, 0, 900), 'path'=>$path, 'tries'=>$path ? 0 : (int)($row->tries ?? 0) + 1, 'error'=>$err, 'updated_at'=>now(), 'created_at'=>$row->created_at ?? now()]);
+    return $path;
+  }
 }

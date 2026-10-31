@@ -74,4 +74,6 @@ chown -R www-data:www-data storage bootstrap/cache public/uploads
 ( su -s /bin/sh www-data -c 'php artisan mother:sync-feed'; while true; do sleep 3600; su -s /bin/sh www-data -c 'php artisan mother:sync-feed'; done ) > /proc/1/fd/1 2>&1 &
 # Courier: check open parcels every 10 minutes so order stages update by themselves
 ( sleep 120; while true; do su -s /bin/sh www-data -c 'php artisan mother:courier-sync'; sleep 600; done ) > /proc/1/fd/1 2>&1 &
+# Images: optimise every upload and copy outside-hosted product/category/banner images into our own storage, quietly, every 2 minutes
+( sleep 90; while true; do su -s /bin/sh www-data -c 'php artisan mother:images'; sleep 120; done ) > /proc/1/fd/1 2>&1 &
 exec php-fpm

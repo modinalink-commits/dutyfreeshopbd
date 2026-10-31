@@ -5,11 +5,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 /** Image Optimization tool + Media Library (admin). Existing files are optimised in small batches so memory stays low. */
 class MediaController extends Controller {
-  private function files(): array {
-    $d = Img::dir(); if (!is_dir($d)) return [];
-    $out = []; foreach (scandir($d) as $f) if ($f[0] !== '.' && is_file($d.'/'.$f) && Img::isOriginal($f)) $out[] = $f;
-    return $out;
-  }
+  private function files(): array { return Img::localFiles(); }
   public function index(Request $r) {
     $files = $this->files(); $total = count($files);
     $rows = DB::table('media_images')->whereIn('path', $files)->get()->keyBy('path');
@@ -40,21 +36,7 @@ class MediaController extends Controller {
   /** One batch: optimise up to N pending files (and retry failed ones when asked). */
   public function batch(Request $r) {
     if (!Img::ok()) return response()->json(['ok'=>false, 'error'=>'GD is not enabled on the server yet'], 503);
-    @set_time_limit(50); $t0 = microtime(true);
-    $files = $this->files(); $done = DB::table('media_images')->whereIn('path', $files)->pluck('path')->all();
-    $todo = array_values(array_diff($files, $done)); $n = 0; $saved = 0; $fail = 0; $backup = Img::backupOn();
-    foreach ($todo as $f) {
-      if ($n >= 12 || microtime(true) - $t0 > 35) break;
-      $abs = Img::dir().'/'.$f; if ($backup) Img::backup($abs);
-      $kind = DB::table('sliders')->where('image', '/uploads/'.$f)->exists() ? 'banner' : (DB::table('sliders')->where('mobile_image', '/uploads/'.$f)->exists() ? 'mobile' : ((\Illuminate\Support\Facades\Schema::hasColumn('categories', 'image') && DB::table('categories')->where('image', '/uploads/'.$f)->exists()) ? 'category' : (str_starts_with($f, 'c-') ? 'auto' : 'product')));
-      try { $res = Img::process($abs, $kind); } catch (\Throwable $e) { $res = ['ok'=>false, 'error'=>mb_substr($e->getMessage(), 0, 150)]; }
-      $row = ['orig_bytes'=>$res['before'] ?? 0, 'opt_bytes'=>$res['after'] ?? ($res['before'] ?? 0), 'width'=>$res['w'] ?? null, 'height'=>$res['h'] ?? null, 'format'=>$res['format'] ?? null, 'status'=>$res['ok'] ? 'optimized' : 'failed', 'error'=>$res['ok'] ? null : mb_substr((string)$res['error'], 0, 150), 'optimized_at'=>now(), 'updated_at'=>now()];
-      DB::table('media_images')->updateOrInsert(['path'=>$f], $row + ['created_at'=>now()]);
-      if ($res['ok']) $saved += max(0, ($res['before'] ?? 0) - ($res['after'] ?? 0)); else $fail++;
-      $n++;
-    }
-    $left = max(0, count($todo) - $n);
-    return response()->json(['ok'=>true, 'processed'=>$n, 'failed'=>$fail, 'saved'=>$saved, 'remaining'=>$left]);
+    @set_time_limit(50); return response()->json(['ok'=>true] + Img::runBatch(12, 35));
   }
   public function retry() { DB::table('media_images')->where('status', 'failed')->delete(); return response()->json(['ok'=>true]); }
 }
