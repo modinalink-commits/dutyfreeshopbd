@@ -188,31 +188,24 @@ class StoreController extends Controller {
     return array_slice($o, 0, 30, true);
   }
   /** One price calculation for the cart, the checkout and the saved order. */
-  private function quote(array $want, int $area, string $code, ?string $phone = null): array {
+  private function quote(array $want, int $area, string $code, ?string $phone = null, bool $verified = false): array {
     $b = $this->base(); $rules = $b['rules'];
     $rows = $want ? $this->q()->whereIn('id', array_keys($want))->get(['id','ext_id','name','price','compare_price','image','stock']) : collect();
     $items = []; $sub = 0; $qty = 0;
     foreach ($rows as $p) { $n = $want[$p->id]; $items[] = ['id'=>$p->id, 'name'=>$p->name, 'image'=>$p->image, 'url'=>self::url($p), 'price'=>(float)$p->price, 'compare'=>(float)$p->compare_price, 'qty'=>$n, 'line'=>(float)$p->price * $n]; $sub += (float)$p->price * $n; $qty += $n; }
     $ship = isset($b['areas'][$area]) ? $b['areas'][$area]['c'] : (count($b['areas']) ? reset($b['areas'])['c'] : 0);
     if (isset($rules['freedelivery']) && $sub >= (float)($rules['freedelivery']['Free over TK'] ?? PHP_INT_MAX)) $ship = 0;
-    $disc = 0; $notes = [];
-    if (isset($rules['bundle']) && $qty >= (int)($rules['bundle']['Minimum products'] ?? 2) && (float)($rules['bundle']['Bundle %'] ?? 0) > 0) { $d = round($sub * (float)$rules['bundle']['Bundle %'] / 100); if ($d > $disc) { $disc = $d; $notes = ['Bundle '.(float)$rules['bundle']['Bundle %'].'%']; } }
-    if (isset($rules['amount'])) { $pct = 0; foreach (['Over 20000 TK %'=>20000,'Over 10000 TK %'=>10000,'Over 5000 TK %'=>5000] as $k => $min) if ($sub > $min) { $pct = (float)($rules['amount'][$k] ?? 0); break; }
-      $d = min(round($sub * $pct / 100), (float)($rules['amount']['Max discount per order TK'] ?? PHP_INT_MAX)); if ($d > $disc) { $disc = $d; $notes = ['Order amount '.$pct.'%']; } }
-    $cmsg = ''; $cOk = null;
-    if ($code !== '') {
-      $c = DB::table('coupons')->whereRaw('upper(code) = ?', [mb_strtoupper($code)])->where('active',true)->first();
-      $today = now('Asia/Dhaka')->toDateString();
-      if (!$c || ($c->valid_from && $c->valid_from > $today) || ($c->valid_to && $c->valid_to < $today) || ($c->usage_limit && $c->used_count >= $c->usage_limit)) $cmsg = 'Coupon code is not valid';
-      elseif ($sub < (float)$c->min_order) $cmsg = 'Minimum order for this coupon: '.self::tk($c->min_order);
-      elseif ($phone && $c->per_customer && DB::table('orders')->where('phone',$phone)->whereRaw('upper(coupon) = ?', [mb_strtoupper($c->code)])->where('status','!=','Cancel')->count() >= $c->per_customer) $cmsg = 'You have already used this coupon';
-      else { $d = $c->type === 'fixed' ? (float)$c->value : round($sub * (float)$c->value / 100); if ($c->max_discount) $d = min($d, (float)$c->max_discount); $disc += $d; $notes[] = 'Coupon '.$c->code; $cOk = $c->code; $cmsg = 'Coupon applied: '.self::tk($d).' off'; }
-    }
+    $eng = \App\Support\OrderDiscount::compute($phone, (float)$sub, $code !== '' ? $code : null, ['web'=>true, 'verified'=>$verified, 'qty'=>$qty]);
+    $app = array_values(array_filter($eng['lines'], fn($l) => $l['applied'])); $disc = (float)$eng['total']; $notes = array_column($app, 'label');
+    if ($eng['free_ship']) $ship = 0;
+    $cOk = null; $cmsg = $eng['coupon_error'] ?? ''; foreach ($app as $l) if (($l['key'] ?? '') === 'coupon') { $cOk = $l['code']; $cmsg = 'Coupon applied: '.self::tk($l['amount']).' off'; }
+    if ($code !== '' && !$cOk && !$cmsg) $cmsg = $eng['free_ship'] ? 'Free delivery applied' : 'Coupon is valid but another discount is already better for this order';
     $disc = min($disc, $sub);
-    return ['items'=>$items, 'sub'=>$sub, 'ship'=>$items ? $ship : 0, 'disc'=>$disc, 'total'=>$items ? $sub + $ship - $disc : 0, 'coupon'=>$cOk, 'coupon_msg'=>$cmsg, 'notes'=>$notes];
+    return ['items'=>$items, 'sub'=>$sub, 'ship'=>$items ? $ship : 0, 'disc'=>$disc, 'total'=>$items ? $sub + $ship - $disc : 0, 'coupon'=>$cOk, 'coupon_msg'=>$cmsg, 'notes'=>$notes, 'applied'=>$app, 'profile'=>$eng['profile']];
   }
   public function cartItems(Request $r) {
-    return response()->json($this->quote($this->parseItems($r->input('ids')), (int)$r->input('area', 1), trim(mb_substr((string)$r->input('code'), 0, 40))))->header('Cache-Control','no-store');
+    $sp = \App\Support\OrderDiscount::sessionPhone($r);
+    return response()->json($this->quote($this->parseItems($r->input('ids')), (int)$r->input('area', 1), trim(mb_substr((string)$r->input('code'), 0, 40)), $sp, (bool)$sp))->header('Cache-Control','no-store');
   }
   public function order(Request $r) {
     $ip = $r->ip();
@@ -234,13 +227,14 @@ class StoreController extends Controller {
     }
     $phone = substr(preg_replace('/\D/','',$d['phone']), -11);
     $b = $this->base(); $area = (int)($d['area'] ?? 1);
-    $qt = $this->quote($want, $area, trim((string)($d['coupon'] ?? '')), $phone);
+    $sp = \App\Support\OrderDiscount::sessionPhone($r); $qt = $this->quote($want, $area, trim((string)($d['coupon'] ?? '')), $phone, $sp !== null && $sp === \App\Support\Chat::phone($phone));
     if (!$qt['items']) return $back('These products are no longer available');
     $where = $d['district'] ?? ($b['areas'][$area]['n'] ?? null);
-    $note = trim(($d['note'] ?? '').($qt['notes'] ? ' | Discount: '.implode(', ', $qt['notes']) : ''), ' |');
-    $id = DB::transaction(function () use ($d, $qt, $phone, $ip, $where, $note, $pm) {
+    $note = trim((string)($d['note'] ?? ''));
+    $meta = \App\Support\OrderDiscount::meta($qt['applied'], $qt['profile'], 'Automatic', (float)$qt['disc']);
+    $id = DB::transaction(function () use ($d, $qt, $phone, $ip, $where, $note, $pm, $meta) {
       $cust = DB::table('customers')->where('phone',$phone)->value('id'); if ($cust) { DB::table('customers')->where('id',$cust)->update(array_filter(['email'=>$d['email'] ?? null],'strlen')+['updated_at'=>now()]); } else $cust = DB::table('customers')->insertGetId(['name'=>$d['name'],'phone'=>$phone,'email'=>($d['email'] ?? null) ?: null,'address'=>$d['address'],'ip'=>$ip,'created_at'=>now(),'updated_at'=>now()]);
-      $id = DB::table('orders')->insertGetId(['invoice'=>'TMP'.uniqid(),'store_id'=>DB::table('stores')->value('id'),'customer_id'=>$cust,'customer_name'=>$d['name'],'phone'=>$phone,'email'=>($d['email'] ?? null) ?: null,'address'=>$d['address'],'district'=>$where,'source'=>'Web Site','shipping'=>$qt['ship'],'discount'=>$qt['disc'],'coupon'=>$qt['coupon'],'total'=>$qt['total'],'status'=>'New','note'=>$note ?: null,'payment_method'=>$pm['label'],'pay_txn'=>$pm['txn'],'pay_account'=>$pm['acct'],'pay_proof'=>$pm['proof'],'pay_status'=>$pm['status'],'ip'=>$ip,'created_at'=>now(),'updated_at'=>now()]);
+      $id = DB::table('orders')->insertGetId(['invoice'=>'TMP'.uniqid(),'store_id'=>DB::table('stores')->value('id'),'customer_id'=>$cust,'customer_name'=>$d['name'],'phone'=>$phone,'email'=>($d['email'] ?? null) ?: null,'address'=>$d['address'],'district'=>$where,'source'=>'Web Site','shipping'=>$qt['ship'],'discount'=>$qt['disc'],'coupon'=>$qt['coupon'],'total'=>$qt['total'],'status'=>'New','note'=>$note ?: null,'payment_method'=>$pm['label'],'pay_txn'=>$pm['txn'],'pay_account'=>$pm['acct'],'pay_proof'=>$pm['proof'],'pay_status'=>$pm['status'],'ip'=>$ip,'created_at'=>now(),'updated_at'=>now()] + $meta);
       DB::table('orders')->where('id',$id)->update(['invoice'=>'INV-'.str_pad($id,6,'0',STR_PAD_LEFT)]);
       foreach ($qt['items'] as $it) DB::table('order_items')->insert(['order_id'=>$id,'product_id'=>$it['id'],'name'=>$it['name'],'qty'=>$it['qty'],'price'=>$it['price'],'created_at'=>now(),'updated_at'=>now()]);
       if ($qt['coupon']) DB::table('coupons')->where('code',$qt['coupon'])->increment('used_count');

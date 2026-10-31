@@ -117,14 +117,15 @@ class AdminController extends Controller {
   public function orderDiscount(Request $r) {
     $p = \App\Support\Chat::phone($r->query('phone')); $sub = max(0, (float)$r->query('subtotal', 0));
     $can = \App\Http\Middleware\ModulePermission::can(Auth::user(), 'marketing', 'edit');
-    if (!$p || strlen($p) < 10 || $sub <= 0) return response()->json(['lines'=>[], 'total'=>0, 'mode'=>\App\Support\OrderDiscount::mode(), 'can'=>$can, 'coupon_error'=>null]);
-    return response()->json(\App\Support\OrderDiscount::compute($p, $sub, $r->query('coupon')) + ['can'=>$can]);
+    if (!$p || strlen($p) < 10) return response()->json(['lines'=>[], 'total'=>0, 'mode'=>\App\Support\OrderDiscount::mode(), 'can'=>$can, 'coupon_error'=>null, 'profile'=>null]);
+    if ($sub <= 0) return response()->json(['lines'=>[], 'total'=>0, 'mode'=>\App\Support\OrderDiscount::mode(), 'can'=>$can, 'coupon_error'=>null, 'profile'=>\App\Support\OrderDiscount::profile($p)]);
+    return response()->json(\App\Support\OrderDiscount::compute($p, $sub, $r->query('coupon'), ['qty'=>(int)$r->query('qty', 0)]) + ['can'=>$can]);
   }
   public function orderStore(Request $r) {
     $d = $r->validate(['customer_name'=>'required|string|max:120','phone'=>'required|string|max:20','address'=>'nullable|string','district'=>'nullable|string|max:60','source'=>'nullable|string|max:40','shipping'=>'nullable|numeric|min:0','note'=>'nullable|string','courier'=>'nullable|string|max:60','assigned_admin'=>'nullable|string|max:80','sub_city'=>'nullable|string|max:80','items'=>'required|array|min:1|max:60','items.*.name'=>'required|string|max:200','items.*.product_id'=>'nullable|integer','items.*.qty'=>'required|integer|min:1|max:100000','items.*.price'=>'required|numeric|min:0','coupon'=>'nullable|string|max:40','disc_off'=>'nullable|array','disc_manual'=>'nullable|numeric|min:0','disc_extra'=>'nullable|numeric|min:0']);
     $d['phone'] = \App\Support\Chat::phone($d['phone']) ?: $d['phone'];
     if (!empty($d['sub_city'])) $d['address'] = trim(($d['address'] ?? '').' ('.$d['sub_city'].')');
-    $sub = round(array_sum(array_map(fn($i) => $i['qty'] * $i['price'], $d['items'])), 2); if ($sub <= 0) return back()->withInput()->withErrors(['items'=>'Add at least one product with a price']); $auto = \App\Support\OrderDiscount::compute($d['phone'], $sub, $d['coupon'] ?? null);
+    $sub = round(array_sum(array_map(fn($i) => $i['qty'] * $i['price'], $d['items'])), 2); if ($sub <= 0) return back()->withInput()->withErrors(['items'=>'Add at least one product with a price']); $auto = \App\Support\OrderDiscount::compute($d['phone'], $sub, $d['coupon'] ?? null, ['qty'=>array_sum(array_column($d['items'], 'qty'))]);
     $can = \App\Http\Middleware\ModulePermission::can(Auth::user(), 'marketing', 'edit');
     $off = $can ? (array)($d['disc_off'] ?? []) : []; $kept = array_values(array_filter($auto['lines'], fn($l) => $l['applied'] && !in_array($l['key'], $off)));
     $disc = min($sub, round(array_sum(array_column($kept, 'amount')), 2)); $labels = array_column($kept, 'label');
@@ -133,12 +134,16 @@ class AdminController extends Controller {
     $disc = max(0, min($sub, round($disc, 2))); $changed = abs($disc - $auto['total']) > 0.009;
     $cpn = null; foreach ($kept as $l) if (($l['key'] ?? '') === 'coupon') $cpn = $l['code'] ?? null; if ($changed && $labels === ['Manual discount']) $cpn = null;
     $d['total'] = round($sub - $disc, 2);
+    $manual = $changed || $labels !== array_column($kept, 'label');
+    if ($manual && $disc > 0) { $meta = ['discount_type'=>'Manual Discount', 'discount_rule'=>'Admin override', 'discount_pct'=>null, 'discount_source'=>'Manual by '.Auth::user()->name, 'discount_by'=>'Manual', 'customer_category'=>$auto['profile']['category'], 'membership_status'=>$auto['profile']['membership'].($auto['profile']['membership_name'] ? ' – '.$auto['profile']['membership_name'] : '')]; }
+    else $meta = \App\Support\OrderDiscount::meta($kept, $auto['profile'], 'Automatic', $disc);
+    if ($disc <= 0) $meta['discount_by'] = null;
     $cu = DB::table('customers')->where('phone', $d['phone'])->orderBy('id')->first();
     if (!$cu) $cid = DB::table('customers')->insertGetId(['name'=>$d['customer_name'], 'phone'=>$d['phone'], 'address'=>$d['address'] ?? null, 'created_at'=>now(), 'updated_at'=>now()]);
     else { $cid = $cu->id; if (trim((string)($cu->address ?? '')) === '' && !empty($d['address'])) DB::table('customers')->where('id', $cid)->update(['address'=>$d['address'], 'updated_at'=>now()]); }
-    $id = DB::transaction(function () use ($d, $cid, $disc, $cpn, $changed, $auto, $labels) {
+    $id = DB::transaction(function () use ($d, $cid, $disc, $cpn, $changed, $auto, $labels, $meta) {
       $id = DB::table('orders')->insertGetId(['invoice'=>'TMP'.uniqid(),'store_id'=>1,'customer_name'=>$d['customer_name'],'phone'=>$d['phone'],'customer_id'=>$cid,'address'=>$d['address']??null,'district'=>$d['district']??null,'source'=>$d['source']??'Web Site','shipping'=>$d['shipping']??0,'total'=>$d['total'],'status'=>'New','note'=>$d['note']??null,'courier'=>$d['courier']??null,'assigned_admin'=>$d['assigned_admin']??null,'created_at'=>now(),'updated_at'=>now()]);
-      DB::table('orders')->where('id',$id)->update(['invoice'=>'INV-'.str_pad($id,6,'0',STR_PAD_LEFT), 'discount'=>$disc, 'coupon'=>$cpn]);
+      DB::table('orders')->where('id',$id)->update(['invoice'=>'INV-'.str_pad($id,6,'0',STR_PAD_LEFT), 'discount'=>$disc, 'coupon'=>$cpn] + $meta);
       if ($cpn) DB::table('coupons')->where('code', $cpn)->increment('used_count');
       if ($disc > 0 || $changed) DB::table('order_discount_logs')->insert(['order_id'=>$id, 'kind'=>$changed ? 'override' : 'applied', 'label'=>mb_substr(implode(' + ', $labels) ?: 'No discount', 0, 200), 'prev_amount'=>$auto['total'], 'new_amount'=>$disc, 'user_id'=>Auth::id(), 'user_name'=>Auth::user()->name, 'created_at'=>now(), 'updated_at'=>now()]);
       foreach ($d['items'] as $it) DB::table('order_items')->insert(['order_id'=>$id,'product_id'=>$it['product_id'] ?? null,'name'=>$it['name'],'qty'=>$it['qty'],'price'=>$it['price'],'created_at'=>now(),'updated_at'=>now()]);

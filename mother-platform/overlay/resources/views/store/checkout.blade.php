@@ -37,7 +37,7 @@ body{background:#fff}.cf,.cc{border:1px solid #EAEAEA;border-radius:20px;box-sha
 @foreach($areas as $i => $a)
 <label class="ar {{ $loop->first ? 'on' : '' }}"><input type="radio" name="area" value="{{ $i }}" {{ $loop->first ? 'checked' : '' }}><span class="rc"></span>{{ $a['n'] }}<span class="ch2">{{ $a['c'] > 0 ? number_format($a['c']).' TK' : 'Free' }}</span></label>
 @endforeach
-<div class="fl" style="margin:8px 0 14px"><label class="l" for="f-nt">Delivery Note</label><div class="ip"><input id="f-nt" name="note" placeholder="Delivery Note" maxlength="500"></div></div>
+<div class="fl" style="margin:8px 0 14px"><label class="l" for="f-nt">Delivery Note <small style="font-weight:400">(the courier will see this note)</small></label><div class="ip"><input id="f-nt" name="note" placeholder="Delivery Note" maxlength="200"></div></div>
 @php $pays = $pays ?? collect(); $banks = $pays->where('kind','bank'); @endphp
 <div class="pys"><span class="l" style="font-size:11px;font-weight:600;margin-bottom:6px;display:block">Payment Method</span>
 @if($s['co_cod']==='1' || !$pays->count())<label class="py on"><input type="radio" name="pay" value="cod" checked><b>💵 Cash on Delivery</b><small>Pay when you receive</small></label>@endif
@@ -54,7 +54,7 @@ body{background:#fff}.cf,.cc{border:1px solid #EAEAEA;border-radius:20px;box-sha
 <div class="cc">@if($s['co_coupon']==='1')<div class="cp"><div class="ip"><input id="cpc" placeholder="Coupon Code" maxlength="40" aria-label="Coupon Code"></div><button type="button" id="cpb">Apply</button></div><div class="cpm" id="cpm"></div>@endif
 <div class="th"><span>PRODUCT</span><span style="text-align:center">QUANTITY</span><span>PRICE</span><span>TOTAL PRICE</span><span style="text-align:right">ACTION</span></div>
 <div id="rows"><div class="emp">Loading…</div></div>
-<div class="sm"><span>Sub Total :</span><span id="sSub">0 TK</span></div><div class="sm"><span>Shipping Charge :</span><span id="sShip">0 TK</span></div><div class="sm"><span>Discount Amount :</span><span id="sDisc">0 TK</span></div><div class="sm tt"><span>Payable Amount :</span><span id="sTot">0 TK</span></div></div>
+<div class="sm"><span>Sub Total :</span><span id="sSub">0 TK</span></div><div class="sm"><span>Shipping Charge :</span><span id="sShip">0 TK</span></div><div id="sRcv" style="display:none;margin:4px 0 6px;padding:8px 10px;border-radius:8px;background:#F0FDF4;border:1px solid #BBF7D0;color:#14532D;font-size:13px;font-weight:600"></div><div class="sm"><span>Discount Amount :</span><span id="sDisc">0 TK</span></div><div class="sm tt"><span>Payable Amount :</span><span id="sTot">0 TK</span></div></div>
 </form>
 @endsection
 @section('js')
@@ -70,7 +70,7 @@ function load(){var c=DF.cart(),ids=Object.keys(c).map(function(k){return k+':'+
   Object.keys(c).forEach(function(k){if(!seen[k])delete c[k]});DF.p('dfc',c);DF.tab();
   document.getElementById('rows').innerHTML=h||'<div class="emp">These products are no longer available.</div>';
   document.getElementById('sSub').textContent=f(q.sub);document.getElementById('sShip').textContent=g(q.ship);document.getElementById('sDisc').textContent=g(q.disc);document.getElementById('sTot').textContent=g(q.total);
-  var m=document.getElementById('cpm');if(m){m.textContent=q.coupon_msg||'';m.style.color=q.coupon?'#16A34A':'#B91C1C'}document.getElementById('cpv').value=q.coupon||'';
+  var rv=document.getElementById('sRcv');if(rv){rv.innerHTML=(q.notes&&q.notes.length)?q.notes.map(function(n){return 'You received: '+E(n)}).join('<br>'):'';rv.style.display=(q.notes&&q.notes.length)?'block':'none'}var m=document.getElementById('cpm');if(m){m.textContent=q.coupon_msg||'';m.style.color=q.coupon?'#16A34A':'#B91C1C'}document.getElementById('cpv').value=q.coupon||'';
  })}
 document.getElementById('rows').onclick=function(e){var t=e.target,c=DF.cart(),k;if(k=t.getAttribute('data-i')){c[k].q=Math.min(50,c[k].q+1)}else if(k=t.getAttribute('data-d')){c[k].q=Math.max(1,c[k].q-1)}else if(k=t.getAttribute('data-r')){delete c[k]}else return;DF.p('dfc',c);load()};
 document.querySelectorAll('.ar').forEach(function(l){l.onclick=function(){document.querySelectorAll('.ar').forEach(function(x){x.classList.remove('on')});l.classList.add('on');l.querySelector('input').checked=true;load()}});

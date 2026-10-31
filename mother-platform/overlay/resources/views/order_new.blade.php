@@ -13,7 +13,7 @@
 <label>Sub City / Area</label><input name="sub_city" value="{{ old('sub_city') }}" placeholder="Thana / area (optional)">
 <label>Admins</label><select name="assigned_admin" id="onad"><option value="">Select Assign Admin</option>@foreach(\DB::table('users')->where('active', true)->orderBy('name')->pluck('name') as $un)<option {{ old('assigned_admin')===$un ? 'selected' : '' }}>{{ $un }}</option>@endforeach</select>
 <label>Order Source</label><select name="source">@foreach(['Web Site','messenger','Whatsapp','FB','youtube','google','tiktok','instagram','Landing Page'] as $s)<option>{{ $s }}</option>@endforeach</select>
-<label>Note</label><textarea name="note" rows="2" placeholder="note"></textarea>
+<label>Note <small style="color:#6B7280">(the courier sees this note on the parcel, max 200 characters)</small></label><textarea name="note" rows="2" maxlength="200" placeholder="note for the courier"></textarea>
 </div>
 <div class="card"><h3 style="margin:0 0 4px;text-align:center">Product information</h3>
 <label>Scan Barcode || product code</label><div style="position:relative"><input id="ops" autocomplete="off" placeholder="type product code or name"><div class="opt" id="opo" style="display:none"></div></div>
@@ -21,7 +21,7 @@
 <div style="overflow:auto"><table class="itb"><thead><tr><th>#</th><th>Product</th><th style="width:90px">Quantity</th><th style="width:120px">Price</th><th style="width:110px">Total</th><th style="width:70px">Action</th></tr></thead><tbody id="itb"></tbody></table></div>
 @if($errors->any())<div class="err" style="margin-top:8px">{{ $errors->first() }}</div>@endif
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px"><div><label>Shipping (TK)</label><input name="shipping" id="osh" type="number" step="0.01" min="0" value="0"></div><div><label>Subtotal (TK)</label><input id="ost" readonly value="0" style="background:#F9FAFB"></div></div>
-<div id="dsp" style="margin-top:12px;border:1px solid #E5E7EB;border-radius:10px;padding:10px 12px;font-size:13px"><b>Discount</b><div id="dsl" style="margin:6px 0;color:#6B7280">Enter the customer phone and add products to check discounts.</div>
+<div id="dsp" style="margin-top:12px;border:1px solid #E5E7EB;border-radius:10px;padding:10px 12px;font-size:13px"><b>Discount</b><div id="dsn" style="display:none;margin:6px 0;padding:8px 10px;border-radius:8px;background:#EFF6FF;color:#1E3A8A;font-size:12.5px;line-height:1.6"></div><div id="dsl" style="margin:6px 0;color:#6B7280">Enter the customer phone and add products to check discounts.</div>
 <label>Coupon code (optional)</label><input name="coupon" id="ocp" autocomplete="off" value="{{ old('coupon') }}" style="max-width:220px"><div id="dso" style="display:none"><label>Change discount to (TK, replaces the automatic one)</label><input name="disc_manual" id="odm" type="number" step="0.01" min="0" style="max-width:220px"><label>Extra discount (TK)</label><input name="disc_extra" id="ode" type="number" step="0.01" min="0" style="max-width:220px"><p style="font-size:11px;color:#6B7280;margin:4px 0 0">Any manual change is logged with your name, the previous and new discount, and the time.</p></div>
 <div id="dss" style="margin-top:10px;font-weight:600"></div></div>
 <div style="margin-top:14px"><button>Save order</button></div></div>
@@ -64,18 +64,21 @@ document.addEventListener('click',function(e){if(!PO.contains(e.target)&&e.targe
 D.addEventListener('change',function(){var o=D.options[D.selectedIndex];if(o&&o.dataset.ch&&(SH.value===''||SH.value==='0'||SH.dataset.auto==='1')){SH.value=o.dataset.ch;SH.dataset.auto='1';sum()}});
 SH.addEventListener('input',function(){this.dataset.auto='0'});
 /* discount */
-var CP=document.getElementById('ocp'),DL=document.getElementById('dsl'),DS=document.getElementById('dss'),DO=document.getElementById('dso'),DM=document.getElementById('odm'),DE=document.getElementById('ode'),dt,lastP='',can=false;
+var CP=document.getElementById('ocp'),DL=document.getElementById('dsl'),NT=document.getElementById('dsn'),DS=document.getElementById('dss'),DO=document.getElementById('dso'),DM=document.getElementById('odm'),DE=document.getElementById('ode'),dt,lastP='',can=false;
 function resetOv(){DM.value='';DE.value=''}
 function calc(){var ph=p.value.replace(/\D/g,''),s=sub();
- if(ph.length<10||s<=0){DL.textContent='Enter the customer phone and add products to check discounts.';DL.dataset.auto=0;DO.style.display='none';sum();return}
- fetch('/admin/orders/discount?phone='+encodeURIComponent(p.value)+'&subtotal='+s+'&coupon='+encodeURIComponent(CP.value),{headers:{Accept:'application/json'},credentials:'same-origin'}).then(function(r){return r.json()}).then(function(j){
-  can=!!j.can;var h='';
+ if(ph.length<10){DL.textContent='Enter the customer phone and add products to check discounts.';DL.dataset.auto=0;DO.style.display='none';NT.style.display='none';sum();return}
+ fetch('/admin/orders/discount?phone='+encodeURIComponent(p.value)+'&subtotal='+s+'&qty='+IT.reduce(function(a,x){return a+(x.qty||0)},0)+'&coupon='+encodeURIComponent(CP.value),{headers:{Accept:'application/json'},credentials:'same-origin'}).then(function(r){return r.json()}).then(function(j){
+  can=!!j.can;var h='';note(j);
   (j.lines||[]).forEach(function(l){h+='<div style="display:flex;gap:8px;align-items:center;padding:3px 0'+(l.applied?'':';opacity:.55')+'">'+(l.applied&&can?'<label style="display:flex;gap:4px;align-items:center;margin:0;font-weight:400"><input type="checkbox" class="dof" name="disc_off[]" value="'+esc(l.key)+'" style="width:auto"> remove</label>':'')+'<span>'+esc(l.label)+(l.pct!=null?' · '+l.pct+'%':'')+'</span><b style="margin-left:auto">'+(l.applied?'-'+tk(l.amount):'not applied')+'</b></div>'});
   if(j.coupon_error)h+='<div style="color:#991B1B">'+esc(j.coupon_error)+'</div>';
   DL.innerHTML=h||'No discount: this customer has no saved or active discount rule.';DL.style.color='#111';
   DO.style.display=can?'block':'none';DL.dataset.auto=j.total;
   var o=DL.querySelectorAll('.dof');for(var i=0;i<o.length;i++)o[i].onchange=sum;sum();
  }).catch(function(){})}
+function note(j){var pr=j.profile;if(!pr){NT.style.display='none';return}var ap=(j.lines||[]).filter(function(l){return l.applied}),ot=(j.lines||[]).filter(function(l){return !l.applied});
+ var el=ap.length?ap.map(function(l){return esc(l.type)+(l.pct!=null?' '+l.pct+'%':' ৳'+l.amount)}).join(' + '):'None';
+ NT.innerHTML='Customer Type: <b>'+esc(pr.category)+'</b> · Membership: <b>'+esc(pr.membership)+(pr.membership_name?' ('+esc(pr.membership_name)+')':'')+'</b><br>Eligible Discount: <b>'+el+'</b>'+(ot.length?'<br>Other Eligible Offer: '+ot.map(function(l){return esc(l.type)+(l.pct!=null?' '+l.pct+'%':' ৳'+l.amount)}).join(', '):'')+'<br>Applied Discount: <b>'+tk(j.total||0)+'</b>'+(ap.length?' · Source: '+ap.map(function(l){return esc(l.source)}).join(', '):'');NT.style.display='block'}
 function sum(){var s=sub(),auto=parseFloat(DL.dataset.auto)||0,off=0;
  var ls=DL.querySelectorAll('.dof');for(var i=0;i<ls.length;i++)if(ls[i].checked){var b=ls[i].closest('div').querySelector('b').textContent.replace(/[^0-9.]/g,'');off+=parseFloat(b)||0}
  var d=auto-off;if(DM.value!=='')d=parseFloat(DM.value)||0;d+=parseFloat(DE.value)||0;d=Math.max(0,Math.min(s,d));
