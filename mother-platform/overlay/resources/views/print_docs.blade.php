@@ -5,20 +5,20 @@
 .sheet{page-break-after:always;break-after:page}.sheet:last-child{page-break-after:auto;break-after:auto}
 img{max-width:100%}.bc svg{display:block;width:100%;height:100%}
 /* INVOICE: same 80 mm column as the old invoice, centred */
-.inv{width:80mm;margin:0 auto;font-size:11.5px;line-height:1.4;border-top:3px solid #FF5A00;padding-top:6px}.inv .hd{text-align:center}.inv .hd img{height:36px}.inv .site{font-weight:700;color:#0B1F3A;font-size:12px}
+.inv{width:64mm;margin:0 auto;font-size:10.5px;line-height:1.4;border-top:3px solid #FF5A00;padding-top:6px}.inv .hd{text-align:center}.inv .hd img{height:36px}.inv .site{font-weight:700;color:#0B1F3A;font-size:12px}
 .inv .id{margin:6px 0 2px;text-align:center;font-size:17px;font-weight:800;letter-spacing:.3px}.inv .meta{display:flex;justify-content:space-between;font-size:10.5px;color:#222;margin-bottom:5px}
 .inv .chips{text-align:center;margin-bottom:5px}.inv .chips span{display:inline-block;border:1px solid #0B1F3A;border-radius:10px;padding:1px 7px;margin:1px;font-size:10px;font-weight:700;color:#0B1F3A}
 .inv .cust{border:1px solid #0B1F3A;border-radius:5px;padding:5px 7px;margin:4px 0}.inv .cust b{color:#0B1F3A}
 .inv table{width:100%;border-collapse:collapse;margin-top:4px}.inv th{font-size:9.5px;text-transform:uppercase;text-align:left;border-bottom:1.5px solid #0B1F3A;padding:2px 0;color:#0B1F3A}.inv td{padding:3px 0;border-bottom:.5px solid #bbb;vertical-align:top}.inv .r{text-align:right}.inv small{color:#333;font-size:9.5px}
 .inv .tot{margin-top:5px}.inv .tot div{display:flex;justify-content:space-between;padding:1.5px 0}.inv .due{border-top:1.5px solid #0B1F3A;margin-top:3px;padding-top:4px!important;font-size:14.5px;font-weight:800;color:#0B1F3A}
 .inv .save{border:1px dashed #FF5A00;border-radius:5px;padding:3px 7px;margin:5px 0;text-align:center;font-weight:700}.inv .words{font-weight:700;margin:6px 0 4px}.inv .ship{font-size:10.5px;margin:3px 0}
-.inv .ft{text-align:center;font-size:10.5px;margin-top:6px}.inv .codes{display:flex;justify-content:space-between;align-items:center;margin-top:6px}.inv .codes .qr{width:21mm;height:21mm}.inv .codes .bc{width:50mm;height:11mm}.qr svg{width:100%;height:100%}
+.inv .ft{text-align:center;font-size:10.5px;margin-top:6px}.inv .codes{display:flex;justify-content:space-between;align-items:center;margin-top:6px}.inv .codes .qr{width:18mm;height:18mm}.inv .codes .bc{width:42mm;height:10mm}.qr svg{width:100%;height:100%}
 /* LABEL: full printable width, like the old label */
-.lbl{width:100%;font-size:13px;line-height:1.35;padding:4px 0}.lbl .hd{text-align:center}.lbl .hd img{height:40px}.lbl .site{font-size:12px;color:#0B1F3A;font-weight:700}.lbl .id{text-align:center;font-size:17px;font-weight:800;margin:3px 0}
-.lbl .bc{width:62%;height:13mm;margin:2px auto 8px}.lbl .row{margin:4px 0;font-size:14px}.lbl .row b{display:inline-block;min-width:62px;color:#0B1F3A}
-.lbl .phone{font-size:25px;font-weight:900;letter-spacing:.5px;margin:6px 0;border-top:1px solid #000;padding-top:6px}.lbl .addr{font-size:17px;font-weight:800;border:2px solid #000;border-radius:6px;padding:7px 9px;margin:6px 0;line-height:1.35}
-.lbl .cod{border:3px solid #000;border-radius:8px;text-align:center;font-size:30px;font-weight:900;padding:6px;margin:8px 0}.lbl .cod small{display:block;font-size:11px;font-weight:700;letter-spacing:1px}
-.lbl .ex{display:flex;flex-wrap:wrap;gap:2px 16px;font-size:12.5px;border-top:1px solid #000;padding-top:5px}.lbl .ex b{color:#0B1F3A}
+.lbl{width:59mm;margin:0 auto;border:1px dashed #000;font-size:11px;line-height:1.3;padding:4px 5px;box-sizing:border-box}.lbl .hd{text-align:center}.lbl .hd img{height:34px}.lbl .site{font-size:12px;color:#0B1F3A;font-weight:700}.lbl .id{text-align:center;font-size:14px;font-weight:800;margin:3px 0}
+.lbl .bc{width:85%;height:11mm;margin:2px auto 8px}.lbl .row{margin:3px 0;font-size:11.5px}.lbl .row b{display:inline-block;min-width:48px;color:#0B1F3A}
+.lbl .phone{font-size:19px;font-weight:900;letter-spacing:.3px;margin:5px 0;border-top:1px solid #000;padding-top:5px}.lbl .addr{font-size:13px;font-weight:800;border:2px solid #000;border-radius:6px;padding:7px 9px;margin:6px 0;line-height:1.35}
+.lbl .cod{border:3px solid #000;border-radius:8px;text-align:center;font-size:23px;font-weight:900;padding:4px;margin:6px 0}.lbl .cod small{display:block;font-size:11px;font-weight:700;letter-spacing:1px}
+.lbl .ex{display:flex;flex-wrap:wrap;gap:2px 16px;font-size:10.5px;border-top:1px solid #000;padding-top:5px}.lbl .ex b{color:#0B1F3A}
 @media print{.bar{display:none}}
 </style></head><body>
 <div class="bar"><span>{{ count($sheets) }} {{ $type === 'label' ? 'label' : 'invoice' }}{{ count($sheets) === 1 ? '' : 's' }} ready: each order prints on its own page.</span><button onclick="window.print()">Print</button></div>
