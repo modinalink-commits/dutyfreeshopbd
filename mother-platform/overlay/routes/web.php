@@ -88,6 +88,7 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\ValidateCsrfTok
   Route::post('/webhooks/pathao', [\App\Http\Controllers\CourierController::class,'webhook'])->middleware('throttle:120,1');
   Route::get('/', [\App\Http\Controllers\StoreController::class,'home']);
   Route::get('/sitemap.xml', [\App\Http\Controllers\StoreController::class,'sitemap']);
+  Route::get('/search-suggest', [\App\Http\Controllers\StoreController::class,'suggest'])->middleware('throttle:120,1');
   Route::get('/search', [\App\Http\Controllers\StoreController::class,'search']);
   Route::get('/track', [\App\Http\Controllers\StoreController::class,'track']);
   Route::get('/checkout', [\App\Http\Controllers\StoreController::class,'checkout']);

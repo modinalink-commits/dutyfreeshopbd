@@ -51,7 +51,7 @@ class StoreController extends Controller {
   }
   public function home() {
     $s = self::set();
-    $data = self::rem('store.home2', 300, function () {
+    $data = self::rem('store.home3', 300, function () {
       $pub = fn() => DB::table('products')->where('published',true);
       $sold = DB::table('order_items as i')->join('orders as o','o.id','=','i.order_id')->where('o.status','!=','Cancel')->where('o.created_at','>=',now()->subDays(30))->groupBy('i.product_id')->selectRaw('i.product_id as pid, sum(i.qty) as q')->pluck('q','pid');
       $deals = $pub()->whereColumn('compare_price','>','price')->where('compare_price','>',0)->orderByRaw('(compare_price - price) / compare_price desc')->orderByDesc('id')->limit(12)->get()
@@ -67,7 +67,7 @@ class StoreController extends Controller {
       $offers = [];
       foreach ($this->cats() as $c) { $mx = (int)$pub()->where('category_id',$c->id)->whereColumn('compare_price','>','price')->where('compare_price','>',0)->max(DB::raw('round((compare_price - price) / compare_price * 100)')); if ($mx > 0) $offers[] = [$c, $mx]; }
       usort($offers, fn($a, $b) => $b[1] <=> $a[1]);
-      return ['new'=>$pub()->orderByDesc('id')->limit(6)->get(), 'deals'=>$deals, 'top'=>$top, 'topLabel'=>$topLabel, 'sec'=>$sec, 'offers'=>array_slice($offers, 0, 2), 'slides'=>DB::table('sliders')->where('active',true)->whereNotNull('image')->orderBy('position')->get(), 'count'=>$pub()->count(), 'maxOff'=>$deals->count() ? self::off($deals[0]) : 0];
+      return ['new'=>$pub()->orderByDesc('id')->limit(6)->get(), 'deals'=>$deals, 'top'=>$top, 'topLabel'=>$topLabel, 'sec'=>$sec, 'offers'=>array_slice($offers, 0, 2), 'slides'=>DB::table('sliders')->where('active',true)->whereNotNull('image')->orderBy('position')->get(), 'stores'=>DB::table('stores')->where('active',true)->orderBy('id')->get(['id','name','domain','scan_published'])->all(), 'best'=>DB::table('order_items as i')->join('orders as o','o.id','=','i.order_id')->join('products as p','p.id','=','i.product_id')->where('p.published',true)->where('o.status','!=','Cancel')->where('o.created_at','>=',now()->subDays(60))->select('p.*', DB::raw('sum(i.qty) q'))->groupBy('p.id')->orderByDesc('q')->limit(12)->get(), 'count'=>$pub()->count(), 'maxOff'=>$deals->count() ? self::off($deals[0]) : 0];
     });
     if ($data['count'] === 0) return response()->view('coming', [], 503)->header('Retry-After','3600');
     $live = $s['home_live_orders'] === '1' ? $this->liveOrders() : collect();
@@ -75,9 +75,9 @@ class StoreController extends Controller {
   }
   /** Real recent orders, customer names masked (first letter + ***). */
   private function liveOrders() {
-    return self::rem('store.live2', 60, fn() => DB::table('orders as o')->join('order_items as i','i.order_id','=','o.id')->leftJoin('products as p','p.id','=','i.product_id')->whereNotIn('o.status',['Cancel','Incomplete'])->where('o.created_at','>=',now()->subDays(3))
-      ->select('o.customer_name','o.district','o.shipping','o.created_at','i.name','i.qty','i.price','p.image','p.id as pid','p.ext_id','p.name as pname')->orderByDesc('o.id')->limit(6)->get()
-      ->map(function ($r) { $r->masked = mb_strtoupper(mb_substr(trim($r->customer_name) ?: 'C', 0, 1)).'***'; return $r; }));
+    return self::rem('store.live3', 60, fn() => DB::table('orders as o')->join('order_items as i','i.order_id','=','o.id')->leftJoin('products as p','p.id','=','i.product_id')->whereNotIn('o.status',['Cancel','Incomplete'])->where('o.created_at','>=',now()->subDays(3))
+      ->select(DB::raw("'' as customer_name"),DB::raw("'' as district"),'o.shipping','o.created_at','i.name','i.qty','i.price','p.image','p.id as pid','p.ext_id','p.name as pname')->orderByDesc('o.id')->limit(6)->get()
+      ->map(function ($r) { $r->masked = ''; return $r; }));
   }
   public function category(Request $r, string $slug) {
     $c = $this->cats()[$slug] ?? null;
@@ -105,6 +105,16 @@ class StoreController extends Controller {
     if ($r->boolean('deals')) { $items = $this->q()->whereColumn('compare_price','>','price')->where('compare_price','>',0)->orderByRaw('(compare_price - price) / compare_price desc')->paginate(48)->withQueryString(); $t = 'Flash Sale'; }
     elseif ($t !== '') { $items = $this->q()->where(fn($w) => $w->where('name','ilike','%'.$t.'%')->orWhere('sub','ilike','%'.$t.'%'))->orderByDesc('id')->paginate(48)->withQueryString(); DB::table('product_views')->insert(['term'=>$t,'day'=>now('Asia/Dhaka')->toDateString(),'created_at'=>now(),'updated_at'=>now()]); }
     return response()->view('store.search', $this->base(['t'=>$t, 'items'=>$items, 'title'=>($t ? $t.' – ' : '').'Search | DutyFree Shop BD', 'desc'=>'', 'canon'=>url('/search'), 'noindex'=>true]));
+  }
+  /** Live search suggestions: products (with image), brands, categories and stores. */
+  public function suggest(Request $r) {
+    $t = trim(mb_substr((string)$r->q, 0, 60)); if (mb_strlen($t) < 2) return response()->json([]);
+    $like = '%'.str_replace(['%','_'], ['\\%','\\_'], $t).'%';
+    $out = [];
+    foreach ($this->q()->where(fn($w) => $w->where('name','ilike',$like)->orWhere('sku','ilike',$like)->orWhere('sub','ilike',$like))->orderByDesc('id')->limit(6)->get(['id','ext_id','name','price','image','sub']) as $p) $out[] = ['t'=>'p','n'=>$p->name,'u'=>self::url($p),'i'=>$p->image,'x'=>number_format($p->price).' TK'];
+    foreach ($this->cats() as $c) if (stripos($c->name, $t) !== false) $out[] = ['t'=>'c','n'=>$c->name,'u'=>'/'.$c->slug.'/'];
+    foreach (DB::table('products')->where('published',true)->where('sub','ilike',$like)->select('category_id','sub')->distinct()->limit(3)->get() as $b) { $c = $this->cats()->firstWhere('id',$b->category_id); if ($c) $out[] = ['t'=>'b','n'=>$b->sub,'u'=>'/'.$c->slug.'/?sub='.rawurlencode($b->sub)]; }
+    return response()->json($out)->header('Cache-Control','public, max-age=60');
   }
   public function checkout() {
     return response()->view('store.checkout', $this->base(['title'=>'Checkout | DutyFree Shop BD', 'desc'=>'', 'canon'=>url('/checkout'), 'noindex'=>true, 'grey'=>true]));
@@ -170,7 +180,7 @@ class StoreController extends Controller {
       DB::table('order_status_logs')->insert(['order_id'=>$id,'user_id'=>null,'user_name'=>'Website','from_status'=>null,'to_status'=>'New','note'=>'Order placed on website','created_at'=>now(),'updated_at'=>now()]);
       return $id;
     });
-    Cache::forget('store.live2');
+    Cache::forget('store.live3');
     $inv = DB::table('orders')->where('id',$id)->value('invoice');
     try {
       if ((DB::table('settings')->where('key','sms_order_confirm')->value('value') ?? '1') === '1') {

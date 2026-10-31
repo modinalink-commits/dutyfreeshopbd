@@ -43,6 +43,17 @@
   .sec-cs{padding:0 8px!important}.cs{gap:0}.cs .hh{display:none}.cs .mt{display:block;text-align:center;margin:12px 0 6px}.cs .mt span{background:#14594A;color:#fff;font-size:11px;font-weight:700;padding:5px 16px;border-radius:2px;text-transform:uppercase}.cs .gr .pc:nth-child(n+7){display:none}
   .cs .mv{display:block;text-align:center;margin:12px 0 0}.cs .mv a{background:var(--o);color:#fff;font-size:11px;font-weight:700;padding:7px 22px;border-radius:20px;display:inline-block}
 }
+
+.pm{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding-top:14px}.pm a{display:flex;gap:10px;align-items:center;background:#fff;border:1.25px solid var(--bd);border-radius:10px;padding:10px 14px}.pm i{font-style:normal;width:34px;height:34px;border-radius:50%;background:var(--n);color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;flex:none}.pm b{display:block;font-size:13px;color:var(--n)}.pm span{font-size:11px;color:var(--mut)}
+.fst{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.fst a{background:#fff;border:1.25px solid var(--bd);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}.fst .cv{height:64px;background:linear-gradient(120deg,var(--n),#1F2A44 60%,var(--o))}.fst .bd{padding:0 14px 14px;margin-top:-22px;display:flex;flex-direction:column;gap:4px}.fst .lg{width:44px;height:44px;border-radius:12px;background:var(--o);color:#fff;border:3px solid #fff;display:flex;align-items:center;justify-content:center;font-weight:700}.fst b{font-size:14px;color:var(--n)}.fst .vf{font-size:10px;font-weight:700;color:#14594A;background:#DCFCE7;border-radius:20px;padding:1px 8px;align-self:flex-start}.fst .tp{font-size:11px;color:var(--mut)}.fst .vs{margin-top:6px;background:var(--n);color:#fff;font-size:11px;font-weight:700;border-radius:6px;text-align:center;padding:6px 0}
+.td{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);background:#fff;border:1.25px solid var(--bd);border-radius:14px;overflow:hidden}.td .im{background:#fff;display:flex;align-items:center;justify-content:center;min-height:260px}.td .im img{max-width:80%;max-height:240px;object-fit:contain}.td .tx{padding:26px;display:flex;flex-direction:column;gap:10px;justify-content:center}.td .k{font-size:12px;font-weight:700;letter-spacing:.1em;color:var(--o)}.td h3{font-size:22px;color:var(--n);line-height:1.25}.td .pp{font-size:26px;font-weight:700;color:var(--o)}.td .pp s{font-size:15px;color:var(--mut);font-weight:500;margin-left:8px}.td .pp em{font-style:normal;font-size:12px;background:var(--red);color:#fff;border-radius:20px;padding:2px 10px;margin-left:8px;vertical-align:middle}.td .bt{align-self:flex-start;background:var(--o);color:#fff;font-weight:700;border-radius:10px;padding:12px 28px}
+.tr{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}.tr div{background:#fff;border:1.25px solid var(--bd);border-radius:10px;padding:14px 8px;text-align:center;font-size:12px;font-weight:600;color:var(--n)}.tr i{display:block;font-style:normal;font-size:22px;margin-bottom:4px}
+.sl{background:linear-gradient(120deg,var(--n),#1F2A44);border-radius:14px;color:#fff;padding:30px 36px;display:flex;align-items:center;gap:20px;flex-wrap:wrap}.sl div{flex:1;min-width:220px}.sl b{font-size:22px}.sl span{display:block;font-size:13px;color:#CBD5E1;margin-top:4px}.sl a{background:var(--o);color:#fff;font-weight:700;border-radius:10px;padding:12px 26px}
+.ap{background:#fff;border:1.25px solid var(--bd);border-radius:14px;padding:22px 28px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}.ap div{flex:1;min-width:200px}.ap b{font-size:18px;color:var(--n)}.ap a{background:var(--n);color:#fff;font-weight:700;font-size:12px;border-radius:8px;padding:10px 18px}
+.fq{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:8px}.fq details{background:#fff;border:1.25px solid var(--bd);border-radius:10px;padding:12px 16px}.fq summary{font-weight:600;font-size:14px;color:var(--n);cursor:pointer}.fq p{margin:8px 0 0;font-size:13px;color:#374151;line-height:1.55}
+@media (max-width:760px){.pm{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;padding-top:8px}.pm a{padding:6px;gap:5px;flex-direction:column;text-align:center;border-radius:8px}.pm i{width:24px;height:24px;font-size:11px}.pm b{font-size:9px}.pm span{display:none}
+.fst{display:flex;overflow-x:auto;gap:8px;scrollbar-width:none}.fst a{flex:0 0 150px}.fst::-webkit-scrollbar{display:none}.td{grid-template-columns:1fr}.td .im{min-height:150px}.td .tx{padding:14px}.td h3{font-size:15px}.td .pp{font-size:19px}
+.tr{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}.tr div{padding:8px 3px;font-size:9px;border-radius:8px}.tr i{font-size:16px}.sl{padding:16px}.sl b{font-size:15px}.ap{padding:14px}}
 </style>
 @if($s['home_hero']==='1')
 @if($slides->count())
@@ -54,6 +65,7 @@
 @endif
 @endif
 
+@if($s['home_promos']==='1')<div class="w pm"><a href="/delivery-policy/"><i>🚚</i><span><b>Free Delivery</b><span>On selected orders</span></span></a><a href="/about-us/"><i>✔</i><span><b>100% Original</b><span>Imported and authentic</span></span></a><a href="#flash"><i>%</i><span><b>Special Offers</b><span>Up to {{ $maxOff }}% off</span></span></a></div>@endif
 @if($s['home_flash']==='1' && $flash->count())
 <div class="w sec-fs" id="flash" style="padding-top:22px"><div class="fs">
 <div class="hd2"><b class="t">⚡ FLASH SALE</b><span class="e">ENDS IN</span><div class="tm"><span class="b" data-cd="h">00</span><span>:</span><span class="b" data-cd="m">00</span><span>:</span><span class="b" data-cd="s">00</span></div>
@@ -79,7 +91,7 @@
 @php $lu = $l->pid ? \App\Http\Controllers\StoreController::url((object)['id'=>$l->pid,'ext_id'=>$l->ext_id,'name'=>$l->pname]) : null; @endphp
 <div class="lo"><span class="tg"><span class="dot"></span>{{ \Carbon\Carbon::parse($l->created_at)->diffForHumans(null, true) }} ago</span><a class="bx" @if($lu) href="{{ $lu }}" @endif>
 <div class="im">@if($l->image)<img src="{{ $l->image }}" alt="{{ $l->name }}" width="110" height="110" loading="lazy" draggable="false">@endif</div>
-<span class="wh">{{ $l->masked }} from {{ $l->district ?: 'Bangladesh' }}</span><span class="nm">{{ $l->name }}</span>
+<span class="wh">Recent order</span><span class="nm">{{ $l->name }}</span>
 <div class="rw"><b>{{ number_format($l->price) }} TK</b><span>x{{ $l->qty }}</span></div><span class="dl">{{ (float)$l->shipping > 0 ? 'Delivery ৳'.number_format($l->shipping) : 'FREE delivery' }}</span></a></div>
 @endforeach</div></div>
 @endif
@@ -90,6 +102,13 @@
 @endforeach</div></div></div>
 @endif
 
+@if($s['home_stores']==='1' && count($stores))
+<div class="w sec-st" id="stores" style="padding-top:34px"><div class="st"><h2>Featured Stores</h2><div class="fst">
+<a href="/search?deals=1"><div class="cv"></div><div class="bd"><span class="lg">DF</span><b>DutyFree Shop BD</b><span class="vf">✔ Verified</span><span class="tp">{{ number_format($count) }} products</span><span class="vs">View Store</span></div></a>
+@foreach($stores as $st)<a href="/search?q={{ rawurlencode(parse_url('http://'.$st->domain, PHP_URL_HOST) ?: $st->name) }}"><div class="cv"></div><div class="bd"><span class="lg">{{ $ini($st->name) }}</span><b>{{ $st->name }}</b><span class="vf">✔ Verified</span><span class="tp">{{ number_format((int)$st->scan_published) }} products</span><span class="vs">View Store</span></div></a>@endforeach
+</div></div></div>
+@endif
+
 @if($s['home_new']==='1' && $new->count())
 <div class="w sec-st" id="new" style="padding-top:34px"><div class="st"><h2><span class="only-d" style="display:inline">New Arrival Products</span><span class="only-m">New Arrival</span></h2>
 <div class="gr">@foreach($new as $q)@include('store.card', ['fd'=>false])@endforeach</div></div></div>
@@ -98,6 +117,16 @@
 @if($s['home_top']==='1' && $top->count())
 <div class="w sec-st sec-top" id="top" style="padding-top:34px"><div class="st"><h2>{{ $topLabel }}</h2>
 <div class="gr">@foreach($top as $q)@include('store.card', ['fd'=>true])@endforeach</div></div></div>
+@endif
+
+@if($s['home_todays_deal']==='1' && $deals->count())
+@php $dd = $deals[0]; $du = \App\Http\Controllers\StoreController::url($dd); @endphp
+<div class="w sec-st" id="deal" style="padding-top:34px"><div class="st"><h2>Today's Deal</h2><div class="td"><a class="im" href="{{ $du }}"><img src="{{ $dd->image ?: '/icon.png' }}" alt="{{ $dd->name }}" width="240" height="240" loading="lazy" draggable="false"></a>
+<div class="tx"><span class="k">DEAL ENDS IN <span data-cd="all">00:00:00</span></span><h3><a href="{{ $du }}">{{ $dd->name }}</a></h3><div class="pp">{{ number_format($dd->price) }} TK <s>{{ number_format($dd->compare_price) }} TK</s><em>{{ \App\Http\Controllers\StoreController::off($dd) }}% OFF</em></div><span style="font-size:12px;color:var(--mut)">Sold by DutyFree Shop BD · Cash on delivery</span><a class="bt" href="/checkout?add={{ $dd->id }}&amp;p={{ (float)$dd->price }}" rel="nofollow">ORDER NOW</a></div></div></div></div>
+@endif
+
+@if($s['home_best']==='1' && $best->count())
+<div class="w sec-st" id="best" style="padding-top:34px"><div class="st"><h2>Best Sellers</h2><div class="gr">@foreach($best->take(12) as $q)@include('store.card', ['fd'=>true])@endforeach</div></div></div>
 @endif
 
 @if($s['home_offer_banners']==='1' && count($offers))
@@ -117,6 +146,20 @@
 <div class="mv"><a href="/{{ $c->slug }}/">View All</a></div></div></div>
 @endif
 @endforeach
+@endif
+@if($s['home_trust']==='1')
+<div class="w" style="padding-top:34px"><div class="tr"><div><i>🚚</i>Free Delivery</div><div><i>✔</i>100% Original</div><div><i>💵</i>Cash on Delivery</div><div><i>↩</i>Easy Return</div><div><i>🔒</i>Secure Payment</div><div><i>☎</i>Customer Support</div></div></div>
+@endif
+@if($s['home_seller']==='1')
+<div class="w" style="padding-top:24px"><div class="sl"><div><b>Grow Your Business With MultiStore</b><span>Open your store on our platform and reach customers across Bangladesh.</span></div><a href="{{ $s['seller_link'] ?: '/contact-us/' }}">Open Your Store</a></div></div>
+@endif
+@if($s['home_app']==='1' && ($s['app_android'] || $s['app_ios']))
+<div class="w" style="padding-top:24px"><div class="ap"><div><b>Shop faster with our app</b></div>@if($s['app_android'])<a href="{{ $s['app_android'] }}" rel="noopener">Android</a>@endif @if($s['app_ios'])<a href="{{ $s['app_ios'] }}" rel="noopener">iOS</a>@endif</div></div>
+@endif
+@if($s['home_faq']==='1')
+@php $faq = collect(preg_split('/\R/', (string)$s['faq_items']))->map(fn($l) => array_map('trim', explode('|', $l, 2)))->filter(fn($a) => count($a) === 2 && $a[0] !== ''); @endphp
+@if($faq->count())<div class="w" style="padding-top:34px"><div class="st"><h2>Frequently Asked Questions</h2><div class="fq">@foreach($faq as [$fqq, $fqa])<details><summary>{{ $fqq }}</summary><p>{{ $fqa }}</p></details>@endforeach</div></div></div>
+<script type="application/ld+json">{!! json_encode(['@context'=>'https://schema.org','@type'=>'FAQPage','mainEntity'=>$faq->map(fn($a) => ['@type'=>'Question','name'=>$a[0],'acceptedAnswer'=>['@type'=>'Answer','text'=>$a[1]]])->values()->all()], JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES) !!}</script>@endif
 @endif
 @endsection
 @section('js')
