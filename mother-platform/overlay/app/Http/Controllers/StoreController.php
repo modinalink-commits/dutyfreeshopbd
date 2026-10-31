@@ -17,7 +17,7 @@ class StoreController extends Controller {
   }
   public static function url($p): string { return '/p/'.($p->ext_id ?? 'm'.$p->id).'-'.self::slugOf($p->name).'/'; }
   public static function set(): array {
-    $o = self::rem('store.settings', 300, function () {
+    $o = self::rem('store.settings2', 300, function () {
       $cur = DB::table('settings')->pluck('value','key'); $o = [];
       foreach (SiteController::schema() as [$k,$l,$t,$d,$g]) $o[$k] = $cur[$k] ?? $d;
       return $o;
@@ -54,7 +54,7 @@ class StoreController extends Controller {
   }
   public function home() {
     $s = self::set();
-    $data = self::rem('store.home3', 300, function () {
+    $data = self::rem('store.home4', 300, function () {
       $pub = fn() => DB::table('products')->where('published',true);
       $sold = DB::table('order_items as i')->join('orders as o','o.id','=','i.order_id')->where('o.status','!=','Cancel')->where('o.created_at','>=',now()->subDays(30))->groupBy('i.product_id')->selectRaw('i.product_id as pid, sum(i.qty) as q')->pluck('q','pid');
       $deals = $pub()->whereColumn('compare_price','>','price')->where('compare_price','>',0)->orderByRaw('(compare_price - price) / compare_price desc')->orderByDesc('id')->limit(12)->get()

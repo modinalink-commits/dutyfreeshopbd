@@ -97,13 +97,13 @@
 @endforeach</div></div>
 @endif
 
-@if($s['home_categories']==='1')
+@if($s['home_cats_v2']==='1')
 <div class="w sec-ct" style="padding-top:24px"><div class="cts"><h2>Categories</h2><div class="ctl">@foreach($cats as $c)
 <a class="ct" href="/{{ $c->slug }}/"><span class="ci">@if(!empty($c->image))<img src="{{ $c->image }}" alt="{{ $c->name }}" width="52" height="52" loading="lazy">@else{{ $ini($c->name) }}@endif</span><span class="cn"><span class="d">{{ $c->name }}</span><span class="m">{{ explode(' ', $c->name)[0] }}</span></span></a>
 @endforeach</div></div></div>
 @endif
 
-@if($s['home_stores']==='1' && count($stores))
+@if($s['home_stores_v2']==='1' && count($stores))
 <div class="w sec-st" id="stores" style="padding-top:34px"><div class="st"><h2>Featured Stores</h2><div class="fst">
 <a href="/search?deals=1"><div class="cv"></div><div class="bd"><span class="lg">DF</span><b>DutyFree Shop BD</b><span class="vf">✔ Verified</span><span class="tp">{{ number_format($count) }} products</span><span class="vs">View Store</span></div></a>
 @foreach($stores as $st)<a href="/search?q={{ rawurlencode(parse_url('http://'.$st->domain, PHP_URL_HOST) ?: $st->name) }}"><div class="cv"></div><div class="bd"><span class="lg">{{ $ini($st->name) }}</span><b>{{ $st->name }}</b><span class="vf">✔ Verified</span><span class="tp">{{ number_format((int)$st->scan_published) }} products</span><span class="vs">View Store</span></div></a>@endforeach

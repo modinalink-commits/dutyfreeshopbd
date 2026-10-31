@@ -15,7 +15,7 @@ class SmsController extends Controller {
     if (!empty($d['sender_id'])) Sms::setSecret('sms_sender_id', trim($d['sender_id']));
     foreach (['owner_phone'=>$d['owner_phone'] ?? '', 'manager_phones'=>$d['manager_phones'] ?? '', 'sms_order_confirm'=>$r->boolean('order_confirm') ? '1' : '0'] as $k => $v)
       DB::table('settings')->updateOrInsert(['key'=>$k], ['value'=>$v, 'updated_at'=>now(), 'created_at'=>now()]);
-    \Illuminate\Support\Facades\Cache::forget('store.settings');
+    \Illuminate\Support\Facades\Cache::forget('store.settings2');
     DB::table('audit_logs')->insert(['user_id'=>auth()->id(),'user_name'=>auth()->user()->name,'action'=>'sms.settings','subject'=>'SMS gateway settings saved','ip'=>$r->ip(),'created_at'=>now(),'updated_at'=>now()]);
     return back()->with('ok','SMS settings saved.');
   }
