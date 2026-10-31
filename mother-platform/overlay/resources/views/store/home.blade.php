@@ -149,12 +149,11 @@ body .w [data-cr]{--pv:6;--g:10px;display:flex;gap:var(--g);padding:0;overflow-x
 <div class="w" style="padding-top:34px"><div class="tr"><div><i>🚚</i>Free Delivery</div><div><i>✔</i>100% Original</div><div><i>💵</i>Cash on Delivery</div><div><i>↩</i>Easy Return</div><div><i>🔒</i>Secure Payment</div><div><i>☎</i>Customer Support</div></div></div>
 @endif
 @if($s['home_seller']==='1')
-<div class="w" style="padding-top:24px"><div class="sl"><div><b>Grow Your Business With MultiStore</b><span>Open your store on our platform and reach customers across Bangladesh.</span></div><a href="{{ $s['seller_link'] ?: '/contact-us/' }}">Open Your Store</a></div></div>
 @endif
 @if($s['home_app']==='1' && ($s['app_android'] || $s['app_ios']))
 <div class="w" style="padding-top:24px"><div class="ap"><div><b>Shop faster with our app</b></div>@if($s['app_android'])<a href="{{ $s['app_android'] }}" rel="noopener">Android</a>@endif @if($s['app_ios'])<a href="{{ $s['app_ios'] }}" rel="noopener">iOS</a>@endif</div></div>
 @endif
-@if($s['home_faq']==='1')
+@if(($s['home_faq_v2'] ?? '0')==='1')
 @php $faq = collect(preg_split('/\R/', (string)$s['faq_items']))->map(fn($l) => array_map('trim', explode('|', $l, 2)))->filter(fn($a) => count($a) === 2 && $a[0] !== ''); @endphp
 @if($faq->count())<div class="w" style="padding-top:34px"><div class="st"><h2>Frequently Asked Questions</h2><div class="fq">@foreach($faq as [$fqq, $fqa])<details><summary>{{ $fqq }}</summary><p>{{ $fqa }}</p></details>@endforeach</div></div></div>
 <script type="application/ld+json">{!! json_encode(['@context'=>'https://schema.org','@type'=>'FAQPage','mainEntity'=>$faq->map(fn($a) => ['@type'=>'Question','name'=>$a[0],'acceptedAnswer'=>['@type'=>'Answer','text'=>$a[1]]])->values()->all()], JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES) !!}</script>@endif
