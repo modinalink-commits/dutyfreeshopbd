@@ -86,3 +86,6 @@ resources/views/courier_setup.blade.php
 database/migrations/2026_10_31_000011_courier_tracking.php
 app/Support/CourierSync.php
 resources/views/courier_dashboard.blade.php
+app/Support/AiChat.php
+app/Http/Controllers/AiChatController.php
+resources/views/ai_chat.blade.php

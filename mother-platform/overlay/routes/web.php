@@ -49,6 +49,9 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::get('/courier-dashboard/export/{fmt}', [\App\Http\Controllers\CourierController::class,'export'])->where('fmt','csv|xls|doc|pdf');
   Route::post('/courier/sync', [\App\Http\Controllers\CourierController::class,'sync']);
   Route::post('/courier/settle', [\App\Http\Controllers\CourierController::class,'settle']);
+  Route::get('/ai-chat', [\App\Http\Controllers\AiChatController::class,'show']);
+  Route::post('/ai-chat', [\App\Http\Controllers\AiChatController::class,'save']);
+  Route::post('/ai-chat/test', [\App\Http\Controllers\AiChatController::class,'test']);
   Route::get('/courier', [\App\Http\Controllers\CourierController::class,'show']);
   Route::post('/courier', [\App\Http\Controllers\CourierController::class,'save']);
   Route::post('/courier/connect', [\App\Http\Controllers\CourierController::class,'connect']);
@@ -88,6 +91,7 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\ValidateCsrfTok
   Route::post('/webhooks/pathao', [\App\Http\Controllers\CourierController::class,'webhook'])->middleware('throttle:120,1');
   Route::get('/', [\App\Http\Controllers\StoreController::class,'home']);
   Route::get('/sitemap.xml', [\App\Http\Controllers\StoreController::class,'sitemap']);
+  Route::post('/ai-chat', [\App\Http\Controllers\AiChatController::class,'ask'])->middleware('throttle:12,1');
   Route::get('/search-suggest', [\App\Http\Controllers\StoreController::class,'suggest'])->middleware('throttle:120,1');
   Route::get('/search', [\App\Http\Controllers\StoreController::class,'search']);
   Route::get('/track', [\App\Http\Controllers\StoreController::class,'track']);
