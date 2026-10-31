@@ -51,6 +51,9 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::post('/stores', [\App\Http\Controllers\InventoryController::class,'storeAdd']);
   Route::post('/stores/{id}/scan', [\App\Http\Controllers\InventoryController::class,'scanStart']);
   Route::post('/stores/{id}/scan-step', [\App\Http\Controllers\InventoryController::class,'scanStep']);
+  Route::get('/stores/{id}/edit', [\App\Http\Controllers\InventoryController::class,'storeEdit']);
+  Route::post('/stores/{id}/update', [\App\Http\Controllers\InventoryController::class,'storeUpdate']);
+  Route::post('/stores/{id}/delete', [\App\Http\Controllers\InventoryController::class,'storeDelete']);
   Route::post('/stores/{id}/clear', [\App\Http\Controllers\InventoryController::class,'storeRemoveProducts']);
   Route::get('/m/{slug}', [R::class,'index']);
   Route::get('/m/{slug}/new', [R::class,'form']);

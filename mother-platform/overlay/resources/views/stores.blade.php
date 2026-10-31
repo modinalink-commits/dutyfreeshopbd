@@ -19,10 +19,15 @@
 <td id="plat{{ $s->id }}">{{ $s->platform ?: '—' }}</td><td id="tot{{ $s->id }}">{{ number_format($c->n ?? 0) }}</td><td id="pub{{ $s->id }}">{{ number_format($c->pub ?? 0) }}</td><td id="dr{{ $s->id }}">{{ number_format(($c->n ?? 0) - ($c->pub ?? 0)) }}</td>
 <td id="last{{ $s->id }}">{{ $s->last_scan_at ? \Carbon\Carbon::parse($s->last_scan_at)->timezone('Asia/Dhaka')->format('d M Y, H:i') : 'never' }}</td>
 <td><span id="st{{ $s->id }}" class="pill {{ $s->scan_status==='completed'?'ok':($s->scan_status==='failed'?'red':'') }}">{{ ucfirst($s->scan_status === 'never' ? 'Not scanned' : $s->scan_status) }}</span>@if($s->scan_status==='failed' && $s->scan_note)<div style="font-size:11px;color:#B91C1C;max-width:200px">{{ $s->scan_note }}</div>@endif</td>
-<td style="white-space:nowrap">@if($s->domain)<button type="button" id="btn{{ $s->id }}" onclick="scan({{ $s->id }})">{{ $s->scan_status==='never' ? 'Scan Products' : 'Re-scan' }}</button> @endif<a class="btn g" href="/admin/inventory?store={{ $s->id }}">View</a></td></tr>
+<td style="white-space:nowrap">@if($s->domain)<button type="button" id="btn{{ $s->id }}" onclick="scan({{ $s->id }})">{{ $s->scan_status==='never' ? 'Scan Products' : 'Re-scan' }}</button> @endif<a class="btn g" href="/admin/inventory?store={{ $s->id }}">View</a> <a class="btn g" href="/admin/stores/{{ $s->id }}/edit">Edit Store</a> <button type="button" class="g" style="color:#B91C1C" onclick="askDelete({{ $s->id }}, @js($s->name), {{ (int)($c->n ?? 0) }})">Delete Store</button></td></tr>
 @if($s->scan_status==='running')<script>document.addEventListener('DOMContentLoaded',function(){scan({{ $s->id }},true)})</script>@endif
 @endforeach</tbody></table></div>
+<div id="dm" style="display:none;position:fixed;inset:0;background:rgba(11,18,32,.55);z-index:99;align-items:center;justify-content:center;padding:16px"><form id="df" method="post" class="card" style="max-width:460px;width:100%;margin:0">@csrf<input type="hidden" name="mode" id="dmode" value="store"><h3 style="margin:0 0 8px">Are you sure you want to delete this store?</h3><p id="dt" style="font-size:13px;color:#374151;margin:0 0 14px"></p>
+<div style="display:flex;flex-direction:column;gap:8px"><button type="submit" class="g" onclick="document.getElementById('dmode').value='store'"><b>Delete Store Only</b><br><small style="font-weight:400">Store is removed, imported product data stays in the inventory.</small></button>
+<button type="submit" style="background:#B91C1C" onclick="document.getElementById('dmode').value='all'"><b>Delete Store + Products</b><br><small style="font-weight:400">Store and all its imported products are removed.</small></button>
+<button type="button" class="g" onclick="document.getElementById('dm').style.display='none'">Cancel</button></div></form></div>
 <script>
+function askDelete(id,name,n){document.getElementById('df').action='/admin/stores/'+id+'/delete';document.getElementById('dt').textContent=name+' · '+n.toLocaleString('en-US')+' imported products';document.getElementById('dm').style.display='flex'}
 var TOK='{{ csrf_token() }}';
 function nf(n){return (n||0).toLocaleString('en-US')}
 function paint(d){

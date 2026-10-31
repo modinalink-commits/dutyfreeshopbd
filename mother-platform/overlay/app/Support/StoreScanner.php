@@ -163,13 +163,13 @@ class StoreScanner {
           while ($pos < count($q) && microtime(true) < $deadline - 6) {
             $batch = array_slice($q, $pos, 16); $pos += count($batch);
             foreach (self::pget($batch, 10) as $u => $r) {
-              if (!$r || $r['code'] !== 200) { $c['fail']++; continue; }
+              if (!$r || $r['code'] !== 200) { $c['fail']++; $k = $r ? 'http'.$r['code'] : 'noresp'; $st['why'][$k] = ($st['why'][$k] ?? 0) + 1; continue; }
               $row = self::parsePage($id, $u, $r['body']);
-              if ($row) { $rows[] = $row; $c['pub']++; } else $c['fail']++;
+              if ($row) { $rows[] = $row; $c['pub']++; } else { $c['fail']++; $st['why']['noproduct'] = ($st['why']['noproduct'] ?? 0) + 1; if (empty($st['sample'])) $st['sample'] = $u.' len='.strlen($r['body']); }
             }
           }
           self::save($rows); $c['imp'] += count($rows); $st['pos'] = $pos; $done = $pos >= count($q);
-          $pct = count($q) ? min(99, (int)round($pos / count($q) * 100)) : 99; $note = "Reading product pages $pos / ".count($q);
+          $pct = count($q) ? min(99, (int)round($pos / count($q) * 100)) : 99; $note = "Reading product pages $pos / ".count($q).(!empty($st['why']) ? ' (skipped: '.http_build_query($st['why'], '', ', ').')' : '');
         }
       }
     } catch (\Throwable $e) { $c['fail']++; $note = 'Error: '.mb_substr($e->getMessage(), 0, 160); }

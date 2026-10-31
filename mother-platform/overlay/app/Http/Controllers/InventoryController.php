@@ -8,7 +8,7 @@ class InventoryController extends Controller {
   /** Every product from every store as one list: this site's own catalogue + all scanned stores. */
   private function union() {
     $own = DB::table('products as p')->leftJoin('categories as c','c.id','=','p.category_id')->selectRaw("'own' as src, p.id as id, 0 as store_id, 'DutyFreeShopBD (this site)' as store_name, p.name as name, p.sku as sku, p.image as image, p.price as price, p.stock as stock, null::boolean as in_stock, coalesce(c.name,'') as category, null as url, p.published as published, p.updated_at as updated_at");
-    $ext = DB::table('store_products as sp')->join('stores as s','s.id','=','sp.store_id')->selectRaw("'ext' as src, sp.id as id, sp.store_id as store_id, s.name as store_name, sp.name as name, sp.sku as sku, sp.image as image, sp.price as price, sp.stock as stock, sp.in_stock as in_stock, coalesce(sp.category,'') as category, sp.url as url, sp.published as published, sp.updated_at as updated_at");
+    $ext = DB::table('store_products as sp')->leftJoin('stores as s','s.id','=','sp.store_id')->selectRaw("'ext' as src, sp.id as id, sp.store_id as store_id, coalesce(s.name, sp.store_label || ' (removed)', 'Removed store') as store_name, sp.name as name, sp.sku as sku, sp.image as image, sp.price as price, sp.stock as stock, sp.in_stock as in_stock, coalesce(sp.category,'') as category, sp.url as url, sp.published as published, sp.updated_at as updated_at");
     return DB::query()->fromSub($own->unionAll($ext), 'u');
   }
   private function filtered(Request $r) {
@@ -79,6 +79,32 @@ class InventoryController extends Controller {
     DB::table('stores')->insert(['name'=>$d['name'],'domain'=>$dom,'active'=>true,'created_at'=>now(),'updated_at'=>now()]);
     return redirect('/admin/stores')->with('ok','Store added. Press "Scan Products" to import its products.');
   }
+  public function storeEdit($id) {
+    $s = DB::table('stores')->find($id); abort_unless($s, 404);
+    return view('store_edit', compact('s'));
+  }
+  public function storeUpdate(Request $r, $id) {
+    $s = DB::table('stores')->find($id); abort_unless($s, 404);
+    $d = $r->validate(['name'=>'required|string|max:120','domain'=>'required|string|max:200']);
+    $dom = StoreScanner::cleanDomain($d['domain']);
+    if ($dom === '') return back()->withErrors(['domain'=>'Enter a valid domain such as example.com'])->withInput();
+    if (DB::table('stores')->where('domain',$dom)->where('id','!=',$id)->exists()) return back()->withErrors(['domain'=>'This domain is already added'])->withInput();
+    DB::table('stores')->where('id',$id)->update(['name'=>$d['name'],'domain'=>$dom,'active'=>$r->boolean('active'),'updated_at'=>now()]);
+    DB::table('store_products')->where('store_id',$id)->update(['store_label'=>$d['name']]);
+    return redirect('/admin/stores')->with('ok','Store updated.');
+  }
+  public function storeDelete(Request $r, $id) {
+    $s = DB::table('stores')->find($id); abort_unless($s, 404);
+    $mode = $r->input('mode') === 'all' ? 'all' : 'store';
+    DB::transaction(function () use ($id, $s, $mode) {
+      if ($mode === 'all') DB::table('store_products')->where('store_id',$id)->delete();
+      else DB::table('store_products')->where('store_id',$id)->update(['store_label'=>$s->name.' / '.$s->domain]);
+      DB::table('stores')->where('id',$id)->delete();
+      DB::table('audit_logs')->insert(['user_id'=>auth()->id(),'user_name'=>auth()->user()->name,'action'=>'delete','subject'=>'store#'.$id.' '.$s->domain.' ('.($mode==='all'?'with products':'store only').')','ip'=>request()->ip(),'created_at'=>now(),'updated_at'=>now()]);
+    });
+    @unlink(storage_path('app/scan-'.$id.'.json'));
+    return redirect('/admin/stores')->with('ok', $mode === 'all' ? 'Store and its imported products were deleted.' : 'Store deleted. Its imported products stay in the inventory.');
+  }
   public function storeRemoveProducts($id) {
     DB::table('store_products')->where('store_id',$id)->delete();
     DB::table('stores')->where('id',$id)->update(['scan_status'=>'never','scan_total'=>0,'scan_published'=>0,'scan_draft'=>0,'scan_imported'=>0,'scan_failed'=>0,'scan_percent'=>0,'scan_note'=>null,'last_scan_at'=>null,'updated_at'=>now()]);
@@ -98,7 +124,7 @@ class InventoryController extends Controller {
     @set_time_limit(60);
     $lock = Cache::lock('scan-'.(int)$id, 50);
     if (!$lock->get()) return response()->json($this->payload(DB::table('stores')->find($id)));
-    try { $s = StoreScanner::step((int)$id); } finally { $lock->release(); }
+    try { $s = StoreScanner::step((int)$id); DB::table('store_products')->where('store_id',$id)->whereNull('store_label')->update(['store_label'=>$s->name]); } finally { $lock->release(); }
     return response()->json($this->payload($s));
   }
 }

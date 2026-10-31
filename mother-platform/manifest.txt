@@ -73,3 +73,5 @@ app/Http/Controllers/InventoryController.php
 database/migrations/2026_10_31_000007_inventory_scan.php
 resources/views/inventory.blade.php
 resources/views/stores.blade.php
+database/migrations/2026_10_31_000008_store_label.php
+resources/views/store_edit.blade.php
