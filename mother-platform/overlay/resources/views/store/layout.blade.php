@@ -79,7 +79,7 @@ h1,h2,h3{margin:0}
   .fg .py{margin-top:10px;padding:8px;gap:5px}.fg .py .pb{display:none}.fg .py span.c{padding:3px 7px;border-radius:3px;font-size:9px}.fg .bt{padding:10px 0 0;font-size:9px}
   .fn{display:none}
 }
-.shp{max-width:760px;margin:14px auto 4px;padding:0 6px}.shp img{display:block;width:100%;height:auto}</style>
+.shp{width:100%;margin:22px 0 10px;padding:0}.shp img{display:block;width:100%;height:auto}</style>
 <style>
 /* Marketplace skin (Evaly-style layout, DutyFree colours) */
 .nv .nvi>div{display:flex;align-items:center}.nv .allc{align-self:center}.cts{align-items:flex-start}.cts h2,.st h2{text-align:left!important;font-size:26px!important;font-weight:800!important;color:var(--n)}.fs .pc{border-radius:14px}.fs .pc .ph{background:#F8F8F8}
@@ -163,7 +163,7 @@ body .hh .va:hover{filter:brightness(1.08)}
 <div><b>Shop</b><a href="#new">New arrivals</a><a href="#top">Top selling</a><a href="#flash">Offers</a></div>
 <div><b>Help</b><a href="/track">Order tracking</a><a href="/delivery-policy/">Delivery</a><a href="/return-policy/">Returns</a></div>
 <div><b>Company</b><a href="/about-us/">About</a><a href="/contact-us/">Contact</a><a href="/terms/">Terms</a></div></footer>
-<div class="shp only-d"><img src="/pay/shurjopay.png" alt="Powered by shurjoPay — payment methods" width="1100" height="167" loading="lazy"></div>
+<div class="w"><div class="shp only-d"><img src="/pay/shurjopay.png" alt="Powered by shurjoPay — payment methods" width="1588" height="241" loading="lazy"></div></div>
 @endif
 <footer class="fg {{ !empty($home) ? 'only-m' : '' }}"><div class="w" style="padding-left:inherit;padding-right:inherit"><div class="cols">
 <div><img src="{{ $logo }}" alt="DutyFree Shop BD" width="150" height="34" loading="lazy"><div class="ab">{{ $s['footer_about'] ?: 'Your trusted source for authentic products at the best prices. 100% original. Cash on delivery available.' }}</div></div>
@@ -173,7 +173,7 @@ body .hh .va:hover{filter:brightness(1.08)}
 @if($s[$k])<a href="{{ $s[$k] }}" rel="noopener" aria-label="{{ ucfirst(str_replace('social_','',$k)) }}">{{ $l }}</a>@else<span>{{ $l }}</span>@endif
 @endforeach<a href="https://wa.me/{{ $wa }}" rel="noopener" aria-label="WhatsApp">✆</a></div></div></div>
 <div class="py"><span class="pb">We accept <b>{{ count($pays) > 1 ? 'payment gateway' : 'cash on delivery' }}</b></span>@foreach($pays as $py)<span class="c">{{ $py }}</span>@endforeach</div>
-<div class="shp"><img src="/pay/shurjopay.png" alt="Powered by shurjoPay — payment methods" width="1100" height="167" loading="lazy"></div>
+<div class="shp"><img src="/pay/shurjopay.png" alt="Powered by shurjoPay — payment methods" width="1588" height="241" loading="lazy"></div>
 <div class="bt"><span>All rights reserved</span><span>{{ $s['footer_copyright'] }} · Customer care {{ $s['call_number'] }}</span></div></div></footer>
 @if($s['fab_side_cart']==='1')<a class="sc" href="/checkout" aria-label="Cart"><b id="scT">0 TK</b><div id="scN">0 items</div></a>@endif
 <div class="fb" id="fb">@if($s['fab_ai_chat']==='1')<a class="ai" href="https://wa.me/{{ $wa }}" rel="noopener">AI</a>@endif
