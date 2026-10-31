@@ -50,7 +50,7 @@ h1,h2,h3{margin:0}
 /* side cart and floating buttons */
 .sc{position:fixed;right:0;top:420px;width:54px;background:#fff;border:1px solid #E5E7EB;border-right:0;border-radius:6px 0 0 6px;text-align:center;font-size:10px;padding:8px 0 0;line-height:1.5;z-index:40;overflow:hidden}.sc div{background:var(--n);color:#fff;margin-top:4px;padding:1px 0}
 .fb{position:fixed;right:20px;bottom:24px;display:flex;flex-direction:column;gap:6px;z-index:40}.fb a,.fb button{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;border:0;padding:0;box-shadow:0 3px 10px rgba(0,0,0,.18)}.fb .x{width:32px;height:32px;background:#EF4444;font-weight:700;font-size:16px}.fb.cl a{display:none}
-.ai{background:var(--o);font-size:9px;font-weight:700}
+.fb .ai{background:var(--o);font-size:9px;font-weight:700;display:none}
 /* footers */
 .fg{background:#E5E5E5;padding-top:36px}.fg .cols{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:20px;font-size:12px;line-height:2.1}.fg .cols img{height:34px;width:auto;display:block}.fg .ab{line-height:1.6;margin-top:10px;max-width:440px}.fg .cols b.h{font-size:13px;border-bottom:1.5px solid #000}.fg .cols a{display:block}
 .fg .so{display:flex;gap:6px;margin-top:10px}.fg .so a,.fg .so span{width:26px;height:26px;border:1px solid var(--pk);background:#fff;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700}
@@ -74,7 +74,7 @@ h1,h2,h3{margin:0}
   .pc .ph,.pc.s170 .ph{height:92px;border-radius:5px}.pc .nm{font-size:9.5px;line-height:1.25;height:24px}.pc .pr{font-size:9.5px;line-height:1.3}.pc .pr b{font-weight:700}.pc .pr br{display:inline}.pc .pr s{font-size:8.5px;margin-left:0}
   .pc .on{font-size:9px;border-radius:3px;padding:5px 0}
   .sc{top:300px;width:46px;font-size:9px;padding-top:5px}.sc div{margin-top:3px}
-  .fb{right:8px;bottom:16px;gap:5px}.fb a,.fb button{width:26px;height:26px}.fb a svg{width:13px;height:13px}.fb .x{display:none}
+  .fb{right:8px;bottom:16px;gap:5px}.fb a,.fb button{width:26px;height:26px}.fb a svg{width:13px;height:13px}.fb .x{display:none}.fb .ai{display:flex}
   .fg{padding:20px 14px 12px;margin-top:20px;font-size:11px}.fg .cols{grid-template-columns:1fr 1fr;gap:10px;font-size:11px;line-height:1.9}.fg .cols>div:first-child{grid-column:1/-1}.fg .cols img{height:26px}.fg .ab{margin:6px 0 0;line-height:1.5}.fg .cols b.h{font-size:11px;border:0}.fg .fo{display:none}
   .fg .py{margin-top:10px;padding:8px;gap:5px}.fg .py .pb{display:none}.fg .py span.c{padding:3px 7px;border-radius:3px;font-size:9px}.fg .bt{padding:10px 0 0;font-size:9px}
   .fn{display:none}
@@ -119,7 +119,7 @@ cd:function(){var now=new Date(),d=new Date(now.getTime()+6*36e5),end=Date.UTC(d
 <div class="py"><span class="pb">We accept <b>{{ count($pays) > 1 ? 'payment gateway' : 'cash on delivery' }}</b></span>@foreach($pays as $py)<span class="c">{{ $py }}</span>@endforeach</div>
 <div class="bt"><span>All rights reserved</span><span>{{ $s['footer_copyright'] }} · Customer care {{ $s['call_number'] }}</span></div></div></footer>
 @if($s['fab_side_cart']==='1')<a class="sc" href="/checkout" aria-label="Cart"><b id="scT">0 TK</b><div id="scN">0 items</div></a>@endif
-<div class="fb" id="fb">@if($s['fab_ai_chat']==='1')<a class="ai only-m" href="https://wa.me/{{ $wa }}" rel="noopener" style="display:flex">AI</a>@endif
+<div class="fb" id="fb">@if($s['fab_ai_chat']==='1')<a class="ai" href="https://wa.me/{{ $wa }}" rel="noopener">AI</a>@endif
 @if($s['fab_messenger']==='1' && $s['pp_messenger'])<a href="{{ $s['pp_messenger'] }}" rel="noopener" style="background:#2563EB" aria-label="Messenger">{!! $ico['msg'] !!}</a>@endif
 @if($s['whatsapp_number'])<a href="https://wa.me/{{ $wa }}" rel="noopener" style="background:#16A34A" aria-label="WhatsApp">{!! $ico['wa'] !!}</a>@endif
 @if($s['fab_call']==='1')<a href="tel:{{ $s['call_number'] }}" style="background:#22C55E" aria-label="Call">{!! $ico['phone'] !!}</a>@endif

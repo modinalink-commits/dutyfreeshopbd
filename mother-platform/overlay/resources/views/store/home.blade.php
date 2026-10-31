@@ -7,7 +7,7 @@
   $hsub = str_replace('{max}', (string)$maxOff, $s['hero_sub']);
 @endphp
 <style>
-.hero{height:555px;background:linear-gradient(120deg,#0B1220 0%,#1F2A44 55%,#FF5A00 140%);display:flex;align-items:center;padding:0 140px;color:#fff;position:relative;max-width:1440px;margin:0 auto}
+.hero{height:555px;background:linear-gradient(120deg,#0B1220 0%,#1F2A44 55%,#FF5A00 140%);display:flex;align-items:center;padding:0 140px;color:#fff;position:relative;padding-left:max(140px,calc((100% - 1440px) / 2 + 140px))}
 .hero .in{display:flex;flex-direction:column;gap:18px;max-width:640px}.hero .k{font-size:13px;letter-spacing:.14em;font-weight:600;color:#FDC2A5}.hero h1{font-size:60px;font-weight:700;line-height:1.05}.hero .sb{font-size:20px;color:#E5E7EB}.hero .bt{align-self:flex-start;background:var(--o);color:#fff;font-weight:700;font-size:16px;border-radius:10px;padding:14px 30px}
 .hero-i{max-width:1440px;margin:0 auto;display:block}.hero-i img{width:100%;height:auto;display:block}
 .hm{display:none}
@@ -91,7 +91,7 @@
 @endif
 
 @if($s['home_new']==='1' && $new->count())
-<div class="w sec-st" id="new" style="padding-top:34px"><div class="st"><h2><span class="only-d" style="display:inline">New Arrival Products</span><span class="only-m" style="display:none">New Arrival</span></h2>
+<div class="w sec-st" id="new" style="padding-top:34px"><div class="st"><h2><span class="only-d" style="display:inline">New Arrival Products</span><span class="only-m">New Arrival</span></h2>
 <div class="gr">@foreach($new as $q)@include('store.card', ['fd'=>false])@endforeach</div></div></div>
 @endif
 

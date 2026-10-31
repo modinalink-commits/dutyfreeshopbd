@@ -58,7 +58,10 @@ class StoreController extends Controller {
         ->map(function ($p) use ($sold) { $p->sold = (int)($sold[$p->id] ?? 0); return $p; });
       $top = DB::table('order_items as i')->join('products as p','p.id','=','i.product_id')->where('p.published',true)->select('p.*', DB::raw('sum(i.qty) q'))->groupBy('p.id')->orderByDesc('q')->limit(6)->get();
       $topLabel = 'Top Selling Products';
-      if ($top->count() < 6) { $topLabel = $top->count() ? $topLabel : 'Most Viewed Products'; if (!$top->count()) $top = DB::table('product_views as v')->join('products as p','p.id','=','v.product_id')->where('p.published',true)->select('p.*', DB::raw('count(*) q'))->groupBy('p.id')->orderByDesc('q')->limit(6)->get(); }
+      if ($top->count() < 6) {
+        $more = DB::table('product_views as v')->join('products as p','p.id','=','v.product_id')->where('p.published',true)->whereNotIn('p.id', $top->pluck('id'))->where('v.created_at','>=',now()->subDays(30))->select('p.*', DB::raw('count(*) q'))->groupBy('p.id')->orderByDesc('q')->limit(6 - $top->count())->get();
+        if ($more->count()) { $top = $top->concat($more); $topLabel = 'Popular Products'; }
+      }
       $sec = []; $i = 0;
       foreach ($this->cats() as $c) { $sec[] = [$c, $pub()->where('category_id',$c->id)->orderByDesc('id')->limit($i < 2 ? 12 : 6)->get()]; $i++; }
       $offers = [];
