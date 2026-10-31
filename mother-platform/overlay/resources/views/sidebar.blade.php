@@ -6,8 +6,21 @@ $stores = \DB::table('stores')->where('active',true)->count();
 @endphp
 <aside><a class="brand" href="/admin"><b>M</b><span>Mother Commerce<small>Control center</small></span></a>
 <div class="viewing"><small>VIEWING</small><strong>All stores ({{ $stores }}) + {{ $B['channels'] }} channel</strong></div>
+<div class="sbs"><input id="sbq" type="search" placeholder="Search menu… (press /)" autocomplete="off" aria-label="Search menu"><div id="sbn" style="display:none">No match</div></div>
 <nav>@foreach($N as [$l,$h,$ic,$m,$bk])@continue(!\App\Http\Middleware\ModulePermission::can(auth()->user(), \App\Http\Middleware\ModulePermission::moduleFor(ltrim($h,'/')), 'view'))@php $on = request()->is(...explode(',', $m)) && !($h==='/admin/modules' && $l==='Frontend map'); if($h==='/admin' ) $on = request()->is('admin'); $bv = $bk ? ($B[$bk] ?? 0) : 0; @endphp
 <a href="{{ $h }}" class="nv {{ $on ? 'on':'' }}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">{!! $IC[$ic] !!}</svg><span>{{ $l }}</span>@if($bv)<em>{{ $bv }}</em>@endif</a>@endforeach
 <details class="more" {{ request()->is('admin/m/*') ? 'open':'' }}><summary><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">{!! $IC['grid'] !!}</svg><span>All modules</span></summary>
 @foreach(\App\Models\Res::groups() as $g=>$items)@continue($g==='Documents')<div class="gh">{{ $g }}</div>@foreach($items as [$sl,$ti])<a class="sub {{ request()->is('admin/m/'.$sl) || request()->is('admin/m/'.$sl.'/*') ? 'on':'' }}" href="/admin/m/{{ $sl }}">{{ $ti }}</a>@endforeach @endforeach</details></nav>
 <div class="me">{{ auth()->user()->name }}<form method="post" action="/admin/logout">@csrf<button class="g">Sign out</button></form></div></aside>
+<style>aside .sbs{margin:2px 0 8px}aside .sbs input{width:100%;box-sizing:border-box;background:#161E30;border:1px solid #232D44;color:#fff;border-radius:10px;padding:9px 12px;font-size:13px;font-family:inherit}aside .sbs input::placeholder{color:#8A94A8}aside .sbs input:focus{outline:2px solid #FF5A00;border-color:#FF5A00}aside .sbs div{font-size:12px;color:#8A94A8;padding:8px 12px}</style>
+<script>(function(){var q=document.getElementById('sbq');if(!q)return;var nav=q.parentNode.nextElementSibling,none=document.getElementById('sbn'),det=nav.querySelector('details.more'),was=det?det.open:false;
+function run(){var t=q.value.trim().toLowerCase(),n=0,first=null;
+nav.querySelectorAll('a.nv,a.sub').forEach(function(a){var ok=!t||a.textContent.toLowerCase().indexOf(t)>-1;a.style.display=ok?'':'none';if(ok&&t){n++;if(!first)first=a}});
+nav.querySelectorAll('.gh').forEach(function(g){var el=g.nextElementSibling,any=!t;while(el&&!el.classList.contains('gh')){if(el.classList.contains('sub')&&el.style.display!=='none')any=true;el=el.nextElementSibling}g.style.display=any?'':'none'});
+if(det){if(t){det.open=true;det.querySelector('summary').style.display='none'}else{det.open=was;det.querySelector('summary').style.display=''}}
+none.style.display=t&&!n?'block':'none';q._first=first}
+q.addEventListener('input',run);
+q.addEventListener('keydown',function(e){if(e.key==='Enter'&&q._first){location.href=q._first.getAttribute('href')}if(e.key==='Escape'){q.value='';run();q.blur()}});
+document.addEventListener('keydown',function(e){if(e.key==='/'&&!/INPUT|TEXTAREA|SELECT/.test((document.activeElement||{}).tagName||'')&&!e.ctrlKey&&!e.metaKey){e.preventDefault();q.focus()}});
+if(det)det.addEventListener('toggle',function(){if(!q.value)was=det.open})})();</script>
+
