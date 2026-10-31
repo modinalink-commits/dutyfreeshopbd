@@ -121,6 +121,25 @@ tab:function(){var c=DF.cart(),n=0,t=0;for(var k in c){n+=c[k].q;t+=c[k].q*c[k].
 cd:function(){var now=new Date(),d=new Date(now.getTime()+6*36e5),end=Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()+1)-6*36e5,r=Math.max(0,Math.floor((end-now.getTime())/1e3)),f=function(x){return(x<10?'0':'')+x},h=f(Math.floor(r/3600)),m=f(Math.floor(r%3600/60)),s=f(r%60);document.querySelectorAll('[data-cd]').forEach(function(e){var k=e.getAttribute('data-cd');e.textContent=k==='h'?h:k==='m'?m:k==='s'?s:h+':'+m+':'+s})}};
 </script>
 @if(!empty($s['head_code'])){!! $s['head_code'] !!}@endif
+<style>
+/* product card v3: ribbon discount, green free-delivery pill, price + discount chip, stock pill, cart button */
+.pc{border:1px solid #F0E6E0;border-radius:16px;box-shadow:0 2px 10px rgba(15,23,42,.05);padding:0 0 12px;gap:7px}
+.pc .bo{left:8px;top:8px;min-width:38px;text-align:center;background:linear-gradient(145deg,#FF4B3A,#D81B1B);color:#fff;font-size:14px;font-weight:800;line-height:1;border-radius:0;padding:8px 8px 15px;clip-path:polygon(0 0,100% 0,100% 74%,50% 100%,0 74%);letter-spacing:.2px;z-index:2}
+.pc .bf{right:8px;top:8px;display:inline-flex;align-items:center;gap:5px;background:linear-gradient(135deg,#12A150,#0A6B38);color:#fff;font-size:10.5px;font-weight:800;letter-spacing:.3px;border-radius:999px;padding:5px 11px 5px 8px;box-shadow:0 3px 8px rgba(10,107,56,.35);z-index:2}
+.pc .bf i,.pc .on i{font-style:normal}
+.pc .pr{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px}.pc .pr b{font-size:17px;font-weight:800;color:#0B1220}.pc .pr br{display:none}
+.pc .pr s{color:#9CA3AF;font-size:11.5px;font-weight:500;margin:0}
+.pc .pr .dp{display:inline-block!important;background:#FFE4E8;color:#E11D48;font-size:11.5px;font-weight:800;border-radius:8px;padding:2px 8px;margin:0}
+.pc .ck{display:inline-block!important;background:#DCFCE7;color:#166534;font-size:11.5px;font-weight:700;border-radius:8px;padding:3px 10px}.pc .ck.no{background:#FEE2E2;color:#991B1B}
+.pc .on{display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(180deg,#14203A,#0B1220);color:#fff;font-size:13px;font-weight:800;letter-spacing:.4px;border-radius:10px;padding:0;height:40px;box-shadow:0 3px 8px rgba(11,18,32,.25)}
+@media(max-width:760px){
+.pc{border-radius:12px;padding-bottom:6px;gap:4px}
+.pc .bo{left:4px;top:4px;min-width:26px;font-size:9px;padding:5px 5px 10px}
+.pc .bf{right:3px;top:4px;font-size:6.5px;gap:2px;padding:2px 5px 2px 3px}.pc .bf svg{width:9px;height:9px}
+.pc .pr b{font-size:11px}.pc .pr s{font-size:8.5px}.pc .pr .dp{font-size:8.5px;padding:1px 4px;border-radius:5px}
+.pc .ck{font-size:8.5px;padding:2px 6px;border-radius:5px}
+.pc .on{height:28px;font-size:8.5px;gap:3px;border-radius:7px}.pc .on svg{width:10px;height:10px}}
+</style>
 </head><body oncontextmenu="if(event.target.tagName==='IMG')return false">@if(!empty($s['gtm_id']))<noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{ $s['gtm_id'] }}" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>@endif
 <div class="ts"><div class="w tsi"><span class="dl">📍 Deliver to <b>Chattogram &amp; all Bangladesh</b></span><a href="{{ $s['seller_link'] ?? '/contact-us/' }}">Sell with us</a>@if($s['show_tracking']==='1')<a href="/track">Track order</a>@endif<a href="/contact-us/">Help center</a><span class="sp"></span><a href="tel:{{ $s['call_number'] }}">📞 {{ $s['call_number'] }}</a></div></div>
 <div class="hdw"><div class="hd w"><button class="mb" type="button" aria-label="Menu" onclick="document.getElementById('drw').classList.add('op')">☰</button><a class="lg" href="/" aria-label="DutyFree Shop BD"><img src="{{ $logo }}" alt="DutyFree Shop BD" width="176" height="40"></a>
