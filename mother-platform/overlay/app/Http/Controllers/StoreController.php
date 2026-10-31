@@ -17,11 +17,14 @@ class StoreController extends Controller {
   }
   public static function url($p): string { return '/p/'.($p->ext_id ?? 'm'.$p->id).'-'.self::slugOf($p->name).'/'; }
   public static function set(): array {
-    return self::rem('store.settings', 300, function () {
+    $o = self::rem('store.settings', 300, function () {
       $cur = DB::table('settings')->pluck('value','key'); $o = [];
       foreach (SiteController::schema() as [$k,$l,$t,$d,$g]) $o[$k] = $cur[$k] ?? $d;
       return $o;
     });
+    // a cached copy from before a deploy may lack newer keys: fill them with their defaults
+    foreach (SiteController::schema() as [$k,$l,$t,$d,$g]) if (!array_key_exists($k, $o)) $o[$k] = $d;
+    return $o;
   }
   /** Discount percent shown on cards (from the compare price). */
   public static function off($p): int { return $p->compare_price && $p->compare_price > $p->price ? (int)round(($p->compare_price - $p->price) / $p->compare_price * 100) : 0; }
