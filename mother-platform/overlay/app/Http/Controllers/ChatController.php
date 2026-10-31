@@ -67,6 +67,7 @@ class ChatController extends Controller {
 
   public function read($id) {
     $t = DB::table('chat_threads')->find($id); abort_unless($t, 404);
+    DB::table('chat_messages')->where('thread_id', $id)->where('dir', 'in')->whereNull('read_at')->update(['read_at'=>now()]);
     DB::table('chat_threads')->where('id', $id)->update(['unread'=>0, 'status'=>$t->status === 'new' ? 'open' : $t->status, 'updated_at'=>now()]);
     return response()->json(['ok'=>true, 'unread'=>Chat::unreadTotal()]);
   }
@@ -157,25 +158,50 @@ class ChatController extends Controller {
   private function webOn(): bool { return (DB::table('settings')->where('key', 'chat_web_on')->value('value') ?? '1') === '1'; }
   public function webStart(Request $r) {
     abort_unless($this->webOn(), 404);
-    $d = $r->validate(['name'=>'required|string|max:60', 'phone'=>'nullable|string|max:20']);
+    $d = $r->validate(['name'=>'nullable|string|max:60', 'phone'=>'required|string|max:20']);
+    $ph = Chat::phone($d['phone']);
+    if (!$ph || !preg_match('/^01[3-9]\d{8}$/', $ph)) return response()->json(['error'=>'Enter a valid mobile number.'], 422);
+    // a saved customer is recognised by number; the visitor is never shown what we hold, only the admin sees it
+    $cu = DB::table('customers')->where('phone', $ph)->orderBy('id')->first();
+    $name = trim(strip_tags((string)($d['name'] ?? ''))) ?: ($cu->name ?? null) ?: DB::table('orders')->where('phone', $ph)->orderByDesc('id')->value('customer_name') ?: 'Visitor '.substr($ph, -4);
     $tok = bin2hex(random_bytes(16));
-    DB::table('chat_threads')->insert(['channel'=>'web', 'external_id'=>$tok, 'name'=>strip_tags($d['name']), 'phone'=>Chat::phone($d['phone'] ?? null), 'status'=>'new', 'unread'=>0, 'created_at'=>now(), 'updated_at'=>now()]);
-    $t = DB::table('chat_threads')->where(['channel'=>'web', 'external_id'=>$tok])->first();
-    if ($t->phone && ($c = DB::table('customers')->where('phone', $t->phone)->orderBy('id')->first())) DB::table('chat_threads')->where('id', $t->id)->update(['customer_id'=>$c->id]);
+    DB::table('chat_threads')->insert(['channel'=>'web', 'external_id'=>$tok, 'name'=>mb_substr($name, 0, 60), 'phone'=>$ph, 'customer_id'=>$cu->id ?? null, 'status'=>'new', 'unread'=>0, 'created_at'=>now(), 'updated_at'=>now()]);
     return response()->json(['token'=>$tok]);
   }
+  private function webThread(string $tok): object { $t = DB::table('chat_threads')->where(['channel'=>'web', 'external_id'=>$tok])->first(); abort_unless($t, 404); return $t; }
   public function webSend(Request $r) {
     abort_unless($this->webOn(), 404);
     $d = $r->validate(['token'=>'required|string|size:32', 'body'=>'required|string|max:1000']);
-    $t = DB::table('chat_threads')->where(['channel'=>'web', 'external_id'=>$d['token']])->first(); abort_unless($t, 404);
-    Chat::ingest('web', $d['token'], null, strip_tags($d['body']));
-    return response()->json(['ok'=>true]);
+    $t = $this->webThread($d['token']);
+    $th = Chat::ingest('web', $d['token'], null, strip_tags($d['body']));
+    $m = DB::table('chat_messages')->where('thread_id', $t->id)->where('dir', 'in')->orderByDesc('id')->first(['id', 'created_at']);
+    return response()->json(['ok'=>true, 'id'=>$m->id ?? null, 'at'=>$m ? \Carbon\Carbon::parse($m->created_at)->toIso8601String() : null]);
+  }
+  public function webUpload(Request $r) {
+    abort_unless($this->webOn(), 404);
+    $r->validate(['token'=>'required|string|size:32', 'file'=>'required|file|mimes:jpg,jpeg,png,webp,gif|max:5120']);
+    $t = $this->webThread($r->input('token')); $f = $r->file('file');
+    $dir = public_path('uploads/chat'); if (!is_dir($dir)) @mkdir($dir, 0775, true);
+    $name = 'c-'.date('ymd').'-'.bin2hex(random_bytes(6)).'.'.strtolower($f->getClientOriginalExtension() ?: 'jpg'); $f->move($dir, $name);
+    $url = url('/uploads/chat/'.$name);
+    Chat::ingest('web', $t->external_id, null, '', $url);
+    $m = DB::table('chat_messages')->where('thread_id', $t->id)->where('dir', 'in')->orderByDesc('id')->first(['id', 'created_at']);
+    return response()->json(['ok'=>true, 'id'=>$m->id ?? null, 'url'=>$url, 'at'=>$m ? \Carbon\Carbon::parse($m->created_at)->toIso8601String() : null]);
   }
   public function webPoll(Request $r) {
-    $tok = (string)$r->query('token'); $t = DB::table('chat_threads')->where(['channel'=>'web', 'external_id'=>$tok])->first(); abort_unless($t, 404);
-    $m = DB::table('chat_messages')->where('thread_id', $t->id)->where('id', '>', (int)$r->query('after'))->orderBy('id')->get(['id', 'dir', 'body', 'attachment_url', 'attachment_type'])
-      ->map(fn($m) => ['id'=>$m->id, 'dir'=>$m->dir, 'body'=>$m->body, 'att'=>$m->attachment_url, 'att_type'=>$m->attachment_type]);
-    return response()->json(['messages'=>$m, 'closed'=>$t->status === 'resolved']);
+    $t = $this->webThread((string)$r->query('token'));
+    $m = DB::table('chat_messages')->where('thread_id', $t->id)->where('id', '>', (int)$r->query('after'))->orderBy('id')->get(['id', 'dir', 'body', 'attachment_url', 'attachment_type', 'created_at', 'read_at', 'user_name'])
+      ->map(fn($m) => ['id'=>$m->id, 'dir'=>$m->dir, 'body'=>$m->body, 'att'=>$m->attachment_url, 'att_type'=>$m->attachment_type, 'at'=>\Carbon\Carbon::parse($m->created_at)->toIso8601String(), 'seen'=>(bool)$m->read_at]);
+    $seen = (int)DB::table('chat_messages')->where('thread_id', $t->id)->where('dir', 'in')->whereNotNull('read_at')->max('id');
+    return response()->json(['messages'=>$m, 'seen_upto'=>$seen, 'closed'=>$t->status === 'resolved']);
+  }
+  /** Status of the visitor's own order: released only when invoice and mobile number both match. */
+  public function webOrder(Request $r) {
+    $inv = strtoupper(trim((string)$r->query('invoice'))); if (ctype_digit($inv)) $inv = 'INV-'.str_pad($inv, 6, '0', STR_PAD_LEFT);
+    $ph = Chat::phone($r->query('phone'));
+    $o = $ph && $inv ? DB::table('orders')->where('invoice', $inv)->first(['invoice', 'status', 'total', 'phone', 'courier_status', 'tracking_code', 'created_at']) : null;
+    if (!$o || Chat::phone($o->phone) !== $ph) return response()->json(['found'=>false]);
+    return response()->json(['found'=>true, 'invoice'=>$o->invoice, 'status'=>$o->status, 'total'=>(float)$o->total, 'courier_status'=>$o->courier_status, 'url'=>url('/track?invoice='.$o->invoice)]);
   }
 
   // ---------------- public: Meta webhook (Messenger, Instagram, WhatsApp Cloud API) ----------------

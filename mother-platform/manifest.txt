@@ -136,3 +136,4 @@ resources/views/chat_widget.blade.php
 resources/views/chat_inbox.blade.php
 resources/views/chat_settings.blade.php
 resources/views/store/chat_widget.blade.php
+database/migrations/2026_10_31_000023_chat_read_at.php

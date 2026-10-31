@@ -126,6 +126,8 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\ValidateCsrfTok
   Route::post('/webhooks/meta', [\App\Http\Controllers\ChatController::class,'metaHook'])->middleware('throttle:300,1');
   Route::post('/chat/start', [\App\Http\Controllers\ChatController::class,'webStart'])->middleware('throttle:8,1');
   Route::post('/chat/send', [\App\Http\Controllers\ChatController::class,'webSend'])->middleware('throttle:30,1');
+  Route::post('/chat/upload', [\App\Http\Controllers\ChatController::class,'webUpload'])->middleware('throttle:8,1');
+  Route::get('/chat/order', [\App\Http\Controllers\ChatController::class,'webOrder'])->middleware('throttle:20,1');
   Route::get('/chat/poll', [\App\Http\Controllers\ChatController::class,'webPoll'])->middleware('throttle:90,1');
   Route::get('/', [\App\Http\Controllers\StoreController::class,'home']);
   Route::get('/sitemap.xml', [\App\Http\Controllers\StoreController::class,'sitemap']);
