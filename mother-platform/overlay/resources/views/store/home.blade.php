@@ -43,8 +43,8 @@ body .w [data-cr]{--pv:6;--g:10px;display:flex;gap:var(--g);padding:0;overflow-x
   .sec-ct{padding:0 8px!important}.cts{gap:0}.cts h2{font-size:13px;margin:10px 0 6px}.ctl{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}.ct{width:auto;height:auto;border-radius:8px;padding:6px 2px;gap:4px}.ct .ci{width:36px;height:36px;background:#14261F}.ct .cn{font-size:8px}.ct .cn .d{display:none}.ct .cn .m{display:inline}
   .sec-st{padding:0 8px!important}.st{gap:0}.st h2{font-size:13px;margin:14px 0 4px}.st .gr .pc:nth-child(n+7){display:none}
   .sec-top,.sec-of{display:none}
-  .sec-cs{padding:0 8px!important}.cs{gap:0}.cs .hh{display:none}.cs .mt{display:block;text-align:center;margin:12px 0 6px}.cs .mt span{background:#14594A;color:#fff;font-size:11px;font-weight:700;padding:5px 16px;border-radius:2px;text-transform:uppercase}.cs .gr .pc:nth-child(n+7){display:none}
-  .cs .mv{display:block;text-align:center;margin:12px 0 0}.cs .mv a{background:var(--o);color:#fff;font-size:11px;font-weight:700;padding:7px 22px;border-radius:20px;display:inline-block}
+  .sec-cs{padding:0 8px!important}.cs{gap:0}.cs .hh{display:none}.cs .mt{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:18px 2px 10px}.cs .mt span{position:relative;padding-left:12px;font-size:17px;font-weight:800;color:var(--n);letter-spacing:.01em;line-height:1.2}.cs .mt span::before{content:'';position:absolute;left:0;top:2px;bottom:2px;width:4px;border-radius:4px;background:var(--o)}.cs .mt a{flex:none;font-size:12px;font-weight:700;color:var(--o);background:#FFF1E8;border:1px solid var(--bd);border-radius:999px;padding:6px 12px}.cs .gr .pc:nth-child(n+7){display:none}
+  .cs .mv{display:block;text-align:center;margin:14px 0 0}.cs .mv a{display:flex;align-items:center;justify-content:center;gap:6px;background:#fff;color:var(--n);font-size:13px;font-weight:700;padding:12px 18px;border:1.5px solid var(--n);border-radius:12px}.mv a::after{content:'→';color:var(--o);font-size:15px}
 }
 
 .pm{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding-top:14px}.pm a{display:flex;gap:10px;align-items:center;background:#fff;border:1.25px solid var(--bd);border-radius:10px;padding:10px 14px}.pm i{font-style:normal;width:34px;height:34px;border-radius:50%;background:var(--n);color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;flex:none}.pm b{display:block;font-size:13px;color:var(--n)}.pm span{font-size:11px;color:var(--mut)}
@@ -147,9 +147,9 @@ body .w [data-cr]{--pv:6;--g:10px;display:flex;gap:var(--g);padding:0;overflow-x
 @if($items->count())
 <div class="w sec-cs" style="padding-top:34px"><div class="cs">
 <div class="hh"><span class="t">{{ $c->name }}</span><span class="sp"></span>@foreach(array_slice($subs[$c->id] ?? [], 0, 5) as $sb)<a class="tb" href="/{{ $c->slug }}/{{ \App\Support\Slugs::subSlug($sb->sub) }}">{{ $sb->sub }}</a>@endforeach<a class="va" href="/{{ $c->slug }}/">View All</a></div>
-<div class="mt"><span>{{ $c->name }}</span></div>
+<div class="mt"><span>{{ $c->name }}</span><a href="/{{ $c->slug }}/">View all ›</a></div>
 <div class="gr">@foreach($items as $q)@include('store.card', ['fd'=>true])@endforeach</div>
-<div class="mv"><a href="/{{ $c->slug }}/">View All</a></div></div></div>
+<div class="mv"><a href="/{{ $c->slug }}/">Browse all {{ $c->name }}</a></div></div></div>
 @endif
 @endforeach
 @endif
