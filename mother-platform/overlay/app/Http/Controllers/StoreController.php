@@ -145,13 +145,18 @@ class StoreController extends Controller {
     if (!str_starts_with($u, '/p/')) return redirect($u, 301);
     return $this->renderProduct($p);
   }
-  private function renderProduct($p) {
+  public function previewProduct(int $id) {
+    $p = DB::table('products')->find($id); abort_unless($p, 404);
+    return $this->renderProduct($p, true);
+  }
+  private function renderProduct($p, bool $preview = false) {
     $c = DB::table('categories')->find($p->category_id);
     $rel = $this->q()->where('category_id',$p->category_id)->where('id','!=',$p->id)->orderByRaw('(sub = ?) desc', [$p->sub ?? ''])->orderByDesc('id')->limit(11)->get();
     $reviews = DB::table('reviews')->where('product_id',$p->id)->where('status','approved')->orderByDesc('id')->limit(20)->get();
     DB::table('product_views')->insert(['product_id'=>$p->id,'day'=>now('Asia/Dhaka')->toDateString(),'created_at'=>now(),'updated_at'=>now()]);
     $price = (float)$p->price;
-    return response()->view('store.product', $this->base(['p'=>$p, 'c'=>$c, 'rel'=>$rel, 'reviews'=>$reviews, 'title'=>$p->name.' দাম ৳ '.number_format($price).' | '.($c->name ?? 'Shop').' | DutyFree Shop BD', 'desc'=>$p->name.' – দাম ৳ '.number_format($price).'। অরিজিনাল ইমপোর্টেড পণ্য, অর্ডার করুন, সারা বাংলাদেশে ডেলিভারি। DutyFree Shop BD.', 'canon'=>url(self::url($p)), 'ogimg'=>$p->image ? (preg_match('#^https?://#i', $p->image) ? $p->image : url($p->image)) : url('/og.png')]))->header('Cache-Control','public, max-age=120');
+    $gallery = DB::table('product_images')->where('product_id',$p->id)->orderBy('position')->orderBy('id')->pluck('path')->all();
+    return response()->view('store.product', $this->base(['preview'=>$preview, 'gallery'=>$gallery, 'p'=>$p, 'c'=>$c, 'rel'=>$rel, 'reviews'=>$reviews, 'title'=>$p->name.' দাম ৳ '.number_format($price).' | '.($c->name ?? 'Shop').' | DutyFree Shop BD', 'desc'=>$p->name.' – দাম ৳ '.number_format($price).'। অরিজিনাল ইমপোর্টেড পণ্য, অর্ডার করুন, সারা বাংলাদেশে ডেলিভারি। DutyFree Shop BD.', 'canon'=>url(self::url($p)), 'ogimg'=>$p->image ? (preg_match('#^https?://#i', $p->image) ? $p->image : url($p->image)) : url('/og.png')]))->header('Cache-Control','public, max-age=120');
   }
   public function search(Request $r) {
     $t = trim(mb_substr((string)$r->q, 0, 80)); $items = collect();

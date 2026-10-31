@@ -19,16 +19,97 @@ class CatalogController extends Controller {
     return view('products', ['products'=>$q->paginate(50)->withQueryString(), 'stats'=>$stats, 'cats'=>DB::table('categories')->orderBy('name')->get(), 'brands'=>DB::table('brands')->orderBy('position')->get(), 'smsOn'=>$smsOn]);
   }
   public function productForm($id = null) {
-    return view('product_form', ['p'=>$id ? DB::table('products')->find($id) : null, 'cats'=>DB::table('categories')->orderBy('name')->get(), 'brands'=>DB::table('brands')->orderBy('position')->get()]);
+    $p = $id ? DB::table('products')->find($id) : null;
+    if ($id) abort_unless($p, 404);
+    $cats = DB::table('categories')->orderBy('position')->orderBy('name')->get();
+    $mains = $cats->whereNull('parent_id')->values();
+    if ($p && $p->category_id && !$mains->contains('id', $p->category_id)) $mains->push($cats->firstWhere('id', $p->category_id));
+    $map = [];
+    foreach ($mains->filter() as $m) {
+      $subs = [];
+      foreach ($cats->where('parent_id', $m->id) as $ch) {
+        $subs[$ch->name] = $cats->where('parent_id', $ch->id)->pluck('name')->all();
+      }
+      foreach (DB::table('products')->where('category_id', $m->id)->whereNotNull('sub')->where('sub', '!=', '')->select('sub', 'sub_sub')->distinct()->get() as $r) {
+        $subs[$r->sub] = $subs[$r->sub] ?? [];
+        if ($r->sub_sub && !in_array($r->sub_sub, $subs[$r->sub], true)) $subs[$r->sub][] = $r->sub_sub;
+      }
+      ksort($subs, SORT_NATURAL | SORT_FLAG_CASE);
+      $map[$m->id] = ['slug' => $m->slug, 'subs' => $subs];
+    }
+    $imgs = $id ? DB::table('product_images')->where('product_id', $id)->orderBy('position')->orderBy('id')->pluck('path')->all() : [];
+    if (!$imgs && $p && $p->image) $imgs = [$p->image];
+    $vars = $id ? DB::table('product_variants')->where('product_id', $id)->orderBy('id')->get()->map(function ($v) {
+      $o = json_decode($v->options ?? '', true) ?: []; $k = array_key_first($o);
+      return ['attr' => $k ?? 'Size', 'value' => $k !== null ? (string)$o[$k] : '', 'sku' => $v->sku, 'price' => $v->price, 'stock' => $v->stock];
+    })->all() : [];
+    $canon = ($p && $p->published) ? url(\App\Http\Controllers\StoreController::url($p)) : null;
+    return view('product_form', ['p'=>$p, 'mains'=>$mains->filter()->values(), 'map'=>$map, 'brands'=>DB::table('brands')->orderBy('position')->orderBy('name')->get(), 'imgs'=>$imgs, 'vars'=>$vars, 'canon'=>$canon, 'host'=>request()->getHost()]);
   }
   public function productSave(Request $r, $id = null) {
-    $d = $r->validate(['name'=>'required|string|max:200','sku'=>'nullable|string|max:60|unique:products,sku'.($id?','.$id:''),'barcode'=>'nullable|string|max:60','size'=>'nullable|string|max:60','category_id'=>'nullable|integer','brand_id'=>'nullable|integer','price'=>'required|numeric|min:0','offer_price'=>'nullable|numeric|min:0','cost'=>'nullable|numeric|min:0','stock'=>'required|integer|min:0','description'=>'nullable|string|max:20000','slug'=>'nullable|string|max:200','meta_title'=>'nullable|string|max:200','meta_description'=>'nullable|string|max:500','image'=>'nullable|string|max:500','compare_price'=>'nullable|numeric|min:0']);
-    $d['cost'] = $d['cost'] ?? 0; $d['updated_at'] = now();
-    $d['slug'] = \Illuminate\Support\Str::slug(($d['slug'] ?? null) ?: $d['name']) ?: null;
-    if ($id) DB::table('products')->where('id',$id)->update($d);
-    else { $d['created_at'] = now(); $d['published'] = false; $id = DB::table('products')->insertGetId($d); }
-    \App\Support\Slugs::assignAll();
-    return redirect('/admin/products');
+    $m = fn($min = 0) => 'nullable|numeric|min:'.$min;
+    $d = $r->validate([
+      'name'=>'required|string|max:200', 'sku'=>'nullable|string|max:60|unique:products,sku'.($id ? ','.$id : ''),
+      'category_id'=>'required|integer|exists:categories,id', 'sub'=>'nullable|string|max:120', 'sub_sub'=>'nullable|string|max:120', 'brand_id'=>'nullable|integer',
+      'video_url'=>'nullable|string|max:500', 'affiliate_commission'=>'nullable|numeric|min:0|max:100',
+      'regular_price'=>'required|numeric|min:0', 'sale_price'=>'nullable|numeric|min:0|lte:regular_price',
+      'buy1_price'=>$m(), 'buy2_price'=>$m(), 'buy3_price'=>$m(), 'buy4_price'=>$m(), 'buy5_price'=>$m(),
+      'stock'=>'required|integer|min:0', 'stock_status'=>'required|in:in_stock,out_of_stock,pre_order', 'low_stock_alert'=>'nullable|integer|min:0',
+      'description'=>'nullable|string|max:60000', 'slug'=>'nullable|string|max:200', 'meta_title'=>'nullable|string|max:200', 'meta_description'=>'nullable|string|max:500', 'meta_keywords'=>'nullable|string|max:500',
+      'status'=>'nullable|in:draft,published', 'act'=>'nullable|in:draft,publish,preview',
+      'images'=>'nullable|array|max:6', 'images.*'=>'string|max:500',
+      'has_variants'=>'nullable', 'v'=>'nullable|array|max:100',
+    ]);
+    $regular = (float)$d['regular_price']; $sale = ($d['sale_price'] ?? null) !== null && (float)$d['sale_price'] < $regular ? (float)$d['sale_price'] : null;
+    $row = [
+      'name'=>trim($d['name']), 'sku'=>($d['sku'] ?? null) ?: null, 'category_id'=>(int)$d['category_id'],
+      'sub'=>trim((string)($d['sub'] ?? '')) ?: null, 'sub_sub'=>trim((string)($d['sub_sub'] ?? '')) ?: null, 'brand_id'=>($d['brand_id'] ?? null) ?: null,
+      'video_url'=>($d['video_url'] ?? null) ?: null, 'affiliate_commission'=>$d['affiliate_commission'] ?? null,
+      'price'=>$sale ?? $regular, 'compare_price'=>$sale !== null ? $regular : null,
+      'stock'=>$d['stock_status'] === 'out_of_stock' ? 0 : (int)$d['stock'], 'stock_status'=>$d['stock_status'], 'low_stock_alert'=>$d['low_stock_alert'] ?? null,
+      'description'=>\App\Support\Html::clean($d['description'] ?? ''),
+      'meta_title'=>($d['meta_title'] ?? null) ?: null, 'meta_description'=>($d['meta_description'] ?? null) ?: null, 'meta_keywords'=>($d['meta_keywords'] ?? null) ?: null,
+      'updated_at'=>now(),
+    ];
+    foreach ([1,2,3,4,5] as $n) $row["buy{$n}_price"] = ($d["buy{$n}_price"] ?? null) !== null && $d["buy{$n}_price"] !== '' ? (float)$d["buy{$n}_price"] : null;
+    $old = $id ? DB::table('products')->find($id) : null;
+    if ($id) abort_unless($old, 404);
+    // URL slug, unique inside main category + sub category
+    $base = \App\Support\Slugs::slug(($d['slug'] ?? null) ?: $row['name']) ?: 'product';
+    $subSlug = \App\Support\Slugs::subSlug($row['sub']); $slug = $base; $i = 2;
+    while (DB::table('products')->where('category_id', $row['category_id'])->when($id, fn($q) => $q->where('id', '!=', $id))->whereRaw(\App\Support\Slugs::subSql().' = ?', [$subSlug])->where('path_slug', $slug)->exists()) $slug = $base.'-'.$i++;
+    $row['slug'] = $base; $row['path_slug'] = $slug;
+    // publish state
+    $act = $d['act'] ?? 'publish';
+    $pub = $act === 'draft' ? false : ($act === 'publish' && !$id ? true : (($d['status'] ?? ($old && $old->published ? 'published' : 'draft')) === 'published'));
+    if ($act === 'preview' && !$id) $pub = false;
+    $row['published'] = $pub;
+    // images
+    $imgs = array_values(array_filter(array_map('trim', $d['images'] ?? []), fn($u) => preg_match('#^(https?://|/)#', $u)));
+    $row['image'] = $imgs[0] ?? ($old->image ?? null);
+    if ($d && empty($imgs) && $id) $row['image'] = null;
+    DB::transaction(function () use (&$id, $row, $imgs, $old, $r, $pub) {
+      if ($id) DB::table('products')->where('id', $id)->update($row);
+      else { $row['created_at'] = now(); $id = DB::table('products')->insertGetId($row); }
+      DB::table('product_images')->where('product_id', $id)->delete();
+      foreach ($imgs as $k => $u) DB::table('product_images')->insert(['product_id'=>$id, 'path'=>$u, 'position'=>$k, 'created_at'=>now(), 'updated_at'=>now()]);
+      DB::table('product_variants')->where('product_id', $id)->delete();
+      if ($r->boolean('has_variants')) foreach ((array)$r->input('v', []) as $v) {
+        $val = trim((string)($v['value'] ?? '')); if ($val === '') continue;
+        $attr = ($v['attr'] ?? 'Size') === 'Custom' ? (trim((string)($v['custom'] ?? '')) ?: 'Option') : (string)($v['attr'] ?? 'Size');
+        DB::table('product_variants')->insert(['product_id'=>$id, 'sku'=>($v['sku'] ?? null) ?: null, 'options'=>json_encode([$attr => $val], JSON_UNESCAPED_UNICODE), 'price'=>($v['price'] ?? '') !== '' ? (float)$v['price'] : null, 'stock'=>(int)($v['stock'] ?? 0), 'created_at'=>now(), 'updated_at'=>now()]);
+      }
+      $was = $old ? (bool)$old->published : false;
+      if ($pub !== $was) DB::table('product_status_logs')->insert(['product_id'=>$id, 'user_id'=>Auth::id(), 'user_name'=>Auth::user()->name, 'action'=>$pub ? 'Published' : 'Unpublished', 'created_at'=>now(), 'updated_at'=>now()]);
+    });
+    if ((bool)($old->published ?? false) !== $pub && ($old || $pub)) $this->notifyStatus([$row['name']], $pub);
+    \Illuminate\Support\Facades\Cache::forget('store.home6'); \Illuminate\Support\Facades\Cache::forget('store.sitemap3');
+    if ($act === 'preview') return redirect('/admin/products/'.$id.'/preview');
+    return redirect($act === 'draft' ? '/admin/products/'.$id.'/edit?saved=1' : '/admin/products/'.$id.'/edit?saved=1');
+  }
+  public function productPreview($id) {
+    abort_unless(DB::table('products')->find($id), 404);
+    return app(\App\Http\Controllers\StoreController::class)->previewProduct((int)$id);
   }
   public function productToggle($id) {
     $p = DB::table('products')->find($id); abort_unless($p, 404);

@@ -31,6 +31,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::post('/brands/{id}/toggle', [C::class,'brandToggle']);
   Route::post('/products', [C::class,'productSave']);
   Route::get('/products/{id}/edit', [C::class,'productForm']);
+  Route::get('/products/{id}/preview', [C::class,'productPreview']);
   Route::post('/products/{id}', [C::class,'productSave']);
   Route::post('/products/{id}/toggle', [C::class,'productToggle']);
   Route::get('/products-export.csv', [C::class,'productsCsv']);
