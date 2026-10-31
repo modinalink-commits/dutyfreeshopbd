@@ -176,6 +176,19 @@ class ChatController extends Controller {
     if (!empty($res['success'])) return back()->with('ok', 'WhatsApp number registered. Status now: '.json_encode($st));
     return back()->with('err', 'Register failed: '.json_encode($res['error'] ?? $res).' Status: '.json_encode($st));
   }
+  public function waCode(Request $r) {
+    $tok = Chat::sec('chat_wa_token'); $ph = Chat::sec('chat_wa_phone_id');
+    if (!$tok || !$ph) return back()->with('err', 'Save the WhatsApp Cloud API token and phone number ID first.');
+    $h = fn($m, $u, $q = []) => \Illuminate\Support\Facades\Http::timeout(25)->withToken($tok)->{$m}('https://graph.facebook.com/v21.0/'.$u, $q)->json();
+    $code = preg_replace('/\D/', '', (string)$r->input('wa_code'));
+    if ($code !== '') {
+      $res = $h('post', $ph.'/verify_code', ['code'=>$code]);
+      return !empty($res['success']) ? back()->with('ok', 'Code verified. Now enter a 6-digit PIN and press Register WhatsApp number.') : back()->with('err', 'Verify failed: '.json_encode($res['error'] ?? $res));
+    }
+    $method = $r->input('code_method') === 'VOICE' ? 'VOICE' : 'SMS';
+    $res = $h('post', $ph.'/request_code', ['code_method'=>$method, 'language'=>'en_US']);
+    return !empty($res['success']) ? back()->with('ok', 'Verification code requested by '.$method.' to the number. Enter the 6-digit code below and press Verify.') : back()->with('err', 'Request failed: '.json_encode($res['error'] ?? $res));
+  }
   public function saveSettings(Request $r) {
     $d = $r->validate(['fb_token'=>'nullable|string|max:600', 'ig_token'=>'nullable|string|max:600', 'wa_token'=>'nullable|string|max:600', 'wa_phone_id'=>'nullable|string|max:40', 'app_secret'=>'nullable|string|max:100']);
     foreach (['fb_token'=>'chat_fb_token', 'ig_token'=>'chat_ig_token', 'wa_token'=>'chat_wa_token', 'app_secret'=>'chat_app_secret', 'wa_phone_id'=>'chat_wa_phone_id'] as $k => $sk) if (!empty($d[$k])) Sms::setSecret($sk, trim($d[$k]));
