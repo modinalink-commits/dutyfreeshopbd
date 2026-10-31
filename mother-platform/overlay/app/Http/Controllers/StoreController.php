@@ -210,8 +210,19 @@ class StoreController extends Controller {
         \App\Support\Sms::queue($phone, "DutyFree Shop BD: আপনার অর্ডার $inv গ্রহণ করা হয়েছে। মোট ৳".number_format((float)$tot).". ট্র্যাক: dutyfreeshopbd.com/track?invoice=$inv", 'order_placed');
       }
     } catch (\Throwable $e) {}
-    return redirect('/track?invoice='.$inv.'&new=1');
+    return redirect(\Illuminate\Support\Facades\URL::temporarySignedRoute('order.done', now()->addDays(3), ['invoice'=>$inv]));
   }
+  private function pack(string $invoice): array {
+    $o = DB::table('orders')->where('invoice',$invoice)->first(); abort_unless($o, 404);
+    $items = DB::table('order_items as i')->leftJoin('products as p','p.id','=','i.product_id')->where('i.order_id',$o->id)->get(['i.name','i.qty','i.price','p.image']);
+    $pay = $o->pay_status ? ($o->pay_status==='Verification Pending' ? 'Payment Verification Pending' : ($o->pay_status==='Verified' ? 'Paid (verified)' : 'Payment '.$o->pay_status)) : 'Cash on delivery. Pay when you receive';
+    return ['o'=>$o,'items'=>$items,'sub'=>$items->sum(fn($i)=>$i->price*$i->qty),'payText'=>$pay];
+  }
+  public function done($invoice) {
+    $u = fn($extra = []) => \Illuminate\Support\Facades\URL::temporarySignedRoute('order.invoice', now()->addDays(3), ['invoice'=>$invoice] + $extra);
+    return response()->view('store.success', $this->base($this->pack($invoice) + ['viewUrl'=>$u(), 'dlUrl'=>$u(['print'=>1]), 'title'=>'Order Placed | DutyFree Shop BD','desc'=>'','canon'=>url('/'),'noindex'=>true]));
+  }
+  public function invoice($invoice) { return response()->view('store.invoice', $this->pack($invoice) + ['print'=>request()->boolean('print')]); }
   /** Tracking by invoice number only: shows status steps and products, never the customer's name, phone or address. */
   public function track(Request $r) {
     $o = null; $logs = collect();

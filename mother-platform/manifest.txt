@@ -105,3 +105,5 @@ public/pay/mtb.png
 public/pay/bkash.png
 public/pay/nagad.png
 app/Console/Commands/MotherCourierSync.php
+resources/views/store/success.blade.php
+resources/views/store/invoice.blade.php

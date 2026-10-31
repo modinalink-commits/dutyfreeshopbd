@@ -107,6 +107,8 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\ValidateCsrfTok
   Route::get('/track', [\App\Http\Controllers\StoreController::class,'track']);
   Route::get('/checkout', [\App\Http\Controllers\StoreController::class,'checkout']);
   Route::get('/wishlist', [\App\Http\Controllers\StoreController::class,'wishlist']);
+  Route::get('/order-success/{invoice}', [\App\Http\Controllers\StoreController::class,'done'])->name('order.done')->middleware('signed');
+  Route::get('/invoice/{invoice}', [\App\Http\Controllers\StoreController::class,'invoice'])->name('order.invoice')->middleware('signed');
   Route::get('/cart-items', [\App\Http\Controllers\StoreController::class,'cartItems'])->middleware('throttle:60,1');
   Route::post('/order', [\App\Http\Controllers\StoreController::class,'order'])->middleware('throttle:20,1');
   Route::get('/p/{key}', [\App\Http\Controllers\StoreController::class,'product'])->where('key','[A-Za-z0-9\-]+');
