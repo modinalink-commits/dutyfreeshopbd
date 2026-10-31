@@ -58,7 +58,7 @@ body .w [data-cr]{--pv:6;--g:10px;display:flex;gap:var(--g);padding:0;overflow-x
 .fst{display:flex;overflow-x:auto;gap:8px;scrollbar-width:none}.fst a{flex:0 0 150px}.fst::-webkit-scrollbar{display:none}.td{grid-template-columns:1fr}.td .im{min-height:150px}.td .tx{padding:14px}.td h3{font-size:15px}.td .pp{font-size:19px}
 .tr{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}.tr div{padding:8px 3px;font-size:9px;border-radius:8px}.tr i svg{width:18px;height:18px}.sl{padding:16px}.sl b{font-size:15px}.ap{padding:14px}}
 .sld.mb{display:none}@media (max-width:760px){.sld.dk{display:none}.sld.mb{display:block}}.sld{position:relative;max-width:1440px;margin:0 auto}.sld .sl-t{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}.sld .sl-t::-webkit-scrollbar{display:none}.sld .sl-t>a{flex:0 0 100%;scroll-snap-align:start;display:block}.sld .sl-t img{width:100%;height:auto;display:block}.sl-d{position:absolute;left:0;right:0;bottom:10px;display:flex;justify-content:center;gap:6px;pointer-events:none}.sl-d i{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.55)}.sl-d i.on{background:var(--o);width:20px;border-radius:6px}
-.osl{padding-top:16px}.osl .sl-t{gap:12px}.osl .sl-t>a{flex:0 0 calc(50% - 6px);border-radius:14px;overflow:hidden}@media (max-width:760px){.osl .sl-t>a{flex:0 0 88%}}
+.osl .sl-t>a{flex:0 0 50%;aspect-ratio:576/296;overflow:hidden}.osl .sl-t img{width:100%;height:100%;object-fit:cover}@media (max-width:760px){.osl .sl-t>a{flex:0 0 88%;margin-right:8px;border-radius:12px}}
 </style>
 @if($s['home_hero']==='1')
 @if($slides->count())
@@ -73,7 +73,6 @@ body .w [data-cr]{--pv:6;--g:10px;display:flex;gap:var(--g);padding:0;overflow-x
 
 @if($s['home_promos']==='1')<div class="w pm"><a href="/delivery-policy/"><i><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h11v10H3zM14 9h4l3 3v4h-7z"/><circle cx="7" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/></svg></i><span><b>Free Delivery</b><span>On selected orders</span></span></a><a href="/about-us/"><i><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M8.5 12l2.5 2.5L15.5 10"/></svg></i><span><b>100% Original</b><span>Imported and authentic</span></span></a><a href="#flash"><i><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 5L5 19"/><circle cx="7" cy="7" r="2.2"/><circle cx="17" cy="17" r="2.2"/></svg></i><span><b>Special Offers</b><span>Up to {{ $maxOff }}% off</span></span></a></div>@endif
 @if($s['home_flash']==='1' && $flash->count() && $fOn)
-@if($offerSlides->count())<div class="w osl"><div class="sld" data-auto="5000"><div class="sl-t">@foreach($offerSlides as $os)<a href="{{ $os->link ?: '#flash' }}"><img src="{{ $os->image }}" alt="DutyFree Shop BD offer" loading="lazy"></a>@endforeach</div></div></div>@endif
 <div class="w sec-fs" id="flash" data-end="{{ $fFix ? $fEnd * 1000 : '' }}" style="padding-top:22px"><div class="fs">
 <div class="hd2"><b class="t">⚡ FLASH SALE</b><span class="e">ENDS IN</span><div class="tm"><span class="b" data-cd="h">{{ substr($fmt($fEnd),0,2) }}</span><span>:</span><span class="b" data-cd="m">{{ substr($fmt($fEnd),3,2) }}</span><span>:</span><span class="b" data-cd="s">{{ substr($fmt($fEnd),6,2) }}</span></div>
 <div class="tb"><button type="button" class="on" data-ft="f">Flash Sale</button>@if($plus->count())<button type="button" data-ft="p">Plus Sale</button>@endif<a href="/search?deals=1">View All ›</a></div></div>
@@ -131,11 +130,8 @@ body .w [data-cr]{--pv:6;--g:10px;display:flex;gap:var(--g);padding:0;overflow-x
 </div></div></div>
 @endif
 
-@if($s['home_offer_banners']==='1' && count($offers))
-<div class="w sec-of" style="padding-top:34px"><div class="ofr">@foreach($offers as $i => [$oc, $mx])
-<div class="of" style="background:{{ $i === 0 ? 'linear-gradient(120deg,#7C2D12,#FF5A00)' : 'linear-gradient(120deg,#0B1220,#1D4ED8)' }}"><span class="k">SPECIAL OFFER</span><span class="t">Up to {{ $mx }}% off<br>{{ $oc->name }}</span><span class="s">{{ $i === 0 ? 'Delivery across the country · Cash on delivery' : 'Original imported products · Cash on delivery' }}</span>
-<div class="b"><a href="/{{ $oc->slug }}/" style="background:#fff;color:#0B1220">Save up to {{ $mx }}%</a><a href="/{{ $oc->slug }}/" style="background:#FF5A00;color:#fff">Order now</a></div></div>
-@endforeach</div></div>
+@if($offerSlides->count())
+<div class="w osl" style="padding-top:34px"><div class="sld" data-auto="5000"><div class="sl-t">@foreach($offerSlides as $os)<a href="{{ $os->link ?: '#flash' }}"><img src="{{ $os->image }}" alt="DutyFree Shop BD offer" loading="lazy"></a>@endforeach</div></div></div>
 @endif
 
 @if($s['home_cat_sections']==='1')
