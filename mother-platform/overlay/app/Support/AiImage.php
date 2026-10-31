@@ -15,12 +15,25 @@ class AiImage {
   public static function original(object $row): string {
     if ($row->original_image && is_file(public_path(ltrim($row->original_image, '/')))) return public_path(ltrim($row->original_image, '/'));
     $src = (string)$row->source_url; $abs = null;
-    if (preg_match('#^https?://#i', $src) && !str_contains($src, parse_url(config('app.url') ?: 'http://x', PHP_URL_HOST) ?: '@@')) { $m = Img::mirror($src, 'product'); $abs = $m ? public_path(ltrim($m, '/')) : null; }
-    else $abs = self::absOf($src);
+    $abs = self::absOf($src);
+    if (!$abs && preg_match('#^https?://#i', $src)) $abs = self::download($src, (int)$row->id);
     if (!$abs || !is_file($abs)) throw new \RuntimeException('Original image file not found on the server');
-    $ext = strtolower(pathinfo($abs, PATHINFO_EXTENSION)) ?: 'jpg'; $name = 'orig-'.$row->id.'.'.$ext; copy($abs, self::dir().'/'.$name);
+    $ext = strtolower(pathinfo($abs, PATHINFO_EXTENSION)) ?: 'jpg'; $name = 'orig-'.$row->id.'.'.$ext; (dirname($abs) === self::dir()) ? rename($abs, self::dir().'/'.$name) : copy($abs, self::dir().'/'.$name);
     DB::table('ai_images')->where('id', $row->id)->update(['original_image'=>'/uploads/ai/'.$name]);
     return self::dir().'/'.$name;
+  }
+  /** Download an image hosted elsewhere into uploads/ai (SSRF-guarded). Returns the absolute path. */
+  private static function download(string $url, int $id): string {
+    $host = parse_url($url, PHP_URL_HOST); $ip = $host ? gethostbyname($host) : null;
+    if (!$host || !$ip || !filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) throw new \RuntimeException('Original image host is not allowed');
+    $r = null; $last = '';
+    foreach ([['Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36', 'https://'.$host.'/'], ['Mozilla/5.0 (compatible; DutyFreeBD-ImageBot/1.0)', null]] as [$ua, $ref]) {
+      try { $h = ['User-Agent'=>$ua, 'Accept'=>'image/avif,image/webp,image/*,*/*;q=0.8']; if ($ref) $h['Referer'] = $ref; $r = \Illuminate\Support\Facades\Http::timeout(25)->withHeaders($h)->get($url); if ($r->ok()) break; $last = 'HTTP '.$r->status(); } catch (\Throwable $e) { $last = mb_substr($e->getMessage(), 0, 120); $r = null; }
+    }
+    if (!$r || !$r->ok()) throw new \RuntimeException('Could not download the original image from its website ('.$last.')');
+    $body = $r->body(); if (strlen($body) < 200 || strlen($body) > 15 * 1048576) throw new \RuntimeException('Downloaded original is not a valid image');
+    $i = @getimagesizefromstring($body); $ext = [IMAGETYPE_JPEG=>'jpg', IMAGETYPE_PNG=>'png', IMAGETYPE_WEBP=>'webp'][$i[2] ?? 0] ?? null; if (!$ext) throw new \RuntimeException('Downloaded original is not a JPG, PNG or WebP image');
+    $abs = self::dir().'/src-'.$id.'.'.$ext; file_put_contents($abs, $body); @chmod($abs, 0664); return $abs;
   }
   private static function load(string $abs) {
     $i = @getimagesize($abs); if (!$i) return null;
