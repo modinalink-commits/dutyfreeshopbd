@@ -23,6 +23,6 @@
 @foreach($c['extra'] ?? [] as [$xk,$xl])<td>{{ $ex[$row->id][$xk] ?? '' }}</td>@endforeach
 <td style="white-space:nowrap">@if(empty($c['ro']) && empty($c['noEdit']))<a class="btn g" href="/admin/m/{{ $c['slug'] }}/{{ $row->id }}/edit">Edit</a>@endif
 @if(empty($c['ro']) && empty($c['noCreate']))<form method="post" action="/admin/m/{{ $c['slug'] }}/{{ $row->id }}/delete" style="display:inline" onsubmit="return confirm('Delete this record?')">@csrf<button class="g">Delete</button></form>@endif</td></tr>
-@empty<tr><td colspan="30">No records yet.</td></tr>@endforelse</tbody></table>{{ $rows->links() }}</div>
+@empty<tr><td colspan="30">No records yet.</td></tr>@endforelse</tbody></table>{{ $rows->links('pagination.admin') }}</div>
 @includeIf('panels.'.$c['slug'])
 @endsection

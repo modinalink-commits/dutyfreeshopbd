@@ -24,5 +24,5 @@
 <td><b>@if($link)<a href="{{ $link }}" @if($x->src!=='own') target="_blank" rel="noopener nofollow" @endif style="color:inherit">{{ $x->name }}</a>@else{{ $x->name }}@endif</b>@if($x->category)<br><small style="color:#6B7280">{{ $x->category }}</small>@endif</td>
 <td>{{ $x->sku ?: '—' }}</td><td>{{ $x->store_name }}</td><td><b>{{ \App\Http\Controllers\InventoryController::stockText($x) }}</b></td><td>{{ $x->price !== null ? '৳'.number_format($x->price) : '—' }}</td><td><span class="pill {{ $cls }}">{{ $st }}</span></td></tr>
 @endif
-@empty<tr><td colspan="7">No products match. Add a store and press Scan Products on the Stores page.</td></tr>@endforelse</tbody></table></div>{{ $rows->links() }}</div>
+@empty<tr><td colspan="7">No products match. Add a store and press Scan Products on the Stores page.</td></tr>@endforelse</tbody></table></div>{{ $rows->links('pagination.admin') }}</div>
 @endsection
