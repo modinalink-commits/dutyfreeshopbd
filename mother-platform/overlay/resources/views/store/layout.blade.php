@@ -79,7 +79,7 @@ h1,h2,h3{margin:0}
   .fg .py{margin-top:10px;padding:8px;gap:5px}.fg .py .pb{display:none}.fg .py span.c{padding:3px 7px;border-radius:3px;font-size:9px}.fg .bt{padding:10px 0 0;font-size:9px}
   .fn{display:none}
 }
-.fnb{margin-top:44px;background:var(--n);padding-bottom:22px}.fnb .fn{margin-top:0;padding-bottom:12px}.fnb .shp{background:#fff;border-radius:12px;padding:12px;margin:10px 0 0;box-sizing:border-box}.shp{width:100%;margin:22px 0 10px;padding:0}.shp img{display:block;width:100%;height:auto}</style>
+.fnb{margin-top:44px;background:var(--n);padding-bottom:22px}.fnb .fn{margin-top:0;padding-bottom:12px}.fnb .shp{margin:10px 0 0;padding:0}.shp{width:100%;margin:22px 0 10px;padding:0}.shp img{display:block;width:100%;height:auto}</style>
 <style>
 /* Marketplace skin (Evaly-style layout, DutyFree colours) */
 .nv .nvi>div{display:flex;align-items:center}.nv .allc{align-self:center}.cts{align-items:flex-start}.cts h2,.st h2{text-align:left!important;font-size:26px!important;font-weight:800!important;color:var(--n)}.fs .pc{border-radius:14px}.fs .pc .ph{background:#F8F8F8}
@@ -163,7 +163,7 @@ body .hh .va:hover{filter:brightness(1.08)}
 <div><b>Shop</b><a href="#new">New arrivals</a><a href="#top">Top selling</a><a href="#flash">Offers</a></div>
 <div><b>Help</b><a href="/track">Order tracking</a><a href="/delivery-policy/">Delivery</a><a href="/return-policy/">Returns</a></div>
 <div><b>Company</b><a href="/about-us/">About</a><a href="/contact-us/">Contact</a><a href="/terms/">Terms</a></div></footer>
-<div class="w"><div class="shp"><img src="/pay/shurjopay.png" alt="Powered by shurjoPay — payment methods" width="1588" height="241" loading="lazy"></div></div></div>
+<div class="w"><div class="shp"><img src="/pay/shurjopay-dark.png" alt="Powered by shurjoPay — payment methods" width="1588" height="241" loading="lazy"></div></div></div>
 @endif
 <footer class="fg {{ !empty($home) ? 'only-m' : '' }}"><div class="w" style="padding-left:inherit;padding-right:inherit"><div class="cols">
 <div><img src="{{ $logo }}" alt="DutyFree Shop BD" width="150" height="34" loading="lazy"><div class="ab">{{ $s['footer_about'] ?: 'Your trusted source for authentic products at the best prices. 100% original. Cash on delivery available.' }}</div></div>
