@@ -177,7 +177,7 @@ body .hh .va:hover{filter:brightness(1.08)}
 <div class="fo"><b class="h">Follow Us</b><div class="so">@foreach($soc as $k => $l)
 @if($s[$k])<a href="{{ $s[$k] }}" rel="noopener" aria-label="{{ ucfirst(str_replace('social_','',$k)) }}">{!! $l !!}</a>@else<span>{!! $l !!}</span>@endif
 @endforeach<a href="https://wa.me/{{ $wa }}" rel="noopener" aria-label="WhatsApp">{!! $waI !!}</a></div></div></div>
-<div class="py"><span class="pb">We accept <b>{{ count($pays) > 1 ? 'payment gateway' : 'cash on delivery' }}</b></span>@foreach($pays as $py)<span class="c">{{ $py }}</span>@endforeach</div>
+@if(count($pays) > 1)<div class="py"><span class="pb">We accept <b>{{ count($pays) > 1 ? 'payment gateway' : 'cash on delivery' }}</b></span>@foreach($pays as $py)<span class="c">{{ $py }}</span>@endforeach</div>@endif
 <div class="shp"><img src="/pay/shurjopay.png" alt="Powered by shurjoPay — payment methods" width="1588" height="241" loading="lazy"></div>
 <div class="bt"><span>All rights reserved</span><span>{{ $s['footer_copyright'] }} · Customer care {{ $s['call_number'] }}</span></div></div></footer>
 @if($s['fab_side_cart']==='1')<a class="sc" href="/checkout" aria-label="Cart"><b id="scT">0 TK</b><div id="scN">0 items</div></a>@endif
