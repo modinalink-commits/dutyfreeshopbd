@@ -200,7 +200,7 @@ class AdminController extends Controller {
   }
   public function staffLog(Request $r) {
     $d0 = now('Asia/Dhaka')->startOfDay()->utc();
-    $logs = DB::table('order_status_logs as l')->join('orders as o','o.id','=','l.order_id')->select('l.*','o.invoice')->when($r->filled('staff'), fn($q) => $q->where('l.user_name',$r->staff))->orderByDesc('l.id')->paginate(50)->withQueryString();
+    $logs = DB::table('order_status_logs as l')->join('orders as o','o.id','=','l.order_id')->select('l.*','o.invoice')->when($r->filled('staff'), fn($q) => $q->where('l.user_name',$r->staff))->orderByDesc('l.id')->paginate(\App\Support\Pg::per(50))->withQueryString();
     $today = DB::table('order_status_logs')->where('created_at','>=',$d0);
     $conf = DB::selectOne("select avg(extract(epoch from (l.created_at - o.created_at))/60) m from order_status_logs l join orders o on o.id=l.order_id where l.to_status='Approved' and l.created_at >= ?", [$d0]);
     $stuck = DB::table('orders')->whereIn('status',['New','Pending'])->where('updated_at','<',now()->subMinutes(30))->count();

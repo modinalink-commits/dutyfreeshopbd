@@ -7,7 +7,7 @@ class AiImageController extends Controller {
   private function flush(): void { foreach (['store.home2','store.home4','store.home6','store.home5','store.cats','store.live2','store.live3','store.live4'] as $k) \Illuminate\Support\Facades\Cache::forget($k); }
   public function index(Request $r) {
     $q = trim((string)$r->query('q', '')); $f = $r->query('f', 'all');
-    $prods = DB::table('products')->when($q !== '', fn($w) => $w->where('name', 'ilike', '%'.$q.'%'))->whereNotNull('image')->where('image', '<>', '')->orderByDesc('id')->paginate(24)->withQueryString();
+    $prods = DB::table('products')->when($q !== '', fn($w) => $w->where('name', 'ilike', '%'.$q.'%'))->whereNotNull('image')->where('image', '<>', '')->orderByDesc('id')->paginate(\App\Support\Pg::per(24))->withQueryString();
     $ids = collect($prods->items())->pluck('id')->all();
     $gal = $ids ? DB::table('product_images')->whereIn('product_id', $ids)->orderBy('position')->get()->groupBy('product_id') : collect();
     $recs = $ids ? DB::table('ai_images')->whereIn('product_id', $ids)->get() : collect();

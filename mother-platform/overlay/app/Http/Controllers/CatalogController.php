@@ -16,7 +16,7 @@ class CatalogController extends Controller {
     $all = DB::table('products')->count(); $act = DB::table('products')->where('published',true)->count();
     $stats = [['Products', number_format($all), 'all stores'], ['Active', number_format($act), $all ? round($act/$all*100).'%' : '0%'], ['Low stock', DB::table('products')->whereBetween('stock',[1,5])->count(), 'needs buying'], ['Out of stock', DB::table('products')->where('stock','<=',0)->count(), 'hidden on site'], ['Reviews waiting', DB::table('reviews')->where('status','pending')->count(), 'approve']];
     $smsOn = (bool) DB::table('settings')->where('key','owner_phone')->value('value');
-    return view('products', ['products'=>$q->paginate(50)->withQueryString(), 'stats'=>$stats, 'cats'=>DB::table('categories')->orderBy('name')->get(), 'brands'=>DB::table('brands')->orderBy('position')->get(), 'smsOn'=>$smsOn]);
+    return view('products', ['products'=>$q->paginate(\App\Support\Pg::per(50))->withQueryString(), 'stats'=>$stats, 'cats'=>DB::table('categories')->orderBy('name')->get(), 'brands'=>DB::table('brands')->orderBy('position')->get(), 'smsOn'=>$smsOn]);
   }
   public function productForm($id = null) {
     $p = $id ? DB::table('products')->find($id) : null;

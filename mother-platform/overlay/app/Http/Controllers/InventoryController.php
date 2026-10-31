@@ -37,9 +37,9 @@ class InventoryController extends Controller {
     $base = $this->filtered($r);
     if ($grouped) {
       $key = "coalesce(nullif(lower(sku),''), lower(name))";
-      $rows = DB::query()->fromSub($base, 'f')->selectRaw("$key as k, min(name) as name, min(sku) as sku, (array_agg(image) filter (where image is not null))[1] as image, count(*) as stores, sum(coalesce(stock,0)) as total, max(price) as price, string_agg(store_name || ': ' || coalesce(stock::text, case when in_stock is true then 'In stock' when in_stock is false then 'Out' else '—' end), '  ·  ' order by store_name) as per_store")->groupByRaw($key)->orderByRaw('min(name)')->paginate(50)->withQueryString();
+      $rows = DB::query()->fromSub($base, 'f')->selectRaw("$key as k, min(name) as name, min(sku) as sku, (array_agg(image) filter (where image is not null))[1] as image, count(*) as stores, sum(coalesce(stock,0)) as total, max(price) as price, string_agg(store_name || ': ' || coalesce(stock::text, case when in_stock is true then 'In stock' when in_stock is false then 'Out' else '—' end), '  ·  ' order by store_name) as per_store")->groupByRaw($key)->orderByRaw('min(name)')->paginate(\App\Support\Pg::per(50))->withQueryString();
     } else {
-      $rows = $base->orderBy('name')->orderBy('store_name')->paginate(50)->withQueryString();
+      $rows = $base->orderBy('name')->orderBy('store_name')->paginate(\App\Support\Pg::per(50))->withQueryString();
     }
     $stores = DB::table('stores')->orderBy('name')->get(['id','name','domain']);
     $perStore = DB::table('store_products')->select('store_id', DB::raw('count(*) n'))->groupBy('store_id')->pluck('n','store_id');

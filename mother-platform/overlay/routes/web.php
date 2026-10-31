@@ -1,4 +1,5 @@
 <?php
+\Illuminate\Pagination\Paginator::defaultView('pagination.global'); \Illuminate\Pagination\Paginator::defaultSimpleView('pagination.global');
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AdminController as A;
 use App\Http\Controllers\CatalogController as C;

@@ -27,7 +27,7 @@
 <div class="aiErr" style="color:#B91C1C;font-size:12px;margin-top:4px">{{ $rec->processing_error ?? '' }}</div>
 <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"><button type="button" class="aiGo" style="padding:4px 10px;font-size:12px">{{ $proc ? 'Reprocess' : 'AI Process' }}</button><button type="button" class="g aiMain" style="padding:4px 10px;font-size:12px;{{ $proc ? '' : 'display:none' }}">Set as Main Image</button><a class="btn g aiDl" href="{{ $proc && $rec ? '/admin/ai-images/'.$rec->id.'/download' : '#' }}" style="padding:4px 10px;font-size:12px;{{ $proc ? '' : 'display:none' }}">Download</a><button type="button" class="g aiDel" style="padding:4px 10px;font-size:12px;color:#B91C1C;{{ $proc ? '' : 'display:none' }}">Delete</button></div></div>
 @empty<div class="card">No product images found.</div>@endforelse</div>
-<div style="margin-top:12px">{{ $prods->links() }}</div>
+<div style="margin-top:12px">{{ $prods->links('pagination.global', ['perSel'=>true]) }}</div>
 @verbatim<script>(function(){
 var G=document.getElementById('aiGrid'),T=G.dataset.t,bar=document.getElementById('aiBar'),msg=document.getElementById('aiMsg'),busy=false;
 function post(u,fd){fd=fd||new FormData();fd.append('_token',T);return fetch(u,{method:'POST',body:fd,headers:{Accept:'application/json'}}).then(function(r){return r.json()})}

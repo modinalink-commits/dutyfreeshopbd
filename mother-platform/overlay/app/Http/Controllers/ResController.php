@@ -150,7 +150,7 @@ class ResController extends Controller {
   }
   public function index($slug, Request $r) {
     $c = $this->cfg($slug); $lk = $this->lookups($c);
-    $rows = $this->query($c, $r)->paginate(50)->withQueryString();
+    $rows = $this->query($c, $r)->paginate(\App\Support\Pg::per(50))->withQueryString();
     return view('res_list', ['c'=>$c,'rows'=>$rows,'lk'=>$lk,'sum'=>$this->summary($c),'ctl'=>$this,'ex'=>$this->extras($c,$rows)]);
   }
   public function cell($c, $row, $f, $lk) { return $this->show($c, $row, $f, $lk); }
