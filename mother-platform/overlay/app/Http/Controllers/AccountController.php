@@ -69,7 +69,10 @@ class AccountController extends StoreController {
     $exists = DB::table('customers')->where('phone', $p)->whereNotNull('password')->exists();
     if ($d['purpose'] !== 'register' && !$exists) return response()->json(['sent'=>true]); // do not reveal which numbers have accounts
     if ($d['purpose'] === 'register' && $exists) return response()->json(['sent'=>false, 'error'=>'এই নম্বরে ইতিমধ্যে অ্যাকাউন্ট আছে। লগইন করুন।'], 422);
-    if (Cache::has("ac.otp.cool.$p")) return response()->json(['sent'=>false, 'error'=>'১ মিনিট পরে আবার চেষ্টা করুন'], 429);
+    if (Cache::has("ac.otp.cool.$p")) return response()->json(['sent'=>false, 'error'=>'কোড একটু আগেই পাঠানো হয়েছে। মোবাইলের SMS দেখুন, না এলে ১ মিনিট পরে আবার চেষ্টা করুন'], 429);
+    $hr = "ac.otp.hr.$p"; Cache::add($hr, 0, 3600);
+    if ((int)Cache::get($hr, 0) >= 8) return response()->json(['sent'=>false, 'error'=>'এই নম্বরে অনেকবার কোড চাওয়া হয়েছে। ১ ঘণ্টা পরে আবার চেষ্টা করুন অথবা কল করুন'], 429);
+    Cache::increment($hr);
     $c = (string)random_int(100000, 999999);
     Cache::put($this->otpKey($d['purpose'], $p), ['h'=>hash('sha256', $c.$p.config('app.key')), 't'=>0], 300); Cache::put("ac.otp.cool.$p", 1, 60);
     Sms::queue(Sms::number($p), "DutyFree Shop BD: আপনার কোড {$c} । কোডটি কাউকে দেবেন না।", 'account_otp');

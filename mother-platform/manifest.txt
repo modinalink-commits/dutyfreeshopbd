@@ -182,3 +182,4 @@ public/js/df-export.js
 app/Support/CardImg.php
 app/Support/Seo.php
 resources/views/store/zoom.blade.php
+config/trustedproxy.php

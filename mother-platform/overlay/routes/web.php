@@ -165,7 +165,7 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestF
   Route::get('/chat/order', [\App\Http\Controllers\ChatController::class,'webOrder'])->middleware('throttle:20,1');
   Route::get('/chat/poll', [\App\Http\Controllers\ChatController::class,'webPoll'])->middleware('throttle:90,1');
   Route::get('/account/login', [\App\Http\Controllers\AccountController::class,'authForm']);
-  Route::post('/account/otp', [\App\Http\Controllers\AccountController::class,'otpSend'])->middleware('throttle:6,1');
+  Route::post('/account/otp', [\App\Http\Controllers\AccountController::class,'otpSend'])->middleware('throttle:12,1');
   Route::post('/account/login', [\App\Http\Controllers\AccountController::class,'login'])->middleware('throttle:20,1');
   Route::post('/account/otp-login', [\App\Http\Controllers\AccountController::class,'otpLogin'])->middleware('throttle:15,1');
   Route::post('/account/register', [\App\Http\Controllers\AccountController::class,'register'])->middleware('throttle:10,1');

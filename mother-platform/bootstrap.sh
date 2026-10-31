@@ -67,6 +67,7 @@ COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader --cla
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
+for f in storage/framework/views/*.php; do php -l "$f" >/dev/null 2>&1 || echo "VIEWLINT FAIL $(head -c 220 "$f" | grep -o 'PATH [^ ]*') :: $(php -l "$f" 2>&1 | head -1)"; done
 php artisan mother:smoke || true
 mkdir -p public/uploads
 chown -R www-data:www-data storage bootstrap/cache public/uploads
