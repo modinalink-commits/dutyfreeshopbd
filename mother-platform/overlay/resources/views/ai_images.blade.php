@@ -1,0 +1,51 @@
+@extends('layout')@section('title','AI Product Images')
+@section('body')
+<h1 style="margin:0 0 4px">AI Product Images</h1>
+<span style="font-size:13px;color:#6B7280">One click turns a product photo into a clean e-commerce image: background removed, product unchanged, centred on white, 600 × 600 px, with thumbnails. Processing happens on the server; the OpenAI key is never sent to the browser.</span>
+@if(session('ok'))<div class="card" style="margin-top:12px;background:#ECFDF5;border-color:#A7F3D0">{{ session('ok') }}</div>@endif
+@if(!$gd)<div class="card err" style="margin-top:12px">PHP GD is not enabled on the server, so AI processing is paused.</div>@endif
+@if(!$hasKey)<div class="card err" style="margin-top:12px">OpenAI API key is not set yet. Paste it in the AI settings box below to start.</div>@endif
+<div class="card" style="margin-top:12px"><b>AI settings</b>
+<form method="post" action="/admin/ai-images/settings" style="display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin-top:8px">@csrf
+<label>OpenAI API key <small style="color:#6B7280">{{ $hasKey ? 'saved: '.$keyMask : 'not set' }}</small><input type="password" name="openai_api_key" autocomplete="off" placeholder="{{ $hasKey ? 'leave empty to keep the saved key' : 'sk-...' }}"></label>
+<label>Model<input name="ai_img_model" value="{{ $model }}"></label>
+<label>Quality<select name="ai_img_quality">@foreach(['low','medium','high'] as $qq)<option {{ $quality===$qq ? 'selected' : '' }}>{{ $qq }}</option>@endforeach</select></label>
+<label style="grid-column:1/-1">AI instruction<textarea name="ai_img_prompt" rows="4">{{ $prompt }}</textarea></label>
+<div><button>Save settings</button></div></form></div>
+<div class="card" style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+<form method="get" style="display:flex;gap:6px;margin:0"><input name="q" value="{{ $q }}" placeholder="Search product" style="max-width:200px"><select name="f" onchange="this.form.submit()" style="width:auto">@foreach(['all'=>'All','pending'=>'Pending','processing'=>'Processing','completed'=>'Completed','failed'=>'Failed'] as $k=>$l)<option value="{{ $k }}" {{ $f===$k ? 'selected' : '' }}>{{ $l }}{{ $k!=='all' ? ' ('.($counts[$k] ?? 0).')' : '' }}</option>@endforeach</select><button>Search</button></form>
+<span style="margin-left:auto"></span>
+<label style="margin:0;display:flex;gap:5px;align-items:center"><input type="checkbox" id="aiAll" style="width:auto"> Select all</label>
+<button type="button" id="bSel">Process Selected Images</button><button type="button" class="g" id="bPend">Process All Pending (this page)</button><button type="button" class="g" id="bRe">Reprocess All (this page)</button><button type="button" class="g" id="bTh">Generate Thumbnails</button>
+<div style="flex-basis:100%"><div style="height:8px;background:#E5E7EB;border-radius:6px;overflow:hidden"><div id="aiBar" style="height:8px;width:0;background:#16A34A"></div></div><small id="aiMsg" style="color:#6B7280"></small></div></div>
+<div id="aiGrid" data-t="{{ csrf_token() }}" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px;margin-top:12px">
+@forelse($slots as $s)@php $rec = $s['rec']; $st = $rec->ai_status ?? 'pending'; $orig = ($rec && $rec->original_image) ? $rec->original_image : $s['url']; $proc = $rec->processed_image ?? null; @endphp
+<div class="card ai" style="margin:0" data-pid="{{ $s['p']->id }}" data-url="{{ $rec && $rec->source_url ? $rec->source_url : $s['url'] }}" data-id="{{ $rec->id ?? '' }}" data-st="{{ $st }}">
+<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><input type="checkbox" class="aiCk" style="width:auto"><b style="flex:1;font-size:13px">{{ \Illuminate\Support\Str::limit($s['p']->name, 48) }}</b><span class="pill aiSt" style="background:{{ ['completed'=>'#DCFCE7','failed'=>'#FEE2E2','processing'=>'#FEF3C7','pending'=>'#E5E7EB'][$st] ?? '#E5E7EB' }}">{{ $st }}</span></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div><small style="color:#6B7280">Original</small><div style="aspect-ratio:1;background:#F3F4F6;border-radius:8px;display:flex;align-items:center;justify-content:center;overflow:hidden"><img src="{{ $orig }}" alt="" loading="lazy" referrerpolicy="no-referrer" style="max-width:100%;max-height:100%;object-fit:contain"></div></div>
+<div><small style="color:#6B7280">Processed 600 × 600 @if($s['main'] && $rec && $rec->is_main)<b style="color:#16A34A">· main image</b>@endif</small><div style="aspect-ratio:1;background:#fff;border:1px dashed #D1D5DB;border-radius:8px;display:flex;align-items:center;justify-content:center;overflow:hidden" class="aiPv">@if($proc)<img src="{{ $proc }}?v={{ $rec->processed_at ? \Carbon\Carbon::parse($rec->processed_at)->timestamp : 0 }}" alt="" loading="lazy" style="max-width:100%;max-height:100%">@else<small style="color:#9CA3AF">not processed</small>@endif</div></div></div>
+<div class="aiErr" style="color:#B91C1C;font-size:12px;margin-top:4px">{{ $rec->processing_error ?? '' }}</div>
+<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"><button type="button" class="aiGo" style="padding:4px 10px;font-size:12px">{{ $proc ? 'Reprocess' : 'AI Process' }}</button><button type="button" class="g aiMain" style="padding:4px 10px;font-size:12px;{{ $proc ? '' : 'display:none' }}">Set as Main Image</button><a class="btn g aiDl" href="{{ $proc && $rec ? '/admin/ai-images/'.$rec->id.'/download' : '#' }}" style="padding:4px 10px;font-size:12px;{{ $proc ? '' : 'display:none' }}">Download</a><button type="button" class="g aiDel" style="padding:4px 10px;font-size:12px;color:#B91C1C;{{ $proc ? '' : 'display:none' }}">Delete</button></div></div>
+@empty<div class="card">No product images found.</div>@endforelse</div>
+<div style="margin-top:12px">{{ $prods->links() }}</div>
+@verbatim<script>(function(){
+var G=document.getElementById('aiGrid'),T=G.dataset.t,bar=document.getElementById('aiBar'),msg=document.getElementById('aiMsg'),busy=false;
+function post(u,fd){fd=fd||new FormData();fd.append('_token',T);return fetch(u,{method:'POST',body:fd,headers:{Accept:'application/json'}}).then(function(r){return r.json()})}
+function paint(c,j){var st=j.ok?'completed':'failed';c.dataset.st=st;if(j.id)c.dataset.id=j.id;var p=c.querySelector('.aiSt');p.textContent=st;p.style.background=j.ok?'#DCFCE7':'#FEE2E2';c.querySelector('.aiErr').textContent=j.ok?'':(j.error||'Failed');
+if(j.ok){c.querySelector('.aiPv').innerHTML='<img src="'+j.processed+'" alt="" style="max-width:100%;max-height:100%">';c.querySelector('.aiGo').textContent='Reprocess';['.aiMain','.aiDl','.aiDel'].forEach(function(s){c.querySelector(s).style.display=''});c.querySelector('.aiDl').href='/admin/ai-images/'+j.id+'/download'}}
+function one(c){var p=c.querySelector('.aiSt');p.textContent='processing';p.style.background='#FEF3C7';c.querySelector('.aiGo').disabled=true;var fd=new FormData();fd.append('product_id',c.dataset.pid);fd.append('url',c.dataset.url);
+return post('/admin/ai-images/process',fd).then(function(j){paint(c,j)}).catch(function(){paint(c,{ok:false,error:'Network or server timeout. Try again.'})}).then(function(){c.querySelector('.aiGo').disabled=false})}
+function many(list,label){if(busy||!list.length){msg.textContent=list.length?'Busy…':'Nothing to process.';return}busy=true;var n=0;bar.style.width='0';(function next(){if(n>=list.length){busy=false;msg.textContent=label+': finished '+n+' image(s).';bar.style.width='100%';return}msg.textContent=label+' '+(n+1)+' / '+list.length+' (about 20-40 seconds each, keep this page open)';one(list[n]).then(function(){n++;bar.style.width=Math.round(n/list.length*100)+'%';next()})})()}
+var cards=function(){return [].slice.call(G.querySelectorAll('.ai'))};
+G.addEventListener('click',function(e){var c=e.target.closest('.ai');if(!c)return;
+if(e.target.classList.contains('aiGo'))one(c);
+if(e.target.classList.contains('aiMain')){if(!confirm('Use the processed image as the main product image on the website?'))return;post('/admin/ai-images/'+c.dataset.id+'/main').then(function(j){msg.textContent=j.ok?'Main image updated. Live on the website.':'Could not update.'})}
+if(e.target.classList.contains('aiDel')){if(!confirm('Delete the processed image? The original stays.'))return;post('/admin/ai-images/'+c.dataset.id+'/delete').then(function(){location.reload()})}
+if(e.target.classList.contains('aiDl')&&e.target.getAttribute('href')==='#')e.preventDefault()});
+document.getElementById('aiAll').onchange=function(){var v=this.checked;cards().forEach(function(c){c.querySelector('.aiCk').checked=v})};
+document.getElementById('bSel').onclick=function(){many(cards().filter(function(c){return c.querySelector('.aiCk').checked}),'Processing')};
+document.getElementById('bPend').onclick=function(){many(cards().filter(function(c){return c.dataset.st==='pending'||c.dataset.st==='failed'}),'Processing')};
+document.getElementById('bRe').onclick=function(){if(confirm('Reprocess every image on this page? This uses the OpenAI API for each one.'))many(cards(),'Reprocessing')};
+document.getElementById('bTh').onclick=function(){msg.textContent='Generating thumbnails…';post('/admin/ai-images/thumbs').then(function(j){msg.textContent='Thumbnails rebuilt for '+j.n+' processed image(s).'})};
+})();</script>@endverbatim
+@endsection

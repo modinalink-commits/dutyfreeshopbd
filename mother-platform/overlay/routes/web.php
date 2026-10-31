@@ -82,6 +82,13 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::post('/courier/settle', [\App\Http\Controllers\CourierController::class,'settle']);
   Route::get('/ai-chat', [\App\Http\Controllers\AiChatController::class,'show']);
   Route::post('/ai-chat', [\App\Http\Controllers\AiChatController::class,'save']);
+  Route::get('/ai-images', [\App\Http\Controllers\AiImageController::class,'index']);
+  Route::post('/ai-images/settings', [\App\Http\Controllers\AiImageController::class,'settings']);
+  Route::post('/ai-images/process', [\App\Http\Controllers\AiImageController::class,'process']);
+  Route::post('/ai-images/thumbs', [\App\Http\Controllers\AiImageController::class,'thumbs']);
+  Route::post('/ai-images/{id}/main', [\App\Http\Controllers\AiImageController::class,'setMain']);
+  Route::post('/ai-images/{id}/delete', [\App\Http\Controllers\AiImageController::class,'destroy']);
+  Route::get('/ai-images/{id}/download', [\App\Http\Controllers\AiImageController::class,'download']);
   Route::get('/media', [\App\Http\Controllers\MediaController::class,'index']);
   Route::post('/media/optimize', [\App\Http\Controllers\MediaController::class,'batch']);
   Route::post('/media/settings', [\App\Http\Controllers\MediaController::class,'settings']);
