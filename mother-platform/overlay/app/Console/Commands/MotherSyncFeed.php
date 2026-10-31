@@ -65,7 +65,8 @@ class MotherSyncFeed extends Command {
       $seen[] = $pid; $n++;
     }
     if ($n >= 50) DB::table('products')->whereNotNull('ext_id')->whereNotIn('ext_id',$seen)->update(['published'=>false,'updated_at'=>$now]);
-    foreach (['store.home2','store.cats','store.subs','store.sitemap','store.live2'] as $k) \Illuminate\Support\Facades\Cache::forget($k);
+    \App\Support\Slugs::assignAll();
+    foreach (['store.home2','store.home4','store.home5','store.cats','store.catslugs','store.subs','store.sitemap','store.sitemap2','store.live2','store.live4'] as $k) \Illuminate\Support\Facades\Cache::forget($k);
     $this->line("FEED imported $n");
     return 0;
   }

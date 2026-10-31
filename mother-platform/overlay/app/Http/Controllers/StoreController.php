@@ -15,7 +15,14 @@ class StoreController extends Controller {
     $s = trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($name)), '-'); $s = trim(substr($s, 0, 60), '-');
     return $s !== '' ? $s : 'product';
   }
-  public static function url($p): string { return '/p/'.($p->ext_id ?? 'm'.$p->id).'-'.self::slugOf($p->name).'/'; }
+  /** Canonical product URL: /main-category/secondary-category/product-name (legacy /p/ID-name only when a product has no slug yet). */
+  public static function url($p): string {
+    if (!empty($p->path_slug) && !empty($p->category_id)) {
+      $cs = self::rem('store.catslugs', 300, fn() => DB::table('categories')->whereNotNull('slug')->pluck('slug','id')->all())[$p->category_id] ?? null;
+      if ($cs) return '/'.$cs.'/'.\App\Support\Slugs::subSlug($p->sub ?? null).'/'.$p->path_slug;
+    }
+    return '/p/'.($p->ext_id ?? 'm'.$p->id).'-'.self::slugOf($p->name).'/';
+  }
   public static function set(): array {
     $o = self::rem('store.settings2', 300, function () {
       $cur = DB::table('settings')->pluck('value','key'); $o = [];
@@ -63,7 +70,7 @@ class StoreController extends Controller {
   }
   public function home() {
     $s = self::set();
-    $data = self::rem('store.home4', 300, function () use ($s) {
+    $data = self::rem('store.home5', 300, function () use ($s) {
       $pub = fn() => DB::table('products')->where('published',true);
       $sold = DB::table('order_items as i')->join('orders as o','o.id','=','i.order_id')->where('o.status','!=','Cancel')->where('o.created_at','>=',now()->subDays(30))->groupBy('i.product_id')->selectRaw('i.product_id as pid, sum(i.qty) as q')->pluck('q','pid');
       $deals = self::dealBase((float)($s['deal_min_off'] ?? 0))->limit(max(1,(int)($s['deal_max'] ?? 12)))->get()
@@ -87,31 +94,58 @@ class StoreController extends Controller {
   }
   /** Real recent orders, customer names masked (first letter + ***). */
   private function liveOrders() {
-    return self::rem('store.live3', 60, fn() => DB::table('orders as o')->join('order_items as i','i.order_id','=','o.id')->leftJoin('products as p','p.id','=','i.product_id')->whereNotIn('o.status',['Cancel','Incomplete'])->where('o.created_at','>=',now()->subDays(3))
-      ->select(DB::raw("'' as customer_name"),DB::raw("'' as district"),'o.shipping','o.created_at','i.name','i.qty','i.price','p.image','p.id as pid','p.ext_id','p.name as pname')->orderByDesc('o.id')->limit(6)->get()
+    return self::rem('store.live4', 60, fn() => DB::table('orders as o')->join('order_items as i','i.order_id','=','o.id')->leftJoin('products as p','p.id','=','i.product_id')->whereNotIn('o.status',['Cancel','Incomplete'])->where('o.created_at','>=',now()->subDays(3))
+      ->select(DB::raw("'' as customer_name"),DB::raw("'' as district"),'o.shipping','o.created_at','i.name','i.qty','i.price','p.image','p.id as pid','p.ext_id','p.name as pname','p.category_id as pcat','p.sub as psub','p.path_slug as pslug')->orderByDesc('o.id')->limit(6)->get()
       ->map(function ($r) { $r->masked = ''; return $r; }));
   }
-  public function category(Request $r, string $slug) {
+  public function category(Request $r, string $slug, ?string $subSlug = null) {
     $c = $this->cats()[$slug] ?? null;
-    if (!$c) { $page = DB::table('pages')->where('slug',$slug)->where('active',true)->first(); if ($page) return $this->page($page); return $this->notFound(); }
+    if (!$c) { if ($subSlug !== null) return $this->notFound(); $page = DB::table('pages')->where('slug',$slug)->where('active',true)->first(); if ($page) return $this->page($page); return $this->notFound(); }
+    if ($subSlug === null && $r->filled('sub')) { // old ?sub=LM links -> /category/lm (301)
+      $rest = $r->except('sub'); return redirect('/'.$slug.'/'.\App\Support\Slugs::subSlug($r->sub).($rest ? '?'.http_build_query($rest) : ''), 301);
+    }
     $s = self::set(); $per = max(12, (int)$s['per_page']);
-    $q = $this->q()->where('category_id',$c->id); if ($r->filled('sub')) $q->where('sub',$r->sub);
+    $q = $this->q()->where('category_id',$c->id); $subName = null;
+    if ($subSlug !== null) {
+      $q->whereRaw(\App\Support\Slugs::subSql().' = ?', [$subSlug]);
+      $subName = (clone $q)->whereNotNull('sub')->value('sub') ?: ((clone $q)->exists() ? 'Other' : null);
+      if ($subName === null) return $this->notFound();
+    }
     if (is_numeric($r->min)) $q->where('price','>=',(float)$r->min); if (is_numeric($r->max)) $q->where('price','<=',(float)$r->max);
     $q = $q->orderByRaw('coalesce(sub, \'~\')');
     $items = $this->sorted($q, $r->input('sort', $s['default_sort']))->paginate($per)->withQueryString();
-    return response()->view('store.category', $this->base(['c'=>$c, 'items'=>$items, 'groups'=>collect($items->items())->groupBy(fn($p) => $p->sub ?: $c->name), 'title'=>$c->title ?: $c->name.' | DutyFree Shop BD', 'desc'=>$c->meta_description, 'canon'=>url('/'.$slug).'/'.($r->filled('sub') ? '?sub='.rawurlencode($r->sub) : '')]))->header('Cache-Control','public, max-age=120');
+    $canon = url('/'.$slug).($subSlug !== null ? '/'.$subSlug : '/');
+    $title = $subName ? $subName.' – '.$c->name.' | DutyFree Shop BD' : ($c->title ?: $c->name.' | DutyFree Shop BD');
+    return response()->view('store.category', $this->base(['c'=>$c, 'subName'=>$subName, 'subSlug'=>$subSlug, 'items'=>$items, 'groups'=>collect($items->items())->groupBy(fn($p) => $p->sub ?: $c->name), 'title'=>$title, 'desc'=>$subName ? $subName.' – original imported products in '.$c->name.' at DutyFree Shop BD. Cash on delivery, nationwide delivery.' : $c->meta_description, 'canon'=>$canon]))->header('Cache-Control','public, max-age=120');
   }
+  /** /category/secondary-category */
+  public function categorySub(Request $r, string $cat, string $sub) { return $this->category($r, $cat, $sub); }
+  /** /category/secondary-category/product-name */
+  public function productByPath(string $cat, string $sub, string $slug) {
+    $c = $this->cats()[$cat] ?? null; if (!$c) return $this->notFound();
+    $cands = $this->q()->where('category_id',$c->id)->where('path_slug',$slug)->orderBy('id')->get(); if ($cands->isEmpty()) return $this->notFound();
+    $p = $cands->first(fn($x) => \App\Support\Slugs::subSlug($x->sub) === $sub) ?? ($cands->count() === 1 ? $cands->first() : null);
+    if (!$p) return $this->notFound();
+    if (rtrim(request()->getPathInfo(),'/') !== self::url($p)) return redirect(self::url($p), 301);
+    return $this->renderProduct($p);
+  }
+  /** Legacy /p/ID-name URLs: 301 to the canonical hierarchy URL. */
   public function product(string $key) {
     if (!preg_match('/^(m?)(\d+)(?:-(.*))?$/', $key, $m)) return $this->notFound();
     $p = $m[1] === 'm' ? $this->q()->where('id',(int)$m[2])->first() : $this->q()->where('ext_id',(int)$m[2])->first();
     if (!$p) return $this->notFound();
-    if (rtrim(request()->getPathInfo(),'/').'/' !== self::url($p)) return redirect(self::url($p), 301);
+    if (empty($p->path_slug)) { \App\Support\Slugs::assignAll(); $p = $this->q()->where('id',$p->id)->first(); }
+    $u = self::url($p);
+    if (!str_starts_with($u, '/p/')) return redirect($u, 301);
+    return $this->renderProduct($p);
+  }
+  private function renderProduct($p) {
     $c = DB::table('categories')->find($p->category_id);
     $rel = $this->q()->where('category_id',$p->category_id)->where('id','!=',$p->id)->orderByRaw('(sub = ?) desc', [$p->sub ?? ''])->orderByDesc('id')->limit(11)->get();
     $reviews = DB::table('reviews')->where('product_id',$p->id)->where('status','approved')->orderByDesc('id')->limit(20)->get();
     DB::table('product_views')->insert(['product_id'=>$p->id,'day'=>now('Asia/Dhaka')->toDateString(),'created_at'=>now(),'updated_at'=>now()]);
     $price = (float)$p->price;
-    return response()->view('store.product', $this->base(['p'=>$p, 'c'=>$c, 'rel'=>$rel, 'reviews'=>$reviews, 'title'=>$p->name.' দাম ৳ '.number_format($price).' | '.($c->name ?? 'Shop').' | DutyFree Shop BD', 'desc'=>$p->name.' – দাম ৳ '.number_format($price).'। অরিজিনাল ইমপোর্টেড পণ্য, অর্ডার করুন, সারা বাংলাদেশে ডেলিভারি। DutyFree Shop BD.', 'canon'=>url(self::url($p)), 'ogimg'=>$p->image]))->header('Cache-Control','public, max-age=120');
+    return response()->view('store.product', $this->base(['p'=>$p, 'c'=>$c, 'rel'=>$rel, 'reviews'=>$reviews, 'title'=>$p->name.' দাম ৳ '.number_format($price).' | '.($c->name ?? 'Shop').' | DutyFree Shop BD', 'desc'=>$p->name.' – দাম ৳ '.number_format($price).'। অরিজিনাল ইমপোর্টেড পণ্য, অর্ডার করুন, সারা বাংলাদেশে ডেলিভারি। DutyFree Shop BD.', 'canon'=>url(self::url($p)), 'ogimg'=>$p->image ? (preg_match('#^https?://#i', $p->image) ? $p->image : url($p->image)) : url('/og.png')]))->header('Cache-Control','public, max-age=120');
   }
   public function search(Request $r) {
     $t = trim(mb_substr((string)$r->q, 0, 80)); $items = collect();
@@ -202,7 +236,7 @@ class StoreController extends Controller {
       DB::table('order_status_logs')->insert(['order_id'=>$id,'user_id'=>null,'user_name'=>'Website','from_status'=>null,'to_status'=>'New','note'=>$pm['status'] ? 'Order placed on website. Payment Verification Pending ('.$pm['label'].', ref '.$pm['txn'].')' : 'Order placed on website','created_at'=>now(),'updated_at'=>now()]);
       return $id;
     });
-    Cache::forget('store.live3');
+    Cache::forget('store.live3'); Cache::forget('store.live4');
     $inv = DB::table('orders')->where('id',$id)->value('invoice');
     try {
       if ((DB::table('settings')->where('key','sms_order_confirm')->value('value') ?? '1') === '1') {
@@ -240,10 +274,11 @@ class StoreController extends Controller {
     return response()->view('store.missing', $this->base(['title'=>'পেজ পাওয়া যায়নি | DutyFree Shop BD', 'desc'=>'', 'canon'=>url('/'), 'noindex'=>true]), 404);
   }
   public function sitemap() {
-    $xml = self::rem('store.sitemap', 3600, function () {
+    $xml = self::rem('store.sitemap2', 3600, function () {
       $u = fn($loc, $img = null) => '<url><loc>'.e($loc).'</loc><changefreq>daily</changefreq>'.($img ? '<image:image><image:loc>'.e($img).'</image:loc></image:image>' : '').'</url>';
       $o = $u(url('/').'/');
       foreach ($this->cats() as $c) $o .= $u(url('/'.$c->slug).'/');
+      foreach ($this->subs() as $cid => $rows) { $cs = $this->cats()->firstWhere('id', $cid); if ($cs) foreach ($rows as $rw) $o .= $u(url('/'.$cs->slug.'/'.\App\Support\Slugs::subSlug($rw->sub))); }
       foreach (DB::table('products')->where('published',true)->orderBy('id')->cursor() as $p) $o .= $u(url(self::url($p)), $p->image);
       return '<?xml version="1.0" encoding="UTF-8"?>'."\n".'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">'.$o.'</urlset>';
     });

@@ -112,3 +112,5 @@ app/Support/CustomerIntel.php
 resources/views/cust_intel.blade.php
 database/migrations/2026_10_31_000016_order_email_field.php
 public/pay/shurjopay.png
+app/Support/Slugs.php
+database/migrations/2026_10_31_000017_product_path_slug.php

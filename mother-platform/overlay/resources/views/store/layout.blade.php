@@ -122,6 +122,14 @@ cd:function(){var now=new Date(),d=new Date(now.getTime()+6*36e5),end=Date.UTC(d
 </script>
 @if(!empty($s['head_code'])){!! $s['head_code'] !!}@endif
 <style>
+/* home category section header, same look as the category page (pill chips, bold title) */
+body .hh{gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+body .hh .t{font-size:22px;font-weight:800;text-transform:none;color:var(--n);padding-left:10px;border-left:4px solid var(--o);line-height:1.15}
+body .hh .tb{font-size:12.5px;font-weight:600;text-decoration:none;text-transform:none;color:#374151;background:#fff;border:1px solid #EAEAEA;border-radius:999px;padding:6px 13px;white-space:nowrap;transition:border-color .15s,color .15s}
+body .hh .tb:hover{border-color:var(--o);color:var(--o)}
+body .hh .tb:nth-of-type(n+4){display:inline-block}.hh .tb:nth-of-type(n+6){display:none}
+body .hh .va{background:var(--o);color:#fff;font-size:12.5px;font-weight:700;border-radius:999px;padding:7px 15px;white-space:nowrap}.hh .va:after{content:" →"}
+body .hh .va:hover{filter:brightness(1.08)}
 /* product card v3: ribbon discount, green free-delivery pill, price + discount chip, stock pill, cart button */
 .pc{border:1px solid #F0E6E0;border-radius:16px;box-shadow:0 2px 10px rgba(15,23,42,.05);padding:0 0 12px;gap:7px}
 .pc .bo{left:8px;top:8px;min-width:38px;text-align:center;background:linear-gradient(145deg,#FF4B3A,#D81B1B);color:#fff;font-size:14px;font-weight:800;line-height:1;border-radius:0;padding:8px 8px 15px;clip-path:polygon(0 0,100% 0,100% 74%,50% 100%,0 74%);letter-spacing:.2px;z-index:2}
@@ -193,7 +201,7 @@ document.addEventListener('click',function(e){if(!f.contains(e.target))box.style
 <div class="aip" id="aip" role="dialog" aria-label="Shopping assistant"><h4><span>DutyFree Shop BD Assistant</span><button type="button" id="aix" aria-label="Close">×</button></h4><div class="aim" id="aim"><div class="b">আসসালামু আলাইকুম! কোন পণ্য খুঁজছেন? আমাকে জিজ্ঞেস করুন।</div></div><form class="aif" id="aif"><input id="aiq" maxlength="300" autocomplete="off" placeholder="Type your question..."><button>Send</button></form></div>
 <script>(function(){var o=document.getElementById('ai0'),p=document.getElementById('aip'),m=document.getElementById('aim'),f=document.getElementById('aif'),q=document.getElementById('aiq'),h=[],busy=0;
 o.onclick=function(){p.classList.toggle('op');if(p.classList.contains('op'))q.focus()};document.getElementById('aix').onclick=function(){p.classList.remove('op')};
-function add(c,t){var d=document.createElement('div');d.className=c;var re=/(\/p\/[A-Za-z0-9\-_%]+\/?|\/[a-z0-9\-]+\/\?sub=[^\s]+)/g,i=0,x;while((x=re.exec(t))){d.appendChild(document.createTextNode(t.slice(i,x.index)));var a=document.createElement('a');a.href=x[0];a.textContent='View product';d.appendChild(a);i=x.index+x[0].length}d.appendChild(document.createTextNode(t.slice(i)));m.appendChild(d);m.scrollTop=m.scrollHeight;return d}
+function add(c,t){var d=document.createElement('div');d.className=c;var re=/(\/p\/[A-Za-z0-9\-_%]+\/?|\/[a-z0-9\-]+\/[a-z0-9\-]+\/[a-z0-9\-]+|\/[a-z0-9\-]+\/\?sub=[^\s]+)/g,i=0,x;while((x=re.exec(t))){d.appendChild(document.createTextNode(t.slice(i,x.index)));var a=document.createElement('a');a.href=x[0];a.textContent='View product';d.appendChild(a);i=x.index+x[0].length}d.appendChild(document.createTextNode(t.slice(i)));m.appendChild(d);m.scrollTop=m.scrollHeight;return d}
 f.onsubmit=function(e){e.preventDefault();var t=q.value.trim();if(!t||busy)return;q.value='';add('u',t);h.push({role:'user',content:t});busy=1;var w=add('b','...');
 fetch('/ai-chat',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({messages:h.slice(-8)})}).then(function(r){return r.json()}).then(function(j){w.remove();var r=j.reply||'Sorry, please call 09613828081.';add('b',r);h.push({role:'assistant',content:r})}).catch(function(){w.remove();add('b','Network problem. Please try again.')}).then(function(){busy=0})}})();</script>
 @endif

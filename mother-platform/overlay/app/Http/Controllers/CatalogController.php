@@ -26,6 +26,7 @@ class CatalogController extends Controller {
     $d['slug'] = \Illuminate\Support\Str::slug(($d['slug'] ?? null) ?: $d['name']) ?: null;
     if ($id) DB::table('products')->where('id',$id)->update($d);
     else { $d['created_at'] = now(); $d['published'] = false; $id = DB::table('products')->insertGetId($d); }
+    \App\Support\Slugs::assignAll();
     return redirect('/admin/products');
   }
   public function productToggle($id) {
@@ -76,7 +77,7 @@ class CatalogController extends Controller {
       else DB::table('products')->insert($data + ['sku'=>$sku ?: null, 'slug'=>\Illuminate\Support\Str::slug($data['name']), 'published'=>false, 'created_at'=>now()]);
       $n++;
     }
-    fclose($fh);
+    fclose($fh); \App\Support\Slugs::assignAll();
     return back()->with('ok', "$n products imported or updated".($bad ? ", $bad rows skipped" : '').'. Imported products stay unpublished until you publish them.');
   }
   public function importTemplate() {
