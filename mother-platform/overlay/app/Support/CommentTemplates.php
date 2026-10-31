@@ -2,7 +2,7 @@
 namespace App\Support;
 /** Ready-made internal comment templates for the order page. */
 class CommentTemplates {
-  public static function all(): array { return [
+  public static function defaults(): array { return [
     'কাস্টমার কনফার্মেশন' => [
       'কাস্টমার অর্ডার কনফার্ম করেছেন।',
       'কাস্টমার ফোন রিসিভ করেননি।',
@@ -80,4 +80,12 @@ class CommentTemplates {
       'অর্ডার সফলভাবে সম্পন্ন হয়েছে।',
     ],
   ]; }
+  /** Templates are managed in Admin > Order comment templates (table order_comments); falls back to the built-in list. */
+  public static function all(): array {
+    try {
+      $rows = \Illuminate\Support\Facades\DB::table('order_comments')->orderBy('id')->get(['text','kind']);
+      if ($rows->isEmpty()) return self::defaults();
+      $o = []; foreach ($rows as $r) $o[$r->kind ?: 'General'][] = $r->text; return $o;
+    } catch (\Throwable $e) { return self::defaults(); }
+  }
 }

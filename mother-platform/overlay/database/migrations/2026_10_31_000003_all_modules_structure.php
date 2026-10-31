@@ -18,7 +18,7 @@ return new class extends Migration {
     Schema::create('couriers', function (Blueprint $t) { $t->id(); $t->string('name'); $t->boolean('active')->default(false); $t->boolean('is_default')->default(false); $t->json('settings')->nullable(); $t->timestamps(); });
     Schema::create('districts', function (Blueprint $t) { $t->id(); $t->string('name'); $t->decimal('delivery_charge',10,2)->default(0); $t->boolean('active')->default(true); $t->timestamps(); });
     Schema::create('sub_districts', function (Blueprint $t) { $t->id(); $t->foreignId('district_id')->index(); $t->string('name'); $t->decimal('delivery_charge',10,2)->nullable(); $t->timestamps(); });
-    Schema::create('order_staff_comments', function (Blueprint $t) { $t->id(); $t->string('text'); $t->string('kind')->nullable(); $t->timestamps(); });
+    Schema::create('order_comments', function (Blueprint $t) { $t->id(); $t->string('text'); $t->string('kind')->nullable(); $t->timestamps(); });
     Schema::create('order_sources', function (Blueprint $t) { $t->id(); $t->string('name'); $t->boolean('active')->default(true); $t->timestamps(); });
     Schema::create('money_accounts', function (Blueprint $t) { $t->id(); $t->string('name'); $t->string('type')->default('bank'); $t->decimal('opening',14,2)->default(0); $t->boolean('active')->default(true); $t->timestamps(); });
     Schema::create('expense_purposes', function (Blueprint $t) { $t->id(); $t->string('name'); $t->boolean('is_expense')->default(true); $t->timestamps(); });

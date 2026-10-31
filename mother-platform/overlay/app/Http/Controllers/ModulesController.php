@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\DB;
 class ModulesController extends Controller {
   public function index() {
     $mods = [
-      'Order Management (18 stages)' => [['orders','order_items','order_status_logs','order_staff_comments','order_sources'], 'Working', '/admin/orders'],
+      'Order Management (18 stages)' => [['orders','order_items','order_status_logs','order_comments','order_sources'], 'Working', '/admin/orders'],
       'Staff Activity and Tracking' => [['order_status_logs','audit_logs'], 'Working', '/admin/staff-log'],
       'Catalog, Categories, Brands' => [['products','categories','brands','product_status_logs'], 'Working', '/admin/products'],
       'Discount Center and Coupons' => [['discount_rules','coupons'], 'Working (rules apply at checkout in the next step)', '/admin/discounts'],
