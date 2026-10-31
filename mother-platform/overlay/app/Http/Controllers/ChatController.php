@@ -155,11 +155,14 @@ class ChatController extends Controller {
       foreach (($d['data']['granular_scopes'] ?? []) as $gs) if (($gs['scope'] ?? '') === 'whatsapp_business_management') foreach (($gs['target_ids'] ?? []) as $id) { $c = $g('get', $id.'/phone_numbers', ['fields'=>'id']); foreach (($c['data'] ?? []) as $pn) if (($pn['id'] ?? '') === $ph) $waba = $id; }
       if (!$waba) return back()->with('err', 'Could not find the WhatsApp account for this token/phone ID: '.json_encode($d['error'] ?? ($d['data']['granular_scopes'] ?? 'no scopes')).' Enter the WABA ID manually.');
     }
-    $a = $g('post', $waba.'/subscribed_apps');
+    $cb = url('/webhooks/meta'); $vt = Chat::sec('chat_verify_token');
+    $a = $g('post', $waba.'/subscribed_apps', ['override_callback_uri'=>$cb, 'verify_token'=>$vt]);
+    $p = $g('post', $ph, ['webhook_configuration'=>['override_callback_uri'=>$cb, 'verify_token'=>$vt]]);
     $b = $g('get', $waba.'/subscribed_apps');
+    $pc = $g('get', $ph, ['fields'=>'webhook_configuration,display_phone_number,status']);
     $names = collect($b['data'] ?? [])->map(fn($x) => $x['whatsapp_business_api_data']['name'] ?? ($x['name'] ?? '?'))->implode(', ');
     DB::table('audit_logs')->insert(['user_id'=>auth()->id(), 'user_name'=>auth()->user()->name, 'action'=>'chat.wa_subscribe', 'subject'=>'WhatsApp app subscribe (WABA '.$waba.')', 'ip'=>$r->ip(), 'created_at'=>now(), 'updated_at'=>now()]);
-    if (!empty($a['success'])) return back()->with('ok', 'App subscribed to WhatsApp account '.$waba.'. Subscribed apps now: '.($names ?: 'none listed').'.');
+    if (!empty($a['success'])) return back()->with('ok', 'App subscribed to WhatsApp account '.$waba.'. Subscribed apps now: '.($names ?: 'none listed').'. Phone override set: '.json_encode($p).'. Phone webhook config: '.json_encode($pc['webhook_configuration'] ?? $pc).'. WABA apps: '.json_encode($b['data'] ?? $b));
     return back()->with('err', 'Subscribe failed for '.$waba.': '.json_encode($a['error'] ?? $a).' Subscribed apps: '.($names ?: 'none'));
   }
   public function saveSettings(Request $r) {
