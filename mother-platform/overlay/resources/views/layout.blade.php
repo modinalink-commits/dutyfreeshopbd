@@ -28,5 +28,5 @@ label{font-size:12px;color:#6B7280;display:block;margin:10px 0 4px}
 <main>@yield('body')</main>
 @auth @include('chat_widget') @include('softphone_fab') @endauth
 @yield('js')
-@auth<script src="/js/df-export.js?v=1" defer></script>@endauth
+@auth<script src="/js/df-export.js?v=2" defer></script>@endauth
 </body></html>

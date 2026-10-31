@@ -96,7 +96,7 @@
 
   function readTable(tbl) {
     var htr = tbl.tHead && tbl.tHead.rows[0] ? tbl.tHead.rows[0] : tbl.rows[0];
-    var heads = [].slice.call(htr.cells).map(function (c, i) { return { i: i, sel: c.classList.contains('dfx-c'), name: txt(c) || '', hidden: isHidden(c) }; });
+    var heads = [].slice.call(htr.cells).map(function (c, i) { return { i: i, sel: c.classList.contains('dfx-c') || c.classList.contains('dfx-own'), name: txt(c) || '', hidden: isHidden(c) }; });
     var body = [].slice.call(tbl.rows).filter(function (r) { return r !== htr && r.parentNode.tagName !== 'THEAD' && r.cells.length > 1 && !r.classList.contains('dfx-skip'); });
     return { heads: heads, rows: body, htr: htr };
   }
@@ -109,10 +109,11 @@
     var d = readTable(tbl), cols = d.heads.filter(function (h) { return !actionCol(h, d.rows); });
     if (opts.cols === 'visible') cols = cols.filter(function (h) { return !h.hidden; });
     else if (opts.cols === 'selected') cols = cols.filter(function (h) { return opts.pick.indexOf(h.i) > -1; });
-    var rows = d.rows; if (opts.onlySel) rows = rows.filter(function (r) { var b = r.querySelector('.dfx-c input'); return b && b.checked; });
+    var rows = d.rows; if (opts.onlySel) rows = rows.filter(function (r) { var b = selBox(r); return b && b.checked; });
     return { head: cols.map(function (h) { return h.name || 'Column ' + (h.i + 1); }), rows: rows.map(function (r) { return cols.map(function (h) { return r.cells[h.i] ? txt(r.cells[h.i]) : ''; }); }), cols: cols };
   }
 
+  function selBox(r) { return r.querySelector('.dfx-c input') || (r.cells[0] && r.cells[0].classList.contains('dfx-own') ? r.cells[0].querySelector('input[type=checkbox]') : null); }
   function pageCount() {
     var max = 1; [].forEach.call(document.querySelectorAll('a[href*="page="]'), function (a) { var m = /[?&]page=(\d+)/.exec(a.getAttribute('href')); if (m && +m[1] > max) max = +m[1]; }); return max;
   }
@@ -159,6 +160,7 @@
 
   function addSelection(tbl) {
     var d = readTable(tbl); if (!d.htr || d.htr.querySelector('.dfx-c')) return;
+    var f0 = d.htr.cells[0]; if (f0 && f0.querySelector('input[type=checkbox]')) { f0.classList.add('dfx-own'); d.rows.forEach(function (r) { if (r.cells[0]) r.cells[0].classList.add('dfx-own'); }); return; }
     var th = document.createElement('th'); th.className = 'dfx-c'; th.innerHTML = '<input type="checkbox" title="Select all rows" aria-label="Select all rows">'; d.htr.insertBefore(th, d.htr.cells[0]);
     d.rows.forEach(function (r) { var td = document.createElement('td'); td.className = 'dfx-c'; td.innerHTML = '<input type="checkbox" aria-label="Select row">'; r.insertBefore(td, r.cells[0]); });
     th.firstChild.addEventListener('change', function () { d.rows.forEach(function (r) { var b = r.querySelector('.dfx-c input'); if (b) b.checked = th.firstChild.checked; }); });
@@ -178,7 +180,7 @@
   }
 
   function showMenu(tbl, idx, btn) {
-    var d = readTable(tbl), selN = d.rows.filter(function (r) { var b = r.querySelector('.dfx-c input'); return b && b.checked; }).length, pages = pageCount();
+    var d = readTable(tbl), selN = d.rows.filter(function (r) { var b = selBox(r); return b && b.checked; }).length, pages = pageCount();
     var m = document.createElement('div'); m.className = 'dfx-menu';
     var names = d.heads.filter(function (h) { return !actionCol(h, d.rows); });
     m.innerHTML = '<h4>' + (selN ? 'Export Selected (' + selN + ')' : 'Export Current Result (' + d.rows.length + ' rows)') + '</h4>' +
