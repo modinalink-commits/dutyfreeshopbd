@@ -110,6 +110,9 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\ValidateCsrfTok
   Route::get('/order-success/{invoice}', [\App\Http\Controllers\StoreController::class,'done'])->name('order.done')->middleware('signed');
   Route::get('/invoice/{invoice}', [\App\Http\Controllers\StoreController::class,'invoice'])->name('order.invoice')->middleware('signed');
   Route::get('/cart-items', [\App\Http\Controllers\StoreController::class,'cartItems'])->middleware('throttle:60,1');
+  Route::post('/checkout/lookup', [\App\Http\Controllers\CheckoutLookupController::class,'lookup'])->middleware('throttle:15,1');
+  Route::post('/checkout/otp', [\App\Http\Controllers\CheckoutLookupController::class,'otp'])->middleware('throttle:4,1');
+  Route::post('/checkout/verify', [\App\Http\Controllers\CheckoutLookupController::class,'verify'])->middleware('throttle:10,1');
   Route::post('/order', [\App\Http\Controllers\StoreController::class,'order'])->middleware('throttle:20,1');
   Route::get('/p/{key}', [\App\Http\Controllers\StoreController::class,'product'])->where('key','[A-Za-z0-9\-]+');
   Route::get('/{slug}', [\App\Http\Controllers\StoreController::class,'category'])->where('slug','[a-z0-9\-]+');

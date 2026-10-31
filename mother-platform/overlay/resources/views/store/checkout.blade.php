@@ -81,6 +81,26 @@ document.getElementById('cof').onsubmit=function(e){var c=DF.cart(),h='';for(var
  var ph=document.getElementById('f-ph').value.replace(/\D/g,'').slice(-11),er='';if(!h)er='Your cart is empty';else if(!/^01[3-9]\d{8}$/.test(ph))er='সঠিক মোবাইল নম্বর লিখুন (01XXXXXXXXX)';else if(!document.getElementById('f-nm').value.trim()||!document.getElementById('f-ad').value.trim())er='মোবাইল নম্বর, নাম ও ঠিকানা লিখুন।';
  var pmv=document.querySelector('input[name=pay]:checked');if(!er&&pmv&&pmv.value!=='cod'){if(document.getElementById('pay-tx').value.trim().length<4)er='Transaction ID / Reference দিন';else if(pmv.value==='bank'&&!document.querySelector('input[name=pay_account]:checked'))er='কোন ব্যাংক অ্যাকাউন্টে টাকা পাঠিয়েছেন সেটি বেছে নিন';if(er){var tf=document.getElementById('pay-tx');if(er.indexOf('Transaction')===0&&tf){tf.scrollIntoView({behavior:'smooth',block:'center'});tf.focus();tf.style.borderColor='#DC2626'}else{var bk=document.querySelector('#pd-bank');if(bk)bk.scrollIntoView({behavior:'smooth',block:'start'})}}}if(er){e.preventDefault();alertBox(er);return}document.getElementById('sbm').disabled=true;var cc=DF.cart(),its=[],tv=0;for(var k in cc){its.push({item_id:String(k),price:cc[k].p,quantity:cc[k].q});tv+=cc[k].p*cc[k].q}DF.ev('begin_checkout',{value:tv,items:its});};
 function alertBox(m){var b=document.querySelector('.er');if(!b){b=document.createElement('div');b.className='er';var h=document.querySelector('.cf .h');h.parentNode.insertBefore(b,h.nextSibling)}b.textContent=m;b.scrollIntoView({block:'center'})}
+
+/* returning-customer auto-fill */
+(function(){var P=document.getElementById('f-ph'),box=document.createElement('div');box.id='afb';box.style.cssText='display:none;margin:-4px 0 10px;padding:9px 11px;border-radius:10px;background:#F0FDF4;border:1px solid #BBF7D0;color:#14532D;font-size:12.5px;line-height:1.6';P.closest('.fl').appendChild(box);
+var last='',F={nm:'f-nm',em:'f-em',ad:'f-ad'};
+function post(u,d){return fetch(u,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(d)}).then(function(r){return r.json()})}
+function setv(id,v,force){var e=document.getElementById(id);if(e&&v&&(force||!e.value.trim())){e.value=v;e.dispatchEvent(new Event('input',{bubbles:true}))}}
+function area(t){if(!t)return;document.querySelectorAll('input[name=area]').forEach(function(r){var l=r.closest('label');if(l&&l.textContent.indexOf(t)>-1){r.checked=true;r.dispatchEvent(new Event('change',{bubbles:true}));document.querySelectorAll('.ar').forEach(function(x){x.classList.toggle('on',x===l)})}})}
+function fill(d){setv('f-nm',d.name);setv('f-em',d.email);setv('f-ad',d.address);area(d.district);box.style.display='block';box.innerHTML='✅ আপনার আগের তথ্য ফর্মে বসানো হয়েছে। প্রয়োজনে যেকোনো ঘর এডিট করুন।'}
+function ph(){return P.value.replace(/\D/g,'').slice(-11)}
+function run(){var p=ph();if(!/^01[3-9]\d{8}$/.test(p)){box.style.display='none';last='';return}if(p===last)return;last=p;
+ var sv=null;try{sv=JSON.parse(localStorage.getItem('df_cust')||'null')}catch(e){}
+ if(sv&&sv.p===p){fill({name:sv.n,email:sv.e,address:sv.a,district:sv.d});return}
+ post('/checkout/lookup',{phone:p}).then(function(j){if(!j.found||ph()!==p){box.style.display='none';return}box.style.display='block';
+  if(!j.otp){box.innerHTML='👋 স্বাগতম, '+j.hint+' — আবার অর্ডার করছেন! তথ্য নিচে লিখুন।';return}
+  box.innerHTML='👋 স্বাগতম, <b>'+j.hint+'</b>! আগের তথ্য স্বয়ংক্রিয়ভাবে বসাতে এই নম্বরে একটি SMS কোড পাঠানো হবে। <button type="button" id="afs" style="margin-left:6px;padding:4px 10px;border-radius:8px;border:0;background:#16A34A;color:#fff;font-weight:700">কোড পাঠান</button><span id="afc"></span>';
+  document.getElementById('afs').onclick=function(){this.disabled=true;post('/checkout/otp',{phone:p}).then(function(o){var c=document.getElementById('afc');if(!o.sent){c.innerHTML='<br>কিছুক্ষণ পর আবার চেষ্টা করুন।';return}c.innerHTML='<br><input id="afi" inputmode="numeric" maxlength="4" placeholder="৪ সংখ্যার কোড" style="width:130px;padding:6px 8px;border:1px solid #86EFAC;border-radius:8px"> <button type="button" id="afv" style="padding:5px 10px;border-radius:8px;border:0;background:#0B1220;color:#fff;font-weight:700">যাচাই</button>';
+   document.getElementById('afv').onclick=function(){post('/checkout/verify',{phone:p,code:document.getElementById('afi').value}).then(function(v){if(v.ok)fill(v.d);else document.getElementById('afc').insertAdjacentHTML('beforeend',' <span style="color:#B91C1C">কোড সঠিক নয়</span>')})}})}})}
+P.addEventListener('input',run);P.addEventListener('change',run);setTimeout(run,300);
+document.getElementById('cof').addEventListener('submit',function(){try{var d=ph();if(/^01[3-9]\d{8}$/.test(d)&&document.getElementById('f-nm').value.trim()&&document.getElementById('f-ad').value.trim()){var a=document.querySelector('input[name=area]:checked'),l=a&&a.closest('label');localStorage.setItem('df_cust',JSON.stringify({p:d,n:document.getElementById('f-nm').value.trim(),e:document.getElementById('f-em').value.trim(),a:document.getElementById('f-ad').value.trim(),d:l?(l.childNodes[2]?l.childNodes[2].textContent.trim():''):''}))}}catch(e){}});
+})();
 load();})();
 </script>
 @endsection
