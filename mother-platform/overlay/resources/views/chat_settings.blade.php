@@ -2,6 +2,7 @@
 @section('body')
 <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px"><div style="flex:1;min-width:240px"><h1 style="margin:0">Chat Settings</h1><span style="font-size:13px;color:#6B7280">Connect Facebook, Instagram, WhatsApp and the website chat to the Messages inbox.</span></div><a class="btn g" href="/admin/chat">Open inbox</a></div>
 @if(session('ok'))<div class="card" style="color:#166534">{{ session('ok') }}</div>@endif
+@if(session('err'))<div class="card err">{{ session('err') }}</div>@endif
 @if($errors->any())<div class="card err">{{ $errors->first() }}</div>@endif
 <div class="grid" style="margin-bottom:16px">
 @foreach(['facebook'=>['Facebook', $has['fb']], 'instagram'=>['Instagram', $has['ig'] || $has['fb']], 'whatsapp'=>['WhatsApp', $has['wa'] && $wa_phone], 'web'=>['Website Chat', $web_on]] as $k => [$l, $on])
@@ -20,6 +21,7 @@
 <label>Instagram token {{ $has['ig'] ? '(saved)' : '(optional; the Page token is used when blank)' }}</label><input type="password" name="ig_token" autocomplete="off">
 <label>WhatsApp Cloud API token {{ $has['wa'] ? '(saved)' : '' }}</label><input type="password" name="wa_token" autocomplete="off">
 <label>WhatsApp phone number ID</label><input name="wa_phone_id" value="{{ $wa_phone }}" autocomplete="off">
+<label>WhatsApp account (WABA) ID <span style="color:#6B7280">(optional, auto-detected)</span></label><input name="waba_id" placeholder="e.g. 1728673528206378" autocomplete="off"><button type="submit" formaction="/admin/chat-settings/wa-subscribe" formnovalidate class="g" style="margin:8px 0">Subscribe this app to WhatsApp (receive customer messages)</button>
 <hr style="border:0;border-top:1px solid #FFE7D6;margin:16px 0">
 <label style="display:flex;gap:8px;align-items:center;margin:0;font-size:13px;color:#0B1220"><input type="checkbox" name="web_on" value="1" {{ $web_on ? 'checked' : '' }} style="width:auto"> Show the live chat button on the website</label>
 <label style="display:flex;gap:8px;align-items:center;margin:8px 0 0;font-size:13px;color:#0B1220"><input type="checkbox" name="ai_auto" value="1" {{ $ai_auto ? 'checked' : '' }} style="width:auto"> Claude AI answers website chat automatically (stops on a chat once a staff member replies)</label>

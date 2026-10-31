@@ -145,6 +145,23 @@ class ChatController extends Controller {
       'hook_last'=>DB::table('settings')->where('key', 'chat_hook_last')->value('value'), 'wa_phone'=>Chat::sec('chat_wa_phone_id'), 'ai_auto'=>\App\Support\AiChat::chatOn() || (\App\Support\Sms::secret('ai_chat_auto') !== '0'), 'web_on'=>(DB::table('settings')->where('key', 'chat_web_on')->value('value') ?? '1') === '1',
       'quick'=>DB::table('chat_quick_replies')->orderBy('id')->get(), 'counts'=>DB::table('chat_threads')->select('channel', DB::raw('count(*) n'))->groupBy('channel')->pluck('n', 'channel')]);
   }
+  public function waSubscribe(Request $r) {
+    $tok = Chat::sec('chat_wa_token'); $ph = Chat::sec('chat_wa_phone_id');
+    if (!$tok || !$ph) return back()->with('err', 'Save the WhatsApp Cloud API token and phone number ID first.');
+    $g = fn($m, $u, $q = []) => \Illuminate\Support\Facades\Http::timeout(20)->withToken($tok)->{$m}('https://graph.facebook.com/v21.0/'.$u, $q)->json();
+    $waba = trim((string)$r->input('waba_id'));
+    if (!$waba) {
+      $d = \Illuminate\Support\Facades\Http::timeout(20)->get('https://graph.facebook.com/v21.0/debug_token', ['input_token'=>$tok, 'access_token'=>$tok])->json();
+      foreach (($d['data']['granular_scopes'] ?? []) as $gs) if (($gs['scope'] ?? '') === 'whatsapp_business_management') foreach (($gs['target_ids'] ?? []) as $id) { $c = $g('get', $id.'/phone_numbers', ['fields'=>'id']); foreach (($c['data'] ?? []) as $pn) if (($pn['id'] ?? '') === $ph) $waba = $id; }
+      if (!$waba) return back()->with('err', 'Could not find the WhatsApp account for this token/phone ID: '.json_encode($d['error'] ?? ($d['data']['granular_scopes'] ?? 'no scopes')).' Enter the WABA ID manually.');
+    }
+    $a = $g('post', $waba.'/subscribed_apps');
+    $b = $g('get', $waba.'/subscribed_apps');
+    $names = collect($b['data'] ?? [])->map(fn($x) => $x['whatsapp_business_api_data']['name'] ?? ($x['name'] ?? '?'))->implode(', ');
+    DB::table('audit_logs')->insert(['user_id'=>auth()->id(), 'user_name'=>auth()->user()->name, 'action'=>'chat.wa_subscribe', 'subject'=>'WhatsApp app subscribe (WABA '.$waba.')', 'ip'=>$r->ip(), 'created_at'=>now(), 'updated_at'=>now()]);
+    if (!empty($a['success'])) return back()->with('ok', 'App subscribed to WhatsApp account '.$waba.'. Subscribed apps now: '.($names ?: 'none listed').'.');
+    return back()->with('err', 'Subscribe failed for '.$waba.': '.json_encode($a['error'] ?? $a).' Subscribed apps: '.($names ?: 'none'));
+  }
   public function saveSettings(Request $r) {
     $d = $r->validate(['fb_token'=>'nullable|string|max:600', 'ig_token'=>'nullable|string|max:600', 'wa_token'=>'nullable|string|max:600', 'wa_phone_id'=>'nullable|string|max:40', 'app_secret'=>'nullable|string|max:100']);
     foreach (['fb_token'=>'chat_fb_token', 'ig_token'=>'chat_ig_token', 'wa_token'=>'chat_wa_token', 'app_secret'=>'chat_app_secret', 'wa_phone_id'=>'chat_wa_phone_id'] as $k => $sk) if (!empty($d[$k])) Sms::setSecret($sk, trim($d[$k]));
