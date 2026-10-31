@@ -66,13 +66,12 @@
 @endif
 </div>
 <div class="w" style="padding-top:16px;padding-bottom:40px">
-<div class="tbs"><button type="button" class="on" data-t="d">DESCRIPTION</button><button type="button" data-t="h">HOW TO ORDER</button><button type="button" data-t="r">REVIEWS{{ $reviews->count() ? ' ('.$reviews->count().')' : '' }}</button></div>
-<div class="tp" data-tp="d"><b>Details</b> for {{ $p->name }}:
-@if($p->description)@if(\App\Support\Html::isHtml($p->description))<div class="pdx" style="margin-top:6px">{!! \App\Support\Html::clean($p->description) !!}</div>@else<div style="white-space:pre-line;margin-top:6px">{{ $p->description }}</div>@endif @endif
-<h3>Product information</h3><ul>@if($c)<li>Category: {{ $c->name }}</li>@endif @if($p->sub)<li>Brand: {{ $p->sub }}</li>@endif @if($p->size)<li>Size: {{ $p->size }}</li>@endif @if($code)<li>Product code: {{ $code }}</li>@endif<li>{{ (int)$p->stock > 0 ? 'In stock' : 'Ask for availability' }}</li></ul>
+<div class="tp" id="pinfo"><h3 style="border:0;padding-top:0;margin-top:0">Product Information</h3><ul>@if($c)<li>Category: {{ $c->name }}</li>@endif @if($p->sub)<li>Brand: {{ $p->sub }}</li>@endif @if($p->size)<li>Size: {{ $p->size }}</li>@endif @if($code)<li>Product code: {{ $code }}</li>@endif<li>{{ (int)$p->stock > 0 ? 'In stock' : 'Ask for availability' }}</li></ul>
 <h3>Delivery</h3><ul>@foreach($areas as $a)<li>{{ $a['n'] }}: {{ $a['c'] > 0 ? number_format($a['c']).' TK' : 'Free' }}</li>@endforeach<li>Cash on delivery all over Bangladesh</li></ul></div>
-<div class="tp" data-tp="h" style="display:none"><h3 style="border:0;padding-top:0;margin-top:0">How to order</h3><ul><li>Choose Buy 1, 2 or 3 and press <b>Order Now</b>, or <b>Add To Cart</b> to buy more products together.</li><li>Write your mobile number, name and full address, then choose your delivery area.</li><li>Press <b>ORDER SUBMIT</b>. Our team will call you to confirm.</li><li>Pay cash when the product reaches you.</li><li>Need help? Call {{ $s['pp_call'] }} or message us on WhatsApp.</li></ul></div>
-<div class="tp" data-tp="r" style="display:none">@forelse($reviews as $rv)<div style="border-top:1px solid #D4D4D4;padding:10px 0"><b>{{ $rv->name }}</b> <span style="color:#FF5A00">{{ str_repeat('★', (int)$rv->rating) }}{{ str_repeat('☆', 5 - (int)$rv->rating) }}</span>@if($rv->verified_buyer) <span style="font-size:10px;color:#16A34A;font-weight:700">Verified buyer</span>@endif<div>{{ $rv->body }}</div>@if($rv->reply)<div style="color:#6B7280;margin-top:4px">Reply: {{ $rv->reply }}</div>@endif</div>@empty<p>No reviews yet.</p>@endforelse</div>
+<div class="tp" id="pdesc"><h3>Product Description</h3>@if($p->description)@if(\App\Support\Html::isHtml($p->description))<div class="pdx" style="margin-top:6px">{!! \App\Support\Html::clean($p->description) !!}</div>@else<div style="white-space:pre-line;margin-top:6px">{{ $p->description }}</div>@endif @else<p>{{ $p->name }}</p>@endif</div>
+@php $rvN = $reviews->count(); $rvAvg = $rvN ? round($reviews->avg('rating'), 1) : 0; @endphp
+<div class="tp" id="previews"><h3>Customer Reviews @if($rvN)<span style="font-weight:600;color:#FF5A00;font-size:14px">★ {{ $rvAvg }} / 5 · {{ $rvN }} {{ $rvN === 1 ? 'review' : 'reviews' }}</span>@endif</h3>
+@forelse($reviews as $rv)<div style="border-top:1px solid #D4D4D4;padding:10px 0"><b>{{ $rv->name }}</b> <span style="color:#FF5A00">{{ str_repeat('★', (int)$rv->rating) }}{{ str_repeat('☆', 5 - (int)$rv->rating) }}</span>@if($rv->verified_buyer) <span style="font-size:10px;color:#16A34A;font-weight:700">Verified buyer</span>@endif <small style="color:#6B7280">{{ \Carbon\Carbon::parse($rv->created_at)->format('d M Y') }}</small><div>{{ $rv->body }}</div>@if($rv->reply)<div style="color:#6B7280;margin-top:4px">Reply: {{ $rv->reply }}</div>@endif</div>@empty<p>No reviews yet for this product.</p>@endforelse</div>
 @if($s['pp_related']==='1' && $bottom->count())
 <div class="rh">Related Products</div>
 <div class="gr">@foreach($bottom as $q)@include('store.card', ['fd'=>true])@endforeach</div>
@@ -86,7 +85,6 @@ document.querySelectorAll('.bn').forEach(function(b){b.onclick=function(){docume
 var wl=document.getElementById('wl'),sw=function(){var on=DF.wish().indexOf(String(id))>=0;wl.classList.toggle('on',on);wl.textContent=on?'♥':'♡'};sw();wl.onclick=function(){DF.tw(id);sw()};
 var ad=document.getElementById('addc');ad.onclick=function(){DF.add(id,n,pr);DF.ev('add_to_cart',{value:pr*n,items:[{item_id:String(id),item_name:@json($p->name),price:pr,quantity:n}]});ad.textContent='Added ✓ ('+DF.cart()[String(id)].q+')';setTimeout(function(){ad.textContent='Add To Cart'},1800)};
 document.getElementById('ordn').onclick=function(){DF.add(id,n,pr,true);DF.ev('add_to_cart',{value:pr*n,items:[{item_id:String(id),item_name:@json($p->name),price:pr,quantity:n}]});location.href='/checkout'};
-document.querySelectorAll('[data-t]').forEach(function(b){b.onclick=function(){var k=b.getAttribute('data-t');document.querySelectorAll('[data-t]').forEach(function(x){x.classList.toggle('on',x===b)});document.querySelectorAll('[data-tp]').forEach(function(x){x.style.display=x.getAttribute('data-tp')===k?'':'none'})}});
 })();
 </script>
 <script>DF.ev('view_item',{value:{{ $price }},items:[{item_id:@json((string)$p->id),item_name:@json($p->name),price:{{ $price }}}]});</script>
