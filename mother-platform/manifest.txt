@@ -79,3 +79,7 @@ app/Support/Sms.php
 app/Http/Controllers/SmsController.php
 resources/views/sms_setup.blade.php
 database/migrations/2026_10_31_000009_secrets.php
+database/migrations/2026_10_31_000010_courier_orders.php
+app/Support/Pathao.php
+app/Http/Controllers/CourierController.php
+resources/views/courier_setup.blade.php

@@ -45,6 +45,12 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::post('/m-districts/charge', [R::class,'districtCharge']);
   Route::post('/m-payroll/generate', [R::class,'payrollGenerate']);
   Route::post('/m-customers/import', [R::class,'customerImport']);
+  Route::get('/courier', [\App\Http\Controllers\CourierController::class,'show']);
+  Route::post('/courier', [\App\Http\Controllers\CourierController::class,'save']);
+  Route::post('/courier/connect', [\App\Http\Controllers\CourierController::class,'connect']);
+  Route::post('/courier/send-bulk', [\App\Http\Controllers\CourierController::class,'sendBulk']);
+  Route::post('/orders/{id}/courier-send', [\App\Http\Controllers\CourierController::class,'sendOne']);
+  Route::post('/orders/{id}/courier-refresh', [\App\Http\Controllers\CourierController::class,'refresh']);
   Route::get('/sms', [\App\Http\Controllers\SmsController::class,'show']);
   Route::post('/sms', [\App\Http\Controllers\SmsController::class,'save']);
   Route::post('/sms/test', [\App\Http\Controllers\SmsController::class,'test']);
