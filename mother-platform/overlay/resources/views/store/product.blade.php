@@ -30,6 +30,12 @@
 @media (max-width:760px){.pp{grid-template-columns:1fr;padding-top:6px;gap:0;padding-left:0!important;padding-right:0!important}.pp .ph{height:300px;aspect-ratio:auto}.pi{padding:10px 12px;gap:7px}.pi .bc{display:none}.pi h1{font-size:15px;font-weight:700}.pi .pz b{font-size:16px}.pi .pz s{font-size:13px;font-weight:400}.pi .pz span{font-size:9px;padding:2px 8px}
 .bnl{font-size:10px;margin-top:4px}.bnl span{padding:0 8px;top:-7px}.bn{padding:8px 10px;gap:8px}.bn .q{font-size:11px;font-weight:700}.bn .tg{font-size:8px;padding:1px 4px}.bn .sv{font-size:8.5px}.bn .rp s{display:none}.acts{gap:8px;margin-top:0}.acts .ac{padding:11px 0}.acts .wl{width:42px}.onw{padding:11px 0}.cm{display:none}.rh{font-size:13px;margin:8px 0 6px;padding:0}.tbs{margin-top:8px}}
 </style>
+<style>
+.pp .ph{border:1px solid #EAEAEA;border-radius:20px;background:#F8F8F8}.pi h1{font-size:24px;font-weight:700;color:var(--n);line-height:1.25}.pi .pz b{font-size:30px;font-weight:800;color:var(--n)}.pi .pz s{font-size:16px;color:#9CA3AF;font-weight:400}.pi .pz span{background:#FFE4E8;color:#E11D48;font-size:13px;border-radius:8px;padding:4px 9px}
+.pi .bc a{color:#6B7280}.bn{border-radius:14px;border:1px solid #E5E7EB;padding:12px 16px}.bn.on{border-color:var(--o);background:#FFF6F0}.acts .ac{background:var(--n);border-radius:12px;font-size:14px;font-weight:700;padding:14px 0}.acts .ac:hover{background:var(--o)}.acts .wl{border-radius:12px;width:52px}.onw{background:var(--o);border-radius:12px;font-size:14px;font-weight:700;padding:14px 0}
+.cm a{border-radius:12px;border-color:#EAEAEA}.rs{border-radius:16px;background:#F8F8F8}.rs a{border-radius:10px}.tbs{background:#F3F4F6;border-radius:12px;overflow:hidden}.tbs button.on{background:var(--n)}.rh{text-align:left;font-size:24px;font-weight:800;color:var(--n)}
+@media(max-width:760px){.pp .ph{border-radius:0;border-width:0 0 1px}.pi h1{font-size:17px}.pi .pz b{font-size:22px}.pi .pz span{font-size:11px}}
+</style>
 <div class="w pp">
 <div class="ph"><img src="{{ $p->image ?: '/icon.png' }}" alt="{{ $p->name }}" width="568" height="568" fetchpriority="high" draggable="false"><span class="wm">DutyFree Shop BD</span></div>
 <div class="pi">
