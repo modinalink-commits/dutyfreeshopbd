@@ -138,3 +138,7 @@ resources/views/chat_settings.blade.php
 resources/views/store/chat_widget.blade.php
 database/migrations/2026_10_31_000023_chat_read_at.php
 database/migrations/2026_10_31_000024_chat_ai.php
+app/Http/Controllers/AccountController.php
+resources/views/store/account.blade.php
+resources/views/store/account_auth.blade.php
+database/migrations/2026_10_31_000025_customer_accounts.php

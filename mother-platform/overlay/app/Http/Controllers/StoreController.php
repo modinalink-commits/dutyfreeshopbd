@@ -65,7 +65,7 @@ class StoreController extends Controller {
   private function rules(): array {
     return self::rem('store.rules', 300, fn() => DB::table('discount_rules')->where('enabled',true)->get()->mapWithKeys(fn($r) => [$r->key => json_decode($r->config, true) ?: []])->all());
   }
-  private function base(array $x = []): array {
+  protected function base(array $x = []): array {
     $s = self::set(); $wa = preg_replace('/\D/', '', $s['whatsapp_number']); if (str_starts_with($wa, '0')) $wa = '88'.$wa;
     $areas = []; foreach ([1,2,3] as $i) if (trim($s["ship_{$i}_name"]) !== '') $areas[$i] = ['n'=>$s["ship_{$i}_name"], 'c'=>(float)$s["ship_{$i}_charge"]];
     return $x + ['s'=>$s, 'cats'=>$this->cats(), 'subs'=>$this->subs(), 'wa'=>$wa, 'areas'=>$areas, 'rules'=>$this->rules()];
