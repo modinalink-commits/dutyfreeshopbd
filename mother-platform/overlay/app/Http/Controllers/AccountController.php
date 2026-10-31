@@ -39,7 +39,7 @@ class AccountController extends StoreController {
   }
   private function cid($c) { return 'DFC'.str_pad((string)$c->id, 6, '0', STR_PAD_LEFT); }
   /** Customer-facing category. "Watchlist" is an internal risk label and is never shown. */
-  private function category(string $phone, ?object $c): string {
+  private function custCategory(string $phone, ?object $c): string {
     $cat = 'New';
     try { $first = DB::table('orders')->where('phone', $phone)->orderByDesc('id')->first(['id', 'phone', 'total']); if ($first) $cat = CustomerIntel::forOrders([$first])[$first->id]['cat'] ?? 'Regular'; elseif ($c && (int)$c->legacy_orders > 0) $cat = 'Regular'; } catch (\Throwable $e) {}
     return $cat === 'Watchlist' ? 'Regular' : $cat;
@@ -141,7 +141,7 @@ class AccountController extends StoreController {
     $all = $this->orders($c)->orderByDesc('id')->get(['id', 'invoice', 'status', 'total', 'shipping', 'discount', 'created_at', 'payment_method', 'pay_status', 'courier', 'consignment_id', 'tracking_code', 'courier_status']);
     $cnt = array_fill_keys(array_keys(self::GROUPS), 0); $spend = 0;
     foreach ($all as $o) { $g = $this->group($o->status); $cnt[$g]++; if (!in_array($g, ['Cancelled', 'Returned'])) $spend += (float)$o->total; }
-    $d = ['c'=>$c, 'tab'=>$tab, 'cid'=>$this->cid($c), 'cat'=>$this->category($c->phone, $c), 'cnt'=>$cnt, 'spend'=>$spend + (float)$c->legacy_spent, 'totalOrders'=>$all->count() + (int)$c->legacy_orders,
+    $d = ['c'=>$c, 'tab'=>$tab, 'cid'=>$this->cid($c), 'cat'=>$this->custCategory($c->phone, $c), 'cnt'=>$cnt, 'spend'=>$spend + (float)$c->legacy_spent, 'totalOrders'=>$all->count() + (int)$c->legacy_orders,
       'title'=>'My Account | DutyFree Shop BD', 'groups'=>array_keys(self::GROUPS)];
     if ($tab === 'dashboard') {
       $recent = $all->take(5); $d['recent'] = $recent; $d['items'] = $this->thumbs($recent->pluck('id')->all());
