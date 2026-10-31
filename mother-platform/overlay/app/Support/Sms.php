@@ -24,8 +24,8 @@ class Sms {
     return null;
   }
   /** Save to the SMS log and send right after the response is delivered. */
-  public static function queue(string $to, string $body, string $event): void {
-    DB::table('sms_logs')->insert(['to'=>$to,'body'=>$body,'event'=>$event,'status'=>'queued','created_at'=>now(),'updated_at'=>now()]);
+  public static function queue(string $to, string $body, string $event, array $extra = []): void {
+    DB::table('sms_logs')->insert(['to'=>$to,'body'=>$body,'event'=>$event,'status'=>'queued','created_at'=>now(),'updated_at'=>now()] + $extra);
     if (!self::$hook && self::configured()) { self::$hook = true; app()->terminating(fn() => self::flush(25)); }
   }
   public static function flush(int $limit = 25): int {

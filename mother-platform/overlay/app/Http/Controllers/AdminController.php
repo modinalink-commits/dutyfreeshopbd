@@ -133,7 +133,7 @@ class AdminController extends Controller {
     if ($can && !empty($d['disc_extra'])) { $disc += (float)$d['disc_extra']; $labels[] = 'Extra discount'; }
     $disc = max(0, min($sub, round($disc, 2))); $changed = abs($disc - $auto['total']) > 0.009;
     $cpn = null; foreach ($kept as $l) if (($l['key'] ?? '') === 'coupon') $cpn = $l['code'] ?? null; if ($changed && $labels === ['Manual discount']) $cpn = null;
-    $d['total'] = round($sub - $disc, 2);
+    $d['total'] = round($sub - $disc + (float)($d['shipping'] ?? 0), 2);
     $manual = $changed || $labels !== array_column($kept, 'label');
     if ($manual && $disc > 0) { $meta = ['discount_type'=>'Manual Discount', 'discount_rule'=>'Admin override', 'discount_pct'=>null, 'discount_source'=>'Manual by '.Auth::user()->name, 'discount_by'=>'Manual', 'customer_category'=>$auto['profile']['category'], 'membership_status'=>$auto['profile']['membership'].($auto['profile']['membership_name'] ? ' – '.$auto['profile']['membership_name'] : '')]; }
     else $meta = \App\Support\OrderDiscount::meta($kept, $auto['profile'], 'Automatic', $disc);
@@ -150,6 +150,7 @@ class AdminController extends Controller {
       DB::table('order_status_logs')->insert(['order_id'=>$id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'from_status'=>null,'to_status'=>'New','note'=>'Order created','created_at'=>now(),'updated_at'=>now()]);
       return $id;
     });
+    \App\Support\OrderSms::placed((int)$id);
     return redirect("/admin/orders/$id");
   }
   public function orderShow($id) {
