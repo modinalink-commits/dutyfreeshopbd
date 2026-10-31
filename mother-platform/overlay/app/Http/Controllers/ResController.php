@@ -188,6 +188,8 @@ class ResController extends Controller {
       $data[$n] = $v;
     }
     $new = !$id; $slugName = $c['slug'];
+    // empty optional values must not overwrite NOT NULL columns that have a default (e.g. "Display order")
+    try { $nn = collect(DB::select("select column_name from information_schema.columns where table_name = ? and is_nullable = 'NO' and column_default is not null", [$c['table']]))->pluck('column_name')->all(); foreach ($data as $k => $v) if ($v === null && in_array($k, $nn)) unset($data[$k]); } catch (\Throwable $e) {}
     try {
       $id = DB::transaction(function () use ($c, $id, $data, $new, $slugName) {
         $now = now(); $t = $c['table'];
@@ -211,7 +213,9 @@ class ResController extends Controller {
         return $id;
       });
     } catch (\Illuminate\Database\QueryException $e) {
-      return back()->withInput()->withErrors(['db'=>'Could not save: '.(str_contains($e->getMessage(),'unique') ? 'this value already exists' : 'check the values')]);
+      $m = $e->getMessage(); $col = preg_match('/column "(\w+)"/', $m, $mm) ? $mm[1] : null; $lab = $col ? (collect($c['fields'])->firstWhere('n', $col)['l'] ?? $col) : null;
+      $why = str_contains($m, 'unique') ? 'this value already exists' : (str_contains($m, 'too long') ? 'text is too long' : (str_contains($m, 'null value') ? 'this field cannot be empty' : 'check the values'));
+      return back()->withInput()->withErrors(['db'=>'Could not save'.($lab ? ' — "'.$lab.'": ' : ': ').$why]);
     }
     return redirect('/admin/m/'.$slugName)->with('ok', 'Saved');
   }
