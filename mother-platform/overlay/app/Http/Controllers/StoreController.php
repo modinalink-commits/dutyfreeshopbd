@@ -276,15 +276,30 @@ class StoreController extends Controller {
   private function page($page) {
     return response()->view('store.page', $this->base(['page'=>$page, 'title'=>($page->meta_title ?: $page->title).' | DutyFree Shop BD', 'desc'=>$page->meta_description, 'canon'=>url('/'.$page->slug).'/']));
   }
+  public function blog() {
+    $posts = DB::table('posts')->where('active',true)->where(fn($q)=>$q->whereNull('published_at')->orWhere('published_at','<=',now()))->orderByDesc('published_at')->orderByDesc('id')->get();
+    return response()->view('store.blog', $this->base(['posts'=>$posts, 'title'=>'Blog | DutyFree Shop BD', 'desc'=>'Guides and articles from DutyFree Shop BD', 'canon'=>url('/blog')]));
+  }
+  public function post($slug) {
+    $p = DB::table('posts')->where('slug',$slug)->where('active',true)->where(fn($q)=>$q->whereNull('published_at')->orWhere('published_at','<=',now()))->first();
+    if (!$p) return $this->notFound();
+    return response()->view('store.post', $this->base(['p'=>$p, 'title'=>($p->meta_title ?: $p->title).' | DutyFree Shop BD', 'desc'=>$p->meta_description ?: $p->excerpt, 'canon'=>url('/blog/'.$p->slug), 'ogimg'=>$p->featured_image ? (str_starts_with($p->featured_image,'http') ? $p->featured_image : url($p->featured_image)) : null]));
+  }
+  public function cmsExport() {
+    return response()->json(['source'=>url('/'), 'pages'=>DB::table('pages')->where('active',true)->get(['slug','title','body','meta_title','meta_description','updated_at']), 'posts'=>DB::table('posts')->where('active',true)->get(['slug','title','featured_image','excerpt','body','meta_title','meta_description','published_at'])]);
+  }
   public function notFound() {
     return response()->view('store.missing', $this->base(['title'=>'পেজ পাওয়া যায়নি | DutyFree Shop BD', 'desc'=>'', 'canon'=>url('/'), 'noindex'=>true]), 404);
   }
   public function sitemap() {
-    $xml = self::rem('store.sitemap2', 3600, function () {
+    $xml = self::rem('store.sitemap3', 3600, function () {
       $u = fn($loc, $img = null) => '<url><loc>'.e($loc).'</loc><changefreq>daily</changefreq>'.($img ? '<image:image><image:loc>'.e($img).'</image:loc></image:image>' : '').'</url>';
       $o = $u(url('/').'/');
       foreach ($this->cats() as $c) $o .= $u(url('/'.$c->slug).'/');
       foreach ($this->subs() as $cid => $rows) { $cs = $this->cats()->firstWhere('id', $cid); if ($cs) foreach ($rows as $rw) $o .= $u(url('/'.$cs->slug.'/'.\App\Support\Slugs::subSlug($rw->sub))); }
+      $o .= $u(url('/blog'));
+      foreach (DB::table('posts')->where('active',true)->get(['slug']) as $bp) $o .= $u(url('/blog/'.$bp->slug));
+      foreach (DB::table('pages')->where('active',true)->get(['slug']) as $pg) $o .= $u(url('/'.$pg->slug).'/');
       foreach (DB::table('products')->where('published',true)->orderBy('id')->cursor() as $p) $o .= $u(url(self::url($p)), $p->image);
       return '<?xml version="1.0" encoding="UTF-8"?>'."\n".'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">'.$o.'</urlset>';
     });

@@ -117,3 +117,7 @@ database/migrations/2026_10_31_000017_product_path_slug.php
 public/pay/shurjopay-dark.png
 app/Http/Controllers/UploadController.php
 database/migrations/2026_10_31_000018_slider_type.php
+app/Support/Cms.php
+database/migrations/2026_10_31_000019_cms_blog_pages.php
+resources/views/store/blog.blade.php
+resources/views/store/post.blade.php

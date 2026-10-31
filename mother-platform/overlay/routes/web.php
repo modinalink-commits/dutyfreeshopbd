@@ -106,6 +106,9 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\ValidateCsrfTok
   Route::get('/search-suggest', [\App\Http\Controllers\StoreController::class,'suggest'])->middleware('throttle:120,1');
   Route::get('/search', [\App\Http\Controllers\StoreController::class,'search']);
   Route::get('/track', [\App\Http\Controllers\StoreController::class,'track']);
+  Route::get('/blog', [\App\Http\Controllers\StoreController::class,'blog']);
+  Route::get('/blog/{slug}', [\App\Http\Controllers\StoreController::class,'post'])->where('slug','[a-z0-9\-]+');
+  Route::get('/api/cms', [\App\Http\Controllers\StoreController::class,'cmsExport'])->middleware('throttle:60,1');
   Route::get('/checkout', [\App\Http\Controllers\StoreController::class,'checkout']);
   Route::get('/wishlist', [\App\Http\Controllers\StoreController::class,'wishlist']);
   Route::get('/order-success/{invoice}', [\App\Http\Controllers\StoreController::class,'done'])->name('order.done')->middleware('signed');

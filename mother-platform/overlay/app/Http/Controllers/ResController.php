@@ -33,7 +33,7 @@ class ResController extends Controller {
     return $q->orderByDesc($c['order'] ?? 'id')->orderByDesc('id');
   }
   private function audit($act, $subject, $meta = []) {
-    if (preg_match('/^(sliders|banners)/', (string)$subject)) foreach (['store.home5','store.home6'] as $k) \Illuminate\Support\Facades\Cache::forget($k);
+    if (preg_match('/^(sliders|banners|pages|posts)/', (string)$subject)) foreach (['store.home5','store.home6'] as $k) \Illuminate\Support\Facades\Cache::forget($k);
     DB::table('audit_logs')->insert(['user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'action'=>$act,'subject'=>$subject,'meta'=>json_encode($meta),'ip'=>request()->ip(),'created_at'=>now(),'updated_at'=>now()]);
   }
   private function summary($c) {
@@ -191,7 +191,7 @@ class ResController extends Controller {
     try {
       $id = DB::transaction(function () use ($c, $id, $data, $new, $slugName) {
         $now = now(); $t = $c['table'];
-        if ($slugName==='pages' && empty($data['slug'])) $data['slug'] = \Illuminate\Support\Str::slug($data['title']) ?: 'page-'.time();
+        if (($slugName==='pages' || $slugName==='posts') && empty($data['slug'])) $data['slug'] = \Illuminate\Support\Str::slug($data['title']) ?: 'page-'.time();
         if ($slugName==='entries' && $new) { $data['reference'] = 'TMP'.uniqid(); $data['user_id'] = Auth::id(); $data['user_name'] = Auth::user()->name; }
         if ($slugName==='purchases' && $new) { $data['invoice'] = 'TMP'.uniqid(); $data['user_id'] = Auth::id(); }
         if ($slugName==='damaged' && $new) { $data['user_id'] = Auth::id(); }
