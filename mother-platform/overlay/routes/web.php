@@ -20,6 +20,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::get('/incomplete', [\App\Http\Controllers\IncompleteController::class,'index']);
   Route::get('/incomplete/{id}', [\App\Http\Controllers\IncompleteController::class,'show']);
   Route::post('/incomplete/{id}/{act}', [\App\Http\Controllers\IncompleteController::class,'act'])->where('act', 'recovered|archive|reopen');
+  Route::get('/orders/print', [\App\Http\Controllers\PrintController::class,'show']);
   Route::get('/orders/products', [A::class,'orderProducts']);
   Route::get('/orders/discount', [A::class,'orderDiscount']);
   Route::post('/orders/bulk', [A::class,'orderBulk']);

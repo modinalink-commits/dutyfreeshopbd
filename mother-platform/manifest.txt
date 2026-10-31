@@ -158,3 +158,6 @@ app/Http/Controllers/IncompleteController.php
 resources/views/incomplete.blade.php
 resources/views/incomplete_show.blade.php
 database/migrations/2026_10_31_000032_incomplete_orders.php
+app/Http/Controllers/PrintController.php
+app/Support/Code128.php
+resources/views/print_docs.blade.php
