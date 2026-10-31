@@ -26,6 +26,6 @@ label{font-size:12px;color:#6B7280;display:block;margin:10px 0 4px}
 </style></head><body>
 @auth @include('sidebar') @endauth
 <main>@yield('body')</main>
-@auth @include('chat_widget') @endauth
+@auth @include('chat_widget') @include('softphone_fab') @endauth
 @yield('js')
 </body></html>

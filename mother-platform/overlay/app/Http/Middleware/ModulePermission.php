@@ -15,6 +15,8 @@ class ModulePermission {
     if ($m !== null) { foreach ($map as $mod => $slugs) if (in_array($m, $slugs)) return $mod; return 'users'; }
     if (str_starts_with($p, 'chat-settings')) return 'settings';
     if (preg_match('#^chat(/|$)#', $p)) return 'orders';
+    if (str_starts_with($p, 'call-center/account')) return 'settings';
+    if (str_starts_with($p, 'call-center')) return 'orders';
     if (preg_match('#^(orders|orders-export|incomplete)#', $p)) return 'orders';
     if (str_starts_with($p, 'staff-log')) return 'stafflog';
     if (preg_match('#^(products|taxonomy|categories|brands|inventory)#', $p)) return 'products';

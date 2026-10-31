@@ -83,6 +83,15 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::post('/courier/settle', [\App\Http\Controllers\CourierController::class,'settle']);
   Route::get('/ai-chat', [\App\Http\Controllers\AiChatController::class,'show']);
   Route::post('/ai-chat', [\App\Http\Controllers\AiChatController::class,'save']);
+  Route::get('/call-center/phone', [\App\Http\Controllers\CallCenterController::class,'phone']);
+  Route::get('/call-center/account', [\App\Http\Controllers\CallCenterController::class,'account']);
+  Route::post('/call-center/account', [\App\Http\Controllers\CallCenterController::class,'saveAccount']);
+  Route::get('/call-center/creds', [\App\Http\Controllers\CallCenterController::class,'creds']);
+  Route::get('/call-center/lookup', [\App\Http\Controllers\CallCenterController::class,'lookup']);
+  Route::post('/call-center/log', [\App\Http\Controllers\CallCenterController::class,'logStart']);
+  Route::post('/call-center/log/{id}/end', [\App\Http\Controllers\CallCenterController::class,'logEnd']);
+  Route::post('/call-center/log/{id}/note', [\App\Http\Controllers\CallCenterController::class,'logNote']);
+  Route::get('/call-center/history', [\App\Http\Controllers\CallCenterController::class,'history']);
   Route::get('/ai-images', [\App\Http\Controllers\AiImageController::class,'index']);
   Route::post('/ai-images/settings', [\App\Http\Controllers\AiImageController::class,'settings']);
   Route::post('/ai-images/process', [\App\Http\Controllers\AiImageController::class,'process']);

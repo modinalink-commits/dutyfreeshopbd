@@ -171,3 +171,9 @@ resources/views/ai_images.blade.php
 database/migrations/2026_10_31_000036_ai_model_default.php
 resources/views/pagination/global.blade.php
 app/Support/Pg.php
+app/Http/Controllers/CallCenterController.php
+database/migrations/2026_10_31_000037_call_center.php
+resources/views/softphone.blade.php
+resources/views/sip_account.blade.php
+resources/views/call_history.blade.php
+resources/views/softphone_fab.blade.php
