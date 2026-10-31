@@ -95,6 +95,11 @@ class AdminController extends Controller {
     return back()->with('ok', "$n orders moved to {$d['status']}");
   }
   public function orderNew() { return view('order_new'); }
+  public function orderProducts(Request $r) {
+    $q = trim((string)$r->query('q', '')); if (mb_strlen($q) < 1) return response()->json([]);
+    $like = '%'.str_replace(['%', '_'], '', $q).'%';
+    return response()->json(DB::table('products')->where(fn($w) => $w->where('name', 'ilike', $like)->orWhere('sku', 'ilike', $like))->orderByRaw('published desc')->limit(12)->get(['id', 'name', 'sku', 'price', 'stock'])->map(fn($p) => ['id'=>$p->id, 'name'=>$p->name, 'sku'=>$p->sku, 'price'=>(float)$p->price, 'stock'=>(int)$p->stock])->all());
+  }
   /** Create Order: find a saved customer by mobile number and return what we know about them. */
   public function orderLookup(Request $r) {
     $p = \App\Support\Chat::phone($r->query('phone')); if (!$p || strlen($p) < 10) return response()->json(['found'=>false]);
@@ -116,9 +121,10 @@ class AdminController extends Controller {
     return response()->json(\App\Support\OrderDiscount::compute($p, $sub, $r->query('coupon')) + ['can'=>$can]);
   }
   public function orderStore(Request $r) {
-    $d = $r->validate(['customer_name'=>'required|string|max:120','phone'=>'required|string|max:20','address'=>'nullable|string','district'=>'nullable|string|max:60','source'=>'nullable|string|max:40','total'=>'required|numeric|min:0','shipping'=>'nullable|numeric|min:0','note'=>'nullable|string','item_name'=>'required|string|max:200','qty'=>'required|integer|min:1','coupon'=>'nullable|string|max:40','disc_off'=>'nullable|array','disc_manual'=>'nullable|numeric|min:0','disc_extra'=>'nullable|numeric|min:0']);
+    $d = $r->validate(['customer_name'=>'required|string|max:120','phone'=>'required|string|max:20','address'=>'nullable|string','district'=>'nullable|string|max:60','source'=>'nullable|string|max:40','shipping'=>'nullable|numeric|min:0','note'=>'nullable|string','courier'=>'nullable|string|max:60','assigned_admin'=>'nullable|string|max:80','sub_city'=>'nullable|string|max:80','items'=>'required|array|min:1|max:60','items.*.name'=>'required|string|max:200','items.*.product_id'=>'nullable|integer','items.*.qty'=>'required|integer|min:1|max:100000','items.*.price'=>'required|numeric|min:0','coupon'=>'nullable|string|max:40','disc_off'=>'nullable|array','disc_manual'=>'nullable|numeric|min:0','disc_extra'=>'nullable|numeric|min:0']);
     $d['phone'] = \App\Support\Chat::phone($d['phone']) ?: $d['phone'];
-    $sub = (float)$d['total']; $auto = \App\Support\OrderDiscount::compute($d['phone'], $sub, $d['coupon'] ?? null);
+    if (!empty($d['sub_city'])) $d['address'] = trim(($d['address'] ?? '').' ('.$d['sub_city'].')');
+    $sub = round(array_sum(array_map(fn($i) => $i['qty'] * $i['price'], $d['items'])), 2); if ($sub <= 0) return back()->withInput()->withErrors(['items'=>'Add at least one product with a price']); $auto = \App\Support\OrderDiscount::compute($d['phone'], $sub, $d['coupon'] ?? null);
     $can = \App\Http\Middleware\ModulePermission::can(Auth::user(), 'marketing', 'edit');
     $off = $can ? (array)($d['disc_off'] ?? []) : []; $kept = array_values(array_filter($auto['lines'], fn($l) => $l['applied'] && !in_array($l['key'], $off)));
     $disc = min($sub, round(array_sum(array_column($kept, 'amount')), 2)); $labels = array_column($kept, 'label');
@@ -131,11 +137,11 @@ class AdminController extends Controller {
     if (!$cu) $cid = DB::table('customers')->insertGetId(['name'=>$d['customer_name'], 'phone'=>$d['phone'], 'address'=>$d['address'] ?? null, 'created_at'=>now(), 'updated_at'=>now()]);
     else { $cid = $cu->id; if (trim((string)($cu->address ?? '')) === '' && !empty($d['address'])) DB::table('customers')->where('id', $cid)->update(['address'=>$d['address'], 'updated_at'=>now()]); }
     $id = DB::transaction(function () use ($d, $cid, $disc, $cpn, $changed, $auto, $labels) {
-      $id = DB::table('orders')->insertGetId(['invoice'=>'TMP'.uniqid(),'store_id'=>1,'customer_name'=>$d['customer_name'],'phone'=>$d['phone'],'customer_id'=>$cid,'address'=>$d['address']??null,'district'=>$d['district']??null,'source'=>$d['source']??'Web Site','shipping'=>$d['shipping']??0,'total'=>$d['total'],'status'=>'New','note'=>$d['note']??null,'created_at'=>now(),'updated_at'=>now()]);
+      $id = DB::table('orders')->insertGetId(['invoice'=>'TMP'.uniqid(),'store_id'=>1,'customer_name'=>$d['customer_name'],'phone'=>$d['phone'],'customer_id'=>$cid,'address'=>$d['address']??null,'district'=>$d['district']??null,'source'=>$d['source']??'Web Site','shipping'=>$d['shipping']??0,'total'=>$d['total'],'status'=>'New','note'=>$d['note']??null,'courier'=>$d['courier']??null,'assigned_admin'=>$d['assigned_admin']??null,'created_at'=>now(),'updated_at'=>now()]);
       DB::table('orders')->where('id',$id)->update(['invoice'=>'INV-'.str_pad($id,6,'0',STR_PAD_LEFT), 'discount'=>$disc, 'coupon'=>$cpn]);
       if ($cpn) DB::table('coupons')->where('code', $cpn)->increment('used_count');
       if ($disc > 0 || $changed) DB::table('order_discount_logs')->insert(['order_id'=>$id, 'kind'=>$changed ? 'override' : 'applied', 'label'=>mb_substr(implode(' + ', $labels) ?: 'No discount', 0, 200), 'prev_amount'=>$auto['total'], 'new_amount'=>$disc, 'user_id'=>Auth::id(), 'user_name'=>Auth::user()->name, 'created_at'=>now(), 'updated_at'=>now()]);
-      DB::table('order_items')->insert(['order_id'=>$id,'name'=>$d['item_name'],'qty'=>$d['qty'],'price'=>$d['total'] + $disc,'created_at'=>now(),'updated_at'=>now()]);
+      foreach ($d['items'] as $it) DB::table('order_items')->insert(['order_id'=>$id,'product_id'=>$it['product_id'] ?? null,'name'=>$it['name'],'qty'=>$it['qty'],'price'=>$it['price'],'created_at'=>now(),'updated_at'=>now()]);
       DB::table('order_status_logs')->insert(['order_id'=>$id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'from_status'=>null,'to_status'=>'New','note'=>'Order created','created_at'=>now(),'updated_at'=>now()]);
       return $id;
     });

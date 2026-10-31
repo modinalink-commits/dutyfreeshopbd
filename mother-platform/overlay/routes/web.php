@@ -17,6 +17,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::get('/orders', [A::class,'orders']);
   Route::get('/orders/new', [A::class,'orderNew']);
   Route::get('/orders/lookup', [A::class,'orderLookup']);
+  Route::get('/orders/products', [A::class,'orderProducts']);
   Route::get('/orders/discount', [A::class,'orderDiscount']);
   Route::post('/orders/bulk', [A::class,'orderBulk']);
   Route::post('/orders', [A::class,'orderStore']);
