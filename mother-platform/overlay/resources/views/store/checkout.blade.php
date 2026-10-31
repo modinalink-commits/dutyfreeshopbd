@@ -64,7 +64,7 @@ document.querySelectorAll('.ar').forEach(function(l){l.onclick=function(){docume
 var cb=document.getElementById('cpb');if(cb)cb.onclick=function(){code=document.getElementById('cpc').value.trim();load()};
 document.getElementById('cof').onsubmit=function(e){var c=DF.cart(),h='';for(var k in c)h+='<input type="hidden" name="items['+(+k)+']" value="'+(+c[k].q)+'">';document.getElementById('itf').innerHTML=h;
  var ph=document.getElementById('f-ph').value.replace(/\D/g,'').slice(-11),er='';if(!h)er='Your cart is empty';else if(!/^01[3-9]\d{8}$/.test(ph))er='সঠিক মোবাইল নম্বর লিখুন (01XXXXXXXXX)';else if(!document.getElementById('f-nm').value.trim()||!document.getElementById('f-ad').value.trim())er='মোবাইল নম্বর, নাম ও ঠিকানা লিখুন।';
- if(er){e.preventDefault();alertBox(er);return}document.getElementById('sbm').disabled=true;if(window.fbq)fbq('track','InitiateCheckout');};
+ if(er){e.preventDefault();alertBox(er);return}document.getElementById('sbm').disabled=true;var cc=DF.cart(),its=[],tv=0;for(var k in cc){its.push({item_id:String(k),price:cc[k].p,quantity:cc[k].q});tv+=cc[k].p*cc[k].q}DF.ev('begin_checkout',{value:tv,items:its});};
 function alertBox(m){var b=document.querySelector('.er');if(!b){b=document.createElement('div');b.className='er';var h=document.querySelector('.cf .h');h.parentNode.insertBefore(b,h.nextSibling)}b.textContent=m;b.scrollIntoView({block:'center'})}
 load();})();
 </script>

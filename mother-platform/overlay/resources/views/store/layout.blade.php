@@ -102,20 +102,26 @@ body{background:#fff}
 @media(max-width:760px){.ts,.nv{display:none}.hd{height:56px;gap:10px}.hi span,.hi:nth-of-type(1){display:none}.hi{padding:4px 6px}.sr{height:38px}.sr button span{display:none}.sr button{padding:0 11px}.hv{grid-template-columns:1fr;padding-top:10px}.hv .hero{min-height:0;padding:22px 18px!important;border-radius:18px}.hv .hero h1{font-size:26px}.hv .chips{gap:14px}.hv .chips b{font-size:15px}.hs{flex-direction:row}.hs a{padding:12px}.hs b{font-size:14px}.hero-i{padding:10px 12px 0}.pc{border-radius:10px;padding-bottom:6px}.pc .ph{height:112px}.pc .nm,.pc .pr,.pc .sby,.pc .on{margin-left:6px;margin-right:6px}.pc .nm{font-size:11px}.pc .pr{font-size:12px}.pc .ck,.pc .pr .dp{display:none}.pc .sby{font-size:9.5px}.st h2,.lvh h2{font-size:20px}.fs .hd2{padding:12px}}
 </style>
 
-@if($s['gtag_id'])
+@if(!empty($s['gsc_verify']))<meta name="google-site-verification" content="{{ $s['gsc_verify'] }}">@endif
+@if(!empty($s['bing_verify']))<meta name="msvalidate.01" content="{{ $s['bing_verify'] }}">@endif
+@if(!empty($s['fb_verify']))<meta name="facebook-domain-verification" content="{{ $s['fb_verify'] }}">@endif
+<script>window.dataLayer=window.dataLayer||[];</script>
+@if(!empty($s['gtm_id']))<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f)})(window,document,'script','dataLayer',@json($s['gtm_id']));</script>@endif
+@if($s['gtag_id'] && empty($s['gtm_id']))
 <script async src="https://www.googletagmanager.com/gtag/js?id={{ $s['gtag_id'] }}"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date());gtag("config",@json($s['gtag_id']),{currency:"BDT"});</script>
 @endif
-@if($s['pixel_id'])
+@if($s['pixel_id'] && empty($s['gtm_id']))
 <script>!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init',@json($s['pixel_id']));fbq('track','PageView');</script>
 @endif
 <script>
-var DF={g:function(k,d){try{return JSON.parse(localStorage.getItem(k))||d}catch(e){return d}},p:function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},
+var DF={ev:function(n,d){try{var it=d.items,v=d.value;window.dataLayer.push({ecommerce:null});window.dataLayer.push({event:n,ecommerce:{currency:'BDT',value:v,items:it}});if(window.gtag&&!window.google_tag_manager_on)gtag('event',n,{currency:'BDT',value:v,items:it});if(window.fbq){var m={add_to_cart:'AddToCart',view_item:'ViewContent',begin_checkout:'InitiateCheckout',purchase:'Purchase'}[n];if(m)fbq('track',m,{currency:'BDT',value:v,content_type:'product',content_ids:it.map(function(x){return x.item_id}),num_items:it.length},n=='purchase'&&d.id?{eventID:d.id}:undefined)}}catch(e){}},g:function(k,d){try{return JSON.parse(localStorage.getItem(k))||d}catch(e){return d}},p:function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},
 cart:function(){return DF.g('dfc',{})},add:function(id,q,price,set){var c=DF.cart();id=String(id);q=parseInt(q)||1;c[id]={q:Math.min(50,set?q:((c[id]?c[id].q:0)+q)),p:+price||(c[id]?c[id].p:0)};DF.p('dfc',c);DF.tab();if(window.fbq)fbq('track','AddToCart',{currency:'BDT',value:(+price||0)*q});},
 wish:function(){return DF.g('dfw',[])},tw:function(id){var w=DF.wish();id=String(id);var i=w.indexOf(id);if(i<0)w.push(id);else w.splice(i,1);DF.p('dfw',w);DF.tab();return i<0},
 tab:function(){var c=DF.cart(),n=0,t=0;for(var k in c){n+=c[k].q;t+=c[k].q*c[k].p}var a=document.getElementById('scT'),b=document.getElementById('scN');if(a){a.textContent=Math.round(t).toLocaleString('en-US')+' TK';b.textContent=n+' items'}document.querySelectorAll('.cn').forEach(function(e){e.textContent=n;e.style.display=n?'block':'none'});var w=DF.wish().length;document.querySelectorAll('.wn').forEach(function(e){e.textContent=w;e.style.display=w?'block':'none'})},
 cd:function(){var now=new Date(),d=new Date(now.getTime()+6*36e5),end=Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()+1)-6*36e5,r=Math.max(0,Math.floor((end-now.getTime())/1e3)),f=function(x){return(x<10?'0':'')+x},h=f(Math.floor(r/3600)),m=f(Math.floor(r%3600/60)),s=f(r%60);document.querySelectorAll('[data-cd]').forEach(function(e){var k=e.getAttribute('data-cd');e.textContent=k==='h'?h:k==='m'?m:k==='s'?s:h+':'+m+':'+s})}};
 </script>
-</head><body oncontextmenu="if(event.target.tagName==='IMG')return false">
+@if(!empty($s['head_code'])){!! $s['head_code'] !!}@endif
+</head><body oncontextmenu="if(event.target.tagName==='IMG')return false">@if(!empty($s['gtm_id']))<noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{ $s['gtm_id'] }}" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>@endif
 <div class="ts"><div class="w tsi"><span class="dl">📍 Deliver to <b>Chattogram &amp; all Bangladesh</b></span><a href="{{ $s['seller_link'] ?? '/contact-us/' }}">Sell with us</a>@if($s['show_tracking']==='1')<a href="/track">Track order</a>@endif<a href="/contact-us/">Help center</a><span class="sp"></span><a href="tel:{{ $s['call_number'] }}">📞 {{ $s['call_number'] }}</a></div></div>
 <div class="hdw"><div class="hd w"><button class="mb" type="button" aria-label="Menu" onclick="document.getElementById('drw').classList.add('op')">☰</button><a class="lg" href="/" aria-label="DutyFree Shop BD"><img src="{{ $logo }}" alt="DutyFree Shop BD" width="176" height="40"></a>
 <form class="sr" action="/search" role="search"><input name="q" value="{{ request('q') }}" placeholder="Search perfume, skin care, daily needs & more..." aria-label="Search"><button aria-label="Search">{!! $ico['search'] !!}<span>Search</span></button></form>

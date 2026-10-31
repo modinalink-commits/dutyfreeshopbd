@@ -80,10 +80,10 @@
 (function(){var id={{ $p->id }},pr={{ $price }},n=1;
 document.querySelectorAll('.bn').forEach(function(b){b.onclick=function(){document.querySelectorAll('.bn').forEach(function(x){x.classList.remove('on')});b.classList.add('on');n=+b.getAttribute('data-n')}});
 var wl=document.getElementById('wl'),sw=function(){var on=DF.wish().indexOf(String(id))>=0;wl.classList.toggle('on',on);wl.textContent=on?'♥':'♡'};sw();wl.onclick=function(){DF.tw(id);sw()};
-var ad=document.getElementById('addc');ad.onclick=function(){DF.add(id,n,pr);ad.textContent='Added ✓ ('+DF.cart()[String(id)].q+')';setTimeout(function(){ad.textContent='Add To Cart'},1800)};
-document.getElementById('ordn').onclick=function(){DF.add(id,n,pr,true);location.href='/checkout'};
+var ad=document.getElementById('addc');ad.onclick=function(){DF.add(id,n,pr);DF.ev('add_to_cart',{value:pr*n,items:[{item_id:String(id),item_name:@json($p->name),price:pr,quantity:n}]});ad.textContent='Added ✓ ('+DF.cart()[String(id)].q+')';setTimeout(function(){ad.textContent='Add To Cart'},1800)};
+document.getElementById('ordn').onclick=function(){DF.add(id,n,pr,true);DF.ev('add_to_cart',{value:pr*n,items:[{item_id:String(id),item_name:@json($p->name),price:pr,quantity:n}]});location.href='/checkout'};
 document.querySelectorAll('[data-t]').forEach(function(b){b.onclick=function(){var k=b.getAttribute('data-t');document.querySelectorAll('[data-t]').forEach(function(x){x.classList.toggle('on',x===b)});document.querySelectorAll('[data-tp]').forEach(function(x){x.style.display=x.getAttribute('data-tp')===k?'':'none'})}});
 })();
 </script>
-@if($s['gtag_id'])<script>gtag("event","view_item",{currency:"BDT",value:{{ $price }},items:[{item_id:@json((string)$p->id),item_name:@json($p->name),price:{{ $price }}}]});</script>@endif
+<script>DF.ev('view_item',{value:{{ $price }},items:[{item_id:@json((string)$p->id),item_name:@json($p->name),price:{{ $price }}}]});</script>
 @endsection

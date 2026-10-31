@@ -14,8 +14,7 @@
 <div style="border-top:1px solid #EEE;border-bottom:1px solid #EEE;padding:12px 0;font-size:12px;display:flex;justify-content:space-between"><span>Payable amount</span><b>{{ number_format($o->total) }} TK</b></div>
 <div class="bt"><a href="/track?invoice={{ $o->invoice }}" style="background:#0B1220;color:#fff">TRACK ORDER</a><a href="/" style="border:1.25px solid #FF5A00;color:#FF5A00">CONTINUE SHOPPING</a></div></div></div>
 <script>try{localStorage.removeItem('dfc')}catch(e){}</script>
-@if($s['pixel_id'])<script>fbq('track','Purchase',{currency:'BDT',value:{{ (float)$o->total }}});</script>@endif
-@if($s['gtag_id'])<script>gtag('event','purchase',{transaction_id:@json($o->invoice),currency:'BDT',value:{{ (float)$o->total }}});</script>@endif
+<script>(function(){var k='dfp_'+@json($o->invoice);try{if(localStorage.getItem(k))return;localStorage.setItem(k,'1')}catch(e){}window.dataLayer.push({ecommerce:null});window.dataLayer.push({event:'purchase',ecommerce:{transaction_id:@json($o->invoice),currency:'BDT',value:{{ (float)$o->total }}}});if(window.gtag&&!{{ !empty($s['gtm_id']) ? 'true':'false' }})gtag('event','purchase',{transaction_id:@json($o->invoice),currency:'BDT',value:{{ (float)$o->total }}});if(window.fbq)fbq('track','Purchase',{currency:'BDT',value:{{ (float)$o->total }}},{eventID:@json($o->invoice)})})();</script>
 @else
 <div class="tk2"><div class="tkc">
 <h1 style="font-size:12px;margin-bottom:10px;font-weight:400"><b>TRACK YOUR CONSIGNMENT</b> &nbsp; Now you can easily track your consignment</h1>
