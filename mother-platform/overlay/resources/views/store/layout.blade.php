@@ -210,4 +210,5 @@ function add(c,t){var d=document.createElement('div');d.className=c;var re=/(\/p
 f.onsubmit=function(e){e.preventDefault();var t=q.value.trim();if(!t||busy)return;q.value='';add('u',t);h.push({role:'user',content:t});busy=1;var w=add('b','...');
 fetch('/ai-chat',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({messages:h.slice(-8)})}).then(function(r){return r.json()}).then(function(j){w.remove();var r=j.reply||'Sorry, please call 09613828081.';add('b',r);h.push({role:'assistant',content:r})}).catch(function(){w.remove();add('b','Network problem. Please try again.')}).then(function(){busy=0})}})();</script>
 @endif
+@include('store.chat_widget')
 </body></html>

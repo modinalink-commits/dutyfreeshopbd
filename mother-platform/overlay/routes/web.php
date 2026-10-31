@@ -40,6 +40,22 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::post('/brands', [C::class,'brandSave']);
   Route::get('/modules', [M::class,'index']);
   Route::get('/reports', [R::class,'reports']);
+  Route::get('/chat', [\App\Http\Controllers\ChatController::class,'inbox']);
+  Route::get('/chat/threads', [\App\Http\Controllers\ChatController::class,'threads']);
+  Route::get('/chat/poll', [\App\Http\Controllers\ChatController::class,'poll']);
+  Route::get('/chat/products', [\App\Http\Controllers\ChatController::class,'products']);
+  Route::get('/chat/order/{oid}/text', [\App\Http\Controllers\ChatController::class,'orderText']);
+  Route::get('/chat/thread/{id}', [\App\Http\Controllers\ChatController::class,'thread']);
+  Route::get('/chat/thread/{id}/messages', [\App\Http\Controllers\ChatController::class,'messagesAfter']);
+  Route::post('/chat/thread/{id}/read', [\App\Http\Controllers\ChatController::class,'read']);
+  Route::post('/chat/thread/{id}/reply', [\App\Http\Controllers\ChatController::class,'reply']);
+  Route::post('/chat/thread/{id}/assign', [\App\Http\Controllers\ChatController::class,'assign']);
+  Route::post('/chat/thread/{id}/status', [\App\Http\Controllers\ChatController::class,'status']);
+  Route::post('/chat/thread/{id}/phone', [\App\Http\Controllers\ChatController::class,'phone']);
+  Route::get('/chat-settings', [\App\Http\Controllers\ChatController::class,'settings']);
+  Route::post('/chat-settings', [\App\Http\Controllers\ChatController::class,'saveSettings']);
+  Route::post('/chat-settings/quick', [\App\Http\Controllers\ChatController::class,'quickSave']);
+  Route::post('/chat-settings/quick/{id}/delete', [\App\Http\Controllers\ChatController::class,'quickDelete']);
   Route::get('/analytics', [\App\Http\Controllers\AnalyticsController::class,'index']);
   Route::get('/analytics/{slug}', [\App\Http\Controllers\AnalyticsController::class,'show']);
   Route::get('/analytics/{slug}/export/{fmt}', [\App\Http\Controllers\AnalyticsController::class,'export']);
@@ -105,6 +121,11 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
 // ---- Storefront: order form has no CSRF token (pages stay cacheable); orders are rate limited per IP and honeypot-protected
 Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class, \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])->group(function () {
   Route::post('/webhooks/pathao', [\App\Http\Controllers\CourierController::class,'webhook'])->middleware('throttle:120,1');
+  Route::get('/webhooks/meta', [\App\Http\Controllers\ChatController::class,'metaVerify']);
+  Route::post('/webhooks/meta', [\App\Http\Controllers\ChatController::class,'metaHook'])->middleware('throttle:300,1');
+  Route::post('/chat/start', [\App\Http\Controllers\ChatController::class,'webStart'])->middleware('throttle:8,1');
+  Route::post('/chat/send', [\App\Http\Controllers\ChatController::class,'webSend'])->middleware('throttle:30,1');
+  Route::get('/chat/poll', [\App\Http\Controllers\ChatController::class,'webPoll'])->middleware('throttle:90,1');
   Route::get('/', [\App\Http\Controllers\StoreController::class,'home']);
   Route::get('/sitemap.xml', [\App\Http\Controllers\StoreController::class,'sitemap']);
   Route::post('/ai-chat', [\App\Http\Controllers\AiChatController::class,'ask'])->middleware('throttle:12,1');

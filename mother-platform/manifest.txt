@@ -129,3 +129,10 @@ app/Support/Analytics.php
 app/Http/Controllers/AnalyticsController.php
 resources/views/analytics.blade.php
 resources/views/analytics_print.blade.php
+database/migrations/2026_10_31_000022_chat_inbox.php
+app/Support/Chat.php
+app/Http/Controllers/ChatController.php
+resources/views/chat_widget.blade.php
+resources/views/chat_inbox.blade.php
+resources/views/chat_settings.blade.php
+resources/views/store/chat_widget.blade.php

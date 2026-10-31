@@ -25,4 +25,7 @@ label{font-size:12px;color:#6B7280;display:block;margin:10px 0 4px}
 .err{color:#B91C1C;font-size:12px}
 </style></head><body>
 @auth @include('sidebar') @endauth
-<main>@yield('body')</main></body></html>
+<main>@yield('body')</main>
+@auth @include('chat_widget') @endauth
+@yield('js')
+</body></html>
