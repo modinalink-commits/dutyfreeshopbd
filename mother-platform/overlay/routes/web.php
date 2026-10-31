@@ -45,6 +45,10 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::post('/m-districts/charge', [R::class,'districtCharge']);
   Route::post('/m-payroll/generate', [R::class,'payrollGenerate']);
   Route::post('/m-customers/import', [R::class,'customerImport']);
+  Route::get('/courier-dashboard', [\App\Http\Controllers\CourierController::class,'dashboard']);
+  Route::get('/courier-dashboard/export/{fmt}', [\App\Http\Controllers\CourierController::class,'export'])->where('fmt','csv|xls|doc|pdf');
+  Route::post('/courier/sync', [\App\Http\Controllers\CourierController::class,'sync']);
+  Route::post('/courier/settle', [\App\Http\Controllers\CourierController::class,'settle']);
   Route::get('/courier', [\App\Http\Controllers\CourierController::class,'show']);
   Route::post('/courier', [\App\Http\Controllers\CourierController::class,'save']);
   Route::post('/courier/connect', [\App\Http\Controllers\CourierController::class,'connect']);
@@ -81,6 +85,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
 });
 // ---- Storefront: order form has no CSRF token (pages stay cacheable); orders are rate limited per IP and honeypot-protected
 Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class, \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])->group(function () {
+  Route::post('/webhooks/pathao', [\App\Http\Controllers\CourierController::class,'webhook'])->middleware('throttle:120,1');
   Route::get('/', [\App\Http\Controllers\StoreController::class,'home']);
   Route::get('/sitemap.xml', [\App\Http\Controllers\StoreController::class,'sitemap']);
   Route::get('/search', [\App\Http\Controllers\StoreController::class,'search']);

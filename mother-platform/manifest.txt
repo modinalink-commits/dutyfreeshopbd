@@ -83,3 +83,6 @@ database/migrations/2026_10_31_000010_courier_orders.php
 app/Support/Pathao.php
 app/Http/Controllers/CourierController.php
 resources/views/courier_setup.blade.php
+database/migrations/2026_10_31_000011_courier_tracking.php
+app/Support/CourierSync.php
+resources/views/courier_dashboard.blade.php

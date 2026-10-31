@@ -58,7 +58,7 @@ class AdminController extends Controller {
     $health = [['Database response', $dbms.' ms'], ['Failed jobs, 1 h', $failed], ['Stores online', DB::table('stores')->where('active',true)->count().' of '.DB::table('stores')->count()], ['Server time', $now->format('H:i')]];
     return view('dashboard', compact('now','kpis','stores','max','counts','orders','bad','alerts','health'));
   }
-  public function orders(Request $r) {
+  public function orders(Request $r) { \App\Support\CourierSync::auto();
     $q = DB::table('orders')->orderByDesc('id');
     if ($r->filled('status')) $q->where('status', $r->status);
     if ($r->filled('q')) $q->where(fn($w) => $w->where('invoice','like','%'.$r->q.'%')->orWhere('phone','like','%'.$r->q.'%')->orWhere('customer_name','ilike','%'.$r->q.'%'));
