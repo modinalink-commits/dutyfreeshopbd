@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 /** Server-side AI product image processing: OpenAI cuts out the product, GD centres it on a 600x600 white canvas. */
 class AiImage {
+  const MODEL = 'gpt-image-2.5-sunburst';
   const PROMPT = "Edit only the supplied product photograph. Remove the existing background completely. Preserve the original product exactly: branding, logo, printed text, packaging, shape, proportions and colors. Do not redesign or alter the product. Place the complete product vertically and horizontally centered on a clean pure white e-commerce background. The entire product must remain visible; do not crop any part of the product. Leave balanced white space around the product. Use clean studio lighting. A very subtle realistic shadow may be added under the product. Do not add promotional text, extra products, decorative objects or watermarks. Create a professional standard e-commerce product photograph (1:1 square).";
   public static function set(string $k, ?string $d = null): ?string { $v = DB::table('settings')->where('key', $k)->value('value'); return ($v === null || $v === '') ? $d : $v; }
   public static function key(): ?string { return self::set('openai_api_key'); }
@@ -58,7 +59,10 @@ class AiImage {
       $abs = self::original($row);
       $png = self::prepare($abs);
       $q = in_array(self::set('ai_img_quality', 'medium'), ['low', 'medium', 'high'], true) ? self::set('ai_img_quality', 'medium') : 'medium';
-      $r = Http::timeout(180)->withToken($key)->attach('image', $png, 'product.png')->post('https://api.openai.com/v1/images/edits', ['model'=>self::set('ai_img_model', 'gpt-image-1'), 'prompt'=>self::prompt(), 'size'=>'1024x1024', 'quality'=>$q, 'background'=>'transparent', 'output_format'=>'png', 'n'=>1]);
+      $model = self::set('ai_img_model', self::MODEL);
+      $call = fn(array $f) => Http::timeout(180)->withToken($key)->attach('image', $png, 'product.png')->post('https://api.openai.com/v1/images/edits', $f);
+      $r = $call(['model'=>$model, 'prompt'=>self::prompt(), 'size'=>'1024x1024', 'quality'=>$q, 'background'=>'transparent', 'output_format'=>'png', 'n'=>1]);
+      if ($r->status() === 400 && preg_match('/background|output_format|quality|unknown parameter|unsupported|invalid value/i', (string)$r->body()) && !preg_match('/does not exist/i', (string)$r->body())) $r = $call(['model'=>$model, 'prompt'=>self::prompt(), 'size'=>'1024x1024', 'n'=>1]);
       if (!$r->ok()) throw new \RuntimeException('OpenAI error '.$r->status().': '.mb_substr((string)($r->json('error.message') ?? $r->body()), 0, 220));
       $b64 = $r->json('data.0.b64_json'); if (!$b64) throw new \RuntimeException('OpenAI returned no image');
       $out = self::finish((string)base64_decode($b64), $id);

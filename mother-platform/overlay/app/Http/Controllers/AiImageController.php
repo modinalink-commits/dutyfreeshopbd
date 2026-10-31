@@ -22,7 +22,7 @@ class AiImageController extends Controller {
     if ($f !== 'all') $slots = array_values(array_filter($slots, fn($s) => ($s['rec']->ai_status ?? 'pending') === $f));
     $counts = DB::table('ai_images')->select('ai_status', DB::raw('count(*) n'))->groupBy('ai_status')->pluck('n', 'ai_status');
     $key = AiImage::key();
-    return view('ai_images', ['slots'=>$slots, 'prods'=>$prods, 'q'=>$q, 'f'=>$f, 'counts'=>$counts, 'hasKey'=>(bool)$key, 'keyMask'=>$key ? substr($key, 0, 5).'••••'.substr($key, -4) : '', 'model'=>AiImage::set('ai_img_model', 'gpt-image-1'), 'quality'=>AiImage::set('ai_img_quality', 'medium'), 'prompt'=>AiImage::prompt(), 'gd'=>\App\Support\Img::ok()]);
+    return view('ai_images', ['slots'=>$slots, 'prods'=>$prods, 'q'=>$q, 'f'=>$f, 'counts'=>$counts, 'hasKey'=>(bool)$key, 'keyMask'=>$key ? substr($key, 0, 5).'••••'.substr($key, -4) : '', 'model'=>AiImage::set('ai_img_model', AiImage::MODEL), 'quality'=>AiImage::set('ai_img_quality', 'medium'), 'prompt'=>AiImage::prompt(), 'gd'=>\App\Support\Img::ok()]);
   }
   public function settings(Request $r) {
     $d = $r->validate(['openai_api_key'=>'nullable|string|max:300', 'ai_img_model'=>'nullable|string|max:60', 'ai_img_quality'=>'nullable|in:low,medium,high', 'ai_img_prompt'=>'nullable|string|max:3000']);

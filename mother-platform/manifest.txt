@@ -168,3 +168,4 @@ app/Support/AiImage.php
 app/Http/Controllers/AiImageController.php
 database/migrations/2026_10_31_000035_ai_images.php
 resources/views/ai_images.blade.php
+database/migrations/2026_10_31_000036_ai_model_default.php
