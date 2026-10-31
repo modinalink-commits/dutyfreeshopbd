@@ -19,7 +19,8 @@
     'wa' => '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .1-3.3-.8a12 12 0 0 1-4.6-4.3c-.4-.6-1-1.8-1-3.1 0-1.3.7-2 1-2.3.3-.3.6-.3.8-.3h.6c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.4 0 .5l-.4.6-.4.4c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.6-.1l.9-1c.2-.3.4-.2.6-.1l2 1c.3.1.4.2.5.3 0 .2 0 .7-.2 1.2z"/></svg>',
     'msg' => '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 2C6.5 2 2 6.1 2 11.3c0 2.9 1.4 5.5 3.7 7.2V22l3.4-1.9c.9.3 1.9.4 2.9.4 5.5 0 10-4.1 10-9.2S17.5 2 12 2zm1 12.4-2.6-2.7-5 2.7 5.5-5.8 2.6 2.7 5-2.7-5.5 5.8z"/></svg>',
   ];
-  $soc = ['social_facebook'=>'f','social_youtube'=>'▶','social_tiktok'=>'♪','social_instagram'=>'◎'];
+  $soc = ['social_facebook'=>'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M14 8V6.5c0-.7.3-1 1.1-1H17V2h-2.6C11.6 2 10 3.7 10 6.2V8H7.5v3.5H10V22h4V11.5h2.8L17.3 8z"/></svg>','social_youtube'=>'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21.6 7.2a2.5 2.5 0 0 0-1.8-1.8C18.2 5 12 5 12 5s-6.2 0-7.8.4A2.5 2.5 0 0 0 2.4 7.2C2 8.8 2 12 2 12s0 3.2.4 4.8a2.5 2.5 0 0 0 1.8 1.8C5.8 19 12 19 12 19s6.2 0 7.8-.4a2.5 2.5 0 0 0 1.8-1.8c.4-1.6.4-4.8.4-4.8s0-3.2-.4-4.8zM10 15V9l5.2 3z"/></svg>','social_tiktok'=>'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.6 2h-3.2v12.4a2.6 2.6 0 1 1-2.6-2.6c.3 0 .5 0 .8.1V8.6a5.9 5.9 0 1 0 5 5.8V8.3a7 7 0 0 0 4 1.3V6.4a4 4 0 0 1-4-4.4z"/></svg>','social_instagram'=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>'];
+  $waI = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.2-1.4A10 10 0 1 0 12 2zm5.2 14c-.2.6-1.2 1.2-1.7 1.2-.5.1-1 .2-3.3-.7-2.8-1.2-4.5-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.8s.7-2 .9-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 1.9c.1.2.1.4 0 .5l-.4.6-.3.3c-.1.2-.3.3-.1.6.2.3.8 1.3 1.7 2.100 1.200 1 2.200 1.400 2.500 1.500.3.1.5.1.7-.1l.9-1.100c.2-.3.4-.2.6-.1l1.800.9c.3.1.5.2.5.3.1.2.1.8-.1 1.100z"/></svg>';
   $pays = ['CASH ON DELIVERY'];
   if ($s['co_card']==='1') array_push($pays, 'VISA', 'Mastercard', 'AMEX', 'DBBL Nexus');
   if ($s['co_wallets']==='1') array_push($pays, 'bKash', 'Nagad', 'Rocket');
@@ -53,7 +54,7 @@ h1,h2,h3{margin:0}
 .fb .ai{background:var(--o);font-size:9px;font-weight:700;display:none}
 /* footers */
 .fg{background:#E5E5E5;padding-top:36px}.fg .cols{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:20px;font-size:12px;line-height:2.1}.fg .cols img{height:34px;width:auto;display:block}.fg .ab{line-height:1.6;margin-top:10px;max-width:440px}.fg .cols b.h{font-size:13px;border-bottom:1.5px solid #000}.fg .cols a{display:block}
-.fg .so{display:flex;gap:6px;margin-top:10px}.fg .so a,.fg .so span{width:26px;height:26px;border:1px solid var(--pk);background:#fff;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700}
+.fg .so{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}.fg .so a,.fg .so span{width:42px;height:42px;border:1.25px solid var(--pk);background:#fff;color:#0B1220;border-radius:12px;display:flex;align-items:center;justify-content:center;transition:.15s}.fg .so svg{width:20px;height:20px}.fg .so a:hover{background:#0B1220;color:#fff;border-color:#0B1220}.fg .so span{opacity:.45}
 .fg .py{margin-top:16px;border:0;padding:0 0 4px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}.fg .py .pb{font-size:15px;color:var(--mut);margin-right:8px}.fg .py .pb b{color:#4F46E5}.fg .py span.c{background:#fff;border-radius:4px;padding:7px 12px;font-size:11px;font-weight:700;color:#374151}
 .fg .bt{display:flex;justify-content:space-between;font-size:10px;padding:12px 0}
 .fn{margin-top:44px;background:var(--n);color:#CBD5E1;padding-top:36px;padding-bottom:36px;display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:40px;font-size:13px;line-height:1.8}.fn b{color:#fff}.fn a{display:block}.fn .lb{background:#fff;border-radius:8px;padding:8px 12px;display:inline-block}.fn .lb img{height:34px;width:auto;display:block}
@@ -174,8 +175,8 @@ body .hh .va:hover{filter:brightness(1.08)}
 <div><b class="h">Quick Links</b><a href="/track">Order Tracking</a><a href="/about-us/">About Us</a><a href="/contact-us/">Contact Us</a><a href="/wishlist">Wishlist</a></div>
 <div><b class="h">Information</b><a href="/delivery-policy/">Delivery policy</a><a href="/privacy-policy/">Privacy Policy</a><a href="/return-policy/">Return Policy</a><a href="/blog/">Blog</a></div>
 <div class="fo"><b class="h">Follow Us</b><div class="so">@foreach($soc as $k => $l)
-@if($s[$k])<a href="{{ $s[$k] }}" rel="noopener" aria-label="{{ ucfirst(str_replace('social_','',$k)) }}">{{ $l }}</a>@else<span>{{ $l }}</span>@endif
-@endforeach<a href="https://wa.me/{{ $wa }}" rel="noopener" aria-label="WhatsApp">✆</a></div></div></div>
+@if($s[$k])<a href="{{ $s[$k] }}" rel="noopener" aria-label="{{ ucfirst(str_replace('social_','',$k)) }}">{!! $l !!}</a>@else<span>{!! $l !!}</span>@endif
+@endforeach<a href="https://wa.me/{{ $wa }}" rel="noopener" aria-label="WhatsApp">{!! $waI !!}</a></div></div></div>
 <div class="py"><span class="pb">We accept <b>{{ count($pays) > 1 ? 'payment gateway' : 'cash on delivery' }}</b></span>@foreach($pays as $py)<span class="c">{{ $py }}</span>@endforeach</div>
 <div class="shp"><img src="/pay/shurjopay.png" alt="Powered by shurjoPay — payment methods" width="1588" height="241" loading="lazy"></div>
 <div class="bt"><span>All rights reserved</span><span>{{ $s['footer_copyright'] }} · Customer care {{ $s['call_number'] }}</span></div></div></footer>
