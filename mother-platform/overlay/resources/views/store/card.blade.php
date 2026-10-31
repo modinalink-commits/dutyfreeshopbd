@@ -1,7 +1,7 @@
 @php $off = \App\Http\Controllers\StoreController::off($q); $u = \App\Http\Controllers\StoreController::url($q); @endphp
 <div class="pc {{ $cls ?? '' }}">@if($off > 0 && $s['badge_discount']==='1')<span class="bo">{{ $off }}%</span>@endif
 @if(!empty($fd) && $s['badge_free_delivery']==='1')<span class="bf"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 6h13v10H1zM14 10h4l3 3v3h-7z"/><circle cx="6" cy="18" r="2" fill="#fff"/><circle cx="17" cy="18" r="2" fill="#fff"/></svg><i>FREE DELIVERY</i></span>@endif
-<a class="ph" href="{{ $u }}"><img src="{{ $q->image ?: '/icon.png' }}" alt="{{ $q->name }}" width="200" height="200" loading="lazy" decoding="async" draggable="false"></a>
+<a class="ph" href="{{ $u }}"><img src="{{ $q->image ?: '/icon.png' }}" alt="{{ $q->name }}" width="200" height="200" loading="lazy" decoding="async" draggable="false" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='/icon.png'"></a>
 <a class="nm" href="{{ $u }}">{{ $q->name }}</a>
 <div class="pr"><b>{{ number_format($q->price) }} TK</b> <br>@if($off > 0)<s>{{ number_format($q->compare_price) }} TK</s><span class="dp">-{{ $off }}%</span>@endif</div>
 <span class="ck {{ ($q->stock ?? 1) > 0 ? '' : 'no' }}">{{ ($q->stock ?? 1) > 0 ? 'In stock' : 'Out of stock' }}</span>

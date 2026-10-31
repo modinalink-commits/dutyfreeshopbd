@@ -11,6 +11,12 @@ class StoreController extends Controller {
     if (is_string($raw) && ($v = @unserialize($raw)) !== false) return $v;
     $v = $fn(); Cache::put($k, serialize($v), $ttl); return $v;
   }
+  /** Unix end time of a campaign: the admin-set Dhaka time, or the next Dhaka midnight when blank. Returns [endTs, fixed]. */
+  public static function endAt(?string $v): array {
+    $v = trim((string)$v);
+    if ($v !== '') { try { return [\Carbon\Carbon::parse($v, 'Asia/Dhaka')->timestamp, true]; } catch (\Throwable $e) {} }
+    return [now('Asia/Dhaka')->addDay()->startOfDay()->timestamp, false];
+  }
   public static function slugOf(string $name): string {
     $s = trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($name)), '-'); $s = trim(substr($s, 0, 60), '-');
     return $s !== '' ? $s : 'product';

@@ -1,6 +1,7 @@
 @extends('store.layout')
 @section('ld')<script type="application/ld+json">{!! json_encode([['@context'=>'https://schema.org','@type'=>'OnlineStore','name'=>'DutyFree Shop BD','url'=>url('/').'/','logo'=>url('/icon.png'),'telephone'=>'+880'.ltrim($s['call_number'],'0'),'areaServed'=>'BD'],['@context'=>'https://schema.org','@type'=>'WebSite','name'=>'DutyFree Shop BD','url'=>url('/').'/','inLanguage'=>'bn-BD','potentialAction'=>['@type'=>'SearchAction','target'=>url('/search').'?q={q}','query-input'=>'required name=q']]], JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES|JSON_HEX_TAG) !!}</script>@endsection
 @section('main')
+@php [$fEnd,$fFix] = \App\Http\Controllers\StoreController::endAt($s['flash_end_at'] ?? ''); [$dEnd,$dFix] = \App\Http\Controllers\StoreController::endAt($s['deal_end_at'] ?? ''); $fOn = !$fFix || $fEnd > time(); $dOn = !$dFix || $dEnd > time(); $fmt = function($e){ $r = max(0, $e - time()); return sprintf('%02d:%02d:%02d', intdiv($r,3600), intdiv($r%3600,60), $r%60); }; @endphp
 @php
   $ini = fn($n) => collect(preg_split('/[\s&\/-]+/', $n))->filter()->map(fn($w) => mb_strtoupper(mb_substr($w, 0, 1)))->take(3)->implode('');
   $flash = $deals->take(6); $plus = $deals->slice(6, 6);
@@ -62,16 +63,16 @@ body .w [data-cr]{--pv:6;--g:10px;display:flex;gap:var(--g);padding:0;overflow-x
 <a class="hero-i" href="{{ $slides[0]->link ?: '#flash' }}"><img src="{{ $slides[0]->image }}" alt="DutyFree Shop BD offer" width="1440" height="555" fetchpriority="high"></a>
 <a class="hm im" href="{{ $slides[0]->link ?: '#flash' }}"><img src="{{ $slides[0]->image }}" alt="DutyFree Shop BD offer" width="390" height="140" loading="lazy"></a>
 @else
-<div class="w hv"><div class="hero"><div class="in"><span class="k">{{ $s['hero_kicker'] }} <span data-cd="all">00:00:00</span></span><h1>{!! nl2br(e(str_replace(', ', ",\n", $s['hero_title']))) !!}</h1><span class="sb">{{ $hsub }}</span><div class="chips"><div><b>100%</b><span>Original</span></div><div><b>COD</b><span>Pay on delivery</span></div><div><b>24-72h</b><span>Delivery</span></div></div><div class="btns"><a class="bt" href="#flash">{{ $s['hero_button'] }} →</a><a class="bt2" href="/search?deals=1">View offers</a></div></div></div>
+<div class="w hv"><div class="hero"><div class="in"><span class="k" data-end="{{ $fFix ? $fEnd * 1000 : '' }}">{{ $s['hero_kicker'] }} <span data-cd="all">{{ $fmt($fEnd) }}</span></span><h1>{!! nl2br(e(str_replace(', ', ",\n", $s['hero_title']))) !!}</h1><span class="sb">{{ $hsub }}</span><div class="chips"><div><b>100%</b><span>Original</span></div><div><b>COD</b><span>Pay on delivery</span></div><div><b>24-72h</b><span>Delivery</span></div></div><div class="btns"><a class="bt" href="#flash">{{ $s['hero_button'] }} →</a><a class="bt2" href="/search?deals=1">View offers</a></div></div></div>
 <div class="hs"><a href="/delivery-policy/"><b>Cash on Delivery</b><span>Pay in cash when your order arrives</span><em>Shop now →</em></a><a href="/delivery-policy/"><b>Nationwide Delivery</b><span>Fast delivery across Bangladesh</span><em>Learn more →</em></a></div></div>
 <div class="hm"><b>{{ $s['hero_mobile_title'] }}</b><span>{{ $s['hero_mobile_sub'] }}</span></div>
 @endif
 @endif
 
 @if($s['home_promos']==='1')<div class="w pm"><a href="/delivery-policy/"><i>🚚</i><span><b>Free Delivery</b><span>On selected orders</span></span></a><a href="/about-us/"><i>✔</i><span><b>100% Original</b><span>Imported and authentic</span></span></a><a href="#flash"><i>%</i><span><b>Special Offers</b><span>Up to {{ $maxOff }}% off</span></span></a></div>@endif
-@if($s['home_flash']==='1' && $flash->count())
-<div class="w sec-fs" id="flash" style="padding-top:22px"><div class="fs">
-<div class="hd2"><b class="t">⚡ FLASH SALE</b><span class="e">ENDS IN</span><div class="tm"><span class="b" data-cd="h">00</span><span>:</span><span class="b" data-cd="m">00</span><span>:</span><span class="b" data-cd="s">00</span></div>
+@if($s['home_flash']==='1' && $flash->count() && $fOn)
+<div class="w sec-fs" id="flash" data-end="{{ $fFix ? $fEnd * 1000 : '' }}" style="padding-top:22px"><div class="fs">
+<div class="hd2"><b class="t">⚡ FLASH SALE</b><span class="e">ENDS IN</span><div class="tm"><span class="b" data-cd="h">{{ substr($fmt($fEnd),0,2) }}</span><span>:</span><span class="b" data-cd="m">{{ substr($fmt($fEnd),3,2) }}</span><span>:</span><span class="b" data-cd="s">{{ substr($fmt($fEnd),6,2) }}</span></div>
 <div class="tb"><button type="button" class="on" data-ft="f">Flash Sale</button>@if($plus->count())<button type="button" data-ft="p">Plus Sale</button>@endif<a href="/search?deals=1">View All ›</a></div></div>
 <div class="mtb"><button type="button" class="on" data-ft="f">Flash Sale</button>@if($plus->count())<button type="button" data-ft="p">Plus Sale</button>@endif</div>
 @foreach(['f'=>$flash, 'p'=>$plus] as $fk => $list)
@@ -93,9 +94,9 @@ body .w [data-cr]{--pv:6;--g:10px;display:flex;gap:var(--g);padding:0;overflow-x
 <div class="gr" data-cr>@foreach($top as $q)@include('store.card', ['fd'=>true])@endforeach</div></div></div>
 @endif
 
-@if($s['home_todays_deal']==='1' && $deals->count())
-<div class="w sec-st" id="deal" style="padding-top:34px"><div class="st"><h2>Today's Deal</h2><div class="dl" data-cr="1">@foreach($deals as $dd)@php $du = \App\Http\Controllers\StoreController::url($dd); @endphp<div class="td"><a class="im" href="{{ $du }}"><img src="{{ $dd->image ?: '/icon.png' }}" alt="{{ $dd->name }}" width="240" height="240" loading="lazy" draggable="false"></a>
-<div class="tx"><span class="k">DEAL ENDS IN <span data-cd="all">00:00:00</span></span><h3><a href="{{ $du }}">{{ $dd->name }}</a></h3><div class="pp">{{ number_format($dd->price) }} TK <s>{{ number_format($dd->compare_price) }} TK</s><em>{{ \App\Http\Controllers\StoreController::off($dd) }}% OFF</em></div><span style="font-size:12px;color:var(--mut)">Sold by DutyFree Shop BD · Cash on delivery</span><a class="bt" href="/checkout?add={{ $dd->id }}&amp;p={{ (float)$dd->price }}" rel="nofollow">ORDER NOW</a></div></div>@endforeach</div></div></div>
+@if($s['home_todays_deal']==='1' && $deals->count() && $dOn)
+<div class="w sec-st" id="deal" data-end="{{ $dFix ? $dEnd * 1000 : '' }}" style="padding-top:34px"><div class="st"><h2>Today's Deal</h2><div class="dl" data-cr="1">@foreach($deals as $dd)@php $du = \App\Http\Controllers\StoreController::url($dd); @endphp<div class="td"><a class="im" href="{{ $du }}"><img src="{{ $dd->image ?: '/icon.png' }}" alt="{{ $dd->name }}" width="240" height="240" loading="lazy" draggable="false"></a>
+<div class="tx"><span class="k">DEAL ENDS IN <span data-cd="all">{{ $fmt($dEnd) }}</span></span><h3><a href="{{ $du }}">{{ $dd->name }}</a></h3><div class="pp">{{ number_format($dd->price) }} TK <s>{{ number_format($dd->compare_price) }} TK</s><em>{{ \App\Http\Controllers\StoreController::off($dd) }}% OFF</em></div><span style="font-size:12px;color:var(--mut)">Sold by DutyFree Shop BD · Cash on delivery</span><a class="bt" href="/checkout?add={{ $dd->id }}&amp;p={{ (float)$dd->price }}" rel="nofollow">ORDER NOW</a></div></div>@endforeach</div></div></div>
 @endif
 
 @if($s['home_new']==='1' && $new->count())

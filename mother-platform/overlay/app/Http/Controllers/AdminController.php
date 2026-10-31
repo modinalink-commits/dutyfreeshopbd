@@ -49,6 +49,8 @@ class AdminController extends Controller {
     if ($stale) $alerts[] = ['WARNING', "$stale new orders waiting over 30 min", 'Confirm or call the customer'];
     $low = DB::table('products')->where('published',true)->where('stock','<=',2)->count();
     if ($low) $alerts[] = ['WARNING', "$low published products low on stock", '2 or fewer left'];
+    $noimg = DB::table('products')->where('published',true)->where(fn($w)=>$w->whereNull('image')->orWhere('image',''))->count();
+    if ($noimg) $alerts[] = ['WARNING', "$noimg published products have a Missing Product Image", 'Open Products and filter by missing image: /admin/products?missing_image=1'];
     $bills = DB::table('bill_statements')->where('status','unpaid')->count();
     if ($bills) $alerts[] = ['INFO', "$bills unpaid bills", 'See Accounts, Bill statements'];
     $wd = DB::table('withdraw_requests')->where('status','pending')->count();
