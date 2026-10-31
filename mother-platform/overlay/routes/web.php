@@ -80,6 +80,10 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::get('/m/{slug}/{id}/edit', [R::class,'form']);
   Route::post('/m/{slug}/{id}', [R::class,'save']);
   Route::post('/m/{slug}/{id}/delete', [R::class,'destroy']);
+  Route::get('/deals', [\App\Http\Controllers\DealController::class,'index']);
+  Route::get('/deals.csv', [\App\Http\Controllers\DealController::class,'csv']);
+  Route::post('/deals/settings', [\App\Http\Controllers\DealController::class,'settings']);
+  Route::post('/deals/{id}/{mode}', [\App\Http\Controllers\DealController::class,'flag']);
   Route::get('/discounts', [D::class,'index']);
   Route::post('/discounts/rules/{id}', [D::class,'ruleSave']);
   Route::post('/discounts/coupons', [D::class,'couponSave']);

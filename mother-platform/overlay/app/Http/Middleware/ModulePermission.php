@@ -16,7 +16,7 @@ class ModulePermission {
     if (preg_match('#^(orders|orders-export)#', $p)) return 'orders';
     if (str_starts_with($p, 'staff-log')) return 'stafflog';
     if (preg_match('#^(products|taxonomy|categories|brands|inventory)#', $p)) return 'products';
-    if (preg_match('#^(discounts|coupons)#', $p)) return 'marketing';
+    if (preg_match('#^(discounts|coupons|deals)#', $p)) return 'marketing';
     if (preg_match('#^(reports|modules|report-details)#', $p)) return 'reports';
     if (preg_match('#^m-districts#', $p)) return 'couriers';
     if (preg_match('#^m-payroll#', $p)) return 'hr';

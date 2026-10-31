@@ -27,6 +27,15 @@ class StoreController extends Controller {
     return $o;
   }
   /** Discount percent shown on cards (from the compare price). */
+  public static function dealBase(float $min = 0) {
+    $ex = DB::table('deal_flags')->where('mode','exclude')->pluck('product_id')->all();
+    $pin = array_map('intval', DB::table('deal_flags')->where('mode','pin')->pluck('product_id')->all());
+    $q = DB::table('products')->where('published',true)->whereColumn('compare_price','>','price')->where('compare_price','>',0);
+    if ($ex) $q->whereNotIn('id', $ex);
+    $q->where(function ($w) use ($min, $pin) { $w->whereRaw('(compare_price - price) / compare_price * 100 >= ?', [$min]); if ($pin) $w->orWhereIn('id', $pin); });
+    if ($pin) $q->orderByRaw('case when id in ('.implode(',', $pin).') then 0 else 1 end');
+    return $q->orderByRaw('(compare_price - price) / compare_price desc')->orderByDesc('id');
+  }
   public static function off($p): int { return $p->compare_price && $p->compare_price > $p->price ? (int)round(($p->compare_price - $p->price) / $p->compare_price * 100) : 0; }
   public static function tk($v): string { return number_format((float)$v).' TK'; }
   private function cats() {
@@ -54,10 +63,10 @@ class StoreController extends Controller {
   }
   public function home() {
     $s = self::set();
-    $data = self::rem('store.home4', 300, function () {
+    $data = self::rem('store.home4', 300, function () use ($s) {
       $pub = fn() => DB::table('products')->where('published',true);
       $sold = DB::table('order_items as i')->join('orders as o','o.id','=','i.order_id')->where('o.status','!=','Cancel')->where('o.created_at','>=',now()->subDays(30))->groupBy('i.product_id')->selectRaw('i.product_id as pid, sum(i.qty) as q')->pluck('q','pid');
-      $deals = $pub()->whereColumn('compare_price','>','price')->where('compare_price','>',0)->orderByRaw('(compare_price - price) / compare_price desc')->orderByDesc('id')->limit(12)->get()
+      $deals = self::dealBase((float)($s['deal_min_off'] ?? 0))->limit(max(1,(int)($s['deal_max'] ?? 12)))->get()
         ->map(function ($p) use ($sold) { $p->sold = (int)($sold[$p->id] ?? 0); return $p; });
       $top = DB::table('order_items as i')->join('products as p','p.id','=','i.product_id')->where('p.published',true)->select('p.*', DB::raw('sum(i.qty) q'))->groupBy('p.id')->orderByDesc('q')->limit(6)->get();
       $topLabel = 'Top Selling Products';
@@ -106,7 +115,7 @@ class StoreController extends Controller {
   }
   public function search(Request $r) {
     $t = trim(mb_substr((string)$r->q, 0, 80)); $items = collect();
-    if ($r->boolean('deals')) { $items = $this->q()->whereColumn('compare_price','>','price')->where('compare_price','>',0)->orderByRaw('(compare_price - price) / compare_price desc')->paginate(48)->withQueryString(); $t = 'Flash Sale'; }
+    if ($r->boolean('deals')) { $items = self::dealBase(0)->paginate(48)->withQueryString(); $t = 'Flash Sale'; }
     elseif ($t !== '') { $items = $this->q()->where(fn($w) => $w->where('name','ilike','%'.$t.'%')->orWhere('sub','ilike','%'.$t.'%'))->orderByDesc('id')->paginate(48)->withQueryString(); DB::table('product_views')->insert(['term'=>$t,'day'=>now('Asia/Dhaka')->toDateString(),'created_at'=>now(),'updated_at'=>now()]); }
     return response()->view('store.search', $this->base(['t'=>$t, 'items'=>$items, 'title'=>($t ? $t.' – ' : '').'Search | DutyFree Shop BD', 'desc'=>'', 'canon'=>url('/search'), 'noindex'=>true]));
   }

@@ -91,3 +91,6 @@ app/Http/Controllers/AiChatController.php
 resources/views/ai_chat.blade.php
 database/migrations/2026_10_31_000012_cigarette_first.php
 database/migrations/2026_10_31_000013_hide_category_cards.php
+database/migrations/2026_10_31_000014_deal_flags.php
+app/Http/Controllers/DealController.php
+resources/views/deals.blade.php
