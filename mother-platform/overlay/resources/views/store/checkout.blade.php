@@ -17,6 +17,12 @@ body{background:#F7F5F2}
 @media (max-width:760px){.co{grid-template-columns:1fr;padding-top:10px;padding-left:8px!important;padding-right:8px!important;gap:10px}.cf{padding:16px 14px}.cc{padding:14px;order:-1}.cf .h{font-size:15px;margin-bottom:14px}
 .th{display:none}.tr{grid-template-columns:minmax(0,1fr) 24px}.tr>.qt,.tr>.up,.tr>.lt{display:none}.tr .mq{display:flex;gap:6px;align-items:center;margin-top:3px;font-weight:500}.tr .mq button{width:16px;height:16px;border:1px solid #CCC;border-radius:3px;background:#fff;padding:0;font-size:11px;line-height:13px}.tr .pn{align-items:flex-start}.tr .pn>span{display:flex;flex-direction:column}}
 </style>
+<style>
+body{background:#fff}.cf,.cc{border:1px solid #EAEAEA;border-radius:20px;box-shadow:0 1px 2px rgba(11,18,32,.04),0 8px 22px rgba(11,18,32,.05)}.cf .h{text-align:left;font-size:22px;font-weight:800;color:var(--n)}.fl .l{font-size:12px;color:#374151}
+.ip{height:44px;border-radius:12px;background:#F3F4F6;border-color:#E5E7EB}.ip input,.ip textarea{font-size:14px}.ip span{font-size:13px}.ar{height:44px;border-radius:12px;font-size:13px}.ar.on{border-color:var(--o)}
+.sbm{background:var(--o);border-radius:12px;font-size:15px;padding:15px 0}.sbm:hover{background:var(--n)}.cp button{border-radius:10px;font-size:12px;background:var(--n)}.th,.tr{font-size:12px}.sm{font-size:13px}.sm.tt{font-size:16px;color:var(--n)}.tr .pn img{width:44px;height:48px;border-radius:8px}.pm span{border-radius:8px}
+@media(max-width:760px){.cf,.cc{border-radius:16px}.cf .h{font-size:18px}.ip{height:42px}}
+</style>
 <form class="w co" id="cof" method="post" action="/order" novalidate>
 <div class="cf"><div class="h">Please Order Now</div>
 @if(request('e'))<div class="er">{{ request('e') }}</div>@endif
