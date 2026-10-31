@@ -79,8 +79,10 @@ class AdminController extends Controller {
     $items = DB::table('order_items as i')->leftJoin('products as p','p.id','=','i.product_id')->whereIn('i.order_id', collect($orders->items())->pluck('id'))->select('i.*', DB::raw('coalesce(p.image,(select pp.image from products pp where pp.name = i.name limit 1)) as image'))->get()->groupBy('order_id');
     $counts = DB::table('orders')->select('status', DB::raw('count(*) c'))->groupBy('status')->pluck('c','status');
     $intel = \App\Support\CustomerIntel::forOrders($orders->items());
+    $cmLast = []; $phs = collect($orders->items())->pluck('phone')->filter()->unique()->all();
+    if ($phs) foreach (DB::table('order_comments as c')->join('orders as oo','oo.id','=','c.order_id')->whereIn('oo.phone',$phs)->orderByDesc('c.id')->select('c.body','oo.phone')->get() as $c) { if (!isset($cmLast[$c->phone])) $cmLast[$c->phone] = $c->body; }
     $incOpen = (int)DB::table('incomplete_orders')->where('status', 'open')->count();
-    return view('orders', compact('orders','counts','items','per','intel','incOpen') + ['isInc'=>$isInc] + ($isInc ? \App\Http\Controllers\IncompleteController::data($r) : []));
+    return view('orders', compact('orders','counts','items','per','intel','incOpen','cmLast') + ['isInc'=>$isInc] + ($isInc ? \App\Http\Controllers\IncompleteController::data($r) : []));
   }
   public function orderBulk(Request $r) {
     $d = $r->validate(['ids'=>'required|array|max:500','ids.*'=>'integer','status'=>'required|in:'.implode(',',Mother::STAGES)]);
@@ -171,8 +173,15 @@ class AdminController extends Controller {
     $d = $r->validate(['body'=>'required|string|max:2000','category'=>'nullable|string|max:80']);
     abort_unless(DB::table('orders')->where('id',$id)->exists(), 404);
     DB::table('order_comments')->insert(['order_id'=>$id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'category'=>$d['category']??null,'body'=>trim($d['body']),'created_at'=>now(),'updated_at'=>now()]);
+    if ($r->expectsJson()) return response()->json(['ok'=>true] + self::commentPayload($id));
     return redirect("/admin/orders/$id#comments");
   }
+  public static function commentPayload($id): array {
+    $o = DB::table('orders')->find($id); $ph = (string)($o->phone ?? '');
+    $rows = DB::table('order_comments as c')->join('orders as oo','oo.id','=','c.order_id')->where(fn($w) => $w->where('c.order_id',$id)->orWhere(fn($x) => $x->where('oo.phone',$ph)->where('oo.phone','<>','')))->orderByDesc('c.id')->limit(50)->select('c.*','oo.invoice as inv')->get();
+    return ['inv'=>$o->invoice ?? '', 'last'=>$rows->first()->body ?? '', 'n'=>$rows->count(), 'rows'=>$rows->map(fn($c) => ['t'=>\Carbon\Carbon::parse($c->created_at)->timezone('Asia/Dhaka')->format('d M Y, h:i A'), 'by'=>$c->user_name, 'cat'=>$c->category, 'body'=>$c->body, 'inv'=>$c->order_id == $id ? null : $c->inv])->all()];
+  }
+  public function orderComments($id) { abort_unless(DB::table('orders')->where('id',$id)->exists(), 404); return response()->json(self::commentPayload($id)); }
   public function orderStatus(Request $r, $id) {
     $d = $r->validate(['status'=>'required|in:'.implode(',',Mother::STAGES),'note'=>'nullable|string|max:500']);
     $o = DB::table('orders')->find($id); abort_unless($o, 404);

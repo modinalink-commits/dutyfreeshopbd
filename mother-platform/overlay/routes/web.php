@@ -27,6 +27,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::get('/orders/{id}', [A::class,'orderShow']);
   Route::post('/orders/{id}/status', [A::class,'orderStatus']);
   Route::post('/orders/{id}/comment', [A::class,'orderComment']);
+  Route::get('/orders/{id}/comments', [A::class,'orderComments']);
   Route::get('/orders-export.csv', [A::class,'ordersCsv']);
   Route::get('/staff-log', [A::class,'staffLog']);
   Route::get('/products', [C::class,'products']);
