@@ -6,20 +6,26 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 class StoreController extends Controller {
+  /** Cache helper: stores a serialized string so cached collections/objects come back intact. */
+  public static function rem(string $k, int $ttl, \Closure $fn) {
+    $raw = Cache::get($k);
+    if (is_string($raw) && ($v = @unserialize($raw)) !== false) return $v;
+    $v = $fn(); Cache::put($k, serialize($v), $ttl); return $v;
+  }
   public static function slugOf(string $name): string {
     $s = trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($name)), '-'); $s = trim(substr($s, 0, 60), '-');
     return $s !== '' ? $s : 'product';
   }
   public static function url($p): string { return '/p/'.($p->ext_id ?? 'm'.$p->id).'-'.self::slugOf($p->name).'/'; }
   public static function set(): array {
-    return Cache::remember('store.settings', 300, function () {
+    return self::rem('store.settings', 300, function () {
       $cur = DB::table('settings')->pluck('value','key'); $o = [];
       foreach (SiteController::schema() as [$k,$l,$t,$d,$g]) $o[$k] = $cur[$k] ?? $d;
       return $o;
     });
   }
   private function cats() {
-    return Cache::remember('store.cats', 300, fn() => DB::table('categories')->whereNotNull('slug')->where('active',true)->orderBy('position')->get()->keyBy('slug'));
+    return self::rem('store.cats', 300, fn() => DB::table('categories')->whereNotNull('slug')->where('active',true)->orderBy('position')->get()->keyBy('slug'));
   }
   private function base(array $x = []): array {
     $s = self::set(); $wa = preg_replace('/\D/', '', $s['whatsapp_number']); if (str_starts_with($wa, '0')) $wa = '88'.$wa;
@@ -31,7 +37,7 @@ class StoreController extends Controller {
   }
   public function home() {
     $s = self::set();
-    $data = Cache::remember('store.home', 300, function () {
+    $data = self::rem('store.home', 300, function () {
       $sec = [];
       foreach ($this->cats() as $c) $sec[] = [$c, DB::table('products')->where('published',true)->where('category_id',$c->id)->orderByDesc('id')->limit(12)->get()];
       $top = DB::table('order_items as i')->join('products as p','p.id','=','i.product_id')->where('p.published',true)->select('p.*', DB::raw('sum(i.qty) q'))->groupBy('p.id')->orderByDesc('q')->limit(12)->get();
@@ -42,7 +48,7 @@ class StoreController extends Controller {
     return response()->view('store.home', $this->base($data + ['live'=>$live, 'title'=>$s['site_title'], 'desc'=>$s['meta_description'] ?: 'ডিউটি ফ্রি দামে অরিজিনাল ইমপোর্টেড পারফিউম, আতর, সিগারেট, ভেপ, স্কিন কেয়ার ও ডেইলি নিডস। অর্ডার করুন, সারা বাংলাদেশে হোম ডেলিভারি।', 'canon'=>url('/').'/']))->header('Cache-Control','public, max-age=120');
   }
   private function liveOrders() {
-    return Cache::remember('store.live', 60, fn() => DB::table('orders as o')->join('order_items as i','i.order_id','=','o.id')->whereNotIn('o.status',['Cancel'])->where('o.created_at','>=',now()->subDays(3))->select('o.customer_name','o.district','o.created_at','i.name')->orderByDesc('o.id')->limit(10)->get()->map(function ($r) { $n = trim($r->customer_name); $r->masked = mb_substr($n,0,1).str_repeat('•', max(2, min(5, mb_strlen($n)-1))); return $r; }));
+    return self::rem('store.live', 60, fn() => DB::table('orders as o')->join('order_items as i','i.order_id','=','o.id')->whereNotIn('o.status',['Cancel'])->where('o.created_at','>=',now()->subDays(3))->select('o.customer_name','o.district','o.created_at','i.name')->orderByDesc('o.id')->limit(10)->get()->map(function ($r) { $n = trim($r->customer_name); $r->masked = mb_substr($n,0,1).str_repeat('•', max(2, min(5, mb_strlen($n)-1))); return $r; }));
   }
   public function category(Request $r, string $slug) {
     $c = $this->cats()[$slug] ?? null;
@@ -60,7 +66,7 @@ class StoreController extends Controller {
     if (rtrim(request()->getPathInfo(),'/').'/' !== self::url($p)) return redirect(self::url($p), 301);
     $c = DB::table('categories')->find($p->category_id);
     $rel = $this->q()->where('category_id',$p->category_id)->where('id','!=',$p->id)->orderByRaw('(sub = ?) desc', [$p->sub ?? ''])->orderByDesc('id')->limit(12)->get();
-    $districts = Cache::remember('store.districts', 600, fn() => DB::table('districts')->where('active',true)->orderBy('name')->get(['name','delivery_charge']));
+    $districts = self::rem('store.districts', 600, fn() => DB::table('districts')->where('active',true)->orderBy('name')->get(['name','delivery_charge']));
     DB::table('product_views')->insert(['product_id'=>$p->id,'day'=>now('Asia/Dhaka')->toDateString(),'created_at'=>now(),'updated_at'=>now()]);
     $price = (float)$p->price;
     return response()->view('store.product', $this->base(['p'=>$p, 'c'=>$c, 'rel'=>$rel, 'districts'=>$districts, 'title'=>$p->name.' দাম ৳ '.number_format($price).' | '.($c->name ?? 'Shop').' | DutyFree Shop BD', 'desc'=>$p->name.' – দাম ৳ '.number_format($price).'। অরিজিনাল ইমপোর্টেড পণ্য, অর্ডার করুন, সারা বাংলাদেশে ডেলিভারি। DutyFree Shop BD.', 'canon'=>url(self::url($p)), 'ogimg'=>$p->image]))->header('Cache-Control','public, max-age=120');
@@ -108,7 +114,7 @@ class StoreController extends Controller {
     return response()->view('store.missing', $this->base(['title'=>'পেজ পাওয়া যায়নি | DutyFree Shop BD', 'desc'=>'', 'canon'=>url('/'), 'noindex'=>true]), 404);
   }
   public function sitemap() {
-    $xml = Cache::remember('store.sitemap', 3600, function () {
+    $xml = self::rem('store.sitemap', 3600, function () {
       $u = fn($loc, $img = null) => '<url><loc>'.e($loc).'</loc><changefreq>daily</changefreq>'.($img ? '<image:image><image:loc>'.e($img).'</image:loc></image:image>' : '').'</url>';
       $o = $u(url('/').'/');
       foreach ($this->cats() as $c) $o .= $u(url('/'.$c->slug).'/');
