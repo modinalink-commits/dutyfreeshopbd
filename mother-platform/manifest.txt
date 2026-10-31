@@ -121,3 +121,4 @@ app/Support/Cms.php
 database/migrations/2026_10_31_000019_cms_blog_pages.php
 resources/views/store/blog.blade.php
 resources/views/store/post.blade.php
+database/migrations/2026_10_31_000020_slider_hero_fields.php
