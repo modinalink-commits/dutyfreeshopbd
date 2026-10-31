@@ -164,7 +164,14 @@ class AdminController extends Controller {
     $items = DB::table('order_items as i')->leftJoin('products as p','p.id','=','i.product_id')->where('i.order_id',$id)->select('i.*','p.sku as sku', DB::raw('coalesce(p.image,(select pp.image from products pp where pp.name = i.name limit 1)) as image'))->get();
     $logs = DB::table('order_status_logs')->where('order_id',$id)->orderBy('id')->get();
     $ci = \App\Support\CustomerIntel::forOrders([$o])[$o->id];
-    return view('order_show', compact('o','items','logs','ci'));
+    $comments = DB::table('order_comments')->where('order_id',$id)->orderByDesc('id')->get();
+    return view('order_show', compact('o','items','logs','ci','comments'));
+  }
+  public function orderComment(Request $r, $id) {
+    $d = $r->validate(['body'=>'required|string|max:2000','category'=>'nullable|string|max:80']);
+    abort_unless(DB::table('orders')->where('id',$id)->exists(), 404);
+    DB::table('order_comments')->insert(['order_id'=>$id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'category'=>$d['category']??null,'body'=>trim($d['body']),'created_at'=>now(),'updated_at'=>now()]);
+    return redirect("/admin/orders/$id#comments");
   }
   public function orderStatus(Request $r, $id) {
     $d = $r->validate(['status'=>'required|in:'.implode(',',Mother::STAGES),'note'=>'nullable|string|max:500']);

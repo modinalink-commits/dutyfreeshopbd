@@ -160,3 +160,5 @@ app/Http/Controllers/PrintController.php
 app/Support/Code128.php
 resources/views/print_docs.blade.php
 resources/views/orders_incomplete.blade.php
+app/Support/CommentTemplates.php
+database/migrations/2026_10_31_000033_order_comments.php
