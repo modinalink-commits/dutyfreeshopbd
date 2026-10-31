@@ -35,6 +35,7 @@
 <div class="pi">
 <div class="bc"><a href="/" aria-label="Home">⌂</a><span>›</span>@if($c)<a href="/{{ $c->slug }}/">{{ $c->name }}</a>@endif @if($p->sub)<span>›</span><a href="/{{ $c->slug ?? '' }}/?sub={{ rawurlencode($p->sub) }}" style="color:#555">{{ $p->sub }}</a>@endif</div>
 <h1>{{ $p->name }}@if($code) - ( {{ $code }} )@endif</h1>
+<p style="font-size:13px;color:#6B7280;margin:2px 0 8px">Sold by <a href="/" style="color:#FF5A00;font-weight:700">DutyFree Shop BD</a></p>
 <div class="pz"><b>Tk {{ number_format($price) }}</b>@if($cmp)<s>Tk {{ number_format($cmp) }}</s>@endif @if($save > 0 && $s['pp_save_badge']==='1')<span>SAVE TK {{ number_format($save) }}</span>@endif</div>
 @if($s['pp_bundle']==='1')
 <div class="bnl"><span>BUNDLE &amp; SAVE</span></div>
