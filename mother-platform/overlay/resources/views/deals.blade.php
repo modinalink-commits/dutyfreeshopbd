@@ -1,5 +1,6 @@
 @extends('layout')@section('title',"Today's Deal")
 @section('body')
+@if(session('ok'))<div class="card" style="color:#166534">{{ session('ok') }}</div>@endif
 <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap"><h1 style="margin:0;flex:1">Today's Deal</h1><a class="btn g" href="/admin/deals.csv">Download CSV</a><a class="btn g" href="/" target="_blank">View on site</a></div>
 <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin-bottom:12px">
 <div class="card"><div style="font-size:12px;color:#6B7280">On the homepage now</div><div style="font-size:26px;font-weight:800">{{ $cur->count() }} <small style="font-size:12px;font-weight:500">of {{ $max }} slots</small></div></div>
