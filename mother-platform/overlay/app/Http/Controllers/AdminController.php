@@ -66,7 +66,8 @@ class AdminController extends Controller {
     $orders = $q->paginate($per)->withQueryString();
     $items = DB::table('order_items as i')->leftJoin('products as p','p.id','=','i.product_id')->whereIn('i.order_id', collect($orders->items())->pluck('id'))->select('i.*', DB::raw('coalesce(p.image,(select pp.image from products pp where pp.name = i.name limit 1)) as image'))->get()->groupBy('order_id');
     $counts = DB::table('orders')->select('status', DB::raw('count(*) c'))->groupBy('status')->pluck('c','status');
-    return view('orders', compact('orders','counts','items','per'));
+    $intel = \App\Support\CustomerIntel::forOrders($orders->items());
+    return view('orders', compact('orders','counts','items','per','intel'));
   }
   public function orderBulk(Request $r) {
     $d = $r->validate(['ids'=>'required|array|max:500','ids.*'=>'integer','status'=>'required|in:'.implode(',',Mother::STAGES)]);
@@ -97,7 +98,8 @@ class AdminController extends Controller {
     $o = DB::table('orders')->find($id); abort_unless($o, 404);
     $items = DB::table('order_items as i')->leftJoin('products as p','p.id','=','i.product_id')->where('i.order_id',$id)->select('i.*','p.sku as sku', DB::raw('coalesce(p.image,(select pp.image from products pp where pp.name = i.name limit 1)) as image'))->get();
     $logs = DB::table('order_status_logs')->where('order_id',$id)->orderBy('id')->get();
-    return view('order_show', compact('o','items','logs'));
+    $ci = \App\Support\CustomerIntel::forOrders([$o])[$o->id];
+    return view('order_show', compact('o','items','logs','ci'));
   }
   public function orderStatus(Request $r, $id) {
     $d = $r->validate(['status'=>'required|in:'.implode(',',Mother::STAGES),'note'=>'nullable|string|max:500']);

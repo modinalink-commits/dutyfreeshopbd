@@ -108,3 +108,5 @@ app/Console/Commands/MotherCourierSync.php
 resources/views/store/success.blade.php
 resources/views/store/invoice.blade.php
 app/Http/Controllers/CheckoutLookupController.php
+app/Support/CustomerIntel.php
+resources/views/cust_intel.blade.php
