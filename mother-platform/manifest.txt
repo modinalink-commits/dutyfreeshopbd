@@ -163,3 +163,4 @@ resources/views/orders_incomplete.blade.php
 app/Support/CommentTemplates.php
 database/migrations/2026_10_31_000033_order_staff_comments.php
 database/migrations/2026_10_31_000034_seed_comment_templates.php
+resources/views/orders_inc_row.blade.php
