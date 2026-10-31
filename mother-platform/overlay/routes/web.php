@@ -45,6 +45,13 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::post('/m-districts/charge', [R::class,'districtCharge']);
   Route::post('/m-payroll/generate', [R::class,'payrollGenerate']);
   Route::post('/m-customers/import', [R::class,'customerImport']);
+  Route::get('/inventory', [\App\Http\Controllers\InventoryController::class,'index']);
+  Route::get('/inventory/export/{fmt}', [\App\Http\Controllers\InventoryController::class,'export']);
+  Route::get('/stores', [\App\Http\Controllers\InventoryController::class,'stores']);
+  Route::post('/stores', [\App\Http\Controllers\InventoryController::class,'storeAdd']);
+  Route::post('/stores/{id}/scan', [\App\Http\Controllers\InventoryController::class,'scanStart']);
+  Route::post('/stores/{id}/scan-step', [\App\Http\Controllers\InventoryController::class,'scanStep']);
+  Route::post('/stores/{id}/clear', [\App\Http\Controllers\InventoryController::class,'storeRemoveProducts']);
   Route::get('/m/{slug}', [R::class,'index']);
   Route::get('/m/{slug}/new', [R::class,'form']);
   Route::post('/m/{slug}', [R::class,'save']);

@@ -68,3 +68,8 @@ public/robots.txt
 database/products-snapshot.json
 database/products-feed.xml
 database/migrations/2026_10_31_000006_customer_import.php
+app/Support/StoreScanner.php
+app/Http/Controllers/InventoryController.php
+database/migrations/2026_10_31_000007_inventory_scan.php
+resources/views/inventory.blade.php
+resources/views/stores.blade.php

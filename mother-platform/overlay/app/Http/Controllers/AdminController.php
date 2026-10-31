@@ -64,7 +64,7 @@ class AdminController extends Controller {
     if ($r->filled('q')) $q->where(fn($w) => $w->where('invoice','like','%'.$r->q.'%')->orWhere('phone','like','%'.$r->q.'%')->orWhere('customer_name','ilike','%'.$r->q.'%'));
     $per = in_array((int)$r->input('per'), [25,50,100,200]) ? (int)$r->input('per') : 50;
     $orders = $q->paginate($per)->withQueryString();
-    $items = DB::table('order_items')->whereIn('order_id', collect($orders->items())->pluck('id'))->get()->groupBy('order_id');
+    $items = DB::table('order_items as i')->leftJoin('products as p','p.id','=','i.product_id')->whereIn('i.order_id', collect($orders->items())->pluck('id'))->select('i.*', DB::raw('coalesce(p.image,(select pp.image from products pp where pp.name = i.name limit 1)) as image'))->get()->groupBy('order_id');
     $counts = DB::table('orders')->select('status', DB::raw('count(*) c'))->groupBy('status')->pluck('c','status');
     return view('orders', compact('orders','counts','items','per'));
   }
@@ -95,7 +95,7 @@ class AdminController extends Controller {
   }
   public function orderShow($id) {
     $o = DB::table('orders')->find($id); abort_unless($o, 404);
-    $items = DB::table('order_items')->where('order_id',$id)->get();
+    $items = DB::table('order_items as i')->leftJoin('products as p','p.id','=','i.product_id')->where('i.order_id',$id)->select('i.*','p.sku as sku', DB::raw('coalesce(p.image,(select pp.image from products pp where pp.name = i.name limit 1)) as image'))->get();
     $logs = DB::table('order_status_logs')->where('order_id',$id)->orderBy('id')->get();
     return view('order_show', compact('o','items','logs'));
   }
