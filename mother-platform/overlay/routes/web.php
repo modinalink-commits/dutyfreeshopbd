@@ -16,6 +16,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::post('/upload-image', [\App\Http\Controllers\UploadController::class,'image']);
   Route::get('/orders', [A::class,'orders']);
   Route::get('/orders/new', [A::class,'orderNew']);
+  Route::get('/orders/lookup', [A::class,'orderLookup']);
   Route::post('/orders/bulk', [A::class,'orderBulk']);
   Route::post('/orders', [A::class,'orderStore']);
   Route::get('/orders/{id}', [A::class,'orderShow']);
