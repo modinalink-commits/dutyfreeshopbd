@@ -75,3 +75,7 @@ resources/views/inventory.blade.php
 resources/views/stores.blade.php
 database/migrations/2026_10_31_000008_store_label.php
 resources/views/store_edit.blade.php
+app/Support/Sms.php
+app/Http/Controllers/SmsController.php
+resources/views/sms_setup.blade.php
+database/migrations/2026_10_31_000009_secrets.php

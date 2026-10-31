@@ -44,7 +44,7 @@ class CatalogController extends Controller {
     if (!$to) return;
     $what = count($names) === 1 ? '"'.$names[0].'"' : count($names).' products';
     $body = "Product $what was ".($published ? 'PUBLISHED' : 'UNPUBLISHED').' by '.Auth::user()->name.' at '.now('Asia/Dhaka')->format('H:i').'. Store: '.($set['store_name'] ?? 'DutyFreeBD').'.';
-    foreach ($to as $ph) DB::table('sms_logs')->insert(['to'=>$ph,'body'=>$body,'event'=>$published?'product_published':'product_unpublished','status'=>'queued','created_at'=>now(),'updated_at'=>now()]);
+    foreach ($to as $ph) \App\Support\Sms::queue($ph, $body, $published ? 'product_published' : 'product_unpublished');
   }
   public function productBulk(Request $r) {
     $d = $r->validate(['ids'=>'required|array|max:500','ids.*'=>'integer','action'=>'required|in:publish,unpublish']);

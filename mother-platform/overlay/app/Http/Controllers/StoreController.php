@@ -172,6 +172,12 @@ class StoreController extends Controller {
     });
     Cache::forget('store.live2');
     $inv = DB::table('orders')->where('id',$id)->value('invoice');
+    try {
+      if ((DB::table('settings')->where('key','sms_order_confirm')->value('value') ?? '1') === '1') {
+        $tot = DB::table('orders')->where('id',$id)->value('total');
+        \App\Support\Sms::queue($phone, "DutyFree Shop BD: আপনার অর্ডার $inv গ্রহণ করা হয়েছে। মোট ৳".number_format((float)$tot).". ট্র্যাক: dutyfreeshopbd.com/track?invoice=$inv", 'order_placed');
+      }
+    } catch (\Throwable $e) {}
     return redirect('/track?invoice='.$inv.'&new=1');
   }
   /** Tracking by invoice number only: shows status steps and products, never the customer's name, phone or address. */

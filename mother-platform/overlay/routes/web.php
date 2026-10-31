@@ -45,6 +45,11 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::post('/m-districts/charge', [R::class,'districtCharge']);
   Route::post('/m-payroll/generate', [R::class,'payrollGenerate']);
   Route::post('/m-customers/import', [R::class,'customerImport']);
+  Route::get('/sms', [\App\Http\Controllers\SmsController::class,'show']);
+  Route::post('/sms', [\App\Http\Controllers\SmsController::class,'save']);
+  Route::post('/sms/test', [\App\Http\Controllers\SmsController::class,'test']);
+  Route::post('/sms/balance', [\App\Http\Controllers\SmsController::class,'balance']);
+  Route::post('/sms/flush', [\App\Http\Controllers\SmsController::class,'flush']);
   Route::get('/inventory', [\App\Http\Controllers\InventoryController::class,'index']);
   Route::get('/inventory/export/{fmt}', [\App\Http\Controllers\InventoryController::class,'export']);
   Route::get('/stores', [\App\Http\Controllers\InventoryController::class,'stores']);
