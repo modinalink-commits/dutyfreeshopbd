@@ -17,6 +17,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::get('/orders', [A::class,'orders']);
   Route::get('/orders/new', [A::class,'orderNew']);
   Route::get('/orders/lookup', [A::class,'orderLookup']);
+  Route::get('/orders/discount', [A::class,'orderDiscount']);
   Route::post('/orders/bulk', [A::class,'orderBulk']);
   Route::post('/orders', [A::class,'orderStore']);
   Route::get('/orders/{id}', [A::class,'orderShow']);
@@ -120,6 +121,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::post('/deals/{id}/{mode}', [\App\Http\Controllers\DealController::class,'flag']);
   Route::get('/discounts', [D::class,'index']);
   Route::post('/discounts/rules/{id}', [D::class,'ruleSave']);
+  Route::post('/discounts/policy', [D::class,'policy']);
   Route::post('/discounts/coupons', [D::class,'couponSave']);
   Route::post('/discounts/coupons/{id}/toggle', [D::class,'couponToggle']);
   Route::get('/coupons-export.csv', [D::class,'couponsCsv']);

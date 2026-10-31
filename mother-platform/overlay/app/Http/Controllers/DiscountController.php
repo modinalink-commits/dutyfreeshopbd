@@ -15,6 +15,10 @@ class DiscountController extends Controller {
     \Illuminate\Support\Facades\Cache::forget('store.rules');
     return back();
   }
+  public function policy(Request $r) {
+    $m = $r->input('mode'); abort_unless(isset(\App\Support\OrderDiscount::MODES[$m]), 422);
+    DB::table('settings')->updateOrInsert(['key'=>'order_disc_mode'], ['value'=>$m, 'updated_at'=>now(), 'created_at'=>now()]); return back();
+  }
   public function couponSave(Request $r) {
     $d = $r->validate(['code'=>'required|string|max:40|alpha_dash|unique:coupons,code','type'=>'required|in:percent,fixed,free_delivery','value'=>'required|numeric|min:0','min_order'=>'nullable|numeric|min:0','max_discount'=>'nullable|numeric|min:0','usage_limit'=>'nullable|integer|min:1','per_customer'=>'nullable|integer|min:1','valid_from'=>'nullable|date','valid_to'=>'nullable|date']);
     $d['code'] = strtoupper($d['code']); $d['min_order'] = $d['min_order'] ?? 0; $d['per_customer'] = $d['per_customer'] ?? 1;

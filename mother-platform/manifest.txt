@@ -146,3 +146,5 @@ app/Support/Img.php
 app/Http/Controllers/MediaController.php
 resources/views/media.blade.php
 database/migrations/2026_10_31_000026_media_images.php
+app/Support/OrderDiscount.php
+database/migrations/2026_10_31_000027_order_discounts.php

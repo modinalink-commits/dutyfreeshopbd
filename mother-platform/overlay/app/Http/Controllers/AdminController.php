@@ -106,18 +106,36 @@ class AdminController extends Controller {
     $cnt = DB::table('orders')->whereIn('phone', $alt)->count();
     return response()->json(['found'=>true, 'phone'=>$p, 'name'=>$c->name ?? $last->customer_name ?? '', 'address'=>(($c->address ?? '') !== '' ? $c->address : ($last->address ?? '')), 'district'=>$last->district ?? '',
       'email'=>$c->email ?? '', 'customer_id'=>$c->id ?? null, 'blocked'=>(bool)($c->blocked ?? false), 'orders'=>$cnt + (int)($c->legacy_orders ?? 0), 'cat'=>$i['cat'] ?? 'New', 'risk'=>$i['risk'] ?? 'Low',
+      'membership'=>(\App\Support\OrderDiscount::tier($p, $c)['name'] ?? null), 'courier_pref'=>(($c->courier_pref ?? '') !== '' ? $c->courier_pref : (DB::table('orders')->whereIn('phone', $alt)->whereNotNull('courier')->orderByDesc('id')->value('courier'))), 'assigned'=>$c->assigned_to ?? null, 'cnote'=>$c->note ?? null,
       'delivered'=>$i['delivered'] ?? 0, 'returned'=>$i['returned'] ?? 0, 'last'=>$last ? ['id'=>$last->id, 'invoice'=>$last->invoice, 'status'=>$last->status, 'total'=>(float)$last->total] : null]);
   }
+  public function orderDiscount(Request $r) {
+    $p = \App\Support\Chat::phone($r->query('phone')); $sub = max(0, (float)$r->query('subtotal', 0));
+    $can = \App\Http\Middleware\ModulePermission::can(Auth::user(), 'marketing', 'edit');
+    if (!$p || strlen($p) < 10 || $sub <= 0) return response()->json(['lines'=>[], 'total'=>0, 'mode'=>\App\Support\OrderDiscount::mode(), 'can'=>$can, 'coupon_error'=>null]);
+    return response()->json(\App\Support\OrderDiscount::compute($p, $sub, $r->query('coupon')) + ['can'=>$can]);
+  }
   public function orderStore(Request $r) {
-    $d = $r->validate(['customer_name'=>'required|string|max:120','phone'=>'required|string|max:20','address'=>'nullable|string','district'=>'nullable|string|max:60','source'=>'nullable|string|max:40','total'=>'required|numeric|min:0','shipping'=>'nullable|numeric|min:0','note'=>'nullable|string','item_name'=>'required|string|max:200','qty'=>'required|integer|min:1']);
+    $d = $r->validate(['customer_name'=>'required|string|max:120','phone'=>'required|string|max:20','address'=>'nullable|string','district'=>'nullable|string|max:60','source'=>'nullable|string|max:40','total'=>'required|numeric|min:0','shipping'=>'nullable|numeric|min:0','note'=>'nullable|string','item_name'=>'required|string|max:200','qty'=>'required|integer|min:1','coupon'=>'nullable|string|max:40','disc_off'=>'nullable|array','disc_manual'=>'nullable|numeric|min:0','disc_extra'=>'nullable|numeric|min:0']);
     $d['phone'] = \App\Support\Chat::phone($d['phone']) ?: $d['phone'];
+    $sub = (float)$d['total']; $auto = \App\Support\OrderDiscount::compute($d['phone'], $sub, $d['coupon'] ?? null);
+    $can = \App\Http\Middleware\ModulePermission::can(Auth::user(), 'marketing', 'edit');
+    $off = $can ? (array)($d['disc_off'] ?? []) : []; $kept = array_values(array_filter($auto['lines'], fn($l) => $l['applied'] && !in_array($l['key'], $off)));
+    $disc = min($sub, round(array_sum(array_column($kept, 'amount')), 2)); $labels = array_column($kept, 'label');
+    if ($can && isset($d['disc_manual']) && $d['disc_manual'] !== '') { $disc = (float)$d['disc_manual']; $labels = ['Manual discount']; }
+    if ($can && !empty($d['disc_extra'])) { $disc += (float)$d['disc_extra']; $labels[] = 'Extra discount'; }
+    $disc = max(0, min($sub, round($disc, 2))); $changed = abs($disc - $auto['total']) > 0.009;
+    $cpn = null; foreach ($kept as $l) if (($l['key'] ?? '') === 'coupon') $cpn = $l['code'] ?? null; if ($changed && $labels === ['Manual discount']) $cpn = null;
+    $d['total'] = round($sub - $disc, 2);
     $cu = DB::table('customers')->where('phone', $d['phone'])->orderBy('id')->first();
     if (!$cu) $cid = DB::table('customers')->insertGetId(['name'=>$d['customer_name'], 'phone'=>$d['phone'], 'address'=>$d['address'] ?? null, 'created_at'=>now(), 'updated_at'=>now()]);
     else { $cid = $cu->id; if (trim((string)($cu->address ?? '')) === '' && !empty($d['address'])) DB::table('customers')->where('id', $cid)->update(['address'=>$d['address'], 'updated_at'=>now()]); }
-    $id = DB::transaction(function () use ($d, $cid) {
+    $id = DB::transaction(function () use ($d, $cid, $disc, $cpn, $changed, $auto, $labels) {
       $id = DB::table('orders')->insertGetId(['invoice'=>'TMP'.uniqid(),'store_id'=>1,'customer_name'=>$d['customer_name'],'phone'=>$d['phone'],'customer_id'=>$cid,'address'=>$d['address']??null,'district'=>$d['district']??null,'source'=>$d['source']??'Web Site','shipping'=>$d['shipping']??0,'total'=>$d['total'],'status'=>'New','note'=>$d['note']??null,'created_at'=>now(),'updated_at'=>now()]);
-      DB::table('orders')->where('id',$id)->update(['invoice'=>'INV-'.str_pad($id,6,'0',STR_PAD_LEFT)]);
-      DB::table('order_items')->insert(['order_id'=>$id,'name'=>$d['item_name'],'qty'=>$d['qty'],'price'=>$d['total'],'created_at'=>now(),'updated_at'=>now()]);
+      DB::table('orders')->where('id',$id)->update(['invoice'=>'INV-'.str_pad($id,6,'0',STR_PAD_LEFT), 'discount'=>$disc, 'coupon'=>$cpn]);
+      if ($cpn) DB::table('coupons')->where('code', $cpn)->increment('used_count');
+      if ($disc > 0 || $changed) DB::table('order_discount_logs')->insert(['order_id'=>$id, 'kind'=>$changed ? 'override' : 'applied', 'label'=>mb_substr(implode(' + ', $labels) ?: 'No discount', 0, 200), 'prev_amount'=>$auto['total'], 'new_amount'=>$disc, 'user_id'=>Auth::id(), 'user_name'=>Auth::user()->name, 'created_at'=>now(), 'updated_at'=>now()]);
+      DB::table('order_items')->insert(['order_id'=>$id,'name'=>$d['item_name'],'qty'=>$d['qty'],'price'=>$d['total'] + $disc,'created_at'=>now(),'updated_at'=>now()]);
       DB::table('order_status_logs')->insert(['order_id'=>$id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'from_status'=>null,'to_status'=>'New','note'=>'Order created','created_at'=>now(),'updated_at'=>now()]);
       return $id;
     });
