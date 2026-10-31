@@ -39,6 +39,27 @@ class StoreScanner {
     }
     return null;
   }
+  /** Fetch many URLs at once using small child PHP processes (no curl extension needed). */
+  public static function pget(array $urls, int $timeout = 10): array {
+    $out = []; $procs = [];
+    $code = 'require $argv[1]; $r=\\App\\Support\\StoreScanner::get($argv[2],(int)$argv[3],700000); echo $r ? $r["code"]."\n".$r["url"]."\n".$r["body"] : "0\n\n";';
+    $file = base_path('app/Support/StoreScanner.php');
+    foreach ($urls as $u) {
+      $p = parse_url($u); if (!$p || !self::safeHost($p['host'] ?? '')) { $out[$u] = null; continue; }
+      $pr = @proc_open([PHP_BINARY, '-d', 'display_errors=0', '-r', $code, $file, $u, (string)$timeout], [1 => ['pipe','w'], 2 => ['file','/dev/null','w']], $pipes);
+      if (!is_resource($pr)) { $r = self::get($u, $timeout, 700000); $out[$u] = $r; continue; }
+      stream_set_blocking($pipes[1], false); $procs[$u] = [$pr, $pipes[1], ''];
+    }
+    $end = microtime(true) + $timeout + 6;
+    while ($procs && microtime(true) < $end) {
+      $read = array_map(fn($x) => $x[1], $procs); $w = $e = null;
+      if (@stream_select($read, $w, $e, 1) === false) break;
+      foreach ($procs as $u => &$x) { $chunk = fread($x[1], 262144); if ($chunk !== false && $chunk !== '') $x[2] .= $chunk; if (feof($x[1])) { fclose($x[1]); proc_close($x[0]); $parts = explode("\n", $x[2], 3); $out[$u] = ((int)($parts[0] ?? 0)) ? ['code'=>(int)$parts[0], 'url'=>$parts[1] ?? $u, 'body'=>$parts[2] ?? '', 'h'=>[]] : null; unset($procs[$u]); } }
+      unset($x);
+    }
+    foreach ($procs as $u => $x) { @proc_terminate($x[0]); @fclose($x[1]); @proc_close($x[0]); $out[$u] = null; }
+    return $out;
+  }
   private static function json(?array $r) { return ($r && $r['code'] === 200) ? json_decode($r['body'], true) : null; }
   private static function row(int $sid, string $key, string $name, ?string $sku, ?string $img, $price, $stock, $inStock, ?string $cat, ?string $url, bool $pub): array {
     $img = $img && preg_match('#^https?://#', $img) ? mb_substr($img, 0, 600) : null;
@@ -131,19 +152,21 @@ class StoreScanner {
             if (!preg_match_all('#<loc>\s*(?:<!\[CDATA\[)?\s*([^<\]\s]+)#i', $b, $m)) continue;
             if (stripos($b, '<sitemapindex') !== false) {
               $kids = $m[1]; $prod = array_values(array_filter($kids, fn($k) => stripos($k, 'product') !== false)); if ($prod) $kids = $prod;
-              foreach (array_slice($kids, 0, 80) as $k) $st['sm'][] = html_entity_decode($k);
-            } else foreach ($m[1] as $l) { $l = html_entity_decode($l); if (!preg_match('#\.(jpg|jpeg|png|webp|gif|pdf|xml)(\?|$)#i', $l) && !preg_match('#/(cart|checkout|account|login|blog|contact|about|terms|privacy|tag|category|categories|collections?)(/|$)#i', $l)) $q[] = $l; }
+              foreach (array_slice($kids, 0, 80) as $k) $st['sm'][] = preg_replace('#^https?://[^/]+#', $st['base'], html_entity_decode($k));
+            } else foreach ($m[1] as $l) { $l = html_entity_decode($l); $l = preg_replace('#^https?://[^/]+#', $st['base'], $l); if (!preg_match('#\.(jpg|jpeg|png|webp|gif|pdf|xml)(\?|$)#i', $l) && !preg_match('#/(cart|checkout|account|login|blog|contact|about|terms|privacy|tag|category|categories|collections?)(/|$)#i', $l)) $q[] = $l; }
           }
-          if (!$st['sm']) { $q = array_values(array_unique($q)); $st['phase'] = 'pages'; $c['total'] = count($q); if (!$q) { $done = true; $note = 'No sitemap or product pages found.'; } else $note = 'Found '.count($q).' pages, reading products…'; }
+          if (!$st['sm']) { $q = array_values(array_unique($q)); $pp = array_values(array_filter($q, fn($l) => preg_match('#/(products?|p|items?|shop|goods)/[^/?]+#i', $l))); if (count($pp) >= 10) $q = $pp; $st['phase'] = 'pages'; $c['total'] = count($q); if (!$q) { $done = true; $note = 'No sitemap or product pages found.'; } else $note = 'Found '.count($q).' pages, reading products…'; }
           else $note = 'Reading sitemaps… ('.count($q).' pages so far)';
           file_put_contents(self::qfile($id), json_encode($q)); $pct = 3;
         } else {
-          $rows = []; $n = 0; $pos = $st['pos'];
-          while ($pos < count($q) && microtime(true) < $deadline && $n < 40) {
-            $u = $q[$pos++]; $n++; $r = self::get($u, 8, 1500000);
-            if (!$r || $r['code'] !== 200) { $c['fail']++; continue; }
-            $row = self::parsePage($id, $r['url'], $r['body']);
-            if ($row) { $rows[] = $row; $c['pub']++; } else $c['fail']++;
+          $rows = []; $pos = $st['pos'];
+          while ($pos < count($q) && microtime(true) < $deadline - 6) {
+            $batch = array_slice($q, $pos, 16); $pos += count($batch);
+            foreach (self::pget($batch, 10) as $u => $r) {
+              if (!$r || $r['code'] !== 200) { $c['fail']++; continue; }
+              $row = self::parsePage($id, $u, $r['body']);
+              if ($row) { $rows[] = $row; $c['pub']++; } else $c['fail']++;
+            }
           }
           self::save($rows); $c['imp'] += count($rows); $st['pos'] = $pos; $done = $pos >= count($q);
           $pct = count($q) ? min(99, (int)round($pos / count($q) * 100)) : 99; $note = "Reading product pages $pos / ".count($q);
