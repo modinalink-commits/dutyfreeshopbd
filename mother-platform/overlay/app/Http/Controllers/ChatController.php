@@ -44,7 +44,7 @@ class ChatController extends Controller {
     $t = DB::table('chat_threads')->find($id); abort_unless($t, 404);
     $card = Chat::cards([$t])[0];
     $msgs = DB::table('chat_messages')->where('thread_id', $id)->orderByDesc('id')->limit(250)->get()->reverse()->values()->map(fn($m) => [
-      'id'=>$m->id, 'dir'=>$m->dir, 'kind'=>$m->kind, 'body'=>$m->body, 'att'=>$m->attachment_url, 'att_type'=>$m->attachment_type, 'by'=>$m->user_name, 'status'=>$m->status, 'error'=>$m->error,
+      'id'=>$m->id, 'dir'=>$m->dir, 'kind'=>$m->kind, 'body'=>$m->body, 'att'=>$m->attachment_url, 'att_type'=>$m->attachment_type, 'by'=>$m->user_name, 'is_ai'=>(bool)($m->is_ai ?? false), 'status'=>$m->status, 'error'=>$m->error,
       'at'=>\Carbon\Carbon::parse($m->created_at)->toIso8601String()]);
     $cust = $t->customer_id ? DB::table('customers')->find($t->customer_id) : ($t->phone ? DB::table('customers')->where('phone', $t->phone)->first() : null);
     $orders = $t->phone ? DB::table('orders')->where('phone', $t->phone)->orderByDesc('id')->limit(8)->get(['id', 'invoice', 'status', 'total', 'created_at', 'courier', 'consignment_id', 'tracking_code', 'courier_status'])->map(fn($o) => (array)$o + ['date'=>\Carbon\Carbon::parse($o->created_at)->timezone('Asia/Dhaka')->format('d M Y')]) : collect();
@@ -87,10 +87,17 @@ class ChatController extends Controller {
     $mid = DB::table('chat_messages')->insertGetId(['thread_id'=>$id, 'dir'=>'out', 'kind'=>$d['kind'] ?? ($att ? 'file' : 'text'), 'body'=>$body, 'attachment_url'=>$att, 'attachment_type'=>$type,
       'user_id'=>auth()->id(), 'user_name'=>auth()->user()->name, 'status'=>$ok ? 'sent' : 'failed', 'error'=>$err, 'created_at'=>now(), 'updated_at'=>now()]);
     DB::table('chat_threads')->where('id', $id)->update(['last_message'=>mb_substr($body !== '' ? $body : '[attachment]', 0, 300), 'last_dir'=>'out', 'last_at'=>now(), 'unread'=>0,
-      'status'=>in_array($t->status, ['new', 'open']) ? 'waiting' : $t->status, 'assigned_to'=>$t->assigned_to ?: auth()->id(), 'updated_at'=>now()]);
-    return response()->json(['ok'=>$ok, 'error'=>$err, 'id'=>$mid]);
+      'status'=>in_array($t->status, ['new', 'open']) ? 'waiting' : $t->status, 'assigned_to'=>$t->assigned_to ?: auth()->id(), 'ai_paused'=>true, 'updated_at'=>now()]);
+    return response()->json(['ok'=>$ok, 'error'=>$err, 'id'=>$mid, 'ai'=>false]);
   }
 
+  /** Turn Claude's automatic replies on or off for one conversation. */
+  public function ai(Request $r, $id) {
+    $on = $r->boolean('on');
+    DB::table('chat_threads')->where('id', $id)->update(['ai_paused'=>!$on, 'updated_at'=>now()]);
+    if ($on) { $tid = (int)$id; app()->terminating(fn() => Chat::aiReply($tid)); }
+    return response()->json(['ok'=>true, 'ai'=>$on]);
+  }
   public function assign(Request $r, $id) {
     $d = $r->validate(['user_id'=>'nullable|integer|exists:users,id']);
     DB::table('chat_threads')->where('id', $id)->update(['assigned_to'=>$d['user_id'] ?? null, 'updated_at'=>now()]);
@@ -135,12 +142,13 @@ class ChatController extends Controller {
     $has = fn($k) => (bool)Chat::sec($k);
     if (!Chat::sec('chat_verify_token')) Sms::setSecret('chat_verify_token', bin2hex(random_bytes(12)));
     return view('chat_settings', ['verify'=>Chat::sec('chat_verify_token'), 'hook'=>url('/webhooks/meta'), 'has'=>['fb'=>$has('chat_fb_token'), 'ig'=>$has('chat_ig_token'), 'wa'=>$has('chat_wa_token'), 'secret'=>$has('chat_app_secret')],
-      'wa_phone'=>Chat::sec('chat_wa_phone_id'), 'web_on'=>(DB::table('settings')->where('key', 'chat_web_on')->value('value') ?? '1') === '1',
+      'wa_phone'=>Chat::sec('chat_wa_phone_id'), 'ai_auto'=>\App\Support\AiChat::chatOn() || (\App\Support\Sms::secret('ai_chat_auto') !== '0'), 'web_on'=>(DB::table('settings')->where('key', 'chat_web_on')->value('value') ?? '1') === '1',
       'quick'=>DB::table('chat_quick_replies')->orderBy('id')->get(), 'counts'=>DB::table('chat_threads')->select('channel', DB::raw('count(*) n'))->groupBy('channel')->pluck('n', 'channel')]);
   }
   public function saveSettings(Request $r) {
     $d = $r->validate(['fb_token'=>'nullable|string|max:600', 'ig_token'=>'nullable|string|max:600', 'wa_token'=>'nullable|string|max:600', 'wa_phone_id'=>'nullable|string|max:40', 'app_secret'=>'nullable|string|max:100']);
     foreach (['fb_token'=>'chat_fb_token', 'ig_token'=>'chat_ig_token', 'wa_token'=>'chat_wa_token', 'app_secret'=>'chat_app_secret', 'wa_phone_id'=>'chat_wa_phone_id'] as $k => $sk) if (!empty($d[$k])) Sms::setSecret($sk, trim($d[$k]));
+    Sms::setSecret('ai_chat_auto', $r->boolean('ai_auto') ? '1' : '0');
     DB::table('settings')->updateOrInsert(['key'=>'chat_web_on'], ['value'=>$r->boolean('web_on') ? '1' : '0', 'updated_at'=>now(), 'created_at'=>now()]);
     \Illuminate\Support\Facades\Cache::forget('store.settings2'); \Illuminate\Support\Facades\Cache::forget('chat.web_on');
     DB::table('audit_logs')->insert(['user_id'=>auth()->id(), 'user_name'=>auth()->user()->name, 'action'=>'chat.settings', 'subject'=>'Chat channel settings saved', 'ip'=>$r->ip(), 'created_at'=>now(), 'updated_at'=>now()]);
@@ -174,6 +182,7 @@ class ChatController extends Controller {
     $d = $r->validate(['token'=>'required|string|size:32', 'body'=>'required|string|max:1000']);
     $t = $this->webThread($d['token']);
     $th = Chat::ingest('web', $d['token'], null, strip_tags($d['body']));
+    if ($th && !$th->ai_paused) { $tid = (int)$th->id; app()->terminating(fn() => Chat::aiReply($tid)); }
     $m = DB::table('chat_messages')->where('thread_id', $t->id)->where('dir', 'in')->orderByDesc('id')->first(['id', 'created_at']);
     return response()->json(['ok'=>true, 'id'=>$m->id ?? null, 'at'=>$m ? \Carbon\Carbon::parse($m->created_at)->toIso8601String() : null]);
   }

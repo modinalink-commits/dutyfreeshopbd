@@ -8,6 +8,8 @@ class AiChat {
   public static function on(): bool {
     return Cache::remember('ai.on', 300, fn() => Sms::secret('ai_enabled') === '1' && (bool) Sms::secret('ai_key'));
   }
+  /** Automatic replies inside the website live chat (can be switched off in Chat Settings). */
+  public static function chatOn(): bool { return self::on() && Sms::secret('ai_chat_auto') !== '0'; }
   public static function model(): string { return Sms::secret('ai_model') ?: 'claude-haiku-5-5'; }
   private static function context(string $q): string {
     $words = array_values(array_filter(preg_split('/[\s,]+/u', mb_strtolower($q)), fn($w) => mb_strlen($w) >= 3));
@@ -20,7 +22,7 @@ class AiChat {
     if ($rows->isEmpty()) return 'No matching products were found for the latest message.';
     return $rows->map(fn($p) => '- '.$p->name.' | '.number_format($p->price).' TK | '.($p->stock > 0 ? 'in stock' : 'out of stock').' | link: '.parse_url(\App\Http\Controllers\StoreController::url($p), PHP_URL_PATH))->implode("\n");
   }
-  public static function reply(array $history): array {
+  public static function reply(array $history, string $extra = ''): array {
     $key = Sms::secret('ai_key'); if (!$key) return [false, 'not configured'];
     $msgs = [];
     foreach (array_slice($history, -8) as $m) {
@@ -36,7 +38,7 @@ class AiChat {
       ."Reply in the customer's language (Bengali or English), short and friendly, at most 4 sentences.\n"
       ."Only state prices, stock and links that appear in the PRODUCT LIST below; never invent a product, price, discount, delivery time or policy. If unsure, say so and give the phone/WhatsApp number $call.\n"
       ."When you recommend a product, include its link path exactly as given (for example /p/123-name/). To order, the customer opens the product and presses ORDER NOW (cash on delivery is available).\n"
-      ."You cannot see orders or customer data; for order status send them to /track or the phone number. Never ask for passwords or card numbers.\n\nPRODUCT LIST (live from the store):\n".self::context(end($msgs)['content']);
+      ."You cannot see orders or customer data; for order status send them to /track or the phone number. Never ask for passwords or card numbers.\n".$extra."\nPRODUCT LIST (live from the store):\n".self::context(end($msgs)['content']);
     try {
       $res = Http::withHeaders(['x-api-key'=>$key, 'anthropic-version'=>'2023-06-01'])->timeout(30)->post('https://api.anthropic.com/v1/messages', ['model'=>self::model(), 'max_tokens'=>400, 'system'=>$sys, 'messages'=>$msgs]);
     } catch (\Throwable $e) { return [false, 'network']; }

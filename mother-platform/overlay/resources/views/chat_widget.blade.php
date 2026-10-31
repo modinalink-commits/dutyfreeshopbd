@@ -62,7 +62,7 @@ M.mount=function(el,id,opt){
   S.stop=function(){clearInterval(S.timer);if(M.current===id)M.current=null};
   M.current=id;
   function bub(m){var a=m.att?(m.att_type==='image'?'<a href="'+esc(m.att)+'" target="_blank"><img src="'+esc(m.att)+'" alt="" loading="lazy"></a>':'<a href="'+esc(m.att)+'" target="_blank">📎 Attachment</a><br>'):'';
-    return '<div class="b '+(m.dir==='in'?'in':'out')+(m.status==='failed'?' fail':'')+'" data-id="'+m.id+'">'+a+lnk(m.body||'')+'<small>'+(m.dir==='out'&&m.by?esc(m.by)+' · ':'')+tm(m.at)+(m.status==='failed'?' · ⚠ not delivered: '+esc(m.error||''):'')+'</small></div>'}
+    return '<div class="b '+(m.dir==='in'?'in':'out')+(m.status==='failed'?' fail':'')+'" data-id="'+m.id+'">'+a+lnk(m.body||'')+'<small>'+(m.dir==='out'&&m.by?(m.is_ai?'🤖 ':'')+esc(m.by)+' · ':'')+tm(m.at)+(m.status==='failed'?' · ⚠ not delivered: '+esc(m.error||''):'')+'</small></div>'}
   function addMsgs(list){var box=$('#mm'),near=box.scrollHeight-box.scrollTop-box.clientHeight<120||!S.last;list.forEach(function(m){if(m.id>S.last){box.insertAdjacentHTML('beforeend',bub(m));S.last=m.id}});if(near)box.scrollTop=box.scrollHeight}
   function head(){var d=S.d,t=d.thread,opts=Object.keys(d.statuses).map(function(k){return '<option value="'+k+'"'+(t.status===k?' selected':'')+'>'+d.statuses[k]+'</option>'}).join('');
     var ag='<option value="">Unassigned</option>'+d.agents.map(function(a){return '<option value="'+a.id+'"'+(t.assigned_to==a.id?' selected':'')+'>'+esc(a.name)+'</option>'}).join('');
@@ -70,9 +70,10 @@ M.mount=function(el,id,opt){
     $('#mh').innerHTML='<div class="r1">'+av(t)+'<div style="flex:1;min-width:0"><b>'+esc(t.name)+' '+badge(t.channel)+'</b><small>'+esc(t.phone||t.username||'No number yet')+' · '+esc(t.channel_name)+'</small></div></div>'+
       '<div class="r2"><select id="hs" title="Status"'+(CAN?'':' disabled')+'>'+opts+'</select><select id="ha" title="Assigned to"'+(CAN?'':' disabled')+'>'+ag+'</select>'+
       (d.customer?'<a class="lk" href="/admin/m/customers/'+d.customer.id+'/edit">View Customer</a>':(t.phone?'<a class="lk" href="/admin/m/customers?q='+encodeURIComponent(t.phone)+'">Find Customer</a>':''))+
-      (lo?'<a class="lk" href="/admin/orders/'+lo.id+'">View Order</a>':'')+(opt.drawer?'<button class="lk" type="button" id="hm" title="Sound">'+(M.mute?'🔕':'🔔')+'</button>':'')+'</div>';
+      (lo?'<a class="lk" href="/admin/orders/'+lo.id+'">View Order</a>':'')+(t.channel==='web'&&CAN?'<button class="lk" type="button" id="hai" title="Claude AI auto-reply for this chat">'+(t.ai?'🤖 AI: ON':'🤖 AI: OFF')+'</button>':'')+(opt.drawer?'<button class="lk" type="button" id="hm" title="Sound">'+(M.mute?'🔕':'🔔')+'</button>':'')+'</div>';
     $('#hs').onchange=function(){post('/admin/chat/thread/'+id+'/status',{status:this.value}).then(function(j){if(opt.onchange)opt.onchange();M.badge(j.unread)})};
     $('#ha').onchange=function(){post('/admin/chat/thread/'+id+'/assign',{user_id:this.value||null}).then(function(){if(opt.onchange)opt.onchange()})};
+    var hai=$('#hai');if(hai)hai.onclick=function(){var on=!t.ai;post('/admin/chat/thread/'+id+'/ai',{on:on?1:0}).then(function(j){t.ai=j.ai;hai.textContent=j.ai?'🤖 AI: ON':'🤖 AI: OFF'})};
     var hm=$('#hm');if(hm)hm.onclick=function(){this.textContent=M.toggleMute()?'🔕':'🔔'}}
   function cust(){var d=S.d,t=d.thread,i=d.intel,o=d.orders,cur=o[0];
     var h='<summary>Customer · '+esc(t.cat)+' · '+t.orders+' orders · '+esc(t.risk)+' risk</summary><div class="st"><span>'+esc(t.cat)+' customer</span><span>Orders: '+t.orders+'</span><span class="rk-'+esc(t.risk)+'">Risk: '+esc(t.risk)+(i?' ('+i.fraud+')':'')+'</span>'+(i&&i.rate!=null?'<span>Delivered: '+i.rate+'%</span>':'')+(i?'<span>Returned: '+i.returned+'</span><span>Spent: ৳'+Math.round(i.spent).toLocaleString()+'</span>':'')+'</div>';

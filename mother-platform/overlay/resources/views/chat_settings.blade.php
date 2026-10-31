@@ -21,6 +21,7 @@
 <label>WhatsApp phone number ID</label><input name="wa_phone_id" value="{{ $wa_phone }}" autocomplete="off">
 <hr style="border:0;border-top:1px solid #FFE7D6;margin:16px 0">
 <label style="display:flex;gap:8px;align-items:center;margin:0;font-size:13px;color:#0B1220"><input type="checkbox" name="web_on" value="1" {{ $web_on ? 'checked' : '' }} style="width:auto"> Show the live chat button on the website</label>
+<label style="display:flex;gap:8px;align-items:center;margin:8px 0 0;font-size:13px;color:#0B1220"><input type="checkbox" name="ai_auto" value="1" {{ $ai_auto ? 'checked' : '' }} style="width:auto"> Claude AI answers website chat automatically (stops on a chat once a staff member replies)</label>
 <div style="margin-top:14px"><button>Save settings</button></div></form>
 <div class="card" style="max-width:760px"><b>Quick replies</b><p style="font-size:12px;color:#6B7280;margin:4px 0 10px">Ready messages that staff pick from the chat panel.</p>
 @foreach($quick as $q)<form method="post" action="/admin/chat-settings/quick" style="display:grid;grid-template-columns:150px 1fr auto auto;gap:8px;margin-bottom:8px;align-items:start">@csrf<input type="hidden" name="id" value="{{ $q->id }}"><input name="title" value="{{ $q->title }}" required maxlength="80"><textarea name="body" rows="2" required maxlength="1500">{{ $q->body }}</textarea><button>Save</button><button class="g" formaction="/admin/chat-settings/quick/{{ $q->id }}/delete" formnovalidate onclick="return confirm('Remove this quick reply?')">Remove</button></form>@endforeach

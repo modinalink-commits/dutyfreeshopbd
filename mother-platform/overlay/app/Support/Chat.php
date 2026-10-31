@@ -36,6 +36,27 @@ class Chat {
       'last_dir'=>'in', 'last_at'=>now(), 'status'=>$st, 'updated_at'=>now()]);
     return DB::table('chat_threads')->find($t->id);
   }
+  /** Claude answers a website chat message, unless a staff member has taken the thread over. Runs after the response is sent. */
+  public static function aiReply(int $tid): void {
+    try {
+      if (!AiChat::chatOn()) return;
+      $t = DB::table('chat_threads')->find($tid);
+      if (!$t || $t->channel !== 'web' || $t->ai_paused) return;
+      $k = 'ai.t.'.$tid.'.'.now()->format('YmdH'); \Illuminate\Support\Facades\Cache::add($k, 0, 4000);
+      if (\Illuminate\Support\Facades\Cache::increment($k) > 25) return;
+      $d = 'ai.n.'.now()->format('Ymd'); \Illuminate\Support\Facades\Cache::add($d, 0, 90000);
+      if (\Illuminate\Support\Facades\Cache::increment($d) > 1500) return;
+      $rows = DB::table('chat_messages')->where('thread_id', $tid)->orderByDesc('id')->limit(10)->get()->reverse()->values();
+      if ($rows->isEmpty() || $rows->last()->dir !== 'in') return;
+      $hist = $rows->map(fn($m) => ['role'=>$m->dir === 'in' ? 'user' : 'assistant', 'content'=>$m->body !== '' ? $m->body : '[ছবি]'])->all();
+      [$ok, $txt] = AiChat::reply($hist, "You are answering inside the live chat. If the customer wants a person, has a complaint, wants to change/cancel an order, or you are not sure, say a team member will reply shortly and give the phone/WhatsApp number. Do not claim to be human.\n");
+      if (!$ok) return;
+      // a staff member may have replied while Claude was thinking
+      if (DB::table('chat_threads')->where('id', $tid)->value('ai_paused')) return;
+      DB::table('chat_messages')->insert(['thread_id'=>$tid, 'dir'=>'out', 'kind'=>'text', 'body'=>mb_substr($txt, 0, 3500), 'user_name'=>'Claude AI', 'is_ai'=>true, 'status'=>'sent', 'created_at'=>now(), 'updated_at'=>now()]);
+      DB::table('chat_threads')->where('id', $tid)->update(['last_message'=>mb_substr($txt, 0, 300), 'last_dir'=>'out', 'last_at'=>now(), 'updated_at'=>now()]);
+    } catch (\Throwable $e) { report($e); }
+  }
   /** Name / photo from the Graph API (best effort). */
   public static function profile(string $ch, string $id): array {
     $tok = self::sec($ch === 'instagram' && self::sec('chat_ig_token') ? 'chat_ig_token' : 'chat_fb_token'); if (!$tok) return [];
@@ -90,7 +111,7 @@ class Chat {
       $i = $intel[$t->id] ?? null; $n = (int)($oc[$t->phone] ?? 0) + (int)($i['legacy'] ?? 0);
       return ['id'=>$t->id, 'channel'=>$t->channel, 'channel_name'=>self::CH[$t->channel] ?? $t->channel, 'name'=>$t->name, 'phone'=>$t->phone, 'username'=>$t->username, 'avatar'=>$t->avatar,
         'status'=>$t->status, 'unread'=>(int)$t->unread, 'last'=>$t->last_message, 'last_dir'=>$t->last_dir, 'last_at'=>$t->last_at ? \Carbon\Carbon::parse($t->last_at)->toIso8601String() : null,
-        'assigned_to'=>$t->assigned_to, 'assigned_name'=>$agents[$t->assigned_to] ?? null, 'customer_id'=>$t->customer_id,
+        'ai'=>!($t->ai_paused ?? false), 'assigned_to'=>$t->assigned_to, 'assigned_name'=>$agents[$t->assigned_to] ?? null, 'customer_id'=>$t->customer_id,
         'cat'=>$n > 0 && $i ? $i['cat'] : 'New', 'orders'=>$n, 'risk'=>$n > 0 && $i ? $i['risk'] : 'Low'];
     })->all();
   }
