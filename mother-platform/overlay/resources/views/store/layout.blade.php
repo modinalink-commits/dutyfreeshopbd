@@ -82,6 +82,7 @@ h1,h2,h3{margin:0}
 </style>
 <style>
 /* Marketplace skin (Evaly-style layout, DutyFree colours) */
+.nv .nvi>div{display:flex;align-items:center}.nv .allc{align-self:center}.cts{align-items:flex-start}.cts h2,.st h2{text-align:left!important;font-size:26px!important;font-weight:800!important;color:var(--n)}.fs .pc{border-radius:14px}.fs .pc .ph{background:#F8F8F8}
 :root{--r:16px;--sh:0 1px 2px rgba(11,18,32,.05),0 6px 18px rgba(11,18,32,.06)}
 body{background:#fff}
 .ts{background:var(--n);height:auto;color:#fff;font-size:12px}.ts .tsi{display:flex;align-items:center;gap:20px;height:30px}.ts a,.ts .dl{color:#E5E7EB;white-space:nowrap}.ts a:hover{color:#fff}.ts .dl b{color:#fff}.ts .sp{flex:1}
