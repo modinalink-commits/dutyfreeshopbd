@@ -43,7 +43,7 @@ class Sms {
   /** @return array{bool,string} */
   public static function send(string $to, string $body): array {
     $num = self::number($to); if (!$num) return [false, 'Invalid phone number'];
-    $res = self::post(['api_key'=>self::secret('sms_api_key'), 'senderid'=>self::secret('sms_sender_id'), 'number'=>$num, 'message'=>$body]);
+    $res = self::post(['api_key'=>self::secret('sms_api_key'), 'type'=>'text', 'senderid'=>self::secret('sms_sender_id'), 'number'=>$num, 'message'=>$body]);
     $code = (int)($res['response_code'] ?? 0);
     return [$code === 202, $code.' '.(self::CODES[$code] ?? ($res['error_message'] ?? $res['success_message'] ?? 'No response'))];
   }
