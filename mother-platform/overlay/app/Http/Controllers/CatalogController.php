@@ -22,7 +22,7 @@ class CatalogController extends Controller {
     return view('product_form', ['p'=>$id ? DB::table('products')->find($id) : null, 'cats'=>DB::table('categories')->orderBy('name')->get(), 'brands'=>DB::table('brands')->orderBy('position')->get()]);
   }
   public function productSave(Request $r, $id = null) {
-    $d = $r->validate(['name'=>'required|string|max:200','sku'=>'nullable|string|max:60|unique:products,sku'.($id?','.$id:''),'barcode'=>'nullable|string|max:60','size'=>'nullable|string|max:60','category_id'=>'nullable|integer','brand_id'=>'nullable|integer','price'=>'required|numeric|min:0','offer_price'=>'nullable|numeric|min:0','cost'=>'nullable|numeric|min:0','stock'=>'required|integer|min:0','description'=>'nullable|string|max:20000','slug'=>'nullable|string|max:200','meta_title'=>'nullable|string|max:200','meta_description'=>'nullable|string|max:500']);
+    $d = $r->validate(['name'=>'required|string|max:200','sku'=>'nullable|string|max:60|unique:products,sku'.($id?','.$id:''),'barcode'=>'nullable|string|max:60','size'=>'nullable|string|max:60','category_id'=>'nullable|integer','brand_id'=>'nullable|integer','price'=>'required|numeric|min:0','offer_price'=>'nullable|numeric|min:0','cost'=>'nullable|numeric|min:0','stock'=>'required|integer|min:0','description'=>'nullable|string|max:20000','slug'=>'nullable|string|max:200','meta_title'=>'nullable|string|max:200','meta_description'=>'nullable|string|max:500','image'=>'nullable|string|max:500','compare_price'=>'nullable|numeric|min:0']);
     $d['cost'] = $d['cost'] ?? 0; $d['updated_at'] = now();
     $d['slug'] = \Illuminate\Support\Str::slug(($d['slug'] ?? null) ?: $d['name']) ?: null;
     if ($id) DB::table('products')->where('id',$id)->update($d);
