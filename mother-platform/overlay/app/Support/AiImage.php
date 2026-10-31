@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 /** Server-side AI product image processing: OpenAI cuts out the product, GD centres it on a 600x600 white canvas. */
 class AiImage {
-  const PROMPT = 'Remove the background from the uploaded product image. Keep the product shape, branding, label, color, and proportions unchanged. Place the product exactly in the center of a clean white background. Make the product fully visible and professionally aligned like a standard e-commerce product image. Use a 1:1 square format, ideally 600x600 pixels. Do not distort the product.';
+  const PROMPT = "Edit only the supplied product photograph. Remove the existing background completely. Preserve the original product exactly: branding, logo, printed text, packaging, shape, proportions and colors. Do not redesign or alter the product. Place the complete product vertically and horizontally centered on a clean pure white e-commerce background. The entire product must remain visible; do not crop any part of the product. Leave balanced white space around the product. Use clean studio lighting. A very subtle realistic shadow may be added under the product. Do not add promotional text, extra products, decorative objects or watermarks. Create a professional standard e-commerce product photograph (1:1 square).";
   public static function set(string $k, ?string $d = null): ?string { $v = DB::table('settings')->where('key', $k)->value('value'); return ($v === null || $v === '') ? $d : $v; }
   public static function key(): ?string { return self::set('openai_api_key'); }
   public static function prompt(): string { return self::set('ai_img_prompt', self::PROMPT); }
