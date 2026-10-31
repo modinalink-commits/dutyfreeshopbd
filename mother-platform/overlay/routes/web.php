@@ -80,6 +80,12 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::get('/m/{slug}/{id}/edit', [R::class,'form']);
   Route::post('/m/{slug}/{id}', [R::class,'save']);
   Route::post('/m/{slug}/{id}/delete', [R::class,'destroy']);
+  Route::get('/payment-methods', [\App\Http\Controllers\PaymentController::class,'index']);
+  Route::post('/payment-methods/whatsapp', [\App\Http\Controllers\PaymentController::class,'wa']);
+  Route::post('/payment-methods', [\App\Http\Controllers\PaymentController::class,'save']);
+  Route::post('/payment-methods/{id}', [\App\Http\Controllers\PaymentController::class,'save']);
+  Route::get('/orders/{id}/pay-proof', [\App\Http\Controllers\PaymentController::class,'proof']);
+  Route::post('/orders/{id}/pay-{mode}', [\App\Http\Controllers\PaymentController::class,'decide']);
   Route::get('/deals', [\App\Http\Controllers\DealController::class,'index']);
   Route::get('/deals.csv', [\App\Http\Controllers\DealController::class,'csv']);
   Route::post('/deals/settings', [\App\Http\Controllers\DealController::class,'settings']);

@@ -130,7 +130,7 @@ class StoreController extends Controller {
     return response()->json($out)->header('Cache-Control','public, max-age=60');
   }
   public function checkout() {
-    return response()->view('store.checkout', $this->base(['title'=>'Checkout | DutyFree Shop BD', 'desc'=>'', 'canon'=>url('/checkout'), 'noindex'=>true, 'grey'=>true]));
+    return response()->view('store.checkout', $this->base(['pays'=>\App\Http\Controllers\PaymentController::active(),'title'=>'Checkout | DutyFree Shop BD', 'desc'=>'', 'canon'=>url('/checkout'), 'noindex'=>true, 'grey'=>true]));
   }
   public function wishlist() {
     return response()->view('store.wishlist', $this->base(['title'=>'Wishlist | DutyFree Shop BD', 'desc'=>'', 'canon'=>url('/wishlist'), 'noindex'=>true]));
@@ -175,22 +175,31 @@ class StoreController extends Controller {
     $back = fn($m) => redirect('/checkout?e='.rawurlencode($m));
     if (!$want) return $back('Your cart is empty');
     if (DB::table('blocked_ips')->where('ip',$ip)->exists()) return $back('অনুগ্রহ করে কল করে অর্ডার করুন।');
-    $v = \Illuminate\Support\Facades\Validator::make($r->all(), ['name'=>'required|string|max:120','phone'=>['required','regex:/^(\+?88)?01[3-9]\d{8}$/'],'email'=>'nullable|email|max:120','address'=>'required|string|max:500','area'=>'nullable|integer','district'=>'nullable|string|max:60','note'=>'nullable|string|max:500','coupon'=>'nullable|string|max:40','website'=>'max:0'], ['phone.regex'=>'সঠিক মোবাইল নম্বর লিখুন (01XXXXXXXXX)','required'=>'মোবাইল নম্বর, নাম ও ঠিকানা লিখুন।','email'=>'সঠিক ইমেইল লিখুন অথবা খালি রাখুন।']);
+    $v = \Illuminate\Support\Facades\Validator::make($r->all(), ['name'=>'required|string|max:120','phone'=>['required','regex:/^(\+?88)?01[3-9]\d{8}$/'],'email'=>'nullable|email|max:120','address'=>'required|string|max:500','area'=>'nullable|integer','district'=>'nullable|string|max:60','note'=>'nullable|string|max:500','coupon'=>'nullable|string|max:40','website'=>'max:0','pay'=>'nullable|in:cod,bank,bkash,nagad','pay_account'=>'nullable|string|max:80','pay_txn'=>['nullable','string','max:60','regex:/^[A-Za-z0-9\-_\/ ]+$/'],'pay_proof'=>'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:3072'], ['phone.regex'=>'সঠিক মোবাইল নম্বর লিখুন (01XXXXXXXXX)','required'=>'মোবাইল নম্বর, নাম ও ঠিকানা লিখুন।','email'=>'সঠিক ইমেইল লিখুন অথবা খালি রাখুন।']);
     if ($v->fails()) return $back($v->errors()->first());
     $d = $v->validated();
+    $pm = ['label'=>'COD','txn'=>null,'acct'=>null,'proof'=>null,'status'=>null];
+    $pk = $d['pay'] ?? 'cod';
+    if ($pk !== 'cod') {
+      if (!DB::table('payment_methods')->where('kind',$pk)->where('active',true)->exists()) return $back('এই পেমেন্ট মেথডটি এখন চালু নেই।');
+      $tx = trim((string)($d['pay_txn'] ?? ''));
+      if (strlen($tx) < 4) return $back('Transaction ID / Reference দিন');
+      if (DB::table('orders')->where('pay_txn',$tx)->whereIn('pay_status',['Verification Pending','Verified'])->exists()) return $back('এই Transaction ID আগে ব্যবহার হয়েছে। সঠিক ID দিন বা WhatsApp-এ জানান।');
+      $pm = ['label'=>PaymentController::KINDS[$pk],'txn'=>$tx,'acct'=>$d['pay_account'] ?? null,'proof'=>$r->hasFile('pay_proof') ? $r->file('pay_proof')->store('pay-proofs','local') : null,'status'=>'Verification Pending'];
+    }
     $phone = substr(preg_replace('/\D/','',$d['phone']), -11);
     $b = $this->base(); $area = (int)($d['area'] ?? 1);
     $qt = $this->quote($want, $area, trim((string)($d['coupon'] ?? '')), $phone);
     if (!$qt['items']) return $back('These products are no longer available');
     $where = $d['district'] ?? ($b['areas'][$area]['n'] ?? null);
     $note = trim(($d['note'] ?? '').($qt['notes'] ? ' | Discount: '.implode(', ', $qt['notes']) : '').(!empty($d['email']) ? ' | Email: '.$d['email'] : ''), ' |');
-    $id = DB::transaction(function () use ($d, $qt, $phone, $ip, $where, $note) {
+    $id = DB::transaction(function () use ($d, $qt, $phone, $ip, $where, $note, $pm) {
       $cust = DB::table('customers')->where('phone',$phone)->value('id') ?? DB::table('customers')->insertGetId(['name'=>$d['name'],'phone'=>$phone,'address'=>$d['address'],'ip'=>$ip,'created_at'=>now(),'updated_at'=>now()]);
-      $id = DB::table('orders')->insertGetId(['invoice'=>'TMP'.uniqid(),'store_id'=>DB::table('stores')->value('id'),'customer_id'=>$cust,'customer_name'=>$d['name'],'phone'=>$phone,'address'=>$d['address'],'district'=>$where,'source'=>'Web Site','shipping'=>$qt['ship'],'discount'=>$qt['disc'],'coupon'=>$qt['coupon'],'total'=>$qt['total'],'status'=>'New','note'=>$note ?: null,'payment_method'=>'COD','ip'=>$ip,'created_at'=>now(),'updated_at'=>now()]);
+      $id = DB::table('orders')->insertGetId(['invoice'=>'TMP'.uniqid(),'store_id'=>DB::table('stores')->value('id'),'customer_id'=>$cust,'customer_name'=>$d['name'],'phone'=>$phone,'address'=>$d['address'],'district'=>$where,'source'=>'Web Site','shipping'=>$qt['ship'],'discount'=>$qt['disc'],'coupon'=>$qt['coupon'],'total'=>$qt['total'],'status'=>'New','note'=>$note ?: null,'payment_method'=>$pm['label'],'pay_txn'=>$pm['txn'],'pay_account'=>$pm['acct'],'pay_proof'=>$pm['proof'],'pay_status'=>$pm['status'],'ip'=>$ip,'created_at'=>now(),'updated_at'=>now()]);
       DB::table('orders')->where('id',$id)->update(['invoice'=>'INV-'.str_pad($id,6,'0',STR_PAD_LEFT)]);
       foreach ($qt['items'] as $it) DB::table('order_items')->insert(['order_id'=>$id,'product_id'=>$it['id'],'name'=>$it['name'],'qty'=>$it['qty'],'price'=>$it['price'],'created_at'=>now(),'updated_at'=>now()]);
       if ($qt['coupon']) DB::table('coupons')->where('code',$qt['coupon'])->increment('used_count');
-      DB::table('order_status_logs')->insert(['order_id'=>$id,'user_id'=>null,'user_name'=>'Website','from_status'=>null,'to_status'=>'New','note'=>'Order placed on website','created_at'=>now(),'updated_at'=>now()]);
+      DB::table('order_status_logs')->insert(['order_id'=>$id,'user_id'=>null,'user_name'=>'Website','from_status'=>null,'to_status'=>'New','note'=>$pm['status'] ? 'Order placed on website. Payment Verification Pending ('.$pm['label'].', ref '.$pm['txn'].')' : 'Order placed on website','created_at'=>now(),'updated_at'=>now()]);
       return $id;
     });
     Cache::forget('store.live3');
@@ -208,7 +217,7 @@ class StoreController extends Controller {
     $o = null; $logs = collect();
     if ($r->filled('invoice')) {
       $inv = strtoupper(trim($r->invoice)); if (ctype_digit($inv)) $inv = 'INV-'.str_pad($inv, 6, '0', STR_PAD_LEFT);
-      $o = DB::table('orders')->where('invoice', $inv)->first(['id','invoice','status','shipping','discount','total','created_at']);
+      $o = DB::table('orders')->where('invoice', $inv)->first(['id','invoice','status','shipping','discount','total','created_at','payment_method','pay_status','pay_txn']);
       if ($o) $logs = DB::table('order_status_logs')->where('order_id',$o->id)->orderBy('id')->get(['to_status','created_at']);
     }
     return response()->view('store.track', $this->base(['o'=>$o, 'logs'=>$logs, 'items'=>$o ? DB::table('order_items')->where('order_id',$o->id)->get(['name','qty','price']) : collect(), 'title'=>'Order Tracking | DutyFree Shop BD', 'desc'=>'', 'canon'=>url('/track'), 'noindex'=>true]))->header('Cache-Control','no-store');

@@ -94,3 +94,13 @@ database/migrations/2026_10_31_000013_hide_category_cards.php
 database/migrations/2026_10_31_000014_deal_flags.php
 app/Http/Controllers/DealController.php
 resources/views/deals.blade.php
+database/migrations/2026_10_31_000015_manual_payments.php
+app/Http/Controllers/PaymentController.php
+resources/views/payment_methods.blade.php
+public/pay/city.png
+public/pay/brac.png
+public/pay/islami.png
+public/pay/ebl.png
+public/pay/mtb.png
+public/pay/bkash.png
+public/pay/nagad.png
