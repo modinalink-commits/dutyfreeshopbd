@@ -19,6 +19,8 @@
 .fs .mtb{display:none}
 .lvh{display:flex;flex-direction:column;gap:6px}.chip{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;background:#DCFCE7;color:#14594A;font-size:11px;font-weight:700;letter-spacing:.06em;border-radius:20px;padding:4px 12px}.dot{width:7px;height:7px;border-radius:50%;background:#16A34A;display:inline-block}
 .lvh h2{font-size:22px;font-weight:700;color:var(--n)}.lvh .su{font-size:13px;color:var(--mut)}
+body .w [data-cr]{--pv:6;--g:10px;display:flex;gap:var(--g);padding:0;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}body .w [data-cr]::-webkit-scrollbar{display:none}body .w [data-cr]>*{flex:0 0 calc((100% - (var(--pv) - 1)*var(--g))/var(--pv));scroll-snap-align:start;min-width:0}body .w [data-cr]>.pc:nth-child(n),body .w [data-cr]>.lo:nth-child(n){display:flex}body .w [data-cr="1"]{--pv:1!important}.fs .crw{padding:12px}.crw{position:relative}.cra{position:absolute;top:42%;z-index:5;width:38px;height:38px;border-radius:50%;border:1px solid #E5E7EB;background:#fff;color:var(--n);font-size:22px;font-weight:800;box-shadow:0 4px 12px rgba(0,0,0,.18);cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;padding:0}.cra.l{left:-8px}.cra.r{right:-8px}.cra:hover{background:var(--o);color:#fff}[data-cr="1"]~.cra,.dl~.cra{top:46%}
+@media(max-width:1200px){body .w [data-cr]{--pv:5}}@media(max-width:980px){body .w [data-cr]{--pv:4}}@media(max-width:760px){body .w [data-cr]{--pv:3;--g:6px}.cra{width:30px;height:30px;font-size:17px}.cra.l{left:-4px}.cra.r{right:-4px}.fs .crw{padding:6px}}
 .lg2{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:11px}.lo{display:flex;flex-direction:column;gap:6px;min-width:0}.lo .tg{align-self:flex-start;display:inline-flex;align-items:center;gap:5px;background:#F0FDF4;color:#14594A;font-size:11px;font-weight:600;border-radius:20px;padding:3px 10px}.lo .tg .dot{width:6px;height:6px}
 .lo .bx{border:1.25px solid var(--bd);border-radius:10px;background:#fff;padding:8px;display:flex;flex-direction:column;gap:6px}.lo .im{height:110px;border-radius:8px;background:#F5F5F5;display:flex;align-items:center;justify-content:center;overflow:hidden}.lo .im img{max-width:100%;max-height:100%;object-fit:contain}
 .lo .wh{font-size:11px;color:#14594A;font-weight:600}.lo .nm{font-size:12px;font-weight:600;color:var(--n);line-height:1.3;height:32px;overflow:hidden}.lo .rw{display:flex;align-items:center;justify-content:space-between}.lo .rw b{font-size:14px;color:var(--o)}.lo .rw span{font-size:11px;font-weight:600;background:#FFF1E8;color:#C2410C;border-radius:6px;padding:2px 7px}.lo .dl{font-size:10.5px;color:var(--grn);font-weight:600}
@@ -74,7 +76,7 @@
 <div class="mtb"><button type="button" class="on" data-ft="f">Flash Sale</button>@if($plus->count())<button type="button" data-ft="p">Plus Sale</button>@endif</div>
 @foreach(['f'=>$flash, 'p'=>$plus] as $fk => $list)
 @if($list->count())
-<div class="gr" data-fl="{{ $fk }}" @if($fk==='p') style="display:none" @endif>@foreach($list as $q)
+<div class="gr" data-cr data-fl="{{ $fk }}" @if($fk==='p') style="display:none" @endif>@foreach($list as $q)
 @php $off = \App\Http\Controllers\StoreController::off($q); $u = \App\Http\Controllers\StoreController::url($q); $w = $q->sold > 0 ? max(8, min(100, round($q->sold / max(1, $q->sold + max(0, (int)$q->stock)) * 100))) : max(8, min(90, 100 - (int)$q->stock)); @endphp
 <div class="pc"><span class="bo">{{ $off }}%<i> OFF</i></span><a class="ph" href="{{ $u }}" style="background:#fff"><img src="{{ $q->image ?: '/icon.png' }}" alt="{{ $q->name }}" width="150" height="150" loading="lazy" decoding="async" draggable="false"></a>
 <a class="nm" href="{{ $u }}">{{ $q->name }}</a><div class="pr"><b>{{ number_format($q->price) }} TK</b> <s>{{ number_format($q->compare_price) }} TK</s></div>
@@ -86,9 +88,24 @@
 </div></div>
 @endif
 
+@if($s['home_top']==='1' && $top->count())
+<div class="w sec-st sec-top" id="top" style="padding-top:34px"><div class="st"><h2>{{ $topLabel }}</h2>
+<div class="gr" data-cr>@foreach($top as $q)@include('store.card', ['fd'=>true])@endforeach</div></div></div>
+@endif
+
+@if($s['home_todays_deal']==='1' && $deals->count())
+<div class="w sec-st" id="deal" style="padding-top:34px"><div class="st"><h2>Today's Deal</h2><div class="dl" data-cr="1">@foreach($deals as $dd)@php $du = \App\Http\Controllers\StoreController::url($dd); @endphp<div class="td"><a class="im" href="{{ $du }}"><img src="{{ $dd->image ?: '/icon.png' }}" alt="{{ $dd->name }}" width="240" height="240" loading="lazy" draggable="false"></a>
+<div class="tx"><span class="k">DEAL ENDS IN <span data-cd="all">00:00:00</span></span><h3><a href="{{ $du }}">{{ $dd->name }}</a></h3><div class="pp">{{ number_format($dd->price) }} TK <s>{{ number_format($dd->compare_price) }} TK</s><em>{{ \App\Http\Controllers\StoreController::off($dd) }}% OFF</em></div><span style="font-size:12px;color:var(--mut)">Sold by DutyFree Shop BD · Cash on delivery</span><a class="bt" href="/checkout?add={{ $dd->id }}&amp;p={{ (float)$dd->price }}" rel="nofollow">ORDER NOW</a></div></div>@endforeach</div></div></div>
+@endif
+
+@if($s['home_new']==='1' && $new->count())
+<div class="w sec-st" id="new" style="padding-top:34px"><div class="st"><h2><span class="only-d" style="display:inline">New Arrival Products</span><span class="only-m">New Arrival</span></h2>
+<div class="gr" data-cr>@foreach($new as $q)@include('store.card', ['fd'=>false])@endforeach</div></div></div>
+@endif
+
 @if($live->count())
 <div class="w sec-lv" style="padding-top:24px;display:flex;flex-direction:column;gap:12px"><div class="lvh"><span class="chip"><span class="dot"></span>LIVE ORDERS</span><h2>Recently ordered</h2><span class="su">Bought by shoppers across Bangladesh, updated every minute</span></div>
-<div class="lg2">@foreach($live as $l)
+<div class="lg2" data-cr>@foreach($live as $l)
 @php $lu = $l->pid ? \App\Http\Controllers\StoreController::url((object)['id'=>$l->pid,'ext_id'=>$l->ext_id,'name'=>$l->pname]) : null; @endphp
 <div class="lo"><span class="tg"><span class="dot"></span>{{ \Carbon\Carbon::parse($l->created_at)->diffForHumans(null, true) }} ago</span><a class="bx" @if($lu) href="{{ $lu }}" @endif>
 <div class="im">@if($l->image)<img src="{{ $l->image }}" alt="{{ $l->name }}" width="110" height="110" loading="lazy" draggable="false">@endif</div>
@@ -108,26 +125,6 @@
 <a href="/search?deals=1"><div class="cv"></div><div class="bd"><span class="lg">DF</span><b>DutyFree Shop BD</b><span class="vf">✔ Verified</span><span class="tp">{{ number_format($count) }} products</span><span class="vs">View Store</span></div></a>
 @foreach($stores as $st)<a href="/search?q={{ rawurlencode(parse_url('http://'.$st->domain, PHP_URL_HOST) ?: $st->name) }}"><div class="cv"></div><div class="bd"><span class="lg">{{ $ini($st->name) }}</span><b>{{ $st->name }}</b><span class="vf">✔ Verified</span><span class="tp">{{ number_format((int)$st->scan_published) }} products</span><span class="vs">View Store</span></div></a>@endforeach
 </div></div></div>
-@endif
-
-@if($s['home_new']==='1' && $new->count())
-<div class="w sec-st" id="new" style="padding-top:34px"><div class="st"><h2><span class="only-d" style="display:inline">New Arrival Products</span><span class="only-m">New Arrival</span></h2>
-<div class="gr">@foreach($new as $q)@include('store.card', ['fd'=>false])@endforeach</div></div></div>
-@endif
-
-@if($s['home_top']==='1' && $top->count())
-<div class="w sec-st sec-top" id="top" style="padding-top:34px"><div class="st"><h2>{{ $topLabel }}</h2>
-<div class="gr">@foreach($top as $q)@include('store.card', ['fd'=>true])@endforeach</div></div></div>
-@endif
-
-@if($s['home_todays_deal']==='1' && $deals->count())
-@php $dd = $deals[0]; $du = \App\Http\Controllers\StoreController::url($dd); @endphp
-<div class="w sec-st" id="deal" style="padding-top:34px"><div class="st"><h2>Today's Deal</h2><div class="td"><a class="im" href="{{ $du }}"><img src="{{ $dd->image ?: '/icon.png' }}" alt="{{ $dd->name }}" width="240" height="240" loading="lazy" draggable="false"></a>
-<div class="tx"><span class="k">DEAL ENDS IN <span data-cd="all">00:00:00</span></span><h3><a href="{{ $du }}">{{ $dd->name }}</a></h3><div class="pp">{{ number_format($dd->price) }} TK <s>{{ number_format($dd->compare_price) }} TK</s><em>{{ \App\Http\Controllers\StoreController::off($dd) }}% OFF</em></div><span style="font-size:12px;color:var(--mut)">Sold by DutyFree Shop BD · Cash on delivery</span><a class="bt" href="/checkout?add={{ $dd->id }}&amp;p={{ (float)$dd->price }}" rel="nofollow">ORDER NOW</a></div></div></div></div>
-@endif
-
-@if($s['home_best']==='1' && $best->count())
-<div class="w sec-st" id="best" style="padding-top:34px"><div class="st"><h2>Best Sellers</h2><div class="gr">@foreach($best->take(12) as $q)@include('store.card', ['fd'=>true])@endforeach</div></div></div>
 @endif
 
 @if($s['home_offer_banners']==='1' && count($offers))
@@ -165,4 +162,18 @@
 @endsection
 @section('js')
 <script>document.querySelectorAll('[data-ft]').forEach(function(b){b.onclick=function(){var k=b.getAttribute('data-ft');document.querySelectorAll('[data-ft]').forEach(function(x){x.classList.toggle('on',x.getAttribute('data-ft')===k)});document.querySelectorAll('[data-fl]').forEach(function(g){g.style.display=g.getAttribute('data-fl')===k?'':'none'})}});</script>
+<script>(function(){var rm=matchMedia('(prefers-reduced-motion: reduce)').matches;function mk(c,t){var b=document.createElement('button');b.type='button';b.className='cra '+c;b.setAttribute('aria-label',c==='l'?'Previous':'Next');b.textContent=t;return b}
+function init(tr){var kids=[].slice.call(tr.children);if(kids.length<2)return;var w=document.createElement('div');w.className='crw';var fl=tr.getAttribute('data-fl');tr.parentNode.insertBefore(w,tr);w.appendChild(tr);if(fl!==null){w.setAttribute('data-fl',fl);tr.removeAttribute('data-fl');w.style.display=tr.style.display;tr.style.display=''}
+var L=mk('l','\u2039'),R=mk('r','\u203a');w.appendChild(L);w.appendChild(R);var gap=function(){return parseFloat(getComputedStyle(tr).columnGap)||0},per=function(){return Math.round(parseFloat(getComputedStyle(tr).getPropertyValue('--pv')))||1},loop=kids.length>per();
+if(loop)kids.forEach(function(k){var c=k.cloneNode(true);c.setAttribute('aria-hidden','true');tr.appendChild(c)});
+function sw(){return tr.children[0].getBoundingClientRect().width+gap()}function pd(){return(tr.scrollWidth+gap())/2}
+function jump(d){tr.style.scrollSnapType='none';tr.scrollLeft+=d;requestAnimationFrame(function(){tr.style.scrollSnapType=''})}
+function next(){if(tr.clientWidth)tr.scrollBy({left:sw(),behavior:'smooth'})}function prev(){if(!tr.clientWidth)return;if(loop&&tr.scrollLeft<sw())jump(pd());tr.scrollBy({left:-sw(),behavior:'smooth'})}
+function upd(){var o=tr.scrollWidth>tr.clientWidth+2;L.style.display=R.style.display=o?'':'none'}
+tr.addEventListener('scroll',function(){if(loop&&tr.scrollLeft>=pd()-1)jump(-pd())},{passive:true});L.onclick=prev;R.onclick=next;
+var paused=false,vis=true;w.addEventListener('mouseenter',function(){paused=true;upd()});w.addEventListener('mouseleave',function(){paused=false});w.addEventListener('touchstart',function(){paused=true},{passive:true});w.addEventListener('touchend',function(){setTimeout(function(){paused=false},4000)},{passive:true});w.addEventListener('focusin',function(){paused=true});w.addEventListener('focusout',function(){paused=false});
+if('IntersectionObserver' in window)new IntersectionObserver(function(e){vis=e[0].isIntersecting}).observe(w);
+if(!rm)setInterval(function(){if(!paused&&vis&&!document.hidden&&tr.clientWidth&&tr.scrollWidth>tr.clientWidth+2)next()},3200);
+addEventListener('resize',upd);setTimeout(upd,300);upd()}
+document.querySelectorAll('[data-cr]').forEach(init)})();</script>
 @endsection
