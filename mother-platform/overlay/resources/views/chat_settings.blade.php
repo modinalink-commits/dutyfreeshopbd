@@ -10,6 +10,7 @@
 <b>Meta webhook (Facebook, Instagram, WhatsApp)</b>
 <p style="font-size:12px;color:#6B7280;margin:4px 0 10px">In your Meta app (developers.facebook.com) open Webhooks and use these two values. Subscribe the Page to <i>messages</i>, the Instagram account to <i>messages</i>, and WhatsApp to <i>messages</i>. A Meta app can use only one callback URL per product; if another tool (for example LazyChat) already uses it for the same page, only one of the two will receive messages.</p>
 <label>Callback URL</label><input readonly value="{{ $hook }}" onclick="this.select()">
+<div style="margin:6px 0 10px;padding:8px 10px;border-radius:8px;font-size:12.5px;background:{{ ($hook_last ?? null) && str_contains($hook_last, 'accepted') ? '#ECFDF5' : '#FEF3C7' }}"><b>Last webhook from Meta:</b> {{ $hook_last ?? 'nothing received yet' }}</div>
 <label>Verify token</label><input readonly value="{{ $verify }}" onclick="this.select()">
 <label>App secret {{ $has['secret'] ? '(saved)' : '(required: messages are rejected without it)' }}</label><input type="password" name="app_secret" placeholder="{{ $has['secret'] ? 'Leave blank to keep the saved secret' : 'Paste the Meta app secret' }}" autocomplete="off">
 <hr style="border:0;border-top:1px solid #FFE7D6;margin:16px 0">

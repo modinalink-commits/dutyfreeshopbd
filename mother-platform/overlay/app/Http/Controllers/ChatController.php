@@ -142,7 +142,7 @@ class ChatController extends Controller {
     $has = fn($k) => (bool)Chat::sec($k);
     if (!Chat::sec('chat_verify_token')) Sms::setSecret('chat_verify_token', bin2hex(random_bytes(12)));
     return view('chat_settings', ['verify'=>Chat::sec('chat_verify_token'), 'hook'=>url('/webhooks/meta'), 'has'=>['fb'=>$has('chat_fb_token'), 'ig'=>$has('chat_ig_token'), 'wa'=>$has('chat_wa_token'), 'secret'=>$has('chat_app_secret')],
-      'wa_phone'=>Chat::sec('chat_wa_phone_id'), 'ai_auto'=>\App\Support\AiChat::chatOn() || (\App\Support\Sms::secret('ai_chat_auto') !== '0'), 'web_on'=>(DB::table('settings')->where('key', 'chat_web_on')->value('value') ?? '1') === '1',
+      'hook_last'=>DB::table('settings')->where('key', 'chat_hook_last')->value('value'), 'wa_phone'=>Chat::sec('chat_wa_phone_id'), 'ai_auto'=>\App\Support\AiChat::chatOn() || (\App\Support\Sms::secret('ai_chat_auto') !== '0'), 'web_on'=>(DB::table('settings')->where('key', 'chat_web_on')->value('value') ?? '1') === '1',
       'quick'=>DB::table('chat_quick_replies')->orderBy('id')->get(), 'counts'=>DB::table('chat_threads')->select('channel', DB::raw('count(*) n'))->groupBy('channel')->pluck('n', 'channel')]);
   }
   public function saveSettings(Request $r) {
@@ -221,8 +221,11 @@ class ChatController extends Controller {
   }
   public function metaHook(Request $r) {
     $secret = Chat::sec('chat_app_secret'); $raw = $r->getContent();
-    if (!$secret || !hash_equals('sha256='.hash_hmac('sha256', $raw, $secret), (string)$r->header('X-Hub-Signature-256'))) return response('Bad signature', 403);
+    $note = function ($t) { try { DB::table('settings')->updateOrInsert(['key'=>'chat_hook_last'], ['value'=>now()->timezone('Asia/Dhaka')->format('d M H:i:s').' — '.$t]); } catch (\Throwable $e) {} };
+    if (!$secret) { $note('Webhook received, but the App secret is not saved in Chat Settings, so it was rejected.'); return response('Bad signature', 403); }
+    if (!hash_equals('sha256='.hash_hmac('sha256', $raw, $secret), (string)$r->header('X-Hub-Signature-256'))) { $note('Webhook received, but the signature did not match. The App secret saved here is different from the one in the Meta app (App settings > Basic).'); return response('Bad signature', 403); }
     $j = json_decode($raw, true) ?: []; $obj = $j['object'] ?? '';
+    $note('Webhook received and accepted (object: '.($obj ?: 'none').', '.count($j['entry'] ?? []).' entries).');
     try {
       foreach ($j['entry'] ?? [] as $e) {
         if ($obj === 'page' || $obj === 'instagram') {
