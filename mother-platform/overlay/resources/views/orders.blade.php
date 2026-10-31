@@ -6,7 +6,8 @@
 @if(session('ok'))<div class="card" style="color:#166534;margin:10px 0">{{ session('ok') }}</div>@endif
 @if($errors->any())<div class="card err">{{ $errors->first() }}</div>@endif
 <div class="chips" style="margin-top:12px"><a class="chip {{ request('status')?'':'on' }}" href="/admin/orders">All <b>{{ $counts->sum() }}</b></a>
-@foreach(\App\Models\Mother::STAGES as $s)<a class="chip s-{{ \Illuminate\Support\Str::slug($s) }} {{ request('status')==$s?'on':'' }}" href="/admin/orders?status={{ urlencode($s) }}">{{ $s }} <b>{{ $counts[$s] ?? 0 }}</b></a>@endforeach</div>
+@foreach(\App\Models\Mother::STAGES as $s)<a class="chip s-{{ \Illuminate\Support\Str::slug($s) }} {{ request('status')==$s?'on':'' }}" href="/admin/orders?status={{ urlencode($s) }}">{{ $s }} <b>{{ $counts[$s] ?? 0 }}</b></a>@endforeach<a class="chip {{ $isInc ? 'on' : '' }}" href="/admin/orders?status=Incomplete" style="border-color:#F59E0B">Incomplete <b>{{ $incOpen }}</b></a></div>
+@if($isInc)@include('orders_incomplete')@else
 <div class="card"><div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:10px"><div style="flex:1;min-width:200px"><b>Manage Order</b><div style="font-size:12px;color:#6B7280">Dashboard &gt; Orders &gt; {{ request('status') ?: 'All Orders' }}</div></div>
 <form style="display:flex;gap:8px;align-items:center;margin:0">@if(request('status'))<input type="hidden" name="status" value="{{ request('status') }}">@endif<label style="margin:0">Show</label><select name="per" onchange="this.form.submit()" style="width:auto">@foreach([25,50,100,200] as $pp)<option {{ $per==$pp?'selected':'' }}>{{ $pp }}</option>@endforeach</select><input name="q" value="{{ request('q') }}" placeholder="type invoice or customer phone" style="min-width:220px"><button>Search</button></form></div>
 <form method="post" action="/admin/orders/bulk" id="bulk">@csrf
@@ -18,4 +19,5 @@
 <td>৳{{ number_format($o->total) }}</td><td>৳{{ number_format($o->shipping) }}</td><td><span class="pill s-{{ \Illuminate\Support\Str::slug($o->status) }}">{{ $o->status }}</span>@if($o->pay_status)<br><small style="color:{{ $o->pay_status==='Verified' ? '#166534' : ($o->pay_status==='Rejected' ? '#B91C1C' : '#C2410C') }};font-weight:700">{{ $o->pay_status==='Verification Pending' ? 'Payment Verification Pending' : 'Payment '.$o->pay_status }}</small>@endif</td><td>{{ \Illuminate\Support\Str::limit(\App\Support\CustomerIntel::cleanNote($o->note) ?: '—', 60) }}</td><td>{{ $o->courier ?: '—' }}</td><td><a class="btn g" href="/admin/orders/{{ $o->id }}">View</a></td></tr>
 @empty<tr><td colspan="10">No orders yet.</td></tr>@endforelse</tbody></table></div></form>
 <p style="font-size:12px;color:#6B7280">Showing {{ $orders->firstItem() ?? 0 }} to {{ $orders->lastItem() ?? 0 }} of {{ $orders->total() }} entries. Click a status chip to filter. Select rows, then Action to change status.</p>{{ $orders->links('pagination.admin') }}</div>
+@endif
 @endsection

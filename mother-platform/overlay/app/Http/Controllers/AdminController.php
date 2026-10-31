@@ -71,15 +71,16 @@ class AdminController extends Controller {
     return view('dashboard', compact('now','kpis','stores','max','counts','orders','bad','alerts','health','range','label','trend','topProducts','cats','couriers','chatUnread'));
   }
   public function orders(Request $r) { \App\Support\CourierSync::auto();
-    $q = DB::table('orders')->orderByDesc('id');
-    if ($r->filled('status')) $q->where('status', $r->status);
+    $isInc = $r->input('status') === 'Incomplete'; $q = DB::table('orders')->orderByDesc('id');
+    if ($isInc) $q->whereRaw('1 = 0'); elseif ($r->filled('status')) $q->where('status', $r->status);
     if ($r->filled('q')) $q->where(fn($w) => $w->where('invoice','like','%'.$r->q.'%')->orWhere('phone','like','%'.$r->q.'%')->orWhere('customer_name','ilike','%'.$r->q.'%'));
     $per = in_array((int)$r->input('per'), [25,50,100,200]) ? (int)$r->input('per') : 50;
     $orders = $q->paginate($per)->withQueryString();
     $items = DB::table('order_items as i')->leftJoin('products as p','p.id','=','i.product_id')->whereIn('i.order_id', collect($orders->items())->pluck('id'))->select('i.*', DB::raw('coalesce(p.image,(select pp.image from products pp where pp.name = i.name limit 1)) as image'))->get()->groupBy('order_id');
     $counts = DB::table('orders')->select('status', DB::raw('count(*) c'))->groupBy('status')->pluck('c','status');
     $intel = \App\Support\CustomerIntel::forOrders($orders->items());
-    return view('orders', compact('orders','counts','items','per','intel'));
+    $incOpen = (int)DB::table('incomplete_orders')->where('status', 'open')->count();
+    return view('orders', compact('orders','counts','items','per','intel','incOpen') + ['isInc'=>$isInc] + ($isInc ? \App\Http\Controllers\IncompleteController::data($r) : []));
   }
   public function orderBulk(Request $r) {
     $d = $r->validate(['ids'=>'required|array|max:500','ids.*'=>'integer','status'=>'required|in:'.implode(',',Mother::STAGES)]);

@@ -17,8 +17,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::get('/orders', [A::class,'orders']);
   Route::get('/orders/new', [A::class,'orderNew']);
   Route::get('/orders/lookup', [A::class,'orderLookup']);
-  Route::get('/incomplete', [\App\Http\Controllers\IncompleteController::class,'index']);
-  Route::get('/incomplete/{id}', [\App\Http\Controllers\IncompleteController::class,'show']);
+  Route::get('/incomplete', fn() => redirect('/admin/orders?status=Incomplete'));
   Route::post('/incomplete/{id}/{act}', [\App\Http\Controllers\IncompleteController::class,'act'])->where('act', 'recovered|archive|reopen');
   Route::get('/orders/print', [\App\Http\Controllers\PrintController::class,'show']);
   Route::get('/orders/products', [A::class,'orderProducts']);
