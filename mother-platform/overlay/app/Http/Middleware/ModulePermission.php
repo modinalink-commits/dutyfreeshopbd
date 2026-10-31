@@ -17,7 +17,7 @@ class ModulePermission {
     if (str_starts_with($p, 'staff-log')) return 'stafflog';
     if (preg_match('#^(products|taxonomy|categories|brands|inventory)#', $p)) return 'products';
     if (preg_match('#^(discounts|coupons|deals|payment-methods)#', $p)) return 'marketing';
-    if (preg_match('#^(reports|modules|report-details)#', $p)) return 'reports';
+    if (preg_match('#^(reports|modules|report-details|analytics)#', $p)) return 'reports';
     if (preg_match('#^m-districts#', $p)) return 'couriers';
     if (preg_match('#^m-payroll#', $p)) return 'hr';
     if (preg_match('#^m-customers#', $p)) return 'customers';

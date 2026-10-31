@@ -125,3 +125,7 @@ database/migrations/2026_10_31_000020_slider_hero_fields.php
 app/Support/Html.php
 database/migrations/2026_10_31_000021_product_form_fields.php
 resources/views/pagination/admin.blade.php
+app/Support/Analytics.php
+app/Http/Controllers/AnalyticsController.php
+resources/views/analytics.blade.php
+resources/views/analytics_print.blade.php

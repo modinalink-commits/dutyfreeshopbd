@@ -40,6 +40,9 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::post('/brands', [C::class,'brandSave']);
   Route::get('/modules', [M::class,'index']);
   Route::get('/reports', [R::class,'reports']);
+  Route::get('/analytics', [\App\Http\Controllers\AnalyticsController::class,'index']);
+  Route::get('/analytics/{slug}', [\App\Http\Controllers\AnalyticsController::class,'show']);
+  Route::get('/analytics/{slug}/export/{fmt}', [\App\Http\Controllers\AnalyticsController::class,'export']);
   Route::get('/report-details', [R::class,'details']);
   Route::get('/permissions', [\App\Http\Controllers\PermissionController::class,'show']);
   Route::post('/permissions', [\App\Http\Controllers\PermissionController::class,'save']);

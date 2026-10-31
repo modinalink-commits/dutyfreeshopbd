@@ -88,7 +88,7 @@ class Analytics {
       'low-stock','out-of-stock' => ['image'=>['',$I],'product'=>['Product',$T],'sku'=>['SKU',$T],'category'=>['Category',$T],'stock'=>['Stock',$N],'alert'=>['Alert at',$N],'cost'=>['Cost',$M],'price'=>['Price',$M]],
       'purchase-report' => ['date'=>['Date',$Dt],'invoice'=>['Invoice',$T],'supplier'=>['Supplier',$T],'qty'=>['Qty',$N],'total'=>['Total',$M],'paid'=>['Paid',$M],'due'=>['Due',$M]],
       'supplier-report' => ['supplier'=>['Supplier',$T],'purchases'=>['Purchases',$N],'total'=>['Total purchased',$M],'paid'=>['Paid',$M],'due'=>['Due',$M],'last'=>['Last purchase',$Dt]],
-      'new-returning' => ['date'=>['Date',$Dt],'new_customers'=>['New customers',$N],'returning'=>['Returning orders',$N],'orders'=>['Orders',$N],'new_share'=>['New share',$P]],
+      'new-returning' => ['date'=>['Date',$Dt],'new_customers'=>['New customers',$N],'returning_orders'=>['Returning orders',$N],'orders'=>['Orders',$N],'new_share'=>['New share',$P]],
       'repeat-rate' => ['date'=>['Month',$Dt],'customers'=>['Customers',$N],'repeat'=>['Repeat customers',$N],'rate'=>['Repeat rate',$P]],
       'top-customers','customer-orders-summary' => ['name'=>['Customer',$T],'phone'=>['Mobile',$T],'category'=>['Category',$S],'orders'=>['Orders',$N],'delivered'=>['Delivered',$N],'returned'=>['Returned',$N],'cancelled'=>['Cancelled',$N],'spend'=>['Total spend',$M],'score'=>['Reliability',$P],'risk'=>['Risk',$S]],
       'customer-orders' => ['date'=>['Date',$Dt],'invoice'=>['Invoice',$T],'customer'=>['Customer',$T],'phone'=>['Mobile',$T],'product'=>['Products',$T],'store'=>['Store',$T],'total'=>['Order total',$M],'status'=>['Status',$S]],
@@ -281,7 +281,7 @@ class Analytics {
   private static function newReturning(array $f): array {
     [$w, $b] = self::w($f, 'nocancel');
     $d = self::day();
-    $sql = "select $d date, sum(case when o.created_at = fo.first_at then 1 else 0 end) new_customers, sum(case when o.created_at > fo.first_at then 1 else 0 end) returning, count(*) orders from orders o join (select phone, min(created_at) first_at from orders where status <> 'Cancel' group by phone) fo on fo.phone = o.phone $w group by $d order by 1 desc";
+    $sql = "select $d date, sum(case when o.created_at = fo.first_at then 1 else 0 end) new_customers, sum(case when o.created_at > fo.first_at then 1 else 0 end) returning_orders, count(*) orders from orders o join (select phone, min(created_at) first_at from orders where status <> 'Cancel' group by phone) fo on fo.phone = o.phone $w group by $d order by 1 desc";
     $rows = self::arr(self::sel($sql, $b));
     foreach ($rows as &$r) $r['new_share'] = (int)$r['orders'] > 0 ? round($r['new_customers'] / $r['orders'] * 100, 1) : 0;
     return $rows;
