@@ -165,6 +165,17 @@ class ChatController extends Controller {
     if (!empty($a['success'])) return back()->with('ok', 'App subscribed to WhatsApp account '.$waba.'. Subscribed apps now: '.($names ?: 'none listed').'. Phone override set: '.json_encode($p).'. Phone webhook config: '.json_encode($pc['webhook_configuration'] ?? $pc).'. WABA apps: '.json_encode($b['data'] ?? $b));
     return back()->with('err', 'Subscribe failed for '.$waba.': '.json_encode($a['error'] ?? $a).' Subscribed apps: '.($names ?: 'none'));
   }
+  public function waRegister(Request $r) {
+    $d = $r->validate(['reg_pin'=>['required', 'regex:/^\d{6}$/']]);
+    $tok = Chat::sec('chat_wa_token'); $ph = Chat::sec('chat_wa_phone_id');
+    if (!$tok || !$ph) return back()->with('err', 'Save the WhatsApp Cloud API token and phone number ID first.');
+    $h = fn($m, $u, $q = []) => \Illuminate\Support\Facades\Http::timeout(25)->withToken($tok)->{$m}('https://graph.facebook.com/v21.0/'.$u, $q)->json();
+    $res = $h('post', $ph.'/register', ['messaging_product'=>'whatsapp', 'pin'=>$d['reg_pin']]);
+    $st = $h('get', $ph, ['fields'=>'status,code_verification_status,platform_type,throughput,display_phone_number']);
+    DB::table('audit_logs')->insert(['user_id'=>auth()->id(), 'user_name'=>auth()->user()->name, 'action'=>'chat.wa_register', 'subject'=>'WhatsApp number register attempt', 'ip'=>$r->ip(), 'created_at'=>now(), 'updated_at'=>now()]);
+    if (!empty($res['success'])) return back()->with('ok', 'WhatsApp number registered. Status now: '.json_encode($st));
+    return back()->with('err', 'Register failed: '.json_encode($res['error'] ?? $res).' Status: '.json_encode($st));
+  }
   public function saveSettings(Request $r) {
     $d = $r->validate(['fb_token'=>'nullable|string|max:600', 'ig_token'=>'nullable|string|max:600', 'wa_token'=>'nullable|string|max:600', 'wa_phone_id'=>'nullable|string|max:40', 'app_secret'=>'nullable|string|max:100']);
     foreach (['fb_token'=>'chat_fb_token', 'ig_token'=>'chat_ig_token', 'wa_token'=>'chat_wa_token', 'app_secret'=>'chat_app_secret', 'wa_phone_id'=>'chat_wa_phone_id'] as $k => $sk) if (!empty($d[$k])) Sms::setSecret($sk, trim($d[$k]));

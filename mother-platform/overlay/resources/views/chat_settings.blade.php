@@ -22,6 +22,7 @@
 <label>WhatsApp Cloud API token {{ $has['wa'] ? '(saved)' : '' }}</label><input type="password" name="wa_token" autocomplete="off">
 <label>WhatsApp phone number ID</label><input name="wa_phone_id" value="{{ $wa_phone }}" autocomplete="off">
 <label>WhatsApp account (WABA) ID <span style="color:#6B7280">(optional, auto-detected)</span></label><input name="waba_id" placeholder="e.g. 1728673528206378" autocomplete="off"><button type="submit" formaction="/admin/chat-settings/wa-subscribe" formnovalidate class="g" style="margin:8px 0">Subscribe this app to WhatsApp (receive customer messages)</button>
+<label>Register number: choose a new 6-digit PIN (not stored)</label><input name="reg_pin" inputmode="numeric" maxlength="6" placeholder="6 digits" autocomplete="off"><button type="submit" formaction="/admin/chat-settings/wa-register" formnovalidate class="g" style="margin:8px 0">Register WhatsApp number (fixes Offline status)</button>
 <hr style="border:0;border-top:1px solid #FFE7D6;margin:16px 0">
 <label style="display:flex;gap:8px;align-items:center;margin:0;font-size:13px;color:#0B1220"><input type="checkbox" name="web_on" value="1" {{ $web_on ? 'checked' : '' }} style="width:auto"> Show the live chat button on the website</label>
 <label style="display:flex;gap:8px;align-items:center;margin:8px 0 0;font-size:13px;color:#0B1220"><input type="checkbox" name="ai_auto" value="1" {{ $ai_auto ? 'checked' : '' }} style="width:auto"> Claude AI answers website chat automatically (stops on a chat once a staff member replies)</label>
