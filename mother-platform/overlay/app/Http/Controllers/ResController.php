@@ -108,8 +108,30 @@ class ResController extends Controller {
     $out = [];
     foreach ($rows->items() as $r) { $a = $agg[$r->phone] ?? null; $s = $a ? (float)$a->s : 0;
       $tier = $r->membership ?: (($a && $a->n > 1) ? (optional($lv->first(fn($l) => $s >= $l->min_spent))->name ?? 'Member') : ($a ? 'New' : '—'));
-      $out[$r->id] = ['orders'=>$a->n ?? 0, 'spent'=>'৳'.number_format($s), 'tier'=>$tier, 'last'=>$a ? \Carbon\Carbon::parse($a->l)->diffForHumans() : '—']; }
+      $out[$r->id] = ['orders'=>($a->n ?? 0) + (int)($r->legacy_orders ?? 0), 'spent'=>'৳'.number_format($s), 'tier'=>$tier, 'last'=>$a ? \Carbon\Carbon::parse($a->l)->diffForHumans() : '—']; }
     return $out;
+  }
+  public function customerImport(Request $r) {
+    $r->validate(['file'=>'required|file|max:25600']);
+    @set_time_limit(300);
+    $fh = fopen($r->file('file')->getRealPath(), 'r'); $head = fgetcsv($fh);
+    if (!$head) return back()->withErrors(['file'=>'Empty file']);
+    $head = array_map(fn($h) => strtolower(trim(preg_replace('/^\xEF\xBB\xBF/', '', (string)$h))), $head);
+    if (!in_array('phone', $head)) return back()->withErrors(['file'=>'The file needs a phone column']);
+    $existing = DB::table('customers')->pluck('id','phone')->all();
+    $new = 0; $upd = 0; $skip = 0; $batch = []; $now = now();
+    $flush = function () use (&$batch) { if ($batch) { DB::table('customers')->insert($batch); $batch = []; } };
+    while (($row = fgetcsv($fh)) !== false) {
+      $x = array_combine($head, array_pad(array_slice($row, 0, count($head)), count($head), ''));
+      $ph = substr(preg_replace('/\D/', '', $x['phone'] ?? ''), -11);
+      if (!preg_match('/^01[3-9]\d{8}$/', $ph)) { $skip++; continue; }
+      $data = ['name'=>mb_substr(trim($x['name'] ?? '') ?: $ph, 0, 120), 'address'=>mb_substr($x['address'] ?? '', 0, 1000) ?: null, 'ip'=>mb_substr($x['ip'] ?? '', 0, 45) ?: null, 'username'=>mb_substr($x['username'] ?? '', 0, 60) ?: null, 'legacy_orders'=>(int)($x['legacy_orders'] ?? 0), 'legacy_spent'=>(float)($x['legacy_spent'] ?? 0), 'note'=>mb_substr($x['note'] ?? '', 0, 1000) ?: null, 'updated_at'=>$now];
+      if (isset($existing[$ph])) { DB::table('customers')->where('id',$existing[$ph])->update($data); $upd++; }
+      else { $batch[] = $data + ['phone'=>$ph, 'created_at'=>$now]; $existing[$ph] = true; $new++; if (count($batch) >= 1000) $flush(); }
+    }
+    $flush(); fclose($fh);
+    $this->audit('import', "customers new=$new updated=$upd skipped=$skip");
+    return back()->with('ok', "Customers imported: $new new, $upd updated, $skip rows skipped (invalid phone).");
   }
   public function payrollGenerate() {
     $mon = now('Asia/Dhaka')->format('Y-m'); $n = 0;

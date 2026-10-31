@@ -64,3 +64,4 @@ public/google9e6eea6fbe5e8eaa.html
 public/robots.txt
 database/products-snapshot.json
 database/products-feed.xml
+database/migrations/2026_10_31_000006_customer_import.php

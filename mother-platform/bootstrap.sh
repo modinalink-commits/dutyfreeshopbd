@@ -35,6 +35,9 @@ opcache.jit_buffer_size=64M
 realpath_cache_size=4096K
 realpath_cache_ttl=600
 expose_php=0
+upload_max_filesize=25M
+post_max_size=30M
+memory_limit=512M
 INI
 cat > /usr/local/etc/php-fpm.d/zz-pool.conf <<'POOL'
 [www]
