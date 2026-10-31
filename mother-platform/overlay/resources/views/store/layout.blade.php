@@ -3,6 +3,7 @@
 @if(!empty($desc))
 <meta name="description" content="{{ $desc }}">
 @endif
+@if(!empty($keywords))<meta name="keywords" content="{{ $keywords }}">@endif
 <link rel="canonical" href="{{ $canon }}"><meta name="robots" content="{{ !empty($noindex) ? 'noindex,follow' : 'index,follow,max-image-preview:large' }}">
 <meta name="theme-color" content="#0B1220"><meta property="og:type" content="{{ isset($p) ? 'product' : 'website' }}"><meta property="og:site_name" content="DutyFree Shop BD"><meta property="og:locale" content="bn_BD">
 <meta property="og:title" content="{{ $title }}"><meta property="og:description" content="{{ $desc ?? '' }}"><meta property="og:url" content="{{ $canon }}"><meta property="og:image" content="{{ $ogimg ?? url('/og.png') }}"><meta name="twitter:card" content="summary_large_image">

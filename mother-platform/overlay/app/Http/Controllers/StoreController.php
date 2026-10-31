@@ -156,7 +156,7 @@ class StoreController extends Controller {
     DB::table('product_views')->insert(['product_id'=>$p->id,'day'=>now('Asia/Dhaka')->toDateString(),'created_at'=>now(),'updated_at'=>now()]);
     $price = (float)$p->price;
     $gallery = DB::table('product_images')->where('product_id',$p->id)->orderBy('position')->orderBy('id')->pluck('path')->all();
-    return response()->view('store.product', $this->base(['preview'=>$preview, 'gallery'=>$gallery, 'p'=>$p, 'c'=>$c, 'rel'=>$rel, 'reviews'=>$reviews, 'title'=>$p->name.' দাম ৳ '.number_format($price).' | '.($c->name ?? 'Shop').' | DutyFree Shop BD', 'desc'=>$p->name.' – দাম ৳ '.number_format($price).'। অরিজিনাল ইমপোর্টেড পণ্য, অর্ডার করুন, সারা বাংলাদেশে ডেলিভারি। DutyFree Shop BD.', 'canon'=>url(self::url($p)), 'ogimg'=>$p->image ? (preg_match('#^https?://#i', $p->image) ? $p->image : url($p->image)) : url('/og.png')]))->header('Cache-Control','public, max-age=120');
+    return response()->view('store.product', $this->base(['preview'=>$preview, 'gallery'=>$gallery, 'p'=>$p, 'c'=>$c, 'rel'=>$rel, 'reviews'=>$reviews, 'title'=>($p->meta_title ?: $p->name.' দাম ৳ '.number_format($price).' | '.($c->name ?? 'Shop').' | DutyFree Shop BD'), 'keywords'=>$p->meta_keywords ?? null, 'desc'=>($p->meta_description ?: $p->name.' – দাম ৳ '.number_format($price).'। অরিজিনাল ইমপোর্টেড পণ্য, অর্ডার করুন, সারা বাংলাদেশে ডেলিভারি। DutyFree Shop BD.'), 'canon'=>url(self::url($p)), 'ogimg'=>$p->image ? (preg_match('#^https?://#i', $p->image) ? $p->image : url($p->image)) : url('/og.png')]))->header('Cache-Control','public, max-age=120');
   }
   public function search(Request $r) {
     $t = trim(mb_substr((string)$r->q, 0, 80)); $items = collect();
@@ -313,15 +313,16 @@ class StoreController extends Controller {
     return response()->view('store.missing', $this->base(['title'=>'পেজ পাওয়া যায়নি | DutyFree Shop BD', 'desc'=>'', 'canon'=>url('/'), 'noindex'=>true]), 404);
   }
   public function sitemap() {
-    $xml = self::rem('store.sitemap3', 3600, function () {
+    $xml = self::rem('store.sitemap4', 3600, function () {
+      $B = 'https://'.request()->getHost(); $ul = fn($p) => $B.'/'.ltrim($p, '/');
       $u = fn($loc, $img = null) => '<url><loc>'.e($loc).'</loc><changefreq>daily</changefreq>'.($img ? '<image:image><image:loc>'.e($img).'</image:loc></image:image>' : '').'</url>';
-      $o = $u(url('/').'/');
-      foreach ($this->cats() as $c) $o .= $u(url('/'.$c->slug).'/');
-      foreach ($this->subs() as $cid => $rows) { $cs = $this->cats()->firstWhere('id', $cid); if ($cs) foreach ($rows as $rw) $o .= $u(url('/'.$cs->slug.'/'.\App\Support\Slugs::subSlug($rw->sub))); }
-      $o .= $u(url('/blog'));
-      foreach (DB::table('posts')->where('active',true)->get(['slug']) as $bp) $o .= $u(url('/blog/'.$bp->slug));
-      foreach (DB::table('pages')->where('active',true)->get(['slug']) as $pg) $o .= $u(url('/'.$pg->slug).'/');
-      foreach (DB::table('products')->where('published',true)->orderBy('id')->cursor() as $p) $o .= $u(url(self::url($p)), $p->image);
+      $o = $u($ul('/'));
+      foreach ($this->cats() as $c) $o .= $u($ul($c->slug.'/'));
+      foreach ($this->subs() as $cid => $rows) { $cs = $this->cats()->firstWhere('id', $cid); if ($cs) foreach ($rows as $rw) $o .= $u($ul($cs->slug.'/'.\App\Support\Slugs::subSlug($rw->sub))); }
+      $o .= $u($ul('/blog'));
+      foreach (DB::table('posts')->where('active',true)->get(['slug']) as $bp) $o .= $u($ul('/blog/'.$bp->slug));
+      foreach (DB::table('pages')->where('active',true)->get(['slug']) as $pg) $o .= $u($ul($pg->slug.'/'));
+      foreach (DB::table('products')->where('published',true)->orderBy('id')->cursor() as $p) $o .= $u($ul(self::url($p)), $p->image);
       return '<?xml version="1.0" encoding="UTF-8"?>'."\n".'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">'.$o.'</urlset>';
     });
     return response($xml, 200, ['Content-Type'=>'application/xml; charset=utf-8']);

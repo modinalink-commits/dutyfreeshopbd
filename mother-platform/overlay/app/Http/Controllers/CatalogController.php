@@ -71,6 +71,8 @@ class CatalogController extends Controller {
       'meta_title'=>($d['meta_title'] ?? null) ?: null, 'meta_description'=>($d['meta_description'] ?? null) ?: null, 'meta_keywords'=>($d['meta_keywords'] ?? null) ?: null,
       'updated_at'=>now(),
     ];
+    $__g = \App\Support\Seo::gen((object)['name'=>$row['name'], 'price'=>$row['price'], 'sub'=>$row['sub']], DB::table('categories')->where('id', $row['category_id'])->value('name'), $row['brand_id'] ? DB::table('brands')->where('id', $row['brand_id'])->value('name') : null);
+    foreach ($__g as $__k => $__v) if (empty($row[$__k])) $row[$__k] = $__v;
     foreach ([1,2,3,4,5] as $n) $row["buy{$n}_price"] = ($d["buy{$n}_price"] ?? null) !== null && $d["buy{$n}_price"] !== '' ? (float)$d["buy{$n}_price"] : null;
     $old = $id ? DB::table('products')->find($id) : null;
     if ($id) abort_unless($old, 404);
@@ -103,7 +105,7 @@ class CatalogController extends Controller {
       if ($pub !== $was) DB::table('product_status_logs')->insert(['product_id'=>$id, 'user_id'=>Auth::id(), 'user_name'=>Auth::user()->name, 'action'=>$pub ? 'Published' : 'Unpublished', 'created_at'=>now(), 'updated_at'=>now()]);
     });
     if ((bool)($old->published ?? false) !== $pub && ($old || $pub)) $this->notifyStatus([$row['name']], $pub);
-    \Illuminate\Support\Facades\Cache::forget('store.home6'); \Illuminate\Support\Facades\Cache::forget('store.sitemap3');
+    \Illuminate\Support\Facades\Cache::forget('store.home6'); \Illuminate\Support\Facades\Cache::forget('store.sitemap4');
     if ($act === 'preview') return redirect('/admin/products/'.$id.'/preview');
     return redirect($act === 'draft' ? '/admin/products/'.$id.'/edit?saved=1' : '/admin/products/'.$id.'/edit?saved=1');
   }
@@ -190,5 +192,10 @@ class CatalogController extends Controller {
       foreach (DB::table('products')->orderBy('id')->cursor() as $p) fputcsv($f,[$p->id,$p->name,$p->sku,$p->price,$p->cost,$p->stock,$p->published?'yes':'no']);
       fclose($f);
     }, 'products.csv', ['Content-Type'=>'text/csv']);
+  }
+  public function seoAutofill(Request $r) {
+    $res = \App\Support\Seo::fillAll($r->input('mode') === 'all');
+    DB::table('audit_logs')->insert(['user_id'=>auth()->id(), 'user_name'=>auth()->user()->name, 'action'=>'seo.autofill', 'subject'=>'Auto-filled SEO for '.$res['updated'].' products ('.($r->input('mode') === 'all' ? 'overwrite' : 'empty only').')', 'ip'=>$r->ip(), 'created_at'=>now(), 'updated_at'=>now()]);
+    return back()->with('ok', 'SEO auto-filled for '.$res['updated'].' of '.$res['total'].' products ('.($r->input('mode') === 'all' ? 'all fields rewritten' : 'only empty fields filled').'); '.$res['slugs'].' missing URL slugs created.');
   }
 }

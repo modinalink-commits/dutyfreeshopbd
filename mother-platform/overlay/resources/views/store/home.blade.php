@@ -1,6 +1,7 @@
 @extends('store.layout')
 @section('ld')<script type="application/ld+json">{!! json_encode([['@context'=>'https://schema.org','@type'=>'OnlineStore','name'=>'DutyFree Shop BD','url'=>url('/').'/','logo'=>url('/icon.png'),'telephone'=>'+880'.ltrim($s['call_number'],'0'),'areaServed'=>'BD'],['@context'=>'https://schema.org','@type'=>'WebSite','name'=>'DutyFree Shop BD','url'=>url('/').'/','inLanguage'=>'bn-BD','potentialAction'=>['@type'=>'SearchAction','target'=>url('/search').'?q={q}','query-input'=>'required name=q']]], JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES|JSON_HEX_TAG) !!}</script>@endsection
 @section('main')
+<h1 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap">DutyFree Shop BD – ডিউটি ফ্রি দামে অরিজিনাল পারফিউম, সিগারেট ও স্কিন কেয়ার</h1>
 @php [$fEnd,$fFix] = \App\Http\Controllers\StoreController::endAt($s['flash_end_at'] ?? ''); [$dEnd,$dFix] = \App\Http\Controllers\StoreController::endAt($s['deal_end_at'] ?? ''); $fOn = !$fFix || $fEnd > time(); $dOn = !$dFix || $dEnd > time(); $fmt = function($e){ $r = max(0, $e - time()); return sprintf('%02d:%02d:%02d', intdiv($r,3600), intdiv($r%3600,60), $r%60); }; @endphp
 @php
   $ini = fn($n) => collect(preg_split('/[\s&\/-]+/', $n))->filter()->map(fn($w) => mb_strtoupper(mb_substr($w, 0, 1)))->take(3)->implode('');

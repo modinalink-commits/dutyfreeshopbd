@@ -180,4 +180,5 @@ resources/views/softphone_fab.blade.php
 public/js/jssip.min.js
 public/js/df-export.js
 app/Support/CardImg.php
+app/Support/Seo.php
 resources/views/store/zoom.blade.php
