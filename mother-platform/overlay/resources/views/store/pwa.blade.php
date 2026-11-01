@@ -9,9 +9,10 @@
 
 <div class="dfm" id="dfm-gen" role="dialog" aria-modal="true" aria-label="Install app"><div class="dfm-s" data-x></div><div class="dfm-p"><button type="button" class="dfm-x" data-x aria-label="Close">×</button><img src="/pwa/logo-240.png" alt="" width="52" height="56"><h3>Install DutyFreeBD App</h3><p id="dfm-gt">Open your browser menu <b>⋮</b> and choose <b>Install app</b> or <b>Add to Home screen</b>.</p><button type="button" class="dfm-ok" data-x>Got it</button></div></div>
 
-<div class="dfi" id="dfi" role="dialog" aria-label="Install DutyFreeBD App"><button type="button" class="dfi-x" id="dfi-no0" aria-label="Close">×</button><div class="dfi-h"><img src="/pwa/logo-240.png" alt="" width="48" height="52"><div><h3>Install DutyFreeBD App</h3><p>DutyFreeBD এখন আপনার ফোনে অ্যাপের মতো ব্যবহার করুন।</p></div></div>
-<ul><li>দ্রুত Shopping</li><li>Order Tracking</li><li>Special Offers</li><li>Push Notifications</li><li>Account Access</li><li>Faster Experience</li></ul><div class="dfi-a"><button type="button" class="dfi-go" id="dfi-go">Install App</button><button type="button" class="dfi-no" id="dfi-no">Not Now</button></div></div>
+<div class="dfi" id="dfi" role="dialog" aria-label="Install DutyFreeBD App"><button type="button" class="dfi-x" id="dfi-no0" aria-label="Close">×</button><div class="dfi-h"><img src="/pwa/logo-240.png" alt="" width="48" height="52"><div><h3>DutyFreeBD App Install করুন</h3><p>দ্রুত shopping, order tracking এবং exclusive notification পান।</p></div></div><div class="dfi-a"><button type="button" class="dfi-go" id="dfi-go">Install App</button><button type="button" class="dfi-no" id="dfi-no">Not Now</button></div></div>
 <div class="dfi" id="dfn" role="dialog" aria-label="Notifications"><button type="button" class="dfi-x" id="dfn-no0" aria-label="Close">×</button><div class="dfi-h"><img src="/pwa/logo-240.png" alt="" width="48" height="52"><div><h3>Notifications</h3><p>DutyFreeBD-এর Order Update ও Special Offer Notification পেতে চান?</p></div></div><div class="dfi-a"><button type="button" class="dfi-go" id="dfn-go">Allow Notifications</button><button type="button" class="dfi-no" id="dfn-no">Not Now</button></div></div>
+<div class="dfs" id="dfs" role="region" aria-label="Install app"><img src="/pwa/logo-240.png" alt="" width="30" height="32"><span>DutyFreeBD App — <b>Install Now</b></span><button type="button" id="dfs-go">Install</button><button type="button" id="dfs-x" aria-label="Close">×</button></div>
+<div class="dfp" id="dfbp" role="dialog" aria-label="Notifications"><div class="dfp-h"><b>Notifications</b><button type="button" id="dfp-all">Mark all read</button></div><div id="dfp-l"></div><div class="dfp-f"><button type="button" id="dfp-en" style="display:none">Enable notifications</button><a href="/account/notifications">View all →</a></div></div>
 <div class="dfu" id="dfu" role="status"><span>New Update Available</span><button type="button" id="dfu-go">Refresh</button></div>
 
 <style>
@@ -31,6 +32,14 @@
 .dfi-a{display:flex;gap:10px}.dfi-go{flex:1;border:0;background:linear-gradient(135deg,#FF7A1A,#FF5A00);color:#fff;font-weight:700;font-size:15px;border-radius:13px;padding:12px;cursor:pointer}.dfi-no{border:1px solid #E5E7EB;background:#fff;color:#374151;font-weight:600;font-size:14px;border-radius:13px;padding:12px 18px;cursor:pointer}
 @media(max-width:760px){.dfi{bottom:66px}}
 .dfu{position:fixed;left:50%;top:14px;transform:translate(-50%,-160%);z-index:2147481500;background:#0B1220;color:#fff;border-radius:14px;padding:10px 12px 10px 16px;display:flex;gap:14px;align-items:center;font-size:14px;font-weight:600;box-shadow:0 10px 26px rgba(11,18,32,.35);transition:transform .35s}.dfu.on{transform:translate(-50%,0)}.dfu button{border:0;background:#FF5A00;color:#fff;font-weight:700;border-radius:10px;padding:7px 14px;cursor:pointer}
+.dfs{position:fixed;left:8px;right:8px;bottom:calc(60px + env(safe-area-inset-bottom));z-index:2147481000;background:#0B1220;color:#fff;border-radius:14px;padding:8px 8px 8px 10px;display:none;align-items:center;gap:9px;font-size:13px;box-shadow:0 10px 26px rgba(11,18,32,.35)}.dfs.on{display:flex}.dfs img{background:#fff;border-radius:8px;padding:2px}.dfs span{flex:1;min-width:0}.dfs b{color:#FF8A3D}.dfs #dfs-go{border:0;background:#FF5A00;color:#fff;font-weight:700;border-radius:10px;padding:8px 14px;font-size:13px;cursor:pointer}.dfs #dfs-x{border:0;background:none;color:#9CA3AF;font-size:20px;cursor:pointer;padding:0 4px}
+.dfb{background:none;border:0;cursor:pointer;font-family:inherit}
+.dfp{position:fixed;top:64px;right:10px;width:min(360px,calc(100vw - 20px));max-height:70vh;overflow:auto;background:#fff;border:1px solid #E6EAF0;border-radius:16px;box-shadow:0 18px 44px rgba(11,18,32,.28);z-index:2147481200;display:none}.dfp.on{display:block}
+.dfp-h{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid #F1F3F6;font-size:14px;color:#0B1220}.dfp-h button,.dfp-f button{border:0;background:none;color:#FF5A00;font-weight:700;font-size:12px;cursor:pointer}
+.dfp-i{display:flex;gap:10px;padding:10px 14px;border-bottom:1px solid #F7F8FA;text-decoration:none;color:#0B1220}.dfp-i.un{background:#FFF8F3}.dfp-i i{font-style:normal;font-size:18px}.dfp-i b{display:block;font-size:13px}.dfp-i small{display:block;color:#6B7280;font-size:11.5px;margin-top:1px}.dfp-e{padding:22px 14px;text-align:center;color:#6B7280;font-size:13px}
+.dfp-f{display:flex;justify-content:space-between;align-items:center;padding:10px 14px}.dfp-f a{color:#FF5A00;font-weight:700;font-size:12px;text-decoration:none}
+@media(min-width:761px){.dfs{display:none!important}}
+.dfo{margin:14px 0;background:linear-gradient(135deg,#0B1220,#16233F);color:#fff;border-radius:16px;padding:14px;display:flex;gap:12px;align-items:center}.dfo img{background:#fff;border-radius:12px;padding:4px;flex:none}.dfo p{margin:0;flex:1;font-size:13px;line-height:1.5}.dfo button{border:0;background:#FF5A00;color:#fff;font-weight:700;border-radius:11px;padding:10px 16px;font-size:13px;cursor:pointer;white-space:nowrap}
 </style>
 <script>
 (function(){
@@ -41,7 +50,7 @@ var dp=null;
 window.DFPWA={isIOS:isIOS,standalone:standalone,installed:function(){return standalone()||ls('dfInstalled')==='1'},canPrompt:function(){return !!dp}};
 function open(id){var m=$(id);if(m)m.classList.add('on')}
 document.querySelectorAll('.dfm [data-x]').forEach(function(b){b.addEventListener('click',function(){b.closest('.dfm').classList.remove('on')})});
-function setInstalledUI(){document.querySelectorAll('#dfapp [data-l]').forEach(function(el){el.textContent='App Installed ✓'});var f=$('dfapp');if(f)f.classList.add('done');var p=$('dfi');if(p)p.classList.remove('on');document.dispatchEvent(new Event('dfpwa:installed'))}
+function setInstalledUI(){document.querySelectorAll('#dfapp [data-l]').forEach(function(el){el.textContent='App Installed ✓'});var f=$('dfapp');if(f)f.classList.add('done');var p=$('dfi');if(p)p.classList.remove('on');var q=$('dfs');if(q)q.classList.remove('on');document.querySelectorAll('.df-hide-inst').forEach(function(e){e.style.display='none'});document.querySelectorAll('.df-show-inst').forEach(function(e){e.style.display=''});document.dispatchEvent(new Event('dfpwa:installed'))}
 function install(kind){
   if(standalone()||ls('dfInstalled')==='1'){setInstalledUI();return}
   if(dp){var e=dp;dp=null;e.prompt();e.userChoice.then(function(c){if(c&&c.outcome==='accepted'){ls('dfInstalled','1');setInstalledUI()}})['catch'](function(){});return}
@@ -58,10 +67,11 @@ var shown=false;
 function schedule(){
   if(shown||standalone()||ls('dfInstalled')==='1'||ss('dfiHide'))return;var t=+ls('dfiNo')||0;if(t&&Date.now()-t<7*864e5)return;
   var n=(+ss('dfPv')||0);var delay=n>=2?3000:15000;
-  setTimeout(function(){if(shown||ss('dfiHide')||(!dp&&!isIOS))return;shown=true;$('dfi').classList.add('on')},delay)}
+  setTimeout(function(){if(shown||ss('dfiHide')||(!dp&&!isIOS))return;shown=true;(innerWidth<=760?$('dfs'):$('dfi')).classList.add('on')},innerWidth<=760?Math.min(delay,8000):delay)}
 ss('dfPv',String((+ss('dfPv')||0)+1));
 if(isIOS)schedule();
-function hide(){$('dfi').classList.remove('on');ss('dfiHide','1')}
+function hide(){$('dfi').classList.remove('on');$('dfs').classList.remove('on');ss('dfiHide','1')}
+$('dfs-x').onclick=hide;$('dfs-go').onclick=function(){hide();install('auto')};
 $('dfi-no').onclick=function(){ls('dfiNo',String(Date.now()));hide()};$('dfi-no0').onclick=$('dfi-no').onclick;
 $('dfi-go').onclick=function(){hide();install('auto')};
 
@@ -74,7 +84,7 @@ window.DFPWA.pushOff=function(){return navigator.serviceWorker.ready.then(functi
 if(pSup()&&Notification.permission==='granted'&&!ss('dfPs')){ss('dfPs','1');navigator.serviceWorker.ready.then(function(reg){return reg.pushManager.getSubscription()}).then(function(s){if(s)pSend(s)})['catch'](function(){})}
 function nSchedule(){
   if(!pSup()||Notification.permission!=='default'||ss('dfnHide'))return;if(!(standalone()||ls('dfInstalled')==='1'))return;var t=+ls('dfnNo')||0;if(t&&Date.now()-t<14*864e5)return;
-  if((+ss('dfPv')||0)<2)return;setTimeout(function(){if(ss('dfnHide')||$('dfi').classList.contains('on'))return;$('dfn').classList.add('on')},6000)}
+  if((+ss('dfPv')||0)<2)return;setTimeout(function(){if(ss('dfnHide')||$('dfi').classList.contains('on')||$('dfs').classList.contains('on'))return;$('dfn').classList.add('on')},6000)}
 nSchedule();
 function nHide(){$('dfn').classList.remove('on');ss('dfnHide','1')}
 $('dfn-no').onclick=function(){ls('dfnNo',String(Date.now()));nHide()};$('dfn-no0').onclick=$('dfn-no').onclick;
@@ -86,5 +96,19 @@ if('serviceWorker' in navigator){addEventListener('load',function(){navigator.se
   reg.addEventListener('updatefound',function(){var w=reg.installing;if(!w)return;w.addEventListener('statechange',function(){if(w.state==='installed')ready(w)})});
   setInterval(function(){reg.update()['catch'](function(){})},3600000);
 })['catch'](function(){});var r=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(r)return;r=true;location.reload()})})}
+// notification bell
+(function(){var b=$('dfb'),pn=$('dfbp'),n=$('dfbn');if(!b||!pn)return;var IC={offers:'🔥',coupons:'🎟',membership:'⭐',delivery:'🚚',support:'💬',orders:'📦'};
+function esc(t){return String(t==null?'':t).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function pushable(){return 'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window&&Notification.permission==='default'}
+function paint(j){var u=j.unread||0;n.textContent=u>9?'9+':u;n.style.display=u?'block':'none';
+ var h=!j.auth?'<div class="dfp-e">নোটিফিকেশন দেখতে <a href="/account" style="color:#FF5A00;font-weight:700">লগইন করুন</a>।</div>':(j.items.length?j.items.map(function(i){return '<a class="dfp-i '+(i.read?'':'un')+'" data-id="'+i.id+'" href="'+esc(i.url)+'"><i>'+(IC[i.cat]||'📦')+'</i><div><b>'+esc(i.title)+'</b>'+esc(i.body)+'<small>'+esc(i.ago)+'</small></div></a>'}).join(''):'<div class="dfp-e">কোনো নোটিফিকেশন নেই।</div>');
+ $('dfp-l').innerHTML=h;$('dfp-all').style.display=(j.auth&&u)?'':'none';$('dfp-en').style.display=pushable()?'':'none'}
+function load(){fetch('/push/bell',{credentials:'same-origin',headers:{Accept:'application/json'}}).then(function(r){return r.json()}).then(paint)['catch'](function(){})}
+b.addEventListener('click',function(e){e.stopPropagation();pn.classList.toggle('on');if(pn.classList.contains('on'))load()});
+document.addEventListener('click',function(e){if(!pn.contains(e.target))pn.classList.remove('on')});
+$('dfp-l').addEventListener('click',function(e){var a=e.target.closest('.dfp-i.un');if(a&&navigator.sendBeacon)navigator.sendBeacon('/push/read',new Blob([JSON.stringify({id:a.dataset.id})],{type:'application/json'}))});
+$('dfp-all').onclick=function(){fetch('/push/read',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:'all'}),credentials:'same-origin'}).then(load)};
+$('dfp-en').onclick=function(){window.DFPWA.pushOn().then(function(){load()})};
+setTimeout(load,1200);setInterval(function(){if(!document.hidden)load()},60000);})();
 })();
 </script>

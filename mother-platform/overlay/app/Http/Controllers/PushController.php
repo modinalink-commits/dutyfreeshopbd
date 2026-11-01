@@ -48,6 +48,21 @@ class PushController extends Controller
     return response()->json(['ok' => true]);
   }
 
+  /** Header bell: unread count + the latest notifications. */
+  public function bell(Request $r) {
+    $cid = $this->cid($r);
+    if (!$cid) return response()->json(['auth' => false, 'unread' => 0, 'items' => []])->header('Cache-Control', 'no-store');
+    $rows = DB::table('customer_notifications')->where('customer_id', $cid)->orderByDesc('id')->limit(8)->get()->map(fn($n) => ['id' => $n->id, 'title' => $n->title, 'body' => \Illuminate\Support\Str::limit((string)$n->body, 90), 'url' => $n->url ?: '/account/notifications', 'cat' => $n->category, 'read' => (bool)$n->read_at, 'ago' => \Carbon\Carbon::parse($n->created_at, 'UTC')->diffForHumans()]);
+    return response()->json(['auth' => true, 'unread' => (int)DB::table('customer_notifications')->where('customer_id', $cid)->whereNull('read_at')->count(), 'items' => $rows])->header('Cache-Control', 'no-store');
+  }
+
+  public function remove(Request $r) {
+    $cid = $this->cid($r); if (!$cid) return response()->json(['ok' => false], 401);
+    $q = DB::table('customer_notifications')->where('customer_id', $cid);
+    if ($r->input('id') === 'read') $q->whereNotNull('read_at'); else $q->where('id', (int)$r->input('id'));
+    $q->delete(); return response()->json(['ok' => true]);
+  }
+
   public function prefs(Request $r) {
     $cid = $this->cid($r); if (!$cid) return response()->json(['ok' => false], 401);
     $d = []; foreach (array_keys(Push::CATEGORIES) as $c) $d[$c] = $r->boolean($c);

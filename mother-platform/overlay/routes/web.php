@@ -206,6 +206,8 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestF
   Route::get('/push/key', [\App\Http\Controllers\PushController::class,'key']);
   Route::post('/push/subscribe', [\App\Http\Controllers\PushController::class,'subscribe']);
   Route::post('/push/unsubscribe', [\App\Http\Controllers\PushController::class,'unsubscribe']);
+  Route::get('/push/bell', [\App\Http\Controllers\PushController::class,'bell']);
+  Route::post('/push/delete', [\App\Http\Controllers\PushController::class,'remove']);
   Route::get('/push/status', [\App\Http\Controllers\PushController::class,'status']);
   Route::post('/push/clicked', [\App\Http\Controllers\PushController::class,'clicked']);
   Route::post('/push/read', [\App\Http\Controllers\PushController::class,'read']);
