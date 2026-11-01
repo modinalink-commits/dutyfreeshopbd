@@ -60,7 +60,7 @@ class AccountController extends StoreController {
   /* ---------------- sign in / register ---------------- */
   public function authForm(Request $r) {
     if ($this->me($r)) return redirect('/account');
-    return $this->view('store.account_auth', ['title'=>'Login / Register | DutyFree Shop BD', 'mode'=>$r->query('mode') === 'register' ? 'register' : 'login', 'smsOn'=>Sms::configured(), 'fbOn'=>\App\Support\CustAuth::fbOn(), 'gOn'=>\App\Support\CustAuth::googleOn(), 'fbErr'=>$r->query('fb') === 'err']);
+    return $this->view('store.account_auth', ['title'=>'Login / Register | DutyFree Shop BD', 'mode'=>$r->query('mode') === 'register' ? 'register' : 'login', 'smsOn'=>Sms::configured(), 'fbOn'=>\App\Support\CustAuth::fbOn(), 'gOn'=>\App\Support\CustAuth::googleOn(), 'fbErr'=>$r->query('fb') === 'off' ? 'off' : ($r->query('fb') === 'err')]);
   }
   public function otpSend(Request $r) {
     \App\Support\PhoneRule::trim($r);
@@ -151,7 +151,7 @@ class AccountController extends StoreController {
   public function fbCallback(Request $r) { return $this->oauthCallback($r, 'facebook'); }
   public function googleCallback(Request $r) { return $this->oauthCallback($r, 'google'); }
   private function oauthStart(Request $r, string $prov) {
-    if (!\App\Support\CustAuth::on($prov)) return redirect('/account/login?fb=err');
+    if (!\App\Support\CustAuth::on($prov)) return redirect('/account/login?fb=off');
     $mode = $r->query('mode') === 'connect' ? 'connect' : 'login'; $c = $mode === 'connect' ? $this->me($r) : null; if ($mode === 'connect' && !$c) return redirect('/account/login');
     $st = bin2hex(random_bytes(20)); $next = (string)$r->query('next'); $next = ($next !== '' && $next[0] === '/' && !str_starts_with($next, '//')) ? $next : '';
     Cache::put('oa.st.' . $st, ['prov'=>$prov, 'mode'=>$mode, 'cid'=>$c->id ?? null, 'next'=>$next], 600);
