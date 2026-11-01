@@ -108,7 +108,7 @@ chown -R www-data:www-data /srv/shared/storage bootstrap/cache /srv/shared/uploa
     REQ=$(cat /srv/deploy/request); rm -f /srv/deploy/request
     if echo "$REQ" | grep -Eq '^([0-9a-f]{40}( allow-breaking)?|rollback)$'; then
       SHA=${REQ%% *}
-      [ "$SHA" != rollback ] && wget -qO /srv/deploy/deploy.new "https://raw.githubusercontent.com/modinalink-commits/dutyfreeshopbd/$SHA/mother-platform/deploy.sh" && mv /srv/deploy/deploy.new /srv/deploy/deploy.sh
+      [ "$SHA" != rollback ] && wget -q -T 20 -t 3 -O /srv/deploy/deploy.new "https://raw.githubusercontent.com/modinalink-commits/dutyfreeshopbd/$SHA/mother-platform/deploy.sh" && mv /srv/deploy/deploy.new /srv/deploy/deploy.sh
       [ -f /srv/deploy/deploy.sh ] && sh /srv/deploy/deploy.sh $REQ > /srv/deploy/last.log 2>&1
       chmod 666 /srv/deploy/last.log /srv/deploy/status 2>/dev/null
     fi

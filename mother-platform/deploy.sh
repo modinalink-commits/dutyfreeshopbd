@@ -58,11 +58,11 @@ echo "$ID" > "$REL/RELEASE"
 
 log "2/9 download new code"; stg Downloading 12
 cd "$REL" || fail "cd"
-export R; wget -qO manifest.txt.new "$R/manifest.txt" || fail "manifest download"
+export R; wget -q -T 30 -t 3 -O manifest.txt.new "$R/manifest.txt" || fail "manifest download"
 sed -i '/^$/d' manifest.txt.new; N=$(wc -l < manifest.txt.new)
 rm -f "$D/dl.fail"; i=0
 while read -r f; do
-  ( mkdir -p "$(dirname "$f")"; wget -q -O "$f" "$R/overlay/$f" || echo "$f" >> "$D/dl.fail" ) &
+  ( mkdir -p "$(dirname "$f")"; { wget -q -T 30 -O "$f" "$R/overlay/$f" || { sleep 2; wget -q -T 30 -O "$f" "$R/overlay/$f"; } || { sleep 4; wget -q -T 30 -O "$f" "$R/overlay/$f"; }; } || echo "$f" >> "$D/dl.fail" ) &
   i=$((i+1)); [ $((i % 8)) = 0 ] && wait
 done < manifest.txt.new
 wait
