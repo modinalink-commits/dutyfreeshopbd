@@ -163,4 +163,29 @@ class LegacyProductController extends Controller
     DB::table('settings')->updateOrInsert(['key' => 'legacy_products_result'], ['value' => json_encode($st), 'updated_at' => now(), 'created_at' => now()]);
     return redirect('/admin/legacy-products')->with('ok', 'Imported: ' . json_encode($st));
   }
+
+  /** Copy main product images from the old server into /uploads (batch; call repeatedly until left = 0). */
+  public function images(Request $r) {
+    @set_time_limit(120);
+    $dir = public_path('uploads'); if (!is_dir($dir)) @mkdir($dir, 0775, true);
+    $rows = DB::table('legacy_products as l')->join('products as p', 'p.id', '=', 'l.new_product_id')
+      ->where(fn($q) => $q->whereNull('p.image')->orWhere('p.image', ''))->whereNotNull('l.thumbnail_img')->where('l.thumbnail_img', '!=', '')->where(fn($q) => $q->whereNull('l.action')->orWhere('l.action', '!=', 'imgfail'))
+      ->orderBy('l.old_id')->limit(40)->get(['l.old_id', 'l.thumbnail_img', 'p.id as pid', 'p.name']);
+    $ok = 0; $fail = 0;
+    foreach ($rows as $x) {
+      $ext = strtolower(pathinfo(parse_url($x->thumbnail_img, PHP_URL_PATH) ?: '', PATHINFO_EXTENSION)) ?: 'jpg'; if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif'])) $ext = 'jpg';
+      $name = 'legacy-' . $x->old_id . '.' . $ext; $abs = $dir . '/' . $name;
+      try {
+        $res = \Illuminate\Support\Facades\Http::timeout(15)->get('https://dutyfreebd.com/' . ltrim($x->thumbnail_img, '/'));
+        $b = $res->successful() ? $res->body() : '';
+        if (strlen($b) > 500 && @getimagesizefromstring($b)) { file_put_contents($abs, $b);
+          DB::table('products')->where('id', $x->pid)->update(['image' => '/uploads/' . $name, 'image_alt' => $x->name]);
+          DB::table('product_images')->where('product_id', $x->pid)->delete();
+          DB::table('product_images')->insert(['product_id' => $x->pid, 'path' => '/uploads/' . $name, 'position' => 0, 'created_at' => now(), 'updated_at' => now()]); $ok++; continue; }
+      } catch (\Throwable $e) {}
+      DB::table('legacy_products')->where('old_id', $x->old_id)->update(['action' => 'imgfail']); $fail++;
+    }
+    $left = DB::table('legacy_products as l')->join('products as p', 'p.id', '=', 'l.new_product_id')->where(fn($q) => $q->whereNull('p.image')->orWhere('p.image', ''))->whereNotNull('l.thumbnail_img')->where('l.thumbnail_img', '!=', '')->where(fn($q) => $q->whereNull('l.action')->orWhere('l.action', '!=', 'imgfail'))->count();
+    return response()->json(['ok' => $ok, 'fail' => $fail, 'left' => $left, 'failed_total' => DB::table('legacy_products')->where('action', 'imgfail')->count()]);
+  }
 }
