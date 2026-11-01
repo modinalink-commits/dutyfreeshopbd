@@ -6,7 +6,7 @@
 @if(session('ok'))<div class="card" style="color:#166534">{{ session('ok') }}</div>@endif
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:12px">
 @foreach([['Total pages',$kpi['total']],['Published',$kpi['pub']],['Draft',$kpi['draft']],['Needs SEO work',$kpi['low']]] as [$l,$v])<div class="card" style="margin:0;padding:10px 12px"><span style="font-size:11.5px;color:#6B7280;display:block">{{ $l }}</span><b style="font-size:20px">{{ $v }}</b></div>@endforeach</div>
-<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">@foreach($tabs as $k=>$l)<a href="?tab={{ $k }}" class="g" style="text-decoration:none;{{ $tab===$k ? 'background:#FF5A00;color:#fff;border-color:#FF5A00' : '' }}">{{ $l }}</a>@endforeach</div>
+<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">@foreach($tabs as $k=>$l)<a href="?tab={{ $k }}" class="g" style="text-decoration:none;{{ $tab===$k ? 'background:#FF5A00;color:#fff;border-color:#FF5A00' : '' }}">{{ $l }}</a>@endforeach<a href="/admin/seo/items?type=category" class="g" style="text-decoration:none">Categories SEO</a><a href="/admin/seo/items?type=brand" class="g" style="text-decoration:none">Brands SEO</a><a href="/admin/seo/items?type=product" class="g" style="text-decoration:none">Products SEO</a><a href="/admin/seo/alt" class="g" style="text-decoration:none">Image ALT</a></div>
 
 @if($tab==='pages'||$tab==='audit')
 <div class="card"><form method="get" style="display:flex;flex-wrap:wrap;gap:8px;align-items:end"><input type="hidden" name="tab" value="{{ $tab }}">

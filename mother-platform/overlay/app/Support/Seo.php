@@ -13,10 +13,13 @@ class Seo {
     $where = trim(($cat ?: '').($sub && $sub !== $cat ? ' / '.$sub : ''), ' /');
     $desc = $name.' অরিজিনাল ইমপোর্টেড, ডিউটি ফ্রি দামে মাত্র ৳'.$price.'।'.($where ? ' '.$where.'।' : '').' ক্যাশ অন ডেলিভারি, সারা বাংলাদেশে হোম ডেলিভারি। এখনই অর্ডার করুন।';
     if (mb_strlen($desc) > 158) $desc = mb_substr($desc, 0, 155).'…';
-    $kw = [$name, $name.' দাম', $name.' price in bangladesh', $name.' original', $cat, $sub, $brand, $cat ? $cat.' price in bangladesh' : null, 'duty free', 'ডিউটি ফ্রি', 'original imported', 'dutyfree shop bd', 'cash on delivery'];
+    $kw = [$name, $name.' দাম', $name.' এর দাম', $name.' দাম বাংলাদেশ', $name.' price in bangladesh', $name.' price bd', $name.' কিনুন', 'buy '.$name.' online bd', $name.' original', $name.' অরিজিনাল', $name.' duty free', $name.' dutyfree shop bd',
+      $brand ? $brand.' '.$name : null, $brand ? $brand.' দাম' : null, $brand ? $brand.' price in bangladesh' : null, $brand ? $brand.' original' : null,
+      $cat, $sub, $cat ? $cat.' price in bangladesh' : null, $cat ? $cat.' দাম' : null, $cat ? 'buy '.$cat.' online bangladesh' : null, $sub ? $sub.' price in bangladesh' : null,
+      'duty free', 'ডিউটি ফ্রি', 'duty free price in bangladesh', 'original imported', 'dutyfree shop bd', 'dutyfreeshopbd', 'cash on delivery', 'ক্যাশ অন ডেলিভারি', 'home delivery bangladesh'];
     $out = []; $len = 0;
-    foreach ($kw as $k) { $k = trim((string)$k); if ($k === '' || in_array(mb_strtolower($k), array_map('mb_strtolower', $out), true)) continue; if ($len + mb_strlen($k) + 2 > 480) break; $out[] = $k; $len += mb_strlen($k) + 2; }
-    return ['meta_title'=>$title, 'meta_description'=>$desc, 'meta_keywords'=>implode(', ', $out)];
+    foreach ($kw as $k) { $k = trim((string)$k); if ($k === '' || in_array(mb_strtolower($k), array_map('mb_strtolower', $out), true)) continue; if ($len + mb_strlen($k) + 2 > 490) break; $out[] = $k; $len += mb_strlen($k) + 2; }
+    return ['focus_keyword'=>mb_substr($name.' দাম', 0, 120), 'meta_title'=>$title, 'meta_description'=>$desc, 'meta_keywords'=>implode(', ', $out)];
   }
 
   /** Fill every product. $overwrite=false keeps anything an editor already wrote. */

@@ -168,6 +168,9 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
     Route::get('/', [$S,'index']); Route::get('/export', [$S,'export']); Route::get('/page', [$S,'edit']); Route::post('/page', [$S,'save']);
     Route::get('/page/{id}', [$S,'edit'])->whereNumber('id'); Route::post('/page/{id}', [$S,'save'])->whereNumber('id');
     Route::post('/page/{id}/duplicate', [$S,'duplicate'])->whereNumber('id'); Route::post('/page/{id}/delete', [$S,'destroy'])->whereNumber('id'); Route::post('/page/{id}/restore/{rid}', [$S,'restore'])->whereNumber(['id','rid']);
+    $I = \App\Http\Controllers\SeoItemsController::class;
+    Route::get('/items', [$I,'index']); Route::post('/items/{t}/{id}', [$I,'save'])->whereNumber('id'); Route::post('/items/{t}/autofill', [$I,'autofill']); Route::get('/items/{t}/export', [$I,'export']);
+    Route::get('/alt', [$I,'alt']); Route::post('/alt/fill', [$I,'altFill']); Route::post('/alt/{id}', [$I,'altSave'])->whereNumber('id');
     Route::post('/bulk', [$S,'bulk']); Route::post('/redirect', [$S,'redirectSave']); Route::post('/redirect/{id}', [$S,'redirectAct'])->whereNumber('id'); Route::post('/settings', [$S,'settings']); Route::post('/sitemap', [$S,'sitemap']);
   });
   Route::get('/referral', [\App\Http\Controllers\ReferralController::class,'index']); Route::post('/referral/settings', [\App\Http\Controllers\ReferralController::class,'save']);
@@ -285,6 +288,7 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestF
   Route::get('/pwa-sw', [\App\Http\Controllers\PwaController::class,'sw']);
   Route::get('/offline', [\App\Http\Controllers\PwaController::class,'offline']);
   Route::get('/ref/{code}', [\App\Http\Controllers\StoreController::class,'referral'])->where('code','[A-Za-z0-9]+');
+  Route::get('/robots.txt', function () { $t = \App\Support\SeoMgr::robotsText(); if (!preg_match('/^\s*sitemap:/im', $t)) $t .= "\n\nSitemap: " . url('/sitemap.xml'); return response($t . "\n", 200, ['Content-Type' => 'text/plain; charset=utf-8', 'Cache-Control' => 'public, max-age=300']); });
   Route::get('/sitemap.xml', [\App\Http\Controllers\StoreController::class,'sitemap']);
   Route::post('/ai-chat', [\App\Http\Controllers\AiChatController::class,'ask'])->middleware('throttle:120,1');
   Route::get('/search-suggest', [\App\Http\Controllers\StoreController::class,'suggest'])->middleware('throttle:600,1');
