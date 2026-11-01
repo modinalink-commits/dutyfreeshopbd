@@ -25,6 +25,7 @@ class MotherPushWorker extends Command
   public function handle(): int {
     try { $this->orders(); } catch (\Throwable $e) { $this->error('orders: ' . $e->getMessage()); }
     try { $this->chat(); } catch (\Throwable $e) { $this->error('chat: ' . $e->getMessage()); }
+    try { \App\Support\Deployer::tick(); } catch (\Throwable $e) { $this->error('deploy: ' . $e->getMessage()); }
     try { $this->campaigns(); } catch (\Throwable $e) { $this->error('campaigns: ' . $e->getMessage()); }
     return 0;
   }

@@ -18,6 +18,12 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::get('/deploy', [\App\Http\Controllers\DeployController::class,'index']);
   Route::get('/deploy/status', [\App\Http\Controllers\DeployController::class,'status']);
   Route::post('/deploy', [\App\Http\Controllers\DeployController::class,'run']);
+  Route::post('/deploy/refresh', [\App\Http\Controllers\DeployController::class,'refresh']);
+  Route::post('/deploy/cancel', [\App\Http\Controllers\DeployController::class,'cancel']);
+  Route::post('/deploy/settings', [\App\Http\Controllers\DeployController::class,'settings']);
+  Route::post('/deploy/{id}/retry', [\App\Http\Controllers\DeployController::class,'retry'])->whereNumber('id');
+  Route::post('/deploy/{id}/edit', [\App\Http\Controllers\DeployController::class,'edit'])->whereNumber('id');
+  Route::get('/deploy/{id}/log', [\App\Http\Controllers\DeployController::class,'log'])->whereNumber('id');
   Route::get('/push', [\App\Http\Controllers\PushAdminController::class,'index']);
   Route::post('/push', [\App\Http\Controllers\PushAdminController::class,'store']);
   Route::get('/push/count', [\App\Http\Controllers\PushAdminController::class,'count']);
@@ -204,6 +210,7 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestF
   Route::post('/push/clicked', [\App\Http\Controllers\PushController::class,'clicked']);
   Route::post('/push/read', [\App\Http\Controllers\PushController::class,'read']);
   Route::post('/push/prefs', [\App\Http\Controllers\PushController::class,'prefs']);
+  Route::get('/_health', [\App\Http\Controllers\DeployController::class,'health']);
   Route::get('/manifest.webmanifest', [\App\Http\Controllers\PwaController::class,'manifest']);
   Route::get('/pwa-sw', [\App\Http\Controllers\PwaController::class,'sw']);
   Route::get('/offline', [\App\Http\Controllers\PwaController::class,'offline']);

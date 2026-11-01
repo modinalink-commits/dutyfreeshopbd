@@ -104,6 +104,8 @@ class AdminController extends Controller {
     $hr = $safe(fn() => DB::table('orders')->whereIn('status',['Cancel','Returned'])->select('phone', DB::raw('count(*) c'))->groupBy('phone')->havingRaw('count(*) >= 3')->get()->count(), 0);
     if ($hr) $alerts[] = ['WARNING', "$hr customers with 3 or more returns/cancels", 'Verify by call or take advance payment', '/admin/m/customers'];
     if ($failed ?? 0) $alerts[] = ['WARNING', $failed.' failed background jobs (last hour)', 'Check API sync and courier calls', '/admin'];
+    $fd = $safe(fn() => \Illuminate\Support\Facades\Schema::hasTable('deployments') ? DB::table('deployments')->whereIn('status',['Failed','Rolled Back'])->where('finished_at','>=',now()->subDay())->latest('id')->first() : null, null);
+    if ($fd) $alerts[] = ['WARNING', 'Deployment '.strtolower($fd->status).': '.\Illuminate\Support\Str::limit((string)$fd->subject, 50), 'The previous version is still live', '/admin/deploy'];
     $bills = DB::table('bill_statements')->where('status','unpaid')->count();
     if ($bills) $alerts[] = ['INFO', "$bills unpaid bills", 'See Accounts, Bill statements', '/admin/m/bills'];
     $wd = DB::table('withdraw_requests')->where('status','pending')->count();
