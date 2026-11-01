@@ -47,7 +47,7 @@ textarea,.ti{width:100%;border:1.5px solid var(--bd);border-radius:8px;padding:8
 
 <div class="box tp" id="tp-pad">
 <div class="stt"><span id="cst">Ready</span> · <span id="tmr">00:00:00</span></div>
-<div class="num"><input id="num" inputmode="tel" autocomplete="off" placeholder="Enter Phone Number" value="{{ $n }}"><button type="button" id="bk" title="Backspace">⌫</button></div>
+<div id="ctxL" style="display:none;margin:0 0 6px;padding:6px 10px;border-radius:8px;background:#EFF6FF;color:#1E3A8A;font-size:12.5px;font-weight:600"></div><div class="num"><input id="num" inputmode="tel" autocomplete="off" placeholder="Enter Phone Number" value="{{ $n }}"><button type="button" id="bk" title="Backspace">⌫</button></div>
 <div id="found" class="fnd"></div>
 <div class="keys">@foreach([['1',''],['2','ABC'],['3','DEF'],['4','GHI'],['5','JKL'],['6','MNO'],['7','PQRS'],['8','TUV'],['9','WXYZ'],['*',''],['0','+'],['#','']] as $k)<button type="button" data-k="{{ $k[0] }}">{{ $k[0] }}<small>{{ $k[1] ?: ' ' }}</small></button>@endforeach</div>
 <button type="button" class="go call" id="bGo">📞 Call</button>
@@ -98,7 +98,9 @@ textarea,.ti{width:100%;border:1.5px solid var(--bd);border-radius:8px;padding:8
 (function(){
 var $=function(i){return document.getElementById(i)},T=document.querySelector('meta[name=csrf]').content,emb=!!document.querySelector('.ph.emb');
 var ua=null,cfg=null,ses=null,logId=null,connAt=0,tick=null,dir='out',phase='idle',muted=false,held=false,cur='',info=null,ring=null,inCtx=null,sum=null,lastBusy=null,okCount=0;
-var ch=window.BroadcastChannel?new BroadcastChannel('dfphone'):null;
+var ch=window.BroadcastChannel?new BroadcastChannel('dfphone'):null,pend=null;
+function ctxShow(o,nm){var e=$('ctxL');if(!e)return;var t=[o,nm].filter(Boolean).join(' · ');e.textContent=t?'📄 '+t:'';e.style.display=t?'block':'none'}
+function autoDial(n,d){n=clean(n);ctxShow(d&&d.o,d&&d.cn);if(!n)return;if(inCall()){tab('act');err('An active call is currently in progress. End or hold the current call first.');return}$('num').value=n;lastN='';found();if(reg()){dialNum(n)}else{pend=n;tab('act');err('Connecting to PBX… the call starts automatically.')}}
 function esc(t){return String(t==null?'':t).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function post(u,o){var f=new FormData();f.append('_token',T);for(var k in o||{})if(o[k]!=null)f.append(k,o[k]);return fetch(u,{method:'POST',body:f,headers:{Accept:'application/json'}}).then(function(r){return r.json().then(function(j){j._s=r.status;return j})})}
 function getj(u){return fetch(u,{headers:{Accept:'application/json'}}).then(function(r){return r.json()})}
@@ -147,7 +149,7 @@ function look(n){return getj('/admin/call-center/lookup?phone='+encodeURICompone
 function connect(){if(ua)return;badge('Connecting','b-wait');
  getj('/admin/call-center/creds').then(function(c){if(!c.ok){badge('Disconnected','b-bad');err(c.error);return}cfg=c;
   try{var sock=new JsSIP.WebSocketInterface(c.wss);ua=new JsSIP.UA({sockets:[sock],uri:'sip:'+c.user+'@'+c.domain,password:c.pw,authorization_user:c.auth,display_name:c.name,register:true,session_timers:false})}catch(e){console.warn('dialer',e);badge('Registration Failed','b-bad');err('Registration Failed. Please contact admin.');ua=null;return}
-  ua.on('registered',function(){badge('Connected','b-ok');err('');if(!inCall())setPhase('idle')});
+  ua.on('registered',function(){badge('Connected','b-ok');err('');if(!inCall())setPhase('idle');if(pend){var px=pend;pend=null;setTimeout(function(){dialNum(px)},150)}});
   ua.on('unregistered',function(){badge('Disconnected','b-bad')});
   ua.on('registrationFailed',function(e){console.warn('dialer reg fail',e&&e.cause);badge('Registration Failed','b-bad');err('Registration Failed. Please contact admin.')});
   ua.on('disconnected',function(){if(ua&&!ua.isRegistered()){badge('Disconnected','b-bad');err('PBX connection required')}});
@@ -275,18 +277,19 @@ function detail(id){getj('/admin/call-center/call/'+id).then(function(d){detPhon
  $('dRec').innerHTML=d.rec_url?'<audio controls preload="none" src="'+esc(d.rec_url)+'" style="width:100%"></audio>':'<div class="mut">'+(d.rec==='processing'||d.rec==='recording'?'Recording Processing':'No Recording')+'</div>';
  $('ovDet').classList.add('on')})}
 $('dX').onclick=function(){$('ovDet').classList.remove('on')};$('dCall').onclick=function(){$('ovDet').classList.remove('on');dialNum(detPhone)};
-function dialNum(n){if(inCall()){tab('act');return}$('num').value=n;lastN='';found();call(n)}
+function dialNum(n){if(inCall()){tab('act');err('Call already in progress');return}$('num').value=n;lastN='';found();call(n)}
 document.addEventListener('click',function(e){var b=e.target.closest('.cb');if(b){e.stopPropagation();dialNum(b.dataset.n);return}var li=e.target.closest('#rl .li');if(li)detail(li.dataset.id)});
 $('bRc').onclick=reconnect;
 /* ---------- window / PBX messages ---------- */
 if(emb){var P=function(a){parent.postMessage({dfdial:a},location.origin)};$('pX').onclick=function(){P('close')};$('pMin').onclick=function(){P('min')};$('pPop').onclick=function(){P('pop')}}
-if(ch)ch.onmessage=function(m){var d=m.data||{};if(d.type==='ping')ch.postMessage({type:'here'});if(d.type==='dial'){$('num').value=clean(d.n);lastN='';found();tab('pad');window.focus();$('num').focus()}if(d.type==='call'){$('num').value=clean(d.n);window.focus();dialNum(d.n)}if(d.type==='disconnect')disconnect();if(d.type==='connect')connect();if(d.type==='getstatus')ch.postMessage({type:'status',text:$('bdg').textContent,cls:$('bdg').className.replace('badge ','')})};
+if(ch)ch.onmessage=function(m){var d=m.data||{};if(d.type==='ping')ch.postMessage({type:'here'});if(d.type==='dial'){$('num').value=clean(d.n);lastN='';found();tab('pad');window.focus();$('num').focus()}if(d.type==='call'){window.focus();autoDial(d.n,d)}if(d.type==='disconnect')disconnect();if(d.type==='connect')connect();if(d.type==='getstatus')ch.postMessage({type:'status',text:$('bdg').textContent,cls:$('bdg').className.replace('badge ','')})};
 window.addEventListener('beforeunload',function(e){if(inCall()){e.preventDefault();e.returnValue=''}});
 if(window.Notification&&Notification.permission==='default')try{Notification.requestPermission()}catch(e){}
 function chk(){if(inCall()||!cfg)return;getj('/admin/call-center/creds').then(function(c){if(c&&c.ok&&(c.user!==cfg.user||c.pw!==cfg.pw||c.domain!==cfg.domain||c.wss!==cfg.wss)){reconnect()}}).catch(function(){})}
 document.addEventListener('visibilitychange',function(){if(!document.hidden)chk()});window.addEventListener('focus',chk);setInterval(chk,60000);
 setPhase('idle');ui();
 if($('num').value)found();
+(function(){var q=new URLSearchParams(location.search);if(q.get('auto')==='1'&&q.get('n'))autoDial(q.get('n'),{o:q.get('o'),cn:q.get('cn')})})();
 if($('msg').textContent==='')connect();else badge('Disconnected','b-bad');
 })();
 </script>

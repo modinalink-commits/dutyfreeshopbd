@@ -20,15 +20,15 @@ var ch=window.BroadcastChannel?new BroadcastChannel('dfphone'):null,dock=documen
 function clean(n){return String(n||'').replace(/[^0-9+*#]/g,'')}
 function sv(v){try{localStorage.setItem(ls,v?'1':'0')}catch(e){}}
 function ld(){try{return localStorage.getItem(ls)==='1'}catch(e){return false}}
-function mk(n){if(fr)return;fr=document.createElement('iframe');fr.allow='microphone; autoplay';fr.title='Mother Commerce Dialer';fr.src='/admin/call-center/phone?embed=1'+(n?'&n='+encodeURIComponent(n):'');dock.appendChild(fr)}
-function show(n){mk(n);dock.classList.add('on');document.body.classList.add('dfp-open');sv(1)}
+function mk(n,x){if(fr)return;fr=document.createElement('iframe');fr.allow='microphone; autoplay';fr.title='Mother Commerce Dialer';fr.src='/admin/call-center/phone?embed=1'+(n?'&n='+encodeURIComponent(n):'')+(x&&x.auto?'&auto=1':'')+(x&&x.o?'&o='+encodeURIComponent(x.o):'')+(x&&x.cn?'&cn='+encodeURIComponent(x.cn):'');dock.appendChild(fr)}
+function show(n,x){mk(n,x);dock.classList.add('on');document.body.classList.add('dfp-open');sv(1)}
 function hide(){dock.classList.remove('on');document.body.classList.remove('dfp-open');sv(0)}
 function kill(){hide();if(fr){fr.remove();fr=null}busy=false;edge.classList.remove('busy')}
 if(ch)ch.onmessage=function(m){var d=m.data||{};if(d.type==='here'&&!fr)popHere=true};
-window.dfCall=function(n){n=clean(n);
- if(fr){show();if(ch)ch.postMessage({type:'dial',n:n});return false}
+window.dfCall=function(n,c){n=clean(n);c=c||{};var m={type:'call',n:n,o:c.order||'',cn:c.name||''};
+ if(fr){show();if(ch)ch.postMessage(m);return false}
  popHere=false;if(ch)ch.postMessage({type:'ping'});
- setTimeout(function(){if(popHere&&ch){ch.postMessage({type:'dial',n:n})}else{show(n)}},200);return false};
+ setTimeout(function(){if(popHere&&ch){ch.postMessage(m)}else{show(n,{auto:1,o:c.order,cn:c.name})}},200);return false};
 edge.addEventListener('click',function(){show()});
 window.addEventListener('message',function(e){if(e.origin!==location.origin||!e.data||!e.data.dfdial)return;var a=e.data.dfdial;
  if(a==='min')hide();
