@@ -242,3 +242,4 @@ setInterval(function(){if(cb&&cb.checked&&!document.hidden)refresh()},60000);
 </script>
 @endverbatim
 @endsection
+
