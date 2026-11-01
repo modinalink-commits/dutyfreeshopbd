@@ -30,6 +30,18 @@ class CallCenterController extends Controller {
     try { $pw = Crypt::decryptString($a->password_enc); } catch (\Throwable $e) { return response()->json(['ok'=>false, 'error'=>'Saved extension password could not be read. Ask admin to save it again.']); }
     return response()->json(['ok'=>true, 'wss'=>$b->wss_url, 'user'=>$a->username, 'auth'=>$a->auth_username ?: $a->username, 'pw'=>$pw, 'domain'=>$b->domain, 'name'=>$a->display_name ?: Auth::user()->name, 'prefix'=>$b->dial_prefix, 'stun'=>$b->stun_server, 'ext'=>$a->username, 'rec'=>$this->recOn(), 'staff'=>Auth::user()->name])->header('Cache-Control', 'no-store');
   }
+  /** Used by the Admin-users form: set / change / remove the extension of one user. Returns an error text or null. */
+  public static function setExt(int $uid, ?string $ext, ?string $pw): ?string {
+    $ext = trim((string)$ext); $ex = DB::table('sip_accounts')->where('user_id', $uid)->first();
+    if ($ext === '') return null;
+    if (!preg_match('/^[A-Za-z0-9_.-]{1,40}$/', $ext)) return 'Extension must be letters/numbers only.';
+    if (DB::table('sip_accounts')->where('username', $ext)->whereNotNull('user_id')->where('user_id', '!=', $uid)->exists()) return 'Extension '.$ext.' is already given to another user.';
+    $row = ['username'=>$ext, 'updated_at'=>now()];
+    if ($pw !== null && $pw !== '') $row['password_enc'] = Crypt::encryptString($pw); elseif (!$ex || !$ex->password_enc) return 'Extension password is required.';
+    if ($ex) DB::table('sip_accounts')->where('id', $ex->id)->update($row);
+    else { $b = DB::table('sip_accounts')->whereNull('user_id')->orderBy('id')->first(); DB::table('sip_accounts')->insert($row + ['user_id'=>$uid, 'domain'=>$b->domain ?? '', 'created_at'=>now()]); }
+    return null;
+  }
   /** Admin: one extension per user. */
   public function extensions() {
     $users = DB::table('users')->orderBy('id')->get(['id', 'name', 'email', 'role', 'active']); $rows = DB::table('sip_accounts')->whereNotNull('user_id')->get()->keyBy('user_id');

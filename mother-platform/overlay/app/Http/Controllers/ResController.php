@@ -218,6 +218,7 @@ class ResController extends Controller {
       $why = str_contains($m, 'unique') ? 'this value already exists' : (str_contains($m, 'too long') ? 'text is too long' : (str_contains($m, 'null value') ? 'this field cannot be empty' : 'check the values'));
       return back()->withInput()->withErrors(['db'=>'Could not save'.($lab ? ' — "'.$lab.'": ' : ': ').$why]);
     }
+    if ($slugName==='users' && $r->has('ext_username')) { $er = \App\Http\Controllers\CallCenterController::setExt((int)$id, $r->input('ext_username'), $r->input('ext_password')); if ($er) return redirect('/admin/m/users/'.$id.'/edit')->withErrors(['db'=>'User saved, but extension not saved: '.$er]); }
     return redirect('/admin/m/'.$slugName)->with('ok', 'Saved');
   }
   private function stock($pid, $delta, $source, $ref) {
