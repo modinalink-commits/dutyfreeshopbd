@@ -16,7 +16,7 @@
 .tm{display:flex;gap:4px;font-weight:700;font-size:14px}.tm span.b{background:var(--n);border-radius:4px;padding:3px 7px}
 .fs .tb{margin-left:auto;display:flex;gap:6px}.fs .tb button,.fs .tb a{font-size:11px;font-weight:700;border-radius:20px;padding:4px 12px;border:1px solid #fff;background:transparent;color:#fff}.fs .tb button.on{background:#fff;color:var(--red)}.fs .tb a{border:0;padding:4px 6px}
 .fs .gr{padding:12px}.fs .pc{gap:6px}.fs .pc .bo{background:var(--red)}.fs .pc .ph{height:150px}.fs .pc .pr{font-size:13px}.fs .pc .pr b{color:var(--red);font-weight:700}.fs .pc .pr s{color:var(--mut);text-decoration:line-through;font-size:11px}
-.bar{height:6px;background:#FEE2E2;border-radius:3px}.bar i{display:block;height:6px;background:var(--red);border-radius:3px}.sold{font-size:9px;color:var(--mut);margin-top:2px}.fs .pc .on{border-radius:4px;padding:7px 0}
+.bar{height:6px;background:#FEE2E2;border-radius:3px}.bar i{display:block;height:6px;background:var(--red);border-radius:3px}.sold{font-size:9px;color:var(--mut);margin-top:2px}
 .fs .mtb{display:none}
 .lvh{display:flex;flex-direction:column;gap:6px}.chip{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;background:#DCFCE7;color:#14594A;font-size:11px;font-weight:700;letter-spacing:.06em;border-radius:20px;padding:4px 12px}.dot{width:7px;height:7px;border-radius:50%;background:#16A34A;display:inline-block}
 .lvh h2{font-size:22px;font-weight:700;color:var(--n)}.lvh .su{font-size:13px;color:var(--mut)}
@@ -37,7 +37,7 @@ body .w [data-cr]{--pv:6;--g:10px;display:flex;gap:var(--g);padding:0;overflow-x
   .sec-fs{padding:8px 8px 0!important}.fs{border-radius:10px}.fs .hd2{padding:7px 8px;gap:6px}.fs .hd2 b.t{font-size:12px}.fs .hd2 .e,.fs .tb button{display:none}.fs .tb{gap:0}.fs .tb a{font-size:9px;padding:0}
   .tm{gap:2px;font-size:10px}.tm span.b{border-radius:3px;padding:2px 4px}
   .fs .mtb{display:flex;gap:6px;padding:6px 6px 0}.fs .mtb button{font-size:9px;font-weight:700;border-radius:20px;padding:3px 10px;border:1px solid var(--red);background:#fff;color:var(--red)}.fs .mtb button.on{background:var(--red);color:#fff}
-  .fs .gr{padding:6px;gap:5px}.fs .pc{border-radius:8px;padding:3px;gap:3px}.fs .pc:nth-child(n+4){display:none}.fs .pc .bo{left:4px;top:4px;font-size:8px;padding:1px 5px}.fs .pc .bo i{display:none}.fs .pc .ph{height:80px}.fs .pc .nm{font-size:9px;height:22px}.fs .pc .pr{font-size:9.5px}.fs .pc .pr s,.fs .pc .pr br,.fs .pc .sold,.fs .pc .on{display:none}.bar,.bar i{height:4px}
+  .fs .gr{padding:6px;gap:5px}.fs .pc{border-radius:8px;padding:3px;gap:3px}.fs .pc:nth-child(n+4){display:none}.fs .pc .bo{left:4px;top:4px;font-size:8px;padding:1px 5px}.fs .pc .bo i{display:none}.fs .pc .ph{height:80px}.fs .pc .nm{font-size:9px;height:22px}.fs .pc .pr{font-size:9.5px}.fs .pc .pr s,.fs .pc .pr br,.fs .pc .sold{display:none}.bar,.bar i{height:4px}
   .sec-lv{padding:10px 8px 0!important}.chip{font-size:9px;padding:3px 9px;gap:5px;letter-spacing:0}.chip .dot{width:6px;height:6px}.lvh{gap:0}.lvh h2{font-size:14px;margin:4px 0 6px}.lvh .su{display:none}
   .lg2{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}.lo:nth-child(n+4){display:none}.lo{gap:0}.lo .tg{font-size:8px;padding:2px 6px;margin-bottom:3px}.lo .tg .dot{display:none}.lo .bx{border-radius:8px;padding:3px;gap:3px}.lo .im{height:56px;border-radius:6px}.lo .wh{font-size:8px}.lo .nm{font-size:9px;line-height:1.2;height:22px}.lo .rw b{font-size:10px}.lo .rw span,.lo .dl{display:none}
   .sec-ct{padding:0 8px!important}.cts{gap:0}.cts h2{font-size:13px;margin:10px 0 6px}.ctl{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}.ct{width:auto;height:auto;border-radius:8px;padding:6px 2px;gap:4px}.ct .ci{width:36px;height:36px;background:#14261F}.ct .cn{font-size:8px}.ct .cn .d{display:none}.ct .cn .m{display:inline}
@@ -91,7 +91,7 @@ body .w [data-cr]{--pv:6;--g:10px;display:flex;gap:var(--g);padding:0;overflow-x
 <div class="pc"><span class="bo">{{ $off }}%<i> OFF</i></span><a class="ph" href="{{ $u }}" style="background:#fff"><img src="{{ $q->image ?: '/icon.png' }}" alt="{{ $q->name }}" width="150" height="150" loading="lazy" decoding="async" draggable="false"></a>
 <a class="nm" href="{{ $u }}">{{ $q->name }}</a><div class="pr"><b>{{ number_format($q->price) }} TK</b> <s>{{ number_format($q->compare_price) }} TK</s></div>
 <div style="padding:0 2px"><div class="bar"><i style="width:{{ $w }}%"></i></div><div class="sold">{{ $q->sold > 0 ? $q->sold.' sold' : ((int)$q->stock > 0 ? (int)$q->stock.' in stock' : 'Limited stock') }}</div></div>
-<a class="on" href="/checkout?add={{ $q->id }}&amp;p={{ (float)$q->price }}" rel="nofollow">ORDER NOW</a></div>
+<a class="on" href="/checkout?add={{ $q->id }}&amp;p={{ (float)$q->price }}" rel="nofollow"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 2h4l2.7 12.4a2 2 0 0 0 2 1.6h8.7a2 2 0 0 0 2-1.6L22 7H6"/><circle cx="10" cy="20.5" r="1.4" fill="#fff"/><circle cx="18" cy="20.5" r="1.4" fill="#fff"/></svg><i>ORDER NOW</i></a></div>
 @endforeach</div>
 @endif
 @endforeach
