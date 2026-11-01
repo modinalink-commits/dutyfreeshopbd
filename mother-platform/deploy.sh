@@ -69,10 +69,29 @@ wait
 [ -f "$D/dl.fail" ] && fail "download failed: $(head -3 "$D/dl.fail" | tr '\n' ' ')"
 cp manifest.txt.new manifest.txt; rm -f manifest.txt.new; log "   $N files"
 
-log "3/9 composer install"; stg Building 35
-export COMPOSER_ALLOW_SUPERUSER=1
-composer install --no-dev --optimize-autoloader --classmap-authoritative --no-interaction -q || fail "composer install"
+log "   change detection (vs live release)"
+: > "$D/changed.list"; CH=0; ADDPHP=0; MIG=0; PHPCH=0
+while read -r f; do
+  if [ ! -f "$CUR/$f" ]; then
+    CH=$((CH+1)); echo "$f" >> "$D/changed.list"
+    case "$f" in app/*.php|database/seeders/*.php|database/factories/*.php) ADDPHP=$((ADDPHP+1));; esac
+  elif ! cmp -s "$f" "$CUR/$f"; then CH=$((CH+1)); echo "$f" >> "$D/changed.list"; fi
+done < manifest.txt
+while read -r f; do
+  case "$f" in database/migrations/*) MIG=$((MIG+1));; *.php) PHPCH=$((PHPCH+1)); php -l "$f" >/dev/null 2>&1 || fail "PHP syntax error in $f";; esac
+done < "$D/changed.list"
+echo "$CH" > "$D/changed"; chmod 666 "$D/changed" 2>/dev/null
+log "   $CH files changed ($MIG migration, $PHPCH php, $ADDPHP new classes)"
 
+log "3/9 composer"; stg Building 35
+export COMPOSER_ALLOW_SUPERUSER=1
+if [ ! -d vendor ] || [ ! -f vendor/autoload.php ] || ! cmp -s composer.lock "$CUR/composer.lock" || ! cmp -s composer.json "$CUR/composer.json"; then
+  composer install --no-dev --optimize-autoloader --classmap-authoritative --no-interaction -q || fail "composer install"
+elif [ "$ADDPHP" -gt 0 ]; then
+  log "   new class files: refreshing autoloader only"; composer dump-autoload --optimize --classmap-authoritative --no-interaction -q || fail "composer dump-autoload"
+else log "   SKIPPED (no composer or class-map change)"; fi
+
+if [ "$MIG" -gt 0 ]; then
 log "4/9 migration safety check"; stg Building 48
 PRET=$(php artisan migrate --pretend --force 2>&1) || fail "migrate --pretend: $(echo "$PRET" | tail -2 | tr '\n' ' ')"
 if echo "$PRET" | grep -Eiq 'drop (column|table|index|constraint)|rename (column|to)|alter column .* (type|set not null)|truncate'; then
@@ -83,6 +102,7 @@ else log "   pending migrations are additive"; fi
 log "5/9 migrate + install"; stg Building 55
 [ "$DOWN" = 1 ] && php artisan down --retry=30 >/dev/null 2>&1 || true
 php artisan migrate --force || fail "migrate"
+else log "4/9 migration check: SKIPPED (no migration files changed)"; log "5/9 migrate: SKIPPED"; stg Building 55; fi
 php artisan mother:install || log "   (install step reported a problem, continuing)"
 
 log "6/9 optimise caches"; stg Building 65

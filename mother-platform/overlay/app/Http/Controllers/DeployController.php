@@ -13,19 +13,35 @@ class DeployController extends Controller
   private function data(): array {
     Deployer::tick();
     $live = Deployer::liveId();
-    $rows = DB::table('deployments')->orderByDesc('id')->limit(40)->get()->map(function ($d) use ($live) {
-      $a = (array)$d; $a['live'] = $d->release_id && $d->release_id === $live && $d->status === 'Completed';
-      $a['badge'] = $a['live'] ? 'Live' : $d->status;
-      $a['start'] = $d->started_at ? \Carbon\Carbon::parse($d->started_at, 'UTC')->timezone('Asia/Dhaka')->format('d M, h:i A') : '';
-      $a['end'] = $d->finished_at ? \Carbon\Carbon::parse($d->finished_at, 'UTC')->timezone('Asia/Dhaka')->format('d M, h:i A') : '';
-      $a['dur'] = ($d->started_at && $d->finished_at) ? max(1, (int)round((strtotime($d->finished_at . ' UTC') - strtotime($d->started_at . ' UTC')) / 60)) . ' min' : '';
-      unset($a['log']); $a['has_log'] = (bool)$d->log; return $a;
-    })->values()->all();
+    $tz = fn($t) => $t ? \Carbon\Carbon::parse($t, 'UTC')->timezone('Asia/Dhaka') : null;
+    $all = DB::table('deployments')->orderBy('id')->limit(400)->get();
+    $groups = [];
+    foreach ($all as $d) { $k = $d->sha ?: 'r' . $d->id; $groups[$k][] = $d; }
+    $out = []; $n = 0; $files = fn($d) => ($d->log && preg_match('/(\d+) files changed/', $d->log, $m)) ? (int)$m[1] : null;
+    foreach ($groups as $att) {
+      $done = null; $act = null;
+      foreach ($att as $x) { if ($x->status === 'Completed') $done = $x; if (in_array($x->status, Deployer::ACTIVE, true)) $act = $x; }
+      $last = end($att); $main = $act ?: ($done ?: $last);
+      $isRb = !$main->sha; $ok = $done || ($isRb && $main->status === 'Rolled Back');
+      if ($ok && $done) $n++;
+      $isLive = $done && $done->release_id && $done->release_id === $live;
+      $status = $act ? $act->status : ($done ? 'Completed' : $last->status);
+      $cat = $act ? 'running' : ($isLive ? 'live' : (($done || $isRb) ? 'completed' : 'failed'));
+      $dur = fn($x) => ($x->started_at && $x->finished_at) ? max(1, strtotime($x->finished_at . ' UTC') - strtotime($x->started_at . ' UTC')) : null;
+      $fin = $tz(($done ?: $main)->finished_at ?: ($main->started_at));
+      $out[] = ['id' => $main->id, 'version' => $done ? 'v1.' . $n : '', 'subject' => $main->subject, 'description' => $main->description, 'notes' => $main->notes, 'sha' => $main->sha,
+        'status' => $status, 'badge' => $isLive ? 'Live' : ($isRb && !$act ? 'Rollback' : $status), 'cat' => $cat, 'live' => (bool)$isLive, 'stage' => $main->stage, 'progress' => (int)$main->progress,
+        'source' => $main->source, 'release_id' => $main->release_id, 'dur' => $done ? $dur($done) : $dur($main), 'at' => $fin ? $fin->format('d M Y · g:i A') : '', 'short' => $fin ? $fin->format('g:i A') : '',
+        'started_ts' => $main->started_at ? strtotime($main->started_at . ' UTC') : null, 'files' => $files($done ?: $main), 'error' => ($done ? null : $last->error),
+        'attempts' => array_map(fn($x, $i) => ['n' => $i + 1, 'id' => $x->id, 'status' => $x->status, 'dur' => $dur($x), 'at' => ($t = $tz($x->started_at)) ? $t->format('d M · g:i A') : '', 'error' => $x->error], $att, array_keys($att)),
+        'retry' => (!$act && !$done && $last->sha) ? $last->id : null];
+    }
+    $rows = array_slice(array_reverse($out), 0, 60);
     $cur = null; foreach ($rows as $r) if ($r['live']) { $cur = $r; break; }
-    $act = null; foreach ($rows as $r) if (in_array($r['status'], Deployer::ACTIVE, true)) { $act = $r; break; }
+    $act = null; foreach ($rows as $r) if ($r['cat'] === 'running') { $act = $r; $act['changed'] = (int)@file_get_contents(Deployer::D . '/changed'); break; }
     $head = Deployer::head(); $headRow = $head ? DB::table('deployments')->where('sha', $head['sha'])->orderByDesc('id')->first() : null;
     $log = is_file(Deployer::D . '/last.log') ? implode("\n", array_slice(explode("\n", (string)@file_get_contents(Deployer::D . '/last.log')), -80)) : '';
-    return ['enabled' => Deployer::enabled(), 'liveId' => $live, 'current' => $cur, 'active' => $act, 'history' => $rows, 'head' => $head,
+    return ['enabled' => Deployer::enabled(), 'liveId' => $live, 'current' => $cur, 'active' => $act, 'history' => $rows, 'head' => $head, 'ts' => time(),
       'headState' => !$head ? 'unknown' : ($headRow ? ($headRow->release_id === $live ? 'live' : strtolower($headRow->status)) : (Deployer::mode() === 'hold' ? 'waiting' : 'pending')),
       'mode' => Deployer::mode(), 'branch' => Deployer::branch(), 'log' => $log, 'now' => now()->timezone('Asia/Dhaka')->format('h:i:s A')];
   }
