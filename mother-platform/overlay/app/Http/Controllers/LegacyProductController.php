@@ -53,6 +53,16 @@ class LegacyProductController extends Controller
       'live published (matched)' => $q('select count(*) n from legacy_products l join products p on p.ext_id = l.old_id where p.published'),
       'old active (matched)' => $q('select count(*) n from legacy_products l join products p on p.ext_id = l.old_id where l.status = 1'),
     ];
+    $nm = "lower(trim(p.name)) = lower(trim(l.name))";
+    $d['cmp'] += [
+      'ext_id = old_id + 999' => $q("select count(*) n from legacy_products l join products p on p.ext_id = l.old_id + 999"),
+      'ext_id = old_id + 999 AND same name' => $q("select count(*) n from legacy_products l join products p on p.ext_id = l.old_id + 999 and $nm"),
+      'ext_id = old_id AND same name (old rule)' => $q("select count(*) n from legacy_products l join products p on p.ext_id = l.old_id and $nm"),
+      'distinct old products with a same-name live product' => $q("select count(*) n from legacy_products l where exists (select 1 from products p where $nm)"),
+      'old products with NO live product by name and NO +999 id' => $q("select count(*) n from legacy_products l where not exists (select 1 from products p where $nm) and not exists (select 1 from products p where p.ext_id = l.old_id + 999)"),
+      'same-name live products that are duplicated (2+ live rows)' => $q("select count(*) n from (select lower(trim(name)) k from products group by 1 having count(*) > 1) z"),
+      'live products matching no old product (by name or +999)' => $q("select count(*) n from products p where not exists (select 1 from legacy_products l where $nm) and not exists (select 1 from legacy_products l where p.ext_id = l.old_id + 999)"),
+    ];
     $d['liveonly'] = DB::select('select p.ext_id, p.name, p.price, p.published from products p where p.ext_id is not null and not exists (select 1 from legacy_products l where l.old_id = p.ext_id) order by p.ext_id desc limit 10');
     $d['msample'] = DB::select("select l.old_id, left(l.name,28) n, l.price o_price, l.sale_price o_sale, l.purchase_price o_cost, (l.raw->>'discount') o_d1, (l.raw->>'double_products_discount') o_d2, (l.raw->>'triple_products_discount') o_d3, p.price p_price, p.offer_price p_offer, p.compare_price p_cmp, p.cost p_cost, p.buy1_price b1, p.buy2_price b2, p.buy3_price b3, p.buy4_price b4, p.buy5_price b5, p.published pub, l.status o_st from legacy_products l join products p on p.ext_id = l.old_id where l.raw->>'double_products_discount' <> '0' order by l.old_id desc limit 6");
     $d['status'] = DB::select('select coalesce(status::text, \'null\') s, count(*) n from legacy_products group by 1 order by 2 desc');
