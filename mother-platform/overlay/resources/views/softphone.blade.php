@@ -174,7 +174,7 @@ function wire(s){ses=s;
  s.on('failed',function(e){finish('failed',(e&&e.cause)||'')});
  s.on('hold',function(e){if(e.originator==='local'){held=true;$('bHold').classList.add('on');$('bHold').lastChild.textContent='Resume'}});
  s.on('unhold',function(e){if(e.originator==='local'){held=false;$('bHold').classList.remove('on');$('bHold').lastChild.textContent='Hold'}});
- var pc=s.connection;if(pc)pc.addEventListener('track',function(ev){if(ev.streams&&ev.streams[0])$('aud').srcObject=ev.streams[0]})}
+ var pc=s.connection;if(pc)pc.addEventListener('track',function(ev){if(ev.streams&&ev.streams[0])$('aud').srcObject=ev.streams[0];if(phase==='connecting'&&dir==='out')setPhase('ringing')})}
 function friendly(c){c=String(c||'');
  if(/busy|rejected|decline/i.test(c))return 'Call Rejected';
  if(/unavailable|not found|address incomplete|no answer|timeout|expired/i.test(c))return 'Number Unreachable';
