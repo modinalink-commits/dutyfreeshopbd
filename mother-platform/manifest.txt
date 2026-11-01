@@ -297,3 +297,5 @@ database/migrations/2026_11_02_000001_seo_items.php
 app/Support/PathaoLocator.php
 resources/views/call_history_block.blade.php
 database/migrations/2026_11_02_000002_dialer_call_logs.php
+resources/views/sip_extensions.blade.php
+database/migrations/2026_11_02_000003_sip_per_user.php

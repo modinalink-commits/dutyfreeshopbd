@@ -52,7 +52,7 @@ textarea,.ti{width:100%;border:1.5px solid var(--bd);border-radius:8px;padding:8
 <div class="keys">@foreach([['1',''],['2','ABC'],['3','DEF'],['4','GHI'],['5','JKL'],['6','MNO'],['7','PQRS'],['8','TUV'],['9','WXYZ'],['*',''],['0','+'],['#','']] as $k)<button type="button" data-k="{{ $k[0] }}">{{ $k[0] }}<small>{{ $k[1] ?: ' ' }}</small></button>@endforeach</div>
 <button type="button" class="go call" id="bGo">📞 Call</button>
 <button type="button" class="go hang" id="bHang1" style="display:none">⛔ Hang Up</button>
-<div class="msg" id="msg">@if(!$has)SIP account is not set up. Ask an admin to open Call Center → SIP Account.@endif</div>
+<div class="msg" id="msg">@if(!$has)আপনার এক্সটেনশন সেট করা নেই। অ্যাডমিনকে বলুন Call Center → Extensions থেকে দিতে।@endif</div>
 <div class="mut"><a href="/admin/call-center/history" target="_blank">Call history</a></div>
 </div>
 

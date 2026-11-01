@@ -6,8 +6,11 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 /** Web softphone (SIP over WSS via the browser), call history and call notes. SIP password stays encrypted on the server and is only handed to the logged-in admin's browser when connecting. */
 class CallCenterController extends Controller {
-  private function acct() { return DB::table('sip_accounts')->orderBy('id')->first(); }
-  public function phone(Request $r) { return view('softphone', ['embed'=>$r->boolean('embed'), 'has'=>(bool)($this->acct()->wss_url ?? null), 'n'=>preg_replace('/[^0-9+*#]/', '', (string)$r->query('n', ''))]); }
+  /** Shared PBX server settings (WSS URL, domain, STUN, prefix). */
+  private function acct() { return DB::table('sip_accounts')->whereNull('user_id')->orderBy('id')->first(); }
+  /** The signed-in user's own extension. */
+  private function mine() { return DB::table('sip_accounts')->where('user_id', Auth::id())->first(); }
+  public function phone(Request $r) { return view('softphone', ['embed'=>$r->boolean('embed'), 'has'=>(bool)($this->mine()->username ?? null) && (bool)($this->acct()->wss_url ?? null), 'n'=>preg_replace('/[^0-9+*#]/', '', (string)$r->query('n', ''))]); }
   public function account() {
     $a = $this->acct(); return view('sip_account', ['a'=>$a, 'hasPw'=>(bool)($a->password_enc ?? null)]);
   }
@@ -21,9 +24,28 @@ class CallCenterController extends Controller {
   }
   /** Connection details for the signed-in admin's browser (never embedded in page HTML). */
   public function creds() {
-    $a = $this->acct(); if (!$a || !$a->wss_url || !$a->password_enc) return response()->json(['ok'=>false, 'error'=>'SIP account is not set up yet.'], 200);
-    try { $pw = Crypt::decryptString($a->password_enc); } catch (\Throwable $e) { return response()->json(['ok'=>false, 'error'=>'Saved SIP password could not be read. Please save the password again.']); }
-    return response()->json(['ok'=>true, 'wss'=>$a->wss_url, 'user'=>$a->username, 'auth'=>$a->auth_username ?: $a->username, 'pw'=>$pw, 'domain'=>$a->domain, 'name'=>$a->display_name ?: ($a->caller_id ?: $a->username), 'prefix'=>$a->dial_prefix, 'stun'=>$a->stun_server, 'ext'=>$a->username, 'rec'=>$this->recOn(), 'staff'=>Auth::user()->name])->header('Cache-Control', 'no-store');
+    $b = $this->acct(); $a = $this->mine();
+    if (!$b || !$b->wss_url) return response()->json(['ok'=>false, 'error'=>'PBX server is not set up yet.'], 200);
+    if (!$a || !$a->username || !$a->password_enc) return response()->json(['ok'=>false, 'error'=>'আপনার জন্য কোনো এক্সটেনশন সেট করা নেই। অ্যাডমিনকে বলুন Call Center → Extensions থেকে দিতে।'], 200);
+    try { $pw = Crypt::decryptString($a->password_enc); } catch (\Throwable $e) { return response()->json(['ok'=>false, 'error'=>'Saved extension password could not be read. Ask admin to save it again.']); }
+    return response()->json(['ok'=>true, 'wss'=>$b->wss_url, 'user'=>$a->username, 'auth'=>$a->auth_username ?: $a->username, 'pw'=>$pw, 'domain'=>$b->domain, 'name'=>$a->display_name ?: Auth::user()->name, 'prefix'=>$b->dial_prefix, 'stun'=>$b->stun_server, 'ext'=>$a->username, 'rec'=>$this->recOn(), 'staff'=>Auth::user()->name])->header('Cache-Control', 'no-store');
+  }
+  /** Admin: one extension per user. */
+  public function extensions() {
+    $users = DB::table('users')->orderBy('id')->get(['id', 'name', 'email', 'role', 'active']); $rows = DB::table('sip_accounts')->whereNotNull('user_id')->get()->keyBy('user_id');
+    $used = $rows->pluck('username')->filter()->all(); $next = 101; while (in_array((string)$next, $used)) $next++;
+    return view('sip_extensions', ['users'=>$users, 'rows'=>$rows, 'next'=>$next]);
+  }
+  public function saveExtension(Request $r, $uid) {
+    abort_unless(DB::table('users')->where('id', $uid)->exists(), 404);
+    $d = $r->validate(['username'=>'nullable|string|max:40|regex:/^[A-Za-z0-9_.-]+$/', 'auth_username'=>'nullable|string|max:60', 'display_name'=>'nullable|string|max:120', 'password'=>'nullable|string|max:200']);
+    $ex = DB::table('sip_accounts')->where('user_id', $uid)->first();
+    if (empty($d['username'])) { if ($ex) DB::table('sip_accounts')->where('id', $ex->id)->delete(); return back()->with('ok', 'Extension removed'); }
+    if (DB::table('sip_accounts')->where('username', $d['username'])->whereNotNull('user_id')->where('user_id', '!=', $uid)->exists()) return back()->withErrors(['username'=>'Extension '.$d['username'].' is already given to another user.']);
+    $row = ['username'=>$d['username'], 'auth_username'=>$d['auth_username'] ?? null, 'display_name'=>$d['display_name'] ?? null, 'updated_at'=>now()];
+    if (!empty($d['password'])) $row['password_enc'] = Crypt::encryptString($d['password']); elseif (!$ex || !$ex->password_enc) return back()->withErrors(['password'=>'Password is required for a new extension.']);
+    if ($ex) DB::table('sip_accounts')->where('id', $ex->id)->update($row); else { $b = $this->acct(); DB::table('sip_accounts')->insert($row + ['user_id'=>$uid, 'domain'=>$b->domain ?? '', 'created_at'=>now()]); }
+    return back()->with('ok', 'Extension saved');
   }
   private function norm(string $v): string { $d = preg_replace('/\D/', '', $v); return preg_match('/(01\d{9})$/', $d, $m) ? $m[1] : $d; }
   private function cat(string $ph, int $n): string { try { $p = \App\Support\OrderDiscount::profile($ph); if (!empty($p['category'])) return (string)$p['category']; } catch (\Throwable $e) {} return $n > 0 ? 'Regular' : 'New'; }
