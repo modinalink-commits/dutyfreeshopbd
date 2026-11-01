@@ -30,6 +30,7 @@ window.dfCall=function(n,c){n=clean(n);c=c||{};var m={type:'call',n:n,o:c.order|
  popHere=false;if(ch)ch.postMessage({type:'ping'});
  setTimeout(function(){if(popHere&&ch){ch.postMessage(m)}else{show(n,{auto:1,o:c.order,cn:c.name})}},200);return false};
 edge.addEventListener('click',function(){show()});
+document.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('a[href^="tel:"],[data-dfcall]');if(!t||t.hasAttribute('onclick'))return;var n=t.getAttribute('data-dfcall')||t.getAttribute('href').slice(4);if(!clean(n))return;e.preventDefault();window.dfCall(n,{order:t.getAttribute('data-order')||'',name:t.getAttribute('data-name')||''})});
 window.addEventListener('message',function(e){if(e.origin!==location.origin||!e.data||!e.data.dfdial)return;var a=e.data.dfdial;
  if(a==='min')hide();
  else if(a==='close'){if(busy&&!confirm('A call is active. Close the dialer and hang up?'))return;kill()}
