@@ -170,6 +170,8 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
     Route::get('/settings', [$C,'settings']); Route::post('/settings', [$C,'settingsSave']); Route::post('/optout', [$C,'optout']);
     Route::post('/quick', [$C,'quick']); Route::get('/history', [$C,'history']);
   });
+  Route::get('/voice', [\App\Http\Controllers\VoiceCampaignController::class,'index']); Route::get('/voice/new', [\App\Http\Controllers\VoiceCampaignController::class,'form']); Route::post('/voice/save', [\App\Http\Controllers\VoiceCampaignController::class,'save']); Route::post('/voice/settings', [\App\Http\Controllers\VoiceCampaignController::class,'settingsSave']); Route::post('/voice/prefs/{cid}', [\App\Http\Controllers\VoiceCampaignController::class,'prefs'])->whereNumber('cid');
+  Route::get('/voice/{id}', [\App\Http\Controllers\VoiceCampaignController::class,'show'])->whereNumber('id'); Route::get('/voice/{id}/edit', [\App\Http\Controllers\VoiceCampaignController::class,'form'])->whereNumber('id'); Route::post('/voice/{id}/save', [\App\Http\Controllers\VoiceCampaignController::class,'save'])->whereNumber('id'); Route::post('/voice/{id}/action', [\App\Http\Controllers\VoiceCampaignController::class,'action'])->whereNumber('id'); Route::post('/voice/{id}/test', [\App\Http\Controllers\VoiceCampaignController::class,'test'])->whereNumber('id');
   Route::get('/winback', [\App\Http\Controllers\WinbackController::class,'index']); Route::post('/winback/settings', [\App\Http\Controllers\WinbackController::class,'save']); Route::post('/winback/run', [\App\Http\Controllers\WinbackController::class,'run']); Route::post('/winback/test', [\App\Http\Controllers\WinbackController::class,'test']);
   Route::get('/dob-requests', [\App\Http\Controllers\DobController::class,'index']); Route::post('/dob-requests/{id}', [\App\Http\Controllers\DobController::class,'decide']);
   Route::get('/customer-auth', [\App\Http\Controllers\CustAuthAdminController::class,'index']); Route::post('/customer-auth', [\App\Http\Controllers\CustAuthAdminController::class,'save']); Route::post('/customer-auth/test', [\App\Http\Controllers\CustAuthAdminController::class,'test']);
@@ -242,6 +244,8 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
 });
 // ---- Storefront: order form has no CSRF token (pages stay cacheable); orders are rate limited per IP and honeypot-protected
 Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class, \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class, \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])->group(function () {
+  Route::post('/webhooks/voice', [\App\Http\Controllers\VoiceCampaignController::class,'hook'])->middleware('throttle:120,1');
+  Route::get('/voice-audio/{id}.{ext}', [\App\Http\Controllers\VoiceCampaignController::class,'audio'])->whereNumber('id')->middleware('throttle:120,1');
   Route::post('/webhooks/pathao', [\App\Http\Controllers\CourierController::class,'webhook'])->middleware('throttle:120,1');
   Route::get('/webhooks/meta', [\App\Http\Controllers\ChatController::class,'metaVerify']);
   Route::post('/webhooks/meta', [\App\Http\Controllers\ChatController::class,'metaHook'])->middleware('throttle:300,1');

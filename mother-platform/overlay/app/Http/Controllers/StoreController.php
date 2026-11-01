@@ -222,7 +222,7 @@ class StoreController extends Controller {
     $items = []; $sub = 0; $qty = 0;
     foreach ($rows as $p) { $n = $want[$p->id]; $items[] = ['id'=>$p->id, 'name'=>$p->name, 'image'=>$p->image, 'url'=>self::url($p), 'price'=>(float)$p->price, 'compare'=>(float)$p->compare_price, 'qty'=>$n, 'line'=>(float)$p->price * $n]; $sub += (float)$p->price * $n; $qty += $n; }
     $dv = \App\Support\Delivery::compute((float)$sub, $area, $addr, '', array_column($items, 'id')); $ship = $dv['charge'];
-    $eng = \App\Support\OrderDiscount::compute($phone, (float)$sub, $code !== '' ? $code : null, ['web'=>true, 'verified'=>$verified, 'qty'=>$qty]);
+    $eng = \App\Support\OrderDiscount::compute($phone, (float)$sub, $code !== '' ? $code : null, ['web'=>true, 'verified'=>$verified, 'qty'=>$qty, 'items'=>array_map(fn($i) => ['product_id'=>$i['id'], 'price'=>$i['price'], 'qty'=>$i['qty']], $items)]);
     $app = array_values(array_filter($eng['lines'], fn($l) => $l['applied'])); $disc = (float)$eng['total']; $notes = array_column($app, 'label');
     if ($eng['free_ship'] && $ship > 0) { $dv['free_discount'] = $dv['original']; $dv['free'] = true; $dv['reason'] = 'Free delivery coupon'; $ship = 0; }
     $cOk = null; $cmsg = $eng['coupon_error'] ?? ''; foreach ($app as $l) if (($l['key'] ?? '') === 'coupon') { $cOk = $l['code']; $cmsg = 'Coupon applied: '.self::tk($l['amount']).' off'; }
@@ -302,7 +302,7 @@ class StoreController extends Controller {
       return $id;
     });
     Cache::forget('store.live3'); Cache::forget('store.live4');
-    try { \App\Support\Referral::onOrder((int)$id, $phone, $qt); \App\Support\Winback::onOrder($phone, (int)$id, $qt); } catch (\Throwable $e) {}
+    try { \App\Support\Referral::onOrder((int)$id, $phone, $qt); \App\Support\Winback::onOrder($phone, (int)$id, $qt); \App\Support\Voice::onOrder($phone, (int)$id, $qt['applied'] ?? []); } catch (\Throwable $e) {}
     $inv = DB::table('orders')->where('id',$id)->value('invoice');
     \App\Support\OrderSms::placed((int)$id);
     try { DB::table('incomplete_orders')->where('status', 'open')->where(fn($q) => $q->where('token', (string)$r->input('inc'))->orWhere('phone', $phone))->update(['status'=>'converted', 'order_id'=>$id, 'updated_at'=>now()]); } catch (\Throwable $e) {}

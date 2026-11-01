@@ -304,3 +304,11 @@ database/migrations/2026_11_02_000004_order_revisions.php
 app/Http/Controllers/OrderRevisionController.php
 resources/views/order_edit.blade.php
 resources/views/order_revision_block.blade.php
+database/migrations/2026_11_02_000005_voice_campaigns.php
+app/Support/Voice.php
+app/Http/Controllers/VoiceCampaignController.php
+resources/views/voice_campaigns.blade.php
+resources/views/voice_campaign_form.blade.php
+resources/views/voice_campaign_show.blade.php
+resources/views/voice_history.blade.php
+resources/views/voice_offer_lua.txt

@@ -192,14 +192,14 @@ class AdminController extends Controller {
     $can = \App\Http\Middleware\ModulePermission::can(Auth::user(), 'marketing', 'edit');
     if (!$p || strlen($p) < 10) return response()->json(['lines'=>[], 'total'=>0, 'mode'=>\App\Support\OrderDiscount::mode(), 'can'=>$can, 'coupon_error'=>null, 'profile'=>null]);
     if ($sub <= 0) return response()->json(['lines'=>[], 'total'=>0, 'mode'=>\App\Support\OrderDiscount::mode(), 'can'=>$can, 'coupon_error'=>null, 'profile'=>\App\Support\OrderDiscount::profile($p)]);
-    return response()->json(\App\Support\OrderDiscount::compute($p, $sub, $r->query('coupon'), ['qty'=>(int)$r->query('qty', 0)]) + ['can'=>$can]);
+    return response()->json(\App\Support\OrderDiscount::compute($p, $sub, $r->query('coupon'), ['qty'=>(int)$r->query('qty', 0), 'items'=>array_values(array_filter(array_map(function($t) { $a = explode(':', $t); return count($a) === 3 ? ['product_id'=>(int)$a[0], 'price'=>(float)$a[1], 'qty'=>(int)$a[2]] : null; }, explode(',', (string)$r->query('items', '')))))]) + ['can'=>$can]);
   }
   public function orderStore(Request $r) {
     \App\Support\PhoneRule::trim($r);
     $d = $r->validate(['customer_name'=>'required|string|max:120','phone'=>['required','string',new \App\Support\PhoneRule],'address'=>'nullable|string','district'=>'nullable|string|max:60','source'=>'nullable|string|max:40','shipping'=>'nullable|numeric|min:0','note'=>'nullable|string','courier'=>'nullable|string|max:60','assigned_admin'=>'nullable|string|max:80','sub_city'=>'nullable|string|max:80','items'=>'required|array|min:1|max:60','items.*.name'=>'required|string|max:200','items.*.product_id'=>'nullable|integer','items.*.qty'=>'required|integer|min:1|max:100000','items.*.price'=>'required|numeric|min:0','inc_id'=>'nullable|integer','coupon'=>'nullable|string|max:40','disc_off'=>'nullable|array','disc_manual'=>'nullable|numeric|min:0','disc_extra'=>'nullable|numeric|min:0']);
     $d['phone'] = \App\Support\Chat::phone($d['phone']) ?: $d['phone'];
     if (!empty($d['sub_city'])) $d['address'] = trim(($d['address'] ?? '').' ('.$d['sub_city'].')');
-    $sub = round(array_sum(array_map(fn($i) => $i['qty'] * $i['price'], $d['items'])), 2); if ($sub <= 0) return back()->withInput()->withErrors(['items'=>'Add at least one product with a price']); $auto = \App\Support\OrderDiscount::compute($d['phone'], $sub, $d['coupon'] ?? null, ['qty'=>array_sum(array_column($d['items'], 'qty'))]);
+    $sub = round(array_sum(array_map(fn($i) => $i['qty'] * $i['price'], $d['items'])), 2); if ($sub <= 0) return back()->withInput()->withErrors(['items'=>'Add at least one product with a price']); $auto = \App\Support\OrderDiscount::compute($d['phone'], $sub, $d['coupon'] ?? null, ['qty'=>array_sum(array_column($d['items'], 'qty')), 'items'=>array_map(fn($i) => ['product_id'=>$i['product_id'] ?? 0, 'price'=>$i['price'], 'qty'=>$i['qty']], $d['items'])]);
     $can = \App\Http\Middleware\ModulePermission::can(Auth::user(), 'marketing', 'edit');
     $off = $can ? (array)($d['disc_off'] ?? []) : []; $kept = array_values(array_filter($auto['lines'], fn($l) => $l['applied'] && !in_array($l['key'], $off)));
     $disc = min($sub, round(array_sum(array_column($kept, 'amount')), 2)); $labels = array_column($kept, 'label');
@@ -230,6 +230,7 @@ class AdminController extends Controller {
     });
     if (!empty($d['inc_id'])) DB::table('incomplete_orders')->where('id', (int)$d['inc_id'])->whereIn('status', ['open','recovered'])->update(['status'=>'converted', 'order_id'=>$id, 'updated_at'=>now()]);
     DB::table('incomplete_orders')->where('status', 'open')->where('phone', $d['phone'])->update(['status'=>'converted', 'order_id'=>$id, 'updated_at'=>now()]);
+    try { \App\Support\Voice::onOrder($d['phone'], (int)$id, $kept); } catch (\Throwable $e) {}
     \App\Support\OrderSms::placed((int)$id);
     return redirect("/admin/orders/$id");
   }

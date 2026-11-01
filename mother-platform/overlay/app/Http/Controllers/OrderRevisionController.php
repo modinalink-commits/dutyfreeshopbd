@@ -87,7 +87,7 @@ class OrderRevisionController extends Controller {
     $sub = round(array_sum(array_column($live, 'new_total')), 2); $qtyTot = array_sum(array_column($live, 'new_qty')); $oldSub = round((float)$old->sum(fn($i) => $i->qty * $i->price), 2);
     // ---- discount
     $dmode = in_array($opt['discount_mode'] ?? 'auto', ['auto', 'keep', 'manual']) ? $opt['discount_mode'] : 'auto'; $oldDisc = round((float)($o->discount ?? 0), 2);
-    $auto = OrderDiscount::compute($o->phone, $sub, $o->coupon, ['qty'=>$qtyTot, 'exclude_order'=>$o->id]);
+    $auto = OrderDiscount::compute($o->phone, $sub, $o->coupon, ['qty'=>$qtyTot, 'exclude_order'=>$o->id, 'items'=>array_map(fn($x) => ['product_id'=>$x['product_id'], 'price'=>$x['new_price'], 'qty'=>$x['new_qty']], $live)]);
     $kept = array_values(array_filter($auto['lines'], fn($l) => $l['applied'])); $autoDisc = min($sub, round(array_sum(array_column($kept, 'amount')), 2)); $dmeta = null; $dnote = null;
     if ($dmode === 'auto') { $disc = $autoDisc; $dmeta = OrderDiscount::meta($kept, $auto['profile'], 'Automatic', $disc); if ($disc <= 0) $dmeta['discount_by'] = null; $dnote = $kept ? 'Recalculated: '.implode(' + ', array_column($kept, 'label')) : 'Recalculated: no discount applies'; }
     elseif ($dmode === 'keep') { $disc = min($sub, $oldDisc); $dnote = 'Original discount kept (৳'.number_format($disc).')'; }
@@ -106,7 +106,7 @@ class OrderRevisionController extends Controller {
         $dcols = ['delivery_zone'=>mb_substr((string)$dv['zone'], 0, 160), 'delivery_original'=>$dv['original'], 'delivery_free_discount'=>$dv['free_discount'], 'delivery_manual_adj'=>round($ship - $dv['charge'], 2), 'delivery_manual_by'=>Auth::user()->name, 'delivery_note'=>$dv['reason'] ? mb_substr($dv['reason'], 0, 200) : null]; }
     } else { $ship = round((float)$dv['charge'], 2); $snote = 'Recalculated'.($dv['zone'] ? ' ('.$dv['zone'].')' : ''); $dcols = ['delivery_zone'=>mb_substr((string)$dv['zone'], 0, 160), 'delivery_original'=>$dv['original'], 'delivery_free_discount'=>$dv['free_discount'], 'delivery_manual_adj'=>null, 'delivery_manual_by'=>null, 'delivery_note'=>$dv['reason'] ? mb_substr($dv['reason'], 0, 200) : null]; }
     $total = round($sub - $disc + $ship, 2); $oldTotal = round((float)$o->total, 2);
-    return ['rows'=>$rows, 'errors'=>$errs, 'warnings'=>$warn, 'old_sub'=>$oldSub, 'sub'=>$sub, 'old_disc'=>$oldDisc, 'disc'=>$disc, 'auto_disc'=>$autoDisc, 'disc_lines'=>array_map(fn($l) => ['label'=>$l['label'], 'amount'=>$l['amount'], 'applied'=>$l['applied']], $auto['lines']), 'disc_meta'=>$dmeta, 'disc_note'=>$dnote, 'dmode'=>$dmode,
+    return ['voice_lines'=>($dmode === 'auto' ? array_values(array_filter($kept, fn($l) => ($l['key'] ?? '') === 'voice')) : []), 'rows'=>$rows, 'errors'=>$errs, 'warnings'=>$warn, 'old_sub'=>$oldSub, 'sub'=>$sub, 'old_disc'=>$oldDisc, 'disc'=>$disc, 'auto_disc'=>$autoDisc, 'disc_lines'=>array_map(fn($l) => ['label'=>$l['label'], 'amount'=>$l['amount'], 'applied'=>$l['applied']], $auto['lines']), 'disc_meta'=>$dmeta, 'disc_note'=>$dnote, 'dmode'=>$dmode,
       'old_ship'=>$oldShip, 'ship'=>$ship, 'auto_ship'=>round((float)$dv['charge'], 2), 'ship_note'=>$snote, 'smode'=>$smode, 'dcols'=>$dcols, 'old_total'=>$oldTotal, 'total'=>$total, 'diff'=>round($total - $oldTotal, 2), 'qty'=>$qtyTot];
   }
   public function quote(Request $r, $id) {
@@ -176,6 +176,7 @@ class OrderRevisionController extends Controller {
         elseif ($x['action'] === 'added') DB::table('order_items')->insert(['order_id'=>$o->id, 'product_id'=>$x['product_id'], 'name'=>$x['name'], 'qty'=>$x['new_qty'], 'price'=>$x['new_price'], 'created_at'=>now(), 'updated_at'=>now()]);
         elseif ($x['action'] !== 'kept') DB::table('order_items')->where('id', $x['item_id'])->update(['product_id'=>$x['product_id'], 'name'=>$x['name'], 'qty'=>$x['new_qty'], 'price'=>$x['new_price'], 'updated_at'=>now()]);
       }
+      if (!empty($c['voice_lines'])) \App\Support\Voice::onOrder((string)$o->phone, (int)$o->id, $c['voice_lines']);
       $upd = ['total'=>$c['total'], 'discount'=>$c['disc'], 'shipping'=>$c['ship'], 'updated_at'=>now()];
       if ($c['disc_meta']) $upd += $c['disc_meta']; if ($c['disc'] <= 0 && $c['dmode'] !== 'keep') $upd += ['discount_by'=>null];
       if ($c['dcols']) $upd += $c['dcols'];

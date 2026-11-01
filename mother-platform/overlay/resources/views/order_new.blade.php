@@ -76,7 +76,7 @@ var CP=document.getElementById('ocp'),DL=document.getElementById('dsl'),NT=docum
 function resetOv(){DM.value='';DE.value=''}
 function calc(){var ph=p.value.replace(/\D/g,''),s=sub();
  if(ph.length<10){DL.textContent='Enter the customer phone and add products to check discounts.';DL.dataset.auto=0;DO.style.display='none';NT.style.display='none';sum();return}
- fetch('/admin/orders/discount?phone='+encodeURIComponent(p.value)+'&subtotal='+s+'&qty='+IT.reduce(function(a,x){return a+(x.qty||0)},0)+'&coupon='+encodeURIComponent(CP.value),{headers:{Accept:'application/json'},credentials:'same-origin'}).then(function(r){return r.json()}).then(function(j){
+ fetch('/admin/orders/discount?phone='+encodeURIComponent(p.value)+'&subtotal='+s+'&qty='+IT.reduce(function(a,x){return a+(x.qty||0)},0)+'&items='+IT.filter(function(x){return x.id}).map(function(x){return x.id+':'+(parseFloat(x.price)||0)+':'+(x.qty||0)}).join(',')+'&coupon='+encodeURIComponent(CP.value),{headers:{Accept:'application/json'},credentials:'same-origin'}).then(function(r){return r.json()}).then(function(j){
   can=!!j.can;var h='';note(j);
   (j.lines||[]).forEach(function(l){h+='<div style="display:flex;gap:8px;align-items:center;padding:3px 0'+(l.applied?'':';opacity:.55')+'">'+(l.applied&&can?'<label style="display:flex;gap:4px;align-items:center;margin:0;font-weight:400"><input type="checkbox" class="dof" name="disc_off[]" value="'+esc(l.key)+'" style="width:auto"> remove</label>':'')+'<span>'+esc(l.label)+(l.pct!=null?' · '+l.pct+'%':'')+'</span><b style="margin-left:auto">'+(l.applied?'-'+tk(l.amount):'not applied')+'</b></div>'});
   if(j.coupon_error)h+='<div style="color:#991B1B">'+esc(j.coupon_error)+'</div>';

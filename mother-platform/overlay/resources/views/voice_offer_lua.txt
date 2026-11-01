@@ -1,0 +1,29 @@
+-- voice_offer.lua : Mother Commerce personalised voice offer
+local audio = session:getVariable("vc_audio")
+local hook  = session:getVariable("vc_hook")
+local dtmf  = session:getVariable("vc_dtmf")
+local agent = session:getVariable("vc_agent") or "101"
+local uuid  = session:get_uuid()
+local api   = freeswitch.API()
+local function notify(ev, extra)
+  api:executeString("curl " .. hook .. "&ev=" .. ev .. "&uuid=" .. uuid .. "&" .. (extra or "") .. " post x=1")
+end
+session:answer()
+session:sleep(300)
+notify("answered")
+local digit = ""
+if dtmf == "1" then
+  digit = session:playAndGetDigits(1, 1, 1, 6000, "#", audio, "", "[129]") or ""
+else
+  session:streamFile(audio)
+end
+if digit ~= "" then
+  notify("digit", "digit=" .. digit)
+  if digit == "2" then
+    session:execute("transfer", agent .. " XML " .. session:getVariable("domain_name"))
+    return
+  end
+end
+local dur = session:getVariable("billsec") or "0"
+notify("hangup", "duration=" .. dur)
+session:hangup()
