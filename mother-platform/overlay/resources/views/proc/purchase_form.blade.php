@@ -1,5 +1,6 @@
 @extends('layout')@section('title',$p ? 'Edit purchase' : 'New purchase')
 @section('body')
+@php $exj = $items->map(function($i){ return ['product_id'=>$i->product_id,'name'=>$i->name,'sku'=>$i->sku,'barcode'=>$i->barcode,'qty'=>$i->qty,'cost'=>$i->cost,'discount'=>$i->discount,'tax'=>$i->tax,'batch'=>$i->batch,'expiry'=>$i->expiry,'damage_qty'=>$i->damage_qty]; })->values(); @endphp
 <h1 style="margin:0 0 10px">{{ $p ? 'Edit '.$p->invoice : 'New Purchase' }}</h1>@include('proc.nav')
 <form method="post" action="/admin/purchase/save" id="pf">@csrf<input type="hidden" name="id" value="{{ $p->id ?? '' }}">
 <div class="card"><b>Basic information</b><div class="fg">
@@ -30,7 +31,7 @@
 <div id="lim" class="mut" style="margin-top:6px"></div>
 <label style="display:flex;gap:8px;align-items:center;font-size:14px;color:var(--n);margin-top:12px"><input type="checkbox" style="width:auto" name="sms" value="1"> Send invoice link SMS to the supplier</label></div>
 <div style="display:flex;gap:8px;flex-wrap:wrap"><button name="act" value="save">Save purchase &amp; receive stock</button><button name="act" value="draft" class="g">Save as draft</button><a class="btn g" href="/admin/purchase/invoices">Cancel</a></div></form>
-<script>(function(){var DUES=@json($dues),LIM={},ex=@json($items->map(fn($i)=>['product_id'=>$i->product_id,'name'=>$i->name,'sku'=>$i->sku,'barcode'=>$i->barcode,'qty'=>$i->qty,'cost'=>$i->cost,'discount'=>$i->discount,'tax'=>$i->tax,'batch'=>$i->batch,'expiry'=>$i->expiry,'damage_qty'=>$i->damage_qty])->values()),isNew={{ $p ? 'false' : 'true' }};
+<script>(function(){var DUES=@json($dues),LIM={},ex=@json($exj),isNew={{ $p ? 'false' : 'true' }};
 var tb=document.querySelector('#it tbody'),n=0,q=document.getElementById('q'),dd=document.getElementById('dd'),H=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
 @foreach($sup as $s)LIM[{{ $s->id }}]={{ (float)$s->credit_limit }};@endforeach
 function row(p){var i=n++,tr=document.createElement('tr');p=p||{};
