@@ -19,7 +19,8 @@ class Delivery
   }
   public static function flush(): void { Cache::forget('delv.cfg'); Cache::forget('delv.zones'); Cache::forget('store.rules'); }
   public static function zones() {
-    return Cache::remember('delv.zones', 60, fn() => Schema::hasTable('delivery_zones') ? DB::table('delivery_zones')->where('active', true)->get() : collect());
+    $rows = Cache::remember('delv.zones', 60, fn() => Schema::hasTable('delivery_zones') ? DB::table('delivery_zones')->where('active', true)->get()->map(fn($z) => (array)$z)->all() : []);
+    return collect($rows)->map(fn($z) => (object)(array)$z);
   }
   /** checkout radio options: 1 inside, 2 outside, 3 express (only if an express charge is set). Shown charge is the base charge. */
   public static function options(): array {
