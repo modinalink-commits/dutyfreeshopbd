@@ -60,7 +60,7 @@ class AccountController extends StoreController {
   /* ---------------- sign in / register ---------------- */
   public function authForm(Request $r) {
     if ($this->me($r)) return redirect('/account');
-    return $this->view('store.account_auth', ['title'=>'Login / Register | DutyFree Shop BD', 'mode'=>$r->query('mode') === 'register' ? 'register' : 'login', 'smsOn'=>Sms::configured(), 'fbOn'=>\App\Support\CustAuth::fbOn(), 'fbErr'=>$r->query('fb') === 'err']);
+    return $this->view('store.account_auth', ['title'=>'Login / Register | DutyFree Shop BD', 'mode'=>$r->query('mode') === 'register' ? 'register' : 'login', 'smsOn'=>Sms::configured(), 'fbOn'=>\App\Support\CustAuth::fbOn(), 'gOn'=>\App\Support\CustAuth::googleOn(), 'fbErr'=>$r->query('fb') === 'err']);
   }
   public function otpSend(Request $r) {
     \App\Support\PhoneRule::trim($r);
@@ -146,36 +146,52 @@ class AccountController extends StoreController {
     return response()->json(['ok'=>true, 'go'=>'/account'])->withCookie($this->startSession($r, $cid, true));
   }
   /* ---------------- Facebook ---------------- */
-  public function fbStart(Request $r) {
-    if (!\App\Support\CustAuth::fbOn()) return redirect('/account/login?fb=err');
+  public function fbStart(Request $r) { return $this->oauthStart($r, 'facebook'); }
+  public function googleStart(Request $r) { return $this->oauthStart($r, 'google'); }
+  public function fbCallback(Request $r) { return $this->oauthCallback($r, 'facebook'); }
+  public function googleCallback(Request $r) { return $this->oauthCallback($r, 'google'); }
+  private function oauthStart(Request $r, string $prov) {
+    if (!\App\Support\CustAuth::on($prov)) return redirect('/account/login?fb=err');
     $mode = $r->query('mode') === 'connect' ? 'connect' : 'login'; $c = $mode === 'connect' ? $this->me($r) : null; if ($mode === 'connect' && !$c) return redirect('/account/login');
     $st = bin2hex(random_bytes(20)); $next = (string)$r->query('next'); $next = ($next !== '' && $next[0] === '/' && !str_starts_with($next, '//')) ? $next : '';
-    Cache::put('fb.st.' . $st, ['mode'=>$mode, 'cid'=>$c->id ?? null, 'next'=>$next], 600);
-    $url = 'https://www.facebook.com/v19.0/dialog/oauth?' . http_build_query(['client_id'=>Sms::secret('fb_app_id'), 'redirect_uri'=>\App\Support\CustAuth::redirectUrl(), 'state'=>$st, 'scope'=>'email,public_profile', 'response_type'=>'code']);
+    Cache::put('oa.st.' . $st, ['prov'=>$prov, 'mode'=>$mode, 'cid'=>$c->id ?? null, 'next'=>$next], 600);
+    $ru = \App\Support\CustAuth::redirectFor($prov);
+    $url = $prov === 'google'
+      ? 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query(['client_id'=>Sms::secret('g_client_id'), 'redirect_uri'=>$ru, 'response_type'=>'code', 'scope'=>'openid email profile', 'state'=>$st, 'prompt'=>'select_account'])
+      : 'https://www.facebook.com/v19.0/dialog/oauth?' . http_build_query(['client_id'=>Sms::secret('fb_app_id'), 'redirect_uri'=>$ru, 'state'=>$st, 'scope'=>'email,public_profile', 'response_type'=>'code']);
     return redirect()->away($url)->withCookie(cookie('dffs', $st, 10, '/', null, $r->isSecure(), true, false, 'lax'));
   }
-  public function fbCallback(Request $r) {
+  private function oauthCallback(Request $r, string $prov) {
     $fail = fn() => redirect('/account/login?fb=err')->withCookie(cookie()->forget('dffs'));
-    $st = (string)$r->query('state'); $ctx = $st !== '' ? Cache::pull('fb.st.' . $st) : null;
-    if (!$ctx || !hash_equals($st, (string)$r->cookie('dffs')) || $r->query('error') || !$r->query('code')) return $fail();
+    $st = (string)$r->query('state'); $ctx = $st !== '' ? Cache::pull('oa.st.' . $st) : null;
+    if (!$ctx || ($ctx['prov'] ?? '') !== $prov || !hash_equals($st, (string)$r->cookie('dffs')) || $r->query('error') || !$r->query('code')) return $fail();
+    $ru = \App\Support\CustAuth::redirectFor($prov); $H = \Illuminate\Support\Facades\Http::class;
     try {
-      $tk = \Illuminate\Support\Facades\Http::timeout(12)->get('https://graph.facebook.com/v19.0/oauth/access_token', ['client_id'=>Sms::secret('fb_app_id'), 'client_secret'=>Sms::secret('fb_app_secret'), 'redirect_uri'=>\App\Support\CustAuth::redirectUrl(), 'code'=>$r->query('code')])->json('access_token');
-      if (!$tk) return $fail();
-      $me = \Illuminate\Support\Facades\Http::timeout(12)->get('https://graph.facebook.com/v19.0/me', ['fields'=>'id,name,email,picture.width(200).height(200)', 'access_token'=>$tk])->json();
+      if ($prov === 'google') {
+        $tk = $H::timeout(12)->asForm()->post('https://oauth2.googleapis.com/token', ['code'=>$r->query('code'), 'client_id'=>Sms::secret('g_client_id'), 'client_secret'=>Sms::secret('g_client_secret'), 'redirect_uri'=>$ru, 'grant_type'=>'authorization_code'])->json('access_token');
+        if (!$tk) return $fail();
+        $g = $H::timeout(12)->withToken($tk)->get('https://openidconnect.googleapis.com/v1/userinfo')->json();
+        $me = ['id'=>(string)($g['sub'] ?? ''), 'email'=>!empty($g['email_verified']) ? (string)($g['email'] ?? '') : '', 'name'=>(string)($g['name'] ?? ''), 'avatar'=>$g['picture'] ?? null];
+      } else {
+        $tk = $H::timeout(12)->get('https://graph.facebook.com/v19.0/oauth/access_token', ['client_id'=>Sms::secret('fb_app_id'), 'client_secret'=>Sms::secret('fb_app_secret'), 'redirect_uri'=>$ru, 'code'=>$r->query('code')])->json('access_token');
+        if (!$tk) return $fail();
+        $f = $H::timeout(12)->get('https://graph.facebook.com/v19.0/me', ['fields'=>'id,name,email,picture.width(200).height(200)', 'access_token'=>$tk])->json();
+        $me = ['id'=>(string)($f['id'] ?? ''), 'email'=>(string)($f['email'] ?? ''), 'name'=>(string)($f['name'] ?? ''), 'avatar'=>$f['picture']['data']['url'] ?? null];
+      }
     } catch (\Throwable $e) { return $fail(); }
-    if (empty($me['id'])) return $fail();
+    if ($me['id'] === '') return $fail();
     $go = $ctx['next'] ?: '/account'; $forget = cookie()->forget('dffs');
     if ($ctx['mode'] === 'connect' && $ctx['cid']) {
-      $ex = DB::table('customer_auth_providers')->where('provider', 'facebook')->where('provider_user_id', (string)$me['id'])->first();
+      $ex = DB::table('customer_auth_providers')->where('provider', $prov)->where('provider_user_id', $me['id'])->first();
       if ($ex && (int)$ex->customer_id !== (int)$ctx['cid']) return redirect('/account/security?fb=used')->withCookie($forget);
-      \App\Support\CustAuth::link((int)$ctx['cid'], 'facebook', (string)$me['id'], $me['email'] ?? null, $me['name'] ?? null, $me['picture']['data']['url'] ?? null);
+      \App\Support\CustAuth::link((int)$ctx['cid'], $prov, $me['id'], $me['email'] ?: null, $me['name'], $me['avatar']);
       return redirect('/account/security?fb=ok')->withCookie($forget);
     }
-    [$cid, $state] = \App\Support\CustAuth::resolveFacebook($me);
-    if ($state === 'need_email') { $t = bin2hex(random_bytes(16)); Cache::put('fb.pend.' . $t, $me, 900); return redirect('/account/complete?t=' . $t)->withCookie($forget); }
+    [$cid, $state] = \App\Support\CustAuth::resolveSocial($prov, $me['id'], $me['email'], $me['name'], $me['avatar']);
+    if ($state === 'need_email') { $t = bin2hex(random_bytes(16)); Cache::put('fb.pend.' . $t, ['id'=>$me['id'], 'name'=>$me['name'], 'picture'=>['data'=>['url'=>$me['avatar']]], 'prov'=>$prov], 900); return redirect('/account/complete?t=' . $t)->withCookie($forget); }
     if (!$cid) return $fail();
     $c = DB::table('customers')->find($cid); if (!$c || $c->blocked) return redirect('/account/login?fb=err')->withCookie($forget);
-    \App\Support\CustAuth::log($r, $cid, 'facebook');
+    \App\Support\CustAuth::log($r, $cid, $prov);
     return redirect($go)->withCookie($forget)->withCookie($this->startSession($r, $cid, true));
   }
   /** Facebook gave no email: ask for one. */
@@ -188,13 +204,14 @@ class AccountController extends StoreController {
     $d = $r->validate(['email'=>'required|email|max:120']); $em = mb_strtolower(trim($d['email']));
     if (DB::table('customers')->whereRaw('lower(email) = ?', [$em])->exists()) return response()->json(['ok'=>false, 'error'=>'এই ইমেইলে আগে থেকে অ্যাকাউন্ট আছে। ওই ইমেইল দিয়ে লগইন করে Login & Security থেকে Facebook যুক্ত করুন।'], 422);
     $cid = \App\Support\CustAuth::create($me['name'] ?? 'Customer', $em, $me['picture']['data']['url'] ?? null, false);
-    \App\Support\CustAuth::link($cid, 'facebook', (string)$me['id'], $em, $me['name'] ?? null, $me['picture']['data']['url'] ?? null); Cache::forget('fb.pend.' . $t); \App\Support\CustAuth::log($r, $cid, 'facebook');
+    $pv = $me['prov'] ?? 'facebook'; \App\Support\CustAuth::link($cid, $pv, (string)$me['id'], $em, $me['name'] ?? null, $me['picture']['data']['url'] ?? null); Cache::forget('fb.pend.' . $t); \App\Support\CustAuth::log($r, $cid, $pv);
     return response()->json(['ok'=>true, 'go'=>'/account'])->withCookie($this->startSession($r, $cid, true));
   }
-  public function fbDisconnect(Request $r) {
-    $c = $this->me($r); if (!$c) return response()->json([], 401);
-    if (empty($c->password)) return response()->json(['ok'=>false, 'error'=>'Facebook-ই আপনার একমাত্র লগইন পদ্ধতি। আগে Email + Password সেট করুন, তারপর Facebook বিচ্ছিন্ন করুন।'], 422);
-    DB::table('customer_auth_providers')->where('customer_id', $c->id)->where('provider', 'facebook')->delete(); return response()->json(['ok'=>true]);
+  public function fbDisconnect(Request $r, $p = 'facebook') {
+    $c = $this->me($r); if (!$c) return response()->json([], 401); $p = $p === 'google' ? 'google' : 'facebook';
+    $others = DB::table('customer_auth_providers')->where('customer_id', $c->id)->whereNotIn('provider', ['email', $p])->count();
+    if (empty($c->password) && !$others) return response()->json(['ok'=>false, 'error'=>ucfirst($p) . '-ই আপনার একমাত্র লগইন পদ্ধতি। আগে Email + Password সেট করুন, তারপর বিচ্ছিন্ন করুন।'], 422);
+    DB::table('customer_auth_providers')->where('customer_id', $c->id)->where('provider', $p)->delete(); return response()->json(['ok'=>true]);
   }
   /** Facebook-only customers set Email + Password (no current password needed). */
   public function setPassword(Request $r) {
@@ -302,7 +319,7 @@ class AccountController extends StoreController {
     }
     if ($tab === 'notifications') $d['notes'] = $this->notes($c, $all);
     if ($tab === 'notifications') { $d['hist'] = DB::table('customer_notifications')->where('customer_id', $c->id)->orderByDesc('id')->limit(60)->get(); $d['prefs'] = \App\Support\Push::prefs((int)$c->id); }
-    if ($tab === 'security') { $d['sessions'] = DB::table('customer_sessions')->where('customer_id', $c->id)->orderByDesc('last_at')->get(); $d['prov'] = DB::table('customer_auth_providers')->where('customer_id', $c->id)->pluck('provider')->all(); $d['fbOn'] = \App\Support\CustAuth::fbOn(); $d['hist'] = DB::table('customer_login_history')->where('customer_id', $c->id)->orderByDesc('id')->limit(10)->get(); }
+    if ($tab === 'security') { $d['sessions'] = DB::table('customer_sessions')->where('customer_id', $c->id)->orderByDesc('last_at')->get(); $d['prov'] = DB::table('customer_auth_providers')->where('customer_id', $c->id)->pluck('provider')->all(); $d['fbOn'] = \App\Support\CustAuth::fbOn(); $d['gOn'] = \App\Support\CustAuth::googleOn(); $d['hist'] = DB::table('customer_login_history')->where('customer_id', $c->id)->orderByDesc('id')->limit(10)->get(); }
     return $this->view('store.account', $d);
   }
   private function publicCoupons() {

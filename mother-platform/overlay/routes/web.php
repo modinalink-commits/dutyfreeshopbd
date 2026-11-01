@@ -239,6 +239,9 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestF
   Route::post('/account/register', [\App\Http\Controllers\AccountController::class,'register']);
   Route::post('/account/register-email', [\App\Http\Controllers\AccountController::class,'registerEmail']);
   Route::get('/account/facebook', [\App\Http\Controllers\AccountController::class,'fbStart']);
+  Route::get('/account/google', [\App\Http\Controllers\AccountController::class,'googleStart']);
+  Route::get('/account/google/callback', [\App\Http\Controllers\AccountController::class,'googleCallback']);
+  Route::post('/account/provider/{p}/disconnect', [\App\Http\Controllers\AccountController::class,'fbDisconnect'])->where('p','google|facebook');
   Route::get('/account/facebook/callback', [\App\Http\Controllers\AccountController::class,'fbCallback']);
   Route::get('/account/complete', [\App\Http\Controllers\AccountController::class,'completeForm']);
   Route::post('/account/complete', [\App\Http\Controllers\AccountController::class,'completeSave']);
