@@ -160,6 +160,7 @@ body .hh .va:hover{filter:brightness(1.08)}
 .pc .pr b{font-size:11px}.pc .pr s{font-size:8.5px}.pc .pr .dp{font-size:8.5px;padding:1px 4px;border-radius:5px}
 .pc .ck{font-size:8.5px;padding:2px 6px;border-radius:5px}
 .pc .on{height:28px;font-size:8.5px;gap:3px;border-radius:7px}.pc .on svg{width:10px;height:10px}}
+.pc .on svg{stroke:#FF5A00;transition:stroke .2s ease,transform .2s ease}.pc .on svg circle{fill:#FF5A00;transition:fill .2s ease}.pc .on:hover svg{stroke:#E04E00}.pc .on:hover svg circle{fill:#E04E00}
 </style>
 <style>.pc .ph{position:relative;overflow:hidden}.pc .ph img{transition:transform .3s ease-in-out,opacity .3s ease-in-out;transform-origin:center;will-change:transform}.pc .ph .im2{position:absolute;top:0;right:0;bottom:0;left:0;margin:auto;opacity:0}@media(hover:hover) and (pointer:fine){.pc:hover .ph img{transform:scale(1.08)}.pc:hover .ph img:first-child:not(:only-child){opacity:0}.pc:hover .ph .im2{opacity:1;transform:scale(1.06)}}@media(prefers-reduced-motion:reduce){.pc .ph img{transition:none}}</style>
 </head><body oncontextmenu="if(event.target.tagName==='IMG')return false">@include('store.pwa_splash')@if(!empty($s['gtm_id']))<noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{ $s['gtm_id'] }}" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>@endif
