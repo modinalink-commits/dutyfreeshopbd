@@ -206,7 +206,7 @@ function fmt(n){return '৳'+Math.round(n).toLocaleString('en-US')}
 function smooth(p,lo,hi){var K=function(v){return Math.max(lo,Math.min(hi,v))};if(p.length<2)return '';var d='M'+p[0][0]+','+p[0][1];for(var i=0;i<p.length-1;i++){var a=p[i-1]||p[i],b=p[i],c=p[i+1],e=p[i+2]||c;d+=' C'+(b[0]+(c[0]-a[0])/6)+','+K(b[1]+(c[1]-a[1])/6)+' '+(c[0]-(e[0]-b[0])/6)+','+K(c[1]-(e[1]-b[1])/6)+' '+c[0]+','+c[1]}return d}
 function draw(){
  var box=document.getElementById('dxchart');if(!box)return;var T=JSON.parse(box.dataset.trend||'[]');var m=(document.querySelector('#dxtabs .on')||{dataset:{m:'sales'}}).dataset.m;
- var W=720,H=190,L=40,R=12,Tp=10,B=24,n=T.length,cw=(W-L-R)/Math.max(1,n),iw=W-L-R,ih=H-Tp-B;
+ var W=960,H=165,L=40,R=12,Tp=10,B=24,n=T.length,cw=(W-L-R)/Math.max(1,n),iw=W-L-R,ih=H-Tp-B;
  var A,Bs,la,lb,fa,fb;
  if(m==='sales'){A=T.map(function(t){return t.sales});Bs=T.map(function(t){return t.orders});la='Sales (৳)';lb='Orders';fa=fmt;fb=function(v){return v+' orders'}}
  else if(m==='profit'){A=T.map(function(t){return t.profit});Bs=null;la='Gross profit (৳)';fa=fmt}
