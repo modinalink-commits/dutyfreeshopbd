@@ -1,0 +1,1 @@
+@if(!empty($ann))<div class="an-rot" aria-live="off"><ul>@foreach($ann as $a)<li>@if(!empty($a['link']))<a href="{{ $a['link'] }}">@endif{{ trim(($a['icon'] ?? '').' '.$a['text']) }}@if(!empty($a['link']))</a>@endif</li>@endforeach</ul></div>@endif

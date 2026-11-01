@@ -315,3 +315,7 @@ resources/views/voice_offer_lua.txt
 database/migrations/2026_11_02_000006_command_board.php
 app/Http/Controllers/CommandBoardController.php
 resources/views/command_board.blade.php
+database/migrations/2026_11_02_000007_announcements.php
+app/Http/Controllers/AnnouncementController.php
+resources/views/announcements.blade.php
+resources/views/store/announce.blade.php
