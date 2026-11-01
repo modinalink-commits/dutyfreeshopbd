@@ -5,7 +5,7 @@ $G = [
 ['Call Center','phone',[['Soft Dialer','/admin/call-center/phone',null],['Call History','/admin/call-center/history',null],['Missed Calls','/admin/call-center/history?f=missed',null],['Call Reports','/admin/call-center/history?view=report',null],['SIP Accounts','/admin/call-center/account',null],['PBX Settings','/admin/call-center/account',null]]],
 ['Orders & Fulfillment','list',[['Orders','/admin/orders','orders'],['New Order','/admin/orders/new',null],['Order sources','/admin/m/order-sources',null],['Order comment templates','/admin/m/order-comments',null]]],
 ['Products & Inventory','cube',[['Catalog (Products)','/admin/products',null,'Products'],['Add Product','/admin/products/new',null,'Products'],['Product Order','/admin/product-order',null,'Products'],['Customer reviews','/admin/m/reviews',null,'Products'],['Attributes','/admin/m/attributes',null,'Products'],['Attribute values','/admin/m/attribute-values',null,'Products'],['Product variants','/admin/m/variants',null,'Products'],['Main Categories','/admin/categories/main',null,'Categories & Brands'],['Sub Categories','/admin/categories/sub',null,'Categories & Brands'],['Child Categories','/admin/categories/child',null,'Categories & Brands'],['Brands','/admin/brands',null,'Categories & Brands'],['Inventory','/admin/inventory',null,'Inventory'],['Stock Log','/admin/m/stock-log',null,'Inventory']]],
-['Purchase & Suppliers','truck-box',[['Purchase invoices','/admin/m/purchases',null],['Suppliers','/admin/m/suppliers',null],['Purchase items','/admin/m/purchase-items',null],['Damaged products','/admin/m/damaged',null]]],
+['Purchase & Suppliers','truck-box',[['Purchase Dashboard','/admin/purchase',null],['New Purchase','/admin/purchase/new',null],['Purchase Invoices','/admin/purchase/invoices',null],['Suppliers','/admin/purchase/suppliers',null],['Supplier Ledger','/admin/purchase/ledger',null],['Supplier Payments','/admin/purchase/payments',null],['Due / Payables','/admin/purchase/dues',null],['Damage Products','/admin/purchase/damages',null],['Purchase Return','/admin/purchase/returns',null],['Debit / Credit Notes','/admin/purchase/notes',null],['Purchase Reports','/admin/purchase/reports',null],['Audit Log','/admin/purchase/audit',null],['Settings','/admin/purchase/settings',null]]],
 ['Stores & Channels','store',[['Stores & Scan','/admin/stores',null],['Stores list','/admin/m/stores',null],['Sales channels','/admin/m/channels','channels']]],
 ['Customers','users',[['Customers','/admin/m/customers',null],['Customer Segments','/admin/sms-marketing/customers',null],['Membership levels','/admin/m/memberships',null],['Loyalty points','/admin/m/points',null],['Contact messages','/admin/m/messages',null],['Blocked IPs','/admin/m/blocked-ips',null]]],
 ['Staff & HR','idcard',[['Staff Tracking','/admin/staff-log',null],['HR & Payroll','/admin/m/employees',null],['Payroll','/admin/m/payroll',null]]],
@@ -17,7 +17,7 @@ $G = [
 ['Reports & Analytics','chart',[['Reports & Documents','/admin/reports',null],['Report Details','/admin/report-details',null],['Orders (document)','/admin/m/r-orders',null],['Products (document)','/admin/m/r-products',null],['Staff order tracking (document)','/admin/m/r-staff-log',null]]],
 ['Settings & System','gear',[['Chat Settings','/admin/chat-settings',null],['Deployments','/admin/deploy',null],['Users & Permissions','/admin/permissions',null],['Admin users','/admin/m/users',null],['Roles and permissions','/admin/m/roles',null],['Site settings','/admin/m/settings',null],['Audit log','/admin/m/audit-log',null],['Error log','/admin/error-log',null]]],
 ];
-$used = []; foreach ($G as $g) foreach ($g[2] as $it) $used[$it[1]] = 1;
+$used = []; foreach ($G as $g) foreach ($g[2] as $it) $used[$it[1]] = 1; foreach (['purchases','suppliers','purchase-items','damaged'] as $oldm) $used['/admin/m/'.$oldm] = 1;
 $left = []; foreach (\App\Models\Res::all() as $sl => $r) if (empty($used['/admin/m/'.$sl])) $left[] = [$r['title'], '/admin/m/'.$sl, null];
 if ($left) $G[count($G)-1][2] = array_merge($G[count($G)-1][2], $left);
 $cur = '/'.trim(request()->path(), '/'); $best = null; $bl = 0;
@@ -38,10 +38,10 @@ $svg = fn($p) => '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" st
 @foreach($G as $gi => [$gl, $gic, $gitems])
 @php $vis = array_values(array_filter(array_keys($gitems), fn($i) => $ok($gitems[$i][1]))); $isRep = $gl === 'Reports & Analytics'; $showRep = $isRep && $canRep; $gopen = $an && $isRep; foreach ($vis as $i) if ($best === $gi.'.'.$i) $gopen = true; @endphp
 @continue(!$vis && !$showRep)
-<details class="mg" name="mg" {{ $gopen ? 'open' : '' }}><summary>{!! $svg($IC[$gic]) !!}<span>{{ $gl }}</span></summary>
+<details class="mg" data-g="{{ $gi }}" {{ $gopen ? 'open' : '' }}><summary>{!! $svg($IC[$gic]) !!}<span>{{ $gl }}</span></summary>
 @if($showRep)<a class="sub rp1 {{ $an && $agrp === 'overview' ? 'on' : '' }}" href="/admin/analytics">Analytics Dashboard</a>
 @foreach(\App\Support\Analytics::menu() as $gk => [$agl, $agi])@continue($gk === 'overview')
-<details class="rpg" name="rpg" {{ $an && $agrp === $gk ? 'open' : '' }}><summary>{{ $agl }}</summary>@foreach($agi as $sl => $st)<a class="sub {{ $aslug === $sl ? 'on' : '' }}" href="/admin/analytics/{{ $sl }}">{{ $st }}</a>@endforeach</details>
+<details class="rpg" {{ $an && $agrp === $gk ? 'open' : '' }}><summary>{{ $agl }}</summary>@foreach($agi as $sl => $st)<a class="sub {{ $aslug === $sl ? 'on' : '' }}" href="/admin/analytics/{{ $sl }}">{{ $st }}</a>@endforeach</details>
 @endforeach @endif
 @php $sg = null; @endphp
 @foreach($vis as $i)@php [$il, $ih, $ibk] = $gitems[$i]; $isg = $gitems[$i][3] ?? null; $bv = $ibk ? ($B[$ibk] ?? 0) : 0; @endphp
@@ -55,6 +55,13 @@ var a=n.querySelector('a.sub.on,a.nv.on');if(a){var nr=n.getBoundingClientRect()
 var t;function sv(){try{sessionStorage.setItem(K,n.scrollTop)}catch(e){}}
 n.addEventListener('scroll',function(){clearTimeout(t);t=setTimeout(sv,80)},{passive:true});n.addEventListener('click',sv,true);window.addEventListener('pagehide',sv);window.addEventListener('beforeunload',sv);
 window.addEventListener('pageshow',function(e){if(e.persisted){var x=null;try{x=sessionStorage.getItem(K)}catch(z){}if(x!==null)n.scrollTop=+x||0}})})();</script>
+<script>(function(){var n=document.querySelector('aside nav');if(!n)return;var K='dfSbOpen',on=n.querySelector('a.sub.on,a.nv.on');
+function act(d){return !!(on&&d.contains(on))}
+var o=[];try{o=JSON.parse(sessionStorage.getItem(K)||'[]')}catch(e){}
+n.querySelectorAll('details.mg').forEach(function(d){if(!act(d)&&o.indexOf(d.dataset.g)>-1&&o.length===1)d.open=true});
+n.querySelectorAll('details.mg').forEach(function(d){d.addEventListener('toggle',function(){if(d.open){n.querySelectorAll('details.mg[open]').forEach(function(x){if(x!==d&&!act(x))x.open=false})}
+var l=[];n.querySelectorAll('details.mg[open]').forEach(function(x){l.push(x.dataset.g)});try{sessionStorage.setItem(K,JSON.stringify(l))}catch(e){}})});
+n.querySelectorAll('details').forEach(function(d){if(act(d)){d.addEventListener('click',function(e){if(e.target.closest('summary')&&d.open&&e.target.closest('summary').parentNode===d&&act(d)){e.preventDefault()}},true)}})})();</script>
 <div class="me">{{ auth()->user()->name }}<form method="post" action="/admin/logout">@csrf<button class="g">Sign out</button></form></div></aside>
 <style>aside details.mg{margin:0}aside details.mg>summary{font-weight:600;position:relative;padding-right:30px}aside details.mg>summary::after{content:'›';position:absolute;right:14px;font-size:16px;opacity:.7;transition:.15s}aside details.mg[open]>summary::after{transform:rotate(90deg)}aside details.mg[open]>summary{color:#fff;background:#121A2B}aside details.mg>a.sub{display:flex;align-items:center;justify-content:space-between;gap:8px}aside details.mg>a.sub.on{border-left:3px solid #FF5A00;padding-left:39px}aside details.mg>a.rp1{padding-left:42px}aside details.mg{margin-bottom:1px}aside details.mg>summary::-webkit-details-marker{display:none}
 aside details.rpg{margin:0}aside details.rpg>summary{display:flex;align-items:center;justify-content:space-between;padding:7px 12px 7px 42px;font-size:13px;color:#C7CEDB;border-radius:8px;cursor:pointer;list-style:none}aside details.rpg>summary::after{content:'›';transition:.15s;font-size:15px;opacity:.7}aside details.rpg[open]>summary::after{transform:rotate(90deg)}aside details.rpg>summary:hover{background:#161E30;color:#fff}aside details.rpg[open]>summary{color:#fff}aside details.rpg a.sub{padding-left:56px;font-size:12.5px;display:flex;align-items:center;justify-content:space-between;gap:8px}aside details.rpg a.sub.on{border-left:3px solid #FF5A00;padding-left:53px}aside details.rpg>summary::-webkit-details-marker{display:none}aside a.sub em{font-size:10.5px;padding:0 7px}</style>
@@ -67,3 +74,4 @@ none.style.display=t&&!n?'block':'none';q._first=first}
 q.addEventListener('input',run);
 q.addEventListener('keydown',function(e){if(e.key==='Enter'&&q._first){location.href=q._first.getAttribute('href')}if(e.key==='Escape'){q.value='';run();q.blur()}});
 document.addEventListener('keydown',function(e){if(e.key==='/'&&!/INPUT|TEXTAREA|SELECT/.test((document.activeElement||{}).tagName||'')&&!e.ctrlKey&&!e.metaKey){e.preventDefault();q.focus()}})})();</script>
+<style>aside{width:240px!important;min-width:240px;max-width:240px}aside a.sub,aside summary span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}aside a.sub.on{box-shadow:inset 3px 0 0 var(--o);background:#1B2540;color:#fff;font-weight:600}aside details.mg>.sub,aside details.rpg{animation:none}</style>

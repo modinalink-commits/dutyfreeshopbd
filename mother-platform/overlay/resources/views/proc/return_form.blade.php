@@ -1,0 +1,19 @@
+@extends('layout')@section('title','Purchase return')
+@section('body')
+<h1 style="margin:0 0 10px">New Purchase Return</h1>@include('proc.nav')
+<form class="card" method="post" action="/admin/purchase/returns">@csrf<input type="hidden" name="product_id" id="pid"><input type="hidden" name="name" id="nm">
+<div class="fg"><div><label>Supplier *</label><select name="supplier_id" id="sup" required><option value="">Select…</option>@foreach($sup as $s)<option value="{{ $s->id }}">{{ $s->name }}</option>@endforeach</select></div>
+<div><label>Original purchase invoice</label><select name="purchase_id" id="inv"><option value="">—</option></select></div>
+<div><label>Product * <span class="mut" id="pn"></span></label><select id="isel" style="display:none"></select><input id="pq" placeholder="Or search any product…" autocomplete="off"><div id="pl" style="position:relative"></div></div>
+<div><label>Quantity *</label><input type="number" min="1" name="qty" id="qty" required></div><div><label>Rate *</label><input type="number" step="0.01" name="rate" id="rate" required value="0"></div><div><label>Return value</label><input id="val" disabled value="0.00"></div>
+<div><label>Reason</label><input name="reason"></div><div><label>Return date *</label><input type="date" name="return_date" required value="{{ now('Asia/Dhaka')->toDateString() }}"></div></div>
+<label>Note</label><textarea name="note" rows="2"></textarea><p class="mut">Stock goes down by the returned quantity and the supplier balance is reduced by the return value.</p>
+<button>Save return</button> <a class="btn g" href="/admin/purchase/returns">Cancel</a></form>
+<script>(function(){var $=function(i){return document.getElementById(i)},H=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})},it=[];
+function val(){$('val').value=((+$('qty').value||0)*(+$('rate').value||0)).toFixed(2)}$('qty').oninput=val;$('rate').oninput=val;
+$('sup').onchange=function(){$('inv').innerHTML='<option value="">—</option>';$('isel').style.display='none';if(!this.value)return;fetch('/admin/purchase/api/supplier/'+this.value).then(function(r){return r.json()}).then(function(d){d.invoices.forEach(function(x){$('inv').insertAdjacentHTML('beforeend','<option value="'+x.id+'">'+H(x.invoice)+' · '+x.date+'</option>')})})};
+$('inv').onchange=function(){$('isel').style.display='none';if(!this.value)return;fetch('/admin/purchase/api/items/'+this.value).then(function(r){return r.json()}).then(function(a){it=a;$('isel').innerHTML='<option value="">Pick from this invoice…</option>'+a.map(function(x,i){return '<option value="'+i+'">'+H(x.name)+' (bought '+x.qty+', returned '+x.returned+')</option>'}).join('');$('isel').style.display='block'})};
+$('isel').onchange=function(){var x=it[this.value];if(!x)return;$('pid').value=x.product_id||'';$('nm').value=x.name;$('pn').textContent=x.name;$('rate').value=x.cost;$('qty').max=x.qty-x.returned;val()};
+var tm;$('pq').oninput=function(){clearTimeout(tm);var v=this.value.trim();if(!v){$('pl').innerHTML='';return}tm=setTimeout(function(){fetch('/admin/purchase/api/products?q='+encodeURIComponent(v)).then(function(r){return r.json()}).then(function(a){$('pl').innerHTML='<div style="position:absolute;z-index:9;left:0;right:0;background:#fff;border:1px solid var(--bd);border-radius:10px;max-height:220px;overflow:auto">'+a.map(function(p){return '<div class="pp" data-i="'+p.id+'" data-n="'+H(p.name)+'" data-c="'+p.cost+'" style="padding:7px 10px;cursor:pointer">'+H(p.name)+'</div>'}).join('')+'</div>';$('pl').querySelectorAll('.pp').forEach(function(e){e.onclick=function(){$('pid').value=e.dataset.i;$('nm').value=e.dataset.n;$('pn').textContent=e.dataset.n;$('rate').value=e.dataset.c;$('pl').innerHTML='';$('pq').value='';val()}})})},200)};
+document.querySelector('form').onsubmit=function(){if(!$('nm').value){alert('Choose a product');return false}}})();</script>
+@endsection

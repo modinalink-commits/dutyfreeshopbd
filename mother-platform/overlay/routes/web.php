@@ -155,6 +155,24 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
     Route::get('/settings', [$C,'settings']); Route::post('/settings', [$C,'settingsSave']); Route::post('/optout', [$C,'optout']);
     Route::post('/quick', [$C,'quick']); Route::get('/history', [$C,'history']);
   });
+  Route::prefix('purchase')->group(function () {
+    $C = \App\Http\Controllers\ProcurementController::class;
+    Route::get('/', [$C,'dashboard']);
+    Route::get('/new', [$C,'form']); Route::get('/edit/{id}', [$C,'form'])->whereNumber('id'); Route::post('/save', [$C,'save']);
+    Route::get('/invoices', [$C,'list'])->defaults('kind','invoices'); Route::get('/invoices/{id}', [$C,'show'])->whereNumber('id'); Route::post('/invoices/{id}/action', [$C,'action'])->whereNumber('id'); Route::get('/invoices/{id}/export/{fmt}', [$C,'invoiceExport'])->whereNumber('id');
+    Route::get('/suppliers', [$C,'list'])->defaults('kind','suppliers'); Route::get('/suppliers/new', [$C,'supplierForm']); Route::post('/suppliers/save', [$C,'supplierSave']);
+    Route::get('/suppliers/{id}', [$C,'supplier'])->whereNumber('id'); Route::get('/suppliers/{id}/edit', [$C,'supplierForm'])->whereNumber('id'); Route::post('/suppliers/{id}/delete', [$C,'supplierDelete'])->whereNumber('id');
+    Route::post('/suppliers/{id}/sms', [$C,'supplierSms'])->whereNumber('id'); Route::post('/suppliers/{id}/remind', [$C,'remind'])->whereNumber('id'); Route::post('/suppliers/{id}/statement-sms', [$C,'sendStatement'])->whereNumber('id');
+    Route::get('/ledger', [$C,'ledger']);
+    Route::get('/payments', [$C,'list'])->defaults('kind','payments'); Route::get('/payments/new', [$C,'payForm']); Route::post('/payments', [$C,'paySave']); Route::post('/payments/{id}/{a}', [$C,'payAction'])->whereNumber('id');
+    Route::get('/dues', [$C,'list'])->defaults('kind','dues');
+    Route::get('/damages', [$C,'list'])->defaults('kind','damages'); Route::get('/damages/new', [$C,'damageForm']); Route::post('/damages', [$C,'damageSave']); Route::post('/damages/{id}/delete', [$C,'damageDelete'])->whereNumber('id');
+    Route::get('/returns', [$C,'list'])->defaults('kind','returns'); Route::get('/returns/new', [$C,'returnForm']); Route::post('/returns', [$C,'returnSave']); Route::post('/returns/{id}/delete', [$C,'returnDelete'])->whereNumber('id');
+    Route::get('/notes', [$C,'list'])->defaults('kind','notes'); Route::get('/notes/new', [$C,'noteForm']); Route::post('/notes', [$C,'noteSave']); Route::post('/notes/{id}/delete', [$C,'noteDelete'])->whereNumber('id');
+    Route::get('/reports', [$C,'reports']); Route::get('/audit', [$C,'audit']); Route::get('/settings', [$C,'settings']); Route::post('/settings', [$C,'settingsSave']);
+    Route::get('/export/{kind}/{fmt}', [$C,'export']);
+    Route::get('/api/products', [$C,'apiProducts']); Route::post('/api/product', [$C,'apiNewProduct']); Route::post('/api/bulk', [$C,'apiBulk']); Route::get('/api/supplier/{id}', [$C,'apiSupplier'])->whereNumber('id'); Route::get('/api/items/{id}', [$C,'apiItems'])->whereNumber('id');
+  });
   Route::get('/inventory', [\App\Http\Controllers\InventoryController::class,'index']);
   Route::get('/inventory/export/{fmt}', [\App\Http\Controllers\InventoryController::class,'export']);
   Route::get('/stores', [\App\Http\Controllers\InventoryController::class,'stores']);
@@ -253,6 +271,8 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestF
   Route::post('/checkout/verify', [\App\Http\Controllers\CheckoutLookupController::class,'verify']);
   Route::post('/checkout/track', [\App\Http\Controllers\StoreController::class,'trackCheckout']);
   Route::post('/order', [\App\Http\Controllers\StoreController::class,'order']);
+  Route::get('/purchase/invoice/{no}', [\App\Http\Controllers\ProcurementController::class,'publicInvoice'])->where('no','PUR-[0-9]+')->middleware('throttle:60,1');
+  Route::get('/supplier/statement/{token}', [\App\Http\Controllers\ProcurementController::class,'statement'])->where('token','[a-f0-9]+')->middleware('throttle:60,1');
   Route::get('/p/{key}', [\App\Http\Controllers\StoreController::class,'product'])->where('key','[A-Za-z0-9\-]+');
   Route::get('/{slug}', [\App\Http\Controllers\StoreController::class,'category'])->where('slug','[a-z0-9\-]+');
   Route::get('/{cat}/{sub}', [\App\Http\Controllers\StoreController::class,'categorySub'])->where(['cat'=>'[a-z0-9\-]+','sub'=>'[a-z0-9\-]+']);

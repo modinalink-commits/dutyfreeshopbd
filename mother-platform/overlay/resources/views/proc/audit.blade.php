@@ -1,0 +1,7 @@
+@extends('layout')@section('title','Purchase audit log')
+@section('body')
+<h1 style="margin:0 0 10px">Purchase Audit Log</h1>@include('proc.nav')
+<form class="card" method="get"><div class="fg"><div><label>From</label><input type="date" name="from" value="{{ request('from') }}"></div><div><label>To</label><input type="date" name="to" value="{{ request('to') }}"></div><div><label>Action contains</label><input name="a" value="{{ request('a') }}" placeholder="payment, purchase…"></div><div><label>User</label><input name="u" value="{{ request('u') }}"></div><div style="align-self:end"><button>Filter</button></div></div></form>
+<div class="card tw"><table><thead><tr><th>Date</th><th>Time</th><th>User</th><th>Action</th><th>Subject</th><th>Previous value</th><th>New value</th></tr></thead><tbody>
+@forelse($rows as $r)@php $m = json_decode((string)$r->meta,true) ?: []; $t = \Carbon\Carbon::parse($r->created_at)->timezone('Asia/Dhaka'); @endphp<tr><td>{{ $t->format('d M Y') }}</td><td>{{ $t->format('H:i:s') }}</td><td>{{ $r->user_name }}</td><td>{{ str_replace('proc.','',$r->action) }}</td><td>{{ $r->subject }}</td><td style="max-width:260px;font-size:12px">{{ isset($m['previous']) ? json_encode($m['previous'],JSON_UNESCAPED_UNICODE) : '' }}</td><td style="max-width:260px;font-size:12px">{{ isset($m['new']) ? json_encode($m['new'],JSON_UNESCAPED_UNICODE) : '' }}</td></tr>@empty<tr><td colspan="7" class="mut">No entries yet.</td></tr>@endforelse</tbody></table>{{ $rows->links() }}</div>
+@endsection
