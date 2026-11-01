@@ -72,9 +72,39 @@
 @php $rvN = $reviews->count(); $rvAvg = $rvN ? round($reviews->avg('rating'), 1) : 0; @endphp
 <div class="tp" id="previews"><h3>Customer Reviews @if($rvN)<span style="font-weight:600;color:#FF5A00;font-size:14px">★ {{ $rvAvg }} / 5 · {{ $rvN }} {{ $rvN === 1 ? 'review' : 'reviews' }}</span>@endif</h3>
 @forelse($reviews as $rv)<div style="border-top:1px solid #D4D4D4;padding:10px 0"><b>{{ $rv->name }}</b> <span style="color:#FF5A00">{{ str_repeat('★', (int)$rv->rating) }}{{ str_repeat('☆', 5 - (int)$rv->rating) }}</span>@if($rv->verified_buyer) <span style="font-size:10px;color:#16A34A;font-weight:700">Verified buyer</span>@endif <small style="color:#6B7280">{{ \Carbon\Carbon::parse($rv->created_at)->format('d M Y') }}</small><div>{{ $rv->body }}</div>@if($rv->reply)<div style="color:#6B7280;margin-top:4px">Reply: {{ $rv->reply }}</div>@endif</div>@empty<p>No reviews yet for this product.</p>@endforelse</div>
-@if($s['pp_related']==='1' && $bottom->count())
-<div class="rh">Related Products</div>
-<div class="gr">@foreach($bottom as $q)@include('store.card', ['fd'=>true])@endforeach</div>
+@if($s['pp_related']==='1' && $rel->count())
+@php $relAll = $c ? '/'.$c->slug.'/' : '/'; $relList = $rel->take(8); @endphp
+<section class="rpx"><div class="rpx-h"><span class="rpx-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1 12H6L5 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></span><h2>Related Products</h2><a href="{{ $relAll }}" class="rpx-all">View All <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></a></div>
+<div class="rpx-g">@foreach($relList as $q)
+@php $qu = \App\Http\Controllers\StoreController::url($q); $qo = \App\Http\Controllers\StoreController::off($q); $qin = ($q->stock ?? 1) > 0; $qa = (float)$q->rv_avg; @endphp
+<article class="rpx-c"><a class="rpx-i" href="{{ $qu }}"><img src="{{ $q->image ?: '/icon.png' }}" alt="{{ $q->name }}" width="120" height="120" loading="lazy" decoding="async" draggable="false" onerror="this.onerror=null;this.src='/icon.png'"></a>
+<div class="rpx-b"><a class="rpx-n" href="{{ $qu }}">{{ $q->name }}</a>
+@if($q->rv_n > 0)<div class="rpx-r" title="{{ $qa }} / 5"><span class="rpx-s" style="--p:{{ round($qa / 5 * 100) }}%" aria-hidden="true">★★★★★</span><b>{{ number_format($qa, 1) }}</b><em>({{ $q->rv_n }} {{ $q->rv_n === 1 ? 'Review' : 'Reviews' }})</em></div>@else<div class="rpx-r"><em>No reviews yet</em></div>@endif
+<div class="rpx-p"><b>৳{{ number_format($q->price) }}</b>@if($qo > 0)<s>৳{{ number_format($q->compare_price) }}</s><span class="rpx-off">{{ $qo }}% OFF</span>@endif</div>
+<span class="rpx-st {{ $qin ? '' : 'no' }}">{!! $qin ? '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg>' : '' !!} {{ $qin ? 'In Stock' : 'Out of Stock' }}</span></div>
+@if($qin)<button type="button" class="rpx-cart" data-id="{{ $q->id }}" data-p="{{ (float)$q->price }}" aria-label="Add to Cart"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 2h4l2.7 12.4a2 2 0 0 0 2 1.6h8.7a2 2 0 0 0 2-1.6L22 7H6"/><circle cx="10" cy="20.5" r="1.4"/><circle cx="18" cy="20.5" r="1.4"/></svg><span>Add to Cart</span></button>@endif</article>
+@endforeach</div></section>
+<style>
+.rpx{margin:28px 0 8px}.rpx-h{display:flex;align-items:center;gap:12px;margin-bottom:14px}.rpx-ic{width:44px;height:44px;border-radius:14px;background:#FFF1E6;color:var(--o);display:flex;align-items:center;justify-content:center;flex:none}
+.rpx-h h2{margin:0;font-size:24px;font-weight:800;color:var(--n);position:relative;padding-bottom:8px}.rpx-h h2:after{content:"";position:absolute;left:0;bottom:0;width:46px;height:4px;border-radius:4px;background:var(--o)}
+.rpx-all{margin-left:auto;color:var(--o);font-weight:700;font-size:15px;display:inline-flex;align-items:center;gap:2px;text-decoration:none}
+.rpx-g{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.rpx-c{position:relative;display:flex;gap:14px;align-items:center;background:#fff;border-radius:18px;padding:12px;box-shadow:0 4px 18px rgba(15,23,42,.07);border:1px solid #F3EDE8;transition:transform .15s,box-shadow .15s}
+.rpx-c:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(15,23,42,.12)}
+.rpx-i{flex:none;width:112px;height:112px;border-radius:14px;background:#FAF7F4;display:flex;align-items:center;justify-content:center;overflow:hidden}.rpx-i img{max-width:100%;max-height:100%;object-fit:contain}
+.rpx-b{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;padding-right:56px}
+.rpx-n{color:var(--n);font-weight:700;font-size:15px;line-height:1.35;text-decoration:none;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.rpx-r{display:flex;align-items:center;gap:6px;font-size:13px}.rpx-r b{color:var(--n)}.rpx-r em{color:#6B7280;font-style:normal}
+.rpx-s{position:relative;display:inline-block;font-size:15px;letter-spacing:1px;color:#E5E7EB;line-height:1}.rpx-s:before{content:"★★★★★";position:absolute;left:0;top:0;width:var(--p);overflow:hidden;color:#F59E0B;white-space:nowrap}
+.rpx-p{display:flex;align-items:center;flex-wrap:wrap;gap:8px}.rpx-p b{color:var(--o);font-size:19px;font-weight:800}.rpx-p s{color:#9CA3AF;font-size:14px}
+.rpx-off{background:#FFE9DA;color:#EA580C;font-weight:700;font-size:12px;border-radius:8px;padding:3px 9px}
+.rpx-st{display:inline-flex;align-items:center;gap:5px;align-self:flex-start;background:#E8F8EE;color:#15803D;font-weight:700;font-size:12.5px;border-radius:9px;padding:4px 10px}.rpx-st.no{background:#FEE2E2;color:#B91C1C}
+.rpx-cart{position:absolute;right:12px;bottom:12px;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:48px;height:46px;padding:0 13px;border:0;border-radius:14px;background:linear-gradient(135deg,#FF7A1A,#FF5A00);color:#fff;font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 6px 14px rgba(255,90,0,.32)}.rpx-cart span{display:none}
+.rpx-cart.ok{background:linear-gradient(135deg,#22C55E,#15803D)}
+@media(min-width:900px){.rpx-cart span{display:inline}.rpx-b{padding-right:0;padding-bottom:50px}.rpx-cart{right:14px;bottom:12px}}
+@media(max-width:899px){.rpx-g{grid-template-columns:1fr}.rpx-h h2{font-size:21px}.rpx-i{width:104px;height:104px}}
+</style>
+<script>document.querySelectorAll('.rpx-cart').forEach(function(b){b.addEventListener('click',function(){var id=b.getAttribute('data-id'),pr=+b.getAttribute('data-p');DF.add(id,1,pr);DF.ev('add_to_cart',{value:pr,items:[{item_id:String(id),price:pr,quantity:1}]});b.classList.add('ok');setTimeout(function(){b.classList.remove('ok')},1500)})});</script>
 @endif
 </div>
 @include('store.zoom')

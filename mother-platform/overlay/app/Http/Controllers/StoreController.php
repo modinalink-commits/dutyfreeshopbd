@@ -153,6 +153,8 @@ class StoreController extends Controller {
     $c = DB::table('categories')->find($p->category_id);
     $rel = $this->q()->where('category_id',$p->category_id)->where('id','!=',$p->id)->orderByRaw('(sub = ?) desc', [$p->sub ?? ''])->orderByDesc('id')->limit(11)->get();
     $reviews = DB::table('reviews')->where('product_id',$p->id)->where('status','approved')->orderByDesc('id')->limit(20)->get();
+    $rst = DB::table('reviews')->whereIn('product_id', $rel->pluck('id')->all())->where('status','approved')->groupBy('product_id')->selectRaw('product_id, avg(rating) as av, count(*) as n')->get()->keyBy('product_id');
+    foreach ($rel as $r0) { $x = $rst->get($r0->id); $r0->rv_avg = $x ? round((float)$x->av, 1) : 0; $r0->rv_n = $x ? (int)$x->n : 0; }
     DB::table('product_views')->insert(['product_id'=>$p->id,'day'=>now('Asia/Dhaka')->toDateString(),'created_at'=>now(),'updated_at'=>now()]);
     $price = (float)$p->price;
     $gallery = DB::table('product_images')->where('product_id',$p->id)->orderBy('position')->orderBy('id')->pluck('path')->all();
