@@ -156,7 +156,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
     Route::get('/settings', [$C,'settings']); Route::post('/settings', [$C,'settingsSave']); Route::post('/optout', [$C,'optout']);
     Route::post('/quick', [$C,'quick']); Route::get('/history', [$C,'history']);
   });
-  Route::get('/winback', [\App\Http\Controllers\WinbackController::class,'index']); Route::post('/winback/settings', [\App\Http\Controllers\WinbackController::class,'save']); Route::post('/winback/run', [\App\Http\Controllers\WinbackController::class,'run']);
+  Route::get('/winback', [\App\Http\Controllers\WinbackController::class,'index']); Route::post('/winback/settings', [\App\Http\Controllers\WinbackController::class,'save']); Route::post('/winback/run', [\App\Http\Controllers\WinbackController::class,'run']); Route::post('/winback/test', [\App\Http\Controllers\WinbackController::class,'test']);
   Route::get('/dob-requests', [\App\Http\Controllers\DobController::class,'index']); Route::post('/dob-requests/{id}', [\App\Http\Controllers\DobController::class,'decide']);
   Route::get('/customer-auth', [\App\Http\Controllers\CustAuthAdminController::class,'index']); Route::post('/customer-auth', [\App\Http\Controllers\CustAuthAdminController::class,'save']); Route::post('/customer-auth/test', [\App\Http\Controllers\CustAuthAdminController::class,'test']);
   Route::get('/fraud', [\App\Http\Controllers\FraudController::class,'index']); Route::get('/fraud/check', [\App\Http\Controllers\FraudController::class,'check']); Route::post('/fraud/settings', [\App\Http\Controllers\FraudController::class,'save']);

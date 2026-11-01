@@ -14,7 +14,7 @@ class Winback
   public static function put(string $k, string $v): void { DB::table('settings')->updateOrInsert(['key' => 'wb_' . $k], ['value' => $v, 'updated_at' => now(), 'created_at' => now()]); }
   public static function on(): bool { return self::set('on', '0') === '1'; }
   public static function stages(): array {
-    $j = json_decode(self::set('stages', ''), true); $s = is_array($j) && $j ? $j : self::DEF_STAGES; $max = (float)self::set('max_pct', '5');
+    $j = json_decode(self::set('stages', ''), true); $s = is_array($j) && $j ? $j : self::DEF_STAGES; $max = (float)self::set('max_pct', '100'); if ($max <= 0) $max = 100000;
     $o = []; foreach ($s as $r) { $d = (int)($r[0] ?? 0); $p = min((float)($r[1] ?? 0), $max); if ($d > 0 && $p > 0) $o[$d] = $p; } ksort($o); $out = []; foreach ($o as $d => $p) $out[] = [$d, $p]; return $out;
   }
   public static function norm(string $p): string { return substr(preg_replace('/\D/', '', $p), -11); }
@@ -45,7 +45,7 @@ class Winback
     if (!self::on()) return; $today = now('Asia/Dhaka')->toDateString();
     if (!$force && (self::set('last_run') === $today || (int)now('Asia/Dhaka')->format('H') < 10)) return;
     $st = self::stages(); if (!$st) return; $sent = 0; $exp = max(1, (int)self::set('expiry', '30')); $mode = self::set('mode', 'auto') === 'coupon' ? 'coupon' : 'auto'; $lastStage = end($st)[0];
-    $ch = array_filter(['sms' => self::set('sms', '1') === '1', 'push' => self::set('push', '1') === '1', 'notif' => self::set('notif', '1') === '1', 'wa' => self::set('wa', '0') === '1']);
+    $ch = array_filter(['sms' => self::set('sms', '1') === '1', 'push' => self::set('push', '1') === '1', 'notif' => self::set('notif', '1') === '1']);
     foreach (self::lastDelivered() as $p => $x) {
       $d = self::days($x['at']); $s = self::stageFor($d); if (!$s) continue;
       if (DB::table('winback_events')->where('phone', $p)->where('cycle_order_id', $x['oid'])->where('stage_days', '>=', $s[0])->exists()) continue; // each stage once per cycle
@@ -65,6 +65,20 @@ class Winback
       $sent++;
     }
     self::put('last_run', $today);
+  }
+
+  /** Send the offer to ONE existing customer only (safe test): real SMS via the SMS API, real discount, no other customer touched. */
+  public static function testSend(string $phone, float $pct): string {
+    $p = self::norm($phone); $c = DB::table('customers')->whereRaw('right(phone,11) = ?', [$p])->first(); if (!$c) return 'No customer account with this number — create/login the account first.';
+    $max = (float)self::set('max_pct', '100'); if ($max > 0) $pct = min($pct, $max); if ($pct <= 0) return 'Enter a discount % above 0.';
+    $exp = max(1, (int)self::set('expiry', '30')); $mode = self::set('mode', 'auto') === 'coupon' ? 'coupon' : 'auto'; $code = null;
+    DB::table('winback_events')->where('phone', $p)->where('cycle_order_id', 0)->whereNull('used_at')->delete();
+    if ($mode === 'coupon') { $code = 'WB-' . strtoupper(substr(md5($p . microtime()), 0, 6));
+      DB::table('coupons')->insert(['code' => $code, 'type' => 'percent', 'value' => $pct, 'min_order' => (float)self::set('min_order', '0'), 'max_discount' => (float)self::set('max_discount', '0') ?: null, 'usage_limit' => 1, 'per_customer' => 1, 'valid_from' => now('Asia/Dhaka')->toDateString(), 'valid_to' => now('Asia/Dhaka')->addDays($exp)->toDateString(), 'active' => true, 'created_at' => now(), 'updated_at' => now()]); }
+    DB::table('winback_events')->insert(['phone' => $p, 'customer_id' => $c->id, 'cycle_order_id' => 0, 'stage_days' => 0, 'pct' => $pct, 'mode' => $mode, 'coupon_code' => $code, 'channels' => 'sms', 'expires_at' => now()->addDays($exp), 'created_at' => now(), 'updated_at' => now()]);
+    $v = ['{name}' => $c->name, '{pct}' => rtrim(rtrim(number_format($pct, 2), '0'), '.'), '{days}' => 0, '{expiry}' => $exp, '{code}' => $code ? ' কুপন কোড: ' . $code : ''];
+    Sms::queue($p, self::render(self::set('sms_text', self::SMS), $v), 'winback');
+    return 'Test offer (' . $v['{pct}'] . '%) sent by SMS to ' . $p . ' only' . ($code ? ' — code ' . $code : ' — applies automatically to that account') . '.';
   }
 
   public static function onOrder(string $phone, int $orderId, array $qt): void {
