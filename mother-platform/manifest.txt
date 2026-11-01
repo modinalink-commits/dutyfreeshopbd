@@ -273,3 +273,8 @@ database/migrations/2026_11_01_000010_delivery.php
 app/Support/Delivery.php
 app/Http/Controllers/DeliveryController.php
 resources/views/delivery.blade.php
+database/migrations/2026_11_01_000011_fraud_check.php
+app/Support/FraudCheck.php
+app/Http/Controllers/FraudController.php
+resources/views/fraud.blade.php
+resources/views/fraud_widget.blade.php

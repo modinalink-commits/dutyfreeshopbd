@@ -156,6 +156,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
     Route::post('/quick', [$C,'quick']); Route::get('/history', [$C,'history']);
   });
   Route::get('/winback', [\App\Http\Controllers\WinbackController::class,'index']); Route::post('/winback/settings', [\App\Http\Controllers\WinbackController::class,'save']); Route::post('/winback/run', [\App\Http\Controllers\WinbackController::class,'run']);
+  Route::get('/fraud', [\App\Http\Controllers\FraudController::class,'index']); Route::get('/fraud/check', [\App\Http\Controllers\FraudController::class,'check']); Route::post('/fraud/settings', [\App\Http\Controllers\FraudController::class,'save']);
   Route::prefix('delivery')->group(function () { $DL = \App\Http\Controllers\DeliveryController::class;
     Route::get('/', [$DL,'index']); Route::post('/settings', [$DL,'save']); Route::post('/zone', [$DL,'zoneSave']); Route::post('/zone/{id}', [$DL,'zoneSave'])->whereNumber('id'); Route::post('/zone/{id}/act', [$DL,'zoneAct'])->whereNumber('id');
     Route::post('/override', [$DL,'ovSave']); Route::post('/override/{id}/act', [$DL,'ovAct'])->whereNumber('id');

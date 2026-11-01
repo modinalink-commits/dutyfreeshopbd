@@ -6,7 +6,7 @@
 @if($pre)<input type="hidden" name="inc_id" value="{{ $pre['inc'] }}">@endif
 <div class="card"><h3 style="margin:0 0 4px;text-align:center">Customer Information</h3>
 <label>Customer Phone</label><input name="phone" id="onp" data-bdphone required inputmode="numeric" maxlength="11" autocomplete="off" value="{{ old('phone') }}" placeholder="Enter customer 11 digit mobile number">
-<div id="onx" style="display:none;margin-top:8px;border-radius:10px;padding:9px 12px;font-size:13px"></div>
+<div id="onx" style="display:none;margin-top:8px;border-radius:10px;padding:9px 12px;font-size:13px"></div>@include('fraud_widget',['fcInput'=>'#onp'])
 <label>Name</label><input name="customer_name" id="onn" required value="{{ old('customer_name') }}" placeholder="Name">
 <label>Address</label><textarea name="address" id="ona" rows="2" placeholder="address">{{ old('address') }}</textarea>
 <label>Courier</label><select name="courier" id="onc"><option value="">Select Courier</option>@foreach(\DB::table('couriers')->orderByDesc('is_default')->orderBy('name')->pluck('name') as $cn)<option {{ old('courier')===$cn ? 'selected' : '' }}>{{ $cn }}</option>@endforeach</select>
