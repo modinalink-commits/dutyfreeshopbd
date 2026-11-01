@@ -7,9 +7,9 @@ class Procure {
   const METHODS = ['Cash','Bank Transfer','bKash','Nagad','Cheque','Other'];
   const REASONS = ['Broken','Expired','Leakage','Packaging Damage','Transit Damage','Supplier Damage','Warehouse Damage','Customer Return Damage','Other'];
   const TPL = [
-    'purchase' => 'প্রিয় {supplier_name}, Purchase Invoice {invoice_no} তৈরি হয়েছে। Invoice Amount: ৳{invoice_total}. Current Due: ৳{due}. Invoice: {invoice_link}',
-    'payment'  => 'DutyFreeBD: আপনার অ্যাকাউন্টে ৳{amount} পেমেন্ট করা হয়েছে। বর্তমান বকেয়া ৳{due}। Invoice: {invoice_link}. ধন্যবাদ।',
-    'due'      => 'DutyFreeBD: আপনার বর্তমান পাওনা ৳{due}। বিস্তারিত Statement: {statement_link}',
+    'purchase' => 'প্রিয় {supplier_name}, Purchase Invoice {invoice_no} তৈরি হয়েছে। Total: ৳{total}. Paid: ৳{paid}. Due: ৳{due}. Invoice: {invoice_link}',
+    'payment'  => 'প্রিয় {supplier_name}, আজ ৳{amount} পেমেন্ট করা হয়েছে। আপনার বর্তমান বকেয়া ৳{due}। Invoice/Statement: {invoice_link}',
+    'due'      => 'প্রিয় {supplier_name}, আপনার বর্তমান পাওনা ৳{due}। বিস্তারিত: {statement_link}',
     'return'   => 'DutyFreeBD: {invoice_no} এর পণ্য ফেরত (৳{amount}) হিসাবে সমন্বয় করা হয়েছে। বর্তমান বকেয়া ৳{due}। Statement: {statement_link}',
     'damage'   => 'DutyFreeBD: ড্যামেজ ক্লেইম ৳{amount} আপনার হিসাবে সমন্বয় করা হয়েছে। বর্তমান বকেয়া ৳{due}। Statement: {statement_link}',
     'statement'=> 'DutyFreeBD: আপনার Statement তৈরি হয়েছে। বর্তমান পাওনা ৳{due}। দেখুন: {statement_link}',
@@ -115,7 +115,7 @@ class Procure {
     if (!$force && !self::on('proc_sms_'.$kind)) return false;
     $s = DB::table('suppliers')->find($sid); if (!$s) return false; $num = Sms::number((string)($s->phone ?: $s->whatsapp)); if (!$num) return false;
     $p = $purchaseId ? DB::table('purchases')->find($purchaseId) : null; $due = self::due($sid);
-    $v = ['supplier_name'=>$s->name,'due'=>number_format($due,2),'statement_link'=>self::statementLink($s),'invoice_no'=>$p->invoice ?? '','invoice_total'=>$p ? number_format($p->total,2) : '','invoice_link'=>$p ? self::invoiceLink($p) : self::statementLink($s),'date'=>now('Asia/Dhaka')->format('d M Y')] + $x;
+    $v = ['supplier_name'=>$s->name,'due'=>number_format($due,2),'statement_link'=>self::statementLink($s),'invoice_no'=>$p->invoice ?? '','invoice_total'=>$p ? number_format($p->total,2) : '','total'=>$p ? number_format($p->total,2) : '','paid'=>$p ? number_format(self::paidOf($p->id),2) : '','invoice_link'=>$p ? self::invoiceLink($p) : self::statementLink($s),'date'=>now('Asia/Dhaka')->format('d M Y')] + $x;
     $body = self::render(self::set('tpl_'.$kind, self::TPL[$kind]) ?: self::TPL[$kind], $v);
     if ($ref && DB::table('sms_logs')->where('ref',$ref)->exists()) return false;
     Sms::queue($num, $body, 'supplier_'.$kind, ['type'=>'transactional','customer_name'=>$s->name,'ref'=>$ref ?: 'sup:'.$sid.':'.($p->invoice ?? '-').':'.($x['amount'] ?? $v['invoice_total'] ?? '')]);

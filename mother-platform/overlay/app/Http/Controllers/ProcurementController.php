@@ -23,6 +23,7 @@ class ProcurementController extends Controller {
   // ---------------- generic list + export ----------------
   private function listPage(Request $r, string $kind, array $d) {
     $rows = $d['rows']; $page = max(1, (int)$r->input('page', 1)); $n = count($rows);
+    $d['tabs'] = match ($kind) { 'dues','payments' => [['Due list','/admin/purchase/dues',$kind==='dues'],['Payment history','/admin/purchase/payments',$kind==='payments']], 'damages','returns' => [['Damage','/admin/purchase/damages',$kind==='damages'],['Supplier Return','/admin/purchase/returns',$kind==='returns']], default => [] };
     $d['rows'] = array_slice($rows, ($page-1)*self::PER, self::PER); $d += ['page'=>$page,'pages'=>max(1,(int)ceil($n/self::PER)),'n'=>$n,'kind'=>$kind,'sup'=>$this->suppliers(),'stores'=>$this->stores()];
     return view('proc.list', $d);
   }
@@ -58,20 +59,21 @@ class ProcurementController extends Controller {
       $rows[] = ['id'=>$p->id,'cells'=>['<a href="/admin/purchase/invoices/'.$p->id.'"><b>'.e($p->invoice).'</b></a>',$p->purchase_date,'<a href="/admin/purchase/suppliers/'.$p->supplier_id.'">'.e($p->sname).'</a>',e($p->supplier_invoice),e($stores[$p->store_id] ?? '—'),$this->badge($p->status),$this->badge($ps),number_format($p->total,2),number_format($pd,2),number_format($due,2),$p->due_date ?: '—'],
         'text'=>[$p->invoice,$p->purchase_date,$p->sname,$p->supplier_invoice,$stores[$p->store_id] ?? '',$p->status,$ps,$p->total,$pd,$due,$p->due_date]];
     }
-    return ['title'=>'Purchase Invoices','sub'=>'Every purchase, its payment status and what is still owed.','head'=>['Invoice','Date','Supplier','Supplier invoice','Store','Status','Payment','Total','Paid','Due','Due date'],'rows'=>$rows,'num'=>[7,8,9],
+    return ['title'=>'Purchase','sub'=>'Every purchase, its payment status and what is still owed.','head'=>['Invoice','Date','Supplier','Supplier invoice','Store','Status','Payment','Total','Paid','Due','Due date'],'rows'=>$rows,'num'=>[7,8,9],
       'foot'=>['Total',7,[number_format($T['t'],2),number_format($T['p'],2),number_format($T['d'],2)]],'new'=>['New Purchase','/admin/purchase/new'],
       'filters'=>array_merge($this->dateF(),[['supplier','Supplier','supplier'],['q','Invoice / reference','text'],['product','Product / SKU / barcode','text'],['store','Store','store'],['status','Purchase status','select',['draft'=>'Draft','pending'=>'Pending Approval','approved'=>'Approved','received'=>'Received','cancelled'=>'Cancelled']],['pay','Payment status','select',['paid'=>'Paid','partial'=>'Partial','due'=>'Due','overdue'=>'Overdue']],['due','Due status','select',['open'=>'Has due','overdue'=>'Overdue only']]])];
   }
   private function dSuppliers(Request $r): array {
-    $dm = P::dueMap(); $q = DB::table('suppliers'); if ($r->filled('q')) { $t = '%'.$r->q.'%'; $q->where(fn($w) => $w->where('name','ilike',$t)->orWhere('phone','ilike',$t)->orWhere('code','ilike',$t)->orWhere('business_name','ilike',$t)->orWhere('contact_person','ilike',$t)); }
+    $dm = P::dueMap(); $q = DB::table('suppliers'); if ($r->filled('q')) { $t = '%'.$r->q.'%'; $q->where(fn($w) => $w->where('name','ilike',$t)->orWhere('phone','ilike',$t)->orWhere('code','ilike',$t)->orWhere('business_name','ilike',$t)); }
     if ($r->filled('status')) $q->where('active', $r->status === 'active');
-    $tp = DB::table('purchases')->whereNotIn('status',P::BAD)->groupBy('supplier_id')->selectRaw('supplier_id, sum(total) s, count(*) n, max(purchase_date) last')->get()->keyBy('supplier_id'); $rows = [];
+    $tp = DB::table('purchases')->whereNotIn('status',P::BAD)->groupBy('supplier_id')->selectRaw('supplier_id, sum(total) s, max(purchase_date) last')->get()->keyBy('supplier_id');
+    $pd = DB::table('supplier_payments')->where('status','paid')->groupBy('supplier_id')->selectRaw('supplier_id, sum(amount) s')->pluck('s','supplier_id'); $rows = [];
     foreach ($q->orderBy('name')->get() as $s) { $due = $dm[$s->id] ?? 0; $o = $tp[$s->id] ?? null; if ($r->filled('due') && ($r->due === 'open' ? $due <= 0.009 : $due > 0.009)) continue;
-      $rows[] = ['id'=>$s->id,'cells'=>['<a href="/admin/purchase/suppliers/'.$s->id.'"><b>'.e($s->name).'</b></a><div class="mut">'.e($s->business_name).'</div>',e($s->code),e($s->contact_person),e($s->phone),$o ? (int)$o->n : 0,number_format($o->s ?? 0,2),'<b style="color:'.($due > 0.009 ? '#C2410C' : '#166534').'">'.number_format($due,2).'</b>',$s->active ? '<span class="pb pb-paid">Active</span>' : '<span class="pb pb-cancelled">Inactive</span>',
-        '<a class="btn g sm" href="/admin/purchase/suppliers/'.$s->id.'/edit">Edit</a> <a class="btn g sm" href="/admin/purchase/ledger?supplier='.$s->id.'">Ledger</a>'],
-        'text'=>[$s->name,$s->code,$s->contact_person,$s->phone,$o->n ?? 0,$o->s ?? 0,$due,$s->active ? 'Active' : 'Inactive']]; }
-    return ['title'=>'Suppliers','sub'=>'Supplier profiles, balances and quick access to ledger and payments.','head'=>['Supplier','Code','Contact','Mobile','Invoices','Total purchase','Current due','Status','Actions'],'rows'=>$rows,'noExportCol'=>8,'num'=>[5,6],'new'=>['New Supplier','/admin/purchase/suppliers/new'],
-      'filters'=>[['q','Name / mobile / code','text'],['status','Status','select',['active'=>'Active','inactive'=>'Inactive']],['due','Balance','select',['open'=>'Has due','clear'=>'No due']]]];
+      $rows[] = ['id'=>$s->id,'cells'=>['<a href="/admin/purchase/suppliers/'.$s->id.'"><b>'.e($s->name).'</b></a>'.($s->active ? '' : ' <span class="pb pb-cancelled">Inactive</span>'),e($s->phone),number_format($o->s ?? 0,2),number_format($pd[$s->id] ?? 0,2),'<b style="color:'.($due > 0.009 ? '#C2410C' : '#166534').'">'.number_format($due,2).'</b>',$o->last ?? '—',
+        '<a class="btn g sm" href="/admin/purchase/suppliers/'.$s->id.'">View</a> <a class="btn g sm" href="/admin/purchase/new?supplier='.$s->id.'">New Purchase</a> <a class="btn g sm" href="/admin/purchase/payments/new?supplier='.$s->id.'">Payment</a> <a class="btn g sm" href="/admin/purchase/ledger?supplier='.$s->id.'">Ledger</a>'],
+        'text'=>[$s->name,$s->phone,$o->s ?? 0,$pd[$s->id] ?? 0,$due,$o->last ?? '']]; }
+    return ['title'=>'Suppliers','sub'=>'Total purchase, total paid and current due for every supplier.','head'=>['Supplier Name','Mobile','Total Purchase','Total Paid','Current Due','Last Purchase','Action'],'rows'=>$rows,'noExportCol'=>6,'num'=>[2,3,4],'new'=>['New Supplier','/admin/purchase/suppliers/new'],
+      'filters'=>[['q','Name / mobile','text'],['due','Balance','select',['open'=>'Has due','clear'=>'No due']]]];
   }
   private function dPayments(Request $r): array {
     $q = DB::table('supplier_payments as p')->join('suppliers as s','s.id','=','p.supplier_id')->leftJoin('purchases as u','u.id','=','p.purchase_id')->select('p.*','s.name as sname','u.invoice as inv');
@@ -84,7 +86,7 @@ class ProcurementController extends Controller {
       if ($p->status !== 'paid' || P::canApprove()) $act .= ' '.$this->post('/admin/purchase/payments/'.$p->id.'/delete','Delete',[],'g sm','Delete this payment?');
       $rows[] = ['id'=>$p->id,'cells'=>[e($p->code),$p->pay_date,'<a href="/admin/purchase/suppliers/'.$p->supplier_id.'">'.e($p->sname).'</a>',$p->inv ? '<a href="/admin/purchase/invoices/'.$p->purchase_id.'">'.e($p->inv).'</a>' : 'On account',e($p->method.($p->account ? ' · '.$p->account : '')),e($p->txn_id),number_format($p->amount,2),$p->proof ? '<a href="'.e($p->proof).'" target="_blank">View</a>' : '—',$this->badge($p->status === 'paid' ? 'paid' : 'pending'),$act],
         'text'=>[$p->code,$p->pay_date,$p->sname,$p->inv ?: 'On account',$p->method.' '.$p->account,$p->txn_id,$p->amount,$p->proof ? 'yes' : '',$p->status]]; }
-    return ['title'=>'Supplier Payments','sub'=>'Every payment made to suppliers, with proof and invoice allocation.','head'=>['Payment','Date','Supplier','Invoice','Method / account','Transaction ID','Amount','Proof','Status','Actions'],'rows'=>$rows,'num'=>[6],'noExportCol'=>9,'foot'=>['Total paid',6,[number_format($tot,2)]],'new'=>['Make Payment','/admin/purchase/payments/new'],
+    return ['title'=>'Payment History','sub'=>'Every payment made to suppliers, with proof and invoice allocation.','head'=>['Payment','Date','Supplier','Invoice','Method / account','Transaction ID','Amount','Proof','Status','Actions'],'rows'=>$rows,'num'=>[6],'noExportCol'=>9,'foot'=>['Total paid',6,[number_format($tot,2)]],'new'=>['Make Payment','/admin/purchase/payments/new'],
       'filters'=>array_merge($this->dateF(),[['supplier','Supplier','supplier'],['q','Payment / txn / invoice','text'],['method','Method','select',array_combine(P::METHODS,P::METHODS)],['status','Status','select',['paid'=>'Paid','pending'=>'Pending approval']]])];
   }
   private function dues(Request $r): array {
@@ -106,7 +108,7 @@ class ProcurementController extends Controller {
       $rows[] = ['id'=>$s->id,'cells'=>['<a href="/admin/purchase/suppliers/'.$s->id.'"><b>'.e($s->name).'</b></a>',number_format($x['tp'],2),number_format($x['paid'],2),'<b>'.number_format($x['due'],2).'</b>',number_format($x['over'],2),$x['last'] ?: '—',$x['next'] ?: '—',$this->badge($x['st']),
         '<a class="btn sm" href="/admin/purchase/payments/new?supplier='.$s->id.'">Pay</a> <a class="btn g sm" href="/admin/purchase/ledger?supplier='.$s->id.'">Ledger</a> '.$this->post('/admin/purchase/suppliers/'.$s->id.'/remind','SMS reminder',[],'g sm','Send due reminder SMS to '.$s->name.'?')],
         'text'=>[$s->name,$x['tp'],$x['paid'],$x['due'],$x['over'],$x['last'],$x['next'],$x['st']]]; }
-    return ['title'=>'Due / Payables','sub'=>'What we owe each supplier. Overdue = an invoice past its due date and still unpaid.','head'=>['Supplier','Total purchase','Total paid','Current due','Overdue','Last payment','Next due date','Status','Actions'],'rows'=>$rows,'num'=>[1,2,3,4],'noExportCol'=>8,'foot'=>['Total',1,[number_format($T['p'],2),number_format($T['pd'],2),number_format($T['d'],2),number_format($T['o'],2)]],
+    return ['new'=>['Make Payment','/admin/purchase/payments/new'],'title'=>'Payments & Due','sub'=>'What we owe each supplier. Overdue = an invoice past its due date and still unpaid.','head'=>['Supplier','Total purchase','Total paid','Current due','Overdue','Last payment','Next due date','Status','Actions'],'rows'=>$rows,'num'=>[1,2,3,4],'noExportCol'=>8,'foot'=>['Total',1,[number_format($T['p'],2),number_format($T['pd'],2),number_format($T['d'],2),number_format($T['o'],2)]],
       'filters'=>[['supplier','Supplier','supplier'],['q','Name / mobile','text'],['status','Status','select',['paid'=>'Paid','partial'=>'Partial','due'=>'Due','overdue'=>'Overdue']]]];
   }
   private function dDamages(Request $r): array {
@@ -118,7 +120,7 @@ class ProcurementController extends Controller {
     foreach ($q->orderByDesc('d.dmg_date')->orderByDesc('d.id')->limit(5000)->get() as $d) { $T += $d->value; $qt += $d->qty; $code = $d->code ?: 'DMG-'.str_pad($d->id,6,'0',STR_PAD_LEFT);
       $rows[] = ['id'=>$d->id,'cells'=>[e($code),$d->dmg_date,e($d->pname),e($d->sname ?: '—'),$d->inv ? '<a href="/admin/purchase/invoices/'.$d->purchase_id.'">'.e($d->inv).'</a>' : '—',e($d->batch),(int)$d->qty,number_format($d->value,2),e($d->reason_type),$this->badge($d->responsibility === 'supplier' ? 'supplier' : 'company'),$d->photo ? '<a href="'.e($d->photo).'" target="_blank">Photo</a>' : '—',$this->post('/admin/purchase/damages/'.$d->id.'/delete','Delete',[],'g sm','Delete this damage record and restore the stock?')],
         'text'=>[$code,$d->dmg_date,$d->pname,$d->sname,$d->inv,$d->batch,$d->qty,$d->value,$d->reason_type,$d->responsibility === 'supplier' ? 'Supplier claim' : 'Company loss',$d->note]]; }
-    return ['title'=>'Damage Products','sub'=>'Damaged stock leaves saleable stock and is tracked separately. Supplier claims reduce the supplier balance automatically.','head'=>['Damage','Date','Product','Supplier','Invoice','Batch','Qty','Value','Reason','Treatment','Photo','Actions'],'rows'=>$rows,'num'=>[6,7],'noExportCol'=>11,'foot'=>['Total',6,[$qt,number_format($T,2)]],'new'=>['Add Damage','/admin/purchase/damages/new'],
+    return ['title'=>'Damage / Return','sub'=>'Damaged stock leaves saleable stock and is tracked separately. Supplier claims reduce the supplier balance automatically.','head'=>['Damage','Date','Product','Supplier','Invoice','Batch','Qty','Value','Reason','Treatment','Photo','Actions'],'rows'=>$rows,'num'=>[6,7],'noExportCol'=>11,'foot'=>['Total',6,[$qt,number_format($T,2)]],'new'=>['Add Damage / Return','/admin/purchase/damages/new'],
       'filters'=>array_merge($this->dateF(),[['supplier','Supplier','supplier'],['q','Product / invoice / batch','text'],['reason','Reason','select',array_combine(P::REASONS,P::REASONS)],['resp','Treatment','select',['company'=>'Company loss','supplier'=>'Supplier claim']],['store','Store','store']])];
   }
   private function dReturns(Request $r): array {
@@ -129,7 +131,7 @@ class ProcurementController extends Controller {
     foreach ($q->orderByDesc('t.return_date')->orderByDesc('t.id')->limit(5000)->get() as $t) { $T += $t->value;
       $rows[] = ['id'=>$t->id,'cells'=>[e($t->code),$t->return_date,e($t->sname),$t->inv ? '<a href="/admin/purchase/invoices/'.$t->purchase_id.'">'.e($t->inv).'</a>' : '—',e($t->name),(int)$t->qty,number_format($t->rate,2),number_format($t->value,2),e($t->reason),$this->post('/admin/purchase/returns/'.$t->id.'/delete','Delete',[],'g sm','Delete this return and put the stock back?')],
         'text'=>[$t->code,$t->return_date,$t->sname,$t->inv,$t->name,$t->qty,$t->rate,$t->value,$t->reason]]; }
-    return ['title'=>'Purchase Return','sub'=>'Goods sent back to suppliers. Stock goes down and the supplier balance is reduced.','head'=>['Return','Date','Supplier','Invoice','Product','Qty','Rate','Value','Reason','Actions'],'rows'=>$rows,'num'=>[5,6,7],'noExportCol'=>9,'foot'=>['Total',7,[number_format($T,2)]],'new'=>['New Return','/admin/purchase/returns/new'],
+    return ['title'=>'Damage / Return','sub'=>'Goods sent back to suppliers. Stock goes down and the supplier balance is reduced.','head'=>['Return','Date','Supplier','Invoice','Product','Qty','Rate','Value','Reason','Actions'],'rows'=>$rows,'num'=>[5,6,7],'noExportCol'=>9,'foot'=>['Total',7,[number_format($T,2)]],'new'=>['Add Damage / Return','/admin/purchase/damages/new'],
       'filters'=>array_merge($this->dateF(),[['supplier','Supplier','supplier'],['q','Product / invoice','text']])];
   }
   private function dNotes(Request $r): array {
@@ -243,7 +245,7 @@ class ProcurementController extends Controller {
     $sub = array_sum(array_map(fn($x) => $x['qty']*$x['cost'], $items)); $idis = array_sum(array_column($items,'discount')); $tax = array_sum(array_column($items,'tax'));
     $edis = (float)$r->input('extra_discount',0); $tr = (float)$r->input('transport',0); $oc = (float)$r->input('other_cost',0); $total = round($sub-$idis-$edis+$tax+$tr+$oc,2);
     $sid = (int)$r->supplier_id; $s = DB::table('suppliers')->find($sid); if (!$s) return back()->withInput()->with('bad','Select a supplier.');
-    $draft = $r->input('act') === 'draft'; $id = (int)$r->input('id'); $old = $id ? DB::table('purchases')->find($id) : null;
+    $act = $r->input('act','save'); $draft = $act === 'draft'; $id = (int)$r->input('id'); $old = $id ? DB::table('purchases')->find($id) : null;
     $status = $draft ? 'draft' : ((P::on('proc_approval') && $total >= (float)P::set('proc_approval_limit','100000') && !P::canApprove()) ? 'pending' : 'received');
     if ($old && !$draft && in_array($old->status,['approved']) ) $status = 'approved';
     $due = $r->input('due_date') ?: ($s->payment_terms ? \Carbon\Carbon::parse($r->purchase_date)->addDays((int)$s->payment_terms)->toDateString() : null);
@@ -262,7 +264,8 @@ class ProcurementController extends Controller {
       return [$id, $note];
     });
     [$id, $note] = $msg;
-    if (!in_array($status,P::BAD) && ($r->boolean('sms') || (P::on('proc_sms_purchase') && !$old))) P::notify('purchase',$sid,[],$id,true);
+    if (!in_array($status,P::BAD) && ($r->boolean('sms') || $act === 'sms' || (P::on('proc_sms_purchase') && !$old))) P::notify('purchase',$sid,[],$id,true);
+    if ($act === 'print') return redirect('/admin/purchase/invoices/'.$id.'/export/pdf');
     return redirect('/admin/purchase/invoices/'.$id)->with('ok', ($draft ? 'Draft saved' : ($status === 'pending' ? 'Sent for approval' : 'Purchase saved & stock updated')).$note);
   }
   public function show($id) {
@@ -315,12 +318,19 @@ class ProcurementController extends Controller {
 
   // ---------------- damage / return / notes ----------------
   public function damageForm() { return view('proc.damage_form', ['sup'=>$this->suppliers(),'stores'=>$this->stores(),'reasons'=>P::REASONS]); }
+  public function drSave(Request $r) {
+    $m = $r->input('mode','company');
+    if ($m === 'return') { $r->validate(['supplier_id'=>'required|integer','product_id'=>'required|integer','qty'=>'required|integer|min:1','dmg_date'=>'required|date']);
+      $qty = max(1,(int)$r->qty); $amt = $r->filled('amount') ? (float)$r->amount : $qty*(float)$r->unit_cost; $name = DB::table('products')->where('id',(int)$r->product_id)->value('name') ?: 'Product';
+      $r->merge(['name'=>$name,'rate'=>round($amt/$qty,2),'return_date'=>$r->dmg_date,'reason'=>$r->reason_type.($r->note ? ' — '.$r->note : '')]); return $this->returnSave($r); }
+    $r->merge(['responsibility'=>$m === 'claim' ? 'supplier' : 'company']); return $this->damageSave($r);
+  }
   public function damageSave(Request $r) {
     $r->validate(['product_id'=>'required|integer','qty'=>'required|integer|min:1','dmg_date'=>'required|date','photo'=>'nullable|image|max:8192']);
     $photo = null; if ($r->hasFile('photo')) { $dir = public_path('uploads/proc'); if (!is_dir($dir)) @mkdir($dir,0775,true); $f = $r->file('photo'); $n = date('ymd').'-'.bin2hex(random_bytes(5)).'.'.strtolower($f->getClientOriginalExtension()); $f->move($dir,$n); $photo = '/uploads/proc/'.$n; }
     $qty = (int)$r->qty; $cost = (float)$r->unit_cost; $resp = $r->responsibility === 'supplier' && $r->supplier_id ? 'supplier' : 'company'; $sid = (int)$r->supplier_id ?: null;
     $id = DB::transaction(function () use ($r, $qty, $cost, $resp, $sid, $photo) {
-      $id = DB::table('damaged_products')->insertGetId(['product_id'=>(int)$r->product_id,'qty'=>$qty,'reason'=>$r->reason_type,'supplier_id'=>$sid,'purchase_id'=>(int)$r->purchase_id ?: null,'batch'=>$r->batch,'reason_type'=>$r->reason_type ?: 'Other','responsibility'=>$resp,'photo'=>$photo,'unit_cost'=>$cost,'value'=>round($qty*$cost,2),'dmg_date'=>$r->dmg_date,'note'=>$r->note,'store_id'=>(int)$r->store_id ?: null,'user_id'=>auth()->id(),'created_at'=>now(),'updated_at'=>now()]);
+      $id = DB::table('damaged_products')->insertGetId(['product_id'=>(int)$r->product_id,'qty'=>$qty,'reason'=>$r->reason_type,'supplier_id'=>$sid,'purchase_id'=>(int)$r->purchase_id ?: null,'batch'=>$r->batch,'reason_type'=>$r->reason_type ?: 'Other','responsibility'=>$resp,'photo'=>$photo,'unit_cost'=>$cost,'value'=>$r->filled('amount') ? round((float)$r->amount,2) : round($qty*$cost,2),'dmg_date'=>$r->dmg_date,'note'=>$r->note,'store_id'=>(int)$r->store_id ?: null,'user_id'=>auth()->id(),'created_at'=>now(),'updated_at'=>now()]);
       DB::table('damaged_products')->where('id',$id)->update(['code'=>'DMG-'.str_pad($id,6,'0',STR_PAD_LEFT)]);
       P::stock((int)$r->product_id, -$qty, 'damaged', 'DMG-'.str_pad($id,6,'0',STR_PAD_LEFT)); DB::table('products')->where('id',(int)$r->product_id)->increment('damage_stock',$qty); return $id; });
     P::audit('proc.damage.add','damage#'.$id,null,['qty'=>$qty,'value'=>$qty*$cost,'treatment'=>$resp]);

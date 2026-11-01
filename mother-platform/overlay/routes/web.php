@@ -166,7 +166,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
     Route::get('/ledger', [$C,'ledger']);
     Route::get('/payments', [$C,'list'])->defaults('kind','payments'); Route::get('/payments/new', [$C,'payForm']); Route::post('/payments', [$C,'paySave']); Route::post('/payments/{id}/{a}', [$C,'payAction'])->whereNumber('id');
     Route::get('/dues', [$C,'list'])->defaults('kind','dues');
-    Route::get('/damages', [$C,'list'])->defaults('kind','damages'); Route::get('/damages/new', [$C,'damageForm']); Route::post('/damages', [$C,'damageSave']); Route::post('/damages/{id}/delete', [$C,'damageDelete'])->whereNumber('id');
+    Route::get('/damages', [$C,'list'])->defaults('kind','damages'); Route::get('/damages/new', [$C,'damageForm']); Route::post('/damages', [$C,'drSave']); Route::post('/damages/{id}/delete', [$C,'damageDelete'])->whereNumber('id');
     Route::get('/returns', [$C,'list'])->defaults('kind','returns'); Route::get('/returns/new', [$C,'returnForm']); Route::post('/returns', [$C,'returnSave']); Route::post('/returns/{id}/delete', [$C,'returnDelete'])->whereNumber('id');
     Route::get('/notes', [$C,'list'])->defaults('kind','notes'); Route::get('/notes/new', [$C,'noteForm']); Route::post('/notes', [$C,'noteSave']); Route::post('/notes/{id}/delete', [$C,'noteDelete'])->whereNumber('id');
     Route::get('/reports', [$C,'reports']); Route::get('/audit', [$C,'audit']); Route::get('/settings', [$C,'settings']); Route::post('/settings', [$C,'settingsSave']);

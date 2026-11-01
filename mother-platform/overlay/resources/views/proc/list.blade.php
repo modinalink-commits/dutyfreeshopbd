@@ -2,6 +2,7 @@
 @section('body')
 <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px"><div style="flex:1;min-width:240px"><h1 style="margin:0">{{ $title }}</h1><span style="font-size:13px;color:#6B7280">{{ $sub }}</span></div>@if(!empty($new))<a class="btn" href="{{ $new[1] }}">+ {{ $new[0] }}</a>@endif</div>
 @include('proc.nav')
+@if(!empty($tabs))<div class="chips" style="margin:-4px 0 12px">@foreach($tabs as [$tl,$tu,$ton])<a class="chip {{ $ton ? 'on' : '' }}" href="{{ $tu }}">{{ $tl }}</a>@endforeach</div>@endif
 @if(!empty($ledger) || $kind==='ledger')@endif
 <form class="card" method="get" style="padding:12px"><div class="fg">
 @foreach($filters as $f)@php [$fn,$fl,$ft] = $f; $fo = $f[3] ?? []; $val = request($fn, $fn==='r' ? ($reportKey ?? '') : ''); @endphp
