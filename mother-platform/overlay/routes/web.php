@@ -42,6 +42,13 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::get('/orders/discount', [A::class,'orderDiscount']); Route::get('/orders/delivery', [\App\Http\Controllers\DeliveryController::class,'quote']);
   Route::post('/orders/bulk', [A::class,'orderBulk']);
   Route::post('/orders', [A::class,'orderStore']);
+  Route::get('/orders/rev-products', [\App\Http\Controllers\OrderRevisionController::class,'products']);
+  Route::post('/orders/revision-sms', [\App\Http\Controllers\OrderRevisionController::class,'smsSetting']);
+  Route::get('/orders/{id}/edit', [\App\Http\Controllers\OrderRevisionController::class,'form'])->whereNumber('id');
+  Route::post('/orders/{id}/quote', [\App\Http\Controllers\OrderRevisionController::class,'quote'])->whereNumber('id');
+  Route::post('/orders/{id}/revise', [\App\Http\Controllers\OrderRevisionController::class,'save'])->whereNumber('id');
+  Route::post('/orders/{id}/revisions/{rid}/apply', [\App\Http\Controllers\OrderRevisionController::class,'apply'])->whereNumber('id')->whereNumber('rid');
+  Route::post('/orders/{id}/revisions/{rid}/discard', [\App\Http\Controllers\OrderRevisionController::class,'discard'])->whereNumber('id')->whereNumber('rid');
   Route::get('/orders/{id}', [A::class,'orderShow']);
   Route::post('/orders/{id}/status', [A::class,'orderStatus']);
   Route::post('/orders/{id}/comment', [A::class,'orderComment']);

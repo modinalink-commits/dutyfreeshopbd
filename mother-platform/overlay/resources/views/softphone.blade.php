@@ -79,6 +79,7 @@ textarea,.ti{width:100%;border:1.5px solid var(--bd);border-radius:8px;padding:8
 
 <div class="ov" id="ovSum"><div class="card"><h3>Call Summary</h3><div class="sub">কাস্টমারের সাথে কথোপকথনের ফলাফল সংরক্ষণ করুন</div>
 <div class="sg"><div><span>Customer Name</span><b id="sN">—</b></div><div><span>Phone</span><b id="sP">—</b></div><div><span>Call Duration</span><b id="sD">—</b></div><div><span>Order Number</span><b id="sO">—</b></div><div><span>Agent Name</span><b id="sA">—</b></div><div><span>Recording Status</span><b id="sR">—</b></div></div>
+<a id="sEdit" href="#" target="_blank" style="display:none;margin-bottom:6px;text-align:center;border:1.5px solid var(--o);color:var(--o);border-radius:8px;padding:8px;font-weight:800;text-decoration:none">✏️ Edit Current Order</a>
 <div class="lb">Order Outcome</div>
 <div class="oc" id="ocO"><button type="button" data-v="confirmed" class="cf">Order Confirmed</button><button type="button" data-v="pending">Pending</button><button type="button" data-v="call_later">Call Later</button><button type="button" data-v="no_answer">No Answer</button><button type="button" data-v="cancelled" class="cn" style="grid-column:1/-1">Order Cancelled</button></div>
 <div id="cwrap" style="display:none"><div class="lb">Cancel Reason</div><div id="ocC">@foreach(['Price Issue','Delivery Charge Issue','Changed Mind','Duplicate Order','Ordered by Mistake','Product Unavailable','Delay','Not Needed','Suspicious','Other'] as $c)<span class="chip" data-v="{{ $c }}">{{ $c }}</span>@endforeach</div></div>
@@ -240,6 +241,7 @@ var sel={out:null,resp:null,can:null};
 function openSum(c){sum=c;sel={out:c.connected?null:'no_answer',resp:c.connected?null:'No Answer',can:null};
  var i=c.info||{};$('sN').textContent=i.found&&i.name?i.name:'Unknown Customer';$('sP').textContent=c.phone;$('sD').textContent=c.connected?fmtD(c.dur):'Not connected';$('sO').textContent=i.last?i.last.invoice:'—';$('sA').textContent=(cfg&&cfg.staff)||'—';
  $('sR').textContent=!c.connected?'No Recording':(cfg&&cfg.rec?'Recording Processing':'No Recording');
+ var ed=$('sEdit');if(i.last){ed.style.display='block';ed.href='/admin/orders/'+i.last.id+'/edit?call='+c.id}else ed.style.display='none';
  $('sNote').value='';$('sErr').textContent='';paintSum();$('ovSum').classList.add('on')}
 function paintSum(){document.querySelectorAll('#ocO button').forEach(function(b){b.classList.toggle('on',b.dataset.v===sel.out)});
  document.querySelectorAll('#ocR .chip').forEach(function(b){b.classList.toggle('on',b.dataset.v===sel.resp)});

@@ -16,8 +16,8 @@ class OrderDiscount {
     $s = DB::table('customer_sessions')->where('token_hash', hash('sha256', $tok))->where(fn($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))->first(); if (!$s) return null;
     $c = DB::table('customers')->find($s->customer_id); return $c && !$c->blocked ? (Chat::phone($c->phone) ?: null) : null;
   }
-  public static function stats(string $p, $c): array {
-    $a = DB::table('orders')->whereIn('phone', self::alt($p))->where('status', '!=', 'Cancel')->selectRaw('count(*) n, coalesce(sum(total),0) s')->first();
+  public static function stats(string $p, $c, ?int $ex = null): array {
+    $a = DB::table('orders')->whereIn('phone', self::alt($p))->where('status', '!=', 'Cancel')->when($ex, fn($q) => $q->where('id', '!=', $ex))->selectRaw('count(*) n, coalesce(sum(total),0) s')->first();
     return ['n' => (int)$a->n + (int)($c->legacy_orders ?? 0), 's' => (float)$a->s + (float)($c->legacy_spent ?? 0)];
   }
   /** Saved tier name, or the level the customer's spend has earned. */
@@ -36,7 +36,7 @@ class OrderDiscount {
   }
   public static function compute(?string $phone, float $sub, ?string $coupon = null, array $ctx = []): array {
     $web = !empty($ctx['web']); $qty = (int)($ctx['qty'] ?? 0); $prof = !$web || !empty($ctx['verified']);
-    $c = $phone ? self::customer($phone) : null; $st = $phone ? self::stats($phone, $c) : ['n' => 0, 's' => 0.0]; $profile = $phone ? self::profile($phone) : ['category' => 'New', 'membership' => 'Inactive', 'membership_name' => null, 'orders' => 0, 'found' => false];
+    $c = $phone ? self::customer($phone) : null; $ex = !empty($ctx['exclude_order']) ? (int)$ctx['exclude_order'] : null; $st = $phone ? self::stats($phone, $c, $ex) : ['n' => 0, 's' => 0.0]; $profile = $phone ? self::profile($phone) : ['category' => 'New', 'membership' => 'Inactive', 'membership_name' => null, 'orders' => 0, 'found' => false];
     $cand = []; $cerr = null; $free = false;
     $add = function ($key, $type, $rule, $source, $pct, $cap = null, $fixed = null) use (&$cand, $sub) {
       if ($fixed !== null) { if ($fixed <= 0) return; $amt = min((float)$fixed, $sub); $pct = null; } else { if ($pct <= 0) return; $amt = round($sub * $pct / 100, 2); if ($cap !== null && $cap > 0) $amt = min($amt, (float)$cap); }
@@ -65,7 +65,7 @@ class OrderDiscount {
       elseif ($cp->valid_to && $today > substr((string)$cp->valid_to, 0, 10)) $cerr = 'Coupon has expired';
       elseif ($cp->usage_limit && (int)$cp->used_count >= (int)$cp->usage_limit) $cerr = 'Coupon usage limit reached';
       elseif ($sub < (float)$cp->min_order) $cerr = 'Minimum order for this coupon is ৳'.number_format($cp->min_order);
-      elseif ($phone && $cp->per_customer && DB::table('orders')->whereRaw('upper(coupon) = ?', [$coupon])->whereIn('phone', self::alt($phone))->where('status', '!=', 'Cancel')->count() >= (int)$cp->per_customer) $cerr = 'This customer already used the coupon';
+      elseif ($phone && $cp->per_customer && DB::table('orders')->whereRaw('upper(coupon) = ?', [$coupon])->whereIn('phone', self::alt($phone))->where('status', '!=', 'Cancel')->when($ex, fn($q) => $q->where('id', '!=', $ex))->count() >= (int)$cp->per_customer) $cerr = 'This customer already used the coupon';
       elseif ($cp->type === 'free_delivery') { if ($web) $free = true; else $cerr = 'Free-delivery coupons work on the website checkout only'; }
       else {
         $amt = $cp->type === 'percent' ? round($sub * (float)$cp->value / 100, 2) : min((float)$cp->value, $sub); if ($cp->max_discount) $amt = min($amt, (float)$cp->max_discount);
@@ -73,7 +73,7 @@ class OrderDiscount {
           'label' => 'Coupon '.$cp->code.' – '.($cp->type === 'percent' ? rtrim(rtrim(number_format((float)$cp->value, 2), '0'), '.').'%' : '৳'.number_format($amt))];
       }
     }
-    if ($prof && $phone && Winback::set('mode', 'auto') === 'auto' && ($we = Winback::active($phone)) && $sub >= (float)Winback::set('min_order', '0')) {
+    if ($prof && $phone && Winback::set('mode', 'auto') === 'auto' && ($we = Winback::active($phone) ?: ($ex ? DB::table('winback_events')->where('used_order_id', $ex)->first() : null)) && $sub >= (float)Winback::set('min_order', '0')) {
       $wa = round($sub * (float)$we->pct / 100, 2); $wm = (float)Winback::set('max_discount', '0'); if ($wm > 0) $wa = min($wa, $wm);
       if ($wa > 0) $cand[] = ['key' => 'winback', 'type' => 'Win-Back Discount', 'rule' => 'Customer reactivation', 'source' => 'Win-back offer', 'pct' => (float)$we->pct, 'amount' => $wa, 'wbid' => $we->id, 'label' => 'Welcome Back Discount: '.rtrim(rtrim(number_format((float)$we->pct, 2), '0'), '.').'%'];
     }

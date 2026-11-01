@@ -15,9 +15,9 @@ class AdminController extends Controller {
   public function dashboard(Request $r) {
     $tz = 'Asia/Dhaka'; $now = now($tz); $A = \App\Support\Analytics::class;
     $safe = function (callable $fn, $def = []) { try { return $fn(); } catch (\Throwable $e) { \Log::warning('dashboard: '.$e->getMessage()); return $def; } };
-    $range = in_array($r->query('range'), ['today', '7', '30', 'custom'], true) ? $r->query('range') : 'today';
+    $range = in_array($r->query('range'), ['today', '7', '30', 'custom'], true) ? $r->query('range') : '30';
     $dOk = fn($k) => preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)$r->query($k));
-    if ($range === 'custom' && !($dOk('from') && $dOk('to'))) $range = 'today';
+    if ($range === 'custom' && !($dOk('from') && $dOk('to'))) $range = '30';
     $storeId = (int)$r->query('store'); $ch = mb_substr(trim((string)$r->query('channel')), 0, 40); $sf = ($storeId ? ['stores'=>[$storeId]] : []) + ($ch !== '' ? ['source'=>$ch] : []);
     if ($range === 'custom') {
       $from = \Carbon\Carbon::parse($r->query('from'), $tz); $to = \Carbon\Carbon::parse($r->query('to'), $tz); if ($from->gt($to)) [$from, $to] = [$to, $from];
