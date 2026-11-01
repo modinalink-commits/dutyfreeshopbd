@@ -33,7 +33,9 @@ class TaxonomyController extends Controller {
     $cnt = []; foreach (DB::table('products')->select('category_id', 'sub', 'sub_sub', DB::raw('count(*) n'))->groupBy('category_id', 'sub', 'sub_sub')->get() as $r) { $cnt['m' . $r->category_id] = ($cnt['m' . $r->category_id] ?? 0) + $r->n; if ($r->sub !== null && $r->sub !== '') { $cnt['s' . $r->category_id . '|' . $r->sub] = ($cnt['s' . $r->category_id . '|' . $r->sub] ?? 0) + $r->n; if ($r->sub_sub) $cnt['t' . $r->category_id . '|' . $r->sub . '|' . $r->sub_sub] = ($cnt['t' . $r->category_id . '|' . $r->sub . '|' . $r->sub_sub] ?? 0) + $r->n; } }
     $nodes = DB::table('category_nodes')->orderBy('position')->orderBy('name')->get();
     $o = [];
-    foreach (DB::table('categories')->whereNull('parent_id')->orderBy('position')->orderBy('name')->get() as $m) {
+    $mm = DB::table('categories')->whereNull('parent_id')->orderBy('position')->orderBy('name')->get();
+    foreach ($mm as $i => $m) if ((int)$m->position !== $i + 1) { DB::table('categories')->where('id', $m->id)->update(['position' => $i + 1]); $m->position = $i + 1; } // keep main positions 1..n
+    foreach ($mm as $m) {
       $subs = [];
       foreach ($nodes->where('category_id', $m->id)->where('level', 2) as $s) {
         $kids = [];
