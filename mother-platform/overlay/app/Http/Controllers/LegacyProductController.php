@@ -166,6 +166,7 @@ class LegacyProductController extends Controller
 
   /** Copy main product images from the old server into /uploads (batch; call repeatedly until left = 0). */
   public function images(Request $r) {
+    if ($r->boolean('reset')) DB::table('legacy_products')->where('action', 'imgfail')->update(['action' => 'updated']);
     @set_time_limit(120);
     $dir = public_path('uploads'); if (!is_dir($dir)) @mkdir($dir, 0775, true);
     $rows = DB::table('legacy_products as l')->join('products as p', 'p.id', '=', 'l.new_product_id')
@@ -176,7 +177,7 @@ class LegacyProductController extends Controller
       $ext = strtolower(pathinfo(parse_url($x->thumbnail_img, PHP_URL_PATH) ?: '', PATHINFO_EXTENSION)) ?: 'jpg'; if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif'])) $ext = 'jpg';
       $name = 'legacy-' . $x->old_id . '.' . $ext; $abs = $dir . '/' . $name;
       try {
-        $res = \Illuminate\Support\Facades\Http::timeout(8)->withHeaders(['User-Agent' => 'Mozilla/5.0 (compatible; DutyFreeShopBD-migrate)'])->get('https://dutyfreebd.com/' . ltrim($x->thumbnail_img, '/'));
+        $res = \Illuminate\Support\Facades\Http::timeout(8)->withHeaders(['User-Agent' => 'Mozilla/5.0 (compatible; DutyFreeShopBD-migrate)'])->get('https://dutyfreebd.com/storage/' . ltrim($x->thumbnail_img, '/'));
         $b = $res->successful() ? $res->body() : ''; if (!$b) $why = 'http ' . $res->status();
         if (strlen($b) > 500 && @getimagesizefromstring($b)) { file_put_contents($abs, $b);
           DB::table('products')->where('id', $x->pid)->update(['image' => '/uploads/' . $name, 'image_alt' => $x->name]);
