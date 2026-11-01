@@ -278,3 +278,5 @@ app/Support/FraudCheck.php
 app/Http/Controllers/FraudController.php
 resources/views/fraud.blade.php
 resources/views/fraud_widget.blade.php
+database/data/blog_posts.json
+database/migrations/2026_11_01_000012_blog_posts.php
