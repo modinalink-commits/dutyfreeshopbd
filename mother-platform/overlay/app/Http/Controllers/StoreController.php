@@ -231,8 +231,12 @@ class StoreController extends Controller {
     return ['items'=>$items, 'sub'=>$sub, 'ship'=>$items ? $ship : 0, 'disc'=>$disc, 'total'=>$items ? $sub + $ship - $disc : 0, 'coupon'=>$cOk, 'coupon_msg'=>$cmsg, 'notes'=>$notes, 'applied'=>$app, 'profile'=>$eng['profile'], 'zone'=>$dv['zone'], 'ship_orig'=>$dv['original'], 'ship_free'=>(bool)$dv['free'], 'ship_unlocked'=>(bool)$dv['unlocked'], 'dv'=>$dv];
   }
   public function cartItems(Request $r) {
-    $sp = \App\Support\OrderDiscount::sessionPhone($r);
-    return response()->json($this->quote($this->parseItems($r->input('ids')), (int)$r->input('area', 1), trim(mb_substr((string)$r->input('code'), 0, 40)), $sp, (bool)$sp, mb_substr((string)$r->input('addr'), 0, 300)))->header('Cache-Control','no-store');
+    $sp = \App\Support\OrderDiscount::sessionPhone($r); $ph = null;
+    // A guest who arrived through a referral link: preview exactly what the order will give for the typed number (same calculation as order submit); the customer profile is not revealed.
+    if (!$sp && \App\Support\Referral::cookieCode()) { $t = substr(preg_replace('/\D/', '', (string)$r->input('ph')), -11); if (preg_match('/^01\d{9}$/', $t)) $ph = $t; }
+    $q = $this->quote($this->parseItems($r->input('ids')), (int)$r->input('area', 1), trim(mb_substr((string)$r->input('code'), 0, 40)), $sp ?: $ph, (bool)$sp, mb_substr((string)$r->input('addr'), 0, 300));
+    if ($ph) $q['profile'] = null;
+    return response()->json($q)->header('Cache-Control','no-store');
   }
   /** Checkout progress tracking: one "incomplete order" per browser session, updated as the customer types. Never confirms, never sends SMS, never touches stock or courier. */
   public function trackCheckout(Request $r) {
