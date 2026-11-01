@@ -113,6 +113,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::get('/call-center/phone', [\App\Http\Controllers\CallCenterController::class,'phone']);
   Route::get('/call-center/contacts', [\App\Http\Controllers\CallCenterController::class,'contacts']);
   Route::get('/call-center/recent', [\App\Http\Controllers\CallCenterController::class,'recent']);
+  Route::get('/call-center/agents', [\App\Http\Controllers\CallCenterController::class,'agents']);
   Route::get('/call-center/extensions', [\App\Http\Controllers\CallCenterController::class,'extensions']);
   Route::post('/call-center/extensions/{uid}', [\App\Http\Controllers\CallCenterController::class,'saveExtension'])->whereNumber('uid');
   Route::get('/call-center/account', [\App\Http\Controllers\CallCenterController::class,'account']);

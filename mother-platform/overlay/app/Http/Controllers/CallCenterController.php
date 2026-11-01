@@ -42,6 +42,24 @@ class CallCenterController extends Controller {
     else { $b = DB::table('sip_accounts')->whereNull('user_id')->orderBy('id')->first(); DB::table('sip_accounts')->insert($row + ['user_id'=>$uid, 'domain'=>$b->domain ?? '', 'created_at'=>now()]); }
     return null;
   }
+  /** Agent scoreboard: who answers first, talks most and confirms most. */
+  public function agents(Request $r) {
+    $p = in_array($r->query('p'), ['today', '7', '30', 'all']) ? $r->query('p') : '7';
+    $from = match ($p) { 'today' => now('Asia/Dhaka')->startOfDay()->utc(), '7' => now()->subDays(7), '30' => now()->subDays(30), default => null };
+    $q = DB::table('call_logs')->whereNotNull('user_id')->when($from, fn($x) => $x->where('started_at', '>=', $from))->groupBy('user_id')
+      ->selectRaw("user_id, max(user_name) as name,
+        count(*) filter (where direction='in') as in_total,
+        count(*) filter (where direction='in' and status='answered') as in_ans,
+        count(*) filter (where direction='in' and status='answered' and connected_at is not null and dial_started_at is not null and extract(epoch from (connected_at - dial_started_at)) <= 10) as fast,
+        avg(extract(epoch from (connected_at - dial_started_at))) filter (where direction='in' and status='answered' and connected_at is not null and dial_started_at is not null) as avg_ans,
+        count(*) filter (where direction='out') as out_total,
+        count(*) filter (where direction='out' and status='answered') as out_ans,
+        coalesce(sum(duration) filter (where status='answered'), 0) as talk,
+        count(*) filter (where outcome='confirmed') as conf,
+        count(*) filter (where outcome='cancelled') as canc");
+    $rows = $q->get()->map(function ($x) { $x->score = $x->in_ans * 3 + $x->fast * 2 + $x->out_ans + $x->conf * 5; return $x; })->sortByDesc('score')->values();
+    return view('call_agents', ['rows'=>$rows, 'p'=>$p]);
+  }
   /** Admin: one extension per user. */
   public function extensions() {
     $users = DB::table('users')->orderBy('id')->get(['id', 'name', 'email', 'role', 'active']); $rows = DB::table('sip_accounts')->whereNotNull('user_id')->get()->keyBy('user_id');
