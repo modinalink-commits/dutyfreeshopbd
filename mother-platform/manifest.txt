@@ -341,3 +341,5 @@ database/migrations/2026_11_02_000015_products_legacy_cols.php
 database/migrations/2026_11_02_000016_legacy_orders.php
 app/Http/Controllers/LegacyOrderController.php
 resources/views/legacy_orders.blade.php
+app/Support/Brand.php
+public/couriers/pathao.png
