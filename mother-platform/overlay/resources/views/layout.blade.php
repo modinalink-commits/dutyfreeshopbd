@@ -23,6 +23,22 @@ label{font-size:12px;color:#6B7280;display:block;margin:10px 0 4px}
 .pill{font-size:11px;font-weight:600;border-radius:6px;padding:2px 8px;background:#FFE7D6;color:#C2410C}.pill.red{background:#FEE2E2;color:#B91C1C}.pill.ok{background:#DCFCE7;color:#166534}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}.k b{font-size:24px;display:block}.k span{font-size:12px;color:#6B7280}
 .err{color:#B91C1C;font-size:12px}
+.ibar{display:flex;gap:6px;margin-top:7px;align-items:center;flex-wrap:wrap}
+.ib{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:9px;border:1px solid #E5E7EB;background:#fff;color:#374151;text-decoration:none;transition:transform .15s,box-shadow .15s;box-shadow:0 1px 2px rgba(15,23,42,.05);vertical-align:middle}
+.ib.sm{width:26px;height:26px;border-radius:8px}
+.ib:hover,.ib-call:hover{transform:translateY(-1px);box-shadow:0 5px 12px rgba(15,23,42,.12)}
+.ib.wa{color:#16A34A;background:#ECFDF5;border-color:#BBF7D0}.ib.pf{color:#4F46E5;background:#EEF2FF;border-color:#C7D2FE}.ib.hs{color:#C2410C;background:#FFF7ED;border-color:#FED7AA}
+.ib-call{display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 12px;border-radius:9px;background:linear-gradient(135deg,#22C55E,#15803D);color:#fff!important;font-weight:700;font-size:12px;text-decoration:none;box-shadow:0 2px 6px rgba(22,163,74,.3);transition:transform .15s,box-shadow .15s}
+.vd{display:inline-flex;align-items:center;gap:5px}.vbtn{display:inline-flex;align-items:center;gap:5px}
+table.ordt{border-collapse:separate;border-spacing:0 8px}
+table.ordt>tbody>tr>td{border-top:1px solid #EFE6DF;border-bottom:1px solid #EFE6DF;background:var(--rb,#fff);transition:background .15s}
+table.ordt>tbody>tr>td:first-child{border-left:4px solid var(--ra,#FDBA8C);border-radius:12px 0 0 12px;padding-left:10px}
+table.ordt>tbody>tr>td:last-child{border-right:1px solid #EFE6DF;border-radius:0 12px 12px 0;padding-right:10px}
+table.ordt>tbody>tr:nth-child(4n+1){--rb:#FFFAF6;--ra:#FDBA8C}table.ordt>tbody>tr:nth-child(4n+2){--rb:#F5F8FF;--ra:#93C5FD}
+table.ordt>tbody>tr:nth-child(4n+3){--rb:#F4FBF6;--ra:#86EFAC}table.ordt>tbody>tr:nth-child(4n){--rb:#FAF6FF;--ra:#C4B5FD}
+table.ordt>tbody>tr[style*="FFFBEB"]{--rb:#FFFBEB;--ra:#F59E0B}
+table.ordt>tbody>tr:hover>td{background:#FFFFFF;box-shadow:0 2px 0 rgba(0,0,0,0)}
+table.ordt>tbody>tr:hover{filter:drop-shadow(0 4px 10px rgba(15,23,42,.08))}
 </style></head><body>
 @auth @include('sidebar') @endauth
 <main>@yield('body')</main>
