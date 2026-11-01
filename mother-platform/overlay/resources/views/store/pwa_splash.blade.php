@@ -1,0 +1,2 @@
+<div id="dfsp" aria-hidden="true"><img src="/pwa/logo-240.png" alt="" width="104" height="113"><i></i></div>
+<script>(function(){try{if(sessionStorage.getItem('dfsp'))return;sessionStorage.setItem('dfsp','1')}catch(e){}var s=document.getElementById('dfsp');if(!s)return;s.classList.add('on');var d=function(){s.style.opacity=0;setTimeout(function(){s.remove()},260)};if(document.readyState==='complete')setTimeout(d,350);else addEventListener('load',function(){setTimeout(d,250)});setTimeout(d,2500)})();</script>

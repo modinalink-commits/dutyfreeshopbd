@@ -187,6 +187,9 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestF
   Route::get('/account/{tab}', [\App\Http\Controllers\AccountController::class,'index'])->where('tab','[a-z]+');
   Route::get('/account/{tab}/{arg}', [\App\Http\Controllers\AccountController::class,'index'])->where(['tab'=>'[a-z]+','arg'=>'[A-Za-z0-9\-]+']);
   Route::get('/', [\App\Http\Controllers\StoreController::class,'home']);
+  Route::get('/manifest.webmanifest', [\App\Http\Controllers\PwaController::class,'manifest']);
+  Route::get('/pwa-sw', [\App\Http\Controllers\PwaController::class,'sw']);
+  Route::get('/offline', [\App\Http\Controllers\PwaController::class,'offline']);
   Route::get('/sitemap.xml', [\App\Http\Controllers\StoreController::class,'sitemap']);
   Route::post('/ai-chat', [\App\Http\Controllers\AiChatController::class,'ask'])->middleware('throttle:120,1');
   Route::get('/search-suggest', [\App\Http\Controllers\StoreController::class,'suggest'])->middleware('throttle:600,1');
