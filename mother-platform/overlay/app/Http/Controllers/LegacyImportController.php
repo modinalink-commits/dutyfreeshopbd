@@ -29,7 +29,10 @@ class LegacyImportController extends Controller
   private const TIER = "case when l.orders_amount >= 200000 then 'Diamond / V VIP' when l.orders_amount >= 150000 then 'Platinum / VIP' when l.orders_amount >= 50000 then 'Gold / Premium' when l.orders_amount >= 5000 then 'Silver / Standard' else null end";
   /** Real customers only: valid phone (guaranteed by staging) and not an obvious test entry with no orders. */
   private const REAL = "not (l.orders_count = 0 and (l.name ilike 'test%' or coalesce(l.name,'') = ''))";
+  /** Bogus values in the old system: more than 1 lakh per order on average (fake/test orders). Zero the amount, keep the count. */
+  private function clean(): void { DB::statement("update legacy_customers set orders_amount = 0 where orders_amount > 100000 * greatest(orders_count,1)"); }
   public function review() {
+    $this->clean();
     $m = "exists (select 1 from customers c where right(c.phone,11) = l.phone)";
     $q = fn($w) => (int)DB::selectOne("select count(*) n from legacy_customers l where $w")->n;
     $d = ['staged' => $q('true'), 'real' => $q(self::REAL), 'test' => $q('not ('.self::REAL.')'), 'matched' => $q(self::REAL." and $m"), 'new' => $q(self::REAL." and not $m"), 'with_orders' => $q('l.orders_count > 0'),
@@ -42,6 +45,7 @@ class LegacyImportController extends Controller
   }
   public function apply(Request $r) {
     abort_unless($r->input('confirm') === 'IMPORT', 422);
+    $this->clean();
     $m = "exists (select 1 from customers c where right(c.phone,11) = l.phone)";
     DB::transaction(function () use ($m) {
       DB::statement("update legacy_customers l set action = case when $m then 'update' else 'insert' end where action is null and ".self::REAL);
