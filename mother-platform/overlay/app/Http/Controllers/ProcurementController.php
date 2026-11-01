@@ -18,6 +18,18 @@ class ProcurementController extends Controller {
     $h = ''; foreach ($f as $k=>$v) $h .= '<input type="hidden" name="'.$k.'" value="'.e($v).'">';
     return '<form method="post" action="'.$url.'" style="display:inline"'.($ask ? ' onsubmit="return confirm(\''.e($ask).'\')"' : '').'>'.csrf_field().$h.'<button class="'.$cls.'">'.$label.'</button></form>';
   }
+  private function ic(string $href, string $t, string $svg, ?array $post = null): string {
+    $i = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'.$svg.'</svg>';
+    if ($post !== null) return '<form method="post" action="'.$href.'" style="display:inline" onsubmit="return confirm(\''.e($t).'?\')">'.csrf_field().'<button class="ib" title="'.e($t).'">'.$i.'</button></form>';
+    return '<a class="ib" href="'.$href.'" title="'.e($t).'">'.$i.'</a>';
+  }
+  private function supActions(int $id): string {
+    return $this->ic('/admin/purchase/new?supplier='.$id,'New purchase','<circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M3 4h2.5l2.2 11h10.6l2-8H6.2"/>')
+      .$this->ic('/admin/purchase/payments/new?supplier='.$id,'Make payment','<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 15h3"/>')
+      .$this->ic('/admin/purchase/ledger?supplier='.$id,'Ledger','<path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M9 9h6M9 13h6"/>')
+      .$this->ic('/admin/purchase/suppliers/'.$id.'/remind','Send due SMS','<path d="M4 5h16v11H9l-5 4z"/>',[])
+      .$this->ic('/admin/purchase/suppliers/'.$id,'View profile / more','<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>');
+  }
   private function paidMap() { return DB::table('payment_allocations as a')->join('supplier_payments as p','p.id','=','a.payment_id')->where('p.status','paid')->groupBy('a.purchase_id')->selectRaw('a.purchase_id, sum(a.amount) s')->pluck('s','purchase_id'); }
 
   // ---------------- generic list + export ----------------
@@ -64,16 +76,16 @@ class ProcurementController extends Controller {
       'filters'=>array_merge($this->dateF(),[['supplier','Supplier','supplier'],['q','Invoice / reference','text'],['product','Product / SKU / barcode','text'],['store','Store','store'],['status','Purchase status','select',['draft'=>'Draft','pending'=>'Pending Approval','approved'=>'Approved','received'=>'Received','cancelled'=>'Cancelled']],['pay','Payment status','select',['paid'=>'Paid','partial'=>'Partial','due'=>'Due','overdue'=>'Overdue']],['due','Due status','select',['open'=>'Has due','overdue'=>'Overdue only']]])];
   }
   private function dSuppliers(Request $r): array {
-    $dm = P::dueMap(); $q = DB::table('suppliers'); if ($r->filled('q')) { $t = '%'.$r->q.'%'; $q->where(fn($w) => $w->where('name','ilike',$t)->orWhere('phone','ilike',$t)->orWhere('code','ilike',$t)->orWhere('business_name','ilike',$t)); }
+    $dm = P::dueMap(); $stm = []; foreach ($this->dues($r) as $x) $stm[$x['s']->id] = $x['st']; $q = DB::table('suppliers'); if ($r->filled('q')) { $t = '%'.$r->q.'%'; $q->where(fn($w) => $w->where('name','ilike',$t)->orWhere('phone','ilike',$t)->orWhere('code','ilike',$t)->orWhere('business_name','ilike',$t)); }
     if ($r->filled('status')) $q->where('active', $r->status === 'active');
     $tp = DB::table('purchases')->whereNotIn('status',P::BAD)->groupBy('supplier_id')->selectRaw('supplier_id, sum(total) s, max(purchase_date) last')->get()->keyBy('supplier_id');
     $pd = DB::table('supplier_payments')->where('status','paid')->groupBy('supplier_id')->selectRaw('supplier_id, sum(amount) s')->pluck('s','supplier_id'); $rows = [];
-    foreach ($q->orderBy('name')->get() as $s) { $due = $dm[$s->id] ?? 0; $o = $tp[$s->id] ?? null; if ($r->filled('due') && ($r->due === 'open' ? $due <= 0.009 : $due > 0.009)) continue;
-      $rows[] = ['id'=>$s->id,'cells'=>['<a href="/admin/purchase/suppliers/'.$s->id.'"><b>'.e($s->name).'</b></a>'.($s->active ? '' : ' <span class="pb pb-cancelled">Inactive</span>'),e($s->phone),number_format($o->s ?? 0,2),number_format($pd[$s->id] ?? 0,2),'<b style="color:'.($due > 0.009 ? '#C2410C' : '#166534').'">'.number_format($due,2).'</b>',$o->last ?? '—',
-        '<a class="btn g sm" href="/admin/purchase/suppliers/'.$s->id.'">View</a> <a class="btn g sm" href="/admin/purchase/new?supplier='.$s->id.'">New Purchase</a> <a class="btn g sm" href="/admin/purchase/payments/new?supplier='.$s->id.'">Payment</a> <a class="btn g sm" href="/admin/purchase/ledger?supplier='.$s->id.'">Ledger</a>'],
-        'text'=>[$s->name,$s->phone,$o->s ?? 0,$pd[$s->id] ?? 0,$due,$o->last ?? '']]; }
-    return ['title'=>'Suppliers','sub'=>'Total purchase, total paid and current due for every supplier.','head'=>['Supplier Name','Mobile','Total Purchase','Total Paid','Current Due','Last Purchase','Action'],'rows'=>$rows,'noExportCol'=>6,'num'=>[2,3,4],'new'=>['New Supplier','/admin/purchase/suppliers/new'],
-      'filters'=>[['q','Name / mobile','text'],['due','Balance','select',['open'=>'Has due','clear'=>'No due']]]];
+    foreach ($q->orderBy('name')->get() as $s) { $due = $dm[$s->id] ?? 0; $o = $tp[$s->id] ?? null; if ($r->filled('due') && ($r->due === 'open' ? $due <= 0.009 : $due > 0.009)) continue; $st = $stm[$s->id] ?? 'paid';
+      if ($r->filled('pay') && $r->pay !== $st) continue; if (!$o && $due <= 0.009 && !$r->filled('q')) $st = 'none';
+      $rows[] = ['id'=>$s->id,'cells'=>['<a href="/admin/purchase/suppliers/'.$s->id.'"><b>'.e($s->name).'</b></a>'.($s->active ? '' : ' <span class="pb pb-cancelled">INACTIVE</span>'),e($s->phone),number_format($o->s ?? 0),number_format($pd[$s->id] ?? 0),'<b style="color:'.($due > 0.009 ? '#C2410C' : '#166534').'">'.number_format($due).'</b>',$o->last ?? '—',$st === 'none' ? '<span class="mut">—</span>' : $this->badge($st),$this->supActions($s->id)],
+        'text'=>[$s->name,$s->phone,$o->s ?? 0,$pd[$s->id] ?? 0,$due,$o->last ?? '',$st]]; }
+    return ['title'=>'Suppliers','sub'=>'Manage purchases, supplier payments and dues','head'=>['Supplier','Mobile','Total Purchase','Paid','Due','Last Purchase','Status','Action'],'rows'=>$rows,'noExportCol'=>7,'num'=>[2,3,4],'new'=>['Supplier','/admin/purchase/suppliers/new'],
+      'filters'=>[['q','Name / mobile','text'],['pay','Status','select',['paid'=>'Paid','partial'=>'Partial','due'=>'Due','overdue'=>'Overdue']],['due','Balance','select',['open'=>'Has due','clear'=>'No due']]]];
   }
   private function dPayments(Request $r): array {
     $q = DB::table('supplier_payments as p')->join('suppliers as s','s.id','=','p.supplier_id')->leftJoin('purchases as u','u.id','=','p.purchase_id')->select('p.*','s.name as sname','u.invoice as inv');
@@ -180,21 +192,19 @@ class ProcurementController extends Controller {
   public function reports(Request $r) { return $this->list('reports', $r); }
 
   // ---------------- dashboard ----------------
-  public function dashboard() {
-    $bad = P::BAD; $today = $this->today(); $m0 = now('Asia/Dhaka')->startOfMonth()->toDateString(); $pq = fn() => DB::table('purchases')->whereNotIn('status',$bad);
-    $dm = P::dueMap(); $due = array_sum(array_filter($dm, fn($v) => $v > 0)); $over = 0; $paid = $this->paidMap();
-    foreach ($pq()->whereNotNull('due_date')->where('due_date','<',$today)->get() as $p) $over += max(0, $p->total - ($paid[$p->id] ?? 0));
-    $k = ['total'=>$pq()->sum('total'),'today'=>$pq()->where('purchase_date',$today)->sum('total'),'month'=>$pq()->where('purchase_date','>=',$m0)->sum('total'),'due'=>$due,'paid'=>DB::table('supplier_payments')->where('status','paid')->sum('amount'),'over'=>$over,
-      'active'=>DB::table('suppliers')->where('active',true)->count(),'damage'=>DB::table('damaged_products')->sum('value'),'returns'=>DB::table('purchase_returns')->sum('value'),'pendpay'=>DB::table('supplier_payments')->where('status','pending')->sum('amount'),
-      'pendappr'=>DB::table('purchases')->where('status','pending')->count()+DB::table('supplier_payments')->where('status','pending')->count()];
-    $mon = $pq()->where('purchase_date','>=',now('Asia/Dhaka')->subMonths(11)->startOfMonth()->toDateString())->groupByRaw("to_char(purchase_date,'YYYY-MM')")->selectRaw("to_char(purchase_date,'YYYY-MM') g, sum(total) a")->pluck('a','g');
-    $dmg = DB::table('damaged_products')->where('dmg_date','>=',now('Asia/Dhaka')->subMonths(11)->startOfMonth()->toDateString())->groupByRaw("to_char(dmg_date,'YYYY-MM')")->selectRaw("to_char(dmg_date,'YYYY-MM') g, sum(value) a")->pluck('a','g');
-    $months = []; for ($i = 11; $i >= 0; $i--) $months[] = now('Asia/Dhaka')->subMonths($i)->format('Y-m');
-    $ch = ['monthly'=>array_map(fn($m) => [date('M y', strtotime($m.'-01')), (float)($mon[$m] ?? 0)], $months), 'damage'=>array_map(fn($m) => [date('M y', strtotime($m.'-01')), (float)($dmg[$m] ?? 0)], $months),
-      'supplier'=>$pq()->join('suppliers as s','s.id','=','purchases.supplier_id')->groupBy('s.name')->orderByDesc('a')->limit(8)->selectRaw('s.name g, sum(purchases.total) a')->get()->map(fn($x) => [$x->g,(float)$x->a])->all(),
-      'pd'=>[['Paid',(float)$k['paid']],['Due',(float)$k['due']]]];
-    $recent = DB::table('purchases as p')->join('suppliers as s','s.id','=','p.supplier_id')->orderByDesc('p.id')->limit(8)->get(['p.id','p.invoice','p.total','p.status','p.purchase_date','s.name as sname']);
-    return view('proc.dashboard', compact('k','ch','recent'));
+  public function dashboard(Request $r) {
+    $bad = P::BAD; $today = $this->today(); $m0 = now('Asia/Dhaka')->startOfMonth()->toDateString(); $lm0 = now('Asia/Dhaka')->subMonthNoOverflow()->startOfMonth()->toDateString();
+    $pq = fn() => DB::table('purchases')->whereNotIn('status',$bad); $dm = P::dueMap(); $paid = $this->paidMap();
+    $month = (float)$pq()->where('purchase_date','>=',$m0)->sum('total'); $last = (float)$pq()->whereBetween('purchase_date',[$lm0,$m0])->where('purchase_date','<',$m0)->sum('total');
+    $k = ['today'=>(float)$pq()->where('purchase_date',$today)->sum('total'),'todayn'=>$pq()->where('purchase_date',$today)->count(),'month'=>$month,'pct'=>$last > 0 ? round(($month-$last)/$last*100) : null,
+      'due'=>array_sum(array_filter($dm, fn($v) => $v > 0)),'duen'=>count(array_filter($dm, fn($v) => $v > 0.009)),'paid'=>(float)DB::table('supplier_payments')->where('status','paid')->sum('amount'),'paidm'=>(float)DB::table('supplier_payments')->where('status','paid')->where('pay_date','>=',$m0)->sum('amount'),
+      'damage'=>(float)DB::table('damaged_products')->sum('value'),'returns'=>(float)DB::table('purchase_returns')->sum('value')];
+    $recent = DB::table('purchases as p')->join('suppliers as s','s.id','=','p.supplier_id')->orderByDesc('p.purchase_date')->orderByDesc('p.id')->limit(8)->get(['p.id','p.invoice','p.total','p.status','p.purchase_date','s.name as sname'])->map(function ($x) use ($paid) { $x->paid = (float)($paid[$x->id] ?? 0); return $x; });
+    $names = DB::table('suppliers')->pluck('name','id'); $dues = collect($dm)->filter(fn($v) => $v > 0.009)->sortDesc()->take(8)->map(fn($v,$id) => ['id'=>$id,'name'=>$names[$id] ?? '#'.$id,'due'=>$v])->values();
+    $sup = $this->dSuppliers($r); $sup['rows'] = array_slice($sup['rows'], 0, 12);
+    $mon = $pq()->where('purchase_date','>=',now('Asia/Dhaka')->subMonths(11)->startOfMonth()->toDateString())->groupByRaw("to_char(purchase_date,'YYYY-MM')")->selectRaw("to_char(purchase_date,'YYYY-MM') g, sum(total) a")->pluck('a','g'); $months = []; for ($i = 11; $i >= 0; $i--) $months[] = now('Asia/Dhaka')->subMonths($i)->format('Y-m');
+    $ch = array_map(fn($m) => [date('M y', strtotime($m.'-01')), (float)($mon[$m] ?? 0)], $months);
+    return view('proc.dashboard', compact('k','recent','dues','sup','ch'));
   }
 
   // ---------------- suppliers ----------------
@@ -300,7 +310,7 @@ class ProcurementController extends Controller {
   }
 
   // ---------------- payments ----------------
-  public function payForm() { return view('proc.payment_form', ['sup'=>$this->suppliers(),'pre'=>(int)request('supplier'),'inv'=>(int)request('invoice'),'methods'=>P::METHODS]); }
+  public function payForm() { $m0 = now('Asia/Dhaka')->startOfMonth()->toDateString(); return view('proc.payment_form', ['sumDue'=>array_sum(array_filter(P::dueMap(), fn($v) => $v > 0)),'sumPaid'=>(float)DB::table('supplier_payments')->where('status','paid')->where('pay_date','>=',$m0)->sum('amount'),'sup'=>$this->suppliers(),'pre'=>(int)request('supplier'),'inv'=>(int)request('invoice'),'methods'=>P::METHODS]); }
   public function paySave(Request $r) {
     $r->validate(['supplier_id'=>'required|integer','pay_date'=>'required|date','amount'=>'required|numeric|min:0.01','method'=>'required','proof'=>'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:8192']);
     $proof = null; if ($r->hasFile('proof')) { $dir = public_path('uploads/proc'); if (!is_dir($dir)) @mkdir($dir,0775,true); $f = $r->file('proof'); $n = date('ymd').'-'.bin2hex(random_bytes(5)).'.'.strtolower($f->getClientOriginalExtension()); $f->move($dir,$n); $proof = '/uploads/proc/'.$n; }

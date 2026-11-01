@@ -1,6 +1,6 @@
 @extends('layout')@section('title','Make payment')
 @section('body')
-<h1 style="margin:0 0 10px">Supplier Payment</h1>@include('proc.nav')
+<h1>Payments &amp; Due</h1><div class="sub">Due <b>৳{{ number_format($sumDue) }}</b> &nbsp;|&nbsp; Paid This Month <b>৳{{ number_format($sumPaid) }}</b></div>@include('proc.nav')
 <form class="card" method="post" action="/admin/purchase/payments" enctype="multipart/form-data">@csrf<div class="fg">
 <div><label>Supplier *</label><select name="supplier_id" id="sup" required><option value="">Select…</option>@foreach($sup as $s)<option value="{{ $s->id }}" @selected(old('supplier_id',$pre)==$s->id)>{{ $s->name }} · {{ $s->code }}</option>@endforeach</select></div>
 <div><label>Against invoice (optional — otherwise oldest dues first)</label><select name="purchase_id" id="inv"><option value="">On account / oldest first</option></select></div>
