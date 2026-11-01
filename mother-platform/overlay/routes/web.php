@@ -60,6 +60,8 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::post('/products/{id}/toggle', [C::class,'productToggle']);
   Route::get('/products-export.csv', [C::class,'productsCsv']);
   Route::get('/taxonomy', [\App\Http\Controllers\TaxonomyController::class,'index']);
+  Route::get('/categories/{level}', [\App\Http\Controllers\TaxonomyController::class,'level'])->where('level','main|sub|child');
+  Route::get('/brands', [\App\Http\Controllers\TaxonomyController::class,'index']);
   Route::get('/taxonomy/data', [\App\Http\Controllers\TaxonomyController::class,'data']);
   Route::post('/taxonomy/save', [\App\Http\Controllers\TaxonomyController::class,'save']);
   Route::post('/taxonomy/delete', [\App\Http\Controllers\TaxonomyController::class,'delete']);

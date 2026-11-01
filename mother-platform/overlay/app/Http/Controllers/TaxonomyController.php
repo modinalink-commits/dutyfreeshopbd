@@ -51,6 +51,11 @@ class TaxonomyController extends Controller {
     return DB::table('brands')->orderBy('position')->orderBy('name')->get()->map(fn($b) => ['id' => $b->id, 'name' => $b->name, 'slug' => $b->slug ?: Slugs::slug($b->name), 'logo' => $b->logo ?? null, 'description' => $b->description ?? null, 'position' => $b->position, 'active' => (bool)$b->active, 'count' => $bc[$b->id] ?? 0])->all();
   }
   public function index() { return view('taxonomy', ['data' => ['tree' => $this->tree(), 'brands' => $this->brands()]]); }
+  public function level(string $level) {
+    abort_unless(in_array($level, ['main', 'sub', 'child'], true), 404);
+    $t = ['main' => ['Main Categories', 'Top-level categories. Add a Main Category, set its position, then link Sub Categories to it.'], 'sub' => ['Sub Categories', 'Each Sub Category is linked to one Main Category. Choose the parent when you add it and set its position inside that Main Category.'], 'child' => ['Child Categories', 'Each Child Category is linked to one Sub Category (last level). Choose Main → Sub when you add it and set its position inside that Sub Category.']][$level];
+    return view('category_level', ['level' => $level === 'child' ? 'subsub' : $level, 'title' => $t[0], 'intro' => $t[1], 'data' => ['tree' => $this->tree(), 'brands' => []]]);
+  }
   public function data() { return response()->json(['tree' => $this->tree(), 'brands' => $this->brands()])->header('Cache-Control', 'no-store'); }
 
   public function save(Request $r) {

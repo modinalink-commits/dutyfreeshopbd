@@ -115,7 +115,7 @@ $('bl').addEventListener('click',function(e){var b=e.target.closest('[data-be],[
 $('bq').addEventListener('input',bdraw);$('ab').onclick=function(){bform(null)};
 $('tC').onclick=function(){$('pC').style.display='';$('pB').style.display='none';$('tC').className='on';$('tB').className=''};
 $('tB').onclick=function(){$('pB').style.display='';$('pC').style.display='none';$('tB').className='on';$('tC').className=''};
-fillMains();draw();bdraw();form('main',null);bform(null);
+fillMains();draw();bdraw();form('main',null);bform(null);if(location.hash==='#brands'||location.pathname==='/admin/brands')$('tB').click();
 })();
 </script>
 @endverbatim
