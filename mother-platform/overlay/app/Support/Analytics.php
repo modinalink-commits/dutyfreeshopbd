@@ -39,7 +39,7 @@ class Analytics {
     $s = fn($k) => trim((string)($in[$k] ?? ''));
     $view = in_array($in['view'] ?? '', ['store','compare'], true) ? $in['view'] : 'combined';
     return ['from'=>$from, 'to'=>$to, 'stores'=>$stores, 'category'=>(int)($in['category'] ?? 0), 'product'=>mb_substr($s('product'), 0, 80), 'customer'=>mb_substr($s('customer'), 0, 80),
-      'courier'=>mb_substr($s('courier'), 0, 40), 'status'=>mb_substr($s('status'), 0, 40), 'pay'=>mb_substr($s('pay'), 0, 40), 'view'=>$view];
+      'courier'=>mb_substr($s('courier'), 0, 40), 'source'=>mb_substr($s('source'), 0, 40), 'status'=>mb_substr($s('status'), 0, 40), 'pay'=>mb_substr($s('pay'), 0, 40), 'view'=>$view];
   }
   private static function utc(string $date, bool $end): string {
     $d = new \DateTime($date.' 00:00:00', new \DateTimeZone('Asia/Dhaka')); if ($end) $d->modify('+1 day');
@@ -50,6 +50,7 @@ class Analytics {
     $c = ['o.created_at >= ?', 'o.created_at < ?']; $b = [self::utc($f['from'], false), self::utc($f['to'], true)];
     if ($f['stores']) $c[] = 'o.store_id in ('.implode(',', array_map('intval', $f['stores'])).')';
     if ($f['courier'] !== '') { if ($f['courier'] === 'Unassigned') $c[] = "coalesce(o.courier,'') = ''"; else { $c[] = 'o.courier = ?'; $b[] = $f['courier']; } }
+    if (($f['source'] ?? '') !== '') { $c[] = 'o.source = ?'; $b[] = $f['source']; }
     if ($f['status'] !== '') { $c[] = 'o.status = ?'; $b[] = $f['status']; }
     elseif ($basis === 'valid') $c[] = "o.status not in ('Cancel','Returned','Return Pending')";
     elseif ($basis === 'nocancel') $c[] = "o.status <> 'Cancel'";
