@@ -18,7 +18,7 @@ class DeliveryController extends Controller
   }
   public function save(Request $r) {
     $old = D::cfg();
-    foreach (['delv_on', 'delv_free_on'] as $k) DB::table('settings')->updateOrInsert(['key' => $k], ['value' => $r->boolean($k) ? '1' : '0', 'updated_at' => now(), 'created_at' => now()]);
+    foreach (['delv_on', 'delv_free_on', 'delv_pathao'] as $k) DB::table('settings')->updateOrInsert(['key' => $k], ['value' => $r->boolean($k) ? '1' : '0', 'updated_at' => now(), 'created_at' => now()]);
     foreach (['delv_default', 'delv_inside', 'delv_outside', 'delv_express', 'delv_free_min'] as $k) DB::table('settings')->updateOrInsert(['key' => $k], ['value' => (string)max(0, round((float)$r->input($k, 0), 2)), 'updated_at' => now(), 'created_at' => now()]);
     foreach (['delv_inside_label' => 60, 'delv_outside_label' => 60, 'delv_express_label' => 60, 'delv_inside_names' => 300] as $k => $n) DB::table('settings')->updateOrInsert(['key' => $k], ['value' => mb_substr(trim((string)$r->input($k)), 0, $n), 'updated_at' => now(), 'created_at' => now()]);
     D::flush(); \App\Support\Procure::audit('delivery.settings', 'Delivery charge settings', $old, $r->except(['_token']));

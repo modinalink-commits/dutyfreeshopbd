@@ -8,13 +8,13 @@ use Illuminate\Support\Facades\Schema;
 /** One delivery-charge engine for website orders and admin (manual) orders. All amounts come from Admin settings / zones / overrides. */
 class Delivery
 {
-  const KEYS = ['delv_on', 'delv_default', 'delv_inside', 'delv_outside', 'delv_express', 'delv_free_on', 'delv_free_min', 'delv_inside_label', 'delv_outside_label', 'delv_express_label', 'delv_inside_names'];
+  const KEYS = ['delv_on', 'delv_default', 'delv_inside', 'delv_outside', 'delv_express', 'delv_free_on', 'delv_free_min', 'delv_inside_label', 'delv_outside_label', 'delv_express_label', 'delv_inside_names', 'delv_pathao'];
   public static function cfg(): array {
     return Cache::remember('delv.cfg', 60, function () {
       $s = DB::table('settings')->where('key', 'like', 'delv\_%')->pluck('value', 'key')->all(); $g = fn($k, $d = '') => array_key_exists($k, $s) && $s[$k] !== null ? (string)$s[$k] : $d;
       return ['on' => $g('delv_on', '1') === '1', 'default' => (float)$g('delv_default', '130'), 'inside' => (float)$g('delv_inside', '70'), 'outside' => (float)$g('delv_outside', '130'), 'express' => (float)$g('delv_express', '0'),
         'free_on' => $g('delv_free_on', '0') === '1', 'free_min' => (float)$g('delv_free_min', '0'), 'l_in' => $g('delv_inside_label', 'Inside Chattogram'), 'l_out' => $g('delv_outside_label', 'Outside Chattogram'), 'l_ex' => $g('delv_express_label', 'Express / Same Day'),
-        'names' => array_values(array_filter(array_map('trim', explode(',', $g('delv_inside_names', 'Chattogram,Chittagong'))))) ];
+        'pathao' => $g('delv_pathao', '1') === '1', 'names' => array_values(array_filter(array_map('trim', explode(',', $g('delv_inside_names', 'Chattogram,Chittagong'))))) ];
     });
   }
   public static function flush(): void { Cache::forget('delv.cfg'); Cache::forget('delv.zones'); Cache::forget('store.rules'); }
@@ -50,6 +50,12 @@ class Delivery
    * @param int $area checkout choice (1 inside, 2 outside, 3 express, 0 = detect from address only)
    * @return array zone, original (before free/override), free_discount, charge (final), free, label, unlocked, reason
    */
+  /** Live Pathao charge from the typed address, or null (then the flat rates below are used). */
+  public static function pathao(string $text): ?array {
+    if (!self::cfg()['pathao'] || !\App\Support\Pathao::configured()) return null;
+    try { $loc = \App\Support\PathaoLocator::find($text); if (!$loc) return null; $p = \App\Support\Pathao::price($loc['city'], $loc['zone']); if (!$p) return null;
+      return $loc + ['price' => (float)$p['final_price']]; } catch (\Throwable $e) { return null; }
+  }
   public static function compute(float $sub, int $area, string $addr = '', string $district = '', array $pids = []): array {
     $c = self::cfg(); $text = trim($district . ' ' . $addr); $z = self::match($text);
     $r = ['zone' => null, 'original' => 0.0, 'free_discount' => 0.0, 'charge' => 0.0, 'free' => false, 'unlocked' => false, 'reason' => null, 'zone_id' => $z->id ?? null];
@@ -57,6 +63,7 @@ class Delivery
     $express = $area === 3 && $c['express'] > 0;
     if ($express) { $r['zone'] = $c['l_ex'] . ($z ? ' · ' . $z->name : ''); $orig = $z && $z->express_charge !== null ? (float)$z->express_charge : $c['express']; }
     elseif ($z) { $r['zone'] = $z->name . ' (' . $z->level . ')'; $orig = (float)$z->charge; }
+    elseif (($pp = self::pathao($text))) { $r['zone'] = 'Pathao · ' . $pp['city_name'] . ($pp['matched_zone'] ? ' / ' . $pp['zone_name'] : ''); $orig = $pp['price']; $r['pathao'] = ['city' => $pp['city'], 'zone' => $pp['zone']]; }
     elseif ($area === 1) { $r['zone'] = $c['l_in']; $orig = $c['inside']; }
     elseif ($area === 2) { $r['zone'] = $c['l_out']; $orig = $c['outside']; }
     else {

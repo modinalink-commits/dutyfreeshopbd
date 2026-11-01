@@ -11,6 +11,7 @@
 <div class="card"><h2>Main settings</h2><form method="post" action="/admin/delivery/settings">@csrf
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;align-items:end">
 <div><label>Delivery charge</label><select name="delv_on"><option value="1" @selected($cfg['on'])>ON</option><option value="0" @selected(!$cfg['on'])>OFF (no delivery charge)</option></select></div>
+<div><label>Pathao auto charge (from address)</label><select name="delv_pathao"><option value="1" @selected($cfg['pathao'])>ON — charge from Pathao</option><option value="0" @selected(!$cfg['pathao'])>OFF — flat rates only</option></select></div>
 <div><label>Default delivery charge ৳</label><input type="number" min="0" step="0.01" name="delv_default" value="{{ $cfg['default'] }}"></div>
 <div><label>Inside city charge ৳</label><input type="number" min="0" step="0.01" name="delv_inside" value="{{ $cfg['inside'] }}"></div>
 <div><label>Outside city charge ৳</label><input type="number" min="0" step="0.01" name="delv_outside" value="{{ $cfg['outside'] }}"></div>

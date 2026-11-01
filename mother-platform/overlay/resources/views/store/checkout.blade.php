@@ -33,9 +33,11 @@ body{background:#fff}.cf,.cc{border:1px solid #EAEAEA;border-radius:20px;box-sha
 <div class="fl"><label class="l" for="f-nm">Full Name</label><div class="ip"><input id="f-nm" name="name" required autocomplete="name" placeholder="Full Name" maxlength="120"><span>👤</span></div></div>
 <div class="fl"><label class="l" for="f-em">Email(Optional)</label><div class="ip"><input id="f-em" name="email" type="email" autocomplete="email" placeholder="ex: abc@example.com" maxlength="120"><span>✉</span></div></div>
 <div class="fl"><label class="l" for="f-ad">Full Address</label><div class="ip ta"><textarea id="f-ad" name="address" rows="1" required autocomplete="street-address" placeholder="Full Address" maxlength="500"></textarea><span>⌖</span></div></div>
-<span class="l" style="font-size:11px;font-weight:600;margin-bottom:6px;display:block">Delivery Area</span>
+@php $__pa = \App\Support\Delivery::cfg()['pathao'] && \App\Support\Pathao::configured(); @endphp
+@if($__pa)<div style="font-size:12px;color:#64748B;margin:0 0 10px;padding:9px 12px;background:#FFF7ED;border:1px solid #FED7AA;border-radius:10px">🚚 ডেলিভারি চার্জ আপনার ঠিকানা (জেলা/এলাকা) অনুযায়ী স্বয়ংক্রিয়ভাবে হিসাব হবে। ঠিকানায় জেলার নাম লিখুন।</div><input type="radio" name="area" value="1" checked hidden>@endif
+<span class="l" style="font-size:11px;font-weight:600;margin-bottom:6px;display:{{ $__pa ? 'none' : 'block' }}">Delivery Area</span>
 @foreach($areas as $i => $a)
-<label class="ar {{ $loop->first ? 'on' : '' }}"><input type="radio" name="area" value="{{ $i }}" {{ $loop->first ? 'checked' : '' }}><span class="rc"></span>{{ $a['n'] }}<span class="ch2">{{ $a['c'] > 0 ? number_format($a['c']).' TK' : 'Free' }}</span></label>
+<label class="ar {{ $loop->first ? 'on' : '' }}" @if($__pa) hidden @endif><input type="radio" name="area" value="{{ $i }}" @if(!$__pa) {{ $loop->first ? 'checked' : '' }} @endif><span class="rc"></span>{{ $a['n'] }}<span class="ch2">{{ $a['c'] > 0 ? number_format($a['c']).' TK' : 'Free' }}</span></label>
 @endforeach
 <div class="fl" style="margin:8px 0 14px"><label class="l" for="f-nt">Delivery Note <small style="font-weight:400">(the courier will see this note)</small></label><div class="ip"><input id="f-nt" name="note" placeholder="Delivery Note" maxlength="200"></div></div>
 @php $pays = $pays ?? collect(); $banks = $pays->where('kind','bank'); @endphp
