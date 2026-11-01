@@ -110,7 +110,7 @@ class StoreController extends Controller {
   }
   public function category(Request $r, string $slug, ?string $subSlug = null, ?string $subSubName = null) {
     $c = $this->cats()[$slug] ?? null;
-    if (!$c) { if ($subSlug !== null) return $this->notFound(); $page = DB::table('pages')->where('slug',$slug)->where('active',true)->first(); if ($page) return $this->page($page); return $this->notFound(); }
+    if (!$c) { if ($subSlug !== null) return $this->notFound(); $page = DB::table('pages')->where('slug',$slug)->where('active',true)->first(); if (!$page && ($pt = request()->query('preview'))) { $pp = DB::table('pages')->where('slug',$slug)->first(); if ($pp && \App\Support\SeoMgr::previewOk($pt, $pp)) { $page = $pp; $GLOBALS['seo_preview'] = true; } } if ($page) return $this->page($page); return $this->notFound(); }
     if ($subSlug === null && $r->filled('sub')) { // old ?sub=LM links -> /category/lm (301)
       $rest = $r->except('sub'); return redirect('/'.$slug.'/'.\App\Support\Slugs::subSlug($r->sub).($rest ? '?'.http_build_query($rest) : ''), 301);
     }
@@ -327,7 +327,10 @@ class StoreController extends Controller {
     return response()->view('store.track', $this->base(['o'=>$o, 'logs'=>$logs, 'items'=>$o ? DB::table('order_items')->where('order_id',$o->id)->get(['name','qty','price']) : collect(), 'title'=>'Order Tracking | DutyFree Shop BD', 'desc'=>'', 'canon'=>url('/track'), 'noindex'=>true]))->header('Cache-Control','no-store');
   }
   private function page($page) {
-    return response()->view('store.page', $this->base(['page'=>$page, 'title'=>($page->meta_title ?: $page->title).' | DutyFree Shop BD', 'desc'=>$page->meta_description, 'canon'=>url('/'.$page->slug).'/']));
+    $S = \App\Support\SeoMgr::class; $img = fn($u) => $u ? (str_starts_with($u,'http') ? $u : url($u)) : null;
+    $noidx = !empty($GLOBALS['seo_preview']) || (isset($page->robots_index) && !$page->robots_index) || $S::get('seo_global_index','1') === '0';
+    return response()->view('store.page', $this->base(['page'=>$page, 'title'=>isset($page->status) ? $S::effTitle($page) : (($page->meta_title ?: $page->title).' | DutyFree Shop BD'), 'desc'=>isset($page->status) ? $S::effDesc($page) : $page->meta_description,
+      'canon'=>!empty($page->canonical) ? $page->canonical : url('/'.$page->slug).'/', 'noindex'=>$noidx, 'keywords'=>$page->keywords ?? null, 'ogimg'=>$img($page->og_image ?? $page->featured_image ?? null)]));
   }
   public function blog() {
     $posts = DB::table('posts')->where('active',true)->where(fn($q)=>$q->whereNull('published_at')->orWhere('published_at','<=',now()))->orderByDesc('published_at')->orderByDesc('id')->get();
@@ -347,6 +350,7 @@ class StoreController extends Controller {
     $r = redirect('/'); return $ok ? $r->withCookie(cookie('dfref', $c, 60 * 24 * 60, '/', null, null, false)) : $r;
   }
   public function notFound() {
+    if ($rd = \App\Support\SeoMgr::redirect(request()->path())) return redirect($rd->to_url, (int)$rd->type);
     return response()->view('store.missing', $this->base(['title'=>'পেজ পাওয়া যায়নি | DutyFree Shop BD', 'desc'=>'', 'canon'=>url('/'), 'noindex'=>true]), 404);
   }
   public function sitemap() {
@@ -359,7 +363,7 @@ class StoreController extends Controller {
       if (\Illuminate\Support\Facades\Schema::hasTable('category_nodes')) foreach (DB::table('category_nodes as t')->join('category_nodes as s', 's.id', '=', 't.parent_id')->join('categories as c', 'c.id', '=', 't.category_id')->where('t.level', 3)->where('t.active', true)->where('s.active', true)->whereExists(fn($q) => $q->select(DB::raw(1))->from('products as p')->whereColumn('p.category_id', 't.category_id')->whereColumn('p.sub', 's.name')->whereColumn('p.sub_sub', 't.name')->where('p.published', true))->select('c.slug as cs', 's.name as sn', 't.name as tn')->get() as $ch) $o .= $u($ul($ch->cs.'/'.\App\Support\Slugs::subSlug($ch->sn).'/'.\App\Support\Slugs::slug($ch->tn, 60)));
       $o .= $u($ul('/blog'));
       foreach (DB::table('posts')->where('active',true)->get(['slug']) as $bp) $o .= $u($ul('/blog/'.$bp->slug));
-      foreach (DB::table('pages')->where('active',true)->get(['slug']) as $pg) $o .= $u($ul($pg->slug.'/'));
+      foreach (DB::table('pages')->where('active',true)->where(fn($q)=>$q->whereNull('robots_index')->orWhere('robots_index',true))->get(['slug']) as $pg) $o .= $u($ul($pg->slug.'/'));
       foreach (DB::table('products')->where('published',true)->orderBy('id')->cursor() as $p) $o .= $u($ul(self::url($p)), $p->image);
       return '<?xml version="1.0" encoding="UTF-8"?>'."\n".'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">'.$o.'</urlset>';
     });

@@ -156,6 +156,12 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
     Route::post('/quick', [$C,'quick']); Route::get('/history', [$C,'history']);
   });
   Route::get('/winback', [\App\Http\Controllers\WinbackController::class,'index']); Route::post('/winback/settings', [\App\Http\Controllers\WinbackController::class,'save']); Route::post('/winback/run', [\App\Http\Controllers\WinbackController::class,'run']);
+  Route::prefix('seo')->group(function () { $S = \App\Http\Controllers\SeoController::class;
+    Route::get('/', [$S,'index']); Route::get('/export', [$S,'export']); Route::get('/page', [$S,'edit']); Route::post('/page', [$S,'save']);
+    Route::get('/page/{id}', [$S,'edit'])->whereNumber('id'); Route::post('/page/{id}', [$S,'save'])->whereNumber('id');
+    Route::post('/page/{id}/duplicate', [$S,'duplicate'])->whereNumber('id'); Route::post('/page/{id}/delete', [$S,'destroy'])->whereNumber('id'); Route::post('/page/{id}/restore/{rid}', [$S,'restore'])->whereNumber(['id','rid']);
+    Route::post('/bulk', [$S,'bulk']); Route::post('/redirect', [$S,'redirectSave']); Route::post('/redirect/{id}', [$S,'redirectAct'])->whereNumber('id'); Route::post('/settings', [$S,'settings']); Route::post('/sitemap', [$S,'sitemap']);
+  });
   Route::get('/referral', [\App\Http\Controllers\ReferralController::class,'index']); Route::post('/referral/settings', [\App\Http\Controllers\ReferralController::class,'save']);
   Route::prefix('purchase')->group(function () {
     $C = \App\Http\Controllers\ProcurementController::class;

@@ -15,6 +15,7 @@ class ModulePermission {
     if ($m !== null) { foreach ($map as $mod => $slugs) if (in_array($m, $slugs)) return $mod; return 'users'; }
     if (preg_match('#^purchase(/|$)#', $p)) return 'purchase';
     if (preg_match('#^(referral|winback)(/|$)#', $p)) return 'marketing';
+    if (preg_match('#^seo(/|$)#', $p)) return 'settings';
     if (preg_match('#^sms-marketing/(quick|history)#', $p)) return 'orders';
     if (str_starts_with($p, 'sms-marketing')) return 'marketing';
     if (str_starts_with($p, 'push')) return 'marketing';

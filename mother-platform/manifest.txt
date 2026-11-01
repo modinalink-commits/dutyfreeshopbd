@@ -264,3 +264,8 @@ public/apple-touch-icon.png
 public/android-chrome-192x192.png
 public/android-chrome-512x512.png
 resources/views/favicon_head.blade.php
+database/migrations/2026_11_01_000007_pages_seo.php
+app/Support/SeoMgr.php
+app/Http/Controllers/SeoController.php
+resources/views/seo.blade.php
+resources/views/seo_edit.blade.php
