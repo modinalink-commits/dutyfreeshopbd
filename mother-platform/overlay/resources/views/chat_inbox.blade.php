@@ -1,20 +1,20 @@
 @extends('layout')@section('title','Messages')
 @section('body')
 <style>
-.ib{display:grid;grid-template-columns:360px 1fr;gap:14px;height:calc(100vh - 150px);min-height:480px}
-.ib .ls,.ib .cv{background:#fff;border:1px solid var(--bd);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;min-height:0}
-.ib .fl{display:flex;flex-wrap:wrap;gap:5px;padding:10px;border-bottom:1px solid #FFE7D6}
-.ib .fl a{padding:5px 10px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid var(--bd);color:#0B1220;text-decoration:none;background:#fff;cursor:pointer}.ib .fl a.on{background:#FF5A00;border-color:#FF5A00;color:#fff}
-.ib .lt{flex:1;overflow:auto}.ib .th{display:flex;gap:10px;padding:10px 12px;border-bottom:1px solid #FFF0E6;cursor:pointer;align-items:flex-start}.ib .th:hover{background:#FFF8F3}.ib .th.on{background:#FFF1E8}
-.ib .th b{font-size:13.5px}.ib .th .lm{font-size:12.5px;color:#4B5563;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:215px}.ib .th small{color:#6B7280;font-size:11px}
-.ib .th .un{background:#E11D48;color:#fff;border-radius:20px;font-size:11px;padding:1px 7px;font-weight:700}
-.ib .sc{display:inline-block;font-size:10.5px;border-radius:6px;padding:1px 6px;background:#FFE7D6;color:#C2410C;font-weight:600}.ib .sc.resolved{background:#DCFCE7;color:#166534}.ib .sc.waiting{background:#FEF3C7;color:#92400E}.ib .sc.new{background:#E0E7FF;color:#3730A3}
-.ib .emp{padding:40px 20px;text-align:center;color:#6B7280;font-size:13px}
-@media(max-width:900px){.ib{grid-template-columns:1fr;height:auto}.ib .cv{height:78vh}}
+.mbx{display:grid;grid-template-columns:360px 1fr;gap:14px;height:calc(100vh - 150px);min-height:480px}
+.mbx .ls,.mbx .cv{background:#fff;border:1px solid var(--bd);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;min-height:0}
+.mbx .fl{display:flex;flex-wrap:wrap;gap:5px;padding:10px;border-bottom:1px solid #FFE7D6}
+.mbx .fl a{padding:5px 10px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid var(--bd);color:#0B1220;text-decoration:none;background:#fff;cursor:pointer}.mbx .fl a.on{background:#FF5A00;border-color:#FF5A00;color:#fff}
+.mbx .lt{flex:1;overflow:auto}.mbx .th{display:flex;gap:10px;padding:10px 12px;border-bottom:1px solid #FFF0E6;cursor:pointer;align-items:flex-start}.mbx .th:hover{background:#FFF8F3}.mbx .th.on{background:#FFF1E8}
+.mbx .th b{font-size:13.5px}.mbx .th .lm{font-size:12.5px;color:#4B5563;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:215px}.mbx .th small{color:#6B7280;font-size:11px}
+.mbx .th .un{background:#E11D48;color:#fff;border-radius:20px;font-size:11px;padding:1px 7px;font-weight:700}
+.mbx .sc{display:inline-block;font-size:10.5px;border-radius:6px;padding:1px 6px;background:#FFE7D6;color:#C2410C;font-weight:600}.mbx .sc.resolved{background:#DCFCE7;color:#166534}.mbx .sc.waiting{background:#FEF3C7;color:#92400E}.mbx .sc.new{background:#E0E7FF;color:#3730A3}
+.mbx .emp{padding:40px 20px;text-align:center;color:#6B7280;font-size:13px}
+@media(max-width:900px){.mbx{grid-template-columns:1fr;height:auto}.mbx .cv{height:78vh}}
 </style>
 <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px"><div style="flex:1"><h1 style="margin:0">Messages <span id="ibu" style="font-size:13px;vertical-align:middle"></span></h1><span style="font-size:13px;color:#6B7280">Facebook, Instagram, WhatsApp and website chat in one inbox.</span></div>
 <button class="btn g" type="button" id="ibm">🔔 Sound on</button><a class="btn g" href="/admin/chat-settings">Chat settings</a></div>
-<div class="ib"><div class="ls"><div class="fl" id="ibf"></div><div style="padding:8px 10px;border-bottom:1px solid #FFE7D6"><input id="ibq" type="search" placeholder="Search name, mobile, message…" style="padding:7px 10px;font-size:13px"></div><div class="lt" id="ibl"></div></div>
+<div class="mbx"><div class="ls"><div class="fl" id="ibf"></div><div style="padding:8px 10px;border-bottom:1px solid #FFE7D6"><input id="ibq" type="search" placeholder="Search name, mobile, message…" style="padding:7px 10px;font-size:13px"></div><div class="lt" id="ibl"></div></div>
 <div class="cv" id="ibc"><div class="emp" style="margin:auto">Select a conversation to read and reply.<br>New messages appear here and as a popup anywhere in the dashboard.</div></div></div>
 @endsection
 @section('js')
