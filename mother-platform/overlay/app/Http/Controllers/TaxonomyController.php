@@ -85,7 +85,7 @@ class TaxonomyController extends Controller {
       } else { $row += ['category_id' => $main->id, 'level' => 2, 'position' => $d['position'] ?? ((int)DB::table('category_nodes')->where('category_id', $main->id)->where('level', 2)->max('position') + 1), 'created_at' => $now]; $id = DB::table('category_nodes')->insertGetId($row); }
     } else {
       $ps = DB::table('category_nodes')->where('id', $parent)->where('level', 2)->first(); if (!$ps) return $this->err('Choose a parent sub category.');
-      if (DB::table('category_nodes')->where('level', 3)->where('parent_id', $ps->id)->whereRaw('lower(name) = ?', [mb_strtolower($name)])->when($id, fn($q) => $q->where('id', '!=', $id))->exists()) return $this->err('This sub category already has a sub sub category with that name.');
+      if (DB::table('category_nodes')->where('level', 3)->where('parent_id', $ps->id)->whereRaw('lower(name) = ?', [mb_strtolower($name)])->when($id, fn($q) => $q->where('id', '!=', $id))->exists()) return $this->err('This sub category already has a child category with that name.');
       if ($id) {
         $old = DB::table('category_nodes')->where('id', $id)->where('level', 3)->first(); abort_unless($old, 404);
         $oldPs = DB::table('category_nodes')->find($old->parent_id);

@@ -22,7 +22,7 @@
 </style>
 <div id="txm"></div>
 <h1>Categories &amp; Brands</h1>
-<p style="color:#6B7280;margin:0">Main Category → Sub Category → Sub Sub Category. Brands are managed separately and are not part of the tree.</p>
+<p style="color:#6B7280;margin:0">Main Category → Sub Category → Child Category. Brands are managed separately and are not part of the tree.</p>
 <div class="txt"><button type="button" id="tC" class="on">Categories</button><button type="button" id="tB">Brands</button></div>
 
 <div id="pC" class="tx">
@@ -51,7 +51,7 @@ function match(n,q){return !q||n.name.toLowerCase().indexOf(q)>=0}
 function vis(n,q,fs){var ok=match(n,q)&&(!fs||(fs==='a')===n.active);var k=(n.children||[]).map(function(c){return vis(c,q,fs)});return ok||k.some(Boolean)?{ok:ok,k:k}:null}
 function row(n,lvl,q,fs){var kids=n.children||[],o=open[n.type+n.id]||(q&&true),h='<li class="l'+lvl+'" draggable="true" data-t="'+n.type+'" data-id="'+n.id+'" data-p="'+(n.parent_id||0)+'">';
  h+='<div class="rw"><span class="hd" title="Drag to reorder">⠿</span><span class="ps" title="Position">'+(n.position<10?'0':'')+n.position+'</span><button class="ib2 mv" title="Move up" data-mv="'+n.type+':'+n.id+':-1">▲</button><button class="ib2 mv" title="Move down" data-mv="'+n.type+':'+n.id+':1">▼</button><span class="cr" data-tg="'+n.type+n.id+'">'+(kids.length?(o?'▼':'▶'):'')+'</span>'+(n.image?'<img class="thm" src="'+E(n.image)+'" alt="">':'')+'<span class="nm" title="'+E(n.url)+'">'+E(n.name)+'</span><span class="ct">'+n.count+' Products</span><button class="st '+(n.active?'a':'i')+'" data-tog="'+n.type+':'+n.id+'">'+(n.active?'Active':'Inactive')+'</button>'
- +(n.type!=='subsub'?'<button class="ib2" title="'+(n.type==='main'?'Add Sub Category':'Add Sub Sub Category')+'" data-add="'+n.type+':'+n.id+'">+</button>':'')+'<button class="ib2" title="Edit" data-ed="'+n.type+':'+n.id+'">✎</button><button class="ib2 d" title="Delete" data-del="'+n.type+':'+n.id+'">🗑</button></div>';
+ +(n.type!=='subsub'?'<button class="ib2" title="'+(n.type==='main'?'Add Sub Category':'Add Child Category')+'" data-add="'+n.type+':'+n.id+'">+</button>':'')+'<button class="ib2" title="Edit" data-ed="'+n.type+':'+n.id+'">✎</button><button class="ib2 d" title="Delete" data-del="'+n.type+':'+n.id+'">🗑</button></div>';
  if(kids.length&&o){h+='<ul>';kids.forEach(function(c){if(vis(c,q,fs)||(!q&&!fs))h+=row(c,lvl+1,q,fs)});h+='</ul>'}return h+'</li>'}
 function draw(){var q=$('q').value.trim().toLowerCase(),fs=$('fs').value,fm=$('fm').value,h='<ul>';
  D.tree.forEach(function(m){if(fm&&String(m.id)!==fm)return;if(q||fs){if(!vis(m,q,fs))return}h+=row(m,1,q,fs)});h+='</ul>';$('tree').innerHTML=D.tree.length?h:'<p>No categories yet. Click “+ Main Category”.</p>'}
@@ -74,7 +74,7 @@ $('tree').addEventListener('dragend',function(){if(!drag)return;drag.classList.r
  post('/admin/taxonomy/reorder',{kind:kind,ids:items.map(function(x){return +x.dataset.id})}).then(function(j){if(j.ok)msg('Order saved — menu updated',true);else msg('Could not save order');reload()})});
 /* ---------- form ---------- */
 function up(inp,hid,pv){inp.onchange=function(){var f=inp.files[0];if(!f)return;var fd=new FormData();fd.append('file',f);fd.append('kind','category');fetch('/admin/upload-image',{method:'POST',headers:{'X-CSRF-TOKEN':T,Accept:'application/json'},body:fd}).then(function(r){return r.json()}).then(function(j){if(j.url){hid.value=j.url;pv.src=j.url;pv.style.display=''}else msg(j.message||'Upload failed')}).catch(function(){msg('Upload failed')})}}
-function form(type,n,parent){cur={type:type,n:n};var L={main:'Main Category',sub:'Sub Category',subsub:'Sub Sub Category'}[type],h='<h3 style="margin:0">'+(n?'Edit ':'Add ')+L+'</h3>';
+function form(type,n,parent){cur={type:type,n:n};var L={main:'Main Category',sub:'Sub Category',subsub:'Child Category'}[type],h='<h3 style="margin:0">'+(n?'Edit ':'Add ')+L+'</h3>';
  var mains=D.tree,subs=[];D.tree.forEach(function(m){(m.children||[]).forEach(function(s){subs.push({id:s.id,name:m.name+' → '+s.name})})});
  var pv=n?n.parent_id:parent;
  if(type==='sub')h+='<label>Parent Main Category *</label><select id="f-p">'+mains.map(function(m){return '<option value="'+m.id+'"'+(m.id==pv?' selected':'')+'>'+E(m.name)+'</option>'}).join('')+'</select>';
