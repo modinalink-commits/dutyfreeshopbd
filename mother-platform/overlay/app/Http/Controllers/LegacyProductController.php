@@ -40,6 +40,20 @@ class LegacyProductController extends Controller
       'live_no_ext' => $q('select count(*) n from products where ext_id is null'),
       'done' => $q('select count(*) n from legacy_products where action is not null'),
     ];
+    $d['cmp'] = [
+      'price = old sale price' => $q('select count(*) n from legacy_products l join products p on p.ext_id = l.old_id where abs(coalesce(p.price,0) - l.sale_price) < 0.5'),
+      'price = old list price' => $q('select count(*) n from legacy_products l join products p on p.ext_id = l.old_id where abs(coalesce(p.price,0) - l.price) < 0.5'),
+      'offer = old sale price' => $q('select count(*) n from legacy_products l join products p on p.ext_id = l.old_id where abs(coalesce(p.offer_price,0) - l.sale_price) < 0.5'),
+      'compare = old list price' => $q('select count(*) n from legacy_products l join products p on p.ext_id = l.old_id where abs(coalesce(p.compare_price,0) - l.price) < 0.5'),
+      'missing: same name as a live product (other id)' => $q("select count(*) n from legacy_products l where not exists (select 1 from products p where p.ext_id = l.old_id) and exists (select 1 from products p where lower(trim(p.name)) = lower(trim(l.name)))"),
+      'live-not-in-old: published' => $q('select count(*) n from products p where p.ext_id is not null and p.published and not exists (select 1 from legacy_products l where l.old_id = p.ext_id)'),
+      'live-not-in-old: max ext_id' => $q('select coalesce(max(ext_id),0) n from products p where p.ext_id is not null and not exists (select 1 from legacy_products l where l.old_id = p.ext_id)'),
+      'live-not-in-old: min ext_id' => $q('select coalesce(min(ext_id),0) n from products p where p.ext_id is not null and not exists (select 1 from legacy_products l where l.old_id = p.ext_id)'),
+      'old max id' => $q('select coalesce(max(old_id),0) n from legacy_products'),
+      'live published (matched)' => $q('select count(*) n from legacy_products l join products p on p.ext_id = l.old_id where p.published'),
+      'old active (matched)' => $q('select count(*) n from legacy_products l join products p on p.ext_id = l.old_id where l.status = 1'),
+    ];
+    $d['liveonly'] = DB::select('select p.ext_id, p.name, p.price, p.published from products p where p.ext_id is not null and not exists (select 1 from legacy_products l where l.old_id = p.ext_id) order by p.ext_id desc limit 10');
     $d['status'] = DB::select('select coalesce(status::text, \'null\') s, count(*) n from legacy_products group by 1 order by 2 desc');
     $d['unm_by_status'] = DB::select('select coalesce(l.status::text, \'null\') s, count(*) n from legacy_products l where not exists (select 1 from products p where p.ext_id = l.old_id) group by 1 order by 2 desc');
     $d['sample'] = DB::select('select l.old_id, l.name, l.status, l.price, l.stock from legacy_products l where not exists (select 1 from products p where p.ext_id = l.old_id) order by l.old_id desc limit 12');
