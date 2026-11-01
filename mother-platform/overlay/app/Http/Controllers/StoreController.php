@@ -105,7 +105,7 @@ class StoreController extends Controller {
   /** Real recent orders, customer names masked (first letter + ***). */
   private function liveOrders() {
     return self::rem('store.live4', 60, fn() => DB::table('orders as o')->join('order_items as i','i.order_id','=','o.id')->leftJoin('products as p','p.id','=','i.product_id')->whereNotIn('o.status',['Cancel','Incomplete'])->where('o.created_at','>=',now()->subDays(3))
-      ->select(DB::raw("'' as customer_name"),DB::raw("'' as district"),'o.shipping','o.created_at','i.name','i.qty','i.price','p.image','p.id as pid','p.ext_id','p.name as pname','p.category_id as pcat','p.sub as psub','p.path_slug as pslug')->orderByDesc('o.id')->limit(6)->get()
+      ->select(DB::raw("'' as customer_name"),DB::raw("'' as district"),'o.shipping','o.created_at','i.name','i.qty','i.price','p.image','p.id as pid','p.ext_id','p.name as pname','p.category_id as pcat','p.sub as psub','p.sub_sub as psubsub','p.path_slug as pslug')->orderByDesc('o.id')->limit(6)->get()
       ->map(function ($r) { $r->masked = ''; return $r; }));
   }
   public function category(Request $r, string $slug, ?string $subSlug = null, ?string $subSubName = null) {
@@ -349,6 +349,7 @@ class StoreController extends Controller {
       $o = $u($ul('/'));
       foreach ($this->cats() as $c) $o .= $u($ul($c->slug.'/'));
       foreach ($this->subs() as $cid => $rows) { $cs = $this->cats()->firstWhere('id', $cid); if ($cs) foreach ($rows as $rw) $o .= $u($ul($cs->slug.'/'.\App\Support\Slugs::subSlug($rw->sub))); }
+      if (\Illuminate\Support\Facades\Schema::hasTable('category_nodes')) foreach (DB::table('category_nodes as t')->join('category_nodes as s', 's.id', '=', 't.parent_id')->join('categories as c', 'c.id', '=', 't.category_id')->where('t.level', 3)->where('t.active', true)->where('s.active', true)->whereExists(fn($q) => $q->select(DB::raw(1))->from('products as p')->whereColumn('p.category_id', 't.category_id')->whereColumn('p.sub', 's.name')->whereColumn('p.sub_sub', 't.name')->where('p.published', true))->select('c.slug as cs', 's.name as sn', 't.name as tn')->get() as $ch) $o .= $u($ul($ch->cs.'/'.\App\Support\Slugs::subSlug($ch->sn).'/'.\App\Support\Slugs::slug($ch->tn, 60)));
       $o .= $u($ul('/blog'));
       foreach (DB::table('posts')->where('active',true)->get(['slug']) as $bp) $o .= $u($ul('/blog/'.$bp->slug));
       foreach (DB::table('pages')->where('active',true)->get(['slug']) as $pg) $o .= $u($ul($pg->slug.'/'));

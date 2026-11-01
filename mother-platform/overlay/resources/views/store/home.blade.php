@@ -116,7 +116,7 @@ body .w [data-cr]{--pv:6;--g:10px;display:flex;gap:var(--g);padding:0;overflow-x
 @if($live->count())
 <div class="w sec-lv" style="padding-top:24px;display:flex;flex-direction:column;gap:12px"><div class="lvh"><span class="chip"><span class="dot"></span>LIVE ORDERS</span><h2>Recently ordered</h2><span class="su">Bought by shoppers across Bangladesh, updated every minute</span></div>
 <div class="lg2" data-cr>@foreach($live as $l)
-@php $lu = $l->pid ? \App\Http\Controllers\StoreController::url((object)['id'=>$l->pid,'ext_id'=>$l->ext_id,'name'=>$l->pname,'category_id'=>$l->pcat,'sub'=>$l->psub,'path_slug'=>$l->pslug]) : null; @endphp
+@php $lu = $l->pid ? \App\Http\Controllers\StoreController::url((object)['id'=>$l->pid,'ext_id'=>$l->ext_id,'name'=>$l->pname,'category_id'=>$l->pcat,'sub'=>$l->psub,'sub_sub'=>$l->psubsub ?? null,'path_slug'=>$l->pslug]) : null; @endphp
 <div class="lo"><span class="tg"><span class="dot"></span>{{ \Carbon\Carbon::parse($l->created_at)->diffForHumans(null, true) }} ago</span><a class="bx" @if($lu) href="{{ $lu }}" @endif>
 <div class="im">@if($l->image)<img src="{{ $l->image }}" alt="{{ $l->name }}" width="110" height="110" loading="lazy" draggable="false">@endif</div>
 <span class="wh">Recent order</span><span class="nm">{{ $l->name }}</span>
