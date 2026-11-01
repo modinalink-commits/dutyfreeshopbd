@@ -1,5 +1,5 @@
 fe43f8b6cb422cca81ee18b74d3972f77e7852de database/migrations/2026_10_31_000001_mother_core.php
-ae54a60ea23416bf7d4c02925d548113a3ddf781 routes/web.php
+1ffbc98abaee55dfe75355503b1dd4e4cedec446 routes/web.php
 4eb9c45dba79c3a8479970e7d5fac7c89719990f app/Models/Mother.php
 ee19e56424345625975e363e5c05f8b6c4896b92 app/Http/Controllers/AdminController.php
 bd49f23ea0895af93bed5374937115c21911b0cd app/Console/Commands/MotherInstall.php
@@ -28,7 +28,7 @@ fa2b968d7610da857e9101e1e992ca04ba598681 app/Models/Res.php
 6d791d6efcd6661309de2dbf79937150c67115c1 resources/views/res_list.blade.php
 3ec859745604afc4ddcfc9e977c77296c3859d08 resources/views/res_form.blade.php
 67a76a09307002f6201cc2e684f3161b22c67d9c resources/views/reports.blade.php
-de6c4397246ce0e588bb85008c607bf75a95a6f0 resources/views/sidebar.blade.php
+873370918c2afb5bac35cb2ca5aef7e1e428916b resources/views/sidebar.blade.php
 732fff2be30a171e9823bd97034bf441348c856c resources/views/coming.blade.php
 c391e719e9e194b7bf6ecf86ccb4c9a4504c2d17 database/migrations/2026_10_31_000004_catalog_extra.php
 bd753699bbd209d243e7e4b2b82c37d322444553 resources/views/panels/customers.blade.php
@@ -40,7 +40,7 @@ c25a13956ea9946159b80572e41bd26d65050c7a resources/views/panels/accounts.blade.p
 1cb9863e39bdf894fc9136ae20d93aea9105a087 resources/views/panels/stock-log.blade.php
 71f296bf66ab5617c5421ac0a20b3dfc1dd649cf app/Http/Controllers/SiteController.php
 83f7d91e3943f758a5cc593ff2b2c3f4a34c500e resources/views/site.blade.php
-048d69bb1e4e832ab6a5ef97a7d603f15753290c app/Http/Middleware/ModulePermission.php
+322140554cfb4d08fd24f70d52dc7208126fe795 app/Http/Middleware/ModulePermission.php
 2a839fb1a64c2d2986cda02d11cbd025c8afeef5 app/Http/Controllers/PermissionController.php
 25b7fe381729658fc95088f08798e84c213ac6d5 resources/views/permissions.blade.php
 d787924ace3fa42cc66a3de321e4e94e784006d8 resources/views/panels/employees.blade.php
@@ -312,3 +312,6 @@ a7780c3757267c22e2fd9359abb5a761c239d490 resources/views/voice_campaign_form.bla
 96d4efc4fa93a980c7a2075e87846a57c311e1e0 resources/views/voice_campaign_show.blade.php
 500dbba8e86d45bafc1db7a1e823d4b24493ee59 resources/views/voice_history.blade.php
 f69e43429a3441f6ecac763eaf6d6afd70db116a resources/views/voice_offer_lua.txt
+b3a1d36c529811fa9a8feeacf70ca6bd2b802b36 database/migrations/2026_11_02_000006_command_board.php
+6455a9a752bdec0a0ff6d1fd1c3eec407c142b1c app/Http/Controllers/CommandBoardController.php
+f88a00106f2c7e7886dc6634ce8aca460398f7c7 resources/views/command_board.blade.php
