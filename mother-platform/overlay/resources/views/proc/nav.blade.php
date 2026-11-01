@@ -2,7 +2,6 @@
 $T = [['Purchase','/admin/purchase/invoices',['/admin/purchase/invoices','/admin/purchase/new','/admin/purchase/edit']],['Suppliers','/admin/purchase/suppliers',['/admin/purchase/suppliers','/admin/purchase/ledger']],['Payments & Due','/admin/purchase/dues',['/admin/purchase/dues','/admin/purchase/payments']],['Damage / Return','/admin/purchase/damages',['/admin/purchase/damages','/admin/purchase/returns']],['Reports','/admin/purchase',['/admin/purchase/reports']]]; @endphp
 <div class="chips" style="margin-bottom:12px">@foreach($T as [$n,$u,$pre])@php $on = $n==='Reports' ? ($p==='/admin/purchase' || str_starts_with($p,'/admin/purchase/reports')) : collect($pre)->contains(fn($x)=>str_starts_with($p,$x)); @endphp<a class="chip {{ $on ? 'on' : '' }}" href="{{ $u }}">{{ $n }}</a>@endforeach
 <span style="flex:1"></span><a class="chip" href="/admin/purchase/notes">Debit/Credit Notes</a><a class="chip" href="/admin/purchase/audit">Audit</a><a class="chip" href="/admin/purchase/settings">Settings</a></div>
-<div class="chips" style="margin-bottom:12px">@foreach($T as [$n,$u])@php $on = $u === '/admin/purchase' ? $p === $u : str_starts_with($p, $u); @endphp<a class="chip {{ $on ? 'on' : '' }}" href="{{ $u }}">{{ $n }}</a>@endforeach</div>
 @if(session('ok'))<div class="card" style="color:#166534">{{ session('ok') }}</div>@endif
 @if(session('bad'))<div class="card err">{{ session('bad') }}</div>@endif
 @if($errors->any())<div class="card err">{{ $errors->first() }}</div>@endif
