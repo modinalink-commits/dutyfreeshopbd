@@ -60,12 +60,28 @@ log "2/9 download new code"; stg Downloading 12
 cd "$REL" || fail "cd"
 export R; wget -q -T 30 -t 3 -O manifest.txt.new "$R/manifest.txt" || fail "manifest download"
 sed -i '/^$/d' manifest.txt.new; N=$(wc -l < manifest.txt.new)
-rm -f "$D/dl.fail"; i=0
+# Incremental download: manifest.sha lists the sha1 of every file; files identical to the live release (already copied above) are NOT downloaded again.
+INC=0; wget -q -T 30 -t 3 -O manifest.sha.new "$R/manifest.sha" && [ -s manifest.sha.new ] && INC=1
+rm -f "$D/dl.fail" "$D/dl.list"; : > "$D/dl.list"; i=0; DLN=0; REUSED=0
 while read -r f; do
+  if [ "$INC" = 1 ] && [ -f "$CUR/$f" ]; then
+    EXP=$(awk -v p="$f" '$2==p{print $1; exit}' manifest.sha.new); LIVE=$(sha1sum < "$CUR/$f" | cut -d' ' -f1)
+    if [ -n "$EXP" ] && [ "$EXP" = "$LIVE" ]; then REUSED=$((REUSED+1)); continue; fi
+  fi
+  DLN=$((DLN+1)); echo "$f" >> "$D/dl.list"
   ( mkdir -p "$(dirname "$f")"; { wget -q -T 30 -O "$f" "$R/overlay/$f" || { sleep 2; wget -q -T 30 -O "$f" "$R/overlay/$f"; } || { sleep 4; wget -q -T 30 -O "$f" "$R/overlay/$f"; }; } || echo "$f" >> "$D/dl.fail" ) &
   i=$((i+1)); [ $((i % 8)) = 0 ] && wait
 done < manifest.txt.new
 wait
+if [ "$INC" = 1 ] && [ ! -f "$D/dl.fail" ]; then # integrity: every downloaded file must match its recorded sha1 (catches a stale manifest.sha)
+  while read -r f; do
+    EXP=$(awk -v p="$f" '$2==p{print $1; exit}' manifest.sha.new); GOT=$(sha1sum < "$f" | cut -d' ' -f1)
+    [ -z "$EXP" ] || [ "$EXP" = "$GOT" ] || fail "manifest.sha is stale for $f (expected $EXP, got $GOT)"
+  done < "$D/dl.list"
+fi
+rm -f manifest.sha.new
+if [ "$INC" = 1 ]; then log "   incremental download: $DLN downloaded, $REUSED reused from the live release"; else log "   full download ($DLN files; manifest.sha unavailable)"; fi
+echo "$DLN|$REUSED" > "$D/dlstat" 2>/dev/null
 [ -f "$D/dl.fail" ] && fail "download failed: $(head -3 "$D/dl.fail" | tr '\n' ' ')"
 cp manifest.txt.new manifest.txt; rm -f manifest.txt.new; log "   $N files"
 
