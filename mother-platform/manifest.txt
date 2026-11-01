@@ -338,3 +338,6 @@ app/Http/Controllers/LegacyProductController.php
 resources/views/legacy_products.blade.php
 public/pay/shurjopay-logo.png
 database/migrations/2026_11_02_000015_products_legacy_cols.php
+database/migrations/2026_11_02_000016_legacy_orders.php
+app/Http/Controllers/LegacyOrderController.php
+resources/views/legacy_orders.blade.php
