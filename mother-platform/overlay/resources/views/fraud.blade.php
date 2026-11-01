@@ -1,6 +1,6 @@
 @extends('layout')@section('title','Fraud Check')
 @section('body')
-<div style="margin-bottom:10px"><h1 style="margin:0">Fraud Check</h1><div style="font-size:12px;color:#6B7280">Customer courier reliability from Steadfast, RedX and Pathao. A customer with no courier history is shown as “Unknown”, never as fraud.</div></div>
+<div style="margin-bottom:10px"><h1 style="margin:0">Fraud Check</h1><div style="font-size:12px;color:#6B7280">Customer courier reliability. Pathao is used now (live API connection; falls back to this store's own Pathao parcel results); Steadfast and RedX are added when their keys are saved. A customer with no courier history is shown as “Unknown”, never as fraud.</div></div>
 @if(session('ok'))<div class="card" style="color:#166534">{{ session('ok') }}</div>@endif
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:12px">@foreach([['Checks done',$k->n],['Low / very low risk',$k->lo],['High / very high risk',$k->hi],['No history',$k->un]] as [$l,$v])<div class="card" style="margin:0;padding:10px 12px"><span style="font-size:11.5px;color:#6B7280;display:block">{{ $l }}</span><b style="font-size:18px">{{ $v }}</b></div>@endforeach</div>
 <div class="card"><form method="get" style="display:flex;gap:8px;align-items:end;flex-wrap:wrap"><div><label>Customer mobile number</label><input name="phone" data-bdphone inputmode="numeric" maxlength="11" value="{{ $phone }}" placeholder="01XXXXXXXXX"></div><button>Check</button></form></div>

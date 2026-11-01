@@ -35,26 +35,33 @@ class FraudCheck
   public static function check(string $phone, bool $force = false): array {
     $phone = self::phone($phone); if (!preg_match('/^01\d{9}$/', $phone)) return ['ok' => false, 'error' => 'Invalid mobile number'];
     if (!$force) { $c = DB::table('fraud_checks')->where('phone', $phone)->where('created_at', '>', now()->subHours(6))->orderByDesc('id')->first(); if ($c && $c->data) return json_decode($c->data, true) + ['cached' => true]; }
-    $cfg = self::configured(); $safe = fn($v) => $v ? (int)$v : 0; $res = ['steadfast' => [0, 0, 0, 'off'], 'redx' => [0, 0, 0, 'off'], 'pathao' => [0, 0, 0, 'off']];
+    $cfg = self::configured(); $ptok = (string)(Sms::secret('fc_pathao_token') ?: (Pathao::configured() ? Pathao::token() : '')); $cfg['pathao'] = $ptok !== ''; $psrc = 'off'; $safe = fn($v) => $v ? (int)$v : 0; $res = ['steadfast' => [0, 0, 0, 'off'], 'redx' => [0, 0, 0, 'off'], 'pathao' => [0, 0, 0, 'off']];
     if (array_filter($cfg)) {
       try {
         $rs = Http::pool(fn($pool) => [
           $pool->as('s')->timeout(10)->withHeaders(['Api-Key' => (string)Sms::secret('fc_steadfast_key'), 'Secret-Key' => (string)Sms::secret('fc_steadfast_secret'), 'Content-Type' => 'application/json'])->get('https://portal.packzy.com/api/v1/fraud_check/score/' . $phone),
           $pool->as('r')->timeout(10)->withHeaders(['API-ACCESS-TOKEN' => 'Bearer ' . Sms::secret('fc_redx_token'), 'Accept' => 'application/json'])->get('https://openapi.redx.com.bd/v1.0.0-beta/customer/success_rate/' . $phone),
-          $pool->as('p')->timeout(10)->withHeaders(['Content-Type' => 'application/json', 'accept' => 'application/json', 'Authorization' => 'Bearer ' . Sms::secret('fc_pathao_token')])->post('https://merchant.pathao.com/api/v1/user/success', ['phone' => $phone]),
+          $pool->as('p')->timeout(10)->withHeaders(['Content-Type' => 'application/json', 'accept' => 'application/json', 'Authorization' => 'Bearer ' . $ptok])->post('https://merchant.pathao.com/api/v1/user/success', ['phone' => $phone]),
         ]);
         $j = fn($k) => ($rs[$k] instanceof \Illuminate\Http\Client\Response && $rs[$k]->successful()) ? json_decode($rs[$k]->body()) : null;
         if ($cfg['steadfast']) { $x = $j('s'); $d = $safe($x->delivered_count ?? 0); $c = $safe($x->cancelled_count ?? 0); $res['steadfast'] = [$d + $c, $d, $c, $x ? 'ok' : 'error']; }
         if ($cfg['redx']) { $x = $j('r'); $d = $safe($x->deliveredParcels ?? 0); $t = $safe($x->totalParcels ?? 0); $res['redx'] = [$t, $d, max($t - $d, 0), $x ? 'ok' : 'error']; }
         if ($cfg['pathao']) { $x = $j('p'); $d = $safe($x->data->customer->successful_delivery ?? 0); $t = $safe($x->data->customer->total_delivery ?? 0); $res['pathao'] = [$t, $d, max($t - $d, 0), $x ? 'ok' : 'error']; }
+        if ($cfg['pathao'] && $res['pathao'][3] === 'ok') $psrc = 'network';
       } catch (\Throwable $e) {}
+    }
+    // Pathao fallback: when Pathao's network score is unavailable, use this store's own Pathao parcels for the number (official API, our synced parcel results).
+    if ($res['pathao'][3] !== 'ok' || $res['pathao'][0] === 0) {
+      $pp = DB::table('orders')->whereNotNull('consignment_id')->whereRaw('right(phone,11) = ?', [$phone])->selectRaw("count(*) filter (where courier_stage = 'Delivered') as d, count(*) filter (where courier_stage in ('Returned','Cancelled','Failed Delivery')) as r")->first();
+      $pd = (int)($pp->d ?? 0); $pr = (int)($pp->r ?? 0);
+      if ($pd + $pr > 0 || $cfg['pathao']) { $res['pathao'] = [$pd + $pr, $pd, $pr, 'ok']; $psrc = 'own_parcels'; }
     }
     $own = self::own($phone); $inc = Sms::secret('fc_internal') === '1';
     $del = array_sum(array_column($res, 1)) + ($inc ? $own['delivered'] : 0); $ret = array_sum(array_column($res, 2)) + ($inc ? $own['returned'] : 0); $tot = $del + $ret;
     $rate = $tot > 0 ? round($del / $tot * 100, 1) : 0.0; $rr = $tot > 0 ? round($ret / $tot * 100, 1) : 0.0; [$lv, $score] = self::level($tot, $rate);
     $out = ['ok' => true, 'phone' => $phone, 'total_parcel' => $tot, 'total_delivery' => $del, 'total_return' => $ret, 'success_rate' => $rate, 'return_rate' => $rr, 'risk_score' => $score, 'risk_level' => $lv,
       'label' => self::LEVELS[$lv][0], 'title' => self::LEVELS[$lv][1], 'bn' => self::LEVELS[$lv][2], 'color' => self::LEVELS[$lv][3], 'bg' => self::LEVELS[$lv][4], 'own' => $own, 'own_included' => $inc, 'configured' => $cfg,
-      'couriers' => array_map(fn($a) => ['total' => $a[0], 'delivered' => $a[1], 'returned' => $a[2], 'status' => $a[3]], $res), 'at' => now()->toDateTimeString()];
+      'couriers' => array_map(fn($a) => ['total' => $a[0], 'delivered' => $a[1], 'returned' => $a[2], 'status' => $a[3]], $res), 'pathao_source' => $psrc, 'at' => now()->toDateTimeString()];
     try { DB::table('fraud_checks')->insert(['phone' => $phone, 'risk_level' => $lv, 'risk_score' => $score, 'total' => $tot, 'delivered' => $del, 'returned' => $ret, 'success_rate' => $rate, 'data' => json_encode($out), 'checked_by' => auth()->user()->name ?? 'system', 'created_at' => now(), 'updated_at' => now()]); } catch (\Throwable $e) {}
     return $out;
   }
