@@ -9,6 +9,7 @@ $tone = ['orange'=>['#FFF1E8','#FF5A00'],'blue'=>['#E6EFF9','#1D5FA8'],'violet'=
 $q = http_build_query(array_filter(['range'=>$range, 'store'=>$storeId ?: null, 'from'=>request('from'), 'to'=>request('to')]));
 $nT = count($trend);
 $spark = function ($a, $col, $w = 62, $h = 22) { if (!$a || count($a) < 2) return ''; $m = max(1, max($a)); $pp = []; foreach (array_values($a) as $i => $y) $pp[] = round($i/(count($a)-1)*$w,1).','.round($h-2-($y/$m)*($h-5),1); return '<svg class="sp" width="'.$w.'" height="'.$h.'" viewBox="0 0 '.$w.' '.$h.'" aria-hidden="true"><polyline points="'.implode(' ',$pp).'" fill="none" stroke="'.$col.'" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>'; };
+$P5C = ['New'=>['#1D5FA8','#E6EFF9','plus'],'Pending'=>['#C2410C','#FFF1E8','clock'],'Processing'=>['#5B3FA6','#F1EAF8','box'],'Shipment'=>['#0E7490','#E0F2FE','truck'],'Delivered'=>['#166534','#DCFCE7','check']];
 $PIPE = ['New'=>'plus','Incomplete'=>'alert','Assign'=>'users','Pending'=>'clock','Approved'=>'check','Packaging'=>'box','Shipment'=>'truck','Delivered'=>'check','Return Pending'=>'undo','Returned'=>'undo','Cancel'=>'x'];
 $qs = fn($extra = []) => http_build_query(array_filter(array_merge(['store'=>$storeId ?: null, 'channel'=>$ch ?: null], $extra)));
 @endphp
@@ -87,6 +88,12 @@ $qs = fn($extra = []) => http_build_query(array_filter(array_merge(['store'=>$st
 @media (max-width:1280px){.dx-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}.dx-p{grid-template-columns:repeat(2,minmax(0,1fr))}.dx-p>:first-child{grid-column:1/-1}}
 @media (max-width:1000px){.dx-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.dx-3{grid-template-columns:repeat(2,minmax(0,1fr))}.dx-2{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:700px){.dx-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.dx-3,.dx-p{grid-template-columns:minmax(0,1fr)}.dx-pipe{grid-template-columns:repeat(3,minmax(0,1fr))}.dx-search{flex:1 1 140px;min-width:0}.dx-k .v{font-size:17px}.dx-k svg.sp{display:none}}
+.dx-p5{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}
+.dx-p5 a{position:relative;border:1px solid #E6EAF0;border-top:3px solid var(--c);border-radius:11px;padding:9px 12px;background:#fff;display:flex;flex-direction:column;gap:2px;transition:all .15s}
+.dx-p5 a:hover{border-color:var(--c);background:var(--b);transform:translateY(-1px)}
+.dx-p5 a:not(:last-child)::after{content:"";position:absolute;right:-12px;top:50%;width:8px;height:8px;border-top:2px solid #C5CCD6;border-right:2px solid #C5CCD6;transform:translateY(-50%) rotate(45deg)}
+.dx-p5 .tp{display:flex;align-items:center;gap:6px;color:var(--c);font-weight:800;font-size:11.5px}.dx-p5 .n{font-size:17px;font-weight:800;line-height:1.15;color:#0B1220}.dx-p5 .n small{font-size:11px;font-weight:600;color:#6B7280;margin-left:3px}.dx-p5 .vl{font-size:12.5px;font-weight:700;color:var(--c)}
+@media (max-width:900px){.dx-p5{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.dx-p5 a::after{display:none!important}}
 </style>
 <div class="dx" id="dxroot" data-q="{{ $q }}">
 <header class="dx-top">
@@ -105,6 +112,12 @@ $qs = fn($extra = []) => http_build_query(array_filter(array_merge(['store'=>$st
     <div class="pop"><a target="_blank" href="/admin/m/r-orders/export/pdf">PDF</a><a href="/admin/m/r-orders/export/xls">Excel</a><a href="/admin/m/r-orders/export/doc">Word (DOCX)</a><a href="/admin/m/r-orders/export/csv">CSV</a></div></details>
   <label class="dx-live" id="dxlive" title="Auto refresh every 60 seconds"><i></i><span>Updated <b id="dxupd">{{ $now->format('h:i:s A') }}</b></span><input type="checkbox" id="dxauto" checked style="width:auto;height:auto;margin:0"> auto</label>
 </header>
+
+<section class="card" id="dxp5" style="padding:10px 14px">
+  <div class="head" style="margin-bottom:8px"><h2>Order Pipeline · {{ $label }}</h2><span class="muted">Active: <b style="color:#0B1220">{{ number_format($pipeAct['count']) }} orders</b> · <b style="color:#0B1220">৳{{ number_format($pipeAct['value']) }}</b></span></div>
+  <div class="dx-p5">@foreach($pipe5 as $p5)@php $pc = $P5C[$p5['name']]; @endphp
+    <a href="/admin/orders?status={{ urlencode($p5['filter']) }}" style="--c:{{ $pc[0] }};--b:{{ $pc[1] }}" title="{{ $p5['name'] }}: {{ $p5['count'] }} orders, ৳{{ number_format($p5['value']) }}"><span class="tp">{!! $ico($pc[2],14) !!}{{ $p5['name'] }}</span><span class="n">{{ number_format($p5['count']) }}<small>Orders</small></span><span class="vl">৳{{ number_format($p5['value']) }}</span></a>@endforeach</div>
+</section>
 
 <section class="dx-kpis" id="dxkpis">
 @foreach($kpis as [$l,$v,$sub,$icn,$tr,$href,$tn,$spk])
@@ -156,7 +169,7 @@ $qs = fn($extra = []) => http_build_query(array_filter(array_merge(['store'=>$st
 </section>
 
 <section class="dx-p">
-  <div class="card"><div class="head"><h2>Order Pipeline</h2><span class="muted">Click a stage to filter</span></div>
+  <div class="card"><div class="head"><h2>All Order Stages</h2><span class="muted">Click a stage to filter</span></div>
     <div class="dx-pipe">@foreach($PIPE as $sg => $pi)@php $cn2 = (int)($counts[$sg] ?? 0); @endphp
       <a href="/admin/orders?status={{ urlencode($sg) }}" style="--c:{{ $ST[$sg][1] ?? '#475569' }};--b:{{ $ST[$sg][0] ?? '#F3F4F6' }}"><span class="tp">{!! $ico($pi,13) !!}<span class="nm">{{ $sg }}</span></span><span class="ct">{{ $cn2 }}</span></a>@endforeach</div></div>
   <div class="card"><div class="head"><h2>Courier Performance</h2><a class="more" href="/admin/courier-dashboard">Open →</a></div>

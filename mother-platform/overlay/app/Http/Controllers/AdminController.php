@@ -86,6 +86,11 @@ class AdminController extends Controller {
     $chatUnread = \Illuminate\Support\Facades\Schema::hasTable('chat_threads') ? (int)DB::table('chat_threads')->sum('unread') : 0;
     $counts = $oq()->select('status', DB::raw('count(*) c'))->groupBy('status')->pluck('c','status');
     $counts['Incomplete'] = $incOpen;
+    $P5 = [['New', ['New'], 'New'], ['Pending', ['Pending','Assign','AI Order','Pre Order'], 'Pending'], ['Processing', ['Approved','Scheduled','WFP','Packaging'], 'Approved'], ['Shipment', ['Shipment','Late Delivery'], 'Shipment'], ['Delivered', ['Delivered','Partial Delivered'], 'Delivered']];
+    $pv = $safe(function () use ($oq, $f, $tz) { $s0 = \Carbon\Carbon::parse($f['from'], $tz)->startOfDay()->utc(); $e0 = \Carbon\Carbon::parse($f['to'], $tz)->endOfDay()->utc();
+      return $oq()->where('created_at','>=',$s0)->where('created_at','<=',$e0)->select('status', DB::raw('count(*) c'), DB::raw('coalesce(sum(total),0) v'))->groupBy('status')->get()->keyBy('status'); }, collect());
+    $pipe5 = array_map(function ($g) use ($pv) { $c = 0; $v = 0.0; foreach ($g[1] as $st) { $c += (int)($pv[$st]->c ?? 0); $v += (float)($pv[$st]->v ?? 0); } return ['name'=>$g[0], 'count'=>$c, 'value'=>$v, 'filter'=>implode(',', $g[1])]; }, $P5);
+    $pipeAct = ['count'=>array_sum(array_column(array_slice($pipe5, 0, 4), 'count')), 'value'=>array_sum(array_column(array_slice($pipe5, 0, 4), 'value'))];
     $orders = DB::table('orders')->leftJoin('stores','stores.id','=','orders.store_id')->when($storeId, fn($q) => $q->where('orders.store_id', $storeId))->select('orders.*','stores.name as store')->orderByDesc('orders.id')->limit(8)->get();
     $bad = DB::table('orders')->whereIn('status',['Cancel','Returned'])->whereIn('phone',$orders->pluck('phone'))->select('phone',DB::raw('count(*) c'))->groupBy('phone')->pluck('c','phone');
     $alerts = []; $failed = \Illuminate\Support\Facades\Schema::hasTable('failed_jobs') ? DB::table('failed_jobs')->where('failed_at','>=',now()->subHour())->count() : 0;
@@ -130,11 +135,11 @@ class AdminController extends Controller {
     $safe(function () use (&$feed) { if (\Illuminate\Support\Facades\Schema::hasTable('call_logs')) foreach (DB::table('call_logs')->orderByDesc('id')->limit(3)->get() as $c) $feed->push(['call', ucfirst($c->direction).' call · '.($c->customer_name ?: $c->phone).' · '.$c->status, $c->started_at ?? $c->created_at, '/admin/call-center/history']); });
     $feed = $feed->filter(fn($e) => $e[2])->sortByDesc(fn($e) => \Carbon\Carbon::parse($e[2])->timestamp)->take(10)->values()->map(fn($e) => [$e[0], $e[1], \Carbon\Carbon::parse($e[2])->timezone($tz)->diffForHumans(), \Carbon\Carbon::parse($e[2])->timezone($tz)->format('d M, h:i A'), $e[3]]);
     $storeList = $safe(fn() => DB::table('stores')->where('active',true)->orderBy('name')->get(['id','name']), collect());
-    return view('dashboard', compact('ch','channels','topCust','storePerf','now','kpis','stores','max','counts','orders','bad','alerts','health','range','label','trend','topProducts','cats','couriers','chatUnread','goal','cust','calls','risk','feed','storeList','storeId','canFin','prev','f','incOpen','newN','stale') + ['isCustom'=>$range === 'custom']);
+    return view('dashboard', compact('pipe5','pipeAct','ch','channels','topCust','storePerf','now','kpis','stores','max','counts','orders','bad','alerts','health','range','label','trend','topProducts','cats','couriers','chatUnread','goal','cust','calls','risk','feed','storeList','storeId','canFin','prev','f','incOpen','newN','stale') + ['isCustom'=>$range === 'custom']);
   }
   public function orders(Request $r) { \App\Support\CourierSync::auto();
     $isInc = $r->input('status') === 'Incomplete'; $q = DB::table('orders')->orderByDesc('id');
-    if ($isInc) $q->whereRaw('1 = 0'); elseif ($r->filled('status')) $q->where('status', $r->status);
+    if ($isInc) $q->whereRaw('1 = 0'); elseif ($r->filled('status')) { $sts = array_filter(array_map('trim', explode(',', (string)$r->status))); count($sts) > 1 ? $q->whereIn('status', $sts) : $q->where('status', $r->status); }
     if ($r->filled('q')) $q->where(fn($w) => $w->where('invoice','like','%'.$r->q.'%')->orWhere('phone','like','%'.$r->q.'%')->orWhere('customer_name','ilike','%'.$r->q.'%'));
     $per = in_array((int)$r->input('per'), [25,50,100,200]) ? (int)$r->input('per') : 50;
     $orders = $q->paginate($per)->withQueryString();
