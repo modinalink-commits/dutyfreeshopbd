@@ -17,8 +17,8 @@
 #txm{position:fixed;left:50%;top:18px;transform:translateX(-50%);z-index:99999;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700;display:none;box-shadow:0 8px 24px rgba(0,0,0,.2);max-width:90vw}#txm.ok{background:#166534;color:#fff;display:block}#txm.er{background:#B91C1C;color:#fff;display:block}
 </style>
 <div id="txm"></div>
-<div class="cl-head"><h1 class="cl" style="display:block">{{ $title }}</h1><p class="cl sub0" style="display:block">{{ $intro }}</p>
-<div class="cl nav2" style="display:flex"><a href="/admin/categories/main" class="{{ $level==='main'?'on':'' }}">1 · Main Categories</a><a href="/admin/categories/sub" class="{{ $level==='sub'?'on':'' }}">2 · Sub Categories</a><a href="/admin/categories/child" class="{{ $level==='subsub'?'on':'' }}">3 · Child Categories</a><a href="/admin/brands">Brands</a></div></div>
+<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px"><div style="flex:1;min-width:240px"><h1 style="margin:0">{{ $title }}</h1><span style="font-size:13px;color:#6B7280">{{ $intro }}</span></div></div>
+<div class="chips" style="margin-bottom:14px"><a class="chip {{ $level==='main'?'on':'' }}" href="/admin/categories/main">1 · Main Categories</a><a class="chip {{ $level==='sub'?'on':'' }}" href="/admin/categories/sub">2 · Sub Categories</a><a class="chip {{ $level==='subsub'?'on':'' }}" href="/admin/categories/child">3 · Child Categories</a><a class="chip" href="/admin/brands">Brands</a></div>
 <div class="cl"><div class="card"><div class="tb"><input id="q" placeholder="Search"><select id="fp"></select></div><div id="list"></div><p style="font-size:12px;color:#6B7280">Drag ⠿ or use ▲▼ to change the position inside the same group. The store menu follows this order.</p></div>
 <div class="card fm" id="form"></div></div>
 <script type="application/json" id="txd">@json($data)</script>
