@@ -86,6 +86,81 @@ class LegacyProductController extends Controller
     $d['unm_by_status'] = DB::select('select coalesce(l.status::text, \'null\') s, count(*) n from legacy_products l where not exists (select 1 from products p where p.ext_id = l.old_id) group by 1 order by 2 desc');
     $d['sample'] = DB::select('select l.old_id, l.name, l.status, l.price, l.stock from legacy_products l where not exists (select 1 from products p where p.ext_id = l.old_id) order by l.old_id desc limit 12');
     $d['cols'] = collect(DB::select("select column_name from information_schema.columns where table_name = 'products' order by ordinal_position"))->pluck('column_name')->implode(', ');
-    return view('legacy_products', ['d' => $d]);
+    $d['result'] = DB::table('settings')->where('key', 'legacy_products_result')->value('value'); return view('legacy_products', ['d' => $d]);
+  }
+
+  private function norm($v): string { return preg_replace('/[^a-z0-9]+/', '', mb_strtolower(preg_replace('/[^\p{L}\p{N} ]+/u', ' ', (string)$v))); }
+  private function clean($v): string { return trim(preg_replace('/\s+/u', ' ', preg_replace('/[^\p{L}\p{N}&\-\' ]+/u', ' ', (string)$v))); }
+  /** Mirror every staged old product into the live catalog (backup first). */
+  public function apply(Request $r) {
+    abort_unless($r->input('confirm') === 'IMPORT', 422);
+    @set_time_limit(600);
+    if (!\Illuminate\Support\Facades\Schema::hasTable('products_backup_legacy')) DB::statement('create table products_backup_legacy as select * from products');
+    $tx = json_decode((string)DB::table('settings')->where('key', 'legacy_taxonomy')->value('value'), true) ?: [];
+    $oc = collect($tx['cats'] ?? [])->keyBy('id'); $os = collect($tx['subs'] ?? [])->keyBy('id'); $oss = collect($tx['subsubs'] ?? [])->keyBy('id'); $ob = collect($tx['brands'] ?? [])->keyBy('id');
+    $cats = DB::table('categories')->get(['id', 'name'])->keyBy(fn($c) => $this->norm($c->name))->map(fn($c) => $c->id)->all();
+    $brands = DB::table('brands')->get(['id', 'name'])->keyBy(fn($c) => $this->norm($c->name))->map(fn($c) => $c->id)->all();
+    $cigId = $cats[$this->norm('Cigarette and Vape')] ?? null;
+    $catFor = function ($oldId) use (&$cats, $oc, $cigId) {
+      $o = $oc[$oldId] ?? null; if (!$o) return null; $n = $this->clean($o['name']); $k = $this->norm($n);
+      if (isset($cats[$k])) return $cats[$k];
+      if ($cigId && preg_match('/cigarette|vape/i', $n)) return $cats[$k] = $cigId;
+      $id = DB::table('categories')->insertGetId(['name' => $n, 'created_at' => now(), 'updated_at' => now()]); return $cats[$k] = $id;
+    };
+    $brandFor = function ($oldId) use (&$brands, $ob) {
+      $o = $ob[$oldId] ?? null; if (!$o) return null; $n = $this->clean($o['name']); $k = $this->norm($n);
+      if (isset($brands[$k])) return $brands[$k];
+      $id = DB::table('brands')->insertGetId(['name' => $n, 'slug' => \App\Support\Slugs::slug($n), 'active' => true, 'position' => 0, 'created_at' => now(), 'updated_at' => now()]); return $brands[$k] = $id;
+    };
+    $node = function ($catId, $name, $level, $parent) {
+      $name = $this->clean($name); if ($name === '' || !$catId) return;
+      $ex = DB::table('category_nodes')->where('category_id', $catId)->where('level', $level)->whereRaw('lower(name) = ?', [mb_strtolower($name)])->exists();
+      if (!$ex) DB::table('category_nodes')->insert(['category_id' => $catId, 'parent_id' => $parent, 'level' => $level, 'name' => $name, 'slug' => \App\Support\Slugs::slug($name) ?: 'x', 'position' => 0, 'active' => true, 'created_at' => now(), 'updated_at' => now()]);
+    };
+    $st = ['updated' => 0, 'inserted' => 0, 'by_id' => 0, 'by_name' => 0, 'published' => 0, 'unpublished' => 0];
+    $claimed = [];
+    $stockStatus = fn($n) => $n > 0 ? 'in_stock' : 'out_of_stock';
+    DB::table('legacy_products')->orderBy('old_id')->chunkById(150, function ($rows) use (&$st, &$claimed, $catFor, $brandFor, $node, $oc, $os, $oss, $stockStatus) {
+      foreach ($rows as $l) {
+        $x = json_decode((string)$l->raw, true) ?: [];
+        $list = (float)$l->price; $sale = (float)$l->sale_price; $d1 = (float)($x['discount'] ?? 0);
+        if ($sale <= 0 && $list > 0) $sale = $list - $d1; if ($sale <= 0) $sale = $list;
+        $price = $sale > 0 ? $sale : $list; $cmp = ($list > $price) ? $list : null;
+        $pub = (int)$l->status === 1; $stock = max(0, (int)$l->stock);
+        $row = ['price' => $price, 'compare_price' => $cmp, 'offer_price' => null, 'cost' => (float)$l->purchase_price, 'stock' => $stock, 'stock_status' => $stockStatus($stock), 'published' => $pub,
+          'legacy_product_id' => $l->old_id, 'legacy_source' => 'dutyfreebd.com', 'migrated_at' => now(), 'updated_at' => now()];
+        $dn = [2 => 'double_products_discount', 3 => 'triple_products_discount', 4 => 'four_products_discount', 5 => 'five_products_discount'];
+        foreach ($dn as $n => $f) { $dv = (float)($x[$f] ?? 0); $row["buy{$n}_price"] = $dv > 0 && $list > 0 ? max(0, $n * $list - $dv) : null; }
+        $p = DB::table('products')->where('ext_id', $l->old_id + 999)->first(); $how = 'by_id';
+        if (!$p) {
+          $c = DB::table('products')->whereRaw('lower(trim(name)) = ?', [mb_strtolower(trim((string)$l->name))])->whereNotIn('id', $claimed ?: [0])->get();
+          if ($c->count() === 1) { $p = $c->first(); $how = 'by_name'; }
+        }
+        if ($p) {
+          $claimed[] = $p->id;
+          foreach (['barcode' => $l->barcode, 'video_url' => $x['video_url'] ?? null] as $k => $v) if (empty($p->$k) && !empty($v)) $row[$k] = mb_substr((string)$v, 0, 500);
+          if (empty($p->description) && !empty($x['details'])) $row['description'] = $x['details'];
+          foreach (['meta_title' => 'meta_title', 'meta_description' => 'meta_description', 'meta_keywords' => 'meta_key'] as $k => $f) if (empty($p->$k) && !empty($x[$f])) $row[$k] = mb_substr((string)$x[$f], 0, 500);
+          if (empty($p->ext_id)) $row['ext_id'] = $l->old_id + 999;
+          DB::table('products')->where('id', $p->id)->update($row); $st['updated']++; $st[$how]++;
+        } else {
+          $catId = $catFor($l->category_id) ?? DB::table('categories')->orderBy('id')->value('id');
+          $sub = $os[$l->sub_category_id]['name'] ?? null; $subsub = $oss[$l->sub_sub_category_id]['name'] ?? null;
+          $sub = $sub ? $this->clean($sub) : null; $subsub = $subsub ? $this->clean($subsub) : null;
+          if ($sub) { $node($catId, $sub, 2, null); }
+          $base = \App\Support\Slugs::slug($l->slug ?: $l->name) ?: 'product'; $slug = $base; $i = 2; $subSlug = \App\Support\Slugs::subSlug($sub);
+          while (DB::table('products')->where('category_id', $catId)->whereRaw(\App\Support\Slugs::subSql() . ' = ?', [$subSlug])->where('path_slug', $slug)->exists()) $slug = $base . '-' . $i++;
+          $sku = $l->product_code && !DB::table('products')->where('sku', $l->product_code)->exists() ? $l->product_code : null;
+          $row += ['name' => mb_substr((string)$l->name, 0, 200), 'sku' => $sku, 'category_id' => $catId, 'brand_id' => $brandFor($x['brand_id'] ?? null), 'sub' => $sub, 'sub_sub' => $subsub, 'barcode' => $l->barcode,
+            'video_url' => !empty($x['video_url']) ? mb_substr((string)$x['video_url'], 0, 500) : null, 'description' => $x['details'] ?? null, 'meta_title' => $x['meta_title'] ?? null, 'meta_description' => $x['meta_description'] ?? null, 'meta_keywords' => $x['meta_key'] ?? null,
+            'slug' => $base, 'path_slug' => $slug, 'ext_id' => $l->old_id + 999, 'created_at' => $l->old_created_at ?: now()];
+          $nid = DB::table('products')->insertGetId($row); $claimed[] = $nid; $st['inserted']++;
+        }
+        $pub ? $st['published']++ : $st['unpublished']++;
+        DB::table('legacy_products')->where('old_id', $l->old_id)->update(['action' => $p ? 'updated' : 'inserted', 'new_product_id' => $p->id ?? $nid ?? null]);
+      }
+    }, 'old_id');
+    DB::table('settings')->updateOrInsert(['key' => 'legacy_products_result'], ['value' => json_encode($st), 'updated_at' => now(), 'created_at' => now()]);
+    return redirect('/admin/legacy-products')->with('ok', 'Imported: ' . json_encode($st));
   }
 }
