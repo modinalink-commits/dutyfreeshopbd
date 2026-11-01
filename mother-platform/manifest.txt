@@ -336,3 +336,4 @@ resources/views/shurjopay_settings.blade.php
 database/migrations/2026_11_02_000014_legacy_products.php
 app/Http/Controllers/LegacyProductController.php
 resources/views/legacy_products.blade.php
+public/pay/shurjopay-logo.png
