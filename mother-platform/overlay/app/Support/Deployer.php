@@ -94,7 +94,8 @@ class Deployer
       $u += ['status' => $rolled ? 'Rolled Back' : 'Failed', 'stage' => $rolled ? 'Rolled back' : 'Failed', 'error' => trim(substr($st, 7)), 'log' => mb_substr($log, -9000), 'finished_at' => now()];
       self::audit($rolled ? 'deploy rolled back' : 'deploy failed', ($row->subject ?? '') . ' — previous version kept');
     } elseif ($fresh && $st !== '') {
-      [$stage, $pct] = array_pad(explode('|', self::rd('stage')), 2, '0');
+      $sf = self::D . '/stage'; $stale = is_file($sf) && filemtime($sf) < strtotime((string)$row->created_at . ' UTC') - 5;
+      [$stage, $pct] = $stale ? ['', '0'] : array_pad(explode('|', self::rd('stage')), 2, '0');
       $map = ['Downloading' => 'Downloading', 'Building' => 'Building', 'Testing' => 'Testing', 'Deploying' => 'Deploying', 'Verifying' => 'Deploying', 'Rolling back' => 'Deploying'];
       if (isset($map[$stage])) $u += ['status' => $map[$stage], 'stage' => $stage, 'progress' => min(99, max((int)$row->progress, (int)$pct))];
       if ($row->status === 'Queued' && isset($map[$stage])) self::audit('deploy started', (string)$row->subject);
