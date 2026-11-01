@@ -275,6 +275,7 @@ class StoreController extends Controller {
     $d = $v->validated();
     $pm = ['label'=>'COD','txn'=>null,'acct'=>null,'proof'=>null,'status'=>null];
     $pk = $d['pay'] ?? 'cod';
+    if (in_array($pk, ['cod', 'shurjopay'], true) && DB::table('payment_methods')->where('kind', $pk)->where('active', false)->exists()) return $back('এই পেমেন্ট মেথডটি এখন চালু নেই।');
     if ($pk === 'shurjopay') {
       if (!\App\Support\ShurjoPay::enabled()) return $back('অনলাইন পেমেন্ট এখন চালু নেই।');
       $pm = ['label'=>'ShurjoPay (Online)','txn'=>null,'acct'=>null,'proof'=>null,'status'=>'Awaiting Payment'];

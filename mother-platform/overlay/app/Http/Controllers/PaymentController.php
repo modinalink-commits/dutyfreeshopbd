@@ -14,10 +14,13 @@ class PaymentController extends Controller {
   public static function active() { try { return DB::table('payment_methods')->where('active',true)->orderBy('position')->get(); } catch (\Throwable $e) { return collect(); } }
   public function index() { return view('payment_methods', ['rows'=>DB::table('payment_methods')->orderBy('position')->get(), 'wa'=>DB::table('settings')->where('key','pay_wa')->value('value') ?: '01871600600', 'pending'=>DB::table('orders')->where('pay_status','Verification Pending')->count()]); }
   public function save(Request $r, $id = null) {
-    $d = $r->validate(['kind'=>'required|in:bank,bkash,nagad','title'=>'required|max:80','account_name'=>'nullable|max:120','account_no'=>'nullable|max:60','branch'=>'nullable|max:120','routing'=>'nullable|max:30','swift'=>'nullable|max:30','instruction'=>'nullable|max:500','position'=>'nullable|integer']);
+    $d = $r->validate(['kind'=>'required|in:bank,bkash,nagad,cod,shurjopay','title'=>'required|max:80','description'=>'nullable|max:300','logo_file'=>'nullable|image|max:1024','remove_logo'=>'nullable','account_name'=>'nullable|max:120','account_no'=>'nullable|max:60','branch'=>'nullable|max:120','routing'=>'nullable|max:30','swift'=>'nullable|max:30','instruction'=>'nullable|max:500','position'=>'nullable|integer']);
     $d['active'] = $r->boolean('active'); $d['updated_at'] = now(); $d['position'] = (int)($d['position'] ?? 0);
-    if ($id) DB::table('payment_methods')->where('id',$id)->update($d); else { $d['created_at'] = now(); $d['logo'] = $d['kind']==='bank' ? null : $d['kind']; $id = DB::table('payment_methods')->insertGetId($d); }
-    $this->audit($r, 'payment.method', $d['title']); Cache::forget('store.settings2');
+    $file = $r->file('logo_file'); unset($d['logo_file'], $d['remove_logo']);
+    if ($id) DB::table('payment_methods')->where('id',$id)->update($d); else { $d['created_at'] = now(); $d['logo'] = $d['kind']==='bank' ? null : $d['kind']; $d['code'] = $d['kind']; $id = DB::table('payment_methods')->insertGetId($d); }
+    if ($file) { $dir = public_path('uploads'); if (!is_dir($dir)) @mkdir($dir, 0775, true); $ext = strtolower($file->getClientOriginalExtension() ?: 'png'); $nm = 'pay-'.$id.'-'.time().'.'.$ext; $file->move($dir, $nm); DB::table('payment_methods')->where('id',$id)->update(['logo_url'=>'/uploads/'.$nm]); }
+    elseif ($r->boolean('remove_logo')) DB::table('payment_methods')->where('id',$id)->update(['logo_url'=>null,'logo'=>null]);
+    $this->audit($r, 'payment.method', $d['title']); Cache::forget('store.settings2'); Cache::forget('pay.methods');
     return redirect('/admin/payment-methods')->with('ok','Saved: '.$d['title']);
   }
   public function wa(Request $r) {

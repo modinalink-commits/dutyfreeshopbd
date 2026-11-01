@@ -6,15 +6,17 @@
 <form class="card" method="post" action="/admin/payment-methods/whatsapp" style="max-width:520px;margin-bottom:12px">@csrf<label>WhatsApp number for payment approval</label><input name="pay_wa" value="{{ $wa }}" required><div style="margin-top:10px"><button>Save</button></div></form>
 <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr))">
 @foreach($rows as $m)
-<form class="card" method="post" action="/admin/payment-methods/{{ $m->id }}">@csrf
-<div style="display:flex;gap:10px;align-items:center;margin-bottom:6px">@if($m->logo)<img src="/pay/{{ $m->logo }}.png" alt="" style="height:30px;max-width:110px;object-fit:contain">@endif<h3 style="margin:0">{{ $m->title }}</h3></div>
+<form class="card" method="post" enctype="multipart/form-data" action="/admin/payment-methods/{{ $m->id }}">@csrf
+<div style="display:flex;gap:10px;align-items:center;margin-bottom:6px">@if($lg = \App\Support\Brand::logoUrl($m))<img src="{{ $lg }}" alt="" style="height:30px;max-width:110px;object-fit:contain">@endif<h3 style="margin:0">{{ $m->title }}</h3></div>
 <input type="hidden" name="kind" value="{{ $m->kind }}">
 <label>Name shown</label><input name="title" value="{{ $m->title }}" required>
-<label>Account name</label><input name="account_name" value="{{ $m->account_name }}">
-<label>{{ $m->kind==='bank' ? 'Account number' : 'Number' }}</label><input name="account_no" value="{{ $m->account_no }}">
+<label>Short description (shown under the name)</label><input name="description" value="{{ $m->description }}" maxlength="300">
+<label>Logo (PNG/JPG/WebP, max 1 MB — updates checkout, orders, invoice)</label><input type="file" name="logo_file" accept="image/*">@if(\App\Support\Brand::logoUrl($m))<label style="display:flex;gap:6px;align-items:center"><input type="checkbox" name="remove_logo" value="1" style="width:auto"> Remove logo</label>@endif
+@if(!in_array($m->kind,['cod','shurjopay']))<label>Account name</label><input name="account_name" value="{{ $m->account_name }}">
+<label>{{ $m->kind==='bank' ? 'Account number' : 'Number' }}</label><input name="account_no" value="{{ $m->account_no }}">@endif
 @if($m->kind==='bank')<label>Branch</label><input name="branch" value="{{ $m->branch }}"><label>Routing number</label><input name="routing" value="{{ $m->routing }}"><label>SWIFT</label><input name="swift" value="{{ $m->swift }}">@endif
-<label>Extra instruction (optional)</label><input name="instruction" value="{{ $m->instruction }}">
-<label>Order</label><input name="position" type="number" value="{{ $m->position }}">
+@if(!in_array($m->kind,['cod','shurjopay']))<label>Extra instruction (optional)</label><input name="instruction" value="{{ $m->instruction }}">@endif
+<label>Display order (smaller = higher on checkout)</label><input name="position" type="number" value="{{ $m->position }}">
 <label style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" name="active" value="1" {{ $m->active?'checked':'' }} style="width:auto"> Show on checkout</label><div style="margin-top:10px"><button>Save</button></div></form>
 @endforeach
 <form class="card" method="post" action="/admin/payment-methods">@csrf<h3 style="margin-top:0">Add another</h3>
