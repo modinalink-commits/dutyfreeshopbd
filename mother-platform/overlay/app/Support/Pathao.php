@@ -53,5 +53,16 @@ class Pathao {
     if (!empty($r['json']['errors'])) $msg .= ': '.collect($r['json']['errors'])->flatten()->take(3)->implode('; ');
     return [false, $msg.' (HTTP '.$r['code'].')', []];
   }
+  /** City / zone lists (cached 1 day) and live delivery price for a recipient city+zone. */
+  public static function cities(): array { return \Illuminate\Support\Facades\Cache::remember('pathao.cities', 86400, function () { $r = self::call('GET', '/aladdin/api/v1/city-list'); return $r['json']['data']['data'] ?? []; }); }
+  public static function zones(int $city): array { return \Illuminate\Support\Facades\Cache::remember('pathao.zones.'.$city, 86400, function () use ($city) { $r = self::call('GET', '/aladdin/api/v1/cities/'.$city.'/zone-list'); return $r['json']['data']['data'] ?? []; }); }
+  public static function price(int $city, int $zone, ?float $kg = null): ?array {
+    $kg = $kg ?: (float)(Sms::secret('pathao_weight') ?: 0.5); $store = self::storeId(); if (!$store) return null;
+    $key = 'pathao.price.'.$city.'.'.$zone.'.'.$kg;
+    return \Illuminate\Support\Facades\Cache::remember($key, 21600, function () use ($city, $zone, $kg, $store) {
+      $r = self::call('POST', '/aladdin/api/v1/merchant/price-plan', ['store_id'=>$store, 'item_type'=>2, 'delivery_type'=>48, 'item_weight'=>$kg, 'recipient_city'=>$city, 'recipient_zone'=>$zone]);
+      $d = $r['json']['data'] ?? []; return $r['code'] === 200 && isset($d['final_price']) ? $d : null;
+    });
+  }
   public static function info(string $cid): array { $r = self::call('GET', '/aladdin/api/v1/orders/'.rawurlencode($cid).'/info'); return $r['json']['data'] ?? []; }
 }

@@ -160,7 +160,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::get('/dob-requests', [\App\Http\Controllers\DobController::class,'index']); Route::post('/dob-requests/{id}', [\App\Http\Controllers\DobController::class,'decide']);
   Route::get('/customer-auth', [\App\Http\Controllers\CustAuthAdminController::class,'index']); Route::post('/customer-auth', [\App\Http\Controllers\CustAuthAdminController::class,'save']); Route::post('/customer-auth/test', [\App\Http\Controllers\CustAuthAdminController::class,'test']);
   Route::get('/fraud', [\App\Http\Controllers\FraudController::class,'index']); Route::get('/fraud/check', [\App\Http\Controllers\FraudController::class,'check']); Route::post('/fraud/settings', [\App\Http\Controllers\FraudController::class,'save']);
-  Route::prefix('delivery')->group(function () { $DL = \App\Http\Controllers\DeliveryController::class;
+  Route::prefix('delivery')->group(function () { $DL = \App\Http\Controllers\DeliveryController::class; Route::get('/pathao-diag', [$DL,'pathaoDiag']);
     Route::get('/', [$DL,'index']); Route::post('/settings', [$DL,'save']); Route::post('/zone', [$DL,'zoneSave']); Route::post('/zone/{id}', [$DL,'zoneSave'])->whereNumber('id'); Route::post('/zone/{id}/act', [$DL,'zoneAct'])->whereNumber('id');
     Route::post('/override', [$DL,'ovSave']); Route::post('/override/{id}/act', [$DL,'ovAct'])->whereNumber('id');
   });

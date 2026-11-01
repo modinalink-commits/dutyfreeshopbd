@@ -54,4 +54,12 @@ class DeliveryController extends Controller
     $pids = array_values(array_filter(array_map('intval', explode(',', (string)$r->query('pids')))));
     return response()->json(D::compute((float)$r->query('subtotal', 0), 0, (string)$r->query('address'), (string)$r->query('district'), $pids))->header('Cache-Control', 'no-store');
   }
+  /** Admin diagnostic (read-only): Pathao cities, zones of one city, and a live price. Creates no parcel. */
+  public function pathaoDiag(Request $r) {
+    if (!\App\Support\Pathao::configured()) return response()->json(['ok' => false, 'msg' => 'Pathao not configured']);
+    $cities = \App\Support\Pathao::cities(); $out = ['ok' => true, 'store' => \App\Support\Pathao::storeId(), 'cities' => count($cities), 'sample' => array_slice($cities, 0, 6)];
+    if ($c = (int)$r->query('city')) { $z = \App\Support\Pathao::zones($c); $out['zones'] = count($z); $out['zone_sample'] = array_slice($z, 0, 6); if ($zz = (int)$r->query('zone')) $out['price'] = \App\Support\Pathao::price($c, $zz); }
+    if ($r->query('find')) $out['find'] = array_values(array_filter($cities, fn($x) => stripos($x['city_name'] ?? '', (string)$r->query('find')) !== false));
+    return response()->json($out);
+  }
 }
