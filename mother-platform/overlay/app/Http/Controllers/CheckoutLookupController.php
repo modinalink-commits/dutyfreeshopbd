@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 class CheckoutLookupController extends Controller {
   private function phone(Request $r): ?string {
     $p = substr(preg_replace('/\D/', '', (string)$r->input('phone')), -11);
-    return preg_match('/^01[3-9]\d{8}$/', $p) ? $p : null;
+    return preg_match('/^01\d{9}$/', $p) ? $p : null;
   }
   private function last(string $p) {
     return DB::table('orders')->where('phone', $p)->whereNotNull('address')->where('address', '!=', '')->orderByDesc('id')->first();

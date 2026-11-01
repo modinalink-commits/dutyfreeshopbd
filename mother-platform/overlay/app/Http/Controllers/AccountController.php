@@ -22,7 +22,7 @@ class AccountController extends StoreController {
   const STEPS = ['Order Placed', 'Confirmed', 'Processing', 'Packaging', 'Shipment', 'Delivered'];
   const STEP_OF = ['New'=>0, 'Incomplete'=>0, 'Pre Order'=>0, 'AI Order'=>0, 'Assign'=>1, 'Pending'=>1, 'Approved'=>1, 'Scheduled'=>2, 'WFP'=>2, 'Packaging'=>3, 'Shipment'=>4, 'Late Delivery'=>4, 'Partial Delivered'=>4, 'Delivered'=>5];
 
-  private function norm($v): ?string { $p = Chat::phone((string)$v); return $p && preg_match('/^01[3-9]\d{8}$/', $p) ? $p : null; }
+  private function norm($v): ?string { $p = Chat::phone((string)$v); return $p && preg_match('/^01\d{9}$/', $p) ? $p : null; }
   public function me(Request $r): ?object {
     $tok = (string)$r->cookie('dfa'); if (strlen($tok) < 30) return null;
     $s = DB::table('customer_sessions')->where('token_hash', hash('sha256', $tok))->where(fn($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))->first();
@@ -63,7 +63,8 @@ class AccountController extends StoreController {
     return $this->view('store.account_auth', ['title'=>'Login / Register | DutyFree Shop BD', 'mode'=>$r->query('mode') === 'register' ? 'register' : 'login', 'smsOn'=>Sms::configured()]);
   }
   public function otpSend(Request $r) {
-    $d = $r->validate(['phone'=>'required|string|max:20', 'purpose'=>'required|in:login,register,reset']);
+    \App\Support\PhoneRule::trim($r);
+    $d = $r->validate(['phone'=>['required','string',new \App\Support\PhoneRule], 'purpose'=>'required|in:login,register,reset']);
     $p = $this->norm($d['phone']); if (!$p) return response()->json(['sent'=>false, 'error'=>'সঠিক মোবাইল নম্বর দিন'], 422);
     if (!Sms::configured()) return response()->json(['sent'=>false, 'error'=>'এই মুহূর্তে SMS কোড পাঠানো যাচ্ছে না। পাসওয়ার্ড দিয়ে লগইন করুন অথবা কল করুন।'], 503);
     $exists = DB::table('customers')->where('phone', $p)->whereNotNull('password')->exists();
@@ -90,7 +91,8 @@ class AccountController extends StoreController {
     return response()->json(['ok'=>true, 'go'=>$r->input('next') && str_starts_with((string)$r->input('next'), '/') && !str_starts_with((string)$r->input('next'), '//') ? $r->input('next') : '/account'])->withCookie($this->startSession($r, $c->id, $r->boolean('remember')));
   }
   public function otpLogin(Request $r) {
-    $d = $r->validate(['phone'=>'required|string|max:20', 'code'=>'required|string|max:10']);
+    \App\Support\PhoneRule::trim($r);
+    $d = $r->validate(['phone'=>['required','string',new \App\Support\PhoneRule], 'code'=>'required|string|max:10']);
     $p = $this->norm($d['phone']); if (!$p || $this->throttle($r, 'otp'.$p)) return response()->json(['ok'=>false, 'error'=>'কোড ঠিক নয়'], 422);
     $c = DB::table('customers')->where('phone', $p)->whereNotNull('password')->first();
     if (!$c || $c->blocked || !$this->otpCheck('login', $p, $d['code'])) { $this->hit($r, 'otp'.$p); return response()->json(['ok'=>false, 'error'=>'কোড ঠিক নয় বা মেয়াদ শেষ'], 422); }
@@ -98,7 +100,8 @@ class AccountController extends StoreController {
     return response()->json(['ok'=>true, 'go'=>'/account'])->withCookie($this->startSession($r, $c->id, true));
   }
   public function register(Request $r) {
-    $d = $r->validate(['name'=>'required|string|min:2|max:80', 'phone'=>'required|string|max:20', 'password'=>'required|string|min:6|max:100|confirmed', 'email'=>'nullable|email|max:120', 'ref'=>'nullable|string|max:40', 'code'=>'nullable|string|max:10']);
+    \App\Support\PhoneRule::trim($r);
+    $d = $r->validate(['name'=>'required|string|min:2|max:80', 'phone'=>['required','string',new \App\Support\PhoneRule], 'password'=>'required|string|min:6|max:100|confirmed', 'email'=>'nullable|email|max:120', 'ref'=>'nullable|string|max:40', 'code'=>'nullable|string|max:10']);
     $p = $this->norm($d['phone']); if (!$p) return response()->json(['ok'=>false, 'error'=>'সঠিক মোবাইল নম্বর দিন'], 422);
     if (DB::table('customers')->where('phone', $p)->whereNotNull('password')->exists()) return response()->json(['ok'=>false, 'error'=>'এই নম্বরে ইতিমধ্যে অ্যাকাউন্ট আছে। লগইন করুন।'], 422);
     $row = DB::table('customers')->where('phone', $p)->orderBy('id')->first();
@@ -116,7 +119,8 @@ class AccountController extends StoreController {
     return response()->json(['ok'=>true, 'go'=>'/account'])->withCookie($this->startSession($r, $cid, true));
   }
   public function reset(Request $r) {
-    $d = $r->validate(['phone'=>'required|string|max:20', 'code'=>'required|string|max:10', 'password'=>'required|string|min:6|max:100|confirmed']);
+    \App\Support\PhoneRule::trim($r);
+    $d = $r->validate(['phone'=>['required','string',new \App\Support\PhoneRule], 'code'=>'required|string|max:10', 'password'=>'required|string|min:6|max:100|confirmed']);
     $p = $this->norm($d['phone']); $c = $p ? DB::table('customers')->where('phone', $p)->whereNotNull('password')->first() : null;
     if (!$c || !$this->otpCheck('reset', $p, $d['code'])) return response()->json(['ok'=>false, 'error'=>'কোড ঠিক নয় বা মেয়াদ শেষ'], 422);
     DB::table('customers')->where('id', $c->id)->update(['password'=>Hash::make($d['password']), 'phone_verified_at'=>$c->phone_verified_at ?? now(), 'updated_at'=>now()]);
@@ -240,8 +244,9 @@ class AccountController extends StoreController {
     return response()->json(['ok'=>true]);
   }
   public function saveAddress(Request $r) {
+    \App\Support\PhoneRule::trim($r);
     $c = $this->me($r); if (!$c) return response()->json([], 401);
-    $d = $r->validate(['id'=>'nullable|integer', 'label'=>'required|in:Home,Office,Other', 'receiver'=>'required|string|max:80', 'phone'=>'required|string|max:20', 'district'=>'required|string|max:60', 'thana'=>'nullable|string|max:60', 'area'=>'nullable|string|max:80', 'road'=>'required|string|max:200', 'landmark'=>'nullable|string|max:120']);
+    $d = $r->validate(['id'=>'nullable|integer', 'label'=>'required|in:Home,Office,Other', 'receiver'=>'required|string|max:80', 'phone'=>['required','string',new \App\Support\PhoneRule], 'district'=>'required|string|max:60', 'thana'=>'nullable|string|max:60', 'area'=>'nullable|string|max:80', 'road'=>'required|string|max:200', 'landmark'=>'nullable|string|max:120']);
     $p = $this->norm($d['phone']); if (!$p) return response()->json(['ok'=>false, 'error'=>'সঠিক মোবাইল নম্বর দিন'], 422);
     $row = ['label'=>$d['label'], 'receiver'=>$d['receiver'], 'phone'=>$p, 'district'=>$d['district'], 'thana'=>$d['thana'] ?? null, 'area'=>$d['area'] ?? null, 'road'=>$d['road'], 'landmark'=>$d['landmark'] ?? null, 'updated_at'=>now()];
     if (!empty($d['id'])) { DB::table('customer_addresses')->where('id', $d['id'])->where('customer_id', $c->id)->update($row); $id = $d['id']; }

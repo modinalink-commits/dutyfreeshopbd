@@ -26,20 +26,20 @@
 @if($smsOn)<button type="button" class="alt" id="to-otp">📱 মোবাইলে OTP দিয়ে লগইন</button>@endif
 <div class="er" id="l-er"></div></form>
 
-<form class="pn" id="p-otp"><label>Mobile Number</label><div class="sm"><input type="tel" id="o-ph" placeholder="01XXXXXXXXX" inputmode="numeric" maxlength="14"><button type="button" id="o-send">কোড পাঠান</button></div>
+<form class="pn" id="p-otp"><label>Mobile Number</label><div class="sm"><input type="tel" id="o-ph" data-bdphone placeholder="01XXXXXXXXX" inputmode="numeric" maxlength="11"><button type="button" id="o-send">কোড পাঠান</button></div>
 <label>৬ ডিজিটের কোড</label><input type="text" id="o-code" inputmode="numeric" maxlength="6" placeholder="------">
 <button class="go" id="o-go">Login</button><div class="row"><button type="button" class="lk" id="o-back">← পাসওয়ার্ড দিয়ে লগইন</button></div><div class="er" id="o-er"></div></form>
 
 <form class="pn" id="p-reg" autocomplete="on">
 <label>Full Name</label><input type="text" id="r-nm" maxlength="80" autocomplete="name" required>
-<label>Mobile Number</label>@if($smsOn)<div class="sm"><input type="tel" id="r-ph" placeholder="01XXXXXXXXX" inputmode="numeric" maxlength="14" autocomplete="tel" required><button type="button" id="r-send">কোড পাঠান</button></div><label>মোবাইলে পাঠানো কোড</label><input type="text" id="r-code" inputmode="numeric" maxlength="6" placeholder="------">@else<input type="tel" id="r-ph" placeholder="01XXXXXXXXX" inputmode="numeric" maxlength="14" autocomplete="tel" required>@endif
+<label>Mobile Number</label>@if($smsOn)<div class="sm"><input type="tel" id="r-ph" data-bdphone placeholder="01XXXXXXXXX" inputmode="numeric" maxlength="11" autocomplete="tel" required><button type="button" id="r-send">কোড পাঠান</button></div><label>মোবাইলে পাঠানো কোড</label><input type="text" id="r-code" inputmode="numeric" maxlength="6" placeholder="------">@else<input type="tel" id="r-ph" data-bdphone placeholder="01XXXXXXXXX" inputmode="numeric" maxlength="11" autocomplete="tel" required>@endif
 <label>Password</label><div class="pw"><input type="password" id="r-pw" minlength="6" autocomplete="new-password" required><button type="button" data-eye="r-pw" aria-label="Show password">👁</button></div>
 <label>Confirm Password</label><input type="password" id="r-pw2" minlength="6" autocomplete="new-password" required>
 <label>Email (ঐচ্ছিক)</label><input type="email" id="r-em" autocomplete="email"><label>Referral Code (ঐচ্ছিক)</label><input type="text" id="r-rf" maxlength="40">
 <button class="go" id="r-go">Create Account</button><div class="er" id="r-er"></div></form>
 
 <form class="pn" id="p-forgot"><p class="s" style="margin-top:0">রেজিস্টার্ড মোবাইল নম্বরে কোড পাঠানো হবে।</p>
-<label>Mobile Number</label><div class="sm"><input type="tel" id="f-ph" placeholder="01XXXXXXXXX" inputmode="numeric" maxlength="14"><button type="button" id="f-send">কোড পাঠান</button></div>
+<label>Mobile Number</label><div class="sm"><input type="tel" id="f-ph" data-bdphone placeholder="01XXXXXXXXX" inputmode="numeric" maxlength="11"><button type="button" id="f-send">কোড পাঠান</button></div>
 <label>৬ ডিজিটের কোড</label><input type="text" id="f-code" inputmode="numeric" maxlength="6" placeholder="------"><label>নতুন পাসওয়ার্ড</label><input type="password" id="f-pw" minlength="6" autocomplete="new-password"><label>নতুন পাসওয়ার্ড (আবার)</label><input type="password" id="f-pw2" minlength="6" autocomplete="new-password">
 <button class="go" id="f-go">পাসওয়ার্ড বদলান</button><div class="row"><button type="button" class="lk" id="f-back">← লগইনে ফিরুন</button></div><div class="er" id="f-er"></div></form>
 

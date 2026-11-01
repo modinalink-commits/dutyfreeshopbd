@@ -84,11 +84,11 @@ function welcome(){var n=S.n||ck().n;botSay('আসসালামু আলা�
 /* identity: a returning browser is recognised without asking again */
 function identity(){var c=ck();return {phone:S.p||c.p||'',name:S.n||c.n||''}}
 function askPhone(){var i=identity();var c=document.createElement('div');c.className='card';c.id='dfcid';
- c.innerHTML='<b>শুরু করতে আপনার মোবাইল নম্বর দিন</b><input id="dfcph" inputmode="tel" maxlength="14" placeholder="01XXXXXXXXX" value="'+esc(i.phone)+'" autocomplete="tel"><input id="dfcnm" maxlength="60" placeholder="আপনার নাম (ঐচ্ছিক)" value="'+esc(i.name)+'" autocomplete="name"><div class="e" id="dfce"></div><button type="button" id="dfcgo">চ্যাট শুরু করুন</button>';
+ c.innerHTML='<b>শুরু করতে আপনার মোবাইল নম্বর দিন</b><input id="dfcph" data-bdphone inputmode="numeric" maxlength="11" placeholder="01XXXXXXXXX" value="'+esc(i.phone)+'" autocomplete="tel"><input id="dfcnm" maxlength="60" placeholder="আপনার নাম (ঐচ্ছিক)" value="'+esc(i.name)+'" autocomplete="name"><div class="e" id="dfce"></div><button type="button" id="dfcgo">চ্যাট শুরু করুন</button>';
  M.appendChild(c);scroll();var go=function(){startChat($('dfcph').value,$('dfcnm').value)};$('dfcgo').onclick=go;c.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();go()}})}
-function startChat(p,n){var d=String(p).replace(/\D/g,'');d=d.slice(-11);if(!/^01[3-9]\d{8}$/.test(d)){$('dfce').textContent='সঠিক মোবাইল নম্বর দিন (১১ ডিজিট)';return}
+function startChat(p,n){var d=String(p).replace(/\D/g,'');d=d.slice(-11);if(!/^01\d{9}$/.test(d)){$('dfce').textContent='সঠিক মোবাইল নম্বর দিন (১১ ডিজিট)';return}
  $('dfcgo').disabled=true;J('/chat/start',{phone:d,name:(n||'').trim()}).then(function(j){S.t=j.token;S.p=d;if(n&&n.trim())S.n=n.trim();save();var c=$('dfcid');if(c)c.remove();started=true;botSay('ধন্যবাদ! আপনার মেসেজ লিখুন, আমাদের টিম শীঘ্রই উত্তর দেবে।');ping();if(pend){var t=pend;pend=null;send(t)}}).catch(function(e){var el=$('dfce');if(el){el.textContent=(e&&e._err===422)?'সঠিক মোবাইল নম্বর দিন':'এখন চ্যাট শুরু করা যাচ্ছে না। কল করুন: 09613828081';$('dfcgo').disabled=false}})}
-function ensure(cb){if(S.t){cb();return}var i=identity();if(/^01[3-9]\d{8}$/.test(String(i.phone).replace(/\D/g,'').slice(-11))){J('/chat/start',{phone:String(i.phone).replace(/\D/g,'').slice(-11),name:i.name}).then(function(j){S.t=j.token;S.p=i.phone;save();started=true;ping();cb()}).catch(function(){askPhone()})}else askPhone()}
+function ensure(cb){if(S.t){cb();return}var i=identity();if(/^01\d{9}$/.test(String(i.phone).replace(/\D/g,'').slice(-11))){J('/chat/start',{phone:String(i.phone).replace(/\D/g,'').slice(-11),name:i.name}).then(function(j){S.t=j.token;S.p=i.phone;save();started=true;ping();cb()}).catch(function(){askPhone()})}else askPhone()}
 /* sending */
 function send(text){text=(text||'').trim();if(!text)return;var q=$('dfcqi');if(q)q.remove();showBar();
  if(!S.t){pend=text;ensure(function(){});return}

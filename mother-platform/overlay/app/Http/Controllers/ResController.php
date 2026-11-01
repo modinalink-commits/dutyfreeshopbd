@@ -125,7 +125,7 @@ class ResController extends Controller {
     while (($row = fgetcsv($fh)) !== false) {
       $x = array_combine($head, array_pad(array_slice($row, 0, count($head)), count($head), ''));
       $ph = substr(preg_replace('/\D/', '', $x['phone'] ?? ''), -11);
-      if (!preg_match('/^01[3-9]\d{8}$/', $ph)) { $skip++; continue; }
+      if (!preg_match('/^01\d{9}$/', $ph)) { $skip++; continue; }
       $data = ['name'=>mb_substr(trim($x['name'] ?? '') ?: $ph, 0, 120), 'address'=>mb_substr($x['address'] ?? '', 0, 1000) ?: null, 'ip'=>mb_substr($x['ip'] ?? '', 0, 45) ?: null, 'username'=>mb_substr($x['username'] ?? '', 0, 60) ?: null, 'legacy_orders'=>(int)($x['legacy_orders'] ?? 0), 'legacy_spent'=>(float)($x['legacy_spent'] ?? 0), 'note'=>mb_substr($x['note'] ?? '', 0, 1000) ?: null, 'updated_at'=>$now];
       if (isset($existing[$ph])) { DB::table('customers')->where('id',$existing[$ph])->update($data); $upd++; }
       else { $batch[] = $data + ['phone'=>$ph, 'created_at'=>$now]; $existing[$ph] = true; $new++; if (count($batch) >= 1000) $flush(); }
@@ -177,6 +177,7 @@ class ResController extends Controller {
       $rules[$f['n']] = $rule;
     }
     if ($c['slug']==='users') { $rules['email'][] = 'email'; }
+    if ($c['slug']==='customers' && isset($rules['phone'])) { \App\Support\PhoneRule::trim($r); $rules['phone'][] = new \App\Support\PhoneRule; }
     $in = $r->validate($rules);
     foreach ($c['fields'] as $f) {
       $n = $f['n']; if (!array_key_exists($n, $rules)) continue;

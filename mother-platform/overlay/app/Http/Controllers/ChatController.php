@@ -230,9 +230,10 @@ class ChatController extends Controller {
   private function webOn(): bool { return (DB::table('settings')->where('key', 'chat_web_on')->value('value') ?? '1') === '1'; }
   public function webStart(Request $r) {
     abort_unless($this->webOn(), 404);
-    $d = $r->validate(['name'=>'nullable|string|max:60', 'phone'=>'required|string|max:20']);
+    \App\Support\PhoneRule::trim($r);
+    $d = $r->validate(['name'=>'nullable|string|max:60', 'phone'=>['required','string',new \App\Support\PhoneRule]]);
     $ph = Chat::phone($d['phone']);
-    if (!$ph || !preg_match('/^01[3-9]\d{8}$/', $ph)) return response()->json(['error'=>'Enter a valid mobile number.'], 422);
+    if (!$ph || !preg_match('/^01\d{9}$/', $ph)) return response()->json(['error'=>'Enter a valid mobile number.'], 422);
     // a saved customer is recognised by number; the visitor is never shown what we hold, only the admin sees it
     $cu = DB::table('customers')->where('phone', $ph)->orderBy('id')->first();
     $name = trim(strip_tags((string)($d['name'] ?? ''))) ?: ($cu->name ?? null) ?: DB::table('orders')->where('phone', $ph)->orderByDesc('id')->value('customer_name') ?: 'Visitor '.substr($ph, -4);

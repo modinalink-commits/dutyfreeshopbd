@@ -79,4 +79,4 @@ document.getElementById('dfsmx').onclick=function(){m.style.display='none'};
 document.getElementById('dfsms').onclick=function(){var b=document.getElementById('dfsmb').value.trim(),r=document.getElementById('dfsmr');if(!b){r.textContent='Write a message first.';return}
 r.textContent='Sending…';post('/admin/sms-marketing/quick',{phone:ph,name:nm,body:b}).then(function(j){r.style.color=j.ok?'#166534':'#B91C1C';r.textContent=j.ok?('SMS '+j.status+'.'):(j.msg||'Failed')}).catch(function(){r.style.color='#B91C1C';r.textContent='Could not send.'})};})();</script>
 @endif
-</body></html>
+@include('phone_js')</body></html>

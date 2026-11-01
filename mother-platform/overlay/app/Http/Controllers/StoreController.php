@@ -242,7 +242,7 @@ class StoreController extends Controller {
     $phone = substr(preg_replace('/\D/', '', (string)($in['phone'] ?? '')), -11);
     $row = DB::table('incomplete_orders')->where('token', $tok)->orderByDesc('id')->first();
     if ($row && $row->status === 'converted') return response()->json(['ok'=>true, 'done'=>true]);
-    if (!preg_match('/^01[3-9]\d{8}$/', $phone)) return response()->json(['ok'=>false]);
+    if (!preg_match('/^01\d{9}$/', $phone)) return response()->json(['ok'=>false]);
     if (DB::table('customers')->where('phone', $phone)->where('blocked', true)->exists()) return response()->json(['ok'=>false]); // blocked by phone, never by shared IP
     $want = $this->parseItems($in['items'] ?? ''); if (!$want) return response()->json(['ok'=>false]);
     $area = (int)($in['area'] ?? 1); $sp = \App\Support\OrderDiscount::sessionPhone($r);
@@ -266,7 +266,8 @@ class StoreController extends Controller {
     $want = $r->filled('product') ? [(int)$r->input('product') => max(1, min(50, (int)$r->input('qty', 1)))] : $this->parseItems($r->input('items', []));
     $back = fn($m) => redirect('/checkout?e='.rawurlencode($m));
     if (!$want) return $back('Your cart is empty');
-    $v = \Illuminate\Support\Facades\Validator::make($r->all(), ['name'=>'required|string|max:120','phone'=>['required','regex:/^(\+?88)?01[3-9]\d{8}$/'],'email'=>'nullable|email|max:120','address'=>'required|string|max:500','area'=>'nullable|integer','district'=>'nullable|string|max:60','note'=>'nullable|string|max:500','coupon'=>'nullable|string|max:40','website'=>'max:0','pay'=>'nullable|in:cod,bank,bkash,nagad','pay_account'=>'nullable|string|max:80','pay_txn'=>['nullable','string','max:60','regex:/^[A-Za-z0-9\-_\/ ]+$/'],'pay_proof'=>'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:3072'], ['phone.regex'=>'সঠিক মোবাইল নম্বর লিখুন (01XXXXXXXXX)','required'=>'মোবাইল নম্বর, নাম ও ঠিকানা লিখুন।','email'=>'সঠিক ইমেইল লিখুন অথবা খালি রাখুন।']);
+    \App\Support\PhoneRule::trim($r);
+    $v = \Illuminate\Support\Facades\Validator::make($r->all(), ['name'=>'required|string|max:120','phone'=>['required','string',new \App\Support\PhoneRule],'email'=>'nullable|email|max:120','address'=>'required|string|max:500','area'=>'nullable|integer','district'=>'nullable|string|max:60','note'=>'nullable|string|max:500','coupon'=>'nullable|string|max:40','website'=>'max:0','pay'=>'nullable|in:cod,bank,bkash,nagad','pay_account'=>'nullable|string|max:80','pay_txn'=>['nullable','string','max:60','regex:/^[A-Za-z0-9\-_\/ ]+$/'],'pay_proof'=>'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:3072'], ['phone.regex'=>'সঠিক মোবাইল নম্বর লিখুন (01XXXXXXXXX)','required'=>'মোবাইল নম্বর, নাম ও ঠিকানা লিখুন।','email'=>'সঠিক ইমেইল লিখুন অথবা খালি রাখুন।']);
     if ($v->fails()) return $back($v->errors()->first());
     $d = $v->validated();
     $pm = ['label'=>'COD','txn'=>null,'acct'=>null,'proof'=>null,'status'=>null];

@@ -25,7 +25,7 @@ class Referral
 
   /** Rules 1-3, 6: returns ['code','referrer','discount'] when this phone may use the code on this subtotal. */
   public static function eligible(string $phone, string $code, float $sub): ?array {
-    if (!self::on()) return null; $phone = self::norm($phone); if (!preg_match('/^01[3-9]\d{8}$/', $phone)) return null;
+    if (!self::on()) return null; $phone = self::norm($phone); if (!preg_match('/^01\d{9}$/', $phone)) return null;
     $ref = self::referrer($code); if (!$ref) return null;
     if (self::norm((string)$ref->phone) === $phone) return null;                                           // own link
     if (DB::table('referrals')->where('referred_phone', $phone)->exists()) return null;                    // benefit only once
