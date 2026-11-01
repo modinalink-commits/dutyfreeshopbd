@@ -17,9 +17,9 @@ class SeoItemsController extends Controller
   private function tcol(string $t): string { return $t === 'category' ? 'title' : 'meta_title'; }
   private function status(object $x, string $t): array {
     $ti = trim((string)($x->{$this->tcol($t)} ?? '')); $de = trim((string)($x->meta_description ?? '')); $kw = trim((string)($x->focus_keyword ?? '')); $iss = [];
-    if ($ti === '') $iss[] = 'No SEO title'; elseif (mb_strlen($ti) > 70) $iss[] = 'Title too long';
+    if ($ti === '') $iss[] = 'No SEO title'; elseif (mb_strlen($ti) > 78) $iss[] = 'Title too long';
     if ($de === '') $iss[] = 'No meta description'; elseif (mb_strlen($de) < 70) $iss[] = 'Description short'; elseif (mb_strlen($de) > 165) $iss[] = 'Description too long';
-    if ($kw === '') $iss[] = 'No focus keyword'; elseif ($ti !== '' && mb_stripos($ti, $kw) === false && mb_stripos($de, $kw) === false) $iss[] = 'Keyword not in title/description';
+    if ($kw === '') $iss[] = 'No focus keyword'; elseif ($ti !== '' && mb_stripos($ti, mb_substr($kw, 0, 24)) === false && mb_stripos($de, mb_substr($kw, 0, 24)) === false) $iss[] = 'Keyword not in title/description';
     return $iss;
   }
   private function items(string $t, Request $r) {
