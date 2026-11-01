@@ -329,3 +329,7 @@ database/migrations/2026_11_02_000010_legacy_customers_more.php
 database/migrations/2026_11_02_000011_legacy_action.php
 resources/views/legacy_import.blade.php
 database/migrations/2026_11_02_000012_legacy_indexes.php
+database/migrations/2026_11_02_000013_shurjopay.php
+app/Support/ShurjoPay.php
+app/Http/Controllers/ShurjoPayController.php
+resources/views/shurjopay_settings.blade.php

@@ -1,5 +1,5 @@
 fe43f8b6cb422cca81ee18b74d3972f77e7852de database/migrations/2026_10_31_000001_mother_core.php
-1fd3b5afb0dd52f72170401cc65f7ccba6f12bf9 routes/web.php
+453c25baba4c30dac1b74be1ed5ba3852fa69bcc routes/web.php
 4eb9c45dba79c3a8479970e7d5fac7c89719990f app/Models/Mother.php
 ee19e56424345625975e363e5c05f8b6c4896b92 app/Http/Controllers/AdminController.php
 bd49f23ea0895af93bed5374937115c21911b0cd app/Console/Commands/MotherInstall.php
@@ -28,7 +28,7 @@ fc3568db08725a38056a08be87cb325d92aebb5f database/migrations/2026_10_31_000003_a
 6d791d6efcd6661309de2dbf79937150c67115c1 resources/views/res_list.blade.php
 f3b1b4ce22124a2cd23b2ffce1f40df3955045ab resources/views/res_form.blade.php
 67a76a09307002f6201cc2e684f3161b22c67d9c resources/views/reports.blade.php
-31dd7e9ffb494c33c4ed8332348b4dccaa7e1fcc resources/views/sidebar.blade.php
+dfc78532f209c35cb20e7c6bb58603d24fd03af2 resources/views/sidebar.blade.php
 732fff2be30a171e9823bd97034bf441348c856c resources/views/coming.blade.php
 c391e719e9e194b7bf6ecf86ccb4c9a4504c2d17 database/migrations/2026_10_31_000004_catalog_extra.php
 bd753699bbd209d243e7e4b2b82c37d322444553 resources/views/panels/customers.blade.php
@@ -40,7 +40,7 @@ c25a13956ea9946159b80572e41bd26d65050c7a resources/views/panels/accounts.blade.p
 1cb9863e39bdf894fc9136ae20d93aea9105a087 resources/views/panels/stock-log.blade.php
 71f296bf66ab5617c5421ac0a20b3dfc1dd649cf app/Http/Controllers/SiteController.php
 83f7d91e3943f758a5cc593ff2b2c3f4a34c500e resources/views/site.blade.php
-a3e1a90b44eb94c0e37acaded0a86857919aa31d app/Http/Middleware/ModulePermission.php
+08510c25347335fb5131f94d73d050213701282a app/Http/Middleware/ModulePermission.php
 2a839fb1a64c2d2986cda02d11cbd025c8afeef5 app/Http/Controllers/PermissionController.php
 25b7fe381729658fc95088f08798e84c213ac6d5 resources/views/permissions.blade.php
 d787924ace3fa42cc66a3de321e4e94e784006d8 resources/views/panels/employees.blade.php
@@ -48,7 +48,7 @@ d787924ace3fa42cc66a3de321e4e94e784006d8 resources/views/panels/employees.blade.
 16d44d41f6b845877a906678b144cbc1233a96f5 resources/views/report_details.blade.php
 2f840d53881d8aeaf0c5959161774787e5f540bc database/migrations/2026_10_31_000005_storefront.php
 222ab4ddea0d63cf8ce22be51b139a0163f9002d app/Console/Commands/MotherSyncFeed.php
-73aff21a28277ba52dd45d59d005c8394b20cc2c app/Http/Controllers/StoreController.php
+e5217d5d34506b1443fcb73a4080e68305ca9d39 app/Http/Controllers/StoreController.php
 3561f23ca29744324ad7eb289cdd67c5a09345a9 resources/views/store/layout.blade.php
 f2fdd5f72dea44d4b82418630faaf0ca6c90d261 resources/views/store/card.blade.php
 fe07f94018d11b608f3ef330eabfa9f7574af889 resources/views/store/home.blade.php
@@ -58,7 +58,7 @@ aa2d795f0101cf2a736e851d6c14cc20faeb6cd4 resources/views/store/product.blade.php
 057390142f77401e1fadc0d325a2d3ac854c9cb9 resources/views/store/track.blade.php
 06bcf7500fa7b454a3bd935dbe8f0baea4cf33a1 resources/views/store/page.blade.php
 06722f66390bb7e2d70f564ee2dd0dededd9a2b7 resources/views/store/missing.blade.php
-5274f375793f47dded02df478d0bf9bf92210a32 resources/views/store/checkout.blade.php
+509dab51f8ba2ec76207819d46683d5b87cdc6d0 resources/views/store/checkout.blade.php
 6ad097f64101a8cebb0e6ca28845c51243acad6c resources/views/store/wishlist.blade.php
 d162155635ee8d0ea432ac994aa1a1942c3cbe47 resources/views/store/pager.blade.php
 e75f162e466d0a2e2958bfaff473552e686e1543 public/logo.webp
@@ -106,7 +106,7 @@ d12347a9cf32eb078cee4c7af3033c741868e269 public/pay/ebl.png
 7da9749c724f15b03dcd131fae2e9544804eba31 public/pay/bkash.png
 a757009ad517bc95d5b0e08c9f87c8ff919a3fd5 public/pay/nagad.png
 ecc70f7878a0ce3042937d3a4348318bf0e2a2c2 app/Console/Commands/MotherCourierSync.php
-331a139e7ddf0ad354127844c996731282ca4a79 resources/views/store/success.blade.php
+4ef38daa99f49312ac1921f8dba2f652784103ca resources/views/store/success.blade.php
 4156e31ca1000b78426af8e87456506a78866b16 resources/views/store/invoice.blade.php
 0c71b384238d9f8ede008e4cc8b041f1c37a9911 app/Http/Controllers/CheckoutLookupController.php
 50e15b23a7beecec3d9719b570baee5f2e73b8b3 app/Support/CustomerIntel.php
@@ -329,3 +329,7 @@ a8448395a0acf720fdac363f8d95187304e66447 database/migrations/2026_11_02_000010_l
 5b0876bb5a1d5b091451855bf07b2241211daa19 database/migrations/2026_11_02_000011_legacy_action.php
 0dfb69a36072009754d0aa61298e5895dd4e8d60 resources/views/legacy_import.blade.php
 b2fe2d3479890d323d030e51f13a2837c886e2b6 database/migrations/2026_11_02_000012_legacy_indexes.php
+be4aeef9bd52f1d14b5c1f382b0fb1e20f53ecb7 database/migrations/2026_11_02_000013_shurjopay.php
+2ea22329cded2ba7bf638dc5134f03df486da565 app/Support/ShurjoPay.php
+8c34c7df6cc9039f910f1b78a183baf035018da7 app/Http/Controllers/ShurjoPayController.php
+c13ce72687917774cf1b405f45c09a1e14726c19 resources/views/shurjopay_settings.blade.php

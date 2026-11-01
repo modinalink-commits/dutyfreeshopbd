@@ -229,6 +229,9 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::get('/m/{slug}/{id}/edit', [R::class,'form']);
   Route::post('/m/{slug}/{id}', [R::class,'save']);
   Route::post('/m/{slug}/{id}/delete', [R::class,'destroy']);
+  Route::get('/shurjopay', [\App\Http\Controllers\ShurjoPayController::class,'settings']);
+  Route::post('/shurjopay', [\App\Http\Controllers\ShurjoPayController::class,'save']);
+  Route::post('/shurjopay/test', [\App\Http\Controllers\ShurjoPayController::class,'test']);
   Route::get('/payment-methods', [\App\Http\Controllers\PaymentController::class,'index']);
   Route::post('/payment-methods/whatsapp', [\App\Http\Controllers\PaymentController::class,'wa']);
   Route::post('/payment-methods', [\App\Http\Controllers\PaymentController::class,'save']);
@@ -322,6 +325,9 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestF
   Route::get('/api/cms', [\App\Http\Controllers\StoreController::class,'cmsExport'])->middleware('throttle:300,1');
   Route::get('/checkout', [\App\Http\Controllers\StoreController::class,'checkout']);
   Route::get('/wishlist', [\App\Http\Controllers\StoreController::class,'wishlist']);
+  Route::get('/pay/shurjopay/start/{invoice}', [\App\Http\Controllers\ShurjoPayController::class,'start'])->name('pay.shurjopay.start')->middleware('signed');
+  Route::get('/pay/shurjopay/return', [\App\Http\Controllers\ShurjoPayController::class,'back']);
+  Route::get('/pay/shurjopay/cancel', [\App\Http\Controllers\ShurjoPayController::class,'back']);
   Route::get('/order-success/{invoice}', [\App\Http\Controllers\StoreController::class,'done'])->name('order.done')->middleware('signed');
   Route::get('/invoice/{invoice}', [\App\Http\Controllers\StoreController::class,'invoice'])->name('order.invoice')->middleware('signed');
   Route::get('/cart-items', [\App\Http\Controllers\StoreController::class,'cartItems']);

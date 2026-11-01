@@ -270,12 +270,15 @@ class StoreController extends Controller {
     $back = fn($m) => redirect('/checkout?e='.rawurlencode($m));
     if (!$want) return $back('Your cart is empty');
     \App\Support\PhoneRule::trim($r);
-    $v = \Illuminate\Support\Facades\Validator::make($r->all(), ['name'=>'required|string|max:120','phone'=>['required','string',new \App\Support\PhoneRule],'email'=>'nullable|email|max:120','address'=>'required|string|max:500','area'=>'nullable|integer','district'=>'nullable|string|max:60','note'=>'nullable|string|max:500','coupon'=>'nullable|string|max:40','website'=>'max:0','pay'=>'nullable|in:cod,bank,bkash,nagad','pay_account'=>'nullable|string|max:80','pay_txn'=>['nullable','string','max:60','regex:/^[A-Za-z0-9\-_\/ ]+$/'],'pay_proof'=>'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:3072'], ['phone.regex'=>'সঠিক মোবাইল নম্বর লিখুন (01XXXXXXXXX)','required'=>'মোবাইল নম্বর, নাম ও ঠিকানা লিখুন।','email'=>'সঠিক ইমেইল লিখুন অথবা খালি রাখুন।']);
+    $v = \Illuminate\Support\Facades\Validator::make($r->all(), ['name'=>'required|string|max:120','phone'=>['required','string',new \App\Support\PhoneRule],'email'=>'nullable|email|max:120','address'=>'required|string|max:500','area'=>'nullable|integer','district'=>'nullable|string|max:60','note'=>'nullable|string|max:500','coupon'=>'nullable|string|max:40','website'=>'max:0','pay'=>'nullable|in:cod,bank,bkash,nagad,shurjopay','pay_account'=>'nullable|string|max:80','pay_txn'=>['nullable','string','max:60','regex:/^[A-Za-z0-9\-_\/ ]+$/'],'pay_proof'=>'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:3072'], ['phone.regex'=>'সঠিক মোবাইল নম্বর লিখুন (01XXXXXXXXX)','required'=>'মোবাইল নম্বর, নাম ও ঠিকানা লিখুন।','email'=>'সঠিক ইমেইল লিখুন অথবা খালি রাখুন।']);
     if ($v->fails()) return $back($v->errors()->first());
     $d = $v->validated();
     $pm = ['label'=>'COD','txn'=>null,'acct'=>null,'proof'=>null,'status'=>null];
     $pk = $d['pay'] ?? 'cod';
-    if ($pk !== 'cod') {
+    if ($pk === 'shurjopay') {
+      if (!\App\Support\ShurjoPay::enabled()) return $back('অনলাইন পেমেন্ট এখন চালু নেই।');
+      $pm = ['label'=>'ShurjoPay (Online)','txn'=>null,'acct'=>null,'proof'=>null,'status'=>'Awaiting Payment'];
+    } elseif ($pk !== 'cod') {
       if (!DB::table('payment_methods')->where('kind',$pk)->where('active',true)->exists()) return $back('এই পেমেন্ট মেথডটি এখন চালু নেই।');
       $tx = trim((string)($d['pay_txn'] ?? ''));
       if (strlen($tx) < 4) return $back('Transaction ID / Reference দিন');
@@ -298,20 +301,21 @@ class StoreController extends Controller {
       DB::table('orders')->where('id',$id)->update(['invoice'=>'INV-'.str_pad($id,6,'0',STR_PAD_LEFT)]);
       foreach ($qt['items'] as $it) DB::table('order_items')->insert(['order_id'=>$id,'product_id'=>$it['id'],'name'=>$it['name'],'qty'=>$it['qty'],'price'=>$it['price'],'created_at'=>now(),'updated_at'=>now()]);
       if ($qt['coupon']) DB::table('coupons')->where('code',$qt['coupon'])->increment('used_count');
-      DB::table('order_status_logs')->insert(['order_id'=>$id,'user_id'=>null,'user_name'=>'Website','from_status'=>null,'to_status'=>'New','note'=>$pm['status'] ? 'Order placed on website. Payment Verification Pending ('.$pm['label'].', ref '.$pm['txn'].')' : 'Order placed on website','created_at'=>now(),'updated_at'=>now()]);
+      DB::table('order_status_logs')->insert(['order_id'=>$id,'user_id'=>null,'user_name'=>'Website','from_status'=>null,'to_status'=>'New','note'=>$pm['status'] === 'Awaiting Payment' ? 'Order placed on website. Awaiting online payment (ShurjoPay)' : ($pm['status'] ? 'Order placed on website. Payment Verification Pending ('.$pm['label'].', ref '.$pm['txn'].')' : 'Order placed on website'),'created_at'=>now(),'updated_at'=>now()]);
       return $id;
     });
     Cache::forget('store.live3'); Cache::forget('store.live4');
     try { \App\Support\Referral::onOrder((int)$id, $phone, $qt); \App\Support\Winback::onOrder($phone, (int)$id, $qt); \App\Support\Voice::onOrder($phone, (int)$id, $qt['applied'] ?? []); } catch (\Throwable $e) {}
     $inv = DB::table('orders')->where('id',$id)->value('invoice');
-    \App\Support\OrderSms::placed((int)$id);
+    if ($pk !== 'shurjopay') \App\Support\OrderSms::placed((int)$id);
     try { DB::table('incomplete_orders')->where('status', 'open')->where(fn($q) => $q->where('token', (string)$r->input('inc'))->orWhere('phone', $phone))->update(['status'=>'converted', 'order_id'=>$id, 'updated_at'=>now()]); } catch (\Throwable $e) {}
+    if ($pk === 'shurjopay') return redirect(\Illuminate\Support\Facades\URL::temporarySignedRoute('pay.shurjopay.start', now()->addHours(2), ['invoice'=>$inv]));
     return redirect(\Illuminate\Support\Facades\URL::temporarySignedRoute('order.done', now()->addDays(3), ['invoice'=>$inv]));
   }
   private function pack(string $invoice): array {
     $o = DB::table('orders')->where('invoice',$invoice)->first(); abort_unless($o, 404);
     $items = DB::table('order_items as i')->leftJoin('products as p','p.id','=','i.product_id')->where('i.order_id',$o->id)->get(['i.name','i.qty','i.price','p.image']);
-    $pay = $o->pay_status ? ($o->pay_status==='Verification Pending' ? 'Payment Verification Pending' : ($o->pay_status==='Verified' ? 'Paid (verified)' : 'Payment '.$o->pay_status)) : 'Cash on delivery. Pay when you receive';
+    $pay = $o->pay_status ? ($o->pay_status==='Verification Pending' ? 'Payment Verification Pending' : ($o->pay_status==='Verified' ? 'Paid (verified)' : ($o->pay_status==='Awaiting Payment' ? 'Online payment not completed' : 'Payment '.$o->pay_status))) : 'Cash on delivery. Pay when you receive';
     return ['o'=>$o,'items'=>$items,'sub'=>$items->sum(fn($i)=>$i->price*$i->qty),'payText'=>$pay];
   }
   public function done($invoice) {
