@@ -157,6 +157,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
     Route::post('/quick', [$C,'quick']); Route::get('/history', [$C,'history']);
   });
   Route::get('/winback', [\App\Http\Controllers\WinbackController::class,'index']); Route::post('/winback/settings', [\App\Http\Controllers\WinbackController::class,'save']); Route::post('/winback/run', [\App\Http\Controllers\WinbackController::class,'run']);
+  Route::get('/customer-auth', [\App\Http\Controllers\CustAuthAdminController::class,'index']); Route::post('/customer-auth', [\App\Http\Controllers\CustAuthAdminController::class,'save']); Route::post('/customer-auth/test', [\App\Http\Controllers\CustAuthAdminController::class,'test']);
   Route::get('/fraud', [\App\Http\Controllers\FraudController::class,'index']); Route::get('/fraud/check', [\App\Http\Controllers\FraudController::class,'check']); Route::post('/fraud/settings', [\App\Http\Controllers\FraudController::class,'save']);
   Route::prefix('delivery')->group(function () { $DL = \App\Http\Controllers\DeliveryController::class;
     Route::get('/', [$DL,'index']); Route::post('/settings', [$DL,'save']); Route::post('/zone', [$DL,'zoneSave']); Route::post('/zone/{id}', [$DL,'zoneSave'])->whereNumber('id'); Route::post('/zone/{id}/act', [$DL,'zoneAct'])->whereNumber('id');
@@ -236,6 +237,17 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestF
   Route::post('/account/login', [\App\Http\Controllers\AccountController::class,'login']);
   Route::post('/account/otp-login', [\App\Http\Controllers\AccountController::class,'otpLogin']);
   Route::post('/account/register', [\App\Http\Controllers\AccountController::class,'register']);
+  Route::post('/account/register-email', [\App\Http\Controllers\AccountController::class,'registerEmail']);
+  Route::get('/account/facebook', [\App\Http\Controllers\AccountController::class,'fbStart']);
+  Route::get('/account/facebook/callback', [\App\Http\Controllers\AccountController::class,'fbCallback']);
+  Route::get('/account/complete', [\App\Http\Controllers\AccountController::class,'completeForm']);
+  Route::post('/account/complete', [\App\Http\Controllers\AccountController::class,'completeSave']);
+  Route::post('/account/facebook/disconnect', [\App\Http\Controllers\AccountController::class,'fbDisconnect']);
+  Route::post('/account/set-password', [\App\Http\Controllers\AccountController::class,'setPassword']);
+  Route::post('/account/mobile', [\App\Http\Controllers\AccountController::class,'addMobile']);
+  Route::post('/account/forgot-email', [\App\Http\Controllers\AccountController::class,'forgotEmail']);
+  Route::get('/account/reset-email/{t}', [\App\Http\Controllers\AccountController::class,'resetEmailForm'])->where('t','[a-f0-9]{48}');
+  Route::post('/account/reset-email/{t}', [\App\Http\Controllers\AccountController::class,'resetEmailSave'])->where('t','[a-f0-9]{48}');
   Route::post('/account/reset', [\App\Http\Controllers\AccountController::class,'reset']);
   Route::get('/account/logout', [\App\Http\Controllers\AccountController::class,'logout']);
   Route::get('/account/me', [\App\Http\Controllers\AccountController::class,'whoami']);

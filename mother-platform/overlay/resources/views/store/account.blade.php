@@ -6,7 +6,7 @@
   $gl = ['Pending'=>'Pending','Confirmed'=>'Confirmed','Processing'=>'Processing','Shipment'=>'Shipment','Delivered'=>'Delivered','Cancelled'=>'Cancelled','Returned'=>'Returned'];
   $catc = ['VIP'=>['#FEF3C7','#B45309'], 'High Value'=>['#EDE9FE','#6D28D9'], 'Regular'=>['#DBEAFE','#1D4ED8'], 'New'=>['#DCFCE7','#15803D']][$cat] ?? ['#F3F4F6','#374151'];
   $tk = fn($n) => '৳'.number_format((float)$n);
-  $nav = [['dashboard','Dashboard','▦'],['profile','My Profile','👤'],['orders','My Orders','🧾'],['track','Track Order','📍'],['addresses','Address Book','🏠'],['wishlist','My Wishlist','♡'],['coupons','My Coupons','🎟'],['refer','Refer & Earn','🎁'],['reviews','My Reviews','★'],['support','Support / Chat','💬'],['notifications','Notifications','🔔'],['security','Change Password','🔒']];
+  $nav = [['dashboard','Dashboard','▦'],['profile','My Profile','👤'],['orders','My Orders','🧾'],['track','Track Order','📍'],['addresses','Address Book','🏠'],['wishlist','My Wishlist','♡'],['coupons','My Coupons','🎟'],['refer','Refer & Earn','🎁'],['reviews','My Reviews','★'],['support','Support / Chat','💬'],['notifications','Notifications','🔔'],['security','Login & Security','🔒']];
   $dt = fn($v) => \Carbon\Carbon::parse($v)->timezone('Asia/Dhaka');
   $img = fn($u) => $u ?: '/icon.png';
 @endphp
@@ -187,7 +187,17 @@ var f=$('nPrefs');if(f)f.addEventListener('change',function(){var d={};f.querySe
 @endif
 
 @if($tab==='security')
+@php $hasPw = !empty($c->password); $hasFb = in_array('facebook', $prov ?? []); @endphp
+<div class="bx"><h2>Connected Accounts</h2>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid #F8EFE8;font-size:13px"><div><b>Email</b><div style="color:#9CA3AF;font-size:11.5px">{{ $c->email ?: 'ইমেইল যোগ করা নেই' }}</div></div><span class="st" style="background:{{ $hasPw ? '#DCFCE7;color:#15803D' : '#FEF3C7;color:#92400E' }}">{{ $hasPw ? 'Connected' : 'Password সেট করা হয়নি' }}</span></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;font-size:13px"><div><b>Facebook</b><div style="color:#9CA3AF;font-size:11.5px">{{ $hasFb ? 'Facebook দিয়ে লগইন সক্রিয়' : 'এক ক্লিকে লগইনের জন্য যুক্ত করুন' }}</div></div>
+@if($hasFb)<button class="b1 r" type="button" id="fbd">Disconnect Facebook</button>@elseif($fbOn ?? false)<a class="b1 p" href="/account/facebook?mode=connect" style="text-decoration:none">Connect Facebook</a>@else<span style="color:#9CA3AF;font-size:12px">এখন বন্ধ</span>@endif</div>
+<div class="msg" id="fbm">@if(request('fb')==='ok')<span class="ok2">Facebook যুক্ত হয়েছে ✓</span>@elseif(request('fb')==='used')<span class="er">এই Facebook অ্যাকাউন্টটি অন্য একটি অ্যাকাউন্টে যুক্ত আছে।</span>@endif</div></div>
+@if(!$c->phone)<div class="bx"><h2>আপনার মোবাইল নম্বর যোগ করুন</h2><form class="f" id="mbf" style="max-width:420px"><label>Mobile Number</label><input type="tel" name="phone" id="mbp" placeholder="01XXXXXXXXX" inputmode="numeric" maxlength="11" required><div id="mbc" style="display:none"><label>মোবাইলে পাঠানো কোড</label><input type="text" name="code" inputmode="numeric" maxlength="6"></div><div style="margin-top:14px"><button class="b1 p" style="padding:10px 22px">Save</button> <button class="b1" type="button" id="mbs" style="display:none">কোড পাঠান</button></div><div class="msg" id="mbm"></div></form></div>@endif
+@if(!$hasPw)<div class="bx"><h2>Email + Password সেট করুন</h2><form class="f" id="spf" style="max-width:420px">@if(!$c->email)<div class="msg er">আগে প্রোফাইলে একটি Email যোগ করুন।</div>@endif<label>নতুন পাসওয়ার্ড</label><input type="password" name="password" minlength="6" autocomplete="new-password" required><label>নতুন পাসওয়ার্ড (আবার)</label><input type="password" name="password_confirmation" minlength="6" autocomplete="new-password" required><div style="margin-top:14px"><button class="b1 p" style="padding:10px 22px">Set Password</button></div><div class="msg" id="spm"></div></form></div>
+@else
 <div class="bx"><h2>Change Password</h2><form class="f" id="pwf" style="max-width:420px"><label>বর্তমান পাসওয়ার্ড</label><input type="password" name="current" autocomplete="current-password" required><label>নতুন পাসওয়ার্ড</label><input type="password" name="password" minlength="6" autocomplete="new-password" required><label>নতুন পাসওয়ার্ড (আবার)</label><input type="password" name="password_confirmation" minlength="6" autocomplete="new-password" required><div style="margin-top:14px"><button class="b1 p" style="padding:10px 22px">Update Password</button></div><div class="msg" id="pwm"></div></form></div>
+@endif
 <div class="bx"><h2>Login Sessions @if($sessions->count()>1)<button class="b1" type="button" id="eo">অন্য সব ডিভাইস থেকে লগআউট</button>@endif</h2>
 @foreach($sessions as $s2)<div style="display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid #F8EFE8;font-size:13px"><div>{{ \Illuminate\Support\Str::limit(preg_match('/(Android|iPhone|iPad|Windows|Macintosh|Linux)/', (string)$s2->device, $mm) ? $mm[1].' · '.(preg_match('/(Chrome|Firefox|Safari|Edg)/', (string)$s2->device, $bm) ? $bm[1] : 'Browser') : 'Device', 40) }}@if($s2->id===$c->sid) <span class="st" style="background:#DCFCE7;color:#15803D">এই ডিভাইস</span>@endif<div style="color:#9CA3AF;font-size:11.5px">{{ $s2->ip }} · {{ $s2->last_at ? $dt($s2->last_at)->format('d M, h:i A') : '' }}</div></div>@if($s2->id!==$c->sid)<button class="b1 r" type="button" data-end="{{ $s2->id }}">Logout</button>@endif</div>@endforeach</div>
 @endif
@@ -204,6 +214,11 @@ function em(j){return j.error||(j.errors&&Object.values(j.errors)[0][0])||'ক�
 function say(el,ok,t){if(!el)return;el.className='msg '+(ok?'ok2':'er');el.textContent=t}
 try{var o=JSON.parse(localStorage.getItem('df_cust')||'{}')||{};o.p=ACC.p;o.n=ACC.n;if(ACC.e)o.e=ACC.e;localStorage.setItem('df_cust',JSON.stringify(o))}catch(e){}
 var pf=$('#pf');if(pf)pf.onsubmit=function(e){e.preventDefault();var f=new FormData(pf);post('/account/profile',{name:f.get('name'),email:f.get('email'),dob:f.get('dob')}).then(function(j){say($('#pm'),j.ok,j.ok?'সেভ হয়েছে ✓':em(j))})};
+/* login & security */
+var fbd=$('#fbd');if(fbd)fbd.onclick=function(){if(confirm('Facebook বিচ্ছিন্ন করবেন?'))post('/account/facebook/disconnect').then(function(j){if(j.ok)location.reload();else say($('#fbm'),false,em(j))})};
+var spf=$('#spf');if(spf)spf.onsubmit=function(e){e.preventDefault();var f=new FormData(spf);post('/account/set-password',{password:f.get('password'),password_confirmation:f.get('password_confirmation')}).then(function(j){if(j.ok)location.reload();else say($('#spm'),false,em(j))})};
+var mbf=$('#mbf');if(mbf){mbf.onsubmit=function(e){e.preventDefault();var f=new FormData(mbf);post('/account/mobile',{phone:f.get('phone'),code:f.get('code')||''}).then(function(j){if(j.ok)location.reload();else{say($('#mbm'),false,em(j));if(j.need_code){$('#mbc').style.display='block';$('#mbs').style.display='inline-block'}}})};
+ $('#mbs').onclick=function(){post('/account/otp',{phone:$('#mbp').value,purpose:'register'}).then(function(j){say($('#mbm'),!!j.sent,j.sent?'কোড পাঠানো হয়েছে':em(j))})}}
 /* addresses */
 var amo=$('#amo');if(amo){var af=$('#af');
  function openA(a){$('#amt').textContent=a?'ঠিকানা এডিট':'নতুন ঠিকানা';['id','label','receiver','phone','district','thana','area','road','landmark'].forEach(function(k){if(a&&a[k]!=null)af.elements[k].value=a[k];else if(!a&&k==='id')af.elements[k].value=''});af.elements.is_default.checked=!!(a&&a.is_default);amo.classList.add('op')}

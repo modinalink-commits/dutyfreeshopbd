@@ -60,7 +60,7 @@ class AccountController extends StoreController {
   /* ---------------- sign in / register ---------------- */
   public function authForm(Request $r) {
     if ($this->me($r)) return redirect('/account');
-    return $this->view('store.account_auth', ['title'=>'Login / Register | DutyFree Shop BD', 'mode'=>$r->query('mode') === 'register' ? 'register' : 'login', 'smsOn'=>Sms::configured()]);
+    return $this->view('store.account_auth', ['title'=>'Login / Register | DutyFree Shop BD', 'mode'=>$r->query('mode') === 'register' ? 'register' : 'login', 'smsOn'=>Sms::configured(), 'fbOn'=>\App\Support\CustAuth::fbOn(), 'fbErr'=>$r->query('fb') === 'err']);
   }
   public function otpSend(Request $r) {
     \App\Support\PhoneRule::trim($r);
@@ -86,8 +86,9 @@ class AccountController extends StoreController {
     $id = trim($d['id']); if ($this->throttle($r, $id)) return response()->json(['ok'=>false, 'error'=>'অনেকবার ভুল হয়েছে। ১৫ মিনিট পরে চেষ্টা করুন।'], 429);
     $p = $this->norm($id);
     $c = $p ? DB::table('customers')->where('phone', $p)->whereNotNull('password')->first() : DB::table('customers')->whereRaw('lower(email) = ?', [mb_strtolower($id)])->whereNotNull('password')->first();
-    if (!$c || !Hash::check($d['password'], $c->password)) { $this->hit($r, $id); return response()->json(['ok'=>false, 'error'=>'মোবাইল/ইমেইল বা পাসওয়ার্ড ঠিক নয়'], 422); }
+    if (!$c || !Hash::check($d['password'], $c->password)) { $this->hit($r, $id); \App\Support\CustAuth::log($r, $c->id ?? null, 'email', 'failed'); return response()->json(['ok'=>false, 'error'=>'মোবাইল/ইমেইল বা পাসওয়ার্ড ঠিক নয়'], 422); }
     if ($c->blocked) return response()->json(['ok'=>false, 'error'=>'এই অ্যাকাউন্টে লগইন করা যাচ্ছে না। আমাদের সাথে যোগাযোগ করুন।'], 403);
+    \App\Support\CustAuth::log($r, (int)$c->id, 'email');
     return response()->json(['ok'=>true, 'go'=>$r->input('next') && str_starts_with((string)$r->input('next'), '/') && !str_starts_with((string)$r->input('next'), '//') ? $r->input('next') : '/account'])->withCookie($this->startSession($r, $c->id, $r->boolean('remember')));
   }
   public function otpLogin(Request $r) {
@@ -127,6 +128,117 @@ class AccountController extends StoreController {
     DB::table('customer_sessions')->where('customer_id', $c->id)->delete();
     return response()->json(['ok'=>true, 'go'=>'/account'])->withCookie($this->startSession($r, $c->id, true));
   }
+
+  /* ---------------- Email registration (Full name, Email, Password) ---------------- */
+  public function registerEmail(Request $r) {
+    if (!\App\Support\CustAuth::emailOn()) return response()->json(['ok'=>false, 'error'=>'এই মুহূর্তে ইমেইল দিয়ে রেজিস্ট্রেশন বন্ধ আছে।'], 403);
+    $d = $r->validate(['name'=>'required|string|min:2|max:80', 'email'=>'required|email|max:120', 'password'=>'required|string|min:6|max:100|confirmed', 'ref'=>'nullable|string|max:40']);
+    $em = mb_strtolower(trim($d['email'])); if ($this->throttle($r, 'reg'.$em, 10)) return response()->json(['ok'=>false, 'error'=>'অনেকবার চেষ্টা করা হয়েছে। পরে চেষ্টা করুন।'], 429); $this->hit($r, 'reg'.$em);
+    $ex = DB::table('customers')->whereRaw('lower(email) = ?', [$em])->orderBy('id')->get();
+    if ($ex->contains(fn($x) => $x->password)) return response()->json(['ok'=>false, 'error'=>'এই ইমেইলে ইতিমধ্যে অ্যাকাউন্ট আছে। লগইন করুন।'], 422);
+    $guest = $ex->first();
+    if ($guest && ($guest->phone || DB::table('orders')->where('customer_id', $guest->id)->exists())) return response()->json(['ok'=>false, 'error'=>'এই ইমেইলে আগের অর্ডারের তথ্য আছে। Facebook দিয়ে লগইন করুন অথবা সাপোর্টে যোগাযোগ করুন।'], 422);
+    $hash = Hash::make($d['password']);
+    if ($guest) { DB::table('customers')->where('id', $guest->id)->update(['password'=>$hash, 'registered_at'=>now(), 'name'=>$guest->name ?: $d['name'], 'updated_at'=>now()]); $cid = (int)$guest->id; }
+    else { $cid = \App\Support\CustAuth::create($d['name'], $em, null, false, $hash); }
+    if (!empty($d['ref']) || $r->cookie('dfref')) DB::table('customers')->where('id', $cid)->update(['referred_by'=>(($d['ref'] ?? null) ?: $r->cookie('dfref')) ?: null]);
+    \App\Support\CustAuth::link($cid, 'email', $em, $em, $d['name']); \App\Support\CustAuth::log($r, $cid, 'email');
+    return response()->json(['ok'=>true, 'go'=>'/account'])->withCookie($this->startSession($r, $cid, true));
+  }
+  /* ---------------- Facebook ---------------- */
+  public function fbStart(Request $r) {
+    if (!\App\Support\CustAuth::fbOn()) return redirect('/account/login?fb=err');
+    $mode = $r->query('mode') === 'connect' ? 'connect' : 'login'; $c = $mode === 'connect' ? $this->me($r) : null; if ($mode === 'connect' && !$c) return redirect('/account/login');
+    $st = bin2hex(random_bytes(20)); $next = (string)$r->query('next'); $next = ($next !== '' && $next[0] === '/' && !str_starts_with($next, '//')) ? $next : '';
+    Cache::put('fb.st.' . $st, ['mode'=>$mode, 'cid'=>$c->id ?? null, 'next'=>$next], 600);
+    $url = 'https://www.facebook.com/v19.0/dialog/oauth?' . http_build_query(['client_id'=>Sms::secret('fb_app_id'), 'redirect_uri'=>\App\Support\CustAuth::redirectUrl(), 'state'=>$st, 'scope'=>'email,public_profile', 'response_type'=>'code']);
+    return redirect()->away($url)->withCookie(cookie('dffs', $st, 10, '/', null, $r->isSecure(), true, false, 'lax'));
+  }
+  public function fbCallback(Request $r) {
+    $fail = fn() => redirect('/account/login?fb=err')->withCookie(cookie()->forget('dffs'));
+    $st = (string)$r->query('state'); $ctx = $st !== '' ? Cache::pull('fb.st.' . $st) : null;
+    if (!$ctx || !hash_equals($st, (string)$r->cookie('dffs')) || $r->query('error') || !$r->query('code')) return $fail();
+    try {
+      $tk = \Illuminate\Support\Facades\Http::timeout(12)->get('https://graph.facebook.com/v19.0/oauth/access_token', ['client_id'=>Sms::secret('fb_app_id'), 'client_secret'=>Sms::secret('fb_app_secret'), 'redirect_uri'=>\App\Support\CustAuth::redirectUrl(), 'code'=>$r->query('code')])->json('access_token');
+      if (!$tk) return $fail();
+      $me = \Illuminate\Support\Facades\Http::timeout(12)->get('https://graph.facebook.com/v19.0/me', ['fields'=>'id,name,email,picture.width(200).height(200)', 'access_token'=>$tk])->json();
+    } catch (\Throwable $e) { return $fail(); }
+    if (empty($me['id'])) return $fail();
+    $go = $ctx['next'] ?: '/account'; $forget = cookie()->forget('dffs');
+    if ($ctx['mode'] === 'connect' && $ctx['cid']) {
+      $ex = DB::table('customer_auth_providers')->where('provider', 'facebook')->where('provider_user_id', (string)$me['id'])->first();
+      if ($ex && (int)$ex->customer_id !== (int)$ctx['cid']) return redirect('/account/security?fb=used')->withCookie($forget);
+      \App\Support\CustAuth::link((int)$ctx['cid'], 'facebook', (string)$me['id'], $me['email'] ?? null, $me['name'] ?? null, $me['picture']['data']['url'] ?? null);
+      return redirect('/account/security?fb=ok')->withCookie($forget);
+    }
+    [$cid, $state] = \App\Support\CustAuth::resolveFacebook($me);
+    if ($state === 'need_email') { $t = bin2hex(random_bytes(16)); Cache::put('fb.pend.' . $t, $me, 900); return redirect('/account/complete?t=' . $t)->withCookie($forget); }
+    if (!$cid) return $fail();
+    $c = DB::table('customers')->find($cid); if (!$c || $c->blocked) return redirect('/account/login?fb=err')->withCookie($forget);
+    \App\Support\CustAuth::log($r, $cid, 'facebook');
+    return redirect($go)->withCookie($forget)->withCookie($this->startSession($r, $cid, true));
+  }
+  /** Facebook gave no email: ask for one. */
+  public function completeForm(Request $r) {
+    $me = Cache::get('fb.pend.' . (string)$r->query('t')); if (!$me) return redirect('/account/login');
+    return $this->view('store.account_complete', ['title'=>'অ্যাকাউন্ট সম্পূর্ণ করুন | DutyFree Shop BD', 't'=>(string)$r->query('t'), 'name'=>$me['name'] ?? '']);
+  }
+  public function completeSave(Request $r) {
+    $t = (string)$r->input('t'); $me = Cache::get('fb.pend.' . $t); if (!$me) return response()->json(['ok'=>false, 'error'=>'সেশন শেষ হয়েছে। আবার চেষ্টা করুন।'], 422);
+    $d = $r->validate(['email'=>'required|email|max:120']); $em = mb_strtolower(trim($d['email']));
+    if (DB::table('customers')->whereRaw('lower(email) = ?', [$em])->exists()) return response()->json(['ok'=>false, 'error'=>'এই ইমেইলে আগে থেকে অ্যাকাউন্ট আছে। ওই ইমেইল দিয়ে লগইন করে Login & Security থেকে Facebook যুক্ত করুন।'], 422);
+    $cid = \App\Support\CustAuth::create($me['name'] ?? 'Customer', $em, $me['picture']['data']['url'] ?? null, false);
+    \App\Support\CustAuth::link($cid, 'facebook', (string)$me['id'], $em, $me['name'] ?? null, $me['picture']['data']['url'] ?? null); Cache::forget('fb.pend.' . $t); \App\Support\CustAuth::log($r, $cid, 'facebook');
+    return response()->json(['ok'=>true, 'go'=>'/account'])->withCookie($this->startSession($r, $cid, true));
+  }
+  public function fbDisconnect(Request $r) {
+    $c = $this->me($r); if (!$c) return response()->json([], 401);
+    if (empty($c->password)) return response()->json(['ok'=>false, 'error'=>'Facebook-ই আপনার একমাত্র লগইন পদ্ধতি। আগে Email + Password সেট করুন, তারপর Facebook বিচ্ছিন্ন করুন।'], 422);
+    DB::table('customer_auth_providers')->where('customer_id', $c->id)->where('provider', 'facebook')->delete(); return response()->json(['ok'=>true]);
+  }
+  /** Facebook-only customers set Email + Password (no current password needed). */
+  public function setPassword(Request $r) {
+    $c = $this->me($r); if (!$c) return response()->json([], 401);
+    if (!empty($c->password)) return response()->json(['ok'=>false, 'error'=>'আপনার পাসওয়ার্ড আগে থেকেই সেট করা আছে।'], 422);
+    $d = $r->validate(['password'=>'required|string|min:6|max:100|confirmed']); if (empty($c->email)) return response()->json(['ok'=>false, 'error'=>'আগে প্রোফাইলে ইমেইল যোগ করুন।'], 422);
+    DB::table('customers')->where('id', $c->id)->update(['password'=>Hash::make($d['password']), 'updated_at'=>now()]); \App\Support\CustAuth::link((int)$c->id, 'email', mb_strtolower($c->email), $c->email, $c->name);
+    return response()->json(['ok'=>true]);
+  }
+  /** Add / complete the mobile number from the profile. */
+  public function addMobile(Request $r) {
+    $c = $this->me($r); if (!$c) return response()->json([], 401); \App\Support\PhoneRule::trim($r);
+    if ($c->phone) return response()->json(['ok'=>false, 'error'=>'মোবাইল নম্বর বদলাতে সাপোর্টে যোগাযোগ করুন।'], 422);
+    $d = $r->validate(['phone'=>['required','string',new \App\Support\PhoneRule], 'code'=>'nullable|string|max:10']); $p = $this->norm($d['phone']); if (!$p) return response()->json(['ok'=>false, 'error'=>'সঠিক মোবাইল নম্বর দিন'], 422);
+    if ($this->throttle($r, 'am'.$c->id, 8)) return response()->json(['ok'=>false, 'error'=>'অনেকবার চেষ্টা হয়েছে, পরে চেষ্টা করুন'], 429); $this->hit($r, 'am'.$c->id);
+    $ok = !empty($d['code']) && $this->otpCheck('register', $p, $d['code']) ? true : null;
+    $e = \App\Support\CustAuth::addMobile($c, $p, $ok ? '1' : null);
+    if ($e === 'NEED_CODE') return response()->json(['ok'=>false, 'need_code'=>true, 'error'=>'এই নম্বরে আগের তথ্য আছে। মোবাইলে পাঠানো কোড দিন।'], 422);
+    if ($e) return response()->json(['ok'=>false, 'error'=>$e], 422);
+    return response()->json(['ok'=>true]);
+  }
+  /** Forgot password by email (works when an email provider is configured). */
+  public function forgotEmail(Request $r) {
+    $d = $r->validate(['email'=>'required|email|max:120']); $em = mb_strtolower(trim($d['email']));
+    if ($this->throttle($r, 'fe'.$em, 5)) return response()->json(['ok'=>false, 'error'=>'অনেকবার চেষ্টা হয়েছে, পরে চেষ্টা করুন'], 429); $this->hit($r, 'fe'.$em);
+    if (!\App\Support\CustAuth::mailReady()) return response()->json(['ok'=>false, 'error'=>'ইমেইল পাঠানো এখনো চালু নেই। নিচে মোবাইল কোড দিয়ে পাসওয়ার্ড রিসেট করুন অথবা সাপোর্টে কল করুন।'], 503);
+    $c = DB::table('customers')->whereRaw('lower(email) = ?', [$em])->whereNotNull('password')->first();
+    if ($c) {
+      $t = bin2hex(random_bytes(24)); DB::table('customer_password_resets')->insert(['customer_id'=>$c->id, 'token_hash'=>hash('sha256', $t), 'expires_at'=>now()->addMinutes(30), 'created_at'=>now(), 'updated_at'=>now()]);
+      try { \Illuminate\Support\Facades\Mail::raw("DutyFree Shop BD — পাসওয়ার্ড রিসেট লিংক (৩০ মিনিট বৈধ):\n" . url('/account/reset-email/' . $t) . "\nআপনি অনুরোধ না করলে এটি উপেক্ষা করুন।", fn($m) => $m->to($c->email)->subject('Password reset — DutyFree Shop BD')); } catch (\Throwable $e) {}
+    }
+    return response()->json(['ok'=>true, 'msg'=>'ইমেইলটি আমাদের কাছে থাকলে রিসেট লিংক পাঠানো হয়েছে।']);
+  }
+  public function resetEmailForm(Request $r, $t) {
+    $x = DB::table('customer_password_resets')->where('token_hash', hash('sha256', $t))->whereNull('used_at')->where('expires_at', '>', now())->first(); if (!$x) return redirect('/account/login');
+    return $this->view('store.account_complete', ['title'=>'নতুন পাসওয়ার্ড | DutyFree Shop BD', 'reset'=>$t, 't'=>'', 'name'=>'']);
+  }
+  public function resetEmailSave(Request $r, $t) {
+    $x = DB::table('customer_password_resets')->where('token_hash', hash('sha256', $t))->whereNull('used_at')->where('expires_at', '>', now())->first(); if (!$x) return response()->json(['ok'=>false, 'error'=>'লিংকের মেয়াদ শেষ'], 422);
+    $d = $r->validate(['password'=>'required|string|min:6|max:100|confirmed']);
+    DB::table('customers')->where('id', $x->customer_id)->update(['password'=>Hash::make($d['password']), 'email_verified_at'=>DB::raw('coalesce(email_verified_at, now())'), 'updated_at'=>now()]);
+    DB::table('customer_password_resets')->where('id', $x->id)->update(['used_at'=>now()]); DB::table('customer_sessions')->where('customer_id', $x->customer_id)->delete();
+    return response()->json(['ok'=>true, 'go'=>'/account'])->withCookie($this->startSession($r, (int)$x->customer_id, true));
+  }
   public function logout(Request $r) {
     if ($t = (string)$r->cookie('dfa')) DB::table('customer_sessions')->where('token_hash', hash('sha256', $t))->delete();
     return redirect('/account/login?out=1')->withCookie(cookie()->forget('dfa'));
@@ -134,7 +246,7 @@ class AccountController extends StoreController {
 
   /* ---------------- dashboard ---------------- */
   private function orders($c) {
-    return DB::table('orders')->where(fn($q) => $q->where('phone', $c->phone)->orWhere('customer_id', $c->id));
+    return DB::table('orders')->where(fn($q) => $c->phone ? $q->where('phone', $c->phone)->orWhere('customer_id', $c->id) : $q->where('customer_id', $c->id));
   }
   private function group(string $st): string { foreach (self::GROUPS as $g => $l) if (in_array($st, $l)) return $g; return 'Pending'; }
   private function thumbs(array $ids): array {
@@ -190,7 +302,7 @@ class AccountController extends StoreController {
     }
     if ($tab === 'notifications') $d['notes'] = $this->notes($c, $all);
     if ($tab === 'notifications') { $d['hist'] = DB::table('customer_notifications')->where('customer_id', $c->id)->orderByDesc('id')->limit(60)->get(); $d['prefs'] = \App\Support\Push::prefs((int)$c->id); }
-    if ($tab === 'security') $d['sessions'] = DB::table('customer_sessions')->where('customer_id', $c->id)->orderByDesc('last_at')->get();
+    if ($tab === 'security') { $d['sessions'] = DB::table('customer_sessions')->where('customer_id', $c->id)->orderByDesc('last_at')->get(); $d['prov'] = DB::table('customer_auth_providers')->where('customer_id', $c->id)->pluck('provider')->all(); $d['fbOn'] = \App\Support\CustAuth::fbOn(); $d['hist'] = DB::table('customer_login_history')->where('customer_id', $c->id)->orderByDesc('id')->limit(10)->get(); }
     return $this->view('store.account', $d);
   }
   private function publicCoupons() {

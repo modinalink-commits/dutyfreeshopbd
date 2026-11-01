@@ -281,3 +281,9 @@ resources/views/fraud_widget.blade.php
 database/data/blog_posts.json
 database/migrations/2026_11_01_000012_blog_posts.php
 database/migrations/2026_11_01_000013_work_log.php
+database/migrations/2026_11_01_000014_customer_auth.php
+app/Support/CustAuth.php
+app/Http/Controllers/CustAuthAdminController.php
+resources/views/customer_auth.blade.php
+resources/views/cust_login_info.blade.php
+resources/views/store/account_complete.blade.php

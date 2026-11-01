@@ -5,10 +5,19 @@
   $map = ['Approved'=>1,'Scheduled'=>1,'WFP'=>1,'Packaging'=>2,'Shipment'=>3,'Late Delivery'=>3,'Partial Delivered'=>4,'Delivered'=>4];
   $at = $o ? ($map[$o->status] ?? 0) : -1; $bad = $o && in_array($o->status, ['Cancel','Return Pending','Returned','Exchange Received']);
 @endphp
-<style>.tk2{padding:36px 0 56px;display:flex;justify-content:center}.tkc{width:926px;max-width:100%;background:#fff;border-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,.08);padding:34px 32px 26px}.tkf{display:flex;gap:6px}.tkf input{flex-grow:1;height:32px;border:1px solid #D1D5DB;padding:0 12px;font-size:11px;outline:0;min-width:0}.tkf button{width:210px;background:#0B1220;color:#fff;border:0;display:flex;align-items:center;justify-content:center}
-.stp{display:flex;margin-top:6px}.stp div{flex:1;text-align:center;font-size:10px;font-weight:600}.stp i{display:block;width:22px;height:22px;border-radius:50%;margin:0 auto 6px;color:#fff;line-height:22px;font-style:normal}
+<style>.tk2{padding:24px 12px 40px;display:flex;justify-content:center}.tkc{width:926px;max-width:100%;background:#fff;border:1px solid #FED7AA;border-radius:16px;box-shadow:0 2px 10px rgba(15,23,42,.05);padding:22px 24px}
+.tkc h1{font-size:19px;font-weight:700;color:#0F172A;margin:0}.tkc .sub{font-size:12.5px;color:#64748B;margin:3px 0 16px}
+.tkf{display:flex;gap:8px}.tkf input{flex:1;height:42px;border:1px solid #D1D5DB;border-radius:10px;padding:0 14px;font-size:13px;color:#111827;outline:0;min-width:0}.tkf input:focus{border-color:#FF5A00;box-shadow:0 0 0 3px rgba(255,90,0,.12)}
+.tkf button{background:#FF5A00;color:#fff;border:0;border-radius:10px;padding:0 20px;height:42px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:7px;cursor:pointer;transition:.15s}.tkf button:hover{background:#E04F00}
+.tkm{margin-top:18px;border:1px solid #FED7AA;background:#FFF7ED;border-radius:12px;padding:12px 14px;display:flex;flex-wrap:wrap;gap:6px 22px;font-size:12.5px;color:#111827}.tkm b{color:#0F172A}.tkm small{display:block;color:#64748B;font-size:11px}
+.tke{margin-top:16px;background:#FEE2E2;border:1px solid #FCA5A5;color:#991B1B;border-radius:10px;padding:11px 14px;font-size:12.5px}.tkn{margin-top:16px;font-size:12.5px;color:#64748B;text-align:center}
+.stp{display:flex;margin-top:22px;overflow-x:auto;padding-bottom:4px}.stp div{flex:1;min-width:84px;text-align:center;font-size:11.5px;font-weight:700;color:#111827;position:relative}.stp div small{display:block;font-size:10.5px;font-weight:500;color:#64748B;margin-top:1px}
+.stp i{display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;margin:0 auto 7px;background:#E5E7EB;color:#6B7280;position:relative;z-index:1}
+.stp div:not(:last-child):after{content:"";position:absolute;top:16px;left:calc(50% + 17px);right:calc(-50% + 17px);height:2px;background:#E5E7EB}
+.stp div.d i{background:#FF5A00;color:#fff}.stp div.d:not(:last-child):after{background:#FF5A00}.stp div.c i{background:#FF5A00;color:#fff;box-shadow:0 0 0 4px rgba(255,90,0,.2)}
+.stp div:not(.d):not(.c){color:#64748B}
 .ok{padding:40px 0 56px;display:flex;justify-content:center}.okc{width:560px;max-width:100%;background:#fff;border:1px solid #FDC2A5;border-radius:12px;padding:30px;text-align:center}.okc .ck{width:54px;height:54px;border-radius:50%;background:#16A34A;color:#fff;font-size:28px;line-height:54px;margin:0 auto 12px}.okc .bt{display:flex;gap:10px;margin-top:18px}.okc .bt a{flex:1;font-size:12px;font-weight:700;padding:10px 0;border-radius:4px}
-@media (max-width:760px){.tk2,.ok{padding:16px 10px 30px}.tkc{padding:18px 14px}.tkf button{width:70px}.okc{padding:22px 16px}}</style>
+@media (max-width:760px){.tk2,.ok{padding:14px 12px 28px}.tkc{padding:16px 14px}.tkf{flex-direction:column}.tkf button{justify-content:center}.okc{padding:22px 16px}}</style>
 @if(request('new') && $o)
 <div class="ok"><div class="okc"><div class="ck">✓</div><div style="font-size:18px;font-weight:700">Your order is placed</div><div style="font-size:12px;color:#555;margin:6px 0 16px">Invoice no. {{ $o->invoice }} · We will call you to confirm. Pay cash on delivery.</div>
 <div style="border-top:1px solid #EEE;border-bottom:1px solid #EEE;padding:12px 0;font-size:12px;display:flex;justify-content:space-between"><span>Payable amount</span><b>{{ number_format($o->total) }} TK</b></div>
@@ -18,17 +27,22 @@
 <script>(function(){var k='dfp_'+@json($o->invoice);try{if(localStorage.getItem(k))return;localStorage.setItem(k,'1')}catch(e){}window.dataLayer.push({ecommerce:null});window.dataLayer.push({event:'purchase',ecommerce:{transaction_id:@json($o->invoice),currency:'BDT',value:{{ (float)$o->total }}}});if(window.gtag&&!{{ !empty($s['gtm_id']) ? 'true':'false' }})gtag('event','purchase',{transaction_id:@json($o->invoice),currency:'BDT',value:{{ (float)$o->total }}});if(window.fbq)fbq('track','Purchase',{currency:'BDT',value:{{ (float)$o->total }}},{eventID:@json($o->invoice)})})();</script>
 @else
 <div class="tk2"><div class="tkc">
-<h1 style="font-size:12px;margin-bottom:10px;font-weight:400"><b>TRACK YOUR CONSIGNMENT</b> &nbsp; Now you can easily track your consignment</h1>
-<form class="tkf" action="/track"><input name="invoice" value="{{ request('invoice') }}" placeholder="Enter Order Invoice No" required aria-label="Invoice number"><button aria-label="Track"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button></form>
-@if(request('invoice') && !$o)<div style="border-top:1px solid #FDC2A5;margin-top:18px;padding-top:18px;font-size:12px;color:#B91C1C">No order found with this invoice number. Please check and try again, or call {{ $s['call_number'] }}.</div>@endif
+@php
+ $ic = ['<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>','<path d="m5 12 5 5 9-10"/>','<path d="m3 8 9-5 9 5v8l-9 5-9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/>','<path d="M2 6h11v10H2zM13 9h4l3 3v4h-7"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="18" r="2"/>','<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>'];
+ $bn = ['অর্ডার হয়েছে','নিশ্চিত হয়েছে','প্যাক করা হয়েছে','পথে রয়েছে','ডেলিভারি হয়েছে']; $en = ['Order Placed','Confirmed','Packed','On the Way','Delivered'];
+@endphp
+<h1>Track Your Order</h1><div class="sub">আপনার অর্ডারের বর্তমান অবস্থা সহজেই দেখুন</div>
+<form class="tkf" action="/track"><input name="invoice" value="{{ request('invoice') }}" placeholder="অর্ডার / ইনভয়েস নম্বর লিখুন" required aria-label="Invoice number"><button><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Track Order</button></form>
+@if(request('invoice') && !$o)<div class="tke">অর্ডারটি খুঁজে পাওয়া যায়নি। অর্ডার/ইনভয়েস নম্বরটি আবার পরীক্ষা করুন।</div>@endif
+@if(!request('invoice'))<div class="tkn">অর্ডার নম্বর দিয়ে আপনার অর্ডারের বর্তমান অবস্থা দেখুন।</div>@endif
 @if($o)
-<div style="border-top:1px solid #FDC2A5;margin-top:18px;padding-top:18px;font-size:12px"><b>{{ $o->invoice }}</b> · {{ \Carbon\Carbon::parse($o->created_at)->timezone('Asia/Dhaka')->format('d M Y, h:i A') }} · Status: <b style="color:{{ $bad ? '#B91C1C' : '#FF5A00' }}">{{ ['New'=>'Confirmation Pending','Approved'=>'Confirmed','Packaging'=>'Processing'][$o->status] ?? $o->status }}</b></div>
-@if(!$bad)<div class="stp" style="margin-top:16px">@foreach($steps as $i => $st)<div><i style="background:{{ $i < $at || ($i === $at && $at === 4) ? '#16A34A' : ($i === $at ? '#FF5A00' : '#D1D5DB') }}">{{ $i < $at || ($i === $at && $at === 4) ? '✓' : $i + 1 }}</i>{{ $st }}</div>@endforeach</div>@endif
-<table style="width:100%;margin-top:16px;font-size:12px;border-collapse:collapse">@foreach($items as $it)<tr><td style="padding:5px 0;border-top:1px solid #EEE">{{ $it->name }} × {{ $it->qty }}</td><td style="text-align:right;border-top:1px solid #EEE">{{ number_format($it->price * $it->qty) }} TK</td></tr>@endforeach
-<tr><td style="padding:5px 0;border-top:1px solid #EEE">Shipping Charge</td><td style="text-align:right;border-top:1px solid #EEE">{{ number_format($o->shipping) }} TK</td></tr>@if((float)$o->discount > 0)<tr><td style="padding:5px 0">Discount</td><td style="text-align:right">-{{ number_format($o->discount) }} TK</td></tr>@endif
-<tr><td style="padding:5px 0;border-top:1px solid #EEE"><b>Payable Amount</b></td><td style="text-align:right;border-top:1px solid #EEE"><b>{{ number_format($o->total) }} TK</b></td></tr></table>
+<div class="tkm"><div><small>Order</small><b>#{{ $o->invoice }}</b></div><div><small>Current Status</small><b style="color:{{ $bad ? '#B91C1C' : '#FF5A00' }}">{{ ['New'=>'Confirmation Pending','Approved'=>'Confirmed','Packaging'=>'Processing','Shipment'=>'On the Way'][$o->status] ?? $o->status }}</b></div><div><small>Placed</small><b>{{ \Carbon\Carbon::parse($o->created_at)->timezone('Asia/Dhaka')->format('d M Y, h:i A') }}</b></div></div>
+@if(!$bad)<div class="stp">@foreach($steps as $i => $st)@php $dn = $i < $at || ($i === $at && $at === 4); @endphp<div class="{{ $dn ? 'd' : ($i === $at ? 'c' : '') }}"><i><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">{!! $ic[$i] !!}</svg></i>{{ $en[$i] }}<small>{{ $bn[$i] }}</small></div>@endforeach</div>@endif
+<table style="width:100%;margin-top:18px;font-size:12.5px;border-collapse:collapse;color:#111827">@foreach($items as $it)<tr><td style="padding:6px 0;border-top:1px solid #F1F5F9">{{ $it->name }} × {{ $it->qty }}</td><td style="text-align:right;border-top:1px solid #F1F5F9">{{ number_format($it->price * $it->qty) }} TK</td></tr>@endforeach
+<tr><td style="padding:6px 0;border-top:1px solid #F1F5F9">Shipping Charge</td><td style="text-align:right;border-top:1px solid #F1F5F9">{{ number_format($o->shipping) }} TK</td></tr>@if((float)$o->discount > 0)<tr><td style="padding:6px 0">Discount</td><td style="text-align:right">-{{ number_format($o->discount) }} TK</td></tr>@endif
+<tr><td style="padding:6px 0;border-top:1px solid #E5E7EB"><b>Payable Amount</b></td><td style="text-align:right;border-top:1px solid #E5E7EB"><b>{{ number_format($o->total) }} TK</b></td></tr></table>
 @else
-<div class="stp" style="margin-top:18px;opacity:.55">@foreach($steps as $i => $st)<div><i style="background:#D1D5DB">{{ $i + 1 }}</i>{{ $st }}</div>@endforeach</div>
+<div class="stp" style="opacity:.8">@foreach($steps as $i => $st)<div><i><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">{!! $ic[$i] !!}</svg></i>{{ $en[$i] }}<small>{{ $bn[$i] }}</small></div>@endforeach</div>
 @endif
 </div></div>
 @endif
