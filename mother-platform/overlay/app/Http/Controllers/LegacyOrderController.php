@@ -32,7 +32,7 @@ class LegacyOrderController extends Controller
   public function apply(Request $r) {
     abort_unless($r->input('confirm') === 'IMPORT' || $r->boolean('go'), 422);
     @set_time_limit(120);
-    $map = self::STATUS + [14 => $r->input('s14', 'Pre Order'), 15 => $r->input('s15', 'Late Delivery'), 16 => $r->input('s16', 'Scheduled')];
+    $map = self::STATUS + [14 => 'Pre Order', 15 => 'Late Delivery', 16 => 'Scheduled', 17 => 'Scheduled'];
     $rows = DB::table('legacy_orders')->whereNull('action')->orderBy('old_id')->limit(max(50, min(1500, (int)($r->input('n') ?: 600))))->get();
     $pids = DB::table('products')->whereNotNull('ext_id')->pluck('id', 'ext_id')->all();
     $stats = ['imported' => 0, 'skipped' => 0];
@@ -43,10 +43,10 @@ class LegacyOrderController extends Controller
         foreach ($chunk as $l) {
           $x = json_decode((string)$l->raw, true) ?: []; $inv = 'INV-' . $l->invoice_no;
           if (DB::table('orders')->where('legacy_order_id', $l->old_id)->exists() || DB::table('orders')->where('invoice', $inv)->exists()) { DB::table('legacy_orders')->where('old_id', $l->old_id)->update(['action' => 'skipped']); $stats['skipped']++; continue; }
-          $c = $x['customer'] ?? []; $created = $l->old_created_at ?: now();
+          $tot = (float)($x['total'] ?? 0); $junk = $tot > 1000000 * max(1, count($x['order_item'] ?? [])); if ($junk) $tot = 0; $c = $x['customer'] ?? []; $created = $l->old_created_at ?: now();
           $oid = DB::table('orders')->insertGetId(['invoice' => $inv, 'customer_id' => $cust[$l->phone] ?? null, 'customer_name' => mb_substr((string)($c['name'] ?? 'Customer'), 0, 190) ?: 'Customer', 'phone' => $l->phone ?: '', 'address' => $c['address'] ?? null,
-            'district' => $x['city']['name'] ?? ($x['select_area'] ?? null), 'source' => $x['source']['name'] ?? 'Web Site', 'courier' => $x['courier']['name'] ?? null, 'shipping' => (float)($x['shipping_cost'] ?? 0), 'total' => (float)($x['total'] ?? 0),
-            'status' => $map[(int)$l->status] ?? 'New', 'note' => trim(implode(' | ', array_filter([$x['note'] ?? null, $x['comment'] ?? null]))) ?: null, 'payment_method' => $x['payment_method'] ?? null, 'discount' => (float)($x['discount'] ?? 0) + (float)($x['coupon_disocunt'] ?? 0),
+            'district' => $x['city']['name'] ?? ($x['select_area'] ?? null), 'source' => $x['source']['name'] ?? 'Web Site', 'courier' => $x['courier']['name'] ?? null, 'shipping' => (float)($x['shipping_cost'] ?? 0), 'total' => $tot,
+            'status' => $map[(int)$l->status] ?? 'New', 'note' => trim(implode(' | ', array_filter([$x['note'] ?? null, $x['comment'] ?? null, $junk ? '[legacy total ignored: ' . ($x['total'] ?? '') . ']' : null]))) ?: null, 'payment_method' => $x['payment_method'] ?? null, 'discount' => (float)($x['discount'] ?? 0) + (float)($x['coupon_disocunt'] ?? 0),
             'tracking_code' => $x['tracking_id'] ?? null, 'legacy_order_id' => $l->old_id, 'legacy_source' => 'dutyfreebd.com', 'created_at' => $created, 'updated_at' => $x['updated_at'] ?? $created]);
           $items = [];
           foreach (($x['order_item'] ?? []) as $it) {
