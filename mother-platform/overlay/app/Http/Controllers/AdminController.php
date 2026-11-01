@@ -50,8 +50,8 @@ class AdminController extends Controller {
       ['Orders '.$label, number_format($ord), '৳'.number_format($aov).' average', 'cart', $tren($ord, $pord), '/admin/orders', 'blue', 'orders'],
       ['Average order value', '৳'.number_format($aov), 'per valid order', 'tag', $tren($aov, $paov), '/admin/analytics', 'violet', null],
       ['Gross profit', $canFin ? '৳'.number_format($profit) : '—', $canFin ? ($n($x, 'cost') > 0 ? round($sales > 0 ? $profit/$sales*100 : 0, 1).'% margin' : 'Set product cost prices') : 'Reports permission needed', 'coin', $tren($profit, $pprofit), '/admin/analytics/profit-loss', 'green', 'profit'],
-      ['Delivery success', $fin ? round($dr, 1).'%' : '—', $del.' delivered of '.$fin.' finished', 'truck', $tren($dr, $pdr), '/admin/orders?status=Delivered', 'teal', 'delivered'],
-      ['Return rate', $fin ? round($rr, 1).'%' : '0%', $retn.' returned · '.(int)$n($x, 'cancelled').' cancelled', 'undo', $tren($rr, $prr, false), '/admin/orders?status=Returned', 'red', null],
+      ['Delivery success', $fin ? round($dr, 1).'%' : '—', $del.' delivered of '.$fin.' finished', 'truck', $fin ? $tren($dr, $pdr) : [0, '', null], '/admin/orders?status=Delivered', 'teal', 'delivered'],
+      ['Return rate', $fin ? round($rr, 1).'%' : '0%', $retn.' returned · '.(int)$n($x, 'cancelled').' cancelled', 'undo', $fin ? $tren($rr, $prr, false) : [0, '', null], '/admin/orders?status=Returned', 'red', null],
       ['Awaiting confirmation', (string)$newN, $oldest ? 'Oldest waiting '.\Carbon\Carbon::parse($oldest)->diffForHumans(null, true) : 'Nothing waiting', 'clock', [0, '', null], '/admin/orders?status=New', 'amber', null],
       ['Ready to ship', (string)$ready, 'Packaging + WFP', 'box', [0, '', null], '/admin/orders?status=Packaging', 'slate', null],
     ];
