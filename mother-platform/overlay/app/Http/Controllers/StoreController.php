@@ -298,7 +298,7 @@ class StoreController extends Controller {
       return $id;
     });
     Cache::forget('store.live3'); Cache::forget('store.live4');
-    try { \App\Support\Referral::onOrder((int)$id, $phone, $qt); } catch (\Throwable $e) {}
+    try { \App\Support\Referral::onOrder((int)$id, $phone, $qt); \App\Support\Winback::onOrder($phone, (int)$id, $qt); } catch (\Throwable $e) {}
     $inv = DB::table('orders')->where('id',$id)->value('invoice');
     \App\Support\OrderSms::placed((int)$id);
     try { DB::table('incomplete_orders')->where('status', 'open')->where(fn($q) => $q->where('token', (string)$r->input('inc'))->orWhere('phone', $phone))->update(['status'=>'converted', 'order_id'=>$id, 'updated_at'=>now()]); } catch (\Throwable $e) {}

@@ -155,6 +155,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
     Route::get('/settings', [$C,'settings']); Route::post('/settings', [$C,'settingsSave']); Route::post('/optout', [$C,'optout']);
     Route::post('/quick', [$C,'quick']); Route::get('/history', [$C,'history']);
   });
+  Route::get('/winback', [\App\Http\Controllers\WinbackController::class,'index']); Route::post('/winback/settings', [\App\Http\Controllers\WinbackController::class,'save']); Route::post('/winback/run', [\App\Http\Controllers\WinbackController::class,'run']);
   Route::get('/referral', [\App\Http\Controllers\ReferralController::class,'index']); Route::post('/referral/settings', [\App\Http\Controllers\ReferralController::class,'save']);
   Route::prefix('purchase')->group(function () {
     $C = \App\Http\Controllers\ProcurementController::class;

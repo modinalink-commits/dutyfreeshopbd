@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\DB;
 /** THE discount engine. Admin Create Order, website checkout and the customer account all call compute(); nothing else calculates a discount.
  *  Every line comes from a saved rule, membership level, coupon or customer-profile value: nothing is invented. */
 class OrderDiscount {
-  const ORDER = ['special', 'vip', 'membership', 'returning', 'birthday', 'first', 'referral', 'bundle', 'amount', 'coupon', 'refcredit'];
+  const ORDER = ['special', 'vip', 'membership', 'returning', 'winback', 'birthday', 'first', 'referral', 'bundle', 'amount', 'coupon', 'refcredit'];
   const MODES = ['highest' => 'Highest discount only', 'priority' => 'Priority order (first match only)', 'stack' => 'Stackable: multiple discounts allowed'];
   public static function mode(): string { $m = (string)DB::table('settings')->where('key', 'order_disc_mode')->value('value'); return isset(self::MODES[$m]) ? $m : 'highest'; }
   private static function rule(string $k): ?array { $r = DB::table('discount_rules')->where('key', $k)->where('enabled', true)->first(); return $r ? ['cfg' => json_decode($r->config, true) ?: [], 'title' => $r->title] : null; }
@@ -72,6 +72,10 @@ class OrderDiscount {
         if ($amt > 0) $cand[] = ['key' => 'coupon', 'type' => 'Coupon Discount', 'rule' => 'Coupon '.$cp->code, 'source' => 'Coupon – '.$cp->code, 'pct' => $cp->type === 'percent' ? (float)$cp->value : null, 'amount' => $amt, 'code' => $cp->code,
           'label' => 'Coupon '.$cp->code.' – '.($cp->type === 'percent' ? rtrim(rtrim(number_format((float)$cp->value, 2), '0'), '.').'%' : '৳'.number_format($amt))];
       }
+    }
+    if ($prof && $phone && Winback::set('mode', 'auto') === 'auto' && ($we = Winback::active($phone)) && $sub >= (float)Winback::set('min_order', '0')) {
+      $wa = round($sub * (float)$we->pct / 100, 2); $wm = (float)Winback::set('max_discount', '0'); if ($wm > 0) $wa = min($wa, $wm);
+      if ($wa > 0) $cand[] = ['key' => 'winback', 'type' => 'Win-Back Discount', 'rule' => 'Customer reactivation', 'source' => 'Win-back offer', 'pct' => (float)$we->pct, 'amount' => $wa, 'wbid' => $we->id, 'label' => 'Welcome Back Discount: '.rtrim(rtrim(number_format((float)$we->pct, 2), '0'), '.').'%'];
     }
     if ($web && $phone && ($rc = Referral::codeFlow($phone)) && ($rf = Referral::eligible($phone, $rc, $sub))) {
       $ra = min((float)$rf['discount'], $sub); if ($ra > 0) $cand[] = ['key' => 'referral', 'type' => 'Referral Discount', 'rule' => 'Referral '.$rf['code'], 'source' => 'Referral – '.$rf['code'], 'pct' => null, 'amount' => round($ra, 2), 'refcode' => $rf['code'], 'label' => 'Referral discount – ৳'.number_format($ra)];

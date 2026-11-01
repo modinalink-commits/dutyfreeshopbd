@@ -249,3 +249,8 @@ database/migrations/2026_11_01_000008_referral.php
 app/Support/Referral.php
 app/Http/Controllers/ReferralController.php
 resources/views/referral.blade.php
+database/migrations/2026_11_01_000009_winback.php
+app/Support/Winback.php
+app/Http/Controllers/WinbackController.php
+resources/views/winback.blade.php
+resources/views/winback_activity.blade.php

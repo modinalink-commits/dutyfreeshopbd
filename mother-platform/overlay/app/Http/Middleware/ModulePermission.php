@@ -14,7 +14,7 @@ class ModulePermission {
     $map = ['orders'=>['order-sources','order-comments','r-orders'], 'stafflog'=>['r-staff-log'], 'products'=>['attributes','attribute-values','variants','reviews','stock-log','r-products'], 'purchase'=>['suppliers','purchases','purchase-items','damaged'], 'accounts'=>['accounts','purposes','entries','bills','withdrawals'], 'customers'=>['customers','memberships','points','messages','blocked-ips'], 'couriers'=>['couriers','districts','sub-districts'], 'settings'=>['settings','banners','sliders','pages','posts','stores','channels'], 'marketing'=>['sms-log','email-log','campaigns','r-coupons'], 'hr'=>['employees','payroll'], 'users'=>['users','roles','audit-log']];
     if ($m !== null) { foreach ($map as $mod => $slugs) if (in_array($m, $slugs)) return $mod; return 'users'; }
     if (preg_match('#^purchase(/|$)#', $p)) return 'purchase';
-    if (preg_match('#^referral(/|$)#', $p)) return 'marketing';
+    if (preg_match('#^(referral|winback)(/|$)#', $p)) return 'marketing';
     if (preg_match('#^sms-marketing/(quick|history)#', $p)) return 'orders';
     if (str_starts_with($p, 'sms-marketing')) return 'marketing';
     if (str_starts_with($p, 'push')) return 'marketing';
