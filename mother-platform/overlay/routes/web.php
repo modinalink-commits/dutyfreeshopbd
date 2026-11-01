@@ -18,6 +18,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::get('/deploy', [\App\Http\Controllers\DeployController::class,'index']);
   Route::get('/deploy/status', [\App\Http\Controllers\DeployController::class,'status']);
   Route::post('/deploy', [\App\Http\Controllers\DeployController::class,'run']);
+  Route::post('/deploy/task', [\App\Http\Controllers\DeployController::class,'taskSave']);
   Route::post('/deploy/refresh', [\App\Http\Controllers\DeployController::class,'refresh']);
   Route::post('/deploy/cancel', [\App\Http\Controllers\DeployController::class,'cancel']);
   Route::post('/deploy/settings', [\App\Http\Controllers\DeployController::class,'settings']);

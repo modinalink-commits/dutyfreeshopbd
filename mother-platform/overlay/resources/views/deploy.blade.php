@@ -27,6 +27,8 @@
     <button class="b pri" id="bDeploy">Deploy Now</button><button class="b" id="bRefresh">Refresh</button><button class="b" id="bCancel">Cancel Pending</button></div>
   <div id="msg" class="mu"></div>
   <div class="g2"><div class="cd" id="cur"></div><div class="cd" id="act"></div></div>
+  <div class="cd" style="overflow-x:auto"><div class="bar" style="justify-content:space-between;margin-bottom:6px"><h2 style="margin:0">Work Log <span class="mu" id="wsum"></span></h2></div>
+    <table><thead><tr><th style="width:36px">#</th><th>Task</th><th>Status</th><th style="width:150px">Progress</th><th>Updated</th></tr></thead><tbody id="wl"></tbody></table></div>
   <div class="cd" style="overflow-x:auto"><div class="bar" style="justify-content:space-between;margin-bottom:6px"><h2 style="margin:0">History</h2><div class="bar" id="flt"></div></div>
     <table><thead><tr><th>Version</th><th>Subject</th><th>Status</th><th>Duration</th><th>Deployed</th><th>Action</th></tr></thead><tbody id="hist"></tbody></table></div>
   <details class="cd"><summary style="cursor:pointer;font-weight:700;font-size:13px">Automation settings</summary><div class="bar" style="margin-top:8px"><label class="mu">Mode</label><select id="sMode"><option value="auto">Automatic — deploy every new commit</option><option value="hold">Hold — wait for my Deploy Now</option></select><label class="mu">Branch</label><input id="sBranch" style="width:110px"><button class="b" id="sSave">Save</button></div><div class="mu" id="head" style="margin-top:6px"></div></details>
@@ -63,6 +65,9 @@ function render(){
   $('flt').innerHTML=FL.map(function(x){return '<button class="b'+(F===x[0]?' pri':'')+'" data-f="'+x[0]+'">'+x[1]+'</button>'}).join('');
   var rows=D.history.filter(show);
   $('hist').innerHTML=rows.map(function(r){return '<tr><td><b>'+esc(r.version||'—')+'</b></td><td>'+esc(r.subject||'')+(r.attempts.length>1?' <span class="mu">('+r.attempts.length+' attempts)</span>':'')+'</td><td>'+pill(r.badge)+'</td><td>'+dur(r.dur)+'</td><td>'+esc(r.short||'')+'</td><td style="white-space:nowrap"><button class="b" data-v="'+r.id+'">View</button>'+(r.retry?' <button class="b" data-r="'+r.retry+'">Retry</button>':'')+'</td></tr>'}).join('')||'<tr><td colspan="6" class="mu">Nothing to show for this filter.</td></tr>';
+  var T=D.tasks||[],WC={done:['#14532D','#BBF7D0','DONE'],partial:['#B45309','#FEF3C7','PARTIAL'],pending:['#4B5563','#F3F4F6','PENDING'],blocked:['#B91C1C','#FEE2E2','BLOCKED']};
+  if($('wl')){var dn=T.filter(function(x){return x.status==='done'}).length;$('wsum').textContent=T.length?'· '+dn+' of '+T.length+' complete':'';
+   $('wl').innerHTML=T.map(function(x,i){var c=WC[x.status]||WC.pending;return '<tr><td><b>'+(i+1)+'</b></td><td>'+esc(x.title)+(x.note?'<div class="mu">'+esc(x.note)+'</div>':'')+'</td><td><span class="pl" style="color:'+c[0]+';background:'+c[1]+'">'+c[2]+'</span></td><td><div class="pb" style="margin:0 0 3px"><i style="width:'+x.percent+'%;background:'+(x.status==='done'?'#16A34A':'#FF5A00')+'"></i></div><b>'+x.percent+'%</b></td><td class="mu">'+esc(x.at)+'</td></tr>'}).join('')||'<tr><td colspan="5" class="mu">No tasks yet.</td></tr>'}
   var act=!!a;$('bDeploy').disabled=act;if($('bRoll'))$('bRoll').disabled=act;$('bCancel').disabled=!(a&&a.status==='Queued');
 }
 function load(u,m){if(busy)return;busy=true;return fetch(u,{method:m||'GET',credentials:'same-origin',headers:{Accept:'application/json','X-CSRF-TOKEN':csrf()}}).then(function(r){return r.json()}).then(function(j){D=j;T0=Date.now()/1000-D.ts;render()}).catch(function(){}).then(function(){busy=false})}

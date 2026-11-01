@@ -43,10 +43,19 @@ class DeployController extends Controller
     $log = is_file(Deployer::D . '/last.log') ? implode("\n", array_slice(explode("\n", (string)@file_get_contents(Deployer::D . '/last.log')), -80)) : '';
     return ['enabled' => Deployer::enabled(), 'liveId' => $live, 'current' => $cur, 'active' => $act, 'history' => $rows, 'head' => $head, 'ts' => time(),
       'headState' => !$head ? 'unknown' : ($headRow ? ($headRow->release_id === $live ? 'live' : strtolower($headRow->status)) : (Deployer::mode() === 'hold' ? 'waiting' : 'pending')),
+      'tasks' => \Illuminate\Support\Facades\Schema::hasTable('work_log') ? DB::table('work_log')->orderBy('id')->get(['id', 'title', 'status', 'percent', 'note', 'updated_at'])->map(fn($t) => (array)$t + ['at' => \Carbon\Carbon::parse($t->updated_at, 'UTC')->timezone('Asia/Dhaka')->format('d M · g:i A')])->all() : [],
       'mode' => Deployer::mode(), 'branch' => Deployer::branch(), 'log' => $log, 'now' => now()->timezone('Asia/Dhaka')->format('h:i:s A')];
   }
 
   public function index() { $this->guard(); return view('deploy', ['d' => $this->data()]); }
+  public function taskSave(Request $r) {
+    $this->guard(); $v = $r->validate(['id' => 'nullable|integer', 'title' => 'nullable|string|max:200', 'status' => 'nullable|in:pending,partial,done,blocked', 'percent' => 'nullable|integer|min:0|max:100', 'note' => 'nullable|string|max:1000']);
+    $u = array_filter(['title' => $v['title'] ?? null, 'status' => $v['status'] ?? null, 'percent' => $v['percent'] ?? null, 'note' => $v['note'] ?? null], fn($x) => $x !== null);
+    if (($v['status'] ?? '') === 'done' && !isset($u['percent'])) $u['percent'] = 100;
+    if (!empty($v['id'])) DB::table('work_log')->where('id', $v['id'])->update($u + ['updated_at' => now()]);
+    elseif (!empty($u['title'])) $v['id'] = DB::table('work_log')->insertGetId($u + ['created_at' => now(), 'updated_at' => now()]);
+    return response()->json(['ok' => true, 'id' => $v['id'] ?? null]);
+  }
   public function status() { $this->guard(); return response()->json($this->data())->header('Cache-Control', 'no-store'); }
   public function refresh() { $this->guard(); Deployer::tick(true); \Cache::forget('deploy_head_' . Deployer::branch()); Deployer::head(true); return response()->json($this->data())->header('Cache-Control', 'no-store'); }
 
