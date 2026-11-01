@@ -51,7 +51,7 @@ d787924ace3fa42cc66a3de321e4e94e784006d8 resources/views/panels/employees.blade.
 73aff21a28277ba52dd45d59d005c8394b20cc2c app/Http/Controllers/StoreController.php
 3561f23ca29744324ad7eb289cdd67c5a09345a9 resources/views/store/layout.blade.php
 f2fdd5f72dea44d4b82418630faaf0ca6c90d261 resources/views/store/card.blade.php
-59152cc79e9e63622c39ac8fc5de4522b42a8b24 resources/views/store/home.blade.php
+fe07f94018d11b608f3ef330eabfa9f7574af889 resources/views/store/home.blade.php
 6aa949a4e1ea5de5298971728076fad706a3c256 resources/views/store/category.blade.php
 aa2d795f0101cf2a736e851d6c14cc20faeb6cd4 resources/views/store/product.blade.php
 7ad9d9502d41f54d6784414a9aa3f16a8ab0ec13 resources/views/store/search.blade.php
