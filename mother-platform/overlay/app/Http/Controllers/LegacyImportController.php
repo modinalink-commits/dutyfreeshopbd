@@ -35,6 +35,8 @@ class LegacyImportController extends Controller
     $d = ['staged' => $q('true'), 'real' => $q(self::REAL), 'test' => $q('not ('.self::REAL.')'), 'matched' => $q(self::REAL." and $m"), 'new' => $q(self::REAL." and not $m"), 'with_orders' => $q('l.orders_count > 0'),
       'sum_orders' => (int)DB::selectOne('select coalesce(sum(orders_count),0) n from legacy_customers')->n, 'sum_amount' => (float)DB::selectOne('select coalesce(sum(orders_amount),0) n from legacy_customers')->n,
       'email' => $q("coalesce(l.email,'') <> ''"), 'done' => $q("l.action is not null"), 'now' => (int)DB::table('customers')->count()];
+    $d['top'] = DB::select("select phone, name, orders_count, orders_amount from legacy_customers order by orders_amount desc limit 12");
+    $d['huge'] = $q('l.orders_amount > 5000000');
     $d['tiers'] = DB::select("select coalesce(".self::TIER.", 'Regular') t, count(*) n from legacy_customers l where ".self::REAL." group by 1 order by 2 desc");
     return view('legacy_import', ['d' => $d]);
   }
