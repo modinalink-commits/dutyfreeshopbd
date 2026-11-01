@@ -143,6 +143,17 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::post('/sms/test', [\App\Http\Controllers\SmsController::class,'test']);
   Route::post('/sms/balance', [\App\Http\Controllers\SmsController::class,'balance']);
   Route::post('/sms/flush', [\App\Http\Controllers\SmsController::class,'flush']);
+  Route::prefix('sms-marketing')->group(function () {
+    $C = \App\Http\Controllers\SmsMarketingController::class;
+    Route::get('/', [$C,'dashboard']); Route::get('/send', [$C,'compose']); Route::post('/estimate', [$C,'estimate']); Route::post('/send', [$C,'send']);
+    Route::get('/customers', [$C,'customers']);
+    Route::get('/templates', [$C,'templates']); Route::post('/templates', [$C,'templateSave']); Route::post('/templates/delete', [$C,'templateDelete']);
+    Route::get('/campaigns', [$C,'campaigns']); Route::get('/campaigns/{id}', [$C,'campaign'])->whereNumber('id'); Route::post('/campaigns/{id}/action', [$C,'campaignAction'])->whereNumber('id');
+    Route::get('/automation', [$C,'automation']); Route::post('/automation', [$C,'automationSave']);
+    Route::get('/reports', [$C,'reports']); Route::get('/reports/export/csv', [$C,'export']);
+    Route::get('/settings', [$C,'settings']); Route::post('/settings', [$C,'settingsSave']); Route::post('/optout', [$C,'optout']);
+    Route::post('/quick', [$C,'quick']); Route::get('/history', [$C,'history']);
+  });
   Route::get('/inventory', [\App\Http\Controllers\InventoryController::class,'index']);
   Route::get('/inventory/export/{fmt}', [\App\Http\Controllers\InventoryController::class,'export']);
   Route::get('/stores', [\App\Http\Controllers\InventoryController::class,'stores']);

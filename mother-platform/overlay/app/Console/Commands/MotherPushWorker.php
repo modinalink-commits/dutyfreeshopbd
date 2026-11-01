@@ -27,6 +27,8 @@ class MotherPushWorker extends Command
     try { $this->chat(); } catch (\Throwable $e) { $this->error('chat: ' . $e->getMessage()); }
     try { \App\Support\Deployer::tick(); } catch (\Throwable $e) { $this->error('deploy: ' . $e->getMessage()); }
     try { $this->campaigns(); } catch (\Throwable $e) { $this->error('campaigns: ' . $e->getMessage()); }
+    try { \App\Support\SmsMarketing::tick(); } catch (\Throwable $e) { $this->error('sms: ' . $e->getMessage()); }
+    try { $this->smsAuto(); } catch (\Throwable $e) { $this->error('smsauto: ' . $e->getMessage()); }
     return 0;
   }
 
@@ -64,5 +66,38 @@ class MotherPushWorker extends Command
 
   private function campaigns(): void {
     foreach (DB::table('push_campaigns')->whereIn('status', ['scheduled', 'sending'])->where(fn($q) => $q->whereNull('schedule_at')->orWhere('schedule_at', '<=', now()))->orderBy('id')->limit(3)->pluck('id') as $id) Push::runCampaign((int)$id, 200);
+  }
+
+  /** SMS automations: order status changes, new customers, incomplete-order recovery, win-back. */
+  private function smsAuto(): void {
+    if (!\Illuminate\Support\Facades\Schema::hasTable('sms_automations') || !DB::table('sms_automations')->where('active', true)->exists()) return;
+    $M = \App\Support\SmsMarketing::class;
+    $cur = $this->cursor('sms_log_cursor', fn() => (int)DB::table('order_status_logs')->max('id'));
+    if ($cur >= 0) {
+      $map = ['Approved' => 'order_confirmed', 'Packaging' => 'order_processing', 'Shipment' => 'order_shipped', 'Delivered' => 'order_delivered', 'Cancel' => 'order_cancelled', 'Returned' => 'order_returned'];
+      foreach (DB::table('order_status_logs')->where('id', '>', $cur)->orderBy('id')->limit(100)->get() as $l) {
+        $cur = $l->id; $o = DB::table('orders')->find($l->order_id); if (!$o || !$o->phone) continue;
+        $v = ['customer_name' => $o->customer_name, 'order_id' => $o->invoice, 'invoice' => $o->invoice, 'total' => number_format((float)$o->total), 'tracking_id' => (string)($o->consignment_id ?? ''), 'delivery_status' => (string)($o->courier_status ?? $o->status), 'discount' => number_format((float)($o->discount ?? 0))];
+        if (str_starts_with((string)$l->note, 'Payment Verified')) { $M::auto('payment_verified', $o->phone, $v, 'pv'.$o->id, (int)$o->id); continue; }
+        if ($l->from_status !== $l->to_status && isset($map[$l->to_status])) $M::auto($map[$l->to_status], $o->phone, $v, $map[$l->to_status].$o->id, (int)$o->id);
+      }
+      $this->setCursor('sms_log_cursor', (int)$cur);
+    }
+    $cc = $this->cursor('sms_cust_cursor', fn() => (int)DB::table('customers')->max('id'));
+    if ($cc >= 0) {
+      foreach (DB::table('customers')->where('id', '>', $cc)->orderBy('id')->limit(50)->get() as $c) { $cc = $c->id; if ($c->phone) $M::auto('welcome', $c->phone, ['customer_name' => $c->name], 'w'.$c->id, null, (int)$c->id); }
+      $this->setCursor('sms_cust_cursor', (int)$cc);
+    }
+    $rec = DB::table('sms_automations')->where('trigger', 'incomplete_recovery')->where('active', true)->first();
+    if ($rec) {
+      $mins = max(15, (int)($rec->param ?: 60));
+      foreach (DB::table('incomplete_orders')->where('status', 'open')->where('last_activity_at', '<=', now()->subMinutes($mins))->where('last_activity_at', '>=', now()->subDay())->limit(30)->get() as $i)
+        $M::auto('incomplete_recovery', $i->phone, ['customer_name' => $i->name ?: 'Customer', 'total' => number_format((float)$i->total), 'checkout_link' => url('/checkout')], 'ir'.$i->id);
+    }
+    $in = DB::table('sms_automations')->where('trigger', 'inactive')->where('active', true)->first();
+    if ($in && $this->cursor('sms_inactive_day', fn() => 0) !== (int)date('Ymd')) {
+      $this->setCursor('sms_inactive_day', (int)date('Ymd'));
+      foreach ($M::audience([], ['no_order_days' => max(1, (int)($in->param ?: 90)), 'min_orders' => 1]) as $r) $M::auto('inactive', $r->num, $M::vars($r), 'in'.$r->id.date('Ym'), null, $r->id);
+    }
   }
 }

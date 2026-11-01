@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>@yield('title','Mother Commerce')</title>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="csrf-token" content="{{ csrf_token() }}"><title>@yield('title','Mother Commerce')</title>
 <style>
 :root{--o:#FF5A00;--n:#0B1220;--bg:#FFFBF8;--bd:#FDC2A5}
 *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;background:var(--bg);color:var(--n);display:flex;min-height:100vh}
@@ -45,4 +45,23 @@ table.ordt>tbody>tr:hover{filter:drop-shadow(0 4px 10px rgba(15,23,42,.08))}
 @auth @include('chat_widget') @include('softphone_fab') @endauth
 @yield('js')
 @auth<script src="/js/df-export.js?v=2" defer></script>@endauth
+
+@if(auth()->check())
+<div id="dfsm" style="display:none;position:fixed;inset:0;background:rgba(10,20,50,.55);z-index:99999;align-items:center;justify-content:center;padding:14px"><div class="card" style="max-width:460px;width:100%;margin:0;max-height:92vh;overflow:auto">
+<b style="font-size:16px">Send SMS <span id="dfsmw" style="font-weight:400;font-size:13px;color:#6B7280"></span></b>
+<label>Template</label><select id="dfsmt"><option value="">— write your own —</option></select>
+<label>Message</label><textarea id="dfsmb" rows="4" maxlength="1000"></textarea><div style="font-size:11px;color:#6B7280">Use {customer_name}. <span id="dfsmc"></span></div>
+<div style="display:flex;gap:8px;margin-top:10px"><button type="button" id="dfsms">Send</button><button type="button" class="g" id="dfsmx">Close</button></div><div id="dfsmr" style="font-size:13px;margin-top:8px"></div>
+<details style="margin-top:8px"><summary style="cursor:pointer;font-size:12px;font-weight:600">SMS history</summary><div id="dfsmh" style="font-size:12px;margin-top:6px"></div></details></div></div>
+<script>(function(){var m=document.getElementById('dfsm'),ph='',nm='',loaded=false,T=[];
+function tk(){var e=document.querySelector('meta[name=csrf-token]');return e?e.content:''}
+function post(u,d){return fetch(u,{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':tk(),Accept:'application/json'},body:JSON.stringify(d)}).then(function(r){return r.json()})}
+window.dfSms=function(p,n){ph=p;nm=n||'';document.getElementById('dfsmw').textContent='to '+(nm?nm+' · ':'')+p;document.getElementById('dfsmr').textContent='';document.getElementById('dfsmb').value='';m.style.display='flex';
+if(!loaded){loaded=true;fetch('/admin/sms-marketing/send',{headers:{Accept:'text/html'}}).then(function(r){return r.text()}).then(function(h){var d=new DOMParser().parseFromString(h,'text/html'),s=document.getElementById('dfsmt');[].forEach.call(d.querySelectorAll('#tpl option[data-b]'),function(o){var x=document.createElement('option');x.textContent=o.textContent;x.dataset.b=o.dataset.b;s.appendChild(x)})}).catch(function(){})}
+var H=document.getElementById('dfsmh');H.textContent='Loading…';fetch('/admin/sms-marketing/history?phone='+encodeURIComponent(p),{headers:{Accept:'application/json'}}).then(function(r){return r.json()}).then(function(a){H.innerHTML=a.length?a.map(function(x){return '<div style="border-top:1px solid #eee;padding:4px 0"><b>'+x.at+'</b> · '+x.status+'<br>'+x.body.replace(/</g,'&lt;')+'</div>'}).join(''):'No SMS yet.'});return true};
+document.getElementById('dfsmt').onchange=function(){var o=this.options[this.selectedIndex];if(o.dataset.b)document.getElementById('dfsmb').value=o.dataset.b};
+document.getElementById('dfsmx').onclick=function(){m.style.display='none'};
+document.getElementById('dfsms').onclick=function(){var b=document.getElementById('dfsmb').value.trim(),r=document.getElementById('dfsmr');if(!b){r.textContent='Write a message first.';return}
+r.textContent='Sending…';post('/admin/sms-marketing/quick',{phone:ph,name:nm,body:b}).then(function(j){r.style.color=j.ok?'#166534':'#B91C1C';r.textContent=j.ok?('SMS '+j.status+'.'):(j.msg||'Failed')}).catch(function(){r.style.color='#B91C1C';r.textContent='Could not send.'})};})();</script>
+@endif
 </body></html>

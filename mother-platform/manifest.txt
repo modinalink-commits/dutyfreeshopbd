@@ -210,3 +210,16 @@ resources/views/deploy.blade.php
 app/Support/Deployer.php
 database/migrations/2026_11_01_000002_deployments.php
 database/migrations/2026_11_01_000003_category_tree.php
+app/Support/SmsMarketing.php
+app/Http/Controllers/SmsMarketingController.php
+database/migrations/2026_11_01_000004_sms_marketing.php
+resources/views/smsmk/nav.blade.php
+resources/views/smsmk/dashboard.blade.php
+resources/views/smsmk/compose.blade.php
+resources/views/smsmk/customers.blade.php
+resources/views/smsmk/templates.blade.php
+resources/views/smsmk/campaigns.blade.php
+resources/views/smsmk/campaign.blade.php
+resources/views/smsmk/automation.blade.php
+resources/views/smsmk/reports.blade.php
+resources/views/smsmk/settings.blade.php
