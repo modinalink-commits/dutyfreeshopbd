@@ -189,6 +189,7 @@ resources/views/store/offline.blade.php
 resources/views/store/pwa.blade.php
 resources/views/store/pwa_head.blade.php
 resources/views/store/pwa_splash.blade.php
+resources/views/store/minicart.blade.php
 public/pwa/icon-192.png
 public/pwa/icon-512.png
 public/pwa/maskable-512.png
