@@ -54,6 +54,7 @@ class LegacyProductController extends Controller
       'old active (matched)' => $q('select count(*) n from legacy_products l join products p on p.ext_id = l.old_id where l.status = 1'),
     ];
     $d['liveonly'] = DB::select('select p.ext_id, p.name, p.price, p.published from products p where p.ext_id is not null and not exists (select 1 from legacy_products l where l.old_id = p.ext_id) order by p.ext_id desc limit 10');
+    $d['msample'] = DB::select("select l.old_id, left(l.name,28) n, l.price o_price, l.sale_price o_sale, l.purchase_price o_cost, (l.raw->>'discount') o_d1, (l.raw->>'double_products_discount') o_d2, (l.raw->>'triple_products_discount') o_d3, p.price p_price, p.offer_price p_offer, p.compare_price p_cmp, p.cost p_cost, p.buy1_price b1, p.buy2_price b2, p.buy3_price b3, p.buy4_price b4, p.buy5_price b5, p.published pub, l.status o_st from legacy_products l join products p on p.ext_id = l.old_id where l.raw->>'double_products_discount' <> '0' order by l.old_id desc limit 6");
     $d['status'] = DB::select('select coalesce(status::text, \'null\') s, count(*) n from legacy_products group by 1 order by 2 desc');
     $d['unm_by_status'] = DB::select('select coalesce(l.status::text, \'null\') s, count(*) n from legacy_products l where not exists (select 1 from products p where p.ext_id = l.old_id) group by 1 order by 2 desc');
     $d['sample'] = DB::select('select l.old_id, l.name, l.status, l.price, l.stock from legacy_products l where not exists (select 1 from products p where p.ext_id = l.old_id) order by l.old_id desc limit 12');
