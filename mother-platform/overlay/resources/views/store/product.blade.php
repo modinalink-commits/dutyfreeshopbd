@@ -59,10 +59,27 @@
 <div class="cm"><a href="tel:{{ $s['pp_call'] }}"><span class="ic">{!! '<svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1z"/></svg>' !!}</span><span class="t"><b>Call us</b>{{ $s['pp_call'] }}</span></a><a href="{{ $msgLink }}" rel="noopener"><span class="ic" style="background:#DCFCE7;color:#16A34A">✆</span><span class="t"><b>Message us</b>{{ $s['whatsapp_number'] }}</span></a></div>
 </div>
 @if($s['pp_related']==='1')
-<div class="rs"><div class="h">Related Products</div>@foreach($side as $r)
-@php $roff = $r->compare_price && $r->compare_price > $r->price; @endphp
-<a href="{{ \App\Http\Controllers\StoreController::url($r) }}"><span class="ri">@if($r->image)<img src="{{ $r->image }}" alt="{{ $r->name }}" width="46" height="46" loading="lazy" draggable="false">@endif</span><span class="rt2"><span>{{ $r->name }}</span><span>{{ number_format($r->price) }}TK @if($roff)<s>{{ number_format($r->compare_price) }}TK</s>@endif</span></span></a>
+<div class="rs rsx"><div class="rsx-h"><span class="rpx-ic"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1 12H6L5 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></span><h3>Related Products</h3><a href="{{ $c ? '/'.$c->slug.'/' : '/' }}" class="rpx-all">View All <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></a></div>@foreach($side as $r)
+@php $ru = \App\Http\Controllers\StoreController::url($r); $ro = \App\Http\Controllers\StoreController::off($r); $rin = ($r->stock ?? 1) > 0; $ra = (float)$r->rv_avg; @endphp
+<article class="rsx-c"><a class="rsx-i" href="{{ $ru }}"><img src="{{ $r->image ?: '/icon.png' }}" alt="{{ $r->name }}" width="72" height="72" loading="lazy" draggable="false" onerror="this.onerror=null;this.src='/icon.png'"></a>
+<div class="rsx-b"><a class="rsx-n" href="{{ $ru }}">{{ $r->name }}</a>
+@if($r->rv_n > 0)<div class="rpx-r"><span class="rpx-s" style="--p:{{ round($ra / 5 * 100) }}%" aria-hidden="true">★★★★★</span><b>{{ number_format($ra, 1) }}</b><em>({{ $r->rv_n }})</em></div>@else<div class="rpx-r"><em>No reviews yet</em></div>@endif
+<div class="rpx-p"><b>৳{{ number_format($r->price) }}</b>@if($ro > 0)<s>৳{{ number_format($r->compare_price) }}</s><span class="rpx-off">{{ $ro }}% OFF</span>@endif</div>
+<span class="rpx-st {{ $rin ? '' : 'no' }}">{{ $rin ? 'In Stock' : 'Out of Stock' }}</span></div>
+@if($rin)<button type="button" class="rpx-cart rsx-cart" data-id="{{ $r->id }}" data-p="{{ (float)$r->price }}" aria-label="Add to Cart"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 2h4l2.7 12.4a2 2 0 0 0 2 1.6h8.7a2 2 0 0 0 2-1.6L22 7H6"/><circle cx="10" cy="20.5" r="1.4"/><circle cx="18" cy="20.5" r="1.4"/></svg></button>@endif</article>
 @endforeach</div>
+<style>
+.rsx{background:#fff;border:1px solid #F3EDE8;box-shadow:0 4px 18px rgba(15,23,42,.06);padding:14px;gap:10px;min-height:0}
+.rsx-h{display:flex;align-items:center;gap:9px;margin-bottom:4px}.rsx-h .rpx-ic{width:34px;height:34px;border-radius:11px}
+.rsx-h h3{margin:0;font-size:16px;font-weight:800;color:var(--n);border:0;padding:0}.rsx-h .rpx-all{font-size:12.5px}
+.rsx-c{position:relative;display:flex;gap:10px;align-items:center;background:#FFFDFB;border:1px solid #F3EDE8;border-radius:14px;padding:9px;transition:box-shadow .15s,transform .15s}.rsx-c:hover{box-shadow:0 8px 20px rgba(15,23,42,.10);transform:translateY(-1px)}
+.rs .rsx-i{flex:none;width:72px;height:72px;border-radius:11px;background:#FAF7F4;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:0;gap:0}.rsx-i img{max-width:100%;max-height:100%;object-fit:contain}
+.rsx-b{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;padding-right:38px}
+.rs .rsx-n{background:none;padding:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--n);font-weight:700;font-size:12.5px;line-height:1.3;text-decoration:none}
+.rsx .rpx-r{font-size:11px;gap:4px}.rsx .rpx-s{font-size:12px}.rsx .rpx-p b{font-size:14px}.rsx .rpx-p s{font-size:11px}.rsx .rpx-p{gap:5px}.rsx .rpx-off{font-size:10px;padding:2px 6px;border-radius:6px}.rsx .rpx-st{font-size:10.5px;padding:2px 7px;border-radius:7px}
+.rs .rsx-h .rpx-all{background:none;padding:0;margin-left:auto;display:inline-flex}
+.rsx-cart{min-width:34px;width:34px;height:34px;padding:0;border-radius:11px;right:9px;bottom:9px}
+</style>
 @endif
 </div>
 <div class="w" style="padding-top:16px;padding-bottom:40px">
@@ -104,7 +121,7 @@
 @media(min-width:900px){.rpx-cart span{display:inline}.rpx-b{padding-right:0;padding-bottom:50px}.rpx-cart{right:14px;bottom:12px}}
 @media(max-width:899px){.rpx-g{grid-template-columns:1fr}.rpx-h h2{font-size:21px}.rpx-i{width:104px;height:104px}}
 </style>
-<script>document.querySelectorAll('.rpx-cart').forEach(function(b){b.addEventListener('click',function(){var id=b.getAttribute('data-id'),pr=+b.getAttribute('data-p');DF.add(id,1,pr);DF.ev('add_to_cart',{value:pr,items:[{item_id:String(id),price:pr,quantity:1}]});b.classList.add('ok');setTimeout(function(){b.classList.remove('ok')},1500)})});</script>
+<script>document.querySelectorAll('.rpx-cart,.rsx-cart').forEach(function(b){b.addEventListener('click',function(){var id=b.getAttribute('data-id'),pr=+b.getAttribute('data-p');DF.add(id,1,pr);DF.ev('add_to_cart',{value:pr,items:[{item_id:String(id),price:pr,quantity:1}]});b.classList.add('ok');setTimeout(function(){b.classList.remove('ok')},1500)})});</script>
 @endif
 </div>
 @include('store.zoom')
