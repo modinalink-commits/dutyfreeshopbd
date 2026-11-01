@@ -23,7 +23,7 @@ class AccountController extends StoreController {
   const STEP_OF = ['New'=>0, 'Incomplete'=>0, 'Pre Order'=>0, 'AI Order'=>0, 'Assign'=>1, 'Pending'=>1, 'Approved'=>1, 'Scheduled'=>2, 'WFP'=>2, 'Packaging'=>3, 'Shipment'=>4, 'Late Delivery'=>4, 'Partial Delivered'=>4, 'Delivered'=>5];
 
   private function norm($v): ?string { $p = Chat::phone((string)$v); return $p && preg_match('/^01[3-9]\d{8}$/', $p) ? $p : null; }
-  private function me(Request $r): ?object {
+  public function me(Request $r): ?object {
     $tok = (string)$r->cookie('dfa'); if (strlen($tok) < 30) return null;
     $s = DB::table('customer_sessions')->where('token_hash', hash('sha256', $tok))->where(fn($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))->first();
     if (!$s) return null;
@@ -181,6 +181,7 @@ class AccountController extends StoreController {
       $d['threads'] = $th->map(fn($t) => ['t'=>$t, 'msgs'=>DB::table('chat_messages')->where('thread_id', $t->id)->orderByDesc('id')->limit(30)->get()->reverse()->values()]);
     }
     if ($tab === 'notifications') $d['notes'] = $this->notes($c, $all);
+    if ($tab === 'notifications') { $d['hist'] = DB::table('customer_notifications')->where('customer_id', $c->id)->orderByDesc('id')->limit(60)->get(); $d['prefs'] = \App\Support\Push::prefs((int)$c->id); }
     if ($tab === 'security') $d['sessions'] = DB::table('customer_sessions')->where('customer_id', $c->id)->orderByDesc('last_at')->get();
     return $this->view('store.account', $d);
   }

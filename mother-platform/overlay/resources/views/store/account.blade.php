@@ -128,8 +128,32 @@ table.t.rs thead{display:none}table.t.rs,table.t.rs tbody,table.t.rs tr,table.t.
 @endif
 
 @if($tab==='notifications')
-<div class="bx"><h2>Notifications</h2>@if(!count($notes))<p style="color:#6B7280;font-size:13.5px;margin:0">কোনো নোটিফিকেশন নেই।</p>@endif
+<div class="bx" id="nApp"><h2>Install DutyFreeBD App</h2><div class="nrow"><div><b id="nAppT">Install App</b><small id="nAppS">Open DutyFreeBD from your home screen like an app.</small></div><button type="button" class="nbtn" id="nAppB">Install App</button></div>
+<div class="nrow"><div><b>Notifications: <span id="nPushT">…</span></b><small id="nPushS">Order updates and special offers on this device.</small></div><button type="button" class="nbtn" id="nPushB" style="display:none">Enable</button></div></div>
+<div class="bx"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px"><h2 style="margin:0;flex:1">Notifications</h2>@if($hist->whereNull('read_at')->count())<button type="button" class="nbtn" id="nAll">Mark all as read</button>@endif</div>
+@if(!count($notes) && $hist->isEmpty())<p style="color:#6B7280;font-size:13.5px;margin:0">কোনো নোটিফিকেশন নেই।</p>@endif
+@foreach($hist as $h)<a class="ntf nhs {{ $h->read_at ? '' : 'un' }}" data-id="{{ $h->id }}" href="{{ $h->url ?: '/account/notifications' }}"><i>{{ ['offers'=>'🔥','coupons'=>'🎟','membership'=>'⭐','delivery'=>'🚚','support'=>'💬'][$h->category] ?? '📦' }}</i><div><b style="display:block;font-size:13.5px">{{ $h->title }}</b>{{ $h->body }}<small>{{ $dt($h->created_at)->format('d M Y, h:i A') }} · {{ \App\Support\Push::CATEGORIES[$h->category] ?? '' }}</small></div></a>@endforeach
 @foreach($notes as $n)<a class="ntf" href="{{ $n['href'] }}"><i>{{ $n['icon'] }}</i><div>{{ $n['text'] }}<small>{{ $dt($n['at'])->format('d M Y, h:i A') }}</small></div></a>@endforeach</div>
+<div class="bx"><h2>Notification Settings</h2><form id="nPrefs">@foreach(\App\Support\Push::CATEGORIES as $k => $l)<label class="nsw"><span>{{ $l }}</span><input type="checkbox" name="{{ $k }}" value="1" {{ ($prefs[$k] ?? true) ? 'checked' : '' }}><i></i></label>@endforeach</form><small style="color:#6B7280;display:block;margin-top:8px">Marketing notifications (offers, coupons, membership) can be turned off any time. Order confirmations are always delivered.</small><span id="nPrefsOk" style="display:none;color:#16A34A;font-size:12.5px;font-weight:700">Saved ✓</span></div>
+<style>.nrow{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:12px 0;border-top:1px solid #F3EDE8}.nrow:first-of-type{border-top:0}.nrow small{display:block;color:#6B7280;font-size:12.5px;margin-top:2px}.nbtn{border:0;background:linear-gradient(135deg,#FF7A1A,#FF5A00);color:#fff;font-weight:700;font-size:13px;border-radius:11px;padding:9px 16px;cursor:pointer;white-space:nowrap}.nbtn.g{background:#E8F8EE;color:#15803D}
+.ntf.nhs.un{background:#FFF8F3;border-left:3px solid #FF5A00}.ntf.nhs.un b:after{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#FF5A00;margin-left:6px}
+.nsw{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-top:1px solid #F3EDE8;cursor:pointer;font-size:14px}.nsw:first-child{border-top:0}.nsw input{display:none}.nsw i{width:44px;height:25px;border-radius:25px;background:#D1D5DB;position:relative;transition:.2s;flex:none}.nsw i:after{content:"";position:absolute;left:3px;top:3px;width:19px;height:19px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.25)}.nsw input:checked+i{background:#FF5A00}.nsw input:checked+i:after{left:22px}</style>
+<script>(function(){
+var P=window.DFPWA||{};function $(i){return document.getElementById(i)}
+var ab=$('nAppB'),at=$('nAppT'),as=$('nAppS');
+function app(){if(P.installed&&P.installed()){at.textContent='App Installed ✓';as.textContent='DutyFreeBD is installed on this device.';ab.style.display='none'}else{ab.style.display=''}}
+ab.onclick=function(){P.install&&P.install('auto')};app();document.addEventListener('dfpwa:installed',app);
+var pb=$('nPushB'),pt=$('nPushT'),ps=$('nPushS');
+function sup(){return 'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window}
+function paint(on){pt.textContent=on?'Enabled':'Disabled';pb.style.display='';pb.textContent=on?'Turn off':'Enable';pb.className='nbtn'+(on?' g':'')}
+async function cur(){var reg=await navigator.serviceWorker.ready;return reg.pushManager.getSubscription()}
+if(!sup()){pt.textContent='Not supported';ps.textContent=(P.isIOS&&!(P.standalone&&P.standalone()))?'iPhone: install the app to Home Screen first, then enable notifications.':'This browser does not support notifications.'}
+else{cur().then(function(s){paint(!!s&&Notification.permission==='granted')});
+pb.onclick=async function(){var s=await cur();if(s&&Notification.permission==='granted'){await P.pushOff();paint(false)}else{var ok=await P.pushOn();paint(!!ok);if(!ok&&Notification.permission==='denied')ps.textContent='Notifications are blocked in your browser settings.'}}}
+var all=$('nAll');if(all)all.onclick=function(){fetch('/push/read',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:'all'}),credentials:'same-origin'}).then(function(){document.querySelectorAll('.nhs.un').forEach(function(e){e.classList.remove('un')});all.remove()})};
+document.querySelectorAll('.nhs.un').forEach(function(a){a.addEventListener('click',function(){navigator.sendBeacon&&navigator.sendBeacon('/push/read',new Blob([JSON.stringify({id:a.dataset.id})],{type:'application/json'}))})});
+var f=$('nPrefs');if(f)f.addEventListener('change',function(){var d={};f.querySelectorAll('input').forEach(function(i){d[i.name]=i.checked?1:0});fetch('/push/prefs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d),credentials:'same-origin'}).then(function(){var o=$('nPrefsOk');o.style.display='inline';setTimeout(function(){o.style.display='none'},1800)})});
+})();</script>
 @endif
 
 @if($tab==='security')

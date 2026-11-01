@@ -11,6 +11,7 @@
 
 <div class="dfi" id="dfi" role="dialog" aria-label="Install DutyFreeBD App"><button type="button" class="dfi-x" id="dfi-no0" aria-label="Close">×</button><div class="dfi-h"><img src="/pwa/logo-240.png" alt="" width="48" height="52"><div><h3>Install DutyFreeBD App</h3><p>DutyFreeBD এখন আপনার ফোনে অ্যাপের মতো ব্যবহার করুন।</p></div></div>
 <ul><li>দ্রুত Shopping</li><li>Order Tracking</li><li>Special Offers</li><li>Push Notifications</li><li>Account Access</li><li>Faster Experience</li></ul><div class="dfi-a"><button type="button" class="dfi-go" id="dfi-go">Install App</button><button type="button" class="dfi-no" id="dfi-no">Not Now</button></div></div>
+<div class="dfi" id="dfn" role="dialog" aria-label="Notifications"><button type="button" class="dfi-x" id="dfn-no0" aria-label="Close">×</button><div class="dfi-h"><img src="/pwa/logo-240.png" alt="" width="48" height="52"><div><h3>Notifications</h3><p>DutyFreeBD-এর Order Update ও Special Offer Notification পেতে চান?</p></div></div><div class="dfi-a"><button type="button" class="dfi-go" id="dfn-go">Allow Notifications</button><button type="button" class="dfi-no" id="dfn-no">Not Now</button></div></div>
 <div class="dfu" id="dfu" role="status"><span>New Update Available</span><button type="button" id="dfu-go">Refresh</button></div>
 
 <style>
@@ -63,6 +64,21 @@ if(isIOS)schedule();
 function hide(){$('dfi').classList.remove('on');ss('dfiHide','1')}
 $('dfi-no').onclick=function(){ls('dfiNo',String(Date.now()));hide()};$('dfi-no0').onclick=$('dfi-no').onclick;
 $('dfi-go').onclick=function(){hide();install('auto')};
+
+// push notifications
+function pSup(){return 'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window}
+function u8(b){var p='='.repeat((4-b.length%4)%4),s=(b+p).replace(/-/g,'+').replace(/_/g,'/'),r=atob(s),o=new Uint8Array(r.length);for(var i=0;i<r.length;i++)o[i]=r.charCodeAt(i);return o}
+function pSend(s){return fetch('/push/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(s.toJSON()),credentials:'same-origin'})}
+window.DFPWA.pushOn=function(){if(!pSup())return Promise.resolve(false);return Notification.requestPermission().then(function(p){if(p!=='granted')return false;return navigator.serviceWorker.ready.then(function(reg){return fetch('/push/key').then(function(r){return r.json()}).then(function(k){return reg.pushManager.getSubscription().then(function(s){return s||reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:u8(k.key)})})}).then(function(s){return pSend(s).then(function(){return true})})})})['catch'](function(){return false})};
+window.DFPWA.pushOff=function(){return navigator.serviceWorker.ready.then(function(reg){return reg.pushManager.getSubscription().then(function(s){if(!s)return;return fetch('/push/unsubscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({endpoint:s.endpoint})}).then(function(){return s.unsubscribe()})})})};
+if(pSup()&&Notification.permission==='granted'&&!ss('dfPs')){ss('dfPs','1');navigator.serviceWorker.ready.then(function(reg){return reg.pushManager.getSubscription()}).then(function(s){if(s)pSend(s)})['catch'](function(){})}
+function nSchedule(){
+  if(!pSup()||Notification.permission!=='default'||ss('dfnHide'))return;if(!(standalone()||ls('dfInstalled')==='1'))return;var t=+ls('dfnNo')||0;if(t&&Date.now()-t<14*864e5)return;
+  if((+ss('dfPv')||0)<2)return;setTimeout(function(){if(ss('dfnHide')||$('dfi').classList.contains('on'))return;$('dfn').classList.add('on')},6000)}
+nSchedule();
+function nHide(){$('dfn').classList.remove('on');ss('dfnHide','1')}
+$('dfn-no').onclick=function(){ls('dfnNo',String(Date.now()));nHide()};$('dfn-no0').onclick=$('dfn-no').onclick;
+$('dfn-go').onclick=function(){nHide();window.DFPWA.pushOn()};
 // service worker + update prompt
 if('serviceWorker' in navigator){addEventListener('load',function(){navigator.serviceWorker.register('/pwa-sw').then(function(reg){
   function ready(w){var b=$('dfu');if(!b||!navigator.serviceWorker.controller)return;b.classList.add('on');$('dfu-go').onclick=function(){w.postMessage('SKIP_WAITING')}}

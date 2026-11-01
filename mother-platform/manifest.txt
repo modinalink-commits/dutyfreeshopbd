@@ -195,3 +195,10 @@ public/pwa/maskable-512.png
 public/pwa/apple-touch-180.png
 public/pwa/badge-96.png
 public/pwa/logo-240.png
+app/Support/WebPush.php
+app/Support/Push.php
+app/Http/Controllers/PushController.php
+app/Http/Controllers/PushAdminController.php
+app/Console/Commands/MotherPushWorker.php
+database/migrations/2026_11_01_000001_push_notifications.php
+resources/views/push_admin.blade.php

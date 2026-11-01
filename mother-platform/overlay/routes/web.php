@@ -15,6 +15,13 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::get('/', [A::class,'dashboard']);
   Route::get('/error-log', [\App\Http\Controllers\UploadController::class,'errorLog']);
   Route::post('/upload-image', [\App\Http\Controllers\UploadController::class,'image']);
+  Route::get('/push', [\App\Http\Controllers\PushAdminController::class,'index']);
+  Route::post('/push', [\App\Http\Controllers\PushAdminController::class,'store']);
+  Route::get('/push/count', [\App\Http\Controllers\PushAdminController::class,'count']);
+  Route::post('/push/device', [\App\Http\Controllers\PushAdminController::class,'device']);
+  Route::post('/push/test', [\App\Http\Controllers\PushAdminController::class,'test']);
+  Route::post('/push/{id}/cancel', [\App\Http\Controllers\PushAdminController::class,'cancel'])->whereNumber('id');
+  Route::post('/push/{id}/send', [\App\Http\Controllers\PushAdminController::class,'sendDraft'])->whereNumber('id');
   Route::get('/orders', [A::class,'orders']);
   Route::get('/orders/new', [A::class,'orderNew']);
   Route::get('/orders/lookup', [A::class,'orderLookup']);
@@ -187,6 +194,13 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestF
   Route::get('/account/{tab}', [\App\Http\Controllers\AccountController::class,'index'])->where('tab','[a-z]+');
   Route::get('/account/{tab}/{arg}', [\App\Http\Controllers\AccountController::class,'index'])->where(['tab'=>'[a-z]+','arg'=>'[A-Za-z0-9\-]+']);
   Route::get('/', [\App\Http\Controllers\StoreController::class,'home']);
+  Route::get('/push/key', [\App\Http\Controllers\PushController::class,'key']);
+  Route::post('/push/subscribe', [\App\Http\Controllers\PushController::class,'subscribe']);
+  Route::post('/push/unsubscribe', [\App\Http\Controllers\PushController::class,'unsubscribe']);
+  Route::get('/push/status', [\App\Http\Controllers\PushController::class,'status']);
+  Route::post('/push/clicked', [\App\Http\Controllers\PushController::class,'clicked']);
+  Route::post('/push/read', [\App\Http\Controllers\PushController::class,'read']);
+  Route::post('/push/prefs', [\App\Http\Controllers\PushController::class,'prefs']);
   Route::get('/manifest.webmanifest', [\App\Http\Controllers\PwaController::class,'manifest']);
   Route::get('/pwa-sw', [\App\Http\Controllers\PwaController::class,'sw']);
   Route::get('/offline', [\App\Http\Controllers\PwaController::class,'offline']);
