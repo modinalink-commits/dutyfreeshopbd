@@ -188,6 +188,13 @@ class ResController extends Controller {
       if ($f['t']==='json' && ($v===null || $v==='')) $v = null;
       $data[$n] = $v;
     }
+    if ($c['slug']==='sliders') {
+      if (($data['media_type'] ?? 'image')==='video') {
+        $vid = \App\Support\Youtube::id((string)($data['video_url'] ?? ''));
+        if (!$vid) throw \Illuminate\Validation\ValidationException::withMessages(['video_url'=>'Paste a valid YouTube link (watch, youtu.be, shorts or embed).']);
+        $data['video_id'] = $vid;
+      } else { $data['video_id'] = null; $data['media_type'] = 'image'; if (empty($data['image'])) throw \Illuminate\Validation\ValidationException::withMessages(['image'=>'Add a banner image for an image slide.']); }
+    }
     $new = !$id; $slugName = $c['slug'];
     // empty optional values must not overwrite NOT NULL columns that have a default (e.g. "Display order")
     try { $nn = collect(DB::select("select column_name from information_schema.columns where table_name = ? and is_nullable = 'NO' and column_default is not null", [$c['table']]))->pluck('column_name')->all(); foreach ($data as $k => $v) if ($v === null && in_array($k, $nn)) unset($data[$k]); } catch (\Throwable $e) {}

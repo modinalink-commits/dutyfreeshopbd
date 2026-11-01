@@ -15,7 +15,7 @@ class ModulePermission {
     if ($m !== null) { foreach ($map as $mod => $slugs) if (in_array($m, $slugs)) return $mod; return 'users'; }
     if (preg_match('#^purchase(/|$)#', $p)) return 'purchase';
     if (preg_match('#^(referral|winback|voice)(/|$)#', $p)) return 'marketing';
-    if (preg_match('#^(seo|commands|announcements)(/|$)#', $p)) return 'settings';
+    if (preg_match('#^(seo|commands|announcements|hero-slider)(/|$)#', $p)) return 'settings';
     if (preg_match('#^delivery(/|$)#', $p)) return 'couriers';
     if (preg_match('#^fraud(/|$)#', $p)) return 'customers';
     if (preg_match('#^customer-auth(/|$)#', $p)) return 'settings';
