@@ -287,3 +287,6 @@ app/Http/Controllers/CustAuthAdminController.php
 resources/views/customer_auth.blade.php
 resources/views/cust_login_info.blade.php
 resources/views/store/account_complete.blade.php
+database/migrations/2026_11_01_000015_dob_requests.php
+app/Http/Controllers/DobController.php
+resources/views/dob_requests.blade.php

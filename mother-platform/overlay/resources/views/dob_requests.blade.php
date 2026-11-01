@@ -1,0 +1,10 @@
+@extends('layout')@section('title','DOB Requests')
+@section('body')
+<div style="margin-bottom:10px"><h1 style="margin:0">Date of Birth Requests</h1><div style="font-size:12px;color:#6B7280">কাস্টমার জন্মতারিখ একবারই সেভ করতে পারে। পরিবর্তনের অনুরোধ এখানে অনুমোদন বা প্রত্যাখ্যান করুন।</div></div>
+@if(session('ok'))<div class="card" style="background:#ECFDF5;border-color:#A7F3D0;color:#065F46">{{ session('ok') }}</div>@endif
+<div style="margin-bottom:10px">@foreach(['pending'=>'Pending','approved'=>'Approved','rejected'=>'Rejected'] as $k=>$l)<a class="btn {{ $st===$k ? '' : 'g' }}" href="/admin/dob-requests?status={{ $k }}">{{ $l }} ({{ $n[$k] ?? 0 }})</a> @endforeach</div>
+<div class="card" style="overflow:auto"><table style="width:100%;font-size:13px;border-collapse:collapse"><tr style="text-align:left;color:#6B7280"><th>Customer</th><th>পুরনো</th><th>নতুন</th><th>কারণ</th><th>তারিখ</th><th></th></tr>
+@forelse($rows as $x)<tr style="border-top:1px solid #EEE;vertical-align:top"><td><b>{{ $x->name }}</b><div style="font-size:11.5px;color:#6B7280">{{ $x->phone ?: $x->email }}</div></td><td>{{ $x->old_dob ? \Carbon\Carbon::parse($x->old_dob)->format('d-m-Y') : '—' }}</td><td><b>{{ \Carbon\Carbon::parse($x->new_dob)->format('d-m-Y') }}</b></td><td style="max-width:260px">{{ $x->reason }}@if($x->admin_note)<div style="font-size:11.5px;color:#6B7280">Admin: {{ $x->admin_note }}</div>@endif</td><td>{{ \Carbon\Carbon::parse($x->created_at)->timezone('Asia/Dhaka')->format('d M, h:i A') }}</td>
+<td>@if($x->status==='pending')<form method="post" action="/admin/dob-requests/{{ $x->id }}" style="display:flex;gap:6px;flex-wrap:wrap">@csrf<input name="note" placeholder="নোট (ঐচ্ছিক)" style="width:140px"><button name="action" value="approve">Approve</button><button name="action" value="reject" class="btn g">Reject</button></form>@else{{ ucfirst($x->status) }} · {{ $x->decided_by }}@endif</td></tr>
+@empty<tr><td colspan="6" style="padding:14px;color:#6B7280">কোনো অনুরোধ নেই।</td></tr>@endforelse</table></div>
+@endsection

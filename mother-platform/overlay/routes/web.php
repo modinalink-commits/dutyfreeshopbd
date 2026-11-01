@@ -157,6 +157,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
     Route::post('/quick', [$C,'quick']); Route::get('/history', [$C,'history']);
   });
   Route::get('/winback', [\App\Http\Controllers\WinbackController::class,'index']); Route::post('/winback/settings', [\App\Http\Controllers\WinbackController::class,'save']); Route::post('/winback/run', [\App\Http\Controllers\WinbackController::class,'run']);
+  Route::get('/dob-requests', [\App\Http\Controllers\DobController::class,'index']); Route::post('/dob-requests/{id}', [\App\Http\Controllers\DobController::class,'decide']);
   Route::get('/customer-auth', [\App\Http\Controllers\CustAuthAdminController::class,'index']); Route::post('/customer-auth', [\App\Http\Controllers\CustAuthAdminController::class,'save']); Route::post('/customer-auth/test', [\App\Http\Controllers\CustAuthAdminController::class,'test']);
   Route::get('/fraud', [\App\Http\Controllers\FraudController::class,'index']); Route::get('/fraud/check', [\App\Http\Controllers\FraudController::class,'check']); Route::post('/fraud/settings', [\App\Http\Controllers\FraudController::class,'save']);
   Route::prefix('delivery')->group(function () { $DL = \App\Http\Controllers\DeliveryController::class;
@@ -254,6 +255,7 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestF
   Route::post('/account/reset', [\App\Http\Controllers\AccountController::class,'reset']);
   Route::get('/account/logout', [\App\Http\Controllers\AccountController::class,'logout']);
   Route::get('/account/me', [\App\Http\Controllers\AccountController::class,'whoami']);
+  Route::post('/account/dob-request', [\App\Http\Controllers\AccountController::class,'dobRequest']);
   Route::post('/account/profile', [\App\Http\Controllers\AccountController::class,'saveProfile']);
   Route::post('/account/address', [\App\Http\Controllers\AccountController::class,'saveAddress']);
   Route::post('/account/address/{id}/delete', [\App\Http\Controllers\AccountController::class,'deleteAddress']);

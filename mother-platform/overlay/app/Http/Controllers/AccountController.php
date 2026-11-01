@@ -372,6 +372,19 @@ class AccountController extends StoreController {
     DB::table('customers')->where('id', $c->id)->update(['name'=>$d['name'], 'email'=>$d['email'] ?: null, 'updated_at'=>now()] + ($dob ? ['dob'=>$dob] : []));
     return response()->json(['ok'=>true]);
   }
+  /** DOB is saved once; a later correction is a request an admin approves. */
+  public function dobRequest(Request $r) {
+    $c = $this->me($r); if (!$c) return response()->json([], 401);
+    if (empty($c->dob)) return response()->json(['ok'=>false, 'error'=>'আগে প্রোফাইলে জন্মতারিখ সেভ করুন।'], 422);
+    $d = $r->validate(['dob'=>'required|string|max:10', 'reason'=>'required|string|min:5|max:300']); $v = trim($d['dob']); $dt = null;
+    foreach (['d-m-Y', 'd/m/Y', 'Y-m-d'] as $fm) { $x = \DateTime::createFromFormat('!' . $fm, $v); if ($x && $x->format($fm) === $v) { $dt = $x; break; } }
+    if (!$dt || $dt >= new \DateTime('today') || (int)$dt->format('Y') < 1900) return response()->json(['ok'=>false, 'error'=>'সঠিক জন্মতারিখ দিন (DD-MM-YYYY)'], 422);
+    if ($dt->format('Y-m-d') === substr((string)$c->dob, 0, 10)) return response()->json(['ok'=>false, 'error'=>'এটি আপনার বর্তমান জন্মতারিখই।'], 422);
+    if (DB::table('dob_change_requests')->where('customer_id', $c->id)->where('status', 'pending')->exists()) return response()->json(['ok'=>false, 'error'=>'আপনার একটি অনুরোধ ইতিমধ্যে পেন্ডিং আছে।'], 422);
+    if ($this->throttle($r, 'dob'.$c->id, 5)) return response()->json(['ok'=>false, 'error'=>'অনেকবার চেষ্টা হয়েছে, পরে চেষ্টা করুন'], 429); $this->hit($r, 'dob'.$c->id);
+    DB::table('dob_change_requests')->insert(['customer_id'=>$c->id, 'old_dob'=>$c->dob, 'new_dob'=>$dt->format('Y-m-d'), 'reason'=>trim($d['reason']), 'status'=>'pending', 'created_at'=>now(), 'updated_at'=>now()]);
+    return response()->json(['ok'=>true]);
+  }
   public function saveAddress(Request $r) {
     \App\Support\PhoneRule::trim($r);
     $c = $this->me($r); if (!$c) return response()->json([], 401);
