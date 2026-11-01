@@ -31,7 +31,7 @@
 .dfi ul{list-style:none;margin:0 0 12px;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:6px 10px}.dfi li{font-size:12.5px;color:#0B1220;padding-left:20px;position:relative}.dfi li:before{content:"✓";position:absolute;left:0;color:#16A34A;font-weight:800}
 .dfi-a{display:flex;gap:10px}.dfi-go{flex:1;border:0;background:linear-gradient(135deg,#FF7A1A,#FF5A00);color:#fff;font-weight:700;font-size:15px;border-radius:13px;padding:12px;cursor:pointer}.dfi-no{border:1px solid #E5E7EB;background:#fff;color:#374151;font-weight:600;font-size:14px;border-radius:13px;padding:12px 18px;cursor:pointer}
 @media(max-width:760px){.dfi{bottom:66px}}
-.dfu{position:fixed;left:50%;top:14px;transform:translate(-50%,-160%);z-index:2147481500;background:#0B1220;color:#fff;border-radius:14px;padding:10px 12px 10px 16px;display:flex;gap:14px;align-items:center;font-size:14px;font-weight:600;box-shadow:0 10px 26px rgba(11,18,32,.35);transition:transform .35s}.dfu.on{transform:translate(-50%,0)}.dfu button{border:0;background:#FF5A00;color:#fff;font-weight:700;border-radius:10px;padding:7px 14px;cursor:pointer}
+.dfu{display:none!important;position:fixed;left:50%;top:14px;transform:translate(-50%,-160%);z-index:2147481500;background:#0B1220;color:#fff;border-radius:14px;padding:10px 12px 10px 16px;display:flex;gap:14px;align-items:center;font-size:14px;font-weight:600;box-shadow:0 10px 26px rgba(11,18,32,.35);transition:transform .35s}.dfu.on{transform:translate(-50%,0)}.dfu button{border:0;background:#FF5A00;color:#fff;font-weight:700;border-radius:10px;padding:7px 14px;cursor:pointer}
 .dfs{position:fixed;left:8px;right:8px;bottom:calc(60px + env(safe-area-inset-bottom));z-index:2147481000;background:#0B1220;color:#fff;border-radius:14px;padding:8px 8px 8px 10px;display:none;align-items:center;gap:9px;font-size:13px;box-shadow:0 10px 26px rgba(11,18,32,.35)}.dfs.on{display:flex}.dfs img{background:#fff;border-radius:8px;padding:2px}.dfs span{flex:1;min-width:0}.dfs b{color:#FF8A3D}.dfs #dfs-go{border:0;background:#FF5A00;color:#fff;font-weight:700;border-radius:10px;padding:8px 14px;font-size:13px;cursor:pointer}.dfs #dfs-x{border:0;background:none;color:#9CA3AF;font-size:20px;cursor:pointer;padding:0 4px}
 .dfb{background:none;border:0;cursor:pointer;font-family:inherit}
 .dfp{position:fixed;top:64px;right:10px;width:min(360px,calc(100vw - 20px));max-height:70vh;overflow:auto;background:#fff;border:1px solid #E6EAF0;border-radius:16px;box-shadow:0 18px 44px rgba(11,18,32,.28);z-index:2147481200;display:none}.dfp.on{display:block}
@@ -91,7 +91,7 @@ $('dfn-no').onclick=function(){ls('dfnNo',String(Date.now()));nHide()};$('dfn-no
 $('dfn-go').onclick=function(){nHide();window.DFPWA.pushOn()};
 // service worker + update prompt
 if('serviceWorker' in navigator){addEventListener('load',function(){navigator.serviceWorker.register('/pwa-sw').then(function(reg){
-  function ready(w){var b=$('dfu');if(!b||!navigator.serviceWorker.controller)return;b.classList.add('on');$('dfu-go').onclick=function(){w.postMessage('SKIP_WAITING')}}
+  function ready(w){if(!navigator.serviceWorker.controller)return;window.DFPWA_UPDATE=function(){w.postMessage('SKIP_WAITING')}} /* silent: new version installs in the background and is used on the next normal open; no popup */
   if(reg.waiting)ready(reg.waiting);
   reg.addEventListener('updatefound',function(){var w=reg.installing;if(!w)return;w.addEventListener('statechange',function(){if(w.state==='installed')ready(w)})});
   setInterval(function(){reg.update()['catch'](function(){})},3600000);
