@@ -34,7 +34,10 @@ class CatalogController extends Controller {
         $subs[$r->sub] = $subs[$r->sub] ?? [];
         if ($r->sub_sub && !in_array($r->sub_sub, $subs[$r->sub], true)) $subs[$r->sub][] = $r->sub_sub;
       }
-      ksort($subs, SORT_NATURAL | SORT_FLAG_CASE);
+      $nd = DB::table('category_nodes')->where('category_id', $m->id)->orderBy('position')->orderBy('name')->get(); $ord = [];
+      foreach ($nd->where('level', 2)->where('active', true) as $n2) { $ord[$n2->name] = $nd->where('parent_id', $n2->id)->where('active', true)->pluck('name')->all(); foreach ($subs[$n2->name] ?? [] as $x) if (!in_array($x, $ord[$n2->name], true)) $ord[$n2->name][] = $x; }
+      foreach ($subs as $k => $v) if (!isset($ord[$k])) $ord[$k] = $v;
+      $subs = $ord;
       $map[$m->id] = ['slug' => $m->slug, 'subs' => $subs];
     }
     $imgs = $id ? DB::table('product_images')->where('product_id', $id)->orderBy('position')->orderBy('id')->pluck('path')->all() : [];

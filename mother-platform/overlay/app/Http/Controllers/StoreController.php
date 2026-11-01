@@ -58,7 +58,11 @@ class StoreController extends Controller {
   private function subs() {
     return self::rem('store.subs', 300, function () {
       $o = [];
-      foreach (DB::table('products')->where('published',true)->whereNotNull('sub')->select('category_id','sub', DB::raw('count(*) n'))->groupBy('category_id','sub')->orderByDesc('n')->get() as $r) $o[$r->category_id][] = $r;
+      $nodes = \Illuminate\Support\Facades\Schema::hasTable('category_nodes') ? DB::table('category_nodes')->where('level', 2)->get()->keyBy(fn($n) => $n->category_id.'|'.$n->name) : collect();
+      foreach (DB::table('products')->where('published',true)->whereNotNull('sub')->select('category_id','sub', DB::raw('count(*) n'))->groupBy('category_id','sub')->orderByDesc('n')->get() as $r) {
+        $nd = $nodes[$r->category_id.'|'.$r->sub] ?? null; if ($nd && !$nd->active) continue; $r->pos = $nd->position ?? 100000; $o[$r->category_id][] = $r;
+      }
+      foreach ($o as $k => $rows) { usort($rows, fn($x, $y) => [$x->pos, -$x->n] <=> [$y->pos, -$y->n]); $o[$k] = $rows; }
       return $o;
     });
   }
@@ -104,7 +108,7 @@ class StoreController extends Controller {
       ->select(DB::raw("'' as customer_name"),DB::raw("'' as district"),'o.shipping','o.created_at','i.name','i.qty','i.price','p.image','p.id as pid','p.ext_id','p.name as pname','p.category_id as pcat','p.sub as psub','p.path_slug as pslug')->orderByDesc('o.id')->limit(6)->get()
       ->map(function ($r) { $r->masked = ''; return $r; }));
   }
-  public function category(Request $r, string $slug, ?string $subSlug = null) {
+  public function category(Request $r, string $slug, ?string $subSlug = null, ?string $subSubName = null) {
     $c = $this->cats()[$slug] ?? null;
     if (!$c) { if ($subSlug !== null) return $this->notFound(); $page = DB::table('pages')->where('slug',$slug)->where('active',true)->first(); if ($page) return $this->page($page); return $this->notFound(); }
     if ($subSlug === null && $r->filled('sub')) { // old ?sub=LM links -> /category/lm (301)
@@ -116,11 +120,12 @@ class StoreController extends Controller {
       $q->whereRaw(\App\Support\Slugs::subSql().' = ?', [$subSlug]);
       $subName = (clone $q)->whereNotNull('sub')->value('sub') ?: ((clone $q)->exists() ? 'Other' : null);
       if ($subName === null) return $this->notFound();
+      if ($subSubName !== null) { $q->where('sub_sub', $subSubName); if (!(clone $q)->exists()) return $this->notFound(); }
     }
     if (is_numeric($r->min)) $q->where('price','>=',(float)$r->min); if (is_numeric($r->max)) $q->where('price','<=',(float)$r->max);
     $q = $q->orderByRaw('coalesce(sub, \'~\')');
     $items = $this->sorted($q, $r->input('sort', $s['default_sort']))->paginate($per)->withQueryString();
-    $canon = url('/'.$slug).($subSlug !== null ? '/'.$subSlug : '/');
+    $canon = url('/'.$slug).($subSlug !== null ? '/'.$subSlug.($subSubName !== null ? '/'.\App\Support\Slugs::slug($subSubName, 60) : '') : '/'); if ($subSubName !== null) { $subName = $subSubName.' · '.$subName; }
     $title = $subName ? $subName.' – '.$c->name.' | DutyFree Shop BD' : ($c->title ?: $c->name.' | DutyFree Shop BD');
     return response()->view('store.category', $this->base(['c'=>$c, 'subName'=>$subName, 'subSlug'=>$subSlug, 'items'=>$items, 'groups'=>collect($items->items())->groupBy(fn($p) => $p->sub ?: $c->name), 'title'=>$title, 'desc'=>$subName ? $subName.' – original imported products in '.$c->name.' at DutyFree Shop BD. Cash on delivery, nationwide delivery.' : $c->meta_description, 'canon'=>$canon]))->header('Cache-Control','public, max-age=120');
   }
@@ -129,9 +134,12 @@ class StoreController extends Controller {
   /** /category/secondary-category/product-name */
   public function productByPath(string $cat, string $sub, string $slug) {
     $c = $this->cats()[$cat] ?? null; if (!$c) return $this->notFound();
-    $cands = $this->q()->where('category_id',$c->id)->where('path_slug',$slug)->orderBy('id')->get(); if ($cands->isEmpty()) return $this->notFound();
-    $p = $cands->first(fn($x) => \App\Support\Slugs::subSlug($x->sub) === $sub) ?? ($cands->count() === 1 ? $cands->first() : null);
-    if (!$p) return $this->notFound();
+    $cands = $this->q()->where('category_id',$c->id)->where('path_slug',$slug)->orderBy('id')->get();
+    $p = $cands->isEmpty() ? null : ($cands->first(fn($x) => \App\Support\Slugs::subSlug($x->sub) === $sub) ?? ($cands->count() === 1 ? $cands->first() : null));
+    if (!$p) { // /category/sub/sub-sub category listing
+      $t = \Illuminate\Support\Facades\Schema::hasTable('category_nodes') ? DB::table('category_nodes as t')->join('category_nodes as s', 's.id', '=', 't.parent_id')->where('t.level', 3)->where('t.active', true)->where('t.category_id', $c->id)->where('t.slug', $slug)->get(['t.name as tn', 's.name as sn'])->first(fn($x) => \App\Support\Slugs::subSlug($x->sn) === $sub) : null;
+      return $t ? $this->category(request(), $cat, $sub, $t->tn) : $this->notFound();
+    }
     if (rtrim(request()->getPathInfo(),'/') !== self::url($p)) return redirect(self::url($p), 301);
     return $this->renderProduct($p);
   }

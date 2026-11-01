@@ -12,6 +12,7 @@ resources/views/order_show.blade.php
 resources/views/stafflog.blade.php
 database/migrations/2026_10_31_000002_catalog_discounts.php
 app/Http/Controllers/CatalogController.php
+app/Http/Controllers/TaxonomyController.php
 app/Http/Controllers/DiscountController.php
 resources/views/products.blade.php
 resources/views/product_form.blade.php
@@ -207,3 +208,4 @@ app/Http/Controllers/DeployController.php
 resources/views/deploy.blade.php
 app/Support/Deployer.php
 database/migrations/2026_11_01_000002_deployments.php
+database/migrations/2026_11_01_000003_category_tree.php
