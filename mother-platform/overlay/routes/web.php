@@ -155,6 +155,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
     Route::get('/settings', [$C,'settings']); Route::post('/settings', [$C,'settingsSave']); Route::post('/optout', [$C,'optout']);
     Route::post('/quick', [$C,'quick']); Route::get('/history', [$C,'history']);
   });
+  Route::get('/referral', [\App\Http\Controllers\ReferralController::class,'index']); Route::post('/referral/settings', [\App\Http\Controllers\ReferralController::class,'save']);
   Route::prefix('purchase')->group(function () {
     $C = \App\Http\Controllers\ProcurementController::class;
     Route::get('/', [$C,'dashboard']);
@@ -253,6 +254,7 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestF
   Route::get('/manifest.webmanifest', [\App\Http\Controllers\PwaController::class,'manifest']);
   Route::get('/pwa-sw', [\App\Http\Controllers\PwaController::class,'sw']);
   Route::get('/offline', [\App\Http\Controllers\PwaController::class,'offline']);
+  Route::get('/ref/{code}', [\App\Http\Controllers\StoreController::class,'referral'])->where('code','[A-Za-z0-9]+');
   Route::get('/sitemap.xml', [\App\Http\Controllers\StoreController::class,'sitemap']);
   Route::post('/ai-chat', [\App\Http\Controllers\AiChatController::class,'ask'])->middleware('throttle:120,1');
   Route::get('/search-suggest', [\App\Http\Controllers\StoreController::class,'suggest'])->middleware('throttle:600,1');

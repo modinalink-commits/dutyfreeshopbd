@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\DB;
 /** THE discount engine. Admin Create Order, website checkout and the customer account all call compute(); nothing else calculates a discount.
  *  Every line comes from a saved rule, membership level, coupon or customer-profile value: nothing is invented. */
 class OrderDiscount {
-  const ORDER = ['special', 'vip', 'membership', 'returning', 'birthday', 'first', 'bundle', 'amount', 'coupon'];
+  const ORDER = ['special', 'vip', 'membership', 'returning', 'birthday', 'first', 'referral', 'bundle', 'amount', 'coupon', 'refcredit'];
   const MODES = ['highest' => 'Highest discount only', 'priority' => 'Priority order (first match only)', 'stack' => 'Stackable: multiple discounts allowed'];
   public static function mode(): string { $m = (string)DB::table('settings')->where('key', 'order_disc_mode')->value('value'); return isset(self::MODES[$m]) ? $m : 'highest'; }
   private static function rule(string $k): ?array { $r = DB::table('discount_rules')->where('key', $k)->where('enabled', true)->first(); return $r ? ['cfg' => json_decode($r->config, true) ?: [], 'title' => $r->title] : null; }
@@ -73,12 +73,19 @@ class OrderDiscount {
           'label' => 'Coupon '.$cp->code.' – '.($cp->type === 'percent' ? rtrim(rtrim(number_format((float)$cp->value, 2), '0'), '.').'%' : '৳'.number_format($amt))];
       }
     }
+    if ($web && $phone && ($rc = Referral::codeFlow($phone)) && ($rf = Referral::eligible($phone, $rc, $sub))) {
+      $ra = min((float)$rf['discount'], $sub); if ($ra > 0) $cand[] = ['key' => 'referral', 'type' => 'Referral Discount', 'rule' => 'Referral '.$rf['code'], 'source' => 'Referral – '.$rf['code'], 'pct' => null, 'amount' => round($ra, 2), 'refcode' => $rf['code'], 'label' => 'Referral discount – ৳'.number_format($ra)];
+    }
     $mode = self::mode(); $sel = [];
     usort($cand, fn($a, $b) => array_search($a['key'], self::ORDER) <=> array_search($b['key'], self::ORDER));
     if ($cand) {
       if ($mode === 'stack') $sel = array_column($cand, 'key');
       elseif ($mode === 'priority') $sel = [$cand[0]['key']];
       else { $best = $cand[0]; foreach ($cand as $x) if ($x['amount'] > $best['amount']) $best = $x; $sel = [$best['key']]; }
+    }
+    if ($web && $prof && $phone && Referral::on() && Referral::set('credit_use', '1') === '1' && ($bal = Referral::balance($phone)) > 0) {
+      $paid = 0; foreach ($cand as $x0) if (in_array($x0['key'], $sel)) $paid += $x0['amount'];
+      $ca = round(min($bal, max(0, $sub - $paid)), 2); if ($ca > 0) { $cand[] = ['key' => 'refcredit', 'type' => 'Referral Credit', 'rule' => 'Referral wallet', 'source' => 'Referral credit', 'pct' => null, 'amount' => $ca, 'label' => 'Referral credit – ৳'.number_format($ca)]; $sel[] = 'refcredit'; }
     }
     $sum = 0; foreach ($cand as &$x) { $x['applied'] = in_array($x['key'], $sel); if ($x['applied']) $sum += $x['amount']; } unset($x);
     return ['mode' => $mode, 'lines' => $cand, 'total' => min(round($sum, 2), $sub), 'coupon_error' => $cerr, 'free_ship' => $free, 'profile' => $profile];

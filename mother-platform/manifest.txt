@@ -245,3 +245,7 @@ resources/views/proc/supplier_form.blade.php
 app/Support/Procure.php
 app/Http/Controllers/ProcurementController.php
 database/migrations/2026_11_01_000006_procurement.php
+database/migrations/2026_11_01_000008_referral.php
+app/Support/Referral.php
+app/Http/Controllers/ReferralController.php
+resources/views/referral.blade.php

@@ -298,6 +298,7 @@ class StoreController extends Controller {
       return $id;
     });
     Cache::forget('store.live3'); Cache::forget('store.live4');
+    try { \App\Support\Referral::onOrder((int)$id, $phone, $qt); } catch (\Throwable $e) {}
     $inv = DB::table('orders')->where('id',$id)->value('invoice');
     \App\Support\OrderSms::placed((int)$id);
     try { DB::table('incomplete_orders')->where('status', 'open')->where(fn($q) => $q->where('token', (string)$r->input('inc'))->orWhere('phone', $phone))->update(['status'=>'converted', 'order_id'=>$id, 'updated_at'=>now()]); } catch (\Throwable $e) {}
@@ -338,6 +339,11 @@ class StoreController extends Controller {
   }
   public function cmsExport() {
     return response()->json(['source'=>url('/'), 'pages'=>DB::table('pages')->where('active',true)->get(['slug','title','body','meta_title','meta_description','updated_at']), 'posts'=>DB::table('posts')->where('active',true)->get(['slug','title','featured_image','excerpt','body','meta_title','meta_description','published_at'])]);
+  }
+  /** /ref/CODE: remember the friend's code for 60 days, then go to the shop. */
+  public function referral(string $code) {
+    $c = strtoupper($code); $ok = \App\Support\Referral::on() && preg_match('/^[A-Z0-9]{4,20}$/', $c) && \App\Support\Referral::referrer($c);
+    $r = redirect('/'); return $ok ? $r->withCookie(cookie('dfref', $c, 60 * 24 * 60, '/', null, null, false)) : $r;
   }
   public function notFound() {
     return response()->view('store.missing', $this->base(['title'=>'পেজ পাওয়া যায়নি | DutyFree Shop BD', 'desc'=>'', 'canon'=>url('/'), 'noindex'=>true]), 404);

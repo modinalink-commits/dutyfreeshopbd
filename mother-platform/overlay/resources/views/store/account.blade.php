@@ -6,7 +6,7 @@
   $gl = ['Pending'=>'Pending','Confirmed'=>'Confirmed','Processing'=>'Processing','Shipment'=>'Shipment','Delivered'=>'Delivered','Cancelled'=>'Cancelled','Returned'=>'Returned'];
   $catc = ['VIP'=>['#FEF3C7','#B45309'], 'High Value'=>['#EDE9FE','#6D28D9'], 'Regular'=>['#DBEAFE','#1D4ED8'], 'New'=>['#DCFCE7','#15803D']][$cat] ?? ['#F3F4F6','#374151'];
   $tk = fn($n) => '৳'.number_format((float)$n);
-  $nav = [['dashboard','Dashboard','▦'],['profile','My Profile','👤'],['orders','My Orders','🧾'],['track','Track Order','📍'],['addresses','Address Book','🏠'],['wishlist','My Wishlist','♡'],['coupons','My Coupons','🎟'],['reviews','My Reviews','★'],['support','Support / Chat','💬'],['notifications','Notifications','🔔'],['security','Change Password','🔒']];
+  $nav = [['dashboard','Dashboard','▦'],['profile','My Profile','👤'],['orders','My Orders','🧾'],['track','Track Order','📍'],['addresses','Address Book','🏠'],['wishlist','My Wishlist','♡'],['coupons','My Coupons','🎟'],['refer','Refer & Earn','🎁'],['reviews','My Reviews','★'],['support','Support / Chat','💬'],['notifications','Notifications','🔔'],['security','Change Password','🔒']];
   $dt = fn($v) => \Carbon\Carbon::parse($v)->timezone('Asia/Dhaka');
   $img = fn($u) => $u ?: '/icon.png';
 @endphp
@@ -74,7 +74,7 @@ if(!sup()){pt.textContent='Not supported'}else{navigator.serviceWorker.ready.the
 @if($tab==='profile')
 <div class="bx"><h2>My Profile <span class="cb" style="background:{{ $catc[0] }};color:{{ $catc[1] }}">{{ $cat }} Customer</span></h2>
 <form class="f" id="pf"><div class="g2"><div><label>Full Name</label><input name="name" value="{{ $c->name }}" required maxlength="80"></div><div><label>Mobile Number</label><input value="{{ $c->phone }}" disabled><div style="font-size:11.5px;color:#6B7280;margin-top:4px">মোবাইল নম্বর বদলাতে সাপোর্টে যোগাযোগ করুন।</div></div>
-<div><label>Email</label><input type="email" name="email" value="{{ $c->email }}" maxlength="120"></div><div><label>Date of Birth (ঐচ্ছিক)</label><input type="date" name="dob" value="{{ $c->dob ? \Carbon\Carbon::parse($c->dob)->format('Y-m-d') : '' }}" max="{{ now()->format('Y-m-d') }}"></div>
+<div><label>Email</label><input type="email" name="email" value="{{ $c->email }}" maxlength="120"></div><div><label>Date of Birth</label>@if($c->dob)<input value="{{ \Carbon\Carbon::parse($c->dob)->format('d-m-Y') }}" disabled><div style="font-size:11.5px;color:#6B7280;margin-top:4px">জন্মতারিখ একবারই সেভ করা যায়। সংশোধন করতে সাপোর্টে যোগাযোগ করুন।</div>@else<input name="dob" placeholder="DD-MM-YYYY" inputmode="numeric" maxlength="10" pattern="\d{2}-\d{2}-\d{4}"><div style="font-size:11.5px;color:#C2410C;margin-top:4px">🎂 Add your Date of Birth to unlock your Birthday Special Discount. (একবার সেভ করলে পরিবর্তন করতে অ্যাডমিনের অনুমোদন লাগবে।)</div>@endif</div>
 <div><label>Customer ID</label><input value="{{ $cid }}" disabled></div><div><label>Member Since</label><input value="{{ $dt($c->registered_at ?? $c->created_at)->format('d M Y') }}" disabled></div></div>
 <div style="margin-top:14px"><button class="b1 p" style="padding:10px 22px;font-size:14px">Save Changes</button></div><div class="msg" id="pm"></div></form></div>
 @endif
@@ -118,6 +118,22 @@ if(!sup()){pt.textContent='Not supported'}else{navigator.serviceWorker.ready.the
 @if($wish->isEmpty())<p style="color:#6B7280;font-size:13.5px" id="wle">উইশলিস্ট খালি। প্রোডাক্টের ♡ চাপলে এখানে জমা হবে।</p>@endif
 <div class="wg">@foreach($wish as $p)<div class="wc"><a href="{{ $p->url }}"><img src="{{ $img($p->image) }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='/icon.png'"></a><b>{{ $p->name }}</b><div style="color:var(--o);font-weight:800">{{ $tk($p->offer_price ?: $p->price) }}</div><div style="font-size:12px;color:{{ $p->stock>0 ? '#15803D' : '#B91C1C' }}">{{ $p->stock>0 ? 'In Stock' : 'Out of Stock' }}</div>
 <div style="display:flex;gap:6px;justify-content:center;margin-top:8px">@if($p->stock>0)<button class="b1 p" type="button" data-cart="{{ $p->id }}" data-price="{{ $p->offer_price ?: $p->price }}">Add to Cart</button>@endif<button class="b1 r" type="button" data-wrm="{{ $p->id }}">✕</button></div></div>@endforeach</div></div></div>
+@endif
+
+@if($tab==='refer')
+<div class="bx"><h2>Refer &amp; Earn</h2>
+@if(!$ron)<p style="color:#6B7280;font-size:13.5px">রেফারেল প্রোগ্রামটি এখন বন্ধ আছে।</p>@else
+<p style="font-size:13.5px;margin:0 0 10px">আপনার বন্ধুর রেফারেল লিংক ব্যবহার করে প্রথম অর্ডারে <b>{{ $tk($rdisc) }}</b> ডিসকাউন্ট পান। বন্ধুর অর্ডার ডেলিভারি হলে আপনি পাবেন <b>{{ $tk($rrew) }}</b> রেফারেল ক্রেডিট।</p>
+<label style="font-size:12px;color:#6B7280">Your Referral Link</label>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 10px"><input id="rl" readonly value="{{ $rlink }}" style="flex:1;min-width:220px;height:40px;border:1.25px solid var(--bd);border-radius:10px;padding:0 12px;font-weight:700"><button type="button" class="b1 p" id="rcp" style="padding:0 18px">Copy Link</button></div>
+@php $rt = rawurlencode('আমার রেফারেল লিংক দিয়ে অর্ডার করলে প্রথম অর্ডারে '.number_format($rdisc).' টাকা ডিসকাউন্ট পাবেন: '.$rlink); $ru = rawurlencode($rlink); @endphp
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"><a class="b1" style="background:#16A34A;color:#fff;padding:9px 16px;border-radius:10px;font-weight:700;font-size:13px" target="_blank" rel="noopener" href="https://wa.me/?text={{ $rt }}">WhatsApp Share</a><a class="b1" style="background:#0A7CFF;color:#fff;padding:9px 16px;border-radius:10px;font-weight:700;font-size:13px" href="fb-messenger://share/?link={{ $ru }}">Messenger</a><a class="b1" style="background:#1877F2;color:#fff;padding:9px 16px;border-radius:10px;font-weight:700;font-size:13px" target="_blank" rel="noopener" href="https://www.facebook.com/sharer/sharer.php?u={{ $ru }}">Facebook</a></div>
+<div class="cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px">
+@foreach([['Total Referrals',$rs['total']],['Successful',$rs['ok']],['Pending',$rs['pending']],['Referral Earnings',$tk($rs['earned'])],['Available Credit',$tk($rs['balance'])]] as [$l,$v])<div style="border:1.25px solid var(--bd);border-radius:12px;padding:10px 12px"><small style="color:#6B7280">{{ $l }}</small><div style="font-size:18px;font-weight:800">{{ $v }}</div></div>@endforeach</div>
+<p style="font-size:12px;color:#6B7280;margin:10px 0 0">রেফারেল ক্রেডিট পরবর্তী অর্ডারে স্বয়ংক্রিয়ভাবে ব্যবহার হবে। বন্ধুর অর্ডার Delivered হলে ক্রেডিট কনফার্ম হয়; ক্যান্সেল বা রিটার্ন হলে হয় না।</p>
+@if($rlist->count())<table class="t" style="margin-top:12px"><thead><tr><th>Friend</th><th>Date</th><th>Status</th><th>Reward</th></tr></thead><tbody>@foreach($rlist as $x)<tr><td>{{ $x->name ?: substr($x->referred_phone,0,5).'XXXXXX' }}</td><td>{{ \Carbon\Carbon::parse($x->created_at)->format('d M Y') }}</td><td>{{ ucfirst($x->status === 'rewarded' ? 'Successful' : ($x->status === 'void' ? 'Cancelled' : 'Pending')) }}</td><td>{{ $tk($x->reward) }}</td></tr>@endforeach</tbody></table>@endif
+<script>document.getElementById('rcp').onclick=function(){var i=document.getElementById('rl');i.select();try{navigator.clipboard.writeText(i.value)}catch(e){document.execCommand('copy')}this.textContent='Copied ✓';var b=this;setTimeout(function(){b.textContent='Copy Link'},1800)}</script>
+@endif</div>
 @endif
 
 @if($tab==='coupons')

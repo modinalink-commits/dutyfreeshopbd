@@ -109,7 +109,7 @@ class AccountController extends StoreController {
       $verified = true;
     } elseif ($hasHistory) return response()->json(['ok'=>false, 'error'=>'এই নম্বরে আগের অর্ডার আছে, তাই নিরাপত্তার জন্য কোড লাগবে। কল করুন: '.('0'.ltrim((string)(self::set()['call_number'] ?? '09613828081'), '0'))], 422);
     if (!empty($d['email']) && DB::table('customers')->whereRaw('lower(email) = ?', [mb_strtolower($d['email'])])->where('phone', '!=', $p)->whereNotNull('password')->exists()) return response()->json(['ok'=>false, 'error'=>'এই ইমেইল অন্য অ্যাকাউন্টে ব্যবহৃত'], 422);
-    $set = ['password'=>Hash::make($d['password']), 'registered_at'=>now(), 'phone_verified_at'=>$verified ? now() : null, 'referred_by'=>$d['ref'] ?? null, 'updated_at'=>now()];
+    $set = ['password'=>Hash::make($d['password']), 'registered_at'=>now(), 'phone_verified_at'=>$verified ? now() : null, 'referred_by'=>(($d['ref'] ?? null) ?: $r->cookie('dfref')) ?: null, 'updated_at'=>now()];
     if ($row) { DB::table('customers')->where('id', $row->id)->update($set + ['name'=>$row->name ?: $d['name']] + (!empty($d['email']) && !$row->email ? ['email'=>$d['email']] : [])); $cid = $row->id; }
     else $cid = DB::table('customers')->insertGetId($set + ['name'=>$d['name'], 'phone'=>$p, 'email'=>$d['email'] ?? null, 'type'=>'retail', 'ip'=>$r->ip(), 'created_at'=>now()]);
     DB::table('orders')->where('phone', $p)->whereNull('customer_id')->update(['customer_id'=>$cid]);
@@ -140,7 +140,7 @@ class AccountController extends StoreController {
   }
   public function index(Request $r, $tab = 'dashboard', $arg = null) {
     $c = $this->me($r); if (!$c) return redirect('/account/login'.($r->path() !== 'account' ? '?next=/'.$r->path() : ''));
-    $tabs = ['dashboard', 'profile', 'orders', 'track', 'addresses', 'wishlist', 'coupons', 'reviews', 'support', 'notifications', 'security'];
+    $tabs = ['dashboard', 'profile', 'orders', 'track', 'addresses', 'wishlist', 'coupons', 'reviews', 'support', 'notifications', 'security', 'refer'];
     if (!in_array($tab, $tabs)) return $this->notFound();
     if ($tab === 'track') return redirect('/track');
     $all = $this->orders($c)->orderByDesc('id')->get(['id', 'invoice', 'status', 'total', 'shipping', 'discount', 'created_at', 'payment_method', 'pay_status', 'courier', 'consignment_id', 'tracking_code', 'courier_status']);
@@ -168,6 +168,10 @@ class AccountController extends StoreController {
     if ($tab === 'wishlist') {
       $d['wish'] = DB::table('customer_wishlist as w')->join('products as p', 'p.id', '=', 'w.product_id')->where('w.customer_id', $c->id)->where('p.published', true)->orderByDesc('w.id')
         ->get(['p.id', 'p.ext_id', 'p.name', 'p.price', 'p.offer_price', 'p.stock', 'p.image', 'p.category_id', 'p.sub', 'p.sub_sub', 'p.path_slug'])->map(function ($p) { $p->url = self::url($p); return $p; });
+    }
+    if ($tab === 'refer') {
+      $code = \App\Support\Referral::codeFor($c); $d += ['rcode'=>$code, 'rlink'=>\App\Support\Referral::link($code), 'rs'=>\App\Support\Referral::stats((int)$c->id), 'ron'=>\App\Support\Referral::on(), 'rdisc'=>\App\Support\Referral::discount(), 'rrew'=>\App\Support\Referral::reward(),
+        'rlist'=>DB::table('referrals as r')->leftJoin('customers as u', 'u.id', '=', 'r.referred_id')->where('r.referrer_id', $c->id)->orderByDesc('r.id')->limit(50)->get(['r.status', 'r.reward', 'r.created_at', 'r.referred_phone', 'u.name'])];
     }
     if ($tab === 'coupons') $d['coupons'] = $this->publicCoupons();
     if ($tab === 'reviews') {
@@ -223,9 +227,16 @@ class AccountController extends StoreController {
   /* ---------------- profile & data ---------------- */
   public function saveProfile(Request $r) {
     $c = $this->me($r); if (!$c) return response()->json([], 401);
-    $d = $r->validate(['name'=>'required|string|min:2|max:80', 'email'=>'nullable|email|max:120', 'dob'=>'nullable|date|before:today']);
+    $d = $r->validate(['name'=>'required|string|min:2|max:80', 'email'=>'nullable|email|max:120', 'dob'=>'nullable|string|max:10']);
+    $dob = null;
+    if (empty($c->dob) && trim((string)($d['dob'] ?? '')) !== '') { // DOB can be saved once; later corrections go through admin
+      $v = trim($d['dob']); $dt = null;
+      foreach (['d-m-Y', 'd/m/Y', 'Y-m-d'] as $fm) { $x = \DateTime::createFromFormat('!' . $fm, $v); if ($x && $x->format($fm) === $v) { $dt = $x; break; } }
+      if (!$dt || $dt >= new \DateTime('today') || (int)$dt->format('Y') < 1900) return response()->json(['ok'=>false, 'error'=>'সঠিক জন্মতারিখ দিন (DD-MM-YYYY)'], 422);
+      $dob = $dt->format('Y-m-d');
+    }
     if (!empty($d['email']) && DB::table('customers')->whereRaw('lower(email) = ?', [mb_strtolower($d['email'])])->where('id', '!=', $c->id)->whereNotNull('password')->exists()) return response()->json(['ok'=>false, 'error'=>'এই ইমেইল অন্য অ্যাকাউন্টে ব্যবহৃত'], 422);
-    DB::table('customers')->where('id', $c->id)->update(['name'=>$d['name'], 'email'=>$d['email'] ?: null, 'dob'=>$d['dob'] ?: null, 'updated_at'=>now()]);
+    DB::table('customers')->where('id', $c->id)->update(['name'=>$d['name'], 'email'=>$d['email'] ?: null, 'updated_at'=>now()] + ($dob ? ['dob'=>$dob] : []));
     return response()->json(['ok'=>true]);
   }
   public function saveAddress(Request $r) {
