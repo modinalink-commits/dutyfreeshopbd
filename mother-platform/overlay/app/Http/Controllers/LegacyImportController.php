@@ -20,7 +20,7 @@ class LegacyImportController extends Controller
         'name' => mb_substr(trim((string)($x['name'] ?? '')), 0, 160) ?: null, 'email' => mb_substr(trim((string)($x['email'] ?? '')), 0, 160) ?: null,
         'address' => trim((string)($x['address'] ?? '')) ?: null, 'tier' => mb_substr(trim((string)($x['tier'] ?? '')), 0, 40) ?: null, 'ip_status' => mb_substr(trim((string)($x['ip'] ?? '')), 0, 40) ?: null,
         'orders_count' => (int)preg_replace('/\D/', '', (string)($x['orders'] ?? '0')), 'orders_amount' => $amt, 'last_order' => mb_substr(trim((string)($x['last'] ?? '')), 0, 40) ?: null,
-        'comment' => trim((string)($x['comment'] ?? '')) ?: null, 'src_page' => (int)($x['page'] ?? 0), 'updated_at' => now(), 'created_at' => now()]);
+        'comment' => trim((string)($x['comment'] ?? '')) ?: null, 'old_id' => (int)($x['id'] ?? 0) ?: null, 'old_status' => isset($x['status']) ? (int)$x['status'] : null, 'customer_type' => isset($x['ctype']) ? (int)$x['ctype'] : null, 'is_blocked' => isset($x['blocked']) ? (int)$x['blocked'] : null, 'city_id' => (int)($x['city'] ?? 0) ?: null, 'sub_city_id' => (int)($x['sub'] ?? 0) ?: null, 'old_created_at' => mb_substr((string)($x['cat'] ?? ''), 0, 30) ?: null, 'old_updated_at' => mb_substr((string)($x['uat'] ?? ''), 0, 30) ?: null, 'last_order_date' => mb_substr((string)($x['lod'] ?? ''), 0, 30) ?: null, 'coupon_income' => (float)($x['coupon'] ?? 0), 'username' => mb_substr((string)($x['user'] ?? ''), 0, 120) ?: null, 'src_page' => (int)($x['page'] ?? 0), 'updated_at' => now(), 'created_at' => now()]);
       $n++;
     }
     return response()->json(['ok' => true, 'saved' => $n, 'bad' => $bad]);

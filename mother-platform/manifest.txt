@@ -325,3 +325,4 @@ app/Http/Controllers/HeroSliderController.php
 resources/views/hero_slider.blade.php
 database/migrations/2026_11_02_000009_legacy_customers.php
 app/Http/Controllers/LegacyImportController.php
+database/migrations/2026_11_02_000010_legacy_customers_more.php
