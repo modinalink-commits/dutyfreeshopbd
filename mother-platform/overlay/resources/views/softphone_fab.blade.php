@@ -11,8 +11,8 @@ body.dfp-open #dfEdge{display:none}
 @media(max-width:800px){#dfDock{top:auto;left:0;width:100%;height:92vh;border-left:0;border-radius:18px 18px 0 0;transform:translateY(104%)}#dfDock.on{transform:none}
 #dfEdge{writing-mode:horizontal-tb;top:auto;bottom:76px;right:14px;transform:none;width:50px;height:50px;border-radius:50%;padding:0;justify-content:center;background:#16A34A;font-size:22px}#dfEdge span{display:none}#dfEdge:hover{background:#15803D}}
 </style>
-<button type="button" id="dfEdge" title="Open Soft Dialer"><i>📞</i><span>Open Dialer</span></button>
-<div id="dfDock" aria-label="Soft Dialer"></div>
+<button type="button" id="dfEdge" title="Open Mother Commerce Dialer"><i>📞</i><span>Open Dialer</span></button>
+<div id="dfDock" aria-label="Mother Commerce Dialer"></div>
 @verbatim
 <script>
 (function(){
@@ -20,7 +20,7 @@ var ch=window.BroadcastChannel?new BroadcastChannel('dfphone'):null,dock=documen
 function clean(n){return String(n||'').replace(/[^0-9+*#]/g,'')}
 function sv(v){try{localStorage.setItem(ls,v?'1':'0')}catch(e){}}
 function ld(){try{return localStorage.getItem(ls)==='1'}catch(e){return false}}
-function mk(n){if(fr)return;fr=document.createElement('iframe');fr.allow='microphone; autoplay';fr.title='Soft Dialer';fr.src='/admin/call-center/phone?embed=1'+(n?'&n='+encodeURIComponent(n):'');dock.appendChild(fr)}
+function mk(n){if(fr)return;fr=document.createElement('iframe');fr.allow='microphone; autoplay';fr.title='Mother Commerce Dialer';fr.src='/admin/call-center/phone?embed=1'+(n?'&n='+encodeURIComponent(n):'');dock.appendChild(fr)}
 function show(n){mk(n);dock.classList.add('on');document.body.classList.add('dfp-open');sv(1)}
 function hide(){dock.classList.remove('on');document.body.classList.remove('dfp-open');sv(0)}
 function kill(){hide();if(fr){fr.remove();fr=null}busy=false;edge.classList.remove('busy')}
@@ -38,7 +38,7 @@ window.addEventListener('message',function(e){if(e.origin!==location.origin||!e.
  else if(a==='idle'){busy=false;edge.classList.remove('busy')}
  else if(a==='incoming'){show()}});
 window.addEventListener('beforeunload',function(e){if(busy){e.preventDefault();e.returnValue=''}});
-if(ld())show();
+if(ld())show();else{popHere=false;if(ch)ch.postMessage({type:'ping'});setTimeout(function(){if(!popHere&&!fr)mk()},600)}
 })();
 </script>
 @endverbatim

@@ -1,144 +1,286 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><meta name="csrf" content="{{ csrf_token() }}"><title>Softphone · DutyFreeBD</title>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><meta name="csrf" content="{{ csrf_token() }}"><title>Mother Commerce Dialer</title>
 <style>
-:root{--n:#0B1F3A;--o:#FF5A00;--bd:#E5E7EB}*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;background:#F3F4F6;color:var(--n)}
-.ph{max-width:380px;margin:0 auto;min-height:100vh;background:#fff;display:flex;flex-direction:column}
-.top{background:var(--n);color:#fff;padding:12px 14px;display:flex;align-items:center;gap:10px}.top b{flex:1;font-size:15px}
-.badge{font-size:11.5px;font-weight:800;padding:3px 10px;border-radius:12px;color:#fff;background:#6B7280}.b-connected{background:#16A34A}.b-connecting{background:#2563EB}.b-failed{background:#DC2626}.b-perm{background:#F59E0B}
-.box{padding:14px;flex:1;display:flex;flex-direction:column;gap:10px}
-.num{display:flex;gap:6px}.num input{flex:1;font-size:22px;letter-spacing:1px;text-align:center;padding:10px;border:1.5px solid var(--bd);border-radius:12px;color:var(--n);font-weight:700;min-width:0}.num button{border:1.5px solid var(--bd);background:#fff;border-radius:12px;width:48px;font-size:18px;cursor:pointer}
-.stat{text-align:center;min-height:46px}.stat b{display:block;font-size:15px}.stat span{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
-.keys{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.keys button{height:54px;border:1px solid var(--bd);border-radius:14px;background:#F9FAFB;font-size:20px;font-weight:700;color:var(--n);cursor:pointer}.keys button:active{background:#FFF1E8}.keys small{display:block;font-size:9px;color:#9CA3AF;font-weight:600;letter-spacing:1px}
-.row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.row button{border:1px solid var(--bd);background:#fff;border-radius:12px;padding:9px 2px;font-size:12px;font-weight:700;color:var(--n);cursor:pointer}.row button.on{background:var(--n);color:#fff}
-.go{display:flex;gap:8px}.go button{flex:1;border:0;border-radius:14px;height:56px;font-size:16px;font-weight:800;color:#fff;cursor:pointer}.call{background:#16A34A}.hang{background:#DC2626}button:disabled{opacity:.45;cursor:not-allowed}
-.msg{font-size:12.5px;color:#B91C1C;text-align:center;min-height:16px}.mut{font-size:12px;color:#6B7280;text-align:center}
-.ov{position:fixed;inset:0;background:rgba(11,31,58,.6);display:none;align-items:center;justify-content:center;z-index:9;padding:14px}.ov.on{display:flex}.card{background:#fff;border-radius:16px;padding:16px;width:min(360px,100%)}
-.chip{display:inline-block;margin:3px 3px 0 0;padding:5px 10px;border:1px solid var(--bd);border-radius:14px;font-size:12px;font-weight:600;cursor:pointer;background:#fff}.chip:hover{border-color:var(--o);color:var(--o)}
-textarea{width:100%;border:1.5px solid var(--bd);border-radius:10px;padding:8px;font:inherit;margin-top:8px}.pri{border:0;background:var(--o);color:#fff;border-radius:10px;padding:10px 16px;font-weight:800;cursor:pointer}.sec{border:1px solid var(--bd);background:#fff;border-radius:10px;padding:10px 16px;font-weight:700;cursor:pointer;color:var(--n)}
-.inc b.nm{font-size:18px}.inc .ln{font-size:13px;color:#4B5563;margin-top:3px}
-.top small{display:block;font-size:11.5px;color:#C9D1E0;margin-top:2px}.top .badge{font-size:10.5px;padding:1px 8px}.tb{border:0;background:rgba(255,255,255,.14);color:#fff;width:28px;height:28px;border-radius:8px;font-size:16px;cursor:pointer}
-.tabs{display:flex;border-bottom:1px solid var(--bd);background:#fff}.tabs button{flex:1;border:0;background:none;padding:10px 2px;font-size:12px;font-weight:700;color:#6B7280;cursor:pointer;border-bottom:2px solid transparent}.tabs button.on{color:var(--o);border-bottom-color:var(--o)}
-.fnd{min-height:0;font-size:12.5px;text-align:center}.fnd.on{background:#F0FDF4;border:1px solid #BBF7D0;color:#14532D;border-radius:10px;padding:6px 8px}
-.srch{width:100%;border:1.5px solid var(--bd);border-radius:10px;padding:9px 11px;font:inherit;font-size:13px}.lst{display:flex;flex-direction:column}.li{display:flex;align-items:center;gap:10px;padding:9px 2px;border-top:1px solid #F1F3F6;cursor:pointer}.li:first-child{border-top:0}.li b{display:block;font-size:13px}.li small{color:#6B7280;font-size:11.5px}.li .go2{margin-left:auto;border:0;background:#E8F8EE;color:#15803D;width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:15px}.li .av2{width:34px;height:34px;border-radius:50%;background:var(--n);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex:none}
-.act{text-align:center;padding:10px 0}.act .av{width:62px;height:62px;border-radius:50%;background:var(--n);color:#fff;font-size:24px;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 8px}.act b{font-size:17px;display:block}.act .as{font-weight:800;color:#16A34A;margin-top:6px}.act .at{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums}
-.kv{display:grid;grid-template-columns:1fr 1fr;gap:8px}.kv div{background:#F9FAFB;border:1px solid var(--bd);border-radius:10px;padding:8px 10px}.kv span{display:block;font-size:11px;color:#6B7280}.kv b{font-size:13px}.qa{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.qa a{text-align:center;border:1px solid var(--bd);border-radius:10px;padding:9px;font-size:12.5px;font-weight:700;color:var(--n);text-decoration:none}.qa a:hover{border-color:var(--o);color:var(--o)}
-.emb body,.emb{max-width:none}body:has(.emb){background:#fff}.emb.ph{max-width:none}
+:root{--n:#0F1F3D;--n2:#1B2F55;--o:#F26B1D;--g:#16A34A;--r:#DC2626;--bd:#E5E7EB;--gr:#F3F4F6;--mu:#6B7280}*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Noto Sans Bengali',Arial,sans-serif;background:#EEF0F4;color:var(--n);font-size:13px}
+button{font-family:inherit}button:disabled{opacity:.5;cursor:not-allowed}
+.ph{max-width:400px;margin:0 auto;height:100vh;background:#fff;display:flex;flex-direction:column;overflow:hidden}.ph.emb{max-width:none}
+.top{background:var(--n);color:#fff;padding:10px 12px;display:flex;align-items:center;gap:8px}.top .tt{flex:1;min-width:0}.top b{display:block;font-size:15px;letter-spacing:.2px}.top small{display:flex;align-items:center;gap:6px;font-size:11px;color:#C5CEE0;margin-top:2px}
+.badge{font-size:10.5px;font-weight:800;padding:1px 8px;border-radius:10px;color:#fff;background:var(--r)}.b-ok{background:var(--g)}.b-wait{background:#2563EB}.b-bad{background:var(--r)}
+.tb{border:0;background:rgba(255,255,255,.13);color:#fff;width:26px;height:26px;border-radius:6px;font-size:15px;cursor:pointer;line-height:1}.tb:hover{background:rgba(255,255,255,.25)}
+.tabs{display:flex;border-bottom:1px solid var(--bd);background:#fff}.tabs button{flex:1;border:0;background:none;padding:9px 2px;font-size:12px;font-weight:700;color:var(--mu);cursor:pointer;border-bottom:2px solid transparent}.tabs button.on{color:var(--o);border-bottom-color:var(--o)}.tabs button .dot{display:none;width:7px;height:7px;border-radius:50%;background:var(--g);margin-left:4px;vertical-align:middle}.tabs button.live .dot{display:inline-block}
+.disc{display:none;background:#FEF2F2;border-bottom:1px solid #FECACA;color:#991B1B;padding:7px 12px;font-size:12px;font-weight:700;align-items:center;gap:8px}.disc.on{display:flex}.disc span{flex:1}.disc button{border:0;background:var(--r);color:#fff;border-radius:6px;padding:5px 10px;font-weight:700;cursor:pointer;font-size:12px}
+.box{padding:12px;flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:9px}
+.num{display:flex;gap:6px}.num input{flex:1;font-size:20px;letter-spacing:1px;text-align:center;padding:8px;border:1.5px solid var(--bd);border-radius:8px;color:var(--n);font-weight:700;min-width:0}.num input:focus{outline:0;border-color:var(--o)}.num button{border:1.5px solid var(--bd);background:#fff;border-radius:8px;width:44px;font-size:16px;cursor:pointer}
+.stt{text-align:center;font-size:12px;color:var(--mu);font-weight:700}.stt span{font-variant-numeric:tabular-nums}
+.keys{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.keys button{height:46px;border:1px solid var(--bd);border-radius:8px;background:var(--gr);font-size:18px;font-weight:700;color:var(--n);cursor:pointer}.keys button:active{background:#FFEDE0}.keys small{display:block;font-size:8.5px;color:#9CA3AF;font-weight:600;letter-spacing:1px;line-height:1}
+.go{border:0;border-radius:8px;height:48px;font-size:15px;font-weight:800;color:#fff;cursor:pointer;width:100%;display:flex;align-items:center;justify-content:center;gap:8px}.call{background:var(--g)}.call.busyb{background:#64748B}.hang{background:var(--r)}.hang.big{height:54px;font-size:16px}
+.msg{font-size:12px;color:#B91C1C;text-align:center;min-height:14px}.mut{font-size:12px;color:var(--mu);text-align:center}.mut a{color:#4F46E5}
+.fnd{display:none;background:#F0FDF4;border:1px solid #BBF7D0;color:#14532D;border-radius:8px;padding:6px 9px;font-size:12px}.fnd.on{display:block}.fnd.unk{background:var(--gr);border-color:var(--bd);color:#374151}.fnd a{color:var(--o);font-weight:700;text-decoration:none}
+.srch{width:100%;border:1.5px solid var(--bd);border-radius:8px;padding:8px 10px;font:inherit}.srch:focus{outline:0;border-color:var(--o)}
+.lst{display:flex;flex-direction:column}.li{display:flex;align-items:center;gap:9px;padding:8px 2px;border-top:1px solid #F1F3F6;cursor:pointer}.li:first-child{border-top:0}.li:hover{background:#FAFAFB}.li .mid{flex:1;min-width:0}.li b{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.li small{color:var(--mu);font-size:11.5px;display:block}
+.av2{width:32px;height:32px;border-radius:50%;background:var(--n);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12.5px;flex:none}
+.li .cb{border:0;background:#E8F8EE;color:#15803D;padding:0 11px;height:30px;border-radius:6px;cursor:pointer;font-weight:800;font-size:12px;flex:none}
+.tg{display:inline-block;font-size:10.5px;font-weight:800;padding:1px 7px;border-radius:8px;background:#EEF2FF;color:#3730A3;margin-right:3px}.tg.vip{background:#FEF3C7;color:#92400E}.tg.new{background:#E0F2FE;color:#075985}.tg.o{background:#DCFCE7;color:#166534}.tg.x{background:#FEE2E2;color:#991B1B}
+.act{text-align:center;padding:4px 0 0}.act .av{width:58px;height:58px;border-radius:50%;background:var(--n);color:#fff;font-size:22px;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 6px}.act .nm{font-size:17px;font-weight:800;display:block}.act .ph1{color:var(--mu);margin-top:2px;font-variant-numeric:tabular-nums}
+.act .as{font-weight:800;margin-top:6px;font-size:13px;color:var(--mu)}.act .as.ok{color:var(--g)}.act .as.bad{color:var(--r)}.act .as.wt{color:#2563EB}.act .at{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:1px}
+.rec{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;color:#B91C1C}.rec i{width:8px;height:8px;border-radius:50%;background:var(--r);animation:bl 1.2s infinite}@keyframes bl{50%{opacity:.25}}
+.card2{background:var(--gr);border:1px solid var(--bd);border-radius:8px;padding:8px 10px;text-align:left}.card2 .r{display:flex;justify-content:space-between;gap:8px;padding:2px 0}.card2 .r span{color:var(--mu)}.card2 .r b{text-align:right}
+.qa{display:grid;grid-template-columns:1fr 1fr;gap:7px}.qa a{text-align:center;border:1px solid var(--bd);border-radius:8px;padding:8px;font-size:12.5px;font-weight:700;color:var(--n);text-decoration:none;background:#fff}.qa a:hover{border-color:var(--o);color:var(--o)}.qa a.off{pointer-events:none;opacity:.4}
+.ctl{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}.ctl.c5{grid-template-columns:repeat(5,1fr)}.ctl button{border:1px solid var(--bd);background:#fff;border-radius:8px;padding:8px 2px;font-size:11.5px;font-weight:700;color:var(--n);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}.ctl button i{font-style:normal;font-size:16px}.ctl button.on{background:var(--n);color:#fff;border-color:var(--n)}
+.fr{display:inline-block;font-size:11.5px;font-weight:800;padding:2px 8px;border-radius:8px}
+.ov{position:fixed;inset:0;background:rgba(15,31,61,.6);display:none;align-items:center;justify-content:center;z-index:9;padding:10px}.ov.on{display:flex}.card{background:#fff;border-radius:10px;padding:14px;width:min(380px,100%);max-height:96vh;overflow-y:auto}
+.card h3{margin:0;font-size:16px}.card .sub{color:var(--mu);font-size:12px;margin:2px 0 8px}
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}.sg div{background:var(--gr);border:1px solid var(--bd);border-radius:7px;padding:5px 8px}.sg span{display:block;font-size:10.5px;color:var(--mu)}.sg b{font-size:12.5px}
+.lb{font-size:11.5px;font-weight:800;color:#374151;margin:8px 0 4px}
+.oc{display:grid;grid-template-columns:1fr 1fr;gap:6px}.oc button{border:1.5px solid var(--bd);background:#fff;border-radius:7px;padding:8px 4px;font-weight:700;font-size:12px;cursor:pointer;color:var(--n)}.oc button.on{border-color:var(--o);background:#FFF1E8;color:#B94A0B}.oc button.on.cn{border-color:var(--r);background:#FEF2F2;color:#991B1B}.oc button.on.cf{border-color:var(--g);background:#F0FDF4;color:#166534}
+.chip{display:inline-block;margin:0 4px 5px 0;padding:4px 9px;border:1px solid var(--bd);border-radius:14px;font-size:11.5px;font-weight:600;cursor:pointer;background:#fff;color:var(--n)}.chip:hover{border-color:var(--o)}.chip.on{background:var(--n);color:#fff;border-color:var(--n)}
+textarea,.ti{width:100%;border:1.5px solid var(--bd);border-radius:8px;padding:8px;font:inherit}textarea:focus,.ti:focus{outline:0;border-color:var(--o)}
+.acts{display:flex;gap:7px;margin-top:10px}.pri{border:0;background:var(--o);color:#fff;border-radius:8px;padding:10px 14px;font-weight:800;cursor:pointer;flex:1}.sec{border:1px solid var(--bd);background:#fff;border-radius:8px;padding:10px 12px;font-weight:700;cursor:pointer;color:var(--n)}.pri.gn{background:var(--g)}.pri.rd{background:var(--r)}
+.err{color:#B91C1C;font-size:12px;margin-top:6px;min-height:14px}
+.kp{display:none;grid-template-columns:repeat(3,1fr);gap:6px}.kp.on{display:grid}.kp button{height:38px;border:1px solid var(--bd);border-radius:7px;background:var(--gr);font-size:16px;font-weight:700;cursor:pointer;color:var(--n)}
+.inc .nm{font-size:18px;font-weight:800}.inc .ln{font-size:12.5px;color:#4B5563;margin-top:3px}
 </style></head><body>
 <div class="ph{{ $embed ? ' emb' : '' }}">
-<div class="top"><div style="flex:1;min-width:0"><b>Soft Dialer</b><small>Call Center · <span class="badge" id="bdg">Disconnected</span></small></div>@if($embed)<button type="button" class="tb" id="pPop" title="Pop out (keeps the call alive while you browse)">⧉</button><button type="button" class="tb" id="pMin" title="Minimize">–</button><button type="button" class="tb" id="pX" title="Close">×</button>@endif</div>
-<div class="tabs"><button type="button" data-t="pad" class="on">Dial Pad</button><button type="button" data-t="con">Contacts</button><button type="button" data-t="rec">Recent</button><button type="button" data-t="act">Active Call</button></div>
+<div class="top"><div class="tt"><b>Mother Commerce Dialer</b><small>Call Center · <span class="badge b-bad" id="bdg">Disconnected</span></small></div>@if($embed)<button type="button" class="tb" id="pPop" title="Pop out (keeps the call alive while you browse)">⧉</button><button type="button" class="tb" id="pMin" title="Minimize">–</button><button type="button" class="tb" id="pX" title="Close">×</button>@endif</div>
+<div class="disc" id="disc"><span>PBX connection required</span><button type="button" id="bRc">Reconnect</button></div>
+<div class="tabs"><button type="button" data-t="pad" class="on">Dial Pad</button><button type="button" data-t="con">Contacts</button><button type="button" data-t="rec">Recent</button><button type="button" data-t="act" id="tAct">Active Call<span class="dot"></span></button></div>
+
 <div class="box tp" id="tp-pad">
-<div class="stat"><b id="cst">Ready</b><span id="tmr">00:00:00</span></div>
-<div class="num"><input id="num" inputmode="tel" autocomplete="off" placeholder="Enter Phone Number" value="{{ $n }}"><button id="bk" title="Backspace">⌫</button></div>
+<div class="stt"><span id="cst">Ready</span> · <span id="tmr">00:00:00</span></div>
+<div class="num"><input id="num" inputmode="tel" autocomplete="off" placeholder="Enter Phone Number" value="{{ $n }}"><button type="button" id="bk" title="Backspace">⌫</button></div>
 <div id="found" class="fnd"></div>
 <div class="keys">@foreach([['1',''],['2','ABC'],['3','DEF'],['4','GHI'],['5','JKL'],['6','MNO'],['7','PQRS'],['8','TUV'],['9','WXYZ'],['*',''],['0','+'],['#','']] as $k)<button type="button" data-k="{{ $k[0] }}">{{ $k[0] }}<small>{{ $k[1] ?: ' ' }}</small></button>@endforeach</div>
-<div class="row"><button id="bMute" disabled>🎙 Mute</button><button id="bHold" disabled>⏸ Hold</button><button id="bSpk">🔊 Speaker</button><button id="bDtmf" disabled>⌨ DTMF</button></div>
-<div class="go"><button class="call" id="bCall">📞 Call</button><button class="hang" id="bHang" disabled>⛔ Hang Up</button></div>
+<button type="button" class="go call" id="bGo">📞 Call</button>
+<button type="button" class="go hang" id="bHang1" style="display:none">⛔ Hang Up</button>
 <div class="msg" id="msg">@if(!$has)SIP account is not set up. Ask an admin to open Call Center → SIP Account.@endif</div>
-<div class="mut"><a href="#" id="bCn" style="color:#4F46E5">Connect</a> · <a href="#" id="bDc" style="color:#4F46E5">Disconnect</a> · <a href="/admin/call-center/history" target="_blank" style="color:#4F46E5">Call history</a></div>
+<div class="mut"><a href="/admin/call-center/history" target="_blank">Call history</a></div>
 </div>
-<div class="box tp" id="tp-con" style="display:none"><input id="cq" placeholder="Search name or phone" class="srch"><div id="cl" class="lst"></div></div>
+
+<div class="box tp" id="tp-con" style="display:none"><input id="cq" placeholder="Search name, phone or customer ID" class="srch"><div id="cl" class="lst"></div></div>
 <div class="box tp" id="tp-rec" style="display:none"><div id="rl" class="lst"></div></div>
-<div class="box tp" id="tp-act" style="display:none"><div class="act"><div class="av" id="aAv">?</div><b id="aN">No active call</b><div id="aP" class="mut"></div><div id="aS" class="as">—</div><div id="aT" class="at">00:00:00</div></div>
-<div class="kv"><div><span>Category</span><b id="aC">—</b></div><div><span>Total orders</span><b id="aO">—</b></div><div style="grid-column:1/-1"><span>Current / last order</span><b id="aL">—</b></div></div>
-<div class="qa"><a id="aCu" target="_blank" href="#">Open Customer</a><a id="aOr" target="_blank" href="#">Open Order</a></div><div class="mut" style="margin-top:8px">When the call ends, a Call Note box opens: confirmed, no answer, call later, cancelled, WhatsApp follow-up or custom — saved to the customer and order history.</div></div>
+
+<div class="box tp" id="tp-act" style="display:none">
+<div id="aNone" class="mut" style="padding:30px 0">No active call. Dial a number or pick a contact to start.</div>
+<div id="aBox" style="display:none;flex-direction:column;gap:9px">
+ <div class="act"><div class="av" id="aAv">?</div><span class="nm" id="aN">Unknown Customer</span><div class="ph1" id="aP"></div><div class="as" id="aS">—</div><div class="at" id="aT">00:00:00</div><div id="aRec" style="margin-top:2px"></div></div>
+ <div class="card2" id="aCard"></div>
+ <div class="qa"><a id="aCu" href="#" target="_blank">Open Customer</a><a id="aOr" href="#" target="_blank">Open Order</a></div>
+ <div class="kp" id="kp">@foreach(['1','2','3','4','5','6','7','8','9','*','0','#'] as $k)<button type="button" data-d="{{ $k }}">{{ $k }}</button>@endforeach</div>
+ <div class="ctl" id="ctl"><button type="button" id="bMute" disabled><i>🎙</i><span>Mute</span></button><button type="button" id="bHold" disabled><i>⏸</i><span>Hold</span></button><button type="button" id="bKp" disabled><i>⌨</i><span>Keypad</span></button><button type="button" id="bTr" disabled><i>↗</i><span>Transfer</span></button><button type="button" id="bSpk" style="display:none"><i>🔊</i><span>Speaker</span></button></div>
+ <button type="button" class="go hang big" id="bHang2" disabled>⛔ Hang Up</button>
+ <div class="msg" id="msg2"></div>
 </div>
-<div class="ov" id="ovInc"><div class="card inc"><div style="font-size:12px;color:#6B7280;font-weight:700">Incoming Call</div><b class="nm" id="icN">Unknown caller</b><div class="ln" id="icP"></div><div class="ln" id="icI"></div><div style="display:flex;gap:8px;margin-top:14px"><button class="pri" id="icA" style="background:#16A34A;flex:1">Answer</button><button class="pri" id="icR" style="background:#DC2626;flex:1">Reject</button></div></div></div>
-<div class="ov" id="ovNote"><div class="card"><b>Add Call Note</b><div style="margin-top:6px">@foreach(['Customer confirmed','No answer','Call later','Order cancelled','WhatsApp follow-up required'] as $c)<span class="chip" data-c="{{ $c }}">{{ $c }}</span>@endforeach</div><textarea id="ntx" rows="3" maxlength="1000" placeholder="Write a note…"></textarea><div style="display:flex;gap:8px;margin-top:10px"><button class="pri" id="nSave">Save note</button><button class="sec" id="nSkip">Skip</button></div></div></div>
+</div>
+</div>
+
+<div class="ov" id="ovInc"><div class="card inc"><div style="font-size:12px;color:var(--mu);font-weight:800">Incoming Call</div><div class="nm" id="icN">Unknown Customer</div><div class="ln" id="icP"></div><div class="ln" id="icI"></div><div class="acts"><button type="button" class="pri gn" id="icA">Answer</button><button type="button" class="pri rd" id="icR">Reject</button></div></div></div>
+
+<div class="ov" id="ovTr"><div class="card"><h3>Transfer to Extension</h3><div class="sub">Connect this call to another extension.</div><input class="ti" id="trExt" inputmode="numeric" placeholder="Extension"><div class="err" id="trErr"></div><div class="acts"><button type="button" class="pri" id="trGo">Transfer Call</button><button type="button" class="sec" id="trX">Cancel</button></div></div></div>
+
+<div class="ov" id="ovSum"><div class="card"><h3>Call Summary</h3><div class="sub">কাস্টমারের সাথে কথোপকথনের ফলাফল সংরক্ষণ করুন</div>
+<div class="sg"><div><span>Customer Name</span><b id="sN">—</b></div><div><span>Phone</span><b id="sP">—</b></div><div><span>Call Duration</span><b id="sD">—</b></div><div><span>Order Number</span><b id="sO">—</b></div><div><span>Agent Name</span><b id="sA">—</b></div><div><span>Recording Status</span><b id="sR">—</b></div></div>
+<div class="lb">Order Outcome</div>
+<div class="oc" id="ocO"><button type="button" data-v="confirmed" class="cf">Order Confirmed</button><button type="button" data-v="pending">Pending</button><button type="button" data-v="call_later">Call Later</button><button type="button" data-v="no_answer">No Answer</button><button type="button" data-v="cancelled" class="cn" style="grid-column:1/-1">Order Cancelled</button></div>
+<div id="cwrap" style="display:none"><div class="lb">Cancel Reason</div><div id="ocC">@foreach(['Price Issue','Delivery Charge Issue','Changed Mind','Duplicate Order','Ordered by Mistake','Product Unavailable','Delay','Not Needed','Suspicious','Other'] as $c)<span class="chip" data-v="{{ $c }}">{{ $c }}</span>@endforeach</div></div>
+<div class="lb">Customer Response</div>
+<div id="ocR">@foreach(['Customer Received Call','Busy','No Answer','Phone Off','Unreachable','Wrong Number','Call Later','WhatsApp Required','Need More Information'] as $c)<span class="chip" data-v="{{ $c }}">{{ $c }}</span>@endforeach</div>
+<div class="lb">Call Note</div><textarea id="sNote" rows="3" maxlength="1000" placeholder="কাস্টমারের সাথে কী কথা হয়েছে, সংক্ষেপে লিখুন..."></textarea>
+<div class="err" id="sErr"></div>
+<div class="acts"><button type="button" class="pri" id="sSave">Save &amp; Close</button><button type="button" class="pri" id="sNext" style="background:var(--n)">Save &amp; Next</button><button type="button" class="sec" id="sSkip">Skip</button></div></div></div>
+
+<div class="ov" id="ovDet"><div class="card"><h3>Call Details</h3><div class="sub" id="dSub"></div><div class="card2" id="dBody"></div><div id="dRec" style="margin-top:8px"></div><div class="acts"><button type="button" class="pri gn" id="dCall">Call Again</button><button type="button" class="sec" id="dX">Close</button></div></div></div>
 <audio id="aud" autoplay></audio>
+
 @verbatim
 <script src="/js/jssip.min.js"></script>
 <script>
 (function(){
-var $=function(i){return document.getElementById(i)},T=document.querySelector('meta[name=csrf]').content,ua=null,cfg=null,ses=null,logId=null,t0=0,tick=null,dir='out',held=false,muted=false,answered=false,cur='',ring=null,inCtx=null;
+var $=function(i){return document.getElementById(i)},T=document.querySelector('meta[name=csrf]').content,emb=!!document.querySelector('.ph.emb');
+var ua=null,cfg=null,ses=null,logId=null,connAt=0,tick=null,dir='out',phase='idle',muted=false,held=false,cur='',info=null,ring=null,inCtx=null,sum=null,lastBusy=null,okCount=0;
 var ch=window.BroadcastChannel?new BroadcastChannel('dfphone'):null;
-function post(u,o){var f=new FormData();f.append('_token',T);for(var k in o||{})f.append(k,o[k]);return fetch(u,{method:'POST',body:f,headers:{Accept:'application/json'}}).then(function(r){return r.json()})}
-function badge(t,c){var b=$('bdg');b.textContent=t;b.className='badge '+(c||'');if(ch)ch.postMessage({type:'status',text:t,cls:c||''})}
-function st(t){$('cst').textContent=t}function err(t){$('msg').textContent=t||''}
-function fmt(s){var h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return [h,m,x].map(function(v){return (v<10?'0':'')+v}).join(':')}
-function startTimer(){t0=Date.now();clearInterval(tick);tick=setInterval(function(){$('tmr').textContent=fmt(Math.floor((Date.now()-t0)/1000))},500)}
-function secs(){return t0?Math.floor((Date.now()-t0)/1000):0}
+function esc(t){return String(t==null?'':t).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function post(u,o){var f=new FormData();f.append('_token',T);for(var k in o||{})if(o[k]!=null)f.append(k,o[k]);return fetch(u,{method:'POST',body:f,headers:{Accept:'application/json'}}).then(function(r){return r.json().then(function(j){j._s=r.status;return j})})}
+function getj(u){return fetch(u,{headers:{Accept:'application/json'}}).then(function(r){return r.json()})}
 function clean(n){return String(n||'').replace(/[^0-9+*#]/g,'')}
-function ui(on){$('bCall').disabled=on||!ua||!ua.isRegistered();$('bHang').disabled=!on;['bMute','bHold','bDtmf'].forEach(function(i){$(i).disabled=!on||!answered})}
-function mic(){if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)return Promise.reject({name:'NoMedia'});return navigator.mediaDevices.getUserMedia({audio:true}).then(function(s){s.getTracks().forEach(function(t){t.stop()})})}
-function micErr(e){badge('Permission Issue','b-perm');err('Microphone access is required to make calls.');st('Failed')}
-function creds(){return fetch('/admin/call-center/creds',{headers:{Accept:'application/json'}}).then(function(r){return r.json()})}
-function connect(){if(ua){return}badge('Connecting','b-connecting');creds().then(function(c){if(!c.ok){badge('Disconnected','');err(c.error);return}cfg=c;
- try{var sock=new JsSIP.WebSocketInterface(c.wss);ua=new JsSIP.UA({sockets:[sock],uri:'sip:'+c.user+'@'+c.domain,password:c.pw,authorization_user:c.auth,display_name:c.name,register:true,session_timers:false});}catch(e){badge('Registration Failed','b-failed');err('Could not start: '+e.message);ua=null;return}
- ua.on('registered',function(){badge('Connected','b-connected');err('');st('Ready');ui(false)});
- ua.on('unregistered',function(){badge('Disconnected','')});
- ua.on('registrationFailed',function(e){badge('Registration Failed','b-failed');err('Registration failed'+(e&&e.cause?': '+e.cause:'')+'. Check username, password and domain.')});
- ua.on('disconnected',function(){if(ua&&!ua.isRegistered()){badge('Disconnected','');err('Cannot reach the PBX over WSS. Check the WebSocket URL and that the PBX supports WebRTC.')}});
- ua.on('newRTCSession',function(e){var s=e.session;if(s.direction==='incoming')incoming(s)});
- ua.start()}).catch(function(){badge('Disconnected','');err('Could not load the SIP account.')})}
-function disconnect(){if(ua){try{ua.stop()}catch(e){}ua=null}badge('Disconnected','');ui(false)}
+function fmt(s){var h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return [h,m,x].map(function(v){return (v<10?'0':'')+v}).join(':')}
+function fmtD(s){return s>=60?Math.floor(s/60)+'m '+(s%60)+'s':s+'s'}
+function inCall(){return !!ses&&(phase==='connecting'||phase==='ringing'||phase==='connected')}
+function connected(){return inCall()&&phase==='connected'}
+/* ---------- connection badge ---------- */
+function badge(t,c){var b=$('bdg');b.textContent=t;b.className='badge '+(c||'b-bad');if(ch)ch.postMessage({type:'status',text:t,cls:c||'b-bad'});ui()}
+function reg(){return !!(ua&&ua.isRegistered())}
+function err(t){$('msg').textContent=t||'';$('msg2').textContent=t||''}
+/* ---------- state / UI ---------- */
+var LBL={idle:'Ready',connecting:'Connecting...',ringing:'Ringing...',connected:'Connected',ended:'Call Ended',failed:'Failed'};
+function setPhase(p,label){phase=p;var t=label||LBL[p];$('cst').textContent=t;var a=$('aS');a.textContent=t.replace('...','');a.className='as '+(p==='connected'?'ok':(p==='failed'?'bad':(p==='connecting'||p==='ringing'?'wt':'')));ui()}
+function ui(){var r=reg(),ic=inCall(),cn=connected();
+ $('disc').classList.toggle('on',!r&&!ic);
+ var g=$('bGo');if(ic){g.textContent=phase==='connected'?'✔ Connected':LBL[phase];g.disabled=true;g.className='go call busyb'}else{g.textContent='📞 Call';g.disabled=!r;g.className='go call'}
+ $('bHang1').style.display=ic?'flex':'none';$('bHang2').disabled=!ic;
+ ['bMute','bHold','bKp','bTr'].forEach(function(i){$(i).disabled=!cn});
+ $('tAct').classList.toggle('live',ic);
+ var b=ic?'busy':'idle';if(b!==lastBusy){lastBusy=b;if(emb)parent.postMessage({dfdial:b},location.origin)}}
+function startTimer(){connAt=Date.now();clearInterval(tick);tick=setInterval(function(){var s=fmt(Math.floor((Date.now()-connAt)/1000));$('tmr').textContent=s;$('aT').textContent=s},500)}
+function secs(){return connAt?Math.floor((Date.now()-connAt)/1000):0}
+function tab(t){document.querySelectorAll('.tabs button').forEach(function(b){b.classList.toggle('on',b.dataset.t===t)});document.querySelectorAll('.tp').forEach(function(p){p.style.display=p.id==='tp-'+t?'':'none'});if(t==='rec')recent();if(t==='con')contacts()}
+document.querySelectorAll('.tabs button').forEach(function(b){b.onclick=function(){tab(b.dataset.t)}});
+/* ---------- customer info ---------- */
+function tagCls(c){c=String(c||'').toLowerCase();return c==='vip'?'vip':(c==='new'?'new':'')}
+function fr(f){return f?'<span class="fr" style="color:'+esc(f.color)+';background:'+esc(f.bg)+'">Courier Reliability: '+esc(f.label)+'</span>':''}
+function renderAct(){var c=info||{},ph=cur;
+ $('aNone').style.display='none';$('aBox').style.display='flex';
+ var nm=c.found&&c.name?c.name:'Unknown Customer';$('aN').textContent=nm;$('aAv').textContent=c.found&&c.name?c.name.trim().charAt(0).toUpperCase():'?';$('aP').textContent=ph;
+ var h='';if(c.found){h+='<div class="r"><span>Category</span><b><span class="tg '+tagCls(c.category)+'">'+esc(c.category||'Regular')+'</span> '+c.orders+' Orders</b></div>';
+  if(c.customer_id)h+='<div class="r"><span>Customer ID</span><b>#'+c.customer_id+'</b></div>';
+  h+='<div class="r"><span>Current / Last Order</span><b>'+(c.last?esc(c.last.invoice)+' · '+esc(c.last.status):'—')+'</b></div>';
+  if(c.fraud)h+='<div class="r"><span>Reliability</span><b>'+fr(c.fraud)+'</b></div>'}
+ else h='<div class="r"><span>Customer</span><b>Unknown Customer</b></div><div class="r"><span>Total Orders</span><b>0</b></div>';
+ $('aCard').innerHTML=h;
+ var cu=$('aCu'),or=$('aOr');
+ if(c.customer_id){cu.textContent='Open Customer';cu.href='/admin/m/customers/'+c.customer_id+'/edit';cu.className=''}else{cu.textContent='Create Customer';cu.href='/admin/m/customers/new?phone='+encodeURIComponent(ph);cu.className=''}
+ if(c.last){or.href='/admin/orders/'+c.last.id;or.className=''}else{or.href='#';or.className='off'}
+ recInd()}
+function recInd(){var e=$('aRec');if(inCall()&&connected()&&cfg&&cfg.rec)e.innerHTML='<span class="rec"><i></i>Recording</span>';else e.innerHTML=''}
+function look(n){return getj('/admin/call-center/lookup?phone='+encodeURIComponent(n)).then(function(c){return c}).catch(function(){return {found:false}})}
+/* ---------- connect ---------- */
+function connect(){if(ua)return;badge('Connecting','b-wait');
+ getj('/admin/call-center/creds').then(function(c){if(!c.ok){badge('Disconnected','b-bad');err(c.error);return}cfg=c;
+  try{var sock=new JsSIP.WebSocketInterface(c.wss);ua=new JsSIP.UA({sockets:[sock],uri:'sip:'+c.user+'@'+c.domain,password:c.pw,authorization_user:c.auth,display_name:c.name,register:true,session_timers:false})}catch(e){console.warn('dialer',e);badge('Registration Failed','b-bad');err('Registration Failed. Please contact admin.');ua=null;return}
+  ua.on('registered',function(){badge('Connected','b-ok');err('');if(!inCall())setPhase('idle')});
+  ua.on('unregistered',function(){badge('Disconnected','b-bad')});
+  ua.on('registrationFailed',function(e){console.warn('dialer reg fail',e&&e.cause);badge('Registration Failed','b-bad');err('Registration Failed. Please contact admin.')});
+  ua.on('disconnected',function(){if(ua&&!ua.isRegistered()){badge('Disconnected','b-bad');err('PBX connection required')}});
+  ua.on('newRTCSession',function(e){if(e.session.direction==='incoming')incoming(e.session)});
+  ua.start()}).catch(function(){badge('Disconnected','b-bad');err('PBX connection required')})}
+function disconnect(){if(ua){try{ua.stop()}catch(e){}ua=null}badge('Disconnected','b-bad')}
+function reconnect(){err('');disconnect();setTimeout(connect,300)}
+/* ---------- call flow ---------- */
 function target(n){var p=cfg.prefix||'';n=clean(n);if(p&&n.indexOf(p)!==0&&n.charAt(0)!=='+')n=p+n;return 'sip:'+n+'@'+cfg.domain}
-function wire(s){ses=s;answered=false;
- s.on('progress',function(){st('Ringing...')});
- s.on('accepted',function(){answered=true;st('Connected');startTimer();ui(true)});
- s.on('confirmed',function(){answered=true;if(!t0)startTimer();st('Connected');ui(true)});
- s.on('ended',function(){finish('Call Ended',answered?'answered':'missed')});
- s.on('failed',function(e){var c=(e&&e.cause)||'';finish('Failed',/busy/i.test(c)?'busy':(/cancel/i.test(c)&&dir==='in'?'missed':(/cancel|rejected/i.test(c)?'rejected':'failed')),c)});
- s.on('hold',function(){st('On Hold')});s.on('unhold',function(){st('Connected')});
- var pc=s.connection;if(pc)pc.addEventListener('track',function(ev){$('aud').srcObject=ev.streams[0]});
-}
-function finish(label,status,cause){var d=secs();clearInterval(tick);st(label);if(logId)post('/admin/call-center/log/'+logId+'/end',{status:status,duration:d});var id=logId;ses=null;answered=false;held=false;muted=false;t0=0;$('bMute').classList.remove('on');$('bHold').classList.remove('on');stopRing();ui(false);
- if(status==='failed'&&cause)err('Call failed: '+cause);if(id&&status!=='failed'||id&&d>0){note(id)}logId=null}
-function call(n){n=clean(n||$('num').value);if(!n){err('Enter a phone number first.');return}if(!ua||!ua.isRegistered()){err('Not connected. Press Connect first.');return}err('');cur=n;dir='out';
- mic().then(function(){st('Dialing...');$('tmr').textContent='00:00:00';ui(true);return post('/admin/call-center/log',{direction:'out',phone:n,extension:cfg.ext})}).then(function(j){logId=j.id;
-  var o={mediaConstraints:{audio:true,video:false},pcConfig:{iceServers:cfg.stun?[{urls:'stun:'+cfg.stun.replace(/^stun:/,'')}]:[{urls:'stun:stun.l.google.com:19302'}]},rtcOfferConstraints:{offerToReceiveAudio:true}};
-  wire(ua.call(target(n),o))}).catch(function(e){ui(false);if(e&&(e.name==='NotAllowedError'||e.name==='NotFoundError'||e.name==='NoMedia'||e.name==='SecurityError'))micErr(e);else{st('Failed');err('Could not place the call.')}})}
-function hang(){if(ses){try{ses.terminate()}catch(e){}}}
+function iceCfg(){return {iceServers:cfg.stun?[{urls:'stun:'+cfg.stun.replace(/^stun:/,'')}]:[{urls:'stun:stun.l.google.com:19302'}]}}
+function mic(){if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)return Promise.reject({name:'NoMedia'});return navigator.mediaDevices.getUserMedia({audio:true}).then(function(s){s.getTracks().forEach(function(t){t.stop()})})}
+function micErr(){setPhase('failed','Failed');err('Microphone access is required to make calls.')}
+function resetCtl(){muted=false;held=false;$('bMute').classList.remove('on');$('bHold').classList.remove('on');$('bMute').lastChild.textContent='Mute';$('bHold').lastChild.textContent='Hold';$('bKp').classList.remove('on');$('kp').classList.remove('on')}
+function begin(n,d){cur=n;dir=d;info=null;connAt=0;clearInterval(tick);$('tmr').textContent='00:00:00';$('aT').textContent='00:00:00';resetCtl();renderAct();look(n).then(function(c){if(cur===n){info=c;renderAct();if(d==='in'){$('icN').textContent=c.found&&c.name?c.name:'Unknown Customer';$('icI').textContent=c.found?((c.category||'Customer')+' · '+c.orders+' orders'+(c.last?' · Last: '+c.last.invoice+' ('+c.last.status+')':'')):'No customer record'}}})}
+function call(n){n=clean(n||$('num').value);if(!n){err('Enter a phone number first.');return}if(inCall())return;if(!reg()){err('PBX connection required');return}err('');
+ begin(n,'out');setPhase('connecting');tab('act');
+ mic().then(function(){return post('/admin/call-center/log',{direction:'out',phone:n,extension:cfg.ext})}).then(function(j){logId=j.id;
+  var s=ua.call(target(n),{mediaConstraints:{audio:true,video:false},pcConfig:iceCfg(),rtcOfferConstraints:{offerToReceiveAudio:true}});wire(s)}).catch(function(e){ses=null;if(e&&(e.name==='NotAllowedError'||e.name==='NotFoundError'||e.name==='NoMedia'||e.name==='SecurityError'))micErr();else{console.warn('dialer call',e);setPhase('failed','PBX Error');err('PBX Error. Please try again.')}})}
+function pbxId(){try{return ses._request&&ses._request.call_id||''}catch(e){return ''}}
+function wire(s){ses=s;
+ s.on('progress',function(){if(phase==='connecting')setPhase('ringing')});
+ var up=function(){if(phase==='connected')return;setPhase('connected');startTimer();if(logId)post('/admin/call-center/log/'+logId+'/connected',{pbx_call_id:pbxId()});recInd();err('')};
+ s.on('accepted',up);s.on('confirmed',up);
+ s.on('ended',function(e){finish('ended',e&&e.cause)});
+ s.on('failed',function(e){finish('failed',(e&&e.cause)||'')});
+ s.on('hold',function(e){if(e.originator==='local'){held=true;$('bHold').classList.add('on');$('bHold').lastChild.textContent='Resume'}});
+ s.on('unhold',function(e){if(e.originator==='local'){held=false;$('bHold').classList.remove('on');$('bHold').lastChild.textContent='Hold'}});
+ var pc=s.connection;if(pc)pc.addEventListener('track',function(ev){if(ev.streams&&ev.streams[0])$('aud').srcObject=ev.streams[0]})}
+function friendly(c){c=String(c||'');
+ if(/busy|rejected|decline/i.test(c))return 'Call Rejected';
+ if(/unavailable|not found|address incomplete|no answer|timeout|expired/i.test(c))return 'Number Unreachable';
+ if(/connection|rtp|websocket/i.test(c))return 'Connection Lost';
+ if(/authent/i.test(c))return 'Registration Failed';
+ return 'PBX Error'}
+function finish(kind,cause){if(!ses&&phase!=='connecting'&&phase!=='ringing'&&phase!=='connected')return;
+ var wasConn=!!connAt,d=secs(),id=logId,raw=String(cause||''),canceled=/cancel|bye|terminated/i.test(raw);
+ clearInterval(tick);stopRing();$('ovInc').classList.remove('on');
+ var status,label,isFail=false;
+ if(wasConn){status='answered';label='Call Ended'}
+ else if(dir==='in'){status=/cancel/i.test(raw)?'missed':'rejected';label='Call Ended'}
+ else if(canceled||kind==='ended'){status='missed';label='Call Ended'}
+ else{isFail=true;label=friendly(raw);status=/busy/i.test(raw)?'busy':(/rejected|decline/i.test(raw)?'rejected':'failed')}
+ if(raw)console.warn('dialer call end:',raw);
+ setPhase(isFail?'failed':'ended',label);
+ if(isFail)err(label);
+ if(id)post('/admin/call-center/log/'+id+'/end',{status:status,duration:d,fail_reason:raw.slice(0,150)});
+ var sc={id:id,dur:d,connected:wasConn,dir:dir,phone:cur,info:info,status:status};
+ ses=null;logId=null;recInd();ui();
+ if(id&&(wasConn||dir==='out')&&!(isFail&&/Registration/.test(label)))setTimeout(function(){openSum(sc)},350)}
+function hang(){if(ses){try{ses.terminate()}catch(e){console.warn(e)}
+ setTimeout(function(){if(ses&&inCall())finish('ended','Canceled')},1500)}}
+/* ---------- incoming ---------- */
 function ringStart(){try{inCtx=inCtx||new (window.AudioContext||window.webkitAudioContext)();var b=function(){var o=inCtx.createOscillator(),g=inCtx.createGain();o.frequency.value=480;g.gain.value=.08;o.connect(g);g.connect(inCtx.destination);o.start();setTimeout(function(){o.stop()},700)};b();ring=setInterval(b,1800)}catch(e){}}
 function stopRing(){clearInterval(ring);ring=null}
 function incoming(s){if(ses){try{s.terminate({status_code:486})}catch(e){}return}
- var num=clean((s.remote_identity&&s.remote_identity.uri&&s.remote_identity.uri.user)||'');dir='in';cur=num;ses=s;wire(s);st('Ringing...');ringStart();
- $('icN').textContent=(s.remote_identity&&s.remote_identity.display_name)||'Unknown caller';$('icP').textContent=num;$('icI').textContent='';fetch('/admin/call-center/lookup?phone='+encodeURIComponent(num),{headers:{Accept:'application/json'}}).then(function(r){return r.json()}).then(function(c){if(c.found){if(c.name)$('icN').textContent=c.name;$('icI').textContent=(c.category||'Customer')+' · '+c.orders+' orders'+(c.last?' · Last: '+c.last.invoice+' ('+c.last.status+')':'')}}).catch(function(){});$('ovInc').classList.add('on');
+ var num=clean((s.remote_identity&&s.remote_identity.uri&&s.remote_identity.uri.user)||'');
+ ses=s;begin(num,'in');setPhase('ringing');wire(s);ringStart();
+ $('icN').textContent=(s.remote_identity&&s.remote_identity.display_name)||'Unknown Customer';$('icP').textContent=num;$('icI').textContent='';$('ovInc').classList.add('on');tab('act');
+ if(emb)parent.postMessage({dfdial:'incoming'},location.origin);
  post('/admin/call-center/log',{direction:'in',phone:num,extension:cfg&&cfg.ext}).then(function(j){logId=j.id});
- fetch('/admin/call-center/lookup?phone='+encodeURIComponent(num),{headers:{Accept:'application/json'}}).then(function(r){return r.json()}).then(function(c){if(c.found){$('icN').textContent=c.name||'Customer';$('icI').textContent=(c.category||'Customer')+(c.membership?' · Membership '+c.membership:'')+' · Previous orders: '+c.orders+(c.last?' · Last: '+c.last.invoice+' ('+c.last.status+')':'')}});
- if(window.Notification&&Notification.permission==='granted')try{new Notification('Incoming call',{body:num})}catch(e){}
- s.on('ended',function(){$('ovInc').classList.remove('on')});s.on('failed',function(){$('ovInc').classList.remove('on')});}
-$('icA').onclick=function(){stopRing();$('ovInc').classList.remove('on');mic().then(function(){ses.answer({mediaConstraints:{audio:true,video:false},pcConfig:{iceServers:cfg.stun?[{urls:'stun:'+cfg.stun.replace(/^stun:/,'')}]:[{urls:'stun:stun.l.google.com:19302'}]}});$('num').value=cur;ui(true)}).catch(micErr)};
+ if(window.Notification&&Notification.permission==='granted')try{new Notification('Incoming call',{body:num})}catch(e){}}
+$('icA').onclick=function(){stopRing();$('ovInc').classList.remove('on');setPhase('connecting');mic().then(function(){ses.answer({mediaConstraints:{audio:true,video:false},pcConfig:iceCfg()})}).catch(function(){micErr();try{ses.terminate({status_code:486})}catch(e){}})};
 $('icR').onclick=function(){stopRing();$('ovInc').classList.remove('on');try{ses.terminate({status_code:486})}catch(e){}};
-function note(id){$('ntx').value='';$('ovNote').classList.add('on');$('ovNote').dataset.id=id}
-document.querySelectorAll('.chip').forEach(function(c){c.onclick=function(){$('ntx').value=c.dataset.c}});
-$('nSkip').onclick=function(){$('ovNote').classList.remove('on')};
-$('nSave').onclick=function(){var t=$('ntx').value.trim();if(!t)return;post('/admin/call-center/log/'+$('ovNote').dataset.id+'/note',{note:t}).then(function(){$('ovNote').classList.remove('on')})};
-document.querySelectorAll('[data-k]').forEach(function(b){b.onclick=function(){var k=b.dataset.k;if(ses&&answered){try{ses.sendDTMF(k)}catch(e){}}$('num').value+=k}});
-$('bk').onclick=function(){$('num').value=$('num').value.slice(0,-1)};
-$('bCall').onclick=function(){call()};$('bHang').onclick=hang;
-$('bMute').onclick=function(){if(!ses)return;muted=!muted;muted?ses.mute({audio:true}):ses.unmute({audio:true});this.classList.toggle('on',muted);this.textContent=muted?'🎙 Unmute':'🎙 Mute'};
-$('bHold').onclick=function(){if(!ses)return;held=!held;held?ses.hold():ses.unhold();this.classList.toggle('on',held);this.textContent=held?'▶ Resume':'⏸ Hold'};
-$('bSpk').onclick=function(){var a=$('aud');a.muted=!a.muted;this.classList.toggle('on',a.muted);this.textContent=a.muted?'🔇 Speaker off':'🔊 Speaker'};
-$('bDtmf').onclick=function(){err('Use the keypad above to send DTMF tones during the call.')};
-$('bCn').onclick=function(e){e.preventDefault();connect()};$('bDc').onclick=function(e){e.preventDefault();disconnect()};
-if(ch)ch.onmessage=function(m){var d=m.data||{};if(d.type==='ping'){ch.postMessage({type:'here'})}if(d.type==='dial'){$('num').value=clean(d.n);window.focus();$('num').focus()}if(d.type==='call'){$('num').value=clean(d.n);window.focus();call(d.n)}if(d.type==='disconnect')disconnect();if(d.type==='connect')connect();if(d.type==='getstatus')ch.postMessage({type:'status',text:$('bdg').textContent,cls:$('bdg').className.replace('badge ','')})};
-window.addEventListener('beforeunload',function(e){if(ses&&answered){e.preventDefault();e.returnValue=''}});
+/* ---------- in-call controls ---------- */
+function dtmf(k){if(ses&&connected()){try{ses.sendDTMF(k,{duration:160,interToneGap:80})}catch(e){console.warn(e)}}}
+document.querySelectorAll('#tp-pad [data-k]').forEach(function(b){b.onclick=function(){var k=b.dataset.k;if(connected())dtmf(k);else if(!inCall()){$('num').value+=k;found()}}});
+document.querySelectorAll('#kp [data-d]').forEach(function(b){b.onclick=function(){dtmf(b.dataset.d)}});
+$('bk').onclick=function(){if(!inCall()){$('num').value=$('num').value.slice(0,-1);found()}};
+$('bGo').onclick=function(){call()};$('bHang1').onclick=hang;$('bHang2').onclick=hang;
+$('bMute').onclick=function(){if(!connected())return;muted=!muted;try{muted?ses.mute({audio:true}):ses.unmute({audio:true})}catch(e){}this.classList.toggle('on',muted);this.lastChild.textContent=muted?'Unmute':'Mute'};
+$('bHold').onclick=function(){if(!connected())return;try{held?ses.unhold():ses.hold()}catch(e){console.warn(e)}};
+$('bKp').onclick=function(){var k=$('kp');k.classList.toggle('on');this.classList.toggle('on',k.classList.contains('on'))};
+if(typeof HTMLMediaElement!=='undefined'&&HTMLMediaElement.prototype.setSinkId&&navigator.mediaDevices&&navigator.mediaDevices.enumerateDevices){$('bSpk').style.display='';$('ctl').classList.add('c5');
+ var spkI=0;$('bSpk').onclick=function(){navigator.mediaDevices.enumerateDevices().then(function(l){var o=l.filter(function(d){return d.kind==='audiooutput'});if(o.length<2){err('No other speaker found on this device.');return}spkI=(spkI+1)%o.length;return $('aud').setSinkId(o[spkI].deviceId).then(function(){$('bSpk').lastChild.textContent=(o[spkI].label||'Speaker').slice(0,9)})}).catch(function(){err('Could not switch speaker.')})}}
+$('bTr').onclick=function(){if(!connected())return;$('trErr').textContent='';$('trExt').value='';$('ovTr').classList.add('on');setTimeout(function(){$('trExt').focus()},50)};
+$('trX').onclick=function(){$('ovTr').classList.remove('on')};
+$('trGo').onclick=function(){var x=clean($('trExt').value);if(!x){$('trErr').textContent='Enter an extension.';return}
+ if(!ses||!connected()){$('ovTr').classList.remove('on');return}
+ $('trErr').style.color='#374151';$('trErr').textContent='Transferring...';
+ try{var rs=ses.refer('sip:'+x+'@'+cfg.domain);
+  rs.on('requestSucceeded',function(){$('ovTr').classList.remove('on');err('Call transferred to '+x)});
+  rs.on('requestFailed',function(){$('trErr').style.color='#B91C1C';$('trErr').textContent='Transfer failed. The PBX did not accept it.'});
+  rs.on('accepted',function(){setTimeout(function(){if(ses&&connected())hang()},400)});
+  rs.on('failed',function(){err('Transfer did not complete.')})}catch(e){console.warn(e);$('trErr').style.color='#B91C1C';$('trErr').textContent='Transfer is not available.'}};
+/* ---------- call summary ---------- */
+var sel={out:null,resp:null,can:null};
+function openSum(c){sum=c;sel={out:c.connected?null:'no_answer',resp:c.connected?null:'No Answer',can:null};
+ var i=c.info||{};$('sN').textContent=i.found&&i.name?i.name:'Unknown Customer';$('sP').textContent=c.phone;$('sD').textContent=c.connected?fmtD(c.dur):'Not connected';$('sO').textContent=i.last?i.last.invoice:'—';$('sA').textContent=(cfg&&cfg.staff)||'—';
+ $('sR').textContent=!c.connected?'No Recording':(cfg&&cfg.rec?'Recording Processing':'No Recording');
+ $('sNote').value='';$('sErr').textContent='';paintSum();$('ovSum').classList.add('on')}
+function paintSum(){document.querySelectorAll('#ocO button').forEach(function(b){b.classList.toggle('on',b.dataset.v===sel.out)});
+ document.querySelectorAll('#ocR .chip').forEach(function(b){b.classList.toggle('on',b.dataset.v===sel.resp)});
+ document.querySelectorAll('#ocC .chip').forEach(function(b){b.classList.toggle('on',b.dataset.v===sel.can)});
+ $('cwrap').style.display=sel.out==='cancelled'?'':'none'}
+document.querySelectorAll('#ocO button').forEach(function(b){b.onclick=function(){sel.out=sel.out===b.dataset.v?null:b.dataset.v;if(sel.out!=='cancelled')sel.can=null;paintSum()}});
+document.querySelectorAll('#ocR .chip').forEach(function(b){b.onclick=function(){sel.resp=sel.resp===b.dataset.v?null:b.dataset.v;paintSum()}});
+document.querySelectorAll('#ocC .chip').forEach(function(b){b.onclick=function(){sel.can=sel.can===b.dataset.v?null:b.dataset.v;paintSum()}});
+function saveSum(next){if(!sum)return;var note=$('sNote').value.trim();
+ if(!sel.out&&!sel.resp&&!note){$('sErr').textContent='Select an outcome or write a note first.';return}
+ if(sel.out==='cancelled'&&!sel.can){$('sErr').textContent='Select a cancel reason.';return}
+ if(sel.out==='cancelled'&&sel.can==='Other'&&!note){$('sErr').textContent='Other কারণ হলে নোট লিখতে হবে।';return}
+ var o={outcome:sel.out,response:sel.resp,cancel_reason:sel.out==='cancelled'?sel.can:null,note:note};if(sum.info&&sum.info.last)o.order_id=sum.info.last.id;
+ $('sSave').disabled=true;$('sNext').disabled=true;
+ post('/admin/call-center/log/'+sum.id+'/summary',o).then(function(j){$('sSave').disabled=false;$('sNext').disabled=false;if(j&&j.ok){$('ovSum').classList.remove('on');sum=null;if(next){$('num').value='';found();tab('pad');$('num').focus()}else tab('pad')}else $('sErr').textContent=(j&&j.error)||'Could not save. Try again.'}).catch(function(){$('sSave').disabled=false;$('sNext').disabled=false;$('sErr').textContent='Could not save. Try again.'})}
+$('sSave').onclick=function(){saveSum(false)};$('sNext').onclick=function(){saveSum(true)};$('sSkip').onclick=function(){$('ovSum').classList.remove('on');sum=null;tab('pad')};
+/* ---------- dial pad: customer found ---------- */
+var lastN='',ft=null;
+function found(){clearTimeout(ft);ft=setTimeout(function(){var n=($('num').value||'').replace(/\D/g,'');if(n===lastN)return;lastN=n;var f=$('found');if(n.length<6){f.className='fnd';f.innerHTML='';return}
+ look(n).then(function(c){if(($('num').value||'').replace(/\D/g,'')!==n)return;if(c.found){f.className='fnd on';f.innerHTML='<b>'+esc(c.name||'Customer')+'</b> · '+esc(c.category||'Regular')+' · '+c.orders+' Orders'+(c.last?'<br>'+esc(c.last.invoice)+' · '+esc(c.last.status):'')+(c.fraud?'<br>'+fr(c.fraud):'')}else if(n.length>=10){f.className='fnd on unk';f.innerHTML='Unknown Customer · <a href="/admin/m/customers/new?phone='+encodeURIComponent(n)+'" target="_blank">Create Customer</a>'}else{f.className='fnd'}})},250)}
+$('num').addEventListener('input',found);
+/* ---------- contacts / recent / details ---------- */
+function contacts(){getj('/admin/call-center/contacts?q='+encodeURIComponent($('cq').value)).then(function(a){$('cl').innerHTML=a.length?a.map(function(c){return '<div class="li"><span class="av2">'+esc((c.name||'?').trim().charAt(0).toUpperCase())+'</span><div class="mid"><b>'+esc(c.name)+'</b><small>'+esc(c.phone)+' · <span class="tg '+tagCls(c.category)+'">'+esc(c.category)+'</span>'+c.orders+' Orders</small></div><button type="button" class="cb" data-n="'+esc(c.phone)+'">Call</button></div>'}).join(''):'<div class="mut" style="padding:14px">No customers found.</div>'})}
+var qt;$('cq').oninput=function(){clearTimeout(qt);qt=setTimeout(contacts,250)};
+var OC={confirmed:'Confirmed',pending:'Pending',call_later:'Call Later',no_answer:'No Answer',cancelled:'Cancelled'},RI={available:'🎧',processing:'⏳',recording:'⏳'};
+function recent(){getj('/admin/call-center/recent').then(function(a){$('rl').innerHTML=a.length?a.map(function(c){return '<div class="li" data-id="'+c.id+'"><span class="av2">'+esc((c.name||c.phone||'?').trim().charAt(0).toUpperCase())+'</span><div class="mid"><b>'+esc(c.name||c.phone)+'</b><small>'+esc(c.phone)+' · '+(c.dir==='in'?'↙ Incoming':'↗ Outgoing')+'<br>'+esc(c.at)+' · '+fmtD(c.dur)+' · '+esc(OC[c.outcome]||c.status)+(RI[c.rec]?' · '+RI[c.rec]:'')+'</small></div></div>'}).join(''):'<div class="mut" style="padding:14px">No calls yet.</div>'})}
+var detPhone='';
+function detail(id){getj('/admin/call-center/call/'+id).then(function(d){detPhone=d.phone;$('dSub').textContent=(d.name||'Unknown Customer')+' · '+d.phone;
+ var rows=[['Direction',d.dir==='in'?'Incoming':'Outgoing'],['Agent',d.agent||'—'],['Extension',d.ext||'—'],['Status',d.status],['Dial started',d.dial||'—'],['Connected',d.conn||'—'],['Ended',d.end||'—'],['Duration',fmtD(d.dur)],['Order',d.order?d.order.invoice+' · '+d.order.status:'—'],['Outcome',OC[d.outcome]||'—'],['Response',d.response||'—'],['Cancel reason',d.cancel||'—'],['Note',d.note||'—']];
+ $('dBody').innerHTML=rows.map(function(r){return '<div class="r"><span>'+r[0]+'</span><b>'+esc(r[1])+'</b></div>'}).join('');
+ $('dRec').innerHTML=d.rec_url?'<audio controls preload="none" src="'+esc(d.rec_url)+'" style="width:100%"></audio>':'<div class="mut">'+(d.rec==='processing'||d.rec==='recording'?'Recording Processing':'No Recording')+'</div>';
+ $('ovDet').classList.add('on')})}
+$('dX').onclick=function(){$('ovDet').classList.remove('on')};$('dCall').onclick=function(){$('ovDet').classList.remove('on');dialNum(detPhone)};
+function dialNum(n){if(inCall()){tab('act');return}$('num').value=n;lastN='';found();call(n)}
+document.addEventListener('click',function(e){var b=e.target.closest('.cb');if(b){e.stopPropagation();dialNum(b.dataset.n);return}var li=e.target.closest('#rl .li');if(li)detail(li.dataset.id)});
+$('bRc').onclick=reconnect;
+/* ---------- window / PBX messages ---------- */
+if(emb){var P=function(a){parent.postMessage({dfdial:a},location.origin)};$('pX').onclick=function(){P('close')};$('pMin').onclick=function(){P('min')};$('pPop').onclick=function(){P('pop')}}
+if(ch)ch.onmessage=function(m){var d=m.data||{};if(d.type==='ping')ch.postMessage({type:'here'});if(d.type==='dial'){$('num').value=clean(d.n);lastN='';found();tab('pad');window.focus();$('num').focus()}if(d.type==='call'){$('num').value=clean(d.n);window.focus();dialNum(d.n)}if(d.type==='disconnect')disconnect();if(d.type==='connect')connect();if(d.type==='getstatus')ch.postMessage({type:'status',text:$('bdg').textContent,cls:$('bdg').className.replace('badge ','')})};
+window.addEventListener('beforeunload',function(e){if(inCall()){e.preventDefault();e.returnValue=''}});
 if(window.Notification&&Notification.permission==='default')try{Notification.requestPermission()}catch(e){}
-ui(false);
-if(document.querySelector('.msg').textContent==='')connect();
+setPhase('idle');ui();
+if($('num').value)found();
+if($('msg').textContent==='')connect();else badge('Disconnected','b-bad');
 })();
 </script>
 @endverbatim
-<script>
-(function(){
-var $=function(i){return document.getElementById(i)},emb=!!document.querySelector('.ph.emb');
-function esc(t){return String(t==null?'':t).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
-function tab(t){document.querySelectorAll('.tabs button').forEach(function(b){b.classList.toggle('on',b.dataset.t===t)});document.querySelectorAll('.tp').forEach(function(p){p.style.display=p.id==='tp-'+t?'':'none'});if(t==='rec')recent();if(t==='con')contacts()}
-document.querySelectorAll('.tabs button').forEach(function(b){b.onclick=function(){tab(b.dataset.t)}});
-function fmtD(s){return s>=60?Math.floor(s/60)+'m '+(s%60)+'s':s+'s'}
-function recent(){fetch('/admin/call-center/recent',{headers:{Accept:'application/json'}}).then(function(r){return r.json()}).then(function(a){$('rl').innerHTML=a.length?a.map(function(c){return '<div class="li"><span class="av2">'+esc((c.name||'?').charAt(0).toUpperCase())+'</span><div><b>'+esc(c.name||c.phone)+'</b><small>'+esc(c.phone)+'<br>'+(c.dir==='in'?'↙ Incoming':'↗ Outgoing')+' · '+esc(c.status)+' · '+fmtD(c.dur)+' · '+esc(c.at)+'</small></div><button type="button" class="go2" data-n="'+esc(c.phone)+'" title="Call again">📞</button></div>'}).join(''):'<div class="mut">No calls yet.</div>'})}
-function contacts(){var q=$('cq').value;fetch('/admin/call-center/contacts?q='+encodeURIComponent(q),{headers:{Accept:'application/json'}}).then(function(r){return r.json()}).then(function(a){$('cl').innerHTML=a.length?a.map(function(c){return '<div class="li"><span class="av2">'+esc((c.name||'?').charAt(0).toUpperCase())+'</span><div><b>'+esc(c.name)+'</b><small>'+esc(c.phone)+' · '+c.orders+' orders</small></div><button type="button" class="go2" data-n="'+esc(c.phone)+'" title="Call">📞</button></div>'}).join(''):'<div class="mut">No customers found.</div>'})}
-var t0;$('cq').oninput=function(){clearTimeout(t0);t0=setTimeout(contacts,250)};
-document.addEventListener('click',function(e){var b=e.target.closest('.go2');if(!b)return;$('num').value=b.dataset.n;tab('pad');found();setTimeout(function(){$('bCall').click()},150)});
-var lastN='';function found(){var n=($('num').value||'').replace(/\D/g,'');if(n===lastN)return;lastN=n;var f=$('found');if(n.length<6){f.className='fnd';f.textContent='';return}
- fetch('/admin/call-center/lookup?phone='+encodeURIComponent(n),{headers:{Accept:'application/json'}}).then(function(r){return r.json()}).then(function(c){if(c.found){f.className='fnd on';f.innerHTML='Customer Found: <b>'+esc(c.name||'Customer')+'</b><br>'+esc(c.category||'Customer')+' · '+c.orders+' Orders'}else{f.className='fnd';f.textContent=''}})}
-setInterval(found,600);
-var curNum='';function active(n){curNum=n;fetch('/admin/call-center/lookup?phone='+encodeURIComponent(n),{headers:{Accept:'application/json'}}).then(function(r){return r.json()}).then(function(c){$('aN').textContent=(c.found&&c.name)||'Unknown caller';$('aAv').textContent=((c.name||'?').charAt(0)).toUpperCase();$('aC').textContent=c.found?(c.category||'Customer'):'New caller';$('aO').textContent=c.found?c.orders:'0';$('aL').textContent=c.last?(c.last.invoice+' · '+c.last.status):'—';$('aCu').href='/admin/m/customers?q='+encodeURIComponent(n);$('aOr').href=c.last?('/admin/orders/'+c.last.id):'/admin/orders?q='+encodeURIComponent(n)})}
-function sync(){var s=$('cst').textContent;$('aS').textContent=s;$('aT').textContent=$('tmr').textContent;var live=/Dialing|Ringing|Connected|Hold/i.test(s);if(live){var n=($('icP').textContent||$('num').value||'').replace(/[^0-9+]/g,'');$('aP').textContent=n;if(n&&n!==curNum)active(n);if(!sync.sw){sync.sw=1;tab('act')}}else{sync.sw=0}}
-new MutationObserver(sync).observe($('cst'),{childList:true,characterData:true,subtree:true});new MutationObserver(function(){$('aT').textContent=$('tmr').textContent}).observe($('tmr'),{childList:true,characterData:true,subtree:true});
-new MutationObserver(function(){if($('ovInc').classList.contains('on')){tab('act');if(emb)parent.postMessage({dfdial:'incoming'},location.origin)}}).observe($('ovInc'),{attributes:true,attributeFilter:['class']});
-if(emb){var P=function(a){parent.postMessage({dfdial:a},location.origin)};$('pX').onclick=function(){P('close')};$('pMin').onclick=function(){P('min')};$('pPop').onclick=function(){P('pop')};
- new MutationObserver(function(){P($('bHang').disabled?'idle':'busy')}).observe($('bHang'),{attributes:true,attributeFilter:['disabled']})}
-})();
-</script>
 </body></html>

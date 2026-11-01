@@ -20,6 +20,7 @@
 <label>Dialing Prefix (optional)<input name="dial_prefix" value="{{ $f('dial_prefix') }}"></label>
 <label>Caller ID<input name="caller_id" value="{{ $f('caller_id') }}"></label>
 <label>STUN/TURN Server (optional)<input name="stun_server" value="{{ $f('stun_server') }}" placeholder="stun.l.google.com:19302"></label>
+<label style="grid-column:1/-1;display:flex;gap:8px;align-items:center"><input type="checkbox" name="recording_on" value="1" style="width:auto" @checked(\Illuminate\Support\Facades\DB::table('settings')->where('key','cc_recording_on')->value('value')==='1')> আমাদের PBX কল রেকর্ড করে (ডায়ালারে "Recording" সূচক দেখাবে)। রেকর্ডিং লিংক PBX থেকে না এলে "Processing" দেখাবে — লিংক ছাড়া "Available" দেখানো হয় না।</label>
 <div style="grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" type="submit">Save Account</button><button class="btn" type="button" id="bTest" style="background:#fff;color:#0B1F3A;border:1px solid #D1D5DB">Test Connection</button><button class="btn" type="button" id="bCon" style="background:#16A34A">Connect</button><button class="btn" type="button" id="bDis" style="background:#6B7280">Disconnect</button></div>
 </form><div id="tres" style="margin-top:10px;font-size:13px"></div></div>
 @verbatim

@@ -120,6 +120,10 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::post('/call-center/log', [\App\Http\Controllers\CallCenterController::class,'logStart']);
   Route::post('/call-center/log/{id}/end', [\App\Http\Controllers\CallCenterController::class,'logEnd']);
   Route::post('/call-center/log/{id}/note', [\App\Http\Controllers\CallCenterController::class,'logNote']);
+  Route::get('/call-center/call/{id}', [\App\Http\Controllers\CallCenterController::class,'detail'])->whereNumber('id');
+  Route::post('/call-center/log/{id}/connected', [\App\Http\Controllers\CallCenterController::class,'logConnected']);
+  Route::post('/call-center/log/{id}/summary', [\App\Http\Controllers\CallCenterController::class,'logSummary']);
+  Route::post('/call-center/log/{id}/recording', [\App\Http\Controllers\CallCenterController::class,'logRecording']);
   Route::get('/call-center/history', [\App\Http\Controllers\CallCenterController::class,'history']);
   Route::get('/ai-images', [\App\Http\Controllers\AiImageController::class,'index']);
   Route::post('/ai-images/settings', [\App\Http\Controllers\AiImageController::class,'settings']);
