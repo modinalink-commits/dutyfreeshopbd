@@ -30,7 +30,7 @@ class SmsMarketing {
     $o = DB::table('orders')->whereNotIn('status', ['Cancel', 'Returned', 'Incomplete'])->select('phone', DB::raw('count(*) n'), DB::raw('coalesce(sum(total),0) s'), DB::raw('max(created_at) last'))->groupBy('phone');
     return DB::table('customers as c')->leftJoinSub($o, 'o', 'o.phone', '=', 'c.phone')
       ->where('c.blocked', false)->whereNotNull('c.phone')
-      ->select('c.id', 'c.name', 'c.phone', 'c.membership', 'c.created_at', DB::raw('coalesce(o.n,0)+coalesce(c.legacy_orders,0) as orders'), DB::raw('coalesce(o.s,0)+coalesce(c.legacy_spent,0) as spend'), 'o.last as last_order');
+      ->select('c.id', 'c.name', 'c.phone', 'c.membership', 'c.created_at', DB::raw('coalesce(o.n,0)+coalesce(c.legacy_orders,0) as orders'), DB::raw('coalesce(o.s,0)+coalesce(c.legacy_spent,0) as spend'), DB::raw('coalesce(c.legacy_orders,0) as legacy'), 'o.last as last_order');
   }
   public static function opted(): array { return DB::table('sms_optouts')->pluck('phone')->all(); }
 
@@ -51,10 +51,10 @@ class SmsMarketing {
       if ($n >= 1) { $tags[] = 'has_orders'; $tags[] = 'regular'; }
       if ($n >= 2) $tags[] = 'returning';
       if ($sp >= $high) $tags[] = 'high_value';
-      if ($r->created_at && \Carbon\Carbon::parse($r->created_at)->gte($c30)) $tags[] = 'new';
+      if ($r->created_at && \Carbon\Carbon::parse($r->created_at)->gte($c30) && $n <= 1 && (int)$r->legacy === 0) $tags[] = 'new';
       if (trim((string)$r->membership) !== '') $tags[] = 'membership';
-      if (($last && $last->lt($c90)) || (!$last && $r->created_at && \Carbon\Carbon::parse($r->created_at)->lt($c90))) $tags[] = 'inactive';
-      if ($last && $last->lt($cut)) $tags[] = 'no_recent';
+      if (($last && $last->lt($c90)) || (!$last && ((int)$r->legacy > 0 || ($r->created_at && \Carbon\Carbon::parse($r->created_at)->lt($c90))))) $tags[] = 'inactive';
+      if (!$last || $last->lt($cut)) $tags[] = 'no_recent';
       if (isset($aband[$num])) $tags[] = 'abandoned';
       if ($ids) { if (!in_array((int)$r->id, $ids, true)) continue; }
       else {
@@ -64,7 +64,7 @@ class SmsMarketing {
       if (!empty($f['min_orders']) && $n < (int)$f['min_orders']) continue;
       if (!empty($f['min_spend']) && $sp < (float)$f['min_spend']) continue;
       if (!empty($f['max_orders']) && $n > (int)$f['max_orders']) continue;
-      if (!empty($f['no_order_days']) && !in_array('no_recent', $segs, true) && $last && $last->gte($cut)) continue;
+      if (!empty($f['no_order_days']) && $last && $last->gte($cut)) continue;
       if ($kw !== '' && !isset($kwPh[$num])) continue;
       $seen[$num] = 1;
       $out[] = (object)['id'=>(int)$r->id, 'name'=>$r->name, 'phone'=>$r->phone, 'num'=>$num, 'membership'=>$r->membership, 'orders'=>$n, 'spend'=>$sp, 'last'=>$last, 'tags'=>$tags];
