@@ -323,3 +323,5 @@ database/migrations/2026_11_02_000008_slider_video.php
 app/Support/Youtube.php
 app/Http/Controllers/HeroSliderController.php
 resources/views/hero_slider.blade.php
+database/migrations/2026_11_02_000009_legacy_customers.php
+app/Http/Controllers/LegacyImportController.php
