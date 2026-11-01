@@ -58,8 +58,8 @@
 <div><label>SKU</label><input name="sku" value="{{ $v('sku') }}" maxlength="60"></div></div>
 <div class="g3"><div><label>Main category *</label><select name="category_id" id="cMain" required><option value="">Select</option>@foreach($mains as $m)<option value="{{ $m->id }}" @selected($v('category_id')==$m->id)>{{ $m->name }}</option>@endforeach</select></div>
 <div><label>Sub category</label><input name="sub" id="cSub" list="dlSub" value="{{ $v('sub') }}" autocomplete="off" disabled placeholder="Select main first"><datalist id="dlSub"></datalist></div>
-<div><label>Sub-sub category</label><input name="sub_sub" id="cSs" list="dlSs" value="{{ $v('sub_sub') }}" autocomplete="off" disabled placeholder="Select sub first"><datalist id="dlSs"></datalist></div></div>
-<p class="hint">Pick from the list or type a new sub category. Manage main categories and brands in <a href="/admin/m/categories">Categories</a> and <a href="/admin/m/brands">Brands</a>.</p>
+<div><label>Child category</label><input name="sub_sub" id="cSs" list="dlSs" value="{{ $v('sub_sub') }}" autocomplete="off" disabled placeholder="Select sub first"><datalist id="dlSs"></datalist></div></div>
+<p class="hint">Pick from the list or type a new sub or child category. Manage main categories and brands in <a href="/admin/taxonomy">Categories</a> and Brands.</p>
 <div class="g2"><div><label>Video URL <small>(optional)</small></label><input name="video_url" type="url" value="{{ $v('video_url') }}" placeholder="https://youtube.com/..."></div>
 <div><label>Affiliate commission % <small>(optional)</small></label><input name="affiliate_commission" type="number" step="0.01" min="0" max="100" value="{{ $v('affiliate_commission') }}"></div></div>
 </div>

@@ -243,5 +243,6 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestF
   Route::get('/{slug}', [\App\Http\Controllers\StoreController::class,'category'])->where('slug','[a-z0-9\-]+');
   Route::get('/{cat}/{sub}', [\App\Http\Controllers\StoreController::class,'categorySub'])->where(['cat'=>'[a-z0-9\-]+','sub'=>'[a-z0-9\-]+']);
   Route::get('/{cat}/{sub}/{slug}', [\App\Http\Controllers\StoreController::class,'productByPath'])->where(['cat'=>'[a-z0-9\-]+','sub'=>'[a-z0-9\-]+','slug'=>'[a-z0-9\-]+']);
+  Route::get('/{cat}/{sub}/{child}/{slug}', [\App\Http\Controllers\StoreController::class,'productByChild'])->where(['cat'=>'[a-z0-9\-]+','sub'=>'[a-z0-9\-]+','child'=>'[a-z0-9\-]+','slug'=>'[a-z0-9\-]+']);
   Route::fallback([\App\Http\Controllers\StoreController::class,'notFound']);
 });

@@ -25,7 +25,7 @@ class StoreController extends Controller {
   public static function url($p): string {
     if (!empty($p->path_slug) && !empty($p->category_id)) {
       $cs = self::rem('store.catslugs', 300, fn() => DB::table('categories')->whereNotNull('slug')->pluck('slug','id')->all())[$p->category_id] ?? null;
-      if ($cs) return '/'.$cs.'/'.\App\Support\Slugs::subSlug($p->sub ?? null).'/'.$p->path_slug;
+      if ($cs) { $ch = trim((string)($p->sub_sub ?? '')) !== '' ? \App\Support\Slugs::slug($p->sub_sub, 60) : ''; return '/'.$cs.'/'.\App\Support\Slugs::subSlug($p->sub ?? null).($ch !== '' ? '/'.$ch : '').'/'.$p->path_slug; }
     }
     return '/p/'.($p->ext_id ?? 'm'.$p->id).'-'.self::slugOf($p->name).'/';
   }
@@ -132,11 +132,14 @@ class StoreController extends Controller {
   /** /category/secondary-category */
   public function categorySub(Request $r, string $cat, string $sub) { return $this->category($r, $cat, $sub); }
   /** /category/secondary-category/product-name */
-  public function productByPath(string $cat, string $sub, string $slug) {
+  public function productByChild(string $cat, string $sub, string $child, string $slug) { return $this->productByPath($cat, $sub, $slug, $child); }
+  public function productByPath(string $cat, string $sub, string $slug, ?string $child = null) {
     $c = $this->cats()[$cat] ?? null; if (!$c) return $this->notFound();
     $cands = $this->q()->where('category_id',$c->id)->where('path_slug',$slug)->orderBy('id')->get();
+    if ($child !== null) $cands = $cands->filter(fn($x) => \App\Support\Slugs::slug($x->sub_sub, 60) === $child)->values();
     $p = $cands->isEmpty() ? null : ($cands->first(fn($x) => \App\Support\Slugs::subSlug($x->sub) === $sub) ?? ($cands->count() === 1 ? $cands->first() : null));
-    if (!$p) { // /category/sub/sub-sub category listing
+    if (!$p && $child !== null) return $this->notFound();
+    if (!$p) { // /category/sub/child category listing
       $t = \Illuminate\Support\Facades\Schema::hasTable('category_nodes') ? DB::table('category_nodes as t')->join('category_nodes as s', 's.id', '=', 't.parent_id')->where('t.level', 3)->where('t.active', true)->where('t.category_id', $c->id)->where('t.slug', $slug)->get(['t.name as tn', 's.name as sn'])->first(fn($x) => \App\Support\Slugs::subSlug($x->sn) === $sub) : null;
       return $t ? $this->category(request(), $cat, $sub, $t->tn) : $this->notFound();
     }
