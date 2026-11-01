@@ -256,3 +256,11 @@ resources/views/winback.blade.php
 resources/views/winback_activity.blade.php
 app/Support/PhoneRule.php
 resources/views/phone_js.blade.php
+public/favicon.ico
+public/favicon-16x16.png
+public/favicon-32x32.png
+public/favicon-48x48.png
+public/apple-touch-icon.png
+public/android-chrome-192x192.png
+public/android-chrome-512x512.png
+resources/views/favicon_head.blade.php
