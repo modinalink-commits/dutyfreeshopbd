@@ -17,7 +17,7 @@ class Brand
   public static function payment($o): array {
     $m = trim((string)($o->payment_method ?? '')); $l = strtolower($m);
     static $banks = null; if ($banks === null) $banks = DB::table('payment_methods')->where('kind', 'bank')->get(['title', 'logo'])->all();
-    if ($m === '' || $l === 'cod' || str_contains($l, 'cash')) return ['logo' => null, 'name' => 'Cash on Delivery', 'sub' => null, 'cod' => true];
+    if ($m === '' || $l === 'cod' || str_contains($l, 'cash')) return ['logo' => is_file(public_path('pay/cod.png')) ? '/pay/cod.png' : null, 'name' => 'Cash on Delivery', 'sub' => null, 'cod' => true];
     if (str_contains($l, 'shurjo')) return ['logo' => '/pay/shurjopay-logo.png', 'name' => 'Pay Online', 'sub' => 'via ShurjoPay'];
     if (str_contains($l, 'bkash')) return ['logo' => '/pay/bkash.png', 'name' => $m, 'sub' => null];
     if (str_contains($l, 'nagad')) return ['logo' => '/pay/nagad.png', 'name' => $m, 'sub' => null];

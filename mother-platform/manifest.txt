@@ -343,3 +343,4 @@ app/Http/Controllers/LegacyOrderController.php
 resources/views/legacy_orders.blade.php
 app/Support/Brand.php
 public/couriers/pathao.png
+public/pay/cod.png
