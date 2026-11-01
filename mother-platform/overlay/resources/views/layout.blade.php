@@ -39,6 +39,21 @@ table.ordt>tbody>tr:nth-child(4n+3){--rb:#F4FBF6;--ra:#86EFAC}table.ordt>tbody>t
 table.ordt>tbody>tr[style*="FFFBEB"]{--rb:#FFFBEB;--ra:#F59E0B}
 table.ordt>tbody>tr:hover>td{background:#FFFFFF;box-shadow:0 2px 0 rgba(0,0,0,0)}
 table.ordt>tbody>tr:hover{filter:drop-shadow(0 4px 10px rgba(15,23,42,.08))}
+/* ===== Mother admin design standard (matches Dashboard Overview) ===== */
+main{padding:16px 18px}
+main h1{font-size:17px;font-weight:700;margin:0 0 10px;line-height:1.25;letter-spacing:-.005em}main h2{font-size:14px;font-weight:700;margin:0 0 8px;line-height:1.3}main h3{font-size:13px;font-weight:700;margin:0 0 6px}
+main .card{border:1px solid #E6EAF0;border-radius:12px;padding:12px 14px;margin-bottom:12px;box-shadow:0 1px 2px rgba(11,18,32,.04)}
+main table:not(.ordt){font-size:12.5px}main table:not(.ordt) th{font-size:11px;font-weight:700;color:#6B7280;background:#F8FAFC;padding:7px 8px;white-space:nowrap}main table:not(.ordt) td{padding:7px 8px;border-top:1px solid #EEF1F5;vertical-align:middle}
+main table:not(.ordt) tbody tr:hover td{background:#FFFBF8}
+main .btn,main button{padding:7px 12px;min-height:32px;font-size:12px;font-weight:600;border-radius:9px;line-height:1.2;transition:background .15s,border-color .15s,filter .15s}
+main .btn:hover,main button:hover{filter:brightness(.94)}main .btn.g:hover,main button.g:hover{background:#FFF1E8;border-color:#FDC2A5;filter:none}
+main input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]),main select{height:34px;padding:0 10px;border:1px solid #E6EAF0;border-radius:9px;font-size:12.5px;background:#fff}
+main textarea{padding:8px 10px;border:1px solid #E6EAF0;border-radius:9px;font-size:12.5px;line-height:1.45}
+main input:focus,main select:focus,main textarea:focus{outline:0;border-color:#FF5A00;box-shadow:0 0 0 3px rgba(255,90,0,.12)}
+main label{font-size:11.5px;font-weight:600;margin:8px 0 3px}
+main .grid{gap:10px}main .k b{font-size:20px}main .k span{font-size:11.5px}
+main .pill{font-size:10.5px;font-weight:700;border-radius:6px;padding:2px 8px}
+@media(max-width:800px){main{padding:12px}main table:not(.ordt){display:block;overflow-x:auto;max-width:100%}main .btn,main button{min-height:34px}}
 </style></head><body>
 @auth @include('sidebar') @endauth
 <main>@yield('body')</main>
