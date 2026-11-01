@@ -33,7 +33,7 @@ class AiChat {
     return Cache::remember('ai.catalog', 300, function () {
       $cat = DB::table('categories')->pluck('name', 'id');
       $rows = DB::table('products')->where('published', true)->orderByDesc('stock')->orderBy('id')->limit(900)
-        ->get(['id', 'ext_id', 'name', 'price', 'offer_price', 'compare_price', 'stock', 'sub', 'category_id', 'path_slug', 'size']);
+        ->get(['id', 'ext_id', 'name', 'price', 'offer_price', 'compare_price', 'stock', 'sub', 'sub_sub', 'category_id', 'path_slug', 'size']);
       return $rows->map(function ($p) use ($cat) {
         $now = (float)($p->offer_price ?: $p->price); $was = (float)$p->compare_price > $now ? ' (was '.number_format($p->compare_price).')' : '';
         return ['id'=>$p->id, 'line'=>$p->name.' | '.($cat[$p->category_id] ?? '').($p->sub ? '/'.$p->sub : '').($p->size ? ' | '.$p->size : '').' | '.number_format($now).' TK'.$was.' | '.($p->stock > 0 ? 'in stock' : 'OUT OF STOCK').' | '.parse_url(\App\Http\Controllers\StoreController::url($p), PHP_URL_PATH)];

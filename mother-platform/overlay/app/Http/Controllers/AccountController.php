@@ -167,7 +167,7 @@ class AccountController extends StoreController {
     if ($tab === 'addresses') $d['addrs'] = DB::table('customer_addresses')->where('customer_id', $c->id)->orderByDesc('is_default')->orderBy('id')->get();
     if ($tab === 'wishlist') {
       $d['wish'] = DB::table('customer_wishlist as w')->join('products as p', 'p.id', '=', 'w.product_id')->where('w.customer_id', $c->id)->where('p.published', true)->orderByDesc('w.id')
-        ->get(['p.id', 'p.ext_id', 'p.name', 'p.price', 'p.offer_price', 'p.stock', 'p.image', 'p.category_id', 'p.sub', 'p.path_slug'])->map(function ($p) { $p->url = self::url($p); return $p; });
+        ->get(['p.id', 'p.ext_id', 'p.name', 'p.price', 'p.offer_price', 'p.stock', 'p.image', 'p.category_id', 'p.sub', 'p.sub_sub', 'p.path_slug'])->map(function ($p) { $p->url = self::url($p); return $p; });
     }
     if ($tab === 'coupons') $d['coupons'] = $this->publicCoupons();
     if ($tab === 'reviews') {
