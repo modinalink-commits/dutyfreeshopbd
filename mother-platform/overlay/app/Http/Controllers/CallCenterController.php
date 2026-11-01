@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 /** Web softphone (SIP over WSS via the browser), call history and call notes. SIP password stays encrypted on the server and is only handed to the logged-in admin's browser when connecting. */
 class CallCenterController extends Controller {
   private function acct() { return DB::table('sip_accounts')->orderBy('id')->first(); }
-  public function phone(Request $r) { return view('softphone', ['has'=>(bool)($this->acct()->wss_url ?? null), 'n'=>preg_replace('/[^0-9+*#]/', '', (string)$r->query('n', ''))]); }
+  public function phone(Request $r) { return view('softphone', ['embed'=>$r->boolean('embed'), 'has'=>(bool)($this->acct()->wss_url ?? null), 'n'=>preg_replace('/[^0-9+*#]/', '', (string)$r->query('n', ''))]); }
   public function account() {
     $a = $this->acct(); return view('sip_account', ['a'=>$a, 'hasPw'=>(bool)($a->password_enc ?? null)]);
   }
@@ -31,6 +31,16 @@ class CallCenterController extends Controller {
     $last = DB::table('orders')->where('phone', $ph)->orderByDesc('id')->first(['id', 'invoice', 'status', 'total', 'customer_name']);
     $p = \App\Support\OrderDiscount::profile($ph);
     return response()->json(['found'=>(bool)($c || $n), 'phone'=>$ph, 'name'=>$c->name ?? ($last->customer_name ?? null), 'customer_id'=>$c->id ?? null, 'orders'=>$n, 'last'=>$last, 'category'=>$p['category'] ?? null, 'membership'=>$p['membership'] ?? null]);
+  }
+  public function contacts(Request $r) {
+    $q = trim((string)$r->query('q', '')); $b = DB::table('customers');
+    if ($q !== '') $b->where(fn($w) => $w->where('name', 'ilike', '%'.$q.'%')->orWhere('phone', 'like', '%'.preg_replace('/\D/', '', $q).'%'));
+    $rows = $b->orderByDesc('id')->limit(15)->get(['id', 'name', 'phone', 'membership'])->map(fn($c) => ['name' => $c->name, 'phone' => $c->phone, 'orders' => DB::table('orders')->where('phone', $c->phone)->count()]);
+    return response()->json($rows);
+  }
+  public function recent() {
+    $rows = DB::table('call_logs')->orderByDesc('id')->limit(15)->get(['direction', 'phone', 'customer_name', 'status', 'duration', 'started_at'])->map(fn($l) => ['dir' => $l->direction, 'phone' => $l->phone, 'name' => $l->customer_name, 'status' => $l->status, 'dur' => (int)$l->duration, 'at' => $l->started_at ? \Carbon\Carbon::parse($l->started_at, 'UTC')->timezone('Asia/Dhaka')->format('d M, h:i A') : '']);
+    return response()->json($rows);
   }
   public function logStart(Request $r) {
     $d = $r->validate(['direction'=>'required|in:in,out', 'phone'=>'required|string|max:40', 'extension'=>'nullable|string|max:40']);

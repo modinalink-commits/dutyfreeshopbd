@@ -15,18 +15,33 @@
 .chip{display:inline-block;margin:3px 3px 0 0;padding:5px 10px;border:1px solid var(--bd);border-radius:14px;font-size:12px;font-weight:600;cursor:pointer;background:#fff}.chip:hover{border-color:var(--o);color:var(--o)}
 textarea{width:100%;border:1.5px solid var(--bd);border-radius:10px;padding:8px;font:inherit;margin-top:8px}.pri{border:0;background:var(--o);color:#fff;border-radius:10px;padding:10px 16px;font-weight:800;cursor:pointer}.sec{border:1px solid var(--bd);background:#fff;border-radius:10px;padding:10px 16px;font-weight:700;cursor:pointer;color:var(--n)}
 .inc b.nm{font-size:18px}.inc .ln{font-size:13px;color:#4B5563;margin-top:3px}
+.top small{display:block;font-size:11.5px;color:#C9D1E0;margin-top:2px}.top .badge{font-size:10.5px;padding:1px 8px}.tb{border:0;background:rgba(255,255,255,.14);color:#fff;width:28px;height:28px;border-radius:8px;font-size:16px;cursor:pointer}
+.tabs{display:flex;border-bottom:1px solid var(--bd);background:#fff}.tabs button{flex:1;border:0;background:none;padding:10px 2px;font-size:12px;font-weight:700;color:#6B7280;cursor:pointer;border-bottom:2px solid transparent}.tabs button.on{color:var(--o);border-bottom-color:var(--o)}
+.fnd{min-height:0;font-size:12.5px;text-align:center}.fnd.on{background:#F0FDF4;border:1px solid #BBF7D0;color:#14532D;border-radius:10px;padding:6px 8px}
+.srch{width:100%;border:1.5px solid var(--bd);border-radius:10px;padding:9px 11px;font:inherit;font-size:13px}.lst{display:flex;flex-direction:column}.li{display:flex;align-items:center;gap:10px;padding:9px 2px;border-top:1px solid #F1F3F6;cursor:pointer}.li:first-child{border-top:0}.li b{display:block;font-size:13px}.li small{color:#6B7280;font-size:11.5px}.li .go2{margin-left:auto;border:0;background:#E8F8EE;color:#15803D;width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:15px}.li .av2{width:34px;height:34px;border-radius:50%;background:var(--n);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex:none}
+.act{text-align:center;padding:10px 0}.act .av{width:62px;height:62px;border-radius:50%;background:var(--n);color:#fff;font-size:24px;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 8px}.act b{font-size:17px;display:block}.act .as{font-weight:800;color:#16A34A;margin-top:6px}.act .at{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:8px}.kv div{background:#F9FAFB;border:1px solid var(--bd);border-radius:10px;padding:8px 10px}.kv span{display:block;font-size:11px;color:#6B7280}.kv b{font-size:13px}.qa{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.qa a{text-align:center;border:1px solid var(--bd);border-radius:10px;padding:9px;font-size:12.5px;font-weight:700;color:var(--n);text-decoration:none}.qa a:hover{border-color:var(--o);color:var(--o)}
+.emb body,.emb{max-width:none}body:has(.emb){background:#fff}.emb.ph{max-width:none}
 </style></head><body>
-<div class="ph">
-<div class="top"><b>☎ Softphone</b><span class="badge" id="bdg">Disconnected</span></div>
-<div class="box">
+<div class="ph{{ $embed ? ' emb' : '' }}">
+<div class="top"><div style="flex:1;min-width:0"><b>Soft Dialer</b><small>Call Center · <span class="badge" id="bdg">Disconnected</span></small></div>@if($embed)<button type="button" class="tb" id="pPop" title="Pop out (keeps the call alive while you browse)">⧉</button><button type="button" class="tb" id="pMin" title="Minimize">–</button><button type="button" class="tb" id="pX" title="Close">×</button>@endif</div>
+<div class="tabs"><button type="button" data-t="pad" class="on">Dial Pad</button><button type="button" data-t="con">Contacts</button><button type="button" data-t="rec">Recent</button><button type="button" data-t="act">Active Call</button></div>
+<div class="box tp" id="tp-pad">
 <div class="stat"><b id="cst">Ready</b><span id="tmr">00:00:00</span></div>
 <div class="num"><input id="num" inputmode="tel" autocomplete="off" placeholder="Enter Phone Number" value="{{ $n }}"><button id="bk" title="Backspace">⌫</button></div>
+<div id="found" class="fnd"></div>
 <div class="keys">@foreach([['1',''],['2','ABC'],['3','DEF'],['4','GHI'],['5','JKL'],['6','MNO'],['7','PQRS'],['8','TUV'],['9','WXYZ'],['*',''],['0','+'],['#','']] as $k)<button type="button" data-k="{{ $k[0] }}">{{ $k[0] }}<small>{{ $k[1] ?: ' ' }}</small></button>@endforeach</div>
 <div class="row"><button id="bMute" disabled>🎙 Mute</button><button id="bHold" disabled>⏸ Hold</button><button id="bSpk">🔊 Speaker</button><button id="bDtmf" disabled>⌨ DTMF</button></div>
 <div class="go"><button class="call" id="bCall">📞 Call</button><button class="hang" id="bHang" disabled>⛔ Hang Up</button></div>
 <div class="msg" id="msg">@if(!$has)SIP account is not set up. Ask an admin to open Call Center → SIP Account.@endif</div>
 <div class="mut"><a href="#" id="bCn" style="color:#4F46E5">Connect</a> · <a href="#" id="bDc" style="color:#4F46E5">Disconnect</a> · <a href="/admin/call-center/history" target="_blank" style="color:#4F46E5">Call history</a></div>
-</div></div>
+</div>
+<div class="box tp" id="tp-con" style="display:none"><input id="cq" placeholder="Search name or phone" class="srch"><div id="cl" class="lst"></div></div>
+<div class="box tp" id="tp-rec" style="display:none"><div id="rl" class="lst"></div></div>
+<div class="box tp" id="tp-act" style="display:none"><div class="act"><div class="av" id="aAv">?</div><b id="aN">No active call</b><div id="aP" class="mut"></div><div id="aS" class="as">—</div><div id="aT" class="at">00:00:00</div></div>
+<div class="kv"><div><span>Category</span><b id="aC">—</b></div><div><span>Total orders</span><b id="aO">—</b></div><div style="grid-column:1/-1"><span>Current / last order</span><b id="aL">—</b></div></div>
+<div class="qa"><a id="aCu" target="_blank" href="#">Open Customer</a><a id="aOr" target="_blank" href="#">Open Order</a></div><div class="mut" style="margin-top:8px">When the call ends, a Call Note box opens: confirmed, no answer, call later, cancelled, WhatsApp follow-up or custom — saved to the customer and order history.</div></div>
+</div>
 <div class="ov" id="ovInc"><div class="card inc"><div style="font-size:12px;color:#6B7280;font-weight:700">Incoming Call</div><b class="nm" id="icN">Unknown caller</b><div class="ln" id="icP"></div><div class="ln" id="icI"></div><div style="display:flex;gap:8px;margin-top:14px"><button class="pri" id="icA" style="background:#16A34A;flex:1">Answer</button><button class="pri" id="icR" style="background:#DC2626;flex:1">Reject</button></div></div></div>
 <div class="ov" id="ovNote"><div class="card"><b>Add Call Note</b><div style="margin-top:6px">@foreach(['Customer confirmed','No answer','Call later','Order cancelled','WhatsApp follow-up required'] as $c)<span class="chip" data-c="{{ $c }}">{{ $c }}</span>@endforeach</div><textarea id="ntx" rows="3" maxlength="1000" placeholder="Write a note…"></textarea><div style="display:flex;gap:8px;margin-top:10px"><button class="pri" id="nSave">Save note</button><button class="sec" id="nSkip">Skip</button></div></div></div>
 <audio id="aud" autoplay></audio>
@@ -77,7 +92,7 @@ function ringStart(){try{inCtx=inCtx||new (window.AudioContext||window.webkitAud
 function stopRing(){clearInterval(ring);ring=null}
 function incoming(s){if(ses){try{s.terminate({status_code:486})}catch(e){}return}
  var num=clean((s.remote_identity&&s.remote_identity.uri&&s.remote_identity.uri.user)||'');dir='in';cur=num;ses=s;wire(s);st('Ringing...');ringStart();
- $('icN').textContent=(s.remote_identity&&s.remote_identity.display_name)||'Unknown caller';$('icP').textContent=num;$('icI').textContent='';$('ovInc').classList.add('on');
+ $('icN').textContent=(s.remote_identity&&s.remote_identity.display_name)||'Unknown caller';$('icP').textContent=num;$('icI').textContent='';fetch('/admin/call-center/lookup?phone='+encodeURIComponent(num),{headers:{Accept:'application/json'}}).then(function(r){return r.json()}).then(function(c){if(c.found){if(c.name)$('icN').textContent=c.name;$('icI').textContent=(c.category||'Customer')+' · '+c.orders+' orders'+(c.last?' · Last: '+c.last.invoice+' ('+c.last.status+')':'')}}).catch(function(){});$('ovInc').classList.add('on');
  post('/admin/call-center/log',{direction:'in',phone:num,extension:cfg&&cfg.ext}).then(function(j){logId=j.id});
  fetch('/admin/call-center/lookup?phone='+encodeURIComponent(num),{headers:{Accept:'application/json'}}).then(function(r){return r.json()}).then(function(c){if(c.found){$('icN').textContent=c.name||'Customer';$('icI').textContent=(c.category||'Customer')+(c.membership?' · Membership '+c.membership:'')+' · Previous orders: '+c.orders+(c.last?' · Last: '+c.last.invoice+' ('+c.last.status+')':'')}});
  if(window.Notification&&Notification.permission==='granted')try{new Notification('Incoming call',{body:num})}catch(e){}
@@ -104,4 +119,26 @@ if(document.querySelector('.msg').textContent==='')connect();
 })();
 </script>
 @endverbatim
+<script>
+(function(){
+var $=function(i){return document.getElementById(i)},emb=!!document.querySelector('.ph.emb');
+function esc(t){return String(t==null?'':t).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function tab(t){document.querySelectorAll('.tabs button').forEach(function(b){b.classList.toggle('on',b.dataset.t===t)});document.querySelectorAll('.tp').forEach(function(p){p.style.display=p.id==='tp-'+t?'':'none'});if(t==='rec')recent();if(t==='con')contacts()}
+document.querySelectorAll('.tabs button').forEach(function(b){b.onclick=function(){tab(b.dataset.t)}});
+function fmtD(s){return s>=60?Math.floor(s/60)+'m '+(s%60)+'s':s+'s'}
+function recent(){fetch('/admin/call-center/recent',{headers:{Accept:'application/json'}}).then(function(r){return r.json()}).then(function(a){$('rl').innerHTML=a.length?a.map(function(c){return '<div class="li"><span class="av2">'+esc((c.name||'?').charAt(0).toUpperCase())+'</span><div><b>'+esc(c.name||c.phone)+'</b><small>'+esc(c.phone)+'<br>'+(c.dir==='in'?'↙ Incoming':'↗ Outgoing')+' · '+esc(c.status)+' · '+fmtD(c.dur)+' · '+esc(c.at)+'</small></div><button type="button" class="go2" data-n="'+esc(c.phone)+'" title="Call again">📞</button></div>'}).join(''):'<div class="mut">No calls yet.</div>'})}
+function contacts(){var q=$('cq').value;fetch('/admin/call-center/contacts?q='+encodeURIComponent(q),{headers:{Accept:'application/json'}}).then(function(r){return r.json()}).then(function(a){$('cl').innerHTML=a.length?a.map(function(c){return '<div class="li"><span class="av2">'+esc((c.name||'?').charAt(0).toUpperCase())+'</span><div><b>'+esc(c.name)+'</b><small>'+esc(c.phone)+' · '+c.orders+' orders</small></div><button type="button" class="go2" data-n="'+esc(c.phone)+'" title="Call">📞</button></div>'}).join(''):'<div class="mut">No customers found.</div>'})}
+var t0;$('cq').oninput=function(){clearTimeout(t0);t0=setTimeout(contacts,250)};
+document.addEventListener('click',function(e){var b=e.target.closest('.go2');if(!b)return;$('num').value=b.dataset.n;tab('pad');found();setTimeout(function(){$('bCall').click()},150)});
+var lastN='';function found(){var n=($('num').value||'').replace(/\D/g,'');if(n===lastN)return;lastN=n;var f=$('found');if(n.length<6){f.className='fnd';f.textContent='';return}
+ fetch('/admin/call-center/lookup?phone='+encodeURIComponent(n),{headers:{Accept:'application/json'}}).then(function(r){return r.json()}).then(function(c){if(c.found){f.className='fnd on';f.innerHTML='Customer Found: <b>'+esc(c.name||'Customer')+'</b><br>'+esc(c.category||'Customer')+' · '+c.orders+' Orders'}else{f.className='fnd';f.textContent=''}})}
+setInterval(found,600);
+var curNum='';function active(n){curNum=n;fetch('/admin/call-center/lookup?phone='+encodeURIComponent(n),{headers:{Accept:'application/json'}}).then(function(r){return r.json()}).then(function(c){$('aN').textContent=(c.found&&c.name)||'Unknown caller';$('aAv').textContent=((c.name||'?').charAt(0)).toUpperCase();$('aC').textContent=c.found?(c.category||'Customer'):'New caller';$('aO').textContent=c.found?c.orders:'0';$('aL').textContent=c.last?(c.last.invoice+' · '+c.last.status):'—';$('aCu').href='/admin/m/customers?q='+encodeURIComponent(n);$('aOr').href=c.last?('/admin/orders/'+c.last.id):'/admin/orders?q='+encodeURIComponent(n)})}
+function sync(){var s=$('cst').textContent;$('aS').textContent=s;$('aT').textContent=$('tmr').textContent;var live=/Dialing|Ringing|Connected|Hold/i.test(s);if(live){var n=($('icP').textContent||$('num').value||'').replace(/[^0-9+]/g,'');$('aP').textContent=n;if(n&&n!==curNum)active(n);if(!sync.sw){sync.sw=1;tab('act')}}else{sync.sw=0}}
+new MutationObserver(sync).observe($('cst'),{childList:true,characterData:true,subtree:true});new MutationObserver(function(){$('aT').textContent=$('tmr').textContent}).observe($('tmr'),{childList:true,characterData:true,subtree:true});
+new MutationObserver(function(){if($('ovInc').classList.contains('on')){tab('act');if(emb)parent.postMessage({dfdial:'incoming'},location.origin)}}).observe($('ovInc'),{attributes:true,attributeFilter:['class']});
+if(emb){var P=function(a){parent.postMessage({dfdial:a},location.origin)};$('pX').onclick=function(){P('close')};$('pMin').onclick=function(){P('min')};$('pPop').onclick=function(){P('pop')};
+ new MutationObserver(function(){P($('bHang').disabled?'idle':'busy')}).observe($('bHang'),{attributes:true,attributeFilter:['disabled']})}
+})();
+</script>
 </body></html>
