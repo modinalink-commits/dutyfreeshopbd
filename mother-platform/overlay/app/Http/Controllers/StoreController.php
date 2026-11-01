@@ -123,11 +123,24 @@ class StoreController extends Controller {
       if ($subSubName !== null) { $q->where('sub_sub', $subSubName); if (!(clone $q)->exists()) return $this->notFound(); }
     }
     if (is_numeric($r->min)) $q->where('price','>=',(float)$r->min); if (is_numeric($r->max)) $q->where('price','<=',(float)$r->max);
-    $q = $q->orderByRaw('coalesce(sub, \'~\')');
-    $items = $this->sorted($q, $r->input('sort', $s['default_sort']))->paginate($per)->withQueryString();
+    $scope = 'm:'.$c->id; $hasPos = false;
+    if ($subSlug !== null && \Illuminate\Support\Facades\Schema::hasTable('category_nodes')) {
+      $sn = DB::table('category_nodes')->where('category_id', $c->id)->where('level', 2)->where('slug', $subSlug)->first();
+      if ($sn) { $scope = 'n:'.$sn->id; if ($subSubName !== null && ($cn = DB::table('category_nodes')->where('level', 3)->where('parent_id', $sn->id)->where('name', $subSubName)->first())) $scope = 'n:'.$cn->id; }
+    }
+    if (\Illuminate\Support\Facades\Schema::hasTable('product_positions')) $hasPos = DB::table('product_positions')->where('pp_scope', $scope)->exists();
+    $sort = (string)$r->input('sort', '');
+    if ($hasPos && ($sort === '' || $sort === 'position')) {
+      $q = $q->leftJoin('product_positions as pp', fn($j) => $j->on('pp.pp_product', '=', 'products.id')->where('pp.pp_scope', '=', $scope))->select('products.*')
+        ->orderByRaw('pp.pp_pos asc nulls last')->orderByDesc('products.id');
+      $items = $q->paginate($per)->withQueryString();
+    } else {
+      $q = $q->orderByRaw('coalesce(sub, \'~\')');
+      $items = $this->sorted($q, $sort === 'new' ? 'new' : ($sort !== '' ? $sort : $s['default_sort']))->paginate($per)->withQueryString();
+    }
     $canon = url('/'.$slug).($subSlug !== null ? '/'.$subSlug.($subSubName !== null ? '/'.\App\Support\Slugs::slug($subSubName, 60) : '') : '/'); if ($subSubName !== null) { $subName = $subSubName.' · '.$subName; }
     $title = $subName ? $subName.' – '.$c->name.' | DutyFree Shop BD' : ($c->title ?: $c->name.' | DutyFree Shop BD');
-    return response()->view('store.category', $this->base(['c'=>$c, 'subName'=>$subName, 'subSlug'=>$subSlug, 'items'=>$items, 'groups'=>collect($items->items())->groupBy(fn($p) => $p->sub ?: $c->name), 'title'=>$title, 'desc'=>$subName ? $subName.' – original imported products in '.$c->name.' at DutyFree Shop BD. Cash on delivery, nationwide delivery.' : $c->meta_description, 'canon'=>$canon]))->header('Cache-Control','public, max-age=120');
+    return response()->view('store.category', $this->base(['c'=>$c, 'subName'=>$subName, 'subSlug'=>$subSlug, 'items'=>$items, 'hasPos'=>$hasPos, 'groups'=>collect($items->items())->groupBy(fn($p) => $p->sub ?: $c->name), 'title'=>$title, 'desc'=>$subName ? $subName.' – original imported products in '.$c->name.' at DutyFree Shop BD. Cash on delivery, nationwide delivery.' : $c->meta_description, 'canon'=>$canon]))->header('Cache-Control','public, max-age=120');
   }
   /** /category/secondary-category */
   public function categorySub(Request $r, string $cat, string $sub) { return $this->category($r, $cat, $sub); }

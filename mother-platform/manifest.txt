@@ -223,3 +223,6 @@ resources/views/smsmk/campaign.blade.php
 resources/views/smsmk/automation.blade.php
 resources/views/smsmk/reports.blade.php
 resources/views/smsmk/settings.blade.php
+app/Http/Controllers/ProductOrderController.php
+resources/views/product_order.blade.php
+database/migrations/2026_11_01_000005_product_positions.php

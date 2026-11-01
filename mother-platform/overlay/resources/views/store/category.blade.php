@@ -5,7 +5,7 @@
   $sub = $subName ?? null; $title = $sub ?: $c->name; $base = '/'.$c->slug.'/'; $cur = $sub ? '/'.$c->slug.'/'.$subSlug : $base;
   $qs = fn(array $o) => $cur.'?'.http_build_query(array_filter(array_merge(request()->only(['min','max','sort']), $o), fn($v) => $v !== null && $v !== ''));
   $ranges = [[null,1000,'Under ৳1,000'],[1000,5000,'৳1,000 – ৳5,000'],[5000,20000,'৳5,000 – ৳20,000'],[20000,50000,'৳20,000 – ৳50,000'],[50000,null,'Over ৳50,000']];
-  $sorts = [''=>'Newest','popular'=>'Most in stock','price_asc'=>'Price: low to high','price_desc'=>'Price: high to low'];
+  $sorts = ($hasPos ?? false) ? [''=>'Position (default)','new'=>'Newest','popular'=>'Most in stock','price_asc'=>'Price: low to high','price_desc'=>'Price: high to low'] : [''=>'Newest','popular'=>'Most in stock','price_asc'=>'Price: low to high','price_desc'=>'Price: high to low'];
 @endphp
 <style>
 .cb{display:flex;gap:8px;align-items:center;font-size:13px;color:#6B7280;padding-top:16px}.cb a:hover{color:var(--o)}.cb b{color:var(--n);font-weight:600}

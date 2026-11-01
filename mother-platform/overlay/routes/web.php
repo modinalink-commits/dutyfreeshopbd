@@ -143,6 +143,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::post('/sms/test', [\App\Http\Controllers\SmsController::class,'test']);
   Route::post('/sms/balance', [\App\Http\Controllers\SmsController::class,'balance']);
   Route::post('/sms/flush', [\App\Http\Controllers\SmsController::class,'flush']);
+  Route::get('/product-order', [\App\Http\Controllers\ProductOrderController::class,'index']); Route::get('/product-order/data', [\App\Http\Controllers\ProductOrderController::class,'data']); Route::post('/product-order/save', [\App\Http\Controllers\ProductOrderController::class,'save']); Route::post('/product-order/reset', [\App\Http\Controllers\ProductOrderController::class,'reset']);
   Route::prefix('sms-marketing')->group(function () {
     $C = \App\Http\Controllers\SmsMarketingController::class;
     Route::get('/', [$C,'dashboard']); Route::get('/send', [$C,'compose']); Route::post('/estimate', [$C,'estimate']); Route::post('/send', [$C,'send']);
