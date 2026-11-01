@@ -281,6 +281,8 @@ if(emb){var P=function(a){parent.postMessage({dfdial:a},location.origin)};$('pX'
 if(ch)ch.onmessage=function(m){var d=m.data||{};if(d.type==='ping')ch.postMessage({type:'here'});if(d.type==='dial'){$('num').value=clean(d.n);lastN='';found();tab('pad');window.focus();$('num').focus()}if(d.type==='call'){$('num').value=clean(d.n);window.focus();dialNum(d.n)}if(d.type==='disconnect')disconnect();if(d.type==='connect')connect();if(d.type==='getstatus')ch.postMessage({type:'status',text:$('bdg').textContent,cls:$('bdg').className.replace('badge ','')})};
 window.addEventListener('beforeunload',function(e){if(inCall()){e.preventDefault();e.returnValue=''}});
 if(window.Notification&&Notification.permission==='default')try{Notification.requestPermission()}catch(e){}
+function chk(){if(inCall()||!cfg)return;getj('/admin/call-center/creds').then(function(c){if(c&&c.ok&&(c.user!==cfg.user||c.pw!==cfg.pw||c.domain!==cfg.domain||c.wss!==cfg.wss)){reconnect()}}).catch(function(){})}
+document.addEventListener('visibilitychange',function(){if(!document.hidden)chk()});window.addEventListener('focus',chk);setInterval(chk,60000);
 setPhase('idle');ui();
 if($('num').value)found();
 if($('msg').textContent==='')connect();else badge('Disconnected','b-bad');
