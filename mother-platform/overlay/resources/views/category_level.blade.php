@@ -18,7 +18,7 @@
 </style>
 <div id="txm"></div>
 <div class="cl-head"><h1 class="cl" style="display:block">{{ $title }}</h1><p class="cl sub0" style="display:block">{{ $intro }}</p>
-<div class="cl nav2" style="display:flex"><a href="/admin/categories/main" class="{{ $level==='main'?'on':'' }}">1 · Main Categories</a><a href="/admin/categories/sub" class="{{ $level==='sub'?'on':'' }}">2 · Sub Categories</a><a href="/admin/categories/child" class="{{ $level==='subsub'?'on':'' }}">3 · Child Categories</a><a href="/admin/taxonomy">Category Tree</a><a href="/admin/brands">Brands</a></div></div>
+<div class="cl nav2" style="display:flex"><a href="/admin/categories/main" class="{{ $level==='main'?'on':'' }}">1 · Main Categories</a><a href="/admin/categories/sub" class="{{ $level==='sub'?'on':'' }}">2 · Sub Categories</a><a href="/admin/categories/child" class="{{ $level==='subsub'?'on':'' }}">3 · Child Categories</a><a href="/admin/brands">Brands</a></div></div>
 <div class="cl"><div class="card"><div class="tb"><input id="q" placeholder="Search"><select id="fp"></select></div><div id="list"></div><p style="font-size:12px;color:#6B7280">Drag ⠿ or use ▲▼ to change the position inside the same group. The store menu follows this order.</p></div>
 <div class="card fm" id="form"></div></div>
 <script type="application/json" id="txd">@json($data)</script>
