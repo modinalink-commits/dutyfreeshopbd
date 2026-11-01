@@ -20,7 +20,7 @@
 <div style="font-size:11.5px;color:#6B7280;margin-top:6px">Only customers with a delivered order, no newer open order, calls allowed, an active in-stock last product and outside the cooldown are included.</div></div>
 <div class="card"><h2>Schedule</h2><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px">
 <div><label>Campaign start date</label><input type="date" name="start_date" value="{{ $o('start_date') ? substr($o('start_date'),0,10) : '' }}"></div><div><label>Campaign end date</label><input type="date" name="end_date" value="{{ $o('end_date') ? substr($o('end_date'),0,10) : '' }}"></div>
-<div><label>Call start time</label><input type="time" name="call_start_time" value="{{ $o('call_start_time','10:00') }}"></div><div><label>Call end time</label><input type="time" name="call_end_time" value="{{ $o('call_end_time','20:00') }}"></div>
+<div><label>Call start time</label><input type="time" name="call_start_time" value="{{ $o('call_start_time','14:00') }}"></div><div><label>Call end time</label><input type="time" name="call_end_time" value="{{ $o('call_end_time','17:00') }}"></div>
 <div><label>Max calls per day</label><input type="number" min="1" name="daily_limit" value="{{ $o('daily_limit',200) }}"></div>
 <div><label>Max attempts per customer</label><input type="number" min="1" max="5" name="retry_limit" value="{{ $o('retry_limit',2) }}"></div><div><label>Retry after (hours)</label><input type="number" min="1" name="retry_gap_hours" value="{{ $o('retry_gap_hours',6) }}"></div></div>
 <label style="display:block"><input type="checkbox" name="retry_on" value="1" @checked($o('retry_on', true))> Retry no-answer / busy / failed calls</label></div>

@@ -50,11 +50,12 @@ class VoiceCampaignController extends Controller
     return redirect('/admin/voice/' . $id)->with('ok', 'Campaign saved');
   }
   public function show(Request $r, $id) {
-    $c = DB::table('voice_campaigns')->find($id); if (!$c) abort(404); $flt = (string)$r->query('status', '');
+    $c = DB::table('voice_campaigns')->find($id); if (!$c) abort(404); $flt = (string)$r->query('status', ''); $day = preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)$r->query('date')) ? (string)$r->query('date') : '';
     $prev = null; if (in_array($c->status, ['draft', 'paused'])) { $cd = V::candidates($c, 3000); $prev = ['n' => count($cd['rows']), 'skipped' => count($cd['skipped']), 'reasons' => array_count_values($cd['skipped']), 'rows' => array_slice($cd['rows'], 0, 8)]; foreach ($prev['rows'] as &$x) $x['script'] = V::scriptFor($c, (object)['product_name' => $x['product_name'], 'discount_value' => $c->discount_value, 'name' => $x['name']]); unset($x); }
-    $rows = DB::table('voice_campaign_customers')->where('campaign_id', $id)->when($flt !== '', fn($q) => $q->where('call_status', $flt))->orderByDesc('id')->limit(200)->get();
+    $rows = DB::table('voice_campaign_customers')->where('campaign_id', $id)->when($flt !== '', fn($q) => $q->where('call_status', $flt))->when($day !== '', fn($q) => $q->whereRaw("(created_at at time zone 'UTC' at time zone 'Asia/Dhaka')::date = ?", [$day]))->orderByDesc('id')->limit(300)->get();
+    $days = DB::table('voice_campaign_customers')->where('campaign_id', $id)->selectRaw("(created_at at time zone 'UTC' at time zone 'Asia/Dhaka')::date as d, count(*) n, count(*) filter (where call_attempts>0) called, count(*) filter (where answered_at is not null) ans, count(*) filter (where interested) intr, count(*) filter (where converted) ord")->groupByRaw('1')->orderByRaw('1 desc')->limit(30)->get();
     $att = DB::table('voice_call_attempts')->where('campaign_id', $id)->orderByDesc('id')->limit(30)->get();
-    return view('voice_campaign_show', ['c' => $c, 'st' => V::stats((int)$id), 'prev' => $prev, 'rows' => $rows, 'att' => $att, 'flt' => $flt, 'ready' => V::readiness(), 'sample' => $prev['rows'][0] ?? null]);
+    return view('voice_campaign_show', ['c' => $c, 'st' => V::stats((int)$id), 'prev' => $prev, 'rows' => $rows, 'att' => $att, 'flt' => $flt, 'day' => $day, 'days' => $days, 'ready' => V::readiness(), 'sample' => $prev['rows'][0] ?? null]);
   }
   public function action(Request $r, $id) {
     $c = DB::table('voice_campaigns')->find($id); if (!$c) abort(404); $a = (string)$r->input('a');
