@@ -38,7 +38,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::post('/incomplete/{id}/{act}', [\App\Http\Controllers\IncompleteController::class,'act'])->where('act', 'recovered|archive|reopen');
   Route::get('/orders/print', [\App\Http\Controllers\PrintController::class,'show']);
   Route::get('/orders/products', [A::class,'orderProducts']);
-  Route::get('/orders/discount', [A::class,'orderDiscount']);
+  Route::get('/orders/discount', [A::class,'orderDiscount']); Route::get('/orders/delivery', [\App\Http\Controllers\DeliveryController::class,'quote']);
   Route::post('/orders/bulk', [A::class,'orderBulk']);
   Route::post('/orders', [A::class,'orderStore']);
   Route::get('/orders/{id}', [A::class,'orderShow']);
@@ -156,6 +156,10 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
     Route::post('/quick', [$C,'quick']); Route::get('/history', [$C,'history']);
   });
   Route::get('/winback', [\App\Http\Controllers\WinbackController::class,'index']); Route::post('/winback/settings', [\App\Http\Controllers\WinbackController::class,'save']); Route::post('/winback/run', [\App\Http\Controllers\WinbackController::class,'run']);
+  Route::prefix('delivery')->group(function () { $DL = \App\Http\Controllers\DeliveryController::class;
+    Route::get('/', [$DL,'index']); Route::post('/settings', [$DL,'save']); Route::post('/zone', [$DL,'zoneSave']); Route::post('/zone/{id}', [$DL,'zoneSave'])->whereNumber('id'); Route::post('/zone/{id}/act', [$DL,'zoneAct'])->whereNumber('id');
+    Route::post('/override', [$DL,'ovSave']); Route::post('/override/{id}/act', [$DL,'ovAct'])->whereNumber('id');
+  });
   Route::prefix('seo')->group(function () { $S = \App\Http\Controllers\SeoController::class;
     Route::get('/', [$S,'index']); Route::get('/export', [$S,'export']); Route::get('/page', [$S,'edit']); Route::post('/page', [$S,'save']);
     Route::get('/page/{id}', [$S,'edit'])->whereNumber('id'); Route::post('/page/{id}', [$S,'save'])->whereNumber('id');

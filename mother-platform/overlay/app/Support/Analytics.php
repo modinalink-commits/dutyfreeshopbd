@@ -193,7 +193,7 @@ class Analytics {
   private static function profitLoss(array $f): array {
     [$w, $b] = self::w($f, 'all');
     $v = "o.status not in ('Cancel','Returned','Return Pending')";
-    $sql = "select coalesce(sum(case when $v then x.items end),0) items, coalesce(sum(case when $v then o.discount end),0) disc, coalesce(sum(case when $v then x.cost end),0) cost, coalesce(sum(case when $v then o.shipping end),0) ship, coalesce(sum(case when $v then coalesce(o.courier_fee,0) end),0) cfee, coalesce(sum(case when o.status in ".self::RET." then coalesce(o.courier_return_fee,0) end),0) rfee, coalesce(sum(case when o.status in ".self::RET." then x.items - o.discount end),0) ret from orders o".self::lat().$w;
+    $sql = "select coalesce(sum(case when $v then x.items end),0) items, coalesce(sum(case when $v then o.discount end),0) disc, coalesce(sum(case when $v then x.cost end),0) cost, coalesce(sum(case when $v then o.shipping end),0) ship, coalesce(sum(case when $v then o.delivery_free_discount end),0) dfree, coalesce(sum(case when $v then o.delivery_manual_adj end),0) dadj, coalesce(sum(case when $v then coalesce(o.courier_fee,0) end),0) cfee, coalesce(sum(case when o.status in ".self::RET." then coalesce(o.courier_return_fee,0) end),0) rfee, coalesce(sum(case when o.status in ".self::RET." then x.items - o.discount end),0) ret from orders o".self::lat().$w;
     $r = (array)(self::sel($sql, $b)[0] ?? []);
     $exp = (float)(DB::select("select coalesce(sum(amount),0) s from account_entries where direction = 'expense' and entry_date between ? and ?", [$f['from'], $f['to']])[0]->s ?? 0);
     $rev = (float)$r['items'] - (float)$r['disc']; $gross = $rev - (float)$r['cost'];
@@ -211,6 +211,8 @@ class Analytics {
       $L('Return courier fee', -(float)$r['rfee'], 'Fee paid for returned parcels.'),
       $L('Other expense', -$exp, 'Expense entries from Accounts in the same dates.'),
       $B('Net profit', $net),
+      ['line'=>'Memo: free delivery given (waived)', 'amount'=>(float)($r['dfree'] ?? 0), 'note'=>'Delivery charge waived by free-delivery rules; not part of net sales.', 'bold'=>0],
+      ['line'=>'Memo: manual delivery adjustments', 'amount'=>(float)($r['dadj'] ?? 0), 'note'=>'Admin changes to the calculated delivery charge.', 'bold'=>0],
       ['line'=>'Memo: returned orders value', 'amount'=>(float)$r['ret'], 'note'=>'Already excluded from revenue above.', 'bold'=>0],
       ['line'=>'Memo: refunds', 'amount'=>0, 'note'=>'Refunds are not recorded separately yet. Returns are shown above.', 'bold'=>0],
     ];

@@ -16,6 +16,7 @@ class ModulePermission {
     if (preg_match('#^purchase(/|$)#', $p)) return 'purchase';
     if (preg_match('#^(referral|winback)(/|$)#', $p)) return 'marketing';
     if (preg_match('#^seo(/|$)#', $p)) return 'settings';
+    if (preg_match('#^delivery(/|$)#', $p)) return 'couriers';
     if (preg_match('#^sms-marketing/(quick|history)#', $p)) return 'orders';
     if (str_starts_with($p, 'sms-marketing')) return 'marketing';
     if (str_starts_with($p, 'push')) return 'marketing';

@@ -207,7 +207,10 @@ class AdminController extends Controller {
     if ($can && !empty($d['disc_extra'])) { $disc += (float)$d['disc_extra']; $labels[] = 'Extra discount'; }
     $disc = max(0, min($sub, round($disc, 2))); $changed = abs($disc - $auto['total']) > 0.009;
     $cpn = null; foreach ($kept as $l) if (($l['key'] ?? '') === 'coupon') $cpn = $l['code'] ?? null; if ($changed && $labels === ['Manual discount']) $cpn = null;
-    $d['total'] = round($sub - $disc + (float)($d['shipping'] ?? 0), 2);
+    $dv = \App\Support\Delivery::compute((float)$sub, 0, trim(($d['address'] ?? '').' '.($d['sub_city'] ?? '')), (string)($d['district'] ?? ''), array_values(array_filter(array_map(fn($i) => (int)($i['product_id'] ?? 0), $d['items']))));
+    $shipIn = ($d['shipping'] ?? '') === '' ? $dv['charge'] : round((float)$d['shipping'], 2); $d['shipping'] = $shipIn; $adj = abs($shipIn - $dv['charge']) > 0.009 ? round($shipIn - $dv['charge'], 2) : null;
+    $dcols = ['delivery_zone'=>mb_substr((string)$dv['zone'], 0, 160), 'delivery_original'=>$dv['original'], 'delivery_free_discount'=>$dv['free_discount'], 'delivery_manual_adj'=>$adj, 'delivery_manual_by'=>$adj !== null ? Auth::user()->name : null, 'delivery_note'=>$dv['reason'] ? mb_substr($dv['reason'], 0, 200) : null];
+    $d['total'] = round($sub - $disc + $shipIn, 2);
     $manual = $changed || $labels !== array_column($kept, 'label');
     if ($manual && $disc > 0) { $meta = ['discount_type'=>'Manual Discount', 'discount_rule'=>'Admin override', 'discount_pct'=>null, 'discount_source'=>'Manual by '.Auth::user()->name, 'discount_by'=>'Manual', 'customer_category'=>$auto['profile']['category'], 'membership_status'=>$auto['profile']['membership'].($auto['profile']['membership_name'] ? ' – '.$auto['profile']['membership_name'] : '')]; }
     else $meta = \App\Support\OrderDiscount::meta($kept, $auto['profile'], 'Automatic', $disc);
@@ -215,9 +218,10 @@ class AdminController extends Controller {
     $cu = DB::table('customers')->where('phone', $d['phone'])->orderBy('id')->first();
     if (!$cu) $cid = DB::table('customers')->insertGetId(['name'=>$d['customer_name'], 'phone'=>$d['phone'], 'address'=>$d['address'] ?? null, 'created_at'=>now(), 'updated_at'=>now()]);
     else { $cid = $cu->id; if (trim((string)($cu->address ?? '')) === '' && !empty($d['address'])) DB::table('customers')->where('id', $cid)->update(['address'=>$d['address'], 'updated_at'=>now()]); }
-    $id = DB::transaction(function () use ($d, $cid, $disc, $cpn, $changed, $auto, $labels, $meta) {
+    $id = DB::transaction(function () use ($d, $cid, $disc, $cpn, $changed, $auto, $labels, $meta, $dcols, $dv) {
       $id = DB::table('orders')->insertGetId(['invoice'=>'TMP'.uniqid(),'store_id'=>1,'customer_name'=>$d['customer_name'],'phone'=>$d['phone'],'customer_id'=>$cid,'address'=>$d['address']??null,'district'=>$d['district']??null,'source'=>$d['source']??'Web Site','shipping'=>$d['shipping']??0,'total'=>$d['total'],'status'=>'New','note'=>$d['note']??null,'courier'=>$d['courier']??null,'assigned_admin'=>$d['assigned_admin']??null,'created_at'=>now(),'updated_at'=>now()]);
-      DB::table('orders')->where('id',$id)->update(['invoice'=>'INV-'.str_pad($id,6,'0',STR_PAD_LEFT), 'discount'=>$disc, 'coupon'=>$cpn] + $meta);
+      DB::table('orders')->where('id',$id)->update(['invoice'=>'INV-'.str_pad($id,6,'0',STR_PAD_LEFT), 'discount'=>$disc, 'coupon'=>$cpn] + $meta + $dcols);
+      if ($dcols['delivery_manual_adj'] !== null) \App\Support\Procure::audit('delivery.manual_adjust', 'INV-'.str_pad($id,6,'0',STR_PAD_LEFT), ['charge'=>$dv['charge']], ['charge'=>$d['shipping']]);
       if ($cpn) DB::table('coupons')->where('code', $cpn)->increment('used_count');
       if ($disc > 0 || $changed) DB::table('order_discount_logs')->insert(['order_id'=>$id, 'kind'=>$changed ? 'override' : 'applied', 'label'=>mb_substr(implode(' + ', $labels) ?: 'No discount', 0, 200), 'prev_amount'=>$auto['total'], 'new_amount'=>$disc, 'user_id'=>Auth::id(), 'user_name'=>Auth::user()->name, 'created_at'=>now(), 'updated_at'=>now()]);
       foreach ($d['items'] as $it) DB::table('order_items')->insert(['order_id'=>$id,'product_id'=>$it['product_id'] ?? null,'name'=>$it['name'],'qty'=>$it['qty'],'price'=>$it['price'],'created_at'=>now(),'updated_at'=>now()]);

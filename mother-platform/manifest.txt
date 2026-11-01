@@ -269,3 +269,7 @@ app/Support/SeoMgr.php
 app/Http/Controllers/SeoController.php
 resources/views/seo.blade.php
 resources/views/seo_edit.blade.php
+database/migrations/2026_11_01_000010_delivery.php
+app/Support/Delivery.php
+app/Http/Controllers/DeliveryController.php
+resources/views/delivery.blade.php

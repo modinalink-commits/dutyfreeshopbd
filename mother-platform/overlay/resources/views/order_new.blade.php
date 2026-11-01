@@ -21,7 +21,7 @@
 <div style="margin:6px 0"><button type="button" class="g" id="ocu">+ Add custom item</button></div>
 <div style="overflow:auto"><table class="itb"><thead><tr><th>#</th><th>Product</th><th style="width:90px">Quantity</th><th style="width:120px">Price</th><th style="width:110px">Total</th><th style="width:70px">Action</th></tr></thead><tbody id="itb"></tbody></table></div>
 @if($errors->any())<div class="err" style="margin-top:8px">{{ $errors->first() }}</div>@endif
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px"><div><label>Shipping (TK)</label><input name="shipping" id="osh" type="number" step="0.01" min="0" value="0"></div><div><label>Subtotal (TK)</label><input id="ost" readonly value="0" style="background:#F9FAFB"></div></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px"><div><label>Delivery Charge (TK)</label><input name="shipping" id="osh" type="number" step="0.01" min="0" value="0"><div id="odz" style="font-size:11.5px;color:#6B7280;margin-top:3px"></div></div><div><label>Subtotal (TK)</label><input id="ost" readonly value="0" style="background:#F9FAFB"></div></div>
 <div id="dsp" style="margin-top:12px;border:1px solid #E5E7EB;border-radius:10px;padding:10px 12px;font-size:13px"><b>Discount</b><div id="dsn" style="display:none;margin:6px 0;padding:8px 10px;border-radius:8px;background:#EFF6FF;color:#1E3A8A;font-size:12.5px;line-height:1.6"></div><div id="dsl" style="margin:6px 0;color:#6B7280">Enter the customer phone and add products to check discounts.</div>
 <label>Coupon code (optional)</label><input name="coupon" id="ocp" autocomplete="off" value="{{ old('coupon') }}" style="max-width:220px"><div id="dso" style="display:none"><label>Change discount to (TK, replaces the automatic one)</label><input name="disc_manual" id="odm" type="number" step="0.01" min="0" style="max-width:220px"><label>Extra discount (TK)</label><input name="disc_extra" id="ode" type="number" step="0.01" min="0" style="max-width:220px"><p style="font-size:11px;color:#6B7280;margin:4px 0 0">Any manual change is logged with your name, the previous and new discount, and the time.</p></div>
 <div id="dss" style="margin-top:10px;font-weight:600"></div></div>
@@ -63,8 +63,14 @@ PS.addEventListener('input',function(){clearTimeout(pt);var q=PS.value.trim();if
 PO.addEventListener('click',function(e){var d=e.target.closest('[data-k]');if(!d)return;addP(PO._a[+d.getAttribute('data-k')]);PO.style.display='none';PS.value='';PS.focus()});
 PS.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();var d=PO.querySelector('[data-k]');if(d&&PO.style.display!=='none'){addP(PO._a[+d.getAttribute('data-k')]);PO.style.display='none';PS.value=''}}});
 document.addEventListener('click',function(e){if(!PO.contains(e.target)&&e.target!==PS)PO.style.display='none'});
-D.addEventListener('change',function(){var o=D.options[D.selectedIndex];if(o&&o.dataset.ch&&(SH.value===''||SH.value==='0'||SH.dataset.auto==='1')){SH.value=o.dataset.ch;SH.dataset.auto='1';sum()}});
-SH.addEventListener('input',function(){this.dataset.auto='0'});
+SH.dataset.auto='1';var DZ=document.getElementById('odz'),dvT,dvAuto=null,dvInfo='';
+function dvShow(){var v=parseFloat(SH.value)||0,t=dvInfo;if(dvAuto!==null&&Math.abs(v-dvAuto)>0.009)t+=(t?' · ':'')+'<b style="color:#B45309">Manual adjustment '+(v-dvAuto>0?'+':'-')+tk(Math.abs(v-dvAuto))+' (will be recorded)</b>';DZ.innerHTML=t}
+function dvGo(){var ids=IT.filter(function(x){return x.id}).map(function(x){return x.id}).join(','),q='subtotal='+sub()+'&district='+encodeURIComponent(D.value)+'&address='+encodeURIComponent((document.getElementById('ona').value||'')+' '+(document.querySelector('[name=sub_city]').value||''))+'&pids='+ids;
+ fetch('/admin/orders/delivery?'+q,{headers:{Accept:'application/json'},credentials:'same-origin'}).then(function(r){return r.json()}).then(function(j){dvAuto=j.charge;dvInfo='Zone: <b>'+esc(j.zone||'—')+'</b>'+(j.free?' · <b style="color:#166534">FREE delivery'+(j.reason?' ('+esc(j.reason)+')':'')+'</b> (normal '+tk(j.original)+')':'');if(SH.dataset.auto==='1'){SH.value=j.charge}dvShow();sum()}).catch(function(){})}
+function dvs(){clearTimeout(dvT);dvT=setTimeout(dvGo,300)}
+D.addEventListener('change',dvs);document.getElementById('ona').addEventListener('input',dvs);document.querySelector('[name=sub_city]').addEventListener('input',dvs);
+SH.addEventListener('input',function(){this.dataset.auto='0';dvShow();sum()});
+var _rd=render;render=function(){_rd.apply(this,arguments);dvs()};
 /* discount */
 var CP=document.getElementById('ocp'),DL=document.getElementById('dsl'),NT=document.getElementById('dsn'),DS=document.getElementById('dss'),DO=document.getElementById('dso'),DM=document.getElementById('odm'),DE=document.getElementById('ode'),dt,lastP='',can=false;
 function resetOv(){DM.value='';DE.value=''}
