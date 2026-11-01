@@ -52,7 +52,7 @@ class Delivery
    */
   /** Live Pathao charge from the typed address, or null (then the flat rates below are used). */
   public static function pathao(string $text): ?array {
-    if (!self::cfg()['pathao'] || !\App\Support\Pathao::configured()) return null;
+    if (!(self::cfg()['pathao'] ?? true) || !\App\Support\Pathao::configured()) return null;
     try { $loc = \App\Support\PathaoLocator::find($text); if (!$loc) return null; $p = \App\Support\Pathao::price($loc['city'], $loc['zone']); if (!$p) return null;
       return $loc + ['price' => (float)$p['final_price']]; } catch (\Throwable $e) { return null; }
   }
@@ -64,6 +64,7 @@ class Delivery
     if ($express) { $r['zone'] = $c['l_ex'] . ($z ? ' · ' . $z->name : ''); $orig = $z && $z->express_charge !== null ? (float)$z->express_charge : $c['express']; }
     elseif ($z) { $r['zone'] = $z->name . ' (' . $z->level . ')'; $orig = (float)$z->charge; }
     elseif (($pp = self::pathao($text))) { $r['zone'] = 'Pathao · ' . $pp['city_name'] . ($pp['matched_zone'] ? ' / ' . $pp['zone_name'] : ''); $orig = $pp['price']; $r['pathao'] = ['city' => $pp['city'], 'zone' => $pp['zone']]; }
+    elseif (($c['pathao'] ?? true) && $text !== '' && $area !== 3 && \App\Support\Pathao::configured()) { $r['zone'] = 'Default delivery (district not found in address)'; $orig = $c['default']; }
     elseif ($area === 1) { $r['zone'] = $c['l_in']; $orig = $c['inside']; }
     elseif ($area === 2) { $r['zone'] = $c['l_out']; $orig = $c['outside']; }
     else {
