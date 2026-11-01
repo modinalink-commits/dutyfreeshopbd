@@ -333,3 +333,6 @@ database/migrations/2026_11_02_000013_shurjopay.php
 app/Support/ShurjoPay.php
 app/Http/Controllers/ShurjoPayController.php
 resources/views/shurjopay_settings.blade.php
+database/migrations/2026_11_02_000014_legacy_products.php
+app/Http/Controllers/LegacyProductController.php
+resources/views/legacy_products.blade.php
