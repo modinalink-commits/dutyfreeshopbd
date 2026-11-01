@@ -1,0 +1,115 @@
+#!/bin/sh
+# Zero-downtime release deploy. Runs inside the app container as root.
+# usage: deploy.sh <40-char git sha> [allow-breaking]   |   deploy.sh rollback
+# Flow: copy live release -> fetch new code -> composer -> migrate (backward-compatible only) -> caches
+#       -> health check on the NEW release -> atomic symlink switch -> health check live -> auto-rollback on failure.
+set -u
+D=/srv/deploy; mkdir -p "$D"
+exec 9>"$D/lock"
+if ! flock -n 9; then echo "another deploy is running"; exit 1; fi
+LOG="$D/last.log"
+log() { echo "[$(date +%H:%M:%S)] $*"; }
+setst() { echo "$1" > "$D/status"; }
+fail() { log "FAILED: $*"; setst "failed: $*"; [ -n "${REL:-}" ] && [ -d "${REL:-}" ] && [ "${KEEP:-0}" != 1 ] && rm -rf "$REL"; [ -n "${HPID:-}" ] && kill "$HPID" 2>/dev/null; [ "${DOWN:-0}" = 1 ] && (cd "$CUR" && php artisan up >/dev/null 2>&1); exit 1; }
+swap() { # atomic: rename(2) replaces the symlink in one step
+  ln -sfn "$1" /srv/app.tmp && php -r 'exit(rename("/srv/app.tmp","/srv/app")?0:1);'
+}
+cat > "$D/hc.php" <<'PHP'
+<?php
+$base=$argv[1]; $host=$argv[2]; $paths=array_slice($argv,3); $bad=0;
+function get($u,$host,&$code){ $ctx=stream_context_create(['http'=>['timeout'=>40,'ignore_errors'=>true,'follow_location'=>0,'header'=>"Host: $host\r\nUser-Agent: deploy-check\r\nX-Forwarded-Proto: https\r\n"]]); $b=@file_get_contents($u,false,$ctx); $code=0; if(isset($http_response_header[0]) && preg_match('#\s(\d{3})\s#',$http_response_header[0],$m)) $code=(int)$m[1]; return $b; }
+foreach($paths as $p){
+  if($p==='@product'){ $h=get($base.'/',$host,$c); if($h && preg_match('#href="(/[a-z0-9-]+/[a-z0-9-]+/[a-z0-9-]+)"#',$h,$m)) $p=$m[1]; else { echo "SKIP no product link\n"; continue; } }
+  $t=microtime(true); $b=get($base.$p,$host,$code);
+  $ok=$code>=200 && $code<400 && $b!==false && !preg_match('/Server Error|Whoops|Stack trace|ErrorException|Undefined (variable|array key)/i',(string)$b);
+  printf("%s %d %s (%.1fs)\n",$ok?'OK  ':'FAIL',$code,$p,microtime(true)-$t); if(!$ok)$bad++;
+}
+exit($bad?1:0);
+PHP
+
+ARG="${1:-}"; FLAG="${2:-}"
+[ -L /srv/app ] || { log "FAILED: /srv/app is not a release symlink yet (one full redeploy adopts the layout)"; setst "failed: layout"; exit 1; }
+CUR=$(readlink -f /srv/app)
+REL=""; HPID=""; KEEP=0; DOWN=0
+
+if [ "$ARG" = rollback ]; then
+  PREV=$(cat "$D/previous" 2>/dev/null || true)
+  [ -d "$PREV" ] || fail "no previous release kept"
+  log "ROLLBACK $CUR -> $PREV"; setst "rolling back"
+  swap "$PREV" || fail "switch failed"
+  echo "$CUR" > "$D/previous"; echo "$PREV" > "$D/current"
+  su -s /bin/sh www-data -c "cd /srv/app && php artisan queue:restart" >/dev/null 2>&1 || true
+  php "$D/hc.php" http://web dutyfreeshopbd.com / /offline || log "WARNING: live check failed after rollback"
+  log "rollback done"; setst "ok: rolled back to $(basename "$PREV")"; exit 0
+fi
+
+echo "$ARG" | grep -Eq '^[0-9a-f]{40}$' || fail "bad ref"
+REF="$ARG"; R="https://raw.githubusercontent.com/modinalink-commits/dutyfreeshopbd/$REF/mother-platform"
+ID="$(date +%Y%m%d-%H%M%S)-$(echo "$REF" | cut -c1-7)"; REL="/srv/releases/$ID"
+setst "building $ID"; log "release $ID (from $(basename "$CUR"))"
+
+log "1/9 copy live release"
+mkdir -p "$REL" && cp -a "$CUR/." "$REL/" || fail "copy"
+rm -rf "$REL/storage" "$REL/.env" "$REL/public/uploads"; rm -f "$REL"/bootstrap/cache/*.php
+ln -sfn /srv/shared/storage "$REL/storage"; ln -sfn /srv/shared/.env "$REL/.env"; ln -sfn /srv/shared/uploads "$REL/public/uploads"
+echo "$ID" > "$REL/RELEASE"
+
+log "2/9 download new code"
+cd "$REL" || fail "cd"
+export R; wget -qO manifest.txt.new "$R/manifest.txt" || fail "manifest download"
+sed -i '/^$/d' manifest.txt.new; N=$(wc -l < manifest.txt.new)
+rm -f "$D/dl.fail"; i=0
+while read -r f; do
+  ( mkdir -p "$(dirname "$f")"; wget -q -O "$f" "$R/overlay/$f" || echo "$f" >> "$D/dl.fail" ) &
+  i=$((i+1)); [ $((i % 8)) = 0 ] && wait
+done < manifest.txt.new
+wait
+[ -f "$D/dl.fail" ] && fail "download failed: $(head -3 "$D/dl.fail" | tr '\n' ' ')"
+cp manifest.txt.new manifest.txt; rm -f manifest.txt.new; log "   $N files"
+
+log "3/9 composer install"
+export COMPOSER_ALLOW_SUPERUSER=1
+composer install --no-dev --optimize-autoloader --classmap-authoritative --no-interaction -q || fail "composer install"
+
+log "4/9 migration safety check"
+PRET=$(php artisan migrate --pretend --force 2>&1) || fail "migrate --pretend: $(echo "$PRET" | tail -2 | tr '\n' ' ')"
+if echo "$PRET" | grep -Eiq 'drop (column|table|index|constraint)|rename (column|to)|alter column .* (type|set not null)|truncate'; then
+  if [ "$FLAG" = allow-breaking ]; then log "   BREAKING migration allowed: maintenance mode for the switch"; DOWN=1
+  else log "$(echo "$PRET" | grep -Ei 'drop (column|table|index|constraint)|rename|alter column|truncate' | head -3)"; fail "pending migration is NOT backward-compatible (drops/renames). Deploy with allow-breaking in a quiet moment."; fi
+else log "   pending migrations are additive"; fi
+
+log "5/9 migrate + install"
+[ "$DOWN" = 1 ] && php artisan down --retry=30 >/dev/null 2>&1 || true
+php artisan migrate --force || fail "migrate"
+php artisan mother:install || log "   (install step reported a problem, continuing)"
+
+log "6/9 optimise caches"
+php artisan config:cache && php artisan route:cache && php artisan view:cache || fail "cache build"
+for f in storage/framework/views/*.php; do php -l "$f" >/dev/null 2>&1 || log "   VIEWLINT FAIL $(head -c 220 "$f" | grep -o 'PATH [^ ]*')"; done
+chown -R www-data:www-data "$REL/bootstrap/cache" /srv/shared/storage 2>/dev/null
+
+log "7/9 health check on the NEW release (not live yet)"
+su -s /bin/sh www-data -c "cd $REL && exec php -S 127.0.0.1:8099 -t public public/index.php" >"$D/hc-server.log" 2>&1 &
+HPID=$!; sleep 3
+php "$D/hc.php" http://127.0.0.1:8099 dutyfreeshopbd.com / @product /offline /manifest.webmanifest /track /admin/login /account/login | sed 's/^/   /'
+HC=$?; kill "$HPID" 2>/dev/null; HPID=""; pkill -f 'php -S 127.0.0.1:8099' 2>/dev/null
+[ "$HC" = 0 ] || fail "health check failed on new release (live site untouched)"
+
+log "8/9 switch (atomic)"
+swap "$REL" || fail "switch"
+echo "$CUR" > "$D/previous"; echo "$REL" > "$D/current"
+[ "$DOWN" = 1 ] && php artisan up >/dev/null 2>&1; DOWN=0
+KEEP=1
+su -s /bin/sh www-data -c "cd /srv/app && php artisan queue:restart" >/dev/null 2>&1 || true
+
+log "9/9 health check LIVE"
+sleep 2
+if ! php "$D/hc.php" http://web dutyfreeshopbd.com / /offline /manifest.webmanifest | sed 's/^/   /'; then
+  log "live check failed -> automatic rollback"; swap "$CUR"; echo "$CUR" > "$D/current"; echo "$REL" > "$D/previous"
+  php "$D/hc.php" http://web dutyfreeshopbd.com / | sed 's/^/   /'
+  setst "failed: live check failed, rolled back to $(basename "$CUR")"; log "rolled back"; exit 1
+fi
+# keep the newest 3 releases (live + previous always)
+ls -1dt /srv/releases/* 2>/dev/null | tail -n +4 | while read -r old; do [ "$old" != "$(readlink -f /srv/app)" ] && [ "$old" != "$CUR" ] && rm -rf "$old"; done
+log "DONE: $ID is live. Previous release kept for rollback: $(basename "$CUR")"
+setst "ok: $ID live"

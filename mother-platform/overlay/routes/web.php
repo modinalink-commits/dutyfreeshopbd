@@ -15,6 +15,9 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::get('/', [A::class,'dashboard']);
   Route::get('/error-log', [\App\Http\Controllers\UploadController::class,'errorLog']);
   Route::post('/upload-image', [\App\Http\Controllers\UploadController::class,'image']);
+  Route::get('/deploy', [\App\Http\Controllers\DeployController::class,'index']);
+  Route::get('/deploy/status', [\App\Http\Controllers\DeployController::class,'status']);
+  Route::post('/deploy', [\App\Http\Controllers\DeployController::class,'run']);
   Route::get('/push', [\App\Http\Controllers\PushAdminController::class,'index']);
   Route::post('/push', [\App\Http\Controllers\PushAdminController::class,'store']);
   Route::get('/push/count', [\App\Http\Controllers\PushAdminController::class,'count']);

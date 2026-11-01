@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 class PwaController extends Controller
 {
   public static function ver(): string {
+    $f = base_path('RELEASE'); if (is_file($f)) { $v = trim((string)@file_get_contents($f)); if ($v !== '') return $v; }
     $v = getenv('REF') ?: ($_SERVER['REF'] ?? '');
     return $v !== '' ? substr($v, 0, 10) : (string)@filemtime(base_path('routes/web.php'));
   }

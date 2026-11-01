@@ -202,3 +202,5 @@ app/Http/Controllers/PushAdminController.php
 app/Console/Commands/MotherPushWorker.php
 database/migrations/2026_11_01_000001_push_notifications.php
 resources/views/push_admin.blade.php
+app/Http/Controllers/DeployController.php
+resources/views/deploy.blade.php
