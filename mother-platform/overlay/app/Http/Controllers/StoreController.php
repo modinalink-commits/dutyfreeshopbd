@@ -115,7 +115,7 @@ class StoreController extends Controller {
       $rest = $r->except('sub'); return redirect('/'.$slug.'/'.\App\Support\Slugs::subSlug($r->sub).($rest ? '?'.http_build_query($rest) : ''), 301);
     }
     $s = self::set(); $per = max(12, (int)$s['per_page']);
-    $q = $this->q()->where('category_id',$c->id); $subName = null;
+    $q = $this->q()->where('products.category_id',$c->id); $subName = null;
     if ($subSlug !== null) {
       $q->whereRaw(\App\Support\Slugs::subSql().' = ?', [$subSlug]);
       $subName = (clone $q)->whereNotNull('sub')->value('sub') ?: ((clone $q)->exists() ? 'Other' : null);
@@ -130,13 +130,15 @@ class StoreController extends Controller {
     }
     if (\Illuminate\Support\Facades\Schema::hasTable('product_positions')) $hasPos = DB::table('product_positions')->where('pp_scope', $scope)->exists();
     $sort = (string)$r->input('sort', '');
-    if ($hasPos && ($sort === '' || $sort === 'position')) {
-      $q = $q->leftJoin('product_positions as pp', fn($j) => $j->on('pp.pp_product', '=', 'products.id')->where('pp.pp_scope', '=', $scope))->select('products.*')
-        ->orderByRaw('pp.pp_pos asc nulls last')->orderByDesc('products.id');
+    if ($sort === '' || $sort === 'position') { // category position, then product position inside it
+      $q = $q->leftJoin('category_nodes as sn', fn($j) => $j->on('sn.category_id', '=', 'products.category_id')->where('sn.level', '=', 2)->on('sn.name', '=', 'products.sub'))
+        ->leftJoin('category_nodes as cn', fn($j) => $j->where('cn.level', '=', 3)->on('cn.parent_id', '=', 'sn.id')->on('cn.name', '=', 'products.sub_sub'))
+        ->leftJoin('product_positions as pp', fn($j) => $j->on('pp.pp_product', '=', 'products.id')->where('pp.pp_scope', '=', $scope))->select('products.*')
+        ->orderByRaw('sn.position asc nulls last')->orderByRaw('cn.position asc nulls last')->orderByRaw('pp.pp_pos asc nulls last')->orderByDesc('products.id');
       $items = $q->paginate($per)->withQueryString();
     } else {
       $q = $q->orderByRaw('coalesce(sub, \'~\')');
-      $items = $this->sorted($q, $sort === 'new' ? 'new' : ($sort !== '' ? $sort : $s['default_sort']))->paginate($per)->withQueryString();
+      $items = $this->sorted($q, $sort === 'new' ? 'new' : $sort)->paginate($per)->withQueryString();
     }
     $canon = url('/'.$slug).($subSlug !== null ? '/'.$subSlug.($subSubName !== null ? '/'.\App\Support\Slugs::slug($subSubName, 60) : '') : '/'); if ($subSubName !== null) { $subName = $subSubName.' · '.$subName; }
     $title = $subName ? $subName.' – '.$c->name.' | DutyFree Shop BD' : ($c->title ?: $c->name.' | DutyFree Shop BD');
