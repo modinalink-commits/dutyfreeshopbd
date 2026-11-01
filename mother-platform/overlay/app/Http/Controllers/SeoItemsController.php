@@ -87,7 +87,7 @@ class SeoItemsController extends Controller
     DB::table('products')->whereNotNull('image')->where('image', '!=', '')->where(fn($w) => $w->whereNull('image_alt')->orWhere('image_alt', ''))->orderBy('id')->chunkById(300, function ($rs) use (&$n, $cats) {
       foreach ($rs as $p) { $a = trim($p->name . ' — অরিজিনাল ' . ($cats[$p->category_id] ?? 'পণ্য') . ' | DutyFree Shop BD'); DB::table('products')->where('id', $p->id)->update(['image_alt' => mb_substr($a, 0, 290)]); $n++; }
     });
-    DB::table('product_images')->join('products as p', 'p.id', '=', 'product_images.product_id')->where(fn($w) => $w->whereNull('product_images.alt')->orWhere('product_images.alt', ''))->update(['product_images.alt' => DB::raw("left(p.name || ' – ছবি', 290)")]);
+    DB::statement("update product_images set alt = left(p.name || ' – ছবি', 290) from products p where p.id = product_images.product_id and (product_images.alt is null or product_images.alt = '')");
     $this->clear(); S::audit('alt.fill', 'products', null, ['n' => $n]);
     return back()->with('ok', "Image alt text generated for $n product(s) (existing alt text kept).");
   }
