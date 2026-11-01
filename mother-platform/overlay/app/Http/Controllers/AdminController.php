@@ -14,61 +14,103 @@ class AdminController extends Controller {
   public function logout(Request $r) { Auth::logout(); $r->session()->invalidate(); $r->session()->regenerateToken(); return redirect('/admin/login'); }
   public function dashboard(Request $r) {
     $tz = 'Asia/Dhaka'; $now = now($tz); $A = \App\Support\Analytics::class;
-    $range = in_array($r->query('range'), ['today', '7', '30'], true) ? $r->query('range') : 'today';
-    $days = $range === 'today' ? 1 : (int)$range;
-    $f = $A::filters(['from'=>$now->copy()->subDays($days-1)->format('Y-m-d'), 'to'=>$now->format('Y-m-d')]);
-    if ($range === 'today') { $pd = $now->copy()->subWeek()->format('Y-m-d'); $fp = $A::filters(['from'=>$pd, 'to'=>$pd]); $prev = 'last '.$now->format('l'); }
-    else { $fp = $A::filters(['from'=>$now->copy()->subDays(2*$days-1)->format('Y-m-d'), 'to'=>$now->copy()->subDays($days)->format('Y-m-d')]); $prev = 'previous '.$days.' days'; }
-    $label = $range === 'today' ? 'today' : 'last '.$days.' days';
     $safe = function (callable $fn, $def = []) { try { return $fn(); } catch (\Throwable $e) { \Log::warning('dashboard: '.$e->getMessage()); return $def; } };
+    $range = in_array($r->query('range'), ['today', '7', '30', 'custom'], true) ? $r->query('range') : 'today';
+    $dOk = fn($k) => preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)$r->query($k));
+    if ($range === 'custom' && !($dOk('from') && $dOk('to'))) $range = 'today';
+    $storeId = (int)$r->query('store'); $sf = $storeId ? ['stores'=>[$storeId]] : [];
+    if ($range === 'custom') {
+      $from = \Carbon\Carbon::parse($r->query('from'), $tz); $to = \Carbon\Carbon::parse($r->query('to'), $tz); if ($from->gt($to)) [$from, $to] = [$to, $from];
+      $days = max(1, min(366, $from->diffInDays($to) + 1)); $f = $A::filters(['from'=>$from->format('Y-m-d'), 'to'=>$to->format('Y-m-d')] + $sf);
+      $fp = $A::filters(['from'=>$from->copy()->subDays($days)->format('Y-m-d'), 'to'=>$from->copy()->subDay()->format('Y-m-d')] + $sf); $prev = 'previous '.$days.' days'; $label = $from->format('j M').' – '.$to->format('j M');
+    } else {
+      $days = $range === 'today' ? 1 : (int)$range;
+      $f = $A::filters(['from'=>$now->copy()->subDays($days-1)->format('Y-m-d'), 'to'=>$now->format('Y-m-d')] + $sf);
+      if ($range === 'today') { $pd = $now->copy()->subDay()->format('Y-m-d'); $fp = $A::filters(['from'=>$pd, 'to'=>$pd] + $sf); $prev = 'yesterday'; }
+      else { $fp = $A::filters(['from'=>$now->copy()->subDays(2*$days-1)->format('Y-m-d'), 'to'=>$now->copy()->subDays($days)->format('Y-m-d')] + $sf); $prev = 'previous '.$days.' days'; }
+      $label = $range === 'today' ? 'today' : 'last '.$days.' days';
+    }
     $x = $safe(fn() => $A::dashboard($f)); $xp = $safe(fn() => $A::dashboard($fp));
     $n = fn($a, $k) => (float)($a[$k] ?? 0);
-    $pct = fn($a, $b) => $b > 0 ? (($a-$b) >= 0 ? '+' : '').round(($a-$b)/$b*100).'% vs '.$prev : 'No data for '.$prev;
+    $tren = function ($a, $b, $goodUp = true) use ($prev) { // [direction -1/0/1, text, good?]
+      if ($b <= 0) return [0, $a > 0 ? 'new vs '.$prev : 'no data for '.$prev, null];
+      $p = round(($a-$b)/$b*100); if ($p == 0) return [0, 'same as '.$prev, null];
+      return [$p > 0 ? 1 : -1, abs($p).'% vs '.$prev, ($p > 0) === $goodUp];
+    };
+    $canFin = \App\Http\Middleware\ModulePermission::can(auth()->user(), 'reports', 'view');
     $sales = $n($x, 'sales'); $ord = (int)$n($x, 'orders'); $profit = $sales - $n($x, 'cost') - $n($x, 'cfee');
-    $del = (int)$n($x, 'delivered'); $retn = (int)$n($x, 'returned'); $fin = $del + $retn;
-    $newQ = DB::table('orders')->where('status','New'); $newN = (clone $newQ)->count(); $oldest = (clone $newQ)->min('created_at');
-    $ready = DB::table('orders')->whereIn('status',['Packaging','WFP'])->count();
+    $psales = $n($xp, 'sales'); $pord = (int)$n($xp, 'orders'); $pprofit = $psales - $n($xp, 'cost') - $n($xp, 'cfee');
+    $del = (int)$n($x, 'delivered'); $retn = (int)$n($x, 'returned'); $fin = $del + $retn; $pdel = (int)$n($xp, 'delivered'); $pret = (int)$n($xp, 'returned'); $pfin = $pdel + $pret;
+    $oq = fn() => DB::table('orders')->when($storeId, fn($q) => $q->where('store_id', $storeId));
+    $newQ = $oq()->where('status','New'); $newN = (clone $newQ)->count(); $oldest = (clone $newQ)->min('created_at');
+    $ready = $oq()->whereIn('status',['Packaging','WFP'])->count();
+    $aov = $ord ? $sales/$ord : 0; $paov = $pord ? $psales/$pord : 0; $dr = $fin ? $del/$fin*100 : 0; $pdr = $pfin ? $pdel/$pfin*100 : 0; $rr = $fin ? $retn/$fin*100 : 0; $prr = $pfin ? $pret/$pfin*100 : 0;
     $kpis = [
-      ['Sales '.$label, '৳'.number_format($sales), $pct($sales, $n($xp, 'sales')), '#FF5A00'],
-      ['Orders '.$label, number_format($ord), $pct($ord, $n($xp, 'orders')), '#FF5A00'],
-      ['Average order value', '৳'.number_format($ord ? $sales/$ord : 0), $ord.' orders', '#6B7280'],
-      ['Gross profit', '৳'.number_format($profit), $n($x, 'cost') > 0 ? round($sales > 0 ? $profit/$sales*100 : 0, 1).'% margin' : 'Set product cost prices', $n($x, 'cost') > 0 ? '#166534' : '#C2410C'],
-      ['Delivery success', $fin ? round($del/$fin*100, 1).'%' : '—', $del.' delivered of '.$fin.' finished', '#166534'],
-      ['Return rate', $fin ? round($retn/$fin*100, 1).'%' : '0%', $retn.' returned · '.(int)$n($x, 'cancelled').' cancelled', '#A3281E'],
-      ['Awaiting confirmation', $newN, $oldest ? 'Oldest waiting '.\Carbon\Carbon::parse($oldest)->diffForHumans(null, true) : 'Nothing waiting', '#C2410C'],
-      ['Ready to ship', $ready, 'Packaging + WFP', '#6B7280'],
+      ['Sales '.$label, '৳'.number_format($sales), $ord.' orders', 'sales', $tren($sales, $psales), '/admin/analytics/sales-summary', 'orange', 'sales'],
+      ['Orders '.$label, number_format($ord), '৳'.number_format($aov).' average', 'cart', $tren($ord, $pord), '/admin/orders', 'blue', 'orders'],
+      ['Average order value', '৳'.number_format($aov), 'per valid order', 'tag', $tren($aov, $paov), '/admin/analytics', 'violet', null],
+      ['Gross profit', $canFin ? '৳'.number_format($profit) : '—', $canFin ? ($n($x, 'cost') > 0 ? round($sales > 0 ? $profit/$sales*100 : 0, 1).'% margin' : 'Set product cost prices') : 'Reports permission needed', 'coin', $tren($profit, $pprofit), '/admin/analytics/profit-loss', 'green', 'profit'],
+      ['Delivery success', $fin ? round($dr, 1).'%' : '—', $del.' delivered of '.$fin.' finished', 'truck', $tren($dr, $pdr), '/admin/orders?status=Delivered', 'teal', 'delivered'],
+      ['Return rate', $fin ? round($rr, 1).'%' : '0%', $retn.' returned · '.(int)$n($x, 'cancelled').' cancelled', 'undo', $tren($rr, $prr, false), '/admin/orders?status=Returned', 'red', null],
+      ['Awaiting confirmation', (string)$newN, $oldest ? 'Oldest waiting '.\Carbon\Carbon::parse($oldest)->diffForHumans(null, true) : 'Nothing waiting', 'clock', [0, '', null], '/admin/orders?status=New', 'amber', null],
+      ['Ready to ship', (string)$ready, 'Packaging + WFP', 'box', [0, '', null], '/admin/orders?status=Packaging', 'slate', null],
     ];
     // sales trend: at least the last 7 days, filled with zeros for quiet days
-    $N = max(7, $days); $tf = $A::filters(['from'=>$now->copy()->subDays($N-1)->format('Y-m-d'), 'to'=>$now->format('Y-m-d')]);
+    $N = max(7, $days); $tEnd = $range === 'custom' ? $to : $now; $tf = $A::filters(['from'=>$tEnd->copy()->subDays($N-1)->format('Y-m-d'), 'to'=>$tEnd->format('Y-m-d')] + $sf);
     $tr = collect($safe(fn() => $A::trend($tf)))->keyBy(fn($r) => substr($r['date'], 0, 10)); $trend = [];
-    for ($i = $N-1; $i >= 0; $i--) { $d = $now->copy()->subDays($i); $k = $d->format('Y-m-d'); $trend[] = ['d'=>$d->format('j M'), 'sales'=>(float)($tr[$k]['sales'] ?? 0), 'orders'=>(int)($tr[$k]['orders'] ?? 0), 'delivered'=>(int)($tr[$k]['delivered'] ?? 0)]; }
+    for ($i = $N-1; $i >= 0; $i--) { $d = $tEnd->copy()->subDays($i); $k = $d->format('Y-m-d'); $trend[] = ['d'=>$d->format('j M'), 'sales'=>(float)($tr[$k]['sales'] ?? 0), 'orders'=>(int)($tr[$k]['orders'] ?? 0), 'delivered'=>(int)($tr[$k]['delivered'] ?? 0), 'profit'=>$canFin ? (float)($tr[$k]['profit'] ?? 0) : 0]; }
     $stores = collect($safe(fn() => $A::byStore($f)))->map(fn($r) => [$r['store'], (float)$r['sales']]);
     $max = max(1, $stores->max(fn($r) => $r[1]) ?? 1);
     $topProducts = collect($safe(fn() => $A::rows('product-sales', $f)['rows']))->sortByDesc(fn($r) => (float)$r['gross'])->take(5)->map(fn($r) => [$r['product'], (int)$r['qty'], (float)$r['gross']])->values();
     $cats = collect($safe(fn() => $A::categorySalesChart($f)))->sortByDesc(fn($r) => (float)$r['value'])->take(6)->map(fn($r) => [$r['label'], (float)$r['value']])->values();
     $couriers = collect($safe(fn() => $A::courierChart($f)))->take(5)->map(fn($r) => [$r['courier'], (int)$r['parcels'], (float)$r['success']])->values();
     $chatUnread = \Illuminate\Support\Facades\Schema::hasTable('chat_threads') ? (int)DB::table('chat_threads')->sum('unread') : 0;
-    $counts = DB::table('orders')->select('status', DB::raw('count(*) c'))->groupBy('status')->pluck('c','status');
-    $orders = DB::table('orders')->leftJoin('stores','stores.id','=','orders.store_id')->select('orders.*','stores.name as store')->orderByDesc('orders.id')->limit(8)->get();
+    $counts = $oq()->select('status', DB::raw('count(*) c'))->groupBy('status')->pluck('c','status');
+    $incOpen = $safe(fn() => (int)DB::table('incomplete_orders')->where('status','open')->count(), 0);
+    $counts['Incomplete'] = $incOpen;
+    $orders = DB::table('orders')->leftJoin('stores','stores.id','=','orders.store_id')->when($storeId, fn($q) => $q->where('orders.store_id', $storeId))->select('orders.*','stores.name as store')->orderByDesc('orders.id')->limit(8)->get();
     $bad = DB::table('orders')->whereIn('status',['Cancel','Returned'])->whereIn('phone',$orders->pluck('phone'))->select('phone',DB::raw('count(*) c'))->groupBy('phone')->pluck('c','phone');
     $alerts = [];
     $late = $counts['Late Delivery'] ?? 0; $rp = $counts['Return Pending'] ?? 0;
-    $stale = DB::table('orders')->where('status','New')->where('created_at','<',now()->subMinutes(30))->count();
-    if ($late) $alerts[] = ['CRITICAL', "$late orders are Late Delivery", 'Follow up with the courier today'];
-    if ($rp) $alerts[] = ['CRITICAL', "$rp orders are Return Pending", 'Receive the parcel and update stock'];
-    if ($stale) $alerts[] = ['WARNING', "$stale new orders waiting over 30 min", 'Confirm or call the customer'];
+    $stale = $oq()->where('status','New')->where('created_at','<',now()->subMinutes(30))->count();
+    if ($late) $alerts[] = ['CRITICAL', "$late orders are Late Delivery", 'Follow up with the courier today', '/admin/orders?status='.urlencode('Late Delivery')];
+    if ($rp) $alerts[] = ['CRITICAL', "$rp orders are Return Pending", 'Receive the parcel and update stock', '/admin/orders?status='.urlencode('Return Pending')];
+    if ($stale) $alerts[] = ['WARNING', "$stale new orders waiting over 30 min", 'Confirm or call the customer', '/admin/orders?status=New'];
+    $payP = $safe(fn() => (int)DB::table('orders')->where('pay_status','Verification Pending')->count(), 0);
+    if ($payP) $alerts[] = ['WARNING', "$payP payments waiting for verification", 'Check the transaction ID and mark verified', '/admin/orders'];
+    if ($incOpen) $alerts[] = ['INFO', "$incOpen incomplete checkouts not processed", 'Call these customers to recover the sale', '/admin/orders?status=Incomplete'];
     $low = DB::table('products')->where('published',true)->where('stock','<=',2)->count();
-    if ($low) $alerts[] = ['WARNING', "$low published products low on stock", '2 or fewer left'];
+    if ($low) $alerts[] = ['WARNING', "$low published products low on stock", '2 or fewer left', '/admin/inventory'];
     $noimg = DB::table('products')->where('published',true)->where(fn($w)=>$w->whereNull('image')->orWhere('image',''))->count();
-    if ($noimg) $alerts[] = ['WARNING', "$noimg published products have a Missing Product Image", 'Open Products and filter by missing image: /admin/products?missing_image=1'];
+    if ($noimg) $alerts[] = ['WARNING', "$noimg published products have a Missing Product Image", 'Open Products and filter by missing image', '/admin/products?missing_image=1'];
+    $hr = $safe(fn() => DB::table('orders')->whereIn('status',['Cancel','Returned'])->select('phone', DB::raw('count(*) c'))->groupBy('phone')->havingRaw('count(*) >= 3')->get()->count(), 0);
+    if ($hr) $alerts[] = ['WARNING', "$hr customers with 3 or more returns/cancels", 'Verify by call or take advance payment', '/admin/m/customers'];
     $bills = DB::table('bill_statements')->where('status','unpaid')->count();
-    if ($bills) $alerts[] = ['INFO', "$bills unpaid bills", 'See Accounts, Bill statements'];
+    if ($bills) $alerts[] = ['INFO', "$bills unpaid bills", 'See Accounts, Bill statements', '/admin/m/bills'];
     $wd = DB::table('withdraw_requests')->where('status','pending')->count();
-    if ($wd) $alerts[] = ['INFO', "$wd withdraw requests pending", 'See Payments'];
+    if ($wd) $alerts[] = ['INFO', "$wd withdraw requests pending", 'See Payments', '/admin/m/withdrawals'];
     $t = microtime(true); DB::select('select 1'); $dbms = round((microtime(true)-$t)*1000, 1);
     $failed = \Illuminate\Support\Facades\Schema::hasTable('failed_jobs') ? DB::table('failed_jobs')->where('failed_at','>=',now()->subHour())->count() : 0;
     $health = [['Database response', $dbms.' ms'], ['Failed jobs, 1 h', $failed], ['Stores online', DB::table('stores')->where('active',true)->count().' of '.DB::table('stores')->count()], ['Server time', $now->format('H:i')]];
-    return view('dashboard', compact('now','kpis','stores','max','counts','orders','bad','alerts','health','range','label','trend','topProducts','cats','couriers','chatUnread'));
+    // smart widgets
+    $dayStart = $now->copy()->startOfDay()->utc(); $todayS = (float)$n($safe(fn() => $A::dashboard($A::filters(['from'=>$now->format('Y-m-d'), 'to'=>$now->format('Y-m-d')] + $sf))), 'sales');
+    $wk = $safe(fn() => $A::dashboard($A::filters(['from'=>$now->copy()->subDays(7)->format('Y-m-d'), 'to'=>$now->copy()->subDay()->format('Y-m-d')] + $sf))); $target = max(1, $n($wk, 'sales') / 7);
+    $goal = ['today'=>$todayS, 'target'=>round($target), 'pct'=>round($todayS/$target*100)];
+    $fromUtc = $A::filters(['from'=>$f['from'], 'to'=>$f['to']]); $startUtc = \Carbon\Carbon::parse($f['from'], $tz)->startOfDay()->utc();
+    $phones = $safe(fn() => $oq()->where('created_at','>=',$startUtc)->whereNotIn('status',['Cancel'])->distinct()->pluck('phone')->filter()->values(), collect());
+    $ret = $phones->isEmpty() ? 0 : DB::table('orders')->whereIn('phone', $phones)->where('created_at','<',$startUtc)->distinct()->count('phone');
+    $cust = ['new'=>max(0, $phones->count()-$ret), 'returning'=>$ret];
+    $calls = $safe(function () use ($now) { if (!\Illuminate\Support\Facades\Schema::hasTable('call_logs')) return null; $s = $now->copy()->startOfDay()->utc(); $q = DB::table('call_logs')->where('started_at','>=',$s); return ['total'=>(clone $q)->count(), 'missed'=>(clone $q)->where('status','missed')->count(), 'talk'=>(int)(clone $q)->sum('duration')]; }, null);
+    $risk = ['high'=>$hr, 'watch'=>$safe(fn() => DB::table('orders')->whereIn('status',['Cancel','Returned'])->where('created_at','>=',now()->subDays(30))->count(), 0)];
+    // recent activity feed
+    $feed = collect();
+    $safe(function () use (&$feed, $orders) { foreach ($orders->take(6) as $o) $feed->push(['order', 'New order '.$o->invoice.' · ৳'.number_format($o->total), $o->created_at, '/admin/orders/'.$o->id]); });
+    $safe(function () use (&$feed) { foreach (DB::table('audit_logs')->orderByDesc('id')->limit(8)->get() as $a) $feed->push([str_contains($a->action, 'stock') ? 'stock' : (str_contains($a->action, 'export') ? 'export' : 'edit'), trim(($a->user_name ?: 'System').' · '.$a->action.' · '.\Illuminate\Support\Str::limit((string)$a->subject, 60)), $a->created_at, null]); });
+    $safe(function () use (&$feed) { if (\Illuminate\Support\Facades\Schema::hasTable('incomplete_orders')) foreach (DB::table('incomplete_orders')->orderByDesc('id')->limit(3)->get() as $i) $feed->push(['incomplete', 'Incomplete checkout · ৳'.number_format($i->total ?? 0), $i->last_activity_at ?? $i->created_at, '/admin/orders?status=Incomplete']); });
+    $safe(function () use (&$feed) { if (\Illuminate\Support\Facades\Schema::hasTable('call_logs')) foreach (DB::table('call_logs')->orderByDesc('id')->limit(3)->get() as $c) $feed->push(['call', ucfirst($c->direction).' call · '.($c->customer_name ?: $c->phone).' · '.$c->status, $c->started_at ?? $c->created_at, '/admin/call-center/history']); });
+    $feed = $feed->filter(fn($e) => $e[2])->sortByDesc(fn($e) => \Carbon\Carbon::parse($e[2])->timestamp)->take(10)->values()->map(fn($e) => [$e[0], $e[1], \Carbon\Carbon::parse($e[2])->timezone($tz)->diffForHumans(), \Carbon\Carbon::parse($e[2])->timezone($tz)->format('d M, h:i A'), $e[3]]);
+    $storeList = $safe(fn() => DB::table('stores')->where('active',true)->orderBy('name')->get(['id','name']), collect());
+    return view('dashboard', compact('now','kpis','stores','max','counts','orders','bad','alerts','health','range','label','trend','topProducts','cats','couriers','chatUnread','goal','cust','calls','risk','feed','storeList','storeId','canFin','prev','f','incOpen','newN','stale') + ['isCustom'=>$range === 'custom']);
   }
   public function orders(Request $r) { \App\Support\CourierSync::auto();
     $isInc = $r->input('status') === 'Incomplete'; $q = DB::table('orders')->orderByDesc('id');
