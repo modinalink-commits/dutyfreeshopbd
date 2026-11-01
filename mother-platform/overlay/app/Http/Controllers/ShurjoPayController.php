@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\URL;
 class ShurjoPayController extends Controller {
+  private function audit(Request $r, string $a, string $s): void { try { DB::table('audit_logs')->insert(['user_id'=>auth()->id(),'user_name'=>auth()->user()->name,'action'=>$a,'subject'=>$s,'ip'=>$r->ip(),'created_at'=>now(),'updated_at'=>now()]); } catch (\Throwable $e) {} }
   // ---------- admin ----------
   public function settings() {
     $recent = DB::table('orders')->whereNotNull('sp_order_id')->orderByDesc('id')->limit(15)->get(['invoice', 'total', 'pay_status', 'sp_method', 'pay_txn', 'created_at']);
