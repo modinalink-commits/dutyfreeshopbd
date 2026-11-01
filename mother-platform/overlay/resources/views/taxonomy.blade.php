@@ -13,7 +13,7 @@
 .tn .st{font-size:10.5px;font-weight:700;border-radius:999px;padding:2px 8px;cursor:pointer;border:0}.st.a{background:#DCFCE7;color:#166534}.st.i{background:#F3F4F6;color:#6B7280}
 .tn .thm{width:26px;height:26px;border-radius:7px;object-fit:cover;background:#F3F4F6;flex:none}
 .fm label{display:block;font-size:12px;font-weight:700;margin:10px 0 4px;color:#374151}.fm input[type=text],.fm input[type=number],.fm select,.fm textarea{width:100%;border:1px solid var(--bd);border-radius:9px;padding:8px 10px;font-size:13px;background:#fff;font-family:inherit}.fm textarea{min-height:64px}
-.fm .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.fm .ck{display:flex;gap:14px;flex-wrap:wrap;margin-top:6px}.fm .ck label{display:flex;gap:6px;align-items:center;font-weight:600;margin:0}
+.ftabs{display:flex;gap:6px;margin:10px 0 0}.ftabs button{flex:1;background:#fff;color:#0B1F3A;border:1px solid var(--bd);padding:8px 4px;font-size:12px}.ftabs button.on{background:#FF5A00;color:#fff;border-color:#FF5A00}.fm .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.fm .ck{display:flex;gap:14px;flex-wrap:wrap;margin-top:6px}.fm .ck label{display:flex;gap:6px;align-items:center;font-weight:600;margin:0}
 .fm .pv{display:flex;gap:10px;align-items:center;margin-top:4px}.fm .pv img{width:54px;height:54px;border-radius:10px;object-fit:cover;background:#F3F4F6;border:1px solid var(--bd)}
 .fm .hint{font-size:11.5px;color:#6B7280;margin-top:3px}.fm .url{font-family:monospace;font-size:12px;background:#F9FAFB;border:1px dashed var(--bd);border-radius:8px;padding:6px 8px;margin-top:4px;word-break:break-all}
 .fm .acts{display:flex;gap:8px;margin-top:14px}.fm .acts .g{background:#fff;color:#0B1F3A;border:1px solid var(--bd)}
@@ -26,7 +26,7 @@
 <div class="txt"><button type="button" id="tC" class="on">Categories</button><button type="button" id="tB">Brands</button></div>
 
 <div id="pC" class="tx">
- <div class="card tn"><div class="tb"><input id="q" placeholder="Search category"><select id="fs"><option value="">All status</option><option value="a">Active</option><option value="i">Inactive</option></select><select id="fm"><option value="">All main categories</option></select><button type="button" class="g" id="ea" style="background:#fff;color:#0B1F3A;border:1px solid var(--bd)">Expand all</button><button type="button" class="g" id="ca" style="background:#fff;color:#0B1F3A;border:1px solid var(--bd)">Collapse all</button><button type="button" id="am">+ Main Category</button></div>
+ <div class="card tn"><div class="tb"><input id="q" placeholder="Search category"><select id="fs"><option value="">All status</option><option value="a">Active</option><option value="i">Inactive</option></select><select id="fm"><option value="">All main categories</option></select><button type="button" class="g" id="ea" style="background:#fff;color:#0B1F3A;border:1px solid var(--bd)">Expand all</button><button type="button" class="g" id="ca" style="background:#fff;color:#0B1F3A;border:1px solid var(--bd)">Collapse all</button><button type="button" id="am">+ Add Main Category</button><button type="button" id="as" style="background:#0B1F3A">+ Add Sub Category</button><button type="button" id="ac" style="background:#0F766E">+ Add Child Category</button></div>
   <div id="tree"></div><p class="hint" style="font-size:12px;color:#6B7280">Drag ⠿ to change the order inside the same level. The storefront menu follows this order.</p></div>
  <div class="card fm" id="form"></div>
 </div>
@@ -55,6 +55,7 @@ function row(n,lvl,q,fs){var kids=n.children||[],o=open[n.type+n.id]||(q&&true),
  if(kids.length&&o){h+='<ul>';kids.forEach(function(c){if(vis(c,q,fs)||(!q&&!fs))h+=row(c,lvl+1,q,fs)});h+='</ul>'}return h+'</li>'}
 function draw(){var q=$('q').value.trim().toLowerCase(),fs=$('fs').value,fm=$('fm').value,h='<ul>';
  D.tree.forEach(function(m){if(fm&&String(m.id)!==fm)return;if(q||fs){if(!vis(m,q,fs))return}h+=row(m,1,q,fs)});h+='</ul>';$('tree').innerHTML=D.tree.length?h:'<p>No categories yet. Click “+ Main Category”.</p>'}
+function findSub(id){var r=null;D.tree.forEach(function(m){(m.children||[]).forEach(function(x){if(x.id==id)r=x})});return r}
 function find(t,id){var r=null;(function w(a){a.forEach(function(n){if(n.type===t&&n.id==id)r=n;if(n.children)w(n.children)})})(D.tree);return r}
 $('tree').addEventListener('click',function(e){var b=e.target.closest('[data-tg],[data-tog],[data-add],[data-ed],[data-del],[data-mv]');if(!b)return;
  if(b.dataset.mv){var m=b.dataset.mv.split(':'),n0=find(m[0],m[1]),sib=m[0]==='main'?D.tree:find(m[0]==='sub'?'main':'sub',n0.parent_id).children,ix=sib.indexOf(n0),jx=ix+ +m[2];if(jx<0||jx>=sib.length)return;var ids=sib.map(function(x){return x.id});ids.splice(ix,1);ids.splice(jx,0,n0.id);post('/admin/taxonomy/reorder',{kind:m[0]==='main'?'main':'node',ids:ids}).then(function(j){if(j.ok){msg('Order saved — menu updated',true);reload()}else msg('Could not save order')});return}
@@ -65,7 +66,7 @@ $('tree').addEventListener('click',function(e){var b=e.target.closest('[data-tg]
  if(b.dataset.del){var p3=b.dataset.del.split(':'),n=find(p3[0],p3[1]);if(!confirm('Delete “'+n.name+'”?'))return;post('/admin/taxonomy/delete',{type:p3[0],id:+p3[1]}).then(function(j){if(j.ok){msg('Deleted',true);if(cur&&cur.n&&cur.n.id==n.id)form('main',null);reload()}else msg(j.message||'Could not delete')})}});
 ['q','fs','fm'].forEach(function(i){$(i).addEventListener('input',draw)});
 $('ea').onclick=function(){(function w(a){a.forEach(function(n){if(n.children&&n.children.length){open[n.type+n.id]=true;w(n.children)}})})(D.tree);draw()};
-$('ca').onclick=function(){open={};draw()};$('am').onclick=function(){form('main',null)};
+$('ca').onclick=function(){open={};draw()};$('am').onclick=function(){form('main',null)};$('as').onclick=function(){form('sub',null)};$('ac').onclick=function(){form('subsub',null)};
 /* ---------- drag & drop (same parent only) ---------- */
 var drag=null;
 $('tree').addEventListener('dragstart',function(e){var li=e.target.closest('li[draggable]');if(!li)return;drag=li;li.classList.add('dg');e.dataTransfer.effectAllowed='move';try{e.dataTransfer.setData('text/plain','x')}catch(x){}});
@@ -75,24 +76,28 @@ $('tree').addEventListener('dragend',function(){if(!drag)return;drag.classList.r
 /* ---------- form ---------- */
 function up(inp,hid,pv){inp.onchange=function(){var f=inp.files[0];if(!f)return;var fd=new FormData();fd.append('file',f);fd.append('kind','category');fetch('/admin/upload-image',{method:'POST',headers:{'X-CSRF-TOKEN':T,Accept:'application/json'},body:fd}).then(function(r){return r.json()}).then(function(j){if(j.url){hid.value=j.url;pv.src=j.url;pv.style.display=''}else msg(j.message||'Upload failed')}).catch(function(){msg('Upload failed')})}}
 function form(type,n,parent){cur={type:type,n:n};var L={main:'Main Category',sub:'Sub Category',subsub:'Child Category'}[type],h='<h3 style="margin:0">'+(n?'Edit ':'Add ')+L+'</h3>';
+ if(!n)h+='<div class="ftabs">'+[['main','Main Category'],['sub','Sub Category'],['subsub','Child Category']].map(function(t){return '<button type="button" class="'+(t[0]===type?'on':'')+'" data-ft="'+t[0]+'">'+t[1]+'</button>'}).join('')+'</div>';
  var mains=D.tree,subs=[];D.tree.forEach(function(m){(m.children||[]).forEach(function(s){subs.push({id:s.id,name:m.name+' → '+s.name})})});
  var pv=n?n.parent_id:parent;
- if(type==='sub')h+='<label>Parent Main Category *</label><select id="f-p">'+mains.map(function(m){return '<option value="'+m.id+'"'+(m.id==pv?' selected':'')+'>'+E(m.name)+'</option>'}).join('')+'</select>';
- if(type==='subsub')h+='<label>Parent Sub Category *</label><select id="f-p">'+subs.map(function(s){return '<option value="'+s.id+'"'+(s.id==pv?' selected':'')+'>'+E(s.name)+'</option>'}).join('')+'</select>';
+ if(type==='sub')h+='<label>Parent Main Category *</label><select id="f-p"><option value="">— Select main category —</option>'+mains.map(function(m){return '<option value="'+m.id+'"'+(m.id==pv?' selected':'')+'>'+E(m.name)+'</option>'}).join('')+'</select>'+(mains.length?'':'<div class="hint">Create a Main Category first.</div>');
+ var pm=null;if(type==='subsub'){var ps=pv?findSub(pv):null;pm=ps?ps.main_id:null;
+  h+='<label>Main Category *</label><select id="f-m"><option value="">— Select main category —</option>'+mains.map(function(m){return '<option value="'+m.id+'"'+(m.id==pm?' selected':'')+'>'+E(m.name)+'</option>'}).join('')+'</select><label>Parent Sub Category *</label><select id="f-p"><option value="">— Select sub category —</option></select><div class="hint" id="f-ph"></div>'}
  h+='<label>'+L+' Name *</label><input type="text" id="f-n" value="'+E(n?n.name:'')+'" placeholder="e.g. Cigarette and Vape">';
  if(type==='main')h+='<label>Slug *</label><input type="text" id="f-s" value="'+E(n?n.slug:'')+'" placeholder="cigarette-and-vape"><div class="hint">Changing the slug changes the URL of the category and its products.</div>';
  else h+='<div class="hint">URL slug is generated from the name.</div><div class="url" id="f-u">'+E(n?n.url:'')+'</div>';
  h+='<label>Category Image / Icon <small style="font-weight:400">(JPG, PNG, WebP — square works best)</small></label><div class="pv"><img id="f-pv" src="'+E(n&&n.image||'')+'" alt="" style="'+(n&&n.image?'':'display:none')+'"><input type="file" id="f-f" accept="image/jpeg,image/png,image/webp"></div><input type="hidden" id="f-i" value="'+E(n&&n.image||'')+'">';
  h+='<label>Description</label><textarea id="f-d">'+E(n&&n.description||'')+'</textarea>';
- h+='<div class="row2"><div><label>Sort Order</label><input type="number" id="f-o" value="'+(n?n.position:'')+'" placeholder="auto"></div><div><label>Status</label><select id="f-a"><option value="1"'+(!n||n.active?' selected':'')+'>Active</option><option value="0"'+(n&&!n.active?' selected':'')+'>Inactive</option></select></div></div>';
+ h+='<div class="row2"><div><label>Position / Sort Order</label><input type="number" id="f-o" value="'+(n?n.position:'')+'" placeholder="auto (next)"></div><div><label>Status</label><select id="f-a"><option value="1"'+(!n||n.active?' selected':'')+'>Active</option><option value="0"'+(n&&!n.active?' selected':'')+'>Inactive</option></select></div></div>';
  h+='<div class="ck"><label><input type="checkbox" id="f-h"'+(n?(n.show_home?' checked':''):(type==='main'?' checked':''))+'> Show on Homepage</label>'+(type!=='main'?'<label><input type="checkbox" id="f-ft"'+(n&&n.featured?' checked':'')+'> Featured</label>':'')+'</div>';
  h+='<div class="acts"><button type="button" id="f-save">Save '+L+'</button>'+(n?'<button type="button" class="g" id="f-new">New</button>':'')+'</div>';
  $('form').innerHTML=h;up($('f-f'),$('f-i'),$('f-pv'));
+ [].forEach.call($('form').querySelectorAll('[data-ft]'),function(b){b.onclick=function(){form(b.dataset.ft,null)}});
+ if(type==='subsub'){var fm=$('f-m'),fp=$('f-p');var fill=function(){var m=find('main',fm.value),k=m?m.children:[];fp.innerHTML='<option value="">— Select sub category —</option>'+k.map(function(x){return '<option value="'+x.id+'"'+(x.id==pv?' selected':'')+'>'+E(x.name)+'</option>'}).join('');$('f-ph').textContent=m&&!k.length?'This main category has no Sub Category yet — add a Sub Category first.':''};fm.onchange=function(){pv=null;fill()};fill()}
  var nm=$('f-n');if(type!=='main'&&!n)nm.addEventListener('input',function(){var s=nm.value.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');$('f-u').textContent=s?'…/'+s:''});
  if(type==='main'&&!n){nm.addEventListener('input',function(){if(!$('f-s').dataset.m)$('f-s').value=nm.value.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')});$('f-s').addEventListener('input',function(){this.dataset.m=1})}
  $('f-save').onclick=function(){var b={type:type,id:n?n.id:0,name:nm.value,image:$('f-i').value,description:$('f-d').value,position:$('f-o').value===''?null:+$('f-o').value,active:$('f-a').value==='1',show_home:$('f-h').checked};
   if(type==='main')b.slug=$('f-s').value;else{b.parent_id=+$('f-p').value;b.featured=$('f-ft').checked}
-  if(!b.name.trim()){msg('Name is required');return}
+  if(!b.name.trim()){msg('Name is required');return}if(type!=='main'&&!b.parent_id){msg(type==='sub'?'Select a parent Main Category':'Select a parent Sub Category');return}
   post('/admin/taxonomy/save',b).then(function(j){if(j.ok){msg('Saved',true);if(b.parent_id)open[(type==='sub'?'main':'sub')+b.parent_id]=true;reload().then(function(){form(type,find(type,j.id))})}else msg(j.message||'Could not save')})};
  var nw=$('f-new');if(nw)nw.onclick=function(){form(type,null,pv)}}
 /* ---------- brands ---------- */
