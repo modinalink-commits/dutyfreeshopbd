@@ -189,4 +189,23 @@ class LegacyProductController extends Controller
     $left = DB::table('legacy_products as l')->join('products as p', 'p.id', '=', 'l.new_product_id')->where(fn($q) => $q->whereNull('p.image')->orWhere('p.image', ''))->whereNotNull('l.thumbnail_img')->where('l.thumbnail_img', '!=', '')->where(fn($q) => $q->whereNull('l.action')->orWhere('l.action', '!=', 'imgfail'))->count();
     return response()->json(['why' => $why, 'ok' => $ok, 'fail' => $fail, 'left' => $left, 'failed_total' => DB::table('legacy_products')->where('action', 'imgfail')->count()]);
   }
+
+  /** Image pushed from the old-site browser tab (when the server-side download times out). */
+  public function imagePush(Request $r) {
+    if (!$this->ok($r)) abort(404);
+    $id = (int)$r->input('old_id'); $f = $r->file('img'); if (!$id || !$f || !$f->isValid()) return response()->json(['ok' => false]);
+    $l = DB::table('legacy_products')->where('old_id', $id)->first(); if (!$l || !$l->new_product_id) return response()->json(['ok' => false, 'why' => 'no product']);
+    $ext = strtolower($f->getClientOriginalExtension() ?: 'jpg'); if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif'])) $ext = 'jpg';
+    if (!@getimagesize($f->getRealPath())) return response()->json(['ok' => false, 'why' => 'not image']);
+    $dir = public_path('uploads'); if (!is_dir($dir)) @mkdir($dir, 0775, true); $name = 'legacy-' . $id . '.' . $ext; $f->move($dir, $name);
+    $p = DB::table('products')->where('id', $l->new_product_id)->first(['id', 'name', 'image']);
+    if ($p && empty($p->image)) { DB::table('products')->where('id', $p->id)->update(['image' => '/uploads/' . $name, 'image_alt' => $p->name]); DB::table('product_images')->where('product_id', $p->id)->delete(); DB::table('product_images')->insert(['product_id' => $p->id, 'path' => '/uploads/' . $name, 'position' => 0, 'created_at' => now(), 'updated_at' => now()]); }
+    DB::table('legacy_products')->where('old_id', $id)->update(['action' => 'updated']);
+    return response()->json(['ok' => true]);
+  }
+  /** List of old products whose image is still missing (for the browser push). */
+  public function imageTodo(Request $r) {
+    if (!$this->ok($r)) abort(404);
+    return response()->json(DB::table('legacy_products as l')->join('products as p', 'p.id', '=', 'l.new_product_id')->where(fn($q) => $q->whereNull('p.image')->orWhere('p.image', ''))->whereNotNull('l.thumbnail_img')->where('l.thumbnail_img', '!=', '')->orderBy('l.old_id')->limit(400)->get(['l.old_id', 'l.thumbnail_img']));
+  }
 }
