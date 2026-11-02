@@ -12,7 +12,7 @@ class IncompleteController extends Controller {
   }
   /** Open incomplete checkouts merged into All Orders by creation time: returns [order id => rows to print before that order] plus 'tail' (older than the last order on the last page). */
   public static function mix(Request $r, $orders, ?array $range): array {
-    $none = ['incBefore'=>[], 'incTail'=>collect(), 'incTop'=>collect(), 'incTopImgs'=>[]];
+    $none = ['incHtml'=>[], 'incTailHtml'=>'', 'incTop'=>collect(), 'incTopImgs'=>[]];
     if ($r->filled('status') || $r->filled('print') || !\Illuminate\Support\Facades\Schema::hasTable('incomplete_orders')) return $none;
     $items = collect($orders->items()); $first = $items->first(); $last = $items->last();
     $q = DB::table('incomplete_orders')->where('status', 'open');
@@ -22,11 +22,14 @@ class IncompleteController extends Controller {
     if ($pg > 1 && $first) $q->where('created_at', '<', $first->created_at);   // belongs to an earlier page
     if ($orders->hasMorePages() && $last) $q->where('created_at', '>=', $last->created_at); // belongs to a later page
     $rows = $q->orderByDesc('created_at')->orderByDesc('id')->limit(200)->get();
-    $before = []; $tail = collect();
+    $imgs = self::imgs($rows); $html = []; $tailHtml = '';
+    $draw = fn($row) => view('orders_inc_row', ['withPay'=>true, 'o'=>$row, 'imgs'=>$imgs, 'cid'=>null])->render();
     foreach ($rows as $row) {
       $target = $items->first(fn($o) => $o->created_at <= $row->created_at);
-      if ($target) $before[$target->id][] = $row; else $tail->push($row);
+      if ($target) $html[$target->id] = ($html[$target->id] ?? '').$draw($row); else $tailHtml .= $draw($row);
     }
+    return ['incHtml'=>$html, 'incTailHtml'=>$tailHtml, 'incTop'=>collect(), 'incTopImgs'=>[]];
+  }
     return ['incBefore'=>$before, 'incTail'=>$tail, 'incTop'=>collect(), 'incTopImgs'=>self::imgs($rows)];
   }
   public static function data(Request $r): array {
