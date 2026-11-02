@@ -17,36 +17,33 @@ class ManualPaymentController extends Controller {
     $l = strtolower((string)$label);
     return str_contains($l, 'bkash') ? 'bkash' : (str_contains($l, 'nagad') ? 'nagad' : 'bank');
   }
-  public function count() { return response()->json(['pending' => (int)DB::table('orders')->where('pay_status', 'Verification Pending')->count()]); }
+  public function count() { return response()->json(['pending' => (int)DB::table('order_payments')->where('status', 'pending')->count()]); }
 
   public function index(Request $r) {
-    $q = $this->base();
+    $q = DB::table('order_payments as p')->join('orders as o', 'o.id', '=', 'p.order_id');
     if ($s = trim((string)$r->query('q'))) {
       $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $s).'%';
-      $q->where(fn($w) => $w->where('o.customer_name', 'ilike', $like)->orWhere('o.phone', 'ilike', $like)->orWhere('o.invoice', 'ilike', $like)->orWhere('o.pay_txn', 'ilike', $like)->orWhere('o.pay_account', 'ilike', $like));
+      $q->where(fn($w) => $w->where('o.customer_name', 'ilike', $like)->orWhere('o.phone', 'ilike', $like)->orWhere('o.invoice', 'ilike', $like)->orWhere('p.txn_id', 'ilike', $like)->orWhere('p.sender', 'ilike', $like));
     }
     $range = (string)$r->query('range', '');
-    if ($range === 'today') $q->whereDate('o.created_at', now()->toDateString());
-    elseif ($range === 'yesterday') $q->whereDate('o.created_at', now()->subDay()->toDateString());
-    if ($f = $r->query('from')) $q->whereDate('o.created_at', '>=', $f);
-    if ($t = $r->query('to')) $q->whereDate('o.created_at', '<=', $t);
-    if ($m = $r->query('method')) { $q->whereRaw("lower(o.payment_method) like ?", ['%'.($m === 'bank' ? 'bank' : $m).'%']); }
-    if ($b = trim((string)$r->query('bank'))) $q->where('o.pay_account', 'ilike', '%'.$b.'%');
+    if ($range === 'today') $q->whereDate('p.created_at', now()->toDateString());
+    elseif ($range === 'yesterday') $q->whereDate('p.created_at', now()->subDay()->toDateString());
+    if ($f = $r->query('from')) $q->whereDate('p.created_at', '>=', $f);
+    if ($t = $r->query('to')) $q->whereDate('p.created_at', '<=', $t);
+    if ($m = $r->query('method')) $q->whereRaw('lower(p.method) like ?', ['%'.$m.'%']);
     $st = (string)$r->query('status', '');
-    if ($st === 'Pending Verification') $q->where('o.pay_status', 'Verification Pending');
-    elseif (in_array($st, ['Verified','Rejected','Cancelled'], true)) $q->where('o.pay_status', $st);
-    elseif ($st === 'Duplicate') $q->whereRaw("o.pay_txn is not null and o.pay_txn <> '' and exists (select 1 from orders x where x.pay_txn = o.pay_txn and x.id <> o.id and x.pay_status in ('Verification Pending','Verified'))");
-    elseif ($st === 'Amount Mismatch') $q->whereNotNull('o.pay_amount')->whereRaw('o.pay_amount <> o.total');
-    if (is_numeric($r->query('min'))) $q->where('o.total', '>=', (float)$r->query('min'));
-    if (is_numeric($r->query('max'))) $q->where('o.total', '<=', (float)$r->query('max'));
+    if ($st === 'Pending Verification') $q->where('p.status', 'pending');
+    elseif ($st === 'Verified') $q->where('p.status', 'verified');
+    elseif ($st === 'Rejected') $q->where('p.status', 'rejected');
+    elseif ($st === 'Duplicate') $q->whereRaw("p.txn_id is not null and p.txn_id <> '' and exists (select 1 from order_payments x where x.txn_id = p.txn_id and x.id <> p.id and x.status in ('pending','verified'))");
+    if (is_numeric($r->query('min'))) $q->where('p.amount', '>=', (float)$r->query('min'));
+    if (is_numeric($r->query('max'))) $q->where('p.amount', '<=', (float)$r->query('max'));
     $sort = $r->query('sort') === 'old' ? 'asc' : 'desc';
-    $rows = (clone $q)->orderBy('o.created_at', $sort)->orderBy('o.id', $sort)
-      ->select('o.id','o.invoice','o.customer_name','o.phone','o.payment_method','o.pay_account','o.pay_txn','o.pay_proof','o.pay_status','o.pay_by','o.pay_at','o.pay_note','o.pay_reason','o.pay_amount','o.total','o.created_at','o.status')
-      ->paginate(40)->withQueryString();
-    $txns = $rows->pluck('pay_txn')->filter()->unique()->all();
-    $dups = $txns ? DB::table('orders')->whereIn('pay_txn', $txns)->whereIn('pay_status', ['Verification Pending','Verified'])->select('pay_txn', DB::raw('count(*) c'))->groupBy('pay_txn')->pluck('c', 'pay_txn') : collect();
-    $all = $this->base();
-    $k = (clone $all)->selectRaw("count(*) filter (where o.pay_status='Verification Pending') pend, count(*) filter (where o.pay_status='Verified' and o.pay_at::date = current_date) vtoday, count(*) filter (where o.pay_status='Rejected') rej, coalesce(sum(o.total) filter (where o.pay_status='Verification Pending'),0) pamt, count(*) filter (where lower(o.payment_method) like '%bkash%' and o.pay_status='Verification Pending') bk, count(*) filter (where lower(o.payment_method) like '%nagad%' and o.pay_status='Verification Pending') ng, count(*) filter (where lower(o.payment_method) like '%bank%' and o.pay_status='Verification Pending') bn")->first();
+    $rows = (clone $q)->orderBy('p.created_at', $sort)->orderBy('p.id', $sort)
+      ->select('p.*', 'o.invoice', 'o.customer_name', 'o.phone', 'o.total as order_total', 'o.paid_total', 'o.payment_status', 'o.status as order_status')->paginate(40)->withQueryString();
+    $txns = $rows->pluck('txn_id')->filter()->unique()->all();
+    $dups = $txns ? DB::table('order_payments')->whereIn('txn_id', $txns)->whereIn('status', ['pending','verified'])->select('txn_id', DB::raw('count(*) c'))->groupBy('txn_id')->pluck('c', 'txn_id') : collect();
+    $k = DB::table('order_payments as p')->selectRaw("count(*) filter (where p.status='pending') pend, count(*) filter (where p.status='verified' and p.verified_at::date = current_date) vtoday, count(*) filter (where p.status='rejected') rej, coalesce(sum(p.amount) filter (where p.status='pending'),0) pamt, count(*) filter (where lower(p.method) like '%bkash%' and p.status='pending') bk, count(*) filter (where lower(p.method) like '%nagad%' and p.status='pending') ng, count(*) filter (where lower(p.method) like '%bank%' and p.status='pending') bn")->first();
     $banks = DB::table('payment_methods')->where('kind', 'bank')->orderBy('position')->pluck('title');
     return view('manual_payments', ['rows' => $rows, 'dups' => $dups, 'k' => $k, 'banks' => $banks, 'reasons' => self::REASONS, 'canAct' => P::can(Auth::user(), 'orders', 'edit')]);
   }

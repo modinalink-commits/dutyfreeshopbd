@@ -26,18 +26,15 @@ table.mpt{width:100%;border-collapse:collapse;font-size:13px;background:#fff}.mp
 <select name="sort"><option value="">Newest first</option><option value="old" @selected(request('sort')==='old')>Oldest first</option></select>
 <button>Filter</button><a class="btn g" href="/admin/manual-payments">Reset</a>
 </form>
-<div id="mpw" style="overflow:auto"><table class="mpt"><thead><tr><th>Date &amp; Time</th><th>Invoice</th><th>Customer</th><th>Mobile</th><th>Method</th><th>Amount</th><th>Txn ID / Ref</th><th>Proof</th><th>Status</th><th>Action</th></tr></thead><tbody>
-@forelse($rows as $o)
-@php $dup = $o->pay_txn && ($dups[$o->pay_txn] ?? 0) > 1; $mm = $o->pay_amount !== null && abs((float)$o->pay_amount - (float)$o->total) > 0.5;
- $st = $o->pay_status==='Verification Pending' ? ['Pending Verification','p'] : ($o->pay_status==='Verified' ? ['Verified','v'] : ($o->pay_status==='Rejected' ? ['Rejected','r'] : ['Cancelled','c'])); @endphp
-<tr data-id="{{ $o->id }}" style="cursor:pointer" onclick="mpOpen(this)" data-j="{{ e(json_encode(['id'=>$o->id,'inv'=>$o->invoice,'cust'=>$o->customer_name,'ph'=>$o->phone,'m'=>$o->payment_method,'acc'=>$o->pay_account,'tx'=>$o->pay_txn,'tot'=>(float)$o->total,'amt'=>$o->pay_amount,'at'=>(string)$o->created_at,'st'=>$st[0],'by'=>$o->pay_by,'pat'=>(string)$o->pay_at,'note'=>$o->pay_note,'rs'=>$o->pay_reason,'proof'=>(bool)$o->pay_proof,'dup'=>$dup,'mm'=>$mm,'pend'=>$o->pay_status==='Verification Pending'])) }}">
-<td style="white-space:nowrap">{{ \Carbon\Carbon::parse($o->created_at)->format('d M Y, h:i A') }}</td>
-<td><a href="/admin/orders/{{ $o->id }}" onclick="event.stopPropagation()"><b>{{ $o->invoice }}</b></a></td><td>{{ $o->customer_name }}</td><td>{{ $o->phone }}</td>
-<td>@include('pay_badge',['o'=>$o,'h'=>22])</td><td><b>৳{{ number_format((float)$o->total) }}</b></td><td>{{ $o->pay_txn ?: '—' }}</td>
-<td>@if($o->pay_proof)<a href="/admin/orders/{{ $o->id }}/pay-proof" target="_blank" onclick="event.stopPropagation()">View</a>@else — @endif</td>
-<td><span class="tg {{ $st[1] }}">{{ $st[0] }}</span>@if($dup && $o->pay_status==='Verification Pending') <span class="tg d" title="Same Transaction ID on another order">Possible Duplicate</span>@endif @if($mm) <span class="tg m">Amount Mismatch</span>@endif</td>
-<td class="mpa" style="white-space:nowrap"><a class="btn g" href="/admin/orders/{{ $o->id }}" onclick="event.stopPropagation()">Order</a> <button type="button" class="g">Open</button></td></tr>
-@empty<tr><td colspan="10" style="text-align:center;color:#6B7280;padding:24px">No manual payments found.</td></tr>@endforelse
+<div id="mpw" style="overflow:auto"><table class="mpt"><thead><tr><th>Date</th><th>Customer</th><th>Mobile</th><th>Invoice</th><th>Method</th><th>Amount</th><th>Txn ID / Ref</th><th>Verification</th><th>Order Payment</th><th>Verified By</th><th>Action</th></tr></thead><tbody>
+@forelse($rows as $p)
+<tr><td style="white-space:nowrap">{{ \Carbon\Carbon::parse($p->paid_at ?? $p->created_at)->timezone('Asia/Dhaka')->format('d M Y, h:i A') }}</td><td>{{ $p->customer_name }}</td><td>{{ $p->phone }}</td>
+<td><a href="/admin/orders/{{ $p->order_id }}#payhist"><b>{{ $p->invoice }}</b></a></td><td>{{ $p->method }}</td><td><b>৳{{ number_format((float)$p->amount) }}</b></td><td>{{ $p->txn_id ?: '—' }}@if($p->txn_id && ($dups[$p->txn_id] ?? 0) > 1) <span class="tg d" title="Same Transaction ID used more than once">Possible Duplicate</span>@endif</td>
+<td><span class="tg {{ $p->status==='verified' ? 'v' : ($p->status==='rejected' ? 'r' : 'p') }}">{{ $p->status==='pending' ? 'Pending Verification' : ucfirst($p->status) }}</span>@if($p->reject_reason) <small title="{{ $p->reject_reason }}">ⓘ</small>@endif</td>
+<td>{{ $p->payment_status ?: 'Unpaid' }} <small style="color:#6B7280">৳{{ number_format((float)$p->paid_total) }}/{{ number_format((float)$p->order_total) }}</small></td><td>{{ $p->verified_by ?: '—' }}</td>
+<td class="mpa" style="white-space:nowrap"><a class="btn g" href="/admin/orders/{{ $p->order_id }}#payhist">View Order</a>@if($p->proof) <a class="btn g" href="/storage/{{ $p->proof }}" target="_blank">Proof</a>@endif
+@if($p->status==='pending' && $canAct) <form method="post" action="/admin/manual-payments/entry/{{ $p->id }}/verify" style="display:inline">@csrf <button class="btn">Verify</button></form> <form method="post" action="/admin/manual-payments/entry/{{ $p->id }}/reject" style="display:inline">@csrf <input name="reason" placeholder="Reason" required style="width:110px"> <button class="btn g">Reject</button></form>@endif</td></tr>
+@empty<tr><td colspan="11" style="text-align:center;color:#6B7280;padding:24px">No manual payments found.</td></tr>@endforelse
 </tbody></table><div style="margin-top:10px">{{ $rows->links() }}</div></div>
 
 <dialog id="mpd"><div style="display:flex;justify-content:space-between;align-items:center"><h3 style="margin:0" id="mpt"></h3><button type="button" class="g" onclick="mpd.close()">✕</button></div>
