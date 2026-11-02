@@ -1,0 +1,20 @@
+@extends('layout')@section('title','Stock Report')
+@section('body')
+@include('report_grid_assets')
+<div class="noprint" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:8px"><div style="flex:1;min-width:240px"><h1 style="margin:0">Stock Report</h1><span style="font-size:13px;color:#6B7280">Current stock by category with cost value and sale value.</span></div>
+<a class="btn g" href="?category={{ $cat }}&show={{ $show }}&q={{ urlencode($q) }}&export=csv">Export Excel (CSV)</a><a class="btn g" href="?category={{ $cat }}&show={{ $show }}&q={{ urlencode($q) }}&export=doc">Export Word</a><button class="g" onclick="window.print()">Print / PDF</button></div>
+<form class="bar" method="get"><div><label>Category</label><select name="category"><option value="0">All categories</option>@foreach($cats as $c)<option value="{{ $c->id }}" {{ $cat==$c->id?'selected':'' }}>{{ $c->name }}</option>@endforeach</select></div>
+<div><label>Show</label><select name="show"><option value="instock" {{ $show==='instock'?'selected':'' }}>In stock</option><option value="out" {{ $show==='out'?'selected':'' }}>Out of stock</option><option value="published" {{ $show==='published'?'selected':'' }}>Published</option><option value="all" {{ $show==='all'?'selected':'' }}>All products</option></select></div>
+<div><label>Search name or product ID</label><input name="q" value="{{ $q }}" placeholder="search" style="min-width:220px"></div><div><button>Search</button> <a class="btn g" href="/admin/stock-report">Reset</a></div></form>
+<div class="rp-body"><div class="noprint" style="font-size:12px;color:#6B7280;margin-bottom:6px">{{ number_format($g['n']) }} products @if($capped) (first 4,000 only, narrow the filter) @endif &middot; <a href="#" onclick="document.querySelectorAll('.det').forEach(e=>e.classList.add('hide'));return false">collapse all</a> &middot; <a href="#" onclick="document.querySelectorAll('.det').forEach(e=>e.classList.remove('hide'));return false">expand all</a></div>
+<div style="overflow:auto;max-height:78vh"><table class="pl"><thead><tr><th>Product ID</th><th>Product</th><th class="n">Stock</th><th class="n">Cost</th><th class="n">Stock cost value</th><th class="n">Selling price</th><th class="n">Stock sale value</th></tr></thead><tbody>
+@forelse($groups as $i => $gr)
+<tr class="gh" onclick="document.querySelectorAll('.d{{ $i }}').forEach(e=>e.classList.toggle('hide'))"><td colspan="7">&#9660; Category: {{ $gr['name'] }} &nbsp;|&nbsp; Products: {{ count($gr['rows']) }} &nbsp;|&nbsp; Stock: {{ number_format($gr['qty']) }} &nbsp;|&nbsp; Cost value: {{ number_format($gr['cost'],2) }}</td></tr>
+@foreach($gr['rows'] as $x)<tr class="det d{{ $i }}"><td>{{ $x['sku'] }}</td><td>{{ $x['name'] }}@if($x['nc']) <span class="nc">(no cost)</span>@endif @if(!$x['pub']) <span style="color:#6B7280">(hidden)</span>@endif</td><td class="n">{{ number_format($x['qty']) }}</td><td class="n">{{ number_format($x['cost'],2) }}</td><td class="n">{{ number_format($x['cv'],2) }}</td><td class="n">{{ number_format($x['price'],2) }}</td><td class="n">{{ number_format($x['sv'],2) }}</td></tr>@endforeach
+<tr class="st det d{{ $i }}"><td colspan="2" class="n">Total ({{ $gr['name'] }})</td><td class="n">{{ number_format($gr['qty']) }}</td><td></td><td class="n">{{ number_format($gr['cost'],2) }}</td><td></td><td class="n">{{ number_format($gr['sale'],2) }}</td></tr>
+@empty<tr><td colspan="7" style="padding:14px">No products for this filter.</td></tr>@endforelse
+<tr class="gt"><td colspan="2">Grand Total ({{ number_format($g['n']) }} products)</td><td class="n">{{ number_format($g['qty']) }}</td><td></td><td class="n">{{ number_format($g['cost'],2) }}</td><td></td><td class="n">{{ number_format($g['sale'],2) }}</td></tr>
+<tr class="gt"><td colspan="7">Total stock: {{ number_format($g['qty']) }} &nbsp;|&nbsp; Stock cost value: {{ number_format($g['cost'],2) }} &nbsp;|&nbsp; Stock sale value: {{ number_format($g['sale'],2) }} &nbsp;|&nbsp; Expected margin: <span class="p">{{ number_format($g['sale']-$g['cost'],2) }}</span></td></tr>
+</tbody></table></div></div>
+@include('report_grid_js')
+@endsection

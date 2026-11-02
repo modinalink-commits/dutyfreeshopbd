@@ -150,6 +150,8 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::post('/ai-chat/test', [\App\Http\Controllers\AiChatController::class,'test']);
   Route::get('/supplier-ledger-report', [\App\Http\Controllers\SupplierLedgerReportController::class,'index']);
   Route::get('/courier-report', [\App\Http\Controllers\CourierReportController::class,'index']);
+  Route::get('/cashbook-report', [\App\Http\Controllers\CashbookReportController::class,'index']);
+  Route::get('/stock-report', [\App\Http\Controllers\StockReportController::class,'index']);
   Route::get('/legacy-key', [\App\Http\Controllers\LegacyKeyController::class,'show']);
   Route::get('/purchase-report', [\App\Http\Controllers\PurchaseReportController::class,'index']);
   Route::get('/profit-report', [\App\Http\Controllers\ProfitReportController::class,'index']);

@@ -376,3 +376,7 @@ resources/views/supplier_ledger_report.blade.php
 resources/views/courier_report.blade.php
 resources/views/report_grid_assets.blade.php
 resources/views/report_grid_js.blade.php
+app/Http/Controllers/CashbookReportController.php
+app/Http/Controllers/StockReportController.php
+resources/views/cashbook_report.blade.php
+resources/views/stock_report.blade.php
