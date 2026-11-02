@@ -66,7 +66,7 @@
 @if($r->rv_n > 0)<div class="rpx-r"><span class="rpx-s" style="--p:{{ round($ra / 5 * 100) }}%" aria-hidden="true">★★★★★</span><b>{{ number_format($ra, 1) }}</b><em>({{ $r->rv_n }})</em></div>@else<div class="rpx-r"><em>No reviews yet</em></div>@endif
 <div class="rpx-p"><b>৳{{ number_format($r->price) }}</b>@if($ro > 0)<s>৳{{ number_format($r->compare_price) }}</s><span class="rpx-off">{{ $ro }}% OFF</span>@endif</div>
 <span class="rpx-st {{ $rin ? '' : 'no' }}">{{ $rin ? 'In Stock' : 'Out of Stock' }}</span></div>
-@if($rin)<button type="button" class="rpx-cart rsx-cart" data-id="{{ $r->id }}" data-p="{{ (float)$r->price }}" aria-label="Add to Cart"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 2h4l2.7 12.4a2 2 0 0 0 2 1.6h8.7a2 2 0 0 0 2-1.6L22 7H6"/><circle cx="10" cy="20.5" r="1.4"/><circle cx="18" cy="20.5" r="1.4"/></svg></button>@endif</article>
+@if($rin)<button type="button" class="rpx-cart rsx-cart" data-id="{{ $r->id }}" data-x="{{ ($r->ext_id ?? null) ?: $r->id }}" data-p="{{ (float)$r->price }}" aria-label="Add to Cart"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 2h4l2.7 12.4a2 2 0 0 0 2 1.6h8.7a2 2 0 0 0 2-1.6L22 7H6"/><circle cx="10" cy="20.5" r="1.4"/><circle cx="18" cy="20.5" r="1.4"/></svg></button>@endif</article>
 @endforeach</div>
 <style>
 .rsx{background:#fff;border:1px solid #F3EDE8;box-shadow:0 4px 18px rgba(15,23,42,.06);padding:14px;gap:10px;min-height:0}
@@ -99,7 +99,7 @@
 @if($q->rv_n > 0)<div class="rpx-r" title="{{ $qa }} / 5"><span class="rpx-s" style="--p:{{ round($qa / 5 * 100) }}%" aria-hidden="true">★★★★★</span><b>{{ number_format($qa, 1) }}</b><em>({{ $q->rv_n }} {{ $q->rv_n === 1 ? 'Review' : 'Reviews' }})</em></div>@else<div class="rpx-r"><em>No reviews yet</em></div>@endif
 <div class="rpx-p"><b>৳{{ number_format($q->price) }}</b>@if($qo > 0)<s>৳{{ number_format($q->compare_price) }}</s><span class="rpx-off">{{ $qo }}% OFF</span>@endif</div>
 <span class="rpx-st {{ $qin ? '' : 'no' }}">{!! $qin ? '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg>' : '' !!} {{ $qin ? 'In Stock' : 'Out of Stock' }}</span></div>
-@if($qin)<button type="button" class="rpx-cart" data-id="{{ $q->id }}" data-p="{{ (float)$q->price }}" aria-label="Add to Cart"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 2h4l2.7 12.4a2 2 0 0 0 2 1.6h8.7a2 2 0 0 0 2-1.6L22 7H6"/><circle cx="10" cy="20.5" r="1.4"/><circle cx="18" cy="20.5" r="1.4"/></svg><span>Add to Cart</span></button>@endif</article>
+@if($qin)<button type="button" class="rpx-cart" data-id="{{ $q->id }}" data-x="{{ ($q->ext_id ?? null) ?: $q->id }}" data-p="{{ (float)$q->price }}" aria-label="Add to Cart"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 2h4l2.7 12.4a2 2 0 0 0 2 1.6h8.7a2 2 0 0 0 2-1.6L22 7H6"/><circle cx="10" cy="20.5" r="1.4"/><circle cx="18" cy="20.5" r="1.4"/></svg><span>Add to Cart</span></button>@endif</article>
 @endforeach</div></section>
 <style>
 .rpx{margin:28px 0 8px}.rpx-h{display:flex;align-items:center;gap:12px;margin-bottom:14px}.rpx-ic{width:44px;height:44px;border-radius:14px;background:#FFF1E6;color:var(--o);display:flex;align-items:center;justify-content:center;flex:none}
@@ -121,19 +121,19 @@
 @media(min-width:900px){.rpx-cart span{display:inline}.rpx-b{padding-right:0;padding-bottom:50px}.rpx-cart{right:14px;bottom:12px}}
 @media(max-width:899px){.rpx-g{grid-template-columns:1fr}.rpx-h h2{font-size:21px}.rpx-i{width:104px;height:104px}}
 </style>
-<script>document.querySelectorAll('.rpx-cart,.rsx-cart').forEach(function(b){b.addEventListener('click',function(){var id=b.getAttribute('data-id'),pr=+b.getAttribute('data-p');DF.add(id,1,pr);DF.ev('add_to_cart',{value:pr,items:[{item_id:String(id),price:pr,quantity:1}]});b.classList.add('ok');setTimeout(function(){b.classList.remove('ok')},1500)})});</script>
+<script>document.querySelectorAll('.rpx-cart,.rsx-cart').forEach(function(b){b.addEventListener('click',function(){var id=b.getAttribute('data-id'),xid=b.getAttribute('data-x')||id,pr=+b.getAttribute('data-p');DF.add(id,1,pr,false,xid);DF.ev('add_to_cart',{value:pr,items:[{item_id:String(xid),price:pr,quantity:1}]});b.classList.add('ok');setTimeout(function(){b.classList.remove('ok')},1500)})});</script>
 @endif
 </div>
 @include('store.zoom')
 @endsection
 @section('js')
 <script>
-(function(){var id={{ $p->id }},pr={{ $price }},n=1;
+(function(){var id={{ $p->id }},xid=@json((string)(($p->ext_id ?? null) ?: $p->id)),pr={{ $price }},n=1;
 document.querySelectorAll('.bn').forEach(function(b){b.onclick=function(){document.querySelectorAll('.bn').forEach(function(x){x.classList.remove('on')});b.classList.add('on');n=+b.getAttribute('data-n')}});
 var wl=document.getElementById('wl'),sw=function(){var on=DF.wish().indexOf(String(id))>=0;wl.classList.toggle('on',on);wl.textContent=on?'♥':'♡'};sw();wl.onclick=function(){DF.tw(id);sw()};
-var ad=document.getElementById('addc');ad.onclick=function(){DF.add(id,n,pr);DF.ev('add_to_cart',{value:pr*n,items:[{item_id:String(id),item_name:@json($p->name),price:pr,quantity:n}]});ad.textContent='Added ✓ ('+DF.cart()[String(id)].q+')';setTimeout(function(){ad.textContent='Add To Cart'},1800)};
-document.getElementById('ordn').onclick=function(){DF.add(id,n,pr,true);DF.ev('add_to_cart',{value:pr*n,items:[{item_id:String(id),item_name:@json($p->name),price:pr,quantity:n}]});location.href='/checkout'};
+var ad=document.getElementById('addc');ad.onclick=function(){DF.add(id,n,pr,false,xid);DF.ev('add_to_cart',{value:pr*n,items:[{item_id:xid,item_name:@json($p->name),price:pr,quantity:n}]});ad.textContent='Added ✓ ('+DF.cart()[String(id)].q+')';setTimeout(function(){ad.textContent='Add To Cart'},1800)};
+document.getElementById('ordn').onclick=function(){DF.add(id,n,pr,true,xid);DF.ev('add_to_cart',{value:pr*n,items:[{item_id:xid,item_name:@json($p->name),price:pr,quantity:n}]});location.href='/checkout'};
 })();
 </script>
-<script>DF.ev('view_item',{value:{{ $price }},items:[{item_id:@json((string)$p->id),item_name:@json($p->name),price:{{ $price }}}]});</script>
+<script>DF.ev('view_item',{value:{{ $price }},items:[{item_id:@json((string)(($p->ext_id ?? null) ?: $p->id)),item_name:@json($p->name),price:{{ $price }}}]});</script>
 @endsection

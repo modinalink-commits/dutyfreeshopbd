@@ -43,8 +43,8 @@ class Capi
   public static function purchase(int $orderId, Request $r): void {
     if (!self::enabled()) return;
     $o = DB::table('orders')->where('id', $orderId)->first(); if (!$o) return;
-    $its = DB::table('order_items')->where('order_id', $orderId)->get(['product_id', 'qty', 'price']);
-    $contents = $its->filter(fn($i) => $i->product_id)->map(fn($i) => ['id' => (string)$i->product_id, 'quantity' => (int)$i->qty, 'item_price' => (float)$i->price])->values()->all();
+    $its = DB::table('order_items as i')->leftJoin('products as p', 'p.id', '=', 'i.product_id')->where('i.order_id', $orderId)->get(['i.product_id', 'p.ext_id', 'i.qty', 'i.price']);
+    $contents = $its->filter(fn($i) => $i->product_id)->map(fn($i) => ['id' => (string)(($i->ext_id ?? null) ?: $i->product_id), 'quantity' => (int)$i->qty, 'item_price' => (float)$i->price])->values()->all();
     $user = self::user(['phone' => $o->phone, 'name' => $o->customer_name, 'email' => $o->email, 'city' => $o->district, 'external_id' => $o->customer_id], $_COOKIE['_fbp'] ?? null, $_COOKIE['_fbc'] ?? null, $r->ip(), (string)$r->userAgent());
     $custom = ['currency' => 'BDT', 'value' => (float)$o->total, 'content_type' => 'product', 'content_ids' => array_column($contents, 'id'), 'contents' => $contents, 'num_items' => array_sum(array_column($contents, 'quantity')), 'order_id' => $o->invoice];
     $url = url('/order-placed'); $inv = (string)$o->invoice;

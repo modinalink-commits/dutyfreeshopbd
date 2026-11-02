@@ -1,5 +1,5 @@
 @php
-  $pxItems = collect($items ?? [])->map(fn($i) => ['id' => (string)($i->product_id ?? ''), 'quantity' => (int)$i->qty, 'item_price' => (float)$i->price])->filter(fn($x) => $x['id'] !== '')->values()->all();
+  $pxItems = collect($items ?? [])->map(fn($i) => ['id' => (string)(($i->ext_id ?? null) ?: ($i->product_id ?? '')), 'quantity' => (int)$i->qty, 'item_price' => (float)$i->price])->filter(fn($x) => $x['id'] !== '')->values()->all();
   $pxAm = [];
   if (!empty($withAm)) {
     $d = preg_replace('/\D/', '', (string)($o->phone ?? '')); $d = substr($d, -10);
