@@ -70,7 +70,7 @@ class StoreController extends Controller {
     return self::rem('store.rules', 300, fn() => DB::table('discount_rules')->where('enabled',true)->get()->mapWithKeys(fn($r) => [$r->key => json_decode($r->config, true) ?: []])->all());
   }
   protected function base(array $x = []): array {
-    $s = self::set(); $wa = preg_replace('/\D/', '', $s['whatsapp_number']); if (str_starts_with($wa, '0')) $wa = '88'.$wa;
+    $s = self::set(); $wa = \App\Support\Biz::waIntl($s['whatsapp_number'] ?: null);
     $areas = \App\Support\Delivery::options();
     return $x + ['s'=>$s, 'cats'=>$this->cats(), 'subs'=>$this->subs(), 'wa'=>$wa, 'areas'=>$areas, 'rules'=>$this->rules()];
   }

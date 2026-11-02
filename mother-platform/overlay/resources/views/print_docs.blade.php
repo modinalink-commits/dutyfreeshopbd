@@ -37,6 +37,7 @@ img{max-width:100%}.bc svg{display:block;width:100%;height:100%}
 @if($disc > 0)<div class="save">{{ $dname }}{{ $dpct !== null && (float)$dpct > 0 ? ': '.rtrim(rtrim(number_format((float)$dpct, 2), '0'), '.').'%' : '' }} · You Saved: ৳{{ number_format($disc) }}</div>@endif
 <div class="words">In Words: {{ $s['words'] }}</div>
 <div class="ft">Thank You For Shopping With Us.<br>Please Come Again</div>
+<div class="ft" style="font-size:9.5px;margin-top:3px;line-height:1.35">Hotline: {{ \App\Support\Biz::hotline() }}<br>WhatsApp: {{ \App\Support\Biz::whatsapp() }}<br>{{ \App\Support\Biz::email() }}</div>
 <div class="codes"><div class="qr" data-qr="{{ $s['url'] }}"></div><div class="bc">{!! $s['bc'] !!}</div></div>
 </div></div>
 @else

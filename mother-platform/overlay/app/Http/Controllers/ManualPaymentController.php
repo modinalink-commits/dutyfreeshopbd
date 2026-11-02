@@ -78,7 +78,7 @@ class ManualPaymentController extends Controller {
     if ($r->boolean('sms') && $o->phone) {
       try {
         $to = \App\Support\Chat::phone($o->phone) ?: $o->phone;
-        $body = $mode === 'verify' ? 'আপনার পেমেন্ট সফলভাবে যাচাই করা হয়েছে। অর্ডার নম্বর: '.$o->invoice.'. ধন্যবাদ।' : 'আপনার পেমেন্টটি যাচাই করা যায়নি। বিস্তারিত জানতে আমাদের সাথে যোগাযোগ করুন।';
+        $body = $mode === 'verify' ? 'আপনার পেমেন্ট সফলভাবে যাচাই করা হয়েছে। অর্ডার নম্বর: '.$o->invoice.'. ধন্যবাদ।' : 'আপনার পেমেন্টটি যাচাই করা যায়নি। বিস্তারিত জানতে কল করুন: '.\App\Support\Biz::hotline();
         \App\Support\Sms::queue($to, $body, 'payment_'.$mode, ['order_id' => $id]);
       } catch (\Throwable $e) {}
     }

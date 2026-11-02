@@ -22,11 +22,11 @@ class AiChatController extends Controller {
     return back()->with($ok ? 'ok' : 'bad', $ok ? 'Claude replied: '.$m : 'Claude API error: '.$m);
   }
   public function ask(Request $r) {
-    if (!AiChat::on()) return response()->json(['reply'=>'দুঃখিত, এই মুহূর্তে চ্যাট চালু নেই। অনুগ্রহ করে কল করুন: 09613828081'], 503);
+    if (!AiChat::on()) return response()->json(['reply'=>'দুঃখিত, এই মুহূর্তে চ্যাট চালু নেই। অনুগ্রহ করে কল করুন: '.\App\Support\Biz::hotline()], 503);
     $k = 'ai.n.'.now()->format('Ymd'); Cache::add($k, 0, 90000);
-    if (Cache::increment($k) > 1500) return response()->json(['reply'=>'আজকের চ্যাট সীমা শেষ। অনুগ্রহ করে কল করুন: 09613828081']);
+    if (Cache::increment($k) > 1500) return response()->json(['reply'=>'আজকের চ্যাট সীমা শেষ। অনুগ্রহ করে কল করুন: '.\App\Support\Biz::hotline()]);
     $h = $r->input('messages'); if (!is_array($h)) return response()->json(['reply'=>''], 422);
     [$ok, $m] = AiChat::reply($h);
-    return response()->json(['reply'=>$ok ? $m : 'দুঃখিত, এখন উত্তর দিতে পারছি না। কল/WhatsApp করুন: 09613828081']);
+    return response()->json(['reply'=>$ok ? $m : 'দুঃখিত, এখন উত্তর দিতে পারছি না। কল/WhatsApp করুন: '.\App\Support\Biz::hotline()]);
   }
 }

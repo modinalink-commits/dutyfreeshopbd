@@ -15,7 +15,7 @@ class AiChat {
   private static function facts(): string {
     return Cache::remember('ai.facts', 300, function () {
       $s = \App\Http\Controllers\StoreController::set(); $o = [];
-      $o[] = 'STORE: DutyFree Shop BD (dutyfreebd.com), Child City. Phone/WhatsApp: '.StoreFallback::phone().'. Customer care: 09613828081. Email: '.($s['contact_email'] ?? '').'. Address: '.preg_replace('/\s+/', ' ', (string)($s['contact_address'] ?? '')).'. Hours: '.($s['business_hours'] ?? '').'.';
+      $o[] = 'STORE: DutyFree Shop BD (dutyfreebd.com), Child City. Hotline: '.Biz::hotline().'. Mobile: '.Biz::mobile().'. WhatsApp: '.Biz::whatsapp().'. Email: '.($s['contact_email'] ?? '').'. Address: '.preg_replace('/\s+/', ' ', (string)($s['contact_address'] ?? '')).'. Hours: '.($s['business_hours'] ?? '').'.';
       $d = []; foreach ([1,2,3,4] as $i) if (!empty($s["ship_{$i}_name"])) $d[] = $s["ship_{$i}_name"].' = '.$s["ship_{$i}_charge"].' TK';
       if ($d) $o[] = 'DELIVERY CHARGES: '.implode('; ', $d).'.';
       $pay = [];
@@ -89,4 +89,4 @@ class AiChat {
     return $t === '' ? [false, 'empty reply'] : [true, $t];
   }
 }
-class StoreFallback { public static function phone(): string { $s = \App\Http\Controllers\StoreController::set(); return '0'.ltrim((string)($s['call_number'] ?? '09613828081'), '0'); } }
+class StoreFallback { public static function phone(): string { return Biz::hotline(); } }

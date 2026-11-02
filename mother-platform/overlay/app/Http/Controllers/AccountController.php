@@ -111,7 +111,7 @@ class AccountController extends StoreController {
     if (Sms::configured()) { // the number must be proven: it gives access to existing order history
       if (empty($d['code']) || !$this->otpCheck('register', $p, $d['code'])) return response()->json(['ok'=>false, 'error'=>'মোবাইলে পাঠানো কোডটি দিন (বা কোড ঠিক নয়)', 'need_code'=>true], 422);
       $verified = true;
-    } elseif ($hasHistory) return response()->json(['ok'=>false, 'error'=>'এই নম্বরে আগের অর্ডার আছে, তাই নিরাপত্তার জন্য কোড লাগবে। কল করুন: '.('0'.ltrim((string)(self::set()['call_number'] ?? '09613828081'), '0'))], 422);
+    } elseif ($hasHistory) return response()->json(['ok'=>false, 'error'=>'এই নম্বরে আগের অর্ডার আছে, তাই নিরাপত্তার জন্য কোড লাগবে। কল করুন: '.\App\Support\Biz::hotline()], 422);
     if (!empty($d['email']) && DB::table('customers')->whereRaw('lower(email) = ?', [mb_strtolower($d['email'])])->where('phone', '!=', $p)->whereNotNull('password')->exists()) return response()->json(['ok'=>false, 'error'=>'এই ইমেইল অন্য অ্যাকাউন্টে ব্যবহৃত'], 422);
     $set = ['password'=>Hash::make($d['password']), 'registered_at'=>now(), 'phone_verified_at'=>$verified ? now() : null, 'referred_by'=>(($d['ref'] ?? null) ?: $r->cookie('dfref')) ?: null, 'updated_at'=>now()];
     if ($row) { DB::table('customers')->where('id', $row->id)->update($set + ['name'=>$row->name ?: $d['name']] + (!empty($d['email']) && !$row->email ? ['email'=>$d['email']] : [])); $cid = $row->id; }

@@ -156,7 +156,7 @@ if(!sup()){pt.textContent='Not supported'}else{navigator.serviceWorker.ready.the
 @endif
 
 @if($tab==='support')
-<div class="bx"><h2>Support / Chat</h2><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="b1 p" type="button" id="oc" style="padding:10px 18px;font-size:14px">💬 লাইভ চ্যাট শুরু করুন</button><a class="b1" style="padding:10px 18px;font-size:14px" target="_blank" rel="noopener" href="https://wa.me/{{ $wa }}">WhatsApp Support</a><a class="b1" style="padding:10px 18px;font-size:14px" href="tel:{{ $s['call_number'] }}">📞 {{ $s['call_number'] }}</a></div></div>
+<div class="bx"><h2>Support / Chat</h2><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="b1 p" type="button" id="oc" style="padding:10px 18px;font-size:14px">💬 লাইভ চ্যাট শুরু করুন</button><a class="b1" style="padding:10px 18px;font-size:14px" target="_blank" rel="noopener" href="https://wa.me/{{ $wa }}">WhatsApp Support</a><a class="b1" style="padding:10px 18px;font-size:14px" href="{{ \App\Support\Biz::telUrl(\App\Support\Biz::hotline()) }}">📞 {{ \App\Support\Biz::hotline() }}</a></div></div>
 @foreach($threads as $th)<div class="bx"><h2>Conversation · {{ $dt($th['t']->last_at ?? $th['t']->created_at)->format('d M Y') }}</h2><div class="cht">@foreach($th['msgs'] as $m)<div class="{{ $m->dir }}">{{ $m->body ?: '[ছবি]' }}<small>{{ $m->dir==='out' ? ($m->is_ai ? '🤖 DutyFreeBD Assistant' : 'DutyFreeBD Support') : 'You' }} · {{ $dt($m->created_at)->format('d M, h:i A') }}</small></div>@endforeach</div></div>@endforeach
 @if($threads->isEmpty())<div class="bx"><p style="color:#6B7280;font-size:13.5px;margin:0">আগের কোনো কথোপকথন নেই। উপরের বাটনে চ্যাট শুরু করুন — আপনার নাম ও নম্বর আবার দিতে হবে না।</p></div>@endif
 @endif

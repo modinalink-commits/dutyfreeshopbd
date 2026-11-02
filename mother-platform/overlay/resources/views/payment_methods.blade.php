@@ -3,7 +3,7 @@
 @if(session('ok'))<div class="card" style="color:#166534">{{ session('ok') }}</div>@endif
 <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap"><h1 style="margin:0;flex:1">Manual Payment Methods</h1><a class="btn g" href="/admin/orders">Orders</a></div>
 <div class="card" style="margin-bottom:12px"><b>{{ $pending }}</b> orders are waiting for payment verification. Rule: every manual payment must be approved on WhatsApp first. The customer sends the payment proof on WhatsApp, then you open the order here and press Verify. Until then the order shows <b>Payment Verification Pending</b>.</div>
-<form class="card" method="post" action="/admin/payment-methods/whatsapp" style="max-width:520px;margin-bottom:12px">@csrf<label>WhatsApp number for payment approval</label><input name="pay_wa" value="{{ $wa }}" required><div style="margin-top:10px"><button>Save</button></div></form>
+<div class="card" style="max-width:520px;margin-bottom:12px">WhatsApp number for payment approval: <b>{{ $wa }}</b><br><small>This number is the shop WhatsApp number. Change it once in <a href="/admin/site">Site settings &gt; Business contact</a>, and it updates everywhere.</small></div>
 <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr))">
 @foreach($rows as $m)
 <form class="card" method="post" enctype="multipart/form-data" action="/admin/payment-methods/{{ $m->id }}">@csrf

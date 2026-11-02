@@ -19,7 +19,7 @@
 <div><label>Event Socket port</label><input name="esl_port" value="{{ $s['esl_port'] }}"></div>
 <div><label>Event Socket password {{ $s['has_pw'] ? '(saved)' : '' }}</label><input type="password" name="esl_pass" autocomplete="new-password" placeholder="{{ $s['has_pw'] ? '•••••• leave blank to keep' : '' }}"></div>
 <div><label>Outbound gateway name</label><input name="gateway" value="{{ $s['gateway'] }}" placeholder="e.g. mobile_gw"></div>
-<div><label>Caller ID shown</label><input name="caller_id" value="{{ $s['caller_id'] }}" placeholder="09613828081"></div>
+<div><label>Caller ID shown</label><input name="caller_id" value="{{ $s['caller_id'] }}" placeholder="{{ \App\Support\Biz::hotline() }}"></div>
 <div><label>Number format to dial</label><select name="dial_format"><option value="local" @selected($s['dial_format']==='local')>01XXXXXXXXX</option><option value="intl" @selected($s['dial_format']==='intl')>8801XXXXXXXXX</option><option value="plus" @selected($s['dial_format']==='plus')>+8801XXXXXXXXX</option></select></div>
 <div><label>Dialplan extension</label><input name="dialplan_ext" value="{{ $s['dialplan_ext'] }}"></div>
 <div><label>Dialplan context</label><input name="context" value="{{ $s['context'] }}"></div>

@@ -59,7 +59,7 @@ body{background:#fff}.cf,.cc{border:1px solid #EAEAEA;border-radius:20px;box-sha
 <div class="fl" style="margin:8px 0"><label class="l" for="pay-pf">Payment screenshot (optional)</label><div class="ip"><input id="pay-pf" name="pay_proof" type="file" accept="image/*,.pdf"></div></div>
 <div class="wa2">✅ Your order is not processed until we approve the payment on WhatsApp. After you submit, send the payment screenshot on WhatsApp. Status stays <b>Payment Verification Pending</b> until we verify.</div></div>
 @endif</div>
-<button class="sbm" id="sbm">ORDER SUBMIT</button></div>
+<button class="sbm" id="sbm">ORDER SUBMIT</button><div style="text-align:center;font-size:12px;color:#6B7280;margin-top:8px">Need help? Hotline: <a href="{{ \App\Support\Biz::telUrl(\App\Support\Biz::hotline()) }}" style="color:#FF5A00;font-weight:700">{{ \App\Support\Biz::hotline() }}</a> · WhatsApp: <a href="{{ \App\Support\Biz::waUrl() }}" rel="noopener" style="color:#16A34A;font-weight:700">{{ \App\Support\Biz::whatsapp() }}</a></div></div>
 <div class="cc">@if($s['co_coupon']==='1')<div class="cp"><div class="ip"><input id="cpc" placeholder="Coupon Code" maxlength="40" aria-label="Coupon Code"></div><button type="button" id="cpb">Apply</button></div><div class="cpm" id="cpm"></div>@endif
 <div class="th"><span>PRODUCT</span><span style="text-align:center">QUANTITY</span><span>PRICE</span><span>TOTAL PRICE</span><span style="text-align:right">ACTION</span></div>
 <div id="rows"><div class="emp">Loading…</div></div>

@@ -16,6 +16,7 @@ class OrderSms {
     $L[] = 'Payable: '.self::tk($o->total);
     if (!empty($o->pay_status) && $o->pay_status === 'Verification Pending') $L[] = 'Payment verification is pending.';
     $L[] = 'Our representative will contact you shortly for confirmation. Track: dutyfreebd.com/track?invoice='.$o->invoice;
+    $L[] = 'Help: '.Biz::hotline();
     return implode("\n", $L);
   }
   /** Queue the confirmation once per order. Respects the SMS "order confirmation" switch. */

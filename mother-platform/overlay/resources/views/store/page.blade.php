@@ -13,12 +13,12 @@
 <h1>{{ $page->title }}</h1>
 @if($isContact)
 <div class="cc">
-@if($s['call_number'])<div><b>Hotline</b><a href="tel:{{ $s['call_number'] }}">{{ $s['call_number'] }}</a></div>@endif
-@if($mob)<div><b>Mobile</b><a href="tel:{{ $mob }}">{{ $mob }}</a></div>@endif
-@if($s['whatsapp_number'])<div><b>WhatsApp</b><a href="https://wa.me/{{ $wa }}" rel="noopener">{{ $s['whatsapp_number'] }}</a></div>@endif
-@if($mail)<div><b>Email</b><a href="mailto:{{ $mail }}">{{ $mail }}</a></div>@endif
-@if($addr)<div><b>Address</b><span>{{ $addr }}</span></div>@endif
-@if($hrs)<div><b>Business hours</b><span>{{ $hrs }}</span></div>@endif
+<div><b>Hotline</b><a href="{{ \App\Support\Biz::telUrl(\App\Support\Biz::hotline()) }}">{{ \App\Support\Biz::hotline() }}</a></div>
+<div><b>Mobile</b><a href="{{ \App\Support\Biz::telUrl(\App\Support\Biz::mobile()) }}">{{ \App\Support\Biz::mobile() }}</a></div>
+<div><b>WhatsApp</b><a href="{{ \App\Support\Biz::waUrl() }}" rel="noopener">{{ \App\Support\Biz::whatsapp() }}</a></div>
+<div><b>Email</b><a href="mailto:{{ \App\Support\Biz::email() }}">{{ \App\Support\Biz::email() }}</a></div>
+<div><b>Business Address</b><span>{{ \App\Support\Biz::address() }}</span></div>
+<div><b>Business Hours</b><span>{{ \App\Support\Biz::hours() }}</span></div>
 </div>
 @endif
 {!! $body !!}
