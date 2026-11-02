@@ -15,7 +15,7 @@ class MotherImages extends Command {
     $lock = fopen(storage_path('framework/img-optimizer.lock'), 'c'); if (!$lock || !flock($lock, LOCK_EX | LOCK_NB)) return 0; // one run at a time
     @set_time_limit(0); $t0 = microtime(true);
     $a = Img::runBatch(40, 30);
-    $own = ['dutyfreeshopbd.com', 'www.dutyfreeshopbd.com']; $done = 0; $fail = 0;
+    $own = ['dutyfreeshopbd.com', 'www.dutyfreeshopbd.com', 'dutyfreebd.com', 'www.dutyfreebd.com']; $done = 0; $fail = 0;
     foreach (self::TARGETS as [$tb, $col, $kind]) {
       if (!Schema::hasTable($tb) || !Schema::hasColumn($tb, $col)) continue;
       foreach (DB::table($tb)->where($col, 'like', 'http%')->whereNotIn($col, DB::table('media_sources')->where('tries', '>=', 3)->select('url'))->limit(60)->get(['id', $col]) as $row) {
