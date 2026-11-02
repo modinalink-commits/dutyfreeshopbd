@@ -171,7 +171,7 @@
 
   function attach(tbl, idx) {
     tbl.classList.add('dfx'); addSelection(tbl);
-    var host = tbl.closest('.card') || tbl.parentNode, bar = document.createElement('div'); bar.className = 'dfx-bar';
+    var host = tbl.closest('.card') || tbl.parentNode, bar = document.createElement('div'); bar.className = 'dfx-bar'; bar._tbl = tbl;
     var btn = document.createElement('button'); btn.type = 'button'; btn.className = 'dfx-btn'; btn.textContent = 'Export ▾'; bar.appendChild(btn);
     if (host !== tbl.parentNode) host.insertBefore(bar, host.firstChild); else tbl.parentNode.insertBefore(bar, tbl);
     // the old per-module PDF/Excel/Word/CSV links are replaced by this one component
@@ -211,6 +211,7 @@
   }
 
   function scan() {
+    [].forEach.call(document.querySelectorAll('.dfx-bar'), function (b) { if (b._tbl && !document.contains(b._tbl)) b.remove(); });
     var list = [].filter.call(document.querySelectorAll('main table'), isDataTable);
     list.forEach(function (t, i) { if (!t.classList.contains('dfx')) attach(t, i); });
   }
