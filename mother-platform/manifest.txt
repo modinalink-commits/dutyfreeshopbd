@@ -359,3 +359,6 @@ resources/views/redx_setup.blade.php
 public/couriers/steadfast.png
 public/couriers/redx.png
 public/couriers/carrybee.png
+app/Support/Steadfast.php
+app/Http/Controllers/SteadfastController.php
+resources/views/steadfast_setup.blade.php
