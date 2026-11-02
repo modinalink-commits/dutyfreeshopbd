@@ -148,6 +148,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::post('/media/settings', [\App\Http\Controllers\MediaController::class,'settings']);
   Route::post('/media/retry', [\App\Http\Controllers\MediaController::class,'retry']);
   Route::post('/ai-chat/test', [\App\Http\Controllers\AiChatController::class,'test']);
+  Route::get('/migration', [\App\Http\Controllers\MigrationDashboardController::class,'index']);
   Route::get('/courier', [\App\Http\Controllers\CourierController::class,'show']);
   Route::post('/courier', [\App\Http\Controllers\CourierController::class,'save']);
   Route::post('/courier/connect', [\App\Http\Controllers\CourierController::class,'connect']);

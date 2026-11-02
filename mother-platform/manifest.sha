@@ -1,5 +1,5 @@
 fe43f8b6cb422cca81ee18b74d3972f77e7852de database/migrations/2026_10_31_000001_mother_core.php
-12e4765981500dc85cf4a8f390ca06756d5c8a1a routes/web.php
+3ba8f92775e09199444a9b9510953830cfae2da9 routes/web.php
 4eb9c45dba79c3a8479970e7d5fac7c89719990f app/Models/Mother.php
 2c92de4a667f6628ceba68470fdfff7fa791290f app/Http/Controllers/AdminController.php
 bd49f23ea0895af93bed5374937115c21911b0cd app/Console/Commands/MotherInstall.php
@@ -28,7 +28,7 @@ fc3568db08725a38056a08be87cb325d92aebb5f database/migrations/2026_10_31_000003_a
 6d791d6efcd6661309de2dbf79937150c67115c1 resources/views/res_list.blade.php
 f3b1b4ce22124a2cd23b2ffce1f40df3955045ab resources/views/res_form.blade.php
 67a76a09307002f6201cc2e684f3161b22c67d9c resources/views/reports.blade.php
-a7c3c6771e55b97e606edc37eeae5d73d9535c2d resources/views/sidebar.blade.php
+7298ae5ac2235c5aefff8951694a4710048292c1 resources/views/sidebar.blade.php
 732fff2be30a171e9823bd97034bf441348c856c resources/views/coming.blade.php
 c391e719e9e194b7bf6ecf86ccb4c9a4504c2d17 database/migrations/2026_10_31_000004_catalog_extra.php
 bd753699bbd209d243e7e4b2b82c37d322444553 resources/views/panels/customers.blade.php
@@ -362,3 +362,5 @@ c6238486e568d4aade6bdda2ee4b6419f9f211b4 resources/views/redx_setup.blade.php
 bb12da07150987df46b4bb437f82e1a98ca4328d app/Support/Steadfast.php
 87f3d13a3f3ebe12704f7f9ab65d24dfa5253d8a app/Http/Controllers/SteadfastController.php
 55a46e5c2680c6fbedf6c8aa7752fa0f2623473b resources/views/steadfast_setup.blade.php
+f5f29eecf79936e6cda7775e3b9d5190e8d104e1 app/Http/Controllers/MigrationDashboardController.php
+49d3253cfd43b5614a6adcfde9a376585c5ba1d7 resources/views/migration_dashboard.blade.php

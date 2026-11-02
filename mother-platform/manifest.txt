@@ -362,3 +362,5 @@ public/couriers/carrybee.png
 app/Support/Steadfast.php
 app/Http/Controllers/SteadfastController.php
 resources/views/steadfast_setup.blade.php
+app/Http/Controllers/MigrationDashboardController.php
+resources/views/migration_dashboard.blade.php
