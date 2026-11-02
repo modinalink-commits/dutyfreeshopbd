@@ -358,6 +358,21 @@ class StoreController extends Controller {
     $r = redirect('/'); return $ok ? $r->withCookie(cookie('dfref', $c, 60 * 24 * 60, '/', null, null, false)) : $r;
   }
   public function notFound() {
+    $pp = request()->path();
+    if (preg_match('#^(?:public/)?storage/images/(?:products|product_thumbnail_img|product_gallery|gallery)/([^/]+)$#i', $pp, $m)) {
+      $fn = basename(urldecode($m[1]));
+      $to = Cache::remember('oldimg.'.md5($fn), 3600, function () use ($fn) {
+        $l = DB::table('legacy_products')->whereNotNull('new_product_id')
+          ->where(fn($q) => $q->where('thumbnail_img', 'like', '%'.$fn)->orWhereRaw('raw::text like ?', ['%'.str_replace('/', '\\/', $fn).'%'])->orWhereRaw('raw::text like ?', ['%'.$fn.'%']))
+          ->first(['new_product_id']);
+        if (!$l) return '';
+        $p = DB::table('products')->where('id', $l->new_product_id)->value('image');
+        if (!$p) $p = DB::table('product_images')->where('product_id', $l->new_product_id)->orderBy('position')->value('path');
+        return (string)$p;
+      });
+      if ($to) return redirect($to, 301);
+      return response('', 410);
+    }
     if ($rd = \App\Support\SeoMgr::redirect(request()->path())) return redirect($rd->to_url, (int)$rd->type);
     return response()->view('store.missing', $this->base(['title'=>'পেজ পাওয়া যায়নি | DutyFree Shop BD', 'desc'=>'', 'canon'=>url('/'), 'noindex'=>true]), 404);
   }
