@@ -119,6 +119,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/m-customers/import', [R::class,'customerImport']);
   Route::get('/courier-dashboard', [\App\Http\Controllers\CourierController::class,'dashboard']);
   Route::get('/courier-dashboard/export/{fmt}', [\App\Http\Controllers\CourierController::class,'export'])->where('fmt','csv|xls|doc|pdf');
+  Route::get('/courier/audit', [\App\Http\Controllers\CourierController::class,'audit']);
   Route::post('/courier/sync', [\App\Http\Controllers\CourierController::class,'sync']);
   Route::post('/courier/settle', [\App\Http\Controllers\CourierController::class,'settle']);
   Route::get('/ai-chat', [\App\Http\Controllers\AiChatController::class,'show']);
