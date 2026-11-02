@@ -52,6 +52,10 @@ class CourierSync {
     Cache::put('courier.last_sync', now()->toDateTimeString(), 86400);
     return $n;
   }
+  /** Courier shown on a new order straight away (the courier marked default, else settings default_courier, else Pathao). Booking the parcel is still a separate step. */
+  public static function defaultName(): string {
+    return Cache::remember('courier.default', 300, fn() => (string)(DB::table('couriers')->where('is_default', true)->where('active', true)->value('name') ?: DB::table('settings')->where('key', 'default_courier')->value('value') ?: 'Pathao'));
+  }
   /** Cheap automatic refresh: at most every 10 minutes, after the response is sent. */
   public static function auto(): void {
     if ((!Pathao::configured() && !Carrybee::configured() && !Redx::configured() && !Steadfast::configured()) || !Cache::add('courier.auto', 1, 600)) return;
