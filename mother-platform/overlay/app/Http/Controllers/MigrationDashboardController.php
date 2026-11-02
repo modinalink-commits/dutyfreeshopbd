@@ -40,7 +40,7 @@ class MigrationDashboardController extends Controller {
     if ($this->has('account_entries', 'reference')) { $a = DB::table('account_entries')->where('reference', 'like', 'OLD-%');
       $add('Accounts', 'Income and expense entries', 3648, (clone $a)->count());
       $add('Accounts', 'Net balance of imported entries', null, (float)(clone $a)->where('direction', 'income')->sum('amount') - (float)(clone $a)->where('direction', 'expense')->sum('amount'), true); }
-    $stat = $this->has('legacy_orders') ? DB::select("select coalesce(l.status,'—') s, count(*) n, coalesce(sum(l.total),0) t from legacy_orders l group by 1 order by 2 desc") : [];
+    $stat = $this->has('legacy_orders') ? DB::select("select coalesce(l.status::text,'—') s, count(*) n, coalesce(sum(l.total),0) t from legacy_orders l group by 1 order by 2 desc") : [];
     $live = DB::select("select status s, count(*) n, coalesce(sum(total),0) t from orders where legacy_order_id is not null group by 1 order by 2 desc");
     return view('migration_dashboard', ['rows' => $rows, 'stat' => $stat, 'live' => $live]);
   }
