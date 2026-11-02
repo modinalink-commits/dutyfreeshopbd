@@ -15,7 +15,7 @@
 .ocb .strip{display:flex;flex-wrap:wrap;gap:5px;flex:1 1 100%;min-width:0;overflow:visible}
 .ocb .chip{flex:none;height:26px;line-height:24px;padding:0 9px;border-radius:14px;font-size:12px}
 .ocb .q{margin-left:auto;display:flex;gap:6px;align-items:center;flex:none}.ocb .q input[name=q]{min-width:200px;height:30px;font-size:12px}
-.ocb .dl{font-size:12px}.ocb .dl a{margin:0 2px}
+.ocb #oexs .dfx-bar{margin:0;display:inline-flex}.ocb #oexs .dfx-btn{height:28px;padding:0 10px;font-size:12px;line-height:26px}.ocb .dl a{margin:0 2px}
 @media(max-width:800px){.ocb{top:0}.ocb .r2{flex-wrap:wrap}}
 </style>
 @php($oq = request()->only('q','per','from','to','ft','tt'))
@@ -26,7 +26,7 @@
 <span class="pre" id="opre"><button type="button" data-p="today">Today</button><button type="button" data-p="yest">Yesterday</button><button type="button" data-p="7">Last 7 Days</button><button type="button" data-p="15">Last 15 Days</button><button type="button" data-p="month">This Month</button><button type="button" data-p="custom">Custom</button><button type="button" data-p="all">All</button></span>
 <span style="display:inline-flex;gap:4px;align-items:center"><input type="date" name="from" value="{{ request('from') }}" title="From date"><input type="time" name="ft" value="{{ request('ft') }}" title="From time"><span class="dt">→</span><input type="date" name="to" value="{{ request('to') }}" title="To date"><input type="time" name="tt" value="{{ request('tt') }}" title="To time"></span>
 <span style="flex:1"></span>
-<span class="dl">Export: <a target="_blank" href="/admin/m/r-orders/export/pdf?{{ $oqs }}">PDF</a>·<a href="/admin/m/r-orders/export/xls?{{ $oqs }}">Excel</a>·<a href="/admin/m/r-orders/export/csv?{{ $oqs }}">CSV</a></span>
+<span id="oexs"></span>
 <a class="btn" href="/admin/orders/new" style="padding:6px 12px;font-size:13px">Create Order</a></div>
 <div class="r2"><div class="strip" id="ostrip"><a class="chip {{ request('status')?'':'on' }}" href="/admin/orders?{{ http_build_query($oq) }}">All <b>{{ $counts->sum() }}</b></a>
 @foreach(\App\Models\Mother::STAGES as $s)@if($s==='Incomplete')<a class="chip s-incomplete {{ $isInc ? 'on' : '' }}" href="/admin/orders?{{ http_build_query(['status'=>'Incomplete']) }}">Incomplete <b>{{ $incOpen }}</b></a>@continue @endif<a class="chip s-{{ \Illuminate\Support\Str::slug($s) }} {{ request('status')==$s?'on':'' }}" href="/admin/orders?{{ http_build_query(array_merge($oq,['status'=>$s])) }}">{{ $s }} <b>{{ $counts[$s] ?? 0 }}</b></a>@endforeach</div>
@@ -39,7 +39,7 @@ document.getElementById('opre').addEventListener('click',function(e){var p=e.tar
 if(p==='today')set(d(t),d(t));else if(p==='yest')set(d(y),d(y));else if(p==='7')set(d(new Date(t.getTime()-6*864e5)),d(t));else if(p==='15')set(d(new Date(t.getTime()-14*864e5)),d(t));else if(p==='month')set(d(new Date(t.getFullYear(),t.getMonth(),1)),d(t));else if(p==='all')set('','');else f.from.focus()});
 ['from','to','ft','tt'].forEach(function(n){f[n].addEventListener('change',function(){if((f.from.value||f.to.value)&&!f.ft.value)f.ft.value='00:00';if((f.from.value||f.to.value)&&!f.tt.value)f.tt.value='23:59';f.requestSubmit()})});
 
-var ob=document.getElementById('ocb');function hh(){document.documentElement.style.setProperty('--ocbh',ob.offsetHeight+'px')}hh();addEventListener('resize',hh);
+function mv(){var b=document.querySelector('.oc .dfx-bar'),x=document.getElementById('oexs');if(b&&x)x.appendChild(b)}mv();setInterval(mv,400);var ob=document.getElementById('ocb');function hh(){document.documentElement.style.setProperty('--ocbh',ob.offsetHeight+'px')}hh();addEventListener('resize',hh);
 function sel(){var n=document.querySelectorAll('#bulk input[name="ids[]"]:checked').length,e=document.getElementById('osel');if(e)e.textContent=n?n+' Selected':''}
 document.addEventListener('change',function(e){if(e.target.closest&&e.target.closest('#bulk'))sel()});
 function load(url,push){var o=document.getElementById('osel');fetch(url,{headers:{'X-Requested-With':'XMLHttpRequest',Accept:'text/html'},credentials:'same-origin'}).then(function(r){return r.text()}).then(function(h){var x=new DOMParser().parseFromString(h,'text/html'),n=x.getElementById('ostrip');if(!n||!x.querySelector('main table')){location.href=url;return}
