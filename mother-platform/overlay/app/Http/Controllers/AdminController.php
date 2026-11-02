@@ -153,7 +153,7 @@ class AdminController extends Controller {
     $cmLast = []; $phs = collect($orders->items())->pluck('phone')->filter()->unique()->all();
     if ($phs) foreach (DB::table('order_staff_comments as c')->join('orders as oo','oo.id','=','c.order_id')->whereIn('oo.phone',$phs)->orderByDesc('c.id')->select('c.body','oo.phone')->get() as $c) { if (!isset($cmLast[$c->phone])) $cmLast[$c->phone] = $c->body; }
     $incOpen = (int)DB::table('incomplete_orders')->where('status', 'open')->count();
-    return view('orders', compact('orders','counts','items','per','intel','incOpen','cmLast') + ['isInc'=>$isInc] + ($isInc ? \App\Http\Controllers\IncompleteController::data($r) : \App\Http\Controllers\IncompleteController::top($r)));
+    return view('orders', compact('orders','counts','items','per','intel','incOpen','cmLast') + ['isInc'=>$isInc] + ($isInc ? \App\Http\Controllers\IncompleteController::data($r) : \App\Http\Controllers\IncompleteController::mix($r, $orders, $range)));
   }
   public function orderBulk(Request $r) {
     $d = $r->validate(['ids'=>'required|array|max:500','ids.*'=>'integer','status'=>'required|in:'.implode(',',Mother::STAGES)]);

@@ -10,10 +10,24 @@ class IncompleteController extends Controller {
     $ids = []; foreach ($rows as $o) foreach (json_decode($o->items ?: '[]', true) ?: [] as $i) if (!empty($i['id'])) $ids[] = (int)$i['id'];
     return $ids ? DB::table('products')->whereIn('id', array_unique($ids))->pluck('image', 'id')->all() : [];
   }
-  public static function top(Request $r): array {
-    if ($r->filled('status') || $r->filled('from') || $r->filled('to') || $r->filled('q') || (int)$r->query('page', 1) > 1) return ['incTop'=>collect(), 'incTopImgs'=>[]];
-    $rows = DB::table('incomplete_orders')->where('status', 'open')->orderByDesc('last_activity_at')->limit(30)->get();
-    return ['incTop'=>$rows, 'incTopImgs'=>self::imgs($rows)];
+  /** Open incomplete checkouts merged into All Orders by creation time: returns [order id => rows to print before that order] plus 'tail' (older than the last order on the last page). */
+  public static function mix(Request $r, $orders, ?array $range): array {
+    $none = ['incBefore'=>[], 'incTail'=>collect(), 'incTopImgs'=>[]];
+    if ($r->filled('status') || $r->filled('print') || !\Illuminate\Support\Facades\Schema::hasTable('incomplete_orders')) return $none;
+    $items = collect($orders->items()); $first = $items->first(); $last = $items->last();
+    $q = DB::table('incomplete_orders')->where('status', 'open');
+    if ($r->filled('q')) { $qs = trim((string)$r->q); $qd = preg_replace('/\D/', '', $qs); $q->where(fn($w) => $w->where('phone', 'like', '%'.($qd !== '' ? $qd : $qs).'%')->orWhere('name', 'ilike', '%'.$qs.'%')); }
+    if ($range) { if ($range[0]) $q->where('created_at', '>=', $range[0]); if ($range[1]) $q->where('created_at', '<=', $range[1]); }
+    $pg = (int)$r->query('page', 1);
+    if ($pg > 1 && $first) $q->where('created_at', '<', $first->created_at);   // belongs to an earlier page
+    if ($orders->hasMorePages() && $last) $q->where('created_at', '>=', $last->created_at); // belongs to a later page
+    $rows = $q->orderByDesc('created_at')->orderByDesc('id')->limit(200)->get();
+    $before = []; $tail = collect();
+    foreach ($rows as $row) {
+      $target = $items->first(fn($o) => $o->created_at <= $row->created_at);
+      if ($target) $before[$target->id][] = $row; else $tail->push($row);
+    }
+    return ['incBefore'=>$before, 'incTail'=>$tail, 'incTopImgs'=>self::imgs($rows)];
   }
   public static function data(Request $r): array {
     $st = array_key_exists($r->query('inc'), self::TABS) ? $r->query('inc') : 'open'; $q = trim((string)$r->query('q', ''));
