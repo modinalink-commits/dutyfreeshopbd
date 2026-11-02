@@ -7,8 +7,8 @@ use Illuminate\Support\Facades\DB;
 class Winback
 {
   const DEF_STAGES = [[15, 3], [25, 3.5], [35, 4], [45, 4.5], [55, 5]];
-  const SMS = 'আমরা আপনাকে মিস করছি! আপনার পরবর্তী অর্ডারে বিশেষ {pct}% ডিসকাউন্ট উপভোগ করুন।{code}';
-  const SMS_FINAL = 'আপনার জন্য আমাদের বিশেষ Welcome Back Offer — পরবর্তী অর্ডারে {pct}% ডিসকাউন্ট। আবার আমাদের সাথে অর্ডার করুন।{code}';
+  const SMS = 'আমরা আপনাকে মিস করছি! আপনার পরবর্তী অর্ডারে বিশেষ {pct}% ডিসকাউন্ট উপভোগ করুন।{code} অর্ডার করুন: {link}';
+  const SMS_FINAL = 'আপনার জন্য আমাদের বিশেষ Welcome Back Offer — পরবর্তী অর্ডারে {pct}% ডিসকাউন্ট। আবার আমাদের সাথে অর্ডার করুন।{code} {link}';
 
   private static ?array $mem = null;
   public static function set(string $k, string $def = ''): string { if (self::$mem === null) self::$mem = DB::table('settings')->where('key', 'like', 'wb\\_%')->pluck('value', 'key')->all(); $v = self::$mem['wb_' . $k] ?? null; return $v === null ? $def : (string)$v; }
@@ -43,7 +43,8 @@ class Winback
     return $e;
   }
 
-  private static function render(string $t, array $v): string { return trim(strtr($t, $v)); }
+  const LINK = 'https://dutyfreebd.com';
+  private static function render(string $t, array $v): string { $v['{link}'] = self::LINK; $o = trim(strtr($t, $v)); if (stripos($o, 'dutyfreebd.com') === false) $o .= ' ' . self::LINK; return $o; }
 
   public static function tick(bool $force = false): void {
     if (!self::on()) return; $today = now('Asia/Dhaka')->toDateString();
