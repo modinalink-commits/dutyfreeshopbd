@@ -7,15 +7,15 @@
 .ocb{position:static!important;margin:0 0 8px!important}
 @media(max-width:800px){.oc{height:auto;min-height:0}.oc>form#bulk>.otw{max-height:70vh}}
 .ocb{position:sticky;top:8px;z-index:60;background:#fff;border:1px solid #EDF0F3;border-radius:12px;box-shadow:0 4px 14px rgba(0,0,0,.06);padding:10px 12px;margin:-8px 0 12px}
-.ocb form{margin:0}.ocb .r1,.ocb .r2{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.ocb .r2{margin-top:8px;flex-wrap:nowrap}
+.ocb form{margin:0}.ocb .r1,.ocb .r2{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.ocb .r2{margin-top:6px;flex-wrap:wrap}
 .ocb h1{margin:0;font-size:17px}.ocb .dt{font-size:12px;color:#6B7280}
 .ocb input[type=date],.ocb input[type=time],.ocb select{width:auto;height:30px;padding:2px 6px;font-size:12px}
 .ocb .pre{display:inline-flex;gap:4px;flex-wrap:wrap}.ocb .pre button,.ocb .rf{height:28px;padding:0 10px;font-size:12px;border-radius:14px;background:#F3F4F6;color:#0B1220;border:1px solid #E5E7EB;cursor:pointer}.ocb .pre button.on{background:#FF5A00;color:#fff;border-color:#FF5A00}
-.ocb .strip{display:flex;gap:6px;overflow-x:auto;white-space:nowrap;flex:1 1 auto;min-width:0;scrollbar-width:thin;padding-bottom:2px}.ocb .strip::-webkit-scrollbar{height:4px}.ocb .strip::-webkit-scrollbar-thumb{background:#D8DDE5;border-radius:4px}
-.ocb .chip{flex:none;height:28px;line-height:26px;padding:0 10px;border-radius:14px;font-size:12px}
-.ocb .q{display:flex;gap:6px;align-items:center;flex:none}.ocb .q input[name=q]{min-width:200px;height:30px;font-size:12px}
+.ocb .strip{display:flex;flex-wrap:wrap;gap:5px;flex:1 1 100%;min-width:0;overflow:visible}
+.ocb .chip{flex:none;height:26px;line-height:24px;padding:0 9px;border-radius:14px;font-size:12px}
+.ocb .q{margin-left:auto;display:flex;gap:6px;align-items:center;flex:none}.ocb .q input[name=q]{min-width:200px;height:30px;font-size:12px}
 .ocb .dl{font-size:12px}.ocb .dl a{margin:0 2px}
-@media(max-width:800px){.ocb{top:0}.ocb .r2{flex-wrap:wrap}.ocb .strip{flex-basis:100%}}
+@media(max-width:800px){.ocb{top:0}.ocb .r2{flex-wrap:wrap}}
 </style>
 @php($oq = request()->only('q','per','from','to','ft','tt'))
 @php($oqs = http_build_query(request()->only('status','q','from','to','ft','tt')))
@@ -31,7 +31,7 @@
 @foreach(\App\Models\Mother::STAGES as $s)@if($s==='Incomplete')<a class="chip s-incomplete {{ $isInc ? 'on' : '' }}" href="/admin/orders?{{ http_build_query(['status'=>'Incomplete']) }}">Incomplete <b>{{ $incOpen }}</b></a>@continue @endif<a class="chip s-{{ \Illuminate\Support\Str::slug($s) }} {{ request('status')==$s?'on':'' }}" href="/admin/orders?{{ http_build_query(array_merge($oq,['status'=>$s])) }}">{{ $s }} <b>{{ $counts[$s] ?? 0 }}</b></a>@endforeach</div>
 <span class="q"><input name="q" value="{{ request('q') }}" placeholder="name / phone / invoice" autocomplete="off"><select name="per" onchange="this.form.requestSubmit()">@foreach([25,50,100,200] as $pp)<option value="{{ $pp }}" {{ $per==$pp?'selected':'' }}>Show {{ $pp }}</option>@endforeach</select><button type="button" class="rf" onclick="location.reload()" title="Refresh">⟳</button></span></div>
 </form></div>
-@verbatim<script>(function(){var f=document.getElementById('ofx'),s=document.getElementById('ostrip'),on=s.querySelector('.on');if(on){s.scrollLeft=Math.max(0,on.offsetLeft-60)}
+@verbatim<script>(function(){var f=document.getElementById('ofx'),s=document.getElementById('ostrip'),on=s.querySelector('.on');
 var d=function(x){var m=x.getMonth()+1,dd=x.getDate();return x.getFullYear()+'-'+(m<10?'0':'')+m+'-'+(dd<10?'0':'')+dd};
 function set(a,b){f.from.value=a;f.to.value=b;f.ft.value=a?'00:00':'';f.tt.value=b?'23:59':'';f.requestSubmit()}
 document.getElementById('opre').addEventListener('click',function(e){var p=e.target.getAttribute&&e.target.getAttribute('data-p');if(!p)return;var t=new Date(),y=new Date(t.getTime()-864e5);
