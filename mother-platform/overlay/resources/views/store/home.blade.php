@@ -110,7 +110,7 @@ if(document.readyState==='complete')setTimeout(first,300);else addEventListener(
 @if($list->count())
 <div class="gr" data-cr data-fl="{{ $fk }}" @if($fk==='p') style="display:none" @endif>@foreach($list as $q)
 @php $off = \App\Http\Controllers\StoreController::off($q); $u = \App\Http\Controllers\StoreController::url($q); $w = $q->sold > 0 ? max(8, min(100, round($q->sold / max(1, $q->sold + max(0, (int)$q->stock)) * 100))) : max(8, min(90, 100 - (int)$q->stock)); @endphp
-<div class="pc"><span class="bo">{{ $off }}%<i> OFF</i></span><a class="ph" href="{{ $u }}" style="background:#fff"><img src="{{ $q->image ?: '/icon.png' }}" alt="{{ $q->name }}" width="150" height="150" loading="lazy" decoding="async" draggable="false"></a>
+<div class="pc"><span class="bo">{{ $off }}%<i> OFF</i></span><a class="ph" href="{{ $u }}" style="background:#fff"><img src="{{ $q->image ?: '/product-placeholder' }}" alt="{{ $q->name }}" width="150" height="150" loading="lazy" decoding="async" draggable="false"></a>
 <a class="nm" href="{{ $u }}">{{ $q->name }}</a><div class="pr"><b>{{ number_format($q->price) }} TK</b> <s>{{ number_format($q->compare_price) }} TK</s></div>
 <div style="padding:0 2px"><div class="bar"><i style="width:{{ $w }}%"></i></div><div class="sold">{{ $q->sold > 0 ? $q->sold.' sold' : ((int)$q->stock > 0 ? (int)$q->stock.' in stock' : 'Limited stock') }}</div></div>
 <a class="on" href="/checkout?add={{ $q->id }}&amp;p={{ (float)$q->price }}" rel="nofollow"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 2h4l2.7 12.4a2 2 0 0 0 2 1.6h8.7a2 2 0 0 0 2-1.6L22 7H6"/><circle cx="10" cy="20.5" r="1.4" fill="#fff"/><circle cx="18" cy="20.5" r="1.4" fill="#fff"/></svg><i>ORDER NOW</i></a></div>
@@ -126,7 +126,7 @@ if(document.readyState==='complete')setTimeout(first,300);else addEventListener(
 @endif
 
 @if($s['home_todays_deal']==='1' && $deals->count() && $dOn)
-<div class="w sec-st" id="deal" data-end="{{ $dFix ? $dEnd * 1000 : '' }}" style="padding-top:34px"><div class="st"><h2>Today's Deal</h2><div class="dl" data-cr="1">@foreach($deals as $dd)@php $du = \App\Http\Controllers\StoreController::url($dd); @endphp<div class="td"><a class="im" href="{{ $du }}"><img src="{{ $dd->image ?: '/icon.png' }}" alt="{{ $dd->name }}" width="240" height="240" loading="lazy" draggable="false"></a>
+<div class="w sec-st" id="deal" data-end="{{ $dFix ? $dEnd * 1000 : '' }}" style="padding-top:34px"><div class="st"><h2>Today's Deal</h2><div class="dl" data-cr="1">@foreach($deals as $dd)@php $du = \App\Http\Controllers\StoreController::url($dd); @endphp<div class="td"><a class="im" href="{{ $du }}"><img src="{{ $dd->image ?: '/product-placeholder' }}" alt="{{ $dd->name }}" width="240" height="240" loading="lazy" draggable="false"></a>
 <div class="tx"><span class="k">DEAL ENDS IN <span data-cd="all">{{ $fmt($dEnd) }}</span></span><h3><a href="{{ $du }}">{{ $dd->name }}</a></h3><div class="pp">{{ number_format($dd->price) }} TK <s>{{ number_format($dd->compare_price) }} TK</s><em>{{ \App\Http\Controllers\StoreController::off($dd) }}% OFF</em></div><span style="font-size:12px;color:var(--mut)">Sold by DutyFree Shop BD · Cash on delivery</span><a class="bt" href="/checkout?add={{ $dd->id }}&amp;p={{ (float)$dd->price }}" rel="nofollow">ORDER NOW</a></div></div>@endforeach</div></div></div>
 @endif
 

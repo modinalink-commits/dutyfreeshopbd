@@ -33,6 +33,7 @@ class MotherImages extends Command {
 
   /** Server-side product image repair (no browser): a few products per run until nothing repairable is left. */
   private function autoRepair(float $t0): void {
+    try { $g = \App\Support\ImageAudit::fillFromGallery(); if ($g) { $this->line("image repair: $g products got their gallery image as main image"); foreach (['store.home2','store.home4','store.home5','store.home6','store.cats','store.live2','store.live3','store.live4'] as $k) \Illuminate\Support\Facades\Cache::forget($k); } } catch (\Throwable $e) {}
     $st = (string)DB::table('settings')->where('key', 'img_auto_repair')->value('value');
     if ($st === 'done' || $st === 'off' || microtime(true) - $t0 > 40) return;
     $failed = json_decode((string)DB::table('settings')->where('key', 'img_repair_failed')->value('value'), true) ?: [];

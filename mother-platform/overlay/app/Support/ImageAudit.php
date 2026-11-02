@@ -29,6 +29,21 @@ class ImageAudit {
     return ['state' => $th || $i[2] === IMAGETYPE_GIF ? 'ok' : 'thumb_missing', 'abs' => $abs, 'thumbs' => $th];
   }
 
+  /** Products whose main image is empty but whose gallery holds a usable image: promote it (old value logged, nothing else touched). */
+  public static function fillFromGallery(): int {
+    $n = 0;
+    $rows = DB::table('products')->where(fn($q) => $q->whereNull('image')->orWhere('image', ''))->pluck('id');
+    foreach ($rows as $id) {
+      foreach (DB::table('product_images')->where('product_id', $id)->orderBy('id')->pluck('path') as $path) {
+        if (!$path) continue; $c = self::check($path); if (!in_array($c['state'], ['ok', 'thumb_missing'], true)) continue;
+        DB::table('products')->where('id', $id)->update(['image' => $path, 'updated_at' => now()]);
+        try { DB::table('image_audit_log')->insert(['kind' => 'repair', 'table_name' => 'products', 'row_id' => $id, 'col' => 'image', 'old_value' => '', 'state' => 'none', 'attempt' => 'gallery', 'result' => 'fixed', 'created_at' => now(), 'updated_at' => now()]); } catch (\Throwable $e) {}
+        $n++; break;
+      }
+    }
+    return $n;
+  }
+
   /** One row per product with its worst image state (main image + gallery). */
   public static function scan(): array {
     $prods = DB::table('products')->select('id', 'name', 'sku', 'image', 'published')->orderBy('id')->get();
