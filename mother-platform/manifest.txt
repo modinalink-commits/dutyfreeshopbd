@@ -395,3 +395,9 @@ database/migrations/2026_11_02_000020_manual_payment_module.php
 app/Http/Controllers/ManualPaymentController.php
 resources/views/manual_payments.blade.php
 database/migrations/2026_11_02_000021_domain_dutyfreebd_com.php
+database/migrations/2026_11_02_000022_image_audit_log.php
+app/Support/ImageAudit.php
+app/Console/Commands/ProductsScanImages.php
+app/Http/Controllers/ImageAuditController.php
+resources/views/image_audit.blade.php
+public/images/product-placeholder.svg

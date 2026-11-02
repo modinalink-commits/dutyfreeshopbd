@@ -145,6 +145,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/ai-images/{id}/main', [\App\Http\Controllers\AiImageController::class,'setMain']);
   Route::post('/ai-images/{id}/delete', [\App\Http\Controllers\AiImageController::class,'destroy']);
   Route::get('/ai-images/{id}/download', [\App\Http\Controllers\AiImageController::class,'download']);
+  Route::get('/image-audit', [\App\Http\Controllers\ImageAuditController::class,'index']); Route::post('/image-audit/scan', [\App\Http\Controllers\ImageAuditController::class,'scan']); Route::post('/image-audit/repair', [\App\Http\Controllers\ImageAuditController::class,'repair']);
   Route::get('/media', [\App\Http\Controllers\MediaController::class,'index']);
   Route::post('/media/optimize', [\App\Http\Controllers\MediaController::class,'batch']);
   Route::post('/media/settings', [\App\Http\Controllers\MediaController::class,'settings']);
