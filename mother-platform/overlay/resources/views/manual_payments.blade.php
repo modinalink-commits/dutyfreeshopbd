@@ -2,7 +2,7 @@
 @section('body')
 <style>
 .mpk{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:10px}.mpk div{background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:8px 10px}.mpk small{display:block;color:#6B7280;font-size:11px}.mpk b{font-size:18px}.mpk .w b{color:#D97706}
-.mpf{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px}.mpf input,.mpf select{padding:6px 8px;border:1px solid #D1D5DB;border-radius:8px;font-size:13px}
+.mpf{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px}.mpf input,.mpf select{width:auto!important;margin:0!important;padding:6px 8px;border:1px solid #D1D5DB;border-radius:8px;font-size:13px}
 table.mpt{width:100%;border-collapse:collapse;font-size:13px;background:#fff}.mpt th,.mpt td{padding:7px 8px;border-bottom:1px solid #F1F5F9;text-align:left;vertical-align:middle}.mpt th{background:#F8FAFC;font-size:12px;color:#475569;white-space:nowrap}.mpt tr:hover td{background:#FFFBEB}
 .tg{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;white-space:nowrap}.tg.p{background:#FEF3C7;color:#92400E}.tg.v{background:#DCFCE7;color:#166534}.tg.r{background:#FEE2E2;color:#991B1B}.tg.d{background:#FFE4E6;color:#BE123C}.tg.m{background:#EDE9FE;color:#5B21B6}.tg.c{background:#E5E7EB;color:#374151}
 #mpd{border:0;border-radius:14px;padding:16px;max-width:520px;width:94%;box-shadow:0 20px 60px rgba(0,0,0,.3)}#mpd::backdrop{background:rgba(15,23,42,.5)}#mpd dl{display:grid;grid-template-columns:130px 1fr;gap:4px 10px;margin:8px 0;font-size:13px}#mpd dt{color:#6B7280}#mpd dd{margin:0;word-break:break-word}
@@ -16,7 +16,7 @@ table.mpt{width:100%;border-collapse:collapse;font-size:13px;background:#fff}.mp
 <div><small>Pending Bank</small><b>{{ (int)$k->bn }}</b></div><div><small>Pending bKash</small><b>{{ (int)$k->bk }}</b></div><div><small>Pending Nagad</small><b>{{ (int)$k->ng }}</b></div><div class="w"><small>Total Pending Amount</small><b>৳{{ number_format((float)$k->pamt) }}</b></div>
 </div>
 <form class="mpf" id="mpf" method="get" action="/admin/manual-payments">
-<input type="search" name="q" value="{{ request('q') }}" placeholder="Search name, mobile, invoice, TrxID…" style="min-width:230px" autocomplete="off">
+<input type="search" name="q" value="{{ request('q') }}" placeholder="Search name, mobile, invoice, TrxID…" style="min-width:260px;width:260px!important" autocomplete="off">
 <select name="range"><option value="">All dates</option><option value="today" @selected(request('range')==='today')>Today</option><option value="yesterday" @selected(request('range')==='yesterday')>Yesterday</option></select>
 <input type="date" name="from" value="{{ request('from') }}" title="From"><input type="date" name="to" value="{{ request('to') }}" title="To">
 <select name="method"><option value="">All methods</option><option value="bank" @selected(request('method')==='bank')>Bank Transfer</option><option value="bkash" @selected(request('method')==='bkash')>bKash</option><option value="nagad" @selected(request('method')==='nagad')>Nagad</option></select>
