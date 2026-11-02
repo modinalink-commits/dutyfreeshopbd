@@ -43,14 +43,15 @@ class Winback
 
   public static function tick(bool $force = false): void {
     if (!self::on()) return; $today = now('Asia/Dhaka')->toDateString();
-    if (!$force && (self::set('last_run') === $today || (int)now('Asia/Dhaka')->format('H') < 10)) return;
+    if (!$force) { $h = (int)now('Asia/Dhaka')->format('H'); if (self::set('last_run') === $today || $h < (int)self::set('win_from', '14') || $h >= (int)self::set('win_to', '17')) return; } // offers go out only 2 PM to 5 PM Dhaka time
     $st = self::stages(); if (!$st) return; $sent = 0; $exp = max(1, (int)self::set('expiry', '30')); $mode = self::set('mode', 'auto') === 'coupon' ? 'coupon' : 'auto'; $lastStage = end($st)[0];
     $ch = array_filter(['sms' => self::set('sms', '1') === '1', 'push' => self::set('push', '1') === '1', 'notif' => self::set('notif', '1') === '1']);
-    foreach (self::lastDelivered() as $p => $x) {
+    $queue = self::lastDelivered(); uasort($queue, fn($a, $b) => strcmp($a['at'], $b['at'])); // serial order: whoever became eligible first is messaged first
+    foreach ($queue as $p => $x) {
       $d = self::days($x['at']); $s = self::stageFor($d); if (!$s) continue;
       if (DB::table('winback_events')->where('phone', $p)->where('cycle_order_id', $x['oid'])->where('stage_days', '>=', $s[0])->exists()) continue; // each stage once per cycle
       $c = DB::table('customers')->whereRaw('right(phone,11) = ?', [$p])->where('blocked', false)->first(); if (!$c) continue;
-      if ($sent >= 250) return;
+      if ($sent >= 40) return; // small batch per tick: the rest continue on the next tick inside the window
       $code = null;
       if ($mode === 'coupon') {
         $code = 'WB-' . strtoupper(substr(md5($p . $x['oid'] . $s[0] . microtime()), 0, 6));
