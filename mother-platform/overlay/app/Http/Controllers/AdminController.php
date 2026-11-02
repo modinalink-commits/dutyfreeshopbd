@@ -166,6 +166,7 @@ class AdminController extends Controller {
         $n++;
       }
     });
+    if ($r->expectsJson()) return response()->json(['success'=>true,'moved'=>$n,'status'=>$d['status']]);
     return back()->with('ok', "$n orders moved to {$d['status']}");
   }
   public function orderNew(Request $r) {
