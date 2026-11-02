@@ -153,4 +153,30 @@ class LegacyImportController extends Controller
     }
     return response()->json(['ok'=>true, 'moved'=>$moved, 'removed'=>$removed, 'suppliers'=>DB::table('suppliers')->count()]);
   }
+  /** Token webhook: old supplier payment history. d = {reset:1?, pays:[{id,sid,pid,amt,date,acct,note,at}]}. The old purchase "paid" column is not additive, so the placeholder payments made from it are removed on reset. */
+  public function payments(Request $r) {
+    if (!$this->ok($r)) abort(404);
+    $d = json_decode((string)$r->input('d'), true);
+    if (!is_array($d)) return response()->json(['ok'=>false], 422);
+    $removed = 0;
+    if (!empty($d['reset'])) {
+      $ids = DB::table('supplier_payments')->where('note', 'Imported from old site')->pluck('id')->all();
+      foreach (array_chunk($ids, 500) as $c) { DB::table('payment_allocations')->whereIn('payment_id', $c)->delete(); $removed += DB::table('supplier_payments')->whereIn('id', $c)->delete(); }
+      DB::table('purchases')->whereNotNull('legacy_purchase_id')->update(['paid'=>0, 'pay_type'=>'Credit']);
+    }
+    $in = 0; $skip = 0; $nosup = 0;
+    foreach (($d['pays'] ?? []) as $x) {
+      $lid = (int)($x['id'] ?? 0); if (!$lid) continue;
+      if (DB::table('supplier_payments')->where('legacy_payment_id', $lid)->exists()) { $skip++; continue; }
+      $sid = DB::table('suppliers')->where('legacy_supplier_id', (int)($x['sid'] ?? 0))->value('id');
+      if (!$sid) { $nosup++; continue; }
+      $pid = !empty($x['pid']) ? DB::table('purchases')->where('legacy_purchase_id', (int)$x['pid'])->value('id') : null;
+      $amt = (float)($x['amt'] ?? 0); $date = $x['date'] ?? now()->toDateString();
+      $py = DB::table('supplier_payments')->insertGetId(['supplier_id'=>$sid, 'purchase_id'=>$pid, 'pay_date'=>$date, 'amount'=>$amt, 'method'=>'Other', 'account'=>mb_substr((string)($x['acct'] ?? ''),0,160) ?: null, 'note'=>($x['note'] ?? null) ?: null, 'status'=>'paid', 'legacy_payment_id'=>$lid, 'created_at'=>($x['at'] ?? $date), 'updated_at'=>now()]);
+      DB::table('supplier_payments')->where('id', $py)->update(['code'=>'PAY-'.str_pad($py,6,'0',STR_PAD_LEFT)]);
+      if ($pid) { DB::table('payment_allocations')->insert(['payment_id'=>$py, 'purchase_id'=>$pid, 'amount'=>$amt, 'created_at'=>now(), 'updated_at'=>now()]); DB::table('purchases')->where('id', $pid)->update(['paid'=>DB::raw('paid + '.$amt)]); }
+      $in++;
+    }
+    return response()->json(['ok'=>true, 'removed'=>$removed, 'in'=>$in, 'skip'=>$skip, 'nosup'=>$nosup, 'sum'=>(float)DB::table('supplier_payments')->sum('amount'), 'tot'=>DB::table('supplier_payments')->count()]);
+  }
 }
