@@ -309,14 +309,14 @@ class StoreController extends Controller {
     Cache::forget('store.live3'); Cache::forget('store.live4');
     try { \App\Support\Referral::onOrder((int)$id, $phone, $qt); \App\Support\Winback::onOrder($phone, (int)$id, $qt); \App\Support\Voice::onOrder($phone, (int)$id, $qt['applied'] ?? []); } catch (\Throwable $e) {}
     $inv = DB::table('orders')->where('id',$id)->value('invoice');
-    if ($pk !== 'shurjopay') \App\Support\OrderSms::placed((int)$id);
+    if ($pk !== 'shurjopay') { \App\Support\OrderSms::placed((int)$id); try { \App\Support\Capi::purchase((int)$id, $r); } catch (\Throwable $e) {} }
     try { DB::table('incomplete_orders')->where('status', 'open')->where(fn($q) => $q->where('token', (string)$r->input('inc'))->orWhere('phone', $phone))->update(['status'=>'converted', 'order_id'=>$id, 'updated_at'=>now()]); } catch (\Throwable $e) {}
     if ($pk === 'shurjopay') return redirect(\Illuminate\Support\Facades\URL::temporarySignedRoute('pay.shurjopay.start', now()->addHours(2), ['invoice'=>$inv]));
     return redirect(\Illuminate\Support\Facades\URL::temporarySignedRoute('order.done', now()->addDays(3), ['invoice'=>$inv]));
   }
   private function pack(string $invoice): array {
     $o = DB::table('orders')->where('invoice',$invoice)->first(); abort_unless($o, 404);
-    $items = DB::table('order_items as i')->leftJoin('products as p','p.id','=','i.product_id')->where('i.order_id',$o->id)->get(['i.name','i.qty','i.price','p.image']);
+    $items = DB::table('order_items as i')->leftJoin('products as p','p.id','=','i.product_id')->where('i.order_id',$o->id)->get(['i.product_id','i.name','i.qty','i.price','p.image']);
     $pay = $o->pay_status ? ($o->pay_status==='Verification Pending' ? 'Payment Verification Pending' : ($o->pay_status==='Verified' ? 'Paid (verified)' : ($o->pay_status==='Awaiting Payment' ? 'Online payment not completed' : 'Payment '.$o->pay_status))) : 'Cash on delivery. Pay when you receive';
     return ['o'=>$o,'items'=>$items,'sub'=>$items->sum(fn($i)=>$i->price*$i->qty),'payText'=>$pay];
   }
@@ -333,7 +333,7 @@ class StoreController extends Controller {
       $o = DB::table('orders')->where('invoice', $inv)->first(['id','invoice','status','shipping','discount','total','created_at','payment_method','pay_status','pay_txn']);
       if ($o) $logs = DB::table('order_status_logs')->where('order_id',$o->id)->orderBy('id')->get(['to_status','created_at']);
     }
-    return response()->view('store.track', $this->base(['o'=>$o, 'logs'=>$logs, 'items'=>$o ? DB::table('order_items')->where('order_id',$o->id)->get(['name','qty','price']) : collect(), 'title'=>'Order Tracking | DutyFree Shop BD', 'desc'=>'', 'canon'=>url('/track'), 'noindex'=>true]))->header('Cache-Control','no-store');
+    return response()->view('store.track', $this->base(['o'=>$o, 'logs'=>$logs, 'items'=>$o ? DB::table('order_items')->where('order_id',$o->id)->get(['product_id','name','qty','price']) : collect(), 'title'=>'Order Tracking | DutyFree Shop BD', 'desc'=>'', 'canon'=>url('/track'), 'noindex'=>true]))->header('Cache-Control','no-store');
   }
   private function page($page) {
     $S = \App\Support\SeoMgr::class; $img = fn($u) => $u ? (str_starts_with($u,'http') ? $u : url($u)) : null;

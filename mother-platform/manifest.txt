@@ -426,3 +426,7 @@ database/migrations/2026_11_02_000035_winback_stages_fixed_codes.php
 database/migrations/2026_11_02_000036_winback_turn_on.php
 database/migrations/2026_11_02_000037_winback_pct_3_to_5.php
 resources/views/winback_report.blade.php
+resources/views/store/pixel_purchase.blade.php
+app/Support/Capi.php
+app/Http/Controllers/PixelController.php
+resources/views/pixel_admin.blade.php

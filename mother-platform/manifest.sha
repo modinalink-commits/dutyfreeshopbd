@@ -1,5 +1,5 @@
 fe43f8b6cb422cca81ee18b74d3972f77e7852de database/migrations/2026_10_31_000001_mother_core.php
-de675138d7c40b5b984e1a4dca4673f4c75a11ea routes/web.php
+c3c374688d7f9fe74e39e7beeb4822cf82a5d91a routes/web.php
 b9cf8555d6fb5e676f63a548f5a964a0f36be94f app/Models/Mother.php
 9ba3db447e8439e621a76711fe2a9a110df4dff6 app/Http/Controllers/AdminController.php
 bd49f23ea0895af93bed5374937115c21911b0cd app/Console/Commands/MotherInstall.php
@@ -48,14 +48,14 @@ d787924ace3fa42cc66a3de321e4e94e784006d8 resources/views/panels/employees.blade.
 16d44d41f6b845877a906678b144cbc1233a96f5 resources/views/report_details.blade.php
 2f840d53881d8aeaf0c5959161774787e5f540bc database/migrations/2026_10_31_000005_storefront.php
 2d4fe4438a505d89a186bd63a5ee8d50bec17844 app/Console/Commands/MotherSyncFeed.php
-0fd604548a048f895f4a75d541d082292dc49521 app/Http/Controllers/StoreController.php
-f766cafdd88e4d6435a9f392737edac8363357c2 resources/views/store/layout.blade.php
+49294405206d899b45cbd8e4cd77de75d2fd466a app/Http/Controllers/StoreController.php
+6fa437a3bdbac6a4d4a0ec1e40351c2ed290a454 resources/views/store/layout.blade.php
 55af1b65f87c4b4816080ce2885760d24ff102b9 resources/views/store/card.blade.php
 bc41e6d92d114caf568da031fd4a36610ba083aa resources/views/store/home.blade.php
 6aa949a4e1ea5de5298971728076fad706a3c256 resources/views/store/category.blade.php
 3b16c7642d49d1c84a3a852fda7a5fc1df9dbfb1 resources/views/store/product.blade.php
 7ad9d9502d41f54d6784414a9aa3f16a8ab0ec13 resources/views/store/search.blade.php
-057390142f77401e1fadc0d325a2d3ac854c9cb9 resources/views/store/track.blade.php
+de47714c47d3108a03673c1e422d00ebcf0e3500 resources/views/store/track.blade.php
 1aa52e9a1cc85e3723d11055b65e301c5f2dc0c1 resources/views/store/page.blade.php
 06722f66390bb7e2d70f564ee2dd0dededd9a2b7 resources/views/store/missing.blade.php
 36dcfd4fbc1aaf1fb61010041810296c8f82fb46 resources/views/store/checkout.blade.php
@@ -106,7 +106,7 @@ d12347a9cf32eb078cee4c7af3033c741868e269 public/pay/ebl.png
 7da9749c724f15b03dcd131fae2e9544804eba31 public/pay/bkash.png
 a757009ad517bc95d5b0e08c9f87c8ff919a3fd5 public/pay/nagad.png
 ecc70f7878a0ce3042937d3a4348318bf0e2a2c2 app/Console/Commands/MotherCourierSync.php
-9ad4a8b2205d0043b0a0e643fcbca7f2926bea8e resources/views/store/success.blade.php
+986543668f2f261367cfd2308fa7967e95e43651 resources/views/store/success.blade.php
 75c1369fdd068ee10c46a688ac144d9ad9423716 resources/views/store/invoice.blade.php
 0c71b384238d9f8ede008e4cc8b041f1c37a9911 app/Http/Controllers/CheckoutLookupController.php
 50e15b23a7beecec3d9719b570baee5f2e73b8b3 app/Support/CustomerIntel.php
@@ -426,3 +426,7 @@ d067f76d542f95204122bb970f4bfbf3cb390e03 app/Support/Biz.php
 b05b063714fb42c7a8aec31345d6403d54262bd0 database/migrations/2026_11_02_000036_winback_turn_on.php
 d1fbee6bc332cf27a800bf6d53672d28d055ad09 database/migrations/2026_11_02_000037_winback_pct_3_to_5.php
 bafaf9fa236e097407fc5d82abc67029711d07bd resources/views/winback_report.blade.php
+2900824f0ca575e5381b97db73f39fc5785e8318 resources/views/store/pixel_purchase.blade.php
+8b308f6faaa2386613a1732e1dbac5dec3e51002 app/Support/Capi.php
+0a68a32b8463bfa9bf365ebd69b536a028e9b0be app/Http/Controllers/PixelController.php
+76c7b1742b33e49b25fbf284cf83483ce4af3e23 resources/views/pixel_admin.blade.php
