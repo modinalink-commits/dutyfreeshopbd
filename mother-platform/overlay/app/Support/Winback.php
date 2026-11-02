@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 /** Inactive-customer win-back: counts days since the last Delivered order, sends the matching stage once per cycle, and applies the discount at checkout. */
 class Winback
 {
-  const DEF_STAGES = [[15, 1], [30, 2], [35, 3], [45, 4], [55, 5]];
+  const DEF_STAGES = [[15, 1], [25, 2], [35, 3], [45, 4], [55, 5]];
   const SMS = 'আমরা আপনাকে মিস করছি! আপনার পরবর্তী অর্ডারে বিশেষ {pct}% ডিসকাউন্ট উপভোগ করুন।{code}';
   const SMS_FINAL = 'আপনার জন্য আমাদের বিশেষ Welcome Back Offer — পরবর্তী অর্ডারে {pct}% ডিসকাউন্ট। আবার আমাদের সাথে অর্ডার করুন।{code}';
 
