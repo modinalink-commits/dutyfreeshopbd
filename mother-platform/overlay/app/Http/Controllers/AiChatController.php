@@ -22,7 +22,7 @@ class AiChatController extends Controller {
     return back()->with($ok ? 'ok' : 'bad', $ok ? 'Claude replied: '.$m : 'Claude API error: '.$m);
   }
   public function ask(Request $r) {
-    if (!AiChat::on()) return response()->json(['reply'=>'Chat is not available right now.'], 503);
+    if (!AiChat::on()) return response()->json(['reply'=>'দুঃখিত, এই মুহূর্তে চ্যাট চালু নেই। অনুগ্রহ করে কল করুন: 09613828081'], 503);
     $k = 'ai.n.'.now()->format('Ymd'); Cache::add($k, 0, 90000);
     if (Cache::increment($k) > 1500) return response()->json(['reply'=>'আজকের চ্যাট সীমা শেষ। অনুগ্রহ করে কল করুন: 09613828081']);
     $h = $r->input('messages'); if (!is_array($h)) return response()->json(['reply'=>''], 422);

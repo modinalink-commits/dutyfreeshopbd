@@ -44,14 +44,14 @@
 <script>window.DFC={wa:@json($wa ?? ''),bn:@json($__bn)};</script>
 <div class="dfc-p" id="dfcp" role="status"><button class="x" type="button" id="dfcpx" aria-label="Dismiss">×</button><b>আসসালামু আলাইকুম 👋</b><span>আমি আপনার জন্য প্রস্তুত আছি। কীভাবে সাহায্য করতে পারি?</span><span style="margin-top:5px;font-size:12px">অর্ডার, প্রোডাক্ট, ডেলিভারি বা পেমেন্ট বিষয়ে জানতে মেসেজ দিন।</span></div>
 <div class="dfc-w" id="dfcw" role="dialog" aria-label="DutyFreeBD Support chat" aria-hidden="true">
-<div class="dfc-h"><div class="dfc-av">DF<i></i></div><div style="flex:1;min-width:0"><b>DutyFreeBD Support</b><small><span class="g">🟢</span> Online এখনই</small></div><button type="button" id="dfcmin" aria-label="Minimize" title="Minimize">–</button><button type="button" id="dfcclose" aria-label="Close" title="Close">×</button></div>
+<div class="dfc-h"><div class="dfc-av">DF<i></i></div><div style="flex:1;min-width:0"><b>DutyFreeBD সহায়তা</b><small><span class="g">🟢</span> Online এখনই</small></div><button type="button" id="dfcmin" aria-label="Minimize" title="Minimize">–</button><button type="button" id="dfcclose" aria-label="Close" title="Close">×</button></div>
 <div class="dfc-m" id="dfcm" aria-live="polite"></div>
 <div class="dfc-o" id="dfco"></div>
 <div class="dfc-qb" id="dfcqb"></div>
 <form class="dfc-f" id="dfcf" autocomplete="off"><div class="dfc-em" id="dfcem"></div><button type="button" class="ic" id="dfcemb" aria-label="Emoji">😊</button><button type="button" class="ic" id="dfcat" aria-label="Attach image">📎</button><input type="file" id="dfcfi" accept="image/jpeg,image/png,image/webp,image/gif" hidden>
 <textarea id="dfcq" rows="1" maxlength="1000" placeholder="এখানে আপনার মেসেজ লিখুন..." aria-label="Message"></textarea><button class="sd" id="dfcsd" type="submit" aria-label="Send"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg></button></form>
 <div class="dfc-pw">DutyFreeBD · আমরা সাধারণত কয়েক মিনিটের মধ্যে উত্তর দিই</div></div>
-<div class="dfc-l" id="dfcl"><span class="dfc-lab">Need Help? Chat with us</span><button type="button" class="dfc-b" id="dfcb" aria-label="Open live chat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.5 8.5 0 0 1-12.2 7.6L3 21l1.5-5.4A8.5 8.5 0 1 1 21 12z"/><path d="M8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01" stroke-width="2.6"/></svg><span class="dfc-n" id="dfcn"></span></button></div>
+<div class="dfc-l" id="dfcl"><span class="dfc-lab">সাহায্য লাগবে? আমাদের সাথে চ্যাট করুন</span><button type="button" class="dfc-b" id="dfcb" aria-label="Open live chat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.5 8.5 0 0 1-12.2 7.6L3 21l1.5-5.4A8.5 8.5 0 1 1 21 12z"/><path d="M8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01" stroke-width="2.6"/></svg><span class="dfc-n" id="dfcn"></span></button></div>
 @verbatim
 <script>(function(){
 var D=window.DFC||{},K='dfchat',$=function(i){return document.getElementById(i)};
