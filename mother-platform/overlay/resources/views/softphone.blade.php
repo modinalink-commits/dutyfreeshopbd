@@ -106,7 +106,11 @@ var ua=null,cfg=null,ses=null,logId=null,connAt=0,tick=null,dir='out',phase='idl
 var ch=window.BroadcastChannel?new BroadcastChannel('dfphone'):null,pend=null;
 /* ---------- availability (Available / Busy) ---------- */
 var agBusy=($('stSel')||{}).value==='busy';
-function stApply(v,tell){agBusy=v==='busy';var e=$('stSel');if(e){e.value=v;e.className='stsel st-'+v}if(emb&&tell!==false)parent.postMessage({dfdial:'status',v:v},location.origin)}
+var tmpReg=false,pendCall=null;
+function busyUnreg(){if(ua&&agBusy&&!inCall()&&!tmpReg&&!pend){try{ua.unregister({all:true})}catch(e){}}}
+function stApply(v,tell){var was=agBusy;agBusy=v==='busy';var e=$('stSel');if(e){e.value=v;e.className='stsel st-'+v}if(emb&&tell!==false)parent.postMessage({dfdial:'status',v:v},location.origin);if(tell!==false&&ch)try{ch.postMessage({type:'status',v:v})}catch(x){}
+ if(ua&&agBusy!==was){if(agBusy)busyUnreg();else{try{ua.register()}catch(x){}}}if(agBusy)badge('Busy · not receiving calls','b-bad');else if(was&&ua&&reg())badge('Connected','b-ok')}
+setInterval(function(){getj('/admin/call-center/my-status').then(function(j){if(j&&j.status&&(j.status==='busy')!==agBusy)stApply(j.status,false)}).catch(function(){})},20000);
 if($('stSel')){$('stSel').onchange=function(){var v=this.value;stApply(v);post('/admin/call-center/my-status',{status:v}).then(function(j){if(!j||!j.ok)stApply(agBusy?'available':'busy')}).catch(function(){})};stApply(agBusy?'busy':'available')}
 (function(){var b=$('bdg'),f=$('dfc');if(!b||!f||!window.MutationObserver)return;var u=function(){var t=b.textContent.trim();f.textContent='● '+t;f.className=/connected|registered|ready/i.test(t)&&!/dis/i.test(t)?'ok':'no'};new MutationObserver(u).observe(b,{childList:true,characterData:true,subtree:true});u()})();
 
@@ -128,8 +132,8 @@ function err(t){$('msg').textContent=t||'';$('msg2').textContent=t||''}
 var LBL={idle:'Ready',connecting:'Connecting...',ringing:'Ringing...',connected:'Connected',ended:'Call Ended',failed:'Failed'};
 function setPhase(p,label){phase=p;var t=label||LBL[p];$('cst').textContent=t;var a=$('aS');a.textContent=t.replace('...','');a.className='as '+(p==='connected'?'ok':(p==='failed'?'bad':(p==='connecting'||p==='ringing'?'wt':'')));ui()}
 function ui(){var r=reg(),ic=inCall(),cn=connected();
- $('disc').classList.toggle('on',!r&&!ic);
- var g=$('bGo');if(ic){g.textContent=phase==='connected'?'✔ Connected':LBL[phase];g.disabled=true;g.className='go call busyb'}else{g.textContent='📞 Call';g.disabled=!r;g.className='go call'}
+ $('disc').classList.toggle('on',!r&&!ic&&!agBusy);
+ var g=$('bGo');if(ic){g.textContent=phase==='connected'?'✔ Connected':LBL[phase];g.disabled=true;g.className='go call busyb'}else{g.textContent='📞 Call';g.disabled=!r&&!(agBusy&&!!ua);g.className='go call'}
  $('bHang1').disabled=!ic;$('bMuteQ').disabled=!cn;$('bHang2').disabled=!ic;
  ['bMute','bHold','bKp','bTr'].forEach(function(i){$(i).disabled=!cn});
  $('tAct').classList.toggle('live',ic);
@@ -160,8 +164,8 @@ function look(n){return getj('/admin/call-center/lookup?phone='+encodeURICompone
 function connect(){if(ua)return;badge('Connecting','b-wait');
  getj('/admin/call-center/creds').then(function(c){if(!c.ok){badge('Disconnected','b-bad');err(c.error);return}cfg=c;
   try{var sock=new JsSIP.WebSocketInterface(c.wss);ua=new JsSIP.UA({sockets:[sock],uri:'sip:'+c.user+'@'+c.domain,password:c.pw,authorization_user:c.auth,display_name:c.name,register:true,session_timers:false})}catch(e){console.warn('dialer',e);badge('Registration Failed','b-bad');err('Registration Failed. Please contact admin.');ua=null;return}
-  ua.on('registered',function(){badge('Connected','b-ok');err('');if(!inCall())setPhase('idle');if(pend){var px=pend;pend=null;setTimeout(function(){dialNum(px)},150)}});
-  ua.on('unregistered',function(){badge('Disconnected','b-bad')});
+  ua.on('registered',function(){badge('Connected','b-ok');err('');if(!inCall())setPhase('idle');if(tmpReg&&pendCall){tmpReg=false;var qc=pendCall;pendCall=null;setTimeout(function(){call(qc)},120);return}if(agBusy&&!pend){setTimeout(busyUnreg,300);badge('Busy · not receiving calls','b-bad')}if(pend){var px=pend;pend=null;setTimeout(function(){dialNum(px)},150)}});
+  ua.on('unregistered',function(){badge(agBusy?'Busy · not receiving calls':'Disconnected','b-bad')});
   ua.on('registrationFailed',function(e){console.warn('dialer reg fail',e&&e.cause);badge('Registration Failed','b-bad');err('Registration Failed. Please contact admin.')});
   ua.on('disconnected',function(){if(ua&&!ua.isRegistered()){badge('Disconnected','b-bad');err('PBX connection required')}});
   ua.on('newRTCSession',function(e){if(e.session.direction==='incoming')incoming(e.session)});
@@ -173,9 +177,9 @@ function target(n){var p=cfg.prefix||'';n=clean(n);if(p&&n.indexOf(p)!==0&&n.cha
 function iceCfg(){return {iceServers:cfg.stun?[{urls:'stun:'+cfg.stun.replace(/^stun:/,'')}]:[{urls:'stun:stun.l.google.com:19302'}]}}
 function mic(){if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)return Promise.reject({name:'NoMedia'});return navigator.mediaDevices.getUserMedia({audio:true}).then(function(s){s.getTracks().forEach(function(t){t.stop()})})}
 function micErr(){setPhase('failed','Failed');err('Microphone access is required to make calls.')}
-function resetCtl(){muted=false;held=false;var q=$('bMuteQ');if(q){q.classList.remove('on');q.textContent='🎙'}$('bMute').classList.remove('on');$('bHold').classList.remove('on');$('bMute').lastChild.textContent='Mute';$('bHold').lastChild.textContent='Hold';$('bKp').classList.remove('on');$('kp').classList.remove('on')}
+function resetCtl(){setTimeout(busyUnreg,1500);muted=false;held=false;var q=$('bMuteQ');if(q){q.classList.remove('on');q.textContent='🎙'}$('bMute').classList.remove('on');$('bHold').classList.remove('on');$('bMute').lastChild.textContent='Mute';$('bHold').lastChild.textContent='Hold';$('bKp').classList.remove('on');$('kp').classList.remove('on')}
 function begin(n,d){cur=n;dir=d;info=null;connAt=0;clearInterval(tick);$('tmr').textContent='00:00:00';$('aT').textContent='00:00:00';resetCtl();renderAct();look(n).then(function(c){if(cur===n){info=c;renderAct();if(d==='in'){$('icN').textContent=c.found&&c.name?c.name:'Unknown Customer';$('icI').textContent=c.found?((c.category||'Customer')+' · '+c.orders+' orders'+(c.last?' · Last: '+c.last.invoice+' ('+c.last.status+')':'')):'No customer record'}}})}
-function call(n){n=clean(n||$('num').value);if(!n){err('Enter a phone number first.');return}if(inCall())return;if(!reg()){err('PBX connection required');return}err('');
+function call(n){n=clean(n||$('num').value);if(!n){err('Enter a phone number first.');return}if(inCall())return;if(!reg()){if(agBusy&&ua&&!tmpReg){tmpReg=true;pendCall=n;err('');try{ua.register()}catch(e){tmpReg=false;pendCall=null;err('PBX connection required')}setTimeout(function(){if(tmpReg){tmpReg=false;pendCall=null;err('PBX connection required')}},8000);return}err('PBX connection required');return}err('');
  begin(n,'out');setPhase('connecting');tab('act');
  mic().then(function(){return post('/admin/call-center/log',{direction:'out',phone:n,extension:cfg.ext})}).then(function(j){logId=j.id;
   var s=ua.call(target(n),{mediaConstraints:{audio:true,video:false},pcConfig:iceCfg(),rtcOfferConstraints:{offerToReceiveAudio:true}});wire(s)}).catch(function(e){ses=null;if(e&&(e.name==='NotAllowedError'||e.name==='NotFoundError'||e.name==='NoMedia'||e.name==='SecurityError'))micErr();else{console.warn('dialer call',e);setPhase('failed','PBX Error');err('PBX Error. Please try again.')}})}
@@ -293,7 +297,7 @@ document.addEventListener('click',function(e){var b=e.target.closest('.cb');if(b
 $('bRc').onclick=reconnect;
 /* ---------- window / PBX messages ---------- */
 if(emb){var P=function(a){parent.postMessage({dfdial:a},location.origin)};$('pX').onclick=function(){P('close')};$('pMin').onclick=function(){P('min')};$('pPop').onclick=function(){P('pop')}}
-if(ch)ch.onmessage=function(m){var d=m.data||{};if(d.type==='ping')ch.postMessage({type:'here'});if(d.type==='dial'){$('num').value=clean(d.n);lastN='';found();tab('pad');window.focus();$('num').focus()}if(d.type==='call'){window.focus();autoDial(d.n,d)}if(d.type==='disconnect')disconnect();if(d.type==='connect')connect();if(d.type==='getstatus')ch.postMessage({type:'status',text:$('bdg').textContent,cls:$('bdg').className.replace('badge ','')})};
+if(ch)ch.onmessage=function(m){var d=m.data||{};if(d.type==='status'){stApply(d.v,false);return}if(d.type==='ping')ch.postMessage({type:'here'});if(d.type==='dial'){$('num').value=clean(d.n);lastN='';found();tab('pad');window.focus();$('num').focus()}if(d.type==='call'){window.focus();autoDial(d.n,d)}if(d.type==='disconnect')disconnect();if(d.type==='connect')connect();if(d.type==='getstatus')ch.postMessage({type:'status',text:$('bdg').textContent,cls:$('bdg').className.replace('badge ','')})};
 window.addEventListener('beforeunload',function(e){if(inCall()){e.preventDefault();e.returnValue=''}});
 if(window.Notification&&Notification.permission==='default')try{Notification.requestPermission()}catch(e){}
 function chk(){if(inCall()||!cfg)return;getj('/admin/call-center/creds').then(function(c){if(c&&c.ok&&(c.user!==cfg.user||c.pw!==cfg.pw||c.domain!==cfg.domain||c.wss!==cfg.wss)){reconnect()}}).catch(function(){})}
