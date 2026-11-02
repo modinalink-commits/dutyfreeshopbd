@@ -10,6 +10,6 @@
 <script>(function(){var k='dfp_'+@json($o->invoice);try{if(localStorage.getItem(k))return;localStorage.setItem(k,'1')}catch(e){}
 var ids=@json(array_column($pxItems, 'id')),cn=@json($pxItems),v={{ (float)$o->total }};
 window.dataLayer.push({ecommerce:null});window.dataLayer.push({event:'purchase',ecommerce:{transaction_id:@json($o->invoice),currency:'BDT',value:v,items:cn.map(function(x){return{item_id:x.id,quantity:x.quantity,price:x.item_price}})}});
-if(window.gtag&&!{{ !empty($s['gtm_id']) ? 'true' : 'false' }})gtag('event','purchase',{transaction_id:@json($o->invoice),currency:'BDT',value:v});
+if(window.gtag&&!{{ !empty($s['gtm_id']) ? 'true' : 'false' }})gtag('event','purchase',{transaction_id:@json($o->invoice),currency:'BDT',value:v,items:cn.map(function(x){return{item_id:x.id,quantity:x.quantity,price:x.item_price}})});
 if(window.fbq){@if($pxAm && !empty($s['pixel_id']))fbq('init',@json($s['pixel_id']),@json($pxAm));@endif
 fbq('track','Purchase',{currency:'BDT',value:v,content_type:'product',content_ids:ids,contents:cn,num_items:cn.reduce(function(a,x){return a+x.quantity},0),order_id:@json($o->invoice)},{eventID:@json($o->invoice)})}})();</script>
