@@ -23,7 +23,10 @@ class Redx {
   /** RedX needs a delivery area id: pick the area of the order's district whose name appears in the address, else the first of that district. */
   public static function area(string $district, string $addr): ?array {
     $district = trim($district); if ($district === '') return null;
-    $list = Cache::remember('redx.areas.' . mb_strtolower($district), 86400, function () use ($district) { $r = self::call('GET', '/areas?district_name=' . rawurlencode($district)); return $r['code'] === 200 ? ($r['json']['areas'] ?? []) : []; });
+    $alias = ['chattogram' => 'Chittagong', 'cumilla' => 'Comilla', 'barishal' => 'Barisal', 'bogura' => 'Bogra', 'jashore' => 'Jessore', 'chapainawabganj' => 'Nawabganj', 'brahmanbaria' => 'Brahmanbaria', 'coxs bazar' => "Cox's Bazar"];
+    $tries = array_values(array_unique(array_filter([$district, $alias[mb_strtolower($district)] ?? null])));
+    $list = [];
+    foreach ($tries as $nm) { $list = Cache::remember('redx.areas.' . mb_strtolower($nm), 86400, function () use ($nm) { $r = self::call('GET', '/areas?district_name=' . rawurlencode($nm)); return $r['code'] === 200 ? ($r['json']['areas'] ?? []) : []; }); if ($list) break; Cache::forget('redx.areas.' . mb_strtolower($nm)); }
     if (!$list) return null; $a = mb_strtolower($addr); $best = null;
     foreach ($list as $x) { $n = mb_strtolower(preg_replace('/\(.*?\)/u', '', (string)$x['name'])); $n = trim($n); if ($n !== '' && mb_strpos($a, $n) !== false && (!$best || mb_strlen($n) > mb_strlen($best['n']))) $best = ['n' => $n, 'x' => $x]; }
     $x = $best['x'] ?? $list[0]; return ['id' => (int)$x['id'], 'name' => (string)$x['name']];
