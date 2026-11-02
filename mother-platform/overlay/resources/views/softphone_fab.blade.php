@@ -1,5 +1,5 @@
 <style>
-#dfDock{position:fixed;right:16px;bottom:16px;width:360px;max-width:calc(100vw - 24px);height:min(640px,calc(100vh - 32px));z-index:70;background:#fff;border:1px solid #E5E7EB;border-radius:14px;overflow:hidden;box-shadow:0 12px 36px rgba(15,31,61,.28);transform:translateY(calc(100% + 40px));opacity:0;pointer-events:none;transition:transform .2s ease,opacity .2s ease;display:flex;flex-direction:column}
+#dfDock{position:fixed;right:16px;bottom:16px;width:720px;max-width:calc(100vw - 32px);height:min(640px,calc(100vh - 32px));z-index:70;background:#fff;border:1px solid #E5E7EB;border-radius:14px;overflow:hidden;box-shadow:0 12px 36px rgba(15,31,61,.28);transform:translateY(calc(100% + 40px));opacity:0;pointer-events:none;transition:transform .2s ease,opacity .2s ease;display:flex;flex-direction:column}
 #dfDock.on{transform:none;opacity:1;pointer-events:auto}
 #dfDock iframe{border:0;width:100%;flex:1;background:#fff}
 #dfEdge{position:fixed;right:16px;bottom:16px;z-index:60;background:#0F1F3D;color:#fff;border:0;border-radius:24px;padding:10px 16px;cursor:pointer;font:700 13px/1 inherit;box-shadow:0 4px 14px rgba(15,31,61,.3);display:flex;align-items:center;gap:8px}

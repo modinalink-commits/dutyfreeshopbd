@@ -40,17 +40,24 @@ textarea,.ti{width:100%;border:1.5px solid var(--bd);border-radius:8px;padding:8
 .kp{display:none;grid-template-columns:repeat(3,1fr);gap:6px}.kp.on{display:grid}.kp button{height:38px;border:1px solid var(--bd);border-radius:7px;background:var(--gr);font-size:16px;font-weight:700;cursor:pointer;color:var(--n)}
 .inc .nm{font-size:18px;font-weight:800}.inc .ln{font-size:12.5px;color:#4B5563;margin-top:3px}
 .ph{height:100vh}.top{padding:8px 10px}.top b{font-size:14px}.tabs button{padding:7px 2px}.box{padding:10px;gap:7px}.num input{font-size:18px;padding:6px}.keys{gap:6px}.keys button{height:46px}.go{height:46px}
-.stsel{max-width:104px;border:0;border-radius:14px;padding:3px 6px;text-overflow:ellipsis;font:700 11px inherit;color:#fff;cursor:pointer;outline:0}.stsel.st-available{background:var(--g)}.stsel.st-busy{background:var(--r)}.stsel option{color:#111;background:#fff}
+.stsel{max-width:150px;border:0;border-radius:14px;padding:3px 6px;text-overflow:ellipsis;font:700 11px inherit;color:#fff;cursor:pointer;outline:0}.stsel.st-available{background:var(--g)}.stsel.st-busy{background:var(--r)}.stsel option{color:#111;background:#fff}
 .dfoot{display:flex;justify-content:space-between;align-items:center;padding:7px 12px;border-top:1px solid var(--bd);font-size:11.5px;color:var(--mu);background:#fff}.dfoot a{color:var(--o);font-weight:700;text-decoration:none}.dfoot i{font-style:normal;font-weight:700}.dfoot i.ok{color:var(--g)}.dfoot i.no{color:var(--r)}
 .crow{display:flex;gap:8px}.crow .go.call{flex:1}.go.sm{width:52px;flex:none;font-size:18px;padding:0}.go.hang.sm:disabled,.go.mq:disabled{opacity:.45}.go.mq{background:#fff;color:#374151;border:1.5px solid var(--bd)}.go.mq.on{background:#FEF3C7;border-color:#F59E0B}
 .tabs button svg{width:14px;height:14px;vertical-align:-2px;margin-right:4px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+.mn{display:block;flex:1;min-height:0;overflow:auto}
+@media(min-width:640px){.top b{font-size:17px}.mn{display:grid;grid-template-columns:56% 44%;overflow:hidden}.mn>.tp{overflow-y:auto}.mn #tp-pad,.mn #tp-con,.mn #tp-rec{grid-column:1;grid-row:1}.mn #tp-act{display:flex!important;grid-column:2;grid-row:1;border-left:1px solid var(--bd);background:#F8FAFC}.keys{gap:8px}.keys button{height:60px;font-size:24px;border-radius:12px}.keys small{font-size:11px}.num input{font-size:20px;padding:12px 8px}.go{height:50px;font-size:16px;border-radius:12px}.tabs button{font-size:14px;padding:10px 2px}}
+.cidr{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--mu)}.actb{background:#DCFCE7;color:#166534;font-weight:800;border-radius:12px;padding:2px 10px}
+.wv{display:flex;align-items:center;justify-content:center;gap:3px;height:34px;background:#ECFDF5;border-radius:17px}.wv i{width:3px;height:6px;background:#86EFAC;border-radius:2px}.wv.on i{background:var(--g);animation:wvb 1s ease-in-out infinite}.wv.on i:nth-child(3n){animation-delay:.2s}.wv.on i:nth-child(3n+1){animation-delay:.45s}@keyframes wvb{0%,100%{height:5px}50%{height:22px}}
+.cn{margin-top:auto;border:1px solid var(--bd);border-radius:14px;background:#fff;padding:10px}.cnh{font-weight:800;font-size:13px;margin-bottom:6px}.cn textarea{width:100%;border:1.5px solid var(--bd);border-radius:10px;padding:8px;font:inherit;resize:none}.cn textarea:focus{outline:0;border-color:var(--o)}.cnb{display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:12px;color:var(--g)}.cnb button{border:0;background:#FFEDD5;color:#C2410C;font-weight:800;border-radius:10px;padding:7px 18px;cursor:pointer}.cnb button:disabled{opacity:.5}
+.dfoot{gap:8px;flex-wrap:wrap;justify-content:space-between}.dfoot .ag{flex:1;text-align:center}
 </style></head><body>
 <div class="ph{{ $embed ? ' emb' : '' }}">
-<div class="top"><div class="tt"><b>Mother Commerce Dialer</b><small>Call Center · <span class="badge b-bad" id="bdg">Disconnected</span></small></div><select id="stSel" class="stsel st-{{ $agst ?? 'available' }}" title="Availability"><option value="available"{{ ($agst ?? 'available') === 'available' ? ' selected' : '' }}>● Available — Ready to take calls</option><option value="busy"{{ ($agst ?? '') === 'busy' ? ' selected' : '' }}>● Busy — Do not receive calls</option></select>@if($embed)<button type="button" class="tb" id="pPop" title="Pop out (keeps the call alive while you browse)">⧉</button><button type="button" class="tb" id="pMin" title="Minimize">–</button><button type="button" class="tb" id="pX" title="Close">×</button>@endif</div>
+<div class="top"><div class="tt"><b>Mother Commerce Dialer</b><small>Call Center · <span class="badge b-bad" id="bdg">Disconnected</span></small></div><select id="stSel" class="stsel st-{{ $agst ?? 'available' }}" title="Availability"><option value="available"{{ ($agst ?? 'available') === 'available' ? ' selected' : '' }}>● Available (Receive calls)</option><option value="busy"{{ ($agst ?? '') === 'busy' ? ' selected' : '' }}>● Busy (Do not receive calls)</option></select>@if($embed)<button type="button" class="tb" id="pPop" title="Pop out (keeps the call alive while you browse)">⧉</button><button type="button" class="tb" id="pMin" title="Minimize">–</button><button type="button" class="tb" id="pX" title="Close">×</button>@endif</div>
 <div class="disc" id="disc"><span>PBX connection required</span><button type="button" id="bRc">Reconnect</button></div>
 <div class="tabs"><button type="button" data-t="pad" class="on"><svg viewBox="0 0 24 24"><circle cx="5" cy="5" r="1.5"/><circle cx="12" cy="5" r="1.5"/><circle cx="19" cy="5" r="1.5"/><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>Dial Pad</button><button type="button" data-t="con"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Contacts</button><button type="button" data-t="rec"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Recent</button><button type="button" data-t="act" id="tAct">Active Call<span class="dot"></span></button></div>
 
-<div class="box tp" id="tp-pad">
+<div class="mn"><div class="box tp" id="tp-pad">
 <div class="stt"><span id="cst">Ready</span> · <span id="tmr">00:00:00</span></div>
 <div id="ctxL" style="display:none;margin:0 0 6px;padding:6px 10px;border-radius:8px;background:#EFF6FF;color:#1E3A8A;font-size:12.5px;font-weight:600"></div><div class="num"><input id="num" inputmode="tel" autocomplete="off" placeholder="Enter Phone Number" value="{{ $n }}"><button type="button" id="bk" title="Backspace">⌫</button></div>
 <div id="found" class="fnd"></div>
@@ -65,17 +72,19 @@ textarea,.ti{width:100%;border:1.5px solid var(--bd);border-radius:8px;padding:8
 
 <div class="box tp" id="tp-act" style="display:none">
 <div id="aNone" class="mut" style="padding:30px 0">No active call. Dial a number or pick a contact to start.</div>
-<div id="aBox" style="display:none;flex-direction:column;gap:9px">
+<div id="aBox" style="display:none;flex-direction:column;gap:9px"><div class="cidr"><span class="actb">● Active Call</span><span id="cid"></span></div><div class="wv" id="wv"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
  <div class="act"><div class="av" id="aAv">?</div><span class="nm" id="aN">Unknown Customer</span><div class="ph1" id="aP"></div><div class="as" id="aS">—</div><div class="at" id="aT">00:00:00</div><div id="aRec" style="margin-top:2px"></div></div>
  <div class="card2" id="aCard"></div>
  <div class="qa"><a id="aCu" href="#" target="_blank">Open Customer</a><a id="aOr" href="#" target="_blank">Open Order</a></div>
  <div class="kp" id="kp">@foreach(['1','2','3','4','5','6','7','8','9','*','0','#'] as $k)<button type="button" data-d="{{ $k }}">{{ $k }}</button>@endforeach</div>
  <div class="ctl" id="ctl"><button type="button" id="bMute" disabled><i>🎙</i><span>Mute</span></button><button type="button" id="bHold" disabled><i>⏸</i><span>Hold</span></button><button type="button" id="bKp" disabled><i>⌨</i><span>Keypad</span></button><button type="button" id="bTr" disabled><i>↗</i><span>Transfer</span></button><button type="button" id="bSpk" style="display:none"><i>🔊</i><span>Speaker</span></button></div>
- <button type="button" class="go hang big" id="bHang2" disabled>⛔ Hang Up</button>
+ <button type="button" class="go hang big" id="bHang2" disabled>⛔ End Call</button>
  <div class="msg" id="msg2"></div>
 </div>
+<div class="cn"><div class="cnh">Call Notes</div><textarea id="cNote" rows="3" maxlength="1000" placeholder="Write a note..."></textarea><div class="cnb"><span id="cNm"></span><button type="button" id="cSave">Save</button></div></div>
 </div>
-<div class="dfoot"><i id="dfc" class="no">● Disconnected</i><a href="/admin/call-center/history" target="_blank">Call History</a></div>
+</div>
+<div class="dfoot"><span><i id="dfc" class="no">● Disconnected</i></span><span>Ext: <b id="dfx">—</b></span><span class="ag">Agent: <b>{{ $agname ?? '' }}</b></span><a href="/admin/call-center/history" target="_blank">History</a><a href="/admin/call-center/account" target="_blank">⚙ Settings</a></div>
 </div>
 
 <div class="ov" id="ovInc"><div class="card inc"><div style="font-size:12px;color:var(--mu);font-weight:800">Incoming Call</div><div class="nm" id="icN">Unknown Customer</div><div class="ln" id="icP"></div><div class="ln" id="icI"></div><div class="acts"><button type="button" class="pri gn" id="icA">Answer</button><button type="button" class="pri rd" id="icR">Reject</button></div></div></div>
@@ -106,7 +115,7 @@ var ua=null,cfg=null,ses=null,logId=null,connAt=0,tick=null,dir='out',phase='idl
 var ch=window.BroadcastChannel?new BroadcastChannel('dfphone'):null,pend=null;
 /* ---------- availability (Available / Busy) ---------- */
 var agBusy=($('stSel')||{}).value==='busy';
-var tmpReg=false,pendCall=null;
+var tmpReg=false,pendCall=null,lastLog=null;
 function busyUnreg(){if(ua&&agBusy&&!inCall()&&!tmpReg&&!pend){try{ua.unregister({all:true})}catch(e){}}}
 function stApply(v,tell){var was=agBusy;agBusy=v==='busy';var e=$('stSel');if(e){e.value=v;e.className='stsel st-'+v}if(emb&&tell!==false)parent.postMessage({dfdial:'status',v:v},location.origin);if(tell!==false&&ch)try{ch.postMessage({type:'status',v:v})}catch(x){}
  if(ua&&agBusy!==was){if(agBusy)busyUnreg();else{try{ua.register()}catch(x){}}}if(agBusy)badge('Busy · not receiving calls','b-bad');else if(was&&ua&&reg())badge('Connected','b-ok')}
@@ -136,11 +145,12 @@ function ui(){var r=reg(),ic=inCall(),cn=connected();
  var g=$('bGo');if(ic){g.textContent=phase==='connected'?'✔ Connected':LBL[phase];g.disabled=true;g.className='go call busyb'}else{g.textContent='📞 Call';g.disabled=!r&&!(agBusy&&!!ua);g.className='go call'}
  $('bHang1').disabled=!ic;$('bMuteQ').disabled=!cn;$('bHang2').disabled=!ic;
  ['bMute','bHold','bKp','bTr'].forEach(function(i){$(i).disabled=!cn});
- $('tAct').classList.toggle('live',ic);
+ $('tAct').classList.toggle('live',ic);try{$('cid').textContent=ic&&logId?'Call ID: #'+logId:'';$('wv').className='wv'+(phase==='connected'?' on':'')}catch(e){}
  var b=ic?'busy':'idle';if(b!==lastBusy){lastBusy=b;if(emb)parent.postMessage({dfdial:b},location.origin)}}
 function startTimer(){connAt=Date.now();clearInterval(tick);tick=setInterval(function(){var s=fmt(Math.floor((Date.now()-connAt)/1000));$('tmr').textContent=s;$('aT').textContent=s},500)}
 function secs(){return connAt?Math.floor((Date.now()-connAt)/1000):0}
-function tab(t){document.querySelectorAll('.tabs button').forEach(function(b){b.classList.toggle('on',b.dataset.t===t)});document.querySelectorAll('.tp').forEach(function(p){p.style.display=p.id==='tp-'+t?'':'none'});if(t==='rec')recent();if(t==='con')contacts()}
+var lastLeft='pad';
+function tab(t){if(window.innerWidth>=640){if(t==='act')t=lastLeft;else lastLeft=t}document.querySelectorAll('.tabs button').forEach(function(b){b.classList.toggle('on',b.dataset.t===t)});document.querySelectorAll('.tp').forEach(function(p){p.style.display=p.id==='tp-'+t?'':'none'});if(t==='rec')recent();if(t==='con')contacts()}
 document.querySelectorAll('.tabs button').forEach(function(b){b.onclick=function(){tab(b.dataset.t)}});
 /* ---------- customer info ---------- */
 function tagCls(c){c=String(c||'').toLowerCase();return c==='vip'?'vip':(c==='new'?'new':'')}
@@ -162,7 +172,7 @@ function recInd(){var e=$('aRec');if(inCall()&&connected()&&cfg&&cfg.rec)e.inner
 function look(n){return getj('/admin/call-center/lookup?phone='+encodeURIComponent(n)).then(function(c){return c}).catch(function(){return {found:false}})}
 /* ---------- connect ---------- */
 function connect(){if(ua)return;badge('Connecting','b-wait');
- getj('/admin/call-center/creds').then(function(c){if(!c.ok){badge('Disconnected','b-bad');err(c.error);return}cfg=c;
+ getj('/admin/call-center/creds').then(function(c){if(!c.ok){badge('Disconnected','b-bad');err(c.error);return}cfg=c;try{$('dfx').textContent=c.ext||'—'}catch(e){}
   try{var sock=new JsSIP.WebSocketInterface(c.wss);ua=new JsSIP.UA({sockets:[sock],uri:'sip:'+c.user+'@'+c.domain,password:c.pw,authorization_user:c.auth,display_name:c.name,register:true,session_timers:false})}catch(e){console.warn('dialer',e);badge('Registration Failed','b-bad');err('Registration Failed. Please contact admin.');ua=null;return}
   ua.on('registered',function(){badge('Connected','b-ok');err('');if(!inCall())setPhase('idle');if(tmpReg&&pendCall){tmpReg=false;var qc=pendCall;pendCall=null;setTimeout(function(){call(qc)},120);return}if(agBusy&&!pend){setTimeout(busyUnreg,300);badge('Busy · not receiving calls','b-bad')}if(pend){var px=pend;pend=null;setTimeout(function(){dialNum(px)},150)}});
   ua.on('unregistered',function(){badge(agBusy?'Busy · not receiving calls':'Disconnected','b-bad')});
@@ -181,7 +191,7 @@ function resetCtl(){setTimeout(busyUnreg,1500);muted=false;held=false;var q=$('b
 function begin(n,d){cur=n;dir=d;info=null;connAt=0;clearInterval(tick);$('tmr').textContent='00:00:00';$('aT').textContent='00:00:00';resetCtl();renderAct();look(n).then(function(c){if(cur===n){info=c;renderAct();if(d==='in'){$('icN').textContent=c.found&&c.name?c.name:'Unknown Customer';$('icI').textContent=c.found?((c.category||'Customer')+' · '+c.orders+' orders'+(c.last?' · Last: '+c.last.invoice+' ('+c.last.status+')':'')):'No customer record'}}})}
 function call(n){n=clean(n||$('num').value);if(!n){err('Enter a phone number first.');return}if(inCall())return;if(!reg()){if(agBusy&&ua&&!tmpReg){tmpReg=true;pendCall=n;err('');try{ua.register()}catch(e){tmpReg=false;pendCall=null;err('PBX connection required')}setTimeout(function(){if(tmpReg){tmpReg=false;pendCall=null;err('PBX connection required')}},8000);return}err('PBX connection required');return}err('');
  begin(n,'out');setPhase('connecting');tab('act');
- mic().then(function(){return post('/admin/call-center/log',{direction:'out',phone:n,extension:cfg.ext})}).then(function(j){logId=j.id;
+ mic().then(function(){return post('/admin/call-center/log',{direction:'out',phone:n,extension:cfg.ext})}).then(function(j){logId=j.id;lastLog=j.id;
   var s=ua.call(target(n),{mediaConstraints:{audio:true,video:false},pcConfig:iceCfg(),rtcOfferConstraints:{offerToReceiveAudio:true}});wire(s)}).catch(function(e){ses=null;if(e&&(e.name==='NotAllowedError'||e.name==='NotFoundError'||e.name==='NoMedia'||e.name==='SecurityError'))micErr();else{console.warn('dialer call',e);setPhase('failed','PBX Error');err('PBX Error. Please try again.')}})}
 function pbxId(){try{return ses._request&&ses._request.call_id||''}catch(e){return ''}}
 function wire(s){ses=s;
@@ -228,7 +238,7 @@ function incoming(s){if(ses||agBusy){try{s.terminate({status_code:486})}catch(e)
  ses=s;begin(num,'in');setPhase('ringing');wire(s);ringStart();
  $('icN').textContent=(s.remote_identity&&s.remote_identity.display_name)||'Unknown Customer';$('icP').textContent=num;$('icI').textContent='';$('ovInc').classList.add('on');tab('act');
  if(emb)parent.postMessage({dfdial:'incoming'},location.origin);
- post('/admin/call-center/log',{direction:'in',phone:num,extension:cfg&&cfg.ext}).then(function(j){logId=j.id});
+ post('/admin/call-center/log',{direction:'in',phone:num,extension:cfg&&cfg.ext}).then(function(j){logId=j.id;lastLog=j.id});
  if(window.Notification&&Notification.permission==='granted')try{new Notification('Incoming call',{body:num})}catch(e){}}
 $('icA').onclick=function(){stopRing();$('ovInc').classList.remove('on');setPhase('connecting');mic().then(function(){ses.answer({mediaConstraints:{audio:true,video:false},pcConfig:iceCfg()})}).catch(function(){micErr();try{ses.terminate({status_code:486})}catch(e){}})};
 $('icR').onclick=function(){stopRing();$('ovInc').classList.remove('on');try{ses.terminate({status_code:486})}catch(e){}};
@@ -237,7 +247,7 @@ function dtmf(k){if(ses&&connected()){try{ses.sendDTMF(k,{duration:160,interTone
 document.querySelectorAll('#tp-pad [data-k]').forEach(function(b){b.onclick=function(){var k=b.dataset.k;if(connected())dtmf(k);else if(!inCall()){$('num').value+=k;found()}}});
 document.querySelectorAll('#kp [data-d]').forEach(function(b){b.onclick=function(){dtmf(b.dataset.d)}});
 $('bk').onclick=function(){if(!inCall()){$('num').value=$('num').value.slice(0,-1);found()}};
-$('bMuteQ').onclick=function(){$('bMute').click();var on=$('bMute').classList.contains('on');this.classList.toggle('on',on);this.textContent=on?'🔇':'🎙'};$('bGo').onclick=function(){call()};$('bHang1').onclick=hang;$('bHang2').onclick=hang;
+$('bMuteQ').onclick=function(){$('bMute').click();var on=$('bMute').classList.contains('on');this.classList.toggle('on',on);this.textContent=on?'🔇':'🎙'};$('cSave').onclick=function(){var id=logId||(sum&&sum.id)||lastLog,n=$('cNote').value.trim();if(!n){return}if(!id){$('cNm').textContent='';return}var b=this;b.disabled=true;post('/admin/call-center/log/'+id+'/note',{note:n}).then(function(j){b.disabled=false;$('cNm').textContent=j&&j.ok?'Saved':'Could not save';if(j&&j.ok)$('cNote').value='';setTimeout(function(){$('cNm').textContent=''},2500)}).catch(function(){b.disabled=false;$('cNm').textContent='Could not save'})};$('bGo').onclick=function(){call()};$('bHang1').onclick=hang;$('bHang2').onclick=hang;
 $('bMute').onclick=function(){if(!connected())return;muted=!muted;try{muted?ses.mute({audio:true}):ses.unmute({audio:true})}catch(e){}this.classList.toggle('on',muted);this.lastChild.textContent=muted?'Unmute':'Mute'};
 $('bHold').onclick=function(){if(!connected())return;try{held?ses.unhold():ses.hold()}catch(e){console.warn(e)}};
 $('bKp').onclick=function(){var k=$('kp');k.classList.toggle('on');this.classList.toggle('on',k.classList.contains('on'))};

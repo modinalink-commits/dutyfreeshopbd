@@ -23,7 +23,7 @@ class CallCenterController extends Controller {
     try { DB::table('agent_availability')->updateOrInsert(['user_id' => $uid], ['agent_status' => $v, 'status_updated_at' => now(), 'updated_at' => now(), 'created_at' => now()]); } catch (\Throwable $e) { return response()->json(['ok' => false, 'status' => 'available'], 500); }
     return response()->json(['ok' => true, 'status' => $v]);
   }
-  public function phone(Request $r) { return view('softphone', ['embed'=>$r->boolean('embed'), 'has'=>(bool)($this->mine()->username ?? null) && (bool)($this->acct()->wss_url ?? null), 'n'=>preg_replace('/[^0-9+*#]/', '', (string)$r->query('n', '')), 'agst'=>self::agentStatus((int)$r->user()->id)]); }
+  public function phone(Request $r) { return view('softphone', ['embed'=>$r->boolean('embed'), 'has'=>(bool)($this->mine()->username ?? null) && (bool)($this->acct()->wss_url ?? null), 'n'=>preg_replace('/[^0-9+*#]/', '', (string)$r->query('n', '')), 'agst'=>self::agentStatus((int)$r->user()->id), 'agname'=>(string)$r->user()->name]); }
   public function account() {
     $a = $this->acct(); return view('sip_account', ['a'=>$a, 'hasPw'=>(bool)($a->password_enc ?? null)]);
   }
