@@ -19,7 +19,7 @@ table.mpt{width:100%;border-collapse:collapse;font-size:13px;background:#fff}.mp
 <input type="search" name="q" value="{{ request('q') }}" placeholder="Search name, mobile, invoice, TrxID…" style="min-width:260px;width:260px!important" autocomplete="off">
 <select name="range"><option value="">All dates</option><option value="today" @selected(request('range')==='today')>Today</option><option value="yesterday" @selected(request('range')==='yesterday')>Yesterday</option></select>
 <input type="date" name="from" value="{{ request('from') }}" title="From"><input type="date" name="to" value="{{ request('to') }}" title="To">
-<select name="method"><option value="">All methods</option><option value="bank" @selected(request('method')==='bank')>Bank Transfer</option><option value="bkash" @selected(request('method')==='bkash')>bKash</option><option value="nagad" @selected(request('method')==='nagad')>Nagad</option></select>
+<select name="method"><option value="">All methods</option><option value="bank" @selected(request('method')==='bank')>{{ \App\Support\Brand::BANK_LABEL }}</option><option value="bkash" @selected(request('method')==='bkash')>bKash</option><option value="nagad" @selected(request('method')==='nagad')>Nagad</option></select>
 <select name="bank"><option value="">All banks</option>@foreach($banks as $b)<option @selected(request('bank')===$b)>{{ $b }}</option>@endforeach</select>
 <select name="status"><option value="">All status</option>@foreach(['Pending Verification','Verified','Rejected','Amount Mismatch','Duplicate','Cancelled'] as $s)<option @selected(request('status')===$s)>{{ $s }}</option>@endforeach</select>
 <input type="number" name="min" value="{{ request('min') }}" placeholder="Min ৳" style="width:90px"><input type="number" name="max" value="{{ request('max') }}" placeholder="Max ৳" style="width:90px">
@@ -69,7 +69,7 @@ function mpOpen(tr){const j=JSON.parse(tr.dataset.j);document.getElementById('mp
 <label>Customer Mobile</label><div style="display:flex;gap:6px"><input id="mpPh" placeholder="01XXXXXXXXX" inputmode="tel"><button type="button" id="mpFind">Find</button></div>
 <div id="mpCu" style="font-size:13px;color:#475569;margin:6px 0"></div>
 <label>Order / Invoice</label><select name="order_id" id="mpOr" required><option value="">Find customer first</option></select>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div><label>Payment Method</label><select name="method"><option>bKash Personal</option><option>Nagad Personal</option><option>Bank Transfer</option><option>Cash</option><option>Other</option></select></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div><label>Payment Method</label><select name="method"><option>bKash Personal</option><option>Nagad Personal</option><option>{{ \App\Support\Brand::BANK_LABEL }}</option><option>Cash</option><option>Other</option></select></div>
 <div><label>Amount (৳)</label><input name="amount" id="mpAm" type="number" step="0.01" min="1" required></div>
 <div><label>Transaction ID / Reference</label><input name="txn_id"></div><div><label>Sender Number</label><input name="sender"></div>
 <div><label>Payment Date</label><input name="paid_at" type="datetime-local"></div><div><label>Received By</label><input name="received_by" value="{{ auth()->user()->name }}"></div></div>

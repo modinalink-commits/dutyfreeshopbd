@@ -14,6 +14,9 @@ class Brand
     return $c[$s] = null;
   }
   /** Logo URL of a payment_methods row (uploaded logo first, then the legacy /pay/<logo>.png). */
+  /** Customer-facing name of the bank transfer option (single place to rename it). */
+  const BANK_LABEL = 'NPSB Bank Transfer';
+  const BANK_LOGO = '/pay/npsb.png';
   public static function logoUrl($m): ?string {
     if (!$m) return null;
     if (!empty($m->logo_url)) return $m->logo_url;
@@ -38,7 +41,7 @@ class Brand
     if ($m === '' || $l === 'cod' || str_contains($l, 'cash')) return ['logo' => self::logoUrl($row), 'name' => $row->title ?? 'Cash on Delivery', 'sub' => null, 'cod' => true];
     if (str_contains($l, 'shurjo')) return ['logo' => self::logoUrl($row) ?: '/pay/shurjopay-logo.png', 'name' => $row->title ?? 'Pay Online', 'sub' => 'via ShurjoPay'];
     if (str_contains($l, 'bkash') || str_contains($l, 'nagad')) return ['logo' => self::logoUrl($row) ?: '/pay/' . (str_contains($l, 'bkash') ? 'bkash' : 'nagad') . '.png', 'name' => $row->title ?? $m, 'sub' => null];
-    if (str_contains($l, 'bank')) return ['logo' => self::logoUrl($row), 'name' => 'Bank Transfer', 'sub' => $row ? null : ($o->pay_account ?? null)];
+    if (str_contains($l, 'bank')) return ['logo' => self::logoUrl($row) ?: self::BANK_LOGO, 'name' => self::BANK_LABEL, 'sub' => $row ? null : ($o->pay_account ?? null)];
     return ['logo' => null, 'name' => $m, 'sub' => null];
   }
 }

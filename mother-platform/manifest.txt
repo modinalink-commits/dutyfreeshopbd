@@ -419,3 +419,5 @@ database/migrations/2026_11_02_000031_invoice_sequence_fix.php
 app/Support/Biz.php
 resources/views/store/contact_block.blade.php
 database/migrations/2026_11_02_000032_business_contact_settings.php
+database/migrations/2026_11_02_000033_npsb_bank_label.php
+public/pay/npsb.png

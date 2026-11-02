@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 class PaymentController extends Controller {
-  const KINDS = ['bank'=>'Bank Transfer','bkash'=>'bKash Personal','nagad'=>'Nagad Personal'];
+  const KINDS = ['bank'=>\App\Support\Brand::BANK_LABEL,'bkash'=>'bKash Personal','nagad'=>'Nagad Personal'];
   public static function waNumber(): string {
     return \App\Support\Biz::waIntl();
   }
