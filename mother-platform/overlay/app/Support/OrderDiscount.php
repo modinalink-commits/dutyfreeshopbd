@@ -61,6 +61,7 @@ class OrderDiscount {
     if ($coupon !== '') {
       $cp = DB::table('coupons')->whereRaw('upper(code) = ?', [$coupon])->first(); $today = now('Asia/Dhaka')->toDateString();
       if (!$cp || !$cp->active) $cerr = 'Coupon not found or not active';
+      elseif (DB::table('winback_events')->where('coupon_code', $coupon)->where('mode', 'fixed')->exists() && !($phone && DB::table('winback_events')->where('coupon_code', $coupon)->where('mode', 'fixed')->whereIn('phone', array_map(fn($x) => substr(preg_replace('/\D/', '', $x), -11), self::alt($phone)))->whereNull('used_at')->where('expires_at', '>', now())->exists())) $cerr = 'This coupon is not valid for this number, was already used, or has expired';
       elseif ($cp->valid_from && $today < substr((string)$cp->valid_from, 0, 10)) $cerr = 'Coupon is not valid yet';
       elseif ($cp->valid_to && $today > substr((string)$cp->valid_to, 0, 10)) $cerr = 'Coupon has expired';
       elseif ($cp->usage_limit && (int)$cp->used_count >= (int)$cp->usage_limit) $cerr = 'Coupon usage limit reached';

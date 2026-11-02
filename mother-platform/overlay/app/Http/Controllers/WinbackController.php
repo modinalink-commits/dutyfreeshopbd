@@ -26,10 +26,12 @@ class WinbackController extends Controller
   }
   public function save(Request $r) {
     $days = (array)$r->input('days', []); $pcts = (array)$r->input('pct', []); $st = [];
-    foreach ($days as $i => $dv) { $dd = (int)$dv; $pp = (float)($pcts[$i] ?? 0); if ($dd > 0 && $pp > 0) $st[] = [$dd, $pp]; }
+    $cds = (array)$r->input('code', []); $codes = [];
+    foreach ($days as $i => $dv) { $dd = (int)$dv; $pp = (float)($pcts[$i] ?? 0); if ($dd > 0 && $pp > 0) { $st[] = [$dd, $pp]; $cc = strtoupper(preg_replace('/[^A-Za-z0-9_-]/', '', (string)($cds[$i] ?? ''))); if ($cc !== '') $codes[$dd] = mb_substr($cc, 0, 30); } }
+    W::put('codes', json_encode((object)$codes));
     usort($st, fn($a, $b) => $a[0] <=> $b[0]); W::put('stages', json_encode($st));
     foreach (['max_pct', 'max_discount', 'min_order', 'expiry'] as $k) W::put($k, (string)max(0, (float)$r->input($k, 0)));
-    W::put('mode', $r->input('mode') === 'coupon' ? 'coupon' : 'auto'); W::put('on', $r->boolean('on') ? '1' : '0');
+    W::put('mode', in_array($r->input('mode'), ['coupon', 'fixed'], true) ? $r->input('mode') : 'auto'); W::put('on', $r->boolean('on') ? '1' : '0');
     foreach (['sms', 'push', 'notif'] as $k) W::put($k, $r->boolean($k) ? '1' : '0');
     foreach (['sms_text', 'sms_final'] as $k) W::put($k, mb_substr((string)$r->input($k), 0, 500));
     \App\Support\Procure::audit('winback.settings', 'Win-back settings', null, $r->except(['_token']));

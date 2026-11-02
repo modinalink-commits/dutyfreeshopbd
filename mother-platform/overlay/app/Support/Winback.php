@@ -17,6 +17,9 @@ class Winback
     $j = json_decode(self::set('stages', ''), true); $s = is_array($j) && $j ? $j : self::DEF_STAGES; $max = (float)self::set('max_pct', '100'); if ($max <= 0) $max = 100000;
     $o = []; foreach ($s as $r) { $d = (int)($r[0] ?? 0); $p = min((float)($r[1] ?? 0), $max); if ($d > 0 && $p > 0) $o[$d] = $p; } ksort($o); $out = []; foreach ($o as $d => $p) $out[] = [$d, $p]; return $out;
   }
+  /** Fixed coupon code per stage (admin-editable; default WB-<days>). */
+  public static function codes(): array { $j = json_decode(self::set('codes', ''), true); return is_array($j) ? $j : []; }
+  public static function codeFor(int $days): string { $c = strtoupper(preg_replace('/[^A-Za-z0-9_-]/', '', (string)(self::codes()[$days] ?? ''))); return $c !== '' ? $c : 'WB-' . $days; }
   public static function norm(string $p): string { return substr(preg_replace('/\D/', '', $p), -11); }
 
   /** phone => [oid, at] of the latest Delivered order for customers with no newer live order. */
@@ -44,7 +47,7 @@ class Winback
   public static function tick(bool $force = false): void {
     if (!self::on()) return; $today = now('Asia/Dhaka')->toDateString();
     if (!$force) { $h = (int)now('Asia/Dhaka')->format('H'); if (self::set('last_run') === $today || $h < (int)self::set('win_from', '14') || $h >= (int)self::set('win_to', '17')) return; } // offers go out only 2 PM to 5 PM Dhaka time
-    $st = self::stages(); if (!$st) return; $sent = 0; $exp = max(1, (int)self::set('expiry', '30')); $mode = self::set('mode', 'auto') === 'coupon' ? 'coupon' : 'auto'; $lastStage = end($st)[0];
+    $st = self::stages(); if (!$st) return; $sent = 0; $exp = max(1, (int)self::set('expiry', '30')); $mode = in_array(self::set('mode', 'auto'), ['coupon', 'fixed'], true) ? self::set('mode', 'auto') : 'auto'; $lastStage = end($st)[0];
     $ch = array_filter(['sms' => self::set('sms', '1') === '1', 'push' => self::set('push', '1') === '1', 'notif' => self::set('notif', '1') === '1']);
     $queue = self::lastDelivered(); uasort($queue, fn($a, $b) => strcmp($a['at'], $b['at'])); // serial order: whoever became eligible first is messaged first
     foreach ($queue as $p => $x) {
@@ -56,6 +59,10 @@ class Winback
       if ($mode === 'coupon') {
         $code = 'WB-' . strtoupper(substr(md5($p . $x['oid'] . $s[0] . microtime()), 0, 6));
         DB::table('coupons')->insert(['code' => $code, 'type' => 'percent', 'value' => $s[1], 'min_order' => (float)self::set('min_order', '0'), 'max_discount' => (float)self::set('max_discount', '0') ?: null, 'usage_limit' => 1, 'per_customer' => 1, 'valid_from' => now('Asia/Dhaka')->toDateString(), 'valid_to' => now('Asia/Dhaka')->addDays($exp)->toDateString(), 'active' => true, 'created_at' => now(), 'updated_at' => now()]);
+      }
+      if ($mode === 'fixed') {
+        $code = self::codeFor($s[0]);
+        DB::table('coupons')->updateOrInsert(['code' => $code], ['type' => 'percent', 'value' => $s[1], 'min_order' => (float)self::set('min_order', '0'), 'max_discount' => (float)self::set('max_discount', '0') ?: null, 'usage_limit' => null, 'per_customer' => 1, 'valid_from' => now('Asia/Dhaka')->toDateString(), 'valid_to' => null, 'active' => true, 'updated_at' => now(), 'created_at' => now()]);
       }
       try { DB::table('winback_events')->insert(['phone' => $p, 'customer_id' => $c->id, 'cycle_order_id' => $x['oid'], 'stage_days' => $s[0], 'pct' => $s[1], 'mode' => $mode, 'coupon_code' => $code, 'channels' => implode(',', array_keys($ch)), 'expires_at' => now()->addDays($exp), 'created_at' => now(), 'updated_at' => now()]); }
       catch (\Throwable $e) { continue; }
@@ -72,7 +79,7 @@ class Winback
   public static function testSend(string $phone, float $pct): string {
     $p = self::norm($phone); $c = DB::table('customers')->whereRaw('right(phone,11) = ?', [$p])->first(); if (!$c) return 'No customer account with this number — create/login the account first.';
     $max = (float)self::set('max_pct', '100'); if ($max > 0) $pct = min($pct, $max); if ($pct <= 0) return 'Enter a discount % above 0.';
-    $exp = max(1, (int)self::set('expiry', '30')); $mode = self::set('mode', 'auto') === 'coupon' ? 'coupon' : 'auto'; $code = null;
+    $exp = max(1, (int)self::set('expiry', '30')); $mode = self::set('mode', 'auto') === 'auto' ? 'auto' : 'coupon'; $code = null;
     DB::table('winback_events')->where('phone', $p)->where('cycle_order_id', 0)->whereNull('used_at')->delete();
     if ($mode === 'coupon') { $code = 'WB-' . strtoupper(substr(md5($p . microtime()), 0, 6));
       DB::table('coupons')->insert(['code' => $code, 'type' => 'percent', 'value' => $pct, 'min_order' => (float)self::set('min_order', '0'), 'max_discount' => (float)self::set('max_discount', '0') ?: null, 'usage_limit' => 1, 'per_customer' => 1, 'valid_from' => now('Asia/Dhaka')->toDateString(), 'valid_to' => now('Asia/Dhaka')->addDays($exp)->toDateString(), 'active' => true, 'created_at' => now(), 'updated_at' => now()]); }
@@ -85,9 +92,9 @@ class Winback
   public static function onOrder(string $phone, int $orderId, array $qt): void {
     $p = self::norm($phone); $o = DB::table('orders')->find($orderId); if (!$o) return;
     foreach ($qt['applied'] ?? [] as $l) if (($l['key'] ?? '') === 'winback' && !empty($l['wbid'])) DB::table('winback_events')->where('id', $l['wbid'])->update(['used_at' => now(), 'used_order_id' => $orderId, 'used_discount' => (float)$l['amount'], 'used_total' => (float)$o->total, 'updated_at' => now()]);
-    if (!empty($qt['coupon']) && str_starts_with((string)$qt['coupon'], 'WB-')) {
+    if (!empty($qt['coupon'])) {
       $disc = 0; foreach ($qt['applied'] ?? [] as $l) if (($l['key'] ?? '') === 'coupon') $disc = (float)$l['amount'];
-      DB::table('winback_events')->where('coupon_code', $qt['coupon'])->update(['used_at' => now(), 'used_order_id' => $orderId, 'used_discount' => $disc, 'used_total' => (float)$o->total, 'updated_at' => now()]);
+      DB::table('winback_events')->where('coupon_code', strtoupper((string)$qt['coupon']))->where('phone', $p)->whereNull('used_at')->update(['used_at' => now(), 'used_order_id' => $orderId, 'used_discount' => $disc, 'used_total' => (float)$o->total, 'updated_at' => now()]);
     }
   }
 
