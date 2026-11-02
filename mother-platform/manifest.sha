@@ -49,7 +49,7 @@ d787924ace3fa42cc66a3de321e4e94e784006d8 resources/views/panels/employees.blade.
 2f840d53881d8aeaf0c5959161774787e5f540bc database/migrations/2026_10_31_000005_storefront.php
 65414d9e2fbe5f16f1fbf1551cce91276e9f30f9 app/Console/Commands/MotherSyncFeed.php
 743469ea0c8d07bbd67a9e461f395f9c21e8da4e app/Http/Controllers/StoreController.php
-3227a73f0bc0ebc86a74b85bb7348fe56efa07a8 resources/views/store/layout.blade.php
+55f8b9bedc49afbc11522241be9b2daa0fbc0b7a resources/views/store/layout.blade.php
 55af1b65f87c4b4816080ce2885760d24ff102b9 resources/views/store/card.blade.php
 bc41e6d92d114caf568da031fd4a36610ba083aa resources/views/store/home.blade.php
 6aa949a4e1ea5de5298971728076fad706a3c256 resources/views/store/category.blade.php
@@ -58,7 +58,7 @@ bc41e6d92d114caf568da031fd4a36610ba083aa resources/views/store/home.blade.php
 de47714c47d3108a03673c1e422d00ebcf0e3500 resources/views/store/track.blade.php
 1aa52e9a1cc85e3723d11055b65e301c5f2dc0c1 resources/views/store/page.blade.php
 06722f66390bb7e2d70f564ee2dd0dededd9a2b7 resources/views/store/missing.blade.php
-4f5df7063351e77ba21ac94e7b8c9f8ae235a710 resources/views/store/checkout.blade.php
+341c09daf288abfdfb41e8e8674169a540a83dd1 resources/views/store/checkout.blade.php
 03f8e0d0a55ce2cfd1251778fac95d2fee3d46e1 resources/views/store/wishlist.blade.php
 d162155635ee8d0ea432ac994aa1a1942c3cbe47 resources/views/store/pager.blade.php
 e75f162e466d0a2e2958bfaff473552e686e1543 public/logo.webp
@@ -426,7 +426,7 @@ d067f76d542f95204122bb970f4bfbf3cb390e03 app/Support/Biz.php
 b05b063714fb42c7a8aec31345d6403d54262bd0 database/migrations/2026_11_02_000036_winback_turn_on.php
 d1fbee6bc332cf27a800bf6d53672d28d055ad09 database/migrations/2026_11_02_000037_winback_pct_3_to_5.php
 bafaf9fa236e097407fc5d82abc67029711d07bd resources/views/winback_report.blade.php
-4aed526219f58d194241fa4ba68588248b19b926 resources/views/store/pixel_purchase.blade.php
+032c2e07a6bf5573c18b2769ff2bfabf1e6e36f4 resources/views/store/pixel_purchase.blade.php
 9703eee0c0d70ecd1c50e698da69e0232862eeb6 app/Support/Capi.php
 0a68a32b8463bfa9bf365ebd69b536a028e9b0be app/Http/Controllers/PixelController.php
 76c7b1742b33e49b25fbf284cf83483ce4af3e23 resources/views/pixel_admin.blade.php
