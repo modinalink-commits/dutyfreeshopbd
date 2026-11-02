@@ -53,6 +53,8 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/orders/{id}/revisions/{rid}/discard', [\App\Http\Controllers\OrderRevisionController::class,'discard'])->whereNumber('id')->whereNumber('rid');
   Route::get('/orders/{id}', [A::class,'orderShow']);
   Route::post('/orders/{id}/status', [A::class,'orderStatus']);
+  Route::post('/orders/{id}/schedule', [A::class,'orderSchedule'])->whereNumber('id');
+  Route::post('/orders/{id}/schedule/cancel', [A::class,'orderScheduleCancel'])->whereNumber('id');
   Route::post('/orders/{id}/quick-status', [A::class,'orderQuickStatus'])->whereNumber('id');
   Route::post('/orders/{id}/comment', [A::class,'orderComment']);
   Route::get('/orders/{id}/comments', [A::class,'orderComments']);

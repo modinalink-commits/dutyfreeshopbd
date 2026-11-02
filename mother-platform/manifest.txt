@@ -402,3 +402,6 @@ app/Http/Controllers/ImageAuditController.php
 resources/views/image_audit.blade.php
 public/images/product-placeholder.svg
 database/migrations/2026_11_02_000023_unstick_deploys.php
+database/migrations/2026_11_02_000024_order_schedule.php
+app/Support/OrderSchedule.php
+app/Console/Commands/OrdersProcessScheduled.php

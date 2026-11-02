@@ -157,6 +157,7 @@ class AdminController extends Controller {
   }
   public function orderBulk(Request $r) {
     $d = $r->validate(['ids'=>'required|array|max:500','ids.*'=>'integer','status'=>'required|in:'.implode(',',Mother::STAGES)]);
+    if ($d['status'] === 'Scheduled') return back()->with('bad', 'Scheduled needs a date/time. Open the order (or use the quick-action menu on its row) and pick Scheduled with a date.');
     $n = 0; $okB = 0; $failB = []; @set_time_limit(240);
     if ($d['status'] === 'Shipment') {
       $skip = []; $tried = 0;
@@ -271,11 +272,15 @@ class AdminController extends Controller {
   }
   public function orderComments($id) { abort_unless(DB::table('orders')->where('id',$id)->exists(), 404); return response()->json(self::commentPayload($id)); }
   public function orderStatus(Request $r, $id) {
-    $d = $r->validate(['status'=>'required|in:'.implode(',',Mother::STAGES),'note'=>'nullable|string|max:500']);
+    $d = $r->validate(['status'=>'required|in:'.implode(',',Mother::STAGES),'note'=>'nullable|string|max:500','sched_date'=>'nullable|date_format:Y-m-d','sched_time'=>'nullable|string|max:8']);
     $o = DB::table('orders')->find($id); abort_unless($o, 404);
+    if ($d['status'] === 'Scheduled') {
+      [$sok, $smsg] = \App\Support\OrderSchedule::set((int)$id, $d['sched_date'] ?? null, $d['sched_time'] ?? null, $d['note'] ?? null, Auth::id(), Auth::user()->name);
+      return back()->with($sok ? 'ok' : 'bad', $smsg);
+    }
     if ($d['status'] === 'Shipment' && $o->status !== 'Shipment') { $b = \App\Support\CourierSync::autoBook((int)$id); if ($b && !$b[0]) return back()->with('bad', 'Parcel booking failed, the order stays in '.$o->status.': '.$b[1]); $o = DB::table('orders')->find($id); }
     if ($o->status !== $d['status']) DB::transaction(function () use ($o, $d, $id) {
-      DB::table('orders')->where('id',$id)->update(['status'=>$d['status'],'updated_at'=>now()]);
+      DB::table('orders')->where('id',$id)->update(['status'=>$d['status'],'updated_at'=>now()] + ($o->status === 'Scheduled' ? ['scheduled_at'=>null,'scheduled_note'=>null] : []));
       DB::table('order_status_logs')->insert(['order_id'=>$id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'from_status'=>$o->status,'to_status'=>$d['status'],'note'=>$d['note']??null,'created_at'=>now(),'updated_at'=>now()]);
     });
     if ($r->input('go') === 'list') {
@@ -287,14 +292,28 @@ class AdminController extends Controller {
   }
   /** One-click status change from the order list (AJAX): same rules and audit log as orderStatus. */
   public function orderQuickStatus(Request $r, $id) {
-    $d = $r->validate(['status'=>'required|in:'.implode(',',Mother::STAGES),'note'=>'nullable|string|max:500']);
+    $d = $r->validate(['status'=>'required|in:'.implode(',',Mother::STAGES),'note'=>'nullable|string|max:500','sched_date'=>'nullable|date_format:Y-m-d','sched_time'=>'nullable|string|max:8']);
     $o = DB::table('orders')->find($id); abort_unless($o, 404);
+    if ($d['status'] === 'Scheduled') {
+      if (empty($d['sched_date'])) return response()->json(['success'=>false,'need_schedule'=>true,'message'=>'Scheduled date is required']);
+      [$sok, $smsg] = \App\Support\OrderSchedule::set((int)$id, $d['sched_date'], $d['sched_time'] ?? null, $d['note'] ?? null, Auth::id(), Auth::user()->name);
+      return response()->json(['success'=>$sok,'message'=>$smsg,'status'=>'Scheduled','cls'=>'s-scheduled','sched'=>\App\Support\OrderSchedule::short(DB::table('orders')->where('id',$id)->value('scheduled_at'))]);
+    }
     if ($d['status'] === 'Shipment' && $o->status !== 'Shipment') { $b = \App\Support\CourierSync::autoBook((int)$id); if ($b && !$b[0]) return response()->json(['success'=>false,'message'=>'Parcel booking failed, the order stays in '.$o->status.': '.$b[1]]); $o = DB::table('orders')->find($id); }
     if ($o->status !== $d['status']) DB::transaction(function () use ($o, $d, $id) {
-      DB::table('orders')->where('id',$id)->update(['status'=>$d['status'],'updated_at'=>now()]);
+      DB::table('orders')->where('id',$id)->update(['status'=>$d['status'],'updated_at'=>now()] + ($o->status === 'Scheduled' ? ['scheduled_at'=>null,'scheduled_note'=>null] : []));
       DB::table('order_status_logs')->insert(['order_id'=>$id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'from_status'=>$o->status,'to_status'=>$d['status'],'note'=>trim('Quick Action '.($d['note'] ?? '')),'created_at'=>now(),'updated_at'=>now()]);
     });
     return response()->json(['success'=>true,'status'=>$d['status'],'cls'=>'s-'.\Illuminate\Support\Str::slug($d['status'])]);
+  }
+  public function orderSchedule(Request $r, $id) {
+    $d = $r->validate(['sched_date'=>'required|date_format:Y-m-d','sched_time'=>'nullable|string|max:8','note'=>'nullable|string|max:500']);
+    [$ok, $m] = \App\Support\OrderSchedule::set((int)$id, $d['sched_date'], $d['sched_time'] ?? null, $d['note'] ?? null, Auth::id(), Auth::user()->name);
+    return back()->with($ok ? 'ok' : 'bad', $m);
+  }
+  public function orderScheduleCancel($id) {
+    [$ok, $m] = \App\Support\OrderSchedule::cancel((int)$id, Auth::id(), Auth::user()->name);
+    return back()->with($ok ? 'ok' : 'bad', $m);
   }
   public function ordersCsv() {
     return response()->streamDownload(function () {
