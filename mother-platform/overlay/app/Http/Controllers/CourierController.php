@@ -62,7 +62,7 @@ class CourierController extends Controller {
   private function audit(Request $r, string $a, string $s): void { DB::table('audit_logs')->insert(['user_id'=>auth()->id(),'user_name'=>auth()->user()->name,'action'=>$a,'subject'=>$s,'ip'=>$r->ip(),'created_at'=>now(),'updated_at'=>now()]); }
 
   /** Read-only audit: why do Shipment orders not match the Pathao panel? */
-  public function audit(Request $r) {
+  public function shipAudit(Request $r) {
     $by = DB::table('orders')->where('status', 'Shipment')->selectRaw("coalesce(courier,'(none)') c, (consignment_id is not null) has_cid, (tracking_code is not null and tracking_code <> '') has_trk, count(*) n")->groupBy('c', 'has_cid', 'has_trk')->get();
     $sample = DB::table('orders')->where('status', 'Shipment')->whereNull('consignment_id')->whereNotNull('tracking_code')->where('tracking_code', '<>', '')->orderByDesc('id')->limit(5)->get(['id', 'invoice', 'courier', 'tracking_code', 'courier_status', 'created_at']);
     $out = ['shipment_total' => DB::table('orders')->where('status', 'Shipment')->count(), 'groups' => $by, 'sample' => $sample, 'with_cid_total' => DB::table('orders')->whereNotNull('consignment_id')->count(), 'last_sync' => \Illuminate\Support\Facades\Cache::get('courier.last_sync'), 'pathao_ready' => Pathao::configured(), 'webhook_secret_set' => (bool)Sms::secret('pathao_webhook_secret')];
