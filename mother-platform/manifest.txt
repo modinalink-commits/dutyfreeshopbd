@@ -413,3 +413,5 @@ app/Http/Middleware/OrderActivityMw.php
 database/migrations/2026_11_02_000028_order_activity_logs.php
 app/Http/Controllers/OrderPaymentController.php
 database/migrations/2026_11_02_000029_order_payments_ledger.php
+app/Support/InvoiceNumber.php
+database/migrations/2026_11_02_000030_unified_invoice_sequence.php
