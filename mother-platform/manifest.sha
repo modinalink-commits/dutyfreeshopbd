@@ -1,5 +1,5 @@
 fe43f8b6cb422cca81ee18b74d3972f77e7852de database/migrations/2026_10_31_000001_mother_core.php
-e12597c391afd172a1aa27ac97d64e5ca86463a2 routes/web.php
+f006a3863c643f5500919ae9f519113dea6f3533 routes/web.php
 4eb9c45dba79c3a8479970e7d5fac7c89719990f app/Models/Mother.php
 2c92de4a667f6628ceba68470fdfff7fa791290f app/Http/Controllers/AdminController.php
 bd49f23ea0895af93bed5374937115c21911b0cd app/Console/Commands/MotherInstall.php
@@ -368,3 +368,5 @@ e88bb8cbc31828b06dab807e269e8ea17e763e88 resources/views/migration_dashboard.bla
 2ccf0bdf1b7b01f726724178caa6bc08757049f6 resources/views/profit_report.blade.php
 85c80db976a5d91c2058226e9a1046f6ce6d4c47 app/Http/Controllers/PurchaseReportController.php
 00378dde5192745a673990f0471bbf0d9cfdd879 resources/views/purchase_report.blade.php
+55ab561211071241f24fc95ce217fddcf6ba07bd app/Http/Controllers/LegacyKeyController.php
+f77e16997084e5162155bc0c86494dd57c9401f0 resources/views/legacy_key.blade.php
