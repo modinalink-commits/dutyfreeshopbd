@@ -1,0 +1,13 @@
+@extends('layout')@section('title','Performance audit')
+@section('body')
+<h1 style="margin:0 0 4px">Performance audit (read-only)</h1><p style="color:#6B7280;margin:0 0 12px;font-size:13px">Measured live on this server. Nothing on this page changes data. To measure any admin page add <code>?_perf=1</code> to its address and read the X-Perf response header.</p>
+@foreach($S as $title => $rows)
+<h2 style="font-size:15px;margin:16px 0 6px">{{ $title }}</h2><table style="border-collapse:collapse;width:100%;font-size:13px">@foreach($rows as $r)<tr><td style="border:1px solid #dfe3e8;padding:5px 8px;width:34%;background:#f8fafc">{{ $r[0] }}</td><td style="border:1px solid #dfe3e8;padding:5px 8px;word-break:break-word">{{ is_scalar($r[1]) || $r[1]===null ? $r[1] : json_encode($r[1]) }}</td></tr>@endforeach</table>
+@endforeach
+<h2 style="font-size:15px;margin:16px 0 6px">Tables with most sequential scans</h2><table style="border-collapse:collapse;width:100%;font-size:13px"><tr style="background:#f1f5f9"><th style="border:1px solid #dfe3e8;padding:5px 8px;text-align:left">Table</th><th style="border:1px solid #dfe3e8;padding:5px 8px;text-align:right">Rows</th><th style="border:1px solid #dfe3e8;padding:5px 8px;text-align:right">Seq scans</th><th style="border:1px solid #dfe3e8;padding:5px 8px;text-align:right">Index scans</th><th style="border:1px solid #dfe3e8;padding:5px 8px">Size</th></tr>
+@foreach($tables as $t)<tr><td style="border:1px solid #dfe3e8;padding:5px 8px">{{ $t->relname }}</td><td style="border:1px solid #dfe3e8;padding:5px 8px;text-align:right">{{ number_format($t->rows) }}</td><td style="border:1px solid #dfe3e8;padding:5px 8px;text-align:right">{{ number_format($t->seq_scan) }}</td><td style="border:1px solid #dfe3e8;padding:5px 8px;text-align:right">{{ number_format((int)$t->idx_scan) }}</td><td style="border:1px solid #dfe3e8;padding:5px 8px">{{ $t->size }}</td></tr>@endforeach</table>
+<h2 style="font-size:15px;margin:16px 0 6px">Existing indexes on key tables</h2><pre style="font-size:11.5px;white-space:pre-wrap;background:#f8fafc;border:1px solid #dfe3e8;padding:8px;border-radius:6px">@foreach($idx as $i){{ $i->tablename }}: {{ $i->indexdef }}
+@endforeach</pre>
+<h2 style="font-size:15px;margin:16px 0 6px">EXPLAIN (ANALYZE, BUFFERS) of key queries</h2>
+@foreach($explain as $label => $txt)<h3 style="font-size:13px;margin:10px 0 3px">{{ $label }}</h3><pre style="font-size:11.5px;white-space:pre-wrap;background:#f8fafc;border:1px solid #dfe3e8;padding:8px;border-radius:6px">{{ $txt }}</pre>@endforeach
+@endsection

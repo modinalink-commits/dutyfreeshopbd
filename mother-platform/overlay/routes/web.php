@@ -11,7 +11,7 @@ Route::get('/admin/login', [A::class,'loginForm'])->name('login');
 Route::post('/admin/login', [A::class,'login']);
 Route::post('/admin/logout', [A::class,'logout']);
 Route::get('/login', fn() => redirect('/admin/login'));
-Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefix('admin')->group(function () {
+Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Http\Middleware\PerfProbe::class])->prefix('admin')->group(function () {
   Route::get('/', [A::class,'dashboard']);
   Route::get('/error-log', [\App\Http\Controllers\UploadController::class,'errorLog']);
   Route::post('/upload-image', [\App\Http\Controllers\UploadController::class,'image']);
@@ -154,6 +154,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::get('/order-history-report', [\App\Http\Controllers\OrderHistoryReportController::class,'index']);
   Route::get('/stock-movement-report', [\App\Http\Controllers\StockMovementReportController::class,'index']);
   Route::get('/stock-report', [\App\Http\Controllers\StockReportController::class,'index']);
+  Route::get('/perf-audit', [\App\Http\Controllers\PerfAuditController::class,'show']);
   Route::get('/legacy-key', [\App\Http\Controllers\LegacyKeyController::class,'show']);
   Route::get('/purchase-report', [\App\Http\Controllers\PurchaseReportController::class,'index']);
   Route::get('/profit-report', [\App\Http\Controllers\ProfitReportController::class,'index']);
