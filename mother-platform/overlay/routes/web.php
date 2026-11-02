@@ -151,6 +151,12 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class])->prefi
   Route::get('/courier', [\App\Http\Controllers\CourierController::class,'show']);
   Route::post('/courier', [\App\Http\Controllers\CourierController::class,'save']);
   Route::post('/courier/connect', [\App\Http\Controllers\CourierController::class,'connect']);
+  Route::get('/carrybee', [\App\Http\Controllers\CarrybeeController::class,'show']);
+  Route::post('/carrybee', [\App\Http\Controllers\CarrybeeController::class,'save']);
+  Route::post('/carrybee/connect', [\App\Http\Controllers\CarrybeeController::class,'connect']);
+  Route::post('/carrybee/send-bulk', [\App\Http\Controllers\CarrybeeController::class,'sendBulk']);
+  Route::post('/orders/{id}/carrybee-send', [\App\Http\Controllers\CarrybeeController::class,'sendOne']);
+  Route::post('/orders/{id}/carrybee-refresh', [\App\Http\Controllers\CarrybeeController::class,'refresh']);
   Route::post('/courier/send-bulk', [\App\Http\Controllers\CourierController::class,'sendBulk']);
   Route::post('/orders/{id}/courier-send', [\App\Http\Controllers\CourierController::class,'sendOne']);
   Route::post('/orders/{id}/courier-refresh', [\App\Http\Controllers\CourierController::class,'refresh']);
@@ -262,6 +268,7 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestF
   Route::post('/webhooks/voice', [\App\Http\Controllers\VoiceCampaignController::class,'hook'])->middleware('throttle:120,1');
   Route::get('/voice-audio/{id}.{ext}', [\App\Http\Controllers\VoiceCampaignController::class,'audio'])->whereNumber('id')->middleware('throttle:120,1');
   Route::post('/webhooks/pathao', [\App\Http\Controllers\CourierController::class,'webhook'])->middleware('throttle:120,1');
+  Route::post('/webhooks/carrybee', [\App\Http\Controllers\CarrybeeController::class,'webhook'])->middleware('throttle:120,1');
   Route::get('/webhooks/meta', [\App\Http\Controllers\ChatController::class,'metaVerify']);
   Route::post('/webhooks/meta', [\App\Http\Controllers\ChatController::class,'metaHook'])->middleware('throttle:300,1');
   Route::post('/chat/start', [\App\Http\Controllers\ChatController::class,'webStart'])->middleware('throttle:60,1');

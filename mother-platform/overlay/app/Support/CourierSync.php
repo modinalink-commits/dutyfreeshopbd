@@ -20,7 +20,7 @@ class CourierSync {
       str_contains($s, 'pickup fail') => 'Failed Delivery',
       str_contains($s, 'picked') => 'Picked Up',
       str_contains($s, 'hub') || str_contains($s, 'sorting') => 'At Hub',
-      str_contains($s, 'transit') => 'In Transit',
+      str_contains($s, 'transit') || str_contains($s, 'warehouse') => 'In Transit',
       default => 'Pending',
     };
   }
@@ -38,23 +38,23 @@ class CourierSync {
     $new = self::orderStatus($stage);
     if ($new && $o->status !== $new && !in_array($o->status, ['Delivered','Returned','Cancel','Exchange Received'], true)) {
       $upd['status'] = $new;
-      DB::table('order_status_logs')->insert(['order_id'=>$o->id, 'user_id'=>null, 'user_name'=>'Courier (auto)', 'from_status'=>$o->status, 'to_status'=>$new, 'note'=>'Pathao: '.$raw, 'created_at'=>$now, 'updated_at'=>$now]);
+      DB::table('order_status_logs')->insert(['order_id'=>$o->id, 'user_id'=>null, 'user_name'=>'Courier (auto)', 'from_status'=>$o->status, 'to_status'=>$new, 'note'=>($o->courier ?: 'Pathao').': '.$raw, 'created_at'=>$now, 'updated_at'=>$now]);
     }
     DB::table('orders')->where('id', $o->id)->update($upd);
     return $changed;
   }
   /** Poll open parcels. Returns how many changed. */
   public static function run(int $limit = 40): int {
-    if (!Pathao::configured()) return 0;
+    if (!Pathao::configured() && !Carrybee::configured()) return 0;
     $n = 0;
     $rows = DB::table('orders')->whereNotNull('consignment_id')->where(fn($q) => $q->whereNull('courier_stage')->orWhereNotIn('courier_stage', ['Delivered','Returned','Cancelled']))->orderByRaw('courier_synced_at asc nulls first')->limit($limit)->get();
-    foreach ($rows as $o) { $i = Pathao::info($o->consignment_id); if ($i && self::apply($o, $i)) $n++; elseif ($i === []) DB::table('orders')->where('id', $o->id)->update(['courier_synced_at'=>now()]); }
+    foreach ($rows as $o) { $i = $o->courier === 'Carrybee' ? (Carrybee::configured() ? Carrybee::info($o->consignment_id) : null) : (Pathao::configured() ? Pathao::info($o->consignment_id) : null); if ($i && self::apply($o, $i)) $n++; elseif ($i === []) DB::table('orders')->where('id', $o->id)->update(['courier_synced_at'=>now()]); }
     Cache::put('courier.last_sync', now()->toDateTimeString(), 86400);
     return $n;
   }
   /** Cheap automatic refresh: at most every 10 minutes, after the response is sent. */
   public static function auto(): void {
-    if (!Pathao::configured() || !Cache::add('courier.auto', 1, 600)) return;
+    if ((!Pathao::configured() && !Carrybee::configured()) || !Cache::add('courier.auto', 1, 600)) return;
     app()->terminating(fn() => rescue(fn() => self::run(25), null, false));
   }
 }
