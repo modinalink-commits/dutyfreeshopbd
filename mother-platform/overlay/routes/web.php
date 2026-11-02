@@ -122,6 +122,8 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/courier/settle', [\App\Http\Controllers\CourierController::class,'settle']);
   Route::get('/ai-chat', [\App\Http\Controllers\AiChatController::class,'show']);
   Route::post('/ai-chat', [\App\Http\Controllers\AiChatController::class,'save']);
+  Route::get('/call-center/my-status', [\App\Http\Controllers\CallCenterController::class,'myStatus']);
+  Route::post('/call-center/my-status', [\App\Http\Controllers\CallCenterController::class,'setStatus']);
   Route::get('/call-center/phone', [\App\Http\Controllers\CallCenterController::class,'phone']);
   Route::get('/call-center/contacts', [\App\Http\Controllers\CallCenterController::class,'contacts']);
   Route::get('/call-center/recent', [\App\Http\Controllers\CallCenterController::class,'recent']);

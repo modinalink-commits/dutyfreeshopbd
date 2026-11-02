@@ -10,7 +10,20 @@ class CallCenterController extends Controller {
   private function acct() { return DB::table('sip_accounts')->whereNull('user_id')->orderBy('id')->first(); }
   /** The signed-in user's own extension. */
   private function mine() { return DB::table('sip_accounts')->where('user_id', Auth::id())->first(); }
-  public function phone(Request $r) { return view('softphone', ['embed'=>$r->boolean('embed'), 'has'=>(bool)($this->mine()->username ?? null) && (bool)($this->acct()->wss_url ?? null), 'n'=>preg_replace('/[^0-9+*#]/', '', (string)$r->query('n', ''))]); }
+  /** Agent availability (server-side): available | busy. Busy agents get no incoming calls; outbound stays allowed. */
+  public static function agentStatus(int $uid): string {
+    try { return (string)(DB::table('agent_availability')->where('user_id', $uid)->value('agent_status') ?: 'available'); } catch (\Throwable $e) { return 'available'; }
+  }
+  public static function availableAgents(): array {
+    try { return DB::table('agent_availability')->where('agent_status', 'busy')->pluck('user_id')->all(); } catch (\Throwable $e) { return []; }
+  }
+  public function myStatus(Request $r) { return response()->json(['status' => self::agentStatus((int)$r->user()->id)]); }
+  public function setStatus(Request $r) {
+    $v = $r->input('status') === 'busy' ? 'busy' : 'available'; $uid = (int)$r->user()->id;
+    try { DB::table('agent_availability')->updateOrInsert(['user_id' => $uid], ['agent_status' => $v, 'status_updated_at' => now(), 'updated_at' => now(), 'created_at' => now()]); } catch (\Throwable $e) { return response()->json(['ok' => false, 'status' => 'available'], 500); }
+    return response()->json(['ok' => true, 'status' => $v]);
+  }
+  public function phone(Request $r) { return view('softphone', ['embed'=>$r->boolean('embed'), 'has'=>(bool)($this->mine()->username ?? null) && (bool)($this->acct()->wss_url ?? null), 'n'=>preg_replace('/[^0-9+*#]/', '', (string)$r->query('n', '')), 'agst'=>self::agentStatus((int)$r->user()->id)]); }
   public function account() {
     $a = $this->acct(); return view('sip_account', ['a'=>$a, 'hasPw'=>(bool)($a->password_enc ?? null)]);
   }

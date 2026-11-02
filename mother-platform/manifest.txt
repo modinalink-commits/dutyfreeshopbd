@@ -407,3 +407,4 @@ app/Support/OrderSchedule.php
 app/Console/Commands/OrdersProcessScheduled.php
 database/migrations/2026_11_02_000025_unstick_deploys2.php
 database/migrations/2026_11_02_000026_voice_pbx_final.php
+database/migrations/2026_11_02_000027_agent_availability.php
