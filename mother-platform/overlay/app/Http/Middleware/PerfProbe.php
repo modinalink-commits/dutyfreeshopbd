@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 /** Read-only measurement: super users can add ?_perf=1 to an admin page to get query count, DB time, memory and time as response headers. */
 class PerfProbe {
   public function handle(Request $r, Closure $next) {
-    if (!$r->query('_perf') || !auth()->check() || auth()->user()->type !== 'super') return $next($r);
+    if (!$r->query('_perf') || !auth()->check() || !in_array(auth()->user()->role, ['super','admin'], true)) return $next($r);
     $t0 = microtime(true); DB::enableQueryLog();
     $resp = $next($r);
     $log = DB::getQueryLog(); $ms = 0; $pat = [];

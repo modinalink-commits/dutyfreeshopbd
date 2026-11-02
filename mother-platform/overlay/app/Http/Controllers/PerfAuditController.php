@@ -7,7 +7,7 @@ class PerfAuditController extends Controller {
   private function safe(callable $f, $d = null) { try { return $f(); } catch (\Throwable $e) { return $d ?? ('n/a: ' . substr($e->getMessage(), 0, 120)); } }
   private function cpu(): array { $r = fn() => preg_split('/\s+/', trim(explode("\n", (string)@file_get_contents('/proc/stat'))[0])); $a = $r(); usleep(400000); $b = $r(); $d = []; for ($i = 1; $i <= 8; $i++) $d[$i] = (int)($b[$i] ?? 0) - (int)($a[$i] ?? 0); $t = max(1, array_sum($d)); return ['busy' => round(100 - ($d[4] + $d[5]) / $t * 100, 1), 'iowait' => round($d[5] / $t * 100, 1)]; }
   public function show() {
-    abort_unless(auth()->user() && auth()->user()->type === 'super', 403);
+    abort_unless(auth()->user() && in_array(auth()->user()->role, ['super','admin'], true), 403);
     $S = []; $mem = []; foreach (explode("\n", (string)@file_get_contents('/proc/meminfo')) as $l) if (preg_match('/^(\w+):\s+(\d+)/', $l, $m)) $mem[$m[1]] = (int)$m[2] / 1024;
     $cores = max(1, substr_count((string)@file_get_contents('/proc/cpuinfo'), 'processor'));
     $S['Server'] = [
