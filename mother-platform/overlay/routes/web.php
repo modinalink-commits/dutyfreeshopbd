@@ -257,6 +257,7 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestF
   Route::post('/webhooks/legacy-procurement', [\App\Http\Controllers\LegacyImportController::class,'procurement'])->middleware('throttle:120,1');
   Route::post('/webhooks/legacy-dedupe-suppliers', [\App\Http\Controllers\LegacyImportController::class,'dedupeSuppliers'])->middleware('throttle:20,1');
   Route::post('/webhooks/legacy-payments', [\App\Http\Controllers\LegacyImportController::class,'payments'])->middleware('throttle:60,1');
+  Route::post('/webhooks/legacy-accounts', [\App\Http\Controllers\LegacyImportController::class,'accounts'])->middleware('throttle:60,1');
   Route::post('/webhooks/legacy-passwords', [\App\Http\Controllers\LegacyImportController::class,'passwords'])->middleware('throttle:600,1');
   Route::post('/webhooks/voice', [\App\Http\Controllers\VoiceCampaignController::class,'hook'])->middleware('throttle:120,1');
   Route::get('/voice-audio/{id}.{ext}', [\App\Http\Controllers\VoiceCampaignController::class,'audio'])->whereNumber('id')->middleware('throttle:120,1');

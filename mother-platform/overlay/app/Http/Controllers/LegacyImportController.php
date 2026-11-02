@@ -179,4 +179,22 @@ class LegacyImportController extends Controller
     }
     return response()->json(['ok'=>true, 'removed'=>$removed, 'in'=>$in, 'skip'=>$skip, 'nosup'=>$nosup, 'sum'=>(float)DB::table('supplier_payments')->sum('amount'), 'tot'=>DB::table('supplier_payments')->count()]);
   }
+
+  /** Token webhook: old accounts. d = {accounts:[name,...], tx:[{id,date,type,acct,desc,inc,exp,voucher,at}]}. Idempotent via reference OLD-<id>. Opening balance stays 0: the old running balance is the sum of the imported entries. */
+  public function accounts(Request $r) {
+    if (!$this->ok($r)) abort(404);
+    $d = json_decode((string)$r->input('d'), true); if (!is_array($d)) return response()->json(['ok'=>false], 422);
+    $ids = []; foreach (($d['accounts'] ?? []) as $n) { $n = mb_substr(trim((string)$n), 0, 120); if ($n === '') continue; $row = DB::table('money_accounts')->where('name', $n)->first();
+      $ids[$n] = $row ? $row->id : DB::table('money_accounts')->insertGetId(['name'=>$n, 'type'=>(stripos($n,'bank')!==false?'bank':'wallet'), 'opening'=>0, 'active'=>true, 'created_at'=>now(), 'updated_at'=>now()]); }
+    $in = 0; $skip = 0; $noacc = 0; $sum = 0.0;
+    foreach (($d['tx'] ?? []) as $x) {
+      $ref = 'OLD-'.(int)$x['id']; $acc = $ids[$x['acct'] ?? ''] ?? null; if (!$acc) { $noacc++; continue; }
+      if (DB::table('account_entries')->where('reference', $ref)->exists()) { $skip++; continue; }
+      $inc = (float)($x['inc'] ?? 0); $exp = (float)($x['exp'] ?? 0); $dir = $inc > 0 ? 'income' : 'expense'; $amt = $inc > 0 ? $inc : $exp; if ($amt <= 0) { $skip++; continue; }
+      $at = $x['at'] ?? ($x['date'] ?? now()); 
+      DB::table('account_entries')->insert(['reference'=>$ref, 'direction'=>$dir, 'account_id'=>$acc, 'amount'=>$amt, 'comment'=>mb_substr(trim(($x['voucher'] ?? '').': '.($x['desc'] ?? ''), ': '), 0, 500) ?: null, 'entry_date'=>substr((string)($x['date'] ?? $at), 0, 10), 'user_name'=>'Imported from old site', 'created_at'=>$at, 'updated_at'=>$at]);
+      $in++; $sum += $dir === 'income' ? $amt : -$amt;
+    }
+    return response()->json(['ok'=>true, 'in'=>$in, 'skip'=>$skip, 'noacc'=>$noacc, 'net'=>$sum, 'accounts'=>count($ids)]);
+  }
 }
