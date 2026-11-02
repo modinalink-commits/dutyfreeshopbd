@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 
 /** Order Edit / Revision: an existing order is never overwritten silently. Every change is a revision (who, when, why, before, after, totals). */
 class OrderRevisionController extends Controller {
-  const EDITABLE = ['New', 'Pre Order', 'Assign', 'Pending', 'AI Order', 'Approved', 'Scheduled', 'WFP', 'Packaging'];
+  const EDITABLE = ['New', 'Pre Order', 'Assign', 'Pending', 'AI Order', 'Approved', 'Scheduled', 'WFP', 'Packaging', 'Cancel'];
   const CONFIRMED = ['Approved', 'Scheduled', 'WFP', 'Packaging'];
   const OPEN = ['New', 'Pre Order', 'Assign', 'Pending', 'AI Order'];
   const REASONS = ['Customer requested product addition', 'Customer requested product removal', 'Quantity changed', 'Product replaced', 'Price correction', 'Delivery charge correction', 'Discount correction', 'Customer confirmation update', 'Other'];

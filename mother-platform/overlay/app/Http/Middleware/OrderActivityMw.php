@@ -13,7 +13,7 @@ class OrderActivityMw {
       $id = (int)$m[1]; $p = $m[2];
       if (preg_match('/^(steadfast|redx|carrybee|courier)-send$/', $p, $c)) OrderActivity::log($id,'courier_assigned',null,$c[1],ucfirst($c[1]).' courier assigned');
       elseif (preg_match('/^pay-(\w+)$/', $p, $c)) OrderActivity::log($id, in_array($c[1],['reject','rejected','decline']) ? 'payment_rejected' : 'payment_verified', null, $c[1], 'Manual payment '.$c[1]);
-      elseif ($p === 'revise' || preg_match('#^revisions/\d+/apply$#', $p)) OrderActivity::log($id,'order_edited',null,null,$p === 'revise' ? 'Order revision saved' : 'Order revision applied');
+      elseif ($p === 'revise' || preg_match('#^revisions/\d+/apply$#', $p)) OrderActivity::log($id,'order_edited',null,null,(\DB::table('orders')->where('id',$id)->value('status') === 'Cancel' ? 'Cancelled Order Edited (still Cancelled). ' : '').($p === 'revise' ? 'Order revision saved' : 'Order revision applied'));
       elseif ($p === 'comment') OrderActivity::log($id,'note_added',null,null,mb_substr((string)$r->input('body'),0,300));
       elseif ($p === 'print-log') OrderActivity::log($id,$r->input('type') === 'invoice' ? 'invoice_printed' : 'label_printed',null,null,(string)$r->input('type').' printed');
       elseif ($p === 'schedule') OrderActivity::log($id,'order_scheduled',null,(string)$r->input('sched_date'),(string)$r->input('note'));
