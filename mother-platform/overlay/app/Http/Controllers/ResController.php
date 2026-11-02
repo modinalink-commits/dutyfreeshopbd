@@ -106,10 +106,14 @@ class ResController extends Controller {
     $ph = collect($rows->items())->pluck('phone')->filter()->all(); if (!$ph) return [];
     $agg = DB::table('orders')->whereIn('phone',$ph)->whereNotIn('status',['Cancel'])->select('phone', DB::raw('count(*) n'), DB::raw('coalesce(sum(total),0) s'), DB::raw('max(created_at) l'))->groupBy('phone')->get()->keyBy('phone');
     $lv = DB::table('membership_levels')->where('active',true)->orderByDesc('min_spent')->get();
+    $st = DB::table('orders')->whereIn('phone',$ph)->select('phone', DB::raw("sum(case when status in ('Delivered','Partial Delivered') then 1 else 0 end) d"), DB::raw("sum(case when status in ('Return Pending','Returned','Exchange Received','Cancel') then 1 else 0 end) x"))->groupBy('phone')->get()->keyBy('phone');
+    $lastp = DB::table('orders as o')->join('order_items as i', 'i.order_id', '=', 'o.id')->whereIn('o.phone',$ph)->whereNotIn('o.status',['Cancel'])
+      ->whereRaw('o.id = (select max(o2.id) from orders o2 where o2.phone = o.phone and o2.status <> ?)', ['Cancel'])->select('o.phone', 'i.name')->orderBy('i.id')->get()->groupBy('phone');
     $out = [];
     foreach ($rows->items() as $r) { $a = $agg[$r->phone] ?? null; $s = $a ? (float)$a->s : 0;
       $tier = $r->membership ?: (($a && $a->n > 1) ? (optional($lv->first(fn($l) => $s >= $l->min_spent))->name ?? 'Member') : ($a ? 'New' : '—'));
-      $out[$r->id] = ['orders'=>($a->n ?? 0) + (int)($r->legacy_orders ?? 0), 'spent'=>'৳'.number_format($s), 'tier'=>$tier, 'last'=>$a ? \Carbon\Carbon::parse($a->l)->diffForHumans() : '—']; }
+      $out[$r->id] = ['orders'=>($a->n ?? 0) + (int)($r->legacy_orders ?? 0), 'spent'=>'৳'.number_format($s), 'tier'=>$tier, 'last'=>$a ? \Carbon\Carbon::parse($a->l)->diffForHumans() : '—',
+        'rate'=>(($x = $st[$r->phone] ?? null) && ($x->d + $x->x) > 0) ? round($x->d / ($x->d + $x->x) * 100).'% ('.$x->d.'/'.($x->d + $x->x).')' : '—', 'lastp'=>isset($lastp[$r->phone]) ? \Illuminate\Support\Str::limit($lastp[$r->phone]->pluck('name')->take(2)->implode(', '), 40) : '—']; }
     return $out;
   }
   public function customerImport(Request $r) {
