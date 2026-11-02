@@ -108,7 +108,7 @@ body{background:#fff}
 
 @if(!empty($s['gsc_verify']))<meta name="google-site-verification" content="{{ $s['gsc_verify'] }}">@endif
 @if(!empty($s['bing_verify']))<meta name="msvalidate.01" content="{{ $s['bing_verify'] }}">@endif
-@if(!empty($s['fb_verify']))<meta name="facebook-domain-verification" content="{{ $s['fb_verify'] }}">@endif
+<meta name="facebook-domain-verification" content="{{ !empty($s['fb_verify']) ? $s['fb_verify'] : 'c8mtczmkayiwcwfwctb0nh45tm8lwj' }}">
 <script>window.dataLayer=window.dataLayer||[];</script>
 @if(!empty($s['gtm_id']))<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f)})(window,document,'script','dataLayer',@json($s['gtm_id']));</script>@endif
 @if($s['gtag_id'] && empty($s['gtm_id']))
