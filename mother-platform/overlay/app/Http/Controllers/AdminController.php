@@ -157,19 +157,24 @@ class AdminController extends Controller {
   }
   public function orderBulk(Request $r) {
     $d = $r->validate(['ids'=>'required|array|max:500','ids.*'=>'integer','status'=>'required|in:'.implode(',',Mother::STAGES)]);
-    $n = 0; $book = [];
-    DB::transaction(function () use ($d, &$n, &$book) {
+    $n = 0; $okB = 0; $failB = []; @set_time_limit(240);
+    if ($d['status'] === 'Shipment') {
+      $skip = []; $tried = 0;
+      foreach (DB::table('orders')->whereIn('id',$d['ids'])->where('status','!=','Shipment')->whereNull('consignment_id')->orderBy('id')->pluck('id') as $bid) {
+        if ($tried >= 60) { $skip[] = (int)$bid; $failB[] = '#'.$bid.': over the 60-parcel limit per click, stays in its old status'; continue; }
+        $tried++; $b = \App\Support\CourierSync::autoBook((int)$bid);
+        if ($b === null) continue; if ($b[0]) $okB++; else { $skip[] = (int)$bid; $failB[] = '#'.$bid.': '.$b[1].' (stays in its old status)'; }
+      }
+      $d['ids'] = array_values(array_diff($d['ids'], $skip));
+    }
+    DB::transaction(function () use ($d, &$n) {
       foreach (DB::table('orders')->whereIn('id',$d['ids'])->lockForUpdate()->get() as $o) {
         if ($o->status === $d['status']) continue;
-        if ($d['status'] === 'Shipment') $book[] = (int)$o->id;
         DB::table('orders')->where('id',$o->id)->update(['status'=>$d['status'],'updated_at'=>now()]);
         DB::table('order_status_logs')->insert(['order_id'=>$o->id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'from_status'=>$o->status,'to_status'=>$d['status'],'note'=>'Bulk action','created_at'=>now(),'updated_at'=>now()]);
         $n++;
       }
     });
-    $okB = 0; $failB = []; @set_time_limit(240);
-    foreach (array_slice($book, 0, 60) as $bid) { $b = \App\Support\CourierSync::autoBook($bid); if ($b === null) continue; if ($b[0]) $okB++; else $failB[] = '#'.$bid.': '.$b[1]; }
-    if (count($book) > 60) $failB[] = (count($book) - 60).' more orders: send them from the Courier button (limit 60 per click)';
     if ($r->expectsJson()) return response()->json(['success'=>true,'moved'=>$n,'status'=>$d['status'],'booked'=>$okB,'parcel_errors'=>array_slice($failB, 0, 6)]);
     return back()->with('ok', "$n orders moved to {$d['status']}");
   }
@@ -268,28 +273,28 @@ class AdminController extends Controller {
   public function orderStatus(Request $r, $id) {
     $d = $r->validate(['status'=>'required|in:'.implode(',',Mother::STAGES),'note'=>'nullable|string|max:500']);
     $o = DB::table('orders')->find($id); abort_unless($o, 404);
+    if ($d['status'] === 'Shipment' && $o->status !== 'Shipment') { $b = \App\Support\CourierSync::autoBook((int)$id); if ($b && !$b[0]) return back()->with('bad', 'Parcel booking failed, the order stays in '.$o->status.': '.$b[1]); $o = DB::table('orders')->find($id); }
     if ($o->status !== $d['status']) DB::transaction(function () use ($o, $d, $id) {
       DB::table('orders')->where('id',$id)->update(['status'=>$d['status'],'updated_at'=>now()]);
       DB::table('order_status_logs')->insert(['order_id'=>$id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'from_status'=>$o->status,'to_status'=>$d['status'],'note'=>$d['note']??null,'created_at'=>now(),'updated_at'=>now()]);
     });
-    $warn = null; if ($d['status'] === 'Shipment' && $o->status !== 'Shipment') { $b = \App\Support\CourierSync::autoBook((int)$id); if ($b && !$b[0]) $warn = 'Status saved, but the parcel was not booked: '.$b[1]; }
     if ($r->input('go') === 'list') {
       parse_str(ltrim((string)$r->input('ret'), '?'), $keep);
       $keep = array_filter(array_intersect_key($keep, array_flip(['q','from','to','ft','tt','per'])), fn($v) => is_scalar($v) && $v !== '');
-      return redirect('/admin/orders?'.http_build_query($keep + ['status'=>$d['status'],'hl'=>(int)$id]))->with('ok', 'Order status updated successfully. / অর্ডারের স্ট্যাটাস সফলভাবে আপডেট হয়েছে।')->with('bad', $warn);
+      return redirect('/admin/orders?'.http_build_query($keep + ['status'=>$d['status'],'hl'=>(int)$id]))->with('ok', 'Order status updated successfully. / অর্ডারের স্ট্যাটাস সফলভাবে আপডেট হয়েছে।');
     }
-    return $warn ? back()->with('bad', $warn) : back();
+    return back();
   }
   /** One-click status change from the order list (AJAX): same rules and audit log as orderStatus. */
   public function orderQuickStatus(Request $r, $id) {
     $d = $r->validate(['status'=>'required|in:'.implode(',',Mother::STAGES),'note'=>'nullable|string|max:500']);
     $o = DB::table('orders')->find($id); abort_unless($o, 404);
+    if ($d['status'] === 'Shipment' && $o->status !== 'Shipment') { $b = \App\Support\CourierSync::autoBook((int)$id); if ($b && !$b[0]) return response()->json(['success'=>false,'message'=>'Parcel booking failed, the order stays in '.$o->status.': '.$b[1]]); $o = DB::table('orders')->find($id); }
     if ($o->status !== $d['status']) DB::transaction(function () use ($o, $d, $id) {
       DB::table('orders')->where('id',$id)->update(['status'=>$d['status'],'updated_at'=>now()]);
       DB::table('order_status_logs')->insert(['order_id'=>$id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'from_status'=>$o->status,'to_status'=>$d['status'],'note'=>trim('Quick Action '.($d['note'] ?? '')),'created_at'=>now(),'updated_at'=>now()]);
     });
-    $parcel = null; if ($d['status'] === 'Shipment' && $o->status !== 'Shipment') { $b = \App\Support\CourierSync::autoBook((int)$id); if ($b && !$b[0]) $parcel = (string)$b[1]; }
-    return response()->json(['success'=>true,'status'=>$d['status'],'cls'=>'s-'.\Illuminate\Support\Str::slug($d['status']),'parcel_error'=>$parcel]);
+    return response()->json(['success'=>true,'status'=>$d['status'],'cls'=>'s-'.\Illuminate\Support\Str::slug($d['status'])]);
   }
   public function ordersCsv() {
     return response()->streamDownload(function () {
