@@ -139,4 +139,18 @@ class LegacyImportController extends Controller
     }
     return response()->json(['ok'=>true, 'sup'=>$sup, 'pur'=>$pur, 'skip'=>$skip, 'items'=>$items, 'nosup'=>$nop, 'tot_sup'=>DB::table('suppliers')->count(), 'tot_pur'=>DB::table('purchases')->count()]);
   }
+  /** Token webhook: merge pre-existing suppliers into the legacy-imported ones (same phone or same name). Moves their purchases/payments/returns/notes, then removes the empty duplicate. */
+  public function dedupeSuppliers(Request $r) {
+    if (!$this->ok($r)) abort(404);
+    $moved = 0; $removed = 0; $kept = [];
+    foreach (DB::table('suppliers')->whereNotNull('legacy_supplier_id')->get() as $n) {
+      $olds = DB::table('suppliers')->whereNull('legacy_supplier_id')->where(fn($w) => $w->whereRaw('lower(name) = ?', [mb_strtolower($n->name)])->orWhere(fn($z) => $z->whereNotNull('phone')->where('phone', '!=', '')->where('phone', $n->phone)))->get();
+      foreach ($olds as $o) {
+        foreach (['purchases','supplier_payments','purchase_returns','supplier_notes','damaged_products'] as $tb) if (\Schema::hasColumn($tb, 'supplier_id')) $moved += DB::table($tb)->where('supplier_id', $o->id)->update(['supplier_id'=>$n->id]);
+        DB::table('suppliers')->where('id', $n->id)->update(['opening_balance'=>DB::raw('opening_balance + '.(float)$o->opening_balance), 'credit_limit'=>max((float)$n->credit_limit, (float)$o->credit_limit), 'email'=>$n->email ?: $o->email, 'whatsapp'=>$n->whatsapp ?: $o->whatsapp, 'contact_person'=>$n->contact_person ?: $o->contact_person, 'notes'=>$n->notes ?: $o->notes]);
+        DB::table('suppliers')->where('id', $o->id)->delete(); $removed++;
+      }
+    }
+    return response()->json(['ok'=>true, 'moved'=>$moved, 'removed'=>$removed, 'suppliers'=>DB::table('suppliers')->count()]);
+  }
 }
