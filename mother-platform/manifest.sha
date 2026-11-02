@@ -358,3 +358,4 @@ d17dbe4ab1503ce45ab10878fb619c39d8c298ad app/Http/Controllers/RedxController.php
 c6238486e568d4aade6bdda2ee4b6419f9f211b4 resources/views/redx_setup.blade.php
 0e6257bbf4098c37d08b2485b536c8a324740c97 public/couriers/steadfast.png
 53e495850e695c284ac7f47ad90a87c2d59c0bc4 public/couriers/redx.png
+6d5104957c91aaa1f81bba430f1ec6bc8e5a5477 public/couriers/carrybee.png
