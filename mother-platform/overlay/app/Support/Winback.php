@@ -77,7 +77,7 @@ class Winback
   }
 
   public static function dailyCap(): int { return max(1, (int)self::set('daily_cap', '250')); }
-  public static function sentToday(): int { return (int)DB::table('winback_events')->where('cycle_order_id', '>', 0)->whereDate(DB::raw("created_at at time zone 'UTC' at time zone 'Asia/Dhaka'"), now('Asia/Dhaka')->toDateString())->count(); }
+  public static function sentToday(): int { return (int)DB::table('winback_events')->where('cycle_order_id', '>', 0)->whereRaw("(created_at at time zone 'UTC' at time zone 'Asia/Dhaka')::date = ?", [now('Asia/Dhaka')->toDateString()])->count(); }
   /** Who will be messaged at the next send window, in serial order (oldest delivery first). Read-only preview. */
   public static function queue(?\Carbon\Carbon $at = null): array {
     $st = self::stages(); if (!$st) return ['rows' => [], 'total' => 0, 'when' => null];
