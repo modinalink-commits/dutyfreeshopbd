@@ -231,4 +231,4 @@ f.onsubmit=function(e){e.preventDefault();var t=q.value.trim();if(!t||busy)retur
 fetch('/ai-chat',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({messages:h.slice(-8)})}).then(function(r){return r.json()}).then(function(j){w.remove();var r=j.reply||'দুঃখিত, অনুগ্রহ করে কল করুন: 09613828081';add('b',r);h.push({role:'assistant',content:r})}).catch(function(){w.remove();add('b','নেটওয়ার্ক সমস্যা হয়েছে, আবার চেষ্টা করুন।')}).then(function(){busy=0})}})();</script>
 @endif
 @include('store.chat_widget')
-@include('phone_js')<script>document.addEventListener('error',function(e){var t=e.target;if(t&&t.tagName==='IMG'&&!t.dataset.fb&&t.getAttribute('src')!=='/images/product-placeholder.svg'){t.dataset.fb='1';t.removeAttribute('srcset');t.src='/images/product-placeholder.svg'}},true)</script></body></html>
+@include('phone_js')<script>document.addEventListener('error',function(e){var t=e.target;if(t&&t.tagName==='IMG'&&!t.dataset.fb&&t.getAttribute('src')!=='/product-placeholder'){t.dataset.fb='1';t.removeAttribute('srcset');t.src='/product-placeholder'}},true)</script></body></html>

@@ -294,6 +294,7 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestF
   Route::post('/webhooks/legacy-payments', [\App\Http\Controllers\LegacyImportController::class,'payments'])->middleware('throttle:60,1');
   Route::post('/webhooks/legacy-accounts', [\App\Http\Controllers\LegacyImportController::class,'accounts'])->middleware('throttle:60,1');
   Route::post('/webhooks/legacy-passwords', [\App\Http\Controllers\LegacyImportController::class,'passwords'])->middleware('throttle:600,1');
+  Route::get('/product-placeholder', fn() => response('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120"><rect width="120" height="120" fill="#F8FAFC"/><g fill="none" stroke="#CBD5E1" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M36 48l24-12 24 12v28L60 88 36 76z"/><path d="M36 48l24 12 24-12M60 60v28"/></g></svg>', 200, ['Content-Type'=>'image/svg+xml','Cache-Control'=>'public, max-age=86400']));
   Route::post('/webhooks/voice', [\App\Http\Controllers\VoiceCampaignController::class,'hook'])->middleware('throttle:120,1');
   Route::get('/voice-audio/{id}.{ext}', [\App\Http\Controllers\VoiceCampaignController::class,'audio'])->whereNumber('id')->middleware('throttle:120,1');
   Route::post('/webhooks/pathao', [\App\Http\Controllers\CourierController::class,'webhook'])->middleware('throttle:120,1');

@@ -11,7 +11,7 @@ class ImageAuditController extends Controller {
     $log = DB::table('image_audit_log')->where('kind', 'repair')->orderByDesc('id')->limit(60)->get();
     $fixed = (int)DB::table('image_audit_log')->where('kind', 'repair')->where('result', 'fixed')->count();
     $failed = (int)DB::table('image_audit_log')->where('kind', 'repair')->where('result', 'failed')->count();
-    return view('image_audit', ['rep' => $rep, 'log' => $log, 'fixed' => $fixed, 'failed' => $failed]);
+    return response(view('image_audit', ['rep' => $rep, 'log' => $log, 'fixed' => $fixed, 'failed' => $failed])->render());
     } catch (\Throwable $e) { return response('Image audit error: '.get_class($e).': '.mb_substr($e->getMessage(), 0, 500).' @'.basename($e->getFile()).':'.$e->getLine(), 500)->header('Content-Type', 'text/plain'); }
   }
   public function scan() { @set_time_limit(120); try { $r = ImageAudit::scan(); unset($r['bad']); return response()->json($r); } catch (\Throwable $e) { return response()->json(['error' => get_class($e).': '.mb_substr($e->getMessage(), 0, 400).' @'.basename($e->getFile()).':'.$e->getLine()], 500); } }
