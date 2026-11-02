@@ -12,7 +12,7 @@ class IncompleteController extends Controller {
   }
   /** Open incomplete checkouts merged into All Orders by creation time: returns [order id => rows to print before that order] plus 'tail' (older than the last order on the last page). */
   public static function mix(Request $r, $orders, ?array $range): array {
-    $none = ['incBefore'=>[], 'incTail'=>collect(), 'incTopImgs'=>[]];
+    $none = ['incBefore'=>[], 'incTail'=>collect(), 'incTop'=>collect(), 'incTopImgs'=>[]];
     if ($r->filled('status') || $r->filled('print') || !\Illuminate\Support\Facades\Schema::hasTable('incomplete_orders')) return $none;
     $items = collect($orders->items()); $first = $items->first(); $last = $items->last();
     $q = DB::table('incomplete_orders')->where('status', 'open');
@@ -27,7 +27,7 @@ class IncompleteController extends Controller {
       $target = $items->first(fn($o) => $o->created_at <= $row->created_at);
       if ($target) $before[$target->id][] = $row; else $tail->push($row);
     }
-    return ['incBefore'=>$before, 'incTail'=>$tail, 'incTopImgs'=>self::imgs($rows)];
+    return ['incBefore'=>$before, 'incTail'=>$tail, 'incTop'=>collect(), 'incTopImgs'=>self::imgs($rows)];
   }
   public static function data(Request $r): array {
     $st = array_key_exists($r->query('inc'), self::TABS) ? $r->query('inc') : 'open'; $q = trim((string)$r->query('q', ''));
