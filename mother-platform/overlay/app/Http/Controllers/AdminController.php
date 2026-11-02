@@ -264,6 +264,16 @@ class AdminController extends Controller {
     });
     return back();
   }
+  /** One-click status change from the order list (AJAX): same rules and audit log as orderStatus. */
+  public function orderQuickStatus(Request $r, $id) {
+    $d = $r->validate(['status'=>'required|in:'.implode(',',Mother::STAGES),'note'=>'nullable|string|max:500']);
+    $o = DB::table('orders')->find($id); abort_unless($o, 404);
+    if ($o->status !== $d['status']) DB::transaction(function () use ($o, $d, $id) {
+      DB::table('orders')->where('id',$id)->update(['status'=>$d['status'],'updated_at'=>now()]);
+      DB::table('order_status_logs')->insert(['order_id'=>$id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'from_status'=>$o->status,'to_status'=>$d['status'],'note'=>trim('Quick Action '.($d['note'] ?? '')),'created_at'=>now(),'updated_at'=>now()]);
+    });
+    return response()->json(['success'=>true,'status'=>$d['status'],'cls'=>'s-'.\Illuminate\Support\Str::slug($d['status'])]);
+  }
   public function ordersCsv() {
     return response()->streamDownload(function () {
       $f = fopen('php://output','w'); fputcsv($f,['Invoice','Customer','Phone','District','Source','Total','Shipping','Status','Created']);
