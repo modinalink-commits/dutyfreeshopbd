@@ -25,6 +25,21 @@ class WinbackController extends Controller
     $q = W::queue(); $cap = W::dailyCap(); $d['q'] = ['rows' => array_slice($q['rows'], 0, $cap), 'total' => $q['total'], 'cap' => $cap, 'when' => $q['when'], 'start' => W::set('start', ''), 'sentToday' => W::sentToday()];
     return view('winback', $d);
   }
+  /** Who used the Win-Back offers + results by stage; ?csv=1 downloads it. */
+  public function report(Request $r) {
+    $from = $r->query('from'); $to = $r->query('to');
+    $ev = fn() => DB::table('winback_events as e')->when($from, fn($q) => $q->whereDate('e.created_at', '>=', $from))->when($to, fn($q) => $q->whereDate('e.created_at', '<=', $to));
+    $stages = $ev()->selectRaw('e.stage_days, max(e.pct) as pct, count(*) as sent, sum(case when e.used_at is not null then 1 else 0 end) as used, coalesce(sum(e.used_total),0) as rev, coalesce(sum(e.used_discount),0) as disc')->groupBy('e.stage_days')->orderBy('e.stage_days')->get();
+    $users = $ev()->whereNotNull('e.used_at')->leftJoin('customers as c', 'c.id', '=', 'e.customer_id')->leftJoin('orders as o', 'o.id', '=', 'e.used_order_id')->orderByDesc('e.used_at')->select('e.*', 'o.*', 'c.name as cname', 'e.id as eid', 'e.phone as ephone', 'e.created_at as sent_at', 'e.coupon_code as ecode', 'e.stage_days as estage', 'e.pct as epct', 'e.used_at as eused', 'e.used_discount as edisc', 'e.used_total as etotal')->limit(2000)->get();
+    $rows = $users->map(fn($u) => ['name' => $u->cname, 'phone' => $u->ephone, 'stage' => $u->estage, 'pct' => (float)$u->epct, 'code' => $u->ecode ?: 'Auto', 'invoice' => $u->invoice_no ?? $u->invoice ?? ('#' . $u->used_order_id), 'total' => (float)$u->etotal, 'disc' => (float)$u->edisc, 'sent' => $u->sent_at, 'used' => $u->eused]);
+    if ($r->boolean('csv')) {
+      $out = fopen('php://temp', 'w+'); fwrite($out, "\xEF\xBB\xBF"); fputcsv($out, ['Customer', 'Phone', 'Stage (days)', 'Discount %', 'Coupon', 'Invoice', 'Order total', 'Discount given', 'Offer sent', 'Used at']);
+      foreach ($rows as $x) fputcsv($out, [$x['name'], $x['phone'], $x['stage'], $x['pct'], $x['code'], $x['invoice'], $x['total'], $x['disc'], $x['sent'], $x['used']]);
+      rewind($out); $csv = stream_get_contents($out); fclose($out);
+      return response($csv, 200, ['Content-Type' => 'text/csv; charset=utf-8', 'Content-Disposition' => 'attachment; filename="winback-usage-' . now('Asia/Dhaka')->format('Ymd') . '.csv"']);
+    }
+    return view('winback_report', ['stages' => $stages, 'rows' => $rows, 'from' => $from, 'to' => $to]);
+  }
   public function save(Request $r) {
     $days = (array)$r->input('days', []); $pcts = (array)$r->input('pct', []); $st = [];
     $cds = (array)$r->input('code', []); $codes = [];

@@ -52,7 +52,7 @@ class Winback
     $st = self::stages(); if (!$st) return; $sent = 0; $exp = max(1, (int)self::set('expiry', '30')); $mode = in_array(self::set('mode', 'auto'), ['coupon', 'fixed'], true) ? self::set('mode', 'auto') : 'auto'; $lastStage = end($st)[0];
     $ch = array_filter(['sms' => self::set('sms', '1') === '1', 'push' => self::set('push', '1') === '1', 'notif' => self::set('notif', '1') === '1']);
     $room = min(40, self::dailyCap() - self::sentToday()); if ($room <= 0) return; $done = self::doneSet();
-    $queue = self::lastDelivered(); uasort($queue, fn($a, $b) => strcmp($a['at'], $b['at'])); // serial order: whoever became eligible first is messaged first
+    $queue = self::lastDelivered(); self::rank($queue); // serial order: best customers (highest spend) first, then longest inactive
     foreach ($queue as $p => $x) {
       $d = self::days($x['at']); $s = self::stageFor($d); if (!$s) continue;
       if (($done[$p . '|' . $x['oid']] ?? 0) >= $s[0]) continue; // each stage once per cycle
@@ -80,6 +80,10 @@ class Winback
 
   /** 'phone|cycleOrderId' => highest stage already sent (one query instead of one per customer). */
   public static function doneSet(): array { $o = []; foreach (DB::table('winback_events')->selectRaw('phone, cycle_order_id, max(stage_days) as m')->groupBy('phone', 'cycle_order_id')->get() as $r) $o[$r->phone . '|' . $r->cycle_order_id] = (int)$r->m; return $o; }
+  /** phone => [orders, spent] over live orders; used to message the best customers first. */
+  public static function value(): array { $o = []; foreach (DB::table('orders')->whereNotIn('status', ['Cancel', 'Returned'])->whereNotNull('phone')->selectRaw('right(phone,11) as p, count(*) as n, coalesce(sum(total),0) as s')->groupBy(DB::raw('right(phone,11)'))->get() as $r) $o[$r->p] = [(int)$r->n, (float)$r->s]; return $o; }
+  /** Serial order: highest lifetime spend first, then the longest inactive. */
+  public static function rank(array &$all): array { $v = self::value(); uksort($all, function ($a, $b) use ($all, $v) { $sa = $v[$a][1] ?? 0; $sb = $v[$b][1] ?? 0; return $sb <=> $sa ?: strcmp($all[$a]['at'], $all[$b]['at']); }); return $v; }
   public static function dailyCap(): int { return max(1, (int)self::set('daily_cap', '250')); }
   public static function sentToday(): int { return (int)DB::table('winback_events')->where('cycle_order_id', '>', 0)->whereRaw("(created_at at time zone 'UTC' at time zone 'Asia/Dhaka')::date = ?", [now('Asia/Dhaka')->toDateString()])->count(); }
   /** Who will be messaged at the next send window, in serial order (oldest delivery first). Read-only preview. */
@@ -87,11 +91,11 @@ class Winback
     $st = self::stages(); if (!$st) return ['rows' => [], 'total' => 0, 'when' => null];
     $start = self::set('start', ''); $day = now('Asia/Dhaka')->addDay()->startOfDay(); if ($start !== '' && $day->toDateString() < $start) $day = \Carbon\Carbon::parse($start, 'Asia/Dhaka')->startOfDay();
     $at = $at ?: $day->copy()->setTime((int)self::set('win_from', '14'), 0); $ts = $at->getTimestamp(); $cand = [];
-    $done = self::doneSet(); $all = self::lastDelivered(); uasort($all, fn($a, $b) => strcmp($a['at'], $b['at']));
+    $done = self::doneSet(); $all = self::lastDelivered(); $val = self::rank($all);
     foreach ($all as $p => $x) {
       $d = (int)floor(($ts - strtotime($x['at'] . ' UTC')) / 86400); $s = self::stageFor($d); if (!$s) continue;
       if (($done[$p . '|' . $x['oid']] ?? 0) >= $s[0]) continue;
-      $cand[$p] = ['p' => $p, 'd' => $d, 's' => $s, 'at' => $x['at']];
+      $cand[$p] = ['p' => $p, 'd' => $d, 's' => $s, 'at' => $x['at'], 'n' => $val[$p][0] ?? 0, 'sp' => $val[$p][1] ?? 0];
     }
     $names = []; foreach (array_chunk(array_keys($cand), 1000) as $ch) foreach (DB::table('customers')->where('blocked', false)->whereRaw('right(phone,11) in (' . implode(',', array_fill(0, count($ch), '?')) . ')', $ch)->selectRaw('right(phone,11) as k, name')->get() as $cu) $names[$cu->k] = $cu->name;
     $rows = []; foreach ($cand as $p => $c) { if (!array_key_exists($p, $names)) continue; $c['name'] = $names[$p]; $c['code'] = self::set('mode', 'auto') === 'fixed' ? self::codeFor($c['s'][0]) : null; $rows[] = $c; }
