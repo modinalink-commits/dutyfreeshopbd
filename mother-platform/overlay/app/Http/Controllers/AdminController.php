@@ -91,7 +91,7 @@ class AdminController extends Controller {
       return $oq()->where('created_at','>=',$s0)->where('created_at','<=',$e0)->select('status', DB::raw('count(*) c'), DB::raw('coalesce(sum(total),0) v'))->groupBy('status')->get()->keyBy('status'); }, collect());
     $pipe5 = array_map(function ($g) use ($pv) { $c = 0; $v = 0.0; foreach ($g[1] as $st) { $c += (int)($pv[$st]->c ?? 0); $v += (float)($pv[$st]->v ?? 0); } return ['name'=>$g[0], 'count'=>$c, 'value'=>$v, 'filter'=>implode(',', $g[1])]; }, $P5);
     $pipeAct = ['count'=>array_sum(array_column(array_slice($pipe5, 0, 4), 'count')), 'value'=>array_sum(array_column(array_slice($pipe5, 0, 4), 'value'))];
-    $orders = DB::table('orders')->leftJoin('stores','stores.id','=','orders.store_id')->when($storeId, fn($q) => $q->where('orders.store_id', $storeId))->select('orders.*','stores.name as store')->orderByDesc('orders.id')->limit(8)->get();
+    $orders = DB::table('orders')->leftJoin('stores','stores.id','=','orders.store_id')->when($storeId, fn($q) => $q->where('orders.store_id', $storeId))->select('orders.*','stores.name as store')->orderByDesc('orders.created_at')->orderByDesc('orders.id')->limit(8)->get();
     $bad = DB::table('orders')->whereIn('status',['Cancel','Returned'])->whereIn('phone',$orders->pluck('phone'))->select('phone',DB::raw('count(*) c'))->groupBy('phone')->pluck('c','phone');
     $alerts = []; $failed = \Illuminate\Support\Facades\Schema::hasTable('failed_jobs') ? DB::table('failed_jobs')->where('failed_at','>=',now()->subHour())->count() : 0;
     $late = $counts['Late Delivery'] ?? 0; $rp = $counts['Return Pending'] ?? 0;
@@ -138,7 +138,7 @@ class AdminController extends Controller {
     return view('dashboard', compact('pipe5','pipeAct','ch','channels','topCust','storePerf','now','kpis','stores','max','counts','orders','bad','alerts','health','range','label','trend','topProducts','cats','couriers','chatUnread','goal','cust','calls','risk','feed','storeList','storeId','canFin','prev','f','incOpen','newN','stale') + ['isCustom'=>$range === 'custom']);
   }
   public function orders(Request $r) { \App\Support\CourierSync::auto();
-    $isInc = $r->input('status') === 'Incomplete'; $q = DB::table('orders')->orderByDesc('id');
+    $isInc = $r->input('status') === 'Incomplete'; $q = DB::table('orders'); if ($r->filled('q')) $q->orderByRaw('case when invoice = ? then 0 else 1 end', [trim((string)$r->q)]); $q->orderByDesc('created_at')->orderByDesc('id');
     if ($isInc) $q->whereRaw('1 = 0'); elseif ($r->filled('status')) { $sts = array_filter(array_map('trim', explode(',', (string)$r->status))); count($sts) > 1 ? $q->whereIn('status', $sts) : $q->where('status', $r->status); }
     if ($r->filled('q')) { $qs = trim((string)$r->q); $qd = preg_replace('/\D/', '', $qs); if (str_starts_with($qd, '880')) $qd = substr($qd, 2); $q->where(fn($w) => $w->where('invoice','ilike','%'.$qs.'%')->orWhere('phone','like','%'.($qd !== '' ? $qd : $qs).'%')->orWhere('customer_name','ilike','%'.$qs.'%')); }
     $per = in_array((int)$r->input('per'), [25,50,100,200]) ? (int)$r->input('per') : 50;
