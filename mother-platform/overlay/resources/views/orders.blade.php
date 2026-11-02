@@ -3,7 +3,8 @@
 <style>
 .oc{display:flex;flex-direction:column;height:calc(100vh - var(--ocbh,150px) - 52px);min-height:320px;padding:10px 12px;margin-bottom:0}.oc>*{flex:none}.oc>form#bulk{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}.oc>form#bulk>*{flex:none}.oc>form#bulk>.otw{flex:1 1 auto;min-height:0;overflow:auto}.oc .pgx{margin:6px 0 0}
 .oc table.ordt thead th{position:sticky;top:0;z-index:5;background:#F8FAFC;border-bottom:1px solid #E5E7EB;padding:7px 8px;font-size:12px}.oc table.ordt{border-spacing:0 6px}
-.obk button{padding:5px 10px;font-size:12px}.obk select{height:30px;font-size:12px}#osel{font-size:12px;font-weight:700;color:#FF5A00}
+.obk button{padding:5px 10px;font-size:12px}.obk select{height:30px;font-size:12px}.obk button{border:0!important;font-weight:600;border-radius:8px}.obk button:nth-of-type(1){background:#DBEAFE!important;color:#1E40AF!important}.obk button:nth-of-type(2){background:#DCFCE7!important;color:#166534!important}.obk button:nth-of-type(3){background:#FEF3C7!important;color:#92400E!important}.obk button:nth-of-type(4){background:#EDE9FE!important;color:#5B21B6!important}.obk button:hover{filter:brightness(.95)}
+#osel{font-size:12px;font-weight:700;color:#FF5A00}
 .ocb{position:static!important;margin:0 0 8px!important}
 @media(max-width:800px){.oc{height:auto;min-height:0}.oc>form#bulk>.otw{max-height:70vh}}
 .ocb{position:sticky;top:8px;z-index:60;background:#fff;border:1px solid #EDF0F3;border-radius:12px;box-shadow:0 4px 14px rgba(0,0,0,.06);padding:10px 12px;margin:-8px 0 12px}
