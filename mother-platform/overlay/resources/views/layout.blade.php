@@ -65,6 +65,7 @@ main .pill{font-size:10.5px;font-weight:700;border-radius:6px;padding:2px 8px}
 @auth @include('chat_widget') @include('softphone_fab') @endauth
 @yield('js')
 @auth<script src="/js/df-export.js?v=3" defer></script>@endauth
+@auth<script src="/js/report-grid.js?v=1" defer></script>@endauth
 @auth<script src="/js/live-search.js?v=1" defer></script>@endauth
 
 @if(auth()->check())

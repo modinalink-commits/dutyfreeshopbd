@@ -349,3 +349,4 @@ resources/views/pay_badge.blade.php
 public/js/live-search.js
 database/migrations/2026_11_02_000018_legacy_procurement.php
 database/migrations/2026_11_02_000019_legacy_payments.php
+public/js/report-grid.js

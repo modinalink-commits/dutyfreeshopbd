@@ -3,7 +3,7 @@ bce0e03c17d202a62fa39a8000664dd6d24284c0 routes/web.php
 4eb9c45dba79c3a8479970e7d5fac7c89719990f app/Models/Mother.php
 2c92de4a667f6628ceba68470fdfff7fa791290f app/Http/Controllers/AdminController.php
 bd49f23ea0895af93bed5374937115c21911b0cd app/Console/Commands/MotherInstall.php
-78715645a26f1499d3929e668b86881f93e1b461 resources/views/layout.blade.php
+5b25ded8856a47c144ba511115f6671e74ed17e2 resources/views/layout.blade.php
 7ba1a8252b36e7db33e40d8be3ea5ec2cd241fb7 resources/views/login.blade.php
 d8475158991af998c5f7bf8943f665b8b6204829 resources/views/dashboard.blade.php
 5fda1ab25e907c2cefa285518021d5d9c99b508c resources/views/orders.blade.php
@@ -349,3 +349,4 @@ ce9e3d33de31851e42aeb528602e04e54be06b04 database/migrations/2026_11_02_000017_p
 4ba680b9a2c37a7859b721c0554e3fa4d6c36af7 public/js/live-search.js
 c2ac0705e213af3eb88153df150b530e38019071 database/migrations/2026_11_02_000018_legacy_procurement.php
 90b598f50161c16f0c3b7b0e6fe9c2dc891cefce database/migrations/2026_11_02_000019_legacy_payments.php
+8cad63d89bd4305235b0fe6de3afa227dbadc958 public/js/report-grid.js
