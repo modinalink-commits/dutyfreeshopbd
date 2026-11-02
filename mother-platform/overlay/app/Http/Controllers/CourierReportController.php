@@ -11,7 +11,7 @@ class CourierReportController extends Controller {
     $oq = DB::table('orders')->whereNotNull('courier')->where('courier', '<>', '')->whereDate(DB::raw('coalesce(courier_sent_at, created_at)'), '>=', $from)->whereDate(DB::raw('coalesce(courier_sent_at, created_at)'), '<=', $to);
     if ($courier !== '') $oq->where('courier', $courier);
     if ($q !== '') { $like = '%' . $q . '%'; $oq->where(fn($w) => $w->where('invoice', 'ilike', $like)->orWhere('customer_name', 'ilike', $like)->orWhere('phone', 'like', $like)->orWhere('consignment_id', 'ilike', $like)); }
-    $rows = $oq->orderBy('courier')->orderByDesc('id')->limit(3000)->get(['id', 'invoice', 'customer_name', 'phone', 'courier', 'consignment_id', 'status', 'courier_status', 'courier_fee', 'courier_cod', 'total', 'courier_sent_at', 'created_at']);
+    $rows = $oq->orderByDesc('id')->limit(3000)->get(['id', 'invoice', 'customer_name', 'phone', 'courier', 'consignment_id', 'status', 'courier_status', 'courier_fee', 'courier_cod', 'total', 'courier_sent_at', 'created_at']);
     $groups = []; $g = ['n' => 0, 'cod' => 0, 'fee' => 0, 'del' => 0, 'delcod' => 0, 'ret' => 0, 'pend' => 0];
     foreach ($rows->groupBy('courier') as $name => $list) {
       $gr = ['name' => $name, 'rows' => [], 'n' => 0, 'cod' => 0, 'fee' => 0, 'del' => 0, 'delcod' => 0, 'ret' => 0, 'pend' => 0];
