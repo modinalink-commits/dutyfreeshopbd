@@ -67,7 +67,10 @@ class ImageAudit {
         return [$r['ok'] ? 'fixed' : 'failed', $r['error'] ?? 'thumbnails built'];
       }
       if (in_array($state, ['old_server', 'external'], true) || ($state === 'legacy_path' && preg_match('#^https?://#i', $path))) {
-        $u = $path; if (!$dry) { $loc = Img::mirror($u, 'product'); }
+        $u = $path; $h = strtolower((string)parse_url($path, PHP_URL_HOST));
+        // links that still point at our own new domain but use the old /public/storage/images/... path: the real file lives on the old server
+        if (in_array($h, ['dutyfreebd.com', 'www.dutyfreebd.com', 'dutyfreeshopbd.com', 'www.dutyfreeshopbd.com'], true) && preg_match('#^/public/storage/images/#', (string)parse_url($path, PHP_URL_PATH))) $u = self::OLD . parse_url($path, PHP_URL_PATH);
+        if (!$dry) { $loc = Img::mirror($u, 'product'); }
         if ($dry) return ['would', 'copy from '.parse_url($u, PHP_URL_HOST)];
         return self::apply($p, $path, $loc ?? null, 'mirror', $state);
       }
