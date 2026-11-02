@@ -354,5 +354,5 @@ e7d687168113808f453009b9a43caae153747d90 app/Support/Carrybee.php
 8cef657d0394fcbe325946c86e73ce9a2b9879de app/Http/Controllers/CarrybeeController.php
 675ab3aa2ed5ca2734b9436bbb77ed1c8547a0ff resources/views/carrybee_setup.blade.php
 4fb31ea5e53b23327d1f338815e821081af7230d app/Support/Redx.php
-cf47b6403abbb4a7570b785826133b91031d595d app/Http/Controllers/RedxController.php
+d17dbe4ab1503ce45ab10878fb619c39d8c298ad app/Http/Controllers/RedxController.php
 c6238486e568d4aade6bdda2ee4b6419f9f211b4 resources/views/redx_setup.blade.php

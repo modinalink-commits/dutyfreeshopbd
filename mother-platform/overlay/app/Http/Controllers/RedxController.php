@@ -25,7 +25,7 @@ class RedxController extends Controller {
   public function connect() {
     if (!Redx::configured()) return back()->with('bad', 'Save the RedX token first.');
     $r = Redx::call('GET', '/pickup/stores');
-    if (in_array($r['code'], [401, 403], true)) return back()->with('bad', 'RedX refused the token. Check that it is valid and that live/sandbox matches.');
+    if (in_array($r['code'], [401, 403], true)) return back()->with('bad', 'RedX refused the token (HTTP '.$r['code'].', mode '.strtoupper(Redx::env()).', token length '.strlen(Redx::token()).'). RedX says: '.mb_substr(json_encode($r['json'], JSON_UNESCAPED_UNICODE), 0, 200).'. Use the token for the same mode (Production token with Live).');
     if ($r['code'] !== 200) return back()->with('bad', ($r['err'] ?? 'RedX did not answer') . ' (HTTP ' . $r['code'] . ')');
     $stores = $r['json']['pickup_stores'] ?? [];
     if (!$stores) return back()->with('ok', 'Connected to RedX, but no pickup store exists yet. Create one in the RedX panel (My Shops).');
