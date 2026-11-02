@@ -12,8 +12,9 @@
 .ocb h1{margin:0;font-size:17px}.ocb .dt{font-size:12px;color:#6B7280}
 .ocb input[type=date],.ocb input[type=time],.ocb select{width:auto;height:30px;padding:2px 6px;font-size:12px}
 .ocb .pre{display:inline-flex;gap:4px;flex-wrap:wrap}.ocb .pre button,.ocb .rf{height:28px;padding:0 10px;font-size:12px;border-radius:14px;background:#F3F4F6;color:#0B1220;border:1px solid #E5E7EB;cursor:pointer}.ocb .pre button.on{background:#FF5A00;color:#fff;border-color:#FF5A00}
-.ocb .strip{display:flex;flex-wrap:wrap;gap:5px;flex:1 1 100%;min-width:0;overflow:visible}
-.ocb .chip{flex:none;height:26px;line-height:24px;padding:0 9px;border-radius:14px;font-size:12px}
+.ocb .strip{display:flex;flex-wrap:nowrap;align-items:center;gap:6px;flex:1 1 100%;min-width:0;overflow-x:auto;overflow-y:hidden;white-space:nowrap;padding-bottom:3px;scrollbar-width:thin}
+.ocb .chip{flex:0 0 auto;height:30px;line-height:28px;padding:0 10px;border-radius:14px;font-size:12px;white-space:nowrap;box-sizing:border-box;border:1px solid transparent}.ocb .chip.on{font-weight:700;border-color:currentColor;box-shadow:0 0 0 1px rgba(0,0,0,.06)}
+.ocb .r2{flex-wrap:wrap}.ocb .r2 .q{margin-left:auto}
 .ocb .q{margin-left:auto;display:flex;gap:6px;align-items:center;flex:none}.ocb .q input[name=q]{min-width:200px;height:30px;font-size:12px}
 .ocb #oexs .dfx-bar{margin:0;display:inline-flex}.ocb #oexs .dfx-btn{height:28px;padding:0 10px;font-size:12px;line-height:26px}.ocb .dl a{margin:0 2px}
 @media(max-width:800px){.ocb{top:0}.ocb .r2{flex-wrap:wrap}}

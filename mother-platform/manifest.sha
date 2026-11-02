@@ -6,7 +6,7 @@ bd49f23ea0895af93bed5374937115c21911b0cd app/Console/Commands/MotherInstall.php
 9eec69bda97ce10644aa47d125c5590734c23c3d resources/views/layout.blade.php
 7ba1a8252b36e7db33e40d8be3ea5ec2cd241fb7 resources/views/login.blade.php
 685a0e264232571d0af8f969827822effe7089b4 resources/views/dashboard.blade.php
-bea3b2a478271eac37a5d8ef3a28af3642a9c058 resources/views/orders.blade.php
+ac273e4a6f9befe2ee55390dc8b5714465640c80 resources/views/orders.blade.php
 3c44d58ece708b47803eba747c04f565b7e71b5d resources/views/order_new.blade.php
 f66bf1915d506d6ff3b2df189797544e195e3c8d resources/views/order_show.blade.php
 a0ce2ec716cd99715961a8e4b2691db239036099 resources/views/stafflog.blade.php
