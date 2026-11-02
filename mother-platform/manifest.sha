@@ -1,5 +1,5 @@
 fe43f8b6cb422cca81ee18b74d3972f77e7852de database/migrations/2026_10_31_000001_mother_core.php
-c3c374688d7f9fe74e39e7beeb4822cf82a5d91a routes/web.php
+a997489b9bdd08398528f375002c02025f5e51b0 routes/web.php
 b9cf8555d6fb5e676f63a548f5a964a0f36be94f app/Models/Mother.php
 9ba3db447e8439e621a76711fe2a9a110df4dff6 app/Http/Controllers/AdminController.php
 bd49f23ea0895af93bed5374937115c21911b0cd app/Console/Commands/MotherInstall.php
@@ -47,7 +47,7 @@ d787924ace3fa42cc66a3de321e4e94e784006d8 resources/views/panels/employees.blade.
 421a15715c705da2bb55f7d4026f43050ca6691a resources/views/panels/campaigns.blade.php
 16d44d41f6b845877a906678b144cbc1233a96f5 resources/views/report_details.blade.php
 2f840d53881d8aeaf0c5959161774787e5f540bc database/migrations/2026_10_31_000005_storefront.php
-2d4fe4438a505d89a186bd63a5ee8d50bec17844 app/Console/Commands/MotherSyncFeed.php
+65414d9e2fbe5f16f1fbf1551cce91276e9f30f9 app/Console/Commands/MotherSyncFeed.php
 743469ea0c8d07bbd67a9e461f395f9c21e8da4e app/Http/Controllers/StoreController.php
 b92709cb2dc4880b599f1da2fb4f0207a8010c2c resources/views/store/layout.blade.php
 55af1b65f87c4b4816080ce2885760d24ff102b9 resources/views/store/card.blade.php
@@ -430,3 +430,4 @@ ad330d9f2c9cbd45b3158acbf8b49c9c32ed2d38 resources/views/store/pixel_purchase.bl
 9703eee0c0d70ecd1c50e698da69e0232862eeb6 app/Support/Capi.php
 0a68a32b8463bfa9bf365ebd69b536a028e9b0be app/Http/Controllers/PixelController.php
 76c7b1742b33e49b25fbf284cf83483ce4af3e23 resources/views/pixel_admin.blade.php
+1f735f5ebfaee136667b93bb530e146b7f184f04 app/Http/Controllers/CatalogFeedController.php

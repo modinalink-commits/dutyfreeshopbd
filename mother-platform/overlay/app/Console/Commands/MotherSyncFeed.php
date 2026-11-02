@@ -25,6 +25,7 @@ class MotherSyncFeed extends Command {
     foreach (self::FEEDS as $u) {
       $ctx = stream_context_create(['http'=>['timeout'=>20,'header'=>"User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120 Safari/537.36\r\nAccept: application/xml,text/xml,*/*\r\n"],'ssl'=>['verify_peer'=>true]]);
       $body = @file_get_contents($u, false, $ctx);
+      if ($body && str_contains($body, 'DutyFreeBD product feed')) { $this->line('FEED is our own live feed: nothing to import'); return 0; }
       if ($body && strlen($body) > 1000) { $xml = $body; $this->line("FEED ok $u ".strlen($body)); break; }
       $this->line("FEED fail $u");
     }

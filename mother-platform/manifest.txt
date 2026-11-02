@@ -430,3 +430,4 @@ resources/views/store/pixel_purchase.blade.php
 app/Support/Capi.php
 app/Http/Controllers/PixelController.php
 resources/views/pixel_admin.blade.php
+app/Http/Controllers/CatalogFeedController.php
