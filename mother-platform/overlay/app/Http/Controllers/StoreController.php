@@ -78,9 +78,14 @@ class StoreController extends Controller {
   private function sorted($q, $sort) {
     return match ($sort) { 'price_asc'=>$q->orderBy('price'), 'price_desc'=>$q->orderByDesc('price'), 'popular'=>$q->orderByDesc('stock'), default=>$q->orderByDesc('id') };
   }
+  /** Tobacco/vape is kept off Google: these pages are noindex and absent from the sitemap, and public titles/descriptions never mention it. */
+  public static function isSmokeCat($c): bool { return $c && (($c->slug ?? '') === 'cigarette-vape' || preg_match('/cigarette|vape|সিগারেট|ভেপ/iu', (string)($c->name ?? '')) === 1); }
+  public static function cleanSeo(?string $v, string $fallback): string { $v = trim((string)$v); return ($v === '' || preg_match('/সিগারেট|ভেপ|cigar|vape|tobacco|nicotin|smok/iu', $v)) ? $fallback : $v; }
+  const HOME_TITLE = 'DutyFree BD | আন্তর্জাতিক মানের অরিজিনাল ইমপোর্টেড পণ্যের বিশ্বস্ত অনলাইন শপ – পারফিউম, স্কিন কেয়ার ও লাইফস্টাইল';
+  const HOME_DESC = 'আন্তর্জাতিক মানের সকল অরিজিনাল ইমপোর্টেড পণ্য এক জায়গায়: পারফিউম, আতর, স্কিন কেয়ার, হেয়ার কেয়ার, বেবি প্রোডাক্ট ও ডেইলি নিডস। ক্যাশ অন ডেলিভারি, সারা বাংলাদেশে হোম ডেলিভারি।';
   public function home() {
     $s = self::set();
-    $data = self::rem('store.home6', 300, function () use ($s) {
+    $data = self::rem('store.home7', 300, function () use ($s) {
       $pub = fn() => DB::table('products')->where('published',true);
       $sold = DB::table('order_items as i')->join('orders as o','o.id','=','i.order_id')->where('o.status','!=','Cancel')->where('o.created_at','>=',now()->subDays(30))->groupBy('i.product_id')->selectRaw('i.product_id as pid, sum(i.qty) as q')->pluck('q','pid');
       $deals = self::dealBase((float)($s['deal_min_off'] ?? 0))->limit(max(1,(int)($s['deal_max'] ?? 12)))->get()
@@ -92,15 +97,16 @@ class StoreController extends Controller {
         if ($more->count()) { $top = $top->concat($more); $topLabel = 'Popular Products'; }
       }
       $sec = []; $i = 0;
-      foreach ($this->cats() as $c) { $sec[] = [$c, $pub()->where('category_id',$c->id)->orderByDesc('id')->limit($i < 2 ? 12 : 6)->get()]; $i++; }
+      $ordC = $this->cats()->values()->sortBy(fn($c) => self::isSmokeCat($c) ? 2 : (preg_match('/perfume|attar|আতর|পারফিউম/iu', ($c->slug ?? '').' '.($c->name ?? '')) ? 0 : 1))->values();
+      foreach ($ordC as $c) { $sec[] = [$c, $pub()->where('category_id',$c->id)->orderByDesc('id')->limit($i < 2 ? 12 : 6)->get()]; $i++; }
       $offers = [];
       foreach ($this->cats() as $c) { $mx = (int)$pub()->where('category_id',$c->id)->whereColumn('compare_price','>','price')->where('compare_price','>',0)->max(DB::raw('round((compare_price - price) / compare_price * 100)')); if ($mx > 0) $offers[] = [$c, $mx]; }
       usort($offers, fn($a, $b) => $b[1] <=> $a[1]);
-      return ['new'=>$pub()->orderByDesc('id')->limit(12)->get(), 'deals'=>$deals, 'top'=>$top, 'topLabel'=>$topLabel, 'sec'=>$sec, 'offers'=>array_slice($offers, 0, 2), 'slides'=>DB::table('sliders')->where('active',true)->where(fn($q)=>$q->whereNotNull('image')->orWhereNotNull('video_id'))->where(fn($q)=>$q->whereNull('type')->orWhere('type','main'))->where(fn($q)=>$q->whereNull('starts_at')->orWhere('starts_at','<=',now()))->where(fn($q)=>$q->whereNull('ends_at')->orWhere('ends_at','>=',now()))->orderBy('position')->get(), 'offerSlides'=>DB::table('sliders')->where('active',true)->whereNotNull('image')->where('type','offer')->where(fn($q)=>$q->whereNull('starts_at')->orWhere('starts_at','<=',now()))->where(fn($q)=>$q->whereNull('ends_at')->orWhere('ends_at','>=',now()))->orderBy('position')->get(), 'stores'=>DB::table('stores')->where('active',true)->orderBy('id')->get(['id','name','domain','scan_published'])->all(), 'best'=>DB::table('order_items as i')->join('orders as o','o.id','=','i.order_id')->join('products as p','p.id','=','i.product_id')->where('p.published',true)->where('o.status','!=','Cancel')->where('o.created_at','>=',now()->subDays(60))->select('p.*', DB::raw('sum(i.qty) q'))->groupBy('p.id')->orderByDesc('q')->limit(12)->get(), 'count'=>$pub()->count(), 'maxOff'=>$deals->count() ? self::off($deals[0]) : 0];
+      return ['new'=>$pub()->where(fn($q)=>$q->whereNull('group_key')->orWhere('group_key','!=','smoke'))->orderByDesc('id')->limit(12)->get(), 'deals'=>$deals, 'top'=>$top, 'topLabel'=>$topLabel, 'sec'=>$sec, 'offers'=>array_slice($offers, 0, 2), 'slides'=>DB::table('sliders')->where('active',true)->where(fn($q)=>$q->whereNotNull('image')->orWhereNotNull('video_id'))->where(fn($q)=>$q->whereNull('type')->orWhere('type','main'))->where(fn($q)=>$q->whereNull('starts_at')->orWhere('starts_at','<=',now()))->where(fn($q)=>$q->whereNull('ends_at')->orWhere('ends_at','>=',now()))->orderBy('position')->get(), 'offerSlides'=>DB::table('sliders')->where('active',true)->whereNotNull('image')->where('type','offer')->where(fn($q)=>$q->whereNull('starts_at')->orWhere('starts_at','<=',now()))->where(fn($q)=>$q->whereNull('ends_at')->orWhere('ends_at','>=',now()))->orderBy('position')->get(), 'stores'=>DB::table('stores')->where('active',true)->orderBy('id')->get(['id','name','domain','scan_published'])->all(), 'best'=>DB::table('order_items as i')->join('orders as o','o.id','=','i.order_id')->join('products as p','p.id','=','i.product_id')->where('p.published',true)->where('o.status','!=','Cancel')->where('o.created_at','>=',now()->subDays(60))->select('p.*', DB::raw('sum(i.qty) q'))->groupBy('p.id')->orderByDesc('q')->limit(12)->get(), 'count'=>$pub()->count(), 'maxOff'=>$deals->count() ? self::off($deals[0]) : 0];
     });
     if ($data['count'] === 0) return response()->view('coming', [], 503)->header('Retry-After','3600');
     $live = $s['home_live_orders'] === '1' ? $this->liveOrders() : collect();
-    return response()->view('store.home', $this->base($data + ['live'=>$live, 'title'=>$s['site_title'], 'desc'=>$s['meta_description'] ?: 'ডিউটি ফ্রি দামে অরিজিনাল ইমপোর্টেড পারফিউম, আতর, সিগারেট, ভেপ, স্কিন কেয়ার ও ডেইলি নিডস। অর্ডার করুন, সারা বাংলাদেশে হোম ডেলিভারি।', 'canon'=>url('/').'/', 'home'=>true]))->header('Cache-Control','public, max-age=60');
+    return response()->view('store.home', $this->base($data + ['live'=>$live, 'title'=>self::cleanSeo($s['site_title'] ?? '', self::HOME_TITLE), 'desc'=>self::cleanSeo($s['meta_description'] ?? '', self::HOME_DESC), 'canon'=>url('/').'/', 'home'=>true]))->header('Cache-Control','public, max-age=60');
   }
   /** Real recent orders, customer names masked (first letter + ***). */
   private function liveOrders() {
@@ -142,7 +148,7 @@ class StoreController extends Controller {
     }
     $canon = url('/'.$slug).($subSlug !== null ? '/'.$subSlug.($subSubName !== null ? '/'.\App\Support\Slugs::slug($subSubName, 60) : '') : '/'); if ($subSubName !== null) { $subName = $subSubName.' · '.$subName; }
     $title = $subName ? $subName.' – '.$c->name.' | DutyFree Shop BD' : ($c->title ?: $c->name.' | DutyFree Shop BD');
-    return response()->view('store.category', $this->base(['c'=>$c, 'subName'=>$subName, 'subSlug'=>$subSlug, 'items'=>$items, 'hasPos'=>$hasPos, 'groups'=>collect($items->items())->groupBy(fn($p) => $p->sub ?: $c->name), 'title'=>$title, 'desc'=>$subName ? $subName.' – original imported products in '.$c->name.' at DutyFree Shop BD. Cash on delivery, nationwide delivery.' : $c->meta_description, 'canon'=>(!$subName && !empty($c->canonical)) ? $c->canonical : $canon, 'noindex'=>!empty($c->noindex) && !$subName, 'keywords'=>$c->focus_keyword ?? null, 'ogimg'=>(!empty($c->og_image) ? $c->og_image : null)]))->header('Cache-Control','public, max-age=120');
+    return response()->view('store.category', $this->base(['c'=>$c, 'subName'=>$subName, 'subSlug'=>$subSlug, 'items'=>$items, 'hasPos'=>$hasPos, 'groups'=>collect($items->items())->groupBy(fn($p) => $p->sub ?: $c->name), 'title'=>$title, 'desc'=>$subName ? $subName.' – original imported products in '.$c->name.' at DutyFree Shop BD. Cash on delivery, nationwide delivery.' : $c->meta_description, 'canon'=>(!$subName && !empty($c->canonical)) ? $c->canonical : $canon, 'noindex'=>(!empty($c->noindex) && !$subName) || self::isSmokeCat($c), 'keywords'=>$c->focus_keyword ?? null, 'ogimg'=>(!empty($c->og_image) ? $c->og_image : null)]))->header('Cache-Control','public, max-age=120');
   }
   /** /category/secondary-category */
   public function categorySub(Request $r, string $cat, string $sub) { return $this->category($r, $cat, $sub); }
@@ -184,7 +190,7 @@ class StoreController extends Controller {
     DB::table('product_views')->insert(['product_id'=>$p->id,'day'=>now('Asia/Dhaka')->toDateString(),'created_at'=>now(),'updated_at'=>now()]);
     $price = (float)$p->price;
     $gallery = DB::table('product_images')->where('product_id',$p->id)->orderBy('position')->orderBy('id')->pluck('path')->all();
-    return response()->view('store.product', $this->base(['preview'=>$preview, 'gallery'=>$gallery, 'p'=>$p, 'c'=>$c, 'rel'=>$rel, 'reviews'=>$reviews, 'title'=>($p->meta_title ?: $p->name.' দাম ৳ '.number_format($price).' | '.($c->name ?? 'Shop').' | DutyFree Shop BD'), 'keywords'=>$p->meta_keywords ?? null, 'desc'=>($p->meta_description ?: $p->name.' – দাম ৳ '.number_format($price).'। অরিজিনাল ইমপোর্টেড পণ্য, অর্ডার করুন, সারা বাংলাদেশে ডেলিভারি। DutyFree Shop BD.'), 'canon'=>($p->canonical ?? null) ?: url(self::url($p)), 'noindex'=>!empty($p->noindex), 'ogimg'=>($p->og_image ?? null) ?: ($p->image ? (preg_match('#^https?://#i', $p->image) ? $p->image : url($p->image)) : url('/og.png'))]))->header('Cache-Control','public, max-age=120');
+    return response()->view('store.product', $this->base(['preview'=>$preview, 'gallery'=>$gallery, 'p'=>$p, 'c'=>$c, 'rel'=>$rel, 'reviews'=>$reviews, 'title'=>($p->meta_title ?: $p->name.' দাম ৳ '.number_format($price).' | '.($c->name ?? 'Shop').' | DutyFree Shop BD'), 'keywords'=>$p->meta_keywords ?? null, 'desc'=>($p->meta_description ?: $p->name.' – দাম ৳ '.number_format($price).'। অরিজিনাল ইমপোর্টেড পণ্য, অর্ডার করুন, সারা বাংলাদেশে ডেলিভারি। DutyFree Shop BD.'), 'canon'=>($p->canonical ?? null) ?: url(self::url($p)), 'noindex'=>!empty($p->noindex) || ($p->group_key ?? null) === 'smoke', 'ogimg'=>($p->og_image ?? null) ?: ($p->image ? (preg_match('#^https?://#i', $p->image) ? $p->image : url($p->image)) : url('/og.png'))]))->header('Cache-Control','public, max-age=120');
   }
   public function search(Request $r) {
     $t = trim(mb_substr((string)$r->q, 0, 80)); $items = collect();
@@ -378,17 +384,17 @@ class StoreController extends Controller {
     return response()->view('store.missing', $this->base(['title'=>'পেজ পাওয়া যায়নি | DutyFree Shop BD', 'desc'=>'', 'canon'=>url('/'), 'noindex'=>true]), 404);
   }
   public function sitemap() {
-    $xml = self::rem('store.sitemap5', 3600, function () {
+    $xml = self::rem('store.sitemap6', 3600, function () {
       $h = request()->getHost(); $B = in_array($h, ['localhost','127.0.0.1','::1'], true) || !str_contains($h, '.') ? rtrim((string)config('app.url'), '/') : 'https://'.$h; $ul = fn($p) => $B.'/'.ltrim($p, '/');
       $u = fn($loc, $img = null) => '<url><loc>'.e($loc).'</loc><changefreq>daily</changefreq>'.($img ? '<image:image><image:loc>'.e($img).'</image:loc></image:image>' : '').'</url>';
       $o = $u($ul('/'));
-      foreach ($this->cats() as $c) $o .= $u($ul($c->slug.'/'));
-      foreach ($this->subs() as $cid => $rows) { $cs = $this->cats()->firstWhere('id', $cid); if ($cs) foreach ($rows as $rw) $o .= $u($ul($cs->slug.'/'.\App\Support\Slugs::subSlug($rw->sub))); }
+      foreach ($this->cats() as $c) { if (self::isSmokeCat($c)) continue; $o .= $u($ul($c->slug.'/')); }
+      foreach ($this->subs() as $cid => $rows) { $cs = $this->cats()->firstWhere('id', $cid); if ($cs && !self::isSmokeCat($cs)) foreach ($rows as $rw) $o .= $u($ul($cs->slug.'/'.\App\Support\Slugs::subSlug($rw->sub))); }
       if (\Illuminate\Support\Facades\Schema::hasTable('category_nodes')) foreach (DB::table('category_nodes as t')->join('category_nodes as s', 's.id', '=', 't.parent_id')->join('categories as c', 'c.id', '=', 't.category_id')->where('t.level', 3)->where('t.active', true)->where('s.active', true)->whereExists(fn($q) => $q->select(DB::raw(1))->from('products as p')->whereColumn('p.category_id', 't.category_id')->whereColumn('p.sub', 's.name')->whereColumn('p.sub_sub', 't.name')->where('p.published', true))->select('c.slug as cs', 's.name as sn', 't.name as tn')->get() as $ch) $o .= $u($ul($ch->cs.'/'.\App\Support\Slugs::subSlug($ch->sn).'/'.\App\Support\Slugs::slug($ch->tn, 60)));
       $o .= $u($ul('/blog'));
       foreach (DB::table('posts')->where('active',true)->get(['slug']) as $bp) $o .= $u($ul('/blog/'.$bp->slug));
       foreach (DB::table('pages')->where('active',true)->where(fn($q)=>$q->whereNull('robots_index')->orWhere('robots_index',true))->get(['slug']) as $pg) $o .= $u($ul($pg->slug.'/'));
-      foreach (DB::table('products')->where('published',true)->orderBy('id')->cursor() as $p) $o .= $u($ul(self::url($p)), $p->image);
+      foreach (DB::table('products')->where('published',true)->where(fn($q)=>$q->whereNull('group_key')->orWhere('group_key','!=','smoke'))->orderBy('id')->cursor() as $p) $o .= $u($ul(self::url($p)), $p->image);
       return '<?xml version="1.0" encoding="UTF-8"?>'."\n".'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">'.$o.'</urlset>';
     });
     return response($xml, 200, ['Content-Type'=>'application/xml; charset=utf-8']);

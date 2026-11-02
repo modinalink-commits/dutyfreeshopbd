@@ -11,6 +11,15 @@ class Capi
   const VER = 'v19.0';
   public static function pixelId(): string { return trim((string)(\App\Http\Controllers\StoreController::set()['pixel_id'] ?? '')); }
   public static function enabled(): bool { return self::pixelId() !== '' && (bool)Sms::secret('meta_capi_token'); }
+  /** Real visitor IP even behind Docker/Traefik/Cloudflare: first public address from the proxy headers, else the connection IP (Meta ignores private IPs). */
+  public static function clientIp(Request $r): ?string {
+    $c = [];
+    foreach (['CF-Connecting-IP', 'True-Client-IP', 'X-Real-IP'] as $h) { $v = trim((string)$r->header($h)); if ($v !== '') $c[] = $v; }
+    foreach (explode(',', (string)$r->header('X-Forwarded-For')) as $v) { $v = trim($v); if ($v !== '') $c[] = $v; }
+    $c[] = (string)$r->ip(); $c[] = (string)($_SERVER['REMOTE_ADDR'] ?? '');
+    foreach ($c as $ip) { if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) return $ip; }
+    return null;
+  }
   private static function h(?string $v): ?string { $v = trim((string)$v); return $v === '' ? null : hash('sha256', mb_strtolower($v)); }
 
   /** Hashed customer data per Meta rules (phone as 880XXXXXXXXXX digits, lower-case name/email/city). */
@@ -45,7 +54,7 @@ class Capi
     $o = DB::table('orders')->where('id', $orderId)->first(); if (!$o) return;
     $its = DB::table('order_items as i')->leftJoin('products as p', 'p.id', '=', 'i.product_id')->where('i.order_id', $orderId)->get(['i.product_id', 'p.ext_id', 'i.qty', 'i.price']);
     $contents = $its->filter(fn($i) => $i->product_id)->map(fn($i) => ['id' => (string)(($i->ext_id ?? null) ?: $i->product_id), 'quantity' => (int)$i->qty, 'item_price' => (float)$i->price])->values()->all();
-    $user = self::user(['phone' => $o->phone, 'name' => $o->customer_name, 'email' => $o->email, 'city' => $o->district, 'external_id' => $o->customer_id], $_COOKIE['_fbp'] ?? null, $_COOKIE['_fbc'] ?? null, $r->ip(), (string)$r->userAgent());
+    $user = self::user(['phone' => $o->phone, 'name' => $o->customer_name, 'email' => $o->email, 'city' => $o->district, 'external_id' => $o->customer_id], $_COOKIE['_fbp'] ?? null, $_COOKIE['_fbc'] ?? null, self::clientIp($r), (string)$r->userAgent());
     $custom = ['currency' => 'BDT', 'value' => (float)$o->total, 'content_type' => 'product', 'content_ids' => array_column($contents, 'id'), 'contents' => $contents, 'num_items' => array_sum(array_column($contents, 'quantity')), 'order_id' => $o->invoice];
     $url = url('/order-placed'); $inv = (string)$o->invoice;
     app()->terminating(fn() => self::send('Purchase', $inv, $user, $custom, $url));

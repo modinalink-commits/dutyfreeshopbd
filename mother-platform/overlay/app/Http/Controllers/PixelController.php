@@ -24,7 +24,7 @@ class PixelController extends Controller
   public function test(Request $r) {
     if (!Capi::enabled()) return redirect('/admin/pixel')->with('ok', 'Add the access token first.');
     if (!Sms::secret('meta_capi_test')) return redirect('/admin/pixel')->with('ok', 'Enter the Test Events code first (Events Manager → Test events), so the test is not counted as a real sale.');
-    $u = Capi::user(['phone' => '01700000000', 'name' => 'Test Customer', 'city' => 'Chattogram', 'external_id' => 'test'], null, null, $r->ip(), (string)$r->userAgent());
+    $u = Capi::user(['phone' => '01700000000', 'name' => 'Test Customer', 'city' => 'Chattogram', 'external_id' => 'test'], null, null, Capi::clientIp($r), (string)$r->userAgent());
     $res = Capi::send('Purchase', 'TEST-' . time(), $u, ['currency' => 'BDT', 'value' => 100, 'content_type' => 'product', 'content_ids' => ['test'], 'order_id' => 'TEST'], url('/'), null, true);
     return redirect('/admin/pixel')->with('ok', ($res['ok'] ? 'Test event sent: ' : 'Failed: ') . $res['msg']);
   }
