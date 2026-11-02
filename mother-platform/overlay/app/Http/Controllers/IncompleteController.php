@@ -11,7 +11,7 @@ class IncompleteController extends Controller {
     return $ids ? DB::table('products')->whereIn('id', array_unique($ids))->pluck('image', 'id')->all() : [];
   }
   public static function top(Request $r): array {
-    if ($r->filled('status') || $r->filled('q') || (int)$r->query('page', 1) > 1) return ['incTop'=>collect(), 'incTopImgs'=>[]];
+    if ($r->filled('status') || $r->filled('from') || $r->filled('to') || $r->filled('q') || (int)$r->query('page', 1) > 1) return ['incTop'=>collect(), 'incTopImgs'=>[]];
     $rows = DB::table('incomplete_orders')->where('status', 'open')->orderByDesc('last_activity_at')->limit(30)->get();
     return ['incTop'=>$rows, 'incTopImgs'=>self::imgs($rows)];
   }

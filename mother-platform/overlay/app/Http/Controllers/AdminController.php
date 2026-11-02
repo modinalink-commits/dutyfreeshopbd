@@ -142,9 +142,12 @@ class AdminController extends Controller {
     if ($isInc) $q->whereRaw('1 = 0'); elseif ($r->filled('status')) { $sts = array_filter(array_map('trim', explode(',', (string)$r->status))); count($sts) > 1 ? $q->whereIn('status', $sts) : $q->where('status', $r->status); }
     if ($r->filled('q')) { $qs = trim((string)$r->q); $qd = preg_replace('/\D/', '', $qs); if (str_starts_with($qd, '880')) $qd = substr($qd, 2); $q->where(fn($w) => $w->where('invoice','ilike','%'.$qs.'%')->orWhere('phone','like','%'.($qd !== '' ? $qd : $qs).'%')->orWhere('customer_name','ilike','%'.$qs.'%')); }
     $per = in_array((int)$r->input('per'), [25,50,100,200]) ? (int)$r->input('per') : 50;
+    $range = null; try { if ($r->filled('from') || $r->filled('to')) { $tz = 'Asia/Dhaka'; $ft = preg_match('/^\d{2}:\d{2}$/', (string)$r->ft) ? $r->ft : '00:00'; $tt = preg_match('/^\d{2}:\d{2}$/', (string)$r->tt) ? $r->tt : '23:59';
+      $a = $r->filled('from') ? \Carbon\Carbon::parse($r->from.' '.$ft, $tz)->utc() : null; $b = $r->filled('to') ? \Carbon\Carbon::parse($r->to.' '.$tt.':59', $tz)->utc() : null; $range = [$a, $b]; } } catch (\Throwable $e) { $range = null; }
+    if ($range) { if ($range[0]) $q->where('created_at', '>=', $range[0]); if ($range[1]) $q->where('created_at', '<=', $range[1]); }
     $orders = $q->paginate($per)->withQueryString();
     $items = DB::table('order_items as i')->leftJoin('products as p','p.id','=','i.product_id')->whereIn('i.order_id', collect($orders->items())->pluck('id'))->select('i.*', DB::raw('coalesce(p.image,(select pp.image from products pp where pp.name = i.name limit 1)) as image'))->get()->groupBy('order_id');
-    $counts = DB::table('orders')->select('status', DB::raw('count(*) c'))->groupBy('status')->pluck('c','status');
+    $cq = DB::table('orders')->select('status', DB::raw('count(*) c'))->groupBy('status'); if ($range) { if ($range[0]) $cq->where('created_at', '>=', $range[0]); if ($range[1]) $cq->where('created_at', '<=', $range[1]); } $counts = $cq->pluck('c','status');
     $intel = \App\Support\CustomerIntel::forOrders($orders->items());
     $cmLast = []; $phs = collect($orders->items())->pluck('phone')->filter()->unique()->all();
     if ($phs) foreach (DB::table('order_staff_comments as c')->join('orders as oo','oo.id','=','c.order_id')->whereIn('oo.phone',$phs)->orderByDesc('c.id')->select('c.body','oo.phone')->get() as $c) { if (!isset($cmLast[$c->phone])) $cmLast[$c->phone] = $c->body; }
