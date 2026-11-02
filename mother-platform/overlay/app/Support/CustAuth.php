@@ -15,8 +15,8 @@ class CustAuth
   public static function googleConfigured(): bool { return (bool)(Sms::secret('g_client_id') && Sms::secret('g_client_secret')); }
   public static function googleOn(): bool { return self::flag('auth_google_on', '0') && self::googleConfigured(); }
   public static function on(string $p): bool { return $p === 'google' ? self::googleOn() : self::fbOn(); }
-  public static function redirectFor(string $p): string { return rtrim((string)config('app.url', 'https://dutyfreeshopbd.com'), '/') . '/account/' . ($p === 'google' ? 'google' : 'facebook') . '/callback'; }
-  public static function redirectUrl(): string { return rtrim((string)config('app.url', 'https://dutyfreeshopbd.com'), '/') . '/account/facebook/callback'; }
+  public static function redirectFor(string $p): string { return rtrim((string)config('app.url', 'https://dutyfreebd.com'), '/') . '/account/' . ($p === 'google' ? 'google' : 'facebook') . '/callback'; }
+  public static function redirectUrl(): string { return rtrim((string)config('app.url', 'https://dutyfreebd.com'), '/') . '/account/facebook/callback'; }
   public static function mailReady(): bool { return config('mail.default') && !in_array(config('mail.default'), ['log', 'array'], true) && (config('mail.mailers.smtp.host') || config('mail.default') !== 'smtp'); }
 
   public static function log(Request $r, ?int $cid, string $provider, string $status = 'success'): void {

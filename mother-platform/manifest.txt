@@ -394,3 +394,4 @@ database/migrations/2026_11_02_000003_default_courier_backfill.php
 database/migrations/2026_11_02_000020_manual_payment_module.php
 app/Http/Controllers/ManualPaymentController.php
 resources/views/manual_payments.blade.php
+database/migrations/2026_11_02_000021_domain_dutyfreebd_com.php

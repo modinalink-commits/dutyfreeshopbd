@@ -99,7 +99,7 @@ class SeoMgr
   }
   public static function robotsText(): string {
     $t = trim(self::get('seo_robots', self::ROBOTS)); if (self::get('seo_global_index', '1') === '0') $t = "User-agent: *\nDisallow: /";
-    if (!preg_match('/^\s*sitemap:/im', $t)) $t .= "\nSitemap: " . rtrim((string)config('app.url', 'https://dutyfreeshopbd.com'), '/') . '/sitemap.xml';
+    if (!preg_match('/^\s*sitemap:/im', $t)) $t .= "\nSitemap: " . rtrim((string)config('app.url', 'https://dutyfreebd.com'), '/') . '/sitemap.xml';
     return $t . "\n";
   }
   public static function apply(string $tpl, array $v): string {

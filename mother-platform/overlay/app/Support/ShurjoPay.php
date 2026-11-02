@@ -30,7 +30,7 @@ class ShurjoPay {
         'prefix' => self::get('prefix'), 'token' => $t['token'], 'return_url' => $returnUrl, 'cancel_url' => $cancelUrl, 'store_id' => $t['store_id'],
         'amount' => round((float)$o->total, 2), 'order_id' => $o->invoice, 'currency' => 'BDT',
         'customer_name' => mb_substr((string)$o->customer_name, 0, 100), 'customer_address' => mb_substr((string)$o->address, 0, 250),
-        'customer_email' => $o->email ?: 'noreply@dutyfreeshopbd.com', 'customer_phone' => $o->phone, 'customer_city' => mb_substr((string)($o->district ?: 'Dhaka'), 0, 60),
+        'customer_email' => $o->email ?: 'noreply@dutyfreebd.com', 'customer_phone' => $o->phone, 'customer_city' => mb_substr((string)($o->district ?: 'Dhaka'), 0, 60),
         'customer_post_code' => '1000', 'client_ip' => $ip,
       ]);
       $j = $r->json();

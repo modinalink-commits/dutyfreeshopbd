@@ -3,7 +3,7 @@ namespace App\Support;
 use Illuminate\Support\Facades\DB;
 /** Scans a store/domain and imports its products into store_products (central inventory). Runs in short steps so the browser can show progress. */
 class StoreScanner {
-  const UA = 'Mozilla/5.0 (compatible; MotherCommerceBot/1.0; +https://dutyfreeshopbd.com) Chrome/120 Safari/537.36';
+  const UA = 'Mozilla/5.0 (compatible; MotherCommerceBot/1.0; +https://dutyfreebd.com) Chrome/120 Safari/537.36';
   public static function ph(): string {
     return 'data:image/svg+xml;utf8,'.rawurlencode('<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80"><rect width="80" height="80" rx="10" fill="#FFF1E8"/><path d="M22 54l11-14 8 9 6-7 11 12z" fill="#FDC2A5"/><circle cx="53" cy="29" r="6" fill="#FDC2A5"/></svg>');
   }

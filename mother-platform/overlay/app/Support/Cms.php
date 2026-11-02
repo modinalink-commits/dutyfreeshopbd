@@ -8,7 +8,7 @@ class Cms {
     if (!preg_match('/<[a-z][\s\S]*>/i', $html)) $html = nl2br(e($html));
     $html = preg_replace('#<script\b[\s\S]*?</script>#i', '', $html);
     $html = preg_replace('/\son[a-z]+\s*=\s*("[^"]*"|\'[^\']*\')/i', '', $html);
-    $host = parse_url(url('/'), PHP_URL_HOST) ?: 'dutyfreeshopbd.com';
+    $host = parse_url(url('/'), PHP_URL_HOST) ?: 'dutyfreebd.com';
     $hours = $s['business_hours'] ?? '10 AM – 10 PM';
     $map = ['[[call]]'=>$s['call_number'] ?? '', '[[whatsapp]]'=>$s['whatsapp_number'] ?? '', '[[email]]'=>$s['contact_email'] ?? '', '[[mobile]]'=>($s['contact_mobile'] ?? '') ?: ($s['call_number'] ?? ''), '[[site]]'=>$host, '[[address]]'=>$s['contact_address'] ?? '', '[[hours]]'=>$hours];
     $html = strtr($html, $map);

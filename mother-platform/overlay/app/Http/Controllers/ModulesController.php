@@ -14,7 +14,7 @@ class ModulesController extends Controller {
       'Accounts' => [['money_accounts','expense_purposes','account_entries','bill_statements','withdraw_requests'], 'Working', '/admin/m/accounts'],
       'Customers and Memberships' => [['customers','membership_levels','loyalty_points','contact_messages','blocked_ips'], 'Working', '/admin/m/customers'],
       'Website and Content' => [['settings','banners','sliders','pages','posts'], 'Working', '/admin/site'],
-      'Storefront (dutyfreeshopbd.com)' => [['products','orders'], 'Live', '/'],
+      'Storefront (dutyfreebd.com)' => [['products','orders'], 'Live', '/'],
       'SMS, Email and Campaigns' => [['sms_logs','email_logs','campaigns'], 'Queued only (needs SMS/email provider)', '/admin/m/campaigns'],
       'HR and Payroll' => [['employees','payroll_entries'], 'Working', '/admin/m/employees'],
       'Stores and Sales Channels' => [['stores','sales_channels'], 'Working', '/admin/m/stores'],
