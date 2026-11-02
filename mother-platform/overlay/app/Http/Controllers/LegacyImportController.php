@@ -99,4 +99,44 @@ class LegacyImportController extends Controller
     }
     return response()->json(['ok'=>true, 'in'=>$in, 'skip'=>$skip, 'nomatch'=>$nomatch, 'total'=>DB::table('reviews')->count()]);
   }
+  /** Token webhook: old-site suppliers and purchases (with items and the old paid amount as a payment). Idempotent by legacy ids. Stock is NOT changed. */
+  public function procurement(Request $r) {
+    if (!$this->ok($r)) abort(404);
+    $d = json_decode((string)$r->input('d'), true);
+    if (!is_array($d)) return response()->json(['ok'=>false], 422);
+    $sup = 0; $pur = 0; $skip = 0; $items = 0; $nop = 0;
+    foreach (($d['suppliers'] ?? []) as $x) {
+      $lid = (int)($x['id'] ?? 0); if (!$lid) continue;
+      $name = trim((string)($x['name'] ?? '')) ?: trim((string)($x['company'] ?? '')) ?: 'Supplier '.$lid;
+      $row = ['name'=>mb_substr($name,0,190), 'business_name'=>mb_substr((string)($x['company'] ?? ''),0,200) ?: null, 'phone'=>mb_substr((string)($x['phone'] ?? ''),0,40) ?: null, 'address'=>($x['address'] ?? null) ?: null, 'active'=>(int)($x['st'] ?? 1) === 1, 'updated_at'=>now()];
+      $ex = DB::table('suppliers')->where('legacy_supplier_id', $lid)->first();
+      if ($ex) { DB::table('suppliers')->where('id', $ex->id)->update($row); continue; }
+      $id = DB::table('suppliers')->insertGetId($row + ['legacy_supplier_id'=>$lid, 'created_at'=>($x['at'] ?? now())]);
+      DB::table('suppliers')->where('id', $id)->update(['code'=>'SUP-'.str_pad($id,5,'0',STR_PAD_LEFT), 'token'=>bin2hex(random_bytes(10))]);
+      $sup++;
+    }
+    foreach (($d['purchases'] ?? []) as $x) {
+      $lid = (int)($x['id'] ?? 0); if (!$lid) continue;
+      if (DB::table('purchases')->where('legacy_purchase_id', $lid)->exists()) { $skip++; continue; }
+      $sid = DB::table('suppliers')->where('legacy_supplier_id', (int)($x['sid'] ?? 0))->value('id');
+      if (!$sid) { $nop++; continue; }
+      DB::transaction(function () use ($x, $lid, $sid, &$pur, &$items) {
+        $total = (float)($x['total'] ?? 0); $paid = min((float)($x['paid'] ?? 0), $total > 0 ? $total : (float)($x['paid'] ?? 0)); $date = $x['date'] ?? now()->toDateString();
+        $pid = DB::table('purchases')->insertGetId(['invoice'=>'OLD-'.$lid, 'supplier_id'=>$sid, 'total'=>$total, 'paid'=>$paid, 'purchase_date'=>$date, 'note'=>($x['note'] ?? null) ?: null, 'status'=>'received', 'stock_applied'=>true, 'subtotal'=>$total, 'ptype'=>'Local', 'pay_type'=>$paid >= $total && $total > 0 ? 'Cash' : 'Credit', 'supplier_invoice'=>isset($x['inv']) ? mb_substr((string)$x['inv'],0,80) : null, 'approved_by'=>($x['by'] ?? null) ?: null, 'token'=>bin2hex(random_bytes(10)), 'legacy_purchase_id'=>$lid, 'created_at'=>($x['at'] ?? $date), 'updated_at'=>now()]);
+        foreach (($x['items'] ?? []) as $it) {
+          $prod = DB::table('products')->where('ext_id', (int)($it[0] ?? 0) + 999)->first(['id','name','sku']);
+          $qty = (int)($it[2] ?? 0); $cost = (float)($it[1] ?? 0);
+          DB::table('purchase_items')->insert(['purchase_id'=>$pid, 'product_id'=>$prod->id ?? null, 'name'=>mb_substr((string)($prod->name ?? ($it[3] ?? 'Legacy product')),0,250), 'qty'=>$qty, 'cost'=>$cost, 'sku'=>$prod->sku ?? null, 'line_total'=>$qty * $cost, 'created_at'=>now(), 'updated_at'=>now()]);
+          $items++;
+        }
+        if ($paid > 0) {
+          $py = DB::table('supplier_payments')->insertGetId(['supplier_id'=>$sid, 'purchase_id'=>$pid, 'pay_date'=>$date, 'amount'=>$paid, 'method'=>'Other', 'note'=>'Imported from old site', 'status'=>'paid', 'created_at'=>now(), 'updated_at'=>now()]);
+          DB::table('supplier_payments')->where('id', $py)->update(['code'=>'PAY-'.str_pad($py,6,'0',STR_PAD_LEFT)]);
+          DB::table('payment_allocations')->insert(['payment_id'=>$py, 'purchase_id'=>$pid, 'amount'=>$paid, 'created_at'=>now(), 'updated_at'=>now()]);
+        }
+        $pur++;
+      });
+    }
+    return response()->json(['ok'=>true, 'sup'=>$sup, 'pur'=>$pur, 'skip'=>$skip, 'items'=>$items, 'nosup'=>$nop, 'tot_sup'=>DB::table('suppliers')->count(), 'tot_pur'=>DB::table('purchases')->count()]);
+  }
 }
