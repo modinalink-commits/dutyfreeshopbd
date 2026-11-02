@@ -32,7 +32,7 @@ class SteadfastController extends Controller {
     $i = Steadfast::info($o->consignment_id); if (!$i) return back()->with('bad', 'Could not read the status from Steadfast.');
     CourierSync::apply($o, $i); return back()->with('ok', 'Steadfast status: ' . $i['order_status']);
   }
-  private function book(int $id): array {
+  public function book(int $id): array {
     $o = DB::table('orders')->find($id); if (!$o) return [false, 'Order not found'];
     $items = DB::table('order_items')->where('order_id', $id)->get();
     [$ok, $msg, $data] = Steadfast::send($o, $items); if (!$ok) return [false, $msg];

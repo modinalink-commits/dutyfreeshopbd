@@ -56,6 +56,20 @@ class CourierSync {
   public static function defaultName(): string {
     return Cache::remember('courier.default', 300, fn() => (string)(DB::table('couriers')->where('is_default', true)->where('active', true)->value('name') ?: DB::table('settings')->where('key', 'default_courier')->value('value') ?: 'Pathao'));
   }
+  /** Moving an order to Shipment books the parcel with its courier (like the old site). Returns null when nothing to do, [ok, message] otherwise. */
+  public static function autoBook(int $id): ?array {
+    $o = DB::table('orders')->find($id); if (!$o || $o->consignment_id) return null;
+    $name = $o->courier ?: self::defaultName();
+    [$cls, $ready] = match ($name) {
+      'Pathao' => [\App\Http\Controllers\CourierController::class, Pathao::configured()],
+      'RedX' => [\App\Http\Controllers\RedxController::class, Redx::configured()],
+      'Carrybee' => [\App\Http\Controllers\CarrybeeController::class, Carrybee::configured()],
+      'Steadfast' => [\App\Http\Controllers\SteadfastController::class, Steadfast::configured()],
+      default => [null, false],
+    };
+    if (!$cls || !$ready) return [false, $name.' is not connected, parcel not booked'];
+    try { return app($cls)->book($id); } catch (\Throwable $e) { report($e); return [false, $name.' booking error, send it manually']; }
+  }
   /** Cheap automatic refresh: at most every 10 minutes, after the response is sent. */
   public static function auto(): void {
     if ((!Pathao::configured() && !Carrybee::configured() && !Redx::configured() && !Steadfast::configured()) || !Cache::add('courier.auto', 1, 600)) return;

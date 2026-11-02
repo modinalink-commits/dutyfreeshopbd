@@ -157,16 +157,20 @@ class AdminController extends Controller {
   }
   public function orderBulk(Request $r) {
     $d = $r->validate(['ids'=>'required|array|max:500','ids.*'=>'integer','status'=>'required|in:'.implode(',',Mother::STAGES)]);
-    $n = 0;
-    DB::transaction(function () use ($d, &$n) {
+    $n = 0; $book = [];
+    DB::transaction(function () use ($d, &$n, &$book) {
       foreach (DB::table('orders')->whereIn('id',$d['ids'])->lockForUpdate()->get() as $o) {
         if ($o->status === $d['status']) continue;
+        if ($d['status'] === 'Shipment') $book[] = (int)$o->id;
         DB::table('orders')->where('id',$o->id)->update(['status'=>$d['status'],'updated_at'=>now()]);
         DB::table('order_status_logs')->insert(['order_id'=>$o->id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'from_status'=>$o->status,'to_status'=>$d['status'],'note'=>'Bulk action','created_at'=>now(),'updated_at'=>now()]);
         $n++;
       }
     });
-    if ($r->expectsJson()) return response()->json(['success'=>true,'moved'=>$n,'status'=>$d['status']]);
+    $okB = 0; $failB = []; @set_time_limit(240);
+    foreach (array_slice($book, 0, 60) as $bid) { $b = \App\Support\CourierSync::autoBook($bid); if ($b === null) continue; if ($b[0]) $okB++; else $failB[] = '#'.$bid.': '.$b[1]; }
+    if (count($book) > 60) $failB[] = (count($book) - 60).' more orders: send them from the Courier button (limit 60 per click)';
+    if ($r->expectsJson()) return response()->json(['success'=>true,'moved'=>$n,'status'=>$d['status'],'booked'=>$okB,'parcel_errors'=>array_slice($failB, 0, 6)]);
     return back()->with('ok', "$n orders moved to {$d['status']}");
   }
   public function orderNew(Request $r) {
@@ -268,12 +272,13 @@ class AdminController extends Controller {
       DB::table('orders')->where('id',$id)->update(['status'=>$d['status'],'updated_at'=>now()]);
       DB::table('order_status_logs')->insert(['order_id'=>$id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'from_status'=>$o->status,'to_status'=>$d['status'],'note'=>$d['note']??null,'created_at'=>now(),'updated_at'=>now()]);
     });
+    $warn = null; if ($d['status'] === 'Shipment' && $o->status !== 'Shipment') { $b = \App\Support\CourierSync::autoBook((int)$id); if ($b && !$b[0]) $warn = 'Status saved, but the parcel was not booked: '.$b[1]; }
     if ($r->input('go') === 'list') {
       parse_str(ltrim((string)$r->input('ret'), '?'), $keep);
       $keep = array_filter(array_intersect_key($keep, array_flip(['q','from','to','ft','tt','per'])), fn($v) => is_scalar($v) && $v !== '');
-      return redirect('/admin/orders?'.http_build_query($keep + ['status'=>$d['status'],'hl'=>(int)$id]))->with('ok', 'Order status updated successfully. / অর্ডারের স্ট্যাটাস সফলভাবে আপডেট হয়েছে।');
+      return redirect('/admin/orders?'.http_build_query($keep + ['status'=>$d['status'],'hl'=>(int)$id]))->with('ok', 'Order status updated successfully. / অর্ডারের স্ট্যাটাস সফলভাবে আপডেট হয়েছে।')->with('bad', $warn);
     }
-    return back();
+    return $warn ? back()->with('bad', $warn) : back();
   }
   /** One-click status change from the order list (AJAX): same rules and audit log as orderStatus. */
   public function orderQuickStatus(Request $r, $id) {
@@ -283,7 +288,8 @@ class AdminController extends Controller {
       DB::table('orders')->where('id',$id)->update(['status'=>$d['status'],'updated_at'=>now()]);
       DB::table('order_status_logs')->insert(['order_id'=>$id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'from_status'=>$o->status,'to_status'=>$d['status'],'note'=>trim('Quick Action '.($d['note'] ?? '')),'created_at'=>now(),'updated_at'=>now()]);
     });
-    return response()->json(['success'=>true,'status'=>$d['status'],'cls'=>'s-'.\Illuminate\Support\Str::slug($d['status'])]);
+    $parcel = null; if ($d['status'] === 'Shipment' && $o->status !== 'Shipment') { $b = \App\Support\CourierSync::autoBook((int)$id); if ($b && !$b[0]) $parcel = (string)$b[1]; }
+    return response()->json(['success'=>true,'status'=>$d['status'],'cls'=>'s-'.\Illuminate\Support\Str::slug($d['status']),'parcel_error'=>$parcel]);
   }
   public function ordersCsv() {
     return response()->streamDownload(function () {

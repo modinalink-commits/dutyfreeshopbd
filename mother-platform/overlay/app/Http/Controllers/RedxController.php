@@ -38,7 +38,7 @@ class RedxController extends Controller {
     $i = Redx::info($o->consignment_id); if (!$i) return back()->with('bad', 'Could not read the status from RedX.');
     CourierSync::apply($o, $i); return back()->with('ok', 'RedX status: ' . $i['order_status']);
   }
-  private function book(int $id): array {
+  public function book(int $id): array {
     $o = DB::table('orders')->find($id); if (!$o) return [false, 'Order not found'];
     $items = DB::table('order_items')->where('order_id', $id)->get();
     [$ok, $msg, $data] = Redx::send($o, $items); if (!$ok) return [false, $msg];
