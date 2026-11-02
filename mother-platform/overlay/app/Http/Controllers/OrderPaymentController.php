@@ -18,6 +18,24 @@ class OrderPaymentController extends Controller {
     elseif (DB::table('order_payments')->where('order_id', $oid)->where('status', 'pending')->exists()) $upd += ['pay_status' => 'Verification Pending'];
     DB::table('orders')->where('id', $oid)->update($upd);
   }
+  /** Customer-submitted payments (website checkout) and approvals made from the order list still live on the order row. Mirror them into the ledger so Manual Payments always shows them. */
+  public static function syncLegacy(): void {
+    try {
+      if (!\Illuminate\Support\Facades\Schema::hasTable('order_payments')) return;
+      DB::unprepared("INSERT INTO order_payments(order_id,method,amount,txn_id,sender,paid_at,note,proof,status,verified_by,verified_at,created_by_name,created_at,updated_at)
+        SELECT o.id,COALESCE(o.payment_method,'Manual'),COALESCE(o.pay_amount,o.total),o.pay_txn,o.pay_account,COALESCE(o.pay_at,o.created_at),o.pay_note,o.pay_proof,
+        CASE o.pay_status WHEN 'Verified' THEN 'verified' WHEN 'Rejected' THEN 'rejected' ELSE 'pending' END, CASE WHEN o.pay_status='Verified' THEN o.pay_by END, CASE WHEN o.pay_status='Verified' THEN o.pay_at END,'Customer / website',o.created_at,now()
+        FROM orders o WHERE o.pay_status IN ('Verification Pending','Verified','Rejected') AND lower(coalesce(o.payment_method,'')) NOT LIKE '%shurjo%' AND lower(coalesce(o.payment_method,'')) NOT LIKE '%cash%'
+        AND NOT EXISTS (SELECT 1 FROM order_payments p WHERE p.order_id=o.id)");
+      // approvals/rejections done on the order itself (old flow) for payments nobody handled in the ledger
+      $ids = DB::select("SELECT DISTINCT p.order_id FROM order_payments p JOIN orders o ON o.id=p.order_id WHERE p.created_by IS NULL AND ((p.status='pending' AND o.pay_status IN ('Verified','Rejected')) OR (p.status<>'pending' AND false))");
+      foreach ($ids as $r) {
+        $o = DB::table('orders')->find($r->order_id); if (!$o) continue;
+        DB::table('order_payments')->where('order_id', $o->id)->where('status', 'pending')->whereNull('created_by')->update(['status' => $o->pay_status === 'Verified' ? 'verified' : 'rejected', 'verified_by' => $o->pay_by, 'verified_at' => $o->pay_at, 'updated_at' => now()]);
+        self::recalc((int)$o->id);
+      }
+    } catch (\Throwable $e) { report($e); }
+  }
   /** GET lookup?phone=... → customer summary and open orders with paid/due. */
   public function lookup(Request $r) {
     $ph = preg_replace('/\D+/', '', (string)$r->query('phone')); abort_if(strlen($ph) < 6, 422);

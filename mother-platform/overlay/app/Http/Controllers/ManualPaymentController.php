@@ -17,9 +17,10 @@ class ManualPaymentController extends Controller {
     $l = strtolower((string)$label);
     return str_contains($l, 'bkash') ? 'bkash' : (str_contains($l, 'nagad') ? 'nagad' : 'bank');
   }
-  public function count() { return response()->json(['pending' => (int)DB::table('order_payments')->where('status', 'pending')->count()]); }
+  public function count() { \App\Http\Controllers\OrderPaymentController::syncLegacy(); return response()->json(['pending' => (int)DB::table('order_payments')->where('status', 'pending')->count()]); }
 
   public function index(Request $r) {
+    \App\Http\Controllers\OrderPaymentController::syncLegacy();
     $q = DB::table('order_payments as p')->join('orders as o', 'o.id', '=', 'p.order_id');
     if ($s = trim((string)$r->query('q'))) {
       $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $s).'%';
