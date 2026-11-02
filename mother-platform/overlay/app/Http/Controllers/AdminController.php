@@ -141,6 +141,7 @@ class AdminController extends Controller {
     $isInc = $r->input('status') === 'Incomplete'; $q = DB::table('orders'); if ($r->filled('q')) $q->orderByRaw('case when invoice = ? then 0 else 1 end', [trim((string)$r->q)]); $q->orderByDesc('created_at')->orderByDesc('id');
     if ($isInc) $q->whereRaw('1 = 0'); elseif ($r->filled('status')) { $sts = array_filter(array_map('trim', explode(',', (string)$r->status))); count($sts) > 1 ? $q->whereIn('status', $sts) : $q->where('status', $r->status); }
     if ($r->filled('q')) { $qs = trim((string)$r->q); $qd = preg_replace('/\D/', '', $qs); if (str_starts_with($qd, '880')) $qd = substr($qd, 2); $q->where(fn($w) => $w->where('invoice','ilike','%'.$qs.'%')->orWhere('phone','like','%'.($qd !== '' ? $qd : $qs).'%')->orWhere('customer_name','ilike','%'.$qs.'%')); }
+    $pf = (string)$r->input('print'); if ($pf === 'inv_not') $q->where('invoice_print_count', 0); elseif ($pf === 'inv') $q->where('invoice_print_count', '>', 0); elseif ($pf === 'lbl_not') $q->where('label_print_count', 0); elseif ($pf === 'lbl') $q->where('label_print_count', '>', 0);
     $per = in_array((int)$r->input('per'), [25,50,100,200]) ? (int)$r->input('per') : 50;
     $range = null; try { if ($r->filled('from') || $r->filled('to')) { $tz = 'Asia/Dhaka'; $ft = preg_match('/^\d{2}:\d{2}$/', (string)$r->ft) ? $r->ft : '00:00'; $tt = preg_match('/^\d{2}:\d{2}$/', (string)$r->tt) ? $r->tt : '23:59';
       $a = $r->filled('from') ? \Carbon\Carbon::parse($r->from.' '.$ft, $tz)->utc() : null; $b = $r->filled('to') ? \Carbon\Carbon::parse($r->to.' '.$tt.':59', $tz)->utc() : null; $range = [$a, $b]; } } catch (\Throwable $e) { $range = null; }
@@ -243,7 +244,8 @@ class AdminController extends Controller {
     $logs = DB::table('order_status_logs')->where('order_id',$id)->orderBy('id')->get();
     $ci = \App\Support\CustomerIntel::forOrders([$o])[$o->id];
     $comments = DB::table('order_staff_comments as c')->join('orders as oo','oo.id','=','c.order_id')->where(fn($w) => $w->where('c.order_id',$id)->orWhere(fn($x) => $x->where('oo.phone',$o->phone)->whereNotNull('oo.phone')->where('oo.phone','<>','')))->orderByDesc('c.id')->select('c.*','oo.invoice as inv')->get();
-    return view('order_show', compact('o','items','logs','ci','comments'));
+    $prints = \Illuminate\Support\Facades\Schema::hasTable('order_print_logs') ? DB::table('order_print_logs')->where('order_id',$id)->orderByDesc('printed_at')->orderByDesc('id')->get() : collect();
+    return view('order_show', compact('o','items','logs','ci','comments','prints'));
   }
   public function orderComment(Request $r, $id) {
     $d = $r->validate(['body'=>'required|string|max:2000','category'=>'nullable|string|max:80']);

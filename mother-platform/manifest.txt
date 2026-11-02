@@ -388,3 +388,5 @@ app/Http/Middleware/PerfProbe.php
 app/Http/Controllers/PerfAuditController.php
 resources/views/perf_audit.blade.php
 database/migrations/2026_11_02_000001_orders_newest_first_indexes.php
+database/migrations/2026_11_02_000002_order_print_logs.php
+app/Http/Controllers/PrintLogController.php

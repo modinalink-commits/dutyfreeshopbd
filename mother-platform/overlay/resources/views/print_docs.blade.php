@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>{{ $type === 'label' ? 'Label Print' : 'Invoice Print' }}</title>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><meta name="csrf-token" content="{{ csrf_token() }}"><title>{{ $type === 'label' ? 'Label Print' : 'Invoice Print' }}</title>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Arial,'Helvetica Neue','Noto Sans Bengali','Nirmala UI',sans-serif;color:#000;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .bar{position:sticky;top:0;background:#0B1F3A;color:#fff;padding:8px 14px;display:flex;gap:12px;align-items:center;font-size:14px}.bar button{background:#FF5A00;color:#fff;border:0;border-radius:6px;padding:7px 16px;font-weight:700;cursor:pointer}
@@ -21,6 +21,7 @@ img{max-width:100%}.bc svg{display:block;width:100%;height:100%}
 .lbl .ex{display:flex;flex-wrap:wrap;gap:2px 16px;font-size:10.5px;border-top:1px solid #000;padding-top:5px}.lbl .ex b{color:#0B1F3A}
 @media print{.bar{display:none}}
 </style></head><body>
+<script>(function(){var ids={!! json_encode($sheets->pluck('o.id')->values()) !!},type={!! json_encode($type) !!},last=0;function log(){if(Date.now()-last<4000)return;last=Date.now();var b=(self.crypto&&crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random()).replace(/-/g,"").slice(0,32);var t=document.querySelector('meta[name=csrf-token]').content;try{fetch('/admin/orders/print-log',{method:'POST',credentials:'same-origin',keepalive:true,headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':t},body:JSON.stringify({type:type,ids:ids,batch:b,device:(navigator.platform||"").slice(0,60)})})}catch(e){}}window.addEventListener('beforeprint',log)})();</script>
 <div class="bar"><span>{{ count($sheets) }} {{ $type === 'label' ? 'label' : 'invoice' }}{{ count($sheets) === 1 ? '' : 's' }} ready: each order prints on its own page.</span><button onclick="window.print()">Print</button></div>
 @foreach($sheets as $s)@php $o = $s['o']; $disc = (float)($o->discount ?? 0); $dname = trim((string)($o->discount_type ?? '')) ?: 'Discount'; $dpct = $o->discount_pct ?? null; $addr = trim($o->address.($o->district ? ', '.$o->district : '')); @endphp
 @if($type === 'invoice')

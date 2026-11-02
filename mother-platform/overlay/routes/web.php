@@ -38,6 +38,8 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/incomplete', fn() => redirect('/admin/orders?status=Incomplete'));
   Route::post('/incomplete/{id}/{act}', [\App\Http\Controllers\IncompleteController::class,'act'])->where('act', 'recovered|archive|reopen');
   Route::get('/orders/print', [\App\Http\Controllers\PrintController::class,'show']);
+  Route::post('/orders/print-log', [\App\Http\Controllers\PrintLogController::class,'store'])->middleware('throttle:120,1');
+  Route::post('/orders/{order}/print-log', [\App\Http\Controllers\PrintLogController::class,'store'])->whereNumber('order')->middleware('throttle:120,1');
   Route::get('/orders/products', [A::class,'orderProducts']);
   Route::get('/orders/discount', [A::class,'orderDiscount']); Route::get('/orders/delivery', [\App\Http\Controllers\DeliveryController::class,'quote']);
   Route::post('/orders/bulk', [A::class,'orderBulk']);
