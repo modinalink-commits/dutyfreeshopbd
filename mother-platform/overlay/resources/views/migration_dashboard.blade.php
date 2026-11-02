@@ -1,6 +1,6 @@
 @extends('layout')@section('title','Migration check')
 @section('body')
-<div style="margin-bottom:14px"><h1 style="margin:0">Migration check</h1><span style="font-size:13px;color:#6B7280">Old site (staged copy) against the live tables. "OK" means the numbers match; a difference is listed so it can be explained before go-live. Some old-site totals are fixed reference figures taken from the old admin.</span></div>
+<div style="margin-bottom:14px"><h1 style="margin:0">Migration check</h1><span style="font-size:13px;color:#6B7280">Old site (staged copy) against the live tables. "OK" means the numbers match; a difference is listed so it can be explained before go-live. Where the old site has no staged copy (suppliers, purchases, accounts, reviews) the old column shows a dash; compare those with the old admin totals by hand.</span></div>
 @php $g = collect($rows)->groupBy('g'); @endphp
 @foreach($g as $name => $list)
 <div class="card" style="overflow-x:auto"><b>{{ $name }}</b><table><thead><tr><th>Check</th><th style="text-align:right">Old site</th><th style="text-align:right">New system</th><th style="text-align:right">Difference</th></tr></thead><tbody>
