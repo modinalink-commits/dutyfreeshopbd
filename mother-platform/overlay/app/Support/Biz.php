@@ -20,7 +20,7 @@ class Biz {
   public static function address(): string { return preg_replace('/\s+/', ' ', self::get('address')); }
   public static function hours(): string { return self::get('business_hours'); }
   /** 01872404040 -> 8801872404040 (wa.me format) */
-  public static function waIntl(?string $n = null): string { $d = preg_replace('/\D/', '', $n ?? self::whatsapp()); return str_starts_with($d, '880') ? $d : '88'.ltrim($d, '0'); }
+  public static function waIntl(?string $n = null): string { $d = preg_replace('/\D/', '', $n ?? self::whatsapp()); return str_starts_with($d, '880') ? $d : '880'.ltrim($d, '0'); }
   public static function waUrl(string $text = ''): string { return 'https://wa.me/'.self::waIntl().($text !== '' ? '?text='.rawurlencode($text) : ''); }
   /** 01871600600 -> +8801871600600 (tel: format) */
   public static function tel(?string $n): string { $d = preg_replace('/\D/', '', (string)$n); if ($d === '') return ''; return '+'.(str_starts_with($d, '880') ? $d : '880'.ltrim($d, '0')); }
