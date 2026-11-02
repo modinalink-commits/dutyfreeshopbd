@@ -47,8 +47,14 @@ class MigrationDashboardController extends Controller {
       $sup = DB::select("select s.id, s.name, coalesce(p.t,0) bought, coalesce(y.t,0) paid, coalesce(p.t,0)-coalesce(y.t,0) due from suppliers s left join (select supplier_id, sum(total) t from purchases group by 1) p on p.supplier_id=s.id left join (select supplier_id, sum(amount) t from supplier_payments where coalesce(status,'paid')='paid' group by 1) y on y.supplier_id=s.id where s.legacy_supplier_id is not null order by due desc");
       $add('Suppliers', 'Total supplier due (purchases − payments)', 11702964, (float)collect($sup)->sum('due'), true);
     }
+    $noimg = [];
+    if ($this->has('products', 'legacy_product_id')) {
+      $q = DB::table('products')->whereNotNull('legacy_product_id')->where(fn($x) => $x->whereNull('image')->orWhere('image', ''));
+      $add('Catalogue', 'Imported products without any image', 0, (clone $q)->count());
+      $noimg = (clone $q)->orderByDesc('published')->orderBy('id')->limit(80)->get(['id', 'name', 'legacy_product_id', 'published', 'stock']);
+    }
     $stat = $this->has('legacy_orders') ? DB::select("select coalesce(l.status::text,'—') s, count(*) n, coalesce(sum(l.total),0) t from legacy_orders l group by 1 order by 2 desc") : [];
     $live = DB::select("select status s, count(*) n, coalesce(sum(total),0) t from orders where legacy_order_id is not null group by 1 order by 2 desc");
-    return view('migration_dashboard', ['rows' => $rows, 'stat' => $stat, 'live' => $live, 'sup' => $sup]);
+    return view('migration_dashboard', ['rows' => $rows, 'stat' => $stat, 'live' => $live, 'sup' => $sup, 'noimg' => $noimg]);
   }
 }
