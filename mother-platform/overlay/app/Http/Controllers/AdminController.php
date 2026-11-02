@@ -256,7 +256,8 @@ class AdminController extends Controller {
     $ci = \App\Support\CustomerIntel::forOrders([$o])[$o->id];
     $comments = DB::table('order_staff_comments as c')->join('orders as oo','oo.id','=','c.order_id')->where(fn($w) => $w->where('c.order_id',$id)->orWhere(fn($x) => $x->where('oo.phone',$o->phone)->whereNotNull('oo.phone')->where('oo.phone','<>','')))->orderByDesc('c.id')->select('c.*','oo.invoice as inv')->get();
     $prints = \Illuminate\Support\Facades\Schema::hasTable('order_print_logs') ? DB::table('order_print_logs')->where('order_id',$id)->orderByDesc('printed_at')->orderByDesc('id')->get() : collect();
-    return view('order_show', compact('o','items','logs','ci','comments','prints'));
+    $ops = \Illuminate\Support\Facades\Schema::hasTable('order_payments') ? DB::table('order_payments')->where('order_id',$id)->orderByDesc('id')->get() : collect();
+    return view('order_show', compact('o','items','logs','ci','comments','prints','ops'));
   }
   public function orderComment(Request $r, $id) {
     $d = $r->validate(['body'=>'required|string|max:2000','category'=>'nullable|string|max:80']);
