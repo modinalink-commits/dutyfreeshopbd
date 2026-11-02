@@ -268,6 +268,11 @@ class AdminController extends Controller {
       DB::table('orders')->where('id',$id)->update(['status'=>$d['status'],'updated_at'=>now()]);
       DB::table('order_status_logs')->insert(['order_id'=>$id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'from_status'=>$o->status,'to_status'=>$d['status'],'note'=>$d['note']??null,'created_at'=>now(),'updated_at'=>now()]);
     });
+    if ($r->input('go') === 'list') {
+      parse_str(ltrim((string)$r->input('ret'), '?'), $keep);
+      $keep = array_filter(array_intersect_key($keep, array_flip(['q','from','to','ft','tt','per'])), fn($v) => is_scalar($v) && $v !== '');
+      return redirect('/admin/orders?'.http_build_query($keep + ['status'=>$d['status'],'hl'=>(int)$id]))->with('ok', 'Order status updated successfully. / অর্ডারের স্ট্যাটাস সফলভাবে আপডেট হয়েছে।');
+    }
     return back();
   }
   /** One-click status change from the order list (AJAX): same rules and audit log as orderStatus. */
