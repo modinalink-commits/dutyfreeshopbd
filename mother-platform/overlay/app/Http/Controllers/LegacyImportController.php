@@ -64,4 +64,23 @@ class LegacyImportController extends Controller
     if (!$this->ok($r)) abort(404);
     return response()->json(['rows' => DB::table('legacy_customers')->count(), 'pages' => DB::table('legacy_customers')->distinct()->count('src_page'), 'maxpage' => DB::table('legacy_customers')->max('src_page')]);
   }
+  /** Token webhook: set bcrypt hashes from the old site where the new account has no password yet. d = JSON [[phone,hash],...] */
+  public function passwords(Request $r) {
+    if (!$this->ok($r)) abort(404);
+    $rows = json_decode((string)$r->input('d'), true);
+    if (!is_array($rows)) return response()->json(['ok'=>false], 422);
+    $set = 0; $seen = 0;
+    foreach (array_chunk($rows, 400) as $ch) {
+      $v = []; $b = [];
+      foreach ($ch as $x) {
+        $ph = self::phone($x[0] ?? ''); $h = (string)($x[1] ?? '');
+        if (!$ph || !preg_match('/^\$2[aby]\$\d\d\$[.\/A-Za-z0-9]{53}$/', $h)) continue;
+        $v[] = '(?,?)'; $b[] = $ph; $b[] = $h;
+      }
+      if (!$v) continue;
+      $seen += count($v);
+      $set += DB::update("update customers c set password = v.h, registered_at = coalesce(c.registered_at, now()), updated_at = now() from (values ".implode(',', $v).") as v(p,h) where right(c.phone,11) = v.p and c.password is null", $b);
+    }
+    return response()->json(['ok'=>true, 'seen'=>$seen, 'set'=>$set, 'with_pw'=>DB::table('customers')->whereNotNull('password')->count()]);
+  }
 }
