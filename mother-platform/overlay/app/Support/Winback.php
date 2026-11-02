@@ -10,8 +10,9 @@ class Winback
   const SMS = 'আমরা আপনাকে মিস করছি! আপনার পরবর্তী অর্ডারে বিশেষ {pct}% ডিসকাউন্ট উপভোগ করুন।{code}';
   const SMS_FINAL = 'আপনার জন্য আমাদের বিশেষ Welcome Back Offer — পরবর্তী অর্ডারে {pct}% ডিসকাউন্ট। আবার আমাদের সাথে অর্ডার করুন।{code}';
 
-  public static function set(string $k, string $def = ''): string { $v = DB::table('settings')->where('key', 'wb_' . $k)->value('value'); return $v === null ? $def : (string)$v; }
-  public static function put(string $k, string $v): void { DB::table('settings')->updateOrInsert(['key' => 'wb_' . $k], ['value' => $v, 'updated_at' => now(), 'created_at' => now()]); }
+  private static ?array $mem = null;
+  public static function set(string $k, string $def = ''): string { if (self::$mem === null) self::$mem = DB::table('settings')->where('key', 'like', 'wb\\_%')->pluck('value', 'key')->all(); $v = self::$mem['wb_' . $k] ?? null; return $v === null ? $def : (string)$v; }
+  public static function put(string $k, string $v): void { DB::table('settings')->updateOrInsert(['key' => 'wb_' . $k], ['value' => $v, 'updated_at' => now(), 'created_at' => now()]); self::$mem = null; }
   public static function on(): bool { return self::set('on', '0') === '1'; }
   public static function stages(): array {
     $j = json_decode(self::set('stages', ''), true); $s = is_array($j) && $j ? $j : self::DEF_STAGES; $max = (float)self::set('max_pct', '100'); if ($max <= 0) $max = 100000;
