@@ -269,6 +269,9 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/shurjopay', [\App\Http\Controllers\ShurjoPayController::class,'save']);
   Route::post('/shurjopay/test', [\App\Http\Controllers\ShurjoPayController::class,'test']);
   Route::get('/manual-payments', [\App\Http\Controllers\ManualPaymentController::class,'index']);
+  Route::get('/manual-payments/lookup', [\App\Http\Controllers\OrderPaymentController::class,'lookup']);
+  Route::post('/manual-payments/entry', [\App\Http\Controllers\OrderPaymentController::class,'store']);
+  Route::post('/manual-payments/entry/{pid}/{mode}', [\App\Http\Controllers\OrderPaymentController::class,'act'])->whereNumber('pid')->where('mode','verify|reject');
   Route::get('/manual-payments/count', [\App\Http\Controllers\ManualPaymentController::class,'count']);
   Route::post('/manual-payments/{id}/{mode}', [\App\Http\Controllers\ManualPaymentController::class,'act'])->where('mode','verify|reject|note');
   Route::get('/payment-methods', [\App\Http\Controllers\PaymentController::class,'index']);

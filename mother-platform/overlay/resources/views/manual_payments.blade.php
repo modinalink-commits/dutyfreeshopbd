@@ -10,7 +10,7 @@ table.mpt{width:100%;border-collapse:collapse;font-size:13px;background:#fff}.mp
 </style>
 @if(session('ok'))<div class="card" style="color:#166534">{{ session('ok') }}</div>@endif
 @if(session('bad'))<div class="card err">{{ session('bad') }}</div>@endif
-<div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap"><h1 style="margin:0;flex:1">Manual Payments <span class="tg p" id="mpc">{{ (int)$k->pend }} pending</span></h1><a class="btn g" href="/admin/payment-methods">Payment Methods</a><a class="btn g" href="/admin/orders">Orders</a></div>
+<div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap"><h1 style="margin:0;flex:1">Manual Payments <span class="tg p" id="mpc">{{ (int)$k->pend }} pending</span></h1><button type="button" class="btn" onclick="document.getElementById('mpAdd').showModal()">+ Add Manual Payment</button> <a class="btn g" href="/admin/payment-methods">Payment Methods</a><a class="btn g" href="/admin/orders">Orders</a></div>
 <div class="mpk">
 <div class="w"><small>Pending Verification</small><b>{{ (int)$k->pend }}</b></div><div><small>Verified Today</small><b>{{ (int)$k->vtoday }}</b></div><div><small>Failed / Rejected</small><b>{{ (int)$k->rej }}</b></div>
 <div><small>Pending Bank</small><b>{{ (int)$k->bn }}</b></div><div><small>Pending bKash</small><b>{{ (int)$k->bk }}</b></div><div><small>Pending Nagad</small><b>{{ (int)$k->ng }}</b></div><div class="w"><small>Total Pending Amount</small><b>৳{{ number_format((float)$k->pamt) }}</b></div>
@@ -67,3 +67,26 @@ function mpOpen(tr){const j=JSON.parse(tr.dataset.j);document.getElementById('mp
 })();
 </script>
 @endsection
+<dialog id="mpAdd" style="border:0;border-radius:14px;padding:16px;max-width:560px;width:94%"><form method="post" action="/admin/manual-payments/entry" enctype="multipart/form-data" id="mpAf">@csrf
+<div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:16px">+ Add Manual Payment</b><button type="button" onclick="this.closest('dialog').close()">✕</button></div>
+<label>Customer Mobile</label><div style="display:flex;gap:6px"><input id="mpPh" placeholder="01XXXXXXXXX" inputmode="tel"><button type="button" id="mpFind">Find</button></div>
+<div id="mpCu" style="font-size:13px;color:#475569;margin:6px 0"></div>
+<label>Order / Invoice</label><select name="order_id" id="mpOr" required><option value="">Find customer first</option></select>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div><label>Payment Method</label><select name="method"><option>bKash Personal</option><option>Nagad Personal</option><option>Bank Transfer</option><option>Cash</option><option>Other</option></select></div>
+<div><label>Amount (৳)</label><input name="amount" id="mpAm" type="number" step="0.01" min="1" required></div>
+<div><label>Transaction ID / Reference</label><input name="txn_id"></div><div><label>Sender Number</label><input name="sender"></div>
+<div><label>Payment Date</label><input name="paid_at" type="datetime-local"></div><div><label>Received By</label><input name="received_by" value="{{ auth()->user()->name }}"></div></div>
+<label>Note</label><input name="note"><label>Payment Proof / Screenshot</label><input type="file" name="proof" accept="image/*">
+<div id="mpOv" style="display:none;background:#FEF3C7;border-radius:8px;padding:8px;margin-top:8px;font-size:13px"></div>
+<label style="display:block;margin-top:8px"><input type="checkbox" name="dup_ok" value="1"> I checked the duplicate warning</label>
+<label style="display:block"><input type="checkbox" name="mark_paid" value="1"> Save &amp; verify now (authorized staff)</label>
+<div style="margin-top:10px;display:flex;gap:8px"><button class="btn">Save Payment</button><button type="button" class="btn g" onclick="this.closest('dialog').close()">Cancel</button></div></form></dialog>
+<script>(function(){var due={};function $(i){return document.getElementById(i)}
+$('mpFind').onclick=function(){fetch('/admin/manual-payments/lookup?phone='+encodeURIComponent($('mpPh').value),{headers:{Accept:'application/json'}}).then(function(r){return r.json()}).then(function(d){var s=$('mpOr');s.innerHTML='';due={};
+if(!d.found){$('mpCu').textContent='No customer found for this number.';s.innerHTML='<option value="">No orders</option>';return}
+$('mpCu').innerHTML='<b>'+d.name+'</b> · Orders '+d.total_orders+' · Unpaid '+d.unpaid+' · Partially paid '+d.partial+' · Outstanding ৳'+Math.round(d.outstanding).toLocaleString();
+if(!d.orders.length){s.innerHTML='<option value="">No unpaid orders</option>';return}
+d.orders.forEach(function(o){due[o.id]=o.due;var e=document.createElement('option');e.value=o.id;e.textContent=o.invoice+' · Total ৳'+o.total+' · Paid ৳'+o.paid+' · Due ৳'+o.due+' · '+o.status;s.appendChild(e)});s.onchange();}).catch(function(){$('mpCu').textContent='Lookup failed.'})};
+$('mpOr').onchange=function(){if(due[this.value]!=null&&!$('mpAm').value)$('mpAm').value=due[this.value];chk()};
+function chk(){var d=due[$('mpOr').value],a=parseFloat($('mpAm').value),b=$('mpOv');if(d!=null&&a>d){b.style.display='block';b.innerHTML='Payment amount exceeds order due by ৳'+Math.round(a-d)+'. <label><input type="radio" name="overpay" value="apply_due" checked> Apply ৳'+Math.round(d)+' to order</label> (or press Cancel)'}else b.style.display='none'}
+$('mpAm').oninput=chk;if(location.hash==='#add'){document.getElementById('mpAdd').showModal();var q=new URLSearchParams(location.search);if(q.get('phone')){$('mpPh').value=q.get('phone');$('mpFind').onclick();var t=setInterval(function(){var s=$('mpOr');if(s.options.length>1||s.options[0].value){clearInterval(t);if(q.get('order'))s.value=q.get('order');s.onchange()}},300);setTimeout(function(){clearInterval(t)},6000)}}})();</script>
