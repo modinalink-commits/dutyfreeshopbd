@@ -1,19 +1,13 @@
 @extends('layout')@section('title','Profit & Loss Report')
 @section('body')
-<style>
-.pl{width:100%;border-collapse:collapse;font-size:13px}.pl th,.pl td{border:1px solid #dfe3e8;padding:0 8px;height:34px}
-.pl thead th{position:sticky;top:0;background:#E9EEF5;color:#1E2A3B;z-index:2;height:36px}.pl .n{text-align:right;font-variant-numeric:tabular-nums}
-.pl .gh td{background:#EEF3F9;font-weight:600;cursor:pointer}.pl .st td{background:#F3F4F6;font-weight:700}.pl .gt td{background:#FFF1E8;font-weight:700;height:38px}
-.pl .p{color:#15803D}.pl .l{color:#B91C1C}.pl .gh:hover td{background:#FFF1E8}.pl .nc{color:#B45309}
-.hide{display:none}.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:end;margin-bottom:12px}.bar label{font-size:12px;color:#6B7280;display:block}
-@media print{.bar,.noprint,aside,nav,.sidebar,header{display:none!important}.pl thead th{position:static}body{background:#fff}.hide{display:table-row!important}}
-</style>
+@include('report_grid_assets')
 <div class="noprint" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:8px"><div style="flex:1;min-width:240px"><h1 style="margin:0">Profit &amp; Loss Report</h1><span style="font-size:13px;color:#6B7280">Invoice-wise purchase, sales and margin. Purchase rate is the product's current cost price.</span></div>
-<a class="btn g" href="?from={{ $from }}&to={{ $to }}&status={{ urlencode($status) }}&q={{ urlencode($q) }}&export=csv">Export Excel (CSV)</a><button class="g" onclick="window.print()">Print / PDF</button></div>
+<a class="btn g" href="?from={{ $from }}&to={{ $to }}&status={{ urlencode($status) }}&q={{ urlencode($q) }}&export=csv">Export Excel (CSV)</a><a class="btn g" href="?from={{ $from }}&to={{ $to }}&status={{ urlencode($status) }}&q={{ urlencode($q) }}&export=doc">Export Word</a><button class="g" onclick="window.print()">Print / PDF</button></div>
 <form class="bar" method="get" id="f"><div><label>From</label><input type="date" name="from" value="{{ $from }}"></div><div><label>To</label><input type="date" name="to" value="{{ $to }}"></div>
 <div><label>Status</label><select name="status"><option value="all" {{ $status==='all'?'selected':'' }}>All</option>@foreach($statuses as $s)<option {{ $status===$s?'selected':'' }}>{{ $s }}</option>@endforeach</select></div>
 <div><label>Search invoice, name, mobile, product</label><input name="q" value="{{ $q }}" placeholder="search" style="min-width:220px"></div>
 <div><label>Invoices</label><select name="per">@foreach([50,100,200,500] as $n)<option {{ $per==$n?'selected':'' }}>{{ $n }}</option>@endforeach</select></div><div><button>Search</button> <a class="btn g" href="/admin/profit-report">Reset</a></div></form>
+<div class="rp-body">
 <div class="noprint" style="font-size:12px;color:#6B7280;margin-bottom:6px">Showing {{ count($groups) }} of {{ number_format($total) }} invoices · {{ $from }} → {{ $to }} · <a href="#" onclick="document.querySelectorAll('.det').forEach(e=>e.classList.add('hide'));return false">collapse all</a> · <a href="#" onclick="document.querySelectorAll('.det').forEach(e=>e.classList.remove('hide'));return false">expand all</a></div>
 <div style="overflow:auto;max-height:78vh"><table class="pl"><thead><tr><th>Product ID</th><th>Product</th><th class="n">Qty</th><th class="n">Purchase rate</th><th class="n">Purchase total</th><th class="n">Selling price</th><th class="n">Sold total</th><th class="n">Profit/Loss</th><th class="n">Margin %</th></tr></thead><tbody>
 @forelse($groups as $i => $gr)@php($o=$gr['o'])
@@ -24,4 +18,6 @@
 <tr class="gt"><td colspan="4">Grand Total ({{ count($groups) }} invoices, {{ $g['lines'] }} products)</td><td class="n">{{ number_format($g['buy'],2) }}</td><td></td><td class="n">{{ number_format($g['sale'],2) }}</td><td class="n p">{{ number_format($g['sale']-$g['buy'],2) }}</td><td class="n">{{ $g['sale']>0 ? round(($g['sale']-$g['buy'])/$g['sale']*100,1) : 0 }}%</td></tr>
 <tr class="gt"><td colspan="9">Total profit: <span class="p">{{ number_format($g['profit'],2) }}</span> &nbsp;|&nbsp; Total loss: <span class="l">{{ number_format($g['loss'],2) }}</span> &nbsp;|&nbsp; Total discount: {{ number_format($g['disc'],2) }} &nbsp;|&nbsp; Total delivery: {{ number_format($g['ship'],2) }} &nbsp;|&nbsp; Net profit (sale − purchase − discount): <span class="{{ $g['net']>=0?'p':'l' }}">{{ number_format($g['net'],2) }}</span></td></tr>
 </tbody></table></div>
+</div>
+@include('report_grid_js')
 @endsection

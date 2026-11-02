@@ -31,6 +31,7 @@ class PurchaseReportController extends Controller {
       rewind($out); return response("\xEF\xBB\xBF" . stream_get_contents($out), 200, ['Content-Type' => 'text/csv; charset=UTF-8', 'Content-Disposition' => 'attachment; filename="purchase-report-' . $from . '-' . $to . '.csv"']);
     }
     $suppliers = DB::table('suppliers')->orderBy('name')->get(['id', 'name']);
+    if ($r->query('export') === 'doc') { $html = view('purchase_report', get_defined_vars())->render(); return response('<html><head><meta charset="utf-8"></head><body>' . (preg_match('#<table class="pl".*?</table>#s', $html, $m) ? $m[0] : '') . '</body></html>', 200, ['Content-Type' => 'application/msword; charset=UTF-8', 'Content-Disposition' => 'attachment; filename="purchase_report.doc"']); }
     return view('purchase_report', compact('groups', 'g', 'from', 'to', 'sup', 'q', 'per', 'total', 'suppliers'));
   }
 }

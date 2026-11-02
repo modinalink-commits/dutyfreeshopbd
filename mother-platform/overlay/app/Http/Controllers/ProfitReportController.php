@@ -36,6 +36,7 @@ class ProfitReportController extends Controller {
       rewind($out); return response("\xEF\xBB\xBF" . stream_get_contents($out), 200, ['Content-Type' => 'text/csv; charset=UTF-8', 'Content-Disposition' => 'attachment; filename="profit-loss-' . $from . '-' . $to . '.csv"']);
     }
     $statuses = DB::table('orders')->select('status')->distinct()->orderBy('status')->pluck('status');
+    if ($r->query('export') === 'doc') { $html = view('profit_report', get_defined_vars())->render(); return response('<html><head><meta charset="utf-8"></head><body>' . (preg_match('#<table class="pl".*?</table>#s', $html, $m) ? $m[0] : '') . '</body></html>', 200, ['Content-Type' => 'application/msword; charset=UTF-8', 'Content-Disposition' => 'attachment; filename="profit_report.doc"']); }
     return view('profit_report', compact('groups', 'g', 'from', 'to', 'status', 'q', 'per', 'total', 'statuses'));
   }
 }

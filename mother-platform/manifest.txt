@@ -370,3 +370,9 @@ app/Http/Controllers/PurchaseReportController.php
 resources/views/purchase_report.blade.php
 app/Http/Controllers/LegacyKeyController.php
 resources/views/legacy_key.blade.php
+app/Http/Controllers/SupplierLedgerReportController.php
+app/Http/Controllers/CourierReportController.php
+resources/views/supplier_ledger_report.blade.php
+resources/views/courier_report.blade.php
+resources/views/report_grid_assets.blade.php
+resources/views/report_grid_js.blade.php
