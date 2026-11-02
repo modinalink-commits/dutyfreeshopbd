@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 return new class extends Migration {
   public function up(): void {
-    if (DB::getDriverName() !== 'pgsql') return;
+    if (DB::getDriverName() !== 'pgsql' || DB::connection()->pretending()) return; // --pretend (deploy safety check) cannot read results
     if (!Schema::hasColumn('incomplete_orders', 'invoice')) Schema::table('incomplete_orders', fn(Blueprint $t) => $t->string('invoice', 30)->nullable()->index());
     // Audit (read-only): duplicates and non-standard series in existing orders.
     $dups = (int)DB::selectOne("select count(*) n from (select invoice from orders group by invoice having count(*)>1) x")->n;
