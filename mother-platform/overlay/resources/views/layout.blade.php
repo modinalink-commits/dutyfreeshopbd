@@ -64,7 +64,7 @@ main .pill{font-size:10.5px;font-weight:700;border-radius:6px;padding:2px 8px}
 <main>@yield('body')</main>
 @auth @include('chat_widget') @include('softphone_fab') @endauth
 @yield('js')
-@auth<script src="/js/df-export.js?v=2" defer></script>@endauth
+@auth<script src="/js/df-export.js?v=2" defer></script>@endauth@auth<script src="/js/live-search.js?v=1" defer></script>@endauth
 
 @if(auth()->check())
 <div id="dfsm" style="display:none;position:fixed;inset:0;background:rgba(10,20,50,.55);z-index:99999;align-items:center;justify-content:center;padding:14px"><div class="card" style="max-width:460px;width:100%;margin:0;max-height:92vh;overflow:auto">

@@ -140,7 +140,7 @@ class AdminController extends Controller {
   public function orders(Request $r) { \App\Support\CourierSync::auto();
     $isInc = $r->input('status') === 'Incomplete'; $q = DB::table('orders')->orderByDesc('id');
     if ($isInc) $q->whereRaw('1 = 0'); elseif ($r->filled('status')) { $sts = array_filter(array_map('trim', explode(',', (string)$r->status))); count($sts) > 1 ? $q->whereIn('status', $sts) : $q->where('status', $r->status); }
-    if ($r->filled('q')) $q->where(fn($w) => $w->where('invoice','like','%'.$r->q.'%')->orWhere('phone','like','%'.$r->q.'%')->orWhere('customer_name','ilike','%'.$r->q.'%'));
+    if ($r->filled('q')) { $qs = trim((string)$r->q); $qd = preg_replace('/\D/', '', $qs); if (str_starts_with($qd, '880')) $qd = substr($qd, 2); $q->where(fn($w) => $w->where('invoice','ilike','%'.$qs.'%')->orWhere('phone','like','%'.($qd !== '' ? $qd : $qs).'%')->orWhere('customer_name','ilike','%'.$qs.'%')); }
     $per = in_array((int)$r->input('per'), [25,50,100,200]) ? (int)$r->input('per') : 50;
     $orders = $q->paginate($per)->withQueryString();
     $items = DB::table('order_items as i')->leftJoin('products as p','p.id','=','i.product_id')->whereIn('i.order_id', collect($orders->items())->pluck('id'))->select('i.*', DB::raw('coalesce(p.image,(select pp.image from products pp where pp.name = i.name limit 1)) as image'))->get()->groupBy('order_id');

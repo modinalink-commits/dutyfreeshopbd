@@ -1,9 +1,9 @@
 fe43f8b6cb422cca81ee18b74d3972f77e7852de database/migrations/2026_10_31_000001_mother_core.php
 27de9be8c1c988bab4ab647a6f3a591db7f34b76 routes/web.php
 4eb9c45dba79c3a8479970e7d5fac7c89719990f app/Models/Mother.php
-ee634eb65a6755457522e9038697da3f985e231c app/Http/Controllers/AdminController.php
+db0661e96757e5e6476d11df3af46e168f44fd83 app/Http/Controllers/AdminController.php
 bd49f23ea0895af93bed5374937115c21911b0cd app/Console/Commands/MotherInstall.php
-319066521bd839c9ea0adf3f20840f0ecb72cc13 resources/views/layout.blade.php
+3027265d9c8b4e5a4cf1608511255b13c5a140f9 resources/views/layout.blade.php
 7ba1a8252b36e7db33e40d8be3ea5ec2cd241fb7 resources/views/login.blade.php
 d8475158991af998c5f7bf8943f665b8b6204829 resources/views/dashboard.blade.php
 80f33b0d3b14e2dc1544646a23b9a9e006160696 resources/views/orders.blade.php
@@ -346,3 +346,4 @@ d1490a1f4b26b431e5b2703157d1d16a402e2fa8 resources/views/legacy_orders.blade.php
 054e88474a90f53d55586b81a29e23c52faef7e1 public/pay/cod.png
 ce9e3d33de31851e42aeb528602e04e54be06b04 database/migrations/2026_11_02_000017_payment_master.php
 77fba68eadc05e6e8b6d687e7b394d4bda97ab33 resources/views/pay_badge.blade.php
+4ba680b9a2c37a7859b721c0554e3fa4d6c36af7 public/js/live-search.js

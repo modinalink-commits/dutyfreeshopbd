@@ -346,3 +346,4 @@ public/couriers/pathao.png
 public/pay/cod.png
 database/migrations/2026_11_02_000017_payment_master.php
 resources/views/pay_badge.blade.php
+public/js/live-search.js
