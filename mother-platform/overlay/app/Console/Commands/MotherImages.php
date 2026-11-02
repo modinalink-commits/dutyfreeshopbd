@@ -42,6 +42,7 @@ class MotherImages extends Command {
     $rep = \App\Support\ImageAudit::scan();
     $todo = array_values(array_filter($rep['bad'], fn($p) => $p['state'] !== 'none' && !in_array($p['id'], $failed, true)));
     if (!$todo) { DB::table('settings')->updateOrInsert(['key' => 'img_auto_repair'], ['value' => 'done', 'updated_at' => now(), 'created_at' => now()]); $this->line('image repair: finished'); return; }
+    if ($st === 'done') DB::table('settings')->updateOrInsert(['key' => 'img_auto_repair'], ['value' => 'run', 'updated_at' => now(), 'created_at' => now()]);
     $fixed = 0;
     foreach (array_slice($todo, 0, 30) as $p) {
       if (microtime(true) - $t0 > 100) break;
