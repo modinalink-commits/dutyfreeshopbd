@@ -83,4 +83,20 @@ class LegacyImportController extends Controller
     }
     return response()->json(['ok'=>true, 'seen'=>$seen, 'set'=>$set, 'with_pw'=>DB::table('customers')->whereNotNull('password')->count()]);
   }
+  /** Token webhook: import old-site product reviews (idempotent). d = JSON [{pid,pcode,user,st,txt,stars,at},...] */
+  public function reviews(Request $r) {
+    if (!$this->ok($r)) abort(404);
+    $rows = json_decode((string)$r->input('d'), true);
+    if (!is_array($rows)) return response()->json(['ok'=>false], 422);
+    $in = 0; $skip = 0; $nomatch = 0;
+    foreach ($rows as $x) {
+      $pid = DB::table('products')->where('ext_id', (int)($x['pid'] ?? 0) + 999)->value('id') ?: (($x['pcode'] ?? '') !== '' ? DB::table('products')->where('sku', (string)$x['pcode'])->value('id') : null);
+      if (!$pid) { $nomatch++; continue; }
+      $name = mb_substr(trim((string)($x['user'] ?? '')) ?: 'Customer', 0, 120); $body = trim((string)($x['txt'] ?? '')); $at = $x['at'] ?? now();
+      if (DB::table('reviews')->where('product_id', $pid)->where('name', $name)->where('body', $body)->where('created_at', $at)->exists()) { $skip++; continue; }
+      DB::table('reviews')->insert(['product_id'=>$pid, 'name'=>$name, 'rating'=>max(1, min(5, (int)($x['stars'] ?? 5))), 'body'=>$body, 'verified_buyer'=>false, 'status'=>((int)($x['st'] ?? 0)) === 1 ? 'approved' : 'hidden', 'created_at'=>$at, 'updated_at'=>$at]);
+      $in++;
+    }
+    return response()->json(['ok'=>true, 'in'=>$in, 'skip'=>$skip, 'nomatch'=>$nomatch, 'total'=>DB::table('reviews')->count()]);
+  }
 }
