@@ -1,16 +1,16 @@
 <?php
 namespace App\Http\Controllers;
 use Illuminate\Support\Facades\DB;
-/** Meta / Google product feed served live from the database: /products.xml (id = products.ext_id, same ID the Pixel and CAPI send). */
+/** Tobacco/vape (group 'smoke') is deliberately left out: Meta ad policy prohibits it; the products stay on the website. Meta / Google product feed served live from the database: /products.xml (id = products.ext_id, same ID the Pixel and CAPI send). */
 class CatalogFeedController extends Controller {
   const BASE = 'https://dutyfreebd.com';
   private static function x(?string $s): string { $s = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/u', '', (string)$s); return htmlspecialchars($s, ENT_XML1 | ENT_QUOTES, 'UTF-8'); }
   public function feed() {
-    $xml = StoreController::rem('store.catalogfeed1', 1800, function () {
+    $xml = StoreController::rem('store.catalogfeed2', 1800, function () {
       $brands = DB::table('brands')->pluck('name', 'id')->all();
       $cats = DB::table('categories')->pluck('name', 'id')->all();
       $o = '<?xml version="1.0" encoding="UTF-8"?>' . "\n" . '<rss xmlns:g="http://base.google.com/ns/1.0" version="2.0"><channel><title>DutyFreeBD</title><link>' . self::BASE . '</link><description>DutyFreeBD product feed</description>' . "\n";
-      foreach (DB::table('products')->where('published', true)->where('price', '>', 0)->orderBy('id')->cursor() as $p) {
+      foreach (DB::table('products')->where('published', true)->where('price', '>', 0)->where(fn($q) => $q->whereNull('group_key')->orWhere('group_key', '!=', 'smoke'))->orderBy('id')->cursor() as $p) {
         $id = (string)(($p->ext_id ?? null) ?: $p->id);
         $img = trim((string)$p->image); if ($img === '') continue;
         if (!preg_match('#^https?://#i', $img)) $img = self::BASE . '/' . ltrim($img, '/');
