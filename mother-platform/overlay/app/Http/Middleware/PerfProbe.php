@@ -13,6 +13,8 @@ class PerfProbe {
     $log = DB::getQueryLog(); $ms = 0; $pat = [];
     foreach ($log as $q) { $ms += $q['time']; $k = substr(preg_replace(['/\s+/', '/\b\d+\b/', "/'[^']*'/"], [' ', '?', '?'], $q['query']), 0, 90); $pat[$k] = ($pat[$k] ?? 0) + 1; }
     arsort($pat); $top = []; foreach (array_slice($pat, 0, 3, true) as $k => $n) $top[] = $n . 'x ' . $k;
+    usort($log, fn($x, $y) => $y['time'] <=> $x['time']); $slow = []; foreach (array_slice($log, 0, 4) as $q) $slow[] = round($q['time']) . 'ms ' . substr(preg_replace('/\s+/', ' ', $q['query']), 0, 230);
+    $resp->headers->set('X-Perf-Slow', preg_replace('/[^\x20-\x7E]/', '', implode(' || ', $slow)));
     $resp->headers->set('X-Perf', sprintf('time_ms=%d; queries=%d; db_ms=%.1f; peak_mb=%.1f; bytes=%d', (microtime(true) - $t0) * 1000, count($log), $ms, memory_get_peak_usage(true) / 1048576, strlen((string)$resp->getContent())));
     $resp->headers->set('X-Perf-Top', preg_replace('/[^\x20-\x7E]/', '', implode(' || ', $top)));
     return $resp;
