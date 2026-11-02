@@ -21,7 +21,8 @@ class WinbackController extends Controller
       'k' => ['sent' => (clone $ev)->count(), 'used' => (clone $ev)->whereNotNull('used_at')->count(), 'disc' => (float)(clone $ev)->sum('used_discount'), 'rev' => (float)(clone $ev)->sum('used_total')],
       'hist' => DB::table('winback_events as e')->leftJoin('customers as c', 'c.id', '=', 'e.customer_id')->orderByDesc('e.id')->limit(60)->get(['e.*', 'c.name']),
       's' => ['on' => W::on(), 'auto' => W::set('mode', 'auto'), 'max_pct' => W::set('max_pct', '100'), 'max_discount' => W::set('max_discount', '0'), 'min_order' => W::set('min_order', '0'), 'expiry' => W::set('expiry', '30'),
-        'sms' => W::set('sms', '1'), 'push' => W::set('push', '1'), 'notif' => W::set('notif', '1'), 'sms_text' => W::set('sms_text', W::SMS), 'sms_final' => W::set('sms_final', W::SMS_FINAL), 'last_run' => W::set('last_run')]];
+        'sms' => W::set('sms', '1'), 'push' => W::set('push', '1'), 'notif' => W::set('notif', '1'), 'sms_text' => W::set('sms_text', W::SMS), 'sms_final' => W::set('sms_final', W::SMS_FINAL), 'last_run' => W::set('last_run'), 'daily_cap' => W::dailyCap()]];
+    $q = W::queue(); $cap = W::dailyCap(); $d['q'] = ['rows' => array_slice($q['rows'], 0, $cap), 'total' => $q['total'], 'cap' => $cap, 'when' => $q['when'], 'start' => W::set('start', ''), 'sentToday' => W::sentToday()];
     return view('winback', $d);
   }
   public function save(Request $r) {
@@ -30,6 +31,7 @@ class WinbackController extends Controller
     foreach ($days as $i => $dv) { $dd = (int)$dv; $pp = (float)($pcts[$i] ?? 0); if ($dd > 0 && $pp > 0) { $st[] = [$dd, $pp]; $cc = strtoupper(preg_replace('/[^A-Za-z0-9_-]/', '', (string)($cds[$i] ?? ''))); if ($cc !== '') $codes[$dd] = mb_substr($cc, 0, 30); } }
     W::put('codes', json_encode((object)$codes));
     usort($st, fn($a, $b) => $a[0] <=> $b[0]); W::put('stages', json_encode($st));
+    W::put('daily_cap', (string)max(1, (int)$r->input('daily_cap', 250)));
     foreach (['max_pct', 'max_discount', 'min_order', 'expiry'] as $k) W::put($k, (string)max(0, (float)$r->input($k, 0)));
     W::put('mode', in_array($r->input('mode'), ['coupon', 'fixed'], true) ? $r->input('mode') : 'auto'); W::put('on', $r->boolean('on') ? '1' : '0');
     foreach (['sms', 'push', 'notif'] as $k) W::put($k, $r->boolean($k) ? '1' : '0');
