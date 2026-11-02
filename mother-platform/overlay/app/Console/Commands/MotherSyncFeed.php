@@ -58,8 +58,12 @@ class MotherSyncFeed extends Command {
     $n = 0; $now = now(); $seen = [];
     foreach ($rows as [$pid, $title, $grp, $sub, $sale, $cmp, $img, $desc]) {
       if (!isset($catId[$grp])) $grp = 'other';
-      $data = ['name'=>mb_substr($title,0,200), 'price'=>$sale, 'compare_price'=>$cmp, 'image'=>(\App\Support\Img::mirrored($img) ?: $img), 'group_key'=>$grp, 'sub'=>mb_substr($sub,0,120), 'category_id'=>$catId[$grp], 'description'=>mb_substr($desc,0,5000), 'published'=>true, 'synced_at'=>$now, 'updated_at'=>$now];
       $ex = DB::table('products')->where('ext_id',$pid)->first();
+      // keep a working local image (the feed only knows the old-server URL); own-domain old paths live on the old server
+      $keep = $ex && in_array(\App\Support\ImageAudit::check($ex->image)['state'], ['ok','thumb_missing'], true);
+      if ($img && preg_match('#^https?://(www\.)?(dutyfreebd|dutyfreeshopbd)\.com(/public/storage/images/.*)$#i', $img, $mm)) $img = \App\Support\ImageAudit::OLD . $mm[3];
+      $data = ['name'=>mb_substr($title,0,200), 'price'=>$sale, 'compare_price'=>$cmp, 'group_key'=>$grp, 'sub'=>mb_substr($sub,0,120), 'category_id'=>$catId[$grp], 'description'=>mb_substr($desc,0,5000), 'published'=>true, 'synced_at'=>$now, 'updated_at'=>$now];
+      if (!$keep) $data['image'] = \App\Support\Img::mirrored($img) ?: $img;
       if ($ex) DB::table('products')->where('id',$ex->id)->update($data);
       else DB::table('products')->insert($data + ['ext_id'=>$pid, 'sku'=>'DF-'.$pid, 'slug'=>Str::slug($title) ?: 'product', 'stock'=>100, 'cost'=>0, 'created_at'=>$now]);
       $seen[] = $pid; $n++;
