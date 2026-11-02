@@ -24,8 +24,13 @@ class Winback
 
   /** phone => [oid, at] of the latest Delivered order for customers with no newer live order. */
   public static function lastDelivered(?string $phone = null): array {
-    $sql = "select distinct on (right(o.phone,11)) right(o.phone,11) as p, o.id as oid, l.created_at as at from order_status_logs l join orders o on o.id = l.order_id where l.to_status = 'Delivered'" . ($phone ? " and right(o.phone,11) = ?" : '') . " order by right(o.phone,11), l.created_at desc";
-    $rows = DB::select($sql, $phone ? [$phone] : []); $out = [];
+    $ph = $phone ? " and right(o.phone,11) = ?" : '';
+    $sql = "select distinct on (p) p, oid, at from (
+      select right(o.phone,11) as p, o.id as oid, l.created_at as at from order_status_logs l join orders o on o.id = l.order_id where l.to_status = 'Delivered'" . $ph . "
+      union all
+      select right(o.phone,11) as p, o.id as oid, coalesce(o.courier_delivered_at, o.created_at) as at from orders o where o.status in ('Delivered','Partial Delivered','Late Delivery') and not exists (select 1 from order_status_logs l where l.order_id = o.id and l.to_status = 'Delivered')" . $ph . "
+    ) x order by p, at desc";
+    $rows = DB::select($sql, $phone ? [$phone, $phone] : []); $out = [];
     $newer = DB::table('orders')->whereNotIn('status', ['Cancel', 'Returned'])->selectRaw('right(phone,11) as p, max(created_at) as m')->groupBy(DB::raw('right(phone,11)'))->pluck('m', 'p')->all();
     foreach ($rows as $r) { if (isset($newer[$r->p]) && $newer[$r->p] > $r->at) continue; $out[$r->p] = ['oid' => (int)$r->oid, 'at' => $r->at]; }
     return $out;
