@@ -377,7 +377,7 @@ class StoreController extends Controller {
     return response()->view('store.missing', $this->base(['title'=>'পেজ পাওয়া যায়নি | DutyFree Shop BD', 'desc'=>'', 'canon'=>url('/'), 'noindex'=>true]), 404);
   }
   public function sitemap() {
-    $xml = self::rem('store.sitemap6', 3600, function () {
+    $xml = self::rem('store.sitemap5', 3600, function () {
       $h = request()->getHost(); $B = in_array($h, ['localhost','127.0.0.1','::1'], true) || !str_contains($h, '.') ? rtrim((string)config('app.url'), '/') : 'https://'.$h; $ul = fn($p) => $B.'/'.ltrim($p, '/');
       $u = fn($loc, $img = null) => '<url><loc>'.e($loc).'</loc><changefreq>daily</changefreq>'.($img ? '<image:image><image:loc>'.e($img).'</image:loc></image:image>' : '').'</url>';
       $o = $u($ul('/'));
