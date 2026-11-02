@@ -68,6 +68,13 @@ class OrderPaymentController extends Controller {
     if ($verify) OrderActivity::log((int)$o->id, 'payment_verified', null, (string)$amt, 'Payment verified: '.$d['method'].' ৳'.number_format($amt).' for '.$o->invoice, ['payment_id' => $pid]);
     return back()->with('ok', 'Payment saved for '.$o->invoice.($verify ? ' (verified)' : ' (pending verification)'));
   }
+  /** Proof file of a ledger entry: new uploads sit on the public disk, website uploads on the private local disk. */
+  public function proof($pid) {
+    $p = DB::table('order_payments')->find($pid); abort_unless($p && $p->proof, 404);
+    $f = ltrim(preg_replace('#^/?storage/#', '', (string)$p->proof), '/');
+    foreach (['public', 'local'] as $d) { $disk = \Illuminate\Support\Facades\Storage::disk($d); if ($disk->exists($f)) return response()->file($disk->path($f)); }
+    abort(404);
+  }
   public function act(Request $r, $pid, $mode) {
     $this->can();
     $p = DB::table('order_payments')->find($pid); abort_unless($p && in_array($mode, ['verify', 'reject']), 404);

@@ -41,7 +41,7 @@ class ManualPaymentController extends Controller {
     if (is_numeric($r->query('max'))) $q->where('p.amount', '<=', (float)$r->query('max'));
     $sort = $r->query('sort') === 'old' ? 'asc' : 'desc';
     $rows = (clone $q)->orderBy('p.created_at', $sort)->orderBy('p.id', $sort)
-      ->select('p.*', 'o.invoice', 'o.customer_name', 'o.phone', 'o.total as order_total', 'o.paid_total', 'o.payment_status', 'o.status as order_status')->paginate(40)->withQueryString();
+      ->select('p.*', 'o.invoice', 'o.pay_account as order_pay_account', 'o.customer_name', 'o.phone', 'o.total as order_total', 'o.paid_total', 'o.payment_status', 'o.status as order_status')->paginate(40)->withQueryString();
     $txns = $rows->pluck('txn_id')->filter()->unique()->all();
     $dups = $txns ? DB::table('order_payments')->whereIn('txn_id', $txns)->whereIn('status', ['pending','verified'])->select('txn_id', DB::raw('count(*) c'))->groupBy('txn_id')->pluck('c', 'txn_id') : collect();
     $k = DB::table('order_payments as p')->selectRaw("count(*) filter (where p.status='pending') pend, count(*) filter (where p.status='verified' and p.verified_at::date = current_date) vtoday, count(*) filter (where p.status='rejected') rej, coalesce(sum(p.amount) filter (where p.status='pending'),0) pamt, count(*) filter (where lower(p.method) like '%bkash%' and p.status='pending') bk, count(*) filter (where lower(p.method) like '%nagad%' and p.status='pending') ng, count(*) filter (where lower(p.method) like '%bank%' and p.status='pending') bn")->first();
