@@ -26,7 +26,27 @@ class MotherImages extends Command {
       }
     }
     if ($done) foreach (['store.home2','store.home4','store.home6','store.home5','store.cats','store.live2','store.live3','store.live4'] as $k) \Illuminate\Support\Facades\Cache::forget($k);
+    try { $this->autoRepair($t0); } catch (\Throwable $e) { $this->line('image repair: '.$e->getMessage()); }
     $this->line("IMAGES uploads {$a['processed']} (left {$a['remaining']}), mirrored $done, failed $fail");
     return 0;
+  }
+
+  /** Server-side product image repair (no browser): a few products per run until nothing repairable is left. */
+  private function autoRepair(float $t0): void {
+    $st = (string)DB::table('settings')->where('key', 'img_auto_repair')->value('value');
+    if ($st === 'done' || $st === 'off' || microtime(true) - $t0 > 40) return;
+    $failed = json_decode((string)DB::table('settings')->where('key', 'img_repair_failed')->value('value'), true) ?: [];
+    $rep = \App\Support\ImageAudit::scan();
+    $todo = array_values(array_filter($rep['bad'], fn($p) => $p['state'] !== 'none' && !in_array($p['id'], $failed, true)));
+    if (!$todo) { DB::table('settings')->updateOrInsert(['key' => 'img_auto_repair'], ['value' => 'done', 'updated_at' => now(), 'created_at' => now()]); $this->line('image repair: finished'); return; }
+    $fixed = 0;
+    foreach (array_slice($todo, 0, 15) as $p) {
+      if (microtime(true) - $t0 > 100) break;
+      [$res] = \App\Support\ImageAudit::repair($p);
+      if ($res === 'fixed') $fixed++; else $failed[] = $p['id'];
+    }
+    DB::table('settings')->updateOrInsert(['key' => 'img_repair_failed'], ['value' => json_encode(array_values(array_unique($failed))), 'updated_at' => now(), 'created_at' => now()]);
+    foreach (['store.home2','store.home4','store.home5','store.home6','store.cats','store.live2','store.live3','store.live4'] as $k) \Illuminate\Support\Facades\Cache::forget($k);
+    $this->line("image repair: fixed $fixed, left " . max(0, count($todo) - 15));
   }
 }
