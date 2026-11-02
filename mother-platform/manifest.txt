@@ -366,3 +366,5 @@ app/Http/Controllers/MigrationDashboardController.php
 resources/views/migration_dashboard.blade.php
 app/Http/Controllers/ProfitReportController.php
 resources/views/profit_report.blade.php
+app/Http/Controllers/PurchaseReportController.php
+resources/views/purchase_report.blade.php
