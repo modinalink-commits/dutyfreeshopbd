@@ -16,8 +16,10 @@ class FraudCheck
     'unknown'   => ['Unknown', 'No Courier History', 'কুরিয়ার হিস্ট্রি পাওয়া যায়নি', '#4B5563', '#F3F4F6', null],
   ];
   const KEYS = ['fc_steadfast_key', 'fc_steadfast_secret', 'fc_redx_token', 'fc_pathao_token'];
+  /** Fraud-check token, or the RedX courier API token when none was entered separately. */
+  public static function redxToken(): string { $t = trim((string)(Sms::secret('fc_redx_token') ?: Sms::secret('redx_token'))); return preg_replace('/^bearer\s+/i', '', $t); }
   public static function phone(string $p): string { $d = preg_replace('/\D/', '', $p); if (str_starts_with($d, '880')) $d = '0' . substr($d, 3); return substr($d, -11); }
-  public static function configured(): array { return ['steadfast' => (bool)(Sms::secret('fc_steadfast_key') && Sms::secret('fc_steadfast_secret')), 'redx' => (bool)Sms::secret('fc_redx_token'), 'pathao' => (bool)Sms::secret('fc_pathao_token')]; }
+  public static function configured(): array { return ['steadfast' => (bool)(Sms::secret('fc_steadfast_key') && Sms::secret('fc_steadfast_secret')), 'redx' => self::redxToken() !== '', 'pathao' => (bool)Sms::secret('fc_pathao_token')]; }
 
   public static function level(int $total, float $rate): array {
     if ($total <= 0) return ['unknown', null];
@@ -40,7 +42,7 @@ class FraudCheck
       try {
         $rs = Http::pool(fn($pool) => [
           $pool->as('s')->timeout(10)->withHeaders(['Api-Key' => (string)Sms::secret('fc_steadfast_key'), 'Secret-Key' => (string)Sms::secret('fc_steadfast_secret'), 'Content-Type' => 'application/json'])->get('https://portal.packzy.com/api/v1/fraud_check/score/' . $phone),
-          $pool->as('r')->timeout(10)->withHeaders(['API-ACCESS-TOKEN' => 'Bearer ' . Sms::secret('fc_redx_token'), 'Accept' => 'application/json'])->get('https://openapi.redx.com.bd/v1.0.0-beta/customer/success_rate/' . $phone),
+          $pool->as('r')->timeout(10)->withHeaders(['API-ACCESS-TOKEN' => 'Bearer ' . self::redxToken(), 'Accept' => 'application/json'])->get('https://openapi.redx.com.bd/v1.0.0-beta/customer/success_rate/' . $phone),
           $pool->as('p')->timeout(10)->withHeaders(['Content-Type' => 'application/json', 'accept' => 'application/json', 'Authorization' => 'Bearer ' . $ptok])->post('https://merchant.pathao.com/api/v1/user/success', ['phone' => $phone]),
         ]);
         foreach (['s' => 'steadfast', 'r' => 'redx', 'p' => 'pathao'] as $hk => $hn) $http[$hn] = $rs[$hk] instanceof \Illuminate\Http\Client\Response ? $rs[$hk]->status() : 0;
