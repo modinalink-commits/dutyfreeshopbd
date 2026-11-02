@@ -357,3 +357,4 @@ app/Support/Redx.php
 app/Http/Controllers/RedxController.php
 resources/views/redx_setup.blade.php
 public/couriers/steadfast.png
+public/couriers/redx.png
