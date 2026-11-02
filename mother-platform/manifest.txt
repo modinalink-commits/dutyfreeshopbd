@@ -391,3 +391,6 @@ database/migrations/2026_11_02_000001_orders_newest_first_indexes.php
 database/migrations/2026_11_02_000002_order_print_logs.php
 app/Http/Controllers/PrintLogController.php
 database/migrations/2026_11_02_000003_default_courier_backfill.php
+database/migrations/2026_11_02_000020_manual_payment_module.php
+app/Http/Controllers/ManualPaymentController.php
+resources/views/manual_payments.blade.php
