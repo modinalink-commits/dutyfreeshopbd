@@ -6,13 +6,15 @@ use Illuminate\Support\Facades\DB;
 
 class ImageAuditController extends Controller {
   public function index() {
+    try {
     $rep = json_decode((string)DB::table('settings')->where('key', 'image_audit_report')->value('value'), true);
     $log = DB::table('image_audit_log')->where('kind', 'repair')->orderByDesc('id')->limit(60)->get();
     $fixed = (int)DB::table('image_audit_log')->where('kind', 'repair')->where('result', 'fixed')->count();
     $failed = (int)DB::table('image_audit_log')->where('kind', 'repair')->where('result', 'failed')->count();
     return view('image_audit', ['rep' => $rep, 'log' => $log, 'fixed' => $fixed, 'failed' => $failed]);
+    } catch (\Throwable $e) { return response('Image audit error: '.get_class($e).': '.mb_substr($e->getMessage(), 0, 500).' @'.basename($e->getFile()).':'.$e->getLine(), 500)->header('Content-Type', 'text/plain'); }
   }
-  public function scan() { @set_time_limit(120); $r = ImageAudit::scan(); unset($r['bad']); return response()->json($r); }
+  public function scan() { @set_time_limit(120); try { $r = ImageAudit::scan(); unset($r['bad']); return response()->json($r); } catch (\Throwable $e) { return response()->json(['error' => get_class($e).': '.mb_substr($e->getMessage(), 0, 400).' @'.basename($e->getFile()).':'.$e->getLine()], 500); } }
   /** One small batch; the page calls it repeatedly. */
   public function repair(Request $r) {
     @set_time_limit(120); $skip = array_map('intval', array_filter((array)$r->input('skip', []))); $n = max(1, min(25, (int)($r->input('n') ?: 12)));

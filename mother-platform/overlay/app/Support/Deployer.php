@@ -93,7 +93,7 @@ class Deployer
       $rolled = str_contains($st, 'rolled back');
       $u += ['status' => $rolled ? 'Rolled Back' : 'Failed', 'stage' => $rolled ? 'Rolled back' : 'Failed', 'error' => trim(substr($st, 7)), 'log' => mb_substr($log, -9000), 'finished_at' => now()];
       self::audit($rolled ? 'deploy rolled back' : 'deploy failed', ($row->subject ?? '') . ' — previous version kept');
-    } elseif ($fresh && $row->status !== 'Queued' && !str_starts_with($st, 'queued') && time() - max((int)@filemtime(self::D . '/stage'), (int)@filemtime(self::D . '/status'), (int)@filemtime(self::D . '/last.log')) > 1200) {
+    } elseif ($fresh && $row->status !== 'Queued' && time() - max((int)@filemtime(self::D . '/stage'), (int)@filemtime(self::D . '/status'), (int)@filemtime(self::D . '/last.log')) > 1200) {
       $u += ['status' => 'Failed', 'stage' => 'Failed', 'error' => 'Interrupted: no progress for 20 minutes (the server was restarted during this deployment). Press Deploy Now to run it again.', 'finished_at' => now()];
       self::audit('deploy interrupted', (string)$row->subject);
     } elseif ($fresh && $st !== '') {
