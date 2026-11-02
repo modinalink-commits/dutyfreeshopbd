@@ -42,19 +42,20 @@ textarea,.ti{width:100%;border:1.5px solid var(--bd);border-radius:8px;padding:8
 .ph{height:100vh}.top{padding:8px 10px}.top b{font-size:14px}.tabs button{padding:7px 2px}.box{padding:10px;gap:7px}.num input{font-size:18px;padding:6px}.keys{gap:6px}.keys button{height:46px}.go{height:46px}
 .stsel{max-width:104px;border:0;border-radius:14px;padding:3px 6px;text-overflow:ellipsis;font:700 11px inherit;color:#fff;cursor:pointer;outline:0}.stsel.st-available{background:var(--g)}.stsel.st-busy{background:var(--r)}.stsel option{color:#111;background:#fff}
 .dfoot{display:flex;justify-content:space-between;align-items:center;padding:7px 12px;border-top:1px solid var(--bd);font-size:11.5px;color:var(--mu);background:#fff}.dfoot a{color:var(--o);font-weight:700;text-decoration:none}.dfoot i{font-style:normal;font-weight:700}.dfoot i.ok{color:var(--g)}.dfoot i.no{color:var(--r)}
+.crow{display:flex;gap:8px}.crow .go.call{flex:1}.go.sm{width:52px;flex:none;font-size:18px;padding:0}.go.hang.sm:disabled,.go.mq:disabled{opacity:.45}.go.mq{background:#fff;color:#374151;border:1.5px solid var(--bd)}.go.mq.on{background:#FEF3C7;border-color:#F59E0B}
+.tabs button svg{width:14px;height:14px;vertical-align:-2px;margin-right:4px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 </style></head><body>
 <div class="ph{{ $embed ? ' emb' : '' }}">
 <div class="top"><div class="tt"><b>Mother Commerce Dialer</b><small>Call Center · <span class="badge b-bad" id="bdg">Disconnected</span></small></div><select id="stSel" class="stsel st-{{ $agst ?? 'available' }}" title="Availability"><option value="available"{{ ($agst ?? 'available') === 'available' ? ' selected' : '' }}>● Available — Ready to take calls</option><option value="busy"{{ ($agst ?? '') === 'busy' ? ' selected' : '' }}>● Busy — Do not receive calls</option></select>@if($embed)<button type="button" class="tb" id="pPop" title="Pop out (keeps the call alive while you browse)">⧉</button><button type="button" class="tb" id="pMin" title="Minimize">–</button><button type="button" class="tb" id="pX" title="Close">×</button>@endif</div>
 <div class="disc" id="disc"><span>PBX connection required</span><button type="button" id="bRc">Reconnect</button></div>
-<div class="tabs"><button type="button" data-t="pad" class="on">Dial Pad</button><button type="button" data-t="con">Contacts</button><button type="button" data-t="rec">Recent</button><button type="button" data-t="act" id="tAct">Active Call<span class="dot"></span></button></div>
+<div class="tabs"><button type="button" data-t="pad" class="on"><svg viewBox="0 0 24 24"><circle cx="5" cy="5" r="1.5"/><circle cx="12" cy="5" r="1.5"/><circle cx="19" cy="5" r="1.5"/><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>Dial Pad</button><button type="button" data-t="con"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Contacts</button><button type="button" data-t="rec"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Recent</button><button type="button" data-t="act" id="tAct">Active Call<span class="dot"></span></button></div>
 
 <div class="box tp" id="tp-pad">
 <div class="stt"><span id="cst">Ready</span> · <span id="tmr">00:00:00</span></div>
 <div id="ctxL" style="display:none;margin:0 0 6px;padding:6px 10px;border-radius:8px;background:#EFF6FF;color:#1E3A8A;font-size:12.5px;font-weight:600"></div><div class="num"><input id="num" inputmode="tel" autocomplete="off" placeholder="Enter Phone Number" value="{{ $n }}"><button type="button" id="bk" title="Backspace">⌫</button></div>
 <div id="found" class="fnd"></div>
 <div class="keys">@foreach([['1',''],['2','ABC'],['3','DEF'],['4','GHI'],['5','JKL'],['6','MNO'],['7','PQRS'],['8','TUV'],['9','WXYZ'],['*',''],['0','+'],['#','']] as $k)<button type="button" data-k="{{ $k[0] }}">{{ $k[0] }}<small>{{ $k[1] ?: ' ' }}</small></button>@endforeach</div>
-<button type="button" class="go call" id="bGo">📞 Call</button>
-<button type="button" class="go hang" id="bHang1" style="display:none">⛔ Hang Up</button>
+<div class="crow"><button type="button" class="go call" id="bGo">📞 Call</button><button type="button" class="go hang sm" id="bHang1" title="Hang Up" disabled>📵</button><button type="button" class="go mq sm" id="bMuteQ" title="Mute" disabled>🎙</button></div>
 <div class="msg" id="msg">@if(!$has)আপনার এক্সটেনশন সেট করা নেই। অ্যাডমিনকে বলুন Call Center → Extensions থেকে দিতে।@endif</div>
 <div class="mut"><a href="/admin/call-center/history" target="_blank">Call history</a></div>
 </div>
@@ -129,7 +130,7 @@ function setPhase(p,label){phase=p;var t=label||LBL[p];$('cst').textContent=t;va
 function ui(){var r=reg(),ic=inCall(),cn=connected();
  $('disc').classList.toggle('on',!r&&!ic);
  var g=$('bGo');if(ic){g.textContent=phase==='connected'?'✔ Connected':LBL[phase];g.disabled=true;g.className='go call busyb'}else{g.textContent='📞 Call';g.disabled=!r;g.className='go call'}
- $('bHang1').style.display=ic?'flex':'none';$('bHang2').disabled=!ic;
+ $('bHang1').disabled=!ic;$('bMuteQ').disabled=!cn;$('bHang2').disabled=!ic;
  ['bMute','bHold','bKp','bTr'].forEach(function(i){$(i).disabled=!cn});
  $('tAct').classList.toggle('live',ic);
  var b=ic?'busy':'idle';if(b!==lastBusy){lastBusy=b;if(emb)parent.postMessage({dfdial:b},location.origin)}}
@@ -172,7 +173,7 @@ function target(n){var p=cfg.prefix||'';n=clean(n);if(p&&n.indexOf(p)!==0&&n.cha
 function iceCfg(){return {iceServers:cfg.stun?[{urls:'stun:'+cfg.stun.replace(/^stun:/,'')}]:[{urls:'stun:stun.l.google.com:19302'}]}}
 function mic(){if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)return Promise.reject({name:'NoMedia'});return navigator.mediaDevices.getUserMedia({audio:true}).then(function(s){s.getTracks().forEach(function(t){t.stop()})})}
 function micErr(){setPhase('failed','Failed');err('Microphone access is required to make calls.')}
-function resetCtl(){muted=false;held=false;$('bMute').classList.remove('on');$('bHold').classList.remove('on');$('bMute').lastChild.textContent='Mute';$('bHold').lastChild.textContent='Hold';$('bKp').classList.remove('on');$('kp').classList.remove('on')}
+function resetCtl(){muted=false;held=false;var q=$('bMuteQ');if(q){q.classList.remove('on');q.textContent='🎙'}$('bMute').classList.remove('on');$('bHold').classList.remove('on');$('bMute').lastChild.textContent='Mute';$('bHold').lastChild.textContent='Hold';$('bKp').classList.remove('on');$('kp').classList.remove('on')}
 function begin(n,d){cur=n;dir=d;info=null;connAt=0;clearInterval(tick);$('tmr').textContent='00:00:00';$('aT').textContent='00:00:00';resetCtl();renderAct();look(n).then(function(c){if(cur===n){info=c;renderAct();if(d==='in'){$('icN').textContent=c.found&&c.name?c.name:'Unknown Customer';$('icI').textContent=c.found?((c.category||'Customer')+' · '+c.orders+' orders'+(c.last?' · Last: '+c.last.invoice+' ('+c.last.status+')':'')):'No customer record'}}})}
 function call(n){n=clean(n||$('num').value);if(!n){err('Enter a phone number first.');return}if(inCall())return;if(!reg()){err('PBX connection required');return}err('');
  begin(n,'out');setPhase('connecting');tab('act');
@@ -232,7 +233,7 @@ function dtmf(k){if(ses&&connected()){try{ses.sendDTMF(k,{duration:160,interTone
 document.querySelectorAll('#tp-pad [data-k]').forEach(function(b){b.onclick=function(){var k=b.dataset.k;if(connected())dtmf(k);else if(!inCall()){$('num').value+=k;found()}}});
 document.querySelectorAll('#kp [data-d]').forEach(function(b){b.onclick=function(){dtmf(b.dataset.d)}});
 $('bk').onclick=function(){if(!inCall()){$('num').value=$('num').value.slice(0,-1);found()}};
-$('bGo').onclick=function(){call()};$('bHang1').onclick=hang;$('bHang2').onclick=hang;
+$('bMuteQ').onclick=function(){$('bMute').click();var on=$('bMute').classList.contains('on');this.classList.toggle('on',on);this.textContent=on?'🔇':'🎙'};$('bGo').onclick=function(){call()};$('bHang1').onclick=hang;$('bHang2').onclick=hang;
 $('bMute').onclick=function(){if(!connected())return;muted=!muted;try{muted?ses.mute({audio:true}):ses.unmute({audio:true})}catch(e){}this.classList.toggle('on',muted);this.lastChild.textContent=muted?'Unmute':'Mute'};
 $('bHold').onclick=function(){if(!connected())return;try{held?ses.unhold():ses.hold()}catch(e){console.warn(e)}};
 $('bKp').onclick=function(){var k=$('kp');k.classList.toggle('on');this.classList.toggle('on',k.classList.contains('on'))};
