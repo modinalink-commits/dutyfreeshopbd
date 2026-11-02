@@ -4,6 +4,7 @@ namespace App\Support;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 /** Promotional Voice Campaigns: last ordered product -> personalised % offer -> scheduled PBX call -> conversion tracking. */
 class Voice
@@ -28,7 +29,7 @@ class Voice
   /** Readiness checklist shown on the admin page. */
   public static function readiness(): array {
     return [
-      ['PBX call origination (Event Socket)', self::set('esl_host') !== '' && Sms::secret('vc_esl_pass') && self::set('gateway') !== '', 'PBX host, port, password and outbound gateway name'],
+      ['PBX call origination (Event Socket)', (self::set('esl_host') !== '' || env('PBX_ESL_HOST')) && (Sms::secret('vc_esl_pass') || env('PBX_ESL_PASSWORD')) && self::set('gateway') !== '', 'PBX host, port, password and outbound gateway name'],
       ['Voice (Bangla text-to-speech)', self::set('tts_provider', 'none') !== 'none' && (bool)Sms::secret('vc_tts_key'), 'Azure or Google key, or upload a prerecorded audio per campaign'],
       ['PBX call script installed (voice_offer)', self::set('script_ok') === '1', 'Install voice_offer.lua on the PBX once and tick "installed"'],
       ['Follow-up SMS gateway', Sms::configured(), 'SMS API key and sender ID'],
@@ -84,7 +85,7 @@ class Voice
         'custom' => $d >= (int)($cfg['min_days'] ?? 0) && $d <= ((int)($cfg['max_days'] ?? 0) ?: 100000) && (!($cfg['category'] ?? '') || (($cfg['category'] === 'vip') === ($cu && strtolower((string)($cu->type ?? '')) === 'vip'))), default => true };
       if (!$ok) continue;
       if (!$cu) { $skip[$p] = 'No customer account'; continue; } if ($cu->blocked) { $skip[$p] = 'Customer blocked'; continue; }
-      if (!($cu->promo_call ?? true)) { $skip[$p] = 'Promotional calls disabled'; continue; } if (!self::validPhone($p)) { $skip[$p] = 'Invalid phone number'; continue; }
+      if (!($cu->promo_call ?? true) || self::optedOut($p)) { $skip[$p] = 'Voice offer opt-out'; continue; } if (!self::validPhone($p)) { $skip[$p] = 'Invalid phone number'; continue; }
       if (isset($recent[$p])) { $skip[$p] = 'Called within the last ' . $c->cooldown_days . ' days'; continue; }
       if (($cfg['min_orders'] ?? 0) && OrderDiscount::stats($p, $cu)['n'] < (int)$cfg['min_orders']) { $skip[$p] = 'Fewer orders than required'; continue; }
       $pr = self::lastProduct($x['oid']); if (!$pr) { $skip[$p] = 'Last order has no catalogue product'; continue; }
@@ -105,8 +106,8 @@ class Voice
   }
 
   // ---------- calling
-  private static function esl(string $cmd, int $timeout = 45): array {
-    $h = self::set('esl_host'); $port = (int)self::set('esl_port', '8021'); $pw = Sms::secret('vc_esl_pass'); if ($h === '' || !$pw) return [false, 'PBX connection is not set up'];
+  public static function esl(string $cmd, int $timeout = 45): array {
+    $h = self::set('esl_host') ?: (string)env('PBX_ESL_HOST', ''); $port = (int)(self::set('esl_port') ?: env('PBX_ESL_PORT', 8021)); $pw = Sms::secret('vc_esl_pass') ?: (string)env('PBX_ESL_PASSWORD', ''); if ($h === '' || !$pw) return [false, 'PBX connection is not set up'];
     $fp = @fsockopen($h, $port, $en, $es, 6); if (!$fp) return [false, 'PBX is not reachable (' . ($es ?: 'timeout') . ')']; stream_set_timeout($fp, $timeout);
     $rd = function () use ($fp) { $hd = ''; while (($l = fgets($fp)) !== false) { if (trim($l) === '') break; $hd .= $l; } $len = 0; if (preg_match('/Content-Length:\s*(\d+)/i', $hd, $m)) $len = (int)$m[1]; return [$hd, $len ? fread($fp, $len) : '']; };
     try {
@@ -121,14 +122,16 @@ class Voice
     $id = (int)($row->id ?? 0); $uuid = self::uuid(); $aid = self::audioId($f);
     $url = self::baseUrl() . '/voice-audio/' . $aid . '.' . strtolower(pathinfo($f, PATHINFO_EXTENSION)) . '?t=' . self::audioToken((int)$aid); self::linkAudio($aid, $f);
     $var = ["origination_uuid=$uuid", 'origination_caller_id_number=' . (self::set('caller_id') ?: '0000'), 'origination_caller_id_name=DutyFreeBD', 'originate_timeout=' . (int)self::set('ring_timeout', '30'), 'ignore_early_media=true',
-      "vc_id=$id", "vc_audio='$url'", "vc_hook='" . self::baseUrl() . '/webhooks/voice?k=' . self::hookToken() . "'", 'vc_dtmf=' . ($c->dtmf_on ? '1' : '0'), 'vc_agent=' . (self::set('agent_ext') ?: '101')];
-    $cmd = 'originate {' . implode(',', $var) . '}sofia/gateway/' . self::set('gateway') . '/' . self::dialNumber($row->phone) . ' ' . (self::set('dialplan_ext', 'voice_offer')) . ' XML ' . (self::set('context') ?: 'public');
+      "vc_id=$id", "vc_audio='$url'", "vc_hook='" . self::baseUrl() . '/webhooks/voice?k=' . self::hookToken() . "'", 'vc_dtmf=' . ($c->dtmf_on ? '1' : '0'), 'vc_agent=' . (self::set('agent_ext') ?: '101'), 'vc_rec=' . self::recName($id, $row->phone, $uuid)];
+    $cmd = 'originate {' . implode(',', $var) . '}sofia/gateway/' . self::set('gateway') . '/' . self::dialNumber($row->phone) . ' ' . (self::set('dialplan_ext') ?: (string)env('PBX_DESTINATION', 'voice_offer')) . ' XML ' . (self::set('context') ?: (string)env('PBX_CONTEXT', 'public'));
     [$ok, $out] = self::esl($cmd, (int)self::set('ring_timeout', '30') + 15); if (!$ok) return ['failed', $out, $uuid];
-    if (str_starts_with($out, '+OK')) return ['answered', '', $uuid];
+    if (str_starts_with($out, '+OK')) { $job = trim(substr($out, 3)); if ($job !== '') self::$lastJob = $job; return ['answered', '', $uuid]; }
     $cause = trim(preg_replace('/^-ERR\s*/', '', $out)); $u = strtoupper($cause);
     $st = str_contains($u, 'BUSY') ? 'busy' : (preg_match('/NO_ANSWER|NO_USER_RESPONSE|ORIGINATOR_CANCEL|RECOVERY_ON_TIMER/', $u) ? 'not_answered' : 'failed');
     return [$st, $cause, $uuid];
   }
+  public static ?string $lastJob = null;
+  public static function recName($id, string $phone, string $uuid): string { return preg_replace('/[^A-Za-z0-9_\-]/', '', 'voiceoffer_' . ($uuid ?: $id) . '_' . $phone . '_' . now('Asia/Dhaka')->format('YmdHis')) . '.mp3'; }
   private static function uuid(): string { $b = random_bytes(16); $b[6] = chr(ord($b[6]) & 0x0f | 0x40); $b[8] = chr(ord($b[8]) & 0x3f | 0x80); return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($b), 4)); }
   private static function audioId(string $f): string { return (string)(hexdec(substr(md5(basename($f)), 0, 7))); }
   private static function linkAudio(string $id, string $f): void { Cache::put('vcaudio.' . $id, $f, now()->addDay()); }
@@ -141,7 +144,7 @@ class Voice
     $row = (object)['id' => 0, 'phone' => $p, 'name' => 'Test', 'product_name' => $product ?: 'Patron Nano White Special', 'discount_value' => $c->discount_value, 'customer_id' => null];
     $aid = DB::table('voice_call_attempts')->insertGetId(['vc_id' => 0, 'campaign_id' => $c->id, 'phone' => $p, 'attempt' => 1, 'started_at' => now(), 'result' => 'calling', 'test' => true, 'created_at' => now(), 'updated_at' => now()]);
     [$st, $cause, $uuid] = self::originate($c, $row);
-    DB::table('voice_call_attempts')->where('id', $aid)->update(['pbx_call_id' => $uuid ?: null, 'result' => $st, 'cause' => mb_substr($cause, 0, 60), 'updated_at' => now()]);
+    DB::table('voice_call_attempts')->where('id', $aid)->update(['pbx_call_id' => $uuid ?: null, 'pbx_job_uuid' => self::$lastJob, 'recording_name' => self::recName($row->id ?? 0, $row->phone, $uuid), 'error' => in_array($st, ['failed', 'busy', 'not_answered']) ? mb_substr($cause, 0, 250) : null, 'result' => $st, 'cause' => mb_substr($cause, 0, 60), 'updated_at' => now()]); self::$lastJob = null;
     return [$st === 'answered', $st === 'answered' ? 'Test call was answered.' : 'Test call result: ' . $st . ($cause ? ' — ' . $cause : '') . '.'];
   }
 
@@ -154,10 +157,10 @@ class Voice
 
   /** Place the call for one campaign customer and record the result. */
   public static function dial(object $c, object $row, bool $test = false): array {
-    $att = $row->call_attempts + 1; DB::table('voice_campaign_customers')->where('id', $row->id)->update(['call_status' => 'calling', 'call_attempts' => $att, 'called_at' => now(), 'updated_at' => now()]);
+    $att = $row->call_attempts + 1; if (!$test && DB::table('voice_campaign_customers')->where('id', $row->id)->where('call_status', 'calling')->where('updated_at', '>', now()->subMinutes(3))->exists()) return ['calling', 'duplicate blocked']; DB::table('voice_campaign_customers')->where('id', $row->id)->update(['call_status' => 'calling', 'call_attempts' => $att, 'called_at' => now(), 'updated_at' => now()]);
     $aid = DB::table('voice_call_attempts')->insertGetId(['vc_id' => $row->id, 'campaign_id' => $c->id, 'customer_id' => $row->customer_id, 'phone' => $row->phone, 'attempt' => $att, 'started_at' => now(), 'result' => 'calling', 'test' => $test, 'created_at' => now(), 'updated_at' => now()]);
     [$st, $cause, $uuid] = self::originate($c, $row);
-    DB::table('voice_call_attempts')->where('id', $aid)->update(['pbx_call_id' => $uuid ?: null, 'result' => $st, 'cause' => mb_substr($cause, 0, 60), 'updated_at' => now()]);
+    DB::table('voice_call_attempts')->where('id', $aid)->update(['pbx_call_id' => $uuid ?: null, 'pbx_job_uuid' => self::$lastJob, 'recording_name' => self::recName($row->id ?? 0, $row->phone, $uuid), 'error' => in_array($st, ['failed', 'busy', 'not_answered']) ? mb_substr($cause, 0, 250) : null, 'result' => $st, 'cause' => mb_substr($cause, 0, 60), 'updated_at' => now()]); self::$lastJob = null;
     if ($st === 'answered') { /* the PBX script reports answer / digit / hangup through the webhook; mark answered even if its first event is late */ self::onAnswered($row->id, $aid, $uuid); return [$st, $cause]; }
     $retry = $c->retry_on && $att < (int)$c->retry_limit && in_array($st, ['not_answered', 'busy', 'failed']);
     DB::table('voice_campaign_customers')->where('id', $row->id)->update(['call_status' => $st, 'pbx_call_id' => $uuid ?: null, 'next_attempt_at' => $retry ? now()->addHours(max(1, (int)$c->retry_gap_hours)) : null, 'updated_at' => now()]);
@@ -176,7 +179,7 @@ class Voice
 
   /** Called by the scheduler worker: top-up enrolment once a day, then dial what is due. */
   public static function tick(): void {
-    if (!self::on() || !self::set('esl_host')) return;
+    if (!self::on() || !(self::set('esl_host') ?: env('PBX_ESL_HOST'))) return;
     $lock = Cache::lock('vc_tick', 90); if (!$lock->get()) return;
     try {
       $t0 = time();
@@ -191,7 +194,7 @@ class Voice
         $due = DB::table('voice_campaign_customers')->where('campaign_id', $c->id)->where(fn($q) => $q->where('call_status', 'pending')->orWhere(fn($w) => $w->whereIn('call_status', ['not_answered', 'busy', 'failed'])->whereNotNull('next_attempt_at')->where('next_attempt_at', '<=', now())))->orderBy('id')->limit(min($left, 4))->get();
         foreach ($due as $r) {
           if (time() - $t0 > 50) return;
-          $cu = DB::table('customers')->find($r->customer_id); if (!$cu || $cu->blocked || !($cu->promo_call ?? true)) { DB::table('voice_campaign_customers')->where('id', $r->id)->update(['call_status' => 'opted_out', 'offer_status' => 'void', 'skip_reason' => 'Calls not allowed', 'updated_at' => now()]); continue; }
+          $cu = DB::table('customers')->find($r->customer_id); if (!$cu || $cu->blocked || !($cu->promo_call ?? true) || self::optedOut($r->phone)) { DB::table('voice_campaign_customers')->where('id', $r->id)->update(['call_status' => 'opted_out', 'offer_status' => 'void', 'skip_reason' => 'Calls not allowed', 'updated_at' => now()]); continue; }
           $pr = DB::table('products')->find($r->product_id); if (!$pr || !$pr->published || (int)$pr->stock <= 0) { DB::table('voice_campaign_customers')->where('id', $r->id)->update(['call_status' => 'failed', 'offer_status' => 'void', 'skip_reason' => 'Product unavailable', 'next_attempt_at' => null, 'updated_at' => now()]); continue; }
           self::dial($c, $r);
         }
@@ -199,21 +202,45 @@ class Voice
     } finally { $lock->release(); }
   }
 
-  /** PBX webhook: answered / digit / hangup. */
+  /** Configurable DTMF map: digit => [action, label, enabled]. Digit 9 is always the opt-out. */
+  public static function dtmfMap(): array {
+    $d = ['1' => ['interested', 'Interested', 1], '2' => ['agent', 'Speak to agent', 1], '9' => ['optout', 'Do Not Call / Opt-Out', 1]];
+    $c = json_decode(self::set('dtmf_map'), true); if (is_array($c)) foreach ($c as $k => $v) if (is_array($v) && isset($v[0])) $d[(string)$k] = [(string)$v[0], (string)($v[1] ?? ''), (int)($v[2] ?? 1)];
+    $d['9'][0] = 'optout'; $d['9'][2] = 1; return $d;
+  }
+  public static function optedOut(string $phone): bool { return DB::table('voice_optouts')->where('phone', self::norm($phone))->exists(); }
+  public static function optOut(string $phone, ?int $cid, ?string $callId): void {
+    $p = self::norm($phone); try { DB::table('voice_optouts')->insert(['customer_id' => $cid, 'phone' => $p, 'opted_out_at' => now(), 'source' => 'voice_offer', 'call_id' => $callId, 'created_at' => now(), 'updated_at' => now()]); } catch (\Throwable $e) {}
+    if ($cid) DB::table('customers')->where('id', $cid)->update(['promo_call' => false, 'updated_at' => now()]);
+  }
+  /** PBX webhook: answered / digit / hangup. The raw payload is always kept. */
   public static function hook(array $d): array {
-    $uuid = (string)($d['uuid'] ?? ''); $a = $uuid !== '' ? DB::table('voice_call_attempts')->where('pbx_call_id', $uuid)->orderByDesc('id')->first() : null; if (!$a) return ['ok' => false, 'error' => 'unknown call'];
-    $ev = (string)($d['ev'] ?? ''); $row = DB::table('voice_campaign_customers')->find($a->vc_id);
+    unset($d['k']); $uuid = (string)($d['uuid'] ?? $d['call_id'] ?? ''); $a = $uuid !== '' ? DB::table('voice_call_attempts')->where('pbx_call_id', $uuid)->orderByDesc('id')->first() : null;
+    if (!$a) { Log::warning('voice hook: unknown call', ['uuid' => $uuid]); return ['ok' => false, 'error' => 'unknown call']; }
+    $log = json_decode((string)($a->webhook_payload ?? ''), true) ?: []; $log[] = ['at' => now()->toIso8601String(), 'data' => $d]; $log = array_slice($log, -30);
+    DB::table('voice_call_attempts')->where('id', $a->id)->update(['webhook_payload' => json_encode($log, JSON_UNESCAPED_UNICODE), 'updated_at' => now()]);
+    $ev = (string)($d['ev'] ?? $d['event'] ?? ''); $row = DB::table('voice_campaign_customers')->find($a->vc_id);
+    if (!empty($d['cause']) && !in_array(strtoupper((string)$d['cause']), ['NORMAL_CLEARING'], true)) Log::info('voice hook carrier cause', ['phone' => $a->phone, 'cause' => $d['cause']]);
     if ($ev === 'answered') { if ($row) self::onAnswered($row->id, $a->id, $uuid); else DB::table('voice_call_attempts')->where('id', $a->id)->update(['answered_at' => now(), 'result' => 'answered', 'updated_at' => now()]); }
     elseif ($ev === 'digit') {
-      $g = substr((string)($d['digit'] ?? ''), 0, 1); DB::table('voice_call_attempts')->where('id', $a->id)->update(['digit' => $g, 'updated_at' => now()]); if (!$row) return ['ok' => true];
-      if ($g === '1') DB::table('voice_campaign_customers')->where('id', $row->id)->update(['interested' => true, 'call_status' => $row->converted ? 'accepted' : 'interested', 'updated_at' => now()]);
-      elseif ($g === '2') DB::table('voice_campaign_customers')->where('id', $row->id)->update(['transferred' => true, 'call_status' => $row->converted ? 'accepted' : 'transferred', 'updated_at' => now()]);
-      elseif ($g === '9') { DB::table('voice_campaign_customers')->where('id', $row->id)->update(['opted_out' => true, 'call_status' => 'opted_out', 'offer_status' => 'void', 'updated_at' => now()]); DB::table('customers')->where('id', $row->customer_id)->update(['promo_call' => false, 'updated_at' => now()]); }
+      $g = substr((string)($d['digit'] ?? ''), 0, 1); DB::table('voice_call_attempts')->where('id', $a->id)->update(['digit' => $g, 'updated_at' => now()]);
+      $m = self::dtmfMap()[$g] ?? null; if (!$m || !$m[2]) return ['ok' => true];
+      if ($m[0] === 'optout') { self::optOut($a->phone, $a->customer_id, $uuid); if ($row) DB::table('voice_campaign_customers')->where('id', $row->id)->update(['opted_out' => true, 'call_status' => 'opted_out', 'offer_status' => 'void', 'updated_at' => now()]); return ['ok' => true]; }
+      if (!$row) return ['ok' => true];
+      if ($m[0] === 'interested') DB::table('voice_campaign_customers')->where('id', $row->id)->update(['interested' => true, 'call_status' => $row->converted ? 'accepted' : 'interested', 'updated_at' => now()]);
+      elseif ($m[0] === 'agent') DB::table('voice_campaign_customers')->where('id', $row->id)->update(['transferred' => true, 'call_status' => $row->converted ? 'accepted' : 'transferred', 'updated_at' => now()]);
     } elseif ($ev === 'hangup') {
-      $dur = max(0, (int)($d['duration'] ?? 0)); DB::table('voice_call_attempts')->where('id', $a->id)->update(['duration' => $dur, 'recording_ref' => ($d['recording'] ?? null) ? mb_substr((string)$d['recording'], 0, 250) : $a->recording_ref, 'updated_at' => now()]);
+      $dur = max(0, (int)($d['duration'] ?? 0)); $final = isset($d['billsec']) && (int)$d['billsec'] > 0 ? (int)$d['billsec'] : null; $rec = ($d['recording'] ?? null) ? mb_substr((string)$d['recording'], 0, 250) : ($a->recording_ref ?? null);
+      DB::table('voice_call_attempts')->where('id', $a->id)->update(['duration' => $dur, 'approx_duration' => $dur, 'final_duration' => $final ?? $a->final_duration ?? null, 'ended_at' => now(), 'recording_ref' => $rec, 'updated_at' => now()]);
       if ($row) DB::table('voice_campaign_customers')->where('id', $row->id)->update(['duration' => $dur, 'updated_at' => now()]);
     }
     return ['ok' => true];
+  }
+  /** Connection test from this server: TCP, auth, and a harmless command. */
+  public static function pbxTest(): array {
+    $h = self::set('esl_host') ?: (string)env('PBX_ESL_HOST', ''); $port = (int)(self::set('esl_port') ?: env('PBX_ESL_PORT', 8021)); $out = ['host' => $h, 'port' => $port];
+    $fp = @fsockopen($h ?: 'invalid', $port, $en, $es, 6); $out['tcp'] = (bool)$fp; if (!$fp) { $out['error'] = $es ?: 'timeout'; return $out; } fclose($fp);
+    [$ok, $r] = self::esl('status', 15); $out['auth_and_command'] = $ok; $out['response'] = $ok ? mb_substr($r, 0, 200) : $r; return $out;
   }
 
   // ---------- offer at checkout
