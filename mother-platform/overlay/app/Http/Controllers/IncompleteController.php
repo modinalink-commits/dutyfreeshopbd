@@ -30,8 +30,6 @@ class IncompleteController extends Controller {
     }
     return ['incHtml'=>$html, 'incTailHtml'=>$tailHtml, 'incTop'=>collect(), 'incTopImgs'=>[]];
   }
-    return ['incBefore'=>$before, 'incTail'=>$tail, 'incTop'=>collect(), 'incTopImgs'=>self::imgs($rows)];
-  }
   public static function data(Request $r): array {
     $st = array_key_exists($r->query('inc'), self::TABS) ? $r->query('inc') : 'open'; $q = trim((string)$r->query('q', ''));
     $rows = DB::table('incomplete_orders')->where('status', $st)->when($q !== '', fn($w) => $w->where(fn($x) => $x->where('phone', 'like', '%'.$q.'%')->orWhere('name', 'ilike', '%'.$q.'%')))->orderByDesc('last_activity_at')->paginate(\App\Support\Pg::per(24))->withQueryString();
