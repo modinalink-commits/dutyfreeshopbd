@@ -49,13 +49,13 @@ class Winback
     if (!$force) { $h = (int)now('Asia/Dhaka')->format('H'); $stt = self::set('start', ''); if ($stt !== '' && $today < $stt) return; if (self::set('last_run') === $today || $h < (int)self::set('win_from', '14') || $h >= (int)self::set('win_to', '17')) return; } // offers go out only 2 PM to 5 PM Dhaka time
     $st = self::stages(); if (!$st) return; $sent = 0; $exp = max(1, (int)self::set('expiry', '30')); $mode = in_array(self::set('mode', 'auto'), ['coupon', 'fixed'], true) ? self::set('mode', 'auto') : 'auto'; $lastStage = end($st)[0];
     $ch = array_filter(['sms' => self::set('sms', '1') === '1', 'push' => self::set('push', '1') === '1', 'notif' => self::set('notif', '1') === '1']);
+    $room = min(40, self::dailyCap() - self::sentToday()); if ($room <= 0) return; $done = self::doneSet();
     $queue = self::lastDelivered(); uasort($queue, fn($a, $b) => strcmp($a['at'], $b['at'])); // serial order: whoever became eligible first is messaged first
     foreach ($queue as $p => $x) {
       $d = self::days($x['at']); $s = self::stageFor($d); if (!$s) continue;
-      if (DB::table('winback_events')->where('phone', $p)->where('cycle_order_id', $x['oid'])->where('stage_days', '>=', $s[0])->exists()) continue; // each stage once per cycle
+      if (($done[$p . '|' . $x['oid']] ?? 0) >= $s[0]) continue; // each stage once per cycle
       $c = DB::table('customers')->whereRaw('right(phone,11) = ?', [$p])->where('blocked', false)->first(); if (!$c) continue;
-      if ($sent >= 40) return; // small batch per tick: the rest continue on the next tick inside the window
-      if (!$force && self::sentToday() + $sent >= self::dailyCap()) return; // daily SMS cap: the rest continue tomorrow
+      if ($sent >= $room) return; // small batch per tick + daily cap: the rest continue on the next tick / tomorrow
       $code = null;
       if ($mode === 'coupon') {
         $code = 'WB-' . strtoupper(substr(md5($p . $x['oid'] . $s[0] . microtime()), 0, 6));
@@ -76,6 +76,8 @@ class Winback
     self::put('last_run', $today);
   }
 
+  /** 'phone|cycleOrderId' => highest stage already sent (one query instead of one per customer). */
+  public static function doneSet(): array { $o = []; foreach (DB::table('winback_events')->selectRaw('phone, cycle_order_id, max(stage_days) as m')->groupBy('phone', 'cycle_order_id')->get() as $r) $o[$r->phone . '|' . $r->cycle_order_id] = (int)$r->m; return $o; }
   public static function dailyCap(): int { return max(1, (int)self::set('daily_cap', '250')); }
   public static function sentToday(): int { return (int)DB::table('winback_events')->where('cycle_order_id', '>', 0)->whereRaw("(created_at at time zone 'UTC' at time zone 'Asia/Dhaka')::date = ?", [now('Asia/Dhaka')->toDateString()])->count(); }
   /** Who will be messaged at the next send window, in serial order (oldest delivery first). Read-only preview. */
@@ -83,10 +85,10 @@ class Winback
     $st = self::stages(); if (!$st) return ['rows' => [], 'total' => 0, 'when' => null];
     $start = self::set('start', ''); $day = now('Asia/Dhaka')->addDay()->startOfDay(); if ($start !== '' && $day->toDateString() < $start) $day = \Carbon\Carbon::parse($start, 'Asia/Dhaka')->startOfDay();
     $at = $at ?: $day->copy()->setTime((int)self::set('win_from', '14'), 0); $ts = $at->getTimestamp(); $cand = [];
-    $all = self::lastDelivered(); uasort($all, fn($a, $b) => strcmp($a['at'], $b['at']));
+    $done = self::doneSet(); $all = self::lastDelivered(); uasort($all, fn($a, $b) => strcmp($a['at'], $b['at']));
     foreach ($all as $p => $x) {
       $d = (int)floor(($ts - strtotime($x['at'] . ' UTC')) / 86400); $s = self::stageFor($d); if (!$s) continue;
-      if (DB::table('winback_events')->where('phone', $p)->where('cycle_order_id', $x['oid'])->where('stage_days', '>=', $s[0])->exists()) continue;
+      if (($done[$p . '|' . $x['oid']] ?? 0) >= $s[0]) continue;
       $cand[$p] = ['p' => $p, 'd' => $d, 's' => $s, 'at' => $x['at']];
     }
     $names = []; foreach (array_chunk(array_keys($cand), 1000) as $ch) foreach (DB::table('customers')->where('blocked', false)->whereRaw('right(phone,11) in (' . implode(',', array_fill(0, count($ch), '?')) . ')', $ch)->selectRaw('right(phone,11) as k, name')->get() as $cu) $names[$cu->k] = $cu->name;
