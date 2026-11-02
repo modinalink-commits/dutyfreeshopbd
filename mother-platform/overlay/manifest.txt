@@ -1,4 +1,0 @@
-app/Http/Controllers/OrderHistoryReportController.php
-resources/views/order_history_report.blade.php
-app/Http/Controllers/StockMovementReportController.php
-resources/views/stock_movement_report.blade.php
