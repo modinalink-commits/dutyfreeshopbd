@@ -1,6 +1,6 @@
 @extends('layout')@section('title',$title)
 @section('body')
-<div class="hd"><div><h1>{{ $title }}</h1><div class="sub" style="margin-bottom:0">{{ $sub }}</div></div>@if(!empty($new))<a class="btn" href="{{ $new[1] }}">+ {{ $new[0] }}</a>@endif</div>
+<div class="hd"><div><h1>{{ $title }}</h1><div class="sub" style="margin-bottom:0">{{ $sub }}</div></div></div>
 @include('proc.nav')
 @if(!empty($tabs))<div class="chips" style="margin:-4px 0 12px">@foreach($tabs as [$tl,$tu,$ton])<a class="chip {{ $ton ? 'on' : '' }}" href="{{ $tu }}">{{ $tl }}</a>@endforeach</div>@endif
 @if(!empty($ledger) || $kind==='ledger')@endif

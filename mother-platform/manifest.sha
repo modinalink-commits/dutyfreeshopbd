@@ -231,8 +231,8 @@ d8901d6a206e7ba539de8546b84a4c292e0c8728 resources/views/proc/dashboard.blade.ph
 157437fdb25460bf67fdd7db772e28e9fd20214c resources/views/proc/invoice_doc.blade.php
 fa71f5b713eb48db8706158fe0040e5f09ce8d0c resources/views/proc/invoice_public.blade.php
 5d28a996daeaa1f87dcbb2f3b9a88826908f89f5 resources/views/proc/invoice_show.blade.php
-76e0c86928fb6175e3ddc8dd4e317225dfcc3263 resources/views/proc/list.blade.php
-7ce93bd2023520975891f92b96e88fd128564583 resources/views/proc/nav.blade.php
+90020cfb710c52c9ccba2f99e9d4e5267f5232c6 resources/views/proc/list.blade.php
+73c59e844cb172b2b72ade42d4fdca4c476411a7 resources/views/proc/nav.blade.php
 0445410328b3d39d65679223cd68b27c7eec0ddc resources/views/proc/note_form.blade.php
 44cef8af51f02cd4ca665e549865f04cc09b7973 resources/views/proc/payment_form.blade.php
 e927dd83799965544d740be2d085ae904a4c8426 resources/views/proc/purchase_form.blade.php
