@@ -294,6 +294,7 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestF
   Route::post('/webhooks/voice', [\App\Http\Controllers\VoiceCampaignController::class,'hook'])->middleware('throttle:120,1');
   Route::get('/voice-audio/{id}.{ext}', [\App\Http\Controllers\VoiceCampaignController::class,'audio'])->whereNumber('id')->middleware('throttle:120,1');
   Route::post('/webhooks/pathao', [\App\Http\Controllers\CourierController::class,'webhook'])->middleware('throttle:120,1');
+  Route::post('/api/pathao-webhook', [\App\Http\Controllers\CourierController::class,'webhook'])->middleware('throttle:120,1'); // callback URL already registered in the Pathao panel (old site path)
   Route::post('/webhooks/steadfast', [\App\Http\Controllers\SteadfastController::class,'webhook'])->middleware('throttle:120,1');
   Route::post('/webhooks/redx', [\App\Http\Controllers\RedxController::class,'webhook'])->middleware('throttle:120,1');
   Route::post('/webhooks/carrybee', [\App\Http\Controllers\CarrybeeController::class,'webhook'])->middleware('throttle:120,1');
