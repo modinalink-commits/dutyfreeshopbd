@@ -415,3 +415,4 @@ app/Http/Controllers/OrderPaymentController.php
 database/migrations/2026_11_02_000029_order_payments_ledger.php
 app/Support/InvoiceNumber.php
 database/migrations/2026_11_02_000030_unified_invoice_sequence.php
+database/migrations/2026_11_02_000031_invoice_sequence_fix.php
