@@ -13,7 +13,7 @@ class AdminController extends Controller {
   }
   public function logout(Request $r) { Auth::logout(); $r->session()->invalidate(); $r->session()->regenerateToken(); return redirect('/admin/login'); }
   public function dashboard(Request $r) {
-    $tz = 'Asia/Dhaka'; $now = now($tz); $A = \App\Support\Analytics::class;
+    $tz = 'Asia/Dhaka'; $now = now($tz); $A = \App\Support\Analytics::class; $cd = fn(array $ff) => \Illuminate\Support\Facades\Cache::remember('dash.v1.'.md5(json_encode($ff)), 45, fn() => $A::dashboard($ff));
     $safe = function (callable $fn, $def = []) { try { return $fn(); } catch (\Throwable $e) { \Log::warning('dashboard: '.$e->getMessage()); return $def; } };
     $range = in_array($r->query('range'), ['today', '7', '30', 'custom'], true) ? $r->query('range') : '30';
     $dOk = fn($k) => preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)$r->query($k));
@@ -30,7 +30,7 @@ class AdminController extends Controller {
       else { $fp = $A::filters(['from'=>$now->copy()->subDays(2*$days-1)->format('Y-m-d'), 'to'=>$now->copy()->subDays($days)->format('Y-m-d')] + $sf); $prev = 'previous '.$days.' days'; }
       $label = $range === 'today' ? 'today' : 'last '.$days.' days';
     }
-    $x = $safe(fn() => $A::dashboard($f)); $xp = $safe(fn() => $A::dashboard($fp));
+    $x = $safe(fn() => $cd($f)); $xp = $safe(fn() => $cd($fp));
     $n = fn($a, $k) => (float)($a[$k] ?? 0);
     $tren = function ($a, $b, $goodUp = true) use ($prev) { // [direction -1/0/1, text, good?]
       if ($b <= 0) return [0, $a > 0 ? 'new vs '.$prev : 'no data for '.$prev, null];
@@ -118,8 +118,8 @@ class AdminController extends Controller {
     $t = microtime(true); DB::select('select 1'); $dbms = round((microtime(true)-$t)*1000, 1);
     $health = [['Database response', $dbms.' ms'], ['Failed jobs, 1 h', $failed], ['Stores online', DB::table('stores')->where('active',true)->count().' of '.DB::table('stores')->count()], ['Server time', $now->format('H:i')]];
     // smart widgets
-    $dayStart = $now->copy()->startOfDay()->utc(); $todayS = (float)$n($safe(fn() => $A::dashboard($A::filters(['from'=>$now->format('Y-m-d'), 'to'=>$now->format('Y-m-d')] + $sf))), 'sales');
-    $wk = $safe(fn() => $A::dashboard($A::filters(['from'=>$now->copy()->subDays(7)->format('Y-m-d'), 'to'=>$now->copy()->subDay()->format('Y-m-d')] + $sf))); $target = max(1, $n($wk, 'sales') / 7);
+    $dayStart = $now->copy()->startOfDay()->utc(); $todayS = (float)$n($safe(fn() => $cd($A::filters(['from'=>$now->format('Y-m-d'), 'to'=>$now->format('Y-m-d')] + $sf))), 'sales');
+    $wk = $safe(fn() => $cd($A::filters(['from'=>$now->copy()->subDays(7)->format('Y-m-d'), 'to'=>$now->copy()->subDay()->format('Y-m-d')] + $sf))); $target = max(1, $n($wk, 'sales') / 7);
     $goal = ['today'=>$todayS, 'target'=>round($target), 'pct'=>round($todayS/$target*100)];
     $fromUtc = $A::filters(['from'=>$f['from'], 'to'=>$f['to']]); $startUtc = \Carbon\Carbon::parse($f['from'], $tz)->startOfDay()->utc();
     $phones = $safe(fn() => $oq()->where('created_at','>=',$startUtc)->whereNotIn('status',['Cancel'])->distinct()->pluck('phone')->filter()->values(), collect());
