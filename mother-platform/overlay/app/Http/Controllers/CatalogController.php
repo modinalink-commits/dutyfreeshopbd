@@ -147,8 +147,7 @@ class CatalogController extends Controller {
     if ($names) $this->notifyStatus($names, $new);
     return back()->with('ok', count($names).' products '.($new?'published':'unpublished'));
   }
-  // Fill Buy 2-5 bundle prices from the sale price (2/3/4/5 %). Products whose four bundle prices are already set
-  // and each cheaper than singles are left untouched. Dry run unless apply=1; old values saved to storage/logs for rollback.
+  // Fill missing/invalid Buy 2-5 bundle prices from the sale price (2/3/4/5 %). Valid bundle prices already set are kept. Dry run unless apply=1; old values saved to storage/logs for rollback.
   public function bundleFill(Request $r) {
     abort_unless(Auth::check(), 403);
     $apply = $r->boolean('apply'); $pc = [2=>2.0, 3=>3.0, 4=>4.0, 5=>5.0];
@@ -157,14 +156,18 @@ class CatalogController extends Controller {
     foreach ($rows as $p) {
       $stat['total']++; $u = (float)$p->price;
       if ($u < 20 || $p->id == 1326) { $stat['skipped']++; continue; }
-      $good = true;
-      foreach ($pc as $n => $x) { $t = (float)$p->{"buy{$n}_price"}; if (!($t > 0 && $t < $u * $n)) { $good = false; break; } }
-      if ($good) { $stat['kept']++; continue; }
-      $new = [];
+      $new = []; $prev = null;
       foreach ($pc as $n => $x) {
-        $tot = $u * $n; $raw = $tot * (1 - $x / 100); $step = $tot >= 2000 ? 10 : ($tot >= 500 ? 5 : 1);
-        $new["buy{$n}_price"] = (float)(floor($raw / $step) * $step);
+        $t = (float)$p->{"buy{$n}_price"};
+        if (!($t > 0 && $t < $u * $n)) {
+          $tot = $u * $n; $raw = $tot * (1 - $x / 100); $step = $tot >= 2000 ? 10 : ($tot >= 500 ? 5 : 1);
+          $t = (float)(floor($raw / $step) * $step);
+          if ($prev !== null) $t = min($t, floor($prev / ($n - 1) * $n));
+          $new["buy{$n}_price"] = $t;
+        }
+        $prev = $t;
       }
+      if (!$new) { $stat['kept']++; continue; }
       $stat['filled']++;
       if (count($sample) < 6) $sample[] = ['id'=>$p->id, 'name'=>mb_substr($p->name, 0, 30), 'price'=>$u] + $new;
       if ($apply) {
