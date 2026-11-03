@@ -151,10 +151,11 @@ class AdminController extends Controller {
     $items = DB::table('order_items as i')->leftJoin('products as p','p.id','=','i.product_id')->whereIn('i.order_id', collect($orders->items())->pluck('id'))->select('i.*', DB::raw('coalesce(p.image,(select pp.image from products pp where pp.name = i.name limit 1)) as image'))->get()->groupBy('order_id');
     $cq = DB::table('orders')->select('status', DB::raw('count(*) c'))->groupBy('status'); if ($range) { if ($range[0]) $cq->where('created_at', '>=', $range[0]); if ($range[1]) $cq->where('created_at', '<=', $range[1]); } $counts = $cq->pluck('c','status');
     $intel = \App\Support\CustomerIntel::forOrders($orders->items());
+    $__ids = collect($orders->items())->pluck('id')->all(); $dupHint = $__ids ? \App\Support\OrderDedupe::possible($__ids) : []; $dupInv = $__ids ? DB::table('orders as d')->join('orders as p','p.id','=','d.duplicate_of_order_id')->whereIn('d.id', $__ids)->pluck('p.invoice','d.id')->all() : [];
     $cmLast = []; $phs = collect($orders->items())->pluck('phone')->filter()->unique()->all();
     if ($phs) foreach (DB::table('order_staff_comments as c')->join('orders as oo','oo.id','=','c.order_id')->whereIn('oo.phone',$phs)->orderByDesc('c.id')->select('c.body','oo.phone')->get() as $c) { if (!isset($cmLast[$c->phone])) $cmLast[$c->phone] = $c->body; }
     $incOpen = (int)DB::table('incomplete_orders')->where('status', 'open')->count();
-    return view('orders', compact('orders','counts','items','per','intel','incOpen','cmLast') + ['isInc'=>$isInc] + ($isInc ? \App\Http\Controllers\IncompleteController::data($r) : \App\Http\Controllers\IncompleteController::mix($r, $orders, $range)));
+    return view('orders', compact('orders','counts','items','per','intel','incOpen','cmLast','dupHint','dupInv') + ['isInc'=>$isInc] + ($isInc ? \App\Http\Controllers\IncompleteController::data($r) : \App\Http\Controllers\IncompleteController::mix($r, $orders, $range)));
   }
   public function orderBulk(Request $r) {
     $d = $r->validate(['ids'=>'required|array|max:500','ids.*'=>'integer','status'=>'required|in:'.implode(',',Mother::STAGES)]);

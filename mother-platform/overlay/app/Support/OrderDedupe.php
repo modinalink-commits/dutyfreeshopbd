@@ -37,4 +37,12 @@ class OrderDedupe {
     $ex = DB::table('orders')->where('order_fingerprint', $fp)->where('created_at', '>', now()->subSeconds(self::WINDOW))->whereNull('duplicate_of_order_id')->orderBy('id')->first();
     return [$ex ?: null, $key];
   }
+  /** "Possible Duplicate" hints for a page of orders: same phone + same total within 15 minutes of an EARLIER non-cancelled order (and same fingerprint when both have one). One query, no per-row lookups. Returns [orderId => ['id'=>originalId, 'invoice'=>originalInvoice]]. Review only: nothing is changed automatically. */
+  public static function possible(array $ids): array {
+    $ids = array_values(array_unique(array_filter(array_map('intval', $ids)))); if (!$ids) return [];
+    $in = implode(',', array_fill(0, count($ids), '?'));
+    $rows = DB::select("select distinct on (o.id) o.id as oid, p.id as pid, p.invoice as pinv from orders o join orders p on p.phone = o.phone and p.id < o.id and p.total = o.total and p.status <> 'Cancel' and p.duplicate_of_order_id is null and p.created_at between o.created_at - interval '15 minutes' and o.created_at and (o.order_fingerprint is null or p.order_fingerprint is null or o.order_fingerprint = p.order_fingerprint) where o.id in ($in) and o.status <> 'Cancel' and o.duplicate_of_order_id is null order by o.id, p.id", $ids);
+    $out = []; foreach ($rows as $r) $out[(int)$r->oid] = ['id'=>(int)$r->pid, 'invoice'=>(string)$r->pinv];
+    return $out;
+  }
 }

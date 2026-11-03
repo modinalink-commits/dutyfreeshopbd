@@ -15,7 +15,37 @@ class QuickEditController extends Controller {
   private function can(string $mod): bool { return MP::can(Auth::user(), $mod, 'edit'); }
   private function phone(string $p): ?string { $d = preg_replace('/\D+/', '', $p); if (str_starts_with($d, '880')) $d = '0'.substr($d, 3); elseif (strlen($d) === 10 && $d[0] === '1') $d = '0'.$d; return preg_match('/^01[3-9]\d{8}$/', $d) ? $d : null; }
 
-  public function act(Request $r, $id, string $what) { return match ($what) { 'customer' => $this->customer($r, $id), 'address' => $this->address($r, $id), 'courier' => $this->courier($r, $id), default => $this->payreq($r, $id) }; }
+  public function act(Request $r, $id, string $what) { return match ($what) { 'customer' => $this->customer($r, $id), 'address' => $this->address($r, $id), 'courier' => $this->courier($r, $id), 'duplicate' => $this->duplicate($r, $id), default => $this->payreq($r, $id) }; }
+  /** Mark an order as a duplicate of another (never deletes): links it to the original, moves it to Cancel so the existing Cancel rules drop it from stock, courier, revenue and customer value, and writes the staff audit log. */
+  public function duplicate(Request $r, $id) {
+    $o = $this->load($id); if (!$this->can('orders')) return $this->err('Your role does not allow editing orders.');
+    if ($r->input('undo')) {
+      if (empty($o->duplicate_of_order_id)) return $this->err('This order is not marked as a duplicate.');
+      $orig = DB::table('orders')->where('id', $o->duplicate_of_order_id)->value('invoice');
+      DB::transaction(function () use ($o, $orig) {
+        DB::table('orders')->where('id', $o->id)->update(['duplicate_of_order_id'=>null, 'status'=>'New', 'updated_at'=>now()]);
+        DB::table('order_status_logs')->insert(['order_id'=>$o->id, 'user_id'=>Auth::id(), 'user_name'=>Auth::user()->name, 'from_status'=>$o->status, 'to_status'=>'New', 'note'=>'Not a duplicate (was linked to '.$orig.')', 'created_at'=>now(), 'updated_at'=>now()]);
+        OrderActivity::log((int)$o->id, 'duplicate_unmarked', 'Duplicate of '.$orig, null, 'Duplicate mark removed; order restored to New');
+      });
+      return response()->json(['ok'=>true, 'msg'=>'Duplicate mark removed. The order is back in New.']);
+    }
+    if (!empty($o->duplicate_of_order_id)) return $this->err('This order is already marked as a duplicate.');
+    if (in_array($o->status, self::LOCKED)) return $this->err('An order in "'.$o->status.'" cannot be marked as a duplicate.');
+    if (!empty($o->consignment_id)) return $this->err('A courier parcel already exists for this order. Cancel the parcel first, then mark the duplicate.');
+    $inv = strtoupper(trim((string)$r->input('original'))); if ($inv === '') return $this->err('Enter the invoice number of the original order.');
+    $orig = DB::table('orders')->whereRaw('upper(invoice) = ?', [$inv])->first(); if (!$orig) return $this->err('No order found with invoice '.$inv.'.');
+    if ((int)$orig->id === (int)$o->id) return $this->err('An order cannot be a duplicate of itself.');
+    if (!empty($orig->duplicate_of_order_id)) return $this->err($orig->invoice.' is itself a duplicate. Use the real original.');
+    if ($orig->status === 'Cancel') return $this->err('The original order '.$orig->invoice.' is cancelled; pick the order that is actually being processed.');
+    $note = mb_substr(trim((string)$r->input('note')), 0, 300);
+    DB::transaction(function () use ($o, $orig, $note) {
+      DB::table('orders')->where('id', $o->id)->update(['duplicate_of_order_id'=>$orig->id, 'status'=>'Cancel', 'updated_at'=>now()]);
+      DB::table('order_status_logs')->insert(['order_id'=>$o->id, 'user_id'=>Auth::id(), 'user_name'=>Auth::user()->name, 'from_status'=>$o->status, 'to_status'=>'Cancel', 'note'=>trim('Duplicate of '.$orig->invoice.($note !== '' ? ' — '.$note : '')), 'created_at'=>now(), 'updated_at'=>now()]);
+      OrderActivity::log((int)$o->id, 'marked_duplicate', (string)$o->status, 'Duplicate', 'Order marked as Duplicate — Original: '.$orig->invoice.($note !== '' ? ' ('.$note.')' : ''), ['original_id'=>(int)$orig->id, 'original_invoice'=>$orig->invoice]);
+      OrderActivity::log((int)$orig->id, 'duplicate_linked', null, $o->invoice, $o->invoice.' was marked as a duplicate of this order');
+    });
+    return response()->json(['ok'=>true, 'msg'=>$o->invoice.' marked as Duplicate of '.$orig->invoice.'. It is excluded from stock, courier, SMS and revenue; nothing was deleted.']);
+  }
   public function customer(Request $r, $id) {
     $o = $this->load($id); if (!$this->can('orders')) return $this->err('Your role does not allow editing orders.');
     if (in_array($o->status, self::LOCKED)) return $this->err('An order in "'.$o->status.'" cannot be edited.');
