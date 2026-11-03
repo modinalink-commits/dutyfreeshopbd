@@ -21,7 +21,7 @@ class FreeCallController extends Controller
     return response()->json(['visible' => $vis, 'open' => $open, 'msg' => $msg, 'recording' => false])->header('Cache-Control', 'no-store');
   }
   public function request(Request $r) {
-    [$c, $err] = F::request($r->only(['name', 'phone', 'url', 'title', 'product_id', 'invoice', 'cart', 'session']) + ['staff' => Auth::check()]);
+    [$c, $err] = F::request($r->only(['name', 'phone', 'url', 'title', 'product_id', 'invoice', 'cart', 'session']) + ['staff' => Auth::check(), 'ip' => (string)($r->header('CF-Connecting-IP') ?: $r->ip()), 'ua' => (string)$r->userAgent()]);
     if (!$c) return response()->json(['ok' => false, 'error' => $err], 422);
     return response()->json(['ok' => true, 'c' => $c->call_uuid, 's' => $c->customer_session_id, 'status' => $c->status, 'pos' => F::position($c)]);
   }
@@ -60,7 +60,7 @@ class FreeCallController extends Controller
       $o['active'] = F::ctx($ac) + ['answered_ts' => strtotime(($ac->connected_at ?: $ac->answered_at) . ' UTC'), 'ice' => F::ice($ac->call_uuid)]; $o['signals'] = F::signals($ac->id, 'agent', (int)$r->query('after', 0));
     } else {
       $lc = DB::table('customer_calls')->where('assigned_staff_id', $me)->whereNotNull('ended_at')->where('ended_at', '>=', now()->subMinutes(5))->orderByDesc('ended_at')->first();
-      if ($lc && !DB::table('customer_call_notes')->where('call_id', $lc->id)->exists()) $o['last'] = ['id' => (int)$lc->id, 'name' => $lc->guest_name ?: $lc->mobile, 'duration' => (int)$lc->duration_seconds, 'status' => $lc->status];
+      if ($lc && !DB::table('customer_call_notes')->where('call_id', $lc->id)->exists()) $o['last'] = ['id' => (int)$lc->id, 'mobile' => $lc->mobile, 'name' => $lc->guest_name ?: $lc->mobile, 'duration' => (int)$lc->duration_seconds, 'status' => $lc->status];
     }
     return response()->json($o)->header('Cache-Control', 'no-store');
   }
@@ -99,7 +99,7 @@ class FreeCallController extends Controller
   }
   public function history(Request $r) {
     $q = DB::table('customer_calls as c')->leftJoin('users as u', 'u.id', '=', 'c.assigned_staff_id')->leftJoin('orders as o', 'o.id', '=', 'c.order_id')->orderByDesc('c.id');
-    if ($r->filled('status')) $q->where('c.status', $r->query('status')); if ($r->filled('q')) { $t = '%' . trim((string)$r->query('q')) . '%'; $q->where(fn($w) => $w->where('c.mobile', 'like', $t)->orWhere('c.guest_name', 'like', $t)); }
+    if ($r->filled('status')) $q->where('c.status', $r->query('status')); if ($r->filled('q')) { $t = '%' . trim((string)$r->query('q')) . '%'; $q->where(fn($w) => $w->where('c.mobile', 'like', $t)->orWhere('c.guest_name', 'like', $t)->orWhere('c.ip_address', 'like', $t)); }
     $rows = $q->limit(300)->get(['c.*', 'u.name as agent', 'o.invoice']);
     $notes = DB::table('customer_call_notes')->whereIn('call_id', $rows->pluck('id'))->orderBy('id')->get()->groupBy('call_id');
     return view('free_calls_history', ['rows' => $rows, 'notes' => $notes, 'status' => $r->query('status'), 'q' => $r->query('q')]);

@@ -538,3 +538,4 @@ resources/views/free_call_admin.blade.php
 resources/views/store/free_call.blade.php
 app/Http/Controllers/FreeCallController.php
 app/Support/FreeCall.php
+database/migrations/2026_11_04_000071_free_call_ip.php

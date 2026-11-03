@@ -3,12 +3,12 @@
   try { $__st = auth()->check(); $__fcw = \Illuminate\Support\Facades\Cache::remember('fc.cfg.' . ($__st ? 's' : 'c'), 30, fn() => \App\Support\FreeCall::widget($__st)); } catch (\Throwable $e) { $__fcw = null; }
   $__fcbn = ($s['mobile_bottom_nav'] ?? '') === '1';
 @endphp
+<style>.ai0,.aip,.fb{display:none!important}</style>
 @if($__fcw && $__fcw[0])
 <style>
 .dffc-b{position:fixed;left:14px;bottom:18px;z-index:55;display:flex;align-items:center;gap:7px;background:#FF5A00;color:#fff;border:2.5px solid #0B1220;border-radius:24px;padding:9px 14px;font-size:13px;font-weight:700;font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;box-shadow:0 4px 14px rgba(255,90,0,.38);cursor:pointer}
 .dffc-b svg{width:16px;height:16px}.dffc-b.off{background:#64748B;box-shadow:0 4px 14px rgba(100,116,139,.35)}
 @media(max-width:760px){.dffc-b{bottom:68px}}
-.ai0,.aip{display:none!important}
 .dffc-o{position:fixed;inset:0;z-index:100002;background:rgba(11,18,32,.5);display:none;align-items:center;justify-content:center;padding:14px;font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif}.dffc-o.on{display:flex}
 .dffc-x{background:#fff;border-radius:22px;width:min(350px,100%);box-shadow:0 24px 60px rgba(11,18,32,.4);overflow:hidden;color:#0B1220}
 .dffc-h{background:#FF5A00;color:#fff;padding:12px 16px;display:flex;align-items:center;gap:9px;font-weight:800;font-size:14px}.dffc-h i{width:9px;height:9px;border-radius:50%;background:#fff;display:inline-block}.dffc-h button{margin-left:auto;background:rgba(255,255,255,.12);border:0;color:#fff;width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:16px;padding:0}

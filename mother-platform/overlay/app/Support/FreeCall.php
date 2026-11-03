@@ -77,7 +77,7 @@ class FreeCall
     $url = mb_substr((string)($in['url'] ?? ''), 0, 500); $type = $oid ? 'order' : ($pid ? 'product' : (preg_match('#/checkout#', $url) ? 'checkout' : 'page'));
     $uuid = bin2hex(random_bytes(16)); $sess = $in['session'] ?? bin2hex(random_bytes(16));
     $id = DB::table('customer_calls')->insertGetId(['call_uuid' => $uuid, 'customer_id' => $cu->id ?? null, 'guest_name' => $name ?: null, 'mobile' => $p, 'order_id' => $oid, 'product_id' => $pid, 'source_url' => $url ?: null, 'source_type' => $type,
-      'status' => 'waiting', 'requested_at' => now(), 'customer_session_id' => $sess, 'cust_seen_at' => now(), 'context' => json_encode($ctx), 'created_at' => now(), 'updated_at' => now()]);
+      'status' => 'waiting', 'requested_at' => now(), 'customer_session_id' => $sess, 'cust_seen_at' => now(), 'context' => json_encode($ctx), 'ip_address' => mb_substr((string)($in['ip'] ?? ''), 0, 64) ?: null, 'user_agent' => mb_substr((string)($in['ua'] ?? ''), 0, 255) ?: null, 'created_at' => now(), 'updated_at' => now()]);
     self::ev($id, 'requested'); self::ev($id, 'queued');
     self::dispatch();
     return [DB::table('customer_calls')->find($id), ''];
@@ -188,7 +188,7 @@ class FreeCall
     $x = json_decode((string)$c->context, true) ?: []; $cu = $c->customer_id ? DB::table('customers')->find($c->customer_id) : DB::table('customers')->whereRaw('right(phone,11) = ?', [$c->mobile])->first();
     $o = ['id' => (int)$c->id, 'uuid' => $c->call_uuid, 'name' => $cu->name ?? ($x['name'] ?? '') ?: ($c->guest_name ?: ''), 'mobile' => $c->mobile, 'guest' => !$cu, 'customer_id' => $cu->id ?? null,
       'level' => $cu ? ucfirst((string)($cu->customer_level ?: 'Regular')) : null, 'product' => $x['product'] ?? null, 'code' => $x['code'] ?? null, 'page' => $c->source_url, 'page_title' => $x['page_title'] ?? null, 'cart' => $x['cart'] ?? null,
-      'waiting' => max(0, time() - strtotime($c->requested_at . ' UTC')), 'status' => $c->status, 'order' => null, 'latest' => null, 'counts' => null];
+      'ip' => $c->ip_address ?? null, 'waiting' => max(0, time() - strtotime($c->requested_at . ' UTC')), 'status' => $c->status, 'order' => null, 'latest' => null, 'counts' => null];
     $q = DB::table('orders')->whereRaw('right(phone,11) = ?', [$c->mobile]);
     $o['counts'] = ['total' => (clone $q)->count(), 'delivered' => (clone $q)->where('status', 'Delivered')->count(), 'returned' => (clone $q)->where('status', 'Returned')->count(), 'cancelled' => (clone $q)->where('status', 'Cancel')->count()];
     $l = (clone $q)->orderByDesc('id')->first(); if ($l) $o['latest'] = ['id' => (int)$l->id, 'invoice' => $l->invoice, 'status' => $l->status, 'total' => (float)$l->total];
