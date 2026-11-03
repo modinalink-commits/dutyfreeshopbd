@@ -38,7 +38,7 @@ class SmsMarketing {
   public static function audience(array $segs = [], array $f = [], array $ids = [], bool $marketing = true): array {
     $vip = (float)self::set('sms_vip_spend', '50000'); $high = (float)self::set('sms_high_spend', '20000');
     $days = max(1, (int)($f['no_order_days'] ?? 30)); $rows = self::base()->get();
-    $aband = in_array('abandoned', $segs, true) ? DB::table('incomplete_orders')->where('status', 'open')->pluck('phone')->map(fn($p) => Sms::number((string)$p))->filter()->flip()->all() : [];
+    $aband = false && in_array('abandoned', $segs, true) ? DB::table('incomplete_orders')->where('status', 'open')->pluck('phone')->map(fn($p) => Sms::number((string)$p))->filter()->flip()->all() : [];
     $kw = trim((string)($f['keyword'] ?? '')); $kwPh = [];
     if ($kw !== '') $kwPh = DB::table('order_items as i')->join('orders as o', 'o.id', '=', 'i.order_id')->where('i.name', 'ilike', '%'.$kw.'%')->pluck('o.phone')->map(fn($p) => Sms::number((string)$p))->filter()->flip()->all();
     $out = []; $seen = []; $opt = $marketing ? array_flip(self::opted()) : [];

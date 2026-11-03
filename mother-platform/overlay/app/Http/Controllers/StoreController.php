@@ -254,15 +254,25 @@ class StoreController extends Controller {
     foreach (explode(',', (string)$raw) as $part) { [$id, $q] = array_pad(explode(':', $part), 2, 1); if ((int)$id > 0 && (int)$q > 0) $o[(int)$id] = min(50, (int)$q); }
     return array_slice($o, 0, 30, true);
   }
+  /** Total for $n units of a product using the admin "Quantity prices" (Buy 2..5 = total price of the pack). Packs of 5 first, then the remainder; never more than unit price x qty. */
+  public static function bundleLine(object $p, int $n): float {
+    $u = (float)$p->price; $plain = $u * $n; if ($n < 2) return round($plain, 2);
+    $tier = function (int $k) use ($p, $u) { $t = (float)($p->{'buy'.$k.'_price'} ?? 0); return ($t > 0 && $t < $u * $k) ? $t : $u * $k; };
+    $left = $n; $tot = 0.0;
+    while ($left >= 5) { $tot += $tier(5); $left -= 5; }
+    $tot += $left >= 2 ? $tier($left) : $u * $left;
+    return round(min($tot, $plain), 2);
+  }
   /** One price calculation for the cart, the checkout and the saved order. */
   private function quote(array $want, int $area, string $code, ?string $phone = null, bool $verified = false, string $addr = ''): array {
     $b = $this->base(); $rules = $b['rules'];
-    $rows = $want ? $this->q()->whereIn('id', array_keys($want))->get(['id','ext_id','name','price','compare_price','image','stock']) : collect();
-    $items = []; $sub = 0; $qty = 0;
-    foreach ($rows as $p) { $n = $want[$p->id]; $items[] = ['id'=>$p->id, 'ext'=>(string)(($p->ext_id ?? null) ?: $p->id), 'name'=>$p->name, 'image'=>$p->image, 'url'=>self::url($p), 'price'=>(float)$p->price, 'compare'=>(float)$p->compare_price, 'qty'=>$n, 'line'=>(float)$p->price * $n]; $sub += (float)$p->price * $n; $qty += $n; }
+    $rows = $want ? $this->q()->whereIn('id', array_keys($want))->get(['id','ext_id','name','price','compare_price','image','stock','buy2_price','buy3_price','buy4_price','buy5_price']) : collect();
+    $items = []; $sub = 0; $qty = 0; $bsave = 0.0;
+    foreach ($rows as $p) { $n = $want[$p->id]; $lst = (float)$p->price * $n; $ln = self::bundleLine($p, $n); $bs = round($lst - $ln, 2); $bsave += $bs; $items[] = ['id'=>$p->id, 'ext'=>(string)(($p->ext_id ?? null) ?: $p->id), 'name'=>$p->name, 'image'=>$p->image, 'url'=>self::url($p), 'price'=>(float)$p->price, 'compare'=>(float)$p->compare_price, 'qty'=>$n, 'line'=>$ln, 'list'=>$lst, 'bsave'=>$bs]; $sub += $lst; $qty += $n; }
     $dv = \App\Support\Delivery::compute((float)$sub, $area, $addr, '', array_column($items, 'id')); $ship = $dv['charge'];
-    $eng = \App\Support\OrderDiscount::compute($phone, (float)$sub, $code !== '' ? $code : null, ['web'=>true, 'verified'=>$verified, 'qty'=>$qty, 'items'=>array_map(fn($i) => ['product_id'=>$i['id'], 'price'=>$i['price'], 'qty'=>$i['qty']], $items)]);
-    $app = array_values(array_filter($eng['lines'], fn($l) => $l['applied'])); $disc = (float)$eng['total']; $notes = array_map(fn($l) => in_array($l['key'] ?? '', ['special', 'vip', 'membership', 'returning', 'birthday'], true) ? (string)($l['type'] ?? $l['label']) : $l['label'], $app); // customers never see the % of their own membership / profile discounts
+    $eng = \App\Support\OrderDiscount::compute($phone, (float)($sub - $bsave), $code !== '' ? $code : null, ['web'=>true, 'verified'=>$verified, 'qty'=>$qty, 'qprice'=>$bsave > 0, 'items'=>array_map(fn($i) => ['product_id'=>$i['id'], 'price'=>$i['price'], 'qty'=>$i['qty']], $items)]);
+    $app = array_values(array_filter($eng['lines'], fn($l) => $l['applied'])); $disc = (float)$eng['total'] + $bsave;
+    if ($bsave > 0) array_unshift($app, ['key'=>'qprice', 'type'=>'Bundle Price', 'rule'=>'Quantity price (Buy 2-5)', 'source'=>'Product bundle price', 'pct'=>null, 'amount'=>round($bsave, 2), 'label'=>'Bundle price – saved '.self::tk($bsave), 'applied'=>true]); $notes = array_map(fn($l) => in_array($l['key'] ?? '', ['special', 'vip', 'membership', 'returning', 'birthday'], true) ? (string)($l['type'] ?? $l['label']) : $l['label'], $app); // customers never see the % of their own membership / profile discounts
     if ($eng['free_ship'] && $ship > 0) { $dv['free_discount'] = $dv['original']; $dv['free'] = true; $dv['reason'] = 'Free delivery coupon'; $ship = 0; }
     $cOk = null; $cmsg = $eng['coupon_error'] ?? ''; foreach ($app as $l) if (($l['key'] ?? '') === 'coupon') { $cOk = $l['code']; $cmsg = 'Coupon applied: '.self::tk($l['amount']).' off'; }
     if ($code !== '' && !$cOk && !$cmsg) $cmsg = $eng['free_ship'] ? 'Free delivery applied' : 'Coupon is valid but another discount is already better for this order';

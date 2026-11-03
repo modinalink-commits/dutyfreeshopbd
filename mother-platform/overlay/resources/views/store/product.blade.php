@@ -8,8 +8,11 @@
   $code = $p->sku ?: $p->ext_id;
   $bd = $rules['bundle'] ?? null; $bpct = $bd ? (float)($bd['Bundle %'] ?? 0) : 0; $bmin = $bd ? (int)($bd['Minimum products'] ?? 2) : 99;
   $bundles = [];
-  foreach ([1,2,3,4,5] as $n) { $tp = (float)($p->{'buy'.$n.'_price'} ?? 0); if ($n > 3 && $tp <= 0) continue; $ex = (!$tp && $bpct > 0 && $n >= $bmin) ? $bpct : 0; $fin = $tp > 0 ? round($tp) : round($price * $n * (1 - $ex / 100)); $orig = ($cmp ?: $price) * $n; $pc = $orig > 0 ? round(($orig - $fin) / $orig * 100, 2) : 0;
-    $bundles[] = ['n'=>$n, 'fin'=>$fin, 'orig'=>$orig, 'save'=>$orig - $fin, 'tag'=>$ex > 0 ? 'Get Extra '.rtrim(rtrim(number_format($pc, 2), '0'), '.').'% Off' : ($pc > 0 ? rtrim(rtrim(number_format($pc, 2), '0'), '.').' % Off' : ''), 'tc'=>$ex > 0 ? '#15803D' : '#DC2626']; }
+  foreach ([2,3,4,5] as $n) { $tp = (float)($p->{'buy'.$n.'_price'} ?? 0); $lst = $price * $n; $fin = 0;
+    if ($tp > 0 && $tp < $lst) $fin = $tp; elseif ($bpct > 0 && $n >= $bmin) $fin = round($lst * (1 - $bpct / 100), 2);
+    if ($fin <= 0 || $fin >= $lst) continue;
+    $sv = $lst - $fin; $pc = round($sv / $lst * 100, 1);
+    $bundles[] = ['n'=>$n, 'fin'=>$fin, 'save'=>$sv, 'pct'=>rtrim(rtrim(number_format($pc, 1), '0'), '.')]; }
   $msgLink = $s['pp_messenger'] ?: 'https://wa.me/'.$wa.'?text='.rawurlencode('আমি এই পণ্যটি অর্ডার করতে চাই: '.$p->name.' ('.$code.') '.$canon);
   $side = $rel->take(5); $bottom = $rel->slice(5, 6); if ($bottom->count() < 6) $bottom = $rel->take(6);
 @endphp
@@ -32,6 +35,28 @@
 @media (max-width:760px){.pp{grid-template-columns:1fr;padding-top:6px;gap:0;padding-left:0!important;padding-right:0!important}.pp .ph{height:300px;aspect-ratio:auto}.pi{padding:10px 12px;gap:7px}.pi .bc{display:none}.pi h1{font-size:15px;font-weight:700}.pi .pz b{font-size:16px}.pi .pz s{font-size:13px;font-weight:400}.pi .pz span{font-size:9px;padding:2px 8px}
 .bnl{font-size:10px;margin-top:4px}.bnl span{padding:0 8px;top:-7px}.bn{padding:8px 10px;gap:8px}.bn .q{font-size:11px;font-weight:700}.bn .tg{font-size:8px;padding:1px 4px}.bn .sv{font-size:8.5px}.bn .rp s{display:none}.acts{gap:8px;margin-top:0}.acts .ac{padding:11px 0}.acts .wl{width:42px}.onw{padding:11px 0}.cm{display:none}.rh{font-size:13px;margin:8px 0 6px;padding:0}.tbs{margin-top:8px}}
 .pdx img{max-width:100%;height:auto;border-radius:8px}.pdx table{border-collapse:collapse;width:100%;margin:8px 0}.pdx td,.pdx th{border:1px solid #E5E7EB;padding:6px 8px;text-align:left}.pdx h2,.pdx h3,.pdx h4{margin:12px 0 6px}.pdx ul,.pdx ol{padding-left:20px}
+
+.pi .bnl{display:flex;align-items:center;justify-content:center;gap:12px;border:0;margin:6px 0 2px;padding:0;text-align:center;font-size:12px;letter-spacing:.05em;font-weight:800;color:#0B1723}
+.pi .bnl:before,.pi .bnl:after{content:"";flex:1;height:1px;background:#D9DEE5}
+.pi .bnl span{display:inline-flex;align-items:center;gap:6px;background:#FFF1E6;color:#0B1723;border-radius:999px;padding:6px 14px;position:static;top:auto}
+.bq{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.bo{position:relative;display:flex;align-items:center;justify-content:center;gap:8px;height:60px;padding:0 14px;border:1.5px solid #0B1723;border-radius:11px;background:#fff;color:#0B1723;cursor:pointer;font:inherit;transition:box-shadow .15s,border-color .15s,background-color .15s}
+.bo .ci{width:20px;height:20px;flex:none;fill:none;stroke:currentColor}
+.bo b{font-size:17px;font-weight:700;white-space:nowrap}.bo .dv{width:1px;height:22px;background:#0B1723;opacity:.28;flex:none}
+.bo .sv{font-size:14px;font-weight:700;white-space:nowrap;border-radius:6px;padding:2px 7px;background:rgba(255,255,255,.75)}
+.bo .ck{display:none;position:absolute;top:-1px;right:8px;transform:translateY(-50%);width:18px;height:18px;border-radius:50%;background:#0B1723;color:#fff;font-size:11px;line-height:18px;text-align:center}
+.bo.t2{background:#F3F8FF}.bo.t2 .ci,.bo.t2 .sv{color:#2563EB}.bo.t2 .sv{background:#E2EEFF}
+.bo.t3{background:#F2FBF4}.bo.t3 .ci,.bo.t3 .sv{color:#16803C}.bo.t3 .sv{background:#DDF4E3}
+.bo.t4{background:#F8F4FF}.bo.t4 .ci,.bo.t4 .sv{color:#7C3AED}.bo.t4 .sv{background:#EDE3FF}
+.bo.t5{background:#FFF7EE}.bo.t5 .ci,.bo.t5 .sv{color:#EA580C}.bo.t5 .sv{background:#FFE9D2}
+.bo:hover{border-color:#07111B;box-shadow:0 2px 6px rgba(11,23,35,.08)}
+.bo:focus-visible{outline:2px solid #0B1723;outline-offset:2px}
+.bo.on{box-shadow:inset 0 0 0 1px #0B1723,0 2px 6px rgba(11,23,35,.1)}.bo.on .ck{display:block}
+.bo.t2.on{background:#E6F0FF}.bo.t3.on{background:#E3F6E8}.bo.t4.on{background:#F0E7FF}.bo.t5.on{background:#FFEEDC}
+.bsum{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:8px;padding:9px 12px;border:1px dashed #0B1723;border-radius:10px;background:#fff;font-size:13px;color:#0B1723}
+.bsum[hidden]{display:none}.bsum b{font-weight:800}.bsum span:last-child b{color:#16803C}
+@media(max-width:520px){.bo{height:58px;padding:0 8px;gap:6px}.bo b{font-size:15px}.bo .sv{font-size:13px;padding:2px 5px}.bo .ci{width:18px;height:18px}.bo .dv{height:20px}}
+@media(max-width:360px){.bo b{font-size:14px}.bo .sv{font-size:12px}.bo .ci{display:none}}
 </style>
 <style>
 .pp .ph{border:1px solid #EAEAEA;border-radius:20px;background:#F8F8F8}.pi h1{font-size:24px;font-weight:700;color:var(--n);line-height:1.25}.pi .pz b{font-size:30px;font-weight:800;color:var(--n)}.pi .pz s{font-size:16px;color:#9CA3AF;font-weight:400}.pi .pz span{background:#FFE4E8;color:#E11D48;font-size:13px;border-radius:8px;padding:4px 9px}
@@ -46,11 +71,14 @@
 <h1>{{ $p->name }}@if($code) - ( {{ $code }} )@endif</h1>
 <p style="font-size:13px;color:#6B7280;margin:2px 0 8px">Sold by <a href="/" style="color:#FF5A00;font-weight:700">DutyFree BD</a></p>
 <div class="pz"><b>Tk {{ number_format($price) }}</b>@if($cmp)<s>Tk {{ number_format($cmp) }}</s>@endif @if($save > 0 && $s['pp_save_badge']==='1')<span>SAVE TK {{ number_format($save) }}</span>@endif</div>
-@if($s['pp_bundle']==='1')
-<div class="bnl"><span>BUNDLE &amp; SAVE</span></div>
+@if($s['pp_bundle']==='1' && count($bundles))
+<div class="bnl"><span><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.2"/></svg>BUNDLE &amp; SAVE</span></div>
+<div class="bq" role="radiogroup" aria-label="Bundle and save">
 @foreach($bundles as $b)
-<button type="button" class="bn {{ $b['n'] === 1 ? 'on' : '' }}" data-n="{{ $b['n'] }}"><span class="rd"><i></i></span><span class="md"><span style="display:flex;gap:8px;align-items:center"><span class="q">Buy {{ $b['n'] }}</span>@if($b['tag'])<span class="tg" style="background:{{ $b['tc'] }}">{{ $b['tag'] }}</span>@endif</span>@if($b['save'] > 0)<span class="sv">YOU SAVE TK {{ number_format($b['save']) }}</span>@endif</span><span class="rp"><b>Tk {{ number_format($b['fin']) }}</b>@if($b['orig'] > $b['fin'])<s>Tk {{ number_format($b['orig']) }}</s>@endif</span></button>
+<button type="button" class="bo t{{ $b['n'] }}" role="radio" aria-checked="false" data-n="{{ $b['n'] }}" data-fin="{{ $b['fin'] }}" data-save="{{ $b['save'] }}"><svg class="ci" aria-hidden="true"><use href="#dfi-cart"/></svg><b>Buy {{ $b['n'] }}</b><i class="dv"></i><span class="sv">Save {{ $b['pct'] }}%</span><span class="ck" aria-hidden="true">✓</span></button>
 @endforeach
+</div>
+<div class="bsum" id="bsum" hidden><span>Bundle Price: <b id="bpr"></b></span><span>You Save: <b id="bsv"></b></span></div>
 @endif
 @if($p->stock !== null && (int)$p->stock <= 0)<div style="font-size:12px;color:#B91C1C;font-weight:600">Stock out — call us for the next arrival</div>@endif
 <div class="acts"><button type="button" class="ac" id="addc">Add To Cart</button><button type="button" class="wl" id="wl" aria-label="Wishlist">♡</button></div>
@@ -130,10 +158,11 @@
 @section('js')
 <script>
 (function(){var id={{ $p->id }},xid=@json((string)(($p->ext_id ?? null) ?: $p->id)),pr={{ $price }},n=1;
-document.querySelectorAll('.bn').forEach(function(b){b.onclick=function(){document.querySelectorAll('.bn').forEach(function(x){x.classList.remove('on')});b.classList.add('on');n=+b.getAttribute('data-n')}});
+var unit=pr,bo=document.querySelectorAll('.bo'),bs=document.getElementById('bsum'),fm=function(x){return 'Tk '+Math.round(x).toLocaleString('en-US')};
+bo.forEach(function(b){b.onclick=function(){var was=b.classList.contains('on');bo.forEach(function(x){x.classList.remove('on');x.setAttribute('aria-checked','false')});if(was){n=1;unit=pr;bs.hidden=true;return}b.classList.add('on');b.setAttribute('aria-checked','true');n=+b.getAttribute('data-n');var fin=+b.getAttribute('data-fin');unit=fin/n;document.getElementById('bpr').textContent=fm(fin);document.getElementById('bsv').textContent=fm(+b.getAttribute('data-save'));bs.hidden=false}});
 var wl=document.getElementById('wl'),sw=function(){var on=DF.wish().indexOf(String(id))>=0;wl.classList.toggle('on',on);wl.textContent=on?'♥':'♡'};sw();wl.onclick=function(){DF.tw(id);sw()};
-var ad=document.getElementById('addc');ad.onclick=function(){DF.add(id,n,pr,false,xid);DF.ev('add_to_cart',{value:pr*n,items:[{item_id:xid,item_name:@json($p->name),price:pr,quantity:n}]});ad.textContent='Added ✓ ('+DF.cart()[String(id)].q+')';setTimeout(function(){ad.textContent='Add To Cart'},1800)};
-document.getElementById('ordn').onclick=function(){DF.add(id,n,pr,true,xid);DF.ev('add_to_cart',{value:pr*n,items:[{item_id:xid,item_name:@json($p->name),price:pr,quantity:n}]});location.href='/checkout'};
+var ad=document.getElementById('addc');ad.onclick=function(){DF.add(id,n,unit,false,xid);DF.ev('add_to_cart',{value:unit*n,items:[{item_id:xid,item_name:@json($p->name),price:unit,quantity:n}]});ad.textContent='Added ✓ ('+DF.cart()[String(id)].q+')';setTimeout(function(){ad.textContent='Add To Cart'},1800)};
+document.getElementById('ordn').onclick=function(){DF.add(id,n,unit,true,xid);DF.ev('add_to_cart',{value:unit*n,items:[{item_id:xid,item_name:@json($p->name),price:unit,quantity:n}]});location.href='/checkout'};
 })();
 </script>
 <script>DF.ev('view_item',{value:{{ $price }},items:[{item_id:@json((string)(($p->ext_id ?? null) ?: $p->id)),item_name:@json($p->name),price:{{ $price }}}]});</script>

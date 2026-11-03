@@ -72,7 +72,7 @@ class OrderDiscount {
       try { $b = \Carbon\Carbon::parse($c->dob); $d = now('Asia/Dhaka')->startOfDay(); if (abs($d->diffInDays($b->copy()->year($d->year), false)) <= (int)($R['cfg']['Valid days'] ?? 0)) $add('birthday', 'Birthday Discount', $R['title'], 'Birthday rule', (float)($R['cfg']['Birthday %'] ?? 0)); } catch (\Throwable $e) {}
     }
     if ($phone && $st['n'] === 0 && ($R = self::rule('first'))) $add('first', 'First Order Discount', $R['title'], 'First order rule', (float)($R['cfg']['Discount %'] ?? 0), (float)($R['cfg']['Max TK'] ?? 0));
-    if ($qty > 0 && ($R = self::rule('bundle')) && $qty >= (int)($R['cfg']['Minimum products'] ?? 2)) $add('bundle', 'Bundle Discount', $R['title'], 'Bundle rule', (float)($R['cfg']['Bundle %'] ?? 0));
+    if ($qty > 0 && empty($ctx['qprice']) && ($R = self::rule('bundle')) && $qty >= (int)($R['cfg']['Minimum products'] ?? 2)) $add('bundle', 'Bundle Discount', $R['title'], 'Bundle rule', (float)($R['cfg']['Bundle %'] ?? 0));
     if ($R = self::rule('amount')) { $pct = 0; foreach (['Over 20000 TK %' => 20000, 'Over 10000 TK %' => 10000, 'Over 5000 TK %' => 5000] as $k => $min) if ($sub > $min) { $pct = (float)($R['cfg'][$k] ?? 0); break; }
       $add('amount', 'Order Amount Discount', $R['title'], 'Order amount rule', $pct, (float)($R['cfg']['Max discount per order TK'] ?? 0)); }
     $coupon = strtoupper(trim((string)$coupon));

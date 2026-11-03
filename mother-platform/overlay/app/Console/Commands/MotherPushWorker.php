@@ -94,7 +94,7 @@ class MotherPushWorker extends Command
       foreach (DB::table('customers')->where('id', '>', $cc)->orderBy('id')->limit(50)->get() as $c) { $cc = $c->id; if ($c->phone) $M::auto('welcome', $c->phone, ['customer_name' => $c->name], 'w'.$c->id, null, (int)$c->id); }
       $this->setCursor('sms_cust_cursor', (int)$cc);
     }
-    $rec = DB::table('sms_automations')->where('trigger', 'incomplete_recovery')->where('active', true)->first();
+    $rec = null; // Incomplete checkouts never get any message to the customer (owner rule), so the recovery SMS is switched off here.
     if ($rec) {
       $mins = max(15, (int)($rec->param ?: 60));
       foreach (DB::table('incomplete_orders')->where('status', 'open')->where('last_activity_at', '<=', now()->subMinutes($mins))->where('last_activity_at', '>=', now()->subDay())->limit(30)->get() as $i)

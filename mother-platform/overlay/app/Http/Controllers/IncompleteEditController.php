@@ -96,7 +96,8 @@ class IncompleteEditController extends Controller {
       DB::table('incomplete_orders')->where('id', $r->id)->update(['courier'=>$c, 'consignment'=>$cn ?: null, 'updated_at'=>now()]);
       $this->log((int)$r->id, 'courier', (string)($r->courier ?? ''), $c, 'Courier noted (no parcel is booked for an incomplete checkout)'); return response()->json(['ok'=>true, 'msg'=>'Courier saved. No parcel is booked until the checkout becomes an order.']);
     }
-    if ($what === 'payreq') {
+    if ($what === 'payreq') { return $this->err('No message is sent for an incomplete checkout. Convert it to an order first.'); }
+    if ($what === 'payreq-disabled') {
       $amt = round((float)$req->input('amount'), 2); if ($amt <= 0) return $this->err('Enter the amount requested.'); if ($amt > (float)$r->total + 0.009) return $this->err('The amount is more than the total (৳'.number_format($r->total).').');
       $to = $this->phone((string)$req->input('mobile')); if (!$to) return $this->err('Enter a valid customer mobile number.'); $m = mb_substr(trim((string)$req->input('message')), 0, 320); if ($m === '') return $this->err('Write the message.');
       try { \App\Support\Sms::queue(\App\Support\Sms::number($to) ?: $to, $m, 'payment_request', ['incomplete_id'=>$r->id]); } catch (\Throwable $e) { return $this->err('The SMS could not be queued: '.mb_substr($e->getMessage(), 0, 120)); }
