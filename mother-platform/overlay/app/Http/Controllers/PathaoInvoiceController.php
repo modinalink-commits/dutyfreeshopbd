@@ -36,8 +36,10 @@ class PathaoInvoiceController extends Controller {
     abort_unless(P::can(Auth::user(), 'couriers', 'edit'), 403);
     $t = \App\Support\Pathao::token(); if (!$t) return back()->with('bad', 'Probe: could not get a Pathao token from the saved login.');
     $out = [];
-    foreach (['/api/v1/monetary/invoices/receivable', '/api/v1/monetary/invoices/receivable?page=1&limit=5', '/api/v1/monetary/invoices/021126DQZGCPT', '/api/v1/monetary/invoices/021126DQZGCPT/orders', '/api/v1/monetary/invoices/021126DQZGCPT/items', '/api/v1/monetary/invoice/021126DQZGCPT'] as $p) {
-      $o = ['http'=>['method'=>'GET', 'timeout'=>20, 'ignore_errors'=>true, 'header'=>"Accept: application/json\r\nAuthorization: Bearer $t\r\nUser-Agent: MotherCommerce/1.0\r\n"], 'ssl'=>['verify_peer'=>true]];
+    $paths = ['/api/v1/monetary/invoices/receivable', '/api/v1/monetary/invoices/receivable?page=1&limit=5', '/api/v1/monetary/invoices/021126DQZGCPT', '/api/v1/monetary/invoices/021126DQZGCPT/orders', '/api/v1/monetary/invoices/021126DQZGCPT/items', '/api/v1/monetary/invoice/021126DQZGCPT'];
+    if ($r->filled('i') && isset($paths[(int)$r->input('i')])) $paths = [$paths[(int)$r->input('i')]];   // one endpoint per request keeps it under the gateway timeout
+    foreach ($paths as $p) {
+      $o = ['http'=>['method'=>'GET', 'timeout'=>12, 'ignore_errors'=>true, 'header'=>"Accept: application/json\r\nAuthorization: Bearer $t\r\nUser-Agent: MotherCommerce/1.0\r\n"], 'ssl'=>['verify_peer'=>true]];
       $b = @file_get_contents('https://merchant.pathao.com'.$p, false, stream_context_create($o)); $code = 0; foreach ($http_response_header ?? [] as $l) if (preg_match('#^HTTP/\S+\s+(\d+)#', $l, $m)) $code = (int)$m[1];
       $j = json_decode((string)$b, true); $src = is_array($j) ? ($j['error']['description'] ?? $j['message'] ?? '') : 'not json';
       $dd = is_array($j) ? ($j['data'] ?? $j) : []; $first = is_array($dd) && isset($dd[0]) && is_array($dd[0]) ? $dd[0] : (is_array($dd) && isset($dd['data'][0]) && is_array($dd['data'][0]) ? $dd['data'][0] : null);
