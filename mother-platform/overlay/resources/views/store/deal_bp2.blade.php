@@ -109,7 +109,7 @@
 .bpx-c .st{width:36px;height:36px;font-size:10.5px;left:-6px;top:-8px}
 .bpx-ar{width:28px;height:28px;font-size:15px;margin-top:-18px}
 .bpx-ft{margin:0 12px;padding:5px 0 8px;font-size:8.5px}
-.bpx-sb{padding:20px 12px 10px;gap:8px}.bpx-t div{width:48px}.bpx-bc svg{height:30px}.bpx-all{padding:6px}
+.bpx-sb{padding:20px 12px 10px;gap:8px}.bpx-t div{width:48px}.bpx-bc{display:none}.bpx-all{grid-column:1/-1;padding:7px}
 }
 @media(prefers-reduced-motion:reduce){.bpx-ln i{animation:none;left:calc(50% - 12px);opacity:1}}
 </style>
