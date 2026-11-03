@@ -54,6 +54,7 @@
 #ocb .r1 .qsearch{flex:1 1 280px;min-width:180px;max-width:520px;display:flex;margin-left:4px}
 #ocb .r1 .qsearch input[name=q]{width:100%!important;min-width:0!important;height:26px!important;font-size:12px!important}
 #ocb .r1>.qsearch{flex:1 1 280px!important}
+#ocb .r1 .owt .owf select,#ocb .r1 .owt .q select,#ocb .r1 .owt .obk select{width:auto!important;max-width:none!important;min-width:max-content}
 #ocb .r1 .qsearch input[name=q]{box-sizing:border-box;border:1.5px solid #94A3B8!important;border-radius:8px!important;background:#F8FAFC!important;color:#0B1220!important;font-weight:500!important;padding:0 10px!important;box-shadow:none!important;transition:border-color .15s ease}
 #ocb .r1 .qsearch input[name=q]:hover{border-color:#475569!important}#ocb .r1 .qsearch input[name=q]:focus{border-color:#FF5A00!important;outline:0}
 .ocb .r1 .owt .obk{gap:4px}.ocb .r1 .owt .obk button{height:26px!important;min-height:0!important;padding:0 8px!important;font-size:11px!important}.ocb .r1 .owt .obk select,.ocb .r1 .owt .owf select,.ocb .r1 .owt .q select{height:26px!important;font-size:11px!important;padding:0 4px!important}.ocb .r1 .owt .owf{margin-left:4px;padding-left:6px;gap:4px;border-left:1px solid #CBD5E1}.ocb .r1 .owt .q{gap:4px}.ocb .r1 .owt .q input[name=q]{min-width:150px!important;width:160px!important;height:26px!important;font-size:11px!important}.ocb .r1 .owt .q .rf{height:26px!important}
