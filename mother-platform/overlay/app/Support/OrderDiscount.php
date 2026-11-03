@@ -28,10 +28,14 @@ class OrderDiscount {
     if ($st['n'] > 1) { $l = $lv->first(fn($x) => $st['s'] >= $x->min_spent); if ($l) return ['name' => $l->name, 'pct' => (float)$l->discount_percent, 'stars' => self::starsOf((string)$l->name, (int)($l->stars ?? 0))]; }
     return null;
   }
-  /** Star rating of a membership level: the saved number, else by name (Silver 1, Gold 2, Platinum 3, Diamond 4). */
+  private static ?array $rank = null;
+  /** Stars are automatic: a level's star count is its position when the active levels are sorted by minimum spend (lowest = 1). Add a new package and it gets the next star count without any setting. */
   public static function starsOf(string $name, int $saved = 0): int {
-    if ($saved > 0) return min(5, $saved); $n = strtolower($name);
-    foreach (['silver' => 1, 'gold' => 2, 'platinum' => 3, 'diamond' => 4] as $k => $v) if (str_contains($n, $k)) return $v;
+    if (self::$rank === null) { self::$rank = []; try { $i = 0; foreach (DB::table('membership_levels')->where('active', true)->orderBy('min_spent')->orderBy('id')->get(['name']) as $l) self::$rank[mb_strtolower(trim((string)$l->name))] = ++$i; } catch (\Throwable $e) {} }
+    $n = mb_strtolower(trim($name)); if ($n === '') return 0;
+    if (isset(self::$rank[$n])) return self::$rank[$n];
+    $ks = array_keys(self::$rank); usort($ks, fn($a, $b) => mb_strlen($b) <=> mb_strlen($a));
+    foreach ($ks as $k) if ($k !== '' && (str_contains($n, $k) || str_contains($k, $n))) return self::$rank[$k]; // e.g. "Active – Gold / Premium" on an order
     return 0;
   }
   public static function starText(int $n): string { return $n > 0 ? str_repeat('★', $n) : ''; }
