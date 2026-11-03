@@ -127,6 +127,11 @@ class StoreController extends Controller {
     return response()->view('store.home', $this->base($data + ['live'=>$live, 'title'=>self::cleanSeo($s['site_title'] ?? '', self::HOME_TITLE), 'desc'=>self::cleanSeo($s['meta_description'] ?? '', self::HOME_DESC), 'canon'=>url('/').'/', 'home'=>true]))->header('Cache-Control','public, max-age=60');
   }
   /** Below-the-fold home category section, lazy-loaded by the home page so the first HTML stays small. */
+  /** Private preview of the globe section before it goes on the front page. */
+  public function globePreview() {
+    $deals = self::dealList(self::set())->take(6);
+    return response()->view('store.globe_preview', $this->base(['deals'=>$deals, 'title'=>'Globe preview | DutyFree BD', 'desc'=>'', 'canon'=>url('/globe-preview'), 'noindex'=>true]))->header('X-Robots-Tag', 'noindex')->header('Cache-Control', 'no-store');
+  }
   public function homeSec(string $slug) {
     $c = $this->cats()[$slug] ?? null; $s = self::set();
     if (!$c || $s['home_cat_sections'] !== '1') abort(404);

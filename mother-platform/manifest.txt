@@ -515,3 +515,6 @@ app/Http/Controllers/IncompleteEditController.php
 database/migrations/2026_11_03_000070_incomplete_parity.php
 resources/views/incomplete_qpop.blade.php
 database/migrations/2026_11_04_000080_chat_pages.php
+public/dfglobe.js
+resources/views/store/globe.blade.php
+resources/views/store/globe_preview.blade.php
