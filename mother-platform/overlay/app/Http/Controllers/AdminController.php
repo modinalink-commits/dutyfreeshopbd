@@ -332,6 +332,7 @@ class AdminController extends Controller {
   public function orderSchedule(Request $r, $id) {
     $d = $r->validate(['sched_date'=>'required|date_format:Y-m-d','sched_time'=>'nullable|string|max:8','note'=>'nullable|string|max:500']);
     [$ok, $m] = \App\Support\OrderSchedule::set((int)$id, $d['sched_date'], $d['sched_time'] ?? null, $d['note'] ?? null, Auth::id(), Auth::user()->name);
+    if ($r->expectsJson()) return response()->json(['ok'=>$ok, 'message'=>$m]);
     return back()->with($ok ? 'ok' : 'bad', $m);
   }
   public function orderScheduleCancel($id) {
