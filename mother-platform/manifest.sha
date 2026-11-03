@@ -41,7 +41,7 @@ c25a13956ea9946159b80572e41bd26d65050c7a resources/views/panels/accounts.blade.p
 1cb9863e39bdf894fc9136ae20d93aea9105a087 resources/views/panels/stock-log.blade.php
 e694b6b46fb885a73fe36935a7d1af598ad3e5a7 app/Http/Controllers/SiteController.php
 83f7d91e3943f758a5cc593ff2b2c3f4a34c500e resources/views/site.blade.php
-dd6b3a9c01c0561af9d2a9f460a2c2f1d46a7f54 app/Http/Middleware/ModulePermission.php
+670caabe3166cb31dfb5f0a7a238c61b94f01028 app/Http/Middleware/ModulePermission.php
 2a839fb1a64c2d2986cda02d11cbd025c8afeef5 app/Http/Controllers/PermissionController.php
 25b7fe381729658fc95088f08798e84c213ac6d5 resources/views/permissions.blade.php
 d787924ace3fa42cc66a3de321e4e94e784006d8 resources/views/panels/employees.blade.php
