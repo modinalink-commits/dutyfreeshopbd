@@ -21,6 +21,8 @@ class CustomerIntel {
       DB::raw("sum(case when created_at > now() - interval '24 hours' then 1 else 0 end) r24"))
       ->groupBy('phone')->get()->keyBy('phone');
     $cust = DB::table('customers')->whereIn('phone', $phones)->orderBy('id')->get()->unique('phone')->keyBy('phone');
+    $ts = DB::table('orders')->whereIn('phone', $phones)->where('status', '!=', 'Cancel')->select('phone', DB::raw('count(*) n'), DB::raw('coalesce(sum(total),0) s'))->groupBy('phone')->get()->keyBy('phone');
+    $lv = DB::table('membership_levels')->where('active', true)->orderByDesc('min_spent')->get();
     $rn = [];
     try { foreach (DB::select('select id, row_number() over (partition by phone order by created_at, id) rn from orders where phone in ('.implode(',', array_fill(0, count($phones), '?')).')', $phones->all()) as $x) $rn[(int)$x->id] = (int)$x->rn; } catch (\Throwable $e) {}
     $out = [];
@@ -31,6 +33,12 @@ class CustomerIntel {
       $pend = max(0, $tot - $del - $ret - $can); $all = $tot + $legacy;
       $fin = $del + $ret + $can; $rate = $fin > 0 ? round($del / $fin * 100) : null;
       $blocked = (bool)($cu->blocked ?? false);
+      // membership stars (same level the discount engine uses): saved level on the customer, else the level earned by spend after the first order
+      $stars = 0;
+      try {
+        if (!empty($cu->membership)) { $l = $lv->first(fn($x) => strcasecmp($x->name, $cu->membership) === 0); $stars = OrderDiscount::starsOf((string)$cu->membership, (int)($l->stars ?? 0)); }
+        elseif ((int)($ts[$o->phone]->n ?? 0) + $legacy > 1) { $sp2 = (float)($ts[$o->phone]->s ?? 0) + (float)($cu->legacy_spent ?? 0); $l = $lv->first(fn($x) => $sp2 >= $x->min_spent); if ($l) $stars = OrderDiscount::starsOf((string)$l->name, (int)($l->stars ?? 0)); }
+      } catch (\Throwable $e) {}
       // reliability: delivery record smoothed toward a neutral prior so one order doesn't swing it
       $rel = (int)round(($del + 0.7 * 3) / ($fin + 3) * 100) - ($blocked ? 30 : 0);
       $rel = max(0, min(100, $rel));
@@ -49,7 +57,7 @@ class CustomerIntel {
       else $cat = 'Regular';
       $out[$o->id] = ['cat'=>$cat, 'cid'=>$cu ? 'C-'.str_pad($cu->id, 5, '0', STR_PAD_LEFT) : '—', 'cuid'=>$cu->id ?? null,
         'nth'=>isset($rn[(int)$o->id]) ? $rn[(int)$o->id] + $legacy : null, 'total'=>$all, 'delivered'=>$del, 'returned'=>$ret, 'cancelled'=>$can, 'pending'=>$pend, 'legacy'=>$legacy, 'rate'=>$rate,
-        'rel'=>$rel, 'fraud'=>$f, 'risk'=>$risk, 'spent'=>$spent,
+        'stars'=>$stars, 'rel'=>$rel, 'fraud'=>$f, 'risk'=>$risk, 'spent'=>$spent,
         'verdict'=>$risk === 'Low' ? 'safe' : ($risk === 'Medium' ? 'call' : 'hold')];
     }
     return $out;
