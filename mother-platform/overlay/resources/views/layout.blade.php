@@ -33,7 +33,7 @@ label{font-size:12px;color:#6B7280;display:block;margin:10px 0 4px}
 table.ordt{border-collapse:separate;border-spacing:0 8px}
 table.ordt>tbody>tr>td{color:#1E293B}table.ordt>tbody>tr>td:not(:first-child),table.ordt>tbody>tr>td:first-child{border-top-color:#FED7AA;border-bottom-color:#FED7AA}table.ordt>tbody>tr>td:last-child{border-right-color:#FED7AA}
 table.ordt .pill{font-weight:700;color:color-mix(in srgb,var(--c,#C2410C) 78%,#000);border:1px solid color-mix(in srgb,var(--c,#C2410C) 30%,transparent)}
-table.ordt small{font-weight:500}table.ordt .ib{color:#1E293B}table.ordt .ib.ch{color:#1D4ED8;background:#DBEAFE;border-color:#93C5FD}table.ordt .ib.wa{color:#15803D;background:#DCFCE7;border-color:#86EFAC}table.ordt .ib.pf{color:#3730A3;background:#E0E7FF;border-color:#A5B4FC}table.ordt .ib.hs{color:#9A3412;background:#FFEDD5;border-color:#FDBA74}
+table.ordt small{font-weight:500}table.ordt .ib{color:#1E293B}table.ordt .ib.ch{color:#1D4ED8;background:#DBEAFE;border-color:#93C5FD}table.ordt .ib.wa{color:#15803D;background:#DCFCE7;border-color:#86EFAC}table.ordt .ib.pf{color:#3730A3;background:#E0E7FF;border-color:#A5B4FC}table.ordt .ib.hs{color:#9A3412;background:#FFEDD5;border-color:#FDBA74}.ib.cp{color:#475569;background:#F1F5F9;border-color:#CBD5E1}
 table.ordt .ib-call{background:#16A34A;box-shadow:0 2px 6px rgba(22,163,74,.3)}
 table.ordt .vbtn{border:1px solid #FF5A00;color:#0F172A;background:#fff}table.ordt .vbtn:hover{background:#FFF7ED}table.ordt .vbtn svg{stroke:#0F172A}
 /* shared order Action column (all order views) */
@@ -77,7 +77,7 @@ main .pill{font-size:10.5px;font-weight:700;border-radius:6px;padding:2px 8px}
 <main>@yield('body')</main>
 @auth @include('chat_widget') @include('softphone_fab') @endauth
 @yield('js')
-@auth<script src="/js/df-export.js?v=4" defer></script>@endauth
+@auth<script>function dfCopyNo(a,n){n=String(n||"").trim();var ok=function(){var o=a.innerHTML;a.innerHTML='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#15803D" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';a.title="Copied "+n;setTimeout(function(){a.innerHTML=o;a.title="Copy mobile number"},1200)};try{if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(n).then(ok,function(){fb()})}else fb()}catch(e){fb()}function fb(){var x=document.createElement("textarea");x.value=n;x.style.cssText="position:fixed;opacity:0";document.body.appendChild(x);x.select();try{document.execCommand("copy");ok()}catch(e){}x.remove()}return false}</script><script src="/js/df-export.js?v=4" defer></script>@endauth
 @auth<script src="/js/report-grid.js?v=1" defer></script>@endauth
 @auth<script src="/js/live-search.js?v=1" defer></script>@endauth
 
