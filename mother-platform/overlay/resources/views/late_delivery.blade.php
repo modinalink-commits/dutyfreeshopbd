@@ -8,6 +8,8 @@
 .ld .btn:hover,.ld button:hover{filter:brightness(.95);border-color:#64748B!important}.ld td form button:hover{border-color:#15803D!important}.ld .ldbar button[type=submit]:hover{border-color:#1D4ED8!important}
 .ld .dfx-btn{height:26px!important;font-size:11px!important;padding:0 10px!important;border:1.5px solid #94A3B8!important;border-radius:8px!important;background:#F1F5F9!important}
 </style><div class="ld">
+<div class="ocb" id="ocb">@include('admin.orders.partials.status-tabs', ['oq'=>[], 'counts'=>$counts, 'incOpen'=>$incOpen, 'isInc'=>false, 'activeStatus'=>'Late Delivery'])</div>
+<script>(function(){var s=document.getElementById('ostrip'),o=s&&s.querySelector('.on');if(o)s.scrollLeft=Math.max(0,o.offsetLeft-80)})()</script>
 <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px"><div style="flex:1;min-width:260px"><h1 style="margin:0">Late Delivery <small style="font-weight:700;color:#B45309">{{ $rows->total() }}</small></h1><span style="font-size:13px;color:#6B7280">Shipments not delivered 72 hours after they went to the courier. Most overdue first. This list is automatic: a parcel leaves it when the courier delivers it.</span></div>
 <a class="btn g" href="/admin/orders">All orders</a></div>
 @if(session('ok'))<div class="card" style="color:#166534">{{ session('ok') }}</div>@endif @if(session('bad'))<div class="card err">{{ session('bad') }}</div>@endif @if($errors->any())<div class="card err">{{ $errors->first() }}</div>@endif

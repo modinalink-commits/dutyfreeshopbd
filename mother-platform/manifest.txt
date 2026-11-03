@@ -7,6 +7,7 @@ resources/views/layout.blade.php
 resources/views/login.blade.php
 resources/views/dashboard.blade.php
 resources/views/orders.blade.php
+resources/views/admin/orders/partials/status-tabs.blade.php
 resources/views/order_new.blade.php
 resources/views/order_show.blade.php
 resources/views/stafflog.blade.php

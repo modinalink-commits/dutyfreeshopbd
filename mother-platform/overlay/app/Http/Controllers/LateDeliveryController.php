@@ -16,7 +16,7 @@ class LateDeliveryController extends Controller {
     $rows = (clone $q)->orderByRaw('coalesce(shipment_at, courier_sent_at) asc nulls last')->orderBy('id')->paginate(100)->withQueryString();
     $items = DB::table('order_items')->whereIn('order_id', collect($rows->items())->pluck('id'))->get(['order_id', 'name', 'qty'])->groupBy('order_id');
     $couriers = DB::table('orders')->where('status', 'Late Delivery')->whereNotNull('courier')->distinct()->pluck('courier');
-    return view('late_delivery', ['rows' => $rows, 'items' => $items, 'couriers' => $couriers, 'canAct' => P::can(Auth::user(), 'orders', 'edit')]);
+    return view('late_delivery', ['counts' => DB::table('orders')->select('status', DB::raw('count(*) c'))->groupBy('status')->pluck('c', 'status'), 'incOpen' => (int)DB::table('incomplete_orders')->where('status', 'open')->count(), 'rows' => $rows, 'items' => $items, 'couriers' => $couriers, 'canAct' => P::can(Auth::user(), 'orders', 'edit')]);
   }
   public function follow(Request $r, $id) {
     abort_unless(P::can(Auth::user(), 'orders', 'edit'), 403);
