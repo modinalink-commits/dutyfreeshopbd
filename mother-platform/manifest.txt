@@ -463,3 +463,4 @@ database/migrations/2026_11_03_000045_pathao_outcome_sync.php
 app/Support/Inv.php
 app/Http/Middleware/InvoiceDisplay.php
 database/migrations/2026_11_03_000046_invoice_six_digits.php
+app/Http/Controllers/OrderLiveController.php
