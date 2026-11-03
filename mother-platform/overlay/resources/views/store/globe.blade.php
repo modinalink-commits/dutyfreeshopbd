@@ -33,5 +33,5 @@
 <div class="dfg-gl"><canvas role="img" aria-label="Rotating globe with planes flying between Dubai, Dhaka and Chattogram"></canvas></div>
 </div>
 </section>
-<script src="/dfglobe.js?v=1" defer></script>
+<script src="/dfglobe.js?v=2" defer></script>
 @endif

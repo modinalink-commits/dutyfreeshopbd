@@ -44,7 +44,7 @@
     });
     function size() {
       var w = cv.clientWidth || 300, h = cv.clientHeight || 300; W = cv.width = Math.round(w * dpr); H = cv.height = Math.round(h * dpr);
-      R = Math.min(W, H) * .4; CX = W / 2; CY = H / 2;
+      R = Math.min(W, H) * .43; CX = W / 2; CY = H / 2;
     }
     function rot(v) {
       var p = yaw * D, c = Math.cos(p), s = Math.sin(p), x = v[0] * c - v[2] * s, z = v[0] * s + v[2] * c, y = v[1];
@@ -95,7 +95,7 @@
         var big = c[3], rr = (big ? 3.2 : 1.8) * dpr;
         if (big) { var ph = (T * .8 + (k.charCodeAt(0) % 7) * .3) % 1; cx2.strokeStyle = 'rgba(255,110,30,' + (.55 * (1 - ph)) + ')'; cx2.lineWidth = 1.5 * dpr; cx2.beginPath(); cx2.arc(p[0], p[1], rr + ph * 12 * dpr, 0, 7); cx2.stroke(); }
         cx2.fillStyle = big ? '#FF6A1A' : '#ffd2b0'; cx2.beginPath(); cx2.arc(p[0], p[1], rr, 0, 7); cx2.fill();
-        if (big && p[2] > .25) { cx2.font = '700 ' + (11 * dpr) + 'px system-ui,sans-serif'; cx2.fillStyle = 'rgba(255,255,255,.92)'; cx2.fillText(c[0], p[0] + 7 * dpr, p[1] - 6 * dpr); }
+        if (big && p[2] > .25) { cx2.font = '700 ' + (11 * dpr) + 'px system-ui,sans-serif'; cx2.fillStyle = 'rgba(255,255,255,.92)'; var lw = cx2.measureText(c[0]).width, ox = k === 'DXB' ? -lw - 8 * dpr : (k === 'DAC' ? -lw * .5 : 8 * dpr), oy = k === 'CGP' ? 15 * dpr : -9 * dpr; cx2.fillText(c[0], p[0] + ox, p[1] + oy); }
       }
       // planes
       var tagPl = null, tagP = null, vplanes = [];
