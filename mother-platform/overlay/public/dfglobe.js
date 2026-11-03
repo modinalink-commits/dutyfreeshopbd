@@ -50,7 +50,7 @@
     });
     function size() {
       var w = cv.clientWidth || 300, h = cv.clientHeight || 300; W = cv.width = Math.round(w * dpr); H = cv.height = Math.round(h * dpr);
-      if (W / H > 1.25) { R = W * .5; CX = W / 2; CY = H * .6; } else { R = Math.min(W, H) * .43; CX = W / 2; CY = H / 2; }
+      if (w < 300) { R = W * .8; CX = W / 2; CY = H * .55; } else { R = Math.min(W, H) * .44; CX = W / 2; CY = H / 2; }
     }
     function rot(v) {
       var p = yaw * D, c = Math.cos(p), s = Math.sin(p), x = v[0] * c - v[2] * s, z = v[0] * s + v[2] * c, y = v[1];
@@ -116,7 +116,7 @@
         if (p0[2] > .3) vplanes.push([i, p0]);
       }
       // cities + Bengali country names (greedy, no overlaps; Bangladesh first)
-      var placed = [], dacBox = null, fs0 = Math.max(10, Math.min(13, R / dpr / 19)) * dpr;
+      var placed = [], dacBox = null, fs0 = Math.max(10, Math.min(14, R / dpr / 15)) * dpr;
       ORDER.forEach(function (k) {
         var c = CITIES[k]; p = pt(cityV[k]); if (p[2] <= .12) return;
         var big = c[3], rr = (big ? 3.6 : 2.2) * dpr;
