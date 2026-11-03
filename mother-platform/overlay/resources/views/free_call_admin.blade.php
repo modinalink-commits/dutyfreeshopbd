@@ -4,12 +4,14 @@
 .fca-p.on{display:flex}.fca-p i{width:9px;height:9px;border-radius:50%;background:#64748B;display:inline-block}.fca-p.av i{background:#22C55E}.fca-p.bz i{background:#F59E0B}
 .fca-p select{background:#1E293B;color:#fff;border:0;border-radius:14px;padding:5px 8px;font-weight:600;font-size:12px;font-family:inherit;cursor:pointer}.fca-p em{background:#FF5A00;border-radius:10px;padding:0 7px;font-style:normal;font-size:11px;display:none}.fca-p em.on{display:inline}
 @media(max-width:900px){.fca-p{left:12px;bottom:70px}}
-#fcabar{position:fixed;right:16px;bottom:12px;z-index:9990;display:flex;align-items:center;gap:8px;font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif}
-#fcabar>*{position:static!important;transform:none!important;height:38px;margin:0!important}
-#fcabar .fcam{display:flex;align-items:center;gap:7px;background:#0B1220;color:#fff;border-radius:22px;padding:0 14px;font-size:12.5px;font-weight:700;text-decoration:none;box-shadow:0 8px 20px rgba(11,18,32,.3)}.fcam:hover{background:#FF5A00}.fcam b{background:#FF5A00;border-radius:10px;padding:0 7px;font-size:11px;line-height:18px}
-#fcabar #dfEdge{writing-mode:horizontal-tb!important;border-radius:22px!important;padding:0 14px!important;flex-direction:row;box-shadow:0 8px 20px rgba(11,18,32,.3)!important;background:#0B1220;font-size:12.5px;gap:7px}#fcabar #dfEdge:hover{background:#FF5A00}#fcabar #dfEdge::after{order:0}
-#fcabar .fca-p{left:auto!important;bottom:auto!important}
-@media(max-width:900px){#fcabar{right:8px;bottom:68px;gap:6px}#fcabar #dfEdge span{display:inline}.fcam span{display:none}}
+#fcabar{position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:9990;display:flex;flex-direction:row;align-items:center;gap:4px;font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif}
+#fcabar>*{position:relative!important;transform:none!important;height:auto!important;margin:0!important;left:auto!important;top:auto!important;bottom:auto!important;right:auto!important;writing-mode:vertical-rl!important;align-items:center;gap:7px;padding:14px 7px!important;background:#0B1220!important;color:#fff;border:0;border-radius:10px 0 0 10px!important;font-size:12.5px;font-weight:700;line-height:1;text-decoration:none;cursor:pointer;box-shadow:-3px 3px 12px rgba(11,18,32,.25)!important;letter-spacing:.3px}
+#fcabar>.fcam,#fcabar>#dfEdge{display:flex}#fcabar>.fca-p.on{display:flex!important}#fcabar>*:hover{background:#FF5A00!important}
+#fcabar i,#fcabar b,#fcabar em{writing-mode:horizontal-tb;font-style:normal}
+.fcam b{background:#FF5A00;border-radius:10px;padding:0 6px;font-size:11px;line-height:18px}.fcam:hover b{background:#0B1220}
+#fcabar #dfEdge::after{order:3}
+#fcap select{position:absolute!important;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;writing-mode:horizontal-tb}
+@media(max-width:900px){#fcabar .lbl,#fcabar #dfEdge span,#fcabar .fcam span,#fcast{display:none!important}#fcabar>*{padding:12px 6px!important}}
 .fca-c{position:fixed;top:16px;right:16px;z-index:100003;width:320px;max-width:calc(100vw - 24px);background:#0B1220;color:#fff;border-radius:22px;box-shadow:0 24px 60px rgba(11,18,32,.5);padding:16px;font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;display:none}.fca-c.on{display:block}
 .fca-c .t{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#FDBA8C;font-weight:700;display:flex;justify-content:space-between}
 .fca-c .n{font-size:19px;font-weight:800;margin:6px 0 1px;word-break:break-word}.fca-c .m{font-size:13px;color:#CBD5E1}
@@ -20,7 +22,7 @@
 .fca-ac{background:#16A34A}.fca-dc{background:#E11D48}.fca-gy{background:#334155}.fca-gy.on{background:#FF5A00}.fca-k{display:flex;gap:8px;margin-top:8px}
 .fca-c textarea,.fca-c select.o{width:100%;background:#1E293B;color:#fff;border:1px solid #334155;border-radius:11px;padding:8px;font-size:13px;font-family:inherit;margin-top:8px}
 </style>
-<div class="fca-p" id="fcap"><i></i>Free Call<select id="fcas"><option value="available">Available</option><option value="busy">Busy</option><option value="offline">Offline</option></select><em id="fcaq"></em></div>
+<div class="fca-p" id="fcap"><i></i><span class="lbl">Free Call</span><span id="fcast">Offline</span><select id="fcas"><option value="available">Available</option><option value="busy">Busy</option><option value="offline">Offline</option></select><em id="fcaq"></em></div>
 <div class="fca-c" id="fcac"></div>
 <audio id="fcaa" autoplay playsinline></audio>
 @verbatim
@@ -64,7 +66,7 @@ function sigs(a,list){list.forEach(function(m){g.after=Math.max(g.after,m.id);if
  if(m.type==='offer'){var o=JSON.parse(m.payload);g.pc.setRemoteDescription(o).then(function(){g.rd=true;g.iceQ.splice(0).forEach(function(c){g.pc.addIceCandidate(c).catch(function(){})});return g.pc.createAnswer()}).then(function(an){return g.pc.setLocalDescription(an)}).then(function(){post('/admin/free-calls/'+a.id+'/signal',{type:'answer',payload:JSON.stringify(g.pc.localDescription)})}).catch(function(){})}
  else if(m.type==='ice'){var c=JSON.parse(m.payload);if(g.rd)g.pc.addIceCandidate(c).catch(function(){});else g.iceQ.push(c)}})}
 function poll(){if(g.busy||g.dead)return;g.busy=true;fetch('/admin/free-calls/poll?after='+g.after+(g.local&&g.id?'&own='+g.id:''),{headers:{'Accept':'application/json'},credentials:'same-origin'}).then(function(r){if(r.status===403||r.status===404||r.status===401){g.dead=true;P.classList.remove('on');return null}return r.json()}).then(function(j){g.busy=false;if(!j||!j.ok)return;
-  P.classList.add('on');P.className='fca-p on '+(j.eff==='available'?'av':j.eff==='busy'?'bz':'');if(document.activeElement!==S)S.value=j.status;
+  P.classList.add('on');P.className='fca-p on '+(j.eff==='available'?'av':j.eff==='busy'?'bz':'');if(document.activeElement!==S)S.value=j.status;var fs=document.getElementById('fcast');if(fs)fs.textContent=({available:'Available',busy:'Busy',offline:'Offline'})[j.eff]||j.eff;
   Q.textContent=j.waiting+' waiting';Q.classList.toggle('on',j.waiting>0);P.title=j.on?'':'Free Call is OFF for customers';
   var nv=document.querySelectorAll('a[href="/admin/free-calls"]');
   if(j.active){var a=j.active;if(!g.local&&!g.accepting){passive(a);return}
