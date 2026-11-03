@@ -14,6 +14,7 @@ Route::get('/login', fn() => redirect('/admin/login'));
 Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Http\Middleware\PerfProbe::class, \App\Http\Middleware\OrderActivityMw::class])->prefix('admin')->group(function () {
   Route::get('/', [A::class,'dashboard']);
   Route::get('/error-log', [\App\Http\Controllers\UploadController::class,'errorLog']);
+  Route::get('/db-health', [\App\Http\Controllers\DbHealthController::class,'index']);
   Route::post('/upload-image', [\App\Http\Controllers\UploadController::class,'image']);
   Route::get('/deploy', [\App\Http\Controllers\DeployController::class,'index']);
   Route::get('/deploy/status', [\App\Http\Controllers\DeployController::class,'status']);

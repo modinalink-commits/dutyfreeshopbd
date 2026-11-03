@@ -1,5 +1,5 @@
 fe43f8b6cb422cca81ee18b74d3972f77e7852de database/migrations/2026_10_31_000001_mother_core.php
-a997489b9bdd08398528f375002c02025f5e51b0 routes/web.php
+cbbbaa3668c6bf5442190a97b7f1864997adde41 routes/web.php
 b9cf8555d6fb5e676f63a548f5a964a0f36be94f app/Models/Mother.php
 3b67c3f668657a1423d10c14feea0b6e1fa85ff3 app/Http/Controllers/AdminController.php
 bd49f23ea0895af93bed5374937115c21911b0cd app/Console/Commands/MotherInstall.php
@@ -436,3 +436,4 @@ bafaf9fa236e097407fc5d82abc67029711d07bd resources/views/winback_report.blade.ph
 fe6f02df10a6eabdecd4dc7a85258dc6eb239d9c app/Providers/AppServiceProvider.php
 79f6b9b92c6b30208f01bdc29d79635f1717bc52 database/migrations/2026_11_03_000039_orders_duplicate_guard.php
 25e46be698833ed1289245649c5c829f690905a3 app/Support/OrderDedupe.php
+1f98912c4d5af55c38e3cb9730ff86f4fbfd41b2 app/Http/Controllers/DbHealthController.php
