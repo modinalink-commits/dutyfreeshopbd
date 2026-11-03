@@ -30,7 +30,7 @@ $stores = \DB::table('stores')->where('active',true)->count();
 $chatUn = \Illuminate\Support\Facades\Schema::hasTable('chat_threads') ? (int)\DB::table('chat_threads')->sum('unread') : 0;
 $svg = fn($p) => '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'.$p.'</svg>';
 @endphp
-<aside><a class="brand" href="/admin"><b>M</b><span>Mother Commerce<small>Control center</small></span></a>
+<aside><style>aside .brand.dfb{flex-direction:column;align-items:flex-start;gap:3px;padding:6px 8px 4px}aside .brand.dfb img{display:block;height:34px;width:auto;max-width:100%}aside .brand.dfb small{display:block;margin:0 0 0 2px;font-size:11.5px;font-weight:600;letter-spacing:.3px;color:#6B7280}</style><a class="brand dfb" href="/admin" title="DutyFree BD — Control center"><img src="/dutyfree-bd-logo.png" alt="DutyFree BD"><small>Control center</small></a>
 <div class="viewing"><small>VIEWING</small><strong>All stores ({{ $stores }}) + {{ $B['channels'] }} channel</strong></div>
 <div class="sbs"><input id="sbq" type="search" placeholder="Search menu… (press /)" autocomplete="off" aria-label="Search menu"><div id="sbn" style="display:none">No match</div></div>
 <nav><a href="/admin" class="nv {{ $cur === '/admin' ? 'on' : '' }}">{!! $svg($IC['dash']) !!}<span>Dashboard</span></a>

@@ -29,7 +29,7 @@ fcd3c9b6b8b34260cd0f4a8ed955b20c28b05bd2 app/Http/Controllers/ResController.php
 6d791d6efcd6661309de2dbf79937150c67115c1 resources/views/res_list.blade.php
 f3b1b4ce22124a2cd23b2ffce1f40df3955045ab resources/views/res_form.blade.php
 67a76a09307002f6201cc2e684f3161b22c67d9c resources/views/reports.blade.php
-43c37d31fc5983a7c261436e1bcfb61425338e7c resources/views/sidebar.blade.php
+223e6b1a743f973149047cc1fbdda5c2326551c2 resources/views/sidebar.blade.php
 85962752c1c36393879cd52b485c2495742f15f0 resources/views/coming.blade.php
 c391e719e9e194b7bf6ecf86ccb4c9a4504c2d17 database/migrations/2026_10_31_000004_catalog_extra.php
 bd753699bbd209d243e7e4b2b82c37d322444553 resources/views/panels/customers.blade.php
@@ -63,6 +63,7 @@ dc4dd0a7a69c180a2c75ef92ebb2057d28be5d32 resources/views/store/checkout.blade.ph
 03f8e0d0a55ce2cfd1251778fac95d2fee3d46e1 resources/views/store/wishlist.blade.php
 d162155635ee8d0ea432ac994aa1a1942c3cbe47 resources/views/store/pager.blade.php
 e75f162e466d0a2e2958bfaff473552e686e1543 public/logo.webp
+7cfaa7f28db18b9d9aceca06e00b63221df26e66 public/dutyfree-bd-logo.png
 c94a778fefb027fc04d7101883ca0bf17fd7a5ec public/icon.png
 1a6e76d76afa1f22238f0dca146dc4568ac7fbb5 public/og.png
 93ca6da9c84543068a00131417602875511290fd public/ban-sx555.webp
