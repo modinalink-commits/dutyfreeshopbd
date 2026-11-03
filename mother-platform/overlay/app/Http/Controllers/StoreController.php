@@ -55,7 +55,7 @@ class StoreController extends Controller {
     return self::rem('store.globe_products', 300, function () {
       $sc = DB::table('categories')->get(['id','slug','name'])->filter(fn($c) => self::isSmokeCat($c))->pluck('id')->all();
       $q = DB::table('products')->where('published', true)->whereNotNull('image')->where('image', '!=', '')->where(function ($w) use ($sc) { $w->where('group_key', 'smoke'); if ($sc) $w->orWhereIn('category_id', $sc); });
-      return $q->orderByRaw('coalesce(stock,0) > 0 desc')->orderByDesc('id')->limit(40)->get();
+      return $q->orderByRaw('coalesce(stock,0) > 0 desc')->orderByDesc('id')->limit(60)->get();
     });
   }
   public static function dealBase(float $min = 0, ?string $scope = null) {

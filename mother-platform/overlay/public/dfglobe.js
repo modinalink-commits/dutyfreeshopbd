@@ -67,8 +67,8 @@
       var g, i, p, q, b;
       cx2.clearRect(0, 0, W, H);
       // atmosphere
-      g = cx2.createRadialGradient(CX, CY, R * .96, CX, CY, R * 1.42); g.addColorStop(0, 'rgba(255,120,40,.30)'); g.addColorStop(.35, 'rgba(255,90,0,.10)'); g.addColorStop(1, 'rgba(255,90,0,0)');
-      cx2.fillStyle = g; cx2.beginPath(); cx2.arc(CX, CY, R * 1.42, 0, 7); cx2.fill();
+      g = cx2.createRadialGradient(CX, CY, R * .96, CX, CY, R * 1.16); g.addColorStop(0, 'rgba(255,120,40,.30)'); g.addColorStop(.35, 'rgba(255,90,0,.10)'); g.addColorStop(1, 'rgba(255,90,0,0)');
+      cx2.fillStyle = g; cx2.beginPath(); cx2.arc(CX, CY, R * 1.16, 0, 7); cx2.fill();
       // ocean
       g = cx2.createRadialGradient(CX - R * .35, CY - R * .4, R * .1, CX, CY, R); g.addColorStop(0, '#1d2a45'); g.addColorStop(.6, '#101a2e'); g.addColorStop(1, '#070c18');
       cx2.fillStyle = g; cx2.beginPath(); cx2.arc(CX, CY, R, 0, 7); cx2.fill();
@@ -95,6 +95,26 @@
         }
       }
       cx2.stroke(); cx2.setLineDash([]);
+      // planes
+      var tagPl = null, tagP = null, vplanes = [];
+      for (i = 0; i < planes.length; i++) {
+        var P = planes[i]; if (!reduce) P.t += dt / P.dur; if (P.t >= 1) P.t -= 1;
+        var t = .5 - .5 * Math.cos(Math.PI * P.t), v0 = slerp(P.a, P.b, t, P.om), a0 = 1 + P.h * Math.sin(Math.PI * t), p0 = pt(v0, a0);
+        // trail
+        var on2 = false; cx2.lineWidth = 1.5 * dpr;
+        for (var s2 = 10; s2 >= 0; s2--) {
+          var t2 = t - s2 * .012; if (t2 < 0) continue; var pp = pt(slerp(P.a, P.b, t2, P.om), 1 + P.h * Math.sin(Math.PI * t2));
+          if (pp[2] > 0 || pp[3] > 1) { if (on2) { cx2.strokeStyle = 'rgba(255,150,70,' + (.5 * (1 - s2 / 11)) + ')'; cx2.beginPath(); cx2.moveTo(on2[0], on2[1]); cx2.lineTo(pp[0], pp[1]); cx2.stroke(); } on2 = pp; } else on2 = false;
+        }
+        if (!(p0[2] > 0 || p0[3] > 1)) continue;
+        var t3 = Math.min(1, t + .01), p1 = pt(slerp(P.a, P.b, t3, P.om), 1 + P.h * Math.sin(Math.PI * t3)), ang = Math.atan2(p1[1] - p0[1], p1[0] - p0[0]);
+        var sc = (.95 + .4 * Math.sin(Math.PI * t) + .25 * Math.max(0, Math.min(1, p0[2] + .3))) * dpr * (R / 230 < .75 ? .75 : Math.min(1.4, R / 230));
+        cx2.save(); cx2.globalAlpha = Math.min(1, P.t / .03, (1 - P.t) / .03); cx2.translate(p0[0], p0[1]); cx2.rotate(ang); cx2.scale(sc, sc);
+        cx2.shadowColor = 'rgba(255,120,30,.9)'; cx2.shadowBlur = 8 * dpr; cx2.fillStyle = '#fff'; cx2.fill(PLANE);
+        cx2.shadowBlur = 0; cx2.strokeStyle = 'rgba(255,200,160,.9)'; cx2.lineWidth = .8; cx2.beginPath(); cx2.moveTo(-8.4, 0); cx2.lineTo(-13, 0); cx2.stroke();
+        cx2.translate(-13, 0); cx2.fillStyle = '#FF5A00'; cx2.fillRect(-6.5, -2.6, 6.5, 5.2); cx2.fillStyle = '#fff'; cx2.fillRect(-6.5, -.8, 6.5, 1.6); cx2.restore();
+        if (p0[2] > .3) vplanes.push([i, p0]);
+      }
       // cities + Bengali country names (greedy, no overlaps; Bangladesh first)
       var placed = [], fs0 = Math.max(10, Math.min(13, R / dpr / 19)) * dpr;
       ORDER.forEach(function (k) {
@@ -115,26 +135,6 @@
         cx2.textBaseline = 'top'; cx2.lineJoin = 'round'; cx2.lineWidth = 3.2 * dpr; cx2.strokeStyle = 'rgba(7,12,24,.9)'; cx2.strokeText(c[0], bx, by);
         cx2.fillStyle = k === 'DAC' ? '#FFB48A' : '#fff'; cx2.fillText(c[0], bx, by); cx2.textBaseline = 'alphabetic';
       });
-      // planes
-      var tagPl = null, tagP = null, vplanes = [];
-      for (i = 0; i < planes.length; i++) {
-        var P = planes[i]; if (!reduce) P.t += dt / P.dur; if (P.t >= 1) P.t -= 1;
-        var t = .5 - .5 * Math.cos(Math.PI * P.t), v0 = slerp(P.a, P.b, t, P.om), a0 = 1 + P.h * Math.sin(Math.PI * t), p0 = pt(v0, a0);
-        // trail
-        var on2 = false; cx2.lineWidth = 2.2 * dpr;
-        for (var s2 = 10; s2 >= 0; s2--) {
-          var t2 = t - s2 * .012; if (t2 < 0) continue; var pp = pt(slerp(P.a, P.b, t2, P.om), 1 + P.h * Math.sin(Math.PI * t2));
-          if (pp[2] > 0 || pp[3] > 1) { if (on2) { cx2.strokeStyle = 'rgba(255,150,70,' + (.5 * (1 - s2 / 11)) + ')'; cx2.beginPath(); cx2.moveTo(on2[0], on2[1]); cx2.lineTo(pp[0], pp[1]); cx2.stroke(); } on2 = pp; } else on2 = false;
-        }
-        if (!(p0[2] > 0 || p0[3] > 1)) continue;
-        var t3 = Math.min(1, t + .01), p1 = pt(slerp(P.a, P.b, t3, P.om), 1 + P.h * Math.sin(Math.PI * t3)), ang = Math.atan2(p1[1] - p0[1], p1[0] - p0[0]);
-        var sc = (1.15 + .5 * Math.sin(Math.PI * t) + .35 * Math.max(0, Math.min(1, p0[2] + .3))) * dpr * (R / 230 < .75 ? .75 : Math.min(1.4, R / 230));
-        cx2.save(); cx2.globalAlpha = Math.min(1, P.t / .03, (1 - P.t) / .03); cx2.translate(p0[0], p0[1]); cx2.rotate(ang); cx2.scale(sc, sc);
-        cx2.shadowColor = 'rgba(255,120,30,.9)'; cx2.shadowBlur = 8 * dpr; cx2.fillStyle = '#fff'; cx2.fill(PLANE);
-        cx2.shadowBlur = 0; cx2.strokeStyle = 'rgba(255,200,160,.9)'; cx2.lineWidth = .8; cx2.beginPath(); cx2.moveTo(-8.4, 0); cx2.lineTo(-13, 0); cx2.stroke();
-        cx2.translate(-13, 0); cx2.fillStyle = '#FF5A00'; cx2.fillRect(-9, -3.4, 9, 6.8); cx2.fillStyle = '#fff'; cx2.fillRect(-9, -1.1, 9, 2.2); cx2.fillStyle = '#0B1220'; cx2.fillRect(-6.2, -1.1, 1, 2.2); cx2.fillRect(-3.4, -1.1, 1, 2.2); cx2.restore();
-        if (p0[2] > .3) vplanes.push([i, p0]);
-      }
       // featured offer tag follows one visible plane
       if (vplanes.length) {
         if (T - featAt > 4.2 || feat < 0 || !vplanes.some(function (e) { return e[0] === feat; })) {

@@ -1,4 +1,4 @@
-@php $__g = collect($deals ?? [])->take(40); $__n = $__g->count(); $__tk = $__n > 4; $__dur = max(14, ceil($__n / 2) * 3.4); @endphp
+@php $__g = collect($deals ?? [])->take(60); $__n = $__g->count(); $__tk = $__n > 4; $__dur = max(14, ceil($__n / 2) * 3.4); @endphp
 @if($__g->count())
 <style>
 .dfg{position:relative;overflow:hidden;color:#fff;background:radial-gradient(1.2px 1.2px at 8% 18%,#fff,transparent),radial-gradient(1px 1px at 22% 72%,#cfe0ff,transparent),radial-gradient(1.4px 1.4px at 37% 30%,#fff,transparent),radial-gradient(1px 1px at 55% 12%,#fff,transparent),radial-gradient(1.2px 1.2px at 63% 86%,#cfe0ff,transparent),radial-gradient(1px 1px at 78% 40%,#fff,transparent),radial-gradient(1.3px 1.3px at 91% 14%,#fff,transparent),radial-gradient(1px 1px at 94% 78%,#cfe0ff,transparent),radial-gradient(1px 1px at 4% 90%,#fff,transparent),linear-gradient(120deg,#050B17 0%,#0B1220 45%,#14233F 100%);border-radius:14px;margin:18px 0}
@@ -43,7 +43,7 @@
 </div>
 @endfor
 </div></div>
-<a class="dfg-all" href="/deals">সব অফার দেখুন →</a>
+<a class="dfg-all" href="/cigarette-vape/">সব প্রোডাক্ট দেখুন →</a>
 @php $__an = trim((string)($s['app_android'] ?? '')); $__io = trim((string)($s['app_ios'] ?? '')); @endphp
 <div class="dfg-app"><span>📱 আমাদের Android ও iPhone অ্যাপ — আরও দ্রুত, আরও সহজে অর্ডার করুন</span><div class="dfg-ab">
 @if($__an !== '')<a href="{{ $__an }}" rel="noopener" aria-label="Get it on Google Play">@else<em>@endif<svg viewBox="0 0 24 24"><path d="M3.6 2.2c-.3.2-.5.6-.5 1.1v17.4c0 .5.2.9.5 1.1l9.7-9.8z" fill="#00D7FE"/><path d="M16.6 8.7 13.3 12l3.3 3.3 3.9-2.2c1.1-.6 1.1-1.6 0-2.2z" fill="#FFCE00"/><path d="m3.6 21.8 9.7-9.8 3.3 3.3-11.2 6.3c-.7.4-1.4.3-1.8.2z" fill="#F43249"/><path d="M3.6 2.2c.4-.1 1.1-.2 1.8.2l11.2 6.3L13.3 12z" fill="#00F076"/></svg><span><small>{{ $__an !== '' ? 'GET IT ON' : 'COMING SOON' }}</small><b>Google Play</b></span>@if($__an !== '')</a>@else</em>@endif
@@ -53,5 +53,5 @@
 <div class="dfg-gl"><canvas role="img" aria-label="Globe with planes flying from nearby countries to land in Bangladesh"></canvas></div>
 </div>
 </section>
-<script src="/dfglobe.js?v=5" defer></script>
+<script src="/dfglobe.js?v=6" defer></script>
 @endif
