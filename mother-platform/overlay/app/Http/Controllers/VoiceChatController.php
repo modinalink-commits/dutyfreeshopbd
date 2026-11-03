@@ -14,7 +14,7 @@ class VoiceChatController extends Controller
   // ---------------- admin ----------------
   public function settings() {
     $s = []; foreach (VoiceChat::DEF as $k => $v) $s[$k] = VoiceChat::set($k);
-    return view('voice_chat_settings', ['s' => $s, 'hasKey' => (bool)VoiceChat::key(), 'langs' => VoiceChat::LANGS, 'stats' => VoiceChat::stats()]);
+    return view('voice_chat_settings', ['s' => $s, 'hasKey' => (bool)VoiceChat::key(), 'langs' => VoiceChat::LANGS, 'stats' => VoiceChat::stats(), 'recent' => \Illuminate\Support\Facades\Schema::hasTable('voice_chat_logs') ? DB::table('voice_chat_logs')->orderByDesc('id')->limit(10)->get() : collect()]);
   }
   public function saveSettings(Request $r) {
     $d = $r->validate(['api_key' => 'nullable|string|max:300', 'lang' => 'required|in:' . implode(',', array_keys(VoiceChat::LANGS)), 'speed' => 'required|numeric|min:0.75|max:1.25', 'provider' => 'required|in:google', 'retention' => 'required|integer|min:1|max:90', 'voice' => 'required|string|max:40|regex:/^[A-Za-z0-9\-]+$/']);
