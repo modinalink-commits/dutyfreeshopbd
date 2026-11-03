@@ -4,9 +4,9 @@
 .fca-p.on{display:flex}.fca-p i{width:9px;height:9px;border-radius:50%;background:#64748B;display:inline-block}.fca-p.av i{background:#22C55E}.fca-p.bz i{background:#F59E0B}
 .fca-p select{background:#1E293B;color:#fff;border:0;border-radius:14px;padding:5px 8px;font-weight:600;font-size:12px;font-family:inherit;cursor:pointer}.fca-p em{background:#FF5A00;border-radius:10px;padding:0 7px;font-style:normal;font-size:11px;display:none}.fca-p em.on{display:inline}
 @media(max-width:900px){.fca-p{left:12px;bottom:70px}}
-#fcabar{position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:9990;display:flex;flex-direction:row;align-items:center;gap:4px;font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif}
+#fcabar{position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:9990;display:flex;flex-direction:row;align-items:stretch;gap:4px;font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif}
 #fcabar>*{position:relative!important;transform:none!important;height:auto!important;margin:0!important;left:auto!important;top:auto!important;bottom:auto!important;right:auto!important;writing-mode:vertical-rl!important;align-items:center;gap:7px;padding:14px 7px!important;background:#0B1220!important;color:#fff;border:0;border-radius:10px 0 0 10px!important;font-size:12.5px;font-weight:700;line-height:1;text-decoration:none;cursor:pointer;box-shadow:-3px 3px 12px rgba(11,18,32,.25)!important;letter-spacing:.3px}
-#fcabar>.fcam,#fcabar>#dfEdge{display:flex}#fcabar>.fca-p.on{display:flex!important}#fcabar>*:hover{background:#FF5A00!important}
+#fcabar>.fcam,#fcabar>#dfEdge{display:flex}#fcabar>*{justify-content:center}#fcabar>.fca-p{order:1}#fcabar>.fcam{order:2}#fcabar>#dfEdge{order:3}#fcabar>.fca-p.on{display:flex!important}#fcabar>*:hover{background:#FF5A00!important}
 #fcabar i,#fcabar b,#fcabar em{writing-mode:horizontal-tb;font-style:normal}
 .fcam b{background:#FF5A00;border-radius:10px;padding:0 6px;font-size:11px;line-height:18px}.fcam:hover b{background:#0B1220}
 #fcabar #dfEdge::after{order:3}
