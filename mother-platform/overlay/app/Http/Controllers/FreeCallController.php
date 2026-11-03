@@ -104,6 +104,10 @@ class FreeCallController extends Controller
     $notes = DB::table('customer_call_notes')->whereIn('call_id', $rows->pluck('id'))->orderBy('id')->get()->groupBy('call_id');
     return view('free_calls_history', ['rows' => $rows, 'notes' => $notes, 'status' => $r->query('status'), 'q' => $r->query('q')]);
   }
+  public function toggle(Request $r) {
+    $on = !F::on(); F::put('on', $on ? '1' : '0'); \App\Support\Procure::audit('freecall.toggle', 'Free Call ' . ($on ? 'ON' : 'OFF'), null, []);
+    return redirect('/admin/free-calls')->with('ok', 'Free Call service is now ' . ($on ? 'ON' : 'OFF'));
+  }
   public function settings(Request $r) {
     F::put('on', $r->boolean('on') ? '1' : '0'); F::put('ring_timeout', (string)max(5, min(60, (int)$r->input('ring_timeout', 15)))); F::put('max_queue', (string)max(1, min(200, (int)$r->input('max_queue', 20))));
     F::put('hours_on', $r->boolean('hours_on') ? '1' : '0'); foreach (['hours_from', 'hours_to'] as $k) if (preg_match('/^\d\d:\d\d$/', (string)$r->input($k))) F::put($k, $r->input($k));

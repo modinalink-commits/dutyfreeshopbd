@@ -4,10 +4,12 @@
 @php $mm = fn($n) => sprintf('%02d:%02d', intdiv((int)$n, 60), (int)$n % 60); @endphp
 <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px"><div style="flex:1"><h1 style="margin:0">Customer Free Call</h1><div style="font-size:12px;color:#6B7280">Website visitors call DutyFreeBD from the browser (WebRTC) — no phone charge for the customer.</div></div>
 <span style="font-size:11px;font-weight:700;border-radius:999px;padding:4px 12px;background:{{ $s['on'] ? '#DCFCE7' : '#FEE2E2' }};color:{{ $s['on'] ? '#166534' : '#B91C1C' }}">{{ $s['on'] ? 'SERVICE ON' : 'SERVICE OFF' }}</span>
+<span style="font-size:11px;font-weight:700;border-radius:999px;padding:4px 12px;background:{{ $s['turn_ready'] ? '#DCFCE7' : '#FEF3C7' }};color:{{ $s['turn_ready'] ? '#166534' : '#92400E' }}" title="TURN relay lets calls work on mobile data">TURN: {{ $s['turn_ready'] ? 'READY' : ($s['turn_urls'] === '' ? 'NOT SET' : 'SECRET MISSING') }}</span>
+<form method="post" action="/admin/free-calls/toggle" style="margin:0">@csrf<button class="g" style="height:32px;font-weight:700" title="Master switch for customers">{{ $s['on'] ? 'Turn OFF' : 'Turn ON' }}</button></form>
 <a href="/admin/free-calls/history" style="text-decoration:none;display:inline-block;padding:6px 12px;border:1px solid #E5E7EB;border-radius:8px;font-size:12px;font-weight:600;background:#fff;color:inherit">Call history</a>
 <button type="button" class="sbtn" data-sdr="fcset">⚙ Settings</button></div>
 @if(session('ok'))<div class="card" style="color:#166534">{{ session('ok') }}</div>@endif
-@if($s['on'] && !$s['turn_ready'])<div class="card" style="border-color:#FDBA74;background:#FFF7ED;font-size:12.5px">⚠ TURN relay is not configured. Calls work on most Wi-Fi/broadband, but many mobile-data (CGNAT) connections will fail without a TURN server. Add it in Settings.</div>@endif
+@if(!$s['turn_ready'])<div class="card" style="border-color:#FDBA74;background:#FFF7ED;font-size:12.5px">⚠ TURN relay is not configured. Calls work on most Wi-Fi/broadband, but many mobile-data (CGNAT) connections will fail without a TURN server. Add it in Settings.</div>@endif
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:12px">
 @foreach([['Agents Available',$k['avail']],['Agents Busy',$k['busy']],['Waiting Now',$k['waiting']],['Active Calls',$k['active']],['Calls Today',$k['today']],['Missed Today',$k['missed']],['Avg Wait',$mm($k['avgwait'])],['Avg Duration',$mm($k['avgdur'])]] as [$l,$v])<div class="card" style="margin:0;padding:10px 12px"><span style="font-size:11.5px;color:#6B7280;display:block">{{ $l }}</span><b style="font-size:20px">{{ $v }}</b></div>@endforeach
 </div>
