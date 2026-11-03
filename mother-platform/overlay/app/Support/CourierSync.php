@@ -63,6 +63,9 @@ class CourierSync {
     if (!Pathao::configured() && !Carrybee::configured() && !Redx::configured() && !Steadfast::configured()) return 0;
     $n = 0;
     $rows = DB::table('orders')->whereNotNull('consignment_id')->where(fn($q) => $q->whereNull('courier_stage')->orWhereNotIn('courier_stage', ['Delivered','Returned','Cancelled'])->orWhereIn('status', ['Shipment','Partial Return Pending','Return Pending','Partial Delivered','Late Delivery']))->orderByRaw('courier_synced_at asc nulls first')->limit($limit)->get();
+    // One-time catch-up: Pathao parcels read before the status map existed, whose Pathao word is return-like but never got an outcome (e.g. "Partial Delivery" read as plain delivered). They drop out of this set once read.
+    $catch = DB::table('orders')->whereNotNull('consignment_id')->whereRaw("coalesce(courier,'Pathao') = 'Pathao'")->whereNull('pathao_outcome')->whereNull('courier_flag')->whereRaw("courier_status ~* 'partial|exchange|return'")->orderByRaw('courier_synced_at asc nulls first')->limit(30)->get();
+    $rows = $rows->concat($catch)->unique('id')->values();
     foreach ($rows as $o) { $i = $o->courier === 'Steadfast' ? (Steadfast::configured() ? Steadfast::info($o->consignment_id) : null) : ($o->courier === 'RedX' ? (Redx::configured() ? Redx::info($o->consignment_id) : null) : ($o->courier === 'Carrybee' ? (Carrybee::configured() ? Carrybee::info($o->consignment_id) : null) : (Pathao::configured() ? Pathao::info($o->consignment_id) : null))); if ($i && self::apply($o, $i)) $n++; elseif ($i === []) DB::table('orders')->where('id', $o->id)->update(['courier_synced_at'=>now()]); }
     Cache::put('courier.last_sync', now()->toDateTimeString(), 86400);
     return $n;

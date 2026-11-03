@@ -15,7 +15,9 @@ use Illuminate\Support\Facades\DB;
  * Stock goes back only when the goods are confirmed received, and only for items that are known.
  */
 class PathaoStatusSync {
-  const OPEN = ['Shipment', 'Late Delivery', 'Partial Delivered', 'Partial Return Pending', 'Return Pending', 'Exchange Pending'];
+  const OPEN = ['Shipment', 'Late Delivery', 'Delivered', 'Partial Delivered', 'Partial Return Pending', 'Return Pending', 'Exchange Pending'];
+  /** Stages a courier verdict (Partial / Exchange / Return) may still move forward. "Delivered" is included because an earlier sync may have read Pathao's "Partial Delivery" as plain delivered. */
+  const ENTRY = ['Shipment', 'Late Delivery', 'Delivered'];
 
   public static function collected(array $i): ?float {
     foreach (['collected_amount', 'amount_collected', 'collected_cod'] as $k) if (isset($i[$k]) && is_numeric($i[$k]) && (float)$i[$k] > 0) return (float)$i[$k];
@@ -27,7 +29,7 @@ class PathaoStatusSync {
     // Received / Returned are set only when OUR warehouse confirms the goods in hand (the Received button). The courier result only ever makes an order "Pending".
     $action = ['partial_received'=>'partial_pending', 'exchange_received'=>'exchange_pending', 'returned'=>'return_pending'][$action] ?? $action;
     $o = DB::table('orders')->find($id); if (!$o || !in_array($o->status, self::OPEN, true)) return;
-    if ($action === 'exchange_pending') { if (in_array($o->status, ['Shipment', 'Late Delivery'], true)) { DB::table('orders')->where('id', $id)->update(['return_type' => 'Exchange']); self::setStatus($o, 'Exchange Pending', 'Pathao: Exchange'); } return; }
+    if ($action === 'exchange_pending') { if (in_array($o->status, self::ENTRY, true)) { DB::table('orders')->where('id', $id)->update(['return_type' => 'Exchange']); self::setStatus($o, 'Exchange Pending', 'Pathao: Exchange'); } return; }
     if ($action === 'exchange_received') { if ($o->status === 'Exchange Pending') { DB::table('orders')->where('id', $id)->update(['return_received_at' => now()]); self::setStatus($o, 'Exchange Received', 'Pathao: exchange received'); } return; }
     $items = DB::table('order_items')->where('order_id', $id)->orderBy('id')->get(); if ($items->isEmpty()) return;
     $known = $items->contains(fn($x) => $x->outcome !== null);
@@ -46,7 +48,7 @@ class PathaoStatusSync {
       return;
     }
     if ($action === 'return_pending') {
-      if (!in_array($o->status, ['Shipment', 'Late Delivery'], true) || $known) return;   // already in a return flow, or staff recorded it
+      if (!in_array($o->status, self::ENTRY, true) || $known) return;   // already in a return flow, or staff recorded it
       $all = []; foreach ($items as $x) $all[$x->id] = (int)$x->qty;
       ShipmentOutcome::save($id, $all, 'Pathao Regular Return (auto)');
       return;
