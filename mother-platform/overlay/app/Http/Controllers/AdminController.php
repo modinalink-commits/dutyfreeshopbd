@@ -98,6 +98,7 @@ class AdminController extends Controller {
     $late = $counts['Late Delivery'] ?? 0; $rp = $counts['Return Pending'] ?? 0;
     $stale = $oq()->where('status','New')->where('created_at','<',now()->subMinutes(30))->count();
     if ($late) $alerts[] = ['CRITICAL', "$late orders are Late Delivery", 'Follow up with the courier today', '/admin/orders?status='.urlencode('Late Delivery')];
+    $prp = $counts['Partial Return Pending'] ?? 0; if ($prp) $alerts[] = ['CRITICAL', "$prp orders are Partial Return Pending", 'Receive the returned items at the warehouse', '/admin/orders?status='.urlencode('Partial Return Pending')];
     if ($rp) $alerts[] = ['CRITICAL', "$rp orders are Return Pending", 'Receive the parcel and update stock', '/admin/orders?status='.urlencode('Return Pending')];
     if ($stale) $alerts[] = ['WARNING', "$stale new orders waiting over 30 min", 'Confirm or call the customer', '/admin/orders?status=New'];
     $payP = $safe(fn() => (int)DB::table('orders')->where('pay_status','Verification Pending')->count(), 0);
@@ -142,6 +143,8 @@ class AdminController extends Controller {
     $isInc = $r->input('status') === 'Incomplete'; $q = DB::table('orders'); $q->orderByDesc('created_at')->orderByDesc('id'); // strict chronological: no batch/status/invoice-match priority
     if ($isInc) $q->whereRaw('1 = 0'); elseif ($r->filled('status')) { $sts = array_filter(array_map('trim', explode(',', (string)$r->status))); count($sts) > 1 ? $q->whereIn('status', $sts) : $q->where('status', $r->status); }
     if ($r->filled('q')) { $qs = trim((string)$r->q); $qd = preg_replace('/\D/', '', $qs); if (str_starts_with($qd, '880')) $qd = substr($qd, 2); $q->where(fn($w) => $w->where('invoice','ilike','%'.$qs.'%')->orWhere('phone','like','%'.($qd !== '' ? $qd : $qs).'%')->orWhere('customer_name','ilike','%'.$qs.'%')); }
+    $rt = (string)$r->input('rtype'); $rs = (string)$r->input('rstat');
+    if (in_array($rt, ['partial','full'], true) || in_array($rs, ['pending','received','completed'], true)) { $rset = $rt === 'partial' ? ['Partial Return Pending','Partial Returned'] : ($rt === 'full' ? ['Return Pending','Returned'] : ['Partial Return Pending','Partial Returned','Return Pending','Returned']); if ($rs === 'pending') $rset = array_values(array_intersect($rset, ['Partial Return Pending','Return Pending'])); elseif ($rs !== '') $rset = array_values(array_intersect($rset, ['Partial Returned','Returned'])); $q->whereIn('status', $rset); }
     $pf = (string)$r->input('print'); if ($pf === 'inv_not') $q->where('invoice_print_count', 0); elseif ($pf === 'inv') $q->where('invoice_print_count', '>', 0); elseif ($pf === 'lbl_not') $q->where('label_print_count', 0); elseif ($pf === 'lbl') $q->where('label_print_count', '>', 0);
     $per = in_array((int)$r->input('per'), [25,50,100,200]) ? (int)$r->input('per') : 50;
     $range = null; try { if ($r->filled('from') || $r->filled('to')) { $tz = 'Asia/Dhaka'; $ft = preg_match('/^\d{2}:\d{2}$/', (string)$r->ft) ? $r->ft : '00:00'; $tt = preg_match('/^\d{2}:\d{2}$/', (string)$r->tt) ? $r->tt : '23:59';
@@ -159,6 +162,7 @@ class AdminController extends Controller {
   }
   public function orderBulk(Request $r) {
     $d = $r->validate(['ids'=>'required|array|max:500','ids.*'=>'integer','status'=>'required|in:'.implode(',',Mother::STAGES)]);
+    if (in_array($d['status'], \App\Support\ShipmentOutcome::SYSTEM_ONLY, true)) return back()->with('bad', 'Partial Return statuses are calculated from the items. Open the order and use Delivery Outcome.');
     if ($d['status'] === 'Scheduled') return back()->with('bad', 'Scheduled needs a date/time. Open the order (or use the quick-action menu on its row) and pick Scheduled with a date.');
     $n = 0; $okB = 0; $failB = []; @set_time_limit(240);
     if ($d['status'] === 'Shipment') {
@@ -282,6 +286,7 @@ class AdminController extends Controller {
   public function orderStatus(Request $r, $id) {
     $d = $r->validate(['status'=>'required|in:'.implode(',',Mother::STAGES),'note'=>'nullable|string|max:500','sched_date'=>'nullable|date_format:Y-m-d','sched_time'=>'nullable|string|max:8']);
     $o = DB::table('orders')->find($id); abort_unless($o, 404);
+    if (in_array($d['status'], \App\Support\ShipmentOutcome::SYSTEM_ONLY, true) && $o->status !== $d['status']) return back()->with('bad', 'Partial Return statuses are calculated from the items. Use "Delivery Outcome" on the order page, then "Receive Partial Return".');
     if ($d['status'] === 'Scheduled') {
       [$sok, $smsg] = \App\Support\OrderSchedule::set((int)$id, $d['sched_date'] ?? null, $d['sched_time'] ?? null, $d['note'] ?? null, Auth::id(), Auth::user()->name);
       return back()->with($sok ? 'ok' : 'bad', $smsg);
@@ -302,6 +307,7 @@ class AdminController extends Controller {
   public function orderQuickStatus(Request $r, $id) {
     $d = $r->validate(['status'=>'required|in:'.implode(',',Mother::STAGES),'note'=>'nullable|string|max:500','sched_date'=>'nullable|date_format:Y-m-d','sched_time'=>'nullable|string|max:8']);
     $o = DB::table('orders')->find($id); abort_unless($o, 404);
+    if (in_array($d['status'], \App\Support\ShipmentOutcome::SYSTEM_ONLY, true) && $o->status !== $d['status']) return response()->json(['success'=>false,'message'=>'Partial Return statuses are calculated from the items. Use Delivery Outcome on the order page.']);
     if ($d['status'] === 'Scheduled') {
       if (empty($d['sched_date'])) return response()->json(['success'=>false,'need_schedule'=>true,'message'=>'Scheduled date is required']);
       [$sok, $smsg] = \App\Support\OrderSchedule::set((int)$id, $d['sched_date'], $d['sched_time'] ?? null, $d['note'] ?? null, Auth::id(), Auth::user()->name);

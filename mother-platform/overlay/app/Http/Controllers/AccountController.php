@@ -17,10 +17,10 @@ class AccountController extends StoreController {
     'Shipment'   => ['Shipment', 'Late Delivery', 'Partial Delivered'],
     'Delivered'  => ['Delivered'],
     'Cancelled'  => ['Cancel'],
-    'Returned'   => ['Return Pending', 'Returned', 'Exchange Received'],
+    'Returned'   => ['Return Pending', 'Returned', 'Exchange Received', 'Partial Return Pending', 'Partial Returned'],
   ];
   const STEPS = ['Order Placed', 'Confirmed', 'Processing', 'Packaging', 'Shipment', 'Delivered'];
-  const STEP_OF = ['New'=>0, 'Incomplete'=>0, 'Pre Order'=>0, 'AI Order'=>0, 'Assign'=>1, 'Pending'=>1, 'Approved'=>1, 'Scheduled'=>2, 'WFP'=>2, 'Packaging'=>3, 'Shipment'=>4, 'Late Delivery'=>4, 'Partial Delivered'=>4, 'Delivered'=>5];
+  const STEP_OF = ['New'=>0, 'Incomplete'=>0, 'Pre Order'=>0, 'AI Order'=>0, 'Assign'=>1, 'Pending'=>1, 'Approved'=>1, 'Scheduled'=>2, 'WFP'=>2, 'Packaging'=>3, 'Shipment'=>4, 'Late Delivery'=>4, 'Partial Delivered'=>4, 'Partial Return Pending'=>5, 'Partial Returned'=>5, 'Delivered'=>5];
 
   private function norm($v): ?string { $p = Chat::phone((string)$v); return $p && preg_match('/^01\d{9}$/', $p) ? $p : null; }
   public function me(Request $r): ?object {

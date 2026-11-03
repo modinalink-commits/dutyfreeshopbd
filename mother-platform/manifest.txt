@@ -452,3 +452,7 @@ app/Http/Controllers/VoiceChatController.php
 resources/views/voice_chat_settings.blade.php
 resources/views/admin_grid.blade.php
 resources/views/admin_theme.blade.php
+app/Support/ShipmentOutcome.php
+app/Http/Controllers/ShipmentOutcomeController.php
+resources/views/order_outcome.blade.php
+database/migrations/2026_11_03_000043_shipment_outcome.php

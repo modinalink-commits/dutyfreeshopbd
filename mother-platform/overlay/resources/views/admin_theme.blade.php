@@ -51,13 +51,13 @@ main table:not(.ordt):has(th) tbody tr:is(.grid-neutral,.grid-info,.grid-success
 .st-approved{--rt:var(--tint-green);--ra:var(--acc-green)}
 .st-shipment{--rt:var(--tint-cyan);--ra:var(--acc-cyan)}
 .st-delivered,.st-partial-delivered{--rt:var(--tint-greengray);--ra:var(--acc-greengray)}
-.st-late-delivery,.st-exchange-received{--rt:var(--tint-orange);--ra:var(--acc-orange)}
-.st-returned,.st-return-pending{--rt:var(--tint-pink);--ra:var(--acc-red)}
+.st-late-delivery,.st-partial-return-pending,.st-partial-returned,.st-exchange-received{--rt:var(--tint-orange);--ra:var(--acc-orange)}
+.st-returned,.st-return-pending,.st-partial-return-pending,.st-partial-returned{--rt:var(--tint-pink);--ra:var(--acc-red)}
 .st-cancel,.st-cancelled{--rt:var(--tint-redgray);--ra:var(--acc-gray)}
 .st-incomplete{--rt:var(--tint-gray);--ra:var(--acc-gray)}
-main table.ordt>tbody>tr:is(.st-new,.st-scheduled,.st-pending,.st-pre-order,.st-wfp,.st-assign,.st-ai-order,.st-packaging,.st-approved,.st-shipment,.st-delivered,.st-partial-delivered,.st-late-delivery,.st-exchange-received,.st-returned,.st-return-pending,.st-cancel,.st-cancelled,.st-incomplete)>td{background:var(--rt)}
-main table.ordt>tbody>tr:is(.st-new,.st-scheduled,.st-pending,.st-pre-order,.st-wfp,.st-assign,.st-ai-order,.st-packaging,.st-approved,.st-shipment,.st-delivered,.st-partial-delivered,.st-late-delivery,.st-exchange-received,.st-returned,.st-return-pending,.st-cancel,.st-cancelled,.st-incomplete)>td:first-child{border-left-color:var(--ra)}
-main table.ordt>tbody>tr:is(.st-new,.st-scheduled,.st-pending,.st-pre-order,.st-wfp,.st-assign,.st-ai-order,.st-packaging,.st-approved,.st-shipment,.st-delivered,.st-partial-delivered,.st-late-delivery,.st-exchange-received,.st-returned,.st-return-pending,.st-cancel,.st-cancelled,.st-incomplete):hover>td{background:var(--rt);filter:brightness(.985)}
+main table.ordt>tbody>tr:is(.st-new,.st-scheduled,.st-pending,.st-pre-order,.st-wfp,.st-assign,.st-ai-order,.st-packaging,.st-approved,.st-shipment,.st-delivered,.st-partial-delivered,.st-late-delivery,.st-partial-return-pending,.st-partial-returned,.st-exchange-received,.st-returned,.st-return-pending,.st-cancel,.st-cancelled,.st-incomplete)>td{background:var(--rt)}
+main table.ordt>tbody>tr:is(.st-new,.st-scheduled,.st-pending,.st-pre-order,.st-wfp,.st-assign,.st-ai-order,.st-packaging,.st-approved,.st-shipment,.st-delivered,.st-partial-delivered,.st-late-delivery,.st-partial-return-pending,.st-partial-returned,.st-exchange-received,.st-returned,.st-return-pending,.st-cancel,.st-cancelled,.st-incomplete)>td:first-child{border-left-color:var(--ra)}
+main table.ordt>tbody>tr:is(.st-new,.st-scheduled,.st-pending,.st-pre-order,.st-wfp,.st-assign,.st-ai-order,.st-packaging,.st-approved,.st-shipment,.st-delivered,.st-partial-delivered,.st-late-delivery,.st-partial-return-pending,.st-partial-returned,.st-exchange-received,.st-returned,.st-return-pending,.st-cancel,.st-cancelled,.st-incomplete):hover>td{background:var(--rt);filter:brightness(.985)}
 main table.ordt>tbody>tr:has(input[type=checkbox]:checked)>td{background:var(--row-selected)!important}
 
 /* ===== 4. table furniture: header, group, total (spec §35-37) ===== */
