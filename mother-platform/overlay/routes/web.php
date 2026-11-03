@@ -126,6 +126,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/courier/sync', [\App\Http\Controllers\CourierController::class,'sync']);
   Route::post('/courier/settle', [\App\Http\Controllers\CourierController::class,'settle']);
   Route::get('/ai-chat', [\App\Http\Controllers\AiChatController::class,'show']);
+  Route::get('/voice-chat', [\App\Http\Controllers\VoiceChatController::class,'settings']); Route::post('/voice-chat', [\App\Http\Controllers\VoiceChatController::class,'saveSettings']); Route::post('/voice-chat/test', [\App\Http\Controllers\VoiceChatController::class,'test']);
   Route::post('/ai-chat', [\App\Http\Controllers\AiChatController::class,'save']);
   Route::get('/call-center/my-status', [\App\Http\Controllers\CallCenterController::class,'myStatus']);
   Route::post('/call-center/my-status', [\App\Http\Controllers\CallCenterController::class,'setStatus']);
@@ -320,6 +321,8 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestF
   Route::post('/chat/start', [\App\Http\Controllers\ChatController::class,'webStart'])->middleware('throttle:60,1');
   Route::post('/chat/send', [\App\Http\Controllers\ChatController::class,'webSend'])->middleware('throttle:240,1');
   Route::post('/chat/upload', [\App\Http\Controllers\ChatController::class,'webUpload'])->middleware('throttle:60,1');
+  Route::post('/chat/voice', [\App\Http\Controllers\VoiceChatController::class,'stt'])->middleware('throttle:20,1');
+  Route::post('/chat/voice/tts', [\App\Http\Controllers\VoiceChatController::class,'tts'])->middleware('throttle:40,1');
   Route::get('/chat/order', [\App\Http\Controllers\ChatController::class,'webOrder'])->middleware('throttle:120,1');
   Route::get('/chat/poll', [\App\Http\Controllers\ChatController::class,'webPoll'])->middleware('throttle:600,1');
   Route::get('/account/login', [\App\Http\Controllers\AccountController::class,'authForm']);

@@ -1,4 +1,5 @@
 @php $__cw = \Illuminate\Support\Facades\Cache::remember('chat.web_on', 60, fn() => (\DB::table('settings')->where('key', 'chat_web_on')->value('value') ?? '1') === '1' && \Illuminate\Support\Facades\Schema::hasTable('chat_threads')); $__bn = ($s['mobile_bottom_nav'] ?? '') === '1'; @endphp
+@php $__vc = []; try { $__vc = $__cw ? \App\Support\VoiceChat::widgetCfg() : []; } catch (\Throwable $e) { $__vc = []; } @endphp
 @if($__cw)
 <style>
 .dfc-l{position:fixed;right:18px;bottom:22px;z-index:58;display:flex;align-items:center;gap:10px;font-family:inherit}
@@ -31,6 +32,11 @@
 .dfc-f .ic{width:36px;height:40px;border:0;background:none;font-size:19px;cursor:pointer;border-radius:10px;padding:0;flex-shrink:0}.dfc-f .ic:hover{background:#FFF1E8}
 .dfc-f .sd{width:42px;height:40px;border:0;background:#FF5A00;color:#fff;border-radius:13px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0}.dfc-f .sd:disabled{opacity:.5}
 .dfc-em{position:absolute;left:10px;bottom:58px;background:#fff;border:1.25px solid #FDC2A5;border-radius:14px;padding:8px;display:none;grid-template-columns:repeat(8,1fr);gap:2px;box-shadow:0 10px 26px rgba(11,18,32,.18);z-index:2}.dfc-em.op{display:grid}.dfc-em button{border:0;background:none;font-size:20px;cursor:pointer;border-radius:8px;padding:3px}.dfc-em button:hover{background:#FFF1E8}
+.dfc-f .mic{width:38px;height:40px;border:0;background:none;font-size:19px;cursor:pointer;border-radius:10px;padding:0;flex-shrink:0}.dfc-f .mic:hover{background:#FFF1E8}.dfc-f .mic.rec{background:#FEE2E2;animation:dfcr 1s infinite}
+@keyframes dfcr{0%,100%{box-shadow:0 0 0 0 rgba(225,29,72,.35)}50%{box-shadow:0 0 0 7px rgba(225,29,72,0)}}
+.dfc-vb{display:none;align-items:center;gap:8px;padding:8px 12px;background:#FEF2F2;border-top:1px solid #FECACA;font-size:12.5px;color:#7F1D1D}.dfc-vb.sp{background:#FFF1E8;border-color:#FFE0CC;color:#7C2D12}.dfc-vb b{font-variant-numeric:tabular-nums}.dfc-vb button{margin-left:auto;border:1px solid currentColor;background:#fff;color:inherit;border-radius:9px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer}.dfc-vb button+button{margin-left:0}
+.dfc-ls{display:inline-block;margin-top:5px;border:1px solid #FDC2A5;background:#FFF8F3;color:#7C2D12;border-radius:12px;padding:3px 10px;font-size:11.5px;font-weight:700;cursor:pointer}.dfc-ls:hover{background:#FFE7D6}
+.dfc-h #dfcvm{font-size:15px}.dfc-h #dfcvm.on{background:#FF5A00}
 .dfc-pw{text-align:center;font-size:10.5px;color:#9CA3AF;padding:0 0 6px;background:#fff}
 .dfc-p{position:fixed;right:18px;bottom:96px;z-index:57;width:290px;max-width:calc(100vw - 100px);background:#fff;border:1.25px solid #FDC2A5;border-radius:16px 16px 4px 16px;box-shadow:0 14px 34px rgba(11,18,32,.22);padding:13px 15px 12px;font:13.5px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:#0B1220;cursor:pointer;opacity:0;transform:translateY(10px);pointer-events:none;visibility:hidden;transition:.3s}
 .dfc-p.op{opacity:1;transform:none;pointer-events:auto;visibility:visible}.dfc-p b{display:block;font-size:14.5px;margin-bottom:3px}.dfc-p span{display:block;color:#4B5563;font-size:12.5px}.dfc-p .x{position:absolute;top:5px;right:8px;border:0;background:none;color:#9CA3AF;font-size:17px;cursor:pointer;line-height:1;padding:2px 4px}
@@ -41,15 +47,16 @@
 .dfc-p{right:12px;bottom:{{ $__bn ? '138px' : '86px' }};width:250px}}
 @media(prefers-reduced-motion:reduce){.dfc-b{animation:none}.dfc-w,.dfc-p{transition:none}}
 </style>
-<script>window.DFC={wa:@json($wa ?? ''),bn:@json($__bn)};</script>
+<script>window.DFC={wa:@json($wa ?? ''),bn:@json($__bn),vc:@json($__vc)};</script>
 <div class="dfc-p" id="dfcp" role="status"><button class="x" type="button" id="dfcpx" aria-label="Dismiss">×</button><b>আসসালামু আলাইকুম 👋</b><span>আমি আপনার জন্য প্রস্তুত আছি। কীভাবে সাহায্য করতে পারি?</span><span style="margin-top:5px;font-size:12px">অর্ডার, প্রোডাক্ট, ডেলিভারি বা পেমেন্ট বিষয়ে জানতে মেসেজ দিন।</span></div>
 <div class="dfc-w" id="dfcw" role="dialog" aria-label="DutyFreeBD Support chat" aria-hidden="true">
-<div class="dfc-h"><div class="dfc-av">DF<i></i></div><div style="flex:1;min-width:0"><b>DutyFreeBD সহায়তা</b><small><span class="g">🟢</span> Online এখনই</small></div><button type="button" id="dfcmin" aria-label="Minimize" title="Minimize">–</button><button type="button" id="dfcclose" aria-label="Close" title="Close">×</button></div>
+<div class="dfc-h"><div class="dfc-av">DF<i></i></div><div style="flex:1;min-width:0"><b>DutyFreeBD সহায়তা</b><small><span class="g">🟢</span> Online এখনই</small></div><button type="button" id="dfcvm" aria-label="ভয়েস রিপ্লাই" title="ভয়েস রিপ্লাই চালু/বন্ধ" hidden>🔇</button><button type="button" id="dfcmin" aria-label="Minimize" title="Minimize">–</button><button type="button" id="dfcclose" aria-label="Close" title="Close">×</button></div>
 <div class="dfc-m" id="dfcm" aria-live="polite"></div>
 <div class="dfc-o" id="dfco"></div>
 <div class="dfc-qb" id="dfcqb"></div>
+<div class="dfc-vb" id="dfcvb" role="status"></div>
 <form class="dfc-f" id="dfcf" autocomplete="off"><div class="dfc-em" id="dfcem"></div><button type="button" class="ic" id="dfcemb" aria-label="Emoji">😊</button><button type="button" class="ic" id="dfcat" aria-label="Attach image">📎</button><input type="file" id="dfcfi" accept="image/jpeg,image/png,image/webp,image/gif" hidden>
-<textarea id="dfcq" rows="1" maxlength="1000" placeholder="এখানে আপনার মেসেজ লিখুন..." aria-label="Message"></textarea><button class="sd" id="dfcsd" type="submit" aria-label="Send"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg></button></form>
+<button type="button" class="mic" id="dfcmic" aria-label="ভয়েস মেসেজ পাঠান" title="কথা বলুন" hidden>🎙</button><textarea id="dfcq" rows="1" maxlength="1000" placeholder="এখানে আপনার মেসেজ লিখুন..." aria-label="Message"></textarea><button class="sd" id="dfcsd" type="submit" aria-label="Send"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg></button></form>
 <div class="dfc-pw">DutyFreeBD · আমরা সাধারণত কয়েক মিনিটের মধ্যে উত্তর দিই</div></div>
 <div class="dfc-l" id="dfcl"><span class="dfc-lab">সাহায্য লাগবে? আমাদের সাথে চ্যাট করুন</span><button type="button" class="dfc-b" id="dfcb" aria-label="Open live chat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.5 8.5 0 0 1-12.2 7.6L3 21l1.5-5.4A8.5 8.5 0 1 1 21 12z"/><path d="M8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01" stroke-width="2.6"/></svg><span class="dfc-n" id="dfcn"></span></button></div>
 @verbatim
@@ -77,6 +84,7 @@ var QA=[['🛒 Order করতে চাই','msg','আমি অর্ডার
 function qaClick(a){if(a[1]==='wa'){window.open('https://wa.me/'+(D.wa||''),'_blank','noopener');return}
  if(a[1]==='track'){botSay('আপনার অর্ডার নম্বরটি লিখুন (যেমন INV-000123)। আমি স্ট্যাটাস দেখে দিচ্ছি।');Q.placeholder='অর্ডার নম্বর, যেমন INV-000123';Q.focus();S.track=1;return}
  send(a[2])}
+var VC=D.vc||{};if(VC.on&&VC.handoff)QA.push(['🧑 মানুষের সাথে কথা বলুন','msg','আমি একজন মানুষের সাথে কথা বলতে চাই।']);
 function qaHtml(el){QA.forEach(function(a){var b=document.createElement('button');b.type='button';b.textContent=a[0];b.onclick=function(){qaClick(a)};el.appendChild(b)})}
 function botSay(t){return bubble('t',fmt(t),new Date().toISOString())}
 function welcome(){var n=S.n||ck().n;botSay('আসসালামু আলাইকুম'+(n?' '+n.split(' ')[0]:'')+'! 👋\nআমি আপনার জন্য প্রস্তুত আছি। কীভাবে সাহায্য করতে পারি?\n\nঅর্ডার, প্রোডাক্ট, ডেলিভারি বা পেমেন্ট বিষয়ে জানতে মেসেজ দিন।');
@@ -107,10 +115,11 @@ $('dfcfi').onchange=function(){var f=this.files[0];this.value='';if(!f)return;if
  var url=URL.createObjectURL(f),el=bubble('me','',new Date().toISOString(),null,'⏳ Sending',url),fd=new FormData();fd.append('token',S.t);fd.append('file',f);
  J('/chat/upload',null,fd).then(function(j){if(j.id){mine[j.id]=el;shown[j.id]=1;if(j.id>last)last=j.id}el.querySelector('small b').textContent='✓ Sent';showBar()}).catch(function(){el.querySelector('small b').textContent='⚠ Not sent'})};
 /* polling: support replies, delivered / seen ticks */
-function poll(force){if(!S.t||busy)return;busy=true;J('/chat/poll?token='+S.t+'&after='+last).then(function(j){busy=false;var n=0,lastBody='';
+function poll(force){if(!S.t||busy)return;busy=true;J('/chat/poll?token='+S.t+'&after='+last).then(function(j){busy=false;var n=0,lastBody='',autoP=null;
  (j.messages||[]).forEach(function(x){if(x.id>last)last=x.id;if(shown[x.id])return;shown[x.id]=1;
-  if(x.dir==='out'){bubble('t',fmt(x.body||''),x.at,null,null,x.att_type==='image'?x.att:null);if(!firstPoll){n++;lastBody=x.body||'[ছবি]'}}
+  if(x.dir==='out'){var ob=bubble('t',fmt(x.body||''),x.at,null,null,x.att_type==='image'?x.att:null);if(VC.speaker&&x.body)addListen(ob,x.id);if(!firstPoll){n++;lastBody=x.body||'[ছবি]';if(VC.speaker&&voiceMode&&isOpen&&x.body)autoP=[ob,x.id]}}
   else{mine[x.id]=bubble('me',fmt(x.body||''),x.at,null,'✓✓ Delivered',x.att_type==='image'?x.att:null)}});
+ if(autoP){var ab=autoP[0].querySelector('.dfc-ls');if(ab)playMsg(autoP[1],ab)}
  var changed=false;Object.keys(mine).forEach(function(id){if(+id<=j.seen_upto)setStatus(mine[id],true);else if(mine[id]&&/Sent|Sending/.test((mine[id].querySelector('small b')||{}).textContent||''))setStatus(mine[id],false)});
  if(firstPoll){firstPoll=false;if(M.children.length<=1&&!j.messages.length){}if(j.messages&&j.messages.length){started=true;showBar()}}
  if(n){if(!isOpen){unread+=n;badge();toast(lastBody)}}
@@ -120,11 +129,46 @@ function showBar(){if(QB.childElementCount===0){QA.forEach(function(a){var b=doc
 function toast(t){P.querySelector('b').textContent='DutyFreeBD Support';var s=P.querySelectorAll('span');s[0].textContent=(t||'').slice(0,110);s[1].style.display='none';P.classList.add('op');clearTimeout(toast.t);toast.t=setTimeout(function(){P.classList.remove('op')},8000)}
 /* current order of this device (invoice + phone must match) */
 function showOrder(){var inv='';try{inv=localStorage.getItem('df_last')||''}catch(e){}var p=identity().phone;if(!inv||!p)return;J('/chat/order?invoice='+encodeURIComponent(inv)+'&phone='+encodeURIComponent(p)).then(function(j){if(j.found){OB.style.display='flex';OB.innerHTML='<span>📦 আপনার অর্ডার <b>'+esc(j.invoice)+'</b> · '+esc(j.status)+'</span><a href="'+esc(j.url)+'" target="_blank">Track →</a>'}}).catch(function(){})}
+/* ---------- voice (optional; every failure falls back to plain text chat) ---------- */
+var voiceMode=false,rec=null,recStream=null,recChunks=[],recT0=0,recTick=null,recCancel=false,aud=null,audBtn=null,AU={};
+try{voiceMode=sessionStorage.getItem('dfvm')==='1'}catch(e){}
+var MIC=$('dfcmic'),VB=$('dfcvb'),VM=$('dfcvm'),MIME='';
+function pickMime(){try{return ['audio/webm;codecs=opus','audio/ogg;codecs=opus'].filter(function(m){return window.MediaRecorder&&MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(m)})[0]||''}catch(e){return ''}}
+if(VC.on&&VC.mic&&navigator.mediaDevices&&navigator.mediaDevices.getUserMedia){MIME=pickMime();if(MIME){MIC.hidden=false;MIC.onclick=function(){rec?finishRec():ensure(startRec)}}}
+if(VC.on&&(VC.speaker||VC.auto)){VM.hidden=false;paintVm();VM.onclick=function(){voiceMode=!voiceMode;try{sessionStorage.setItem('dfvm',voiceMode?'1':'0')}catch(e){}if(!voiceMode)stopAudio();paintVm()}}
+function paintVm(){VM.textContent=voiceMode?'🔊':'🔇';VM.classList.toggle('on',voiceMode);VM.title=voiceMode?'ভয়েস রিপ্লাই চালু (বন্ধ করতে চাপুন)':'ভয়েস রিপ্লাই বন্ধ (চালু করতে চাপুন)'}
+function vbar(html,cls){VB.className='dfc-vb'+(cls?' '+cls:'');VB.innerHTML=html;VB.style.display=html?'flex':'none'}
+function fmtT(s){s=Math.floor(s);return Math.floor(s/60)+':'+('0'+s%60).slice(-2)}
+function startRec(){if(rec||!S.t)return;stopAudio();
+ navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}}).then(function(st){recStream=st;recChunks=[];recCancel=false;
+  try{rec=new MediaRecorder(st,{mimeType:MIME})}catch(e){rel();botSay('এই ব্রাউজারে ভয়েস রেকর্ড করা যাচ্ছে না। অনুগ্রহ করে লিখে জানান।');return}
+  rec.ondataavailable=function(e){if(e.data&&e.data.size)recChunks.push(e.data)};
+  rec.onstop=function(){var dur=(Date.now()-recT0)/1000;clearInterval(recTick);MIC.classList.remove('rec');vbar('');var ch=recChunks;rec=null;rel();if(recCancel||!ch.length)return;if(dur<0.6){botSay('রেকর্ডিং খুব ছোট হয়েছে। মাইক চেপে একটু বেশি সময় কথা বলুন।');return}sendVoice(new Blob(ch,{type:MIME.split(';')[0]}),dur)};
+  recT0=Date.now();rec.start();MIC.classList.add('rec');var max=VC.max||40;
+  function paint(){var el=(Date.now()-recT0)/1000;vbar('🎙 রেকর্ড হচ্ছে… <b>'+fmtT(el)+'</b><button type="button" id="dfcrc">বাতিল</button><button type="button" id="dfcrs">পাঠান</button>');$('dfcrc').onclick=cancelRec;$('dfcrs').onclick=finishRec;if(el>=max-1)finishRec()}
+  paint();recTick=setInterval(paint,500)
+ }).catch(function(){botSay('মাইক্রোফোনের অনুমতি পাওয়া যায়নি। ব্রাউজারে মাইক্রোফোন চালু করুন, অথবা লিখে জানান।')})}
+function rel(){if(recStream){recStream.getTracks().forEach(function(t){t.stop()});recStream=null}}
+function finishRec(){if(rec&&rec.state!=='inactive'){recCancel=false;rec.stop()}}
+function cancelRec(){if(rec&&rec.state!=='inactive'){recCancel=true;rec.stop()}else{rec=null;rel();vbar('');MIC.classList.remove('rec')}}
+function sendVoice(blob,dur){var q=$('dfcqi');if(q)q.remove();showBar();
+ var el=bubble('me','🎤 <i>বুঝে নিচ্ছি…</i>',new Date().toISOString(),null,'⏳ Sending'),fd=new FormData();fd.append('token',S.t);fd.append('duration',dur.toFixed(1));fd.append('audio',blob,'voice.'+(blob.type.indexOf('ogg')>-1?'ogg':'webm'));
+ J('/chat/voice',null,fd).then(function(j){if(j.id){mine[j.id]=el;shown[j.id]=1;if(j.id>last)last=j.id}var sm=el.querySelector('small');el.firstChild&&(el.innerHTML='🎤 '+fmt(j.text||'')+(sm?sm.outerHTML:''));var b=el.querySelector('small b');if(b)b.textContent='✓ Sent';
+  if(VC.auto&&VC.speaker&&!voiceMode){voiceMode=true;try{sessionStorage.setItem('dfvm','1')}catch(e){}paintVm()}poll(true)
+ }).catch(function(e){if(e&&e._err===404&&S.t&&!(e.error)){S={};save();el.remove();askPhone();return}var b=el.querySelector('small b');el.firstChild&&(el.querySelector('i')?el.querySelector('i').textContent='🎤 পাঠানো যায়নি':0);if(b)b.textContent='⚠ Not sent';botSay((e&&e.error)||'ভয়েস পাঠানো যায়নি। অনুগ্রহ করে লিখে জানান।')})}
+function addListen(b,id){if(b.querySelector('.dfc-ls'))return;var l=document.createElement('button');l.type='button';l.className='dfc-ls';l.textContent='🔊 শুনুন';l.setAttribute('aria-label','উত্তরটি শুনুন');l.onclick=function(){playMsg(id,l)};b.appendChild(l)}
+function stopAudio(){if(aud){try{aud.pause()}catch(e){}aud=null}if(audBtn){audBtn.textContent='🔊 আবার শুনুন';audBtn=null}vbar('')}
+function playMsg(id,btn){if(!btn)return;if(aud&&audBtn===btn){stopAudio();return}stopAudio();btn.textContent='⏳ …';
+ var go=function(url){var a=new Audio(url);aud=a;audBtn=btn;a.onended=function(){if(aud===a){aud=null;audBtn=null;vbar('')}btn.textContent='🔊 আবার শুনুন'};a.onerror=function(){if(aud===a){aud=null;audBtn=null;vbar('')}btn.textContent='⚠ শোনা যাচ্ছে না'};
+  btn.textContent='⏸ থামান';vbar('🔊 উত্তর শোনাচ্ছি…<button type="button" id="dfcst">থামান</button>','sp');$('dfcst').onclick=stopAudio;
+  var p=a.play();if(p&&p.catch)p.catch(function(){if(aud===a){aud=null;audBtn=null;vbar('')}btn.textContent='🔊 শুনুন'})};
+ if(AU[id]){go(AU[id]);return}
+ fetch('/chat/voice/tts',{method:'POST',headers:{'Content-Type':'application/json','Accept':'audio/mpeg'},body:JSON.stringify({token:S.t,id:id})}).then(function(r){if(!r.ok)throw 0;return r.blob()}).then(function(bl){AU[id]=URL.createObjectURL(bl);go(AU[id])}).catch(function(){btn.textContent='⚠ শোনা যাচ্ছে না';setTimeout(function(){btn.textContent='🔊 শুনুন'},3000)})}
 /* open / close */
 function openChat(){if(isOpen)return;isOpen=true;W.classList.add('op');W.setAttribute('aria-hidden','false');L.classList.add('hid');P.classList.remove('op');unread=0;badge();try{sessionStorage.setItem('dfw','1')}catch(e){}
  if(!started&&!M.children.length){if(S.t){started=true}else welcome()}
  if(S.t){poll();showBar();showOrder()}setTimeout(function(){Q.focus({preventScroll:true});scroll()},250)}
-function closeChat(){isOpen=false;W.classList.remove('op');W.setAttribute('aria-hidden','true');L.classList.remove('hid');emb.classList.remove('op')}
+function closeChat(){stopAudio();if(rec)cancelRec();isOpen=false;W.classList.remove('op');W.setAttribute('aria-hidden','true');L.classList.remove('hid');emb.classList.remove('op')}
 B.onclick=function(){isOpen?closeChat():openChat()};$('dfcmin').onclick=closeChat;$('dfcclose').onclick=function(){closeChat();try{sessionStorage.setItem('dfw','1')}catch(e){}};
 document.addEventListener('keydown',function(e){if(e.key==='Escape'&&isOpen)closeChat()});
 P.onclick=function(e){if(e.target.id==='dfcpx'){P.classList.remove('op');try{sessionStorage.setItem('dfw','1')}catch(x){}return}openChat()};

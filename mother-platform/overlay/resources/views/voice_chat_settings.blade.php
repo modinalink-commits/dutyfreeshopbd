@@ -1,0 +1,32 @@
+@extends('layout')@section('title','Voice Chat')
+@section('body')
+<h1 style="margin:0 0 4px">Voice Chat (Bangla)</h1><span style="font-size:13px;color:#6B7280">Customers can speak to the same AI assistant on the store chat. Their voice becomes text for the assistant, and the reply can be heard. Text chat is never affected: if voice fails the customer simply types.</span>
+@if(session('ok'))<div class="card" style="color:#166534;margin-top:12px">{{ session('ok') }}</div>@endif
+@if($errors->any())<div class="card err" style="margin-top:12px">{{ $errors->first() }}</div>@endif
+@php $on = $s['enabled']==='1' && $hasKey; @endphp
+<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin:14px 0">
+<div class="card k" style="margin:0"><span style="font-size:13px">Voice chat</span><b style="font-size:22px">{{ $on ? 'ON' : 'OFF' }}</b></div>
+<div class="card k" style="margin:0"><span style="font-size:13px">Google key</span><b style="font-size:22px">{{ $hasKey ? 'Saved' : 'Not set' }}</b></div>
+<div class="card k" style="margin:0"><span style="font-size:13px">Voice in (7 days)</span><b style="font-size:22px">{{ $stats['stt'] }}</b><span style="font-size:11px;color:#6B7280">failed {{ $stats['stt_fail'] }}</span></div>
+<div class="card k" style="margin:0"><span style="font-size:13px">Voice out (7 days)</span><b style="font-size:22px">{{ $stats['tts'] }}</b><span style="font-size:11px;color:#6B7280">failed {{ $stats['tts_fail'] }} · cached {{ $stats['cached'] }}</span></div></div>
+<form class="card" method="post" action="/admin/voice-chat" style="max-width:700px">@csrf
+<b>Settings</b>
+<p style="font-size:12px;color:#6B7280;margin:4px 0 10px">Paste a Google Cloud API key yourself. It must allow <b>Cloud Speech-to-Text API</b> and <b>Cloud Text-to-Speech API</b>. It is stored encrypted and never shown again; leave blank to keep the saved key. Voice never places orders by itself: the assistant follows exactly the same confirmation rules as typed chat.</p>
+<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" name="enabled" value="1" style="width:auto" {{ $s['enabled']==='1'?'checked':'' }}> Enable AI Voice Chat</label>
+<label style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox" name="mic" value="1" style="width:auto" {{ $s['mic']==='1'?'checked':'' }}> Enable Customer Microphone (customer can speak)</label>
+<label style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox" name="auto" value="1" style="width:auto" {{ $s['auto']==='1'?'checked':'' }}> Enable Auto Voice Reply (after a customer speaks, replies play automatically; the customer can switch it off)</label>
+<label style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox" name="speaker" value="1" style="width:auto" {{ $s['speaker']==='1'?'checked':'' }}> Enable Speaker Button (🔊 Listen on each reply)</label>
+<label style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox" name="handoff" value="1" style="width:auto" {{ $s['handoff']==='1'?'checked':'' }}> Enable Human Handoff button in voice mode</label>
+<label style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox" name="store_audio" value="1" style="width:auto" {{ $s['store_audio']==='1'?'checked':'' }}> Store customer audio (private server storage, not public; default OFF, transcripts are always kept)</label>
+<label>Audio retention (days)</label><input type="number" name="retention" min="1" max="90" value="{{ $s['retention'] }}" style="max-width:120px">
+<label>Default voice language (what the customer speaks)</label><select name="lang">@foreach($langs as $k=>$v)<option value="{{ $k }}" {{ $s['lang']===$k?'selected':'' }}>{{ $v }}</option>@endforeach</select>
+<label>Voice speed (0.75 – 1.25)</label><input type="number" name="speed" step="0.05" min="0.75" max="1.25" value="{{ $s['speed'] }}" style="max-width:120px">
+<label>Voice provider</label><select name="provider"><option value="google" selected>Google Cloud (Speech-to-Text + Text-to-Speech)</option></select>
+<label>Reply voice name</label><input name="voice" value="{{ $s['voice'] }}" maxlength="40" style="max-width:260px"><span style="font-size:11px;color:#6B7280"> e.g. bn-IN-Wavenet-A, bn-IN-Wavenet-B, bn-IN-Standard-A</span>
+<label>Google API key {{ $hasKey ? '(saved, leave blank to keep)' : '' }}</label><input type="password" name="api_key" autocomplete="new-password" placeholder="{{ $hasKey ? '••••••••••••' : 'AIza...' }}">
+<div style="margin-top:14px"><button>Save</button></div></form>
+<div class="card" style="max-width:700px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button type="button" id="vt">▶ Play a test voice</button><span id="vts" style="font-size:12px;color:#6B7280">Checks that Text-to-Speech works with the saved key.</span><audio id="vta" hidden></audio></div>
+<div class="card" style="max-width:700px;font-size:12px;color:#374151"><b>Notes</b><ul style="margin:6px 0 0 18px;padding:0"><li>Speech understanding needs Chrome, Edge, Firefox or recent Safari on the customer's phone; the mic button hides itself where recording is not supported.</li><li>Recordings are limited to 40 seconds and 1.5 MB; each visitor is limited to 40 voice messages and 60 spoken replies per hour.</li><li>Spoken replies are cached, so repeated answers cost nothing extra.</li><li>Full voice checkout (ordering by voice) is not part of this phase; the assistant uses the same safe order flow as text.</li></ul></div>
+@verbatim<script>(function(){var b=document.getElementById('vt'),s=document.getElementById('vts'),a=document.getElementById('vta'),t=document.querySelector('input[name=_token]').value;
+b.onclick=function(){s.textContent='Working…';fetch('/admin/voice-chat/test',{method:'POST',headers:{'X-CSRF-TOKEN':t,'Accept':'audio/mpeg'},credentials:'same-origin'}).then(function(r){if(!r.ok)return r.json().then(function(j){throw new Error(j.error||('Error '+r.status))});return r.blob()}).then(function(bl){a.src=URL.createObjectURL(bl);a.play();s.textContent='Played. If you heard Bangla speech, the voice is ready.'}).catch(function(e){s.textContent=e.message})}})();</script>@endverbatim
+@endsection
