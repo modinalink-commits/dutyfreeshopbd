@@ -14,17 +14,26 @@ class Chat {
     return $d;
   }
   public static function sec(string $k): ?string { return Sms::secret($k); }
+  /** Token for the Page / Instagram account a conversation belongs to (Facebook Login connections), else the single saved token. */
+  public static function pageTok(string $ch, ?string $ref): ?string {
+    try {
+      $p = $ref ? DB::table('chat_pages')->where('page_id', $ref)->orWhere('ig_id', $ref)->first() : null;
+      if (!$p && !$ref && DB::table('chat_pages')->count() === 1) $p = DB::table('chat_pages')->first();
+      if ($p && $p->token) return \Illuminate\Support\Facades\Crypt::decryptString($p->token);
+    } catch (\Throwable $e) {}
+    return self::sec($ch === 'instagram' && self::sec('chat_ig_token') ? 'chat_ig_token' : 'chat_fb_token');
+  }
   /** Store one incoming message and (re)open its thread. Returns the thread, or null for a duplicate. */
   public static function ingest(string $ch, string $ext, ?string $name, string $body, ?string $att = null, ?string $mid = null, array $meta = []): ?object {
     if ($mid && DB::table('chat_messages')->where('ext_id', $mid)->exists()) return null;
     $t = DB::table('chat_threads')->where(['channel'=>$ch, 'external_id'=>$ext])->first();
     $phone = $ch === 'whatsapp' ? self::phone($ext) : self::phone($meta['phone'] ?? null);
     if (!$t) {
-      $prof = in_array($ch, ['facebook', 'instagram']) ? self::profile($ch, $ext) : [];
+      $prof = in_array($ch, ['facebook', 'instagram']) ? self::profile($ch, $ext, $meta['page_ref'] ?? null) : [];
       $cust = $phone ? DB::table('customers')->where('phone', $phone)->orderBy('id')->first() : null;
       $id = DB::table('chat_threads')->insertGetId(['channel'=>$ch, 'external_id'=>$ext, 'customer_id'=>$cust->id ?? null,
         'name'=>$name ?: ($prof['name'] ?? null) ?: ($cust->name ?? null) ?: self::CH[$ch].' user', 'phone'=>$phone, 'username'=>$meta['username'] ?? ($prof['username'] ?? null),
-        'avatar'=>$prof['avatar'] ?? null, 'status'=>'new', 'unread'=>0, 'created_at'=>now(), 'updated_at'=>now()]);
+        'avatar'=>$prof['avatar'] ?? null, 'page_ref'=>($meta['page_ref'] ?? null) ?: null, 'status'=>'new', 'unread'=>0, 'created_at'=>now(), 'updated_at'=>now()]);
       $t = DB::table('chat_threads')->find($id);
     } elseif ($name && (str_ends_with((string)$t->name, ' user') || !$t->name)) {
       DB::table('chat_threads')->where('id', $t->id)->update(['name'=>$name]);
@@ -68,8 +77,8 @@ class Chat {
     } catch (\Throwable $e) { report($e); }
   }
   /** Name / photo from the Graph API (best effort). */
-  public static function profile(string $ch, string $id): array {
-    $tok = self::sec($ch === 'instagram' && self::sec('chat_ig_token') ? 'chat_ig_token' : 'chat_fb_token'); if (!$tok) return [];
+  public static function profile(string $ch, string $id, ?string $ref = null): array {
+    $tok = self::pageTok($ch, $ref); if (!$tok) return [];
     try {
       $r = Http::timeout(4)->get(self::API.'/'.$id, ['fields'=>$ch === 'instagram' ? 'name,username,profile_pic' : 'first_name,last_name,profile_pic', 'access_token'=>$tok]);
       if (!$r->ok()) return [];
@@ -95,7 +104,7 @@ class Chat {
         }
         return [true, null];
       }
-      $tok = self::sec($t->channel === 'instagram' && self::sec('chat_ig_token') ? 'chat_ig_token' : 'chat_fb_token');
+      $tok = self::pageTok($t->channel, $t->page_ref ?? null);
       if (!$tok) return [false, ucfirst($t->channel).' is not connected (Chat Settings).'];
       $msgs = [];
       if ($att) $msgs[] = ['attachment'=>['type'=>$attType === 'image' ? 'image' : 'file', 'payload'=>['url'=>$att, 'is_reusable'=>true]]];

@@ -141,7 +141,7 @@ class ChatController extends Controller {
   public function settings() {
     $has = fn($k) => (bool)Chat::sec($k);
     if (!Chat::sec('chat_verify_token')) Sms::setSecret('chat_verify_token', bin2hex(random_bytes(12)));
-    return view('chat_settings', ['verify'=>Chat::sec('chat_verify_token'), 'hook'=>url('/webhooks/meta'), 'has'=>['fb'=>$has('chat_fb_token'), 'ig'=>$has('chat_ig_token'), 'wa'=>$has('chat_wa_token'), 'secret'=>$has('chat_app_secret')],
+    return view('chat_settings', ['verify'=>Chat::sec('chat_verify_token'), 'hook'=>url('/webhooks/meta'), 'app_id'=>Chat::sec('chat_app_id'), 'redir'=>url('/admin/chat-settings/fb-callback'), 'pages'=>$this->pages(), 'has'=>['fb'=>$has('chat_fb_token') || $this->pages()->isNotEmpty(), 'ig'=>$has('chat_ig_token'), 'wa'=>$has('chat_wa_token'), 'secret'=>$has('chat_app_secret')],
       'hook_last'=>DB::table('settings')->where('key', 'chat_hook_last')->value('value'), 'wa_phone'=>Chat::sec('chat_wa_phone_id'), 'ai_auto'=>\App\Support\AiChat::chatOn() || (\App\Support\Sms::secret('ai_chat_auto') !== '0'), 'web_on'=>(DB::table('settings')->where('key', 'chat_web_on')->value('value') ?? '1') === '1',
       'quick'=>DB::table('chat_quick_replies')->orderBy('id')->get(), 'counts'=>DB::table('chat_threads')->select('channel', DB::raw('count(*) n'))->groupBy('channel')->pluck('n', 'channel')]);
   }
@@ -209,9 +209,63 @@ class ChatController extends Controller {
     DB::table('audit_logs')->insert(['user_id'=>auth()->id(), 'user_name'=>auth()->user()->name, 'action'=>'chat.fb_subscribe', 'subject'=>'Facebook page subscribe', 'ip'=>$r->ip(), 'created_at'=>now(), 'updated_at'=>now()]);
     return back()->with('ok', 'Facebook: '.implode(' | ', $out));
   }
+  private function pages() { try { return DB::table('chat_pages')->orderBy('id')->get(['id', 'page_id', 'name', 'ig_id', 'ig_username', 'subscribed', 'note', 'updated_at']); } catch (\Throwable $e) { return collect(); } }
+  /** Facebook Login: the owner signs in at Facebook and picks Pages; we never see the password. */
+  public function fbConnect(Request $r) {
+    $id = trim((string)Chat::sec('chat_app_id'));
+    if (!$id) return redirect('/admin/chat-settings')->with('err', 'Save the Meta App ID first (Chat Settings > Meta app).');
+    $st = bin2hex(random_bytes(16)); session(['fb_oauth_state'=>$st]);
+    return redirect('https://www.facebook.com/v21.0/dialog/oauth?'.http_build_query(['client_id'=>$id, 'redirect_uri'=>url('/admin/chat-settings/fb-callback'), 'state'=>$st, 'response_type'=>'code',
+      'scope'=>'pages_show_list,pages_messaging,pages_manage_metadata,pages_read_engagement,instagram_basic,instagram_manage_messages,business_management']));
+  }
+  public function fbCallback(Request $r) {
+    $back = redirect('/admin/chat-settings');
+    if ($r->query('error')) return $back->with('err', 'Facebook login was cancelled or refused: '.mb_substr((string)($r->query('error_description') ?: $r->query('error')), 0, 220));
+    $st = (string)session('fb_oauth_state'); session()->forget('fb_oauth_state');
+    if ($st === '' || !hash_equals($st, (string)$r->query('state'))) return $back->with('err', 'The login session expired. Press "Connect with Facebook" again.');
+    $id = trim((string)Chat::sec('chat_app_id')); $sec = trim((string)Chat::sec('chat_app_secret'));
+    if (!$id || !$sec) return $back->with('err', 'Save both the Meta App ID and the App secret first.');
+    $G = 'https://graph.facebook.com/v21.0/'; $H = fn() => \Illuminate\Support\Facades\Http::timeout(25);
+    $a = $H()->get($G.'oauth/access_token', ['client_id'=>$id, 'client_secret'=>$sec, 'redirect_uri'=>url('/admin/chat-settings/fb-callback'), 'code'=>(string)$r->query('code')])->json();
+    if (empty($a['access_token'])) return $back->with('err', 'Facebook did not accept the login: '.mb_substr((string)($a['error']['message'] ?? json_encode($a)), 0, 250));
+    $l = $H()->get($G.'oauth/access_token', ['grant_type'=>'fb_exchange_token', 'client_id'=>$id, 'client_secret'=>$sec, 'fb_exchange_token'=>$a['access_token']])->json();
+    $ut = $l['access_token'] ?? $a['access_token'];
+    [$ok, $msg] = $this->importPages($ut, $r);
+    return $back->with($ok ? 'ok' : 'err', $msg);
+  }
+  /** Takes a user or Page token, finds every Page it manages, stores each Page token (encrypted) and subscribes the Page. Returns [ok, message]. */
+  private function importPages(string $ut, Request $r): array {
+    $G = 'https://graph.facebook.com/v21.0/'; $H = fn() => \Illuminate\Support\Facades\Http::timeout(25);
+    $pg = $H()->withToken($ut)->get($G.'me/accounts', ['fields'=>'id,name,access_token,instagram_business_account{id,username}', 'limit'=>50])->json();
+    $list = $pg['data'] ?? [];
+    if (!$list) return [false, 'No Facebook Pages were returned. The token must belong to someone who manages the Pages (pages_show_list). '.mb_substr((string)($pg['error']['message'] ?? ''), 0, 200)];
+    $n = 0; $bad = [];
+    foreach ($list as $p) {
+      if (empty($p['access_token'])) continue;
+      $res = $H()->withToken($p['access_token'])->post($G.$p['id'].'/subscribed_apps', ['subscribed_fields'=>'messages,messaging_postbacks,message_reads'])->json();
+      $ok = !empty($res['success']); if (!$ok) $bad[] = ($p['name'] ?? $p['id']).': '.mb_substr((string)($res['error']['message'] ?? 'subscribe failed'), 0, 120);
+      DB::table('chat_pages')->updateOrInsert(['page_id'=>(string)$p['id']], ['name'=>$p['name'] ?? null, 'token'=>\Illuminate\Support\Facades\Crypt::encryptString($p['access_token']),
+        'ig_id'=>$p['instagram_business_account']['id'] ?? null, 'ig_username'=>$p['instagram_business_account']['username'] ?? null, 'subscribed'=>$ok, 'note'=>$ok ? null : mb_substr(end($bad), 0, 290), 'updated_at'=>now(), 'created_at'=>now()]);
+      $n++;
+    }
+    DB::table('audit_logs')->insert(['user_id'=>auth()->id(), 'user_name'=>auth()->user()->name, 'action'=>'chat.fb_connect', 'subject'=>'Facebook Login: '.$n.' page(s) connected', 'ip'=>$r->ip(), 'created_at'=>now(), 'updated_at'=>now()]);
+    return [true, $n.' Facebook Page(s) connected.'.($bad ? ' Attention: '.implode(' | ', $bad) : ' Messages from these Pages now arrive in the inbox.')];
+  }
+  public function fbImport(Request $r) {
+    $t = trim((string)$r->input('user_token'));
+    if ($t === '') return back()->with('err', 'Paste the token first.');
+    [$ok, $msg] = $this->importPages($t, $r);
+    return back()->with($ok ? 'ok' : 'err', $msg);
+  }
+  public function fbDisconnect(Request $r, $id) {
+    $p = DB::table('chat_pages')->find($id); if (!$p) return back();
+    DB::table('chat_pages')->where('id', $id)->delete();
+    DB::table('audit_logs')->insert(['user_id'=>auth()->id(), 'user_name'=>auth()->user()->name, 'action'=>'chat.fb_disconnect', 'subject'=>'Page disconnected: '.$p->name, 'ip'=>$r->ip(), 'created_at'=>now(), 'updated_at'=>now()]);
+    return back()->with('ok', 'Disconnected '.$p->name.'. (Its old conversations stay in the inbox.)');
+  }
   public function saveSettings(Request $r) {
-    $d = $r->validate(['fb_token'=>'nullable|string|max:600', 'ig_token'=>'nullable|string|max:600', 'wa_token'=>'nullable|string|max:600', 'wa_phone_id'=>'nullable|string|max:40', 'app_secret'=>'nullable|string|max:100']);
-    foreach (['fb_token'=>'chat_fb_token', 'ig_token'=>'chat_ig_token', 'wa_token'=>'chat_wa_token', 'app_secret'=>'chat_app_secret', 'wa_phone_id'=>'chat_wa_phone_id'] as $k => $sk) if (!empty($d[$k])) Sms::setSecret($sk, trim($d[$k]));
+    $d = $r->validate(['fb_token'=>'nullable|string|max:600', 'ig_token'=>'nullable|string|max:600', 'wa_token'=>'nullable|string|max:600', 'wa_phone_id'=>'nullable|string|max:40', 'app_secret'=>'nullable|string|max:100', 'app_id'=>'nullable|string|max:40']);
+    foreach (['fb_token'=>'chat_fb_token', 'ig_token'=>'chat_ig_token', 'wa_token'=>'chat_wa_token', 'app_secret'=>'chat_app_secret', 'app_id'=>'chat_app_id', 'wa_phone_id'=>'chat_wa_phone_id'] as $k => $sk) if (!empty($d[$k])) Sms::setSecret($sk, trim($d[$k]));
     Sms::setSecret('ai_chat_auto', $r->boolean('ai_auto') ? '1' : '0');
     DB::table('settings')->updateOrInsert(['key'=>'chat_web_on'], ['value'=>$r->boolean('web_on') ? '1' : '0', 'updated_at'=>now(), 'created_at'=>now()]);
     \Illuminate\Support\Facades\Cache::forget('store.settings2'); \Illuminate\Support\Facades\Cache::forget('chat.web_on');
@@ -300,7 +354,7 @@ class ChatController extends Controller {
             $msg = $m['message']; $att = null;
             foreach ($msg['attachments'] ?? [] as $a) if (!empty($a['payload']['url'])) { $att = $a['payload']['url']; break; }
             $body = (string)($msg['text'] ?? ''); if ($body === '' && !$att) $body = '[unsupported message]';
-            Chat::ingest($ch, (string)$m['sender']['id'], null, $body, $att, $msg['mid'] ?? null);
+            Chat::ingest($ch, (string)$m['sender']['id'], null, $body, $att, $msg['mid'] ?? null, ['page_ref'=>(string)($e['id'] ?? '')]);
           }
         } elseif ($obj === 'whatsapp_business_account') {
           foreach ($e['changes'] ?? [] as $c) {
