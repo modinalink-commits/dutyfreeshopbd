@@ -437,3 +437,5 @@ app/Providers/AppServiceProvider.php
 database/migrations/2026_11_03_000039_orders_duplicate_guard.php
 app/Support/OrderDedupe.php
 app/Http/Controllers/DbHealthController.php
+app/Http/Controllers/QuickEditController.php
+resources/views/order_quick_edit.blade.php

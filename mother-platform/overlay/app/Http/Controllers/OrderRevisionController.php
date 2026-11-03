@@ -210,6 +210,48 @@ class OrderRevisionController extends Controller {
     $n = DB::table('order_revisions')->where('id', $rid)->where('order_id', $id)->where('status', 'pending')->update(['status'=>'discarded', 'updated_at'=>now()]); abort_unless($n, 404);
     Procure::audit('order.revision.discard', 'order#'.$id, null, ['revision'=>$rid]); return redirect('/admin/orders/'.$id.'#revisions')->with('rev_ok', 'Pending revision discarded.');
   }
+  /** Quick Edit (small popups on the order page). Same calculation, permissions, revision history and audit as the full editor. JSON in / JSON out. */
+  public function quick(Request $r, $id) {
+    $err = fn(string $m) => response()->json(['ok'=>false, 'error'=>$m], 422);
+    $o = DB::table('orders')->find($id); abort_unless($o, 404); $P = $this->perms();
+    if ($m = $this->blocked($o, $P)) return $err($m);
+    $kind = (string)$r->input('kind'); if (!in_array($kind, ['qty', 'products', 'discount', 'delivery', 'amount'], true)) return $err('Unknown quick edit.');
+    if (!$r->boolean('customer_confirmed')) return $err('Tick "Customer confirmed this change" first.');
+    $note = mb_substr(trim((string)$r->input('note', '')), 0, 500);
+    if (in_array($kind, ['discount', 'delivery', 'amount'], true) && $note === '') return $err('Please write the reason.');
+    $cur = $this->items($id)->map(fn($i) => ['item_id'=>$i->id, 'product_id'=>$i->product_id, 'variant_id'=>null, 'name'=>$i->name, 'qty'=>(int)$i->qty, 'price'=>(float)$i->price, 'price_reason'=>''])->all();
+    $manualShip = ($o->delivery_manual_adj ?? null) !== null || stripos((string)($o->delivery_zone ?? ''), 'express') !== false;
+    $keepDisc = ((string)($o->discount_by ?? '') === 'Manual' || stripos((string)($o->discount_source ?? ''), 'referral') !== false || stripos((string)($o->discount_type ?? ''), 'referral') !== false);
+    $opt = ['discount_mode'=>$keepDisc ? 'keep' : 'auto', 'ship_mode'=>$manualShip ? 'keep' : 'auto'];
+    $reason = 'Other';
+    if ($kind === 'qty') {
+      $q = (array)$r->input('qty', []); foreach ($cur as &$x) if (isset($q[$x['item_id']])) $x['qty'] = max(0, (int)$q[$x['item_id']]); unset($x); $reason = 'Quantity changed';
+    } elseif ($kind === 'products') {
+      $cur = $this->norm($r->input('items')); foreach ($cur as &$x) $x['price_reason'] = $note !== '' ? $note : 'Quick edit'; unset($x);
+      $reason = in_array((string)$r->input('reason'), self::REASONS, true) ? (string)$r->input('reason') : 'Other';
+    }
+    if (in_array($kind, ['discount', 'amount'], true)) {
+      $sub = round(array_sum(array_map(fn($x) => $x['qty'] * $x['price'], $cur)), 2);
+      $val = round((float)$r->input('discount_value', 0), 2); $amt = $r->input('discount_type') === 'pct' ? round($sub * min(100, max(0, $val)) / 100, 2) : $val;
+      if ($r->filled('discount_value') || $kind === 'discount') { $opt['discount_mode'] = 'manual'; $opt['discount_manual'] = $amt; } else $opt['discount_mode'] = 'keep';
+      $reason = 'Discount correction';
+    }
+    if (in_array($kind, ['delivery', 'amount'], true)) {
+      if ($r->filled('delivery_charge') || $kind === 'delivery') { $opt['ship_mode'] = 'override'; $opt['ship_override'] = (float)$r->input('delivery_charge', 0); $opt['ship_reason'] = $note; } else $opt['ship_mode'] = 'keep';
+      $reason = $kind === 'delivery' ? 'Delivery charge correction' : $reason;
+    }
+    if ($kind === 'delivery') $opt['discount_mode'] = 'keep';
+    $c = $this->calc($o, $this->norm($cur), $opt, $P);
+    if ($c['errors']) return $err(implode(' ', $c['errors']));
+    if ($this->typeOf($c) === 'none' && abs($c['diff']) < 0.01) return $err('Nothing was changed.');
+    try { $this->commit($o, $c, ['reason'=>$reason, 'note'=>'Quick Edit'.($note !== '' ? ': '.$note : '')], null, null, false, false); }
+    catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) { return $err($e->getMessage() ?: 'The order changed while you were editing. Reload and try again.'); }
+    $A = '\App\Support\OrderActivity';
+    if (abs($c['disc'] - $c['old_disc']) > 0.009) $A::log((int)$o->id, 'discount_changed', '৳'.number_format($c['old_disc'], 2), '৳'.number_format($c['disc'], 2), $note);
+    if (abs($c['ship'] - $c['old_ship']) > 0.009) $A::log((int)$o->id, 'delivery_charge_changed', '৳'.number_format($c['old_ship'], 2), '৳'.number_format($c['ship'], 2), $note);
+    $sum = $this->summary($c); if (in_array($kind, ['qty', 'products'], true) && $sum !== '') $A::log((int)$o->id, $kind === 'qty' ? 'quantity_changed' : 'products_changed', '৳'.number_format($c['old_total'], 2), '৳'.number_format($c['total'], 2), mb_substr($sum, 0, 250));
+    return response()->json(['ok'=>true, 'msg'=>'Saved. New total ৳'.number_format($c['total']).' (difference '.($c['diff'] >= 0 ? '+' : '−').'৳'.number_format(abs($c['diff'])).').']);
+  }
   public function smsSetting(Request $r) {
     abort_unless($this->perms()['settings'], 403);
     DB::table('settings')->updateOrInsert(['key'=>'order_update_sms'], ['value'=>$r->boolean('on') ? '1' : '0', 'updated_at'=>now(), 'created_at'=>now()]);
