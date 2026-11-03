@@ -24,10 +24,17 @@ class OrderDiscount {
   public static function tier(string $p, $c): ?array {
     if (!$c) return null; $st = self::stats($p, $c);
     $lv = DB::table('membership_levels')->where('active', true)->orderByDesc('min_spent')->get();
-    if (!empty($c->membership)) { $l = $lv->first(fn($x) => strcasecmp($x->name, $c->membership) === 0); return ['name' => $c->membership, 'pct' => (float)($l->discount_percent ?? 0)]; }
-    if ($st['n'] > 1) { $l = $lv->first(fn($x) => $st['s'] >= $x->min_spent); if ($l) return ['name' => $l->name, 'pct' => (float)$l->discount_percent]; }
+    if (!empty($c->membership)) { $l = $lv->first(fn($x) => strcasecmp($x->name, $c->membership) === 0); return ['name' => $c->membership, 'pct' => (float)($l->discount_percent ?? 0), 'stars' => self::starsOf((string)$c->membership, (int)($l->stars ?? 0))]; }
+    if ($st['n'] > 1) { $l = $lv->first(fn($x) => $st['s'] >= $x->min_spent); if ($l) return ['name' => $l->name, 'pct' => (float)$l->discount_percent, 'stars' => self::starsOf((string)$l->name, (int)($l->stars ?? 0))]; }
     return null;
   }
+  /** Star rating of a membership level: the saved number, else by name (Silver 1, Gold 2, Platinum 3, Diamond 4). */
+  public static function starsOf(string $name, int $saved = 0): int {
+    if ($saved > 0) return min(5, $saved); $n = strtolower($name);
+    foreach (['silver' => 1, 'gold' => 2, 'platinum' => 3, 'diamond' => 4] as $k => $v) if (str_contains($n, $k)) return $v;
+    return 0;
+  }
+  public static function starText(int $n): string { return $n > 0 ? str_repeat('★', $n) : ''; }
   /** Customer Type (VIP / Regular / New) and Membership (Active / Inactive). */
   public static function profile(string $p): array {
     $c = self::customer($p); $st = self::stats($p, $c); $t = self::tier($p, $c);
