@@ -5,7 +5,7 @@
 .dfc-l{position:fixed;right:18px;bottom:22px;z-index:58;display:flex;align-items:center;gap:10px;font-family:inherit}
 .dfc-lab{background:#fff;color:#0B1220;border:1.25px solid #FDC2A5;border-radius:22px;padding:9px 14px;font-size:12.5px;font-weight:700;box-shadow:0 6px 18px rgba(11,18,32,.14);white-space:nowrap;opacity:0;transform:translateX(8px);transition:.25s;pointer-events:none}
 .dfc-l:hover .dfc-lab,.dfc-l.hint .dfc-lab{opacity:1;transform:none}
-.dfc-b{position:relative;width:58px;height:58px;border-radius:50%;border:0;background:linear-gradient(145deg,#FF7A2E,#FF5A00);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(255,90,0,.45),0 0 0 6px rgba(255,90,0,.12);transition:transform .2s;animation:dfcg 2.8s ease-in-out infinite;padding:0}
+.dfc-b{position:relative;width:58px;height:58px;border-radius:50%;border:2.5px solid #0B1220;background:linear-gradient(145deg,#FF7A2E,#FF5A00);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(255,90,0,.45),0 0 0 6px rgba(255,90,0,.12);transition:transform .2s;animation:dfcg 2.8s ease-in-out infinite;padding:0}
 .dfc-b:hover{transform:translateY(-3px) scale(1.06)}.dfc-b:hover svg{animation:dfcw .6s}.dfc-b:active{transform:scale(.96)}
 @keyframes dfcg{0%,100%{box-shadow:0 8px 24px rgba(255,90,0,.45),0 0 0 6px rgba(255,90,0,.12)}50%{box-shadow:0 8px 28px rgba(255,90,0,.55),0 0 0 12px rgba(255,90,0,0)}}
 @keyframes dfcw{0%,100%{transform:rotate(0)}30%{transform:rotate(-12deg)}60%{transform:rotate(10deg)}}

@@ -5,7 +5,7 @@
 @endphp
 @if($__fcw && $__fcw[0])
 <style>
-.dffc-b{position:fixed;left:14px;bottom:18px;z-index:55;display:flex;align-items:center;gap:7px;background:#FF5A00;color:#fff;border:0;border-radius:24px;padding:11px 16px;font-size:13px;font-weight:700;font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;box-shadow:0 4px 14px rgba(255,90,0,.38);cursor:pointer}
+.dffc-b{position:fixed;left:14px;bottom:18px;z-index:55;display:flex;align-items:center;gap:7px;background:#FF5A00;color:#fff;border:2.5px solid #0B1220;border-radius:24px;padding:9px 14px;font-size:13px;font-weight:700;font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;box-shadow:0 4px 14px rgba(255,90,0,.38);cursor:pointer}
 .dffc-b svg{width:16px;height:16px}.dffc-b.off{background:#64748B;box-shadow:0 4px 14px rgba(100,116,139,.35)}
 @media(max-width:760px){.dffc-b{bottom:68px}}
 .ai0,.aip{display:none!important}
