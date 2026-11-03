@@ -478,3 +478,8 @@ database/migrations/2026_11_03_000050_return_status_cleanup.php
 database/migrations/2026_11_03_000051_shipment_at.php
 resources/views/order_amount_block.blade.php
 database/migrations/2026_11_03_000052_order_discount_lines.php
+app/Support/PathaoInvoice.php
+app/Http/Controllers/PathaoInvoiceController.php
+resources/views/pathao_invoices.blade.php
+resources/views/pathao_invoice_show.blade.php
+database/migrations/2026_11_03_000053_pathao_invoices.php

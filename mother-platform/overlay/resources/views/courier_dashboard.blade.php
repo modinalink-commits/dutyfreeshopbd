@@ -1,6 +1,7 @@
 @extends('layout')@section('title','Courier Dashboard')
 @section('body')
 <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px"><div style="flex:1;min-width:240px"><h1 style="margin:0">Courier Dashboard</h1><span style="font-size:13px;color:#6B7280">Every parcel, its live courier status, COD and settlement.{{ $last ? ' Last sync '.\Carbon\Carbon::parse($last)->timezone('Asia/Dhaka')->format('d M H:i').'.' : '' }}</span></div>
+<a class="btn g" href="/admin/courier/pathao-invoices" style="font-size:12px">Pathao Invoices</a>
 <span style="display:inline-flex;gap:6px;font-size:12px;font-weight:600;color:#FF5A00;background:#FFF1E8;border-radius:8px;padding:6px 10px">⬇ Download: <a target="_blank" href="/admin/courier-dashboard/export/pdf?{{ http_build_query(request()->query()) }}">PDF</a> · <a href="/admin/courier-dashboard/export/xls?{{ http_build_query(request()->query()) }}">Excel</a> · <a href="/admin/courier-dashboard/export/doc?{{ http_build_query(request()->query()) }}">Word</a> · <a href="/admin/courier-dashboard/export/csv?{{ http_build_query(request()->query()) }}">CSV</a></span>
 <form method="post" action="/admin/courier/sync" style="margin:0">@csrf<button>Sync now</button></form><a class="btn g" href="/admin/courier">Courier API setup</a><a class="btn g" href="/admin/courier/status-map">Pathao Status Map</a></div>
 @if(session('ok'))<div class="card" style="color:#166534">{{ session('ok') }}</div>@endif @if(session('bad'))<div class="card err">{{ session('bad') }}</div>@endif
