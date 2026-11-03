@@ -25,7 +25,7 @@ class ModulePermission {
     if (str_starts_with($p, 'push')) return 'marketing';
     if (str_starts_with($p, 'chat-settings')) return 'settings';
     if (preg_match('#^chat(/|$)#', $p)) return 'orders';
-    if (str_starts_with($p, 'call-center/account')) return 'settings';
+    if (preg_match('#^call-center/(account|extensions)#', $p)) return 'settings'; // SIP server + per-user extension passwords: settings-level only
     if (str_starts_with($p, 'call-center')) return 'orders';
     if (preg_match('#^(orders|orders-export|incomplete|manual-payments)#', $p)) return 'orders';
     if (str_starts_with($p, 'staff-log')) return 'stafflog';
