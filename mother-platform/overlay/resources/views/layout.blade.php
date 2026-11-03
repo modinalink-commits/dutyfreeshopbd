@@ -80,6 +80,7 @@ main input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=ran
 main .btn:hover,main button:hover,main a.btn:hover{box-shadow:inset 0 0 0 1px rgba(15,23,42,.32)}
 main .pre button:hover,main .rf:hover{border-color:var(--border-hover)!important;background-color:#EEF1F4}
 main .btn:focus-visible,main button:focus-visible,main select:focus-visible,main a.chip:focus-visible{outline:2px solid #FF5A00;outline-offset:1px}
+nav[role=navigation] svg,.pagination svg{width:16px!important;height:16px!important;max-width:16px!important;max-height:16px!important;display:inline-block;vertical-align:middle}nav[role=navigation] a,nav[role=navigation] span[aria-current] span{padding:2px 8px}
 </style></head><body>
 @auth @include('sidebar') @include('admin_grid') @include('admin_theme') @endauth
 <main>@yield('body')</main>

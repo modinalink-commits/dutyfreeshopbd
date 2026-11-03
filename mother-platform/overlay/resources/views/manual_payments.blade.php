@@ -35,7 +35,7 @@ table.mpt{width:100%;border-collapse:collapse;font-size:13px;background:#fff}.mp
 <td class="mpa" style="white-space:nowrap"><a class="btn g" href="/admin/orders/{{ $p->order_id }}#payhist">View Order</a>@if($p->proof) <a class="btn g" href="/admin/manual-payments/entry/{{ $p->id }}/proof" target="_blank">Proof</a>@endif
 @if($p->status==='pending' && $canAct) <form method="post" action="/admin/manual-payments/entry/{{ $p->id }}/verify" style="display:inline">@csrf <button class="btn">Verify</button></form> <form method="post" action="/admin/manual-payments/entry/{{ $p->id }}/reject" style="display:inline">@csrf <input name="reason" placeholder="Reason" required style="width:110px"> <button class="btn g">Reject</button></form>@endif</td></tr>
 @empty<tr><td colspan="11" style="text-align:center;color:#6B7280;padding:24px">No manual payments found.</td></tr>@endforelse
-</tbody></table><div style="margin-top:10px">{{ $rows->links() }}</div></div>
+</tbody></table><div style="margin-top:10px">{{ $rows->links('pagination.global') }}</div></div>
 
 <dialog id="mpd"><div style="display:flex;justify-content:space-between;align-items:center"><h3 style="margin:0" id="mpt"></h3><button type="button" class="g" onclick="mpd.close()">✕</button></div>
 <div id="mpb"></div>

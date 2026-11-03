@@ -27,6 +27,6 @@
 <td style="font-size:12px">{{ $o->pathao_raw_status ?: ($o->courier_status ?: '—') }}</td><td style="white-space:nowrap">৳{{ number_format((float)($o->courier_cod ?? 0)) }}</td>
 <td style="white-space:nowrap;font-size:12px">{{ $o->courier_synced_at ? \Carbon\Carbon::parse($o->courier_synced_at)->timezone('Asia/Dhaka')->format('d M h:i A') : '—' }}</td>
 <td style="min-width:200px"><a class="btn g" href="/admin/orders/{{ $o->id }}" style="font-size:12px">Open</a>@if($canAct)<form method="post" action="/admin/late-delivery/{{ $o->id }}/follow" style="display:flex;gap:4px;margin-top:4px">@csrf<input name="note" placeholder="Follow-up note" maxlength="500" required style="font-size:12px"><button type="submit" style="font-size:12px">Save</button></form>@endif</td></tr>
-@empty<tr><td colspan="12" style="text-align:center;color:#6B7280;padding:24px">No late shipments. Everything is within 72 hours or delivered.</td></tr>@endforelse</tbody></table>{{ $rows->links() }}</div>
+@empty<tr><td colspan="12" style="text-align:center;color:#6B7280;padding:24px">No late shipments. Everything is within 72 hours or delivered.</td></tr>@endforelse</tbody></table>{{ $rows->links('pagination.global') }}</div>
 </div>
 @endsection

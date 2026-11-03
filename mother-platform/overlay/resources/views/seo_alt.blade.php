@@ -9,5 +9,5 @@
 <tr><td><img src="{{ $p->image }}" alt="" width="40" height="40" loading="lazy" style="object-fit:cover;border-radius:6px"></td><td>{{ $p->name }}</td>
 <td colspan="2"><form method="post" action="/admin/seo/alt/{{ $p->id }}" style="display:flex;gap:6px">@csrf<input name="alt" value="{{ $p->image_alt }}" placeholder="{{ $p->name }}" maxlength="300" style="flex:1;min-width:200px"><button class="g">Save</button></form></td></tr>
 @empty<tr><td colspan="4" style="padding:16px;color:#6B7280">সব ঠিক আছে ✓</td></tr>@endforelse</tbody></table></div>
-<div style="margin-top:10px">{{ $rows->links() }}</div>
+<div style="margin-top:10px">{{ $rows->links('pagination.global') }}</div>
 @endsection
