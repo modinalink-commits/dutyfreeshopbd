@@ -347,4 +347,4 @@ if($('msg').textContent==='')connect();else badge('Disconnected','b-bad');
 })();
 </script>
 @endverbatim
-</body></html>
+@include('popup_close')</body></html>

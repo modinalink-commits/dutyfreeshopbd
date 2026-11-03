@@ -271,4 +271,4 @@ fetch('/ai-chat',{method:'POST',headers:{'Content-Type':'application/json','Acce
 }
 @media(max-width:359px){body .gr,body .fs .gr{gap:8px}body .pc .nm{font-size:12px}body .pc .pr,body .pc .pr b{font-size:14px}body .pc .on,body .pc .on i{font-size:11.5px}}
 </style>
-@include('phone_js')<script>document.addEventListener('error',function(e){var t=e.target;if(t&&t.tagName==='IMG'&&!t.dataset.fb&&t.getAttribute('src')!=='/product-placeholder'){t.dataset.fb='1';t.removeAttribute('srcset');t.src='/product-placeholder'}},true)</script></body></html>
+@include('popup_close')@include('phone_js')<script>document.addEventListener('error',function(e){var t=e.target;if(t&&t.tagName==='IMG'&&!t.dataset.fb&&t.getAttribute('src')!=='/product-placeholder'){t.dataset.fb='1';t.removeAttribute('srcset');t.src='/product-placeholder'}},true)</script></body></html>

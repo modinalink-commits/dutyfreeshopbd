@@ -3,7 +3,7 @@ fe43f8b6cb422cca81ee18b74d3972f77e7852de database/migrations/2026_10_31_000001_m
 5ec9cde3d13c963d0d55a626e10bf2e39e36a691 app/Models/Mother.php
 621db8407b5a9dc9521fda36f625da3ec50c0477 app/Http/Controllers/AdminController.php
 bd49f23ea0895af93bed5374937115c21911b0cd app/Console/Commands/MotherInstall.php
-7361c196265a4a2f3b7ffd828b82e4a2285d30ad resources/views/layout.blade.php
+c1e2bc22bcf686fb06147de043e857d866c39785 resources/views/layout.blade.php
 7ba1a8252b36e7db33e40d8be3ea5ec2cd241fb7 resources/views/login.blade.php
 166a496b2823812fc07a3ca6f7c676eda7dff40f resources/views/dashboard.blade.php
 f96e3fbe1547dbfca91de57c6e31991394007663 resources/views/orders.blade.php
@@ -50,7 +50,7 @@ d787924ace3fa42cc66a3de321e4e94e784006d8 resources/views/panels/employees.blade.
 2f840d53881d8aeaf0c5959161774787e5f540bc database/migrations/2026_10_31_000005_storefront.php
 65414d9e2fbe5f16f1fbf1551cce91276e9f30f9 app/Console/Commands/MotherSyncFeed.php
 ecbb664e3f3d73bc64e5a40e6897deee9adb0317 app/Http/Controllers/StoreController.php
-cab48ab23be7e23687a420f2af56611cc6a8f717 resources/views/store/layout.blade.php
+8f4d667c98840d018410a86d42ea8d209cbd31d7 resources/views/store/layout.blade.php
 c2e55fb1ce8845dc356edd488dfcadfec6c96924 resources/views/store/card.blade.php
 368779d82636a73d690dc1f7a28ed58a0ba17712 resources/views/store/home.blade.php
 6aa949a4e1ea5de5298971728076fad706a3c256 resources/views/store/category.blade.php
@@ -177,7 +177,7 @@ dd90050273775555fbe0aaa968b0bf7545a48986 resources/views/ai_images.blade.php
 f5a5dab4dfd73a5cc466cdc17409fd5c2e8bf42e app/Support/Pg.php
 8bb1b912ff002820b65e5fbb49018e53d2b35307 app/Http/Controllers/CallCenterController.php
 74d0d6e6e0f6f4a9e77ca510fc874a31973b2459 database/migrations/2026_10_31_000037_call_center.php
-21350d328c839e7c5e3630f92f9d6cae19c2ad6d resources/views/softphone.blade.php
+70b0c622de570bac12fe558a411068837c12eea3 resources/views/softphone.blade.php
 cc62dc2999d79ce7a6e46833bd774c0ea255aa70 resources/views/sip_account.blade.php
 df8c09076466870665b8e80f5ebeacccd9739829 resources/views/call_history.blade.php
 bdbb50b672be2f97c2bdcf20f76809a2a8ec15f2 resources/views/softphone_fab.blade.php
@@ -493,3 +493,4 @@ df745554b06b8c36d0e19006e1ff72986b21c28f database/migrations/2026_11_03_000055_w
 8ab390861591d37386138595e73961b1b5941a40 database/migrations/2026_11_03_000057_customer_level.php
 50b22ddd25ad337734d7d38830e5deb07b94d08d resources/views/components/customer-level-stars.blade.php
 1c3966fdc5985041dba80dfc541c66dc691e27d1 resources/views/discount_modal.blade.php
+090bcaf2780dacb4c77f2de0b95945d0596994cb resources/views/popup_close.blade.php
