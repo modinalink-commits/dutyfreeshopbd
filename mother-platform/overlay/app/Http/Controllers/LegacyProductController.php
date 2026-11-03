@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 /** Temporary token-protected intake of the old DutyFreeBD products into a staging table, plus a dry-run comparison with the live catalog. */
 class LegacyProductController extends Controller
 {
-  private function ok(Request $r): bool { $t = (string)DB::table('settings')->where('key', 'legacy_import_token')->value('value'); return $t !== '' && hash_equals($t, (string)$r->query('k')); }
+  private function ok(Request $r): bool { $t = (string)DB::table('settings')->where('key', 'legacy_import_token')->value('value'); return $t !== '' && hash_equals($t, (string)($r->header('X-Import-Key') ?: $r->query('k'))); }
   public function ingest(Request $r) {
     if (!$this->ok($r)) abort(404);
     $rows = json_decode((string)$r->input('rows'), true); if (!is_array($rows)) return response()->json(['ok' => false]);

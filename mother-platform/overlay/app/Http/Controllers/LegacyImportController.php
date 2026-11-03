@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 /** Temporary token-protected intake for the old DutyFreeBD customer data (staging table only; nothing touches live customers). */
 class LegacyImportController extends Controller
 {
-  private function ok(Request $r): bool { $t = (string)DB::table('settings')->where('key', 'legacy_import_token')->value('value'); return $t !== '' && hash_equals($t, (string)$r->query('k')); }
+  private function ok(Request $r): bool { $t = (string)DB::table('settings')->where('key', 'legacy_import_token')->value('value'); return $t !== '' && hash_equals($t, (string)($r->header('X-Import-Key') ?: $r->query('k'))); }
   public static function phone(?string $p): ?string { $s = preg_replace('/\D/', '', (string)$p); if (str_starts_with($s, '880')) $s = substr($s, 2); return preg_match('/^01[3-9]\d{8}$/', $s) ? $s : null; }
   public function ingest(Request $r) {
     if (!$this->ok($r)) abort(404);

@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\DB;
  * Money columns are product revenue (items minus discount); shipping charged is shown only in the P&L.
  */
 class Analytics {
+  /** Escape LIKE wildcards so a typed % or _ matches literally. */
+  private static function esc(string $v): string { return addcslashes($v, '%_\\'); }
   const DONE = "('Delivered','Partial Delivered','Late Delivery')";
   const RET  = "('Returned','Return Pending')";
   const LIMIT = 5000;
@@ -55,11 +57,11 @@ class Analytics {
     elseif ($basis === 'valid') $c[] = "(o.status not in ('Cancel','Returned','Return Pending') or o.return_type = 'Partial')";
     elseif ($basis === 'nocancel') $c[] = "o.status <> 'Cancel'";
     if ($f['pay'] !== '') { $c[] = "coalesce(o.pay_status,'') = ?"; $b[] = $f['pay'] === 'None' ? '' : $f['pay']; }
-    if ($f['customer'] !== '') { $c[] = '(o.phone ilike ? or o.customer_name ilike ?)'; $b[] = '%'.$f['customer'].'%'; $b[] = '%'.$f['customer'].'%'; }
+    if ($f['customer'] !== '') { $c[] = '(o.phone ilike ? or o.customer_name ilike ?)'; $b[] = '%'.self::esc((string)$f['customer']).'%'; $b[] = '%'.self::esc((string)$f['customer']).'%'; }
     if ($f['category'] || $f['product'] !== '') {
       $x = []; $xb = [];
       if ($f['category']) { $x[] = 'p.category_id = ?'; $xb[] = $f['category']; }
-      if ($f['product'] !== '') { $x[] = '(coalesce(p.name,i.name) ilike ? or p.sku ilike ?)'; $xb[] = '%'.$f['product'].'%'; $xb[] = '%'.$f['product'].'%'; }
+      if ($f['product'] !== '') { $x[] = '(coalesce(p.name,i.name) ilike ? or p.sku ilike ?)'; $xb[] = '%'.self::esc((string)$f['product']).'%'; $xb[] = '%'.self::esc((string)$f['product']).'%'; }
       if ($item) { $c = array_merge($c, $x); $b = array_merge($b, $xb); }
       else { $c[] = 'exists (select 1 from order_items i join products p on p.id = i.product_id where i.order_id = o.id and '.implode(' and ', $x).')'; $b = array_merge($b, $xb); }
     }
@@ -238,7 +240,7 @@ class Analytics {
   private static function margin(array $f): array {
     $c = ['1=1']; $b = [self::utc($f['from'], false), self::utc($f['to'], true)];
     if ($f['category']) { $c[] = 'p.category_id = ?'; $b[] = $f['category']; }
-    if ($f['product'] !== '') { $c[] = '(p.name ilike ? or p.sku ilike ?)'; $b[] = '%'.$f['product'].'%'; $b[] = '%'.$f['product'].'%'; }
+    if ($f['product'] !== '') { $c[] = '(p.name ilike ? or p.sku ilike ?)'; $b[] = '%'.self::esc((string)$f['product']).'%'; $b[] = '%'.self::esc((string)$f['product']).'%'; }
     $sql = "select p.name product, coalesce(p.sku,'') sku, coalesce(p.image,'') image, coalesce(c.name,'') category, p.price price, p.cost cost, coalesce(s.sold,0) sold from products p left join categories c on c.id = p.category_id left join (select i.product_id, sum(i.qty - case when (o.status in ('Return Pending','Returned') and o.return_type = 'Partial') then coalesce(i.ret_qty,0) else 0 end) sold from order_items i join orders o on o.id = i.order_id where o.created_at >= ? and o.created_at < ? and (o.status not in ('Cancel','Returned','Return Pending') or o.return_type = 'Partial') group by i.product_id) s on s.product_id = p.id where ".implode(' and ', $c)." order by case when p.price > 0 then (p.price - p.cost) / p.price end asc nulls last limit ".self::LIMIT;
     $rows = self::arr(self::sel($sql, $b));
     foreach ($rows as &$r) { $r['unit_profit'] = (float)$r['price'] - (float)$r['cost']; $r['margin'] = (float)$r['price'] > 0 ? round($r['unit_profit'] / (float)$r['price'] * 100, 1) : 0; }
@@ -250,7 +252,7 @@ class Analytics {
     $lo = self::utc($f['from'], false); $hi = self::utc($f['to'], true);
     $b = [$lo, $lo, $hi, $lo, $hi, $lo, $hi, $lo, $hi];
     if ($f['category']) { $c[] = 'p.category_id = ?'; $b[] = $f['category']; }
-    if ($f['product'] !== '') { $c[] = '(p.name ilike ? or p.sku ilike ?)'; $b[] = '%'.$f['product'].'%'; $b[] = '%'.$f['product'].'%'; }
+    if ($f['product'] !== '') { $c[] = '(p.name ilike ? or p.sku ilike ?)'; $b[] = '%'.self::esc((string)$f['product']).'%'; $b[] = '%'.self::esc((string)$f['product']).'%'; }
     $sql = "select p.name product, coalesce(p.sku,'') sku, coalesce(p.image,'') image, 'All stores (one shared stock)' store, p.stock current, coalesce(l.since,0) since, coalesce(l.net,0) net, coalesce(l.inn,0) stock_in, coalesce(l.outt,0) stock_out, coalesce(s.sold,0) sold, coalesce(s.ret,0) returned
       from products p
       left join (select product_id, sum(case when created_at >= ? then change_qty end) since, sum(case when created_at >= ? and created_at < ? then change_qty end) net, sum(case when created_at >= ? and created_at < ? and change_qty > 0 then change_qty end) inn, sum(case when created_at >= ? and created_at < ? and change_qty < 0 then -change_qty end) outt from stock_logs group by product_id) l on l.product_id = p.id
@@ -271,7 +273,7 @@ class Analytics {
   private static function stockLog(array $f): array {
     $c = ['l.created_at >= ?', 'l.created_at < ?']; $b = [self::utc($f['from'], false), self::utc($f['to'], true)];
     if ($f['category']) { $c[] = 'p.category_id = ?'; $b[] = $f['category']; }
-    if ($f['product'] !== '') { $c[] = '(p.name ilike ? or p.sku ilike ?)'; $b[] = '%'.$f['product'].'%'; $b[] = '%'.$f['product'].'%'; }
+    if ($f['product'] !== '') { $c[] = '(p.name ilike ? or p.sku ilike ?)'; $b[] = '%'.self::esc((string)$f['product']).'%'; $b[] = '%'.self::esc((string)$f['product']).'%'; }
     $sql = "select to_char(l.created_at + interval '6 hours','YYYY-MM-DD HH24:MI') date, coalesce(p.name,'Deleted product') product, l.source, coalesce(l.reference,'') reference, l.before_qty before, l.change_qty change, l.after_qty after, coalesce(l.user_name,'') by from stock_logs l left join products p on p.id = l.product_id where ".implode(' and ', $c)." order by l.id desc limit ".self::LIMIT;
     return self::arr(self::sel($sql, $b));
   }
@@ -279,21 +281,21 @@ class Analytics {
   private static function lowStock(array $f, bool $out): array {
     $c = [$out ? 'p.stock <= 0' : 'p.stock > 0 and p.stock <= coalesce(p.low_stock_alert, 10)']; $b = [];
     if ($f['category']) { $c[] = 'p.category_id = ?'; $b[] = $f['category']; }
-    if ($f['product'] !== '') { $c[] = '(p.name ilike ? or p.sku ilike ?)'; $b[] = '%'.$f['product'].'%'; $b[] = '%'.$f['product'].'%'; }
+    if ($f['product'] !== '') { $c[] = '(p.name ilike ? or p.sku ilike ?)'; $b[] = '%'.self::esc((string)$f['product']).'%'; $b[] = '%'.self::esc((string)$f['product']).'%'; }
     $sql = "select p.name product, coalesce(p.sku,'') sku, coalesce(p.image,'') image, coalesce(c.name,'') category, p.stock stock, coalesce(p.low_stock_alert,10) alert, p.cost cost, p.price price from products p left join categories c on c.id = p.category_id where ".implode(' and ', $c)." order by p.stock, p.name limit ".self::LIMIT;
     return self::arr(self::sel($sql, $b));
   }
 
   private static function purchaseReport(array $f): array {
     $c = ['p.purchase_date between ? and ?']; $b = [$f['from'], $f['to']];
-    if ($f['customer'] !== '') { $c[] = 's.name ilike ?'; $b[] = '%'.$f['customer'].'%'; }
+    if ($f['customer'] !== '') { $c[] = 's.name ilike ?'; $b[] = '%'.self::esc((string)$f['customer']).'%'; }
     $sql = "select to_char(p.purchase_date,'YYYY-MM-DD') date, p.invoice, coalesce(s.name,'') supplier, coalesce((select sum(qty) from purchase_items i where i.purchase_id = p.id),0) qty, p.total total, p.paid paid, (p.total - p.paid) due from purchases p left join suppliers s on s.id = p.supplier_id where ".implode(' and ', $c)." order by p.purchase_date desc, p.id desc limit ".self::LIMIT;
     return self::arr(self::sel($sql, $b));
   }
 
   private static function supplierReport(array $f): array {
     $c = ['1=1']; $b = [$f['from'], $f['to']];
-    if ($f['customer'] !== '') { $c[] = 's.name ilike ?'; $b[] = '%'.$f['customer'].'%'; }
+    if ($f['customer'] !== '') { $c[] = 's.name ilike ?'; $b[] = '%'.self::esc((string)$f['customer']).'%'; }
     $sql = "select s.name supplier, count(p.id) purchases, coalesce(sum(p.total),0) total, coalesce(sum(p.paid),0) paid, coalesce(sum(p.total - p.paid),0) due, to_char(max(p.purchase_date),'YYYY-MM-DD') last from suppliers s left join purchases p on p.supplier_id = s.id and p.purchase_date between ? and ? where ".implode(' and ', $c)." group by s.id, s.name order by 3 desc";
     return self::arr(self::sel($sql, $b));
   }
@@ -372,7 +374,7 @@ class Analytics {
 
   private static function entries(array $f, string $dir): array {
     $c = ['e.direction = ?', 'e.entry_date between ? and ?']; $b = [$dir, $f['from'], $f['to']];
-    if ($f['customer'] !== '') { $c[] = '(e.comment ilike ? or pu.name ilike ?)'; $b[] = '%'.$f['customer'].'%'; $b[] = '%'.$f['customer'].'%'; }
+    if ($f['customer'] !== '') { $c[] = '(e.comment ilike ? or pu.name ilike ?)'; $b[] = '%'.self::esc((string)$f['customer']).'%'; $b[] = '%'.self::esc((string)$f['customer']).'%'; }
     $sql = "select to_char(e.entry_date,'YYYY-MM-DD') date, e.reference, coalesce(a.name,'') account, coalesce(pu.name,'') purpose, e.amount amount, coalesce(e.comment,'') comment, coalesce(e.user_name,'') by from account_entries e left join money_accounts a on a.id = e.account_id left join expense_purposes pu on pu.id = e.purpose_id where ".implode(' and ', $c)." order by e.entry_date desc, e.id desc limit ".self::LIMIT;
     return self::arr(self::sel($sql, $b));
   }
@@ -385,7 +387,7 @@ class Analytics {
 
   private static function payable(array $f): array {
     $c = ['(p.total - p.paid) > 0']; $b = [];
-    if ($f['customer'] !== '') { $c[] = 's.name ilike ?'; $b[] = '%'.$f['customer'].'%'; }
+    if ($f['customer'] !== '') { $c[] = 's.name ilike ?'; $b[] = '%'.self::esc((string)$f['customer']).'%'; }
     $sql = "select coalesce(s.name,'Unknown') supplier, count(*) invoices, sum(p.total) total, sum(p.paid) paid, sum(p.total - p.paid) due from purchases p left join suppliers s on s.id = p.supplier_id where ".implode(' and ', $c)." group by s.id, s.name order by 5 desc";
     return self::arr(self::sel($sql, $b));
   }

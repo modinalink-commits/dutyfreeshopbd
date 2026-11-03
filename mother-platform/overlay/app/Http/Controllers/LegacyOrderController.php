@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 class LegacyOrderController extends Controller
 {
   const STATUS = [1 => 'New', 2 => 'Pending', 3 => 'Approved', 4 => 'Shipment', 5 => 'Delivered', 6 => 'Cancel', 7 => 'Returned', 8 => 'Packaging', 9 => 'WFP', 10 => 'Partial Delivered', 11 => 'Return Pending', 12 => 'Incomplete', 13 => 'Assign'];
-  private function ok(Request $r): bool { $t = (string)DB::table('settings')->where('key', 'legacy_import_token')->value('value'); return $t !== '' && hash_equals($t, (string)$r->query('k')); }
+  private function ok(Request $r): bool { $t = (string)DB::table('settings')->where('key', 'legacy_import_token')->value('value'); return $t !== '' && hash_equals($t, (string)($r->header('X-Import-Key') ?: $r->query('k'))); }
   public function ingest(Request $r) {
     if (!$this->ok($r)) abort(404);
     $rows = json_decode((string)$r->input('rows'), true); if (!is_array($rows)) return response()->json(['ok' => false]);
