@@ -39,24 +39,21 @@
 .pi .bnl{display:flex;align-items:center;justify-content:center;gap:12px;border:0;margin:6px 0 2px;padding:0;text-align:center;font-size:12px;letter-spacing:.05em;font-weight:800;color:#0B1723}
 .pi .bnl:before,.pi .bnl:after{content:"";flex:1;height:1px;background:#D9DEE5}
 .pi .bnl span{display:inline-flex;align-items:center;gap:6px;background:#FFF1E6;color:#0B1723;border-radius:999px;padding:6px 14px;position:static;top:auto}
-.bq{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.bo{position:relative;display:flex;align-items:center;justify-content:center;gap:8px;height:60px;padding:0 14px;border:1.5px solid #0B1723;border-radius:11px;background:#fff;color:#0B1723;cursor:pointer;font:inherit;transition:box-shadow .15s,border-color .15s,background-color .15s}
-.bo .ci{width:20px;height:20px;flex:none;fill:none;stroke:currentColor}
-.bo b{font-size:17px;font-weight:700;white-space:nowrap}.bo .dv{width:1px;height:22px;background:#0B1723;opacity:.28;flex:none}
-.bo .sv{font-size:14px;font-weight:700;white-space:nowrap;border-radius:6px;padding:2px 7px;background:rgba(255,255,255,.75)}
-.bo .ck{display:none;position:absolute;top:-1px;right:8px;transform:translateY(-50%);width:18px;height:18px;border-radius:50%;background:#0B1723;color:#fff;font-size:11px;line-height:18px;text-align:center}
-.bo.t2{background:#F3F8FF}.bo.t2 .ci,.bo.t2 .sv{color:#2563EB}.bo.t2 .sv{background:#E2EEFF}
-.bo.t3{background:#F2FBF4}.bo.t3 .ci,.bo.t3 .sv{color:#16803C}.bo.t3 .sv{background:#DDF4E3}
-.bo.t4{background:#F8F4FF}.bo.t4 .ci,.bo.t4 .sv{color:#7C3AED}.bo.t4 .sv{background:#EDE3FF}
-.bo.t5{background:#FFF7EE}.bo.t5 .ci,.bo.t5 .sv{color:#EA580C}.bo.t5 .sv{background:#FFE9D2}
+.bq{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;container-type:inline-size}
+.bo{position:relative;display:flex;align-items:center;justify-content:center;gap:8px;min-width:0;height:48px;padding:0 10px;border:1.5px solid #0B1723;border-radius:10px;background:#fff;color:#0B1723;cursor:pointer;font:inherit;line-height:1.15;transition:box-shadow .15s,border-color .15s,background-color .15s}
+.bo b{font-size:15px;font-weight:700;white-space:nowrap}.bo .dv{width:1px;height:20px;background:#0B1723;opacity:.28;flex:none}
+.bo .sv{font-size:13px;font-weight:700;white-space:nowrap;border-radius:6px;padding:2px 6px}
+.bo.t2{background:#F3F8FF}.bo.t2 .sv{color:#2563EB;background:#E2EEFF}
+.bo.t3{background:#F2FBF4}.bo.t3 .sv{color:#16803C;background:#DDF4E3}
+.bo.t4{background:#F8F4FF}.bo.t4 .sv{color:#7C3AED;background:#EDE3FF}
+.bo.t5{background:#FFF7EE}.bo.t5 .sv{color:#EA580C;background:#FFE9D2}
 .bo:hover{border-color:#07111B;box-shadow:0 2px 6px rgba(11,23,35,.08)}
 .bo:focus-visible{outline:2px solid #0B1723;outline-offset:2px}
-.bo.on{box-shadow:inset 0 0 0 1px #0B1723,0 2px 6px rgba(11,23,35,.1)}.bo.on .ck{display:block}
+.bo.on{box-shadow:inset 0 0 0 1.5px #0B1723,0 2px 6px rgba(11,23,35,.1)}
 .bo.t2.on{background:#E6F0FF}.bo.t3.on{background:#E3F6E8}.bo.t4.on{background:#F0E7FF}.bo.t5.on{background:#FFEEDC}
+@container (max-width:300px){.bo{flex-direction:column;gap:3px;height:auto;min-height:48px;padding:6px 4px}.bo .dv{display:none}.bo b{font-size:14px}.bo .sv{font-size:12px;padding:1px 6px}}
 .bsum{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:8px;padding:9px 12px;border:1px dashed #0B1723;border-radius:10px;background:#fff;font-size:13px;color:#0B1723}
 .bsum[hidden]{display:none}.bsum b{font-weight:800}.bsum span:last-child b{color:#16803C}
-@media(max-width:520px){.bo{height:58px;padding:0 8px;gap:6px}.bo b{font-size:15px}.bo .sv{font-size:13px;padding:2px 5px}.bo .ci{width:18px;height:18px}.bo .dv{height:20px}}
-@media(max-width:360px){.bo b{font-size:14px}.bo .sv{font-size:12px}.bo .ci{display:none}}
 </style>
 <style>
 .pp .ph{border:1px solid #EAEAEA;border-radius:20px;background:#F8F8F8}.pi h1{font-size:24px;font-weight:700;color:var(--n);line-height:1.25}.pi .pz b{font-size:30px;font-weight:800;color:var(--n)}.pi .pz s{font-size:16px;color:#9CA3AF;font-weight:400}.pi .pz span{background:#FFE4E8;color:#E11D48;font-size:13px;border-radius:8px;padding:4px 9px}
@@ -75,7 +72,7 @@
 <div class="bnl"><span><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.2"/></svg>BUNDLE &amp; SAVE</span></div>
 <div class="bq" role="radiogroup" aria-label="Bundle and save">
 @foreach($bundles as $b)
-<button type="button" class="bo t{{ $b['n'] }}" role="radio" aria-checked="false" data-n="{{ $b['n'] }}" data-fin="{{ $b['fin'] }}" data-save="{{ $b['save'] }}"><svg class="ci" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 2h4l2.7 12.4a2 2 0 0 0 2 1.6h8.7a2 2 0 0 0 2-1.6L22 7H6"/><circle cx="10" cy="20.5" r="1.4" fill="currentColor"/><circle cx="18" cy="20.5" r="1.4" fill="currentColor"/></svg><b>Buy {{ $b['n'] }}</b><i class="dv"></i><span class="sv">Save {{ $b['pct'] }}%</span><span class="ck" aria-hidden="true">✓</span></button>
+<button type="button" class="bo t{{ $b['n'] }}" role="radio" aria-checked="false" data-n="{{ $b['n'] }}" data-fin="{{ $b['fin'] }}" data-save="{{ $b['save'] }}"><b>Buy {{ $b['n'] }}</b><i class="dv"></i><span class="sv">Save {{ $b['pct'] }}%</span></button>
 @endforeach
 </div>
 <div class="bsum" id="bsum" hidden><span>Bundle Price: <b id="bpr"></b></span><span>You Save: <b id="bsv"></b></span></div>
