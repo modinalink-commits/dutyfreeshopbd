@@ -57,18 +57,31 @@ class StoreController extends Controller {
     $fl = DB::table('deal_flags')->get(['product_id','mode']);
     $ex = $fl->where('mode','exclude')->pluck('product_id')->map(fn($v) => (int)$v)->all();
     $pin = $fl->where('mode','pin')->pluck('product_id')->map(fn($v) => (int)$v)->all();
-    $key = 'store.todaybest2.'.$max.'.'.md5(implode(',', $ex).'|'.implode(',', $pin).'|'.($s['deal_min_off'] ?? '').'|'.($s['deal_smoke'] ?? ''));
+    $key = 'store.todaybest3.'.$max.'.'.md5(implode(',', $ex).'|'.implode(',', $pin).'|'.($s['deal_min_off'] ?? '').'|'.($s['deal_smoke'] ?? ''));
     return self::rem($key, 600, function () use ($max, $ex, $pin, $s) {
       $d1 = now()->subDay(); $d7 = now()->subDays(7); $d30 = now()->subDays(30);
       $rows = DB::table('order_items as i')->join('orders as o','o.id','=','i.order_id')->whereNotIn('o.status',['Cancel','Incomplete'])->where('o.created_at','>=',$d30)->whereNotNull('i.product_id')
         ->groupBy('i.product_id')->selectRaw('i.product_id as pid, sum(case when o.created_at >= ? then i.qty else 0 end) as q1, sum(case when o.created_at >= ? then i.qty else 0 end) as q7, sum(i.qty) as q30', [$d1, $d7])
         ->orderByDesc('q1')->orderByDesc('q7')->orderByDesc('q30')->limit(120)->get();
       $rank = []; foreach ($rows as $r) $rank[(int)$r->pid] = $r;
-      $ids = array_values(array_unique(array_merge($pin, array_keys($rank))));
-      $ids = array_values(array_diff($ids, $ex));
+      $ids = array_values(array_diff(array_values(array_unique(array_merge($pin, array_keys($rank)))), $ex));
       $prods = $ids ? DB::table('products')->whereIn('id', $ids)->where('published', true)->where(fn($w) => $w->whereNull('stock')->orWhere('stock', '>', 0))->whereNotNull('image')->where('image', '!=', '')->get()->keyBy('id') : collect();
-      $out = collect();
-      foreach ($ids as $id) { if (!isset($prods[$id])) continue; $p = $prods[$id]; $r = $rank[$id] ?? null; $p->bs_q1 = $r ? (int)$r->q1 : 0; $p->bs = $r && ((int)$r->q30 > 0); $out->push($p); if ($out->count() >= $max) break; }
+      $sc = DB::table('categories')->get(['id','slug','name'])->filter(fn($c) => self::isSmokeCat($c))->pluck('id')->map(fn($v) => (int)$v)->all();
+      $out = collect(); $sm = []; $ot = [];
+      foreach ($ids as $id) {
+        if (!isset($prods[$id])) continue; $p = $prods[$id]; $r = $rank[$id] ?? null;
+        $p->bs_q1 = $r ? (int)$r->q1 : 0; $p->bs = $r && ((int)$r->q30 > 0);
+        if (in_array($id, $pin, true)) { $out->push($p); continue; }
+        if (!$p->bs) continue;
+        if ($p->group_key === 'smoke' || ($p->category_id && in_array((int)$p->category_id, $sc, true))) $sm[] = $p; else $ot[] = $p;
+      }
+      $out = $out->take($max);
+      $room = $max - $out->count();
+      $k = max(0, min($room, (int)($s['deal_smoke'] ?? 4)));
+      $takeS = min($k, count($sm)); $takeO = min($room - $takeS, count($ot));
+      $takeS = min(count($sm), $room - $takeO);
+      $sm = array_slice($sm, 0, $takeS); $ot = array_slice($ot, 0, $takeO);
+      for ($i = 0, $n = max(count($sm), count($ot)); $i < $n; $i++) { if (isset($sm[$i])) $out->push($sm[$i]); if (isset($ot[$i])) $out->push($ot[$i]); }
       if ($out->count() < $max) { foreach (self::dealList($s) as $p) { if (in_array($p->id, $ex) || $out->contains('id', $p->id)) continue; $out->push($p); if ($out->count() >= $max) break; } }
       return $out->values();
     });
