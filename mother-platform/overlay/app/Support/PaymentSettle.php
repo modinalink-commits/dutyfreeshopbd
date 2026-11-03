@@ -32,11 +32,18 @@ class PaymentSettle {
       }
       if ($changed || $moved) OrderActivity::log($oid, 'payment_settled', (string)($before->payment_status ?: 'Unpaid'), (string)$o->payment_status,
         'Paid ৳'.number_format((float)$before->paid_total).' → ৳'.number_format($paid).' · Due ৳'.number_format((float)$before->total - (float)$before->paid_total > 0 ? (float)$before->total - (float)$before->paid_total : 0).' → ৳'.number_format($due)
-        .($moved ? ' · Order '.$moved.' → Approved (automatic)' : ($o->payment_status === 'Paid' ? ' · Order status unchanged ('.$o->status.')' : '')).' · Source: '.$source, ['source' => $source, 'paid' => $paid, 'due' => $due]);
+        .($moved ? ' · Order '.$moved.' → Approved (automatic)' : ($o->payment_status === 'Paid' ? ' · Order status unchanged ('.$o->status.')' : '')).' · Courier COD ৳'.number_format(self::cod($o)).' · Source: '.$source, ['source' => $source, 'paid' => $paid, 'due' => $due]);
       return $moved ? 'Approved' : null;
     } catch (\Throwable $e) { report($e); return null; }
   }
 
+  /** What the courier must collect from the customer: max(final payable - verified paid, 0). A fully prepaid order (ShurjoPay, verified bank/bKash/Nagad) is always 0. */
+  public static function cod(object $o): float {
+    $total = (float)$o->total;
+    $paid = (float)DB::table('order_payments')->where('order_id', $o->id)->where('status', 'verified')->sum('amount');
+    if ($paid <= 0 && ($o->pay_status ?? null) === 'Verified') { $m = strtolower((string)($o->payment_method ?? '')); if (!str_contains($m, 'cash') && !str_contains($m, 'cod')) $paid = (float)(($o->pay_amount ?? 0) ?: $total); }
+    return max(round($total - $paid, 2), 0.0);
+  }
   /** Online (ShurjoPay) and old-style order-level verifications have no ledger row. Make one, once, so Paid is always computed from real records. */
   private static function ledgerFromOrder(object $o): void {
     if ($o->pay_status !== 'Verified') return;

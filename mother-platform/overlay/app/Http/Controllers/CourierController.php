@@ -54,7 +54,7 @@ class CourierController extends Controller {
     [$ok, $msg, $data] = Pathao::send($o, $items);
     if (!$ok) return [false, $msg];
     DB::transaction(function () use ($o, $id, $data) {
-      DB::table('orders')->where('id', $id)->update(['consignment_id'=>$data['consignment_id'], 'courier'=>'Pathao', 'courier_status'=>$data['order_status'] ?? 'Pending', 'courier_fee'=>$data['delivery_fee'] ?? null, 'courier_sent_at'=>now(), 'courier_stage'=>'Pending', 'courier_cod'=>$o->total, 'settlement_status'=>'Pending', 'status'=>'Shipment', 'updated_at'=>now()]);
+      DB::table('orders')->where('id', $id)->update(['consignment_id'=>$data['consignment_id'], 'courier'=>'Pathao', 'courier_status'=>$data['order_status'] ?? 'Pending', 'courier_fee'=>$data['delivery_fee'] ?? null, 'courier_sent_at'=>now(), 'courier_stage'=>'Pending', 'courier_cod'=>\App\Support\PaymentSettle::cod($o), 'settlement_status'=>'Pending', 'status'=>'Shipment', 'updated_at'=>now()]);
       DB::table('order_status_logs')->insert(['order_id'=>$id,'user_id'=>auth()->id(),'user_name'=>auth()->user()->name,'from_status'=>$o->status,'to_status'=>'Shipment','note'=>'Sent to Pathao, consignment '.$data['consignment_id'],'created_at'=>now(),'updated_at'=>now()]);
     });
     return [true, $msg];

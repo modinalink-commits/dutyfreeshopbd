@@ -41,7 +41,7 @@ class Redx {
     $area = self::area((string)($o->district ?? ''), trim($addr . ' ' . ($o->sub_city ?? ''))); if (!$area) return [false, 'RedX delivery area could not be matched for "' . ($o->district ?? '') . '". Put the thana / area name (as RedX spells it, e.g. Kotwali, Agrabad, Khulshi) in the address or Sub City field, then send again.', []];
     $total = (int)round($o->total);
     $p = ['customer_name' => mb_substr(trim((string)$o->customer_name), 0, 100), 'customer_phone' => $phone, 'delivery_area' => $area['name'], 'delivery_area_id' => $area['id'], 'customer_address' => mb_substr($addr, 0, 250), 'merchant_invoice_id' => (string)$o->invoice,
-      'cash_collection_amount' => (string)$total, 'parcel_weight' => (int)round(((float)(Sms::secret('redx_weight') ?: 0.5)) * 1000), 'instruction' => mb_substr((string)$o->note, 0, 200), 'value' => $total, 'pickup_store_id' => (int)$store,
+      'cash_collection_amount' => (string)(int)round(PaymentSettle::cod($o)), 'parcel_weight' => (int)round(((float)(Sms::secret('redx_weight') ?: 0.5)) * 1000), 'instruction' => mb_substr((string)$o->note, 0, 200), 'value' => $total, 'pickup_store_id' => (int)$store,
       'parcel_details_json' => collect($items)->map(fn($i) => ['name' => mb_substr((string)$i->name, 0, 100), 'category' => 'general', 'value' => (int)round($i->price * $i->qty)])->values()->all()];
     $r = self::call('POST', '/parcel', $p);
     if (in_array($r['code'], [200, 201], true) && !empty($r['json']['tracking_id'])) return [true, 'Sent to RedX. Tracking ' . $r['json']['tracking_id'] . ' (area ' . $area['name'] . ')', ['consignment_id' => $r['json']['tracking_id']]];

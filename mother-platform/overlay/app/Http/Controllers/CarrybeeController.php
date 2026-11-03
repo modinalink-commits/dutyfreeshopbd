@@ -48,7 +48,7 @@ class CarrybeeController extends Controller {
     $items = DB::table('order_items')->where('order_id', $id)->get();
     [$ok, $msg, $data] = Carrybee::send($o, $items); if (!$ok) return [false, $msg];
     DB::transaction(function () use ($o, $id, $data) {
-      DB::table('orders')->where('id', $id)->update(['consignment_id' => $data['consignment_id'], 'courier' => 'Carrybee', 'courier_status' => 'Pending', 'courier_fee' => $data['delivery_fee'], 'courier_sent_at' => now(), 'courier_stage' => 'Pending', 'courier_cod' => $o->total, 'settlement_status' => 'Pending', 'status' => 'Shipment', 'updated_at' => now()]);
+      DB::table('orders')->where('id', $id)->update(['consignment_id' => $data['consignment_id'], 'courier' => 'Carrybee', 'courier_status' => 'Pending', 'courier_fee' => $data['delivery_fee'], 'courier_sent_at' => now(), 'courier_stage' => 'Pending', 'courier_cod' => \App\Support\PaymentSettle::cod($o), 'settlement_status' => 'Pending', 'status' => 'Shipment', 'updated_at' => now()]);
       DB::table('order_status_logs')->insert(['order_id' => $id, 'user_id' => auth()->id(), 'user_name' => auth()->user()->name, 'from_status' => $o->status, 'to_status' => 'Shipment', 'note' => 'Sent to Carrybee, consignment ' . $data['consignment_id'], 'created_at' => now(), 'updated_at' => now()]);
     });
     return [true, $msg];

@@ -44,7 +44,7 @@ class Pathao {
     if (mb_strlen($addr) < 10) return [false, 'Address is too short for Pathao (minimum 10 characters).', []];
     $names = collect($items)->map(fn($i) => $i->name.' x'.$i->qty)->implode(', ');
     $payload = ['store_id'=>$store, 'merchant_order_id'=>Inv::show($o->invoice), 'recipient_name'=>mb_substr(str_pad($o->customer_name, 3, ' '), 0, 100), 'recipient_phone'=>self::phone($o->phone), 'recipient_address'=>mb_substr($addr, 0, 220), 'delivery_type'=>48, 'item_type'=>2,
-      'special_instruction'=>mb_substr((string)$o->note, 0, 200), 'item_quantity'=>max(1, (int)collect($items)->sum('qty')), 'item_weight'=>(float)(Sms::secret('pathao_weight') ?: 0.5), 'item_description'=>mb_substr($names, 0, 250), 'amount_to_collect'=>(int)round($o->total)];
+      'special_instruction'=>mb_substr((string)$o->note, 0, 200), 'item_quantity'=>max(1, (int)collect($items)->sum('qty')), 'item_weight'=>(float)(Sms::secret('pathao_weight') ?: 0.5), 'item_description'=>mb_substr($names, 0, 250), 'amount_to_collect'=>(int)round(PaymentSettle::cod($o))];
     if (strlen($payload['recipient_phone']) !== 11) return [false, 'Customer phone must be 11 digits.', []];
     $r = self::call('POST', '/aladdin/api/v1/orders', $payload);
     $d = $r['json']['data'] ?? [];
