@@ -5,7 +5,7 @@ ad563479e2e595a99bc1e35da58f0929f0958b0f app/Http/Controllers/AdminController.ph
 bd49f23ea0895af93bed5374937115c21911b0cd app/Console/Commands/MotherInstall.php
 bbb6b0282ff7a277b50aaf0a6ff007db41c2ccae resources/views/layout.blade.php
 7ba1a8252b36e7db33e40d8be3ea5ec2cd241fb7 resources/views/login.blade.php
-3431340a529f4ab858ba55214388be987a3185c8 resources/views/dashboard.blade.php
+931fa411dc6ca46dde47f2688dbc3f8a974621a7 resources/views/dashboard.blade.php
 fc9fed3061968952ae47f778af8ad92c18db4e4e resources/views/orders.blade.php
 b7c84b6850d63486f9c116cb6bf1a3feee68f6db resources/views/order_new.blade.php
 65492b93a2c929631a0cf82411196e13eb63b525 resources/views/order_show.blade.php

@@ -48,7 +48,7 @@ $qs = fn($extra = []) => http_build_query(array_filter(array_merge(['store'=>$st
 .dx-k svg.sp{position:absolute;right:10px;bottom:8px;opacity:.9}
 .dx-2{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,1fr);gap:10px}
 .dx-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-.dx-p{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,1fr);gap:10px}
+.dx-p{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .dx-tabs{display:inline-flex;background:#F3F5F8;border-radius:8px;padding:2px;gap:1px}
 .dx-tabs button{border:0;background:transparent;padding:4px 9px;border-radius:6px;font-size:11px;font-weight:700;color:#6B7280;cursor:pointer;width:auto;height:auto;margin:0}
 .dx-tabs button.on{background:#fff;color:#FF5A00;box-shadow:0 1px 2px rgba(0,0,0,.1)}
@@ -64,7 +64,7 @@ $qs = fn($extra = []) => http_build_query(array_filter(array_merge(['store'=>$st
 .dx-qa em{font-style:normal;position:absolute;top:4px;right:5px;background:#E11D48;color:#fff;border-radius:20px;font-size:9.5px;padding:0 5px;line-height:15px}
 .dx-bar{height:6px;background:#EEF1F5;border-radius:4px;overflow:hidden}.dx-bar>i{display:block;height:100%;border-radius:4px}
 .dx-row{display:grid;gap:8px;align-items:center;font-size:12px;margin:6px 0}
-.dx-pipe{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.dx-pipe{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:7px}
 .dx-pipe a{border:1px solid #EEF1F5;border-radius:10px;padding:7px 9px;display:flex;flex-direction:column;gap:2px;background:var(--b);transition:all .15s}
 .dx-pipe a:hover{border-color:var(--c);transform:translateY(-1px)}
 .dx-pipe .tp{display:flex;align-items:center;gap:5px;color:var(--c)}.dx-pipe .nm{font-size:10.5px;font-weight:700;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dx-pipe .ct{font-size:17px;font-weight:800;line-height:1.1;color:#0B1220}
@@ -85,7 +85,7 @@ $qs = fn($extra = []) => http_build_query(array_filter(array_merge(['store'=>$st
 .dx-sk .card{position:relative;overflow:hidden}.dx-sk .card::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.75) 50%,transparent 70%);animation:dxs 1s infinite;transform:translateX(-100%)}
 @keyframes dxs{to{transform:translateX(100%)}}
 .dx-empty{color:#9CA3AF;font-size:12px;padding:4px 0}
-@media (max-width:1280px){.dx-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}.dx-p{grid-template-columns:repeat(2,minmax(0,1fr))}.dx-p>:first-child{grid-column:1/-1}}
+@media (max-width:1280px){.dx-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}.dx-pipe{grid-template-columns:repeat(6,minmax(0,1fr))}}
 @media (max-width:1000px){.dx-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.dx-3{grid-template-columns:repeat(2,minmax(0,1fr))}.dx-2{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:700px){.dx-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.dx-3,.dx-p{grid-template-columns:minmax(0,1fr)}.dx-pipe{grid-template-columns:repeat(3,minmax(0,1fr))}.dx-search{flex:1 1 140px;min-width:0}.dx-k .v{font-size:17px}.dx-k svg.sp{display:none}}
 .dx-p5{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}
@@ -117,6 +117,12 @@ $qs = fn($extra = []) => http_build_query(array_filter(array_merge(['store'=>$st
   <div class="head" style="margin-bottom:8px"><h2>Order Pipeline · {{ $label }}</h2><span class="muted">Active: <b style="color:#0B1220">{{ number_format($pipeAct['count']) }} orders</b> · <b style="color:#0B1220">৳{{ number_format($pipeAct['value']) }}</b></span></div>
   <div class="dx-p5">@foreach($pipe5 as $p5)@php $pc = $P5C[$p5['name']]; @endphp
     <a href="/admin/orders?status={{ urlencode($p5['filter']) }}" style="--c:{{ $pc[0] }};--b:{{ $pc[1] }}" title="{{ $p5['name'] }}: {{ $p5['count'] }} orders, ৳{{ number_format($p5['value']) }}"><span class="tp">{!! $ico($pc[2],14) !!}{{ $p5['name'] }}</span><span class="n">{{ number_format($p5['count']) }}<small>Orders</small></span><span class="vl">৳{{ number_format($p5['value']) }}</span></a>@endforeach</div>
+</section>
+
+<section class="card" id="dxstages" style="padding:10px 14px">
+  <div class="head" style="margin-bottom:8px"><h2>All Order Stages</h2><span class="muted">Click a stage to filter</span></div>
+    <div class="dx-pipe">@foreach($PIPE as $sg => $pi)@php $cn2 = (int)($counts[$sg] ?? 0); @endphp
+      <a href="/admin/orders?status={{ urlencode($sg) }}" style="--c:{{ $ST[$sg][1] ?? '#475569' }};--b:{{ $ST[$sg][0] ?? '#F3F4F6' }}"><span class="tp">{!! $ico($pi,13) !!}<span class="nm">{{ $sg }}</span></span><span class="ct">{{ $cn2 }}</span></a>@endforeach</div>
 </section>
 
 <section class="dx-kpis" id="dxkpis">
@@ -169,9 +175,6 @@ $qs = fn($extra = []) => http_build_query(array_filter(array_merge(['store'=>$st
 </section>
 
 <section class="dx-p">
-  <div class="card"><div class="head"><h2>All Order Stages</h2><span class="muted">Click a stage to filter</span></div>
-    <div class="dx-pipe">@foreach($PIPE as $sg => $pi)@php $cn2 = (int)($counts[$sg] ?? 0); @endphp
-      <a href="/admin/orders?status={{ urlencode($sg) }}" style="--c:{{ $ST[$sg][1] ?? '#475569' }};--b:{{ $ST[$sg][0] ?? '#F3F4F6' }}"><span class="tp">{!! $ico($pi,13) !!}<span class="nm">{{ $sg }}</span></span><span class="ct">{{ $cn2 }}</span></a>@endforeach</div></div>
   <div class="card"><div class="head"><h2>Courier Performance</h2><a class="more" href="/admin/courier-dashboard">Open →</a></div>
     @forelse($couriers as [$cn,$cp,$cs,$cdl,$crt])<a href="/admin/courier-dashboard" style="display:block;margin:7px 0"><div style="display:flex;gap:6px;font-size:12px"><b style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ $cn }}</b><b style="color:{{ $cs>=80 ? '#166534' : ($cs>=60 ? '#B45309' : '#B91C1C') }}">{{ $cs }}%</b></div><div class="dx-bar" style="margin:3px 0"><i style="width:{{ min(100,$cs) }}%;background:{{ $cs>=80 ? '#16A34A' : ($cs>=60 ? '#F59E0B' : '#DC2626') }}"></i></div><span class="muted">{{ $cp }} parcels · {{ $cdl }} delivered · {{ $crt }} returned</span></a>
     @empty<div class="dx-empty">No courier data for this period.</div>@endforelse</div>
