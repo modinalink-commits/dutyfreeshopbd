@@ -136,6 +136,10 @@ class StoreController extends Controller {
     $deals = self::dealList(self::set())->take(6);
     return response()->view('store.globe_preview2', $this->base(['deals'=>$deals, 'title'=>'Globe preview 2 | DutyFree BD', 'desc'=>'', 'canon'=>url('/globe-preview-2'), 'noindex'=>true]))->header('X-Robots-Tag', 'noindex')->header('Cache-Control', 'no-store');
   }
+  public function airportPreview() {
+    $deals = self::dealList(self::set())->take(6);
+    return response()->view('store.airport_preview', $this->base(['deals'=>$deals, 'title'=>'Airport preview | DutyFree BD', 'desc'=>'', 'canon'=>url('/airport-preview'), 'noindex'=>true]))->header('X-Robots-Tag', 'noindex')->header('Cache-Control', 'no-store');
+  }
   public function homeSec(string $slug) {
     $c = $this->cats()[$slug] ?? null; $s = self::set();
     if (!$c || $s['home_cat_sections'] !== '1') abort(404);
