@@ -1,6 +1,8 @@
 @php $off = \App\Http\Controllers\StoreController::off($q); $u = \App\Http\Controllers\StoreController::url($q); @endphp
 <div class="pc {{ $cls ?? '' }}">@if($off > 0 && $s['badge_discount']==='1')<span class="bo">{{ $off }}%</span>@endif
 @if(!empty($fd) && $s['badge_free_delivery']==='1')<span class="bf"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 6h13v10H1zM14 10h4l3 3v3h-7z"/><circle cx="6" cy="18" r="2" fill="#fff"/><circle cx="17" cy="18" r="2" fill="#fff"/></svg><i>FREE DELIVERY</i></span>@endif
+@if(!empty($tb))<span class="tsb">Today's Top Seller</span>@endif
+@if(!empty($ts))<span class="tsn">{{ number_format($ts) }} sold today</span>@endif
 <a class="ph" href="{{ $u }}"><img src="{{ $q->image ?: '/product-placeholder' }}" @php $__ss = \App\Support\Img::srcset($q->image); @endphp @if($__ss) srcset="{{ $__ss }}" sizes="(max-width:640px) 45vw, 200px" @endif alt="{{ !empty($q->image_alt) ? $q->image_alt : $q->name }}" width="200" height="200" loading="lazy" decoding="async" draggable="false" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='/product-placeholder'">@php $__i2 = \App\Support\CardImg::second($q->id); @endphp @if($__i2)<img class="im2" src="{{ $__i2 }}" alt="" width="200" height="200" loading="lazy" decoding="async" draggable="false" aria-hidden="true" onerror="this.remove()">@endif</a>
 <a class="nm" href="{{ $u }}">{{ $q->name }}</a>
 <div class="pr"><b>{{ number_format($q->price) }} TK</b> <br>@if($off > 0)<s>{{ number_format($q->compare_price) }} TK</s><span class="dp">-{{ $off }}%</span>@endif</div>

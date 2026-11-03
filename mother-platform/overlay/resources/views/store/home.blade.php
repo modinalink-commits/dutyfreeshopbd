@@ -122,8 +122,10 @@ if(document.readyState==='complete')setTimeout(first,300);else addEventListener(
 @endif
 
 @if($s['home_top']==='1' && $top->count())
+@php $__d = min(8, max(2, (int)$s['top_vis_d'])); $__m = min(4, max(1, (int)$s['top_vis_m'])); $__sp = min(15, max(1, (int)$s['top_speed'])) * 1000; @endphp
+<style>@media(min-width:1201px){#top [data-cr]{--pv:{{ $__d }}}}@media(min-width:981px) and (max-width:1200px){#top [data-cr]{--pv:{{ min($__d, 5) }}}}@media(min-width:761px) and (max-width:980px){#top [data-cr]{--pv:{{ min($__d, 4) }}}}@media(max-width:760px){#top [data-cr]{--pv:{{ $__m }}}}#top .pc .tsb{margin:0 10px;align-self:flex-start;background:#FFF1E8;color:#C2410C;font-size:10.5px;font-weight:700;border-radius:20px;padding:2px 9px}#top .pc .tsn{margin:0 10px;font-size:11px;color:#374151}@media(max-width:760px){#top .pc .tsb{font-size:8.5px;padding:1px 6px;margin:0 6px}#top .pc .tsn{font-size:9px;margin:0 6px}}</style>
 <div class="w sec-st sec-top" id="top" style="padding-top:34px"><div class="st"><h2>{{ $topLabel }}</h2>
-<div class="gr" data-cr>@foreach($top as $q)@include('store.card', ['fd'=>true])@endforeach</div></div></div>
+<div class="gr" data-cr data-sp="{{ $__sp }}" data-auto="{{ $s['top_auto'] === '1' ? '1' : '0' }}">@foreach($top as $q)@include('store.card', ['fd'=>true, 'tb'=>$s['top_badge']==='1' && isset($topSold[$q->id]), 'ts'=>$s['top_show_sold']==='1' ? (int)($topSold[$q->id] ?? 0) : 0])@endforeach</div></div></div>
 @endif
 
 @if($s['home_todays_deal']==='1' && $deals->count() && $dOn)
@@ -202,7 +204,7 @@ function upd(){var o=tr.scrollWidth>tr.clientWidth+2;L.style.display=R.style.dis
 tr.addEventListener('scroll',function(){if(loop&&tr.scrollLeft>=pd()-1)jump(-pd())},{passive:true});L.onclick=prev;R.onclick=next;
 var paused=false,vis=true;w.addEventListener('mouseenter',function(){paused=true;upd()});w.addEventListener('mouseleave',function(){paused=false});w.addEventListener('touchstart',function(){paused=true},{passive:true});w.addEventListener('touchend',function(){setTimeout(function(){paused=false},4000)},{passive:true});w.addEventListener('focusin',function(){paused=true});w.addEventListener('focusout',function(){paused=false});
 if('IntersectionObserver' in window)new IntersectionObserver(function(e){vis=e[0].isIntersecting}).observe(w);
-if(!rm)setInterval(function(){if(!paused&&vis&&!document.hidden&&tr.clientWidth&&tr.scrollWidth>tr.clientWidth+2)next()},3200);
+if(!rm&&tr.getAttribute('data-auto')!=='0')setInterval(function(){if(!paused&&vis&&!document.hidden&&tr.clientWidth&&tr.scrollWidth>tr.clientWidth+2)next()},parseInt(tr.getAttribute('data-sp'),10)||3200);
 addEventListener('resize',upd);setTimeout(upd,300);upd()}
 document.querySelectorAll('[data-cr]').forEach(init)})();</script>
 <script>(function(){document.querySelectorAll('.sld[data-auto]').forEach(function(w){var t=w.querySelector('.sl-t'),n=t.children.length;if(n<2||t.scrollWidth<=t.clientWidth+4&&n<3&&!w.classList.contains('dk')&&!w.classList.contains('mb')&&false)return;var d=w.querySelector('.sl-d');if(d){for(var k=0;k<n;k++)d.appendChild(document.createElement('i'));}var i=0,h=false;function dots(){if(!d)return;var a=Math.round(t.scrollLeft/t.children[0].offsetWidth);[].forEach.call(d.children,function(e,x){e.className=x==a?'on':''})}t.addEventListener('scroll',dots);dots();w.addEventListener('mouseenter',function(){h=true});w.addEventListener('mouseleave',function(){h=false});t.addEventListener('touchstart',function(){h=true},{passive:true});t.addEventListener('touchend',function(){setTimeout(function(){h=false},4000)},{passive:true});setInterval(function(){if(h||w.hasAttribute('data-hold')||!t.offsetWidth||matchMedia('(prefers-reduced-motion: reduce)').matches)return;var c=t.children[0].offsetWidth+(parseFloat(getComputedStyle(t).columnGap)||0),a=Math.round(t.scrollLeft/c);t.scrollTo({left:(t.scrollLeft+t.clientWidth>=t.scrollWidth-4?0:(a+1)*c),behavior:'smooth'})},+w.getAttribute('data-auto'))})})();</script>

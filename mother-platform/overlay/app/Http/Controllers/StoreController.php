@@ -91,25 +91,21 @@ class StoreController extends Controller {
   const HOME_DESC = 'আন্তর্জাতিক মানের সকল অরিজিনাল ইমপোর্টেড পণ্য এক জায়গায়: পারফিউম, আতর, স্কিন কেয়ার, হেয়ার কেয়ার, বেবি প্রোডাক্ট ও ডেইলি নিডস। ক্যাশ অন ডেলিভারি, সারা বাংলাদেশে হোম ডেলিভারি।';
   public function home() {
     $s = self::set();
-    $data = self::rem('store.home7', 300, function () use ($s) {
+    $data = self::rem('store.home8', 300, function () use ($s) {
       $pub = fn() => DB::table('products')->where('published',true);
       $sold = DB::table('order_items as i')->join('orders as o','o.id','=','i.order_id')->where('o.status','!=','Cancel')->where('o.created_at','>=',now()->subDays(30))->groupBy('i.product_id')->selectRaw('i.product_id as pid, sum(i.qty) as q')->pluck('q','pid');
       $deals = self::dealBase((float)($s['deal_min_off'] ?? 0))->limit(max(1,(int)($s['deal_max'] ?? 12)))->get()
         ->map(function ($p) use ($sold) { $p->sold = (int)($sold[$p->id] ?? 0); return $p; });
-      $top = DB::table('order_items as i')->join('products as p','p.id','=','i.product_id')->where('p.published',true)->select('p.*', DB::raw('sum(i.qty) q'))->groupBy('p.id')->orderByDesc('q')->limit(12)->get();
-      $topLabel = 'Top Selling Products';
-      if ($top->count() < 6) {
-        $more = DB::table('product_views as v')->join('products as p','p.id','=','v.product_id')->where('p.published',true)->whereNotIn('p.id', $top->pluck('id'))->where('v.created_at','>=',now()->subDays(30))->select('p.*', DB::raw('count(*) q'))->groupBy('p.id')->orderByDesc('q')->limit(6 - $top->count())->get();
-        if ($more->count()) { $top = $top->concat($more); $topLabel = 'Popular Products'; }
-      }
       $sec = []; $i = 0;
-      $ordC = $this->cats()->values()->sortBy(fn($c) => self::isSmokeCat($c) ? 2 : (preg_match('/perfume|attar|আতর|পারফিউম/iu', ($c->slug ?? '').' '.($c->name ?? '')) ? 0 : 1))->values();
+      $ordC = $this->cats()->values()->sortBy(fn($c) => self::isSmokeCat($c) ? 0 : (preg_match('/perfume|attar|আতর|পারফিউম/iu', ($c->slug ?? '').' '.($c->name ?? '')) ? 1 : 2))->values();
       foreach ($ordC as $c) { $sec[] = [$c, $pub()->where('category_id',$c->id)->orderByDesc('id')->limit($i < 2 ? 12 : 6)->get()]; $i++; }
       $offers = [];
       foreach ($this->cats() as $c) { $mx = (int)$pub()->where('category_id',$c->id)->whereColumn('compare_price','>','price')->where('compare_price','>',0)->max(DB::raw('round((compare_price - price) / compare_price * 100)')); if ($mx > 0) $offers[] = [$c, $mx]; }
       usort($offers, fn($a, $b) => $b[1] <=> $a[1]);
-      return ['new'=>$pub()->where(fn($q)=>$q->whereNull('group_key')->orWhere('group_key','!=','smoke'))->orderByDesc('id')->limit(12)->get(), 'deals'=>$deals, 'top'=>$top, 'topLabel'=>$topLabel, 'sec'=>$sec, 'offers'=>array_slice($offers, 0, 2), 'slides'=>DB::table('sliders')->where('active',true)->where(fn($q)=>$q->whereNotNull('image')->orWhereNotNull('video_id'))->where(fn($q)=>$q->whereNull('type')->orWhere('type','main'))->where(fn($q)=>$q->whereNull('starts_at')->orWhere('starts_at','<=',now()))->where(fn($q)=>$q->whereNull('ends_at')->orWhere('ends_at','>=',now()))->orderBy('position')->get(), 'offerSlides'=>DB::table('sliders')->where('active',true)->whereNotNull('image')->where('type','offer')->where(fn($q)=>$q->whereNull('starts_at')->orWhere('starts_at','<=',now()))->where(fn($q)=>$q->whereNull('ends_at')->orWhere('ends_at','>=',now()))->orderBy('position')->get(), 'stores'=>DB::table('stores')->where('active',true)->orderBy('id')->get(['id','name','domain','scan_published'])->all(), 'best'=>DB::table('order_items as i')->join('orders as o','o.id','=','i.order_id')->join('products as p','p.id','=','i.product_id')->where('p.published',true)->where('o.status','!=','Cancel')->where('o.created_at','>=',now()->subDays(60))->select('p.*', DB::raw('sum(i.qty) q'))->groupBy('p.id')->orderByDesc('q')->limit(12)->get(), 'count'=>$pub()->count(), 'maxOff'=>$deals->count() ? self::off($deals[0]) : 0];
+      return ['new'=>$pub()->where(fn($q)=>$q->whereNull('group_key')->orWhere('group_key','!=','smoke'))->orderByDesc('id')->limit(12)->get(), 'deals'=>$deals, 'top'=>collect(), 'topLabel'=>'Top Selling Products', 'sec'=>$sec, 'offers'=>array_slice($offers, 0, 2), 'slides'=>DB::table('sliders')->where('active',true)->where(fn($q)=>$q->whereNotNull('image')->orWhereNotNull('video_id'))->where(fn($q)=>$q->whereNull('type')->orWhere('type','main'))->where(fn($q)=>$q->whereNull('starts_at')->orWhere('starts_at','<=',now()))->where(fn($q)=>$q->whereNull('ends_at')->orWhere('ends_at','>=',now()))->orderBy('position')->get(), 'offerSlides'=>DB::table('sliders')->where('active',true)->whereNotNull('image')->where('type','offer')->where(fn($q)=>$q->whereNull('starts_at')->orWhere('starts_at','<=',now()))->where(fn($q)=>$q->whereNull('ends_at')->orWhere('ends_at','>=',now()))->orderBy('position')->get(), 'stores'=>DB::table('stores')->where('active',true)->orderBy('id')->get(['id','name','domain','scan_published'])->all(), 'best'=>DB::table('order_items as i')->join('orders as o','o.id','=','i.order_id')->join('products as p','p.id','=','i.product_id')->where('p.published',true)->where('o.status','!=','Cancel')->where('o.created_at','>=',now()->subDays(60))->select('p.*', DB::raw('sum(i.qty) q'))->groupBy('p.id')->orderByDesc('q')->limit(12)->get(), 'count'=>$pub()->count(), 'maxOff'=>$deals->count() ? self::off($deals[0]) : 0];
     });
+    // daily ranking is read outside the 5-minute page cache so a new Dhaka day starts at midnight
+    [$data['top'], $data['topSold']] = \App\Support\TopSellers::products($s); $data['topLabel'] = 'Top Selling Products';
     if ($data['count'] === 0) return response()->view('coming', [], 503)->header('Retry-After','3600');
     $live = $s['home_live_orders'] === '1' ? $this->liveOrders() : collect();
     return response()->view('store.home', $this->base($data + ['live'=>$live, 'title'=>self::cleanSeo($s['site_title'] ?? '', self::HOME_TITLE), 'desc'=>self::cleanSeo($s['meta_description'] ?? '', self::HOME_DESC), 'canon'=>url('/').'/', 'home'=>true]))->header('Cache-Control','public, max-age=60');
