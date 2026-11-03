@@ -132,8 +132,8 @@ class AgentTools {
   /** The customer must have said a clear yes AFTER the summary was shown. Checked here, in code. */
   public static function isConfirm(string $t): bool {
     $t = mb_strtolower(trim($t));
-    if ($t === '' || preg_match('/(না\b|করবেন না|বাতিল|cancel|\bno\b|not now|change|পরিবর্তন|দাম কত|\?|কি\b|কত)/iu', $t)) return false;
-    return (bool)preg_match('/^(হ্যাঁ|হ্যা|হা|ঠিক আছে|কনফার্ম|confirm|confirmed|yes|yep|ok|okay|ওকে|জি|জ্বি|করুন|অর্ডার করুন|place order|done)\b/iu', $t) || (bool)preg_match('/(কনফার্ম|confirm|অর্ডার.*(করুন|করে দিন)|হ্যাঁ)/iu', $t);
+    if ($t === '' || preg_match('/(না(?![\p{L}\p{M}])|করবেন না|বাতিল|cancel|(?<![\p{L}\p{M}])no(?![\p{L}\p{M}])|not now|change|পরিবর্তন|দাম কত|\?|কি(?![\p{L}\p{M}])|কত)/iu', $t)) return false;
+    return (bool)preg_match('/^(হ্যাঁ|হ্যা|হা|ঠিক আছে|কনফার্ম|confirm|confirmed|yes|yep|ok|okay|ওকে|জি|জ্বি|করুন|অর্ডার করুন|place order|done)(?![\p{L}\p{M}])/iu', $t) || (bool)preg_match('/(কনফার্ম|confirm|অর্ডার.*(করুন|করে দিন)|হ্যাঁ)/iu', $t);
   }
   private static function place(array &$st, array $ctx): array {
     if (empty($ctx['orders_on'])) return ['error'=>'order placing by the assistant is switched off; hand over to a human agent', 'handoff_required'=>true];
