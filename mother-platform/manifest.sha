@@ -48,7 +48,7 @@ d787924ace3fa42cc66a3de321e4e94e784006d8 resources/views/panels/employees.blade.
 16d44d41f6b845877a906678b144cbc1233a96f5 resources/views/report_details.blade.php
 2f840d53881d8aeaf0c5959161774787e5f540bc database/migrations/2026_10_31_000005_storefront.php
 65414d9e2fbe5f16f1fbf1551cce91276e9f30f9 app/Console/Commands/MotherSyncFeed.php
-c75878cce11b142293890fd7d3208638824526ce app/Http/Controllers/StoreController.php
+a97da1187ebe17d0b9138fb93f9136e668f82695 app/Http/Controllers/StoreController.php
 55f8b9bedc49afbc11522241be9b2daa0fbc0b7a resources/views/store/layout.blade.php
 55af1b65f87c4b4816080ce2885760d24ff102b9 resources/views/store/card.blade.php
 0bd0dc94bfb3700191748c2589fada8767ab8585 resources/views/store/home.blade.php
