@@ -30,6 +30,8 @@
 var T=(document.querySelector('meta[name="csrf-token"]')||{}).content||'',P=document.getElementById('fcap'),S=document.getElementById('fcas'),Q=document.getElementById('fcaq'),CD=document.getElementById('fcac'),AU=document.getElementById('fcaa');
 var g={pc:null,id:0,stream:null,after:0,local:false,muted:false,t0:0,view:'',ringId:0,iceQ:[],rd:false,tick:null,busy:false,dead:false,skip:[],accepting:false,tone:null,actx:null,lastStatus:null};
 try{g.skip=JSON.parse(sessionStorage.getItem('fcskip')||'[]')}catch(e){}
+// Free Call popup sits beside (to the left of) the chat-message cards instead of on top of them
+setInterval(function(){var m=document.getElementById('mcp'),n=m&&m.children.length>0&&innerWidth>=1000;CD.style.right=(n?376:16)+'px'},400);
 var BAR=document.createElement('div');BAR.id='fcabar';document.body.appendChild(BAR);
 (function(){var m=[].slice.call(document.querySelectorAll('aside a')).filter(function(a){return /^\s*Messages/.test(a.textContent)})[0];if(m){var l=document.createElement('a');l.className='fcam';l.href=m.getAttribute('href');l.innerHTML='💬 <span>Messages</span><b id="fcamn" style="display:none"></b>';BAR.appendChild(l);var upd=function(){var e=m.querySelector('em'),n=document.getElementById('fcamn');if(!n)return;var v=e?e.textContent.trim():'';n.textContent=v;n.style.display=v&&v!=='0'?'inline':'none'};upd();setInterval(upd,4000)}
 var d=document.getElementById('dfEdge');if(d)BAR.appendChild(d);BAR.appendChild(P)})();
