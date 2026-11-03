@@ -67,7 +67,7 @@
       var g, i, p, q, b;
       cx2.clearRect(0, 0, W, H);
       // atmosphere
-      g = cx2.createRadialGradient(CX, CY, R * .96, CX, CY, R * 1.16); g.addColorStop(0, 'rgba(255,120,40,.30)'); g.addColorStop(.35, 'rgba(255,90,0,.10)'); g.addColorStop(1, 'rgba(255,90,0,0)');
+      g = cx2.createRadialGradient(CX, CY, R * .96, CX, CY, R * 1.16); g.addColorStop(0, 'rgba(255,120,40,.12)'); g.addColorStop(.35, 'rgba(255,90,0,.05)'); g.addColorStop(1, 'rgba(255,90,0,0)');
       cx2.fillStyle = g; cx2.beginPath(); cx2.arc(CX, CY, R * 1.16, 0, 7); cx2.fill();
       // ocean
       g = cx2.createRadialGradient(CX - R * .35, CY - R * .4, R * .1, CX, CY, R); g.addColorStop(0, '#1d2a45'); g.addColorStop(.6, '#101a2e'); g.addColorStop(1, '#070c18');
@@ -83,7 +83,7 @@
       var cols = ['#7a2e06', '#b13f06', '#e04e00', '#ff5a00', '#ff8a45', '#ffc79e'];
       for (i = 0; i < B; i++) { cx2.fillStyle = cols[i]; cx2.fill(paths[i]); }
       // rim light
-      g = cx2.createRadialGradient(CX, CY, R * .86, CX, CY, R); g.addColorStop(0, 'rgba(255,120,40,0)'); g.addColorStop(1, 'rgba(255,120,40,.34)');
+      g = cx2.createRadialGradient(CX, CY, R * .86, CX, CY, R); g.addColorStop(0, 'rgba(255,120,40,0)'); g.addColorStop(1, 'rgba(255,120,40,.15)');
       cx2.fillStyle = g; cx2.beginPath(); cx2.arc(CX, CY, R, 0, 7); cx2.fill();
       // route lines
       cx2.lineWidth = Math.max(1, dpr * .8); cx2.strokeStyle = 'rgba(255,170,110,.16)'; cx2.setLineDash([3 * dpr, 5 * dpr]); cx2.beginPath();
@@ -110,28 +110,28 @@
         var t3 = Math.min(1, t + .01), p1 = pt(slerp(P.a, P.b, t3, P.om), 1 + P.h * Math.sin(Math.PI * t3)), ang = Math.atan2(p1[1] - p0[1], p1[0] - p0[0]);
         var sc = (.95 + .4 * Math.sin(Math.PI * t) + .25 * Math.max(0, Math.min(1, p0[2] + .3))) * dpr * (R / 230 < .75 ? .75 : Math.min(1.4, R / 230));
         cx2.save(); cx2.globalAlpha = Math.min(1, P.t / .03, (1 - P.t) / .03); cx2.translate(p0[0], p0[1]); cx2.rotate(ang); cx2.scale(sc, sc);
-        cx2.shadowColor = 'rgba(255,120,30,.9)'; cx2.shadowBlur = 8 * dpr; cx2.fillStyle = '#fff'; cx2.fill(PLANE);
+        cx2.shadowColor = 'rgba(255,120,30,.45)'; cx2.shadowBlur = 3 * dpr; cx2.fillStyle = '#fff'; cx2.fill(PLANE);
         cx2.shadowBlur = 0; cx2.strokeStyle = 'rgba(255,200,160,.9)'; cx2.lineWidth = .8; cx2.beginPath(); cx2.moveTo(-8.4, 0); cx2.lineTo(-13, 0); cx2.stroke();
         cx2.translate(-13, 0); cx2.fillStyle = '#FF5A00'; cx2.fillRect(-6.5, -2.6, 6.5, 5.2); cx2.fillStyle = '#fff'; cx2.fillRect(-6.5, -.8, 6.5, 1.6); cx2.restore();
         if (p0[2] > .3) vplanes.push([i, p0]);
       }
       // cities + Bengali country names (greedy, no overlaps; Bangladesh first)
-      var placed = [], fs0 = Math.max(10, Math.min(13, R / dpr / 19)) * dpr;
+      var placed = [], dacBox = null, fs0 = Math.max(10, Math.min(13, R / dpr / 19)) * dpr;
       ORDER.forEach(function (k) {
         var c = CITIES[k]; p = pt(cityV[k]); if (p[2] <= .12) return;
         var big = c[3], rr = (big ? 3.6 : 2.2) * dpr;
-        if (big) { var ph = (T * .8 + (k === 'CGP' ? .5 : 0)) % 1; cx2.strokeStyle = 'rgba(255,110,30,' + (.6 * (1 - ph)) + ')'; cx2.lineWidth = 1.6 * dpr; cx2.beginPath(); cx2.arc(p[0], p[1], rr + ph * 14 * dpr, 0, 7); cx2.stroke(); }
+        if (big) { var ph = (T * .8 + (k === 'CGP' ? .5 : 0)) % 1; cx2.strokeStyle = 'rgba(255,110,30,' + (.4 * (1 - ph)) + ')'; cx2.lineWidth = 1.6 * dpr; cx2.beginPath(); cx2.arc(p[0], p[1], rr + ph * 14 * dpr, 0, 7); cx2.stroke(); }
         cx2.fillStyle = big ? '#FF5A00' : '#fff'; cx2.beginPath(); cx2.arc(p[0], p[1], rr, 0, 7); cx2.fill();
         if (big) { cx2.strokeStyle = '#fff'; cx2.lineWidth = dpr; cx2.stroke(); }
         if (k === 'CGP' || p[2] < .3) return;
-        var fs = k === 'DAC' ? fs0 * 1.25 : fs0; cx2.font = '700 ' + fs + 'px "Noto Sans Bengali","Hind Siliguri","Nirmala UI",system-ui,sans-serif';
+        var fs = k === 'DAC' ? fs0 * 1.75 : fs0; cx2.font = '700 ' + fs + 'px "Noto Sans Bengali","Hind Siliguri","Nirmala UI",system-ui,sans-serif';
         var tw = cx2.measureText(c[0]).width, th = fs * 1.15, sides = [[8 * dpr, -th * .35], [-tw - 8 * dpr, -th * .35], [-tw / 2, -th - 6 * dpr], [-tw / 2, 6 * dpr]], j, bx, by, ok;
         for (j = 0; j < sides.length; j++) {
           bx = p[0] + sides[j][0]; by = p[1] + sides[j][1]; ok = bx > 2 * dpr && bx + tw < W - 2 * dpr;
           for (var m = 0; ok && m < placed.length; m++) { var q2 = placed[m]; if (bx < q2[0] + q2[2] + 3 * dpr && bx + tw + 3 * dpr > q2[0] && by < q2[1] + q2[3] && by + th > q2[1]) ok = false; }
           if (ok) break;
         }
-        if (!ok) return; placed.push([bx, by, tw, th]);
+        if (!ok) return; placed.push([bx, by, tw, th]); if (k === 'DAC') dacBox = [bx, by, tw, th];
         cx2.textBaseline = 'top'; cx2.lineJoin = 'round'; cx2.lineWidth = 3.2 * dpr; cx2.strokeStyle = 'rgba(7,12,24,.9)'; cx2.strokeText(c[0], bx, by);
         cx2.fillStyle = k === 'DAC' ? '#FFB48A' : '#fff'; cx2.fillText(c[0], bx, by); cx2.textBaseline = 'alphabetic';
       });
@@ -145,6 +145,7 @@
         if (tagP) {
           var txt = tags[active], fs = 12 * dpr; cx2.font = '800 ' + fs + 'px system-ui,sans-serif'; var tw = cx2.measureText(txt).width + 16 * dpr, th = fs + 10 * dpr;
           var tx = Math.min(W - tw - 4 * dpr, Math.max(4 * dpr, tagP[0] + 12 * dpr)), ty = Math.max(4 * dpr, tagP[1] - th - 10 * dpr);
+          if (dacBox && tx < dacBox[0] + dacBox[2] + 4 * dpr && tx + tw > dacBox[0] - 4 * dpr && ty < dacBox[1] + dacBox[3] + 4 * dpr && ty + th > dacBox[1] - 4 * dpr) ty = Math.max(4 * dpr, dacBox[1] - th - 6 * dpr);
           cx2.strokeStyle = 'rgba(255,255,255,.55)'; cx2.lineWidth = dpr; cx2.beginPath(); cx2.moveTo(tagP[0], tagP[1]); cx2.lineTo(tx + 6 * dpr, ty + th); cx2.stroke();
           cx2.fillStyle = '#FF5A00'; cx2.beginPath(); (cx2.roundRect ? cx2.roundRect(tx, ty, tw, th, 7 * dpr) : cx2.rect(tx, ty, tw, th)); cx2.fill();
           cx2.fillStyle = '#fff'; cx2.textBaseline = 'middle'; cx2.fillText(txt, tx + 8 * dpr, ty + th / 2 + dpr * .5); cx2.textBaseline = 'alphabetic';

@@ -53,5 +53,5 @@
 <div class="dfg-gl"><canvas role="img" aria-label="Globe with planes flying from nearby countries to land in Bangladesh"></canvas></div>
 </div>
 </section>
-<script src="/dfglobe.js?v=6" defer></script>
+<script src="/dfglobe.js?v=7" defer></script>
 @endif
