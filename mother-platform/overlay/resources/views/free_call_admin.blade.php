@@ -44,7 +44,7 @@
 #fcdock{position:fixed;right:16px;top:50%;width:390px;max-width:calc(100vw - 32px);height:min(680px,calc(100vh - 32px));z-index:9989;background:#fff;border:1px solid #E5E7EB;border-radius:14px;overflow:hidden;box-shadow:0 12px 36px rgba(15,31,61,.28);transform:translate(calc(100% + 40px),-50%);opacity:0;pointer-events:none;transition:transform .28s cubic-bezier(.22,.8,.3,1),opacity .2s ease;display:flex;flex-direction:column}
 #fcdock.on{transform:translate(0,-50%);opacity:1;pointer-events:auto}
 #fcdock .dh{display:flex;align-items:center;gap:8px;background:#0B1220;color:#fff;padding:9px 10px 9px 14px;font:700 13px system-ui,-apple-system,'Segoe UI',Arial,sans-serif;flex:none}
-#fcdock .dh b{flex:1;font-size:13px}#fcdock .dh select{background:#1E293B;color:#fff;border:1px solid #475569;border-radius:8px;padding:4px 6px;font:600 12px inherit;cursor:pointer}
+#fcdock .dh b{flex:1;font-size:13px;white-space:nowrap}#fcdock .dh select{background:#1E293B;color:#fff;border:1px solid #475569;border-radius:8px;padding:4px 6px;font:600 12px inherit;cursor:pointer}
 #fcdock .dh a,#fcdock .dh button{background:#1E293B;color:#fff;border:1px solid #475569;border-radius:8px;width:28px;height:26px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;text-decoration:none;padding:0}
 #fcdock iframe{border:0;width:100%;flex:1;background:#fff;display:none}#fcdock iframe.on{display:block}
 #fcap select{pointer-events:none}
@@ -65,7 +65,7 @@ var BAR=document.createElement('div');BAR.id='fcabar';document.body.appendChild(
 var d=document.getElementById('dfEdge');if(d){var st=document.getElementById('dfSt');d.insertAdjacentHTML('beforeend','<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="6" cy="5" r="1.8"/><circle cx="12" cy="5" r="1.8"/><circle cx="18" cy="5" r="1.8"/><circle cx="6" cy="11" r="1.8"/><circle cx="12" cy="11" r="1.8"/><circle cx="18" cy="11" r="1.8"/><circle cx="6" cy="17" r="1.8"/><circle cx="12" cy="17" r="1.8"/><circle cx="18" cy="17" r="1.8"/><circle cx="12" cy="22" r="1.8"/></svg>');var sp=d.querySelector('span');if(sp)sp.innerHTML='Mother Dialer<b id="dfSt">'+(st?st.textContent:'Available')+'</b>';BAR.appendChild(d)}BAR.appendChild(P)})();
 (function(){var dk=document.createElement('div');dk.id='fcdock';dk.innerHTML='<div class="dh"><b id="fcdt"></b><select id="fcdsel" title="My Free Call status" style="display:none"><option value="available">Available</option><option value="busy">Busy</option><option value="offline">Offline</option></select><a id="fcdfull" target="_blank" rel="noopener" title="Open full page">⤢</a><button type="button" id="fcdx" title="Hide">✕</button></div>';document.body.appendChild(dk);
 var frs={},cur=null,orig=P&&P.querySelector('select');
-var DEF={fc:{t:'📞 Customer Free Call',u:'/admin/free-calls'},msg:{t:'💬 SMS & Messages',u:'/admin/chat'}};
+var DEF={fc:{t:'📞 Free Call',u:'/admin/free-calls'},msg:{t:'💬 SMS & Messages',u:'/admin/chat'}};
 var ml=document.querySelector('.fcam');if(ml){var h=ml.getAttribute('href');if(h)DEF.msg.u=h}
 function hideDial(){window.postMessage({dfdial:'min'},location.origin)}
 function open(k){var d=DEF[k];if(!d)return;hideDial();if(!frs[k]){var f=document.createElement('iframe');f.title=d.t;f.allow='microphone; autoplay';f.src=d.u+(d.u.indexOf('?')<0?'?':'&')+'embed=1';dk.appendChild(f);frs[k]=f}
