@@ -82,9 +82,27 @@ main .pre button:hover,main .rf:hover{border-color:var(--border-hover)!important
 main .btn:focus-visible,main button:focus-visible,main select:focus-visible,main a.chip:focus-visible{outline:2px solid #FF5A00;outline-offset:1px}
 nav[role=navigation] svg,.pagination svg{width:16px!important;height:16px!important;max-width:16px!important;max-height:16px!important;display:inline-block;vertical-align:middle}nav[role=navigation] a,nav[role=navigation] span[aria-current] span{padding:2px 8px}
 </style></head><body>
-@auth @include('sidebar') @include('admin_grid') @include('admin_theme')<script>if(window.dfSbGo)dfSbGo()</script> @endauth
+@php($__emb = request()->isMethod('GET') && request()->boolean('embed'))
+@auth
+@if(!$__emb)
+@include('sidebar')
+@endif
+@include('admin_grid')
+@include('admin_theme')
+<script>if(window.dfSbGo)dfSbGo()</script>
+@endauth
+@if($__emb)
+<style>aside{display:none!important}body{display:block}main{padding:10px 12px!important;width:100%}main h1{font-size:15px!important}</style>
+<script>document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a||a.target||a.hasAttribute('download'))return;var h=a.getAttribute('href');if(!h||h.charAt(0)==='#'||/^(javascript|tel|mailto):/i.test(h))return;try{var u=new URL(h,location.href);if(u.origin!==location.origin||u.searchParams.has('embed'))return;u.searchParams.set('embed','1');a.setAttribute('href',u.pathname+u.search+u.hash)}catch(x){}},true)</script>
+@endif
 <main>@yield('body')</main>
-@auth @include('chat_widget') @include('softphone_fab') @include('free_call_admin') @endauth
+@auth
+@if(!$__emb)
+@include('chat_widget')
+@include('softphone_fab')
+@include('free_call_admin')
+@endif
+@endauth
 @yield('js')
 @auth<script>function dfCopyNo(a,n){n=String(n||"").trim();var ok=function(){var o=a.innerHTML;a.innerHTML='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#15803D" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';a.title="Copied "+n;setTimeout(function(){a.innerHTML=o;a.title="Copy mobile number"},1200)};try{if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(n).then(ok,function(){fb()})}else fb()}catch(e){fb()}function fb(){var x=document.createElement("textarea");x.value=n;x.style.cssText="position:fixed;opacity:0";document.body.appendChild(x);x.select();try{document.execCommand("copy");ok()}catch(e){}x.remove()}return false}</script><script src="/js/df-export.js?v=4" defer></script>@endauth
 @auth<script src="/js/report-grid.js?v=1" defer></script>@endauth
