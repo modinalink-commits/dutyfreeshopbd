@@ -139,7 +139,7 @@ class AdminController extends Controller {
     $storeList = $safe(fn() => DB::table('stores')->where('active',true)->orderBy('name')->get(['id','name']), collect());
     return view('dashboard', compact('pipe5','pipeAct','ch','channels','topCust','storePerf','now','kpis','stores','max','counts','orders','bad','alerts','health','range','label','trend','topProducts','cats','couriers','chatUnread','goal','cust','calls','risk','feed','storeList','storeId','canFin','prev','f','incOpen','newN','stale') + ['isCustom'=>$range === 'custom']);
   }
-  public function orders(Request $r) { \App\Support\CourierSync::auto(); \App\Support\LateDelivery::auto();
+  public function orders(Request $r) { \App\Support\CourierSync::auto(); \App\Support\LateDelivery::auto(); \App\Support\PaymentSettle::auto();
     $isInc = $r->input('status') === 'Incomplete'; $q = DB::table('orders'); $q->orderByDesc('created_at')->orderByDesc('id'); // strict chronological: no batch/status/invoice-match priority
     if ($isInc) $q->whereRaw('1 = 0'); elseif ($r->filled('status')) { $sts = array_filter(array_map('trim', explode(',', (string)$r->status))); count($sts) > 1 ? $q->whereIn('status', $sts) : $q->where('status', $r->status); }
     if ($r->filled('q')) { $qs = trim((string)$r->q); $qd = preg_replace('/\D/', '', $qs); if (str_starts_with($qd, '880')) $qd = substr($qd, 2); $qInv = \App\Support\Inv::candidates($qs); $q->where(fn($w) => $w->where('invoice','ilike','%'.$qs.'%')->when(preg_match('/^(INV-?)?\d{6,8}$/i', $qs) && $qInv, fn($x) => $x->orWhereIn('invoice', $qInv))->orWhere('phone','like','%'.($qd !== '' ? $qd : $qs).'%')->orWhere('customer_name','ilike','%'.$qs.'%')); }

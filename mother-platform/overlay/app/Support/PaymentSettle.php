@@ -11,6 +11,16 @@ class PaymentSettle {
   /** Stages that may still be moved forward to Approved by a full payment. Pre Order / Scheduled / Incomplete are deliberately left alone. */
   const ELIGIBLE = ['New', 'Pending', 'WFP', 'Assign', 'AI Order'];
 
+  /** Safety net: any fully paid order still waiting in an early stage (paid before auto-approval existed, or verified through a path that did not call apply()) is settled now. Throttled to once every 2 minutes. */
+  public static function auto(): void { if (\Illuminate\Support\Facades\Cache::add('payment.settle.sweep', 1, 120)) { try { self::sweep(); } catch (\Throwable $e) { report($e); } } }
+  public static function sweep(int $limit = 300): int {
+    $ids = DB::table('orders')->whereIn('status', self::ELIGIBLE)->whereNull('duplicate_of_order_id')
+      ->where(fn($q) => $q->where('pay_status', 'Verified')->orWhere('payment_status', 'Paid')->orWhereExists(fn($x) => $x->select(DB::raw(1))->from('order_payments as p')->whereColumn('p.order_id', 'orders.id')->where('p.status', 'verified')))
+      ->orderBy('id')->limit($limit)->pluck('id'); $n = 0;
+    foreach ($ids as $id) if (self::apply((int)$id, 'Payment check (automatic)')) $n++;
+    return $n;
+  }
+
   public static function apply(int $oid, string $source): ?string {
     try {
       $o = DB::table('orders')->find($oid); if (!$o) return null;
