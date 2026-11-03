@@ -2,7 +2,7 @@
 @if(($kind ?? 'order') === 'incomplete')
 <div class="order-action-group incomplete-actions">
 <div class="oar"><a class="btn oa oa-view vbtn" href="/admin/incomplete/{{ $o->id }}">View</a>@if($o->status !== 'converted')<a class="btn oa oa-ghost oa-edit" href="/admin/incomplete/{{ $o->id }}/edit">Edit</a>@endif</div>
-@if($o->status !== 'converted')<div class="oar"><button type="button" class="oa oa-quick iqk-btn" data-id="{{ $o->id }}" data-name="{{ $o->name }}" data-phone="{{ $o->phone }}" data-address="{{ $o->address }}" data-note="{{ $o->note }}" title="Quick Edit" aria-label="Quick Edit">⚡ Quick ▾</button></div>@endif
+@if($o->status !== 'converted')<div class="oar"><button type="button" class="oa oa-quick qk-btn" data-inc="1" data-id="{{ $o->id }}" title="Quick Edit" aria-label="Quick Edit">⚡ Quick ▾</button></div>@endif
 @if(in_array($o->status, ['open','recovered']))
 <a class="btn oa oa-primary btn-convert" href="/admin/orders/new?inc={{ $o->id }}">Convert to Order</a>
 @elseif($o->order_id)

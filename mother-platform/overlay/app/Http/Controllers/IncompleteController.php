@@ -40,6 +40,9 @@ class IncompleteController extends Controller {
     $open = DB::table('incomplete_orders')->where('status', 'open')->selectRaw('coalesce(sum(total),0) s')->first();
     $ph = collect($rows->items())->pluck('phone')->all();
     $cust = $ph ? DB::table('customers')->whereIn('phone', $ph)->pluck('id', 'phone') : collect();
+    $ids = collect($rows->items())->pluck('id')->all();
+    $lc = $ids ? DB::table('incomplete_activity')->where('kind', 'note')->whereIn('incomplete_id', $ids)->orderBy('id')->pluck('body', 'incomplete_id') : collect();
+    foreach ($rows->items() as $it) $it->last_comment = $lc[$it->id] ?? null;
     return ['incRows'=>$rows, 'incSt'=>$st, 'incCounts'=>$counts, 'incSum'=>(float)$open->s, 'incTabs'=>self::TABS, 'incCust'=>$cust, 'incImgs'=>self::imgs($rows->items())];
   }
   /** Read-only detail page of one incomplete checkout. */
@@ -57,7 +60,7 @@ class IncompleteController extends Controller {
     $o = DB::table('incomplete_orders')->find($id); abort_unless($o, 404);
     if ($o->status === 'converted') return back()->with('bad', 'This checkout is already converted to an order - edit the order instead.');
     $d = $r->validate(['name'=>'nullable|string|max:120', 'phone'=>['required', 'string', new \App\Support\PhoneRule], 'email'=>'nullable|string|max:120', 'address'=>'nullable|string|max:500', 'district'=>'nullable|string|max:80',
-      'note'=>'nullable|string|max:500', 'shipping'=>'nullable|numeric|min:0|max:100000', 'qty'=>'nullable|array', 'qty.*'=>'nullable|integer|min:0|max:999']);
+      'note'=>'nullable|string|max:500', 'shipping'=>'nullable|numeric|min:0|max:100000', 'qty'=>'nullable|array', 'qty.*'=>'nullable|integer|min:0|max:999', 'discount'=>'nullable|numeric|min:0|max:1000000', 'pay_method'=>'nullable|string|max:20', 'courier'=>'nullable|string|max:40', 'consignment'=>'nullable|string|max:80']);
     $items = json_decode($o->items ?: '[]', true) ?: []; $out = []; $sub = 0; $q = 0;
     foreach ($items as $k => $i) {
       $n = array_key_exists($k, $d['qty'] ?? []) ? (int)$d['qty'][$k] : (int)($i['qty'] ?? 0);
@@ -65,8 +68,9 @@ class IncompleteController extends Controller {
     }
     if (!$out) return back()->withInput()->with('bad', 'At least one product must stay in the checkout. Use Archive to remove the whole entry.');
     $ship = array_key_exists('shipping', $d) && $d['shipping'] !== null ? (float)$d['shipping'] : (float)$o->shipping;
-    $disc = min((float)$o->discount, $sub);
-    DB::table('incomplete_orders')->where('id', $id)->update(['name'=>trim((string)($d['name'] ?? '')) ?: null, 'phone'=>$d['phone'], 'email'=>trim((string)($d['email'] ?? '')) ?: null,
+    $disc = min(array_key_exists('discount', $d) && $d['discount'] !== null ? (float)$d['discount'] : (float)$o->discount, $sub);
+    $cour = trim((string)($d['courier'] ?? '')); if ($cour !== '' && !in_array($cour, QuickEditController::COURIERS, true)) $cour = '';
+    DB::table('incomplete_orders')->where('id', $id)->update(['pay_method'=>trim((string)($d['pay_method'] ?? '')) ?: null, 'courier'=>$cour ?: null, 'consignment'=>trim((string)($d['consignment'] ?? '')) ?: null, 'name'=>trim((string)($d['name'] ?? '')) ?: null, 'phone'=>$d['phone'], 'email'=>trim((string)($d['email'] ?? '')) ?: null,
       'address'=>trim((string)($d['address'] ?? '')) ?: null, 'district'=>trim((string)($d['district'] ?? '')) ?: null, 'note'=>trim((string)($d['note'] ?? '')) ?: null,
       'items'=>json_encode($out, JSON_UNESCAPED_UNICODE), 'qty'=>$q, 'subtotal'=>$sub, 'discount'=>$disc, 'shipping'=>$ship, 'total'=>max(0, $sub - $disc + $ship), 'updated_at'=>now()]);
     return redirect('/admin/incomplete/'.$id)->with('ok', 'Saved');

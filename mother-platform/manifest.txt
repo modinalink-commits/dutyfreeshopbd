@@ -509,3 +509,6 @@ resources/views/soft_reload.blade.php
 resources/views/incomplete_show.blade.php
 resources/views/incomplete_edit.blade.php
 resources/views/incomplete_quick.blade.php
+app/Http/Controllers/IncompleteEditController.php
+database/migrations/2026_11_03_000070_incomplete_parity.php
+resources/views/incomplete_qpop.blade.php

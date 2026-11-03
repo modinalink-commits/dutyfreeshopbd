@@ -1,13 +1,13 @@
 @php
 $qU = auth()->user(); $qMP = fn($m, $n) => \App\Http\Middleware\ModulePermission::can($qU, $m, $n);
-$qEd = $qMP('orders', 'edit'); $qCour = $qMP('couriers', 'edit');
-$qMoneyOk = $qEd && in_array($o->status, \App\Http\Controllers\OrderRevisionController::EDITABLE) && ($qMP('orders', 'all') || !in_array($o->status, \App\Http\Controllers\OrderRevisionController::CONFIRMED));
-$qInfoOk = $qEd && !in_array($o->status, \App\Http\Controllers\QuickEditController::LOCKED);
+$qEd = $qMP('orders', 'edit'); $qCour = $qMP('couriers', 'edit'); $qInc = !empty($qInc);
+$qMoneyOk = $qInc ? $qEd : $qEd && in_array($o->status, \App\Http\Controllers\OrderRevisionController::EDITABLE) && ($qMP('orders', 'all') || !in_array($o->status, \App\Http\Controllers\OrderRevisionController::CONFIRMED));
+$qInfoOk = $qInc ? $qEd : $qEd && !in_array($o->status, \App\Http\Controllers\QuickEditController::LOCKED);
 $qDue = max(0, round((float)$o->total - (float)($o->paid_total ?? 0), 2));
 $qd = ['id'=>(int)$o->id, 'inv'=>$o->invoice, 'status'=>$o->status, 'name'=>(string)$o->customer_name, 'phone'=>(string)$o->phone, 'email'=>(string)($o->email ?? ''), 'address'=>(string)$o->address, 'district'=>(string)$o->district,
   'courier'=>(string)($o->courier ?? ''), 'coupon'=>(string)($o->coupon ?? ''), 'cons'=>(string)($o->consignment_id ?? ''), 'disc'=>(float)($o->discount ?? 0), 'ship'=>(float)$o->shipping, 'total'=>(float)$o->total, 'sub'=>round((float)$o->total + (float)($o->discount ?? 0) - (float)$o->shipping, 2), 'paid'=>(float)($o->paid_total ?? 0), 'due'=>$qDue,
   'pstatus'=>(string)($o->payment_status ?? 'Unpaid'), 'pmethod'=>(string)($o->payment_method ?? ''), 'items'=>(function() use ($items) { $st = \Illuminate\Support\Facades\DB::table('products')->whereIn('id', $items->pluck('product_id')->filter()->unique()->all())->pluck('stock', 'id'); return $items->map(fn($i) => ['id'=>(int)$i->id, 'pid'=>$i->product_id, 'name'=>$i->name, 'qty'=>(int)$i->qty, 'price'=>(float)$i->price, 'stock'=>isset($st[$i->product_id]) ? (int)$st[$i->product_id] : null])->values(); })(),
-  'stages'=>\App\Models\Mother::STAGES, 'reasons'=>\App\Http\Controllers\OrderRevisionController::REASONS, 'couriers'=>\App\Http\Controllers\QuickEditController::COURIERS, 'csrf'=>csrf_token(), 'dupOf'=>(string)(!empty($o->duplicate_of_order_id) ? (\Illuminate\Support\Facades\DB::table('orders')->where('id', $o->duplicate_of_order_id)->value('invoice') ?? '') : ''), 'dupSug'=>(string)((\App\Support\OrderDedupe::possible([(int)$o->id])[(int)$o->id]['invoice'] ?? '')), 'canMark'=>$qMP('orders', 'edit'), 'canMoney'=>$qMoneyOk, 'canInfo'=>$qInfoOk, 'canCourier'=>$qCour];
+  'inc'=>$qInc ? 1 : 0, 'base'=>$qInc ? '/admin/incomplete/'.(int)$o->id : '/admin/orders/'.(int)$o->id, 'stages'=>$qInc ? \App\Http\Controllers\IncompleteEditController::STAGES : \App\Models\Mother::STAGES, 'reasons'=>\App\Http\Controllers\OrderRevisionController::REASONS, 'couriers'=>\App\Http\Controllers\QuickEditController::COURIERS, 'csrf'=>csrf_token(), 'dupOf'=>$qInc ? '' : (string)(!empty($o->duplicate_of_order_id) ? (\Illuminate\Support\Facades\DB::table('orders')->where('id', $o->duplicate_of_order_id)->value('invoice') ?? '') : ''), 'dupSug'=>$qInc ? '' : (string)((\App\Support\OrderDedupe::possible([(int)$o->id])[(int)$o->id]['invoice'] ?? '')), 'canMark'=>$qMP('orders', 'edit'), 'canMoney'=>$qMoneyOk, 'canInfo'=>$qInfoOk, 'canCourier'=>$qCour];
 @endphp
 <style>
 .qe-wrap{position:relative;display:inline-block;vertical-align:middle}.qe-menu{display:none;position:absolute;left:0;top:100%;margin-top:6px;background:#fff;border:1px solid var(--bd);border-radius:12px;box-shadow:0 10px 30px rgba(15,23,42,.18);min-width:240px;z-index:60;padding:6px}.qe-menu.on{display:block}
@@ -26,7 +26,7 @@ $qd = ['id'=>(int)$o->id, 'inv'=>$o->invoice, 'status'=>$o->status, 'name'=>(str
 <script type="application/json" id="qeData">{!! json_encode($qd, JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS) !!}</script>
 @verbatim<script>
 (function(){
-var D=JSON.parse(document.getElementById('qeData').textContent),base='/admin/orders/'+D.id;
+var D=JSON.parse(document.getElementById('qeData').textContent),base=D.base||('/admin/orders/'+D.id);
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function mny(n){return '৳'+Number(n||0).toLocaleString('en-US',{maximumFractionDigits:2})}
 function q(s,r){return (r||document).querySelector(s)}
@@ -49,10 +49,10 @@ function jform(title,html,label,build,url,wide){show(title,'<form novalidate>'+h
  f.addEventListener('click',function(e){if(e.target.getAttribute&&e.target.getAttribute('data-x'))close()});
  f.addEventListener('submit',function(e){e.preventDefault();var d=build(f);if(d)post(url,d,f)});return f}
 function val(f,n){var x=f.elements[n];return x?x.value:''}
-function ck(f){return f.elements.customer_confirmed&&f.elements.customer_confirmed.checked?1:0}
+function ck(f){if(D.inc)return 1;return f.elements.customer_confirmed&&f.elements.customer_confirmed.checked?1:0}
 function err(f,m){var e=q('.qe-e',f);e.textContent=m;e.style.display='block'}
 function pform(title,action,html,label){show(title,'<form method="post" action="'+action+'"><input type="hidden" name="_token" value="'+esc(D.csrf)+'">'+html+foot(label)+'</form>');q('form',B).addEventListener('click',function(e){if(e.target.getAttribute&&e.target.getAttribute('data-x'))close()})}
-function blocked(){return '<p style="color:#6B7280;font-size:13px">This order is in <b>'+esc(D.status)+'</b>, so this cannot be changed here.</p>'}
+function blocked(){return '<p style="color:#6B7280;font-size:13px">This '+(D.inc?'checkout':'order')+' is in <b>'+esc(D.status)+'</b>, so this cannot be changed here.</p>'}
 var POP=window.name==='qpop';function tell(m){try{parent.postMessage(m,location.origin)}catch(_){}}
 var K={};
 K.customer=function(){if(!D.canInfo)return show('Customer Details',blocked());
@@ -84,7 +84,7 @@ K.delivery=function(){if(!D.canMoney)return show('Delivery Charge',blocked());
 var METHODS=['Cash on Delivery','ShurjoPay','NPSB Bank Transfer','bKash Personal','Nagad Personal'];
 function payForm(title,mark){if(!D.canMark)return show(title,blocked());if(D.due<=0)return show(title,'<p style="font-size:13px">This order has no due amount. Paid '+mny(D.paid)+' · '+esc(D.pstatus)+'</p>');
  pform(title,'/admin/manual-payments/entry','<input type="hidden" name="order_id" value="'+D.id+'">'+(mark?'<input type="hidden" name="mark_paid" value="1">':'')+'<p style="margin:0;font-size:13px">Method now: <b>'+esc(D.pmethod||'—')+'</b> · Paid '+mny(D.paid)+' · Due <b>'+mny(D.due)+'</b> · '+esc(D.pstatus)+'</p><label>Payment method</label><select name="method">'+opts(METHODS,D.pmethod)+'</select><label>Amount (৳)</label><input name="amount" type="number" min="1" step="0.01" max="'+D.due+'" value="'+D.due+'" required><label>Transaction ID / Reference</label><input name="txn_id" maxlength="120"><label>Sender number / name</label><input name="sender" maxlength="60">'+(mark?'<div class="qe-n">This creates a real, verified payment record (who, when, method, reference) and updates Paid/Due. It is not just a status flag.</div>':'<label style="display:flex;gap:6px;align-items:center;font-weight:500"><input type="checkbox" name="mark_paid" value="1" style="width:auto"> Payment already verified (mark as received)</label><div class="qe-n">Without the tick the entry stays Pending until verified.</div>'),mark?'Mark Paid':'Save payment')}
-K.payment=function(){payForm('Edit Payment',false)};K.markpaid=function(){payForm('Mark Paid',true)};
+K.payment=function(){if(D.inc){if(!D.canInfo)return show('Payment',blocked());return jform('Edit Payment Method','<p style="margin:0;font-size:13px">Method now: <b>'+esc(D.pmethod||'—')+'</b> · Total <b>'+mny(D.total)+'</b></p><label>Payment method</label><select name="method">'+opts(METHODS,D.pmethod)+'</select><div class="qe-n">Only the method is noted. No payment record is created until this checkout becomes an order.</div>','Save',function(f){return {kind:'payment',method:val(f,'method')}},base+'/qe/money')}payForm('Edit Payment',false)};K.markpaid=function(){payForm('Mark Paid',true)};
 K.payreq=function(){if(!D.canMark)return show('Payment Request',blocked());if(D.due<=0)return show('Payment Request','<p style="font-size:13px">This order has no due amount.</p>');
  var touched=false;function msg(f){return 'DutyFreeBD: Please pay Tk '+(parseFloat(val(f,'amount'))||0)+' for order '+D.inv+' via '+val(f,'method')+' and reply with the Transaction ID. Thank you.'}
  var f=jform('Payment Request','<label>Amount requested (৳)</label><input name="amount" type="number" min="1" step="0.01" max="'+D.due+'" value="'+D.due+'"><label>Payment method</label><select name="method">'+opts(METHODS.slice(1),'bKash Personal')+'</select><label>Customer mobile</label><input name="mobile" value="'+esc(D.phone)+'"><label>Message (SMS)</label><textarea name="message" rows="4" maxlength="320"></textarea><div class="qe-n">An SMS is sent to the customer when you press Send, and the request is saved on this invoice.</div>','Send',function(f){return {amount:val(f,'amount'),method:val(f,'method'),mobile:val(f,'mobile'),message:val(f,'message')}},base+'/qe/payreq');
@@ -97,7 +97,7 @@ function statusForm(title,pre,label){var ret='';try{ret=sessionStorage.getItem('
 K.status=function(){statusForm('Edit Order Status')};
 K.cancel=function(){statusForm('Cancel Order','Cancel','Cancel Order')};
 K.restore=function(){statusForm('Restore Order','New','Restore')};
-K.note=function(){pform('Add Note','/admin/orders/'+D.id+'/comment','<label>Type</label><select name="category"><option>Internal Note</option><option>Customer Note</option></select><label>Note</label><textarea name="body" rows="4" maxlength="2000" required></textarea><div class="qe-n">Notes are kept as history and cannot be deleted.</div>','Save note')};
+K.note=function(){pform('Add Note',base+'/comment','<label>Type</label><select name="category"><option>Internal Note</option><option>Customer Note</option></select><label>Note</label><textarea name="body" rows="4" maxlength="2000" required></textarea><div class="qe-n">Notes are kept as history and cannot be deleted.</div>','Save note')};
 K.dup=function(){jform('Mark as Duplicate','<p style="margin:0;font-size:13px">Use when the customer submitted this same order more than once. <b>'+esc(D.inv)+'</b> will be linked to the original and moved to Cancel (stock, courier, SMS and revenue skip it). Nothing is deleted.</p><label>Original invoice *</label><input name="original" value="'+esc(D.dupSug)+'" placeholder="INV-xxxxxx" maxlength="40" autocomplete="off">'+(D.dupSug?'<div class="qe-n">Suggested: the earlier order with the same phone and amount.</div>':'')+'<label>Note (optional)</label><input name="note" maxlength="300">','Mark Duplicate',function(f){var o=val(f,'original').trim();if(!o){err(f,'Enter the original invoice number.');return null}return {original:o,note:val(f,'note')}},base+'/qe/duplicate')};
 K.undup=function(){jform('Not a Duplicate','<p style="margin:0;font-size:13px"><b>'+esc(D.inv)+'</b> is marked as a duplicate of <b>'+esc(D.dupOf)+'</b>. Remove the mark and put the order back to New?</p>','Remove mark',function(f){return {undo:1}},base+'/qe/duplicate')};
 K.activity=function(){var e=document.getElementById('staffact');if(e){e.scrollIntoView({behavior:'smooth',block:'start'})}};

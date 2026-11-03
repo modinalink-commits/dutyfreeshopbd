@@ -38,7 +38,12 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/orders/lookup', [A::class,'orderLookup']);
   Route::get('/incomplete', fn() => redirect('/admin/orders?status=Incomplete'));
   Route::post('/incomplete/bulk', [\App\Http\Controllers\IncompleteController::class,'bulk']);
-  Route::get('/incomplete/{id}', [\App\Http\Controllers\IncompleteController::class,'show'])->whereNumber('id');
+  Route::get('/incomplete/{id}', [\App\Http\Controllers\IncompleteEditController::class,'show'])->whereNumber('id');
+  Route::get('/incomplete/{id}/qpop', function ($id) { $r = \Illuminate\Support\Facades\DB::table('incomplete_orders')->find($id); abort_unless($r, 404); abort_unless(\App\Http\Middleware\ModulePermission::can(auth()->user(), 'orders', 'edit'), 403); return view('incomplete_qpop', ['o'=>\App\Http\Controllers\IncompleteEditController::asOrder($r), 'items'=>\App\Http\Controllers\IncompleteEditController::asItems($r)]); })->whereNumber('id');
+  Route::post('/incomplete/{id}/qe/money', [\App\Http\Controllers\IncompleteEditController::class,'money'])->whereNumber('id');
+  Route::post('/incomplete/{id}/qe/{what}', [\App\Http\Controllers\IncompleteEditController::class,'qe'])->whereNumber('id')->where('what','customer|address|courier|payreq');
+  Route::post('/incomplete/{id}/status', [\App\Http\Controllers\IncompleteEditController::class,'status'])->whereNumber('id');
+  Route::post('/incomplete/{id}/comment', [\App\Http\Controllers\IncompleteEditController::class,'comment'])->whereNumber('id');
   Route::get('/incomplete/{id}/edit', [\App\Http\Controllers\IncompleteController::class,'edit'])->whereNumber('id');
   Route::post('/incomplete/{id}/update', [\App\Http\Controllers\IncompleteController::class,'update'])->whereNumber('id');
   Route::post('/incomplete/{id}/quick', [\App\Http\Controllers\IncompleteController::class,'quick'])->whereNumber('id');
