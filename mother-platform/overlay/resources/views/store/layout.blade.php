@@ -240,6 +240,7 @@ fetch('/ai-chat',{method:'POST',headers:{'Content-Type':'application/json','Acce
 @media(max-width:760px){
   body .w{padding-left:10px;padding-right:10px}
   body .gr{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  body .cl{grid-template-columns:minmax(0,1fr)}
   body .cl .gr{grid-template-columns:repeat(2,minmax(0,1fr))}
   body .w [data-cr],body #top [data-cr]{--pv:2;--g:10px}
   body .w [data-cr="1"]{--pv:1}
