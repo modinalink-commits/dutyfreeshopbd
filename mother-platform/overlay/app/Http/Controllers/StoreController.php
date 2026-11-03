@@ -136,6 +136,10 @@ class StoreController extends Controller {
   }
   /** Below-the-fold home category section, lazy-loaded by the home page so the first HTML stays small. */
   /** Private preview of the globe section before it goes on the front page. */
+  public function dealPreview() {
+    $deals = self::dealList(self::set())->take(12);
+    return response()->view('store.deal_preview', $this->base(['deals'=>$deals, 'title'=>'Deal boarding pass preview | DutyFree BD', 'desc'=>'', 'canon'=>url('/deal-preview'), 'noindex'=>true]))->header('X-Robots-Tag', 'noindex')->header('Cache-Control', 'no-store');
+  }
   public function globePreview() {
     $deals = self::dealList(self::set())->take(6);
     return response()->view('store.globe_preview', $this->base(['deals'=>$deals, 'title'=>'Globe preview | DutyFree BD', 'desc'=>'', 'canon'=>url('/globe-preview'), 'noindex'=>true]))->header('X-Robots-Tag', 'noindex')->header('Cache-Control', 'no-store');
