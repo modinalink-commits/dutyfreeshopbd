@@ -73,7 +73,7 @@ main .grid{gap:10px}main .k b{font-size:20px}main .k span{font-size:11.5px}
 main .pill{font-size:10.5px;font-weight:700;border-radius:6px;padding:2px 8px}
 @media(max-width:800px){main{padding:12px}main table:not(.ordt){display:block;overflow-x:auto;max-width:100%}main .btn,main button{min-height:34px}}
 </style></head><body>
-@auth @include('sidebar') @include('admin_grid') @endauth
+@auth @include('sidebar') @include('admin_grid') @include('admin_theme') @endauth
 <main>@yield('body')</main>
 @auth @include('chat_widget') @include('softphone_fab') @endauth
 @yield('js')
