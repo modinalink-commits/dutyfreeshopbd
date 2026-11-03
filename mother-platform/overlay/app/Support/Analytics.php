@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
  * Money columns are product revenue (items minus discount); shipping charged is shown only in the P&L.
  */
 class Analytics {
-  const DONE = "('Delivered','Partial Delivered','Late Delivery','Partial Return Pending','Partial Return Received','Partial Returned')";
+  const DONE = "('Delivered','Partial Delivered','Late Delivery')";
   const RET  = "('Returned','Return Pending')";
   const LIMIT = 5000;
 
@@ -52,7 +52,7 @@ class Analytics {
     if ($f['courier'] !== '') { if ($f['courier'] === 'Unassigned') $c[] = "coalesce(o.courier,'') = ''"; else { $c[] = 'o.courier = ?'; $b[] = $f['courier']; } }
     if (($f['source'] ?? '') !== '') { $c[] = 'o.source = ?'; $b[] = $f['source']; }
     if ($f['status'] !== '') { $c[] = 'o.status = ?'; $b[] = $f['status']; }
-    elseif ($basis === 'valid') $c[] = "o.status not in ('Cancel','Returned','Return Pending')";
+    elseif ($basis === 'valid') $c[] = "(o.status not in ('Cancel','Returned','Return Pending') or o.return_type = 'Partial')";
     elseif ($basis === 'nocancel') $c[] = "o.status <> 'Cancel'";
     if ($f['pay'] !== '') { $c[] = "coalesce(o.pay_status,'') = ?"; $b[] = $f['pay'] === 'None' ? '' : $f['pay']; }
     if ($f['customer'] !== '') { $c[] = '(o.phone ilike ? or o.customer_name ilike ?)'; $b[] = '%'.$f['customer'].'%'; $b[] = '%'.$f['customer'].'%'; }
@@ -192,7 +192,7 @@ class Analytics {
   /** Statement rows for Profit / Loss. */
   private static function profitLoss(array $f): array {
     [$w, $b] = self::w($f, 'all');
-    $v = "o.status not in ('Cancel','Returned','Return Pending')";
+    $v = "(o.status not in ('Cancel','Returned','Return Pending') or o.return_type = 'Partial')";
     $sql = "select coalesce(sum(case when $v then x.items end),0) items, coalesce(sum(case when $v then o.discount end),0) disc, coalesce(sum(case when $v then x.cost end),0) cost, coalesce(sum(case when $v then o.shipping end),0) ship, coalesce(sum(case when $v then o.delivery_free_discount end),0) dfree, coalesce(sum(case when $v then o.delivery_manual_adj end),0) dadj, coalesce(sum(case when $v then coalesce(o.courier_fee,0) end),0) cfee, coalesce(sum(case when o.status in ".self::RET." then coalesce(o.courier_return_fee,0) end),0) rfee, coalesce(sum(case when o.status in ".self::RET." then x.items - o.discount end),0) ret from orders o".self::lat().$w;
     $r = (array)(self::sel($sql, $b)[0] ?? []);
     $exp = (float)(DB::select("select coalesce(sum(amount),0) s from account_entries where direction = 'expense' and entry_date between ? and ?", [$f['from'], $f['to']])[0]->s ?? 0);
@@ -222,7 +222,7 @@ class Analytics {
     $c = ['1=1']; $b = [self::utc($f['from'], false), self::utc($f['to'], true)];
     if ($f['category']) { $c[] = 'p.category_id = ?'; $b[] = $f['category']; }
     if ($f['product'] !== '') { $c[] = '(p.name ilike ? or p.sku ilike ?)'; $b[] = '%'.$f['product'].'%'; $b[] = '%'.$f['product'].'%'; }
-    $sql = "select p.name product, coalesce(p.sku,'') sku, coalesce(p.image,'') image, coalesce(c.name,'') category, p.price price, p.cost cost, coalesce((select sum((i.qty - case when o.status in ('Partial Return Pending','Partial Return Received','Partial Returned') then coalesce(i.ret_qty,0) else 0 end)) from order_items i join orders o on o.id = i.order_id where i.product_id = p.id and o.created_at >= ? and o.created_at < ? and o.status not in ('Cancel','Returned','Return Pending')),0) sold from products p left join categories c on c.id = p.category_id where ".implode(' and ', $c)." order by case when p.price > 0 then (p.price - p.cost) / p.price end asc nulls last limit ".self::LIMIT;
+    $sql = "select p.name product, coalesce(p.sku,'') sku, coalesce(p.image,'') image, coalesce(c.name,'') category, p.price price, p.cost cost, coalesce((select sum((i.qty - case when (o.status in ('Return Pending','Returned') and o.return_type = 'Partial') then coalesce(i.ret_qty,0) else 0 end)) from order_items i join orders o on o.id = i.order_id where i.product_id = p.id and o.created_at >= ? and o.created_at < ? and (o.status not in ('Cancel','Returned','Return Pending') or o.return_type = 'Partial')),0) sold from products p left join categories c on c.id = p.category_id where ".implode(' and ', $c)." order by case when p.price > 0 then (p.price - p.cost) / p.price end asc nulls last limit ".self::LIMIT;
     $rows = self::arr(self::sel($sql, $b));
     foreach ($rows as &$r) { $r['unit_profit'] = (float)$r['price'] - (float)$r['cost']; $r['margin'] = (float)$r['price'] > 0 ? round($r['unit_profit'] / (float)$r['price'] * 100, 1) : 0; }
     return $rows;
@@ -237,7 +237,7 @@ class Analytics {
     $sql = "select p.name product, coalesce(p.sku,'') sku, coalesce(p.image,'') image, 'All stores (one shared stock)' store, p.stock current, coalesce(l.since,0) since, coalesce(l.net,0) net, coalesce(l.inn,0) stock_in, coalesce(l.outt,0) stock_out, coalesce(s.sold,0) sold, coalesce(s.ret,0) returned
       from products p
       left join (select product_id, sum(case when created_at >= ? then change_qty end) since, sum(case when created_at >= ? and created_at < ? then change_qty end) net, sum(case when created_at >= ? and created_at < ? and change_qty > 0 then change_qty end) inn, sum(case when created_at >= ? and created_at < ? and change_qty < 0 then -change_qty end) outt from stock_logs group by product_id) l on l.product_id = p.id
-      left join (select i.product_id, sum(case when o.status not in ('Cancel','Returned','Return Pending') then (i.qty - case when o.status in ('Partial Return Pending','Partial Return Received','Partial Returned') then coalesce(i.ret_qty,0) else 0 end) end) sold, sum(case when o.status in ".self::RET." then i.qty when o.status in ('Partial Return Pending','Partial Return Received','Partial Returned') then coalesce(i.ret_qty,0) end) ret from order_items i join orders o on o.id = i.order_id where o.created_at >= ? and o.created_at < ? group by i.product_id) s on s.product_id = p.id
+      left join (select i.product_id, sum(case when (o.status not in ('Cancel','Returned','Return Pending') or o.return_type = 'Partial') then (i.qty - case when (o.status in ('Return Pending','Returned') and o.return_type = 'Partial') then coalesce(i.ret_qty,0) else 0 end) end) sold, sum(case when (o.status in ('Return Pending','Returned') and o.return_type = 'Partial') then coalesce(i.ret_qty,0) when o.status in ".self::RET." then i.qty end) ret from order_items i join orders o on o.id = i.order_id where o.created_at >= ? and o.created_at < ? group by i.product_id) s on s.product_id = p.id
       where ".implode(' and ', $c)." order by p.name limit ".self::LIMIT;
     $rows = self::arr(self::sel($sql, $b));
     foreach ($rows as &$r) { $r['opening'] = (int)$r['current'] - (int)$r['since']; $r['closing'] = $r['opening'] + (int)$r['net']; }
@@ -384,7 +384,7 @@ class Analytics {
   public static function trend(array $f): array {
     [$w, $b] = self::w($f, 'all');
     $d = self::day();
-    $v = "o.status not in ('Cancel','Returned','Return Pending')";
+    $v = "(o.status not in ('Cancel','Returned','Return Pending') or o.return_type = 'Partial')";
     $sql = "select $d date, sum(case when $v then 1 else 0 end) orders, coalesce(sum(case when $v then x.items - o.discount end),0) sales, coalesce(sum(case when $v then x.items - o.discount - x.cost - coalesce(o.courier_fee,0) end),0) profit, sum(case when o.status in ".self::DONE." then 1 else 0 end) delivered, sum(case when o.status in ".self::RET." then 1 else 0 end) returned from orders o".self::lat()."$w group by $d order by 1";
     return self::arr(self::sel($sql, $b));
   }
@@ -398,7 +398,7 @@ class Analytics {
   }
   public static function dashboard(array $f): array {
     [$w, $b] = self::w($f, 'all');
-    $v = "o.status not in ('Cancel','Returned','Return Pending')";
+    $v = "(o.status not in ('Cancel','Returned','Return Pending') or o.return_type = 'Partial')";
     $sql = "select count(*) all_orders, sum(case when $v then 1 else 0 end) orders, coalesce(sum(case when $v then x.items - o.discount end),0) sales, coalesce(sum(case when $v then x.cost end),0) cost, coalesce(sum(case when $v then coalesce(o.courier_fee,0) end),0) cfee, sum(case when o.status in ".self::DONE." then 1 else 0 end) delivered, sum(case when o.status in ".self::RET." then 1 else 0 end) returned, sum(case when o.status = 'Cancel' then 1 else 0 end) cancelled, sum(case when $v and o.status not in ".self::DONE." then 1 else 0 end) pending from orders o".self::lat().$w;
     return (array)(self::sel($sql, $b)[0] ?? []);
   }

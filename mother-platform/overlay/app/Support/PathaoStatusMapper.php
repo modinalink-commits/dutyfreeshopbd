@@ -7,9 +7,9 @@ class PathaoStatusMapper {
   const OUTCOMES = ['Partial Return', 'Exchange', 'Regular Return', 'Paid Return'];
   const ACTIONS = [
     'none' => 'No order change (courier tracking only)',
-    'partial_pending' => 'Partial Return Pending',
-    'exchange_pending' => 'Exchange Pending',
-    'return_pending' => 'Return Pending',
+    'partial_pending' => 'Return Pending (Partial Return)',
+    'exchange_pending' => 'Return Pending (Exchange)',
+    'return_pending' => 'Return Pending (Regular Return)',
   ];
   public static function key(?string $raw): string { return trim(preg_replace('/[^a-z0-9]+/', ' ', strtolower((string)$raw))); }
   /** Cached as plain arrays (the cache does not hand back stdClass objects), rebuilt into objects on every read. */

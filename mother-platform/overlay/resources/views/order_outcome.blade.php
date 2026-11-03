@@ -4,15 +4,13 @@ $soRec = in_array($soSt, \App\Support\ShipmentOutcome::RECORDABLE, true);
 $soS = \App\Support\ShipmentOutcome::summary($o, $items);
 $soShow = $soRec || $soS['has'] || in_array($soSt, \App\Support\ShipmentOutcome::RETURN_STATUSES, true);
 $soExp = \App\Support\ShipmentOutcome::expected($o, $items);
+$soKind = $o->return_type === 'Exchange' ? 'Exchange' : ($o->return_type === 'Partial' ? 'Partial Return' : 'Return');
 $soStock = $o->stock_deducted_at !== null && $o->stock_returned_at === null;
 @endphp
 @if($soShow)
 <div class="card" id="soCard" data-live-swap>@if(!empty($o->billing_flag))<div style="margin:0 0 10px;padding:8px 10px;border-radius:8px;background:#FEF2F2;color:#B91C1C;font-size:13px;font-weight:700">⚠ {{ $o->billing_flag }} — needs manual review. <span style="font-weight:500">{{ $o->billing_flag_note }}</span></div>@endif<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px"><h3 style="margin:0;flex:1">Delivery Outcome @if($o->return_type)<span class="pill s-{{ $o->return_type==='Partial' ? 'partial-return-pending' : ($o->return_type==='Exchange' ? 'exchange-pending' : 'return-pending') }}" style="margin-left:6px">{{ $o->return_type }} Return</span>@endif</h3>
 @if($soCan && $soRec)<button type="button" class="btn" id="soOpen" style="font-size:12px">📦 {{ $soS['has'] ? 'Update' : 'Record' }} Delivery Outcome</button>@endif
-@if($soCan && $soSt==='Partial Return Pending' && $soExp)<button type="button" class="btn" id="soRcvOpen" style="font-size:12px;background:#7C3AED">📥 Partial Return Received</button>@endif
-@if($soCan && $soSt==='Exchange Pending' && $soExp)<button type="button" class="btn" id="soRcvOpen" style="font-size:12px;background:#A21CAF">📥 Exchange Received</button>@endif
-@if($soCan && $soSt==='Return Pending' && $soExp)<button type="button" class="btn" id="soRcvOpen" style="font-size:12px;background:#7C3AED">📥 Return Received</button>@endif
-@if($soCan && $soSt==='Partial Return Received')<button type="button" class="btn" id="soDone" style="font-size:12px;background:#7E22CE">✔ Complete Partial Return</button>@endif
+@if($soCan && $soSt==='Return Pending' && $soExp)<button type="button" class="btn" id="soRcvOpen" style="font-size:12px;background:{{ $soKind==='Exchange' ? '#A21CAF' : '#7C3AED' }}">📥 {{ $soKind }} Received</button>@endif
 </div>
 <table><thead><tr><th>Product</th><th style="width:70px">Qty</th><th style="width:220px">Delivery Outcome</th><th style="width:110px;text-align:right">Value</th></tr></thead><tbody>
 @foreach($items as $i)@php $iq=(int)$i->qty; $ir=max(0,min($iq,(int)($i->ret_qty ?? 0))); $lab=\App\Support\ShipmentOutcome::itemLabel($i); $col = !($i->outcome ?? null) ? ['#F3F4F6','#4B5563'] : ($i->outcome==='Received' ? ['#DCFCE7','#166534'] : ($i->outcome==='Returned' ? ['#F3E8FF','#7E22CE'] : ['#FFEDD5','#C2410C'])); @endphp
@@ -35,13 +33,13 @@ $soStock = $o->stock_deducted_at !== null && $o->stock_returned_at === null;
 <input id="soNote" placeholder="Note (optional)" maxlength="300" style="width:100%;margin-bottom:10px"><div id="soErr" style="color:#B91C1C;font-size:12px;margin-bottom:6px"></div>
 <div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn g" id="soCancel">Cancel</button><button type="button" class="btn" id="soSave">Save Outcome</button></div></div></div>
 @endif
-@if($soCan && in_array($soSt, ['Partial Return Pending','Return Pending','Exchange Pending'], true) && $soExp)
+@if($soCan && $soSt==='Return Pending' && $soExp)
 <div id="soRcv" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:90;align-items:center;justify-content:center"><div style="background:#fff;border-radius:12px;padding:16px;width:min(620px,94vw);max-height:90vh;overflow:auto">
-<div style="display:flex;justify-content:space-between;align-items:center"><b>{{ $soSt==='Return Pending' ? 'Return Received' : ($soSt==='Exchange Pending' ? 'Exchange Received' : 'Partial Return Received') }} · {{ $o->invoice }}</b><a href="#" id="soRX" style="font-size:20px;text-decoration:none">×</a></div>
+<div style="display:flex;justify-content:space-between;align-items:center"><b>{{ $soKind }} Received · {{ $o->invoice }}</b><a href="#" id="soRX" style="font-size:20px;text-decoration:none">×</a></div>
 <p style="font-size:12px;color:#6B7280;margin:6px 0 10px">Check the products that physically came back and fix the quantity if needed. @if($soStock)<b style="color:#166534">Stock will be increased by exactly the quantities received back.</b>@else<b style="color:#B45309">Stock will not change: @if($o->stock_deducted_at === null)this order shipped before automatic stock deduction started.@else its stock was already returned.@endif</b>@endif</p>
 @foreach($soExp as [$ei, $eq])<div class="soRc" data-id="{{ $ei->id }}" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 0;border-top:1px solid #E5E7EB"><div style="flex:1;min-width:180px"><b>{{ $ei->name }}</b><div style="font-size:12px;color:#6B7280">Returning {{ $eq }}</div></div><label style="font-size:12px;display:flex;gap:4px;align-items:center">Received back<input type="number" class="soBk" min="0" max="{{ $eq }}" value="{{ $eq }}" style="width:70px"></label></div>@endforeach
 <div id="soRErr" style="color:#B91C1C;font-size:12px;margin:8px 0"></div>
-<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px"><button type="button" class="btn g" id="soRCancel">Cancel</button><button type="button" class="btn" id="soRSave" style="background:#7C3AED">{{ $soSt==='Return Pending' ? 'Confirm Return Received' : ($soSt==='Exchange Pending' ? 'Confirm Exchange Received' : 'Confirm Partial Return Received') }}</button></div></div></div>
+<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px"><button type="button" class="btn g" id="soRCancel">Cancel</button><button type="button" class="btn" id="soRSave" style="background:#7C3AED">Confirm {{ $soKind }} Received</button></div></div></div>
 @endif
 @verbatim<script>(function(){var T=(document.querySelector('meta[name=csrf-token]')||{}).content||'';
 function post(url,body,cb){var f=new FormData();f.append('_token',T);for(var k in body)f.append(k,body[k]);fetch(url,{method:'POST',body:f,credentials:'same-origin',headers:{'X-Requested-With':'XMLHttpRequest',Accept:'application/json'}}).then(function(r){return r.json().catch(function(){return{success:false,message:'Request failed ('+r.status+')'}})}).then(cb).catch(function(){cb({success:false,message:'Network error'})})}

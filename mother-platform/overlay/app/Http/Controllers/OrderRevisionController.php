@@ -22,7 +22,7 @@ class OrderRevisionController extends Controller {
   }
   /** null = editable, otherwise the sentence to show. */
   private function blocked($o, array $P): ?string {
-    if (in_array($o->status, ['Shipment', 'Partial Delivered', 'Delivered', 'Late Delivery', 'Partial Return Pending', 'Partial Return Received', 'Partial Returned'])) return 'This order has already been shipped. Use Return / Replacement workflow instead.';
+    if (in_array($o->status, ['Shipment', 'Partial Delivered', 'Delivered', 'Late Delivery', 'Return Pending', 'Returned', 'Exchange Received'])) return 'This order has already been shipped. Use Return / Replacement workflow instead.';
     if (!in_array($o->status, self::EDITABLE)) return 'An order in "'.$o->status.'" cannot be edited.';
     if (!$P['edit']) return 'Your role does not allow editing orders.';
     if (in_array($o->status, self::CONFIRMED) && !$P['confirmed']) return 'This order is already confirmed. Editing it needs the "Edit Confirmed Order" permission.';
