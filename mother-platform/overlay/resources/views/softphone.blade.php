@@ -142,7 +142,7 @@ var ch=window.BroadcastChannel?new BroadcastChannel('dfphone'):null,pend=null;
 var agBusy=($('stSel')||{}).value==='busy';
 var tmpReg=false,pendCall=null,lastLog=null;
 function busyUnreg(){if(ua&&agBusy&&!inCall()&&!tmpReg&&!pend){try{ua.unregister({all:true})}catch(e){}}}
-function stApply(v,tell){var was=agBusy;agBusy=v==='busy';var e=$('stSel');if(e){e.value=v;e.className='stsel st-'+v;e.textContent=v==='busy'?'\u25CF Offline':'\u25CF Online'}if(emb&&tell!==false)parent.postMessage({dfdial:'status',v:v},location.origin);if(tell!==false&&ch)try{ch.postMessage({type:'status',v:v})}catch(x){}
+function stApply(v,tell){if(v!=='busy'&&v!=='available')return;var was=agBusy;agBusy=v==='busy';var e=$('stSel');if(e){e.value=v;e.className='stsel st-'+v;e.textContent=v==='busy'?'\u25CF Offline':'\u25CF Online'}if(emb&&tell!==false)parent.postMessage({dfdial:'status',v:v},location.origin);if(tell!==false&&ch)try{ch.postMessage({type:'status',v:v})}catch(x){}
  if(ua&&agBusy!==was){if(agBusy)busyUnreg();else{try{ua.register()}catch(x){}}}if(agBusy)badge('Busy · not receiving calls','b-bad');else if(was&&ua&&reg())badge('Connected','b-ok')}
 setInterval(function(){getj('/admin/call-center/my-status').then(function(j){if(j&&j.status&&(j.status==='busy')!==agBusy)stApply(j.status,false)}).catch(function(){})},20000);
 if($('stSel')){$('stSel').onclick=function(){var v=agBusy?'available':'busy';stApply(v);post('/admin/call-center/my-status',{status:v}).then(function(j){if(!j||!j.ok)stApply(agBusy?'available':'busy')}).catch(function(){})};stApply(agBusy?'busy':'available')}
