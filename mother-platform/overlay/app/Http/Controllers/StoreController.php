@@ -175,7 +175,12 @@ class StoreController extends Controller {
     $canon = url('/'.$slug).($subSlug !== null ? '/'.$subSlug.($subSubName !== null ? '/'.\App\Support\Slugs::slug($subSubName, 60) : '') : '/'); if ($subSubName !== null) { $subName = $subSubName.' · '.$subName; }
     $baseT = trim((string)($c->title ?: $c->name));
     if ($subName) { $tt = $subName.' – '.$c->name; if (mb_strlen($tt) < 26) $tt .= ' – Original Imported Products'; $title = self::fitTitle($tt, ' | DutyFree BD'); }
-    else { if (mb_strlen($baseT) < 30) $baseT .= ' – Original Imported Products in Bangladesh'; $title = mb_strlen($baseT) <= 66 && mb_strlen($baseT) >= 30 && str_contains($baseT, '|') ? $baseT : self::fitTitle($baseT, ' | DutyFree BD'); }
+    else {
+      $baseT = trim(preg_replace('/\s*\|.*$/su', '', $baseT)); // drop any old "| brand" suffix, the brand is added once below
+      if (mb_strlen($baseT) < 10) $baseT = trim((string)$c->name);
+      if (mb_strlen($baseT) < 30) $baseT .= ' – Original Imported Products in Bangladesh';
+      $title = self::fitTitle($baseT, ' | DutyFree BD');
+    }
     return response()->view('store.category', $this->base(['c'=>$c, 'subName'=>$subName, 'subSlug'=>$subSlug, 'items'=>$items, 'hasPos'=>$hasPos, 'groups'=>collect($items->items())->groupBy(fn($p) => $p->sub ?: $c->name), 'title'=>$title, 'desc'=>$subName ? $subName.' – original imported products in '.$c->name.' at DutyFree BD. Cash on delivery, nationwide delivery.' : $c->meta_description, 'canon'=>(!$subName && !empty($c->canonical)) ? $c->canonical : $canon, 'noindex'=>(!empty($c->noindex) && !$subName) || self::isSmokeCat($c), 'keywords'=>$c->focus_keyword ?? null, 'ogimg'=>(!empty($c->og_image) ? $c->og_image : null)]))->header('Cache-Control','public, max-age=120');
   }
   /** /category/secondary-category */
