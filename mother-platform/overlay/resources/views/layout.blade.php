@@ -75,6 +75,7 @@ main .pill{font-size:10.5px;font-weight:700;border-radius:6px;padding:2px 8px}
 /* v1.303 global hover border contrast: same 1px width, only colour darkens; no layout shift */
 :root{--border-grid:#CED4DA;--border-hover:#9CA3AF}
 main input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]),main select,main textarea,main .chip,main .pre button,main .rf{transition:border-color .15s ease,background-color .15s ease,box-shadow .15s ease}
+main input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]):not(:focus),main select:not(:focus),main textarea:not(:focus),main .pre button,main .rf{border-color:var(--border-grid)}
 main input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]):not(:focus):hover,main select:not(:focus):hover,main textarea:not(:focus):hover{border-color:var(--border-hover)}
 main .btn:hover,main button:hover,main a.btn:hover{box-shadow:inset 0 0 0 1px rgba(15,23,42,.32)}
 main .chip:hover{border-color:rgba(15,23,42,.38)!important}
