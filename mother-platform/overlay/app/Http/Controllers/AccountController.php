@@ -39,9 +39,9 @@ class AccountController extends StoreController {
   }
   private function cid($c) { return 'DFC'.str_pad((string)$c->id, 6, '0', STR_PAD_LEFT); }
   /** Customer-facing category. "Watchlist" is an internal risk label and is never shown. */
-  private function custCategory(string $phone, ?object $c): string {
+  private function custCategory(?string $phone, ?object $c): string {
     $cat = 'New';
-    try { $first = DB::table('orders')->where('phone', $phone)->orderByDesc('id')->first(['id', 'phone', 'total']); if ($first) $cat = CustomerIntel::forOrders([$first])[$first->id]['cat'] ?? 'Regular'; elseif ($c && (int)$c->legacy_orders > 0) $cat = 'Regular'; } catch (\Throwable $e) {}
+    try { $first = ($phone !== null && $phone !== '') ? DB::table('orders')->where('phone', $phone)->orderByDesc('id')->first(['id', 'phone', 'total']) : null; if ($first) $cat = CustomerIntel::forOrders([$first])[$first->id]['cat'] ?? 'Regular'; elseif ($c && (int)$c->legacy_orders > 0) $cat = 'Regular'; } catch (\Throwable $e) {}
     return $cat === 'Watchlist' ? 'Regular' : $cat;
   }
   private function otpKey($purpose, $p) { return "ac.otp.$purpose.$p"; }
@@ -285,7 +285,7 @@ class AccountController extends StoreController {
       $recent = $all->take(5); $d['recent'] = $recent; $d['items'] = $this->thumbs($recent->pluck('id')->all());
       $d['wishN'] = DB::table('customer_wishlist')->where('customer_id', $c->id)->count(); $d['addrN'] = DB::table('customer_addresses')->where('customer_id', $c->id)->count();
       $d['couponN'] = $this->publicCoupons()->count();
-      $d['chatN'] = DB::table('chat_threads')->where(fn($q) => $q->where('customer_id', $c->id)->orWhere('phone', $c->phone))->where('channel', 'web')->count();
+      $d['chatN'] = DB::table('chat_threads')->where(fn($q) => $c->phone ? $q->where('customer_id', $c->id)->orWhere('phone', $c->phone) : $q->where('customer_id', $c->id))->where('channel', 'web')->count();
     }
     if ($tab === 'orders') {
       if ($arg) return $this->orderDetail($c, $arg, $d);
@@ -314,7 +314,7 @@ class AccountController extends StoreController {
         ->whereNotNull('i.product_id')->whereNotIn('i.product_id', $done ?: [0])->groupBy('i.product_id', 'i.name', 'p.image')->select('i.product_id', 'i.name', 'p.image', DB::raw('max(o.id) as oid'))->limit(12)->get();
     }
     if ($tab === 'support') {
-      $th = DB::table('chat_threads')->where('channel', 'web')->where(fn($q) => $q->where('customer_id', $c->id)->orWhere('phone', $c->phone))->orderByDesc('last_at')->limit(5)->get();
+      $th = DB::table('chat_threads')->where('channel', 'web')->where(fn($q) => $c->phone ? $q->where('customer_id', $c->id)->orWhere('phone', $c->phone) : $q->where('customer_id', $c->id))->orderByDesc('last_at')->limit(5)->get();
       $d['threads'] = $th->map(fn($t) => ['t'=>$t, 'msgs'=>DB::table('chat_messages')->where('thread_id', $t->id)->orderByDesc('id')->limit(30)->get()->reverse()->values()]);
     }
     if ($tab === 'notifications') $d['notes'] = $this->notes($c, $all);
@@ -336,7 +336,7 @@ class AccountController extends StoreController {
       $out[] = ['at'=>$l->created_at, 'icon'=>$g === 'Delivered' ? '✅' : ($g === 'Shipment' ? '🚚' : ($g === 'Cancelled' ? '❌' : '📦')), 'text'=>$msg.' · '.($inv[$l->order_id] ?? ''), 'href'=>'/account/orders/'.($inv[$l->order_id] ?? '')];
     }
     foreach ($all as $o) if ($o->pay_status === 'Verified') $out[] = ['at'=>$o->created_at, 'icon'=>'💳', 'text'=>'পেমেন্ট যাচাই হয়েছে · '.$o->invoice, 'href'=>'/account/orders/'.$o->invoice];
-    foreach (DB::table('chat_messages as m')->join('chat_threads as t', 't.id', '=', 'm.thread_id')->where('t.channel', 'web')->where(fn($q) => $q->where('t.customer_id', $c->id)->orWhere('t.phone', $c->phone))->where('m.dir', 'out')->orderByDesc('m.id')->limit(5)->get(['m.body', 'm.created_at']) as $m)
+    foreach (DB::table('chat_messages as m')->join('chat_threads as t', 't.id', '=', 'm.thread_id')->where('t.channel', 'web')->where(fn($q) => $c->phone ? $q->where('t.customer_id', $c->id)->orWhere('t.phone', $c->phone) : $q->where('t.customer_id', $c->id))->where('m.dir', 'out')->orderByDesc('m.id')->limit(5)->get(['m.body', 'm.created_at']) as $m)
       $out[] = ['at'=>$m->created_at, 'icon'=>'💬', 'text'=>'সাপোর্ট রিপ্লাই: '.mb_substr((string)$m->body, 0, 80), 'href'=>'/account/support'];
     usort($out, fn($a, $b) => strcmp((string)$b['at'], (string)$a['at']));
     return array_slice($out, 0, 30);
@@ -430,7 +430,7 @@ class AccountController extends StoreController {
   public function review(Request $r) {
     $c = $this->me($r); if (!$c) return response()->json([], 401);
     $d = $r->validate(['product_id'=>'required|integer', 'rating'=>'required|integer|min:1|max:5', 'body'=>'nullable|string|max:1000']);
-    $bought = DB::table('order_items as i')->join('orders as o', 'o.id', '=', 'i.order_id')->where('i.product_id', $d['product_id'])->where('o.status', 'Delivered')->where(fn($q) => $q->where('o.phone', $c->phone)->orWhere('o.customer_id', $c->id))->orderByDesc('o.id')->value('o.id');
+    $bought = DB::table('order_items as i')->join('orders as o', 'o.id', '=', 'i.order_id')->where('i.product_id', $d['product_id'])->where('o.status', 'Delivered')->where(fn($q) => $c->phone ? $q->where('o.phone', $c->phone)->orWhere('o.customer_id', $c->id) : $q->where('o.customer_id', $c->id))->orderByDesc('o.id')->value('o.id');
     if (!$bought) return response()->json(['ok'=>false, 'error'=>'শুধু ডেলিভারি হওয়া প্রোডাক্টে রিভিউ দেওয়া যায়'], 422);
     if (DB::table('reviews')->where('customer_id', $c->id)->where('product_id', $d['product_id'])->exists()) return response()->json(['ok'=>false, 'error'=>'আপনি ইতিমধ্যে রিভিউ দিয়েছেন'], 422);
     DB::table('reviews')->insert(['product_id'=>$d['product_id'], 'customer_id'=>$c->id, 'order_id'=>$bought, 'name'=>$c->name, 'rating'=>$d['rating'], 'body'=>strip_tags((string)($d['body'] ?? '')), 'verified_buyer'=>true, 'status'=>'pending', 'created_at'=>now(), 'updated_at'=>now()]);
@@ -455,7 +455,7 @@ class AccountController extends StoreController {
   public function whoami(Request $r) {
     $c = $this->me($r); if (!$c) return response()->json(['in'=>false])->header('Cache-Control', 'no-store');
     $a = DB::table('customer_addresses')->where('customer_id', $c->id)->orderByDesc('is_default')->orderBy('id')->first();
-    $lastO = DB::table('orders')->where('phone', $c->phone)->whereNotNull('address')->orderByDesc('id')->first(['address', 'district']);
+    $lastO = DB::table('orders')->where(fn($q) => $c->phone ? $q->where('phone', $c->phone)->orWhere('customer_id', $c->id) : $q->where('customer_id', $c->id))->whereNotNull('address')->orderByDesc('id')->first(['address', 'district']);
     $addr = $a ? trim(implode(', ', array_filter([$a->road, $a->area, $a->thana]))) : ($lastO->address ?? '');
     return response()->json(['in'=>true, 'p'=>$c->phone, 'n'=>$c->name, 'e'=>$c->email ?: '', 'a'=>$addr, 'd'=>$a->district ?? ($lastO->district ?? '')])->header('Cache-Control', 'no-store');
   }
