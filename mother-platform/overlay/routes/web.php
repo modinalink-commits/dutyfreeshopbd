@@ -132,6 +132,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/late-delivery/{id}/follow', [\App\Http\Controllers\LateDeliveryController::class,'follow'])->whereNumber('id');
   Route::get('/courier/pathao-invoices', [\App\Http\Controllers\PathaoInvoiceController::class,'index']);
   Route::post('/courier/pathao-invoices/import', [\App\Http\Controllers\PathaoInvoiceController::class,'import']);
+  Route::post('/courier/pathao-invoices/probe', [\App\Http\Controllers\PathaoInvoiceController::class,'probe']);
   Route::post('/courier/pathao-invoices/rematch', [\App\Http\Controllers\PathaoInvoiceController::class,'rematch']);
   Route::get('/courier/pathao-invoices/{no}', [\App\Http\Controllers\PathaoInvoiceController::class,'show'])->where('no','[A-Za-z0-9]+');
   Route::get('/courier/status-map', [\App\Http\Controllers\PathaoMapController::class,'index']);

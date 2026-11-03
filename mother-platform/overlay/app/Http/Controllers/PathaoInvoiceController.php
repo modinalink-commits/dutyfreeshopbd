@@ -31,6 +31,19 @@ class PathaoInvoiceController extends Controller {
     $i = DB::table('pathao_invoices')->where('invoice_no', $no)->first();
     return redirect('/admin/courier/pathao-invoices/'.$no)->with('ok', 'Invoice '.$no.': '.$res['new'].' new line(s)'.($res['dup'] ? ', '.$res['dup'].' already imported' : '').'. Matched '.$i->matched.' of '.$i->lines.($i->unmatched ? ', '.$i->unmatched.' not matched' : '').($i->flagged ? ', '.$i->flagged.' to check' : '').'.');
   }
+  /** Can our existing Pathao login read the merchant invoices API? Shows only status codes and field names, never tokens. */
+  public function probe(Request $r) {
+    abort_unless(P::can(Auth::user(), 'couriers', 'edit'), 403);
+    $t = \App\Support\Pathao::token(); if (!$t) return back()->with('bad', 'Probe: could not get a Pathao token from the saved login.');
+    $out = [];
+    foreach (['/api/v1/monetary/invoices?page=1', '/api/v1/monetary/stats/invoice'] as $p) {
+      $o = ['http'=>['method'=>'GET', 'timeout'=>20, 'ignore_errors'=>true, 'header'=>"Accept: application/json\r\nAuthorization: Bearer $t\r\nUser-Agent: MotherCommerce/1.0\r\n"], 'ssl'=>['verify_peer'=>true]];
+      $b = @file_get_contents('https://merchant.pathao.com'.$p, false, stream_context_create($o)); $code = 0; foreach ($http_response_header ?? [] as $l) if (preg_match('#^HTTP/\S+\s+(\d+)#', $l, $m)) $code = (int)$m[1];
+      $j = json_decode((string)$b, true); $src = is_array($j) ? ($j['error']['description'] ?? $j['message'] ?? '') : 'not json';
+      $out[] = $p.' → HTTP '.$code.($code === 200 && is_array($j) ? ' (fields: '.implode(', ', array_slice(array_keys($j['data'] ?? $j), 0, 10)).')' : ' ('.mb_substr((string)$src, 0, 80).')');
+    }
+    return back()->with('ok', 'Probe result: '.implode(' | ', $out));
+  }
   public function rematch(Request $r) {
     abort_unless(P::can(Auth::user(), 'couriers', 'edit'), 403);
     $n = PathaoInvoice::settle(null, Auth::user()->name ?? 'Staff');
