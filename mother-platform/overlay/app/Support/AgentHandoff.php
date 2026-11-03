@@ -20,7 +20,7 @@ class AgentHandoff {
   public static function create(array $ctx, array &$st, string $reason, string $summary, string $priority): array {
     $call = Biz::hotline();
     $tell = 'আমাদের টিম সদস্য শীঘ্রই আপনাকে রিপ্লাই দেবেন। জরুরি হলে কল/WhatsApp করুন: '.$call;
-    if (!empty($ctx['sim'])) return ['simulated'=>true, 'handed_over'=>true, 'tell_customer'=>$tell];
+    if (!empty($ctx['sim'])) { $st['handed_off'] = true; return ['simulated'=>true, 'handed_over'=>true, 'tell_customer'=>$tell]; }
     $tid = (int)($ctx['thread_id'] ?? 0); if (!$tid) return ['error'=>'no conversation'];
     $st['handed_off'] = true;
     $agents = self::eligible(); $pick = $agents[0] ?? null;

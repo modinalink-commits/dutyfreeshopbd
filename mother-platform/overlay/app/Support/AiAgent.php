@@ -46,6 +46,8 @@ class AiAgent {
       $text = trim(collect($blocks)->where('type', 'text')->pluck('text')->implode("\n"));
       $uses = array_values(array_filter($blocks, fn($b) => ($b['type'] ?? '') === 'tool_use'));
       if (!$uses || $res->json('stop_reason') !== 'tool_use') break;
+      // PHP turns an empty JSON object into [] — send it back as {} so the model's thinking signature stays valid
+      $blocks = array_map(function ($b) { if (($b['type'] ?? '') === 'tool_use' && empty($b['input'])) $b['input'] = new \stdClass; return $b; }, $blocks);
       $msgs[] = ['role'=>'assistant', 'content'=>$blocks]; $results = [];
       foreach ($uses as $u) {
         $out = AgentTools::run((string)$u['name'], (array)($u['input'] ?? []), $st, $ctx); $trace[] = ['tool'=>$u['name'], 'input'=>$u['input'] ?? [], 'result'=>$out];
