@@ -36,7 +36,8 @@ class OrderRevisionController extends Controller {
     $o = DB::table('orders')->find($id); abort_unless($o, 404); $P = $this->perms();
     $rows = $this->items($id)->map(fn($i) => ['item_id' => $i->id, 'product_id' => $i->product_id, 'variant_id' => null, 'name' => $i->name, 'sku' => $i->sku, 'qty' => (int)$i->qty, 'price' => (float)$i->price, 'base' => (float)$i->price, 'image' => $i->image, 'stock' => $i->stock, 'orig_name' => $i->name, 'orig_qty' => (int)$i->qty, 'orig_price' => (float)$i->price])->values();
     $manualShip = ($o->delivery_manual_adj ?? null) !== null || stripos((string)($o->delivery_zone ?? ''), 'express') !== false;
-    $suggestDisc = ((string)($o->discount_by ?? '') === 'Manual' || stripos((string)($o->discount_source ?? ''), 'referral') !== false || stripos((string)($o->discount_type ?? ''), 'referral') !== false) ? 'keep' : 'auto';
+    // Never add or change a discount silently: only an existing automatic discount is recalculated by default; otherwise the original discount stays until staff chooses otherwise.
+    $suggestDisc = ((float)($o->discount ?? 0) > 0 && (string)($o->discount_by ?? '') === 'Automatic' && (string)($o->discount_by ?? '') !== 'Manual' && stripos((string)($o->discount_source ?? ''), 'referral') === false && stripos((string)($o->discount_type ?? ''), 'referral') === false) ? 'auto' : 'keep';
     return view('order_edit', ['o'=>$o, 'rows'=>$rows, 'P'=>$P, 'block'=>$this->blocked($o, $P), 'reasons'=>self::REASONS, 'smsOn'=>(DB::table('settings')->where('key', 'order_update_sms')->value('value') ?? '0') === '1',
       'suggestDisc'=>$suggestDisc, 'suggestShip'=>$manualShip ? 'keep' : 'auto', 'call'=>(int)$r->query('call', 0), 'courier'=>!empty($o->consignment_id)]);
   }
@@ -223,7 +224,7 @@ class OrderRevisionController extends Controller {
     if (in_array($kind, ['discount', 'delivery', 'amount'], true) && $note === '') return $err('Please write the reason.');
     $cur = $this->items($id)->map(fn($i) => ['item_id'=>$i->id, 'product_id'=>$i->product_id, 'variant_id'=>null, 'name'=>$i->name, 'qty'=>(int)$i->qty, 'price'=>(float)$i->price, 'price_reason'=>''])->all();
     $manualShip = ($o->delivery_manual_adj ?? null) !== null || stripos((string)($o->delivery_zone ?? ''), 'express') !== false;
-    $keepDisc = ((string)($o->discount_by ?? '') === 'Manual' || stripos((string)($o->discount_source ?? ''), 'referral') !== false || stripos((string)($o->discount_type ?? ''), 'referral') !== false);
+    $keepDisc = !((float)($o->discount ?? 0) > 0 && (string)($o->discount_by ?? '') === 'Automatic' && stripos((string)($o->discount_source ?? ''), 'referral') === false && stripos((string)($o->discount_type ?? ''), 'referral') === false);
     $opt = ['discount_mode'=>$keepDisc ? 'keep' : 'auto', 'ship_mode'=>$manualShip ? 'keep' : 'auto'];
     $reason = 'Other';
     if ($kind === 'qty') {
