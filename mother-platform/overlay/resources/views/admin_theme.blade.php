@@ -10,11 +10,14 @@
   --tint-slate:#F5F7FA;--tint-greengray:#F4F8F6;--tint-redgray:#FAF5F5;
   --acc-blue:#A9C4F5;--acc-green:#9BD6AE;--acc-orange:#F6C39A;--acc-yellow:#EFD98A;--acc-purple:#C9B8F2;
   --acc-cyan:#94D8E3;--acc-red:#F2B3B3;--acc-gray:#CBD2DB;--acc-greengray:#A9C7B9;
-  --border-main:#E3E7ED;--border-soft:#EDF0F4;
-  --head-bg:#EDF1F5;--group-bg:#EEF2F6;--total-bg:#E9EEF3;
+  /* 5-level ladder: 1 normal row < 2 group row < 3 working bar < 4 module/section bar < 5 table header */
+  --grid-bg-level-1:#FAFBFC;--grid-bg-level-2:#F5F7F9;--toolbar-bg-level-3:#F0F3F6;--module-bg-level-4:#E8ECF1;--header-bg-level-5:#E3E8EE;
+  --grid-border-soft:#EDF0F4;--grid-border-main:#E0E5EB;--toolbar-border:#DDE3E9;--module-border:#CBD3DD;
+  --border-main:var(--grid-border-main);--border-soft:var(--grid-border-soft);
+  --head-bg:var(--header-bg-level-5);--group-bg:var(--grid-bg-level-2);--total-bg:var(--toolbar-bg-level-3);
   --accent-tint:#FFF4EC;
   /* module / section / working bars: one step darker than normal grid rows (6-10 % tint) */
-  --module-bar-bg:#F1F4F7;--module-bar-border:#D9E0E7;--module-bar-text:#111827;
+  --module-bar-bg:var(--module-bg-level-4);--module-bar-border:var(--module-border);--module-bar-text:#111827;
   /* map the tokens onto the variables admin_grid already reads */
   --bg:var(--page-bg);--surface:var(--surface-main);--surface-2:var(--surface-soft);
   --border-color:var(--border-main);--row-hover:#F6F8FA;--row-selected:#FFF3EA;--primary-soft:var(--accent-tint);
@@ -57,7 +60,9 @@ main table.ordt>tbody>tr:has(input[type=checkbox]:checked)>td{background:var(--r
 main table:not(.ordt):has(th) th,main table.ordt>thead>tr>th{background:var(--head-bg);color:#374151}
 main table:not(.ordt):has(th),main table.ordt{border-color:var(--border-main)}
 main table:not(.ordt):has(th) td,main table.ordt>tbody>tr>td{border-bottom-color:var(--border-soft);border-right-color:var(--border-soft)}
+main table:not(.ordt):has(th) td{background:var(--grid-bg-level-1)}
 main table:not(.ordt):has(th) tr.g-group>td{background:var(--group-bg)}
+main table:not(.ordt):has(th) tr.g-group.imp>td{background:var(--header-bg-level-5)}
 main table:not(.ordt):has(th) tfoot td,main table:not(.ordt):has(th) tr.g-total>td{background:var(--total-bg);border-top:1px solid var(--border-main);font-weight:700}
 /* soft tint for the first row-group zebra: only on tables that opt in with .g-zebra (never random) */
 main table.g-zebra:not(.ordt) tbody tr:nth-child(even)>td{background:var(--surface-soft)}
@@ -81,24 +86,29 @@ main .grid>.card.k:nth-child(5n+5){background:var(--tint-cyan)}
 /* ===== 7. sidebar, pagination, tabs, modals, dropdowns (spec §27-28, §52-55) ===== */
 aside nav a.nv:hover,aside nav details>summary:hover,aside nav a.sub:hover{background:var(--tint-gray)}
 aside nav a.nv.on,aside nav a.sub.on{background:var(--accent-tint)}
-aside nav details.mg[open]>summary{background:var(--tint-slate)}
+aside nav details.mg>summary{background:var(--toolbar-bg-level-3)}
+aside nav details.mg[open]>summary{background:var(--module-bg-level-4);border-bottom-color:var(--module-border)}
+aside nav details.mg>a.sub,aside nav details.rpg>summary{background:var(--grid-bg-level-1)}
 aside nav,aside nav a.nv,aside nav details.mg>summary{border-color:var(--border-soft)}
 .pgx .b{background:var(--surface-main);border-color:var(--border-main)}
 .pgx .b.on{background:var(--accent-tint)!important;color:#C2410C!important;border-color:#FDBA8C!important;font-weight:700}
 dialog,[role=dialog],.modal,.modal-box{border:1px solid var(--border-main);background:var(--surface-main)}
-dialog h3,[role=dialog] h3,.modal h3,.modal-box h3{background:var(--tint-slate)}
-/* ===== 7b. module / section / working bars (one step darker than rows) ===== */
-.ui-module-bar,.ui-section-bar,.ui-submodule-bar,.ui-toolbar-row,.ui-filter-row,.ui-search-row,.ui-export-row,
-main>h1,main .card>:is(h2,h3):first-child,main .g-toolbar{
-  background:var(--module-bar-bg);border:1px solid var(--module-bar-border);border-radius:8px;min-height:36px;box-sizing:border-box;color:var(--module-bar-text)}
-main>h1,.ui-module-bar{display:flex;align-items:center;gap:8px;padding:6px 12px;font-weight:600}
-main .card>:is(h2,h3):first-child,.ui-section-bar,.ui-submodule-bar{display:flex;align-items:center;gap:8px;padding:6px 12px;font-weight:600;min-height:32px;margin-bottom:8px}
-.ui-toolbar-row,.ui-filter-row,.ui-search-row,.ui-export-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:6px 10px}
-.ui-bar-title{font-weight:600;color:var(--module-bar-text)}.ui-bar-sub{color:var(--text-secondary)}
-/* filter / search / bulk-action / pagination bars share the bar tint */
-.ocb,.pgx,.g-toolbar{background:var(--module-bar-bg)!important;border-color:var(--module-bar-border)!important}
-main form#bulk>.card:first-child,main .bulk-bar,main .filter-bar,main .search-bar{background:var(--module-bar-bg);border-color:var(--module-bar-border)}
-main .card:has(> form.row:first-child) {background:var(--module-bar-bg);border-color:var(--module-bar-border)}
+dialog h3,[role=dialog] h3,.modal h3,.modal-box h3{background:var(--module-bg-level-4);border-bottom:1px solid var(--module-border);padding:8px 12px;margin:0;font-size:13px}
+/* ===== 7b. bars: Level 4 module/section vs Level 3 working bars (spec: module bar = 3 steps lighter-tint stronger than a normal row) ===== */
+.ui-grid-row{background:var(--grid-bg-level-1)}.ui-group-row{background:var(--grid-bg-level-2)}
+.ui-table-header,.ui-important-group-header{background:var(--header-bg-level-5)}
+.ui-module-bar,.ui-section-bar,.ui-submodule-bar,main>h1,main .card>:is(h2,h3):first-child{
+  background:var(--module-bg-level-4);border:1px solid var(--module-border);border-radius:6px;box-sizing:border-box;color:var(--module-bar-text)}
+.ui-toolbar-row,.ui-filter-row,.ui-search-row,.ui-export-row,.ui-summary-bar,main .g-toolbar{
+  background:var(--toolbar-bg-level-3);border:1px solid var(--toolbar-border);border-radius:6px;box-sizing:border-box;color:var(--module-bar-text)}
+main>h1,.ui-module-bar{display:flex;align-items:center;gap:8px;padding:6px 12px;min-height:38px;font-size:14px;font-weight:650;margin:0 0 10px}
+main .card>:is(h2,h3):first-child,.ui-section-bar,.ui-submodule-bar{display:flex;align-items:center;gap:8px;padding:6px 12px;font-size:13px;font-weight:600;min-height:36px;margin-bottom:8px}
+.ui-submodule-bar{min-height:34px}
+.ui-toolbar-row,.ui-filter-row,.ui-search-row,.ui-export-row,.ui-summary-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:6px 10px;min-height:34px}
+.ui-module-bar-title,.ui-bar-title{font-size:13px;font-weight:650;color:var(--module-bar-text)}.ui-bar-sub{color:var(--text-secondary)}
+/* filter / search / date / show / bulk-action / pagination bars = Level 3 */
+.ocb,.pgx,.g-toolbar{background:var(--toolbar-bg-level-3)!important;border-color:var(--toolbar-border)!important}
+main form#bulk>.card:first-child,main .bulk-bar,main .filter-bar,main .search-bar,main .card:has(> form.row:first-child){background:var(--toolbar-bg-level-3);border-color:var(--toolbar-border)}
 /* ===== 8. compact action icons (desktop only; mobile keeps big touch targets) ===== */
 @media(min-width:761px){.ibar{gap:4px;margin-top:3px}.ibar .ib{width:24px;height:24px;border-radius:7px;box-shadow:none}.ibar .ib svg{width:12px;height:12px}.ibar .ib-call{height:24px;padding:0 9px;font-size:11px;border-radius:7px;gap:4px;box-shadow:none}.ibar .ib-call svg{width:11px;height:11px}}
 .dfx-menu{border-color:var(--border-main)}
