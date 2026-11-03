@@ -5,9 +5,10 @@
 @endphp
 @if($__fcw && $__fcw[0])
 <style>
-.dffc-b{position:fixed;right:18px;bottom:96px;z-index:57;display:flex;align-items:center;gap:7px;height:40px;padding:0 15px 0 12px;border:0;border-radius:22px;background:#16A34A;color:#fff;font:700 13px system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;cursor:pointer;box-shadow:0 8px 20px rgba(22,163,74,.38);transition:transform .2s}
-.dffc-b:hover{transform:translateY(-2px)}.dffc-b svg{width:18px;height:18px}.dffc-b.off{background:#64748B;box-shadow:0 6px 16px rgba(100,116,139,.35)}
-@media(max-width:760px){.dffc-b{right:12px;bottom:{{ $__fcbn ? '138px' : '86px' }};height:38px;font-size:12.5px}}
+.dffc-b{position:fixed;left:14px;bottom:18px;z-index:55;display:flex;align-items:center;gap:7px;background:#16A34A;color:#fff;border:0;border-radius:24px;padding:11px 16px;font-size:13px;font-weight:700;font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;box-shadow:0 4px 14px rgba(22,163,74,.38);cursor:pointer}
+.dffc-b svg{width:16px;height:16px}.dffc-b.off{background:#64748B;box-shadow:0 4px 14px rgba(100,116,139,.35)}
+@media(max-width:760px){.dffc-b{bottom:68px}}
+.ai0,.aip{display:none!important}
 .dffc-o{position:fixed;inset:0;z-index:100002;background:rgba(11,18,32,.5);display:none;align-items:center;justify-content:center;padding:14px;font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif}.dffc-o.on{display:flex}
 .dffc-x{background:#fff;border-radius:22px;width:min(350px,100%);box-shadow:0 24px 60px rgba(11,18,32,.4);overflow:hidden;color:#0B1220}
 .dffc-h{background:#0B1220;color:#fff;padding:12px 16px;display:flex;align-items:center;gap:9px;font-weight:800;font-size:14px}.dffc-h i{width:9px;height:9px;border-radius:50%;background:#22C55E;display:inline-block}.dffc-h button{margin-left:auto;background:rgba(255,255,255,.12);border:0;color:#fff;width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:16px;padding:0}
@@ -19,7 +20,7 @@
 .dffc-ct{display:flex;gap:10px;justify-content:center;margin-top:10px}.dffc-ct button{flex:1;border:1.25px solid #E5E7EB;background:#fff;border-radius:13px;padding:10px 4px;font-weight:600;font-size:12px;font-family:inherit;cursor:pointer}.dffc-ct button.on{background:#0B1220;color:#fff;border-color:#0B1220}
 .dffc-e{color:#B91C1C;font-size:12.5px;min-height:16px}
 </style>
-<button type="button" class="dffc-b{{ $__fcw[1] ? '' : ' off' }}" id="dffcb" aria-label="Free Call"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>Free Call</button>
+<button type="button" class="dffc-b{{ $__fcw[1] ? '' : ' off' }}" id="dffcb" aria-label="Free Call"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>ফ্রি কল করুন</button>
 <div class="dffc-o" id="dffco" role="dialog" aria-modal="true" aria-label="DutyFreeBD Free Call"><div class="dffc-x"><div class="dffc-h"><i></i>DutyFreeBD Free Call<button type="button" data-a="close" aria-label="Close">×</button></div><div class="dffc-p" id="dffcp"></div></div></div>
 <audio id="dffca" autoplay playsinline></audio>
 <script>window.DFFC={open:@json((bool)$__fcw[1]),msg:@json($__fcw[2]),wa:@json($wa ?? ''),tel:'09613828081'};</script>
@@ -105,8 +106,6 @@ document.addEventListener('click',function(e){var b=e.target.closest('[data-a]')
  if(a==='start')start();else if(a==='go')go(false);else if(a==='cancel')hang();else if(a==='chat')openChat();else if(a==='mute')mute();else if(a==='spk')spk()});
 document.addEventListener('keydown',function(e){if(e.key==='Escape'&&O.classList.contains('on')&&!st.c)O.classList.remove('on')});
 if(sess())resume();
-// hide beside the chat panel while it is open
-var cw=document.getElementById('dfcw'),fb=$('dffcb');if(cw&&fb&&window.MutationObserver)new MutationObserver(function(){fb.style.display=cw.classList.contains('op')?'none':''}).observe(cw,{attributes:true,attributeFilter:['class']});
 })();</script>
 @endverbatim
 @endif
