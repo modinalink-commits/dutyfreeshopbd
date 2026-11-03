@@ -57,7 +57,7 @@ M.toggleMute=function(){M.mute=!M.mute;try{localStorage.setItem('mchat_mute',M.m
 M.mount=function(el,id,opt){
   opt=opt||{};if(el._mc)el._mc.stop();
   var S={id:id,last:0,timer:null,d:null,kind:'text'};el._mc=S;
-  el.innerHTML='<div class="mc"><div class="hd" id="mh"></div><details class="cb" id="mcu" open></details><div class="ms" id="mm"></div><div class="cm" id="mf"></div></div>';
+  el.innerHTML='<div class="mc"><div class="hd" id="mh"></div><details class="cb" id="mcu"'+(window.DF_EMBED?'':' open')+'></details><div class="ms" id="mm"></div><div class="cm" id="mf"></div></div>';
   var $=function(s){return el.querySelector(s)};
   S.stop=function(){clearInterval(S.timer);if(M.current===id)M.current=null};
   M.current=id;
