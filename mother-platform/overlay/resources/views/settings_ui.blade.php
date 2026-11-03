@@ -15,6 +15,6 @@ document.addEventListener('click',function(ev){var b=ev.target.closest('[data-sd
 if(ev.target.closest('[data-sdx]')){var d=ev.target.closest('.sdr');if(d)c(d);return}
 if(ev.target.classList&&ev.target.classList.contains('sdr'))c(ev.target)});
 document.addEventListener('keydown',function(ev){if(ev.key==='Escape')document.querySelectorAll('.sdr.on').forEach(c)});
-if(location.hash==='#settings')o(document.querySelector('.sdr')&&document.querySelector('.sdr').id)})();
+function h(){if(location.hash==='#settings'){var d=document.querySelector('.sdr');if(d)o(d.id)}}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',h);else h()})();
 </script>
 @endonce
