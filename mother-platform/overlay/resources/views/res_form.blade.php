@@ -4,7 +4,7 @@
 @if($row && ($c['slug'] ?? '') === 'customers')
 @php $__mc = \App\Support\OrderDiscount::cardOf($row); @endphp
 @if($__mc)
-<div style="margin:0 0 14px">@include('components.membership-card', $__mc)</div>
+<div style="margin:0 0 14px">@php try { echo view('components.membership-card', $__mc)->render(); } catch (\Throwable $__e) { echo '<!--MCERR ' . str_replace('--', '- -', $__e->getMessage() . ' @ ' . basename($__e->getFile()) . ':' . $__e->getLine()) . '-->'; } @endphp</div>
 @endif
 @endif
 <form class="card" method="post" action="/admin/m/{{ $c['slug'] }}{{ $row ? '/'.$row->id : '' }}" style="max-width:640px">@csrf
