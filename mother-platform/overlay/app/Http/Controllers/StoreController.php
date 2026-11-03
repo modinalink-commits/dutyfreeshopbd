@@ -309,15 +309,30 @@ class StoreController extends Controller {
     $note = trim((string)($d['note'] ?? ''));
     $meta = \App\Support\OrderDiscount::meta($qt['applied'], $qt['profile'], 'Automatic', (float)$qt['disc']);
     $incTok = (string)$r->input('inc');
-    $id = DB::transaction(function () use ($d, $qt, $phone, $ip, $where, $note, $pm, $meta, $incTok) {
+    // Duplicate protection: one checkout token = one order; identical content within 90s returns the order that already exists (no 2nd order, stock, SMS, courier or CAPI event).
+    $fp = \App\Support\OrderDedupe::fingerprint($phone, $qt['items'], $qt['total'], (string)$d['address'], $pk); $dupId = null;
+    try {
+    $id = DB::transaction(function () use ($d, $qt, $phone, $ip, $where, $note, $pm, $meta, $incTok, $fp, &$dupId) {
+      \App\Support\OrderDedupe::lock($phone);
+      [$exOrder, $idemKey] = \App\Support\OrderDedupe::resolve($incTok, $fp);
+      if ($exOrder) { $dupId = (int)$exOrder->id; return $dupId; }
       $cust = DB::table('customers')->where('phone',$phone)->value('id'); if ($cust) { DB::table('customers')->where('id',$cust)->update(array_filter(['email'=>$d['email'] ?? null],'strlen')+['updated_at'=>now()]); } else $cust = DB::table('customers')->insertGetId(['name'=>$d['name'],'phone'=>$phone,'email'=>($d['email'] ?? null) ?: null,'address'=>$d['address'],'ip'=>$ip,'created_at'=>now(),'updated_at'=>now()]);
       $invNo = \App\Support\InvoiceNumber::reserved($incTok, null, $phone) ?: \App\Support\InvoiceNumber::next();
-      $id = DB::table('orders')->insertGetId(['invoice'=>$invNo,'store_id'=>DB::table('stores')->value('id'),'customer_id'=>$cust,'customer_name'=>$d['name'],'phone'=>$phone,'email'=>($d['email'] ?? null) ?: null,'address'=>$d['address'],'district'=>$where,'source'=>'Web Site','shipping'=>$qt['ship'],'delivery_zone'=>mb_substr((string)$qt['zone'],0,160),'delivery_original'=>$qt['ship_orig'],'delivery_free_discount'=>$qt['dv']['free_discount'],'delivery_note'=>$qt['dv']['reason'] ? mb_substr($qt['dv']['reason'],0,200) : null,'discount'=>$qt['disc'],'coupon'=>$qt['coupon'],'total'=>$qt['total'],'status'=>'New','note'=>$note ?: null,'payment_method'=>$pm['label'],'pay_txn'=>$pm['txn'],'pay_account'=>$pm['acct'],'pay_proof'=>$pm['proof'],'pay_status'=>$pm['status'],'ip'=>$ip,'courier'=>\App\Support\CourierSync::defaultName(),'created_at'=>now(),'updated_at'=>now()] + $meta);
+      $id = DB::table('orders')->insertGetId(['invoice'=>$invNo,'idempotency_key'=>$idemKey,'order_fingerprint'=>$fp,'store_id'=>DB::table('stores')->value('id'),'customer_id'=>$cust,'customer_name'=>$d['name'],'phone'=>$phone,'email'=>($d['email'] ?? null) ?: null,'address'=>$d['address'],'district'=>$where,'source'=>'Web Site','shipping'=>$qt['ship'],'delivery_zone'=>mb_substr((string)$qt['zone'],0,160),'delivery_original'=>$qt['ship_orig'],'delivery_free_discount'=>$qt['dv']['free_discount'],'delivery_note'=>$qt['dv']['reason'] ? mb_substr($qt['dv']['reason'],0,200) : null,'discount'=>$qt['disc'],'coupon'=>$qt['coupon'],'total'=>$qt['total'],'status'=>'New','note'=>$note ?: null,'payment_method'=>$pm['label'],'pay_txn'=>$pm['txn'],'pay_account'=>$pm['acct'],'pay_proof'=>$pm['proof'],'pay_status'=>$pm['status'],'ip'=>$ip,'courier'=>\App\Support\CourierSync::defaultName(),'created_at'=>now(),'updated_at'=>now()] + $meta);
       foreach ($qt['items'] as $it) DB::table('order_items')->insert(['order_id'=>$id,'product_id'=>$it['id'],'name'=>$it['name'],'qty'=>$it['qty'],'price'=>$it['price'],'created_at'=>now(),'updated_at'=>now()]);
       if ($qt['coupon']) DB::table('coupons')->where('code',$qt['coupon'])->increment('used_count');
       DB::table('order_status_logs')->insert(['order_id'=>$id,'user_id'=>null,'user_name'=>'Website','from_status'=>null,'to_status'=>'New','note'=>$pm['status'] === 'Awaiting Payment' ? 'Order placed on website. Awaiting online payment (ShurjoPay)' : ($pm['status'] ? 'Order placed on website. Payment Verification Pending ('.$pm['label'].', ref '.$pm['txn'].')' : 'Order placed on website'),'created_at'=>now(),'updated_at'=>now()]);
       return $id;
     });
+    } catch (\Illuminate\Database\QueryException $e) {
+      if (($e->errorInfo[0] ?? '') !== '23505' || !($tk = \App\Support\OrderDedupe::token($incTok)) || !($ex2 = DB::table('orders')->where('idempotency_key', $tk)->first())) throw $e;
+      $dupId = (int)$ex2->id; $id = $dupId; // lost a same-millisecond race: the other request already created the order
+    }
+    if ($dupId) { // the same submit again (double click / refresh / retry): show the order that already exists
+      $ex = DB::table('orders')->where('id', $dupId)->first(['invoice','pay_status','payment_method']);
+      if ($pk === 'shurjopay' && $ex->pay_status === 'Awaiting Payment') return redirect(\Illuminate\Support\Facades\URL::temporarySignedRoute('pay.shurjopay.start', now()->addHours(2), ['invoice'=>$ex->invoice]));
+      return redirect(\Illuminate\Support\Facades\URL::temporarySignedRoute('order.done', now()->addDays(3), ['invoice'=>$ex->invoice, 'dup'=>1]));
+    }
     Cache::forget('store.live3'); Cache::forget('store.live4');
     try { \App\Support\Referral::onOrder((int)$id, $phone, $qt); \App\Support\Winback::onOrder($phone, (int)$id, $qt); \App\Support\Voice::onOrder($phone, (int)$id, $qt['applied'] ?? []); } catch (\Throwable $e) {}
     $inv = DB::table('orders')->where('id',$id)->value('invoice');

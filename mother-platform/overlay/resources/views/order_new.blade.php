@@ -2,7 +2,7 @@
 @section('body')
 <style>.onw{display:grid;grid-template-columns:minmax(300px,1fr) 2fr;gap:16px;align-items:start}@media(max-width:900px){.onw{grid-template-columns:1fr}}.onw label{display:block;margin:10px 0 4px;font-size:13px}.onw .card{margin:0}.opt{position:absolute;left:0;right:0;top:100%;z-index:20;background:#fff;border:1px solid #E5E7EB;border-radius:8px;max-height:280px;overflow:auto;box-shadow:0 8px 24px rgba(0,0,0,.12)}.opt div{padding:8px 10px;cursor:pointer;display:flex;justify-content:space-between;gap:8px;font-size:13px}.opt div:hover{background:#F3F4F6}.itb{width:100%;border-collapse:collapse;font-size:13px}.itb th{text-align:left;background:#F3F4F6;padding:8px;color:#6B7280}.itb td{padding:6px 8px;border-top:1px solid #E5E7EB}.itb input{margin:0;padding:6px}</style>
 <a class="btn g" href="/admin/orders" style="margin-bottom:10px;display:inline-block">&larr; Back</a>
-<form method="post" action="/admin/orders" id="onf" class="onw">@csrf
+<form method="post" action="/admin/orders" id="onf" class="onw">@csrf<input type="hidden" name="idem" value="{{ \Illuminate\Support\Str::random(32) }}">
 @if($pre)<input type="hidden" name="inc_id" value="{{ $pre['inc'] }}">@endif
 <div class="card"><h3 style="margin:0 0 4px;text-align:center">Customer Information</h3>
 <label>Customer Phone</label><input name="phone" id="onp" data-bdphone required inputmode="numeric" maxlength="11" autocomplete="off" value="{{ old('phone') }}" placeholder="Enter customer 11 digit mobile number">
@@ -25,7 +25,7 @@
 <div id="dsp" style="margin-top:12px;border:1px solid #E5E7EB;border-radius:10px;padding:10px 12px;font-size:13px"><b>Discount</b><div id="dsn" style="display:none;margin:6px 0;padding:8px 10px;border-radius:8px;background:#EFF6FF;color:#1E3A8A;font-size:12.5px;line-height:1.6"></div><div id="dsl" style="margin:6px 0;color:#6B7280">Enter the customer phone and add products to check discounts.</div>
 <label>Coupon code (optional)</label><input name="coupon" id="ocp" autocomplete="off" value="{{ old('coupon') }}" style="max-width:220px"><div id="dso" style="display:none"><label>Change discount to (TK, replaces the automatic one)</label><input name="disc_manual" id="odm" type="number" step="0.01" min="0" style="max-width:220px"><label>Extra discount (TK)</label><input name="disc_extra" id="ode" type="number" step="0.01" min="0" style="max-width:220px"><p style="font-size:11px;color:#6B7280;margin:4px 0 0">Any manual change is logged with your name, the previous and new discount, and the time.</p></div>
 <div id="dss" style="margin-top:10px;font-weight:600"></div></div>
-<div style="margin-top:14px"><button>Save order</button></div></div>
+<div style="margin-top:14px"><button id="osv">Save order</button></div></div>
 </form>
 @endsection
 @section('js')
@@ -99,5 +99,6 @@ p.addEventListener('input',function(){clearTimeout(tm);tm=setTimeout(look,350);o
 render();
 if(window.PRE){var P0=window.PRE;p.value=P0.phone||'';document.getElementById('onn').value=P0.name||'';document.getElementById('ona').value=P0.address||'';var nt=document.querySelector('textarea[name=note]');if(nt&&P0.note)nt.value=P0.note;setSel(D,P0.district);(P0.items||[]).forEach(function(x){IT.push({id:x.id||null,name:x.name,sku:null,stock:null,qty:x.qty,price:x.price,custom:false})});render();look();onPhone()}
 })();</script>
+<script>(function(){var f=document.getElementById('onf'),b=document.getElementById('osv');if(!f||!b)return;f.addEventListener('submit',function(e){if(f.dataset.busy==='1'){e.preventDefault();return}f.dataset.busy='1';b.disabled=true;b.textContent='Saving...';setTimeout(function(){f.dataset.busy='';b.disabled=false;b.textContent='Save order'},20000)});window.addEventListener('pageshow',function(ev){if(ev.persisted){f.dataset.busy='';b.disabled=false;b.textContent='Save order'}})})();</script>
 @endverbatim
 @endsection

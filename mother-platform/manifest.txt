@@ -434,3 +434,5 @@ app/Http/Controllers/CatalogFeedController.php
 database/migrations/2026_11_03_000038_orders_ga_purchase_guard.php
 app/Http/Middleware/CloudflareRealIp.php
 app/Providers/AppServiceProvider.php
+database/migrations/2026_11_03_000039_orders_duplicate_guard.php
+app/Support/OrderDedupe.php

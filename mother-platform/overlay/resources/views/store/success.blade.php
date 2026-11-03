@@ -10,6 +10,8 @@
 </style>
 <div class="sx">
 <div class="hd2"><div class="ck">✓</div><h1>Order Placed Successfully ✅</h1><span class="no">{{ $o->invoice }}</span></div>
+@if(request()->query('dup'))<div class="msg" style="margin:10px 0">ℹ️ এই অর্ডারটি আগেই জমা হয়েছে — নতুন কোনো অর্ডার তৈরি হয়নি। (This order has already been submitted.)</div>@endif
+<script>try{localStorage.removeItem('dfinc')}catch(e){}</script>
 <div class="stt"><div>Status: <b>Awaiting Confirmation</b> <span style="font-size:11px;color:#6B7280">(Confirmation Pending)</span></div>
 <div class="fl2"><span class="dn"><i></i>Order placed</span><span class="on"><i></i>Confirmation call</span><span><i></i>Confirmed</span><span><i></i>Processing</span></div></div>
 <div class="msg">আপনার অর্ডারের জন্য আন্তরিক ধন্যবাদ। কিছুক্ষণের মধ্যে আমাদের একজন প্রতিনিধি আপনাকে কল করবেন। ফোনে অর্ডার কনফার্ম হওয়ার পর আপনার অর্ডারটি প্রসেস করা হবে।</div>

@@ -233,9 +233,12 @@ class AdminController extends Controller {
     $cu = DB::table('customers')->where('phone', $d['phone'])->orderBy('id')->first();
     if (!$cu) $cid = DB::table('customers')->insertGetId(['name'=>$d['customer_name'], 'phone'=>$d['phone'], 'address'=>$d['address'] ?? null, 'created_at'=>now(), 'updated_at'=>now()]);
     else { $cid = $cu->id; if (trim((string)($cu->address ?? '')) === '' && !empty($d['address'])) DB::table('customers')->where('id', $cid)->update(['address'=>$d['address'], 'updated_at'=>now()]); }
-    $id = DB::transaction(function () use ($d, $cid, $disc, $cpn, $changed, $auto, $labels, $meta, $dcols, $dv) {
+    $fp = \App\Support\OrderDedupe::fingerprint($d['phone'], $d['items'], $d['total'], (string)($d['address'] ?? ''), 'admin'); $idemTok = (string)$r->input('idem'); $dupId = null;
+    $id = DB::transaction(function () use ($d, $cid, $disc, $cpn, $changed, $auto, $labels, $meta, $dcols, $dv, $fp, $idemTok, &$dupId) {
+      \App\Support\OrderDedupe::lock($d['phone']); [$exOrder, $idemKey] = \App\Support\OrderDedupe::resolve($idemTok, $fp); // staff double-click on Save returns the order just created
+      if ($exOrder) { $dupId = (int)$exOrder->id; return $dupId; }
       $invNo = \App\Support\InvoiceNumber::reserved(null, $d['inc_id'] ?? null, $d['phone']) ?: \App\Support\InvoiceNumber::next();
-      $id = DB::table('orders')->insertGetId(['invoice'=>$invNo,'store_id'=>1,'customer_name'=>$d['customer_name'],'phone'=>$d['phone'],'customer_id'=>$cid,'address'=>$d['address']??null,'district'=>$d['district']??null,'source'=>$d['source']??'Web Site','shipping'=>$d['shipping']??0,'total'=>$d['total'],'status'=>'New','note'=>$d['note']??null,'courier'=>($d['courier'] ?? null) ?: \App\Support\CourierSync::defaultName(),'assigned_admin'=>$d['assigned_admin']??null,'created_at'=>now(),'updated_at'=>now()]);
+      $id = DB::table('orders')->insertGetId(['invoice'=>$invNo,'idempotency_key'=>$idemKey,'order_fingerprint'=>$fp,'store_id'=>1,'customer_name'=>$d['customer_name'],'phone'=>$d['phone'],'customer_id'=>$cid,'address'=>$d['address']??null,'district'=>$d['district']??null,'source'=>$d['source']??'Web Site','shipping'=>$d['shipping']??0,'total'=>$d['total'],'status'=>'New','note'=>$d['note']??null,'courier'=>($d['courier'] ?? null) ?: \App\Support\CourierSync::defaultName(),'assigned_admin'=>$d['assigned_admin']??null,'created_at'=>now(),'updated_at'=>now()]);
       DB::table('orders')->where('id',$id)->update(['discount'=>$disc, 'coupon'=>$cpn] + $meta + $dcols);
       if ($dcols['delivery_manual_adj'] !== null) \App\Support\Procure::audit('delivery.manual_adjust', $invNo, ['charge'=>$dv['charge']], ['charge'=>$d['shipping']]);
       if ($cpn) DB::table('coupons')->where('code', $cpn)->increment('used_count');
@@ -244,6 +247,7 @@ class AdminController extends Controller {
       DB::table('order_status_logs')->insert(['order_id'=>$id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'from_status'=>null,'to_status'=>'New','note'=>'Order created','created_at'=>now(),'updated_at'=>now()]);
       return $id;
     });
+    if ($dupId) return redirect("/admin/orders/$dupId")->with('ok', 'This order was already saved (duplicate click ignored).');
     if (!empty($d['inc_id'])) DB::table('incomplete_orders')->where('id', (int)$d['inc_id'])->whereIn('status', ['open','recovered'])->update(['status'=>'converted', 'order_id'=>$id, 'updated_at'=>now()]);
     DB::table('incomplete_orders')->where('status', 'open')->where('phone', $d['phone'])->update(['status'=>'converted', 'order_id'=>$id, 'updated_at'=>now()]);
     try { \App\Support\Voice::onOrder($d['phone'], (int)$id, $kept); } catch (\Throwable $e) {}
