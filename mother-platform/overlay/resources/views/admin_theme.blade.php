@@ -18,6 +18,8 @@
   --border-main:var(--grid-border-main);--border-soft:var(--grid-border-soft);
   --head-bg:var(--header-bg-level-5);--group-bg:var(--grid-bg-level-2);--total-bg:var(--toolbar-bg-level-3);
   --accent-tint:#FFF4EC;
+  /* text must read clearly stronger than any border: primary near-black, secondary dark slate, muted still dark enough */
+  --text-primary:#0B1220;--text-secondary:#1F2937;--text-muted:#4B5563;
   /* module / section / working bars: one step darker than normal grid rows (6-10 % tint) */
   --module-bar-bg:var(--module-bg-level-4);--module-bar-border:var(--module-border);--module-bar-text:#111827;
   /* map the tokens onto the variables admin_grid already reads */
@@ -59,7 +61,7 @@ main table.ordt>tbody>tr:is(.st-new,.st-scheduled,.st-pending,.st-pre-order,.st-
 main table.ordt>tbody>tr:has(input[type=checkbox]:checked)>td{background:var(--row-selected)!important}
 
 /* ===== 4. table furniture: header, group, total (spec §35-37) ===== */
-main table:not(.ordt):has(th) th,main table.ordt>thead>tr>th{background:var(--head-bg);color:#374151}
+main table:not(.ordt):has(th) th,main table.ordt>thead>tr>th{background:var(--head-bg);color:#111827}
 main table:not(.ordt):has(th),main table.ordt{border-color:var(--border-main)}
 main table:not(.ordt):has(th) td,main table.ordt>tbody>tr>td{border-bottom-color:var(--border-grid);border-right-color:var(--border-grid)}
 main table:not(.ordt):has(th) th,main table.ordt>thead>tr>th{border-color:var(--border-grid);border-bottom-color:var(--border-strong)}
@@ -121,6 +123,26 @@ main input:focus-visible,main select:focus-visible,main textarea:focus-visible{b
 main .card{border-color:var(--border-grid)}
 .ui-module-bar,.ui-section-bar,main>h1,main .card>:is(h2,h3):first-child{border-bottom-color:var(--border-strong)}
 dialog,[role=dialog],.modal,.modal-box{border-color:var(--border-grid)}
+/* ===== 9. stronger text & icons (spec: text darker than borders) ===== */
+main{color:var(--text-primary)}
+main td{color:#111827}
+main label,main small,main .muted,main .k span,main .sub-t{color:#374151}
+main label{font-weight:600}
+main h1,main h2,main h3,main h4{color:#0B1220}
+/* inline light-gray text colours (#6B7280 / #9CA3AF / #94A3B8 / #64748B) -> dark slate; #475569 -> darker */
+main [style*="color:#6B7280" i],main [style*="color:#9CA3AF" i],main [style*="color:#94A3B8" i],main [style*="color:#64748B" i],main [style*="color: #6B7280" i],main [style*="color: #9CA3AF" i]{color:#4B5563!important}
+main [style*="color:#475569" i],main [style*="color:#4B5563" i]{color:#334155!important}
+main .pill,main .chip{font-weight:700}
+/* icons follow text colour; make the grey ones clearly darker */
+main svg{stroke-opacity:1}
+main .ib{color:#111827}
+main td svg,main .ocb svg{opacity:1}
+aside a.sub,aside details.rpg>summary{color:#111827!important}
+aside a.nv svg,aside details summary svg{color:#1F2937!important}
+aside details.mg>summary::after,aside details.rpg>summary::after{color:#374151!important}
+aside .brand small,aside .viewing small{color:#4B5563!important}
+aside .sbs input::placeholder{color:#4B5563}
+::placeholder{color:#6B7280;opacity:1}
 /* ===== 8. compact action icons (desktop only; mobile keeps big touch targets) ===== */
 @media(min-width:761px){.ibar{gap:4px;margin-top:3px}.ibar .ib{width:24px;height:24px;border-radius:7px;box-shadow:none}.ibar .ib svg{width:12px;height:12px}.ibar .ib-call{height:24px;padding:0 9px;font-size:11px;border-radius:7px;gap:4px;box-shadow:none}.ibar .ib-call svg{width:11px;height:11px}}
 .dfx-menu{border-color:var(--border-main)}
