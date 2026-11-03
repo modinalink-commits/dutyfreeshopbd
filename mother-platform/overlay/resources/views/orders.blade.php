@@ -57,7 +57,7 @@
 /* v1.327 no size changes when clicking in the table: stray export bar hidden until moved, fixed export slot, fixed selection badge */
 .oc .dfx-bar:not(#oexs .dfx-bar){display:none!important}
 #ocb #oexs{display:inline-flex;align-items:center;min-width:70px;height:26px;flex:none;position:relative}#ocb #oexs .dfx-bar{position:absolute!important;left:0;top:0;opacity:0;pointer-events:none;z-index:-1;visibility:visible}
-#ocb #osel{display:inline-flex;align-items:center;justify-content:center;flex:none;width:28px;height:26px;font-size:11px;font-weight:700;color:#1E40AF;visibility:visible}#ocb #osel:empty{visibility:hidden}
+#ocb #osel{display:inline-flex;align-items:center;justify-content:center;flex:none;width:28px;height:26px;font-size:11px;font-weight:700;color:#1E40AF;visibility:visible}#ocb #osel:empty{display:none!important}
 /* v1.326 row action buttons (View / Edit / more / Convert / Recovered / Archive) share the toolbar design */
 .oa,.oa.btn{display:inline-flex!important;align-items:center;justify-content:center;gap:5px;box-sizing:border-box;height:28px!important;min-height:0!important;padding:0 10px!important;font-size:11px!important;font-weight:600!important;line-height:1!important;border-radius:8px!important;border:1.5px solid #94A3B8!important;background:#F1F5F9!important;color:#0B1220!important;box-shadow:none!important;filter:none!important;transform:none!important;text-decoration:none;transition:border-color .15s ease,background-color .15s ease}
 .oa:hover{border-color:#475569!important;transform:none!important}
