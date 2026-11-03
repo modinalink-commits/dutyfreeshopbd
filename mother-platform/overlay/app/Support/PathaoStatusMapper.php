@@ -12,8 +12,9 @@ class PathaoStatusMapper {
     'return_pending' => 'Return Pending',
   ];
   public static function key(?string $raw): string { return trim(preg_replace('/[^a-z0-9]+/', ' ', strtolower((string)$raw))); }
-  private static function all(): array { return Cache::remember('pathao.status_map', 60, fn() => DB::table('pathao_status_map')->get()->keyBy('raw_key')->all()); }
-  public static function forget(): void { Cache::forget('pathao.status_map'); }
+  /** Cached as plain arrays (the cache does not hand back stdClass objects), rebuilt into objects on every read. */
+  private static function all(): array { return array_map(fn($a) => (object)$a, Cache::remember('pathao.status_map.v2', 60, fn() => DB::table('pathao_status_map')->get()->map(fn($r) => (array)$r)->keyBy('raw_key')->all())); }
+  public static function forget(): void { Cache::forget('pathao.status_map'); Cache::forget('pathao.status_map.v2'); }
   /** An existing mapping row (never creates one). */
   public static function peek(?string $raw): ?object { return self::all()[self::key($raw)] ?? null; }
   /** @return array{action:string,outcome:?string,stage:?string,needs:bool,row:?object} An unseen status is recorded and flagged for mapping, never guessed. */
