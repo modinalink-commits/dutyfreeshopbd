@@ -147,6 +147,34 @@ class CatalogController extends Controller {
     if ($names) $this->notifyStatus($names, $new);
     return back()->with('ok', count($names).' products '.($new?'published':'unpublished'));
   }
+  // Fill Buy 2-5 bundle prices from the sale price (2/3/4/5 %). Products whose four bundle prices are already set
+  // and each cheaper than singles are left untouched. Dry run unless apply=1; old values saved to storage/logs for rollback.
+  public function bundleFill(Request $r) {
+    abort_unless(Auth::check(), 403);
+    $apply = $r->boolean('apply'); $pc = [2=>2.0, 3=>3.0, 4=>4.0, 5=>5.0];
+    $stat = ['total'=>0, 'kept'=>0, 'filled'=>0, 'skipped'=>0]; $undo = []; $sample = [];
+    $rows = DB::table('products')->get(['id','name','price','buy2_price','buy3_price','buy4_price','buy5_price']);
+    foreach ($rows as $p) {
+      $stat['total']++; $u = (float)$p->price;
+      if ($u < 20 || $p->id == 1326) { $stat['skipped']++; continue; }
+      $good = true;
+      foreach ($pc as $n => $x) { $t = (float)$p->{"buy{$n}_price"}; if (!($t > 0 && $t < $u * $n)) { $good = false; break; } }
+      if ($good) { $stat['kept']++; continue; }
+      $new = [];
+      foreach ($pc as $n => $x) {
+        $tot = $u * $n; $raw = $tot * (1 - $x / 100); $step = $tot >= 2000 ? 10 : ($tot >= 500 ? 5 : 1);
+        $new["buy{$n}_price"] = (float)(floor($raw / $step) * $step);
+      }
+      $stat['filled']++;
+      if (count($sample) < 6) $sample[] = ['id'=>$p->id, 'name'=>mb_substr($p->name, 0, 30), 'price'=>$u] + $new;
+      if ($apply) {
+        $undo[$p->id] = ['buy2_price'=>$p->buy2_price, 'buy3_price'=>$p->buy3_price, 'buy4_price'=>$p->buy4_price, 'buy5_price'=>$p->buy5_price];
+        DB::table('products')->where('id', $p->id)->update($new + ['updated_at'=>now()]);
+      }
+    }
+    if ($apply && $undo) @file_put_contents(storage_path('logs/bundle-fill-'.date('Ymd-His').'.json'), json_encode($undo));
+    return response()->json(['applied'=>$apply] + $stat + ['sample'=>$sample]);
+  }
   public function productImport(Request $r) {
     $r->validate(['file'=>'required|file|max:10240']);
     $fh = fopen($r->file('file')->getRealPath(), 'r'); $head = fgetcsv($fh); if (!$head) return back()->withErrors(['file'=>'Empty file']);

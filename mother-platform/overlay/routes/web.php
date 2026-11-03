@@ -85,6 +85,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/products/new', [C::class,'productForm']);
   Route::post('/products/seo-autofill', [C::class,'seoAutofill']);
   Route::post('/products/bulk', [C::class,'productBulk']);
+  Route::post('/products/bundle-fill', [C::class,'bundleFill']);
   Route::post('/products/import', [C::class,'productImport']);
   Route::get('/products-template.csv', [C::class,'importTemplate']);
   Route::post('/products', [C::class,'productSave']);
