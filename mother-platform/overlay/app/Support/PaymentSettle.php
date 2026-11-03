@@ -8,8 +8,8 @@ use Illuminate\Support\Facades\DB;
  * Safe to call any number of times: the ledger row is created once, the status moves once, the activity entry is written only when something changed.
  */
 class PaymentSettle {
-  /** Stages that may still be moved forward to Approved by a full payment. Pre Order / Scheduled / Incomplete are deliberately left alone. */
-  const ELIGIBLE = ['New', 'Pending', 'WFP', 'Assign', 'AI Order'];
+  /** Stages that may still be moved forward to Approved by a full payment (owner's rule: New, Pending, WFP, AI Order, Scheduled; Assign too). Pre Order / Incomplete are left alone. */
+  const ELIGIBLE = ['New', 'Pending', 'WFP', 'Assign', 'AI Order', 'Scheduled'];
 
   /** Safety net: any fully paid order still waiting in an early stage (paid before auto-approval existed, or verified through a path that did not call apply()) is settled now. Throttled to once every 2 minutes. */
   public static function auto(): void { if (\Illuminate\Support\Facades\Cache::add('payment.settle.sweep', 1, 120)) { try { self::sweep(); } catch (\Throwable $e) { report($e); } } }
