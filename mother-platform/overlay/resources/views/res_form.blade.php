@@ -1,6 +1,7 @@
 @extends('layout')@section('title',$c['title'])
 @section('body')<h1>{{ $row ? 'Edit' : 'Add' }}: {{ $c['title'] }}</h1>
 @if($errors->any())<div class="card err">{{ $errors->first() }}</div>@endif
+@if($row && ($c['slug'] ?? '') === 'customers')@php $__mc = \App\Support\OrderDiscount::cardOf($row); @endphp@if($__mc)<div style="margin:0 0 14px">@include('components.membership-card', $__mc)</div>@endif@endif
 <form class="card" method="post" action="/admin/m/{{ $c['slug'] }}{{ $row ? '/'.$row->id : '' }}" style="max-width:640px">@csrf
 @foreach($c['fields'] as $f)@php if(!empty($f['auto']) || !empty($f['formHide'])) continue; if($row && !empty($c['editOnly']) && !in_array($f['n'],$c['editOnly'])) continue;
 $cur = $row ? ($row->{$f['n']} ?? null) : null; if ($cur===null && !$row && ($f['default'] ?? null)==='today') $cur = date('Y-m-d'); if ($cur===null && !$row && $f['t']==='bool' && $f['n']==='active') $cur = true; if ($cur===null && !$row && array_key_exists('def',$f)) $cur = $f['def']; $val = old($f['n'], $cur);

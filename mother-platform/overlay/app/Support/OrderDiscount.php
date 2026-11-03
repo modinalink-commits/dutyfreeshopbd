@@ -45,6 +45,12 @@ class OrderDiscount {
     if (isset(self::LEVELS[$m])) return ['key' => $m, 'name' => self::LEVELS[$m], 'stars' => array_search($m, $keys) + 1];
     if ($autoStars < 1) return null; $i = min(4, $autoStars) - 1; return ['key' => $keys[$i], 'name' => self::LEVELS[$keys[$i]], 'stars' => $i + 1];
   }
+  /** Membership card data for a customer row (null = not a member). */
+  public static function cardOf(object $c, ?string $displayId = null): ?array {
+    try { $t = self::tier((string)$c->phone, $c); $lv = self::levelOf($c->customer_level ?? null, (int)($t['stars'] ?? 0)); } catch (\Throwable $e) { return null; }
+    if (!$lv) return null;
+    return ['name' => (string)$c->name, 'id' => $displayId ?: ('DFC' . str_pad((string)$c->id, 6, '0', STR_PAD_LEFT)), 'stars' => $lv['stars'], 'key' => $lv['key']];
+  }
   public static function starText(int $n): string { return $n > 0 ? str_repeat('★', $n) : ''; }
   /** Customer Type (VIP / Regular / New) and Membership (Active / Inactive). */
   public static function profile(string $p): array {

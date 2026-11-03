@@ -48,6 +48,7 @@ table.t.rs thead{display:none}table.t.rs,table.t.rs tbody,table.t.rs tr,table.t.
 
 @if($tab==='dashboard')
 <div class="hello"><h1>আসসালামু আলাইকুম, {{ $c->name }}! 👋</h1><p>আপনার অ্যাকাউন্টে স্বাগতম। আমরা সবসময় আপনার সেবায় প্রস্তুত।</p></div>
+@if(!empty($tier))<div style="margin:0 0 16px">@include('components.membership-card',['name'=>$c->name,'id'=>$cid,'stars'=>$tier['stars'],'key'=>strtolower($tier['name'])])</div>@endif
 <div class="cards"><div class="k"><small>Total Orders</small><b>{{ $totalOrders }}</b></div><div class="k"><small>Delivered</small><b style="color:#15803D">{{ $cnt['Delivered'] }}</b></div><div class="k"><small>Pending</small><b style="color:#C2410C">{{ $cnt['Pending'] + $cnt['Confirmed'] + $cnt['Processing'] + $cnt['Shipment'] }}</b></div><div class="k"><small>Cancelled</small><b style="color:#B91C1C">{{ $cnt['Cancelled'] }}</b></div><div class="k"><small>Returned</small><b style="color:#7E22CE">{{ $cnt['Returned'] }}</b></div><div class="k"><small>Total Spend</small><b>{{ $tk($spend) }}</b></div></div>
 <div class="bx" id="appN"><h2>App &amp; Notifications</h2>
 <div class="nrow"><div><b id="aiT">Install DutyFreeBD App</b><small id="aiS">হোম স্ক্রিন থেকে অ্যাপের মতো খুলুন।</small></div><button type="button" class="nbtn" id="aiB">Install App</button></div>
@@ -72,6 +73,7 @@ if(!sup()){pt.textContent='Not supported'}else{navigator.serviceWorker.ready.the
 @endif
 
 @if($tab==='profile')
+@if(!empty($tier))<div style="margin:0 0 16px">@include('components.membership-card',['name'=>$c->name,'id'=>$cid,'stars'=>$tier['stars'],'key'=>strtolower($tier['name'])])</div>@endif
 <div class="bx"><h2>My Profile <span class="cb" style="background:{{ $catc[0] }};color:{{ $catc[1] }}">{{ $cat }} Customer</span>@if(!empty($tier)) <span class="cb" style="background:#FEF3C7;color:#B45309">{{ \App\Support\OrderDiscount::starText($tier['stars']) }} {{ $tier['name'] }}</span>@endif</h2>
 <form class="f" id="pf"><div class="g2"><div><label>Full Name</label><input name="name" value="{{ $c->name }}" required maxlength="80"></div><div><label>Mobile Number</label><input value="{{ $c->phone }}" disabled><div style="font-size:11.5px;color:#6B7280;margin-top:4px">মোবাইল নম্বর বদলাতে সাপোর্টে যোগাযোগ করুন।</div></div>
 <div><label>Email</label><input type="email" name="email" value="{{ $c->email }}" maxlength="120"></div><div><label>Date of Birth</label>@if($c->dob)<input value="{{ \Carbon\Carbon::parse($c->dob)->format('d-m-Y') }}" disabled><div style="font-size:11.5px;color:#6B7280;margin-top:4px">জন্মতারিখ একবারই সেভ করা যায়। সংশোধন করতে অনুরোধ পাঠান — অ্যাডমিন অনুমোদন করলে বদলাবে।</div>
