@@ -143,6 +143,7 @@ class StoreController extends Controller {
   public function category(Request $r, string $slug, ?string $subSlug = null, ?string $subSubName = null) {
     $c = $this->cats()[$slug] ?? null;
     if (!$c) { if ($subSlug !== null) return $this->notFound(); $page = DB::table('pages')->where('slug',$slug)->where('active',true)->first(); if (!$page && ($pt = request()->query('preview'))) { $pp = DB::table('pages')->where('slug',$slug)->first(); if ($pp && \App\Support\SeoMgr::previewOk($pt, $pp)) { $page = $pp; $GLOBALS['seo_preview'] = true; } } if ($page) return $this->page($page); return $this->notFound(); }
+    if ($subSlug === null && $r->isMethod('get') && !str_ends_with($r->getPathInfo(), '/') && !$r->filled('sub')) return redirect('/'.$slug.'/'.($r->getQueryString() ? '?'.$r->getQueryString() : ''), 301); // one URL form: /category/
     if ($subSlug === null && $r->filled('sub')) { // old ?sub=LM links -> /category/lm (301)
       $rest = $r->except('sub'); return redirect('/'.$slug.'/'.\App\Support\Slugs::subSlug($r->sub).($rest ? '?'.http_build_query($rest) : ''), 301);
     }
@@ -173,8 +174,10 @@ class StoreController extends Controller {
       $items = $this->sorted($q, $sort === 'new' ? 'new' : $sort)->paginate($per)->withQueryString();
     }
     $canon = url('/'.$slug).($subSlug !== null ? '/'.$subSlug.($subSubName !== null ? '/'.\App\Support\Slugs::slug($subSubName, 60) : '') : '/'); if ($subSubName !== null) { $subName = $subSubName.' · '.$subName; }
-    $title = $subName ? self::fitTitle($subName.' – '.$c->name, ' | DutyFree BD') : (($c->title && mb_strlen($c->title) <= 66) ? $c->title : self::fitTitle((string)($c->title ?: $c->name), ' | DutyFree BD'));
-    return response()->view('store.category', $this->base(['c'=>$c, 'subName'=>$subName, 'subSlug'=>$subSlug, 'items'=>$items, 'hasPos'=>$hasPos, 'groups'=>collect($items->items())->groupBy(fn($p) => $p->sub ?: $c->name), 'title'=>$title, 'desc'=>$subName ? $subName.' – original imported products in '.$c->name.' at DutyFree Shop BD. Cash on delivery, nationwide delivery.' : $c->meta_description, 'canon'=>(!$subName && !empty($c->canonical)) ? $c->canonical : $canon, 'noindex'=>(!empty($c->noindex) && !$subName) || self::isSmokeCat($c), 'keywords'=>$c->focus_keyword ?? null, 'ogimg'=>(!empty($c->og_image) ? $c->og_image : null)]))->header('Cache-Control','public, max-age=120');
+    $baseT = trim((string)($c->title ?: $c->name));
+    if ($subName) { $tt = $subName.' – '.$c->name; if (mb_strlen($tt) < 26) $tt .= ' – Original Imported Products'; $title = self::fitTitle($tt, ' | DutyFree BD'); }
+    else { if (mb_strlen($baseT) < 30) $baseT .= ' – Original Imported Products in Bangladesh'; $title = mb_strlen($baseT) <= 66 && mb_strlen($baseT) >= 30 && str_contains($baseT, '|') ? $baseT : self::fitTitle($baseT, ' | DutyFree BD'); }
+    return response()->view('store.category', $this->base(['c'=>$c, 'subName'=>$subName, 'subSlug'=>$subSlug, 'items'=>$items, 'hasPos'=>$hasPos, 'groups'=>collect($items->items())->groupBy(fn($p) => $p->sub ?: $c->name), 'title'=>$title, 'desc'=>$subName ? $subName.' – original imported products in '.$c->name.' at DutyFree BD. Cash on delivery, nationwide delivery.' : $c->meta_description, 'canon'=>(!$subName && !empty($c->canonical)) ? $c->canonical : $canon, 'noindex'=>(!empty($c->noindex) && !$subName) || self::isSmokeCat($c), 'keywords'=>$c->focus_keyword ?? null, 'ogimg'=>(!empty($c->og_image) ? $c->og_image : null)]))->header('Cache-Control','public, max-age=120');
   }
   /** /category/secondary-category */
   public function categorySub(Request $r, string $cat, string $sub) { return $this->category($r, $cat, $sub); }
@@ -216,13 +219,13 @@ class StoreController extends Controller {
     DB::table('product_views')->insert(['product_id'=>$p->id,'day'=>now('Asia/Dhaka')->toDateString(),'created_at'=>now(),'updated_at'=>now()]);
     $price = (float)$p->price;
     $gallery = DB::table('product_images')->where('product_id',$p->id)->orderBy('position')->orderBy('id')->pluck('path')->all();
-    return response()->view('store.product', $this->base(['preview'=>$preview, 'gallery'=>$gallery, 'p'=>$p, 'c'=>$c, 'rel'=>$rel, 'reviews'=>$reviews, 'title'=>(mb_strlen((string)$p->meta_title) >= 10 && mb_strlen((string)$p->meta_title) <= 66 ? $p->meta_title : self::fitTitle($p->name, ' দাম ৳'.number_format($price).' | DutyFree BD')), 'keywords'=>$p->meta_keywords ?? null, 'desc'=>($p->meta_description ?: $p->name.' – দাম ৳ '.number_format($price).'। অরিজিনাল ইমপোর্টেড পণ্য, অর্ডার করুন, সারা বাংলাদেশে ডেলিভারি। DutyFree Shop BD.'), 'canon'=>($p->canonical ?? null) ?: url(self::url($p)), 'noindex'=>!empty($p->noindex) || ($p->group_key ?? null) === 'smoke', 'ogimg'=>($p->og_image ?? null) ?: ($p->image ? (preg_match('#^https?://#i', $p->image) ? $p->image : url($p->image)) : url('/og.png'))]))->header('Cache-Control','public, max-age=120');
+    return response()->view('store.product', $this->base(['preview'=>$preview, 'gallery'=>$gallery, 'p'=>$p, 'c'=>$c, 'rel'=>$rel, 'reviews'=>$reviews, 'title'=>(mb_strlen((string)$p->meta_title) >= 10 && mb_strlen((string)$p->meta_title) <= 66 ? $p->meta_title : self::fitTitle($p->name, ' দাম ৳'.number_format($price).' | DutyFree BD')), 'keywords'=>$p->meta_keywords ?? null, 'desc'=>($p->meta_description ?: $p->name.' – দাম ৳ '.number_format($price).'। অরিজিনাল ইমপোর্টেড পণ্য, অর্ডার করুন, সারা বাংলাদেশে ডেলিভারি। DutyFree BD.'), 'canon'=>($p->canonical ?? null) ?: url(self::url($p)), 'noindex'=>!empty($p->noindex) || ($p->group_key ?? null) === 'smoke', 'ogimg'=>($p->og_image ?? null) ?: ($p->image ? (preg_match('#^https?://#i', $p->image) ? $p->image : url($p->image)) : url('/og.png'))]))->header('Cache-Control','public, max-age=120');
   }
   public function search(Request $r) {
     $t = trim(mb_substr((string)$r->q, 0, 80)); $items = collect();
     if ($r->boolean('deals')) { $items = self::dealBase(0)->paginate(48)->withQueryString(); $t = 'Flash Sale'; }
     elseif ($t !== '') { $items = $this->q()->where(fn($w) => $w->where('name','ilike','%'.$t.'%')->orWhere('sub','ilike','%'.$t.'%'))->orderByDesc('id')->paginate(48)->withQueryString(); DB::table('product_views')->insert(['term'=>$t,'day'=>now('Asia/Dhaka')->toDateString(),'created_at'=>now(),'updated_at'=>now()]); }
-    return response()->view('store.search', $this->base(['t'=>$t, 'items'=>$items, 'title'=>($t ? $t.' – ' : '').'Search | DutyFree Shop BD', 'desc'=>'', 'canon'=>url('/search'), 'noindex'=>true]));
+    return response()->view('store.search', $this->base(['t'=>$t, 'items'=>$items, 'title'=>($t ? $t.' – ' : '').'Search | DutyFree BD', 'desc'=>'', 'canon'=>url('/search'), 'noindex'=>true]));
   }
   /** Live search suggestions: products (with image), brands, categories and stores. */
   public function suggest(Request $r) {
@@ -235,10 +238,10 @@ class StoreController extends Controller {
     return response()->json($out)->header('Cache-Control','public, max-age=60');
   }
   public function checkout() {
-    return response()->view('store.checkout', $this->base(['pays'=>\App\Http\Controllers\PaymentController::active(),'title'=>'Checkout | DutyFree Shop BD', 'desc'=>'', 'canon'=>url('/checkout'), 'noindex'=>true, 'grey'=>true]));
+    return response()->view('store.checkout', $this->base(['pays'=>\App\Http\Controllers\PaymentController::active(),'title'=>'Checkout | DutyFree BD', 'desc'=>'', 'canon'=>url('/checkout'), 'noindex'=>true, 'grey'=>true]));
   }
   public function wishlist() {
-    return response()->view('store.wishlist', $this->base(['title'=>'Wishlist | DutyFree Shop BD', 'desc'=>'', 'canon'=>url('/wishlist'), 'noindex'=>true]));
+    return response()->view('store.wishlist', $this->base(['title'=>'Wishlist | DutyFree BD', 'desc'=>'', 'canon'=>url('/wishlist'), 'noindex'=>true]));
   }
   /** Parse "12:2,15:1" into [product_id => qty]. */
   private function parseItems($raw): array {
@@ -372,12 +375,12 @@ class StoreController extends Controller {
   public function done($invoice) {
     $u = fn($extra = []) => \Illuminate\Support\Facades\URL::temporarySignedRoute('order.invoice', now()->addDays(3), ['invoice'=>$invoice] + $extra);
     try {
-      return response()->view('store.success', $this->base($this->pack($invoice) + ['viewUrl'=>$u(), 'dlUrl'=>$u(['print'=>1]), 'title'=>'Order Placed | DutyFree Shop BD','desc'=>'','canon'=>url('/'),'noindex'=>true]));
+      return response()->view('store.success', $this->base($this->pack($invoice) + ['viewUrl'=>$u(), 'dlUrl'=>$u(['print'=>1]), 'title'=>'Order Placed | DutyFree BD','desc'=>'','canon'=>url('/'),'noindex'=>true]));
     } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) { throw $e;
     } catch (\Throwable $e) {
       report($e);
       $inv = e((string)$invoice);
-      return response('<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Order Placed | DutyFree Shop BD</title></head><body style="font-family:system-ui,Arial,sans-serif;background:#f8fafc;margin:0;padding:24px"><div style="max-width:440px;margin:40px auto;background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:24px;text-align:center"><div style="font-size:42px">✅</div><h1 style="font-size:20px;margin:8px 0">Order Placed Successfully</h1><p style="color:#374151;font-size:15px">Your order number: <b>'.$inv.'</b></p><p style="color:#6b7280;font-size:13px;line-height:1.6">Thank you! Our team will call you shortly to confirm your order. / ধন্যবাদ! আমাদের প্রতিনিধি শীঘ্রই ফোন করে অর্ডার কনফার্ম করবেন।</p><a href="/" style="display:inline-block;margin-top:12px;background:#FF5A00;color:#fff;text-decoration:none;padding:10px 18px;border-radius:10px;font-weight:700">Continue shopping</a></div></body></html>', 200, ['Content-Type'=>'text/html; charset=utf-8']);
+      return response('<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Order Placed | DutyFree BD</title></head><body style="font-family:system-ui,Arial,sans-serif;background:#f8fafc;margin:0;padding:24px"><div style="max-width:440px;margin:40px auto;background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:24px;text-align:center"><div style="font-size:42px">✅</div><h1 style="font-size:20px;margin:8px 0">Order Placed Successfully</h1><p style="color:#374151;font-size:15px">Your order number: <b>'.$inv.'</b></p><p style="color:#6b7280;font-size:13px;line-height:1.6">Thank you! Our team will call you shortly to confirm your order. / ধন্যবাদ! আমাদের প্রতিনিধি শীঘ্রই ফোন করে অর্ডার কনফার্ম করবেন।</p><a href="/" style="display:inline-block;margin-top:12px;background:#FF5A00;color:#fff;text-decoration:none;padding:10px 18px;border-radius:10px;font-weight:700">Continue shopping</a></div></body></html>', 200, ['Content-Type'=>'text/html; charset=utf-8']);
     }
   }
   public function invoice($invoice) { return response()->view('store.invoice', $this->pack($invoice) + ['print'=>request()->boolean('print')]); }
@@ -396,22 +399,23 @@ class StoreController extends Controller {
       } else $bad = true;
       if ($o) $logs = DB::table('order_status_logs')->where('order_id',$o->id)->orderBy('id')->get(['to_status','created_at']);
     }
-    return response()->view('store.track', $this->base(['o'=>$o, 'logs'=>$logs, 'askPhone'=>$askPhone, 'badTrack'=>$bad, 'items'=>$o ? DB::table('order_items as i')->leftJoin('products as p','p.id','=','i.product_id')->where('i.order_id',$o->id)->get(['i.product_id','p.ext_id','i.name','i.qty','i.price']) : collect(), 'title'=>'Order Tracking | DutyFree Shop BD', 'desc'=>'', 'canon'=>url('/track'), 'noindex'=>true]))->header('Cache-Control','no-store');
+    return response()->view('store.track', $this->base(['o'=>$o, 'logs'=>$logs, 'askPhone'=>$askPhone, 'badTrack'=>$bad, 'items'=>$o ? DB::table('order_items as i')->leftJoin('products as p','p.id','=','i.product_id')->where('i.order_id',$o->id)->get(['i.product_id','p.ext_id','i.name','i.qty','i.price']) : collect(), 'title'=>'Order Tracking | DutyFree BD', 'desc'=>'', 'canon'=>url('/track'), 'noindex'=>true]))->header('Cache-Control','no-store');
   }
   private function page($page) {
+    if (empty($page->canonical) && request()->isMethod('get') && !str_ends_with(request()->getPathInfo(), '/') && empty($GLOBALS['seo_preview']) && !request()->query('preview')) return redirect(url('/'.$page->slug).'/'.(request()->getQueryString() ? '?'.request()->getQueryString() : ''), 301);
     $S = \App\Support\SeoMgr::class; $img = fn($u) => $u ? (str_starts_with($u,'http') ? $u : url($u)) : null;
     $noidx = !empty($GLOBALS['seo_preview']) || (isset($page->robots_index) && !$page->robots_index) || $S::get('seo_global_index','1') === '0';
-    return response()->view('store.page', $this->base(['page'=>$page, 'title'=>isset($page->status) ? $S::effTitle($page) : (($page->meta_title ?: $page->title).' | DutyFree Shop BD'), 'desc'=>isset($page->status) ? $S::effDesc($page) : $page->meta_description,
+    return response()->view('store.page', $this->base(['page'=>$page, 'title'=>isset($page->status) ? $S::effTitle($page) : (($page->meta_title ?: $page->title).' | DutyFree BD'), 'desc'=>(isset($page->status) ? $S::effDesc($page) : $page->meta_description) ?: \Illuminate\Support\Str::limit(trim(preg_replace('/\s+/u', ' ', strip_tags((string)($page->body ?? $page->content ?? '')))), 155, '…'),
       'canon'=>!empty($page->canonical) ? $page->canonical : url('/'.$page->slug).'/', 'noindex'=>$noidx, 'keywords'=>$page->keywords ?? null, 'ogimg'=>$img($page->og_image ?? $page->featured_image ?? null)]));
   }
   public function blog() {
     $posts = DB::table('posts')->where('active',true)->where(fn($q)=>$q->whereNull('published_at')->orWhere('published_at','<=',now()))->orderByDesc('published_at')->orderByDesc('id')->get();
-    return response()->view('store.blog', $this->base(['posts'=>$posts, 'title'=>'Blog | DutyFree Shop BD', 'desc'=>'Guides and articles from DutyFree Shop BD', 'canon'=>url('/blog')]));
+    return response()->view('store.blog', $this->base(['posts'=>$posts, 'title'=>'Blog | DutyFree BD', 'desc'=>'Guides and articles from DutyFree BD', 'canon'=>url('/blog')]));
   }
   public function post($slug) {
     $p = DB::table('posts')->where('slug',$slug)->where('active',true)->where(fn($q)=>$q->whereNull('published_at')->orWhere('published_at','<=',now()))->first();
     if (!$p) return $this->notFound();
-    return response()->view('store.post', $this->base(['p'=>$p, 'title'=>($p->meta_title ?: $p->title).' | DutyFree Shop BD', 'desc'=>$p->meta_description ?: $p->excerpt, 'canon'=>url('/blog/'.$p->slug), 'ogimg'=>$p->featured_image ? (str_starts_with($p->featured_image,'http') ? $p->featured_image : url($p->featured_image)) : null]));
+    return response()->view('store.post', $this->base(['p'=>$p, 'title'=>($p->meta_title ?: $p->title).' | DutyFree BD', 'desc'=>$p->meta_description ?: $p->excerpt, 'canon'=>url('/blog/'.$p->slug), 'ogimg'=>$p->featured_image ? (str_starts_with($p->featured_image,'http') ? $p->featured_image : url($p->featured_image)) : null]));
   }
   public function cmsExport() {
     return response()->json(['source'=>url('/'), 'pages'=>DB::table('pages')->where('active',true)->get(['slug','title','body','meta_title','meta_description','updated_at']), 'posts'=>DB::table('posts')->where('active',true)->get(['slug','title','featured_image','excerpt','body','meta_title','meta_description','published_at'])]);
@@ -441,12 +445,12 @@ class StoreController extends Controller {
     if (preg_match('#^product/([a-z0-9\-]+)$#i', $pp, $lm) && preg_match('/-(\d{3,6})$/', $lm[1], $lid)) { // old site /product/name-EXTID -> current canonical URL
       $lp = $this->q()->where('ext_id', (int)$lid[1])->first() ?: DB::table('products')->where('ext_id', (int)$lid[1])->where('published', true)->first();
       if ($lp) { if (empty($lp->path_slug)) { \App\Support\Slugs::assignAll(); $lp = DB::table('products')->where('id', $lp->id)->first(); } return redirect(self::url($lp), 301); }
-      return response()->view('store.missing', $this->base(['title'=>'পেজ পাওয়া যায়নি | DutyFree Shop BD', 'desc'=>'', 'canon'=>url('/'), 'noindex'=>true]), 410); // product no longer exists: tell Google it is gone for good
+      return response()->view('store.missing', $this->base(['title'=>'পেজ পাওয়া যায়নি | DutyFree BD', 'desc'=>'', 'canon'=>url('/'), 'noindex'=>true]), 410); // product no longer exists: tell Google it is gone for good
     }
     if (preg_match('#^public/index\.php(/.*)?$#i', $pp, $pm)) { $qs = request()->getQueryString(); return redirect(($pm[1] ?? '') !== '' ? $pm[1] : '/', 301); } // old /public/index.php/... duplicates -> clean URL (query string dropped)
     if (preg_match('#^custom/page/([a-z0-9\-]+)$#i', $pp, $cm)) return redirect('/'.$cm[1].($cm[1] === 'blog' ? '' : '/'), 301);
     if (preg_match('#^(vape|exclusive-deals|premium-cigarette|nano-cigarette|cigarettes?|cigars?)(/.*)?$#i', $pp)) return redirect('/cigarette-vape/', 301); // old tobacco category URLs -> tobacco hub (noindex)
-    return response()->view('store.missing', $this->base(['title'=>'পেজ পাওয়া যায়নি | DutyFree Shop BD', 'desc'=>'', 'canon'=>url('/'), 'noindex'=>true]), 404);
+    return response()->view('store.missing', $this->base(['title'=>'পেজ পাওয়া যায়নি | DutyFree BD', 'desc'=>'', 'canon'=>url('/'), 'noindex'=>true]), 404);
   }
   public function sitemap() {
     $xml = self::rem('store.sitemap8', 3600, function () {
