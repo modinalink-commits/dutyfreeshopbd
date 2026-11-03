@@ -390,6 +390,7 @@ resources/views/order_history_report.blade.php
 app/Http/Controllers/StockMovementReportController.php
 resources/views/stock_movement_report.blade.php
 app/Http/Middleware/PerfProbe.php
+app/Http/Middleware/StorefrontGuard.php
 app/Http/Controllers/PerfAuditController.php
 resources/views/perf_audit.blade.php
 database/migrations/2026_11_02_000001_orders_newest_first_indexes.php

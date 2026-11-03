@@ -383,12 +383,20 @@ class StoreController extends Controller {
   public function invoice($invoice) { return response()->view('store.invoice', $this->pack($invoice) + ['print'=>request()->boolean('print')]); }
   /** Tracking by invoice number only: shows status steps and products, never the customer's name, phone or address. */
   public function track(Request $r) {
-    $o = null; $logs = collect();
+    $o = null; $logs = collect(); $askPhone = false; $bad = false;
     if ($r->filled('invoice')) {
-      $o = DB::table('orders')->whereIn('invoice', \App\Support\Inv::candidates($r->invoice) ?: ['-'])->first(['id','invoice','status','shipping','discount','total','created_at','payment_method','pay_status','pay_txn']);
+      $row = DB::table('orders')->whereIn('invoice', \App\Support\Inv::candidates($r->invoice) ?: ['-'])->first(['id','invoice','status','shipping','discount','total','created_at','payment_method','pay_status','pay_txn','phone']);
+      $ph = substr(preg_replace('/\D/', '', (string)$r->input('phone')), -10);
+      $hasKey = $r->filled('k'); $hasPh = strlen($ph) === 10;
+      if (!$hasKey && !$hasPh) $askPhone = true; // same prompt whether or not the invoice exists, so numbers cannot be probed
+      elseif ($row) {
+        $okKey = $hasKey && hash_equals(\App\Support\Inv::trackKey($row->invoice), (string)$r->input('k'));
+        $okPh = $hasPh && substr(preg_replace('/\D/', '', (string)$row->phone), -10) === $ph;
+        if ($okKey || $okPh) { $o = $row; unset($o->phone); } else $bad = true;
+      } else $bad = true;
       if ($o) $logs = DB::table('order_status_logs')->where('order_id',$o->id)->orderBy('id')->get(['to_status','created_at']);
     }
-    return response()->view('store.track', $this->base(['o'=>$o, 'logs'=>$logs, 'items'=>$o ? DB::table('order_items as i')->leftJoin('products as p','p.id','=','i.product_id')->where('i.order_id',$o->id)->get(['i.product_id','p.ext_id','i.name','i.qty','i.price']) : collect(), 'title'=>'Order Tracking | DutyFree Shop BD', 'desc'=>'', 'canon'=>url('/track'), 'noindex'=>true]))->header('Cache-Control','no-store');
+    return response()->view('store.track', $this->base(['o'=>$o, 'logs'=>$logs, 'askPhone'=>$askPhone, 'badTrack'=>$bad, 'items'=>$o ? DB::table('order_items as i')->leftJoin('products as p','p.id','=','i.product_id')->where('i.order_id',$o->id)->get(['i.product_id','p.ext_id','i.name','i.qty','i.price']) : collect(), 'title'=>'Order Tracking | DutyFree Shop BD', 'desc'=>'', 'canon'=>url('/track'), 'noindex'=>true]))->header('Cache-Control','no-store');
   }
   private function page($page) {
     $S = \App\Support\SeoMgr::class; $img = fn($u) => $u ? (str_starts_with($u,'http') ? $u : url($u)) : null;

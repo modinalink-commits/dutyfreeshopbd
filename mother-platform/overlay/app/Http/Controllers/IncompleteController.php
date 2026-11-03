@@ -99,6 +99,7 @@ class IncompleteController extends Controller {
     return redirect('/admin/orders?status=Incomplete&hl=1')->with('ok', $n.' entr'.($n === 1 ? 'y' : 'ies').' set to '.ucfirst($to).'.');
   }
   public function act(Request $r, $id, $act) {
+    abort_unless(in_array($act, ['recovered','archive','reopen'], true), 404);
     $o = DB::table('incomplete_orders')->find($id); abort_unless($o, 404);
     DB::table('incomplete_orders')->where('id', $id)->update(['status'=>['recovered'=>'recovered', 'archive'=>'archived', 'reopen'=>'open'][$act], 'updated_at'=>now()]);
     return redirect('/admin/orders?status=Incomplete&inc='.($act === 'reopen' ? 'open' : $o->status));

@@ -340,7 +340,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/coupons/{id}/usage', [\App\Http\Controllers\CouponController::class,'usageReport'])->whereNumber('id');
 });
 // ---- Storefront: order form has no CSRF token (pages stay cacheable); orders are rate limited per IP and honeypot-protected
-Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class, \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class, \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])->group(function () {
+Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class, \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class, \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])->middleware(\App\Http\Middleware\StorefrontGuard::class)->group(function () {
   Route::post('/webhooks/legacy-orders', [\App\Http\Controllers\LegacyOrderController::class,'ingest'])->middleware('throttle:1200,1'); Route::get('/webhooks/legacy-orders', [\App\Http\Controllers\LegacyOrderController::class,'stats'])->middleware('throttle:60,1'); Route::post('/webhooks/legacy-import', [\App\Http\Controllers\LegacyImportController::class,'ingest'])->middleware('throttle:600,1'); Route::post('/webhooks/legacy-products', [\App\Http\Controllers\LegacyProductController::class,'ingest'])->middleware('throttle:600,1'); Route::post('/webhooks/legacy-image', [\App\Http\Controllers\LegacyProductController::class,'imagePush'])->middleware('throttle:1200,1'); Route::get('/webhooks/legacy-image-todo', [\App\Http\Controllers\LegacyProductController::class,'imageTodo'])->middleware('throttle:60,1'); Route::post('/webhooks/legacy-taxonomy', [\App\Http\Controllers\LegacyProductController::class,'taxonomy'])->middleware('throttle:60,1'); Route::get('/webhooks/legacy-products', [\App\Http\Controllers\LegacyProductController::class,'stats'])->middleware('throttle:60,1'); Route::get('/webhooks/legacy-import', [\App\Http\Controllers\LegacyImportController::class,'stats'])->middleware('throttle:60,1');
   Route::post('/webhooks/legacy-reviews', [\App\Http\Controllers\LegacyImportController::class,'reviews'])->middleware('throttle:60,1');
   Route::post('/webhooks/legacy-procurement', [\App\Http\Controllers\LegacyImportController::class,'procurement'])->middleware('throttle:120,1');
@@ -425,7 +425,7 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestF
   Route::get('/search-suggest', [\App\Http\Controllers\StoreController::class,'suggest'])->middleware('throttle:600,1');
   Route::get('/home-sec/{slug}', [\App\Http\Controllers\StoreController::class,'homeSec'])->where('slug','[A-Za-z0-9_-]+')->middleware('throttle:300,1');
   Route::get('/search', [\App\Http\Controllers\StoreController::class,'search']);
-  Route::get('/track', [\App\Http\Controllers\StoreController::class,'track']);
+  Route::get('/track', [\App\Http\Controllers\StoreController::class,'track'])->middleware('throttle:40,1');
   Route::get('/blog', [\App\Http\Controllers\StoreController::class,'blog']);
   Route::get('/blog/{slug}', [\App\Http\Controllers\StoreController::class,'post'])->where('slug','[a-z0-9\-]+');
   Route::get('/api/cms', [\App\Http\Controllers\StoreController::class,'cmsExport'])->middleware('throttle:300,1');

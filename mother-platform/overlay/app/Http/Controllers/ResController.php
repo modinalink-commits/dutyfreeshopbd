@@ -180,9 +180,12 @@ class ResController extends Controller {
       if (in_array($f['t'], ['text','textarea','password'])) $rule[] = 'max:5000';
       $rules[$f['n']] = $rule;
     }
-    if ($c['slug']==='users') { $rules['email'][] = 'email'; }
+    if ($c['slug']==='users') { $rules['email'][] = 'email'; foreach ($c['fields'] as $f) if ($f['t']==='password' && isset($rules[$f['n']])) $rules[$f['n']][] = 'min:8'; }
     if ($c['slug']==='customers' && isset($rules['phone'])) { \App\Support\PhoneRule::trim($r); $rules['phone'][] = new \App\Support\PhoneRule; }
     $in = $r->validate($rules);
+    if ($c['slug']==='users' && Auth::user()->role !== 'super') { // only a super user may create a super user or touch one
+      if (($in['role'] ?? null) === 'super' || ($id && DB::table('users')->where('id',$id)->value('role') === 'super')) abort(403, 'Only a super user can manage super users');
+    }
     foreach ($c['fields'] as $f) {
       $n = $f['n']; if (!array_key_exists($n, $rules)) continue;
       $v = $in[$n] ?? null;

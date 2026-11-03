@@ -8,9 +8,9 @@ class TrackLink {
     $c = (string)($o->courier ?? '');
     return match ($c) {
       'Pathao' => 'https://merchant.pathao.com/tracking?consignment_id='.rawurlencode($cid).'&phone='.rawurlencode(substr(preg_replace('/\D+/', '', (string)($o->phone ?? '')), -11)),
-      'Steadfast' => !empty($o->tracking_code) ? 'https://steadfast.com.bd/t/'.rawurlencode((string)$o->tracking_code) : url('/track').'?invoice='.rawurlencode((string)$o->invoice),
+      'Steadfast' => !empty($o->tracking_code) ? 'https://steadfast.com.bd/t/'.rawurlencode((string)$o->tracking_code) : \App\Support\Inv::trackUrl($o->invoice),
       'RedX' => 'https://redx.com.bd/track-global-parcel/?trackingId='.rawurlencode($cid),
-      default => url('/track').'?invoice='.rawurlencode((string)$o->invoice),
+      default => \App\Support\Inv::trackUrl($o->invoice),
     };
   }
   /** Consignment id, a copy button and the tracking link, as one HTML snippet. */

@@ -275,7 +275,7 @@ class ChatController extends Controller {
     $ph = Chat::phone($r->query('phone'));
     $o = $ph && $inv ? DB::table('orders')->whereIn('invoice', $inv)->first(['invoice', 'status', 'total', 'phone', 'courier_status', 'tracking_code', 'created_at']) : null;
     if (!$o || Chat::phone($o->phone) !== $ph) return response()->json(['found'=>false]);
-    return response()->json(['found'=>true, 'invoice'=>$o->invoice, 'status'=>$o->status, 'total'=>(float)$o->total, 'courier_status'=>$o->courier_status, 'url'=>url('/track?invoice='.$o->invoice)]);
+    return response()->json(['found'=>true, 'invoice'=>$o->invoice, 'status'=>$o->status, 'total'=>(float)$o->total, 'courier_status'=>$o->courier_status, 'url'=>\App\Support\Inv::trackUrl($o->invoice)]);
   }
 
   // ---------------- public: Meta webhook (Messenger, Instagram, WhatsApp Cloud API) ----------------

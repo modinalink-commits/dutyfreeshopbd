@@ -34,8 +34,8 @@
 <form class="pn" id="p-reg" autocomplete="on">
 <label>Full Name</label><input type="text" id="r-nm" maxlength="80" autocomplete="name" required>
 <label>Email Address</label><input type="email" id="r-em" placeholder="your@email.com" autocomplete="email" required>
-<label>Password</label><div class="pw"><input type="password" id="r-pw" minlength="6" autocomplete="new-password" required><button type="button" data-eye="r-pw" aria-label="Show password">👁</button></div>
-<label>Confirm Password</label><input type="password" id="r-pw2" minlength="6" autocomplete="new-password" required>
+<label>Password</label><div class="pw"><input type="password" id="r-pw" minlength="8" autocomplete="new-password" required><button type="button" data-eye="r-pw" aria-label="Show password">👁</button></div>
+<label>Confirm Password</label><input type="password" id="r-pw2" minlength="8" autocomplete="new-password" required>
 <label>Referral Code (ঐচ্ছিক)</label><input type="text" id="r-rf" maxlength="40">
 <button class="go" id="r-go">Create Account</button><div class="er" id="r-er"></div>
 <div class="sep">──── অথবা দ্রুত লগইন করুন ────</div><div class="soc"><a class="alt gg" href="/account/google"><svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.2 5.4-4.7 7.1l7.6 5.9c4.4-4.1 6.9-10.1 6.9-17.5z"/><path fill="#FBBC05" d="M10.5 28.7a14.5 14.5 0 0 1 0-9.4l-7.9-6.1a24 24 0 0 0 0 21.6l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>Google দিয়ে লগইন করুন</a></div></form>
@@ -45,7 +45,7 @@
 @if($smsOn)<p class="s" style="margin:12px 0 0">অথবা রেজিস্টার্ড মোবাইল নম্বরে কোড পাঠানো হবে।</p>@endif
 <div @if(!$smsOn) style="display:none" @endif>
 <label>Mobile Number</label><div class="sm"><input type="tel" id="f-ph" data-bdphone placeholder="01XXXXXXXXX" inputmode="numeric" maxlength="11"><button type="button" id="f-send">কোড পাঠান</button></div>
-<label>৬ ডিজিটের কোড</label><input type="text" id="f-code" inputmode="numeric" maxlength="6" placeholder="------"><label>নতুন পাসওয়ার্ড</label><input type="password" id="f-pw" minlength="6" autocomplete="new-password"><label>নতুন পাসওয়ার্ড (আবার)</label><input type="password" id="f-pw2" minlength="6" autocomplete="new-password">
+<label>৬ ডিজিটের কোড</label><input type="text" id="f-code" inputmode="numeric" maxlength="6" placeholder="------"><label>নতুন পাসওয়ার্ড</label><input type="password" id="f-pw" minlength="8" autocomplete="new-password"><label>নতুন পাসওয়ার্ড (আবার)</label><input type="password" id="f-pw2" minlength="8" autocomplete="new-password">
 <button class="go" id="f-go">পাসওয়ার্ড বদলান</button><div class="er" id="f-er"></div></div><div class="row"><button type="button" class="lk" id="f-back">← লগইনে ফিরুন</button></div></form>
 
 <div class="gl">অর্ডার করতে অ্যাকাউন্ট লাগবে না — <a href="/checkout">গেস্ট হিসেবেও অর্ডার করুন</a><br>আগের অর্ডার ট্র্যাক: <a href="/track">Track Order</a></div>
@@ -58,7 +58,7 @@
 var $=function(i){return document.getElementById(i)},P=['login','otp','reg','forgot'],next=(new URLSearchParams(location.search)).get('next')||'';
 function show(n){P.forEach(function(p){$('p-'+p).classList.toggle('on',p===n)});$('tl').classList.toggle('on',n==='login'||n==='otp'||n==='forgot');$('tr').classList.toggle('on',n==='reg');$('ttl').textContent=n==='reg'?'Create Account':(n==='forgot'?'Reset Password':'My Account')}
 function post(u,b){return fetch(u,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(b)}).then(function(r){return r.json().catch(function(){return{}}).then(function(j){j._s=r.status;return j})})}
-function err(e,j){if(j._s===429&&!j.error){$(e).textContent='অনেকবার চেষ্টা করা হয়েছে। ১ মিনিট অপেক্ষা করে আবার চেষ্টা করুন।';return}var m=j.error||(j.errors&&Object.values(j.errors)[0][0])||j.message||'কিছু ভুল হয়েছে';if(j._s===422&&j.errors){m=Object.values(j.errors)[0][0];if(/confirmation/.test(m))m='দুটি পাসওয়ার্ড মেলেনি';else if(/at least/.test(m))m='পাসওয়ার্ড কমপক্ষে ৬ অক্ষর দিন'}$(e).textContent=m}
+function err(e,j){if(j._s===429&&!j.error){$(e).textContent='অনেকবার চেষ্টা করা হয়েছে। ১ মিনিট অপেক্ষা করে আবার চেষ্টা করুন।';return}var m=j.error||(j.errors&&Object.values(j.errors)[0][0])||j.message||'কিছু ভুল হয়েছে';if(j._s===422&&j.errors){m=Object.values(j.errors)[0][0];if(/confirmation/.test(m))m='দুটি পাসওয়ার্ড মেলেনি';else if(/at least/.test(m))m='পাসওয়ার্ড কমপক্ষে ৮ অক্ষর দিন'}$(e).textContent=m}
 function done(j){if(j.ok){try{fetch('/account/me',{headers:{Accept:'application/json'}}).then(function(r){return r.json()}).then(function(m){if(m.in){localStorage.setItem('df_cust',JSON.stringify({p:m.p,n:m.n,e:m.e,a:m.a,d:m.d}));var w=JSON.parse(localStorage.getItem('dfw')||'[]');return post('/account/wishlist/sync',{ids:w})}}).catch(function(){}).then(function(){location.href=(next&&next.charAt(0)==='/'&&next.charAt(1)!=='/')?next:j.go})}catch(e){location.href=j.go}}}
 if($('to-reg'))$('to-reg').onclick=function(e){e.preventDefault();show('reg')};$('fe-send').onclick=function(){var b=this;b.disabled=true;post('/account/forgot-email',{email:$('fe-em').value}).then(function(j){b.disabled=false;$('fe-er').className=j.ok?'er ok2':'er';if(j.ok)$('fe-er').textContent=j.msg;else err('fe-er',j)})};
 $('tl').onclick=function(){show('login')};$('tr').onclick=function(){show('reg')};$('to-forgot').onclick=function(){show('forgot')};$('f-back').onclick=function(){show('login')};

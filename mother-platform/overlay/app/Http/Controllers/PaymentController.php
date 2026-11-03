@@ -31,7 +31,10 @@ class PaymentController extends Controller {
     abort_unless(in_array($mode, ['verify','reject'], true), 404);
     $o = DB::table('orders')->find($id); abort_unless($o && $o->pay_status, 404);
     $new = $mode === 'verify' ? 'Verified' : 'Rejected';
-    DB::table('orders')->where('id',$id)->update(['pay_status'=>$new,'pay_by'=>Auth::user()->name,'pay_at'=>now(),'updated_at'=>now()]);
+    if ($o->pay_status === $new) return back()->with('ok', "Payment already $new for ".$o->invoice);
+    if ($new === 'Rejected' && $o->pay_status === 'Verified' && in_array($o->status, ['Shipment','Delivered','Partial Delivered','Returned','Return Pending'], true)) return back()->with('bad', 'This payment was already verified and the order is '.$o->status.'; it cannot be rejected now.');
+    $upd = DB::table('orders')->where('id',$id)->where('pay_status',$o->pay_status)->update(['pay_status'=>$new,'pay_by'=>Auth::user()->name,'pay_at'=>now(),'updated_at'=>now()]);
+    if (!$upd) return back()->with('bad', 'Payment status was just changed by someone else; reload and check.');
     DB::table('order_status_logs')->insert(['order_id'=>$id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'from_status'=>$o->status,'to_status'=>$o->status,'note'=>"Payment $new (".$o->payment_method.', ref '.$o->pay_txn.')','created_at'=>now(),'updated_at'=>now()]);
     $this->audit($r, 'payment.'.$mode, $o->invoice);
     $ap = $mode === 'verify' ? \App\Support\PaymentSettle::apply((int)$id, 'Payment verification') : null;

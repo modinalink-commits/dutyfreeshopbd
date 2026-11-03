@@ -76,6 +76,10 @@ class CourierSync {
   }
   /** Moving an order to Shipment books the parcel with its courier (like the old site). Returns null when nothing to do, [ok, message] otherwise. */
   public static function autoBook(int $id): ?array {
+    $lk = \Illuminate\Support\Facades\Cache::lock('courier.book.'.$id, 60); if (!$lk->get()) return [false, 'Parcel booking is already in progress for this order'];
+    try { return self::autoBookLocked($id); } finally { $lk->release(); }
+  }
+  private static function autoBookLocked(int $id): ?array {
     $o = DB::table('orders')->find($id); if (!$o || $o->consignment_id) return null;
     $name = $o->courier ?: self::defaultName();
     [$cls, $ready] = match ($name) {

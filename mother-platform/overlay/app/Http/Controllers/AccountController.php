@@ -102,7 +102,7 @@ class AccountController extends StoreController {
   }
   public function register(Request $r) {
     \App\Support\PhoneRule::trim($r);
-    $d = $r->validate(['name'=>'required|string|min:2|max:80', 'phone'=>['required','string',new \App\Support\PhoneRule], 'password'=>'required|string|min:6|max:100|confirmed', 'email'=>'nullable|email|max:120', 'ref'=>'nullable|string|max:40', 'code'=>'nullable|string|max:10']);
+    $d = $r->validate(['name'=>'required|string|min:2|max:80', 'phone'=>['required','string',new \App\Support\PhoneRule], 'password'=>'required|string|min:8|max:100|confirmed', 'email'=>'nullable|email|max:120', 'ref'=>'nullable|string|max:40', 'code'=>'nullable|string|max:10']);
     $p = $this->norm($d['phone']); if (!$p) return response()->json(['ok'=>false, 'error'=>'সঠিক মোবাইল নম্বর দিন'], 422);
     if (DB::table('customers')->where('phone', $p)->whereNotNull('password')->exists()) return response()->json(['ok'=>false, 'error'=>'এই নম্বরে ইতিমধ্যে অ্যাকাউন্ট আছে। লগইন করুন।'], 422);
     $row = DB::table('customers')->where('phone', $p)->orderBy('id')->first();
@@ -121,7 +121,7 @@ class AccountController extends StoreController {
   }
   public function reset(Request $r) {
     \App\Support\PhoneRule::trim($r);
-    $d = $r->validate(['phone'=>['required','string',new \App\Support\PhoneRule], 'code'=>'required|string|max:10', 'password'=>'required|string|min:6|max:100|confirmed']);
+    $d = $r->validate(['phone'=>['required','string',new \App\Support\PhoneRule], 'code'=>'required|string|max:10', 'password'=>'required|string|min:8|max:100|confirmed']);
     $p = $this->norm($d['phone']); $c = $p ? DB::table('customers')->where('phone', $p)->whereNotNull('password')->first() : null;
     if (!$c || !$this->otpCheck('reset', $p, $d['code'])) return response()->json(['ok'=>false, 'error'=>'কোড ঠিক নয় বা মেয়াদ শেষ'], 422);
     DB::table('customers')->where('id', $c->id)->update(['password'=>Hash::make($d['password']), 'phone_verified_at'=>$c->phone_verified_at ?? now(), 'updated_at'=>now()]);
@@ -132,7 +132,7 @@ class AccountController extends StoreController {
   /* ---------------- Email registration (Full name, Email, Password) ---------------- */
   public function registerEmail(Request $r) {
     if (!\App\Support\CustAuth::emailOn()) return response()->json(['ok'=>false, 'error'=>'এই মুহূর্তে ইমেইল দিয়ে রেজিস্ট্রেশন বন্ধ আছে।'], 403);
-    $d = $r->validate(['name'=>'required|string|min:2|max:80', 'email'=>'required|email|max:120', 'password'=>'required|string|min:6|max:100|confirmed', 'ref'=>'nullable|string|max:40']);
+    $d = $r->validate(['name'=>'required|string|min:2|max:80', 'email'=>'required|email|max:120', 'password'=>'required|string|min:8|max:100|confirmed', 'ref'=>'nullable|string|max:40']);
     $em = mb_strtolower(trim($d['email'])); if ($this->throttle($r, 'reg'.$em, 10)) return response()->json(['ok'=>false, 'error'=>'অনেকবার চেষ্টা করা হয়েছে। পরে চেষ্টা করুন।'], 429); $this->hit($r, 'reg'.$em);
     $ex = DB::table('customers')->whereRaw('lower(email) = ?', [$em])->orderBy('id')->get();
     if ($ex->contains(fn($x) => $x->password)) return response()->json(['ok'=>false, 'error'=>'এই ইমেইলে ইতিমধ্যে অ্যাকাউন্ট আছে। লগইন করুন।'], 422);
@@ -217,7 +217,7 @@ class AccountController extends StoreController {
   public function setPassword(Request $r) {
     $c = $this->me($r); if (!$c) return response()->json([], 401);
     if (!empty($c->password)) return response()->json(['ok'=>false, 'error'=>'আপনার পাসওয়ার্ড আগে থেকেই সেট করা আছে।'], 422);
-    $d = $r->validate(['password'=>'required|string|min:6|max:100|confirmed']); if (empty($c->email)) return response()->json(['ok'=>false, 'error'=>'আগে প্রোফাইলে ইমেইল যোগ করুন।'], 422);
+    $d = $r->validate(['password'=>'required|string|min:8|max:100|confirmed']); if (empty($c->email)) return response()->json(['ok'=>false, 'error'=>'আগে প্রোফাইলে ইমেইল যোগ করুন।'], 422);
     DB::table('customers')->where('id', $c->id)->update(['password'=>Hash::make($d['password']), 'updated_at'=>now()]); \App\Support\CustAuth::link((int)$c->id, 'email', mb_strtolower($c->email), $c->email, $c->name);
     return response()->json(['ok'=>true]);
   }
@@ -251,7 +251,7 @@ class AccountController extends StoreController {
   }
   public function resetEmailSave(Request $r, $t) {
     $x = DB::table('customer_password_resets')->where('token_hash', hash('sha256', $t))->whereNull('used_at')->where('expires_at', '>', now())->first(); if (!$x) return response()->json(['ok'=>false, 'error'=>'লিংকের মেয়াদ শেষ'], 422);
-    $d = $r->validate(['password'=>'required|string|min:6|max:100|confirmed']);
+    $d = $r->validate(['password'=>'required|string|min:8|max:100|confirmed']);
     DB::table('customers')->where('id', $x->customer_id)->update(['password'=>Hash::make($d['password']), 'email_verified_at'=>DB::raw('coalesce(email_verified_at, now())'), 'updated_at'=>now()]);
     DB::table('customer_password_resets')->where('id', $x->id)->update(['used_at'=>now()]); DB::table('customer_sessions')->where('customer_id', $x->customer_id)->delete();
     return response()->json(['ok'=>true, 'go'=>'/account'])->withCookie($this->startSession($r, (int)$x->customer_id, true));
@@ -440,7 +440,7 @@ class AccountController extends StoreController {
   }
   public function password(Request $r) {
     $c = $this->me($r); if (!$c) return response()->json([], 401);
-    $d = $r->validate(['current'=>'required|string|max:100', 'password'=>'required|string|min:6|max:100|confirmed']);
+    $d = $r->validate(['current'=>'required|string|max:100', 'password'=>'required|string|min:8|max:100|confirmed']);
     if ($this->throttle($r, 'pw'.$c->id, 6)) return response()->json(['ok'=>false, 'error'=>'অনেকবার ভুল হয়েছে, পরে চেষ্টা করুন'], 429);
     if (!Hash::check($d['current'], (string)$c->password)) { $this->hit($r, 'pw'.$c->id); return response()->json(['ok'=>false, 'error'=>'বর্তমান পাসওয়ার্ড ঠিক নয়'], 422); }
     DB::table('customers')->where('id', $c->id)->update(['password'=>Hash::make($d['password']), 'updated_at'=>now()]);

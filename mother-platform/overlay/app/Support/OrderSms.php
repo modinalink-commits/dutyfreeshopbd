@@ -15,7 +15,7 @@ class OrderSms {
     if ($ship > 0) $L[] = 'Delivery: '.self::tk($ship);
     $L[] = 'Payable: '.self::tk($o->total);
     if (!empty($o->pay_status) && $o->pay_status === 'Verification Pending') $L[] = 'Payment verification is pending.';
-    $L[] = 'Our representative will contact you shortly for confirmation. Track: dutyfreebd.com/track?invoice='.Inv::show($o->invoice);
+    $L[] = 'Our representative will contact you shortly for confirmation. Track: '.preg_replace('#^https?://#','',Inv::trackUrl($o->invoice));
     $L[] = 'Help: '.Biz::hotline();
     return implode("\n", $L);
   }
