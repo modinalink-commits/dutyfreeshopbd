@@ -9,7 +9,7 @@
 @media(max-width:800px){.oc{height:auto;min-height:0}.oc>form#bulk>.otw{max-height:70vh}}
 .ocb{position:sticky;top:8px;z-index:60;background:#fff;border:1px solid #EDF0F3;border-radius:12px;box-shadow:0 4px 14px rgba(0,0,0,.06);padding:10px 12px;margin:-8px 0 12px}
 .ocb form{margin:0}.ocb .r1,.ocb .r2{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.ocb .r2{margin-top:6px;flex-wrap:wrap}
-.ocb h1{margin:0;font-size:17px}.ocb .dt{font-size:12px;color:#6B7280}
+.ocb .obc{display:flex;align-items:baseline;gap:10px;margin:0 0 4px;font-size:14px}.ocb .obc span{font-size:12px;color:#6B7280}.ocb h1{margin:0;font-size:17px}.ocb .dt{font-size:12px;color:#6B7280}
 .ocb input[type=date],.ocb input[type=time],.ocb select{width:auto;height:30px;padding:2px 6px;font-size:12px}
 .ocb .pre{display:inline-flex;gap:4px;flex-wrap:wrap}.ocb .pre button,.ocb .rf{height:28px;padding:0 10px;font-size:12px;border-radius:14px;background:#F3F4F6;color:#0B1220;border:1px solid #E5E7EB;cursor:pointer}.ocb .pre button.on{background:#FF5A00;color:#fff;border-color:#FF5A00}
 .ocb .strip{display:flex;flex-wrap:nowrap;align-items:center;gap:6px;flex:1 1 100%;min-width:0;overflow-x:auto;overflow-y:hidden;white-space:nowrap;padding-bottom:3px;scrollbar-width:thin}
@@ -25,6 +25,7 @@
 @php($oq = request()->only('q','per','from','to','ft','tt'))
 @php($oqs = http_build_query(request()->only('status','q','from','to','ft','tt')))
 <div class="ocb" id="ocb"><form method="get" action="/admin/orders" id="ofx">
+<div class="obc" id="obc"><b>Manage Order</b><span id="obct">Dashboard &gt; Orders &gt; {{ request('status') ?: 'All Orders' }}</span></div>
 @if(request('status'))<input type="hidden" name="status" value="{{ request('status') }}">@endif
 <div style="margin-bottom:4px"><select name="print" onchange="this.form.submit()" title="Print status" style="width:auto;font-size:12px"><option value="">Print: all</option><option value="inv_not" {{ request('print')==='inv_not'?'selected':'' }}>Invoice not printed</option><option value="inv" {{ request('print')==='inv'?'selected':'' }}>Invoice printed</option><option value="lbl_not" {{ request('print')==='lbl_not'?'selected':'' }}>Label not printed</option><option value="lbl" {{ request('print')==='lbl'?'selected':'' }}>Label printed</option></select> <select name="rtype" onchange="this.form.submit()" title="Return type" style="width:auto;font-size:12px"><option value="">Return type: all</option><option value="partial" {{ request('rtype')==='partial'?'selected':'' }}>Partial Return</option><option value="full" {{ request('rtype')==='full'?'selected':'' }}>Full Return</option></select> <select name="rstat" onchange="this.form.submit()" title="Return status" style="width:auto;font-size:12px"><option value="">Return status: all</option><option value="pending" {{ request('rstat')==='pending'?'selected':'' }}>Pending</option><option value="received" {{ request('rstat')==='received'?'selected':'' }}>Received</option><option value="completed" {{ request('rstat')==='completed'?'selected':'' }}>Completed</option></select></div>
 <div class="r1"><div style="min-width:150px"><h1>Order Management</h1><div class="dt" id="odt">@if(request('from')||request('to')){{ request('from') ?: '…' }} {{ request('ft') ?: '00:00' }} → {{ request('to') ?: '…' }} {{ request('tt') ?: '23:59' }}@else All dates @endif</div></div>
@@ -53,7 +54,7 @@ s.innerHTML=n.innerHTML;document.getElementById('odt').textContent=x.getElementB
 var a=document.querySelector('main table.ordt'),b=x.querySelector('main table.ordt');if(a&&b)a.replaceWith(b);else{location.href=url;return}
 var pa=document.querySelectorAll('main .pgx'),pb=x.querySelectorAll('main .pgx');if(pa.length&&pa.length===pb.length)pa.forEach(function(t,i){t.replaceWith(pb[i])});
 var hs=f.querySelector('input[name=status]'),ns=x.querySelector('#ofx input[name=status]');if(hs&&!ns)hs.remove();else if(ns&&!hs)f.insertBefore(ns,f.firstChild);else if(ns)hs.value=ns.value;
-var cm=x.querySelector('.oc>div b'),bc=document.querySelector('.oc>div>div>div');var nb=x.querySelector('.oc>div>div>div');if(bc&&nb)bc.textContent=nb.textContent;
+var bc=document.getElementById('obct'),nb=x.getElementById('obct');if(bc&&nb)bc.textContent=nb.textContent;
 sel();if(push!==false)history.pushState(null,'',url);hh();if(cb)cb()}).catch(function(){location.href=url})}
 f.addEventListener('submit',function(e){e.preventDefault();var p=new URLSearchParams(new FormData(f));p.delete('page');for(var k of Array.from(p.keys())){if(p.get(k)==='')p.delete(k)}load('/admin/orders'+(p.toString()?'?'+p.toString():''))});
 s.addEventListener('click',function(e){var a=e.target.closest('a.chip');if(!a)return;e.preventDefault();var u=new URL(a.href),p=u.searchParams;['q','per','from','to','ft','tt'].forEach(function(k){if(!p.has(k)&&f[k]&&f[k].value)p.set(k,f[k].value)});load(u.pathname+'?'+p.toString())});
@@ -67,8 +68,7 @@ var bk=document.getElementById('bulk');if(bk)bk.addEventListener('submit',functi
 @if(session('bad'))<div class="card err" style="margin:10px 0">{{ session('bad') }}</div>@endif
 @if($errors->any())<div class="card err">{{ $errors->first() }}</div>@endif
 @if($isInc)@include('orders_incomplete')@else
-<div class="card oc"><div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:6px"><div style="flex:1;min-width:200px"><b>Manage Order</b><div style="font-size:12px;color:#6B7280">Dashboard &gt; Orders &gt; {{ request('status') ?: 'All Orders' }}</div></div>
-</div>
+<div class="card oc">
 <form method="post" action="/admin/orders/bulk" id="bulk">@csrf
 <style>.order-payment-method{display:inline-flex;align-items:center;gap:6px;min-height:28px;white-space:nowrap}.order-payment-method>div{line-height:1.1}.order-payment-method b{display:block;font-size:12px;font-weight:600;color:#0F172A}.order-payment-method small{display:block;font-size:10px;color:#6B7280}table.ordt img.order-payment-logo{width:auto!important;height:22px!important;max-width:80px!important;object-fit:contain;display:block;flex-shrink:0}.order-courier{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;min-height:28px}table.ordt img.order-courier-logo{width:auto!important;height:18px!important;max-width:60px!important;object-fit:contain;display:block;flex-shrink:0}@media(max-width:768px){table.ordt img.order-payment-logo{height:18px!important;max-width:65px!important}table.ordt img.order-courier-logo{height:16px!important;max-width:55px!important}}</style>
 <div class="otw"><table class="ordt"><thead><tr><th><input type="checkbox" style="width:auto" onclick="document.querySelectorAll('#bulk input[name=\'ids[]\']').forEach(c=>c.checked=this.checked)"></th><th>Invoice</th><th>Customer</th><th>Product</th><th>Total to collect</th><th>Shipping</th><th>Payment</th><th>Status</th><th>Note</th><th>Comment</th><th>Courier</th><th class="action-column">Action</th></tr></thead><tbody>
