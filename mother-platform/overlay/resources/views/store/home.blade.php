@@ -171,11 +171,6 @@ if(document.readyState==='complete')setTimeout(first,300);else addEventListener(
 @if($items->count())
 @include('store.home_sec', ['lazy'=>$loop->index >= 2])
 @endif
-@endforeach<a class="va" href="/{{ $c->slug }}/">View All</a></div>
-<div class="mt"><span>{{ $c->name }}</span><a href="/{{ $c->slug }}/">View all ›</a></div>
-<div class="gr">@foreach($items as $q)@include('store.card', ['fd'=>true])@endforeach</div>
-<div class="mv"><a href="/{{ $c->slug }}/">Browse all {{ $c->name }}</a></div></div></div>
-@endif
 @endforeach
 @endif
 @if($s['home_trust']==='1')
