@@ -32,6 +32,8 @@
 #ocb .r1 .owt .obk button:nth-of-type(4){background:#EDE9FE!important;color:#5B21B6!important;border-color:#8B5CF6!important}
 #ocb .r1 #oexs .dfx-btn,#ocb .r1>a.btn{background:#FFEDD5!important;color:#C2410C!important;border-color:#FB923C!important;padding:0 10px!important}
 #ocb .r1>a.btn{display:inline-flex;align-items:center;font-weight:700!important}
+/* v1.400 toolbar a little larger (between the old 26px and the 32px row buttons) */
+#ocb .r1 .owt select,#ocb .r1 .owt input[name=q],#ocb .r1 .owt .rf,#ocb .r1 .pre .opb,#ocb .r1 #oexs .dfx-btn,#ocb .r1 .owt .obk button,#ocb .r1>a.btn{height:30px!important;font-size:12px!important;border-radius:9px!important}#ocb .r1 .owt .obk button{padding:0 10px!important}#ocb .r1 .owt select,#ocb .r1 .owt .rf,#ocb .r1 .pre .opb{padding:0 8px!important}#ocb .r1 .owt .obk select{width:92px!important}#ocb .r1 .owt .owf select{width:auto!important;min-width:84px;max-width:120px!important}#ocb .r1 .owt .q select{min-width:70px}#ocb .r1 .owt .q input[name=q]{min-width:150px!important;width:170px!important}#ocb .r1 .owt .obk,#ocb .r1 .owt .owf,#ocb .r1 .owt .q{gap:5px}#ocb .r1 #oexs .dfx-btn,#ocb .r1>a.btn{padding:0 12px!important}
 #ocb .r1 .owt select:hover,#ocb .r1 .owt input[name=q]:hover,#ocb .r1 .owt .rf:hover,#ocb .r1 .pre .opb:hover{border-color:#475569!important}
 #ocb .r1 .owt .obk button:nth-of-type(1):hover{border-color:#1D4ED8!important}
 #ocb .r1 .owt .obk button:nth-of-type(2):hover{border-color:#15803D!important}
