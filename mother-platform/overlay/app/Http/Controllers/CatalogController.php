@@ -150,7 +150,7 @@ class CatalogController extends Controller {
   // Fill missing/invalid Buy 2-5 bundle prices from the sale price (2/3/4/5 %). Valid bundle prices already set are kept. Dry run unless apply=1; old values saved to storage/logs for rollback.
   public function bundleFill(Request $r) {
     abort_unless(Auth::check(), 403);
-    $apply = $r->boolean('apply'); $pc = [2=>2.0, 3=>3.0, 4=>4.0, 5=>5.0];
+    $apply = $r->boolean('apply'); $force = $r->boolean('force'); $pc = [2=>2.0, 3=>3.0, 4=>4.0, 5=>5.0];
     $stat = ['total'=>0, 'kept'=>0, 'filled'=>0, 'skipped'=>0]; $undo = []; $sample = [];
     $rows = DB::table('products')->get(['id','name','price','buy2_price','buy3_price','buy4_price','buy5_price']);
     foreach ($rows as $p) {
@@ -159,7 +159,7 @@ class CatalogController extends Controller {
       $new = []; $prev = null;
       foreach ($pc as $n => $x) {
         $t = (float)$p->{"buy{$n}_price"};
-        if (!($t > 0 && $t < $u * $n)) {
+        if ($force || !($t > 0 && $t < $u * $n)) {
           $tot = $u * $n; $raw = $tot * (1 - $x / 100); $step = $tot >= 2000 ? 10 : ($tot >= 500 ? 5 : 1);
           $t = (float)(floor($raw / $step) * $step);
           if ($prev !== null) $t = min($t, floor($prev / ($n - 1) * $n));
