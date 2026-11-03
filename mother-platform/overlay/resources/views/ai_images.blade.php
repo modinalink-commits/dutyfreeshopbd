@@ -40,7 +40,7 @@ var cards=function(){return [].slice.call(G.querySelectorAll('.ai'))};
 G.addEventListener('click',function(e){var c=e.target.closest('.ai');if(!c)return;
 if(e.target.classList.contains('aiGo'))one(c);
 if(e.target.classList.contains('aiMain')){if(!confirm('Use the processed image as the main product image on the website?'))return;post('/admin/ai-images/'+c.dataset.id+'/main').then(function(j){msg.textContent=j.ok?'Main image updated. Live on the website.':'Could not update.'})}
-if(e.target.classList.contains('aiDel')){if(!confirm('Delete the processed image? The original stays.'))return;post('/admin/ai-images/'+c.dataset.id+'/delete').then(function(){location.reload()})}
+if(e.target.classList.contains('aiDel')){if(!confirm('Delete the processed image? The original stays.'))return;post('/admin/ai-images/'+c.dataset.id+'/delete').then(function(){(window.dfSoft?dfSoft():location.reload())})}
 if(e.target.classList.contains('aiDl')&&e.target.getAttribute('href')==='#')e.preventDefault()});
 document.getElementById('aiAll').onchange=function(){var v=this.checked;cards().forEach(function(c){c.querySelector('.aiCk').checked=v})};
 document.getElementById('bSel').onclick=function(){many(cards().filter(function(c){return c.querySelector('.aiCk').checked}),'Processing')};

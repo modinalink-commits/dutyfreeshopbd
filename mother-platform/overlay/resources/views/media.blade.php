@@ -41,7 +41,7 @@
   function post(u,b){return fetch(u,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':T},body:JSON.stringify(b||{})}).then(function(r){return r.json()});}
   var go=document.getElementById('go'),msg=document.getElementById('msg'),bar=document.getElementById('bar'),bk=document.getElementById('bk'),rt=document.getElementById('rt');
   bk.onchange=function(){post('/admin/media/settings',{backup:bk.checked?1:0});};
-  if(rt)rt.onclick=function(){post('/admin/media/retry').then(function(){location.reload();});};
+  if(rt)rt.onclick=function(){post('/admin/media/retry').then(function(){(window.dfSoft?dfSoft():location.reload());});};
   var done=0,total=0,saved=0;
   function step(){
     post('/admin/media/optimize').then(function(d){
@@ -49,7 +49,7 @@
       done+=d.processed;saved+=d.saved;if(!total)total=d.processed+d.remaining;
       bar.style.width=(total?Math.min(100,done/total*100):100)+'%';
       msg.textContent=done+' done, '+d.remaining+' left';
-      if(d.remaining>0&&d.processed>0)step();else{msg.textContent='Finished: '+done+' image(s) processed.';setTimeout(function(){location.reload();},1200);}
+      if(d.remaining>0&&d.processed>0)step();else{msg.textContent='Finished: '+done+' image(s) processed.';setTimeout(function(){(window.dfSoft?dfSoft():location.reload());},1200);}
     }).catch(function(){msg.textContent='Network error — press the button again to continue.';go.disabled=false;});
   }
   go.onclick=function(){go.disabled=true;done=0;total=0;saved=0;msg.textContent='Working…';step();};

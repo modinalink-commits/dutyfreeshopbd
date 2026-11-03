@@ -21,10 +21,10 @@
 <script>
 const T=@json(csrf_token()),st=document.getElementById('ist');
 async function post(u,b){const f=new URLSearchParams(b||{});f.set('_token',T);const r=await fetch(u,{method:'POST',headers:{'Accept':'application/json'},body:f});return r.json()}
-document.getElementById('iscan').onclick=async()=>{st.textContent='Scanning…';try{await post('/admin/image-audit/scan');location.reload()}catch(e){st.textContent='Scan failed: '+e}};
+document.getElementById('iscan').onclick=async()=>{st.textContent='Scanning…';try{await post('/admin/image-audit/scan');(window.dfSoft?dfSoft():location.reload())}catch(e){st.textContent='Scan failed: '+e}};
 document.getElementById('irep').onclick=async()=>{if(!confirm('Repair product images in small batches now? Old values are saved first.'))return;const skip=[];let fx=0;
  for(let i=0;i<60;i++){st.textContent='Repairing… fixed '+fx+', failed '+skip.length;const b=new URLSearchParams();skip.forEach(s=>b.append('skip[]',s));b.set('n','12');
   try{const j=await post('/admin/image-audit/repair',b);fx+=j.fixed;j.failed.forEach(x=>skip.push(x));if(!j.left)break}catch(e){st.textContent='Stopped: '+e;break}}
- st.textContent='Finished. Fixed '+fx+', could not fix '+skip.length+'. Reloading…';setTimeout(()=>location.reload(),1200)};
+ st.textContent='Finished. Fixed '+fx+', could not fix '+skip.length+'. Reloading…';setTimeout(()=>(window.dfSoft?dfSoft():location.reload()),1200)};
 </script>
 @endsection

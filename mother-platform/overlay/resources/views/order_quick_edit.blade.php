@@ -43,7 +43,7 @@ function skq(f,id){var it=D.items.filter(function(x){return String(x.id)===Strin
 function conf(){return '<label style="display:flex;gap:6px;align-items:center;font-weight:500"><input type="checkbox" name="customer_confirmed" value="1" style="width:auto"> Customer confirmed this change</label>'}
 function post(url,data,form){var e=q('.qe-e',form),ok=q('.qe-ok',form),b=q('button[type=submit]',form);e.style.display='none';b.disabled=true;var t=b.textContent;b.textContent='Processing...';
  fetch(url,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':D.csrf},body:JSON.stringify(data)}).then(function(r){return r.json().catch(function(){return {ok:false,error:'Unexpected response ('+r.status+').'}})}).then(function(j){
-  if(j&&j.ok){ok.textContent=j.msg||'Saved.';ok.style.display='block';setTimeout(function(){POP?tell('qe-done'):location.reload()},900)}else{e.textContent=(j&&(j.error||j.message))||'Could not save.';e.style.display='block';b.disabled=false;b.textContent=t}
+  if(j&&j.ok){ok.textContent=j.msg||'Saved.';ok.style.display='block';setTimeout(function(){POP?tell('qe-done'):(window.dfSoft?dfSoft():location.reload())},900)}else{e.textContent=(j&&(j.error||j.message))||'Could not save.';e.style.display='block';b.disabled=false;b.textContent=t}
  }).catch(function(){e.textContent='Network error. Nothing was changed - try again.';e.style.display='block';b.disabled=false;b.textContent=t})}
 function jform(title,html,label,build,url,wide){show(title,'<form novalidate>'+html+foot(label)+'</form>',wide);var f=q('form',B);
  f.addEventListener('click',function(e){if(e.target.getAttribute&&e.target.getAttribute('data-x'))close()});
