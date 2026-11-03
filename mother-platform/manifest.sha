@@ -3,7 +3,7 @@ f2f82aacbe18f341c2085967fa22ab96c757b09a routes/web.php
 b9cf8555d6fb5e676f63a548f5a964a0f36be94f app/Models/Mother.php
 ad563479e2e595a99bc1e35da58f0929f0958b0f app/Http/Controllers/AdminController.php
 bd49f23ea0895af93bed5374937115c21911b0cd app/Console/Commands/MotherInstall.php
-9eec69bda97ce10644aa47d125c5590734c23c3d resources/views/layout.blade.php
+10f0f9bf87482124807c7d9d5ca5424fd59ce333 resources/views/layout.blade.php
 7ba1a8252b36e7db33e40d8be3ea5ec2cd241fb7 resources/views/login.blade.php
 3431340a529f4ab858ba55214388be987a3185c8 resources/views/dashboard.blade.php
 43e30dcdbe3f52114aa45826cd3548c6b57265e9 resources/views/orders.blade.php
@@ -110,7 +110,7 @@ ecc70f7878a0ce3042937d3a4348318bf0e2a2c2 app/Console/Commands/MotherCourierSync.
 75c1369fdd068ee10c46a688ac144d9ad9423716 resources/views/store/invoice.blade.php
 0c71b384238d9f8ede008e4cc8b041f1c37a9911 app/Http/Controllers/CheckoutLookupController.php
 50e15b23a7beecec3d9719b570baee5f2e73b8b3 app/Support/CustomerIntel.php
-a767e5be7c3a05cfbca87342871cae83ae5faf47 resources/views/cust_intel.blade.php
+cc8fbb4782e54089a1f04da8bed743de9fd20d56 resources/views/cust_intel.blade.php
 9c15797c319d94931467e8c07b2e02e167d144f0 database/migrations/2026_10_31_000016_order_email_field.php
 e104218e4a5fc238e102f0a6940b693183a889d3 public/pay/shurjopay.png
 d5a24ae4f8caaeb3f3dd533d105548b85ef813b5 app/Support/Slugs.php
