@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
  * Money columns are product revenue (items minus discount); shipping charged is shown only in the P&L.
  */
 class Analytics {
-  const DONE = "('Delivered','Partial Delivered','Late Delivery')";
+  const DONE = "('Delivered','Partial Delivered','Late Delivery','Partial Return Pending','Partial Return Received','Partial Returned')";
   const RET  = "('Returned','Return Pending')";
   const LIMIT = 5000;
 
@@ -222,7 +222,7 @@ class Analytics {
     $c = ['1=1']; $b = [self::utc($f['from'], false), self::utc($f['to'], true)];
     if ($f['category']) { $c[] = 'p.category_id = ?'; $b[] = $f['category']; }
     if ($f['product'] !== '') { $c[] = '(p.name ilike ? or p.sku ilike ?)'; $b[] = '%'.$f['product'].'%'; $b[] = '%'.$f['product'].'%'; }
-    $sql = "select p.name product, coalesce(p.sku,'') sku, coalesce(p.image,'') image, coalesce(c.name,'') category, p.price price, p.cost cost, coalesce((select sum(i.qty) from order_items i join orders o on o.id = i.order_id where i.product_id = p.id and o.created_at >= ? and o.created_at < ? and o.status not in ('Cancel','Returned','Return Pending')),0) sold from products p left join categories c on c.id = p.category_id where ".implode(' and ', $c)." order by case when p.price > 0 then (p.price - p.cost) / p.price end asc nulls last limit ".self::LIMIT;
+    $sql = "select p.name product, coalesce(p.sku,'') sku, coalesce(p.image,'') image, coalesce(c.name,'') category, p.price price, p.cost cost, coalesce((select sum((i.qty - case when o.status in ('Partial Return Pending','Partial Return Received','Partial Returned') then coalesce(i.ret_qty,0) else 0 end)) from order_items i join orders o on o.id = i.order_id where i.product_id = p.id and o.created_at >= ? and o.created_at < ? and o.status not in ('Cancel','Returned','Return Pending')),0) sold from products p left join categories c on c.id = p.category_id where ".implode(' and ', $c)." order by case when p.price > 0 then (p.price - p.cost) / p.price end asc nulls last limit ".self::LIMIT;
     $rows = self::arr(self::sel($sql, $b));
     foreach ($rows as &$r) { $r['unit_profit'] = (float)$r['price'] - (float)$r['cost']; $r['margin'] = (float)$r['price'] > 0 ? round($r['unit_profit'] / (float)$r['price'] * 100, 1) : 0; }
     return $rows;
@@ -237,7 +237,7 @@ class Analytics {
     $sql = "select p.name product, coalesce(p.sku,'') sku, coalesce(p.image,'') image, 'All stores (one shared stock)' store, p.stock current, coalesce(l.since,0) since, coalesce(l.net,0) net, coalesce(l.inn,0) stock_in, coalesce(l.outt,0) stock_out, coalesce(s.sold,0) sold, coalesce(s.ret,0) returned
       from products p
       left join (select product_id, sum(case when created_at >= ? then change_qty end) since, sum(case when created_at >= ? and created_at < ? then change_qty end) net, sum(case when created_at >= ? and created_at < ? and change_qty > 0 then change_qty end) inn, sum(case when created_at >= ? and created_at < ? and change_qty < 0 then -change_qty end) outt from stock_logs group by product_id) l on l.product_id = p.id
-      left join (select i.product_id, sum(case when o.status not in ('Cancel','Returned','Return Pending') then i.qty end) sold, sum(case when o.status in ".self::RET." then i.qty end) ret from order_items i join orders o on o.id = i.order_id where o.created_at >= ? and o.created_at < ? group by i.product_id) s on s.product_id = p.id
+      left join (select i.product_id, sum(case when o.status not in ('Cancel','Returned','Return Pending') then (i.qty - case when o.status in ('Partial Return Pending','Partial Return Received','Partial Returned') then coalesce(i.ret_qty,0) else 0 end) end) sold, sum(case when o.status in ".self::RET." then i.qty when o.status in ('Partial Return Pending','Partial Return Received','Partial Returned') then coalesce(i.ret_qty,0) end) ret from order_items i join orders o on o.id = i.order_id where o.created_at >= ? and o.created_at < ? group by i.product_id) s on s.product_id = p.id
       where ".implode(' and ', $c)." order by p.name limit ".self::LIMIT;
     $rows = self::arr(self::sel($sql, $b));
     foreach ($rows as &$r) { $r['opening'] = (int)$r['current'] - (int)$r['since']; $r['closing'] = $r['opening'] + (int)$r['net']; }

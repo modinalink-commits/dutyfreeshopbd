@@ -58,6 +58,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/orders/{id}', [A::class,'orderShow']);
   Route::post('/orders/{id}/outcome', [\App\Http\Controllers\ShipmentOutcomeController::class,'save'])->whereNumber('id');
   Route::post('/orders/{id}/return-receive', [\App\Http\Controllers\ShipmentOutcomeController::class,'receive'])->whereNumber('id');
+  Route::post('/orders/{id}/return-complete', [\App\Http\Controllers\ShipmentOutcomeController::class,'complete'])->whereNumber('id');
   Route::post('/orders/{id}/status', [A::class,'orderStatus']);
   Route::post('/orders/{id}/schedule', [A::class,'orderSchedule'])->whereNumber('id');
   Route::post('/orders/{id}/schedule/cancel', [A::class,'orderScheduleCancel'])->whereNumber('id');

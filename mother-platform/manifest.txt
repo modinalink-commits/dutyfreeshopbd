@@ -456,3 +456,4 @@ app/Support/ShipmentOutcome.php
 app/Http/Controllers/ShipmentOutcomeController.php
 resources/views/order_outcome.blade.php
 database/migrations/2026_11_03_000043_shipment_outcome.php
+database/migrations/2026_11_03_000044_shipment_stock_money.php

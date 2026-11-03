@@ -3,7 +3,7 @@ namespace App\Support;
 use Illuminate\Support\Facades\DB;
 /** Customer category, order history, reliability and fraud/risk summary for the admin order screens. */
 class CustomerIntel {
-  const DELIVERED = ['Delivered','Partial Delivered'];
+  const DELIVERED = ['Delivered','Partial Delivered','Partial Return Pending','Partial Return Received','Partial Returned'];
   const RETURNED  = ['Return Pending','Returned','Exchange Received'];
   const CANCELLED = ['Cancel'];
   /** @param iterable $orders rows with phone, total, id; returns [orderId => summary] */
