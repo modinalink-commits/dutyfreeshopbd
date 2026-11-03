@@ -50,4 +50,5 @@
 @endif
 </div></div>
 @endif
+@if(!empty($o))<script>window.DFINV={{ \Illuminate\Support\Js::from($o->invoice ?? '') }};</script>@endif
 @endsection

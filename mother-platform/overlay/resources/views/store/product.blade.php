@@ -162,5 +162,6 @@ var ad=document.getElementById('addc');ad.onclick=function(){DF.add(id,n,unit,fa
 document.getElementById('ordn').onclick=function(){DF.add(id,n,unit,true,xid);DF.ev('add_to_cart',{value:unit*n,items:[{item_id:xid,item_name:@json($p->name),price:unit,quantity:n}]});location.href='/checkout'};
 })();
 </script>
+<script>window.DFPID={{ (int)$p->id }};</script>
 <script>DF.ev('view_item',{value:{{ $price }},items:[{item_id:@json((string)(($p->ext_id ?? null) ?: $p->id)),item_name:@json($p->name),price:{{ $price }}}]});</script>
 @endsection

@@ -1,6 +1,6 @@
 @once
 <style>
-.sbtn{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 13px;border:1px solid #E5E7EB;border-radius:8px;background:#fff;font:600 12.5px inherit;font-family:inherit;color:#0F172A;cursor:pointer}.sbtn:hover{border-color:#FF5A00;color:#FF5A00}
+.sbtn{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 13px;border:1px solid #E5E7EB;border-radius:8px;background:#fff;font-weight:600;font-size:12.5px;font-family:inherit;color:#0F172A;cursor:pointer}.sbtn:hover{border-color:#FF5A00;color:#FF5A00}
 .sdr{position:fixed;inset:0;z-index:100001;display:none;background:rgba(15,23,42,.45)}.sdr.on{display:block}
 .sdr-p{position:absolute;top:0;right:0;bottom:0;width:min(720px,100%);background:#F8FAFC;box-shadow:-12px 0 40px rgba(0,0,0,.25);display:flex;flex-direction:column;animation:sdrin .18s ease-out}
 @keyframes sdrin{from{transform:translateX(30px);opacity:.4}to{transform:none;opacity:1}}
