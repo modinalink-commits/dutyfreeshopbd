@@ -64,10 +64,10 @@
       var g, i, p, q, b;
       cx2.clearRect(0, 0, W, H);
       // atmosphere
-      g = cx2.createRadialGradient(CX, CY, R * .96, CX, CY, R * 1.42); g.addColorStop(0, 'rgba(255,120,40,.30)'); g.addColorStop(.35, 'rgba(70,140,255,.16)'); g.addColorStop(1, 'rgba(70,140,255,0)');
+      g = cx2.createRadialGradient(CX, CY, R * .96, CX, CY, R * 1.42); g.addColorStop(0, 'rgba(255,120,40,.30)'); g.addColorStop(.35, 'rgba(255,90,0,.10)'); g.addColorStop(1, 'rgba(255,90,0,0)');
       cx2.fillStyle = g; cx2.beginPath(); cx2.arc(CX, CY, R * 1.42, 0, 7); cx2.fill();
       // ocean
-      g = cx2.createRadialGradient(CX - R * .35, CY - R * .4, R * .1, CX, CY, R); g.addColorStop(0, '#1c3a6b'); g.addColorStop(.6, '#0e2140'); g.addColorStop(1, '#070f1f');
+      g = cx2.createRadialGradient(CX - R * .35, CY - R * .4, R * .1, CX, CY, R); g.addColorStop(0, '#1d2a45'); g.addColorStop(.6, '#101a2e'); g.addColorStop(1, '#070c18');
       cx2.fillStyle = g; cx2.beginPath(); cx2.arc(CX, CY, R, 0, 7); cx2.fill();
       // land dots in 6 brightness buckets
       var B = 6, paths = [], d = Math.max(1.4, R / 150), n;
@@ -77,10 +77,10 @@
         n = q[0] * L[0] + q[1] * L[1] + q[2] * L[2]; b = Math.max(0, n) * .75 + q[2] * .25; b = Math.min(.999, b);
         paths[(b * B) | 0].rect(CX + R * q[0] - d / 2, CY - R * q[1] - d / 2, d, d);
       }
-      var cols = ['#27508c', '#2f64ad', '#3f7fcb', '#5a9be0', '#86bdf2', '#bfe0ff'];
+      var cols = ['#7a2e06', '#b13f06', '#e04e00', '#ff5a00', '#ff8a45', '#ffc79e'];
       for (i = 0; i < B; i++) { cx2.fillStyle = cols[i]; cx2.fill(paths[i]); }
       // rim light
-      g = cx2.createRadialGradient(CX, CY, R * .86, CX, CY, R); g.addColorStop(0, 'rgba(120,180,255,0)'); g.addColorStop(1, 'rgba(120,180,255,.28)');
+      g = cx2.createRadialGradient(CX, CY, R * .86, CX, CY, R); g.addColorStop(0, 'rgba(255,120,40,0)'); g.addColorStop(1, 'rgba(255,120,40,.34)');
       cx2.fillStyle = g; cx2.beginPath(); cx2.arc(CX, CY, R, 0, 7); cx2.fill();
       // route lines
       cx2.lineWidth = Math.max(1, dpr * .8); cx2.strokeStyle = 'rgba(255,170,110,.16)'; cx2.setLineDash([3 * dpr, 5 * dpr]); cx2.beginPath();
@@ -106,16 +106,18 @@
         var P = planes[i]; if (!reduce) P.t += dt / P.dur; if (P.t >= 1) P.t -= 1;
         var t = P.t, v0 = slerp(P.a, P.b, t, P.om), a0 = 1 + P.h * Math.sin(Math.PI * t), p0 = pt(v0, a0);
         // trail
-        var on2 = false; cx2.lineWidth = 1.6 * dpr;
+        var on2 = false; cx2.lineWidth = 2.2 * dpr;
         for (var s2 = 10; s2 >= 0; s2--) {
           var t2 = t - s2 * .012; if (t2 < 0) continue; var pp = pt(slerp(P.a, P.b, t2, P.om), 1 + P.h * Math.sin(Math.PI * t2));
-          if (pp[2] > 0 || pp[3] > 1) { if (on2) { cx2.strokeStyle = 'rgba(255,190,140,' + (.5 * (1 - s2 / 11)) + ')'; cx2.beginPath(); cx2.moveTo(on2[0], on2[1]); cx2.lineTo(pp[0], pp[1]); cx2.stroke(); } on2 = pp; } else on2 = false;
+          if (pp[2] > 0 || pp[3] > 1) { if (on2) { cx2.strokeStyle = 'rgba(255,150,70,' + (.5 * (1 - s2 / 11)) + ')'; cx2.beginPath(); cx2.moveTo(on2[0], on2[1]); cx2.lineTo(pp[0], pp[1]); cx2.stroke(); } on2 = pp; } else on2 = false;
         }
         if (!(p0[2] > 0 || p0[3] > 1)) continue;
         var t3 = Math.min(1, t + .01), p1 = pt(slerp(P.a, P.b, t3, P.om), 1 + P.h * Math.sin(Math.PI * t3)), ang = Math.atan2(p1[1] - p0[1], p1[0] - p0[0]);
-        var sc = (.75 + .35 * Math.max(0, Math.min(1, p0[2] + .3))) * dpr * (R / 230 < .75 ? .75 : Math.min(1.4, R / 230));
+        var sc = (1.35 + .6 * Math.max(0, Math.min(1, p0[2] + .3))) * dpr * (R / 230 < .75 ? .75 : Math.min(1.4, R / 230));
         cx2.save(); cx2.translate(p0[0], p0[1]); cx2.rotate(ang); cx2.scale(sc, sc);
-        cx2.shadowColor = 'rgba(255,120,30,.9)'; cx2.shadowBlur = 8 * dpr; cx2.fillStyle = '#fff'; cx2.fill(PLANE); cx2.restore();
+        cx2.shadowColor = 'rgba(255,120,30,.9)'; cx2.shadowBlur = 8 * dpr; cx2.fillStyle = '#fff'; cx2.fill(PLANE);
+        cx2.shadowBlur = 0; cx2.strokeStyle = 'rgba(255,200,160,.9)'; cx2.lineWidth = .8; cx2.beginPath(); cx2.moveTo(-8.4, 0); cx2.lineTo(-13, 0); cx2.stroke();
+        cx2.translate(-13, 0); cx2.fillStyle = '#FF5A00'; cx2.fillRect(-9, -3.4, 9, 6.8); cx2.fillStyle = '#fff'; cx2.fillRect(-9, -1.1, 9, 2.2); cx2.fillStyle = '#0B1220'; cx2.fillRect(-6.2, -1.1, 1, 2.2); cx2.fillRect(-3.4, -1.1, 1, 2.2); cx2.restore();
         if (p0[2] > .3) vplanes.push([i, p0]);
       }
       // featured offer tag follows one visible plane

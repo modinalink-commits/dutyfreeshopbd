@@ -39,7 +39,7 @@ bd753699bbd209d243e7e4b2b82c37d322444553 resources/views/panels/customers.blade.
 c25a13956ea9946159b80572e41bd26d65050c7a resources/views/panels/accounts.blade.php
 9ae8274960b21c06102f045e43f6906ea60ee6cc resources/views/panels/suppliers.blade.php
 1cb9863e39bdf894fc9136ae20d93aea9105a087 resources/views/panels/stock-log.blade.php
-e694b6b46fb885a73fe36935a7d1af598ad3e5a7 app/Http/Controllers/SiteController.php
+26fb8ccc3be37296dc5ac9ce4b7f82ec10e56b54 app/Http/Controllers/SiteController.php
 83f7d91e3943f758a5cc593ff2b2c3f4a34c500e resources/views/site.blade.php
 a38fab2e151b4f90bbb23ea4bc18da263965bc1f app/Http/Middleware/ModulePermission.php
 2a839fb1a64c2d2986cda02d11cbd025c8afeef5 app/Http/Controllers/PermissionController.php
@@ -53,7 +53,7 @@ d787924ace3fa42cc66a3de321e4e94e784006d8 resources/views/panels/employees.blade.
 3d782cdddd484d3630ce7d778ab84adaf1bb77eb resources/views/store/layout.blade.php
 a17b2eff0aa07664c7ed28c2881cf7aa52baec3f resources/views/store/card.blade.php
 ce0d1f8552836199c028ddef8806c72a2d10ad19 resources/views/store/home_sec.blade.php
-8e983d97ec1bd2d2e58a4e36b1d38963b571c8b5 resources/views/store/home.blade.php
+aa9a6ee9c5fba2aabc5126a45d5d11edc495426b resources/views/store/home.blade.php
 0e5fb9160b143a0aae0c56fedd841bcdf8c5283c resources/views/store/category.blade.php
 56dd249e0ea5a4d3bd384d8fd16070c6646ed451 resources/views/store/product.blade.php
 7ad9d9502d41f54d6784414a9aa3f16a8ab0ec13 resources/views/store/search.blade.php
@@ -515,8 +515,8 @@ dfdc2c103ca9f28234be198c89c0f096a1abf9d3 app/Http/Controllers/IncompleteEditCont
 687efd0c4d9cc00441442b31621fa16b369bb1e5 database/migrations/2026_11_03_000070_incomplete_parity.php
 213351c39df24f0830995dd487777bb1b9f0067c resources/views/incomplete_qpop.blade.php
 ea6a9b4afdc7006c10cc11f79ef0af6a54dac82a database/migrations/2026_11_04_000080_chat_pages.php
-e41df4284c9a3fa7bbe60abfdbb8b809b1698a09 public/dfglobe.js
-6459a5d666e77d50d09316eb1b40fac3712d7e8e resources/views/store/globe.blade.php
+f5112a5a760c077b8d4cda4c3089d2c8d02e0da5 public/dfglobe.js
+44a77ad8f4e06494fe49613c50bbf93fe11a796a resources/views/store/globe.blade.php
 f1060f255137b8d3f1b495740fcf87c3fc1ada43 resources/views/store/globe_preview.blade.php
 fc042c8384fa4315f8db897d62b1df690cd23cbf public/dfglobe2.js
 28cc284fba52bb46003cc2747b26db43e413969f public/globe/day.jpg

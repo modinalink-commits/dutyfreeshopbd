@@ -81,6 +81,9 @@ box.addEventListener('click',function(e){var pb=e.target.closest&&e.target.close
 document.addEventListener('visibilitychange',function(){if(!cur||!cur.pl||!cur.pl.pauseVideo)return;try{document.hidden?cur.pl.pauseVideo():cur.pl.playVideo()}catch(e){}});
 function first(){var f=tr.children[0];if(f&&f.classList.contains('hxv'))active()}
 if(document.readyState==='complete')setTimeout(first,300);else addEventListener('load',function(){setTimeout(first,300)})});</script>
+@if(($s['home_globe'] ?? '1') === '1' && collect($deals ?? [])->count())
+<div class="w hx">@include('store.globe', ['deals' => $deals])</div>
+@else
 <div class="w hx"><div class="hx-m">
 @if($slides->count())
 <h1 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap">DutyFree BD – অরিজিনাল ইমপোর্টেড পারফিউম, স্কিন কেয়ার ও লাইফস্টাইল পণ্য</h1>
@@ -100,6 +103,7 @@ if(document.readyState==='complete')setTimeout(first,300);else addEventListener(
 @endif
 </div>
 </div>
+@endif
 
 @if($s['home_promos']==='1')<div class="w pm"><a href="/delivery-policy/"><i><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h11v10H3zM14 9h4l3 3v4h-7z"/><circle cx="7" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/></svg></i><span><b>Free Delivery</b><span>On selected orders</span></span></a><a href="/about-us/"><i><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M8.5 12l2.5 2.5L15.5 10"/></svg></i><span><b>100% Original</b><span>Imported and authentic</span></span></a><a href="#flash"><i><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 5L5 19"/><circle cx="7" cy="7" r="2.2"/><circle cx="17" cy="17" r="2.2"/></svg></i><span><b>Special Offers</b><span>Up to {{ $maxOff }}% off</span></span></a></div>@endif
 @if($s['home_flash']==='1' && $flash->count() && $fOn)
