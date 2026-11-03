@@ -1,12 +1,12 @@
 fe43f8b6cb422cca81ee18b74d3972f77e7852de database/migrations/2026_10_31_000001_mother_core.php
-802b9aab8592323bdd7ad292264c6c1f70d1c043 routes/web.php
+e0c3456a8a2339418d789436e8561525983fc204 routes/web.php
 5ec9cde3d13c963d0d55a626e10bf2e39e36a691 app/Models/Mother.php
 621db8407b5a9dc9521fda36f625da3ec50c0477 app/Http/Controllers/AdminController.php
 bd49f23ea0895af93bed5374937115c21911b0cd app/Console/Commands/MotherInstall.php
 414893f8e0e20d01a72858d061cad82545fb8110 resources/views/layout.blade.php
 7ba1a8252b36e7db33e40d8be3ea5ec2cd241fb7 resources/views/login.blade.php
 166a496b2823812fc07a3ca6f7c676eda7dff40f resources/views/dashboard.blade.php
-032f1f72d3333392cb3372a3de06cd9c5c78ca6b resources/views/orders.blade.php
+66226f40af57cab83373584f3c4d8603ad898c87 resources/views/orders.blade.php
 33df599b630d438db5fa9c8c46aa4c45085b625b resources/views/admin/orders/partials/status-tabs.blade.php
 b7c84b6850d63486f9c116cb6bf1a3feee68f6db resources/views/order_new.blade.php
 56bb86c91acc1c531cb3679b9cba401886c285bc resources/views/order_show.blade.php
@@ -494,3 +494,5 @@ df745554b06b8c36d0e19006e1ff72986b21c28f database/migrations/2026_11_03_000055_w
 50b22ddd25ad337734d7d38830e5deb07b94d08d resources/views/components/customer-level-stars.blade.php
 1c3966fdc5985041dba80dfc541c66dc691e27d1 resources/views/discount_modal.blade.php
 bdf651c18e0a087ee0ff98870b04583e6d69eaea resources/views/popup_close.blade.php
+9a657b3dd1e23a22096d1a86e4357974cde8dbcf resources/views/courier_modal.blade.php
+b63f51176aec09c413d6bdb2843774c033b48863 app/Support/CourierInfo.php

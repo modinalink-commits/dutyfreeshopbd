@@ -494,3 +494,5 @@ database/migrations/2026_11_03_000057_customer_level.php
 resources/views/components/customer-level-stars.blade.php
 resources/views/discount_modal.blade.php
 resources/views/popup_close.blade.php
+resources/views/courier_modal.blade.php
+app/Support/CourierInfo.php
