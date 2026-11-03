@@ -292,7 +292,7 @@ function openSum(c){sum=c;sel={out:c.connected?null:'no_answer',resp:c.connected
  var i=c.info||{};$('sN').textContent=i.found&&i.name?i.name:'Unknown Customer';$('sP').textContent=c.phone;$('sD').textContent=c.connected?fmtD(c.dur):'Not connected';$('sO').textContent=i.last?i.last.invoice:'—';$('sA').textContent=(cfg&&cfg.staff)||'—';
  $('sR').textContent=!c.connected?'No Recording':(cfg&&cfg.rec?'Recording Processing':'No Recording');
  var ed=$('sEdit');if(i.last){ed.style.display='block';ed.href='/admin/orders/'+i.last.id+'/edit?call='+c.id}else ed.style.display='none';
- $('sNote').value='';$('sErr').textContent='';paintSum();$('ovSum').classList.add('on')}
+ $('sNote').value='';$('sErr').textContent='';paintSum();$('ovSum').classList.add('on');if(emb)parent.postMessage({dfdial:'summary'},location.origin)}
 function paintSum(){document.querySelectorAll('#ocO button').forEach(function(b){b.classList.toggle('on',b.dataset.v===sel.out)});
  document.querySelectorAll('#ocR .chip').forEach(function(b){b.classList.toggle('on',b.dataset.v===sel.resp)});
  document.querySelectorAll('#ocC .chip').forEach(function(b){b.classList.toggle('on',b.dataset.v===sel.can)});
@@ -306,8 +306,8 @@ function saveSum(next){if(!sum)return;var note=$('sNote').value.trim();
  if(sel.out==='cancelled'&&sel.can==='Other'&&!note){$('sErr').textContent='Other কারণ হলে নোট লিখতে হবে।';return}
  var o={outcome:sel.out,response:sel.resp,cancel_reason:sel.out==='cancelled'?sel.can:null,note:note};if(sum.info&&sum.info.last)o.order_id=sum.info.last.id;
  $('sSave').disabled=true;$('sNext').disabled=true;
- post('/admin/call-center/log/'+sum.id+'/summary',o).then(function(j){$('sSave').disabled=false;$('sNext').disabled=false;if(j&&j.ok){$('ovSum').classList.remove('on');sum=null;if(next){$('num').value='';found();tab('pad');$('num').focus()}else tab('pad')}else $('sErr').textContent=(j&&j.error)||'Could not save. Try again.'}).catch(function(){$('sSave').disabled=false;$('sNext').disabled=false;$('sErr').textContent='Could not save. Try again.'})}
-$('sSave').onclick=function(){saveSum(false)};$('sNext').onclick=function(){saveSum(true)};$('sSkip').onclick=function(){$('ovSum').classList.remove('on');sum=null;tab('pad')};
+ post('/admin/call-center/log/'+sum.id+'/summary',o).then(function(j){$('sSave').disabled=false;$('sNext').disabled=false;if(j&&j.ok){$('ovSum').classList.remove('on');sum=null;if(next){$('num').value='';found();tab('pad');$('num').focus()}else{tab('pad');if(emb)parent.postMessage({dfdial:'done'},location.origin)}}else $('sErr').textContent=(j&&j.error)||'Could not save. Try again.'}).catch(function(){$('sSave').disabled=false;$('sNext').disabled=false;$('sErr').textContent='Could not save. Try again.'})}
+$('sSave').onclick=function(){saveSum(false)};$('sNext').onclick=function(){saveSum(true)};$('sSkip').onclick=function(){$('ovSum').classList.remove('on');sum=null;tab('pad');if(emb)parent.postMessage({dfdial:'done'},location.origin)};
 /* ---------- dial pad: customer found ---------- */
 var lastN='',ft=null;
 function found(){clearTimeout(ft);ft=setTimeout(function(){var n=($('num').value||'').replace(/\D/g,'');if(n===lastN)return;lastN=n;var f=$('found');if(n.length<6){f.className='fnd';f.innerHTML='';return}
