@@ -11,8 +11,10 @@
   --acc-blue:#A9C4F5;--acc-green:#9BD6AE;--acc-orange:#F6C39A;--acc-yellow:#EFD98A;--acc-purple:#C9B8F2;
   --acc-cyan:#94D8E3;--acc-red:#F2B3B3;--acc-gray:#CBD2DB;--acc-greengray:#A9C7B9;
   --border-main:#E3E7ED;--border-soft:#EDF0F4;
-  --head-bg:#F4F6F8;--group-bg:#F0F3F7;--total-bg:#EDF1F5;
+  --head-bg:#EDF1F5;--group-bg:#EEF2F6;--total-bg:#E9EEF3;
   --accent-tint:#FFF4EC;
+  /* module / section / working bars: one step darker than normal grid rows (6-10 % tint) */
+  --module-bar-bg:#F1F4F7;--module-bar-border:#D9E0E7;--module-bar-text:#111827;
   /* map the tokens onto the variables admin_grid already reads */
   --bg:var(--page-bg);--surface:var(--surface-main);--surface-2:var(--surface-soft);
   --border-color:var(--border-main);--row-hover:#F6F8FA;--row-selected:#FFF3EA;--primary-soft:var(--accent-tint);
@@ -64,8 +66,6 @@ main table.g-zebra:not(.ordt) tbody tr:nth-child(even)>td{background:var(--surfa
 main .card{background:var(--surface-main);border-color:var(--border-main)}
 main .card:has(> form input,> form select,> form textarea),main form.card{background:var(--surface-soft)}
 main .card input:not([type=checkbox]):not([type=radio]),main .card select,main .card textarea{background:var(--surface-main)}
-.g-toolbar{background:var(--tint-slate);border-color:var(--border-main)}
-.ocb{background:var(--tint-slate)!important;border-color:var(--border-main)!important}
 .ocb input,.ocb select{background:var(--surface-main)}
 main input:focus-visible,main select:focus-visible,main textarea:focus-visible{border-color:var(--primary);box-shadow:0 0 0 3px rgba(255,90,0,.10)}
 main .btn.g,main button.g{background:var(--tint-slate);color:var(--text-primary);border:1px solid var(--border-main)}
@@ -83,11 +83,22 @@ aside nav a.nv:hover,aside nav details>summary:hover,aside nav a.sub:hover{backg
 aside nav a.nv.on,aside nav a.sub.on{background:var(--accent-tint)}
 aside nav details.mg[open]>summary{background:var(--tint-slate)}
 aside nav,aside nav a.nv,aside nav details.mg>summary{border-color:var(--border-soft)}
-.pgx{background:var(--tint-slate);border-color:var(--border-main)}
 .pgx .b{background:var(--surface-main);border-color:var(--border-main)}
 .pgx .b.on{background:var(--accent-tint)!important;color:#C2410C!important;border-color:#FDBA8C!important;font-weight:700}
 dialog,[role=dialog],.modal,.modal-box{border:1px solid var(--border-main);background:var(--surface-main)}
 dialog h3,[role=dialog] h3,.modal h3,.modal-box h3{background:var(--tint-slate)}
+/* ===== 7b. module / section / working bars (one step darker than rows) ===== */
+.ui-module-bar,.ui-section-bar,.ui-submodule-bar,.ui-toolbar-row,.ui-filter-row,.ui-search-row,.ui-export-row,
+main>h1,main .card>:is(h2,h3):first-child,main .g-toolbar{
+  background:var(--module-bar-bg);border:1px solid var(--module-bar-border);border-radius:8px;min-height:36px;box-sizing:border-box;color:var(--module-bar-text)}
+main>h1,.ui-module-bar{display:flex;align-items:center;gap:8px;padding:6px 12px;font-weight:600}
+main .card>:is(h2,h3):first-child,.ui-section-bar,.ui-submodule-bar{display:flex;align-items:center;gap:8px;padding:6px 12px;font-weight:600;min-height:32px;margin-bottom:8px}
+.ui-toolbar-row,.ui-filter-row,.ui-search-row,.ui-export-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:6px 10px}
+.ui-bar-title{font-weight:600;color:var(--module-bar-text)}.ui-bar-sub{color:var(--text-secondary)}
+/* filter / search / bulk-action / pagination bars share the bar tint */
+.ocb,.pgx,.g-toolbar{background:var(--module-bar-bg)!important;border-color:var(--module-bar-border)!important}
+main form#bulk>.card:first-child,main .bulk-bar,main .filter-bar,main .search-bar{background:var(--module-bar-bg);border-color:var(--module-bar-border)}
+main .card:has(> form.row:first-child) {background:var(--module-bar-bg);border-color:var(--module-bar-border)}
 /* ===== 8. compact action icons (desktop only; mobile keeps big touch targets) ===== */
 @media(min-width:761px){.ibar{gap:4px;margin-top:3px}.ibar .ib{width:24px;height:24px;border-radius:7px;box-shadow:none}.ibar .ib svg{width:12px;height:12px}.ibar .ib-call{height:24px;padding:0 9px;font-size:11px;border-radius:7px;gap:4px;box-shadow:none}.ibar .ib-call svg{width:11px;height:11px}}
 .dfx-menu{border-color:var(--border-main)}
