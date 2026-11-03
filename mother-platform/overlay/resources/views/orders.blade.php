@@ -26,9 +26,8 @@
 @php($oq = request()->only('q','per','from','to','ft','tt'))
 @php($oqs = http_build_query(request()->only('status','q','from','to','ft','tt')))
 <div class="ocb" id="ocb"><form method="get" action="/admin/orders" id="ofx">
-<div class="obc" id="obc"><b>Manage Order</b><span id="obct">Dashboard &gt; Orders &gt; {{ request('status') ?: 'All Orders' }}</span></div>
 @if(request('status'))<input type="hidden" name="status" value="{{ request('status') }}">@endif
-<div class="r1"><div style="min-width:150px"><h1>Order Management</h1><div class="dt" id="odt">@if(request('from')||request('to')){{ request('from') ?: '…' }} {{ request('ft') ?: '00:00' }} → {{ request('to') ?: '…' }} {{ request('tt') ?: '23:59' }}@else All dates @endif</div></div>
+<div class="r1"><div style="min-width:150px"><h1>Manage Order</h1><div class="dt"><span id="obct">Dashboard &gt; Orders &gt; {{ request('status') ?: 'All Orders' }}</span> · <span id="odt">@if(request('from')||request('to')){{ request('from') ?: '…' }} {{ request('ft') ?: '00:00' }} → {{ request('to') ?: '…' }} {{ request('tt') ?: '23:59' }}@else All dates @endif</span></div></div>
 <span class="pre" id="opre"><button type="button" data-p="today">Today</button><button type="button" data-p="yest">Yesterday</button><button type="button" data-p="7">Last 7 Days</button><button type="button" data-p="15">Last 15 Days</button><button type="button" data-p="month">This Month</button><button type="button" data-p="custom">Custom</button><button type="button" data-p="all">All</button></span>
 <span style="display:inline-flex;gap:4px;align-items:center"><input type="date" name="from" value="{{ request('from') }}" title="From date"><input type="time" name="ft" value="{{ request('ft') }}" title="From time"><span class="dt">→</span><input type="date" name="to" value="{{ request('to') }}" title="To date"><input type="time" name="tt" value="{{ request('tt') }}" title="To time"></span>
 <span style="flex:1"></span>
