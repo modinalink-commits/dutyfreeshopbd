@@ -64,5 +64,5 @@ class WinbackController extends Controller
     return redirect('/admin/winback')->with('ok', 'Saved');
   }
   public function test(Request $r) { $m = W::testSend((string)$r->input('phone'), (float)$r->input('pct', 0)); return redirect('/admin/winback')->with('ok', $m); }
-  public function run() { W::put('blast', '1'); W::put('blast_at', now()->toIso8601String()); \App\Support\Procure::audit('winback.run_all', 'Win-back: send to everyone now', null, []); return redirect('/admin/winback')->with('ok', 'Sending started: offers go out in batches of 200 every minute until everyone eligible has received theirs. See the report for the sent list.'); }
+  public function run(Request $r) { W::put('blast_limit', (string)max(0, (int)$r->input('limit', 0))); W::put('blast', '1'); W::put('blast_at', now()->toIso8601String()); \App\Support\Procure::audit('winback.run_all', 'Win-back: send to everyone now', null, []); return redirect('/admin/winback')->with('ok', 'Sending started: offers go out in batches of 200 every minute until everyone eligible has received theirs. See the report for the sent list.'); }
 }

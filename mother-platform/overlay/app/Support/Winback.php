@@ -52,7 +52,9 @@ class Winback
     if (!$force) { $h = (int)now('Asia/Dhaka')->format('H'); $stt = self::set('start', ''); if ($stt !== '' && $today < $stt) return; if (self::set('last_run') === $today || $h < (int)self::set('win_from', '14') || $h >= (int)self::set('win_to', '17')) return; } // offers go out only 2 PM to 5 PM Dhaka time
     $st = self::stages(); if (!$st) return; $sent = 0; $exp = max(1, (int)self::set('expiry', '30')); $mode = in_array(self::set('mode', 'auto'), ['coupon', 'fixed'], true) ? self::set('mode', 'auto') : 'auto'; $lastStage = end($st)[0];
     $ch = array_filter(['sms' => self::set('sms', '1') === '1', 'push' => self::set('push', '1') === '1', 'notif' => self::set('notif', '1') === '1']);
-    $room = $blast ? 200 : min(40, self::dailyCap() - self::sentToday()); if ($room <= 0) return; $done = self::doneSet();
+    $room = min(40, self::dailyCap() - self::sentToday());
+    if ($blast) { $room = 200; $lim = (int)self::set('blast_limit', '0'); if ($lim > 0) { $got = DB::table('winback_events')->where('cycle_order_id', '>', 0)->where('created_at', '>=', \Carbon\Carbon::parse(self::set('blast_at', now()->toIso8601String()))->utc())->count(); $room = min(200, $lim - $got); if ($room <= 0) { self::put('blast', '0'); self::put('blast_done', now()->toIso8601String()); return; } } }
+    if ($room <= 0) return; $done = self::doneSet();
     $queue = self::lastDelivered(); self::rank($queue); // serial order: best customers (highest spend) first, then longest inactive
     foreach ($queue as $p => $x) {
       $d = self::days($x['at']); $s = self::stageFor($d); if (!$s) continue;
