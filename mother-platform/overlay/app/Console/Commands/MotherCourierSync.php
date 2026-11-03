@@ -5,5 +5,5 @@ use Illuminate\Console\Command;
 class MotherCourierSync extends Command {
   protected $signature = 'mother:courier-sync';
   protected $description = 'Poll open courier parcels and update the matching orders';
-  public function handle() { $n = \App\Support\CourierSync::run(80); $late = \App\Support\LateDelivery::detect(); \App\Support\PaymentSettle::sweep(); $this->info("courier-sync changed=$n late-delivery changed=$late"); return 0; }
+  public function handle() { $n = \App\Support\CourierSync::run(80); $late = \App\Support\LateDelivery::detect(); \App\Support\PaymentSettle::sweep(); try { \App\Http\Controllers\ShurjoPayController::sweep(); } catch (\Throwable $e) {} $this->info("courier-sync changed=$n late-delivery changed=$late"); return 0; }
 }

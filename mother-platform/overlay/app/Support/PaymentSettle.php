@@ -12,7 +12,7 @@ class PaymentSettle {
   const ELIGIBLE = ['New', 'Pending', 'WFP', 'Assign', 'AI Order', 'Scheduled'];
 
   /** Safety net: any fully paid order still waiting in an early stage (paid before auto-approval existed, or verified through a path that did not call apply()) is settled now. Throttled to once every 2 minutes. */
-  public static function auto(): void { if (\Illuminate\Support\Facades\Cache::add('payment.settle.sweep', 1, 120)) { try { self::sweep(); } catch (\Throwable $e) { report($e); } } }
+  public static function auto(): void { if (\Illuminate\Support\Facades\Cache::add('shurjopay.verify.sweep', 1, 60)) { try { \App\Http\Controllers\ShurjoPayController::sweep(5); } catch (\Throwable $e) { report($e); } } if (\Illuminate\Support\Facades\Cache::add('payment.settle.sweep', 1, 120)) { try { self::sweep(); } catch (\Throwable $e) { report($e); } } }
   public static function sweep(int $limit = 300): int { $was = OrderActivity::$system; OrderActivity::$system = true; try { return self::sweepRun($limit); } finally { OrderActivity::$system = $was; } }
   private static function sweepRun(int $limit): int {
     $ids = DB::table('orders')->whereIn('status', self::ELIGIBLE)->whereNull('duplicate_of_order_id')

@@ -45,11 +45,7 @@ class ShurjoPayController extends Controller {
     $v = ShurjoPay::verify($sp);
     $code = (string)($v['sp_code'] ?? '');
     if ($code === '1000' && abs((float)($v['amount'] ?? $v['payable_amount'] ?? 0) - (float)$o->total) < 1.0) {
-      $won = DB::table('orders')->where('id', $o->id)->where(fn($q) => $q->whereNull('pay_status')->orWhere('pay_status', '<>', 'Verified'))->update(['pay_status' => 'Verified', 'pay_txn' => (string)($v['bank_trx_id'] ?? $v['invoice_no'] ?? $sp), 'sp_method' => mb_substr((string)($v['method'] ?? ''), 0, 60), 'pay_by' => 'ShurjoPay', 'pay_at' => now(), 'updated_at' => now()]);
-      if (!$won) return redirect($done); // a repeated/simultaneous callback: payment already recorded, nothing to do twice
-      $this->log($o, 'Online payment received via ShurjoPay'.(!empty($v['method']) ? ' ('.$v['method'].')' : '').', ref '.($v['bank_trx_id'] ?? $sp));
-      \App\Support\PaymentSettle::apply((int)$o->id, 'ShurjoPay (backend-verified)');
-      try { \App\Support\OrderSms::placed((int)$o->id); } catch (\Throwable $e) {}
+      if (!self::settle($o, $v, $sp)) return redirect($done); // a repeated/simultaneous callback: payment already recorded, nothing to do twice
     } else {
       $st = $code === '1002' ? 'Cancelled' : 'Failed';
       DB::table('orders')->where('id', $o->id)->update(['pay_status' => $st, 'updated_at' => now()]);
@@ -57,5 +53,29 @@ class ShurjoPayController extends Controller {
     }
     return redirect($done);
   }
+  /** Records a verified ShurjoPay payment exactly once and approves the order. Used by the customer return page and by the background sweep. */
+  public static function settle(object $o, array $v, string $sp): bool {
+    $won = DB::table('orders')->where('id', $o->id)->where(fn($q) => $q->whereNull('pay_status')->orWhere('pay_status', '<>', 'Verified'))->update(['pay_status' => 'Verified', 'pay_txn' => (string)($v['bank_trx_id'] ?? $v['invoice_no'] ?? $sp), 'sp_method' => mb_substr((string)($v['method'] ?? ''), 0, 60), 'pay_by' => 'ShurjoPay', 'pay_at' => now(), 'updated_at' => now()]);
+    if (!$won) return false;
+    self::note($o, 'Online payment received via ShurjoPay'.(!empty($v['method']) ? ' ('.$v['method'].')' : '').', ref '.($v['bank_trx_id'] ?? $sp));
+    \App\Support\PaymentSettle::apply((int)$o->id, 'ShurjoPay (backend-verified)');
+    try { \App\Support\OrderSms::placed((int)$o->id); } catch (\Throwable $e) {}
+    return true;
+  }
+  /** Background safety net: customers who paid but never came back to the site are verified with ShurjoPay and approved automatically. */
+  public static function sweep(int $limit = 20): int {
+    if (!\App\Support\ShurjoPay::enabled()) return 0;
+    $n = 0;
+    $rows = DB::table('orders')->where('pay_status', 'Awaiting Payment')->whereNotNull('sp_order_id')->where('sp_order_id', '<>', '')->where('updated_at', '<', now()->subMinutes(2))->where('created_at', '>', now()->subDays(3))->orderBy('id')->limit($limit)->get();
+    foreach ($rows as $o) {
+      $v = \App\Support\ShurjoPay::verify((string)$o->sp_order_id);
+      if (!$v) continue;
+      $code = (string)($v['sp_code'] ?? '');
+      if ($code === '1000' && abs((float)($v['amount'] ?? $v['payable_amount'] ?? 0) - (float)$o->total) < 1.0) { if (self::settle($o, $v, (string)$o->sp_order_id)) $n++; }
+      elseif ($code === '1002') { DB::table('orders')->where('id', $o->id)->where('pay_status', 'Awaiting Payment')->update(['pay_status' => 'Cancelled', 'updated_at' => now()]); self::note($o, 'ShurjoPay payment cancelled (code 1002)'); }
+    }
+    return $n;
+  }
+  private static function note(object $o, string $note): void { DB::table('order_status_logs')->insert(['order_id' => $o->id, 'user_id' => null, 'user_name' => 'ShurjoPay', 'from_status' => $o->status, 'to_status' => $o->status, 'note' => $note, 'created_at' => now(), 'updated_at' => now()]); }
   private function log(object $o, string $note): void { DB::table('order_status_logs')->insert(['order_id' => $o->id, 'user_id' => null, 'user_name' => 'ShurjoPay', 'from_status' => $o->status, 'to_status' => $o->status, 'note' => $note, 'created_at' => now(), 'updated_at' => now()]); }
 }
