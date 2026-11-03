@@ -2,17 +2,20 @@
 (function () {
   'use strict';
   var MASK = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADA/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPj/z////3EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD/++f///wcAAPADgAEAAOADAAAAAAAAAAAAAAAg3N4f/v///wcAAB8AAAAAAAA4AAAAAAAAAAAAAAADAOAH/P///wcAAA4AAAAAAAAwAAAAAAAAAAAAAAC8cQwBAP///wcAAAAAAIAHAMD/DwDwAAAAAAAAAOAAAAAAAPz//wMAAAAAAGAAAPz/AQAAAAAAAAAAAOBdc/MDAPj//wEAAAAAABjAwP///z9gAAAAA4AAAED8A/P/AOD//wEAAAAAADjg/v///z//HwCAAPj/A0/8X4PwB/D//wAAAOA/AADh/v///////wM+A/7///8Pw56BB+D/DwAAAPz/Y+zf/f//////////N/D///////+Bf/D/AQAAAP7/x////v//////////GP7//////7/wJ+AfAH4AAD9++P//////////////AOD//////88GH8AfAAwAwJ////////////////9/APz//////wNxDIAPAAAA8M///////////////98/APzf/////wHwAwAGAAAA+M///////////////+ADAPAB+P///wHwMwAAAAAA8A//////////////ZBgAAIACgP///wPgfwAAAAAQAAf///////////8fAA4AACAAAP///z/gfwAAAAAwYMf///////////8PAB8AAAQAAP7////5/wMAAABoQOj///////////8DAA8AAAAAgPz////5/wcAAADs+P////////////9/AAcAAAAAAPj////7/wMAAADg+f////////////9/AAEAAAAAAPj/////zwAAAAAw/v////////////+/AAAAAAAAAPD/////Gw4AAACg//////////////8fAAAAAAAAAOD/////HxAAAADA//////////////8fAAAAAAAAAOD//////wAAAACA//9P/vj///////8PAAAAAAAAAOD/////EwAAAACA//wHfPz////////HAAAAAAAAAOD/////AQAAAAD8g/EH8Pj////////gAAAAAAAAAOD/////AAAAAAD8Aebn+fH//////z8AAAAAAAAAAOD///9/AAAAAAD8AGT8//H//////xpgAAAAAAAAAMD///8/AAAAAAD8AMT8//H/////fzggAAAAAAAAAID///8fAAAAAABwdAD8/////////zE4AAAAAAAAAID///8fAAAAAACwfwBD/////////zA/AAAAAAAAAAD+//8PAAAAAAD4fwAA/////////wAHAAAAAAAAAAD8//8DAAAAAAD8/2OA/////////4EAAAAAAAAAAADo//8DAAAAAAD8/+///////////wEAAAAAAAAAAADo/wkCAAAAAAD+//////z//////wEAAAAAAAAAAADYfwACAAAAAID///8///n//////wEAAAAAAAAAAACgfwAWAAAAAMD///9//+H//////wAAAAAAAAAAAAAgfwAAAAAAAMD///9//jPg////fwAAAAAAAAAAAAAAfgAAAAAAAOD//////H/A////PwEAAAAAAAAAAAAAfAAIAAAAAOD//////f/A/+f/BwAAAAAAAAAAAAAAfDBwAAAAAOD/////+X8A/sN/AAAAAAAAAAAAAAAA+DgAAwAAAOD/////+T8A/oB/AwAAAAAAAAAAAAAA4B8AAAAAAOD/////8x8AfoB/AAMAAAAAAAAAAAAAgPwAAAAAAOD/////8wcAPoD+AAEAAAAAAAAAAAAAAPgBAAAAAOD/////7wEAHAD+AQEAAAAAAAAAAAAAAMAAAAAAAOD/////PwAAHAD8AQQAAAAAAAAAAAAAAICAAgAAAMD/////HwMAGADgAAoAAAAAAAAAAAAAAADBfgAAAID//////wMAGABAAAAAAAAAAAAAAAAAAADy/wAAAID//////wEAIAAGAAwAAAAAAAAAAAAAAADw/wEAAAD//////wEAIAAIAAgAAAAAAAAAAAAAAADw/x8AAAD8+P///wAAAAAZYAAAAAAAAAAAAAAAAADg/z8AAAAAwP///wAAAAAbMAAAAAAAAAAAAAAAAADw/z8AAAAAwP//fwAAAAAWfAAAAAAAAAAAAAAAAAD4/38AAAAAwP//HwAAAAAcficAAAAAAAAAAAAAAAD8//8BAAAAwP//DwAAAAAYPiABAAAAAAAAAAAAAAD8//8DAAAAwP//BwAAAAA4vgEaAAAAAAAAAAAAAAD8//8/AAAAgP//BwAAAABwEBL+AAAAAAAAAAAAAAD8////AAAAAP//AwAAAABgAADwAQAAAAAAAAAAAAD8////AQAAAP//AwAAAADABADyAwEAAAAAAAAAAAD4////AQAAAP7/AwAAAAAAHADwBgQAAAAAAAAAAADw////AAAAAP7/BwAAAAAAAAQADAAAAAAAAAAAAADw//9/AAAAAP7/BwAAAAAAAAAAAAAAAAAAAAAAAADg//9/AAAAAP7/BwAAAAAAAICHAAAAAAAAAAAAAADg//8/AAAAAP//BwEAAAAAANDHAAAAAAAAAAAAAADA//8/AAAAAP//hwMAAAAAAPjHAQAAAAAAAAAAAAAA//8/AAAAAP//4QEAAAAAAPzfAQAAAAAAAAAAAAAA/v8/AAAAAP//4AEAAAAAAP7/AwAAAAAAAAAAAAAA/v8fAAAAAP5/wAAAAAAAgP//ByAAAAAAAAAAAAAA/v8fAAAAAP7/4AAAAAAA4P//D0AAAAAAAAAAAAAA/v8HAAAAAPz/4AAAAAAA8P//HwAAAAAAAAAAAAAA/v8AAAAAAPx/YAAAAAAA8P//PwAAAAAAAAAAAAAA/v8AAAAAAPw/AAAAAAAA8P//PwAAAAAAAAAAAAAA/v8AAAAAAPw/AAAAAAAA8P//PwAAAAAAAAAAAAAA/38AAAAAAPgfAAAAAAAA4P//PwAAAAAAAAAAAAAA/z8AAAAAAPAPAAAAAAAA4P//PwAAAAAAAAAAAAAA/x8AAAAAAPAHAAAAAAAA4B/+PwAAAAAAAAAAAAAA/w8AAAAAAPABAAAAAAAA4Af0HwAAAAAAAAAAAAAA/wMAAAAAAAAAAAAAAAAAAADwDwAIAAAAAAAAAACA/wMAAAAAAAAAAAAAAAAAAADgDwAQAAAAAAAAAACA/wEAAAAAAAAAAAAAAAAAAADAAgBwAAAAAAAAAACAfwAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAAAAAAACAHwAAAAAAAAAAAAAAAAAAAAAABgAQAAAAAAAAAACAHwAAAAAAAAAAAAAAAAAAAAAABgAMAAAAAAAAAADADwAAAAAAAAAAAAAAAAAAAAAAAAADAAAAAAAAAADABwAAAAAAAAAAAAAAAAAAAAAAAIADAAAAAAAAAADADwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADABwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAgwEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACABwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAADwAAAR4Pv4HAAAAAAAAAAAAAAAACAAAAAAAAAAA4P8/4P//////BwAAAAAAAAAAAAAAPwAAAAAAAADg//8//P///////wMAAAAAAAAAAACAewAAAADI/v////8///////////8BAAAAAAAAABAAeAAAAID///////////////////8DAAAAAAAe4P//fwAAAMD//////////////////38AAADA////////BwAAAPz//////////////////x8AAEDz//////8/AAAA8P///////////////////x8AABj///////8PAIAH/////////////////////38AAADA//////8/gPAD4P///////////////////wcAAAD+////////P4Dx/////////////////////w8AAAD8//////////////////////////////////8A/wMA/v//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////', MW = 240, MH = 120, D = Math.PI / 180;
+  // [Bengali name, lat, lon, priority(1=big Bangladesh dot)] — 20 nearby countries; planes fly from each to Bangladesh and land.
   var CITIES = {
-    DXB: ['Dubai', 25.25, 55.36, 1], DAC: ['Dhaka', 23.84, 90.40, 1], CGP: ['Chattogram', 22.25, 91.81, 1],
-    SIN: ['Singapore', 1.36, 103.99], BKK: ['Bangkok', 13.69, 100.75], IST: ['Istanbul', 41.26, 28.74], LHR: ['London', 51.47, -0.45],
-    DOH: ['Doha', 25.27, 51.61], JED: ['Jeddah', 21.68, 39.15], KUL: ['Kuala Lumpur', 2.74, 101.70], DEL: ['Delhi', 28.56, 77.10],
-    HKG: ['Hong Kong', 22.31, 113.92], JFK: ['New York', 40.64, -73.78], FRA: ['Frankfurt', 50.03, 8.57], NBO: ['Nairobi', -1.32, 36.93], CCU: ['Kolkata', 22.65, 88.45], SYD: ['Sydney', -33.94, 151.18], JNB: ['Johannesburg', -26.14, 28.25], GRU: ['Sao Paulo', -23.43, -46.47],
-    LAX: ['Los Angeles', 33.94, -118.41], NRT: ['Tokyo', 35.77, 140.39], PEK: ['Beijing', 40.08, 116.58], CAI: ['Cairo', 30.12, 31.41], MCT: ['Muscat', 23.59, 58.28],
-    KHI: ['Karachi', 24.91, 67.16], CMB: ['Colombo', 7.18, 79.88], KTM: ['Kathmandu', 27.70, 85.36], RUH: ['Riyadh', 24.96, 46.70]
+    DAC: ['বাংলাদেশ', 23.84, 90.40, 1], CGP: ['চট্টগ্রাম', 22.25, 91.81, 1],
+    DXB: ['দুবাই', 25.25, 55.36], MCT: ['ওমান', 23.59, 58.28], DOH: ['কাতার', 25.27, 51.61], RUH: ['সৌদি আরব', 24.96, 46.70],
+    KWI: ['কুয়েত', 29.23, 47.97], BAH: ['বাহরাইন', 26.27, 50.63], THR: ['ইরান', 35.69, 51.31], KHI: ['পাকিস্তান', 24.91, 67.16],
+    DEL: ['ইন্ডিয়া', 28.56, 77.10], KTM: ['নেপাল', 27.70, 85.36], PBH: ['ভুটান', 27.40, 89.42], CMB: ['শ্রীলঙ্কা', 7.18, 79.88],
+    MLE: ['মালদ্বীপ', 4.19, 73.53], RGN: ['মিয়ানমার', 16.91, 96.13], BKK: ['থাইল্যান্ড', 13.69, 100.75], KUL: ['মালয়েশিয়া', 2.74, 101.70],
+    SIN: ['সিঙ্গাপুর', 1.36, 103.99], CGK: ['ইন্দোনেশিয়া', -6.13, 106.66], HAN: ['ভিয়েতনাম', 21.22, 105.81], CAN: ['চায়না', 23.39, 113.30]
   };
-  var ROUTES = [['DXB', 'DAC'], ['DXB', 'CGP'], ['DOH', 'DAC'], ['SIN', 'DAC'], ['BKK', 'CGP'], ['IST', 'DXB'], ['LHR', 'DXB'], ['KUL', 'DAC'],
-    ['JED', 'DAC'], ['HKG', 'DAC'], ['FRA', 'DXB'], ['DEL', 'DXB'], ['JFK', 'LHR'], ['NBO', 'DXB'], ['SIN', 'DXB'], ['DXB', 'JNB'], ['SIN', 'SYD'], ['HKG', 'SIN'], ['NRT', 'HKG'], ['LAX', 'NRT'], ['JFK', 'LAX'], ['GRU', 'LHR'], ['CAI', 'DXB'], ['KHI', 'DAC'], ['CMB', 'DAC'],
-    ['MCT', 'CGP'], ['RUH', 'DAC'], ['DXB', 'NRT'], ['PEK', 'DAC'], ['LHR', 'DEL'], ['CCU', 'DXB'], ['KTM', 'DAC'], ['DXB', 'JFK'], ['SYD', 'DXB'], ['DOH', 'CGP']];
+  var ORDER = ['DAC', 'DXB', 'DEL', 'BKK', 'KUL', 'SIN', 'CAN', 'MCT', 'DOH', 'RUH', 'KTM', 'CMB', 'RGN', 'KHI', 'PBH', 'HAN', 'CGK', 'MLE', 'KWI', 'BAH', 'THR', 'CGP'];
+  // origin -> landing airport in Bangladesh (some countries fly to both)
+  var ROUTES = [['DXB', 'DAC'], ['DXB', 'CGP'], ['MCT', 'CGP'], ['MCT', 'DAC'], ['DOH', 'DAC'], ['DOH', 'CGP'], ['RUH', 'DAC'], ['KWI', 'DAC'], ['BAH', 'DAC'], ['THR', 'DAC'],
+    ['KHI', 'DAC'], ['DEL', 'DAC'], ['DEL', 'CGP'], ['KTM', 'DAC'], ['PBH', 'DAC'], ['CMB', 'DAC'], ['CMB', 'CGP'], ['MLE', 'CGP'], ['RGN', 'CGP'], ['RGN', 'DAC'],
+    ['BKK', 'DAC'], ['BKK', 'CGP'], ['KUL', 'DAC'], ['KUL', 'CGP'], ['SIN', 'DAC'], ['SIN', 'CGP'], ['CGK', 'DAC'], ['HAN', 'DAC'], ['CAN', 'DAC'], ['CAN', 'CGP']];
   function vec(lat, lon) { var la = lat * D, lo = lon * D, c = Math.cos(la); return [c * Math.sin(lo), Math.sin(la), c * Math.cos(lo)]; }
   function land() {
     var bin = atob(MASK), out = [];
@@ -37,13 +40,13 @@
     var tags = cards.map(function (c) { return c.getAttribute('data-tag'); }); if (!tags.length) tags = ['Duty Free'];
     var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
     var dpr = Math.min(2, window.devicePixelRatio || 1), W = 0, H = 0, R = 0, CX = 0, CY = 0;
-    var yaw = 72, tilt = 22 * D, spin = -5.5, drag = null, last = 0, vis = true, feat = -1, featAt = 0, active = -1, raf = 0, T = 0;
+    var yaw = 86, off = 0, sw = 0, tilt = 22 * D, spin = -5.5, drag = null, last = 0, vis = true, feat = -1, featAt = 0, active = -1, raf = 0, T = 0;
     var cityV = {}, k; for (k in CITIES) cityV[k] = vec(CITIES[k][1], CITIES[k][2]);
     var planes = [];
     ROUTES.forEach(function (r, i) {
       var a = cityV[r[0]], b = cityV[r[1]], om = Math.acos(Math.max(-1, Math.min(1, a[0] * b[0] + a[1] * b[1] + a[2] * b[2])));
-      var dur = 8 + om / Math.PI * 22, h = .035 + .11 * om / Math.PI;
-      planes.push({ a: a, b: b, om: om, dur: dur, h: h, t: (i * .37) % 1, rev: false }, { a: b, b: a, om: om, dur: dur, h: h, t: (i * .37 + .5) % 1, rev: true });
+      var dur = 12 + om / Math.PI * 26, h = .035 + .11 * om / Math.PI;
+      planes.push({ a: a, b: b, om: om, dur: dur, h: h, t: (i * .37) % 1 });
     });
     function size() {
       var w = cv.clientWidth || 300, h = cv.clientHeight || 300; W = cv.width = Math.round(w * dpr); H = cv.height = Math.round(h * dpr);
@@ -60,7 +63,7 @@
     function frame(now) {
       raf = 0; if (!vis || document.hidden) return;
       var dt = last ? Math.min(.05, (now - last) / 1000) : 0; last = now; T += dt;
-      if (!drag && !reduce) yaw += spin * dt;
+      if (!drag && !reduce) sw += dt * .17; yaw = 86 + off + 52 * Math.sin(sw);
       var g, i, p, q, b;
       cx2.clearRect(0, 0, W, H);
       // atmosphere
@@ -84,7 +87,7 @@
       cx2.fillStyle = g; cx2.beginPath(); cx2.arc(CX, CY, R, 0, 7); cx2.fill();
       // route lines
       cx2.lineWidth = Math.max(1, dpr * .8); cx2.strokeStyle = 'rgba(255,170,110,.16)'; cx2.setLineDash([3 * dpr, 5 * dpr]); cx2.beginPath();
-      for (i = 0; i < planes.length; i += 2) {
+      for (i = 0; i < planes.length; i++) {
         var pl = planes[i], on = false;
         for (var s = 0; s <= 36; s++) {
           var tt = s / 36, v = slerp(pl.a, pl.b, tt, pl.om), alt = 1 + pl.h * Math.sin(Math.PI * tt); p = pt(v, alt);
@@ -92,19 +95,31 @@
         }
       }
       cx2.stroke(); cx2.setLineDash([]);
-      // cities
-      for (k in CITIES) {
-        var c = CITIES[k]; p = pt(cityV[k]); if (p[2] <= .05) continue;
-        var big = c[3], rr = (big ? 3.2 : 1.8) * dpr;
-        if (big) { var ph = (T * .8 + (k.charCodeAt(0) % 7) * .3) % 1; cx2.strokeStyle = 'rgba(255,110,30,' + (.55 * (1 - ph)) + ')'; cx2.lineWidth = 1.5 * dpr; cx2.beginPath(); cx2.arc(p[0], p[1], rr + ph * 12 * dpr, 0, 7); cx2.stroke(); }
-        cx2.fillStyle = big ? '#FF6A1A' : '#ffd2b0'; cx2.beginPath(); cx2.arc(p[0], p[1], rr, 0, 7); cx2.fill();
-        if (big && p[2] > .25) { cx2.font = '700 ' + (11 * dpr) + 'px system-ui,sans-serif'; cx2.fillStyle = 'rgba(255,255,255,.92)'; var lw = cx2.measureText(c[0]).width, ox = k === 'DXB' ? -lw - 8 * dpr : (k === 'DAC' ? -lw * .5 : 8 * dpr), oy = k === 'CGP' ? 15 * dpr : -9 * dpr; cx2.fillText(c[0], p[0] + ox, p[1] + oy); }
-      }
+      // cities + Bengali country names (greedy, no overlaps; Bangladesh first)
+      var placed = [], fs0 = Math.max(10, Math.min(13, R / dpr / 19)) * dpr;
+      ORDER.forEach(function (k) {
+        var c = CITIES[k]; p = pt(cityV[k]); if (p[2] <= .12) return;
+        var big = c[3], rr = (big ? 3.6 : 2.2) * dpr;
+        if (big) { var ph = (T * .8 + (k === 'CGP' ? .5 : 0)) % 1; cx2.strokeStyle = 'rgba(255,110,30,' + (.6 * (1 - ph)) + ')'; cx2.lineWidth = 1.6 * dpr; cx2.beginPath(); cx2.arc(p[0], p[1], rr + ph * 14 * dpr, 0, 7); cx2.stroke(); }
+        cx2.fillStyle = big ? '#FF5A00' : '#fff'; cx2.beginPath(); cx2.arc(p[0], p[1], rr, 0, 7); cx2.fill();
+        if (big) { cx2.strokeStyle = '#fff'; cx2.lineWidth = dpr; cx2.stroke(); }
+        if (k === 'CGP' || p[2] < .3) return;
+        var fs = k === 'DAC' ? fs0 * 1.25 : fs0; cx2.font = '700 ' + fs + 'px "Noto Sans Bengali","Hind Siliguri","Nirmala UI",system-ui,sans-serif';
+        var tw = cx2.measureText(c[0]).width, th = fs * 1.15, sides = [[8 * dpr, -th * .35], [-tw - 8 * dpr, -th * .35], [-tw / 2, -th - 6 * dpr], [-tw / 2, 6 * dpr]], j, bx, by, ok;
+        for (j = 0; j < sides.length; j++) {
+          bx = p[0] + sides[j][0]; by = p[1] + sides[j][1]; ok = bx > 2 * dpr && bx + tw < W - 2 * dpr;
+          for (var m = 0; ok && m < placed.length; m++) { var q2 = placed[m]; if (bx < q2[0] + q2[2] + 3 * dpr && bx + tw + 3 * dpr > q2[0] && by < q2[1] + q2[3] && by + th > q2[1]) ok = false; }
+          if (ok) break;
+        }
+        if (!ok) return; placed.push([bx, by, tw, th]);
+        cx2.textBaseline = 'top'; cx2.lineJoin = 'round'; cx2.lineWidth = 3.2 * dpr; cx2.strokeStyle = 'rgba(7,12,24,.9)'; cx2.strokeText(c[0], bx, by);
+        cx2.fillStyle = k === 'DAC' ? '#FFB48A' : '#fff'; cx2.fillText(c[0], bx, by); cx2.textBaseline = 'alphabetic';
+      });
       // planes
       var tagPl = null, tagP = null, vplanes = [];
       for (i = 0; i < planes.length; i++) {
         var P = planes[i]; if (!reduce) P.t += dt / P.dur; if (P.t >= 1) P.t -= 1;
-        var t = P.t, v0 = slerp(P.a, P.b, t, P.om), a0 = 1 + P.h * Math.sin(Math.PI * t), p0 = pt(v0, a0);
+        var t = .5 - .5 * Math.cos(Math.PI * P.t), v0 = slerp(P.a, P.b, t, P.om), a0 = 1 + P.h * Math.sin(Math.PI * t), p0 = pt(v0, a0);
         // trail
         var on2 = false; cx2.lineWidth = 2.2 * dpr;
         for (var s2 = 10; s2 >= 0; s2--) {
@@ -113,8 +128,8 @@
         }
         if (!(p0[2] > 0 || p0[3] > 1)) continue;
         var t3 = Math.min(1, t + .01), p1 = pt(slerp(P.a, P.b, t3, P.om), 1 + P.h * Math.sin(Math.PI * t3)), ang = Math.atan2(p1[1] - p0[1], p1[0] - p0[0]);
-        var sc = (1.35 + .6 * Math.max(0, Math.min(1, p0[2] + .3))) * dpr * (R / 230 < .75 ? .75 : Math.min(1.4, R / 230));
-        cx2.save(); cx2.translate(p0[0], p0[1]); cx2.rotate(ang); cx2.scale(sc, sc);
+        var sc = (1.15 + .5 * Math.sin(Math.PI * t) + .35 * Math.max(0, Math.min(1, p0[2] + .3))) * dpr * (R / 230 < .75 ? .75 : Math.min(1.4, R / 230));
+        cx2.save(); cx2.globalAlpha = Math.min(1, P.t / .03, (1 - P.t) / .03); cx2.translate(p0[0], p0[1]); cx2.rotate(ang); cx2.scale(sc, sc);
         cx2.shadowColor = 'rgba(255,120,30,.9)'; cx2.shadowBlur = 8 * dpr; cx2.fillStyle = '#fff'; cx2.fill(PLANE);
         cx2.shadowBlur = 0; cx2.strokeStyle = 'rgba(255,200,160,.9)'; cx2.lineWidth = .8; cx2.beginPath(); cx2.moveTo(-8.4, 0); cx2.lineTo(-13, 0); cx2.stroke();
         cx2.translate(-13, 0); cx2.fillStyle = '#FF5A00'; cx2.fillRect(-9, -3.4, 9, 6.8); cx2.fillStyle = '#fff'; cx2.fillRect(-9, -1.1, 9, 2.2); cx2.fillStyle = '#0B1220'; cx2.fillRect(-6.2, -1.1, 1, 2.2); cx2.fillRect(-3.4, -1.1, 1, 2.2); cx2.restore();
@@ -143,7 +158,7 @@
     if (window.IntersectionObserver) new IntersectionObserver(function (e) { vis = e[0].isIntersecting; if (vis) { last = 0; go(); } }, { threshold: .05 }).observe(root);
     document.addEventListener('visibilitychange', function () { last = 0; go(); });
     cv.addEventListener('pointerdown', function (e) { drag = { x: e.clientX, y: e.clientY, moved: false }; try { cv.setPointerCapture(e.pointerId); } catch (x) {} });
-    cv.addEventListener('pointermove', function (e) { if (!drag) return; var dx = e.clientX - drag.x; drag.x = e.clientX; yaw -= dx / (R / dpr) / D * .9; if (reduce) frame(performance.now()); });
+    cv.addEventListener('pointermove', function (e) { if (!drag) return; var dx = e.clientX - drag.x; drag.x = e.clientX; off -= dx / (R / dpr) / D * .9; if (reduce) frame(performance.now()); });
     function up() { drag = null; } cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
     if (reduce) frame(performance.now()); else go();
   }

@@ -81,8 +81,9 @@ box.addEventListener('click',function(e){var pb=e.target.closest&&e.target.close
 document.addEventListener('visibilitychange',function(){if(!cur||!cur.pl||!cur.pl.pauseVideo)return;try{document.hidden?cur.pl.pauseVideo():cur.pl.playVideo()}catch(e){}});
 function first(){var f=tr.children[0];if(f&&f.classList.contains('hxv'))active()}
 if(document.readyState==='complete')setTimeout(first,300);else addEventListener('load',function(){setTimeout(first,300)})});</script>
-@if(($s['home_globe'] ?? '1') === '1' && collect($deals ?? [])->count())
-<div class="w hx">@include('store.globe', ['deals' => $deals])</div>
+@php $__gp = ($s['home_globe'] ?? '1') === '1' ? \App\Http\Controllers\StoreController::globeProducts() : collect(); @endphp
+@if($__gp->count())
+<div class="w hx">@include('store.globe', ['deals' => $__gp])</div>
 @else
 <div class="w hx"><div class="hx-m">
 @if($slides->count())

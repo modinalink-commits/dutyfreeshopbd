@@ -50,6 +50,14 @@ class StoreController extends Controller {
     for ($i = 0; $i < $n; $i++) { if (isset($sm[$i])) $out->push($sm[$i]); if (isset($ot[$i])) $out->push($ot[$i]); }
     return $out->take($max)->values();
   }
+  /** Front-page globe banner: every published product of the Cigarette & Vape category (in-stock first), cached 5 minutes. */
+  public static function globeProducts() {
+    return self::rem('store.globe_products', 300, function () {
+      $sc = DB::table('categories')->get(['id','slug','name'])->filter(fn($c) => self::isSmokeCat($c))->pluck('id')->all();
+      $q = DB::table('products')->where('published', true)->whereNotNull('image')->where('image', '!=', '')->where(function ($w) use ($sc) { $w->where('group_key', 'smoke'); if ($sc) $w->orWhereIn('category_id', $sc); });
+      return $q->orderByRaw('coalesce(stock,0) > 0 desc')->orderByDesc('id')->limit(40)->get();
+    });
+  }
   public static function dealBase(float $min = 0, ?string $scope = null) {
     $ex = DB::table('deal_flags')->where('mode','exclude')->pluck('product_id')->all();
     $pin = array_map('intval', DB::table('deal_flags')->where('mode','pin')->pluck('product_id')->all());
