@@ -58,7 +58,6 @@ class Winback
     $queue = self::lastDelivered(); self::rank($queue); // serial order: best customers (highest spend) first, then longest inactive
     foreach ($queue as $p => $x) {
       $d = self::days($x['at']); $s = self::stageFor($d); if (!$s) continue;
-      if (($done[$p . '|' . $x['oid']] ?? 0) >= $s[0]) continue; // each stage once per cycle
       if (isset($lastSent[$p]) && time() - $lastSent[$p] < $gap) continue; // never more than one offer message per number every 15 days
       $c = DB::table('customers')->whereRaw('right(phone,11) = ?', [$p])->where('blocked', false)->first(); if (!$c) continue;
       if ($sent >= $room) { if ($blast) { try { \App\Support\Sms::flush(200); } catch (\Throwable $e) {} self::guardBlast(); } return; } // small batch per tick + daily cap: the rest continue on the next tick / tomorrow
@@ -111,7 +110,6 @@ class Winback
     $done = self::doneSet(); $all = self::lastDelivered(); $val = self::rank($all); $lastSent = self::lastSent(); $gap = self::minGapDays() * 86400;
     foreach ($all as $p => $x) {
       $d = (int)floor(($ts - strtotime($x['at'] . ' UTC')) / 86400); $s = self::stageFor($d); if (!$s) continue;
-      if (($done[$p . '|' . $x['oid']] ?? 0) >= $s[0]) continue;
       if (isset($lastSent[$p]) && $ts - $lastSent[$p] < $gap) continue;
       $cand[$p] = ['p' => $p, 'd' => $d, 's' => $s, 'at' => $x['at'], 'n' => $val[$p][0] ?? 0, 'sp' => $val[$p][1] ?? 0];
     }

@@ -486,3 +486,4 @@ resources/views/pathao_invoices.blade.php
 resources/views/pathao_invoice_show.blade.php
 database/migrations/2026_11_03_000053_pathao_invoices.php
 database/migrations/2026_11_03_000054_remove_exchange_status.php
+database/migrations/2026_11_03_000055_winback_repeat_every_15_days.php
