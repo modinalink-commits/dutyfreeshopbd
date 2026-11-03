@@ -85,6 +85,7 @@ if(document.readyState==='complete')setTimeout(first,300);else addEventListener(
 @if($__gp->count())
 <div class="w hx">@include('store.globe', ['deals' => $__gp])</div>
 @else
+@php $__ms = ($s['hero_member_slide'] ?? '1') !== '0'; @endphp
 <div class="w hx"><div class="hx-m">
 @if($slides->count())
 <h1 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap">DutyFree BD – অরিজিনাল ইমপোর্টেড পারফিউম, স্কিন কেয়ার ও লাইফস্টাইল পণ্য</h1>
@@ -98,7 +99,14 @@ if(document.readyState==='complete')setTimeout(first,300);else addEventListener(
 <a class="hxa" href="{{ $sl->link ?: '#flash' }}"><picture>@if($mi)@if($__w=\App\Support\Img::webp($mi))<source media="(max-width:760px)" type="image/webp" srcset="{{ $__w }}">@endif<source media="(max-width:760px)" srcset="{{ $mi }}" {!! $mdim !!}>@endif @if($__w=\App\Support\Img::webp($sl->image))<source type="image/webp" srcset="{{ $__w }}">@endif<img src="{{ $sl->image }}" alt="{{ $sl->title ?: 'DutyFree BD offer' }}" width="1328" height="472" @if($loop->first) fetchpriority="high" @else loading="lazy" @endif></picture>
 @if($hasTx)<span class="hxt">@if(!empty($sl->title))<b>{{ $sl->title }}</b>@endif @if(!empty($sl->subtitle))<span>{{ $sl->subtitle }}</span>@endif @if(!empty($sl->button_text))<em>{{ $sl->button_text }}</em>@endif</span>@endif</a>
 @endif
-@endforeach</div>@if($slides->count()>1)<div class="sl-d"></div><button type="button" class="sl-a pv" aria-label="Previous slide">‹</button><button type="button" class="sl-a nx" aria-label="Next slide">›</button>@endif</div>
+@if($loop->first && $__ms)
+@include('store.member_slide')
+@endif
+@endforeach</div>@if($slides->count()+($__ms?1:0)>1)<div class="sl-d"></div><button type="button" class="sl-a pv" aria-label="Previous slide">‹</button><button type="button" class="sl-a nx" aria-label="Next slide">›</button>@endif</div>
+@elseif($__ms)
+<div class="sld hxs" data-auto="10000"><div class="sl-t"><div class="hxa hxd"><span class="k" data-end="{{ $fFix ? $fEnd * 1000 : '' }}">{{ $s['hero_kicker'] }} <span data-cd="all">{{ $fmt($fEnd) }}</span></span><h1>{!! nl2br(e(str_replace(', ', ",\n", $s['hero_title']))) !!}</h1><span class="sb">{{ $hsub }}</span><a class="bt" href="#flash">{{ $s['hero_button'] }} →</a></div>
+@include('store.member_slide')
+</div><div class="sl-d"></div><button type="button" class="sl-a pv" aria-label="Previous slide">‹</button><button type="button" class="sl-a nx" aria-label="Next slide">›</button></div>
 @else
 <div class="hxd"><span class="k" data-end="{{ $fFix ? $fEnd * 1000 : '' }}">{{ $s['hero_kicker'] }} <span data-cd="all">{{ $fmt($fEnd) }}</span></span><h1>{!! nl2br(e(str_replace(', ', ",\n", $s['hero_title']))) !!}</h1><span class="sb">{{ $hsub }}</span><a class="bt" href="#flash">{{ $s['hero_button'] }} →</a></div>
 @endif
