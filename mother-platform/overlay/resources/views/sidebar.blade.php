@@ -30,7 +30,7 @@ $stores = \DB::table('stores')->where('active',true)->count();
 $chatUn = \Illuminate\Support\Facades\Schema::hasTable('chat_threads') ? (int)\DB::table('chat_threads')->sum('unread') : 0;
 $svg = fn($p) => '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'.$p.'</svg>';
 @endphp
-<aside><style>aside .brand.dfb{flex-direction:column;align-items:flex-start;gap:3px;padding:6px 8px 4px}aside .brand.dfb img{display:block;height:34px;width:auto;max-width:100%}aside .brand.dfb small{display:block;margin:0 0 0 2px;font-size:11.5px;font-weight:600;letter-spacing:.3px;color:#6B7280}</style><a class="brand dfb" href="/admin" title="DutyFree BD — Control center"><img src="/dutyfree-bd-logo.png" alt="DutyFree BD"><small>Control center</small></a>
+<aside><style id="dfsbh">aside{visibility:hidden}aside,aside *{transition:none!important;animation:none!important}</style><style>aside .brand.dfb{flex-direction:column;align-items:flex-start;gap:3px;padding:6px 8px 4px}aside .brand.dfb img{display:block;height:34px;width:auto;max-width:100%}aside .brand.dfb small{display:block;margin:0 0 0 2px;font-size:11.5px;font-weight:600;letter-spacing:.3px;color:#6B7280}</style><a class="brand dfb" href="/admin" title="DutyFree BD — Control center"><img src="/dutyfree-bd-logo.png" alt="DutyFree BD"><small>Control center</small></a>
 <div class="viewing"><small>VIEWING</small><strong>All stores ({{ $stores }}) + {{ $B['channels'] }} channel</strong></div>
 <div class="sbs"><input id="sbq" type="search" placeholder="Search menu… (press /)" autocomplete="off" aria-label="Search menu"><div id="sbn" style="display:none">No match</div></div>
 <nav><a href="/admin" class="nv {{ $cur === '/admin' ? 'on' : '' }}">{!! $svg($IC['dash']) !!}<span>Dashboard</span></a>
@@ -49,12 +49,6 @@ $svg = fn($p) => '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" st
 <a class="sub {{ $best === $gi.'.'.$i ? 'on' : '' }}" href="{{ $ih }}">{{ $il }}@if($bv)<em>{{ $bv }}</em>@endif</a>
 @endforeach @if($sg !== null)</details>@endif</details>
 @endforeach</nav>
-<script>(function(){var n=document.querySelector('aside nav');if(!n)return;var K='dfSbTop',v=null;try{v=sessionStorage.getItem(K)}catch(e){}
-if(v!==null&&v!=='')n.scrollTop=+v||0;
-var a=n.querySelector('a.sub.on,a.nv.on');if(a){var nr=n.getBoundingClientRect(),ar=a.getBoundingClientRect();if(ar.top<nr.top+4)n.scrollTop-=nr.top+4-ar.top;else if(ar.bottom>nr.bottom-4)n.scrollTop+=ar.bottom-nr.bottom+4}
-var t;function sv(){try{sessionStorage.setItem(K,n.scrollTop)}catch(e){}}
-n.addEventListener('scroll',function(){clearTimeout(t);t=setTimeout(sv,80)},{passive:true});n.addEventListener('click',sv,true);window.addEventListener('pagehide',sv);window.addEventListener('beforeunload',sv);
-window.addEventListener('pageshow',function(e){if(e.persisted){var x=null;try{x=sessionStorage.getItem(K)}catch(z){}if(x!==null)n.scrollTop=+x||0}})})();</script>
 <script>(function(){var n=document.querySelector('aside nav');if(!n)return;var K='dfSbOpen',on=n.querySelector('a.sub.on,a.nv.on');
 function act(d){return !!(on&&d.contains(on))}
 var o=[];try{o=JSON.parse(sessionStorage.getItem(K)||'[]')}catch(e){}
@@ -62,6 +56,14 @@ n.querySelectorAll('details.mg').forEach(function(d){if(!act(d)&&o.indexOf(d.dat
 n.querySelectorAll('details.mg').forEach(function(d){d.addEventListener('toggle',function(){if(d.open){n.querySelectorAll('details.mg[open]').forEach(function(x){if(x!==d&&!act(x))x.open=false})}
 var l=[];n.querySelectorAll('details.mg[open]').forEach(function(x){l.push(x.dataset.g)});try{sessionStorage.setItem(K,JSON.stringify(l))}catch(e){}})});
 n.querySelectorAll('details').forEach(function(d){if(act(d)){d.addEventListener('click',function(e){if(e.target.closest('summary')&&d.open&&e.target.closest('summary').parentNode===d&&act(d)){e.preventDefault()}},true)}})})();</script>
+<script>(function(){var n=document.querySelector('aside nav');if(!n)return;var K='dfSbTop';function fix(){var v=null;try{v=sessionStorage.getItem(K)}catch(e){}
+if(v!==null&&v!=='')n.scrollTop=+v||0;
+var a=n.querySelector('a.sub.on,a.nv.on');if(a){var nr=n.getBoundingClientRect(),ar=a.getBoundingClientRect();if(ar.top<nr.top+4)n.scrollTop-=nr.top+4-ar.top;else if(ar.bottom>nr.bottom-4)n.scrollTop+=ar.bottom-nr.bottom+4}}
+window.dfSbFix=fix;window.dfSbLock=1;fix();
+window.dfSbGo=function(){if(!window.dfSbLock)return;fix();window.dfSbLock=0;var s=document.getElementById('dfsbh');if(s&&s.parentNode)s.parentNode.removeChild(s)};document.addEventListener('DOMContentLoaded',function(){window.dfSbGo()});window.addEventListener('load',function(){window.dfSbGo()});
+var t;function sv(){if(window.dfSbLock)return;try{sessionStorage.setItem(K,n.scrollTop)}catch(e){}}
+n.addEventListener('scroll',function(){clearTimeout(t);t=setTimeout(sv,80)},{passive:true});n.addEventListener('click',sv,true);window.addEventListener('pagehide',sv);window.addEventListener('beforeunload',sv);
+window.addEventListener('pageshow',function(e){if(e.persisted){var x=null;try{x=sessionStorage.getItem(K)}catch(z){}if(x!==null)n.scrollTop=+x||0}})})();</script>
 <div class="me">{{ auth()->user()->name }}<form method="post" action="/admin/logout">@csrf<button class="g">Sign out</button></form></div></aside>
 <style>aside details.mg{margin:0}aside details.mg>summary{font-weight:600;position:relative;padding-right:30px}aside details.mg>summary::after{content:'›';position:absolute;right:14px;font-size:16px;opacity:.7;transition:.15s}aside details.mg[open]>summary::after{transform:rotate(90deg)}aside details.mg[open]>summary{color:#fff;background:#121A2B}aside details.mg>a.sub{display:flex;align-items:center;justify-content:space-between;gap:8px}aside details.mg>a.sub.on{border-left:3px solid #FF5A00;padding-left:39px}aside details.mg>a.rp1{padding-left:42px}aside details.mg{margin-bottom:1px}aside details.mg>summary::-webkit-details-marker{display:none}
 aside details.rpg{margin:0}aside details.rpg>summary{display:flex;align-items:center;justify-content:space-between;padding:7px 12px 7px 42px;font-size:13px;color:#C7CEDB;border-radius:8px;cursor:pointer;list-style:none}aside details.rpg>summary::after{content:'›';transition:.15s;font-size:15px;opacity:.7}aside details.rpg[open]>summary::after{transform:rotate(90deg)}aside details.rpg>summary:hover{background:#161E30;color:#fff}aside details.rpg[open]>summary{color:#fff}aside details.rpg a.sub{padding-left:56px;font-size:12.5px;display:flex;align-items:center;justify-content:space-between;gap:8px}aside details.rpg a.sub.on{border-left:3px solid #FF5A00;padding-left:53px}aside details.rpg>summary::-webkit-details-marker{display:none}aside a.sub em{font-size:10.5px;padding:0 7px}</style>

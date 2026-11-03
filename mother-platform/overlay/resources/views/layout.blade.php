@@ -82,7 +82,7 @@ main .pre button:hover,main .rf:hover{border-color:var(--border-hover)!important
 main .btn:focus-visible,main button:focus-visible,main select:focus-visible,main a.chip:focus-visible{outline:2px solid #FF5A00;outline-offset:1px}
 nav[role=navigation] svg,.pagination svg{width:16px!important;height:16px!important;max-width:16px!important;max-height:16px!important;display:inline-block;vertical-align:middle}nav[role=navigation] a,nav[role=navigation] span[aria-current] span{padding:2px 8px}
 </style></head><body>
-@auth @include('sidebar') @include('admin_grid') @include('admin_theme') @endauth
+@auth @include('sidebar') @include('admin_grid') @include('admin_theme')<script>if(window.dfSbGo)dfSbGo()</script> @endauth
 <main>@yield('body')</main>
 @auth @include('chat_widget') @include('softphone_fab') @endauth
 @yield('js')

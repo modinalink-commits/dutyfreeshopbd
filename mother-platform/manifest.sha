@@ -3,7 +3,7 @@ fe43f8b6cb422cca81ee18b74d3972f77e7852de database/migrations/2026_10_31_000001_m
 5ec9cde3d13c963d0d55a626e10bf2e39e36a691 app/Models/Mother.php
 9c77a40bb8af55e86382ade5b70d23ddaa577043 app/Http/Controllers/AdminController.php
 bd49f23ea0895af93bed5374937115c21911b0cd app/Console/Commands/MotherInstall.php
-762ca558734628ecf6fa6c2924b5f9e5095daabd resources/views/layout.blade.php
+cdf01301131eba51631e0d4f4b0133821d55085f resources/views/layout.blade.php
 7ba1a8252b36e7db33e40d8be3ea5ec2cd241fb7 resources/views/login.blade.php
 166a496b2823812fc07a3ca6f7c676eda7dff40f resources/views/dashboard.blade.php
 a08e1439c0802dd496ca7a66ef722e80a431261a resources/views/orders.blade.php
@@ -29,7 +29,7 @@ fcd3c9b6b8b34260cd0f4a8ed955b20c28b05bd2 app/Http/Controllers/ResController.php
 6d791d6efcd6661309de2dbf79937150c67115c1 resources/views/res_list.blade.php
 f3b1b4ce22124a2cd23b2ffce1f40df3955045ab resources/views/res_form.blade.php
 67a76a09307002f6201cc2e684f3161b22c67d9c resources/views/reports.blade.php
-32582e36de3f68f37bf00c2fdaf02d33938b4a4e resources/views/sidebar.blade.php
+4255321bad2d4385890a154ef3e25becc13cc1cb resources/views/sidebar.blade.php
 85962752c1c36393879cd52b485c2495742f15f0 resources/views/coming.blade.php
 c391e719e9e194b7bf6ecf86ccb4c9a4504c2d17 database/migrations/2026_10_31_000004_catalog_extra.php
 bd753699bbd209d243e7e4b2b82c37d322444553 resources/views/panels/customers.blade.php
