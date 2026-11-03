@@ -135,8 +135,9 @@ if(document.readyState==='complete')setTimeout(first,300);else addEventListener(
 </template>
 @endif
 
-@if($s['home_todays_deal']==='1' && $deals->count() && $dOn)
-<div class="w sec-st" id="deal" style="padding-top:26px">@include('store.deal_bp2', ['deals' => $deals])</div>
+@php $__tb = $s['home_todays_deal']==='1' ? \App\Http\Controllers\StoreController::todayBest($s) : collect(); @endphp
+@if($__tb->count() && $dOn)
+<div class="w sec-st" id="deal" style="padding-top:26px">@include('store.deal_bp2', ['deals' => $__tb])</div>
 @endif
 
 @if($s['home_new']==='1' && $new->count())

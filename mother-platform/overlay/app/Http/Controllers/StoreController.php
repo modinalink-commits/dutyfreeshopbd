@@ -50,6 +50,29 @@ class StoreController extends Controller {
     for ($i = 0; $i < $n; $i++) { if (isset($sm[$i])) $out->push($sm[$i]); if (isset($ot[$i])) $out->push($ot[$i]); }
     return $out->take($max)->values();
   }
+  /** Today's Deal on the front page: the products people ordered most in the last 24 hours (then the last 7 and 30 days), refreshed every 10 minutes. Falls back to the biggest discounts when there are no sales yet, or when the admin turns "deal_mode" off. */
+  public static function todayBest(array $s) {
+    if (($s['deal_mode'] ?? '1') !== '1') return self::dealList($s);
+    $max = max(1, min(24, (int)($s['deal_max'] ?? 12)));
+    $fl = DB::table('deal_flags')->get(['product_id','mode']);
+    $ex = $fl->where('mode','exclude')->pluck('product_id')->map(fn($v) => (int)$v)->all();
+    $pin = $fl->where('mode','pin')->pluck('product_id')->map(fn($v) => (int)$v)->all();
+    $key = 'store.todaybest2.'.$max.'.'.md5(implode(',', $ex).'|'.implode(',', $pin).'|'.($s['deal_min_off'] ?? '').'|'.($s['deal_smoke'] ?? ''));
+    return self::rem($key, 600, function () use ($max, $ex, $pin, $s) {
+      $d1 = now()->subDay(); $d7 = now()->subDays(7); $d30 = now()->subDays(30);
+      $rows = DB::table('order_items as i')->join('orders as o','o.id','=','i.order_id')->whereNotIn('o.status',['Cancel','Incomplete'])->where('o.created_at','>=',$d30)->whereNotNull('i.product_id')
+        ->groupBy('i.product_id')->selectRaw('i.product_id as pid, sum(case when o.created_at >= ? then i.qty else 0 end) as q1, sum(case when o.created_at >= ? then i.qty else 0 end) as q7, sum(i.qty) as q30', [$d1, $d7])
+        ->orderByDesc('q1')->orderByDesc('q7')->orderByDesc('q30')->limit(120)->get();
+      $rank = []; foreach ($rows as $r) $rank[(int)$r->pid] = $r;
+      $ids = array_values(array_unique(array_merge($pin, array_keys($rank))));
+      $ids = array_values(array_diff($ids, $ex));
+      $prods = $ids ? DB::table('products')->whereIn('id', $ids)->where('published', true)->where(fn($w) => $w->whereNull('stock')->orWhere('stock', '>', 0))->whereNotNull('image')->where('image', '!=', '')->get()->keyBy('id') : collect();
+      $out = collect();
+      foreach ($ids as $id) { if (!isset($prods[$id])) continue; $p = $prods[$id]; $r = $rank[$id] ?? null; $p->bs_q1 = $r ? (int)$r->q1 : 0; $p->bs = $r && ((int)$r->q30 > 0); $out->push($p); if ($out->count() >= $max) break; }
+      if ($out->count() < $max) { foreach (self::dealList($s) as $p) { if (in_array($p->id, $ex) || $out->contains('id', $p->id)) continue; $out->push($p); if ($out->count() >= $max) break; } }
+      return $out->values();
+    });
+  }
   /** Front-page globe banner: every published product of the Cigarette & Vape category (in-stock first), cached 5 minutes. */
   public static function globeProducts() {
     return self::rem('store.globe_products', 300, function () {
@@ -137,7 +160,7 @@ class StoreController extends Controller {
   /** Below-the-fold home category section, lazy-loaded by the home page so the first HTML stays small. */
   /** Private preview of the globe section before it goes on the front page. */
   public function dealPreview() {
-    $deals = self::dealList(self::set())->take(12);
+    $deals = self::todayBest(self::set())->take(12);
     return response()->view('store.deal_preview', $this->base(['deals'=>$deals, 'title'=>'Deal boarding pass preview | DutyFree BD', 'desc'=>'', 'canon'=>url('/deal-preview'), 'noindex'=>true]))->header('X-Robots-Tag', 'noindex')->header('Cache-Control', 'no-store');
   }
   public function globePreview() {
