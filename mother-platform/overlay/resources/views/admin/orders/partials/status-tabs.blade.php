@@ -16,6 +16,12 @@
 .ocb .chip b{font-weight:700}
 .ocb .chip:hover{border-color:var(--c,#475569)}
 .ocb .chip.on{font-weight:700;border-color:var(--c,#0B1220);box-shadow:0 0 0 1px color-mix(in srgb,var(--c,#0B1220) 25%,transparent)}
+/* v1.375 very light per-status fill, always black text; active chip = bolder ring */
+.ocb .chip,.ocb .chip b{color:#000!important}
+.ocb .chip[class*=' s-']{background:color-mix(in srgb,var(--b,#F1F5F9) 70%,#fff)!important}
+.ocb .chip:not([class*=' s-']){background:#F1F5F9!important}
+.ocb .chip.on,.ocb .chip.on[class*=' s-']{background:var(--b,#E2E8F0)!important;color:#000!important;border-color:var(--c,#0B1220)!important;border-width:2px;box-shadow:0 0 0 2px color-mix(in srgb,var(--c,#0B1220) 28%,transparent)}
+.ocb .chip.on:not([class*=' s-']){background:#E2E8F0!important;border-color:#0B1220!important}
 </style>
 @endonce
 <div class="r2"><div class="strip" id="ostrip"><a class="chip {{ $activeStatus ? '' : 'on' }}" href="/admin/orders?{{ http_build_query($oq) }}">All <b>{{ collect($counts)->sum() }}</b></a>

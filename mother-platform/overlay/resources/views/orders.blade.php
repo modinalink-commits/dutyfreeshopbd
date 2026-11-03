@@ -94,6 +94,18 @@
 <span id="oexs"><button type="button" class="dfx-btn" id="oexb" aria-haspopup="true">Export ▾</button></span>
 <span class="qsearch" id="qsearch"><input name="q" value="{{ request('q') }}" placeholder="name / phone / invoice" autocomplete="off"></span>
 <a class="btn" href="/admin/orders/new" style="padding:6px 12px;font-size:13px">Create Order</a></div>
+<style>
+/* v1.375 toolbar buttons: very light individual fills, black text */
+#ocb .r1 .owt .obk button:nth-of-type(1){background:#EAF2FF!important;border-color:#B7D0F7!important;color:#000!important}
+#ocb .r1 .owt .obk button:nth-of-type(2){background:#E7F8EC!important;border-color:#B5E3C2!important;color:#000!important}
+#ocb .r1 .owt .obk button:nth-of-type(3){background:#FFF5DB!important;border-color:#F2D798!important;color:#000!important}
+#ocb .r1 .owt .obk button:nth-of-type(4){background:#F3ECFF!important;border-color:#D4C0F7!important;color:#000!important}
+#ocb .r1 #oexs .dfx-btn{background:#FFF0E3!important;border-color:#F6C9A3!important;color:#000!important}
+#ocb .r1>a.btn{background:#FFE6D2!important;border:1px solid #F4B88A!important;color:#000!important;font-weight:700}
+#ocb .r1 .pre .opb{background:#E3F6F4!important;border-color:#A9DDD8!important;color:#000!important}
+#ocb .r1 .owt .rf{background:#EEF1F6!important;border-color:#CBD3E1!important;color:#000!important}
+#ocb .r1 .owt select{color:#000!important}
+</style>
 @include('admin.orders.partials.status-tabs', ['oq'=>$oq,'counts'=>$counts,'incOpen'=>$incOpen,'isInc'=>$isInc,'activeStatus'=>request('status')])
 </form></div>
 @verbatim<script>(function(){var f=document.getElementById('ofx'),s=document.getElementById('ostrip'),on=s.querySelector('.on');
