@@ -518,3 +518,9 @@ database/migrations/2026_11_04_000080_chat_pages.php
 public/dfglobe.js
 resources/views/store/globe.blade.php
 resources/views/store/globe_preview.blade.php
+public/dfglobe2.js
+public/globe/day.jpg
+public/globe/night.jpg
+public/globe/water.jpg
+resources/views/store/globe2.blade.php
+resources/views/store/globe_preview2.blade.php

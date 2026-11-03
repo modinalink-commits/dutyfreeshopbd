@@ -6,10 +6,13 @@
     DXB: ['Dubai', 25.25, 55.36, 1], DAC: ['Dhaka', 23.84, 90.40, 1], CGP: ['Chattogram', 22.25, 91.81, 1],
     SIN: ['Singapore', 1.36, 103.99], BKK: ['Bangkok', 13.69, 100.75], IST: ['Istanbul', 41.26, 28.74], LHR: ['London', 51.47, -0.45],
     DOH: ['Doha', 25.27, 51.61], JED: ['Jeddah', 21.68, 39.15], KUL: ['Kuala Lumpur', 2.74, 101.70], DEL: ['Delhi', 28.56, 77.10],
-    HKG: ['Hong Kong', 22.31, 113.92], JFK: ['New York', 40.64, -73.78], FRA: ['Frankfurt', 50.03, 8.57], NBO: ['Nairobi', -1.32, 36.93]
+    HKG: ['Hong Kong', 22.31, 113.92], JFK: ['New York', 40.64, -73.78], FRA: ['Frankfurt', 50.03, 8.57], NBO: ['Nairobi', -1.32, 36.93], CCU: ['Kolkata', 22.65, 88.45], SYD: ['Sydney', -33.94, 151.18], JNB: ['Johannesburg', -26.14, 28.25], GRU: ['Sao Paulo', -23.43, -46.47],
+    LAX: ['Los Angeles', 33.94, -118.41], NRT: ['Tokyo', 35.77, 140.39], PEK: ['Beijing', 40.08, 116.58], CAI: ['Cairo', 30.12, 31.41], MCT: ['Muscat', 23.59, 58.28],
+    KHI: ['Karachi', 24.91, 67.16], CMB: ['Colombo', 7.18, 79.88], KTM: ['Kathmandu', 27.70, 85.36], RUH: ['Riyadh', 24.96, 46.70]
   };
   var ROUTES = [['DXB', 'DAC'], ['DXB', 'CGP'], ['DOH', 'DAC'], ['SIN', 'DAC'], ['BKK', 'CGP'], ['IST', 'DXB'], ['LHR', 'DXB'], ['KUL', 'DAC'],
-    ['JED', 'DAC'], ['HKG', 'DAC'], ['FRA', 'DXB'], ['DEL', 'DXB'], ['JFK', 'LHR'], ['NBO', 'DXB'], ['SIN', 'DXB']];
+    ['JED', 'DAC'], ['HKG', 'DAC'], ['FRA', 'DXB'], ['DEL', 'DXB'], ['JFK', 'LHR'], ['NBO', 'DXB'], ['SIN', 'DXB'], ['DXB', 'JNB'], ['SIN', 'SYD'], ['HKG', 'SIN'], ['NRT', 'HKG'], ['LAX', 'NRT'], ['JFK', 'LAX'], ['GRU', 'LHR'], ['CAI', 'DXB'], ['KHI', 'DAC'], ['CMB', 'DAC'],
+    ['MCT', 'CGP'], ['RUH', 'DAC'], ['DXB', 'NRT'], ['PEK', 'DAC'], ['LHR', 'DEL'], ['CCU', 'DXB'], ['KTM', 'DAC'], ['DXB', 'JFK'], ['SYD', 'DXB'], ['DOH', 'CGP']];
   function vec(lat, lon) { var la = lat * D, lo = lon * D, c = Math.cos(la); return [c * Math.sin(lo), Math.sin(la), c * Math.cos(lo)]; }
   function land() {
     var bin = atob(MASK), out = [];
