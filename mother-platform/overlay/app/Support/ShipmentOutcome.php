@@ -53,6 +53,7 @@ class ShipmentOutcome {
   public static function rowNote(object $o, iterable $items): string {
     $cf = !empty($o->courier_flag) ? '<br><small style="color:#B45309;font-weight:800">⚠ '.e($o->courier_flag).'</small>' : '';
     $flag = $cf.(!empty($o->billing_flag) ? '<br><small style="color:#B91C1C;font-weight:800" title="'.e((string)($o->billing_flag_note ?? '')).'">⚠ '.e($o->billing_flag).' · needs review</small>' : '');
+    if ($o->status === 'Late Delivery' && ($lh = LateDelivery::hours($o)) !== null) $flag = '<br><small style="color:#B45309;font-weight:700">'.$lh.'h since shipment</small>'.$flag;
     if (!in_array($o->status, self::RETURN_STATUSES, true) || empty($o->return_type)) return $flag;
     $s = self::summary($o, $items);
     return '<br><small style="color:#9A3412;font-weight:700">'.($o->return_type === 'Partial' ? 'Partial Return' : 'Full Return').' · '.$s['ret'].' of '.$s['total'].' item'.($s['total'] == 1 ? '' : 's').' '.($o->status === 'Returned' ? 'returned' : 'returning').'</small>'.$flag;

@@ -128,6 +128,8 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/courier-dashboard', [\App\Http\Controllers\CourierController::class,'dashboard']);
   Route::get('/courier-dashboard/export/{fmt}', [\App\Http\Controllers\CourierController::class,'export'])->where('fmt','csv|xls|doc|pdf');
   Route::get('/courier/ship-audit', [\App\Http\Controllers\CourierController::class,'shipAudit']);
+  Route::get('/late-delivery', [\App\Http\Controllers\LateDeliveryController::class,'index']);
+  Route::post('/late-delivery/{id}/follow', [\App\Http\Controllers\LateDeliveryController::class,'follow'])->whereNumber('id');
   Route::get('/courier/status-map', [\App\Http\Controllers\PathaoMapController::class,'index']);
   Route::post('/courier/status-map', [\App\Http\Controllers\PathaoMapController::class,'add']);
   Route::post('/courier/status-map/recheck', [\App\Http\Controllers\PathaoMapController::class,'recheck']);

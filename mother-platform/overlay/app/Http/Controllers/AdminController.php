@@ -97,7 +97,7 @@ class AdminController extends Controller {
     $alerts = []; $failed = \Illuminate\Support\Facades\Schema::hasTable('failed_jobs') ? DB::table('failed_jobs')->where('failed_at','>=',now()->subHour())->count() : 0;
     $late = $counts['Late Delivery'] ?? 0; $rp = $counts['Return Pending'] ?? 0;
     $stale = $oq()->where('status','New')->where('created_at','<',now()->subMinutes(30))->count();
-    if ($late) $alerts[] = ['CRITICAL', "$late orders are Late Delivery", 'Follow up with the courier today', '/admin/orders?status='.urlencode('Late Delivery')];
+    if ($late) $alerts[] = ['CRITICAL', "$late orders are Late Delivery", 'Follow up with the courier today', '/admin/late-delivery'];
     $invLeft = \App\Support\InvoiceNumber::remaining(); if ($invLeft !== null && $invLeft < 20000) $alerts[] = [$invLeft < 2000 ? 'CRITICAL' : 'WARNING', 'Only '.number_format(max(0, $invLeft)).' invoice numbers left (6-digit range ends at 999999)', 'Decide what happens next before the range is used up; the system will NOT switch to 7 digits on its own', '/admin/orders'];
     if ($rp) $alerts[] = ['CRITICAL', "$rp orders are Return Pending", 'Receive the parcel and update stock', '/admin/orders?status='.urlencode('Return Pending')];
     if ($stale) $alerts[] = ['WARNING', "$stale new orders waiting over 30 min", 'Confirm or call the customer', '/admin/orders?status=New'];
@@ -139,7 +139,7 @@ class AdminController extends Controller {
     $storeList = $safe(fn() => DB::table('stores')->where('active',true)->orderBy('name')->get(['id','name']), collect());
     return view('dashboard', compact('pipe5','pipeAct','ch','channels','topCust','storePerf','now','kpis','stores','max','counts','orders','bad','alerts','health','range','label','trend','topProducts','cats','couriers','chatUnread','goal','cust','calls','risk','feed','storeList','storeId','canFin','prev','f','incOpen','newN','stale') + ['isCustom'=>$range === 'custom']);
   }
-  public function orders(Request $r) { \App\Support\CourierSync::auto();
+  public function orders(Request $r) { \App\Support\CourierSync::auto(); \App\Support\LateDelivery::auto();
     $isInc = $r->input('status') === 'Incomplete'; $q = DB::table('orders'); $q->orderByDesc('created_at')->orderByDesc('id'); // strict chronological: no batch/status/invoice-match priority
     if ($isInc) $q->whereRaw('1 = 0'); elseif ($r->filled('status')) { $sts = array_filter(array_map('trim', explode(',', (string)$r->status))); count($sts) > 1 ? $q->whereIn('status', $sts) : $q->where('status', $r->status); }
     if ($r->filled('q')) { $qs = trim((string)$r->q); $qd = preg_replace('/\D/', '', $qs); if (str_starts_with($qd, '880')) $qd = substr($qd, 2); $qInv = \App\Support\Inv::candidates($qs); $q->where(fn($w) => $w->where('invoice','ilike','%'.$qs.'%')->when(preg_match('/^(INV-?)?\d{6,8}$/i', $qs) && $qInv, fn($x) => $x->orWhereIn('invoice', $qInv))->orWhere('phone','like','%'.($qd !== '' ? $qd : $qs).'%')->orWhere('customer_name','ilike','%'.$qs.'%')); }
