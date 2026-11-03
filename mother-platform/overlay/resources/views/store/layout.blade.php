@@ -234,4 +234,38 @@ f.onsubmit=function(e){e.preventDefault();var t=q.value.trim();if(!t||busy)retur
 fetch('/ai-chat',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({messages:h.slice(-8)})}).then(function(r){return r.json()}).then(function(j){w.remove();var r=j.reply||'দুঃখিত, অনুগ্রহ করে কল করুন: {{ \App\Support\Biz::hotline() }}';add('b',r);h.push({role:'assistant',content:r})}).catch(function(){w.remove();add('b','নেটওয়ার্ক সমস্যা হয়েছে, আবার চেষ্টা করুন।')}).then(function(){busy=0})}})();</script>
 @endif
 @include('store.chat_widget')
+<style id="m2col">
+/* Mobile = 2 products per row, everywhere the shared product card (.pc) is used: homepage grids + sliders, category, sub/child category, brand, search, offers, related, wishlist.
+   Last in the cascade on purpose. Desktop and tablet (>760px) are untouched. Auto-slide / swipe / snap behaviour is unchanged: only the visible count (--pv) and card framing change. */
+@media(max-width:760px){
+  body .w{padding-left:10px;padding-right:10px}
+  body .gr{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  body .cl .gr{grid-template-columns:repeat(2,minmax(0,1fr))}
+  body .w [data-cr],body #top [data-cr]{--pv:2;--g:10px}
+  body .w [data-cr="1"]{--pv:1}
+  body .fs .gr{padding:8px;gap:10px}
+  /* card frame */
+  body .pc{border:1px solid var(--border-soft,#EDF0F4);border-radius:10px;padding:6px 6px 8px;gap:6px;overflow:hidden;box-shadow:none}
+  body .pc:hover{transform:none}
+  body .pc .ph,body .pc.s170 .ph,body .fs .pc .ph{width:100%;height:auto;aspect-ratio:1/1;border-radius:6px;background:#fff}
+  body .pc .ph img:not(.im2){width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;object-position:center}
+  body .pc .nm,body .pc .pr,body .pc .sby,body .pc .ck,body .fs .pc .nm{margin-left:2px;margin-right:2px}
+  body .pc .nm,body .fs .pc .nm{font-size:12.5px;line-height:1.3;height:2.6em;font-weight:600;-webkit-line-clamp:2;overflow:hidden}
+  body .pc .pr,body .fs .pc .pr{font-size:15px;line-height:1.3}
+  body .pc .pr b{font-size:15px;font-weight:700}
+  body .pc .pr br,body .fs .pc .pr br{display:inline}
+  body .pc .pr s,body .fs .pc .pr s{display:inline;font-size:11.5px;margin-left:0}
+  body .fs .pc .sold{display:block;font-size:10px}
+  body .pc .bo{left:6px;top:6px;font-size:10px;padding:2px 6px}
+  body .pc .bf{right:6px;top:6px;font-size:8.5px;padding:2px 5px}
+  body .pc .on{display:flex;align-items:center;justify-content:center;gap:6px;min-height:40px;margin:2px 2px 0;padding:0 6px;font-size:12.5px;border-radius:8px}
+  body .pc .on i{font-style:normal;font-size:12.5px;line-height:1}
+  /* "Today's Live" cards (.lo) get the same room */
+  body .lg2{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  body .lo .im{height:auto;aspect-ratio:1/1}
+  body .lo .nm{font-size:12.5px;height:2.6em;line-height:1.3}
+  body .lo .rw b{font-size:15px}
+}
+@media(max-width:359px){body .gr,body .fs .gr{gap:8px}body .pc .nm{font-size:12px}body .pc .pr,body .pc .pr b{font-size:14px}body .pc .on,body .pc .on i{font-size:11.5px}}
+</style>
 @include('phone_js')<script>document.addEventListener('error',function(e){var t=e.target;if(t&&t.tagName==='IMG'&&!t.dataset.fb&&t.getAttribute('src')!=='/product-placeholder'){t.dataset.fb='1';t.removeAttribute('srcset');t.src='/product-placeholder'}},true)</script></body></html>
