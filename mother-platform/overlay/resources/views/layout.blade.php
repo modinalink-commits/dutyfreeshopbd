@@ -97,7 +97,10 @@ nav[role=navigation] svg,.pagination svg{width:16px!important;height:16px!import
 @endif
 <main>@yield('body')</main>
 @auth
-@if(!$__emb)
+@if($__emb)
+<script>window.DF_EMBED=1</script>
+@include('chat_widget')
+@else
 @include('chat_widget')
 @include('softphone_fab')
 @include('free_call_admin')

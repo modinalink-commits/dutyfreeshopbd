@@ -153,8 +153,8 @@ function tick(){if(busy)return;busy=true;api('/admin/chat/poll'+(since===null?''
   var first=since===null;since=j.last_id;M.badge(j.unread);
   if(!first&&j.items&&j.items.length){var any=false;j.items.forEach(function(it){if(M.current===it.id&&!document.hidden){return}any=true;showCard(it)});if(any)beep();if(M.onNew)M.onNew(j.items)}
   }).catch(function(){busy=false})}
-tick();setInterval(function(){if(!document.hidden||Math.random()<.25)tick()},5000);
-document.addEventListener('visibilitychange',function(){if(!document.hidden)tick()});
+if(!window.DF_EMBED){tick();setInterval(function(){if(!document.hidden||Math.random()<.25)tick()},5000);
+document.addEventListener('visibilitychange',function(){if(!document.hidden)tick()});}
 })();
 </script>
 @endverbatim

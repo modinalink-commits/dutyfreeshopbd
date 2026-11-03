@@ -11,10 +11,17 @@
 .mbx .sc{display:inline-block;font-size:10.5px;border-radius:6px;padding:1px 6px;background:#FFE7D6;color:#C2410C;font-weight:600}.mbx .sc.resolved{background:#DCFCE7;color:#166534}.mbx .sc.waiting{background:#FEF3C7;color:#92400E}.mbx .sc.new{background:#E0E7FF;color:#3730A3}
 .mbx .emp{padding:40px 20px;text-align:center;color:#6B7280;font-size:13px}
 @media(max-width:900px){.mbx{grid-template-columns:1fr;height:auto}.mbx .cv{height:78vh}}
+#ibback{display:none}body.ibsel #ibback{display:inline-block}
+@if(request()->boolean('embed'))
+.mbx{display:block;height:calc(100vh - 20px);min-height:0}.mbx .ls,.mbx .cv{height:100%}.mbx .cv{display:none}
+.mbx.sel .ls{display:none}.mbx.sel .cv{display:flex}body.ibsel .mbx{height:calc(100vh - 62px)}
+.mbx .th .lm{max-width:230px}#ibtop{display:none!important}#ibback{margin:0 0 6px;padding:6px 12px;border-radius:9px;border:1.5px solid #0B1220;background:#fff;color:#0B1220;font-weight:700;font-size:12.5px;cursor:pointer}
+@endif
 </style>
-<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px"><div style="flex:1"><h1 style="margin:0">Messages <span id="ibu" style="font-size:13px;vertical-align:middle"></span></h1><span style="font-size:13px;color:#6B7280">Facebook, Instagram, WhatsApp and website chat in one inbox.</span></div>
+<div id="ibtop" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px"><div style="flex:1"><h1 style="margin:0">Messages <span id="ibu" style="font-size:13px;vertical-align:middle"></span></h1><span style="font-size:13px;color:#6B7280">Facebook, Instagram, WhatsApp and website chat in one inbox.</span></div>
 <button class="btn g" type="button" id="ibm">🔔 Sound on</button><a class="btn g" href="/admin/chat-settings">Chat settings</a></div>
-<div class="mbx"><div class="ls"><div class="fl" id="ibf"></div><div style="padding:8px 10px;border-bottom:1px solid #FFE7D6"><input id="ibq" type="search" placeholder="Search name, mobile, message…" style="padding:7px 10px;font-size:13px"></div><div class="lt" id="ibl"></div></div>
+<button type="button" id="ibback">← All conversations</button>
+<div class="mbx" id="ibx"><div class="ls"><div class="fl" id="ibf"></div><div style="padding:8px 10px;border-bottom:1px solid #FFE7D6"><input id="ibq" type="search" placeholder="Search name, mobile, message…" style="padding:7px 10px;font-size:13px"></div><div class="lt" id="ibl"></div></div>
 <div class="cv" id="ibc"><div class="emp" style="margin:auto">Select a conversation to read and reply.<br>New messages appear here and as a popup anywhere in the dashboard.</div></div></div>
 @endsection
 @section('js')
@@ -38,9 +45,10 @@ function load(){fetch('/admin/chat/threads?f='+f+'&q='+encodeURIComponent(q),{he
   var u=document.getElementById('ibu');u.innerHTML=j.unread?'<span class="un" style="background:#E11D48;color:#fff;border-radius:20px;padding:1px 9px;font-size:12px">'+j.unread+' unread</span>':'';if(window.MChat)MChat.badge(j.unread);
   var l=document.getElementById('ibl');if(!j.threads.length){l.innerHTML='<div class="emp">No conversations here yet.</div>';return}
   l.innerHTML=j.threads.map(function(t){return '<div class="th'+(sel===t.id?' on':'')+'" data-id="'+t.id+'"><span class="mcav">'+(t.avatar?'<img src="'+esc(t.avatar)+'" alt="" referrerpolicy="no-referrer" onerror="this.remove()">':'')+esc((t.name||'?').charAt(0).toUpperCase())+'</span><div style="flex:1;min-width:0"><div style="display:flex;gap:6px;align-items:center"><span class="mcb '+t.channel+'">'+CHL[t.channel]+'</span><b style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(t.name)+'</b><small>'+ago(t.last_at)+'</small></div><div class="lm">'+(t.last_dir==='out'?'You: ':'')+esc(t.last||'')+'</div><div style="display:flex;gap:5px;align-items:center;margin-top:3px"><span class="sc '+t.status+'">'+t.status+'</span><small>'+esc(t.cat)+' · '+t.orders+' orders'+(t.assigned_name?' · '+esc(t.assigned_name):'')+'</small>'+(t.unread?'<span class="un" style="margin-left:auto">'+t.unread+'</span>':'')+'</div>'+aib(t)+'</div></div>'}).join('');
-  l.querySelectorAll('.th').forEach(function(n){n.onclick=function(){sel=+n.dataset.id;l.querySelectorAll('.th').forEach(function(x){x.classList.toggle('on',x===n)});MChat.mount(document.getElementById('ibc'),sel,{onchange:load,focus:true})}})})}
+  l.querySelectorAll('.th').forEach(function(n){n.onclick=function(){sel=+n.dataset.id;l.querySelectorAll('.th').forEach(function(x){x.classList.toggle('on',x===n)});document.getElementById('ibx').classList.add('sel');document.body.classList.add('ibsel');MChat.mount(document.getElementById('ibc'),sel,{onchange:load,focus:true})}})})}
 document.getElementById('ibq').oninput=function(){clearTimeout(tmr);q=this.value;tmr=setTimeout(load,250)};
 var bm=document.getElementById('ibm');function mm(){bm.textContent=MChat.mute?'🔕 Sound off':'🔔 Sound on'}bm.onclick=function(){MChat.toggleMute();mm()};
+document.getElementById('ibback').onclick=function(){document.getElementById('ibx').classList.remove('sel');document.body.classList.remove('ibsel');sel=null;load()};
 drawF();load();mm();setInterval(function(){if(!document.hidden)load()},8000);
 var wait=setInterval(function(){if(window.MChat){clearInterval(wait);MChat.onNew=load}},300);
 var oid=new URLSearchParams(location.search).get('open');if(oid){var w2=setInterval(function(){if(window.MChat){clearInterval(w2);sel=+oid;MChat.mount(document.getElementById('ibc'),sel,{onchange:load})}},300)}
