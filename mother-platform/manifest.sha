@@ -527,7 +527,7 @@ ca6706286e29b85c8126506f13c88d1717ee2df8 resources/views/store/globe2.blade.php
 f55afc16f82d6a04be52ecbb56108e7edfad381a resources/views/store/globe_preview2.blade.php
 0352e99e23ffaf15106ccfbe4d90d2de660d6322 resources/views/store/airport.blade.php
 1fbc0f5c7089cee40ffa1a887a7036e4ae851d55 resources/views/store/airport_preview.blade.php
-d863f480737546f81285d6541331498febd378e0 resources/views/store/deal_bp2.blade.php
+8bb029cbddbbe0343c3069859f7b1728bc13a39e resources/views/store/deal_bp2.blade.php
 c8f049dea002a346f31f75e81881257f3a3ed77a resources/views/store/deal_preview.blade.php
 d06e9f2080824b2834c98779c1a37b1c07804d05 database/migrations/2026_11_04_000060_winback_next_sms_at.php
 952030426a5bf612b3b255a9363809fb2833b1a2 resources/views/settings_ui.blade.php

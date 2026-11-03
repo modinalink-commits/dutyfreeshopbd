@@ -77,6 +77,40 @@
 .bpx-sb{padding:24px 14px 14px;display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:stretch}
 .bpx-pr{display:none}.bpx-cdb{grid-column:1/-1}.bpx-t div{width:58px}.bpx-bc{grid-column:1;margin:0}.bpx-all{grid-column:2;display:flex;align-items:center;justify-content:center}
 }
+/* compact size (smaller section on desktop and mobile) */
+.bpx{margin:14px 0}
+.bpx-hd{padding:8px 20px;min-height:46px;gap:14px}.bpx-lg{padding:5px 11px;border-radius:10px}.bpx-lg img{height:24px}.bpx-bp b{font-size:15px;letter-spacing:.3em}.bpx-bp small{display:none}.bpx-cl{padding:5px 13px;font-size:10px;margin-right:120px}.bpx-hd:after{width:150px}
+.bpx-info{padding:10px 22px 0;gap:4px 24px}.bpx-ti{gap:10px}.bpx-ti h2{font-size:26px}.bpx-ti em{font-size:12.5px}
+.bpx-rt strong{font-size:22px}.bpx-rt small{font-size:8.5px;margin-top:3px}.bpx-ln{height:18px}.bpx-fd small{font-size:8.5px}.bpx-fd b{font-size:13px}
+.bpx-lb{padding:8px 22px 0;font-size:9.5px}
+.bpx-sl{padding:2px 22px 0}.bpx-tr{gap:12px;padding:8px 2px 6px}
+.bpx-c{flex-basis:calc((100% - 36px)/4);padding:8px 9px 10px;border-radius:13px}
+.bpx-c .im{height:92px;border-radius:10px}.bpx-c .im img{max-height:84px}
+.bpx-c .st{width:40px;height:40px;font-size:11.5px;right:-6px;top:-8px}
+.bpx-c .k{margin-top:6px;font-size:8.5px}.bpx-c h3{font-size:12.5px;margin:3px 0 4px;min-height:2.6em}.bpx-c .pp{font-size:17px;gap:6px}.bpx-c .pp s{font-size:11px}.bpx-c .sv{font-size:10.5px;margin:2px 0 7px}
+.bpx-c .bt{padding:7px;font-size:11px;border-radius:8px}
+.bpx-ar{width:32px;height:32px;font-size:17px;margin-top:-20px}
+.bpx-ft{margin:0 22px;padding:6px 0 10px;font-size:9.5px}
+.bpx-sh{min-height:46px;padding:8px 14px 8px 28px}.bpx-sh .ic{width:34px;height:34px}.bpx-sh .ic img{width:19px;height:21px}
+.bpx-sb{padding:10px 16px 12px 28px;gap:8px}
+.bpx-cdb{padding:6px 4px 7px;border-radius:10px}.bpx-cdb>small{font-size:8.5px;margin-bottom:4px}
+.bpx-t div{width:42px;padding:4px 0 3px;border-radius:7px}.bpx-t b{font-size:17px}.bpx-t small{font-size:7px;margin-top:2px}
+.bpx-bc svg{height:34px}.bpx-bc span{font-size:9px;margin-top:4px}
+.bpx-all{padding:7px;font-size:11px}
+.bpx-wm{width:200px;height:218px;margin-top:-109px}
+@media(max-width:1100px){.bpx-c{flex-basis:calc((100% - 12px)/3)}}
+@media(max-width:860px){
+.bpx{margin:10px 0}
+.bpx-hd{padding:7px 12px;min-height:42px;gap:10px}.bpx-lg img{height:20px}.bpx-bp b{font-size:12px}
+.bpx-info{padding:8px 12px 0;gap:6px}.bpx-ti h2{font-size:20px}.bpx-ti em{font-size:11.5px}.bpx-rt strong{font-size:20px}
+.bpx-lb{padding:8px 12px 0;font-size:9px}.bpx-sl{padding:2px 12px 0}.bpx-tr{gap:8px;padding:6px 2px 4px}
+.bpx-c{flex-basis:100%;grid-template-columns:34% minmax(0,1fr);padding:7px 10px 7px 8px;column-gap:9px}
+.bpx-c .im{height:78px;grid-row:1/6}.bpx-c .im img{max-height:70px}.bpx-c .k{margin-top:0}.bpx-c h3{font-size:12.5px;margin:1px 0 3px}.bpx-c .pp{font-size:17px}.bpx-c .sv{margin:1px 0 5px}.bpx-c .bt{padding:6px}
+.bpx-c .st{width:36px;height:36px;font-size:10.5px;left:-6px;top:-8px}
+.bpx-ar{width:28px;height:28px;font-size:15px;margin-top:-18px}
+.bpx-ft{margin:0 12px;padding:5px 0 8px;font-size:8.5px}
+.bpx-sb{padding:20px 12px 10px;gap:8px}.bpx-t div{width:48px}.bpx-bc svg{height:30px}.bpx-all{padding:6px}
+}
 @media(prefers-reduced-motion:reduce){.bpx-ln i{animation:none;left:calc(50% - 12px);opacity:1}}
 </style>
 <div class="bpx" data-end="{{ $__fix ? $__end * 1000 : '' }}">
