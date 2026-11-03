@@ -88,6 +88,8 @@ aside nav,aside nav a.nv,aside nav details.mg>summary{border-color:var(--border-
 .pgx .b.on{background:var(--accent-tint)!important;color:#C2410C!important;border-color:#FDBA8C!important;font-weight:700}
 dialog,[role=dialog],.modal,.modal-box{border:1px solid var(--border-main);background:var(--surface-main)}
 dialog h3,[role=dialog] h3,.modal h3,.modal-box h3{background:var(--tint-slate)}
+/* ===== 8. compact action icons (desktop only; mobile keeps big touch targets) ===== */
+@media(min-width:761px){.ibar{gap:4px;margin-top:3px}.ibar .ib{width:24px;height:24px;border-radius:7px;box-shadow:none}.ibar .ib svg{width:12px;height:12px}.ibar .ib-call{height:24px;padding:0 9px;font-size:11px;border-radius:7px;gap:4px;box-shadow:none}.ibar .ib-call svg{width:11px;height:11px}}
 .dfx-menu{border-color:var(--border-main)}
 .dfx-menu .dfx-f button:hover{background:var(--accent-tint)!important}
 </style>
