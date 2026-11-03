@@ -67,10 +67,11 @@ M.mount=function(el,id,opt){
   function head(){var d=S.d,t=d.thread,opts=Object.keys(d.statuses).map(function(k){return '<option value="'+k+'"'+(t.status===k?' selected':'')+'>'+d.statuses[k]+'</option>'}).join('');
     var ag='<option value="">Unassigned</option>'+d.agents.map(function(a){return '<option value="'+a.id+'"'+(t.assigned_to==a.id?' selected':'')+'>'+esc(a.name)+'</option>'}).join('');
     var lo=d.orders[0];
+    var hs=t.needs_human?'<div style="margin:6px 0 0;padding:6px 9px;border:1px solid #FCA5A5;background:#FEF2F2;border-radius:8px;font-size:12px;line-height:1.4;color:#7F1D1D"><b>Handoff'+(t.priority==='high'?' · HIGH':'')+':</b> '+esc(t.handoff_reason||'')+(t.ai_summary?'<br>'+esc(t.ai_summary):'')+'</div>':'';
     $('#mh').innerHTML='<div class="r1">'+av(t)+'<div style="flex:1;min-width:0"><b>'+esc(t.name)+' '+badge(t.channel)+'</b><small>'+esc(t.phone||t.username||'No number yet')+' · '+esc(t.channel_name)+'</small></div></div>'+
       '<div class="r2"><select id="hs" title="Status"'+(CAN?'':' disabled')+'>'+opts+'</select><select id="ha" title="Assigned to"'+(CAN?'':' disabled')+'>'+ag+'</select>'+
       (d.customer?'<a class="lk" href="/admin/m/customers/'+d.customer.id+'/edit">View Customer</a>':(t.phone?'<a class="lk" href="/admin/m/customers?q='+encodeURIComponent(t.phone)+'">Find Customer</a>':''))+
-      (lo?'<a class="lk" href="/admin/orders/'+lo.id+'">View Order</a>':'')+(t.channel==='web'&&CAN?'<button class="lk" type="button" id="hai" title="Claude AI auto-reply for this chat">'+(t.ai?'🤖 AI: ON':'🤖 AI: OFF')+'</button>':'')+(opt.drawer?'<button class="lk" type="button" id="hm" title="Sound">'+(M.mute?'🔕':'🔔')+'</button>':'')+'</div>';
+      (lo?'<a class="lk" href="/admin/orders/'+lo.id+'">View Order</a>':'')+(t.channel==='web'&&CAN?'<button class="lk" type="button" id="hai" title="Claude AI auto-reply for this chat">'+(t.ai?'🤖 AI: ON':'🤖 AI: OFF')+'</button>':'')+(opt.drawer?'<button class="lk" type="button" id="hm" title="Sound">'+(M.mute?'🔕':'🔔')+'</button>':'')+'</div>'+hs;
     $('#hs').onchange=function(){post('/admin/chat/thread/'+id+'/status',{status:this.value}).then(function(j){if(opt.onchange)opt.onchange();M.badge(j.unread)})};
     $('#ha').onchange=function(){post('/admin/chat/thread/'+id+'/assign',{user_id:this.value||null}).then(function(){if(opt.onchange)opt.onchange()})};
     var hai=$('#hai');if(hai)hai.onclick=function(){var on=!t.ai;post('/admin/chat/thread/'+id+'/ai',{on:on?1:0}).then(function(j){t.ai=j.ai;hai.textContent=j.ai?'🤖 AI: ON':'🤖 AI: OFF'})};
