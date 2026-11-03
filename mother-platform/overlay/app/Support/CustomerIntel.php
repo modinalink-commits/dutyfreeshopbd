@@ -21,6 +21,8 @@ class CustomerIntel {
       DB::raw("sum(case when created_at > now() - interval '24 hours' then 1 else 0 end) r24"))
       ->groupBy('phone')->get()->keyBy('phone');
     $cust = DB::table('customers')->whereIn('phone', $phones)->orderBy('id')->get()->unique('phone')->keyBy('phone');
+    $rn = [];
+    try { foreach (DB::select('select id, row_number() over (partition by phone order by created_at, id) rn from orders where phone in ('.implode(',', array_fill(0, count($phones), '?')).')', $phones->all()) as $x) $rn[(int)$x->id] = (int)$x->rn; } catch (\Throwable $e) {}
     $out = [];
     foreach ($orders as $o) {
       $s = $stats[$o->phone] ?? null; $cu = $cust[$o->phone] ?? null;
@@ -46,7 +48,7 @@ class CustomerIntel {
       elseif ($all <= 1) $cat = 'New';
       else $cat = 'Regular';
       $out[$o->id] = ['cat'=>$cat, 'cid'=>$cu ? 'C-'.str_pad($cu->id, 5, '0', STR_PAD_LEFT) : '—', 'cuid'=>$cu->id ?? null,
-        'total'=>$all, 'delivered'=>$del, 'returned'=>$ret, 'cancelled'=>$can, 'pending'=>$pend, 'legacy'=>$legacy, 'rate'=>$rate,
+        'nth'=>isset($rn[(int)$o->id]) ? $rn[(int)$o->id] + $legacy : null, 'total'=>$all, 'delivered'=>$del, 'returned'=>$ret, 'cancelled'=>$can, 'pending'=>$pend, 'legacy'=>$legacy, 'rate'=>$rate,
         'rel'=>$rel, 'fraud'=>$f, 'risk'=>$risk, 'spent'=>$spent,
         'verdict'=>$risk === 'Low' ? 'safe' : ($risk === 'Medium' ? 'call' : 'hold')];
     }
