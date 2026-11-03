@@ -6,6 +6,15 @@ use Illuminate\Support\Facades\DB;
 class IncompleteController extends Controller {
   const TABS = ['open'=>'Open', 'recovered'=>'Recovered', 'converted'=>'Converted to order', 'archived'=>'Archived'];
   /** product id => image for the given incomplete rows */
+  /** Gives every incomplete row what a New order row shows: customer history/risk, product codes, discount lines, courier/payment and the last note. */
+  public static function decorate($rows): void {
+    $rows = collect($rows); if ($rows->isEmpty()) return;
+    $ci = \App\Support\CustomerIntel::forOrders($rows->map(fn($r) => (object)['id'=>$r->id, 'phone'=>$r->phone, 'total'=>$r->total]));
+    $pids = []; foreach ($rows as $r) foreach (json_decode($r->items ?: '[]', true) ?: [] as $i) if (!empty($i['id'])) $pids[] = (int)$i['id'];
+    $sku = $pids ? DB::table('products')->whereIn('id', array_unique($pids))->pluck('sku', 'id')->all() : [];
+    $lc = DB::table('incomplete_activity')->where('kind', 'note')->whereIn('incomplete_id', $rows->pluck('id')->all())->orderBy('id')->pluck('body', 'incomplete_id');
+    foreach ($rows as $r) { $r->ci = $ci[$r->id] ?? null; $r->skus = $sku; $r->last_comment = $lc[$r->id] ?? null; }
+  }
   public static function imgs($rows): array {
     $ids = []; foreach ($rows as $o) foreach (json_decode($o->items ?: '[]', true) ?: [] as $i) if (!empty($i['id'])) $ids[] = (int)$i['id'];
     return $ids ? DB::table('products')->whereIn('id', array_unique($ids))->pluck('image', 'id')->all() : [];
@@ -22,7 +31,7 @@ class IncompleteController extends Controller {
     if ($pg > 1 && $first) $q->where('created_at', '<', $first->created_at);   // belongs to an earlier page
     if ($orders->hasMorePages() && $last) $q->where('created_at', '>=', $last->created_at); // belongs to a later page
     $rows = $q->orderByDesc('created_at')->orderByDesc('id')->limit(200)->get();
-    $imgs = self::imgs($rows); $html = []; $tailHtml = '';
+    self::decorate($rows); $imgs = self::imgs($rows); $html = []; $tailHtml = '';
     $draw = fn($row) => view('orders_inc_row', ['withPay'=>true, 'o'=>$row, 'imgs'=>$imgs, 'cid'=>null])->render();
     foreach ($rows as $row) {
       $target = $items->first(fn($o) => $o->created_at <= $row->created_at);
@@ -40,9 +49,7 @@ class IncompleteController extends Controller {
     $open = DB::table('incomplete_orders')->where('status', 'open')->selectRaw('coalesce(sum(total),0) s')->first();
     $ph = collect($rows->items())->pluck('phone')->all();
     $cust = $ph ? DB::table('customers')->whereIn('phone', $ph)->pluck('id', 'phone') : collect();
-    $ids = collect($rows->items())->pluck('id')->all();
-    $lc = $ids ? DB::table('incomplete_activity')->where('kind', 'note')->whereIn('incomplete_id', $ids)->orderBy('id')->pluck('body', 'incomplete_id') : collect();
-    foreach ($rows->items() as $it) $it->last_comment = $lc[$it->id] ?? null;
+    self::decorate($rows->items());
     return ['incRows'=>$rows, 'incSt'=>$st, 'incCounts'=>$counts, 'incSum'=>(float)$open->s, 'incTabs'=>self::TABS, 'incCust'=>$cust, 'incImgs'=>self::imgs($rows->items())];
   }
   /** Read-only detail page of one incomplete checkout. */
