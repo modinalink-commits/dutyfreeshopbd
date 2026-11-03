@@ -88,7 +88,7 @@ nav[role=navigation] svg,.pagination svg{width:16px!important;height:16px!import
 @yield('js')
 @auth<script>function dfCopyNo(a,n){n=String(n||"").trim();var ok=function(){var o=a.innerHTML;a.innerHTML='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#15803D" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';a.title="Copied "+n;setTimeout(function(){a.innerHTML=o;a.title="Copy mobile number"},1200)};try{if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(n).then(ok,function(){fb()})}else fb()}catch(e){fb()}function fb(){var x=document.createElement("textarea");x.value=n;x.style.cssText="position:fixed;opacity:0";document.body.appendChild(x);x.select();try{document.execCommand("copy");ok()}catch(e){}x.remove()}return false}</script><script src="/js/df-export.js?v=4" defer></script>@endauth
 @auth<script src="/js/report-grid.js?v=1" defer></script>@endauth
-@auth<script src="/js/live-search.js?v=1" defer></script>@endauth
+@auth<script src="/js/live-search.js?v=2" defer></script>@endauth
 
 @if(auth()->check())
 <div id="dfsm" style="display:none;position:fixed;inset:0;background:rgba(10,20,50,.55);z-index:99999;align-items:center;justify-content:center;padding:14px"><div class="card" style="max-width:460px;width:100%;margin:0;max-height:92vh;overflow:auto">

@@ -3,7 +3,7 @@
 var DELAY=400,MIN=2;
 function init(inp){
   var form=inp.form;
-  if(!form||(form.method||'get').toLowerCase()!=='get'||form.classList.contains('dx-search')||inp.dataset.live==='off')return;
+  if(!form||String(form.getAttribute('method')||'get').toLowerCase()!=='get'||form.classList.contains('dx-search')||inp.dataset.live==='off')return;
   if(!document.querySelector('main table'))return;
   var tmr=null,ctl=null,st=document.createElement('span');
   st.style.cssText='font-size:12px;color:#6B7280;margin-left:6px;white-space:nowrap';
