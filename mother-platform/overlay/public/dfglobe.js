@@ -39,7 +39,7 @@
     var cx2 = cv.getContext('2d'), LAND = land(), cards = [].slice.call(root.querySelectorAll('[data-tag]'));
     var tags = cards.map(function (c) { return c.getAttribute('data-tag'); }); if (!tags.length) tags = ['Duty Free'];
     var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-    var dpr = Math.min(2, window.devicePixelRatio || 1), W = 0, H = 0, R = 0, CX = 0, CY = 0;
+    var small = false, dpr = Math.min(2, window.devicePixelRatio || 1), W = 0, H = 0, R = 0, CX = 0, CY = 0;
     var yaw = 86, off = 0, sw = 0, tilt = 22 * D, spin = -5.5, drag = null, last = 0, vis = true, feat = -1, featAt = 0, active = -1, raf = 0, T = 0;
     var cityV = {}, k; for (k in CITIES) cityV[k] = vec(CITIES[k][1], CITIES[k][2]);
     var planes = [];
@@ -50,7 +50,7 @@
     });
     function size() {
       var w = cv.clientWidth || 300, h = cv.clientHeight || 300; W = cv.width = Math.round(w * dpr); H = cv.height = Math.round(h * dpr);
-      if (w < 300) { R = W * .8; CX = W / 2; CY = H * .55; } else { R = Math.min(W, H) * .44; CX = W / 2; CY = H / 2; }
+      small = w < 300; if (small) { R = W * .7; CX = W / 2; CY = H * .52; } else { R = Math.min(W, H) * .44; CX = W / 2; CY = H / 2; }
     }
     function rot(v) {
       var p = yaw * D, c = Math.cos(p), s = Math.sin(p), x = v[0] * c - v[2] * s, z = v[0] * s + v[2] * c, y = v[1];
@@ -108,7 +108,7 @@
         }
         if (!(p0[2] > 0 || p0[3] > 1)) continue;
         var t3 = Math.min(1, t + .01), p1 = pt(slerp(P.a, P.b, t3, P.om), 1 + P.h * Math.sin(Math.PI * t3)), ang = Math.atan2(p1[1] - p0[1], p1[0] - p0[0]);
-        var sc = (.95 + .4 * Math.sin(Math.PI * t) + .25 * Math.max(0, Math.min(1, p0[2] + .3))) * dpr * (R / 230 < .75 ? .75 : Math.min(1.4, R / 230));
+        var sc = (.95 + .4 * Math.sin(Math.PI * t) + .25 * Math.max(0, Math.min(1, p0[2] + .3))) * dpr * (small ? .62 : (R / 230 < .75 ? .75 : Math.min(1.4, R / 230)));
         cx2.save(); cx2.globalAlpha = Math.min(1, P.t / .03, (1 - P.t) / .03); cx2.translate(p0[0], p0[1]); cx2.rotate(ang); cx2.scale(sc, sc);
         cx2.shadowColor = 'rgba(255,120,30,.45)'; cx2.shadowBlur = 3 * dpr; cx2.fillStyle = '#fff'; cx2.fill(PLANE);
         cx2.shadowBlur = 0; cx2.strokeStyle = 'rgba(255,200,160,.9)'; cx2.lineWidth = .8; cx2.beginPath(); cx2.moveTo(-8.4, 0); cx2.lineTo(-13, 0); cx2.stroke();
@@ -116,7 +116,7 @@
         if (p0[2] > .3) vplanes.push([i, p0]);
       }
       // cities + Bengali country names (greedy, no overlaps; Bangladesh first)
-      var placed = [], dacBox = null, fs0 = Math.max(10, Math.min(14, R / dpr / 15)) * dpr;
+      var placed = [], dacBox = null, fs0 = (small ? 8.5 : Math.max(10, Math.min(14, R / dpr / 15))) * dpr;
       ORDER.forEach(function (k) {
         var c = CITIES[k]; p = pt(cityV[k]); if (p[2] <= .12) return;
         var big = c[3], rr = (big ? 3.6 : 2.2) * dpr;
@@ -124,7 +124,7 @@
         cx2.fillStyle = big ? '#FF5A00' : '#fff'; cx2.beginPath(); cx2.arc(p[0], p[1], rr, 0, 7); cx2.fill();
         if (big) { cx2.strokeStyle = '#fff'; cx2.lineWidth = dpr; cx2.stroke(); }
         if (k === 'CGP' || p[2] < .3) return;
-        var fs = k === 'DAC' ? fs0 * 1.75 : fs0; cx2.font = '700 ' + fs + 'px "Noto Sans Bengali","Hind Siliguri","Nirmala UI",system-ui,sans-serif';
+        var fs = k === 'DAC' ? fs0 * (small ? 1.5 : 1.75) : fs0; cx2.font = '700 ' + fs + 'px "Noto Sans Bengali","Hind Siliguri","Nirmala UI",system-ui,sans-serif';
         var tw = cx2.measureText(c[0]).width, th = fs * 1.15, sides = [[8 * dpr, -th * .35], [-tw - 8 * dpr, -th * .35], [-tw / 2, -th - 6 * dpr], [-tw / 2, 6 * dpr]], j, bx, by, ok;
         for (j = 0; j < sides.length; j++) {
           bx = p[0] + sides[j][0]; by = p[1] + sides[j][1]; ok = bx > 2 * dpr && bx + tw < W - 2 * dpr;
@@ -143,7 +143,7 @@
         }
         vplanes.forEach(function (e) { if (e[0] === feat) tagP = e[1]; });
         if (tagP) {
-          var txt = tags[active], fs = 12 * dpr; cx2.font = '800 ' + fs + 'px system-ui,sans-serif'; var tw = cx2.measureText(txt).width + 16 * dpr, th = fs + 10 * dpr;
+          var txt = tags[active], fs = (small ? 9.5 : 12) * dpr; cx2.font = '800 ' + fs + 'px system-ui,sans-serif'; var tw = cx2.measureText(txt).width + 16 * dpr, th = fs + 10 * dpr;
           var tx = Math.min(W - tw - 4 * dpr, Math.max(4 * dpr, tagP[0] + 12 * dpr)), ty = Math.max(4 * dpr, tagP[1] - th - 10 * dpr);
           if (dacBox && tx < dacBox[0] + dacBox[2] + 4 * dpr && tx + tw > dacBox[0] - 4 * dpr && ty < dacBox[1] + dacBox[3] + 4 * dpr && ty + th > dacBox[1] - 4 * dpr) ty = Math.max(4 * dpr, dacBox[1] - th - 6 * dpr);
           cx2.strokeStyle = 'rgba(255,255,255,.55)'; cx2.lineWidth = dpr; cx2.beginPath(); cx2.moveTo(tagP[0], tagP[1]); cx2.lineTo(tx + 6 * dpr, ty + th); cx2.stroke();
