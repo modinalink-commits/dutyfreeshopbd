@@ -8,7 +8,7 @@ use App\Http\Controllers\ModulesController as M;
 use App\Http\Controllers\ResController as R;
 use App\Http\Controllers\SiteController as S;
 Route::get('/admin/login', [A::class,'loginForm'])->name('login');
-Route::post('/admin/login', [A::class,'login']);
+Route::post('/admin/login', [A::class,'login'])->middleware('throttle:10,1');
 Route::post('/admin/logout', [A::class,'logout']);
 Route::get('/login', fn() => redirect('/admin/login'));
 Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Http\Middleware\PerfProbe::class, \App\Http\Middleware\OrderActivityMw::class])->prefix('admin')->group(function () {
@@ -414,11 +414,11 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestF
   Route::get('/order-success/{invoice}', [\App\Http\Controllers\StoreController::class,'done'])->name('order.done')->middleware('signed');
   Route::get('/invoice/{invoice}', [\App\Http\Controllers\StoreController::class,'invoice'])->name('order.invoice')->middleware('signed');
   Route::get('/cart-items', [\App\Http\Controllers\StoreController::class,'cartItems']);
-  Route::post('/checkout/lookup', [\App\Http\Controllers\CheckoutLookupController::class,'lookup']);
-  Route::post('/checkout/otp', [\App\Http\Controllers\CheckoutLookupController::class,'otp']);
-  Route::post('/checkout/verify', [\App\Http\Controllers\CheckoutLookupController::class,'verify']);
-  Route::post('/checkout/track', [\App\Http\Controllers\StoreController::class,'trackCheckout']);
-  Route::post('/order', [\App\Http\Controllers\StoreController::class,'order']);
+  Route::post('/checkout/lookup', [\App\Http\Controllers\CheckoutLookupController::class,'lookup'])->middleware('throttle:60,1');
+  Route::post('/checkout/otp', [\App\Http\Controllers\CheckoutLookupController::class,'otp'])->middleware('throttle:20,10');
+  Route::post('/checkout/verify', [\App\Http\Controllers\CheckoutLookupController::class,'verify'])->middleware('throttle:40,10');
+  Route::post('/checkout/track', [\App\Http\Controllers\StoreController::class,'trackCheckout'])->middleware('throttle:120,1');
+  Route::post('/order', [\App\Http\Controllers\StoreController::class,'order'])->middleware('throttle:30,1');
   Route::get('/purchase/invoice/{no}', [\App\Http\Controllers\ProcurementController::class,'publicInvoice'])->where('no','PUR-[0-9]+')->middleware('throttle:60,1');
   Route::get('/supplier/statement/{token}', [\App\Http\Controllers\ProcurementController::class,'statement'])->where('token','[a-f0-9]+')->middleware('throttle:60,1');
   Route::get('/p/{key}', [\App\Http\Controllers\StoreController::class,'product'])->where('key','[A-Za-z0-9\-]+');

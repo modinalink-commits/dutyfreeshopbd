@@ -81,7 +81,7 @@ function mpOpen(tr){const j=JSON.parse(tr.dataset.j);document.getElementById('mp
 <script>(function(){var due={};function $(i){return document.getElementById(i)}
 $('mpFind').onclick=function(){fetch('/admin/manual-payments/lookup?phone='+encodeURIComponent($('mpPh').value),{headers:{Accept:'application/json'}}).then(function(r){return r.json()}).then(function(d){var s=$('mpOr');s.innerHTML='';due={};
 if(!d.found){$('mpCu').textContent='No customer found for this number.';s.innerHTML='<option value="">No orders</option>';return}
-$('mpCu').innerHTML='<b>'+d.name+'</b> · Orders '+d.total_orders+' · Unpaid '+d.unpaid+' · Partially paid '+d.partial+' · Outstanding ৳'+Math.round(d.outstanding).toLocaleString();
+$('mpCu').innerHTML='<b>'+esc(d.name)+'</b> · Orders '+d.total_orders+' · Unpaid '+d.unpaid+' · Partially paid '+d.partial+' · Outstanding ৳'+Math.round(d.outstanding).toLocaleString();
 if(!d.orders.length){s.innerHTML='<option value="">No unpaid orders</option>';return}
 d.orders.forEach(function(o){due[o.id]=o.due;var e=document.createElement('option');e.value=o.id;e.textContent=o.invoice+' · Total ৳'+o.total+' · Paid ৳'+o.paid+' · Due ৳'+o.due+' · '+o.status;s.appendChild(e)});s.onchange();}).catch(function(){$('mpCu').textContent='Lookup failed.'})};
 $('mpOr').onchange=function(){if(due[this.value]!=null&&!$('mpAm').value)$('mpAm').value=due[this.value];chk()};
