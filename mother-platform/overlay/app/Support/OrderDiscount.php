@@ -158,8 +158,19 @@ class OrderDiscount {
   /** Same lines as tips(), with the colour of each: [['text'=>..., 'fg'=>..., 'bg'=>..., 'bd'=>...], ...]. */
   public static function tipRows(object $o): array {
     $r = []; foreach (self::lines($o) as $x) { $c = self::colorOf((string)($x['name'] ?? '').' '.(empty($x['auto']) ? 'manual' : ''));
-      $r[] = ['text' => $x['name'].(!empty($x['pct']) ? ' '.rtrim(rtrim(number_format((float)$x['pct'], 2), '0'), '.').'%' : '').(($x['amount'] ?? null) !== null ? '  -৳'.number_format((float)$x['amount']) : '').(empty($x['auto']) ? ' (manual)' : ''), 'fg' => $c[0], 'bg' => $c[1], 'bd' => $c[2]]; }
+      $r[] = ['text' => $x['name'].(!empty($x['pct']) ? ' '.rtrim(rtrim(number_format((float)$x['pct'], 2), '0'), '.').'%' : '').(($x['amount'] ?? null) !== null ? '  -৳'.number_format((float)$x['amount']) : '').(empty($x['auto']) ? ' (manual)' : ''), 'fg' => $c[0], 'bg' => $c[1], 'bd' => $c[2], 'd' => self::detail($x)]; }
     return $r;
+  }
+  /** What the click-to-view popup shows for one discount line: which discount, how much, which area it came from and what it was given for. */
+  public static function detail(array $x): array {
+    $n = strtolower((string)($x['name'] ?? ''));
+    $area = (string)($x['source'] ?? '');
+    if ($area === '') {
+      $area = str_contains($n, 'coupon') ? 'Coupons (Offers & Coupons)' : (str_contains($n, 'win') || str_contains($n, 'welcome') ? 'Win-Back Offers (Marketing)' : (str_contains($n, 'referral') ? 'Referral programme' : (str_contains($n, 'manual') || str_contains($n, 'extra') || empty($x['auto']) ? 'Manual by staff' : (preg_match('/member|vip|special|return|birthday/', $n) ? 'Customer profile / membership level (Customers)' : 'Automatic discount rules (Discount Center)'))));
+    }
+    $why = trim((string)($x['reason'] ?? '')) !== '' ? (string)$x['reason'] : (string)($x['rule'] ?? '');
+    return ['name' => (string)($x['name'] ?? 'Discount'), 'kind' => (string)($x['kind'] ?? ''), 'pct' => $x['pct'] ?? null, 'amount' => $x['amount'] ?? null, 'area' => $area, 'why' => $why, 'code' => $x['code'] ?? null,
+      'by' => !empty($x['auto']) ? 'System (automatic)' : ((string)($x['by'] ?? '') ?: 'Staff'), 'at' => $x['at'] ?? null, 'legacy' => !empty($x['legacy'])];
   }
   /** Staff-visible history when a discount line changes: "Membership Discount: ৳100 → ৳150". */
   public static function logChange(int $orderId, array $old, array $new): void {

@@ -490,3 +490,4 @@ database/migrations/2026_11_03_000055_winback_repeat_every_15_days.php
 database/migrations/2026_11_03_000056_membership_stars.php
 database/migrations/2026_11_03_000057_customer_level.php
 resources/views/components/customer-level-stars.blade.php
+resources/views/discount_modal.blade.php
