@@ -497,3 +497,9 @@ resources/views/keep_position.blade.php
 resources/views/popup_close.blade.php
 resources/views/courier_modal.blade.php
 app/Support/CourierInfo.php
+app/Http/Controllers/CouponController.php
+app/Support/CouponRules.php
+resources/views/coupons_index.blade.php
+resources/views/coupon_form.blade.php
+resources/views/coupon_usage.blade.php
+database/migrations/2026_11_03_000060_coupon_portal.php

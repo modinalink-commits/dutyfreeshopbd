@@ -285,7 +285,7 @@ class AccountController extends StoreController {
     if ($tab === 'dashboard') {
       $recent = $all->take(5); $d['recent'] = $recent; $d['items'] = $this->thumbs($recent->pluck('id')->all());
       $d['wishN'] = DB::table('customer_wishlist')->where('customer_id', $c->id)->count(); $d['addrN'] = DB::table('customer_addresses')->where('customer_id', $c->id)->count();
-      $d['couponN'] = $this->publicCoupons()->count();
+      $d['couponN'] = $this->publicCoupons($c)->count();
       $d['chatN'] = DB::table('chat_threads')->where(fn($q) => $c->phone ? $q->where('customer_id', $c->id)->orWhere('phone', $c->phone) : $q->where('customer_id', $c->id))->where('channel', 'web')->count();
     }
     if ($tab === 'orders') {
@@ -307,7 +307,7 @@ class AccountController extends StoreController {
       $code = \App\Support\Referral::codeFor($c); $d += ['rcode'=>$code, 'rlink'=>\App\Support\Referral::link($code), 'rs'=>\App\Support\Referral::stats((int)$c->id), 'ron'=>\App\Support\Referral::on(), 'rdisc'=>\App\Support\Referral::discount(), 'rrew'=>\App\Support\Referral::reward(),
         'rlist'=>DB::table('referrals as r')->leftJoin('customers as u', 'u.id', '=', 'r.referred_id')->where('r.referrer_id', $c->id)->orderByDesc('r.id')->limit(50)->get(['r.status', 'r.reward', 'r.created_at', 'r.referred_phone', 'u.name'])];
     }
-    if ($tab === 'coupons') $d['coupons'] = $this->publicCoupons();
+    if ($tab === 'coupons') $d['coupons'] = $this->publicCoupons($c);
     if ($tab === 'reviews') {
       $d['mine'] = DB::table('reviews as r')->leftJoin('products as p', 'p.id', '=', 'r.product_id')->where('r.customer_id', $c->id)->orderByDesc('r.id')->get(['r.rating', 'r.body', 'r.status', 'r.reply', 'r.created_at', 'p.name as pname']);
       $done = DB::table('reviews')->where('customer_id', $c->id)->pluck('product_id')->all();
@@ -323,10 +323,11 @@ class AccountController extends StoreController {
     if ($tab === 'security') { $d['sessions'] = DB::table('customer_sessions')->where('customer_id', $c->id)->orderByDesc('last_at')->get(); $d['prov'] = DB::table('customer_auth_providers')->where('customer_id', $c->id)->pluck('provider')->all(); $d['fbOn'] = \App\Support\CustAuth::fbOn(); $d['gOn'] = \App\Support\CustAuth::googleOn(); $d['hist'] = DB::table('customer_login_history')->where('customer_id', $c->id)->orderByDesc('id')->limit(10)->get(); }
     return $this->view('store.account', $d);
   }
-  private function publicCoupons() {
-    $today = now('Asia/Dhaka')->toDateString();
-    return DB::table('coupons')->where('active', true)->where('is_public', true)->where(fn($q) => $q->whereNull('valid_from')->orWhere('valid_from', '<=', $today))->where(fn($q) => $q->whereNull('valid_to')->orWhere('valid_to', '>=', $today))
-      ->where(fn($q) => $q->whereNull('usage_limit')->orWhereRaw('used_count < usage_limit'))->orderBy('valid_to')->get(['code', 'type', 'value', 'min_order', 'max_discount', 'valid_to']);
+  private function publicCoupons($c = null) {
+    $ph = $c ? (\App\Support\Chat::phone($c->phone) ?: null) : null;
+    return DB::table('coupons')->where('active', true)->where('is_public', true)->where(fn($q) => $q->whereNull('usage_limit')->orWhereRaw('used_count < usage_limit'))->get()
+      ->filter(fn($cp) => \App\Support\CouponRules::visibleTo($cp, $ph, $c))->sortBy(fn($cp) => (string)($cp->ends_at ?: $cp->valid_to ?: '9999'))->values()
+      ->map(fn($cp) => (object)['code' => $cp->code, 'type' => $cp->type, 'value' => $cp->value, 'min_order' => $cp->min_order, 'max_discount' => $cp->max_discount, 'valid_to' => $cp->ends_at ? \App\Support\CouponRules::local($cp->ends_at, 'Y-m-d') : $cp->valid_to]);
   }
   private function notes($c, $all): array {
     $out = [];

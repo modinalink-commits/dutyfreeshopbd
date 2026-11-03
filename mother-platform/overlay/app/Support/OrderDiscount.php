@@ -80,14 +80,12 @@ class OrderDiscount {
       $cp = DB::table('coupons')->whereRaw('upper(code) = ?', [$coupon])->first(); $today = now('Asia/Dhaka')->toDateString();
       if (!$cp || !$cp->active) $cerr = 'Coupon not found or not active';
       elseif (DB::table('winback_events')->where('coupon_code', $coupon)->where('mode', 'fixed')->exists() && !($phone && DB::table('winback_events')->where('coupon_code', $coupon)->where('mode', 'fixed')->whereIn('phone', array_map(fn($x) => substr(preg_replace('/\D/', '', $x), -11), self::alt($phone)))->whereNull('used_at')->where('expires_at', '>', now())->exists())) $cerr = 'This coupon is not valid for this number, was already used, or has expired';
-      elseif ($cp->valid_from && $today < substr((string)$cp->valid_from, 0, 10)) $cerr = 'Coupon is not valid yet';
-      elseif ($cp->valid_to && $today > substr((string)$cp->valid_to, 0, 10)) $cerr = 'Coupon has expired';
-      elseif ($cp->usage_limit && (int)$cp->used_count >= (int)$cp->usage_limit) $cerr = 'Coupon usage limit reached';
+      elseif ($ce = CouponRules::error($cp, $phone, $c, $st, $sub, (array)($ctx['items'] ?? []), $web, $phone && $c ? (self::tier($phone, $c) ? 'm' : null) : null)) $cerr = $ce;
       elseif ($sub < (float)$cp->min_order) $cerr = 'Minimum order for this coupon is ৳'.number_format($cp->min_order);
       elseif ($phone && $cp->per_customer && DB::table('orders')->whereRaw('upper(coupon) = ?', [$coupon])->whereIn('phone', self::alt($phone))->where('status', '!=', 'Cancel')->when($ex, fn($q) => $q->where('id', '!=', $ex))->count() >= (int)$cp->per_customer) $cerr = 'This customer already used the coupon';
       elseif ($cp->type === 'free_delivery') { if ($web) $free = true; else $cerr = 'Free-delivery coupons work on the website checkout only'; }
       else {
-        $amt = $cp->type === 'percent' ? round($sub * (float)$cp->value / 100, 2) : min((float)$cp->value, $sub); if ($cp->max_discount) $amt = min($amt, (float)$cp->max_discount);
+        $cb = CouponRules::base($cp, $sub, (array)($ctx['items'] ?? [])); $amt = $cp->type === 'percent' ? round($cb * (float)$cp->value / 100, 2) : min((float)$cp->value, $cb); if ($cp->max_discount) $amt = min($amt, (float)$cp->max_discount);
         if ($amt > 0) $cand[] = ['key' => 'coupon', 'type' => 'Coupon Discount', 'rule' => 'Coupon '.$cp->code, 'source' => 'Coupon – '.$cp->code, 'pct' => $cp->type === 'percent' ? (float)$cp->value : null, 'amount' => $amt, 'code' => $cp->code,
           'label' => 'Coupon '.$cp->code.' – '.($cp->type === 'percent' ? rtrim(rtrim(number_format((float)$cp->value, 2), '0'), '.').'%' : '৳'.number_format($amt))];
       }

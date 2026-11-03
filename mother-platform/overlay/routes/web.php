@@ -316,6 +316,18 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/discounts/coupons', [D::class,'couponSave']);
   Route::post('/discounts/coupons/{id}/toggle', [D::class,'couponToggle']);
   Route::get('/coupons-export.csv', [D::class,'couponsCsv']);
+  Route::get('/coupons', [\App\Http\Controllers\CouponController::class,'index']);
+  Route::get('/coupons/create', [\App\Http\Controllers\CouponController::class,'create']);
+  Route::get('/coupons/export.csv', [\App\Http\Controllers\CouponController::class,'csv']);
+  Route::post('/coupons', [\App\Http\Controllers\CouponController::class,'save']);
+  Route::get('/coupons/{id}/edit', [\App\Http\Controllers\CouponController::class,'edit'])->whereNumber('id');
+  Route::post('/coupons/{id}', [\App\Http\Controllers\CouponController::class,'save'])->whereNumber('id');
+  Route::post('/coupons/{id}/toggle', [\App\Http\Controllers\CouponController::class,'toggle'])->whereNumber('id');
+  Route::post('/coupons/{id}/duplicate', [\App\Http\Controllers\CouponController::class,'duplicate'])->whereNumber('id');
+  Route::post('/coupons/{id}/delete', [\App\Http\Controllers\CouponController::class,'destroy'])->whereNumber('id');
+  Route::post('/coupons/{id}/bulk', [\App\Http\Controllers\CouponController::class,'bulk'])->whereNumber('id');
+  Route::post('/coupons/{id}/test', [\App\Http\Controllers\CouponController::class,'test'])->whereNumber('id');
+  Route::get('/coupons/{id}/usage', [\App\Http\Controllers\CouponController::class,'usageReport'])->whereNumber('id');
 });
 // ---- Storefront: order form has no CSRF token (pages stay cacheable); orders are rate limited per IP and honeypot-protected
 Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class, \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class, \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])->group(function () {
