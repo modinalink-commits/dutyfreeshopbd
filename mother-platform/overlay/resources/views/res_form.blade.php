@@ -1,10 +1,10 @@
 @extends('layout')@section('title',$c['title'])
 @section('body')<h1>{{ $row ? 'Edit' : 'Add' }}: {{ $c['title'] }}</h1>
 @if($errors->any())<div class="card err">{{ $errors->first() }}</div>@endif
-@if($row && ($c['slug'] ?? '') === 'customers')
+@if($row && ($c['slug'] ?? '') === 'customers' && !request()->has('nocard'))
 @php $__mc = \App\Support\OrderDiscount::cardOf($row); @endphp
 @if($__mc)
-<div style="margin:0 0 14px">@php try { echo view('components.membership-card', $__mc)->render(); } catch (\Throwable $__e) { echo '<!--MCERR ' . str_replace('--', '- -', $__e->getMessage() . ' @ ' . basename($__e->getFile()) . ':' . $__e->getLine()) . '-->'; } @endphp</div>
+<div style="margin:0 0 14px">@php try { echo view('components.membership-card', $__mc)->render(); } catch (\Throwable $__e) { report($__e); } @endphp</div>
 @endif
 @endif
 <form class="card" method="post" action="/admin/m/{{ $c['slug'] }}{{ $row ? '/'.$row->id : '' }}" style="max-width:640px">@csrf
