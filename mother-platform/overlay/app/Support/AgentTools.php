@@ -98,6 +98,9 @@ class AgentTools {
         $ship = (float)$opts[$area]['c'];
         try { $dv = \App\Support\Delivery::compute((float)$c['subtotal_raw'], $area, $addr, '', array_keys($st['cart'] ?? [])); $ship = (float)$dv['charge']; } catch (\Throwable $e) { report($e); }
         $total = $c['subtotal_raw'] + $ship;
+        $pd = $st['pending'] ?? null;
+        if (!empty($ctx['orders_on']) && $pd && $pd['name'] === $name && $pd['phone'] === $ph && $pd['address'] === $addr && (int)$pd['area'] === $area && $pd['cart'] == ($st['cart'] ?? []) && self::isConfirm((string)($ctx['last_msg_text'] ?? '')) && (int)($ctx['last_msg_id'] ?? 0) > (int)$pd['after_msg'])
+          return ['error'=>'This exact summary was already shown and the customer has just confirmed it. Do NOT prepare again: call place_order now.'];
         $st['pending'] = ['name'=>$name, 'phone'=>$ph, 'address'=>$addr, 'area'=>$area, 'note'=>mb_substr((string)($in['note'] ?? ''), 0, 300), 'cart'=>$st['cart'], 'total'=>$total, 'after_msg'=>(int)($ctx['last_msg_id'] ?? 0), 'at'=>time()];
         return ['summary'=>['items'=>$c['items'], 'subtotal'=>self::money($c['subtotal_raw']), 'delivery'=>self::money($ship), 'delivery_note'=>isset($dv) ? ($dv['reason'] ?: ($ship <= 0 ? 'No delivery charge' : $dv['zone'])) : null, 'total_estimate'=>self::money($total), 'name'=>$name, 'phone'=>$ph, 'address'=>$addr, 'payment'=>'Cash on delivery'],
           'next'=>'Show this summary and ask the customer to confirm. Do NOT place the order until they clearly say yes.'];
