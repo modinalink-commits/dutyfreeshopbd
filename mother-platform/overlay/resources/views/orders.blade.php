@@ -27,7 +27,7 @@
 @php($oqs = http_build_query(request()->only('status','q','from','to','ft','tt')))
 <div class="ocb" id="ocb"><form method="get" action="/admin/orders" id="ofx">
 @if(request('status'))<input type="hidden" name="status" value="{{ request('status') }}">@endif
-<div class="r1"><div style="min-width:150px"><h1>Manage Order</h1><div class="dt"><span id="obct">Dashboard &gt; Orders &gt; {{ request('status') ?: 'All Orders' }}</span> · <span id="odt">@if(request('from')||request('to')){{ request('from') ?: '…' }} {{ request('ft') ?: '00:00' }} → {{ request('to') ?: '…' }} {{ request('tt') ?: '23:59' }}@else All dates @endif</span></div></div>
+<div class="r1">
 <span class="pre" id="opre"><button type="button" data-p="today">Today</button><button type="button" data-p="yest">Yesterday</button><button type="button" data-p="7">Last 7 Days</button><button type="button" data-p="15">Last 15 Days</button><button type="button" data-p="month">This Month</button><button type="button" data-p="custom">Custom</button><button type="button" data-p="all">All</button></span>
 <span style="display:inline-flex;gap:4px;align-items:center"><input type="date" name="from" value="{{ request('from') }}" title="From date"><input type="time" name="ft" value="{{ request('ft') }}" title="From time"><span class="dt">→</span><input type="date" name="to" value="{{ request('to') }}" title="To date"><input type="time" name="tt" value="{{ request('tt') }}" title="To time"></span>
 <span style="flex:1"></span>
@@ -49,7 +49,7 @@ function mv(){var b=document.querySelector('.oc .dfx-bar'),x=document.getElement
 function sel(){var n=document.querySelectorAll('#bulk input[name="ids[]"]:checked').length,e=document.getElementById('osel');if(e)e.textContent=n?n+' Selected':''}
 document.addEventListener('change',function(e){if(e.target.closest&&e.target.closest('#bulk'))sel()});
 function load(url,push,cb){var o=document.getElementById('osel');fetch(url,{headers:{'X-Requested-With':'XMLHttpRequest',Accept:'text/html'},credentials:'same-origin'}).then(function(r){return r.text()}).then(function(h){var x=new DOMParser().parseFromString(h,'text/html'),n=x.getElementById('ostrip');if(!n||!x.querySelector('main table')){location.href=url;return}
-s.innerHTML=n.innerHTML;document.getElementById('odt').textContent=x.getElementById('odt').textContent.trim();
+s.innerHTML=n.innerHTML;var od=document.getElementById('odt'),nd=x.getElementById('odt');if(od&&nd)od.textContent=nd.textContent.trim();
 var a=document.querySelector('main table.ordt'),b=x.querySelector('main table.ordt');if(a&&b)a.replaceWith(b);else{location.href=url;return}
 var pa=document.querySelectorAll('main .pgx'),pb=x.querySelectorAll('main .pgx');if(pa.length&&pa.length===pb.length)pa.forEach(function(t,i){t.replaceWith(pb[i])});
 var hs=f.querySelector('input[name=status]'),ns=x.querySelector('#ofx input[name=status]');if(hs&&!ns)hs.remove();else if(ns&&!hs)f.insertBefore(ns,f.firstChild);else if(ns)hs.value=ns.value;
