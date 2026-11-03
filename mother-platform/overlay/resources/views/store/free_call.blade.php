@@ -9,6 +9,9 @@
 .dffc-b{position:fixed;left:14px;bottom:18px;z-index:55;display:flex;align-items:center;gap:7px;background:#FF5A00;color:#fff;border:2.5px solid #0B1220;border-radius:24px;padding:9px 14px;font-size:13px;font-weight:700;font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;box-shadow:0 4px 14px rgba(255,90,0,.38);cursor:pointer}
 .dffc-b svg{width:16px;height:16px}.dffc-b.off{background:#64748B;box-shadow:0 4px 14px rgba(100,116,139,.35)}
 @media(max-width:760px){.dffc-b{bottom:68px}}
+.dffc-h2{position:fixed;left:14px;bottom:70px;z-index:55;display:flex;align-items:center;gap:7px;background:#fff;color:#0B1220;border:2px solid #0B1220;border-radius:14px;padding:8px 12px;font-size:12.5px;font-weight:700;font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;box-shadow:0 8px 22px rgba(11,18,32,.18);opacity:0;transform:translateY(6px);transition:.35s;pointer-events:none;white-space:nowrap}
+.dffc-h2.on{opacity:1;transform:none;pointer-events:auto;cursor:pointer}.dffc-h2::after{content:"";position:absolute;left:26px;bottom:-8px;width:12px;height:12px;background:#fff;border-right:2px solid #0B1220;border-bottom:2px solid #0B1220;transform:rotate(45deg)}.dffc-h2 b{color:#FF5A00}
+@media(max-width:760px){.dffc-h2{bottom:122px}}
 .dffc-o{position:fixed;inset:0;z-index:100002;background:rgba(11,18,32,.5);display:none;align-items:center;justify-content:center;padding:14px;font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif}.dffc-o.on{display:flex}
 .dffc-x{background:#fff;border-radius:22px;width:min(350px,100%);box-shadow:0 24px 60px rgba(11,18,32,.4);overflow:hidden;color:#0B1220}
 .dffc-h{background:#FF5A00;color:#fff;padding:12px 16px;display:flex;align-items:center;gap:9px;font-weight:800;font-size:14px}.dffc-h i{width:9px;height:9px;border-radius:50%;background:#fff;display:inline-block}.dffc-h button{margin-left:auto;background:rgba(255,255,255,.12);border:0;color:#fff;width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:16px;padding:0}
@@ -22,6 +25,7 @@
 </style>
 <button type="button" class="dffc-b{{ $__fcw[1] ? '' : ' off' }}" id="dffcb" aria-label="Free Call"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>ফ্রি কল করুন</button>
 <div class="dffc-o" id="dffco" role="dialog" aria-modal="true" aria-label="DutyFreeBD Free Call"><div class="dffc-x"><div class="dffc-h"><i></i>DutyFreeBD Free Call<button type="button" data-a="close" aria-label="Close">×</button></div><div class="dffc-p" id="dffcp"></div></div></div>
+<div class="dffc-h2" id="dffch" aria-hidden="true">📞 সাহায্য লাগলে <b>ফ্রিতে কল</b> করুন</div>
 <audio id="dffca" autoplay playsinline></audio>
 <script>window.DFFC={open:@json((bool)$__fcw[1]),msg:@json($__fcw[2]),wa:@json($wa ?? ''),tel:'09613828081'};</script>
 @verbatim
@@ -106,6 +110,8 @@ document.addEventListener('click',function(e){var b=e.target.closest('[data-a]')
  if(a==='start')start();else if(a==='go')go(false);else if(a==='cancel')hang();else if(a==='chat')openChat();else if(a==='mute')mute();else if(a==='spk')spk()});
 document.addEventListener('keydown',function(e){if(e.key==='Escape'&&O.classList.contains('on')&&!st.c)O.classList.remove('on')});
 if(sess())resume();
+// short hint bubble first (once per session); the chat greeting follows a few seconds later
+try{if(C.open&&!sessionStorage.getItem('dffch')){var hb=$('dffch');setTimeout(function(){if(O.classList.contains('on'))return;hb.classList.add('on');try{sessionStorage.setItem('dffch','1')}catch(e){}setTimeout(function(){hb.classList.remove('on')},5500)},1200);hb.addEventListener('click',function(){hb.classList.remove('on');$('dffcb').click()})}}catch(e){}
 })();</script>
 @endverbatim
 @endif
