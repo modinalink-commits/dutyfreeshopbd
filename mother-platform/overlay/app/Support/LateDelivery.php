@@ -24,7 +24,8 @@ class LateDelivery {
   /** Cheap enough to call from a page load; runs at most once every two minutes. */
   public static function auto(): void { if (Cache::add('late.delivery.auto', 1, 120)) { try { self::detect(); } catch (\Throwable $e) { report($e); } } }
   /** @return int orders changed */
-  public static function detect(): int {
+  public static function detect(): int { $was = OrderActivity::$system; OrderActivity::$system = true; try { return self::run(); } finally { OrderActivity::$system = $was; } }
+  private static function run(): int {
     $cut = now()->subHours(self::HOURS); $n = 0;
     $due = DB::table('orders')->where('status', 'Shipment')
       ->where(fn($q) => $q->where('shipment_at', '<=', $cut)->orWhere(fn($w) => $w->whereNull('shipment_at')->where('courier_sent_at', '<=', $cut)))

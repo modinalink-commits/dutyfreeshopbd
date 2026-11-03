@@ -13,7 +13,8 @@ class PaymentSettle {
 
   /** Safety net: any fully paid order still waiting in an early stage (paid before auto-approval existed, or verified through a path that did not call apply()) is settled now. Throttled to once every 2 minutes. */
   public static function auto(): void { if (\Illuminate\Support\Facades\Cache::add('payment.settle.sweep', 1, 120)) { try { self::sweep(); } catch (\Throwable $e) { report($e); } } }
-  public static function sweep(int $limit = 300): int {
+  public static function sweep(int $limit = 300): int { $was = OrderActivity::$system; OrderActivity::$system = true; try { return self::sweepRun($limit); } finally { OrderActivity::$system = $was; } }
+  private static function sweepRun(int $limit): int {
     $ids = DB::table('orders')->whereIn('status', self::ELIGIBLE)->whereNull('duplicate_of_order_id')
       ->where(fn($q) => $q->where('pay_status', 'Verified')->orWhere('payment_status', 'Paid')->orWhereExists(fn($x) => $x->select(DB::raw(1))->from('order_payments as p')->whereColumn('p.order_id', 'orders.id')->where('p.status', 'verified')))
       ->orderBy('id')->limit($limit)->pluck('id'); $n = 0;
