@@ -75,7 +75,7 @@
 <div class="bnl"><span><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.2"/></svg>BUNDLE &amp; SAVE</span></div>
 <div class="bq" role="radiogroup" aria-label="Bundle and save">
 @foreach($bundles as $b)
-<button type="button" class="bo t{{ $b['n'] }}" role="radio" aria-checked="false" data-n="{{ $b['n'] }}" data-fin="{{ $b['fin'] }}" data-save="{{ $b['save'] }}"><svg class="ci" aria-hidden="true"><use href="#dfi-cart"/></svg><b>Buy {{ $b['n'] }}</b><i class="dv"></i><span class="sv">Save {{ $b['pct'] }}%</span><span class="ck" aria-hidden="true">✓</span></button>
+<button type="button" class="bo t{{ $b['n'] }}" role="radio" aria-checked="false" data-n="{{ $b['n'] }}" data-fin="{{ $b['fin'] }}" data-save="{{ $b['save'] }}"><svg class="ci" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 2h4l2.7 12.4a2 2 0 0 0 2 1.6h8.7a2 2 0 0 0 2-1.6L22 7H6"/><circle cx="10" cy="20.5" r="1.4" fill="currentColor"/><circle cx="18" cy="20.5" r="1.4" fill="currentColor"/></svg><b>Buy {{ $b['n'] }}</b><i class="dv"></i><span class="sv">Save {{ $b['pct'] }}%</span><span class="ck" aria-hidden="true">✓</span></button>
 @endforeach
 </div>
 <div class="bsum" id="bsum" hidden><span>Bundle Price: <b id="bpr"></b></span><span>You Save: <b id="bsv"></b></span></div>
