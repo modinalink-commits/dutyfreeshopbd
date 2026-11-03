@@ -279,7 +279,7 @@ class AccountController extends StoreController {
     $all = $this->orders($c)->orderByDesc('id')->get(['id', 'invoice', 'status', 'total', 'shipping', 'discount', 'created_at', 'payment_method', 'pay_status', 'courier', 'consignment_id', 'tracking_code', 'courier_status']);
     $cnt = array_fill_keys(array_keys(self::GROUPS), 0); $spend = 0;
     foreach ($all as $o) { $g = $this->group($o->status); $cnt[$g]++; if (!in_array($g, ['Cancelled', 'Returned'])) $spend += (float)$o->total; }
-    $tier = null; try { $t0 = \App\Support\OrderDiscount::tier((string)$c->phone, $c); if ($t0) $tier = ['name' => trim(str_replace(' / ', ' ', (string)$t0['name'])), 'stars' => (int)($t0['stars'] ?? 0)]; } catch (\Throwable $e) {}
+    $tier = null; try { $t0 = \App\Support\OrderDiscount::tier((string)$c->phone, $c); $lv0 = \App\Support\OrderDiscount::levelOf($c->customer_level ?? null, (int)($t0['stars'] ?? 0)); if ($lv0) $tier = ['name' => $lv0['name'], 'stars' => $lv0['stars']]; } catch (\Throwable $e) {}
     $d = ['c'=>$c, 'tier'=>$tier, 'tab'=>$tab, 'cid'=>$this->cid($c), 'cat'=>$this->custCategory($c->phone, $c), 'cnt'=>$cnt, 'spend'=>$spend + (float)$c->legacy_spent, 'totalOrders'=>$all->count() + (int)$c->legacy_orders,
       'title'=>'My Account | DutyFree Shop BD', 'groups'=>array_keys(self::GROUPS)];
     if ($tab === 'dashboard') {

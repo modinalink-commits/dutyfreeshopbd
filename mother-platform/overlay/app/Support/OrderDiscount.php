@@ -38,6 +38,13 @@ class OrderDiscount {
     foreach ($ks as $k) if ($k !== '' && (str_contains($n, $k) || str_contains($k, $n))) return self::$rank[$k]; // e.g. "Active – Gold / Premium" on an order
     return 0;
   }
+  const LEVELS = ['silver' => 'Silver', 'gold' => 'Gold', 'platinum' => 'Platinum', 'diamond' => 'Diamond'];
+  /** Customer level for display: the one an admin set on the customer (customers.customer_level), else worked out from the membership level (1 star = Silver ... 4 = Diamond). Always read at render time, never saved on the order. */
+  public static function levelOf(?string $manual, int $autoStars = 0): ?array {
+    $m = strtolower(trim((string)$manual)); $keys = array_keys(self::LEVELS);
+    if (isset(self::LEVELS[$m])) return ['key' => $m, 'name' => self::LEVELS[$m], 'stars' => array_search($m, $keys) + 1];
+    if ($autoStars < 1) return null; $i = min(4, $autoStars) - 1; return ['key' => $keys[$i], 'name' => self::LEVELS[$keys[$i]], 'stars' => $i + 1];
+  }
   public static function starText(int $n): string { return $n > 0 ? str_repeat('★', $n) : ''; }
   /** Customer Type (VIP / Regular / New) and Membership (Active / Inactive). */
   public static function profile(string $p): array {

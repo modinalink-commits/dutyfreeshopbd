@@ -57,7 +57,7 @@ class CustomerIntel {
       else $cat = 'Regular';
       $out[$o->id] = ['cat'=>$cat, 'cid'=>$cu ? 'C-'.str_pad($cu->id, 5, '0', STR_PAD_LEFT) : '—', 'cuid'=>$cu->id ?? null,
         'nth'=>isset($rn[(int)$o->id]) ? $rn[(int)$o->id] + $legacy : null, 'total'=>$all, 'delivered'=>$del, 'returned'=>$ret, 'cancelled'=>$can, 'pending'=>$pend, 'legacy'=>$legacy, 'rate'=>$rate,
-        'stars'=>$stars, 'rel'=>$rel, 'fraud'=>$f, 'risk'=>$risk, 'spent'=>$spent,
+        'stars'=>$stars, 'level'=>OrderDiscount::levelOf($cu->customer_level ?? null, $stars), 'rel'=>$rel, 'fraud'=>$f, 'risk'=>$risk, 'spent'=>$spent,
         'verdict'=>$risk === 'Low' ? 'safe' : ($risk === 'Medium' ? 'call' : 'hold')];
     }
     return $out;
