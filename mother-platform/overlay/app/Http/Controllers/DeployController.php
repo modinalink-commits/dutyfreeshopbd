@@ -93,6 +93,8 @@ class DeployController extends Controller
     $this->guard();
     Deployer::put('deploy_mode', $r->input('mode') === 'hold' ? 'hold' : 'auto');
     $b = trim((string)$r->input('branch', 'main')); if (preg_match('/^[A-Za-z0-9._\/-]{1,60}$/', $b)) Deployer::put('deploy_branch', $b);
+    $gt = trim((string)$r->input('gh_token', ''));
+    if ($gt !== '' && preg_match('/^[A-Za-z0-9_]{20,255}$/', $gt)) \App\Support\Sms::setSecret('deploy_github_token', $gt);
     \Cache::forget('deploy_head_' . Deployer::branch());
     return response()->json(['ok' => true]);
   }

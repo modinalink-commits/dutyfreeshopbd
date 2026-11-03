@@ -31,7 +31,7 @@
     <table><thead><tr><th style="width:36px">#</th><th>Task</th><th>Status</th><th style="width:150px">Progress</th><th>Updated</th></tr></thead><tbody id="wl"></tbody></table></div>
   <div class="cd" style="overflow-x:auto"><div class="bar" style="justify-content:space-between;margin-bottom:6px"><h2 style="margin:0">History</h2><div class="bar" id="flt"></div></div>
     <table><thead><tr><th>Version</th><th>Subject</th><th>Status</th><th>Duration</th><th>Deployed</th><th>Action</th></tr></thead><tbody id="hist"></tbody></table></div>
-  <details class="cd"><summary style="cursor:pointer;font-weight:700;font-size:13px">Automation settings</summary><div class="bar" style="margin-top:8px"><label class="mu">Mode</label><select id="sMode"><option value="auto">Automatic — deploy every new commit</option><option value="hold">Hold — wait for my Deploy Now</option></select><label class="mu">Branch</label><input id="sBranch" style="width:110px"><button class="b" id="sSave">Save</button></div><div class="mu" id="head" style="margin-top:6px"></div></details>
+  <details class="cd"><summary style="cursor:pointer;font-weight:700;font-size:13px">Automation settings</summary><div class="bar" style="margin-top:8px"><label class="mu">Mode</label><select id="sMode"><option value="auto">Automatic — deploy every new commit</option><option value="hold">Hold — wait for my Deploy Now</option></select><label class="mu">Branch</label><input id="sBranch" style="width:110px"><label class="mu">GitHub token (optional, read-only)</label><input id="sGh" type="password" autocomplete="new-password" placeholder="leave blank to keep" style="width:170px"><button class="b" id="sSave">Save</button></div><div class="mu" id="head" style="margin-top:6px"></div></details>
   <div class="ov" id="ov"><div class="md" id="md"></div></div>
 </div>
 <script type="application/json" id="dd">{!! json_encode($d, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) !!}</script>
@@ -76,7 +76,7 @@ $('ov').onclick=function(e){if(e.target===$('ov'))$('ov').classList.remove('on')
 $('bRefresh').onclick=function(){say('Checking…');load('/admin/deploy/refresh','POST').then(function(){say('Updated '+D.now)})};
 $('bDeploy').onclick=function(){var h=D.head;if(!confirm('Deploy '+(h?'“'+h.subject+'” ('+h.sha.slice(0,7)+')':'the latest commit')+' now with zero downtime?'))return;post('/admin/deploy',{}).then(function(j){say(j.msg||'');load('/admin/deploy/status')})};
 $('bCancel').onclick=function(){post('/admin/deploy/cancel').then(function(j){say(j.msg||'');load('/admin/deploy/status')})};
-$('sSave').onclick=function(){post('/admin/deploy/settings',{mode:$('sMode').value,branch:$('sBranch').value}).then(function(){say('Saved');load('/admin/deploy/refresh','POST')})};
+$('sSave').onclick=function(){post('/admin/deploy/settings',{mode:$('sMode').value,branch:$('sBranch').value,gh_token:$('sGh').value}).then(function(){$('sGh').value='';say('Saved');load('/admin/deploy/refresh','POST')})};
 function logOf(id,t){fetch('/admin/deploy/'+id+'/log',{credentials:'same-origin',headers:{Accept:'application/json'}}).then(function(x){return x.json()}).then(function(l){modal('<h2>'+esc(t||'Log')+'</h2><pre>'+esc(l.log||'No log saved.')+'</pre><div class="bar" style="margin-top:8px"><button class="b" id="eClose">Close</button></div>');$('eClose').onclick=function(){$('ov').classList.remove('on')}})}
 $('dc').onclick=function(e){var t=e.target;
   if(t.dataset.f){F=t.dataset.f;render()}

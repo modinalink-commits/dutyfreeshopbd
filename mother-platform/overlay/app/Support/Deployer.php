@@ -21,12 +21,18 @@ class Deployer
   public static function mode(): string { return self::setting('deploy_mode', 'auto') === 'hold' ? 'hold' : 'auto'; }
   public static function branch(): string { $b = self::setting('deploy_branch', 'main'); return preg_match('/^[A-Za-z0-9._\/-]{1,60}$/', $b) ? $b : 'main'; }
 
+  /** GitHub API headers; an optional read-only token (saved in Automation settings) lifts the anonymous 60-requests/hour limit. */
+  private static function gh(array $h = []): array {
+    $h += ['User-Agent' => 'mother-deploy', 'Accept' => 'application/vnd.github+json'];
+    try { $t = \App\Support\Sms::secret('deploy_github_token'); if ($t) $h['Authorization'] = 'Bearer ' . $t; } catch (\Throwable $e) {}
+    return $h;
+  }
   /** Latest commit on the production branch (cached one minute). */
   public static function head(bool $fresh = false): ?array {
     $key = 'deploy_head_' . self::branch();
     if (!$fresh && ($c = \Cache::get($key))) return $c;
     try {
-      $r = Http::withHeaders(['User-Agent' => 'mother-deploy', 'Accept' => 'application/vnd.github+json'])->timeout(8)->get('https://api.github.com/repos/' . self::REPO . '/commits/' . self::branch());
+      $r = Http::withHeaders(self::gh())->timeout(8)->get('https://api.github.com/repos/' . self::REPO . '/commits/' . self::branch());
       if (!$r->ok()) return \Cache::get($key . '_last');
       $j = $r->json(); [$subj, $notes] = self::parse((string)($j['commit']['message'] ?? ''));
       $h = ['sha' => (string)$j['sha'], 'subject' => $subj, 'notes' => $notes, 'at' => (string)($j['commit']['committer']['date'] ?? '')];
@@ -36,7 +42,7 @@ class Deployer
 
   public static function commit(string $sha): ?array {
     try {
-      $r = Http::withHeaders(['User-Agent' => 'mother-deploy'])->timeout(8)->get('https://api.github.com/repos/' . self::REPO . '/commits/' . $sha);
+      $r = Http::withHeaders(self::gh())->timeout(8)->get('https://api.github.com/repos/' . self::REPO . '/commits/' . $sha);
       if (!$r->ok()) return null; $j = $r->json(); [$s, $n] = self::parse((string)($j['commit']['message'] ?? ''));
       return ['sha' => (string)$j['sha'], 'subject' => $s, 'notes' => $n];
     } catch (\Throwable $e) { return null; }
