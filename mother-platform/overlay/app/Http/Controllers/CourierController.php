@@ -7,15 +7,16 @@ use Illuminate\Support\Facades\DB;
 class CourierController extends Controller {
   public function show() {
     $stores = session('stores', []);
-    return view('courier_setup', ['env'=>Pathao::env(), 'ready'=>Pathao::configured(), 'hasSecret'=>(bool)Sms::secret('pathao_client_secret'), 'hasPass'=>(bool)Sms::secret('pathao_password'), 'cid'=>Sms::secret('pathao_client_id'), 'user'=>Sms::secret('pathao_username'), 'storeId'=>Pathao::storeId(), 'weight'=>Sms::secret('pathao_weight') ?: '0.5', 'stores'=>$stores,
+    return view('courier_setup', ['env'=>Pathao::env(), 'ready'=>Pathao::configured(), 'hasSecret'=>(bool)Sms::secret('pathao_client_secret'), 'hasHook'=>(bool)Sms::secret('pathao_webhook_secret'), 'hasPass'=>(bool)Sms::secret('pathao_password'), 'cid'=>Sms::secret('pathao_client_id'), 'user'=>Sms::secret('pathao_username'), 'storeId'=>Pathao::storeId(), 'weight'=>Sms::secret('pathao_weight') ?: '0.5', 'stores'=>$stores,
       'sent'=>DB::table('orders')->whereNotNull('consignment_id')->count(), 'recent'=>DB::table('orders')->whereNotNull('consignment_id')->orderByDesc('courier_sent_at')->limit(15)->get(['id','invoice','customer_name','consignment_id','courier_status','courier_fee','courier_sent_at'])]);
   }
   public function save(Request $r) {
-    $d = $r->validate(['env'=>'required|in:live,sandbox','client_id'=>'nullable|string|max:120','client_secret'=>'nullable|string|max:200','username'=>'nullable|string|max:150','password'=>'nullable|string|max:200','store_id'=>'nullable|integer','weight'=>'nullable|numeric|min:0.5|max:10','enabled'=>'nullable|boolean']);
+    $d = $r->validate(['env'=>'required|in:live,sandbox','client_id'=>'nullable|string|max:120','client_secret'=>'nullable|string|max:200','username'=>'nullable|string|max:150','password'=>'nullable|string|max:200','store_id'=>'nullable|integer','weight'=>'nullable|numeric|min:0.5|max:10','webhook_secret'=>'nullable|string|max:200','enabled'=>'nullable|boolean']);
     Sms::setSecret('pathao_env', $d['env']);
     foreach (['client_id','client_secret','username','password'] as $k) if (!empty($d[$k])) Sms::setSecret('pathao_'.$k, trim($d[$k]));
     if (!empty($d['store_id'])) Sms::setSecret('pathao_store_id', (string)$d['store_id']);
     if (!empty($d['weight'])) Sms::setSecret('pathao_weight', (string)$d['weight']);
+    if (!empty($d['webhook_secret'])) Sms::setSecret('pathao_webhook_secret', trim($d['webhook_secret']));
     // credentials or environment changed: drop cached tokens
     foreach (['pathao_access','pathao_refresh','pathao_exp'] as $k) Sms::setSecret($k, null);
     DB::table('couriers')->updateOrInsert(['name'=>'Pathao'], ['active'=>$r->boolean('enabled', true), 'updated_at'=>now(), 'created_at'=>now()]);
