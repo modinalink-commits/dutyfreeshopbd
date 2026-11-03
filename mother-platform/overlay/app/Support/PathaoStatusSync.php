@@ -15,50 +15,48 @@ use Illuminate\Support\Facades\DB;
  * Stock goes back only when the goods are confirmed received, and only for items that are known.
  */
 class PathaoStatusSync {
-  const OPEN = ['Shipment', 'Late Delivery', 'Partial Delivered', 'Partial Return Pending', 'Return Pending'];
+  const OPEN = ['Shipment', 'Late Delivery', 'Partial Delivered', 'Partial Return Pending', 'Return Pending', 'Exchange Pending'];
 
-  /** partial | return | received | null (anything else is an ordinary courier stage). */
-  public static function kind(?string $raw): ?string {
-    $s = trim(strtolower(preg_replace('/[^a-z]+/i', ' ', (string)$raw))); if ($s === '') return null;
-    if (str_contains($s, 'partial')) return 'partial';
-    if (preg_match('/returned to merchant|return(ed)? to (the )?merchant|return received|received by merchant|paid return|return delivered|return complete/', $s)) return 'received';
-    if (str_contains($s, 'return')) return 'return';
-    return null;
-  }
   public static function collected(array $i): ?float {
     foreach (['collected_amount', 'amount_collected', 'collected_cod'] as $k) if (isset($i[$k]) && is_numeric($i[$k]) && (float)$i[$k] > 0) return (float)$i[$k];
     return null;
   }
 
-  public static function outcome(int $id, string $kind, array $i = []): void {
+  /** $action comes from PathaoStatusMapper (the admin-editable map): partial_pending | partial_received | exchange_pending | exchange_received | return_pending | returned. Safe to run twice for the same event. */
+  public static function outcome(int $id, string $action, array $i = []): void {
     $o = DB::table('orders')->find($id); if (!$o || !in_array($o->status, self::OPEN, true)) return;
+    if ($action === 'exchange_pending') { if (in_array($o->status, ['Shipment', 'Late Delivery'], true)) { DB::table('orders')->where('id', $id)->update(['return_type' => 'Exchange']); self::setStatus($o, 'Exchange Pending', 'Pathao: Exchange'); } return; }
+    if ($action === 'exchange_received') { if ($o->status === 'Exchange Pending') { DB::table('orders')->where('id', $id)->update(['return_received_at' => now()]); self::setStatus($o, 'Exchange Received', 'Pathao: exchange received'); } return; }
     $items = DB::table('order_items')->where('order_id', $id)->orderBy('id')->get(); if ($items->isEmpty()) return;
     $known = $items->contains(fn($x) => $x->outcome !== null);
     $got = self::collected($i);
-    if ($kind === 'partial') {
-      if ($known) { self::checkMoney($o, $items, $got); if ($o->status !== 'Partial Return Pending' && $o->return_type === 'Partial') self::setStatus($o, 'Partial Return Pending', 'Pathao: partial delivery'); return; }
+    if ($action === 'partial_pending') {
+      if ($known) { self::checkMoney($o, $items, $got); if ($o->status !== 'Partial Return Pending' && $o->return_type === 'Partial') self::setStatus($o, 'Partial Return Pending', 'Pathao: Partial Return'); return; }
+      if (in_array($o->status, ['Partial Return Pending', 'Return Pending', 'Exchange Pending'], true)) return;
       $ret = self::match($items, $got, $o);
-      if ($ret !== null) { [$ok, $msg] = ShipmentOutcome::save($id, $ret, 'Pathao delivery outcome (auto, matched on collected ৳'.number_format((float)$got, 2).')'); if ($ok) self::clear($id); return; }
+      if ($ret !== null) { [$ok, $msg] = ShipmentOutcome::save($id, $ret, 'Pathao Partial Return (auto, matched on collected ৳'.number_format((float)$got, 2).')'); if ($ok) self::clear($id); return; }
       DB::table('orders')->where('id', $id)->update(['return_type' => 'Partial']);
-      self::setStatus($o, 'Partial Return Pending', 'Pathao: partial delivery (returned items not known yet)');
+      self::setStatus($o, 'Partial Return Pending', 'Pathao: Partial Return (returned items not known yet)');
       self::flag($id, $got === null ? 'Item Review' : 'Billing Mismatch', $got === null
-        ? 'Pathao reported a partial delivery but did not say which items came back or how much was collected. Record the delivery outcome for this order.'
+        ? 'Pathao reported a Partial Return but did not say which items came back or how much was collected. Record the delivery outcome for this order.'
         : 'Pathao collected ৳'.number_format($got, 2).' (parcel ৳'.number_format((float)$o->total, 2).'); no single combination of items matches. Record the delivery outcome and check the billing.');
       if ($got !== null) DB::table('orders')->where('id', $id)->update(['collected_amount' => $got]);
       return;
     }
-    if ($kind === 'return') {
+    if ($action === 'return_pending') {
       if (!in_array($o->status, ['Shipment', 'Late Delivery'], true) || $known) return;   // already in a return flow, or staff recorded it
       $all = []; foreach ($items as $x) $all[$x->id] = (int)$x->qty;
-      ShipmentOutcome::save($id, $all, 'Pathao: whole parcel returning (auto)');
+      ShipmentOutcome::save($id, $all, 'Pathao Regular Return (auto)');
       return;
     }
-    if ($kind === 'received') {
-      if ($o->status === 'Partial Return Pending') {
-        if ($items->contains(fn($x) => (int)($x->ret_qty ?? 0) > 0)) { [$ok] = ShipmentOutcome::receive($id); if ($ok) self::clear($id); }
-        else self::flag($id, 'Item Review', 'Pathao says the returned goods are back, but the returned items are not recorded. Record the delivery outcome, then confirm the received quantities.');
-        return;
-      }
+    if ($action === 'partial_received') {
+      if ($o->status !== 'Partial Return Pending') return;
+      if ($items->contains(fn($x) => (int)($x->ret_qty ?? 0) > 0)) { [$ok] = ShipmentOutcome::receive($id); if ($ok) self::clear($id); }
+      else self::flag($id, 'Item Review', 'Pathao says the returned goods are back, but the returned items are not recorded. Record the delivery outcome, then confirm the received quantities.');
+      return;
+    }
+    if ($action === 'returned') {
+      if ($o->status === 'Partial Return Pending') return;
       if (in_array($o->status, ['Shipment', 'Late Delivery'], true) && !$known) { $all = []; foreach ($items as $x) $all[$x->id] = (int)$x->qty; ShipmentOutcome::save($id, $all, 'Pathao: whole parcel returned (auto)'); }
       $o2 = DB::table('orders')->find($id);
       if ($o2 && $o2->status === 'Return Pending') { [$ok] = ShipmentOutcome::receive($id); if ($ok) self::clear($id); }

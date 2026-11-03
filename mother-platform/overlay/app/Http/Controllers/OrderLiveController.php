@@ -10,7 +10,7 @@ class OrderLiveController extends Controller {
   private function pack(object $o, $items): array {
     $min = $o->courier_synced_at ? (int)Carbon::parse($o->courier_synced_at)->diffInMinutes(now()) : null;
     return ['id'=>(int)$o->id, 'status'=>(string)$o->status, 'slug'=>Str::slug((string)$o->status), 'note'=>ShipmentOutcome::rowNote($o, $items), 'courier'=>$o->courier, 'consignment'=>$o->consignment_id,
-      'courier_status'=>$o->courier_status, 'stage'=>$o->courier_stage, 'synced_min'=>$min, 'has_courier'=>!empty($o->consignment_id), 'at'=>$o->updated_at ? Carbon::parse($o->updated_at)->timezone('Asia/Dhaka')->format('h:i A') : null,
+      'courier_status'=>$o->courier_status, 'stage'=>$o->courier_stage, 'synced_min'=>$min, 'has_courier'=>!empty($o->consignment_id), 'outcome'=>$o->pathao_outcome ?? null, 'raw'=>$o->pathao_raw_status ?? null, 'cflag'=>$o->courier_flag ?? null, 'bflag'=>$o->billing_flag ?? null, 'at'=>$o->updated_at ? Carbon::parse($o->updated_at)->timezone('Asia/Dhaka')->format('h:i A') : null,
       'ts'=>$o->updated_at ? Carbon::parse($o->updated_at)->timestamp : 0];
   }
   public function one($id) {

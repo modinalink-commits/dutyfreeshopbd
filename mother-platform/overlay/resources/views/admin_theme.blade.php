@@ -51,7 +51,7 @@ main table:not(.ordt):has(th) tbody tr:is(.grid-neutral,.grid-info,.grid-success
 .st-approved{--rt:var(--tint-green);--ra:var(--acc-green)}
 .st-shipment{--rt:var(--tint-cyan);--ra:var(--acc-cyan)}
 .st-delivered,.st-partial-delivered{--rt:var(--tint-greengray);--ra:var(--acc-greengray)}
-.st-late-delivery,.st-partial-return-pending,.st-partial-return-received,.st-partial-returned,.st-exchange-received{--rt:var(--tint-orange);--ra:var(--acc-orange)}
+.st-late-delivery,.st-partial-return-pending,.st-partial-return-received,.st-partial-returned,.st-exchange-pending,.st-exchange-received{--rt:var(--tint-orange);--ra:var(--acc-orange)}
 .st-returned,.st-return-pending,.st-partial-return-pending,.st-partial-return-received,.st-partial-returned{--rt:var(--tint-pink);--ra:var(--acc-red)}
 .st-cancel,.st-cancelled{--rt:var(--tint-redgray);--ra:var(--acc-gray)}
 .st-incomplete{--rt:var(--tint-gray);--ra:var(--acc-gray)}

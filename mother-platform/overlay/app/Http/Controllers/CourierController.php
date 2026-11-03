@@ -76,8 +76,11 @@ class CourierController extends Controller {
     if ($sec && !hash_equals($sec, (string)$r->header('X-PATHAO-Signature', $r->query('key', '')))) return response()->json(['ok'=>false], 403);
     if ($cid && ($o = DB::table('orders')->where('consignment_id', (string)$cid)->first())) { $i = Pathao::info($o->consignment_id);
       // The event name and the collected amount come from the push; the parcel itself is always re-read from Pathao.
-      $ev = strtolower((string)$r->input('event', '')); foreach (['collected_amount', 'delivery_fee'] as $k) if ($r->filled($k) && is_numeric($r->input($k))) $i[$k] = $r->input($k);
-      if ($ev !== '' && \App\Support\PathaoStatusSync::kind(str_replace(['order.', '-', '_'], ' ', $ev)) !== null && \App\Support\PathaoStatusSync::kind($i['order_status'] ?? '') === null) $i['order_status'] = ucwords(trim(str_replace(['order.', '-', '_'], ' ', $ev)));
+      $ev = trim(str_replace(['order.', '-', '_'], ' ', strtolower((string)$r->input('event', ''))));
+      foreach (['collected_amount', 'delivery_fee'] as $k) if ($r->filled($k) && is_numeric($r->input($k))) $i[$k] = $r->input($k);
+      $evRow = $ev !== '' ? \App\Support\PathaoStatusMapper::peek($ev) : null; $curRow = \App\Support\PathaoStatusMapper::peek($i['order_status'] ?? '');
+      if ($evRow && $evRow->action !== 'none' && (!$curRow || $curRow->action === 'none')) $i['order_status'] = $evRow->raw_label;   // the push names a mapped return/partial/exchange event the parcel read has not caught up with
+      $i['_event'] = $ev ?: null;
       if ($i) \App\Support\CourierSync::apply($o, $i); }
     return response()->json(['ok'=>true], 202);
   }

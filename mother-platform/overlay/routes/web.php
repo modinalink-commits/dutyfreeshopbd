@@ -128,6 +128,11 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/courier-dashboard', [\App\Http\Controllers\CourierController::class,'dashboard']);
   Route::get('/courier-dashboard/export/{fmt}', [\App\Http\Controllers\CourierController::class,'export'])->where('fmt','csv|xls|doc|pdf');
   Route::get('/courier/ship-audit', [\App\Http\Controllers\CourierController::class,'shipAudit']);
+  Route::get('/courier/status-map', [\App\Http\Controllers\PathaoMapController::class,'index']);
+  Route::post('/courier/status-map', [\App\Http\Controllers\PathaoMapController::class,'add']);
+  Route::post('/courier/status-map/recheck', [\App\Http\Controllers\PathaoMapController::class,'recheck']);
+  Route::post('/courier/status-map/{id}', [\App\Http\Controllers\PathaoMapController::class,'save'])->whereNumber('id');
+  Route::post('/courier/status-map/{id}/delete', [\App\Http\Controllers\PathaoMapController::class,'destroy'])->whereNumber('id');
   Route::post('/courier/sync', [\App\Http\Controllers\CourierController::class,'sync']);
   Route::post('/courier/settle', [\App\Http\Controllers\CourierController::class,'settle']);
   Route::get('/ai-chat', [\App\Http\Controllers\AiChatController::class,'show']);
