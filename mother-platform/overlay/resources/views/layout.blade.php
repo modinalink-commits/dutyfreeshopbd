@@ -72,6 +72,14 @@ main label{font-size:11.5px;font-weight:600;margin:8px 0 3px}
 main .grid{gap:10px}main .k b{font-size:20px}main .k span{font-size:11.5px}
 main .pill{font-size:10.5px;font-weight:700;border-radius:6px;padding:2px 8px}
 @media(max-width:800px){main{padding:12px}main table:not(.ordt){display:block;overflow-x:auto;max-width:100%}main .btn,main button{min-height:34px}}
+/* v1.303 global hover border contrast: same 1px width, only colour darkens; no layout shift */
+:root{--border-grid:#CED4DA;--border-hover:#9CA3AF}
+main input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]),main select,main textarea,main .chip,main .pre button,main .rf{transition:border-color .15s ease,background-color .15s ease,box-shadow .15s ease}
+main input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]):not(:focus):hover,main select:not(:focus):hover,main textarea:not(:focus):hover{border-color:var(--border-hover)}
+main .btn:hover,main button:hover,main a.btn:hover{box-shadow:inset 0 0 0 1px rgba(15,23,42,.32)}
+main .chip:hover{border-color:rgba(15,23,42,.38)!important}
+main .pre button:hover,main .rf:hover{border-color:var(--border-hover)!important;background-color:#EEF1F4}
+main .btn:focus-visible,main button:focus-visible,main select:focus-visible,main a.chip:focus-visible{outline:2px solid #FF5A00;outline-offset:1px}
 </style></head><body>
 @auth @include('sidebar') @include('admin_grid') @include('admin_theme') @endauth
 <main>@yield('body')</main>
