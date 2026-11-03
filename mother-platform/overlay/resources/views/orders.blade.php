@@ -43,6 +43,17 @@
 #ocb .r1 .owt .obk button:nth-of-type(4):hover{border-color:#6D28D9!important}
 #ocb .r1 #oexs .dfx-btn:hover,#ocb .r1>a.btn:hover{border-color:#C2410C!important}
 #ocb .r1 .owt input[name=q]:focus{border-color:#FF5A00!important;outline:0}
+/* v1.320 no gaps: controls flow one after another with equal spacing, full labels visible */
+#ocb .r1{justify-content:flex-start;gap:4px}
+#ocb .r1>.owt{flex:0 1 auto!important;justify-content:flex-start!important;gap:4px;margin:0!important;padding:0!important;border:0!important}
+#ocb .r1 .owt .q{margin-left:0!important;gap:4px}
+#ocb .r1 .owt .owf{margin-left:0!important;padding-left:0!important;border-left:0!important;gap:4px}
+#ocb .r1 .owt .obk{gap:4px}
+#ocb .r1 .owt select{width:auto!important;max-width:none!important;min-width:0!important}
+#ocb .r1 .owt input[name=q]{width:150px!important;min-width:120px!important}
+#ocb .r1 .opre,#ocb .r1>.pre{margin:0}
+#ocb .r1>span[style*="flex:1"]{display:none!important}
+#ocb .r1 #oexs{display:inline-flex;margin-left:0}
 .ocb .r1 .owt .obk{gap:4px}.ocb .r1 .owt .obk button{height:26px!important;min-height:0!important;padding:0 8px!important;font-size:11px!important}.ocb .r1 .owt .obk select,.ocb .r1 .owt .owf select,.ocb .r1 .owt .q select{height:26px!important;font-size:11px!important;padding:0 4px!important}.ocb .r1 .owt .owf{margin-left:4px;padding-left:6px;gap:4px;border-left:1px solid #CBD5E1}.ocb .r1 .owt .q{gap:4px}.ocb .r1 .owt .q input[name=q]{min-width:150px!important;width:160px!important;height:26px!important;font-size:11px!important}.ocb .r1 .owt .q .rf{height:26px!important}
 .ocb .pre{position:relative}.ocb .r1 .pre .opb{height:24px!important;padding:0 10px!important;font-size:11px!important;font-weight:700;border-radius:8px!important;background:#fff!important;color:#0B1220!important;border:1px solid #CBD5E1!important;cursor:pointer}
 .ocb .opm{display:none;position:absolute;left:0;top:calc(100% + 6px);z-index:90;background:#fff;border:1px solid #CBD5E1;border-radius:10px;box-shadow:0 8px 24px rgba(15,23,42,.16);padding:5px;flex-direction:column;gap:1px;min-width:150px}.ocb .pre.open .opm{display:flex}
