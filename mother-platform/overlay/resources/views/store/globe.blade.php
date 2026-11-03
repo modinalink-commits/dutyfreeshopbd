@@ -25,9 +25,13 @@
 .dfg-ab a:hover{border-color:#FF6A1A}.dfg-ab em{opacity:.75}
 .dfg-ab svg{width:20px;height:20px;flex:none}.dfg-ab small{display:block;font-size:8.5px;letter-spacing:.04em;color:#cbd5e6;line-height:1.1}.dfg-ab b{display:block;font-size:13px;line-height:1.2;font-weight:700}
 .dfg-gl{position:relative;min-width:0}.dfg-gl canvas{position:absolute;left:0;top:0;width:100%;height:100%;display:block;cursor:grab;touch-action:pan-y}.dfg-gl canvas:active{cursor:grabbing}
-@media (max-width:900px){.dfg{aspect-ratio:16/9;max-height:340px}.dfg-in{grid-template-columns:minmax(0,52%) minmax(0,48%)}.dfg-l{padding:10px 0 10px 10px}.dfg-k{display:none}.dfg h2{font-size:14px;margin:0 0 6px}
-.dfg-cards{grid-template-columns:1fr;gap:6px;padding-bottom:6px}.dfg-c{padding:4px 6px;gap:7px;border-radius:9px}.dfg-c img{width:34px;height:34px;border-radius:6px}.dfg-c i{font-size:10.5px;line-height:1.25}.dfg-c b{font-size:11px;margin-top:1px}.dfg-c s{display:none}.dfg-c em{font-size:9px;padding:0 3px}
-.dfg-app{margin-top:6px}.dfg-ab{gap:5px}.dfg-ab a,.dfg-ab em{flex:1;gap:5px;padding:3px 6px;border-radius:8px;justify-content:center}.dfg-ab svg{width:14px;height:14px}.dfg-ab small{display:none}.dfg-ab b{font-size:10px;white-space:nowrap}.dfg-ab svg{width:13px;height:13px}}
+@media (max-width:900px){.dfg{aspect-ratio:auto;max-height:none;border-radius:12px}.dfg-in{display:flex;flex-direction:column;height:auto;position:relative}.dfg-l{display:contents}
+.dfg-gl{order:-1;height:clamp(185px,50vw,270px);flex:none}.dfg-gl:after{content:"";position:absolute;left:0;top:0;right:0;height:56px;background:linear-gradient(rgba(5,11,23,.85),transparent);pointer-events:none}
+.dfg-k{display:none}.dfg h2{position:absolute;z-index:2;left:12px;top:9px;margin:0;font-size:16px;line-height:1.15;text-shadow:0 1px 6px rgba(0,0,0,.7)}
+.dfg-tk{flex:none;height:60px;margin:6px 10px 0}.dfg-tk.go .dfg-tr{animation-duration:calc(var(--dur,20s)*1.9)}
+.dfg-cards{grid-template-columns:1fr;gap:6px;padding-bottom:6px}.dfg-c{padding:5px 8px;gap:9px;border-radius:10px}.dfg-c img{width:38px;height:38px;border-radius:6px}.dfg-c i{font-size:12px;line-height:1.25;max-height:1.3em;white-space:nowrap;text-overflow:ellipsis}.dfg-c b{font-size:12.5px;margin-top:1px}.dfg-c s{display:none}
+.dfg-app{margin:6px 10px 10px}.dfg-ab{gap:8px}.dfg-ab a,.dfg-ab em{flex:1;gap:6px;padding:5px 8px;border-radius:9px;justify-content:center}.dfg-ab svg{width:17px;height:17px}.dfg-ab small{display:none}.dfg-ab b{font-size:12px;white-space:nowrap}}
+@media (max-width:340px){.dfg h2{font-size:14px}}
 </style>
 <section class="dfg" aria-label="Duty Free exceptional offers">
 <div class="dfg-in">
@@ -54,5 +58,5 @@
 <div class="dfg-gl"><canvas role="img" aria-label="Globe with planes flying from nearby countries to land in Bangladesh"></canvas></div>
 </div>
 </section>
-<script src="/dfglobe.js?v=11" defer></script>
+<script src="/dfglobe.js?v=13" defer></script>
 @endif
