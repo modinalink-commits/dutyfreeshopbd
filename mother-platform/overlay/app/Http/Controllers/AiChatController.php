@@ -8,6 +8,7 @@ class AiChatController extends Controller {
   public function show() {
     return view('ai_chat', ['hasKey'=>(bool)Sms::secret('ai_key'), 'on'=>Sms::secret('ai_enabled') === '1', 'model'=>AiChat::model(), 'today'=>(int)Cache::get('ai.n.'.now()->format('Ymd'), 0), 'agentTools'=>Sms::secret('ai_agent_tools') === '1', 'agentOrders'=>Sms::secret('ai_agent_orders') === '1']);
   }
+  private function audit(Request $r, string $a, string $sub): void { try { \Illuminate\Support\Facades\DB::table('audit_logs')->insert(['user_id'=>auth()->id(),'user_name'=>auth()->user()->name,'action'=>$a,'subject'=>$sub,'ip'=>$r->ip(),'created_at'=>now(),'updated_at'=>now()]); } catch (\Throwable $e) {} }
   public function save(Request $r) {
     $d = $r->validate(['api_key'=>'nullable|string|max:300', 'model'=>'required|in:claude-haiku-5-5,claude-sonnet-5-5', 'enabled'=>'nullable|boolean', 'agent_tools'=>'nullable|boolean', 'agent_orders'=>'nullable|boolean']);
     if (!empty($d['api_key'])) Sms::setSecret('ai_key', trim($d['api_key']));
