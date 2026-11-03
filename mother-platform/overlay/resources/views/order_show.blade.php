@@ -20,10 +20,10 @@
 <div class="card" style="font-size:13px;line-height:1.7"><b>Customer &amp; discount</b>
 <div>Subtotal <b>৳{{ number_format((float)$o->total + (float)($o->discount ?? 0) - (float)$o->shipping) }}</b> · Discount <b style="color:{{ ($o->discount ?? 0) > 0 ? '#B91C1C' : '#6B7280' }}">{{ ($o->discount ?? 0) > 0 ? '-৳'.number_format($o->discount) : 'none applied' }}</b> · Delivery <b>৳{{ number_format($o->shipping) }}</b> · Total <b>৳{{ number_format($o->total) }}</b></div>
 @php
- $__dt = ($o->discount ?? 0) > 0 ? \App\Support\OrderDiscount::tips($o) : [];
+ $__dt = ($o->discount ?? 0) > 0 ? \App\Support\OrderDiscount::tipRows($o) : [];
  $__src = ($o->discount ?? 0) > 0 && !count($__dt) ? ($o->discount_source ?: ($o->discount_type ?: ($o->coupon ? 'Coupon '.$o->coupon : ($o->discount_by ?: 'Source not recorded')))) : '';
 @endphp
-@foreach($__dt as $__t)<div style="color:#B91C1C">{{ $__t }}</div>@endforeach
+@foreach($__dt as $__t)<div style="display:inline-block;margin:2px 4px 0 0;padding:1px 8px;border-radius:999px;font-weight:700;font-size:12px;color:{{ $__t['fg'] }};background:{{ $__t['bg'] }};border:1px solid {{ $__t['bd'] }}">{{ $__t['text'] }}</div>@endforeach
 <div style="color:#6B7280">{{ $__src }}</div>
 @if($o->customer_category ?? null)<div>Customer: <b>{{ $o->customer_category }}</b>@if($o->membership_status ?? null) · Membership: <b>{{ $o->membership_status }}</b>@endif</div>@endif
 @foreach($dl as $g)<div style="color:#6B7280">{{ $g->kind === 'override' ? 'Changed' : 'Applied' }}: {{ $g->label }} · previous ৳{{ number_format($g->prev_amount, 2) }} → ৳{{ number_format($g->new_amount, 2) }} · {{ $g->user_name }} · {{ \Carbon\Carbon::parse($g->created_at)->timezone('Asia/Dhaka')->format('d M Y, h:i A') }}</div>@endforeach</div>

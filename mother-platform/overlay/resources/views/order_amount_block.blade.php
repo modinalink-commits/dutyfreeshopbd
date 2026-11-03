@@ -9,9 +9,10 @@
 @if($__ln)
 <tr><td colspan="2" style="padding-top:6px;color:#6B7280"><b>Discounts</b></td></tr>
 @foreach($__ln as $__l)
-<tr><td style="padding-left:10px;vertical-align:top"><b>{{ $__l['name'] }}</b>@if(!empty($__l['pct'])) {{ rtrim(rtrim(number_format($__l['pct'], 2), '0'), '.') }}%@elseif(($__l['kind'] ?? '') === 'Fixed') <span style="color:#6B7280">(Fixed)</span>@endif
+@php $__c = \App\Support\OrderDiscount::colorOf((string)($__l['name'] ?? '').' '.(empty($__l['auto']) ? 'manual' : '')); @endphp
+<tr><td style="padding-left:10px;vertical-align:top"><b style="display:inline-block;padding:1px 8px;border-radius:999px;color:{{ $__c[0] }};background:{{ $__c[1] }};border:1px solid {{ $__c[2] }}">{{ $__l['name'] }}</b>@if(!empty($__l['pct'])) {{ rtrim(rtrim(number_format($__l['pct'], 2), '0'), '.') }}%@elseif(($__l['kind'] ?? '') === 'Fixed') <span style="color:#6B7280">(Fixed)</span>@endif
 <div style="font-size:12px;color:#6B7280">@if(!empty($__l['source']))Source: {{ $__l['source'] }}@endif @if(!empty($__l['rule'])) · Rule: {{ $__l['rule'] }}@endif @if(!empty($__l['code'])) · Code: <b>{{ $__l['code'] }}</b>@endif · Applied: {{ !empty($__l['auto']) ? 'Automatic' : 'Manual' }} by {{ $__l['by'] ?? 'System' }}@if(!empty($__l['reason'])) · Reason: {{ $__l['reason'] }}@endif @if(!empty($__l['at'])) · {{ \Carbon\Carbon::parse($__l['at'])->timezone('Asia/Dhaka')->format('d M Y, h:i A') }}@endif @if(!empty($__l['legacy']) && ($__l['amount'] ?? null) === null) · <i>(amount per offer not saved on older orders)</i>@endif</div></td>
-<td style="text-align:right;vertical-align:top">@if(($__l['amount'] ?? null) !== null)-{{ $__f($__l['amount']) }}@else — @endif</td></tr>
+<td style="text-align:right;vertical-align:top;font-weight:700;color:{{ $__c[0] }}">@if(($__l['amount'] ?? null) !== null)-{{ $__f($__l['amount']) }}@else — @endif</td></tr>
 @endforeach
 @endif
 <tr style="border-top:1px solid #E5E7EB"><td><b>Total Discount</b></td><td style="text-align:right"><b>{{ $__disc > 0 ? '-' : '' }}{{ $__f($__disc) }}</b></td></tr>

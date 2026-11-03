@@ -129,6 +129,20 @@ class OrderDiscount {
     $t = []; foreach (self::lines($o) as $x) $t[] = $x['name'].(!empty($x['pct']) ? ' '.rtrim(rtrim(number_format((float)$x['pct'], 2), '0'), '.').'%' : '').(($x['amount'] ?? null) !== null ? '  -৳'.number_format((float)$x['amount']) : '').(empty($x['auto']) ? ' (manual)' : '');
     return $t;
   }
+  /** One colour per kind of discount so staff can tell them apart at a glance: [text, background, border]. */
+  public static function colorOf(string $name): array {
+    $n = strtolower($name);
+    foreach ([['coupon', ['#6D28D9', '#EDE9FE', '#C4B5FD']], ['win', ['#BE185D', '#FCE7F3', '#F9A8D4']], ['welcome', ['#BE185D', '#FCE7F3', '#F9A8D4']], ['first', ['#166534', '#DCFCE7', '#86EFAC']], ['return', ['#1D4ED8', '#DBEAFE', '#93C5FD']],
+      ['member', ['#B45309', '#FEF3C7', '#FCD34D']], ['vip', ['#9A3412', '#FFEDD5', '#FDBA74']], ['birthday', ['#A21CAF', '#FAE8FF', '#E879F9']], ['bundle', ['#0F766E', '#CCFBF1', '#5EEAD4']], ['amount', ['#3730A3', '#E0E7FF', '#A5B4FC']],
+      ['special', ['#C2410C', '#FFF7ED', '#FB923C']], ['referral', ['#0E7490', '#CFFAFE', '#67E8F9']], ['manual', ['#B91C1C', '#FEE2E2', '#FCA5A5']], ['extra', ['#B91C1C', '#FEE2E2', '#FCA5A5']]] as [$k, $c]) if (str_contains($n, $k)) return $c;
+    return ['#334155', '#F1F5F9', '#CBD5E1'];
+  }
+  /** Same lines as tips(), with the colour of each: [['text'=>..., 'fg'=>..., 'bg'=>..., 'bd'=>...], ...]. */
+  public static function tipRows(object $o): array {
+    $r = []; foreach (self::lines($o) as $x) { $c = self::colorOf((string)($x['name'] ?? '').' '.(empty($x['auto']) ? 'manual' : ''));
+      $r[] = ['text' => $x['name'].(!empty($x['pct']) ? ' '.rtrim(rtrim(number_format((float)$x['pct'], 2), '0'), '.').'%' : '').(($x['amount'] ?? null) !== null ? '  -৳'.number_format((float)$x['amount']) : '').(empty($x['auto']) ? ' (manual)' : ''), 'fg' => $c[0], 'bg' => $c[1], 'bd' => $c[2]]; }
+    return $r;
+  }
   /** Staff-visible history when a discount line changes: "Membership Discount: ৳100 → ৳150". */
   public static function logChange(int $orderId, array $old, array $new): void {
     $o = []; foreach ($old as $l) if (isset($l['amount']) && $l['amount'] !== null) $o[$l['name']] = ($o[$l['name']] ?? 0) + (float)$l['amount'];
