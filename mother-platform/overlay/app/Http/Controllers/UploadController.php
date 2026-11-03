@@ -27,7 +27,9 @@ class UploadController extends Controller {
 
   function errorLog() {
     $f = storage_path('logs/laravel.log');
-    $t = is_file($f) ? substr((string)file_get_contents($f), -14000) : 'No log file yet.';
+    $raw = is_file($f) ? (string)file_get_contents($f) : '';
+    if (request()->query('hdr') && $raw !== '') { preg_match_all('/^\[20\d\d-[^\n]{0,700}/m', substr($raw, -2000000), $mm); $t = implode("\n", array_slice($mm[0], -25)); }
+    else $t = $raw !== '' ? substr($raw, -14000) : 'No log file yet.';
     $t = preg_replace('/(EAA[A-Za-z0-9]{20,}|password[^\n]{0,40}|APP_KEY[^\n]*)/i', '[hidden]', $t);
     return response($t, 200, ['Content-Type'=>'text/plain; charset=utf-8']);
   }

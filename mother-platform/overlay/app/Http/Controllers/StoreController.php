@@ -361,7 +361,14 @@ class StoreController extends Controller {
   }
   public function done($invoice) {
     $u = fn($extra = []) => \Illuminate\Support\Facades\URL::temporarySignedRoute('order.invoice', now()->addDays(3), ['invoice'=>$invoice] + $extra);
-    return response()->view('store.success', $this->base($this->pack($invoice) + ['viewUrl'=>$u(), 'dlUrl'=>$u(['print'=>1]), 'title'=>'Order Placed | DutyFree Shop BD','desc'=>'','canon'=>url('/'),'noindex'=>true]));
+    try {
+      return response()->view('store.success', $this->base($this->pack($invoice) + ['viewUrl'=>$u(), 'dlUrl'=>$u(['print'=>1]), 'title'=>'Order Placed | DutyFree Shop BD','desc'=>'','canon'=>url('/'),'noindex'=>true]));
+    } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) { throw $e;
+    } catch (\Throwable $e) {
+      report($e);
+      $inv = e((string)$invoice);
+      return response('<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Order Placed | DutyFree Shop BD</title></head><body style="font-family:system-ui,Arial,sans-serif;background:#f8fafc;margin:0;padding:24px"><div style="max-width:440px;margin:40px auto;background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:24px;text-align:center"><div style="font-size:42px">✅</div><h1 style="font-size:20px;margin:8px 0">Order Placed Successfully</h1><p style="color:#374151;font-size:15px">Your order number: <b>'.$inv.'</b></p><p style="color:#6b7280;font-size:13px;line-height:1.6">Thank you! Our team will call you shortly to confirm your order. / ধন্যবাদ! আমাদের প্রতিনিধি শীঘ্রই ফোন করে অর্ডার কনফার্ম করবেন।</p><a href="/" style="display:inline-block;margin-top:12px;background:#FF5A00;color:#fff;text-decoration:none;padding:10px 18px;border-radius:10px;font-weight:700">Continue shopping</a></div></body></html>', 200, ['Content-Type'=>'text/html; charset=utf-8']);
+    }
   }
   public function invoice($invoice) { return response()->view('store.invoice', $this->pack($invoice) + ['print'=>request()->boolean('print')]); }
   /** Tracking by invoice number only: shows status steps and products, never the customer's name, phone or address. */
