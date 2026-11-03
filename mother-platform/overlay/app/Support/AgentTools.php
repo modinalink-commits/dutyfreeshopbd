@@ -82,7 +82,9 @@ class AgentTools {
         if ($name === '' || mb_strlen($addr) < 8) return ['error'=>'full name and a complete address are needed'];
         if (!self::validPhone($ph)) return ['error'=>'a valid Bangladeshi mobile number (01XXXXXXXXX) is needed'];
         $opts = \App\Support\Delivery::options(); if (!isset($opts[$area])) return ['error'=>'area must be 1 (inside Chattogram city) or 2 (outside)'];
-        $ship = (float)$opts[$area]['c']; $total = $c['subtotal_raw'] + $ship;
+        $ship = (float)$opts[$area]['c'];
+        try { $dv = \App\Support\Delivery::compute((float)$c['subtotal_raw'], $area, $addr, '', array_keys($st['cart'] ?? [])); $ship = (float)$dv['charge']; } catch (\Throwable $e) { report($e); }
+        $total = $c['subtotal_raw'] + $ship;
         $st['pending'] = ['name'=>$name, 'phone'=>$ph, 'address'=>$addr, 'area'=>$area, 'note'=>mb_substr((string)($in['note'] ?? ''), 0, 300), 'cart'=>$st['cart'], 'total'=>$total, 'after_msg'=>(int)($ctx['last_msg_id'] ?? 0), 'at'=>time()];
         return ['summary'=>['items'=>$c['items'], 'subtotal'=>self::money($c['subtotal_raw']), 'delivery'=>self::money($ship), 'total_estimate'=>self::money($total), 'name'=>$name, 'phone'=>$ph, 'address'=>$addr, 'payment'=>'Cash on delivery'],
           'next'=>'Show this summary and ask the customer to confirm. Do NOT place the order until they clearly say yes.'];
