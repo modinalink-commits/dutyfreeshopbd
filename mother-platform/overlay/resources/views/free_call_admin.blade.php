@@ -38,6 +38,7 @@
 #fcap em{top:-7px;right:auto;left:-7px}
 #fcabar #dfEdge::after{top:auto;left:auto;position:static;flex:none}
 #fcap>i{top:9px;left:50%;transform:translateX(-50%)}
+main{padding-right:44px!important}
 @media(max-width:900px){#fcabar>*{width:26px!important;min-height:104px;font-size:11px}#fcabar .sub,#fcast,#fcabar b#dfSt{font-size:10px!important}}
 
 /* side dock (same look/behaviour as the Dialer dock) for Free Call and SMS & Messages */
