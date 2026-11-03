@@ -432,3 +432,5 @@ app/Http/Controllers/PixelController.php
 resources/views/pixel_admin.blade.php
 app/Http/Controllers/CatalogFeedController.php
 database/migrations/2026_11_03_000038_orders_ga_purchase_guard.php
+app/Http/Middleware/CloudflareRealIp.php
+app/Providers/AppServiceProvider.php
