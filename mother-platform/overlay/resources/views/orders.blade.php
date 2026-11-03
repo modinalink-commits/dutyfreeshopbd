@@ -147,6 +147,7 @@ var bk=document.getElementById('bulk');if(bk)bk.addEventListener('submit',functi
 @if(session('ok') && request('hl'))<div id="tst" role="status" style="position:fixed;top:16px;right:16px;z-index:10000;background:#166534;color:#fff;padding:10px 16px;border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.2);font-weight:600;font-size:14px;transition:opacity .5s">{{ session('ok') }}</div><script>setTimeout(function(){var t=document.getElementById('tst');if(t){t.style.opacity=0;setTimeout(function(){t.remove()},600)}},3000)</script>@elseif(session('ok'))<div class="card" style="color:#166534;margin:10px 0">{{ session('ok') }}</div>@endif
 @if(session('bad'))<div class="card err" style="margin:10px 0">{{ session('bad') }}</div>@endif
 @if($errors->any())<div class="card err">{{ $errors->first() }}</div>@endif
+@include('incomplete_quick')
 @if($isInc)@include('orders_incomplete')@else
 <div class="card oc">
 <form method="post" action="/admin/orders/bulk" id="bulk">@csrf

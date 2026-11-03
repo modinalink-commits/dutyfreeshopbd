@@ -39,6 +39,43 @@ class IncompleteController extends Controller {
     $cust = $ph ? DB::table('customers')->whereIn('phone', $ph)->pluck('id', 'phone') : collect();
     return ['incRows'=>$rows, 'incSt'=>$st, 'incCounts'=>$counts, 'incSum'=>(float)$open->s, 'incTabs'=>self::TABS, 'incCust'=>$cust, 'incImgs'=>self::imgs($rows->items())];
   }
+  /** Read-only detail page of one incomplete checkout. */
+  public function show($id) {
+    $o = DB::table('incomplete_orders')->find($id); abort_unless($o, 404);
+    return view('incomplete_show', ['o'=>$o, 'items'=>json_decode($o->items ?: '[]', true) ?: [], 'imgs'=>self::imgs([$o]), 'cust'=>DB::table('customers')->where('phone', $o->phone)->value('id')]);
+  }
+  public function edit($id) {
+    $o = DB::table('incomplete_orders')->find($id); abort_unless($o, 404);
+    return view('incomplete_edit', ['o'=>$o, 'items'=>json_decode($o->items ?: '[]', true) ?: [], 'imgs'=>self::imgs([$o]),
+      'cities'=>DB::table('districts')->where('active', true)->orderBy('name')->pluck('name')->all()]);
+  }
+  /** Full edit: contact fields, note, item quantities/removal and delivery charge. Totals are recomputed here, never trusted from the browser. */
+  public function update(Request $r, $id) {
+    $o = DB::table('incomplete_orders')->find($id); abort_unless($o, 404);
+    if ($o->status === 'converted') return back()->with('bad', 'This checkout is already converted to an order - edit the order instead.');
+    $d = $r->validate(['name'=>'nullable|string|max:120', 'phone'=>['required', 'string', new \App\Support\PhoneRule], 'email'=>'nullable|string|max:120', 'address'=>'nullable|string|max:500', 'district'=>'nullable|string|max:80',
+      'note'=>'nullable|string|max:500', 'shipping'=>'nullable|numeric|min:0|max:100000', 'qty'=>'nullable|array', 'qty.*'=>'nullable|integer|min:0|max:999']);
+    $items = json_decode($o->items ?: '[]', true) ?: []; $out = []; $sub = 0; $q = 0;
+    foreach ($items as $k => $i) {
+      $n = array_key_exists($k, $d['qty'] ?? []) ? (int)$d['qty'][$k] : (int)($i['qty'] ?? 0);
+      if ($n <= 0) continue; $i['qty'] = $n; $out[] = $i; $sub += (float)($i['price'] ?? 0) * $n; $q += $n;
+    }
+    if (!$out) return back()->withInput()->with('bad', 'At least one product must stay in the checkout. Use Archive to remove the whole entry.');
+    $ship = array_key_exists('shipping', $d) && $d['shipping'] !== null ? (float)$d['shipping'] : (float)$o->shipping;
+    $disc = min((float)$o->discount, $sub);
+    DB::table('incomplete_orders')->where('id', $id)->update(['name'=>trim((string)($d['name'] ?? '')) ?: null, 'phone'=>$d['phone'], 'email'=>trim((string)($d['email'] ?? '')) ?: null,
+      'address'=>trim((string)($d['address'] ?? '')) ?: null, 'district'=>trim((string)($d['district'] ?? '')) ?: null, 'note'=>trim((string)($d['note'] ?? '')) ?: null,
+      'items'=>json_encode($out, JSON_UNESCAPED_UNICODE), 'qty'=>$q, 'subtotal'=>$sub, 'discount'=>$disc, 'shipping'=>$ship, 'total'=>max(0, $sub - $disc + $ship), 'updated_at'=>now()]);
+    return redirect('/admin/incomplete/'.$id)->with('ok', 'Saved');
+  }
+  /** Quick edit popup: contact details + note only (JSON). */
+  public function quick(Request $r, $id) {
+    $o = DB::table('incomplete_orders')->find($id); abort_unless($o, 404);
+    if ($o->status === 'converted') return response()->json(['ok'=>false, 'message'=>'Already converted to an order'], 422);
+    $d = $r->validate(['name'=>'nullable|string|max:120', 'phone'=>['required', 'string', new \App\Support\PhoneRule], 'address'=>'nullable|string|max:500', 'note'=>'nullable|string|max:500']);
+    DB::table('incomplete_orders')->where('id', $id)->update(['name'=>trim((string)($d['name'] ?? '')) ?: null, 'phone'=>$d['phone'], 'address'=>trim((string)($d['address'] ?? '')) ?: null, 'note'=>trim((string)($d['note'] ?? '')) ?: null, 'updated_at'=>now()]);
+    return response()->json(['ok'=>true, 'message'=>'Saved']);
+  }
   public function act(Request $r, $id, $act) {
     $o = DB::table('incomplete_orders')->find($id); abort_unless($o, 404);
     DB::table('incomplete_orders')->where('id', $id)->update(['status'=>['recovered'=>'recovered', 'archive'=>'archived', 'reopen'=>'open'][$act], 'updated_at'=>now()]);

@@ -37,6 +37,10 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/orders/new', [A::class,'orderNew']);
   Route::get('/orders/lookup', [A::class,'orderLookup']);
   Route::get('/incomplete', fn() => redirect('/admin/orders?status=Incomplete'));
+  Route::get('/incomplete/{id}', [\App\Http\Controllers\IncompleteController::class,'show'])->whereNumber('id');
+  Route::get('/incomplete/{id}/edit', [\App\Http\Controllers\IncompleteController::class,'edit'])->whereNumber('id');
+  Route::post('/incomplete/{id}/update', [\App\Http\Controllers\IncompleteController::class,'update'])->whereNumber('id');
+  Route::post('/incomplete/{id}/quick', [\App\Http\Controllers\IncompleteController::class,'quick'])->whereNumber('id');
   Route::post('/incomplete/{id}/{act}', [\App\Http\Controllers\IncompleteController::class,'act'])->where('act', 'recovered|archive|reopen');
   Route::get('/orders/print', [\App\Http\Controllers\PrintController::class,'show']);
   Route::post('/orders/print-log', [\App\Http\Controllers\PrintLogController::class,'store'])->middleware('throttle:120,1');
