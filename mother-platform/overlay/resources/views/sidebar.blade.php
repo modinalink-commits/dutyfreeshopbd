@@ -88,3 +88,25 @@ aside details.mg[open]{background:#243247;border-radius:10px}aside details.mg[op
 aside a.sub,aside details.rpg>summary{color:#CBD5E1}aside a.sub:hover,aside details.rpg>summary:hover{background:#2B3A4F;color:#fff}
 aside a.sub.on{background:#334155;color:#fff;box-shadow:inset 3px 0 0 #FF6B1A}
 aside .gh{color:#94A3B8}aside .me{border-top-color:rgba(255,255,255,.08);color:#F8FAFC}</style>
+<style>/* white sidebar theme (final override) */
+aside{background:#fff;color:#111827;border-right:1px solid #E5E7EB;box-shadow:1px 0 4px rgba(0,0,0,.03);font-family:"Inter","Hind Siliguri","Segoe UI","Noto Sans Bengali",Arial,sans-serif}
+aside .brand{color:#111827;font-weight:700}aside .brand b{background:#FF5A00;color:#fff}aside .brand small{color:#6B7280;font-size:11px;font-weight:400}
+aside .viewing{background:#fff;border:1px solid #E5E7EB}aside .viewing small{color:#6B7280}aside .viewing strong{color:#111827}
+aside .sbs input{background:#F9FAFB;border:1px solid #E5E7EB;color:#111827}aside .sbs input::placeholder{color:#9CA3AF}aside .sbs input:focus{outline:0;border-color:#FF5A00;box-shadow:0 0 0 2px rgba(255,90,0,.15)}aside .sbs div{color:#6B7280}
+aside nav{scrollbar-color:#D1D5DB transparent}
+aside a.nv,aside details summary{color:#111827;min-height:38px;padding:8px 12px;font-size:13px;font-weight:600;gap:10px;box-sizing:border-box;transition:background .15s ease}
+aside a.nv svg,aside details summary svg{color:#374151;opacity:1}
+aside a.nv:hover,aside details summary:hover{background:#F8FAFC;color:#111827}aside a.nv:hover svg,aside details summary:hover svg{color:#111827}
+aside a.nv.on{background:#F3F4F6;color:#111827;font-weight:600;box-shadow:inset 3px 0 0 #FF5A00}aside a.nv.on svg{color:#111827}
+aside details.mg[open]{background:transparent}aside details.mg[open]>summary{color:#111827;background:#F3F4F6}aside details.mg[open]>summary:hover{background:#F3F4F6}
+aside details.mg>summary::after,aside details.rpg>summary::after{color:#6B7280;opacity:1}
+aside a.sub,aside details.rpg>summary{color:#374151;font-size:12px;font-weight:500;min-height:30px;padding-top:5px;padding-bottom:5px;padding-left:34px;box-sizing:border-box;transition:background .15s ease}
+aside a.sub:hover,aside details.rpg>summary:hover{background:#F8FAFC;color:#111827}
+aside a.sub.on{background:#F3F4F6;color:#111827;font-weight:600;box-shadow:inset 3px 0 0 #FF5A00}
+aside details.mg>a.sub.on,aside details.rpg a.sub.on{border-left:0}aside details.mg>a.sub.on{padding-left:34px}aside details.mg>a.rp1{padding-left:34px}aside details.rpg>summary{padding-left:34px}aside details.rpg a.sub{padding-left:48px}aside details.rpg a.sub.on{padding-left:48px}
+aside details.rpg[open]>summary{color:#111827}
+aside .gh{color:#6B7280}
+aside em{background:#FF5A00;color:#fff;font-size:11px;min-width:20px;height:20px;line-height:20px;padding:0 6px;box-sizing:border-box;text-align:center;border-radius:20px}aside a.sub em{height:18px;line-height:18px;min-width:18px;font-size:10.5px;padding:0 6px}
+aside .me{background:#fff;border-top:1px solid #E5E7EB;color:#111827;font-weight:600}
+aside .me button{background:#fff;color:#111827;border:1px solid #FF5A00}aside .me button:hover{background:#FFF7ED}
+</style>
