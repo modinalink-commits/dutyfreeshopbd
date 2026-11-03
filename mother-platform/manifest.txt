@@ -446,6 +446,7 @@ app/Support/AiAgent.php
 database/migrations/2026_11_03_000040_commerce_agent.php
 resources/views/order_actions.blade.php
 database/migrations/2026_11_03_000041_voice_chat.php
+database/migrations/2026_11_03_000042_data_deletion_page.php
 app/Support/VoiceChat.php
 app/Http/Controllers/VoiceChatController.php
 resources/views/voice_chat_settings.blade.php
