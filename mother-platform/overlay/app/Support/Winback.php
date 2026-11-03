@@ -58,7 +58,7 @@ class Winback
       $d = self::days($x['at']); $s = self::stageFor($d); if (!$s) continue;
       if (($done[$p . '|' . $x['oid']] ?? 0) >= $s[0]) continue; // each stage once per cycle
       $c = DB::table('customers')->whereRaw('right(phone,11) = ?', [$p])->where('blocked', false)->first(); if (!$c) continue;
-      if ($sent >= $room) { if ($blast) { try { \App\Support\Sms::flush(200); } catch (\Throwable $e) {} } return; } // small batch per tick + daily cap: the rest continue on the next tick / tomorrow
+      if ($sent >= $room) { if ($blast) { try { \App\Support\Sms::flush(200); } catch (\Throwable $e) {} self::guardBlast(); } return; } // small batch per tick + daily cap: the rest continue on the next tick / tomorrow
       $code = null;
       if ($mode === 'coupon') {
         $code = 'WB-' . strtoupper(substr(md5($p . $x['oid'] . $s[0] . microtime()), 0, 6));
@@ -79,6 +79,14 @@ class Winback
     if ($blast) { self::put('blast', '0'); self::put('blast_done', now()->toIso8601String()); } // list finished
     self::put('last_run', $today);
     if ($blast || $sent > 0) { try { \App\Support\Sms::flush($blast ? 200 : 25); } catch (\Throwable $e) {} }
+    if ($blast) self::guardBlast();
+  }
+  /** If the SMS gateway starts refusing (no balance, sender disabled, IP blocked), stop the run and re-open the customers whose message failed so nobody is marked as 'offered' without getting it. */
+  private static function guardBlast(): void {
+    $f = DB::table('sms_logs')->where('event', 'winback')->where('status', 'failed')->where('updated_at', '>', now()->subMinutes(20))->where(fn($q) => $q->where('provider_response', 'like', '1006%')->orWhere('provider_response', 'like', '1007%')->orWhere('provider_response', 'like', '1002%')->orWhere('provider_response', 'like', '1018%')->orWhere('provider_response', 'like', '1031%')->orWhere('provider_response', 'like', '1032%')->orWhere('provider_response', 'like', '1015%'))->get(['to', 'provider_response']);
+    if ($f->count() < 3) return;
+    self::put('blast', '0'); self::put('blast_stop', now()->toIso8601String() . ' — ' . mb_substr((string)$f->first()->provider_response, 0, 80));
+    foreach ($f as $l) DB::table('winback_events')->where('phone', self::norm((string)$l->to))->whereNull('used_at')->where('cycle_order_id', '>', 0)->where('created_at', '>', now()->subMinutes(40))->delete();
   }
 
   /** 'phone|cycleOrderId' => highest stage already sent (one query instead of one per customer). */
