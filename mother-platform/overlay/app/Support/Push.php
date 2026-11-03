@@ -41,7 +41,7 @@ class Push
 
   /** Customer ids matching an audience filter, or null for "everyone with a device". */
   public static function audienceCustomerIds(string $type, ?string $val): ?array {
-    $paid = "status not in ('Cancel','Returned','Return Pending','Incomplete','Exchange Received')";
+    $paid = "status not in ('Cancel','Returned','Return Pending','Incomplete')";
     $base = "select c.id from customers c left join (select phone, count(*) n, coalesce(sum(total),0) s from orders where $paid group by phone) o on o.phone = c.phone where c.blocked = false";
     $val = trim((string)$val);
     switch ($type) {

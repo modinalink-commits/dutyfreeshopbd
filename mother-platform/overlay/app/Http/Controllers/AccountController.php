@@ -17,7 +17,7 @@ class AccountController extends StoreController {
     'Shipment'   => ['Shipment', 'Late Delivery', 'Partial Delivered'],
     'Delivered'  => ['Delivered'],
     'Cancelled'  => ['Cancel'],
-    'Returned'   => ['Return Pending', 'Returned', 'Exchange Received'],
+    'Returned'   => ['Return Pending', 'Returned'],
   ];
   const STEPS = ['Order Placed', 'Confirmed', 'Processing', 'Packaging', 'Shipment', 'Delivered'];
   const STEP_OF = ['New'=>0, 'Incomplete'=>0, 'Pre Order'=>0, 'AI Order'=>0, 'Assign'=>1, 'Pending'=>1, 'Approved'=>1, 'Scheduled'=>2, 'WFP'=>2, 'Packaging'=>3, 'Shipment'=>4, 'Late Delivery'=>4, 'Partial Delivered'=>4, 'Delivered'=>5];
@@ -348,7 +348,7 @@ class AccountController extends StoreController {
     $at = []; foreach ($logs as $l) { $s = self::STEP_OF[$l->to_status] ?? null; if ($s !== null && !isset($at[$s])) $at[$s] = $l->created_at; }
     $at[0] = $at[0] ?? $o->created_at;
     $inv = URL::signedRoute('order.invoice', ['invoice'=>$o->invoice]);
-    return $this->view('store.account', $d + ['o'=>$o, 'oi'=>$items, 'step'=>self::STEP_OF[$o->status] ?? 0, 'at'=>$at, 'bad'=>in_array($o->status, ['Cancel', 'Return Pending', 'Returned', 'Exchange Received']), 'grp'=>$this->group($o->status), 'inv'=>$inv, 'title'=>$o->invoice.' | My Account']);
+    return $this->view('store.account', $d + ['o'=>$o, 'oi'=>$items, 'step'=>self::STEP_OF[$o->status] ?? 0, 'at'=>$at, 'bad'=>in_array($o->status, ['Cancel', 'Return Pending', 'Returned']), 'grp'=>$this->group($o->status), 'inv'=>$inv, 'title'=>$o->invoice.' | My Account']);
   }
   public function reorder(Request $r, $invoice) {
     $c = $this->me($r); if (!$c) return response()->json([], 401);

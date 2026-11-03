@@ -9,7 +9,7 @@ class TopSellers {
   const DEFAULT_STATUSES = 'Approved,Packaging,Shipment,Partial Delivered,Delivered';
   const TTL = 300;
   /** Order statuses that never count, even if someone types them into the setting. */
-  const NEVER = ['Incomplete','Cancel','Returned','Return Pending','Exchange Received','Failed','Fake','Duplicate','New'];
+  const NEVER = ['Incomplete','Cancel','Returned','Return Pending','Failed','Fake','Duplicate','New'];
   public static function today(): string { return now(self::TZ)->toDateString(); }
   public static function key(string $d): string { return 'homepage:top-selling-products:'.$d; }
   public static function bust(?string $d = null): void { try { Cache::forget(self::key($d ?: self::today())); } catch (\Throwable $e) {} }

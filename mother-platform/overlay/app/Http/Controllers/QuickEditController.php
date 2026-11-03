@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 
 /** Order page "Quick Edit" popups for the non-money fields. Every change is logged to the permanent staff activity (old value, new value, who, when). */
 class QuickEditController extends Controller {
-  const LOCKED = ['Delivered', 'Partial Delivered', 'Returned', 'Exchange Received', 'Late Delivery', 'Return Pending'];
+  const LOCKED = ['Delivered', 'Partial Delivered', 'Returned', 'Late Delivery', 'Return Pending'];
   const COURIERS = ['Pathao', 'Steadfast', 'RedX', 'Carrybee', 'Other'];
   private function err(string $m) { return response()->json(['ok'=>false, 'error'=>$m], 422); }
   private function load($id) { $o = DB::table('orders')->find($id); abort_unless($o, 404); return $o; }

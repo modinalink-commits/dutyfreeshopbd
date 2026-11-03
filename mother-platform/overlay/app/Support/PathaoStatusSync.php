@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
  *
  *   Shipment ── partial delivery ──▶ Return Pending (return_type Partial)  ── returned goods back ──▶ Returned
  *   Shipment ── whole parcel back ─▶ Return Pending (return_type Full)     ── returned goods back ──▶ Returned
- *   Shipment ── exchange ──────────▶ Return Pending (return_type Exchange) ── goods back ──▶ Exchange Received
+ *   Shipment ── exchange ──────────▶ no status change, flagged "Exchange Review" for manual review
  *
  * Pathao reports the parcel, not the items. We never guess an item or a money figure: the returned items are worked
  * out only when the amount Pathao collected matches exactly ONE combination of the order's items; otherwise the order
@@ -25,13 +25,13 @@ class PathaoStatusSync {
     return null;
   }
 
-  /** $action comes from PathaoStatusMapper (the admin-editable map): partial_pending | partial_received | exchange_pending | exchange_received | return_pending | returned. Safe to run twice for the same event. */
+  /** $action comes from PathaoStatusMapper (the admin-editable map): partial_pending | partial_received | exchange_review | return_pending | returned. Safe to run twice for the same event. */
   public static function outcome(int $id, string $action, array $i = []): void {
     // Received / Returned are set only when OUR warehouse confirms the goods in hand (the Received button). The courier result only ever makes an order "Pending".
-    $action = ['partial_received'=>'partial_pending', 'exchange_received'=>'exchange_pending', 'returned'=>'return_pending'][$action] ?? $action;
+    $action = ['partial_received'=>'partial_pending', 'exchange_received'=>'exchange_review', 'exchange_pending'=>'exchange_review', 'returned'=>'return_pending'][$action] ?? $action;
     $o = DB::table('orders')->find($id); if (!$o || !in_array($o->status, self::OPEN, true)) return;
-    if ($action === 'exchange_pending') { if (in_array($o->status, self::ENTRY, true)) { DB::table('orders')->where('id', $id)->update(['return_type' => 'Exchange']); self::setStatus($o, 'Return Pending', 'Pathao: Exchange'); } return; }
-    if ($action === 'exchange_received') { if ($o->status === 'Return Pending' && $o->return_type === 'Exchange') { DB::table('orders')->where('id', $id)->update(['return_received_at' => now()]); self::setStatus($o, 'Exchange Received', 'Pathao: exchange received'); } return; }
+    // Exchange is not part of our workflow: keep Pathao's word on the parcel and ask staff to look, never move the order.
+    if (in_array($action, ['exchange_pending', 'exchange_received', 'exchange_review'], true)) { self::flag($id, 'Exchange Review', 'Pathao reported an Exchange for this parcel. We do not run an exchange workflow, so the order status is unchanged. Review it manually.'); return; }
     $items = DB::table('order_items')->where('order_id', $id)->orderBy('id')->get(); if ($items->isEmpty()) return;
     $known = $items->contains(fn($x) => $x->outcome !== null);
     $got = self::collected($i);

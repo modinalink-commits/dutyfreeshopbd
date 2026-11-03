@@ -3,7 +3,7 @@
 @php
   $steps = ['Placed','Confirmed','Packed','On the way','Delivered'];
   $map = ['Approved'=>1,'Scheduled'=>1,'WFP'=>1,'Packaging'=>2,'Shipment'=>3,'Late Delivery'=>3,'Partial Delivered'=>4,'Delivered'=>4];
-  $at = $o ? ($map[$o->status] ?? 0) : -1; $bad = $o && in_array($o->status, ['Cancel','Return Pending','Returned','Exchange Received']);
+  $at = $o ? ($map[$o->status] ?? 0) : -1; $bad = $o && in_array($o->status, ['Cancel','Return Pending','Returned']);
 @endphp
 <style>.tk2{padding:24px 12px 40px;display:flex;justify-content:center}.tkc{width:926px;max-width:100%;background:#fff;border:1px solid #FED7AA;border-radius:16px;box-shadow:0 2px 10px rgba(15,23,42,.05);padding:22px 24px}
 .tkc h1{font-size:19px;font-weight:700;color:#0F172A;margin:0}.tkc .sub{font-size:12.5px;color:#64748B;margin:3px 0 16px}

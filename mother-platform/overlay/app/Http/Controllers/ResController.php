@@ -106,7 +106,7 @@ class ResController extends Controller {
     $ph = collect($rows->items())->pluck('phone')->filter()->all(); if (!$ph) return [];
     $agg = DB::table('orders')->whereIn('phone',$ph)->whereNotIn('status',['Cancel'])->select('phone', DB::raw('count(*) n'), DB::raw('coalesce(sum(total),0) s'), DB::raw('max(created_at) l'))->groupBy('phone')->get()->keyBy('phone');
     $lv = DB::table('membership_levels')->where('active',true)->orderByDesc('min_spent')->get();
-    $st = DB::table('orders')->whereIn('phone',$ph)->select('phone', DB::raw("sum(case when status in ('Delivered','Partial Delivered') then 1 else 0 end) d"), DB::raw("sum(case when status in ('Return Pending','Returned','Exchange Received','Cancel') then 1 else 0 end) x"))->groupBy('phone')->get()->keyBy('phone');
+    $st = DB::table('orders')->whereIn('phone',$ph)->select('phone', DB::raw("sum(case when status in ('Delivered','Partial Delivered') then 1 else 0 end) d"), DB::raw("sum(case when status in ('Return Pending','Returned','Cancel') then 1 else 0 end) x"))->groupBy('phone')->get()->keyBy('phone');
     $lastp = DB::table('orders as o')->join('order_items as i', 'i.order_id', '=', 'o.id')->whereIn('o.phone',$ph)->whereNotIn('o.status',['Cancel'])
       ->whereRaw('o.id = (select max(o2.id) from orders o2 where o2.phone = o.phone and o2.status <> ?)', ['Cancel'])->select('o.phone', 'i.name')->orderBy('i.id')->get()->groupBy('phone');
     $out = [];

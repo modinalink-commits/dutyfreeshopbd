@@ -7,8 +7,8 @@ use Illuminate\Support\Facades\Auth;
  *   nothing returned          -> Delivered
  *   some received + some back -> Partial Return:  Return Pending (return_type Partial) -> Returned (goods back, stock added)
  *   everything returned       -> Full Return:     Return Pending -> Returned (goods back, stock added)
- *   exchange                  ->                  Return Pending (return_type Exchange) -> Exchange Received
- * The order-status bar only ever shows Shipment, Partial Delivered, Delivered, Late Delivery, Return Pending, Returned, Exchange Received. The kind of return is kept in return_type / pathao_outcome.
+ *   exchange                  ->                  no status change (flagged for manual review)
+ * The order-status bar only ever shows Shipment, Partial Delivered, Delivered, Late Delivery, Return Pending, Returned. The kind of return is kept in return_type / pathao_outcome.
  * Money: for a Partial Return the order total becomes the value of the RECEIVED items only (no delivery charge, no discount); the original figures stay in original_*.
  * Stock: leaves the shelf when the order first reaches Shipment (DB trigger); goes back only when the returned goods are physically received, and only if it was deducted.
  */
@@ -16,10 +16,10 @@ class ShipmentOutcome {
   const RECORDABLE = ['Shipment', 'Late Delivery', 'Partial Delivered', 'Return Pending'];
   const PARTIAL = [];
   const FULL = ['Return Pending', 'Returned'];
-  const RETURN_STATUSES = ['Return Pending', 'Returned', 'Exchange Received'];
+  const RETURN_STATUSES = ['Return Pending', 'Returned'];
   /** Statuses that only this module may set (a person must not pick a parcel type by hand). */
   /** Statuses the courier decides once a parcel exists. Staff cannot set them by hand; the courier result sets them and the warehouse only confirms receipt. */
-  const COURIER_SET = ['Shipment', 'Late Delivery', 'Partial Delivered', 'Delivered', 'Return Pending', 'Returned', 'Exchange Received'];
+  const COURIER_SET = ['Shipment', 'Late Delivery', 'Partial Delivered', 'Delivered', 'Return Pending', 'Returned'];
   public static function courierLocked(object $o): bool { return !empty($o->consignment_id) && in_array($o->status, self::COURIER_SET, true); }
   /** Message when a manual move is not allowed, null when it is. */
   public static function manualBlock(object $o, string $to): ?string {
@@ -96,7 +96,7 @@ class ShipmentOutcome {
   /**
    * Warehouse receives the returned goods ("Partial Return Received" / "Return Received").
    * $back = [order_item_id => quantity physically received] (default: everything that was expected). Stock goes up by exactly that, once.
-   * Return Pending -> Returned (Exchange: Return Pending -> Exchange Received). A partial return restores only the returning items.
+   * Return Pending -> Returned A partial return restores only the returning items.
    */
   public static function receive(int $orderId, array $back = []): array {
     $o = DB::table('orders')->find($orderId); if (!$o) return [false, 'Order not found.', null];
@@ -104,7 +104,7 @@ class ShipmentOutcome {
     $items = DB::table('order_items')->where('order_id', $orderId)->orderBy('id')->get(); $exp = self::expected($o, $items);
     if (!$exp) return [false, 'No returning items were found on this order.', $o->status];
     foreach ($exp as [$i, $q]) { $b = array_key_exists($i->id, $back) ? (int)$back[$i->id] : $q; if ($b < 0 || $b > $q) return [false, 'Received quantity for "'.$i->name.'" must be between 0 and '.$q.'.', $o->status]; $back[$i->id] = $b; }
-    $ex = $o->return_type === 'Exchange'; $full = !$ex && $o->return_type !== 'Partial'; $to = $ex ? 'Exchange Received' : 'Returned'; $now = now(); $lines = []; $stockDone = false;
+    $ex = false; $full = $o->return_type !== 'Partial'; $to = 'Returned'; $now = now(); $lines = []; $stockDone = false;
     $canStock = $o->stock_deducted_at !== null && $o->stock_returned_at === null;
     DB::transaction(function () use ($o, $orderId, $exp, $back, $to, $now, $full, $ex, $canStock, &$lines, &$stockDone) {
       foreach ($exp as [$i, $q]) {

@@ -8,7 +8,7 @@ class PathaoStatusMapper {
   const ACTIONS = [
     'none' => 'No order change (courier tracking only)',
     'partial_pending' => 'Return Pending (Partial Return)',
-    'exchange_pending' => 'Return Pending (Exchange)',
+    'exchange_review' => 'Exchange: manual review only (no status change)',
     'return_pending' => 'Return Pending (Regular Return)',
   ];
   public static function key(?string $raw): string { return trim(preg_replace('/[^a-z0-9]+/', ' ', strtolower((string)$raw))); }

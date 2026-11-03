@@ -49,7 +49,7 @@ class CourierSync {
     $changed = $stage !== $o->courier_stage || (string)$raw !== (string)$o->courier_status;
     if ($changed) { DB::table('courier_events')->insert(['order_id'=>$o->id, 'courier'=>$o->courier ?: 'Pathao', 'status'=>$raw, 'stage'=>$stage, 'location'=>$o->courier_location, 'happened_at'=>$now, 'created_at'=>$now, 'updated_at'=>$now]); if ($isPathao) PathaoStatusMapper::seen((string)$raw); }
     $new = ($action || $unknown) ? null : self::orderStatus($stage);
-    if ($new && $o->status !== $new && !in_array($o->status, ['Delivered','Returned','Cancel','Exchange Received'], true)) {
+    if ($new && $o->status !== $new && !in_array($o->status, ['Delivered','Returned','Cancel'], true)) {
       $upd['status'] = $new;
       DB::table('order_status_logs')->insert(['order_id'=>$o->id, 'user_id'=>null, 'user_name'=>'Courier (auto)', 'from_status'=>$o->status, 'to_status'=>$new, 'note'=>($o->courier ?: 'Pathao').': '.$raw, 'created_at'=>$now, 'updated_at'=>$now]);
     }
