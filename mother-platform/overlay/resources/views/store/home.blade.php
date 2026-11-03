@@ -169,8 +169,9 @@ if(document.readyState==='complete')setTimeout(first,300);else addEventListener(
 @if($s['home_cat_sections']==='1')
 @foreach($sec as [$c, $items])
 @if($items->count())
-<div class="w sec-cs" style="padding-top:34px"><div class="cs">
-<div class="hh"><span class="t">{{ $c->name }}</span><span class="sp"></span>@foreach(array_slice($subs[$c->id] ?? [], 0, 5) as $sb)<a class="tb" href="/{{ $c->slug }}/{{ \App\Support\Slugs::subSlug($sb->sub) }}">{{ $sb->sub }}</a>@endforeach<a class="va" href="/{{ $c->slug }}/">View All</a></div>
+@include('store.home_sec', ['lazy'=>$loop->index >= 2])
+@endif
+@endforeach<a class="va" href="/{{ $c->slug }}/">View All</a></div>
 <div class="mt"><span>{{ $c->name }}</span><a href="/{{ $c->slug }}/">View all ›</a></div>
 <div class="gr">@foreach($items as $q)@include('store.card', ['fd'=>true])@endforeach</div>
 <div class="mv"><a href="/{{ $c->slug }}/">Browse all {{ $c->name }}</a></div></div></div>
@@ -208,4 +209,6 @@ if(!rm&&tr.getAttribute('data-auto')!=='0')setInterval(function(){if(!paused&&vi
 addEventListener('resize',upd);setTimeout(upd,300);upd()}
 document.querySelectorAll('[data-cr]').forEach(init)})();</script>
 <script>(function(){document.querySelectorAll('.sld[data-auto]').forEach(function(w){var t=w.querySelector('.sl-t'),n=t.children.length;if(n<2||t.scrollWidth<=t.clientWidth+4&&n<3&&!w.classList.contains('dk')&&!w.classList.contains('mb')&&false)return;var d=w.querySelector('.sl-d');if(d){for(var k=0;k<n;k++)d.appendChild(document.createElement('i'));}var i=0,h=false;function dots(){if(!d)return;var a=Math.round(t.scrollLeft/t.children[0].offsetWidth);[].forEach.call(d.children,function(e,x){e.className=x==a?'on':''})}t.addEventListener('scroll',dots);dots();w.addEventListener('mouseenter',function(){h=true});w.addEventListener('mouseleave',function(){h=false});t.addEventListener('touchstart',function(){h=true},{passive:true});t.addEventListener('touchend',function(){setTimeout(function(){h=false},4000)},{passive:true});setInterval(function(){if(h||w.hasAttribute('data-hold')||!t.offsetWidth||matchMedia('(prefers-reduced-motion: reduce)').matches)return;var c=t.children[0].offsetWidth+(parseFloat(getComputedStyle(t).columnGap)||0),a=Math.round(t.scrollLeft/c);t.scrollTo({left:(t.scrollLeft+t.clientWidth>=t.scrollWidth-4?0:(a+1)*c),behavior:'smooth'})},+w.getAttribute('data-auto'))})})();</script>
+@verbatim<script>(function(){var els=[].slice.call(document.querySelectorAll('.hsl[data-hs]'));if(!els.length)return;function ld(el){if(el.__l)return;el.__l=1;fetch('/home-sec/'+encodeURIComponent(el.getAttribute('data-hs')),{credentials:'same-origin'}).then(function(r){if(!r.ok)throw 0;return r.text()}).then(function(h){var t=document.createElement('template');t.innerHTML=h.trim();var n=t.content.firstElementChild;if(n)el.replaceWith(n)}).catch(function(){el.__l=0})}
+if('IntersectionObserver' in window){var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){io.unobserve(e.target);ld(e.target)}})},{rootMargin:'900px 0px'});els.forEach(function(e){io.observe(e)})}else els.forEach(ld)})();</script>@endverbatim
 @endsection

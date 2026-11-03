@@ -52,6 +52,7 @@ app/Console/Commands/MotherSyncFeed.php
 app/Http/Controllers/StoreController.php
 resources/views/store/layout.blade.php
 resources/views/store/card.blade.php
+resources/views/store/home_sec.blade.php
 resources/views/store/home.blade.php
 resources/views/store/category.blade.php
 resources/views/store/product.blade.php

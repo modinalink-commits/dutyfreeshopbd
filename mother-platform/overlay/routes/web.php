@@ -423,6 +423,7 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestF
   Route::get('/products.xml', [\App\Http\Controllers\CatalogFeedController::class,'feed']);
   Route::post('/ai-chat', [\App\Http\Controllers\AiChatController::class,'ask'])->middleware('throttle:120,1');
   Route::get('/search-suggest', [\App\Http\Controllers\StoreController::class,'suggest'])->middleware('throttle:600,1');
+  Route::get('/home-sec/{slug}', [\App\Http\Controllers\StoreController::class,'homeSec'])->where('slug','[A-Za-z0-9_-]+')->middleware('throttle:300,1');
   Route::get('/search', [\App\Http\Controllers\StoreController::class,'search']);
   Route::get('/track', [\App\Http\Controllers\StoreController::class,'track']);
   Route::get('/blog', [\App\Http\Controllers\StoreController::class,'blog']);

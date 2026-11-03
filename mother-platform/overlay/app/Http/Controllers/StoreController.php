@@ -126,6 +126,14 @@ class StoreController extends Controller {
     $live = $s['home_live_orders'] === '1' ? $this->liveOrders() : collect();
     return response()->view('store.home', $this->base($data + ['live'=>$live, 'title'=>self::cleanSeo($s['site_title'] ?? '', self::HOME_TITLE), 'desc'=>self::cleanSeo($s['meta_description'] ?? '', self::HOME_DESC), 'canon'=>url('/').'/', 'home'=>true]))->header('Cache-Control','public, max-age=60');
   }
+  /** Below-the-fold home category section, lazy-loaded by the home page so the first HTML stays small. */
+  public function homeSec(string $slug) {
+    $c = $this->cats()[$slug] ?? null; $s = self::set();
+    if (!$c || $s['home_cat_sections'] !== '1') abort(404);
+    $items = self::rem('store.hsec.'.$slug, 300, fn() => DB::table('products')->where('published', true)->where('category_id', $c->id)->orderByDesc('id')->limit(6)->get());
+    if (!$items->count()) abort(404);
+    return response()->view('store.home_sec', $this->base(['c'=>$c, 'items'=>$items, 'lazy'=>false]))->header('X-Robots-Tag', 'noindex')->header('Cache-Control', 'public, max-age=300');
+  }
   /** Real recent orders, customer names masked (first letter + ***). */
   private function liveOrders() {
     return self::rem('store.live4', 60, fn() => DB::table('orders as o')->join('order_items as i','i.order_id','=','o.id')->leftJoin('products as p','p.id','=','i.product_id')->whereNotIn('o.status',['Cancel','Incomplete'])->where('o.created_at','>=',now()->subDays(3))
