@@ -13,11 +13,15 @@ class AiChat {
   public static function model(): string { return Sms::secret('ai_model') ?: 'claude-haiku-5-5'; }
   /** Store-wide facts the assistant may quote (cached 5 min): contact, delivery, payment, policies, offers, categories. */
   public static function facts(): string {
-    return Cache::remember('ai.facts', 300, function () {
+    return Cache::remember('ai.facts2', 300, function () {
       $s = \App\Http\Controllers\StoreController::set(); $o = [];
       $o[] = 'STORE: DutyFree Shop BD (dutyfreebd.com), Child City. Hotline: '.Biz::hotline().'. Mobile: '.Biz::mobile().'. WhatsApp: '.Biz::whatsapp().'. Email: '.($s['contact_email'] ?? '').'. Address: '.preg_replace('/\s+/', ' ', (string)($s['contact_address'] ?? '')).'. Hours: '.($s['business_hours'] ?? '').'.';
-      $d = []; foreach ([1,2,3,4] as $i) if (!empty($s["ship_{$i}_name"])) $d[] = $s["ship_{$i}_name"].' = '.$s["ship_{$i}_charge"].' TK';
-      if ($d) $o[] = 'DELIVERY CHARGES: '.implode('; ', $d).'.';
+      // the live delivery engine (Admin > Delivery) is the single source of truth, not the old ship_N settings
+      try {
+        $dc = \App\Support\Delivery::cfg();
+        if (!$dc['on']) $o[] = 'DELIVERY CHARGES: no delivery charge is added at the moment (delivery charge is OFF in the system). Final charge is always calculated by the system at order time.';
+        else $o[] = 'DELIVERY CHARGES: '.$dc['l_in'].' = '.number_format($dc['inside']).' TK; '.$dc['l_out'].' = '.number_format($dc['outside']).' TK'.($dc['express'] > 0 ? '; '.$dc['l_ex'].' = '.number_format($dc['express']).' TK' : '').($dc['free_on'] && $dc['free_min'] > 0 ? '; FREE delivery on orders of '.number_format($dc['free_min']).' TK or more' : '').'. Final charge (zones, free-delivery rules) is calculated by the system at order time.';
+      } catch (\Throwable $e) {}
       $pay = [];
       if (($s['co_cod'] ?? '1') === '1') $pay[] = 'Cash on delivery';
       try { foreach (DB::table('payment_methods')->where('active', true)->orderBy('position')->get() as $m) $pay[] = $m->title.' ('.$m->kind.')'.($m->account_no ? ' account '.$m->account_no.($m->account_name ? ' / '.$m->account_name : '') : '').($m->instruction ? ' - '.mb_substr(strip_tags($m->instruction), 0, 160) : ''); } catch (\Throwable $e) {}
