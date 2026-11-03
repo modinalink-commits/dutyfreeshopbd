@@ -141,7 +141,7 @@ e2fe13b2a38db1acd38a2cdcfccf1d7a094bd905 resources/views/chat_widget.blade.php
 3d66eebc3b7fea5b3bbd5bbfde36548092f2b957 database/migrations/2026_10_31_000024_chat_ai.php
 15fe96db267138e541e4fb1a73aa6d0ad4451d51 app/Http/Controllers/AccountController.php
 26a77b205ef9ae35bd4ebbfe68e3c3b4ec2fc21f resources/views/store/account.blade.php
-d20027467c0e8a5cdad68b955c0b9196b770b931 resources/views/store/account_auth.blade.php
+5f1b215680148862df5d99fe0e82926db817c886 resources/views/store/account_auth.blade.php
 9aff5efe579d3d9fecc6d438e6dce4e34ba0ff5c database/migrations/2026_10_31_000025_customer_accounts.php
 a483ec8fec0f2a8e661fbb71c446bd0323047a83 app/Support/Img.php
 71742b429c495bfa9aafb299a35efe50bc7e6eaf app/Http/Controllers/MediaController.php
@@ -179,7 +179,7 @@ cc62dc2999d79ce7a6e46833bd774c0ea255aa70 resources/views/sip_account.blade.php
 df8c09076466870665b8e80f5ebeacccd9739829 resources/views/call_history.blade.php
 1ee8822c060030771c163ca0c0ab2f515fff8d97 resources/views/softphone_fab.blade.php
 d60cc2488e9d1428806a53b4a367beb5d0ec79c6 public/js/jssip.min.js
-d6161c1f676b965cc97936bf18fea14829a77765 public/js/df-export.js
+e01283f77d3a60a934ace10fbbd04ff14a7fad0c public/js/df-export.js
 2d1736bd9f1ad4cef1ee2b2f34388ff37f78d001 app/Support/CardImg.php
 c3732a3e2c27a150b4d0b55a8245c04f686ef706 app/Support/Seo.php
 9c47b100afa2523480b6bbb4131db18160331b34 resources/views/store/zoom.blade.php
