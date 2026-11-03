@@ -16,6 +16,7 @@ class PerfProbe {
     usort($log, fn($x, $y) => $y['time'] <=> $x['time']); $slow = []; foreach (array_slice($log, 0, 4) as $q) $slow[] = round($q['time']) . 'ms ' . substr(preg_replace('/\s+/', ' ', $q['query']), 0, 230);
     $resp->headers->set('X-Perf-Slow', preg_replace('/[^\x20-\x7E]/', '', implode(' || ', $slow)));
     $resp->headers->set('X-Perf', sprintf('time_ms=%d; queries=%d; db_ms=%.1f; peak_mb=%.1f; bytes=%d', (microtime(true) - $t0) * 1000, count($log), $ms, memory_get_peak_usage(true) / 1048576, strlen((string)$resp->getContent())));
+    $resp->headers->set('X-Perf-Ip', (string)$r->ip()); // which client IP Laravel sees (verifies the Cloudflare real-IP handling)
     $resp->headers->set('X-Perf-Top', preg_replace('/[^\x20-\x7E]/', '', implode(' || ', $top)));
     return $resp;
   }
