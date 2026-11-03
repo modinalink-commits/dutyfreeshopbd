@@ -11,6 +11,7 @@ class AgentTools {
       $s('search_products', 'Search the live catalogue by name, brand or category (Bengali, English or Banglish). Returns price, stock status and link from the database.', ['query'=>$str, 'limit'=>$int], ['query']),
       $s('product_details', 'Description and live price/stock of one product by id.', ['product_id'=>$int], ['product_id']),
       $s('delivery_info', 'Delivery charge options (inside / outside Chattogram city) and the live payment methods.'),
+      $s('current_offers', 'LIVE offers right now: delivery charge rule (free or not), today\'s deals with prices, and the automatic discount rules. Call this for any question about offers, discounts, deals, free delivery or delivery charge.'),
       $s('order_status', 'Status, total, courier status and tracking code of an order. Requires BOTH the invoice number and the phone number used for that order.', ['invoice'=>$str, 'phone'=>$str], ['invoice', 'phone']),
       $s('cart_add', 'Add a product to this conversation\'s cart (live price and stock are checked).', ['product_id'=>$int, 'qty'=>$int], ['product_id']),
       $s('cart_remove', 'Remove a product from the cart.', ['product_id'=>$int], ['product_id']),
@@ -59,6 +60,17 @@ class AgentTools {
         try { foreach (DB::table('payment_methods')->where('active', true)->orderBy('position')->get() as $m) $pay[] = $m->title.' ('.$m->kind.')'; } catch (\Throwable $e) {}
         return ['areas'=>collect($o)->map(fn($a, $k) => ['area'=>$k, 'name'=>$a['n'], 'charge'=>self::money($a['c'])])->values()->all(), 'payment_methods'=>$pay, 'note'=>'Final delivery charge and any discount are calculated by the system at order time.'];
       }
+      case 'current_offers': {
+        $c = \App\Support\Delivery::cfg(); $out = [];
+        if (!$c['on']) $out['delivery'] = 'FREE: no delivery charge is added to any order at the moment (delivery charge is switched off in the system).';
+        else {
+          $out['delivery'] = ['inside_chattogram'=>self::money($c['inside']), 'outside_chattogram'=>self::money($c['outside']), 'free_over'=>($c['free_on'] && $c['free_min'] > 0) ? self::money($c['free_min']) : null, 'note'=>'Zone or product rules may change the final charge; it is calculated when the order is prepared.']; }
+        try { $deals = \App\Http\Controllers\StoreController::dealList(\App\Http\Controllers\StoreController::set())->take(8);
+          $out['todays_deals'] = $deals->map(fn($p) => ['id'=>$p->id, 'name'=>$p->name, 'price'=>self::money($p->price), 'was'=>self::money($p->compare_price), 'off_percent'=>(int)round(100 * ((float)$p->compare_price - (float)$p->price) / max(1, (float)$p->compare_price)), 'stock'=>self::stockTxt($p), 'link'=>url(\App\Http\Controllers\StoreController::url($p))])->values()->all(); } catch (\Throwable $e) { $out['todays_deals'] = []; }
+        try { $out['automatic_discounts'] = DB::table('discount_rules')->where('enabled', true)->get(['title', 'help', 'config'])->map(fn($r) => ['title'=>$r->title, 'details'=>mb_substr(strip_tags((string)$r->help), 0, 200), 'config'=>mb_substr((string)$r->config, 0, 200)])->all(); } catch (\Throwable $e) { $out['automatic_discounts'] = []; }
+        $out['note'] = 'Coupon codes are personal and applied at checkout; never invent or reveal a code. Only quote what is listed here.';
+        return $out;
+      }
       case 'order_status': {
         $inv = strtoupper(trim((string)($in['invoice'] ?? ''))); if (preg_match('/^(\d{4,8})$/', $inv, $m)) $inv = 'INV-'.$m[1]; $inv = str_replace(' ', '', $inv);
         $ph = self::norm((string)($in['phone'] ?? '')); if (!self::validPhone($ph)) return ['error'=>'a valid 11-digit phone number is needed'];
@@ -86,7 +98,7 @@ class AgentTools {
         try { $dv = \App\Support\Delivery::compute((float)$c['subtotal_raw'], $area, $addr, '', array_keys($st['cart'] ?? [])); $ship = (float)$dv['charge']; } catch (\Throwable $e) { report($e); }
         $total = $c['subtotal_raw'] + $ship;
         $st['pending'] = ['name'=>$name, 'phone'=>$ph, 'address'=>$addr, 'area'=>$area, 'note'=>mb_substr((string)($in['note'] ?? ''), 0, 300), 'cart'=>$st['cart'], 'total'=>$total, 'after_msg'=>(int)($ctx['last_msg_id'] ?? 0), 'at'=>time()];
-        return ['summary'=>['items'=>$c['items'], 'subtotal'=>self::money($c['subtotal_raw']), 'delivery'=>self::money($ship), 'total_estimate'=>self::money($total), 'name'=>$name, 'phone'=>$ph, 'address'=>$addr, 'payment'=>'Cash on delivery'],
+        return ['summary'=>['items'=>$c['items'], 'subtotal'=>self::money($c['subtotal_raw']), 'delivery'=>self::money($ship), 'delivery_note'=>isset($dv) ? ($dv['reason'] ?: ($ship <= 0 ? 'No delivery charge' : $dv['zone'])) : null, 'total_estimate'=>self::money($total), 'name'=>$name, 'phone'=>$ph, 'address'=>$addr, 'payment'=>'Cash on delivery'],
           'next'=>'Show this summary and ask the customer to confirm. Do NOT place the order until they clearly say yes.'];
       }
       case 'place_order': return self::place($st, $ctx);
