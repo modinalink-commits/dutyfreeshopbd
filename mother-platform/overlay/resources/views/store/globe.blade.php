@@ -49,7 +49,7 @@
 @endfor
 </div></div>
 <a class="dfg-all" href="/cigarette-vape/">সব প্রোডাক্ট দেখুন →</a>
-<div class="dfg-app df-hide-inst"><span>📱 আমাদের Android ও iPhone অ্যাপ — সরাসরি ওয়েবসাইট থেকে ইনস্টল করুন</span><div class="dfg-ab">
+<div class="dfg-app"><span>📱 আমাদের Android ও iPhone অ্যাপ — সরাসরি ওয়েবসাইট থেকে ইনস্টল করুন</span><div class="dfg-ab">
 <button type="button" data-pwa="android" aria-label="Install Android app"><svg viewBox="0 0 24 24" fill="#3DDC84"><path d="M17.6 9.5a.9.9 0 1 1 0 1.8.9.9 0 0 1 0-1.8zM6.4 9.5a.9.9 0 1 1 0 1.8.9.9 0 0 1 0-1.8zM15.9 4.4l1.2-2.1a.3.3 0 0 0-.5-.3l-1.2 2.1A7.2 7.2 0 0 0 12 3.4c-1.1 0-2.1.2-3.4.7L7.4 2a.3.3 0 0 0-.5.3l1.2 2.1A6.6 6.6 0 0 0 5 9.7h14a6.6 6.6 0 0 0-3.1-5.3zM5 10.7v7.1c0 .8.6 1.4 1.4 1.4h.9v2.6a1.3 1.3 0 0 0 2.6 0v-2.6h2.2v2.6a1.3 1.3 0 0 0 2.6 0v-2.6h.9c.8 0 1.4-.6 1.4-1.4v-7.1zM2.3 10.7a1.3 1.3 0 0 0-1.3 1.3v4.5a1.3 1.3 0 0 0 2.6 0V12a1.3 1.3 0 0 0-1.3-1.3zm19.4 0a1.3 1.3 0 0 0-1.3 1.3v4.5a1.3 1.3 0 0 0 2.6 0V12a1.3 1.3 0 0 0-1.3-1.3z"/></svg><span><small>INSTALL DIRECTLY</small><b>Android App</b></span></button>
 <button type="button" data-pwa="ios" aria-label="Install iPhone app"><svg viewBox="0 0 24 24" fill="#fff"><path d="M16.4 12.6c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9-.7 0-1.8-.8-3-.8-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.4 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7c1.3 0 2.1-1.1 2.8-2.2.9-1.3 1.3-2.5 1.3-2.6-.1 0-2.5-1-2.5-3.9zM14.2 5.8c.6-.8 1.1-1.9.9-3-.9 0-2.1.6-2.7 1.4-.6.7-1.1 1.8-1 2.9 1.1.1 2.2-.5 2.8-1.3z"/></svg><span><small>INSTALL DIRECTLY</small><b>iPhone App</b></span></button>
 </div></div>
@@ -57,5 +57,5 @@
 <div class="dfg-gl"><canvas role="img" aria-label="Globe with planes flying from nearby countries to land in Bangladesh"></canvas></div>
 </div>
 </section>
-<script src="/dfglobe.js?v=14" defer></script>
+<script src="/dfglobe.js?v=15" defer></script>
 @endif
