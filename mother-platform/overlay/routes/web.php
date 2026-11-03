@@ -160,6 +160,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/media/settings', [\App\Http\Controllers\MediaController::class,'settings']);
   Route::post('/media/retry', [\App\Http\Controllers\MediaController::class,'retry']);
   Route::post('/ai-chat/test', [\App\Http\Controllers\AiChatController::class,'test']);
+  Route::post('/ai-chat/simulate', [\App\Http\Controllers\AiChatController::class,'simulate']);
   Route::get('/supplier-ledger-report', [\App\Http\Controllers\SupplierLedgerReportController::class,'index']);
   Route::get('/courier-report', [\App\Http\Controllers\CourierReportController::class,'index']);
   Route::get('/cashbook-report', [\App\Http\Controllers\CashbookReportController::class,'index']);

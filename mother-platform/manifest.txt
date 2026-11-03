@@ -440,3 +440,7 @@ app/Http/Controllers/DbHealthController.php
 app/Http/Controllers/QuickEditController.php
 resources/views/order_quick_edit.blade.php
 app/Support/TopSellers.php
+app/Support/AgentHandoff.php
+app/Support/AgentTools.php
+app/Support/AiAgent.php
+database/migrations/2026_11_03_000040_commerce_agent.php

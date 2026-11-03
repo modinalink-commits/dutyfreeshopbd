@@ -1,0 +1,142 @@
+<?php
+namespace App\Support;
+use Illuminate\Support\Facades\DB;
+/** Server-side tools for the Commerce Agent. The AI only talks and asks; every rule (price, stock, confirmation, permissions) is enforced here, never by the prompt. */
+class AgentTools {
+  /** Anthropic tool schemas. Nothing here can refund, verify a payment, cancel, change a price or discount, or delete anything. */
+  public static function schemas(bool $orders): array {
+    $s = fn($name, $desc, $props = [], $req = []) => ['name'=>$name, 'description'=>$desc, 'input_schema'=>['type'=>'object', 'properties'=>(object)$props, 'required'=>$req]];
+    $str = ['type'=>'string']; $int = ['type'=>'integer'];
+    $t = [
+      $s('search_products', 'Search the live catalogue by name, brand or category (Bengali, English or Banglish). Returns price, stock status and link from the database.', ['query'=>$str, 'limit'=>$int], ['query']),
+      $s('product_details', 'Description and live price/stock of one product by id.', ['product_id'=>$int], ['product_id']),
+      $s('delivery_info', 'Delivery charge options (inside / outside Chattogram city) and the live payment methods.'),
+      $s('order_status', 'Status, total, courier status and tracking code of an order. Requires BOTH the invoice number and the phone number used for that order.', ['invoice'=>$str, 'phone'=>$str], ['invoice', 'phone']),
+      $s('cart_add', 'Add a product to this conversation\'s cart (live price and stock are checked).', ['product_id'=>$int, 'qty'=>$int], ['product_id']),
+      $s('cart_remove', 'Remove a product from the cart.', ['product_id'=>$int], ['product_id']),
+      $s('cart_show', 'Show the cart with live prices and the order total (no delivery).'),
+      $s('prepare_order', 'Validate the customer details and build the order summary for the customer to confirm. Nothing is placed yet.', ['name'=>$str, 'phone'=>$str, 'address'=>$str, 'area'=>['type'=>'integer', 'description'=>'1 = inside Chattogram city, 2 = outside'], 'note'=>$str], ['name', 'phone', 'address', 'area']),
+      $s('report_conversation', 'Call once per customer message: classify the conversation. intent: greeting|product_question|price|availability|order_status|order_request|delivery|payment|complaint|refund|cancel|change_order|human_request|other. mood: calm|happy|confused|impatient|angry|upset. confidence 0-100 = how sure you are your answer is correct and complete.', ['intent'=>$str, 'mood'=>$str, 'confidence'=>$int], ['intent', 'mood', 'confidence']),
+      $s('handoff_to_human', 'Pass the conversation to a human agent. Use for: refund, payment verification, cancel or change of an order, complaint, angry customer, discount demands, anything you are not sure about, or when the customer asks for a person. Give a short Bengali summary for the agent.', ['reason'=>$str, 'summary'=>$str, 'priority'=>['type'=>'string', 'enum'=>['normal', 'high', 'urgent']]], ['reason', 'summary']),
+    ];
+    if ($orders) $t[] = $s('place_order', 'Place the prepared order. Works ONLY after prepare_order AND after the customer\'s latest message clearly confirms it (e.g. "হ্যাঁ", "confirm"). The server re-checks this.');
+    return $t;
+  }
+  private static function money($v): string { return number_format((float)$v).' TK'; }
+  private static function norm(string $p): string { $d = preg_replace('/\D/', '', $p); return strlen($d) >= 11 ? substr($d, -11) : $d; }
+  private static function validPhone(string $p): bool { return (bool)preg_match('/^01[3-9]\d{8}$/', $p); }
+  private static function stockTxt($p): string { return $p->stock > 0 ? 'in stock' : 'OUT OF STOCK'; }
+  private static function row($p): array { $now = (float)$p->price; return ['id'=>$p->id, 'name'=>$p->name, 'price'=>self::money($now), 'was'=>(float)$p->compare_price > $now ? self::money($p->compare_price) : null, 'stock'=>self::stockTxt($p), 'link'=>url(\App\Http\Controllers\StoreController::url($p))]; }
+
+  /** Runs one tool. $st is the conversation state (cart, pending order), changed by reference. ctx: thread_id, sim, orders_on, last_msg_id, last_msg_text. Returns an array the model sees. */
+  public static function run(string $name, array $in, array &$st, array $ctx): array {
+    try { $r = self::exec($name, $in, $st, $ctx); } catch (\Throwable $e) { report($e); $r = ['error'=>'tool failed, hand over to a human agent']; }
+    self::log($ctx, $name, $in, $r);
+    return $r;
+  }
+  private static function log(array $ctx, string $tool, array $in, array $r): void {
+    try {
+      $safe = $in; foreach (['phone'] as $k) if (isset($safe[$k])) $safe[$k] = substr((string)$safe[$k], 0, 3).'***'.substr((string)$safe[$k], -2);
+      DB::table('ai_activity_logs')->insert(['thread_id'=>$ctx['thread_id'] ?? null, 'customer_id'=>$ctx['customer_id'] ?? null, 'tool'=>$tool, 'input'=>mb_substr(json_encode($safe, JSON_UNESCAPED_UNICODE), 0, 1500),
+        'result'=>mb_substr(json_encode($r, JSON_UNESCAPED_UNICODE), 0, 1500), 'ok'=>!isset($r['error']), 'sim'=>!empty($ctx['sim']), 'created_at'=>now()]);
+    } catch (\Throwable $e) {}
+  }
+  private static function exec(string $name, array $in, array &$st, array $ctx): array {
+    switch ($name) {
+      case 'search_products': {
+        $q = trim(mb_substr((string)($in['query'] ?? ''), 0, 80)); if ($q === '') return ['error'=>'empty query'];
+        $words = array_slice(array_values(array_filter(preg_split('/[\s,.?!]+/u', mb_strtolower($q)), fn($w) => mb_strlen($w) >= 2)), 0, 5);
+        $rows = DB::table('products')->where('published', true)->where(function ($w) use ($words) { foreach ($words as $t) { $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $t).'%'; $w->orWhere('name', 'ilike', $like)->orWhere('sub', 'ilike', $like)->orWhere('size', 'ilike', $like); } })
+          ->orderByRaw('case when stock > 0 then 0 else 1 end')->orderByDesc('id')->limit(max(1, min(6, (int)($in['limit'] ?? 4))))->get(['id', 'name', 'price', 'compare_price', 'stock', 'sub', 'category_id', 'path_slug', 'sub_sub']);
+        return ['count'=>$rows->count(), 'products'=>$rows->map(fn($p) => self::row($p))->all()];
+      }
+      case 'product_details': {
+        $p = DB::table('products')->where('published', true)->find((int)($in['product_id'] ?? 0)); if (!$p) return ['error'=>'product not found'];
+        return self::row($p) + ['description'=>mb_substr(trim(preg_replace('/\s+/u', ' ', strip_tags((string)$p->description))), 0, 600)];
+      }
+      case 'delivery_info': {
+        $o = \App\Support\Delivery::options(); $pay = [];
+        try { foreach (DB::table('payment_methods')->where('active', true)->orderBy('position')->get() as $m) $pay[] = $m->title.' ('.$m->kind.')'; } catch (\Throwable $e) {}
+        return ['areas'=>collect($o)->map(fn($a, $k) => ['area'=>$k, 'name'=>$a['n'], 'charge'=>self::money($a['c'])])->values()->all(), 'payment_methods'=>$pay, 'note'=>'Final delivery charge and any discount are calculated by the system at order time.'];
+      }
+      case 'order_status': {
+        $inv = strtoupper(trim((string)($in['invoice'] ?? ''))); if (preg_match('/^(\d{4,8})$/', $inv, $m)) $inv = 'INV-'.$m[1]; $inv = str_replace(' ', '', $inv);
+        $ph = self::norm((string)($in['phone'] ?? '')); if (!self::validPhone($ph)) return ['error'=>'a valid 11-digit phone number is needed'];
+        $o = DB::table('orders')->where('invoice', $inv)->where('phone', $ph)->first(['invoice', 'status', 'total', 'courier_status', 'tracking_code', 'created_at']);
+        if (!$o) return ['found'=>false, 'message'=>'No order matches that invoice and phone together.'];
+        return ['found'=>true, 'invoice'=>$o->invoice, 'status'=>$o->status, 'total'=>self::money($o->total), 'courier_status'=>$o->courier_status, 'tracking_code'=>$o->tracking_code, 'placed'=>\Carbon\Carbon::parse($o->created_at)->timezone('Asia/Dhaka')->format('d M Y')];
+      }
+      case 'cart_add': {
+        $p = DB::table('products')->where('published', true)->find((int)($in['product_id'] ?? 0)); if (!$p) return ['error'=>'product not found'];
+        if ($p->stock <= 0) return ['error'=>'this product is OUT OF STOCK'];
+        $q = max(1, min(20, (int)($in['qty'] ?? 1))); if ($p->stock < $q) return ['error'=>'only '.(int)$p->stock.' in stock'];
+        $st['cart'][$p->id] = min(20, (int)($st['cart'][$p->id] ?? 0) + $q); unset($st['pending']);
+        return ['added'=>$p->name, 'qty_in_cart'=>$st['cart'][$p->id]];
+      }
+      case 'cart_remove': { unset($st['cart'][(int)($in['product_id'] ?? 0)], $st['pending']); return ['removed'=>true]; }
+      case 'cart_show': return self::cart($st);
+      case 'prepare_order': {
+        $c = self::cart($st); if (empty($c['items'])) return ['error'=>'the cart is empty'];
+        if (!empty($c['problems'])) return ['error'=>implode('; ', $c['problems'])];
+        $name = trim(mb_substr((string)($in['name'] ?? ''), 0, 120)); $ph = self::norm((string)($in['phone'] ?? '')); $addr = trim(mb_substr((string)($in['address'] ?? ''), 0, 500)); $area = (int)($in['area'] ?? 0);
+        if ($name === '' || mb_strlen($addr) < 8) return ['error'=>'full name and a complete address are needed'];
+        if (!self::validPhone($ph)) return ['error'=>'a valid Bangladeshi mobile number (01XXXXXXXXX) is needed'];
+        $opts = \App\Support\Delivery::options(); if (!isset($opts[$area])) return ['error'=>'area must be 1 (inside Chattogram city) or 2 (outside)'];
+        $ship = (float)$opts[$area]['c']; $total = $c['subtotal_raw'] + $ship;
+        $st['pending'] = ['name'=>$name, 'phone'=>$ph, 'address'=>$addr, 'area'=>$area, 'note'=>mb_substr((string)($in['note'] ?? ''), 0, 300), 'cart'=>$st['cart'], 'total'=>$total, 'after_msg'=>(int)($ctx['last_msg_id'] ?? 0), 'at'=>time()];
+        return ['summary'=>['items'=>$c['items'], 'subtotal'=>self::money($c['subtotal_raw']), 'delivery'=>self::money($ship), 'total_estimate'=>self::money($total), 'name'=>$name, 'phone'=>$ph, 'address'=>$addr, 'payment'=>'Cash on delivery'],
+          'next'=>'Show this summary and ask the customer to confirm. Do NOT place the order until they clearly say yes.'];
+      }
+      case 'place_order': return self::place($st, $ctx);
+      case 'report_conversation': {
+        $okI = ['greeting', 'product_question', 'price', 'availability', 'order_status', 'order_request', 'delivery', 'payment', 'complaint', 'refund', 'cancel', 'change_order', 'human_request', 'other'];
+        $okM = ['calm', 'happy', 'confused', 'impatient', 'angry', 'upset'];
+        $i = in_array($in['intent'] ?? '', $okI, true) ? $in['intent'] : 'other'; $m = in_array($in['mood'] ?? '', $okM, true) ? $in['mood'] : 'calm'; $conf = max(0, min(100, (int)($in['confidence'] ?? 50)));
+        $st['meta'] = ['intent'=>$i, 'mood'=>$m, 'confidence'=>$conf];
+        // server-side safety net: these always need a person, whatever the model says
+        $st['force_handoff'] = in_array($i, ['refund', 'cancel', 'change_order', 'complaint', 'human_request'], true) || in_array($m, ['angry', 'upset'], true) || $conf < 40;
+        return ['ok'=>true, 'handoff_required'=>$st['force_handoff']];
+      }
+      case 'handoff_to_human': return AgentHandoff::create($ctx, $st, mb_substr((string)($in['reason'] ?? ''), 0, 200), mb_substr((string)($in['summary'] ?? ''), 0, 1200), in_array($in['priority'] ?? '', ['high', 'urgent'], true) ? $in['priority'] : 'normal');
+    }
+    return ['error'=>'unknown tool'];
+  }
+  private static function cart(array $st): array {
+    $want = array_filter((array)($st['cart'] ?? []), fn($q) => $q > 0); if (!$want) return ['items'=>[], 'subtotal'=>self::money(0), 'subtotal_raw'=>0];
+    $rows = DB::table('products')->where('published', true)->whereIn('id', array_keys($want))->get()->keyBy('id'); $items = []; $sub = 0; $prob = [];
+    foreach ($want as $id => $q) {
+      $p = $rows[$id] ?? null; if (!$p) { $prob[] = 'product #'.$id.' is no longer available'; continue; }
+      if ($p->stock < $q) $prob[] = $p->name.': only '.(int)$p->stock.' in stock';
+      $line = (float)$p->price * $q; $sub += $line; $items[] = ['id'=>$p->id, 'name'=>$p->name, 'qty'=>$q, 'unit'=>self::money($p->price), 'line'=>self::money($line)];
+    }
+    return ['items'=>$items, 'subtotal'=>self::money($sub), 'subtotal_raw'=>$sub, 'problems'=>$prob];
+  }
+  /** The customer must have said a clear yes AFTER the summary was shown. Checked here, in code. */
+  public static function isConfirm(string $t): bool {
+    $t = mb_strtolower(trim($t));
+    if ($t === '' || preg_match('/(না\b|করবেন না|বাতিল|cancel|\bno\b|not now|change|পরিবর্তন|দাম কত|\?|কি\b|কত)/iu', $t)) return false;
+    return (bool)preg_match('/^(হ্যাঁ|হ্যা|হা|ঠিক আছে|কনফার্ম|confirm|confirmed|yes|yep|ok|okay|ওকে|জি|জ্বি|করুন|অর্ডার করুন|place order|done)\b/iu', $t) || (bool)preg_match('/(কনফার্ম|confirm|অর্ডার.*(করুন|করে দিন)|হ্যাঁ)/iu', $t);
+  }
+  private static function place(array &$st, array $ctx): array {
+    if (empty($ctx['orders_on'])) return ['error'=>'order placing by the assistant is switched off; hand over to a human agent', 'handoff_required'=>true];
+    $p = $st['pending'] ?? null; if (!$p) return ['error'=>'call prepare_order first'];
+    if (time() - (int)$p['at'] > 1800) { unset($st['pending']); return ['error'=>'the summary expired; prepare the order again'];}
+    if ((int)($ctx['last_msg_id'] ?? 0) <= (int)$p['after_msg']) return ['error'=>'the customer has not confirmed yet; show the summary and wait for a clear yes'];
+    if (!self::isConfirm((string)($ctx['last_msg_text'] ?? ''))) return ['error'=>'the customer\'s last message is not a clear confirmation; ask again'];
+    if (($p['cart'] ?? []) != ($st['cart'] ?? [])) { unset($st['pending']); return ['error'=>'the cart changed after the summary; prepare the order again'];}
+    if (!empty($ctx['sim'])) return ['simulated'=>true, 'message'=>'Simulation: all checks passed, no real order was created.'];
+    $req = \Illuminate\Http\Request::create('/order', 'POST', ['items'=>$p['cart'], 'name'=>$p['name'], 'phone'=>$p['phone'], 'address'=>$p['address'], 'area'=>$p['area'], 'note'=>trim('[AI Chat] '.$p['note']), 'pay'=>'cod',
+      'inc'=>'ai-'.($ctx['thread_id'] ?? 0).'-'.md5(json_encode($p['cart']).$p['phone'].(int)$p['after_msg'])]);
+    $res = app(\App\Http\Controllers\StoreController::class)->order($req);
+    $url = $res instanceof \Illuminate\Http\RedirectResponse ? $res->getTargetUrl() : '';
+    if ($url !== '' && str_contains($url, '/checkout')) { parse_str((string)parse_url($url, PHP_URL_QUERY), $q); return ['error'=>'the system rejected the order: '.mb_substr((string)($q['e'] ?? 'unknown'), 0, 160).' - hand over to a human agent', 'handoff_required'=>true]; }
+    $inv = null; if (preg_match('#(INV-\d+)#', $url, $m)) $inv = $m[1]; else { parse_str((string)parse_url($url, PHP_URL_QUERY), $q); $inv = null; }
+    if (!$inv) { $inv = DB::table('orders')->where('phone', $p['phone'])->where('created_at', '>', now()->subMinutes(3))->orderByDesc('id')->value('invoice'); }
+    if (!$inv) return ['error'=>'could not confirm the order was created; hand over to a human agent', 'handoff_required'=>true];
+    $o = DB::table('orders')->where('invoice', $inv)->first(['id', 'total']);
+    if ($o) { DB::table('orders')->where('id', $o->id)->update(['source'=>'AI Chat', 'status'=>'AI Order', 'updated_at'=>now()]);
+      DB::table('order_status_logs')->insert(['order_id'=>$o->id, 'user_id'=>null, 'user_name'=>'Claude AI', 'from_status'=>'New', 'to_status'=>'AI Order', 'note'=>'Placed by the AI assistant after the customer confirmed in chat. Staff: please verify before processing.', 'created_at'=>now(), 'updated_at'=>now()]); }
+    $st['cart'] = []; unset($st['pending']);
+    return ['placed'=>true, 'invoice'=>$inv, 'total'=>self::money($o->total ?? $p['total']), 'payment'=>'Cash on delivery', 'note'=>'A team member will confirm shortly. Do not promise a delivery time.'];
+  }
+}
