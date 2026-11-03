@@ -48,7 +48,7 @@ d787924ace3fa42cc66a3de321e4e94e784006d8 resources/views/panels/employees.blade.
 16d44d41f6b845877a906678b144cbc1233a96f5 resources/views/report_details.blade.php
 2f840d53881d8aeaf0c5959161774787e5f540bc database/migrations/2026_10_31_000005_storefront.php
 65414d9e2fbe5f16f1fbf1551cce91276e9f30f9 app/Console/Commands/MotherSyncFeed.php
-efff6008edafb25d025282ec5d551a0b1859c6f1 app/Http/Controllers/StoreController.php
+86a4254592c655f14d7109cd00cd5656f16f856a app/Http/Controllers/StoreController.php
 4688c1c7143fe7136eb8661b12995ed0bfe5aa42 resources/views/store/layout.blade.php
 c2e55fb1ce8845dc356edd488dfcadfec6c96924 resources/views/store/card.blade.php
 368779d82636a73d690dc1f7a28ed58a0ba17712 resources/views/store/home.blade.php
@@ -439,3 +439,4 @@ d6935b615dc2a3a75d0f618e119ebe325bf29946 app/Support/OrderDedupe.php
 1f98912c4d5af55c38e3cb9730ff86f4fbfd41b2 app/Http/Controllers/DbHealthController.php
 896441941b0b47978cc72a7b24522e26b1a8f4e4 app/Http/Controllers/QuickEditController.php
 efe0b3accbd2e51e9922798be5051086e1e10947 resources/views/order_quick_edit.blade.php
+decfc69ceea265c557a2dc5ff10a70ed54bcb403 app/Support/TopSellers.php
