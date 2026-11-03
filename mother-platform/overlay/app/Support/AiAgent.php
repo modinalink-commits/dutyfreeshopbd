@@ -39,15 +39,15 @@ class AiAgent {
     for ($step = 0; $step < self::MAX_STEPS; $step++) {
       try {
         $res = Http::withHeaders(['x-api-key'=>$key, 'anthropic-version'=>'2023-06-01'])->timeout(45)->post('https://api.anthropic.com/v1/messages',
-          ['model'=>AiChat::model(), 'max_tokens'=>900, 'system'=>[['type'=>'text', 'text'=>self::system($st, (bool)$ctx['orders_on'])]], 'tools'=>$tools, 'messages'=>$msgs]);
+          ['model'=>AiChat::model(), 'max_tokens'=>900, 'thinking'=>['type'=>'disabled'], 'system'=>[['type'=>'text', 'text'=>self::system($st, (bool)$ctx['orders_on'])]], 'tools'=>$tools, 'messages'=>$msgs]);
       } catch (\Throwable $e) { return [false, 'network', $trace]; }
       if (!$res->ok()) return [false, 'HTTP '.$res->status().' '.mb_substr((string)($res->json('error.message') ?? ''), 0, 160), $trace];
       $blocks = $res->json('content') ?? [];
       $text = trim(collect($blocks)->where('type', 'text')->pluck('text')->implode("\n"));
       $uses = array_values(array_filter($blocks, fn($b) => ($b['type'] ?? '') === 'tool_use'));
       if (!$uses || $res->json('stop_reason') !== 'tool_use') break;
-      // PHP turns an empty JSON object into [] — send it back as {} so the model's thinking signature stays valid
-      $blocks = array_map(function ($b) { if (($b['type'] ?? '') === 'tool_use' && empty($b['input'])) $b['input'] = new \stdClass; return $b; }, $blocks);
+      // thinking is off; keep only text/tool_use blocks, and an empty tool input must go back as {} not []
+      $blocks = array_values(array_filter(array_map(function ($b) { if (($b['type'] ?? '') === 'tool_use' && empty($b['input'])) $b['input'] = new \stdClass; return $b; }, $blocks), fn($b) => in_array($b['type'] ?? '', ['text', 'tool_use'], true)));
       $msgs[] = ['role'=>'assistant', 'content'=>$blocks]; $results = [];
       foreach ($uses as $u) {
         $out = AgentTools::run((string)$u['name'], (array)($u['input'] ?? []), $st, $ctx); $trace[] = ['tool'=>$u['name'], 'input'=>$u['input'] ?? [], 'result'=>$out];
