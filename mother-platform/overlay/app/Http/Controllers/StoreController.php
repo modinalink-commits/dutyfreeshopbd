@@ -143,7 +143,6 @@ class StoreController extends Controller {
   public function category(Request $r, string $slug, ?string $subSlug = null, ?string $subSubName = null) {
     $c = $this->cats()[$slug] ?? null;
     if (!$c) { if ($subSlug !== null) return $this->notFound(); $page = DB::table('pages')->where('slug',$slug)->where('active',true)->first(); if (!$page && ($pt = request()->query('preview'))) { $pp = DB::table('pages')->where('slug',$slug)->first(); if ($pp && \App\Support\SeoMgr::previewOk($pt, $pp)) { $page = $pp; $GLOBALS['seo_preview'] = true; } } if ($page) return $this->page($page); return $this->notFound(); }
-    if ($subSlug === null && $r->isMethod('get') && !str_ends_with($r->getPathInfo(), '/') && !$r->filled('sub')) return redirect('/'.$slug.'/'.($r->getQueryString() ? '?'.$r->getQueryString() : ''), 301); // one URL form: /category/
     if ($subSlug === null && $r->filled('sub')) { // old ?sub=LM links -> /category/lm (301)
       $rest = $r->except('sub'); return redirect('/'.$slug.'/'.\App\Support\Slugs::subSlug($r->sub).($rest ? '?'.http_build_query($rest) : ''), 301);
     }
