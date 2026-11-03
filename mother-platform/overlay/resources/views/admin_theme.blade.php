@@ -145,6 +145,16 @@ aside .sbs input::placeholder{color:#4B5563}
 ::placeholder{color:#6B7280;opacity:1}
 /* ===== 8. compact action icons (desktop only; mobile keeps big touch targets) ===== */
 @media(min-width:761px){.ibar{gap:4px;margin-top:3px}.ibar .ib{width:24px;height:24px;border-radius:7px;box-shadow:none}.ibar .ib svg{width:12px;height:12px}.ibar .ib-call{height:24px;padding:0 9px;font-size:11px;border-radius:7px;gap:4px;box-shadow:none}.ibar .ib-call svg{width:11px;height:11px}}
+/* ===== 9. softer customer-intel cell + dark-blue outlined action buttons ===== */
+main .ibar a.ib,main .ibar a.ib-call{border:1.5px solid #0B1220!important;box-shadow:none!important}
+main .ibar a.ib{background:#F8FAFC;color:#334155}
+main .ibar a.ib.ch{background:#EFF6FF;color:#3B6FD8}
+main .ibar a.ib.wa{background:#F0FDF4;color:#22A06B}
+main .ibar a.ib.pf{background:#F5F3FF;color:#7C6FDB}
+main .ibar a.ib.hs{background:#FFF7ED;color:#E07B39}
+main .ibar a.ib.cp{background:#F8FAFC;color:#64748B}
+main .ibar a.ib-call{background:#ECFDF5;color:#15803D!important}
+main .ibar a.ib:hover,main .ibar a.ib-call:hover{box-shadow:0 3px 8px rgba(11,18,32,.12)!important}
 .dfx-menu{border-color:var(--border-main)}
 .dfx-menu .dfx-f button:hover{background:var(--accent-tint)!important}
 </style>
