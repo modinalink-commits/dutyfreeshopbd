@@ -212,7 +212,7 @@ if(document.readyState==='complete')setTimeout(first,300);else addEventListener(
 <div class="bp-sb">
 <div class="l1"><span>TODAY'S DEAL</span><svg viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg></div>
 <div class="bp-rt"><div><small>FROM</small><strong>DFB</strong><small>DUTYFREEBD</small></div><u>&#9992;</u><div><small>TO</small><strong>DEAL</strong><small>SPECIAL OFFERS</small></div></div>
-<div class="bp-ch"><div><small>GATE</small><b>D{{ max(1, $deals->count()) }}</b></div><div><small>CLASS</small><b>FLASH</b></div><div><small>DATE</small><b>TODAY</b></div></div>
+<div class="bp-ch"><div><small>GATE</small><b>D10</b></div><div><small>CLASS</small><b>FLASH</b></div><div><small>DATE</small><b>TODAY</b></div></div>
 <div class="bp-cd"><small>DEAL ENDS IN</small><b data-cd="all">{{ $fmt($dEnd) }}</b></div>
 <div class="bp-bc" aria-hidden="true"></div>
 <div class="bp-fl"><span>FLIGHT <b>DFB{{ \Carbon\Carbon::now('Asia/Dhaka')->format('md') }}</b></span><span>BOARDING <b>NOW</b></span></div>
