@@ -11,13 +11,15 @@
 <div class="iqm" id="iqm" role="dialog" aria-modal="true"><div class="iqb"><button type="button" class="iqx" id="iqx" aria-label="Close">×</button>
 <h3>Quick edit - incomplete checkout</h3><div class="iql"><a id="iqc" href="#">📞 Call</a><a id="iqw" href="#" target="_blank" rel="noopener">💬 WhatsApp</a><a id="iqe" href="#">✏️ Full edit</a></div>
 <label>Customer name</label><input id="iqn" maxlength="120"><label>Mobile</label><input id="iqp"><label>Address</label><textarea id="iqa" rows="2" maxlength="500"></textarea><label>Note</label><input id="iqt" maxlength="500">
-<div style="margin-top:12px;display:flex;gap:8px"><button type="button" class="btn" id="iqs">Save</button><button type="button" class="btn g" id="iqk">Cancel</button></div><div class="iqm-msg" id="iqg"></div></div></div>
+<div style="margin-top:12px;display:flex;gap:8px"><button type="button" class="btn" id="iqs">Save</button><button type="button" class="btn g" id="iqk">Close</button><button type="button" class="btn g" id="iqcx" style="margin-left:auto;color:#B91C1C;border-color:#FCA5A5">✖ Cancel Order</button></div><div class="iqm-msg" id="iqg"></div></div></div>
 <script>(function(){var m=document.getElementById('iqm');if(!m||window.__iqk)return;window.__iqk=1;var cur=null,btn=null;function $(i){return document.getElementById(i)}
 function tk(){var e=document.querySelector('meta[name=csrf-token]');return e?e.content:''}
 function close(){m.classList.remove('on');cur=null}
 document.addEventListener('click',function(e){var b=e.target.closest('.iqk-btn');if(!b)return;e.preventDefault();e.stopPropagation();btn=b;cur=b.dataset.id;
 $('iqn').value=b.dataset.name||'';$('iqp').value=b.dataset.phone||'';$('iqa').value=b.dataset.address||'';$('iqt').value=b.dataset.note||'';$('iqg').textContent='';
 var d=(b.dataset.phone||'').replace(/\D/g,'');$('iqc').href='tel:'+(b.dataset.phone||'');$('iqw').href='https://wa.me/'+(d.charAt(0)==='0'?'88'+d:d);$('iqe').href='/admin/incomplete/'+cur+'/edit';m.classList.add('on');$('iqn').focus()},true);
+$('iqcx').onclick=function(){if(!cur)return;if(!confirm('Cancel this incomplete order? It will move to Archived (nothing is deleted, no SMS is sent).'))return;var s=$('iqcx'),g=$('iqg');s.disabled=true;g.style.color='#6B7280';g.textContent='Cancelling...';
+var fd=new FormData();fd.append('_token',tk());fetch('/admin/incomplete/'+cur+'/archive',{method:'POST',body:fd,credentials:'same-origin'}).then(function(r){s.disabled=false;if(r.ok){g.style.color='#166534';g.textContent='Cancelled (moved to Archived)';setTimeout(function(){close();(window.dfSoft?dfSoft():location.reload())},500)}else{g.style.color='#B91C1C';g.textContent='Could not cancel'}}).catch(function(){s.disabled=false;g.style.color='#B91C1C';g.textContent='Network error'})};
 $('iqx').onclick=close;$('iqk').onclick=close;m.addEventListener('click',function(e){if(e.target===m)close()});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&cur)close()});
 $('iqs').onclick=function(){if(!cur)return;var s=$('iqs'),g=$('iqg');s.disabled=true;g.style.color='#6B7280';g.textContent='Saving...';
 var fd=new FormData();fd.append('_token',tk());fd.append('name',$('iqn').value);fd.append('phone',$('iqp').value);fd.append('address',$('iqa').value);fd.append('note',$('iqt').value);
