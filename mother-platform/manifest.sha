@@ -3,7 +3,7 @@ d49a7c36fd8e33bdf757c58346c7c4f8ad4a89fd routes/web.php
 b9cf8555d6fb5e676f63a548f5a964a0f36be94f app/Models/Mother.php
 ad563479e2e595a99bc1e35da58f0929f0958b0f app/Http/Controllers/AdminController.php
 bd49f23ea0895af93bed5374937115c21911b0cd app/Console/Commands/MotherInstall.php
-42f1eaf294d62f6c2c70340c67236b1a19609b52 resources/views/layout.blade.php
+ba887f4d79070dabea56bb45b4233913ae45f73f resources/views/layout.blade.php
 7ba1a8252b36e7db33e40d8be3ea5ec2cd241fb7 resources/views/login.blade.php
 3431340a529f4ab858ba55214388be987a3185c8 resources/views/dashboard.blade.php
 fa18b9a667b778c370933f3a02f09d69450a967f resources/views/orders.blade.php
@@ -449,3 +449,4 @@ b278f9ae0d70401e99545e017c6d94252d80ebcb database/migrations/2026_11_03_000041_v
 2c3c2f89b1e3496c2929f92b4bd368470bfe59db app/Support/VoiceChat.php
 d4962350e9f6f8f2e99aa94b1a866e23ba2afc46 app/Http/Controllers/VoiceChatController.php
 a8d9bbc8747a754f4105752697fca4e4fb8b76c2 resources/views/voice_chat_settings.blade.php
+d0f91dc3c3bcd0cac92dfffc56760d68801036bc resources/views/admin_grid.blade.php

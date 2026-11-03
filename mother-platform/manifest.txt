@@ -449,3 +449,4 @@ database/migrations/2026_11_03_000041_voice_chat.php
 app/Support/VoiceChat.php
 app/Http/Controllers/VoiceChatController.php
 resources/views/voice_chat_settings.blade.php
+resources/views/admin_grid.blade.php
