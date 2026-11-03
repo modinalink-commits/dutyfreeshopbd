@@ -503,3 +503,5 @@ resources/views/coupons_index.blade.php
 resources/views/coupon_form.blade.php
 resources/views/coupon_usage.blade.php
 database/migrations/2026_11_03_000060_coupon_portal.php
+public/track-truck.png
+public/track-truck.webp

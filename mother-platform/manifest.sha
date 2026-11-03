@@ -56,7 +56,7 @@ c2e55fb1ce8845dc356edd488dfcadfec6c96924 resources/views/store/card.blade.php
 6aa949a4e1ea5de5298971728076fad706a3c256 resources/views/store/category.blade.php
 534a5f589d5ae3e1d6efdfccd18519da9681b144 resources/views/store/product.blade.php
 7ad9d9502d41f54d6784414a9aa3f16a8ab0ec13 resources/views/store/search.blade.php
-f83a3db85abcb8de12275dc408f1a584c5a22a68 resources/views/store/track.blade.php
+f774bcf29f7b4d3ff7b46331650b1add987c490b resources/views/store/track.blade.php
 1aa52e9a1cc85e3723d11055b65e301c5f2dc0c1 resources/views/store/page.blade.php
 06722f66390bb7e2d70f564ee2dd0dededd9a2b7 resources/views/store/missing.blade.php
 dc4dd0a7a69c180a2c75ef92ebb2057d28be5d32 resources/views/store/checkout.blade.php
@@ -503,3 +503,5 @@ a5ecce76f3e63cbf5bb4066fdee0888235c8c768 app/Support/CouponRules.php
 0b526ee4ab834b733d2d0a2307c6232ecc0c39da resources/views/coupon_form.blade.php
 16be8d0f94f0de4f80558d1cd37a4edc19af231e resources/views/coupon_usage.blade.php
 c5284e38d03459d397af0e3ee3695518bc8b3d55 database/migrations/2026_11_03_000060_coupon_portal.php
+39b183588251aa25e66f2e76429c7c3d88c9cf11 public/track-truck.png
+902a90f89114ddbacffe3d9cc30ef624f7deeaa7 public/track-truck.webp
