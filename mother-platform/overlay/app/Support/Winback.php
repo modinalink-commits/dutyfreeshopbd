@@ -54,11 +54,12 @@ class Winback
     $ch = array_filter(['sms' => self::set('sms', '1') === '1', 'push' => self::set('push', '1') === '1', 'notif' => self::set('notif', '1') === '1']);
     $room = min(40, self::dailyCap() - self::sentToday());
     if ($blast) { $room = 200; $lim = (int)self::set('blast_limit', '0'); if ($lim > 0) { $got = DB::table('winback_events')->where('cycle_order_id', '>', 0)->where('created_at', '>=', \Carbon\Carbon::parse(self::set('blast_at', now()->toIso8601String()))->utc())->count(); $room = min(200, $lim - $got); if ($room <= 0) { self::put('blast', '0'); self::put('blast_done', now()->toIso8601String()); return; } } }
-    if ($room <= 0) return; $done = self::doneSet();
+    if ($room <= 0) return; $done = self::doneSet(); $lastSent = self::lastSent(); $gap = self::minGapDays() * 86400;
     $queue = self::lastDelivered(); self::rank($queue); // serial order: best customers (highest spend) first, then longest inactive
     foreach ($queue as $p => $x) {
       $d = self::days($x['at']); $s = self::stageFor($d); if (!$s) continue;
       if (($done[$p . '|' . $x['oid']] ?? 0) >= $s[0]) continue; // each stage once per cycle
+      if (isset($lastSent[$p]) && time() - $lastSent[$p] < $gap) continue; // never more than one offer message per number every 15 days
       $c = DB::table('customers')->whereRaw('right(phone,11) = ?', [$p])->where('blocked', false)->first(); if (!$c) continue;
       if ($sent >= $room) { if ($blast) { try { \App\Support\Sms::flush(200); } catch (\Throwable $e) {} self::guardBlast(); } return; } // small batch per tick + daily cap: the rest continue on the next tick / tomorrow
       $code = null;
@@ -92,6 +93,9 @@ class Winback
   }
 
   /** 'phone|cycleOrderId' => highest stage already sent (one query instead of one per customer). */
+  /** phone => time of the last offer message sent to that number (customer rule: a number gets at most one offer message every 15 days). */
+  public static function lastSent(): array { $o = []; foreach (DB::table('winback_events')->where('cycle_order_id', '>', 0)->selectRaw('phone, max(created_at) as m')->groupBy('phone')->get() as $r) $o[self::norm((string)$r->phone)] = strtotime($r->m . ' UTC'); return $o; }
+  public static function minGapDays(): int { return max(1, (int)self::set('min_gap', '15')); }
   public static function doneSet(): array { $o = []; foreach (DB::table('winback_events')->selectRaw('phone, cycle_order_id, max(stage_days) as m')->groupBy('phone', 'cycle_order_id')->get() as $r) $o[$r->phone . '|' . $r->cycle_order_id] = (int)$r->m; return $o; }
   /** phone => [orders, spent] over live orders; used to message the best customers first. */
   public static function value(): array { $o = []; foreach (DB::table('orders')->whereNotIn('status', ['Cancel', 'Returned'])->whereNotNull('phone')->selectRaw('right(phone,11) as p, count(*) as n, coalesce(sum(total),0) as s')->groupBy(DB::raw('right(phone,11)'))->get() as $r) $o[$r->p] = [(int)$r->n, (float)$r->s]; return $o; }
@@ -104,10 +108,11 @@ class Winback
     $st = self::stages(); if (!$st) return ['rows' => [], 'total' => 0, 'when' => null];
     $start = self::set('start', ''); $day = now('Asia/Dhaka')->addDay()->startOfDay(); if ($start !== '' && $day->toDateString() < $start) $day = \Carbon\Carbon::parse($start, 'Asia/Dhaka')->startOfDay();
     $at = $at ?: $day->copy()->setTime((int)self::set('win_from', '14'), 0); $ts = $at->getTimestamp(); $cand = [];
-    $done = self::doneSet(); $all = self::lastDelivered(); $val = self::rank($all);
+    $done = self::doneSet(); $all = self::lastDelivered(); $val = self::rank($all); $lastSent = self::lastSent(); $gap = self::minGapDays() * 86400;
     foreach ($all as $p => $x) {
       $d = (int)floor(($ts - strtotime($x['at'] . ' UTC')) / 86400); $s = self::stageFor($d); if (!$s) continue;
       if (($done[$p . '|' . $x['oid']] ?? 0) >= $s[0]) continue;
+      if (isset($lastSent[$p]) && $ts - $lastSent[$p] < $gap) continue;
       $cand[$p] = ['p' => $p, 'd' => $d, 's' => $s, 'at' => $x['at'], 'n' => $val[$p][0] ?? 0, 'sp' => $val[$p][1] ?? 0];
     }
     $names = []; foreach (array_chunk(array_keys($cand), 1000) as $ch) foreach (DB::table('customers')->where('blocked', false)->whereRaw('right(phone,11) in (' . implode(',', array_fill(0, count($ch), '?')) . ')', $ch)->selectRaw('right(phone,11) as k, name')->get() as $cu) $names[$cu->k] = $cu->name;
