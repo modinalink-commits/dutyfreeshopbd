@@ -417,7 +417,7 @@ class StoreController extends Controller {
     if (empty($page->canonical) && request()->isMethod('get') && !str_ends_with(request()->getPathInfo(), '/') && empty($GLOBALS['seo_preview']) && !request()->query('preview')) return redirect(url('/'.$page->slug).'/'.(request()->getQueryString() ? '?'.request()->getQueryString() : ''), 301);
     $S = \App\Support\SeoMgr::class; $img = fn($u) => $u ? (str_starts_with($u,'http') ? $u : url($u)) : null;
     $noidx = !empty($GLOBALS['seo_preview']) || (isset($page->robots_index) && !$page->robots_index) || $S::get('seo_global_index','1') === '0';
-    return response()->view('store.page', $this->base(['page'=>$page, 'title'=>isset($page->status) ? $S::effTitle($page) : (($page->meta_title ?: $page->title).' | DutyFree BD'), 'desc'=>(isset($page->status) ? $S::effDesc($page) : $page->meta_description) ?: \Illuminate\Support\Str::limit(trim(preg_replace('/\s+/u', ' ', strip_tags((string)($page->body ?? $page->content ?? '')))), 155, '…'),
+    return response()->view('store.page', $this->base(['page'=>$page, 'title'=>isset($page->status) ? $S::effTitle($page) : (($page->meta_title ?: $page->title).' | DutyFree BD'), 'desc'=>(isset($page->status) ? $S::effDesc($page) : $page->meta_description) ?: \Illuminate\Support\Str::limit(trim(preg_replace('/\s+/u', ' ', strip_tags((string)($page->body ?? $page->content ?? '')))), 155, '…') ?: ($page->title.' – DutyFree BD. Original imported products, cash on delivery and nationwide home delivery in Bangladesh.'),
       'canon'=>!empty($page->canonical) ? $page->canonical : url('/'.$page->slug).'/', 'noindex'=>$noidx, 'keywords'=>$page->keywords ?? null, 'ogimg'=>$img($page->og_image ?? $page->featured_image ?? null)]));
   }
   public function blog() {
