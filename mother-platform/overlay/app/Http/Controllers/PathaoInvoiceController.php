@@ -38,12 +38,14 @@ class PathaoInvoiceController extends Controller {
     $out = [];
     $paths = ['/api/v1/monetary/invoices/receivable', '/api/v1/monetary/invoices/receivable?page=1&limit=5', '/api/v1/monetary/invoices/021126DQZGCPT', '/api/v1/monetary/invoices/021126DQZGCPT/orders', '/api/v1/monetary/invoices/021126DQZGCPT/items', '/api/v1/monetary/invoice/021126DQZGCPT'];
     if ($r->filled('i') && isset($paths[(int)$r->input('i')])) $paths = [$paths[(int)$r->input('i')]];   // one endpoint per request keeps it under the gateway timeout
+    if ($r->filled('p') && preg_match('#^/api/v1/monetary/invoices?/[A-Za-z0-9/_\-.?&=]{1,120}$#', (string)$r->input('p'))) $paths = [(string)$r->input('p')];   // custom read-only GET probe, monetary invoice paths only
     foreach ($paths as $p) {
       $o = ['http'=>['method'=>'GET', 'timeout'=>12, 'ignore_errors'=>true, 'header'=>"Accept: application/json\r\nAuthorization: Bearer $t\r\nUser-Agent: MotherCommerce/1.0\r\n"], 'ssl'=>['verify_peer'=>true]];
       $b = @file_get_contents('https://merchant.pathao.com'.$p, false, stream_context_create($o)); $code = 0; foreach ($http_response_header ?? [] as $l) if (preg_match('#^HTTP/\S+\s+(\d+)#', $l, $m)) $code = (int)$m[1];
       $j = json_decode((string)$b, true); $src = is_array($j) ? ($j['error']['description'] ?? $j['message'] ?? '') : 'not json';
+      if (!is_array($j) && $code === 200 && $b !== false && $b !== '') $src = 'not json, '.strlen((string)$b).' bytes, header: '.mb_substr(strtok((string)$b, "\n") ?: '', 0, 220);
       $dd = is_array($j) ? ($j['data'] ?? $j) : []; $first = is_array($dd) && isset($dd[0]) && is_array($dd[0]) ? $dd[0] : (is_array($dd) && isset($dd['data'][0]) && is_array($dd['data'][0]) ? $dd['data'][0] : null);
-      $out[] = $p.' → HTTP '.$code.($code === 200 && is_array($j) ? ' (fields: '.implode(', ', array_slice(array_keys(is_array($dd) ? $dd : []), 0, 12)).($first ? '; item: '.implode(', ', array_slice(array_keys($first), 0, 25)) : '').')' : ' ('.mb_substr((string)$src, 0, 60).')');
+      $out[] = $p.' → HTTP '.$code.($code === 200 && is_array($j) ? ' (fields: '.implode(', ', array_slice(array_keys(is_array($dd) ? $dd : []), 0, 12)).($first ? '; item: '.implode(', ', array_slice(array_keys($first), 0, 25)) : '').')' : ' ('.mb_substr((string)$src, 0, 300).')');
     }
     return back()->with('ok', 'Probe result: '.implode(' | ', $out));
   }
