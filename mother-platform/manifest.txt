@@ -354,6 +354,7 @@ app/Support/Carrybee.php
 app/Http/Controllers/CarrybeeController.php
 resources/views/carrybee_setup.blade.php
 app/Support/Redx.php
+app/Support/TrackLink.php
 app/Http/Controllers/RedxController.php
 resources/views/redx_setup.blade.php
 public/couriers/steadfast.png
