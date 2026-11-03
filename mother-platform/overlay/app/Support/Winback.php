@@ -49,10 +49,10 @@ class Winback
   public static function tick(bool $force = false): void {
     if (!self::on()) return; $today = now('Asia/Dhaka')->toDateString();
     $blast = self::set('blast', '0') === '1'; if ($blast) $force = true; // "Run now": send to everyone eligible now, in batches on every worker cycle, until the list is finished
-    if (!$force) { $h = (int)now('Asia/Dhaka')->format('H'); $stt = self::set('start', ''); if ($stt !== '' && $today < $stt) return; if (self::set('last_run') === $today || $h < (int)self::set('win_from', '14') || $h >= (int)self::set('win_to', '17')) return; } // offers go out only 2 PM to 5 PM Dhaka time
+    if (!$force) { $stt = self::set('start', ''); if ($stt !== '' && $today < $stt) return; if (self::quiet()) return; if (time() - (int)self::set('last_slot', '0') < self::slotGapMin() * 60) return; self::put('last_slot', (string)time()); } // no fixed timetable: one small slot every few minutes, never during quiet hours
     $st = self::stages(); if (!$st) return; $sent = 0; $exp = max(1, (int)self::set('expiry', '30')); $mode = in_array(self::set('mode', 'auto'), ['coupon', 'fixed'], true) ? self::set('mode', 'auto') : 'auto'; $lastStage = end($st)[0];
     $ch = array_filter(['sms' => self::set('sms', '1') === '1', 'push' => self::set('push', '1') === '1', 'notif' => self::set('notif', '1') === '1']);
-    $room = min(40, self::dailyCap() - self::sentToday());
+    $room = min(self::slotSize(), self::dailyCap() - self::sentToday());
     if ($blast) { $room = 200; $lim = (int)self::set('blast_limit', '0'); if ($lim > 0) { $got = DB::table('winback_events')->where('cycle_order_id', '>', 0)->where('created_at', '>=', \Carbon\Carbon::parse(self::set('blast_at', now()->toIso8601String()))->utc())->count(); $room = min(200, $lim - $got); if ($room <= 0) { self::put('blast', '0'); self::put('blast_done', now()->toIso8601String()); return; } } }
     if ($room <= 0) return; $done = self::doneSet(); $lastSent = self::lastSent(); $gap = self::minGapDays() * 86400;
     $queue = self::lastDelivered(); self::rank($queue); // serial order: best customers (highest spend) first, then longest inactive
@@ -61,6 +61,9 @@ class Winback
       if (isset($lastSent[$p]) && time() - $lastSent[$p] < $gap) continue; // never more than one offer message per number every 15 days
       $c = DB::table('customers')->whereRaw('right(phone,11) = ?', [$p])->where('blocked', false)->first(); if (!$c) continue;
       if ($sent >= $room) { if ($blast) { try { \App\Support\Sms::flush(200); } catch (\Throwable $e) {} self::guardBlast(); } return; } // small batch per tick + daily cap: the rest continue on the next tick / tomorrow
+      if (!self::finalOk($p, $x, $c)) continue; // last check right before sending: ON, no newer order, valid mobile, not opted out, cooldown over, no repeated failures
+      $lock = null; try { $lock = \Illuminate\Support\Facades\Cache::lock('winback:sms:customer:' . $p, 30); if (!$lock->get()) continue; } catch (\Throwable $e) { $lock = null; }
+      if (self::cooling($p)) { if ($lock) $lock->release(); continue; } // re-read inside the lock so two workers can never both send
       $code = null;
       if ($mode === 'coupon') {
         $code = 'WB-' . strtoupper(substr(md5($p . $x['oid'] . $s[0] . microtime()), 0, 6));
@@ -70,8 +73,9 @@ class Winback
         $code = self::codeFor($s[0]);
         DB::table('coupons')->updateOrInsert(['code' => $code], ['type' => 'percent', 'value' => $s[1], 'min_order' => (float)self::set('min_order', '0'), 'max_discount' => (float)self::set('max_discount', '0') ?: null, 'usage_limit' => null, 'per_customer' => 1, 'valid_from' => now('Asia/Dhaka')->toDateString(), 'valid_to' => null, 'active' => true, 'updated_at' => now(), 'created_at' => now()]);
       }
-      try { DB::table('winback_events')->insert(['phone' => $p, 'customer_id' => $c->id, 'cycle_order_id' => $x['oid'], 'stage_days' => $s[0], 'pct' => $s[1], 'mode' => $mode, 'coupon_code' => $code, 'channels' => implode(',', array_keys($ch)), 'expires_at' => now()->addDays($exp), 'created_at' => now(), 'updated_at' => now()]); }
-      catch (\Throwable $e) { continue; }
+      try { DB::table('winback_events')->insert(['phone' => $p, 'customer_id' => $c->id, 'cycle_order_id' => $x['oid'], 'stage_days' => $s[0], 'pct' => $s[1], 'mode' => $mode, 'coupon_code' => $code, 'channels' => implode(',', array_keys($ch)), 'expires_at' => now()->addDays($exp), 'created_at' => now(), 'updated_at' => now()] + (self::hasNext() ? ['next_sms_at' => now()->addDays(self::minGapDays())] : [])); }
+      catch (\Throwable $e) { if ($lock) $lock->release(); continue; }
+      if ($lock) $lock->release();
       $v = ['{name}' => $c->name, '{pct}' => rtrim(rtrim(number_format($s[1], 2), '0'), '.'), '{days}' => $d, '{expiry}' => $exp, '{code}' => $code ? ' কুপন কোড: ' . $code : ''];
       $final = $s[0] === $lastStage;
       if (!empty($ch['sms'])) Sms::queue($p, self::render(self::set($final ? 'sms_final' : 'sms_text', $final ? self::SMS_FINAL : self::SMS), $v), 'winback');
@@ -93,7 +97,28 @@ class Winback
 
   /** 'phone|cycleOrderId' => highest stage already sent (one query instead of one per customer). */
   /** phone => time of the last offer message sent to that number (customer rule: a number gets at most one offer message every 15 days). */
-  public static function lastSent(): array { $o = []; foreach (DB::table('winback_events')->where('cycle_order_id', '>', 0)->selectRaw('phone, max(created_at) as m')->groupBy('phone')->get() as $r) $o[self::norm((string)$r->phone)] = strtotime($r->m . ' UTC'); return $o; }
+  /** Events whose SMS was really handed to the gateway (a failed SMS does not start the cooldown). */
+  private static function okSql(): string { return "from winback_events e where e.cycle_order_id > 0 and not exists (select 1 from sms_logs l where l.event = 'winback' and l.status = 'failed' and right(l.\"to\", 11) = e.phone and l.created_at >= e.created_at - interval '2 minutes' and l.created_at <= e.created_at + interval '30 minutes')"; }
+  public static function lastSent(): array { $o = []; foreach (DB::select('select e.phone, max(e.created_at) as m ' . self::okSql() . ' group by e.phone') as $r) $o[self::norm((string)$r->phone)] = strtotime($r->m . ' UTC'); return $o; }
+  /** Fresh single-number read of the last accepted offer message. */
+  public static function lastSentFor(string $p): ?int { $r = DB::selectOne('select max(e.created_at) as m ' . self::okSql() . ' and e.phone = ?', [$p]); return $r && $r->m ? strtotime($r->m . ' UTC') : null; }
+  public static function cooling(string $p): bool { $l = self::lastSentFor($p); return $l !== null && time() - $l < self::minGapDays() * 86400; }
+  private static ?bool $hasNext = null;
+  public static function hasNext(): bool { return self::$hasNext ??= \Illuminate\Support\Facades\Schema::hasColumn('winback_events', 'next_sms_at'); }
+  public static function slotSize(): int { return max(5, min(10, (int)self::set('slot_size', '10'))); }
+  public static function slotGapMin(): int { return max(1, min(240, (int)self::set('slot_gap', '10'))); }
+  /** Quiet hours (Dhaka time) when no offer SMS goes out. */
+  public static function quiet(): bool { $f = (int)self::set('quiet_from', '22'); $t = (int)self::set('quiet_to', '8'); if ($f === $t) return false; $h = (int)now('Asia/Dhaka')->format('H'); return $f > $t ? ($h >= $f || $h < $t) : ($h >= $f && $h < $t); }
+  public static function validMobile(string $p): bool { return (bool)preg_match('/^01[3-9]\d{8}$/', $p); }
+  /** Final check right before a send. */
+  public static function finalOk(string $p, array $x, object $c): bool {
+    if (!self::on() || !self::validMobile($p) || !empty($c->blocked)) return false;
+    if (DB::table('sms_optouts')->where('phone', $p)->exists()) return false;
+    if (DB::table('orders')->whereRaw('right(phone,11) = ?', [$p])->whereNotIn('status', ['Cancel', 'Returned'])->where('created_at', '>', $x['at'])->exists()) return false; // ordered meanwhile: cycle is closed
+    if (self::cooling($p)) return false;
+    if (DB::table('sms_logs')->where('event', 'winback')->where('status', 'failed')->whereRaw('right("to", 11) = ?', [$p])->where('created_at', '>', now()->subDay())->count() >= 3) return false; // gateway keeps refusing this number: stop retrying
+    return true;
+  }
   public static function minGapDays(): int { return max(1, (int)self::set('min_gap', '15')); }
   public static function doneSet(): array { $o = []; foreach (DB::table('winback_events')->selectRaw('phone, cycle_order_id, max(stage_days) as m')->groupBy('phone', 'cycle_order_id')->get() as $r) $o[$r->phone . '|' . $r->cycle_order_id] = (int)$r->m; return $o; }
   /** phone => [orders, spent] over live orders; used to message the best customers first. */
@@ -105,17 +130,21 @@ class Winback
   /** Who will be messaged at the next send window, in serial order (oldest delivery first). Read-only preview. */
   public static function queue(?\Carbon\Carbon $at = null): array {
     $st = self::stages(); if (!$st) return ['rows' => [], 'total' => 0, 'when' => null];
-    $start = self::set('start', ''); $day = now('Asia/Dhaka')->addDay()->startOfDay(); if ($start !== '' && $day->toDateString() < $start) $day = \Carbon\Carbon::parse($start, 'Asia/Dhaka')->startOfDay();
-    $at = $at ?: $day->copy()->setTime((int)self::set('win_from', '14'), 0); $ts = $at->getTimestamp(); $cand = [];
+    $start = self::set('start', ''); $at = $at ?: ($start !== '' && now('Asia/Dhaka')->toDateString() < $start ? \Carbon\Carbon::parse($start, 'Asia/Dhaka')->startOfDay() : now('Asia/Dhaka')); $ts = $at->getTimestamp(); $cand = []; $cool = [];
     $done = self::doneSet(); $all = self::lastDelivered(); $val = self::rank($all); $lastSent = self::lastSent(); $gap = self::minGapDays() * 86400;
     foreach ($all as $p => $x) {
       $d = (int)floor(($ts - strtotime($x['at'] . ' UTC')) / 86400); $s = self::stageFor($d); if (!$s) continue;
-      if (isset($lastSent[$p]) && $ts - $lastSent[$p] < $gap) continue;
+      if (isset($lastSent[$p]) && $ts - $lastSent[$p] < $gap) { $cool[$p] = ['p' => $p, 'd' => $d, 's' => $s, 'at' => $x['at'], 'last' => $lastSent[$p], 'next' => $lastSent[$p] + $gap, 'left' => (int)ceil(($lastSent[$p] + $gap - $ts) / 86400), 'n' => $val[$p][0] ?? 0, 'sp' => $val[$p][1] ?? 0]; continue; }
       $cand[$p] = ['p' => $p, 'd' => $d, 's' => $s, 'at' => $x['at'], 'n' => $val[$p][0] ?? 0, 'sp' => $val[$p][1] ?? 0];
     }
+    $optout = array_flip(DB::table('sms_optouts')->pluck('phone')->map(fn($v) => self::norm((string)$v))->all());
+    foreach ($cand as $p => $_) if (isset($optout[$p]) || !self::validMobile($p)) unset($cand[$p]);
     $names = []; foreach (array_chunk(array_keys($cand), 1000) as $ch) foreach (DB::table('customers')->where('blocked', false)->whereRaw('right(phone,11) in (' . implode(',', array_fill(0, count($ch), '?')) . ')', $ch)->selectRaw('right(phone,11) as k, name')->get() as $cu) $names[$cu->k] = $cu->name;
     $rows = []; foreach ($cand as $p => $c) { if (!array_key_exists($p, $names)) continue; $c['name'] = $names[$p]; $c['code'] = self::set('mode', 'auto') === 'fixed' ? self::codeFor($c['s'][0]) : null; $rows[] = $c; }
-    return ['rows' => $rows, 'total' => count($rows), 'when' => $at];
+    $cn = []; foreach (array_chunk(array_keys($cool), 1000) as $ch) foreach (DB::table('customers')->whereRaw('right(phone,11) in (' . implode(',', array_fill(0, count($ch), '?')) . ')', $ch)->selectRaw('right(phone,11) as k, name')->get() as $cu) $cn[$cu->k] = $cu->name;
+    foreach ($cool as $p => &$cr) $cr['name'] = $cn[$p] ?? null; unset($cr);
+    usort($cool, fn($a, $b) => $a['next'] <=> $b['next']);
+    return ['rows' => $rows, 'total' => count($rows), 'when' => $at, 'cool' => $cool];
   }
 
   /** Send the offer to ONE existing customer only (safe test): real SMS via the SMS API, real discount, no other customer touched. */

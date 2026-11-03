@@ -22,7 +22,31 @@ class WinbackController extends Controller
       'hist' => DB::table('winback_events as e')->leftJoin('customers as c', 'c.id', '=', 'e.customer_id')->orderByDesc('e.id')->limit(60)->get(['e.*', 'c.name']),
       's' => ['on' => W::on(), 'auto' => W::set('mode', 'auto'), 'max_pct' => W::set('max_pct', '100'), 'max_discount' => W::set('max_discount', '0'), 'min_order' => W::set('min_order', '0'), 'expiry' => W::set('expiry', '30'),
         'sms' => W::set('sms', '1'), 'push' => W::set('push', '1'), 'notif' => W::set('notif', '1'), 'sms_text' => W::set('sms_text', W::SMS), 'sms_final' => W::set('sms_final', W::SMS_FINAL), 'last_run' => W::set('last_run'), 'daily_cap' => W::dailyCap()]];
-    $q = W::queue(); $cap = W::dailyCap(); $d['q'] = ['rows' => array_slice($q['rows'], 0, $cap), 'total' => $q['total'], 'cap' => $cap, 'when' => $q['when'], 'start' => W::set('start', ''), 'sentToday' => W::sentToday()];
+    $q = W::queue(); $cap = W::dailyCap(); $view = in_array($r->query('view'), ['eligible', 'cooldown', 'sent', 'converted', 'failed'], true) ? $r->query('view') : 'all';
+    $d['q'] = ['rows' => array_slice($q['rows'], 0, 300), 'total' => $q['total'], 'cap' => $cap, 'when' => $q['when'], 'start' => W::set('start', ''), 'sentToday' => W::sentToday(), 'cool' => array_slice($q['cool'], 0, 300), 'coolTotal' => count($q['cool'])];
+    $d['view'] = $view;
+    $conv = (int)(DB::selectOne("select count(distinct e.id) as n from winback_events e join orders o on right(o.phone,11) = e.phone and o.created_at > e.created_at and o.status not in ('Cancel','Returned') where e.cycle_order_id > 0")->n ?? 0);
+    $failed = (int)DB::table('sms_logs')->where('event', 'winback')->where('status', 'failed')->where('created_at', '>=', now()->subDays(30))->count();
+    $d['dash'] = ['eligible' => $q['total'], 'cooldown' => count($q['cool']), 'today' => W::sentToday(), 'conv' => $conv, 'failed' => $failed];
+    $d['slot'] = ['size' => W::slotSize(), 'gap' => W::slotGapMin(), 'qf' => W::set('quiet_from', '22'), 'qt' => W::set('quiet_to', '8'), 'minGap' => W::minGapDays(), 'quiet' => W::quiet()];
+    // history rows with SMS status, cooldown and conversion per message
+    $hist = DB::table('winback_events as e')->leftJoin('customers as c', 'c.id', '=', 'e.customer_id')->where('e.cycle_order_id', '>', 0)->orderByDesc('e.id')->limit(400)->get(['e.*', 'c.name']);
+    $ph = $hist->pluck('phone')->unique()->all(); $ords = []; $smsF = [];
+    foreach (array_chunk($ph, 500) as $ch) {
+      if (!$ch) continue; $in = implode(',', array_fill(0, count($ch), '?'));
+      foreach (DB::select("select right(phone,11) as p, min(created_at) as m, array_agg(created_at) as all_at from orders where status not in ('Cancel','Returned') and right(phone,11) in ($in) group by right(phone,11)", $ch) as $o) $ords[$o->p] = $o;
+      foreach (DB::table('sms_logs')->where('event', 'winback')->where('status', 'failed')->get(['to', 'created_at']) as $l) $smsF[substr(preg_replace('/\D/', '', (string)$l->to), -11)][] = strtotime($l->created_at . ' UTC');
+    }
+    $lastOrd = []; foreach (DB::select("select right(phone,11) as p, max(created_at) as m from orders where status not in ('Cancel','Returned') and phone is not null group by right(phone,11)") as $o) $lastOrd[$o->p] = strtotime($o->m . ' UTC');
+    $rows2 = [];
+    foreach ($hist as $e) {
+      $sent = strtotime($e->created_at . ' UTC'); $nx = $e->next_sms_at ?? null; $next = $nx ? strtotime($nx . ' UTC') : $sent + W::minGapDays() * 86400;
+      $failedSms = false; foreach ($smsF[$e->phone] ?? [] as $ft) if ($ft >= $sent - 120 && $ft <= $sent + 1800) $failedSms = true;
+      $converted = isset($lastOrd[$e->phone]) && $lastOrd[$e->phone] > $sent;
+      $status = $failedSms ? 'Failed' : ($converted ? 'Converted' : (time() < $next ? 'Cooldown' : 'Sent'));
+      $e->sent_ts = $sent; $e->next_ts = $next; $e->wb_status = $status; $e->left = max(0, (int)ceil(($next - time()) / 86400)); $rows2[] = $e;
+    }
+    $d['hist2'] = collect($rows2)->when(in_array($view, ['sent', 'converted', 'failed'], true), fn($c) => $c->filter(fn($e) => $view === 'sent' ? $e->wb_status !== 'Failed' : strtolower($e->wb_status) === $view))->take(150)->values();
     return view('winback', $d);
   }
   /** Who used the Win-Back offers + results by stage; ?csv=1 downloads it. */
@@ -56,6 +80,8 @@ class WinbackController extends Controller
     W::put('codes', json_encode((object)$codes));
     usort($st, fn($a, $b) => $a[0] <=> $b[0]); W::put('stages', json_encode($st));
     W::put('daily_cap', (string)max(1, (int)$r->input('daily_cap', 250)));
+    W::put('slot_size', (string)max(5, min(10, (int)$r->input('slot_size', 10)))); W::put('slot_gap', (string)max(1, min(240, (int)$r->input('slot_gap', 10)))); W::put('min_gap', (string)max(1, min(90, (int)$r->input('min_gap', 15))));
+    W::put('quiet_from', (string)max(0, min(23, (int)$r->input('quiet_from', 22)))); W::put('quiet_to', (string)max(0, min(23, (int)$r->input('quiet_to', 8))));
     foreach (['max_pct', 'max_discount', 'min_order', 'expiry'] as $k) W::put($k, (string)max(0, (float)$r->input($k, 0)));
     W::put('mode', in_array($r->input('mode'), ['coupon', 'fixed'], true) ? $r->input('mode') : 'auto'); W::put('on', $r->boolean('on') ? '1' : '0');
     foreach (['sms', 'push', 'notif'] as $k) W::put($k, $r->boolean($k) ? '1' : '0');
@@ -63,6 +89,7 @@ class WinbackController extends Controller
     \App\Support\Procure::audit('winback.settings', 'Win-back settings', null, $r->except(['_token']));
     return redirect('/admin/winback')->with('ok', 'Saved');
   }
+  public function toggle(Request $r) { $on = !W::on(); W::put('on', $on ? '1' : '0'); \App\Support\Procure::audit('winback.toggle', 'Win-back automation ' . ($on ? 'ON' : 'OFF'), null, []); return redirect('/admin/winback')->with('ok', 'Win-Back automation is now ' . ($on ? 'ON' : 'OFF') . '. Existing queue and history are kept.'); }
   public function test(Request $r) { $m = W::testSend((string)$r->input('phone'), (float)$r->input('pct', 0)); return redirect('/admin/winback')->with('ok', $m); }
   public function run(Request $r) { W::put('blast_limit', (string)max(0, (int)$r->input('limit', 0))); W::put('blast', '1'); W::put('blast_at', now()->toIso8601String()); \App\Support\Procure::audit('winback.run_all', 'Win-back: send to everyone now', null, []); return redirect('/admin/winback')->with('ok', 'Sending started: offers go out in batches of 200 every minute until everyone eligible has received theirs. See the report for the sent list.'); }
 }
