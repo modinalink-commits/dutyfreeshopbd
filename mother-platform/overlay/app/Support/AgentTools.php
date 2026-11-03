@@ -97,13 +97,19 @@ class AgentTools {
         $opts = \App\Support\Delivery::options(); if (!isset($opts[$area])) return ['error'=>'area must be 1 (inside Chattogram city) or 2 (outside)'];
         $ship = (float)$opts[$area]['c'];
         try { $dv = \App\Support\Delivery::compute((float)$c['subtotal_raw'], $area, $addr, '', array_keys($st['cart'] ?? [])); $ship = (float)$dv['charge']; } catch (\Throwable $e) { report($e); }
-        $total = $c['subtotal_raw'] + $ship;
+        $disc = 0.0; $dnotes = [];
+        try {
+          $eng = \App\Support\OrderDiscount::compute($ph, (float)$c['subtotal_raw'], null, ['web'=>true, 'verified'=>false, 'qty'=>array_sum($st['cart'] ?? []), 'items'=>array_map(fn($i) => ['product_id'=>$i['id'], 'price'=>(float)\Illuminate\Support\Facades\DB::table('products')->where('id', $i['id'])->value('price'), 'qty'=>$i['qty']], $c['items'])]);
+          $disc = min((float)$eng['total'], (float)$c['subtotal_raw']); $dnotes = array_column(array_filter($eng['lines'], fn($l) => $l['applied']), 'label');
+          if (!empty($eng['free_ship']) && $ship > 0) $ship = 0.0;
+        } catch (\Throwable $e) { report($e); }
+        $total = $c['subtotal_raw'] + $ship - $disc;
         $pd = $st['pending'] ?? null;
         if (!empty($ctx['orders_on']) && $pd && $pd['name'] === $name && $pd['phone'] === $ph && $pd['address'] === $addr && (int)$pd['area'] === $area && $pd['cart'] == ($st['cart'] ?? []) && self::isConfirm((string)($ctx['last_msg_text'] ?? '')) && (int)($ctx['last_msg_id'] ?? 0) > (int)$pd['after_msg'])
           return ['error'=>'This exact summary was already shown and the customer has just confirmed it. Do NOT prepare again: call place_order now.'];
         $st['pending'] = ['name'=>$name, 'phone'=>$ph, 'address'=>$addr, 'area'=>$area, 'note'=>mb_substr((string)($in['note'] ?? ''), 0, 300), 'cart'=>$st['cart'], 'total'=>$total, 'after_msg'=>(int)($ctx['last_msg_id'] ?? 0), 'at'=>time()];
-        return ['summary'=>['items'=>$c['items'], 'subtotal'=>self::money($c['subtotal_raw']), 'delivery'=>self::money($ship), 'delivery_note'=>isset($dv) ? ($dv['reason'] ?: ($ship <= 0 ? 'No delivery charge' : $dv['zone'])) : null, 'total_estimate'=>self::money($total), 'name'=>$name, 'phone'=>$ph, 'address'=>$addr, 'payment'=>'Cash on delivery'],
-          'next'=>'Show this summary and ask the customer to confirm. Do NOT place the order until they clearly say yes.'];
+        return ['summary'=>['items'=>$c['items'], 'subtotal'=>self::money($c['subtotal_raw']), 'delivery'=>self::money($ship), 'delivery_note'=>isset($dv) ? ($dv['reason'] ?: ($ship <= 0 ? 'No delivery charge' : $dv['zone'])) : null, 'automatic_discount'=>$disc > 0 ? self::money($disc).' ('.implode(', ', $dnotes).')' : 'none', 'total_estimate'=>self::money($total), 'name'=>$name, 'phone'=>$ph, 'address'=>$addr, 'payment'=>'Cash on delivery'],
+          'next'=>'Show this summary (items, delivery, automatic_discount if any, and the exact total_estimate) and ask the customer to confirm. Do NOT place the order until they clearly say yes.'];
       }
       case 'place_order': return self::place($st, $ctx);
       case 'report_conversation': {
