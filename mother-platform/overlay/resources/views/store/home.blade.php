@@ -84,14 +84,14 @@ if(document.readyState==='complete')setTimeout(first,300);else addEventListener(
 <div class="w hx"><div class="hx-m">
 @if($slides->count())
 <h1 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap">DutyFree BD – অরিজিনাল ইমপোর্টেড পারফিউম, স্কিন কেয়ার ও লাইফস্টাইল পণ্য</h1>
-<div class="sld hxs" data-auto="5000"><div class="sl-t">@foreach($slides as $sl)@php $mi = $sl->mobile_image ?? null; $hasTx = !empty($sl->title) || !empty($sl->subtitle) || !empty($sl->button_text); $isV = (($sl->media_type ?? 'image')==='video' && !empty($sl->video_id)); @endphp
+<div class="sld hxs" data-auto="5000"><div class="sl-t">@foreach($slides as $sl)@php $mi = $sl->mobile_image ?? null; $mdim = ''; if ($mi && str_starts_with($mi, '/uploads/') && is_file(public_path(ltrim($mi, '/')))) { $__d = @getimagesize(public_path(ltrim($mi, '/'))); if ($__d && $__d[0] > 0 && $__d[1] > 0) $mdim = 'width="'.$__d[0].'" height="'.$__d[1].'"'; } $hasTx = !empty($sl->title) || !empty($sl->subtitle) || !empty($sl->button_text); $isV = (($sl->media_type ?? 'image')==='video' && !empty($sl->video_id)); @endphp
 @if($isV)
-<div class="hxa hxv" data-vid="{{ $sl->video_id }}" data-ap="{{ (int)($sl->v_autoplay ?? 1) }}" data-mu="{{ (int)($sl->v_mute ?? 1) }}" data-lp="{{ (int)($sl->v_loop ?? 0) }}" data-ct="{{ (int)($sl->v_controls ?? 0) }}" data-mb="{{ (int)($sl->v_mobile ?? 0) }}"><picture>@if($mi)<source media="(max-width:760px)" srcset="{{ $mi }}">@endif<img src="{{ $sl->image ?: 'https://i.ytimg.com/vi/'.$sl->video_id.'/hqdefault.jpg' }}" alt="{{ $sl->title ?: 'DutyFree Shop BD video' }}" width="1328" height="472" @if($loop->first) fetchpriority="high" @else loading="lazy" @endif></picture>
+<div class="hxa hxv" data-vid="{{ $sl->video_id }}" data-ap="{{ (int)($sl->v_autoplay ?? 1) }}" data-mu="{{ (int)($sl->v_mute ?? 1) }}" data-lp="{{ (int)($sl->v_loop ?? 0) }}" data-ct="{{ (int)($sl->v_controls ?? 0) }}" data-mb="{{ (int)($sl->v_mobile ?? 0) }}"><picture>@if($mi)<source media="(max-width:760px)" srcset="{{ $mi }}" {!! $mdim !!}>@endif<img src="{{ $sl->image ?: 'https://i.ytimg.com/vi/'.$sl->video_id.'/hqdefault.jpg' }}" alt="{{ $sl->title ?: 'DutyFree Shop BD video' }}" width="1328" height="472" @if($loop->first) fetchpriority="high" @else loading="lazy" @endif></picture>
 @if($hasTx)<span class="hxt"><b>{{ $sl->title }}</b>@if(!empty($sl->subtitle))<span>{{ $sl->subtitle }}</span>@endif</span>@endif
 @if(!empty($sl->button_text))<a class="hxk {{ $sl->cta_pos ?? 'left' }}" href="{{ $sl->link ?: '#flash' }}">{{ $sl->button_text }}</a>@endif
 <button type="button" class="hxp" aria-label="Play video" hidden>▶</button><button type="button" class="hxm" aria-label="Sound on" hidden>🔇</button></div>
 @else
-<a class="hxa" href="{{ $sl->link ?: '#flash' }}"><picture>@if($mi)<source media="(max-width:760px)" srcset="{{ $mi }}">@endif<img src="{{ $sl->image }}" alt="{{ $sl->title ?: 'DutyFree Shop BD offer' }}" width="1328" height="472" @if($loop->first) fetchpriority="high" @else loading="lazy" @endif></picture>
+<a class="hxa" href="{{ $sl->link ?: '#flash' }}"><picture>@if($mi)<source media="(max-width:760px)" srcset="{{ $mi }}" {!! $mdim !!}>@endif<img src="{{ $sl->image }}" alt="{{ $sl->title ?: 'DutyFree Shop BD offer' }}" width="1328" height="472" @if($loop->first) fetchpriority="high" @else loading="lazy" @endif></picture>
 @if($hasTx)<span class="hxt">@if(!empty($sl->title))<b>{{ $sl->title }}</b>@endif @if(!empty($sl->subtitle))<span>{{ $sl->subtitle }}</span>@endif @if(!empty($sl->button_text))<em>{{ $sl->button_text }}</em>@endif</span>@endif</a>
 @endif
 @endforeach</div>@if($slides->count()>1)<div class="sl-d"></div><button type="button" class="sl-a pv" aria-label="Previous slide">‹</button><button type="button" class="sl-a nx" aria-label="Next slide">›</button>@endif</div>
@@ -111,7 +111,7 @@ if(document.readyState==='complete')setTimeout(first,300);else addEventListener(
 @if($list->count())
 <div class="gr" data-cr data-fl="{{ $fk }}" @if($fk==='p') style="display:none" @endif>@foreach($list as $q)
 @php $off = \App\Http\Controllers\StoreController::off($q); $u = \App\Http\Controllers\StoreController::url($q); $w = $q->sold > 0 ? max(8, min(100, round($q->sold / max(1, $q->sold + max(0, (int)$q->stock)) * 100))) : max(8, min(90, 100 - (int)$q->stock)); @endphp
-<div class="pc"><span class="bo">{{ $off }}%<i> OFF</i></span><a class="ph" href="{{ $u }}" style="background:#fff"><img src="{{ $q->image ?: '/product-placeholder' }}" alt="{{ $q->name }}" width="150" height="150" loading="lazy" decoding="async" draggable="false"></a>
+<div class="pc"><span class="bo">{{ $off }}%<i> OFF</i></span><a class="ph" href="{{ $u }}" style="background:#fff"><img src="{{ $q->image ?: '/product-placeholder' }}" @php $__ss = \App\Support\Img::srcset($q->image); @endphp @if($__ss) srcset="{{ $__ss }}" sizes="150px" @endif alt="{{ $q->name }}" width="150" height="150" loading="lazy" decoding="async" draggable="false"></a>
 <a class="nm" href="{{ $u }}">{{ $q->name }}</a><div class="pr"><b>{{ number_format($q->price) }} TK</b> <s>{{ number_format($q->compare_price) }} TK</s></div>
 <div style="padding:0 2px"><div class="bar"><i style="width:{{ $w }}%"></i></div><div class="sold">{{ $q->sold > 0 ? $q->sold.' sold' : ((int)$q->stock > 0 ? (int)$q->stock.' in stock' : 'Limited stock') }}</div></div>
 <a class="on" href="/checkout?add={{ $q->id }}&amp;p={{ (float)$q->price }}" rel="nofollow"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 2h4l2.7 12.4a2 2 0 0 0 2 1.6h8.7a2 2 0 0 0 2-1.6L22 7H6"/><circle cx="10" cy="20.5" r="1.4" fill="#fff"/><circle cx="18" cy="20.5" r="1.4" fill="#fff"/></svg><i>ORDER NOW</i></a></div>
@@ -127,7 +127,7 @@ if(document.readyState==='complete')setTimeout(first,300);else addEventListener(
 @endif
 
 @if($s['home_todays_deal']==='1' && $deals->count() && $dOn)
-<div class="w sec-st" id="deal" data-end="{{ $dFix ? $dEnd * 1000 : '' }}" style="padding-top:34px"><div class="st"><h2>Today's Deal</h2><div class="dl" data-cr="1">@foreach($deals as $dd)@php $du = \App\Http\Controllers\StoreController::url($dd); @endphp<div class="td"><a class="im" href="{{ $du }}"><img src="{{ $dd->image ?: '/product-placeholder' }}" alt="{{ $dd->name }}" width="240" height="240" loading="lazy" draggable="false"></a>
+<div class="w sec-st" id="deal" data-end="{{ $dFix ? $dEnd * 1000 : '' }}" style="padding-top:34px"><div class="st"><h2>Today's Deal</h2><div class="dl" data-cr="1">@foreach($deals as $dd)@php $du = \App\Http\Controllers\StoreController::url($dd); @endphp<div class="td"><a class="im" href="{{ $du }}"><img src="{{ $dd->image ?: '/product-placeholder' }}" @php $__ss = \App\Support\Img::srcset($dd->image); @endphp @if($__ss) srcset="{{ $__ss }}" sizes="180px" @endif alt="{{ $dd->name }}" width="240" height="240" loading="lazy" draggable="false"></a>
 <div class="tx"><span class="k">DEAL ENDS IN <span data-cd="all">{{ $fmt($dEnd) }}</span></span><h3><a href="{{ $du }}">{{ $dd->name }}</a></h3><div class="pp">{{ number_format($dd->price) }} TK <s>{{ number_format($dd->compare_price) }} TK</s><em>{{ \App\Http\Controllers\StoreController::off($dd) }}% OFF</em></div><span style="font-size:12px;color:var(--mut)">Sold by DutyFree Shop BD · Cash on delivery</span><a class="bt" href="/checkout?add={{ $dd->id }}&amp;p={{ (float)$dd->price }}" rel="nofollow">ORDER NOW</a></div></div>@endforeach</div></div></div>
 @endif
 
@@ -141,7 +141,7 @@ if(document.readyState==='complete')setTimeout(first,300);else addEventListener(
 <div class="lg2" data-cr>@foreach($live as $l)
 @php $lu = $l->pid ? \App\Http\Controllers\StoreController::url((object)['id'=>$l->pid,'ext_id'=>$l->ext_id,'name'=>$l->pname,'category_id'=>$l->pcat,'sub'=>$l->psub,'sub_sub'=>$l->psubsub ?? null,'path_slug'=>$l->pslug]) : null; @endphp
 <div class="lo"><span class="tg"><span class="dot"></span>{{ \Carbon\Carbon::parse($l->created_at)->diffForHumans(null, true) }} ago</span><a class="bx" @if($lu) href="{{ $lu }}" @endif>
-<div class="im">@if($l->image)<img src="{{ $l->image }}" alt="{{ $l->name }}" width="110" height="110" loading="lazy" draggable="false">@endif</div>
+<div class="im">@if($l->image)<img src="{{ $l->image }}" @php $__ss = \App\Support\Img::srcset($l->image); @endphp @if($__ss) srcset="{{ $__ss }}" sizes="110px" @endif alt="{{ $l->name }}" width="110" height="110" loading="lazy" draggable="false">@endif</div>
 <span class="wh">Recent order</span><span class="nm">{{ $l->name }}</span>
 <div class="rw"><b>{{ number_format($l->price) }} TK</b><span>x{{ $l->qty }}</span></div><span class="dl">{{ (float)$l->shipping > 0 ? 'Delivery ৳'.number_format($l->shipping) : 'FREE delivery' }}</span></a></div>
 @endforeach</div></div>
@@ -194,7 +194,7 @@ if(document.readyState==='complete')setTimeout(first,300);else addEventListener(
 <script>(function(){var rm=matchMedia('(prefers-reduced-motion: reduce)').matches;function mk(c,t){var b=document.createElement('button');b.type='button';b.className='cra '+c;b.setAttribute('aria-label',c==='l'?'Previous':'Next');b.textContent=t;return b}
 function init(tr){var kids=[].slice.call(tr.children);if(kids.length<2)return;var w=document.createElement('div');w.className='crw';var fl=tr.getAttribute('data-fl');tr.parentNode.insertBefore(w,tr);w.appendChild(tr);if(fl!==null){w.setAttribute('data-fl',fl);tr.removeAttribute('data-fl');w.style.display=tr.style.display;tr.style.display=''}
 var L=mk('l','\u2039'),R=mk('r','\u203a');w.appendChild(L);w.appendChild(R);var gap=function(){return parseFloat(getComputedStyle(tr).columnGap)||0},per=function(){return Math.round(parseFloat(getComputedStyle(tr).getPropertyValue('--pv')))||1},loop=kids.length>=per();
-if(loop)kids.forEach(function(k){var c=k.cloneNode(true);c.setAttribute('aria-hidden','true');tr.appendChild(c)});
+if(loop)kids.forEach(function(k){var c=k.cloneNode(true);c.setAttribute('aria-hidden','true');c.querySelectorAll('a,button,input,select,textarea').forEach(function(x){x.setAttribute('tabindex','-1')});tr.appendChild(c)});
 function sw(){return tr.children[0].getBoundingClientRect().width+gap()}function pd(){return(tr.scrollWidth+gap())/2}
 function jump(d){tr.style.scrollSnapType='none';tr.scrollLeft+=d;requestAnimationFrame(function(){tr.style.scrollSnapType=''})}
 function next(){if(tr.clientWidth)tr.scrollBy({left:sw(),behavior:'smooth'})}function prev(){if(!tr.clientWidth)return;if(loop&&tr.scrollLeft<sw())jump(pd());tr.scrollBy({left:-sw(),behavior:'smooth'})}
