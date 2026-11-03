@@ -10,7 +10,7 @@ class DealController extends Controller {
   }
   private function data(): array {
     $s = StoreController::set(); $min = (float)($s['deal_min_off'] ?? 0); $max = max(1, (int)($s['deal_max'] ?? 12));
-    $cur = StoreController::dealBase($min)->limit($max)->get(); $ids = $cur->pluck('id')->all();
+    $cur = StoreController::dealList($s); $ids = $cur->pluck('id')->all();
     $flags = DB::table('deal_flags')->pluck('mode','product_id')->all();
     $sold = $this->sold();
     $others = DB::table('products')->where('published',true)->whereColumn('compare_price','>','price')->where('compare_price','>',0)->whereNotIn('id',$ids)->orderByRaw('(compare_price - price) / compare_price desc')->limit(60)->get();
@@ -27,7 +27,7 @@ class DealController extends Controller {
       fclose($o);
     }, 'todays-deal-'.now()->format('Y-m-d').'.csv', ['Content-Type'=>'text/csv; charset=UTF-8']);
   }
-  private function bust() { foreach (['store.home4','store.home6','store.home5','store.settings2'] as $k) Cache::forget($k); }
+  private function bust() { foreach (['store.home4','store.home6','store.home5','store.home8','store.settings2'] as $k) Cache::forget($k); }
   public function flag(Request $r, $id, $mode) {
     abort_unless(in_array($mode, ['pin','exclude','clear'], true), 404);
     $p = DB::table('products')->find($id); abort_unless($p, 404);

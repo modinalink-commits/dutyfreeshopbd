@@ -40,10 +40,25 @@ class StoreController extends Controller {
     return $o;
   }
   /** Discount percent shown on cards (from the compare price). */
-  public static function dealBase(float $min = 0) {
+  /** Today's Deal products: the biggest real discounts, with a reserved share of Cigarette & Vape products (setting deal_smoke) mixed in, smoke first. */
+  public static function dealList(array $s) {
+    $min = (float)($s['deal_min_off'] ?? 0); $max = max(1, (int)($s['deal_max'] ?? 12)); $k = max(0, min($max, (int)($s['deal_smoke'] ?? 4)));
+    if ($k === 0) return self::dealBase($min)->limit($max)->get();
+    $sm = self::dealBase($min, 'smoke')->limit($k)->get();
+    $ot = self::dealBase($min, 'other')->limit(max(1, $max - $sm->count()))->get();
+    $out = collect(); $n = max($sm->count(), $ot->count());
+    for ($i = 0; $i < $n; $i++) { if (isset($sm[$i])) $out->push($sm[$i]); if (isset($ot[$i])) $out->push($ot[$i]); }
+    return $out->take($max)->values();
+  }
+  public static function dealBase(float $min = 0, ?string $scope = null) {
     $ex = DB::table('deal_flags')->where('mode','exclude')->pluck('product_id')->all();
     $pin = array_map('intval', DB::table('deal_flags')->where('mode','pin')->pluck('product_id')->all());
     $q = DB::table('products')->where('published',true)->whereColumn('compare_price','>','price')->where('compare_price','>',0);
+    if ($scope !== null) {
+      $sc = DB::table('categories')->get(['id','slug','name'])->filter(fn($c) => self::isSmokeCat($c))->pluck('id')->all();
+      if ($scope === 'smoke') $q->where(function ($w) use ($sc) { $w->where('group_key','smoke'); if ($sc) $w->orWhereIn('category_id', $sc); });
+      else $q->where(function ($w) { $w->whereNull('group_key')->orWhere('group_key','!=','smoke'); })->where(function ($w) use ($sc) { $w->whereNull('category_id'); if ($sc) $w->orWhereNotIn('category_id', $sc); });
+    }
     if ($ex) $q->whereNotIn('id', $ex);
     $q->where(function ($w) use ($min, $pin) { $w->whereRaw('(compare_price - price) / compare_price * 100 >= ?', [$min]); if ($pin) $w->orWhereIn('id', $pin); });
     if ($pin) $q->orderByRaw('case when id in ('.implode(',', $pin).') then 0 else 1 end');
@@ -94,7 +109,7 @@ class StoreController extends Controller {
     $data = self::rem('store.home8', 300, function () use ($s) {
       $pub = fn() => DB::table('products')->where('published',true);
       $sold = DB::table('order_items as i')->join('orders as o','o.id','=','i.order_id')->where('o.status','!=','Cancel')->where('o.created_at','>=',now()->subDays(30))->groupBy('i.product_id')->selectRaw('i.product_id as pid, sum(i.qty) as q')->pluck('q','pid');
-      $deals = self::dealBase((float)($s['deal_min_off'] ?? 0))->limit(max(1,(int)($s['deal_max'] ?? 12)))->get()
+      $deals = self::dealList($s)
         ->map(function ($p) use ($sold) { $p->sold = (int)($sold[$p->id] ?? 0); return $p; });
       $sec = []; $i = 0;
       $ordC = $this->cats()->values()->sortBy(fn($c) => self::isSmokeCat($c) ? 0 : (preg_match('/perfume|attar|আতর|পারফিউম/iu', ($c->slug ?? '').' '.($c->name ?? '')) ? 1 : 2))->values();
