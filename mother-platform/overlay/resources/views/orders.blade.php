@@ -79,6 +79,7 @@
 .ocb .oam{display:none;position:absolute;right:0;top:calc(100% + 6px);z-index:90;background:#fff;border:1px solid #CBD5E1;border-radius:10px;box-shadow:0 8px 24px rgba(15,23,42,.16);padding:10px;min-width:340px;flex-direction:column;gap:10px;white-space:normal}.ocb .oaw.open .oam{display:flex}
 .ocb .oam .obk,.ocb .oam .owf{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0;padding:0;border:0}.ocb .oam .owf{padding-top:8px;border-top:1px solid #E5E7EB}.ocb .oam #osel{font-size:12px;font-weight:700;color:#1E40AF}
 .ocb .r1>.owt{border-left:0;padding-left:0}
+#ocb .r1 .owt .obk select,#ocb .r1 .owt .owf select,#ocb .r1 .owt .q select{height:26px!important;min-height:26px!important;box-sizing:border-box;font-size:11px!important;padding:0 18px 0 8px!important;width:auto!important;min-width:84px!important;border-radius:8px!important;border:1.5px solid #94A3B8!important;font-weight:600}
 @media(max-width:800px){.ocb{top:0}.ocb .r2{flex-wrap:wrap}}
 </style>
 @php($oq = request()->only('q','per','from','to','ft','tt'))

@@ -256,8 +256,10 @@ class StoreController extends Controller {
   }
   public function cartItems(Request $r) {
     $sp = \App\Support\OrderDiscount::sessionPhone($r); $ph = null;
-    // A guest who arrived through a referral link: preview exactly what the order will give for the typed number (same calculation as order submit); the customer profile is not revealed.
-    if (!$sp && \App\Support\Referral::cookieCode()) { $t = substr(preg_replace('/\D/', '', (string)$r->input('ph')), -11); if (preg_match('/^01\d{9}$/', $t)) $ph = $t; }
+    // The preview must equal what the order will save. Order submit uses the TYPED number and counts the customer profile only when that number is the logged-in one; so the preview does the same (a typed number that is not the logged-in number gets only the non-profile discounts, and the profile is not revealed).
+    $t = substr(preg_replace('/\D/', '', (string)$r->input('ph')), -11); if (!preg_match('/^01\d{9}$/', $t)) $t = null;
+    if ($sp && $t && $t !== \App\Support\Chat::phone($sp)) { $ph = $t; $sp = null; }
+    elseif (!$sp && $t) $ph = $t;
     $q = $this->quote($this->parseItems($r->input('ids')), (int)$r->input('area', 1), trim(mb_substr((string)$r->input('code'), 0, 40)), $sp ?: $ph, (bool)$sp, mb_substr((string)$r->input('addr'), 0, 300));
     if ($ph) $q['profile'] = null;
     return response()->json($q)->header('Cache-Control','no-store');
