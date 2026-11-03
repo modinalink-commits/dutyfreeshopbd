@@ -441,6 +441,7 @@ app/Support/OrderDedupe.php
 app/Http/Controllers/DbHealthController.php
 app/Http/Controllers/QuickEditController.php
 resources/views/order_quick_edit.blade.php
+resources/views/order_qpop.blade.php
 app/Support/TopSellers.php
 app/Support/AgentHandoff.php
 app/Support/AgentTools.php
