@@ -2,7 +2,7 @@
 @section('ld')<script type="application/ld+json">{!! json_encode(['@context'=>'https://schema.org','@type'=>'BreadcrumbList','itemListElement'=>[['@type'=>'ListItem','position'=>1,'name'=>'হোম','item'=>url('/').'/'],['@type'=>'ListItem','position'=>2,'name'=>$c->name,'item'=>url('/'.$c->slug).'/'], ...(!empty($subName) ? [['@type'=>'ListItem','position'=>3,'name'=>$subName,'item'=>$canon]] : [])]], JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES|JSON_HEX_TAG) !!}</script>@endsection
 @section('main')
 @php
-  $sub = $subName ?? null; $title = $sub ?: $c->name; $base = '/'.$c->slug.'/'; $cur = $sub ? '/'.$c->slug.'/'.$subSlug : $base;
+  $sub = $subName ?? null; $h1t = $sub ?: $c->name; $base = '/'.$c->slug.'/'; $cur = $sub ? '/'.$c->slug.'/'.$subSlug : $base;
   $qs = fn(array $o) => $cur.'?'.http_build_query(array_filter(array_merge(request()->only(['min','max','sort']), $o), fn($v) => $v !== null && $v !== ''));
   $ranges = [[null,1000,'Under ৳1,000'],[1000,5000,'৳1,000 – ৳5,000'],[5000,20000,'৳5,000 – ৳20,000'],[20000,50000,'৳20,000 – ৳50,000'],[50000,null,'Over ৳50,000']];
   $sorts = [''=>'Position (default)','new'=>'Newest','popular'=>'Most in stock','price_asc'=>'Price: low to high','price_desc'=>'Price: high to low'];
@@ -19,7 +19,7 @@
 </style>
 <div class="w">
 <div class="cb"><a href="/">Home</a>›@if($sub)<a href="{{ $base }}">{{ $c->name }}</a>›<b>{{ $sub }}</b>@else<b>{{ $c->name }}</b>@endif</div>
-<div class="cbn"><span class="tg">{{ $sub ? $c->name : 'Category' }}</span><h1>{{ $title }}</h1><p>Browse {{ $title }} on DutyFree BD — original imported products with fast delivery.</p><div class="ch"><span class="n">{{ number_format($items->total()) }} products</span><span>100% Cash on Delivery</span><span>Nationwide delivery</span><span>100% Original</span></div></div>
+<div class="cbn"><span class="tg">{{ $sub ? $c->name : 'Category' }}</span><h1>{{ $h1t }}</h1><p>Browse {{ $h1t }} on DutyFree BD — original imported products with fast delivery.</p><div class="ch"><span class="n">{{ number_format($items->total()) }} products</span><span>100% Cash on Delivery</span><span>Nationwide delivery</span><span>100% Original</span></div></div>
 @if(!empty($subs[$c->id]))<div class="rc"><h2>{{ $sub ? 'Other sections' : 'Related categories' }}<small>{{ count($subs[$c->id]) }} options</small></h2><div class="rcl">@foreach($subs[$c->id] as $sb)<a href="{{ $base }}{{ \App\Support\Slugs::subSlug($sb->sub) }}" class="{{ $sub===$sb->sub ? 'on' : '' }}"><i>{{ mb_strtoupper(mb_substr($sb->sub,0,1)) }}</i>{{ $sb->sub }}<em>→</em></a>@endforeach</div></div>@endif
 <div class="cl"><aside class="fl" id="fl"><h3>Filters</h3><h4>Price</h4>@foreach($ranges as [$a,$b,$lb])@php $on = (string)request('min')===(string)$a && (string)request('max')===(string)$b; @endphp<a class="o {{ $on ? 'on' : '' }}" href="{{ $on ? $qs(['min'=>null,'max'=>null,'page'=>null]) : $qs(['min'=>$a,'max'=>$b,'page'=>null]) }}" rel="nofollow">{{ $lb }}</a>@endforeach
 <h4>Section</h4><a class="o {{ !$sub ? 'on' : '' }}" href="{{ $base }}">All {{ $c->name }}</a>@foreach(array_slice($subs[$c->id] ?? [], 0, 12) as $sb)<a class="o {{ $sub===$sb->sub ? 'on' : '' }}" href="{{ $base }}{{ \App\Support\Slugs::subSlug($sb->sub) }}">{{ $sb->sub }}</a>@endforeach
