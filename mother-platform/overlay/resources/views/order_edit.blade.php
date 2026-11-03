@@ -26,6 +26,7 @@
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:8px">
    <label>Discount<select name="discount_mode" id="oeDm"><option value="auto" @selected($suggestDisc==='auto')>Recalculate automatically</option><option value="keep" @selected($suggestDisc==='keep')>Keep original discount (৳{{ number_format($o->discount ?? 0) }})</option>@if($P['discount'])<option value="manual">Manual amount…</option>@endif</select>
     <input type="number" step="0.01" min="0" name="discount_manual" id="oeDman" placeholder="Manual discount ৳" style="display:none;margin-top:6px"><small id="oeDnote" style="color:#6B7280;display:block;margin-top:4px"></small></label>
+   <label>Coupon code<input name="coupon" id="oeCp" value="{{ $o->coupon }}" maxlength="40" autocomplete="off" placeholder="No coupon" style="text-transform:uppercase"><small style="color:#6B7280;display:block;margin-top:4px">Change or clear the code. The discount is recalculated with it.</small></label>
    <label>Delivery charge<select name="ship_mode" id="oeSm"><option value="auto" @selected($suggestShip==='auto')>Recalculate automatically</option><option value="keep" @selected($suggestShip==='keep')>Keep previous (৳{{ number_format($o->shipping) }})</option>@if($P['delivery'])<option value="override">Override manually…</option>@endif</select>
     <span id="oeSov" style="display:none"><input type="number" step="0.01" min="0" name="ship_override" id="oeSo" placeholder="Delivery charge ৳" style="margin-top:6px"><input name="ship_reason" id="oeSr" placeholder="Reason for override" style="margin-top:6px"></span><small id="oeSnote" style="color:#6B7280;display:block;margin-top:4px"></small></label>
   </div></div>
@@ -91,7 +92,7 @@ $('oeAddRes').addEventListener('click',function(e){var d=e.target.closest('[data
 document.addEventListener('click',function(e){if(!e.target.closest('#oeAdd,#oeAddRes'))$('oeAddRes').style.display='none'});
 /* ---- server quote: discount rules + delivery charge */
 function payload(){var items=ROWS.filter(function(r){return !r._rm}).map(function(r){return {item_id:r.item_id,product_id:r.product_id,variant_id:r.variant_id,name:r.name,qty:r.qty,price:r.price,price_reason:r.price_reason||''}});
- return {items:items,discount_mode:$('oeDm').value,discount_manual:$('oeDman').value,ship_mode:$('oeSm').value,ship_override:$('oeSo').value,ship_reason:($('oeSr').value||$('oeRs').value)}}
+ return {items:items,coupon:$('oeCp').value,discount_mode:$('oeDm').value,discount_manual:$('oeDman').value,ship_mode:$('oeSm').value,ship_override:$('oeSo').value,ship_reason:($('oeSr').value||$('oeRs').value)}}
 function quote(){clearTimeout(qt);qt=setTimeout(function(){fetch('/admin/orders/'+OID+'/quote',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':T,Accept:'application/json'},body:JSON.stringify(payload())}).then(function(r){return r.json()}).then(show).catch(function(){})},250)}
 function show(c){last=c;curDisc=c.disc;curSub=c.sub;shareDisc();
  $('sO').textContent=fm(c.old_total);$('sSub').textContent=fm(c.sub);$('sDis').textContent=fm(c.disc);$('sShp').textContent=fm(c.ship);$('sTot').textContent=fm(c.total);
@@ -101,7 +102,7 @@ function show(c){last=c;curDisc=c.disc;curSub=c.sub;shareDisc();
  $('oeSnote').textContent='Previous Delivery Charge ৳'+fm(c.old_ship)+' → Updated ৳'+fm(c.ship)+(c.smode==='auto'?' (system ৳'+fm(c.auto_ship)+')':'');
  var w='';(c.warnings||[]).forEach(function(x){w+='<div class="oe-w">⚠ '+esc(x)+'</div>'});(c.errors||[]).forEach(function(x){w+='<div class="oe-b">'+esc(x)+'</div>'});$('oeWarn').innerHTML=w}
 $('oeRs').addEventListener('change',quote);['oeDm','oeSm'].forEach(function(i){$(i).addEventListener('change',function(){$('oeDman').style.display=$('oeDm').value==='manual'?'':'none';$('oeSov').style.display=$('oeSm').value==='override'?'':'none';quote()})});
-['oeDman','oeSo'].forEach(function(i){$(i).addEventListener('input',quote)});
+['oeDman','oeSo','oeCp'].forEach(function(i){$(i).addEventListener('input',quote)});
 /* ---- save */
 document.querySelectorAll('[data-m]').forEach(function(b){b.addEventListener('click',function(){var m=b.getAttribute('data-m');$('oeErr').textContent='';
  if(!$('oeRs').value){$('oeErr').textContent='Select the reason for this order change.';return}

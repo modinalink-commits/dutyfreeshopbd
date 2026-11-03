@@ -88,7 +88,8 @@ class OrderRevisionController extends Controller {
     $sub = round(array_sum(array_column($live, 'new_total')), 2); $qtyTot = array_sum(array_column($live, 'new_qty')); $oldSub = round((float)$old->sum(fn($i) => $i->qty * $i->price), 2);
     // ---- discount
     $dmode = in_array($opt['discount_mode'] ?? 'auto', ['auto', 'keep', 'manual']) ? $opt['discount_mode'] : 'auto'; $oldDisc = round((float)($o->discount ?? 0), 2);
-    $auto = OrderDiscount::compute($o->phone, $sub, $o->coupon, ['qty'=>$qtyTot, 'exclude_order'=>$o->id, 'items'=>array_map(fn($x) => ['product_id'=>$x['product_id'], 'price'=>$x['new_price'], 'qty'=>$x['new_qty']], $live)]);
+    $cpn = array_key_exists('coupon', $opt) ? strtoupper(trim((string)$opt['coupon'])) : strtoupper(trim((string)($o->coupon ?? ''))); $cpnSet = array_key_exists('coupon', $opt) && $cpn !== strtoupper(trim((string)($o->coupon ?? ''))); if ($cpnSet) $dmode = 'auto';
+    $auto = OrderDiscount::compute($o->phone, $sub, $cpn !== '' ? $cpn : null, ['qty'=>$qtyTot, 'exclude_order'=>$o->id, 'items'=>array_map(fn($x) => ['product_id'=>$x['product_id'], 'price'=>$x['new_price'], 'qty'=>$x['new_qty']], $live)]);
     $kept = array_values(array_filter($auto['lines'], fn($l) => $l['applied'])); $autoDisc = min($sub, round(array_sum(array_column($kept, 'amount')), 2)); $dmeta = null; $dnote = null;
     if ($dmode === 'auto') { $disc = $autoDisc; $dmeta = OrderDiscount::meta($kept, $auto['profile'], 'Automatic', $disc); if ($disc <= 0) $dmeta['discount_by'] = null; $dnote = $kept ? 'Recalculated: '.implode(' + ', array_column($kept, 'label')) : 'Recalculated: no discount applies'; }
     elseif ($dmode === 'keep') { $disc = min($sub, $oldDisc); $dnote = 'Original discount kept (৳'.number_format($disc).')'; }
@@ -97,7 +98,8 @@ class OrderRevisionController extends Controller {
       else { $disc = max(0, min($sub, round((float)($opt['discount_manual'] ?? 0), 2))); $dnote = 'Manual discount ৳'.number_format($disc).' by '.Auth::user()->name; $dmeta = ['discount_type'=>'Manual Discount', 'discount_rule'=>'Admin override (order revision)', 'discount_pct'=>null, 'discount_source'=>'Manual by '.Auth::user()->name, 'discount_by'=>'Manual', 'customer_category'=>$auto['profile']['category'] ?? null, 'membership_status'=>null];
         if (OrderDiscount::hasLines()) $dmeta['discount_lines'] = OrderDiscount::linesJson([OrderDiscount::manualLine($disc, Auth::user()->name, trim((string)($opt['discount_reason'] ?? '')) ?: 'Order revision override')]); }
     }
-    if ($auto['coupon_error'] && $o->coupon && $dmode === 'auto') $warn[] = 'Coupon '.$o->coupon.': '.$auto['coupon_error'].' (no longer applied).';
+    if ($cpnSet && $cpn !== '' && $auto['coupon_error']) $errs[] = 'Coupon '.$cpn.': '.$auto['coupon_error'].'.';
+    elseif ($auto['coupon_error'] && $cpn !== '' && $dmode === 'auto') $warn[] = 'Coupon '.$cpn.': '.$auto['coupon_error'].' (no longer applied).';
     // ---- delivery
     $pids = array_values(array_filter(array_column($live, 'product_id')));
     $dv = Delivery::compute((float)$sub, 0, (string)($o->address ?? ''), (string)($o->district ?? ''), $pids); $smode = in_array($opt['ship_mode'] ?? 'auto', ['auto', 'keep', 'override']) ? $opt['ship_mode'] : 'auto'; $oldShip = round((float)$o->shipping, 2); $dcols = null; $snote = null;
@@ -108,7 +110,7 @@ class OrderRevisionController extends Controller {
         $dcols = ['delivery_zone'=>mb_substr((string)$dv['zone'], 0, 160), 'delivery_original'=>$dv['original'], 'delivery_free_discount'=>$dv['free_discount'], 'delivery_manual_adj'=>round($ship - $dv['charge'], 2), 'delivery_manual_by'=>Auth::user()->name, 'delivery_note'=>$dv['reason'] ? mb_substr($dv['reason'], 0, 200) : null]; }
     } else { $ship = round((float)$dv['charge'], 2); $snote = 'Recalculated'.($dv['zone'] ? ' ('.$dv['zone'].')' : ''); $dcols = ['delivery_zone'=>mb_substr((string)$dv['zone'], 0, 160), 'delivery_original'=>$dv['original'], 'delivery_free_discount'=>$dv['free_discount'], 'delivery_manual_adj'=>null, 'delivery_manual_by'=>null, 'delivery_note'=>$dv['reason'] ? mb_substr($dv['reason'], 0, 200) : null]; }
     $total = round($sub - $disc + $ship, 2); $oldTotal = round((float)$o->total, 2);
-    return ['voice_lines'=>($dmode === 'auto' ? array_values(array_filter($kept, fn($l) => ($l['key'] ?? '') === 'voice')) : []), 'rows'=>$rows, 'errors'=>$errs, 'warnings'=>$warn, 'old_sub'=>$oldSub, 'sub'=>$sub, 'old_disc'=>$oldDisc, 'disc'=>$disc, 'auto_disc'=>$autoDisc, 'disc_lines'=>array_map(fn($l) => ['label'=>$l['label'], 'amount'=>$l['amount'], 'applied'=>$l['applied']], $auto['lines']), 'disc_meta'=>$dmeta, 'disc_note'=>$dnote, 'dmode'=>$dmode,
+    return ['voice_lines'=>($dmode === 'auto' ? array_values(array_filter($kept, fn($l) => ($l['key'] ?? '') === 'voice')) : []), 'rows'=>$rows, 'errors'=>$errs, 'warnings'=>$warn, 'old_sub'=>$oldSub, 'sub'=>$sub, 'old_disc'=>$oldDisc, 'disc'=>$disc, 'auto_disc'=>$autoDisc, 'disc_lines'=>array_map(fn($l) => ['label'=>$l['label'], 'amount'=>$l['amount'], 'applied'=>$l['applied']], $auto['lines']), 'disc_meta'=>$dmeta, 'disc_note'=>$dnote, 'dmode'=>$dmode, 'coupon'=>$cpn, 'coupon_set'=>$cpnSet, 'old_coupon'=>strtoupper(trim((string)($o->coupon ?? ''))),
       'old_ship'=>$oldShip, 'ship'=>$ship, 'auto_ship'=>round((float)$dv['charge'], 2), 'ship_note'=>$snote, 'smode'=>$smode, 'dcols'=>$dcols, 'old_total'=>$oldTotal, 'total'=>$total, 'diff'=>round($total - $oldTotal, 2), 'qty'=>$qtyTot];
   }
   public function quote(Request $r, $id) {
@@ -147,7 +149,7 @@ class OrderRevisionController extends Controller {
     if ($this->typeOf($c) === 'none' && abs($c['diff']) < 0.01) return back()->withInput()->withErrors(['rev'=>'Nothing was changed.']);
     $call = !empty($d['call_log_id']) && DB::table('call_logs')->where('id', $d['call_log_id'])->exists() ? (int)$d['call_log_id'] : null;
     if ($d['mode'] === 'pending') {
-      $rid = DB::table('order_revisions')->insertGetId($this->revRow($o, $c, $d, false, $call) + ['status'=>'pending', 'payload'=>json_encode(['items'=>$this->norm($r->input('items')), 'opt'=>$r->only(['discount_mode', 'discount_manual', 'ship_mode', 'ship_override', 'ship_reason']), 'reason'=>$d['reason'], 'note'=>$d['note'] ?? null], JSON_UNESCAPED_UNICODE), 'created_at'=>now(), 'updated_at'=>now()]);
+      $rid = DB::table('order_revisions')->insertGetId($this->revRow($o, $c, $d, false, $call) + ['status'=>'pending', 'payload'=>json_encode(['items'=>$this->norm($r->input('items')), 'opt'=>$r->only(['coupon', 'discount_mode', 'discount_manual', 'ship_mode', 'ship_override', 'ship_reason']), 'reason'=>$d['reason'], 'note'=>$d['note'] ?? null], JSON_UNESCAPED_UNICODE), 'created_at'=>now(), 'updated_at'=>now()]);
       $this->itemRows($rid, $c); Procure::audit('order.revision.pending', $o->invoice, ['total'=>$c['old_total']], ['total'=>$c['total'], 'revision'=>$rid]);
       return redirect('/admin/orders/'.$id.'#revisions')->with('rev_ok', 'Saved as pending revision — the order itself is unchanged until you apply it.');
     }
@@ -182,7 +184,12 @@ class OrderRevisionController extends Controller {
       $upd = ['total'=>$c['total'], 'discount'=>$c['disc'], 'shipping'=>$c['ship'], 'updated_at'=>now()];
       if ($c['disc_meta']) $upd += $c['disc_meta']; if (OrderDiscount::hasLines() && $c['disc'] <= 0 && $c['dmode'] !== 'keep') $upd += ['discount_lines'=>null]; if ($c['disc'] <= 0 && $c['dmode'] !== 'keep') $upd += ['discount_by'=>null];
       if ($c['dcols']) $upd += $c['dcols'];
+      if (!empty($c['coupon_set'])) $upd['coupon'] = $c['coupon'] !== '' ? $c['coupon'] : null;
       DB::table('orders')->where('id', $o->id)->update($upd);
+      if (!empty($c['coupon_set'])) {
+        if ($c['old_coupon'] !== '') DB::table('coupons')->whereRaw('upper(code) = ?', [$c['old_coupon']])->where('used_count', '>', 0)->decrement('used_count');
+        if ($c['coupon'] !== '') DB::table('coupons')->whereRaw('upper(code) = ?', [$c['coupon']])->increment('used_count');
+      }
       if ($c['dmode'] !== 'keep' && OrderDiscount::hasLines()) { try { OrderDiscount::logChange((int)$o->id, OrderDiscount::lines($o), isset($upd['discount_lines']) && $upd['discount_lines'] ? json_decode($upd['discount_lines'], true) : []); } catch (\Throwable $e) {} }
       if (abs($c['disc'] - $c['old_disc']) > 0.009) DB::table('order_discount_logs')->insert(['order_id'=>$o->id, 'kind'=>$c['dmode'] === 'manual' ? 'override' : 'applied', 'label'=>mb_substr('Order revision: '.($c['disc_note'] ?? ''), 0, 200), 'prev_amount'=>$c['old_disc'], 'new_amount'=>$c['disc'], 'user_id'=>Auth::id(), 'user_name'=>Auth::user()->name, 'created_at'=>now(), 'updated_at'=>now()]);
       $sum = $this->summary($c);
@@ -218,7 +225,7 @@ class OrderRevisionController extends Controller {
     $err = fn(string $m) => response()->json(['ok'=>false, 'error'=>$m], 422);
     $o = DB::table('orders')->find($id); abort_unless($o, 404); $P = $this->perms();
     if ($m = $this->blocked($o, $P)) return $err($m);
-    $kind = (string)$r->input('kind'); if (!in_array($kind, ['qty', 'products', 'discount', 'delivery', 'amount'], true)) return $err('Unknown quick edit.');
+    $kind = (string)$r->input('kind'); if (!in_array($kind, ['qty', 'products', 'discount', 'delivery', 'amount', 'coupon'], true)) return $err('Unknown quick edit.');
     if (!$r->boolean('customer_confirmed')) return $err('Tick "Customer confirmed this change" first.');
     $note = mb_substr(trim((string)$r->input('note', '')), 0, 500);
     if (in_array($kind, ['discount', 'delivery', 'amount'], true) && $note === '') return $err('Please write the reason.');
@@ -244,6 +251,11 @@ class OrderRevisionController extends Controller {
       $reason = $kind === 'delivery' ? 'Delivery charge correction' : $reason;
     }
     if ($kind === 'delivery') $opt['discount_mode'] = 'keep';
+    if ($kind === 'coupon') {
+      $code = strtoupper(trim(mb_substr((string)$r->input('coupon', ''), 0, 40))); $opt['coupon'] = $code; $opt['discount_mode'] = 'auto'; $reason = 'Discount correction';
+      if ($code === strtoupper(trim((string)($o->coupon ?? '')))) return $err($code === '' ? 'This order has no coupon to remove.' : 'This coupon is already on the order.');
+      if ($note === '') $note = $code !== '' ? 'Coupon '.$code.' applied' : 'Coupon removed';
+    }
     $c = $this->calc($o, $this->norm($cur), $opt, $P);
     if ($c['errors']) return $err(implode(' ', $c['errors']));
     if ($this->typeOf($c) === 'none' && abs($c['diff']) < 0.01) return $err('Nothing was changed.');
