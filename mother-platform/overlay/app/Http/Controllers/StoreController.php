@@ -99,7 +99,7 @@ class StoreController extends Controller {
   /** Keep <title> within ~60 chars so Google does not truncate it: cut the name part at a word boundary. */
   public static function fitTitle(string $name, string $suffix, int $max = 62): string {
     $name = trim(preg_replace('/\s+/u', ' ', $name)); $room = $max - mb_strlen($suffix);
-    if (mb_strlen($name) > $room) { $cut = mb_substr($name, 0, max(10, $room)); $sp = mb_strrpos($cut, ' '); $name = rtrim($sp !== false && $sp > 12 ? mb_substr($cut, 0, $sp) : $cut, " ,-–|"); $name = preg_replace('/\s+(for|and|of|in|with|by|the|a|made|from)$/iu', '', $name); }
+    if (mb_strlen($name) > $room) { $cut = mb_substr($name, 0, max(10, $room)); $sp = mb_strrpos($cut, ' '); $name = (string)preg_replace('/[\s,\-–|]+$/u', '', $sp !== false && $sp > 12 ? mb_substr($cut, 0, $sp) : $cut); $name = (string)preg_replace('/\s+(for|and|of|in|with|by|the|a|made|from)$/iu', '', $name); }
     return $name.$suffix;
   }
   const HOME_TITLE = 'DutyFree BD | অরিজিনাল ইমপোর্টেড পারফিউম ও স্কিন কেয়ার';
