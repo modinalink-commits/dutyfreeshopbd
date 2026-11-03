@@ -15,7 +15,7 @@
 </style>
 <div class="inc-card">
 <div class="inc-h"><h2>Incomplete Orders</h2><p>Customers who entered checkout information but did not complete the order. Nothing is confirmed; no SMS, stock or courier is touched.</p><span class="inc-val">Open Cart Value: <b>৳{{ number_format($incSum) }}</b></span></div>
-<div class="inc-bar"><div class="inc-tabs">@foreach($incTabs as $k=>$l)<a class="incomplete-tab {{ $incSt===$k ? 'active' : '' }}" href="/admin/orders?status=Incomplete&inc={{ $k }}">{{ str_replace(' to order', '', $l) }} <i>{{ $incCounts[$k] ?? 0 }}</i></a>@endforeach</div>
+<div class="inc-bar"><div class="inc-tabs"></div>
 <form method="get" class="inc-s"><input type="hidden" name="status" value="Incomplete"><input type="hidden" name="inc" value="{{ $incSt }}"><input name="q" value="{{ request('q') }}" placeholder="Phone or name"><button>Search</button></form></div>
 <form method="post" action="/admin/orders">@csrf<div style="overflow-x:auto"><table><thead><tr><th></th><th>Invoice</th><th>Customer</th><th>Product</th><th>Total</th><th>Shipping</th><th>Status</th><th>Note</th><th>Courier</th><th class="action-column">Action</th></tr></thead><tbody>
 @forelse($incRows as $o)@include('orders_inc_row', ['o'=>$o, 'imgs'=>$incImgs, 'cid'=>$incCust[$o->phone] ?? null])@empty<tr><td colspan="10" style="padding:14px;color:#6B7280">Nothing here.</td></tr>@endforelse</tbody></table></div></form>
