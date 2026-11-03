@@ -1,4 +1,5 @@
 <style>
+.inc-ab{font-size:10px;color:#92400E;background:#FEF3C7;border-radius:8px;padding:0 6px;margin-left:4px}
 .incomplete-actions .oar{display:flex;gap:6px;justify-content:flex-end;align-items:center}
 .iqm{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:10001;display:none;align-items:center;justify-content:center;padding:16px}.iqm.on{display:flex}
 .iqm .iqb{position:relative;background:#fff;border-radius:14px;width:420px;max-width:100%;padding:18px;box-shadow:0 20px 50px rgba(0,0,0,.25)}

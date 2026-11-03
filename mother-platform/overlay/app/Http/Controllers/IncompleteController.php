@@ -30,9 +30,12 @@ class IncompleteController extends Controller {
     }
     return ['incHtml'=>$html, 'incTailHtml'=>$tailHtml, 'incTop'=>collect(), 'incTopImgs'=>[]];
   }
-  public static function data(Request $r): array {
+  public static function data(Request $r, ?array $range = null): array {
     $st = array_key_exists($r->query('inc'), self::TABS) ? $r->query('inc') : 'open'; $q = trim((string)$r->query('q', ''));
-    $rows = DB::table('incomplete_orders')->where('status', $st)->when($q !== '', fn($w) => $w->where(fn($x) => $x->where('phone', 'like', '%'.$q.'%')->orWhere('name', 'ilike', '%'.$q.'%')))->orderByDesc('created_at')->orderByDesc('id')->paginate(\App\Support\Pg::per(24))->withQueryString();
+    $qd = preg_replace('/\D/', '', $q); if (str_starts_with($qd, '880')) $qd = substr($qd, 2);
+    $rows = DB::table('incomplete_orders')->where('status', $st)->when($q !== '', fn($w) => $w->where(fn($x) => $x->where('phone', 'like', '%'.($qd !== '' ? $qd : $q).'%')->orWhere('name', 'ilike', '%'.$q.'%')->orWhere('invoice', 'ilike', '%'.$q.'%')))
+      ->when($range && $range[0], fn($w) => $w->where('created_at', '>=', $range[0]))->when($range && $range[1], fn($w) => $w->where('created_at', '<=', $range[1]))
+      ->orderByDesc('created_at')->orderByDesc('id')->paginate(\App\Support\Pg::per(24))->withQueryString();
     $counts = DB::table('incomplete_orders')->select('status', DB::raw('count(*) n'))->groupBy('status')->pluck('n', 'status');
     $open = DB::table('incomplete_orders')->where('status', 'open')->selectRaw('coalesce(sum(total),0) s')->first();
     $ph = collect($rows->items())->pluck('phone')->all();
@@ -75,6 +78,14 @@ class IncompleteController extends Controller {
     $d = $r->validate(['name'=>'nullable|string|max:120', 'phone'=>['required', 'string', new \App\Support\PhoneRule], 'address'=>'nullable|string|max:500', 'note'=>'nullable|string|max:500']);
     DB::table('incomplete_orders')->where('id', $id)->update(['name'=>trim((string)($d['name'] ?? '')) ?: null, 'phone'=>$d['phone'], 'address'=>trim((string)($d['address'] ?? '')) ?: null, 'note'=>trim((string)($d['note'] ?? '')) ?: null, 'updated_at'=>now()]);
     return response()->json(['ok'=>true, 'message'=>'Saved']);
+  }
+  /** Bulk status change for the selected incomplete checkouts (Recovered / Archive / Reopen). Nothing is converted or deleted. */
+  public function bulk(Request $r) {
+    $ids = array_values(array_filter(array_map('intval', (array)$r->input('iids', [])))); $to = (string)$r->input('to');
+    $map = ['open'=>'open', 'recovered'=>'recovered', 'archived'=>'archived'];
+    if (!$ids || !isset($map[$to])) return redirect('/admin/orders?status=Incomplete')->with('bad', 'Select at least one entry and a status first.');
+    $n = DB::table('incomplete_orders')->whereIn('id', $ids)->where('status', '<>', 'converted')->update(['status'=>$map[$to], 'updated_at'=>now()]);
+    return redirect('/admin/orders?status=Incomplete&hl=1')->with('ok', $n.' entr'.($n === 1 ? 'y' : 'ies').' set to '.ucfirst($to).'.');
   }
   public function act(Request $r, $id, $act) {
     $o = DB::table('incomplete_orders')->find($id); abort_unless($o, 404);

@@ -37,6 +37,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/orders/new', [A::class,'orderNew']);
   Route::get('/orders/lookup', [A::class,'orderLookup']);
   Route::get('/incomplete', fn() => redirect('/admin/orders?status=Incomplete'));
+  Route::post('/incomplete/bulk', [\App\Http\Controllers\IncompleteController::class,'bulk']);
   Route::get('/incomplete/{id}', [\App\Http\Controllers\IncompleteController::class,'show'])->whereNumber('id');
   Route::get('/incomplete/{id}/edit', [\App\Http\Controllers\IncompleteController::class,'edit'])->whereNumber('id');
   Route::post('/incomplete/{id}/update', [\App\Http\Controllers\IncompleteController::class,'update'])->whereNumber('id');
