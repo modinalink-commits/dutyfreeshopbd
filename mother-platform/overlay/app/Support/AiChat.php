@@ -55,9 +55,9 @@ class AiChat {
       foreach ($rows as $p) { $d = trim(preg_replace('/\s+/u', ' ', strip_tags((string)$p->description))); if ($d !== '') $out .= '- '.$p->name.': '.mb_substr($d, 0, 450)."\n"; }
       if ($out !== '') $out = "PRODUCT DETAILS:\n".$out;
     }
-    if (preg_match('/\bINV-?\s?(\d{4,8})\b/i', $all, $m) && preg_match('/(?<!\d)(?:\+?88)?(01[3-9]\d{8})(?!\d)/', $all, $ph)) {
-      $o = DB::table('orders')->where('invoice', 'INV-'.$m[1])->where('phone', $ph[1])->first(['invoice', 'status', 'total', 'courier_status', 'tracking_code', 'created_at']);
-      if ($o) $out .= "VERIFIED ORDER (the customer proved ownership with the phone number; you may share this): ".$o->invoice.' status '.$o->status.', total '.number_format($o->total).' TK'.($o->courier_status ? ', courier status '.$o->courier_status : '').($o->tracking_code ? ', tracking code '.$o->tracking_code : '').', placed '.\Carbon\Carbon::parse($o->created_at)->timezone('Asia/Dhaka')->format('d M Y').".\n";
+    if (preg_match('/(?<!\d)(?:INV-?\s?)?(\d{6,8})(?!\d)/i', $all, $m) && preg_match('/(?<!\d)(?:\+?88)?(01[3-9]\d{8})(?!\d)/', $all, $ph)) {
+      $o = DB::table('orders')->whereIn('invoice', \App\Support\Inv::candidates($m[1]))->where('phone', $ph[1])->first(['invoice', 'status', 'total', 'courier_status', 'tracking_code', 'created_at']);
+      if ($o) $out .= "VERIFIED ORDER (the customer proved ownership with the phone number; you may share this): ".\App\Support\Inv::show($o->invoice).' status '.$o->status.', total '.number_format($o->total).' TK'.($o->courier_status ? ', courier status '.$o->courier_status : '').($o->tracking_code ? ', tracking code '.$o->tracking_code : '').', placed '.\Carbon\Carbon::parse($o->created_at)->timezone('Asia/Dhaka')->format('d M Y').".\n";
       else $out .= "No order matches that invoice and phone number together.\n";
     }
     return $out;

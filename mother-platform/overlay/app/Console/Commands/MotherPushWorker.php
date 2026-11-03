@@ -83,7 +83,7 @@ class MotherPushWorker extends Command
       $map = ['Approved' => 'order_confirmed', 'Packaging' => 'order_processing', 'Shipment' => 'order_shipped', 'Delivered' => 'order_delivered', 'Cancel' => 'order_cancelled', 'Returned' => 'order_returned'];
       foreach (DB::table('order_status_logs')->where('id', '>', $cur)->orderBy('id')->limit(100)->get() as $l) {
         $cur = $l->id; $o = DB::table('orders')->find($l->order_id); if (!$o || !$o->phone) continue;
-        $v = ['customer_name' => $o->customer_name, 'order_id' => $o->invoice, 'invoice' => $o->invoice, 'total' => number_format((float)$o->total), 'tracking_id' => (string)($o->consignment_id ?? ''), 'delivery_status' => (string)($o->courier_status ?? $o->status), 'discount' => number_format((float)($o->discount ?? 0))];
+        $v = ['customer_name' => $o->customer_name, 'order_id' => \App\Support\Inv::show($o->invoice), 'invoice' => \App\Support\Inv::show($o->invoice), 'total' => number_format((float)$o->total), 'tracking_id' => (string)($o->consignment_id ?? ''), 'delivery_status' => (string)($o->courier_status ?? $o->status), 'discount' => number_format((float)($o->discount ?? 0))];
         if (str_starts_with((string)$l->note, 'Payment Verified')) { $M::auto('payment_verified', $o->phone, $v, 'pv'.$o->id, (int)$o->id); continue; }
         if ($l->from_status !== $l->to_status && isset($map[$l->to_status])) $M::auto($map[$l->to_status], $o->phone, $v, $map[$l->to_status].$o->id, (int)$o->id);
       }

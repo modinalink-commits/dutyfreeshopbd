@@ -23,7 +23,7 @@ class Steadfast {
     $addr = trim((string)$o->address); if (mb_strlen($addr) < 10) $addr = trim($addr . ' ' . ($o->district ?? '') . ' Bangladesh');
     if (mb_strlen($addr) < 10) return [false, 'Address is too short for Steadfast.', []];
     $phone = self::phone((string)$o->phone); if (strlen($phone) !== 11) return [false, 'Customer phone must be 11 digits.', []];
-    $p = ['invoice' => (string)$o->invoice, 'recipient_name' => mb_substr(trim((string)$o->customer_name), 0, 100), 'recipient_phone' => $phone, 'recipient_address' => mb_substr($addr, 0, 250), 'cod_amount' => (int)round($o->total),
+    $p = ['invoice' => Inv::show($o->invoice), 'recipient_name' => mb_substr(trim((string)$o->customer_name), 0, 100), 'recipient_phone' => $phone, 'recipient_address' => mb_substr($addr, 0, 250), 'cod_amount' => (int)round($o->total),
       'note' => mb_substr((string)$o->note, 0, 200), 'item_description' => mb_substr(collect($items)->map(fn($i) => $i->name . ' x' . $i->qty)->implode(', '), 0, 250), 'total_lot' => max(1, (int)collect($items)->sum('qty')), 'delivery_type' => 0];
     $r = self::call('POST', '/create_order', $p); $c = $r['json']['consignment'] ?? [];
     if ($r['code'] === 200 && !empty($c['consignment_id'])) return [true, 'Sent to Steadfast. Consignment ' . $c['consignment_id'] . ' (tracking ' . ($c['tracking_code'] ?? '-') . ')', ['consignment_id' => (string)$c['consignment_id'], 'tracking_code' => isset($c['tracking_code']) ? (string)$c['tracking_code'] : null]];

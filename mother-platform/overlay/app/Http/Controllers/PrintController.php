@@ -24,7 +24,7 @@ class PrintController extends Controller {
       $its = $items[$o->id] ?? collect(); $paid = ($o->pay_status ?? null) === 'Verified' ? (float)$o->total : 0.0; $disc = (float)($o->discount ?? 0);
       return ['o'=>$o, 'items'=>$its, 'qty'=>(int)$its->sum('qty'), 'sub'=>round((float)$o->total + $disc - (float)$o->shipping, 2), 'paid'=>$paid, 'due'=>max(0, round((float)$o->total - $paid, 2)),
         'words'=>'BDT '.self::words((int)round(max(0, (float)$o->total - $paid))).' Taka Only', 'pay'=>$o->payment_method ?: 'Cash on Delivery', 'track'=>$o->consignment_id ?: ($o->tracking_code ?? null),
-        'url'=>url('/track').'?invoice='.rawurlencode($o->invoice), 'bc'=>\App\Support\Code128::svg($o->invoice, 40)];
+        'url'=>url('/track').'?invoice='.rawurlencode(\App\Support\Inv::show($o->invoice)), 'bc'=>\App\Support\Code128::svg(\App\Support\Inv::show($o->invoice), 40)];
     });
     return view('print_docs', ['sheets'=>$sheets, 'type'=>$type]);
   }

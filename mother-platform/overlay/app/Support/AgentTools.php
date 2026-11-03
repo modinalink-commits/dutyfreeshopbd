@@ -72,9 +72,9 @@ class AgentTools {
         return $out;
       }
       case 'order_status': {
-        $inv = strtoupper(trim((string)($in['invoice'] ?? ''))); if (preg_match('/^(\d{4,8})$/', $inv, $m)) $inv = 'INV-'.$m[1]; $inv = str_replace(' ', '', $inv);
+        $inv = strtoupper(trim((string)($in['invoice'] ?? ''))); $inv = str_replace(' ', '', $inv);
         $ph = self::norm((string)($in['phone'] ?? '')); if (!self::validPhone($ph)) return ['error'=>'a valid 11-digit phone number is needed'];
-        $o = DB::table('orders')->where('invoice', $inv)->where('phone', $ph)->first(['invoice', 'status', 'total', 'courier_status', 'tracking_code', 'created_at']);
+        $o = DB::table('orders')->whereIn('invoice', \App\Support\Inv::candidates($inv) ?: ['-'])->where('phone', $ph)->first(['invoice', 'status', 'total', 'courier_status', 'tracking_code', 'created_at']);
         if (!$o) return ['found'=>false, 'message'=>'No order matches that invoice and phone together.'];
         return ['found'=>true, 'invoice'=>$o->invoice, 'status'=>$o->status, 'total'=>self::money($o->total), 'courier_status'=>$o->courier_status, 'tracking_code'=>$o->tracking_code, 'placed'=>\Carbon\Carbon::parse($o->created_at)->timezone('Asia/Dhaka')->format('d M Y')];
       }

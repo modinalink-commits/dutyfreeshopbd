@@ -22,7 +22,7 @@ class OrderHistoryReportController extends Controller {
     $data = compact('groups', 'g', 'from', 'to', 'status', 'q', 'per', 'total', 'statuses');
     if ($r->query('export') === 'csv') {
       $out = fopen('php://temp', 'w+'); fputcsv($out, ['Status', 'Invoice', 'Date', 'Customer', 'Phone', 'Payment', 'Discount', 'Delivery', 'Total']);
-      foreach ($groups as $gr) foreach ($gr['rows'] as $x) fputcsv($out, [$gr['name'], $x->invoice, substr((string)$x->created_at, 0, 10), $x->customer_name, $x->phone, $x->payment_method, $x->discount, $x->shipping, $x->total]);
+      foreach ($groups as $gr) foreach ($gr['rows'] as $x) fputcsv($out, [$gr['name'], \App\Support\Inv::show($x->invoice), substr((string)$x->created_at, 0, 10), $x->customer_name, $x->phone, $x->payment_method, $x->discount, $x->shipping, $x->total]);
       rewind($out); return response("\xEF\xBB\xBF" . stream_get_contents($out), 200, ['Content-Type' => 'text/csv; charset=UTF-8', 'Content-Disposition' => 'attachment; filename="order-history-' . $from . '-' . $to . '.csv"']);
     }
     if ($r->query('export') === 'doc') { $html = view('order_history_report', $data)->render(); return response('<html><head><meta charset="utf-8"></head><body>' . (preg_match('#<table class="pl".*?</table>#s', $html, $m) ? $m[0] : '') . '</body></html>', 200, ['Content-Type' => 'application/msword; charset=UTF-8', 'Content-Disposition' => 'attachment; filename="order-history.doc"']); }

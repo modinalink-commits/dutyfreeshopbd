@@ -6,7 +6,7 @@ class OrderSms {
   private static function tk($n): string { return 'Tk '.number_format((float)$n, (float)$n == floor((float)$n) ? 0 : 2); }
   public static function build(object $o): string {
     $ship = (float)$o->shipping; $disc = (float)($o->discount ?? 0); $sub = round((float)$o->total + $disc - $ship, 2);
-    $L = ['DutyFreeBD: Your Order '.$o->invoice.' has been received.', 'Subtotal: '.self::tk($sub)];
+    $L = ['DutyFreeBD: Your Order '.Inv::show($o->invoice).' has been received.', 'Subtotal: '.self::tk($sub)];
     if ($disc > 0) {
       $t = trim((string)($o->discount_type ?? '')); if ($t === '' || $t === 'Manual Discount') $t = 'Discount'; $pct = $o->discount_pct ?? null;
       $L[] = $t.': '.($pct !== null && (float)$pct > 0 ? rtrim(rtrim(number_format((float)$pct, 2), '0'), '.').'% ' : '').'(-'.self::tk($disc).')';
@@ -15,7 +15,7 @@ class OrderSms {
     if ($ship > 0) $L[] = 'Delivery: '.self::tk($ship);
     $L[] = 'Payable: '.self::tk($o->total);
     if (!empty($o->pay_status) && $o->pay_status === 'Verification Pending') $L[] = 'Payment verification is pending.';
-    $L[] = 'Our representative will contact you shortly for confirmation. Track: dutyfreebd.com/track?invoice='.$o->invoice;
+    $L[] = 'Our representative will contact you shortly for confirmation. Track: dutyfreebd.com/track?invoice='.Inv::show($o->invoice);
     $L[] = 'Help: '.Biz::hotline();
     return implode("\n", $L);
   }

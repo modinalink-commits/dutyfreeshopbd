@@ -460,3 +460,6 @@ resources/views/order_outcome.blade.php
 database/migrations/2026_11_03_000043_shipment_outcome.php
 database/migrations/2026_11_03_000044_shipment_stock_money.php
 database/migrations/2026_11_03_000045_pathao_outcome_sync.php
+app/Support/Inv.php
+app/Http/Middleware/InvoiceDisplay.php
+database/migrations/2026_11_03_000046_invoice_six_digits.php

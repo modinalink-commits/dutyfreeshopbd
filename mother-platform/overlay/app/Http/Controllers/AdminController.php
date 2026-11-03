@@ -98,6 +98,7 @@ class AdminController extends Controller {
     $late = $counts['Late Delivery'] ?? 0; $rp = $counts['Return Pending'] ?? 0;
     $stale = $oq()->where('status','New')->where('created_at','<',now()->subMinutes(30))->count();
     if ($late) $alerts[] = ['CRITICAL', "$late orders are Late Delivery", 'Follow up with the courier today', '/admin/orders?status='.urlencode('Late Delivery')];
+    $invLeft = \App\Support\InvoiceNumber::remaining(); if ($invLeft !== null && $invLeft < 20000) $alerts[] = [$invLeft < 2000 ? 'CRITICAL' : 'WARNING', 'Only '.number_format(max(0, $invLeft)).' invoice numbers left (6-digit range ends at 999999)', 'Decide what happens next before the range is used up; the system will NOT switch to 7 digits on its own', '/admin/orders'];
     $prp = $counts['Partial Return Pending'] ?? 0; if ($prp) $alerts[] = ['CRITICAL', "$prp orders are Partial Return Pending", 'Receive the returned items at the warehouse', '/admin/orders?status='.urlencode('Partial Return Pending')];
     if ($rp) $alerts[] = ['CRITICAL', "$rp orders are Return Pending", 'Receive the parcel and update stock', '/admin/orders?status='.urlencode('Return Pending')];
     if ($stale) $alerts[] = ['WARNING', "$stale new orders waiting over 30 min", 'Confirm or call the customer', '/admin/orders?status=New'];
@@ -142,7 +143,7 @@ class AdminController extends Controller {
   public function orders(Request $r) { \App\Support\CourierSync::auto();
     $isInc = $r->input('status') === 'Incomplete'; $q = DB::table('orders'); $q->orderByDesc('created_at')->orderByDesc('id'); // strict chronological: no batch/status/invoice-match priority
     if ($isInc) $q->whereRaw('1 = 0'); elseif ($r->filled('status')) { $sts = array_filter(array_map('trim', explode(',', (string)$r->status))); count($sts) > 1 ? $q->whereIn('status', $sts) : $q->where('status', $r->status); }
-    if ($r->filled('q')) { $qs = trim((string)$r->q); $qd = preg_replace('/\D/', '', $qs); if (str_starts_with($qd, '880')) $qd = substr($qd, 2); $q->where(fn($w) => $w->where('invoice','ilike','%'.$qs.'%')->orWhere('phone','like','%'.($qd !== '' ? $qd : $qs).'%')->orWhere('customer_name','ilike','%'.$qs.'%')); }
+    if ($r->filled('q')) { $qs = trim((string)$r->q); $qd = preg_replace('/\D/', '', $qs); if (str_starts_with($qd, '880')) $qd = substr($qd, 2); $qInv = \App\Support\Inv::candidates($qs); $q->where(fn($w) => $w->where('invoice','ilike','%'.$qs.'%')->when(preg_match('/^(INV-?)?\d{6,8}$/i', $qs) && $qInv, fn($x) => $x->orWhereIn('invoice', $qInv))->orWhere('phone','like','%'.($qd !== '' ? $qd : $qs).'%')->orWhere('customer_name','ilike','%'.$qs.'%')); }
     $rt = (string)$r->input('rtype'); $rs = (string)$r->input('rstat');
     if (in_array($rt, ['partial','full'], true) || in_array($rs, ['pending','received','completed'], true)) { $rset = $rt === 'partial' ? ['Partial Return Pending','Partial Return Received','Partial Returned'] : ($rt === 'full' ? ['Return Pending','Returned'] : \App\Support\ShipmentOutcome::RETURN_STATUSES); if ($rs === 'pending') $rset = array_values(array_intersect($rset, ['Partial Return Pending','Return Pending'])); elseif ($rs === 'received') $rset = array_values(array_intersect($rset, ['Partial Return Received','Returned'])); elseif ($rs !== '') $rset = array_values(array_intersect($rset, ['Partial Returned','Returned'])); $q->whereIn('status', $rset); }
     $pf = (string)$r->input('print'); if ($pf === 'inv_not') $q->where('invoice_print_count', 0); elseif ($pf === 'inv') $q->where('invoice_print_count', '>', 0); elseif ($pf === 'lbl_not') $q->where('label_print_count', 0); elseif ($pf === 'lbl') $q->where('label_print_count', '>', 0);
@@ -332,7 +333,7 @@ class AdminController extends Controller {
   public function ordersCsv() {
     return response()->streamDownload(function () {
       $f = fopen('php://output','w'); fputcsv($f,['Invoice','Customer','Phone','District','Source','Total','Shipping','Status','Created']);
-      foreach (DB::table('orders')->orderByDesc('id')->cursor() as $o) fputcsv($f,[$o->invoice,$o->customer_name,$o->phone,$o->district,$o->source,$o->total,$o->shipping,$o->status,$o->created_at]);
+      foreach (DB::table('orders')->orderByDesc('id')->cursor() as $o) fputcsv($f,[\App\Support\Inv::show($o->invoice),$o->customer_name,$o->phone,$o->district,$o->source,$o->total,$o->shipping,$o->status,$o->created_at]);
       fclose($f);
     }, 'orders.csv', ['Content-Type'=>'text/csv']);
   }

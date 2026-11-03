@@ -18,7 +18,7 @@ class CourierReportController extends Controller {
       foreach ($list as $o) {
         $cod = (float)($o->courier_cod ?? $o->total); $fee = (float)($o->courier_fee ?? 0); $st = (string)$o->status;
         $isDel = stripos($st, 'deliver') !== false && stripos($st, 'partial') === false; $isRet = stripos($st, 'return') !== false || stripos($st, 'cancel') !== false;
-        $gr['rows'][] = ['inv' => $o->invoice, 'd' => substr((string)($o->courier_sent_at ?: $o->created_at), 0, 10), 'c' => $o->customer_name, 'ph' => $o->phone, 'cid' => $o->consignment_id, 'st' => $st, 'cs' => $o->courier_status, 'cod' => $cod, 'fee' => $fee];
+        $gr['rows'][] = ['inv' => \App\Support\Inv::show($o->invoice), 'd' => substr((string)($o->courier_sent_at ?: $o->created_at), 0, 10), 'c' => $o->customer_name, 'ph' => $o->phone, 'cid' => $o->consignment_id, 'st' => $st, 'cs' => $o->courier_status, 'cod' => $cod, 'fee' => $fee];
         $gr['n']++; $gr['cod'] += $cod; $gr['fee'] += $fee; if ($isDel) { $gr['del']++; $gr['delcod'] += $cod; } elseif ($isRet) $gr['ret']++; else $gr['pend']++;
       }
       $groups[] = $gr; foreach (['n', 'cod', 'fee', 'del', 'delcod', 'ret', 'pend'] as $k) $g[$k] += $gr[$k];

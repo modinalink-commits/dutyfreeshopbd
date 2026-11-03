@@ -271,9 +271,9 @@ class ChatController extends Controller {
   }
   /** Status of the visitor's own order: released only when invoice and mobile number both match. */
   public function webOrder(Request $r) {
-    $inv = strtoupper(trim((string)$r->query('invoice'))); if (ctype_digit($inv)) $inv = 'INV-'.str_pad($inv, 6, '0', STR_PAD_LEFT);
+    $inv = \App\Support\Inv::candidates((string)$r->query('invoice'));
     $ph = Chat::phone($r->query('phone'));
-    $o = $ph && $inv ? DB::table('orders')->where('invoice', $inv)->first(['invoice', 'status', 'total', 'phone', 'courier_status', 'tracking_code', 'created_at']) : null;
+    $o = $ph && $inv ? DB::table('orders')->whereIn('invoice', $inv)->first(['invoice', 'status', 'total', 'phone', 'courier_status', 'tracking_code', 'created_at']) : null;
     if (!$o || Chat::phone($o->phone) !== $ph) return response()->json(['found'=>false]);
     return response()->json(['found'=>true, 'invoice'=>$o->invoice, 'status'=>$o->status, 'total'=>(float)$o->total, 'courier_status'=>$o->courier_status, 'url'=>url('/track?invoice='.$o->invoice)]);
   }

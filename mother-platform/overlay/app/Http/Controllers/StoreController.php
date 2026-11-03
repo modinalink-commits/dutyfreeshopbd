@@ -368,8 +368,7 @@ class StoreController extends Controller {
   public function track(Request $r) {
     $o = null; $logs = collect();
     if ($r->filled('invoice')) {
-      $inv = strtoupper(trim($r->invoice)); if (ctype_digit($inv)) $inv = 'INV-'.str_pad($inv, 6, '0', STR_PAD_LEFT);
-      $o = DB::table('orders')->where('invoice', $inv)->first(['id','invoice','status','shipping','discount','total','created_at','payment_method','pay_status','pay_txn']);
+      $o = DB::table('orders')->whereIn('invoice', \App\Support\Inv::candidates($r->invoice) ?: ['-'])->first(['id','invoice','status','shipping','discount','total','created_at','payment_method','pay_status','pay_txn']);
       if ($o) $logs = DB::table('order_status_logs')->where('order_id',$o->id)->orderBy('id')->get(['to_status','created_at']);
     }
     return response()->view('store.track', $this->base(['o'=>$o, 'logs'=>$logs, 'items'=>$o ? DB::table('order_items as i')->leftJoin('products as p','p.id','=','i.product_id')->where('i.order_id',$o->id)->get(['i.product_id','p.ext_id','i.name','i.qty','i.price']) : collect(), 'title'=>'Order Tracking | DutyFree Shop BD', 'desc'=>'', 'canon'=>url('/track'), 'noindex'=>true]))->header('Cache-Control','no-store');

@@ -32,7 +32,7 @@ class ProfitReportController extends Controller {
     }
     if ($r->query('export') === 'csv') {
       $out = fopen('php://temp', 'w+'); fputcsv($out, ['Invoice', 'Date', 'Customer', 'Status', 'Product ID', 'Product', 'Qty', 'Purchase rate', 'Purchase total', 'Selling price', 'Sold total', 'Profit/Loss', 'Margin %']);
-      foreach ($groups as $gr) foreach ($gr['rows'] as $x) fputcsv($out, [$gr['o']->invoice, substr((string)$gr['o']->created_at, 0, 10), $gr['o']->customer_name, $gr['o']->status, $x['pid'], $x['name'], $x['qty'], $x['rate'], $x['buy'], $x['price'], $x['sold'], $x['pl'], $x['m']]);
+      foreach ($groups as $gr) foreach ($gr['rows'] as $x) fputcsv($out, [\App\Support\Inv::show($gr['o']->invoice), substr((string)$gr['o']->created_at, 0, 10), $gr['o']->customer_name, $gr['o']->status, $x['pid'], $x['name'], $x['qty'], $x['rate'], $x['buy'], $x['price'], $x['sold'], $x['pl'], $x['m']]);
       rewind($out); return response("\xEF\xBB\xBF" . stream_get_contents($out), 200, ['Content-Type' => 'text/csv; charset=UTF-8', 'Content-Disposition' => 'attachment; filename="profit-loss-' . $from . '-' . $to . '.csv"']);
     }
     $statuses = DB::table('orders')->select('status')->distinct()->orderBy('status')->pluck('status');

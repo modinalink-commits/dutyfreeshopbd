@@ -110,7 +110,7 @@ class CourierController extends Controller {
   public function export(Request $r, $fmt) {
     [$rows, , $perf] = $this->dash($r);
     $head = ['Invoice','Customer','Phone','Store','Courier','Consignment','Stage','Courier status','COD','Delivery fee','Return fee','Collected','Settlement','Settled on','Reference','Sent','Delivered'];
-    $data = $rows->map(fn($o) => [$o->invoice,$o->customer_name,$o->phone,$o->store_name,$o->courier,$o->consignment_id,$o->courier_stage,$o->courier_status,$o->courier_cod,$o->courier_fee,$o->courier_return_fee,$o->collected_amount,$o->settlement_status,$o->settlement_date,$o->settlement_ref,$o->courier_sent_at,$o->courier_delivered_at])->all();
+    $data = $rows->map(fn($o) => [\App\Support\Inv::show($o->invoice),$o->customer_name,$o->phone,$o->store_name,$o->courier,$o->consignment_id,$o->courier_stage,$o->courier_status,$o->courier_cod,$o->courier_fee,$o->courier_return_fee,$o->collected_amount,$o->settlement_status,$o->settlement_date,$o->settlement_ref,$o->courier_sent_at,$o->courier_delivered_at])->all();
     $title = 'Courier parcels';
     if ($fmt === 'csv') return response()->streamDownload(function () use ($head, $data) { $f = fopen('php://output', 'w'); fputcsv($f, $head); foreach ($data as $d) fputcsv($f, $d); fclose($f); }, 'courier-parcels.csv', ['Content-Type'=>'text/csv']);
     $h = '<meta charset="utf-8"><h2>'.$title.'</h2><table border="1" cellpadding="4" style="border-collapse:collapse;font:12px sans-serif"><tr>'.collect($head)->map(fn($c) => '<th style="background:#FFF1E8">'.e($c).'</th>')->implode('').'</tr>'.collect($data)->map(fn($d) => '<tr>'.collect($d)->map(fn($c) => '<td>'.e((string)$c).'</td>')->implode('').'</tr>')->implode('').'</table>';
