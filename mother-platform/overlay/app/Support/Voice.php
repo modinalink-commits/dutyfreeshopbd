@@ -117,10 +117,17 @@ class Voice
   }
   public static function dialNumber(string $p): string { $f = self::set('dial_format', 'local'); return $f === 'intl' ? '88' . $p : ($f === 'plus' ? '+88' . $p : $p); }
   /** Place one call now. @return array{string,string,string} [status, cause, uuid] */
+  /** Full PBX-side path of a recording picked in the campaign (file name from FusionPBX → Recordings, or a full path). Null when the campaign does not use a PBX recording. */
+  public static function pbxPath(object $c): ?string {
+    $n = trim((string)($c->pbx_audio ?? '')); if ($n === '') return null; if (str_contains($n, '..') || !preg_match('#^[A-Za-z0-9_./ \-]+$#', $n)) return null;
+    if (str_starts_with($n, '/')) return $n; $d = rtrim(self::set('pbx_rec_dir'), '/'); return $d !== '' ? $d . '/' . $n : null;
+  }
   public static function originate(object $c, object $row): array {
-    [$f, $err] = self::audio($c, $row); if (!$f) return ['failed', $err, ''];
-    $id = (int)($row->id ?? 0); $uuid = self::uuid(); $aid = self::audioId($f);
-    $url = self::baseUrl() . '/voice-audio/' . $aid . '.' . strtolower(pathinfo($f, PATHINFO_EXTENSION)) . '?t=' . self::audioToken((int)$aid); self::linkAudio($aid, $f);
+    $pp = self::pbxPath($c);
+    if (!empty($c->pbx_audio) && !$pp) return ['failed', 'The PBX recording name is not valid, or the PBX recordings folder is not set in Voice settings.', ''];
+    if ($pp) { $f = null; $err = ''; } else { [$f, $err] = self::audio($c, $row); if (!$f) return ['failed', $err, '']; }
+    $id = (int)($row->id ?? 0); $uuid = self::uuid();
+    if ($pp) $url = $pp; else { $aid = self::audioId($f); $url = self::baseUrl() . '/voice-audio/' . $aid . '.' . strtolower(pathinfo($f, PATHINFO_EXTENSION)) . '?t=' . self::audioToken((int)$aid); self::linkAudio($aid, $f); }
     $var = ["origination_uuid=$uuid", 'origination_caller_id_number=' . (self::set('caller_id') ?: '0000'), 'origination_caller_id_name=DutyFreeBD', 'originate_timeout=' . (int)self::set('ring_timeout', '30'), 'ignore_early_media=true',
       "vc_id=$id", "vc_audio='$url'", "vc_hook='" . self::baseUrl() . '/webhooks/voice?k=' . self::hookToken() . "'", 'vc_dtmf=' . ($c->dtmf_on ? '1' : '0'), 'vc_agent=' . (self::set('agent_ext') ?: '101'), 'vc_rec=' . self::recName($id, $row->phone, $uuid)];
     $cmd = 'originate {' . implode(',', $var) . '}sofia/gateway/' . self::set('gateway') . '/' . self::dialNumber($row->phone) . ' ' . (self::set('dialplan_ext') ?: (string)env('PBX_DESTINATION', 'voice_offer')) . ' XML ' . (self::set('context') ?: (string)env('PBX_CONTEXT', 'public'));

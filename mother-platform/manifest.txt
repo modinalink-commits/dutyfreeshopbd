@@ -530,3 +530,4 @@ resources/views/store/deal_bp2.blade.php
 resources/views/store/deal_preview.blade.php
 database/migrations/2026_11_04_000060_winback_next_sms_at.php
 resources/views/settings_ui.blade.php
+database/migrations/2026_11_04_000061_voice_pbx_audio.php
