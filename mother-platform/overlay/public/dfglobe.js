@@ -50,7 +50,7 @@
     });
     function size() {
       var w = cv.clientWidth || 300, h = cv.clientHeight || 300; W = cv.width = Math.round(w * dpr); H = cv.height = Math.round(h * dpr);
-      R = Math.min(W, H) * .43; CX = W / 2; CY = H / 2;
+      if (W / H > 1.25) { R = W * .5; CX = W / 2; CY = H * .6; } else { R = Math.min(W, H) * .43; CX = W / 2; CY = H / 2; }
     }
     function rot(v) {
       var p = yaw * D, c = Math.cos(p), s = Math.sin(p), x = v[0] * c - v[2] * s, z = v[0] * s + v[2] * c, y = v[1];

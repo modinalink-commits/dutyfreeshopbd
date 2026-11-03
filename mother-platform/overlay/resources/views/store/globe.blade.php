@@ -25,8 +25,8 @@
 .dfg-ab a:hover{border-color:#FF6A1A;transform:translateY(-1px)}.dfg-ab em{opacity:.75}
 .dfg-ab svg{width:24px;height:24px;flex:none}.dfg-ab small{display:block;font-size:9.5px;letter-spacing:.04em;color:#cbd5e6;line-height:1.1}.dfg-ab b{display:block;font-size:15px;line-height:1.2;font-weight:700}
 .dfg-gl{position:relative;min-width:0}.dfg-gl canvas{display:block;width:100%;aspect-ratio:1/1;max-height:560px;margin:0 auto;cursor:grab;touch-action:pan-y}.dfg-gl canvas:active{cursor:grabbing}
-@media (max-width:860px){.dfg-in{grid-template-columns:1fr;padding:22px 16px 26px;gap:0}.dfg-gl{order:-1;margin:-6px -10px 0}.dfg h2{font-size:25px}.dfg-tk{max-width:none}.dfg-c img{width:46px;height:46px}.dfg-all{display:block;text-align:center}}
-@media (max-width:420px){.dfg-cards{grid-template-columns:1fr}.dfg-tk.go{height:250px}}
+@media (max-width:860px){.dfg-in{grid-template-columns:1fr;padding:0 12px 14px;gap:0}.dfg-gl{order:-1;margin:0 -12px}.dfg-gl canvas{aspect-ratio:auto;height:clamp(190px,52vw,280px);max-height:none}.dfg h2{font-size:19px;margin:6px 0 10px}.dfg-k,.dfg p.s,.dfg-all{display:none}.dfg-tk{max-width:none}.dfg-tk.go{height:150px}.dfg-cards{gap:8px;padding-bottom:8px}.dfg-c{padding:6px;gap:8px}.dfg-c img{width:40px;height:40px}.dfg-c i{font-size:11.5px}.dfg-c b{font-size:12px;margin-top:2px}.dfg-app{margin-top:12px;padding:8px;max-width:none}.dfg-app>span{display:none}.dfg-ab{flex-wrap:nowrap}.dfg-ab a,.dfg-ab em{flex:1;min-width:0;padding:5px 10px 5px 8px}.dfg-ab svg{width:20px;height:20px}.dfg-ab b{font-size:13.5px}}
+@media (max-width:340px){.dfg-cards{grid-template-columns:1fr}}
 </style>
 <section class="dfg" aria-label="Duty Free exceptional offers">
 <div class="dfg-in">
@@ -53,5 +53,5 @@
 <div class="dfg-gl"><canvas role="img" aria-label="Globe with planes flying from nearby countries to land in Bangladesh"></canvas></div>
 </div>
 </section>
-<script src="/dfglobe.js?v=7" defer></script>
+<script src="/dfglobe.js?v=8" defer></script>
 @endif
