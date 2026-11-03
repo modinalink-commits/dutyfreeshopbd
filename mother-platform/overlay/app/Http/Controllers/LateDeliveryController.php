@@ -17,7 +17,8 @@ class LateDeliveryController extends Controller {
     $items = DB::table('order_items')->whereIn('order_id', collect($rows->items())->pluck('id'))->get(['order_id', 'name', 'qty'])->groupBy('order_id');
     $intel = []; try { $intel = \App\Support\CustomerIntel::forOrders($rows->items()); } catch (\Throwable $e) {}
     $couriers = DB::table('orders')->where('status', 'Late Delivery')->whereNotNull('courier')->distinct()->pluck('courier');
-    return view('late_delivery', ['counts' => DB::table('orders')->select('status', DB::raw('count(*) c'))->groupBy('status')->pluck('c', 'status'), 'incOpen' => (int)DB::table('incomplete_orders')->where('status', 'open')->count(), 'rows' => $rows, 'intel' => $intel, 'items' => $items, 'couriers' => $couriers, 'canAct' => P::can(Auth::user(), 'orders', 'edit')]);
+    $__cr = DB::table('orders')->select('status', DB::raw('count(*) c'), DB::raw('coalesce(sum(total),0) v'))->groupBy('status')->get(); $__v = $__cr->pluck('v', 'status'); try { $__v['Incomplete'] = (float)DB::table('incomplete_orders')->where('status', 'open')->sum('total'); } catch (\Throwable $e) {}
+    return view('late_delivery', ['counts' => $__cr->pluck('c', 'status'), 'vals' => $__v, 'incOpen' => (int)DB::table('incomplete_orders')->where('status', 'open')->count(), 'rows' => $rows, 'intel' => $intel, 'items' => $items, 'couriers' => $couriers, 'canAct' => P::can(Auth::user(), 'orders', 'edit')]);
   }
   public function follow(Request $r, $id) {
     abort_unless(P::can(Auth::user(), 'orders', 'edit'), 403);

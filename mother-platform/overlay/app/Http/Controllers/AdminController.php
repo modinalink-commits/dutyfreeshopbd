@@ -152,13 +152,13 @@ class AdminController extends Controller {
     if ($range) { if ($range[0]) $q->where('created_at', '>=', $range[0]); if ($range[1]) $q->where('created_at', '<=', $range[1]); }
     $orders = $q->paginate($per)->withQueryString();
     $items = DB::table('order_items as i')->leftJoin('products as p','p.id','=','i.product_id')->whereIn('i.order_id', collect($orders->items())->pluck('id'))->select('i.*', 'p.sku as sku', DB::raw('coalesce(p.image,(select pp.image from products pp where pp.name = i.name limit 1)) as image'))->get()->groupBy('order_id');
-    $cq = DB::table('orders')->select('status', DB::raw('count(*) c'))->groupBy('status'); if ($range) { if ($range[0]) $cq->where('created_at', '>=', $range[0]); if ($range[1]) $cq->where('created_at', '<=', $range[1]); } $counts = $cq->pluck('c','status');
+    $cq = DB::table('orders')->select('status', DB::raw('count(*) c'), DB::raw('coalesce(sum(total),0) v'))->groupBy('status'); if ($range) { if ($range[0]) $cq->where('created_at', '>=', $range[0]); if ($range[1]) $cq->where('created_at', '<=', $range[1]); } $__cr = $cq->get(); $counts = $__cr->pluck('c','status'); $vals = $__cr->pluck('v','status');
     $intel = \App\Support\CustomerIntel::forOrders($orders->items());
     $__ids = collect($orders->items())->pluck('id')->all(); $dupHint = $__ids ? \App\Support\OrderDedupe::possible($__ids) : []; $dupInv = $__ids ? DB::table('orders as d')->join('orders as p','p.id','=','d.duplicate_of_order_id')->whereIn('d.id', $__ids)->pluck('p.invoice','d.id')->all() : [];
     $cmLast = []; $phs = collect($orders->items())->pluck('phone')->filter()->unique()->all();
     if ($phs) foreach (DB::table('order_staff_comments as c')->join('orders as oo','oo.id','=','c.order_id')->whereIn('oo.phone',$phs)->orderByDesc('c.id')->select('c.body','oo.phone')->get() as $c) { if (!isset($cmLast[$c->phone])) $cmLast[$c->phone] = $c->body; }
-    $incOpen = (int)DB::table('incomplete_orders')->where('status', 'open')->count();
-    return view('orders', compact('orders','counts','items','per','intel','incOpen','cmLast','dupHint','dupInv') + ['isInc'=>$isInc] + ($isInc ? \App\Http\Controllers\IncompleteController::data($r) : \App\Http\Controllers\IncompleteController::mix($r, $orders, $range)));
+    $incOpen = (int)DB::table('incomplete_orders')->where('status', 'open')->count(); try { $vals['Incomplete'] = (float)DB::table('incomplete_orders')->where('status', 'open')->sum('total'); } catch (\Throwable $e) { $vals['Incomplete'] = 0; }
+    return view('orders', compact('orders','counts','vals','items','per','intel','incOpen','cmLast','dupHint','dupInv') + ['isInc'=>$isInc] + ($isInc ? \App\Http\Controllers\IncompleteController::data($r) : \App\Http\Controllers\IncompleteController::mix($r, $orders, $range)));
   }
   public function orderBulk(Request $r) {
     $d = $r->validate(['ids'=>'required|array|max:500','ids.*'=>'integer','status'=>'required|in:'.implode(',',Mother::STAGES)]);

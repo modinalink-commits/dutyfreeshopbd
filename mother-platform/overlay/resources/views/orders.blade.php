@@ -114,7 +114,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
 var fd=new FormData();fd.append('_token',tk());fd.append('sched_date',v.slice(0,10));fd.append('sched_time',v.slice(11,16));b.disabled=true;
 fetch('/admin/orders/'+box.getAttribute('data-oid')+'/schedule',{method:'POST',body:fd,credentials:'same-origin',headers:{Accept:'application/json'}}).then(function(r){return r.json()}).then(function(d){b.disabled=false;m.textContent=d.message||(d.ok?'Saved':'Failed');m.style.color=d.ok?'#0F766E':'#B91C1C';if(d.ok){i.setAttribute('data-orig',v);b.style.display='none'}}).catch(function(){b.disabled=false;m.textContent='Could not save. Try again.';m.style.color='#B91C1C'})});
 })();</script>@endverbatim
-@include('admin.orders.partials.status-tabs', ['oq'=>$oq,'counts'=>$counts,'incOpen'=>$incOpen,'isInc'=>$isInc,'activeStatus'=>request('status')])
+@include('admin.orders.partials.status-tabs', ['oq'=>$oq,'counts'=>$counts,'vals'=>$vals ?? collect(),'incOpen'=>$incOpen,'isInc'=>$isInc,'activeStatus'=>request('status')])
 </form></div>
 @verbatim<script>(function(){var f=document.getElementById('ofx'),s=document.getElementById('ostrip'),on=s.querySelector('.on');
 var d=function(x){var m=x.getMonth()+1,dd=x.getDate();return x.getFullYear()+'-'+(m<10?'0':'')+m+'-'+(dd<10?'0':'')+dd};

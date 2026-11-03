@@ -11,7 +11,7 @@
 .ld td form button{background:#DCFCE7!important;color:#166534!important;border-color:#22C55E!important}.ld td form button:hover{border-color:#15803D!important}
 .ld .dfx-btn{background:#FFEDD5!important;color:#C2410C!important;border-color:#FB923C!important}.ld .dfx-btn:hover{border-color:#C2410C!important}
 </style><div class="ld">
-<div class="ocb" id="ocb">@include('admin.orders.partials.status-tabs', ['oq'=>[], 'counts'=>$counts, 'incOpen'=>$incOpen, 'isInc'=>false, 'activeStatus'=>'Late Delivery'])</div>
+<div class="ocb" id="ocb">@include('admin.orders.partials.status-tabs', ['oq'=>[], 'counts'=>$counts, 'vals'=>$vals ?? collect(), 'incOpen'=>$incOpen, 'isInc'=>false, 'activeStatus'=>'Late Delivery'])</div>
 <script>(function(){var s=document.getElementById('ostrip'),o=s&&s.querySelector('.on');if(o)s.scrollLeft=Math.max(0,o.offsetLeft-80)})()</script>
 <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px"><div style="flex:1;min-width:260px"><h1 style="margin:0">Late Delivery <small style="font-weight:700;color:#B45309">{{ $rows->total() }}</small></h1><span style="font-size:13px;color:#6B7280">Shipments not delivered 72 hours after they went to the courier. Most overdue first. This list is automatic: a parcel leaves it when the courier delivers it.</span></div>
 <a class="btn g" href="/admin/orders">All orders</a></div>

@@ -4,6 +4,8 @@
   $isInc = $isInc ?? false;
   $counts = $counts ?? collect();
   $incOpen = $incOpen ?? 0;
+  $vals = $vals ?? collect();
+  $mv = function ($n) { $n = (float)$n; if ($n <= 0) return '৳0'; if ($n >= 10000000) return '৳'.rtrim(rtrim(number_format($n / 10000000, 2), '0'), '.').' Cr'; if ($n >= 1000000) return '৳'.rtrim(rtrim(number_format($n / 100000, 2), '0'), '.').' L'; return '৳'.number_format($n); };
 @endphp
 @once
 <style>
@@ -22,7 +24,12 @@
 .ocb .chip:not([class*=' s-']){background:#F1F5F9!important}
 .ocb .chip.on,.ocb .chip.on[class*=' s-']{background:var(--b,#E2E8F0)!important;color:#000!important;border-color:var(--c,#0B1220)!important;border-width:2px;box-shadow:0 0 0 2px color-mix(in srgb,var(--c,#0B1220) 28%,transparent)}
 .ocb .chip.on:not([class*=' s-']){background:#E2E8F0!important;border-color:#0B1220!important}
+/* v1.388 count big, parcel value small underneath */
+.ocb .strip{height:46px!important;align-items:flex-start!important}
+.ocb .chip{height:42px!important;line-height:1.15!important;padding:3px 10px!important;border-radius:12px!important;display:inline-flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:1px}
+.ocb .chip .cl{font-size:11px;font-weight:600;color:#000!important}.ocb .chip .cl b{font-size:16px;font-weight:800;margin-left:3px}
+.ocb .chip .cv{font-size:9.5px;font-weight:600;color:#000!important;opacity:.85;white-space:nowrap}
 </style>
 @endonce
-<div class="r2"><div class="strip" id="ostrip"><a class="chip {{ $activeStatus ? '' : 'on' }}" href="/admin/orders?{{ http_build_query($oq) }}">All <b>{{ collect($counts)->sum() }}</b></a>
-@foreach(\App\Models\Mother::STAGES as $s)@if($s==='Pre Order') @continue @endif @if($s==='Incomplete')<a class="chip s-incomplete {{ $isInc ? 'on' : '' }}" href="/admin/orders?{{ http_build_query(['status'=>'Incomplete']) }}">Incomplete <b>{{ $incOpen }}</b></a>@continue @endif<a class="chip s-{{ \Illuminate\Support\Str::slug($s) }} {{ $activeStatus==$s?'on':'' }}" href="{{ '/admin/orders?'.http_build_query(array_merge($oq,['status'=>$s])) }}">{{ $s }} <b>{{ $counts[$s] ?? 0 }}</b></a>@endforeach</div></div>
+<div class="r2"><div class="strip" id="ostrip"><a class="chip {{ $activeStatus ? '' : 'on' }}" href="/admin/orders?{{ http_build_query($oq) }}"><span class="cl">All <b>{{ collect($counts)->sum() }}</b></span><small class="cv" title="Total parcel value">{{ $mv(collect($vals)->sum()) }}</small></a>
+@foreach(\App\Models\Mother::STAGES as $s)@if($s==='Pre Order') @continue @endif @if($s==='Incomplete')<a class="chip s-incomplete {{ $isInc ? 'on' : '' }}" href="/admin/orders?{{ http_build_query(['status'=>'Incomplete']) }}"><span class="cl">Incomplete <b>{{ $incOpen }}</b></span><small class="cv" title="Total value of open checkouts">{{ $mv($vals['Incomplete'] ?? 0) }}</small></a>@continue @endif<a class="chip s-{{ \Illuminate\Support\Str::slug($s) }} {{ $activeStatus==$s?'on':'' }}" href="{{ '/admin/orders?'.http_build_query(array_merge($oq,['status'=>$s])) }}"><span class="cl">{{ $s }} <b>{{ $counts[$s] ?? 0 }}</b></span><small class="cv" title="Total parcel value">{{ $mv($vals[$s] ?? 0) }}</small></a>@endforeach</div></div>
