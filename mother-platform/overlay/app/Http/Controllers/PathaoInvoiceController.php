@@ -36,11 +36,12 @@ class PathaoInvoiceController extends Controller {
     abort_unless(P::can(Auth::user(), 'couriers', 'edit'), 403);
     $t = \App\Support\Pathao::token(); if (!$t) return back()->with('bad', 'Probe: could not get a Pathao token from the saved login.');
     $out = [];
-    foreach (['/api/v1/monetary/invoices?page=1', '/api/v1/monetary/stats/invoice'] as $p) {
+    foreach (['/api/v1/monetary/invoices/receivable', '/api/v1/monetary/invoices/receivable?page=1&limit=5', '/api/v1/monetary/invoices/021126DQZGCPT', '/api/v1/monetary/invoices/021126DQZGCPT/orders', '/api/v1/monetary/invoices/021126DQZGCPT/items', '/api/v1/monetary/invoice/021126DQZGCPT'] as $p) {
       $o = ['http'=>['method'=>'GET', 'timeout'=>20, 'ignore_errors'=>true, 'header'=>"Accept: application/json\r\nAuthorization: Bearer $t\r\nUser-Agent: MotherCommerce/1.0\r\n"], 'ssl'=>['verify_peer'=>true]];
       $b = @file_get_contents('https://merchant.pathao.com'.$p, false, stream_context_create($o)); $code = 0; foreach ($http_response_header ?? [] as $l) if (preg_match('#^HTTP/\S+\s+(\d+)#', $l, $m)) $code = (int)$m[1];
       $j = json_decode((string)$b, true); $src = is_array($j) ? ($j['error']['description'] ?? $j['message'] ?? '') : 'not json';
-      $out[] = $p.' → HTTP '.$code.($code === 200 && is_array($j) ? ' (fields: '.implode(', ', array_slice(array_keys($j['data'] ?? $j), 0, 10)).')' : ' ('.mb_substr((string)$src, 0, 80).')');
+      $dd = is_array($j) ? ($j['data'] ?? $j) : []; $first = is_array($dd) && isset($dd[0]) && is_array($dd[0]) ? $dd[0] : (is_array($dd) && isset($dd['data'][0]) && is_array($dd['data'][0]) ? $dd['data'][0] : null);
+      $out[] = $p.' → HTTP '.$code.($code === 200 && is_array($j) ? ' (fields: '.implode(', ', array_slice(array_keys(is_array($dd) ? $dd : []), 0, 12)).($first ? '; item: '.implode(', ', array_slice(array_keys($first), 0, 25)) : '').')' : ' ('.mb_substr((string)$src, 0, 60).')');
     }
     return back()->with('ok', 'Probe result: '.implode(' | ', $out));
   }
