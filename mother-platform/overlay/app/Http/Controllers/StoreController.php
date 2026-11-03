@@ -81,7 +81,13 @@ class StoreController extends Controller {
   /** Tobacco/vape is kept off Google: these pages are noindex and absent from the sitemap, and public titles/descriptions never mention it. */
   public static function isSmokeCat($c): bool { return $c && (($c->slug ?? '') === 'cigarette-vape' || preg_match('/cigarette|vape|সিগারেট|ভেপ/iu', (string)($c->name ?? '')) === 1); }
   public static function cleanSeo(?string $v, string $fallback): string { $v = trim((string)$v); return ($v === '' || preg_match('/সিগারেট|ভেপ|cigar|vape|tobacco|nicotin|smok/iu', $v)) ? $fallback : $v; }
-  const HOME_TITLE = 'DutyFree BD | আন্তর্জাতিক মানের অরিজিনাল ইমপোর্টেড পণ্যের বিশ্বস্ত অনলাইন শপ – পারফিউম, স্কিন কেয়ার ও লাইফস্টাইল';
+  /** Keep <title> within ~60 chars so Google does not truncate it: cut the name part at a word boundary. */
+  public static function fitTitle(string $name, string $suffix, int $max = 62): string {
+    $name = trim(preg_replace('/\s+/u', ' ', $name)); $room = $max - mb_strlen($suffix);
+    if (mb_strlen($name) > $room) { $cut = mb_substr($name, 0, max(10, $room)); $sp = mb_strrpos($cut, ' '); $name = rtrim($sp !== false && $sp > 12 ? mb_substr($cut, 0, $sp) : $cut, " ,-–|"); $name = preg_replace('/\s+(for|and|of|in|with|by|the|a|made|from)$/iu', '', $name); }
+    return $name.$suffix;
+  }
+  const HOME_TITLE = 'DutyFree BD | অরিজিনাল ইমপোর্টেড পারফিউম ও স্কিন কেয়ার';
   const HOME_DESC = 'আন্তর্জাতিক মানের সকল অরিজিনাল ইমপোর্টেড পণ্য এক জায়গায়: পারফিউম, আতর, স্কিন কেয়ার, হেয়ার কেয়ার, বেবি প্রোডাক্ট ও ডেইলি নিডস। ক্যাশ অন ডেলিভারি, সারা বাংলাদেশে হোম ডেলিভারি।';
   public function home() {
     $s = self::set();
@@ -147,7 +153,7 @@ class StoreController extends Controller {
       $items = $this->sorted($q, $sort === 'new' ? 'new' : $sort)->paginate($per)->withQueryString();
     }
     $canon = url('/'.$slug).($subSlug !== null ? '/'.$subSlug.($subSubName !== null ? '/'.\App\Support\Slugs::slug($subSubName, 60) : '') : '/'); if ($subSubName !== null) { $subName = $subSubName.' · '.$subName; }
-    $title = $subName ? $subName.' – '.$c->name.' | DutyFree Shop BD' : ($c->title ?: $c->name.' | DutyFree Shop BD');
+    $title = $subName ? self::fitTitle($subName.' – '.$c->name, ' | DutyFree BD') : (($c->title && mb_strlen($c->title) <= 66) ? $c->title : self::fitTitle((string)($c->title ?: $c->name), ' | DutyFree BD'));
     return response()->view('store.category', $this->base(['c'=>$c, 'subName'=>$subName, 'subSlug'=>$subSlug, 'items'=>$items, 'hasPos'=>$hasPos, 'groups'=>collect($items->items())->groupBy(fn($p) => $p->sub ?: $c->name), 'title'=>$title, 'desc'=>$subName ? $subName.' – original imported products in '.$c->name.' at DutyFree Shop BD. Cash on delivery, nationwide delivery.' : $c->meta_description, 'canon'=>(!$subName && !empty($c->canonical)) ? $c->canonical : $canon, 'noindex'=>(!empty($c->noindex) && !$subName) || self::isSmokeCat($c), 'keywords'=>$c->focus_keyword ?? null, 'ogimg'=>(!empty($c->og_image) ? $c->og_image : null)]))->header('Cache-Control','public, max-age=120');
   }
   /** /category/secondary-category */
@@ -190,7 +196,7 @@ class StoreController extends Controller {
     DB::table('product_views')->insert(['product_id'=>$p->id,'day'=>now('Asia/Dhaka')->toDateString(),'created_at'=>now(),'updated_at'=>now()]);
     $price = (float)$p->price;
     $gallery = DB::table('product_images')->where('product_id',$p->id)->orderBy('position')->orderBy('id')->pluck('path')->all();
-    return response()->view('store.product', $this->base(['preview'=>$preview, 'gallery'=>$gallery, 'p'=>$p, 'c'=>$c, 'rel'=>$rel, 'reviews'=>$reviews, 'title'=>($p->meta_title ?: $p->name.' দাম ৳ '.number_format($price).' | '.($c->name ?? 'Shop').' | DutyFree Shop BD'), 'keywords'=>$p->meta_keywords ?? null, 'desc'=>($p->meta_description ?: $p->name.' – দাম ৳ '.number_format($price).'। অরিজিনাল ইমপোর্টেড পণ্য, অর্ডার করুন, সারা বাংলাদেশে ডেলিভারি। DutyFree Shop BD.'), 'canon'=>($p->canonical ?? null) ?: url(self::url($p)), 'noindex'=>!empty($p->noindex) || ($p->group_key ?? null) === 'smoke', 'ogimg'=>($p->og_image ?? null) ?: ($p->image ? (preg_match('#^https?://#i', $p->image) ? $p->image : url($p->image)) : url('/og.png'))]))->header('Cache-Control','public, max-age=120');
+    return response()->view('store.product', $this->base(['preview'=>$preview, 'gallery'=>$gallery, 'p'=>$p, 'c'=>$c, 'rel'=>$rel, 'reviews'=>$reviews, 'title'=>(mb_strlen((string)$p->meta_title) >= 10 && mb_strlen((string)$p->meta_title) <= 66 ? $p->meta_title : self::fitTitle($p->name, ' দাম ৳'.number_format($price).' | DutyFree BD')), 'keywords'=>$p->meta_keywords ?? null, 'desc'=>($p->meta_description ?: $p->name.' – দাম ৳ '.number_format($price).'। অরিজিনাল ইমপোর্টেড পণ্য, অর্ডার করুন, সারা বাংলাদেশে ডেলিভারি। DutyFree Shop BD.'), 'canon'=>($p->canonical ?? null) ?: url(self::url($p)), 'noindex'=>!empty($p->noindex) || ($p->group_key ?? null) === 'smoke', 'ogimg'=>($p->og_image ?? null) ?: ($p->image ? (preg_match('#^https?://#i', $p->image) ? $p->image : url($p->image)) : url('/og.png'))]))->header('Cache-Control','public, max-age=120');
   }
   public function search(Request $r) {
     $t = trim(mb_substr((string)$r->q, 0, 80)); $items = collect();
@@ -381,12 +387,16 @@ class StoreController extends Controller {
       return response('', 410);
     }
     if ($rd = \App\Support\SeoMgr::redirect(request()->path())) return redirect($rd->to_url, (int)$rd->type);
+    if (preg_match('#^product/([a-z0-9\-]+)$#i', $pp, $lm) && preg_match('/-(\d{3,6})$/', $lm[1], $lid)) { // old site /product/name-EXTID -> current canonical URL
+      $lp = $this->q()->where('ext_id', (int)$lid[1])->first() ?: DB::table('products')->where('ext_id', (int)$lid[1])->where('published', true)->first();
+      if ($lp) { if (empty($lp->path_slug)) { \App\Support\Slugs::assignAll(); $lp = DB::table('products')->where('id', $lp->id)->first(); } return redirect(self::url($lp), 301); }
+    }
     return response()->view('store.missing', $this->base(['title'=>'পেজ পাওয়া যায়নি | DutyFree Shop BD', 'desc'=>'', 'canon'=>url('/'), 'noindex'=>true]), 404);
   }
   public function sitemap() {
-    $xml = self::rem('store.sitemap7', 3600, function () {
+    $xml = self::rem('store.sitemap8', 3600, function () {
       $h = request()->getHost(); $B = in_array($h, ['localhost','127.0.0.1','::1'], true) || !str_contains($h, '.') ? rtrim((string)config('app.url'), '/') : 'https://'.$h; $ul = fn($p) => $B.'/'.ltrim($p, '/');
-      $u = fn($loc, $img = null) => '<url><loc>'.e($loc).'</loc><changefreq>daily</changefreq>'.($img ? '<image:image><image:loc>'.e($img).'</image:loc></image:image>' : '').'</url>';
+      $u = fn($loc, $img = null, $lm = null) => '<url><loc>'.e($loc).'</loc>'.($lm ? '<lastmod>'.date('c', strtotime((string)$lm)).'</lastmod>' : '').'<changefreq>daily</changefreq>'.($img ? '<image:image><image:loc>'.e($img).'</image:loc></image:image>' : '').'</url>';
       $o = $u($ul('/'));
       foreach ($this->cats() as $c) { if (self::isSmokeCat($c)) continue; $o .= $u($ul($c->slug.'/')); }
       foreach ($this->subs() as $cid => $rows) { $cs = $this->cats()->firstWhere('id', $cid); if ($cs && !self::isSmokeCat($cs)) foreach ($rows as $rw) $o .= $u($ul($cs->slug.'/'.\App\Support\Slugs::subSlug($rw->sub))); }
@@ -394,7 +404,7 @@ class StoreController extends Controller {
       $o .= $u($ul('/blog'));
       foreach (DB::table('posts')->where('active',true)->get(['slug']) as $bp) $o .= $u($ul('/blog/'.$bp->slug));
       foreach (DB::table('pages')->where('active',true)->where(fn($q)=>$q->whereNull('robots_index')->orWhere('robots_index',true))->get(['slug']) as $pg) $o .= $u($ul($pg->slug.'/'));
-      foreach (DB::table('products')->where('published',true)->where(fn($q)=>$q->whereNull('group_key')->orWhere('group_key','!=','smoke'))->orderBy('id')->cursor() as $p) $o .= $u($ul(self::url($p)), $p->image);
+      foreach (DB::table('products')->where('published',true)->where(fn($q)=>$q->whereNull('group_key')->orWhere('group_key','!=','smoke'))->orderBy('id')->cursor() as $p) $o .= $u($ul(self::url($p)), $p->image, $p->updated_at ?? null);
       return '<?xml version="1.0" encoding="UTF-8"?>'."\n".'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">'.$o.'</urlset>';
     });
     return response($xml, 200, ['Content-Type'=>'application/xml; charset=utf-8']);

@@ -83,6 +83,7 @@ function first(){var f=tr.children[0];if(f&&f.classList.contains('hxv'))active()
 if(document.readyState==='complete')setTimeout(first,300);else addEventListener('load',function(){setTimeout(first,300)})});</script>
 <div class="w hx"><div class="hx-m">
 @if($slides->count())
+<h1 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap">DutyFree BD – অরিজিনাল ইমপোর্টেড পারফিউম, স্কিন কেয়ার ও লাইফস্টাইল পণ্য</h1>
 <div class="sld hxs" data-auto="5000"><div class="sl-t">@foreach($slides as $sl)@php $mi = $sl->mobile_image ?? null; $hasTx = !empty($sl->title) || !empty($sl->subtitle) || !empty($sl->button_text); $isV = (($sl->media_type ?? 'image')==='video' && !empty($sl->video_id)); @endphp
 @if($isV)
 <div class="hxa hxv" data-vid="{{ $sl->video_id }}" data-ap="{{ (int)($sl->v_autoplay ?? 1) }}" data-mu="{{ (int)($sl->v_mute ?? 1) }}" data-lp="{{ (int)($sl->v_loop ?? 0) }}" data-ct="{{ (int)($sl->v_controls ?? 0) }}" data-mb="{{ (int)($sl->v_mobile ?? 0) }}"><picture>@if($mi)<source media="(max-width:760px)" srcset="{{ $mi }}">@endif<img src="{{ $sl->image ?: 'https://i.ytimg.com/vi/'.$sl->video_id.'/hqdefault.jpg' }}" alt="{{ $sl->title ?: 'DutyFree Shop BD video' }}" width="1328" height="472" @if($loop->first) fetchpriority="high" @else loading="lazy" @endif></picture>
