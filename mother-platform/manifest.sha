@@ -51,7 +51,7 @@ d787924ace3fa42cc66a3de321e4e94e784006d8 resources/views/panels/employees.blade.
 9f1027c011380dd12bace29476b3fb0c1afbbc19 app/Http/Controllers/StoreController.php
 4688c1c7143fe7136eb8661b12995ed0bfe5aa42 resources/views/store/layout.blade.php
 55af1b65f87c4b4816080ce2885760d24ff102b9 resources/views/store/card.blade.php
-f3092724d29a4394b8e35640d36a7ac4a57a018d resources/views/store/home.blade.php
+9e973a66c641415033874670f99e2b524337158c resources/views/store/home.blade.php
 6aa949a4e1ea5de5298971728076fad706a3c256 resources/views/store/category.blade.php
 5869bdd915382a17ca3ba2ce16ac3dab2293ffea resources/views/store/product.blade.php
 7ad9d9502d41f54d6784414a9aa3f16a8ab0ec13 resources/views/store/search.blade.php
@@ -143,7 +143,7 @@ b8a2f978f1c4cc253236194c24affdca4f4c24e1 app/Http/Controllers/AccountController.
 26a77b205ef9ae35bd4ebbfe68e3c3b4ec2fc21f resources/views/store/account.blade.php
 1f4e9cb0b8408c5154e6627cb500c780c0190946 resources/views/store/account_auth.blade.php
 9aff5efe579d3d9fecc6d438e6dce4e34ba0ff5c database/migrations/2026_10_31_000025_customer_accounts.php
-72a56c033190c067788b80fdbb2507e74230e667 app/Support/Img.php
+a483ec8fec0f2a8e661fbb71c446bd0323047a83 app/Support/Img.php
 71742b429c495bfa9aafb299a35efe50bc7e6eaf app/Http/Controllers/MediaController.php
 695f1e88b90e001078a794529b366f689ae4d7a1 resources/views/media.blade.php
 1cda6e7f9c562b57ed7cfbb58e3d22aa381e8400 database/migrations/2026_10_31_000026_media_images.php

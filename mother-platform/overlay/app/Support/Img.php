@@ -61,6 +61,11 @@ class Img {
     $d = storage_path('app/img-originals'); if (!is_dir($d)) @mkdir($d, 0775, true);
     $t = $d.'/'.basename($abs); if (!is_file($t)) @copy($abs, $t);
   }
+  /** URL of the .webp sibling (name.ext.webp) for a local raster upload, or null. Lets markup point browsers straight at the small file instead of relying on Accept negotiation (a CDN may have cached the original). */
+  public static function webp(?string $url): ?string {
+    if (!$url || !str_starts_with($url, '/uploads/') || !preg_match('/\.(jpe?g|png)$/i', $url)) return null;
+    return is_file(public_path(ltrim($url, '/').'.webp')) ? $url.'.webp' : null;
+  }
   /** srcset for a local upload whose thumbnails exist; '' otherwise. */
   public static function srcset(?string $url): string {
     if (!$url || !str_starts_with($url, '/uploads/')) return '';
