@@ -14,7 +14,7 @@ class ShipmentOutcome {
   const RECORDABLE = ['Shipment', 'Late Delivery', 'Partial Delivered', 'Partial Return Pending', 'Return Pending'];
   const PARTIAL = ['Partial Return Pending', 'Partial Return Received', 'Partial Returned'];
   const FULL = ['Return Pending', 'Returned'];
-  const RETURN_STATUSES = ['Partial Return Pending', 'Partial Return Received', 'Partial Returned', 'Return Pending', 'Returned'];
+  const RETURN_STATUSES = ['Partial Return Pending', 'Partial Return Received', 'Partial Returned', 'Return Pending', 'Returned', 'Exchange Pending', 'Exchange Received'];
   /** Statuses that only this module may set (a person must not pick a parcel type by hand). */
   const SYSTEM_ONLY = ['Partial Return Pending', 'Partial Return Received', 'Partial Returned'];
 
@@ -79,7 +79,7 @@ class ShipmentOutcome {
   /** Lines the warehouse has to take back: [item row, expected qty]. A Return Pending order without a recorded outcome means the whole parcel. */
   public static function expected(object $o, $items): array {
     $out = []; $any = $items->contains(fn($i) => (int)($i->ret_qty ?? 0) > 0);
-    foreach ($items as $i) { $q = $any ? (int)($i->ret_qty ?? 0) : ($o->status === 'Return Pending' ? (int)$i->qty : 0); if ($q > 0) $out[] = [$i, $q]; }
+    foreach ($items as $i) { $q = $any ? (int)($i->ret_qty ?? 0) : (in_array($o->status, ['Return Pending', 'Exchange Pending'], true) ? (int)$i->qty : 0); if ($q > 0) $out[] = [$i, $q]; }
     return $out;
   }
   /**
@@ -89,25 +89,25 @@ class ShipmentOutcome {
    */
   public static function receive(int $orderId, array $back = []): array {
     $o = DB::table('orders')->find($orderId); if (!$o) return [false, 'Order not found.', null];
-    if (!in_array($o->status, ['Partial Return Pending', 'Return Pending'], true)) return [false, 'Only an order waiting for its return can be received.', $o->status];
+    if (!in_array($o->status, ['Partial Return Pending', 'Return Pending', 'Exchange Pending'], true)) return [false, 'Only an order waiting for its return can be received.', $o->status];
     $items = DB::table('order_items')->where('order_id', $orderId)->orderBy('id')->get(); $exp = self::expected($o, $items);
     if (!$exp) return [false, 'No returning items were found on this order.', $o->status];
     foreach ($exp as [$i, $q]) { $b = array_key_exists($i->id, $back) ? (int)$back[$i->id] : $q; if ($b < 0 || $b > $q) return [false, 'Received quantity for "'.$i->name.'" must be between 0 and '.$q.'.', $o->status]; $back[$i->id] = $b; }
-    $full = $o->status === 'Return Pending'; $to = $full ? 'Returned' : 'Partial Return Received'; $now = now(); $lines = []; $stockDone = false;
+    $full = $o->status === 'Return Pending'; $ex = $o->status === 'Exchange Pending'; $to = $ex ? 'Exchange Received' : ($full ? 'Returned' : 'Partial Return Received'); $now = now(); $lines = []; $stockDone = false;
     $canStock = $o->stock_deducted_at !== null && $o->stock_returned_at === null;
-    DB::transaction(function () use ($o, $orderId, $exp, $back, $to, $now, $full, $canStock, &$lines, &$stockDone) {
+    DB::transaction(function () use ($o, $orderId, $exp, $back, $to, $now, $full, $ex, $canStock, &$lines, &$stockDone) {
       foreach ($exp as [$i, $q]) {
         $b = (int)$back[$i->id];
         DB::table('order_items')->where('id', $i->id)->update(['outcome'=>'Returned', 'ret_qty'=>$q, 'back_qty'=>$b, 'outcome_at'=>$now]);
         if ($canStock && $b > 0 && $i->product_id) { Procure::stock((int)$i->product_id, $b, 'order-return', (string)$o->invoice); $stockDone = true; }
         $lines[] = $i->name.' → Returned'.($b !== $q ? ' (received back '.$b.' of '.$q.')' : '').($canStock && $b > 0 && $i->product_id ? ', stock +'.$b : '');
       }
-      DB::table('orders')->where('id', $orderId)->update(['status'=>$to, 'return_received_at'=>$now, 'return_type'=>$o->return_type ?: ($full ? 'Full' : 'Partial'), 'updated_at'=>$now] + ($stockDone ? ['stock_returned_at'=>$now] : []));
+      DB::table('orders')->where('id', $orderId)->update(['status'=>$to, 'return_received_at'=>$now, 'return_type'=>$o->return_type ?: ($ex ? 'Exchange' : ($full ? 'Full' : 'Partial')), 'updated_at'=>$now] + ($stockDone ? ['stock_returned_at'=>$now] : []));
       DB::table('order_status_logs')->insert(['order_id'=>$orderId, 'user_id'=>Auth::id(), 'user_name'=>Auth::user()->name ?? 'System', 'from_status'=>$o->status, 'to_status'=>$to, 'note'=>'Returned goods received at the warehouse'.($stockDone ? ' · stock added' : ''), 'created_at'=>$now, 'updated_at'=>$now]);
     });
     $why = $stockDone ? ' Stock added.' : ($o->stock_deducted_at === null ? ' Stock unchanged (this order shipped before automatic stock deduction started).' : ($o->stock_returned_at !== null ? ' Stock was already returned.' : ' Stock unchanged (nothing received back).'));
-    OrderActivity::log($orderId, 'return_received', $o->status, $to, ($full ? 'Return Received' : 'Partial Return Received').'.'.$why, ['items'=>$lines]);
-    return [true, ($full ? 'Return received, order is Returned.' : 'Partial return received.').$why, $to];
+    OrderActivity::log($orderId, 'return_received', $o->status, $to, ($ex ? 'Exchange Received' : ($full ? 'Return Received' : 'Partial Return Received')).'.'.$why, ['items'=>$lines]);
+    return [true, ($ex ? 'Exchange received at the warehouse.' : ($full ? 'Return received, order is Returned.' : 'Partial return received.')).$why, $to];
   }
   /** Partial Return Received -> Partial Returned (completed). */
   public static function complete(int $orderId): array {

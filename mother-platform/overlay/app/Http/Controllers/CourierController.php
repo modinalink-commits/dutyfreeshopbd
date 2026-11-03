@@ -108,7 +108,11 @@ class CourierController extends Controller {
   }
   public function dashboard(Request $r) {
     [$rows, $cards, $perf] = $this->dash($r);
-    return view('courier_dashboard', ['rows'=>$rows->take(200), 'cards'=>$cards, 'perf'=>$perf, 'stages'=>\App\Support\CourierSync::STAGES, 'couriers'=>DB::table('orders')->whereNotNull('consignment_id')->distinct()->pluck('courier'), 'stores'=>DB::table('stores')->orderBy('name')->get(['id','name']), 'last'=>\Illuminate\Support\Facades\Cache::get('courier.last_sync'), 'ready'=>Pathao::configured()]);
+    $oc = DB::table('orders')->whereNotNull('pathao_outcome')->selectRaw('pathao_outcome o, status s, count(*) c')->groupBy('pathao_outcome', 'status')->get();
+    $map = ['Partial Return' => [['Partial Return Pending'], ['Partial Return Received', 'Partial Returned']], 'Exchange' => [['Exchange Pending'], ['Exchange Received']], 'Regular Return' => [['Return Pending'], ['Returned']], 'Paid Return' => [[], []]];
+    $outcomes = []; foreach ($map as $lab => [$pend, $recv]) { $g = $oc->where('o', $lab); $outcomes[] = ['label' => $lab, 'total' => (int)$g->sum('c'), 'pend' => (int)$g->whereIn('s', $pend)->sum('c'), 'recv' => (int)$g->whereIn('s', $recv)->sum('c'), 'pend_status' => $pend[0] ?? null, 'recv_status' => $recv[0] ?? null]; }
+    $flagged = (int)DB::table('orders')->whereNotNull('courier_flag')->count();
+    return view('courier_dashboard', ['rows'=>$rows->take(200), 'cards'=>$cards, 'outcomes'=>$outcomes, 'flagged'=>$flagged, 'perf'=>$perf, 'stages'=>\App\Support\CourierSync::STAGES, 'couriers'=>DB::table('orders')->whereNotNull('consignment_id')->distinct()->pluck('courier'), 'stores'=>DB::table('stores')->orderBy('name')->get(['id','name']), 'last'=>\Illuminate\Support\Facades\Cache::get('courier.last_sync'), 'ready'=>Pathao::configured()]);
   }
   public function export(Request $r, $fmt) {
     [$rows, , $perf] = $this->dash($r);

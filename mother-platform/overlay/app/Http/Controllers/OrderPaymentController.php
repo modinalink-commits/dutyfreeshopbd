@@ -66,7 +66,8 @@ class OrderPaymentController extends Controller {
     self::recalc((int)$o->id);
     OrderActivity::log((int)$o->id, 'payment_submitted', null, (string)$amt, 'Manual payment added: '.$d['method'].' ৳'.number_format($amt).($d['txn_id'] ?? '' ? ' ref '.$d['txn_id'] : ''), ['payment_id' => $pid]);
     if ($verify) OrderActivity::log((int)$o->id, 'payment_verified', null, (string)$amt, 'Payment verified: '.$d['method'].' ৳'.number_format($amt).' for '.$o->invoice, ['payment_id' => $pid]);
-    return back()->with('ok', 'Payment saved for '.$o->invoice.($verify ? ' (verified)' : ' (pending verification)'));
+    $ap = $verify ? \App\Support\PaymentSettle::apply((int)$o->id, 'Manual payment entry') : null;
+    return back()->with('ok', 'Payment saved for '.$o->invoice.($verify ? ' (verified)' : ' (pending verification)').($ap ? ' · order moved to Approved' : ''));
   }
   /** Proof file of a ledger entry: new uploads sit on the public disk, website uploads on the private local disk. */
   public function proof($pid) {
@@ -90,6 +91,7 @@ class OrderPaymentController extends Controller {
     }
     self::recalc((int)$o->id);
     OrderActivity::log((int)$o->id, $mode === 'verify' ? 'payment_verified' : 'payment_rejected', null, (string)$p->amount, 'Payment '.($mode === 'verify' ? 'verified' : 'rejected').': '.$p->method.' ৳'.number_format($p->amount).' for '.$o->invoice, ['payment_id' => (int)$pid]);
-    return back()->with('ok', 'Payment '.($mode === 'verify' ? 'verified' : 'rejected').'.');
+    $ap = $mode === 'verify' ? \App\Support\PaymentSettle::apply((int)$o->id, 'Manual Payment Verification') : null;
+    return back()->with('ok', 'Payment '.($mode === 'verify' ? 'verified' : 'rejected').'.'.($ap ? ' Order moved to Approved.' : ''));
   }
 }

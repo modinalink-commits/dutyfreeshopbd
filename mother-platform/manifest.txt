@@ -468,3 +468,4 @@ app/Support/PathaoStatusMapper.php
 app/Http/Controllers/PathaoMapController.php
 resources/views/pathao_map.blade.php
 database/migrations/2026_11_03_000047_pathao_status_map.php
+app/Support/PaymentSettle.php

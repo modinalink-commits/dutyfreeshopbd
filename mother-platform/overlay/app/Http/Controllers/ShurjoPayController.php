@@ -48,6 +48,7 @@ class ShurjoPayController extends Controller {
       $won = DB::table('orders')->where('id', $o->id)->where(fn($q) => $q->whereNull('pay_status')->orWhere('pay_status', '<>', 'Verified'))->update(['pay_status' => 'Verified', 'pay_txn' => (string)($v['bank_trx_id'] ?? $v['invoice_no'] ?? $sp), 'sp_method' => mb_substr((string)($v['method'] ?? ''), 0, 60), 'pay_by' => 'ShurjoPay', 'pay_at' => now(), 'updated_at' => now()]);
       if (!$won) return redirect($done); // a repeated/simultaneous callback: payment already recorded, nothing to do twice
       $this->log($o, 'Online payment received via ShurjoPay'.(!empty($v['method']) ? ' ('.$v['method'].')' : '').', ref '.($v['bank_trx_id'] ?? $sp));
+      \App\Support\PaymentSettle::apply((int)$o->id, 'ShurjoPay (backend-verified)');
       try { \App\Support\OrderSms::placed((int)$o->id); } catch (\Throwable $e) {}
     } else {
       $st = $code === '1002' ? 'Cancelled' : 'Failed';

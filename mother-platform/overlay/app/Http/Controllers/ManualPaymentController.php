@@ -21,7 +21,7 @@ class ManualPaymentController extends Controller {
 
   public function index(Request $r) {
     \App\Http\Controllers\OrderPaymentController::syncLegacy();
-    $q = DB::table('order_payments as p')->join('orders as o', 'o.id', '=', 'p.order_id');
+    $q = DB::table('order_payments as p')->join('orders as o', 'o.id', '=', 'p.order_id')->whereRaw("lower(p.method) not like '%shurjo%'");
     if ($s = trim((string)$r->query('q'))) {
       $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $s).'%';
       $q->where(fn($w) => $w->where('o.customer_name', 'ilike', $like)->orWhere('o.phone', 'ilike', $like)->orWhere('o.invoice', 'ilike', $like)->orWhere('p.txn_id', 'ilike', $like)->orWhere('p.sender', 'ilike', $like));
@@ -44,7 +44,7 @@ class ManualPaymentController extends Controller {
       ->select('p.*', 'o.invoice', 'o.pay_account as order_pay_account', 'o.customer_name', 'o.phone', 'o.total as order_total', 'o.paid_total', 'o.payment_status', 'o.status as order_status')->paginate(40)->withQueryString();
     $txns = $rows->pluck('txn_id')->filter()->unique()->all();
     $dups = $txns ? DB::table('order_payments')->whereIn('txn_id', $txns)->whereIn('status', ['pending','verified'])->select('txn_id', DB::raw('count(*) c'))->groupBy('txn_id')->pluck('c', 'txn_id') : collect();
-    $k = DB::table('order_payments as p')->selectRaw("count(*) filter (where p.status='pending') pend, count(*) filter (where p.status='verified' and p.verified_at::date = current_date) vtoday, count(*) filter (where p.status='rejected') rej, coalesce(sum(p.amount) filter (where p.status='pending'),0) pamt, count(*) filter (where lower(p.method) like '%bkash%' and p.status='pending') bk, count(*) filter (where lower(p.method) like '%nagad%' and p.status='pending') ng, count(*) filter (where lower(p.method) like '%bank%' and p.status='pending') bn")->first();
+    $k = DB::table('order_payments as p')->whereRaw("lower(p.method) not like '%shurjo%'")->selectRaw("count(*) filter (where p.status='pending') pend, count(*) filter (where p.status='verified' and p.verified_at::date = current_date) vtoday, count(*) filter (where p.status='rejected') rej, coalesce(sum(p.amount) filter (where p.status='pending'),0) pamt, count(*) filter (where lower(p.method) like '%bkash%' and p.status='pending') bk, count(*) filter (where lower(p.method) like '%nagad%' and p.status='pending') ng, count(*) filter (where lower(p.method) like '%bank%' and p.status='pending') bn")->first();
     $banks = DB::table('payment_methods')->where('kind', 'bank')->orderBy('position')->pluck('title');
     return view('manual_payments', ['rows' => $rows, 'dups' => $dups, 'k' => $k, 'banks' => $banks, 'reasons' => self::REASONS, 'canAct' => P::can(Auth::user(), 'orders', 'edit')]);
   }
@@ -73,6 +73,7 @@ class ManualPaymentController extends Controller {
     if ($note !== '') $upd['pay_note'] = trim(($o->pay_note ? $o->pay_note."\n" : '').'['.now()->format('d M H:i').' '.$u->name.'] '.mb_substr($note, 0, 300));
     DB::table('orders')->where('id', $id)->update($upd);
     $label = $upd['pay_status'];
+    $ap = $mode === 'verify' ? \App\Support\PaymentSettle::apply((int)$id, 'Manual Payment Verification') : null;
     DB::table('order_status_logs')->insert(['order_id' => $id, 'user_id' => $u->id, 'user_name' => $u->name, 'from_status' => $o->status, 'to_status' => $o->status, 'note' => "Payment $label (".$o->payment_method.', ref '.$o->pay_txn.')'.($mode === 'reject' ? ' - '.$upd['pay_reason'] : '').($note !== '' ? ' - '.mb_substr($note, 0, 200) : ''), 'created_at' => now(), 'updated_at' => now()]);
     $this->log($r, $o, $mode, $mode === 'reject' ? $upd['pay_reason'].($note !== '' ? ' / '.$note : '') : $note);
     if ($r->boolean('sms') && $o->phone) {
@@ -82,7 +83,7 @@ class ManualPaymentController extends Controller {
         \App\Support\Sms::queue($to, $body, 'payment_'.$mode, ['order_id' => $id]);
       } catch (\Throwable $e) {}
     }
-    return back()->with('ok', "Payment $label: ".$o->invoice);
+    return back()->with('ok', "Payment $label: ".$o->invoice.($ap ? ' · order moved to Approved' : ''));
   }
 
   private function log(Request $r, $o, $action, $note) {

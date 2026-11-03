@@ -34,7 +34,8 @@ class PaymentController extends Controller {
     DB::table('orders')->where('id',$id)->update(['pay_status'=>$new,'pay_by'=>Auth::user()->name,'pay_at'=>now(),'updated_at'=>now()]);
     DB::table('order_status_logs')->insert(['order_id'=>$id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'from_status'=>$o->status,'to_status'=>$o->status,'note'=>"Payment $new (".$o->payment_method.', ref '.$o->pay_txn.')','created_at'=>now(),'updated_at'=>now()]);
     $this->audit($r, 'payment.'.$mode, $o->invoice);
-    return back()->with('ok', "Payment $new for ".$o->invoice);
+    $ap = $mode === 'verify' ? \App\Support\PaymentSettle::apply((int)$id, 'Payment verification') : null;
+    return back()->with('ok', "Payment $new for ".$o->invoice.($ap ? ' · order moved to Approved' : ''));
   }
   private function audit(Request $r, $action, $subject) {
     DB::table('audit_logs')->insert(['user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'action'=>$action,'subject'=>mb_substr((string)$subject,0,190),'meta'=>json_encode([]),'ip'=>$r->ip(),'created_at'=>now(),'updated_at'=>now()]);
