@@ -29,7 +29,7 @@ efd9d0835c158e436dde3c171fa9a3f9c69527b4 app/Http/Controllers/ResController.php
 6d791d6efcd6661309de2dbf79937150c67115c1 resources/views/res_list.blade.php
 f3b1b4ce22124a2cd23b2ffce1f40df3955045ab resources/views/res_form.blade.php
 67a76a09307002f6201cc2e684f3161b22c67d9c resources/views/reports.blade.php
-4255321bad2d4385890a154ef3e25becc13cc1cb resources/views/sidebar.blade.php
+a01e8b40f776a5025ed47f03bb5602575744b5e3 resources/views/sidebar.blade.php
 85962752c1c36393879cd52b485c2495742f15f0 resources/views/coming.blade.php
 c391e719e9e194b7bf6ecf86ccb4c9a4504c2d17 database/migrations/2026_10_31_000004_catalog_extra.php
 bd753699bbd209d243e7e4b2b82c37d322444553 resources/views/panels/customers.blade.php
@@ -51,7 +51,7 @@ d787924ace3fa42cc66a3de321e4e94e784006d8 resources/views/panels/employees.blade.
 65414d9e2fbe5f16f1fbf1551cce91276e9f30f9 app/Console/Commands/MotherSyncFeed.php
 3f3b182101f3ebf08a89854a81f3c6e3a58415ca app/Http/Controllers/StoreController.php
 3d782cdddd484d3630ce7d778ab84adaf1bb77eb resources/views/store/layout.blade.php
-a17b2eff0aa07664c7ed28c2881cf7aa52baec3f resources/views/store/card.blade.php
+0700fabbcd111911245ddc06b98fdd1edd272475 resources/views/store/card.blade.php
 ce0d1f8552836199c028ddef8806c72a2d10ad19 resources/views/store/home_sec.blade.php
 eec63449e6fe3b6a9a6ef34d212c0f19ed1313f1 resources/views/store/home.blade.php
 0e5fb9160b143a0aae0c56fedd841bcdf8c5283c resources/views/store/category.blade.php
@@ -273,7 +273,7 @@ ccf63e45d2be530d55e4da8d429a97bd704f85b3 app/Http/Controllers/SeoController.php
 4a5edfd2e410316a5962a415040ec2e38746786e resources/views/seo.blade.php
 e534a3ecf298e566b5ff60f46465dc986e7c8f30 resources/views/seo_edit.blade.php
 4595b90ea962178bb7c668f2b15f28ce6e6f7a8a database/migrations/2026_11_01_000010_delivery.php
-a17b3c4f53a461ed6260766a82b663e38a9dc38b app/Support/Delivery.php
+f4bbc7f5417d7d533b05259254cf228f3f3ddc30 app/Support/Delivery.php
 89c902d7c246298c9ef68e5c140d640114a42249 app/Http/Controllers/DeliveryController.php
 8beebc214c765c863a4dfb9bddc1c5f6b19ccf6b resources/views/delivery.blade.php
 00478e00bd0f6627fa168bd1bfa29c9b43dc4dd9 database/migrations/2026_11_01_000011_fraud_check.php

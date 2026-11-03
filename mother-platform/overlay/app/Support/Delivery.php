@@ -17,7 +17,7 @@ class Delivery
         'pathao' => $g('delv_pathao', '1') === '1', 'names' => array_values(array_filter(array_map('trim', explode(',', $g('delv_inside_names', 'Chattogram,Chittagong'))))) ];
     });
   }
-  public static function flush(): void { Cache::forget('delv.cfg'); Cache::forget('delv.zones'); Cache::forget('store.rules'); }
+  public static function flush(): void { Cache::forget('delv.cfg'); Cache::forget('delv.zones'); Cache::forget('store.rules'); Cache::forget('delv.freeRows'); }
   public static function zones() {
     $rows = Cache::remember('delv.zones', 60, fn() => Schema::hasTable('delivery_zones') ? DB::table('delivery_zones')->where('active', true)->get()->map(fn($z) => (array)$z)->all() : []);
     return collect($rows)->map(fn($z) => (object)(array)$z);
@@ -37,6 +37,23 @@ class Delivery
       if (!$best || ($rank[$z->level] ?? 0) > ($rank[$best->level] ?? 0) || (($rank[$z->level] ?? 0) === ($rank[$best->level] ?? 0) && mb_strlen($z->name) > mb_strlen($best->name))) $best = $z;
     }
     return $best;
+  }
+  /** Does this product ship free (so the "FREE DELIVERY" badge may show)? Only real rules count: delivery switched off, or an active FREE override for the product, its category, or a campaign. */
+  private static ?array $freeRows = null;
+  public static function freeFor($p): bool {
+    $c = self::cfg(); if (!$c['on']) return true;
+    if (self::$freeRows === null) {
+      self::$freeRows = Schema::hasTable('delivery_overrides') ? Cache::remember('delv.freeRows', 60, function () {
+        $now = now();
+        return DB::table('delivery_overrides')->where('active', true)->where('mode', 'free')->where(fn($q) => $q->whereNull('starts_at')->orWhere('starts_at', '<=', $now))->where(fn($q) => $q->whereNull('ends_at')->orWhere('ends_at', '>=', $now))->get(['kind', 'ref_id'])->map(fn($r) => [$r->kind, (int)$r->ref_id])->all();
+      }) : [];
+    }
+    foreach (self::$freeRows as [$k, $ref]) {
+      if ($k === 'campaign') return true;
+      if ($k === 'product' && $ref === (int)($p->id ?? 0)) return true;
+      if ($k === 'category' && $ref === (int)($p->category_id ?? -1)) return true;
+    }
+    return false;
   }
   public static function overrides(array $pids): array {
     if (!Schema::hasTable('delivery_overrides')) return [];
