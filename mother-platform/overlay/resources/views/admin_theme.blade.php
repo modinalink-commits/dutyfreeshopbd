@@ -12,7 +12,9 @@
   --acc-cyan:#94D8E3;--acc-red:#F2B3B3;--acc-gray:#CBD2DB;--acc-greengray:#A9C7B9;
   /* 5-level ladder: 1 normal row < 2 group row < 3 working bar < 4 module/section bar < 5 table header */
   --grid-bg-level-1:#FAFBFC;--grid-bg-level-2:#F5F7F9;--toolbar-bg-level-3:#F0F3F6;--module-bg-level-4:#E8ECF1;--header-bg-level-5:#E3E8EE;
-  --grid-border-soft:#EDF0F4;--grid-border-main:#E0E5EB;--toolbar-border:#DDE3E9;--module-border:#CBD3DD;
+  /* 3-level border ladder (thin 1px lines, darker not thicker): soft inner < grid (main table/grid line) < strong (header bottom, group, totals, module edges) */
+  --grid-border-soft:#E2E6EA;--grid-border-main:#CED4DA;--border-grid:var(--grid-border-main);--border-strong:#BFC6CE;
+  --toolbar-border:var(--border-grid);--module-border:var(--border-grid);
   --border-main:var(--grid-border-main);--border-soft:var(--grid-border-soft);
   --head-bg:var(--header-bg-level-5);--group-bg:var(--grid-bg-level-2);--total-bg:var(--toolbar-bg-level-3);
   --accent-tint:#FFF4EC;
@@ -59,11 +61,14 @@ main table.ordt>tbody>tr:has(input[type=checkbox]:checked)>td{background:var(--r
 /* ===== 4. table furniture: header, group, total (spec §35-37) ===== */
 main table:not(.ordt):has(th) th,main table.ordt>thead>tr>th{background:var(--head-bg);color:#374151}
 main table:not(.ordt):has(th),main table.ordt{border-color:var(--border-main)}
-main table:not(.ordt):has(th) td,main table.ordt>tbody>tr>td{border-bottom-color:var(--border-soft);border-right-color:var(--border-soft)}
+main table:not(.ordt):has(th) td,main table.ordt>tbody>tr>td{border-bottom-color:var(--border-grid);border-right-color:var(--border-grid)}
+main table:not(.ordt):has(th) th,main table.ordt>thead>tr>th{border-color:var(--border-grid);border-bottom-color:var(--border-strong)}
+main table:not(.ordt):has(th),main table.ordt{border-color:var(--border-grid)}
+main table:not(.ordt):has(th) tr.g-group>td{border-top:1px solid var(--border-strong);border-bottom-color:var(--border-grid)}
 main table:not(.ordt):has(th) td{background:var(--grid-bg-level-1)}
 main table:not(.ordt):has(th) tr.g-group>td{background:var(--group-bg)}
 main table:not(.ordt):has(th) tr.g-group.imp>td{background:var(--header-bg-level-5)}
-main table:not(.ordt):has(th) tfoot td,main table:not(.ordt):has(th) tr.g-total>td{background:var(--total-bg);border-top:1px solid var(--border-main);font-weight:700}
+main table:not(.ordt):has(th) tfoot td,main table:not(.ordt):has(th) tr.g-total>td{background:var(--total-bg);border-top:1px solid var(--border-strong);font-weight:700}
 /* soft tint for the first row-group zebra: only on tables that opt in with .g-zebra (never random) */
 main table.g-zebra:not(.ordt) tbody tr:nth-child(even)>td{background:var(--surface-soft)}
 
@@ -87,7 +92,8 @@ main .grid>.card.k:nth-child(5n+5){background:var(--tint-cyan)}
 aside nav a.nv:hover,aside nav details>summary:hover,aside nav a.sub:hover{background:var(--tint-gray)}
 aside nav a.nv.on,aside nav a.sub.on{background:var(--accent-tint)}
 aside nav details.mg>summary{background:var(--toolbar-bg-level-3)}
-aside nav details.mg[open]>summary{background:var(--module-bg-level-4);border-bottom-color:var(--module-border)}
+aside nav details.mg>summary{border-bottom-color:var(--border-grid)}
+aside nav details.mg[open]>summary{background:var(--module-bg-level-4);border-bottom-color:var(--border-grid)}
 aside nav details.mg>a.sub,aside nav details.rpg>summary{background:var(--grid-bg-level-1)}
 aside nav,aside nav a.nv,aside nav details.mg>summary{border-color:var(--border-soft)}
 .pgx .b{background:var(--surface-main);border-color:var(--border-main)}
@@ -109,6 +115,12 @@ main .card>:is(h2,h3):first-child,.ui-section-bar,.ui-submodule-bar{display:flex
 /* filter / search / date / show / bulk-action / pagination bars = Level 3 */
 .ocb,.pgx,.g-toolbar{background:var(--toolbar-bg-level-3)!important;border-color:var(--toolbar-border)!important}
 main form#bulk>.card:first-child,main .bulk-bar,main .filter-bar,main .search-bar,main .card:has(> form.row:first-child){background:var(--toolbar-bg-level-3);border-color:var(--toolbar-border)}
+/* ===== 7c. inputs, modal & detail sections use the same grid border ===== */
+main input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]),main select,main textarea{border-color:var(--border-grid)}
+main input:focus-visible,main select:focus-visible,main textarea:focus-visible{border-color:var(--primary)}
+main .card{border-color:var(--border-grid)}
+.ui-module-bar,.ui-section-bar,main>h1,main .card>:is(h2,h3):first-child{border-bottom-color:var(--border-strong)}
+dialog,[role=dialog],.modal,.modal-box{border-color:var(--border-grid)}
 /* ===== 8. compact action icons (desktop only; mobile keeps big touch targets) ===== */
 @media(min-width:761px){.ibar{gap:4px;margin-top:3px}.ibar .ib{width:24px;height:24px;border-radius:7px;box-shadow:none}.ibar .ib svg{width:12px;height:12px}.ibar .ib-call{height:24px;padding:0 9px;font-size:11px;border-radius:7px;gap:4px;box-shadow:none}.ibar .ib-call svg{width:11px;height:11px}}
 .dfx-menu{border-color:var(--border-main)}
