@@ -41,9 +41,10 @@ class ShipmentOutcome {
   }
   /** Small line under the status pill in the order list. */
   public static function rowNote(object $o, iterable $items): string {
-    if (!in_array($o->status, self::RETURN_STATUSES, true) || empty($o->return_type)) return '';
+    $flag = !empty($o->billing_flag) ? '<br><small style="color:#B91C1C;font-weight:800" title="'.e((string)($o->billing_flag_note ?? '')).'">⚠ '.e($o->billing_flag).' · needs review</small>' : '';
+    if (!in_array($o->status, self::RETURN_STATUSES, true) || empty($o->return_type)) return $flag;
     $s = self::summary($o, $items);
-    return '<br><small style="color:#9A3412;font-weight:700">'.($o->return_type === 'Partial' ? 'Partial Return' : 'Full Return').' · '.$s['ret'].' of '.$s['total'].' item'.($s['total'] == 1 ? '' : 's').' '.(in_array($o->status, ['Partial Return Received', 'Partial Returned', 'Returned'], true) ? 'returned' : 'returning').'</small>';
+    return '<br><small style="color:#9A3412;font-weight:700">'.($o->return_type === 'Partial' ? 'Partial Return' : 'Full Return').' · '.$s['ret'].' of '.$s['total'].' item'.($s['total'] == 1 ? '' : 's').' '.(in_array($o->status, ['Partial Return Received', 'Partial Returned', 'Returned'], true) ? 'returned' : 'returning').'</small>'.$flag;
   }
   /** Partial: total = received items only. Anything else: put the original figures back if they had been replaced. */
   private static function moneyFor(object $o, array $c, float $recV): array {
@@ -67,7 +68,7 @@ class ShipmentOutcome {
         DB::table('order_items')->where('id', $i->id)->update(['outcome'=>$out, 'ret_qty'=>$i->ret_qty, 'back_qty'=>null, 'outcome_at'=>$now]);
         $lines[] = $i->name.' ×'.$i->qty.' → '.($i->ret_qty > 0 ? ($i->ret_qty < $i->qty ? 'Received '.($i->qty - $i->ret_qty).', Return Pending '.$i->ret_qty : 'Return Pending') : 'Received');
       }
-      DB::table('orders')->where('id', $orderId)->update(['status'=>$c['status'], 'return_type'=>$c['type'], 'updated_at'=>$now] + $money);
+      DB::table('orders')->where('id', $orderId)->update(['status'=>$c['status'], 'return_type'=>$c['type'], 'billing_flag'=>null, 'billing_flag_note'=>null, 'updated_at'=>$now] + $money);
       if ($o->status !== $c['status']) DB::table('order_status_logs')->insert(['order_id'=>$orderId, 'user_id'=>Auth::id(), 'user_name'=>Auth::user()->name ?? 'System', 'from_status'=>$o->status, 'to_status'=>$c['status'], 'note'=>'Delivery outcome: '.($c['type'] ? $c['type'].' Return, '.$c['ret'].' of '.$c['total'].' items returning' : 'all items received').($note ? ' · '.$note : ''), 'created_at'=>$now, 'updated_at'=>$now]);
     });
     $fin = ($c['type'] === 'Partial') ? ' Final delivered amount ৳'.number_format($s['recV'], 2).' (original ৳'.number_format((float)($o->original_total ?? $o->total), 2).').' : '';

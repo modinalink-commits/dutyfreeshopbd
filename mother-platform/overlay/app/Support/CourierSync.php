@@ -30,24 +30,27 @@ class CourierSync {
   }
   public static function apply(object $o, array $i): bool {
     $raw = $i['order_status'] ?? $i['order_status_slug'] ?? null; if (!$raw) return false;
+    $isPathao = ($o->courier ?: 'Pathao') === 'Pathao'; $kind = $isPathao ? PathaoStatusSync::kind((string)$raw) : null;   // partial / return / received: handled by PathaoStatusSync
     $stage = self::stage($raw); $now = now(); $upd = ['courier_status'=>$raw, 'courier_stage'=>$stage, 'courier_synced_at'=>$now, 'updated_at'=>$now];
     if (isset($i['delivery_fee'])) $upd['courier_fee'] = $i['delivery_fee'];
-    if ($stage === 'Delivered') { $upd['collected_amount'] = $o->courier_cod ?? $o->total; $upd['courier_delivered_at'] = $o->courier_delivered_at ?: $now; }
+    if ($stage === 'Delivered' && $kind === 'partial') { $upd['courier_delivered_at'] = $o->courier_delivered_at ?: $now; if (($g = PathaoStatusSync::collected($i)) !== null) $upd['collected_amount'] = $g; }
+    elseif ($stage === 'Delivered') { $upd['collected_amount'] = $o->courier_cod ?? $o->total; $upd['courier_delivered_at'] = $o->courier_delivered_at ?: $now; }
     $changed = $stage !== $o->courier_stage;
     if ($changed) DB::table('courier_events')->insert(['order_id'=>$o->id, 'courier'=>$o->courier ?: 'Pathao', 'status'=>$raw, 'stage'=>$stage, 'location'=>$o->courier_location, 'happened_at'=>$now, 'created_at'=>$now, 'updated_at'=>$now]);
-    $new = self::orderStatus($stage);
+    $new = $kind ? null : self::orderStatus($stage);
     if ($new && $o->status !== $new && !in_array($o->status, ['Delivered','Returned','Cancel','Exchange Received','Partial Return Pending','Partial Return Received','Partial Returned'], true)) {
       $upd['status'] = $new;
       DB::table('order_status_logs')->insert(['order_id'=>$o->id, 'user_id'=>null, 'user_name'=>'Courier (auto)', 'from_status'=>$o->status, 'to_status'=>$new, 'note'=>($o->courier ?: 'Pathao').': '.$raw, 'created_at'=>$now, 'updated_at'=>$now]);
     }
     DB::table('orders')->where('id', $o->id)->update($upd);
-    return $changed;
+    if ($kind) { try { PathaoStatusSync::outcome((int)$o->id, $kind, $i); } catch (\Throwable $e) { report($e); } }
+    return $changed || $kind !== null;
   }
   /** Poll open parcels. Returns how many changed. */
   public static function run(int $limit = 40): int {
     if (!Pathao::configured() && !Carrybee::configured() && !Redx::configured() && !Steadfast::configured()) return 0;
     $n = 0;
-    $rows = DB::table('orders')->whereNotNull('consignment_id')->where(fn($q) => $q->whereNull('courier_stage')->orWhereNotIn('courier_stage', ['Delivered','Returned','Cancelled']))->orderByRaw('courier_synced_at asc nulls first')->limit($limit)->get();
+    $rows = DB::table('orders')->whereNotNull('consignment_id')->where(fn($q) => $q->whereNull('courier_stage')->orWhereNotIn('courier_stage', ['Delivered','Returned','Cancelled'])->orWhereIn('status', ['Shipment','Partial Return Pending','Return Pending','Partial Delivered','Late Delivery']))->orderByRaw('courier_synced_at asc nulls first')->limit($limit)->get();
     foreach ($rows as $o) { $i = $o->courier === 'Steadfast' ? (Steadfast::configured() ? Steadfast::info($o->consignment_id) : null) : ($o->courier === 'RedX' ? (Redx::configured() ? Redx::info($o->consignment_id) : null) : ($o->courier === 'Carrybee' ? (Carrybee::configured() ? Carrybee::info($o->consignment_id) : null) : (Pathao::configured() ? Pathao::info($o->consignment_id) : null))); if ($i && self::apply($o, $i)) $n++; elseif ($i === []) DB::table('orders')->where('id', $o->id)->update(['courier_synced_at'=>now()]); }
     Cache::put('courier.last_sync', now()->toDateTimeString(), 86400);
     return $n;

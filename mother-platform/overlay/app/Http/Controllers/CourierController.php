@@ -74,7 +74,11 @@ class CourierController extends Controller {
   public function webhook(Request $r) {
     $cid = $r->input('consignment_id'); $sec = Sms::secret('pathao_webhook_secret');
     if ($sec && !hash_equals($sec, (string)$r->header('X-PATHAO-Signature', $r->query('key', '')))) return response()->json(['ok'=>false], 403);
-    if ($cid && ($o = DB::table('orders')->where('consignment_id', (string)$cid)->first())) { $i = Pathao::info($o->consignment_id); if ($i) \App\Support\CourierSync::apply($o, $i); }
+    if ($cid && ($o = DB::table('orders')->where('consignment_id', (string)$cid)->first())) { $i = Pathao::info($o->consignment_id);
+      // The event name and the collected amount come from the push; the parcel itself is always re-read from Pathao.
+      $ev = strtolower((string)$r->input('event', '')); foreach (['collected_amount', 'delivery_fee'] as $k) if ($r->filled($k) && is_numeric($r->input($k))) $i[$k] = $r->input($k);
+      if ($ev !== '' && \App\Support\PathaoStatusSync::kind(str_replace(['order.', '-', '_'], ' ', $ev)) !== null && \App\Support\PathaoStatusSync::kind($i['order_status'] ?? '') === null) $i['order_status'] = ucwords(trim(str_replace(['order.', '-', '_'], ' ', $ev)));
+      if ($i) \App\Support\CourierSync::apply($o, $i); }
     return response()->json(['ok'=>true], 202);
   }
   public function settle(Request $r) {
