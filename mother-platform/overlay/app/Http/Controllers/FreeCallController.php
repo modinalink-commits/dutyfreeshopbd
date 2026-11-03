@@ -56,7 +56,7 @@ class FreeCallController extends Controller
     $rc = DB::table('customer_calls')->where('status', 'ringing')->where('ring_staff_id', $me)->first(); if ($rc) { $o['ring'] = F::ctx($rc); $o['ring']['ring_left'] = max(0, strtotime($rc->ring_expires_at . ' UTC') - time()); }
     $ac = $a->active_call_id ? DB::table('customer_calls')->find($a->active_call_id) : null;
     if ($ac && in_array($ac->status, ['accepted', 'connected'], true) && (int)$ac->assigned_staff_id === $me) {
-      DB::table('customer_calls')->where('id', $ac->id)->update(['agent_seen_at' => now()]);
+      if ((int)$r->query('own', 0) === (int)$ac->id) DB::table('customer_calls')->where('id', $ac->id)->update(['agent_seen_at' => now()]); // only the window that holds the audio keeps the call alive
       $o['active'] = F::ctx($ac) + ['answered_ts' => strtotime(($ac->connected_at ?: $ac->answered_at) . ' UTC'), 'ice' => F::ice($ac->call_uuid)]; $o['signals'] = F::signals($ac->id, 'agent', (int)$r->query('after', 0));
     } else {
       $lc = DB::table('customer_calls')->where('assigned_staff_id', $me)->whereNotNull('ended_at')->where('ended_at', '>=', now()->subMinutes(5))->orderByDesc('ended_at')->first();

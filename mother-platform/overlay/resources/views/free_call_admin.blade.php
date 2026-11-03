@@ -40,6 +40,7 @@ function showRing(r){if(g.view==='ring'&&g.ringId===r.id){var e=document.getElem
  g.view='ring';g.ringId=r.id;CD.className='fca-c on';CD.innerHTML='<div class="t"><span>📞 Incoming Free Call</span><span id="fcal">'+r.ring_left+'s</span></div>'+ctxHtml(r)+'<div class="fca-r"><button class="fca-ac" data-f="acc" data-id="'+r.id+'">✓ Accept</button><button class="fca-dc" data-f="dec" data-id="'+r.id+'">✕ Decline</button></div>';ring(true)}
 function showActive(a){if(g.view==='act'&&g.id===a.id){var e=document.getElementById('fcat');if(e)e.textContent=fmt(Date.now()/1000-(a.answered_ts||0));return}
  g.view='act';g.id=a.id;ring(false);CD.className='fca-c on';CD.innerHTML='<div class="t"><span>● On call</span><span>Free Call</span></div>'+ctxHtml(a)+'<div class="tm" id="fcat">'+fmt(Date.now()/1000-(a.answered_ts||0))+'</div><div class="fca-k"><button class="fca-gy" data-f="mute" id="fcam">🎤 Mute</button><button class="fca-dc" data-f="hang">Hang Up</button></div><textarea id="fcan" rows="2" placeholder="Add note…" maxlength="2000"></textarea>'}
+function passive(a){if(g.view==='pas'&&g.id===a.id)return;g.view='pas';g.id=a.id;ring(false);CD.className='fca-c on';CD.innerHTML='<div class="t"><span>● On call</span><span>Another window</span></div><div class="n">'+esc(a.name||'Customer')+'</div><div class="m">This call is being handled in another browser window or tab. If that window was closed, the call ends automatically in a few seconds.</div>'}
 function hide(){CD.className='fca-c';CD.innerHTML='';g.view='';ring(false)}
 function cleanup(){if(g.pc){try{g.pc.close()}catch(e){}g.pc=null}if(g.stream){g.stream.getTracks().forEach(function(t){t.stop()});g.stream=null}try{AU.srcObject=null}catch(e){}g.local=false;g.iceQ=[];g.rd=false;g.after=0;g.muted=false}
 function after(l){if(g.skip.indexOf(l.id)>-1)return;if(g.view==='post'&&g.id===l.id)return;g.view='post';g.id=l.id;CD.className='fca-c on';
@@ -52,19 +53,19 @@ function startPc(a){if(g.pc)return;g.pc=new RTCPeerConnection({iceServers:a.ice|
 function sigs(a,list){list.forEach(function(m){g.after=Math.max(g.after,m.id);if(!g.pc)return;
  if(m.type==='offer'){var o=JSON.parse(m.payload);g.pc.setRemoteDescription(o).then(function(){g.rd=true;g.iceQ.splice(0).forEach(function(c){g.pc.addIceCandidate(c).catch(function(){})});return g.pc.createAnswer()}).then(function(an){return g.pc.setLocalDescription(an)}).then(function(){post('/admin/free-calls/'+a.id+'/signal',{type:'answer',payload:JSON.stringify(g.pc.localDescription)})}).catch(function(){})}
  else if(m.type==='ice'){var c=JSON.parse(m.payload);if(g.rd)g.pc.addIceCandidate(c).catch(function(){});else g.iceQ.push(c)}})}
-function poll(){if(g.busy||g.dead)return;g.busy=true;fetch('/admin/free-calls/poll?after='+g.after,{headers:{'Accept':'application/json'},credentials:'same-origin'}).then(function(r){if(r.status===403||r.status===404||r.status===401){g.dead=true;P.classList.remove('on');return null}return r.json()}).then(function(j){g.busy=false;if(!j||!j.ok)return;
+function poll(){if(g.busy||g.dead)return;g.busy=true;fetch('/admin/free-calls/poll?after='+g.after+(g.local&&g.id?'&own='+g.id:''),{headers:{'Accept':'application/json'},credentials:'same-origin'}).then(function(r){if(r.status===403||r.status===404||r.status===401){g.dead=true;P.classList.remove('on');return null}return r.json()}).then(function(j){g.busy=false;if(!j||!j.ok)return;
   P.classList.add('on');P.className='fca-p on '+(j.eff==='available'?'av':j.eff==='busy'?'bz':'');if(document.activeElement!==S)S.value=j.status;
   Q.textContent=j.waiting+' waiting';Q.classList.toggle('on',j.waiting>0);P.title=j.on?'':'Free Call is OFF for customers';
   var nv=document.querySelectorAll('a[href="/admin/free-calls"]');
-  if(j.active){var a=j.active;if(!g.local&&!g.accepting){post('/admin/free-calls/'+a.id+'/hangup');hide();return}
-   showActive(a);if(g.stream&&!g.pc)startPc(a);sigs(a,j.signals||[]);return}
+  if(j.active){var a=j.active;if(!g.local&&!g.accepting){passive(a);return}
+   g.id=a.id;showActive(a);if(g.stream&&!g.pc)startPc(a);sigs(a,j.signals||[]);return}
   if(g.local&&!g.accepting){cleanup();hide()}
   if(j.ring&&!g.accepting){showRing(j.ring);return}
-  if(g.view==='ring'||g.view==='act'){hide()}
+  if(g.view==='ring'||g.view==='act'||g.view==='pas'){hide()}
   if(j.last&&!g.accepting){after(j.last)}else if(g.view==='post'&&!j.last){hide()}
  }).catch(function(){g.busy=false})}
 document.addEventListener('click',function(e){var b=e.target.closest('[data-f]');if(!b||!CD.contains(b))return;var f=b.getAttribute('data-f'),id=b.getAttribute('data-id');
- if(f==='acc'){g.accepting=true;b.disabled=true;ring(false);navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}}).then(function(s){g.stream=s;g.local=true;return post('/admin/free-calls/'+id+'/accept')}).then(function(j){g.accepting=false;if(!j.ok){cleanup();hide();alert(j.error||'Could not accept this call');}else{g.after=0;g.busy=false;poll()}}).catch(function(){g.accepting=false;cleanup();hide();alert('Microphone permission is needed to answer Free Calls.')})}
+ if(f==='acc'){g.accepting=true;g.id=+id;b.disabled=true;ring(false);navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}}).then(function(s){g.stream=s;g.local=true;return post('/admin/free-calls/'+id+'/accept')}).then(function(j){g.accepting=false;if(!j.ok){cleanup();hide();alert(j.error||'Could not accept this call');}else{g.after=0;g.busy=false;poll()}}).catch(function(){g.accepting=false;cleanup();hide();alert('Microphone permission is needed to answer Free Calls.')})}
  else if(f==='dec'){post('/admin/free-calls/'+id+'/decline');hide()}
  else if(f==='mute'){g.muted=!g.muted;if(g.stream)g.stream.getAudioTracks().forEach(function(t){t.enabled=!g.muted});b.classList.toggle('on',g.muted);b.textContent=g.muted?'🎤 Unmute':'🎤 Mute';post('/admin/free-calls/'+g.id+'/event',{e:g.muted?'muted':'unmuted'})}
  else if(f==='hang'){var n=(document.getElementById('fcan')||{}).value||'';var cid=g.id;post('/admin/free-calls/'+cid+'/hangup').then(function(){if(n.trim())return post('/admin/free-calls/'+cid+'/note',{note:n.trim()})}).then(function(){cleanup();hide();g.busy=false;poll()})}
