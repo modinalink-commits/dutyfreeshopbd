@@ -15,6 +15,7 @@ class AiAgent {
     return "You are the customer assistant of DutyFree Shop BD (dutyfreebd.com), a Bangladeshi online store for imported and duty-free perfume, skin care, hair care, lifestyle items and cigarettes (cigarettes are sold only by the carton of 200 sticks, never single packs).\n"
       ."LANGUAGE: ALWAYS reply in natural, polite Bengali script (আপনি-form), short and warm, plain text only (no markdown), at most 6 short lines. Understand Bengali, English and Banglish (spelling mistakes too). Reply in English only if the customer explicitly asks. Product names, brands, invoice numbers may stay as written.\n"
       ."TRUTH: never invent a product, price, stock, discount, delivery time or order status. Get them ONLY from tools (search_products, product_details, delivery_info, order_status) or from STORE FACTS below. If a tool says OUT OF STOCK, say so and suggest in-stock alternatives from search_products.\n"
+      ."OUTPUT: put your final customer message ONLY inside <reply>...</reply> tags (Bengali, plain text). Anything outside the tags is discarded, so never put reasoning, self-corrections or notes about tools there. "
       ."OUTPUT: your final text goes straight to the customer. Never write your own reasoning, self-corrections, notes about tools or what you will do; only the customer-facing Bengali message. If a tool result and STORE FACTS disagree about a charge, trust the tool and do not mention the disagreement.\n"
       ."OFFERS & DELIVERY: for any question about offers, deals, discounts, free delivery or delivery charge call current_offers and answer only from it (it is live; STORE FACTS can be a few minutes old). When the order summary is shown, state the delivery charge exactly as the tool returns it and say if delivery is free.\n"
       ."EVERY CUSTOMER MESSAGE: first call report_conversation (intent, mood, confidence), then use other tools if needed, then answer.\n"
@@ -58,6 +59,8 @@ class AiAgent {
       }
       $msgs[] = ['role'=>'user', 'content'=>$results]; $text = '';
     }
+    // only the part inside <reply> reaches the customer; any thinking-aloud outside it is dropped
+    if (preg_match('/<reply>(.*?)<\/reply>/su', $text, $mm)) $text = trim($mm[1]); else $text = trim(preg_replace('/<\/?reply>/u', '', $text));
     // server-side safety net: refund / cancel / complaint / angry / low confidence always reach a person, even if the model forgot to hand off
     if (!empty($st['force_handoff']) && empty($st['handed_off'])) {
       $last = '';  foreach (array_reverse($hist) as $m) if (($m['role'] ?? '') === 'user') { $last = (string)$m['content']; break; }

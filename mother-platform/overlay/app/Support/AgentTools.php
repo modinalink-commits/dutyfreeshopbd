@@ -13,7 +13,7 @@ class AgentTools {
       $s('delivery_info', 'Delivery charge options (inside / outside Chattogram city) and the live payment methods.'),
       $s('current_offers', 'LIVE offers right now: delivery charge rule (free or not), today\'s deals with prices, and the automatic discount rules. Call this for any question about offers, discounts, deals, free delivery or delivery charge.'),
       $s('order_status', 'Status, total, courier status and tracking code of an order. Requires BOTH the invoice number and the phone number used for that order.', ['invoice'=>$str, 'phone'=>$str], ['invoice', 'phone']),
-      $s('cart_add', 'Add a product to this conversation\'s cart (live price and stock are checked).', ['product_id'=>$int, 'qty'=>$int], ['product_id']),
+      $s('cart_add', 'Put a product in this conversation\'s cart with EXACTLY this quantity (it SETS the quantity, it does not add to what is already there; live price and stock are checked). Check cart_show first if unsure.', ['product_id'=>$int, 'qty'=>$int], ['product_id']),
       $s('cart_remove', 'Remove a product from the cart.', ['product_id'=>$int], ['product_id']),
       $s('cart_show', 'Show the cart with live prices and the order total (no delivery).'),
       $s('prepare_order', 'Validate the customer details and build the order summary for the customer to confirm. Nothing is placed yet.', ['name'=>$str, 'phone'=>$str, 'address'=>$str, 'area'=>['type'=>'integer', 'description'=>'1 = inside Chattogram city, 2 = outside'], 'note'=>$str], ['name', 'phone', 'address', 'area']),
@@ -82,7 +82,8 @@ class AgentTools {
         $p = DB::table('products')->where('published', true)->find((int)($in['product_id'] ?? 0)); if (!$p) return ['error'=>'product not found'];
         if ($p->stock <= 0) return ['error'=>'this product is OUT OF STOCK'];
         $q = max(1, min(20, (int)($in['qty'] ?? 1))); if ($p->stock < $q) return ['error'=>'only '.(int)$p->stock.' in stock'];
-        $st['cart'][$p->id] = min(20, (int)($st['cart'][$p->id] ?? 0) + $q); unset($st['pending']);
+        if (time() - (int)($st['cart_at'] ?? 0) > 21600) $st['cart'] = []; $st['cart_at'] = time();
+        $st['cart'][$p->id] = min(20, $q); unset($st['pending']);
         return ['added'=>$p->name, 'qty_in_cart'=>$st['cart'][$p->id]];
       }
       case 'cart_remove': { unset($st['cart'][(int)($in['product_id'] ?? 0)], $st['pending']); return ['removed'=>true]; }
