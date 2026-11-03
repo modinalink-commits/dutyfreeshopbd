@@ -93,7 +93,8 @@ class OrderRevisionController extends Controller {
     elseif ($dmode === 'keep') { $disc = min($sub, $oldDisc); $dnote = 'Original discount kept (৳'.number_format($disc).')'; }
     else {
       if (!$P['discount']) { $errs[] = 'You do not have permission to change the discount manually.'; $disc = min($sub, $oldDisc); }
-      else { $disc = max(0, min($sub, round((float)($opt['discount_manual'] ?? 0), 2))); $dnote = 'Manual discount ৳'.number_format($disc).' by '.Auth::user()->name; $dmeta = ['discount_type'=>'Manual Discount', 'discount_rule'=>'Admin override (order revision)', 'discount_pct'=>null, 'discount_source'=>'Manual by '.Auth::user()->name, 'discount_by'=>'Manual', 'customer_category'=>$auto['profile']['category'] ?? null, 'membership_status'=>null]; }
+      else { $disc = max(0, min($sub, round((float)($opt['discount_manual'] ?? 0), 2))); $dnote = 'Manual discount ৳'.number_format($disc).' by '.Auth::user()->name; $dmeta = ['discount_type'=>'Manual Discount', 'discount_rule'=>'Admin override (order revision)', 'discount_pct'=>null, 'discount_source'=>'Manual by '.Auth::user()->name, 'discount_by'=>'Manual', 'customer_category'=>$auto['profile']['category'] ?? null, 'membership_status'=>null];
+        if (OrderDiscount::hasLines()) $dmeta['discount_lines'] = OrderDiscount::linesJson([OrderDiscount::manualLine($disc, Auth::user()->name, trim((string)($opt['discount_reason'] ?? '')) ?: 'Order revision override')]); }
     }
     if ($auto['coupon_error'] && $o->coupon && $dmode === 'auto') $warn[] = 'Coupon '.$o->coupon.': '.$auto['coupon_error'].' (no longer applied).';
     // ---- delivery
@@ -178,9 +179,10 @@ class OrderRevisionController extends Controller {
       }
       if (!empty($c['voice_lines'])) \App\Support\Voice::onOrder((string)$o->phone, (int)$o->id, $c['voice_lines']);
       $upd = ['total'=>$c['total'], 'discount'=>$c['disc'], 'shipping'=>$c['ship'], 'updated_at'=>now()];
-      if ($c['disc_meta']) $upd += $c['disc_meta']; if ($c['disc'] <= 0 && $c['dmode'] !== 'keep') $upd += ['discount_by'=>null];
+      if ($c['disc_meta']) $upd += $c['disc_meta']; if (OrderDiscount::hasLines() && $c['disc'] <= 0 && $c['dmode'] !== 'keep') $upd += ['discount_lines'=>null]; if ($c['disc'] <= 0 && $c['dmode'] !== 'keep') $upd += ['discount_by'=>null];
       if ($c['dcols']) $upd += $c['dcols'];
       DB::table('orders')->where('id', $o->id)->update($upd);
+      if ($c['dmode'] !== 'keep' && OrderDiscount::hasLines()) { try { OrderDiscount::logChange((int)$o->id, OrderDiscount::lines($o), isset($upd['discount_lines']) && $upd['discount_lines'] ? json_decode($upd['discount_lines'], true) : []); } catch (\Throwable $e) {} }
       if (abs($c['disc'] - $c['old_disc']) > 0.009) DB::table('order_discount_logs')->insert(['order_id'=>$o->id, 'kind'=>$c['dmode'] === 'manual' ? 'override' : 'applied', 'label'=>mb_substr('Order revision: '.($c['disc_note'] ?? ''), 0, 200), 'prev_amount'=>$c['old_disc'], 'new_amount'=>$c['disc'], 'user_id'=>Auth::id(), 'user_name'=>Auth::user()->name, 'created_at'=>now(), 'updated_at'=>now()]);
       $sum = $this->summary($c);
       DB::table('order_staff_comments')->insert(['order_id'=>$o->id, 'user_id'=>Auth::id(), 'user_name'=>Auth::user()->name, 'category'=>'Order revision', 'body'=>mb_substr('Order changed ('.$d['reason'].'): '.$sum.' — total ৳'.number_format($c['old_total']).' → ৳'.number_format($c['total']).(!empty($d['note']) ? '. '.$d['note'] : '').(!empty($o->consignment_id) ? ' ⚠ Courier parcel already created — update it.' : ''), 0, 1000), 'created_at'=>now(), 'updated_at'=>now()]);

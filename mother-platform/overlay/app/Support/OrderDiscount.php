@@ -96,11 +96,53 @@ class OrderDiscount {
     $sum = 0; foreach ($cand as &$x) { $x['applied'] = in_array($x['key'], $sel); if ($x['applied']) $sum += $x['amount']; } unset($x);
     return ['mode' => $mode, 'lines' => $cand, 'total' => min(round($sum, 2), $sub), 'coupon_error' => $cerr, 'free_ship' => $free, 'profile' => $profile];
   }
+  private static ?bool $hl = null;
+  /** The lines column may not exist for a moment while a release is rolling out; never break an order for it. */
+  public static function hasLines(): bool { return self::$hl ??= \Illuminate\Support\Facades\Schema::hasColumn('orders', 'discount_lines'); }
+  /** One normalized entry per discount (what the order page, list and invoice show). */
+  public static function lineRows(array $applied, string $by, bool $auto = true, ?string $reason = null): array {
+    $out = [];
+    foreach ($applied as $x) {
+      $pct = $x['pct'] ?? null;
+      $out[] = ['name' => (string)($x['type'] ?? 'Discount'), 'kind' => $pct !== null ? 'Percentage' : 'Fixed', 'pct' => $pct !== null ? (float)$pct : null, 'amount' => round((float)($x['amount'] ?? 0), 2),
+        'source' => (string)($x['source'] ?? ''), 'rule' => (string)($x['rule'] ?? ''), 'code' => $x['code'] ?? ($x['refcode'] ?? null), 'auto' => $auto, 'by' => $auto ? 'System' : $by, 'reason' => $reason, 'at' => now()->toIso8601String()];
+    }
+    return $out;
+  }
+  /** A single manual discount (staff typed it): needs a reason and a name. */
+  public static function manualLine(float $amount, string $by, ?string $reason, string $name = 'Manual Discount'): array {
+    return ['name' => $name, 'kind' => 'Fixed', 'pct' => null, 'amount' => round($amount, 2), 'source' => 'Manual by '.$by, 'rule' => $reason ?: 'Admin override', 'code' => null, 'auto' => false, 'by' => $by, 'reason' => $reason, 'at' => now()->toIso8601String()];
+  }
+  public static function linesJson(array $rows): ?string { return $rows ? json_encode($rows, JSON_UNESCAPED_UNICODE) : null; }
+  /** Discount lines of an order. Orders from before per-line storage get what was saved on the order (names, one source, one total) and say so. */
+  public static function lines(object $o): array {
+    $j = json_decode((string)($o->discount_lines ?? ''), true); if (is_array($j) && $j) return $j;
+    $d = round((float)($o->discount ?? 0), 2); if ($d <= 0) return [];
+    $names = array_values(array_filter(array_map('trim', explode(' + ', (string)($o->discount_type ?? '')))));
+    $by = (string)($o->discount_by ?? ''); $manual = $by === 'Manual';
+    if (count($names) <= 1) return [['name' => $names[0] ?? 'Discount', 'kind' => $o->discount_pct !== null ? 'Percentage' : 'Fixed', 'pct' => $o->discount_pct !== null ? (float)$o->discount_pct : null, 'amount' => $d, 'source' => (string)($o->discount_source ?? ''), 'rule' => (string)($o->discount_rule ?? ''), 'code' => $o->coupon ?? null, 'auto' => !$manual, 'by' => $manual ? ($by ?: 'Staff') : 'System', 'reason' => null, 'at' => null, 'legacy' => true]];
+    $out = []; foreach ($names as $n) $out[] = ['name' => $n, 'kind' => '', 'pct' => null, 'amount' => null, 'source' => (string)($o->discount_source ?? ''), 'rule' => (string)($o->discount_rule ?? ''), 'code' => null, 'auto' => !$manual, 'by' => $manual ? ($by ?: 'Staff') : 'System', 'reason' => null, 'at' => null, 'legacy' => true];
+    return $out;
+  }
+  /** One short text per discount for the compact order-list cell. */
+  public static function tips(object $o): array {
+    $t = []; foreach (self::lines($o) as $x) $t[] = $x['name'].(!empty($x['pct']) ? ' '.rtrim(rtrim(number_format((float)$x['pct'], 2), '0'), '.').'%' : '').(($x['amount'] ?? null) !== null ? '  -৳'.number_format((float)$x['amount']) : '').(empty($x['auto']) ? ' (manual)' : '');
+    return $t;
+  }
+  /** Staff-visible history when a discount line changes: "Membership Discount: ৳100 → ৳150". */
+  public static function logChange(int $orderId, array $old, array $new): void {
+    $o = []; foreach ($old as $l) if (isset($l['amount']) && $l['amount'] !== null) $o[$l['name']] = ($o[$l['name']] ?? 0) + (float)$l['amount'];
+    $n = []; foreach ($new as $l) $n[$l['name']] = ($n[$l['name']] ?? 0) + (float)($l['amount'] ?? 0);
+    foreach (array_unique(array_merge(array_keys($o), array_keys($n))) as $name) {
+      $a = $o[$name] ?? 0.0; $b = $n[$name] ?? 0.0; if (abs($a - $b) < 0.009) continue;
+      OrderActivity::log($orderId, 'discount_line_changed', '৳'.number_format($a, 2), '৳'.number_format($b, 2), 'Discount Changed — '.$name.': ৳'.number_format($a, 2).' → ৳'.number_format($b, 2));
+    }
+  }
   /** Columns saved on the order so the reason for a discount is always visible later. */
   public static function meta(array $applied, array $profile, string $by, float $amount): array {
     $j = fn($k) => $applied ? mb_substr(implode(' + ', array_filter(array_column($applied, $k))), 0, 250) : null;
     $pcts = array_filter(array_column($applied, 'pct'), fn($v) => $v !== null);
     return ['discount_type' => $j('type'), 'discount_rule' => $j('rule'), 'discount_pct' => count($applied) === 1 ? ($applied[0]['pct'] ?? null) : null, 'discount_source' => $j('source'),
-      'discount_by' => $amount > 0 ? $by : null, 'customer_category' => $profile['category'] ?? null, 'membership_status' => ($profile['membership'] ?? null) ? $profile['membership'].($profile['membership_name'] ? ' – '.$profile['membership_name'] : '') : null];
+      'discount_by' => $amount > 0 ? $by : null, 'discount_lines' => self::hasLines() ? self::linesJson(self::lineRows($applied, $by, $by === 'Automatic')) : null, 'customer_category' => $profile['category'] ?? null, 'membership_status' => ($profile['membership'] ?? null) ? $profile['membership'].($profile['membership_name'] ? ' – '.$profile['membership_name'] : '') : null];
   }
 }

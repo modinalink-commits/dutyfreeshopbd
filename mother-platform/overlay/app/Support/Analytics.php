@@ -16,7 +16,7 @@ class Analytics {
   public static function menu(): array {
     return [
       'overview'  => ['Overview', ['dashboard'=>'Analytics Dashboard']],
-      'sales'     => ['Sales Reports', ['sales-summary'=>'Sales Summary','product-sales'=>'Product Wise Sales Report','category-sales'=>'Category Wise Sales Report','daily-sales'=>'Daily Sales Report','monthly-sales'=>'Monthly Sales Report']],
+      'sales'     => ['Sales Reports', ['sales-summary'=>'Sales Summary','product-sales'=>'Product Wise Sales Report','category-sales'=>'Category Wise Sales Report','daily-sales'=>'Daily Sales Report','monthly-sales'=>'Monthly Sales Report','discount-report'=>'Discount Report (by type)']],
       'profit'    => ['Profit & Loss', ['profit-loss'=>'Profit / Loss Report','sale-profit'=>'Sale Profit Report','margin'=>'Margin Report']],
       'inventory' => ['Inventory Reports', ['stock-tracking'=>'Product Stock Tracking','category-stock'=>'Category Wise Stock Report','stock-log'=>'Stock Log History','low-stock'=>'Low Stock Report','out-of-stock'=>'Out of Stock Report']],
       'purchase'  => ['Purchase & Supplier', ['purchase-report'=>'Purchase Report','supplier-report'=>'Supplier Report']],
@@ -77,6 +77,7 @@ class Analytics {
     $T = 'text'; $N = 'num'; $M = 'money'; $P = 'pct'; $I = 'img'; $S = 'badge'; $Dt = 'date';
     return match ($slug) {
       'sales-summary' => ['date'=>['Date',$Dt],'invoice'=>['Invoice',$T],'customer'=>['Customer',$T],'product'=>['Product',$T],'store'=>['Store',$T],'qty'=>['Qty',$N],'sales'=>['Sales',$M],'cost'=>['Cost',$M],'profit'=>['Profit',$M],'status'=>['Status',$S]],
+      'discount-report' => ['discount'=>['Discount type',$T],'orders'=>['Orders',$N],'amount'=>['Discount given',$M],'share'=>['Share of all discount',$P]],
       'product-sales' => ['image'=>['',$I],'product'=>['Product',$T],'sku'=>['SKU',$T],'store'=>['Store',$T],'qty'=>['Qty sold',$N],'gross'=>['Gross sales',$M],'discount'=>['Discount',$M],'cost'=>['Cost',$M],'profit'=>['Profit',$M],'margin'=>['Margin %',$P]],
       'category-sales' => ['category'=>['Category',$T],'store'=>['Store',$T],'products'=>['Total products',$N],'qty'=>['Qty sold',$N],'sales'=>['Total sales',$M],'profit'=>['Profit',$M],'return_rate'=>['Return rate',$P]],
       'daily-sales','monthly-sales' => ['date'=>[$slug === 'daily-sales' ? 'Date' : 'Month',$Dt],'store'=>['Store',$T],'orders'=>['Orders',$N],'qty'=>['Qty',$N],'sales'=>['Sales',$M],'cost'=>['Cost',$M],'profit'=>['Profit',$M],'aov'=>['Avg order value',$M]],
@@ -92,7 +93,7 @@ class Analytics {
       'new-returning' => ['date'=>['Date',$Dt],'new_customers'=>['New customers',$N],'returning_orders'=>['Returning orders',$N],'orders'=>['Orders',$N],'new_share'=>['New share',$P]],
       'repeat-rate' => ['date'=>['Month',$Dt],'customers'=>['Customers',$N],'repeat'=>['Repeat customers',$N],'rate'=>['Repeat rate',$P]],
       'top-customers','customer-orders-summary' => ['name'=>['Customer',$T],'phone'=>['Mobile',$T],'category'=>['Category',$S],'orders'=>['Orders',$N],'delivered'=>['Delivered',$N],'returned'=>['Returned',$N],'cancelled'=>['Cancelled',$N],'spend'=>['Total spend',$M],'score'=>['Reliability',$P],'risk'=>['Risk',$S]],
-      'customer-orders' => ['date'=>['Date',$Dt],'invoice'=>['Invoice',$T],'customer'=>['Customer',$T],'phone'=>['Mobile',$T],'product'=>['Products',$T],'store'=>['Store',$T],'total'=>['Order total',$M],'status'=>['Status',$S]],
+      'customer-orders' => ['date'=>['Date',$Dt],'invoice'=>['Invoice',$T],'customer'=>['Customer',$T],'phone'=>['Mobile',$T],'product'=>['Products',$T],'store'=>['Store',$T],'items'=>['Order value',$M],'discount'=>['Discount received',$M],'dtext'=>['Discount breakdown',$T],'total'=>['Final order value',$M],'status'=>['Status',$S]],
       'cancel-rate' => ['date'=>['Date',$Dt],'orders'=>['Orders',$N],'cancelled'=>['Cancelled',$N],'rate'=>['Cancel rate',$P]],
       'return-rate' => ['date'=>['Date',$Dt],'orders'=>['Orders',$N],'returned'=>['Returned',$N],'rate'=>['Return rate',$P]],
       'courier-wise' => ['courier'=>['Courier',$T],'parcels'=>['Total parcels',$N],'delivered'=>['Delivered',$N],'returned'=>['Returned',$N],'pending'=>['Pending',$N],'success'=>['Success rate',$P],'cod'=>['COD collected',$M],'settle_pending'=>['Settlement pending',$M],'settle_received'=>['Settlement received',$M]],
@@ -113,6 +114,7 @@ class Analytics {
     $split = $f['view'] === 'store';
     $rows = match ($slug) {
       'sales-summary','sale-profit','customer-orders','delivered-orders','returned-orders' => self::orderList($slug, $f),
+      'discount-report' => self::discountReport($f),
       'product-sales' => self::productSales($f, $split),
       'category-sales' => self::categorySales($f, $split),
       'daily-sales' => self::periodSales($f, $split, 'YYYY-MM-DD'),
@@ -151,9 +153,11 @@ class Analytics {
     [$w, $b] = self::w($ff, $basis);
     if ($slug === 'delivered-orders') $w .= ' and o.status in '.self::DONE;
     if ($slug === 'returned-orders') $w .= ' and o.status in '.self::RET;
-    $sql = "select ".self::day()." date, o.invoice, o.customer_name customer, o.phone, x.names product, st.name store, x.qty qty, (x.items - o.discount) sales, x.cost cost, coalesce(o.courier_fee,0) courier_fee, (x.items - o.discount - x.cost) profit, o.total total, coalesce(o.courier,'') courier, o.status status from orders o left join stores st on st.id = o.store_id".self::lat().$w." order by o.created_at desc limit ".self::LIMIT;
+    $dlc = \App\Support\OrderDiscount::hasLines() ? 'o.discount_lines' : 'null';
+    $sql = "select ".self::day()." date, o.invoice, o.customer_name customer, o.phone, x.names product, st.name store, x.qty qty, (x.items - o.discount) sales, x.cost cost, coalesce(o.courier_fee,0) courier_fee, (x.items - o.discount - x.cost) profit, o.total total, x.items items, o.discount discount, o.discount_type dtype, $dlc dlines, coalesce(o.courier,'') courier, o.status status from orders o left join stores st on st.id = o.store_id".self::lat().$w." order by o.created_at desc limit ".self::LIMIT;
     $rows = self::arr(self::sel($sql, $b));
     foreach ($rows as &$r) {
+      if ($slug === 'customer-orders') { $r['items'] = round((float)$r['items']); $r['discount'] = round((float)$r['discount']); $r['dtext'] = (float)$r['discount'] > 0 ? implode('; ', \App\Support\OrderDiscount::tips((object)['discount'=>$r['discount'], 'discount_lines'=>$r['dlines'], 'discount_type'=>$r['dtype'], 'discount_pct'=>null, 'discount_source'=>null, 'discount_rule'=>null, 'discount_by'=>null])) : ''; }
       if ($slug === 'sale-profit') { $r['profit'] = (float)$r['profit'] - (float)$r['courier_fee']; $r['margin'] = (float)$r['sales'] > 0 ? round($r['profit'] / (float)$r['sales'] * 100, 1) : 0; }
     }
     return $rows;
@@ -176,6 +180,19 @@ class Analytics {
     $rows = self::arr(self::sel($sql, $b));
     $cnt = []; foreach (self::arr(DB::select('select category_id, count(*) n from products group by category_id')) as $x) $cnt[$x['category_id']] = $x['n'];
     foreach ($rows as &$r) { $r['products'] = (int)($cnt[$r['cid']] ?? 0); $r['sales'] = round((float)$r['sales']); $r['profit'] = $r['sales'] - (float)$r['cost']; $r['return_rate'] = (float)$r['all_qty'] > 0 ? round($r['ret_qty'] / $r['all_qty'] * 100, 1) : 0; }
+    return $rows;
+  }
+
+  /** Total discount given, split by discount type (First Order, Membership, Coupon, Manual…). Orders from before per-offer storage are shown under the type name saved on the order. */
+  private static function discountReport(array $f): array {
+    [$w, $b] = self::w($f, 'valid');
+    $lines = \App\Support\OrderDiscount::hasLines();
+    $new = $lines ? "select o.id, e->>'name' nm, coalesce((e->>'amount')::numeric, 0) amt from orders o cross join lateral jsonb_array_elements(o.discount_lines::jsonb) e$w and coalesce(o.discount_lines,'') <> ''" : null;
+    $old = "select o.id, coalesce(nullif(o.discount_type,''), 'Discount (type not recorded)') nm, o.discount amt from orders o$w and o.discount > 0".($lines ? " and coalesce(o.discount_lines,'') = ''" : '');
+    $sql = "select nm discount, count(distinct id) orders, sum(amt) amount from (".($new ? "$new union all " : '')."$old) t group by nm order by 3 desc";
+    $rows = self::arr(self::sel($sql, $lines ? array_merge($b, $b) : $b));
+    $tot = array_sum(array_map(fn($r) => (float)$r['amount'], $rows));
+    foreach ($rows as &$r) { $r['amount'] = round((float)$r['amount']); $r['share'] = $tot > 0 ? round(100 * (float)$r['amount'] / $tot, 1) : 0; }
     return $rows;
   }
 

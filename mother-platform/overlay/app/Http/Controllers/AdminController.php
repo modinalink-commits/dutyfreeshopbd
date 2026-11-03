@@ -235,7 +235,12 @@ class AdminController extends Controller {
     $dcols = ['delivery_zone'=>mb_substr((string)$dv['zone'], 0, 160), 'delivery_original'=>$dv['original'], 'delivery_free_discount'=>$dv['free_discount'], 'delivery_manual_adj'=>$adj, 'delivery_manual_by'=>$adj !== null ? Auth::user()->name : null, 'delivery_note'=>$dv['reason'] ? mb_substr($dv['reason'], 0, 200) : null];
     $d['total'] = round($sub - $disc + $shipIn, 2);
     $manual = $changed || $labels !== array_column($kept, 'label');
-    if ($manual && $disc > 0) { $meta = ['discount_type'=>'Manual Discount', 'discount_rule'=>'Admin override', 'discount_pct'=>null, 'discount_source'=>'Manual by '.Auth::user()->name, 'discount_by'=>'Manual', 'customer_category'=>$auto['profile']['category'], 'membership_status'=>$auto['profile']['membership'].($auto['profile']['membership_name'] ? ' – '.$auto['profile']['membership_name'] : '')]; }
+    if ($manual && $disc > 0) { $meta = ['discount_type'=>'Manual Discount', 'discount_rule'=>'Admin override', 'discount_pct'=>null, 'discount_source'=>'Manual by '.Auth::user()->name, 'discount_by'=>'Manual', 'customer_category'=>$auto['profile']['category'], 'membership_status'=>$auto['profile']['membership'].($auto['profile']['membership_name'] ? ' – '.$auto['profile']['membership_name'] : '')];
+      if (\App\Support\OrderDiscount::hasLines()) {
+        $lr = ($can && isset($d['disc_manual']) && $d['disc_manual'] !== '') ? [\App\Support\OrderDiscount::manualLine((float)$d['disc_manual'], Auth::user()->name, 'Admin override at order creation')] : \App\Support\OrderDiscount::lineRows($kept, 'Automatic', true);
+        if ($can && !empty($d['disc_extra'])) $lr[] = \App\Support\OrderDiscount::manualLine((float)$d['disc_extra'], Auth::user()->name, 'Extra discount at order creation', 'Extra Discount');
+        $meta['discount_lines'] = \App\Support\OrderDiscount::linesJson($lr);
+      } }
     else $meta = \App\Support\OrderDiscount::meta($kept, $auto['profile'], 'Automatic', $disc);
     if ($disc <= 0) $meta['discount_by'] = null;
     $cu = DB::table('customers')->where('phone', $d['phone'])->orderBy('id')->first();
