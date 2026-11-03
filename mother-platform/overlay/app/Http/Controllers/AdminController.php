@@ -151,7 +151,7 @@ class AdminController extends Controller {
       $a = $r->filled('from') ? \Carbon\Carbon::parse($r->from.' '.$ft, $tz)->utc() : null; $b = $r->filled('to') ? \Carbon\Carbon::parse($r->to.' '.$tt.':59', $tz)->utc() : null; $range = [$a, $b]; } } catch (\Throwable $e) { $range = null; }
     if ($range) { if ($range[0]) $q->where('created_at', '>=', $range[0]); if ($range[1]) $q->where('created_at', '<=', $range[1]); }
     $orders = $q->paginate($per)->withQueryString();
-    $items = DB::table('order_items as i')->leftJoin('products as p','p.id','=','i.product_id')->whereIn('i.order_id', collect($orders->items())->pluck('id'))->select('i.*', DB::raw('coalesce(p.image,(select pp.image from products pp where pp.name = i.name limit 1)) as image'))->get()->groupBy('order_id');
+    $items = DB::table('order_items as i')->leftJoin('products as p','p.id','=','i.product_id')->whereIn('i.order_id', collect($orders->items())->pluck('id'))->select('i.*', 'p.sku as sku', DB::raw('coalesce(p.image,(select pp.image from products pp where pp.name = i.name limit 1)) as image'))->get()->groupBy('order_id');
     $cq = DB::table('orders')->select('status', DB::raw('count(*) c'))->groupBy('status'); if ($range) { if ($range[0]) $cq->where('created_at', '>=', $range[0]); if ($range[1]) $cq->where('created_at', '<=', $range[1]); } $counts = $cq->pluck('c','status');
     $intel = \App\Support\CustomerIntel::forOrders($orders->items());
     $__ids = collect($orders->items())->pluck('id')->all(); $dupHint = $__ids ? \App\Support\OrderDedupe::possible($__ids) : []; $dupInv = $__ids ? DB::table('orders as d')->join('orders as p','p.id','=','d.duplicate_of_order_id')->whereIn('d.id', $__ids)->pluck('p.invoice','d.id')->all() : [];
