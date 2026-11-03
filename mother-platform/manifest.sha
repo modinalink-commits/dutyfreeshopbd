@@ -50,7 +50,7 @@ d787924ace3fa42cc66a3de321e4e94e784006d8 resources/views/panels/employees.blade.
 2f840d53881d8aeaf0c5959161774787e5f540bc database/migrations/2026_10_31_000005_storefront.php
 65414d9e2fbe5f16f1fbf1551cce91276e9f30f9 app/Console/Commands/MotherSyncFeed.php
 ecbb664e3f3d73bc64e5a40e6897deee9adb0317 app/Http/Controllers/StoreController.php
-35694bea1ff9a4b12262492c044c3f56b5b270d9 resources/views/store/layout.blade.php
+cab48ab23be7e23687a420f2af56611cc6a8f717 resources/views/store/layout.blade.php
 c2e55fb1ce8845dc356edd488dfcadfec6c96924 resources/views/store/card.blade.php
 368779d82636a73d690dc1f7a28ed58a0ba17712 resources/views/store/home.blade.php
 6aa949a4e1ea5de5298971728076fad706a3c256 resources/views/store/category.blade.php
@@ -63,6 +63,7 @@ dc4dd0a7a69c180a2c75ef92ebb2057d28be5d32 resources/views/store/checkout.blade.ph
 03f8e0d0a55ce2cfd1251778fac95d2fee3d46e1 resources/views/store/wishlist.blade.php
 d162155635ee8d0ea432ac994aa1a1942c3cbe47 resources/views/store/pager.blade.php
 e75f162e466d0a2e2958bfaff473552e686e1543 public/logo.webp
+b221e86002b382f45e5dfcc4fa7ad59f06357323 public/og-icon.png
 7cfaa7f28db18b9d9aceca06e00b63221df26e66 public/dutyfree-bd-logo.png
 c94a778fefb027fc04d7101883ca0bf17fd7a5ec public/icon.png
 1a6e76d76afa1f22238f0dca146dc4568ac7fbb5 public/og.png

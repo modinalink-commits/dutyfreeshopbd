@@ -63,6 +63,7 @@ resources/views/store/checkout.blade.php
 resources/views/store/wishlist.blade.php
 resources/views/store/pager.blade.php
 public/logo.webp
+public/og-icon.png
 public/dutyfree-bd-logo.png
 public/icon.png
 public/og.png
