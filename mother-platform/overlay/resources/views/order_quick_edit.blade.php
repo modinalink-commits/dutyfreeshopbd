@@ -99,5 +99,6 @@ document.addEventListener('click',function(e){var t=e.target.closest&&e.target.c
  if(g){var m=g.parentNode.querySelector('.qe-menu');menus(m);m.classList.toggle('on');return}
  if(t){menus(null);var k=K[t.getAttribute('data-qe')];if(k)k();return}
  if(!(e.target.closest&&e.target.closest('.qe-menu')))menus(null)});
+try{var __q=new URLSearchParams(location.search).get('qe');if(__q&&K[__q]){setTimeout(function(){K[__q]()},150);history.replaceState(null,'',location.pathname)}}catch(_){}
 })();
 </script>@endverbatim
