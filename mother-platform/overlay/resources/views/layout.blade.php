@@ -78,7 +78,6 @@ main input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=ran
 main input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]):not(:focus),main select:not(:focus),main textarea:not(:focus),main .pre button,main .rf{border-color:var(--border-grid)}
 main input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]):not(:focus):hover,main select:not(:focus):hover,main textarea:not(:focus):hover{border-color:var(--border-hover)}
 main .btn:hover,main button:hover,main a.btn:hover{box-shadow:inset 0 0 0 1px rgba(15,23,42,.32)}
-main .chip:hover{border-color:rgba(15,23,42,.38)!important}
 main .pre button:hover,main .rf:hover{border-color:var(--border-hover)!important;background-color:#EEF1F4}
 main .btn:focus-visible,main button:focus-visible,main select:focus-visible,main a.chip:focus-visible{outline:2px solid #FF5A00;outline-offset:1px}
 </style></head><body>
