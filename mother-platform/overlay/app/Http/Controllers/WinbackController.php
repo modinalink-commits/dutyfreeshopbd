@@ -32,13 +32,22 @@ class WinbackController extends Controller
     $stages = $ev()->selectRaw('e.stage_days, max(e.pct) as pct, count(*) as sent, sum(case when e.used_at is not null then 1 else 0 end) as used, coalesce(sum(e.used_total),0) as rev, coalesce(sum(e.used_discount),0) as disc')->groupBy('e.stage_days')->orderBy('e.stage_days')->get();
     $users = $ev()->whereNotNull('e.used_at')->leftJoin('customers as c', 'c.id', '=', 'e.customer_id')->leftJoin('orders as o', 'o.id', '=', 'e.used_order_id')->orderByDesc('e.used_at')->select('e.*', 'o.*', 'c.name as cname', 'e.id as eid', 'e.phone as ephone', 'e.created_at as sent_at', 'e.coupon_code as ecode', 'e.stage_days as estage', 'e.pct as epct', 'e.used_at as eused', 'e.used_discount as edisc', 'e.used_total as etotal')->limit(2000)->get();
     $rows = $users->map(fn($u) => ['name' => $u->cname, 'phone' => $u->ephone, 'stage' => $u->estage, 'pct' => (float)$u->epct, 'code' => $u->ecode ?: 'Auto', 'invoice' => $u->invoice_no ?? $u->invoice ?? ('#' . $u->used_order_id), 'total' => (float)$u->etotal, 'disc' => (float)$u->edisc, 'sent' => $u->sent_at, 'used' => $u->eused]);
+    $sentq = fn() => $ev()->leftJoin('customers as c', 'c.id', '=', 'e.customer_id')->where('e.cycle_order_id', '>', 0)->selectRaw("e.created_at as sent_at, c.name as cname, e.phone, e.stage_days, e.pct, e.coupon_code, e.channels, e.used_at")->orderByDesc('e.id');
+    $smsMap = []; foreach (DB::table('sms_logs')->where('event', 'winback')->orderBy('id')->get(['to', 'status']) as $l) $smsMap[substr(preg_replace('/\D/', '', (string)$l->to), -11)] = $l->status;
+    if ($r->query('csv') === 'sent') {
+      $out = fopen('php://temp', 'w+'); fwrite($out, "\xEF\xBB\xBF"); fputcsv($out, ['Sent at (Dhaka)', 'Customer', 'Phone', 'Stage (days)', 'Discount %', 'Coupon', 'Channels', 'SMS status', 'Ordered with offer']);
+      foreach ($sentq()->cursor() as $x) fputcsv($out, [\Carbon\Carbon::parse($x->sent_at, 'UTC')->timezone('Asia/Dhaka')->format('Y-m-d H:i'), $x->cname, $x->phone, $x->stage_days, $x->pct, $x->coupon_code, $x->channels, $smsMap[substr($x->phone, -11)] ?? '', $x->used_at ? 'Yes' : 'No']);
+      rewind($out); $csv = stream_get_contents($out); fclose($out);
+      return response($csv, 200, ['Content-Type' => 'text/csv; charset=utf-8', 'Content-Disposition' => 'attachment; filename="winback-sent-' . now('Asia/Dhaka')->format('Ymd') . '.csv"']);
+    }
+    $sentTotal = $sentq()->reorder()->count(); $sentRows = $sentq()->limit(300)->get();
     if ($r->boolean('csv')) {
       $out = fopen('php://temp', 'w+'); fwrite($out, "\xEF\xBB\xBF"); fputcsv($out, ['Customer', 'Phone', 'Stage (days)', 'Discount %', 'Coupon', 'Invoice', 'Order total', 'Discount given', 'Offer sent', 'Used at']);
       foreach ($rows as $x) fputcsv($out, [$x['name'], $x['phone'], $x['stage'], $x['pct'], $x['code'], $x['invoice'], $x['total'], $x['disc'], $x['sent'], $x['used']]);
       rewind($out); $csv = stream_get_contents($out); fclose($out);
       return response($csv, 200, ['Content-Type' => 'text/csv; charset=utf-8', 'Content-Disposition' => 'attachment; filename="winback-usage-' . now('Asia/Dhaka')->format('Ymd') . '.csv"']);
     }
-    return view('winback_report', ['stages' => $stages, 'rows' => $rows, 'from' => $from, 'to' => $to]);
+    return view('winback_report', ['stages' => $stages, 'rows' => $rows, 'from' => $from, 'to' => $to, 'sentTotal' => $sentTotal, 'sentRows' => $sentRows, 'smsMap' => $smsMap]);
   }
   public function save(Request $r) {
     $days = (array)$r->input('days', []); $pcts = (array)$r->input('pct', []); $st = [];
@@ -55,5 +64,5 @@ class WinbackController extends Controller
     return redirect('/admin/winback')->with('ok', 'Saved');
   }
   public function test(Request $r) { $m = W::testSend((string)$r->input('phone'), (float)$r->input('pct', 0)); return redirect('/admin/winback')->with('ok', $m); }
-  public function run() { W::tick(true); return redirect('/admin/winback')->with('ok', 'Reactivation run finished'); }
+  public function run() { W::put('blast', '1'); W::put('blast_at', now()->toIso8601String()); \App\Support\Procure::audit('winback.run_all', 'Win-back: send to everyone now', null, []); return redirect('/admin/winback')->with('ok', 'Sending started: offers go out in batches of 200 every minute until everyone eligible has received theirs. See the report for the sent list.'); }
 }

@@ -48,16 +48,17 @@ class Winback
 
   public static function tick(bool $force = false): void {
     if (!self::on()) return; $today = now('Asia/Dhaka')->toDateString();
+    $blast = self::set('blast', '0') === '1'; if ($blast) $force = true; // "Run now": send to everyone eligible now, in batches on every worker cycle, until the list is finished
     if (!$force) { $h = (int)now('Asia/Dhaka')->format('H'); $stt = self::set('start', ''); if ($stt !== '' && $today < $stt) return; if (self::set('last_run') === $today || $h < (int)self::set('win_from', '14') || $h >= (int)self::set('win_to', '17')) return; } // offers go out only 2 PM to 5 PM Dhaka time
     $st = self::stages(); if (!$st) return; $sent = 0; $exp = max(1, (int)self::set('expiry', '30')); $mode = in_array(self::set('mode', 'auto'), ['coupon', 'fixed'], true) ? self::set('mode', 'auto') : 'auto'; $lastStage = end($st)[0];
     $ch = array_filter(['sms' => self::set('sms', '1') === '1', 'push' => self::set('push', '1') === '1', 'notif' => self::set('notif', '1') === '1']);
-    $room = min(40, self::dailyCap() - self::sentToday()); if ($room <= 0) return; $done = self::doneSet();
+    $room = $blast ? 200 : min(40, self::dailyCap() - self::sentToday()); if ($room <= 0) return; $done = self::doneSet();
     $queue = self::lastDelivered(); self::rank($queue); // serial order: best customers (highest spend) first, then longest inactive
     foreach ($queue as $p => $x) {
       $d = self::days($x['at']); $s = self::stageFor($d); if (!$s) continue;
       if (($done[$p . '|' . $x['oid']] ?? 0) >= $s[0]) continue; // each stage once per cycle
       $c = DB::table('customers')->whereRaw('right(phone,11) = ?', [$p])->where('blocked', false)->first(); if (!$c) continue;
-      if ($sent >= $room) return; // small batch per tick + daily cap: the rest continue on the next tick / tomorrow
+      if ($sent >= $room) { if ($blast) { try { \App\Support\Sms::flush(200); } catch (\Throwable $e) {} } return; } // small batch per tick + daily cap: the rest continue on the next tick / tomorrow
       $code = null;
       if ($mode === 'coupon') {
         $code = 'WB-' . strtoupper(substr(md5($p . $x['oid'] . $s[0] . microtime()), 0, 6));
@@ -75,7 +76,9 @@ class Winback
       if (!empty($ch['push']) || !empty($ch['notif'])) { try { Push::notify((int)$c->id, 'coupon', 'Welcome Back Offer — ' . $v['{pct}'] . '% ছাড়', self::render(self::set($final ? 'sms_final' : 'sms_text', $final ? self::SMS_FINAL : self::SMS), $v), '/account/coupons'); } catch (\Throwable $e) {} }
       $sent++;
     }
+    if ($blast) { self::put('blast', '0'); self::put('blast_done', now()->toIso8601String()); } // list finished
     self::put('last_run', $today);
+    if ($blast || $sent > 0) { try { \App\Support\Sms::flush($blast ? 200 : 25); } catch (\Throwable $e) {} }
   }
 
   /** 'phone|cycleOrderId' => highest stage already sent (one query instead of one per customer). */
