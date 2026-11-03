@@ -9,4 +9,4 @@
 @media (prefers-reduced-motion:reduce){.cls .cls-s{animation:none}}
 </style>
 @endonce
-@if($__s > 0)<span class="cls" title="Customer Level: {{ is_array($level) ? $level['name'] : '' }}{{ $orders !== null ? ' · '.$orders.' successful orders' : '' }}" style="display:inline-flex;align-items:center;white-space:nowrap;line-height:1;cursor:help"><span class="cls-s" style="color:#B8860B;font-size:13px;letter-spacing:.5px">{{ str_repeat('★', $__s) }}</span></span>@endif
+@if($__s > 0)<span class="cls" title="Customer Level: {{ is_array($level) ? $level['name'] : '' }}{{ $orders !== null ? ' · '.$orders.' successful orders' : '' }}" style="display:inline-flex;align-items:center;white-space:nowrap;line-height:1;cursor:help"><span class="cls-s" style="color:#B8860B;font-size:17px;letter-spacing:1px">{{ str_repeat('★', $__s) }}</span></span>@endif
