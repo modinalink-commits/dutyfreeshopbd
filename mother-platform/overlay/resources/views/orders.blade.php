@@ -24,6 +24,7 @@
 /* v1.318 uniform toolbar controls: same height/radius/font, light tint fill, 1.5px border that darkens on hover */
 #ocb .r1 .owt select,#ocb .r1 .owt input[name=q],#ocb .r1 .owt .rf,#ocb .r1 .pre .opb,#ocb .r1 #oexs .dfx-btn,#ocb .r1 .owt .obk button,#ocb .r1>a.btn{box-sizing:border-box;height:26px!important;min-height:0!important;border-radius:8px!important;font-size:11px!important;font-weight:600!important;line-height:1!important;border:1.5px solid #94A3B8!important;background:#F1F5F9!important;color:#0B1220!important;box-shadow:none!important;filter:none!important;transition:border-color .15s ease,background-color .15s ease}
 #ocb .r1 .owt input[name=q]{background:#F8FAFC!important;font-weight:500!important}
+#ocb .r1>.owt{flex-wrap:wrap!important;overflow:visible!important;white-space:normal!important;row-gap:5px!important;column-gap:3px;cursor:auto!important;padding-top:2px!important;padding-bottom:2px!important}#ocb .r1>.owt .obk,#ocb .r1>.owt .owf,#ocb .r1>.owt .q{flex-wrap:wrap!important;row-gap:5px}#ocb .r1>.owt .q{margin-left:0!important}
 #ocb .r1 .owt select,#ocb .r1 .owt .rf,#ocb .r1 .pre .opb{padding:0 6px!important}
 #ocb .r1 .owt .obk button{padding:0 8px!important}
 #ocb .r1 .owt .obk button:nth-of-type(1){background:#DBEAFE!important;color:#1E40AF!important;border-color:#3B82F6!important}
