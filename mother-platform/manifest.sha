@@ -1,7 +1,7 @@
 fe43f8b6cb422cca81ee18b74d3972f77e7852de database/migrations/2026_10_31_000001_mother_core.php
 cbbbaa3668c6bf5442190a97b7f1864997adde41 routes/web.php
 b9cf8555d6fb5e676f63a548f5a964a0f36be94f app/Models/Mother.php
-3b67c3f668657a1423d10c14feea0b6e1fa85ff3 app/Http/Controllers/AdminController.php
+329c0c2095495b2b6d09c7e6bf5190ccfd1a6155 app/Http/Controllers/AdminController.php
 bd49f23ea0895af93bed5374937115c21911b0cd app/Console/Commands/MotherInstall.php
 9eec69bda97ce10644aa47d125c5590734c23c3d resources/views/layout.blade.php
 7ba1a8252b36e7db33e40d8be3ea5ec2cd241fb7 resources/views/login.blade.php

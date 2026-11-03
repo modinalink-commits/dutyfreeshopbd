@@ -14,6 +14,7 @@ class AdminController extends Controller {
   public function logout(Request $r) { Auth::logout(); $r->session()->invalidate(); $r->session()->regenerateToken(); return redirect('/admin/login'); }
   public function dashboard(Request $r) {
     $tz = 'Asia/Dhaka'; $now = now($tz); $A = \App\Support\Analytics::class; $cd = fn(array $ff) => \Illuminate\Support\Facades\Cache::remember('dash.v1.'.md5(json_encode($ff)), 45, fn() => $A::dashboard($ff));
+    $c60 = fn(string $k, $a, callable $fn) => \Illuminate\Support\Facades\Cache::remember('dash.v2.'.$k.'.'.md5(json_encode($a)), 60, $fn);
     $safe = function (callable $fn, $def = []) { try { return $fn(); } catch (\Throwable $e) { \Log::warning('dashboard: '.$e->getMessage()); return $def; } };
     $range = in_array($r->query('range'), ['today', '7', '30', 'custom'], true) ? $r->query('range') : '30';
     $dOk = fn($k) => preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)$r->query($k));
@@ -48,10 +49,10 @@ class AdminController extends Controller {
     $incOpen = $safe(fn() => (int)DB::table('incomplete_orders')->where('status','open')->count(), 0);
     $nc = function ($a, $b) use ($oq, $tz) { $s0 = \Carbon\Carbon::parse($a, $tz)->startOfDay()->utc(); $e0 = \Carbon\Carbon::parse($b, $tz)->endOfDay()->utc();
       return (int)$oq()->where('created_at','>=',$s0)->where('created_at','<=',$e0)->where('status','<>','Cancel')->whereNotExists(fn($q) => $q->select(DB::raw(1))->from('orders as p')->whereColumn('p.phone','orders.phone')->whereColumn('p.created_at','<','orders.created_at'))->distinct()->count('phone'); };
-    $newC = $safe(fn() => $nc($f['from'], $f['to']), 0); $newCp = $safe(fn() => $nc($fp['from'], $fp['to']), 0);
+    $newC = $safe(fn() => $c60('nc', [$f['from'], $f['to'], $storeId, $ch], fn() => $nc($f['from'], $f['to'])), 0); $newCp = $safe(fn() => $c60('nc', [$fp['from'], $fp['to'], $storeId, $ch], fn() => $nc($fp['from'], $fp['to'])), 0);
     // sales trend: at least the last 7 days, filled with zeros for quiet days
     $N = max(7, $days); $tEnd = $range === 'custom' ? $to : $now; $tf = $A::filters(['from'=>$tEnd->copy()->subDays($N-1)->format('Y-m-d'), 'to'=>$tEnd->format('Y-m-d')] + $sf);
-    $tr = collect($safe(fn() => $A::trend($tf)))->keyBy(fn($r) => substr($r['date'], 0, 10)); $trend = [];
+    $tr = collect($safe(fn() => $c60('trend', $tf, fn() => $A::trend($tf))))->keyBy(fn($r) => substr($r['date'], 0, 10)); $trend = [];
     for ($i = $N-1; $i >= 0; $i--) { $d = $tEnd->copy()->subDays($i); $k = $d->format('Y-m-d'); $trend[] = ['d'=>$d->format('j M'), 'sales'=>(float)($tr[$k]['sales'] ?? 0), 'orders'=>(int)($tr[$k]['orders'] ?? 0), 'delivered'=>(int)($tr[$k]['delivered'] ?? 0), 'returned'=>(int)($tr[$k]['returned'] ?? 0), 'profit'=>$canFin ? (float)($tr[$k]['profit'] ?? 0) : 0]; }
     $sp = fn($fn) => array_map($fn, $trend);
     $spS = $sp(fn($t) => $t['sales']); $spO = $sp(fn($t) => $t['orders']); $spA = $sp(fn($t) => $t['orders'] ? $t['sales']/$t['orders'] : 0); $spP = $canFin ? $sp(fn($t) => $t['profit']) : null;
@@ -70,11 +71,11 @@ class AdminController extends Controller {
     ];
     $stores = collect($safe(fn() => $A::byStore($f)))->map(fn($r) => [$r['store'], (float)$r['sales']]);
     $max = max(1, $stores->max(fn($r) => $r[1]) ?? 1);
-    $topProducts = collect($safe(fn() => $A::rows('product-sales', $f)['rows']))->sortByDesc(fn($r) => (float)$r['gross'])->take(5)->map(fn($r) => [$r['product'], (int)$r['qty'], (float)$r['gross'], (string)($r['image'] ?? '')])->values();
+    $topProducts = collect($safe(fn() => $c60('prod', $f, fn() => $A::rows('product-sales', $f)['rows'])))->sortByDesc(fn($r) => (float)$r['gross'])->take(5)->map(fn($r) => [$r['product'], (int)$r['qty'], (float)$r['gross'], (string)($r['image'] ?? '')])->values();
     $catAll = collect($safe(fn() => $A::categorySalesChart($f)))->sortByDesc(fn($r) => (float)$r['value'])->values();
     $cats = $catAll->take(4)->map(fn($r) => [$r['label'], (float)$r['value']])->values();
     if ($catAll->count() > 4) $cats->push(['Others', (float)$catAll->slice(4)->sum(fn($r) => (float)$r['value'])]);
-    $topCust = collect($safe(fn() => $A::rows('top-customers', $f)['rows']))->sortByDesc(fn($r) => (float)$r['spend'])->take(5)->map(fn($r) => [(string)$r['name'], (string)$r['category'], (int)$r['orders'], (float)$r['spend'], (string)$r['risk'], (string)$r['phone']])->values();
+    $topCust = collect($safe(fn() => $c60('topc', $f, fn() => $A::rows('top-customers', $f)['rows'])))->sortByDesc(fn($r) => (float)$r['spend'])->take(5)->map(fn($r) => [(string)$r['name'], (string)$r['category'], (int)$r['orders'], (float)$r['spend'], (string)$r['risk'], (string)$r['phone']])->values();
     $couriers = collect($safe(fn() => $A::courierChart($f)))->take(5)->map(fn($r) => [$r['courier'], (int)$r['parcels'], (float)$r['success'], (int)$r['delivered'], (int)$r['returned']])->values();
     $sb = $safe(function () use ($oq, $f, $tz) { $s0 = \Carbon\Carbon::parse($f['from'], $tz)->startOfDay()->utc(); $e0 = \Carbon\Carbon::parse($f['to'], $tz)->endOfDay()->utc();
       return $oq()->where('created_at','>=',$s0)->where('created_at','<=',$e0)->select('store_id', DB::raw("sum(case when status in ('Delivered','Partial Delivered','Late Delivery') then 1 else 0 end) d"), DB::raw("sum(case when status in ('Returned','Return Pending') then 1 else 0 end) r"))->groupBy('store_id')->get()->keyBy('store_id'); }, collect());
