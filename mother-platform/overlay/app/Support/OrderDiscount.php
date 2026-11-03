@@ -52,7 +52,26 @@ class OrderDiscount {
     $cat = ($c && strtolower((string)($c->type ?? '')) === 'vip') ? 'VIP' : ($st['n'] > 0 ? 'Regular' : 'New');
     return ['category' => $cat, 'membership' => $t ? 'Active' : 'Inactive', 'membership_name' => $t['name'] ?? null, 'orders' => $st['n'], 'found' => (bool)$c];
   }
+  /** Applies the product "Quantity prices" (Buy 2-5) for every channel that did not already do it (website cart does it itself and sets ctx qprice). Lines priced by hand are left alone. */
   public static function compute(?string $phone, float $sub, ?string $coupon = null, array $ctx = []): array {
+    if (array_key_exists('qprice', $ctx) || empty($ctx['items'])) return self::computeCore($phone, $sub, $coupon, $ctx);
+    $bs = 0.0;
+    try {
+      $want = []; foreach ((array)$ctx['items'] as $i) { $pid = (int)($i['product_id'] ?? 0); if ($pid > 0 && (int)($i['qty'] ?? 0) > 0) $want[$pid][] = [(float)($i['price'] ?? 0), (int)$i['qty']]; }
+      if ($want) foreach (DB::table('products')->whereIn('id', array_keys($want))->get(['id','price','buy2_price','buy3_price','buy4_price','buy5_price']) as $p) {
+        $n = 0; foreach ($want[$p->id] as [$pr, $q]) if (abs($pr - (float)$p->price) < 0.5) $n += $q;
+        if ($n >= 2) $bs += max(0, round((float)$p->price * $n - \App\Http\Controllers\StoreController::bundleLine($p, $n), 2));
+      }
+    } catch (\Throwable $e) { report($e); $bs = 0.0; }
+    $bs = min($bs, $sub);
+    $r = self::computeCore($phone, $sub - $bs, $coupon, $ctx + ['qprice' => $bs > 0]);
+    if ($bs > 0) {
+      array_unshift($r['lines'], ['key' => 'qprice', 'type' => 'Bundle Price', 'rule' => 'Quantity price (Buy 2-5)', 'source' => 'Product bundle price', 'pct' => null, 'amount' => round($bs, 2), 'label' => 'Bundle price – saved '.number_format($bs).' TK', 'applied' => true]);
+      $r['total'] = min(round($r['total'] + $bs, 2), $sub);
+    }
+    return $r;
+  }
+  public static function computeCore(?string $phone, float $sub, ?string $coupon = null, array $ctx = []): array {
     $web = !empty($ctx['web']); $qty = (int)($ctx['qty'] ?? 0); $prof = !$web || !empty($ctx['verified']);
     $c = $phone ? self::customer($phone) : null; $ex = !empty($ctx['exclude_order']) ? (int)$ctx['exclude_order'] : null; $st = $phone ? self::stats($phone, $c, $ex) : ['n' => 0, 's' => 0.0]; $profile = $phone ? self::profile($phone) : ['category' => 'New', 'membership' => 'Inactive', 'membership_name' => null, 'orders' => 0, 'found' => false];
     $cand = []; $cerr = null; $free = false;
