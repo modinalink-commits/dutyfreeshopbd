@@ -26,7 +26,7 @@ class CourierSync {
   }
   /** Order stage that a courier stage should drive (null = leave the order alone). */
   public static function orderStatus(string $stage): ?string {
-    return ['Delivered'=>'Delivered','Returned'=>'Returned','Cancelled'=>'Cancel','Failed Delivery'=>'Late Delivery'][$stage] ?? null;
+    return ['Delivered'=>'Delivered','Returned'=>'Return Pending','Cancelled'=>'Cancel','Failed Delivery'=>'Late Delivery'][$stage] ?? null;
   }
   public static function apply(object $o, array $i): bool {
     $raw = $i['order_status'] ?? $i['order_status_slug'] ?? null; if (!$raw) return false;

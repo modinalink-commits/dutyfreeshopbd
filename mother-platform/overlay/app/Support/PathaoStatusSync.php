@@ -24,6 +24,8 @@ class PathaoStatusSync {
 
   /** $action comes from PathaoStatusMapper (the admin-editable map): partial_pending | partial_received | exchange_pending | exchange_received | return_pending | returned. Safe to run twice for the same event. */
   public static function outcome(int $id, string $action, array $i = []): void {
+    // Received / Returned are set only when OUR warehouse confirms the goods in hand (the Received button). The courier result only ever makes an order "Pending".
+    $action = ['partial_received'=>'partial_pending', 'exchange_received'=>'exchange_pending', 'returned'=>'return_pending'][$action] ?? $action;
     $o = DB::table('orders')->find($id); if (!$o || !in_array($o->status, self::OPEN, true)) return;
     if ($action === 'exchange_pending') { if (in_array($o->status, ['Shipment', 'Late Delivery'], true)) { DB::table('orders')->where('id', $id)->update(['return_type' => 'Exchange']); self::setStatus($o, 'Exchange Pending', 'Pathao: Exchange'); } return; }
     if ($action === 'exchange_received') { if ($o->status === 'Exchange Pending') { DB::table('orders')->where('id', $id)->update(['return_received_at' => now()]); self::setStatus($o, 'Exchange Received', 'Pathao: exchange received'); } return; }

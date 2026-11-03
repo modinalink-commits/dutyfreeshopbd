@@ -8,11 +8,8 @@ class PathaoStatusMapper {
   const ACTIONS = [
     'none' => 'No order change (courier tracking only)',
     'partial_pending' => 'Partial Return Pending',
-    'partial_received' => 'Partial Return Received',
     'exchange_pending' => 'Exchange Pending',
-    'exchange_received' => 'Exchange Received',
     'return_pending' => 'Return Pending',
-    'returned' => 'Returned (whole parcel back)',
   ];
   public static function key(?string $raw): string { return trim(preg_replace('/[^a-z0-9]+/', ' ', strtolower((string)$raw))); }
   private static function all(): array { return Cache::remember('pathao.status_map', 60, fn() => DB::table('pathao_status_map')->get()->keyBy('raw_key')->all()); }

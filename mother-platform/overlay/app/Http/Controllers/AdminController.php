@@ -175,16 +175,18 @@ class AdminController extends Controller {
       }
       $d['ids'] = array_values(array_diff($d['ids'], $skip));
     }
-    DB::transaction(function () use ($d, &$n) {
+    $locked = 0;
+    DB::transaction(function () use ($d, &$n, &$locked) {
       foreach (DB::table('orders')->whereIn('id',$d['ids'])->lockForUpdate()->get() as $o) {
         if ($o->status === $d['status']) continue;
+        if (\App\Support\ShipmentOutcome::manualBlock($o, $d['status'])) { $locked++; continue; }
         DB::table('orders')->where('id',$o->id)->update(['status'=>$d['status'],'updated_at'=>now()]);
         DB::table('order_status_logs')->insert(['order_id'=>$o->id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'from_status'=>$o->status,'to_status'=>$d['status'],'note'=>'Bulk action','created_at'=>now(),'updated_at'=>now()]);
         $n++;
       }
     });
-    if ($r->expectsJson()) return response()->json(['success'=>true,'moved'=>$n,'status'=>$d['status'],'booked'=>$okB,'parcel_errors'=>array_slice($failB, 0, 6)]);
-    return back()->with('ok', "$n orders moved to {$d['status']}");
+    if ($r->expectsJson()) return response()->json(['success'=>true,'moved'=>$n,'status'=>$d['status'],'booked'=>$okB,'parcel_errors'=>array_slice($failB, 0, 6) + ($locked ? [$locked.' order(s) skipped: the courier decides their delivery/return status'] : [])]);
+    return back()->with('ok', "$n orders moved to {$d['status']}".($locked ? " · $locked skipped (courier decides their delivery/return status)" : ''));
   }
   public function orderNew(Request $r) {
     $pre = null; if ($r->filled('inc') && ($row = DB::table('incomplete_orders')->find((int)$r->query('inc')))) $pre = ['inc'=>$row->id, 'phone'=>$row->phone, 'name'=>$row->name, 'address'=>$row->address, 'district'=>$row->district, 'note'=>$row->note, 'items'=>json_decode($row->items ?: '[]', true) ?: []];
@@ -287,6 +289,7 @@ class AdminController extends Controller {
   public function orderStatus(Request $r, $id) {
     $d = $r->validate(['status'=>'required|in:'.implode(',',Mother::STAGES),'note'=>'nullable|string|max:500','sched_date'=>'nullable|date_format:Y-m-d','sched_time'=>'nullable|string|max:8']);
     $o = DB::table('orders')->find($id); abort_unless($o, 404);
+    if ($mb = \App\Support\ShipmentOutcome::manualBlock($o, $d['status'])) return back()->with('bad', $mb);
     if (in_array($d['status'], \App\Support\ShipmentOutcome::SYSTEM_ONLY, true) && $o->status !== $d['status']) return back()->with('bad', 'Partial Return statuses are calculated from the items. Use "Delivery Outcome" on the order page, then "Receive Partial Return".');
     if ($d['status'] === 'Scheduled') {
       [$sok, $smsg] = \App\Support\OrderSchedule::set((int)$id, $d['sched_date'] ?? null, $d['sched_time'] ?? null, $d['note'] ?? null, Auth::id(), Auth::user()->name);
@@ -308,6 +311,7 @@ class AdminController extends Controller {
   public function orderQuickStatus(Request $r, $id) {
     $d = $r->validate(['status'=>'required|in:'.implode(',',Mother::STAGES),'note'=>'nullable|string|max:500','sched_date'=>'nullable|date_format:Y-m-d','sched_time'=>'nullable|string|max:8']);
     $o = DB::table('orders')->find($id); abort_unless($o, 404);
+    if ($mb = \App\Support\ShipmentOutcome::manualBlock($o, $d['status'])) return response()->json(['success'=>false,'message'=>$mb]);
     if (in_array($d['status'], \App\Support\ShipmentOutcome::SYSTEM_ONLY, true) && $o->status !== $d['status']) return response()->json(['success'=>false,'message'=>'Partial Return statuses are calculated from the items. Use Delivery Outcome on the order page.']);
     if ($d['status'] === 'Scheduled') {
       if (empty($d['sched_date'])) return response()->json(['success'=>false,'need_schedule'=>true,'message'=>'Scheduled date is required']);

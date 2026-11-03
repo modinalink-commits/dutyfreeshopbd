@@ -16,6 +16,14 @@ class ShipmentOutcome {
   const FULL = ['Return Pending', 'Returned'];
   const RETURN_STATUSES = ['Partial Return Pending', 'Partial Return Received', 'Partial Returned', 'Return Pending', 'Returned', 'Exchange Pending', 'Exchange Received'];
   /** Statuses that only this module may set (a person must not pick a parcel type by hand). */
+  /** Statuses the courier decides once a parcel exists. Staff cannot set them by hand; the courier result sets them and the warehouse only confirms receipt. */
+  const COURIER_SET = ['Shipment', 'Late Delivery', 'Partial Delivered', 'Delivered', 'Partial Return Pending', 'Partial Return Received', 'Partial Returned', 'Return Pending', 'Returned', 'Exchange Pending', 'Exchange Received'];
+  public static function courierLocked(object $o): bool { return !empty($o->consignment_id) && in_array($o->status, self::COURIER_SET, true); }
+  /** Message when a manual move is not allowed, null when it is. */
+  public static function manualBlock(object $o, string $to): ?string {
+    if ($o->status === $to || !self::courierLocked($o) || !in_array($to, self::COURIER_SET, true)) return null;
+    return 'This parcel is with the courier, so its delivery / return status comes from the courier result and cannot be changed by hand. Use the Received button when the goods reach the warehouse.';
+  }
   const SYSTEM_ONLY = ['Partial Return Pending', 'Partial Return Received', 'Partial Returned'];
 
   /** @param iterable $items rows with qty and ret_qty. @return array{total:int,ret:int,rec:int,type:?string,status:string} */
