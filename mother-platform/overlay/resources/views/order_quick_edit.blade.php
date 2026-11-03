@@ -21,6 +21,7 @@ $qd = ['id'=>(int)$o->id, 'inv'=>$o->invoice, 'status'=>$o->status, 'name'=>(str
 .qe-st{display:inline-flex;align-items:center;border:1px solid var(--bd);border-radius:8px}.qe-st button{background:#fff;color:var(--n);border:0;font-size:18px;padding:4px 12px}.qe-st input{width:54px;text-align:center;border:0;border-left:1px solid var(--bd);border-right:1px solid var(--bd);border-radius:0}
 .qe-rm{opacity:.45;text-decoration:line-through}.qe-sr{border:1px solid #E5E7EB;border-radius:8px;margin-top:4px;max-height:160px;overflow:auto}.qe-sr div{padding:7px 10px;cursor:pointer;font-size:13px}.qe-sr div:hover{background:#FFF1E8}
 </style>
+<style>html.qpop,html.qpop body{background:transparent!important}html.qpop body>*:not(.qe-ov){display:none!important}</style><script>if(window.name==='qpop')document.documentElement.className+=' qpop'</script>
 <script type="application/json" id="qeData">{!! json_encode($qd, JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS) !!}</script>
 @verbatim<script>
 (function(){
@@ -30,7 +31,7 @@ function mny(n){return '৳'+Number(n||0).toLocaleString('en-US',{maximumFractio
 function q(s,r){return (r||document).querySelector(s)}
 var ov=document.createElement('div');ov.className='qe-ov';ov.innerHTML='<div class="qe-box" role="dialog" aria-modal="true" aria-labelledby="qeT"><div class="qe-h"><b id="qeT"></b><button type="button" class="qe-x" aria-label="Close">×</button></div><div class="qe-b" id="qeB"></div></div>';document.body.appendChild(ov);
 var box=q('.qe-box',ov),B=q('#qeB',ov);
-function close(){ov.classList.remove('on')}
+function close(){ov.classList.remove('on');if(POP)tell('qe-close')}
 ov.addEventListener('click',function(e){if(e.target===ov||e.target.className==='qe-x')close()});
 document.addEventListener('keydown',function(e){if(e.key==='Escape'){close();menus(null)}});
 function show(title,html,wide){q('#qeT',ov).textContent=title;B.innerHTML=html;box.className='qe-box'+(wide?' w':'');ov.classList.add('on');var f=q('input:not([type=hidden]),select,textarea',B);if(f)try{f.focus()}catch(e){}}
@@ -39,7 +40,7 @@ function opts(list,sel){return list.map(function(x){return '<option'+(x===sel?' 
 function conf(){return '<label style="display:flex;gap:6px;align-items:center;font-weight:500"><input type="checkbox" name="customer_confirmed" value="1" style="width:auto"> Customer confirmed this change</label>'}
 function post(url,data,form){var e=q('.qe-e',form),ok=q('.qe-ok',form),b=q('button[type=submit]',form);e.style.display='none';b.disabled=true;var t=b.textContent;b.textContent='Processing...';
  fetch(url,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':D.csrf},body:JSON.stringify(data)}).then(function(r){return r.json().catch(function(){return {ok:false,error:'Unexpected response ('+r.status+').'}})}).then(function(j){
-  if(j&&j.ok){ok.textContent=j.msg||'Saved.';ok.style.display='block';setTimeout(function(){location.reload()},900)}else{e.textContent=(j&&(j.error||j.message))||'Could not save.';e.style.display='block';b.disabled=false;b.textContent=t}
+  if(j&&j.ok){ok.textContent=j.msg||'Saved.';ok.style.display='block';setTimeout(function(){POP?tell('qe-done'):location.reload()},900)}else{e.textContent=(j&&(j.error||j.message))||'Could not save.';e.style.display='block';b.disabled=false;b.textContent=t}
  }).catch(function(){e.textContent='Network error. Nothing was changed - try again.';e.style.display='block';b.disabled=false;b.textContent=t})}
 function jform(title,html,label,build,url,wide){show(title,'<form novalidate>'+html+foot(label)+'</form>',wide);var f=q('form',B);
  f.addEventListener('click',function(e){if(e.target.getAttribute&&e.target.getAttribute('data-x'))close()});
@@ -49,6 +50,7 @@ function ck(f){return f.elements.customer_confirmed&&f.elements.customer_confirm
 function err(f,m){var e=q('.qe-e',f);e.textContent=m;e.style.display='block'}
 function pform(title,action,html,label){show(title,'<form method="post" action="'+action+'"><input type="hidden" name="_token" value="'+esc(D.csrf)+'">'+html+foot(label)+'</form>');q('form',B).addEventListener('click',function(e){if(e.target.getAttribute&&e.target.getAttribute('data-x'))close()})}
 function blocked(){return '<p style="color:#6B7280;font-size:13px">This order is in <b>'+esc(D.status)+'</b>, so this cannot be changed here.</p>'}
+var POP=window.name==='qpop';function tell(m){try{parent.postMessage(m,location.origin)}catch(_){}}
 var K={};
 K.customer=function(){if(!D.canInfo)return show('Customer Details',blocked());
  jform('Edit Customer Details','<label>Customer name</label><input name="name" value="'+esc(D.name)+'" maxlength="120"><label>Mobile</label><input name="phone" value="'+esc(D.phone)+'" inputmode="tel"><label>Email (optional)</label><input name="email" value="'+esc(D.email)+'"><div class="qe-n">Only this order is updated. Changing the mobile number needs full order permission.</div>','Save',function(f){return {name:val(f,'name'),phone:val(f,'phone'),email:val(f,'email')}},base+'/qe/customer')};
@@ -99,6 +101,6 @@ document.addEventListener('click',function(e){var t=e.target.closest&&e.target.c
  if(g){var m=g.parentNode.querySelector('.qe-menu');menus(m);m.classList.toggle('on');return}
  if(t){menus(null);var k=K[t.getAttribute('data-qe')];if(k)k();return}
  if(!(e.target.closest&&e.target.closest('.qe-menu')))menus(null)});
-try{var __q=new URLSearchParams(location.search).get('qe');if(__q&&K[__q]){setTimeout(function(){K[__q]()},150);history.replaceState(null,'',location.pathname)}}catch(_){}
+try{var __q=new URLSearchParams(location.search).get('qe');if(__q&&K[__q]){setTimeout(function(){K[__q]()},150);if(!POP)history.replaceState(null,'',location.pathname)}else if(POP)tell('qe-done')}catch(_){}
 })();
 </script>@endverbatim
