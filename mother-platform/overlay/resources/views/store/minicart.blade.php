@@ -21,19 +21,17 @@
 #dfat{position:fixed;left:50%;top:18px;transform:translate(-50%,-80px);background:#0B1F3A;color:#fff;border-radius:999px;padding:10px 18px;font-size:13.5px;font-weight:700;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.28);transition:transform .3s;pointer-events:none;border:1px solid rgba(255,138,0,.6)}#dfat.on{transform:translate(-50%,0)}
 @media(max-width:760px){
 #dfmc{top:auto;left:0;width:100%;height:82vh;border-radius:18px 18px 0 0;transform:translateY(104%)}#dfmc.on{transform:none}
-#dfsb.on{display:flex;position:fixed;left:10px;right:10px;bottom:62px;z-index:48;background:#0B1F3A;color:#fff;border-radius:14px;padding:9px 10px 9px 14px;align-items:center;gap:10px;box-shadow:0 8px 22px rgba(0,0,0,.3);font-size:13.5px;font-weight:700}
-#dfsb span{flex:1}#dfsb button{border:0;background:linear-gradient(135deg,#FF8A00,#FF5A00);color:#fff;font-weight:800;border-radius:10px;padding:9px 14px;font-size:13px}
-body.dfsb-on{padding-bottom:116px!important}
-/* the floating Free Call and Chat buttons sit above the View Cart bar instead of covering it */
-body.dfsb-on .dffc-b,body.dfsb-on .dfc-l{bottom:124px}
-body.dfsb-on .dffc-h2{bottom:178px}
-body.dfsb-on .dfc-p{bottom:194px}
-body.dfsb-on .fb{bottom:192px!important}
+/* mobile: a small round cart button in the middle (Free Call left, Cart centre, Chat right), with the item count */
+#dfsb.on{display:block;position:fixed;left:50%;bottom:70px;transform:translateX(-50%);z-index:48;width:54px;height:54px}
+#dfsb span{display:none}
+#dfsb button{position:relative;display:flex;align-items:center;justify-content:center;width:54px;height:54px;padding:0;border:2.5px solid #0B1220;border-radius:50%;background:linear-gradient(135deg,#FF8A00,#FF5A00);color:#fff;font-size:0;box-shadow:0 6px 16px rgba(255,90,0,.42);cursor:pointer}
+#dfsb button svg{width:25px;height:25px}
+#dfsb .bn{position:absolute;top:-7px;right:-7px;min-width:21px;height:21px;padding:0 5px;border-radius:11px;background:#0B1220;color:#fff;border:2px solid #fff;font:800 11px/17px system-ui,-apple-system,Roboto,Arial,sans-serif;text-align:center}
 #dfat{top:auto;bottom:128px;transform:translate(-50%,40px);opacity:0}#dfat.on{transform:translate(-50%,0);opacity:1}}
 </style>
 <div id="dfmcO"></div>
 <aside id="dfmc" role="dialog" aria-label="Your cart" aria-hidden="true"><div class="h"><b>Your Cart <span id="dfmcN">(0)</span></b><button type="button" class="x" id="dfmcX" aria-label="Close">×</button></div><div class="bd" id="dfmcB"></div><div id="dfmcF"></div></aside>
-<div id="dfsb"><span id="dfsbT"></span><button type="button" id="dfsbB">View Cart →</button></div>
+<div id="dfsb"><span id="dfsbT"></span><button type="button" id="dfsbB" aria-label="View cart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2.5 3.5h2.7l2.4 11.2a1.6 1.6 0 0 0 1.6 1.3h8.1a1.6 1.6 0 0 0 1.6-1.2l1.4-7.1H6.1"/></svg><i class="bn" id="dfsbN">0</i></button></div>
 <div id="dfat" role="status" aria-live="polite">Added to Cart ✓</div>
 <script>
 (function(){
@@ -58,7 +56,7 @@ function render(){var my=++seq,s=ids(),B=$('dfmcB'),F=$('dfmcF');
   var ac=el('div','ac'),v=el('a','vc','View Cart'),c=el('a','co','Checkout Now');v.href=c.href='/checkout';ac.append(v,c);F.appendChild(ac)}).catch(function(){B.innerHTML='<div class="em"><b>Could not load cart</b><a href="/checkout">Go to Checkout</a></div>'})}
 function set(p,qty){var c=DF.cart(),k=String(p.id);if(qty<=0){delete c[k];DF.p('dfc',c)}else{c[k]={q:Math.min(50,qty),p:p.price};DF.p('dfc',c)}DF.tab()}
 var T=DF.tab;DF.tab=function(){T();bar();var h=document.querySelector('.hi .cl');var x=totals();if(h)h.textContent=x.n?tk(x.t):'Cart';if(mc.classList.contains('on'))render()};
-function bar(){var x=totals(),b=$('dfsb');if(!b)return;var on=x.n>0&&!onCo;b.classList.toggle('on',on);document.body.classList.toggle('dfsb-on',on);$('dfsbT').textContent=x.n+' Item'+(x.n>1?'s':'')+' · '+tk(x.t)}
+function bar(){var x=totals(),b=$('dfsb');if(!b)return;var on=x.n>0&&!onCo;b.classList.toggle('on',on);document.body.classList.toggle('dfsb-on',on);var tx=x.n+' Item'+(x.n>1?'s':'')+' · '+tk(x.t);$('dfsbT').textContent=tx;$('dfsbN').textContent=x.n>99?'99+':x.n;$('dfsbB').setAttribute('aria-label','View cart: '+tx)}
 DF.nt=function(){var t=$('dfat');t.classList.add('on');clearTimeout(DF._nt);DF._nt=setTimeout(function(){t.classList.remove('on')},1800);document.querySelectorAll('.cn,#bnC').forEach(function(e){e.classList.remove('dfnb');void e.offsetWidth;e.classList.add('dfnb')});if(!onCo&&innerWidth>760)setTimeout(open,350)};
 $('dfmcX').onclick=close;ov.onclick=close;document.addEventListener('keydown',function(e){if(e.key==='Escape')close()});$('dfsbB').onclick=open;
 document.querySelectorAll('.dfcb').forEach(function(b){b.addEventListener('click',function(e){e.preventDefault();open()})});
