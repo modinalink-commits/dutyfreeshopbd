@@ -1,5 +1,5 @@
 @extends('store.layout')
-@section('ld')<script type="application/ld+json">{!! json_encode(['@context'=>'https://schema.org','@type'=>'BreadcrumbList','itemListElement'=>[['@type'=>'ListItem','position'=>1,'name'=>'হোম','item'=>url('/').'/'],['@type'=>'ListItem','position'=>2,'name'=>$c->name,'item'=>url('/'.$c->slug).'/'], ...(!empty($subName) ? [['@type'=>'ListItem','position'=>3,'name'=>$subName,'item'=>$canon]] : [])]], JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES|JSON_HEX_TAG) !!}</script>@endsection
+@section('ld')<script type="application/ld+json">{!! json_encode(['@'.'context'=>'https://schema.org','@type'=>'BreadcrumbList','itemListElement'=>[['@type'=>'ListItem','position'=>1,'name'=>'হোম','item'=>url('/').'/'],['@type'=>'ListItem','position'=>2,'name'=>$c->name,'item'=>url('/'.$c->slug).'/'], ...(!empty($subName) ? [['@type'=>'ListItem','position'=>3,'name'=>$subName,'item'=>$canon]] : [])]], JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES|JSON_HEX_TAG) !!}</script>@endsection
 @section('main')
 @php
   $sub = $subName ?? null; $h1t = $sub ?: $c->name; $base = '/'.$c->slug.'/'; $cur = $sub ? '/'.$c->slug.'/'.$subSlug : $base;
