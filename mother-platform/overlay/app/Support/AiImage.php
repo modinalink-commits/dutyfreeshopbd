@@ -17,6 +17,7 @@ class AiImage {
     if ($row->original_image && is_file(public_path(ltrim($row->original_image, '/')))) return public_path(ltrim($row->original_image, '/'));
     $src = (string)$row->source_url; $abs = null;
     $abs = self::absOf($src);
+    if (!$abs && str_starts_with($src, '/') && !str_starts_with($src, '//')) $src = rtrim((string)config('app.url', 'https://dutyfreebd.com'), '/').$src; // file not on this disk (served through the web server): fetch it over HTTP
     if (!$abs && preg_match('#^https?://#i', $src)) $abs = self::download($src, (int)$row->id);
     if (!$abs || !is_file($abs)) throw new \RuntimeException('Original image file not found on the server');
     $ext = strtolower(pathinfo($abs, PATHINFO_EXTENSION)) ?: 'jpg'; $name = 'orig-'.$row->id.'.'.$ext; (dirname($abs) === self::dir()) ? rename($abs, self::dir().'/'.$name) : copy($abs, self::dir().'/'.$name);
