@@ -53,7 +53,7 @@ c957f0ac6aa9920734875d5f61045ddae290f81b app/Http/Controllers/StoreController.ph
 1f99716fe863f3dbfe905a8c96934ea6cdc625d5 resources/views/store/layout.blade.php
 0700fabbcd111911245ddc06b98fdd1edd272475 resources/views/store/card.blade.php
 ce0d1f8552836199c028ddef8806c72a2d10ad19 resources/views/store/home_sec.blade.php
-0cf82f19f572f41d8c4c73d3cd46d8417fd9a3d6 resources/views/store/home.blade.php
+e54b51f3e755c3521df08426687fddad5ddda68d resources/views/store/home.blade.php
 0e5fb9160b143a0aae0c56fedd841bcdf8c5283c resources/views/store/category.blade.php
 d016ff5e3703cea2f6adab94a18b3d0e5af4c966 resources/views/store/product.blade.php
 7ad9d9502d41f54d6784414a9aa3f16a8ab0ec13 resources/views/store/search.blade.php
@@ -553,7 +553,7 @@ e47d68a916e1a398d15848fd191522f14511fd26 app/Support/CourierOverview.php
 5b5105510c39dd583af1b32d80245afe28d25bcd public/banners/manchester-anim.mp4
 4622c85f1cffe78d07c9b993fbe424928739af3a public/banners/manchester-anim.webp
 72a9e66f32c9a795a92b8fc32cad3ffc427226cb database/migrations/2026_11_04_000095_manchester_slide.php
-717c15c3d3c992bee1d59064e0f0cc061e7e959c resources/views/store/slide_item.blade.php
+e6350c2225c623f0df5d6fd560fb0d520c26e4b8 resources/views/store/slide_item.blade.php
 fe31007aabb568e837441cdf7be182f917ec185b public/banners/brands-anim.mp4
 dae522a21478b3afe3e06aa0654d77c689247704 public/banners/brands-anim.webp
 a5331756876684f8dd50a9a0daee9b1bbe05a8de database/migrations/2026_11_04_000096_brands_slide.php
