@@ -43,6 +43,7 @@ database/migrations/2026_11_05_000001_nk_core.php
 database/migrations/2026_11_05_000002_stock.php
 database/migrations/2026_11_05_000003_sales.php
 database/migrations/2026_11_05_000004_company_ledger.php
+database/migrations/2026_11_05_000005_month_targets.php
 public/css/nk-table.css
 public/img/logo.webp
 public/js/nk-table.js

@@ -2,19 +2,87 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
+use App\Models\CompanyEntry;
+use App\Models\CompanyMonth;
+use App\Models\CompanyRate;
+use App\Models\CustomerLedger;
+use App\Models\Sale;
+use App\Models\SaleItem;
+use App\Models\StockMovement;
 use App\Models\WebsiteOrder;
+use App\Support\CompanyCalc;
+use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
     public function index()
     {
+        $tz = 'Asia/Dhaka';
+        $now = now()->timezone($tz);
+        $dayStart = $now->copy()->startOfDay()->utc();
+        $monthStart = $now->copy()->startOfMonth()->utc();
+        $ym = $now->format('Y-m');
+
+        $live = fn () => Sale::query()->where('stage', '!=', 'voided');
+        $itemsSince = fn ($from) => SaleItem::query()->join('sales', 'sales.id', '=', 'sale_items.sale_id')
+            ->where('sales.stage', '!=', 'voided')->where('sales.created_at', '>=', $from)->whereNotNull('sale_items.size_kg');
+
+        $todaySales = (float) $live()->where('created_at', '>=', $dayStart)->sum('total');
+        $todayCyl = (int) $itemsSince($dayStart)->sum('sale_items.qty');
+        $todayKg = (int) $itemsSince($dayStart)->selectRaw('coalesce(sum(sale_items.qty * sale_items.size_kg),0) kg')->value('kg');
+        $monthCyl = (int) $itemsSince($monthStart)->sum('sale_items.qty');
+        $monthKg = (int) $itemsSince($monthStart)->selectRaw('coalesce(sum(sale_items.qty * sale_items.size_kg),0) kg')->value('kg');
+        $monthSales = (float) $live()->where('created_at', '>=', $monthStart)->sum('total');
+
+        // Gross profit = sales − company bill (DO − transport) for the cylinders sold.
+        $cost = 0;
+        foreach ($itemsSince($monthStart)->select('sale_items.size_kg', 'sale_items.qty', 'sale_items.category', 'sales.created_at')->get() as $i) {
+            $r = CompanyRate::forDate((int) $i->size_kg, Carbon::parse($i->created_at)->timezone($tz)->toDateString());
+            if ($r) $cost += $i->qty * ((float) $r->do_rate - (float) $r->transport);
+        }
+        $gross = $monthSales - $cost;
+
+        $dues = CustomerLedger::query()->selectRaw('customer_id, sum(debit - credit) d')->groupBy('customer_id')->havingRaw('sum(debit - credit) > 0.004')->get();
+        $collected = (float) CustomerLedger::query()->where('kind', 'payment')->where('created_at', '>=', $dayStart)->whereIn('method', ['cash', 'bkash', 'nagad'])->sum('credit')
+            + (float) Sale::query()->whereNull('customer_id')->where('stage', '!=', 'voided')->where('created_at', '>=', $dayStart)->sum('paid');
+
+        // Bars: cylinders per day this month, retail vs wholesale.
+        $bars = [];
+        $rows = SaleItem::query()->join('sales', 'sales.id', '=', 'sale_items.sale_id')->where('sales.stage', '!=', 'voided')
+            ->where('sales.created_at', '>=', $monthStart)->whereNotNull('sale_items.size_kg')
+            ->get(['sales.type', 'sales.created_at', 'sale_items.qty']);
+        for ($d = 1; $d <= $now->day; $d++) $bars[$d] = ['r' => 0, 'w' => 0];
+        foreach ($rows as $r) { $d = Carbon::parse($r->created_at)->timezone($tz)->day; $bars[$d][$r->type === 'wholesale' ? 'w' : 'r'] += $r->qty; }
+
+        // Company target this month (tons lifted from company challans).
+        $month = CompanyMonth::find($ym);
+        $lifted = (float) CompanyEntry::query()->where('kind', 'challan')->whereBetween('entry_date', [$now->copy()->startOfMonth()->toDateString(), $now->copy()->endOfMonth()->toDateString()])
+            ->whereDoesntHave('reversedBy')->selectRaw('coalesce(sum(qty * size_kg),0) kg')->value('kg') / 1000;
+
+        // Needs attention.
+        $alerts = [];
+        $full12 = (int) StockMovement::query()->where('size_kg', 12)->sum('full_delta');
+        $avg12 = $now->day > 0 ? (int) $itemsSince($monthStart)->where('sale_items.size_kg', 12)->sum('sale_items.qty') / max(1, $now->day) : 0;
+        if ($avg12 > 0 && $full12 / $avg12 < 3) $alerts[] = ['t' => '12 kg full stock low', 'd' => "{$full12} left, about ".round($full12 / $avg12, 1).' days of sales. Place a company DO today.', 'link' => route('stock.index'), 'l' => 'Stock →', 'tone' => 'neg'];
+        $old = Sale::query()->where('stage', 'delivered')->whereColumn('paid', '<', 'total')->where('delivered_at', '<', now()->subDays(30))->get();
+        if ($old->count()) $alerts[] = ['t' => $old->pluck('customer_id')->unique()->count().' dealers over 30 days due', 'd' => '৳'.number_format($old->sum(fn ($s) => $s->due())).' in total.', 'link' => route('customers.index', ['f' => 'due']), 'l' => 'Customers →', 'tone' => 'warn'];
+        $newOrders = WebsiteOrder::query()->where('status', 'new')->count();
+        if ($newOrders) $alerts[] = ['t' => "{$newOrders} new website orders", 'd' => 'Call the customers to confirm.', 'link' => route('orders.index', ['status' => 'new']), 'l' => 'Orders →', 'tone' => 'blue'];
+        $calc = null;
+        if (auth()->user()->isSuperAdmin()) {
+            $calc = CompanyCalc::month($now->copy()->subMonthNoOverflow()->format('Y-m'));
+            $mn = Carbon::parse($calc['month']->month.'-01')->format('F');
+            if (! $calc['incentiveReceived'] && $calc['net'] > 0) $alerts[] = ['t' => "{$mn} incentive arrives ".Carbon::parse($calc['incentiveDate'])->format('d-m-Y'), 'd' => 'added to the company balance as Deposit + Incentive.', 'tone' => 'vio'];
+            if (! $calc['commissionReceived'] && $calc['commission'] > 0) $alerts[] = ['t' => "{$mn} commission arrives ".Carbon::parse($calc['commissionDate'])->format('d-m-Y'), 'd' => 'Tk '.rtrim(rtrim(number_format($calc['month']->kg_commission, 2), '0'), '.').' per kg on total '.$mn.' sales.', 'tone' => 'vio'];
+        }
+
         return view('dashboard', [
-            'newOrders' => WebsiteOrder::query()->where('status', 'new')->count(),
-            'todayOrders' => WebsiteOrder::query()->whereDate('created_at', today())->count(),
-            'openOrders' => WebsiteOrder::query()->whereIn('status', ['new', 'called', 'confirmed'])->count(),
-            'users' => User::query()->where('is_active', true)->count(),
-            'latest' => WebsiteOrder::query()->latest()->limit(8)->get(),
+            'now' => $now, 'todaySales' => $todaySales, 'todayCyl' => $todayCyl, 'todayKg' => $todayKg,
+            'monthCyl' => $monthCyl, 'monthKg' => $monthKg, 'gross' => $gross,
+            'balance' => CompanyEntry::balanceUntil($now->toDateString()),
+            'dues' => (float) $dues->sum('d'), 'dueCount' => $dues->count(), 'collected' => $collected,
+            'bars' => $bars, 'month' => $month, 'lifted' => $lifted, 'alerts' => $alerts,
+            'latest' => Sale::query()->with(['customer', 'items'])->latest('id')->limit(6)->get(),
         ]);
     }
 }

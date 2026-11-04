@@ -183,11 +183,13 @@ class CompanyController extends Controller
             'month' => ['required', 'regex:/^\d{4}-\d{2}$/'], 'kg_commission' => ['nullable', 'numeric', 'min:0'],
             'deadline_day' => ['required', 'integer', 'min:1', 'max:31'], 'ait_pct' => ['required', 'numeric', 'min:0', 'max:50'],
             'flags' => ['nullable', 'array'], 'note' => ['nullable', 'string', 'max:255'],
+            'tons_target' => ['nullable', 'numeric', 'min:0'], 'excl_target' => ['nullable', 'numeric', 'min:0'],
         ]);
         $flags = [];
         foreach (array_keys(CompanyRate::PARTS) as $p) foreach (Brand::SIZES as $s) $flags[$p.'_'.$s] = ! empty($data['flags'][$p.'_'.$s]);
         CompanyMonth::query()->updateOrCreate(['month' => $data['month']], ['kg_commission' => $data['kg_commission'] ?? 0, 'deadline_day' => $data['deadline_day'],
-            'ait_pct' => $data['ait_pct'], 'flags' => $flags, 'note' => $data['note'] ?? null]);
+            'ait_pct' => $data['ait_pct'], 'flags' => $flags, 'note' => $data['note'] ?? null,
+            'tons_target' => $data['tons_target'] ?? 0, 'excl_target' => $data['excl_target'] ?? 0]);
         AuditLog::record('company_month', $data['month']);
         return back()->with('ok', 'Month rules saved for '.$data['month'].'.');
     }
@@ -208,7 +210,7 @@ class CompanyController extends Controller
             foreach (($j['months'] ?? []) as $ym => $m) {
                 $flags = [];
                 foreach (($m['disc'] ?? []) as $k => $v) if (preg_match('/^[a-z]+_\d+$/', $k)) $flags[$k] = ($v['st'] ?? '') === 'yes';
-                CompanyMonth::query()->updateOrCreate(['month' => $ym], ['kg_commission' => $m['kgComm'] ?? 0, 'deadline_day' => $m['last'] ?? 16, 'flags' => $flags, 'ait_pct' => 10]);
+                CompanyMonth::query()->updateOrCreate(['month' => $ym], ['kg_commission' => $m['kgComm'] ?? 0, 'deadline_day' => $m['last'] ?? 16, 'flags' => $flags, 'ait_pct' => 10, 'tons_target' => $m['tons'] ?? 0, 'excl_target' => $m['excl'] ?? 0]);
             }
             usort($j['entries'], fn ($a, $b) => [$a['date'], $a['createdAt'] ?? 0] <=> [$b['date'], $b['createdAt'] ?? 0]);
             foreach ($j['entries'] as $e) {

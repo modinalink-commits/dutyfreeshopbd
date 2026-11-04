@@ -37,6 +37,8 @@
       <label class="f">Deadline day<input type="number" name="deadline_day" min="1" max="31" value="{{ $cur?->deadline_day ?? 16 }}"></label>
       <label class="f">Commission ৳ per kg<input type="number" step="0.01" name="kg_commission" value="{{ $cur?->kg_commission ?? 0 }}"></label>
       <label class="f">AIT %<input type="number" step="0.01" name="ait_pct" value="{{ $cur?->ait_pct ?? 10 }}"></label>
+      <label class="f">Regular target (tons)<input type="number" step="0.01" name="tons_target" value="{{ $cur?->tons_target ?? 0 }}"></label>
+      <label class="f">Exclusive target (tons)<input type="number" step="0.01" name="excl_target" value="{{ $cur?->excl_target ?? 0 }}"></label>
     </div>
     <div class="dt-wrap"><table class="dt"><thead><tr><th>Incentive</th>@foreach(\App\Models\Brand::SIZES as $s)<th>{{ $s }} kg</th>@endforeach</tr></thead><tbody>
       @foreach(\App\Models\CompanyRate::PARTS as $p => $l)@continue($p === 'dd')<tr><td>{{ $l }}</td>@foreach(\App\Models\Brand::SIZES as $s)<td class="c"><input type="checkbox" name="flags[{{ $p }}_{{ $s }}]" value="1" style="width:auto;min-height:0" @checked(($cur?->flags ?? [])[$p.'_'.$s] ?? false) aria-label="{{ $l }} {{ $s }} kg earned"></td>@endforeach</tr>@endforeach

@@ -9,7 +9,7 @@ class CompanyMonth extends Model
     protected $primaryKey = 'month';
     public $incrementing = false;
     protected $keyType = 'string';
-    protected $fillable = ['month', 'kg_commission', 'deadline_day', 'flags', 'ait_pct', 'note'];
+    protected $fillable = ['month', 'kg_commission', 'deadline_day', 'flags', 'ait_pct', 'note', 'tons_target', 'excl_target'];
 
     protected function casts(): array
     {
