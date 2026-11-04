@@ -543,3 +543,5 @@ database/migrations/2026_11_04_000071_free_call_ip.php
 resources/views/store/member_slide.blade.php
 public/fonts/anek-bangla-500.woff2
 public/fonts/anek-bangla-700.woff2
+resources/views/store/district_slide.blade.php
+public/bd64.json

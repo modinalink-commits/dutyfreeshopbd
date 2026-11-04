@@ -101,12 +101,17 @@ document.addEventListener('visibilitychange',function(){if(!cur||!cur.pl||!cur.p
 function first(){var f=tr.children[0];if(f&&f.classList.contains('hxv'))active()}
 if(document.readyState==='complete')setTimeout(first,300);else addEventListener('load',function(){setTimeout(first,300)})});</script>
 @php $__gp = ($s['home_globe'] ?? '1') === '1' ? \App\Http\Controllers\StoreController::globeProducts() : collect(); @endphp
-@php $__ms = ($s['hero_member_slide'] ?? '1') !== '0'; @endphp
-@if($__gp->count() && $__ms)
+@php $__ms = ($s['hero_member_slide'] ?? '1') !== '0'; $__dm = ($s['hero_district_slide'] ?? '1') !== '0'; @endphp
+@if($__gp->count() && ($__ms || $__dm))
 <div class="w hx"><div class="hx-m"><div class="sld hxs" data-auto="10000"><div class="sl-t"><div class="hxg">
 @include('store.globe', ['deals' => $__gp])
 </div>
+@if($__dm)
+@include('store.district_slide')
+@endif
+@if($__ms)
 @include('store.member_slide', ['gl' => true])
+@endif
 </div><div class="sl-d"></div><button type="button" class="sl-a pv" aria-label="Previous slide">‹</button><button type="button" class="sl-a nx" aria-label="Next slide">›</button></div></div></div>
 @elseif($__gp->count())
 <div class="w hx">@include('store.globe', ['deals' => $__gp])</div>
@@ -124,13 +129,21 @@ if(document.readyState==='complete')setTimeout(first,300);else addEventListener(
 <a class="hxa" href="{{ $sl->link ?: '#flash' }}"><picture>@if($mi)@if($__w=\App\Support\Img::webp($mi))<source media="(max-width:760px)" type="image/webp" srcset="{{ $__w }}">@endif<source media="(max-width:760px)" srcset="{{ $mi }}" {!! $mdim !!}>@endif @if($__w=\App\Support\Img::webp($sl->image))<source type="image/webp" srcset="{{ $__w }}">@endif<img src="{{ $sl->image }}" alt="{{ $sl->title ?: 'DutyFree BD offer' }}" width="1328" height="472" @if($loop->first) fetchpriority="high" @else loading="lazy" @endif></picture>
 @if($hasTx)<span class="hxt">@if(!empty($sl->title))<b>{{ $sl->title }}</b>@endif @if(!empty($sl->subtitle))<span>{{ $sl->subtitle }}</span>@endif @if(!empty($sl->button_text))<em>{{ $sl->button_text }}</em>@endif</span>@endif</a>
 @endif
+@if($loop->first && $__dm)
+@include('store.district_slide')
+@endif
 @if($loop->first && $__ms)
 @include('store.member_slide')
 @endif
-@endforeach</div>@if($slides->count()+($__ms?1:0)>1)<div class="sl-d"></div><button type="button" class="sl-a pv" aria-label="Previous slide">‹</button><button type="button" class="sl-a nx" aria-label="Next slide">›</button>@endif</div>
-@elseif($__ms)
+@endforeach</div>@if($slides->count()+($__ms?1:0)+($__dm?1:0)>1)<div class="sl-d"></div><button type="button" class="sl-a pv" aria-label="Previous slide">‹</button><button type="button" class="sl-a nx" aria-label="Next slide">›</button>@endif</div>
+@elseif($__ms || $__dm)
 <div class="sld hxs" data-auto="10000"><div class="sl-t"><div class="hxa hxd"><span class="k" data-end="{{ $fFix ? $fEnd * 1000 : '' }}">{{ $s['hero_kicker'] }} <span data-cd="all">{{ $fmt($fEnd) }}</span></span><h1>{!! nl2br(e(str_replace(', ', ",\n", $s['hero_title']))) !!}</h1><span class="sb">{{ $hsub }}</span><a class="bt" href="#flash">{{ $s['hero_button'] }} →</a></div>
+@if($__dm)
+@include('store.district_slide')
+@endif
+@if($__ms)
 @include('store.member_slide')
+@endif
 </div><div class="sl-d"></div><button type="button" class="sl-a pv" aria-label="Previous slide">‹</button><button type="button" class="sl-a nx" aria-label="Next slide">›</button></div>
 @else
 <div class="hxd"><span class="k" data-end="{{ $fFix ? $fEnd * 1000 : '' }}">{{ $s['hero_kicker'] }} <span data-cd="all">{{ $fmt($fEnd) }}</span></span><h1>{!! nl2br(e(str_replace(', ', ",\n", $s['hero_title']))) !!}</h1><span class="sb">{{ $hsub }}</span><a class="bt" href="#flash">{{ $s['hero_button'] }} →</a></div>
