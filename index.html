@@ -89,6 +89,8 @@ form{flex:1 1 460px;background:#fff;border:1px solid var(--line);border-radius:1
 label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--muted)}
 input,select{min-height:48px;border:1px solid #7b8aa8;border-radius:10px;background:#fff;padding:0 12px;font:500 15px 'Plus Jakarta Sans','Hind Siliguri',sans-serif;color:var(--ink);width:100%}
 .full{grid-column:1/-1}
+.note.ok{color:#0f6b3c;font-weight:600;font-size:14px}.note.bad{color:#b3261e;font-weight:600;font-size:14px}
+form{position:relative}
 .note{grid-column:1/-1;margin:0;font-size:12px;color:var(--muted)}
 @media (max-width:560px){form{grid-template-columns:1fr}}
 .dealer{display:flex;flex-wrap:wrap;gap:24px;align-items:center;justify-content:space-between;background:var(--ink);color:#fff;border-radius:24px;padding:40px}
@@ -159,10 +161,10 @@ footer{background:var(--ink);color:#fff;padding:56px 0 32px}
   <div class="wrap order">
     <div class="intro">
       <h2>Order gas <span class="bn" style="font-weight:600;color:var(--gold-ink)">· গ্যাস অর্ডার</span></h2>
-      <p class="sub" style="margin-bottom:0">Fill in the form and send it to us on WhatsApp. We will call you back to confirm.</p>
+      <p class="sub" style="margin-bottom:0">Fill in the form and send it. We will call you back to confirm.</p>
       <div class="steps">
         <span><i>1</i>Choose size and refill or new cylinder</span>
-        <span><i>2</i>Send the order on WhatsApp</span>
+        <span><i>2</i>Press "Send order"</span>
         <span><i>3</i>We call you to confirm price and time</span>
       </div>
     </div>
@@ -173,8 +175,9 @@ footer{background:var(--ink);color:#fff;padding:56px 0 32px}
       <label>Type<select id="fType"><option>Refill (I have an empty)</option><option>New cylinder with gas</option></select></label>
       <label>Quantity<input id="fQty" type="number" min="1" value="1" inputmode="numeric"></label>
       <label>Delivery address<input id="fAddr" type="text" placeholder="Village / bazar, union" required></label>
-      <button class="btn wa full" type="submit">Send order on WhatsApp</button>
-      <p class="note">Nothing is saved on this website. Your order opens in WhatsApp to 01901-168777.</p>
+      <input id="fWeb" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px">
+      <button class="btn dark full" id="fSend" type="submit">Send order</button>
+      <p class="note" id="fOut" role="status" aria-live="polite">We call you to confirm before delivery. You can also order on WhatsApp: <a href="https://wa.me/8801901168777" target="_blank" rel="noopener">01901-168777</a></p>
     </form>
   </div>
 </section>
@@ -252,8 +255,19 @@ footer{background:var(--ink);color:#fff;padding:56px 0 32px}
     var bad=[n,p,a].filter(function(x){return !x.value.trim();});
     [n,p,a].forEach(function(x){x.style.borderColor=x.value.trim()?'#7b8aa8':'#b3261e';});
     if(bad.length){bad[0].focus();return;}
-    var msg='LPG order — NK Corporation\nName: '+n.value.trim()+'\nMobile: '+p.value.trim()+'\nCylinder: '+document.getElementById('fSize').value+'\nType: '+document.getElementById('fType').value+'\nQuantity: '+(document.getElementById('fQty').value||1)+'\nAddress: '+a.value.trim();
-    window.open('https://wa.me/8801901168777?text='+encodeURIComponent(msg),'_blank','noopener');
+    var body={name:n.value.trim(),phone:p.value.trim(),cylinder:document.getElementById('fSize').value,type:document.getElementById('fType').value,quantity:parseInt(document.getElementById('fQty').value||'1',10)||1,address:a.value.trim(),website:document.getElementById('fWeb').value};
+    var msg='LPG order — NK Corporation\nName: '+body.name+'\nMobile: '+body.phone+'\nCylinder: '+body.cylinder+'\nType: '+body.type+'\nQuantity: '+body.quantity+'\nAddress: '+body.address;
+    var wa='https://wa.me/8801901168777?text='+encodeURIComponent(msg);
+    var btn=document.getElementById('fSend'),out=document.getElementById('fOut');
+    btn.disabled=true;btn.textContent='Sending…';
+    fetch('/api/website-order',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(body)})
+      .then(function(r){return r.json().then(function(j){return {ok:r.ok,j:j};});})
+      .then(function(res){
+        if(res.ok&&res.j.ok){document.getElementById('orderForm').reset();out.className='note ok';out.innerHTML='Thank you! Your order'+(res.j.id?' #'+res.j.id:'')+' is received. We will call you soon. <span class="bn">ধন্যবাদ! আমরা শীঘ্রই কল করব।</span> <a href="'+wa+'" target="_blank" rel="noopener">Also send on WhatsApp</a>';}
+        else{var m=res.j&&res.j.errors?Object.values(res.j.errors)[0][0]:'Could not send.';out.className='note bad';out.innerHTML=m+' <a href="'+wa+'" target="_blank" rel="noopener">Send on WhatsApp instead</a>';}
+      })
+      .catch(function(){out.className='note bad';out.innerHTML='Could not reach our server. <a href="'+wa+'" target="_blank" rel="noopener">Send on WhatsApp instead</a>';})
+      .then(function(){btn.disabled=false;btn.textContent='Send order';});
   });
   var bn=document.querySelectorAll('.bnr'),bi=0;if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches)setInterval(function(){if(document.hidden)return;bn[bi].classList.remove('on');bn[bi].setAttribute('aria-hidden','true');bi=(bi+1)%bn.length;bn[bi].classList.add('on');bn[bi].removeAttribute('aria-hidden');},7000);
   var si=document.querySelector('.swapimg');if('IntersectionObserver' in window){new IntersectionObserver(function(es,o){es.forEach(function(e){if(e.isIntersecting){si.classList.add('in');o.disconnect();}});},{threshold:.2}).observe(si);}else si.classList.add('in');
