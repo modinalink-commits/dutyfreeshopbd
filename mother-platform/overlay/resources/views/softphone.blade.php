@@ -101,7 +101,7 @@ body,button,input,textarea,select{font-family:Inter,"Noto Sans Bengali","Segoe U
 <div class="box tp" id="tp-act" style="display:none">
 <div id="aNone" class="mut" style="padding:30px 0">No active call. Dial a number or pick a contact to start.</div>
 <div id="aBox" style="display:none;flex-direction:column;gap:9px"><div class="cidr"><span class="actb">● Active Call</span><span id="cid"></span></div><div class="wv" id="wv"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
- <div class="act"><div class="av" id="aAv">?</div><span class="nm" id="aN">Unknown Customer</span><div class="ph1"><span id="aP"></span> <button type="button" class="cpy" id="aCp" title="Copy number">⧉</button></div><div class="as" id="aS">—</div><div class="at" id="aT">00:00:00</div><div id="aRec" style="margin-top:2px"></div></div>
+ <div class="act"><div class="av" id="aAv">?</div><span class="nm" id="aN">Unknown Customer</span><div class="ph1"><span id="aP"></span> <button type="button" class="cpy" id="aCp" title="Copy number">⧉</button></div><div class="as" id="aS">—</div><div class="at" id="aT">00:00:00</div><div id="aQ" style="font-size:11.5px;font-weight:700;color:#6B7280;margin-top:2px"></div><div id="aRec" style="margin-top:2px"></div></div>
  <div class="card2" id="aCard"></div>
  <div class="qa"><a id="aCu" href="#" target="_blank">Open Customer</a><a id="aOr" href="#" target="_blank">Open Order</a></div>
  <div class="kp" id="kp">@foreach(['1','2','3','4','5','6','7','8','9','*','0','#'] as $k)<button type="button" data-d="{{ $k }}">{{ $k }}</button>@endforeach</div>
@@ -213,18 +213,38 @@ function reconnect(){err('');disconnect();setTimeout(connect,300)}
 /* ---------- call flow ---------- */
 function target(n){var p=cfg.prefix||'';n=clean(n);if(p&&n.indexOf(p)!==0&&n.charAt(0)!=='+')n=p+n;return 'sip:'+n+'@'+cfg.domain}
 function iceCfg(){return {iceServers:cfg.stun?[{urls:'stun:'+cfg.stun.replace(/^stun:/,'')}]:[{urls:'stun:stun.l.google.com:19302'}]}}
-function mic(){if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)return Promise.reject({name:'NoMedia'});return navigator.mediaDevices.getUserMedia({audio:true}).then(function(s){s.getTracks().forEach(function(t){t.stop()})})}
+/* voice quality: explicit echo cancel / noise suppression / auto gain, mono (ideal = never fails on devices without it) */
+var AC={echoCancellation:{ideal:true},noiseSuppression:{ideal:true},autoGainControl:{ideal:true},channelCount:{ideal:1}};
+/* SDP tuning: prefer Opus then G.722 (wideband) over G.711, add Opus FEC so lost packets are repaired; the PBX still picks only what it supports */
+function tuneSdp(sdp,offer){try{var L=sdp.split('\r\n'),mi=-1,i,op=null;for(i=0;i<L.length;i++)if(L[i].indexOf('m=audio')===0){mi=i;break}if(mi<0)return sdp;
+ for(i=0;i<L.length;i++){var m=/^a=rtpmap:(\d+) opus\/48000/i.exec(L[i]);if(m){op=m[1];break}}
+ if(op){var has=false,add=['useinbandfec=1','usedtx=0','stereo=0'];for(i=0;i<L.length;i++){if(L[i].indexOf('a=fmtp:'+op+' ')===0){has=true;add.forEach(function(k){if(L[i].indexOf(k.split('=')[0]+'=')<0)L[i]+=';'+k})}}
+  if(!has)for(i=0;i<L.length;i++){if(L[i].indexOf('a=rtpmap:'+op+' ')===0){L.splice(i+1,0,'a=fmtp:'+op+' minptime=10;'+add.join(';'));break}}}
+ if(offer){var P=L[mi].split(' '),h=P.slice(0,3),pts=P.slice(3),first=[];[op,'9'].forEach(function(x){if(x&&pts.indexOf(x)>-1)first.push(x)});L[mi]=h.concat(first,pts.filter(function(x){return first.indexOf(x)<0})).join(' ')}
+ return L.join('\r\n')}catch(e){return sdp}}
+/* live voice-quality read-out (packet loss, jitter, delay) + a bigger jitter buffer when the line is unstable */
+var qT=null;
+function qStop(){clearInterval(qT);qT=null;var q=$('aQ');if(q)q.innerHTML=''}
+function qStart(s){qStop();var pc=s&&s.connection;if(!pc||!pc.getStats)return;var lp=0,lr=0;
+ qT=setInterval(function(){pc.getStats().then(function(r){var jit=0,lost=0,rec=0,rtt=0;r.forEach(function(x){if(x.type==='inbound-rtp'&&x.kind==='audio'){jit=x.jitter||0;lost=x.packetsLost||0;rec=x.packetsReceived||0}if(x.type==='remote-inbound-rtp'&&x.kind==='audio'&&x.roundTripTime)rtt=x.roundTripTime});
+  var dl=Math.max(0,lost-lp),dr=Math.max(0,rec-lr);lp=lost;lr=rec;var pct=(dl+dr)>0?dl*100/(dl+dr):0,lab,col;
+  if(pct>8||jit>0.08||rtt>0.6){lab='Poor';col='#DC2626'}else if(pct>3||jit>0.04||rtt>0.35){lab='Fair';col='#D97706'}else{lab='Good';col='#16A34A'}
+  var q=$('aQ');if(q)q.innerHTML='<span style="color:'+col+'">● Voice '+lab+'</span> · loss '+pct.toFixed(1)+'% · jitter '+Math.round(jit*1000)+' ms'+(rtt?' · delay '+Math.round(rtt*1000)+' ms':'');
+  try{pc.getReceivers().forEach(function(rv){if(rv.track&&rv.track.kind==='audio'&&('jitterBufferTarget' in rv))rv.jitterBufferTarget=(jit>0.03||pct>2)?200:null})}catch(e){}
+ }).catch(function(){})},3000)}
+function mic(){if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)return Promise.reject({name:'NoMedia'});return navigator.mediaDevices.getUserMedia({audio:AC}).then(function(s){s.getTracks().forEach(function(t){t.stop()})})}
 function micErr(){setPhase('failed','Failed');err('Microphone access is required to make calls.')}
 function resetCtl(){setTimeout(busyUnreg,1500);muted=false;held=false;var q=$('bMuteQ');if(q){q.classList.remove('on')}$('bMute').classList.remove('on');$('bHold').classList.remove('on');$('bMute').lastChild.textContent='Mute';$('bHold').lastChild.textContent='Hold';$('bKp').classList.remove('on');$('kp').classList.remove('on')}
 function begin(n,d){cur=n;dir=d;info=null;connAt=0;clearInterval(tick);$('tmr').textContent='00:00:00';$('aT').textContent='00:00:00';resetCtl();renderAct();look(n).then(function(c){if(cur===n){info=c;renderAct();if(d==='in'){$('icN').textContent=c.found&&c.name?c.name:'Unknown Customer';$('icI').textContent=c.found?((c.category||'Customer')+' · '+c.orders+' orders'+(c.last?' · Last: '+c.last.invoice+' ('+c.last.status+')':'')):'No customer record'}}})}
 function call(n){n=clean(n||$('num').value);if(!n){err('Enter a phone number first.');return}if(inCall())return;if(!reg()){if(agBusy&&ua&&!tmpReg){tmpReg=true;pendCall=n;err('');try{ua.register()}catch(e){tmpReg=false;pendCall=null;err('PBX connection required')}setTimeout(function(){if(tmpReg){tmpReg=false;pendCall=null;err('PBX connection required')}},8000);return}err('PBX connection required');return}err('');
  begin(n,'out');setPhase('connecting');tab('act');
  mic().then(function(){return post('/admin/call-center/log',{direction:'out',phone:n,extension:cfg.ext})}).then(function(j){logId=j.id;lastLog=j.id;
-  var s=ua.call(target(n),{mediaConstraints:{audio:true,video:false},pcConfig:iceCfg(),rtcOfferConstraints:{offerToReceiveAudio:true}});wire(s)}).catch(function(e){ses=null;if(e&&(e.name==='NotAllowedError'||e.name==='NotFoundError'||e.name==='NoMedia'||e.name==='SecurityError'))micErr();else{console.warn('dialer call',e);setPhase('failed','PBX Error');err('PBX Error. Please try again.')}})}
+  var s=ua.call(target(n),{mediaConstraints:{audio:AC,video:false},pcConfig:iceCfg(),rtcOfferConstraints:{offerToReceiveAudio:true}});wire(s)}).catch(function(e){ses=null;if(e&&(e.name==='NotAllowedError'||e.name==='NotFoundError'||e.name==='NoMedia'||e.name==='SecurityError'))micErr();else{console.warn('dialer call',e);setPhase('failed','PBX Error');err('PBX Error. Please try again.')}})}
 function pbxId(){try{return ses._request&&ses._request.call_id||''}catch(e){return ''}}
 function wire(s){ses=s;
+ s.on('sdp',function(e){if(e&&e.sdp)e.sdp=tuneSdp(e.sdp,e.originator==='local'&&e.type==='offer')});
  s.on('progress',function(){if(phase==='connecting')setPhase('ringing')});
- var up=function(){if(phase==='connected')return;setPhase('connected');startTimer();if(logId)post('/admin/call-center/log/'+logId+'/connected',{pbx_call_id:pbxId()});recInd();err('')};
+ var up=function(){if(phase==='connected')return;setPhase('connected');startTimer();qStart(s);if(logId)post('/admin/call-center/log/'+logId+'/connected',{pbx_call_id:pbxId()});recInd();err('')};
  s.on('accepted',up);s.on('confirmed',up);
  s.on('ended',function(e){finish('ended',e&&e.cause)});
  s.on('failed',function(e){finish('failed',(e&&e.cause)||'')});
@@ -239,7 +259,7 @@ function friendly(c){c=String(c||'');
  return 'PBX Error'}
 function finish(kind,cause){if(!ses&&phase!=='connecting'&&phase!=='ringing'&&phase!=='connected')return;
  var wasConn=!!connAt,d=secs(),id=logId,raw=String(cause||''),canceled=/cancel|bye|terminated/i.test(raw);
- clearInterval(tick);stopRing();$('ovInc').classList.remove('on');
+ clearInterval(tick);qStop();stopRing();$('ovInc').classList.remove('on');
  var status,label,isFail=false;
  if(wasConn){status='answered';label='Call Ended'}
  else if(dir==='in'){status=/cancel/i.test(raw)?'missed':'rejected';label='Call Ended'}
@@ -268,7 +288,7 @@ function incoming(s){if(ses||agBusy){try{s.terminate({status_code:486})}catch(e)
  if(emb)parent.postMessage({dfdial:'incoming'},location.origin);
  post('/admin/call-center/log',{direction:'in',phone:num,extension:cfg&&cfg.ext}).then(function(j){logId=j.id;lastLog=j.id});
  if(window.Notification&&Notification.permission==='granted')try{new Notification('Incoming call',{body:num})}catch(e){}}
-$('icA').onclick=function(){stopRing();$('ovInc').classList.remove('on');setPhase('connecting');mic().then(function(){ses.answer({mediaConstraints:{audio:true,video:false},pcConfig:iceCfg()})}).catch(function(){micErr();try{ses.terminate({status_code:486})}catch(e){}})};
+$('icA').onclick=function(){stopRing();$('ovInc').classList.remove('on');setPhase('connecting');mic().then(function(){ses.answer({mediaConstraints:{audio:AC,video:false},pcConfig:iceCfg()})}).catch(function(){micErr();try{ses.terminate({status_code:486})}catch(e){}})};
 $('icR').onclick=function(){stopRing();$('ovInc').classList.remove('on');try{ses.terminate({status_code:486})}catch(e){}};
 /* ---------- in-call controls ---------- */
 function dtmf(k){if(ses&&connected()){try{ses.sendDTMF(k,{duration:160,interToneGap:80})}catch(e){console.warn(e)}}}
