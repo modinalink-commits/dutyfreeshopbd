@@ -80,7 +80,7 @@ class CatalogController extends Controller {
     $old = $id ? DB::table('products')->find($id) : null;
     if ($id) abort_unless($old, 404);
     // Protected 15% company profit: purchase price x 1.15 is the floor for the selling price and the Buy 2-5 pack prices. An old product whose prices are untouched can still be saved; it stays on the price-review list.
-    $pfCost = (float)($old->cost ?? 0); $pfPacks = []; foreach ([2,3,4,5] as $n) $pfPacks[$n] = $row["buy{$n}_price"];
+    $pfCost = $old ? \App\Support\ProfitFloor::base($old) : 0.0; $pfPacks = []; foreach ([2,3,4,5] as $n) $pfPacks[$n] = $row["buy{$n}_price"];
     $pfSame = $old && abs((float)$old->price - (float)$row['price']) < 0.005 && collect([2,3,4,5])->every(fn($n) => abs((float)($old->{"buy{$n}_price"} ?? 0) - (float)($row["buy{$n}_price"] ?? 0)) < 0.005);
     if (!$pfSame && ($pfE = \App\Support\ProfitFloor::productError($pfCost, (float)$row['price'], $pfPacks))) {
       \App\Support\ProfitFloor::audit('Profit floor blocked price', 'Product '.($old->name ?? $row['name']), $old ? ['price'=>$old->price] : null, ['price'=>$row['price'], 'cost'=>$pfCost]);
@@ -198,6 +198,7 @@ class CatalogController extends Controller {
       $x = array_combine($head, array_slice($row, 0, count($head)));
       if (empty($x['name']) || !is_numeric($x['price'] ?? null)) { $bad++; continue; }
       $data = ['name'=>mb_substr($x['name'],0,200), 'price'=>$x['price'], 'cost'=>is_numeric($x['cost'] ?? null) ? $x['cost'] : 0, 'offer_price'=>is_numeric($x['offer_price'] ?? null) ? $x['offer_price'] : null, 'stock'=>(int)($x['stock'] ?? 0), 'barcode'=>$x['barcode'] ?? null, 'size'=>$x['size'] ?? null, 'category_id'=>$cat(trim($x['category'] ?? '')), 'brand_id'=>$brand(trim($x['brand'] ?? '')), 'updated_at'=>now()];
+      if (\App\Support\ProfitFloor::hasAvg() && is_numeric($x['cost'] ?? null) && (float)$x['cost'] > 0) $data['avg_cost'] = (float)$x['cost']; // a cost typed in an import is the owner's stated average
       $sku = trim($x['sku'] ?? '');
       if ($sku !== '' && DB::table('products')->where('sku',$sku)->exists()) DB::table('products')->where('sku',$sku)->update($data);
       else DB::table('products')->insert($data + ['sku'=>$sku ?: null, 'slug'=>\Illuminate\Support\Str::slug($data['name']), 'published'=>false, 'created_at'=>now()]);

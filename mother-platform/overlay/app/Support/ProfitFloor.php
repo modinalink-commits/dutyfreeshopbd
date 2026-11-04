@@ -2,14 +2,36 @@
 namespace App\Support;
 use Illuminate\Support\Facades\DB;
 
-/** Protected Company Profit: nothing (discount, coupon, membership, bundle, delivery, staff or other cost) may take a product's final price below purchase price x 1.15.
+/** Protected Company Profit: nothing (discount, coupon, membership, bundle, delivery, staff or other cost) may take a product's final price below AVERAGE purchase price x 1.15.
+ *  Stock bought at different rates is blended into one weighted average (products.avg_cost); that average is the fixed base. Above the 15% floor there is no upper limit.
  *  One place for the rule; every price entry and every discount path asks it. Products with no purchase price on file cannot be checked and are left alone. */
 class ProfitFloor {
   const RATE = 1.15;
   public static function floor(float $cost): float { return $cost > 0 ? ceil(round($cost * self::RATE * 100, 6)) / 100 : 0.0; }
   public static function ok(float $cost, float $price): bool { return $cost <= 0 || $price + 0.004 >= self::floor($cost); }
   public static function tk(float $v): string { return '৳' . number_format($v, 2); }
-  public static function costs(array $ids): array { $ids = array_values(array_unique(array_filter(array_map('intval', $ids)))); return $ids ? DB::table('products')->whereIn('id', $ids)->get(['id', 'cost', 'price', 'name'])->keyBy('id')->all() : []; }
+  /** The fixed base: average purchase price when known, else the last purchase price. */
+  public static function base($p): float { $a = (float)($p->avg_cost ?? 0); return $a > 0 ? $a : (float)($p->cost ?? 0); }
+  /** Column set for product queries; 'cost' is already the average, 'last_cost' the last purchase price. */
+  public static function hasAvg(): bool { static $h = null; if ($h === null) { try { $h = \Illuminate\Support\Facades\Schema::hasColumn('products', 'avg_cost'); } catch (\Throwable $e) { $h = false; } } return $h; }
+  public static function costs(array $ids): array {
+    $ids = array_values(array_unique(array_filter(array_map('intval', $ids)))); if (!$ids) return [];
+    $rows = DB::table('products')->whereIn('id', $ids)->get(array_merge(['id', 'cost', 'price', 'name'], self::hasAvg() ? ['avg_cost'] : []))->keyBy('id')->all();
+    foreach ($rows as $r) { $r->last_cost = (float)$r->cost; $r->cost = self::base($r); } return $rows;
+  }
+  /** New average after $qty units arrive at $cost. Old stock at or below zero carries no weight (the new price starts the average). */
+  public static function blend($was, int $qty, float $cost): float {
+    $old = max(0, (int)($was->stock ?? 0)); $avg = self::base($was ?? (object)[]);
+    if ($qty <= 0) return $avg > 0 ? round($avg, 4) : round($cost, 4);
+    if ($old <= 0 || $avg <= 0) return round($cost, 4);
+    return round(($old * $avg + $qty * $cost) / ($old + $qty), 4);
+  }
+  /** Average after a purchase of $qty units at $cost is reversed. */
+  public static function unblend($was, int $qty, float $cost): float {
+    $left = (int)($was->stock ?? 0) - $qty; $avg = self::base($was ?? (object)[]);
+    if ($left <= 0 || $avg <= 0) return round($avg, 4);
+    $v = (($left + $qty) * $avg - $qty * $cost) / $left; return $v > 0 ? round($v, 4) : round($avg, 4);
+  }
 
   /** Total discount an order can carry without any line dropping below its protected price. Lines with no known cost are not limited. */
   public static function room(array $items): float {
@@ -53,7 +75,7 @@ class ProfitFloor {
     foreach ($items as $k => $i) {
       $p = $pc[(int)($i['product_id'] ?? 0)] ?? null; if (!$p || (float)$p->cost <= 0) continue;
       $pr = (float)($i['price'] ?? 0); $fl = self::floor((float)$p->cost);
-      if ($pr + 0.004 < $fl && $pr + 0.004 < (float)$p->price) $bad[$k] = $p->name . ' – Purchase ' . self::tk((float)$p->cost) . ', Minimum allowed ' . self::tk($fl) . ', Entered ' . self::tk($pr);
+      if ($pr + 0.004 < $fl && $pr + 0.004 < (float)$p->price) $bad[$k] = $p->name . ' – Average price ' . self::tk((float)$p->cost) . ', Minimum allowed ' . self::tk($fl) . ', Entered ' . self::tk($pr);
     }
     return $bad;
   }
@@ -72,7 +94,7 @@ class ProfitFloor {
   /** Product save: single price and the Buy 2-5 pack prices. */
   public static function productError(float $cost, float $price, array $packs = []): ?string {
     if ($cost <= 0) return null; $fl = self::floor($cost); $msg = []; $bad = false;
-    if ($price + 0.004 < $fl) { $bad = true; $msg[] = "Purchase " . self::tk($cost) . " · Protected profit " . self::tk($cost * 0.15) . " · Minimum price " . self::tk($fl) . " · Entered " . self::tk($price) . " · Difference " . self::tk($fl - $price) . "."; }
+    if ($price + 0.004 < $fl) { $bad = true; $msg[] = "Average price " . self::tk($cost) . " · Protected profit " . self::tk($cost * 0.15) . " · Minimum price " . self::tk($fl) . " · Entered " . self::tk($price) . " · Difference " . self::tk($fl - $price) . "."; }
     foreach ($packs as $n => $t) if ($t !== null && (float)$t > 0 && (float)$t + 0.004 < $fl * $n) { $bad = true; $msg[] = "Buy $n pack " . self::tk((float)$t) . " is below the minimum " . self::tk($fl * $n) . "."; }
     if (!$bad) return null;
     return self::admin() ? "⚠ Minimum Company Profit Protection: এই রেট দেওয়া যাবে না, কোম্পানির লস হবে। " . implode(" ", $msg) . " Please adjust the price." : self::STAFF_MSG . " দাম বাড়িয়ে আবার চেষ্টা করুন।";
