@@ -53,7 +53,7 @@ d787924ace3fa42cc66a3de321e4e94e784006d8 resources/views/panels/employees.blade.
 07b6980da2757fcd62c611e54f06dc9886445880 resources/views/store/layout.blade.php
 270e6c24c9b351dc62de398c4577272b6e77c2f2 resources/views/store/card.blade.php
 ce0d1f8552836199c028ddef8806c72a2d10ad19 resources/views/store/home_sec.blade.php
-71b668f8650c96c9e1b93aa35f7681285dc5a0c5 resources/views/store/home.blade.php
+f1a6d9b8930dea06785d13525d5933208178fb7c resources/views/store/home.blade.php
 0e5fb9160b143a0aae0c56fedd841bcdf8c5283c resources/views/store/category.blade.php
 5d7cb70a757a2819343bbe376d3161f2ff7538e4 resources/views/store/product.blade.php
 7ad9d9502d41f54d6784414a9aa3f16a8ab0ec13 resources/views/store/search.blade.php
@@ -61,7 +61,7 @@ ce0d1f8552836199c028ddef8806c72a2d10ad19 resources/views/store/home_sec.blade.ph
 1aa52e9a1cc85e3723d11055b65e301c5f2dc0c1 resources/views/store/page.blade.php
 06722f66390bb7e2d70f564ee2dd0dededd9a2b7 resources/views/store/missing.blade.php
 7e4459d82e83e77adfd2c0e6cf94a763cf6ff945 resources/views/store/checkout.blade.php
-03f8e0d0a55ce2cfd1251778fac95d2fee3d46e1 resources/views/store/wishlist.blade.php
+489914b032190e3b4829e30e4ecd23d360cba692 resources/views/store/wishlist.blade.php
 d162155635ee8d0ea432ac994aa1a1942c3cbe47 resources/views/store/pager.blade.php
 e75f162e466d0a2e2958bfaff473552e686e1543 public/logo.webp
 b221e86002b382f45e5dfcc4fa7ad59f06357323 public/og-icon.png
