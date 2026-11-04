@@ -43,19 +43,27 @@ class ProfitFloor {
     return $r;
   }
 
-  /** Staff-entered prices/discounts. $items = [product_id, qty, price]. Only lines whose price was reduced below the product's own list price are rejected, so an old product already priced under the floor can still be sold at its list price. Returns an alert text or null. */
-  public static function priceError(array $items): ?string {
+  /** Only Owner/Super Admin/Admin may see the 15% rule, purchase prices, minimum prices or allowed amounts. Everyone else gets a plain red notice with no numbers. */
+  public static function admin(): bool { try { return in_array(auth()->user()->role ?? '', ['super', 'admin'], true); } catch (\Throwable $e) { return false; } }
+  const STAFF_MSG = "⚠ এই রেট/ডিসকাউন্ট দেওয়া যাবে না — এতে আমাদের কোম্পানির লস হবে।";
+
+  /** Lines whose price was reduced below the protected price. Only lines cut below the product's own list price count, so an old product priced under the floor can still be sold at its list price. key => detail */
+  public static function lineIssues(array $items): array {
     $pc = self::costs(array_column($items, 'product_id')); $bad = [];
-    foreach ($items as $i) {
+    foreach ($items as $k => $i) {
       $p = $pc[(int)($i['product_id'] ?? 0)] ?? null; if (!$p || (float)$p->cost <= 0) continue;
       $pr = (float)($i['price'] ?? 0); $fl = self::floor((float)$p->cost);
-      if ($pr + 0.004 < $fl && $pr + 0.004 < (float)$p->price) $bad[] = $p->name . ' – Purchase ' . self::tk((float)$p->cost) . ', Minimum allowed ' . self::tk($fl) . ', Entered ' . self::tk($pr);
+      if ($pr + 0.004 < $fl && $pr + 0.004 < (float)$p->price) $bad[$k] = $p->name . ' – Purchase ' . self::tk((float)$p->cost) . ', Minimum allowed ' . self::tk($fl) . ', Entered ' . self::tk($pr);
     }
-    return $bad ? "⚠ Minimum Company Profit Protection\nএই পরিবর্তনের ফলে product-এর profit কোম্পানির নির্ধারিত ন্যূনতম ১৫%-এর নিচে চলে যাবে।\n" . implode("\n", $bad) : null;
+    return $bad;
+  }
+  public static function priceError(array $items): ?string {
+    $bad = self::lineIssues($items); if (!$bad) return null;
+    return self::admin() ? "⚠ Minimum Company Profit Protection\nএই পরিবর্তনের ফলে product-এর profit কোম্পানির নির্ধারিত ন্যূনতম ১৫%-এর নিচে চলে যাবে।\n" . implode("\n", $bad) : self::STAFF_MSG;
   }
   public static function discountError(array $items, float $disc): ?string {
-    if ($disc <= 0) return null; $room = self::room($items);
-    return $disc > $room + 0.004 ? "⚠ Discount Not Allowed\nএই discount প্রয়োগ করলে product-এর company profit ১৫%-এর নিচে নেমে যাবে।\nMaximum Allowed Discount: " . self::tk($room) : null;
+    if ($disc <= 0) return null; $room = self::room($items); if ($disc <= $room + 0.004) return null;
+    return self::admin() ? "⚠ Discount Not Allowed\nএই discount প্রয়োগ করলে product-এর company profit ১৫%-এর নিচে নেমে যাবে।\nMaximum Allowed Discount: " . self::tk($room) : self::STAFF_MSG;
   }
   public static function orderError(array $items, float $disc, bool $checkPrices = true): ?string {
     return ($checkPrices ? self::priceError($items) : null) ?: self::discountError($items, $disc);
@@ -63,10 +71,11 @@ class ProfitFloor {
 
   /** Product save: single price and the Buy 2-5 pack prices. */
   public static function productError(float $cost, float $price, array $packs = []): ?string {
-    if ($cost <= 0) return null; $fl = self::floor($cost); $msg = [];
-    if ($price + 0.004 < $fl) $msg[] = "Purchase Price: " . self::tk($cost) . "\nProtected Profit (15%): " . self::tk($cost * 0.15) . "\nMinimum Allowed Price: " . self::tk($fl) . "\nEntered Selling Price: " . self::tk($price) . "\nDifference: " . self::tk($fl - $price);
-    foreach ($packs as $n => $t) if ($t !== null && (float)$t > 0 && (float)$t + 0.004 < $fl * $n) $msg[] = "Buy $n pack price " . self::tk((float)$t) . " is below the minimum " . self::tk($fl * $n);
-    return $msg ? "⚠ Minimum Company Profit Protection\nএই পরিবর্তনের ফলে product-এর profit কোম্পানির নির্ধারিত ন্যূনতম ১৫%-এর নিচে চলে যাবে।\n" . implode("\n", $msg) . "\nPlease adjust the price." : null;
+    if ($cost <= 0) return null; $fl = self::floor($cost); $msg = []; $bad = false;
+    if ($price + 0.004 < $fl) { $bad = true; $msg[] = "Purchase Price: " . self::tk($cost) . "\nProtected Profit (15%): " . self::tk($cost * 0.15) . "\nMinimum Allowed Price: " . self::tk($fl) . "\nEntered Selling Price: " . self::tk($price) . "\nDifference: " . self::tk($fl - $price); }
+    foreach ($packs as $n => $t) if ($t !== null && (float)$t > 0 && (float)$t + 0.004 < $fl * $n) { $bad = true; $msg[] = "Buy $n pack price " . self::tk((float)$t) . " is below the minimum " . self::tk($fl * $n); }
+    if (!$bad) return null;
+    return self::admin() ? "⚠ Minimum Company Profit Protection\nএই পরিবর্তনের ফলে product-এর profit কোম্পানির নির্ধারিত ন্যূনতম ১৫%-এর নিচে চলে যাবে।\n" . implode("\n", $msg) . "\nPlease adjust the price." : self::STAFF_MSG . "\nদাম বাড়িয়ে আবার চেষ্টা করুন।";
   }
   public static function audit(string $act, string $subject, $prev = null, $new = null): void { Procure::audit($act, $subject, $prev, $new); }
 }

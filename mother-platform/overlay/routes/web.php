@@ -207,6 +207,8 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/stock-movement-report', [\App\Http\Controllers\StockMovementReportController::class,'index']);
   Route::get('/stock-report', [\App\Http\Controllers\StockReportController::class,'index']);
   Route::get('/price-review', [\App\Http\Controllers\PriceReviewController::class,'index']);
+  Route::get('/profit-check/product', [\App\Http\Controllers\PriceReviewController::class,'checkProduct']); Route::get('/profit-check/order', [\App\Http\Controllers\PriceReviewController::class,'checkOrder']);
+  Route::get('/ship-check/{id}', [\App\Http\Controllers\StockHistoryController::class,'shipCheck'])->whereNumber('id');
   Route::get('/stock-history/{id}', [\App\Http\Controllers\StockHistoryController::class,'show'])->whereNumber('id');
   Route::get('/perf-audit', [\App\Http\Controllers\PerfAuditController::class,'show']);
   Route::get('/legacy-key', [\App\Http\Controllers\LegacyKeyController::class,'show']);

@@ -67,7 +67,7 @@
 <div class="sec"><h2><i>2</i>Pricing</h2><p class="sub">Regular price is the full price. Add a sale price and the discount is calculated for you.</p>
 <div class="g2"><div><label>Regular price (TK) *</label><input name="regular_price" id="pReg" type="number" step="0.01" min="0" value="{{ $regular }}" required></div>
 <div><label>Sale price (TK)</label><input name="sale_price" id="pSale" type="number" step="0.01" min="0" value="{{ $sale }}"></div></div>
-@php($__c = $p ? (float)($p->cost ?? 0) : 0)@if($__c > 0)@php($__f = \App\Support\ProfitFloor::floor($__c))@php($__pr = (float)$p->price)@php($__ok = $__pr + 0.004 >= $__f)
+@php($__c = ($p && \App\Support\ProfitFloor::admin()) ? (float)($p->cost ?? 0) : 0)@if($__c > 0)@php($__f = \App\Support\ProfitFloor::floor($__c))@php($__pr = (float)$p->price)@php($__ok = $__pr + 0.004 >= $__f)
 <div style="margin:8px 0;padding:9px 12px;border-radius:10px;font-size:13px;border:1px solid {{ $__ok ? '#BBF7D0' : '#FCA5A5' }};background:{{ $__ok ? '#F0FDF4' : '#FEF2F2' }};color:{{ $__ok ? '#166534' : '#991B1B' }}"><b>{{ $__ok ? '🟢 Safe' : '🔴 Below Minimum – PRICE REVIEW REQUIRED' }}</b><br>Purchase price ৳{{ number_format($__c, 2) }} · Protected profit (15%) ৳{{ number_format($__c * 0.15, 2) }} · Minimum selling price ৳{{ number_format($__f, 2) }} · Current gross margin {{ $__pr > 0 ? number_format(($__pr - $__c) / $__c * 100, 1) : 0 }}% on cost · Discountable ৳{{ number_format(max(0, $__pr - $__f), 2) }}</div>@endif
 <span class="disc" id="pDisc" style="display:none"></span>
 <div id="pFloorW" style="display:none;margin:8px 0;padding:10px 12px;border-radius:10px;background:#FEF2F2;border:2px solid #DC2626;color:#991B1B;font-size:14px;font-weight:700;white-space:pre-line"></div>
@@ -150,11 +150,9 @@ cm.addEventListener('change',function(){onMain(false)});cs.addEventListener('inp
 /* price */
 function disc(){var r=parseFloat($('pReg').value),s=parseFloat($('pSale').value),b=$('pDisc');if(r>0&&s>0&&s<r){var p=Math.round((r-s)/r*100);b.textContent='Discount: '+p+'% (save TK '+Math.round(r-s).toLocaleString()+')';b.style.display='inline-block'}else b.style.display='none'}
 $('pReg').addEventListener('input',disc);$('pSale').addEventListener('input',disc);
-var PCOST=@json($p ? (float)($p->cost ?? 0) : 0),PFLOOR=PCOST>0?Math.ceil(Math.round(PCOST*115*1e6)/1e6)/100:0,POLD=@json($p ? (float)$p->price : null);
-function floorChk(){var w=$('pFloorW');if(!w||PFLOOR<=0)return;var r=parseFloat($('pReg').value)||0,sl=parseFloat($('pSale').value)||0,eff=(sl>0&&sl<r)?sl:r,m=[];
- if(eff>0&&eff+0.004<PFLOOR)m.push('\u26a0 এই রেট দেওয়া যাবে না — এতে আমাদের কোম্পানির লস হবে।\nক্রয়মূল্য: ৳'+PCOST.toFixed(2)+' · সর্বনিম্ন বিক্রয়মূল্য (ক্রয়মূল্য + ১৫%): ৳'+PFLOOR.toFixed(2)+' · আপনি দিয়েছেন: ৳'+eff.toFixed(2));
- [2,3,4,5].forEach(function(n){var el=document.querySelector('[name=buy'+n+'_price]');var v=el?parseFloat(el.value)||0:0;if(v>0&&v+0.004<PFLOOR*n)m.push('\u26a0 Buy '+n+' প্যাকের এই রেট দেওয়া যাবে না — কোম্পানির লস হবে। সর্বনিম্ন ৳'+(PFLOOR*n).toFixed(2))});
- w.textContent=m.join('\n');w.style.display=m.length?'block':'none'}
+var PFID=@json($p ? (int)$p->id : 0),pfT=null;
+function floorChk(){var w=$('pFloorW');if(!w||!PFID)return;clearTimeout(pfT);pfT=setTimeout(function(){var q='id='+PFID+'&price='+encodeURIComponent(($('pSale').value&&parseFloat($('pSale').value)>0&&parseFloat($('pSale').value)<parseFloat($('pReg').value))?$('pSale').value:$('pReg').value);[2,3,4,5].forEach(function(n){var el=document.querySelector('[name=buy'+n+'_price]');q+='&b'+n+'='+encodeURIComponent(el?el.value:'')});
+ fetch('/admin/profit-check/product?'+q,{headers:{Accept:'application/json'},credentials:'same-origin'}).then(function(r){return r.json()}).then(function(j){w.textContent=j.warn||'';w.style.display=j.warn?'block':'none'}).catch(function(){})},250)}
 ['pReg','pSale'].forEach(function(i){$(i).addEventListener('input',floorChk)});[2,3,4,5].forEach(function(n){var el=document.querySelector('[name=buy'+n+'_price]');if(el)el.addEventListener('input',floorChk)});floorChk();
 /* url preview */
 var slugTouched={{ $p ? 'true' : 'false' }};

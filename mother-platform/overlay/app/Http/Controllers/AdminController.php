@@ -205,7 +205,7 @@ class AdminController extends Controller {
   public function orderProducts(Request $r) {
     $q = trim((string)$r->query('q', '')); if (mb_strlen($q) < 1) return response()->json([]);
     $like = '%'.str_replace(['%', '_'], '', $q).'%';
-    return response()->json(DB::table('products')->where(fn($w) => $w->where('name', 'ilike', $like)->orWhere('sku', 'ilike', $like))->orderByRaw('published desc')->limit(12)->get(['id', 'name', 'sku', 'price', 'stock', 'cost'])->map(fn($p) => ['id'=>$p->id, 'name'=>$p->name, 'sku'=>$p->sku, 'price'=>(float)$p->price, 'stock'=>(int)$p->stock, 'floor'=>\App\Support\ProfitFloor::floor((float)$p->cost)])->all());
+    return response()->json(DB::table('products')->where(fn($w) => $w->where('name', 'ilike', $like)->orWhere('sku', 'ilike', $like))->orderByRaw('published desc')->limit(12)->get(['id', 'name', 'sku', 'price', 'stock'])->map(fn($p) => ['id'=>$p->id, 'name'=>$p->name, 'sku'=>$p->sku, 'price'=>(float)$p->price, 'stock'=>(int)$p->stock])->all());
   }
   /** Create Order: find a saved customer by mobile number and return what we know about them. */
   public function orderLookup(Request $r) {
@@ -227,7 +227,7 @@ class AdminController extends Controller {
     if (!$p || strlen($p) < 10) return response()->json(['lines'=>[], 'total'=>0, 'mode'=>\App\Support\OrderDiscount::mode(), 'can'=>$can, 'coupon_error'=>null, 'profile'=>null]);
     if ($sub <= 0) return response()->json(['lines'=>[], 'total'=>0, 'mode'=>\App\Support\OrderDiscount::mode(), 'can'=>$can, 'coupon_error'=>null, 'profile'=>\App\Support\OrderDiscount::profile($p)]);
     $__it = array_values(array_filter(array_map(function($t) { $a = explode(':', $t); return count($a) === 3 ? ['product_id'=>(int)$a[0], 'price'=>(float)$a[1], 'qty'=>(int)$a[2]] : null; }, explode(',', (string)$r->query('items', '')))));
-    return response()->json(\App\Support\OrderDiscount::compute($p, $sub, $r->query('coupon'), ['qty'=>(int)$r->query('qty', 0), 'items'=>$__it]) + ['can'=>$can, 'room'=>\App\Support\ProfitFloor::room($__it)]);
+    return response()->json(\App\Support\OrderDiscount::compute($p, $sub, $r->query('coupon'), ['qty'=>(int)$r->query('qty', 0), 'items'=>$__it]) + ['can'=>$can]);
   }
   public function orderStore(Request $r) {
     \App\Support\PhoneRule::trim($r);

@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\DB;
 /** Products whose selling price is below purchase price x 1.15 (Protected Company Profit). Computed live, so a purchase-price rise shows here at once. */
 class PriceReviewController extends Controller {
   public function index(Request $r) {
+    abort_unless(\App\Support\ProfitFloor::admin(), 403);
     if (in_array($r->query('export'), ['all', 'alltxt', 'xlsx'], true)) return $this->all($r);
     if ($r->query('export') === 'raised') return $this->raised();
     $rows = [];
@@ -40,5 +41,20 @@ class PriceReviewController extends Controller {
     $o = fopen('php://temp', 'w+'); fputcsv($o, ['Product ID', 'Product', 'Purchase price', 'Old price', 'New price', 'Old crossed-out price', 'Old Buy 2', 'Old Buy 3', 'Old Buy 4', 'Old Buy 5', 'Raised at']);
     try { foreach (DB::table('price_floor_backup')->orderBy('id')->get() as $b) fputcsv($o, [$b->product_id, $b->name, $b->cost, $b->old_price, $b->new_price, $b->old_compare, $b->old_buy2, $b->old_buy3, $b->old_buy4, $b->old_buy5, $b->created_at]); } catch (\Throwable $e) {}
     rewind($o); return response("\xEF\xBB\xBF" . stream_get_contents($o), 200, ['Content-Type' => 'text/csv; charset=UTF-8', 'Content-Disposition' => 'attachment; filename="prices-raised.csv"']);
+  }
+
+  /** Live check while typing a product price (Product form). Staff get a plain notice, admins the details. */
+  public function checkProduct(Request $r) {
+    $p = DB::table('products')->where('id', (int)$r->query('id'))->first(['cost']);
+    $packs = []; foreach ([2, 3, 4, 5] as $n) $packs[$n] = $r->query("b$n") !== null && $r->query("b$n") !== '' ? (float)$r->query("b$n") : null;
+    return response()->json(['warn' => $p ? \App\Support\ProfitFloor::productError((float)$p->cost, (float)$r->query('price'), $packs) : null]);
+  }
+  /** Live check on Create Order: per-line price cuts and the total discount. items = idx:productId:price:qty,... */
+  public function checkOrder(Request $r) {
+    $items = []; foreach (explode(',', (string)$r->query('items', '')) as $t) { $a = explode(':', $t); if (count($a) === 4) $items[(int)$a[0]] = ['product_id' => (int)$a[1], 'price' => (float)$a[2], 'qty' => (int)$a[3]]; }
+    $adm = \App\Support\ProfitFloor::admin(); $lines = [];
+    foreach (\App\Support\ProfitFloor::lineIssues($items) as $k => $d) $lines[$k] = $adm ? "⚠ এই রেট দেওয়া যাবে না — কোম্পানির লস হবে। " . $d : \App\Support\ProfitFloor::STAFF_MSG;
+    $disc = \App\Support\ProfitFloor::discountError($items, (float)$r->query('disc', 0));
+    return response()->json(['lines' => (object)$lines, 'disc' => $disc]);
   }
 }

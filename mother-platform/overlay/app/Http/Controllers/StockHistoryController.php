@@ -29,4 +29,7 @@ class StockHistoryController extends Controller {
     }
     return view('stock_history', ['p' => $p, 'rows' => $out, 'mode' => $mode]);
   }
+
+  /** Read-only: would this order be allowed into Shipment? (same check the Shipment buttons use) */
+  public function shipCheck($id) { return response()->json(['order' => (int)$id, 'blocked' => \App\Support\StockGuard::shipBlock((int)$id)]); }
 }
