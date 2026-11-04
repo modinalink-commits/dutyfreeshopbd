@@ -97,9 +97,9 @@ $qs = fn($extra = []) => http_build_query(array_filter(array_merge(['store'=>$st
 </style>
 <div class="dx" id="dxroot" data-q="{{ $q }}">
 <header class="dx-top">
-  <div class="ttl"><h1>Dashboard Overview</h1><div class="muted">{{ $now->format('D, j M Y') }} · <span id="dxclock">{{ $now->format('h:i A') }}</span> · {{ $storeId ? ($storeList->firstWhere('id',$storeId)->name ?? 'Store') : 'All stores' }}{{ $ch ? ' · '.$ch : '' }}</div></div>
+  <div class="ttl"><h1>Dashboard Overview</h1><div class="muted">{{ $now->format('D, j M Y') }} · <span id="dxclock">{{ $now->format('h:i A') }}</span> · {{ $storeId ? ($storeList->firstWhere('id',$storeId)->name ?? 'Store') : ($storeList->count() === 1 ? $storeList->first()->name : 'All stores') }}{{ $ch ? ' · '.$ch : '' }}</div></div>
   <form method="get" action="/admin">
-    <select name="store" onchange="this.form.submit()" aria-label="Store"><option value="">All stores</option>@foreach($storeList as $st)<option value="{{ $st->id }}" {{ $storeId==$st->id?'selected':'' }}>{{ $st->name }}</option>@endforeach</select>
+    @if($storeList->count() > 1)<select name="store" onchange="this.form.submit()" aria-label="Store"><option value="">All stores</option>@foreach($storeList as $st)<option value="{{ $st->id }}" {{ $storeId==$st->id?'selected':'' }}>{{ $st->name }}</option>@endforeach</select>@endif
     <select name="channel" onchange="this.form.submit()" aria-label="Channel"><option value="">All channels</option>@foreach($channels as $cn0)<option value="{{ $cn0 }}" {{ $ch===$cn0?'selected':'' }}>{{ $cn0 }}</option>@endforeach</select>
     <input type="hidden" name="range" value="{{ $range }}">
     <span class="dx-pills">@foreach(['today'=>'Today','7'=>'7 Days','30'=>'30 Days'] as $rk=>$rl)<a href="/admin?{{ $qs(['range'=>$rk]) }}" class="{{ $range===(string)$rk ? 'on' : '' }}">{{ $rl }}</a>@endforeach<a href="#" onclick="document.getElementById('dxcu').style.display='flex';return false" class="{{ $isCustom ? 'on' : '' }}">Custom</a></span>
@@ -187,13 +187,15 @@ $__am = max(1, $__at ? $__at[0]['customers'] : 1);
 @endif
 
 <section class="dx-p">
-  <div class="card"><div class="head"><h2>Courier Performance</h2><a class="more" href="/admin/courier-dashboard">Open →</a></div>
+  <div class="card" @if($storeList->count() <= 1) style="grid-column:1/-1" @endif><div class="head"><h2>Courier Performance</h2><a class="more" href="/admin/courier-dashboard">Open →</a></div>
     @forelse($couriers as [$cn,$cp,$cs,$cdl,$crt])<a href="/admin/courier-dashboard" style="display:block;margin:7px 0"><div style="display:flex;gap:6px;font-size:12px"><b style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ $cn }}</b><b style="color:{{ $cs>=80 ? '#166534' : ($cs>=60 ? '#B45309' : '#B91C1C') }}">{{ $cs }}%</b></div><div class="dx-bar" style="margin:3px 0"><i style="width:{{ min(100,$cs) }}%;background:{{ $cs>=80 ? '#16A34A' : ($cs>=60 ? '#F59E0B' : '#DC2626') }}"></i></div><span class="muted">{{ $cp }} parcels · {{ $cdl }} delivered · {{ $crt }} returned</span></a>
     @empty<div class="dx-empty">No courier data for this period.</div>@endforelse</div>
+  @if($storeList->count() > 1)
   <div class="card"><div class="head"><h2>Store Performance</h2><a class="more" href="/admin/analytics">Compare →</a></div>
     @php $smx = max(1, $storePerf->max(2) ?? 1); @endphp
     @forelse($storePerf as [$sn,$so,$sv,$sd])<a href="/admin/orders" style="display:block;margin:7px 0"><div style="display:flex;gap:6px;font-size:12px"><b style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ $sn }}</b><b>৳{{ number_format($sv) }}</b></div><div class="dx-bar" style="margin:3px 0"><i style="width:{{ round($sv/$smx*100) }}%;background:#0B1220"></i></div><span class="muted">{{ $so }} orders · {{ $sd === null ? 'no deliveries yet' : $sd.'% delivered' }}</span></a>
     @empty<div class="dx-empty">No store data for this period.</div>@endforelse</div>
+  @endif
 </section>
 
 <section class="dx-3">
