@@ -87,6 +87,7 @@ body .w [data-cr]{--pv:6;--g:10px;display:flex;gap:var(--g);padding:0;overflow-x
 .osl .osv::before,.osl .osv::after{display:none!important}
 .osl .osv img,.osl .osvv{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;border-radius:inherit;animation:none!important}
 .osl .osvv{opacity:0;transition:opacity .5s;z-index:1}.osl .osvv.on{opacity:1}
+@media (max-width:760px){.osl .sl-t:not(:has(>a:nth-child(3)))>a,.osl .sl-t:not(:has(>a:nth-child(3)))>a:last-child{flex-basis:88%;margin-right:8px}}
 /* Recently ordered - modern card strip */
 body .sec-lv .lvh{position:relative;gap:4px}
 body .sec-lv .chip{background:#ECFDF5;color:#047857;border:1px solid #A7F3D0;font-size:11px;letter-spacing:.08em;padding:4px 12px 4px 10px}
