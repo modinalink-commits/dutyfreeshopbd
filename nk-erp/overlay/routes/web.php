@@ -3,7 +3,11 @@
 use App\Http\Controllers\ApiController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\BrandController;
+use App\Http\Controllers\ExchangeController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\RoadmapController;
+use App\Http\Controllers\StockController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -27,6 +31,25 @@ Route::middleware(['auth', 'pwd'])->group(function () {
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
     Route::post('/orders/{order}', [OrderController::class, 'update'])->name('orders.update')
         ->middleware('role:super_admin,admin,manager');
+
+    Route::get('/soon/{key}', [RoadmapController::class, 'soon'])->name('soon');
+    Route::get('/build-progress', [RoadmapController::class, 'index'])->name('roadmap');
+
+    Route::get('/stock', [StockController::class, 'index'])->name('stock.index');
+    Route::get('/stock/history', [StockController::class, 'history'])->name('stock.history');
+    Route::get('/brands', [BrandController::class, 'index'])->name('brands.index');
+
+    Route::middleware('role:super_admin,admin,manager')->group(function () {
+        Route::get('/stock/new', [StockController::class, 'create'])->name('stock.create');
+        Route::post('/stock', [StockController::class, 'store'])->name('stock.store');
+        Route::post('/exchanges', [ExchangeController::class, 'store'])->name('exchanges.store');
+        Route::post('/exchanges/{exchange}', [ExchangeController::class, 'decide'])->name('exchanges.decide');
+    });
+
+    Route::middleware('role:super_admin,admin')->group(function () {
+        Route::post('/brands', [BrandController::class, 'save'])->name('brands.save');
+        Route::post('/stock/{movement}/reverse', [StockController::class, 'reverse'])->name('stock.reverse');
+    });
 
     Route::middleware('role:super_admin,admin')->group(function () {
         Route::get('/settings', [SettingController::class, 'edit'])->name('settings.edit');

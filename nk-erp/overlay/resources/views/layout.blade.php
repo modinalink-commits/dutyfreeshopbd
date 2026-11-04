@@ -21,6 +21,7 @@ a{color:var(--blue)}
 .side a.nav{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:12px;text-decoration:none;color:var(--ink);font-weight:500}
 .side a.nav.on{background:#dce8ff;color:var(--blue);font-weight:700}
 .side a.nav .badge{margin-left:auto;background:#b3261e;color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px}
+.side a.nav.soon{color:#7b8aa8}.side a.nav .later{margin-left:auto;font-size:10px;font-weight:700;color:#7b8aa8;border:1px solid var(--line);border-radius:999px;padding:0 6px}
 .me{margin-top:auto;border-top:1px solid var(--line);padding:12px 6px 0;display:flex;flex-direction:column;gap:6px;font-size:12px}
 .me b{font-size:13px}
 main{flex:1;min-width:0;padding:24px;display:flex;flex-direction:column;gap:16px}
@@ -58,17 +59,25 @@ textarea{padding:8px 10px;min-height:60px}
   <aside class="side" aria-label="Main menu">
     <div class="brand"><img src="/img/logo.webp" alt="NK Corporation logo"><div><b>NK Corporation</b><small>BUSINESS CONTROL</small></div></div>
     @unless($u->must_change_password)
-    <span class="grp">OVERVIEW</span>
-    <a class="nav {{ request()->routeIs('dashboard') ? 'on' : '' }}" href="{{ route('dashboard') }}">Dashboard</a>
-    <span class="grp">SALES</span>
     @php($newCount = \App\Models\WebsiteOrder::where('status', 'new')->count())
-    <a class="nav {{ request()->routeIs('orders.*') ? 'on' : '' }}" href="{{ route('orders.index') }}">Website orders @if($newCount)<span class="badge">{{ $newCount }}</span>@endif</a>
-    @if(in_array($u->role, ['super_admin', 'admin']))
-    <span class="grp">SETTINGS</span>
-    <a class="nav {{ request()->routeIs('settings.*') ? 'on' : '' }}" href="{{ route('settings.edit') }}">Company settings</a>
-    <a class="nav {{ request()->routeIs('users.*') ? 'on' : '' }}" href="{{ route('users.index') }}">Users &amp; roles</a>
-    <a class="nav {{ request()->routeIs('activity') ? 'on' : '' }}" href="{{ route('activity') }}">Activity log</a>
-    @endif
+    @php($waitX = \App\Models\BrandExchange::where('status', 'waiting')->count())
+    @php($adminOnly = ['company', 'users', 'activity', 'sms'])
+    @foreach(\App\Support\Roadmap::MENU as $group => $items)
+      <span class="grp">{{ $group }}</span>
+      @foreach($items as [$key, $label, $route, $design])
+        @continue(in_array($key, $adminOnly) && ! in_array($u->role, ['super_admin', 'admin']))
+        @if($route)
+          <a class="nav {{ request()->routeIs(explode('.', $route)[0].'*') ? 'on' : '' }}" href="{{ route($route) }}">{{ $label }}
+            @if($key === 'corders' && $newCount)<span class="badge">{{ $newCount }}</span>@endif
+            @if($key === 'brands' && $waitX)<span class="badge">{{ $waitX }}</span>@endif
+          </a>
+        @else
+          <a class="nav soon {{ request()->is('soon/'.$key) ? 'on' : '' }}" href="{{ route('soon', $key) }}">{{ $label }}<span class="later">soon</span></a>
+        @endif
+      @endforeach
+    @endforeach
+    <span class="grp">PROJECT</span>
+    <a class="nav {{ request()->routeIs('roadmap') ? 'on' : '' }}" href="{{ route('roadmap') }}">Build progress</a>
     @endunless
     <div class="me">
       <b>{{ $u->name }}</b><span style="color:var(--muted)">{{ $u->roleLabel() }} · {{ $u->email }}</span>

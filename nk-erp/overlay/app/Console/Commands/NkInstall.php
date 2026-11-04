@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Brand;
 use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Console\Command;
@@ -45,6 +46,23 @@ class NkInstall extends Command
             if (! Setting::query()->where('key', $key)->exists()) {
                 Setting::put($key, $value);
             }
+        }
+
+        if (! Brand::query()->exists()) {
+            $names = ['Aygaz United', 'Bashundhara', 'Omera', 'Jamuna', 'Fresh', 'BM', 'Petromax', 'LAUGFS', 'JMI', 'Navana', 'Delta', 'SKS/Sena', 'Beximco', 'Totalgaz', 'Unigas', 'Orion', 'Bengal', 'Dubai Bangla', 'Universal', 'Promita', 'Green', 'Eurogaz', 'TMSS', 'Premier', 'Padma', 'City', 'G Gas', 'Super LPG'];
+            foreach ($names as $i => $name) {
+                $own = $i === 0;
+                Brand::create([
+                    'code' => 'BR-'.str_pad((string) ($i + 1), 2, '0', STR_PAD_LEFT),
+                    'name' => $name,
+                    'sizes' => $own ? [12, 35, 45] : [12],
+                    'is_active' => $own,
+                    'for_sale' => $own,
+                    'empty_collection' => true,
+                    'remarks' => $own ? 'Our brand · distributor' : null,
+                ]);
+            }
+            $this->info('Brand list created.');
         }
 
         return self::SUCCESS;
