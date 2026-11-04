@@ -16,9 +16,14 @@ class CheckoutLookupController extends Controller {
     return DB::table('orders')->where('phone', $p)->whereNotNull('address')->where('address', '!=', '')->orderByDesc('id')->first();
   }
   public function lookup(Request $r) {
-    if (!$this->on()) return response()->json(['found'=>false]);
     $p = $this->phone($r); if (!$p) return response()->json(['found'=>false]);
     $o = $this->last($p); if (!$o) return response()->json(['found'=>false]);
+    if (!$this->on()) {
+      // Free auto-fill (no SMS): name, address and district of the last order for this number. Capped per visitor so the list of customers cannot be harvested.
+      $k = 'co.lk.'.md5((string)$r->ip()); Cache::add($k, 0, 3600); if ((int)Cache::get($k, 0) >= 8) return response()->json(['found'=>false]);
+      Cache::increment($k);
+      return response()->json(['found'=>true, 'otp'=>false, 'd'=>['name'=>$o->customer_name, 'address'=>$o->address, 'district'=>$o->district]]);
+    }
     $n = trim((string)$o->customer_name);
     return response()->json(['found'=>true, 'hint'=>mb_substr($n, 0, 1).'•••', 'otp'=>Sms::configured()]);
   }
