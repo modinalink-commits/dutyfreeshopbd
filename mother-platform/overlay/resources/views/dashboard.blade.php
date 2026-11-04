@@ -96,6 +96,9 @@ $qs = fn($extra = []) => http_build_query(array_filter(array_merge(['store'=>$st
 .dx-p5 a:not(:last-child)::after{content:"";position:absolute;right:-12px;top:50%;width:8px;height:8px;border-top:2px solid #C5CCD6;border-right:2px solid #C5CCD6;transform:translateY(-50%) rotate(45deg)}
 .dx-p5 .tp{display:flex;align-items:center;gap:6px;color:var(--c);font-weight:800;font-size:11.5px}.dx-p5 .n{font-size:17px;font-weight:800;line-height:1.15;color:#0B1220}.dx-p5 .n small{font-size:11px;font-weight:600;color:#6B7280;margin-left:3px}.dx-p5 .vl{font-size:12.5px;font-weight:700;color:var(--c)}
 @media (max-width:900px){.dx-p5{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.dx-p5 a::after{display:none!important}}
+#dxroot .dx-ibtn,#dxroot .dx-top select,#dxroot .dx-pills,#dxroot .dx-tabs,#dxroot .dx-search,#dxroot .dx-qa a,#dxroot .dx-menu summary,#dxroot .dx-live{border:1px solid rgba(11,18,32,.28)!important}
+#dxroot .dx-pills a,#dxroot .dx-tabs button{border:0}
+#dxroot .dx-qa a:hover,#dxroot .dx-ibtn:hover{border-color:rgba(11,18,32,.5)!important}
 </style>
 <div class="dx" id="dxroot" data-q="{{ $q }}">
 <header class="dx-top">
