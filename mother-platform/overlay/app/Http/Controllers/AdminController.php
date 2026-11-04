@@ -240,6 +240,7 @@ class AdminController extends Controller {
     if ($can && isset($d['disc_manual']) && $d['disc_manual'] !== '') { $disc = (float)$d['disc_manual']; $labels = ['Manual discount']; }
     if ($can && !empty($d['disc_extra'])) { $disc += (float)$d['disc_extra']; $labels[] = 'Extra discount'; }
     $disc = max(0, min($sub, round($disc, 2))); $changed = abs($disc - $auto['total']) > 0.009;
+    if ($pfE = \App\Support\ProfitFloor::orderError(array_map(fn($i) => ['product_id'=>$i['product_id'] ?? 0, 'price'=>$i['price'], 'qty'=>$i['qty']], $d['items']), $disc)) { \App\Support\ProfitFloor::audit('Profit floor blocked order', 'Create order '.$d['phone'], null, ['discount'=>$disc, 'by'=>Auth::user()->name]); return back()->withInput()->withErrors(['items'=>$pfE]); }
     $cpn = null; foreach ($kept as $l) if (($l['key'] ?? '') === 'coupon') $cpn = $l['code'] ?? null; if ($changed && $labels === ['Manual discount']) $cpn = null;
     $dv = \App\Support\Delivery::compute((float)$sub, 0, trim(($d['address'] ?? '').' '.($d['sub_city'] ?? '')), (string)($d['district'] ?? ''), array_values(array_filter(array_map(fn($i) => (int)($i['product_id'] ?? 0), $d['items']))));
     $shipIn = ($d['shipping'] ?? '') === '' ? $dv['charge'] : round((float)$d['shipping'], 2); $d['shipping'] = $shipIn; $adj = abs($shipIn - $dv['charge']) > 0.009 ? round($shipIn - $dv['charge'], 2) : null;

@@ -4,6 +4,7 @@ use App\Http\Middleware\ModulePermission as MP;
 use App\Models\Mother;
 use App\Support\Delivery;
 use App\Support\OrderDiscount;
+use App\Support\ProfitFloor;
 use App\Support\Procure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -100,6 +101,11 @@ class OrderRevisionController extends Controller {
     }
     if ($cpnSet && $cpn !== '' && $auto['coupon_error']) $errs[] = 'Coupon '.$cpn.': '.$auto['coupon_error'].'.';
     elseif ($auto['coupon_error'] && $cpn !== '' && $dmode === 'auto') $warn[] = 'Coupon '.$cpn.': '.$auto['coupon_error'].' (no longer applied).';
+    // ---- protected 15% company profit: reduced prices and manual discounts
+    $pfItems = array_map(fn($x) => ['product_id'=>$x['product_id'], 'price'=>$x['new_price'], 'qty'=>$x['new_qty']], $live);
+    $pfE = ProfitFloor::priceError(array_values(array_map(fn($x) => ['product_id'=>$x['product_id'], 'price'=>$x['new_price'], 'qty'=>$x['new_qty']], array_filter($live, fn($x) => !empty($x['price_changed'])))));
+    if (!$pfE && $dmode === 'manual') $pfE = ProfitFloor::discountError($pfItems, $disc);
+    if ($pfE) { $errs[] = $pfE; ProfitFloor::audit('Profit floor blocked order edit', 'Order '.($o->invoice ?? $o->id), null, ['discount'=>$disc, 'by'=>Auth::user()->name]); }
     // ---- delivery
     $pids = array_values(array_filter(array_column($live, 'product_id')));
     $dv = Delivery::compute((float)$sub, 0, (string)($o->address ?? ''), (string)($o->district ?? ''), $pids); $smode = in_array($opt['ship_mode'] ?? 'auto', ['auto', 'keep', 'override']) ? $opt['ship_mode'] : 'auto'; $oldShip = round((float)$o->shipping, 2); $dcols = null; $snote = null;

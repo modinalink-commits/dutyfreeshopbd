@@ -47,7 +47,7 @@
 </style>
 <h1>{{ $p ? 'Edit product' : 'Add product' }}</h1>
 @if(request('saved'))<div class="okb">Saved. {{ $p && $p->published ? 'This product is live on the store.' : 'It is a draft, not visible to customers.' }}</div>@endif
-@if($errors->any())<div class="card err" style="max-width:1180px">{{ $errors->first() }}</div>@endif
+@if($errors->any())<div class="card err" style="max-width:1180px;white-space:pre-line">{{ $errors->first() }}</div>@endif
 <form id="pf" class="pf" method="post" action="{{ $p ? '/admin/products/'.$p->id : '/admin/products' }}">@csrf
 <input type="hidden" name="act" id="act" value="publish">
 <div>
@@ -67,6 +67,8 @@
 <div class="sec"><h2><i>2</i>Pricing</h2><p class="sub">Regular price is the full price. Add a sale price and the discount is calculated for you.</p>
 <div class="g2"><div><label>Regular price (TK) *</label><input name="regular_price" id="pReg" type="number" step="0.01" min="0" value="{{ $regular }}" required></div>
 <div><label>Sale price (TK)</label><input name="sale_price" id="pSale" type="number" step="0.01" min="0" value="{{ $sale }}"></div></div>
+@php($__c = $p ? (float)($p->cost ?? 0) : 0)@if($__c > 0)@php($__f = \App\Support\ProfitFloor::floor($__c))@php($__pr = (float)$p->price)@php($__ok = $__pr + 0.004 >= $__f)
+<div style="margin:8px 0;padding:9px 12px;border-radius:10px;font-size:13px;border:1px solid {{ $__ok ? '#BBF7D0' : '#FCA5A5' }};background:{{ $__ok ? '#F0FDF4' : '#FEF2F2' }};color:{{ $__ok ? '#166534' : '#991B1B' }}"><b>{{ $__ok ? '🟢 Safe' : '🔴 Below Minimum – PRICE REVIEW REQUIRED' }}</b><br>Purchase price ৳{{ number_format($__c, 2) }} · Protected profit (15%) ৳{{ number_format($__c * 0.15, 2) }} · Minimum selling price ৳{{ number_format($__f, 2) }} · Current gross margin {{ $__pr > 0 ? number_format(($__pr - $__c) / $__c * 100, 1) : 0 }}% on cost · Discountable ৳{{ number_format(max(0, $__pr - $__f), 2) }}</div>@endif
 <span class="disc" id="pDisc" style="display:none"></span>
 <label style="margin-top:14px">Quantity prices <small>(total price for the pack, optional)</small></label>
 <div class="g3" style="grid-template-columns:repeat(5,minmax(0,1fr))">@foreach([1=>'Single',2=>'Buy 2',3=>'Buy 3',4=>'Buy 4',5=>'Buy 5'] as $n=>$lab)<div><label style="margin-top:2px">{{ $lab }}</label><input name="buy{{ $n }}_price" type="number" step="0.01" min="0" value="{{ $v('buy'.$n.'_price') }}"></div>@endforeach</div>

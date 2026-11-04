@@ -60,6 +60,9 @@ class OrderDiscount {
   }
   /** Applies the product "Quantity prices" (Buy 2-5) for every channel that did not already do it (website cart does it itself and sets ctx qprice). Lines priced by hand are left alone. */
   public static function compute(?string $phone, float $sub, ?string $coupon = null, array $ctx = []): array {
+    return ProfitFloor::enforce(self::computeRaw($phone, $sub, $coupon, $ctx), array_values((array)($ctx['items'] ?? [])), (float)($ctx['bsave'] ?? 0));
+  }
+  private static function computeRaw(?string $phone, float $sub, ?string $coupon = null, array $ctx = []): array {
     if (array_key_exists('qprice', $ctx) || empty($ctx['items'])) return self::computeCore($phone, $sub, $coupon, $ctx);
     $bs = 0.0;
     try {

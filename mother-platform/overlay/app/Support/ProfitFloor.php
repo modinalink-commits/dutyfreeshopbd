@@ -1,0 +1,72 @@
+<?php
+namespace App\Support;
+use Illuminate\Support\Facades\DB;
+
+/** Protected Company Profit: nothing (discount, coupon, membership, bundle, delivery, staff or other cost) may take a product's final price below purchase price x 1.15.
+ *  One place for the rule; every price entry and every discount path asks it. Products with no purchase price on file cannot be checked and are left alone. */
+class ProfitFloor {
+  const RATE = 1.15;
+  public static function floor(float $cost): float { return $cost > 0 ? ceil(round($cost * self::RATE * 100, 6)) / 100 : 0.0; }
+  public static function ok(float $cost, float $price): bool { return $cost <= 0 || $price + 0.004 >= self::floor($cost); }
+  public static function tk(float $v): string { return '৳' . number_format($v, 2); }
+  public static function costs(array $ids): array { $ids = array_values(array_unique(array_filter(array_map('intval', $ids)))); return $ids ? DB::table('products')->whereIn('id', $ids)->get(['id', 'cost', 'price', 'name'])->keyBy('id')->all() : []; }
+
+  /** Total discount an order can carry without any line dropping below its protected price. Lines with no known cost are not limited. */
+  public static function room(array $items): float {
+    $pc = self::costs(array_column($items, 'product_id')); $room = 0.0;
+    foreach ($items as $i) {
+      $q = (int)($i['qty'] ?? 0); $pr = (float)($i['price'] ?? 0); if ($q <= 0 || $pr <= 0) continue;
+      $c = (float)($pc[(int)($i['product_id'] ?? 0)]->cost ?? 0);
+      $room += $c > 0 ? max(0, $pr - self::floor($c)) * $q : $pr * $q;
+    }
+    return round($room, 2);
+  }
+
+  /** Automatic discounts: reduce (or drop) the applied lines so their sum fits the room. $r is OrderDiscount::compute()'s result; $bsave is a bundle saving already taken outside it. */
+  public static function enforce(array $r, array $items, float $bsave = 0.0): array {
+    if (!$items || empty($r['lines'])) return $r;
+    try {
+      $bsIn = 0.0; foreach ($r['lines'] as $l) if (($l['key'] ?? '') === 'qprice') $bsIn = (float)$l['amount'];
+      $allow = max(0, round(self::room($items) - ($bsIn > 0 ? $bsIn : $bsave), 2));
+      $sum = 0.0; foreach ($r['lines'] as $l) if (!empty($l['applied']) && ($l['key'] ?? '') !== 'qprice') $sum += (float)$l['amount'];
+      if ($sum <= $allow + 0.004) return $r;
+      $f = $allow > 0 ? $allow / $sum : 0; $new = 0.0; $dropCoupon = false;
+      foreach ($r['lines'] as &$l) {
+        if (empty($l['applied']) || ($l['key'] ?? '') === 'qprice') continue;
+        $a = round((float)$l['amount'] * $f, 2);
+        if ($a <= 0) { $l['applied'] = false; if (($l['key'] ?? '') === 'coupon') $dropCoupon = true; continue; }
+        $l['amount'] = $a; $l['pct'] = null; $l['label'] = ($l['type'] ?? 'Discount') . ' – ৳' . number_format($a); $l['floor'] = true; $new += $a;
+      } unset($l);
+      $r['total'] = round($new + $bsIn, 2);
+      if ($dropCoupon) $r['coupon_error'] = 'This coupon cannot be applied to the items in this order';
+    } catch (\Throwable $e) { report($e); }
+    return $r;
+  }
+
+  /** Staff-entered prices/discounts. $items = [product_id, qty, price]. Only lines whose price was reduced below the product's own list price are rejected, so an old product already priced under the floor can still be sold at its list price. Returns an alert text or null. */
+  public static function priceError(array $items): ?string {
+    $pc = self::costs(array_column($items, 'product_id')); $bad = [];
+    foreach ($items as $i) {
+      $p = $pc[(int)($i['product_id'] ?? 0)] ?? null; if (!$p || (float)$p->cost <= 0) continue;
+      $pr = (float)($i['price'] ?? 0); $fl = self::floor((float)$p->cost);
+      if ($pr + 0.004 < $fl && $pr + 0.004 < (float)$p->price) $bad[] = $p->name . ' – Purchase ' . self::tk((float)$p->cost) . ', Minimum allowed ' . self::tk($fl) . ', Entered ' . self::tk($pr);
+    }
+    return $bad ? "⚠ Minimum Company Profit Protection\nএই পরিবর্তনের ফলে product-এর profit কোম্পানির নির্ধারিত ন্যূনতম ১৫%-এর নিচে চলে যাবে।\n" . implode("\n", $bad) : null;
+  }
+  public static function discountError(array $items, float $disc): ?string {
+    if ($disc <= 0) return null; $room = self::room($items);
+    return $disc > $room + 0.004 ? "⚠ Discount Not Allowed\nএই discount প্রয়োগ করলে product-এর company profit ১৫%-এর নিচে নেমে যাবে।\nMaximum Allowed Discount: " . self::tk($room) : null;
+  }
+  public static function orderError(array $items, float $disc, bool $checkPrices = true): ?string {
+    return ($checkPrices ? self::priceError($items) : null) ?: self::discountError($items, $disc);
+  }
+
+  /** Product save: single price and the Buy 2-5 pack prices. */
+  public static function productError(float $cost, float $price, array $packs = []): ?string {
+    if ($cost <= 0) return null; $fl = self::floor($cost); $msg = [];
+    if ($price + 0.004 < $fl) $msg[] = "Purchase Price: " . self::tk($cost) . "\nProtected Profit (15%): " . self::tk($cost * 0.15) . "\nMinimum Allowed Price: " . self::tk($fl) . "\nEntered Selling Price: " . self::tk($price) . "\nDifference: " . self::tk($fl - $price);
+    foreach ($packs as $n => $t) if ($t !== null && (float)$t > 0 && (float)$t + 0.004 < $fl * $n) $msg[] = "Buy $n pack price " . self::tk((float)$t) . " is below the minimum " . self::tk($fl * $n);
+    return $msg ? "⚠ Minimum Company Profit Protection\nএই পরিবর্তনের ফলে product-এর profit কোম্পানির নির্ধারিত ন্যূনতম ১৫%-এর নিচে চলে যাবে।\n" . implode("\n", $msg) . "\nPlease adjust the price." : null;
+  }
+  public static function audit(string $act, string $subject, $prev = null, $new = null): void { Procure::audit($act, $subject, $prev, $new); }
+}

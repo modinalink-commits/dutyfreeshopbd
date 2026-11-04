@@ -79,6 +79,14 @@ class CatalogController extends Controller {
     foreach ([1,2,3,4,5] as $n) $row["buy{$n}_price"] = ($d["buy{$n}_price"] ?? null) !== null && $d["buy{$n}_price"] !== '' ? (float)$d["buy{$n}_price"] : null;
     $old = $id ? DB::table('products')->find($id) : null;
     if ($id) abort_unless($old, 404);
+    // Protected 15% company profit: purchase price x 1.15 is the floor for the selling price and the Buy 2-5 pack prices. An old product whose prices are untouched can still be saved; it stays on the price-review list.
+    $pfCost = (float)($old->cost ?? 0); $pfPacks = []; foreach ([2,3,4,5] as $n) $pfPacks[$n] = $row["buy{$n}_price"];
+    $pfSame = $old && abs((float)$old->price - (float)$row['price']) < 0.005 && collect([2,3,4,5])->every(fn($n) => abs((float)($old->{"buy{$n}_price"} ?? 0) - (float)($row["buy{$n}_price"] ?? 0)) < 0.005);
+    if (!$pfSame && ($pfE = \App\Support\ProfitFloor::productError($pfCost, (float)$row['price'], $pfPacks))) {
+      \App\Support\ProfitFloor::audit('Profit floor blocked price', 'Product '.($old->name ?? $row['name']), $old ? ['price'=>$old->price] : null, ['price'=>$row['price'], 'cost'=>$pfCost]);
+      return back()->withInput()->withErrors(['regular_price'=>$pfE]);
+    }
+    if ($old && abs((float)$old->price - (float)$row['price']) > 0.004) \App\Support\ProfitFloor::audit('Selling price changed', 'Product '.$old->name, ['price'=>$old->price, 'buy'=>[$old->buy2_price, $old->buy3_price, $old->buy4_price, $old->buy5_price]], ['price'=>$row['price'], 'buy'=>[$row['buy2_price'], $row['buy3_price'], $row['buy4_price'], $row['buy5_price']]]);
     // URL slug, unique inside main category + sub category
     $base = \App\Support\Slugs::slug(($d['slug'] ?? null) ?: $row['name']) ?: 'product';
     $subSlug = \App\Support\Slugs::subSlug($row['sub']); $slug = $base; $i = 2;
