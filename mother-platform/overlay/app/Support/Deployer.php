@@ -95,6 +95,7 @@ class Deployer
       $u += ['status' => $rb ? 'Rolled Back' : 'Completed', 'stage' => $rb ? 'Rolled back' : 'Completed', 'progress' => 100, 'release_id' => $rid, 'log' => mb_substr($log, -9000), 'finished_at' => now()];
       if ($rb && $row->from_release) DB::table('deployments')->where('release_id', $row->from_release)->where('id', '<>', $row->id)->update(['status' => 'Rolled Back']);
       self::audit($rb ? 'deploy rolled back' : 'deploy live', ($row->subject ?? '') . ' — now LIVE');
+      if (function_exists('opcache_reset')) @opcache_reset(); // the old release's scripts would otherwise stay in PHP's code cache until it fills up and the site slows down
     } elseif ($fresh && str_starts_with($st, 'failed:')) {
       $rolled = str_contains($st, 'rolled back');
       $u += ['status' => $rolled ? 'Rolled Back' : 'Failed', 'stage' => $rolled ? 'Rolled back' : 'Failed', 'error' => trim(substr($st, 7)), 'log' => mb_substr($log, -9000), 'finished_at' => now()];

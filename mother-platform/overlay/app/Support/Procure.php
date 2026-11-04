@@ -14,8 +14,13 @@ class Procure {
     'damage'   => 'DutyFreeBD: ড্যামেজ ক্লেইম ৳{amount} আপনার হিসাবে সমন্বয় করা হয়েছে। বর্তমান বকেয়া ৳{due}। Statement: {statement_link}',
     'statement'=> 'DutyFreeBD: আপনার Statement তৈরি হয়েছে। বর্তমান পাওনা ৳{due}। দেখুন: {statement_link}',
   ];
-  public static function set(string $k, string $d = ''): string { $v = DB::table('settings')->where('key', $k)->value('value'); return $v === null ? $d : (string)$v; }
-  public static function put(string $k, string $v): void { DB::table('settings')->updateOrInsert(['key'=>$k], ['value'=>$v,'updated_at'=>now(),'created_at'=>now()]); }
+  private static array $setMemo = []; private static float $setAt = 0.0;
+  /** One setting. Many settings are read on every request, so they are loaded in ONE query and kept for 2 seconds (put() updates the copy at once). */
+  public static function set(string $k, string $d = ''): string {
+    if (microtime(true) - self::$setAt > 2.0 || !self::$setMemo) { try { self::$setMemo = DB::table('settings')->pluck('value', 'key')->all(); self::$setAt = microtime(true); } catch (\Throwable $e) { $v = DB::table('settings')->where('key', $k)->value('value'); return $v === null ? $d : (string)$v; } }
+    $v = self::$setMemo[$k] ?? null; return $v === null ? $d : (string)$v;
+  }
+  public static function put(string $k, string $v): void { DB::table('settings')->updateOrInsert(['key'=>$k], ['value'=>$v,'updated_at'=>now(),'created_at'=>now()]); self::$setMemo[$k] = $v; }
   public static function on(string $k): bool { return self::set($k, '0') === '1'; }
   public static function base(): string { return Domain::main(); }
   public static function invoiceLink($p): string { return self::base().'/purchase/invoice/'.$p->invoice.'?t='.$p->token; }

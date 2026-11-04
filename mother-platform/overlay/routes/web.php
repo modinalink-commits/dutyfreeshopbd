@@ -213,7 +213,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/profit-check/product', [\App\Http\Controllers\PriceReviewController::class,'checkProduct']); Route::get('/profit-check/order', [\App\Http\Controllers\PriceReviewController::class,'checkOrder']);
   Route::get('/ship-check/{id}', [\App\Http\Controllers\StockHistoryController::class,'shipCheck'])->whereNumber('id');
   Route::get('/stock-history/{id}', [\App\Http\Controllers\StockHistoryController::class,'show'])->whereNumber('id');
-  Route::get('/perf-audit', [\App\Http\Controllers\PerfAuditController::class,'show']);
+  Route::get('/perf-audit', [\App\Http\Controllers\PerfAuditController::class,'show']); Route::post('/perf-audit/opcache-reset', [\App\Http\Controllers\PerfAuditController::class,'opcacheReset']);
   Route::get('/legacy-key', [\App\Http\Controllers\LegacyKeyController::class,'show']);
   Route::get('/purchase-report', [\App\Http\Controllers\PurchaseReportController::class,'index']);
   Route::get('/profit-report', [\App\Http\Controllers\ProfitReportController::class,'index']);
