@@ -65,7 +65,7 @@ $qs = fn($extra = []) => http_build_query(array_filter(array_merge(['store'=>$st
 .dx-bar{height:6px;background:#EEF1F5;border-radius:4px;overflow:hidden}.dx-bar>i{display:block;height:100%;border-radius:4px}
 .dx-row{display:grid;gap:8px;align-items:center;font-size:12px;margin:6px 0}
 .dx-pipe{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px}
-.dx-pipe a{border:1px solid #EEF1F5;border-radius:10px;padding:7px 9px;display:flex;flex-direction:column;gap:2px;background:var(--b);transition:all .15s}
+.dx-pipe a{border:1px solid rgba(11,18,32,.26);border-radius:10px;padding:7px 9px;display:flex;flex-direction:column;gap:2px;background:var(--b);transition:all .15s}
 .dx-pipe a:hover{border-color:var(--c);transform:translateY(-1px)}
 .dx-pipe .tp{display:flex;align-items:center;gap:5px;color:var(--c)}.dx-pipe .nm{font-size:10.5px;font-weight:700;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dx-pipe .ct{font-size:17px;font-weight:800;line-height:1.1;color:#0B1220}
 .dx-t5 .it{display:flex;align-items:center;gap:9px;padding:6px 0;border-top:1px solid #F1F3F6}.dx-t5 .it:first-of-type{border-top:0}
