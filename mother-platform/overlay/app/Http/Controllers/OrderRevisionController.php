@@ -46,7 +46,7 @@ class OrderRevisionController extends Controller {
   public function products(Request $r) {
     $q = trim((string)$r->query('q', '')); if (mb_strlen($q) < 1) return response()->json([]);
     $like = '%'.str_replace(['%', '_'], '', $q).'%';
-    $ps = DB::table('products')->where(fn($w) => $w->where('name', 'ilike', $like)->orWhere('sku', 'ilike', $like)->orWhere('barcode', 'ilike', $like)->orWhere('ext_id', 'ilike', $like))->orderByRaw('published desc')->limit(10)->get(['id', 'name', 'sku', 'barcode', 'price', 'stock', 'image']);
+    $ps = DB::table('products')->where(fn($w) => \App\Support\SkuSearch::orSku($w->where('name', 'ilike', $like)->orWhere('sku', 'ilike', $like)->orWhere('barcode', 'ilike', $like)->orWhereRaw('ext_id::text ilike ?', [$like]), $q))->orderByRaw('published desc')->limit(10)->get(['id', 'name', 'sku', 'barcode', 'price', 'stock', 'image']);
     $vs = $ps->count() ? DB::table('product_variants')->whereIn('product_id', $ps->pluck('id'))->get()->groupBy('product_id') : collect();
     return response()->json($ps->map(fn($p) => ['id'=>$p->id, 'name'=>$p->name, 'sku'=>$p->sku, 'barcode'=>$p->barcode, 'price'=>(float)$p->price, 'stock'=>(int)$p->stock, 'image'=>$p->image,
       'variants'=>($vs[$p->id] ?? collect())->map(function ($v) use ($p) { $o = is_string($v->options) ? json_decode($v->options, true) : (array)$v->options; $lab = $o ? implode(' / ', array_map(fn($k, $x) => "$k: $x", array_keys($o), $o)) : ($v->sku ?: 'Variant'); return ['id'=>$v->id, 'label'=>$lab, 'price'=>(float)($v->price ?? $p->price), 'stock'=>(int)$v->stock, 'sku'=>$v->sku]; })->values()->all()])->values());

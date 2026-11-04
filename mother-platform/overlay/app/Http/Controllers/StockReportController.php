@@ -10,7 +10,7 @@ class StockReportController extends Controller {
     $pq = DB::table('products as p')->leftJoin('categories as c', 'c.id', '=', 'p.category_id');
     if ($cat) $pq->where('p.category_id', $cat);
     if ($show === 'instock') $pq->where('p.stock', '>', 0); elseif ($show === 'out') $pq->where('p.stock', '<=', 0); elseif ($show === 'published') $pq->where('p.published', true);
-    if ($q !== '') { $like = '%' . $q . '%'; $pq->where(fn($w) => $w->where('p.name', 'ilike', $like)->orWhere('p.sku', 'ilike', $like)); }
+    if ($q !== '') { $like = '%' . $q . '%'; $pq->where(fn($w) => \App\Support\SkuSearch::orSku($w->where('p.name', 'ilike', $like)->orWhere('p.sku', 'ilike', $like), $q, 'p.sku')); }
     $rows = $pq->orderBy('c.name')->orderBy('p.name')->limit(4000)->get(['p.id', 'p.name', 'p.sku', 'p.stock', 'p.cost', 'p.price', 'p.published', 'c.name as cat']);
     $groups = []; $g = ['n' => 0, 'qty' => 0, 'cost' => 0, 'sale' => 0];
     foreach ($rows->groupBy('cat') as $name => $list) {

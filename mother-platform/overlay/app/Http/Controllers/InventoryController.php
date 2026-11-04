@@ -14,8 +14,8 @@ class InventoryController extends Controller {
   private function filtered(Request $r) {
     $q = $this->union();
     if ($r->filled('store')) $q->where('store_id', (int)$r->store);
-    if ($r->filled('q')) { $t = '%'.str_replace(['%','_'], ['\%','\_'], trim($r->q)).'%'; $q->where(fn($w) => $w->where('name','ilike',$t)->orWhere('sku','ilike',$t)->orWhere('category','ilike',$t)); }
-    if ($r->filled('sku')) $q->where('sku','ilike','%'.str_replace(['%','_'], ['\%','\_'], trim($r->sku)).'%');
+    if ($r->filled('q')) { $t = '%'.str_replace(['%','_'], ['\%','\_'], trim($r->q)).'%'; $q->where(fn($w) => \App\Support\SkuSearch::orSku($w->where('name','ilike',$t)->orWhere('sku','ilike',$t)->orWhere('category','ilike',$t), (string)$r->q)); }
+    if ($r->filled('sku')) $q->where(fn($w) => \App\Support\SkuSearch::orSku($w->where('sku','ilike','%'.str_replace(['%','_'], ['\%','\_'], trim($r->sku)).'%'), (string)$r->sku));
     if ($r->filled('published')) $q->where('published', $r->published === '1');
     $st = $r->input('stock');
     if ($st === 'in') $q->where(fn($w) => $w->where('stock','>',5)->orWhere(fn($x) => $x->whereNull('stock')->where(fn($y) => $y->whereNull('in_stock')->orWhere('in_stock', true))));

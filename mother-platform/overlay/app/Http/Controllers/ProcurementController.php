@@ -400,7 +400,7 @@ class ProcurementController extends Controller {
   // ---------------- JSON helpers for the forms ----------------
   public function apiProducts(Request $r) {
     $q = trim((string)$r->input('q')); if ($q === '') return response()->json([]);
-    $x = DB::table('products')->where(fn($w) => $w->where('barcode',$q)->orWhere('sku',$q)->orWhere('name','ilike','%'.$q.'%')->orWhere('sku','ilike','%'.$q.'%')->orWhere('barcode','ilike','%'.$q.'%'))->orderByRaw('(barcode = ? or sku = ?) desc',[$q,$q])->limit(15)->get(['id','name','sku','barcode','cost','stock']);
+    $x = DB::table('products')->where(fn($w) => $w->where('barcode',$q)->orWhere('sku',$q)->orWhere('name','ilike','%'.$q.'%')->orWhere('sku','ilike','%'.$q.'%')->orWhere('barcode','ilike','%'.$q.'%')->orWhere(fn($z) => \App\Support\SkuSearch::orSku($z, $q)))->orderByRaw('(barcode = ? or sku = ?) desc',[$q,$q])->limit(15)->get(['id','name','sku','barcode','cost','stock']);
     return response()->json($x);
   }
   public function apiNewProduct(Request $r) {

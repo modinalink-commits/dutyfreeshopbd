@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 class CatalogController extends Controller {
   public function products(Request $r) {
     $q = DB::table('products as p')->leftJoin('categories as c','c.id','=','p.category_id')->leftJoin('brands as b','b.id','=','p.brand_id')->select('p.*','c.name as category','b.name as brand')->orderByDesc('p.id');
-    if ($r->filled('q')) $q->where(fn($w)=>$w->where('p.name','ilike','%'.$r->q.'%')->orWhere('p.sku','ilike','%'.$r->q.'%'));
+    if ($r->filled('q')) $q->where(fn($w)=>\App\Support\SkuSearch::orSku($w->where('p.name','ilike','%'.$r->q.'%')->orWhere('p.sku','ilike','%'.$r->q.'%'), (string)$r->q, 'p.sku'));
     if ($r->filled('published')) $q->where('p.published', $r->published === '1');
     if ($r->boolean('missing_image')) $q->where(fn($w)=>$w->whereNull('p.image')->orWhere('p.image',''));
     if ($r->input('stock') === 'low') $q->whereBetween('p.stock',[1,5]);
