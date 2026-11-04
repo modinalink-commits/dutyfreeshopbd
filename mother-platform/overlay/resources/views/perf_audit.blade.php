@@ -1,6 +1,8 @@
 @extends('layout')@section('title','Performance audit')
 @section('body')
 <h1 style="margin:0 0 4px">Performance audit (read-only)</h1><p style="color:#6B7280;margin:0 0 12px;font-size:13px">Measured live on this server. Nothing on this page changes data. To measure any admin page add <code>?_perf=1</code> to its address and read the X-Perf response header.</p>
+@if(session('ok'))<div style="background:#ECFDF5;border:1px solid #A7F3D0;color:#065F46;border-radius:10px;padding:8px 12px;margin-bottom:10px;font-size:13px">{{ session('ok') }}</div>@endif
+<form method="post" action="/admin/perf-audit/opcache-reset" style="background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:10px 14px;margin-bottom:12px;display:flex;flex-wrap:wrap;gap:10px;align-items:center">@csrf<button type="submit">Clear OPcache</button><span style="font-size:12.5px;color:#6B7280">If the admin feels slow after several deploys, check the OPcache line below (hit rate under about 90% or memory near 192 MB) and press this. No downtime; the next few pages are a little slower while it refills. It is also cleared automatically after each deploy.</span></form>
 @foreach($S as $title => $rows)
 <h2 style="font-size:15px;margin:16px 0 6px">{{ $title }}</h2><table style="border-collapse:collapse;width:100%;font-size:13px">@foreach($rows as $r)<tr><td style="border:1px solid #dfe3e8;padding:5px 8px;width:34%;background:#f8fafc">{{ $r[0] }}</td><td style="border:1px solid #dfe3e8;padding:5px 8px;word-break:break-word">{{ is_scalar($r[1]) || $r[1]===null ? $r[1] : json_encode($r[1]) }}</td></tr>@endforeach</table>
 @endforeach
