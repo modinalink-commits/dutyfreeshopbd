@@ -36,6 +36,7 @@ app/Models/User.php
 app/Models/WebsiteOrder.php
 app/Providers/AppServiceProvider.php
 app/Support/CompanyCalc.php
+app/Support/Icons.php
 app/Support/Roadmap.php
 app/Support/SalesService.php
 bootstrap/app.php
@@ -56,6 +57,7 @@ resources/views/dashboard.blade.php
 resources/views/layout.blade.php
 resources/views/login.blade.php
 resources/views/orders/index.blade.php
+resources/views/partials/pager.blade.php
 resources/views/password.blade.php
 resources/views/pos.blade.php
 resources/views/products.blade.php

@@ -18,13 +18,35 @@ class StockController extends Controller
             ->selectRaw('size_kg, sum(full_delta) f, sum(empty_delta) e, sum(company_delta) c, sum(damaged_delta) d')
             ->groupBy('size_kg')->get()->keyBy('size_kg');
 
-        $sizes = collect(Brand::SIZES)->map(fn ($s) => [
-            'size' => $s,
-            'full' => (int) ($bySize[$s]->f ?? 0),
-            'empty' => (int) ($bySize[$s]->e ?? 0),
-            'company' => (int) ($bySize[$s]->c ?? 0),
-            'damaged' => (int) ($bySize[$s]->d ?? 0),
-        ]);
+        $now = now()->timezone('Asia/Dhaka');
+        $sold = StockMovement::query()->where('kind', 'sale')->where('created_at', '>=', $now->copy()->startOfMonth()->utc())
+            ->selectRaw('size_kg, -sum(full_delta) q')->groupBy('size_kg')->pluck('q', 'size_kg');
+        $withCustomers = \App\Models\CustomerCylinder::query()->selectRaw('size_kg, sum(qty_delta) q')->groupBy('size_kg')->pluck('q', 'size_kg');
+        $onRoad = \App\Models\SaleItem::query()->join('sales', 'sales.id', '=', 'sale_items.sale_id')->where('sales.stage', 'on_road')
+            ->whereNotNull('sale_items.size_kg')->selectRaw('sale_items.size_kg, sum(sale_items.qty) q')->groupBy('sale_items.size_kg')->pluck('q', 'size_kg');
+        $sizes = collect(Brand::SIZES)->map(function ($s) use ($bySize, $sold, $now, $withCustomers, $onRoad) {
+            $full = (int) ($bySize[$s]->f ?? 0);
+            $avg = ((int) ($sold[$s] ?? 0)) / max(1, $now->day);
+            $days = $avg > 0 ? $full / $avg : null;
+            return [
+                'size' => $s, 'full' => $full,
+                'empty' => (int) ($bySize[$s]->e ?? 0),
+                'company' => (int) ($bySize[$s]->c ?? 0),
+                'damaged' => (int) ($bySize[$s]->d ?? 0),
+                'out' => max(0, (int) ($withCustomers[$s] ?? 0)),
+                'road' => (int) ($onRoad[$s] ?? 0),
+                'days' => $days, 'low' => $days !== null && $days < 3,
+            ];
+        });
+        $deposit = null;
+        if (auth()->user()->isSuperAdmin()) {
+            $sec = fn ($from, $to) => (float) \App\Models\CompanyEntry::query()->where('kind', 'deposit')->where('deposit_kind', 'security')->whereBetween('entry_date', [$from, $to])->sum('amount');
+            $lm = $now->copy()->subMonthNoOverflow();
+            $deposit = [
+                'last' => ['name' => $lm->format('F'), 'amt' => $sec($lm->copy()->startOfMonth()->toDateString(), $lm->copy()->endOfMonth()->toDateString()), 'on' => $now->copy()->day(15)],
+                'this' => ['name' => $now->format('F'), 'amt' => $sec($now->copy()->startOfMonth()->toDateString(), $now->toDateString()), 'on' => $now->copy()->addMonthNoOverflow()->day(15)],
+            ];
+        }
 
         $grid = StockMovement::query()->with('brand')
             ->selectRaw('brand_id, size_kg, sum(full_delta) f, sum(empty_delta) e, sum(company_delta) c, sum(damaged_delta) d')
@@ -36,7 +58,7 @@ class StockController extends Controller
             ->where('created_at', '>=', now()->timezone('Asia/Dhaka')->startOfDay()->utc())
             ->latest('id')->limit(50)->get();
 
-        return view('stock.index', compact('sizes', 'grid', 'today'));
+        return view('stock.index', compact('sizes', 'grid', 'today', 'deposit'));
     }
 
     public function history(Request $request)

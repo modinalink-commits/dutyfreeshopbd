@@ -54,7 +54,7 @@ textarea{padding:8px 10px;min-height:60px}
 @php($u = auth()->user())
 <div class="shell">
   <aside class="side" aria-label="Main menu">
-    <div class="brand"><img src="/img/logo.webp" alt="NK Corporation logo"><div><b>NK Corporation</b><small>BUSINESS CONTROL</small></div></div>
+    <div class="brand" style="flex-direction:column;align-items:stretch;gap:8px"><div style="display:flex;align-items:center;gap:10px"><img src="/img/logo.webp" alt="NK Corporation logo"><div><b>NK Corporation</b><small>BUSINESS CONTROL</small></div></div><span style="align-self:flex-start;background:#2a52a8;color:#fff;font-size:11px;font-weight:600;padding:3px 10px;border-radius:999px">{{ now()->timezone('Asia/Dhaka')->format('F Y') }}</span></div>
     @unless($u->must_change_password)
     @php($newCount = \App\Models\WebsiteOrder::where('status', 'new')->count())
     @php($waitX = \App\Models\BrandExchange::where('status', 'waiting')->count())
@@ -66,20 +66,20 @@ textarea{padding:8px 10px;min-height:60px}
         @continue(in_array($key, $adminOnly) && ! in_array($u->role, ['super_admin', 'admin']))
         @continue(in_array($key, $superOnly) && $u->role !== 'super_admin')
         @if($route)
-          <a class="nav {{ request()->routeIs(explode('.', $route)[0].'*') ? 'on' : '' }}" href="{{ route($route) }}">{{ $label }}
+          <a class="nav {{ request()->routeIs(explode('.', $route)[0].'*') ? 'on' : '' }}" href="{{ route($route) }}">{!! \App\Support\Icons::svg($key) !!}<span style="flex-grow:1">{{ $label }}</span>
             @if($key === 'corders' && $newCount)<span class="badge">{{ $newCount }}</span>@endif
             @if($key === 'brands' && $waitX)<span class="badge">{{ $waitX }}</span>@endif
           </a>
         @else
-          <a class="nav soon {{ request()->is('soon/'.$key) ? 'on' : '' }}" href="{{ route('soon', $key) }}">{{ $label }}<span class="later">soon</span></a>
+          <a class="nav soon {{ request()->is('soon/'.$key) ? 'on' : '' }}" href="{{ route('soon', $key) }}">{!! \App\Support\Icons::svg($key) !!}<span style="flex-grow:1">{{ $label }}</span><span class="later">soon</span></a>
         @endif
       @endforeach
     @endforeach
     <span class="grp">PROJECT</span>
-    <a class="nav {{ request()->routeIs('roadmap') ? 'on' : '' }}" href="{{ route('roadmap') }}">Build progress</a>
+    <a class="nav {{ request()->routeIs('roadmap') ? 'on' : '' }}" href="{{ route('roadmap') }}">{!! \App\Support\Icons::svg('activity') !!}<span style="flex-grow:1">Build progress</span></a>
     @endunless
     <div class="me">
-      <b>{{ $u->name }}</b><span style="color:var(--muted)">{{ $u->roleLabel() }} · {{ $u->email }}</span>
+      <div style="display:flex;align-items:center;gap:10px"><span style="width:32px;height:32px;border-radius:999px;background:#e6eeff;color:#1d4ed8;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">{{ collect(explode(' ', $u->name))->map(fn ($w) => mb_substr($w, 0, 1))->take(2)->implode('') }}</span><div style="display:flex;flex-direction:column;min-width:0"><b>{{ $u->name }}</b><span style="color:var(--muted)">{{ $u->roleLabel() }}</span></div></div>
       <a href="{{ route('password.edit') }}">Change password</a>
       <form method="post" action="{{ route('logout') }}">@csrf<button class="btn sm" type="submit">Log out</button></form>
     </div>

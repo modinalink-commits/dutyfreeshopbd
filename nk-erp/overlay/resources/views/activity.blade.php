@@ -12,5 +12,5 @@
   @endforelse
   </tbody>
 </table></div>
-{{ $logs->links('pagination::default') }}
+@include('partials.pager', ['p' => $logs])
 @endsection

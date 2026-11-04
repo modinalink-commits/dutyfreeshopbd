@@ -17,5 +17,5 @@
   @endforelse
   </tbody>
 </table></div>
-{{ $moves->links('pagination::default') }}
+@include('partials.pager', ['p' => $moves])
 @endsection

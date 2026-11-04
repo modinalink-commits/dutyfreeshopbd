@@ -36,5 +36,5 @@
   @endforelse
   </tbody>
 </table></div>
-{{ $orders->links('pagination::default') }}
+@include('partials.pager', ['p' => $orders])
 @endsection
