@@ -30,36 +30,14 @@ if [ ! -f /srv/app/artisan ]; then
   cd /srv/app && COMPOSER_ALLOW_SUPERUSER=1 composer run-script post-autoload-dump --no-interaction || true
   cd /srv
 fi
+# ---- Release layout: /srv/app -> /srv/releases/<ref>. Deploys build a new release and swap the link, so the site never goes down.
+mkdir -p /srv/releases /srv/deploy
+if [ -d /srv/app ] && [ ! -L /srv/app ]; then
+  mv /srv/app /srv/releases/base && ln -sfn /srv/releases/base /srv/app
+  echo "NK BOOT: moved app to release layout"
+fi
 cd /srv/app
 php artisan --version
-for f in $(wget -qO- "$R/manifest.txt"); do
-  mkdir -p "$(dirname "$f")"; wget -q -O "$f" "$R/overlay/$f"
-done
-[ -s /srv/.appkey ] || php -r 'echo "base64:".base64_encode(random_bytes(32));' > /srv/.appkey
-cat > .env <<ENV
-APP_NAME="NK Corporation"
-APP_ENV=production
-APP_KEY=$(cat /srv/.appkey)
-APP_DEBUG=false
-APP_URL=https://admin.nklpgbd.com
-APP_TIMEZONE=Asia/Dhaka
-LOG_CHANNEL=stderr
-LOG_LEVEL=warning
-DB_CONNECTION=pgsql
-DB_HOST=db
-DB_PORT=5432
-DB_DATABASE=nkerp
-DB_USERNAME=nkerp
-DB_PASSWORD=${DB_PASSWORD}
-SESSION_DRIVER=database
-SESSION_LIFETIME=480
-SESSION_SECURE_COOKIE=true
-SESSION_DOMAIN=admin.nklpgbd.com
-CACHE_STORE=database
-QUEUE_CONNECTION=database
-NK_ADMIN_EMAIL=${ADMIN_EMAIL}
-NK_ADMIN_PASSWORD=${ADMIN_PASSWORD}
-ENV
 cat > /usr/local/etc/php/conf.d/zz-nk.ini <<'INI'
 opcache.enable=1
 opcache.validate_timestamps=0
@@ -70,6 +48,8 @@ post_max_size=12M
 date.timezone=Asia/Dhaka
 INI
 cat > /usr/local/etc/php-fpm.d/zz-pool.conf <<'POOL'
+[global]
+pid = /run/php-fpm.pid
 [www]
 pm = dynamic
 pm.max_children = 12
@@ -79,13 +59,32 @@ pm.max_spare_servers = 6
 pm.max_requests = 1000
 POOL
 i=0; until php -r 'new PDO("pgsql:host=db;dbname=nkerp","nkerp",getenv("DB_PASSWORD"));' 2>/dev/null; do i=$((i+1)); [ $i -gt 30 ] && break; echo "waiting for db"; sleep 2; done
-php artisan config:clear
-php artisan migrate --force
-php artisan nk:install
-php artisan config:cache
-php artisan route:cache || echo "NK WARN: route cache failed"
-php artisan view:clear
-php artisan view:cache || echo "NK WARN: view cache failed"
-chown -R www-data:www-data storage bootstrap/cache
-echo "NK BOOT: ready"
-exec php-fpm
+[ -s /srv/.appkey ] || php -r 'echo "base64:".base64_encode(random_bytes(32));' > /srv/.appkey
+
+if [ ! -s /srv/deploy/current_ref ]; then
+  # First install of the release system: build the release for the compose REF in place.
+  wget -qO /tmp/d.sh "$R/deploy.sh" && sh /tmp/d.sh "$REF" boot
+fi
+# Make sure the live release has caches for this container (plain restart keeps the live code).
+cd /srv/app && php artisan config:cache >/dev/null && php artisan route:cache >/dev/null || true
+chown -R www-data:www-data /srv/app/storage /srv/app/bootstrap/cache
+echo "NK BOOT: ready, live ref $(cat /srv/deploy/current_ref 2>/dev/null)"
+
+php-fpm -F &
+FPM=$!
+# Watch for new releases. The pointer file nk-erp/LIVE on the branch names the commit to run.
+RAWB=https://raw.githubusercontent.com/modinalink-commits/dutyfreeshopbd
+while true; do
+  sleep 45
+  kill -0 $FPM 2>/dev/null || { echo "NK: php-fpm stopped"; exit 1; }
+  L=$(wget -qO- "$RAWB/nklpgbd/nk-erp/LIVE?ts=$(date +%s)" 2>/dev/null | tr -dc 'a-f0-9' | head -c 40)
+  [ ${#L} -eq 40 ] || continue
+  [ "$L" = "$(cat /srv/deploy/current_ref 2>/dev/null)" ] && continue
+  [ "$L" = "$(cat /srv/deploy/failed_ref 2>/dev/null)" ] && continue
+  echo "NK DEPLOY: starting $L"
+  if wget -qO /tmp/d.sh "$RAWB/$L/nk-erp/deploy.sh" && sh /tmp/d.sh "$L"; then
+    kill -USR2 $FPM && echo "NK DEPLOY: live $L"
+  else
+    echo "$L" > /srv/deploy/failed_ref; echo "NK DEPLOY: FAILED $L — the previous release stays live"
+  fi
+done
