@@ -73,6 +73,7 @@
 </div>
 
 <div class="sec"><h2><i>3</i>Inventory</h2>
+@if($p)<div style="margin:-4px 0 10px"><a class="btn g" href="/admin/stock-history/{{ $p->id }}" target="_blank">View Stock History</a></div>@endif
 <div class="g3"><div><label>Stock quantity *</label><input name="stock" type="number" min="0" value="{{ $v('stock', 0) }}" required></div>
 <div><label>Stock status</label><select name="stock_status">@foreach(['in_stock'=>'In stock','out_of_stock'=>'Out of stock','pre_order'=>'Pre order'] as $k=>$l)<option value="{{ $k }}" @selected($v('stock_status','in_stock')===$k)>{{ $l }}</option>@endforeach</select></div>
 <div><label>Low stock alert at</label><input name="low_stock_alert" type="number" min="0" value="{{ $v('low_stock_alert') }}"></div></div>

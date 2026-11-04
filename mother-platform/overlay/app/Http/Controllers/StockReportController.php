@@ -16,7 +16,7 @@ class StockReportController extends Controller {
     foreach ($rows->groupBy('cat') as $name => $list) {
       $gr = ['name' => $name ?: 'No category', 'rows' => [], 'qty' => 0, 'cost' => 0, 'sale' => 0];
       foreach ($list as $x) { $qty = (int)$x->stock; $cv = $qty * (float)$x->cost; $sv = $qty * (float)$x->price;
-        $gr['rows'][] = ['sku' => $x->sku ?: $x->id, 'name' => $x->name, 'qty' => $qty, 'cost' => (float)$x->cost, 'cv' => $cv, 'price' => (float)$x->price, 'sv' => $sv, 'pub' => (bool)$x->published, 'nc' => (float)$x->cost == 0];
+        $gr['rows'][] = ['id' => $x->id, 'sku' => $x->sku ?: $x->id, 'name' => $x->name, 'qty' => $qty, 'cost' => (float)$x->cost, 'cv' => $cv, 'price' => (float)$x->price, 'sv' => $sv, 'pub' => (bool)$x->published, 'nc' => (float)$x->cost == 0];
         $gr['qty'] += $qty; $gr['cost'] += $cv; $gr['sale'] += $sv; }
       $groups[] = $gr; $g['n'] += count($gr['rows']); $g['qty'] += $gr['qty']; $g['cost'] += $gr['cost']; $g['sale'] += $gr['sale'];
     }

@@ -177,7 +177,8 @@ class AdminController extends Controller {
     $n = 0; $okB = 0; $failB = []; @set_time_limit(240);
     if ($d['status'] === 'Shipment') {
       $skip = []; $tried = 0;
-      foreach (DB::table('orders')->whereIn('id',$d['ids'])->where('status','!=','Shipment')->whereNull('consignment_id')->orderBy('id')->pluck('id') as $bid) {
+      foreach (DB::table('orders')->whereIn('id',$d['ids'])->where('status','!=','Shipment')->pluck('id') as $sid) { if ($sm = \App\Support\StockGuard::shipBlock((int)$sid)) { $skip[] = (int)$sid; $failB[] = '#'.$sid.': '.$sm.' (stays in its old status)'; } }
+      foreach (DB::table('orders')->whereIn('id',$d['ids'])->where('status','!=','Shipment')->whereNull('consignment_id')->whereNotIn('id', $skip)->orderBy('id')->pluck('id') as $bid) {
         if ($tried >= 60) { $skip[] = (int)$bid; $failB[] = '#'.$bid.': over the 60-parcel limit per click, stays in its old status'; continue; }
         $tried++; $b = \App\Support\CourierSync::autoBook((int)$bid);
         if ($b === null) continue; if ($b[0]) $okB++; else { $skip[] = (int)$bid; $failB[] = '#'.$bid.': '.$b[1].' (stays in its old status)'; }
@@ -319,6 +320,7 @@ class AdminController extends Controller {
       [$sok, $smsg] = \App\Support\OrderSchedule::set((int)$id, $d['sched_date'] ?? null, $d['sched_time'] ?? null, $d['note'] ?? null, Auth::id(), Auth::user()->name);
       return back()->with($sok ? 'ok' : 'bad', $smsg);
     }
+    if ($d['status'] === 'Shipment' && $o->status !== 'Shipment' && ($sm = \App\Support\StockGuard::shipBlock((int)$id))) return back()->with('bad', $sm);
     if ($d['status'] === 'Shipment' && $o->status !== 'Shipment') { $b = \App\Support\CourierSync::autoBook((int)$id); if ($b && !$b[0]) return back()->with('bad', 'Parcel booking failed, the order stays in '.$o->status.': '.$b[1]); $o = DB::table('orders')->find($id); }
     if ($o->status !== $d['status']) DB::transaction(function () use ($o, $d, $id) {
       DB::table('orders')->where('id',$id)->update(['status'=>$d['status'],'updated_at'=>now()] + ($o->status === 'Scheduled' ? ['scheduled_at'=>null,'scheduled_note'=>null] : []));
@@ -342,6 +344,7 @@ class AdminController extends Controller {
       [$sok, $smsg] = \App\Support\OrderSchedule::set((int)$id, $d['sched_date'], $d['sched_time'] ?? null, $d['note'] ?? null, Auth::id(), Auth::user()->name);
       return response()->json(['success'=>$sok,'message'=>$smsg,'status'=>'Scheduled','cls'=>'s-scheduled','sched'=>\App\Support\OrderSchedule::short(DB::table('orders')->where('id',$id)->value('scheduled_at'))]);
     }
+    if ($d['status'] === 'Shipment' && $o->status !== 'Shipment' && ($sm = \App\Support\StockGuard::shipBlock((int)$id))) return response()->json(['success'=>false,'message'=>$sm]);
     if ($d['status'] === 'Shipment' && $o->status !== 'Shipment') { $b = \App\Support\CourierSync::autoBook((int)$id); if ($b && !$b[0]) return response()->json(['success'=>false,'message'=>'Parcel booking failed, the order stays in '.$o->status.': '.$b[1]]); $o = DB::table('orders')->find($id); }
     if ($o->status !== $d['status']) DB::transaction(function () use ($o, $d, $id) {
       DB::table('orders')->where('id',$id)->update(['status'=>$d['status'],'updated_at'=>now()] + ($o->status === 'Scheduled' ? ['scheduled_at'=>null,'scheduled_note'=>null] : []));

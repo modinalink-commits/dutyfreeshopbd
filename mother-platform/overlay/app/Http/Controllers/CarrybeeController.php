@@ -44,6 +44,7 @@ class CarrybeeController extends Controller {
     return back()->with('ok', 'Carrybee status: ' . $i['order_status']);
   }
   public function book(int $id): array {
+    if ($sm = \App\Support\StockGuard::shipBlock($id)) return [false, $sm];
     $o = DB::table('orders')->find($id); if (!$o) return [false, 'Order not found', []];
     $items = DB::table('order_items')->where('order_id', $id)->get();
     [$ok, $msg, $data] = Carrybee::send($o, $items); if (!$ok) return [false, $msg];

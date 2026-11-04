@@ -50,6 +50,7 @@ class CourierController extends Controller {
     return back()->with('ok', 'Pathao status: '.($i['order_status'] ?? $i['order_status_slug'] ?? 'unknown'));
   }
   public function book(int $id): array {
+    if ($sm = \App\Support\StockGuard::shipBlock($id)) return [false, $sm];
     $o = DB::table('orders')->find($id); if (!$o) return [false, 'Order not found'];
     $items = DB::table('order_items')->where('order_id', $id)->get();
     [$ok, $msg, $data] = Pathao::send($o, $items);

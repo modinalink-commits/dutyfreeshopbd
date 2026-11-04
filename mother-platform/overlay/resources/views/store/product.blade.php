@@ -77,7 +77,7 @@
 </div>
 <div class="bsum" id="bsum" hidden><span>Bundle Price: <b id="bpr"></b></span><span>You Save: <b id="bsv"></b></span></div>
 @endif
-@if($p->stock !== null && (int)$p->stock <= 0)<div style="font-size:12px;color:#B91C1C;font-weight:600">Stock out — call us for the next arrival</div>@endif
+@if($p->stock !== null && (int)$p->stock <= 0 && !\App\Support\StockGuard::sellable($p))<div style="font-size:12px;color:#B91C1C;font-weight:600">Stock out — call us for the next arrival</div>@endif
 <div class="acts"><button type="button" class="ac" id="addc">Add To Cart</button><button type="button" class="wl" id="wl" aria-label="Wishlist">♡</button></div>
 <button type="button" class="onw" id="ordn">Order Now ✓</button>
 @php $wam = $p->name."\nPrice: ৳".number_format($p->price)."\nView Product: ".$canon; @endphp
@@ -86,7 +86,7 @@
 </div>
 @if($s['pp_related']==='1')
 <div class="rs rsx"><div class="rsx-h"><span class="rpx-ic"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1 12H6L5 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></span><h3>Related Products</h3><a href="{{ $c ? '/'.$c->slug.'/' : '/' }}" class="rpx-all">View All <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></a></div>@foreach($side as $r)
-@php $ru = \App\Http\Controllers\StoreController::url($r); $ro = \App\Http\Controllers\StoreController::off($r); $rin = ($r->stock ?? 1) > 0; $ra = (float)$r->rv_avg; @endphp
+@php $ru = \App\Http\Controllers\StoreController::url($r); $ro = \App\Http\Controllers\StoreController::off($r); $rin = \App\Support\StockGuard::sellable($r); $ra = (float)$r->rv_avg; @endphp
 <article class="rsx-c"><a class="rsx-i" href="{{ $ru }}"><img src="{{ $r->image ?: '/product-placeholder' }}" alt="{{ $r->name }}" width="72" height="72" loading="lazy" draggable="false" onerror="this.onerror=null;this.src='/product-placeholder'"></a>
 <div class="rsx-b"><a class="rsx-n" href="{{ $ru }}">{{ $r->name }}</a>
 @if($r->rv_n > 0)<div class="rpx-r"><span class="rpx-s" style="--p:{{ round($ra / 5 * 100) }}%" aria-hidden="true">★★★★★</span><b>{{ number_format($ra, 1) }}</b><em>({{ $r->rv_n }})</em></div>@else<div class="rpx-r"><em>No reviews yet</em></div>@endif
@@ -138,7 +138,7 @@
 @php $relAll = $c ? '/'.$c->slug.'/' : '/'; $relList = $rel->take(8); @endphp
 <section class="rpx"><div class="rpx-h"><span class="rpx-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1 12H6L5 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></span><h2>Related Products</h2><a href="{{ $relAll }}" class="rpx-all">View All <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></a></div>
 <div class="rpx-g">@foreach($relList as $q)
-@php $qu = \App\Http\Controllers\StoreController::url($q); $qo = \App\Http\Controllers\StoreController::off($q); $qin = ($q->stock ?? 1) > 0; $qa = (float)$q->rv_avg; @endphp
+@php $qu = \App\Http\Controllers\StoreController::url($q); $qo = \App\Http\Controllers\StoreController::off($q); $qin = \App\Support\StockGuard::sellable($q); $qa = (float)$q->rv_avg; @endphp
 <article class="rpx-c"><a class="rpx-i" href="{{ $qu }}"><img src="{{ $q->image ?: '/product-placeholder' }}" alt="{{ $q->name }}" width="120" height="120" loading="lazy" decoding="async" draggable="false" onerror="this.onerror=null;this.src='/product-placeholder'"></a>
 <div class="rpx-b"><a class="rpx-n" href="{{ $qu }}">{{ $q->name }}</a>
 @if($q->rv_n > 0)<div class="rpx-r" title="{{ $qa }} / 5"><span class="rpx-s" style="--p:{{ round($qa / 5 * 100) }}%" aria-hidden="true">★★★★★</span><b>{{ number_format($qa, 1) }}</b><em>({{ $q->rv_n }} {{ $q->rv_n === 1 ? 'Review' : 'Reviews' }})</em></div>@else<div class="rpx-r"><em>No reviews yet</em></div>@endif

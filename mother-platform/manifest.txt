@@ -572,3 +572,7 @@ public/banners/brands-hero.webp
 public/banners/brands-hero-m.mp4
 public/banners/brands-hero-m.webp
 database/migrations/2026_11_04_000110_hero_slides_native_size.php
+app/Support/StockGuard.php
+database/migrations/2026_11_04_000120_inventory_modes_auto_publish.php
+app/Http/Controllers/StockHistoryController.php
+resources/views/stock_history.blade.php
