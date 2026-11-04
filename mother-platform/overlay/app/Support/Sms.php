@@ -8,11 +8,15 @@ class Sms {
   const BAL = 'https://bulksmsbd.net/api/getBalanceApi';
   const CODES = [202=>'Submitted',1001=>'Invalid number',1002=>'Sender ID incorrect or disabled',1003=>'Required fields missing',1005=>'Internal error at gateway',1006=>'Balance validity not available',1007=>'Insufficient balance',1011=>'User not found',1012=>'Masking SMS must be Bengali text',1013=>'No gateway for this sender ID',1014=>'Sender type not found',1015=>'No valid gateway',1018=>'Account disabled',1031=>'Account not verified',1032=>'Server IP not whitelisted in BulkSMSBD'];
   private static bool $hook = false;
+  private static ?array $secMemo = null;
+  /** All secrets are read once per request (one query) instead of one query per lookup. */
   public static function secret(string $k): ?string {
-    $v = DB::table('integration_secrets')->where('key',$k)->value('value'); if (!$v) return null;
+    if (self::$secMemo === null) { self::$secMemo = []; try { foreach (DB::table('integration_secrets')->pluck('value', 'key') as $kk => $vv) self::$secMemo[$kk] = $vv; } catch (\Throwable $e) { self::$secMemo = null; $v = DB::table('integration_secrets')->where('key',$k)->value('value'); if (!$v) return null; try { return Crypt::decryptString($v); } catch (\Throwable $e2) { return null; } } }
+    $v = self::$secMemo[$k] ?? null; if (!$v) return null;
     try { return Crypt::decryptString($v); } catch (\Throwable $e) { return null; }
   }
   public static function setSecret(string $k, ?string $v): void {
+    self::$secMemo = null;
     DB::table('integration_secrets')->updateOrInsert(['key'=>$k], ['value'=>$v === null || $v === '' ? null : Crypt::encryptString($v), 'updated_at'=>now(), 'created_at'=>now()]);
   }
   public static function configured(): bool { return (bool) (self::secret('sms_api_key') && self::secret('sms_sender_id')); }
