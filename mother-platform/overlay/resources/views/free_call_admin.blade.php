@@ -132,7 +132,7 @@ document.addEventListener('click',function(e){var b=e.target.closest('[data-f]')
  else if(f==='skip'){skip(+id);hide()}});
 S.addEventListener('change',function(){post('/admin/free-calls/status',{status:S.value}).then(function(){g.busy=false;poll()})});
 window.addEventListener('beforeunload',function(){});
-poll();setInterval(function(){poll()},2000);
+poll();(function loop(){setTimeout(function(){poll();loop()},document.hidden?6000:3000)})();document.addEventListener('visibilitychange',function(){if(!document.hidden)poll()});
 })();</script>
 @endverbatim
 @endif

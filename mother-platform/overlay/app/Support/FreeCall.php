@@ -15,9 +15,9 @@ class FreeCall
   const STATUS = ['waiting' => 'Waiting', 'ringing' => 'Ringing', 'accepted' => 'Connecting', 'connected' => 'Connected', 'completed' => 'Completed', 'cancelled' => 'Cancelled by Customer', 'declined' => 'Declined', 'missed' => 'Missed', 'no_agent' => 'No Agent Available', 'failed' => 'Connection Failed', 'dropped' => 'Dropped'];
   const OUTCOMES = ['resolved' => 'Resolved', 'follow_up' => 'Follow-up Required', 'order' => 'Order Related', 'lead' => 'Sales Lead', 'technical' => 'Not Reached / Technical'];
 
-  public static function set(string $k, string $d = ''): string { $v = DB::table('settings')->where('key', 'fc_' . $k)->value('value'); return $v === null ? $d : (string)$v; }
-  public static function put(string $k, string $v): void { DB::table('settings')->updateOrInsert(['key' => 'fc_' . $k], ['value' => $v, 'updated_at' => now(), 'created_at' => now()]); }
-  public static function ready(): bool { return \Illuminate\Support\Facades\Schema::hasTable('customer_calls'); }
+  public static function set(string $k, string $d = ''): string { $all = Cache::remember('fc.settings.v1', 10, fn() => DB::table('settings')->where('key', 'like', 'fc\\_%')->pluck('value', 'key')->all()); $v = $all['fc_' . $k] ?? null; return $v === null ? $d : (string)$v; }
+  public static function put(string $k, string $v): void { DB::table('settings')->updateOrInsert(['key' => 'fc_' . $k], ['value' => $v, 'updated_at' => now(), 'created_at' => now()]); Cache::forget('fc.settings.v1'); }
+  public static function ready(): bool { return Cache::rememberForever('fc.ready.v1', fn() => \Illuminate\Support\Facades\Schema::hasTable('customer_calls')) ? true : (bool)\Illuminate\Support\Facades\Schema::hasTable('customer_calls'); }
   public static function on(): bool { return self::set('on', '0') === '1'; }
   public static function ringTimeout(): int { return max(5, min(60, (int)self::set('ring_timeout', '15'))); }
   public static function maxQueue(): int { return max(1, min(200, (int)self::set('max_queue', '20'))); }
@@ -88,6 +88,7 @@ class FreeCall
   public static function touchAgent(int $staff): object {
     $a = DB::table('free_call_agents')->where('staff_id', $staff)->first();
     if (!$a) { DB::table('free_call_agents')->insert(['staff_id' => $staff, 'voice_status' => 'offline', 'last_seen_at' => now(), 'updated_at' => now()]); return DB::table('free_call_agents')->where('staff_id', $staff)->first(); }
+    if ($a->last_seen_at && time() - strtotime($a->last_seen_at . ' UTC') < 8) return $a; // presence only needs to stay fresher than agentFresh() (20 s): skip the write when it is already recent
     DB::table('free_call_agents')->where('staff_id', $staff)->update(['last_seen_at' => now()]); $a->last_seen_at = now(); return $a;
   }
   public static function setStatus(int $staff, string $st): void {
@@ -159,7 +160,7 @@ class FreeCall
   }
   /** Heartbeat / ghost cleanup: nobody stays Busy or in the queue forever. */
   public static function sweep(bool $force = false): void {
-    if (!$force && !Cache::add('fc.sweep', 1, 2)) return;
+    if (!$force && !Cache::add('fc.sweep', 1, 3)) return;
     $hb = max(8, (int)self::set('heartbeat', '20')); $wait = max(30, (int)self::set('wait_hb', '90')); $maxWait = max(60, (int)self::set('max_wait', '900'));
     foreach (DB::table('customer_calls')->whereIn('status', self::LIVE)->get() as $c) {
       $cs = $c->cust_seen_at ? time() - strtotime($c->cust_seen_at . ' UTC') : 9999; $as = $c->agent_seen_at ? time() - strtotime($c->agent_seen_at . ' UTC') : 0;
