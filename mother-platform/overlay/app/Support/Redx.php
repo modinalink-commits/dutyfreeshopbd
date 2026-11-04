@@ -39,10 +39,10 @@ class Redx {
     $addr = trim((string)$o->address); if (mb_strlen($addr) < 5) return [false, 'Address is too short for RedX.', []];
     $phone = self::phone((string)$o->phone); if (strlen($phone) !== 11) return [false, 'Customer phone must be 11 digits.', []];
     $area = self::area((string)($o->district ?? ''), trim($addr . ' ' . ($o->sub_city ?? ''))); if (!$area) return [false, 'RedX delivery area could not be matched for "' . ($o->district ?? '') . '". Put the thana / area name (as RedX spells it, e.g. Kotwali, Agrabad, Khulshi) in the address or Sub City field, then send again.', []];
-    $total = (int)round($o->total);
+    $total = (int)round($o->total); $declared = CourierDesc::sendProducts() ? $total : max(1, (int)round(PaymentSettle::cod($o))); // by default only the due amount is declared, not the bill total
     $p = ['customer_name' => mb_substr(trim((string)$o->customer_name), 0, 100), 'customer_phone' => $phone, 'delivery_area' => $area['name'], 'delivery_area_id' => $area['id'], 'customer_address' => mb_substr($addr, 0, 250), 'merchant_invoice_id' => (string)$o->invoice,
-      'cash_collection_amount' => (string)(int)round(PaymentSettle::cod($o)), 'parcel_weight' => (int)round(((float)(Sms::secret('redx_weight') ?: 0.5)) * 1000), 'instruction' => mb_substr((string)$o->note, 0, 200), 'value' => $total, 'pickup_store_id' => (int)$store,
-      'parcel_details_json' => collect($items)->map(fn($i) => ['name' => mb_substr((string)$i->name, 0, 100), 'category' => 'general', 'value' => (int)round($i->price * $i->qty)])->values()->all()];
+      'cash_collection_amount' => (string)(int)round(PaymentSettle::cod($o)), 'parcel_weight' => (int)round(((float)(Sms::secret('redx_weight') ?: 0.5)) * 1000), 'instruction' => mb_substr((string)$o->note, 0, 200), 'value' => $declared, 'pickup_store_id' => (int)$store,
+      'parcel_details_json' => CourierDesc::sendProducts() ? collect($items)->map(fn($i) => ['name' => mb_substr((string)$i->name, 0, 100), 'category' => 'general', 'value' => (int)round($i->price * $i->qty)])->values()->all() : [['name' => 'Parcel', 'category' => 'general', 'value' => $declared]]];
     $r = self::call('POST', '/parcel', $p);
     if (in_array($r['code'], [200, 201], true) && !empty($r['json']['tracking_id'])) return [true, 'Sent to RedX. Tracking ' . $r['json']['tracking_id'] . ' (area ' . $area['name'] . ')', ['consignment_id' => $r['json']['tracking_id']]];
     $msg = $r['err'] ?? ($r['json']['message'] ?? 'RedX did not accept the order'); if (!empty($r['json']['validation_errors'])) $msg .= ': ' . collect($r['json']['validation_errors'])->flatten()->take(3)->implode('; ');

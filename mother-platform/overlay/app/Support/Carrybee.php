@@ -26,7 +26,7 @@ class Carrybee {
     if (mb_strlen($addr) < 10) return [false, 'Address is too short for Carrybee (minimum 10 characters).', []];
     $phone = self::phone((string)$o->phone); if (strlen($phone) !== 11) return [false, 'Customer phone must be 11 digits.', []];
     $cod = (int)round(PaymentSettle::cod($o)); if ($cod > 100000) return [false, 'Carrybee allows a collectable amount up to ৳100,000 only.', []];
-    $names = collect($items)->map(fn($i) => $i->name . ' x' . $i->qty)->implode(', ');
+    $names = CourierDesc::text($items);
     $p = ['store_id' => $store, 'merchant_order_id' => mb_substr(Inv::show($o->invoice), 0, 49), 'delivery_type' => 1, 'product_type' => 1, 'recipient_phone' => $phone, 'recipient_name' => mb_substr(str_pad(trim((string)$o->customer_name), 2, ' '), 0, 99),
       'recipient_address' => mb_substr($addr, 0, 200), 'special_instruction' => mb_substr((string)$o->note, 0, 250), 'product_description' => mb_substr($names, 0, 250),
       'item_weight' => max(1, min(25000, (int)round(((float)(Sms::secret('carrybee_weight') ?: 0.5)) * 1000))), 'item_quantity' => max(1, min(200, (int)collect($items)->sum('qty'))), 'collectable_amount' => $cod];
