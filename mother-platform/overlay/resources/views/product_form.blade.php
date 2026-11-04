@@ -1,14 +1,15 @@
 @extends('layout')@section('title','Product')
 @section('body')
 @php
-  $v = fn($k, $d = '') => old($k, $p->{$k} ?? $d);
+  $ai = $ai ?? null;
+  $v = fn($k, $d = '') => old($k, $p->{$k} ?? ($ai[$k] ?? $d));
   $regular = old('regular_price', $p ? ($p->compare_price && $p->compare_price > $p->price ? $p->compare_price : $p->price) : '');
   $sale = old('sale_price', $p && $p->compare_price && $p->compare_price > $p->price ? $p->price : '');
   $isPub = old('status', $p ? ($p->published ? 'published' : 'draft') : 'draft') === 'published';
-  $imgList = old('images', $imgs);
+  $imgList = old('images', $imgs ?: ($ai['images'] ?? []));
   $varList = old('v', $vars);
   $hasVar = old('has_variants', count($varList) ? 1 : 0);
-  $descRaw = (string)old('description', $p->description ?? '');
+  $descRaw = (string)old('description', $p->description ?? ($ai['description'] ?? ''));
   $descHtml = \App\Support\Html::isHtml($descRaw) ? \App\Support\Html::clean($descRaw) : nl2br(e($descRaw));
 @endphp
 <style>
@@ -48,7 +49,9 @@
 <h1>{{ $p ? 'Edit product' : 'Add product' }}</h1>
 @if(request('saved'))<div class="okb">Saved. {{ $p && $p->published ? 'This product is live on the store.' : 'It is a draft, not visible to customers.' }}</div>@endif
 @if($errors->any())<div class="card err" style="max-width:1180px;white-space:pre-line">{{ $errors->first() }}</div>@endif
+@if($ai)<div class="card" style="max-width:1180px;border:2px solid #FF5A00;background:#FFF7F0"><b>AI filled this product from the image.</b> Please review every field. <b>Price was not filled</b> – enter the Regular price (and Sale price if any), then Save. Nothing is saved until you press Save.</div>@endif
 <form id="pf" class="pf" method="post" action="{{ $p ? '/admin/products/'.$p->id : '/admin/products' }}">@csrf
+@if($ai)<input type="hidden" name="ai_scan" value="{{ $ai['_scan'] }}"><input type="hidden" name="dup_ok" id="dupOk" value="{{ old('dup_ok') }}">@endif
 <input type="hidden" name="act" id="act" value="publish">
 <div>
 
@@ -113,7 +116,7 @@
 <label>Meta title</label><input name="meta_title" value="{{ $v('meta_title') }}" maxlength="200">
 <label>Meta description</label><textarea name="meta_description" rows="2" maxlength="500">{{ $v('meta_description') }}</textarea>
 <label>Meta keywords <small>(comma separated)</small></label><input name="meta_keywords" value="{{ $v('meta_keywords') }}" maxlength="500">
-<label>URL slug</label><input name="slug" id="pSlug" value="{{ old('slug', $p->path_slug ?? ($p->slug ?? '')) }}" placeholder="auto from product name">
+<label>URL slug</label><input name="slug" id="pSlug" value="{{ old('slug', $p->path_slug ?? ($p->slug ?? ($ai['slug'] ?? ''))) }}" placeholder="auto from product name">
 <div class="url" id="urlPrev"></div>
 </div>
 

@@ -46,8 +46,10 @@ class CatalogController extends Controller {
       $o = json_decode($v->options ?? '', true) ?: []; $k = array_key_first($o);
       return ['attr' => $k ?? 'Size', 'value' => $k !== null ? (string)$o[$k] : '', 'sku' => $v->sku, 'price' => $v->price, 'stock' => $v->stock];
     })->all() : [];
+    $ai = null;
+    if (!$id && request()->filled('ai')) { $sc = DB::table('ai_product_scans')->find((int)request('ai')); if ($sc && ((int)$sc->user_id === (int)auth()->id() || \App\Support\ProfitFloor::admin()) && in_array($sc->status, ['accepted', 'scanned', 'saved'], true) && !$sc->product_id) $ai = \App\Support\ProductAutoFillService::prefill($sc) + ['_scan'=>$sc->id]; }
     $canon = ($p && $p->published) ? url(\App\Http\Controllers\StoreController::url($p)) : null;
-    return view('product_form', ['p'=>$p, 'mains'=>$mains->filter()->values(), 'map'=>$map, 'brands'=>DB::table('brands')->orderBy('position')->orderBy('name')->get(), 'imgs'=>$imgs, 'vars'=>$vars, 'canon'=>$canon, 'host'=>request()->getHost()]);
+    return view('product_form', ['p'=>$p, 'mains'=>$mains->filter()->values(), 'map'=>$map, 'brands'=>DB::table('brands')->orderBy('position')->orderBy('name')->get(), 'imgs'=>$imgs, 'vars'=>$vars, 'ai'=>$ai, 'canon'=>$canon, 'host'=>request()->getHost()]);
   }
   public function productSave(Request $r, $id = null) {
     $m = fn($min = 0) => 'nullable|numeric|min:'.$min;
@@ -87,6 +89,11 @@ class CatalogController extends Controller {
       return back()->withInput($r->except(['description', '_token']))->withErrors(['regular_price'=>$pfE]);
     }
     if ($old && abs((float)$old->price - (float)$row['price']) > 0.004) \App\Support\ProfitFloor::audit('Selling price changed', 'Product '.$old->name, ['price'=>$old->price, 'buy'=>[$old->buy2_price, $old->buy3_price, $old->buy4_price, $old->buy5_price]], ['price'=>$row['price'], 'buy'=>[$row['buy2_price'], $row['buy3_price'], $row['buy4_price'], $row['buy5_price']]]);
+    // AI-created product: second duplicate check right before saving (a repeated Save with dup_ok=1 confirms it is a different product)
+    if (!$id && $r->filled('ai_scan') && \App\Support\ProductAutoFillService::on('dup') && $r->input('dup_ok') !== '1') {
+      $dm = \App\Support\ProductMatchingService::strong(['name'=>$row['name'], 'sku'=>$row['sku'], 'brand'=>$row['brand_id'] ? DB::table('brands')->where('id', $row['brand_id'])->value('name') : null]);
+      if ($dm) return back()->withInput(array_merge($r->except(['description', '_token']), ['dup_ok'=>'1']))->withErrors(['name'=>'Possible duplicate: '.implode('; ', array_map(fn($m) => $m['name'].' ('.($m['sku'] ?: 'no SKU').', '.$m['status'].')', $dm)).'. If this is a different product, press Save again.']);
+    }
     // URL slug, unique inside main category + sub category
     $base = \App\Support\Slugs::slug(($d['slug'] ?? null) ?: $row['name']) ?: 'product';
     $subSlug = \App\Support\Slugs::subSlug($row['sub']); $slug = $base; $i = 2;
@@ -115,6 +122,14 @@ class CatalogController extends Controller {
       $was = $old ? (bool)$old->published : false;
       if ($pub !== $was) DB::table('product_status_logs')->insert(['product_id'=>$id, 'user_id'=>Auth::id(), 'user_name'=>Auth::user()->name, 'action'=>$pub ? 'Published' : 'Unpublished', 'created_at'=>now(), 'updated_at'=>now()]);
     });
+    if (!$old && $r->filled('ai_scan')) { try {
+      $sc = DB::table('ai_product_scans')->find((int)$r->input('ai_scan'));
+      if ($sc && !$sc->product_id) {
+        $pf = \App\Support\ProductAutoFillService::prefill($sc); $edits = []; foreach (['name', 'sku', 'brand_id', 'category_id', 'sub', 'sub_sub', 'description', 'meta_title', 'meta_description', 'meta_keywords'] as $k) { $fv = $row[$k] ?? null; $pv = $pf[$k] ?? null; if (trim((string)$fv) !== trim((string)$pv)) $edits[$k] = ['ai'=>$pv, 'staff'=>$fv]; }
+        DB::table('ai_product_scans')->where('id', $sc->id)->update(['status'=>'saved', 'product_id'=>$id, 'final'=>json_encode(['name'=>$row['name'], 'sku'=>$row['sku'], 'category_id'=>$row['category_id'], 'sub'=>$row['sub'], 'sub_sub'=>$row['sub_sub'], 'brand_id'=>$row['brand_id'], 'price'=>$row['price'], 'published'=>$pub], JSON_UNESCAPED_UNICODE), 'edits'=>$edits ? json_encode($edits, JSON_UNESCAPED_UNICODE) : $sc->edits, 'saved_at'=>now(), 'updated_at'=>now()]);
+        \App\Support\Procure::audit('ai.product_created', 'Product created from image: '.$row['name'].' ('.($row['sku'] ?: 'no SKU').')', ['scan'=>$sc->id, 'detected'=>json_decode((string)$sc->detected, true)['fields'] ?? null], ['product_id'=>$id, 'staff_edits'=>array_keys($edits)]);
+      }
+    } catch (\Throwable $e) { report($e); } }
     if ((bool)($old->published ?? false) !== $pub && ($old || $pub)) $this->notifyStatus([$row['name']], $pub);
     \Illuminate\Support\Facades\Cache::forget('store.home6'); \Illuminate\Support\Facades\Cache::forget('store.sitemap5');
     if ($act === 'preview') return redirect('/admin/products/'.$id.'/preview');

@@ -600,3 +600,9 @@ resources/views/inventory_margin_cells.blade.php
 app/Support/SkuSearch.php
 app/Http/Middleware/MinifyHtml.php
 app/Support/CourierDesc.php
+database/migrations/2026_11_04_000150_ai_product_scans.php
+app/Support/ProductImageAIService.php
+app/Support/ProductMatchingService.php
+app/Support/ProductAutoFillService.php
+app/Http/Controllers/AiProductController.php
+resources/views/ai_product_scan.blade.php
