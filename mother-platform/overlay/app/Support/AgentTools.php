@@ -26,7 +26,7 @@ class AgentTools {
   private static function money($v): string { return number_format((float)$v).' TK'; }
   private static function norm(string $p): string { $d = preg_replace('/\D/', '', $p); return strlen($d) >= 11 ? substr($d, -11) : $d; }
   private static function validPhone(string $p): bool { return (bool)preg_match('/^01[3-9]\d{8}$/', $p); }
-  private static function stockTxt($p): string { return $p->stock > 0 ? 'in stock' : 'OUT OF STOCK'; }
+  private static function stockTxt($p): string { return StockGuard::sellable($p) ? 'in stock' : 'OUT OF STOCK'; }
   private static function row($p): array { $now = (float)$p->price; return ['id'=>$p->id, 'name'=>$p->name, 'price'=>self::money($now), 'was'=>(float)$p->compare_price > $now ? self::money($p->compare_price) : null, 'stock'=>self::stockTxt($p), 'link'=>url(\App\Http\Controllers\StoreController::url($p))]; }
 
   /** Runs one tool. $st is the conversation state (cart, pending order), changed by reference. ctx: thread_id, sim, orders_on, last_msg_id, last_msg_text. Returns an array the model sees. */
@@ -81,7 +81,7 @@ class AgentTools {
       case 'cart_add': {
         $p = DB::table('products')->where('published', true)->find((int)($in['product_id'] ?? 0)); if (!$p) return ['error'=>'product not found'];
         if ($p->stock <= 0) return ['error'=>'this product is OUT OF STOCK'];
-        $q = max(1, min(20, (int)($in['qty'] ?? 1))); if ($p->stock < $q) return ['error'=>'only '.(int)$p->stock.' in stock'];
+        $q = max(1, min(20, (int)($in['qty'] ?? 1))); if (StockGuard::mode($p->category_id ?? null) === 'STOCK_CONTROLLED' && $p->stock < $q) return ['error'=>'only '.(int)$p->stock.' in stock'];
         if (time() - (int)($st['cart_at'] ?? 0) > 21600) $st['cart'] = []; $st['cart_at'] = time();
         $st['cart'][$p->id] = min(20, $q); unset($st['pending']);
         return ['added'=>$p->name, 'qty_in_cart'=>$st['cart'][$p->id]];
@@ -130,7 +130,7 @@ class AgentTools {
     $rows = DB::table('products')->where('published', true)->whereIn('id', array_keys($want))->get()->keyBy('id'); $items = []; $sub = 0; $prob = [];
     foreach ($want as $id => $q) {
       $p = $rows[$id] ?? null; if (!$p) { $prob[] = 'product #'.$id.' is no longer available'; continue; }
-      if ($p->stock < $q) $prob[] = $p->name.': only '.(int)$p->stock.' in stock';
+      if (StockGuard::mode($p->category_id ?? null) === 'STOCK_CONTROLLED' && $p->stock < $q) $prob[] = $p->name.': only '.(int)$p->stock.' in stock';
       $line = (float)$p->price * $q; $sub += $line; $items[] = ['id'=>$p->id, 'name'=>$p->name, 'qty'=>$q, 'unit'=>self::money($p->price), 'line'=>self::money($line)];
     }
     return ['items'=>$items, 'subtotal'=>self::money($sub), 'subtotal_raw'=>$sub, 'problems'=>$prob];

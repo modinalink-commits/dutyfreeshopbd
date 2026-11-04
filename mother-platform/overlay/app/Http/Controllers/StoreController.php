@@ -65,7 +65,7 @@ class StoreController extends Controller {
         ->orderByDesc('q1')->orderByDesc('q7')->orderByDesc('q30')->limit(120)->get();
       $rank = []; foreach ($rows as $r) $rank[(int)$r->pid] = $r;
       $ids = array_values(array_diff(array_values(array_unique(array_merge($pin, array_keys($rank)))), $ex));
-      $prods = $ids ? DB::table('products')->whereIn('id', $ids)->where('published', true)->where(fn($w) => $w->whereNull('stock')->orWhere('stock', '>', 0))->whereNotNull('image')->where('image', '!=', '')->get()->keyBy('id') : collect();
+      $prods = $ids ? DB::table('products')->whereIn('id', $ids)->where('published', true)->where(function ($w) { $w->whereNull('stock')->orWhere('stock', '>', 0); if ($ci = \App\Support\StockGuard::controlledIds()) $w->orWhereNotIn('category_id', $ci); })->whereNotNull('image')->where('image', '!=', '')->get()->keyBy('id') : collect();
       $sc = DB::table('categories')->get(['id','slug','name'])->filter(fn($c) => self::isSmokeCat($c))->pluck('id')->map(fn($v) => (int)$v)->all();
       $out = collect(); $sm = []; $ot = [];
       foreach ($ids as $id) {

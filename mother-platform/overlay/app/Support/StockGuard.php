@@ -24,6 +24,13 @@ class StockGuard {
     while (($pid = (int)($par[$id] ?? 0)) && $n++ < 4) { if (($m[$pid] ?? null) === 'STOCK_CONTROLLED') return 'STOCK_CONTROLLED'; $id = $pid; }
     return 'SOURCING';
   }
+  /** Ids of every stock-controlled category and its sub categories (used to keep sourcing products visible at zero stock). */
+  public static function controlledIds(): array {
+    $m = self::modes(); $ids = [];
+    foreach ($m as $id => $mode) if ($mode === 'STOCK_CONTROLLED') $ids[] = (int)$id;
+    if ($ids) { try { $ids = array_values(array_unique(array_merge($ids, array_map('intval', DB::table('categories')->whereIn('parent_id', $ids)->pluck('id')->all())))); } catch (\Throwable $e) {} }
+    return $ids;
+  }
   /** Storefront: can the customer still order this product? (sourcing categories always can; stock-controlled ones only with stock) */
   public static function sellable($p): bool {
     if (!isset($p->stock) || $p->stock === null || (int)$p->stock > 0) return true;
