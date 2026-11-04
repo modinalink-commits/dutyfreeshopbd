@@ -289,15 +289,32 @@ class StoreController extends Controller {
   public function search(Request $r) {
     $t = trim(mb_substr((string)$r->q, 0, 80)); $items = collect();
     if ($r->boolean('deals')) { $items = self::dealBase(0)->paginate(48)->withQueryString(); $t = 'Flash Sale'; }
-    elseif ($t !== '') { $items = $this->q()->where(fn($w) => $w->where('name','ilike','%'.$t.'%')->orWhere('sub','ilike','%'.$t.'%'))->orderByDesc('id')->paginate(48)->withQueryString(); DB::table('product_views')->insert(['term'=>$t,'day'=>now('Asia/Dhaka')->toDateString(),'created_at'=>now(),'updated_at'=>now()]); }
+    elseif ($t !== '') { $items = $this->searchRank($this->searchWhere($this->q(), $t), $t)->orderByDesc('id')->paginate(48)->withQueryString(); DB::table('product_views')->insert(['term'=>$t,'day'=>now('Asia/Dhaka')->toDateString(),'created_at'=>now(),'updated_at'=>now()]); }
     return response()->view('store.search', $this->base(['t'=>$t, 'items'=>$items, 'title'=>($t ? $t.' – ' : '').'Search | DutyFree BD', 'desc'=>'', 'canon'=>url('/search'), 'noindex'=>true]));
+  }
+  /** Customer search: every word must match somewhere - name, product code (DF-1106, df1106 or just 1106), keywords, sub category, URL slug or brand name. */
+  private function searchWhere($qb, string $t) {
+    foreach (array_slice(preg_split('/\s+/u', trim($t), -1, PREG_SPLIT_NO_EMPTY), 0, 6) as $tk) {
+      $like = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $tk).'%'; $norm = preg_replace('/[^a-z0-9]/', '', strtolower($tk));
+      $qb->where(function ($w) use ($like, $norm) {
+        $w->where('name', 'ilike', $like)->orWhere('sku', 'ilike', $like)->orWhere('sub', 'ilike', $like)->orWhere('meta_keywords', 'ilike', $like)->orWhere('slug', 'ilike', $like)
+          ->orWhereIn('brand_id', fn($s) => $s->from('brands')->select('id')->where('name', 'ilike', $like));
+        if (strlen($norm) >= 2) $w->orWhereRaw("regexp_replace(lower(coalesce(sku,'')),'[^a-z0-9]','','g') like ?", ['%'.$norm.'%']);
+      });
+    }
+    return $qb;
+  }
+  /** Best matches first: exact product code, code starts with, name starts with, word starts with, anything else. */
+  private function searchRank($qb, string $t) {
+    $lt = mb_strtolower(trim($t)); $norm = preg_replace('/[^a-z0-9]/', '', $lt); $e = str_replace(['%', '_'], ['\\%', '\\_'], $lt);
+    return $qb->orderByRaw("case when lower(coalesce(sku,'')) = ? or (?::text <> '' and regexp_replace(lower(coalesce(sku,'')),'[^a-z0-9]','','g') = ?) then 0 when lower(coalesce(sku,'')) like ? or (?::text <> '' and regexp_replace(lower(coalesce(sku,'')),'[^a-z0-9]','','g') like ?) then 1 when lower(name) like ? then 2 when lower(name) like ? then 3 else 4 end", [$lt, $norm, $norm, $e.'%', $norm, '%'.$norm.'%', $e.'%', '% '.$e.'%']);
   }
   /** Live search suggestions: products (with image), brands, categories and stores. */
   public function suggest(Request $r) {
     $t = trim(mb_substr((string)$r->q, 0, 60)); if (mb_strlen($t) < 2) return response()->json([]);
     $like = '%'.str_replace(['%','_'], ['\\%','\\_'], $t).'%';
     $out = [];
-    foreach ($this->q()->where(fn($w) => $w->where('name','ilike',$like)->orWhere('sku','ilike',$like)->orWhere('sub','ilike',$like))->orderByDesc('id')->limit(6)->get(['id','ext_id','name','price','image','sub']) as $p) $out[] = ['t'=>'p','n'=>$p->name,'u'=>self::url($p),'i'=>$p->image,'x'=>number_format($p->price).' TK'];
+    foreach ($this->searchRank($this->searchWhere($this->q(), $t), $t)->orderByDesc('id')->limit(8)->get(['id','ext_id','sku','name','price','image','sub','stock','category_id']) as $p) $out[] = ['t'=>'p','n'=>$p->name,'u'=>self::url($p),'i'=>$p->image,'x'=>number_format($p->price).' TK','s'=>(string)($p->sku ?: '')];
     foreach ($this->cats() as $c) if (stripos($c->name, $t) !== false) $out[] = ['t'=>'c','n'=>$c->name,'u'=>'/'.$c->slug.'/'];
     foreach (DB::table('products')->where('published',true)->where('sub','ilike',$like)->select('category_id','sub')->distinct()->limit(3)->get() as $b) { $c = $this->cats()->firstWhere('id',$b->category_id); if ($c) $out[] = ['t'=>'b','n'=>$b->sub,'u'=>'/'.$c->slug.'/?sub='.rawurlencode($b->sub)]; }
     return response()->json($out)->header('Cache-Control','public, max-age=60');
