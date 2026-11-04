@@ -30,13 +30,13 @@
 </section>
 <section class="card">
   <div class="pad" style="display:flex;align-items:center"><h2 style="margin:0;font-size:15px;flex-grow:1">Stock by brand</h2></div>
-  <div class="scroll"><table>
-    <thead><tr><th>Brand</th><th>Size</th><th style="text-align:right">Full</th><th style="text-align:right">Empty</th><th style="text-align:right">At company</th><th style="text-align:right">Damaged</th></tr></thead>
+  <div class="dt-wrap"><table class="dt">
+    <thead><tr><th>Brand</th><th>Size</th><th>Full</th><th>Empty</th><th>At company</th><th>Damaged</th></tr></thead>
     <tbody>
     @forelse($grid as $r)
-      <tr><td><b>{{ $r->brand->name }}</b></td><td>{{ $r->size_kg }} kg</td><td style="text-align:right;font-weight:700">{{ number_format($r->f) }}</td><td style="text-align:right">{{ number_format($r->e) }}</td><td style="text-align:right">{{ number_format($r->c) }}</td><td style="text-align:right">{{ number_format($r->d) }}</td></tr>
+      <tr><td><b>{{ $r->brand->name }}</b></td><td>{{ $r->size_kg }} kg</td><td class="c" style="font-weight:700">{{ number_format($r->f) }}</td><td class="c">{{ number_format($r->e) }}</td><td class="c">{{ number_format($r->c) }}</td><td class="c">{{ number_format($r->d) }}</td></tr>
     @empty
-      <tr><td colspan="6" style="color:var(--muted);padding:20px 12px">No stock entered yet. Start with <a href="{{ route('stock.create', ['kind' => 'opening']) }}">Opening stock</a> for each brand and size you hold today.</td></tr>
+      <tr><td colspan="6" class="empty">No stock entered yet. Start with <a href="{{ route('stock.create', ['kind' => 'opening']) }}">Opening stock</a> for each brand and size you hold today.</td></tr>
     @endforelse
     </tbody>
   </table></div>
@@ -45,13 +45,13 @@
   <div class="pad" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><h2 style="margin:0;font-size:15px;flex-grow:1">Stock movement — today</h2>
     @if($canMove)<a class="btn sm" href="{{ route('stock.create', ['kind' => 'opening']) }}">Opening stock</a><a class="btn sm" href="{{ route('stock.create', ['kind' => 'empty_in']) }}">Empty collected</a><a class="btn sm" href="{{ route('stock.create', ['kind' => 'damaged']) }}">Damaged</a>@endif
     <a href="{{ route('stock.history') }}" style="font-size:12px;font-weight:600;text-decoration:none">Full history →</a></div>
-  <div class="scroll"><table>
-    <thead><tr><th>Time</th><th>Ref</th><th>Movement</th><th>Brand</th><th>Size</th><th style="text-align:right">Full</th><th style="text-align:right">Empty</th><th>Reference / note</th><th>By</th></tr></thead>
+  <div class="dt-wrap"><table class="dt">
+    <thead><tr><th>Time</th><th>Ref</th><th>Movement</th><th>Brand</th><th>Size</th><th>Full</th><th>Empty</th><th>Reference / note</th><th>By</th></tr></thead>
     <tbody>
     @forelse($today as $m)
       @include('stock.row', ['m' => $m, 'withReverse' => false])
     @empty
-      <tr><td colspan="9" style="color:var(--muted);padding:20px 12px">No movement today.</td></tr>
+      <tr><td colspan="9" class="empty">No movement today.</td></tr>
     @endforelse
     </tbody>
   </table></div>

@@ -8,7 +8,7 @@
     <a class="{{ $status === $k ? 'on' : '' }}" href="{{ route('orders.index', ['status' => $k]) }}">{{ $label }} ({{ $counts[$k] ?? 0 }})</a>
   @endforeach
 </div>
-<section class="card"><div class="scroll"><table>
+<div class="dt-wrap tall"><table class="dt">
   <thead><tr><th>#</th><th>Received</th><th>Customer</th><th>Order</th><th>Address</th><th>Status &amp; note</th></tr></thead>
   <tbody>
   @forelse($orders as $o)
@@ -32,9 +32,9 @@
       </td>
     </tr>
   @empty
-    <tr><td colspan="6" style="color:var(--muted);padding:20px 12px">No orders here.</td></tr>
+    <tr><td colspan="6" class="empty">No orders here.</td></tr>
   @endforelse
   </tbody>
-</table></div></section>
+</table></div>
 {{ $orders->links('pagination::default') }}
 @endsection

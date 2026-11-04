@@ -4,6 +4,11 @@ use App\Http\Controllers\ApiController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\BrandController;
+use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\PosController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\SaleController;
+use App\Http\Controllers\WholesaleController;
 use App\Http\Controllers\ExchangeController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\RoadmapController;
@@ -38,6 +43,34 @@ Route::middleware(['auth', 'pwd'])->group(function () {
     Route::get('/stock', [StockController::class, 'index'])->name('stock.index');
     Route::get('/stock/history', [StockController::class, 'history'])->name('stock.history');
     Route::get('/brands', [BrandController::class, 'index'])->name('brands.index');
+
+    // Sales: counter staff (all roles except salesman) can sell; managers handle wholesale and voids.
+    Route::middleware('role:super_admin,admin,manager,accounts')->group(function () {
+        Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
+        Route::get('/pos/customer', [PosController::class, 'lookup'])->name('pos.lookup');
+        Route::post('/pos', [PosController::class, 'store'])->name('pos.store');
+        Route::get('/sales', [SaleController::class, 'index'])->name('sales.index');
+        Route::get('/sales/{sale}', [SaleController::class, 'show'])->name('sales.show');
+        Route::get('/sales/{sale}/print', [SaleController::class, 'print'])->name('sales.print');
+        Route::get('/customers', [CustomerController::class, 'index'])->name('customers.index');
+        Route::post('/customers', [CustomerController::class, 'save'])->name('customers.save');
+        Route::post('/customers/{customer}/pay', [CustomerController::class, 'pay'])->name('customers.pay');
+        Route::post('/customers/{customer}/empties', [CustomerController::class, 'empties'])->name('customers.empties');
+        Route::get('/wholesale', [WholesaleController::class, 'index'])->name('wholesale.index');
+        Route::get('/products', [ProductController::class, 'index'])->name('products.index');
+    });
+
+    Route::middleware('role:super_admin,admin,manager')->group(function () {
+        Route::post('/wholesale', [WholesaleController::class, 'store'])->name('wholesale.store');
+        Route::post('/wholesale/{sale}/load', [WholesaleController::class, 'load'])->name('wholesale.load');
+        Route::post('/wholesale/{sale}/deliver', [WholesaleController::class, 'deliver'])->name('wholesale.deliver');
+        Route::post('/sales/{sale}/void', [SaleController::class, 'void'])->name('sales.void');
+    });
+
+    Route::middleware('role:super_admin,admin')->group(function () {
+        Route::post('/products', [ProductController::class, 'save'])->name('products.save');
+        Route::post('/products/{product}/stock', [ProductController::class, 'receive'])->name('products.stock');
+    });
 
     Route::middleware('role:super_admin,admin,manager')->group(function () {
         Route::get('/stock/new', [StockController::class, 'create'])->name('stock.create');

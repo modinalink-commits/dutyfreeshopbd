@@ -4,8 +4,8 @@
   <td style="white-space:nowrap">{{ $m->ref_no }}</td>
   <td><span class="pill">{{ \App\Models\StockMovement::KINDS[$m->kind] ?? $m->kind }}</span></td>
   <td>{{ $m->brand?->name }}</td><td>{{ $m->size_kg }} kg</td>
-  <td style="text-align:right">{{ $sg($m->full_delta) }}</td>
-  <td style="text-align:right">{{ $sg($m->empty_delta) }}@if($m->company_delta) <span class="sub">(company {{ $sg($m->company_delta) }})</span>@endif @if($m->damaged_delta) <span class="sub">(damaged {{ $sg($m->damaged_delta) }})</span>@endif</td>
+  <td class="c">{{ $sg($m->full_delta) }}</td>
+  <td class="c">{{ $sg($m->empty_delta) }}@if($m->company_delta) <span class="sub">(company {{ $sg($m->company_delta) }})</span>@endif @if($m->damaged_delta) <span class="sub">(damaged {{ $sg($m->damaged_delta) }})</span>@endif</td>
   <td>{{ $m->reference }}@if($m->reference && $m->note) · @endif<span class="sub">{{ $m->note }}</span></td>
   <td>{{ $m->user?->name }}</td>
   @if($withReverse)

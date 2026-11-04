@@ -25,8 +25,8 @@
       <a class="{{ $filter === 'inactive' ? 'on' : '' }}" href="{{ route('brands.index', ['q' => $q, 'f' => 'inactive']) }}">Inactive</a>
     </div>
   </form>
-  <div class="scroll"><table>
-    <thead><tr><th>Brand ID</th><th>Brand</th><th>Company name</th><th>Sizes</th><th>Status</th><th>For sale</th><th>Empty collection</th><th style="text-align:right">Full stock</th><th style="text-align:right">Empty stock</th><th>Remarks</th>@if($canEdit)<th></th>@endif</tr></thead>
+  <div class="dt-wrap"><table class="dt">
+    <thead><tr><th>Brand ID</th><th>Brand</th><th>Company name</th><th>Sizes</th><th>Status</th><th>For sale</th><th>Empty collection</th><th>Full stock</th><th>Empty stock</th><th>Remarks</th>@if($canEdit)<th></th>@endif</tr></thead>
     <tbody>
     @foreach($brands as $b)
       <tr @if($b->for_sale) style="background:#f5f8ff" @endif>
@@ -35,8 +35,8 @@
         <td style="white-space:nowrap">{{ implode(' · ', $b->sizes ?? []) }} kg</td>
         <td><span class="pill {{ $b->is_active ? 'st-delivered' : '' }}">{{ $b->is_active ? 'Active' : 'Inactive' }}</span></td>
         <td>{{ $b->for_sale ? 'Yes' : 'No' }}</td><td>{{ $b->empty_collection ? 'Yes' : 'No' }}</td>
-        <td style="text-align:right;font-weight:700">{{ number_format((int) ($totals[$b->id]->f ?? 0)) }}</td>
-        <td style="text-align:right">{{ number_format((int) ($totals[$b->id]->e ?? 0)) }}</td>
+        <td class="c" style="font-weight:700">{{ number_format((int) ($totals[$b->id]->f ?? 0)) }}</td>
+        <td class="c">{{ number_format((int) ($totals[$b->id]->e ?? 0)) }}</td>
         <td style="color:var(--muted)">{{ $b->remarks }}</td>
         @if($canEdit)<td><a class="btn sm" href="{{ route('brands.index', ['edit' => $b->id]) }}#brand-form">Edit</a></td>@endif
       </tr>

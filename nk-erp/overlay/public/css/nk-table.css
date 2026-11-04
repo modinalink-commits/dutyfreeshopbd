@@ -1,0 +1,25 @@
+/* NK / Mother ERP — global data table & grid standard. One shared file for every list, report and ledger. */
+.dt-wrap{position:relative;overflow:auto;border:1px solid #d5dce8;border-radius:8px;background:#fff;-webkit-overflow-scrolling:touch}
+.card>.dt-wrap{margin:0 16px 16px}
+.dt-wrap.tall{max-height:72vh}
+.dt{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;font-variant-numeric:tabular-nums;color:#14213d}
+.dt th,.dt td{border-right:1px solid #e1e6ef;border-bottom:1px solid #e1e6ef;padding:10px 12px;line-height:1.35;vertical-align:middle;text-align:left}
+.dt th:last-child,.dt td:last-child{border-right:0}
+.dt tbody tr:last-child td{border-bottom:0}
+.dt thead th{position:sticky;top:0;z-index:2;background:#f1f4f9;color:#3b4a63;font-size:12px;font-weight:600;text-align:center;white-space:nowrap;height:40px}
+.dt thead th:first-child{border-top-left-radius:7px}
+.dt thead th:last-child{border-top-right-radius:7px}
+.dt tbody tr:last-child td:first-child{border-bottom-left-radius:7px}
+.dt tbody tr:last-child td:last-child{border-bottom-right-radius:7px}
+.dt tbody td{background:#fff;min-height:40px}
+.dt tbody tr:hover td{background:#f6f9ff}
+.dt .l{text-align:left}.dt .c{text-align:center}.dt .r{text-align:right}
+.dt td.nw,.dt th.nw{white-space:nowrap}
+.dt td.empty{color:#51607a;text-align:center;padding:22px 12px}
+.dt th.sortable{cursor:pointer;user-select:none}
+.dt th.sortable:after{content:" \2195";color:#9aa6bd;font-size:11px}
+.dt th.sortable[aria-sort=ascending]:after{content:" \25B2";color:#123a86}
+.dt th.sortable[aria-sort=descending]:after{content:" \25BC";color:#123a86}
+.dt th.sortable:focus-visible{outline:2px solid #1d4ed8;outline-offset:-2px}
+.dt input,.dt select{min-height:32px}
+@media (max-width:760px){.dt{min-width:640px}.dt th,.dt td{padding:9px 10px}}

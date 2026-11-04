@@ -10,13 +10,13 @@
 </div>
 <section class="card">
   <div class="pad" style="display:flex;align-items:center"><h2 style="margin:0;font-size:15px;flex-grow:1">Latest website orders</h2><a class="btn sm" href="{{ route('orders.index') }}">See all</a></div>
-  <div class="scroll"><table>
+  <div class="dt-wrap"><table class="dt">
     <thead><tr><th>#</th><th>Time</th><th>Name</th><th>Mobile</th><th>Cylinder</th><th>Qty</th><th>Status</th></tr></thead>
     <tbody>
     @forelse($latest as $o)
       <tr><td>{{ $o->id }}</td><td>{{ $o->created_at->timezone('Asia/Dhaka')->format('d-m H:i') }}</td><td>{{ $o->name }}</td><td><a href="tel:{{ $o->phone }}">{{ $o->phone }}</a></td><td>{{ $o->cylinder }} · {{ $o->type }}</td><td>{{ $o->quantity }}</td><td><span class="pill st-{{ $o->status }}">{{ \App\Models\WebsiteOrder::STATUSES[$o->status] ?? $o->status }}</span></td></tr>
     @empty
-      <tr><td colspan="7" style="color:var(--muted);padding:20px 12px">No website orders yet.</td></tr>
+      <tr><td colspan="7" class="empty">No website orders yet.</td></tr>
     @endforelse
     </tbody>
   </table></div>

@@ -9,7 +9,7 @@
   <p class="sub">Give it to the person privately. It is shown only once.</p>
 </div>
 @endif
-<section class="card"><div class="scroll"><table>
+<div class="dt-wrap tall"><table class="dt">
   <thead><tr><th>Name</th><th>Email</th><th>Mobile</th><th>Role</th><th>Status</th><th>Last login</th>@if(auth()->user()->isSuperAdmin())<th></th>@endif</tr></thead>
   <tbody>
   @foreach($users as $usr)
@@ -28,7 +28,7 @@
     </tr>
   @endforeach
   </tbody>
-</table></div></section>
+</table></div>
 @if(auth()->user()->isSuperAdmin())
 <form class="card pad" method="post" action="{{ route('users.store') }}" style="display:flex;flex-direction:column;gap:14px">
   @csrf

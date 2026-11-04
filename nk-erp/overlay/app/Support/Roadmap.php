@@ -14,9 +14,10 @@ class Roadmap
             ['map', 'Distribution map', null, 'DistMap'],
         ],
         'SALES' => [
-            ['pos', 'Retail sale (POS)', null, 'POS'],
-            ['wholesale', 'Wholesale orders', null, 'Wholesale'],
-            ['customers', 'Customers & dues', null, 'Customers'],
+            ['pos', 'Retail sale (POS)', 'pos.index', 'POS · MobilePrint (58/80 mm) · CompanyDoc (A4)'],
+            ['wholesale', 'Wholesale orders', 'wholesale.index', 'Wholesale'],
+            ['customers', 'Customers & dues', 'customers.index', 'Customers'],
+            ['sales', 'Sales list & invoices', 'sales.index', 'POS · CompanyDoc'],
             ['corders', 'Website orders', 'orders.index', 'CustomerOrders'],
         ],
         'ROUTE SALES' => [
@@ -32,6 +33,7 @@ class Roadmap
         'STOCK' => [
             ['stock', 'Stock & cylinders', 'stock.index', 'Stock'],
             ['brands', 'Cylinder brands', 'brands.index', 'BrandMaster'],
+            ['products', 'Products & prices', 'products.index', 'POS · Wholesale price lists'],
         ],
         'COMPANY' => [
             ['supplier', 'Company ledger', null, 'Supplier · STM financial'],

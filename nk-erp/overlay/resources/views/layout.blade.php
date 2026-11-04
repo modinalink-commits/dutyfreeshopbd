@@ -6,6 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>@yield('title', 'Dashboard') · NK Corporation</title>
 <link rel="icon" href="/img/logo.webp">
+<link rel="stylesheet" href="/css/nk-table.css?v=1">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Hind+Siliguri:wght@400;600&display=swap">
 <style>
 :root{--navy:#123a86;--ink:#14213d;--muted:#51607a;--line:#dbe3f0;--bg:#f4f7fc;--blue:#1d4ed8}
@@ -31,10 +32,6 @@ h1{margin:0;font-size:22px}
 .pad{padding:18px 20px}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
 .kpi{padding:16px 18px;display:flex;flex-direction:column;gap:4px}.kpi span{color:var(--muted);font-size:12px;font-weight:600}.kpi b{font-size:26px}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th{background:#eef2f9;color:var(--muted);font-size:11px;font-weight:600;text-align:left;padding:9px 12px;white-space:nowrap}
-td{padding:9px 12px;border-top:1px solid var(--line);vertical-align:top}
-.scroll{overflow-x:auto}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:38px;padding:0 14px;border-radius:999px;border:1px solid #7b8aa8;background:#fff;color:var(--ink);font:600 13px 'Plus Jakarta Sans',sans-serif;cursor:pointer;text-decoration:none}
 .btn.pri{background:var(--navy);border-color:var(--navy);color:#fff}
 .btn.sm{min-height:32px;padding:0 10px;font-size:12px}
@@ -91,5 +88,6 @@ textarea{padding:8px 10px;min-height:60px}
     @yield('content')
   </main>
 </div>
+<script src="/js/nk-table.js?v=1" defer></script>
 </body>
 </html>

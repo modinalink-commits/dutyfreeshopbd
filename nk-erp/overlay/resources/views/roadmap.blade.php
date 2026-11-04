@@ -8,7 +8,7 @@
   <div class="card kpi"><span>Back-office pages live</span><b>{{ $live }} / {{ $all }}</b></div>
   <div class="card kpi"><span>Apps &amp; portals</span><b>0 / {{ count($apps) }}</b></div>
 </div>
-<section class="card"><div class="scroll"><table>
+<div class="dt-wrap tall"><table class="dt">
   <thead><tr><th>Menu</th><th>Page</th><th>Design screens</th><th>Status</th></tr></thead>
   <tbody>
   @foreach($menu as $group => $items)
@@ -21,5 +21,5 @@
       <tr><td style="color:var(--muted)">APPS</td><td><b>{{ $label }}</b></td><td>{{ $design }}</td><td><span class="pill">Planned</span></td></tr>
   @endforeach
   </tbody>
-</table></div></section>
+</table></div>
 @endsection

@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Brand;
+use App\Models\Product;
 use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Console\Command;
@@ -63,6 +64,20 @@ class NkInstall extends Command
                 ]);
             }
             $this->info('Brand list created.');
+        }
+
+        if (! Product::query()->exists()) {
+            $own = Brand::query()->where('for_sale', true)->orderBy('code')->first();
+            if ($own) {
+                $n = 1;
+                foreach ([['refill', 'Refill', 'Customer returns an empty cylinder'], ['new_package', 'New package', 'Cylinder + gas, no empty needed']] as [$cat, $label, $note]) {
+                    foreach ([12, 35, 45] as $size) {
+                        Product::create(['code' => 'P-'.str_pad((string) $n++, 3, '0', STR_PAD_LEFT), 'name' => "{$label} {$size} kg", 'category' => $cat,
+                            'brand_id' => $own->id, 'size_kg' => $size, 'note' => $note, 'is_active' => true]);
+                    }
+                }
+                $this->info('Cylinder products created (prices to be set by the owner).');
+            }
         }
 
         return self::SUCCESS;

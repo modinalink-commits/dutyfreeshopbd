@@ -83,9 +83,9 @@ php artisan config:clear
 php artisan migrate --force
 php artisan nk:install
 php artisan config:cache
-php artisan route:cache
+php artisan route:cache || echo "NK WARN: route cache failed"
 php artisan view:clear
-php artisan view:cache
+php artisan view:cache || echo "NK WARN: view cache failed"
 chown -R www-data:www-data storage bootstrap/cache
 echo "NK BOOT: ready"
 exec php-fpm
