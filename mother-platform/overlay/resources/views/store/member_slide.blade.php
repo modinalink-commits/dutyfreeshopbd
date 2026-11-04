@@ -1,6 +1,8 @@
 <a class="hxa hxmc{{ !empty($gl) ? ' gl' : '' }}" href="/account" aria-label="DutyFree BD Membership — আপনার কার্ড দেখুন">
 <style>
 .hxg{flex:0 0 100%;min-width:0;scroll-snap-align:start}
+.sld .sl-t .hxg .dfg-c img{width:44px;height:44px}
+@media(max-width:900px){.sld .sl-t .hxg .dfg-c img{width:38px;height:38px}}
 .hxmc{container-type:inline-size;display:block;position:relative;overflow:hidden;color:#fff;text-decoration:none;background:linear-gradient(120deg,#0B1220 0%,#1F2A44 55%,#3A2A2A 100%)}
 .hxmc .mg{position:absolute;right:-8cqw;top:-10cqw;width:62cqw;height:50cqw;background:radial-gradient(closest-side,rgba(255,90,0,.38),rgba(255,90,0,0) 70%);pointer-events:none}
 .hxmc .mx{position:absolute;left:8.3cqw;top:0;bottom:0;width:41cqw;display:flex;flex-direction:column;justify-content:center;gap:1.25cqw}

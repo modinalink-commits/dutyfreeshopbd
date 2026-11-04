@@ -540,4 +540,4 @@ e275fefd797835efa26cc36f16cf0f79d717a3f4 resources/views/store/free_call.blade.p
 3c7ae186146648f191436e54a3fc9c8408c22f56 app/Http/Controllers/FreeCallController.php
 36cb3a518644573f6cd03457faa544ece900e4b2 app/Support/FreeCall.php
 03b290179b2948238f320d5b360f8e583e93b72c database/migrations/2026_11_04_000071_free_call_ip.php
-2360339d9c8432b007d5088eb7b875fde7a7ec34 resources/views/store/member_slide.blade.php
+c07ff6723b046c4ffe76ae361442c93499901cd6 resources/views/store/member_slide.blade.php
