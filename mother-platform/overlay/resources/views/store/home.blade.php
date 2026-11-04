@@ -111,7 +111,9 @@ if(document.readyState==='complete')setTimeout(first,300);else addEventListener(
 @php $__gp = ($s['home_globe'] ?? '1') === '1' ? \App\Http\Controllers\StoreController::globeProducts() : collect(); @endphp
 @php $__ms = ($s['hero_member_slide'] ?? '1') !== '0'; $__dm = ($s['hero_district_slide'] ?? '1') !== '0'; @endphp
 @if($__gp->count() && ($__ms || $__dm))
-<div class="w hx"><div class="hx-m"><div class="sld hxs" data-auto="10000"><div class="sl-t"><div class="hxg">
+<div class="w hx"><div class="hx-m"><div class="sld hxs" data-auto="10000"><div class="sl-t">@foreach($slides as $sl)
+@include('store.slide_item', ['sl' => $sl, 'first' => $loop->first])
+@endforeach<div class="hxg">
 @include('store.globe', ['deals' => $__gp])
 </div>
 @if($__dm)
