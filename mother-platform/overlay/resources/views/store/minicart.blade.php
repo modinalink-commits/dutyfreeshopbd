@@ -24,6 +24,11 @@
 #dfsb.on{display:flex;position:fixed;left:10px;right:10px;bottom:62px;z-index:48;background:#0B1F3A;color:#fff;border-radius:14px;padding:9px 10px 9px 14px;align-items:center;gap:10px;box-shadow:0 8px 22px rgba(0,0,0,.3);font-size:13.5px;font-weight:700}
 #dfsb span{flex:1}#dfsb button{border:0;background:linear-gradient(135deg,#FF8A00,#FF5A00);color:#fff;font-weight:800;border-radius:10px;padding:9px 14px;font-size:13px}
 body.dfsb-on{padding-bottom:116px!important}
+/* the floating Free Call and Chat buttons sit above the View Cart bar instead of covering it */
+body.dfsb-on .dffc-b,body.dfsb-on .dfc-l{bottom:124px}
+body.dfsb-on .dffc-h2{bottom:178px}
+body.dfsb-on .dfc-p{bottom:194px}
+body.dfsb-on .fb{bottom:192px!important}
 #dfat{top:auto;bottom:128px;transform:translate(-50%,40px);opacity:0}#dfat.on{transform:translate(-50%,0);opacity:1}}
 </style>
 <div id="dfmcO"></div>
