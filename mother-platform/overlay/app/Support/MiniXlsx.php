@@ -3,7 +3,19 @@ namespace App\Support;
 
 /** Tiny .xlsx writer (one sheet, header row styled + frozen + filtered). Needs PHP ZipArchive; callers fall back to CSV when it is missing. */
 class MiniXlsx {
-  public static function available(): bool { return class_exists(\ZipArchive::class); }
+  public static function available(): bool { return true; }
+  /** Minimal ZIP writer (no extension needed): deflate when zlib is there, otherwise stored. */
+  private static function zip(array $files): string {
+    $out = ''; $cd = ''; $n = 0; $dt = 0x0021; $tm = 0;
+    foreach ($files as $name => $data) {
+      $crc = crc32($data); $len = strlen($data); $m = 0; $c = $data;
+      if (function_exists('gzdeflate')) { $d = gzdeflate($data, 6); if ($d !== false && strlen($d) < $len) { $c = $d; $m = 8; } }
+      $off = strlen($out); $nl = strlen($name);
+      $out .= pack('VvvvvvVVVvv', 0x04034b50, 20, 0x0800, $m, $tm, $dt, $crc, strlen($c), $len, $nl, 0) . $name . $c;
+      $cd .= pack('VvvvvvvVVVvvvvvVV', 0x02014b50, 20, 20, 0x0800, $m, $tm, $dt, $crc, strlen($c), $len, $nl, 0, 0, 0, 0, 0, $off) . $name; $n++;
+    }
+    return $out . $cd . pack('VvvvvVVv', 0x06054b50, 0, 0, $n, $n, strlen($cd), strlen($out), 0);
+  }
   private static function col(int $i): string { $s = ''; for ($i++; $i > 0; $i = intdiv($i - 1, 26)) $s = chr(65 + ($i - 1) % 26) . $s; return $s; }
   private static function esc(string $v): string { return htmlspecialchars(preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', '', $v), ENT_XML1 | ENT_QUOTES, 'UTF-8'); }
   /** @param array $headers list of strings; @param array $rows list of lists (numbers stay numbers); @param array $widths optional column widths */
@@ -32,8 +44,6 @@ class MiniXlsx {
       'xl/styles.xml' => '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><color rgb="FFFFFFFF"/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF1F2937"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/></cellXfs></styleSheet>',
       'xl/worksheets/sheet1.xml' => $x,
     ];
-    $tmp = tempnam(sys_get_temp_dir(), 'xl'); $z = new \ZipArchive(); $z->open($tmp, \ZipArchive::OVERWRITE | \ZipArchive::CREATE);
-    foreach ($files as $name => $data) $z->addFromString($name, $data);
-    $z->close(); $bin = (string)file_get_contents($tmp); @unlink($tmp); return $bin;
+    return self::zip($files);
   }
 }
