@@ -31,5 +31,7 @@ class StockHistoryController extends Controller {
   }
 
   /** Read-only: would this order be allowed into Shipment? (same check the Shipment buttons use) */
-  public function shipCheck($id) { return response()->json(['order' => (int)$id, 'blocked' => \App\Support\StockGuard::shipBlock((int)$id)]); }
+  public function shipCheck($id) { $o = DB::table('orders')->where('id', (int)$id)->first(['status', 'stock_deducted_at', 'duplicate_of_order_id']);
+    $items = DB::table('order_items as i')->leftJoin('products as p', 'p.id', '=', 'i.product_id')->where('i.order_id', (int)$id)->get(['i.name', 'i.qty', 'i.product_id', 'p.stock', 'p.category_id'])->map(fn($x) => $x->product_id . ':' . ($x->stock === null ? 'null' : $x->stock) . ' need ' . $x->qty . ' mode ' . \App\Support\StockGuard::mode($x->category_id))->all();
+    return response()->json(['order' => (int)$id, 'status' => $o->status ?? null, 'deducted' => !empty($o->stock_deducted_at), 'dup' => !empty($o->duplicate_of_order_id), 'items' => $items, 'blocked' => \App\Support\StockGuard::shipBlock((int)$id)]); }
 }
