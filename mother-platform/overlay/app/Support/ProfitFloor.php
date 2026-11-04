@@ -43,8 +43,8 @@ class ProfitFloor {
     return $r;
   }
 
-  /** Only Owner/Super Admin/Admin may see the 15% rule, purchase prices, minimum prices or allowed amounts. Everyone else gets a plain red notice with no numbers. */
-  public static function admin(): bool { try { return in_array(auth()->user()->role ?? '', ['super', 'admin'], true); } catch (\Throwable $e) { return false; } }
+  /** Only the Owner (super user) may see the protected-profit rule, purchase prices, minimum prices or allowed amounts. Everyone else - staff, managers and admins - gets a plain red notice with no numbers. */
+  public static function admin(): bool { try { return (auth()->user()->role ?? '') === 'super'; } catch (\Throwable $e) { return false; } }
   const STAFF_MSG = "⚠ এই রেট/ডিসকাউন্ট দেওয়া যাবে না — এতে আমাদের কোম্পানির লস হবে।";
 
   /** Lines whose price was reduced below the protected price. Only lines cut below the product's own list price count, so an old product priced under the floor can still be sold at its list price. key => detail */
@@ -72,7 +72,7 @@ class ProfitFloor {
   /** Product save: single price and the Buy 2-5 pack prices. */
   public static function productError(float $cost, float $price, array $packs = []): ?string {
     if ($cost <= 0) return null; $fl = self::floor($cost); $msg = []; $bad = false;
-    if ($price + 0.004 < $fl) { $bad = true; $msg[] = "Purchase " . self::tk($cost) . " · Protected 15% " . self::tk($cost * 0.15) . " · Minimum price " . self::tk($fl) . " · Entered " . self::tk($price) . " · Difference " . self::tk($fl - $price) . "."; }
+    if ($price + 0.004 < $fl) { $bad = true; $msg[] = "Purchase " . self::tk($cost) . " · Protected profit " . self::tk($cost * 0.15) . " · Minimum price " . self::tk($fl) . " · Entered " . self::tk($price) . " · Difference " . self::tk($fl - $price) . "."; }
     foreach ($packs as $n => $t) if ($t !== null && (float)$t > 0 && (float)$t + 0.004 < $fl * $n) { $bad = true; $msg[] = "Buy $n pack " . self::tk((float)$t) . " is below the minimum " . self::tk($fl * $n) . "."; }
     if (!$bad) return null;
     return self::admin() ? "⚠ Minimum Company Profit Protection: এই রেট দেওয়া যাবে না, কোম্পানির লস হবে। " . implode(" ", $msg) . " Please adjust the price." : self::STAFF_MSG . " দাম বাড়িয়ে আবার চেষ্টা করুন।";
