@@ -545,3 +545,6 @@ public/fonts/anek-bangla-500.woff2
 public/fonts/anek-bangla-700.woff2
 resources/views/store/district_slide.blade.php
 public/bd64.json
+app/Support/AreaOrders.php
+app/Http/Controllers/AreaOrdersController.php
+resources/views/area_orders.blade.php

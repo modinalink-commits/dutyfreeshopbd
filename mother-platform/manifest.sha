@@ -1,11 +1,11 @@
 fe43f8b6cb422cca81ee18b74d3972f77e7852de database/migrations/2026_10_31_000001_mother_core.php
-85bdff5b95f872bd29d2f0483756b13575975068 routes/web.php
+4ec2996f486222568efbb9bc8ed893d1186aed90 routes/web.php
 5ec9cde3d13c963d0d55a626e10bf2e39e36a691 app/Models/Mother.php
 51ddd04ac28b96880ee280a018e054444c21db8f app/Http/Controllers/AdminController.php
 688025b06769b048f2631fea804aab3bce12b7e8 app/Console/Commands/MotherInstall.php
 8fddb126bc92c08b6bf1c1b6ec5ac9450bf8881c resources/views/layout.blade.php
 7ba1a8252b36e7db33e40d8be3ea5ec2cd241fb7 resources/views/login.blade.php
-166a496b2823812fc07a3ca6f7c676eda7dff40f resources/views/dashboard.blade.php
+d8481335e2e98c8df646e935f5ba9fe83eaf6797 resources/views/dashboard.blade.php
 b88753f97ee652cbae8767e156b816dd214d0277 resources/views/orders.blade.php
 a574e0a91def69038501f940a89f76e287b4a25d resources/views/admin/orders/partials/status-tabs.blade.php
 5676ff7fb9f7b154fe75d44e82cb1286122a8a21 resources/views/order_new.blade.php
@@ -545,3 +545,6 @@ c762bbf7c54ec9c17eec9baf0ab0d7fa19ad4ec6 public/fonts/anek-bangla-500.woff2
 8711f8da2273235fdceeff694825bd5e8b852993 public/fonts/anek-bangla-700.woff2
 a6aac3b6e8ca7ed29cb37afc5da56549afee5c81 resources/views/store/district_slide.blade.php
 7c72f649c1b6f05b09a28f6c4ac6b037c1a549d5 public/bd64.json
+b0469f31ccbcb5b2a853d2fd42ed0239c0a0c6a7 app/Support/AreaOrders.php
+aeaf4abc14e93fee17a03b91756a3b2eaad72f37 app/Http/Controllers/AreaOrdersController.php
+7522251b1ded74459cb2d4583f317d3df27b6c74 resources/views/area_orders.blade.php

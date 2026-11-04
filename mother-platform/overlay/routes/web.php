@@ -132,6 +132,9 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/chat-settings/quick', [\App\Http\Controllers\ChatController::class,'quickSave']);
   Route::post('/chat-settings/quick/{id}/delete', [\App\Http\Controllers\ChatController::class,'quickDelete']);
   Route::get('/analytics', [\App\Http\Controllers\AnalyticsController::class,'index']);
+  Route::get('/analytics/area-orders', [\App\Http\Controllers\AreaOrdersController::class,'index']);
+  Route::get('/analytics/area-orders/export', [\App\Http\Controllers\AreaOrdersController::class,'export']);
+  Route::get('/analytics/area-orders/customers', [\App\Http\Controllers\AreaOrdersController::class,'customers']);
   Route::get('/analytics/{slug}', [\App\Http\Controllers\AnalyticsController::class,'show']);
   Route::get('/analytics/{slug}/export/{fmt}', [\App\Http\Controllers\AnalyticsController::class,'export']);
   Route::get('/report-details', [R::class,'details']);

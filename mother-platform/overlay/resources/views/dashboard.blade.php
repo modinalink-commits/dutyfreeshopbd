@@ -174,6 +174,18 @@ $qs = fn($extra = []) => http_build_query(array_filter(array_merge(['store'=>$st
     @else<div class="dx-empty">No category sales in this period yet.</div>@endif</div>
 </section>
 
+@if($canFin)
+@php
+try { $__ao = \App\Support\AreaOrders::summary(0); $__at = \App\Support\AreaOrders::top($__ao['rows'], 'customers', 10); } catch (\Throwable $e) { $__at = []; }
+$__am = max(1, $__at ? $__at[0]['customers'] : 1);
+@endphp
+@if($__at)
+<section class="card" id="dxarea"><div class="head"><h2>Top 10 areas by customers <small style="font-weight:500;color:#6B7280">· campaign targets</small></h2><a class="more" href="/admin/analytics/area-orders">All 64 districts →</a></div>
+<div class="dx-ar">@foreach($__at as $__i => $__x)<a href="/admin/analytics/area-orders" class="dx-ari"><span class="dx-arr">{{ $__i+1 }}</span><div style="flex:1;min-width:0"><div style="display:flex;gap:6px;font-size:12.5px"><b>{{ $__x['name'] }}</b><span class="muted">{{ $__x['bn'] }}</span><b style="margin-left:auto">{{ number_format($__x['customers']) }}</b></div><div class="dx-bar" style="margin-top:3px"><i style="width:{{ round($__x['customers']/$__am*100) }}%;background:linear-gradient(90deg,#FFB27A,#FF5A00)"></i></div><div class="muted" style="font-size:11px">{{ number_format($__x['orders']) }} orders · ৳{{ number_format($__x['sales']) }}</div></div></a>@endforeach</div></section>
+<style>.dx-ar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 22px}.dx-ari{display:flex;gap:9px;align-items:center;padding:6px 0;border-top:1px solid #F1F3F6;text-decoration:none;color:inherit}.dx-arr{width:22px;height:22px;border-radius:50%;background:#FFF1E8;color:#C2410C;font-size:11.5px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none}@media (max-width:800px){.dx-ar{grid-template-columns:minmax(0,1fr)}}</style>
+@endif
+@endif
+
 <section class="dx-p">
   <div class="card"><div class="head"><h2>Courier Performance</h2><a class="more" href="/admin/courier-dashboard">Open →</a></div>
     @forelse($couriers as [$cn,$cp,$cs,$cdl,$crt])<a href="/admin/courier-dashboard" style="display:block;margin:7px 0"><div style="display:flex;gap:6px;font-size:12px"><b style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ $cn }}</b><b style="color:{{ $cs>=80 ? '#166534' : ($cs>=60 ? '#B45309' : '#B91C1C') }}">{{ $cs }}%</b></div><div class="dx-bar" style="margin:3px 0"><i style="width:{{ min(100,$cs) }}%;background:{{ $cs>=80 ? '#16A34A' : ($cs>=60 ? '#F59E0B' : '#DC2626') }}"></i></div><span class="muted">{{ $cp }} parcels · {{ $cdl }} delivered · {{ $crt }} returned</span></a>
