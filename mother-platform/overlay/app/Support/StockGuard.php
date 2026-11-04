@@ -5,8 +5,12 @@ use Illuminate\Support\Facades\Cache;
 
 /**
  * Category based inventory rules.
- *  - STOCK_CONTROLLED (Cigarette and Vape): zero stock = unpublished, stock-in = published (database trigger), no sale at zero stock.
- *  - SOURCING (every other category): zero stock still sells (purchase after order); the shelf stock is never shown to customers.
+ * Publish status and stock status are SEPARATE (Product Publish, Stock-Out & Stock-In Rules):
+ *  - Stock reaching zero NEVER unpublishes a product (shipment, sale, return pending, depletion, manual edit). Only an authorised person unpublishes by hand.
+ *  - Stock-in (0 -> positive: purchase, return, exchange, authorised adjustment) publishes the product automatically (database trigger products_stock_publish),
+ *    unless it was unpublished by hand (products.manual_unpublish_lock = true). Publishing by hand clears the lock.
+ *  - STOCK_CONTROLLED (Cigarette and Vape): stays published at zero stock, shows "Out of Stock", the Order buttons are disabled and an order is refused.
+ *  - SOURCING (every other category): stays published, can be ordered at zero stock (purchase after order); the shelf stock is never shown to customers.
  * Every category: an order cannot go to Shipment unless every product on it has the stock (shipBlock).
  */
 class StockGuard {
@@ -31,6 +35,18 @@ class StockGuard {
     if ($ids) { try { $ids = array_values(array_unique(array_merge($ids, array_map('intval', DB::table('categories')->whereIn('parent_id', $ids)->pluck('id')->all())))); } catch (\Throwable $e) {} }
     return $ids;
   }
+  private static ?bool $lockReady = null;
+  public static function lockReady(): bool {
+    if (self::$lockReady === null) { try { self::$lockReady = \Illuminate\Support\Facades\Schema::hasColumn('products', 'manual_unpublish_lock'); } catch (\Throwable $e) { self::$lockReady = false; } }
+    return self::$lockReady;
+  }
+  /** Columns to add to a products update when an admin publishes (lock off) or unpublishes (lock on) a product by hand. */
+  public static function lockCol(bool $published): array { return self::lockReady() ? ['manual_unpublish_lock' => !$published] : []; }
+  /** Admin label for the stock state: In Stock / Out of Stock / Sourcing Required (kept apart from the publish status). */
+  public static function stockLabel($p): string {
+    if (!isset($p->stock) || $p->stock === null || (int)$p->stock > 0) return 'In Stock';
+    return self::mode($p->category_id ?? null) === 'STOCK_CONTROLLED' ? 'Out of Stock' : 'Sourcing Required';
+  }
   /** Storefront: can the customer still order this product? (sourcing categories always can; stock-controlled ones only with stock) */
   public static function sellable($p): bool {
     if (!isset($p->stock) || $p->stock === null || (int)$p->stock > 0) return true;
@@ -46,8 +62,8 @@ class StockGuard {
     $rows = DB::table('order_items as i')->join('products as p', 'p.id', '=', 'i.product_id')->where('i.order_id', $orderId)->whereNotNull('p.stock')
       ->groupBy('p.id', 'p.name', 'p.stock')->havingRaw('sum(i.qty) > p.stock')->selectRaw('p.name, p.stock, sum(i.qty) need')->get();
     if (!$rows->isEmpty()) {
-      $l = []; foreach ($rows->take(4) as $r) $l[] = $r->name.' (required '.(int)$r->need.', available '.max(0, (int)$r->stock).')';
-      return 'RED ALERT: Cannot Ship, product stock is not available. '.implode('; ', $l).($rows->count() > 4 ? ' and '.($rows->count() - 4).' more' : '').'. Add stock (purchase / stock-in) before shipment.';
+      $l = []; foreach ($rows->take(4) as $r) $l[] = $r->name.' — Required Qty: '.(int)$r->need.', Available Qty: '.max(0, (int)$r->stock);
+      return '🔴 Stock Required — This product cannot be moved to Shipment. '.implode('; ', $l).($rows->count() > 4 ? ' and '.($rows->count() - 4).' more' : '').'. Please Stock In the product first.';
     }
     return self::profitBlock($o);
   }

@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 class StockHistoryController extends Controller {
   const TYPES = ['purchase' => 'PURCHASE_IN', 'order-shipment' => 'SHIPMENT_OUT', 'order-return' => 'RETURN_IN', 'purchase-reversal' => 'MANUAL_ADJUSTMENT', 'damaged' => 'MANUAL_ADJUSTMENT'];
   public function show(Request $r, $id) {
-    $p = DB::table('products as p')->leftJoin('categories as c', 'c.id', '=', 'p.category_id')->where('p.id', (int)$id)->first(['p.id', 'p.name', 'p.sku', 'p.stock', 'p.published', 'p.category_id', 'c.name as cat']);
+    $p = DB::table('products as p')->leftJoin('categories as c', 'c.id', '=', 'p.category_id')->where('p.id', (int)$id)->first(array_merge(['p.id', 'p.name', 'p.sku', 'p.stock', 'p.published', 'p.category_id', 'c.name as cat'], \App\Support\StockGuard::lockReady() ? ['p.manual_unpublish_lock'] : []));
     abort_unless($p, 404);
     $rows = DB::table('stock_logs as l')->leftJoin('orders as o', function ($j) { $j->on('o.invoice', '=', 'l.reference')->whereIn('l.source', ['order-shipment', 'order-return']); })
       ->where('l.product_id', $p->id)->orderByDesc('l.id')->limit(1000)

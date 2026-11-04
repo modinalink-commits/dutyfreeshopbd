@@ -107,7 +107,7 @@ class CatalogController extends Controller {
     $act = $d['act'] ?? 'publish';
     $pub = $act === 'draft' ? false : ($act === 'publish' && !$id ? true : (($d['status'] ?? ($old && $old->published ? 'published' : 'draft')) === 'published'));
     if ($act === 'preview' && !$id) $pub = false;
-    $row['published'] = $pub;
+    $row['published'] = $pub; $row += \App\Support\StockGuard::lockCol($pub); // manual unpublish lock: a hand-made unpublish is never undone by stock-in
     // images
     $imgs = array_values(array_filter(array_map('trim', $d['images'] ?? []), fn($u) => preg_match('#^(https?://|/)#', $u)));
     $row['image'] = $imgs[0] ?? ($old->image ?? null);
@@ -149,7 +149,7 @@ class CatalogController extends Controller {
     $p = DB::table('products')->find($id); abort_unless($p, 404);
     $new = !$p->published;
     DB::transaction(function () use ($id, $new) {
-      DB::table('products')->where('id',$id)->update(['published'=>$new,'updated_at'=>now()]);
+      DB::table('products')->where('id',$id)->update(['published'=>$new,'updated_at'=>now()] + \App\Support\StockGuard::lockCol($new));
       DB::table('product_status_logs')->insert(['product_id'=>$id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'action'=>$new?'Published':'Unpublished','created_at'=>now(),'updated_at'=>now()]);
     });
     $this->notifyStatus([$p->name], $new);
@@ -168,7 +168,7 @@ class CatalogController extends Controller {
     $new = $d['action'] === 'publish'; $names = [];
     DB::transaction(function () use ($d, $new, &$names) {
       foreach (DB::table('products')->whereIn('id',$d['ids'])->where('published','!=',$new)->get() as $p) {
-        DB::table('products')->where('id',$p->id)->update(['published'=>$new,'updated_at'=>now()]);
+        DB::table('products')->where('id',$p->id)->update(['published'=>$new,'updated_at'=>now()] + \App\Support\StockGuard::lockCol($new));
         DB::table('product_status_logs')->insert(['product_id'=>$p->id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'action'=>$new?'Published':'Unpublished','created_at'=>now(),'updated_at'=>now()]);
         $names[] = $p->name;
       }

@@ -345,9 +345,9 @@ class StoreController extends Controller {
   /** One price calculation for the cart, the checkout and the saved order. */
   private function quote(array $want, int $area, string $code, ?string $phone = null, bool $verified = false, string $addr = ''): array {
     $b = $this->base(); $rules = $b['rules'];
-    $rows = $want ? $this->q()->whereIn('id', array_keys($want))->get(['id','ext_id','name','price','compare_price','image','stock','buy2_price','buy3_price','buy4_price','buy5_price']) : collect();
+    $rows = $want ? $this->q()->whereIn('id', array_keys($want))->get(['id','ext_id','name','price','compare_price','image','stock','category_id','buy2_price','buy3_price','buy4_price','buy5_price']) : collect();
     $items = []; $sub = 0; $qty = 0; $bsave = 0.0;
-    foreach ($rows as $p) { $n = $want[$p->id]; $lst = (float)$p->price * $n; $ln = self::bundleLine($p, $n); $bs = round($lst - $ln, 2); $bsave += $bs; $items[] = ['id'=>$p->id, 'ext'=>(string)(($p->ext_id ?? null) ?: $p->id), 'name'=>$p->name, 'image'=>$p->image, 'url'=>self::url($p), 'price'=>(float)$p->price, 'compare'=>(float)$p->compare_price, 'qty'=>$n, 'line'=>$ln, 'list'=>$lst, 'bsave'=>$bs]; $sub += $lst; $qty += $n; }
+    foreach ($rows as $p) { $n = $want[$p->id]; $lst = (float)$p->price * $n; $ln = self::bundleLine($p, $n); $bs = round($lst - $ln, 2); $bsave += $bs; $items[] = ['id'=>$p->id, 'ext'=>(string)(($p->ext_id ?? null) ?: $p->id), 'name'=>$p->name, 'image'=>$p->image, 'url'=>self::url($p), 'price'=>(float)$p->price, 'compare'=>(float)$p->compare_price, 'qty'=>$n, 'line'=>$ln, 'list'=>$lst, 'bsave'=>$bs, 'oos'=>!\App\Support\StockGuard::sellable($p)]; $sub += $lst; $qty += $n; }
     $dv = \App\Support\Delivery::compute((float)$sub, $area, $addr, '', array_column($items, 'id')); $ship = $dv['charge'];
     $eng = \App\Support\OrderDiscount::compute($phone, (float)($sub - $bsave), $code !== '' ? $code : null, ['web'=>true, 'verified'=>$verified, 'qty'=>$qty, 'qprice'=>$bsave > 0, 'bsave'=>$bsave, 'items'=>array_map(fn($i) => ['product_id'=>$i['id'], 'price'=>$i['price'], 'qty'=>$i['qty']], $items)]);
     $app = array_values(array_filter($eng['lines'], fn($l) => $l['applied'])); $disc = (float)$eng['total'] + $bsave;
@@ -423,6 +423,7 @@ class StoreController extends Controller {
     $b = $this->base(); $area = (int)($d['area'] ?? 1);
     $sp = \App\Support\OrderDiscount::sessionPhone($r); $qt = $this->quote($want, $area, trim((string)($d['coupon'] ?? '')), $phone, $sp !== null && $sp === \App\Support\Chat::phone($phone), (string)$d['address']);
     if (!$qt['items']) return $back('These products are no longer available');
+    if ($oos = array_values(array_filter($qt['items'], fn($i) => !empty($i['oos'])))) return $back(implode(', ', array_map(fn($i) => $i['name'], array_slice($oos, 0, 3))).' — Out of Stock right now. Remove it from the cart or call us for the next arrival. / এই পণ্যটি এখন স্টক আউট।');
     $where = $d['district'] ?? ($b['areas'][$area]['n'] ?? null);
     $note = trim((string)($d['note'] ?? ''));
     $meta = \App\Support\OrderDiscount::meta($qt['applied'], $qt['profile'], 'Automatic', (float)$qt['disc']);

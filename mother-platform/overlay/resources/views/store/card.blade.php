@@ -5,4 +5,4 @@
 <a class="nm" href="{{ $u }}">{{ $q->name }}</a>
 <div class="pr"><b>{{ number_format($q->price) }} TK</b> <br>@if($off > 0)<s>{{ number_format($q->compare_price) }} TK</s><span class="dp">-{{ $off }}%</span>@endif</div>
 @php $__in = \App\Support\StockGuard::sellable($q); @endphp<span class="ck {{ $__in ? '' : 'no' }}">{{ $__in ? 'In stock' : 'Out of stock' }}</span>
-@if($s['btn_order_now']==='1')<a class="on" href="/checkout?add={{ $q->id }}&amp;p={{ (float)$q->price }}" rel="nofollow"><svg width="16" height="16" aria-hidden="true"><use href="#dfi-cart"/></svg><i>ORDER NOW</i></a>@endif</div>
+@if(!$__in)<span class="on" style="background:#9CA3AF;border-color:#9CA3AF;cursor:not-allowed;pointer-events:none"><i>OUT OF STOCK</i></span>@elseif($s['btn_order_now']==='1')<a class="on" href="/checkout?add={{ $q->id }}&amp;p={{ (float)$q->price }}" rel="nofollow"><svg width="16" height="16" aria-hidden="true"><use href="#dfi-cart"/></svg><i>ORDER NOW</i></a>@endif</div>

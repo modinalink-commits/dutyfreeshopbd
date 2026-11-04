@@ -36,7 +36,8 @@ class PriceReviewController extends Controller {
       $cost = (float)$x->fifo; $pr = (float)$x->price; $worst = $pr; $bl = '—'; $bc = '#6B7280';
       foreach ([2, 3, 4, 5] as $kk) { $bp = (float)($x->{"buy{$kk}_price"} ?? 0); if ($bp > 0) $worst = min($worst, $bp / $kk); }
       if ($cost > 0 && $worst < $pr - 0.004) { [$bl, $bc] = \App\Support\ProfitFloor::state($cost, $worst); } elseif ($cost > 0) { $bl = 'No bundle'; }
-      [$lab, $col] = \App\Support\ProfitFloor::state($cost, $worst); // overall status = the weakest of single price and bundles, on the current FIFO batch cost
+      [$lab, $col] = \App\Support\ProfitFloor::state($cost, $pr); // overall status = the single sale price on the current FIFO batch cost (bundle tiers may sit on the 15% line by design; a bundle BELOW it still turns the status red)
+      if ($cost > 0 && $worst < $pr - 0.004 && str_contains($bl, 'Below')) { $lab = $bl; $col = $bc; }
       $k = $cost <= 0 ? 'none' : (str_contains($lab, 'Below') ? 'below' : (str_contains($lab, 'Near') ? 'near' : 'safe')); $n[$k]++;
       if ($f !== '' && $f !== $k) continue;
       $rows[] = ['id' => $x->id, 'sku' => $x->sku ?: $x->id, 'name' => $x->name, 'cat' => $x->cat ?: '-', 'stock' => (int)$x->stock, 'last' => (float)$x->last_cost, 'avg' => (float)$x->avg, 'fifo' => $cost, 'fifo_raw' => (float)$x->fifo_raw, 'price' => $pr, 'min' => $cost > 0 ? \App\Support\ProfitFloor::floor($cost) : 0, 'disc' => $cost > 0 ? max(0, $pr - \App\Support\ProfitFloor::floor($cost)) : 0, 'maxd' => $cost > 0 && $pr > 0 ? max(0, ($pr - \App\Support\ProfitFloor::floor($cost)) / $pr * 100) : null, 'profit' => $cost > 0 ? $pr - $cost : 0, 'pct' => $cost > 0 ? ($pr - $cost) / $cost * 100 : null, 'state' => $lab, 'col' => $col, 'bundle' => $bl, 'bcol' => $bc];

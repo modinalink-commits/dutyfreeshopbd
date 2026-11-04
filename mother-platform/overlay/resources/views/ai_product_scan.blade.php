@@ -60,7 +60,7 @@ function run(o){
 function show(j){
   cur=j;$('res').style.display='block';$('pimg').src=j.image;$('errBox').style.display='none';
   var ok=j.identified,m=j.mode;
-  $('mode').innerHTML=m?('Inventory rule: <b>'+(m==='STOCK_CONTROLLED'?'STOCK_CONTROLLED</b> – stock 0 = unpublished, stock-in publishes it':'SOURCING</b> – can be sold at zero stock, stock must be added before shipment')):'';
+  $('mode').innerHTML=m?('Inventory rule: <b>'+(m==='STOCK_CONTROLLED'?'STOCK_CONTROLLED</b> – stays published at stock 0 as Out of Stock (cannot be ordered), stock-in publishes it if hidden':'SOURCING</b> – can be sold at zero stock, stock must be added before shipment')):'';
   var n=(j.quality==='poor'?'Image quality is poor – a clearer photo will give better results. ':'')+(j.notes||'');$('notes').innerHTML=n?'<div class="wn">'+esc(n)+'</div>':'';
   $('multi').style.display=j.multiple&&j.candidates.length?'block':'none';
   if(j.multiple){$('cands').innerHTML=j.candidates.map(function(c,i){return'<button type="button" class="g" data-c="'+i+'">'+esc(c)+'</button>'}).join('');[].forEach.call($('cands').children,function(b){b.onclick=function(){run({scan_id:cur.scan_id,focus:j.candidates[+b.dataset.c]})}})}
