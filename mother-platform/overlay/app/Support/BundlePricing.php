@@ -58,7 +58,7 @@ class BundlePricing {
         $total = round($total, 2);
         if ($min > 0 && $total + 0.004 < $min) continue;
       }
-      if ($total >= $list - 0.004) continue; // no saving left: do not show an invalid option
+      if ($total > $list - 1) continue; // less than ৳1 saved: not a real offer, do not show it
       $unit = round($total / $n, 2); $out[$n] = ['req' => $req, 'pct' => round((1 - $total / $list) * 100, 2), 'unit' => $unit, 'total' => round($total, 2), 'save' => round($list - $total, 2),
         'save_pct' => round((1 - $total / $list) * 100, 2), 'margin' => $cost > 0 ? round(($unit - $cost) / $cost * 100, 2) : null, 'status' => $status];
     }
