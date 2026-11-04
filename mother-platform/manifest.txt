@@ -586,6 +586,7 @@ database/migrations/2026_11_04_000123_compare_price_10_12.php
 database/migrations/2026_11_04_000130_products_avg_cost.php
 database/migrations/2026_11_04_000131_avg_cost_logs.php
 database/migrations/2026_11_04_000140_raise_near_minimum_2pct.php
+database/migrations/2026_11_04_000141_raise_to_safe_all.php
 app/Support/Domain.php
 app/Http/Middleware/CanonicalHost.php
 resources/views/inventory_pricing.blade.php

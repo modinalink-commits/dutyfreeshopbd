@@ -27,15 +27,18 @@ class PriceReviewController extends Controller {
   public function inventory(Request $r) {
     abort_unless(\App\Support\ProfitFloor::admin(), 403);
     $q = trim((string)$r->query('q', '')); $f = (string)$r->query('status', ''); $cat = (int)$r->query('category', 0);
-    $qb = DB::table('products as p')->leftJoin('categories as c', 'c.id', '=', 'p.category_id')->selectRaw('p.id, p.sku, p.name, p.stock, p.price, p.published, p.cost as last_cost, coalesce(nullif(p.avg_cost,0), p.cost) as avg, c.name as cat');
+    $qb = DB::table('products as p')->leftJoin('categories as c', 'c.id', '=', 'p.category_id')->selectRaw('p.id, p.sku, p.name, p.stock, p.price, p.published, p.cost as last_cost, coalesce(nullif(p.avg_cost,0), p.cost) as avg, p.buy2_price, p.buy3_price, p.buy4_price, p.buy5_price, c.name as cat');
     if ($cat) $qb->where('p.category_id', $cat);
     if ($q !== '') { $like = '%' . $q . '%'; $qb->where(fn($w) => \App\Support\SkuSearch::orSku($w->where('p.name', 'ilike', $like)->orWhere('p.sku', 'ilike', $like), $q, 'p.sku')); }
     $rows = []; $n = ['safe' => 0, 'near' => 0, 'below' => 0, 'none' => 0];
     foreach ($qb->orderBy('p.name')->limit(6000)->get() as $x) {
-      $avg = (float)$x->avg; $pr = (float)$x->price; [$lab, $col] = \App\Support\ProfitFloor::state($avg, $pr);
+      $avg = (float)$x->avg; $pr = (float)$x->price; $worst = $pr; $bl = '—'; $bc = '#6B7280';
+      foreach ([2, 3, 4, 5] as $kk) { $bp = (float)($x->{"buy{$kk}_price"} ?? 0); if ($bp > 0) $worst = min($worst, $bp / $kk); }
+      if ($avg > 0 && $worst < $pr - 0.004) { [$bl, $bc] = \App\Support\ProfitFloor::state($avg, $worst); } elseif ($avg > 0) { $bl = 'No bundle'; }
+      [$lab, $col] = \App\Support\ProfitFloor::state($avg, $worst); // overall status = the weakest of single price and bundles
       $k = $avg <= 0 ? 'none' : (str_contains($lab, 'Below') ? 'below' : (str_contains($lab, 'Near') ? 'near' : 'safe')); $n[$k]++;
       if ($f !== '' && $f !== $k) continue;
-      $rows[] = ['id' => $x->id, 'sku' => $x->sku ?: $x->id, 'name' => $x->name, 'cat' => $x->cat ?: '-', 'stock' => (int)$x->stock, 'last' => (float)$x->last_cost, 'avg' => $avg, 'price' => $pr, 'min' => $avg > 0 ? \App\Support\ProfitFloor::floor($avg) : 0, 'profit' => $avg > 0 ? $pr - $avg : 0, 'pct' => $avg > 0 ? ($pr - $avg) / $avg * 100 : null, 'state' => $lab, 'col' => $col];
+      $rows[] = ['id' => $x->id, 'sku' => $x->sku ?: $x->id, 'name' => $x->name, 'cat' => $x->cat ?: '-', 'stock' => (int)$x->stock, 'last' => (float)$x->last_cost, 'avg' => $avg, 'price' => $pr, 'min' => $avg > 0 ? \App\Support\ProfitFloor::floor($avg) : 0, 'profit' => $avg > 0 ? $pr - $avg : 0, 'pct' => $avg > 0 ? ($pr - $avg) / $avg * 100 : null, 'state' => $lab, 'col' => $col, 'bundle' => $bl, 'bcol' => $bc];
     }
     if ($r->query('export') === 'csv') {
       $o = fopen('php://temp', 'w+'); fputcsv($o, ['Product ID', 'SKU', 'Product', 'Category', 'Stock', 'Last Purchase Price', 'Average Purchase Price', 'Sale Price', 'Minimum Margin %', 'Minimum Safe Price', 'Profit', 'Profit %', 'Status']);
