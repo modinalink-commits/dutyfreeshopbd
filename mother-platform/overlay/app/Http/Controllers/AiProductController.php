@@ -24,6 +24,7 @@ class AiProductController extends Controller {
   }
   public function scan(Request $r) {
     if (!AF::on('on')) return response()->json(['ok'=>false, 'error'=>'AI Product Auto-Fill is turned off in the settings.'], 403);
+    if (!\Illuminate\Support\Facades\RateLimiter::attempt('aiscan:'.auth()->id(), 15, fn() => true, 60)) return response()->json(['ok'=>false, 'error'=>'Too many scans in a minute. Wait a little and try again.'], 429);
     @set_time_limit(150);
     $focus = trim((string)$r->input('focus', '')) ?: null;
     if ($r->filled('scan_id')) {

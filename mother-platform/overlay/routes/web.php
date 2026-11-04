@@ -84,7 +84,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/staff-log', [A::class,'staffLog']);
   Route::get('/products', [C::class,'products']);
   Route::get('/products/new', [C::class,'productForm']);
-  Route::get('/products/from-image', [\App\Http\Controllers\AiProductController::class,'page']); Route::post('/products/from-image/scan', [\App\Http\Controllers\AiProductController::class,'scan'])->middleware('throttle:20,1'); Route::post('/products/from-image/accept', [\App\Http\Controllers\AiProductController::class,'accept']); Route::post('/products/from-image/cancel', [\App\Http\Controllers\AiProductController::class,'cancel']); Route::post('/products/from-image/settings', [\App\Http\Controllers\AiProductController::class,'settings']);
+  Route::get('/products/from-image', [\App\Http\Controllers\AiProductController::class,'page']); Route::post('/products/from-image/scan', [\App\Http\Controllers\AiProductController::class,'scan']); Route::post('/products/from-image/accept', [\App\Http\Controllers\AiProductController::class,'accept']); Route::post('/products/from-image/cancel', [\App\Http\Controllers\AiProductController::class,'cancel']); Route::post('/products/from-image/settings', [\App\Http\Controllers\AiProductController::class,'settings']);
   Route::post('/products/seo-autofill', [C::class,'seoAutofill']);
   Route::post('/products/bulk', [C::class,'productBulk']);
   Route::post('/products/bundle-fill', [C::class,'bundleFill']);
