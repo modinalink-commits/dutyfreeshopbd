@@ -43,7 +43,7 @@
 @for($__pass = 0; $__pass < ($__tk ? 2 : 1); $__pass++)
 <div class="dfg-cards"@if($__pass === 1) aria-hidden="true"@endif>
 @foreach($__g as $q)@php $off = \App\Http\Controllers\StoreController::off($q); $tg = \Illuminate\Support\Str::limit($q->name, 20, '…').($off > 0 ? ' −'.$off.'%' : ''); @endphp
-<a class="dfg-c" href="{{ \App\Http\Controllers\StoreController::url($q) }}" @if($__pass === 0)data-tag="{{ $tg }}"@else tabindex="-1"@endif><img src="{{ $q->image ?: '/product-placeholder' }}" alt="" width="54" height="54" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='/product-placeholder'"><span><i>{{ $q->name }}</i><b>{{ number_format($q->price) }} TK @if($off > 0)<s>{{ number_format($q->compare_price) }}</s><em>-{{ $off }}%</em>@endif</b></span></a>
+<a class="dfg-c" href="{{ \App\Http\Controllers\StoreController::url($q) }}" @if($__pass === 0)data-tag="{{ $tg }}"@else tabindex="-1"@endif><img src="{{ $q->image ?: '/product-placeholder' }}" alt="" width="54" height="54" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='/product-placeholder'"><span><i>{{ $q->name }}</i><b>{{ number_format($q->price) }} TK @if($off > 0)<s>{{ number_format($q->compare_price) }}</s>@endif</b></span></a>
 @endforeach
 </div>
 @endfor

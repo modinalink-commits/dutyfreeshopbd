@@ -25,7 +25,7 @@
 <p class="s">আকাশ পেরিয়ে আসা সেরা ডিউটি ফ্রি ডিল, সরাসরি আপনার দরজায়। আজকের বাছাই করা অফারগুলো দেখুন।</p>
 <div class="dfg-cards">
 @foreach($__g as $q)@php $off = \App\Http\Controllers\StoreController::off($q); $tg = \Illuminate\Support\Str::limit($q->name, 20, '…').($off > 0 ? ' −'.$off.'%' : ''); @endphp
-<a class="dfg-c" href="{{ \App\Http\Controllers\StoreController::url($q) }}" data-tag="{{ $tg }}"><img src="{{ $q->image ?: '/product-placeholder' }}" alt="" width="54" height="54" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='/product-placeholder'"><span><i>{{ $q->name }}</i><b>{{ number_format($q->price) }} TK @if($off > 0)<s>{{ number_format($q->compare_price) }}</s><em>-{{ $off }}%</em>@endif</b></span></a>
+<a class="dfg-c" href="{{ \App\Http\Controllers\StoreController::url($q) }}" data-tag="{{ $tg }}"><img src="{{ $q->image ?: '/product-placeholder' }}" alt="" width="54" height="54" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='/product-placeholder'"><span><i>{{ $q->name }}</i><b>{{ number_format($q->price) }} TK @if($off > 0)<s>{{ number_format($q->compare_price) }}</s>@endif</b></span></a>
 @endforeach
 </div>
 <a class="dfg-all" href="/deals">সব অফার দেখুন →</a>
