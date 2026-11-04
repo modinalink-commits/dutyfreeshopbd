@@ -1,3 +1,4 @@
+<a class="hxa dmz" href="/delivery-policy/" aria-label="সারা বাংলাদেশ হোম ডেলিভারি, ৬৪ জেলা">
 <style>
 @font-face{font-family:'Anek Bangla';font-weight:500;font-style:normal;font-display:swap;src:url(/fonts/anek-bangla-500.woff2) format('woff2')}
 @font-face{font-family:'Anek Bangla';font-weight:700;font-style:normal;font-display:swap;src:url(/fonts/anek-bangla-700.woff2) format('woff2')}
@@ -69,7 +70,6 @@
 .dm .ct2{order:6;height:8cqw;padding:0 4cqw;gap:3cqw;font-size:3.5cqw}.dm .ct2 svg{width:4cqw;height:4cqw}.dm .ct2 s{height:4cqw}
 }
 </style>
-<a class="hxa dmz" href="/delivery-policy/" aria-label="সারা বাংলাদেশ হোম ডেলিভারি, ৬৪ জেলা">
 <div class="dmw"><div class="dm" id="dm">
 <span class="rays"></span><span class="cl a"></span><span class="cl b"></span><span class="cl c"></span>
 <img class="logo" decoding="async" src="/logo.webp" alt="DutyFree BD" width="360" height="82">
