@@ -562,8 +562,12 @@ public/banners/offer-555.webp
 public/banners/offer-dunhill.mp4
 public/banners/offer-dunhill.webp
 database/migrations/2026_11_04_000100_offer_banners_555_dunhill.php
-public/banners/manchester-anim-m.mp4
-public/banners/manchester-anim-m.webp
-public/banners/brands-anim-m.mp4
-public/banners/brands-anim-m.webp
 database/migrations/2026_11_04_000110_hero_slides_native_size.php
+public/banners/manchester-hero.mp4
+public/banners/manchester-hero.webp
+public/banners/manchester-hero-m.mp4
+public/banners/manchester-hero-m.webp
+public/banners/brands-hero.mp4
+public/banners/brands-hero.webp
+public/banners/brands-hero-m.mp4
+public/banners/brands-hero-m.webp
