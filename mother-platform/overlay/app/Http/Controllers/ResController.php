@@ -235,11 +235,7 @@ class ResController extends Controller {
     if ($slugName==='users' && $r->has('ext_username')) { $er = \App\Http\Controllers\CallCenterController::setExt((int)$id, $r->input('ext_username'), $r->input('ext_password')); if ($er) return redirect('/admin/m/users/'.$id.'/edit')->withErrors(['db'=>'User saved, but extension not saved: '.$er]); }
     return redirect('/admin/m/'.$slugName)->with('ok', 'Saved');
   }
-  private function stock($pid, $delta, $source, $ref) {
-    $p = DB::table('products')->where('id',$pid)->lockForUpdate()->first(); if (!$p) return;
-    DB::table('products')->where('id',$pid)->update(['stock'=>$p->stock + $delta]);
-    DB::table('stock_logs')->insert(['product_id'=>$pid,'source'=>$source,'reference'=>$ref,'before_qty'=>$p->stock,'change_qty'=>$delta,'after_qty'=>$p->stock+$delta,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'created_at'=>now(),'updated_at'=>now()]);
-  }
+  private function stock($pid, $delta, $source, $ref) { \App\Support\Procure::stock((int)$pid, (int)$delta, (string)$source, (string)$ref); }
   public function destroy($slug, $id) {
     $c = $this->cfg($slug); if (!empty($c['ro']) || !empty($c['noCreate'])) abort(403);
     if ($slug==='users' && (int)$id === (int)Auth::id()) return back()->withErrors(['db'=>'You cannot delete your own account']);

@@ -37,14 +37,31 @@ class StockGuard {
     if (!isset($p->category_id)) return false; // category unknown: keep the old behaviour
     return self::mode($p->category_id) !== 'STOCK_CONTROLLED';
   }
-  /** Shipment validation: null when every product has the stock, otherwise the red alert text. */
+  /** Shipment validation (Hybrid Costing): null when the order may ship, otherwise the red alert text.
+   *  1. every product must have the stock (No Stock = No Shipment, every category);
+   *  2. revenue after all discounts must stay at or above the ACTUAL FIFO batch cost x 1.15 (protected profit). */
   public static function shipBlock(int $orderId): ?string {
     $o = DB::table('orders')->where('id', $orderId)->first(['id', 'invoice', 'stock_deducted_at', 'duplicate_of_order_id']);
     if (!$o || $o->stock_deducted_at !== null || $o->duplicate_of_order_id !== null) return null;
     $rows = DB::table('order_items as i')->join('products as p', 'p.id', '=', 'i.product_id')->where('i.order_id', $orderId)->whereNotNull('p.stock')
       ->groupBy('p.id', 'p.name', 'p.stock')->havingRaw('sum(i.qty) > p.stock')->selectRaw('p.name, p.stock, sum(i.qty) need')->get();
-    if ($rows->isEmpty()) return null;
-    $l = []; foreach ($rows->take(4) as $r) $l[] = $r->name.' (required '.(int)$r->need.', available '.max(0, (int)$r->stock).')';
-    return 'RED ALERT: Cannot Ship, product stock is not available. '.implode('; ', $l).($rows->count() > 4 ? ' and '.($rows->count() - 4).' more' : '').'. Add stock (purchase / stock-in) before shipment.';
+    if (!$rows->isEmpty()) {
+      $l = []; foreach ($rows->take(4) as $r) $l[] = $r->name.' (required '.(int)$r->need.', available '.max(0, (int)$r->stock).')';
+      return 'RED ALERT: Cannot Ship, product stock is not available. '.implode('; ', $l).($rows->count() > 4 ? ' and '.($rows->count() - 4).' more' : '').'. Add stock (purchase / stock-in) before shipment.';
+    }
+    return self::profitBlock($o);
+  }
+  /** Protected profit at shipment. Mode (Admin setting on Inventory Pricing): block (default) / warn (allow and log) / off. */
+  private static function profitBlock(object $o): ?string {
+    try {
+      if (!Costing::ready()) return null; $mode = Costing::shipMode(); if ($mode === 'off') return null;
+      $bad = Costing::shipViolations((int)$o->id); if (!$bad) return null;
+      $d = array_map(fn($x) => $x['name'].' ×'.$x['qty'].' – Actual FIFO batch cost '.ProfitFloor::tk($x['cost']).', Minimum allowed revenue '.ProfitFloor::tk($x['min']).', Revenue after discount '.ProfitFloor::tk($x['rev']).', Shortfall '.ProfitFloor::tk($x['short']), array_slice($bad, 0, 4));
+      if (Cache::add('costing.shipwarn.'.$o->id.'.'.$mode.'.'.md5(json_encode($bad)), 1, 600)) ProfitFloor::audit($mode === 'warn' ? 'Minimum profit warning at shipment' : 'Minimum profit blocked shipment', 'Order '.$o->invoice, null, ['mode'=>$mode, 'lines'=>$bad, 'by'=>auth()->user()->name ?? 'system']);
+      if ($mode === 'warn') return null;
+      return ProfitFloor::admin()
+        ? '⚠ Minimum Profit Violation – Shipment blocked. This order is below the company\'s protected 15% profit margin on the actual batch cost. '.implode('; ', $d).(count($bad) > 4 ? ' and '.(count($bad) - 4).' more' : '').'. Raise the price or reduce the discount first (or set "Shipment profit protection" to Warn only on Inventory Pricing).'
+        : '⚠ এই অর্ডার Shipment-এ দেওয়া যাবে না — এতে কোম্পানির ন্যূনতম ১৫% প্রফিট সুরক্ষা ভঙ্গ হবে। অনুগ্রহ করে Admin-এর সাথে যোগাযোগ করুন।';
+    } catch (\Throwable $e) { report($e); return null; }
   }
 }

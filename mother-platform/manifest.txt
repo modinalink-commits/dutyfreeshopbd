@@ -607,3 +607,7 @@ app/Support/ProductAutoFillService.php
 app/Http/Controllers/AiProductController.php
 resources/views/ai_product_scan.blade.php
 database/migrations/2026_11_04_000160_manager_costs_permission.php
+app/Support/Costing.php
+app/Support/CostingSql.php
+database/migrations/2026_11_05_000010_hybrid_costing.php
+resources/views/inventory_batches.blade.php

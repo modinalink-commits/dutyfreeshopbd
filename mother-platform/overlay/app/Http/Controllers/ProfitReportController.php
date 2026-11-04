@@ -16,22 +16,24 @@ class ProfitReportController extends Controller {
     $orders = $oq->orderByDesc('created_at')->orderByDesc('id')->limit($per)->get(['id', 'invoice', 'customer_name', 'phone', 'status', 'discount', 'shipping', 'total', 'payment_method', 'created_at', 'courier', 'consignment_id', 'courier_fee', 'return_type']);
     $ids = $orders->pluck('id')->all();
     $items = $ids ? DB::table('order_items as i')->leftJoin('products as p', 'p.id', '=', 'i.product_id')->whereIn('i.order_id', $ids)
-      ->get(['i.order_id', 'i.product_id', 'i.name', 'i.qty', 'i.ret_qty', 'i.price', 'p.cost', 'p.sku'])->groupBy('order_id') : collect();
+      ->get(['i.order_id', 'i.product_id', 'i.name', 'i.qty', 'i.ret_qty', 'i.price', 'i.cogs', 'p.cost', 'p.sku'])->groupBy('order_id') : collect();
     $groups = []; $g = ['buy' => 0, 'sale' => 0, 'profit' => 0, 'loss' => 0, 'disc' => 0, 'ship' => 0, 'net' => 0, 'lines' => 0, 'courier' => 0, 'final' => 0, 'recv' => 0];
     foreach ($orders as $o) {
       $rows = []; $buy = 0; $sale = 0; $fullRet = in_array($o->status, ['Return Pending', 'Returned'], true) && ($o->return_type ?? '') !== 'Partial';
       foreach ($items[$o->id] ?? [] as $it) {
         // goods that came back are not sold: a full return sells nothing, a partial return keeps only the received quantity
-        $qty = (int)$it->qty; $qty = $fullRet ? 0 : max(0, $qty - max(0, (int)($it->ret_qty ?? 0))); $rate = (float)($it->cost ?? 0); $b = $rate * $qty; $s = (float)$it->price * $qty;
-        $rows[] = ['pid' => $it->sku ?: ($it->product_id ?: '—'), 'name' => $it->name, 'qty' => $qty, 'rate' => $rate, 'buy' => $b, 'price' => (float)$it->price, 'sold' => $s, 'pl' => $s - $b, 'm' => $s > 0 ? round(($s - $b) / $s * 100, 1) : 0, 'nocost' => $it->cost === null || (float)$it->cost == 0];
+        $q0 = (int)$it->qty; $qty = $fullRet ? 0 : max(0, $q0 - max(0, (int)($it->ret_qty ?? 0)));
+        // Actual COGS: shipped orders carry the cost of the batches really consumed; older orders fall back to the product's cost price
+        $act = $it->cogs !== null && $q0 > 0; $b = $act ? (float)$it->cogs * $qty / $q0 : (float)($it->cost ?? 0) * $qty; $rate = $qty > 0 ? $b / $qty : ($act && $q0 > 0 ? (float)$it->cogs / $q0 : (float)($it->cost ?? 0)); $s = (float)$it->price * $qty;
+        $rows[] = ['pid' => $it->sku ?: ($it->product_id ?: '—'), 'name' => $it->name, 'qty' => $qty, 'rate' => $rate, 'buy' => $b, 'price' => (float)$it->price, 'sold' => $s, 'pl' => $s - $b, 'm' => $s > 0 ? round(($s - $b) / $s * 100, 1) : 0, 'nocost' => !$act && ($it->cost === null || (float)$it->cost == 0), 'actual' => $act];
         $buy += $b; $sale += $s;
       }
-      $disc = $fullRet ? 0.0 : (float)$o->discount; $ship = (float)$o->shipping; $pl = $sale - $buy; $net = $pl - $disc;
+      $disc = $fullRet ? 0.0 : (float)$o->discount; $ship = (float)$o->shipping; $pl = $sale - $buy; $net = $pl - $disc; $prot = round($buy * 0.15, 2); $extra = round($net - $prot, 2); // protected 15% of actual cost; the rest (additional profit) pays delivery, staff and other costs
       // Money that actually reaches us for a courier parcel: what the customer pays (items - discount + delivery charge) minus the courier's cost. Parcels with no courier keep the old figure.
       $hasCourier = !empty($o->consignment_id); $fee = $hasCourier ? (float)($o->courier_fee ?? 0) : 0.0;
       $recv = $hasCourier ? ($fullRet ? 0.0 : max(0.0, $sale - $disc + $ship)) - $fee : null;
       $final = $hasCourier ? $recv - $buy : $net;
-      $groups[] = ['o' => $o, 'rows' => $rows, 'buy' => $buy, 'sale' => $sale, 'pl' => $pl, 'disc' => $disc, 'ship' => $ship, 'net' => $net, 'fee' => $fee, 'recv' => $recv, 'final' => $final, 'has' => $hasCourier];
+      $groups[] = ['o' => $o, 'rows' => $rows, 'buy' => $buy, 'sale' => $sale, 'pl' => $pl, 'disc' => $disc, 'ship' => $ship, 'net' => $net, 'prot' => $prot, 'extra' => $extra, 'fee' => $fee, 'recv' => $recv, 'final' => $final, 'has' => $hasCourier];
       $g['buy'] += $buy; $g['sale'] += $sale; $g['disc'] += $disc; $g['ship'] += $ship; $g['net'] += $net; $g['lines'] += count($rows); $g['courier'] += $fee; $g['final'] += $final; $g['recv'] += (float)$recv;
       if ($final >= 0) $g['profit'] += $final; else $g['loss'] += -$final;
     }

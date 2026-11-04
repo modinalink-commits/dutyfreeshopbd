@@ -122,6 +122,7 @@ class CatalogController extends Controller {
       $was = $old ? (bool)$old->published : false;
       if ($pub !== $was) DB::table('product_status_logs')->insert(['product_id'=>$id, 'user_id'=>Auth::id(), 'user_name'=>Auth::user()->name, 'action'=>$pub ? 'Published' : 'Unpublished', 'created_at'=>now(), 'updated_at'=>now()]);
     });
+    try { if ($old && (int)$old->stock !== (int)$row['stock']) { $d0 = \App\Support\Costing::sync((int)$id); if ($d0 !== 0) \App\Support\Procure::audit('costing.manual_adjustment', 'Manual stock edit: '.$row['name'], ['stock'=>(int)$old->stock], ['stock'=>(int)$row['stock'], 'batches_adjusted'=>$d0, 'by'=>Auth::user()->name ?? null]); } elseif (!$old && (int)$row['stock'] > 0) \App\Support\Costing::sync((int)$id); } catch (\Throwable $e) { report($e); }
     if (!$old && $r->filled('ai_scan')) { try {
       $sc = DB::table('ai_product_scans')->find((int)$r->input('ai_scan'));
       if ($sc && !$sc->product_id) {

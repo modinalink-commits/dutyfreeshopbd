@@ -7,8 +7,8 @@ use Illuminate\Support\Facades\DB;
 class InventoryController extends Controller {
   /** Every product from every store as one list: this site's own catalogue + all scanned stores. */
   private function union() {
-    $own = DB::table('products as p')->leftJoin('categories as c','c.id','=','p.category_id')->selectRaw("'own' as src, p.id as id, 0 as store_id, 'DutyFreeBD (www.dutyfreebd.com)' as store_name, p.name as name, p.sku as sku, p.image as image, p.price as price, p.stock as stock, null::boolean as in_stock, coalesce(c.name,'') as category, null as url, p.published as published, p.updated_at as updated_at, p.cost as last_cost, coalesce(nullif(p.avg_cost,0), p.cost) as avg_cost, least(p.price, nullif(p.buy2_price,0)/2, nullif(p.buy3_price,0)/3, nullif(p.buy4_price,0)/4, nullif(p.buy5_price,0)/5) as worst_unit");
-    $ext = DB::table('store_products as sp')->leftJoin('stores as s','s.id','=','sp.store_id')->selectRaw("'ext' as src, sp.id as id, sp.store_id as store_id, coalesce(s.name, sp.store_label || ' (removed)', 'Removed store') as store_name, sp.name as name, sp.sku as sku, sp.image as image, sp.price as price, sp.stock as stock, sp.in_stock as in_stock, coalesce(sp.category,'') as category, sp.url as url, sp.published as published, sp.updated_at as updated_at, null::numeric as last_cost, null::numeric as avg_cost, null::numeric as worst_unit");
+    $own = DB::table('products as p')->leftJoin('categories as c','c.id','=','p.category_id')->selectRaw("'own' as src, p.id as id, 0 as store_id, 'DutyFreeBD (www.dutyfreebd.com)' as store_name, p.name as name, p.sku as sku, p.image as image, p.price as price, p.stock as stock, null::boolean as in_stock, coalesce(c.name,'') as category, null as url, p.published as published, p.updated_at as updated_at, p.cost as last_cost, " . \App\Support\Costing::avgSql('p') . " as avg_cost, " . \App\Support\Costing::fifoSql('p') . " as fifo_cost, least(p.price, nullif(p.buy2_price,0)/2, nullif(p.buy3_price,0)/3, nullif(p.buy4_price,0)/4, nullif(p.buy5_price,0)/5) as worst_unit");
+    $ext = DB::table('store_products as sp')->leftJoin('stores as s','s.id','=','sp.store_id')->selectRaw("'ext' as src, sp.id as id, sp.store_id as store_id, coalesce(s.name, sp.store_label || ' (removed)', 'Removed store') as store_name, sp.name as name, sp.sku as sku, sp.image as image, sp.price as price, sp.stock as stock, sp.in_stock as in_stock, coalesce(sp.category,'') as category, sp.url as url, sp.published as published, sp.updated_at as updated_at, null::numeric as last_cost, null::numeric as avg_cost, null::numeric as fifo_cost, null::numeric as worst_unit");
     return DB::query()->fromSub($own->unionAll($ext), 'u');
   }
   private function filtered(Request $r) {
@@ -27,15 +27,16 @@ class InventoryController extends Controller {
     if ($r->stock !== null) return (string)$r->stock;
     return $r->in_stock === null ? '—' : ($r->in_stock ? 'In stock' : 'Out of stock');
   }
-  /** Pricing cells for a row (own products only; other stores' purchase prices are unknown). Returns plain values for exports, or [last, avg, profit, pct, state, colour] for the page. */
+  /** Pricing cells for a row (own products only; other stores' purchase prices are unknown). Hybrid costing: the 15% rule and the status use the current FIFO batch cost, the average is for reporting.
+   *  Returns plain values for exports (keys 9-17), or the named cells for the page. */
   public static function marginCols($x, bool $export = false): array {
-    $avg = (float)($x->avg_cost ?? 0); $pr = (float)($x->price ?? 0); $has = $avg > 0 && ($x->src ?? 'own') === 'own';
-    if (!$has) return $export ? [9=>'',10=>'',11=>'',12=>'',13=>'',14=>'',15=>'',16=>''] : ['last'=>null,'avg'=>null,'profit'=>null,'pct'=>null,'state'=>'—','col'=>'#6B7280','min'=>null,'bundle'=>'—','bcol'=>'#6B7280'];
+    $avg = (float)($x->avg_cost ?? 0); $fifo = (float)($x->fifo_cost ?? 0); $cost = $fifo > 0 ? $fifo : $avg; $pr = (float)($x->price ?? 0); $has = $cost > 0 && ($x->src ?? 'own') === 'own';
+    if (!$has) return $export ? [9=>'',10=>'',11=>'',12=>'',13=>'',14=>'',15=>'',16=>'',17=>''] : ['last'=>null,'avg'=>null,'fifo'=>null,'profit'=>null,'pct'=>null,'state'=>'—','col'=>'#6B7280','min'=>null,'bundle'=>'—','bcol'=>'#6B7280'];
     $worst = isset($x->worst_unit) && (float)$x->worst_unit > 0 ? min($pr, (float)$x->worst_unit) : $pr; // weakest per-unit price among single and Buy 2-5
-    [$lab, $col] = \App\Support\ProfitFloor::state($avg, $worst); $pct = ($pr - $avg) / $avg * 100; $fl = \App\Support\ProfitFloor::floor($avg);
-    [$bl, $bc] = $worst < $pr - 0.004 ? \App\Support\ProfitFloor::state($avg, $worst) : ['No bundle', '#6B7280'];
-    if ($export) return [9=>round((float)$x->last_cost, 2), 10=>round($avg, 2), 11=>15, 12=>$fl, 13=>round($pr - $avg, 2), 14=>round($pct, 2), 15=>preg_replace('/^[^A-Za-z]+/u', '', $lab), 16=>preg_replace('/^[^A-Za-z]+/u', '', $bl)];
-    return ['last'=>(float)$x->last_cost, 'avg'=>$avg, 'profit'=>$pr - $avg, 'pct'=>$pct, 'state'=>$lab, 'col'=>$col, 'min'=>$fl, 'bundle'=>$bl, 'bcol'=>$bc];
+    [$lab, $col] = \App\Support\ProfitFloor::state($cost, $worst); $pct = ($pr - $cost) / $cost * 100; $fl = \App\Support\ProfitFloor::floor($cost);
+    [$bl, $bc] = $worst < $pr - 0.004 ? \App\Support\ProfitFloor::state($cost, $worst) : ['No bundle', '#6B7280'];
+    if ($export) return [9=>round((float)$x->last_cost, 2), 10=>round($avg, 2), 11=>round($cost, 2), 12=>15, 13=>$fl, 14=>round($pr - $cost, 2), 15=>round($pct, 2), 16=>preg_replace('/^[^A-Za-z]+/u', '', $lab), 17=>preg_replace('/^[^A-Za-z]+/u', '', $bl)];
+    return ['last'=>(float)$x->last_cost, 'avg'=>$avg, 'fifo'=>$cost, 'profit'=>$pr - $cost, 'pct'=>$pct, 'state'=>$lab, 'col'=>$col, 'min'=>$fl, 'bundle'=>$bl, 'bcol'=>$bc];
   }
   public static function statusText($r): string {
     if (!$r->published) return 'Unpublished';
@@ -47,7 +48,7 @@ class InventoryController extends Controller {
     $base = $this->filtered($r);
     if ($grouped) {
       $key = "coalesce(nullif(lower(sku),''), lower(name))";
-      $rows = DB::query()->fromSub($base, 'f')->selectRaw("$key as k, min(name) as name, min(sku) as sku, (array_agg(image) filter (where image is not null))[1] as image, count(*) as stores, sum(coalesce(stock,0)) as total, max(price) as price, max(avg_cost) as avg_cost, max(last_cost) as last_cost, min(worst_unit) as worst_unit, string_agg(store_name || ': ' || coalesce(stock::text, case when in_stock is true then 'In stock' when in_stock is false then 'Out' else '—' end), '  ·  ' order by store_name) as per_store")->groupByRaw($key)->orderByRaw('min(name)')->paginate(\App\Support\Pg::per(50))->withQueryString();
+      $rows = DB::query()->fromSub($base, 'f')->selectRaw("$key as k, min(name) as name, min(sku) as sku, (array_agg(image) filter (where image is not null))[1] as image, count(*) as stores, sum(coalesce(stock,0)) as total, max(price) as price, max(avg_cost) as avg_cost, max(fifo_cost) as fifo_cost, max(last_cost) as last_cost, min(worst_unit) as worst_unit, string_agg(store_name || ': ' || coalesce(stock::text, case when in_stock is true then 'In stock' when in_stock is false then 'Out' else '—' end), '  ·  ' order by store_name) as per_store")->groupByRaw($key)->orderByRaw('min(name)')->paginate(\App\Support\Pg::per(50))->withQueryString();
     } else {
       $rows = $base->orderBy('name')->orderBy('store_name')->paginate(\App\Support\Pg::per(50))->withQueryString();
     }
@@ -56,12 +57,12 @@ class InventoryController extends Controller {
     $ownN = DB::table('products')->count();
     $outN = DB::table('products')->where('stock','<=',0)->count() + DB::table('store_products')->where(fn($w) => $w->where('stock','<=',0)->orWhere(fn($x) => $x->whereNull('stock')->where('in_stock', false)))->count();
     $stats = [['All products', number_format($ownN + $perStore->sum()), ($stores->count() + 1).' stores'], ['This site', number_format($ownN), 'DutyFreeBD'], ['Other stores', number_format($perStore->sum()), $perStore->count().' scanned'], ['Out of stock', number_format($outN), 'all stores'], ['Unpublished', number_format(DB::table('products')->where('published',false)->count() + DB::table('store_products')->where('published',false)->count()), 'all stores']];
-    if (\App\Support\ProfitFloor::admin()) { try { $stats[] = ['Below Minimum Margin', number_format(DB::table('products')->whereRaw('coalesce(nullif(avg_cost,0),cost) > 0 and price + 0.004 < coalesce(nullif(avg_cost,0),cost) * 1.15')->count()), 'vs Average Purchase Price']; } catch (\Throwable $e) {} }
+    if (\App\Support\ProfitFloor::admin()) { try { $stats[] = ['Below Minimum Margin', number_format(DB::table('products')->whereRaw(\App\Support\Costing::fifoSql('products').' > 0 and price + 0.004 < '.\App\Support\Costing::fifoSql('products').' * 1.15')->count()), 'vs current FIFO batch cost']; } catch (\Throwable $e) {} }
     return view('inventory', compact('rows','stores','stats','grouped','perStore','ownN'));
   }
   public function export(Request $r, $fmt) {
     abort_unless(in_array($fmt, ['csv','xls','doc','pdf']), 404);
-    $adm = \App\Support\ProfitFloor::admin(); $head = ['Image URL','Product Name','SKU','Store / Domain','Stock Qty','Status','Sale Price','Category','Product URL'] + ($adm ? [9=>'Last Purchase Price',10=>'Average Purchase Price',11=>'Min Margin %',12=>'Minimum Safe Price',13=>'Profit',14=>'Profit %',15=>'Margin Status (weakest of single and bundles)',16=>'Bundle Status (Buy 2-5)'] : []);
+    $adm = \App\Support\ProfitFloor::admin(); $head = ['Image URL','Product Name','SKU','Store / Domain','Stock Qty','Status','Sale Price','Category','Product URL'] + ($adm ? [9=>'Last Purchase Price',10=>'Average Cost',11=>'Current FIFO Cost',12=>'Min Margin %',13=>'Minimum Safe Sale',14=>'Estimated Profit',15=>'Profit %',16=>'Margin Status (weakest of single and bundles)',17=>'Bundle Status (Buy 2-5)'] : []);
     $gen = function () use ($r, $adm) { foreach ($this->filtered($r)->orderBy('name')->orderBy('store_name')->limit(60000)->cursor() as $x) yield [$x->image ?: '', $x->name, $x->sku ?: '', $x->store_name, self::stockText($x), self::statusText($x), $x->price !== null ? number_format((float)$x->price, 2, '.', '') : '', $x->category, $x->url ?: ''] + ($adm ? self::marginCols($x, true) : []); };
     $name = 'inventory-'.date('Ymd-His');
     if ($fmt === 'csv') return response()->streamDownload(function () use ($head, $gen) { $o = fopen('php://output','w'); fwrite($o, "\xEF\xBB\xBF"); fputcsv($o, $head); foreach ($gen() as $row) fputcsv($o, $row); fclose($o); }, "$name.csv", ['Content-Type'=>'text/csv; charset=utf-8']);

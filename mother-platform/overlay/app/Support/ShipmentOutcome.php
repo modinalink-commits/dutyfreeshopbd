@@ -110,7 +110,13 @@ class ShipmentOutcome {
       foreach ($exp as [$i, $q]) {
         $b = (int)$back[$i->id];
         DB::table('order_items')->where('id', $i->id)->update(['outcome'=>'Returned', 'ret_qty'=>$q, 'back_qty'=>$b, 'outcome_at'=>$now]);
-        if ($canStock && $b > 0 && $i->product_id) { Procure::stock((int)$i->product_id, $b, 'order-return', (string)$o->invoice); $stockDone = true; }
+        if ($canStock && $b > 0 && $i->product_id) {
+          // goods go back on the batch(es) they were shipped from (Hybrid Costing); the stock ledger row keeps the cost
+          $lid = Procure::stock((int)$i->product_id, $b, 'order-return', (string)$o->invoice, false);
+          $rc = Costing::restock((int)$i->id, $b, (int)$orderId, (string)$o->invoice); Costing::sync((int)$i->product_id);
+          if ($rc > 0) Procure::logCost($lid, $rc / $b, 'Returned to original batch(es)');
+          Procure::audit('costing.return_restock', 'Return restock: '.$o->invoice.' · '.$i->name, ['order'=>$o->invoice, 'qty_shipped'=>(int)$i->qty], ['qty_back'=>$b, 'cost_restored'=>$rc, 'source'=>'return']);
+          $stockDone = true; }
         $lines[] = $i->name.' → Returned'.($b !== $q ? ' (received back '.$b.' of '.$q.')' : '').($canStock && $b > 0 && $i->product_id ? ', stock +'.$b : '');
       }
       DB::table('orders')->where('id', $orderId)->update(['status'=>$to, 'return_received_at'=>$now, 'return_type'=>$o->return_type ?: 'Full', 'updated_at'=>$now] + ($stockDone ? ['stock_returned_at'=>$now] : []));

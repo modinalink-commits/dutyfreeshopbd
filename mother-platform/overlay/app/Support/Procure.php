@@ -65,24 +65,51 @@ class Procure {
     return $m;
   }
 
-  /** Stock in/out with an inventory ledger line (same shape the old module wrote). */
-  public static function stock(int $pid, int $delta, string $source, string $ref): void {
-    $p = DB::table('products')->where('id',$pid)->lockForUpdate()->first(); if (!$p || $delta === 0) return;
+  /** Stock in/out with an inventory ledger line (same shape the old module wrote). Returns the ledger row id.
+   *  $batches = true: the movement is also applied to the stock batches (oldest first out, a new adjustment batch in). Purchase and return flows pass false and handle their own batches. */
+  public static function stock(int $pid, int $delta, string $source, string $ref, bool $batches = true): int {
+    $p = DB::table('products')->where('id',$pid)->lockForUpdate()->first(); if (!$p || $delta === 0) return 0;
     DB::table('products')->where('id',$pid)->update(['stock'=>$p->stock + $delta]);
-    DB::table('stock_logs')->insert(['product_id'=>$pid,'source'=>$source,'reference'=>$ref,'before_qty'=>$p->stock,'change_qty'=>$delta,'after_qty'=>$p->stock+$delta,'user_id'=>auth()->id(),'user_name'=>auth()->user()->name ?? 'system','created_at'=>now(),'updated_at'=>now()]);
+    $lid = (int)DB::table('stock_logs')->insertGetId(['product_id'=>$pid,'source'=>$source,'reference'=>$ref,'before_qty'=>$p->stock,'change_qty'=>$delta,'after_qty'=>$p->stock+$delta,'user_id'=>auth()->id(),'user_name'=>auth()->user()->name ?? 'system','created_at'=>now(),'updated_at'=>now()]);
+    if ($batches) Costing::moved($pid, $delta, $source, $ref);
+    return $lid;
   }
+  /** Put the unit cost and batch text on a stock ledger row (Stock Tracking shows them to people allowed to see costs). */
+  public static function logCost(int $lid, float $unit, string $note): void {
+    if ($lid && Costing::ready()) { try { DB::table('stock_logs')->where('id',$lid)->update(['unit_cost'=>round($unit,4),'batch_note'=>mb_substr($note,0,250)]); } catch (\Throwable $e) { report($e); } }
+  }
+  /** Stock-in of a received purchase: stock goes up and every purchase line becomes its own batch (Hybrid Costing). */
   public static function applyStock(int $purchaseId): void {
     $p = DB::table('purchases')->where('id',$purchaseId)->lockForUpdate()->first(); if (!$p || $p->stock_applied) return;
     foreach (DB::table('purchase_items')->where('purchase_id',$purchaseId)->get() as $i) if ($i->product_id) { $in = (int)$i->qty - (int)$i->damage_qty; $was = DB::table('products')->where('id',$i->product_id)->first();
-      self::stock($i->product_id, $in, 'purchase', $p->invoice);
-      if ((float)$i->cost > 0) { $na = ProfitFloor::blend($was, $in, (float)$i->cost); DB::table('products')->where('id',$i->product_id)->update(['cost'=>$i->cost, 'avg_cost'=>$na]); ProfitFloor::logAvg((int)$i->product_id, 'purchase', (string)$p->invoice, $in, (float)$i->cost, ProfitFloor::base($was), $na); } }
+      $lid = self::stock($i->product_id, $in, 'purchase', $p->invoice, false);
+      $cost = (float)$i->cost; $oldAvg = ProfitFloor::avg($was);
+      if ($cost > 0) DB::table('products')->where('id',$i->product_id)->update(['cost'=>$i->cost]); // last purchase price
+      $unit = $cost > 0 ? $cost : ProfitFloor::avg($was); $bid = $in > 0 ? Costing::addBatch((int)$i->product_id, $in, $unit, (int)$p->id, $p->supplier_id ? (int)$p->supplier_id : null, $p->purchase_date, (string)$p->invoice, 'purchase') : null;
+      Costing::sync((int)$i->product_id);
+      $after = DB::table('products')->where('id',$i->product_id)->first();
+      if ($bid) self::logCost($lid, $unit, 'B'.$bid.' x'.$in.' @'.rtrim(rtrim(number_format($unit,4,'.',''),'0'),'.'));
+      if ($cost > 0) {
+        if (!Costing::ready()) { $na = ProfitFloor::blend($was, $in, $cost); DB::table('products')->where('id',$i->product_id)->update(['avg_cost'=>$na]); }
+        else $na = ProfitFloor::avg($after);
+        ProfitFloor::logAvg((int)$i->product_id, 'purchase', (string)$p->invoice, $in, $cost, $oldAvg, $na);
+        self::audit('costing.batch_in', 'Batch in: '.$p->invoice.' · product#'.$i->product_id, ['stock'=>(int)($was->stock ?? 0), 'average'=>$oldAvg, 'fifo'=>(float)($was->fifo_cost ?? 0)], ['qty'=>$in, 'unit_cost'=>$cost, 'batch'=>$bid, 'average'=>$na, 'fifo'=>(float)($after->fifo_cost ?? 0), 'last_purchase'=>$cost, 'source'=>'purchase']);
+      } }
     DB::table('purchases')->where('id',$purchaseId)->update(['stock_applied'=>true]);
   }
+  /** Purchase reversed / edited / cancelled: stock goes down and the purchase's batches leave the FIFO queue. */
   public static function reverseStock(int $purchaseId): void {
     $p = DB::table('purchases')->where('id',$purchaseId)->lockForUpdate()->first(); if (!$p || !$p->stock_applied) return;
-    foreach (DB::table('purchase_items')->where('purchase_id',$purchaseId)->get() as $i) if ($i->product_id) { $out = (int)$i->qty - (int)$i->damage_qty; $was = DB::table('products')->where('id',$i->product_id)->first();
-      self::stock($i->product_id, -$out, 'purchase-reversal', $p->invoice);
-      if ($was && (float)$i->cost > 0) { $na = ProfitFloor::unblend($was, $out, (float)$i->cost); DB::table('products')->where('id',$i->product_id)->update(['avg_cost'=>$na]); ProfitFloor::logAvg((int)$i->product_id, 'purchase-reversal', (string)$p->invoice, -$out, (float)$i->cost, ProfitFloor::base($was), $na); } }
+    $items = DB::table('purchase_items')->where('purchase_id',$purchaseId)->get(); $before = [];
+    foreach ($items as $i) if ($i->product_id) { $out = (int)$i->qty - (int)$i->damage_qty; $was = DB::table('products')->where('id',$i->product_id)->first(); $before[(int)$i->product_id] = $before[(int)$i->product_id] ?? ProfitFloor::avg($was);
+      self::stock($i->product_id, -$out, 'purchase-reversal', $p->invoice, false); }
+    Costing::reversePurchase($purchaseId);
+    foreach ($before as $pid => $oldAvg) {
+      Costing::sync($pid); $after = DB::table('products')->where('id',$pid)->first(); $na = ProfitFloor::avg($after);
+      $q = (int)DB::table('purchase_items')->where('purchase_id',$purchaseId)->where('product_id',$pid)->sum(DB::raw('qty - coalesce(damage_qty,0)'));
+      ProfitFloor::logAvg($pid, 'purchase-reversal', (string)$p->invoice, -$q, 0.0, $oldAvg, $na);
+      self::audit('costing.batch_reversed', 'Batch reversed: '.$p->invoice.' · product#'.$pid, ['average'=>$oldAvg], ['average'=>$na, 'fifo'=>(float)($after->fifo_cost ?? 0), 'stock'=>(int)($after->stock ?? 0)]);
+    }
     DB::table('purchases')->where('id',$purchaseId)->update(['stock_applied'=>false]);
   }
 
@@ -126,6 +153,7 @@ class Procure {
   }
   /** Worker hook: due-date reminders (offsets in days from the invoice due date, e.g. -3,0,3). Once per invoice and offset. */
   public static function tick(): void {
+    try { $h = now()->format('YmdH'); if (Costing::ready() && self::set('costing_sync_last') !== $h) { self::put('costing_sync_last', $h); $n = Costing::syncAll(); if ($n > 0) self::audit('costing.sync', "Batches re-aligned with stock on hand for $n products", null, ['products'=>$n, 'reason'=>'manual stock edit / import']); } } catch (\Throwable $e) { report($e); }
     if (!self::on('proc_sms_due')) return; $today = now('Asia/Dhaka')->toDateString();
     if (self::set('proc_due_last') === $today) return; self::put('proc_due_last', $today);
     $offs = array_values(array_filter(array_map('trim', explode(',', self::set('proc_due_offsets', '-3,0,3'))), fn($x)=>is_numeric($x)));

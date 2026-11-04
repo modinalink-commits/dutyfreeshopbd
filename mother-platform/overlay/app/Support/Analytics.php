@@ -68,7 +68,7 @@ class Analytics {
     return [' where '.implode(' and ', $c), $b];
   }
   private static function lat(): string {
-    return " left join lateral (select coalesce(sum(i.qty),0) qty, coalesce(sum(i.qty*i.price),0) items, coalesce(sum(i.qty*coalesce(p.cost,0)),0) cost, string_agg(i.name, ', ' order by i.id) names from order_items i left join products p on p.id = i.product_id where i.order_id = o.id) x on true";
+    return " left join lateral (select coalesce(sum(i.qty),0) qty, coalesce(sum(i.qty*i.price),0) items, coalesce(sum(coalesce(i.cogs, i.qty*coalesce(p.cost,0))),0) cost, string_agg(i.name, ', ' order by i.id) names from order_items i left join products p on p.id = i.product_id where i.order_id = o.id) x on true";
   }
   private static function day(string $fmt = 'YYYY-MM-DD'): string { return "to_char(o.created_at + interval '6 hours','$fmt')"; }
   private static function sel(string $sql, array $b): array { return DB::select($sql, $b); }
@@ -168,7 +168,7 @@ class Analytics {
   private static function productSales(array $f, bool $split): array {
     [$w, $b] = self::w($f, 'valid', true);
     $st = $split ? ', st.name store' : ", coalesce(string_agg(distinct st.name, ', '),'') store"; $g = $split ? ', st.name' : '';
-    $sql = "select coalesce(p.name,i.name) product, max(coalesce(p.sku,'')) sku, max(coalesce(p.image,'')) image $st, sum(i.qty) qty, sum(i.qty*i.price) gross, coalesce(sum(o.discount * (i.qty*i.price) / nullif(t.items,0)),0) discount, sum(i.qty*coalesce(p.cost,0)) cost from order_items i join orders o on o.id = i.order_id left join products p on p.id = i.product_id left join stores st on st.id = o.store_id left join lateral (select sum(qty*price) items from order_items where order_id = o.id) t on true $w group by coalesce(p.name,i.name) $g order by sum(i.qty*i.price) desc limit ".self::LIMIT;
+    $sql = "select coalesce(p.name,i.name) product, max(coalesce(p.sku,'')) sku, max(coalesce(p.image,'')) image $st, sum(i.qty) qty, sum(i.qty*i.price) gross, coalesce(sum(o.discount * (i.qty*i.price) / nullif(t.items,0)),0) discount, sum(coalesce(i.cogs, i.qty*coalesce(p.cost,0))) cost from order_items i join orders o on o.id = i.order_id left join products p on p.id = i.product_id left join stores st on st.id = o.store_id left join lateral (select sum(qty*price) items from order_items where order_id = o.id) t on true $w group by coalesce(p.name,i.name) $g order by sum(i.qty*i.price) desc limit ".self::LIMIT;
     $rows = self::arr(self::sel($sql, $b));
     foreach ($rows as &$r) { $r['discount'] = round((float)$r['discount']); $r['profit'] = (float)$r['gross'] - $r['discount'] - (float)$r['cost']; $r['margin'] = (float)$r['gross'] > 0 ? round($r['profit'] / (float)$r['gross'] * 100, 1) : 0; }
     return $rows;
@@ -178,7 +178,7 @@ class Analytics {
     [$w, $b] = self::w($f, 'nocancel', true);
     $st = $split ? ', st.name store' : ", '' store"; $g = $split ? ', st.name' : '';
     $v = "o.status not in ('Returned','Return Pending')";
-    $sql = "select coalesce(c.name,'Uncategorised') category, max(c.id) cid $st, sum(case when $v then i.qty else 0 end) qty, sum(case when $v then i.qty*i.price - coalesce(o.discount * (i.qty*i.price) / nullif(t.items,0),0) else 0 end) sales, sum(case when $v then i.qty*coalesce(p.cost,0) else 0 end) cost, sum(case when o.status in ".self::RET." then i.qty else 0 end) ret_qty, sum(i.qty) all_qty from order_items i join orders o on o.id = i.order_id left join products p on p.id = i.product_id left join categories c on c.id = p.category_id left join stores st on st.id = o.store_id left join lateral (select sum(qty*price) items from order_items where order_id = o.id) t on true $w group by coalesce(c.name,'Uncategorised') $g order by 5 desc";
+    $sql = "select coalesce(c.name,'Uncategorised') category, max(c.id) cid $st, sum(case when $v then i.qty else 0 end) qty, sum(case when $v then i.qty*i.price - coalesce(o.discount * (i.qty*i.price) / nullif(t.items,0),0) else 0 end) sales, sum(case when $v then coalesce(i.cogs, i.qty*coalesce(p.cost,0)) else 0 end) cost, sum(case when o.status in ".self::RET." then i.qty else 0 end) ret_qty, sum(i.qty) all_qty from order_items i join orders o on o.id = i.order_id left join products p on p.id = i.product_id left join categories c on c.id = p.category_id left join stores st on st.id = o.store_id left join lateral (select sum(qty*price) items from order_items where order_id = o.id) t on true $w group by coalesce(c.name,'Uncategorised') $g order by 5 desc";
     $rows = self::arr(self::sel($sql, $b));
     $cnt = []; foreach (self::arr(DB::select('select category_id, count(*) n from products group by category_id')) as $x) $cnt[$x['category_id']] = $x['n'];
     foreach ($rows as &$r) { $r['products'] = (int)($cnt[$r['cid']] ?? 0); $r['sales'] = round((float)$r['sales']); $r['profit'] = $r['sales'] - (float)$r['cost']; $r['return_rate'] = (float)$r['all_qty'] > 0 ? round($r['ret_qty'] / $r['all_qty'] * 100, 1) : 0; }
@@ -266,7 +266,7 @@ class Analytics {
   private static function categoryStock(array $f): array {
     $c = ['1=1']; $b = [];
     if ($f['category']) { $c[] = 'c.id = ?'; $b[] = $f['category']; }
-    $sql = "select coalesce(c.name,'Uncategorised') category, count(p.id) products, coalesce(sum(greatest(p.stock,0)),0) units, coalesce(sum(greatest(p.stock,0)*p.cost),0) cost_value, coalesce(sum(greatest(p.stock,0)*p.price),0) sale_value, sum(case when p.stock <= 0 then 1 else 0 end) out from products p left join categories c on c.id = p.category_id where ".implode(' and ', $c)." group by c.id, c.name order by 4 desc";
+    $sql = "select coalesce(c.name,'Uncategorised') category, count(p.id) products, coalesce(sum(greatest(p.stock,0)),0) units, coalesce(sum(greatest(p.stock,0)*coalesce(nullif(p.avg_cost,0),p.cost)),0) cost_value, coalesce(sum(greatest(p.stock,0)*p.price),0) sale_value, sum(case when p.stock <= 0 then 1 else 0 end) out from products p left join categories c on c.id = p.category_id where ".implode(' and ', $c)." group by c.id, c.name order by 4 desc";
     return self::arr(self::sel($sql, $b));
   }
 
