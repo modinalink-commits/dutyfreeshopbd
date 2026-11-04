@@ -43,8 +43,8 @@ class ProfitFloor {
     return $r;
   }
 
-  /** Only the Owner (super user) may see the protected-profit rule, purchase prices, minimum prices or allowed amounts. Everyone else - staff, managers and admins - gets a plain red notice with no numbers. */
-  public static function admin(): bool { try { return (auth()->user()->role ?? '') === 'super'; } catch (\Throwable $e) { return false; } }
+  /** Only full-access users (type Admin / super - the owner) may see the protected-profit rule, purchase prices, minimum prices or allowed amounts. Every staff-type user, whatever their role (e.g. Manager), gets a plain red notice with no numbers. */
+  public static function admin(): bool { try { return in_array(auth()->user()->role ?? '', ['super', 'admin'], true); } catch (\Throwable $e) { return false; } }
   const STAFF_MSG = "⚠ এই রেট/ডিসকাউন্ট দেওয়া যাবে না — এতে আমাদের কোম্পানির লস হবে।";
 
   /** Lines whose price was reduced below the protected price. Only lines cut below the product's own list price count, so an old product priced under the floor can still be sold at its list price. key => detail */
