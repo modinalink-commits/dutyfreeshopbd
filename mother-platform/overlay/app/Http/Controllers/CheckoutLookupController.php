@@ -20,7 +20,7 @@ class CheckoutLookupController extends Controller {
     $o = $this->last($p); if (!$o) return response()->json(['found'=>false]);
     if (!$this->on()) {
       // Free auto-fill (no SMS): name, address and district of the last order for this number. Capped per visitor so the list of customers cannot be harvested.
-      $k = 'co.lk.'.md5((string)$r->ip()); Cache::add($k, 0, 3600); if ((int)Cache::get($k, 0) >= 8) return response()->json(['found'=>false]);
+      $k = 'co.lk.'.md5((string)$r->ip()); Cache::add($k, 0, 3600); if ((int)Cache::get($k, 0) >= 20) return response()->json(['found'=>false]);
       Cache::increment($k);
       return response()->json(['found'=>true, 'otp'=>false, 'd'=>['name'=>$o->customer_name, 'address'=>$o->address, 'district'=>$o->district]]);
     }

@@ -457,7 +457,7 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestF
   Route::get('/order-success/{invoice}', [\App\Http\Controllers\StoreController::class,'done'])->name('order.done')->middleware('signed');
   Route::get('/invoice/{invoice}', [\App\Http\Controllers\StoreController::class,'invoice'])->name('order.invoice')->middleware('signed');
   Route::get('/cart-items', [\App\Http\Controllers\StoreController::class,'cartItems']);
-  Route::post('/checkout/lookup', [\App\Http\Controllers\CheckoutLookupController::class,'lookup'])->middleware('throttle:30,10');
+  Route::post('/checkout/lookup', [\App\Http\Controllers\CheckoutLookupController::class,'lookup'])->middleware('throttle:40,10');
   Route::post('/checkout/otp', [\App\Http\Controllers\CheckoutLookupController::class,'otp'])->middleware('throttle:20,10');
   Route::post('/checkout/verify', [\App\Http\Controllers\CheckoutLookupController::class,'verify'])->middleware('throttle:40,10');
   Route::post('/checkout/track', [\App\Http\Controllers\StoreController::class,'trackCheckout'])->middleware('throttle:120,1');
