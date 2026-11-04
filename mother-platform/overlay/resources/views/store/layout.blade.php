@@ -187,7 +187,7 @@ body .hh .va:hover{filter:brightness(1.08)}
 <div><b>Shop</b><a href="#new">New arrivals</a><a href="#top">Top selling</a><a href="#flash">Offers</a></div>
 <div><b>Help</b><a href="/track">Order tracking</a><a href="/delivery-policy/">Delivery</a><a href="/return-policy/">Returns</a><a href="/privacy-policy/">Privacy Policy</a><a href="/blog/">Blog</a></div>
 <div><b>Company</b><a href="/about-us/">About</a><a href="/contact-us/">Contact</a><a href="/terms/">Terms</a></div>
-<div>@include('store.contact_block')</div></footer>
+</footer>
 <div class="w"><div class="shp"><img src="/pay/shurjopay-dark.png" alt="Powered by shurjoPay — payment methods" width="1588" height="241" loading="lazy"></div></div></div>
 @endif
 @if(empty($home))
@@ -197,7 +197,6 @@ body .hh .va:hover{filter:brightness(1.08)}
 <div><img src="{{ $logo }}" alt="DutyFree BD" width="150" height="34" loading="lazy"><div class="ab">{{ $s['footer_about'] ?: 'Your trusted source for authentic products at the best prices. 100% original. Cash on delivery available.' }}</div></div>
 <div><b class="h">Quick Links</b><a href="/track">Order Tracking</a><a href="/about-us/">About Us</a><a href="/contact-us/">Contact Us</a><a href="/wishlist">Wishlist</a></div>
 <div><b class="h">Information</b><a href="/delivery-policy/">Delivery policy</a><a href="/privacy-policy/">Privacy Policy</a><a href="/return-policy/">Return Policy</a><a href="/blog/">Blog</a></div>
-<div>@include('store.contact_block')</div>
 <div class="fo"><b class="h">Follow Us</b><div class="so">@foreach($soc as $k => $l)
 @if($s[$k])<a href="{{ $s[$k] }}" rel="noopener" aria-label="{{ ucfirst(str_replace('social_','',$k)) }}">{!! $l !!}</a>@else<span>{!! $l !!}</span>@endif
 @endforeach<a href="https://wa.me/{{ $wa }}" rel="noopener" aria-label="WhatsApp">{!! $waI !!}</a></div></div></div>
