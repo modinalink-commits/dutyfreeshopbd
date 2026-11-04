@@ -10,6 +10,7 @@ use App\Support\ProfitFloor;
  *  The crossed-out (compare) price follows the standing 10-12% rule. Old values are kept in near_min_raise_backup. Bundles are recalculated. Runs once. */
 return new class extends Migration {
   public function up(): void {
+    return; // superseded by 2026_11_05_000040_raise_below_fifo_minimum_v2 (runs outside a transaction)
     if (!Schema::hasTable('products') || !Schema::hasColumn('products', 'avg_cost')) return;
     if (DB::table('settings')->where('key', 'raised_to_fifo_min_20261104')->exists()) return;
     $skus = ['DF-1043', 'DF-1023', 'DF-1133', 'DF-1151', 'DF-1029', 'DF-1033', 'DF-1164', 'DF-1087', 'DF-1062', 'DF-1060', 'DF-2757'];
