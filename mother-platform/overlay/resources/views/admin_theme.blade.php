@@ -206,3 +206,10 @@ table.ordt td.ost-cell,table.ordt td:has(>.stn){min-width:180px;max-width:230px;
 .stn:hover .stn-p{display:block}
 </style>
 <style>table.ordt td:has(>.stn:hover){z-index:50}.stn-p{background:#fff!important}</style>
+<style>
+/* 12. status: larger and centred in its column */
+table.ordt td.ost-cell,table.ordt td:has(>.stn){text-align:center;vertical-align:middle}
+table.ordt td.ost-cell .pill,table.ordt td:has(>.stn)>.pill{display:inline-block;font-size:13px;font-weight:700;line-height:1;padding:7px 18px;border-radius:999px;min-width:86px;text-align:center}
+.stn{text-align:center}.stn-r{margin-left:auto;margin-right:auto}
+.stn-p{text-align:left;left:50%;transform:translateX(-50%)}
+</style>
