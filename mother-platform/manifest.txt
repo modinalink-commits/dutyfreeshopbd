@@ -589,6 +589,11 @@ database/migrations/2026_11_04_000140_raise_near_minimum_2pct.php
 database/migrations/2026_11_04_000141_raise_to_safe_all.php
 app/Support/Domain.php
 app/Http/Middleware/CanonicalHost.php
+app/Http/Middleware/BrandPrint.php
+app/Support/PrintBrand.php
+public/brand/export-logo.png
+public/brand/watermark-faded.png
+public/brand/watermark-logo.png
 resources/views/inventory_pricing.blade.php
 resources/views/avg_history.blade.php
 resources/views/inventory_margin_cells.blade.php
