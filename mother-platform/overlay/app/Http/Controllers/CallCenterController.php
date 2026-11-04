@@ -110,7 +110,7 @@ class CallCenterController extends Controller {
   }
   public function recent() {
     $rows = DB::table('call_logs')->orderByDesc('id')->limit(25)->get()->map(fn($l) => ['id'=>$l->id, 'dir'=>$l->direction, 'phone'=>$l->phone, 'name'=>$l->customer_name, 'status'=>$l->status, 'dur'=>(int)$l->duration, 'outcome'=>$l->outcome, 'rec'=>$l->recording_status ?? 'none',
-      'at'=>$l->started_at ? \Carbon\Carbon::parse($l->started_at, 'UTC')->timezone('Asia/Dhaka')->format('d M, h:i A') : '']);
+      'at'=>$l->started_at ? \Carbon\Carbon::parse($l->started_at, 'UTC')->timezone('Asia/Dhaka')->format('d M Y, h:i A') : '']);
     return response()->json($rows);
   }
   /** One call with everything the details popup needs. */

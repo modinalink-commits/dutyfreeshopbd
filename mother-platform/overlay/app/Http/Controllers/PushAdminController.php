@@ -14,7 +14,7 @@ class PushAdminController extends Controller
   public function index() {
     $tz = 'Asia/Dhaka';
     $camps = DB::table('push_campaigns')->orderByDesc('id')->limit(40)->get()->map(function ($c) use ($tz) {
-      $c->when = $c->sent_at ? Carbon::parse($c->sent_at)->timezone($tz)->format('d M, h:i A') : ($c->schedule_at ? Carbon::parse($c->schedule_at)->timezone($tz)->format('d M, h:i A') : '-'); return $c; });
+      $c->when = $c->sent_at ? Carbon::parse($c->sent_at)->timezone($tz)->format('d M Y, h:i A') : ($c->schedule_at ? Carbon::parse($c->schedule_at)->timezone($tz)->format('d M Y, h:i A') : '-'); return $c; });
     return view('push_admin', [
       'camps' => $camps, 'aud' => self::AUD, 'types' => Push::TYPES, 'typeNames' => collect(Push::TYPES)->map(fn($g) => collect($g)->map(fn($v) => $v[0]))->all(),
       'stats' => ['subs' => DB::table('push_subscriptions')->where('active', true)->whereNull('label')->count(), 'linked' => DB::table('push_subscriptions')->where('active', true)->whereNull('label')->whereNotNull('customer_id')->count(), 'sent' => (int)DB::table('push_campaigns')->sum('sent'), 'clicks' => (int)DB::table('push_campaigns')->sum('clicks')],
