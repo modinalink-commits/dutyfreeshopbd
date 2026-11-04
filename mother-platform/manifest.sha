@@ -49,7 +49,7 @@ d787924ace3fa42cc66a3de321e4e94e784006d8 resources/views/panels/employees.blade.
 16d44d41f6b845877a906678b144cbc1233a96f5 resources/views/report_details.blade.php
 2f840d53881d8aeaf0c5959161774787e5f540bc database/migrations/2026_10_31_000005_storefront.php
 65414d9e2fbe5f16f1fbf1551cce91276e9f30f9 app/Console/Commands/MotherSyncFeed.php
-b702f171899189eef2c89e16a3213edcaed19124 app/Http/Controllers/StoreController.php
+7ea8b726391e196b47548268e72233c09bcd072a app/Http/Controllers/StoreController.php
 d7d4610b3b1a30a0a84b5f864c82176db2436945 resources/views/store/layout.blade.php
 d016abe8cb44abf17da71e856a2b78293a21de9b resources/views/store/card.blade.php
 ce0d1f8552836199c028ddef8806c72a2d10ad19 resources/views/store/home_sec.blade.php
@@ -57,7 +57,7 @@ e993c7ef752b8e9a0f218eba2ae7dcf221e49aa7 resources/views/store/home.blade.php
 c3a21c86bac7a118c1154270f02040b67f46bdac resources/views/store/category.blade.php
 d5c6abd1b62aa9de880cb517935d1df5aa8d443a resources/views/store/product.blade.php
 7ad9d9502d41f54d6784414a9aa3f16a8ab0ec13 resources/views/store/search.blade.php
-5b14d1db2542a2cf48abc92404acd17528148618 resources/views/store/track.blade.php
+4b9c2c9d102c4157f1559bb68f4665d1899a329d resources/views/store/track.blade.php
 1aa52e9a1cc85e3723d11055b65e301c5f2dc0c1 resources/views/store/page.blade.php
 06722f66390bb7e2d70f564ee2dd0dededd9a2b7 resources/views/store/missing.blade.php
 7e4459d82e83e77adfd2c0e6cf94a763cf6ff945 resources/views/store/checkout.blade.php

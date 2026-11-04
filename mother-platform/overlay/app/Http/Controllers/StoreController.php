@@ -486,20 +486,30 @@ class StoreController extends Controller {
   public function invoice($invoice) { return response()->view('store.invoice', $this->pack($invoice) + ['print'=>request()->boolean('print')]); }
   /** Tracking by invoice number only: shows status steps and products, never the customer's name, phone or address. */
   public function track(Request $r) {
-    $o = null; $logs = collect(); $askPhone = false; $bad = false;
-    if ($r->filled('invoice')) {
-      $row = DB::table('orders')->whereIn('invoice', \App\Support\Inv::candidates($r->invoice) ?: ['-'])->first(['id','invoice','status','shipping','discount','total','created_at','payment_method','pay_status','pay_txn','phone']);
-      $ph = substr(preg_replace('/\D/', '', (string)$r->input('phone')), -10);
-      $hasKey = $r->filled('k'); $hasPh = strlen($ph) === 10;
-      if (!$hasKey && !$hasPh) $askPhone = true; // same prompt whether or not the invoice exists, so numbers cannot be probed
-      elseif ($row) {
+    // Either the invoice number or the mobile number is enough. With both, they must belong to the same order.
+    $o = null; $logs = collect(); $others = collect(); $askPhone = false; $bad = false; $nf = false;
+    $cols = ['id','invoice','status','shipping','discount','total','created_at','payment_method','pay_status','pay_txn','phone'];
+    $inv = trim((string)$r->input('invoice')); $rawPh = (string)$r->input('phone');
+    $ph = substr(preg_replace('/\D/', '', $rawPh), -10); $hasPh = strlen($ph) === 10; $hasKey = $r->filled('k');
+    if ($inv !== '') {
+      $row = DB::table('orders')->whereIn('invoice', \App\Support\Inv::candidates($inv) ?: ['-'])->first($cols);
+      if (!$row) { if ($hasPh || $hasKey) $bad = true; else $nf = true; }
+      elseif (!$hasPh && !$hasKey) { $o = $row; unset($o->phone); }   // invoice number alone
+      else {
         $okKey = $hasKey && hash_equals(\App\Support\Inv::trackKey($row->invoice), (string)$r->input('k'));
         $okPh = $hasPh && substr(preg_replace('/\D/', '', (string)$row->phone), -10) === $ph;
         if ($okKey || $okPh) { $o = $row; unset($o->phone); } else $bad = true;
-      } else $bad = true;
-      if ($o) $logs = DB::table('order_status_logs')->where('order_id',$o->id)->orderBy('id')->get(['to_status','created_at']);
+      }
+    } elseif (trim($rawPh) !== '') {
+      if (!$hasPh) $bad = true;
+      else {
+        $rows = DB::table('orders')->whereRaw("right(regexp_replace(phone, '\\D', '', 'g'), 10) = ?", [$ph])->orderByDesc('id')->limit(6)->get($cols);
+        if ($rows->isEmpty()) $nf = true;
+        else { $o = $rows->first(); $others = $rows->slice(1)->values(); unset($o->phone); }   // mobile number alone: the latest order, plus a short list of the others
+      }
     }
-    return response()->view('store.track', $this->base(['o'=>$o, 'logs'=>$logs, 'askPhone'=>$askPhone, 'badTrack'=>$bad, 'items'=>$o ? DB::table('order_items as i')->leftJoin('products as p','p.id','=','i.product_id')->where('i.order_id',$o->id)->get(['i.product_id','p.ext_id','i.name','i.qty','i.price']) : collect(), 'title'=>'Order Tracking | DutyFree BD', 'desc'=>'', 'canon'=>url('/track'), 'noindex'=>true]))->header('Cache-Control','no-store');
+    if ($o) $logs = DB::table('order_status_logs')->where('order_id',$o->id)->orderBy('id')->get(['to_status','created_at']);
+    return response()->view('store.track', $this->base(['o'=>$o, 'logs'=>$logs, 'others'=>$others, 'askPhone'=>$askPhone, 'badTrack'=>$bad, 'notFound'=>$nf, 'items'=>$o ? DB::table('order_items as i')->leftJoin('products as p','p.id','=','i.product_id')->where('i.order_id',$o->id)->get(['i.product_id','p.ext_id','i.name','i.qty','i.price']) : collect(), 'title'=>'Order Tracking | DutyFree BD', 'desc'=>'', 'canon'=>url('/track'), 'noindex'=>true]))->header('Cache-Control','no-store');
   }
   private function page($page) {
     if (empty($page->canonical) && request()->isMethod('get') && !str_ends_with(request()->getPathInfo(), '/') && empty($GLOBALS['seo_preview']) && !request()->query('preview')) return redirect(url('/'.$page->slug).'/'.(request()->getQueryString() ? '?'.request()->getQueryString() : ''), 301);
