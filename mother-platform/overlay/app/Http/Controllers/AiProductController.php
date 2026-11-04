@@ -43,7 +43,7 @@ class AiProductController extends Controller {
     if (!$res['ok']) {
       DB::table('ai_product_scans')->where('id', $id)->update(['status'=>'failed', 'error'=>mb_substr($res['error'], 0, 290), 'updated_at'=>now()]);
       Procure::audit('ai.product_scan_failed', 'Image scan failed: '.mb_substr($res['error'], 0, 120), null, ['scan'=>$id]);
-      return response()->json(['ok'=>false, 'error'=>'The AI could not read the image ('.$res['error'].'). Try again or enter the product manually.', 'scan_id'=>$id], 502);
+      return response()->json(['ok'=>false, 'error'=>'The AI could not read the image ('.$res['error'].'). Try again or enter the product manually.', 'scan_id'=>$id], 422);
     }
     $d = $res['data'];
     DB::table('ai_product_scans')->where('id', $id)->update(['status'=>$d['identified'] ? 'scanned' : 'unidentified', 'detected'=>json_encode($d, JSON_UNESCAPED_UNICODE), 'edited'=>null, 'scanned_at'=>now(), 'updated_at'=>now()]);

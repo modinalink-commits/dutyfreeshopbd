@@ -55,8 +55,8 @@ class ProductImageAIService {
       ."Report ONLY what is printed on the pack or confidently identifiable. Never output any price. Never invent a barcode, code, size, country or claim: use null with confidence 0 when it is not visible. "
       ."Confidence is 0-100 per field: 90+ only when the text is clearly readable. Category fields must be copied exactly from the CATEGORY TREE. Cigarettes are sold by the carton, but describe the pack that is shown. "
       ."If the photo is blurry, not a product, or you cannot read the brand and name, set identified=false and explain in notes. If it shows several different products set multiple_products=true and list them in candidates.\n\n".$context;
-    $txt = $focus !== null && $focus !== '' ? "The photo contains several products. Analyse ONLY this one: ".mb_substr($focus, 0, 200).". Call report_product." : "Analyse this product photo and call report_product.";
-    $body = ['model'=>self::model(), 'max_tokens'=>2500, 'system'=>$sys, 'tools'=>[['name'=>'report_product', 'description'=>'Report the product detected in the photo.', 'input_schema'=>self::schema()]], 'tool_choice'=>['type'=>'tool', 'name'=>'report_product'],
+    $txt = $focus !== null && $focus !== '' ? "The photo contains several products. Analyse ONLY this one: ".mb_substr($focus, 0, 200).". You must answer by calling the report_product tool." : "Analyse this product photo. You must answer by calling the report_product tool.";
+    $body = ['model'=>self::model(), 'max_tokens'=>2500, 'system'=>$sys, 'tools'=>[['name'=>'report_product', 'description'=>'Report the product detected in the photo.', 'input_schema'=>self::schema()]], 'tool_choice'=>['type'=>'auto'],
       'messages'=>[['role'=>'user', 'content'=>[['type'=>'image', 'source'=>['type'=>'base64', 'media_type'=>'image/jpeg', 'data'=>$b64]], ['type'=>'text', 'text'=>$txt]]]]];
     $res = null; $err = '';
     for ($try = 0; $try < 2; $try++) {
