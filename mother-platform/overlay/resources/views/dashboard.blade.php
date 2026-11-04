@@ -85,6 +85,7 @@ $qs = fn($extra = []) => http_build_query(array_filter(array_merge(['store'=>$st
 .dx-sk .card{position:relative;overflow:hidden}.dx-sk .card::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.75) 50%,transparent 70%);animation:dxs 1s infinite;transform:translateX(-100%)}
 @keyframes dxs{to{transform:translateX(100%)}}
 .dx-rep{margin-top:10px;padding-top:10px;border-top:1px solid #F1F3F6}.dx-lv{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:10px}.dx-lv a{border-radius:9px;padding:6px 4px;text-align:center;text-decoration:none;display:flex;flex-direction:column;line-height:1.2}.dx-lv b{font-size:15px}.dx-lv span{font-size:10.5px;font-weight:700}
+.dx-crh{display:flex;gap:10px;align-items:baseline}.dx-crg{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}.dx-crg>div{background:#F8FAFC;border:1px solid #EEF1F5;border-radius:10px;padding:7px 10px;display:flex;flex-direction:column}.dx-crg b{font-size:16px}.dx-crg span{font-size:11px;color:#6B7280}.dx-cro{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;margin-top:10px;padding-top:8px;border-top:1px solid #F1F3F6}@media (max-width:900px){.dx-crg{grid-template-columns:repeat(3,minmax(0,1fr))}}@media (max-width:560px){.dx-crg{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .dx-empty{color:#9CA3AF;font-size:12px;padding:4px 0}
 @media (max-width:1280px){.dx-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}.dx-pipe{grid-template-columns:repeat(6,minmax(0,1fr))}}
 @media (max-width:1000px){.dx-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.dx-3{grid-template-columns:repeat(2,minmax(0,1fr))}.dx-2{grid-template-columns:minmax(0,1fr)}}
@@ -188,9 +189,20 @@ $__am = max(1, $__at ? $__at[0]['customers'] : 1);
 @endif
 
 <section class="dx-p">
-  <div class="card" @if($storeList->count() <= 1) style="grid-column:1/-1" @endif><div class="head"><h2>Courier Performance</h2><a class="more" href="/admin/courier-dashboard">Open →</a></div>
-    @forelse($couriers as [$cn,$cp,$cs,$cdl,$crt])<a href="/admin/courier-dashboard" style="display:block;margin:7px 0"><div style="display:flex;gap:6px;font-size:12px"><b style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ $cn }}</b><b style="color:{{ $cs>=80 ? '#166534' : ($cs>=60 ? '#B45309' : '#B91C1C') }}">{{ $cs }}%</b></div><div class="dx-bar" style="margin:3px 0"><i style="width:{{ min(100,$cs) }}%;background:{{ $cs>=80 ? '#16A34A' : ($cs>=60 ? '#F59E0B' : '#DC2626') }}"></i></div><span class="muted">{{ $cp }} parcels · {{ $cdl }} delivered · {{ $crt }} returned</span></a>
-    @empty<div class="dx-empty">No courier data for this period.</div>@endforelse</div>
+  <div class="card dx-cr" style="grid-column:1/-1"><div class="head"><h2>Courier Performance <small style="font-weight:500;color:#6B7280">· {{ $label }}</small></h2><a class="more" href="/admin/courier-dashboard">Open courier dashboard →</a></div>
+    @php $__cn = fn($v) => '৳'.number_format($v); @endphp
+    @forelse($cov['couriers'] ?? [] as $__c)
+    <div class="dx-crh"><b style="font-size:14px">{{ $__c['name'] }}</b><span class="muted">{{ number_format($__c['total']) }} parcels</span><b style="margin-left:auto;color:{{ ($__c['success'] ?? 0) >= 90 ? '#166534' : (($__c['success'] ?? 0) >= 75 ? '#C2410C' : '#A3281E') }}">{{ $__c['success'] !== null ? $__c['success'].'% success' : 'no finished parcels' }}</b></div>
+    <div class="dx-bar" style="margin:4px 0 10px"><i style="width:{{ min(100, $__c['success'] ?? 0) }}%;background:#16A34A"></i></div>
+    <div class="dx-crg">
+      @foreach([['Pickup requested',$__c['pickup'],'#1D5FA8'],['In transit',$__c['transit'],'#1D5FA8'],['At hub',$__c['hub'],'#1D5FA8'],['Out for delivery',$__c['ofd'],'#0E7490'],['Delivered',$__c['delivered'],'#166534'],['Returned',$__c['returned'],'#A3281E'],['Failed / Hold',$__c['failed'],'#C2410C'],['Cancelled',$__c['cancelled'],'#6B7280']] as [$__l,$__v,$__k])<div><b style="color:{{ $__k }}">{{ number_format($__v) }}</b><span>{{ $__l }}</span></div>@endforeach
+      <div><b>{{ $__c['avg'] !== null ? $__c['avg'].' d' : '—' }}</b><span>Avg delivery time</span></div>
+      <div><b>{{ $__cn($__c['cod']) }}</b><span>COD collected</span></div>
+      <div><b style="color:#C2410C">{{ $__cn($__c['pending']) }}</b><span>Payment pending</span></div>
+      <div><b style="color:#166534">{{ $__cn($__c['received']) }}</b><span>Payment received</span></div>
+    </div>
+    @empty<div class="dx-empty">No active courier. Turn one on in Courier settings.</div>@endforelse
+    @if(!empty($cov['couriers']))<div class="dx-cro"><span class="muted">Return outcomes:</span>@foreach(['Partial Return','Regular Return','Paid Return','Exchange'] as $__o)<span><b>{{ number_format($cov['outcomes'][$__o] ?? 0) }}</b> {{ $__o }}</span>@endforeach<span style="margin-left:auto">@if(($cov['flagged'] ?? 0) > 0)<a href="/admin/courier-dashboard" style="color:#B45309;font-weight:700">⚠ {{ $cov['flagged'] }} flagged</a>@else<span class="muted">No flagged parcels</span>@endif</span></div>@endif</div>
   @if($storeList->count() > 1)
   <div class="card"><div class="head"><h2>Store Performance</h2><a class="more" href="/admin/analytics">Compare →</a></div>
     @php $smx = max(1, $storePerf->max(2) ?? 1); @endphp

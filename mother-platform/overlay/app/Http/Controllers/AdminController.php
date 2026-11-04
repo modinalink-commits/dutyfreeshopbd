@@ -126,6 +126,7 @@ class AdminController extends Controller {
     $fromUtc = $A::filters(['from'=>$f['from'], 'to'=>$f['to']]); $startUtc = \Carbon\Carbon::parse($f['from'], $tz)->startOfDay()->utc();
     $phones = $safe(fn() => $oq()->where('created_at','>=',$startUtc)->whereNotIn('status',['Cancel'])->distinct()->pluck('phone')->filter()->values(), collect());
     $ret = $phones->isEmpty() ? 0 : DB::table('orders')->whereIn('phone', $phones)->where('created_at','<',$startUtc)->distinct()->count('phone');
+    $cov = $safe(fn() => \App\Support\CourierOverview::get($startUtc->format('Y-m-d H:i:s'), \Carbon\Carbon::parse($f['to'], $tz)->endOfDay()->utc()->format('Y-m-d H:i:s')), ['couriers'=>[], 'outcomes'=>[], 'flagged'=>0]);
     $cust = ['new'=>max(0, $phones->count()-$ret), 'returning'=>$ret, 'vip'=>$vipN, 'member'=>$memN];
     $cx = $safe(fn() => \Illuminate\Support\Facades\Cache::remember('dash.cust.v1', 600, function () {
       $r = DB::selectOne("select count(*) as n, coalesce(sum(case when c > 1 then 1 else 0 end),0) as rep from (select phone, count(*) as c from orders where status not in ('Cancel','Incomplete') and phone is not null and phone <> '' group by phone) t");
@@ -146,7 +147,7 @@ class AdminController extends Controller {
     $safe(function () use (&$feed) { if (\Illuminate\Support\Facades\Schema::hasTable('call_logs')) foreach (DB::table('call_logs')->orderByDesc('id')->limit(3)->get() as $c) $feed->push(['call', ucfirst($c->direction).' call · '.($c->customer_name ?: $c->phone).' · '.$c->status, $c->started_at ?? $c->created_at, '/admin/call-center/history']); });
     $feed = $feed->filter(fn($e) => $e[2])->sortByDesc(fn($e) => \Carbon\Carbon::parse($e[2])->timestamp)->take(10)->values()->map(fn($e) => [$e[0], $e[1], \Carbon\Carbon::parse($e[2])->timezone($tz)->diffForHumans(), \Carbon\Carbon::parse($e[2])->timezone($tz)->format('d M, h:i A'), $e[3]]);
     $storeList = $safe(fn() => DB::table('stores')->where('active',true)->orderBy('name')->get(['id','name']), collect());
-    return view('dashboard', compact('pipe5','pipeAct','ch','channels','topCust','storePerf','now','kpis','stores','max','counts','orders','bad','alerts','health','range','label','trend','topProducts','cats','couriers','chatUnread','goal','cust','calls','risk','feed','storeList','storeId','canFin','prev','f','incOpen','newN','stale') + ['isCustom'=>$range === 'custom']);
+    return view('dashboard', compact('pipe5','pipeAct','ch','channels','topCust','storePerf','now','kpis','stores','max','counts','orders','bad','alerts','health','range','label','trend','topProducts','cats','couriers','chatUnread','goal','cust','cov','calls','risk','feed','storeList','storeId','canFin','prev','f','incOpen','newN','stale') + ['isCustom'=>$range === 'custom']);
   }
   public function orders(Request $r) { \App\Support\CourierSync::auto(); \App\Support\LateDelivery::auto(); \App\Support\PaymentSettle::auto();
     $isInc = $r->input('status') === 'Incomplete'; $q = DB::table('orders'); $q->orderByDesc('created_at')->orderByDesc('id'); // strict chronological: no batch/status/invoice-match priority

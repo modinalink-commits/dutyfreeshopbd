@@ -1,11 +1,11 @@
 fe43f8b6cb422cca81ee18b74d3972f77e7852de database/migrations/2026_10_31_000001_mother_core.php
 5e63f76bf4397824b9bf177a5dd46775e0f91388 routes/web.php
 5ec9cde3d13c963d0d55a626e10bf2e39e36a691 app/Models/Mother.php
-9e525ffaf0f92e96204cb50b1c94ed2285ca347c app/Http/Controllers/AdminController.php
+9cf5a792cc81bca9805e57e7f8f3da50e335c23f app/Http/Controllers/AdminController.php
 688025b06769b048f2631fea804aab3bce12b7e8 app/Console/Commands/MotherInstall.php
 8fddb126bc92c08b6bf1c1b6ec5ac9450bf8881c resources/views/layout.blade.php
 7ba1a8252b36e7db33e40d8be3ea5ec2cd241fb7 resources/views/login.blade.php
-728244251740aee874c5b334c831902e95f8ae08 resources/views/dashboard.blade.php
+a2b45ae5a3c6ff8e47dbf8933618d76ee6b70574 resources/views/dashboard.blade.php
 5a33f90169374bdc398d634168f705855a740c5c resources/views/orders.blade.php
 a574e0a91def69038501f940a89f76e287b4a25d resources/views/admin/orders/partials/status-tabs.blade.php
 5676ff7fb9f7b154fe75d44e82cb1286122a8a21 resources/views/order_new.blade.php
@@ -548,3 +548,4 @@ a6aac3b6e8ca7ed29cb37afc5da56549afee5c81 resources/views/store/district_slide.bl
 b0469f31ccbcb5b2a853d2fd42ed0239c0a0c6a7 app/Support/AreaOrders.php
 aeaf4abc14e93fee17a03b91756a3b2eaad72f37 app/Http/Controllers/AreaOrdersController.php
 478408c9e7349b4099e9c5b47b8eb25a9b2c462e resources/views/area_orders.blade.php
+e47d68a916e1a398d15848fd191522f14511fd26 app/Support/CourierOverview.php
