@@ -32,8 +32,8 @@
 .dm .tk .tx{min-width:0;flex:1}
 .dm .tk .nm{font-size:max(13px,2.3cqw);line-height:1.1;font-weight:700;color:#0B2A5B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dm .tk .sb{font-size:max(9px,1.2cqw);line-height:1.35;font-weight:500;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dm .tk .ct{flex:none;white-space:nowrap;text-align:right;font-weight:700;color:#0B3D91;font-size:max(11px,1.7cqw);line-height:1.1}
-.dm .tk .ct small{display:block;font-size:max(8px,.95cqw);font-weight:500;color:#64748B}
+.dm .tk .dct{flex:none;white-space:nowrap;text-align:right;font-weight:700;color:#0B3D91;font-size:max(11px,1.7cqw);line-height:1.1}
+.dm .tk .dct small{display:block;font-size:max(8px,.95cqw);font-weight:500;color:#64748B}
 .dm .tk .pb{position:absolute;left:1.6cqw;right:1.6cqw;bottom:.55cqw;height:.3cqw;border-radius:9cqw;background:rgba(11,61,145,.12);overflow:hidden}
 .dm .tk .pb i{display:block;height:100%;width:0;background:linear-gradient(90deg,#E6197A,#FF7A00);transition:width .12s linear}
 .dm .tk .sw.pop,.dm .tk .nm.pop,.dm .tk .sb.pop{animation:dmPop .3s ease-out}
@@ -63,7 +63,7 @@
 .dm .map{order:3;width:62cqw}
 .dm .tk{order:4;width:100%;height:15cqw;padding:0 3.4cqw;gap:3cqw;border-radius:3cqw}
 .dm .tk .sw{width:7cqw;height:7cqw}
-.dm .tk .nm{font-size:5.6cqw}.dm .tk .sb{font-size:3cqw}.dm .tk .ct{font-size:4.2cqw}.dm .tk .ct small{font-size:2.6cqw}
+.dm .tk .nm{font-size:5.6cqw}.dm .tk .sb{font-size:3cqw}.dm .tk .dct{font-size:4.2cqw}.dm .tk .dct small{font-size:2.6cqw}
 .dm .tk .pb{left:3.4cqw;right:3.4cqw;bottom:1.2cqw;height:.8cqw}
 .dm .chips{order:5;height:8cqw;padding:0 4.6cqw;gap:2.4cqw;font-size:3.5cqw}.dm .chips i{width:1.2cqw;height:1.2cqw}
 .dm .ct2{order:6;height:8cqw;padding:0 4cqw;gap:3cqw;font-size:3.5cqw}.dm .ct2 svg{width:4cqw;height:4cqw}.dm .ct2 s{height:4cqw}
@@ -78,7 +78,7 @@
 <svg class="route" viewBox="0 0 210 90" aria-hidden="true"><path d="M4 78C48 86 70 30 118 40S178 14 206 8"/><circle cx="206" cy="8" r="4.5"/></svg>
 <div class="h"><span class="h1">সারা বাংলাদেশ</span><span class="h2">হোম ডেলিভারি</span></div>
 <div class="chips"><span>৮ বিভাগ</span><i></i><span>৬৪ জেলা</span><i></i><span>৪৯০+ থানা</span></div>
-<div class="tk" aria-live="off"><span class="sw"></span><div class="tx"><div class="nm">সারা বাংলাদেশে</div><div class="sb">প্রতিটি জেলায় ক্যাশ অন ডেলিভারি</div></div><div class="ct"><span class="n">০</span> / ৬৪<small>জেলা</small></div><span class="pb"><i></i></span></div>
+<div class="tk" aria-live="off"><span class="sw"></span><div class="tx"><div class="nm">সারা বাংলাদেশে</div><div class="sb">প্রতিটি জেলায় ক্যাশ অন ডেলিভারি</div></div><div class="dct"><span class="n">০</span> / ৬৪<small>জেলা</small></div><span class="pb"><i></i></span></div>
 <div class="ct2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>01871600600<s></s><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg>www.dutyfreebd.com</div>
 <svg class="map" viewBox="0 0 408.8 579.5" aria-hidden="true"></svg>
 </div></div>
