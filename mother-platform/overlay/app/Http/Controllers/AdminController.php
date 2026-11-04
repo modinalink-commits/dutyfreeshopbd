@@ -165,8 +165,8 @@ class AdminController extends Controller {
     $cq = DB::table('orders')->select('status', DB::raw('count(*) c'), DB::raw('coalesce(sum(total),0) v'))->groupBy('status'); if ($range) { if ($range[0]) $cq->where('created_at', '>=', $range[0]); if ($range[1]) $cq->where('created_at', '<=', $range[1]); } $__cr = $cq->get(); $counts = $__cr->pluck('c','status'); $vals = $__cr->pluck('v','status');
     $intel = \App\Support\CustomerIntel::forOrders($orders->items());
     $__ids = collect($orders->items())->pluck('id')->all(); $dupHint = $__ids ? \App\Support\OrderDedupe::possible($__ids) : []; $dupInv = $__ids ? DB::table('orders as d')->join('orders as p','p.id','=','d.duplicate_of_order_id')->whereIn('d.id', $__ids)->pluck('p.invoice','d.id')->all() : [];
-    $cmLast = []; $phs = collect($orders->items())->pluck('phone')->filter()->unique()->all();
-    if ($phs) foreach (DB::table('order_staff_comments as c')->join('orders as oo','oo.id','=','c.order_id')->whereIn('oo.phone',$phs)->orderByDesc('c.id')->select('c.body','oo.phone')->get() as $c) { if (!isset($cmLast[$c->phone])) $cmLast[$c->phone] = $c->body; }
+    $cmLast = []; // a note belongs to the order it was written on: last comment per order id
+    if ($__ids) foreach (DB::table('order_staff_comments')->whereIn('order_id', $__ids)->orderByDesc('id')->select('body','order_id')->get() as $c) { if (!isset($cmLast[$c->order_id])) $cmLast[$c->order_id] = $c->body; }
     $incOpen = (int)DB::table('incomplete_orders')->where('status', 'open')->count(); try { $vals['Incomplete'] = (float)DB::table('incomplete_orders')->where('status', 'open')->sum('total'); } catch (\Throwable $e) { $vals['Incomplete'] = 0; }
     return view('orders', compact('orders','counts','vals','items','per','intel','incOpen','cmLast','dupHint','dupInv') + ['isInc'=>$isInc] + ($isInc ? \App\Http\Controllers\IncompleteController::data($r, $range) : \App\Http\Controllers\IncompleteController::mix($r, $orders, $range)));
   }
@@ -285,7 +285,7 @@ class AdminController extends Controller {
     $items = DB::table('order_items as i')->leftJoin('products as p','p.id','=','i.product_id')->where('i.order_id',$id)->select('i.*','p.sku as sku', DB::raw('coalesce(p.image,(select pp.image from products pp where pp.name = i.name limit 1)) as image'))->get();
     $logs = DB::table('order_status_logs')->where('order_id',$id)->orderBy('id')->get();
     $ci = \App\Support\CustomerIntel::forOrders([$o])[$o->id];
-    $comments = DB::table('order_staff_comments as c')->join('orders as oo','oo.id','=','c.order_id')->where(fn($w) => $w->where('c.order_id',$id)->orWhere(fn($x) => $x->where('oo.phone',$o->phone)->whereNotNull('oo.phone')->where('oo.phone','<>','')))->orderByDesc('c.id')->select('c.*','oo.invoice as inv')->get();
+    $comments = DB::table('order_staff_comments as c')->join('orders as oo','oo.id','=','c.order_id')->where('c.order_id',$id)->orderByDesc('c.id')->select('c.*','oo.invoice as inv')->get();
     $prints = \Illuminate\Support\Facades\Schema::hasTable('order_print_logs') ? DB::table('order_print_logs')->where('order_id',$id)->orderByDesc('printed_at')->orderByDesc('id')->get() : collect();
     $ops = \Illuminate\Support\Facades\Schema::hasTable('order_payments') ? DB::table('order_payments')->where('order_id',$id)->orderByDesc('id')->get() : collect();
     return view('order_show', compact('o','items','logs','ci','comments','prints','ops'));
@@ -309,7 +309,7 @@ class AdminController extends Controller {
   }
   public static function commentPayload($id): array {
     $o = DB::table('orders')->find($id); $ph = (string)($o->phone ?? '');
-    $rows = DB::table('order_staff_comments as c')->join('orders as oo','oo.id','=','c.order_id')->where(fn($w) => $w->where('c.order_id',$id)->orWhere(fn($x) => $x->where('oo.phone',$ph)->where('oo.phone','<>','')))->orderByDesc('c.id')->limit(50)->select('c.*','oo.invoice as inv')->get();
+    $rows = DB::table('order_staff_comments as c')->join('orders as oo','oo.id','=','c.order_id')->where('c.order_id',$id)->orderByDesc('c.id')->limit(50)->select('c.*','oo.invoice as inv')->get();
     return ['inv'=>$o->invoice ?? '', 'last'=>$rows->first()->body ?? '', 'n'=>$rows->count(), 'rows'=>$rows->map(fn($c) => ['t'=>\Carbon\Carbon::parse($c->created_at)->timezone('Asia/Dhaka')->format('d M Y, h:i A'), 'by'=>$c->user_name, 'cat'=>$c->category, 'body'=>$c->body, 'inv'=>$c->order_id == $id ? null : $c->inv])->all()];
   }
   public function orderComments($id) { abort_unless(DB::table('orders')->where('id',$id)->exists(), 404); return response()->json(self::commentPayload($id)); }
