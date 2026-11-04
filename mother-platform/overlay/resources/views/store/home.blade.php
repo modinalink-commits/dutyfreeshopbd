@@ -82,6 +82,46 @@ body .w [data-cr]{--pv:6;--g:10px;display:flex;gap:var(--g);padding:0;overflow-x
 .osl .sl-t>a:nth-child(even) img{animation:oslDrift 11s ease-in-out infinite alternate}
 @keyframes oslTw{0%,100%{opacity:0;transform:scale(.8)}50%{opacity:.85;transform:scale(1)}}
 @keyframes oslDrift{from{transform:scale(1)}to{transform:scale(1.03)}}
+/* animated product banners (555 / Dunhill): poster + .mp4 twin share one 1266x650 frame, so nothing is stretched or cropped */
+.osl .sl-t>a.osv{aspect-ratio:1266/650;background:#0b1220}
+.osl .osv::before,.osl .osv::after{display:none!important}
+.osl .osv img,.osl .osvv{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;border-radius:inherit;animation:none!important}
+.osl .osvv{opacity:0;transition:opacity .5s;z-index:1}.osl .osvv.on{opacity:1}
+/* Recently ordered - modern card strip */
+body .sec-lv .lvh{position:relative;gap:4px}
+body .sec-lv .chip{background:#ECFDF5;color:#047857;border:1px solid #A7F3D0;font-size:11px;letter-spacing:.08em;padding:4px 12px 4px 10px}
+body .sec-lv .chip .dot,body .sec-lv .lo .tg .dot{position:relative;background:#10B981}
+body .sec-lv .chip .dot:after,body .sec-lv .lo .tg .dot:after{content:"";position:absolute;inset:-3px;border-radius:50%;border:2px solid #10B981;opacity:0;animation:lvRip 1.9s ease-out infinite}
+@keyframes lvRip{0%{transform:scale(.5);opacity:.9}100%{transform:scale(1.9);opacity:0}}
+body .sec-lv .lvh h2{font-size:28px;font-weight:800;letter-spacing:-.015em;line-height:1.15;margin-top:2px}
+body .sec-lv .lvh h2 em{font-style:normal;background:linear-gradient(90deg,var(--o),#FF9A55);-webkit-background-clip:text;background-clip:text;color:transparent}
+body .sec-lv .lvc{position:absolute;right:0;bottom:2px;font-size:12px;color:var(--mut);background:#F4F6FA;border-radius:20px;padding:5px 13px}
+body .sec-lv .lvc b{color:var(--n);font-weight:800}
+body .sec-lv .lo{position:relative;gap:0;animation:lvIn .6s cubic-bezier(.2,.8,.2,1) both}
+body .sec-lv .lo:nth-child(2){animation-delay:.06s}body .sec-lv .lo:nth-child(3){animation-delay:.12s}body .sec-lv .lo:nth-child(4){animation-delay:.18s}body .sec-lv .lo:nth-child(5){animation-delay:.24s}body .sec-lv .lo:nth-child(n+6){animation-delay:.3s}
+@keyframes lvIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+body .sec-lv .lo .bx{border:1px solid #EDF0F5;border-radius:18px;background:linear-gradient(180deg,#fff,#FAFBFD);padding:10px 10px 12px;gap:7px;box-shadow:0 1px 2px rgba(16,24,40,.04),0 10px 24px -12px rgba(16,24,40,.16);transition:transform .3s cubic-bezier(.2,.8,.2,1),box-shadow .3s,border-color .3s;text-decoration:none}
+body .sec-lv .lo .bx:hover{transform:translateY(-4px);border-color:#FFD2B5;box-shadow:0 2px 4px rgba(16,24,40,.05),0 18px 32px -14px rgba(242,107,33,.32)}
+body .sec-lv .lo .tg{position:absolute;z-index:2;top:19px;left:19px;margin:0;background:rgba(255,255,255,.94);backdrop-filter:blur(6px);color:#065F46;font-size:11px;font-weight:700;padding:4px 10px 4px 9px;box-shadow:0 3px 10px rgba(16,24,40,.12)}
+body .sec-lv .lo .im{height:124px;border-radius:13px;background:radial-gradient(circle at 50% 38%,#fff 0,#F0F4F9 72%)}
+body .sec-lv .lo .im img{transition:transform .45s cubic-bezier(.2,.8,.2,1);filter:drop-shadow(0 6px 8px rgba(16,24,40,.16))}
+body .sec-lv .lo .bx:hover .im img{transform:scale(1.07) translateY(-2px)}
+body .sec-lv .lo .wh{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;color:#047857;letter-spacing:.01em}
+body .sec-lv .lo .wh:before{content:"";width:13px;height:13px;border-radius:50%;background:#10B981 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7'/%3E%3C/svg%3E") center/9px no-repeat}
+body .sec-lv .lo .nm{font-size:13px;font-weight:600;line-height:1.35;height:35px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+body .sec-lv .lo .rw{margin-top:1px}
+body .sec-lv .lo .rw b{font-size:17px;font-weight:800;letter-spacing:-.01em}
+body .sec-lv .lo .rw span{background:var(--n);color:#fff;border-radius:20px;padding:2px 9px;font-size:11px;font-weight:700}
+body .sec-lv .lo .dl{align-self:flex-start;background:#ECFDF5;color:#047857;font-size:10.5px;font-weight:700;border-radius:20px;padding:3px 10px}
+@media (max-width:760px){
+ body .sec-lv .lvh h2{font-size:17px;margin:3px 0 7px}body .sec-lv .lvc{display:none}
+ body .sec-lv .lo .bx{border-radius:12px;padding:5px 5px 7px;gap:4px}
+ body .sec-lv .lo .tg{top:10px;left:10px;font-size:8.5px;padding:2px 7px 2px 6px}body .sec-lv .lo .tg .dot{display:inline-block;width:5px;height:5px}
+ body .sec-lv .lo .im{height:auto;aspect-ratio:1/1;border-radius:9px}
+ body .sec-lv .lo .wh{display:none}body .sec-lv .lo .nm{font-size:10.5px;height:2.7em;line-height:1.35}
+ body .sec-lv .lo .rw b{font-size:12.5px}
+}
+@media (prefers-reduced-motion:reduce){body .sec-lv .lo,body .sec-lv .chip .dot:after,body .sec-lv .lo .tg .dot:after{animation:none}}
 @media (max-width:760px){.osl .sl-t>a:hover{transform:none}}
 @media (prefers-reduced-motion:reduce){.osl .sl-t>a::before,.osl .sl-t>a::after,.osl .sl-t>a img{animation:none!important}.osl .sl-t>a::before,.osl .sl-t>a::after{opacity:0}}
 </style>
@@ -206,12 +246,12 @@ if(document.readyState==='complete')setTimeout(first,300);else addEventListener(
 
 @if($live->count())
 <div class="hst-p" style="min-height:260px"></div><template class="hst">
-<div class="w sec-lv" style="padding-top:24px;display:flex;flex-direction:column;gap:12px"><div class="lvh"><span class="chip"><span class="dot"></span>LIVE ORDERS</span><h2>Recently ordered</h2><span class="su">Bought by shoppers across Bangladesh, updated every minute</span></div>
+<div class="w sec-lv" style="padding-top:24px;display:flex;flex-direction:column;gap:12px"><div class="lvh"><span class="chip"><span class="dot"></span>LIVE ORDERS</span><h2>Recently <em>ordered</em></h2><span class="su">Bought by shoppers across Bangladesh, updated every minute</span><span class="lvc"><b>{{ $live->count() }}</b> latest orders</span></div>
 <div class="lg2" data-cr>@foreach($live as $l)
 @php $lu = $l->pid ? \App\Http\Controllers\StoreController::url((object)['id'=>$l->pid,'ext_id'=>$l->ext_id,'name'=>$l->pname,'category_id'=>$l->pcat,'sub'=>$l->psub,'sub_sub'=>$l->psubsub ?? null,'path_slug'=>$l->pslug]) : null; @endphp
 <div class="lo"><span class="tg"><span class="dot"></span>{{ \Carbon\Carbon::parse($l->created_at)->diffForHumans(null, true) }} ago</span><a class="bx" @if($lu) href="{{ $lu }}" @endif>
 <div class="im">@if($l->image)<img src="{{ $l->image }}" @php $__ss = \App\Support\Img::srcset($l->image); @endphp @if($__ss) srcset="{{ $__ss }}" sizes="110px" @endif alt="{{ $l->name }}" width="110" height="110" loading="lazy" draggable="false">@endif</div>
-<span class="wh">Recent order</span><span class="nm">{{ $l->name }}</span>
+<span class="wh">Verified order</span><span class="nm">{{ $l->name }}</span>
 <div class="rw"><b>{{ number_format($l->price) }} TK</b><span>x{{ $l->qty }}</span></div><span class="dl">{{ (float)$l->shipping > 0 ? 'Delivery ৳'.number_format($l->shipping) : 'FREE delivery' }}</span></a></div>
 @endforeach</div></div>
 </template>
@@ -231,7 +271,11 @@ if(document.readyState==='complete')setTimeout(first,300);else addEventListener(
 @endif
 
 @if($offerSlides->count())
-<div class="w osl" style="padding-top:34px"><div class="sld" data-auto="5000"><div class="sl-t">@foreach($offerSlides as $os)<a href="{{ $os->link ?: '#flash' }}"><img src="{{ $os->image }}" alt="DutyFree BD offer" loading="lazy"></a>@endforeach</div></div></div>
+<div class="w osl" style="padding-top:34px"><div class="sld" data-auto="5000"><div class="sl-t">@foreach($offerSlides as $os)
+@php $__om = (is_string($os->image) && str_starts_with($os->image, '/banners/') && is_file(public_path(preg_replace('/\.\w+$/', '.mp4', ltrim($os->image, '/'))))) ? preg_replace('/\.\w+$/', '.mp4', $os->image) : null; @endphp
+<a href="{{ $os->link ?: '#flash' }}"@if($__om) class="osv"@endif><img src="{{ $os->image }}" alt="DutyFree BD offer" loading="lazy" width="1266" height="650">@if($__om)<video class="osvv" data-src="{{ $__om }}" muted loop playsinline preload="none" aria-hidden="true" tabindex="-1"></video>@endif</a>
+@endforeach</div></div></div>
+<script>(function(){var vs=document.querySelectorAll('.osvv');if(!vs.length||(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches))return;function go(v){if(!v.getAttribute('src'))v.src=v.getAttribute('data-src');var p=v.play();if(p&&p.then)p.then(function(){v.classList.add('on')}).catch(function(){})}if('IntersectionObserver' in window){var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting)go(e.target);else e.target.pause()})},{rootMargin:'120px'});vs.forEach(function(v){io.observe(v)})}else vs.forEach(go)})();</script>
 @endif
 
 @if($s['home_cat_sections']==='1')

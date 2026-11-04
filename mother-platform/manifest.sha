@@ -53,7 +53,7 @@ c957f0ac6aa9920734875d5f61045ddae290f81b app/Http/Controllers/StoreController.ph
 1f99716fe863f3dbfe905a8c96934ea6cdc625d5 resources/views/store/layout.blade.php
 0700fabbcd111911245ddc06b98fdd1edd272475 resources/views/store/card.blade.php
 ce0d1f8552836199c028ddef8806c72a2d10ad19 resources/views/store/home_sec.blade.php
-0f36e9eb3d402044d9fc1679c3f75d5e41227631 resources/views/store/home.blade.php
+554f59623ce1daad8f9f57557d6b3485c5cab13d resources/views/store/home.blade.php
 0e5fb9160b143a0aae0c56fedd841bcdf8c5283c resources/views/store/category.blade.php
 d016ff5e3703cea2f6adab94a18b3d0e5af4c966 resources/views/store/product.blade.php
 7ad9d9502d41f54d6784414a9aa3f16a8ab0ec13 resources/views/store/search.blade.php
@@ -557,3 +557,8 @@ e6350c2225c623f0df5d6fd560fb0d520c26e4b8 resources/views/store/slide_item.blade.
 fe31007aabb568e837441cdf7be182f917ec185b public/banners/brands-anim.mp4
 dae522a21478b3afe3e06aa0654d77c689247704 public/banners/brands-anim.webp
 a5331756876684f8dd50a9a0daee9b1bbe05a8de database/migrations/2026_11_04_000096_brands_slide.php
+c4dc71078c6a603272c67b223f917c103e802dc5 public/banners/offer-555.mp4
+4d7d1106215aaab71acd65633cd1f6e5f432b07c public/banners/offer-555.webp
+e6324e52acb33ee04c6c63128985a2c79f416e58 public/banners/offer-dunhill.mp4
+5d1d0a2cf7cfd9e54d083a7639a0ab069d1a29f6 public/banners/offer-dunhill.webp
+0e3e7a1159d3f8ec71195b3af2b86a92dec998b8 database/migrations/2026_11_04_000100_offer_banners_555_dunhill.php

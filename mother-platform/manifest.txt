@@ -557,3 +557,8 @@ resources/views/store/slide_item.blade.php
 public/banners/brands-anim.mp4
 public/banners/brands-anim.webp
 database/migrations/2026_11_04_000096_brands_slide.php
+public/banners/offer-555.mp4
+public/banners/offer-555.webp
+public/banners/offer-dunhill.mp4
+public/banners/offer-dunhill.webp
+database/migrations/2026_11_04_000100_offer_banners_555_dunhill.php
