@@ -17,7 +17,7 @@ class IncompleteEditController extends Controller {
   private function phone(string $p): ?string { $d = preg_replace('/\D+/', '', $p); if (str_starts_with($d, '880')) $d = '0'.substr($d, 3); elseif (strlen($d) === 10 && $d[0] === '1') $d = '0'.$d; return preg_match('/^01[3-9]\d{8}$/', $d) ? $d : null; }
   /** The incomplete row seen as an order (same field names the order pages use). */
   public static function asOrder($r): object {
-    return (object)['id'=>(int)$r->id, 'invoice'=>$r->invoice ?: 'INC-'.str_pad($r->id, 5, '0', STR_PAD_LEFT), 'status'=>'Incomplete', 'customer_name'=>(string)$r->name, 'phone'=>(string)$r->phone, 'email'=>$r->email, 'address'=>(string)$r->address, 'district'=>(string)$r->district,
+    return (object)['id'=>(int)$r->id, 'invoice'=>$r->invoice ?: 'INC-'.str_pad($r->id, 5, '0', STR_PAD_LEFT), 'status'=>'Incomplete', 'customer_name'=>(string)$r->name, 'phone'=>(string)$r->phone, 'email'=>$r->email, 'address'=>(string)$r->address, 'addr_saved'=>!empty($r->addr_saved), 'district'=>(string)$r->district,
       'courier'=>$r->courier ?? '', 'consignment_id'=>$r->consignment ?? '', 'coupon'=>$r->coupon ?? '', 'discount'=>(float)$r->discount, 'shipping'=>(float)$r->shipping, 'total'=>(float)$r->total, 'paid_total'=>0, 'payment_status'=>'Unpaid', 'payment_method'=>(string)$r->pay_method,
       'created_at'=>$r->created_at, 'source'=>'Website checkout'];
   }

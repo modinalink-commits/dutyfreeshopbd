@@ -13,7 +13,12 @@ class IncompleteController extends Controller {
     $pids = []; foreach ($rows as $r) foreach (json_decode($r->items ?: '[]', true) ?: [] as $i) if (!empty($i['id'])) $pids[] = (int)$i['id'];
     $sku = $pids ? DB::table('products')->whereIn('id', array_unique($pids))->pluck('sku', 'id')->all() : [];
     $lc = DB::table('incomplete_activity')->where('kind', 'note')->whereIn('incomplete_id', $rows->pluck('id')->all())->orderBy('id')->pluck('body', 'incomplete_id');
-    foreach ($rows as $r) { $r->ci = $ci[$r->id] ?? null; $r->skus = $sku; $r->last_comment = $lc[$r->id] ?? null; }
+    // abandoned checkouts often stop right after the phone number: show the address we already hold for that customer (marked as saved), so no row has a blank location
+    $need = $rows->filter(fn($r) => trim((string)$r->address) === '' && trim((string)$r->phone) !== '')->pluck('phone')->unique()->values()->all();
+    $saved = [];
+    if ($need) { try { foreach (DB::select('select distinct on (phone) phone, address, customer_name from orders where phone in ('.implode(',', array_fill(0, count($need), '?')).") and address is not null and address <> '' order by phone, id desc", $need) as $x) $saved[$x->phone] = $x; } catch (\Throwable $e) { $saved = []; } }
+    foreach ($rows as $r) { $r->ci = $ci[$r->id] ?? null; $r->skus = $sku; $r->last_comment = $lc[$r->id] ?? null;
+      if (trim((string)$r->address) === '' && isset($saved[$r->phone])) { $r->address = $saved[$r->phone]->address; $r->addr_saved = true; if (trim((string)$r->name) === '') $r->name = $saved[$r->phone]->customer_name; } }
   }
   public static function imgs($rows): array {
     $ids = []; foreach ($rows as $o) foreach (json_decode($o->items ?: '[]', true) ?: [] as $i) if (!empty($i['id'])) $ids[] = (int)$i['id'];
