@@ -194,3 +194,14 @@ main table.ordt>tbody>tr>td{border-top:1px solid rgba(15,23,42,.045)!important;b
 main table.ordt>tbody>tr>td:last-child{border-right:1px solid rgba(15,23,42,.045)!important}
 aside nav{scrollbar-color:transparent transparent}aside nav:hover{scrollbar-color:#D5DBE3 transparent}
 </style>
+<style>
+/* 11. note + comment live under the status (one column) */
+table.ordt td.ost-cell,table.ordt td:has(>.stn){min-width:180px;max-width:230px;position:relative}
+.stn{margin-top:6px;position:relative;font-size:11.5px;line-height:1.35;color:#475569}
+.stn-r{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:210px}
+.stn-r b{font-weight:700;color:#334155;margin-right:3px}.stn-r.c b{color:#B45309}
+.stn-e{display:inline-flex;align-items:center;margin-top:3px;color:#94A3B8}.stn-e:hover{color:#1D4ED8}
+.stn-p{display:none;position:absolute;left:0;top:100%;z-index:30;width:260px;max-width:70vw;padding:9px 11px;background:#fff;border:1px solid #CBD5E1;border-radius:9px;box-shadow:0 8px 24px rgba(15,23,42,.14);color:#0F172A;font-size:12px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.stn-p b{font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:#64748B}
+.stn:hover .stn-p{display:block}
+</style>
