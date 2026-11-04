@@ -205,3 +205,4 @@ table.ordt td.ost-cell,table.ordt td:has(>.stn){min-width:180px;max-width:230px;
 .stn-p b{font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:#64748B}
 .stn:hover .stn-p{display:block}
 </style>
+<style>table.ordt td:has(>.stn:hover){z-index:50}.stn-p{background:#fff!important}</style>
