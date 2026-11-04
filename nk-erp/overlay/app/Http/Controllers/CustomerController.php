@@ -44,6 +44,7 @@ class CustomerController extends Controller
                 'cyl' => $sel->cylindersOut(),
                 'monthKg' => $monthKg,
                 'openOrders' => Sale::query()->where('customer_id', $sel->id)->where('stage', 'delivered')->whereColumn('paid', '<', 'total')->get(),
+                'oldest' => self::oldestDueDays($sel->id),
             ];
         }
 
@@ -54,6 +55,25 @@ class CustomerController extends Controller
             'edit' => $request->boolean('new') ? new Customer(['type' => 'retail', 'credit_limit' => 0]) : ($request->query('edit') ? Customer::find($request->query('edit')) : null),
             'brands' => Brand::query()->where('empty_collection', true)->orderBy('code')->get(),
         ]);
+    }
+
+    /** Days since the oldest bill that is still not covered by payments (first in, first out). */
+    public static function oldestDueDays(int $customerId): ?int
+    {
+        $rows = CustomerLedger::query()->where('customer_id', $customerId)->orderBy('id')->get();
+        $paid = (float) $rows->sum('credit'); $left = $paid;
+        foreach ($rows->where('debit', '>', 0) as $r) {
+            if ($left + 0.004 >= (float) $r->debit) { $left -= (float) $r->debit; continue; }
+            return (int) $r->created_at->startOfDay()->diffInDays(now()->startOfDay());
+        }
+        return null;
+    }
+
+    public function statement(Customer $customer)
+    {
+        $rows = CustomerLedger::query()->where('customer_id', $customer->id)->orderBy('id')->get();
+        $run = 0; $rows->each(function ($r) use (&$run) { $run += (float) $r->debit - (float) $r->credit; $r->running = $run; });
+        return view('statement_print', ['c' => $customer, 'rows' => $rows, 's' => \App\Models\Setting::query()->pluck('value', 'key'), 'cyl' => $customer->cylindersOut()]);
     }
 
     public function save(Request $request)

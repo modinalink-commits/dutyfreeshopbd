@@ -49,6 +49,7 @@ public/css/nk-table.css
 public/img/logo.webp
 public/js/nk-table.js
 resources/views/activity.blade.php
+resources/views/brand_report.blade.php
 resources/views/brands.blade.php
 resources/views/company/index.blade.php
 resources/views/company/rates.blade.php
@@ -67,6 +68,7 @@ resources/views/sales/print.blade.php
 resources/views/sales/show.blade.php
 resources/views/settings.blade.php
 resources/views/soon.blade.php
+resources/views/statement_print.blade.php
 resources/views/stock/create.blade.php
 resources/views/stock/history.blade.php
 resources/views/stock/index.blade.php

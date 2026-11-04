@@ -4,6 +4,8 @@
 <header style="display:flex;flex-wrap:wrap;align-items:center;gap:12px">
   <div style="flex-grow:1"><h1>Retail sale</h1><p class="sub">Counter and home delivery · next memo {{ $nextNo }}</p></div>
   <a class="btn" href="{{ route('sales.index') }}">Today's sales ({{ $todayCount }})</a>
+  <button class="btn" type="button" id="hold">Hold memo</button>
+  <button class="btn" type="button" id="resume" hidden>Resume held memo</button>
 </header>
 <form method="post" action="{{ route('pos.store') }}" id="pos" style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
   @csrf
@@ -34,7 +36,8 @@
     </div>
     <input type="hidden" name="customer_id" id="cid" value="{{ old('customer_id') }}">
     <span class="sub" id="cinfo">Walk-in customer. Type a saved phone to use a customer account.</span>
-    <label class="f">Delivery charge (৳)<input type="number" name="delivery_charge" id="dc" min="0" step="1" value="{{ old('delivery_charge', 0) }}"></label>
+    <label class="f">Delivery<select id="dtype"><option value="pickup">Counter pickup</option><option value="home">Home delivery</option></select></label>
+    <label class="f" id="dcBox" style="display:none">Home delivery charge (৳)<input type="number" name="delivery_charge" id="dc" min="0" step="1" value="{{ old('delivery_charge', (int) (\App\Models\Setting::get('home_delivery_charge') ?? 0)) }}"></label>
     <div id="lines" style="border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:10px"><span class="sub" style="text-align:center;padding:16px 0" id="emptyMsg">Tap a product to add it.</span></div>
     <div id="hidden"></div>
     <div class="grid2" style="grid-template-columns:repeat(2,minmax(0,1fr))">
@@ -88,6 +91,14 @@
     document.getElementById('save').disabled=!Object.keys(cart).length;
   }
   document.getElementById('emp').addEventListener('input',function(){this.dataset.touched=1;});
+  var dt=document.getElementById('dtype'),dcb=document.getElementById('dcBox'),dcI=document.getElementById('dc');var dcDefault=dcI.value;
+  dt.addEventListener('change',function(){var h=dt.value==='home';dcb.style.display=h?'':'none';dcI.value=h?dcDefault:0;draw();});dcI.value=0;
+  // Hold memo: keeps the cart on this computer only, so the counter can serve the next customer.
+  var KEY='nk_pos_hold';function held(){try{return JSON.parse(localStorage.getItem(KEY)||'null');}catch(e){return null;}}
+  function showResume(){document.getElementById('resume').hidden=!held();}
+  document.getElementById('hold').onclick=function(){if(!Object.keys(cart).length){alert('Nothing to hold.');return;}try{localStorage.setItem(KEY,JSON.stringify({cart:cart,phone:document.getElementById('phone').value,name:document.getElementById('cname').value}));}catch(e){alert('Could not hold on this browser.');return;}cart={};document.getElementById('phone').value='';document.getElementById('cname').value='';document.getElementById('cid').value='';draw();showResume();};
+  document.getElementById('resume').onclick=function(){var h=held();if(!h)return;cart=h.cart||{};document.getElementById('phone').value=h.phone||'';document.getElementById('cname').value=h.name||'';try{localStorage.removeItem(KEY);}catch(e){}document.getElementById('phone').dispatchEvent(new Event('input'));draw();showResume();};
+  showResume();
   ['dc','disc'].forEach(function(id){var e=document.getElementById(id);if(e)e.addEventListener('input',draw);});
   document.querySelectorAll('input[name=method]').forEach(function(r){r.addEventListener('change',function(){document.getElementById('paidBox').style.display=r.value==='due'&&r.checked?'':'none';});});
   var t=null;document.getElementById('phone').addEventListener('input',function(){var v=this.value;clearTimeout(t);t=setTimeout(function(){

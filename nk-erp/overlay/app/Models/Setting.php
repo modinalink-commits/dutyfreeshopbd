@@ -23,6 +23,7 @@ class Setting extends Model
         'trade_license' => 'Trade license no.',
         'tin' => 'TIN',
         'opening_hours' => 'Opening hours',
+        'home_delivery_charge' => 'Home delivery charge (৳)',
     ];
 
     public static function get(string $key, ?string $default = null): ?string

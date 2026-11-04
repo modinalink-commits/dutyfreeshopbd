@@ -44,6 +44,7 @@ Route::middleware(['auth', 'pwd'])->group(function () {
     Route::get('/stock', [StockController::class, 'index'])->name('stock.index');
     Route::get('/stock/history', [StockController::class, 'history'])->name('stock.history');
     Route::get('/brands', [BrandController::class, 'index'])->name('brands.index');
+    Route::get('/brands/report', [BrandController::class, 'report'])->name('brands.report');
 
     // Sales: counter staff (all roles except salesman) can sell; managers handle wholesale and voids.
     Route::middleware('role:super_admin,admin,manager,accounts')->group(function () {
@@ -55,6 +56,7 @@ Route::middleware(['auth', 'pwd'])->group(function () {
         Route::get('/sales/{sale}/print', [SaleController::class, 'print'])->name('sales.print');
         Route::get('/customers', [CustomerController::class, 'index'])->name('customers.index');
         Route::post('/customers', [CustomerController::class, 'save'])->name('customers.save');
+        Route::get('/customers/{customer}/statement', [CustomerController::class, 'statement'])->name('customers.statement');
         Route::post('/customers/{customer}/pay', [CustomerController::class, 'pay'])->name('customers.pay');
         Route::post('/customers/{customer}/empties', [CustomerController::class, 'empties'])->name('customers.empties');
         Route::get('/wholesale', [WholesaleController::class, 'index'])->name('wholesale.index');

@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class CompanyRate extends Model
 {
-    public const PARTS = ['target' => 'Target', 'slab' => 'Slab', 'exclusive' => 'Exclusive', 'deadline' => 'Deadline (lifted by deadline day)', 'late' => 'Late (lifted after deadline day)', 'dd' => 'DD'];
+    public const PARTS = ['target' => 'Target incentive', 'slab' => 'Slab incentive', 'exclusive' => 'Exclusive incentive', 'deadline' => '01–15 additional', 'late' => '16–31 additional', 'dd' => 'DD incentive'];
 
     protected $fillable = ['size_kg', 'from_date', 'do_rate', 'transport', 'target', 'slab', 'exclusive', 'deadline', 'late', 'dd'];
 

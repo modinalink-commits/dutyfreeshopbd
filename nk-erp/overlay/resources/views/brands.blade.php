@@ -5,7 +5,12 @@
 @php($canMove = in_array(auth()->user()->role, ['super_admin', 'admin', 'manager']))
 <header style="display:flex;flex-wrap:wrap;align-items:center;gap:12px">
   <div style="flex-grow:1"><h1>Cylinder brands</h1><p class="sub">Every brand keeps its own full and empty stock · brands not sold are kept for empty tracking</p></div>
-  <a class="btn" href="{{ route('stock.index') }}">Stock by brand</a>
+  <div style="display:flex;gap:6px;flex-wrap:wrap">
+    <a class="btn" href="{{ route('brands.report', ['type' => 'purchase']) }}">Purchase report</a>
+    <a class="btn" href="{{ route('brands.report', ['type' => 'sales']) }}">Sales report</a>
+    <a class="btn" href="{{ route('brands.report', ['type' => 'empty']) }}">Empty collection report</a>
+    <a class="btn" href="{{ route('brands.report', ['type' => 'stock']) }}">Stock by brand</a>
+  </div>
   @if($canEdit)<a class="btn pri" href="{{ route('brands.index') }}#brand-form">＋ Add brand</a>@endif
 </header>
 <section class="kpis">

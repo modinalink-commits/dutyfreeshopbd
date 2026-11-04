@@ -33,7 +33,8 @@ class WholesaleController extends Controller
                 'part' => [$delivered->filter(fn ($o) => (float) $o->paid > 0 && $o->due() > 0)->count(), '৳'.number_format($delivered->filter(fn ($o) => (float) $o->paid > 0)->sum(fn ($o) => $o->due())).' left'],
                 'closed' => [$delivered->filter(fn ($o) => $o->due() <= 0 && $o->created_at >= now()->startOfMonth())->count(), 'this month'],
             ],
-            'dealers' => Customer::query()->where('is_active', true)->whereIn('type', ['dealer', 'commercial'])->orderBy('name')->get(),
+            'dealers' => $dealers = Customer::query()->where('is_active', true)->whereIn('type', ['dealer', 'commercial'])->orderBy('name')->get(),
+            'dealerInfo' => $dealers->mapWithKeys(fn ($d) => [$d->id => ['due' => $d->due(), 'limit' => (float) $d->credit_limit, 'out' => array_sum($d->cylindersOut())]]),
             'products' => Product::query()->where('is_active', true)->whereIn('category', ['refill', 'new_package', 'accessory'])->orderBy('category')->orderBy('size_kg')->get(),
             'brands' => Brand::query()->where('empty_collection', true)->orderBy('code')->get(),
             'ownBrand' => Brand::query()->where('for_sale', true)->value('id'),
@@ -48,6 +49,8 @@ class WholesaleController extends Controller
             'discount' => ['nullable', 'numeric', 'min:0'],
             'vehicle' => ['nullable', 'string', 'max:60'],
             'note' => ['nullable', 'string', 'max:255'],
+            'empties_collect' => ['nullable', 'integer', 'min:0', 'max:100000'],
+            'print' => ['nullable', 'boolean'],
         ]);
         try {
             $sale = DB::transaction(function () use ($data, $request) {
@@ -58,7 +61,7 @@ class WholesaleController extends Controller
                 DB::table('sales')->lockForUpdate()->count();
                 $sale = Sale::create(['invoice_no' => Sale::nextNo('wholesale'), 'type' => 'wholesale', 'customer_id' => $data['customer_id'], 'stage' => 'waiting',
                     'subtotal' => $sub, 'discount' => $data['discount'] ?? 0, 'total' => $total, 'paid' => 0,
-                    'empties_expected' => array_sum(SalesService::refillBySize($lines)), 'vehicle' => $data['vehicle'] ?? null, 'note' => $data['note'] ?? null, 'created_by' => $request->user()->id]);
+                    'empties_expected' => isset($data['empties_collect']) ? (int) $data['empties_collect'] : array_sum(SalesService::refillBySize($lines)), 'vehicle' => $data['vehicle'] ?? null, 'note' => $data['note'] ?? null, 'created_by' => $request->user()->id]);
                 foreach ($lines as $l) {
                     SaleItem::create(['sale_id' => $sale->id, 'product_id' => $l['product']->id, 'description' => $l['product']->name, 'category' => $l['product']->category,
                         'brand_id' => $l['product']->brand_id, 'size_kg' => $l['product']->size_kg, 'qty' => $l['qty'], 'unit_price' => $l['price'], 'line_total' => $l['total']]);
@@ -69,6 +72,7 @@ class WholesaleController extends Controller
             return back()->withInput()->withErrors(['qty' => $e->getMessage()]);
         }
         AuditLog::record('wholesale_order', "{$sale->invoice_no} ৳{$sale->total}");
+        if (! empty($data['print'])) return redirect()->route('sales.print', [$sale, 'size' => 'a4', 'auto' => 1]);
         return redirect()->route('wholesale.index')->with('ok', "{$sale->invoice_no} created. Mark it loaded when it leaves the godown.");
     }
 

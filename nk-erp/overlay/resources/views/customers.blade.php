@@ -5,6 +5,7 @@
 @php($tk = fn ($n) => '৳'.number_format((float) $n))
 <header style="display:flex;flex-wrap:wrap;align-items:center;gap:12px">
   <div style="flex-grow:1"><h1>Customers &amp; dues</h1><p class="sub">Retail customers, dealers and their cylinders</p></div>
+  <button class="btn" type="button" disabled title="Turns on when the SMS gateway is set up in Invoices &amp; SMS">Send due SMS ({{ $counts['due'] }})</button>
   <a class="btn pri" href="{{ route('customers.index', ['new' => 1]) }}#cust-form">＋ Add customer</a>
 </header>
 <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
@@ -56,15 +57,17 @@
       <div style="flex-grow:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:18px;font-weight:700">{{ $sel->name }}</span>
         <span class="sub" style="margin:0">{{ \App\Models\Customer::TYPES[$sel->type] }} @if($sel->area)· {{ $sel->area }}@endif · {{ $sel->phone }} · {{ $sel->code }} · since {{ $sel->created_at->format('m-Y') }}</span></div>
       <a class="btn" href="{{ route('customers.index', ['edit' => $sel->id]) }}#cust-form">Edit</a>
+      <a class="btn" href="{{ route('customers.statement', $sel) }}" target="_blank">Statement PDF</a>
+      <a class="btn pri" href="#pay-form">Receive payment</a>
     </div>
     <div class="kpis">
-      <div class="card kpi" style="background:#fde9e7"><span>Due now</span><b style="color:#b3261e">{{ $tk($detail['due']) }}</b></div>
+      <div class="card kpi" style="background:#fde9e7"><span>Due now</span><b style="color:#b3261e">{{ $tk($detail['due']) }}</b><span>{{ $detail['oldest'] !== null ? 'oldest '.$detail['oldest'].' days' : 'nothing overdue' }}</span></div>
       <div class="card kpi" style="background:#e6eeff"><span>Credit limit</span><b style="color:#1d4ed8">{{ (float) $sel->credit_limit > 0 ? $tk($sel->credit_limit) : 'Off' }}</b>@if((float) $sel->credit_limit > 0)<span>{{ round(max(0, $detail['due']) / (float) $sel->credit_limit * 100) }}% used</span>@endif</div>
       <div class="card kpi" style="background:#fff1d6"><span>Our cylinders with them</span><b style="color:#8a4b00">{{ array_sum($cyl) }}</b><span>@foreach($cyl as $sz => $q){{ $sz }} kg {{ $q }} @endforeach</span></div>
       <div class="card kpi" style="background:#e3f6ec"><span>Bought this month</span><b style="color:#0f6b3c">{{ number_format($detail['monthKg']) }} kg</b></div>
     </div>
     <div class="grid2" style="align-items:start">
-      <form class="card pad" method="post" action="{{ route('customers.pay', $sel) }}" style="display:flex;flex-direction:column;gap:10px">
+ <form id="pay-form" class="card pad" method="post" action="{{ route('customers.pay', $sel) }}" style="display:flex;flex-direction:column;gap:10px">
         @csrf
         <h2 style="margin:0;font-size:15px">Receive payment</h2>
         <div class="grid2" style="grid-template-columns:repeat(2,minmax(0,1fr))">

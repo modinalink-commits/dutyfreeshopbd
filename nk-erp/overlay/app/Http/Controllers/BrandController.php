@@ -48,6 +48,22 @@ class BrandController extends Controller
         ]);
     }
 
+    public function report(Request $request)
+    {
+        $type = in_array($request->query('type'), ['purchase', 'sales', 'empty', 'stock'], true) ? $request->query('type') : 'stock';
+        $from = $request->query('from', now()->timezone('Asia/Dhaka')->startOfMonth()->toDateString());
+        $to = $request->query('to', now()->timezone('Asia/Dhaka')->toDateString());
+        $kinds = ['purchase' => ['received'], 'sales' => ['sale'], 'empty' => ['empty_in', 'exchange']];
+        $q = StockMovement::query()->join('brands', 'brands.id', '=', 'stock_movements.brand_id');
+        if ($type !== 'stock') {
+            $q->whereIn('stock_movements.kind', $kinds[$type])
+              ->whereBetween('stock_movements.created_at', [\Carbon\Carbon::parse($from, 'Asia/Dhaka')->startOfDay()->utc(), \Carbon\Carbon::parse($to, 'Asia/Dhaka')->endOfDay()->utc()]);
+        }
+        $rows = $q->selectRaw('brands.code, brands.name, stock_movements.size_kg, sum(full_delta) f, sum(empty_delta) e, count(*) n')
+            ->groupBy('brands.code', 'brands.name', 'stock_movements.size_kg')->orderBy('brands.code')->orderBy('stock_movements.size_kg')->get();
+        return view('brand_report', compact('type', 'from', 'to', 'rows'));
+    }
+
     public function save(Request $request)
     {
         $id = $request->input('id');

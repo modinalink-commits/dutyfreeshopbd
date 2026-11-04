@@ -53,23 +53,30 @@
     @csrf
     <h2 style="margin:0;font-size:15px">New dealer order</h2>
     <label class="f">Dealer<select name="customer_id" required><option value="">Choose dealer</option>@foreach($dealers as $d)<option value="{{ $d->id }}" @selected(old('customer_id') == $d->id)>{{ $d->name }}@if($d->area) — {{ $d->area }}@endif</option>@endforeach</select></label>
+    <div id="dinfo" style="display:none;background:#fff1d6;color:#8a4b00;border-radius:12px;padding:10px 12px;font-size:12px;line-height:18px"></div>
     @if($dealers->isEmpty())<span class="sub">Add dealers first in <a href="{{ route('customers.index', ['new' => 1]) }}">Customers</a> (type Dealer or Commercial).</span>@endif
     <div class="grid2" style="grid-template-columns:repeat(2,minmax(0,1fr))">
       @foreach($products as $p)
         @php($price = $p->dealer_price ?? $p->retail_price)
-        <label class="f">{{ $p->name }} <span style="font-weight:500">{{ $price !== null ? '@ ৳'.number_format($price) : '(no price)' }}</span><input type="number" min="0" name="qty[{{ $p->id }}]" value="{{ old('qty.'.$p->id, 0) }}" data-price="{{ $price ?? 0 }}" @disabled($price === null)></label>
+        <label class="f">{{ $p->name }} <span style="font-weight:500">{{ $price !== null ? '@ ৳'.number_format($price) : '(no price)' }}</span><input type="number" min="0" name="qty[{{ $p->id }}]" value="{{ old('qty.'.$p->id, 0) }}" data-price="{{ $price ?? 0 }}" @if($p->category === 'refill') data-refill="1" @endif @disabled($price === null)></label>
       @endforeach
     </div>
     <div class="grid2" style="grid-template-columns:repeat(2,minmax(0,1fr))">
       <label class="f">Dealer discount (৳)<input type="number" min="0" name="discount" value="{{ old('discount', 0) }}" id="wdisc"></label>
       <label class="f">Vehicle<input type="text" name="vehicle" value="{{ old('vehicle') }}"></label>
+      <label class="f">Empties to collect<input type="number" min="0" name="empties_collect" id="wemp" value="{{ old('empties_collect') }}"></label>
     </div>
     <div style="background:#eef2f9;border-radius:12px;padding:12px;display:flex;font-size:16px;font-weight:700"><span style="flex-grow:1">Bill</span><span id="wbill">৳0</span></div>
-    <button class="btn pri" type="submit" style="min-height:46px">Save order</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn pri" type="submit" name="print" value="1" style="min-height:46px;flex-grow:1">Save &amp; print challan</button><button class="btn" type="submit" style="min-height:46px">Save only</button></div>
     <span class="sub">Stock leaves when you press Loaded. The dealer is billed when the order is delivered.</span>
   </form>
   <script>
-  (function(){var f=document.getElementById('wform');function calc(){var t=0;f.querySelectorAll('input[data-price]').forEach(function(i){t+=(parseFloat(i.value)||0)*parseFloat(i.dataset.price);});t-=parseFloat(document.getElementById('wdisc').value)||0;document.getElementById('wbill').textContent='৳'+Math.round(t).toLocaleString('en-IN');}f.addEventListener('input',calc);calc();})();
+  (function(){var f=document.getElementById('wform');var info=@json($dealerInfo);var tk=function(n){return '৳'+Math.round(n).toLocaleString('en-IN');};
+  var sel=f.querySelector('select[name=customer_id]'),box=document.getElementById('dinfo');
+  function showInfo(){var d=info[sel.value];if(!d){box.style.display='none';return;}box.style.display='';box.textContent='Due '+tk(d.due)+' of '+(d.limit>0?tk(d.limit)+' credit limit':'no credit (credit off)')+' · '+d.out+' empties still out';}
+  sel.addEventListener('change',showInfo);showInfo();
+  var emp=document.getElementById('wemp');emp.addEventListener('input',function(){emp.dataset.t=1;});
+  function calc(){var t=0,ref=0;f.querySelectorAll('input[data-price]').forEach(function(i){t+=(parseFloat(i.value)||0)*parseFloat(i.dataset.price);if(i.dataset.refill)ref+=parseInt(i.value||0,10);});if(!emp.dataset.t)emp.value=ref;t-=parseFloat(document.getElementById('wdisc').value)||0;document.getElementById('wbill').textContent='৳'+Math.round(t).toLocaleString('en-IN');}f.addEventListener('input',calc);calc();})();
   </script>
   @endif
 </div>
