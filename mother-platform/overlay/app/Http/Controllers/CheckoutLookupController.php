@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 /** Checkout auto-fill for returning customers. Details are only released after an SMS code sent to that very number. */
 class CheckoutLookupController extends Controller {
+  /** SMS-code auto-fill is OFF unless the setting checkout_otp is exactly '1' (it was costing SMS money). */
+  private function on(): bool { return (string)DB::table('settings')->where('key', 'checkout_otp')->value('value') === '1'; }
   private function phone(Request $r): ?string {
     $p = substr(preg_replace('/\D/', '', (string)$r->input('phone')), -11);
     return preg_match('/^01\d{9}$/', $p) ? $p : null;
@@ -14,12 +16,14 @@ class CheckoutLookupController extends Controller {
     return DB::table('orders')->where('phone', $p)->whereNotNull('address')->where('address', '!=', '')->orderByDesc('id')->first();
   }
   public function lookup(Request $r) {
+    if (!$this->on()) return response()->json(['found'=>false]);
     $p = $this->phone($r); if (!$p) return response()->json(['found'=>false]);
     $o = $this->last($p); if (!$o) return response()->json(['found'=>false]);
     $n = trim((string)$o->customer_name);
     return response()->json(['found'=>true, 'hint'=>mb_substr($n, 0, 1).'•••', 'otp'=>Sms::configured()]);
   }
   public function otp(Request $r) {
+    if (!$this->on()) return response()->json(['sent'=>false]);
     $p = $this->phone($r); if (!$p || !Sms::configured() || !$this->last($p)) return response()->json(['sent'=>false]);
     if (Cache::has("co.otp.cool.$p")) return response()->json(['sent'=>false, 'wait'=>true]);
     Cache::add('sms.otp.day', 0, 86400); if ((int)Cache::get('sms.otp.day', 0) >= 3000) return response()->json(['sent'=>false]);
@@ -31,6 +35,7 @@ class CheckoutLookupController extends Controller {
     return response()->json(['sent'=>true]);
   }
   public function verify(Request $r) {
+    if (!$this->on()) return response()->json(['ok'=>false]);
     $p = $this->phone($r); $code = preg_replace('/\D/', '', (string)$r->input('code'));
     $s = $p ? Cache::get("co.otp.$p") : null;
     if (!$s || $s['t'] >= 5) return response()->json(['ok'=>false]);
