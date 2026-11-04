@@ -7,7 +7,7 @@
 .oe-g{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:14px;align-items:start}@media(max-width:980px){.oe-g{grid-template-columns:1fr}}
 .oe-s div{display:flex;justify-content:space-between;padding:4px 0;font-size:13px}.oe-s .big{border-top:1px solid #E5E7EB;margin-top:4px;padding-top:8px;font-size:16px;font-weight:800}.oe-s small{color:#6B7280}
 .oe-res{position:absolute;z-index:20;background:#fff;border:1px solid #D1D5DB;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);width:min(520px,100%);max-height:320px;overflow-y:auto}.oe-res div{padding:7px 10px;border-top:1px solid #F1F3F6;cursor:pointer;font-size:13px}.oe-res div:hover{background:#FFF1E8}
-.oe-w{background:#FFFBEB;border:1px solid #FDE68A;border-radius:8px;padding:8px 10px;font-size:12.5px;margin-top:8px}.oe-b{background:#FEF2F2;border:1px solid #FECACA;color:#991B1B;border-radius:8px;padding:10px 12px;font-size:13px;margin-top:10px}
+.oe-w{background:#FFFBEB;border:1px solid #FDE68A;border-radius:8px;padding:8px 10px;font-size:12.5px;margin-top:8px}.oe-b{white-space:pre-line;background:#FEF2F2;border:1px solid #FECACA;color:#991B1B;border-radius:8px;padding:10px 12px;font-size:13px;margin-top:10px}
 .oe-pos{color:#B45309}.oe-neg{color:#15803D}
 </style>
 <h1 style="margin:0 0 4px">Edit Order {{ $o->invoice }} <span class="pill s-{{ \Illuminate\Support\Str::slug($o->status) }}">{{ $o->status }}</span> <a class="btn g" href="/admin/orders/{{ $o->id }}" style="font-size:12px">← Back to order</a></h1>
