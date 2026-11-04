@@ -547,4 +547,4 @@ a6aac3b6e8ca7ed29cb37afc5da56549afee5c81 resources/views/store/district_slide.bl
 7c72f649c1b6f05b09a28f6c4ac6b037c1a549d5 public/bd64.json
 b0469f31ccbcb5b2a853d2fd42ed0239c0a0c6a7 app/Support/AreaOrders.php
 aeaf4abc14e93fee17a03b91756a3b2eaad72f37 app/Http/Controllers/AreaOrdersController.php
-7522251b1ded74459cb2d4583f317d3df27b6c74 resources/views/area_orders.blade.php
+478408c9e7349b4099e9c5b47b8eb25a9b2c462e resources/views/area_orders.blade.php

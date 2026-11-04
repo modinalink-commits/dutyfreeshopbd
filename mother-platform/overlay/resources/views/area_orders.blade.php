@@ -45,7 +45,7 @@ table.ar-tb{width:100%;border-collapse:collapse;font-size:13px}.ar-tb th{text-al
 <p style="font-size:12px;color:#6B7280;margin:8px 0 0">Data is refreshed every 10 minutes. District comes from the order's city/district field; when it is blank it is read from the address text. Orders whose address names no district are counted under “Address not matched”.</p></div>
 <script>
 (function(){var H=@json($heat),mx={{ $max }};var box=document.getElementById('arMap');
-function col(v){if(!v)return '#EEF1F5';var t=Math.sqrt(v/mx);var a=[255,233,217],b=[255,90,0];return 'rgb('+a.map(function(x,i){return Math.round(x+(b[i]-x)*t)}).join(',')+')'}
+function col(v){if(!v)return '#EEF1F5';var t=Math.pow(v/mx,0.33);var a=[255,233,217],b=[255,90,0];return 'rgb('+a.map(function(x,i){return Math.round(x+(b[i]-x)*t)}).join(',')+')'}
 fetch('/bd64.json').then(function(r){return r.json()}).then(function(j){var s='<svg class="ar-map" viewBox="0 0 '+j.w+' '+j.h+'" role="img" aria-label="District heat map">';
 j.d.forEach(function(d){var h=H[d.en]||{c:0,o:0,s:0,v:0};s+='<path d="'+d.d+'" fill="'+col(h.v)+'"><title>'+d.en+' · '+d.bn+'\n'+h.c+' customers · '+h.o+' orders · ৳'+Number(h.s).toLocaleString('en-US')+'</title></path>'});
 box.innerHTML=s+'</svg>'}).catch(function(){box.textContent='Map could not be loaded.'})})();
