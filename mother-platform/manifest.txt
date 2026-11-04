@@ -615,3 +615,4 @@ app/Support/BundlePricing.php
 app/Http/Controllers/BundlePricingController.php
 database/migrations/2026_11_05_000020_bundle_pricing.php
 resources/views/bundle_pricing.blade.php
+database/migrations/2026_11_05_000030_raise_below_fifo_minimum.php
