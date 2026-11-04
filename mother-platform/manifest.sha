@@ -3,7 +3,7 @@ c7c13641806ffa1ce9de0b39c5387856c243d097 routes/web.php
 5ec9cde3d13c963d0d55a626e10bf2e39e36a691 app/Models/Mother.php
 108200c5a525122bac8010857eac194f8ce845ea app/Http/Controllers/AdminController.php
 688025b06769b048f2631fea804aab3bce12b7e8 app/Console/Commands/MotherInstall.php
-c7b97496cc4db0ff9299a0e82f0db8a548d4476a resources/views/layout.blade.php
+a2de5c20675b2619c8c6cf754795defc7b12fa65 resources/views/layout.blade.php
 7ba1a8252b36e7db33e40d8be3ea5ec2cd241fb7 resources/views/login.blade.php
 91f1db9cea10d63bd04c39409c38cbdd0c036881 resources/views/dashboard.blade.php
 e05a55e8e920334c82d21bd647b16f90582e641d resources/views/orders.blade.php
@@ -183,7 +183,7 @@ cc62dc2999d79ce7a6e46833bd774c0ea255aa70 resources/views/sip_account.blade.php
 df8c09076466870665b8e80f5ebeacccd9739829 resources/views/call_history.blade.php
 bdbb50b672be2f97c2bdcf20f76809a2a8ec15f2 resources/views/softphone_fab.blade.php
 d60cc2488e9d1428806a53b4a367beb5d0ec79c6 public/js/jssip.min.js
-e01283f77d3a60a934ace10fbbd04ff14a7fad0c public/js/df-export.js
+0d08f983964dad6b45cf99cc4e75679053b8a2ec public/js/df-export.js
 2d1736bd9f1ad4cef1ee2b2f34388ff37f78d001 app/Support/CardImg.php
 c3732a3e2c27a150b4d0b55a8245c04f686ef706 app/Support/Seo.php
 9c47b100afa2523480b6bbb4131db18160331b34 resources/views/store/zoom.blade.php
