@@ -35,7 +35,7 @@ class ProfitFloor {
     if ($avg <= 0) return ['No cost on file', '#6B7280'];
     $pct = ($price - $avg) / $avg * 100;
     if ($price + 0.004 < self::floor($avg)) return ['🔴 Below Minimum', '#B91C1C'];
-    return $pct < 20 ? ['🟠 Near Minimum', '#C2410C'] : ['🟢 Safe', '#166534'];
+    return $pct < 19.995 ? ['🟠 Near Minimum', '#C2410C'] : ['🟢 Safe', '#166534'];
   }
   /** Average after a purchase of $qty units at $cost is reversed. */
   public static function unblend($was, int $qty, float $cost): float {
