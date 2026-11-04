@@ -58,7 +58,7 @@ class CatalogController extends Controller {
       'category_id'=>'required|integer|exists:categories,id', 'sub'=>'nullable|string|max:120', 'sub_sub'=>'nullable|string|max:120', 'brand_id'=>'nullable|integer',
       'video_url'=>'nullable|string|max:500', 'affiliate_commission'=>'nullable|numeric|min:0|max:100',
       'regular_price'=>'required|numeric|min:0', 'sale_price'=>'nullable|numeric|min:0|lte:regular_price',
-      'buy1_price'=>$m(), 'buy2_price'=>$m(), 'buy3_price'=>$m(), 'buy4_price'=>$m(), 'buy5_price'=>$m(),
+      'bundle_rule'=>'nullable|in:global,custom,off', 'buy1_price'=>$m(), 'buy2_price'=>$m(), 'buy3_price'=>$m(), 'buy4_price'=>$m(), 'buy5_price'=>$m(),
       'stock'=>'required|integer|min:0', 'stock_status'=>'required|in:in_stock,out_of_stock,pre_order', 'low_stock_alert'=>'nullable|integer|min:0',
       'description'=>'nullable|string|max:60000', 'slug'=>'nullable|string|max:200', 'meta_title'=>'nullable|string|max:200', 'meta_description'=>'nullable|string|max:500', 'meta_keywords'=>'nullable|string|max:500',
       'status'=>'nullable|in:draft,published', 'act'=>'nullable|in:draft,publish,preview',
@@ -81,9 +81,13 @@ class CatalogController extends Controller {
     foreach ([1,2,3,4,5] as $n) $row["buy{$n}_price"] = ($d["buy{$n}_price"] ?? null) !== null && $d["buy{$n}_price"] !== '' ? (float)$d["buy{$n}_price"] : null;
     $old = $id ? DB::table('products')->find($id) : null;
     if ($id) abort_unless($old, 404);
+    // Bundle pricing rule: global (automatic, default) | custom (typed Buy 2-5 totals) | off. Only the Admin may change it; with the global/off rule the Buy 2-5 prices are calculated, never typed.
+    $bpOn = \App\Support\BundlePricing::ready(); $bpOld = $old->bundle_rule ?? 'global'; $bpRule = $bpOld;
+    if ($bpOn && \App\Support\ProfitFloor::admin() && in_array($d['bundle_rule'] ?? '', ['global', 'custom', 'off'], true)) $bpRule = $d['bundle_rule'];
+    if ($bpOn) { $row['bundle_rule'] = $bpRule; if ($bpRule !== 'custom') foreach ([2,3,4,5] as $n) $row["buy{$n}_price"] = $old->{"buy{$n}_price"} ?? null; }
     // Protected 15% company profit: purchase price x 1.15 is the floor for the selling price and the Buy 2-5 pack prices. An old product whose prices are untouched can still be saved; it stays on the price-review list.
-    $pfCost = $old ? \App\Support\ProfitFloor::base($old) : 0.0; $pfPacks = []; foreach ([2,3,4,5] as $n) $pfPacks[$n] = $row["buy{$n}_price"];
-    $pfSame = $old && abs((float)$old->price - (float)$row['price']) < 0.005 && collect([2,3,4,5])->every(fn($n) => abs((float)($old->{"buy{$n}_price"} ?? 0) - (float)($row["buy{$n}_price"] ?? 0)) < 0.005);
+    $pfCost = $old ? \App\Support\ProfitFloor::base($old) : 0.0; $pfPacks = []; if (!$bpOn || $bpRule === 'custom') foreach ([2,3,4,5] as $n) $pfPacks[$n] = $row["buy{$n}_price"];
+    $pfSame = $old && abs((float)$old->price - (float)$row['price']) < 0.005 && (!$pfPacks || collect([2,3,4,5])->every(fn($n) => abs((float)($old->{"buy{$n}_price"} ?? 0) - (float)($row["buy{$n}_price"] ?? 0)) < 0.005));
     if (!$pfSame && ($pfE = \App\Support\ProfitFloor::productError($pfCost, (float)$row['price'], $pfPacks))) {
       \App\Support\ProfitFloor::audit('Profit floor blocked price', 'Product '.($old->name ?? $row['name']), $old ? ['price'=>$old->price] : null, ['price'=>$row['price'], 'cost'=>$pfCost]);
       return back()->withInput($r->except(['description', '_token']))->withErrors(['regular_price'=>$pfE]);
@@ -122,6 +126,7 @@ class CatalogController extends Controller {
       $was = $old ? (bool)$old->published : false;
       if ($pub !== $was) DB::table('product_status_logs')->insert(['product_id'=>$id, 'user_id'=>Auth::id(), 'user_name'=>Auth::user()->name, 'action'=>$pub ? 'Published' : 'Unpublished', 'created_at'=>now(), 'updated_at'=>now()]);
     });
+    try { if ($bpOn) { \App\Support\BundlePricing::sync([(int)$id]); if ($old && $bpOld !== $bpRule) \App\Support\ProfitFloor::audit('Bundle rule changed', 'Product '.$row['name'], ['rule'=>$bpOld], ['rule'=>$bpRule, 'by'=>Auth::user()->name ?? null]); } } catch (\Throwable $e) { report($e); }
     try { if ($old && (int)$old->stock !== (int)$row['stock']) { $d0 = \App\Support\Costing::sync((int)$id); if ($d0 !== 0) \App\Support\Procure::audit('costing.manual_adjustment', 'Manual stock edit: '.$row['name'], ['stock'=>(int)$old->stock], ['stock'=>(int)$row['stock'], 'batches_adjusted'=>$d0, 'by'=>Auth::user()->name ?? null]); } elseif (!$old && (int)$row['stock'] > 0) \App\Support\Costing::sync((int)$id); } catch (\Throwable $e) { report($e); }
     if (!$old && $r->filled('ai_scan')) { try {
       $sc = DB::table('ai_product_scans')->find((int)$r->input('ai_scan'));

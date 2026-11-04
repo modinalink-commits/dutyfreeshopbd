@@ -8,8 +8,9 @@
   $code = $p->sku ?: $p->ext_id;
   $bd = $rules['bundle'] ?? null; $bpct = $bd ? (float)($bd['Bundle %'] ?? 0) : 0; $bmin = $bd ? (int)($bd['Minimum products'] ?? 2) : 99;
   $bundles = [];
-  foreach ([2,3,4,5] as $n) { $tp = (float)($p->{'buy'.$n.'_price'} ?? 0); $lst = $price * $n; $fin = 0;
-    if ($tp > 0 && $tp < $lst) $fin = $tp; elseif ($bpct > 0 && $n >= $bmin) $fin = round($lst * (1 - $bpct / 100), 2);
+  $bt = \App\Support\BundlePricing::forProduct((int)$p->id);
+  foreach ([2,3,4,5] as $n) { $lst = $price * $n; $fin = 0;
+    if (!empty($bt[$n])) $fin = (float)$bt[$n]['total']; elseif (!\App\Support\BundlePricing::ready() && ($tp = (float)($p->{'buy'.$n.'_price'} ?? 0)) > 0 && $tp < $lst) $fin = $tp; elseif ($bpct > 0 && $n >= $bmin) $fin = round($lst * (1 - $bpct / 100), 2);
     if ($fin <= 0 || $fin >= $lst) continue;
     $sv = $lst - $fin; $pc = round($sv / $lst * 100, 1);
     $bundles[] = ['n'=>$n, 'fin'=>$fin, 'save'=>$sv, 'pct'=>rtrim(rtrim(number_format($pc, 1), '0'), '.')]; }

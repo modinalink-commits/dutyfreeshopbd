@@ -154,6 +154,7 @@ class Procure {
   /** Worker hook: due-date reminders (offsets in days from the invoice due date, e.g. -3,0,3). Once per invoice and offset. */
   public static function tick(): void {
     try { $h = now()->format('YmdH'); if (Costing::ready() && self::set('costing_sync_last') !== $h) { self::put('costing_sync_last', $h); $n = Costing::syncAll(); if ($n > 0) self::audit('costing.sync', "Batches re-aligned with stock on hand for $n products", null, ['products'=>$n, 'reason'=>'manual stock edit / import']); } } catch (\Throwable $e) { report($e); }
+    try { $h2 = now()->format('YmdH'); if (BundlePricing::ready() && self::set('bundle_sync_last') !== $h2) { self::put('bundle_sync_last', $h2); BundlePricing::sync(); } } catch (\Throwable $e) { report($e); } // shipments move the FIFO cost: bundle prices never stay stale for more than an hour in the admin lists (the storefront is always live)
     if (!self::on('proc_sms_due')) return; $today = now('Asia/Dhaka')->toDateString();
     if (self::set('proc_due_last') === $today) return; self::put('proc_due_last', $today);
     $offs = array_values(array_filter(array_map('trim', explode(',', self::set('proc_due_offsets', '-3,0,3'))), fn($x)=>is_numeric($x)));

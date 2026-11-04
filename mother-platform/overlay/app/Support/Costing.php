@@ -40,7 +40,7 @@ class Costing {
   /** Damage, purchase return or manual decrease: oldest batches go first. */
   public static function out(int $pid, int $qty): void { if ($qty > 0) self::run(fn() => DB::select('select costing_out(?,?)', [$pid, $qty])); }
   /** Make the open batches add up to the stock on hand (manual edit, import). Returns the difference it fixed. */
-  public static function sync(int $pid): int { return (int)self::run(fn() => DB::selectOne('select costing_sync(?) as d', [$pid])->d, 0); }
+  public static function sync(int $pid): int { $d = (int)self::run(fn() => DB::selectOne('select costing_sync(?) as d', [$pid])->d, 0); try { BundlePricing::sync([$pid]); } catch (\Throwable $e) { report($e); } return $d; } // a stock / cost change also refreshes the product's bundle prices (the FIFO cost may have moved)
   public static function syncAll(): int { return (int)self::run(fn() => DB::selectOne('select costing_sync_all() as n')->n, 0); }
   /** A generic stock movement (damage, manual, reversal of a return ...) seen from the batches. */
   public static function moved(int $pid, int $delta, string $source, string $ref): void {

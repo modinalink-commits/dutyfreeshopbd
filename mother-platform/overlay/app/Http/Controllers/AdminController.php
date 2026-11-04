@@ -269,7 +269,7 @@ class AdminController extends Controller {
       if ($dcols['delivery_manual_adj'] !== null) \App\Support\Procure::audit('delivery.manual_adjust', $invNo, ['charge'=>$dv['charge']], ['charge'=>$d['shipping']]);
       if ($cpn) DB::table('coupons')->where('code', $cpn)->increment('used_count');
       if ($disc > 0 || $changed) DB::table('order_discount_logs')->insert(['order_id'=>$id, 'kind'=>$changed ? 'override' : 'applied', 'label'=>mb_substr(implode(' + ', $labels) ?: 'No discount', 0, 200), 'prev_amount'=>$auto['total'], 'new_amount'=>$disc, 'user_id'=>Auth::id(), 'user_name'=>Auth::user()->name, 'created_at'=>now(), 'updated_at'=>now()]);
-      foreach ($d['items'] as $it) DB::table('order_items')->insert(['order_id'=>$id,'product_id'=>$it['product_id'] ?? null,'name'=>$it['name'],'qty'=>$it['qty'],'price'=>$it['price'],'created_at'=>now(),'updated_at'=>now()]);
+      foreach ($d['items'] as $it) DB::table('order_items')->insert(['order_id'=>$id,'product_id'=>$it['product_id'] ?? null,'name'=>$it['name'],'qty'=>$it['qty'],'price'=>$it['price'],'created_at'=>now(),'updated_at'=>now()] + \App\Support\BundlePricing::snapshot(isset($it['product_id']) ? (int)$it['product_id'] : null, (int)$it['qty'], (float)$it['price'], (float)$it['qty'] * (float)$it['price']));
       DB::table('order_status_logs')->insert(['order_id'=>$id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'from_status'=>null,'to_status'=>'New','note'=>'Order created','created_at'=>now(),'updated_at'=>now()]);
       return $id;
     });

@@ -611,3 +611,7 @@ app/Support/Costing.php
 app/Support/CostingSql.php
 database/migrations/2026_11_05_000010_hybrid_costing.php
 resources/views/inventory_batches.blade.php
+app/Support/BundlePricing.php
+app/Http/Controllers/BundlePricingController.php
+database/migrations/2026_11_05_000020_bundle_pricing.php
+resources/views/bundle_pricing.blade.php

@@ -208,6 +208,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/stock-movement-report', [\App\Http\Controllers\StockMovementReportController::class,'index']);
   Route::get('/stock-report', [\App\Http\Controllers\StockReportController::class,'index']);
   Route::get('/price-review', [\App\Http\Controllers\PriceReviewController::class,'index']);
+  Route::get('/bundle-pricing', [\App\Http\Controllers\BundlePricingController::class,'index']); Route::post('/bundle-pricing', [\App\Http\Controllers\BundlePricingController::class,'save']);
   Route::get('/inventory-pricing', [\App\Http\Controllers\PriceReviewController::class,'inventory']); Route::get('/inventory-pricing/{id}/history', [\App\Http\Controllers\PriceReviewController::class,'history'])->whereNumber('id'); Route::get('/inventory-pricing/{id}/batches', [\App\Http\Controllers\PriceReviewController::class,'batches'])->whereNumber('id'); Route::post('/inventory-pricing/ship-mode', [\App\Http\Controllers\PriceReviewController::class,'shipMode']);
   Route::get('/profit-check/product', [\App\Http\Controllers\PriceReviewController::class,'checkProduct']); Route::get('/profit-check/order', [\App\Http\Controllers\PriceReviewController::class,'checkOrder']);
   Route::get('/ship-check/{id}', [\App\Http\Controllers\StockHistoryController::class,'shipCheck'])->whereNumber('id');
