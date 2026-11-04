@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NK Corporation — Aygaz United LPG, Mirsarai</title>
+<meta name="description" content="NK Corporation — Aygaz United LPG distributor in Jorarganj, Mirsarai, Chattogram. 12, 35 and 45 kg cylinders. Call or WhatsApp 01901-168777.">
+<meta name="theme-color" content="#0f1b2d">
+<link rel="icon" href="/img/logo.webp">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Hind+Siliguri:wght@400;600;700&display=swap">
+<style>
+:root{--ink:#0f1b2d;--cream:#f7f4ec;--sand:#efe5cc;--gold:#b8903a;--gold-ink:#6e5214;--navy:#123a86;--muted:#4a5568;--line:#dbe3f0}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:#fff;color:var(--ink);font-family:'Plus Jakarta Sans','Hind Siliguri',system-ui,sans-serif;line-height:1.5}
+a{color:inherit}
+.wrap{max-width:1200px;margin:0 auto;padding:0 20px}
+.bn{font-family:'Hind Siliguri',sans-serif}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:50px;padding:0 24px;border-radius:999px;border:1px solid var(--ink);font-weight:700;font-size:15px;text-decoration:none;cursor:pointer;background:#fff;color:var(--ink);font-family:inherit}
+.btn.dark{background:var(--ink);color:#fff}
+.btn.wa{background:#0b7a3e;border-color:#0b7a3e;color:#fff}
+.btn:focus-visible,a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #1d4ed8;outline-offset:3px}
+header{position:sticky;top:0;z-index:10;background:rgba(255,255,255,.96);border-bottom:1px solid var(--line);backdrop-filter:blur(6px)}
+.hd{display:flex;align-items:center;gap:16px;min-height:68px}
+.brand{display:flex;align-items:center;gap:10px;flex-grow:1;text-decoration:none}
+.brand img{width:44px;height:44px;border-radius:10px}
+.brand b{display:block;font-size:16px;font-weight:800}
+.brand small{display:block;font-size:11px;color:var(--muted)}
+.hd nav{display:flex;gap:22px;font-size:14px;font-weight:600}
+.hd nav a{text-decoration:none}
+@media (max-width:820px){.hide-sm{display:none}.hd nav{display:none}.hd .btn{min-height:42px;padding:0 16px;font-size:13px}}
+/* hero */
+.hero{position:relative;background:var(--cream);overflow:hidden}
+.hero:before{content:"";position:absolute;right:-140px;top:-160px;width:640px;height:640px;border-radius:50%;background:var(--sand)}
+.hero:after{content:"";position:absolute;right:120px;bottom:-240px;width:420px;height:420px;border-radius:50%;border:2px solid #e2d3a8}
+.stage{position:relative;z-index:1;min-height:600px}
+.slide{position:absolute;top:0;bottom:0;left:20px;right:20px;display:flex;flex-wrap:wrap;align-items:center;gap:24px;padding:48px 0 96px;opacity:0;visibility:hidden;transition:opacity .7s ease,visibility .7s}
+.slide.on{opacity:1;visibility:visible}
+.txt{flex:1 1 420px;min-width:0;display:flex;flex-direction:column;gap:18px}
+.tag{align-self:flex-start;font-size:12px;font-weight:800;letter-spacing:.14em;color:var(--gold-ink);background:var(--sand);padding:6px 12px;border-radius:999px}
+.hero h1{margin:0;font-size:clamp(40px,6vw,64px);line-height:1.05;font-weight:800;letter-spacing:-.01em}
+.hero h1 span{color:var(--gold)}
+.hero p{margin:0;font-size:18px;line-height:28px;color:#3e4756;max-width:500px}
+.hero p.bn{font-size:17px;color:var(--gold-ink)}
+.acts{display:flex;flex-wrap:wrap;gap:12px}
+.cyl{flex:1 1 340px;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.cyl img{filter:drop-shadow(0 18px 24px rgba(15,27,45,.18))}
+.float{position:relative}.float{overflow:hidden;-webkit-mask-image:linear-gradient(#000,#000)}.float:after{content:"";position:absolute;top:0;bottom:0;left:-40%;width:30%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.28),transparent);transform:skewX(-12deg);opacity:0;pointer-events:none}.slide.on .float:after{animation:nkGlint 6s ease-in-out 1.4s infinite}@keyframes nkGlint{0%{left:-40%;opacity:0}10%{opacity:1}30%{left:110%;opacity:0}100%{left:110%;opacity:0}}
+.shadow{width:220px;height:22px;border-radius:999px;background:var(--ink);opacity:.25;filter:blur(8px);margin-top:6px}
+@keyframes nkFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+@keyframes nkShadow{0%,100%{transform:scaleX(1);opacity:.28}50%{transform:scaleX(.82);opacity:.16}}
+@keyframes nkIn{from{opacity:0;transform:translateX(60px)}to{opacity:1;transform:none}}
+@keyframes nkReveal{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+.slide.on .txt>*{animation:nkReveal .8s ease both}
+.slide.on .txt>*:nth-child(2){animation-delay:.12s}
+.slide.on .txt>*:nth-child(3){animation-delay:.24s}
+.slide.on .txt>*:nth-child(4){animation-delay:.36s}
+.slide.on .txt>*:nth-child(5){animation-delay:.48s}
+.slide.on .cyl{animation:nkIn .9s cubic-bezier(.2,.7,.2,1) both}
+.slide.on .float{animation:nkFloat 5s ease-in-out .9s infinite}
+.slide.on .shadow{animation:nkShadow 5s ease-in-out .9s infinite}
+.ctrl{position:absolute;z-index:2;left:0;right:0;bottom:28px}
+.ctrl .wrap{display:flex;align-items:center;gap:14px}
+.dots{display:flex;gap:8px;flex-grow:1}
+.dot{height:10px;width:10px;border:0;border-radius:999px;padding:0;cursor:pointer;background:#c9bfa6;transition:width .4s ease}
+.dot[aria-current="true"]{width:36px;background:var(--ink)}
+.count{font-size:13px;font-weight:700;color:#3e4756;font-variant-numeric:tabular-nums}
+.nav{width:48px;height:48px;border-radius:999px;border:1px solid var(--ink);background:#fff;color:var(--ink);display:flex;align-items:center;justify-content:center;cursor:pointer}
+@media (max-width:760px){.stage{min-height:880px}.cyl img{max-height:300px}}
+@media (prefers-reduced-motion:reduce){.slide,.slide *{animation:none!important;transition:none!important}html{scroll-behavior:auto}}
+/* sections */
+section.blk{padding:72px 0}
+h2{margin:0 0 6px;font-size:32px;font-weight:800;letter-spacing:-.01em}
+.sub{margin:0 0 28px;color:var(--muted);font-size:15px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
+.card{border:1px solid var(--line);border-radius:18px;padding:24px;background:#fff;display:flex;flex-direction:column;gap:10px}
+.pill{align-self:flex-start;background:#e6eeff;color:#1d4ed8;font-size:12px;font-weight:700;padding:4px 12px;border-radius:999px}
+.card h3{margin:0;font-size:22px;font-weight:800}
+.card p{margin:0;color:var(--muted);font-size:14px}
+.soft{background:#f4f7fc}
+.order{display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start}
+.order .intro{flex:1 1 340px}
+.steps{display:flex;flex-direction:column;gap:10px;margin-top:16px;font-size:15px}
+.steps span{display:flex;gap:10px;align-items:center}
+.steps i{font-style:normal;width:28px;height:28px;border-radius:999px;background:var(--ink);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+form{flex:1 1 460px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:24px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--muted)}
+input,select{min-height:48px;border:1px solid #7b8aa8;border-radius:10px;background:#fff;padding:0 12px;font:500 15px 'Plus Jakarta Sans','Hind Siliguri',sans-serif;color:var(--ink);width:100%}
+.full{grid-column:1/-1}
+.note{grid-column:1/-1;margin:0;font-size:12px;color:var(--muted)}
+@media (max-width:560px){form{grid-template-columns:1fr}}
+.dealer{display:flex;flex-wrap:wrap;gap:24px;align-items:center;justify-content:space-between;background:var(--ink);color:#fff;border-radius:24px;padding:40px}
+.dealer p{margin:6px 0 0;color:#c9d6f5;max-width:620px}
+footer{background:var(--ink);color:#fff;padding:56px 0 32px}
+.ft{display:flex;flex-wrap:wrap;gap:32px}
+.ft>div{flex:1 1 260px;display:flex;flex-direction:column;gap:8px;font-size:14px}
+.ft .lbl{font-weight:700}
+.ft .mut{color:#c9d6f5;line-height:22px}
+.ft a{color:#fff}
+.swap{background:var(--cream);overflow:hidden}.swapin{display:flex;flex-wrap:wrap;align-items:center;gap:32px}.swaptxt{flex:1 1 320px;display:flex;flex-direction:column;gap:12px}.swapimg{flex:1 1 460px;min-width:0;width:100%;height:auto;opacity:0;transform:translateY(30px);transition:opacity 1s ease,transform 1s ease}.swapimg.in{opacity:1;transform:none}
+.owner{display:flex;align-items:center;gap:18px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:20px;max-width:440px}.owner img{width:96px;height:96px;border-radius:999px;object-fit:cover}.owner b{display:block;font-size:18px}.owner span{color:var(--muted);font-size:14px}
+@media (prefers-reduced-motion:reduce){.swapimg{opacity:1;transform:none;transition:none}}
+.banners{position:relative;aspect-ratio:1600/625;overflow:hidden;background:#0f1b2d}.bnr{position:absolute;inset:0;opacity:0;transition:opacity 1.2s ease}.bnr.on{opacity:1}.bnr img{width:100%;height:100%;object-fit:cover;display:block}.bnr.on img{animation:nkKen 9s ease-out both}@keyframes nkKen{from{transform:scale(1.08)}to{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.bnr{transition:none}.bnr.on img{animation:none}}
+.cimg{height:180px;width:auto;align-self:center;margin-bottom:6px;transition:transform .4s ease}.card:hover .cimg{transform:translateY(-6px)}
+.copy{margin-top:40px;padding-top:20px;border-top:1px solid #2a3a55;font-size:12px;color:#9fb0cf}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap hd">
+    <a class="brand" href="#top" aria-label="NK Corporation home">
+      <img src="/img/logo.webp" alt="NK Corporation logo" width="44" height="44">
+      <span><b>NK Corporation</b><small>Aygaz United LPG · Think Smart, Do Business</small></span>
+    </a>
+    <nav aria-label="Site">
+      <a href="#sizes">Cylinders</a>
+      <a href="#order">Order gas</a>
+      <a href="#dealer">Become a dealer</a>
+      <a href="#about">About us</a>
+      <a href="#contact">Contact</a>
+    </nav>
+    <a class="btn dark" href="tel:+8801901168777" aria-label="Call 01901-168777">Call<span class="hide-sm">&nbsp;01901-168777</span></a>
+  </div>
+</header>
+
+<main id="top">
+<section class="hero" aria-roledescription="carousel" aria-label="Aygaz United LPG cylinders">
+  <div class="wrap stage" id="stage"></div>
+  <div class="ctrl">
+    <div class="wrap">
+      <div class="dots" id="dots"></div>
+      <span class="count" id="count">01 / 03</span>
+      <button class="nav" type="button" id="prev" aria-label="Previous slide"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <button class="nav" type="button" id="next" aria-label="Next slide"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
+    </div>
+  </div>
+</section>
+
+<section class="banners" aria-roledescription="carousel" aria-label="Aygaz United highlights">
+  <div class="bnr on"><img src="/img/banner-weight.webp" alt="Accurate weight, lasts for days — Aygaz United 12 kg cylinder balanced against a 12 kg weight" width="1600" height="625" loading="lazy"></div>
+  <div class="bnr" aria-hidden="true"><img src="/img/banner-eco.webp" alt="Environmentally friendly — Aygaz United 12 kg cylinder in a forest" width="1600" height="625" loading="lazy"></div>
+</section>
+<section class="blk" id="sizes">
+  <div class="wrap">
+    <h2>Our cylinders <span class="bn" style="font-weight:600;color:var(--gold-ink)">· আমাদের সিলিন্ডার</span></h2>
+    <p class="sub">Aygaz United LPG in three sizes. Call or WhatsApp us for today's price.</p>
+    <div class="grid3">
+      <div class="card"><img class="cimg" src="/img/cyl-12.webp" alt="Aygaz United 12 kg cylinder" loading="lazy"><span class="pill">12 kg</span><h3>Family kitchens</h3><p class="bn">বাসা-বাড়ির রান্নার জন্য</p><a class="btn" href="#order" data-size="12 kg">Order 12 kg</a></div>
+      <div class="card"><img class="cimg" src="/img/cyl-35.webp" alt="Aygaz United 35 kg cylinder" loading="lazy"><span class="pill">35 kg</span><h3>Hotels &amp; restaurants</h3><p class="bn">হোটেল, রেস্টুরেন্ট ও চায়ের দোকানের জন্য</p><a class="btn" href="#order" data-size="35 kg">Order 35 kg</a></div>
+      <div class="card"><img class="cimg" src="/img/cyl-45.webp" alt="Aygaz United 45 kg cylinder" loading="lazy"><span class="pill">45 kg</span><h3>Large kitchens &amp; industry</h3><p class="bn">বড় রান্নাঘর ও কারখানার জন্য</p><a class="btn" href="#order" data-size="45 kg">Order 45 kg</a></div>
+    </div>
+  </div>
+</section>
+
+<section class="blk soft" id="order">
+  <div class="wrap order">
+    <div class="intro">
+      <h2>Order gas <span class="bn" style="font-weight:600;color:var(--gold-ink)">· গ্যাস অর্ডার</span></h2>
+      <p class="sub" style="margin-bottom:0">Fill in the form and send it to us on WhatsApp. We will call you back to confirm.</p>
+      <div class="steps">
+        <span><i>1</i>Choose size and refill or new cylinder</span>
+        <span><i>2</i>Send the order on WhatsApp</span>
+        <span><i>3</i>We call you to confirm price and time</span>
+      </div>
+    </div>
+    <form id="orderForm" novalidate>
+      <label>Your name<input id="fName" type="text" autocomplete="name" placeholder="Full name" required></label>
+      <label>Mobile number<input id="fPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="01XXX-XXXXXX" required></label>
+      <label>Cylinder<select id="fSize"><option>12 kg</option><option>35 kg</option><option>45 kg</option></select></label>
+      <label>Type<select id="fType"><option>Refill (I have an empty)</option><option>New cylinder with gas</option></select></label>
+      <label>Quantity<input id="fQty" type="number" min="1" value="1" inputmode="numeric"></label>
+      <label>Delivery address<input id="fAddr" type="text" placeholder="Village / bazar, union" required></label>
+      <button class="btn wa full" type="submit">Send order on WhatsApp</button>
+      <p class="note">Nothing is saved on this website. Your order opens in WhatsApp to 01901-168777.</p>
+    </form>
+  </div>
+</section>
+
+<section class="blk swap" id="new">
+  <div class="wrap swapin">
+    <div class="swaptxt">
+      <span class="tag" style="display:inline-block">AYGAZ UNITED</span>
+      <h2>Fresh cylinders, every time</h2>
+      <p class="sub" style="margin:0">Bright new Aygaz United cylinders in 12, 35 and 45 kg. Bring your empty and take a full one.</p>
+      <p class="bn" style="margin:0;color:var(--gold-ink);font-size:17px">পুরনো খালি সিলিন্ডার দিন, নতুন ভরা সিলিন্ডার নিন।</p>
+      <div class="acts" style="margin-top:8px"><a class="btn dark" href="#order">Order now</a></div>
+    </div>
+    <img class="swapimg" src="/img/old-vs-new.webp" alt="Old worn gas cylinders next to new Aygaz United 12, 35 and 45 kg cylinders" loading="lazy" width="900" height="509">
+  </div>
+</section>
+<section class="blk" id="dealer">
+  <div class="wrap">
+    <div class="dealer">
+      <div><h2 style="color:#fff">Sell LPG in your bazar</h2><p>Want to become an Aygaz United LPG dealer in your area? Talk to us.<br><span class="bn">আপনার বাজারে ডিলার হতে চাইলে যোগাযোগ করুন।</span></p></div>
+      <a class="btn" href="https://wa.me/8801901168777?text=Dealer%20enquiry%20-%20NK%20Corporation" target="_blank" rel="noopener">Dealer enquiry</a>
+    </div>
+  </div>
+</section>
+<section class="blk soft" id="about">
+  <div class="wrap">
+    <h2>About us <span class="bn" style="font-weight:600;color:var(--gold-ink)">· আমাদের সম্পর্কে</span></h2>
+    <p class="sub">NK Corporation is an Aygaz United LPG distributor in Jorarganj, Mirsarai.</p>
+    <div class="owner"><img src="/img/kazi-nuzrul.webp" alt="Kazi Nuzrul" width="120" height="120" loading="lazy"><div><b>Kazi Nuzrul</b><span>Owner, NK Corporation</span></div></div>
+  </div>
+</section>
+</main>
+
+<footer id="contact">
+  <div class="wrap">
+    <div class="ft">
+      <div><span style="font-weight:800;font-size:18px">NK Corporation</span><span class="mut">Bhuiya Market, Mama Fakir Astana, South Sonapahar, Jorarganj, Mirsarai, Chattogram, Bangladesh</span><span class="mut bn">বিএস আরমের ২ কিলোমিটার দক্ষিণে, মামা ফকির আস্তানা, ভুইয়া মার্কেট, দক্ষিণ সোনাপাহাড়, জোরারগঞ্জ, মীরসরাই, চট্টগ্রাম।</span></div>
+      <div><span class="lbl">Call or WhatsApp</span><a href="tel:+8801901168777">+880 1901-168777</a><a href="https://wa.me/8801901168777" target="_blank" rel="noopener">WhatsApp us</a></div>
+      <div><span class="lbl">Brand</span><span class="mut">Aygaz United LPG distributor<br>Think Smart, Do Business</span></div>
+    </div>
+    <div class="copy">© <span id="yr">2026</span> NK Corporation. All rights reserved.</div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var S=[
+    {size:'12 KG',img:'cyl-12.webp',h:330,en:'For family kitchens. Refills delivered across Jorarganj and Mirsarai.',bn:'বাসা-বাড়ির রান্নার জন্য — জোরারগঞ্জ ও মীরসরাইতে।'},
+    {size:'35 KG',img:'cyl-35.webp',h:390,en:'For hotels, restaurants and tea stalls.',bn:'হোটেল, রেস্টুরেন্ট ও চায়ের দোকানের জন্য।'},
+    {size:'45 KG',img:'cyl-45.webp',h:430,en:'For large kitchens and industry. Bulk and dealer orders welcome.',bn:'বড় রান্নাঘর ও কারখানার জন্য।'}
+  ];
+  function cyl(s,k){return '<img src="/img/'+s.img+'" alt="Aygaz United '+s.size+' LPG cylinder" style="height:'+s.h+'px;width:auto;display:block" '+(k?'loading="lazy"':'fetchpriority="high"')+'>';}
+  var stage=document.getElementById('stage'),dots=document.getElementById('dots'),count=document.getElementById('count');
+  S.forEach(function(s,k){
+    var d=document.createElement('div');d.className='slide';d.setAttribute('role','group');d.setAttribute('aria-roledescription','slide');d.setAttribute('aria-label',(k+1)+' of 3');
+    d.innerHTML='<div class="txt"><span class="tag">AYGAZ UNITED · LPG</span><h1>'+s.size+' <span>LPG</span><br>Cylinder</h1><p>'+s.en+'</p><p class="bn">'+s.bn+'</p>'+
+      '<div class="acts"><a class="btn dark" href="#order" data-size="'+s.size.toLowerCase()+'">Order '+s.size+'</a><a class="btn" href="tel:+8801901168777">Call for today\'s price</a></div></div>'+
+      '<div class="cyl"><div class="float">'+cyl(s,k)+'</div><div class="shadow" aria-hidden="true"></div></div>';
+    stage.appendChild(d);
+    var b=document.createElement('button');b.type='button';b.className='dot';b.setAttribute('aria-label','Show '+s.size+' slide');b.onclick=function(){go(k);};dots.appendChild(b);
+  });
+  var i=0,t=null,slides=stage.children,db=dots.children;
+  function show(){for(var k=0;k<3;k++){slides[k].classList.toggle('on',k===i);slides[k].setAttribute('aria-hidden',k===i?'false':'true');db[k].setAttribute('aria-current',k===i?'true':'false');}count.textContent='0'+(i+1)+' / 03';}
+  function start(){clearInterval(t);if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;t=setInterval(function(){if(!document.hidden){i=(i+1)%3;show();}},6000);}
+  function go(n){i=(n+3)%3;show();start();}
+  document.getElementById('prev').onclick=function(){go(i-1);};
+  document.getElementById('next').onclick=function(){go(i+1);};
+  stage.addEventListener('mouseenter',function(){clearInterval(t);});stage.addEventListener('mouseleave',start);
+  stage.addEventListener('focusin',function(){clearInterval(t);});
+  show();start();
+  document.addEventListener('click',function(e){var a=e.target.closest('[data-size]');if(!a)return;var v=a.getAttribute('data-size').replace('kg',' kg').replace('  ',' ');var sel=document.getElementById('fSize');for(var k=0;k<sel.options.length;k++){if(sel.options[k].text===v.trim())sel.selectedIndex=k;}});
+  document.getElementById('orderForm').addEventListener('submit',function(e){
+    e.preventDefault();
+    var n=document.getElementById('fName'),p=document.getElementById('fPhone'),a=document.getElementById('fAddr');
+    var bad=[n,p,a].filter(function(x){return !x.value.trim();});
+    [n,p,a].forEach(function(x){x.style.borderColor=x.value.trim()?'#7b8aa8':'#b3261e';});
+    if(bad.length){bad[0].focus();return;}
+    var msg='LPG order — NK Corporation\nName: '+n.value.trim()+'\nMobile: '+p.value.trim()+'\nCylinder: '+document.getElementById('fSize').value+'\nType: '+document.getElementById('fType').value+'\nQuantity: '+(document.getElementById('fQty').value||1)+'\nAddress: '+a.value.trim();
+    window.open('https://wa.me/8801901168777?text='+encodeURIComponent(msg),'_blank','noopener');
+  });
+  var bn=document.querySelectorAll('.bnr'),bi=0;if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches)setInterval(function(){if(document.hidden)return;bn[bi].classList.remove('on');bn[bi].setAttribute('aria-hidden','true');bi=(bi+1)%bn.length;bn[bi].classList.add('on');bn[bi].removeAttribute('aria-hidden');},7000);
+  var si=document.querySelector('.swapimg');if('IntersectionObserver' in window){new IntersectionObserver(function(es,o){es.forEach(function(e){if(e.isIntersecting){si.classList.add('in');o.disconnect();}});},{threshold:.2}).observe(si);}else si.classList.add('in');
+  document.getElementById('yr').textContent=new Date().getFullYear();
+})();
+</script>
+</body>
+</html>
