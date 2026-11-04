@@ -77,7 +77,7 @@ function resetOv(){DM.value='';DE.value=''}
 var lastAuto=0,DW=document.getElementById('dsw'),pcT=null;
 function pcheck(){if(!DW)return;clearTimeout(pcT);pcT=setTimeout(function(){var it=IT.map(function(x,i){return x.id?(i+':'+x.id+':'+(parseFloat(x.price)||0)+':'+(x.qty||0)):''}).filter(Boolean).join(',');var d=(DM.value!==''?(parseFloat(DM.value)||0):lastAuto)+(parseFloat(DE.value)||0);
  if(!it){IT.forEach(function(x,i){var e=document.getElementById('pw'+i);if(e)e.textContent=''});DW.style.display='none';return}
- fetch('/admin/profit-check/order?items='+encodeURIComponent(it)+'&disc='+d,{headers:{Accept:'application/json'},credentials:'same-origin'}).then(function(r){return r.json()}).then(function(j){IT.forEach(function(x,i){var e=document.getElementById('pw'+i);if(e)e.textContent=(j.lines&&j.lines[i])||''});if(j.disc){DW.style.display='block';DW.textContent=j.disc}else DW.style.display='none'}).catch(function(){})},250)}
+ fetch('/admin/profit-check/order?items='+encodeURIComponent(it)+'&disc='+d,{headers:{Accept:'application/json'},credentials:'same-origin'}).then(function(r){return r.ok?r.json():Promise.reject()}).then(function(j){IT.forEach(function(x,i){var e=document.getElementById('pw'+i);if(e)e.textContent=(j.lines&&j.lines[i])||''});if(j.disc){DW.style.display='block';DW.textContent=j.disc}else DW.style.display='none'}).catch(function(){DW.style.display='block';DW.textContent='⚠ রেট/ডিসকাউন্টের নিয়ম এখন যাচাই করা যাচ্ছে না। অর্ডার সেভ করার সময় সিস্টেম আবার যাচাই করবে; নিয়মের বাইরে হলে সেভ হবে না ও নোটিশ আসবে।'})},250)}
 function chkDisc(){pcheck()}
 DM.addEventListener('input',chkDisc);DE.addEventListener('input',chkDisc);
 function calc(){var ph=p.value.replace(/\D/g,''),s=sub();

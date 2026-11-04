@@ -156,7 +156,7 @@ function disc(){var r=parseFloat($('pReg').value),s=parseFloat($('pSale').value)
 $('pReg').addEventListener('input',disc);$('pSale').addEventListener('input',disc);
 var PFID=@json($p ? (int)$p->id : 0),pfT=null;
 function floorChk(){var w=$('pFloorW');if(!w||!PFID)return;clearTimeout(pfT);pfT=setTimeout(function(){var q='id='+PFID+'&price='+encodeURIComponent(($('pSale').value&&parseFloat($('pSale').value)>0&&parseFloat($('pSale').value)<parseFloat($('pReg').value))?$('pSale').value:$('pReg').value);[2,3,4,5].forEach(function(n){var el=document.querySelector('[name=buy'+n+'_price]');q+='&b'+n+'='+encodeURIComponent(el?el.value:'')});
- fetch('/admin/profit-check/product?'+q,{headers:{Accept:'application/json'},credentials:'same-origin'}).then(function(r){return r.json()}).then(function(j){w.textContent=j.warn||'';w.style.display=j.warn?'block':'none'}).catch(function(){})},250)}
+ fetch('/admin/profit-check/product?'+q,{headers:{Accept:'application/json'},credentials:'same-origin'}).then(function(r){return r.ok?r.json():Promise.reject()}).then(function(j){w.textContent=j.warn||'';w.style.display=j.warn?'block':'none'}).catch(function(){w.textContent='⚠ দামের নিয়ম এখন যাচাই করা যাচ্ছে না। Save করার সময় সিস্টেম আবার যাচাই করবে; রেট নিয়মের বাইরে হলে Save হবে না ও এখানে নোটিশ আসবে।';w.style.display='block'})},250)}
 ['pReg','pSale'].forEach(function(i){$(i).addEventListener('input',floorChk)});[2,3,4,5].forEach(function(n){var el=document.querySelector('[name=buy'+n+'_price]');if(el)el.addEventListener('input',floorChk)});floorChk();
 /* url preview */
 var slugTouched={{ $p ? 'true' : 'false' }};

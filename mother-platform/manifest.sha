@@ -8,7 +8,7 @@ a2de5c20675b2619c8c6cf754795defc7b12fa65 resources/views/layout.blade.php
 915ddcceaf8fe7c3f03a0bb0838a6577d31f4578 resources/views/dashboard.blade.php
 e05a55e8e920334c82d21bd647b16f90582e641d resources/views/orders.blade.php
 a574e0a91def69038501f940a89f76e287b4a25d resources/views/admin/orders/partials/status-tabs.blade.php
-b3b6f519b0e728c217eddb7d3e79a514877300c4 resources/views/order_new.blade.php
+3181f8f8113a3486c304ee6883164569b5e6e932 resources/views/order_new.blade.php
 c029283c0ca5dd1564a6c40dd8f13b610e7323dc resources/views/order_show.blade.php
 10eb707d68bf93154470b38eed25809fbb0ab23e resources/views/stafflog.blade.php
 3ead694e6fd61447be7c3afcb8ddc08f6a7fe495 database/migrations/2026_10_31_000002_catalog_discounts.php
@@ -16,7 +16,7 @@ a86fc8004565dbccb716d8fb4093c91518f76444 app/Http/Controllers/CatalogController.
 d29e287977c99d0356f38ea873735019d77df9e7 app/Http/Controllers/TaxonomyController.php
 673c2785b792d6513f0f3b05331d27fed6a962cb app/Http/Controllers/DiscountController.php
 f2be7e8cd4a0d84270365857cee48893cf66a7e8 resources/views/products.blade.php
-70deac3dde2a88a23da56abdb333c4ab76d9f084 resources/views/product_form.blade.php
+1d8c783a9c6757f0bf75b770c746d5a4219c9b82 resources/views/product_form.blade.php
 d4c8d5b74998a42fa4e9739bedf77a5ec7553e2f resources/views/taxonomy.blade.php
 23b559a80b56c78f8b280d427d43bf621cd8fdd1 resources/views/category_level.blade.php
 b5ce703e9eac07ab60e2e31f7c486d90029528e2 resources/views/discounts.blade.php
