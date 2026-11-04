@@ -9,5 +9,6 @@ class AppServiceProvider extends ServiceProvider {
     if (!$this->app->runningInConsole()) $this->app->make(\Illuminate\Contracts\Http\Kernel::class)->pushMiddleware(\App\Http\Middleware\CloudflareRealIp::class);
     if (!$this->app->runningInConsole()) $this->app->make(\Illuminate\Contracts\Http\Kernel::class)->pushMiddleware(\App\Http\Middleware\InvoiceDisplay::class);
     if (!$this->app->runningInConsole()) $this->app->make(\Illuminate\Contracts\Http\Kernel::class)->pushMiddleware(\App\Http\Middleware\MinifyHtml::class);
+    if (!$this->app->runningInConsole()) $this->app->make(\Illuminate\Contracts\Http\Kernel::class)->pushMiddleware(\App\Http\Middleware\CanonicalHost::class);
   }
 }

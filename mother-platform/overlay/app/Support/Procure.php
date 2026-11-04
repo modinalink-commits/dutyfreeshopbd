@@ -17,7 +17,7 @@ class Procure {
   public static function set(string $k, string $d = ''): string { $v = DB::table('settings')->where('key', $k)->value('value'); return $v === null ? $d : (string)$v; }
   public static function put(string $k, string $v): void { DB::table('settings')->updateOrInsert(['key'=>$k], ['value'=>$v,'updated_at'=>now(),'created_at'=>now()]); }
   public static function on(string $k): bool { return self::set($k, '0') === '1'; }
-  public static function base(): string { $u = rtrim((string)config('app.url'), '/'); return ($u === '' || str_contains($u, 'localhost')) ? 'https://dutyfreebd.com' : $u; }
+  public static function base(): string { return Domain::main(); }
   public static function invoiceLink($p): string { return self::base().'/purchase/invoice/'.$p->invoice.'?t='.$p->token; }
   public static function statementLink($s, $from = null, $to = null): string { return self::base().'/supplier/statement/'.$s->token.($from ? '?from='.$from.'&to='.$to : ''); }
   public static function audit(string $act, string $subject, $prev = null, $new = null): void {

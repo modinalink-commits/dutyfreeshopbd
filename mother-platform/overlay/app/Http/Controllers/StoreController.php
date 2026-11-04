@@ -554,7 +554,7 @@ class StoreController extends Controller {
   }
   public function sitemap() {
     $xml = self::rem('store.sitemap8', 3600, function () {
-      $h = request()->getHost(); $B = in_array($h, ['localhost','127.0.0.1','::1'], true) || !str_contains($h, '.') ? rtrim((string)config('app.url'), '/') : 'https://'.$h; $ul = fn($p) => $B.'/'.ltrim($p, '/');
+      $B = \App\Support\Domain::main(); // sitemap always lists the main domain, whichever domain asked $ul = fn($p) => $B.'/'.ltrim($p, '/');
       $u = fn($loc, $img = null, $lm = null) => '<url><loc>'.e($loc).'</loc>'.($lm ? '<lastmod>'.date('c', strtotime((string)$lm)).'</lastmod>' : '').'<changefreq>daily</changefreq>'.($img ? '<image:image><image:loc>'.e($img).'</image:loc></image:image>' : '').'</url>';
       $o = $u($ul('/'));
       foreach ($this->cats() as $c) { if (self::isSmokeCat($c)) continue; $o .= $u($ul($c->slug.'/')); }

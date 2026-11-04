@@ -585,6 +585,8 @@ app/Support/MiniXlsx.php
 database/migrations/2026_11_04_000123_compare_price_10_12.php
 database/migrations/2026_11_04_000130_products_avg_cost.php
 database/migrations/2026_11_04_000131_avg_cost_logs.php
+app/Support/Domain.php
+app/Http/Middleware/CanonicalHost.php
 resources/views/inventory_pricing.blade.php
 resources/views/avg_history.blade.php
 resources/views/inventory_margin_cells.blade.php

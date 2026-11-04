@@ -20,7 +20,7 @@ class Referral
     do { $code = $base . random_int(100, 999); } while (DB::table('customers')->where('ref_code', $code)->exists());
     DB::table('customers')->where('id', $c->id)->update(['ref_code' => $code]); return $code;
   }
-  public static function link(string $code): string { return rtrim((string)config('app.url', 'https://dutyfreebd.com'), '/') . '/ref/' . $code; }
+  public static function link(string $code): string { return Domain::main() . '/ref/' . $code; }
   public static function referrer(string $code): ?object { return DB::table('customers')->whereRaw('upper(ref_code) = ?', [strtoupper($code)])->where('blocked', false)->first(); }
 
   /** Rules 1-3, 6: returns ['code','referrer','discount'] when this phone may use the code on this subtotal. */
