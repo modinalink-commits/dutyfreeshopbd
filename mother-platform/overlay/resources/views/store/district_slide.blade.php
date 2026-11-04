@@ -13,6 +13,7 @@
 .dm .cl.c{width:13cqw;height:3.6cqw;left:-14cqw;top:14cqw;animation-duration:74s;animation-delay:-45s;opacity:.5}
 @keyframes dmDrift{to{transform:translateX(125cqw)}}
 .dm .logo{position:absolute;left:3.2cqw;top:2.2cqw;width:16cqw;height:auto;display:block}
+.dmz .dm img.logo{width:16cqw;height:auto;object-fit:contain}
 .dm .tag{position:absolute;left:3.2cqw;top:8.3cqw;width:16cqw;display:flex;align-items:center;gap:.6cqw;font-size:max(8px,1.05cqw);font-weight:500;color:#0B2A5B;white-space:nowrap}
 .dm .tag:before,.dm .tag:after{content:"";height:1px;flex:1;background:rgba(11,42,91,.35)}
 .dm .bd{position:absolute;width:6.8cqw;height:6.8cqw;border-radius:50%;background:#fff;border:.35cqw solid #FF6A00;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font:700 max(7px,.95cqw)/1.15 Inter,system-ui,sans-serif;letter-spacing:.02em;color:#0B2A5B;box-shadow:0 .8cqw 1.8cqw rgba(11,42,91,.18)}
@@ -31,7 +32,7 @@
 .dm .tk .tx{min-width:0;flex:1}
 .dm .tk .nm{font-size:max(13px,2.3cqw);line-height:1.1;font-weight:700;color:#0B2A5B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dm .tk .sb{font-size:max(9px,1.2cqw);line-height:1.35;font-weight:500;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dm .tk .ct{flex:none;text-align:right;font-weight:700;color:#0B3D91;font-size:max(11px,1.7cqw);line-height:1.1}
+.dm .tk .ct{flex:none;white-space:nowrap;text-align:right;font-weight:700;color:#0B3D91;font-size:max(11px,1.7cqw);line-height:1.1}
 .dm .tk .ct small{display:block;font-size:max(8px,.95cqw);font-weight:500;color:#64748B}
 .dm .tk .pb{position:absolute;left:1.6cqw;right:1.6cqw;bottom:.55cqw;height:.3cqw;border-radius:9cqw;background:rgba(11,61,145,.12);overflow:hidden}
 .dm .tk .pb i{display:block;height:100%;width:0;background:linear-gradient(90deg,#E6197A,#FF7A00);transition:width .12s linear}
@@ -55,7 +56,7 @@
 @container dm (max-width:760px){
 .dm{display:flex;flex-direction:column;align-items:center;gap:3.4cqw;padding:5cqw 4cqw 5cqw}
 .dm .logo,.dm .tag,.dm .bd,.dm .route,.dm .h,.dm .chips,.dm .tk,.dm .ct2,.dm .map{position:relative;left:auto;top:auto;bottom:auto;right:auto}
-.dm .logo{width:34cqw;order:1}
+.dm .logo{order:1}.dmz .dm img.logo{width:34cqw}
 .dm .tag{display:none}.dm .bd,.dm .route{display:none}
 .dm .h{order:2;width:100%;align-items:center;text-align:center}
 .dm .h1{font-size:11.5cqw}.dm .h2{font-size:10.5cqw}
