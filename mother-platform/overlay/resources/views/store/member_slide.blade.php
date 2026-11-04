@@ -67,5 +67,5 @@
 <div class="mcc k2" style="--d:4.65s">@include('components.membership-card', ['name'=>'Your Name','id'=>'DFC######','stars'=>3,'key'=>'platinum'])</div>
 <div class="mcc k3" style="--d:6.8s">@include('components.membership-card', ['name'=>'Your Name','id'=>'DFC######','stars'=>4,'key'=>'diamond'])</div>
 </div>
-<script>(function(){var s=document.currentScript,el=s&&s.parentNode;if(!el||!('IntersectionObserver' in window)){el&&el.classList.add('on');return}var t=el.parentNode;new IntersectionObserver(function(es){es.forEach(function(e){if(e.intersectionRatio>=.3)el.classList.add('on');else if(e.intersectionRatio===0)el.classList.remove('on')})},{root:t,threshold:[0,.3]}).observe(el)})();</script>
+<script>(function(){var s=document.currentScript,el=s&&s.parentNode;if(!el)return;var t=el.parentNode,raf=0;function vis(){var a=el.getBoundingClientRect(),b=t.getBoundingClientRect(),w=Math.min(a.right,b.right)-Math.max(a.left,b.left);return a.width?Math.max(0,w)/a.width:0}function upd(){raf=0;var r=vis(),on=el.classList.contains('on');if(r>=.5&&!on)el.classList.add('on');else if(r<=.02&&on)el.classList.remove('on')}function q(){if(!raf)raf=requestAnimationFrame(upd)}t.addEventListener('scroll',q,{passive:true});addEventListener('resize',q);upd()})();</script>
 </a>
