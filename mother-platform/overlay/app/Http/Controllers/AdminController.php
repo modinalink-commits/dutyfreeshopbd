@@ -284,6 +284,16 @@ class AdminController extends Controller {
     if ($r->expectsJson()) return response()->json(['ok'=>true] + self::commentPayload($id));
     return redirect("/admin/orders/$id#comments");
   }
+  /** Courier note = orders.note; it is what Pathao receives as the delivery instruction when the parcel is booked. */
+  public function orderCourierNote(Request $r, $id) {
+    $o = DB::table('orders')->where('id',$id)->first(); abort_unless($o, 404);
+    $new = mb_substr(trim((string)$r->input('note')), 0, 200); $old = trim((string)$o->note);
+    if ($new !== $old) {
+      DB::table('orders')->where('id',$id)->update(['note'=>$new !== '' ? $new : null, 'updated_at'=>now()]);
+      try { \App\Support\OrderActivity::log((int)$id, 'courier_note', $old, $new, 'Courier note '.($new === '' ? 'cleared' : ($old === '' ? 'added' : 'changed'))); } catch (\Throwable $e) {}
+    }
+    return response()->json(['ok'=>true, 'note'=>$new, 'booked'=>!empty($o->consignment_id)]);
+  }
   public static function commentPayload($id): array {
     $o = DB::table('orders')->find($id); $ph = (string)($o->phone ?? '');
     $rows = DB::table('order_staff_comments as c')->join('orders as oo','oo.id','=','c.order_id')->where(fn($w) => $w->where('c.order_id',$id)->orWhere(fn($x) => $x->where('oo.phone',$ph)->where('oo.phone','<>','')))->orderByDesc('c.id')->limit(50)->select('c.*','oo.invoice as inv')->get();

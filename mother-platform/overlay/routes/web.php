@@ -78,6 +78,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/orders/{id}/schedule/cancel', [A::class,'orderScheduleCancel'])->whereNumber('id');
   Route::post('/orders/{id}/quick-status', [A::class,'orderQuickStatus'])->whereNumber('id');
   Route::post('/orders/{id}/comment', [A::class,'orderComment']);
+  Route::post('/orders/{id}/courier-note', [A::class,'orderCourierNote'])->whereNumber('id');
   Route::get('/orders/{id}/comments', [A::class,'orderComments']);
   Route::get('/orders-export.csv', [A::class,'ordersCsv']);
   Route::get('/staff-log', [A::class,'staffLog']);
