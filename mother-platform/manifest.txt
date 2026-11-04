@@ -550,3 +550,6 @@ app/Http/Controllers/AreaOrdersController.php
 resources/views/area_orders.blade.php
 app/Support/CourierOverview.php
 database/migrations/2026_11_04_000090_speed_indexes.php
+public/banners/manchester-anim.mp4
+public/banners/manchester-anim.webp
+database/migrations/2026_11_04_000095_manchester_slide.php
