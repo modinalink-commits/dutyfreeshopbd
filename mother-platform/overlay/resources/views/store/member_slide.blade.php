@@ -1,5 +1,6 @@
-<a class="hxa hxmc" href="/account" aria-label="DutyFree BD Membership — আপনার কার্ড দেখুন">
+<a class="hxa hxmc{{ !empty($gl) ? ' gl' : '' }}" href="/account" aria-label="DutyFree BD Membership — আপনার কার্ড দেখুন">
 <style>
+.hxg{flex:0 0 100%;min-width:0;scroll-snap-align:start}
 .hxmc{container-type:inline-size;display:block;position:relative;overflow:hidden;color:#fff;text-decoration:none;background:linear-gradient(120deg,#0B1220 0%,#1F2A44 55%,#3A2A2A 100%)}
 .hxmc .mg{position:absolute;right:-8cqw;top:-10cqw;width:62cqw;height:50cqw;background:radial-gradient(closest-side,rgba(255,90,0,.38),rgba(255,90,0,0) 70%);pointer-events:none}
 .hxmc .mx{position:absolute;left:8.3cqw;top:0;bottom:0;width:41cqw;display:flex;flex-direction:column;justify-content:center;gap:1.25cqw}
@@ -44,6 +45,12 @@
 .hxmc .ms,.hxmc .mt{display:none}
 .hxmc .mc{height:7.6cqw;padding:0 3.4cqw;border-radius:2cqw;font-size:max(10px,3cqw);box-shadow:0 4px 12px rgba(255,90,0,.35)}
 .hxmc .mst{left:57cqw;width:39cqw}
+.hxmc.gl{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:5cqw;padding:7cqw 5cqw;aspect-ratio:auto}
+.hxmc.gl .mx{position:static;width:100%;align-items:center;text-align:center;gap:3cqw}
+.hxmc.gl .mh{font-size:6cqw}
+.hxmc.gl .mst{position:relative;left:auto;top:auto;transform:none;width:74cqw;flex:none}
+.hxmc.gl .mc{align-self:center;height:9cqw;padding:0 5cqw;font-size:max(11px,3.4cqw)}
+.hxmc.gl .mk{font-size:max(8px,2.6cqw)}
 }
 </style>
 <span class="mg"></span>

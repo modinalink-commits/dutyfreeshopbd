@@ -82,10 +82,16 @@ document.addEventListener('visibilitychange',function(){if(!cur||!cur.pl||!cur.p
 function first(){var f=tr.children[0];if(f&&f.classList.contains('hxv'))active()}
 if(document.readyState==='complete')setTimeout(first,300);else addEventListener('load',function(){setTimeout(first,300)})});</script>
 @php $__gp = ($s['home_globe'] ?? '1') === '1' ? \App\Http\Controllers\StoreController::globeProducts() : collect(); @endphp
-@if($__gp->count())
+@php $__ms = ($s['hero_member_slide'] ?? '1') !== '0'; @endphp
+@if($__gp->count() && $__ms)
+<div class="w hx"><div class="hx-m"><div class="sld hxs" data-auto="10000"><div class="sl-t"><div class="hxg">
+@include('store.globe', ['deals' => $__gp])
+</div>
+@include('store.member_slide', ['gl' => true])
+</div><div class="sl-d"></div><button type="button" class="sl-a pv" aria-label="Previous slide">‹</button><button type="button" class="sl-a nx" aria-label="Next slide">›</button></div></div></div>
+@elseif($__gp->count())
 <div class="w hx">@include('store.globe', ['deals' => $__gp])</div>
 @else
-@php $__ms = ($s['hero_member_slide'] ?? '1') !== '0'; @endphp
 <div class="w hx"><div class="hx-m">
 @if($slides->count())
 <h1 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap">DutyFree BD – অরিজিনাল ইমপোর্টেড পারফিউম, স্কিন কেয়ার ও লাইফস্টাইল পণ্য</h1>
