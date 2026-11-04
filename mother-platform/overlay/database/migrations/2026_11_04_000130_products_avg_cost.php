@@ -9,6 +9,11 @@ return new class extends Migration {
   public function up(): void {
     if (!Schema::hasTable('products') || !Schema::hasColumn('products', 'cost')) return;
     if (!Schema::hasColumn('products', 'avg_cost')) Schema::table('products', fn(Blueprint $t) => $t->decimal('avg_cost', 14, 4)->default(0));
+    if (!Schema::hasTable('avg_cost_logs')) Schema::create('avg_cost_logs', function (Blueprint $t) {
+      $t->id(); $t->unsignedBigInteger('product_id')->index(); $t->string('source', 40); $t->string('reference', 120)->nullable(); $t->integer('qty')->default(0);
+      $t->decimal('unit_cost', 14, 4)->default(0); $t->decimal('old_avg', 14, 4)->default(0); $t->decimal('new_avg', 14, 4)->default(0);
+      $t->unsignedBigInteger('user_id')->nullable(); $t->string('user_name', 120)->nullable(); $t->timestamps();
+    });
     $lots = Schema::hasTable('purchase_items') && Schema::hasTable('purchases') && Schema::hasColumn('purchases', 'stock_applied');
     DB::table('products')->where(fn($q) => $q->whereNull('avg_cost')->orWhere('avg_cost', '<=', 0))->orderBy('id')->chunkById(500, function ($rows) use ($lots) {
       foreach ($rows as $p) {

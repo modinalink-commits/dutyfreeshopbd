@@ -75,14 +75,14 @@ class Procure {
     $p = DB::table('purchases')->where('id',$purchaseId)->lockForUpdate()->first(); if (!$p || $p->stock_applied) return;
     foreach (DB::table('purchase_items')->where('purchase_id',$purchaseId)->get() as $i) if ($i->product_id) { $in = (int)$i->qty - (int)$i->damage_qty; $was = DB::table('products')->where('id',$i->product_id)->first();
       self::stock($i->product_id, $in, 'purchase', $p->invoice);
-      if ((float)$i->cost > 0) DB::table('products')->where('id',$i->product_id)->update(['cost'=>$i->cost, 'avg_cost'=>ProfitFloor::blend($was, $in, (float)$i->cost)]); }
+      if ((float)$i->cost > 0) { $na = ProfitFloor::blend($was, $in, (float)$i->cost); DB::table('products')->where('id',$i->product_id)->update(['cost'=>$i->cost, 'avg_cost'=>$na]); ProfitFloor::logAvg((int)$i->product_id, 'purchase', (string)$p->invoice, $in, (float)$i->cost, ProfitFloor::base($was), $na); } }
     DB::table('purchases')->where('id',$purchaseId)->update(['stock_applied'=>true]);
   }
   public static function reverseStock(int $purchaseId): void {
     $p = DB::table('purchases')->where('id',$purchaseId)->lockForUpdate()->first(); if (!$p || !$p->stock_applied) return;
     foreach (DB::table('purchase_items')->where('purchase_id',$purchaseId)->get() as $i) if ($i->product_id) { $out = (int)$i->qty - (int)$i->damage_qty; $was = DB::table('products')->where('id',$i->product_id)->first();
       self::stock($i->product_id, -$out, 'purchase-reversal', $p->invoice);
-      if ($was && (float)$i->cost > 0) DB::table('products')->where('id',$i->product_id)->update(['avg_cost'=>ProfitFloor::unblend($was, $out, (float)$i->cost)]); }
+      if ($was && (float)$i->cost > 0) { $na = ProfitFloor::unblend($was, $out, (float)$i->cost); DB::table('products')->where('id',$i->product_id)->update(['avg_cost'=>$na]); ProfitFloor::logAvg((int)$i->product_id, 'purchase-reversal', (string)$p->invoice, -$out, (float)$i->cost, ProfitFloor::base($was), $na); } }
     DB::table('purchases')->where('id',$purchaseId)->update(['stock_applied'=>false]);
   }
 

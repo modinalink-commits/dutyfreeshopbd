@@ -26,6 +26,17 @@ class ProfitFloor {
     if ($old <= 0 || $avg <= 0) return round($cost, 4);
     return round(($old * $avg + $qty * $cost) / ($old + $qty), 4);
   }
+  /** Transaction history for every change of the average (stock-in, reversal). */
+  public static function logAvg(int $pid, string $source, string $ref, int $qty, float $unit, float $old, float $new): void {
+    try { if (abs($old - $new) < 0.00005 && $source === 'purchase-reversal') return; DB::table('avg_cost_logs')->insert(['product_id' => $pid, 'source' => $source, 'reference' => $ref, 'qty' => $qty, 'unit_cost' => $unit, 'old_avg' => $old, 'new_avg' => $new, 'user_id' => auth()->id(), 'user_name' => auth()->user()->name ?? 'system', 'created_at' => now(), 'updated_at' => now()]); } catch (\Throwable $e) { report($e); }
+  }
+  /** Margin state for a sale price over the average: [label, colour]. Profit % = (price - avg) / avg. */
+  public static function state(float $avg, float $price): array {
+    if ($avg <= 0) return ['No cost on file', '#6B7280'];
+    $pct = ($price - $avg) / $avg * 100;
+    if ($price + 0.004 < self::floor($avg)) return ['🔴 Below Minimum', '#B91C1C'];
+    return $pct < 20 ? ['🟠 Near Minimum', '#C2410C'] : ['🟢 Safe', '#166534'];
+  }
   /** Average after a purchase of $qty units at $cost is reversed. */
   public static function unblend($was, int $qty, float $cost): float {
     $left = (int)($was->stock ?? 0) - $qty; $avg = self::base($was ?? (object)[]);

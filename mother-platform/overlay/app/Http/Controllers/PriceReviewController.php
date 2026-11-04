@@ -23,6 +23,34 @@ class PriceReviewController extends Controller {
     return view('price_review', ['rows' => $rows]);
   }
 
+  /** Inventory pricing table: last purchase, AVERAGE purchase price (the fixed cost base), sale price, minimum margin, profit, profit % and status for every product. Admin only. */
+  public function inventory(Request $r) {
+    abort_unless(\App\Support\ProfitFloor::admin(), 403);
+    $q = trim((string)$r->query('q', '')); $f = (string)$r->query('status', ''); $cat = (int)$r->query('category', 0);
+    $qb = DB::table('products as p')->leftJoin('categories as c', 'c.id', '=', 'p.category_id')->selectRaw('p.id, p.sku, p.name, p.stock, p.price, p.published, p.cost as last_cost, coalesce(nullif(p.avg_cost,0), p.cost) as avg, c.name as cat');
+    if ($cat) $qb->where('p.category_id', $cat);
+    if ($q !== '') { $like = '%' . $q . '%'; $qb->where(fn($w) => \App\Support\SkuSearch::orSku($w->where('p.name', 'ilike', $like)->orWhere('p.sku', 'ilike', $like), $q, 'p.sku')); }
+    $rows = []; $n = ['safe' => 0, 'near' => 0, 'below' => 0, 'none' => 0];
+    foreach ($qb->orderBy('p.name')->limit(6000)->get() as $x) {
+      $avg = (float)$x->avg; $pr = (float)$x->price; [$lab, $col] = \App\Support\ProfitFloor::state($avg, $pr);
+      $k = $avg <= 0 ? 'none' : (str_contains($lab, 'Below') ? 'below' : (str_contains($lab, 'Near') ? 'near' : 'safe')); $n[$k]++;
+      if ($f !== '' && $f !== $k) continue;
+      $rows[] = ['id' => $x->id, 'sku' => $x->sku ?: $x->id, 'name' => $x->name, 'cat' => $x->cat ?: '-', 'stock' => (int)$x->stock, 'last' => (float)$x->last_cost, 'avg' => $avg, 'price' => $pr, 'min' => $avg > 0 ? \App\Support\ProfitFloor::floor($avg) : 0, 'profit' => $avg > 0 ? $pr - $avg : 0, 'pct' => $avg > 0 ? ($pr - $avg) / $avg * 100 : null, 'state' => $lab, 'col' => $col];
+    }
+    if ($r->query('export') === 'csv') {
+      $o = fopen('php://temp', 'w+'); fputcsv($o, ['Product ID', 'SKU', 'Product', 'Category', 'Stock', 'Last Purchase Price', 'Average Purchase Price', 'Sale Price', 'Minimum Margin %', 'Minimum Safe Price', 'Profit', 'Profit %', 'Status']);
+      foreach ($rows as $x) fputcsv($o, [$x['id'], $x['sku'], $x['name'], $x['cat'], $x['stock'], $x['last'], round($x['avg'], 2), $x['price'], 15, $x['min'], round($x['profit'], 2), $x['pct'] === null ? '' : round($x['pct'], 2), preg_replace('/^[^A-Za-z]+/u', '', $x['state'])]);
+      rewind($o); return response("\xEF\xBB\xBF" . stream_get_contents($o), 200, ['Content-Type' => 'text/csv; charset=UTF-8', 'Content-Disposition' => 'attachment; filename="inventory-pricing.csv"']);
+    }
+    return view('inventory_pricing', ['rows' => $rows, 'n' => $n, 'q' => $q, 'f' => $f, 'cat' => $cat, 'cats' => DB::table('categories')->orderBy('name')->get(['id', 'name'])]);
+  }
+  /** Every change of one product's average purchase price (stock-in / reversal). */
+  public function history(int $id) {
+    abort_unless(\App\Support\ProfitFloor::admin(), 403);
+    $p = DB::table('products')->where('id', $id)->first(); abort_unless($p, 404);
+    return view('avg_history', ['p' => $p, 'rows' => DB::table('avg_cost_logs')->where('product_id', $id)->orderByDesc('id')->limit(300)->get()]);
+  }
+
   /** Every product with purchase price, selling price, profit and ROI (profit on cost), stock and the price before the one-time raise. */
   private function all(Request $r) {
     $old = []; try { foreach (DB::table('price_floor_backup')->orderBy('id')->get(['product_id', 'old_price']) as $b) if (!isset($old[$b->product_id])) $old[$b->product_id] = (float)$b->old_price; } catch (\Throwable $e) {}

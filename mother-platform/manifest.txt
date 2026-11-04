@@ -584,6 +584,9 @@ database/migrations/2026_11_04_000122_zero_sourcing_stock.php
 app/Support/MiniXlsx.php
 database/migrations/2026_11_04_000123_compare_price_10_12.php
 database/migrations/2026_11_04_000130_products_avg_cost.php
+resources/views/inventory_pricing.blade.php
+resources/views/avg_history.blade.php
+resources/views/inventory_margin_cells.blade.php
 app/Support/SkuSearch.php
 app/Http/Middleware/MinifyHtml.php
 app/Support/CourierDesc.php
