@@ -41,6 +41,10 @@ class NkInstall extends Command
             'phone' => '01901-168777',
             'whatsapp' => '01901-168777',
             'address_en' => 'Bhuiya Market, Mama Fakir Astana, South Sonapahar, Jorarganj, Mirsarai, Chattogram, Bangladesh',
+            'supplier_name' => 'AYGas',
+            'supplier_branch' => 'Zorarganj Mirsarai branch',
+            'supplier_code' => 'Cusc000419',
+            'supplier_status' => 'Exclusive',
             'address_bn' => 'বিএস আরমের ২ কিলোমিটার দক্ষিণে, মামা ফকির আস্তানা, ভুইয়া মার্কেট, দক্ষিণ সোনাপাহাড়, জোরারগঞ্জ, মীরসরাই, চট্টগ্রাম।',
         ];
         foreach ($defaults as $key => $value) {

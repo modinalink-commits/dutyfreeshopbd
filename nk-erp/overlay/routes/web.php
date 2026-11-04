@@ -4,6 +4,7 @@ use App\Http\Controllers\ApiController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\BrandController;
+use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\PosController;
 use App\Http\Controllers\ProductController;
@@ -89,6 +90,19 @@ Route::middleware(['auth', 'pwd'])->group(function () {
         Route::post('/settings', [SettingController::class, 'update'])->name('settings.update')->middleware('role:super_admin');
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
         Route::get('/activity', [UserController::class, 'activity'])->name('activity');
+    });
+
+    // Company money is confidential: Super Admin only.
+    Route::middleware('role:super_admin')->group(function () {
+        Route::get('/company', [CompanyController::class, 'index'])->name('company.index');
+        Route::post('/company/deposit', [CompanyController::class, 'storeDeposit'])->name('company.deposit');
+        Route::post('/company/challan', [CompanyController::class, 'storeChallan'])->name('company.challan');
+        Route::post('/company/receive', [CompanyController::class, 'receive'])->name('company.receive');
+        Route::post('/company/reverse', [CompanyController::class, 'reverse'])->name('company.reverse');
+        Route::post('/company/import', [CompanyController::class, 'import'])->name('company.import');
+        Route::get('/company/rates', [CompanyController::class, 'rates'])->name('company.rates');
+        Route::post('/company/rates', [CompanyController::class, 'saveRate'])->name('company.rates.save');
+        Route::post('/company/month', [CompanyController::class, 'saveMonth'])->name('company.month.save');
     });
 
     Route::middleware('role:super_admin')->group(function () {

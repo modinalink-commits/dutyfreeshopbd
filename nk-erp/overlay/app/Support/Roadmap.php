@@ -36,7 +36,7 @@ class Roadmap
             ['products', 'Products & prices', 'products.index', 'POS · Wholesale price lists'],
         ],
         'COMPANY' => [
-            ['supplier', 'Company ledger', null, 'Supplier · STM financial'],
+            ['supplier', 'Company ledger', 'company.index', 'Supplier · STM financial (Super Admin only)'],
         ],
         'MONEY' => [
             ['accounts', 'Accounts & profit', null, 'Accounts'],

@@ -59,10 +59,12 @@ textarea{padding:8px 10px;min-height:60px}
     @php($newCount = \App\Models\WebsiteOrder::where('status', 'new')->count())
     @php($waitX = \App\Models\BrandExchange::where('status', 'waiting')->count())
     @php($adminOnly = ['company', 'users', 'activity', 'sms'])
+    @php($superOnly = ['supplier'])
     @foreach(\App\Support\Roadmap::MENU as $group => $items)
       <span class="grp">{{ $group }}</span>
       @foreach($items as [$key, $label, $route, $design])
         @continue(in_array($key, $adminOnly) && ! in_array($u->role, ['super_admin', 'admin']))
+        @continue(in_array($key, $superOnly) && $u->role !== 'super_admin')
         @if($route)
           <a class="nav {{ request()->routeIs(explode('.', $route)[0].'*') ? 'on' : '' }}" href="{{ route($route) }}">{{ $label }}
             @if($key === 'corders' && $newCount)<span class="badge">{{ $newCount }}</span>@endif
