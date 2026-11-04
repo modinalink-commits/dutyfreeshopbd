@@ -230,7 +230,6 @@ f.onsubmit=function(e){e.preventDefault();var t=q.value.trim();if(!t||busy)retur
 fetch('/ai-chat',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({messages:h.slice(-8)})}).then(function(r){return r.json()}).then(function(j){w.remove();var r=j.reply||'দুঃখিত, অনুগ্রহ করে কল করুন: {{ \App\Support\Biz::hotline() }}';add('b',r);h.push({role:'assistant',content:r})}).catch(function(){w.remove();add('b','নেটওয়ার্ক সমস্যা হয়েছে, আবার চেষ্টা করুন।')}).then(function(){busy=0})}})();</script>
 @endif
 @include('store.chat_widget')
-@include('store.free_call')
 <style id="m2col">
 /* Mobile = 2 products per row, everywhere the shared product card (.pc) is used: homepage grids + sliders, category, sub/child category, brand, search, offers, related, wishlist.
    Last in the cascade on purpose. Desktop and tablet (>760px) are untouched. Auto-slide / swipe / snap behaviour is unchanged: only the visible count (--pv) and card framing change. */

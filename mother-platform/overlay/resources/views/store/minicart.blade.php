@@ -21,7 +21,7 @@
 #dfat{position:fixed;left:50%;top:18px;transform:translate(-50%,-80px);background:#0B1F3A;color:#fff;border-radius:999px;padding:10px 18px;font-size:13.5px;font-weight:700;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.28);transition:transform .3s;pointer-events:none;border:1px solid rgba(255,138,0,.6)}#dfat.on{transform:translate(-50%,0)}
 @media(max-width:760px){
 #dfmc{top:auto;left:0;width:100%;height:82vh;border-radius:18px 18px 0 0;transform:translateY(104%)}#dfmc.on{transform:none}
-/* mobile: a small round cart button in the middle (Free Call left, Cart centre, Chat right), with the item count */
+/* mobile: a small round cart button in the middle (Cart centre, Chat right), with the item count */
 #dfsb.on{display:block;position:fixed;left:50%;bottom:70px;transform:translateX(-50%);z-index:48;width:54px;height:54px}
 #dfsb span{display:none}
 #dfsb button{position:relative;display:flex;align-items:center;justify-content:center;width:54px;height:54px;padding:0;border:2.5px solid #0B1220;border-radius:50%;background:linear-gradient(135deg,#FF8A00,#FF5A00);color:#fff;font-size:0;box-shadow:0 6px 16px rgba(255,90,0,.42);cursor:pointer}

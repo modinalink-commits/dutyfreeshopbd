@@ -24,8 +24,6 @@ class ModulePermission {
     if (str_starts_with($p, 'sms-marketing')) return 'marketing';
     if (str_starts_with($p, 'push')) return 'marketing';
     if (str_starts_with($p, 'chat-settings')) return 'settings';
-    if (preg_match('#^free-calls/(settings|toggle)#', $p)) return 'settings'; // TURN server credentials: settings-level only
-    if (preg_match('#^free-calls?(/|$)#', $p)) return 'orders'; // customer care: Free Call queue, history, settings
     if (preg_match('#^chat(/|$)#', $p)) return 'orders';
     if (preg_match('#^call-center/(account|extensions)#', $p)) return 'settings'; // SIP server + per-user extension passwords: settings-level only
     if (str_starts_with($p, 'call-center')) return 'orders';

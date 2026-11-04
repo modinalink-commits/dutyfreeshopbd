@@ -103,7 +103,6 @@ nav[role=navigation] svg,.pagination svg{width:16px!important;height:16px!import
 @else
 @include('chat_widget')
 @include('softphone_fab')
-@include('free_call_admin')
 @endif
 @endauth
 @yield('js')
