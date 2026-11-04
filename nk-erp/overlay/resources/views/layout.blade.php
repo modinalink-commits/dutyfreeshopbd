@@ -59,7 +59,7 @@ textarea{padding:8px 10px;min-height:60px}
     @php($newCount = \App\Models\WebsiteOrder::where('status', 'new')->count())
     @php($waitX = \App\Models\BrandExchange::where('status', 'waiting')->count())
     @php($adminOnly = ['company', 'users', 'activity', 'sms'])
-    @php($superOnly = ['supplier'])
+    @php($superOnly = ['supplier', 'accounts'])
     @foreach(\App\Support\Roadmap::MENU as $group => $items)
       <span class="grp">{{ $group }}</span>
       @foreach($items as [$key, $label, $route, $design])

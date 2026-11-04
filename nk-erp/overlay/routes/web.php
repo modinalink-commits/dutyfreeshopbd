@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AccountsController;
 use App\Http\Controllers\ApiController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
@@ -96,6 +97,12 @@ Route::middleware(['auth', 'pwd'])->group(function () {
 
     // Company money is confidential: Super Admin only.
     Route::middleware('role:super_admin')->group(function () {
+        Route::get('/accounts', [AccountsController::class, 'index'])->name('accounts.index');
+        Route::post('/accounts/expense', [AccountsController::class, 'expense'])->name('accounts.expense');
+        Route::post('/accounts/expense/{expense}/reverse', [AccountsController::class, 'reverseExpense'])->name('accounts.expense.reverse');
+        Route::post('/accounts/account', [AccountsController::class, 'account'])->name('accounts.account');
+        Route::post('/accounts/transfer', [AccountsController::class, 'transfer'])->name('accounts.transfer');
+        Route::post('/accounts/partner', [AccountsController::class, 'partner'])->name('accounts.partner');
         Route::get('/company', [CompanyController::class, 'index'])->name('company.index');
         Route::post('/company/deposit', [CompanyController::class, 'storeDeposit'])->name('company.deposit');
         Route::post('/company/challan', [CompanyController::class, 'storeChallan'])->name('company.challan');

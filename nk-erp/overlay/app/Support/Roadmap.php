@@ -39,7 +39,7 @@ class Roadmap
             ['supplier', 'Company ledger', 'company.index', 'Supplier · STM financial (Super Admin only)'],
         ],
         'MONEY' => [
-            ['accounts', 'Accounts & profit', null, 'Accounts'],
+            ['accounts', 'Accounts & profit', 'accounts.index', 'Accounts (Super Admin only)'],
             ['exp', 'Expense management', null, 'ExpenseDash · ExpenseEntry · ExpenseSetup'],
         ],
         'WEBSITE' => [

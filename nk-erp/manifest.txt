@@ -1,4 +1,5 @@
 app/Console/Commands/NkInstall.php
+app/Http/Controllers/AccountsController.php
 app/Http/Controllers/ApiController.php
 app/Http/Controllers/AuthController.php
 app/Http/Controllers/BrandController.php
@@ -17,6 +18,7 @@ app/Http/Controllers/UserController.php
 app/Http/Controllers/WholesaleController.php
 app/Http/Middleware/ForcePasswordChange.php
 app/Http/Middleware/RequireRole.php
+app/Models/AccountTransfer.php
 app/Models/AuditLog.php
 app/Models/Brand.php
 app/Models/BrandExchange.php
@@ -26,7 +28,10 @@ app/Models/CompanyRate.php
 app/Models/Customer.php
 app/Models/CustomerCylinder.php
 app/Models/CustomerLedger.php
+app/Models/Expense.php
 app/Models/ItemMovement.php
+app/Models/MoneyAccount.php
+app/Models/Partner.php
 app/Models/Product.php
 app/Models/Sale.php
 app/Models/SaleItem.php
@@ -37,6 +42,7 @@ app/Models/WebsiteOrder.php
 app/Providers/AppServiceProvider.php
 app/Support/CompanyCalc.php
 app/Support/Icons.php
+app/Support/Money.php
 app/Support/Roadmap.php
 app/Support/SalesService.php
 bootstrap/app.php
@@ -45,9 +51,11 @@ database/migrations/2026_11_05_000002_stock.php
 database/migrations/2026_11_05_000003_sales.php
 database/migrations/2026_11_05_000004_company_ledger.php
 database/migrations/2026_11_05_000005_month_targets.php
+database/migrations/2026_11_05_000006_accounts.php
 public/css/nk-table.css
 public/img/logo.webp
 public/js/nk-table.js
+resources/views/accounts.blade.php
 resources/views/activity.blade.php
 resources/views/brand_report.blade.php
 resources/views/brands.blade.php
