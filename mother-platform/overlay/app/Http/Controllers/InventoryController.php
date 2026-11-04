@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 class InventoryController extends Controller {
   /** Every product from every store as one list: this site's own catalogue + all scanned stores. */
   private function union() {
-    $own = DB::table('products as p')->leftJoin('categories as c','c.id','=','p.category_id')->selectRaw("'own' as src, p.id as id, 0 as store_id, 'DutyFreeShopBD (this site)' as store_name, p.name as name, p.sku as sku, p.image as image, p.price as price, p.stock as stock, null::boolean as in_stock, coalesce(c.name,'') as category, null as url, p.published as published, p.updated_at as updated_at, p.cost as last_cost, coalesce(nullif(p.avg_cost,0), p.cost) as avg_cost");
+    $own = DB::table('products as p')->leftJoin('categories as c','c.id','=','p.category_id')->selectRaw("'own' as src, p.id as id, 0 as store_id, 'DutyFreeBD (www.dutyfreebd.com)' as store_name, p.name as name, p.sku as sku, p.image as image, p.price as price, p.stock as stock, null::boolean as in_stock, coalesce(c.name,'') as category, null as url, p.published as published, p.updated_at as updated_at, p.cost as last_cost, coalesce(nullif(p.avg_cost,0), p.cost) as avg_cost");
     $ext = DB::table('store_products as sp')->leftJoin('stores as s','s.id','=','sp.store_id')->selectRaw("'ext' as src, sp.id as id, sp.store_id as store_id, coalesce(s.name, sp.store_label || ' (removed)', 'Removed store') as store_name, sp.name as name, sp.sku as sku, sp.image as image, sp.price as price, sp.stock as stock, sp.in_stock as in_stock, coalesce(sp.category,'') as category, sp.url as url, sp.published as published, sp.updated_at as updated_at, null::numeric as last_cost, null::numeric as avg_cost");
     return DB::query()->fromSub($own->unionAll($ext), 'u');
   }
@@ -53,7 +53,7 @@ class InventoryController extends Controller {
     $perStore = DB::table('store_products')->select('store_id', DB::raw('count(*) n'))->groupBy('store_id')->pluck('n','store_id');
     $ownN = DB::table('products')->count();
     $outN = DB::table('products')->where('stock','<=',0)->count() + DB::table('store_products')->where(fn($w) => $w->where('stock','<=',0)->orWhere(fn($x) => $x->whereNull('stock')->where('in_stock', false)))->count();
-    $stats = [['All products', number_format($ownN + $perStore->sum()), ($stores->count() + 1).' stores'], ['This site', number_format($ownN), 'DutyFreeShopBD'], ['Other stores', number_format($perStore->sum()), $perStore->count().' scanned'], ['Out of stock', number_format($outN), 'all stores'], ['Unpublished', number_format(DB::table('products')->where('published',false)->count() + DB::table('store_products')->where('published',false)->count()), 'all stores']];
+    $stats = [['All products', number_format($ownN + $perStore->sum()), ($stores->count() + 1).' stores'], ['This site', number_format($ownN), 'DutyFreeBD'], ['Other stores', number_format($perStore->sum()), $perStore->count().' scanned'], ['Out of stock', number_format($outN), 'all stores'], ['Unpublished', number_format(DB::table('products')->where('published',false)->count() + DB::table('store_products')->where('published',false)->count()), 'all stores']];
     if (\App\Support\ProfitFloor::admin()) { try { $stats[] = ['Below Minimum Margin', number_format(DB::table('products')->whereRaw('coalesce(nullif(avg_cost,0),cost) > 0 and price + 0.004 < coalesce(nullif(avg_cost,0),cost) * 1.15')->count()), 'vs Average Purchase Price']; } catch (\Throwable $e) {} }
     return view('inventory', compact('rows','stores','stats','grouped','perStore','ownN'));
   }
