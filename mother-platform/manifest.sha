@@ -549,3 +549,4 @@ b0469f31ccbcb5b2a853d2fd42ed0239c0a0c6a7 app/Support/AreaOrders.php
 aeaf4abc14e93fee17a03b91756a3b2eaad72f37 app/Http/Controllers/AreaOrdersController.php
 478408c9e7349b4099e9c5b47b8eb25a9b2c462e resources/views/area_orders.blade.php
 e47d68a916e1a398d15848fd191522f14511fd26 app/Support/CourierOverview.php
+849fb24d1549597a0d80a374ff18bd44aab8e5dc database/migrations/2026_11_04_000090_speed_indexes.php
