@@ -16,7 +16,7 @@ a86fc8004565dbccb716d8fb4093c91518f76444 app/Http/Controllers/CatalogController.
 d29e287977c99d0356f38ea873735019d77df9e7 app/Http/Controllers/TaxonomyController.php
 673c2785b792d6513f0f3b05331d27fed6a962cb app/Http/Controllers/DiscountController.php
 f2be7e8cd4a0d84270365857cee48893cf66a7e8 resources/views/products.blade.php
-c24e42a1626b217d6976bd39ecdb801607288fba resources/views/product_form.blade.php
+70deac3dde2a88a23da56abdb333c4ab76d9f084 resources/views/product_form.blade.php
 d4c8d5b74998a42fa4e9739bedf77a5ec7553e2f resources/views/taxonomy.blade.php
 23b559a80b56c78f8b280d427d43bf621cd8fdd1 resources/views/category_level.blade.php
 b5ce703e9eac07ab60e2e31f7c486d90029528e2 resources/views/discounts.blade.php
@@ -41,7 +41,7 @@ c25a13956ea9946159b80572e41bd26d65050c7a resources/views/panels/accounts.blade.p
 1cb9863e39bdf894fc9136ae20d93aea9105a087 resources/views/panels/stock-log.blade.php
 e6330f5979ce172872354e03de1a06a9ff9f1777 app/Http/Controllers/SiteController.php
 83f7d91e3943f758a5cc593ff2b2c3f4a34c500e resources/views/site.blade.php
-636af647b92c5e1c505132d84f7eb6b51824ae58 app/Http/Middleware/ModulePermission.php
+725a28a31afef43f6b1316554e611bf9af2e3139 app/Http/Middleware/ModulePermission.php
 2a839fb1a64c2d2986cda02d11cbd025c8afeef5 app/Http/Controllers/PermissionController.php
 25b7fe381729658fc95088f08798e84c213ac6d5 resources/views/permissions.blade.php
 d787924ace3fa42cc66a3de321e4e94e784006d8 resources/views/panels/employees.blade.php

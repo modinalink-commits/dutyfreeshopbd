@@ -68,6 +68,7 @@
 </div>
 
 <div class="sec"><h2><i>2</i>Pricing</h2><p class="sub">Regular price is the full price. Add a sale price and the discount is calculated for you.</p>
+@if($errors->has('regular_price'))<div id="pErr" style="margin:8px 0;padding:12px 14px;border-radius:10px;background:#FEF2F2;border:2px solid #DC2626;color:#991B1B;font-size:15px;font-weight:700;white-space:pre-line">{{ $errors->first('regular_price') }}</div><script>document.addEventListener('DOMContentLoaded',function(){var e=document.getElementById('pErr');if(e)e.scrollIntoView({block:'center'})})</script>@endif
 <div class="g2"><div><label>Regular price (TK) *</label><input name="regular_price" id="pReg" type="number" step="0.01" min="0" value="{{ $regular }}" required></div>
 <div><label>Sale price (TK)</label><input name="sale_price" id="pSale" type="number" step="0.01" min="0" value="{{ $sale }}"></div></div>
 @php($__c = ($p && \App\Support\ProfitFloor::admin()) ? \App\Support\ProfitFloor::base($p) : 0)@if($__c > 0)@php($__f = \App\Support\ProfitFloor::floor($__c))@php($__pr = (float)$p->price)@php($__ok = $__pr + 0.004 >= $__f)
