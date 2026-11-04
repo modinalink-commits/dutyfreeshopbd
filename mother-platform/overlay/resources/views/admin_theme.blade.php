@@ -187,3 +187,10 @@ main .ibar a.ib:hover,main .ibar a.ib-call:hover{box-shadow:0 3px 8px rgba(11,18
   window.addEventListener('load',run);
 })();
 </script>
+<style>
+/* 10. fewer lines: no coloured left stripe on order rows, hairline borders only, quiet sidebar scrollbar */
+main table.ordt>tbody>tr>td:first-child,main table.ordt>tbody>tr:is(.st-new,.st-scheduled,.st-pending,.st-pre-order,.st-wfp,.st-assign,.st-ai-order,.st-packaging,.st-approved,.st-shipment,.st-delivered,.st-partial-delivered,.st-late-delivery,.st-partial-return-pending,.st-partial-return-received,.st-partial-returned,.st-exchange-received,.st-returned,.st-return-pending,.st-cancel,.st-cancelled,.st-incomplete)>td:first-child{border-left:0!important;padding-left:12px}
+main table.ordt>tbody>tr>td{border-top:1px solid rgba(15,23,42,.045)!important;border-bottom:1px solid rgba(15,23,42,.045)!important}
+main table.ordt>tbody>tr>td:last-child{border-right:1px solid rgba(15,23,42,.045)!important}
+aside nav{scrollbar-color:transparent transparent}aside nav:hover{scrollbar-color:#D5DBE3 transparent}
+</style>
