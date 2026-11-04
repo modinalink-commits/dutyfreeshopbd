@@ -53,7 +53,7 @@ d787924ace3fa42cc66a3de321e4e94e784006d8 resources/views/panels/employees.blade.
 1f99716fe863f3dbfe905a8c96934ea6cdc625d5 resources/views/store/layout.blade.php
 0700fabbcd111911245ddc06b98fdd1edd272475 resources/views/store/card.blade.php
 ce0d1f8552836199c028ddef8806c72a2d10ad19 resources/views/store/home_sec.blade.php
-2998ac1830b723032d901ee13df9db8163acb0d1 resources/views/store/home.blade.php
+16cceaeb28ce1148fc10b2081cb1bb7a5570c9ea resources/views/store/home.blade.php
 0e5fb9160b143a0aae0c56fedd841bcdf8c5283c resources/views/store/category.blade.php
 d016ff5e3703cea2f6adab94a18b3d0e5af4c966 resources/views/store/product.blade.php
 7ad9d9502d41f54d6784414a9aa3f16a8ab0ec13 resources/views/store/search.blade.php
