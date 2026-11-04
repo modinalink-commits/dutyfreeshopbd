@@ -154,6 +154,7 @@ $qs = fn($extra = []) => http_build_query(array_filter(array_merge(['store'=>$st
     <div class="dx-qa">
       <a class="pri" href="/admin/orders/new"><span class="qi">{!! $ico('plus',15) !!}</span>Create Order</a>
       <a href="/admin/products/new"><span class="qi">{!! $ico('tag',15) !!}</span>Add Product</a>
+      <a href="/admin/products/from-image"><span class="qi">{!! $ico('tag',15) !!}</span>Create from Image</a>
       <a href="/admin/orders"><span class="qi">{!! $ico('list',15) !!}</span>View Orders @if($newN)<em>{{ $newN }}</em>@endif</a>
       <a href="/admin/m/customers"><span class="qi">{!! $ico('users',15) !!}</span>Customers</a>
       <a href="/admin/inventory"><span class="qi">{!! $ico('stock',15) !!}</span>Inventory</a>
