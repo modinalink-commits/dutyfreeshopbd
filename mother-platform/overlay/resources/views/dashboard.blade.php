@@ -84,6 +84,7 @@ $qs = fn($extra = []) => http_build_query(array_filter(array_merge(['store'=>$st
 .dx-tbl tbody tr:hover td{background:#FAFBFC}
 .dx-sk .card{position:relative;overflow:hidden}.dx-sk .card::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.75) 50%,transparent 70%);animation:dxs 1s infinite;transform:translateX(-100%)}
 @keyframes dxs{to{transform:translateX(100%)}}
+.dx-rep{margin-top:10px;padding-top:10px;border-top:1px solid #F1F3F6}.dx-lv{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:10px}.dx-lv a{border-radius:9px;padding:6px 4px;text-align:center;text-decoration:none;display:flex;flex-direction:column;line-height:1.2}.dx-lv b{font-size:15px}.dx-lv span{font-size:10.5px;font-weight:700}
 .dx-empty{color:#9CA3AF;font-size:12px;padding:4px 0}
 @media (max-width:1280px){.dx-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}.dx-pipe{grid-template-columns:repeat(6,minmax(0,1fr))}}
 @media (max-width:1000px){.dx-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.dx-3{grid-template-columns:repeat(2,minmax(0,1fr))}.dx-2{grid-template-columns:minmax(0,1fr)}}
@@ -205,7 +206,12 @@ $__am = max(1, $__at ? $__at[0]['customers'] : 1);
       <a href="/admin/m/customers"><b>{{ $cust['returning'] }}</b><span>Returning</span></a>
       <a href="/admin/m/customers"><b style="color:#C2410C">{{ $cust['vip'] }}</b><span>VIP customers</span></a>
       <a href="/admin/m/customers"><b style="color:#1D5FA8">{{ $cust['member'] }}</b><span>Members</span></a>
-    </div></div>
+    </div>
+    @if(($cust['ordered'] ?? 0) > 0)
+    <div class="dx-rep"><div style="display:flex;justify-content:space-between;font-size:12px"><span><b>Repeat customers</b> <span class="muted">(ordered 2+ times, all time)</span></span><b style="color:#16A34A">{{ $cust['repeat_pct'] }}%</b></div><div class="dx-bar" style="margin:4px 0"><i style="width:{{ min(100, $cust['repeat_pct']) }}%;background:#16A34A"></i></div><div class="muted" style="font-size:11px">{{ number_format($cust['repeat']) }} of {{ number_format($cust['ordered']) }} customers who ordered</div></div>
+    <div class="dx-lv">@foreach(['silver'=>['Silver','#64748B','#F1F5F9'],'gold'=>['Gold','#B45309','#FEF3C7'],'platinum'=>['Platinum','#0E7490','#E0F2FE'],'diamond'=>['Diamond','#6D28D9','#EDE9FE']] as $__k=>[$__n,$__c,$__b])<a href="/admin/m/customers" style="background:{{ $__b }};color:{{ $__c }}"><b>{{ number_format($cust['levels'][$__k] ?? 0) }}</b><span>{{ $__n }}</span></a>@endforeach</div>
+    @endif
+    </div>
   <div class="card"><div class="head"><h2>Recent Activity</h2></div>
     <div class="dx-feed">@php $FI = ['order'=>['cart','#FFF1E8','#FF5A00'],'edit'=>['edit','#E6EFF9','#1D5FA8'],'stock'=>['stock','#DDF1EE','#0E5F58'],'export'=>['dl','#F1EAF8','#5B3FA6'],'incomplete'=>['alert','#FEF3C7','#B45309'],'call'=>['phone','#DCFCE7','#166534']]; @endphp
     @forelse($feed->take(6) as [$ty,$tx,$ago,$abs,$lk])@php $fi = $FI[$ty] ?? $FI['edit']; @endphp
@@ -220,11 +226,11 @@ $__am = max(1, $__at ? $__at[0]['customers'] : 1);
   <div class="card" style="overflow:hidden">
     <div class="head"><h2>Live Orders</h2><span class="dx-live"><i></i>Live</span><a class="more" href="/admin/orders">Open work queue →</a></div>
     <div style="overflow-x:auto"><table class="dx-tbl">
-      <thead><tr><th>Order</th><th>Store</th><th>Customer</th><th style="text-align:right">Total</th><th>Payment</th><th>Risk</th><th>Status</th><th style="text-align:right">Age</th></tr></thead>
-      <tbody>@forelse($orders as $o)@php $b = $bad[$o->phone] ?? 0; $risk2 = $b >= 2 ? 'High' : ($b == 1 ? 'Medium' : 'Low'); $rf = ['Low'=>'#166534','Medium'=>'#C2410C','High'=>'#A3281E'][$risk2]; $ph = strlen($o->phone) > 6 ? substr($o->phone,0,5).'-••••'.substr($o->phone,-2) : $o->phone; $c = $ST[$o->status] ?? ['#F3F4F6','#374151']; @endphp
-      <tr><td style="font-weight:700"><a href="/admin/orders/{{ $o->id }}" style="color:#FF5A00">{{ $o->invoice }}</a></td><td>{{ $o->store ?? '-' }}</td><td>{{ $ph }}</td><td style="text-align:right;font-weight:700">৳{{ number_format($o->total) }}</td><td>@include('pay_badge',['o'=>$o,'h'=>18])</td><td style="font-weight:700;color:{{ $rf }}">{{ $risk2 }}</td>
+      <thead><tr><th>Order</th><th>Customer</th><th style="text-align:right">Total</th><th>Payment</th><th>Risk</th><th>Status</th><th style="text-align:right">Age</th></tr></thead>
+      <tbody>@forelse($orders as $o)@php $b = $bad[$o->phone] ?? 0; $risk2 = $b >= 2 ? 'High' : ($b == 1 ? 'Medium' : 'Low'); $rf = ['Low'=>'#166534','Medium'=>'#C2410C','High'=>'#A3281E'][$risk2]; $ph = $o->phone; $c = $ST[$o->status] ?? ['#F3F4F6','#374151']; @endphp
+      <tr><td style="font-weight:700"><a href="/admin/orders/{{ $o->id }}" style="color:#FF5A00">{{ $o->invoice }}</a></td><td style="font-weight:600">{{ $ph }}</td><td style="text-align:right;font-weight:700">৳{{ number_format($o->total) }}</td><td>@include('pay_badge',['o'=>$o,'h'=>18])</td><td style="font-weight:700;color:{{ $rf }}">{{ $risk2 }}</td>
       <td><span class="dx-bd" style="background:{{ $c[0] }};color:{{ $c[1] }}">{{ $o->status }}</span></td><td style="text-align:right;color:#6B7280">{{ \Carbon\Carbon::parse($o->created_at)->diffForHumans(null, true, true) }}</td></tr>
-      @empty<tr><td colspan="8" class="dx-empty">No orders yet. <a style="color:#FF5A00;font-weight:700" href="/admin/orders/new">Create order</a></td></tr>@endforelse</tbody></table></div>
+      @empty<tr><td colspan="7" class="dx-empty">No orders yet. <a style="color:#FF5A00;font-weight:700" href="/admin/orders/new">Create order</a></td></tr>@endforelse</tbody></table></div>
   </div>
 </section>
 </div>

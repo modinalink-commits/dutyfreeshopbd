@@ -127,6 +127,15 @@ class AdminController extends Controller {
     $phones = $safe(fn() => $oq()->where('created_at','>=',$startUtc)->whereNotIn('status',['Cancel'])->distinct()->pluck('phone')->filter()->values(), collect());
     $ret = $phones->isEmpty() ? 0 : DB::table('orders')->whereIn('phone', $phones)->where('created_at','<',$startUtc)->distinct()->count('phone');
     $cust = ['new'=>max(0, $phones->count()-$ret), 'returning'=>$ret, 'vip'=>$vipN, 'member'=>$memN];
+    $cx = $safe(fn() => \Illuminate\Support\Facades\Cache::remember('dash.cust.v1', 600, function () {
+      $r = DB::selectOne("select count(*) as n, coalesce(sum(case when c > 1 then 1 else 0 end),0) as rep from (select phone, count(*) as c from orders where status not in ('Cancel','Incomplete') and phone is not null and phone <> '' group by phone) t");
+      $lv = ['silver'=>0, 'gold'=>0, 'platinum'=>0, 'diamond'=>0, 'none'=>0];
+      foreach (DB::table('customers')->selectRaw("coalesce(customer_level,'') as cl, coalesce(membership,'') as m, count(*) as n")->groupByRaw('1,2')->get() as $x) {
+        $l = \App\Support\OrderDiscount::levelOf($x->cl, \App\Support\OrderDiscount::starsOf((string)$x->m)); $lv[$l['key'] ?? 'none'] += (int)$x->n;
+      }
+      return ['ordered'=>(int)$r->n, 'repeat'=>(int)$r->rep, 'levels'=>$lv];
+    }), ['ordered'=>0, 'repeat'=>0, 'levels'=>[]]);
+    $cust += ['ordered'=>$cx['ordered'] ?? 0, 'repeat'=>$cx['repeat'] ?? 0, 'repeat_pct'=>($cx['ordered'] ?? 0) > 0 ? round(($cx['repeat'] ?? 0) / $cx['ordered'] * 100, 1) : 0, 'levels'=>$cx['levels'] ?? []];
     $calls = $safe(function () use ($now) { if (!\Illuminate\Support\Facades\Schema::hasTable('call_logs')) return null; $s = $now->copy()->startOfDay()->utc(); $q = DB::table('call_logs')->where('started_at','>=',$s); return ['total'=>(clone $q)->count(), 'missed'=>(clone $q)->where('status','missed')->count(), 'talk'=>(int)(clone $q)->sum('duration')]; }, null);
     $risk = ['high'=>$hr, 'watch'=>$safe(fn() => DB::table('orders')->whereIn('status',['Cancel','Returned'])->where('created_at','>=',now()->subDays(30))->count(), 0)];
     // recent activity feed
