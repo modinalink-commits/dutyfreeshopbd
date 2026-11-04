@@ -4,7 +4,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 class ModulePermission {
-  const MODULES = ['orders'=>'Orders','products'=>'Products','purchase'=>'Purchase','accounts'=>'Accounts','reports'=>'Reports','customers'=>'Customers','couriers'=>'Couriers','marketing'=>'Marketing and offers','settings'=>'Settings and website','hr'=>'HR and payroll','stafflog'=>'Staff log'];
+  const MODULES = ['orders'=>'Orders','products'=>'Products','purchase'=>'Purchase','accounts'=>'Accounts','reports'=>'Reports','customers'=>'Customers','couriers'=>'Couriers','marketing'=>'Marketing and offers','settings'=>'Settings and website','hr'=>'HR and payroll','stafflog'=>'Staff log','costs'=>'Cost, average price and profit (Inventory Pricing, view only)'];
   const LEVELS = ['none'=>0,'view'=>1,'edit'=>2,'all'=>3];
   private static array $cache = [];
   public static function moduleFor(string $path): ?string {
@@ -31,6 +31,7 @@ class ModulePermission {
     if (str_starts_with($p, 'call-center')) return 'orders';
     if (preg_match('#^(orders|orders-export|incomplete|manual-payments)#', $p)) return 'orders';
     if (str_starts_with($p, 'staff-log')) return 'stafflog';
+    if (preg_match('#^inventory-pricing#', $p)) return 'costs'; // purchase / average price and profit: only roles given this permission (Admin always)
     if (preg_match('#^(products|product-order|taxonomy|categories|brands|inventory|image-audit)#', $p)) return 'products';
     if (preg_match('#^(discounts|coupons|deals|payment-methods)#', $p)) return 'marketing';
     if (preg_match('#^(reports|modules|report-details|analytics)#', $p)) return 'reports';

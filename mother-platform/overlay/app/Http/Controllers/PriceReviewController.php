@@ -25,7 +25,8 @@ class PriceReviewController extends Controller {
 
   /** Inventory pricing table: last purchase, AVERAGE purchase price (the fixed cost base), sale price, minimum margin, profit, profit % and status for every product. Admin only. */
   public function inventory(Request $r) {
-    abort_unless(\App\Support\ProfitFloor::admin(), 403);
+    abort_unless(\App\Support\ProfitFloor::admin() || \App\Http\Middleware\ModulePermission::can(auth()->user(), 'costs', 'view'), 403);
+    abort_if($r->query('export') && !\App\Support\ProfitFloor::admin(), 403, 'Download of cost data is for the Admin only.');
     $q = trim((string)$r->query('q', '')); $f = (string)$r->query('status', ''); $cat = (int)$r->query('category', 0);
     $qb = DB::table('products as p')->leftJoin('categories as c', 'c.id', '=', 'p.category_id')->selectRaw('p.id, p.sku, p.name, p.stock, p.price, p.published, p.cost as last_cost, coalesce(nullif(p.avg_cost,0), p.cost) as avg, p.buy2_price, p.buy3_price, p.buy4_price, p.buy5_price, c.name as cat');
     if ($cat) $qb->where('p.category_id', $cat);
@@ -49,7 +50,7 @@ class PriceReviewController extends Controller {
   }
   /** Every change of one product's average purchase price (stock-in / reversal). */
   public function history(int $id) {
-    abort_unless(\App\Support\ProfitFloor::admin(), 403);
+    abort_unless(\App\Support\ProfitFloor::admin() || \App\Http\Middleware\ModulePermission::can(auth()->user(), 'costs', 'view'), 403);
     $p = DB::table('products')->where('id', $id)->first(); abort_unless($p, 404);
     return view('avg_history', ['p' => $p, 'rows' => DB::table('avg_cost_logs')->where('product_id', $id)->orderByDesc('id')->limit(300)->get()]);
   }

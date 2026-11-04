@@ -606,3 +606,4 @@ app/Support/ProductMatchingService.php
 app/Support/ProductAutoFillService.php
 app/Http/Controllers/AiProductController.php
 resources/views/ai_product_scan.blade.php
+database/migrations/2026_11_04_000160_manager_costs_permission.php
