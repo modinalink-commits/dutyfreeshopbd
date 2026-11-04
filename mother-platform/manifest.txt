@@ -579,3 +579,4 @@ resources/views/stock_history.blade.php
 app/Support/ProfitFloor.php
 app/Http/Controllers/PriceReviewController.php
 resources/views/price_review.blade.php
+database/migrations/2026_11_04_000121_raise_prices_to_profit_floor.php
