@@ -554,3 +554,6 @@ public/banners/manchester-anim.mp4
 public/banners/manchester-anim.webp
 database/migrations/2026_11_04_000095_manchester_slide.php
 resources/views/store/slide_item.blade.php
+public/banners/brands-anim.mp4
+public/banners/brands-anim.webp
+database/migrations/2026_11_04_000096_brands_slide.php
