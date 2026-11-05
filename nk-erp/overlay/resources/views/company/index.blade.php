@@ -21,6 +21,30 @@
   <div class="card kpi" style="background:#efe7fb"><span>Incentive coming</span><b style="color:#5b2fa8">{{ $calc['incentiveReceived'] ? 'Received' : $lakh($calc['net']) }}</b><span>{{ \Carbon\Carbon::parse($calc['month']->month.'-01')->format('F') }} · arrives {{ \Carbon\Carbon::parse($calc['incentiveDate'])->format('d-m-Y') }}</span></div>
   <div class="card kpi" style="background:#efe7fb"><span>Commission coming</span><b style="color:#5b2fa8">{{ $calc['commissionReceived'] ? 'Received' : $lakh($calc['commission']) }}</b><span>{{ \Carbon\Carbon::parse($calc['month']->month.'-01')->format('M') }} · Tk {{ rtrim(rtrim(number_format($calc['month']->kg_commission, 2), '0'), '.') }}/kg · {{ \Carbon\Carbon::parse($calc['commissionDate'])->format('d-m-Y') }}</span></div>
 </section>
+@php($pct = $prevTons > 0 ? ($tons - $prevTons) / $prevTons * 100 : null)
+@php($mN = $bnMonth[$start->format('F')] ?? $start->format('F'))
+@php($pN = $bnMonth[\Carbon\Carbon::parse($prev.'-01')->format('F')] ?? '')
+<div style="display:flex;flex-wrap:wrap;gap:16px;align-items:stretch">
+  <details class="card pad" style="flex:2 1 420px;min-width:0">
+    <summary style="display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none"><span style="flex-grow:1;display:flex;flex-direction:column"><span style="font-size:12px;color:var(--muted)">কোম্পানির কাছে জমা · {{ now()->timezone('Asia/Dhaka')->format('d-m-Y') }}</span><b style="font-size:22px">{{ \App\Support\Ui::bd($balanceToday) }}</b></span><span class="btn sm">হিসাব দেখুন ▾</span></summary>
+    <div style="display:flex;flex-direction:column;margin-top:10px">
+      @foreach($explain as $x)
+        <a href="{{ route('company.index', ['m' => $x['m']]) }}" style="display:flex;font-size:13px;padding:6px 0;border-bottom:1px solid #eef2f9;text-decoration:none;color:inherit"><span style="flex-grow:1;color:var(--muted)">{{ $x['t'] }} <span style="font-size:11px">({{ $x['n'] }})</span></span><span style="font-weight:600;font-variant-numeric:tabular-nums">{{ $x['a'] >= 0 ? '+' : '−' }} {{ \App\Support\Ui::bd(abs($x['a']), true) }}</span></a>
+      @endforeach
+      <div style="display:flex;font-size:14px;padding:8px 0;font-weight:800"><span style="flex-grow:1">মোট</span><span>{{ \App\Support\Ui::bd($balanceToday, true) }}</span></div>
+      <span class="sub" style="margin:0">বিল = সিলিন্ডার × (DO − Transport) · প্রতিটা লাইনে ক্লিক করলে সেই মাসের এন্ট্রিগুলো খোলে।</span>
+    </div>
+  </details>
+  <section class="card pad" style="flex:1 1 280px;min-width:0;display:flex;flex-direction:column;gap:8px">
+    <div style="display:flex;align-items:baseline;gap:8px"><b style="font-size:22px">{{ number_format($tons, 1) }} t</b>@if($pct !== null)<span style="font-weight:700;color:{{ $pct >= 0 ? '#0f6b3c' : '#b42318' }}">{{ $pct >= 0 ? '▲' : '▼' }} {{ number_format(abs($pct), 0) }}%</span>@endif</div>
+    <span style="font-size:13px;line-height:20px">{{ $mN }}ে কোম্পানি থেকে {{ number_format($tons, 1) }} টন গ্যাস তোলা হয়েছে@if($pct !== null), {{ $pN }}ের ({{ number_format($prevTons, 1) }} টন) চেয়ে <b>{{ number_format(abs($pct), 0) }}% {{ $pct >= 0 ? 'বেশি' : 'কম' }}</b>@endif।</span>
+    @php($mx = max($tons, $prevTons, 0.1))
+    <div style="display:flex;align-items:flex-end;gap:14px;height:70px">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1"><span style="font-size:11px">{{ number_format($prevTons, 1) }}</span><div style="width:100%;max-width:60px;height:{{ max(2, round($prevTons / $mx * 44)) }}px;background:#c9d2e3;border-radius:6px 6px 0 0"></div><span style="font-size:11px;color:var(--muted)">{{ $pN }}</span></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1"><span style="font-size:11px;font-weight:700">{{ number_format($tons, 1) }}</span><div style="width:100%;max-width:60px;height:{{ max(2, round($tons / $mx * 44)) }}px;background:#123a86;border-radius:6px 6px 0 0"></div><span style="font-size:11px;color:var(--muted)">{{ $mN }}</span></div>
+    </div>
+  </section>
+</div>
 <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
   <section class="card" style="flex:999 1 620px;min-width:0">
     <div class="pad" style="display:flex;align-items:center;gap:8px"><h2 style="margin:0;font-size:15px;flex-grow:1">Ledger — {{ $start->format('F Y') }}</h2><button class="btn sm" type="button" onclick="window.print()">Download PDF</button></div>
@@ -83,13 +107,21 @@
   </form>
   <form id="challan-form" class="card pad" method="post" action="{{ route('company.challan') }}" style="display:flex;flex-direction:column;gap:10px">@csrf
     <h2 style="margin:0;font-size:15px">＋ Challan</h2>
+    @if($dup = session('dup'))
+      <div role="alert" style="border:1px solid #f0c36d;background:#fff8e6;border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px">
+        <b style="color:#8a4b00">এই চালান আগেই লেখা আছে</b>
+        <span style="font-size:13px;line-height:20px">চালান <b>{{ $dup['no'] }}</b>, {{ $dup['q'] }} — {{ $dup['date'] }} তারিখে সেভ করা। একই এন্ট্রি দুইবার দিলে বিল দুইবার কাটবে।</span>
+        <div style="display:flex;flex-wrap:wrap;gap:8px"><a class="btn" href="{{ route('company.index', ['m' => $dup['m']]) }}">আগেরটা দেখুন</a>
+        <button class="btn" type="submit" name="confirm_dup" value="1">ভিন্ন চালান, তবুও সেভ</button></div>
+      </div>
+    @endif
     <div class="grid2" style="grid-template-columns:repeat(2,minmax(0,1fr))">
-      <label class="f">Date<input type="date" name="entry_date" value="{{ now()->timezone('Asia/Dhaka')->toDateString() }}" required></label>
-      <label class="f">Challan number<input type="text" name="challan_no" required></label>
+      <label class="f">Date<input type="date" name="entry_date" value="{{ old('entry_date', now()->timezone('Asia/Dhaka')->toDateString()) }}" required></label>
+      <label class="f"><span>Challan number @include('partials.help', ['t' => 'চালান নম্বর কী?', 'b' => 'কোম্পানির চালানের কাগজের উপরে ছাপা নম্বর।', 'e' => 'উদাহরণ: 144794', 'f' => 'একই নম্বর আগেই থাকলে সিস্টেম সতর্ক করবে।'])</span><input type="text" name="challan_no" value="{{ old('challan_no') }}" required></label>
     </div>
-    <div class="grid2" style="grid-template-columns:repeat(3,minmax(0,1fr))">@foreach(\App\Models\Brand::SIZES as $sz)<label class="f">{{ $sz }} kg full<input type="number" min="0" name="qty[{{ $sz }}]" value="0"></label>@endforeach</div>
+    <div class="grid2" style="grid-template-columns:repeat(3,minmax(0,1fr))">@foreach(\App\Models\Brand::SIZES as $sz)<label class="f">{{ $sz }} kg full<input type="number" min="0" name="qty[{{ $sz }}]" value="{{ old('qty.'.$sz, 0) }}"></label>@endforeach</div>
     <label style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" name="to_stock" value="1" checked style="width:auto;min-height:0"> Also add to godown stock</label>
-    <div class="grid2" style="grid-template-columns:repeat(3,minmax(0,1fr))">@foreach(\App\Models\Brand::SIZES as $sz)<label class="f">{{ $sz }} kg empties handed over<input type="number" min="0" name="empties[{{ $sz }}]" value="0"></label>@endforeach</div>
+    <div class="grid2" style="grid-template-columns:repeat(3,minmax(0,1fr))">@foreach(\App\Models\Brand::SIZES as $sz)<label class="f">{{ $sz }} kg empties handed over<input type="number" min="0" name="empties[{{ $sz }}]" value="{{ old('empties.'.$sz, 0) }}"></label>@endforeach</div>
     <span class="sub">Bill is worked out from the Rate Master row for the challan date.</span>
     <button class="btn pri" type="submit">Save challan</button>
   </form>

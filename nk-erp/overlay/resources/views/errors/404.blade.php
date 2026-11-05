@@ -1,0 +1,5 @@
+@extends('errors.minimal')
+@section('title', 'পাতাটা পাওয়া যায়নি')
+@section('code', '404')
+@section('heading', 'পাতাটা পাওয়া যায়নি')
+@section('message', 'লিংকটা ভুল হতে পারে, অথবা এন্ট্রিটা আর নেই। হোম থেকে আবার খুঁজে দেখুন।')

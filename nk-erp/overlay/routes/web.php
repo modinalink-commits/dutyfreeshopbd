@@ -117,6 +117,7 @@ Route::middleware(['auth', 'pwd'])->group(function () {
         Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
         Route::get('/pos/customer', [PosController::class, 'lookup'])->name('pos.lookup');
         Route::post('/pos', [PosController::class, 'store'])->name('pos.store');
+        Route::get('/search', \App\Http\Controllers\SearchController::class)->middleware('throttle:60,1')->name('search');
         Route::get('/sales', [SaleController::class, 'index'])->name('sales.index');
         Route::get('/sales/{sale}', [SaleController::class, 'show'])->name('sales.show');
         Route::get('/sales/{sale}/print', [SaleController::class, 'print'])->name('sales.print');

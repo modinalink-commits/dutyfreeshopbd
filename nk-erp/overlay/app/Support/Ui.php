@@ -27,16 +27,18 @@ class Ui
     }
 
     /** ৳1,74,200 — South Asian digit grouping. */
-    public static function bd($n): string
+    public static function bd($n, bool $paisa = false): string
     {
-        $v = (int) round(abs((float) $n));
+        $abs = abs((float) $n);
+        $frac = $paisa && fmod($abs, 1) > 0.004 ? substr(number_format($abs, 2, '.', ''), -3) : '';
+        $v = $frac ? (int) floor($abs) : (int) round($abs);
         $x = (string) $v;
         if (strlen($x) > 3) {
             $last = substr($x, -3);
             $rest = substr($x, 0, -3);
             $x = ltrim(strrev(implode(',', str_split(strrev($rest), 2))), ',').','.$last;
         }
-        return ((float) $n < 0 ? '−' : '').'৳'.$x;
+        return ((float) $n < 0 ? '−' : '').'৳'.$x.$frac;
     }
 
     public static function lakh($n): string

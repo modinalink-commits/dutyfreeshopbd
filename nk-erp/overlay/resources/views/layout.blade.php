@@ -49,6 +49,15 @@ textarea{padding:8px 10px;min-height:60px}
 .tabs a{padding:6px 12px;border-radius:999px;text-decoration:none;border:1px solid var(--line);background:#fff;color:var(--ink);font-weight:600;font-size:12px}
 .tabs a.on{background:var(--navy);border-color:var(--navy);color:#fff}
 @media (max-width:860px){.shell{flex-direction:column}.side{width:auto;border-right:0;border-bottom:1px solid var(--line)}.me{margin-top:8px}main{padding:16px}}
+.gs{position:relative;margin-bottom:10px}
+.gs input{width:100%;box-sizing:border-box;min-height:40px;border:1px solid var(--line);border-radius:999px;padding:0 14px;font:500 13px 'Plus Jakarta Sans','Hind Siliguri',sans-serif;background:#fff}
+.gsr{position:absolute;z-index:50;left:0;top:44px;width:340px;max-width:86vw;max-height:70vh;overflow:auto;background:#fff;border:1px solid #dbe3f0;border-radius:14px;box-shadow:0 10px 30px rgba(20,33,61,.16);padding:6px;display:flex;flex-direction:column}
+.gsr[hidden]{display:none}
+.gsg{font:800 10px 'Plus Jakarta Sans',sans-serif;letter-spacing:.1em;color:#51607a;padding:8px 10px 4px}
+.gsr a{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border-radius:10px;text-decoration:none;color:#14213d;font-size:13px}
+.gsr a span{font-size:12px;color:#51607a;font-family:'Hind Siliguri','Plus Jakarta Sans',sans-serif}
+.gsr a:hover,.gsr a:focus{background:#eef2f9;outline:none}
+.gse{padding:10px;font-size:13px;color:#51607a}
 </style>
 </head>
 <body>
@@ -57,6 +66,25 @@ textarea{padding:8px 10px;min-height:60px}
   <aside class="side" aria-label="Main menu">
     <div class="brand" style="flex-direction:column;align-items:stretch;gap:8px"><div style="display:flex;align-items:center;gap:10px"><img src="/img/logo.webp" alt="NK Corporation logo"><div><b>NK Corporation</b><small>BUSINESS CONTROL</small></div></div><span style="align-self:flex-start;background:#2a52a8;color:#fff;font-size:11px;font-weight:600;padding:3px 10px;border-radius:999px">{{ now()->timezone('Asia/Dhaka')->format('F Y') }}</span></div>
     @unless($u->must_change_password)
+    @if(in_array($u->role, ['super_admin', 'admin', 'manager', 'accounts']))
+    <div class="gs" role="search">
+      <input id="gsq" type="search" placeholder="Search customer, invoice, route…" aria-label="Search customer, invoice, route" autocomplete="off" aria-controls="gsr" aria-expanded="false">
+      <div id="gsr" class="gsr" role="listbox" hidden></div>
+    </div>
+    <script>
+    (function(){var q=document.getElementById('gsq'),r=document.getElementById('gsr'),t=null,seq=0;
+      function esc(x){return String(x==null?'':x).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+      function close(){r.hidden=true;q.setAttribute('aria-expanded','false');}
+      q.addEventListener('input',function(){clearTimeout(t);var v=q.value.trim();if(v.length<2){close();return;}t=setTimeout(function(){var n=++seq;fetch('{{ route('search') }}?q='+encodeURIComponent(v),{headers:{'Accept':'application/json'}}).then(function(x){return x.ok?x.json():{groups:[]};}).then(function(d){if(n!==seq)return;
+        r.innerHTML=d.groups.length?d.groups.map(function(g){return '<span class="gsg">'+esc(g.g)+'</span>'+g.items.map(function(i){return '<a role="option" href="'+esc(i.u)+'"><b>'+esc(i.t)+'</b><span>'+esc(i.m)+'</span></a>';}).join('');}).join(''):'<span class="gse">“'+esc(v)+'” — কিছু পাওয়া যায়নি</span>';
+        r.hidden=false;q.setAttribute('aria-expanded','true');}).catch(close);},220);});
+      q.addEventListener('keydown',function(e){var a=[].slice.call(r.querySelectorAll('a'));if(e.key==='Escape'){close();return;}if(e.key==='ArrowDown'&&a.length){e.preventDefault();a[0].focus();}if(e.key==='Enter'&&a.length){e.preventDefault();location.href=a[0].href;}});
+      r.addEventListener('keydown',function(e){var a=[].slice.call(r.querySelectorAll('a')),i=a.indexOf(document.activeElement);if(e.key==='ArrowDown'&&i<a.length-1){e.preventDefault();a[i+1].focus();}if(e.key==='ArrowUp'){e.preventDefault();(i>0?a[i-1]:q).focus();}if(e.key==='Escape'){close();q.focus();}});
+      document.addEventListener('click',function(e){if(!e.target.closest('.gs'))close();});
+      document.addEventListener('keydown',function(e){if(e.key==='/'&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){e.preventDefault();q.focus();}});
+    })();
+    </script>
+    @endif
     @php($newCount = \App\Models\WebsiteOrder::where('status', 'new')->count())
     @php($waitX = \App\Models\BrandExchange::where('status', 'waiting')->count())
     @php($adminOnly = ['company', 'users', 'activity', 'sms', 'hero', 'website'])
@@ -96,7 +124,7 @@ textarea{padding:8px 10px;min-height:60px}
   </aside>
   <main>
     @if(session('ok'))<div class="flash">{{ session('ok') }}</div>@endif
-    @if($errors->any())<div class="err">{{ $errors->first() }}</div>@endif
+    @if($errors->any())<div class="err">{{ $errors->first() }}@if($el = session('err_link')) <a href="{{ $el[0] }}" style="font-weight:700;color:inherit">{{ $el[1] }}</a>@endif</div>@endif
     @yield('content')
   </main>
 </div>

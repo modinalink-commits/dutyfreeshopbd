@@ -22,7 +22,7 @@
     <div class="grid2" style="grid-template-columns:repeat(2,minmax(0,1fr))">
       <label class="f">Size<select name="size_kg">@foreach(\App\Models\Brand::SIZES as $s)<option value="{{ $s }}">{{ $s }} kg</option>@endforeach</select></label>
       <label class="f">From date<input type="date" name="from_date" required></label>
-      <label class="f">DO (৳)<input type="number" step="0.01" name="do_rate" required></label>
+      <label class="f"><span>DO (৳) @include('partials.help', ['t' => 'DO রেট কী?', 'b' => 'কোম্পানির চালানে লেখা প্রতি সিলিন্ডারের দাম, ছাড় বাদ দেওয়ার আগে।', 'e' => 'উদাহরণ: ১২ কেজি, সেপ্টেম্বর ২০২৬ → 1575', 'f' => 'ভুল হলে: চালানের কাগজ দেখে আবার লিখুন। আগের বিল নিজে থেকে ঠিক হয়ে যাবে।'])</span><input type="number" step="0.01" name="do_rate" required></label>
       <label class="f">Transport (৳)<input type="number" step="0.01" name="transport" value="0"></label>
       @foreach(\App\Models\CompanyRate::PARTS as $p => $l)<label class="f">{{ $l }} (৳ per cylinder)<input type="number" step="0.01" name="{{ $p }}" value="0"></label>@endforeach
     </div>

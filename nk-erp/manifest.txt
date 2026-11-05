@@ -23,6 +23,7 @@ app/Http/Controllers/PosController.php
 app/Http/Controllers/ProductController.php
 app/Http/Controllers/RoadmapController.php
 app/Http/Controllers/SaleController.php
+app/Http/Controllers/SearchController.php
 app/Http/Controllers/SettingController.php
 app/Http/Controllers/SmsController.php
 app/Http/Controllers/StockController.php
@@ -134,6 +135,13 @@ resources/views/customers.blade.php
 resources/views/dashboard.blade.php
 resources/views/erp/module.blade.php
 resources/views/erp/overview.blade.php
+resources/views/errors/403.blade.php
+resources/views/errors/404.blade.php
+resources/views/errors/419.blade.php
+resources/views/errors/429.blade.php
+resources/views/errors/500.blade.php
+resources/views/errors/503.blade.php
+resources/views/errors/minimal.blade.php
 resources/views/expenses/_css.blade.php
 resources/views/expenses/entry.blade.php
 resources/views/expenses/index.blade.php
@@ -151,6 +159,7 @@ resources/views/map/_leaflet.blade.php
 resources/views/map/dist.blade.php
 resources/views/map/live.blade.php
 resources/views/orders/index.blade.php
+resources/views/partials/help.blade.php
 resources/views/partials/pager.blade.php
 resources/views/password.blade.php
 resources/views/portal/_back.blade.php

@@ -1,0 +1,5 @@
+@extends('errors.minimal')
+@section('title', 'একটু পরে আসুন')
+@section('code', '503')
+@section('heading', 'একটু পরে আসুন')
+@section('message', 'সিস্টেম আপডেট হচ্ছে। এক-দুই মিনিট পরে পাতাটা রিফ্রেশ করুন।')

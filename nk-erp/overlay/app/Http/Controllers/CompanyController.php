@@ -69,7 +69,19 @@ class CompanyController extends Controller
         $chal = $entries->where('kind', 'challan');
         $today = now()->timezone('Asia/Dhaka')->toDateString();
 
+        // "View calculation": how today's balance adds up, month by month and kind by kind.
+        $bn = ['January' => 'জানুয়ারি', 'February' => 'ফেব্রুয়ারি', 'March' => 'মার্চ', 'April' => 'এপ্রিল', 'May' => 'মে', 'June' => 'জুন', 'July' => 'জুলাই', 'August' => 'আগস্ট', 'September' => 'সেপ্টেম্বর', 'October' => 'অক্টোবর', 'November' => 'নভেম্বর', 'December' => 'ডিসেম্বর'];
+        $kindBn = ['opening' => 'শুরুর ব্যালান্স', 'deposit' => 'জমা', 'challan' => 'চালান বিল', 'incentive' => 'ইনসেনটিভ', 'commission' => 'কমিশন', 'adjustment' => 'সংশোধন', 'reversal' => 'বাতিল/রিভার্সাল'];
+        $order = array_flip(array_keys($kindBn));
+        $explain = CompanyEntry::query()->where('entry_date', '<=', $today)
+            ->selectRaw("to_char(entry_date, 'YYYY-MM') ym, kind, sum(amount) amt, count(*) n, max(entry_date) last")->groupBy('ym', 'kind')->get()
+            ->sortBy(fn ($r) => $r->ym.sprintf('%02d', $order[$r->kind] ?? 9))
+            ->filter(fn ($r) => abs((float) $r->amt) > 0.004)
+            ->map(fn ($r) => ['t' => ($r->kind === 'opening' ? '' : ($bn[Carbon::parse($r->ym.'-01')->format('F')] ?? $r->ym).'-এর ').($kindBn[$r->kind] ?? $r->kind), 'a' => (float) $r->amt, 'n' => (int) $r->n, 'm' => $r->ym])->values();
+        $prevChal = CompanyEntry::query()->where('kind', 'challan')->whereBetween('entry_date', [Carbon::parse($prev.'-01')->toDateString(), Carbon::parse($prev.'-01')->endOfMonth()->toDateString()])->get();
+
         return view('company.index', [
+            'explain' => $explain, 'prevTons' => $prevChal->sum(fn ($x) => $x->qty * $x->size_kg) / 1000, 'bnMonth' => $bn,
             'ym' => $ym, 'start' => $start, 'prev' => $prev, 'next' => $next, 'rows' => $rows,
             'balanceToday' => CompanyEntry::balanceUntil($today),
             'deposited' => (float) $deps->sum('amount'), 'depCount' => $deps->count(),
@@ -96,8 +108,16 @@ class CompanyController extends Controller
             'entry_date' => ['required', 'date'], 'challan_no' => ['required', 'string', 'max:40'],
             'qty' => ['required', 'array'], 'qty.*' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'to_stock' => ['nullable', 'boolean'], 'empties' => ['nullable', 'array'], 'empties.*' => ['nullable', 'integer', 'min:0'],
-            'note' => ['nullable', 'string', 'max:255'],
+            'note' => ['nullable', 'string', 'max:255'], 'confirm_dup' => ['nullable', 'boolean'],
         ]);
+        // Same challan number saved before? Ask first: the bill would be cut twice.
+        if (empty($data['confirm_dup'])) {
+            $prev = CompanyEntry::query()->where('kind', 'challan')->where('challan_no', trim($data['challan_no']))->orderBy('id')->get();
+            if ($prev->isNotEmpty()) {
+                return back()->withInput()->with('dup', ['no' => $data['challan_no'], 'date' => $prev->first()->entry_date->format('d-m-Y'), 'm' => $prev->first()->entry_date->format('Y-m'),
+                    'q' => $prev->map(fn ($e) => $e->size_kg.' কেজি × '.$e->qty)->implode(', ')]);
+            }
+        }
         try {
             DB::transaction(function () use ($data, $request) {
                 $any = false;
@@ -105,7 +125,7 @@ class CompanyController extends Controller
                     $q = (int) ($data['qty'][$s] ?? 0);
                     if (! $q) continue;
                     $rate = CompanyRate::forDate($s, $data['entry_date']);
-                    if (! $rate) throw new RuntimeException("No Rate Master row for {$s} kg on {$data['entry_date']}. Add it first.");
+                    if (! $rate) throw new RuntimeException("{$s} কেজির রেট এই তারিখে ({$data['entry_date']}) বসানো হয়নি, তাই বিল তৈরি হয়নি (০ ধরে বিল হবে না)। Rate Master-এ {$s} কেজির রেট লিখুন, তারপর আবার সেভ করুন।");
                     CompanyEntry::create(['entry_date' => $data['entry_date'], 'kind' => 'challan', 'challan_no' => $data['challan_no'], 'size_kg' => $s, 'qty' => $q,
                         'do_rate' => $rate->do_rate, 'transport' => $rate->transport, 'amount' => -round($q * ((float) $rate->do_rate - (float) $rate->transport), 2),
                         'note' => $data['note'] ?? null, 'created_by' => $request->user()->id]);
@@ -119,7 +139,8 @@ class CompanyController extends Controller
                 if (! $any) throw new RuntimeException('Enter at least one quantity.');
             });
         } catch (RuntimeException $e) {
-            return back()->withInput()->withErrors(['qty' => $e->getMessage()]);
+            $r = back()->withInput()->withErrors(['qty' => $e->getMessage()]);
+            return str_contains($e->getMessage(), 'Rate Master') ? $r->with('err_link', [route('company.rates'), 'Rate Master খুলুন →']) : $r;
         }
         AuditLog::record('company_challan', $data['challan_no']);
         return redirect()->route('company.index', ['m' => substr($data['entry_date'], 0, 7)])->with('ok', "Challan {$data['challan_no']} saved.");
