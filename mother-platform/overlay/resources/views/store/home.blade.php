@@ -228,6 +228,38 @@ if(document.readyState==='complete')setTimeout(first,300);else addEventListener(
 @endif
 
 @if($s['home_promos']==='1')<div class="w pm"><a href="/delivery-policy/"><i><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h11v10H3zM14 9h4l3 3v4h-7z"/><circle cx="7" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/></svg></i><span><b>Free Delivery</b><span>On selected orders</span></span></a><a href="/about-us/"><i><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M8.5 12l2.5 2.5L15.5 10"/></svg></i><span><b>100% Original</b><span>Imported and authentic</span></span></a><a href="#flash"><i><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 5L5 19"/><circle cx="7" cy="7" r="2.2"/><circle cx="17" cy="17" r="2.2"/></svg></i><span><b>Special Offers</b><span>Up to {{ $maxOff }}% off</span></span></a></div>@endif
+<style>
+/* Category sections on the home page: same look as the Flash Sale block (framed card, logo-colour animated bar, white pills, aligned cards). Layout/markup unchanged. */
+body .cs{gap:0;border:1.25px solid var(--bd);border-radius:12px;background:#fff;overflow:hidden}
+body .cs .hh,body .cs .mt{position:relative;overflow:hidden;background:linear-gradient(90deg,#FF5A00 0%,#8A3008 9%,#0B1220 30%,#0B1220 70%,#8A3008 91%,#FF5A00 100%)}
+body .cs .hh::after,body .cs .mt::after{content:"";position:absolute;top:0;bottom:0;left:0;width:30%;background:linear-gradient(90deg,rgba(255,90,0,0),rgba(255,122,48,.5) 50%,rgba(255,90,0,0));animation:csGo 3.4s ease-in-out infinite alternate;pointer-events:none;will-change:transform}
+body .cs .hh>*,body .cs .mt>*{position:relative;z-index:1}
+@keyframes csGo{from{transform:translateX(0)}to{transform:translateX(233%)}}
+body .cs .hh{margin:0;padding:16px 20px;border-radius:18px;gap:10px 14px}
+body .cs .hh .t{color:#fff;border:0;padding:0;font-size:18px;font-weight:800;letter-spacing:.02em;text-transform:uppercase;line-height:1.2}
+body .cs .hh .tb{background:#fff;color:var(--n);border:0;padding:7px 16px;font-size:12px;font-weight:700;text-decoration:none;text-transform:none;min-height:0}
+body .cs .hh .tb:hover{color:#C2410C}
+body .cs .hh .va{background:#fff;color:var(--n);font-size:13px;font-weight:800;padding:8px 16px;border-radius:999px;text-transform:none}
+body .cs .hh .va:after{content:" \203A"}
+body .cs .gr{padding:12px}
+body .cs .pc{border-radius:14px}body .cs .pc .ph{background:#F8F8F8}
+body .cs .pc,body .cs .pc:hover{transform:none}
+body .cs .pc{transition:box-shadow .15s}
+body .cs .pc .ph,body .cs .pc .nm,body .cs .pc .pr,body .cs .pc .ck,body .cs .pc .on{flex:none}
+body .cs .pc .pr{align-content:flex-start;min-height:54px}
+body .cs .pc .on{margin-top:auto}
+@media(max-width:760px){
+  body .cs{border-radius:10px}
+  body .cs .mt{margin:0;padding:8px 10px;border-radius:14px;gap:8px}
+  body .cs .mt span{color:#fff;padding-left:0;font-size:13px;font-weight:800;text-transform:uppercase}
+  body .cs .mt span::before{display:none}
+  body .cs .mt a{background:#fff;color:var(--n);border:0;font-size:11px;padding:5px 11px}
+  body .cs .gr{padding:6px;gap:5px}
+  body .cs .pc .pr{min-height:26px}
+  body .cs .mv{margin:0;padding:0 6px 8px}
+}
+@media(prefers-reduced-motion:reduce){body .cs .hh::after,body .cs .mt::after{animation:none}}
+</style>
 @if($s['home_flash']==='1' && $flash->count() && $fOn)
 <style>
 /* Flash Sale bar: logo colours (navy #0B1220 + orange #FF5A00). Both ends are lit orange and a soft glow travels end to end and back, so no part of the bar is left dead. Decoration only; content and timer are untouched. */
