@@ -36,6 +36,11 @@ class ProductController extends Controller
             'is_active' => ['required', 'boolean'],
         ]);
         unset($data['id']);
+        if (in_array($data['category'], ['refill', 'new_package'], true) && $data['is_active']) {
+            $twin = Product::query()->where('is_active', true)->where('category', $data['category'])->where('brand_id', $data['brand_id'])->where('size_kg', $data['size_kg'])
+                ->when($id, fn ($q) => $q->where('id', '!=', $id))->first();
+            if ($twin) return back()->withInput()->withErrors(['name' => "{$twin->name} ({$twin->code}) already sells this brand, size and type. Change its price instead, or turn it off first — two prices for one cylinder would confuse sales."]);
+        }
         if (! in_array($data['category'], ['refill', 'new_package'], true)) {
             $data['brand_id'] = null; $data['size_kg'] = null;
         }

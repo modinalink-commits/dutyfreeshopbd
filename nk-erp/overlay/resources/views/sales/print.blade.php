@@ -49,7 +49,7 @@ body{margin:0;background:#eef2f9;font-family:'Plus Jakarta Sans','Hind Siliguri'
       <span style="font-size:11px;color:#51607a">Phone: {{ $s['phone'] ?? '' }}{{ ! empty($s['bin']) ? ' · BIN '.$s['bin'] : '' }}{{ ! empty($s['trade_license']) ? ' · Trade license '.$s['trade_license'] : '' }}</span>
     </div>
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-      <span style="font-size:20px;font-weight:800;letter-spacing:.04em">{{ $sale->type === 'wholesale' ? 'SALES INVOICE' : 'CASH MEMO' }}</span>
+      <span style="font-size:20px;font-weight:800;letter-spacing:.04em;white-space:nowrap">{{ $sale->type === 'wholesale' ? 'SALES INVOICE' : 'CASH MEMO' }}</span>
       <span style="font-size:13px;font-weight:700">{{ $sale->invoice_no }}</span>
       <span style="font-size:12px;color:#51607a">{{ $sale->created_at->timezone('Asia/Dhaka')->format('d-m-Y · H:i') }}</span>
     </div>
