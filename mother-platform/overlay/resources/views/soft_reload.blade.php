@@ -15,8 +15,8 @@ function keepNode(n){
  if(n.className&&typeof n.className==='string'&&/(^|\s)(qe-ov|dfm|modal)(\s|$)/.test(n.className))return true;
  return false}
 function sameAttrs(a,b){
- var i,x,v;for(i=0;i<b.attributes.length;i++){x=b.attributes[i];v=x.value;if(x.name==='class'&&a.classList.contains('dfpx')&&!/(^|\s)dfpx(\s|$)/.test(v))v+=' dfpx';if(a.getAttribute(x.name)!==v){if(x.name==='value'&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.tagName==='SELECT'))continue;a.setAttribute(x.name,v)}}
- for(i=a.attributes.length-1;i>=0;i--){x=a.attributes[i];if(!b.hasAttribute(x.name)&&x.name!=='style'&&!/^data-df/.test(x.name)){a.removeAttribute(x.name)}}}
+ var i,x,v;for(i=0;i<b.attributes.length;i++){x=b.attributes[i];v=x.value;if(x.name==='class'){var keep=[].slice.call(a.classList).filter(function(c){return /^(mc-|dfx-|dfpx)/.test(c)&&!new RegExp('(^|\\s)'+c+'(\\s|$)').test(v)});if(keep.length)v=(v?v+' ':'')+keep.join(' ')}if(a.getAttribute(x.name)!==v){if(x.name==='value'&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.tagName==='SELECT'))continue;a.setAttribute(x.name,v)}}
+ for(i=a.attributes.length-1;i>=0;i--){x=a.attributes[i];if(!b.hasAttribute(x.name)&&x.name!=='style'&&!/^data-df/.test(x.name)){if(x.name==='class'){var kp=[].slice.call(a.classList).filter(function(c){return /^(mc-|dfx-|dfpx)/.test(c)});if(kp.length){a.setAttribute('class',kp.join(' '));continue}}a.removeAttribute(x.name)}}}
 function morph(a,b){
  if(a.nodeType===3||a.nodeType===8){if(a.nodeValue!==b.nodeValue)a.nodeValue=b.nodeValue;return}
  if(a.nodeType!==1)return;
