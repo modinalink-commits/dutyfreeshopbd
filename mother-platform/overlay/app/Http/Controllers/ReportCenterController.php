@@ -40,9 +40,16 @@ class ReportCenterController extends Controller
   }
 
   /** Applies the page filters to a query on report_registry. */
+  /** Report codes the signed-in person has starred. */
+  private function favCodes(): array
+  {
+    try { return \Illuminate\Support\Facades\Schema::hasTable('report_favorites') ? DB::table('report_favorites')->where('user_id', Auth::id())->pluck('report_code')->all() : []; } catch (\Throwable $e) { return []; }
+  }
+
   private function filtered(Request $r)
   {
     $q = $this->visible();
+    if ($r->query('fav') === '1') $q->whereIn('report_code', $this->favCodes() ?: ['-']);
     if ($r->filled('q')) {
       $s = '%' . addcslashes(mb_substr(trim((string)$r->query('q')), 0, 80), '%_\\') . '%';
       $q->where(function ($w) use ($s) { $w->where('name', 'ilike', $s)->orWhere('report_code', 'ilike', $s)->orWhere('sub_group', 'ilike', $s)->orWhere('description', 'ilike', $s)->orWhere('owner_module', 'ilike', $s); });
@@ -86,9 +93,54 @@ class ReportCenterController extends Controller
 
     $rid = $rows->pluck('replacement_report_id')->filter()->unique()->all();
     $repl = $rid ? DB::table('report_registry')->whereIn('id', $rid)->pluck('report_code', 'id')->all() : [];
-    $data += compact('rows', 'total', 'page', 'pages', 'pp', 'counts', 'gcount', 'subs', 'sort', 'dir', 'repl');
+    $favs = $this->favCodes();
+    $data += compact('rows', 'total', 'page', 'pages', 'pp', 'counts', 'gcount', 'subs', 'sort', 'dir', 'repl', 'favs');
     if ($r->query('partial')) return view('report_center_list', $data);
     return view('report_center', $data);
+  }
+
+  /** Report Center Home: search, counts, the ten groups, recently viewed and favorite reports. */
+  public function home(Request $r)
+  {
+    C::ensure();
+    if (!C::ready()) return view('report_center_home', ['ready' => false]);
+    $base = $this->visible();
+    $favs = $this->favCodes();
+    $counts = [
+      'total' => (clone $base)->count(), 'active' => (clone $base)->where('is_active', true)->count(), 'favs' => (clone $base)->whereIn('report_code', $favs ?: ['-'])->count(),
+      'native' => (clone $base)->where('is_active', true)->where('native_export', 'like', '%p%')->where('native_export', 'like', '%x%')->where('native_export', 'like', '%c%')->where('native_export', 'like', '%n%')->count(),
+    ];
+    $counts['nonative'] = max(0, $counts['active'] - $counts['native']);
+    $gcount = (clone $base)->select('group_code', DB::raw('count(*) n'))->groupBy('group_code')->pluck('n', 'group_code')->all();
+    $recent = collect();
+    try {
+      if (\Illuminate\Support\Facades\Schema::hasTable('report_views')) {
+        $codes = DB::table('report_views')->where('user_id', Auth::id())->orderByDesc('viewed_at')->limit(8)->pluck('viewed_at', 'report_code');
+        $recent = (clone $base)->whereIn('report_code', $codes->keys()->all() ?: ['-'])->get()->map(function ($x) use ($codes) { $x->viewed_at = $codes[$x->report_code] ?? null; return $x; })->sortByDesc('viewed_at')->values();
+      }
+    } catch (\Throwable $e) {}
+    $favRows = (clone $base)->whereIn('report_code', $favs ?: ['-'])->orderBy('report_code')->limit(30)->get();
+    return view('report_center_home', ['ready' => true, 'isAdmin' => $this->isAdmin(), 'groups' => C::GROUPS, 'counts' => $counts, 'gcount' => $gcount, 'recent' => $recent, 'favRows' => $favRows]);
+  }
+
+  /** Star / unstar a report for the signed-in person. */
+  public function favorite(Request $r)
+  {
+    $code = (string)$r->input('code');
+    abort_unless(C::ready() && preg_match('/^[A-Z]{3}-\d{3}$/', $code) && $this->visible()->where('report_code', $code)->exists(), 404);
+    abort_unless(\Illuminate\Support\Facades\Schema::hasTable('report_favorites'), 503);
+    $q = DB::table('report_favorites')->where('user_id', Auth::id())->where('report_code', $code);
+    if ($q->exists()) { $q->delete(); $on = false; } else { DB::table('report_favorites')->insert(['user_id' => Auth::id(), 'report_code' => $code, 'created_at' => now()]); $on = true; }
+    return response()->json(['ok' => true, 'fav' => $on]);
+  }
+
+  /** Records that a person exported a report with the standard Export bar. */
+  public function logExport(Request $r)
+  {
+    $code = (string)$r->input('code'); $fmt = (string)$r->input('fmt');
+    if (!preg_match('/^[A-Z]{3}-\d{3}$/', $code) || !in_array($fmt, ['pdf', 'xlsx', 'csv', 'print'], true)) return response()->json(['ok' => false], 422);
+    try { DB::table('audit_logs')->insert(['user_id' => Auth::id(), 'user_name' => Auth::user()->name, 'action' => 'export', 'subject' => $code . ' ' . $fmt, 'ip' => $r->ip(), 'created_at' => now(), 'updated_at' => now()]); } catch (\Throwable $e) {}
+    return response()->json(['ok' => true]);
   }
 
   /** CSV of the list exactly as filtered on screen (all matching rows). */
@@ -157,6 +209,7 @@ class ReportCenterController extends Controller
 
     $active = $reg->where('is_active', true);
     $full = $active->filter(fn($x) => !self::missing($x))->count();
+    $native = $active->filter(fn($x) => C::nativeFull($x->native_export ?? ''))->count();
     $c = [
       'discovered' => count($found), 'registered' => $reg->count(), 'active' => $active->count(), 'legacy' => $reg->where('is_legacy', true)->count(), 'hidden' => $reg->where('is_hidden_from_sidebar', true)->count(),
       'broken' => $nBroken, 'perm' => $nPerm, 'export' => $nExport, 'dup' => $dups->sum(fn($g) => $g->count()), 'orphans' => count($orphans),
@@ -164,6 +217,6 @@ class ReportCenterController extends Controller
     $byType = collect($issues)->groupBy('type')->map->count()->all();
     $filter = (string)$r->query('type');
     if ($filter !== '') $issues = array_values(array_filter($issues, fn($i) => $i['type'] === $filter));
-    return view('report_audit', ['ready' => true, 'groups' => C::GROUPS, 'c' => $c, 'full' => $full, 'activeN' => $active->count(), 'issues' => $issues, 'byType' => $byType, 'filter' => $filter, 'dups' => $dupView, 'nFound' => count($found)]);
+    return view('report_audit', ['ready' => true, 'groups' => C::GROUPS, 'c' => $c, 'full' => $full, 'activeN' => $active->count(), 'native' => $native, 'issues' => $issues, 'byType' => $byType, 'filter' => $filter, 'dups' => $dupView, 'nFound' => count($found)]);
   }
 }

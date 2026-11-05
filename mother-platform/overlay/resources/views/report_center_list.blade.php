@@ -9,7 +9,7 @@ $from = $total ? ($page - 1) * $pp + 1 : 0; $to = min($total, $page * $pp);
 $win = array_values(array_unique(array_filter([1, 2, 3, $page - 1, $page, $page + 1, $pages], fn($p) => $p >= 1 && $p <= $pages))); sort($win);
 ?>
 <div class="rc-tw"><table class="rc-g">
-<thead><tr>{!! $th('code', 'Code') !!}{!! $th('name', 'Report Name') !!}{!! $th('group', 'Group') !!}<th scope="col">Sub Group</th><th scope="col" class="c">Type</th>{!! $th('updated', 'Last Updated', 'c') !!}<th scope="col" class="c">Export</th><th scope="col" class="c">Status</th><th scope="col" class="c">Open</th></tr></thead>
+<thead><tr><th scope="col" class="c" title="Favorite">★</th>{!! $th('code', 'Code') !!}{!! $th('name', 'Report Name') !!}{!! $th('group', 'Group') !!}<th scope="col">Sub Group</th><th scope="col" class="c">Type</th>{!! $th('updated', 'Last Updated', 'c') !!}<th scope="col" class="c">Export</th><th scope="col" class="c">Status</th><th scope="col" class="c">Open</th></tr></thead>
 <tbody>
 @forelse($rows as $x)
 @php
@@ -18,13 +18,14 @@ $win = array_values(array_unique(array_filter([1, 2, 3, $page - 1, $page, $page 
   $dim = $x->is_legacy || !$x->is_active;
 @endphp
 <tr style="{{ $dim ? 'color:#6B7280' : '' }}">
+  <td class="c"><button type="button" class="rc-star" data-code="{{ $x->report_code }}" aria-label="Favorite {{ $x->name }}" aria-pressed="{{ in_array($x->report_code, $favs ?? [], true) ? 'true' : 'false' }}" style="border:0;background:none;cursor:pointer;font-size:17px;line-height:1;min-width:32px;min-height:32px;color:{{ in_array($x->report_code, $favs ?? [], true) ? '#F95505' : '#9CA3AF' }}">{{ in_array($x->report_code, $favs ?? [], true) ? '★' : '☆' }}</button></td>
   <td class="nw"><b>{{ $x->report_code }}</b></td>
   <td>{{ $x->name }}@if($x->is_legacy && $x->replacement_report_id)<div class="mut">Replaced By: <b>{{ $repl[$x->replacement_report_id] ?? '—' }}</b></div>@endif @if($x->duplicate_group)<div class="mut" title="May overlap with another report. Not decided yet.">Possible overlap · under review</div>@endif</td>
   <td>{{ $groups[$x->group_code] ?? $x->group_code }}</td>
   <td>{{ $x->sub_group }}</td>
   <td class="c">{{ $types[$x->report_type] ?? $x->report_type }}</td>
   <td class="c nw">{{ \Carbon\Carbon::parse($x->updated_at)->timezone('Asia/Dhaka')->format('d M Y') }}</td>
-  <td class="c nw">{{ $has ? implode(' · ', $has) : 'None' }}@if($x->is_active && $miss)<div class="mut" style="color:#92400E">Missing: {{ implode(', ', $miss) }}</div>@endif</td>
+  <td class="c nw">{{ $has ? implode(' · ', $has) : 'None' }}<div class="mut">{{ \App\Support\ReportCatalog::nativeFull($x->native_export ?? '') ? 'Built in' : 'Standard Export bar' }}</div>@if($x->is_active && $miss)<div class="mut" style="color:#92400E">Missing: {{ implode(', ', $miss) }}</div>@endif</td>
   <td class="c">
     @if($x->is_legacy)<span class="rc-tg" style="background:#E5E7EB;color:#374151">Legacy</span>
     @elseif(!$x->is_active)<span class="rc-tg" style="background:#E5E7EB;color:#374151">Inactive</span>
@@ -34,7 +35,7 @@ $win = array_values(array_unique(array_filter([1, 2, 3, $page - 1, $page, $page 
   <td class="c"><a href="{{ url('/admin/report-center/open/' . $x->report_code) }}">Open</a></td>
 </tr>
 @empty
-<tr><td colspan="9" style="text-align:center;color:#6B7280;padding:18px">No report matches these filters.</td></tr>
+<tr><td colspan="10" style="text-align:center;color:#6B7280;padding:18px">No report matches these filters.</td></tr>
 @endforelse
 </tbody></table></div>
 <div class="rc-foot">

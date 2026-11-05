@@ -99,6 +99,7 @@ nav[role=navigation] svg,.pagination svg{width:16px!important;height:16px!import
 <script>document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a||a.target||a.hasAttribute('download'))return;var h=a.getAttribute('href');if(!h||h.charAt(0)==='#'||/^(javascript|tel|mailto):/i.test(h))return;try{var u=new URL(h,location.href);if(u.origin!==location.origin||u.searchParams.has('embed'))return;u.searchParams.set('embed','1');a.setAttribute('href',u.pathname+u.search+u.hash)}catch(x){}},true)</script>
 @endif
 <main>@yield('body')</main>
+@auth @include('report_export_bar') @endauth
 @auth
 @if($__emb)
 <script>window.DF_EMBED=1</script>

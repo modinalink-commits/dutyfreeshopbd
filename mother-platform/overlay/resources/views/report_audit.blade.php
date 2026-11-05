@@ -62,10 +62,11 @@
 <div class="two">
   <div class="box">
     <h2>Export coverage</h2>
-    <div style="display:flex;align-items:baseline;gap:10px"><b style="font-size:26px">{{ $full }} / {{ $activeN }}</b><span class="mut" style="font-size:12.5px">active reports offer all four formats (PDF, Excel, CSV, Print)</span></div>
+    <div style="display:flex;align-items:baseline;gap:10px"><b style="font-size:26px">{{ $full }} / {{ $activeN }}</b><span class="mut" style="font-size:12.5px">active reports offer all four formats (PDF, Excel, CSV, Print), through the page itself or the standard Export bar</span></div>
     <div class="bar" style="margin-top:8px"><i style="width:{{ $pct }}%"></i></div>
     <div style="display:flex;justify-content:space-between;margin-top:4px" class="mut"><span>Reports missing a format: <b style="color:#B91C1C">{{ $activeN - $full }}</b></span><span>Target: <b>100%</b> · now {{ $pct }}%</span></div>
-    <p class="mut" style="margin:8px 0 0">“PDF” counts where the page has a print and save-as-PDF button. Staff tracking pages offer CSV only today, so they appear as missing.</p>
+    <p style="margin:8px 0 0;font-size:12.5px"><b>{{ $native }} / {{ $activeN }}</b> have all four formats built into the page itself. The other <b>{{ $activeN - $native }}</b> get them from the standard Export bar, which exports the tables shown on screen. A page with no table (a pure chart page) will say so.</p>
+    <p class="mut" style="margin:6px 0 0">“PDF” means print and save as PDF.</p>
   </div>
   <div class="box">
     <h2>Reconciliation</h2>

@@ -41,6 +41,7 @@
     <span class="mut" style="font-size:12.5px">The permanent list of every report. A report hidden from the menu still appears here. Nothing here changes or removes a report.</span>
   </div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <a class="btn2" href="{{ url('/admin/report-center/all-reports') }}?fav=1">★ My Reports</a>
     <a class="btn2" href="{{ $exportUrl }}">Export list (CSV)</a>
     @if($isAdmin)<a class="btn2 p" href="{{ url('/admin/report-center/audit') }}">Report System Audit</a>@endif
   </div>
@@ -91,6 +92,12 @@
   form.addEventListener('submit', function (e) { e.preventDefault(); load(urlFromForm()); });
   form.addEventListener('change', function () { load(urlFromForm()); });
   document.getElementById('rc-q').addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(function () { load(urlFromForm()); }, 250); });
+  box.addEventListener('click', function (e) {
+    var b = e.target.closest('.rc-star'); if (!b) return;
+    var t = document.querySelector('meta[name=csrf-token]');
+    fetch(@json(url('/admin/report-center/favorite')), { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': t ? t.content : '', Accept: 'application/json' }, body: JSON.stringify({ code: b.getAttribute('data-code') }) })
+      .then(function (r) { return r.json(); }).then(function (j) { b.textContent = j.fav ? '★' : '☆'; b.style.color = j.fav ? '#F95505' : '#9CA3AF'; b.setAttribute('aria-pressed', j.fav ? 'true' : 'false'); }).catch(function () {});
+  });
   box.addEventListener('click', function (e) { var a = e.target.closest('a[data-rc]'); if (a) { e.preventDefault(); load(a.getAttribute('href')); } });
 })();
 </script>

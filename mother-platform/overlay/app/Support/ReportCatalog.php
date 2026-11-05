@@ -121,12 +121,51 @@ class ReportCatalog
       $out[] = [
         'report_code' => $code, 'name' => $name, 'slug' => strtolower($code), 'group_code' => substr($code, 0, 3), 'sub_group' => $sub, 'report_type' => $type,
         'data_source' => $owner, 'route_path' => $path, 'permission_key' => ModulePermission::moduleFor(strtok($path, '?')),
-        'supports_pdf' => str_contains($ex, 'p'), 'supports_xlsx' => str_contains($ex, 'x'), 'supports_csv' => str_contains($ex, 'c'),
-        'supports_docx' => str_contains($ex, 'd'), 'supports_print' => str_contains($ex, 'n'),
+        // Every registered report page also gets the standard Export bar (report_export_bar view), so all four formats are available on each page.
+        // native_export keeps what the page itself offers, so the Audit can show both numbers honestly.
+        'native_export' => preg_replace('/[^pxcnd]/', '', $ex),
+        'supports_pdf' => true, 'supports_xlsx' => true, 'supports_csv' => true, 'supports_docx' => str_contains($ex, 'd'), 'supports_print' => true,
         'duplicate_group' => $dup, 'owner_module' => $owner, 'sort_order' => $i,
       ];
     }
     return $out;
+  }
+
+  /** True when the page already has all four formats by itself (no standard Export bar needed). */
+  public static function nativeFull(?string $n): bool { $n = (string)$n; return str_contains($n, 'p') && str_contains($n, 'x') && str_contains($n, 'c') && str_contains($n, 'n'); }
+
+  /** Registry rows keyed by path (without query), cached for a minute. One report per row; a path can hold several (e.g. the Damage Report shares a path with Stock Movement). */
+  public static function map(): array
+  {
+    return \Illuminate\Support\Facades\Cache::remember('report_registry_map_v1', 60, function () {
+      if (!self::ready() || !Schema::hasColumn('report_registry', 'native_export')) return [];
+      $m = [];
+      foreach (DB::table('report_registry')->where('is_active', true)->get(['report_code', 'name', 'group_code', 'route_path', 'native_export']) as $r) $m[self::key(strtok($r->route_path, '?'))][] = $r;
+      return $m;
+    });
+  }
+
+  /** The registry row of the page being viewed, or null when this page is not a registered report. */
+  public static function current(Request $r)
+  {
+    if (!$r->isMethod('GET') || $r->ajax() || $r->query('partial')) return null;
+    try {
+      $rows = self::map()[self::key($r->path())] ?? null; if (!$rows) return null;
+      foreach ($rows as $x) { $q = (string)(parse_url($x->route_path, PHP_URL_QUERY) ?? ''); if ($q !== '') { parse_str($q, $a); foreach ($a as $k => $v) if ((string)$r->query($k) === (string)$v) return $x; } }
+      foreach ($rows as $x) if (!str_contains($x->route_path, '?')) return $x;
+      return $rows[0];
+    } catch (\Throwable $e) { return null; }
+  }
+
+  /** Remembers that the signed-in person opened this report (at most once every 10 minutes per report per session). */
+  public static function touch(string $code): void
+  {
+    try {
+      $uid = \Illuminate\Support\Facades\Auth::id(); if (!$uid || !Schema::hasTable('report_views')) return;
+      $k = 'rv_' . $code; $last = (int)session($k, 0); if ($last && time() - $last < 600) return;
+      session([$k => time()]);
+      DB::table('report_views')->updateOrInsert(['user_id' => $uid, 'report_code' => $code], ['viewed_at' => now()]);
+    } catch (\Throwable $e) {}
   }
 
   public static function ready(): bool { try { return Schema::hasTable('report_registry'); } catch (\Throwable $e) { return false; } }
@@ -138,8 +177,9 @@ class ReportCatalog
   public static function sync(): int
   {
     if (!self::ready()) return 0;
-    $n = 0; $now = now();
+    $n = 0; $now = now(); $hasNative = Schema::hasColumn('report_registry', 'native_export');
     foreach (self::all() as $r) {
+      if (!$hasNative) unset($r['native_export']);
       $cur = DB::table('report_registry')->where('report_code', $r['report_code'])->first();
       if ($cur) {
         DB::table('report_registry')->where('id', $cur->id)->update(array_merge(array_diff_key($r, ['report_code' => 1, 'slug' => 1]), ['updated_at' => $now]));
@@ -150,11 +190,14 @@ class ReportCatalog
     return $n;
   }
 
-  /** Makes sure the registry is filled before a page reads it. Cheap: one count. */
+  /** Makes sure the registry matches the catalogue before a Report Center page reads it (runs again whenever the catalogue changes in a deploy). */
   public static function ensure(): void
   {
     if (!self::ready()) return;
-    try { if (DB::table('report_registry')->count() < count(self::rows())) self::sync(); } catch (\Throwable $e) {}
+    try {
+      $h = md5(json_encode(self::all()));
+      if (\Illuminate\Support\Facades\Cache::get('report_catalog_hash') !== $h) { self::sync(); \Illuminate\Support\Facades\Cache::forever('report_catalog_hash', $h); \Illuminate\Support\Facades\Cache::forget('report_registry_map_v1'); }
+    } catch (\Throwable $e) {}
   }
 
   /** Normalised key of a path: no leading slash, query string kept (it separates e.g. the Damage Report from Stock Movement). */
