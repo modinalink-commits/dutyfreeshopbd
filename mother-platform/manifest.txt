@@ -534,6 +534,7 @@ database/migrations/2026_11_04_000060_winback_next_sms_at.php
 resources/views/settings_ui.blade.php
 database/migrations/2026_11_04_000061_voice_pbx_audio.php
 resources/views/store/member_slide.blade.php
+resources/views/store/offers_slide.blade.php
 public/fonts/anek-bangla-500.woff2
 public/fonts/anek-bangla-700.woff2
 resources/views/store/district_slide.blade.php

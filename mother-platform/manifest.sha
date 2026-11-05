@@ -54,7 +54,7 @@ ec8e6dd7cc9800dbfdbfa87606098c9284d156d0 app/Http/Controllers/StoreController.ph
 bac684fdec09482cc8dde719c5d14c6bdd131227 resources/views/store/layout.blade.php
 eab3909c69947b17ed5d5f2d5e3d1f7b0b564481 resources/views/store/card.blade.php
 ce0d1f8552836199c028ddef8806c72a2d10ad19 resources/views/store/home_sec.blade.php
-7db99d50a27fffc58c311db99b320f91c9be42b1 resources/views/store/home.blade.php
+5a5975b3a2df371cf75d2e3725d22a1a85c48ca7 resources/views/store/home.blade.php
 491190955a7dc5d735fa21b3d82c02e8479fe979 resources/views/store/category.blade.php
 7970abc1ce69bbf88e8d32f3299c21534d820409 resources/views/store/product.blade.php
 7ad9d9502d41f54d6784414a9aa3f16a8ab0ec13 resources/views/store/search.blade.php
@@ -534,6 +534,7 @@ d06e9f2080824b2834c98779c1a37b1c07804d05 database/migrations/2026_11_04_000060_w
 952030426a5bf612b3b255a9363809fb2833b1a2 resources/views/settings_ui.blade.php
 05e920b1cffd249722713a6ef9baf66c40db0be7 database/migrations/2026_11_04_000061_voice_pbx_audio.php
 52c6fe4861ad7db1a9a4e6f54538e220e98ec19c resources/views/store/member_slide.blade.php
+6c4235a24238daed16463ad0eee178ef199af70d resources/views/store/offers_slide.blade.php
 c762bbf7c54ec9c17eec9baf0ab0d7fa19ad4ec6 public/fonts/anek-bangla-500.woff2
 8711f8da2273235fdceeff694825bd5e8b852993 public/fonts/anek-bangla-700.woff2
 a6aac3b6e8ca7ed29cb37afc5da56549afee5c81 resources/views/store/district_slide.blade.php
