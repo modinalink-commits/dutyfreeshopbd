@@ -1,5 +1,5 @@
 fe43f8b6cb422cca81ee18b74d3972f77e7852de database/migrations/2026_10_31_000001_mother_core.php
-5db5709aa6864bb2c23ad12ff678846875cfdcba routes/web.php
+4e5de3a246fd2a1a46b44b934b8fcf18c64c659c routes/web.php
 5ec9cde3d13c963d0d55a626e10bf2e39e36a691 app/Models/Mother.php
 391723b04be14122c65efdf651d98977e629b59b app/Http/Controllers/AdminController.php
 242316b2ef0a0967e6815e39fcbc7377349fdc17 app/Console/Commands/MotherInstall.php
@@ -30,7 +30,7 @@ c1fe97d73322b40c55accfea7deeef698a20c4e2 app/Http/Controllers/ResController.php
 90031b22cae57971a0c16629dd80f61a4ae4358c resources/views/res_list.blade.php
 fb3fe4d17e4370d1184f5daebfa07e5a3423a33a resources/views/res_form.blade.php
 67a76a09307002f6201cc2e684f3161b22c67d9c resources/views/reports.blade.php
-68bf2af100b46025342bae1fcf3f63a4b2abc4dd resources/views/sidebar.blade.php
+0e9d6fe02f543d6e385b007188abe3c5bdc5b0f1 resources/views/sidebar.blade.php
 85962752c1c36393879cd52b485c2495742f15f0 resources/views/coming.blade.php
 c391e719e9e194b7bf6ecf86ccb4c9a4504c2d17 database/migrations/2026_10_31_000004_catalog_extra.php
 bd753699bbd209d243e7e4b2b82c37d322444553 resources/views/panels/customers.blade.php
@@ -42,7 +42,7 @@ c25a13956ea9946159b80572e41bd26d65050c7a resources/views/panels/accounts.blade.p
 1cb9863e39bdf894fc9136ae20d93aea9105a087 resources/views/panels/stock-log.blade.php
 e6330f5979ce172872354e03de1a06a9ff9f1777 app/Http/Controllers/SiteController.php
 83f7d91e3943f758a5cc593ff2b2c3f4a34c500e resources/views/site.blade.php
-52f97ea105fe2b3536209a7af35bd6a7977daa03 app/Http/Middleware/ModulePermission.php
+f7515c4b3f9949bc3b7d81f545d83d23a017d072 app/Http/Middleware/ModulePermission.php
 217e3f62ed366d95546fb65603bced16e4b0d25f app/Http/Controllers/PermissionController.php
 29fd9b024bbb869eee18e8599a34166462affa37 resources/views/permissions.blade.php
 d787924ace3fa42cc66a3de321e4e94e784006d8 resources/views/panels/employees.blade.php
@@ -648,3 +648,7 @@ b8de9413315dc91aa369f93947286064d2455e30 resources/views/components/app-live-car
 2d17249c383db24c6facbce6253338c4d9ec5684 resources/views/components/app-notify-form.blade.php
 6a13ea459007e4b022de0c16549fa975317a8801 resources/views/admin_mobile.blade.php
 4662dc008b470675b0c61e026271d94aca0e9f9a database/migrations/2026_11_05_000050_protected_profit_10.php
+34f574dbc75553e00bf81447075a147fb10dc704 database/migrations/2026_11_05_000140_ai_task_briefs.php
+373f1e342f3305dd6d52eb161bd44f7900a596ad app/Support/AiTaskBrief.php
+4986d77ea041cb8bdecbd692e55a4119482c3ca1 app/Http/Controllers/AiTaskBriefController.php
+048a89bb7bd902bb7e5fb5bdf26996beca462975 resources/views/ai_task_brief.blade.php

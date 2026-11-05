@@ -648,3 +648,7 @@ resources/views/app_users.blade.php
 resources/views/components/app-notify-form.blade.php
 resources/views/admin_mobile.blade.php
 database/migrations/2026_11_05_000050_protected_profit_10.php
+database/migrations/2026_11_05_000140_ai_task_briefs.php
+app/Support/AiTaskBrief.php
+app/Http/Controllers/AiTaskBriefController.php
+resources/views/ai_task_brief.blade.php

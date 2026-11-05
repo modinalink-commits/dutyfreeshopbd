@@ -22,6 +22,7 @@ class ModulePermission {
     if (preg_match('#^dob-requests(/|$)#', $p)) return 'customers';
     if (preg_match('#^sms-marketing/(quick|history)#', $p)) return 'orders';
     if (str_starts_with($p, 'sms-marketing')) return 'marketing';
+    if (str_starts_with($p, 'ai-brief-builder')) return 'orders'; // AI Brief Builder: drafts only; staff who work on orders may use it (40 AI runs per person per day)
     if (str_starts_with($p, 'push')) return 'marketing';
     if (str_starts_with($p, 'chat-settings')) return 'settings';
     if (preg_match('#^chat(/|$)#', $p)) return 'orders';
