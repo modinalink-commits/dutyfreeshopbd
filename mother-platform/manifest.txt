@@ -730,3 +730,9 @@ resources/views/sp/admin_scores.blade.php
 resources/views/sp/admin_forecast.blade.php
 resources/views/sp/admin_prices.blade.php
 resources/views/sp/admin_products.blade.php
+database/migrations/2026_11_06_000120_supplier_account_setup.php
+app/Jobs/GenerateSupplierPortalAccountJob.php
+app/Jobs/SendSupplierInvitationSmsJob.php
+app/Http/Controllers/SupplierPortalSetupController.php
+resources/views/sp/activate.blade.php
+resources/views/sp/admin_setup.blade.php

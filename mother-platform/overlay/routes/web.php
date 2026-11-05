@@ -336,6 +336,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
       Route::get('/scores', [$PB,'scores']); Route::post('/scores/visible', [$PB,'perfToggle']);
       Route::get('/forecast', [$PB,'forecast']); Route::post('/reorder', [$PB,'reorder']); Route::get('/prices', [$PB,'prices']); Route::post('/alerts/{id}/seen', [$PB,'alertSeen'])->whereNumber('id');
       Route::get('/suppliers/{sid}/products', [$PB,'products'])->whereNumber('sid'); Route::post('/suppliers/{sid}/products', [$PB,'productSave'])->whereNumber('sid'); Route::post('/suppliers/{sid}/products/{id}/delete', [$PB,'productDelete'])->whereNumber('sid')->whereNumber('id'); Route::post('/suppliers/{sid}/documents', [$PB,'docSave'])->whereNumber('sid'); Route::get('/files/{id}', [$PB,'file'])->whereNumber('id');
+      $PS = \App\Http\Controllers\SupplierPortalSetupController::class; Route::get('/setup', [$PS,'index']); Route::post('/setup', [$PS,'act']); Route::get('/setup/export/{fmt}', [$PS,'export'])->whereIn('fmt',['csv','xls','pdf']);
       Route::get('/rfqs', [$PA,'rfqs']); Route::get('/rfqs/new', [$PA,'rfqForm']); Route::post('/rfqs', [$PA,'rfqSave']); Route::get('/rfqs/{id}', [$PA,'rfqShow'])->whereNumber('id'); Route::post('/rfqs/{id}/{a}', [$PA,'rfqAction'])->whereNumber('id');
     });
     Route::get('/api/products', [$C,'apiProducts']); Route::post('/api/product', [$C,'apiNewProduct']); Route::post('/api/bulk', [$C,'apiBulk']); Route::get('/api/supplier/{id}', [$C,'apiSupplier'])->whereNumber('id'); Route::get('/api/items/{id}', [$C,'apiItems'])->whereNumber('id');
@@ -402,6 +403,7 @@ Route::prefix('supplier-portal')->group(function () {
   $P = \App\Http\Controllers\SupplierPortalController::class;
   Route::get('/login', [$P,'loginForm']); Route::post('/login', [$P,'login'])->middleware('throttle:12,1');
   Route::get('/forgot', [$P,'forgotForm']); Route::post('/forgot', [$P,'forgot'])->middleware('throttle:8,1');
+  Route::get('/activate/{token}', [$P,'activateForm']); Route::post('/activate/{token}/otp', [$P,'activateOtp'])->middleware('throttle:5,10'); Route::post('/activate/{token}', [$P,'activate'])->middleware('throttle:10,10');
   Route::post('/otp-login', [$P,'otpLogin'])->middleware('throttle:8,1'); Route::get('/verify', [$P,'verifyForm']); Route::post('/verify', [$P,'verify'])->middleware('throttle:10,1');
   Route::get('/manifest.webmanifest', [$P,'manifest']); Route::get('/sw.js', [$P,'sw']); Route::get('/offline', [$P,'offline']);
   Route::middleware([\App\Http\Middleware\SupplierPortalAuth::class])->group(function () use ($P) {

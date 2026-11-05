@@ -39,7 +39,7 @@ class SupplierPortalAdminController extends Controller
     if (!$mobile && !$r->filled('email')) return back()->with('bad','A mobile number or e-mail is needed to sign in.');
     if (!$s->code) { $s->code = 'SUP-'.str_pad($s->id,5,'0',STR_PAD_LEFT); DB::table('suppliers')->where('id',$s->id)->update(['code'=>$s->code]); }
     $pw = $this->pw();
-    $id = DB::table('supplier_users')->insertGetId(['supplier_id'=>$s->id,'name'=>$r->name,'mobile'=>$mobile,'email'=>$r->email ? mb_strtolower($r->email) : null,'password'=>Hash::make($pw),'role'=>$r->role,'status'=>'active','must_change'=>true,'created_at'=>now(),'updated_at'=>now()]);
+    $id = DB::table('supplier_users')->insertGetId(['username'=>\App\Jobs\GenerateSupplierPortalAccountJob::username($s),'supplier_id'=>$s->id,'name'=>$r->name,'mobile'=>$mobile,'email'=>$r->email ? mb_strtolower($r->email) : null,'password'=>Hash::make($pw),'role'=>$r->role,'status'=>'active','must_change'=>true,'created_at'=>now(),'updated_at'=>now()]);
     P::audit('sp.user.add','supplier_user#'.$id,null,['supplier'=>$s->name,'role'=>$r->role]);
     $sms = false;
     if ($r->boolean('sms') && $mobile) { [$sms] = Sms::send($mobile, "DutyFreeBD Supplier Portal: ".url('/supplier-portal')." Login: {$s->code} / $mobile Password: $pw (প্রথম লগইনে পরিবর্তন করুন)"); }

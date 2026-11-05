@@ -51,7 +51,7 @@ class SupplierPortal
     $i = trim($ident); if ($i === '') return null;
     $m = self::phone($i);
     return DB::table('supplier_users as u')->join('suppliers as s','s.id','=','u.supplier_id')
-      ->where(fn($w) => $w->whereRaw('lower(s.code) = ?', [mb_strtolower($i)])->orWhereRaw('lower(u.email) = ?', [mb_strtolower($i)])->orWhere('u.mobile', $m)->orWhere('u.mobile', $i))
+      ->where(fn($w) => $w->whereRaw('lower(u.username) = ?', [mb_strtolower($i)])->orWhereRaw('lower(s.code) = ?', [mb_strtolower($i)])->orWhereRaw('lower(u.email) = ?', [mb_strtolower($i)])->orWhere('u.mobile', $m)->orWhere('u.mobile', $i))
       ->orderBy('u.id')->first(['u.*','s.name as supplier_name','s.code as supplier_code']);
   }
 

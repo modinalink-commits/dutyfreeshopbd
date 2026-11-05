@@ -55,6 +55,28 @@ class SupplierPortalController extends Controller
     return back()->with('ok', $r->boolean('on') ? 'Two-step sign-in is ON.' : 'Two-step sign-in is OFF.');
   }
 
+
+  // ---------- activation by single-use SMS link ----------
+  private function invite(string $token): ?object {
+    if (!preg_match('/^[a-f0-9]{40}$/', $token)) return null;
+    return DB::table('supplier_users as u')->join('suppliers as s','s.id','=','u.supplier_id')->where('u.invite_hash', hash('sha256',$token))->where('u.invite_expires_at','>',now())->where('u.status','active')->first(['u.*','s.name as supplier_name']);
+  }
+  public function activateForm($token) {
+    $u = $this->invite($token); if (!$u) return response(view('sp.activate', ['brand'=>SP::brand(),'bad'=>true,'token'=>$token,'u'=>null]), 410);
+    return view('sp.activate', ['brand'=>SP::brand(),'bad'=>false,'token'=>$token,'u'=>$u]);
+  }
+  public function activateOtp($token) {
+    $u = $this->invite($token); if (!$u) abort(410);
+    $ok = SP::otpSend('activate', $u); return back()->with($ok ? 'ok' : 'bad', $ok ? 'OTP sent to '.substr($u->mobile,0,3).'****'.substr($u->mobile,-3).'.' : 'Could not send OTP. Please contact DutyFreeBD.');
+  }
+  public function activate(Request $r, $token) {
+    $u = $this->invite($token); if (!$u) abort(410); $pw = (string)$r->input('password');
+    if (strlen($pw) < 8 || !preg_match('/[A-Z]/',$pw) || !preg_match('/[a-z]/',$pw) || !preg_match('/\d/',$pw)) return back()->with('bad','Password needs 8+ characters with an uppercase letter, a lowercase letter and a number.');
+    if ($pw !== (string)$r->input('password2')) return back()->with('bad','Passwords do not match.');
+    if (!SP::otpCheck('activate', $u->id, (string)$r->input('otp'))) { SP::log($r, $u, 'failed', 'activate-otp'); return back()->with('bad','OTP is wrong or expired. Press "Send OTP" again.'); }
+    DB::table('supplier_users')->where('id',$u->id)->update(['password'=>Hash::make($pw),'must_change'=>false,'activated_at'=>now(),'password_changed_at'=>now(),'invite_hash'=>null,'invite_expires_at'=>null,'failed_attempts'=>0,'locked_until'=>null,'updated_at'=>now()]);
+    SP::log($r, $u, 'activated'); return $this->finish($r, DB::table('supplier_users')->find($u->id), 'activation');
+  }
   public function logout(Request $r) { $u = SP::user(); if ($u) SP::log($r, $u, 'logout'); session()->forget(['sp_uid','sp_iat']); return redirect('/supplier-portal/login'); }
 
   public function forgotForm() { return view('sp.forgot', ['brand'=>SP::brand(), 'step'=>session('sp_fstep', 1)]); }
@@ -77,7 +99,7 @@ class SupplierPortalController extends Controller
     $u = SP::user(); $pw = (string)$r->input('password');
     if (!Hash::check((string)$r->input('current'), $u->password)) return back()->with('bad','Current password is wrong.');
     if (strlen($pw) < 8 || $pw !== (string)$r->input('password2')) return back()->with('bad','New password must be 8+ characters and match.');
-    DB::table('supplier_users')->where('id',$u->id)->update(['password'=>Hash::make($pw),'must_change'=>false,'updated_at'=>now()]);
+    DB::table('supplier_users')->where('id',$u->id)->update(['password'=>Hash::make($pw),'must_change'=>false,'password_changed_at'=>now(),'updated_at'=>now()]);
     SP::log($r, $u, 'password-change'); return redirect('/supplier-portal')->with('ok','Password updated.');
   }
   public function termsForm() { return $this->v('terms'); }
