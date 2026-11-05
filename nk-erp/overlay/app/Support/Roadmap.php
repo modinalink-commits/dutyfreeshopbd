@@ -45,7 +45,7 @@ class Roadmap
         ],
         'WEBSITE' => [
             ['website', 'Public website', null, 'Website (live at nklpgbd.com; editing from here planned)'],
-            ['hero', 'Hero slider', null, 'Hero · HeroMobile · HeroAdmin'],
+            ['hero', 'Hero slider', 'hero.index', 'Hero · HeroMobile · HeroAdmin'],
         ],
         'ERP MODULES' => [
             ['erp', 'All 15 modules', null, 'Module · Mod01–Mod15'],

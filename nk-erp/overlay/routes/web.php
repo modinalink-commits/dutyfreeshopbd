@@ -21,11 +21,13 @@ use App\Http\Controllers\FleetController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\HrController;
 use App\Http\Controllers\SmsController;
+use App\Http\Controllers\HeroController;
 use App\Http\Controllers\TripController;
 use Illuminate\Support\Facades\Route;
 
 // Public API used by the nklpgbd.com website order form.
 Route::post('/api/website-order', [ApiController::class, 'websiteOrder'])->middleware('throttle:8,1');
+Route::get('/api/hero', [HeroController::class, 'api'])->middleware('throttle:120,1');
 Route::get('/api/ping', fn () => response()->json(['ok' => true]));
 
 Route::middleware('guest')->group(function () {
@@ -165,6 +167,13 @@ Route::middleware(['auth', 'pwd'])->group(function () {
     Route::middleware('role:super_admin')->group(function () {
         Route::post('/sms/gateway', [SmsController::class, 'gateway'])->name('sms.gateway');
         Route::post('/sms/notice', [SmsController::class, 'notice'])->name('sms.notice');
+    });
+    Route::middleware('role:super_admin,admin')->group(function () {
+        Route::get('/hero', [HeroController::class, 'index'])->name('hero.index');
+        Route::post('/hero', [HeroController::class, 'save'])->name('hero.save');
+        Route::post('/hero/publish', [HeroController::class, 'publish'])->name('hero.publish');
+        Route::post('/hero/{slide}/move', [HeroController::class, 'move'])->name('hero.move');
+        Route::post('/hero/{slide}/delete', [HeroController::class, 'delete'])->name('hero.delete');
     });
     Route::get('/vehicle-profit', [FleetController::class, 'profit'])->name('fleet.profit')->middleware('role:super_admin');
 

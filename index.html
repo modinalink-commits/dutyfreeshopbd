@@ -38,6 +38,8 @@ header{position:sticky;top:0;z-index:10;background:rgba(255,255,255,.96);border-
 .stage{position:relative;z-index:1;min-height:600px}
 .slide{position:absolute;top:0;bottom:0;left:20px;right:20px;display:flex;flex-wrap:wrap;align-items:center;gap:24px;padding:48px 0 96px;opacity:0;visibility:hidden;transition:opacity .7s ease,visibility .7s}
 .slide.on{opacity:1;visibility:visible}
+.slide.a-fade.on .cyl,.slide.a-ff.on .cyl{animation:nkFade .9s ease both}.slide.a-fade.on .float,.slide.a-fade.on .shadow{animation:none!important}@keyframes nkFade{from{opacity:0}to{opacity:1}}
+.hero{transition:background .7s ease}
 .txt{flex:1 1 420px;min-width:0;display:flex;flex-direction:column;gap:18px}
 .tag{align-self:flex-start;font-size:12px;font-weight:800;letter-spacing:.14em;color:var(--gold-ink);background:var(--sand);padding:6px 12px;border-radius:999px}
 .hero h1{margin:0;font-size:clamp(40px,6vw,64px);line-height:1.05;font-weight:800;letter-spacing:-.01em}
@@ -225,29 +227,43 @@ footer{background:var(--ink);color:#fff;padding:56px 0 32px}
 <script>
 (function(){
   var S=[
-    {size:'12 KG',img:'cyl-12.webp',h:330,en:'For family kitchens. Refills delivered across Jorarganj and Mirsarai.',bn:'বাসা-বাড়ির রান্নার জন্য — জোরারগঞ্জ ও মীরসরাইতে।'},
-    {size:'35 KG',img:'cyl-35.webp',h:390,en:'For hotels, restaurants and tea stalls.',bn:'হোটেল, রেস্টুরেন্ট ও চায়ের দোকানের জন্য।'},
-    {size:'45 KG',img:'cyl-45.webp',h:430,en:'For large kitchens and industry. Bulk and dealer orders welcome.',bn:'বড় রান্নাঘর ও কারখানার জন্য।'}
+    {size:'12 KG',img:'/img/cyl-12.webp',h:330,en:'For family kitchens. Refills delivered across Jorarganj and Mirsarai.',bn:'বাসা-বাড়ির রান্নার জন্য — জোরারগঞ্জ ও মীরসরাইতে।'},
+    {size:'35 KG',img:'/img/cyl-35.webp',h:390,en:'For hotels, restaurants and tea stalls.',bn:'হোটেল, রেস্টুরেন্ট ও চায়ের দোকানের জন্য।'},
+    {size:'45 KG',img:'/img/cyl-45.webp',h:430,en:'For large kitchens and industry. Bulk and dealer orders welcome.',bn:'বড় রান্নাঘর ও কারখানার জন্য।'}
   ];
-  function cyl(s,k){return '<img src="/img/'+s.img+'" alt="Aygaz United '+s.size+' LPG cylinder" style="height:'+s.h+'px;width:auto;display:block" '+(k?'loading="lazy"':'fetchpriority="high"')+'>';}
-  var stage=document.getElementById('stage'),dots=document.getElementById('dots'),count=document.getElementById('count');
-  S.forEach(function(s,k){
-    var d=document.createElement('div');d.className='slide';d.setAttribute('role','group');d.setAttribute('aria-roledescription','slide');d.setAttribute('aria-label',(k+1)+' of 3');
-    d.innerHTML='<div class="txt"><span class="tag">AYGAZ UNITED · LPG</span><h1>'+s.size+' <span>LPG</span><br>Cylinder</h1><p>'+s.en+'</p><p class="bn">'+s.bn+'</p>'+
-      '<div class="acts"><a class="btn dark" href="#order" data-size="'+s.size.toLowerCase()+'">Order '+s.size+'</a><a class="btn" href="tel:+8801901168777">Call for today\'s price</a></div></div>'+
-      '<div class="cyl"><div class="float">'+cyl(s,k)+'</div><div class="shadow" aria-hidden="true"></div></div>';
-    stage.appendChild(d);
-    var b=document.createElement('button');b.type='button';b.className='dot';b.setAttribute('aria-label','Show '+s.size+' slide');b.onclick=function(){go(k);};dots.appendChild(b);
-  });
-  var i=0,t=null,slides=stage.children,db=dots.children;
-  function show(){for(var k=0;k<3;k++){slides[k].classList.toggle('on',k===i);slides[k].setAttribute('aria-hidden',k===i?'false':'true');db[k].setAttribute('aria-current',k===i?'true':'false');}count.textContent='0'+(i+1)+' / 03';}
-  function start(){clearInterval(t);if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;t=setInterval(function(){if(!document.hidden){i=(i+1)%3;show();}},6000);}
-  function go(n){i=(n+3)%3;show();start();}
+  var H={'12 KG':330,'35 KG':390,'45 KG':430};
+  function esc(x){return String(x==null?'':x).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function cyl(s,k){return s.img?'<img src="'+esc(s.img)+'" alt="'+esc((s.brand||'Aygaz United')+' '+s.size)+' LPG cylinder" style="height:'+(s.h||H[s.size]||360)+'px;width:auto;display:block" '+(k?'loading="lazy"':'fetchpriority="high"')+'>':'';}
+  var stage=document.getElementById('stage'),dots=document.getElementById('dots'),count=document.getElementById('count'),hero=stage.parentNode;
+  var i=0,t=null,slides=stage.children,db=dots.children,N=0,cur=[];
+  function head(s){var m=/^(\d+\s*KG)\s+LPG\s+Cylinder$/i.exec(s.heading||'');if(!s.heading||m)return esc(m?m[1]:s.size)+' <span>LPG</span><br>Cylinder';return esc(s.heading);}
+  function link(s){return s.link==='prices'?'#sizes':(s.link==='app'?'#order':'#order');}
+  function build(L){
+    cur=L;N=L.length;stage.innerHTML='';dots.innerHTML='';i=0;
+    L.forEach(function(s,k){
+      var d=document.createElement('div');d.className='slide'+(s.anim==='fade'?' a-fade':(s.anim==='fade-float'?' a-ff':''));d.setAttribute('role','group');d.setAttribute('aria-roledescription','slide');d.setAttribute('aria-label',(k+1)+' of '+N);
+      d.innerHTML='<div class="txt"><span class="tag">'+esc((s.brand||'Aygaz United').toUpperCase())+' · LPG</span><h1>'+head(s)+'</h1>'+(s.en?'<p>'+esc(s.en)+'</p>':'')+(s.bn?'<p class="bn">'+esc(s.bn)+'</p>':'')+
+        '<div class="acts"><a class="btn dark" href="'+link(s)+'" data-size="'+esc(String(s.size).toLowerCase())+'">'+esc(s.btn||('Order '+s.size))+'</a><a class="btn" href="tel:+8801901168777">Call for today\'s price</a></div></div>'+
+        '<div class="cyl"><div class="float">'+cyl(s,k)+'</div><div class="shadow" aria-hidden="true"></div></div>';
+      stage.appendChild(d);
+      var b=document.createElement('button');b.type='button';b.className='dot';b.setAttribute('aria-label','Show slide '+(k+1));b.onclick=function(){go(k);};dots.appendChild(b);
+    });
+    show();start();
+  }
+  function pad(n){return (n<10?'0':'')+n;}
+  function show(){for(var k=0;k<N;k++){slides[k].classList.toggle('on',k===i);slides[k].setAttribute('aria-hidden',k===i?'false':'true');db[k].setAttribute('aria-current',k===i?'true':'false');}count.textContent=pad(i+1)+' / '+pad(N);if(cur[i]&&cur[i].bg)hero.style.background=cur[i].bg;}
+  function start(){clearTimeout(t);if(N<2||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;t=setTimeout(function tick(){if(!document.hidden&&!paused){i=(i+1)%N;show();}t=setTimeout(tick,((cur[i]&&cur[i].sec)||6)*1000);},((cur[i]&&cur[i].sec)||6)*1000);}
+  var paused=false;
+  function go(n){i=(n+N)%N;show();start();}
   document.getElementById('prev').onclick=function(){go(i-1);};
   document.getElementById('next').onclick=function(){go(i+1);};
-  stage.addEventListener('mouseenter',function(){clearInterval(t);});stage.addEventListener('mouseleave',start);
-  stage.addEventListener('focusin',function(){clearInterval(t);});
-  show();start();
+  stage.addEventListener('mouseenter',function(){paused=true;});stage.addEventListener('mouseleave',function(){paused=false;});
+  stage.addEventListener('focusin',function(){paused=true;});stage.addEventListener('focusout',function(){paused=false;});
+  if('IntersectionObserver' in window){new IntersectionObserver(function(e){paused=!e[0].isIntersecting;}).observe(hero);}
+  function sig(L){return JSON.stringify(L.map(function(s){return [s.size,s.img,s.en||'',s.bn||'',s.btn||('Order '+s.size),s.heading||(s.size+' LPG Cylinder'),s.bg||'#f7f4ec',s.sec||6,s.anim||'slide',s.link||'order',s.brand||'Aygaz United'];}));}
+  build(S);
+  // Slides published from the admin (Hero slider) replace the built-in ones.
+  if(window.fetch){fetch('/api/hero',{headers:{'Accept':'application/json'}}).then(function(r){return r.ok?r.json():null;}).then(function(L){if(L&&L.length&&sig(L)!==sig(S))build(L);}).catch(function(){});}
   document.addEventListener('click',function(e){var a=e.target.closest('[data-size]');if(!a)return;var v=a.getAttribute('data-size').replace('kg',' kg').replace('  ',' ');var sel=document.getElementById('fSize');for(var k=0;k<sel.options.length;k++){if(sel.options[k].text===v.trim())sel.selectedIndex=k;}});
   document.getElementById('orderForm').addEventListener('submit',function(e){
     e.preventDefault();
