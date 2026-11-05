@@ -96,4 +96,21 @@ class Ui
         $db = \Illuminate\Support\Facades\DB::connection();
         if ($db->getDriverName() === 'pgsql') $db->select('select pg_advisory_xact_lock(7243001)');
     }
+
+    /** Same as msg(), in Bangla for the salesman app. */
+    public static function msgBn(\Throwable $e): string
+    {
+        $m = self::msg($e);
+        $map = [
+            '/^Credit is off for (.+?)\. .*$/u' => '$1-এর জন্য বাকি বন্ধ। পুরো টাকা নিন, অথবা অফিসকে বাকির সীমা চালু করতে বলুন।',
+            "/^This would take (.+?)'s due to (৳[\d,]+), above the (৳[\d,]+) credit limit\.$/u" => '$1-এর বকেয়া $2 হয়ে যাবে, যা বাকির সীমা $3-এর বেশি। আরও টাকা নিন।',
+            '/^A walk-in customer must pay in full\..*$/u' => 'খুচরা ক্রেতাকে পুরো টাকা দিতে হবে। বাকিতে দিতে হলে দোকান বাছাই করুন।',
+            '/^A walk-in customer must hand over an empty.*$/u' => 'খুচরা ক্রেতাকে প্রতিটা রিফিলের জন্য খালি দিতে হবে। খালি বাকি রাখতে হলে দোকান বাছাই করুন।',
+            '/^Not enough (full|empty) stock on the vehicle: only (\d+) × (\d+) kg available\.$/u' => 'গাড়িতে $3 কেজির মাত্র $2টি আছে।',
+            '/^Not enough (.+?): only (\d+) in stock\.$/u' => '$1 যথেষ্ট নেই: মাত্র $2টি আছে।',
+            '/^Set a price for (.+?) in Products & prices first\.$/u' => '$1-এর দাম ঠিক করা নেই। অফিসে জানান।',
+        ];
+        foreach ($map as $re => $bn) if (preg_match($re, $m)) return preg_replace($re, $bn, $m);
+        return $m;
+    }
 }

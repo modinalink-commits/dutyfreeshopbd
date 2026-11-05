@@ -154,7 +154,7 @@ class AppController extends Controller
                 return $sale;
             });
         } catch (RuntimeException $ex) {
-            return response()->json(['ok' => false, 'error' => \App\Support\Ui::msg($ex)], 422);
+            return response()->json(['ok' => false, 'error' => \App\Support\Ui::msgBn($ex)], 422);
         }
         if ($sale->customer_id) {
             \App\Models\CustomerOrder::query()->where('customer_id', $sale->customer_id)->whereIn('status', ['approved', 'on_trip'])
