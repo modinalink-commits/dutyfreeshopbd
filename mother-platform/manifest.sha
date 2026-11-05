@@ -647,3 +647,4 @@ b8de9413315dc91aa369f93947286064d2455e30 resources/views/components/app-live-car
 97babfa2907c8a1199834099ef46f78f86f97c18 resources/views/app_users.blade.php
 2d17249c383db24c6facbce6253338c4d9ec5684 resources/views/components/app-notify-form.blade.php
 6a13ea459007e4b022de0c16549fa975317a8801 resources/views/admin_mobile.blade.php
+4662dc008b470675b0c61e026271d94aca0e9f9a database/migrations/2026_11_05_000050_protected_profit_10.php
