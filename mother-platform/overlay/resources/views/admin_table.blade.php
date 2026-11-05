@@ -20,6 +20,10 @@ main table.mc-kv td.n,main table.mc-t td.n{text-align:right;font-variant-numeric
 .pl .gh td,.pl .st td{height:30px;font-size:12px}
 .pl .gt td{height:34px;font-size:12.5px}
 .pl .st td{text-align:right}
+/* 2b. Orders list (.ordt): keeps its card-style row content; header and grid lines now match every other table */
+main table.ordt>thead>tr>th{height:34px;padding:6px 8px;font-weight:600;border-radius:0}
+main table.ordt>tbody>tr>td{border-top-width:1px!important;border-bottom-width:1px!important;border-top-color:var(--border-grid)!important;border-bottom-color:var(--border-grid)!important;border-radius:0}
+main table.ordt>tbody>tr>td:last-child{border-right-color:var(--border-grid)!important}
 /* 3. status pills: compact everywhere */
 main .pill{min-height:22px;padding:2px 7px;font-size:11px}
 /* 4. empty + loading states keep the table layout */
