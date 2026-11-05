@@ -32,7 +32,9 @@
 .ocb .strip::-webkit-scrollbar{display:none;height:0}
 .ocb .strip.dragging{cursor:grabbing}
 .ocb .strip a.status-card{box-sizing:border-box!important;flex:0 0 auto!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:1px!important;height:58px!important;min-width:74px;max-width:112px;padding:6px 8px!important;border-radius:8px!important;border:1px solid color-mix(in srgb,var(--c,#64748B) 45%,#fff)!important;line-height:1.15!important;text-decoration:none;box-shadow:none!important}
-.ocb .strip a.status-card-sm{min-width:72px;max-width:96px}
+/* cards share any spare width equally so the row reaches the panel's right edge; when space is short they keep their min width and the row scrolls */
+.ocb .strip a.status-card,.ocb .strip a.status-card-sm,.ocb .strip a.status-card-md{flex:1 0 auto!important;max-width:none!important}
+.ocb .strip a.status-card-sm{min-width:72px}
 .ocb .strip a.status-card:hover{border-color:var(--c,#475569)!important}
 .ocb .strip a.status-card.on{border-color:var(--c,#0B1220)!important;box-shadow:0 0 0 2px color-mix(in srgb,var(--c,#0B1220) 28%,transparent)!important}
 .ocb .strip a.status-card .cl{display:flex;flex-direction:column;align-items:center;gap:1px;max-width:100%}
