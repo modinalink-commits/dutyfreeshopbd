@@ -617,3 +617,4 @@ app/Http/Controllers/AiBriefController.php
 resources/views/ai_brief.blade.php
 app/Support/DeployHealth.php
 database/migrations/2026_11_05_000090_deploy_center_v2.php
+resources/views/admin_table.blade.php

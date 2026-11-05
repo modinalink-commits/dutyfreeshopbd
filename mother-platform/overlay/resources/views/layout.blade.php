@@ -89,6 +89,7 @@ nav[role=navigation] svg,.pagination svg{width:16px!important;height:16px!import
 @endif
 @include('admin_grid')
 @include('admin_theme')
+@include('admin_table')
 <script>if(window.dfSbGo)dfSbGo()</script>
 @endauth
 @if($__emb)
