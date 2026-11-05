@@ -50,19 +50,19 @@ class StoreController extends Controller {
     for ($i = 0; $i < $n; $i++) { if (isset($sm[$i])) $out->push($sm[$i]); if (isset($ot[$i])) $out->push($ot[$i]); }
     return $out->take($max)->values();
   }
-  /** Today's Deal on the front page: the products people ordered most in the last 24 hours (then the last 7 and 30 days), refreshed every 10 minutes. Falls back to the biggest discounts when there are no sales yet, or when the admin turns "deal_mode" off. */
+  /** Flash Sale / Today's Deal on the front page: the products people ordered most in the LAST 7 DAYS (ties: last 24 hours, then 30 days; if fewer than needed, the best 30-day sellers fill the rest), refreshed every 10 minutes. Falls back to the biggest discounts when there are no sales yet, or when the admin turns "deal_mode" off. */
   public static function todayBest(array $s) {
     if (($s['deal_mode'] ?? '1') !== '1') return self::dealList($s);
     $max = max(1, min(24, (int)($s['deal_max'] ?? 12)));
     $fl = DB::table('deal_flags')->get(['product_id','mode']);
     $ex = $fl->where('mode','exclude')->pluck('product_id')->map(fn($v) => (int)$v)->all();
     $pin = $fl->where('mode','pin')->pluck('product_id')->map(fn($v) => (int)$v)->all();
-    $key = 'store.todaybest3.'.$max.'.'.md5(implode(',', $ex).'|'.implode(',', $pin).'|'.($s['deal_min_off'] ?? '').'|'.($s['deal_smoke'] ?? ''));
+    $key = 'store.todaybest4.'.$max.'.'.md5(implode(',', $ex).'|'.implode(',', $pin).'|'.($s['deal_min_off'] ?? '').'|'.($s['deal_smoke'] ?? ''));
     return self::rem($key, 600, function () use ($max, $ex, $pin, $s) {
       $d1 = now()->subDay(); $d7 = now()->subDays(7); $d30 = now()->subDays(30);
       $rows = DB::table('order_items as i')->join('orders as o','o.id','=','i.order_id')->whereNotIn('o.status',['Cancel','Incomplete'])->where('o.created_at','>=',$d30)->whereNotNull('i.product_id')
         ->groupBy('i.product_id')->selectRaw('i.product_id as pid, sum(case when o.created_at >= ? then i.qty else 0 end) as q1, sum(case when o.created_at >= ? then i.qty else 0 end) as q7, sum(i.qty) as q30', [$d1, $d7])
-        ->orderByDesc('q1')->orderByDesc('q7')->orderByDesc('q30')->limit(120)->get();
+        ->orderByDesc('q7')->orderByDesc('q1')->orderByDesc('q30')->limit(120)->get();
       $rank = []; foreach ($rows as $r) $rank[(int)$r->pid] = $r;
       $ids = array_values(array_diff(array_values(array_unique(array_merge($pin, array_keys($rank)))), $ex));
       $prods = $ids ? DB::table('products')->whereIn('id', $ids)->where('published', true)->where(function ($w) { $w->whereNull('stock')->orWhere('stock', '>', 0); if ($ci = \App\Support\StockGuard::controlledIds()) $w->orWhereNotIn('category_id', $ci); })->whereNotNull('image')->where('image', '!=', '')->get()->keyBy('id') : collect();
@@ -70,7 +70,7 @@ class StoreController extends Controller {
       $out = collect(); $sm = []; $ot = [];
       foreach ($ids as $id) {
         if (!isset($prods[$id])) continue; $p = $prods[$id]; $r = $rank[$id] ?? null;
-        $p->bs_q1 = $r ? (int)$r->q1 : 0; $p->bs = $r && ((int)$r->q30 > 0);
+        $p->bs_q1 = $r ? (int)$r->q1 : 0; $p->bs_q7 = $r ? (int)$r->q7 : 0; $p->bs = $r && ((int)$r->q30 > 0);
         if (in_array($id, $pin, true)) { $out->push($p); continue; }
         if (!$p->bs) continue;
         if ($p->group_key === 'smoke' || ($p->category_id && in_array((int)$p->category_id, $sc, true))) $sm[] = $p; else $ot[] = $p;
@@ -152,7 +152,7 @@ class StoreController extends Controller {
     $s = self::set();
     $data = self::rem('store.home8', 300, function () use ($s) {
       $pub = fn() => DB::table('products')->where('published',true);
-      $sold = DB::table('order_items as i')->join('orders as o','o.id','=','i.order_id')->where('o.status','!=','Cancel')->where('o.created_at','>=',now()->subDays(30))->groupBy('i.product_id')->selectRaw('i.product_id as pid, sum(i.qty) as q')->pluck('q','pid');
+      $sold = DB::table('order_items as i')->join('orders as o','o.id','=','i.order_id')->whereNotIn('o.status',['Cancel','Incomplete'])->where('o.created_at','>=',now()->subDays(7))->groupBy('i.product_id')->selectRaw('i.product_id as pid, sum(i.qty) as q')->pluck('q','pid');
       $deals = self::todayBest($s)
         ->map(function ($p) use ($sold) { $p->sold = (int)($sold[$p->id] ?? 0); return $p; });
       $sec = []; $i = 0;
@@ -288,7 +288,7 @@ class StoreController extends Controller {
   }
   public function search(Request $r) {
     $t = trim(mb_substr((string)$r->q, 0, 80)); $items = collect();
-    if ($r->boolean('deals')) { $items = self::dealBase(0)->paginate(48)->withQueryString(); $t = 'Flash Sale'; }
+    if ($r->boolean('deals')) { $l = self::todayBest(array_merge(self::set(), ['deal_max' => 24])); $items = new \Illuminate\Pagination\LengthAwarePaginator($l, $l->count(), 48, 1, ['path' => url('/search')]); $t = 'Flash Sale'; }
     elseif ($t !== '') { $items = $this->searchRank($this->searchWhere($this->q(), $t), $t)->orderByDesc('id')->paginate(48)->withQueryString(); DB::table('product_views')->insert(['term'=>$t,'day'=>now('Asia/Dhaka')->toDateString(),'created_at'=>now(),'updated_at'=>now()]); }
     return response()->view('store.search', $this->base(['t'=>$t, 'items'=>$items, 'title'=>($t ? $t.' – ' : '').'Search | DutyFree BD', 'desc'=>'', 'canon'=>url('/search'), 'noindex'=>true]));
   }
