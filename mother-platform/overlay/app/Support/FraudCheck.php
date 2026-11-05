@@ -38,7 +38,8 @@ class FraudCheck
     $phone = self::phone($phone); if (!preg_match('/^01\d{9}$/', $phone)) return ['ok' => false, 'error' => 'Invalid mobile number'];
     if (!$force) { $c = DB::table('fraud_checks')->where('phone', $phone)->where('created_at', '>', now()->subHours(6))->orderByDesc('id')->first(); if ($c && $c->data) return json_decode($c->data, true) + ['cached' => true]; }
     $http = []; $cfg = self::configured(); $ptok = (string)(Sms::secret('fc_pathao_token') ?: (Pathao::configured() ? Pathao::token() : '')); $cfg['pathao'] = $ptok !== ''; $psrc = 'off'; $safe = fn($v) => $v ? (int)$v : 0; $res = ['steadfast' => [0, 0, 0, 'off'], 'redx' => [0, 0, 0, 'off'], 'pathao' => [0, 0, 0, 'off']];
-    if (array_filter(array_diff_key($cfg, ['bdcourier' => 1]))) {
+    $bdOnly = $cfg['bdcourier']; // BD Courier active = the only fraud source (direct Steadfast / RedX / Pathao calls are off)
+    if (!$bdOnly && array_filter(array_diff_key($cfg, ['bdcourier' => 1]))) {
       try {
         $rs = Http::pool(fn($pool) => [
           $pool->as('s')->timeout(10)->withHeaders(['Api-Key' => (string)Sms::secret('fc_steadfast_key'), 'Secret-Key' => (string)Sms::secret('fc_steadfast_secret'), 'Content-Type' => 'application/json'])->get('https://portal.packzy.com/api/v1/fraud_check/score/' . $phone),
@@ -66,7 +67,7 @@ class FraudCheck
       } catch (\Throwable $e) { $http['bdcourier'] = 0; }
     }
     // Pathao fallback: when Pathao's network score is unavailable, use this store's own Pathao parcels for the number (official API, our synced parcel results).
-    if ($res['pathao'][3] !== 'ok' || $res['pathao'][0] === 0) {
+    if (!$bdOnly && ($res['pathao'][3] !== 'ok' || $res['pathao'][0] === 0)) {
       $pp = DB::table('orders')->whereNotNull('consignment_id')->whereRaw('right(phone,11) = ?', [$phone])->selectRaw("count(*) filter (where courier_stage = 'Delivered') as d, count(*) filter (where courier_stage in ('Returned','Cancelled','Failed Delivery')) as r")->first();
       $pd = (int)($pp->d ?? 0); $pr = (int)($pp->r ?? 0);
       if ($pd + $pr > 0 || $cfg['pathao']) { $res['pathao'] = [$pd + $pr, $pd, $pr, 'ok']; $psrc = 'own_parcels'; }
