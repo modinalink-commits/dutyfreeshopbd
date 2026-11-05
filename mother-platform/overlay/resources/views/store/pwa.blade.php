@@ -7,6 +7,8 @@
 <div class="dfm" id="dfm-ios" role="dialog" aria-modal="true" aria-label="Install on iPhone"><div class="dfm-s" data-x></div><div class="dfm-p"><button type="button" class="dfm-x" data-x aria-label="Close">×</button><img src="/pwa/logo-240.png" alt="" width="52" height="56"><h3>Install DutyFreeBD on iPhone</h3><p>Safari দিয়ে এই ধাপগুলো অনুসরণ করুন:</p>
 <ol class="dfm-o"><li><span>1</span><div>Open this site in <b>Safari</b></div></li><li><span>2</span><div>Tap the <b>Share</b> button <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-4px"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg> at the bottom</div></li><li><span>3</span><div>Choose <b>Add to Home Screen</b> <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#0B1220" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-4px"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 8v8M8 12h8"/></svg></div></li><li><span>4</span><div>Tap <b>Add</b>. The DutyFreeBD icon appears on your home screen.</div></li></ol><button type="button" class="dfm-ok" data-x>Got it</button></div></div>
 
+<div class="dfm" id="dfm-open" role="dialog" aria-modal="true" aria-label="App installed"><div class="dfm-s" data-x></div><div class="dfm-p"><button type="button" class="dfm-x" data-x aria-label="Close">×</button><img src="/pwa/logo-240.png" alt="" width="52" height="56"><h3>অ্যাপ ইনস্টল করা আছে ✓</h3><p id="dfm-ot">আপনার ফোনের হোম স্ক্রিন বা অ্যাপ লিস্ট থেকে <b>DutyFreeBD</b> আইকনে ট্যাপ করে অ্যাপ খুলুন।</p><button type="button" class="dfm-ok" data-x>ঠিক আছে</button><button type="button" class="dfm-ok sec" id="dfm-re" style="margin-top:8px">অ্যাপ মুছে ফেলেছেন? আবার ইনস্টল করুন</button></div></div>
+
 <div class="dfm" id="dfm-gen" role="dialog" aria-modal="true" aria-label="Install app"><div class="dfm-s" data-x></div><div class="dfm-p"><button type="button" class="dfm-x" data-x aria-label="Close">×</button><img src="/pwa/logo-240.png" alt="" width="52" height="56"><h3>Install DutyFreeBD App</h3><p id="dfm-gt">Open your browser menu <b>⋮</b> and choose <b>Install app</b> or <b>Add to Home screen</b>.</p><button type="button" class="dfm-ok" data-x>Got it</button></div></div>
 
 <div class="dfi" id="dfi" role="dialog" aria-label="Install DutyFreeBD App"><button type="button" class="dfi-x" id="dfi-no0" aria-label="Close">×</button><div class="dfi-h"><img src="/pwa/logo-240.png" alt="" width="48" height="52"><div><h3>DutyFreeBD App Install করুন</h3><p>দ্রুত shopping, order tracking এবং exclusive notification পান।</p></div></div><div class="dfi-a"><button type="button" class="dfi-go" id="dfi-go">Install App</button><button type="button" class="dfi-no" id="dfi-no">Not Now</button></div></div>
@@ -53,16 +55,23 @@ var dp=null;
 window.DFPWA={isIOS:isIOS,standalone:standalone,installed:function(){return standalone()||ls('dfInstalled')==='1'},canPrompt:function(){return !!dp}};
 function open(id){var m=$(id);if(m)m.classList.add('on')}
 document.querySelectorAll('.dfm [data-x]').forEach(function(b){b.addEventListener('click',function(){b.closest('.dfm').classList.remove('on')})});
-function setInstalledUI(){document.querySelectorAll('#dfapp [data-l]').forEach(function(el){el.textContent='App Installed ✓'});var f=$('dfapp');if(f)f.classList.add('done');var p=$('dfi');if(p)p.classList.remove('on');var q=$('dfs');if(q)q.classList.remove('on');document.querySelectorAll('.df-hide-inst').forEach(function(e){e.style.display='none'});document.querySelectorAll('.df-show-inst').forEach(function(e){e.style.display=''});document.dispatchEvent(new Event('dfpwa:installed'))}
+var isAnd=/Android/i.test(ua);
+function paint(){var inst=standalone()||ls('dfInstalled')==='1';document.querySelectorAll('#dfapp [data-pwa]').forEach(function(b){var k=b.getAttribute('data-pwa'),mine=k==='ios'?isIOS:!isIOS,l=b.querySelector('[data-l]');
+ if(isIOS&&k==='android'||isAnd&&k==='ios')b.style.display='none';else b.style.display='';
+ if(l)l.textContent=(inst&&mine)?'Installed ✓ — Open / Reinstall':(k==='ios'?'Install for iPhone':'Install for Android')})}
+function setInstalledUI(){paint();var f=$('dfapp');if(f)f.classList.add('done');var p=$('dfi');if(p)p.classList.remove('on');var q=$('dfs');if(q)q.classList.remove('on');document.querySelectorAll('.df-hide-inst').forEach(function(e){e.style.display='none'});document.querySelectorAll('.df-show-inst').forEach(function(e){e.style.display=''});document.dispatchEvent(new Event('dfpwa:installed'))}
 function install(kind){
-  if(standalone()||ls('dfInstalled')==='1'){setInstalledUI();return}
-  if(dp){var e=dp;dp=null;e.prompt();e.userChoice.then(function(c){if(c&&c.outcome==='accepted'){ls('dfInstalled','1');setInstalledUI();if(window.DFPWA.rewardPopup)window.DFPWA.rewardPopup()}})['catch'](function(){});return}
+  if(standalone()){open('dfm-open');return}
+  if(dp){ls('dfInstalled','0');paint();var e=dp;dp=null;e.prompt();e.userChoice.then(function(c){if(c&&c.outcome==='accepted'){ls('dfInstalled','1');setInstalledUI();if(window.DFPWA.rewardPopup)window.DFPWA.rewardPopup()}})['catch'](function(){});return}
+  if(ls('dfInstalled')==='1'&&((kind==='ios')===isIOS)){open('dfm-open');return}
   if(isIOS||kind==='ios'){open('dfm-ios');return}
   open('dfm-gen')
 }
 window.DFPWA.install=install;
 document.querySelectorAll('[data-pwa]').forEach(function(b){b.addEventListener('click',function(){install(b.getAttribute('data-pwa'))})});
-addEventListener('beforeinstallprompt',function(e){e.preventDefault();dp=e;schedule()});
+addEventListener('beforeinstallprompt',function(e){e.preventDefault();dp=e;if(ls('dfInstalled')==='1'){ls('dfInstalled','0');paint()}schedule()});
+if($('dfm-re'))$('dfm-re').addEventListener('click',function(){ls('dfInstalled','0');paint();var m=$('dfm-open');if(m)m.classList.remove('on');install(isIOS?'ios':'android')});
+paint();
 addEventListener('appinstalled',function(){ls('dfInstalled','1');dp=null;setInstalledUI()});
 if(standalone()||ls('dfInstalled')==='1')setInstalledUI();
 // App Install reward: the page marks this browser as "the App" (cookie df_app) only while it runs as the installed app, so the reward applies to App orders only; the install is recorded once and a logged-in customer with a verified mobile unlocks the reward.

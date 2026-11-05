@@ -192,7 +192,7 @@ c3732a3e2c27a150b4d0b55a8245c04f686ef706 app/Support/Seo.php
 02dde17a04c546fa2309281b2d272f2acb37f6ca app/Http/Controllers/PwaController.php
 6b860ee8dff2722479a8c4ab6c21af17a174b667 resources/pwa/sw.js
 d5202ff40431a660b66ea6ffaecf291662fbcca7 resources/views/store/offline.blade.php
-7e0003d8603f8a8265537145492cf2afc7436ab3 resources/views/store/pwa.blade.php
+b6d9405d29303602aab9ac62f92048e170abc9c1 resources/views/store/pwa.blade.php
 3db3d1e4715352acf1d4364cf30e8fc86bd47004 resources/views/store/pwa_head.blade.php
 d7a74cafdaf227b1700d237b8e71acc1218b9ec4 resources/views/store/pwa_splash.blade.php
 6ded223c717aa29a0b46d98fe9b14afebab29a05 resources/views/store/minicart.blade.php
