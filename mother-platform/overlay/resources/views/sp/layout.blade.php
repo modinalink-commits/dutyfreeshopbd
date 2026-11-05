@@ -6,11 +6,16 @@
     ['Bills & Invoices','/supplier-portal/bills','bills','bills','M4 3h16v18l-3-2-2 2-3-2-3 2-2-2-3 2zM8 8h8M8 12h8'],
     ['Ledger','/supplier-portal/ledger','ledger','ledger','M4 4h16v16H4zM4 9h16M9 4v16'],
     ['Payments','/supplier-portal/payments','payments','payments','M2 6h20v12H2zM2 10h20M6 15h4'],
+    ['Deliveries','/supplier-portal/deliveries','deliveries','delivery','M1 3h15v13H1zM16 8h4l3 3v5h-7zM5.5 21a2 2 0 100-4 2 2 0 000 4zM18.5 21a2 2 0 100-4 2 2 0 000 4z'],
+    ['Returns & Damage','/supplier-portal/returns','returns','returns','M3 12a9 9 0 109-9 9.7 9.7 0 00-7 3L3 8M3 3v5h5'],
+    ['Documents','/supplier-portal/documents','documents','docs','M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9zM13 2v7h7'],
+    ['Support / Dispute','/supplier-portal/messages','messages','support','M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z'],
+    ['My Performance','/supplier-portal/performance','performance','perf','M3 3v18h18M7 14l4-4 4 4 5-6'],
     ['Notifications','/supplier-portal/notifications','notifications',null,'M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0'],
     ['Profile','/supplier-portal/profile','profile',null,'M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8']];
-  $nav = array_values(array_filter($nav, fn($n) => !$n[3] || $SP::can($n[3])));
+  $nav = array_values(array_filter($nav, fn($n) => (!$n[3] || $SP::can($n[3])) && ($n[2] !== 'performance' || \App\Support\Procure::on('sp_show_perf'))));
   $icon = fn($d) => '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="'.$d.'"/></svg>';
-  $on = fn($h) => $h === '/supplier-portal' ? $path === '/supplier-portal' : str_starts_with($path, $h);
+  $on = fn($h) => $h === '/supplier-portal' ? $path === '/supplier-portal' : (str_starts_with($path, $h) || ($h === '/supplier-portal/messages' && str_starts_with($path, '/supplier-portal/disputes')));
   $unread = (int)\Illuminate\Support\Facades\DB::table('supplier_notifications')->where('supplier_id',$u->supplier_id)->whereNull('read_at')->count();
   $bottom = array_values(array_filter($nav, fn($n) => in_array($n[2], ['home','pos','rfq','ledger'])));
 @endphp

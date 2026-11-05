@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 class SupplierPortal
 {
   const ROLES = ['owner'=>'Supplier Owner','accounts'=>'Supplier Accounts','sales'=>'Supplier Sales','delivery'=>'Supplier Delivery'];
-  const ACCESS = ['owner'=>['po','rfq','bills','ledger','payments','profile_edit'],'accounts'=>['bills','ledger','payments'],'sales'=>['po','rfq'],'delivery'=>['po']];
+  const ACCESS = ['owner'=>['po','rfq','bills','ledger','payments','profile_edit','delivery','returns','docs','support','perf'],'accounts'=>['bills','ledger','payments','docs','support'],'sales'=>['po','rfq','docs','support'],'delivery'=>['po','delivery','returns','support']];
   const REJECT = ['Price Changed','Stock Unavailable','Delivery Delay','Minimum Quantity Issue','Product Unavailable','Other'];
   const TERMS = 'v1';
 
@@ -21,6 +21,13 @@ class SupplierPortal
   }
   public static function sid(): int { $u = self::user(); return $u ? (int)$u->supplier_id : 0; }
   public static function can(string $area): bool { $u = self::user(); return $u && in_array($area, self::ACCESS[$u->role] ?? [], true); }
+  /** Save an uploaded file for a supplier (private disk); returns file id or null. */
+  public static function store(?\Illuminate\Http\UploadedFile $f, int $sid, string $refType, ?int $refId, ?string $kind, string $side = 'supplier'): ?int {
+    if (!$f || !$f->isValid()) return null;
+    $ext = strtolower($f->getClientOriginalExtension()); if (!in_array($ext, ['jpg','jpeg','png','webp','pdf','doc','docx','xls','xlsx','csv'], true) || $f->getSize() > 6*1024*1024) return null;
+    $path = $f->storeAs('supplier-files/'.$sid, bin2hex(random_bytes(10)).'.'.$ext, 'local');
+    return DB::table('supplier_files')->insertGetId(['supplier_id'=>$sid,'ref_type'=>$refType,'ref_id'=>$refId,'kind'=>$kind,'name'=>mb_substr($f->getClientOriginalName(),0,190),'path'=>$path,'mime'=>$f->getClientMimeType(),'size'=>(int)$f->getSize(),'by_side'=>$side,'created_at'=>now(),'updated_at'=>now()]);
+  }
   public static function brand(): string { return Procure::set('sp_brand', 'DutyFreeBD Supplier Partner'); }
   public static function tk($n): string { return '৳'.number_format((float)$n, 2); }
 

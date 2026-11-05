@@ -330,6 +330,12 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
       Route::get('/', [$PA,'index']); Route::post('/settings', [$PA,'settingsSave']); Route::post('/users', [$PA,'userSave']); Route::post('/users/{id}/{a}', [$PA,'userAction'])->whereNumber('id');
       Route::get('/suppliers/{sid}', [$PA,'supplier'])->whereNumber('sid'); Route::post('/changes/{id}/{a}', [$PA,'changeAction'])->whereNumber('id'); Route::post('/notify', [$PA,'notify']);
       Route::get('/pos', [$PA,'pos']); Route::get('/pos/new', [$PA,'poForm']); Route::post('/pos', [$PA,'poSave']); Route::get('/pos/{id}', [$PA,'poShow'])->whereNumber('id'); Route::post('/pos/{id}/{a}', [$PA,'poAction'])->whereNumber('id');
+      $PB = \App\Http\Controllers\SupplierPortalAdmin2Controller::class;
+      Route::get('/deliveries', [$PB,'deliveries']); Route::get('/deliveries/{id}', [$PB,'deliveryShow'])->whereNumber('id'); Route::post('/deliveries/{id}/receive', [$PB,'receive'])->whereNumber('id');
+      Route::get('/inbox', [$PB,'inbox']); Route::post('/reply', [$PB,'reply']); Route::post('/disputes/{id}', [$PB,'disputeAction'])->whereNumber('id'); Route::post('/payment-requests/{id}', [$PB,'payReqAction'])->whereNumber('id'); Route::post('/cases/{t}/{id}/note', [$PB,'caseNote'])->whereNumber('id');
+      Route::get('/scores', [$PB,'scores']); Route::post('/scores/visible', [$PB,'perfToggle']);
+      Route::get('/forecast', [$PB,'forecast']); Route::post('/reorder', [$PB,'reorder']); Route::get('/prices', [$PB,'prices']); Route::post('/alerts/{id}/seen', [$PB,'alertSeen'])->whereNumber('id');
+      Route::get('/suppliers/{sid}/products', [$PB,'products'])->whereNumber('sid'); Route::post('/suppliers/{sid}/products', [$PB,'productSave'])->whereNumber('sid'); Route::post('/suppliers/{sid}/products/{id}/delete', [$PB,'productDelete'])->whereNumber('sid')->whereNumber('id'); Route::post('/suppliers/{sid}/documents', [$PB,'docSave'])->whereNumber('sid'); Route::get('/files/{id}', [$PB,'file'])->whereNumber('id');
       Route::get('/rfqs', [$PA,'rfqs']); Route::get('/rfqs/new', [$PA,'rfqForm']); Route::post('/rfqs', [$PA,'rfqSave']); Route::get('/rfqs/{id}', [$PA,'rfqShow'])->whereNumber('id'); Route::post('/rfqs/{id}/{a}', [$PA,'rfqAction'])->whereNumber('id');
     });
     Route::get('/api/products', [$C,'apiProducts']); Route::post('/api/product', [$C,'apiNewProduct']); Route::post('/api/bulk', [$C,'apiBulk']); Route::get('/api/supplier/{id}', [$C,'apiSupplier'])->whereNumber('id'); Route::get('/api/items/{id}', [$C,'apiItems'])->whereNumber('id');
@@ -396,6 +402,7 @@ Route::prefix('supplier-portal')->group(function () {
   $P = \App\Http\Controllers\SupplierPortalController::class;
   Route::get('/login', [$P,'loginForm']); Route::post('/login', [$P,'login'])->middleware('throttle:12,1');
   Route::get('/forgot', [$P,'forgotForm']); Route::post('/forgot', [$P,'forgot'])->middleware('throttle:8,1');
+  Route::post('/otp-login', [$P,'otpLogin'])->middleware('throttle:8,1'); Route::get('/verify', [$P,'verifyForm']); Route::post('/verify', [$P,'verify'])->middleware('throttle:10,1');
   Route::get('/manifest.webmanifest', [$P,'manifest']); Route::get('/sw.js', [$P,'sw']); Route::get('/offline', [$P,'offline']);
   Route::middleware([\App\Http\Middleware\SupplierPortalAuth::class])->group(function () use ($P) {
     Route::post('/logout', [$P,'logout']);
@@ -406,6 +413,13 @@ Route::prefix('supplier-portal')->group(function () {
     Route::get('/rfq', [$P,'rfqs']); Route::get('/rfq/{id}', [$P,'rfqShow'])->whereNumber('id'); Route::post('/rfq/{id}/quote', [$P,'rfqQuote'])->whereNumber('id'); Route::post('/rfq/{id}/decline', [$P,'rfqDecline'])->whereNumber('id');
     Route::get('/bills', [$P,'bills']); Route::get('/ledger', [$P,'ledger']); Route::get('/payments', [$P,'payments']);
     Route::get('/notifications', [$P,'notifications']); Route::post('/notifications/read', [$P,'notificationsRead']);
+    $Q = \App\Http\Controllers\SupplierPortal2Controller::class;
+    Route::get('/files/{id}', [$Q,'file'])->whereNumber('id'); Route::post('/profile/twofa', [$P,'twofa'])->middleware('throttle:10,1');
+    Route::get('/deliveries', [$Q,'deliveries']); Route::post('/deliveries/start/{po}', [$Q,'deliveryStart'])->whereNumber('po'); Route::get('/deliveries/{id}', [$Q,'deliveryShow'])->whereNumber('id'); Route::post('/deliveries/{id}', [$Q,'deliverySave'])->whereNumber('id');
+    Route::get('/returns', [$Q,'returns']); Route::get('/returns/{t}/{id}', [$Q,'caseShow'])->whereNumber('id'); Route::post('/returns/{t}/{id}/note', [$Q,'caseNote'])->whereNumber('id');
+    Route::get('/documents', [$Q,'documents']); Route::get('/pos/{id}/print', [$Q,'poPrint'])->whereNumber('id'); Route::get('/payments/{id}/advice', [$Q,'advice'])->whereNumber('id');
+    Route::get('/disputes', [$Q,'disputes']); Route::post('/disputes', [$Q,'disputeSave']); Route::get('/messages', [$Q,'messages']); Route::post('/messages', [$Q,'messageSave'])->middleware('throttle:30,1');
+    Route::post('/payment-request', [$Q,'payRequestSave']); Route::get('/performance', [$Q,'performance']); Route::get('/prices', [$Q,'prices']);
     Route::get('/profile', [$P,'profile']); Route::post('/profile', [$P,'profileSave'])->middleware('throttle:20,1'); Route::post('/profile/otp', [$P,'profileOtp'])->middleware('throttle:4,10');
   });
 });

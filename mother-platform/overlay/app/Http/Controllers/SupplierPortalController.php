@@ -23,11 +23,38 @@ class SupplierPortalController extends Controller
       SP::log($r, $u, 'failed', $ident);
       return back()->withInput($r->only('login'))->with('bad', $u && $u->status !== 'active' ? 'This account is not active. Please contact DutyFreeBD.' : 'Wrong login or password.');
     }
+    if ($u->twofa && $u->mobile) { SP::otpSend('login', $u); session(['sp_2fa'=>$u->id,'sp_2fa_t'=>time()]); SP::log($r, $u, '2fa-sent', $ident); return redirect('/supplier-portal/verify')->with('ok','Enter the OTP sent to your registered mobile.'); }
+    return $this->finish($r, $u, $ident);
+  }
+  private function finish(Request $r, object $u, string $ident) {
     DB::table('supplier_users')->where('id',$u->id)->update(['failed_attempts'=>0,'locked_until'=>null,'last_login_at'=>now(),'last_login_ip'=>$r->ip()]);
-    $r->session()->regenerate(); session(['sp_uid'=>$u->id,'sp_iat'=>time()]);
+    $r->session()->regenerate(); session(['sp_uid'=>$u->id,'sp_iat'=>time()]); session()->forget(['sp_2fa','sp_2fa_t']);
     SP::log($r, $u, 'login', $ident); DB::table('supplier_activity')->insert(['supplier_id'=>$u->supplier_id,'supplier_user_id'=>$u->id,'action'=>'Login','ip'=>$r->ip(),'created_at'=>now(),'updated_at'=>now()]);
     return redirect('/supplier-portal');
   }
+  /** Passwordless sign-in: OTP to the registered mobile. */
+  public function otpLogin(Request $r) {
+    if ($r->input('step') === 'send') {
+      $u = SP::find((string)$r->input('login'));
+      if ($u && $u->status === 'active' && $u->mobile) { SP::otpSend('login', $u); session(['sp_2fa'=>$u->id,'sp_2fa_t'=>time(),'sp_otp_only'=>1]); SP::log($r, $u, 'otp-sent', $r->input('login')); }
+      return redirect('/supplier-portal/verify')->with('ok','If the account exists, an OTP was sent to its registered mobile.');
+    }
+    return back();
+  }
+  public function verifyForm() { if (!session('sp_2fa')) return redirect('/supplier-portal/login'); return view('sp.verify', ['brand'=>SP::brand()]); }
+  public function verify(Request $r) {
+    $uid = (int)session('sp_2fa'); if (!$uid || time() - (int)session('sp_2fa_t') > 600) return redirect('/supplier-portal/login')->with('bad','Session expired. Please sign in again.');
+    $u = DB::table('supplier_users as u')->join('suppliers as s','s.id','=','u.supplier_id')->where('u.id',$uid)->first(['u.*']);
+    if (!$u || $u->status !== 'active' || !SP::otpCheck('login', $uid, (string)$r->input('otp'))) { SP::log($r, $u, 'failed', 'otp'); return back()->with('bad','OTP is wrong or expired.'); }
+    return $this->finish($r, $u, 'otp');
+  }
+  public function twofa(Request $r) {
+    $u = SP::user(); if (!Hash::check((string)$r->input('current'), $u->password)) return back()->with('bad','Password is wrong.');
+    if (!$u->mobile) return back()->with('bad','Add a mobile number to your login first (ask DutyFreeBD).');
+    DB::table('supplier_users')->where('id',$u->id)->update(['twofa'=>$r->boolean('on'),'updated_at'=>now()]); SP::act('2FA '.($r->boolean('on') ? 'enabled' : 'disabled'));
+    return back()->with('ok', $r->boolean('on') ? 'Two-step sign-in is ON.' : 'Two-step sign-in is OFF.');
+  }
+
   public function logout(Request $r) { $u = SP::user(); if ($u) SP::log($r, $u, 'logout'); session()->forget(['sp_uid','sp_iat']); return redirect('/supplier-portal/login'); }
 
   public function forgotForm() { return view('sp.forgot', ['brand'=>SP::brand(), 'step'=>session('sp_fstep', 1)]); }
@@ -134,7 +161,7 @@ class SupplierPortalController extends Controller
     $row = ['unit_price'=>$d['unit_price'],'available_qty'=>$d['available_qty'],'lead_days'=>$d['lead_days'],'valid_until'=>$d['valid_until'] ?? null,'moq'=>(int)($d['moq'] ?? 0),'delivery_charge'=>$d['delivery_charge'] ?? 0,'note'=>$d['note'] ?? null,'updated_at'=>now()];
     DB::table('supplier_quotes')->updateOrInsert(['rfq_id'=>$rfq->id,'supplier_id'=>SP::sid()], $row + ['created_at'=>$old->created_at ?? now()]);
     DB::table('supplier_rfq_invites')->where('id',$inv->id)->update(['status'=>'quoted','updated_at'=>now()]);
-    SP::act('RFQ submitted', $rfq->rfq_no, ['rate'=>$d['unit_price'],'qty'=>$d['available_qty']]);
+    SP::act('RFQ submitted', $rfq->rfq_no, ['rate'=>$d['unit_price'],'qty'=>$d['available_qty']]); try { \App\Support\SupplierInsight::priceCheck($rfq, SP::sid(), (float)$d['unit_price']); } catch (\Throwable $e) {}
     return redirect('/supplier-portal/rfq/'.$rfq->id)->with('ok','Quote submitted.');
   }
   public function rfqDecline($id) {

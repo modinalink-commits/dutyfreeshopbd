@@ -6,4 +6,5 @@
 <form class="card" method="post" action="/supplier-portal/login">@csrf
 <label>Supplier code / mobile / e-mail</label><input name="login" value="{{ old('login') }}" autocomplete="username" required autofocus>
 <label>Password</label><input type="password" name="password" autocomplete="current-password" required>
-<button style="width:100%;margin-top:14px">Sign in</button><p style="text-align:center;margin:12px 0 0"><a href="/supplier-portal/forgot" style="color:var(--or)">Forgot password?</a></p></form></div></body></html>
+<button style="width:100%;margin-top:14px">Sign in</button><p style="text-align:center;margin:12px 0 0"><a href="/supplier-portal/forgot" style="color:var(--or)">Forgot password?</a></p></form>
+<form class="card" method="post" action="/supplier-portal/otp-login">@csrf<input type="hidden" name="step" value="send"><label style="margin-top:0">Or sign in with an OTP</label><input name="login" placeholder="Supplier code / mobile / e-mail" required><button class="g" style="width:100%;margin-top:10px">Send OTP</button></form></div></body></html>

@@ -1,6 +1,6 @@
 @extends('sp.layout')@section('title',$p->po_no)
 @section('body')<p class="sub"><a href="/supplier-portal/pos">← Purchase Orders</a></p>
-<div class="row" style="justify-content:space-between"><h1>{{ $p->po_no }}</h1><span class="pb pb-{{ $p->status }}">{{ $p->status }}</span></div>
+<div class="row" style="justify-content:space-between"><h1>{{ $p->po_no }}</h1><span class="row"><a class="btn g sm" href="/supplier-portal/pos/{{ $p->id }}/print" target="_blank">Print / PDF</a><span class="pb pb-{{ $p->status }}">{{ $p->status }}</span></span></div>
 <div class="card"><div class="dl"><span>PO Date</span><b>{{ $p->po_date }}</b></div><div class="dl"><span>Delivery Required</span><b>{{ $p->delivery_date ?: '—' }}</b></div><div class="dl"><span>Total</span><b>৳{{ number_format($p->total,2) }}</b></div>
 @if($p->note)<div class="dl"><span>Note</span><span style="color:var(--n)">{{ $p->note }}</span></div>@endif
 @if($p->reject_reason)<div class="dl"><span>Your reason</span><b>{{ $p->reject_reason }}</b></div>@endif @if($p->response_note)<div class="dl"><span>Your note</span><span style="color:var(--n)">{{ $p->response_note }}</span></div>@endif</div>
