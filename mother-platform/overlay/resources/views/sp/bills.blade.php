@@ -1,0 +1,7 @@
+@extends('sp.layout')@section('title','Bills & Invoices')
+@section('body')<h1>Bills &amp; Invoices</h1><p class="sub">Approved purchase bills from DutyFreeBD. Figures come from the same ledger as the company's own books.</p>
+<div class="filters">@foreach([''=>'All','due'=>'Due','partial'=>'Partially paid','overdue'=>'Overdue','paid'=>'Paid'] as $k=>$l)<a class="chip {{ ($s ?? '') === $k ? 'on' : '' }}" href="?s={{ $k }}">{{ $l }}</a>@endforeach</div>
+@if($rows->count())<div class="tw mcards"><table><thead><tr><th>Bill Number</th><th>Bill Date</th><th>Due Date</th><th class="n">Bill Amount</th><th class="n">Paid</th><th class="n">Due</th><th>Status</th></tr></thead><tbody>
+@foreach($rows as $b)<tr><td data-l="Bill"><b>{{ $b->invoice }}</b></td><td data-l="Date">{{ $b->purchase_date }}</td><td data-l="Due date">{{ $b->due_date ?: '—' }}</td><td class="n" data-l="Amount">৳{{ number_format($b->total,2) }}</td><td class="n" data-l="Paid">৳{{ number_format($b->paid_amt,2) }}</td><td class="n" data-l="Due"><b>৳{{ number_format($b->due_amt,2) }}</b></td><td data-l="Status"><span class="pb pb-{{ $b->pay_status }}">{{ $b->pay_status }}</span></td></tr>@endforeach</tbody>
+<tfoot><tr><td colspan="3">Total</td><td class="n">৳{{ number_format($rows->sum('total'),2) }}</td><td class="n">৳{{ number_format($rows->sum('paid_amt'),2) }}</td><td class="n">৳{{ number_format($rows->sum('due_amt'),2) }}</td><td></td></tr></tfoot></table></div>
+@else<div class="card empty"><b>No bills yet</b>Bills appear after DutyFreeBD approves your delivery.</div>@endif @endsection

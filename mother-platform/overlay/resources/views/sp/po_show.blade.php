@@ -1,0 +1,16 @@
+@extends('sp.layout')@section('title',$p->po_no)
+@section('body')<p class="sub"><a href="/supplier-portal/pos">← Purchase Orders</a></p>
+<div class="row" style="justify-content:space-between"><h1>{{ $p->po_no }}</h1><span class="pb pb-{{ $p->status }}">{{ $p->status }}</span></div>
+<div class="card"><div class="dl"><span>PO Date</span><b>{{ $p->po_date }}</b></div><div class="dl"><span>Delivery Required</span><b>{{ $p->delivery_date ?: '—' }}</b></div><div class="dl"><span>Total</span><b>৳{{ number_format($p->total,2) }}</b></div>
+@if($p->note)<div class="dl"><span>Note</span><span style="color:var(--n)">{{ $p->note }}</span></div>@endif
+@if($p->reject_reason)<div class="dl"><span>Your reason</span><b>{{ $p->reject_reason }}</b></div>@endif @if($p->response_note)<div class="dl"><span>Your note</span><span style="color:var(--n)">{{ $p->response_note }}</span></div>@endif</div>
+@php $ask = $p->status === 'sent'; @endphp
+<form method="post" action="/supplier-portal/pos/{{ $p->id }}/respond" id="pf">@csrf<input type="hidden" name="do" id="do">
+<div class="tw mcards"><table><thead><tr><th>Product</th><th>SKU</th><th class="n">Ordered Qty</th><th class="n">Rate</th><th class="n">Amount</th>@if($ask || $p->status==='partial')<th class="n">Available Qty</th>@endif</tr></thead><tbody>
+@foreach($items as $i)<tr><td data-l="Product">{{ $i->name }}</td><td data-l="SKU">{{ $i->sku ?: '—' }}</td><td class="n" data-l="Ordered">{{ $i->qty }}</td><td class="n" data-l="Rate">৳{{ number_format($i->rate,2) }}</td><td class="n" data-l="Amount">৳{{ number_format($i->line_total,2) }}</td>
+@if($ask)<td class="n" data-l="Available"><input type="number" min="0" max="{{ $i->qty }}" name="acc[{{ $i->id }}]" value="{{ $i->qty }}" style="width:90px;min-height:30px;text-align:right"></td>@elseif($p->status==='partial')<td class="n" data-l="Available">{{ $i->accepted_qty }}</td>@endif</tr>@endforeach</tbody></table></div>
+@if($ask)<div class="card" style="margin-top:12px"><label>Note (optional)</label><textarea name="note" maxlength="500"></textarea>
+<div class="row" style="margin-top:10px"><button type="button" onclick="go('accept')">Accept</button><button type="button" class="g" onclick="go('partial')">Partially Accept</button><button type="button" class="rd" onclick="document.getElementById('rj').style.display='block'">Reject</button></div>
+<div id="rj" style="display:none;margin-top:10px"><label>Rejection reason (required)</label><select name="reason"><option value="">Choose…</option>@foreach($reasons as $r)<option>{{ $r }}</option>@endforeach</select><button type="button" class="rd" style="margin-top:8px" onclick="go('reject')">Confirm rejection</button></div></div>
+<script>function go(a){document.getElementById('do').value=a;if(a==='reject'&&!document.querySelector('[name=reason]').value){alert('Please choose a reason');return}document.getElementById('pf').submit()}</script>@endif
+</form>@if($p->status==='partial')<div class="al" style="background:var(--amb);color:var(--am)">Waiting for DutyFreeBD to approve the revised quantity.</div>@endif @endsection

@@ -1,0 +1,7 @@
+@extends('sp.layout')@section('title','Purchase Orders')
+@section('body')<h1>Purchase Orders</h1><p class="sub">Orders from DutyFreeBD. Accept, partially accept or reject each one.</p>
+<div class="filters">@foreach([''=>'All','sent'=>'Awaiting you','accepted'=>'Accepted','partial'=>'Partial','revised'=>'Revised','rejected'=>'Rejected','closed'=>'Closed'] as $k=>$l)<a class="chip {{ ($s ?? '') === $k ? 'on' : '' }}" href="?s={{ $k }}">{{ $l }}</a>@endforeach
+<form method="get" style="margin-left:auto"><input name="q" placeholder="PO number" value="{{ request('q') }}" style="height:32px;min-height:0;width:160px"></form></div>
+@if($rows->count())<div class="tw mcards"><table><thead><tr><th>PO Number</th><th>PO Date</th><th>Delivery Date</th><th class="n">Total</th><th>Status</th></tr></thead><tbody>
+@foreach($rows as $p)<tr onclick="location='/supplier-portal/pos/{{ $p->id }}'" style="cursor:pointer"><td data-l="PO"><a href="/supplier-portal/pos/{{ $p->id }}"><b>{{ $p->po_no }}</b></a></td><td data-l="Date">{{ $p->po_date }}</td><td data-l="Delivery">{{ $p->delivery_date ?: '—' }}</td><td class="n" data-l="Total">৳{{ number_format($p->total,2) }}</td><td data-l="Status"><span class="pb pb-{{ $p->status }}">{{ $p->status }}</span></td></tr>@endforeach</tbody></table></div>{{ $rows->links() }}
+@else<div class="card empty"><b>No purchase orders</b>New orders from DutyFreeBD will appear here.</div>@endif @endsection

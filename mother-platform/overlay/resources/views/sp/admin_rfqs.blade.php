@@ -1,0 +1,5 @@
+@extends('layout')@section('title','RFQs')
+@section('body')@include('sp.admin_nav')
+<div class="hd"><div><h1>RFQ / Price Requests</h1><div class="sub" style="margin-bottom:0">Ask suppliers for their best price. Suppliers never see each other's quotes.</div></div><a class="btn" href="/admin/purchase/portal/rfqs/new">+ New RFQ</a></div>
+<div class="card tw"><table><thead><tr><th>RFQ</th><th>Product</th><th class="n">Qty</th><th>Expires</th><th class="n">Quoted / Invited</th><th>Status</th></tr></thead><tbody>
+@forelse($rows as $r)<tr><td><a href="/admin/purchase/portal/rfqs/{{ $r->id }}"><b>{{ $r->rfq_no }}</b></a></td><td>{{ $r->product }}</td><td class="n">{{ $r->qty }}</td><td>{{ $r->expires_at ? \Carbon\Carbon::parse($r->expires_at)->format('d M, g:i A') : '' }}</td><td class="n">{{ $r->quoted }} / {{ $r->invited }}</td><td><span class="pb pb-{{ $r->status==='awarded' ? 'received' : ($r->status==='sent' ? 'pending' : 'draft') }}">{{ $r->status }}</span></td></tr>@empty<tr><td colspan="6" class="mut">No RFQs yet</td></tr>@endforelse</tbody></table></div>@endsection

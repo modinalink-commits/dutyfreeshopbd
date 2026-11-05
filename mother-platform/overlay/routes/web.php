@@ -325,6 +325,13 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
     Route::get('/notes', [$C,'list'])->defaults('kind','notes'); Route::get('/notes/new', [$C,'noteForm']); Route::post('/notes', [$C,'noteSave']); Route::post('/notes/{id}/delete', [$C,'noteDelete'])->whereNumber('id');
     Route::get('/reports', [$C,'reports']); Route::get('/audit', [$C,'audit']); Route::get('/settings', [$C,'settings']); Route::post('/settings', [$C,'settingsSave']);
     Route::get('/export/{kind}/{fmt}', [$C,'export']);
+    $PA = \App\Http\Controllers\SupplierPortalAdminController::class;
+    Route::prefix('portal')->group(function () use ($PA) {
+      Route::get('/', [$PA,'index']); Route::post('/settings', [$PA,'settingsSave']); Route::post('/users', [$PA,'userSave']); Route::post('/users/{id}/{a}', [$PA,'userAction'])->whereNumber('id');
+      Route::get('/suppliers/{sid}', [$PA,'supplier'])->whereNumber('sid'); Route::post('/changes/{id}/{a}', [$PA,'changeAction'])->whereNumber('id'); Route::post('/notify', [$PA,'notify']);
+      Route::get('/pos', [$PA,'pos']); Route::get('/pos/new', [$PA,'poForm']); Route::post('/pos', [$PA,'poSave']); Route::get('/pos/{id}', [$PA,'poShow'])->whereNumber('id'); Route::post('/pos/{id}/{a}', [$PA,'poAction'])->whereNumber('id');
+      Route::get('/rfqs', [$PA,'rfqs']); Route::get('/rfqs/new', [$PA,'rfqForm']); Route::post('/rfqs', [$PA,'rfqSave']); Route::get('/rfqs/{id}', [$PA,'rfqShow'])->whereNumber('id'); Route::post('/rfqs/{id}/{a}', [$PA,'rfqAction'])->whereNumber('id');
+    });
     Route::get('/api/products', [$C,'apiProducts']); Route::post('/api/product', [$C,'apiNewProduct']); Route::post('/api/bulk', [$C,'apiBulk']); Route::get('/api/supplier/{id}', [$C,'apiSupplier'])->whereNumber('id'); Route::get('/api/items/{id}', [$C,'apiItems'])->whereNumber('id');
   });
   Route::get('/inventory', [\App\Http\Controllers\InventoryController::class,'index']);
@@ -384,6 +391,25 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/coupons/{id}/usage', [\App\Http\Controllers\CouponController::class,'usageReport'])->whereNumber('id');
 });
 // ---- Storefront: order form has no CSRF token (pages stay cacheable); orders are rate limited per IP and honeypot-protected
+// ---- Supplier Partner Portal (public login; everything else behind SupplierPortalAuth) ----
+Route::prefix('supplier-portal')->group(function () {
+  $P = \App\Http\Controllers\SupplierPortalController::class;
+  Route::get('/login', [$P,'loginForm']); Route::post('/login', [$P,'login'])->middleware('throttle:12,1');
+  Route::get('/forgot', [$P,'forgotForm']); Route::post('/forgot', [$P,'forgot'])->middleware('throttle:8,1');
+  Route::get('/manifest.webmanifest', [$P,'manifest']); Route::get('/sw.js', [$P,'sw']); Route::get('/offline', [$P,'offline']);
+  Route::middleware([\App\Http\Middleware\SupplierPortalAuth::class])->group(function () use ($P) {
+    Route::post('/logout', [$P,'logout']);
+    Route::get('/password', [$P,'passwordForm']); Route::post('/password', [$P,'password'])->middleware('throttle:10,1');
+    Route::get('/terms', [$P,'termsForm']); Route::post('/terms', [$P,'terms']);
+    Route::get('/', [$P,'home']); Route::get('/api/summary', [$P,'summary']); Route::get('/search', [$P,'search']);
+    Route::get('/pos', [$P,'pos']); Route::get('/pos/{id}', [$P,'poShow'])->whereNumber('id'); Route::post('/pos/{id}/respond', [$P,'poRespond'])->whereNumber('id');
+    Route::get('/rfq', [$P,'rfqs']); Route::get('/rfq/{id}', [$P,'rfqShow'])->whereNumber('id'); Route::post('/rfq/{id}/quote', [$P,'rfqQuote'])->whereNumber('id'); Route::post('/rfq/{id}/decline', [$P,'rfqDecline'])->whereNumber('id');
+    Route::get('/bills', [$P,'bills']); Route::get('/ledger', [$P,'ledger']); Route::get('/payments', [$P,'payments']);
+    Route::get('/notifications', [$P,'notifications']); Route::post('/notifications/read', [$P,'notificationsRead']);
+    Route::get('/profile', [$P,'profile']); Route::post('/profile', [$P,'profileSave'])->middleware('throttle:20,1'); Route::post('/profile/otp', [$P,'profileOtp'])->middleware('throttle:4,10');
+  });
+});
+
 Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class, \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class, \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])->middleware(\App\Http\Middleware\StorefrontGuard::class)->group(function () {
   Route::post('/webhooks/legacy-orders', [\App\Http\Controllers\LegacyOrderController::class,'ingest'])->middleware('throttle:1200,1'); Route::get('/webhooks/legacy-orders', [\App\Http\Controllers\LegacyOrderController::class,'stats'])->middleware('throttle:60,1'); Route::post('/webhooks/legacy-import', [\App\Http\Controllers\LegacyImportController::class,'ingest'])->middleware('throttle:600,1'); Route::post('/webhooks/legacy-products', [\App\Http\Controllers\LegacyProductController::class,'ingest'])->middleware('throttle:600,1'); Route::post('/webhooks/legacy-image', [\App\Http\Controllers\LegacyProductController::class,'imagePush'])->middleware('throttle:1200,1'); Route::get('/webhooks/legacy-image-todo', [\App\Http\Controllers\LegacyProductController::class,'imageTodo'])->middleware('throttle:60,1'); Route::post('/webhooks/legacy-taxonomy', [\App\Http\Controllers\LegacyProductController::class,'taxonomy'])->middleware('throttle:60,1'); Route::get('/webhooks/legacy-products', [\App\Http\Controllers\LegacyProductController::class,'stats'])->middleware('throttle:60,1'); Route::get('/webhooks/legacy-import', [\App\Http\Controllers\LegacyImportController::class,'stats'])->middleware('throttle:60,1');
   Route::post('/webhooks/legacy-reviews', [\App\Http\Controllers\LegacyImportController::class,'reviews'])->middleware('throttle:60,1');
