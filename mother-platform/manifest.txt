@@ -636,3 +636,5 @@ app/Http/Controllers/AppRewardController.php
 resources/views/app_rewards.blade.php
 resources/views/components/app-reward-card.blade.php
 database/migrations/2026_11_05_000110_chat_quick_templates.php
+database/migrations/2026_11_05_000120_taxonomy_seo_auto.php
+app/Support/SeoAutoGenerator.php

@@ -286,7 +286,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
     Route::get('/page/{id}', [$S,'edit'])->whereNumber('id'); Route::post('/page/{id}', [$S,'save'])->whereNumber('id');
     Route::post('/page/{id}/duplicate', [$S,'duplicate'])->whereNumber('id'); Route::post('/page/{id}/delete', [$S,'destroy'])->whereNumber('id'); Route::post('/page/{id}/restore/{rid}', [$S,'restore'])->whereNumber(['id','rid']);
     $I = \App\Http\Controllers\SeoItemsController::class;
-    Route::get('/items', [$I,'index']); Route::post('/items/{t}/{id}', [$I,'save'])->whereNumber('id'); Route::post('/items/{t}/autofill', [$I,'autofill']); Route::get('/items/{t}/export', [$I,'export']);
+    Route::get('/items', [$I,'index']); Route::post('/items/{t}/{id}', [$I,'save'])->whereNumber('id'); Route::post('/items/{t}/autofill', [$I,'autofill']); Route::get('/items/{t}/export', [$I,'export']); Route::get('/items/{t}/{id}/preview', [$I,'preview'])->whereNumber('id'); Route::post('/generate-missing', [$I,'generateMissing']);
     Route::get('/alt', [$I,'alt']); Route::post('/alt/fill', [$I,'altFill']); Route::post('/alt/{id}', [$I,'altSave'])->whereNumber('id');
     Route::post('/bulk', [$S,'bulk']); Route::post('/redirect', [$S,'redirectSave']); Route::post('/redirect/{id}', [$S,'redirectAct'])->whereNumber('id'); Route::post('/settings', [$S,'settings']); Route::post('/sitemap', [$S,'sitemap']);
   });

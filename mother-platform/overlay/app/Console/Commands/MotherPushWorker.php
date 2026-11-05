@@ -34,6 +34,7 @@ class MotherPushWorker extends Command
     try { \App\Support\Winback::tick(); } catch (\Throwable $e) { $this->error('winback: ' . $e->getMessage()); }
     try { \App\Support\Voice::tick(); } catch (\Throwable $e) { $this->error('voice: ' . $e->getMessage()); }
     try { \App\Support\SeoMgr::tick(); } catch (\Throwable $e) { $this->error('seo: ' . $e->getMessage()); }
+    try { \App\Support\SeoAutoGenerator::backfillOnce(); } catch (\Throwable $e) { $this->error('seoauto: ' . $e->getMessage()); }
     try { \App\Support\AppReward::resolve(); } catch (\Throwable $e) { $this->error('appreward: ' . $e->getMessage()); }
     try { \App\Support\Referral::tick(); } catch (\Throwable $e) { $this->error('referral: ' . $e->getMessage()); }
     try { \App\Support\AiBrief::tick(); } catch (\Throwable $e) { $this->error('aibrief: ' . $e->getMessage()); }

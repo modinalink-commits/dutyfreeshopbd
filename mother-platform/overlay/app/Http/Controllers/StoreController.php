@@ -203,6 +203,14 @@ class StoreController extends Controller {
       ->select(DB::raw("'' as customer_name"),DB::raw("'' as district"),'o.shipping','o.created_at','i.name','i.qty','i.price','p.image','p.id as pid','p.ext_id','p.name as pname','p.category_id as pcat','p.sub as psub','p.sub_sub as psubsub','p.path_slug as pslug')->orderByDesc('o.id')->limit(6)->get()
       ->map(function ($r) { $r->masked = ''; return $r; }));
   }
+  /** Category / sub / child page SEO written by the auto generator (fields tracked in seo_modes). Legacy rows without tracking keep the old logic. */
+  private function autoSeo(?object $n, string $tcol): array {
+    if (!$n) return []; $m = json_decode((string)($n->seo_modes ?? ''), true); if (!is_array($m) || !$m) return [];
+    $v = fn($col, $k) => in_array($m[$k] ?? null, ['auto', 'manual'], true) && trim((string)($n->$col ?? '')) !== '' ? trim((string)$n->$col) : null; $o = [];
+    if ($x = $v($tcol, 'title')) $o['title'] = $x; if ($x = $v('meta_description', 'desc')) $o['desc'] = $x; if ($x = $v('canonical', 'canonical')) $o['canon'] = $x; if ($x = $v('focus_keyword', 'focus')) $o['keywords'] = $x;
+    if ($x = $v('og_title', 'og_title')) $o['ogtitle'] = $x; if ($x = $v('og_description', 'og_desc')) $o['ogdesc'] = $x; if ($x = $v('og_image', 'og_image')) $o['ogimg'] = $x; if ($x = $v('schema_type', 'schema')) $o['schemaType'] = $x; if ($x = $v('breadcrumb_title', 'crumb')) $o['crumb'] = $x;
+    return $o;
+  }
   public function category(Request $r, string $slug, ?string $subSlug = null, ?string $subSubName = null) {
     $c = $this->cats()[$slug] ?? null;
     if (!$c) { if ($subSlug !== null) return $this->notFound(); $page = DB::table('pages')->where('slug',$slug)->where('active',true)->first(); if (!$page && ($pt = request()->query('preview'))) { $pp = DB::table('pages')->where('slug',$slug)->first(); if ($pp && \App\Support\SeoMgr::previewOk($pt, $pp)) { $page = $pp; $GLOBALS['seo_preview'] = true; } } if ($page) return $this->page($page); return $this->notFound(); }
@@ -219,9 +227,10 @@ class StoreController extends Controller {
     }
     if (is_numeric($r->min)) $q->where('price','>=',(float)$r->min); if (is_numeric($r->max)) $q->where('price','<=',(float)$r->max);
     $scope = 'm:'.$c->id; $hasPos = false;
+    $seoNode = null;
     if ($subSlug !== null && \Illuminate\Support\Facades\Schema::hasTable('category_nodes')) {
       $sn = DB::table('category_nodes')->where('category_id', $c->id)->where('level', 2)->where('slug', $subSlug)->first();
-      if ($sn) { $scope = 'n:'.$sn->id; if ($subSubName !== null && ($cn = DB::table('category_nodes')->where('level', 3)->where('parent_id', $sn->id)->where('name', $subSubName)->first())) $scope = 'n:'.$cn->id; }
+      if ($sn) { $scope = 'n:'.$sn->id; $seoNode = $sn; if ($subSubName !== null && ($cn = DB::table('category_nodes')->where('level', 3)->where('parent_id', $sn->id)->where('name', $subSubName)->first())) { $scope = 'n:'.$cn->id; $seoNode = $cn; } }
     }
     if (\Illuminate\Support\Facades\Schema::hasTable('product_positions')) $hasPos = DB::table('product_positions')->where('pp_scope', $scope)->exists();
     $sort = (string)$r->input('sort', '');
@@ -244,7 +253,8 @@ class StoreController extends Controller {
       if (mb_strlen($baseT) < 30) $baseT .= ' – Original Imported Products in Bangladesh';
       $title = self::fitTitle($baseT, ' | DutyFree BD');
     }
-    return response()->view('store.category', $this->base(['c'=>$c, 'subName'=>$subName, 'subSlug'=>$subSlug, 'items'=>$items, 'hasPos'=>$hasPos, 'groups'=>collect($items->items())->groupBy(fn($p) => $p->sub ?: $c->name), 'title'=>$title, 'desc'=>$subName ? $subName.' – original imported products in '.$c->name.' at DutyFree BD. Cash on delivery, nationwide delivery.' : $c->meta_description, 'canon'=>(!$subName && !empty($c->canonical)) ? $c->canonical : $canon, 'noindex'=>(!empty($c->noindex) && !$subName) || self::isSmokeCat($c), 'keywords'=>$c->focus_keyword ?? null, 'ogimg'=>(!empty($c->og_image) ? $c->og_image : null)]))->header('Cache-Control','public, max-age=120');
+    $ov = $this->autoSeo($subSlug === null ? $c : $seoNode, $subSlug === null ? 'title' : 'meta_title');
+    return response()->view('store.category', $this->base(array_replace(['c'=>$c, 'subName'=>$subName, 'subSlug'=>$subSlug, 'items'=>$items, 'hasPos'=>$hasPos, 'groups'=>collect($items->items())->groupBy(fn($p) => $p->sub ?: $c->name), 'title'=>$title, 'desc'=>$subName ? $subName.' – original imported products in '.$c->name.' at DutyFree BD. Cash on delivery, nationwide delivery.' : $c->meta_description, 'canon'=>(!$subName && !empty($c->canonical)) ? $c->canonical : $canon, 'noindex'=>(!empty($c->noindex) && !$subName) || self::isSmokeCat($c), 'keywords'=>$c->focus_keyword ?? null, 'ogimg'=>(!empty($c->og_image) ? $c->og_image : null)], $ov)))->header('Cache-Control','public, max-age=120');
   }
   /** /category/secondary-category */
   public function categorySub(Request $r, string $cat, string $sub) { return $this->category($r, $cat, $sub); }

@@ -2,6 +2,7 @@
 namespace App\Http\Controllers;
 
 use App\Support\Seo;
+use App\Support\SeoAutoGenerator as G;
 use App\Support\SeoMgr as S;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -10,7 +11,9 @@ use Illuminate\Support\Facades\DB;
 /** Pages & SEO -> Category / Brand / Product SEO, image alt audit, keyword coverage, exports. */
 class SeoItemsController extends Controller
 {
-  private const T = ['category' => 'categories', 'brand' => 'brands', 'product' => 'products'];
+  private const T = ['category' => 'categories', 'sub' => 'category_nodes', 'child' => 'category_nodes', 'brand' => 'brands', 'product' => 'products'];
+  /** Admin type -> SEOAutoGenerator type (products are not generated here). */
+  private const GT = ['category' => 'main', 'sub' => 'sub', 'child' => 'child', 'brand' => 'brand'];
   private function tbl(string $t): string { abort_unless(isset(self::T[$t]), 404); return self::T[$t]; }
   private function clear(): void { foreach (['store.home6', 'store.home4', 'store.home5', 'store.sitemap5'] as $k) Cache::forget($k); }
   /** Map to unified [title,desc,kw] columns per type. */
@@ -24,28 +27,62 @@ class SeoItemsController extends Controller
   }
   private function items(string $t, Request $r) {
     $tb = $this->tbl($t); $q = DB::table($tb)->orderBy('id');
+    if ($t === 'sub') $q->where('level', 2); elseif ($t === 'child') $q->where('level', 3);
     if ($s = trim((string)$r->query('q'))) $q->where('name', 'ilike', '%' . $s . '%');
     return $q;
   }
 
   public function index(Request $r) {
-    $t = in_array($r->query('type'), ['category', 'brand', 'product'], true) ? $r->query('type') : 'category'; $f = (string)$r->query('f', 'all');
-    $q = $this->items($t, $r); $all = $q->get();
-    $rows = $all->map(function ($x) use ($t) { $x->iss = $this->status($x, $t); return $x; });
+    $t = in_array($r->query('type'), array_keys(self::T), true) ? $r->query('type') : 'category'; $f = (string)$r->query('f', 'all');
+    $q = $this->items($t, $r); $all = $q->get(); $gt = self::GT[$t] ?? null;
+    $rows = $all->map(function ($x) use ($t, $gt) { $x->iss = $this->status($x, $t); $x->seo = $gt ? G::status($gt, $x) : null; $x->modes = $gt ? G::modes($x) : []; return $x; });
     $tot = $rows->count(); $bad = $rows->filter(fn($x) => count($x->iss))->count();
+    $miss = $gt ? $rows->filter(fn($x) => $x->seo['state'] === 'missing')->count() : 0;
     if ($f === 'bad') $rows = $rows->filter(fn($x) => count($x->iss)); elseif ($f === 'nokw') $rows = $rows->filter(fn($x) => trim((string)$x->focus_keyword) === '');
+    elseif ($gt && $f === 'missing') $rows = $rows->filter(fn($x) => $x->seo['state'] === 'missing'); elseif ($gt && in_array($f, ['auto', 'manual'], true)) $rows = $rows->filter(fn($x) => $x->seo['origin'] === $f);
+    $parents = []; if (in_array($t, ['sub', 'child'], true)) { $parents = DB::table('categories')->pluck('name', 'id')->all(); foreach (DB::table('category_nodes')->where('level', 2)->get(['id', 'name']) as $n) $parents['n' . $n->id] = $n->name; }
     $page = max(1, (int)$r->query('page', 1)); $per = 40; $pages = max(1, (int)ceil($rows->count() / $per));
-    return view('seo_items', ['t' => $t, 'f' => $f, 'rows' => $rows->slice(($page - 1) * $per, $per)->values(), 'tot' => $tot, 'bad' => $bad, 'page' => $page, 'pages' => $pages, 'qs' => $r->query('q'), 'tc' => $this->tcol($t)]);
+    return view('seo_items', ['t' => $t, 'f' => $f, 'rows' => $rows->slice(($page - 1) * $per, $per)->values(), 'tot' => $tot, 'bad' => $bad, 'miss' => $miss, 'gt' => $gt, 'parents' => $parents, 'page' => $page, 'pages' => $pages, 'qs' => $r->query('q'), 'tc' => $this->tcol($t)]);
+  }
+
+  /** Generated (not saved) values for the form: Regenerate SEO / Reset to Auto fill the form from this, staff reviews and saves. */
+  public function preview(Request $r, string $t, int $id) {
+    $this->tbl($t); $gt = self::GT[$t] ?? null; abort_unless($gt, 404); $o = G::row($gt, $id); abort_unless($o, 404);
+    return response()->json(['gen' => G::generate($gt, $o), 'modes' => G::modes($o)])->header('Cache-Control', 'no-store');
+  }
+  /** Admin action: Generate Missing SEO for Main / Sub / Child categories and Brands (only empty fields; existing text untouched). */
+  public function generateMissing(Request $r) {
+    $res = G::bulk($r->filled('type') && isset(self::GT[$r->input('type')]) ? self::GT[$r->input('type')] : null, true);
+    $this->clear(); S::audit('item.generate_missing', 'taxonomy', null, $res);
+    $m = []; foreach ($res as $k => $v) $m[] = G::TYPES[$k] . ': ' . $v['records'] . ' record(s)';
+    return back()->with('ok', 'Missing SEO generated — ' . implode(' · ', $m) . '. Existing and manually edited text was not changed.');
   }
 
   public function save(Request $r, string $t, int $id) {
     $tb = $this->tbl($t); $o = DB::table($tb)->find($id); abort_if(!$o, 404);
+    if ($gt = (self::GT[$t] ?? null)) return $this->saveAuto($r, $t, $gt, $id, $o);
     $row = [$this->tcol($t) => mb_substr(trim((string)$r->input('title')), 0, 200) ?: null, 'meta_description' => mb_substr(trim((string)$r->input('desc')), 0, 500) ?: null,
       'focus_keyword' => mb_substr(trim((string)$r->input('kw')), 0, 200) ?: null, 'canonical' => mb_substr(trim((string)$r->input('canonical')), 0, 500) ?: null,
       'og_image' => mb_substr(trim((string)$r->input('og')), 0, 500) ?: null, 'noindex' => $r->boolean('noindex'), 'updated_at' => now()];
-    if ($t === 'product') { $row['meta_keywords'] = mb_substr(trim((string)$r->input('kws')), 0, 500) ?: null; $row['image_alt'] = mb_substr(trim((string)$r->input('alt')), 0, 300) ?: null; }
-    else $row['meta_keywords'] = mb_substr(trim((string)$r->input('kws')), 0, 500) ?: null;
+    $row['meta_keywords'] = mb_substr(trim((string)$r->input('kws')), 0, 500) ?: null; $row['image_alt'] = mb_substr(trim((string)$r->input('alt')), 0, 300) ?: null;
     DB::table($tb)->where('id', $id)->update($row); $this->clear(); S::audit('item.save', $t . '#' . $id . ' ' . ($o->name ?? ''), null, $row);
+    return back()->with('ok', 'Saved: ' . ($o->name ?? ''));
+  }
+  /** Category / brand save with Auto / Manual tracking: a field the staff changed becomes Manual (never silently overwritten later); a field emptied is filled automatically; "Reset to Auto" returns it to Auto. */
+  private function saveAuto(Request $r, string $t, string $gt, int $id, object $o) {
+    $in = ['title' => 'title', 'desc' => 'desc', 'focus' => 'kw', 'keywords' => 'kws', 'canonical' => 'canonical', 'og_title' => 'og_title', 'og_desc' => 'og_desc', 'og_image' => 'og', 'crumb' => 'crumb', 'alt' => 'alt', 'schema' => 'schema'];
+    $max = ['title' => 200, 'desc' => 500, 'focus' => 200, 'keywords' => 500, 'canonical' => 500, 'og_title' => 200, 'og_desc' => 500, 'og_image' => 500, 'crumb' => 120, 'alt' => 300, 'schema' => 30];
+    $gen = G::generate($gt, $o); $modes = G::modes($o); $row = ['noindex' => $r->boolean('noindex'), 'updated_at' => now()];
+    foreach (G::FIELDS as $f) {
+      $col = G::col($gt, $f); $cur = trim((string)($o->$col ?? '')); $v = mb_substr(trim((string)$r->input($in[$f])), 0, $max[$f]);
+      if ($r->boolean('auto_' . $f)) { $row[$col] = (string)$gen[$f] !== '' ? $gen[$f] : ($v ?: null); $modes[$f] = 'auto'; continue; }
+      if ($v === '') { $row[$col] = (string)$gen[$f] !== '' ? $gen[$f] : null; if ((string)$gen[$f] !== '') $modes[$f] = 'auto'; continue; }
+      $row[$col] = $v;
+      if ($v === $cur) { $modes[$f] = $modes[$f] ?? 'manual'; continue; }
+      $modes[$f] = $v === (string)$gen[$f] ? 'auto' : 'manual';
+    }
+    $row['seo_modes'] = json_encode($modes); $row['seo_auto_at'] = now();
+    DB::table(G::table($gt))->where('id', $id)->update($row); $this->clear(); S::audit('item.save', $t . '#' . $id . ' ' . ($o->name ?? ''), null, $row);
     return back()->with('ok', 'Saved: ' . ($o->name ?? ''));
   }
 
@@ -53,20 +90,7 @@ class SeoItemsController extends Controller
   public function autofill(Request $r, string $t) {
     $tb = $this->tbl($t); $n = 0;
     if ($t === 'product') { $n = Seo::fillAll(false)['updated']; }
-    else {
-      foreach (DB::table($tb)->get() as $x) {
-        $nm = trim((string)$x->name); $upd = [];
-        $title = $nm . ' দাম বাংলাদেশে | অরিজিনাল ' . $nm . ' | ' . S::site();
-        $desc = $nm . ' অরিজিনাল ইমপোর্টেড পণ্য ডিউটি ফ্রি দামে। ' . $nm . ' price in Bangladesh, ক্যাশ অন ডেলিভারি ও সারা দেশে হোম ডেলিভারি — ' . S::site() . '।';
-        $kws = implode(', ', array_unique([$nm, $nm . ' দাম', $nm . ' price in bangladesh', 'buy ' . $nm . ' online bd', $nm . ' original', $nm . ' duty free', 'ডিউটি ফ্রি', 'dutyfree shop bd']));
-        $tcol = $this->tcol($t);
-        if (trim((string)($x->$tcol ?? '')) === '') $upd[$tcol] = mb_substr($title, 0, 120);
-        if (trim((string)($x->meta_description ?? '')) === '') $upd['meta_description'] = mb_substr($desc, 0, 158);
-        if (trim((string)($x->focus_keyword ?? '')) === '') $upd['focus_keyword'] = mb_substr($nm . ' দাম', 0, 120);
-        if (trim((string)($x->meta_keywords ?? '')) === '') $upd['meta_keywords'] = mb_substr($kws, 0, 490);
-        if ($upd) { DB::table($tb)->where('id', $x->id)->update($upd); $n++; }
-      }
-    }
+    else { $res = G::bulk(self::GT[$t], true)[self::GT[$t]]; $n = $res['records']; }
     $this->clear(); S::audit('item.autofill', $t, null, ['updated' => $n]);
     return back()->with('ok', "Auto-filled empty SEO fields on $n " . $t . " record(s). Existing text was not touched.");
   }
@@ -95,7 +119,8 @@ class SeoItemsController extends Controller
   /** CSV / Word (.doc) / printable PDF export of Category, Brand or Product SEO. */
   public function export(Request $r, string $t) {
     $tb = $this->tbl($t); $fmt = (string)$r->query('fmt', 'csv'); $tc = $this->tcol($t);
-    $rows = DB::table($tb)->orderBy('id')->get()->map(function ($x) use ($t, $tc) { return [$x->id, $x->name, $x->$tc, $x->meta_description, $x->focus_keyword, $x->meta_keywords ?? '', $x->canonical, !empty($x->noindex) ? 'noindex' : 'index', $t === 'product' ? ($x->image_alt ?? '') : '', implode('; ', $this->status($x, $t))]; });
+    $eq = DB::table($tb)->orderBy('id'); if ($t === 'sub') $eq->where('level', 2); elseif ($t === 'child') $eq->where('level', 3);
+    $rows = $eq->get()->map(function ($x) use ($t, $tc) { return [$x->id, $x->name, $x->$tc, $x->meta_description, $x->focus_keyword, $x->meta_keywords ?? '', $x->canonical, !empty($x->noindex) ? 'noindex' : 'index', $t === 'product' ? ($x->image_alt ?? '') : '', implode('; ', $this->status($x, $t))]; });
     $h = ['ID', 'Name', 'SEO Title', 'Meta Description', 'Focus Keyword', 'Keywords', 'Canonical', 'Indexing', 'Image Alt', 'Issues'];
     if ($fmt === 'csv') {
       $out = fopen('php://temp', 'w+'); fwrite($out, "\xEF\xBB\xBF"); fputcsv($out, $h); foreach ($rows as $x) fputcsv($out, $x); rewind($out);

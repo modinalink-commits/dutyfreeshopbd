@@ -71,7 +71,7 @@ class TaxonomyController extends Controller {
       $row = ['name' => $name, 'slug' => $slug, 'image' => $img, 'description' => $desc, 'active' => $act, 'show_home' => $home, 'updated_at' => $now];
       if ($id) { abort_unless(DB::table('categories')->where('id', $id)->exists(), 404); if (isset($d['position'])) $row['position'] = (int)$d['position']; DB::table('categories')->where('id', $id)->update($row); }
       else { $row['position'] = $d['position'] ?? ((int)DB::table('categories')->max('position') + 1); $row['created_at'] = $now; $id = DB::table('categories')->insertGetId($row); }
-      $this->bust(); return response()->json(['ok' => true, 'id' => $id]);
+      $this->bust(); \App\Support\SeoAutoGenerator::onSave('main', (int)$id); return response()->json(['ok' => true, 'id' => $id]);
     }
     $slug = Slugs::slug($name, 60); if ($slug === '') return $this->err('Name must contain letters or numbers.');
     $parent = (int)$r->input('parent_id'); $row = ['name' => $name, 'slug' => $type === 'sub' ? Slugs::subSlug($name) : $slug, 'image' => $img, 'description' => $desc, 'active' => $act, 'show_home' => $home, 'featured' => $feat, 'updated_at' => $now];
@@ -104,7 +104,7 @@ class TaxonomyController extends Controller {
         DB::table('category_nodes')->where('id', $id)->update($row + ['parent_id' => $ps->id, 'category_id' => $ps->category_id]);
       } else { $row += ['category_id' => $ps->category_id, 'parent_id' => $ps->id, 'level' => 3, 'position' => $d['position'] ?? ((int)DB::table('category_nodes')->where('parent_id', $ps->id)->max('position') + 1), 'created_at' => $now]; $id = DB::table('category_nodes')->insertGetId($row); }
     }
-    $this->bust(); return response()->json(['ok' => true, 'id' => $id]);
+    $this->bust(); \App\Support\SeoAutoGenerator::onSave($type === 'sub' ? 'sub' : 'child', (int)$id); return response()->json(['ok' => true, 'id' => $id]);
   }
 
   public function delete(Request $r) {
@@ -145,6 +145,7 @@ class TaxonomyController extends Controller {
     $row = ['name' => trim($d['name']), 'slug' => $slug, 'logo' => trim((string)($d['logo'] ?? '')) ?: null, 'description' => trim((string)($d['description'] ?? '')) ?: null, 'active' => filter_var($r->input('active', true), FILTER_VALIDATE_BOOLEAN), 'updated_at' => now()];
     if ($id) { if (isset($d['position'])) $row['position'] = (int)$d['position']; DB::table('brands')->where('id', $id)->update($row); }
     else { $row['position'] = $d['position'] ?? ((int)DB::table('brands')->max('position') + 1); $row['created_at'] = now(); $id = DB::table('brands')->insertGetId($row); }
+    \App\Support\SeoAutoGenerator::onSave('brand', (int)$id, false);
     return response()->json(['ok' => true, 'id' => $id]);
   }
   public function brandDelete(Request $r) {
