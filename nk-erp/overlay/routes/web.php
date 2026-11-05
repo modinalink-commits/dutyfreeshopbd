@@ -22,11 +22,14 @@ use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\HrController;
 use App\Http\Controllers\SmsController;
 use App\Http\Controllers\HeroController;
+use App\Http\Controllers\ExportController;
+use App\Http\Controllers\ImportController;
 use App\Http\Controllers\TripController;
 use Illuminate\Support\Facades\Route;
 
 // Public API used by the nklpgbd.com website order form.
 Route::post('/api/website-order', [ApiController::class, 'websiteOrder'])->middleware('throttle:8,1');
+Route::get('/share/export/{export}', [ExportController::class, 'shared'])->name('exports.shared')->middleware('signed');
 Route::get('/api/hero', [HeroController::class, 'api'])->middleware('throttle:120,1');
 Route::get('/api/ping', fn () => response()->json(['ok' => true]));
 
@@ -174,6 +177,21 @@ Route::middleware(['auth', 'pwd'])->group(function () {
         Route::post('/hero/publish', [HeroController::class, 'publish'])->name('hero.publish');
         Route::post('/hero/{slide}/move', [HeroController::class, 'move'])->name('hero.move');
         Route::post('/hero/{slide}/delete', [HeroController::class, 'delete'])->name('hero.delete');
+    });
+    Route::middleware('role:super_admin,admin,manager,accounts')->group(function () {
+        Route::get('/exports', [ExportController::class, 'index'])->name('exports.index');
+        Route::post('/exports', [ExportController::class, 'generate'])->name('exports.generate');
+        Route::get('/exports/print', [ExportController::class, 'printView'])->name('exports.print');
+        Route::post('/exports/bulk-statements', [ExportController::class, 'bulkStatements'])->name('exports.bulk');
+        Route::get('/exports/{export}/download', [ExportController::class, 'download'])->name('exports.download');
+        Route::post('/exports/{export}/share', [ExportController::class, 'share'])->name('exports.share');
+        Route::post('/exports/{export}/archive', [ExportController::class, 'archive'])->name('exports.archive');
+    });
+    Route::middleware('role:super_admin')->group(function () {
+        Route::get('/import', [ImportController::class, 'index'])->name('imports.index');
+        Route::post('/import', [ImportController::class, 'upload'])->name('imports.upload');
+        Route::post('/import/confirm', [ImportController::class, 'confirm'])->name('imports.confirm');
+        Route::post('/import/cancel', [ImportController::class, 'cancel'])->name('imports.cancel');
     });
     Route::get('/vehicle-profit', [FleetController::class, 'profit'])->name('fleet.profit')->middleware('role:super_admin');
 

@@ -201,40 +201,10 @@ class CompanyController extends Controller
         if (CompanyEntry::query()->exists()) return back()->withErrors(['file' => 'The company ledger already has entries. Import works only on an empty ledger.']);
         $j = json_decode((string) file_get_contents($request->file('file')->getRealPath()), true);
         if (! is_array($j) || ! isset($j['entries'], $j['rates'])) return back()->withErrors(['file' => 'This is not a ledger export file.']);
-        $uid = $request->user()->id; $n = 0;
-        DB::transaction(function () use ($j, $uid, &$n) {
-            foreach ($j['rates'] as $r) {
-                CompanyRate::query()->updateOrCreate(['size_kg' => (int) $r['size'], 'from_date' => $r['from']], ['do_rate' => $r['do'], 'transport' => $r['transport'] ?? 0,
-                    'target' => $r['target'] ?? 0, 'slab' => $r['slab'] ?? 0, 'exclusive' => $r['exclusive'] ?? 0, 'deadline' => $r['deadline'] ?? 0, 'late' => $r['late'] ?? 0, 'dd' => $r['dd'] ?? 0]);
-            }
-            foreach (($j['months'] ?? []) as $ym => $m) {
-                $flags = [];
-                foreach (($m['disc'] ?? []) as $k => $v) if (preg_match('/^[a-z]+_\d+$/', $k)) $flags[$k] = ($v['st'] ?? '') === 'yes';
-                CompanyMonth::query()->updateOrCreate(['month' => $ym], ['kg_commission' => $m['kgComm'] ?? 0, 'deadline_day' => $m['last'] ?? 16, 'flags' => $flags, 'ait_pct' => 10, 'tons_target' => $m['tons'] ?? 0, 'excl_target' => $m['excl'] ?? 0]);
-            }
-            usort($j['entries'], fn ($a, $b) => [$a['date'], $a['createdAt'] ?? 0] <=> [$b['date'], $b['createdAt'] ?? 0]);
-            foreach ($j['entries'] as $e) {
-                if (! empty($e['qty'])) {
-                    $rate = CompanyRate::forDate((int) $e['kg'], $e['date']);
-                    CompanyEntry::create(['entry_date' => $e['date'], 'kind' => 'challan', 'challan_no' => ($e['challan'] ?? '') ?: null, 'size_kg' => (int) $e['kg'], 'qty' => (int) $e['qty'],
-                        'do_rate' => $rate->do_rate, 'transport' => $rate->transport, 'amount' => -round($e['qty'] * ((float) $rate->do_rate - (float) $rate->transport), 2), 'note' => ($e['note'] ?? '') ?: null, 'created_by' => $uid]);
-                } else {
-                    $amt = (float) ($e['depPaid'] ?? 0) ?: (float) ($e['deposit'] ?? 0);
-                    if (! $amt) continue;
-                    if (($e['depKind'] ?? '') === 'comm') {
-                        // August 2026: 4,83,309 = 5,37,010 incentive less 10% AIT (arrived 40 days after the 1st).
-                        $ym = date('Y-m', strtotime($e['date'].' -40 days'));
-                        CompanyEntry::create(['entry_date' => $e['date'], 'kind' => 'incentive', 'for_month' => $ym, 'amount' => $amt, 'gross' => round($amt / 0.9, 2), 'ait' => round($amt / 0.9 - $amt, 2),
-                            'source' => $e['source'] ?? null, 'note' => 'Imported. Old ledger label: '.($e['challan'] ?? ''), 'created_by' => $uid]);
-                    } else {
-                        CompanyEntry::create(['entry_date' => $e['date'], 'kind' => 'deposit', 'deposit_kind' => isset($e['depPaid']) ? 'bill_payment' : 'bank',
-                            'source' => $e['source'] ?? (isset($e['depPaid']) ? 'Deposit paid' : null), 'amount' => $amt, 'challan_no' => ($e['challan'] ?? '') ?: null,
-                            'note' => isset($e['depPaid']) ? 'Imported as "Deposit paid" — kind to be confirmed' : null, 'created_by' => $uid]);
-                    }
-                }
-                $n++;
-            }
-        });
+        if (! empty($j['entries']) && collect($j['entries'])->contains(fn ($e) => isset($e['depPaid']) || ($e['depKind'] ?? '') === 'comm')) {
+            return redirect()->route('imports.index')->withErrors(['file' => 'This file has rows that need your decision. Use Import data to answer them first.']);
+        }
+        $n = \App\Support\LedgerImport::run($j, $request->user()->id, ['dep_paid' => 'bill_payment', 'comm' => 'incentive', 'opening' => 0, 'opening_date' => now()->toDateString()]);
         AuditLog::record('company_import', "{$n} entries");
         return redirect()->route('company.index')->with('ok', "{$n} ledger entries imported. Check the balance against your old ledger.");
     }

@@ -8,9 +8,11 @@ app/Http/Controllers/CustomerController.php
 app/Http/Controllers/DashboardController.php
 app/Http/Controllers/ExchangeController.php
 app/Http/Controllers/ExpenseController.php
+app/Http/Controllers/ExportController.php
 app/Http/Controllers/FleetController.php
 app/Http/Controllers/HeroController.php
 app/Http/Controllers/HrController.php
+app/Http/Controllers/ImportController.php
 app/Http/Controllers/OrderController.php
 app/Http/Controllers/PosController.php
 app/Http/Controllers/ProductController.php
@@ -41,6 +43,7 @@ app/Models/ExpenseCategory.php
 app/Models/ExpenseClaim.php
 app/Models/ExpenseRecurring.php
 app/Models/ExpenseRule.php
+app/Models/Export.php
 app/Models/HeroSlide.php
 app/Models/ItemMovement.php
 app/Models/MoneyAccount.php
@@ -64,7 +67,9 @@ app/Models/WebsiteOrder.php
 app/Providers/AppServiceProvider.php
 app/Support/CompanyCalc.php
 app/Support/Icons.php
+app/Support/LedgerImport.php
 app/Support/Money.php
+app/Support/Reports.php
 app/Support/Roadmap.php
 app/Support/SalesService.php
 app/Support/Sms.php
@@ -82,6 +87,7 @@ database/migrations/2026_11_05_000008_expense_management.php
 database/migrations/2026_11_05_000009_hr_payroll.php
 database/migrations/2026_11_05_000010_company_profile.php
 database/migrations/2026_11_05_000011_hero_slides.php
+database/migrations/2026_11_05_000012_exports.php
 public/css/nk-table.css
 public/img/logo.webp
 public/js/nk-table.js
@@ -97,10 +103,13 @@ resources/views/expenses/_css.blade.php
 resources/views/expenses/entry.blade.php
 resources/views/expenses/index.blade.php
 resources/views/expenses/setup.blade.php
+resources/views/exports.blade.php
+resources/views/exports_print.blade.php
 resources/views/hero.blade.php
 resources/views/hr/employee.blade.php
 resources/views/hr/index.blade.php
 resources/views/hr/payroll.blade.php
+resources/views/imports.blade.php
 resources/views/layout.blade.php
 resources/views/login.blade.php
 resources/views/orders/index.blade.php

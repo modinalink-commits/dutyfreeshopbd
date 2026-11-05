@@ -52,8 +52,8 @@ class Roadmap
             ['hr', 'HR & payroll', 'hr.index', 'HRDash · EmployeeLedger · PayrollRun'],
         ],
         'DOCUMENTS' => [
-            ['export', 'Export center', null, 'ExportCenter · ExportMenu'],
-            ['import', 'Import data', null, 'ImportCenter'],
+            ['export', 'Export center', 'exports.index', 'ExportCenter · ExportMenu'],
+            ['import', 'Import data', 'imports.index', 'ImportCenter'],
         ],
         'SETTINGS' => [
             ['company', 'Company settings', 'settings.edit', 'CompanySettings'],
