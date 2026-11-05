@@ -354,7 +354,7 @@ class AdminController extends Controller {
     }
     if ($d['status'] === 'Shipment' && $o->status !== 'Shipment' && ($sm = \App\Support\StockGuard::shipBlock((int)$id))) return response()->json(['success'=>false,'message'=>$sm]);
     if ($d['status'] === 'Shipment' && $o->status !== 'Shipment') { $b = \App\Support\CourierSync::autoBook((int)$id); if ($b && !$b[0]) return response()->json(['success'=>false,'message'=>'Parcel booking failed, the order stays in '.$o->status.': '.$b[1]]); $o = DB::table('orders')->find($id); }
-    if ($o->status !== $d['status']) DB::transaction(function () use ($o, $d, $id) {
+    if ($o->status !== $d['status']) DB::transaction(function () use ($o, $d, $id, $src) {
       DB::table('orders')->where('id',$id)->update(['status'=>$d['status'],'updated_at'=>now()] + ($o->status === 'Scheduled' ? ['scheduled_at'=>null,'scheduled_note'=>null] : []));
       DB::table('order_status_logs')->insert(['order_id'=>$id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'from_status'=>$o->status,'to_status'=>$d['status'],'note'=>trim(($src ? 'Order List · Status button ' : 'Quick Action ').($d['note'] ?? '')),'created_at'=>now(),'updated_at'=>now()]);
     });
