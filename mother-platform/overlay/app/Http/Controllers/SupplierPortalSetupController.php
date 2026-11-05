@@ -38,14 +38,15 @@ class SupplierPortalSetupController extends Controller
   /** One action for any selection: generate | send | resend | reset | disable | enable. */
   public function act(Request $r) {
     $a = (string)$r->input('do'); $ids = array_map('intval', (array)$r->input('ids')); if (!$ids) return back()->with('bad','Select at least one supplier.');
-    if (!in_array($a, ['generate','send','resend','reset','disable','enable'], true)) abort(404);
-    $n = ['created'=>0,'exists'=>0,'skip'=>0,'queued'=>0]; $who = auth()->user()->name;
+    if (!in_array($a, ['generate','send','resend','reset','disable','enable','temp'], true)) abort(404);
+    $n = ['created'=>0,'exists'=>0,'skip'=>0,'queued'=>0]; $who = auth()->user()->name; $tmp = []; $sendSms = $r->boolean('sms');
     foreach ($ids as $sid) {
       [$res, $uid] = (new GenJob($sid))->handle(); if ($res === 'created') $n['created']++; elseif ($res === 'exists') $n['exists']++; else { $n['skip']++; if (!in_array($a,['disable','enable'])) continue; }
       $uid = $uid ?: DB::table('supplier_users')->where('supplier_id',$sid)->orderBy('id')->value('id'); if (!$uid) continue; $u = DB::table('supplier_users')->find($uid);
       if ($a === 'disable') { DB::table('supplier_users')->where('supplier_id',$sid)->update(['status'=>'suspended','force_logout_at'=>now(),'updated_at'=>now()]); continue; }
       if ($a === 'enable') { DB::table('supplier_users')->where('supplier_id',$sid)->update(['status'=>'active','failed_attempts'=>0,'locked_until'=>null,'updated_at'=>now()]); continue; }
       if ($a === 'generate') continue;
+      if ($a === 'temp') { if ($u->status !== 'active') { $n['skip']++; continue; } $tmp[] = $this->tempPassword($u, self::randomPw(), $sendSms, $who); $n['queued']++; continue; }
       if ($u->status !== 'active') { $n['skip']++; continue; }
       $done = $u->password_changed_at || $u->activated_at;
       if ($a === 'send' && ($done || $u->invite_sent_at)) { $n['skip']++; continue; }       // plain Send never repeats or touches live accounts
@@ -58,7 +59,37 @@ class SupplierPortalSetupController extends Controller
     }
     P::audit('sp.setup.'.$a, 'suppliers', null, ['selected'=>count($ids)] + $n);
     $msg = match ($a) { 'generate' => "Accounts: {$n['created']} created, {$n['exists']} already existed, {$n['skip']} need review (mobile).", 'disable' => 'Selected accounts suspended and logged out.', 'enable' => 'Selected accounts enabled.', default => "{$n['queued']} activation SMS being sent now; {$n['skip']} skipped (no valid mobile, already activated or already invited)." };
+    if ($a === 'temp') return back()->with('ok', count($tmp).' temporary password(s) created. Copy them now — they are shown only this once.')->with('temp', $tmp);
     return back()->with('ok', $msg);
+  }
+  public static function randomPw(): string {
+    $u = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; $l = 'abcdefghijkmnpqrstuvwxyz'; $d = '23456789'; $all = $u.$l.$d; $o = [$u[random_int(0,23)], $l[random_int(0,23)], $d[random_int(0,7)]];
+    for ($i = 0; $i < 7; $i++) $o[] = $all[random_int(0, strlen($all)-1)]; shuffle($o); return implode('', $o);
+  }
+  /** Set a temporary password: hashed, first login forces a new one. Optionally SMS username + password (log keeps no password). */
+  private function tempPassword(object $u, string $pw, bool $sms, string $who): array {
+    DB::table('supplier_users')->where('id',$u->id)->update(['password'=>Hash::make($pw),'must_change'=>true,'password_changed_at'=>null,'force_logout_at'=>now(),'failed_attempts'=>0,'locked_until'=>null,'updated_at'=>now()]);
+    $name = (string)DB::table('suppliers')->where('id',$u->supplier_id)->value('name'); $state = 'Not sent';
+    if ($sms && $u->mobile) {
+      $lid = DB::table('supplier_sms_log')->insertGetId(['supplier_id'=>$u->supplier_id,'supplier_user_id'=>$u->id,'mobile'=>$u->mobile,'type'=>'temp-password','status'=>'pending','triggered_by'=>$who,'created_at'=>now(),'updated_at'=>now()]);
+      $mob = (string)$u->mobile; $un = (string)$u->username; $url = rtrim(P::base(), '/').'/supplier-portal/login'; $brand = SP::brand();
+      dispatch(function () use ($lid, $mob, $un, $pw, $url, $brand, $name) { try {
+        [$ok, $msg] = Sms::send($mob, "$name,\nYour $brand login:\nUsername: $un\nTemporary password: $pw\nLogin: $url\nYou must set a new password at first login.");
+        DB::table('supplier_sms_log')->where('id',$lid)->update(['status'=>$ok ? 'sent' : 'failed','response'=>mb_substr(str_replace($pw,'***',(string)$msg),0,190),'sent_at'=>$ok ? now() : null,'updated_at'=>now()]);
+      } catch (\Throwable $e) { DB::table('supplier_sms_log')->where('id',$lid)->update(['status'=>'failed','response'=>'Error','updated_at'=>now()]); } })->afterResponse();
+      $state = 'SMS sending';
+    } elseif ($sms) $state = 'No mobile';
+    P::audit('sp.setup.temp_password', 'supplier#'.$u->supplier_id, null, ['user'=>$u->username,'sms'=>$sms]);
+    return ['name'=>$name,'username'=>$u->username,'mobile'=>$u->mobile,'pw'=>$pw,'sms'=>$state];
+  }
+  /** Admin types a password for one supplier (or leaves it blank for a random one). */
+  public function setPassword(Request $r) {
+    $sid = (int)$r->input('supplier_id'); $pw = trim((string)$r->input('password'));
+    if ($pw !== '' && (strlen($pw) < 8 || !preg_match('/[A-Z]/',$pw) || !preg_match('/[a-z]/',$pw) || !preg_match('/\d/',$pw))) return back()->with('bad','Password needs 8+ characters with an uppercase letter, a lowercase letter and a number.');
+    [$res, $uid] = (new GenJob($sid))->handle(); $uid = $uid ?: DB::table('supplier_users')->where('supplier_id',$sid)->orderBy('id')->value('id');
+    $u = $uid ? DB::table('supplier_users')->find($uid) : null; if (!$u || $u->status !== 'active') return back()->with('bad','No active account for this supplier (check the mobile number).');
+    $row = $this->tempPassword($u, $pw !== '' ? $pw : self::randomPw(), $r->boolean('sms'), auth()->user()->name);
+    return back()->with('ok','Password set for '.$row['name'].'. The supplier must change it at first login.')->with('temp', [$row]);
   }
   public function export($fmt) {
     $head = ['Supplier Code','Supplier Name','Mobile','Username','Account Status','Invitation Status','Activated At','Last Login']; $rows = [];
