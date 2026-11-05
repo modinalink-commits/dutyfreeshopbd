@@ -229,6 +229,15 @@ if(document.readyState==='complete')setTimeout(first,300);else addEventListener(
 
 @if($s['home_promos']==='1')<div class="w pm"><a href="/delivery-policy/"><i><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h11v10H3zM14 9h4l3 3v4h-7z"/><circle cx="7" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/></svg></i><span><b>Free Delivery</b><span>On selected orders</span></span></a><a href="/about-us/"><i><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M8.5 12l2.5 2.5L15.5 10"/></svg></i><span><b>100% Original</b><span>Imported and authentic</span></span></a><a href="#flash"><i><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 5L5 19"/><circle cx="7" cy="7" r="2.2"/><circle cx="17" cy="17" r="2.2"/></svg></i><span><b>Special Offers</b><span>Up to {{ $maxOff }}% off</span></span></a></div>@endif
 @if($s['home_flash']==='1' && $flash->count() && $fOn)
+<style>
+/* Flash Sale bar: logo colours (navy #0B1220 + orange #FF5A00), slow flowing gradient and a soft light sweep. Decoration only; content and timer are untouched. */
+.fs .hd2{position:relative;overflow:hidden;background:linear-gradient(110deg,#0B1220 0%,#5A1E0A 42%,#FF5A00 100%);background-size:220% 100%;animation:fsFlow 10s ease-in-out infinite alternate}
+.fs .hd2::after{content:"";position:absolute;top:0;bottom:0;left:-40%;width:34%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.2),transparent);transform:skewX(-20deg);animation:fsSheen 5s ease-in-out infinite;pointer-events:none}
+.fs .hd2>*{position:relative;z-index:1}
+@keyframes fsFlow{from{background-position:0 0}to{background-position:100% 0}}
+@keyframes fsSheen{0%{left:-40%}65%,100%{left:125%}}
+@media(prefers-reduced-motion:reduce){.fs .hd2,.fs .hd2::after{animation:none}}
+</style>
 <div class="w sec-fs" id="flash" data-end="{{ $fFix ? $fEnd * 1000 : '' }}" style="padding-top:22px"><div class="fs">
 <div class="hd2"><b class="t">⚡ FLASH SALE</b><span class="e">ENDS IN</span><div class="tm"><span class="b" data-cd="h">{{ substr($fmt($fEnd),0,2) }}</span><span>:</span><span class="b" data-cd="m">{{ substr($fmt($fEnd),3,2) }}</span><span>:</span><span class="b" data-cd="s">{{ substr($fmt($fEnd),6,2) }}</span></div>
 <div class="tb"><button type="button" class="on" data-ft="f">Flash Sale</button>@if($plus->count())<button type="button" data-ft="p">Plus Sale</button>@endif<a href="/search?deals=1">View All ›</a></div></div>
