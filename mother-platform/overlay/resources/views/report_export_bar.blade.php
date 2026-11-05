@@ -9,6 +9,10 @@
   $__rxShow = $__rx && !\App\Support\ReportCatalog::nativeFull($__rx->native_export ?? '');
   $__rxQ = collect(request()->query())->except(['page', 'partial', '_token', 'sort', 'dir', 'pp'])->filter(fn($v) => is_scalar($v) && $v !== '')->map(fn($v, $k) => ucwords(str_replace('_', ' ', $k)) . ': ' . $v)->values()->implode('  ·  ');
 @endphp
+@if(in_array(auth()->user()->role ?? '', ['super','admin'], true) && request()->query('rxdebug'))
+@php try { $__m = \App\Support\ReportCatalog::map(); $__dbg = 'path=' . request()->path() . ' mapKeys=' . count($__m) . ' hit=' . (isset($__m[\App\Support\ReportCatalog::key(request()->path())]) ? 'y' : 'n') . ' cur=' . ($__rx->report_code ?? 'null') . ' ajax=' . (int)request()->ajax(); } catch (\Throwable $e) { $__dbg = 'ERR ' . $e->getMessage(); } @endphp
+<div id="rxb-dbg" style="font:11px monospace;padding:4px">{{ $__dbg }}</div>
+@endif
 @if($__rxShow)
 <div id="rxb-ph" style="display:none">
   <div class="rxb-t">{{ $__rx->name }}</div>
