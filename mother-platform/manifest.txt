@@ -657,3 +657,9 @@ app/Http/Controllers/StaffTrackingController.php
 resources/views/staff_tracking.blade.php
 resources/views/staff_tracking_rows.blade.php
 database/migrations/2026_11_05_000150_staff_login_logs.php
+app/Support/ReportCatalog.php
+app/Http/Controllers/ReportCenterController.php
+resources/views/report_center.blade.php
+resources/views/report_center_list.blade.php
+resources/views/report_audit.blade.php
+database/migrations/2026_11_05_000200_report_registry.php

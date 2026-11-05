@@ -91,6 +91,12 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/orders/{id}/comments', [A::class,'orderComments']);
   Route::get('/orders-export.csv', [A::class,'ordersCsv']);
   Route::get('/staff-log', [A::class,'staffLog']);
+  Route::get('/report-center', fn () => redirect('/admin/report-center/all-reports'));
+  Route::get('/report-center/all-reports', [\App\Http\Controllers\ReportCenterController::class,'index']);
+  Route::get('/report-center/export', [\App\Http\Controllers\ReportCenterController::class,'export']);
+  Route::get('/report-center/open/{code}', [\App\Http\Controllers\ReportCenterController::class,'open']);
+  Route::get('/report-center/audit', [\App\Http\Controllers\ReportCenterController::class,'audit']);
+  Route::post('/report-center/sync', [\App\Http\Controllers\ReportCenterController::class,'sync']);
   Route::get('/staff-tracking/{page?}', [\App\Http\Controllers\StaffTrackingController::class,'show'])->where('page','dashboard|activity|orders|status|payment|courier|price|comm|logins|audit|reports');
   Route::get('/staff-tracking-export/{page}', [\App\Http\Controllers\StaffTrackingController::class,'export'])->where('page','activity|status|payment|courier|price|comm|logins|audit|reports');
   Route::get('/products', [C::class,'products']);

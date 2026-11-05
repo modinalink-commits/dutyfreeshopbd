@@ -33,7 +33,7 @@ class ModulePermission {
     if (preg_match('#^inventory-pricing#', $p)) return 'costs'; // purchase / average price and profit: only roles given this permission (Admin always)
     if (preg_match('#^(products|product-order|taxonomy|categories|brands|inventory|image-audit)#', $p)) return 'products';
     if (preg_match('#^(discounts|coupons|deals|payment-methods)#', $p)) return 'marketing';
-    if (preg_match('#^(reports|modules|report-details|analytics)#', $p)) return 'reports';
+    if (preg_match('#^(reports|modules|report-details|analytics|report-center)#', $p)) return 'reports';
     // Courier work (send/sync/settle/status map/invoices/dashboard/report) belongs to the Couriers permission; only the API-credential screen (/courier, /courier/connect) stays under Settings.
     if (preg_match('#^courier(-dashboard|-report)?(/|$)#', $p) && !preg_match('#^courier(/connect)?$#', $p)) return 'couriers';
     if (preg_match('#^m-districts#', $p)) return 'couriers';
