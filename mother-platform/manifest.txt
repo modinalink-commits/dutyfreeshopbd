@@ -611,3 +611,7 @@ database/migrations/2026_11_05_000030_raise_below_fifo_minimum.php
 database/migrations/2026_11_05_000040_raise_below_fifo_minimum_v2.php
 database/migrations/2026_11_05_000050_publish_stock_separation.php
 database/migrations/2026_11_05_000060_raise_all_to_safe.php
+database/migrations/2026_11_05_000080_ai_briefs.php
+app/Support/AiBrief.php
+app/Http/Controllers/AiBriefController.php
+resources/views/ai_brief.blade.php

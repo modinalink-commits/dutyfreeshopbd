@@ -33,6 +33,7 @@ class MotherPushWorker extends Command
     try { \App\Support\Voice::tick(); } catch (\Throwable $e) { $this->error('voice: ' . $e->getMessage()); }
     try { \App\Support\SeoMgr::tick(); } catch (\Throwable $e) { $this->error('seo: ' . $e->getMessage()); }
     try { \App\Support\Referral::tick(); } catch (\Throwable $e) { $this->error('referral: ' . $e->getMessage()); }
+    try { \App\Support\AiBrief::tick(); } catch (\Throwable $e) { $this->error('aibrief: ' . $e->getMessage()); }
     try { \App\Support\Procure::tick(); } catch (\Throwable $e) { $this->error('procure: ' . $e->getMessage()); }
     try { $this->smsAuto(); } catch (\Throwable $e) { $this->error('smsauto: ' . $e->getMessage()); }
     return 0;
