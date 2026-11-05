@@ -128,6 +128,11 @@
 
   /* ---------- export ---------- */
   var bar = document.getElementById('rxb'); if (!bar) return;
+  /* the page already ships its own export controls: do not show a second Export menu */
+  var own = [].slice.call(document.querySelectorAll('main a, main button, main summary')).some(function (e) {
+    return !e.closest('.rxh') && !e.closest('#rxb-ph') && /^\s*(Export|Download)\b/i.test(e.textContent || '') && e.offsetParent !== null;
+  });
+  if (own) { var hold = bar.parentNode; bar.remove(); return; }
   function tables() {
     var all = [].slice.call(main.querySelectorAll('table')).filter(function (t) {
       if (t.closest('.rxh') || t.closest('#rxb-ph') || t.closest('[hidden]')) return false;
