@@ -46,6 +46,9 @@ class AccountsController extends Controller
         $gross = $totalSales - $cost;
         $calc = CompanyCalc::month($ym);
         $expenses = Expense::query()->whereBetween('expense_date', [$start->toDateString(), $end->toDateString()])->selectRaw('head, sum(amount) s')->groupBy('head')->pluck('s', 'head');
+        // Salary is posted once, from the approved payroll of the month.
+        $pr = \App\Models\Payroll::query()->with('lines')->where('month', $start->format('Y-m'))->whereIn('status', ['approved', 'paid'])->first();
+        if ($pr) $expenses['Salary'] = (float) ($expenses['Salary'] ?? 0) + $pr->gross();
         // Approved bills not yet paid are costs of this month too (paid ones are already in expenses).
         foreach (\App\Models\ExpenseClaim::query()->with('category')->where('status', 'posted')->whereBetween('expense_date', [$start->toDateString(), $end->toDateString()])->get() as $cl) {
             $expenses[$cl->category->name] = (float) ($expenses[$cl->category->name] ?? 0) + (float) $cl->amount;

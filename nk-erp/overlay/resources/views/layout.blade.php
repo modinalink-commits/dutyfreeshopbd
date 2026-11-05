@@ -70,6 +70,7 @@ textarea{padding:8px 10px;min-height:60px}
       @foreach($items as [$key, $label, $route, $design])
         @continue(in_array($key, $adminOnly) && ! in_array($u->role, ['super_admin', 'admin']))
         @continue(in_array($key, $superOnly) && $u->role !== 'super_admin')
+        @continue($key === 'hr' && ! in_array($u->role, ['super_admin', 'admin', 'accounts']))
         @continue(in_array($key, $officeOnly) && ! in_array($u->role, ['super_admin', 'admin', 'manager', 'accounts']))
         @if($route)
           <a class="nav {{ $route === $activeRoute ? 'on' : '' }}" href="{{ route($route) }}">{!! \App\Support\Icons::svg($key) !!}<span style="flex-grow:1">{{ $label }}</span>

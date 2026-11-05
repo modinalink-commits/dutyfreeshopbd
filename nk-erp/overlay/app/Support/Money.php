@@ -44,6 +44,7 @@ class Money
         $bank = $pick('bank');
         foreach (CompanyEntry::query()->where('kind', 'deposit')->get(['entry_date', 'amount']) as $e) $add($bank, $e->entry_date->toDateString(), -(float) $e->amount);
         foreach (Expense::query()->get(['account_id', 'expense_date', 'amount']) as $x) $add($x->account_id, $x->expense_date->toDateString(), -(float) $x->amount);
+        foreach (\App\Models\EmployeeLedger::query()->whereNotNull('account_id')->get(['account_id', 'entry_date', 'cash_out']) as $x) $add($x->account_id, $x->entry_date->toDateString(), -(float) $x->cash_out);
         foreach (AccountTransfer::query()->get() as $t) {
             $add($t->from_account_id, $t->transfer_date->toDateString(), -(float) $t->amount);
             $add($t->to_account_id, $t->transfer_date->toDateString(), (float) $t->amount);

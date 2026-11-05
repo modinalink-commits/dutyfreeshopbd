@@ -49,7 +49,7 @@ class Roadmap
         ],
         'ERP MODULES' => [
             ['erp', 'All 15 modules', null, 'Module · Mod01–Mod15'],
-            ['hr', 'HR & payroll', null, 'HRDash · EmployeeLedger · PayrollRun'],
+            ['hr', 'HR & payroll', 'hr.index', 'HRDash · EmployeeLedger · PayrollRun'],
         ],
         'DOCUMENTS' => [
             ['export', 'Export center', null, 'ExportCenter · ExportMenu'],

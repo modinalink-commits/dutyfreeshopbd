@@ -75,6 +75,12 @@ class ExpenseController extends Controller
             $veh = $cl->cost_center && str_starts_with($cl->cost_center, 'Vehicle ') ? substr($cl->cost_center, 8) : null;
             $out->push(['date' => $cl->expense_date->toDateString(), 'amount' => (float) $cl->amount, 'cat' => $cat, 'group' => $cat?->parent_id ?? $cat?->id, 'cc' => $cl->cost_center, 'veh' => $veh, 'paid' => false]);
         }
+        $sal = $cats->firstWhere('code', 'EX-401');
+        foreach (\App\Models\Payroll::query()->with('lines')->whereIn('status', ['approved', 'paid'])->get() as $p) {
+            $d = Carbon::parse($p->month.'-01')->endOfMonth()->toDateString();
+            if ($d < $from || $d > $to) continue;
+            $out->push(['date' => $d, 'amount' => $p->gross(), 'cat' => $sal, 'group' => $sal?->parent_id, 'cc' => null, 'veh' => null, 'paid' => $p->status === 'paid']);
+        }
         return $out;
     }
 

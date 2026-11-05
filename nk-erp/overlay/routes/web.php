@@ -19,6 +19,7 @@ use App\Http\Controllers\SettingController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\FleetController;
 use App\Http\Controllers\ExpenseController;
+use App\Http\Controllers\HrController;
 use App\Http\Controllers\TripController;
 use Illuminate\Support\Facades\Route;
 
@@ -143,6 +144,19 @@ Route::middleware(['auth', 'pwd'])->group(function () {
         Route::post('/expenses/settings/rule/{rule}/delete', [ExpenseController::class, 'deleteRule'])->name('expenses.rule.delete');
         Route::post('/expenses/settings/alerts', [ExpenseController::class, 'saveAlerts'])->name('expenses.alerts');
     });
+    // HR & payroll: salary data is confidential.
+    Route::middleware('role:super_admin,admin,accounts')->group(function () {
+        Route::get('/hr', [HrController::class, 'index'])->name('hr.index');
+        Route::get('/hr/employees/{employee}', [HrController::class, 'employee'])->name('hr.employee');
+        Route::post('/hr/employees/{employee}', [HrController::class, 'saveEmployee'])->name('hr.employee.save');
+        Route::post('/hr/employees/{employee}/entry', [HrController::class, 'entry'])->name('hr.entry');
+        Route::get('/hr/payroll', [HrController::class, 'payroll'])->name('hr.payroll');
+        Route::post('/hr/payroll/prepare', [HrController::class, 'prepare'])->name('hr.payroll.prepare');
+        Route::post('/hr/payroll/{payroll}/lines', [HrController::class, 'saveLines'])->name('hr.payroll.lines');
+        Route::post('/hr/payroll/{payroll}/check', [HrController::class, 'check'])->name('hr.payroll.check');
+        Route::post('/hr/payroll/{payroll}/pay', [HrController::class, 'pay'])->name('hr.payroll.pay');
+    });
+    Route::post('/hr/payroll/{payroll}/approve', [HrController::class, 'approve'])->name('hr.payroll.approve')->middleware('role:super_admin');
     Route::get('/vehicle-profit', [FleetController::class, 'profit'])->name('fleet.profit')->middleware('role:super_admin');
 
     // Company money is confidential: Super Admin only.
