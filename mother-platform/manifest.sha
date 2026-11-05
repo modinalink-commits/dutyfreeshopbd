@@ -1,5 +1,5 @@
 fe43f8b6cb422cca81ee18b74d3972f77e7852de database/migrations/2026_10_31_000001_mother_core.php
-6faafff12d582824dd50ef8f6b6254cb3d5ec486 routes/web.php
+84e9cb2be92e0d829141fb4e05cd32995b42514c routes/web.php
 5ec9cde3d13c963d0d55a626e10bf2e39e36a691 app/Models/Mother.php
 391723b04be14122c65efdf651d98977e629b59b app/Http/Controllers/AdminController.php
 242316b2ef0a0967e6815e39fcbc7377349fdc17 app/Console/Commands/MotherInstall.php
@@ -203,7 +203,7 @@ ecee6e2b1941abdeb0f16a8e877fe7b38d4250c7 public/pwa/apple-touch-180.png
 b42bad76c22361c148b61e6ebe7b766bbef2cf39 public/pwa/badge-96.png
 68e7509a4fc7e0dbe9c9c3234f10cdb5a3121c98 public/pwa/logo-240.png
 d4c854b85317e1546756f48c07682b2aff90c0b4 app/Support/WebPush.php
-33bafff1843d1635abc4da1d05bb52373b8efc37 app/Support/Push.php
+94720ca5becb62d89132d500164c846695572142 app/Support/Push.php
 8cf24ac4090625805f0e40cbbc759e81cf959461 app/Http/Controllers/PushController.php
 dd75d5b8954856426c056ebfd361490b71bdf1cf app/Http/Controllers/PushAdminController.php
 e6394dd239efd70f6080807f749aea29d30ac16a app/Console/Commands/MotherPushWorker.php
@@ -640,7 +640,8 @@ b314b82f0a71894932519753cd2689b20e9af908 public/fonts/hind-siliguri-bengali-600-
 6fb43e343f5ae4df69633b20cab14e565155e3ba app/Support/SeoAutoGenerator.php
 486acced54ca525d91774148ba2265d55ae86cfd database/migrations/2026_11_05_000130_app_live_login.php
 e4840881b565973df27b293ba79c6dbfba3ea805 app/Support/AppUsers.php
-58e59856f4e0ddec20732079199944e5db6b220a app/Http/Controllers/AppUsersController.php
+7da02ea0db52435ab5c55c59f33a05627d1a65ac app/Http/Controllers/AppUsersController.php
 b8de9413315dc91aa369f93947286064d2455e30 resources/views/components/app-live-card.blade.php
-38fdabc51e0ab2ca2b10a67ef89cf14d705c52df resources/views/app_user_card.blade.php
-aa1f2ba8dc3c8beff0f192ce18f127b06790b6ea resources/views/app_users.blade.php
+9231568f927f8aab61842fff1141a77d064c133e resources/views/app_user_card.blade.php
+97babfa2907c8a1199834099ef46f78f86f97c18 resources/views/app_users.blade.php
+2d17249c383db24c6facbce6253338c4d9ec5684 resources/views/components/app-notify-form.blade.php

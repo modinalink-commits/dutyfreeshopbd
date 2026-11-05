@@ -32,4 +32,26 @@ class AppUsersController extends Controller
     }
     return view('app_users', ['rows' => $rows, 'live' => $live, 'st' => $st, 'f' => $r->only(['q', 'f'])]);
   }
+
+  /** Send one customer an individual notification (push to their App devices + saved in their in-app notification list). */
+  public function notify(Request $r, $id) {
+    $c = DB::table('customers')->find((int)$id);
+    if (!$c) return response()->json(['ok' => false, 'msg' => 'Customer not found'], 404);
+    $d = $r->validate(['title' => 'required|string|max:120', 'body' => 'required|string|max:400', 'type' => 'required|in:special_discount,coupon,new_arrival,support_reply', 'url' => 'nullable|string|max:300']);
+    $url = trim((string)($d['url'] ?? '')) ?: '/'; if (!preg_match('#^(/|https://)#', $url)) $url = '/' . $url;
+    $kind = $d['type'] === 'support_reply' ? 'transactional' : 'marketing';
+    $cat = \App\Support\Push::categoryOf($d['type']);
+    if (!(\App\Support\Push::prefs((int)$c->id)[$cat] ?? true)) return response()->json(['ok' => false, 'msg' => 'এই কাস্টমার "' . (\App\Support\Push::CATEGORIES[$cat] ?? $cat) . '" নোটিফিকেশন বন্ধ রেখেছেন, তাই পাঠানো হয়নি।']);
+    $devices = (int)DB::table('push_subscriptions')->where('customer_id', $c->id)->where('active', true)->whereNull('label')->count();
+    $cid = DB::table('push_campaigns')->insertGetId(['kind' => $kind, 'type' => $d['type'], 'title' => $d['title'], 'body' => $d['body'], 'url' => $url, 'audience_type' => 'id', 'audience_value' => (string)$c->id, 'schedule_at' => now(), 'status' => 'scheduled', 'created_by' => optional(auth()->user())->name, 'created_at' => now(), 'updated_at' => now()]);
+    if ($devices > 0) { try { \App\Support\Push::runCampaign($cid, 50); } catch (\Throwable $e) {} }
+    else {
+      DB::table('customer_notifications')->insert(['customer_id' => $c->id, 'campaign_id' => $cid, 'category' => $cat, 'type' => $d['type'], 'title' => $d['title'], 'body' => $d['body'], 'url' => $url, 'created_at' => now()]);
+      DB::table('push_campaigns')->where('id', $cid)->update(['status' => 'sent', 'targeted' => 0, 'sent_at' => now(), 'updated_at' => now()]);
+    }
+    $row = DB::table('push_campaigns')->find($cid);
+    $name = $c->name ?: $c->phone;
+    if ($devices === 0) return response()->json(['ok' => true, 'msg' => $name . '-এর কোনো পুশ-চালু ডিভাইস নেই। নোটিফিকেশনটি তার অ্যাকাউন্টের নোটিফিকেশন তালিকায় সেভ হয়েছে; অ্যাপ খুললে দেখবেন।']);
+    return response()->json(['ok' => (int)$row->sent > 0, 'msg' => (int)$row->sent > 0 ? $name . '-কে পাঠানো হয়েছে (' . (int)$row->sent . ' ডিভাইস)।' : $name . '-এর ডিভাইসে পাঠানো যায়নি (ডিভাইস মেয়াদোত্তীর্ণ হতে পারে)। অ্যাকাউন্টের নোটিফিকেশন তালিকায় সেভ হয়েছে।']);
+  }
 }
