@@ -617,4 +617,4 @@ c44356a1ceb433ec63f5781230d1aeef871f115c app/Support/AiBrief.php
 937402430ab011a971b8d31b37ceee984d00ebec resources/views/ai_brief.blade.php
 3c1889cced51aee6cbfcc96dcb506218883f2bc3 app/Support/DeployHealth.php
 a33b792d41ca0175c19dc468c4636ac4a8877ff6 database/migrations/2026_11_05_000090_deploy_center_v2.php
-358389fde2a3ef9de603fca408210175424e32c9 resources/views/admin_table.blade.php
+b0d7667ca6052ab24461b4a6f39672a586b55e69 resources/views/admin_table.blade.php

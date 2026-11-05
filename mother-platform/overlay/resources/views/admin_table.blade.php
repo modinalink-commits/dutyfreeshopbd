@@ -26,8 +26,13 @@ main .pill{min-height:22px;padding:2px 7px;font-size:11px}
 main td.empty,main td.g-empty{text-align:center;padding:16px 8px;font-size:12px}
 .mc-loading{opacity:.55;transition:opacity .15s;pointer-events:none}
 /* 5. wide tables scroll inside their own box, never the whole page */
-.mc-ts{overflow-x:auto;overflow-y:visible;width:100%;max-width:100%;min-width:0;-webkit-overflow-scrolling:touch}
+.mc-ts{overflow:auto;max-height:calc(100vh - 110px);width:100%;max-width:100%;min-width:0;-webkit-overflow-scrolling:touch}
+.mc-sbox{max-height:calc(100vh - 110px)}
+main pre{max-width:100%;overflow-x:auto}
 main{min-width:0}
+/* frozen first / action columns on tables that scroll sideways (opaque cells only; no colour added) */
+main table .mc-fl{position:sticky;left:0;z-index:2}main table .mc-fr{position:sticky;right:0;z-index:2}
+main table th.mc-fl,main table th.mc-fr{z-index:4}
 .mc-drag{cursor:grab}.mc-drag.mc-dragging{cursor:grabbing;user-select:none}.mc-drag.mc-dragging *{pointer-events:none}
 </style>
 <script>
@@ -82,6 +87,65 @@ main{min-width:0}
   document.addEventListener('mouseup',stop);document.addEventListener('mouseleave',stop);
   document.addEventListener('click',function(e){if(moved){e.preventDefault();e.stopPropagation()}},true);
   document.addEventListener('mouseover',function(e){var b=box(e.target);if(b&&!b.classList.contains('mc-drag'))b.classList.add('mc-drag')});
+
+  /* D. header row of a table that has none inside <thead> -> move it into one (looks identical; makes sticky header + Export work) */
+  function normHead(){
+    document.querySelectorAll('main table').forEach(function(tb){
+      if(tb.tHead||tb.closest('td')||tb.dataset.mch)return;tb.dataset.mch='1';
+      var tr=tb.querySelector('tr');if(!tr||!tr.cells.length||!tr.parentNode)return;
+      if(![].every.call(tr.cells,function(c){return c.tagName==='TH'}))return;
+      if(tr.parentNode.tagName!=='TBODY'&&tr.parentNode!==tb)return;
+      var th=document.createElement('thead');tb.insertBefore(th,tb.firstChild);th.appendChild(tr);
+    });
+  }
+  /* E. sticky header inside any box that scrolls sideways: give the box a height so the header can stick */
+  function sbox(){
+    document.querySelectorAll('main table').forEach(function(tb){
+      if(tb.closest('td'))return;
+      for(var a=tb.parentElement;a&&a.tagName!=='MAIN';a=a.parentElement){
+        if(scrolls(a)){if(a.scrollWidth>a.clientWidth+2&&!a.classList.contains('mc-ts')&&!/(^|[; ])max-height/.test(a.getAttribute('style')||'')&&getComputedStyle(a).maxHeight==='none'&&a.id!=='owt'&&a.id!=='ostrip')a.classList.add('mc-sbox');break}
+      }
+    });
+  }
+  /* F. frozen columns: first column (two when the first is only a checkbox) and the Actions column, only where the table really scrolls sideways */
+  function freeze(){
+    document.querySelectorAll('main table').forEach(function(tb){
+      if(tb.closest('td'))return;
+      var cs=tb.querySelectorAll('.mc-fl,.mc-fr');
+      var box=null;for(var a=tb.parentElement;a&&a.tagName!=='MAIN';a=a.parentElement){if(scrolls(a)&&a.scrollWidth>a.clientWidth+2){box=a;break}}
+      if(!box||tb.offsetWidth<=box.clientWidth+2){[].forEach.call(cs,function(c){c.classList.remove('mc-fl','mc-fr');c.style.left=c.style.right=''});return}
+      var head=tb.tHead&&tb.tHead.rows[0];if(!head)return;
+      var rows=[].slice.call(tb.tBodies[0]?tb.tBodies[0].rows:[]).slice(0,30),n=head.cells.length;if(n<4)return;
+      var opaque=function(c){var b=getComputedStyle(c).backgroundColor;return b&&!/rgba?\(0, 0, 0, 0\)|transparent/.test(b)};
+      var cbx=function(c){return !!c.querySelector('input[type=checkbox]')&&c.textContent.trim().length<2};
+      var L=[0];if(cbx(head.cells[0])&&n>5)L.push(1);
+      var last=n-1,hasA=/^actions?$/i.test((head.cells[last].textContent||'').replace(/\s+/g,' ').trim());
+      var left=0;
+      L.forEach(function(i){
+        var w=head.cells[i].getBoundingClientRect().width;
+        [head].concat(rows).forEach(function(r){var c=r.cells[i];if(!c||c.colSpan>1||r.cells.length!==n)return;if(c.tagName==='TD'&&!opaque(c))return;c.classList.add('mc-fl');c.style.left=left+'px'});
+        left+=w;
+      });
+      if(hasA)[head].concat(rows).forEach(function(r){var c=r.cells[last];if(!c||c.colSpan>1||r.cells.length!==n)return;if(c.tagName==='TD'&&!opaque(c))return;c.classList.add('mc-fr');c.style.right='0px'});
+    });
+  }
+  /* G. remember the page size (rows per page) the person chose, per page; the URL always wins */
+  function pageSize(){
+    var sels=document.querySelectorAll('main select[name=per],main select[name=per_page],main select[name=pp]');
+    sels.forEach(function(sl){
+      if(sl.dataset.mcp)return;sl.dataset.mcp='1';
+      var opts=[].map.call(sl.options,function(o){return o.value});if(!opts.length||!opts.every(function(v){return /^\d+$/.test(v)}))return;
+      var key='mc.per:'+location.pathname+':'+sl.name;
+      sl.addEventListener('change',function(){try{localStorage.setItem(key,sl.value)}catch(e){}});
+      try{
+        var sv=localStorage.getItem(key),g='mc.pg:'+key+':'+location.href;
+        if(sv&&sv!==sl.value&&opts.indexOf(sv)>-1&&!new URLSearchParams(location.search).has(sl.name)&&!sessionStorage.getItem(g)){
+          sessionStorage.setItem(g,'1');sl.value=sv;sl.dispatchEvent(new Event('change',{bubbles:true}));
+          if(sl.form&&!sl.getAttribute('onchange'))setTimeout(function(){if(!document.hidden&&sl.form.isConnected)try{sl.form.requestSubmit()}catch(e){}},50);
+        }
+      }catch(e){}
+    });
+  }
   /* tag every admin table so the one CSS above reaches it, whatever local class it carries */
   function tag(){
     document.querySelectorAll('main table').forEach(function(tb){
@@ -89,7 +153,8 @@ main{min-width:0}
       if(tb.querySelector('th'))tb.classList.add('mc-t');else if(tb.querySelector('td'))tb.classList.add('mc-kv');
     });
   }
-  function run(){try{tag();centre();wrap()}catch(e){}}
+  function run(){try{normHead();tag();centre();wrap();sbox();freeze();pageSize()}catch(e){}}
+  window.addEventListener('resize',function(){clearTimeout(window.__mcr);window.__mcr=setTimeout(function(){try{freeze()}catch(e){}},150)});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run);else run();
   window.addEventListener('load',run);
   /* ajax-refreshed report bodies: re-apply */
