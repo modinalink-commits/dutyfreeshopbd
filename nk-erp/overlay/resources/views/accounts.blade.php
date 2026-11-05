@@ -18,7 +18,7 @@
   @endforelse
   <div class="card kpi" style="background:#efe7fb"><span>Balance with company</span><b style="color:#5b2fa8">{{ $tk($companyBal) }}</b><span>AYGas · <a href="{{ route('company.index') }}">see ledger</a></span></div>
 </section>
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px;align-items:start">
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr));gap:16px;align-items:start">
   <section class="card pad" style="display:flex;flex-direction:column;gap:2px;font-variant-numeric:tabular-nums">
     <h2 style="margin:0 0 8px;font-size:var(--fs-15)">Profit &amp; loss — month to date</h2>
     @php($row = fn ($k, $v, $kind = '') => compact('k', 'v', 'kind'))

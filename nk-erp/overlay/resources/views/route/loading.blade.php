@@ -22,6 +22,12 @@
       <div style="display:flex;align-items:center;gap:10px"><h2 class="h2" style="flex-grow:1">{{ $trip ? 'Trip '.$trip->trip_no : 'New trip' }}</h2>
         <span class="pill" style="background:#e6eeff;color:#1d4ed8">Trip ID {{ $trip?->trip_no ?? $nextNo }} · automatic</span>
         @if($trip)<a class="btn sm" href="{{ route('trips.loading', ['d' => $day]) }}">＋ New trip</a>@endif</div>
+      @if($vehicles->isEmpty())
+        <div role="alert" style="background:#fff1d6;color:#8a4b00;border-radius:12px;padding:10px 14px;font-size:var(--fs-13);display:flex;flex-wrap:wrap;align-items:center;gap:10px">
+          <span style="flex-grow:1"><b>No vehicle yet.</b> Add a vehicle (with its route, driver and salesman) before the first loading.</span>
+          <a class="btn sm pri" href="{{ route('fleet.vehicles') }}">＋ Add vehicle</a>
+        </div>
+      @endif
       <fieldset @disabled($locked) style="border:0;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px">
         <label class="fld">Date<input type="date" name="trip_date" required value="{{ old('trip_date', $trip?->trip_date?->toDateString() ?? $day) }}"></label>
         <label class="fld">Vehicle<select name="vehicle_id" id="vehSel" required>@foreach($vehicles as $v)<option value="{{ $v->id }}" data-route="{{ $v->route_id }}" data-driver="{{ $v->driver_id }}" data-sales="{{ $v->salesman_id }}" data-cap="{{ $v->capacity }}" @selected(old('vehicle_id', $veh?->id) == $v->id) @disabled($v->status === 'Maintenance')>{{ $v->code }} · {{ $v->reg_no }}{{ $v->status === 'Maintenance' ? ' (maintenance)' : '' }}</option>@endforeach</select></label>
@@ -41,7 +47,7 @@
         <tbody>
         @foreach($sizes as $s)
           @php($have = $godown[$s] + ($locked ? $loadOf($s) : 0))
-          <tr data-have="{{ $have }}" data-size="{{ $s }}"><td>LPG refill cylinder{{ $brand ? ' · '.$brand->code : '' }}</td><td class="c">{{ $s }} kg</td><td class="r">{{ $have }}</td>
+          <tr data-have="{{ $have }}" data-size="{{ $s }}"><td>LPG refill cylinder</td><td class="c">{{ $s }} kg</td><td class="r">{{ $have }}</td>
             <td class="r"><input class="qin" type="number" min="0" name="qty[{{ $s }}]" value="{{ $loadOf($s) }}" aria-label="{{ $s }} kg load quantity" @disabled($locked)></td>
             <td class="r after" style="font-weight:700">{{ $have - $loadOf($s) }}</td><td class="c chk"><span class="pill" style="background:#e3f6ec;color:#0f6b3c">Stock OK</span></td></tr>
         @endforeach
@@ -66,8 +72,8 @@
       </div>
       @unless($locked)
       <div style="display:flex;flex-wrap:wrap;gap:10px">
-        <button class="btn" type="submit" name="action" value="draft">Save as draft</button>
-        @if($isMgr)<button class="btn pri" type="submit" name="action" value="dispatch" onclick="return confirm('Approve and dispatch? Full cylinders will move from the warehouse to the vehicle.')">Approve &amp; dispatch</button>
+        <button class="btn" type="submit" name="action" value="draft" @disabled($vehicles->isEmpty())>Save as draft</button>
+        @if($isMgr)<button class="btn pri" type="submit" name="action" value="dispatch" @disabled($vehicles->isEmpty()) onclick="return confirm('Approve and dispatch? Full cylinders will move from the warehouse to the vehicle.')">Approve &amp; dispatch</button>
         @else<button class="btn pri" type="button" disabled title="Only a manager can approve">Approve &amp; dispatch</button>@endif
       </div>
       @else
@@ -102,7 +108,7 @@
     f.querySelectorAll('tr[data-have]').forEach(r=>{
       const q=+(r.querySelector('input').value||0), h=+r.dataset.have, a=h-q; t+=q;
       r.querySelector('.after').textContent=a;
-      r.querySelector('.chk').innerHTML=a<0?'<span class="pill" style="background:#fde9e7;color:#b3261e">Only '+h+' left</span>':'<span class="pill" style="background:#e3f6ec;color:#0f6b3c">Stock OK</span>';
+      r.querySelector('.chk').innerHTML=a<0?'<span class="pill" style="background:#fde9e7;color:#b3261e">Only '+h+' left</span>':(h===0?'<span class="pill">None in stock</span>':'<span class="pill" style="background:#e3f6ec;color:#0f6b3c">Stock OK</span>');
     });
     const c=cap(), p=c?Math.round(t/c*100):0;
     document.getElementById('totQ').textContent=t;
@@ -111,9 +117,11 @@
     const b=document.getElementById('capBar'); b.style.width=Math.min(100,p)+'%'; b.style.background=p>100?'#b3261e':'#1d4ed8';
   }
   f.addEventListener('input',calc);
-  vs.addEventListener('change',()=>{ const o=vs.selectedOptions[0];
-    [['rSel','route'],['dSel','driver'],['sSel','sales']].forEach(([id,k])=>{ if(o.dataset[k]) document.getElementById(id).value=o.dataset[k]; });
-    calc(); });
+  // Fill route, driver and salesman from the vehicle's defaults; on first load only fill empty ones.
+  function fill(force){ const o=vs.selectedOptions[0]; if(!o) return;
+    [['rSel','route'],['dSel','driver'],['sSel','sales']].forEach(([id,k])=>{ const el=document.getElementById(id); if(o.dataset[k] && (force || !el.value)) el.value=o.dataset[k]; }); }
+  vs.addEventListener('change',()=>{ fill(true); calc(); });
+  fill(false);
   calc();
 })();
 </script>

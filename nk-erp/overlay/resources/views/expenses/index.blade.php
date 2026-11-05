@@ -35,7 +35,7 @@
 </section>
 
 @php($tot = $rows->sum('amount'))
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px">
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr));gap:16px">
   <section class="card" style="padding:20px;display:flex;flex-direction:column;gap:10px">
     <h2 class="h2">Expense by category · {{ $label }}</h2>
     @php($mx = max(1, $byGroup->max('v') ?? 1))
@@ -70,7 +70,7 @@
   </section>
 </div>
 
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px">
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr));gap:16px">
   <section class="card" style="padding:20px;display:flex;flex-direction:column;gap:10px">
     <h2 class="h2">Vehicle-wise expense · {{ $label }}</h2>
     @php($vm = max(1, $veh->max('t') ?? 1))

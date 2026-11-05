@@ -17,7 +17,7 @@
   <div class="card kpi"><span>Collection</span><b style="color:#0f6b3c">{{ $U::tk($c['collection']) }}</b><span>incl. {{ $U::tk($c['prevCash'] + $c['prevDigital']) }} old due</span></div>
 </section>
 @if($open)
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px;align-items:start">
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr));gap:16px;align-items:start">
 <form class="card pad" method="post" action="{{ route('trips.sales.store', $trip) }}" style="display:flex;flex-direction:column;gap:12px">@csrf
   <h2 class="h2">New sale from the vehicle</h2>
   <div class="grid2" style="grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">

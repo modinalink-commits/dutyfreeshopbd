@@ -8,7 +8,7 @@
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <title>@yield('title', 'Dashboard') · NK Corporation</title>
 <link rel="icon" href="/img/logo.webp">
-<link rel="stylesheet" href="/css/nk-table.css?v=2">
+<link rel="stylesheet" href="/css/nk-table.css?v=3">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Hind+Siliguri:wght@400;600&display=swap">
 <style>
 :root{--navy:#123a86;--ink:#14213d;--muted:#51607a;--line:#dbe3f0;--bg:#f4f7fc;--blue:#1d4ed8}
@@ -150,6 +150,6 @@ textarea{padding:8px 10px;min-height:60px}
     @yield('content')
   </main>
 </div>
-<script src="/js/nk-table.js?v=2" defer></script>
+<script src="/js/nk-table.js?v=3" defer></script>
 </body>
 </html>

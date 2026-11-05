@@ -35,7 +35,7 @@
 </section>
 <p class="sub" style="margin:0">Cylinder deposits and refundable security deposits are kept outside this table — they are neither profit nor expense.{{ $T['unrated'] ? ' * '.$T['unrated'].' cylinders have no company DO rate for their date, so their cost is missing. Add the rate in Company ledger → Rates.' : '' }}</p>
 
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;align-items:start">
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:16px;align-items:start">
   <section class="card" style="padding:20px;display:flex;flex-direction:column;gap:10px">
     <h2 class="h2">Expenses by category — {{ $label }}</h2>
     @php($mx = max(1, $cats->max()))

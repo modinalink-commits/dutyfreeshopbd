@@ -48,7 +48,7 @@
     <label class="fld">{{ $fields['invoice_footer'] }}<textarea name="invoice_footer" rows="2" placeholder="Not provided — printed at the bottom of invoices and receipts">{{ $v('invoice_footer') }}</textarea></label>
   </section>
 
-  <aside style="flex:1 1 340px;min-width:300px;display:flex;flex-direction:column;gap:16px">
+  <aside style="flex:1 1 340px;min-width:min(300px,100%);display:flex;flex-direction:column;gap:16px">
     <div class="card" style="padding:20px;display:flex;flex-direction:column;gap:10px">
       <h2 style="margin:0;font-size:var(--fs-15)">Header preview</h2>
       <div style="border:1px solid #dbe3f0;border-radius:12px;padding:14px;display:flex;gap:12px;align-items:center">

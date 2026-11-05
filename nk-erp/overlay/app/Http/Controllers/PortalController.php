@@ -103,7 +103,11 @@ class PortalController extends Controller
     {
         $c = $this->me($request);
         abort_unless($sale->customer_id === $c->id, 404);
-        return view('sales.print', ['sale' => $sale->load(['items', 'customer', 'user']), 'size' => $request->query('size') === '80' ? '80' : 'a4', 's' => collect($sale->company ?? \App\Models\Setting::snapshot())]);
+        $sale->load(['items', 'customer', 'user', 'trip.vehicle', 'trip.salesman']);
+        if ($request->query('print') === 'a4' || $request->query('size')) {
+            return view('sales.print', ['sale' => $sale, 'size' => $request->query('size') === '80' ? '80' : 'a4', 's' => collect($sale->company ?? \App\Models\Setting::snapshot())]);
+        }
+        return view('portal.invoice', ['sale' => $sale]);
     }
 
     public function payments(Request $request)

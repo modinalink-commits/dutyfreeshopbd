@@ -28,7 +28,7 @@
       @endforelse
     </div>
   </section>
-  <aside class="card" style="flex:1 1 340px;min-width:300px;padding:20px;display:flex;flex-direction:column;gap:14px">
+  <aside class="card" style="flex:1 1 340px;min-width:min(300px,100%);padding:20px;display:flex;flex-direction:column;gap:14px">
     <h2 style="margin:0;font-size:var(--fs-15)">Memo</h2>
     <div class="grid2" style="grid-template-columns:repeat(2,minmax(0,1fr))">
       <label class="f">Customer phone<input type="tel" id="phone" name="walkin_phone" value="{{ old('walkin_phone') }}" placeholder="01XXXXXXXXX" autocomplete="off"></label>

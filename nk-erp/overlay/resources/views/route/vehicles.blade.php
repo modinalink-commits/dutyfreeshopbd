@@ -77,7 +77,7 @@
 </section>
 
 @if($canEdit)
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px;align-items:start">
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr));gap:16px;align-items:start">
   <section class="card pad" id="route-form">
     <form method="post" action="{{ route('fleet.routes.save') }}" style="display:flex;flex-direction:column;gap:10px">@csrf
       <h2 class="h2">＋ Route</h2>

@@ -49,7 +49,7 @@
 </section>
 
 <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
-  <section class="card" style="flex:1 1 380px;min-width:300px;padding:20px;display:flex;flex-direction:column;gap:12px">
+  <section class="card" style="flex:1 1 380px;min-width:min(300px,100%);padding:20px;display:flex;flex-direction:column;gap:12px">
     <h2 class="h2">Mismatches to resolve</h2>
     @php($any = false)
     @foreach($c['sizes'] as $s => $z)
@@ -90,7 +90,7 @@
     @endif
   </section>
 
-  <section class="card" style="flex:1 1 380px;min-width:300px;padding:20px;display:flex;flex-direction:column;gap:8px">
+  <section class="card" style="flex:1 1 380px;min-width:min(300px,100%);padding:20px;display:flex;flex-direction:column;gap:8px">
     <h2 class="h2" style="margin:0 0 4px">Audit log</h2>
     @forelse($log as $l)
       <div style="display:flex;gap:12px;padding:8px 0;border-top:1px solid #dbe3f0;font-size:var(--fs-12)">

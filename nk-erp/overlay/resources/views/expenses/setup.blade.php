@@ -51,7 +51,7 @@ function fillCat(c){ const s=(k,v)=>document.getElementById(k).value=v??''; s('c
 </script>
 @endif
 
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:16px">
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(380px,100%),1fr));gap:16px">
   <section class="card" style="overflow:hidden">
     <div style="padding:14px 20px;display:flex;align-items:center"><h2 class="h2" style="flex-grow:1">Recurring expenses</h2>@if($isSa)<a class="btn" href="#rec-form">＋ Recurring</a>@endif</div>
     <div class="dt-wrap" style="margin:0 16px 16px"><table class="dt">

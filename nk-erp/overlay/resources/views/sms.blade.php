@@ -21,7 +21,7 @@
 </section>
 @unless($configured)<div class="flash" style="background:#fff1d6;color:#8a4b00">SMS gateway is not set up yet. Messages are written (status "Gateway not set") and go out with "Retry" once the provider is added.</div>@endunless
 
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:16px;align-items:start">
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(360px,100%),1fr));gap:16px;align-items:start">
   <fieldset @disabled(! $sa) class="card" style="padding:20px;display:flex;flex-direction:column;gap:12px;border:1px solid #dbe3f0;margin:0;min-width:0">
     <h2 style="margin:0;font-size:var(--fs-15)">SMS gateway</h2>
     <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">

@@ -109,6 +109,13 @@ public/css/nk-table.css
 public/css/nk-type.css
 public/img/logo.webp
 public/js/nk-table.js
+public/lib/leaflet/images/layers-2x.png
+public/lib/leaflet/images/layers.png
+public/lib/leaflet/images/marker-icon-2x.png
+public/lib/leaflet/images/marker-icon.png
+public/lib/leaflet/images/marker-shadow.png
+public/lib/leaflet/leaflet.css
+public/lib/leaflet/leaflet.js
 resources/erp/modules.json
 resources/views/accounts.blade.php
 resources/views/activity.blade.php
@@ -167,6 +174,7 @@ resources/views/password.blade.php
 resources/views/portal/_back.blade.php
 resources/views/portal/empty.blade.php
 resources/views/portal/home.blade.php
+resources/views/portal/invoice.blade.php
 resources/views/portal/layout.blade.php
 resources/views/portal/login.blade.php
 resources/views/portal/order.blade.php

@@ -68,7 +68,7 @@
   </table></div>
 </section>
 
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px">
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr));gap:16px">
   <section class="card" style="padding:20px;display:flex;flex-direction:column;gap:10px">
     <h2 class="h2">Closing queue</h2>
     @php($q = collect($stages)->groupBy('stage'))

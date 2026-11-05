@@ -6,7 +6,7 @@
   --border-soft:#e2e6ea;--border-grid:#ced4da;--border-strong:#bfc6ce;
   --table-text:#14213d;--table-muted:#51607a;
 }
-.dt-wrap{position:relative;overflow:auto;width:100%;min-width:0;border:1px solid var(--border-grid);border-radius:8px;background:var(--table-bg);-webkit-overflow-scrolling:touch}
+.dt-wrap{position:relative;overflow:auto;min-width:0;border:1px solid var(--border-grid);border-radius:8px;background:var(--table-bg);-webkit-overflow-scrolling:touch}
 .card>.dt-wrap{margin:0 16px 16px}
 .dt-wrap.tall{max-height:72vh}
 .dt-wrap.drag{cursor:grab}.dt-wrap.dragging{cursor:grabbing;user-select:none}

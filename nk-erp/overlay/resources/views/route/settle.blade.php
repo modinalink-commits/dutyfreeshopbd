@@ -15,7 +15,7 @@
 </header>
 @include('route._tripbar', ['routeName' => 'trips.settle'])
 
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:16px">
   <section class="card" style="padding:20px;display:flex;flex-direction:column">
     <span class="ttl" style="font-size:var(--fs-10);margin-bottom:6px">TODAY'S SALES</span>
     <div class="ln"><span>Cash sales</span><span>{{ $U::tk($c['cashSales']) }}</span></div>
@@ -44,7 +44,7 @@
   </section>
 </div>
 
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:16px">
   <section class="card" style="padding:20px;display:flex;flex-direction:column;gap:6px">
     <h2 class="h2" style="margin:0 0 6px">Cash count</h2>
     @foreach($notes as $n)

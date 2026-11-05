@@ -11,7 +11,7 @@
 @if(session('dl'))<div class="flash">Your file is ready: <a href="{{ session('dl') }}">Download</a></div>@endif
 
 <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
-  <form class="card" method="get" action="{{ route('exports.index') }}" id="exf" style="flex:1 1 340px;min-width:300px;padding:20px;display:flex;flex-direction:column;gap:12px">
+  <form class="card" method="get" action="{{ route('exports.index') }}" id="exf" style="flex:1 1 340px;min-width:min(300px,100%);padding:20px;display:flex;flex-direction:column;gap:12px">
     <h2 style="margin:0;font-size:var(--fs-15)">New export</h2>
     <label class="fld">Report<select name="report" onchange="this.form.submit()">@foreach(\App\Support\Reports::all() as $mod => $list)<optgroup label="{{ $mod }}">@foreach($list as $k => [$l, $roles])<option value="{{ $k }}" @selected($report === $k) @disabled(! in_array($role, $roles, true))>{{ $l }}{{ in_array($role, $roles, true) ? '' : ' (not for your role)' }}</option>@endforeach</optgroup>@endforeach<optgroup label="Distribution map"><option disabled>Coming with the distribution map</option></optgroup></select></label>
     <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
