@@ -15,7 +15,10 @@
 <div class="dfp" id="dfbp" role="dialog" aria-label="Notifications"><div class="dfp-h"><b>Notifications</b><button type="button" id="dfp-all">Mark all read</button></div><div id="dfp-l"></div><div class="dfp-f"><button type="button" id="dfp-en" style="display:none">Enable notifications</button><a href="/account/notifications">View all →</a></div></div>
 <div class="dfu" id="dfu" role="status"><span>New Update Available</span><button type="button" id="dfu-go">Refresh</button></div>
 
+<div class="dfm" id="dfm-rw" role="dialog" aria-modal="true" aria-label="App install reward"><div class="dfm-s" data-x></div><div class="dfm-p rwp"><button type="button" class="dfm-x" data-x aria-label="Close">×</button><div class="rwp-g">🎁</div><h3 id="rwp-t"></h3><p id="rwp-p"></p><ol class="dfm-o" id="rwp-o"></ol><a class="dfm-ok" id="rwp-go" href="/account" style="display:none;text-decoration:none;margin-bottom:8px"></a><button type="button" class="dfm-ok" id="rwp-ok" data-x></button></div></div>
+
 <style>
+.rwp{background:linear-gradient(180deg,#FFF8F3 0%,#fff 46%)}.rwp-g{width:76px;height:76px;margin:-52px auto 6px;border-radius:24px;background:linear-gradient(135deg,#FF7A1A,#FF5A00);display:flex;align-items:center;justify-content:center;font-size:40px;box-shadow:0 12px 26px rgba(255,90,0,.35);animation:rwpop .5s cubic-bezier(.2,1.4,.4,1)}@keyframes rwpop{from{transform:scale(.4) rotate(-12deg);opacity:0}}.rwp h3{font-size:21px!important;margin:8px 0 6px!important}.rwp h3 b{color:#FF5A00}.rwp p{line-height:1.5}.rwp .dfm-ok{display:block;width:100%;box-sizing:border-box;text-align:center}.rwp #rwp-ok.sec{background:#fff;color:#374151;border:1px solid #E5E7EB;box-shadow:none}
 .dfa{margin:30px auto 10px}.dfa-c{background:linear-gradient(135deg,#0B1220 0%,#16233F 100%);border-radius:22px;padding:22px 24px;display:grid;grid-template-columns:1fr auto;gap:16px 24px;align-items:center;box-shadow:0 14px 34px rgba(11,18,32,.22);position:relative;overflow:hidden}.dfa-c:before{content:"";position:absolute;right:-60px;top:-60px;width:200px;height:200px;border-radius:50%;background:rgba(255,90,0,.16)}
 .dfa-l{display:flex;gap:16px;align-items:center;color:#fff;position:relative}.dfa-l img{background:#fff;border-radius:16px;padding:6px;flex:none}.dfa-l h2{margin:0 0 3px;font-size:21px;font-weight:800;color:#fff}.dfa-l b{display:block;color:#FF8A3D;font-size:13.5px;margin-bottom:3px}.dfa-l p{margin:0;color:#C9D1E0;font-size:13px}
 .dfa-b{display:flex;gap:12px;flex-wrap:wrap;position:relative}.dfa-btn{display:flex;align-items:center;gap:11px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:#fff;border-radius:16px;padding:10px 18px 10px 12px;cursor:pointer;text-align:left;font-family:inherit;transition:transform .15s,background .15s}.dfa-btn:hover{background:rgba(255,255,255,.15);transform:translateY(-1px)}
@@ -53,7 +56,7 @@ document.querySelectorAll('.dfm [data-x]').forEach(function(b){b.addEventListene
 function setInstalledUI(){document.querySelectorAll('#dfapp [data-l]').forEach(function(el){el.textContent='App Installed ✓'});var f=$('dfapp');if(f)f.classList.add('done');var p=$('dfi');if(p)p.classList.remove('on');var q=$('dfs');if(q)q.classList.remove('on');document.querySelectorAll('.df-hide-inst').forEach(function(e){e.style.display='none'});document.querySelectorAll('.df-show-inst').forEach(function(e){e.style.display=''});document.dispatchEvent(new Event('dfpwa:installed'))}
 function install(kind){
   if(standalone()||ls('dfInstalled')==='1'){setInstalledUI();return}
-  if(dp){var e=dp;dp=null;e.prompt();e.userChoice.then(function(c){if(c&&c.outcome==='accepted'){ls('dfInstalled','1');setInstalledUI()}})['catch'](function(){});return}
+  if(dp){var e=dp;dp=null;e.prompt();e.userChoice.then(function(c){if(c&&c.outcome==='accepted'){ls('dfInstalled','1');setInstalledUI();if(window.DFPWA.rewardPopup)window.DFPWA.rewardPopup()}})['catch'](function(){});return}
   if(isIOS||kind==='ios'){open('dfm-ios');return}
   open('dfm-gen')
 }
@@ -70,12 +73,24 @@ function rwToast(t){var d=document.createElement('div');d.setAttribute('role','s
 function appSend(){
   fetch('/account/app-activate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:iid()}),credentials:'same-origin'}).then(function(r){return r.json()}).then(function(j){
     if(!j||!j.ok)return;if(j.unlocked||(!j.login&&!j.verify))ss('dfActOk','1');
+    if(j.on&&!j.unlocked&&(j.login||j.verify)&&standalone()){var t=+ls('dfRwPop2')||0;if(!t||Date.now()-t>864e5){ls('dfRwPop2',String(Date.now()));setTimeout(function(){rwShow('welcome',Math.round(j.amount),j)},1500)}}
     if(j.unlocked&&j.status==='available'&&!ls('dfRwToast')){ls('dfRwToast','1');rwToast('🎁 ৳'+Math.round(j.amount)+' App Install Reward unlocked — প্রথম App অর্ডারে অটো ছাড় পাবেন')}
   })['catch'](function(){});
 }
+
+// install popup: promise the reward only while the rule is ON
+var rwInfo=null;function rwGet(cb){if(rwInfo){cb(rwInfo);return}fetch('/account/app-reward',{credentials:'same-origin'}).then(function(r){return r.json()}).then(function(j){rwInfo=j;cb(j)})['catch'](function(){})}
+function rwShow(kind,amt,j){var m=$('dfm-rw');if(!m)return;var t=$('rwp-t'),p=$('rwp-p'),o=$('rwp-o'),go=$('rwp-go'),ok=$('rwp-ok');go.style.display='none';ok.classList.remove('sec');
+  if(kind==='install'){t.innerHTML='অ্যাপ ইনস্টল করছেন? <b>৳'+amt+' ডিসকাউন্ট</b> আপনার!';p.textContent='আপনার ডাউনলোড সম্পূর্ণ হলেই প্রথম অ্যাপ অর্ডারে ৳'+amt+' ছাড় পাবেন — কুপন কোড লাগবে না, অটো যুক্ত হবে।';
+    o.innerHTML='<li><span>1</span><div>অ্যাপটি ইনস্টল হতে দিন ও <b>খুলুন</b></div></li><li><span>2</span><div><b>লগইন</b> করে মোবাইল নম্বর <b>ভেরিফাই</b> করুন</div></li><li><span>3</span><div>প্রথম অর্ডারে <b>৳'+amt+'</b> অটো কেটে যাবে</div></li>';ok.textContent='ঠিক আছে, বুঝেছি'}
+  else{var lg=j&&j.login;t.innerHTML='স্বাগতম! 🎉 <b>৳'+amt+'</b> রিওয়ার্ড অপেক্ষা করছে';p.textContent=lg?'লগইন করে আপনার মোবাইল নম্বর ভেরিফাই করুন — প্রথম অ্যাপ অর্ডারে ৳'+amt+' ছাড় অটো পাবেন।':'আপনার মোবাইল নম্বর ভেরিফাই করলেই প্রথম অ্যাপ অর্ডারে ৳'+amt+' ছাড় অটো যুক্ত হবে।';o.innerHTML='';go.href=lg?'/account/login':'/account/profile';go.textContent=lg?'লগইন করুন':'মোবাইল ভেরিফাই করুন';go.style.display='block';ok.textContent='পরে করব';ok.classList.add('sec')}
+  m.classList.add('on')}
+document.querySelectorAll('#dfm-rw [data-x]').forEach(function(b){b.addEventListener('click',function(){$('dfm-rw').classList.remove('on')})});
+function rwInstallPop(){if(ls('dfRwPop1'))return;rwGet(function(i){if(i&&i.on){ls('dfRwPop1','1');rwShow('install',i.amt)}})}
+window.DFPWA.rewardPopup=rwInstallPop;
 function appSync(){if(standalone()){ckSet('df_app',iid());if(!ss('dfActOk'))appSend()}else{ckDel('df_app')}}
 appSync();
-addEventListener('appinstalled',function(){setTimeout(appSend,400)});
+addEventListener('appinstalled',function(){setTimeout(appSend,400);setTimeout(rwInstallPop,600)});
 // polite install popup: after a bit of browsing, once per session, not again for 7 days after "Not Now"
 var shown=false;
 function schedule(){

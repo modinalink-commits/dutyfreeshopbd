@@ -462,6 +462,8 @@ class AccountController extends StoreController {
     $id = \App\Support\AppReward::validId($in['id'] ?? ''); if (!$id) return response()->json(['ok'=>false])->header('Cache-Control', 'no-store');
     return response()->json(\App\Support\AppReward::activate($id, $this->me($r), (string)$r->userAgent(), (string)$r->ip()))->header('Cache-Control', 'no-store');
   }
+  /** Public: is the App Install reward running, and for how much (the install popup only promises it while it is ON). */
+  public function appRewardInfo() { $c = \App\Support\AppReward::cfg(); return response()->json(['on'=>$c['on'] && $c['amt'] > 0, 'amt'=>(int)round($c['amt'])])->header('Cache-Control', 'public, max-age=60'); }
   public function whoami(Request $r) {
     $c = $this->me($r); if (!$c) return response()->json(['in'=>false])->header('Cache-Control', 'no-store');
     $a = DB::table('customer_addresses')->where('customer_id', $c->id)->orderByDesc('is_default')->orderBy('id')->first();

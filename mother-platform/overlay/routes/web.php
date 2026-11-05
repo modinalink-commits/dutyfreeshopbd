@@ -410,6 +410,7 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestF
   Route::post('/account/set-password', [\App\Http\Controllers\AccountController::class,'setPassword']);
   Route::post('/account/mobile', [\App\Http\Controllers\AccountController::class,'addMobile']);
   Route::post('/account/app-activate', [\App\Http\Controllers\AccountController::class,'appActivate']);
+  Route::get('/account/app-reward', [\App\Http\Controllers\AccountController::class,'appRewardInfo']);
   Route::post('/account/forgot-email', [\App\Http\Controllers\AccountController::class,'forgotEmail']);
   Route::get('/account/reset-email/{t}', [\App\Http\Controllers\AccountController::class,'resetEmailForm'])->where('t','[a-f0-9]{48}');
   Route::post('/account/reset-email/{t}', [\App\Http\Controllers\AccountController::class,'resetEmailSave'])->where('t','[a-f0-9]{48}');

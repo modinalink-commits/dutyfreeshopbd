@@ -1,5 +1,5 @@
 fe43f8b6cb422cca81ee18b74d3972f77e7852de database/migrations/2026_10_31_000001_mother_core.php
-2f9409ffb6d9d3149bce2f00db1b409f30c5a0d2 routes/web.php
+ec547995f346e6bee52a9167bd5a27e7b9be9b02 routes/web.php
 5ec9cde3d13c963d0d55a626e10bf2e39e36a691 app/Models/Mother.php
 01bc4c43b7594c9719408a3a408fb8a2670fa4c8 app/Http/Controllers/AdminController.php
 242316b2ef0a0967e6815e39fcbc7377349fdc17 app/Console/Commands/MotherInstall.php
@@ -144,7 +144,7 @@ cc2e725d74dbfbefcdc26cf66702f9c45be2609c resources/views/analytics.blade.php
 ac82654211a8b4fc1ec34b6b4e6f2544510db9fd resources/views/store/chat_widget.blade.php
 8ef44ec83018599b320f051052bacbfe3df2f254 database/migrations/2026_10_31_000023_chat_read_at.php
 3d66eebc3b7fea5b3bbd5bbfde36548092f2b957 database/migrations/2026_10_31_000024_chat_ai.php
-710779d48d29475efa09514a8d7d7f20336c50fe app/Http/Controllers/AccountController.php
+59cd8c0880a43f1fe215e3fc5c8ffcbbb5621e87 app/Http/Controllers/AccountController.php
 062919c08832cbb40c7ee35c478185ff9874212c resources/views/store/account.blade.php
 acfbd0958409a3ec81d4fda41704544585b7ab8a resources/views/store/account_auth.blade.php
 9aff5efe579d3d9fecc6d438e6dce4e34ba0ff5c database/migrations/2026_10_31_000025_customer_accounts.php
@@ -192,7 +192,7 @@ c3732a3e2c27a150b4d0b55a8245c04f686ef706 app/Support/Seo.php
 02dde17a04c546fa2309281b2d272f2acb37f6ca app/Http/Controllers/PwaController.php
 6b860ee8dff2722479a8c4ab6c21af17a174b667 resources/pwa/sw.js
 d5202ff40431a660b66ea6ffaecf291662fbcca7 resources/views/store/offline.blade.php
-1c00c9afe28af89594f85b27269280913c858e6e resources/views/store/pwa.blade.php
+e5b4040c8650ceb8a72ba18996978808ce24d9bb resources/views/store/pwa.blade.php
 27830f6b750bca3b34a06053ad0f6e88252959e9 resources/views/store/pwa_head.blade.php
 d7a74cafdaf227b1700d237b8e71acc1218b9ec4 resources/views/store/pwa_splash.blade.php
 5b4429a6ca159b7d86116bec8a1dcaa289280fe8 resources/views/store/minicart.blade.php
