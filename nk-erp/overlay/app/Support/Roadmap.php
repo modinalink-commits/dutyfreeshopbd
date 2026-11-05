@@ -41,7 +41,7 @@ class Roadmap
         ],
         'MONEY' => [
             ['accounts', 'Accounts & profit', 'accounts.index', 'Accounts (Super Admin only)'],
-            ['exp', 'Expense management', null, 'ExpenseDash · ExpenseEntry · ExpenseSetup'],
+            ['exp', 'Expense management', 'expenses.index', 'ExpenseDash · ExpenseEntry · ExpenseSetup'],
         ],
         'WEBSITE' => [
             ['website', 'Public website', null, 'Website (live at nklpgbd.com; editing from here planned)'],

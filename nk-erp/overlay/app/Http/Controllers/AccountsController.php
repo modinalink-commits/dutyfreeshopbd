@@ -46,6 +46,10 @@ class AccountsController extends Controller
         $gross = $totalSales - $cost;
         $calc = CompanyCalc::month($ym);
         $expenses = Expense::query()->whereBetween('expense_date', [$start->toDateString(), $end->toDateString()])->selectRaw('head, sum(amount) s')->groupBy('head')->pluck('s', 'head');
+        // Approved bills not yet paid are costs of this month too (paid ones are already in expenses).
+        foreach (\App\Models\ExpenseClaim::query()->with('category')->where('status', 'posted')->whereBetween('expense_date', [$start->toDateString(), $end->toDateString()])->get() as $cl) {
+            $expenses[$cl->category->name] = (float) ($expenses[$cl->category->name] ?? 0) + (float) $cl->amount;
+        }
         $net = $gross + $transport + $calc['gross'] - $calc['ait'] + $calc['commission'] - (float) $expenses->sum();
 
         $partners = Partner::query()->orderBy('id')->get();

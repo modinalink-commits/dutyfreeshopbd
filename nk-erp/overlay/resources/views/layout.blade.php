@@ -60,7 +60,7 @@ textarea{padding:8px 10px;min-height:60px}
     @php($waitX = \App\Models\BrandExchange::where('status', 'waiting')->count())
     @php($adminOnly = ['company', 'users', 'activity', 'sms'])
     @php($superOnly = ['supplier', 'accounts', 'vpl'])
-    @php($officeOnly = ['rdash', 'vehicles', 'loading', 'return', 'settle', 'closing'])
+    @php($officeOnly = ['rdash', 'vehicles', 'loading', 'return', 'settle', 'closing', 'exp'])
     @php($cur = request()->route()?->getName() ?? '')
     @php($cur = ['trips.wizard' => 'trips.closing', 'trips.sales' => 'fleet.dash', 'trips.slip' => 'trips.loading'][$cur] ?? $cur)
     @php($allRoutes = collect(\App\Support\Roadmap::MENU)->flatten(1)->pluck(2)->filter())

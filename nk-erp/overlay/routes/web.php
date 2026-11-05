@@ -18,6 +18,7 @@ use App\Http\Controllers\StockController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\FleetController;
+use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\TripController;
 use Illuminate\Support\Facades\Route;
 
@@ -121,6 +122,26 @@ Route::middleware(['auth', 'pwd'])->group(function () {
         Route::post('/trips/{trip}/return', [TripController::class, 'storeReturn'])->name('trips.return.store');
         Route::post('/trips/{trip}/adjust', [TripController::class, 'adjust'])->name('trips.adjust');
         Route::post('/trips/{trip}/close', [TripController::class, 'close'])->name('trips.close');
+    });
+    // Expense management: anyone in the office can enter; managers approve; Super Admin sets the rules.
+    Route::middleware('role:super_admin,admin,manager,accounts')->group(function () {
+        Route::get('/expenses', [ExpenseController::class, 'index'])->name('expenses.index');
+        Route::get('/expenses/new', [ExpenseController::class, 'create'])->name('expenses.create');
+        Route::post('/expenses', [ExpenseController::class, 'store'])->name('expenses.store');
+        Route::get('/expenses/{claim}/receipt', [ExpenseController::class, 'receipt'])->name('expenses.receipt');
+        Route::post('/expenses/{claim}/pay', [ExpenseController::class, 'markPaid'])->name('expenses.pay');
+        Route::get('/expenses/settings', [ExpenseController::class, 'setup'])->name('expenses.setup');
+    });
+    Route::middleware('role:super_admin,admin,manager')->group(function () {
+        Route::post('/expenses/{claim}/approve', [ExpenseController::class, 'approve'])->name('expenses.approve');
+        Route::post('/expenses/{claim}/reject', [ExpenseController::class, 'reject'])->name('expenses.reject');
+    });
+    Route::middleware('role:super_admin')->group(function () {
+        Route::post('/expenses/settings/category', [ExpenseController::class, 'saveCategory'])->name('expenses.category');
+        Route::post('/expenses/settings/recurring', [ExpenseController::class, 'saveRecurring'])->name('expenses.recurring');
+        Route::post('/expenses/settings/rule', [ExpenseController::class, 'saveRule'])->name('expenses.rule');
+        Route::post('/expenses/settings/rule/{rule}/delete', [ExpenseController::class, 'deleteRule'])->name('expenses.rule.delete');
+        Route::post('/expenses/settings/alerts', [ExpenseController::class, 'saveAlerts'])->name('expenses.alerts');
     });
     Route::get('/vehicle-profit', [FleetController::class, 'profit'])->name('fleet.profit')->middleware('role:super_admin');
 
