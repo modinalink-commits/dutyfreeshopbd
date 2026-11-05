@@ -50,6 +50,7 @@ table.t.rs thead{display:none}table.t.rs,table.t.rs tbody,table.t.rs tr,table.t.
 <div class="hello"><h1>আসসালামু আলাইকুম, {{ $c->name }}! 👋</h1><p>আপনার অ্যাকাউন্টে স্বাগতম। আমরা সবসময় আপনার সেবায় প্রস্তুত।</p></div>
 @if(!empty($tier))<div style="margin:0 0 16px">@include('components.membership-card',['name'=>$c->name,'id'=>$cid,'stars'=>$tier['stars'],'key'=>strtolower($tier['name'])])</div>@endif
 <div class="cards"><div class="k"><small>Total Orders</small><b>{{ $totalOrders }}</b></div><div class="k"><small>Delivered</small><b style="color:#15803D">{{ $cnt['Delivered'] }}</b></div><div class="k"><small>Pending</small><b style="color:#C2410C">{{ $cnt['Pending'] + $cnt['Confirmed'] + $cnt['Processing'] + $cnt['Shipment'] }}</b></div><div class="k"><small>Cancelled</small><b style="color:#B91C1C">{{ $cnt['Cancelled'] }}</b></div><div class="k"><small>Returned</small><b style="color:#7E22CE">{{ $cnt['Returned'] }}</b></div><div class="k"><small>Total Spend</small><b>{{ $tk($spend) }}</b></div></div>
+@include('components.app-reward-card')
 <div class="bx" id="appN"><h2>App &amp; Notifications</h2>
 <div class="nrow"><div><b id="aiT">Install DutyFreeBD App</b><small id="aiS">হোম স্ক্রিন থেকে অ্যাপের মতো খুলুন।</small></div><button type="button" class="nbtn" id="aiB">Install App</button></div>
 <div class="nrow"><div><b>Notifications: <span id="apT">…</span></b><small>অর্ডার আপডেট ও স্পেশাল অফার আপনার ফোনে।</small></div><button type="button" class="nbtn" id="apB" style="display:none">Enable Notifications</button></div>
@@ -146,6 +147,7 @@ if(!sup()){pt.textContent='Not supported'}else{navigator.serviceWorker.ready.the
 @endif
 
 @if($tab==='coupons')
+@include('components.app-reward-card')
 <div class="bx"><h2>My Coupons</h2>@if($coupons->isEmpty())<p style="color:#6B7280;font-size:13.5px">এই মুহূর্তে কোনো কুপন নেই। নতুন অফার এলে এখানে দেখতে পাবেন।</p>@endif
 <div class="cp">@foreach($coupons as $cp)<div class="cpc"><b>{{ $cp->code }}</b><div style="font-size:14px;font-weight:700;margin:4px 0">{{ $cp->type==='fixed' ? $tk($cp->value).' ছাড়' : rtrim(rtrim(number_format($cp->value,2),'0'),'.').'% ছাড়' }}@if($cp->max_discount) <span style="font-weight:400;color:#6B7280">(সর্বোচ্চ {{ $tk($cp->max_discount) }})</span>@endif</div><div style="font-size:12.5px;color:#4B5563">ন্যূনতম অর্ডার: {{ $tk($cp->min_order) }}<br>মেয়াদ: {{ $cp->valid_to ? \Carbon\Carbon::parse($cp->valid_to)->format('d M Y') : 'সীমাহীন' }} · <span style="color:#15803D;font-weight:700">Active</span></div><button class="b1" style="margin-top:8px" type="button" data-copy="{{ $cp->code }}">কোড কপি</button></div>@endforeach</div></div>
 @endif

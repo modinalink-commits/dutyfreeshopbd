@@ -60,7 +60,9 @@ class OrderDiscount {
   }
   /** Applies the product "Quantity prices" (Buy 2-5) for every channel that did not already do it (website cart does it itself and sets ctx qprice). Lines priced by hand are left alone. */
   public static function compute(?string $phone, float $sub, ?string $coupon = null, array $ctx = []): array {
-    return ProfitFloor::enforce(self::computeRaw($phone, $sub, $coupon, $ctx), array_values((array)($ctx['items'] ?? [])), (float)($ctx['bsave'] ?? 0));
+    $r = ProfitFloor::enforce(self::computeRaw($phone, $sub, $coupon, $ctx), array_values((array)($ctx['items'] ?? [])), (float)($ctx['bsave'] ?? 0));
+    // App Install Welcome Discount: after bundle / membership / campaign discounts and the 15% protected-profit rule, capped to what is still safe (Auto Safe-Cap).
+    return !empty($ctx['app']) ? AppReward::apply($r, $phone, $sub, $ctx) : $r;
   }
   private static function computeRaw(?string $phone, float $sub, ?string $coupon = null, array $ctx = []): array {
     if (array_key_exists('qprice', $ctx) || empty($ctx['items'])) return self::computeCore($phone, $sub, $coupon, $ctx);
@@ -176,7 +178,7 @@ class OrderDiscount {
   /** One colour per kind of discount so staff can tell them apart at a glance: [text, background, border]. */
   public static function colorOf(string $name): array {
     $n = strtolower($name);
-    foreach ([['coupon', ['#6D28D9', '#EDE9FE', '#C4B5FD']], ['win', ['#BE185D', '#FCE7F3', '#F9A8D4']], ['welcome', ['#BE185D', '#FCE7F3', '#F9A8D4']], ['first', ['#166534', '#DCFCE7', '#86EFAC']], ['return', ['#1D4ED8', '#DBEAFE', '#93C5FD']],
+    foreach ([['app install', ['#9A3412', '#FFF1E6', '#FDBA74']], ['coupon', ['#6D28D9', '#EDE9FE', '#C4B5FD']], ['win', ['#BE185D', '#FCE7F3', '#F9A8D4']], ['welcome', ['#BE185D', '#FCE7F3', '#F9A8D4']], ['first', ['#166534', '#DCFCE7', '#86EFAC']], ['return', ['#1D4ED8', '#DBEAFE', '#93C5FD']],
       ['member', ['#B45309', '#FEF3C7', '#FCD34D']], ['vip', ['#9A3412', '#FFEDD5', '#FDBA74']], ['birthday', ['#A21CAF', '#FAE8FF', '#E879F9']], ['bundle', ['#0F766E', '#CCFBF1', '#5EEAD4']], ['amount', ['#3730A3', '#E0E7FF', '#A5B4FC']],
       ['special', ['#C2410C', '#FFF7ED', '#FB923C']], ['referral', ['#0E7490', '#CFFAFE', '#67E8F9']], ['manual', ['#B91C1C', '#FEE2E2', '#FCA5A5']], ['extra', ['#B91C1C', '#FEE2E2', '#FCA5A5']]] as [$k, $c]) if (str_contains($n, $k)) return $c;
     return ['#334155', '#F1F5F9', '#CBD5E1'];

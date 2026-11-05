@@ -351,7 +351,7 @@ class StoreController extends Controller {
     $items = []; $sub = 0; $qty = 0; $bsave = 0.0;
     foreach ($rows as $p) { $n = $want[$p->id]; $lst = (float)$p->price * $n; $ln = self::bundleLine($p, $n); $bs = round($lst - $ln, 2); $bsave += $bs; $items[] = ['id'=>$p->id, 'ext'=>(string)(($p->ext_id ?? null) ?: $p->id), 'name'=>$p->name, 'image'=>$p->image, 'url'=>self::url($p), 'price'=>(float)$p->price, 'compare'=>(float)$p->compare_price, 'qty'=>$n, 'line'=>$ln, 'list'=>$lst, 'bsave'=>$bs, 'oos'=>!\App\Support\StockGuard::sellable($p)]; $sub += $lst; $qty += $n; }
     $dv = \App\Support\Delivery::compute((float)$sub, $area, $addr, '', array_column($items, 'id')); $ship = $dv['charge'];
-    $eng = \App\Support\OrderDiscount::compute($phone, (float)($sub - $bsave), $code !== '' ? $code : null, ['web'=>true, 'verified'=>$verified, 'qty'=>$qty, 'qprice'=>$bsave > 0, 'bsave'=>$bsave, 'items'=>array_map(fn($i) => ['product_id'=>$i['id'], 'price'=>$i['price'], 'qty'=>$i['qty']], $items)]);
+    $eng = \App\Support\OrderDiscount::compute($phone, (float)($sub - $bsave), $code !== '' ? $code : null, ['web'=>true, 'verified'=>$verified, 'app'=>$verified ? \App\Support\AppReward::installId() : null, 'qty'=>$qty, 'qprice'=>$bsave > 0, 'bsave'=>$bsave, 'items'=>array_map(fn($i) => ['product_id'=>$i['id'], 'price'=>$i['price'], 'qty'=>$i['qty']], $items)]);
     $app = array_values(array_filter($eng['lines'], fn($l) => $l['applied'])); $disc = (float)$eng['total'] + $bsave;
     if ($bsave > 0) array_unshift($app, ['key'=>'qprice', 'type'=>'Bundle Price', 'rule'=>'Quantity price (Buy 2-5)', 'source'=>'Product bundle price', 'pct'=>null, 'amount'=>round($bsave, 2), 'label'=>'Bundle price – saved '.self::tk($bsave), 'applied'=>true]); $notes = array_map(fn($l) => in_array($l['key'] ?? '', ['special', 'vip', 'membership', 'returning', 'birthday'], true) ? (string)($l['type'] ?? $l['label']) : $l['label'], $app); // customers never see the % of their own membership / profile discounts
     if ($eng['free_ship'] && $ship > 0) { $dv['free_discount'] = $dv['original']; $dv['free'] = true; $dv['reason'] = 'Free delivery coupon'; $ship = 0; }
@@ -464,6 +464,7 @@ class StoreController extends Controller {
     }
     Cache::forget('store.live3'); Cache::forget('store.live4');
     try { \App\Support\Referral::onOrder((int)$id, $phone, $qt); \App\Support\Winback::onOrder($phone, (int)$id, $qt); \App\Support\Voice::onOrder($phone, (int)$id, $qt['applied'] ?? []); } catch (\Throwable $e) {}
+    try { \App\Support\AppReward::onOrder($phone, (int)$id, $qt['applied'] ?? [], \App\Support\AppReward::installId()); } catch (\Throwable $e) {}
     $inv = DB::table('orders')->where('id',$id)->value('invoice');
     if ($pk !== 'shurjopay') { \App\Support\OrderSms::placed((int)$id); try { \App\Support\Capi::purchase((int)$id, $r); } catch (\Throwable $e) {} }
     try { DB::table('incomplete_orders')->where('status', 'open')->where(fn($q) => $q->where('token', (string)$r->input('inc'))->orWhere('phone', $phone))->update(['status'=>'converted', 'order_id'=>$id, 'updated_at'=>now()]); } catch (\Throwable $e) {}

@@ -282,6 +282,7 @@ class AccountController extends StoreController {
     $tier = null; try { $t0 = \App\Support\OrderDiscount::tier((string)$c->phone, $c); $lv0 = \App\Support\OrderDiscount::levelOf($c->customer_level ?? null, (int)($t0['stars'] ?? 0)); if ($lv0) $tier = ['name' => $lv0['name'], 'stars' => $lv0['stars']]; } catch (\Throwable $e) {}
     $d = ['c'=>$c, 'tier'=>$tier, 'tab'=>$tab, 'cid'=>$this->cid($c), 'cat'=>$this->custCategory($c->phone, $c), 'cnt'=>$cnt, 'spend'=>$spend + (float)$c->legacy_spent, 'totalOrders'=>$all->count() + (int)$c->legacy_orders,
       'title'=>'My Account | DutyFree Shop BD', 'groups'=>array_keys(self::GROUPS)];
+    if (in_array($tab, ['dashboard', 'coupons'], true)) { try { $d['reward'] = \App\Support\AppReward::view((string)$c->phone); $d['rewardVerified'] = !empty($c->phone_verified_at); } catch (\Throwable $e) { $d['reward'] = null; } }
     if ($tab === 'dashboard') {
       $recent = $all->take(5); $d['recent'] = $recent; $d['items'] = $this->thumbs($recent->pluck('id')->all());
       $d['wishN'] = DB::table('customer_wishlist')->where('customer_id', $c->id)->count(); $d['addrN'] = DB::table('customer_addresses')->where('customer_id', $c->id)->count();
@@ -454,6 +455,13 @@ class AccountController extends StoreController {
     return response()->json(['ok'=>true]);
   }
   /** Used by the storefront (checkout, chat) to pre-fill a logged-in customer. */
+  /** The installed App reports itself (page script, standalone mode only). Records the install; a logged-in customer with a verified mobile also unlocks the App Install reward. */
+  public function appActivate(Request $r) {
+    $k = 'appact:'.$r->ip(); \Illuminate\Support\Facades\Cache::add($k, 0, 60); if (\Illuminate\Support\Facades\Cache::increment($k) > 40) return response()->json(['ok'=>false])->header('Cache-Control', 'no-store');
+    $in = json_decode((string)$r->getContent(), true); if (!is_array($in)) $in = $r->all();
+    $id = \App\Support\AppReward::validId($in['id'] ?? ''); if (!$id) return response()->json(['ok'=>false])->header('Cache-Control', 'no-store');
+    return response()->json(\App\Support\AppReward::activate($id, $this->me($r), (string)$r->userAgent(), (string)$r->ip()))->header('Cache-Control', 'no-store');
+  }
   public function whoami(Request $r) {
     $c = $this->me($r); if (!$c) return response()->json(['in'=>false])->header('Cache-Control', 'no-store');
     $a = DB::table('customer_addresses')->where('customer_id', $c->id)->orderByDesc('is_default')->orderBy('id')->first();

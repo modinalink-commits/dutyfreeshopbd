@@ -62,6 +62,20 @@ document.querySelectorAll('[data-pwa]').forEach(function(b){b.addEventListener('
 addEventListener('beforeinstallprompt',function(e){e.preventDefault();dp=e;schedule()});
 addEventListener('appinstalled',function(){ls('dfInstalled','1');dp=null;setInstalledUI()});
 if(standalone()||ls('dfInstalled')==='1')setInstalledUI();
+// App Install reward: the page marks this browser as "the App" (cookie df_app) only while it runs as the installed app, so the reward applies to App orders only; the install is recorded once and a logged-in customer with a verified mobile unlocks the reward.
+function ckSet(n,v){document.cookie=n+'='+v+';path=/;max-age='+(400*86400)+';SameSite=Lax;Secure'}
+function ckDel(n){document.cookie=n+'=;path=/;max-age=0;SameSite=Lax;Secure'}
+function iid(){var v=ls('dfInstallId');if(!v||!/^[A-Za-z0-9-]{16,48}$/.test(v)){try{v=crypto.randomUUID()}catch(e){v=''}if(!v)v=(Date.now().toString(36)+Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2)+'0000000000000000').slice(0,32);ls('dfInstallId',v)}return v}
+function rwToast(t){var d=document.createElement('div');d.setAttribute('role','status');d.style.cssText='position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:2147481600;max-width:92vw;background:#0B1220;color:#fff;border-radius:14px;padding:12px 16px;font-size:14px;font-weight:600;box-shadow:0 12px 30px rgba(11,18,32,.35);border:1px solid #FF8A3D';d.textContent=t;document.body.appendChild(d);setTimeout(function(){d.remove()},7000)}
+function appSend(){
+  fetch('/account/app-activate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:iid()}),credentials:'same-origin'}).then(function(r){return r.json()}).then(function(j){
+    if(!j||!j.ok)return;if(j.unlocked||(!j.login&&!j.verify))ss('dfActOk','1');
+    if(j.unlocked&&j.status==='available'&&!ls('dfRwToast')){ls('dfRwToast','1');rwToast('🎁 ৳'+Math.round(j.amount)+' App Install Reward unlocked — প্রথম App অর্ডারে অটো ছাড় পাবেন')}
+  })['catch'](function(){});
+}
+function appSync(){if(standalone()){ckSet('df_app',iid());if(!ss('dfActOk'))appSend()}else{ckDel('df_app')}}
+appSync();
+addEventListener('appinstalled',function(){setTimeout(appSend,400)});
 // polite install popup: after a bit of browsing, once per session, not again for 7 days after "Not Now"
 var shown=false;
 function schedule(){

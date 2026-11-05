@@ -630,3 +630,8 @@ public/fonts/hind-siliguri-bengali-700-normal.woff2
 resources/views/typography.blade.php
 resources/views/admin_type.blade.php
 resources/views/store/typography.blade.php
+database/migrations/2026_11_05_000100_app_install_reward.php
+app/Support/AppReward.php
+app/Http/Controllers/AppRewardController.php
+resources/views/app_rewards.blade.php
+resources/views/components/app-reward-card.blade.php

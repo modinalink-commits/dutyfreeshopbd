@@ -290,6 +290,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
     Route::get('/alt', [$I,'alt']); Route::post('/alt/fill', [$I,'altFill']); Route::post('/alt/{id}', [$I,'altSave'])->whereNumber('id');
     Route::post('/bulk', [$S,'bulk']); Route::post('/redirect', [$S,'redirectSave']); Route::post('/redirect/{id}', [$S,'redirectAct'])->whereNumber('id'); Route::post('/settings', [$S,'settings']); Route::post('/sitemap', [$S,'sitemap']);
   });
+  Route::get('/app-rewards', [\App\Http\Controllers\AppRewardController::class,'index']); Route::post('/app-rewards/settings', [\App\Http\Controllers\AppRewardController::class,'save']);
   Route::get('/referral', [\App\Http\Controllers\ReferralController::class,'index']); Route::post('/referral/settings', [\App\Http\Controllers\ReferralController::class,'save']);
   Route::prefix('purchase')->group(function () {
     $C = \App\Http\Controllers\ProcurementController::class;
@@ -408,6 +409,7 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestF
   Route::post('/account/facebook/disconnect', [\App\Http\Controllers\AccountController::class,'fbDisconnect']);
   Route::post('/account/set-password', [\App\Http\Controllers\AccountController::class,'setPassword']);
   Route::post('/account/mobile', [\App\Http\Controllers\AccountController::class,'addMobile']);
+  Route::post('/account/app-activate', [\App\Http\Controllers\AccountController::class,'appActivate']);
   Route::post('/account/forgot-email', [\App\Http\Controllers\AccountController::class,'forgotEmail']);
   Route::get('/account/reset-email/{t}', [\App\Http\Controllers\AccountController::class,'resetEmailForm'])->where('t','[a-f0-9]{48}');
   Route::post('/account/reset-email/{t}', [\App\Http\Controllers\AccountController::class,'resetEmailSave'])->where('t','[a-f0-9]{48}');
