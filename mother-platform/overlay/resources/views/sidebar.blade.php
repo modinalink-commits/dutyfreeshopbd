@@ -110,7 +110,7 @@ aside .me{background:#fff;border-top:1px solid #E5E7EB;color:#111827;font-weight
 aside .me button{background:#fff;color:#111827;border:1px solid #FF5A00}aside .me button:hover{background:#FFF7ED}
 </style>
 <style>/* NK-style sidebar: brand card, boxed groups with uppercase header bars, icon rows, soft-blue active item */
-aside.sbx{background:#F6F8FB!important;border-right:1px solid #DDE3EC!important;padding:12px 10px!important;gap:8px!important;font-family:"Inter","Hind Siliguri","Segoe UI","Noto Sans Bengali",Arial,sans-serif!important}
+aside.sbx{background:#F6F8FB!important;border-right:1px solid #A9B4C4!important;padding:12px 10px!important;gap:8px!important;font-family:"Inter","Hind Siliguri","Segoe UI","Noto Sans Bengali",Arial,sans-serif!important}
 aside.sbx .sbx-brand{display:flex!important;flex-direction:column!important;align-items:flex-start!important;gap:7px!important;padding:12px!important;margin:0!important;border-radius:12px!important;background:linear-gradient(135deg,#1E3FA8,#2563EB)!important;text-decoration:none!important;box-shadow:0 2px 6px rgba(37,99,235,.25)}
 aside.sbx .sbx-logo{display:block;width:100%;box-sizing:border-box;background:#fff;border-radius:10px;padding:7px 10px;line-height:0}
 aside.sbx .sbx-logo img{display:block!important;height:28px!important;width:auto!important;max-width:100%!important;margin:0 auto}
@@ -123,9 +123,9 @@ aside.sbx .sbs input:focus{border-color:#2563EB!important;box-shadow:0 0 0 3px r
 aside.sbx nav{gap:10px!important;border-top:0!important;padding:0 6px 10px!important;margin:0 -6px!important;scrollbar-color:#CBD5E1 transparent}
 /* cards */
 aside.sbx nav>details.mg,aside.sbx nav>.sbx-ov{flex:none!important}
-aside.sbx nav details.mg,aside.sbx nav .sbx-ov{display:block;background:#fff!important;border:1px solid #D3DAE4!important;border-radius:10px!important;overflow:hidden;margin:0!important;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+aside.sbx nav details.mg,aside.sbx nav .sbx-ov{display:block;background:#fff!important;border:1px solid #94A3B8!important;border-radius:10px!important;overflow:hidden;margin:0!important;box-shadow:0 1px 2px rgba(15,23,42,.04)}
 /* header bars */
-aside.sbx nav details.mg>summary,aside.sbx nav .sbx-oh{display:flex!important;align-items:center;gap:0!important;box-sizing:border-box;min-height:30px!important;margin:0!important;padding:6px 30px 6px 12px!important;background:#EEF2F7!important;color:#334155!important;border:0!important;border-bottom:1px solid #DDE3EC!important;border-radius:0!important;font-size:11px!important;font-weight:800!important;letter-spacing:.7px;text-transform:uppercase;line-height:1.2;box-shadow:none!important}
+aside.sbx nav details.mg>summary,aside.sbx nav .sbx-oh{display:flex!important;align-items:center;gap:0!important;box-sizing:border-box;min-height:30px!important;margin:0!important;padding:6px 30px 6px 12px!important;background:#EEF2F7!important;color:#334155!important;border:0!important;border-bottom:1px solid #A9B4C4!important;border-radius:0!important;font-size:11px!important;font-weight:800!important;letter-spacing:.7px;text-transform:uppercase;line-height:1.2;box-shadow:none!important}
 aside.sbx nav .sbx-oh{padding-right:12px!important;cursor:default}
 aside.sbx nav details.mg>summary svg{display:none!important}
 aside.sbx nav details.mg>summary span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -135,7 +135,7 @@ aside.sbx nav details.mg>summary::after{content:'›';position:absolute;right:12
 aside.sbx nav details.mg[open]>summary::after{transform:rotate(90deg)}
 aside.sbx nav details.mg[open]>summary{background:#EEF2F7!important;color:#334155!important}
 /* rows */
-aside.sbx nav a.nv,aside.sbx nav a.sub{display:flex!important;align-items:center;gap:10px!important;box-sizing:border-box;position:relative;min-height:36px!important;margin:0!important;padding:0 12px!important;background:#fff!important;color:#1F2937!important;border:0!important;border-top:1px solid #EDF0F5!important;border-radius:0!important;font-size:12.5px!important;font-weight:500!important;line-height:1.25;box-shadow:none!important;text-decoration:none}
+aside.sbx nav a.nv,aside.sbx nav a.sub{display:flex!important;align-items:center;gap:10px!important;box-sizing:border-box;position:relative;min-height:36px!important;margin:0!important;padding:0 12px!important;background:#fff!important;color:#1F2937!important;border:0!important;border-top:1px solid #CBD3DF!important;border-radius:0!important;font-size:12.5px!important;font-weight:500!important;line-height:1.25;box-shadow:none!important;text-decoration:none}
 aside.sbx nav .sbx-oh+a.nv,aside.sbx nav details.mg>summary+a.sub{border-top:0!important}
 aside.sbx nav details.mg>a.sub::before,aside.sbx nav details.rpg>summary::before{display:none!important}
 aside.sbx nav a.nv svg,aside.sbx nav a.sub svg{width:16px!important;height:16px!important;flex:none;color:#475569!important;opacity:1}
@@ -147,12 +147,12 @@ aside.sbx nav a.nv.on svg,aside.sbx nav a.sub.on svg{color:#2563EB!important}
 aside.sbx nav a.nv em,aside.sbx nav a.sub em{flex:none;margin-left:auto}
 /* sub-groups (Analytics, Products) inside a card */
 aside.sbx nav details.rpg{display:block;margin:0!important;background:#fff!important}
-aside.sbx nav details.rpg>summary{display:flex!important;align-items:center;box-sizing:border-box;min-height:32px!important;margin:0!important;padding:0 12px 0 14px!important;background:#F8FAFC!important;color:#475569!important;border:0!important;border-top:1px solid #EDF0F5!important;border-radius:0!important;font-size:11.5px!important;font-weight:700!important;text-transform:none}
+aside.sbx nav details.rpg>summary{display:flex!important;align-items:center;box-sizing:border-box;min-height:32px!important;margin:0!important;padding:0 12px 0 14px!important;background:#F8FAFC!important;color:#475569!important;border:0!important;border-top:1px solid #CBD3DF!important;border-radius:0!important;font-size:11.5px!important;font-weight:700!important;text-transform:none}
 aside.sbx nav details.rpg>summary:hover{background:#F1F5F9!important;color:#0F172A!important}
 aside.sbx nav details.rpg a.sub{padding-left:30px!important;margin:0!important;font-size:12px!important}
 aside.sbx nav details.rpg a.sub.on{padding-left:30px!important}
 aside.sbx nav details.mg>a.rp1,aside.sbx nav details.mg>a.sub.on{padding-left:12px!important}
 aside.sbx .gh{display:none}
-aside.sbx .me{background:transparent!important;border-top:1px solid #DDE3EC!important;color:#1F2937!important}
+aside.sbx .me{background:transparent!important;border-top:1px solid #A9B4C4!important;color:#1F2937!important}
 aside.sbx .me button{border-color:#2563EB!important;color:#1D4ED8!important;background:#fff!important}aside.sbx .me button:hover{background:#EAF1FF!important}
 </style>
