@@ -163,6 +163,18 @@ class AiVerify {
       else $add('Courier', 'COURIER_NONE', 'info', 'Courier history', 'Not enough earlier courier deliveries to judge');
     }
 
+    // ---- Parcels still with the courier (earlier orders of this phone) ----
+    if ($validPhone) {
+      try {
+        $q = $same()->where('id', '!=', $o->id)->where('status', 'Shipment');
+        $tr = $q->orderByDesc('id')->limit(5)->get(['id', 'invoice']);
+        if ($tr->count()) {
+          $pn = []; foreach ($tr as $t0) foreach (DB::table('order_items')->where('order_id', $t0->id)->limit(3)->pluck('name') as $nm) $pn[] = $nm;
+          $add('Courier', 'COURIER_IN_TRANSIT', 'review', 'Parcel already with courier', $tr->count() . ' earlier order(s) of this customer are still with the courier (' . $tr->pluck('invoice')->implode(', ') . ')' . ($pn ? ': ' . implode(', ', array_slice(array_unique($pn), 0, 3)) : '') . '. Check before shipping another parcel.', 10);
+        }
+      } catch (\Throwable $e) {}
+    }
+
     // ---- Stock ----
     $short = []; $pids = $items->pluck('product_id')->filter()->unique()->values()->all();
     $stk = $pids ? DB::table('products')->whereIn('id', $pids)->pluck('stock', 'id')->all() : [];
