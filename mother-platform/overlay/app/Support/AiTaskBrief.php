@@ -100,16 +100,16 @@ class AiTaskBrief {
       if ($kind === 'order') {
         $o = DB::table('orders')->whereIn('invoice', Inv::candidates($q) ?: ['-'])->first(); if (!$o) return ['error' => 'No order with invoice ' . $q];
         $it = DB::table('order_items')->where('order_id', $o->id)->limit(12)->get(['name', 'qty', 'price'])->map(fn($x) => ['name' => $x->name, 'qty' => (int)$x->qty, 'price' => (float)$x->price])->all();
-        return ['type' => 'order', 'invoice' => Inv::show($o->invoice), 'customer' => $o->customer_name ?? $o->name ?? null, 'phone' => self::mask($o->phone ?? ''), 'status' => $o->status, 'placed' => (string)$o->created_at, 'district' => $o->district ?? null,
+        return ['type' => 'order', 'invoice' => Inv::show($o->invoice), 'customer' => $o->customer_name ?? null, 'phone' => self::mask($o->phone ?? ''), 'status' => $o->status, 'placed' => (string)$o->created_at, 'district' => $o->district ?? null,
           'courier' => $o->courier ?? null, 'courier_status' => $o->courier_status ?? null, 'tracking' => $o->tracking_code ?? $o->consignment_id ?? null, 'payment_method' => $o->payment_method ?? null, 'payment_status' => $o->payment_status ?? null,
           'paid' => (float)($o->paid_total ?? 0), 'total' => (float)$o->total, 'discount' => (float)($o->discount ?? 0), 'delivery_charge' => (float)($o->shipping ?? 0), 'items' => $it];
       }
       if ($kind === 'customer') {
         $d = preg_replace('/\D/', '', $q); $ph = strlen($d) >= 11 ? substr($d, -11) : $d;
-        $rows = DB::table('orders')->where(fn($w) => $w->where('phone', $ph)->orWhere('phone', 'like', '%' . $ph))->orderByDesc('id')->limit(200)->get(['invoice', 'status', 'total', 'created_at', 'customer_name', 'name']);
+        $rows = DB::table('orders')->where(fn($w) => $w->where('phone', $ph)->orWhere('phone', 'like', '%' . $ph))->orderByDesc('id')->limit(200)->get(['invoice', 'status', 'total', 'created_at', 'customer_name']);
         if (!$rows->count()) return ['error' => 'No customer orders for ' . $q];
         $by = $rows->groupBy('status')->map->count()->all(); $last = $rows->first();
-        return ['type' => 'customer', 'name' => $last->customer_name ?? $last->name ?? null, 'phone' => self::mask($ph), 'orders_total' => $rows->count(), 'orders_by_status' => $by, 'lifetime_value_valid' => (float)$rows->whereNotIn('status', ['Cancel', 'Returned', 'Return Pending'])->sum('total'), 'last_order' => Inv::show($last->invoice) . ' · ' . $last->status . ' · ' . $last->created_at];
+        return ['type' => 'customer', 'name' => $last->customer_name ?? null, 'phone' => self::mask($ph), 'orders_total' => $rows->count(), 'orders_by_status' => $by, 'lifetime_value_valid' => (float)$rows->whereNotIn('status', ['Cancel', 'Returned', 'Return Pending'])->sum('total'), 'last_order' => Inv::show($last->invoice) . ' · ' . $last->status . ' · ' . $last->created_at];
       }
       if ($kind === 'product') {
         $p = DB::table('products')->where(fn($w) => $w->where('sku', $q)->orWhere('id', ctype_digit($q) ? (int)$q : 0)->orWhere('name', 'ilike', '%' . $q . '%'))->first(); if (!$p) return ['error' => 'No product ' . $q];

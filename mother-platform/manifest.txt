@@ -652,3 +652,8 @@ database/migrations/2026_11_05_000140_ai_task_briefs.php
 app/Support/AiTaskBrief.php
 app/Http/Controllers/AiTaskBriefController.php
 resources/views/ai_task_brief.blade.php
+app/Support/StaffTrack.php
+app/Http/Controllers/StaffTrackingController.php
+resources/views/staff_tracking.blade.php
+resources/views/staff_tracking_rows.blade.php
+database/migrations/2026_11_05_000150_staff_login_logs.php

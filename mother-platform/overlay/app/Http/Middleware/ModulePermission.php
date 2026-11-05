@@ -29,7 +29,7 @@ class ModulePermission {
     if (preg_match('#^call-center/(account|extensions)#', $p)) return 'settings'; // SIP server + per-user extension passwords: settings-level only
     if (str_starts_with($p, 'call-center')) return 'orders';
     if (preg_match('#^(orders|orders-export|incomplete|manual-payments)#', $p)) return 'orders';
-    if (str_starts_with($p, 'staff-log')) return 'stafflog';
+    if (str_starts_with($p, 'staff-log') || str_starts_with($p, 'staff-tracking')) return 'stafflog';
     if (preg_match('#^inventory-pricing#', $p)) return 'costs'; // purchase / average price and profit: only roles given this permission (Admin always)
     if (preg_match('#^(products|product-order|taxonomy|categories|brands|inventory|image-audit)#', $p)) return 'products';
     if (preg_match('#^(discounts|coupons|deals|payment-methods)#', $p)) return 'marketing';

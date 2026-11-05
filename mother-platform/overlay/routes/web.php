@@ -91,6 +91,8 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/orders/{id}/comments', [A::class,'orderComments']);
   Route::get('/orders-export.csv', [A::class,'ordersCsv']);
   Route::get('/staff-log', [A::class,'staffLog']);
+  Route::get('/staff-tracking/{page?}', [\App\Http\Controllers\StaffTrackingController::class,'show'])->where('page','dashboard|activity|orders|status|payment|courier|price|comm|logins|audit|reports');
+  Route::get('/staff-tracking-export/{page}', [\App\Http\Controllers\StaffTrackingController::class,'export'])->where('page','activity|status|payment|courier|price|comm|logins|audit|reports');
   Route::get('/products', [C::class,'products']);
   Route::get('/products/new', [C::class,'productForm']);
   Route::get('/products/from-image', [\App\Http\Controllers\AiProductController::class,'page']); Route::post('/products/from-image/scan', [\App\Http\Controllers\AiProductController::class,'scan']); Route::post('/products/from-image/accept', [\App\Http\Controllers\AiProductController::class,'accept']); Route::post('/products/from-image/cancel', [\App\Http\Controllers\AiProductController::class,'cancel']); Route::post('/products/from-image/settings', [\App\Http\Controllers\AiProductController::class,'settings']);

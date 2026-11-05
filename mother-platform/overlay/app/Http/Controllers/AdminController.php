@@ -9,10 +9,11 @@ class AdminController extends Controller {
   public function login(Request $r) {
     if (Auth::check()) return redirect('/admin');
     $c = $r->validate(['email'=>'required|email','password'=>'required']);
-    if (Auth::attempt($c + ['active'=>true], false)) { $r->session()->regenerate(); return redirect('/admin'); }
+    if (Auth::attempt($c + ['active'=>true], false)) { $r->session()->regenerate(); \App\Support\StaffTrack::login('login', Auth::user(), $c['email'], $r); return redirect('/admin'); }
+    \App\Support\StaffTrack::login('failed', null, $c['email'], $r); // the password is never stored
     return back()->withErrors(['email'=>'Wrong email or password'])->onlyInput('email');
   }
-  public function logout(Request $r) { Auth::logout(); $r->session()->invalidate(); $r->session()->regenerateToken(); return redirect('/admin/login'); }
+  public function logout(Request $r) { \App\Support\StaffTrack::login('logout', Auth::user(), Auth::user()->email ?? null, $r); Auth::logout(); $r->session()->invalidate(); $r->session()->regenerateToken(); return redirect('/admin/login'); }
   public function dashboard(Request $r) {
     $tz = 'Asia/Dhaka'; $now = now($tz); $A = \App\Support\Analytics::class; $cd = fn(array $ff) => \Illuminate\Support\Facades\Cache::remember('dash.v1.'.md5(json_encode($ff)), 45, fn() => $A::dashboard($ff));
     $c60 = fn(string $k, $a, callable $fn) => \Illuminate\Support\Facades\Cache::remember('dash.v2.'.$k.'.'.md5(json_encode($a)), 60, $fn);
