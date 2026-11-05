@@ -8,6 +8,7 @@ app/Http/Controllers/CompanyController.php
 app/Http/Controllers/CustomerController.php
 app/Http/Controllers/CustomerOrderController.php
 app/Http/Controllers/DashboardController.php
+app/Http/Controllers/ErpController.php
 app/Http/Controllers/ExchangeController.php
 app/Http/Controllers/ExpenseController.php
 app/Http/Controllers/ExportController.php
@@ -45,6 +46,7 @@ app/Models/CustomerOrder.php
 app/Models/DutySession.php
 app/Models/Employee.php
 app/Models/EmployeeLedger.php
+app/Models/ErpRecord.php
 app/Models/Expense.php
 app/Models/ExpenseCategory.php
 app/Models/ExpenseClaim.php
@@ -99,10 +101,12 @@ database/migrations/2026_11_05_000012_exports.php
 database/migrations/2026_11_05_000013_salesman_app.php
 database/migrations/2026_11_05_000014_map.php
 database/migrations/2026_11_05_000015_customer_portal.php
+database/migrations/2026_11_05_000016_erp_records.php
 public/app-sw.js
 public/css/nk-table.css
 public/img/logo.webp
 public/js/nk-table.js
+resources/erp/modules.json
 resources/views/accounts.blade.php
 resources/views/activity.blade.php
 resources/views/app/_back.blade.php
@@ -127,6 +131,8 @@ resources/views/company/rates.blade.php
 resources/views/corders.blade.php
 resources/views/customers.blade.php
 resources/views/dashboard.blade.php
+resources/views/erp/module.blade.php
+resources/views/erp/overview.blade.php
 resources/views/expenses/_css.blade.php
 resources/views/expenses/entry.blade.php
 resources/views/expenses/index.blade.php

@@ -48,7 +48,7 @@ class Roadmap
             ['hero', 'Hero slider', 'hero.index', 'Hero · HeroMobile · HeroAdmin'],
         ],
         'ERP MODULES' => [
-            ['erp', 'All 15 modules', null, 'Module · Mod01–Mod15'],
+            ['erp', 'All 15 modules', 'erp.index', 'Module · Mod01–Mod15'],
             ['hr', 'HR & payroll', 'hr.index', 'HRDash · EmployeeLedger · PayrollRun'],
         ],
         'DOCUMENTS' => [

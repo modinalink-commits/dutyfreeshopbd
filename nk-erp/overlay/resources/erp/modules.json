@@ -1,0 +1,3690 @@
+{
+ "m01": {
+  "no": "01",
+  "title": "Cylinder lifecycle",
+  "bn": "সিলিন্ডারের জীবনচক্র",
+  "path": "Cylinder Management → Cylinder Lifecycle",
+  "cta": "Record movement",
+  "cols": [
+   "Movement",
+   "Date",
+   "Brand · size",
+   "Qty",
+   "From",
+   "To",
+   "Type"
+  ],
+  "reports": [
+   "Ownership report",
+   "Movement history",
+   "Customer-held cylinders",
+   "Lost cylinders",
+   "Brand / size balance"
+  ],
+  "tableTitle": "Records",
+  "kpiLabels": [
+   "Cylinders tracked",
+   "With customers",
+   "In quarantine",
+   "Lost (unresolved)"
+  ],
+  "flow": [
+   {
+    "t": "Draft",
+    "who": "Creator"
+   },
+   {
+    "t": "Submitted",
+    "who": "Creator"
+   },
+   {
+    "t": "Checked",
+    "who": "Accounts / warehouse"
+   },
+   {
+    "t": "Approved",
+    "who": "Manager"
+   },
+   {
+    "t": "Posted · locked",
+    "who": "System"
+   }
+  ],
+  "forms": [
+   {
+    "tab": "A · Cylinder registration",
+    "submit": "Register",
+    "note": "No serial numbers on these cylinders, so they are tracked as a quantity batch. The system never invents cylinder IDs.",
+    "fields": [
+     {
+      "l": "Cylinder ID",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Brand",
+      "t": "select",
+      "adv": false,
+      "hint": "Aygaz United"
+     },
+     {
+      "l": "Size",
+      "t": "select",
+      "adv": false,
+      "hint": "12 KG"
+     },
+     {
+      "l": "Type",
+      "t": "select",
+      "adv": false,
+      "hint": "Refill"
+     },
+     {
+      "l": "Ownership",
+      "t": "select",
+      "adv": false,
+      "hint": "Company"
+     },
+     {
+      "l": "Quantity in batch",
+      "t": "number",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Serial / QR (optional)",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Current condition",
+      "t": "select",
+      "adv": true,
+      "hint": "Good"
+     },
+     {
+      "l": "Current location",
+      "t": "select",
+      "adv": true,
+      "hint": "Main warehouse"
+     },
+     {
+      "l": "Registration date",
+      "t": "auto",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Remarks",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     }
+    ]
+   },
+   {
+    "tab": "B · Cylinder movement",
+    "submit": "Save movement",
+    "note": "",
+    "fields": [
+     {
+      "l": "Movement ID",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Date",
+      "t": "date",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Brand · size",
+      "t": "select",
+      "adv": false,
+      "hint": "Aygaz United · 12 KG"
+     },
+     {
+      "l": "Quantity",
+      "t": "number",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "From",
+      "t": "select",
+      "adv": false,
+      "hint": "Main warehouse"
+     },
+     {
+      "l": "To",
+      "t": "select",
+      "adv": false,
+      "hint": "Vehicle V-03"
+     },
+     {
+      "l": "Movement type",
+      "t": "select",
+      "adv": false,
+      "hint": "Warehouse to vehicle"
+     },
+     {
+      "l": "Reference challan",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Responsible person",
+      "t": "select",
+      "adv": true,
+      "hint": "Belal"
+     },
+     {
+      "l": "Remarks",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     }
+    ]
+   },
+   {
+    "tab": "C · Ownership adjustment",
+    "submit": "Submit for approval",
+    "note": "Ownership changes always need approval and stay in the audit trail.",
+    "fields": [
+     {
+      "l": "Cylinder / batch",
+      "t": "select",
+      "adv": false,
+      "hint": "Bashundhara 12 KG × 1"
+     },
+     {
+      "l": "Existing owner",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "New owner",
+      "t": "select",
+      "adv": false,
+      "hint": "Company"
+     },
+     {
+      "l": "Reason",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Supporting document",
+      "t": "file",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Requested by",
+      "t": "auto",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Approved by",
+      "t": "select",
+      "adv": true,
+      "hint": "Manager"
+     }
+    ]
+   }
+  ]
+ },
+ "m02": {
+  "no": "02",
+  "title": "General ledger",
+  "bn": "সাধারণ খতিয়ান",
+  "path": "Accounts → General Ledger",
+  "cta": "Journal entry",
+  "cols": [
+   "Journal",
+   "Date",
+   "Description",
+   "Debit",
+   "Credit",
+   "Prepared by"
+  ],
+  "reports": [
+   "General ledger",
+   "Trial balance",
+   "Profit & loss",
+   "Balance sheet",
+   "Cash flow",
+   "Bank reconciliation"
+  ],
+  "tableTitle": "Records",
+  "kpiLabels": [
+   "Journals this month",
+   "Trial balance",
+   "BRAC Bank (book)",
+   "Unreconciled items"
+  ],
+  "flow": [
+   {
+    "t": "Draft",
+    "who": "Creator"
+   },
+   {
+    "t": "Submitted",
+    "who": "Creator"
+   },
+   {
+    "t": "Checked",
+    "who": "Accounts / warehouse"
+   },
+   {
+    "t": "Approved",
+    "who": "Manager"
+   },
+   {
+    "t": "Posted · locked",
+    "who": "System"
+   }
+  ],
+  "forms": [
+   {
+    "tab": "A · Chart of accounts",
+    "submit": "Save account",
+    "note": "",
+    "fields": [
+     {
+      "l": "Account code",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Account name",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Account type",
+      "t": "select",
+      "adv": false,
+      "hint": "Asset"
+     },
+     {
+      "l": "Parent account",
+      "t": "select",
+      "adv": false,
+      "hint": "1300 Supplier deposits"
+     },
+     {
+      "l": "Normal balance",
+      "t": "select",
+      "adv": false,
+      "hint": "Debit"
+     },
+     {
+      "l": "Opening balance",
+      "t": "number",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Status",
+      "t": "select",
+      "adv": true,
+      "hint": "Active"
+     }
+    ]
+   },
+   {
+    "tab": "B · Journal entry",
+    "submit": "Submit for approval",
+    "note": "Total debit must equal total credit. A posted journal is corrected only by a reversal or adjustment entry.",
+    "fields": [
+     {
+      "l": "Journal no.",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Entry date",
+      "t": "date",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Reference",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Description",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Dr 1310 Deposit held by Aygaz",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Cr 1120 BRAC Bank",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Difference",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Attachment",
+      "t": "file",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Prepared by",
+      "t": "auto",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Approved by",
+      "t": "select",
+      "adv": true,
+      "hint": "Mohammad Faruk"
+     }
+    ]
+   },
+   {
+    "tab": "C · Bank reconciliation",
+    "submit": "Submit reconciliation",
+    "note": "",
+    "fields": [
+     {
+      "l": "Bank account",
+      "t": "select",
+      "adv": false,
+      "hint": "BRAC Bank · NK Corporation"
+     },
+     {
+      "l": "Statement period",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Statement closing balance",
+      "t": "number",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Book balance",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Closing difference",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Unmatched transactions",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Adjustments",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Approval",
+      "t": "select",
+      "adv": true,
+      "hint": "Manager"
+     }
+    ]
+   }
+  ]
+ },
+ "m03": {
+  "no": "03",
+  "title": "Cylinder deposit ledger",
+  "bn": "সিলিন্ডার জামানত",
+  "path": "Accounts → Cylinder Deposit",
+  "cta": "Collect deposit",
+  "cols": [
+   "ID",
+   "Date",
+   "Party",
+   "Brand · size",
+   "Qty",
+   "Amount"
+  ],
+  "reports": [
+   "Customer deposit balance",
+   "Supplier deposit balance",
+   "Refund history",
+   "Outstanding deposit liability",
+   "Deposit reconciliation"
+  ],
+  "tableTitle": "Records",
+  "kpiLabels": [
+   "Customer deposits held",
+   "Deposit with supplier",
+   "Refunds this month",
+   "Pending refund approval"
+  ],
+  "flow": [
+   {
+    "t": "Draft",
+    "who": "Creator"
+   },
+   {
+    "t": "Submitted",
+    "who": "Creator"
+   },
+   {
+    "t": "Checked",
+    "who": "Accounts / warehouse"
+   },
+   {
+    "t": "Approved",
+    "who": "Manager"
+   },
+   {
+    "t": "Posted · locked",
+    "who": "System"
+   }
+  ],
+  "forms": [
+   {
+    "tab": "A · Deposit collection",
+    "submit": "Save deposit",
+    "note": "Deposit money is a liability. It never counts as sales revenue or profit.",
+    "fields": [
+     {
+      "l": "Deposit ID",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Date",
+      "t": "date",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Customer / supplier",
+      "t": "select",
+      "adv": false,
+      "hint": "Rahmania Store"
+     },
+     {
+      "l": "Brand · size",
+      "t": "select",
+      "adv": false,
+      "hint": "Aygaz United · 12 KG"
+     },
+     {
+      "l": "Quantity",
+      "t": "number",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Deposit rate",
+      "t": "number",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Total deposit",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Payment method",
+      "t": "select",
+      "adv": true,
+      "hint": "Cash"
+     },
+     {
+      "l": "Reference",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Received by",
+      "t": "auto",
+      "adv": true,
+      "hint": ""
+     }
+    ]
+   },
+   {
+    "tab": "B · Deposit refund",
+    "submit": "Submit for approval",
+    "note": "",
+    "fields": [
+     {
+      "l": "Refund ID",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Customer",
+      "t": "select",
+      "adv": false,
+      "hint": "Nurul Islam"
+     },
+     {
+      "l": "Original deposit",
+      "t": "select",
+      "adv": false,
+      "hint": "DEP-0712-003"
+     },
+     {
+      "l": "Cylinders returned",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Refundable",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Deductions",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Final refund",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Refund method",
+      "t": "select",
+      "adv": true,
+      "hint": "Cash"
+     },
+     {
+      "l": "Approval",
+      "t": "select",
+      "adv": true,
+      "hint": "Manager"
+     },
+     {
+      "l": "Remarks",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     }
+    ]
+   },
+   {
+    "tab": "C · Deposit adjustment",
+    "submit": "Submit for approval",
+    "note": "",
+    "fields": [
+     {
+      "l": "Deposit ledger",
+      "t": "select",
+      "adv": false,
+      "hint": "Customer — Rahmania Store"
+     },
+     {
+      "l": "Adjustment type",
+      "t": "select",
+      "adv": false,
+      "hint": "Correction"
+     },
+     {
+      "l": "Amount",
+      "t": "number",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Reason",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Supporting document",
+      "t": "file",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Approval",
+      "t": "select",
+      "adv": true,
+      "hint": "Manager"
+     }
+    ]
+   }
+  ]
+ },
+ "m04": {
+  "no": "04",
+  "title": "Daily cash & stock reconciliation",
+  "bn": "দৈনিক নগদ ও স্টক মিলানো",
+  "path": "Distribution → Daily Reconciliation",
+  "cta": "Vehicle day closing",
+  "cols": [
+   "Closing",
+   "Vehicle",
+   "Salesman",
+   "Expected cash",
+   "Actual cash",
+   "Stock diff"
+  ],
+  "reports": [
+   "Daily vehicle closing",
+   "Cash shortage",
+   "Cylinder shortage",
+   "Salesman-wise difference",
+   "Unresolved reconciliation"
+  ],
+  "tableTitle": "Records",
+  "kpiLabels": [
+   "Closings today",
+   "Cash difference",
+   "Stock difference",
+   "Open investigations"
+  ],
+  "flow": [
+   {
+    "t": "Draft",
+    "who": "Creator"
+   },
+   {
+    "t": "Submitted",
+    "who": "Creator"
+   },
+   {
+    "t": "Checked",
+    "who": "Accounts / warehouse"
+   },
+   {
+    "t": "Approved",
+    "who": "Manager"
+   },
+   {
+    "t": "Posted · locked",
+    "who": "System"
+   }
+  ],
+  "forms": [
+   {
+    "tab": "A · Vehicle day closing",
+    "submit": "Submit for approval",
+    "note": "",
+    "fields": [
+     {
+      "l": "Closing ID",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Date · vehicle",
+      "t": "date",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Loaded",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Sold",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Expected full return",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Actual full return",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Expected empty",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Actual empty",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Expected cash",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Actual cash",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Difference",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Driver · salesman",
+      "t": "auto",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Route",
+      "t": "auto",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Additional loaded",
+      "t": "auto",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Digital collections",
+      "t": "auto",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Approved credit",
+      "t": "auto",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Closing remarks",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     }
+    ]
+   },
+   {
+    "tab": "B · Shortage investigation",
+    "submit": "Send to manager",
+    "note": "A shortage is not treated as employee misconduct. It stays open until it is investigated and a manager decides.",
+    "fields": [
+     {
+      "l": "Shortage ID",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Closing ref.",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Difference type",
+      "t": "select",
+      "adv": false,
+      "hint": "Cash"
+     },
+     {
+      "l": "Expected / actual",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Difference",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Reason",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Responsible person",
+      "t": "select",
+      "adv": true,
+      "hint": "To be decided"
+     },
+     {
+      "l": "Evidence",
+      "t": "file",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Investigation status",
+      "t": "select",
+      "adv": true,
+      "hint": "Open"
+     },
+     {
+      "l": "Manager decision",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     }
+    ]
+   }
+  ]
+ },
+ "m05": {
+  "no": "05",
+  "title": "Purchase order & goods receiving",
+  "bn": "ক্রয় অর্ডার ও মাল গ্রহণ",
+  "path": "Purchase → Procurement",
+  "cta": "Purchase order",
+  "cols": [
+   "PO / GRN",
+   "Date",
+   "Supplier",
+   "Items",
+   "Amount",
+   "Challan"
+  ],
+  "reports": [
+   "PO register",
+   "Pending receipts",
+   "GRN report",
+   "Purchase returns",
+   "Supplier purchase analysis"
+  ],
+  "tableTitle": "Records",
+  "kpiLabels": [
+   "Open POs",
+   "Received this month",
+   "Pending receipt",
+   "Returns"
+  ],
+  "flow": [
+   {
+    "t": "Draft",
+    "who": "Creator"
+   },
+   {
+    "t": "Submitted",
+    "who": "Creator"
+   },
+   {
+    "t": "Checked",
+    "who": "Accounts / warehouse"
+   },
+   {
+    "t": "Approved",
+    "who": "Manager"
+   },
+   {
+    "t": "Posted · locked",
+    "who": "System"
+   }
+  ],
+  "forms": [
+   {
+    "tab": "A · Purchase order",
+    "submit": "Submit for approval",
+    "note": "",
+    "fields": [
+     {
+      "l": "PO no.",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Supplier",
+      "t": "select",
+      "adv": false,
+      "hint": "Aygaz United (Cusc000419)"
+     },
+     {
+      "l": "Order date",
+      "t": "date",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Brand · size",
+      "t": "select",
+      "adv": false,
+      "hint": "Aygaz United · 12 KG"
+     },
+     {
+      "l": "Quantity",
+      "t": "number",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Rate (Rate Master)",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Total",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Expected delivery",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Warehouse",
+      "t": "select",
+      "adv": true,
+      "hint": "Main warehouse"
+     },
+     {
+      "l": "Product type",
+      "t": "select",
+      "adv": true,
+      "hint": "Refill"
+     },
+     {
+      "l": "Payment terms",
+      "t": "select",
+      "adv": true,
+      "hint": "From deposit balance"
+     },
+     {
+      "l": "Remarks",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     }
+    ]
+   },
+   {
+    "tab": "B · Goods receiving note",
+    "submit": "Post GRN",
+    "note": "",
+    "fields": [
+     {
+      "l": "GRN no.",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "PO ref.",
+      "t": "select",
+      "adv": false,
+      "hint": "PO-0111-001"
+     },
+     {
+      "l": "Supplier challan",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Receive date",
+      "t": "date",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Ordered",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Received",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Accepted",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Difference",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Vehicle no.",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Rejected",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Receiving staff",
+      "t": "select",
+      "adv": true,
+      "hint": "Belal"
+     },
+     {
+      "l": "Remarks",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     }
+    ]
+   },
+   {
+    "tab": "C · Purchase return",
+    "submit": "Submit for approval",
+    "note": "",
+    "fields": [
+     {
+      "l": "Return no.",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "GRN ref.",
+      "t": "select",
+      "adv": false,
+      "hint": "GRN-0211-001"
+     },
+     {
+      "l": "Product",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Return qty",
+      "t": "number",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Reason",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Supplier acknowledgement",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Credit note ref.",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     }
+    ]
+   }
+  ]
+ },
+ "m06": {
+  "no": "06",
+  "title": "Cylinder safety & inspection",
+  "bn": "সিলিন্ডার নিরাপত্তা ও পরিদর্শন",
+  "path": "Safety → Cylinder Inspection",
+  "cta": "New inspection",
+  "cols": [
+   "ID",
+   "Date",
+   "Batch",
+   "Qty",
+   "Finding",
+   "Inspector"
+  ],
+  "reports": [
+   "Inspection history",
+   "Unsafe cylinder register",
+   "Quarantine stock",
+   "Incident register",
+   "Pending safety actions"
+  ],
+  "tableTitle": "Records",
+  "kpiLabels": [
+   "Inspected this week",
+   "Quarantine stock",
+   "Open incidents",
+   "Pending safety actions"
+  ],
+  "flow": [
+   {
+    "t": "Draft",
+    "who": "Creator"
+   },
+   {
+    "t": "Submitted",
+    "who": "Creator"
+   },
+   {
+    "t": "Checked",
+    "who": "Accounts / warehouse"
+   },
+   {
+    "t": "Approved",
+    "who": "Manager"
+   },
+   {
+    "t": "Posted · locked",
+    "who": "System"
+   }
+  ],
+  "forms": [
+   {
+    "tab": "A · Cylinder inspection",
+    "submit": "Save result",
+    "note": "This inspection is a visual check. It does not replace the certified cylinder testing the law requires.",
+    "fields": [
+     {
+      "l": "Inspection ID",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Date",
+      "t": "date",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Cylinder / batch",
+      "t": "select",
+      "adv": false,
+      "hint": "Aygaz 12 KG · batch from V-03"
+     },
+     {
+      "l": "Valve condition",
+      "t": "select",
+      "adv": false,
+      "hint": "Worn"
+     },
+     {
+      "l": "Leakage suspected",
+      "t": "select",
+      "adv": false,
+      "hint": "No"
+     },
+     {
+      "l": "Result",
+      "t": "select",
+      "adv": false,
+      "hint": "Fail — quarantine"
+     },
+     {
+      "l": "Physical condition",
+      "t": "select",
+      "adv": true,
+      "hint": "Good"
+     },
+     {
+      "l": "Visible damage",
+      "t": "select",
+      "adv": true,
+      "hint": "None"
+     },
+     {
+      "l": "Inspector",
+      "t": "select",
+      "adv": true,
+      "hint": "Belal"
+     },
+     {
+      "l": "Photo",
+      "t": "file",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Remarks",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     }
+    ]
+   },
+   {
+    "tab": "B · Quarantine",
+    "submit": "Submit for approval",
+    "note": "Quarantined cylinders cannot be loaded or sold until released by an authorized person.",
+    "fields": [
+     {
+      "l": "Quarantine ID",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Batch ref.",
+      "t": "select",
+      "adv": false,
+      "hint": "INS-0511-014"
+     },
+     {
+      "l": "Quantity",
+      "t": "number",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Reason",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Location",
+      "t": "select",
+      "adv": false,
+      "hint": "Quarantine bay"
+     },
+     {
+      "l": "Date",
+      "t": "auto",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Responsible officer",
+      "t": "select",
+      "adv": true,
+      "hint": "Belal"
+     },
+     {
+      "l": "Release / disposal",
+      "t": "select",
+      "adv": true,
+      "hint": "Send to supplier"
+     },
+     {
+      "l": "Approval",
+      "t": "select",
+      "adv": true,
+      "hint": "Manager"
+     }
+    ]
+   },
+   {
+    "tab": "C · Incident report",
+    "submit": "Report incident",
+    "note": "",
+    "fields": [
+     {
+      "l": "Incident ID",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Date & time",
+      "t": "date",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Location",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Incident type",
+      "t": "select",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Description",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Immediate safety action",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Persons affected",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Evidence",
+      "t": "file",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Reported by",
+      "t": "auto",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Follow-up status",
+      "t": "select",
+      "adv": true,
+      "hint": "Open"
+     }
+    ]
+   }
+  ]
+ },
+ "m07": {
+  "no": "07",
+  "title": "Vehicle fleet & maintenance",
+  "bn": "গাড়ি ও রক্ষণাবেক্ষণ",
+  "path": "Fleet → Vehicle Maintenance",
+  "cta": "Fuel entry",
+  "cols": [
+   "Vehicle",
+   "Reg. no.",
+   "Driver",
+   "Fuel (month)",
+   "Last service",
+   "Next expiry"
+  ],
+  "reports": [
+   "Vehicle expense",
+   "Fuel efficiency",
+   "Maintenance history",
+   "Expiring documents",
+   "Route-wise vehicle cost"
+  ],
+  "tableTitle": "Records",
+  "kpiLabels": [
+   "Vehicles",
+   "Fuel this month",
+   "Documents expiring",
+   "Avg km / litre"
+  ],
+  "flow": [
+   {
+    "t": "Draft",
+    "who": "Creator"
+   },
+   {
+    "t": "Submitted",
+    "who": "Creator"
+   },
+   {
+    "t": "Checked",
+    "who": "Accounts / warehouse"
+   },
+   {
+    "t": "Approved",
+    "who": "Manager"
+   },
+   {
+    "t": "Posted · locked",
+    "who": "System"
+   }
+  ],
+  "forms": [
+   {
+    "tab": "B · Fuel entry",
+    "submit": "Save",
+    "note": "",
+    "fields": [
+     {
+      "l": "Date",
+      "t": "date",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Vehicle",
+      "t": "select",
+      "adv": false,
+      "hint": "V-03 · DM-NA 11-4471"
+     },
+     {
+      "l": "Odometer",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Fuel (litres)",
+      "t": "number",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Rate",
+      "t": "number",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Total cost",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Fuel station",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Receipt",
+      "t": "file",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Entered by",
+      "t": "auto",
+      "adv": true,
+      "hint": ""
+     }
+    ]
+   },
+   {
+    "tab": "A · Vehicle registration",
+    "submit": "Save vehicle",
+    "note": "",
+    "fields": [
+     {
+      "l": "Vehicle ID",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Registration no.",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Type · capacity",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Driver · salesman",
+      "t": "select",
+      "adv": false,
+      "hint": "Jamal · Hasan"
+     },
+     {
+      "l": "Fuel type",
+      "t": "select",
+      "adv": false,
+      "hint": "Diesel"
+     },
+     {
+      "l": "Odometer",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Registration expiry",
+      "t": "date",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Fitness expiry",
+      "t": "date",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Insurance expiry",
+      "t": "date",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Status",
+      "t": "select",
+      "adv": true,
+      "hint": "Active"
+     }
+    ]
+   },
+   {
+    "tab": "C · Maintenance",
+    "submit": "Save",
+    "note": "",
+    "fields": [
+     {
+      "l": "Maintenance ID",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Vehicle",
+      "t": "select",
+      "adv": false,
+      "hint": "V-08"
+     },
+     {
+      "l": "Date",
+      "t": "date",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Service type",
+      "t": "select",
+      "adv": false,
+      "hint": "Repair"
+     },
+     {
+      "l": "Workshop",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Total cost",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Odometer",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Parts cost",
+      "t": "number",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Labour cost",
+      "t": "number",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Next service date",
+      "t": "date",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Attachment",
+      "t": "file",
+      "adv": true,
+      "hint": ""
+     }
+    ]
+   }
+  ]
+ },
+ "m08": {
+  "no": "08",
+  "title": "Credit limit & collection",
+  "bn": "বাকির সীমা ও আদায়",
+  "path": "Customer → Credit Management",
+  "cta": "Credit policy",
+  "cols": [
+   "Customer",
+   "Limit",
+   "Due",
+   "0–15 days",
+   "16–30",
+   "30+"
+  ],
+  "reports": [
+   "Customer aging",
+   "Credit utilization",
+   "Overdue collection",
+   "Credit exceptions",
+   "Collection performance"
+  ],
+  "tableTitle": "Records",
+  "kpiLabels": [
+   "Customers with credit",
+   "Total due",
+   "Over 30 days",
+   "Exceptions waiting"
+  ],
+  "flow": [
+   {
+    "t": "Draft",
+    "who": "Creator"
+   },
+   {
+    "t": "Submitted",
+    "who": "Creator"
+   },
+   {
+    "t": "Checked",
+    "who": "Accounts / warehouse"
+   },
+   {
+    "t": "Approved",
+    "who": "Manager"
+   },
+   {
+    "t": "Posted · locked",
+    "who": "System"
+   }
+  ],
+  "forms": [
+   {
+    "tab": "A · Credit policy",
+    "submit": "Submit for approval",
+    "note": "Credit is off for every customer until management turns it on here.",
+    "fields": [
+     {
+      "l": "Customer",
+      "t": "select",
+      "adv": false,
+      "hint": "Mithachora Hotel"
+     },
+     {
+      "l": "Credit allowed",
+      "t": "select",
+      "adv": false,
+      "hint": "Yes"
+     },
+     {
+      "l": "Credit limit",
+      "t": "number",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Credit days",
+      "t": "number",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Payment terms",
+      "t": "select",
+      "adv": true,
+      "hint": "Weekly"
+     },
+     {
+      "l": "Approval authority",
+      "t": "select",
+      "adv": true,
+      "hint": "Manager"
+     },
+     {
+      "l": "Effective date",
+      "t": "date",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Status",
+      "t": "select",
+      "adv": true,
+      "hint": "Active"
+     }
+    ]
+   },
+   {
+    "tab": "B · Credit collection",
+    "submit": "Save collection",
+    "note": "",
+    "fields": [
+     {
+      "l": "Collection ID",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Customer",
+      "t": "select",
+      "adv": false,
+      "hint": "Kamal Store"
+     },
+     {
+      "l": "Outstanding",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Amount collected",
+      "t": "number",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Method",
+      "t": "select",
+      "adv": false,
+      "hint": "Cash"
+     },
+     {
+      "l": "Invoice ref.",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Date",
+      "t": "date",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Collected by",
+      "t": "auto",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Reference",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Remarks",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     }
+    ]
+   },
+   {
+    "tab": "C · Credit exception",
+    "submit": "Submit for approval",
+    "note": "",
+    "fields": [
+     {
+      "l": "Customer",
+      "t": "select",
+      "adv": false,
+      "hint": "Mirsarai Gas House"
+     },
+     {
+      "l": "Existing due",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Requested extra credit",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Reason",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Requested by",
+      "t": "auto",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Expiry",
+      "t": "date",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Approval status",
+      "t": "select",
+      "adv": true,
+      "hint": "Waiting"
+     }
+    ]
+   }
+  ]
+ },
+ "m09": {
+  "no": "09",
+  "title": "Damage, loss & claims",
+  "bn": "ক্ষতি, হারানো ও দাবি",
+  "path": "Operations → Claims & Loss",
+  "cta": "Damage report",
+  "cols": [
+   "ID",
+   "Date",
+   "Type",
+   "Brand · size",
+   "Qty",
+   "Where"
+  ],
+  "reports": [
+   "Damage register",
+   "Loss register",
+   "Pending claims",
+   "Claim recovery",
+   "Approved write-offs"
+  ],
+  "tableTitle": "Records",
+  "kpiLabels": [
+   "Damaged this month",
+   "Lost (open)",
+   "Claims with supplier",
+   "Written off"
+  ],
+  "flow": [
+   {
+    "t": "Draft",
+    "who": "Creator"
+   },
+   {
+    "t": "Submitted",
+    "who": "Creator"
+   },
+   {
+    "t": "Checked",
+    "who": "Accounts / warehouse"
+   },
+   {
+    "t": "Approved",
+    "who": "Manager"
+   },
+   {
+    "t": "Posted · locked",
+    "who": "System"
+   }
+  ],
+  "forms": [
+   {
+    "tab": "A · Damage report",
+    "submit": "Submit",
+    "note": "",
+    "fields": [
+     {
+      "l": "Report ID",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Date",
+      "t": "date",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Brand · size",
+      "t": "select",
+      "adv": false,
+      "hint": "Aygaz United · 12 KG"
+     },
+     {
+      "l": "Quantity",
+      "t": "number",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Damage type",
+      "t": "select",
+      "adv": false,
+      "hint": "Valve"
+     },
+     {
+      "l": "Location",
+      "t": "select",
+      "adv": false,
+      "hint": "Main warehouse"
+     },
+     {
+      "l": "Related vehicle / customer",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Description",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Photos",
+      "t": "file",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Reported by",
+      "t": "auto",
+      "adv": true,
+      "hint": ""
+     }
+    ]
+   },
+   {
+    "tab": "B · Loss report",
+    "submit": "Submit for approval",
+    "note": "",
+    "fields": [
+     {
+      "l": "Loss ID",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Stock ref.",
+      "t": "select",
+      "adv": false,
+      "hint": "CLS-0511-03"
+     },
+     {
+      "l": "Expected",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Actual",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Difference",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Last known location",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Investigation notes",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Department",
+      "t": "select",
+      "adv": true,
+      "hint": "Distribution"
+     },
+     {
+      "l": "Approval",
+      "t": "select",
+      "adv": true,
+      "hint": "Manager"
+     }
+    ]
+   },
+   {
+    "tab": "C · Supplier claim",
+    "submit": "Send claim",
+    "note": "",
+    "fields": [
+     {
+      "l": "Claim ID",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Supplier",
+      "t": "select",
+      "adv": false,
+      "hint": "Aygaz United"
+     },
+     {
+      "l": "Challan ref.",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Claim type",
+      "t": "select",
+      "adv": false,
+      "hint": "Defective valve"
+     },
+     {
+      "l": "Quantity",
+      "t": "number",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Claimed amount",
+      "t": "number",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Evidence",
+      "t": "file",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Submitted",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Status",
+      "t": "select",
+      "adv": true,
+      "hint": "Draft"
+     },
+     {
+      "l": "Settlement",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     }
+    ]
+   }
+  ]
+ },
+ "m10": {
+  "no": "10",
+  "title": "Warehouses & stock transfer",
+  "bn": "গুদাম ও স্টক স্থানান্তর",
+  "path": "Inventory → Stock Transfer",
+  "cta": "Transfer request",
+  "cols": [
+   "Warehouse",
+   "Manager",
+   "12 kg full",
+   "35 kg full",
+   "45 kg full",
+   "Empties"
+  ],
+  "reports": [
+   "Warehouse stock",
+   "Transfer history",
+   "In-transit stock",
+   "Transfer shortage",
+   "Warehouse capacity"
+  ],
+  "tableTitle": "Records",
+  "kpiLabels": [
+   "Warehouses",
+   "In transit",
+   "Transfers this month",
+   "Transfer shortage"
+  ],
+  "flow": [
+   {
+    "t": "Draft",
+    "who": "Creator"
+   },
+   {
+    "t": "Submitted",
+    "who": "Creator"
+   },
+   {
+    "t": "Checked",
+    "who": "Accounts / warehouse"
+   },
+   {
+    "t": "Approved",
+    "who": "Manager"
+   },
+   {
+    "t": "Posted · locked",
+    "who": "System"
+   }
+  ],
+  "forms": [
+   {
+    "tab": "A · Warehouse registration",
+    "submit": "Save warehouse",
+    "note": "",
+    "fields": [
+     {
+      "l": "Warehouse ID",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Name",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Address",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Manager",
+      "t": "select",
+      "adv": false,
+      "hint": "Belal"
+     },
+     {
+      "l": "Contact",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Storage capacity",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Status",
+      "t": "select",
+      "adv": true,
+      "hint": "Active"
+     }
+    ]
+   },
+   {
+    "tab": "B · Transfer request",
+    "submit": "Submit for approval",
+    "note": "During transit the stock is counted in neither warehouse, only as \"in transit\".",
+    "fields": [
+     {
+      "l": "Transfer ID",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Date",
+      "t": "date",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "From",
+      "t": "select",
+      "adv": false,
+      "hint": "Main warehouse"
+     },
+     {
+      "l": "To",
+      "t": "select",
+      "adv": false,
+      "hint": "[second warehouse]"
+     },
+     {
+      "l": "Brand · size",
+      "t": "select",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Condition",
+      "t": "select",
+      "adv": false,
+      "hint": "Full"
+     },
+     {
+      "l": "Quantity",
+      "t": "number",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Reason",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Requested by",
+      "t": "auto",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Approval",
+      "t": "select",
+      "adv": true,
+      "hint": "Manager"
+     }
+    ]
+   },
+   {
+    "tab": "C · Dispatch & receive",
+    "submit": "Confirm receipt",
+    "note": "",
+    "fields": [
+     {
+      "l": "Transfer ref.",
+      "t": "select",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Dispatched",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Received",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Damaged",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Shortage",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Dispatch date",
+      "t": "date",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Vehicle",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Received by",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Receipt date",
+      "t": "file",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Notes",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     }
+    ]
+   }
+  ]
+ },
+ "m11": {
+  "no": "11",
+  "title": "Salesman incentive & payroll",
+  "bn": "বেতন ও কমিশন",
+  "path": "HR & Payroll → Employee Compensation",
+  "cta": "Process payroll",
+  "cols": [
+   "Employee",
+   "Role",
+   "Present days",
+   "Basic",
+   "Commission",
+   "Net pay"
+  ],
+  "reports": [
+   "Salary sheet",
+   "Payslip",
+   "Attendance",
+   "Commission",
+   "Advance ledger"
+  ],
+  "tableTitle": "Records",
+  "kpiLabels": [
+   "Employees",
+   "Present today",
+   "Commission (Nov, so far)",
+   "Advances open"
+  ],
+  "flow": [
+   {
+    "t": "Draft",
+    "who": "Creator"
+   },
+   {
+    "t": "Submitted",
+    "who": "Creator"
+   },
+   {
+    "t": "Checked",
+    "who": "Accounts / warehouse"
+   },
+   {
+    "t": "Approved",
+    "who": "Manager"
+   },
+   {
+    "t": "Posted · locked",
+    "who": "System"
+   }
+  ],
+  "forms": [
+   {
+    "tab": "C · Commission calculation",
+    "submit": "Submit for approval",
+    "note": "Only server-confirmed sales count. Shortage decisions are applied only after a manager decides.",
+    "fields": [
+     {
+      "l": "Employee",
+      "t": "select",
+      "adv": false,
+      "hint": "Hasan Mahmud"
+     },
+     {
+      "l": "Period",
+      "t": "select",
+      "adv": false,
+      "hint": "November 2026"
+     },
+     {
+      "l": "Eligible sales",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Commission rate",
+      "t": "number",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Gross commission",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Adjustments",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Net commission",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Approval",
+      "t": "select",
+      "adv": true,
+      "hint": "Manager"
+     }
+    ]
+   },
+   {
+    "tab": "A · Salary setup",
+    "submit": "Save",
+    "note": "",
+    "fields": [
+     {
+      "l": "Employee ID",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Name",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Role",
+      "t": "select",
+      "adv": false,
+      "hint": "Salesman"
+     },
+     {
+      "l": "Basic salary",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Commission scheme",
+      "t": "select",
+      "adv": false,
+      "hint": "Per cylinder"
+     },
+     {
+      "l": "Allowances",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Effective date",
+      "t": "date",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Payment method",
+      "t": "select",
+      "adv": true,
+      "hint": "Bank"
+     },
+     {
+      "l": "Status",
+      "t": "select",
+      "adv": true,
+      "hint": "Active"
+     }
+    ]
+   },
+   {
+    "tab": "B · Attendance",
+    "submit": "Save",
+    "note": "",
+    "fields": [
+     {
+      "l": "Employee",
+      "t": "select",
+      "adv": false,
+      "hint": "Hasan Mahmud"
+     },
+     {
+      "l": "Date",
+      "t": "date",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Duty start",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Duty end",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Status",
+      "t": "select",
+      "adv": false,
+      "hint": "Present"
+     },
+     {
+      "l": "Approved leave",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Remarks",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     }
+    ]
+   },
+   {
+    "tab": "D · Payroll",
+    "submit": "Submit for approval",
+    "note": "",
+    "fields": [
+     {
+      "l": "Payroll month",
+      "t": "select",
+      "adv": false,
+      "hint": "October 2026"
+     },
+     {
+      "l": "Employee",
+      "t": "select",
+      "adv": false,
+      "hint": "All"
+     },
+     {
+      "l": "Basic + allowances",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Approved commission",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Advance adjustment",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Net pay",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Authorized deductions",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Payment status",
+      "t": "select",
+      "adv": true,
+      "hint": "Not paid"
+     }
+    ]
+   }
+  ]
+ },
+ "m12": {
+  "no": "12",
+  "title": "Complaints & service tickets",
+  "bn": "অভিযোগ ও সার্ভিস টিকিট",
+  "path": "Customer Service → Support Tickets",
+  "cta": "New ticket",
+  "cols": [
+   "Ticket",
+   "Opened",
+   "Customer",
+   "Category",
+   "Priority",
+   "Assigned"
+  ],
+  "reports": [
+   "Open tickets",
+   "Overdue tickets",
+   "Complaint categories",
+   "Resolution time",
+   "Repeat complaints"
+  ],
+  "tableTitle": "Records",
+  "kpiLabels": [
+   "Open tickets",
+   "Overdue",
+   "Resolved this week",
+   "Repeat complaints"
+  ],
+  "flow": [
+   {
+    "t": "Draft",
+    "who": "Creator"
+   },
+   {
+    "t": "Submitted",
+    "who": "Creator"
+   },
+   {
+    "t": "Checked",
+    "who": "Accounts / warehouse"
+   },
+   {
+    "t": "Approved",
+    "who": "Manager"
+   },
+   {
+    "t": "Posted · locked",
+    "who": "System"
+   }
+  ],
+  "forms": [
+   {
+    "tab": "A · Create ticket",
+    "submit": "Create ticket",
+    "note": "Gas-leak complaints are marked high priority and the customer is told to turn off the cylinder valve and ventilate the room.",
+    "fields": [
+     {
+      "l": "Ticket ID",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Customer",
+      "t": "select",
+      "adv": false,
+      "hint": "Sonapahar Hotel"
+     },
+     {
+      "l": "Mobile",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Category",
+      "t": "select",
+      "adv": false,
+      "hint": "Gas smell / leak"
+     },
+     {
+      "l": "Subject",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Priority",
+      "t": "select",
+      "adv": false,
+      "hint": "High"
+     },
+     {
+      "l": "Related invoice",
+      "t": "select",
+      "adv": true,
+      "hint": "INV-0211-07-008"
+     },
+     {
+      "l": "Description",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Attachment",
+      "t": "file",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Created",
+      "t": "auto",
+      "adv": true,
+      "hint": ""
+     }
+    ]
+   },
+   {
+    "tab": "B · Assignment",
+    "submit": "Assign",
+    "note": "",
+    "fields": [
+     {
+      "l": "Ticket",
+      "t": "select",
+      "adv": false,
+      "hint": "TKT-0511-004"
+     },
+     {
+      "l": "Department",
+      "t": "select",
+      "adv": false,
+      "hint": "Field service"
+     },
+     {
+      "l": "Employee",
+      "t": "select",
+      "adv": false,
+      "hint": "Arif"
+     },
+     {
+      "l": "Target date",
+      "t": "date",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Internal note",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Status",
+      "t": "select",
+      "adv": true,
+      "hint": "Assigned"
+     }
+    ]
+   },
+   {
+    "tab": "C · Resolution",
+    "submit": "Close ticket",
+    "note": "",
+    "fields": [
+     {
+      "l": "Ticket",
+      "t": "select",
+      "adv": false,
+      "hint": "TKT-0511-004"
+     },
+     {
+      "l": "Action taken",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Resolution type",
+      "t": "select",
+      "adv": false,
+      "hint": "Replacement"
+     },
+     {
+      "l": "Customer confirmation",
+      "t": "select",
+      "adv": false,
+      "hint": "Confirmed by phone"
+     },
+     {
+      "l": "Refund / replacement ref.",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Resolution date",
+      "t": "date",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Closing note",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     }
+    ]
+   }
+  ]
+ },
+ "m13": {
+  "no": "13",
+  "title": "Demand forecast & reorder",
+  "bn": "চাহিদা পূর্বাভাস ও অর্ডার পরিকল্পনা",
+  "path": "Analytics → Demand Planning",
+  "cta": "Reorder rule",
+  "cols": [
+   "Product",
+   "Available",
+   "7-day demand",
+   "Pending PO",
+   "Suggested",
+   "Risk"
+  ],
+  "reports": [
+   "Forecast vs actual",
+   "Stockout risk",
+   "Reorder suggestions",
+   "Area-wise demand",
+   "Inventory turnover"
+  ],
+  "tableTitle": "Records",
+  "kpiLabels": [
+   "Stockout risk",
+   "Suggested order",
+   "Forecast accuracy (Oct)",
+   "Open POs"
+  ],
+  "flow": [
+   {
+    "t": "Draft",
+    "who": "Creator"
+   },
+   {
+    "t": "Submitted",
+    "who": "Creator"
+   },
+   {
+    "t": "Checked",
+    "who": "Accounts / warehouse"
+   },
+   {
+    "t": "Approved",
+    "who": "Manager"
+   },
+   {
+    "t": "Posted · locked",
+    "who": "System"
+   }
+  ],
+  "forms": [
+   {
+    "tab": "C · Purchase recommendation",
+    "submit": "Create PO from this",
+    "note": "Forecasts are estimates from past sales, not promised sales. A manager can override every number.",
+    "fields": [
+     {
+      "l": "Recommendation",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Product",
+      "t": "select",
+      "adv": false,
+      "hint": "Aygaz United · 12 KG"
+     },
+     {
+      "l": "Available stock",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Expected demand (7 days)",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Pending POs",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Recommended qty",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Preferred supplier",
+      "t": "select",
+      "adv": true,
+      "hint": "Aygaz United"
+     },
+     {
+      "l": "Approval status",
+      "t": "select",
+      "adv": true,
+      "hint": "Waiting"
+     }
+    ]
+   },
+   {
+    "tab": "A · Reorder rules",
+    "submit": "Save rule",
+    "note": "",
+    "fields": [
+     {
+      "l": "Warehouse",
+      "t": "select",
+      "adv": false,
+      "hint": "Main warehouse"
+     },
+     {
+      "l": "Brand · size",
+      "t": "select",
+      "adv": false,
+      "hint": "Aygaz United · 12 KG"
+     },
+     {
+      "l": "Minimum stock",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Reorder point",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Target stock",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Supplier lead time (days)",
+      "t": "number",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Safety stock",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Status",
+      "t": "select",
+      "adv": true,
+      "hint": "Active"
+     }
+    ]
+   },
+   {
+    "tab": "B · Forecast settings",
+    "submit": "Save",
+    "note": "",
+    "fields": [
+     {
+      "l": "Forecast period",
+      "t": "select",
+      "adv": false,
+      "hint": "Next 7 days"
+     },
+     {
+      "l": "Area",
+      "t": "select",
+      "adv": false,
+      "hint": "All zones"
+     },
+     {
+      "l": "Brand · size",
+      "t": "select",
+      "adv": false,
+      "hint": "Aygaz · 12 KG"
+     },
+     {
+      "l": "History used",
+      "t": "select",
+      "adv": false,
+      "hint": "Last 60 days"
+     },
+     {
+      "l": "Method",
+      "t": "select",
+      "adv": false,
+      "hint": "Moving average"
+     },
+     {
+      "l": "Seasonal adjustment",
+      "t": "select",
+      "adv": true,
+      "hint": "Off"
+     },
+     {
+      "l": "Manager override",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Notes",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     }
+    ]
+   }
+  ]
+ },
+ "m14": {
+  "no": "14",
+  "title": "Audit, backup & recovery",
+  "bn": "অডিট, ব্যাকআপ ও পুনরুদ্ধার",
+  "path": "System → Audit & Recovery",
+  "cta": "Backup job",
+  "cols": [
+   "Time",
+   "User",
+   "Module",
+   "Action",
+   "Record",
+   "Changed"
+  ],
+  "reports": [
+   "Audit activity",
+   "Backup status",
+   "Failed backup alerts",
+   "Restore history",
+   "Recovery test results"
+  ],
+  "tableTitle": "Records",
+  "kpiLabels": [
+   "Audit events today",
+   "Last backup",
+   "Failed backups",
+   "Last restore test"
+  ],
+  "flow": [
+   {
+    "t": "Draft",
+    "who": "Creator"
+   },
+   {
+    "t": "Submitted",
+    "who": "Creator"
+   },
+   {
+    "t": "Checked",
+    "who": "Accounts / warehouse"
+   },
+   {
+    "t": "Approved",
+    "who": "Manager"
+   },
+   {
+    "t": "Posted · locked",
+    "who": "System"
+   }
+  ],
+  "forms": [
+   {
+    "tab": "A · Audit log viewer",
+    "submit": "Apply filters",
+    "note": "",
+    "fields": [
+     {
+      "l": "User",
+      "t": "select",
+      "adv": false,
+      "hint": "All"
+     },
+     {
+      "l": "Role",
+      "t": "select",
+      "adv": false,
+      "hint": "All"
+     },
+     {
+      "l": "Module",
+      "t": "select",
+      "adv": false,
+      "hint": "Daily reconciliation"
+     },
+     {
+      "l": "Action",
+      "t": "select",
+      "adv": false,
+      "hint": "Update"
+     },
+     {
+      "l": "Date range",
+      "t": "date",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Record ref.",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "IP / device",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     }
+    ]
+   },
+   {
+    "tab": "B · Backup configuration",
+    "submit": "Save",
+    "note": "",
+    "fields": [
+     {
+      "l": "Backup name",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Scope",
+      "t": "select",
+      "adv": false,
+      "hint": "Database + uploaded files"
+     },
+     {
+      "l": "Frequency",
+      "t": "select",
+      "adv": false,
+      "hint": "[choose]"
+     },
+     {
+      "l": "Destination",
+      "t": "select",
+      "adv": false,
+      "hint": "[choose storage]"
+     },
+     {
+      "l": "Encryption",
+      "t": "select",
+      "adv": false,
+      "hint": "On"
+     },
+     {
+      "l": "Retention",
+      "t": "select",
+      "adv": true,
+      "hint": "[choose]"
+     },
+     {
+      "l": "Notify",
+      "t": "select",
+      "adv": true,
+      "hint": "Mohammad Faruk"
+     },
+     {
+      "l": "Enabled",
+      "t": "select",
+      "adv": true,
+      "hint": "No"
+     }
+    ]
+   },
+   {
+    "tab": "C · Restore request",
+    "submit": "Submit for approval",
+    "note": "A restore to the live system needs Super Admin approval, a verified backup and a written plan.",
+    "fields": [
+     {
+      "l": "Request ID",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Backup",
+      "t": "select",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Reason",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Target",
+      "t": "select",
+      "adv": false,
+      "hint": "Test environment"
+     },
+     {
+      "l": "Impact assessment",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Requested by",
+      "t": "auto",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Approval",
+      "t": "select",
+      "adv": true,
+      "hint": "Super Admin"
+     },
+     {
+      "l": "Restore window",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     }
+    ]
+   },
+   {
+    "tab": "D · Recovery test",
+    "submit": "Save result",
+    "note": "",
+    "fields": [
+     {
+      "l": "Test date",
+      "t": "date",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Backup",
+      "t": "select",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Environment",
+      "t": "select",
+      "adv": false,
+      "hint": "Test"
+     },
+     {
+      "l": "Restore result",
+      "t": "select",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Data check",
+      "t": "select",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Duration",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Tester",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Findings",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     }
+    ]
+   }
+  ]
+ },
+ "m15": {
+  "no": "15",
+  "title": "Regulatory & compliance",
+  "bn": "লাইসেন্স ও নিয়মকানুন",
+  "path": "Compliance → License & Safety",
+  "cta": "Add license",
+  "cols": [
+   "License",
+   "Type",
+   "Authority",
+   "Number",
+   "Expiry",
+   "Officer"
+  ],
+  "reports": [
+   "License expiry",
+   "Compliance status",
+   "Pending corrective actions",
+   "Safety training",
+   "Inspection history"
+  ],
+  "tableTitle": "Records",
+  "kpiLabels": [
+   "Licenses recorded",
+   "Expiring in 60 days",
+   "Open corrective actions",
+   "Staff trained (this year)"
+  ],
+  "flow": [
+   {
+    "t": "Draft",
+    "who": "Creator"
+   },
+   {
+    "t": "Submitted",
+    "who": "Creator"
+   },
+   {
+    "t": "Checked",
+    "who": "Accounts / warehouse"
+   },
+   {
+    "t": "Approved",
+    "who": "Manager"
+   },
+   {
+    "t": "Posted · locked",
+    "who": "System"
+   }
+  ],
+  "forms": [
+   {
+    "tab": "A · License registration",
+    "submit": "Save license",
+    "note": "Which licenses apply must be checked against current Bangladesh rules. Recording a license here does not by itself mean the business is compliant.",
+    "fields": [
+     {
+      "l": "License ID",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "License type",
+      "t": "select",
+      "adv": false,
+      "hint": "[e.g. trade, LPG storage, fire safety]"
+     },
+     {
+      "l": "Issuing authority",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "License number",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Expiry date",
+      "t": "date",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Entity / branch",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Issue date",
+      "t": "date",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Attachment",
+      "t": "file",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Responsible officer",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Status",
+      "t": "select",
+      "adv": true,
+      "hint": "Active"
+     }
+    ]
+   },
+   {
+    "tab": "B · Compliance checklist",
+    "submit": "Submit",
+    "note": "",
+    "fields": [
+     {
+      "l": "Checklist ID",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Location",
+      "t": "select",
+      "adv": false,
+      "hint": "Main warehouse"
+     },
+     {
+      "l": "Requirement",
+      "t": "select",
+      "adv": false,
+      "hint": "[from configured list]"
+     },
+     {
+      "l": "Inspection date",
+      "t": "date",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Result",
+      "t": "select",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Findings",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Corrective action",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Responsible person",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Due date",
+      "t": "date",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Evidence",
+      "t": "file",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Approval",
+      "t": "select",
+      "adv": true,
+      "hint": ""
+     }
+    ]
+   },
+   {
+    "tab": "C · Safety training",
+    "submit": "Save",
+    "note": "",
+    "fields": [
+     {
+      "l": "Training ID",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Topic",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Date",
+      "t": "date",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Trainer",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Participants",
+      "t": "select",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Assessment",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Certificate",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Next training",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     }
+    ]
+   },
+   {
+    "tab": "D · Compliance incident",
+    "submit": "Report",
+    "note": "",
+    "fields": [
+     {
+      "l": "Incident ID",
+      "t": "auto",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Location",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Date",
+      "t": "date",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Category",
+      "t": "select",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Description",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Immediate action",
+      "t": "text",
+      "adv": false,
+      "hint": ""
+     },
+     {
+      "l": "Reporting authority (if any)",
+      "t": "text",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Documents",
+      "t": "file",
+      "adv": true,
+      "hint": ""
+     },
+     {
+      "l": "Follow-up",
+      "t": "select",
+      "adv": true,
+      "hint": "Open"
+     },
+     {
+      "l": "Closure approval",
+      "t": "select",
+      "adv": true,
+      "hint": ""
+     }
+    ]
+   }
+  ]
+ }
+}

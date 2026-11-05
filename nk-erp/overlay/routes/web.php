@@ -28,6 +28,7 @@ use App\Http\Controllers\AppController;
 use App\Http\Controllers\MapController;
 use App\Http\Controllers\PortalController;
 use App\Http\Controllers\CustomerOrderController;
+use App\Http\Controllers\ErpController;
 use App\Http\Controllers\TripController;
 use Illuminate\Support\Facades\Route;
 
@@ -258,6 +259,13 @@ Route::middleware(['auth', 'pwd'])->group(function () {
         Route::post('/customer-orders/{order}/attach', [CustomerOrderController::class, 'attach'])->name('corders.attach');
         Route::post('/customer-orders/{order}/reject', [CustomerOrderController::class, 'reject'])->name('corders.reject');
         Route::post('/customers/{customer}/portal', [CustomerOrderController::class, 'togglePortal'])->name('corders.portal');
+    });
+    Route::middleware('role:super_admin,admin,manager,accounts')->group(function () {
+        Route::get('/erp', [ErpController::class, 'overview'])->name('erp.index');
+        Route::get('/erp/{m}', [ErpController::class, 'index'])->name('erp.module')->where('m', 'm(0[1-9]|1[0-5])');
+        Route::post('/erp/{m}', [ErpController::class, 'store'])->name('erp.store')->where('m', 'm(0[1-9]|1[0-5])');
+        Route::post('/erp/records/{rec}/step', [ErpController::class, 'step'])->name('erp.step');
+        Route::get('/erp/records/{rec}/file', [ErpController::class, 'file'])->name('erp.file');
     });
     Route::get('/vehicle-profit', [FleetController::class, 'profit'])->name('fleet.profit')->middleware('role:super_admin');
 

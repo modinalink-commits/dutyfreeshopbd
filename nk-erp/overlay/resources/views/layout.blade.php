@@ -62,7 +62,7 @@ textarea{padding:8px 10px;min-height:60px}
     @php($adminOnly = ['company', 'users', 'activity', 'sms', 'hero'])
     @php($superOnly = ['supplier', 'accounts', 'vpl', 'import'])
     @php($mgrOnly = ['map', 'live', 'corders'])
-    @php($officeOnly = ['rdash', 'vehicles', 'loading', 'return', 'settle', 'closing', 'exp', 'export'])
+    @php($officeOnly = ['rdash', 'vehicles', 'loading', 'return', 'settle', 'closing', 'exp', 'export', 'erp'])
     @php($cur = request()->route()?->getName() ?? '')
     @php($cur = ['trips.wizard' => 'trips.closing', 'trips.sales' => 'fleet.dash', 'trips.slip' => 'trips.loading'][$cur] ?? $cur)
     @php($allRoutes = collect(\App\Support\Roadmap::MENU)->flatten(1)->pluck(2)->filter())
