@@ -34,6 +34,10 @@ class AiVerifyController extends Controller {
     // Orders edited after their last verification (customer, address, items, payment, discount, status) are re-verified by themselves; unchanged data is skipped by the fingerprint.
     $stale = DB::table('order_ai_verifications as v')->join('orders as o', 'o.id', '=', 'v.order_id')->whereIn('v.order_id', $ids)->whereColumn('o.updated_at', '>', 'v.verified_at')->orderByDesc('o.updated_at')->limit(4)->pluck('v.order_id')->all();
     foreach ($stale as $sid) { try { AiVerify::run((int)$sid, 'auto-update', true, false); } catch (\Throwable $e) {} }
+    // Results that could not get a fraud answer yet (older automatic runs without the live courier check) are completed by themselves.
+    $nofraud = DB::table('order_ai_verifications')->whereIn('order_id', $ids)->whereRaw("summary->>'fraud_risk' = 'Unknown'")->whereNull('override_status')->orderByDesc('order_id')->limit(4)->pluck('order_id')->all();
+    foreach ($nofraud as $nid) { try { AiVerify::run((int)$nid, 'auto-fraud', true, true); } catch (\Throwable $e) {} }
+    $left += count($nofraud) ? 1 : 0;
     $rows = DB::table('order_ai_verifications')->whereIn('order_id', $ids)->get(['order_id', 'verification_status', 'override_status', 'verification_score']);
     $o = []; foreach ($rows as $x) { $s = $x->override_status ?: $x->verification_status; $o[$x->order_id] = ['s' => $s, 'l' => AiVerify::LABEL[$s] ?? $s, 'n' => (int)$x->verification_score]; }
     return response()->json(['m' => $o, 'left' => $left])->header('Cache-Control', 'no-store');
