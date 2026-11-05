@@ -155,6 +155,26 @@ main .ibar a.ib.hs{background:#FFF7ED;color:#E07B39}
 main .ibar a.ib.cp{background:#F8FAFC;color:#64748B}
 main .ibar a.ib-call{background:#ECFDF5;color:#15803D!important}
 main .ibar a.ib:hover,main .ibar a.ib-call:hover{box-shadow:0 3px 8px rgba(11,18,32,.12)!important}
+/* ===== 10. compact customer card: stat chips + quiet action buttons ===== */
+.ci .cs-row{display:flex;gap:5px;align-items:center;margin-top:5px;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;max-width:100%;scrollbar-width:none;-webkit-overflow-scrolling:touch}.ci .cs-row::-webkit-scrollbar{display:none}
+.ci .cs-row+.cs-row{margin-top:5px}
+.ci .cs{display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 8px;border-radius:8px;border:1px solid #CED4DA;background:#F8FAFC;color:#334155;font-size:11.5px;font-weight:600;line-height:1;white-space:nowrap;flex:0 0 auto;cursor:default}
+.ci .cs b{font-weight:700;color:inherit}
+.ci .cs svg{flex:0 0 auto}
+.ci .cs-sep{width:1px;height:14px;background:#CED4DA;flex:0 0 auto;margin:0 1px}
+.ci .t-n{background:#F3F4F6;border-color:#D5D9DE;color:#374151}
+.ci .t-g{background:#F0FBF4;border-color:#BFE6CE;color:#166534}
+.ci .t-r{background:#FEF3F2;border-color:#F6C4C0;color:#B42318}
+.ci .t-a{background:#FFF8E8;border-color:#F4D79B;color:#9A5B0B}
+.ci .t-b{background:#EEF3FB;border-color:#C5D3EC;color:#1E3A6E}
+.ci .ibar{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;max-width:100%;gap:6px;margin-top:6px;padding:1px;scrollbar-width:none}.ci .ibar::-webkit-scrollbar{display:none}
+main .ci .ibar a.ib,main .ci .ibar a.ib-call{border:1px solid #CED4DA!important;box-shadow:none!important;transform:none!important;transition:border-color .15s,background-color .15s,box-shadow .15s;flex:0 0 auto}
+main .ci .ibar a.ib{width:30px!important;height:30px!important;min-width:30px;border-radius:8px}
+main .ci .ibar a.ib svg{width:14px;height:14px}
+main .ci .ibar a.ib-call{height:30px!important;padding:0 11px;border-radius:8px;font-size:12px;gap:5px;background:#ECFDF5}
+main .ci .ibar a.ib-call svg{width:13px;height:13px}
+main .ci .ibar a.ib:hover,main .ci .ibar a.ib-call:hover{border-color:#9CA3AF!important;box-shadow:0 2px 6px rgba(11,18,32,.10)!important;transform:none!important}
+main .ci .ibar a.ib.on,main .ci .ibar a.ib-call.on{border-color:#FF5A00!important;background:#FFF3EA!important}
 .dfx-menu{border-color:var(--border-main)}
 .dfx-menu .dfx-f button:hover{background:var(--accent-tint)!important}
 </style>
