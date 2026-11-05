@@ -88,19 +88,24 @@ class Reorder
   public static function makeRfq(int $id, array $sup, array $c): void {
     $r = DB::table('reorder_requests')->find($id); $p = DB::table('products')->find($r->product_id); if (!$r || !$p) return;
     $rid = DB::table('supplier_rfqs')->insertGetId(['rfq_no' => 'TMP' . uniqid(), 'product_id' => $p->id, 'product' => $p->name, 'sku' => $p->sku, 'qty' => $r->req_qty, 'required_date' => $r->required_date,
-      'notes' => 'Auto reorder ' . $r->req_no . ' · stock ' . $r->stock_at . ' (below ' . $r->threshold . ')', 'expires_at' => now()->addHours($c['hours']), 'status' => 'draft', 'reorder_id' => $id, 'created_by' => $r->created_by, 'created_at' => now(), 'updated_at' => now()]);
+      'notes' => 'Auto reorder ' . $r->req_no . ' · stock ' . $r->stock_at . ' (below ' . $r->threshold . ')', 'expires_at' => self::expiry($c), 'status' => 'sent', 'reorder_id' => $id, 'created_by' => $r->created_by, 'created_at' => now(), 'updated_at' => now()]);
     DB::table('supplier_rfqs')->where('id', $rid)->update(['rfq_no' => 'RFQ-' . str_pad((string)$rid, 5, '0', STR_PAD_LEFT)]);
     foreach ($sup as $sid) DB::table('supplier_rfq_invites')->insert(['rfq_id' => $rid, 'supplier_id' => $sid, 'status' => 'pending', 'created_at' => now(), 'updated_at' => now()]);
     DB::table('reorder_requests')->where('id', $id)->update(['rfq_id' => $rid, 'status' => 'New', 'updated_at' => now()]);
-    if ($c['auto_send'] && $c['send_at'] === '') self::send($id); // with a daily send time the request waits as New until that time
+    if ($c['auto_send'] && $c['send_at'] === '') self::send($id); // with a daily send time the request is visible in the supplier app now; the notification waits for that time
+  }
+  /** Quote deadline = next notification time + hours (so suppliers always have the full window). */
+  public static function expiry(array $c) {
+    $at = now(); if ($c['send_at'] !== '' && preg_match('/^(\d{1,2}):(\d{2})$/', $c['send_at'], $m)) { $t = now('Asia/Dhaka')->setTime((int)$m[1], (int)$m[2]); if ($t->isPast()) $t = $t->addDay(); $at = $t->copy()->setTimezone(config('app.timezone')); }
+    return $at->addHours($c['hours']);
   }
   /** Send the draft RFQ: supplier app notification (+ SMS when enabled). */
   public static function send(int $id): bool {
     $r = DB::table('reorder_requests')->find($id); if (!$r || !$r->rfq_id) return false;
-    $rfq = DB::table('supplier_rfqs')->find($r->rfq_id); if (!$rfq || $rfq->status !== 'draft') return false;
-    $c = self::cfg(); DB::table('supplier_rfqs')->where('id', $rfq->id)->update(['status' => 'sent', 'expires_at' => now()->addHours($c['hours']), 'updated_at' => now()]);
-    $rfq->expires_at = now()->addHours($c['hours']);
-    DB::table('reorder_requests')->where('id', $id)->update(['status' => 'Sent to Supplier', 'updated_at' => now()]);
+    $rfq = DB::table('supplier_rfqs')->find($r->rfq_id); if (!$rfq || !in_array($rfq->status, ['draft', 'sent'], true) || $r->notified_at) return false;
+    $c = self::cfg(); $exp = now()->addHours($c['hours']); DB::table('supplier_rfqs')->where('id', $rfq->id)->update(['status' => 'sent', 'expires_at' => $exp, 'updated_at' => now()]);
+    $rfq->expires_at = $exp;
+    DB::table('reorder_requests')->where('id', $id)->update(['status' => 'Sent to Supplier', 'notified_at' => now(), 'updated_at' => now()]);
     $pri = in_array($r->urgency, ['Critical', 'High'], true) ? 'urgent' : 'action';
     foreach (DB::table('supplier_rfq_invites')->where('rfq_id', $rfq->id)->pluck('supplier_id') as $sid) {
       SupplierPortal::notify((int)$sid, 'reorder', ($r->kind === 'preorder' ? 'Pre-order request: ' : 'Product needed: ') . $rfq->product, 'Requested qty ' . $r->req_qty . ($r->kind === 'preorder' ? '' : ' · Current stock ' . $r->stock_at) . ' · Required by ' . ($r->required_date ?: '—') . ' · Submit your best price before ' . date('d M, g:i A', strtotime((string)$rfq->expires_at)), '/supplier-portal/rfq/' . $rfq->id, $pri);
@@ -125,12 +130,12 @@ class Reorder
       try {
         $p = DB::table('products')->find($r->product_id); if (!$p) { self::cancel($r->id, 'Product removed'); continue; }
         $stock = (int)$p->stock; $thr = self::threshold($p, $c); $st = $r->status;
-        if ($r->kind !== 'preorder' && in_array($st, self::EARLY, true) && $stock >= $thr) { self::cancel($r->id, 'Stock recovered'); DB::table('reorder_requests')->where('id', $r->id)->update(['status' => 'Closed']); continue; }
+        // requests are never closed because stock came back: they stay visible until quoted, received or cancelled by the admin
         if ($st === 'No Supplier') { $sup = SupplierInsight::suppliersFor((int)$r->product_id); if ($sup) self::makeRfq($r->id, $sup, $c); continue; }
         $rfq = $r->rfq_id ? DB::table('supplier_rfqs')->find($r->rfq_id) : null; if (!$rfq) continue;
         $quotes = DB::table('supplier_quotes')->where('rfq_id', $rfq->id)->count(); $new = $st; $end = null;
         if ($rfq->status === 'draft') $new = 'New';
-        elseif ($rfq->status === 'sent') { $exp = $rfq->expires_at && strtotime((string)$rfq->expires_at) <= time(); $new = $quotes ? ($st === 'Under Review' ? 'Under Review' : 'Quote Received') : ($exp ? 'Expired' : 'Sent to Supplier'); if ($new === 'Expired') DB::table('supplier_rfqs')->where('id', $rfq->id)->update(['status' => 'closed', 'updated_at' => now()]); }
+        elseif ($rfq->status === 'sent') { $exp = $rfq->expires_at && strtotime((string)$rfq->expires_at) <= time(); $new = $quotes ? ($st === 'Under Review' ? 'Under Review' : 'Quote Received') : ($r->notified_at ? 'Sent to Supplier' : 'New'); if ($exp && !$quotes) DB::table('supplier_rfqs')->where('id', $rfq->id)->update(['expires_at' => now()->addHours($c['hours']), 'updated_at' => now()]); /* no quote yet: keep the request open */ }
         elseif ($rfq->status === 'closed') $new = $quotes ? 'Under Review' : 'Expired';
         elseif ($rfq->status === 'awarded') {
           $po = DB::table('supplier_pos')->where('rfq_quote_id', $rfq->awarded_quote_id)->where('status', '!=', 'cancelled')->orderByDesc('id')->first();
@@ -157,7 +162,7 @@ class Reorder
     $c = self::cfg(); if (!$c['auto_send'] || $c['send_at'] === '' || !preg_match('/^\d{1,2}:\d{2}$/', $c['send_at'])) return 0;
     $now = now('Asia/Dhaka'); $today = $now->toDateString(); if ($now->format('H:i') < str_pad($c['send_at'], 5, '0', STR_PAD_LEFT) || Procure::set('reorder_send_last') === $today) return 0;
     Procure::put('reorder_send_last', $today); $n = 0;
-    foreach (DB::table('reorder_requests')->where('status', 'New')->whereNotNull('rfq_id')->pluck('id') as $id) if (self::send((int)$id)) $n++;
+    foreach (DB::table('reorder_requests')->where('status', 'New')->whereNull('notified_at')->whereNotNull('rfq_id')->pluck('id') as $id) if (self::send((int)$id)) $n++;
     if ($n) Procure::audit('reorder.daily_send', 'reorder', null, ['sent' => $n, 'at' => $c['send_at']]);
     return $n;
   }

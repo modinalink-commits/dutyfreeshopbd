@@ -162,9 +162,10 @@ class SupplierPortalController extends Controller
   public function reorders() {
     $this->need('rfq'); $sid = SP::sid();
     $rows = DB::table('supplier_rfq_invites as i')->join('supplier_rfqs as r','r.id','=','i.rfq_id')->join('reorder_requests as o','o.id','=','r.reorder_id')->leftJoin('products as p','p.id','=','r.product_id')->leftJoin('supplier_quotes as q', fn($j) => $j->on('q.rfq_id','=','r.id')->where('q.supplier_id','=',$sid))
-      ->where('i.supplier_id',$sid)->where('r.status','!=','draft')->orderByRaw("case when r.status = 'sent' and i.status = 'pending' then 0 else 1 end")->orderByDesc('r.id')->limit(100)
+      ->where('i.supplier_id',$sid)->where('r.status','!=','draft')->orderBy('r.id')->limit(500)
       ->get(['r.id','r.rfq_no','r.product','r.sku','r.qty','r.required_date','r.expires_at','r.status as rstatus','i.status as istatus','i.decline_reason','o.urgency','o.kind','o.stock_at','p.image','q.unit_price']);
-    return $this->v('reorder_list', compact('rows'));
+    $contact = preg_replace('/[^0-9+]/', '', (string)\App\Support\Procure::set('reorder_contact', ''));
+    return $this->v('reorder_list', compact('rows', 'contact'));
   }
   public function rfqs() {
     $this->need('rfq'); $sid = SP::sid();

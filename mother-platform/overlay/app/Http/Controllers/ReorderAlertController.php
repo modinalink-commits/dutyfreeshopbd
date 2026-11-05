@@ -36,6 +36,7 @@ class ReorderAlertController extends Controller
     $d = $r->validate(['threshold'=>'required|integer|min:1|max:100000','target'=>'required|integer|min:1|max:1000000','days'=>'required|integer|min:1|max:90','hours'=>'required|integer|min:1|max:720','high'=>'required|integer|min:1|max:1000','med'=>'required|integer|min:1|max:1000','send_at'=>['nullable','regex:/^([01]?\d|2[0-3]):[0-5]\d$/']]);
     foreach (['threshold','target'] as $k) P::put('reorder_'.$k, (string)$d[$k]); P::put('reorder_days', (string)$d['days']); P::put('reorder_rfq_hours', (string)$d['hours']);
     P::put('reorder_u_high', (string)$d['high']); P::put('reorder_u_med', (string)max($d['high'], $d['med']));
+    P::put('reorder_contact', trim((string)($d['contact'] ?? '')));
     P::put('reorder_send_at', trim((string)($d['send_at'] ?? '')));
     foreach (['enabled','auto_send','sourcing','sms'] as $k) P::put('reorder_'.$k, $r->boolean($k) ? '1' : '0');
     P::audit('reorder.settings', 'reorder', null, $d + $r->only('enabled','auto_send','sourcing','sms'));
