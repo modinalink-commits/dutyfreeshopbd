@@ -7,7 +7,9 @@ class MotherInstall extends Command {
   protected $signature = 'mother:install';
   protected $description = 'Create first super admin and first store';
   public function handle() {
-    if (!DB::table('users')->where('role','super')->exists()) {
+    $adminEmail = strtolower(trim((string)env('ADMIN_EMAIL', '')));
+    // Skip when any super admin exists OR the configured admin email is already taken (no duplicate-key error on every deploy).
+    if (!DB::table('users')->where('role','super')->exists() && !($adminEmail !== '' && DB::table('users')->whereRaw('lower(email) = ?', [$adminEmail])->exists())) {
       if (strlen((string)env('ADMIN_PASSWORD')) < 12 || !filter_var(env('ADMIN_EMAIL'), FILTER_VALIDATE_EMAIL)) { $this->error('Set ADMIN_EMAIL and an ADMIN_PASSWORD of at least 12 characters, then run again.'); return 1; }
       DB::table('users')->insert(['name'=>'Mohammad Faruk','email'=>env('ADMIN_EMAIL','admin@example.com'),'password'=>Hash::make(env('ADMIN_PASSWORD')),'role'=>'super','active'=>true,'created_at'=>now(),'updated_at'=>now()]);
       $this->info('admin created');
