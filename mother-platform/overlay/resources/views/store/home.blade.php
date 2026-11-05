@@ -236,6 +236,14 @@ if(document.readyState==='complete')setTimeout(first,300);else addEventListener(
 .fs .hd2>*{position:relative;z-index:1}
 @keyframes fsGo{from{transform:translateX(0)}to{transform:translateX(233%)}}
 @media(prefers-reduced-motion:reduce){.fs .hd2::after{animation:none}}
+/* Flash Sale cards: every card has the same internal grid, so rows line up and nothing moves up or down (price can wrap to 2 rows, the name is 2 rows, the sold line is 1 row). */
+.fs .pc,.fs .pc:hover{transform:none}
+.fs .pc{transition:box-shadow .15s}
+.fs .pc .ph,.fs .pc .nm,.fs .pc .pr,.fs .pc .on{flex:none}
+.fs .pc .pr{align-content:flex-start;min-height:54px}
+.fs .pc .sold{min-height:14px;line-height:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fs .pc .on{margin-top:auto}
+@media(max-width:760px){.fs .pc .pr{min-height:26px}}
 </style>
 <div class="w sec-fs" id="flash" data-end="{{ $fFix ? $fEnd * 1000 : '' }}" style="padding-top:22px"><div class="fs">
 <div class="hd2"><b class="t">⚡ FLASH SALE</b><span class="e">ENDS IN</span><div class="tm"><span class="b" data-cd="h">{{ substr($fmt($fEnd),0,2) }}</span><span>:</span><span class="b" data-cd="m">{{ substr($fmt($fEnd),3,2) }}</span><span>:</span><span class="b" data-cd="s">{{ substr($fmt($fEnd),6,2) }}</span></div>
