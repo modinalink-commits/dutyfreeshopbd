@@ -15,6 +15,7 @@ class AiVerifyController extends Controller {
     $res['can_cost'] = \App\Support\Costing::canSee();
     return response()->json($res)->header('Cache-Control', 'no-store');
   }
+  public function page(int $id) { abort_unless(DB::table('orders')->where('id', $id)->exists(), 404); return view('ai_verify_page', ['id' => $id]); }
   public function override(Request $r, int $id) {
     abort_unless(in_array(auth()->user()->role ?? '', ['super', 'admin'], true), 403);
     $d = $r->validate(['status' => 'required|in:verified,review,high,failed,pending', 'reason' => 'required|string|min:5|max:300']);

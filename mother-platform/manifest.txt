@@ -675,3 +675,4 @@ database/migrations/2026_11_06_000010_order_ai_verify.php
 app/Support/AiVerify.php
 app/Http/Controllers/AiVerifyController.php
 resources/views/ai_verify_ui.blade.php
+resources/views/ai_verify_page.blade.php

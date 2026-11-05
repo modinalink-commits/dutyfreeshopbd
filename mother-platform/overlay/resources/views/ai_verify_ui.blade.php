@@ -9,7 +9,7 @@ td.action-column .order-action-grid .ai-btn.s-high{background:#FEECEC!important;
 td.action-column .order-action-grid .ai-btn.s-failed{background:#FBE0E0!important;border-color:#D96A6A!important;color:#7F1D1D!important}
 td.action-column .order-action-grid .ai-btn.s-pending{background:#EEF2F7!important;border-color:#C5CFDC!important;color:#475569!important}
 .aiv-ov{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:9998;display:none}.aiv-ov.on{display:block}
-.aiv{position:fixed;top:0;right:0;bottom:0;width:480px;max-width:100%;background:#fff;z-index:9999;box-shadow:-12px 0 40px rgba(15,23,42,.22);display:flex;flex-direction:column;transform:translateX(102%);transition:transform .25s}.aiv.on{transform:none}
+.aiv{position:fixed;top:0;right:0;bottom:0;width:680px;max-width:100%;background:#fff;z-index:9999;box-shadow:-12px 0 40px rgba(15,23,42,.22);display:flex;flex-direction:column;transform:translateX(102%);transition:transform .25s}.aiv.on{transform:none}
 .aiv-h{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #E5E9F0}.aiv-h b{font-size:15px;color:#1E1B4B}.aiv-h small{display:block;color:#64748B;font-size:11.5px;font-weight:500}
 .aiv-x{border:0;background:#F1F5F9;border-radius:8px;width:30px;height:30px;font-size:18px;cursor:pointer}
 .aiv-b{overflow:auto;padding:14px 16px 20px;flex:1}
@@ -24,10 +24,13 @@ td.action-column .order-action-grid .ai-btn.s-pending{background:#EEF2F7!importa
 .aiv-f{display:flex;gap:8px;padding:12px 16px;border-top:1px solid #E5E9F0}.aiv-f button,.aiv-ovf button{height:34px;border-radius:8px;border:1px solid #CBD5E1;background:#fff;padding:0 14px;font-weight:700;cursor:pointer;font-size:12.5px}.aiv-f button,.aiv-ovf button{color:#0F172A!important}.aiv-f .p{background:#4C1D95!important;color:#fff!important;border-color:#4C1D95!important}.aiv-x{color:#0F172A!important}
 .aiv-ovf{border:1px dashed #CBD5E1;border-radius:10px;padding:10px;margin-top:8px}.aiv-ovf select,.aiv-ovf input{width:100%;height:32px;border:1px solid #CBD5E1;border-radius:8px;padding:0 8px;margin:4px 0;font-size:12.5px;box-sizing:border-box}
 .aiv-h2{width:100%;border-collapse:collapse;font-size:11.5px}.aiv-h2 td{padding:4px 6px;border-bottom:1px solid #F1F5F9;color:#475569}
+.aiv-t{display:inline-flex;align-items:center;height:30px;padding:0 11px;border-radius:8px;background:#EDE9FE;color:#4C1D95!important;font-size:12px;font-weight:700;text-decoration:none;margin-right:8px}
+.aiv.pg{position:static;transform:none;width:auto;max-width:1180px;margin:16px auto;box-shadow:none;border:1px solid #E5E9F0;border-radius:14px;max-height:none}.aiv.pg .aiv-b{overflow:visible}.aiv.pg .aiv-cks{columns:2;column-gap:28px}.aiv.pg .aiv-cks h4,.aiv.pg .aiv-ck{break-inside:avoid}.aiv.pg .aiv-g{grid-template-columns:repeat(5,1fr)}.aiv.pg .aiv-x,.aiv.pg .aiv-t,.aiv.pg #aivC{display:none}body.aipg .aiv-ov{display:none!important}
+@media(max-width:760px){.aiv.pg .aiv-cks{columns:1}.aiv.pg .aiv-g{grid-template-columns:repeat(2,1fr)}}
 .aiv-ld{padding:40px 10px;text-align:center;color:#64748B}
 </style>
 <div class="aiv-ov" id="aivOv"></div>
-<aside class="aiv" id="aiv" aria-hidden="true"><div class="aiv-h"><div><b>AI Verification</b><small id="aivSub">Order</small></div><button type="button" class="aiv-x" id="aivX" aria-label="Close">×</button></div><div class="aiv-b" id="aivB"></div><div class="aiv-f"><button type="button" class="p" id="aivRe">Re-Verify</button><button type="button" id="aivC">Close</button></div></aside>
+<aside class="aiv" id="aiv" aria-hidden="true"><div class="aiv-h"><div><b>AI Verification</b><small id="aivSub">Order</small></div><div><a class="aiv-t" id="aivT" href="#" target="_blank" rel="noopener">↗ Open in new tab</a><button type="button" class="aiv-x" id="aivX" aria-label="Close">×</button></div></div><div class="aiv-b" id="aivB"></div><div class="aiv-f"><button type="button" class="p" id="aivRe">Re-Verify</button><button type="button" id="aivC">Close</button></div></aside>
 <script>(function(){
 var D={verified:'Verified',review:'Review',high:'High Risk',failed:'Failed',pending:'Pending'},IC={verified:'✓',review:'⚠',high:'✕',failed:'✕',pending:'●'},cur=0,tok=function(){var m=document.querySelector('meta[name=csrf-token]');return m?m.content:''};
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
@@ -44,19 +47,20 @@ h+='<div class="aiv-g">'+cell('Customer reliability',r.reliability==null?'New':r
 h+='<h4>Why?</h4>';var rs=r.reasons||[];
 if(rs.length){h+='<div class="aiv-why">';rs.forEach(function(c){h+='<div>'+(c.r==='fail'?'✕':'⚠')+' '+esc(c.d)+' <span class="cd" style="display:inline">'+esc(c.c)+'</span></div>'});h+='</div>'}else h+='<div class="aiv-why ok">✓ Nothing unusual found. Every check passed.</div>';
 if(s.critical&&s.critical.length)h+='<div class="aiv-why" style="margin-top:6px;background:#FEF2F2;border-color:#FECACA">Critical rule(s) forced human review: <b>'+s.critical.map(esc).join(', ')+'</b></div>';
-var G={};(r.checks||[]).forEach(function(c){(G[c.g]=G[c.g]||[]).push(c)});
+h+='<div class="aiv-cks">';var G={};(r.checks||[]).forEach(function(c){(G[c.g]=G[c.g]||[]).push(c)});
 ['Customer','Fraud','Order','Payment','Courier','Stock','Pricing','History','Communication'].forEach(function(g){if(!G[g])return;h+='<h4>'+g+'</h4>';G[g].forEach(function(c){var ic=c.r==='pass'?'✓':c.r==='review'?'⚠':c.r==='fail'?'✕':'i';h+='<div class="aiv-ck '+c.r+'"><i>'+ic+'</i><div><b>'+esc(c.t)+'</b><span class="cd">'+esc(c.c)+'</span><span>'+esc(c.d)+'</span></div></div>'})});
-h+='<h4>Verification history</h4><table class="aiv-h2">';(r.history||[]).forEach(function(x){h+='<tr><td>#'+x.no+'</td><td>'+esc(x.prev)+' → <b>'+esc(x.status)+'</b> ('+x.score+')</td><td>'+esc(x.by)+'</td><td>'+esc(x.at)+(x.note?'<br>'+esc(x.note):'')+'</td></tr>'});h+='</table>';
+h+='</div><h4>Verification history</h4><table class="aiv-h2">';(r.history||[]).forEach(function(x){h+='<tr><td>#'+x.no+'</td><td>'+esc(x.prev)+' → <b>'+esc(x.status)+'</b> ('+x.score+')</td><td>'+esc(x.by)+'</td><td>'+esc(x.at)+(x.note?'<br>'+esc(x.note):'')+'</td></tr>'});h+='</table>';
 h+='<p style="font-size:11px;color:#64748B;margin-top:10px">AI Verify supports staff decisions. It never cancels, blocks, refunds or blacklists. Verified ≥ '+r.threshold.verified+', Review ≥ '+r.threshold.review+'.</p>';
 if(r.can_override)h+='<h4>Staff override</h4><div class="aiv-ovf"><select id="aivOs"><option value="verified">AI Verified</option><option value="review">Review Required</option><option value="high">High Risk</option><option value="pending">Pending Verification</option></select><input id="aivOr" maxlength="300" placeholder="Override reason (required)"><button type="button" id="aivOk">Save override</button></div>';
 B.innerHTML=h;var ok=document.getElementById('aivOk');if(ok)ok.onclick=function(){var rs=document.getElementById('aivOr').value.trim();if(rs.length<5){document.getElementById('aivOr').focus();return}ok.disabled=true;fetch('/admin/orders/'+cur+'/ai-verify/override',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':tok()},body:JSON.stringify({status:document.getElementById('aivOs').value,reason:rs})}).then(function(x){return x.json()}).then(function(j){render(j);upd(j)}).catch(function(){ok.disabled=false})};
 }
 function upd(r){document.querySelectorAll('.ai-btn[data-id="'+r.order_id+'"]').forEach(function(b){paint(b,r.status,r.score)})}
-function load(id,run){cur=id;open();B.innerHTML='<div class="aiv-ld">Verifying order #'+id+' …<br>Checking customer, fraud, payment, stock, pricing and history</div>';document.getElementById('aivSub').textContent='Order #'+id;
+function load(id,run){cur=id;open();B.innerHTML='<div class="aiv-ld">Verifying order #'+id+' …<br>Checking customer, fraud, payment, stock, pricing and history</div>';document.getElementById('aivSub').textContent='Order #'+id;var tl=document.getElementById('aivT');if(tl)tl.href='/admin/orders/'+id+'/ai-verify/page';
 fetch('/admin/orders/'+id+'/ai-verify'+(run?'?run=1':''),{headers:{Accept:'application/json'}}).then(function(x){if(!x.ok)throw 0;return x.json()}).then(function(j){render(j);upd(j)}).catch(function(){B.innerHTML='<div class="aiv-ld">Could not run AI Verify. Please try again.</div>'})}
 document.addEventListener('click',function(e){var b=e.target.closest('.ai-btn');if(b){e.preventDefault();load(parseInt(b.getAttribute('data-id'),10),false)}});
 document.getElementById('aivRe').onclick=function(){if(cur)load(cur,true)};
 var ids=[].map.call(document.querySelectorAll('.ai-btn[data-id]'),function(b){return b.getAttribute('data-id')});
 function stat(n){if(!ids.length)return;fetch('/admin/orders/ai-status?ids='+ids.join(','),{headers:{Accept:'application/json'}}).then(function(x){return x.json()}).then(function(j){var m=j.m||{};document.querySelectorAll('.ai-btn[data-id]').forEach(function(b){var v=m[b.getAttribute('data-id')];if(v)paint(b,v.s,v.n)});if(j.left>0&&n<8)setTimeout(function(){stat(n+1)},800)}).catch(function(){})}
 stat(0);
+var pgE=document.querySelector('[data-aipage]');if(pgE){document.body.classList.add('aipg');dr.classList.add('pg');load(parseInt(pgE.getAttribute('data-aipage'),10),false)}
 })();</script>
