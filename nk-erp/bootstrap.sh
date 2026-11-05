@@ -61,9 +61,10 @@ POOL
 i=0; until php -r 'new PDO("pgsql:host=db;dbname=nkerp","nkerp",getenv("DB_PASSWORD"));' 2>/dev/null; do i=$((i+1)); [ $i -gt 30 ] && break; echo "waiting for db"; sleep 2; done
 [ -s /srv/.appkey ] || php -r 'echo "base64:".base64_encode(random_bytes(32));' > /srv/.appkey
 
-if [ ! -s /srv/deploy/current_ref ]; then
-  # First install of the release system: build the release for the compose REF in place.
-  wget -qO /tmp/d.sh "$R/deploy.sh" && sh /tmp/d.sh "$REF" boot
+if [ "$(cat /srv/deploy/current_ref 2>/dev/null)" != "$REF" ] && [ "$(cat /srv/deploy/boot_ref 2>/dev/null)" != "$REF" ]; then
+  # A new compose REF means "make this release live now" (first install, or an urgent fix).
+  echo "$REF" > /srv/deploy/boot_ref
+  wget -qO /tmp/d.sh "$R/deploy.sh" && sh /tmp/d.sh "$REF" boot || echo "NK BOOT: deploy of $REF failed, keeping $(cat /srv/deploy/current_ref 2>/dev/null)"
 fi
 # Make sure the live release has caches for this container (plain restart keeps the live code).
 cd /srv/app && php artisan config:cache >/dev/null && php artisan route:cache >/dev/null || true
