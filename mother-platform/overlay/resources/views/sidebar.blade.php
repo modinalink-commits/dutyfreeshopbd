@@ -125,15 +125,15 @@ aside.sbx nav{gap:10px!important;border-top:0!important;padding:0 6px 10px!impor
 aside.sbx nav>details.mg,aside.sbx nav>.sbx-ov{flex:none!important}
 aside.sbx nav details.mg,aside.sbx nav .sbx-ov{display:block;background:#fff!important;border:1px solid #94A3B8!important;border-radius:10px!important;overflow:hidden;margin:0!important;box-shadow:0 1px 2px rgba(15,23,42,.04)}
 /* header bars */
-aside.sbx nav details.mg>summary,aside.sbx nav .sbx-oh{display:flex!important;align-items:center;gap:0!important;box-sizing:border-box;min-height:30px!important;margin:0!important;padding:6px 30px 6px 12px!important;background:#EEF2F7!important;color:#334155!important;border:0!important;border-bottom:1px solid #A9B4C4!important;border-radius:0!important;font-size:11px!important;font-weight:800!important;letter-spacing:.7px;text-transform:uppercase;line-height:1.2;box-shadow:none!important}
+aside.sbx nav details.mg>summary,aside.sbx nav .sbx-oh{display:flex!important;align-items:center;gap:0!important;box-sizing:border-box;min-height:30px!important;margin:0!important;padding:6px 30px 6px 12px!important;background:#DCE6F5!important;color:#1E3A8A!important;border:0!important;border-bottom:1px solid #9DB2D4!important;border-radius:0!important;font-size:11px!important;font-weight:800!important;letter-spacing:.7px;text-transform:uppercase;line-height:1.2;box-shadow:none!important}
 aside.sbx nav .sbx-oh{padding-right:12px!important;cursor:default}
 aside.sbx nav details.mg>summary svg{display:none!important}
 aside.sbx nav details.mg>summary span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 aside.sbx nav details.mg:not([open])>summary{border-bottom:0!important}
-aside.sbx nav details.mg>summary:hover{background:#E6ECF4!important;color:#0F172A!important}
-aside.sbx nav details.mg>summary::after{content:'›';position:absolute;right:12px;top:50%;margin-top:-10px;font-size:16px;line-height:20px;color:#64748B!important;opacity:1;transition:transform .15s}
+aside.sbx nav details.mg>summary:hover{background:#CFDDF2!important;color:#172554!important}
+aside.sbx nav details.mg>summary::after{content:'›';position:absolute;right:12px;top:50%;margin-top:-10px;font-size:16px;line-height:20px;color:#1E3A8A!important;opacity:1;transition:transform .15s}
 aside.sbx nav details.mg[open]>summary::after{transform:rotate(90deg)}
-aside.sbx nav details.mg[open]>summary{background:#EEF2F7!important;color:#334155!important}
+aside.sbx nav details.mg[open]>summary{background:#C9DAF3!important;color:#172554!important;box-shadow:inset 3px 0 0 #2563EB!important}
 /* rows */
 aside.sbx nav a.nv,aside.sbx nav a.sub{display:flex!important;align-items:center;gap:10px!important;box-sizing:border-box;position:relative;min-height:36px!important;margin:0!important;padding:0 12px!important;background:#fff!important;color:#1F2937!important;border:0!important;border-top:1px solid #CBD3DF!important;border-radius:0!important;font-size:12.5px!important;font-weight:500!important;line-height:1.25;box-shadow:none!important;text-decoration:none}
 aside.sbx nav .sbx-oh+a.nv,aside.sbx nav details.mg>summary+a.sub{border-top:0!important}
