@@ -42,8 +42,9 @@
 .dfc-p.op{opacity:1;transform:none;pointer-events:auto;visibility:visible}.dfc-p b{display:block;font-size:14.5px;margin-bottom:3px}.dfc-p span{display:block;color:#4B5563;font-size:12.5px}.dfc-p .x{position:absolute;top:5px;right:8px;border:0;background:none;color:#9CA3AF;font-size:17px;cursor:pointer;line-height:1;padding:2px 4px}
 .dfc-p:after{content:'';position:absolute;right:20px;bottom:-7px;width:12px;height:12px;background:#fff;border-right:1.25px solid #FDC2A5;border-bottom:1.25px solid #FDC2A5;transform:rotate(45deg)}
 .fb{bottom:96px!important}
-@media(max-width:760px){.dfc-l{right:12px;bottom:{{ $__bn ? '88px' : '18px' }}}.dfc-lab{display:none}.dfc-b{width:54px;height:54px}.fb{bottom:{{ $__bn ? '154px' : '84px' }}!important}
-.dfc-w{right:0;left:0;bottom:0;top:0;width:auto;max-width:none;height:auto;border-radius:0;transform:translateY(24px)}.dfc-w.op~.dfc-l,.dfc-l.hid{display:none}
+.dfc-wa{position:fixed;right:22px;bottom:94px;z-index:56;width:50px;height:50px;border-radius:50%;background:#25D366;color:#fff;display:flex;align-items:center;justify-content:center;border:2.5px solid #0B1220;box-shadow:0 6px 18px rgba(37,211,102,.45);transition:transform .2s}.dfc-wa:hover{transform:translateY(-3px) scale(1.06)}.dfc-wa svg{width:26px;height:26px}
+@media(max-width:760px){.dfc-wa{right:15px;bottom:{{ $__bn ? '152px' : '82px' }};width:46px;height:46px}.dfc-l{right:12px;bottom:{{ $__bn ? '88px' : '18px' }}}.dfc-lab{display:none}.dfc-b{width:54px;height:54px}.fb{bottom:{{ $__bn ? '154px' : '84px' }}!important}
+.dfc-w{right:0;left:0;bottom:0;top:0;width:auto;max-width:none;height:auto;border-radius:0;transform:translateY(24px)}.dfc-w.op~.dfc-l,.dfc-w.op~.dfc-wa,.dfc-l.hid{display:none}
 .dfc-p{right:12px;bottom:{{ $__bn ? '138px' : '86px' }};width:250px}}
 @media(prefers-reduced-motion:reduce){.dfc-b{animation:none}.dfc-w,.dfc-p{transition:none}}
 </style>
@@ -59,6 +60,7 @@
 <button type="button" class="mic" id="dfcmic" aria-label="ভয়েস মেসেজ পাঠান" title="কথা বলুন" hidden>🎙</button><textarea id="dfcq" rows="1" maxlength="1000" placeholder="এখানে আপনার মেসেজ লিখুন..." aria-label="Message"></textarea><button class="sd" id="dfcsd" type="submit" aria-label="Send"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg></button></form>
 <div class="dfc-pw">DutyFreeBD · আমরা সাধারণত কয়েক মিনিটের মধ্যে উত্তর দিই</div></div>
 <div class="dfc-l" id="dfcl"><span class="dfc-lab">সাহায্য লাগবে? আমাদের সাথে চ্যাট করুন</span><button type="button" class="dfc-b" id="dfcb" aria-label="Open live chat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.5 8.5 0 0 1-12.2 7.6L3 21l1.5-5.4A8.5 8.5 0 1 1 21 12z"/><path d="M8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01" stroke-width="2.6"/></svg><span class="dfc-n" id="dfcn"></span></button></div>
+@if(!empty($wa))<a class="dfc-wa" href="https://wa.me/{{ $wa }}" target="_blank" rel="noopener" aria-label="WhatsApp"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.2-1.4A10 10 0 1 0 12 2zm5.2 14c-.2.6-1.2 1.2-1.7 1.2-.5.1-1 .2-3.3-.7-2.8-1.2-4.5-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.8s.7-2 1-2.3c.2-.2.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.3 0 .5-.1.2-.2.3-.3.5l-.4.5c-.1.1-.3.3-.1.6.2.3.7 1.2 1.5 1.9 1 .9 1.9 1.2 2.2 1.3.3.1.4.1.6-.1l.8-1c.2-.2.3-.2.6-.1l1.9.9c.3.1.5.2.5.3.1.2.1.8-.1 1.3z"/></svg></a>@endif
 @verbatim
 <script>(function(){
 var D=window.DFC||{},K='dfchat',$=function(i){return document.getElementById(i)};
