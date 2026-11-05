@@ -735,4 +735,4 @@ ba9a0585a46334fbc1b3bc1c7bdcc15b5670cbdd database/migrations/2026_11_06_000120_s
 ea89c2b12d67775b814ded1506051013e76aab04 app/Jobs/SendSupplierInvitationSmsJob.php
 63d0b0206dac1af55ed041846ddbf68931f1f3bb app/Http/Controllers/SupplierPortalSetupController.php
 668b9893fa04cf250a4762486ad4553853c6e51c resources/views/sp/activate.blade.php
-e0eda6950e3fd94ad112156fdccf960130a47e8e resources/views/sp/admin_setup.blade.php
+8cb741c906f8c76984eeeb3e058879af947f61bf resources/views/sp/admin_setup.blade.php
