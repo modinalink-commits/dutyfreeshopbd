@@ -59,7 +59,7 @@ class Roadmap
             ['company', 'Company settings', 'settings.edit', 'CompanySettings'],
             ['users', 'Users & roles', 'users.index', 'Roles (all specs)'],
             ['activity', 'Activity log', 'activity', 'Audit trail (all specs)'],
-            ['sms', 'Invoices & SMS', null, 'SmsCenter · CompanyDoc'],
+            ['sms', 'Invoices & SMS', 'sms.index', 'SmsCenter · CompanyDoc'],
         ],
     ];
 

@@ -9,13 +9,19 @@ class Sale extends Model
     public const STAGES = ['waiting' => 'Waiting to load', 'on_road' => 'On the road', 'delivered' => 'Delivered', 'posted' => 'Posted', 'voided' => 'Voided'];
     public const METHODS = ['cash' => 'Cash', 'bkash' => 'bKash', 'nagad' => 'Nagad', 'bank' => 'Bank', 'due' => 'Due'];
 
-    protected $fillable = ['invoice_no', 'type', 'customer_id', 'walkin_name', 'walkin_phone', 'stage', 'subtotal', 'discount', 'delivery_charge', 'total', 'paid', 'payment_method', 'empty_brand_id', 'empties_expected', 'empties_received', 'vehicle', 'note', 'created_by', 'delivered_at', 'voided_by', 'voided_at', 'void_reason', 'trip_id'];
+    protected $fillable = ['invoice_no', 'type', 'customer_id', 'walkin_name', 'walkin_phone', 'stage', 'subtotal', 'discount', 'delivery_charge', 'total', 'paid', 'payment_method', 'empty_brand_id', 'empties_expected', 'empties_received', 'vehicle', 'note', 'created_by', 'delivered_at', 'voided_by', 'voided_at', 'void_reason', 'trip_id', 'company'];
+
+    protected static function booted(): void
+    {
+        static::creating(function (Sale $s) { if (! $s->company) $s->company = Setting::snapshot(); });
+        static::created(fn (Sale $s) => rescue(fn () => \App\Support\Sms::forSale($s), null, false));
+    }
 
     public function trip() { return $this->belongsTo(Trip::class); }
 
     protected function casts(): array
     {
-        return ['subtotal' => 'decimal:2', 'discount' => 'decimal:2', 'delivery_charge' => 'decimal:2', 'total' => 'decimal:2', 'paid' => 'decimal:2', 'delivered_at' => 'datetime', 'voided_at' => 'datetime'];
+        return ['subtotal' => 'decimal:2', 'discount' => 'decimal:2', 'delivery_charge' => 'decimal:2', 'total' => 'decimal:2', 'paid' => 'decimal:2', 'delivered_at' => 'datetime', 'voided_at' => 'datetime', 'company' => 'array'];
     }
 
     public function items() { return $this->hasMany(SaleItem::class); }

@@ -205,6 +205,7 @@ class TripController extends Controller
         $c = Customer::findOrFail($data['customer_id']);
         CustomerLedger::create(['customer_id' => $c->id, 'kind' => 'payment', 'reference' => $trip->trip_no, 'credit' => $data['amount'], 'method' => $data['method'],
             'note' => trim('Previous due collected on '.$trip->trip_no.' '.($data['note'] ?? '')), 'created_by' => $request->user()->id, 'trip_id' => $trip->id]);
+        rescue(fn () => \App\Support\Sms::forPayment($c, (float) $data['amount'], null), null, false);
         AuditLog::record('trip_due_collected', "{$trip->trip_no} · {$c->name} ৳{$data['amount']} {$data['method']}");
         return back()->with('ok', 'Previous due ৳'.number_format((float) $data['amount'])." from {$c->name} saved.");
     }

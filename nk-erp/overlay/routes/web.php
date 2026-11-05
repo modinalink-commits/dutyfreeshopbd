@@ -20,6 +20,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\FleetController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\HrController;
+use App\Http\Controllers\SmsController;
 use App\Http\Controllers\TripController;
 use Illuminate\Support\Facades\Route;
 
@@ -157,6 +158,14 @@ Route::middleware(['auth', 'pwd'])->group(function () {
         Route::post('/hr/payroll/{payroll}/pay', [HrController::class, 'pay'])->name('hr.payroll.pay');
     });
     Route::post('/hr/payroll/{payroll}/approve', [HrController::class, 'approve'])->name('hr.payroll.approve')->middleware('role:super_admin');
+    Route::middleware('role:super_admin,admin')->group(function () {
+        Route::get('/sms', [SmsController::class, 'index'])->name('sms.index');
+        Route::post('/sms/retry', [SmsController::class, 'retry'])->name('sms.retry');
+    });
+    Route::middleware('role:super_admin')->group(function () {
+        Route::post('/sms/gateway', [SmsController::class, 'gateway'])->name('sms.gateway');
+        Route::post('/sms/notice', [SmsController::class, 'notice'])->name('sms.notice');
+    });
     Route::get('/vehicle-profit', [FleetController::class, 'profit'])->name('fleet.profit')->middleware('role:super_admin');
 
     // Company money is confidential: Super Admin only.

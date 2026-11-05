@@ -28,7 +28,8 @@ class SaleController extends Controller
     public function print(Request $request, Sale $sale)
     {
         $size = in_array($request->query('size'), ['a4', '80', '58'], true) ? $request->query('size') : 'a4';
-        return view('sales.print', ['sale' => $sale->load(['items', 'customer', 'user']), 'size' => $size, 's' => \App\Models\Setting::query()->pluck('value', 'key')]);
+        \Illuminate\Support\Facades\DB::table('sales')->where('id', $sale->id)->increment($size === 'a4' ? 'a4_prints' : 'pos_prints');
+        return view('sales.print', ['sale' => $sale->load(['items', 'customer', 'user']), 'size' => $size, 's' => collect($sale->company ?? \App\Models\Setting::snapshot())]);
     }
 
     public function void(Request $request, Sale $sale)

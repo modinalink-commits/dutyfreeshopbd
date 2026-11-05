@@ -13,18 +13,41 @@ class Setting extends Model
 
     public const FIELDS = [
         'company_name' => 'Company name',
-        'brand' => 'Brand',
-        'slogan' => 'Slogan',
-        'phone' => 'Phone',
+        'brand' => 'Product brand',
+        'slogan' => 'Company slogan',
+        'category' => 'Business category',
+        'address_bn' => 'Business address (Bangla)',
+        'address_en' => 'Business address (English)',
+        'country' => 'Country',
+        'division' => 'Division',
+        'upazila' => 'Upazila',
+        'area' => 'Area',
+        'phone' => 'Phone number',
         'whatsapp' => 'WhatsApp number',
-        'email' => 'Email',
-        'address_en' => 'Address (English)',
-        'address_bn' => 'Address (Bangla)',
-        'trade_license' => 'Trade license no.',
+        'email' => 'Email address',
+        'website' => 'Website',
+        'trade_license' => 'Trade license number',
+        'bin' => 'BIN / VAT registration',
         'tin' => 'TIN',
+        'invoice_footer' => 'Invoice footer',
         'opening_hours' => 'Opening hours',
         'home_delivery_charge' => 'Home delivery charge (৳)',
     ];
+
+    /** What an invoice stores at the moment it is made. */
+    public const SNAPSHOT = ['company_name', 'brand', 'slogan', 'address_en', 'address_bn', 'phone', 'email', 'website', 'trade_license', 'bin', 'tin', 'invoice_footer', 'logo', 'signature'];
+
+    public static function snapshot(): array
+    {
+        $all = static::query()->whereIn('key', self::SNAPSHOT)->pluck('value', 'key')->all();
+        $all['logo'] = $all['logo'] ?? '/img/logo.webp';
+        return $all;
+    }
+
+    public static function logo(): string
+    {
+        return static::get('logo') ?: '/img/logo.webp';
+    }
 
     public static function get(string $key, ?string $default = null): ?string
     {

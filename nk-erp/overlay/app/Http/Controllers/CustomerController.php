@@ -138,6 +138,7 @@ class CustomerController extends Controller
                 'sale_id' => $sale?->id, 'credit' => $data['amount'], 'method' => $data['method'], 'note' => $data['note'] ?? null, 'created_by' => $request->user()->id]);
         });
         AuditLog::record('customer_payment', "{$customer->code} ৳{$data['amount']} {$data['method']}");
+        rescue(fn () => \App\Support\Sms::forPayment($customer, (float) $data['amount'], ! empty($data['sale_id']) ? \App\Models\Sale::find($data['sale_id']) : null), null, false);
 
         return back()->with('ok', 'Payment of ৳'.number_format((float) $data['amount']).' saved.');
     }

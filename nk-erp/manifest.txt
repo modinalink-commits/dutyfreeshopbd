@@ -16,6 +16,7 @@ app/Http/Controllers/ProductController.php
 app/Http/Controllers/RoadmapController.php
 app/Http/Controllers/SaleController.php
 app/Http/Controllers/SettingController.php
+app/Http/Controllers/SmsController.php
 app/Http/Controllers/StockController.php
 app/Http/Controllers/TripController.php
 app/Http/Controllers/UserController.php
@@ -49,6 +50,7 @@ app/Models/Route.php
 app/Models/Sale.php
 app/Models/SaleItem.php
 app/Models/Setting.php
+app/Models/SmsMessage.php
 app/Models/StockMovement.php
 app/Models/Trip.php
 app/Models/TripAdjustment.php
@@ -63,6 +65,7 @@ app/Support/Icons.php
 app/Support/Money.php
 app/Support/Roadmap.php
 app/Support/SalesService.php
+app/Support/Sms.php
 app/Support/TripCalc.php
 app/Support/Ui.php
 bootstrap/app.php
@@ -75,6 +78,7 @@ database/migrations/2026_11_05_000006_accounts.php
 database/migrations/2026_11_05_000007_route_sales.php
 database/migrations/2026_11_05_000008_expense_management.php
 database/migrations/2026_11_05_000009_hr_payroll.php
+database/migrations/2026_11_05_000010_company_profile.php
 public/css/nk-table.css
 public/img/logo.webp
 public/js/nk-table.js
@@ -118,6 +122,7 @@ resources/views/sales/index.blade.php
 resources/views/sales/print.blade.php
 resources/views/sales/show.blade.php
 resources/views/settings.blade.php
+resources/views/sms.blade.php
 resources/views/soon.blade.php
 resources/views/statement_print.blade.php
 resources/views/stock/create.blade.php

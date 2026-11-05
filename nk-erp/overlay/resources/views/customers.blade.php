@@ -5,7 +5,9 @@
 @php($tk = fn ($n) => '৳'.number_format((float) $n))
 <header style="display:flex;flex-wrap:wrap;align-items:center;gap:12px">
   <div style="flex-grow:1"><h1>Customers &amp; dues</h1><p class="sub">Retail customers, dealers and their cylinders</p></div>
-  <button class="btn" type="button" disabled title="Turns on when the SMS gateway is set up in Invoices &amp; SMS">Send due SMS ({{ $counts['due'] }})</button>
+  @if(auth()->user()->isSuperAdmin())
+  <form method="post" action="{{ route('sms.notice') }}" onsubmit="this.message.value=prompt('Due reminder text','{{ addslashes(\App\Support\Sms::render('due', ['due' => '…'])) }}')||'';return !!this.message.value">@csrf<input type="hidden" name="to" value="due"><input type="hidden" name="message"><button class="btn" type="submit" @disabled(! \App\Support\Sms::configured()) title="{{ \App\Support\Sms::configured() ? 'Send an SMS to every customer with due' : 'Set up the SMS gateway in Invoices & SMS first' }}">Send due SMS ({{ $counts['due'] }})</button></form>
+  @else<button class="btn" type="button" disabled title="Super Admin sends due SMS">Send due SMS ({{ $counts['due'] }})</button>@endif
   <a class="btn pri" href="{{ route('customers.index', ['new' => 1]) }}#cust-form">＋ Add customer</a>
 </header>
 <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">

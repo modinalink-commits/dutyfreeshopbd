@@ -35,12 +35,12 @@ td,th{padding:4px 0;text-align:left;vertical-align:top}
 <div class="bar"><button type="button" onclick="window.print()">Print</button></div>
 <div class="paper">
   <div class="hd">
-    <img src="/img/logo.webp" alt="">
+    <img src="{{ $s['logo'] ?? '/img/logo.webp' }}" alt="">
     <div>
       <div style="font-weight:800;font-size:{{ $size === 'a4' ? '20px' : '14px' }}">{{ $s['company_name'] ?? 'NK Corporation' }}</div>
       <div>{{ $s['brand'] ?? '' }} LPG · {{ $s['slogan'] ?? '' }}</div>
       <div>{{ $s['address_en'] ?? '' }}</div>
-      <div>Phone {{ $s['phone'] ?? '' }}</div>
+      <div>Phone {{ $s['phone'] ?? '' }}{{ ! empty($s['bin']) ? ' · BIN '.$s['bin'] : '' }}{{ ! empty($s['trade_license']) ? ' · Trade license '.$s['trade_license'] : '' }}</div>
     </div>
   </div>
   <table style="margin:8px 0">
@@ -63,8 +63,9 @@ td,th{padding:4px 0;text-align:left;vertical-align:top}
     <tr><td>Empties received</td><td class="r">{{ $sale->empties_received }} / {{ $sale->empties_expected }}</td></tr>
   </table>
   <div style="margin-top:{{ $size === 'a4' ? '40px' : '8px' }};{{ $size === 'a4' ? 'display:flex;justify-content:space-between' : 'text-align:center' }}">
-    @if($size === 'a4')<span>Customer signature</span><span>For {{ $s['company_name'] ?? 'NK Corporation' }}</span>@else<span>Thank you · {{ $s['slogan'] ?? '' }}</span>@endif
+    @if($size === 'a4')<span>Customer signature</span><span style="text-align:center">@if(! empty($s['signature']))<img src="{{ $s['signature'] }}" alt="" style="height:40px;display:block;margin:0 auto 2px">@endif For {{ $s['company_name'] ?? 'NK Corporation' }}</span>@else<span>Thank you · {{ $s['slogan'] ?? '' }}</span>@endif
   </div>
+  @if(! empty($s['invoice_footer']))<div style="margin-top:8px;font-size:{{ $size === 'a4' ? '11px' : '9px' }};text-align:center;border-top:1px solid #c9d2e3;padding-top:6px">{{ $s['invoice_footer'] }}</div>@endif
 </div>
 <script>if(location.search.indexOf('auto=1')>=0)window.print();</script>
 </body>
