@@ -29,33 +29,30 @@ $canRep = $P::can(auth()->user(), 'reports', 'view');
 $stores = (int)\Illuminate\Support\Facades\Cache::remember('sb.stores.v1', 300, fn() => \DB::table('stores')->where('active',true)->count());
 $chatUn = (int)\Illuminate\Support\Facades\Cache::remember('sb.chat.v1', 10, fn() => \Illuminate\Support\Facades\Schema::hasTable('chat_threads') ? (int)\DB::table('chat_threads')->sum('unread') : 0);
 $svg = fn($p) => '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'.$p.'</svg>';
+$svs = fn($p) => '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'.$p.'</svg>';
+$pickIc = function ($label, $gic) use ($IC) { $l = strtolower($label); foreach ([['/dialer|call|missed|sip|extension|voice/','phone'],['/scoreboard|agent|attendance/','user-check'],['/payment|due|withdraw|bill|income|expense|account|ledger|shurjo|method/','card'],['/courier|delivery|pathao|carrybee|redx|steadfast/','truck'],['/supplier|damage|return/','truck-box'],['/store|channel/','store'],['/hr|payroll|staff|employee/','idcard'],['/customer|member|loyalty|referral|segment|fraud|dob|blocked|user|role|permission/','users'],['/discount|coupon|deal|offer|win-back|winback/','percent'],['/campaign|marketing|ads|push|sms/','mega'],['/report|analytic|profit|summary|brief/','chart'],['/\bai\b|claude|automation/','spark'],['/seo|page|post|blog|banner|hero|announce|website|content/','web'],['/setting|deploy|migration|speed|opcache/','gear'],['/order|invoice|purchase/','list'],['/product|catalog|attribute|variant|inventory|stock|image|media|review|categor|brand|taxonomy/','cube']] as [$re, $k]) if (preg_match($re, $l) && isset($IC[$k])) return $IC[$k]; return $IC[$gic] ?? $IC['grid']; };
 @endphp
-<aside><style id="dfsbh">aside{visibility:hidden}aside,aside *{transition:none!important;animation:none!important}</style><style>aside .brand.dfb{flex-direction:column;align-items:flex-start;gap:3px;padding:6px 8px 4px}aside .brand.dfb img{display:block;height:34px;width:auto;max-width:100%}aside .brand.dfb small{display:block;margin:0 0 0 2px;font-size:11.5px;font-weight:600;letter-spacing:.3px;color:#6B7280}</style><a class="brand dfb" href="/admin" title="DutyFree BD — Control center"><img src="/dutyfree-bd-logo.png" alt="DutyFree BD"><small>Control center</small></a>
+<aside class="sbx"><style id="dfsbh">aside{visibility:hidden}aside,aside *{transition:none!important;animation:none!important}</style><style>aside .brand.dfb{flex-direction:column;align-items:flex-start;gap:3px;padding:6px 8px 4px}aside .brand.dfb img{display:block;height:34px;width:auto;max-width:100%}aside .brand.dfb small{display:block;margin:0 0 0 2px;font-size:11.5px;font-weight:600;letter-spacing:.3px;color:#6B7280}</style><a class="brand dfb sbx-brand" href="/admin" title="DutyFree BD — Control center"><span class="sbx-logo"><img src="/dutyfree-bd-logo.png" alt="DutyFree BD"></span><span class="sbx-sub">Control Center</span><span class="sbx-mo">{{ now('Asia/Dhaka')->format('F Y') }}</span></a>
 @if($stores > 1)<div class="viewing"><small>VIEWING</small><strong>All stores ({{ $stores }}) + {{ $B['channels'] }} channel</strong></div>@endif
 <div class="sbs"><input id="sbq" type="search" placeholder="Search menu… (press /)" autocomplete="off" aria-label="Search menu"><div id="sbn" style="display:none">No match</div></div>
-<nav><a href="/admin" class="nv {{ $cur === '/admin' ? 'on' : '' }}">{!! $svg($IC['dash']) !!}<span>Dashboard</span></a>
-@if($ok('/admin/chat'))<a href="/admin/chat" class="nv {{ $cur === '/admin/chat' || str_starts_with($cur, '/admin/chat/') ? 'on' : '' }}">{!! $svg($IC['msg']) !!}<span>Messages</span><em id="chatBadge" style="background:#E11D48;{{ $chatUn ? '' : 'display:none' }}">{{ $chatUn }}</em></a>@endif
+<nav><div class="sbx-ov"><div class="sbx-oh">Overview</div><a href="/admin" class="nv {{ $cur === '/admin' ? 'on' : '' }}">{!! $svg($IC['dash']) !!}<span>Dashboard</span></a>
+@if($ok('/admin/chat'))<a href="/admin/chat" class="nv {{ $cur === '/admin/chat' || str_starts_with($cur, '/admin/chat/') ? 'on' : '' }}">{!! $svg($IC['msg']) !!}<span>Messages</span><em id="chatBadge" style="background:#E11D48;{{ $chatUn ? '' : 'display:none' }}">{{ $chatUn }}</em></a>@endif</div>
 @foreach($G as $gi => [$gl, $gic, $gitems])
 @php $vis = array_values(array_filter(array_keys($gitems), fn($i) => $ok($gitems[$i][1]))); $isRep = $gl === 'Reports & Analytics'; $showRep = $isRep && $canRep; $gopen = $an && $isRep; foreach ($vis as $i) if ($best === $gi.'.'.$i) $gopen = true; @endphp
 @continue(!$vis && !$showRep)
 <details class="mg" data-g="{{ $gi }}" {{ $gopen ? 'open' : '' }}><summary>{!! $svg($IC[$gic]) !!}<span>{{ $gl }}</span></summary>
-@if($showRep)<a class="sub rp1 {{ $an && $agrp === 'overview' ? 'on' : '' }}" href="/admin/analytics">Analytics Dashboard</a>
+@if($showRep)<a class="sub rp1 {{ $an && $agrp === 'overview' ? 'on' : '' }}" href="/admin/analytics">{!! $svs($IC['chart']) !!}<span class="sl">Analytics Dashboard</span></a>
 @foreach(\App\Support\Analytics::menu() as $gk => [$agl, $agi])@continue($gk === 'overview')
 <details class="rpg" {{ $an && $agrp === $gk ? 'open' : '' }}><summary>{{ $agl }}</summary>@foreach($agi as $sl => $st)<a class="sub {{ $aslug === $sl ? 'on' : '' }}" href="/admin/analytics/{{ $sl }}">{{ $st }}</a>@endforeach</details>
 @endforeach @endif
 @php $sg = null; @endphp
 @foreach($vis as $i)@php [$il, $ih, $ibk] = $gitems[$i]; $isg = $gitems[$i][3] ?? null; $bv = $ibk ? ($B[$ibk] ?? 0) : 0; @endphp
 @if($isg !== $sg)@if($sg !== null)</details>@endif @php $sg = $isg; $sgo = false; if ($sg !== null) foreach ($vis as $j) if (($gitems[$j][3] ?? null) === $sg && $best === $gi.'.'.$j) $sgo = true; @endphp @if($sg !== null)<details class="rpg" {{ $sgo ? 'open' : '' }}><summary>{{ $sg }}</summary>@endif @endif
-<a class="sub {{ $best === $gi.'.'.$i ? 'on' : '' }}" href="{{ $ih }}">{{ $il }}@if($bv)<em>{{ $bv }}</em>@endif</a>
+<a class="sub {{ $best === $gi.'.'.$i ? 'on' : '' }}" href="{{ $ih }}">{!! $svs($pickIc($il, $gic)) !!}<span class="sl">{{ $il }}</span>@if($bv)<em>{{ $bv }}</em>@endif</a>
 @endforeach @if($sg !== null)</details>@endif</details>
 @endforeach</nav>
-<script>(function(){var n=document.querySelector('aside nav');if(!n)return;var K='dfSbOpen',on=n.querySelector('a.sub.on,a.nv.on');
-function act(d){return !!(on&&d.contains(on))}
-var o=[];try{o=JSON.parse(sessionStorage.getItem(K)||'[]')}catch(e){}
-n.querySelectorAll('details.mg').forEach(function(d){if(!act(d)&&o.indexOf(d.dataset.g)>-1&&o.length===1)d.open=true});
-n.querySelectorAll('details.mg').forEach(function(d){d.addEventListener('toggle',function(){if(d.open){n.querySelectorAll('details.mg[open]').forEach(function(x){if(x!==d&&!act(x))x.open=false})}
-var l=[];n.querySelectorAll('details.mg[open]').forEach(function(x){l.push(x.dataset.g)});try{sessionStorage.setItem(K,JSON.stringify(l))}catch(e){}})});
-})();</script>
+<script>(function(){var n=document.querySelector('aside nav');if(!n)return;var K='dfSbOpen2',o=[];try{o=JSON.parse(localStorage.getItem(K)||'[]')}catch(e){}
+n.querySelectorAll('details.mg').forEach(function(d){if(o.indexOf(d.dataset.g)>-1)d.open=true;d.addEventListener('toggle',function(){if(window.dfSbSearching)return;var l=[];n.querySelectorAll('details.mg[open]').forEach(function(x){l.push(x.dataset.g)});try{localStorage.setItem(K,JSON.stringify(l))}catch(e){}})})})();</script>
 <script>(function(){var n=document.querySelector('aside nav');if(!n)return;var K='dfSbTop';function fix(){var v=null;try{v=sessionStorage.getItem(K)}catch(e){}
 if(v!==null&&v!=='')n.scrollTop=+v||0;
 var a=n.querySelector('a.sub.on,a.nv.on');if(a){var nr=n.getBoundingClientRect(),ar=a.getBoundingClientRect();if(ar.top<nr.top+4)n.scrollTop-=nr.top+4-ar.top;else if(ar.bottom>nr.bottom-4)n.scrollTop+=ar.bottom-nr.bottom+4}}
@@ -72,7 +69,7 @@ aside details.rpg{margin:0}aside details.rpg>summary{display:flex;align-items:ce
 function run(){var t=q.value.trim().toLowerCase(),n=0,first=null;
 nav.querySelectorAll('a.nv,a.sub').forEach(function(a){var ok=!t||a.textContent.toLowerCase().indexOf(t)>-1;a.style.display=ok?'':'none';if(ok&&t){n++;if(!first)first=a}});
 nav.querySelectorAll('details.mg,details.rpg').forEach(function(d){var any=!t||d.querySelector('a.sub:not([style*="none"])');d.style.display=any?'':'none';if(t){if(d._w===undefined)d._w=d.open;d.open=!!any}else if(d._w!==undefined){d.open=d._w;d._w=undefined}});
-none.style.display=t&&!n?'block':'none';q._first=first}
+nav.querySelectorAll('.sbx-ov').forEach(function(o){o.style.display=(!t||o.querySelector('a.nv:not([style*="none"])'))?'':'none'});window.dfSbSearching=!!t;none.style.display=t&&!n?'block':'none';q._first=first}
 q.addEventListener('input',run);
 q.addEventListener('keydown',function(e){if(e.key==='Enter'&&q._first){location.href=q._first.getAttribute('href')}if(e.key==='Escape'){q.value='';run();q.blur()}});
 document.addEventListener('keydown',function(e){if(e.key==='/'&&!/INPUT|TEXTAREA|SELECT/.test((document.activeElement||{}).tagName||'')&&!e.ctrlKey&&!e.metaKey){e.preventDefault();q.focus()}})})();</script>
@@ -111,4 +108,50 @@ aside .gh{color:#6B7280}
 aside em{background:#FF5A00;color:#fff;font-size:11px;min-width:20px;height:20px;line-height:20px;padding:0 6px;box-sizing:border-box;text-align:center;border-radius:20px}aside a.sub em{height:18px;line-height:18px;min-width:18px;font-size:10.5px;padding:0 6px}
 aside .me{background:#fff;border-top:1px solid #E5E7EB;color:#111827;font-weight:600}
 aside .me button{background:#fff;color:#111827;border:1px solid #FF5A00}aside .me button:hover{background:#FFF7ED}
+</style>
+<style>/* NK-style sidebar: brand card, boxed groups with uppercase header bars, icon rows, soft-blue active item */
+aside.sbx{background:#F6F8FB!important;border-right:1px solid #DDE3EC!important;padding:12px 10px!important;gap:8px!important;font-family:"Inter","Hind Siliguri","Segoe UI","Noto Sans Bengali",Arial,sans-serif!important}
+aside.sbx .sbx-brand{display:flex!important;flex-direction:column!important;align-items:flex-start!important;gap:7px!important;padding:12px!important;margin:0!important;border-radius:12px!important;background:linear-gradient(135deg,#1E3FA8,#2563EB)!important;text-decoration:none!important;box-shadow:0 2px 6px rgba(37,99,235,.25)}
+aside.sbx .sbx-logo{display:block;width:100%;box-sizing:border-box;background:#fff;border-radius:10px;padding:7px 10px;line-height:0}
+aside.sbx .sbx-logo img{display:block!important;height:28px!important;width:auto!important;max-width:100%!important;margin:0 auto}
+aside.sbx .sbx-sub{font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#C7D9FF;margin:1px 0 0 2px;line-height:1}
+aside.sbx .sbx-mo{display:inline-block;font-size:11px;font-weight:600;line-height:1;color:#fff;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);border-radius:999px;padding:5px 12px}
+aside.sbx .viewing{margin:0!important;border-radius:10px!important}
+aside.sbx .sbs{margin:0!important}
+aside.sbx .sbs input{background:#fff!important;border:1px solid #CBD5E1!important;border-radius:999px!important;padding:9px 14px!important;font-size:12.5px!important;color:#111827!important}
+aside.sbx .sbs input:focus{border-color:#2563EB!important;box-shadow:0 0 0 3px rgba(37,99,235,.15)!important;outline:0!important}
+aside.sbx nav{gap:10px!important;border-top:0!important;padding:0 6px 10px!important;margin:0 -6px!important;scrollbar-color:#CBD5E1 transparent}
+/* cards */
+aside.sbx nav details.mg,aside.sbx nav .sbx-ov{display:block;background:#fff!important;border:1px solid #D3DAE4!important;border-radius:10px!important;overflow:hidden;margin:0!important;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+/* header bars */
+aside.sbx nav details.mg>summary,aside.sbx nav .sbx-oh{display:flex!important;align-items:center;gap:0!important;box-sizing:border-box;min-height:30px!important;margin:0!important;padding:6px 30px 6px 12px!important;background:#EEF2F7!important;color:#334155!important;border:0!important;border-bottom:1px solid #DDE3EC!important;border-radius:0!important;font-size:11px!important;font-weight:800!important;letter-spacing:.7px;text-transform:uppercase;line-height:1.2;box-shadow:none!important}
+aside.sbx nav .sbx-oh{padding-right:12px!important;cursor:default}
+aside.sbx nav details.mg>summary svg{display:none!important}
+aside.sbx nav details.mg>summary span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+aside.sbx nav details.mg:not([open])>summary{border-bottom:0!important}
+aside.sbx nav details.mg>summary:hover{background:#E6ECF4!important;color:#0F172A!important}
+aside.sbx nav details.mg>summary::after{content:'›';position:absolute;right:12px;top:50%;margin-top:-10px;font-size:16px;line-height:20px;color:#64748B!important;opacity:1;transition:transform .15s}
+aside.sbx nav details.mg[open]>summary::after{transform:rotate(90deg)}
+aside.sbx nav details.mg[open]>summary{background:#EEF2F7!important;color:#334155!important}
+/* rows */
+aside.sbx nav a.nv,aside.sbx nav a.sub{display:flex!important;align-items:center;gap:10px!important;box-sizing:border-box;position:relative;min-height:36px!important;margin:0!important;padding:0 12px!important;background:#fff!important;color:#1F2937!important;border:0!important;border-top:1px solid #EDF0F5!important;border-radius:0!important;font-size:12.5px!important;font-weight:500!important;line-height:1.25;box-shadow:none!important;text-decoration:none}
+aside.sbx nav .sbx-oh+a.nv,aside.sbx nav details.mg>summary+a.sub{border-top:0!important}
+aside.sbx nav details.mg>a.sub::before,aside.sbx nav details.rpg>summary::before{display:none!important}
+aside.sbx nav a.nv svg,aside.sbx nav a.sub svg{width:16px!important;height:16px!important;flex:none;color:#475569!important;opacity:1}
+aside.sbx nav a.nv span,aside.sbx nav a.sub .sl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+aside.sbx nav a.nv:hover,aside.sbx nav a.sub:hover{background:#F5F8FD!important;color:#0F172A!important}
+aside.sbx nav a.nv:hover svg,aside.sbx nav a.sub:hover svg{color:#2563EB!important}
+aside.sbx nav a.nv.on,aside.sbx nav a.sub.on{background:#EAF1FF!important;color:#1D4ED8!important;font-weight:600!important;box-shadow:inset 3px 0 0 #2563EB!important;border-left:0!important}
+aside.sbx nav a.nv.on svg,aside.sbx nav a.sub.on svg{color:#2563EB!important}
+aside.sbx nav a.nv em,aside.sbx nav a.sub em{flex:none;margin-left:auto}
+/* sub-groups (Analytics, Products) inside a card */
+aside.sbx nav details.rpg{display:block;margin:0!important;background:#fff!important}
+aside.sbx nav details.rpg>summary{display:flex!important;align-items:center;box-sizing:border-box;min-height:32px!important;margin:0!important;padding:0 12px 0 14px!important;background:#F8FAFC!important;color:#475569!important;border:0!important;border-top:1px solid #EDF0F5!important;border-radius:0!important;font-size:11.5px!important;font-weight:700!important;text-transform:none}
+aside.sbx nav details.rpg>summary:hover{background:#F1F5F9!important;color:#0F172A!important}
+aside.sbx nav details.rpg a.sub{padding-left:30px!important;margin:0!important;font-size:12px!important}
+aside.sbx nav details.rpg a.sub.on{padding-left:30px!important}
+aside.sbx nav details.mg>a.rp1,aside.sbx nav details.mg>a.sub.on{padding-left:12px!important}
+aside.sbx .gh{display:none}
+aside.sbx .me{background:transparent!important;border-top:1px solid #DDE3EC!important;color:#1F2937!important}
+aside.sbx .me button{border-color:#2563EB!important;color:#1D4ED8!important;background:#fff!important}aside.sbx .me button:hover{background:#EAF1FF!important}
 </style>
