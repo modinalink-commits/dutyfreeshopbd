@@ -64,7 +64,7 @@ class SalesService
             $p = $l['product'];
             if ($p->isCylinder()) {
                 StockMovement::post(['kind' => 'sale', 'brand_id' => $p->brand_id, 'size_kg' => $p->size_kg,
-                    'full_delta' => -$l['qty'], 'reference' => $sale->invoice_no, 'note' => $p->name]);
+                    'full_delta' => -$l['qty'], 'reference' => $sale->invoice_no, 'note' => $p->name, 'trip_id' => $sale->trip_id]);
             } elseif ($p->category === 'accessory') {
                 $have = (int) ItemMovement::query()->where('product_id', $p->id)->sum('qty_delta');
                 if ($have < $l['qty']) throw new RuntimeException("Not enough {$p->name}: only {$have} in stock.");
@@ -86,13 +86,13 @@ class SalesService
                     $brand = Brand::findOrFail($emptyBrandId);
                     if (! in_array((int) $size, $brand->sizes ?? [], true)) throw new RuntimeException("{$brand->name} is not set up for {$size} kg empties.");
                     StockMovement::post(['kind' => 'empty_in', 'brand_id' => $emptyBrandId, 'size_kg' => $size, 'empty_delta' => $take,
-                        'reference' => $sale->invoice_no, 'note' => 'Empty with sale']);
+                        'reference' => $sale->invoice_no, 'note' => 'Empty with sale', 'trip_id' => $sale->trip_id]);
                     $left -= $take;
                 }
             }
             if ($left > 0) {
                 $s = array_key_first($refillBySize) ?? 12;
-                StockMovement::post(['kind' => 'empty_in', 'brand_id' => $emptyBrandId, 'size_kg' => $s, 'empty_delta' => $left, 'reference' => $sale->invoice_no, 'note' => 'Extra empty with sale']);
+                StockMovement::post(['kind' => 'empty_in', 'brand_id' => $emptyBrandId, 'size_kg' => $s, 'empty_delta' => $left, 'reference' => $sale->invoice_no, 'note' => 'Extra empty with sale', 'trip_id' => $sale->trip_id]);
                 if ($sale->customer_id) {
                     $own = Brand::query()->where('for_sale', true)->value('id');
                     CustomerCylinder::create(['customer_id' => $sale->customer_id, 'brand_id' => $own, 'size_kg' => $s, 'qty_delta' => -$left, 'reference' => $sale->invoice_no, 'sale_id' => $sale->id]);
@@ -119,7 +119,7 @@ class SalesService
         CustomerLedger::create(['customer_id' => $sale->customer_id, 'kind' => 'sale', 'reference' => $sale->invoice_no, 'sale_id' => $sale->id,
             'debit' => $sale->total, 'credit' => 0, 'created_by' => auth()->id()]);
         if ((float) $sale->paid > 0) {
-            CustomerLedger::create(['customer_id' => $sale->customer_id, 'kind' => 'payment', 'reference' => $sale->invoice_no, 'sale_id' => $sale->id,
+            CustomerLedger::create(['customer_id' => $sale->customer_id, 'kind' => 'payment', 'reference' => $sale->invoice_no, 'sale_id' => $sale->id, 'trip_id' => $sale->trip_id,
                 'debit' => 0, 'credit' => $sale->paid, 'method' => $sale->payment_method, 'note' => 'Paid with '.$sale->invoice_no, 'created_by' => auth()->id()]);
         }
     }
@@ -130,7 +130,7 @@ class SalesService
         DB::transaction(function () use ($sale, $reason) {
             $moves = StockMovement::query()->where('reference', $sale->invoice_no)->whereIn('kind', ['sale', 'empty_in'])->whereDoesntHave('reversedBy')->get();
             foreach ($moves as $m) {
-                StockMovement::post(['kind' => 'reversal', 'brand_id' => $m->brand_id, 'size_kg' => $m->size_kg,
+                StockMovement::post(['kind' => 'reversal', 'brand_id' => $m->brand_id, 'size_kg' => $m->size_kg, 'trip_id' => $m->trip_id,
                     'full_delta' => -$m->full_delta, 'empty_delta' => -$m->empty_delta, 'reference' => $sale->invoice_no,
                     'note' => 'Void: '.$reason, 'reversal_of' => $m->id]);
             }

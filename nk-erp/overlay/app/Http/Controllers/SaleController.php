@@ -35,6 +35,7 @@ class SaleController extends Controller
     {
         $request->validate(['reason' => ['required', 'string', 'max:255']]);
         if ($sale->stage === 'voided') return back()->withErrors(['reason' => 'Already voided.']);
+        if ($sale->trip && $sale->trip->status !== 'dispatched') return back()->withErrors(['reason' => "{$sale->trip->trip_no} is back from the market. Fix this sale with an adjustment in Daily closing."]);
         try {
             SalesService::void($sale, $request->input('reason'));
         } catch (RuntimeException $e) {

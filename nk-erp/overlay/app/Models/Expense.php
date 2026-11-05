@@ -8,8 +8,9 @@ use RuntimeException;
 class Expense extends Model
 {
     const UPDATED_AT = null;
-    public const HEADS = ['Fuel', 'Salary', 'Rent', 'Electricity', 'Toll & parking', 'Loading / unloading', 'Repair', 'Mobile & internet', 'Office', 'Other'];
-    protected $fillable = ['expense_date', 'head', 'amount', 'account_id', 'note', 'reversal_of', 'created_by'];
+    public const HEADS = ['Fuel', 'Salary', 'Rent', 'Electricity', 'Toll', 'Parking', 'Driver allowance', 'Salesman allowance', 'Loading / unloading', 'Maintenance', 'Repair', 'Mobile & internet', 'Office', 'Other'];
+    protected $fillable = ['expense_date', 'head', 'amount', 'account_id', 'note', 'reversal_of', 'created_by', 'trip_id', 'from_collection'];
+    public const TRIP_HEADS = ['Fuel', 'Driver allowance', 'Salesman allowance', 'Loading / unloading', 'Toll', 'Parking', 'Maintenance', 'Other'];
 
     protected function casts(): array
     {
@@ -23,5 +24,6 @@ class Expense extends Model
     }
 
     public function account() { return $this->belongsTo(MoneyAccount::class, 'account_id'); }
+    public function trip() { return $this->belongsTo(Trip::class); }
     public function reversedBy() { return $this->hasOne(Expense::class, 'reversal_of'); }
 }

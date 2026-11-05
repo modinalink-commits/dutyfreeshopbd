@@ -17,6 +17,8 @@ use App\Http\Controllers\RoadmapController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\FleetController;
+use App\Http\Controllers\TripController;
 use Illuminate\Support\Facades\Route;
 
 // Public API used by the nklpgbd.com website order form.
@@ -94,6 +96,33 @@ Route::middleware(['auth', 'pwd'])->group(function () {
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
         Route::get('/activity', [UserController::class, 'activity'])->name('activity');
     });
+
+    // Route sales: vehicles, trips, return, cash settlement, closing.
+    Route::middleware('role:super_admin,admin,manager,accounts')->group(function () {
+        Route::get('/route-sales', [FleetController::class, 'dashboard'])->name('fleet.dash');
+        Route::get('/vehicles', [FleetController::class, 'vehicles'])->name('fleet.vehicles');
+        Route::get('/loading', [TripController::class, 'loading'])->name('trips.loading');
+        Route::get('/trips/{trip}/slip', [TripController::class, 'slip'])->name('trips.slip');
+        Route::get('/trips/{trip}/sales', [TripController::class, 'sales'])->name('trips.sales');
+        Route::get('/vehicle-return', [TripController::class, 'returnForm'])->name('trips.return');
+        Route::get('/settlement', [TripController::class, 'settle'])->name('trips.settle');
+        Route::get('/closing', [TripController::class, 'closing'])->name('trips.closing');
+        Route::get('/closing/steps', [TripController::class, 'wizard'])->name('trips.wizard');
+        Route::post('/trips/{trip}/settle', [TripController::class, 'storeSettle'])->name('trips.settle.store');
+        Route::post('/trips/{trip}/sales', [TripController::class, 'storeSale'])->name('trips.sales.store');
+        Route::post('/trips/{trip}/collect', [TripController::class, 'collect'])->name('trips.collect');
+        Route::post('/trip-expense', [FleetController::class, 'expense'])->name('fleet.expense');
+    });
+    Route::middleware('role:super_admin,admin,manager')->group(function () {
+        Route::post('/vehicles', [FleetController::class, 'saveVehicle'])->name('fleet.vehicles.save');
+        Route::post('/routes', [FleetController::class, 'saveRoute'])->name('fleet.routes.save');
+        Route::post('/staff', [FleetController::class, 'saveStaff'])->name('fleet.staff.save');
+        Route::post('/loading', [TripController::class, 'storeLoading'])->name('trips.loading.store');
+        Route::post('/trips/{trip}/return', [TripController::class, 'storeReturn'])->name('trips.return.store');
+        Route::post('/trips/{trip}/adjust', [TripController::class, 'adjust'])->name('trips.adjust');
+        Route::post('/trips/{trip}/close', [TripController::class, 'close'])->name('trips.close');
+    });
+    Route::get('/vehicle-profit', [FleetController::class, 'profit'])->name('fleet.profit')->middleware('role:super_admin');
 
     // Company money is confidential: Super Admin only.
     Route::middleware('role:super_admin')->group(function () {

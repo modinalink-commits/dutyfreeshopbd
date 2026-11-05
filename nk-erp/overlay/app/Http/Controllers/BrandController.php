@@ -15,7 +15,7 @@ class BrandController extends Controller
     {
         $q = trim((string) $request->query('q'));
         $filter = $request->query('f');
-        $totals = StockMovement::query()->selectRaw('brand_id, sum(full_delta) f, sum(empty_delta) e')->groupBy('brand_id')->get()->keyBy('brand_id');
+        $totals = StockMovement::query()->whereNull('trip_id')->selectRaw('brand_id, sum(full_delta) f, sum(empty_delta) e')->groupBy('brand_id')->get()->keyBy('brand_id');
 
         $brands = Brand::query()
             ->when($q !== '', fn ($w) => $w->where('name', 'ilike', "%{$q}%"))
@@ -55,6 +55,7 @@ class BrandController extends Controller
         $to = $request->query('to', now()->timezone('Asia/Dhaka')->toDateString());
         $kinds = ['purchase' => ['received'], 'sales' => ['sale'], 'empty' => ['empty_in', 'exchange']];
         $q = StockMovement::query()->join('brands', 'brands.id', '=', 'stock_movements.brand_id');
+        if ($type === 'stock') { $q->whereNull('stock_movements.trip_id'); }
         if ($type !== 'stock') {
             $q->whereIn('stock_movements.kind', $kinds[$type])
               ->whereBetween('stock_movements.created_at', [\Carbon\Carbon::parse($from, 'Asia/Dhaka')->startOfDay()->utc(), \Carbon\Carbon::parse($to, 'Asia/Dhaka')->endOfDay()->utc()]);

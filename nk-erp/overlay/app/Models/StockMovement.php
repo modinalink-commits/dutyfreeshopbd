@@ -19,11 +19,13 @@ class StockMovement extends Model
         'damaged' => 'Set aside as damaged',
         'damaged_out' => 'Damaged sent out',
         'exchange' => 'Brand exchange',
+        'loading' => 'Loaded on vehicle',
+        'unloading' => 'Back from vehicle',
         'adjustment' => 'Count adjustment',
         'reversal' => 'Reversal',
     ];
 
-    protected $fillable = ['ref_no', 'kind', 'brand_id', 'size_kg', 'full_delta', 'empty_delta', 'company_delta', 'damaged_delta', 'reference', 'note', 'reversal_of', 'created_by'];
+    protected $fillable = ['ref_no', 'kind', 'brand_id', 'size_kg', 'full_delta', 'empty_delta', 'company_delta', 'damaged_delta', 'reference', 'note', 'reversal_of', 'created_by', 'trip_id'];
 
     protected static function booted(): void
     {
@@ -47,9 +49,11 @@ class StockMovement extends Model
     }
 
     /** Current balance per bucket for one brand and size. */
-    public static function balance(int $brandId, int $size): array
+    /** Balance per bucket. Without a trip: the godown. With a trip: what is on that vehicle. */
+    public static function balance(int $brandId, int $size, ?int $tripId = null): array
     {
         $row = static::query()->where('brand_id', $brandId)->where('size_kg', $size)
+            ->when($tripId, fn ($q) => $q->where('trip_id', $tripId), fn ($q) => $q->whereNull('trip_id'))
             ->selectRaw('coalesce(sum(full_delta),0) f, coalesce(sum(empty_delta),0) e, coalesce(sum(company_delta),0) c, coalesce(sum(damaged_delta),0) d')
             ->first();
         return ['full' => (int) $row->f, 'empty' => (int) $row->e, 'company' => (int) $row->c, 'damaged' => (int) $row->d];
@@ -74,7 +78,7 @@ class StockMovement extends Model
         return DB::transaction(function () use ($data) {
             // Serialise postings for the same brand+size so two users cannot both pass the balance check.
             DB::table('brands')->where('id', $data['brand_id'])->lockForUpdate()->first();
-            $bal = static::balance($data['brand_id'], $data['size_kg']);
+            $bal = static::balance($data['brand_id'], $data['size_kg'], $data['trip_id'] ?? null);
             $after = [
                 'full' => $bal['full'] + ($data['full_delta'] ?? 0),
                 'empty' => $bal['empty'] + ($data['empty_delta'] ?? 0),
@@ -83,7 +87,7 @@ class StockMovement extends Model
             ];
             foreach ($after as $bucket => $v) {
                 if ($v < 0) {
-                    throw new RuntimeException("Not enough {$bucket} stock: only {$bal[$bucket]} available.");
+                    throw new RuntimeException('Not enough '.$bucket.' stock '.(! empty($data['trip_id']) ? 'on the vehicle' : 'in the godown').": only {$bal[$bucket]} × {$data['size_kg']} kg available.");
                 }
             }
             $data['ref_no'] = $data['ref_no'] ?? static::nextRef();

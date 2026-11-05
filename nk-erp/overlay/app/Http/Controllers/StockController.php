@@ -14,16 +14,18 @@ class StockController extends Controller
 {
     public function index()
     {
-        $bySize = StockMovement::query()
+        $bySize = StockMovement::query()->whereNull('trip_id')
             ->selectRaw('size_kg, sum(full_delta) f, sum(empty_delta) e, sum(company_delta) c, sum(damaged_delta) d')
             ->groupBy('size_kg')->get()->keyBy('size_kg');
 
         $now = now()->timezone('Asia/Dhaka');
-        $sold = StockMovement::query()->where('kind', 'sale')->where('created_at', '>=', $now->copy()->startOfMonth()->utc())
+        $sold = StockMovement::query()->where('kind', 'sale')->whereNull('reversal_of')->where('created_at', '>=', $now->copy()->startOfMonth()->utc())
             ->selectRaw('size_kg, -sum(full_delta) q')->groupBy('size_kg')->pluck('q', 'size_kg');
         $withCustomers = \App\Models\CustomerCylinder::query()->selectRaw('size_kg, sum(qty_delta) q')->groupBy('size_kg')->pluck('q', 'size_kg');
-        $onRoad = \App\Models\SaleItem::query()->join('sales', 'sales.id', '=', 'sale_items.sale_id')->where('sales.stage', 'on_road')
+        $onRoadW = \App\Models\SaleItem::query()->join('sales', 'sales.id', '=', 'sale_items.sale_id')->where('sales.stage', 'on_road')
             ->whereNotNull('sale_items.size_kg')->selectRaw('sale_items.size_kg, sum(sale_items.qty) q')->groupBy('sale_items.size_kg')->pluck('q', 'size_kg');
+        $onVeh = StockMovement::query()->whereNotNull('trip_id')->selectRaw('size_kg, sum(full_delta + empty_delta) q')->groupBy('size_kg')->pluck('q', 'size_kg');
+        $onRoad = collect(Brand::SIZES)->mapWithKeys(fn ($s) => [$s => (int) ($onRoadW[$s] ?? 0) + (int) ($onVeh[$s] ?? 0)]);
         $sizes = collect(Brand::SIZES)->map(function ($s) use ($bySize, $sold, $now, $withCustomers, $onRoad) {
             $full = (int) ($bySize[$s]->f ?? 0);
             $avg = ((int) ($sold[$s] ?? 0)) / max(1, $now->day);
@@ -48,7 +50,7 @@ class StockController extends Controller
             ];
         }
 
-        $grid = StockMovement::query()->with('brand')
+        $grid = StockMovement::query()->with('brand')->whereNull('trip_id')
             ->selectRaw('brand_id, size_kg, sum(full_delta) f, sum(empty_delta) e, sum(company_delta) c, sum(damaged_delta) d')
             ->groupBy('brand_id', 'size_kg')->get()
             ->filter(fn ($r) => $r->f || $r->e || $r->c || $r->d)

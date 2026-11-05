@@ -9,7 +9,7 @@ class CustomerLedger extends Model
 {
     const UPDATED_AT = null;
     protected $table = 'customer_ledger';
-    protected $fillable = ['customer_id', 'kind', 'reference', 'sale_id', 'debit', 'credit', 'method', 'note', 'created_by'];
+    protected $fillable = ['customer_id', 'kind', 'reference', 'sale_id', 'debit', 'credit', 'method', 'note', 'created_by', 'trip_id'];
 
     protected function casts(): array
     {
@@ -22,5 +22,6 @@ class CustomerLedger extends Model
         static::deleting(fn () => throw new RuntimeException('Ledger lines cannot be deleted.'));
     }
 
+    public function customer() { return $this->belongsTo(Customer::class); }
     public function user() { return $this->belongsTo(User::class, 'created_by'); }
 }

@@ -59,14 +59,20 @@ textarea{padding:8px 10px;min-height:60px}
     @php($newCount = \App\Models\WebsiteOrder::where('status', 'new')->count())
     @php($waitX = \App\Models\BrandExchange::where('status', 'waiting')->count())
     @php($adminOnly = ['company', 'users', 'activity', 'sms'])
-    @php($superOnly = ['supplier', 'accounts'])
+    @php($superOnly = ['supplier', 'accounts', 'vpl'])
+    @php($officeOnly = ['rdash', 'vehicles', 'loading', 'return', 'settle', 'closing'])
+    @php($cur = request()->route()?->getName() ?? '')
+    @php($cur = ['trips.wizard' => 'trips.closing', 'trips.sales' => 'fleet.dash', 'trips.slip' => 'trips.loading'][$cur] ?? $cur)
+    @php($allRoutes = collect(\App\Support\Roadmap::MENU)->flatten(1)->pluck(2)->filter())
+    @php($activeRoute = $allRoutes->first(fn ($r) => $r === $cur) ?? $allRoutes->first(fn ($r) => str_starts_with($cur, explode('.', $r)[0].'.')))
     @foreach(\App\Support\Roadmap::MENU as $group => $items)
       <span class="grp">{{ $group }}</span>
       @foreach($items as [$key, $label, $route, $design])
         @continue(in_array($key, $adminOnly) && ! in_array($u->role, ['super_admin', 'admin']))
         @continue(in_array($key, $superOnly) && $u->role !== 'super_admin')
+        @continue(in_array($key, $officeOnly) && ! in_array($u->role, ['super_admin', 'admin', 'manager', 'accounts']))
         @if($route)
-          <a class="nav {{ request()->routeIs(explode('.', $route)[0].'*') ? 'on' : '' }}" href="{{ route($route) }}">{!! \App\Support\Icons::svg($key) !!}<span style="flex-grow:1">{{ $label }}</span>
+          <a class="nav {{ $route === $activeRoute ? 'on' : '' }}" href="{{ route($route) }}">{!! \App\Support\Icons::svg($key) !!}<span style="flex-grow:1">{{ $label }}</span>
             @if($key === 'weborders' && $newCount)<span class="badge">{{ $newCount }}</span>@endif
             @if($key === 'brands' && $waitX)<span class="badge">{{ $waitX }}</span>@endif
           </a>

@@ -61,7 +61,7 @@ class DashboardController extends Controller
 
         // Needs attention.
         $alerts = [];
-        $full12 = (int) StockMovement::query()->where('size_kg', 12)->sum('full_delta');
+        $full12 = (int) StockMovement::query()->whereNull('trip_id')->where('size_kg', 12)->sum('full_delta');
         $avg12 = $now->day > 0 ? (int) $itemsSince($monthStart)->where('sale_items.size_kg', 12)->sum('sale_items.qty') / max(1, $now->day) : 0;
         if ($avg12 > 0 && $full12 / $avg12 < 3) $alerts[] = ['t' => '12 kg full stock low', 'd' => "{$full12} left, about ".round($full12 / $avg12, 1).' days of sales. Place a company DO today.', 'link' => route('stock.index'), 'l' => 'Stock →', 'tone' => 'neg'];
         $old = Sale::query()->where('stage', 'delivered')->whereColumn('paid', '<', 'total')->where('delivered_at', '<', now()->subDays(30))->get();
