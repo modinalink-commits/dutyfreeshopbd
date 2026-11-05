@@ -201,6 +201,23 @@ document.getElementById('cmSave').addEventListener('click',function(){var b=docu
 td.action-column{min-width:150px}
 /* Status / Note: status pill and note start at the top of the cell */
 table.ordt td.ost-cell{vertical-align:top!important;padding-top:14px!important}
+/* Courier column: name 12/600, then consignment ID / courier status / tracking link as three identical 26px controls (11/600, radius 7, 4px gap) */
+table.ordt td.crc{font-family:inherit}
+table.ordt td.crc .order-courier{min-height:0;gap:6px;margin-bottom:0}
+table.ordt td.crc .order-courier span{font-size:12px;font-weight:600;line-height:1.2;color:#1F2937}
+table.ordt td.crc .order-courier-logo{height:16px!important;max-width:56px!important}
+table.ordt td.crc .crn,table.ordt td.crc .crs,table.ordt td.crc .crk{box-sizing:border-box;display:flex;align-items:center;gap:4px;width:fit-content;max-width:100%;height:26px;margin:4px 0 0;padding:0 8px;border:1px solid #CBD5E1;border-radius:7px;font-family:inherit;font-size:11px;font-weight:600;line-height:1;letter-spacing:0;white-space:nowrap;text-decoration:none;transition:background-color .15s ease,border-color .15s ease,color .15s ease}
+table.ordt td.crc .crn{background:#F8FAFC;color:#1F2937;font-variant-numeric:tabular-nums;letter-spacing:.1px;user-select:all}
+table.ordt td.crc .crn:hover{background:#F1F5F9;border-color:#94A3B8}
+table.ordt td.crc .crn .ccp{display:inline-flex;align-items:center;justify-content:center;margin:0 0 0 4px;padding:0 0 0 6px;height:14px;border-left:1px solid #CBD5E1;color:#64748B}
+table.ordt td.crc .crn .ccp svg{width:13px;height:13px}table.ordt td.crc .crn .ccp:hover{color:#0F172A}
+table.ordt td.crc .crs{background:#EAF3FD;border-color:#B9D6F2;color:#1769AA;max-width:170px;overflow:hidden;text-overflow:ellipsis;display:block;line-height:24px;padding:0 8px}
+table.ordt td.crc .crs-delivered{background:#E6F6EC;border-color:#9ED8B4;color:#166534}
+table.ordt td.crc .crs-returned,table.ordt td.crc .crs-cancelled{background:#FDECEC;border-color:#F4B5B5;color:#991B1B}
+table.ordt td.crc .crs-warn{background:#FEF3C7;border-color:#FCD34D;color:#92400E}
+table.ordt td.crc .crk{background:#fff;color:#1F2937;cursor:pointer}
+table.ordt td.crc .crk:hover{background:#EEF2FF;border-color:#818CF8;color:#4338CA}
+table.ordt td.crc .crk svg{width:13px;height:13px;flex:none}
 /* Note button (opens the courier / internal note window) */
 table.ordt td.ost-cell .stn-e.note-btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;height:28px;margin-top:8px;padding:0 11px;box-sizing:border-box;border:1px solid #CBD5E1;border-radius:8px;background:#fff;color:#334155;font-size:12px;font-weight:600;line-height:1;text-decoration:none;white-space:nowrap;transition:background-color .15s ease,border-color .15s ease,color .15s ease}
 table.ordt td.ost-cell .stn-e.note-btn:hover{background:#EEF2FF;border-color:#818CF8;color:#4338CA}
