@@ -26,6 +26,8 @@ use App\Http\Controllers\ExportController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\AppController;
 use App\Http\Controllers\MapController;
+use App\Http\Controllers\PortalController;
+use App\Http\Controllers\CustomerOrderController;
 use App\Http\Controllers\TripController;
 use Illuminate\Support\Facades\Route;
 
@@ -62,6 +64,23 @@ Route::middleware(['auth', 'pwd', 'role:salesman,driver,super_admin,admin,manage
     Route::get('/expense', [AppController::class, 'expense'])->name('expense');
     Route::post('/expense', [AppController::class, 'storeExpense'])->name('expense.store');
     Route::get('/notify', [AppController::class, 'notify'])->name('notify');
+});
+// Customer self-service portal (OTP login, separate from staff accounts).
+Route::prefix('my')->name('my.')->group(function () {
+    Route::get('/login', [PortalController::class, 'login'])->name('login');
+    Route::post('/login', [PortalController::class, 'sendCode'])->name('send')->middleware('throttle:5,10');
+    Route::post('/verify', [PortalController::class, 'verify'])->name('verify')->middleware('throttle:10,10');
+    Route::post('/logout', [PortalController::class, 'logout'])->name('logout');
+    Route::middleware(\App\Http\Middleware\CustomerSession::class)->group(function () {
+        Route::get('/', [PortalController::class, 'home'])->name('home');
+        Route::get('/purchases', [PortalController::class, 'purchases'])->name('purchases');
+        Route::get('/invoice/{sale}', [PortalController::class, 'invoice'])->name('invoice');
+        Route::get('/payments', [PortalController::class, 'payments'])->name('payments');
+        Route::get('/empty', [PortalController::class, 'empties'])->name('empty');
+        Route::get('/statement', [PortalController::class, 'statement'])->name('statement');
+        Route::get('/order', [PortalController::class, 'order'])->name('order');
+        Route::post('/order', [PortalController::class, 'storeOrder'])->name('order.store')->middleware('throttle:10,60');
+    });
 });
 Route::get('/api/hero', [HeroController::class, 'api'])->middleware('throttle:120,1');
 Route::get('/api/ping', fn () => response()->json(['ok' => true]));
@@ -232,6 +251,13 @@ Route::middleware(['auth', 'pwd'])->group(function () {
         Route::get('/distribution-map', [MapController::class, 'dist'])->name('map.dist');
         Route::post('/map/routes/{zoneRoute}/zone', [MapController::class, 'saveZone'])->name('map.zone');
         Route::post('/map/customers/{customer}/place', [MapController::class, 'placeCustomer'])->name('map.place');
+    });
+    Route::middleware('role:super_admin,admin,manager')->group(function () {
+        Route::get('/customer-orders', [CustomerOrderController::class, 'index'])->name('corders.index');
+        Route::post('/customer-orders/{order}/approve', [CustomerOrderController::class, 'approve'])->name('corders.approve');
+        Route::post('/customer-orders/{order}/attach', [CustomerOrderController::class, 'attach'])->name('corders.attach');
+        Route::post('/customer-orders/{order}/reject', [CustomerOrderController::class, 'reject'])->name('corders.reject');
+        Route::post('/customers/{customer}/portal', [CustomerOrderController::class, 'togglePortal'])->name('corders.portal');
     });
     Route::get('/vehicle-profit', [FleetController::class, 'profit'])->name('fleet.profit')->middleware('role:super_admin');
 

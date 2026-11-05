@@ -6,6 +6,7 @@ app/Http/Controllers/AuthController.php
 app/Http/Controllers/BrandController.php
 app/Http/Controllers/CompanyController.php
 app/Http/Controllers/CustomerController.php
+app/Http/Controllers/CustomerOrderController.php
 app/Http/Controllers/DashboardController.php
 app/Http/Controllers/ExchangeController.php
 app/Http/Controllers/ExpenseController.php
@@ -16,6 +17,7 @@ app/Http/Controllers/HrController.php
 app/Http/Controllers/ImportController.php
 app/Http/Controllers/MapController.php
 app/Http/Controllers/OrderController.php
+app/Http/Controllers/PortalController.php
 app/Http/Controllers/PosController.php
 app/Http/Controllers/ProductController.php
 app/Http/Controllers/RoadmapController.php
@@ -26,6 +28,7 @@ app/Http/Controllers/StockController.php
 app/Http/Controllers/TripController.php
 app/Http/Controllers/UserController.php
 app/Http/Controllers/WholesaleController.php
+app/Http/Middleware/CustomerSession.php
 app/Http/Middleware/ForcePasswordChange.php
 app/Http/Middleware/RequireRole.php
 app/Models/AccountTransfer.php
@@ -38,6 +41,7 @@ app/Models/CompanyRate.php
 app/Models/Customer.php
 app/Models/CustomerCylinder.php
 app/Models/CustomerLedger.php
+app/Models/CustomerOrder.php
 app/Models/DutySession.php
 app/Models/Employee.php
 app/Models/EmployeeLedger.php
@@ -94,6 +98,7 @@ database/migrations/2026_11_05_000011_hero_slides.php
 database/migrations/2026_11_05_000012_exports.php
 database/migrations/2026_11_05_000013_salesman_app.php
 database/migrations/2026_11_05_000014_map.php
+database/migrations/2026_11_05_000015_customer_portal.php
 public/app-sw.js
 public/css/nk-table.css
 public/img/logo.webp
@@ -119,6 +124,7 @@ resources/views/brand_report.blade.php
 resources/views/brands.blade.php
 resources/views/company/index.blade.php
 resources/views/company/rates.blade.php
+resources/views/corders.blade.php
 resources/views/customers.blade.php
 resources/views/dashboard.blade.php
 resources/views/expenses/_css.blade.php
@@ -140,6 +146,15 @@ resources/views/map/live.blade.php
 resources/views/orders/index.blade.php
 resources/views/partials/pager.blade.php
 resources/views/password.blade.php
+resources/views/portal/_back.blade.php
+resources/views/portal/empty.blade.php
+resources/views/portal/home.blade.php
+resources/views/portal/layout.blade.php
+resources/views/portal/login.blade.php
+resources/views/portal/order.blade.php
+resources/views/portal/payments.blade.php
+resources/views/portal/purchases.blade.php
+resources/views/portal/statement.blade.php
 resources/views/pos.blade.php
 resources/views/products.blade.php
 resources/views/roadmap.blade.php

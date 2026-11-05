@@ -87,7 +87,8 @@ class AppController extends Controller
         $c = $trip ? TripCalc::of($trip) : null;
         $onVeh = [];
         if ($trip) foreach (Brand::SIZES as $s) $onVeh[$s] = (int) StockMovement::query()->where('trip_id', $trip->id)->where('size_kg', $s)->sum('full_delta');
-        return view('app.home', compact('e', 'trip', 'c', 'onVeh'));
+        $orders = $trip ? \App\Models\CustomerOrder::query()->with('customer')->whereIn('status', ['approved', 'on_trip'])->where(fn ($q) => $q->where('trip_id', $trip->id)->orWhere('vehicle_id', $trip->vehicle_id))->get() : collect();
+        return view('app.home', compact('e', 'trip', 'c', 'onVeh', 'orders'));
     }
 
     private function prices(): array
@@ -154,6 +155,10 @@ class AppController extends Controller
             });
         } catch (RuntimeException $ex) {
             return response()->json(['ok' => false, 'error' => $ex->getMessage()], 422);
+        }
+        if ($sale->customer_id) {
+            \App\Models\CustomerOrder::query()->where('customer_id', $sale->customer_id)->whereIn('status', ['approved', 'on_trip'])
+                ->where(fn ($q) => $q->where('trip_id', $trip->id)->orWhere('vehicle_id', $trip->vehicle_id))->oldest('id')->limit(1)->update(['status' => 'delivered', 'sale_id' => $sale->id, 'trip_id' => $trip->id]);
         }
         if ($sale->customer && $sale->customer->lat === null) {
             $pt = GpsPoint::query()->where('employee_id', $e->id)->where('recorded_at', '>=', now()->subMinutes(5))->latest('recorded_at')->first();

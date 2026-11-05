@@ -19,7 +19,7 @@ class Roadmap
             ['customers', 'Customers & dues', 'customers.index', 'Customers'],
             ['sales', 'Sales list & invoices', 'sales.index', 'POS · CompanyDoc'],
             ['weborders', 'Website orders', 'orders.index', 'Order form on nklpgbd.com'],
-            ['corders', 'Customer orders', null, 'CustomerOrders (customer app requests, needs Route sales and Customer portal)'],
+            ['corders', 'Customer orders', 'corders.index', 'CustomerOrders (customer app requests, needs Route sales and Customer portal)'],
         ],
         'ROUTE SALES' => [
             ['rdash', 'Route dashboard', 'fleet.dash', 'RouteDash'],

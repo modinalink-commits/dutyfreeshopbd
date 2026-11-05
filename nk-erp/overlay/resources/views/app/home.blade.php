@@ -34,6 +34,11 @@
   <div class="t" style="background:#fff1d6"><span>বকেয়া</span><span style="color:#8a4b00">{{ $U::tk($c['credit']) }}</span></div>
 </section>
 @endif
+@if($orders->isNotEmpty())
+<section class="card" style="border-radius:16px;display:flex;flex-direction:column;gap:6px;background:#efe7fb;border:0"><b style="font-size:14px;color:#5b2fa8">গ্রাহকের অর্ডার · {{ $orders->count() }}টি</b>
+  @foreach($orders as $o)<a href="{{ route('app.sale', ['customer' => $o->customer_id]) }}" style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid #dccdf5;text-decoration:none;color:#14213d"><span style="flex-grow:1;font-size:14px">{{ $o->customer->name }} · {{ $o->itemsText(true) }}</span><span class="n" style="font-size:12px;color:#5b2fa8">{{ $o->order_no }}</span></a>@endforeach
+</section>
+@endif
 <a href="{{ route('app.sale') }}" style="min-height:64px;border-radius:16px;background:#b45309;color:#fff;display:flex;align-items:center;justify-content:center;gap:10px;font-size:20px;font-weight:700;text-decoration:none"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>নতুন বিক্রি</a>
 <section style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
   <a class="qa" href="{{ route('app.empty') }}">খালি সংগ্রহ</a><a class="qa" href="{{ route('app.pay') }}">টাকা আদায়</a><a class="qa" href="{{ route('app.shops', ['pick' => 'view']) }}">দোকানের তালিকা</a>

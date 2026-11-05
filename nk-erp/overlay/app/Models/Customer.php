@@ -8,11 +8,11 @@ class Customer extends Model
 {
     public const TYPES = ['retail' => 'Retail', 'commercial' => 'Commercial', 'dealer' => 'Dealer'];
 
-    protected $fillable = ['code', 'name', 'phone', 'type', 'area', 'address', 'credit_limit', 'is_active', 'note', 'lat', 'lng'];
+    protected $fillable = ['code', 'name', 'phone', 'type', 'area', 'address', 'credit_limit', 'is_active', 'note', 'lat', 'lng', 'portal_enabled', 'portal_last_seen', 'owner_name'];
 
     protected function casts(): array
     {
-        return ['credit_limit' => 'decimal:2', 'is_active' => 'boolean'];
+        return ['credit_limit' => 'decimal:2', 'is_active' => 'boolean', 'portal_enabled' => 'boolean', 'portal_last_seen' => 'datetime'];
     }
 
     public function ledger() { return $this->hasMany(CustomerLedger::class); }

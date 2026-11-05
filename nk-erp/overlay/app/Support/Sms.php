@@ -61,6 +61,7 @@ class Sms
     public static function queue(string $kind, ?string $to, string $body, ?int $saleId = null, ?int $customerId = null): ?SmsMessage
     {
         $to = $to ? Customer::normalisePhone($to) : null;
+        if ($kind === 'otp' && ! self::configured()) return SmsMessage::create(['kind' => $kind, 'to' => $to, 'body' => 'OTP (hidden)', 'customer_id' => $customerId, 'status' => 'off']);
         $m = SmsMessage::create(['kind' => $kind, 'to' => $to, 'body' => $body, 'sale_id' => $saleId, 'customer_id' => $customerId,
             'status' => ! $to || strlen($to) < 11 ? 'no_mobile' : (self::configured() ? 'queued' : 'off')]);
         if ($m->status === 'queued') \Illuminate\Support\defer(fn () => self::send($m->id));
@@ -77,7 +78,7 @@ class Sms
             $url = strtr((string) Setting::get('sms_endpoint'), ['{api_key}' => rawurlencode($key), '{sender}' => rawurlencode((string) Setting::get('sms_sender', '')),
                 '{to}' => rawurlencode('88'.ltrim($m->to, '+')), '{message}' => rawurlencode($m->body)]);
             $res = Http::timeout(15)->get($url);
-            $m->update(['status' => $res->successful() ? 'sent' : 'failed', 'response' => mb_substr($res->status().' '.$res->body(), 0, 250), 'attempts' => $m->attempts + 1, 'sent_at' => $res->successful() ? now() : null]);
+            $m->update(['status' => $res->successful() ? 'sent' : 'failed', 'response' => mb_substr($res->status().' '.$res->body(), 0, 250), 'attempts' => $m->attempts + 1, 'sent_at' => $res->successful() ? now() : null] + ($m->kind === 'otp' ? ['body' => 'OTP (hidden)'] : []));
         } catch (Throwable $e) {
             $m->update(['status' => 'failed', 'response' => mb_substr($e->getMessage(), 0, 250), 'attempts' => $m->attempts + 1]);
         }
