@@ -49,6 +49,12 @@ class ModulePermission {
     if (!$user->role_id) return ['orders'=>'view'];
     return self::$cache[$user->role_id] ??= (json_decode(DB::table('roles')->where('id',$user->role_id)->value('permissions') ?? '{}', true) ?: []);
   }
+  /** Statuses that need the "Restricted status" permission (Permissions page, Orders row). Absent flag = allowed, so existing roles keep working until the owner unticks it. */
+  const RESTRICTED_STATUSES = ['Cancel','Returned','Return Pending'];
+  public static function canRestricted($user): bool {
+    $r = self::rules($user); if ($r === null) return true;
+    return $r['orders_restricted_status'] ?? true;
+  }
   public static function can($user, ?string $module, string $need = 'view'): bool {
     if ($module === null) return true;
     $r = self::rules($user); if ($r === null) return true;

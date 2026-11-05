@@ -336,22 +336,29 @@ class AdminController extends Controller {
     return back();
   }
   /** One-click status change from the order list (AJAX): same rules and audit log as orderStatus. */
+  private function auditOrderStatus(Request $r, $o, string $new, string $src): void {
+    try { DB::table('audit_logs')->insert(['user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'action'=>'order.status','subject'=>\App\Support\Inv::show($o->invoice).' · '.$o->status.' → '.$new,'meta'=>json_encode(['order_id'=>(int)$o->id,'invoice'=>\App\Support\Inv::show($o->invoice),'old_status'=>$o->status,'new_status'=>$new,'staff'=>Auth::user()->name,'at'=>now('Asia/Dhaka')->format('Y-m-d H:i:s'),'source'=>$src]),'ip'=>$r->ip(),'created_at'=>now(),'updated_at'=>now()]); } catch (\Throwable $e) {}
+  }
   public function orderQuickStatus(Request $r, $id) {
-    $d = $r->validate(['status'=>'required|in:'.implode(',',Mother::STAGES),'note'=>'nullable|string|max:500','sched_date'=>'nullable|date_format:Y-m-d','sched_time'=>'nullable|string|max:8']);
+    $d = $r->validate(['status'=>'required|in:'.implode(',',Mother::STAGES),'note'=>'nullable|string|max:500','sched_date'=>'nullable|date_format:Y-m-d','sched_time'=>'nullable|string|max:8','source'=>'nullable|string|max:40']);
     $o = DB::table('orders')->find($id); abort_unless($o, 404);
+    $src = $d['source'] ?? null; $src = $src === 'Order List' ? 'Order List' : null;
+    if ($o->status !== $d['status'] && in_array($d['status'], \App\Http\Middleware\ModulePermission::RESTRICTED_STATUSES, true) && !\App\Http\Middleware\ModulePermission::canRestricted(Auth::user())) return response()->json(['success'=>false,'message'=>'Your role does not allow changing an order to '.$d['status'].'. Ask an admin for the Restricted status permission.']);
     if ($mb = \App\Support\ShipmentOutcome::manualBlock($o, $d['status'])) return response()->json(['success'=>false,'message'=>$mb]);
     if (in_array($d['status'], \App\Support\ShipmentOutcome::SYSTEM_ONLY, true) && $o->status !== $d['status']) return response()->json(['success'=>false,'message'=>'Partial Return statuses are calculated from the items. Use Delivery Outcome on the order page.']);
     if ($d['status'] === 'Scheduled') {
       if (empty($d['sched_date'])) return response()->json(['success'=>false,'need_schedule'=>true,'message'=>'Scheduled date is required']);
       [$sok, $smsg] = \App\Support\OrderSchedule::set((int)$id, $d['sched_date'], $d['sched_time'] ?? null, $d['note'] ?? null, Auth::id(), Auth::user()->name);
+      if ($sok && $src && $o->status !== 'Scheduled') $this->auditOrderStatus($r, $o, 'Scheduled', $src);
       return response()->json(['success'=>$sok,'message'=>$smsg,'status'=>'Scheduled','cls'=>'s-scheduled','sched'=>\App\Support\OrderSchedule::short(DB::table('orders')->where('id',$id)->value('scheduled_at'))]);
     }
     if ($d['status'] === 'Shipment' && $o->status !== 'Shipment' && ($sm = \App\Support\StockGuard::shipBlock((int)$id))) return response()->json(['success'=>false,'message'=>$sm]);
     if ($d['status'] === 'Shipment' && $o->status !== 'Shipment') { $b = \App\Support\CourierSync::autoBook((int)$id); if ($b && !$b[0]) return response()->json(['success'=>false,'message'=>'Parcel booking failed, the order stays in '.$o->status.': '.$b[1]]); $o = DB::table('orders')->find($id); }
     if ($o->status !== $d['status']) DB::transaction(function () use ($o, $d, $id) {
       DB::table('orders')->where('id',$id)->update(['status'=>$d['status'],'updated_at'=>now()] + ($o->status === 'Scheduled' ? ['scheduled_at'=>null,'scheduled_note'=>null] : []));
-      DB::table('order_status_logs')->insert(['order_id'=>$id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'from_status'=>$o->status,'to_status'=>$d['status'],'note'=>trim('Quick Action '.($d['note'] ?? '')),'created_at'=>now(),'updated_at'=>now()]);
+      DB::table('order_status_logs')->insert(['order_id'=>$id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'from_status'=>$o->status,'to_status'=>$d['status'],'note'=>trim(($src ? 'Order List · Status button ' : 'Quick Action ').($d['note'] ?? '')),'created_at'=>now(),'updated_at'=>now()]);
     });
+    if ($src && $o->status !== $d['status']) $this->auditOrderStatus($r, $o, $d['status'], $src);
     return response()->json(['success'=>true,'status'=>$d['status'],'cls'=>'s-'.\Illuminate\Support\Str::slug($d['status'])]);
   }
   public function orderSchedule(Request $r, $id) {
