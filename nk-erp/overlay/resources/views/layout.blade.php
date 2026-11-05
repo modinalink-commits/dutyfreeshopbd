@@ -61,6 +61,16 @@ textarea{padding:8px 10px;min-height:60px}
 .gsr a span{font-size:var(--fs-12);color:#51607a;font-family:'Hind Siliguri','Plus Jakarta Sans',sans-serif}
 .gsr a:hover,.gsr a:focus{background:#eef2f9;outline:none}
 .gse{padding:10px;font-size:var(--fs-13);color:#51607a}
+/* Sidebar menu on the global table system: each group is a compact bordered grid,
+   the group name is its header row, each link a 32px row, the open page a selected row. */
+.ngrp{display:flex;flex-direction:column;border:1px solid var(--border-grid,#ced4da);border-radius:8px;overflow:hidden;background:#fff;margin-bottom:8px}
+.ngrp:not(:has(a.nav)){display:none}
+.ngrp .grp{background:var(--table-header-bg,#f1f4f7);color:var(--table-text,#14213d);font-size:var(--fs-11);font-weight:600;letter-spacing:.06em;padding:0 10px;height:28px;display:flex;align-items:center;border-bottom:1px solid var(--border-strong,#bfc6ce)}
+.ngrp a.nav{border-radius:0;min-height:32px;padding:5px 10px;border-bottom:1px solid var(--border-soft,#e2e6ea);font-size:var(--fs-13);gap:9px}
+.ngrp a.nav:last-child{border-bottom:0}
+.ngrp a.nav:hover{background:var(--table-hover-bg,#f8fafc)}
+.ngrp a.nav.on{background:var(--table-select-bg,#eaf1ff);box-shadow:inset 3px 0 0 var(--navy);color:var(--blue);font-weight:600}
+.ngrp a.nav svg{width:16px;height:16px;flex-shrink:0}
 </style>
 </head>
 <body>
@@ -99,6 +109,7 @@ textarea{padding:8px 10px;min-height:60px}
     @php($allRoutes = collect(\App\Support\Roadmap::MENU)->flatten(1)->pluck(2)->filter())
     @php($activeRoute = $allRoutes->first(fn ($r) => $r === $cur) ?? $allRoutes->first(fn ($r) => str_starts_with($cur, explode('.', $r)[0].'.')))
     @foreach(\App\Support\Roadmap::MENU as $group => $items)
+      <div class="ngrp" role="group" aria-label="{{ $group }}">
       <span class="grp">{{ $group }}</span>
       @foreach($items as [$key, $label, $route, $design])
         @continue(in_array($key, $adminOnly) && ! in_array($u->role, ['super_admin', 'admin']))
@@ -115,9 +126,12 @@ textarea{padding:8px 10px;min-height:60px}
           <a class="nav soon {{ request()->is('soon/'.$key) ? 'on' : '' }}" href="{{ route('soon', $key) }}">{!! \App\Support\Icons::svg($key) !!}<span style="flex-grow:1">{{ $label }}</span><span class="later">soon</span></a>
         @endif
       @endforeach
+      </div>
     @endforeach
+    <div class="ngrp" role="group" aria-label="PROJECT">
     <span class="grp">PROJECT</span>
     <a class="nav {{ request()->routeIs('roadmap') ? 'on' : '' }}" href="{{ route('roadmap') }}">{!! \App\Support\Icons::svg('activity') !!}<span style="flex-grow:1">Build progress</span></a>
+    </div>
     @endunless
     <div class="me">
       <div style="display:flex;align-items:center;gap:10px"><span style="width:32px;height:32px;border-radius:999px;background:#e6eeff;color:#1d4ed8;display:flex;align-items:center;justify-content:center;font-size:var(--fs-12);font-weight:700;flex-shrink:0">{{ collect(explode(' ', $u->name))->map(fn ($w) => mb_substr($w, 0, 1))->take(2)->implode('') }}</span><div style="display:flex;flex-direction:column;min-width:0"><b>{{ $u->name }}</b><span style="color:var(--muted)">{{ $u->roleLabel() }}</span></div></div>
