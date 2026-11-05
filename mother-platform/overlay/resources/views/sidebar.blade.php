@@ -58,7 +58,11 @@ $pickIc = function ($label, $gic) use ($IC) { $l = strtolower($label); foreach (
 @endforeach @if($sg !== null)</details>@endif</details>
 @endforeach</nav>
 <script>(function(){var n=document.querySelector('aside nav');if(!n)return;var K='dfSbOpen2',o=[];try{o=JSON.parse(localStorage.getItem(K)||'[]')}catch(e){}
-n.querySelectorAll('details.mg').forEach(function(d){if(o.indexOf(d.dataset.g)>-1)d.open=true;d.addEventListener('toggle',function(){if(window.dfSbSearching)return;var l=[];n.querySelectorAll('details.mg[open]').forEach(function(x){l.push(x.dataset.g)});try{localStorage.setItem(K,JSON.stringify(l))}catch(e){}})})})();</script>
+n.querySelectorAll('details.mg').forEach(function(d){if(o.indexOf(d.dataset.g)>-1)d.open=true;d.addEventListener('toggle',function(){if(window.dfSbSearching)return;var l=[];n.querySelectorAll('details.mg[open]').forEach(function(x){l.push(x.dataset.g)});try{localStorage.setItem(K,JSON.stringify(l))}catch(e){}})});
+/* sub-groups (details.rpg): remember them too, so the menu keeps the same height after a click and does not jump */
+var K2='dfSbOpenR',r=[];try{r=JSON.parse(localStorage.getItem(K2)||'[]')}catch(e){}
+function rk(d){var m=d.closest('details.mg'),s=d.querySelector('summary');return (m?m.dataset.g:'')+':'+(s?s.textContent.trim():'')}
+n.querySelectorAll('details.rpg').forEach(function(d){if(r.indexOf(rk(d))>-1)d.open=true;d.addEventListener('toggle',function(){if(window.dfSbSearching)return;var l=[];n.querySelectorAll('details.rpg[open]').forEach(function(x){l.push(rk(x))});try{localStorage.setItem(K2,JSON.stringify(l))}catch(e){}})})})();</script>
 <script>(function(){var n=document.querySelector('aside nav');if(!n)return;var K='dfSbTop';function fix(){var v=null;try{v=sessionStorage.getItem(K)}catch(e){}
 if(v!==null&&v!=='')n.scrollTop=+v||0;
 var a=n.querySelector('a.sub.on,a.nv.on');if(a){var nr=n.getBoundingClientRect(),ar=a.getBoundingClientRect();if(ar.top<nr.top+4)n.scrollTop-=nr.top+4-ar.top;else if(ar.bottom>nr.bottom-4)n.scrollTop+=ar.bottom-nr.bottom+4}}
