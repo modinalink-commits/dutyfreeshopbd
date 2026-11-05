@@ -477,7 +477,7 @@ class StoreController extends Controller {
       return redirect(\Illuminate\Support\Facades\URL::temporarySignedRoute('order.done', now()->addDays(3), ['invoice'=>$ex->invoice, 'dup'=>1]));
     }
     Cache::forget('store.live3'); Cache::forget('store.live4'); Cache::forget('store.live5');
-    try { \App\Support\AiVerify::run((int)$id, 'order_created', false, false); } catch (\Throwable $e) {} // AI Verify (stored fraud data only; never blocks checkout)
+    try { $__avId = (int)$id; dispatch(function () use ($__avId) { try { \App\Support\AiVerify::run($__avId, 'order_created', true, false); } catch (\Throwable $e) {} })->afterResponse(); } catch (\Throwable $e) {} // AI Verify with the live courier fraud check, run after the customer already got the response (never slows checkout)
     try { \App\Support\Referral::onOrder((int)$id, $phone, $qt); \App\Support\Winback::onOrder($phone, (int)$id, $qt); \App\Support\Voice::onOrder($phone, (int)$id, $qt['applied'] ?? []); } catch (\Throwable $e) {}
     try { \App\Support\AppReward::onOrder($phone, (int)$id, $qt['applied'] ?? [], \App\Support\AppReward::installId()); } catch (\Throwable $e) {}
     $inv = DB::table('orders')->where('id',$id)->value('invoice');
