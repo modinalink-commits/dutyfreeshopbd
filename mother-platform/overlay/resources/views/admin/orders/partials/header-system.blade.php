@@ -2,7 +2,7 @@
 <style>
 /* Order Management header system: one panel, equal-height controls (34px), content-based width, 6px rhythm, status cards 58px.
    Reusable classes: .toolbar-control(-xs|-sm|-md|-lg) and .status-card(-sm|-md). Loaded last so it wins over older layered rules. */
-#ocb#ocb{background:#F8FAFC!important;border:1px solid #D8DEE6!important;border-radius:10px!important;padding:8px!important;box-shadow:none!important;margin:0 0 8px!important}
+#ocb#ocb{background:#F8FAFC!important;border:2px solid #475569!important;border-radius:10px!important;padding:7px!important;box-shadow:none!important;margin:0 0 8px!important}
 #ocb#ocb form{margin:0}
 #ocb#ocb .r1{display:flex!important;flex-wrap:wrap!important;align-items:center!important;justify-content:flex-start!important;gap:6px!important;min-height:0!important;position:relative}
 #ocb#ocb .r1>.owt,#ocb#ocb .r1 .owt .obk,#ocb#ocb .r1 .owt .owf,#ocb#ocb .r1 .owt .q{display:contents!important}
