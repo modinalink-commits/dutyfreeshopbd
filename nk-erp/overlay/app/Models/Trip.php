@@ -10,11 +10,11 @@ class Trip extends Model
 
     protected $fillable = ['trip_no', 'trip_date', 'vehicle_id', 'route_id', 'driver_id', 'salesman_id', 'warehouse_staff_id', 'loading_time', 'status', 'remarks',
         'counted_by', 'counted_at', 'approved_by', 'dispatched_at', 'return_time', 'return_checked_by', 'return_remarks', 'returned_at',
-        'cash_notes', 'cash_counted', 'digital_verified', 'received_by', 'settled_at', 'closed_by', 'closed_at'];
+        'cash_notes', 'cash_counted', 'digital_verified', 'received_by', 'settled_at', 'closed_by', 'closed_at', 'return_requested_at'];
 
     protected function casts(): array
     {
-        return ['trip_date' => 'date', 'counted_at' => 'datetime', 'dispatched_at' => 'datetime', 'returned_at' => 'datetime', 'settled_at' => 'datetime', 'closed_at' => 'datetime',
+        return ['trip_date' => 'date', 'counted_at' => 'datetime', 'dispatched_at' => 'datetime', 'returned_at' => 'datetime', 'settled_at' => 'datetime', 'closed_at' => 'datetime', 'return_requested_at' => 'datetime',
             'cash_notes' => 'array', 'cash_counted' => 'decimal:2', 'digital_verified' => 'decimal:2'];
     }
 

@@ -17,6 +17,7 @@ class DashboardController extends Controller
 {
     public function index()
     {
+        if (auth()->user()->role === 'salesman') return redirect()->route('app.home');
         $tz = 'Asia/Dhaka';
         $now = now()->timezone($tz);
         $dayStart = $now->copy()->startOfDay()->utc();

@@ -13,7 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: '*');
         $middleware->validateCsrfTokens(except: ['api/*']);
-        $middleware->redirectGuestsTo('/login');
+        $middleware->redirectGuestsTo(fn ($request) => $request->is('app', 'app/*') ? '/app/login' : '/login');
         $middleware->redirectUsersTo('/');
         $middleware->alias([
             'pwd' => \App\Http\Middleware\ForcePasswordChange::class,

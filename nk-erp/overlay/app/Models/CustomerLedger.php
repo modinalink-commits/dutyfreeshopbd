@@ -9,7 +9,7 @@ class CustomerLedger extends Model
 {
     const UPDATED_AT = null;
     protected $table = 'customer_ledger';
-    protected $fillable = ['customer_id', 'kind', 'reference', 'sale_id', 'debit', 'credit', 'method', 'note', 'created_by', 'trip_id'];
+    protected $fillable = ['customer_id', 'kind', 'reference', 'sale_id', 'debit', 'credit', 'method', 'note', 'created_by', 'trip_id', 'client_tx'];
 
     protected function casts(): array
     {

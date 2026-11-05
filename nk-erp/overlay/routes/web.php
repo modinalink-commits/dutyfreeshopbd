@@ -24,12 +24,44 @@ use App\Http\Controllers\SmsController;
 use App\Http\Controllers\HeroController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\ImportController;
+use App\Http\Controllers\AppController;
 use App\Http\Controllers\TripController;
 use Illuminate\Support\Facades\Route;
 
 // Public API used by the nklpgbd.com website order form.
 Route::post('/api/website-order', [ApiController::class, 'websiteOrder'])->middleware('throttle:8,1');
 Route::get('/share/export/{export}', [ExportController::class, 'shared'])->name('exports.shared')->middleware('signed');
+// Salesman mobile app.
+Route::get('/app/manifest.json', [AppController::class, 'manifest'])->name('app.manifest');
+Route::middleware('guest')->group(function () {
+    Route::get('/app/login', [AppController::class, 'loginForm'])->name('app.login');
+    Route::post('/app/login', [AppController::class, 'login'])->name('app.login.post')->middleware('throttle:6,1');
+});
+Route::middleware(['auth', 'pwd', 'role:salesman,driver,super_admin,admin,manager'])->prefix('app')->name('app.')->group(function () {
+    Route::get('/', [AppController::class, 'home'])->name('home');
+    Route::post('/logout', [AppController::class, 'logout'])->name('logout');
+    Route::get('/sale', [AppController::class, 'sale'])->name('sale');
+    Route::post('/sale', [AppController::class, 'storeSale'])->name('sale.store')->middleware('throttle:60,1');
+    Route::get('/invoice/{sale}', [AppController::class, 'invoice'])->name('invoice');
+    Route::post('/invoice/{sale}/sms', [AppController::class, 'resendSms'])->name('sms')->middleware('throttle:6,1');
+    Route::get('/print/{sale}', [AppController::class, 'printPage'])->name('print');
+    Route::get('/receipt/{sale}', [AppController::class, 'receipt'])->name('receipt');
+    Route::post('/print/{sale}', [AppController::class, 'logPrint'])->name('print.log');
+    Route::get('/sales', [AppController::class, 'sales'])->name('sales');
+    Route::get('/shops', [AppController::class, 'shops'])->name('shops');
+    Route::get('/empty', [AppController::class, 'empty'])->name('empty');
+    Route::post('/empty', [AppController::class, 'storeEmpty'])->name('empty.store');
+    Route::get('/pay', [AppController::class, 'pay'])->name('pay');
+    Route::post('/pay', [AppController::class, 'storePay'])->name('pay.store');
+    Route::get('/summary', [AppController::class, 'summary'])->name('summary');
+    Route::post('/summary/close', [AppController::class, 'requestClose'])->name('close');
+    Route::get('/duty', [AppController::class, 'duty'])->name('duty');
+    Route::post('/duty', [AppController::class, 'toggleDuty'])->name('duty.toggle');
+    Route::post('/gps', [AppController::class, 'gps'])->name('gps')->middleware('throttle:30,1');
+    Route::get('/expense', [AppController::class, 'expense'])->name('expense');
+    Route::post('/expense', [AppController::class, 'storeExpense'])->name('expense.store');
+    Route::get('/notify', [AppController::class, 'notify'])->name('notify');
+});
 Route::get('/api/hero', [HeroController::class, 'api'])->middleware('throttle:120,1');
 Route::get('/api/ping', fn () => response()->json(['ok' => true]));
 

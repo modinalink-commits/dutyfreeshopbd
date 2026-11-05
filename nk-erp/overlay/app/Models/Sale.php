@@ -9,7 +9,7 @@ class Sale extends Model
     public const STAGES = ['waiting' => 'Waiting to load', 'on_road' => 'On the road', 'delivered' => 'Delivered', 'posted' => 'Posted', 'voided' => 'Voided'];
     public const METHODS = ['cash' => 'Cash', 'bkash' => 'bKash', 'nagad' => 'Nagad', 'bank' => 'Bank', 'due' => 'Due'];
 
-    protected $fillable = ['invoice_no', 'type', 'customer_id', 'walkin_name', 'walkin_phone', 'stage', 'subtotal', 'discount', 'delivery_charge', 'total', 'paid', 'payment_method', 'empty_brand_id', 'empties_expected', 'empties_received', 'vehicle', 'note', 'created_by', 'delivered_at', 'voided_by', 'voided_at', 'void_reason', 'trip_id', 'company'];
+    protected $fillable = ['invoice_no', 'type', 'customer_id', 'walkin_name', 'walkin_phone', 'stage', 'subtotal', 'discount', 'delivery_charge', 'total', 'paid', 'payment_method', 'empty_brand_id', 'empties_expected', 'empties_received', 'vehicle', 'note', 'created_by', 'delivered_at', 'voided_by', 'voided_at', 'void_reason', 'trip_id', 'company', 'client_tx'];
 
     protected static function booted(): void
     {
