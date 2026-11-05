@@ -37,12 +37,14 @@ class DeployController extends Controller
     Deployer::tick();
     $live = Deployer::liveId(); $isSuper = $this->isSuper();
     $tz = fn($t) => $t ? \Carbon\Carbon::parse($t, 'UTC')->timezone('Asia/Dhaka') : null;
-    $all = DB::table('deployments')->orderBy('id')->limit(400)->get();
+    $all = DB::table('deployments')->orderByDesc('id')->limit(500)->get()->reverse()->values();
     $hasIssues = \Illuminate\Support\Facades\Schema::hasTable('deploy_issues');
     $ic = $hasIssues ? DB::table('deploy_issues')->whereNotNull('deployment_id')->groupBy('deployment_id')->selectRaw('deployment_id, count(*) n')->pluck('n', 'deployment_id')->all() : [];
     $groups = [];
     foreach ($all as $d) { $k = $d->sha ?: 'r' . $d->id; $groups[$k][] = $d; }
-    $out = []; $n = 0; $files = fn($d) => ($d->log && preg_match('/(\d+) files changed/', $d->log, $m)) ? (int)$m[1] : null;
+    $inWin = $all->pluck('sha')->filter()->unique()->all(); $cut = $all->first()->id ?? 0;
+    $n = (int)DB::table('deployments')->where('id', '<', $cut)->where('status', 'Completed')->whereNotNull('sha')->when($inWin, fn($q) => $q->whereNotIn('sha', $inWin))->distinct()->count('sha'); // release numbers keep counting from the first release even though only the newest rows are loaded
+    $out = []; $files = fn($d) => ($d->log && preg_match('/(\d+) files changed/', $d->log, $m)) ? (int)$m[1] : null;
     foreach ($groups as $att) {
       $done = null; $act = null;
       foreach ($att as $x) { if ($x->status === 'Completed') $done = $x; if (in_array($x->status, Deployer::ACTIVE, true)) $act = $x; }
