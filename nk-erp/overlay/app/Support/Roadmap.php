@@ -11,7 +11,7 @@ class Roadmap
     public const MENU = [
         'OVERVIEW' => [
             ['dashboard', 'Dashboard', 'dashboard', 'Main'],
-            ['map', 'Distribution map', null, 'DistMap'],
+            ['map', 'Distribution map', 'map.dist', 'DistMap'],
         ],
         'SALES' => [
             ['pos', 'Retail sale (POS)', 'pos.index', 'POS · MobilePrint (58/80 mm) · CompanyDoc (A4)'],
@@ -23,7 +23,7 @@ class Roadmap
         ],
         'ROUTE SALES' => [
             ['rdash', 'Route dashboard', 'fleet.dash', 'RouteDash'],
-            ['live', 'Live tracking', null, 'LiveTracking'],
+            ['live', 'Live tracking', 'map.live', 'LiveTracking'],
             ['vehicles', 'Vehicles & routes', 'fleet.vehicles', 'Vehicles'],
             ['loading', 'Morning loading', 'trips.loading', 'Loading'],
             ['return', 'Vehicle return', 'trips.return', 'Return'],

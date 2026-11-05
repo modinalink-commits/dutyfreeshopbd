@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
+<meta name="csrf-token" content="{{ csrf_token() }}">
 <title>@yield('title', 'Dashboard') · NK Corporation</title>
 <link rel="icon" href="/img/logo.webp">
 <link rel="stylesheet" href="/css/nk-table.css?v=1">
@@ -60,6 +61,7 @@ textarea{padding:8px 10px;min-height:60px}
     @php($waitX = \App\Models\BrandExchange::where('status', 'waiting')->count())
     @php($adminOnly = ['company', 'users', 'activity', 'sms', 'hero'])
     @php($superOnly = ['supplier', 'accounts', 'vpl', 'import'])
+    @php($mgrOnly = ['map', 'live'])
     @php($officeOnly = ['rdash', 'vehicles', 'loading', 'return', 'settle', 'closing', 'exp', 'export'])
     @php($cur = request()->route()?->getName() ?? '')
     @php($cur = ['trips.wizard' => 'trips.closing', 'trips.sales' => 'fleet.dash', 'trips.slip' => 'trips.loading'][$cur] ?? $cur)
@@ -71,6 +73,7 @@ textarea{padding:8px 10px;min-height:60px}
         @continue(in_array($key, $adminOnly) && ! in_array($u->role, ['super_admin', 'admin']))
         @continue(in_array($key, $superOnly) && $u->role !== 'super_admin')
         @continue($key === 'hr' && ! in_array($u->role, ['super_admin', 'admin', 'accounts']))
+        @continue(in_array($key, $mgrOnly) && ! in_array($u->role, ['super_admin', 'admin', 'manager']))
         @continue(in_array($key, $officeOnly) && ! in_array($u->role, ['super_admin', 'admin', 'manager', 'accounts']))
         @if($route)
           <a class="nav {{ $route === $activeRoute ? 'on' : '' }}" href="{{ route($route) }}">{!! \App\Support\Icons::svg($key) !!}<span style="flex-grow:1">{{ $label }}</span>

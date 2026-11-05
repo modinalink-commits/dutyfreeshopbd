@@ -14,6 +14,7 @@ app/Http/Controllers/FleetController.php
 app/Http/Controllers/HeroController.php
 app/Http/Controllers/HrController.php
 app/Http/Controllers/ImportController.php
+app/Http/Controllers/MapController.php
 app/Http/Controllers/OrderController.php
 app/Http/Controllers/PosController.php
 app/Http/Controllers/ProductController.php
@@ -92,6 +93,7 @@ database/migrations/2026_11_05_000010_company_profile.php
 database/migrations/2026_11_05_000011_hero_slides.php
 database/migrations/2026_11_05_000012_exports.php
 database/migrations/2026_11_05_000013_salesman_app.php
+database/migrations/2026_11_05_000014_map.php
 public/app-sw.js
 public/css/nk-table.css
 public/img/logo.webp
@@ -132,6 +134,9 @@ resources/views/hr/payroll.blade.php
 resources/views/imports.blade.php
 resources/views/layout.blade.php
 resources/views/login.blade.php
+resources/views/map/_leaflet.blade.php
+resources/views/map/dist.blade.php
+resources/views/map/live.blade.php
 resources/views/orders/index.blade.php
 resources/views/partials/pager.blade.php
 resources/views/password.blade.php

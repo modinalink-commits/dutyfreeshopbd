@@ -25,6 +25,7 @@ use App\Http\Controllers\HeroController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\AppController;
+use App\Http\Controllers\MapController;
 use App\Http\Controllers\TripController;
 use Illuminate\Support\Facades\Route;
 
@@ -224,6 +225,13 @@ Route::middleware(['auth', 'pwd'])->group(function () {
         Route::post('/import', [ImportController::class, 'upload'])->name('imports.upload');
         Route::post('/import/confirm', [ImportController::class, 'confirm'])->name('imports.confirm');
         Route::post('/import/cancel', [ImportController::class, 'cancel'])->name('imports.cancel');
+    });
+    Route::middleware('role:super_admin,admin,manager')->group(function () {
+        Route::get('/live-tracking', [MapController::class, 'live'])->name('map.live');
+        Route::get('/live-tracking/data', [MapController::class, 'liveJson'])->name('map.live.json');
+        Route::get('/distribution-map', [MapController::class, 'dist'])->name('map.dist');
+        Route::post('/map/routes/{zoneRoute}/zone', [MapController::class, 'saveZone'])->name('map.zone');
+        Route::post('/map/customers/{customer}/place', [MapController::class, 'placeCustomer'])->name('map.place');
     });
     Route::get('/vehicle-profit', [FleetController::class, 'profit'])->name('fleet.profit')->middleware('role:super_admin');
 

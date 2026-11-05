@@ -155,6 +155,10 @@ class AppController extends Controller
         } catch (RuntimeException $ex) {
             return response()->json(['ok' => false, 'error' => $ex->getMessage()], 422);
         }
+        if ($sale->customer && $sale->customer->lat === null) {
+            $pt = GpsPoint::query()->where('employee_id', $e->id)->where('recorded_at', '>=', now()->subMinutes(5))->latest('recorded_at')->first();
+            if ($pt && ($pt->accuracy === null || $pt->accuracy <= 100)) $sale->customer->update(['lat' => $pt->lat, 'lng' => $pt->lng]);
+        }
         AuditLog::record('trip_sale', "{$trip->trip_no} · {$sale->invoice_no} · ".$sale->buyerName()." ৳{$sale->total} · salesman app");
         return response()->json(['ok' => true, 'invoice' => $sale->invoice_no, 'id' => $sale->id, 'url' => route('app.invoice', $sale)]);
     }
