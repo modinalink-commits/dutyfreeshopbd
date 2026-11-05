@@ -5,8 +5,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 class AdminController extends Controller {
-  public function loginForm() { return view('login'); }
+  public function loginForm(Request $r) { if (Auth::check()) return redirect($r->query('next') && str_starts_with((string)$r->query('next'), '/admin') && !str_starts_with((string)$r->query('next'), '//') ? $r->query('next') : '/admin'); return view('login'); }
   public function login(Request $r) {
+    if (Auth::check()) return redirect('/admin');
     $c = $r->validate(['email'=>'required|email','password'=>'required']);
     if (Auth::attempt($c + ['active'=>true], false)) { $r->session()->regenerate(); return redirect('/admin'); }
     return back()->withErrors(['email'=>'Wrong email or password'])->onlyInput('email');
