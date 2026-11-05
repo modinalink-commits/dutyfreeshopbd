@@ -127,7 +127,8 @@ class Reorder
       try {
         $p = DB::table('products')->find($r->product_id); if (!$p) { self::cancel($r->id, 'Product removed'); continue; }
         $stock = (int)$p->stock; $thr = self::threshold($p, $c); $st = $r->status;
-        // requests are never closed because stock came back: they stay visible until quoted, received or cancelled by the admin
+        // stock back at/above the alert level: the request leaves the supplier list (record kept as Closed / Stock recovered); below it, the request stays visible
+        if ($r->kind !== 'preorder' && in_array($st, self::EARLY, true) && $stock >= $thr) { self::cancel($r->id, 'Stock recovered'); DB::table('reorder_requests')->where('id', $r->id)->update(['status' => 'Closed']); continue; }
         if ($st === 'No Supplier') { $sup = SupplierInsight::suppliersFor((int)$r->product_id); if ($sup) self::makeRfq($r->id, $sup, $c); continue; }
         $rfq = $r->rfq_id ? DB::table('supplier_rfqs')->find($r->rfq_id) : null; if (!$rfq) continue;
         $quotes = DB::table('supplier_quotes')->where('rfq_id', $rfq->id)->count(); $new = $st; $end = null;
