@@ -137,10 +137,10 @@ class ReportCatalog
   /** Registry rows keyed by path (without query), cached for a minute. One report per row; a path can hold several (e.g. the Damage Report shares a path with Stock Movement). */
   public static function map(): array
   {
-    return \Illuminate\Support\Facades\Cache::remember('report_registry_map_v1', 60, function () {
+    return \Illuminate\Support\Facades\Cache::remember('report_registry_map_v2', 60, function () {
       if (!self::ready() || !Schema::hasColumn('report_registry', 'native_export')) return [];
       $m = [];
-      foreach (DB::table('report_registry')->where('is_active', true)->get(['report_code', 'name', 'group_code', 'route_path', 'native_export']) as $r) $m[self::key(strtok($r->route_path, '?'))][] = $r;
+      foreach (DB::table('report_registry')->where('is_active', true)->get(['report_code', 'name', 'group_code', 'route_path', 'native_export']) as $r) $m[self::key(strtok($r->route_path, '?'))][] = (array)$r; // plain arrays: the cache does not unserialize objects
       return $m;
     });
   }
@@ -151,6 +151,7 @@ class ReportCatalog
     if (!$r->isMethod('GET') || $r->ajax() || $r->query('partial')) return null;
     try {
       $rows = self::map()[self::key($r->path())] ?? null; if (!$rows) return null;
+      $rows = array_map(fn($a) => (object)$a, $rows);
       foreach ($rows as $x) { $q = (string)(parse_url($x->route_path, PHP_URL_QUERY) ?? ''); if ($q !== '') { parse_str($q, $a); foreach ($a as $k => $v) if ((string)$r->query($k) === (string)$v) return $x; } }
       foreach ($rows as $x) if (!str_contains($x->route_path, '?')) return $x;
       return $rows[0];
@@ -196,7 +197,7 @@ class ReportCatalog
     if (!self::ready()) return;
     try {
       $h = md5(json_encode(self::all()));
-      if (\Illuminate\Support\Facades\Cache::get('report_catalog_hash') !== $h) { self::sync(); \Illuminate\Support\Facades\Cache::forever('report_catalog_hash', $h); \Illuminate\Support\Facades\Cache::forget('report_registry_map_v1'); }
+      if (\Illuminate\Support\Facades\Cache::get('report_catalog_hash') !== $h) { self::sync(); \Illuminate\Support\Facades\Cache::forever('report_catalog_hash', $h); \Illuminate\Support\Facades\Cache::forget('report_registry_map_v2'); }
     } catch (\Throwable $e) {}
   }
 
