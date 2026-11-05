@@ -158,7 +158,7 @@ class CustomerController extends Controller
                 CustomerCylinder::create(['customer_id' => $customer->id, 'brand_id' => $own, 'size_kg' => $data['size_kg'], 'qty_delta' => -$data['qty'], 'reference' => $ref]);
             });
         } catch (RuntimeException $e) {
-            return back()->withErrors(['qty' => $e->getMessage()]);
+            return back()->withErrors(['qty' => \App\Support\Ui::msg($e)]);
         }
         AuditLog::record('customer_empties', "{$customer->code} {$data['qty']} × {$data['size_kg']}kg");
         return back()->with('ok', "{$data['qty']} empties received from {$customer->name}.");

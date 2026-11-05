@@ -78,4 +78,22 @@ class Ui
         if ($n > 0) $parts[] = $two($n);
         return implode(' ', $parts);
     }
+
+    /** Message safe to show a user: our own rule messages as written, never SQL or code errors (those go to the admin log). */
+    public static function msg(\Throwable $e): string
+    {
+        if ($e instanceof \Illuminate\Database\QueryException || $e instanceof \PDOException || $e instanceof \Error || ! $e instanceof \RuntimeException
+            || str_contains($e->getMessage(), 'SQLSTATE')) {
+            report($e);
+            return 'কাজটা সেভ হয়নি — সিস্টেমে একটা সমস্যা হয়েছে, যা অ্যাডমিন লগে রাখা হয়েছে। একটু পরে আবার চেষ্টা করুন।';
+        }
+        return $e->getMessage();
+    }
+
+    /** Serialise invoice numbering for the rest of this transaction (Postgres advisory lock; a no-op elsewhere). */
+    public static function lockNumbers(): void
+    {
+        $db = \Illuminate\Support\Facades\DB::connection();
+        if ($db->getDriverName() === 'pgsql') $db->select('select pg_advisory_xact_lock(7243001)');
+    }
 }

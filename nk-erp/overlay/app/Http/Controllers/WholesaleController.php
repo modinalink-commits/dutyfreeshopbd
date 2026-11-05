@@ -58,7 +58,7 @@ class WholesaleController extends Controller
                 $sub = array_sum(array_column($lines, 'total'));
                 $total = round($sub - (float) ($data['discount'] ?? 0), 2);
                 if ($total < 0) throw new RuntimeException('Discount is bigger than the bill.');
-                DB::table('sales')->lockForUpdate()->count();
+                \App\Support\Ui::lockNumbers();
                 $sale = Sale::create(['invoice_no' => Sale::nextNo('wholesale'), 'type' => 'wholesale', 'customer_id' => $data['customer_id'], 'stage' => 'waiting',
                     'subtotal' => $sub, 'discount' => $data['discount'] ?? 0, 'total' => $total, 'paid' => 0,
                     'empties_expected' => isset($data['empties_collect']) ? (int) $data['empties_collect'] : array_sum(SalesService::refillBySize($lines)), 'vehicle' => $data['vehicle'] ?? null, 'note' => $data['note'] ?? null, 'created_by' => $request->user()->id]);
@@ -69,7 +69,7 @@ class WholesaleController extends Controller
                 return $sale;
             });
         } catch (RuntimeException $e) {
-            return back()->withInput()->withErrors(['qty' => $e->getMessage()]);
+            return back()->withInput()->withErrors(['qty' => \App\Support\Ui::msg($e)]);
         }
         AuditLog::record('wholesale_order', "{$sale->invoice_no} ৳{$sale->total}");
         if (! empty($data['print'])) return redirect()->route('sales.print', [$sale, 'size' => 'a4', 'auto' => 1]);
@@ -90,7 +90,7 @@ class WholesaleController extends Controller
                 $sale->update(['stage' => 'on_road', 'vehicle' => $request->input('vehicle') ?: $sale->vehicle]);
             });
         } catch (RuntimeException $e) {
-            return back()->withErrors(['qty' => $e->getMessage()]);
+            return back()->withErrors(['qty' => \App\Support\Ui::msg($e)]);
         }
         AuditLog::record('wholesale_loaded', $sale->invoice_no);
         return back()->with('ok', "{$sale->invoice_no} loaded. Full cylinders are out of stock.");
@@ -116,7 +116,7 @@ class WholesaleController extends Controller
                 SalesService::postMoney($sale);
             });
         } catch (RuntimeException $e) {
-            return back()->withErrors(['qty' => $e->getMessage()]);
+            return back()->withErrors(['qty' => \App\Support\Ui::msg($e)]);
         }
         AuditLog::record('wholesale_delivered', $sale->invoice_no);
         return back()->with('ok', "{$sale->invoice_no} delivered and billed to {$sale->customer->name}.");

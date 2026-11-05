@@ -10,8 +10,8 @@
   <a class="btn pri" href="{{ route('customers.index') }}#new">＋ Register customer</a>
 </header>
 <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">
-  @foreach([['New requests', $k['new'], 'blue'], ['Approved, not on a trip', $k['approved'], 'warn'], ['On a trip', $k['on_trip'], 'vio'], ['Delivered this week', $k['delivered'], 'pos'], ['Customers using the app', $k['app'], 'gray']] as [$l, $v, $c])
-    <div style="background:{{ $U::bg($c) }};border:1px solid #dbe3f0;border-radius:12px;padding:12px;display:flex;flex-direction:column"><span style="font-size:11px;font-weight:600;color:#51607a">{{ $l }}</span><b style="font-size:22px;color:{{ $U::ink($c) }}">{{ $v }}</b></div>
+  @foreach([['New requests', $k['new'], 'blue'], ['Approved, not on a trip', $k['approved'], 'warn'], ['On a trip', $k['on_trip'], 'vio'], ['Delivered this week', $k['delivered'], 'pos'], ['Customers using the app', $k['app'], 'gray']] as [$l, $v, $tone])
+    <div style="background:{{ $U::bg($tone) }};border:1px solid #dbe3f0;border-radius:12px;padding:12px;display:flex;flex-direction:column"><span style="font-size:11px;font-weight:600;color:#51607a">{{ $l }}</span><b style="font-size:22px;color:{{ $U::ink($tone) }}">{{ $v }}</b></div>
   @endforeach
 </section>
 <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">

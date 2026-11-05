@@ -139,8 +139,8 @@ class CompanyController extends Controller
                 if (! $any) throw new RuntimeException('Enter at least one quantity.');
             });
         } catch (RuntimeException $e) {
-            $r = back()->withInput()->withErrors(['qty' => $e->getMessage()]);
-            return str_contains($e->getMessage(), 'Rate Master') ? $r->with('err_link', [route('company.rates'), 'Rate Master খুলুন →']) : $r;
+            $r = back()->withInput()->withErrors(['qty' => \App\Support\Ui::msg($e)]);
+            return str_contains(\App\Support\Ui::msg($e), 'Rate Master') ? $r->with('err_link', [route('company.rates'), 'Rate Master খুলুন →']) : $r;
         }
         AuditLog::record('company_challan', $data['challan_no']);
         return redirect()->route('company.index', ['m' => substr($data['entry_date'], 0, 7)])->with('ok', "Challan {$data['challan_no']} saved.");

@@ -40,7 +40,7 @@ class SaleController extends Controller
         try {
             SalesService::void($sale, $request->input('reason'));
         } catch (RuntimeException $e) {
-            return back()->withErrors(['reason' => $e->getMessage()]);
+            return back()->withErrors(['reason' => \App\Support\Ui::msg($e)]);
         }
         AuditLog::record('sale_void', "{$sale->invoice_no}: {$request->input('reason')}");
         return back()->with('ok', "{$sale->invoice_no} voided. Stock, empties and the customer account were reversed. Refund any money taken.");

@@ -170,7 +170,7 @@ class StockController extends Controller
                 'reference' => $data['reference'] ?? null, 'note' => $data['note'] ?? null,
             ]);
         } catch (RuntimeException $ex) {
-            return back()->withInput()->withErrors(['full' => $ex->getMessage()]);
+            return back()->withInput()->withErrors(['full' => \App\Support\Ui::msg($ex)]);
         }
         AuditLog::record('stock_'.$m->kind, "{$m->ref_no} {$brand->name} {$size}kg");
 
@@ -194,7 +194,7 @@ class StockController extends Controller
                 'reference' => $movement->ref_no, 'note' => $request->input('reason'), 'reversal_of' => $movement->id,
             ]);
         } catch (RuntimeException $ex) {
-            return back()->withErrors(['reason' => $ex->getMessage()]);
+            return back()->withErrors(['reason' => \App\Support\Ui::msg($ex)]);
         }
         AuditLog::record('stock_reversal', "{$r->ref_no} reverses {$movement->ref_no}");
 

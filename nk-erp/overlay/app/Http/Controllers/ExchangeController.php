@@ -60,7 +60,7 @@ class ExchangeController extends Controller
                 $exchange->update(['status' => 'approved', 'decided_by' => $request->user()->id, 'decided_at' => now()]);
             });
         } catch (RuntimeException $ex) {
-            return back()->withErrors(['decision' => $ex->getMessage()]);
+            return back()->withErrors(['decision' => \App\Support\Ui::msg($ex)]);
         }
         AuditLog::record('exchange_approved', $exchange->ref_no);
 

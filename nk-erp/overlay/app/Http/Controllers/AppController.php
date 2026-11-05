@@ -137,7 +137,7 @@ class AppController extends Controller
                 $refills = SalesService::refillBySize($lines);
                 $method = ['cash' => 'cash', 'mfs' => 'bkash', 'bank' => 'bank'][$data['pay']];
                 $empties = $data['type'] === 'ex' ? (int) ($data['empty'] ?? $data['qty']) : 0;
-                DB::table('sales')->lockForUpdate()->count();
+                \App\Support\Ui::lockNumbers();
                 $sale = Sale::create(['invoice_no' => Sale::nextNo('retail'), 'type' => 'retail', 'customer_id' => $customer?->id, 'trip_id' => $trip->id, 'client_tx' => $data['tx'],
                     'walkin_name' => $customer ? null : ($data['walkin_name'] ?? 'Walk-in'), 'stage' => 'posted', 'subtotal' => $total, 'discount' => 0, 'delivery_charge' => 0,
                     'total' => $total, 'paid' => $paid, 'payment_method' => $paid < $total && $paid == 0 ? 'due' : $method, 'empty_brand_id' => Brand::query()->where('for_sale', true)->value('id'),
@@ -154,7 +154,7 @@ class AppController extends Controller
                 return $sale;
             });
         } catch (RuntimeException $ex) {
-            return response()->json(['ok' => false, 'error' => $ex->getMessage()], 422);
+            return response()->json(['ok' => false, 'error' => \App\Support\Ui::msg($ex)], 422);
         }
         if ($sale->customer_id) {
             \App\Models\CustomerOrder::query()->where('customer_id', $sale->customer_id)->whereIn('status', ['approved', 'on_trip'])

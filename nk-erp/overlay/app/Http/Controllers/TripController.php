@@ -127,7 +127,7 @@ class TripController extends Controller
                 return $trip;
             });
         } catch (RuntimeException $e) {
-            return back()->withInput()->withErrors(['qty' => $e->getMessage()]);
+            return back()->withInput()->withErrors(['qty' => \App\Support\Ui::msg($e)]);
         }
         $n = $trip->loads()->sum('qty');
         AuditLog::record($trip->status === 'dispatched' ? 'trip_dispatched' : 'trip_loading', "{$trip->trip_no} · {$n} cylinders".($trip->status === 'dispatched' ? ' · loading approved and dispatched' : ' · counted, waiting for approval'));
@@ -173,7 +173,7 @@ class TripController extends Controller
                 if ($paid > $total + 0.004) throw new RuntimeException('Paid amount is more than the bill.');
                 SalesService::checkCredit($customer, $total - $paid);
                 $refills = SalesService::refillBySize($lines);
-                DB::table('sales')->lockForUpdate()->count();
+                \App\Support\Ui::lockNumbers();
                 $sale = Sale::create([
                     'invoice_no' => Sale::nextNo('retail'), 'type' => 'retail', 'customer_id' => $customer?->id, 'trip_id' => $trip->id,
                     'walkin_name' => $customer ? null : ($data['walkin_name'] ?? null), 'walkin_phone' => $customer ? null : ($data['walkin_phone'] ?? null),
@@ -192,7 +192,7 @@ class TripController extends Controller
                 return $sale;
             });
         } catch (RuntimeException $e) {
-            return back()->withInput()->withErrors(['qty' => $e->getMessage()]);
+            return back()->withInput()->withErrors(['qty' => \App\Support\Ui::msg($e)]);
         }
         AuditLog::record('trip_sale', "{$trip->trip_no} · {$sale->invoice_no} · ".$sale->buyerName()." ৳{$sale->total}");
         return back()->with('ok', "{$sale->invoice_no} saved on {$trip->trip_no}.");
@@ -254,7 +254,7 @@ class TripController extends Controller
                 $trip->vehicle->update(['status' => 'Returned']);
             });
         } catch (RuntimeException $e) {
-            return back()->withInput()->withErrors(['full' => $e->getMessage()]);
+            return back()->withInput()->withErrors(['full' => \App\Support\Ui::msg($e)]);
         }
         $c = TripCalc::of($trip->fresh());
         $short = collect($c['sizes'])->map(fn ($z, $s) => ($z['emptyDiff'] < 0 ? abs($z['emptyDiff']).' empty '.$s.' kg short ' : '').($z['missing'] > 0 ? $z['missing'].' full '.$s.' kg missing' : ''))->filter()->implode(', ');
@@ -370,7 +370,7 @@ class TripController extends Controller
                 TripAdjustment::create(['trip_id' => $trip->id, 'kind' => $kind, 'detail' => $opts[$data['option']], 'reason' => $data['reason'], 'approved_by' => $request->user()->id]);
             });
         } catch (RuntimeException $e) {
-            return back()->withErrors(['option' => $e->getMessage()]);
+            return back()->withErrors(['option' => \App\Support\Ui::msg($e)]);
         }
         AuditLog::record('trip_adjustment', "{$trip->trip_no} · adjustment approved — {$opts[$data['option']]} · {$data['reason']}");
         return back()->with('ok', 'Adjustment approved.');

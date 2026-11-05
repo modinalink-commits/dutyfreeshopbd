@@ -156,7 +156,7 @@ class HrController extends Controller
                 $p->update(['status' => 'draft', 'prepared_by' => $request->user()->id, 'prepared_at' => now(), 'checked_by' => null, 'checked_at' => null]);
             });
         } catch (RuntimeException $e) {
-            return back()->withErrors(['m' => $e->getMessage()]);
+            return back()->withErrors(['m' => \App\Support\Ui::msg($e)]);
         }
         AuditLog::record('payroll_prepared', $m);
         return redirect()->route('hr.payroll', ['m' => $m])->with('ok', "Payroll {$m} prepared.");

@@ -203,7 +203,7 @@ class ExpenseController extends Controller
                 if ($claim->immediate()) $this->pay($claim, $claim->account_id, $user->id);
             });
         } catch (RuntimeException $e) {
-            return back()->withErrors(['amount' => $e->getMessage()]);
+            return back()->withErrors(['amount' => \App\Support\Ui::msg($e)]);
         }
         AuditLog::record('expense_approved', "{$claim->claim_no} ৳{$claim->amount}".($claim->fresh()->status === 'paid' ? ' · paid' : ' · posted, unpaid'));
         return back()->with('ok', "{$claim->claim_no} approved.");

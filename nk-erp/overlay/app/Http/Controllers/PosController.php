@@ -73,7 +73,7 @@ class PosController extends Controller
                 SalesService::checkCredit($customer, $total - $paid);
                 $refills = SalesService::refillBySize($lines);
 
-                DB::table('sales')->lockForUpdate()->count();
+                \App\Support\Ui::lockNumbers();
                 $sale = Sale::create([
                     'invoice_no' => Sale::nextNo('retail'), 'type' => 'retail', 'customer_id' => $customer?->id,
                     'walkin_name' => $customer ? null : ($data['walkin_name'] ?? null), 'walkin_phone' => $customer ? null : ($data['walkin_phone'] ?? null),
@@ -92,7 +92,7 @@ class PosController extends Controller
                 return $sale;
             });
         } catch (RuntimeException $e) {
-            return back()->withInput()->withErrors(['qty' => $e->getMessage()]);
+            return back()->withInput()->withErrors(['qty' => \App\Support\Ui::msg($e)]);
         }
         AuditLog::record('sale_retail', "{$sale->invoice_no} ৳{$sale->total}");
 
