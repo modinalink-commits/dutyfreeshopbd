@@ -59,7 +59,7 @@ class FraudCheck
         $br = Http::timeout(12)->acceptJson()->withToken(trim((string)Sms::secret('fc_bdcourier_key')))->post('https://api.bdcourier.com/courier-check', ['phone' => $phone]); $http['bdcourier'] = $br->status();
         $bj = $br->successful() ? $br->json() : null;
         if (is_array($bj) && ($bj['status'] ?? '') === 'success' && is_array($bj['data'] ?? null)) foreach ($bj['data'] as $bk => $bv) {
-          if (!is_array($bv) || !isset($bv['total_parcel'])) continue; $bk = strtolower((string)$bk); $bt = $safe($bv['total_parcel']); $bd = $safe($bv['success_parcel'] ?? 0); $bc = $safe($bv['cancelled_parcel'] ?? 0);
+          if (!is_array($bv) || !isset($bv['total_parcel'])) continue; $bk = strtolower((string)$bk); if ($bk === 'summary') continue; $bt = $safe($bv['total_parcel']); $bd = $safe($bv['success_parcel'] ?? 0); $bc = $safe($bv['cancelled_parcel'] ?? 0);
           if (!isset($res[$bk])) $res[$bk] = [0, 0, 0, 'off'];
           if ($bt > ($res[$bk][0] ?? 0) || $res[$bk][3] !== 'ok') { $res[$bk] = [$bt, $bd, $bc, 'ok']; if ($bk === 'pathao' && $bt > 0) $psrc = 'network'; }
         }
