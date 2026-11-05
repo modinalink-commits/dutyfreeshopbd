@@ -30,7 +30,7 @@
 <div class="shell">
   <div class="side">
     <a class="brand" href="/supplier-portal"><img src="/brand/export-logo.png" alt="" onerror="this.style.display='none'"><span><b>{{ $brand }}</b></span></a>
-    <div class="nav">@foreach($nav as $n)<a class="nv {{ $on($n[1]) ? 'on' : '' }}" href="{{ $n[1] }}">{!! $icon($n[4]) !!}<span>{{ $n[0] }}</span>@if($n[2]==='notifications' && $unread)<em class="bc">{{ $unread }}</em>@endif@if($n[2]==='reorder' && $rc)<em class="bc">{{ $rc }}</em>@endif</a>@endforeach</div>
+    <div class="nav">@foreach($nav as $n)<a class="nv {{ $on($n[1]) ? 'on' : '' }}" href="{{ $n[1] }}">{!! $icon($n[4]) !!}<span>{{ $n[0] }}</span>@if($n[2]==='notifications' && $unread)<em class="bc">{{ $unread }}</em>@endif @if($n[2]==='reorder' && $rc)<em class="bc">{{ $rc }}</em>@endif</a>@endforeach</div>
     <div class="who"><b>{{ $u->supplier_name }}</b><small>{{ $u->supplier_code }} · {{ \App\Support\SupplierPortal::ROLES[$u->role] ?? $u->role }}</small><form method="post" action="/supplier-portal/logout">@csrf<button class="g sm">Sign out</button></form></div>
   </div>
   <div class="main">
