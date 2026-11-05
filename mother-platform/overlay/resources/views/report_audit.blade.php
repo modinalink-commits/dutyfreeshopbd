@@ -79,6 +79,20 @@
   </div>
 </div>
 
+@if($sq)
+<div class="box">
+  <h2>Data quality: order store mapping</h2>
+  <div style="display:grid;grid-template-columns:1fr auto;gap:6px 14px;align-items:center;max-width:620px">
+    <span>Orders still without a valid store</span><b style="color:{{ $sq['unmapped'] ? '#B91C1C' : '#166534' }}">{{ number_format($sq['unmapped']) }}</b>
+    <span>Orders assigned to the DutyFreeBD store by the backfill</span><b>{{ number_format($sq['backfilled']) }}</b>
+    <span style="padding-left:14px">· imported from the old dutyfreebd.com (certain)</span><b>{{ number_format($sq['legacy']) }}</b>
+    <span style="padding-left:14px">· saved with the fixed store id 1 by the admin order form (certain)</span><b>{{ number_format($sq['fixed1']) }}</b>
+    <span style="padding-left:14px">· no source recorded (assigned because DutyFreeBD is the only store)</span><b style="color:{{ $sq['other'] ? '#92400E' : '#166534' }}">{{ number_format($sq['other']) }}</b>
+  </div>
+  <p class="mut" style="margin:8px 0 0">The old value of every changed order is kept, so the change can be undone for any group.</p>
+</div>
+@endif
+
 <div class="box">
   <h2>Issues found <span class="mut" style="font-weight:400">· {{ count($issues) }} shown</span></h2>
   <div class="chips"><a href="{{ url('/admin/report-center/audit') }}" class="{{ $filter === '' ? 'on' : '' }}">All</a>@foreach($byType as $t => $n)<a href="{{ url('/admin/report-center/audit') }}?type={{ urlencode($t) }}" class="{{ $filter === $t ? 'on' : '' }}">{{ $t }} ({{ $n }})</a>@endforeach</div>

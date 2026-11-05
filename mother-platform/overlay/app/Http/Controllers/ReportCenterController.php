@@ -218,6 +218,16 @@ class ReportCenterController extends Controller
     $byType = collect($issues)->groupBy('type')->map->count()->all();
     $filter = (string)$r->query('type');
     if ($filter !== '') $issues = array_values(array_filter($issues, fn($i) => $i['type'] === $filter));
-    return view('report_audit', ['ready' => true, 'groups' => C::GROUPS, 'c' => $c, 'full' => $full, 'activeN' => $active->count(), 'native' => $native, 'issues' => $issues, 'byType' => $byType, 'filter' => $filter, 'dups' => $dupView, 'nFound' => count($found)]);
+    // Data quality: how the store backfill was decided (only orders imported from the old dutyfreebd.com, or saved with the fixed id 1, are certain).
+    $sq = null;
+    try {
+      $sq = ['unmapped' => (int)DB::table('orders')->whereRaw('store_id is null or store_id not in (select id from stores)')->count(), 'backfilled' => 0, 'legacy' => 0, 'fixed1' => 0, 'other' => 0];
+      if (\Illuminate\Support\Facades\Schema::hasTable('orders_store_backfill')) {
+        $b = DB::table('orders_store_backfill as b')->join('orders as o', 'o.id', '=', 'b.order_id')
+          ->selectRaw("count(*) n, sum(case when o.legacy_source = 'dutyfreebd.com' then 1 else 0 end) legacy, sum(case when b.old_store_id = 1 and coalesce(o.legacy_source,'') <> 'dutyfreebd.com' then 1 else 0 end) fixed1")->first();
+        $sq['backfilled'] = (int)$b->n; $sq['legacy'] = (int)$b->legacy; $sq['fixed1'] = (int)$b->fixed1; $sq['other'] = max(0, $sq['backfilled'] - $sq['legacy'] - $sq['fixed1']);
+      }
+    } catch (\Throwable $e) { $sq = null; }
+    return view('report_audit', ['ready' => true, 'groups' => C::GROUPS, 'c' => $c, 'full' => $full, 'activeN' => $active->count(), 'native' => $native, 'sq' => $sq, 'issues' => $issues, 'byType' => $byType, 'filter' => $filter, 'dups' => $dupView, 'nFound' => count($found)]);
   }
 }
