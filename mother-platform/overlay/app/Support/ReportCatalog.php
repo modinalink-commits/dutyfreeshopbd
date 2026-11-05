@@ -163,10 +163,10 @@ class ReportCatalog
   /** Registry rows keyed by path (without query), cached for a minute. One report per row; a path can hold several (e.g. the Damage Report shares a path with Stock Movement). */
   public static function map(): array
   {
-    return \Illuminate\Support\Facades\Cache::remember('report_registry_map_v2', 60, function () {
+    return \Illuminate\Support\Facades\Cache::remember('report_registry_map_v3', 60, function () {
       if (!self::ready() || !Schema::hasColumn('report_registry', 'native_export')) return [];
       $m = [];
-      foreach (DB::table('report_registry')->where('is_active', true)->get(['report_code', 'name', 'group_code', 'route_path', 'native_export']) as $r) $m[self::key(strtok($r->route_path, '?'))][] = (array)$r; // plain arrays: the cache does not unserialize objects
+      foreach (DB::table('report_registry')->where('is_active', true)->get(['report_code', 'name', 'group_code', 'route_path', 'native_export', 'permission_key', 'description']) as $r) $m[self::key(strtok($r->route_path, '?'))][] = (array)$r; // plain arrays: the cache does not unserialize objects
       return $m;
     });
   }
@@ -182,6 +182,20 @@ class ReportCatalog
       foreach ($rows as $x) if (!str_contains($x->route_path, '?')) return $x;
       return $rows[0];
     } catch (\Throwable $e) { return null; }
+  }
+
+  /** True when this URL path is a registered report page (used to apply the export right to the report's own CSV/Excel links). */
+  public static function isReportPath(string $path): bool { try { return isset(self::map()[self::key($path)]); } catch (\Throwable $e) { return false; } }
+
+  /** Links that export the whole filtered result on the server (not only the page on screen), for the pages that have such an export. */
+  public static function allUrls($row, Request $r): array
+  {
+    $path = self::key($r->path()); $qs = http_build_query($r->query()); $out = ['csv' => null, 'xls' => null];
+    $q = fn(array $x = []) => ($m = array_merge($r->query(), $x)) ? '?' . http_build_query($m) : '';
+    if (preg_match('#^admin/(profit-report|stock-report|stock-movement-report|purchase-report|supplier-ledger-report|courier-report|cashbook-report|order-history-report)$#', $path)) $out['csv'] = url('/' . $path) . $q(['export' => 'csv']);
+    elseif (preg_match('#^admin/analytics/([a-z0-9-]+)$#', $path, $m) && $m[1] !== 'area-orders') { $out['csv'] = url('/admin/analytics/' . $m[1] . '/export/csv') . ($qs ? '?' . $qs : ''); $out['xls'] = url('/admin/analytics/' . $m[1] . '/export/xls') . ($qs ? '?' . $qs : ''); }
+    elseif (preg_match('#^admin/staff-tracking/(activity|status|payment|courier|price|comm|logins|audit|reports)$#', $path, $m)) $out['csv'] = url('/admin/staff-tracking-export/' . $m[1]) . ($qs ? '?' . $qs : '');
+    return $out;
   }
 
   /** Remembers that the signed-in person opened this report (at most once every 10 minutes per report per session). */
@@ -223,7 +237,7 @@ class ReportCatalog
     if (!self::ready()) return;
     try {
       $h = md5(json_encode(self::all()));
-      if (\Illuminate\Support\Facades\Cache::get('report_catalog_hash') !== $h) { self::sync(); \Illuminate\Support\Facades\Cache::forever('report_catalog_hash', $h); \Illuminate\Support\Facades\Cache::forget('report_registry_map_v2'); }
+      if (\Illuminate\Support\Facades\Cache::get('report_catalog_hash') !== $h) { self::sync(); \Illuminate\Support\Facades\Cache::forever('report_catalog_hash', $h); \Illuminate\Support\Facades\Cache::forget('report_registry_map_v3'); }
     } catch (\Throwable $e) {}
   }
 

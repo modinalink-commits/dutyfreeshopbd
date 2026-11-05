@@ -97,6 +97,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/report-center/open/{code}', [\App\Http\Controllers\ReportCenterController::class,'open']);
   Route::get('/report-center/audit', [\App\Http\Controllers\ReportCenterController::class,'audit']);
   Route::post('/report-center/favorite', [\App\Http\Controllers\ReportCenterController::class,'favorite']);
+  Route::post('/report-center/xlsx', [\App\Http\Controllers\ReportCenterController::class,'xlsx']);
   Route::post('/report-center/log-export', [\App\Http\Controllers\ReportCenterController::class,'logExport']);
   Route::post('/report-center/sync', [\App\Http\Controllers\ReportCenterController::class,'sync']);
   Route::get('/staff-tracking/{page?}', [\App\Http\Controllers\StaffTrackingController::class,'show'])->where('page','dashboard|activity|orders|status|payment|courier|price|comm|logins|audit|reports');

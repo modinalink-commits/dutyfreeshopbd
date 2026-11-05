@@ -70,6 +70,9 @@ class ModulePermission {
     $path = $request->path(); $mod = self::moduleFor($path);
     $need = 'view';
     if (str_contains($path, '/export/') || str_ends_with($path, '.csv')) $need = 'download';
+    elseif ($request->isMethod('get') && (str_starts_with($path, 'admin/staff-tracking-export') || $path === 'admin/report-center/export' || (in_array((string)$request->query('export'), ['csv', 'xls', 'xlsx', 'doc', 'pdf'], true) && \App\Support\ReportCatalog::isReportPath($path)))) $need = 'download'; // View and Export are separate rights for reports (the download tick on the Permissions page)
+    elseif ($request->isMethod('post') && $path === 'admin/report-center/xlsx') $need = 'download';
+    elseif ($request->isMethod('post') && in_array($path, ['admin/report-center/favorite', 'admin/report-center/log-export'], true)) $need = 'view';
     elseif ($request->isMethod('post')) $need = str_ends_with($path, '/delete') ? 'all' : 'edit';
     if (!self::can($u, $mod, $need)) abort(403, 'Your role does not allow this.');
     return $next($request);

@@ -46,4 +46,54 @@ class MiniXlsx {
     ];
     return self::zip($files);
   }
+
+  /** Several sheets in one workbook. @param array $sheets list of ['name'=>string,'headers'=>list,'rows'=>list of lists,'widths'=>list]. Numbers stay numbers; the header row is styled and frozen. */
+  public static function buildBook(array $sheets): string {
+    $one = fn(array $sh) => self::sheetXml($sh['headers'] ?? [], $sh['rows'] ?? [], $sh['widths'] ?? []);
+    $ct = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>';
+    $wb = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>';
+    $rel = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">';
+    $files = []; $used = [];
+    foreach (array_values($sheets) as $i => $sh) {
+      $n = $i + 1; $nm = trim(strtr((string)($sh['name'] ?? 'Sheet' . $n), ['\\' => ' ', '/' => ' ', '?' => ' ', '*' => ' ', '[' => ' ', ']' => ' ', ':' => ' '])) ?: 'Sheet' . $n; $nm = mb_substr($nm, 0, 31);
+      while (in_array(mb_strtolower($nm), $used, true)) $nm = mb_substr($nm, 0, 27) . ' ' . $n; $used[] = mb_strtolower($nm);
+      $ct .= '<Override PartName="/xl/worksheets/sheet' . $n . '.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>';
+      $wb .= '<sheet name="' . self::esc($nm) . '" sheetId="' . $n . '" r:id="rId' . $n . '"/>';
+      $rel .= '<Relationship Id="rId' . $n . '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet' . $n . '.xml"/>';
+      $files['xl/worksheets/sheet' . $n . '.xml'] = $one($sh);
+    }
+    $rel .= '<Relationship Id="rId' . (count($sheets) + 1) . '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>';
+    // reuse the single-sheet package for the shared parts (styles, root rels)
+    $base = self::unzipParts(self::build(['x'], [], [], 'x'));
+    $all = ['[Content_Types].xml' => $ct . '</Types>', '_rels/.rels' => $base['_rels/.rels'], 'xl/workbook.xml' => $wb . '</sheets></workbook>', 'xl/_rels/workbook.xml.rels' => $rel, 'xl/styles.xml' => $base['xl/styles.xml']] + $files;
+    return self::zip($all);
+  }
+
+  /** Reads the stored/deflated parts back out of a package made by zip() (only used to borrow styles.xml and the root rels). */
+  private static function unzipParts(string $z): array {
+    $out = []; $o = 0; $len = strlen($z);
+    while ($o + 30 <= $len && substr($z, $o, 4) === "PK\x03\x04") {
+      $h = unpack('vver/vflag/vm/vt/vd/Vcrc/Vcs/Vus/vnl/vel', substr($z, $o + 4, 26)); $name = substr($z, $o + 30, $h['nl']); $data = substr($z, $o + 30 + $h['nl'] + $h['el'], $h['cs']);
+      $out[$name] = $h['m'] === 8 ? gzinflate($data) : $data; $o += 30 + $h['nl'] + $h['el'] + $h['cs'];
+    }
+    return $out;
+  }
+
+  private static function sheetXml(array $headers, array $rows, array $widths): string {
+    $n = max(1, count($headers)); $x = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>';
+    for ($i = 0; $i < $n; $i++) $x .= '<col min="' . ($i + 1) . '" max="' . ($i + 1) . '" width="' . ($widths[$i] ?? 18) . '" customWidth="1"/>';
+    $x .= '</cols><sheetData><row r="1">';
+    foreach ($headers as $i => $h) $x .= '<c r="' . self::col($i) . '1" s="1" t="inlineStr"><is><t>' . self::esc((string)$h) . '</t></is></c>';
+    $x .= '</row>'; $r = 2;
+    foreach ($rows as $row) {
+      $x .= '<row r="' . $r . '">';
+      foreach (array_values($row) as $i => $v) {
+        $ref = self::col($i) . $r; if ($v === '' || $v === null) continue;
+        if (is_int($v) || is_float($v)) $x .= '<c r="' . $ref . '"><v>' . (is_float($v) ? rtrim(rtrim(number_format($v, 6, '.', ''), '0'), '.') : $v) . '</v></c>';
+        else $x .= '<c r="' . $ref . '" t="inlineStr"><is><t xml:space="preserve">' . self::esc((string)$v) . '</t></is></c>';
+      }
+      $x .= '</row>'; $r++;
+    }
+    return $x . '</sheetData></worksheet>';
+  }
 }

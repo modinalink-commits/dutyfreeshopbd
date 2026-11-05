@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 /** Order history (delivered / returned / cancelled / all) grouped by status, one compact row per order. */
 class OrderHistoryReportController extends Controller {
   public function index(Request $r) {
-    $from = $r->query('from') ?: now()->startOfMonth()->toDateString(); $to = $r->query('to') ?: now()->toDateString();
+    $from = $r->query('from') ?: now()->subDays(29)->toDateString(); $to = $r->query('to') ?: now()->toDateString();
     $status = (string)$r->query('status', 'all'); $q = trim((string)$r->query('q', '')); $per = max(100, min(3000, (int)($r->query('per') ?: 1000)));
     $oq = DB::table('orders')->whereDate('created_at', '>=', $from)->whereDate('created_at', '<=', $to);
     if ($status !== '' && $status !== 'all') $oq->where('status', $status);

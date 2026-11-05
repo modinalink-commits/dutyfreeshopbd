@@ -94,6 +94,12 @@
 @endif
 
 <div class="box">
+  <h2>Financial definitions in use</h2>
+  <div class="tw"><table class="g" style="min-width:560px"><thead><tr><th scope="col">Item</th><th scope="col">Definition</th></tr></thead><tbody>@foreach($fin as $d)<tr><td class="nw"><b>{{ $d[0] }}</b></td><td>{{ $d[1] }}</td></tr>@endforeach</tbody></table></div>
+  <p class="mut" style="margin:8px 0 0">These definitions live in one place (FinancialCalc). The protected profit % is never typed into a report: it is read from the central setting.</p>
+</div>
+
+<div class="box">
   <h2>Issues found <span class="mut" style="font-weight:400">· {{ count($issues) }} shown</span></h2>
   <div class="chips"><a href="{{ url('/admin/report-center/audit') }}" class="{{ $filter === '' ? 'on' : '' }}">All</a>@foreach($byType as $t => $n)<a href="{{ url('/admin/report-center/audit') }}?type={{ urlencode($t) }}" class="{{ $filter === $t ? 'on' : '' }}">{{ $t }} ({{ $n }})</a>@endforeach</div>
   <div class="tw"><table class="g" style="min-width:760px">

@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 class StockMovementReportController extends Controller {
   public function index(Request $r) {
     $mode = $r->query('mode') === 'damage' ? 'damage' : 'movement';
-    $from = $r->query('from') ?: now()->startOfMonth()->toDateString(); $to = $r->query('to') ?: now()->toDateString();
+    $from = $r->query('from') ?: now()->subDays(29)->toDateString(); $to = $r->query('to') ?: now()->toDateString();
     $q = trim((string)$r->query('q', '')); $per = max(200, min(3000, (int)($r->query('per') ?: 1000)));
     if ($mode === 'movement') {
       $b = DB::table('stock_logs as l')->leftJoin('products as p', 'p.id', '=', 'l.product_id')->whereDate('l.created_at', '>=', $from)->whereDate('l.created_at', '<=', $to);

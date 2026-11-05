@@ -41,12 +41,16 @@ $pickIc = function ($label, $gic) use ($IC) { $l = strtolower($label); foreach (
 @php $vis = array_values(array_filter(array_keys($gitems), fn($i) => $ok($gitems[$i][1]))); $isRep = $gl === 'Reports & Analytics'; $showRep = $isRep && $canRep; $gopen = $an && $isRep; foreach ($vis as $i) if ($best === $gi.'.'.$i) $gopen = true; @endphp
 @continue(!$vis && !$showRep)
 <details class="mg" data-g="{{ $gi }}" {{ $gopen ? 'open' : '' }}><summary>{!! $svg($IC[$gic]) !!}<span>{{ $gl }}</span></summary>
-@if($showRep)<a class="sub rp1 {{ $an && $agrp === 'overview' ? 'on' : '' }}" href="/admin/analytics">{!! $svs($IC['chart']) !!}<span class="sl">Analytics Dashboard</span></a>
+@if($showRep)@php $rgq = (string)request()->query('group', ''); $onRC = request()->is('admin/report-center/all-reports'); $RN = ['sales'=>'Sales & Orders','profit'=>'Profit & Margin','inventory'=>'Inventory & Stock','purchase'=>'Purchase & Supplier','customer'=>'Customers & Marketing','courier'=>'Courier, Delivery & Returns','accounts'=>'Finance & Accounts']; @endphp
+<details class="rpg" {{ ($an && $agrp === 'overview') || ($onRC && $rgq === 'EXE') ? 'open' : '' }}><summary>Executive &amp; Analytics</summary><a class="sub rp1 {{ $an && $agrp === 'overview' ? 'on' : '' }}" href="/admin/analytics">{!! $svs($IC['chart']) !!}<span class="sl">Analytics Dashboard</span></a><a class="sub {{ $onRC && $rgq === 'EXE' ? 'on' : '' }}" href="/admin/report-center/all-reports?group=EXE">Executive Reports</a></details>
 @foreach(\App\Support\Analytics::menu() as $gk => [$agl, $agi])@continue($gk === 'overview')
 @php $rgo = $an && $agrp === $gk; foreach ($vis as $j) if (($gitems[$j][3] ?? null) === '@'.$gk && $best === $gi.'.'.$j) $rgo = true; @endphp
-<details class="rpg" {{ $rgo ? 'open' : '' }}><summary>{{ $agl }}</summary>@foreach($agi as $sl => $st)<a class="sub {{ $aslug === $sl ? 'on' : '' }}" href="/admin/analytics/{{ $sl }}">{{ $st }}</a>@endforeach
+<details class="rpg" {{ $rgo ? 'open' : '' }}><summary>{{ $RN[$gk] ?? $agl }}</summary>@foreach($agi as $sl => $st)<a class="sub {{ $aslug === $sl ? 'on' : '' }}" href="/admin/analytics/{{ $sl }}">{{ $st }}</a>@endforeach
 @foreach($vis as $i)@if(($gitems[$i][3] ?? null) === '@'.$gk)<a class="sub {{ $best === $gi.'.'.$i ? 'on' : '' }}" href="{{ $gitems[$i][1] }}">{{ $gitems[$i][0] }}</a>@endif @endforeach</details>
-@endforeach @endif
+@endforeach
+<details class="rpg" {{ $onRC && $rgq === 'STF' ? 'open' : '' }}><summary>Staff Activity &amp; Operations</summary><a class="sub {{ $onRC && $rgq === 'STF' ? 'on' : '' }}" href="/admin/report-center/all-reports?group=STF">Staff &amp; Order Tracking Reports</a></details>
+<details class="rpg" {{ $onRC && $rgq === 'SYS' ? 'open' : '' }}><summary>AI, Call, SMS &amp; System</summary><a class="sub {{ $onRC && $rgq === 'SYS' ? 'on' : '' }}" href="/admin/report-center/all-reports?group=SYS">AI, Call, SMS &amp; System Reports</a></details>
+@endif
 @php $sg = null; @endphp
 @foreach($vis as $i)@continue(str_starts_with((string)($gitems[$i][3] ?? ''), '@'))@php [$il, $ih, $ibk] = $gitems[$i]; $isg = $gitems[$i][3] ?? null; $bv = $ibk ? ($B[$ibk] ?? 0) : 0; @endphp
 @if($isg !== $sg)@if($sg !== null)</details>@endif @php $sg = $isg; $sgo = false; if ($sg !== null) foreach ($vis as $j) if (($gitems[$j][3] ?? null) === $sg && $best === $gi.'.'.$j) $sgo = true; @endphp @if($sg !== null)<details class="rpg" {{ $sgo ? 'open' : '' }}><summary>{{ $sg }}</summary>@endif @endif

@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 /** Supplier purchase invoices in the Mother Commerce grid layout: invoice header, item rows, subtotal, grand total. */
 class PurchaseReportController extends Controller {
   public function index(Request $r) {
-    $from = $r->query('from') ?: now()->startOfMonth()->toDateString(); $to = $r->query('to') ?: now()->toDateString();
+    $from = $r->query('from') ?: now()->subDays(29)->toDateString(); $to = $r->query('to') ?: now()->toDateString();
     $sup = (int)$r->query('supplier', 0); $q = trim((string)$r->query('q', '')); $per = max(20, min(500, (int)($r->query('per') ?: 100)));
     $pq = DB::table('purchases as p')->leftJoin('suppliers as s', 's.id', '=', 'p.supplier_id')->whereDate('p.purchase_date', '>=', $from)->whereDate('p.purchase_date', '<=', $to);
     if ($sup) $pq->where('p.supplier_id', $sup);

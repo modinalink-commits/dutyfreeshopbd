@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 /** Courier-wise delivery and COD report in grid layout: one group per courier, parcel rows, subtotal, grand total. */
 class CourierReportController extends Controller {
   public function index(Request $r) {
-    $from = $r->query('from') ?: now()->startOfMonth()->toDateString(); $to = $r->query('to') ?: now()->toDateString();
+    $from = $r->query('from') ?: now()->subDays(29)->toDateString(); $to = $r->query('to') ?: now()->toDateString();
     $courier = trim((string)$r->query('courier', '')); $q = trim((string)$r->query('q', ''));
     $oq = DB::table('orders')->whereNotNull('courier')->where('courier', '<>', '')->whereDate(DB::raw('coalesce(courier_sent_at, created_at)'), '>=', $from)->whereDate(DB::raw('coalesce(courier_sent_at, created_at)'), '<=', $to);
     if ($courier !== '') $oq->where('courier', $courier);

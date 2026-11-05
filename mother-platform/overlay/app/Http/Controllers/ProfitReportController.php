@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 /** Invoice-wise Profit & Loss in the Mother Commerce grid layout: group header, product rows, subtotal, grand total. */
 class ProfitReportController extends Controller {
   public function index(Request $r) {
-    $from = $r->query('from') ?: now()->startOfMonth()->toDateString(); $to = $r->query('to') ?: now()->toDateString();
+    $from = $r->query('from') ?: now()->subDays(29)->toDateString(); $to = $r->query('to') ?: now()->toDateString();
     $status = $r->query('status', 'Delivered'); $q = trim((string)$r->query('q', '')); $per = max(20, min(500, (int)($r->query('per') ?: 100)));
     $oq = DB::table('orders')->whereDate('created_at', '>=', $from)->whereDate('created_at', '<=', $to);
     if ($status !== '' && $status !== 'all') $oq->where('status', $status);
