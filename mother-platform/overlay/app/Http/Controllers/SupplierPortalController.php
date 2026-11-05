@@ -168,9 +168,9 @@ class SupplierPortalController extends Controller
   }
   public function rfqs() {
     $this->need('rfq'); $sid = SP::sid();
-    $rows = DB::table('supplier_rfq_invites as i')->join('supplier_rfqs as r','r.id','=','i.rfq_id')->leftJoin('supplier_quotes as q', fn($j) => $j->on('q.rfq_id','=','r.id')->where('q.supplier_id','=',$sid))
+    $rows = DB::table('supplier_rfq_invites as i')->join('supplier_rfqs as r','r.id','=','i.rfq_id')->leftJoin('products as pp','pp.id','=','r.product_id')->leftJoin('supplier_quotes as q', fn($j) => $j->on('q.rfq_id','=','r.id')->where('q.supplier_id','=',$sid))
       ->where('i.supplier_id',$sid)->where('r.status','!=','draft')->orderByDesc('r.id')->limit(100)
-      ->get(['r.id','r.rfq_no','r.product','r.sku','r.qty','r.required_date','r.expires_at','r.status as rstatus','i.status as istatus','q.unit_price','q.updated_at as qat']);
+      ->get(['pp.image','r.id','r.rfq_no','r.product','r.sku','r.qty','r.required_date','r.expires_at','r.status as rstatus','i.status as istatus','q.unit_price','q.updated_at as qat']);
     return $this->v('rfqs', compact('rows'));
   }
   private function rfq(int $id): array {

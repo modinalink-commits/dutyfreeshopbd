@@ -679,7 +679,7 @@ c79650b9874e1353be45d558b62a31f5b6f410f5 resources/views/ai_verify_page.blade.ph
 381c84f37d724af4a1d5fb5fefdc85d7ffea197f database/migrations/2026_11_06_000100_supplier_portal.php
 2aa47f9681b5bd108d1cc22f0218520041a7db4e app/Support/SupplierPortal.php
 cc10ca2a4f17ee7c86990bd3132a648a7e9e2b4d app/Http/Middleware/SupplierPortalAuth.php
-458d9e8c92a599bd0db9f9ed17f183a0370dcabb app/Http/Controllers/SupplierPortalController.php
+c3936ed10a27c3e900e0d672bec2755ba638c084 app/Http/Controllers/SupplierPortalController.php
 25250c91fd0dec5caffc1851374f4b7e183da81f app/Http/Controllers/SupplierPortalAdminController.php
 d8dc861068207a19e0ed16d4cd97ca6e2f968338 resources/views/sp/layout.blade.php
 0877033df1fa63b814d077ab5729208042d58f5f resources/views/sp/login.blade.php
@@ -688,9 +688,9 @@ c3162f34445adacd59ef97257eb1d97094b392ba resources/views/sp/password.blade.php
 ce95a3f1aaf6e5b66d75ac62ecc6431b8d015f40 resources/views/sp/terms.blade.php
 95214a11898f9d5c0aa82ac659a846fa4bb5e5f5 resources/views/sp/home.blade.php
 de652079f06fec2be2075905a3b805788a1f4cb4 resources/views/sp/pos.blade.php
-303a7ef3d146f70b1c53f75ff08eb3c2bbae6ec4 resources/views/sp/po_show.blade.php
-705256d3fb270d947b34cd257670a1c52136e09c resources/views/sp/rfqs.blade.php
-3b43c6fe5b9bf0a9c3c639c0cdf792a3c12a4fad resources/views/sp/rfq_show.blade.php
+46ed4cf3aaf4e051ad2fa53c596a247d60372a27 resources/views/sp/po_show.blade.php
+134ef36c3864c35c274c5f08a5da89841cecdd94 resources/views/sp/rfqs.blade.php
+3b1cb80dfd7ecd08e6326f0e562014632ecedd92 resources/views/sp/rfq_show.blade.php
 1ca7f40f78c3de4261ede576807d54c8981cc7b5 resources/views/sp/bills.blade.php
 0898d28829cce565f4313b9f8f995f19794d3105 resources/views/sp/ledger.blade.php
 fb237b28842d08fb5b62250f138a2f66613f06e1 resources/views/sp/ledger_print.blade.php
@@ -740,4 +740,4 @@ ea89c2b12d67775b814ded1506051013e76aab04 app/Jobs/SendSupplierInvitationSmsJob.p
 b9e2237ee97fc10b9dd036df48a99bb7a6c7f268 app/Http/Controllers/ReorderAlertController.php
 4f7f94baed1690e46d99e1e61be0c89d82d5b93d database/migrations/2026_11_06_000200_auto_reorder.php
 23aba9d1a10618a6bcc8c4cfa8794cc732a8b790 resources/views/sp/admin_reorder.blade.php
-c3227577f3c384c044d9605af69d2f514935e87c resources/views/sp/reorder_list.blade.php
+39b4cab1a3c005382b4259cd719b61fde9560c8a resources/views/sp/reorder_list.blade.php
