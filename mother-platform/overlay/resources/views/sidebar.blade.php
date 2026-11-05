@@ -122,6 +122,7 @@ aside.sbx .sbs input{background:#fff!important;border:1px solid #CBD5E1!importan
 aside.sbx .sbs input:focus{border-color:#2563EB!important;box-shadow:0 0 0 3px rgba(37,99,235,.15)!important;outline:0!important}
 aside.sbx nav{gap:10px!important;border-top:0!important;padding:0 6px 10px!important;margin:0 -6px!important;scrollbar-color:#CBD5E1 transparent}
 /* cards */
+aside.sbx nav>details.mg,aside.sbx nav>.sbx-ov{flex:none!important}
 aside.sbx nav details.mg,aside.sbx nav .sbx-ov{display:block;background:#fff!important;border:1px solid #D3DAE4!important;border-radius:10px!important;overflow:hidden;margin:0!important;box-shadow:0 1px 2px rgba(15,23,42,.04)}
 /* header bars */
 aside.sbx nav details.mg>summary,aside.sbx nav .sbx-oh{display:flex!important;align-items:center;gap:0!important;box-sizing:border-box;min-height:30px!important;margin:0!important;padding:6px 30px 6px 12px!important;background:#EEF2F7!important;color:#334155!important;border:0!important;border-bottom:1px solid #DDE3EC!important;border-radius:0!important;font-size:11px!important;font-weight:800!important;letter-spacing:.7px;text-transform:uppercase;line-height:1.2;box-shadow:none!important}
