@@ -161,6 +161,12 @@ main .ibar a.ib:hover,main .ibar a.ib-call:hover{box-shadow:0 3px 8px rgba(11,18
 .ci .cs{display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 8px;border-radius:8px;border:1px solid #CED4DA;background:#F8FAFC;color:#334155;font-size:11.5px;font-weight:600;line-height:1;white-space:nowrap;flex:0 0 auto;cursor:default}
 .ci .cs b{font-weight:700;color:inherit}
 .ci .cs svg{flex:0 0 auto}
+.ci .cs{justify-content:center;min-width:44px;font-size:12.5px;font-weight:700}
+.ci .cs.t-n{background:#F6F7F9;border-color:#D5DAE0;color:#1F2937}
+.ci .cs.t-g{background:#F1FBF4;border-color:#BFE8CA;color:#138A3D}
+.ci .cs.t-r{background:#FFF3F3;border-color:#F3B6B6;color:#C62828}
+.ci .cs.t-a{background:#FFF8E8;border-color:#F0D48C;color:#A96A00}
+.ci .cs.t-b{background:#F2F7FF;border-color:#BCD4F6;color:#245DA8}
 .ci .cs-sep{width:1px;height:14px;background:#CED4DA;flex:0 0 auto;margin:0 1px}
 .ci .t-n{background:#F3F4F6;border-color:#D5D9DE;color:#374151}
 .ci .t-g{background:#F0FBF4;border-color:#BFE6CE;color:#166534}

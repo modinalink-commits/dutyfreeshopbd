@@ -14,6 +14,75 @@ class Deployer
 
   public static function enabled(): bool { return is_link('/srv/app') && is_dir(self::D); }
   public static function liveId(): string { return basename((string)realpath('/srv/app')); }
+  /** True while deploy.sh is really running (it holds an flock on /srv/deploy/lock) - the reliable "heartbeat". */
+  public static function lockHeld(): bool {
+    $f = self::D . '/lock'; if (!is_file($f)) return false;
+    $h = @fopen($f, 'c'); if (!$h) return false;
+    $got = @flock($h, LOCK_EX | LOCK_NB); if ($got) flock($h, LOCK_UN); fclose($h);
+    return !$got;
+  }
+  /** Previous stable release kept by deploy.sh (the target of Rollback), with an integrity check. */
+  public static function previous(): ?array {
+    $p = self::rd('previous'); if ($p === '' || !is_dir($p)) return null;
+    $id = basename($p); $row = DB::table('deployments')->where('release_id', $id)->orderByDesc('id')->first();
+    return ['id' => $id, 'row' => $row, 'valid' => is_file($p . '/artisan') && is_file($p . '/vendor/autoload.php') && is_file($p . '/RELEASE')];
+  }
+  /** Quick / Standard from what the engine really did (it skips composer and migrations on its own). */
+  public static function guessType(?string $log): ?string {
+    if (!$log) return null; $skipC = str_contains($log, 'SKIPPED (no composer'); $skipM = str_contains($log, 'migration check: SKIPPED');
+    return ($skipC && $skipM) ? 'quick' : 'standard';
+  }
+  /** Quick Deploy is only offered when GitHub says the change is views/CSS/JS/PHP code: no migration, no composer change. */
+  public static function quickCheck(string $sha): array {
+    $base = DB::table('deployments')->where('release_id', self::liveId())->whereNotNull('sha')->orderByDesc('id')->value('sha');
+    if (!$base) return [false, 'Quick Deploy needs the live commit to compare against - use Standard Deploy.'];
+    if ($base === $sha) return [true, 'Same commit as live'];
+    try {
+      $r = Http::withHeaders(self::gh())->timeout(10)->get('https://api.github.com/repos/' . self::REPO . '/compare/' . $base . '...' . $sha);
+      if (!$r->ok()) return [false, 'Could not compare the changes with GitHub - use Standard Deploy.'];
+      $files = $r->json('files') ?? []; if (count($files) >= 300) return [false, 'Too many changed files for Quick Deploy - use Standard Deploy.'];
+      foreach ($files as $f) { $n = (string)($f['filename'] ?? ''); if (preg_match('#database/migrations/|composer\.(json|lock)$#', $n)) return [false, 'This update contains ' . (str_contains($n, 'migrations') ? 'a database migration' : 'a dependency change') . ' (' . basename($n) . ') - use Standard Deploy.']; }
+      return [true, count($files) . ' changed files, no migration or dependency change'];
+    } catch (\Throwable $e) { return [false, 'Could not compare the changes with GitHub - use Standard Deploy.']; }
+  }
+  /** Changed file names + message of one commit (never file contents, never .env). */
+  public static function commitFiles(string $sha): ?array {
+    return \Cache::remember('dh.changes.' . $sha, 86400, function () use ($sha) {
+      try {
+        $r = Http::withHeaders(self::gh())->timeout(10)->get('https://api.github.com/repos/' . self::REPO . '/commits/' . $sha); if (!$r->ok()) return null; $j = $r->json();
+        $files = collect($j['files'] ?? [])->map(fn($f) => ['name' => (string)$f['filename'], 'status' => (string)($f['status'] ?? ''), 'add' => (int)($f['additions'] ?? 0), 'del' => (int)($f['deletions'] ?? 0)])->reject(fn($f) => preg_match('/(^|\/)\.env/', $f['name']))->values()->take(120)->all();
+        return ['sha' => (string)$j['sha'], 'message' => mb_substr((string)($j['commit']['message'] ?? ''), 0, 1200), 'author' => (string)($j['commit']['author']['name'] ?? ''), 'date' => (string)($j['commit']['committer']['date'] ?? ''), 'branch' => self::branch(), 'files' => $files, 'total' => count($j['files'] ?? [])];
+      } catch (\Throwable $e) { return null; }
+    });
+  }
+  /** Remove secrets before any log leaves the server. */
+  public static function clean(string $t): string {
+    $t = preg_replace('/(ghp_|gho_|github_pat_|sk-ant-|sk-)[A-Za-z0-9_\-]{12,}/', '[hidden]', $t);
+    $t = preg_replace('/(authorization|bearer)\s*[:=]?\s*\S+/i', '$1 [hidden]', $t);
+    return (string)preg_replace('/\b(password|passwd|pwd|secret|token|api[_-]?key|app_key|db_password)\b\s*[=:]\s*\S+/i', '$1=[hidden]', $t);
+  }
+  /** One-click Recovery Check: looks, and only clears stale deployment state (never deletes a release, never restarts anything). */
+  public static function recover(): array {
+    $o = []; $add = function (string $n, string $st, string $t) use (&$o) { $o[] = ['name' => $n, 'state' => $st, 'text' => $t]; };
+    $live = self::liveId(); $ok = self::enabled() && is_file(base_path('artisan')) && is_file(base_path('vendor/autoload.php'));
+    $add('Current release', $ok ? 'ok' : 'fail', $ok ? 'Valid: ' . $live : 'Incomplete: ' . $live . ' (use Rollback)');
+    $held = self::lockHeld(); $act = DB::table('deployments')->whereIn('status', self::ACTIVE)->latest('id')->first(); $req = self::D . '/request';
+    if ($held) $add('Deployment lock', 'ok', 'A deployment is really running - nothing touched');
+    else {
+      $cleared = [];
+      if (is_file($req) && time() - (int)@filemtime($req) > 600) { @unlink($req); $cleared[] = 'stale request file'; }
+      if ($act && !is_file($req) && time() - max((int)@filemtime(self::D . '/stage'), (int)@filemtime(self::D . '/status'), strtotime((string)$act->updated_at . ' UTC')) > 120 && !str_starts_with(self::rd('status'), 'ok:')) {
+        DB::table('deployments')->where('id', $act->id)->update(['status' => 'Failed', 'stage' => 'Failed', 'error' => 'Interrupted: the deployment process is no longer running (server restart or crash). The last healthy release stayed active.', 'finished_at' => now(), 'updated_at' => now()]);
+        DeployHealth::raise('deploy_failed:' . $act->id, 'high', 'Deployment', 'Deployment was interrupted', 'The process stopped before it finished. Production kept the last healthy release.', 'Server or container restart during the deployment.', 'Review the log, then retry the deployment.', (int)$act->id);
+        $cleared[] = 'interrupted deployment #' . $act->id;
+      }
+      $add('Deployment lock', 'ok', $cleared ? 'Cleared: ' . implode(', ', $cleared) : 'Free - no stale state found');
+    }
+    $l = DeployHealth::light(true); foreach ($l['cells'] as $c) if (in_array($c['key'], ['website', 'database', 'containers', 'scheduler'], true)) $add($c['label'], $c['state'], $c['text'] . ($c['detail'] ? ' · ' . $c['detail'] : ''));
+    $q = DeployHealth::queueInfo(); $add('Queue', $q['failed'] ? 'warn' : 'ok', ($q['driver'] === 'sync' ? 'Sync mode' : ($q['pending'] ?? 0) . ' pending') . ' · ' . $q['failed'] . ' failed');
+    return $o;
+  }
+
   private static function rd(string $f): string { return is_file(self::D . '/' . $f) ? trim((string)@file_get_contents(self::D . '/' . $f)) : ''; }
 
   public static function setting(string $k, string $def = ''): string { $v = DB::table('settings')->where('key', $k)->value('value'); return $v === null ? $def : (string)$v; }
@@ -55,23 +124,33 @@ class Deployer
     return [mb_substr($subj, 0, 240), implode("\n", $notes)];
   }
 
-  private static function audit(string $action, string $subject): void {
-    try { DB::table('audit_logs')->insert(['user_name' => 'Deployment', 'action' => $action, 'subject' => mb_substr($subject, 0, 240), 'created_at' => now(), 'updated_at' => now()]); } catch (\Throwable $e) {}
+  public static function audit(string $action, string $subject, ?string $by = null, array $meta = []): void {
+    try {
+      $u = function_exists('auth') ? optional(auth()->user()) : null; $ip = null; try { $ip = request()->ip(); } catch (\Throwable $e) {}
+      DB::table('audit_logs')->insert(['user_id' => $u->id ?? null, 'user_name' => $by ?: ($u->name ?? 'Deployment'), 'action' => $action, 'subject' => mb_substr($subject, 0, 240), 'meta' => $meta ? json_encode($meta) : null, 'ip' => $ip, 'created_at' => now(), 'updated_at' => now()]);
+    } catch (\Throwable $e) {}
   }
 
-  /** Queue a release for deploy.sh. Returns [ok, message, id]. */
+  /** Queue a release for deploy.sh. Returns [ok, message, id]. meta: subject/notes (commit), dtype (quick|standard|full|rollback), note (deployment note) or reason (rollback). */
   public static function queue(string $sha, string $source, array $meta = [], bool $breaking = false, ?string $by = null): array {
     if (!self::enabled()) return [false, 'Release layout is not active', 0];
-    if (is_file(self::D . '/request') || DB::table('deployments')->whereIn('status', self::ACTIVE)->exists()) return [false, 'Another deployment is already running or waiting', 0];
+    if (self::lockHeld() || is_file(self::D . '/request') || DB::table('deployments')->whereIn('status', self::ACTIVE)->exists()) return [false, 'Deployment currently in progress.', 0];
     $rollback = $sha === 'rollback';
     if (!$rollback && !preg_match('/^[0-9a-f]{40}$/', $sha)) return [false, 'Invalid commit id', 0];
+    $prev = null;
+    if ($rollback) { $prev = self::previous(); if (!$prev || !$prev['valid']) return [false, 'The previous release is missing or incomplete - rollback is not safe.', 0]; }
     $info = $rollback ? null : (($meta['subject'] ?? null) ? $meta : (self::commit($sha) ?: []));
-    $id = DB::table('deployments')->insertGetId(['sha' => $rollback ? null : $sha, 'subject' => $rollback ? 'Rollback to previous release' : ($info['subject'] ?? 'Update ' . substr($sha, 0, 7)), 'notes' => $info['notes'] ?? null,
-      'source' => $source, 'status' => 'Queued', 'progress' => 0, 'stage' => 'Queued', 'from_release' => self::liveId(), 'breaking' => $breaking, 'requested_by' => $by, 'started_at' => now(), 'created_at' => now(), 'updated_at' => now()]);
+    $dtype = $rollback ? 'rollback' : (in_array($meta['dtype'] ?? '', ['quick', 'standard', 'full'], true) ? $meta['dtype'] : null);
+    $desc = $rollback ? ('Reason: ' . mb_substr((string)($meta['reason'] ?? ''), 0, 400)) : (($meta['note'] ?? '') !== '' ? mb_substr((string)$meta['note'], 0, 1000) : null);
+    $subject = $rollback ? 'Rollback to ' . ($prev['row']->version ?? $prev['id']) : ($info['subject'] ?? 'Update ' . substr($sha, 0, 7));
+    $row = ['sha' => $rollback ? null : $sha, 'subject' => $subject, 'description' => $desc, 'notes' => $info['notes'] ?? null,
+      'source' => $source, 'status' => 'Queued', 'progress' => 0, 'stage' => 'Queued', 'from_release' => self::liveId(), 'breaking' => $breaking, 'requested_by' => $by, 'started_at' => now(), 'created_at' => now(), 'updated_at' => now()];
+    if (\Illuminate\Support\Facades\Schema::hasColumn('deployments', 'dtype')) $row['dtype'] = $dtype;
+    $id = DB::table('deployments')->insertGetId($row);
     DB::table('deployments')->where('id', $id)->update(['version' => 'v1.' . $id]);
     @file_put_contents(self::D . '/status', 'queued'); @chmod(self::D . '/status', 0666);
     file_put_contents(self::D . '/request', $rollback ? 'rollback' : $sha . ($breaking ? ' allow-breaking' : ''));
-    self::audit('deploy queued', ($rollback ? 'Rollback' : ($info['subject'] ?? $sha)) . ' (' . ($rollback ? 'previous release' : substr($sha, 0, 7)) . ')');
+    self::audit($rollback ? 'Rollback Started' : 'Deployment Started', ($rollback ? $subject . ' · ' . ($meta['reason'] ?? '') : $subject . ' (' . substr($sha, 0, 7) . ', ' . ($dtype ?: $source) . ')'), $by, ['old' => self::liveId(), 'new' => $rollback ? $prev['id'] : substr($sha, 0, 7), 'result' => 'queued', 'deployment' => $id]);
     return [true, 'Queued', $id];
   }
 
@@ -80,7 +159,7 @@ class Deployer
     if (!$row || !is_file(self::D . '/request')) return false;
     @unlink(self::D . '/request');
     DB::table('deployments')->where('id', $row->id)->update(['status' => 'Failed', 'stage' => 'Cancelled', 'error' => 'Cancelled by admin before it started', 'finished_at' => now(), 'updated_at' => now()]);
-    self::audit('deploy cancelled', (string)$row->subject); return true;
+    self::audit('Deployment Cancelled', (string)$row->subject); return true;
   }
 
   /** Move the active deployment forward by reading what deploy.sh wrote. Safe to call often. */
@@ -94,23 +173,27 @@ class Deployer
       $rb = !$row->sha; $rid = $rb ? null : trim(substr($st, 3), ' ') ; $rid = $rid ? preg_replace('/ live$/', '', $rid) : null;
       $u += ['status' => $rb ? 'Rolled Back' : 'Completed', 'stage' => $rb ? 'Rolled back' : 'Completed', 'progress' => 100, 'release_id' => $rid, 'log' => mb_substr($log, -9000), 'finished_at' => now()];
       if ($rb && $row->from_release) DB::table('deployments')->where('release_id', $row->from_release)->where('id', '<>', $row->id)->update(['status' => 'Rolled Back']);
-      self::audit($rb ? 'deploy rolled back' : 'deploy live', ($row->subject ?? '') . ' — now LIVE');
+      if (!$rb && \Illuminate\Support\Facades\Schema::hasColumn('deployments', 'dtype') && !$row->dtype) $u['dtype'] = self::guessType($log);
+      self::audit($rb ? 'Rollback Completed' : 'Deployment Completed', ($row->subject ?? '') . ' — now LIVE', null, ['old' => $row->from_release, 'new' => $rid, 'result' => 'success', 'deployment' => $row->id]);
+      if (!$rb) DeployHealth::resolve('deploy_failed:', 'System (new release is live)', true);
       if (function_exists('opcache_reset')) @opcache_reset(); // the old release's scripts would otherwise stay in PHP's code cache until it fills up and the site slows down
     } elseif ($fresh && str_starts_with($st, 'failed:')) {
       $rolled = str_contains($st, 'rolled back');
       $u += ['status' => $rolled ? 'Rolled Back' : 'Failed', 'stage' => $rolled ? 'Rolled back' : 'Failed', 'error' => trim(substr($st, 7)), 'log' => mb_substr($log, -9000), 'finished_at' => now()];
-      self::audit($rolled ? 'deploy rolled back' : 'deploy failed', ($row->subject ?? '') . ' — previous version kept');
-    } elseif ($fresh && $row->status !== 'Queued' && time() - max((int)@filemtime(self::D . '/stage'), (int)@filemtime(self::D . '/status'), (int)@filemtime(self::D . '/last.log')) > 1200) {
-      $u += ['status' => 'Failed', 'stage' => 'Failed', 'error' => 'Interrupted: no progress for 20 minutes (the server was restarted during this deployment). Press Deploy Now to run it again.', 'finished_at' => now()];
-      self::audit('deploy interrupted', (string)$row->subject);
+      self::audit($rolled ? 'Rollback Completed' : 'Deployment Failed', ($row->subject ?? '') . ' — previous version kept', null, ['old' => $row->from_release, 'new' => $row->from_release, 'result' => trim(substr($st, 7)), 'deployment' => $row->id]);
+      DeployHealth::raise('deploy_failed:' . $row->id, 'high', 'Deployment', $rolled ? 'Deployment failed - automatic rollback completed' : 'Deployment failed - previous release stays live', trim(substr($st, 7)), $rolled ? 'The new release passed the pre-check but failed the live health check.' : 'A build, migration or health check step failed before the switch.', 'Review the log, fix the cause, then retry. Production was not affected.', (int)$row->id);
+    } elseif ($fresh && $row->status !== 'Queued' && !self::lockHeld() && time() - max((int)@filemtime(self::D . '/stage'), (int)@filemtime(self::D . '/status'), (int)@filemtime(self::D . '/last.log')) > 180) {
+      $u += ['status' => 'Failed', 'stage' => 'Failed', 'error' => 'Interrupted: the deployment process is no longer running (server restart or crash). The last healthy release stayed active. Retry when ready.', 'finished_at' => now()];
+      self::audit('Deployment Failed', 'Interrupted: ' . $row->subject, null, ['result' => 'interrupted', 'deployment' => $row->id]);
+      DeployHealth::raise('deploy_failed:' . $row->id, 'high', 'Deployment', 'Deployment was interrupted', 'The process stopped before it finished. Production kept the last healthy release.', 'Server or container restart during the deployment.', 'Review the log, then retry the deployment.', (int)$row->id);
     } elseif ($fresh && $st !== '') {
       $sf = self::D . '/stage'; $stale = is_file($sf) && filemtime($sf) < strtotime((string)$row->created_at . ' UTC') - 5;
       [$stage, $pct] = $stale ? ['', '0'] : array_pad(explode('|', self::rd('stage')), 2, '0');
       $map = ['Downloading' => 'Downloading', 'Building' => 'Building', 'Testing' => 'Testing', 'Deploying' => 'Deploying', 'Verifying' => 'Deploying', 'Rolling back' => 'Deploying'];
       if (isset($map[$stage])) $u += ['status' => $map[$stage], 'stage' => $stage, 'progress' => min(99, max((int)$row->progress, (int)$pct))];
-      if ($row->status === 'Queued' && isset($map[$stage])) self::audit('deploy started', (string)$row->subject);
-    } elseif (!$fresh && $row->status !== 'Queued' && time() - strtotime((string)$row->updated_at . ' UTC') > 1500) {
-      $u += ['status' => 'Failed', 'stage' => 'Failed', 'error' => 'No progress for 25 minutes', 'finished_at' => now()];
+      
+    } elseif (!$fresh && $row->status !== 'Queued' && !self::lockHeld() && time() - strtotime((string)$row->updated_at . ' UTC') > 600) {
+      $u += ['status' => 'Failed', 'stage' => 'Failed', 'error' => 'No heartbeat for 10 minutes: marked interrupted. The last healthy release stayed active.', 'finished_at' => now()];
     } elseif (!$fresh && time() - strtotime((string)$row->created_at . ' UTC') > 120 && !is_file(self::D . '/request')) {
       $u += ['status' => 'Failed', 'stage' => 'Failed', 'error' => 'The deploy worker did not pick this up', 'finished_at' => now()];
     }

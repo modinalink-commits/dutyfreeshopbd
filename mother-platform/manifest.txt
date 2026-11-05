@@ -615,3 +615,5 @@ database/migrations/2026_11_05_000080_ai_briefs.php
 app/Support/AiBrief.php
 app/Http/Controllers/AiBriefController.php
 resources/views/ai_brief.blade.php
+app/Support/DeployHealth.php
+database/migrations/2026_11_05_000090_deploy_center_v2.php
