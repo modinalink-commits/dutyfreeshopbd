@@ -19,6 +19,9 @@
 #ocb#ocb input.toolbar-control-lg{display:block!important;width:100%!important;min-width:0!important;justify-content:flex-start;text-align:left;font-weight:500!important;background:#fff!important;padding:0 12px!important}
 #ocb#ocb input.toolbar-control-lg:focus{border-color:#FF5A00!important;outline:0}
 #ocb#ocb #oexs{height:34px!important;min-width:0!important;flex:0 0 auto!important}
+#ocb#ocb #oexs .dfx-btn.toolbar-control{height:34px!important;min-height:34px!important;padding:0 12px!important;font-size:12px!important;font-weight:600!important;line-height:1!important;border:1px solid var(--border-grid,#CED4DA)!important;border-radius:8px!important}
+#ocb#ocb select.toolbar-control{max-width:130px!important}
+#ocb#ocb .toolbar-control-sm[name=per]{min-width:0!important;padding-right:22px!important}
 #ocb#ocb .pre{flex:0 0 auto!important;margin:0!important}
 /* Create Order: strongest primary action, same height */
 #ocb#ocb a.btn.toolbar-control{margin-left:auto!important;background:var(--o,#FF5A00)!important;border-color:var(--o,#FF5A00)!important;color:#fff!important;font-weight:700!important;text-decoration:none}
