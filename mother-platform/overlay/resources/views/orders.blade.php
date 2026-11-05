@@ -62,7 +62,7 @@
 #ocb #oexs{display:inline-flex;align-items:center;min-width:70px;height:26px;flex:none;position:relative}#ocb #oexs .dfx-bar{position:absolute!important;left:0;top:0;opacity:0;pointer-events:none;z-index:-1;visibility:visible}
 #ocb #osel{display:inline-flex;align-items:center;justify-content:center;flex:none;width:28px;height:26px;font-size:11px;font-weight:700;color:#1E40AF;visibility:visible}#ocb #osel:empty{display:none!important}
 /* v1.326 row action buttons (View / Edit / more / Convert / Recovered / Archive) share the toolbar design */
-.oa,.oa.btn{display:inline-flex!important;align-items:center;justify-content:center;gap:5px;box-sizing:border-box;height:28px!important;min-height:0!important;padding:0 10px!important;font-size:11px!important;font-weight:600!important;line-height:1!important;border-radius:8px!important;border:1.5px solid #94A3B8!important;background:#F1F5F9!important;color:#0B1220!important;box-shadow:none!important;filter:none!important;transform:none!important;text-decoration:none;transition:border-color .15s ease,background-color .15s ease}
+.oa,.oa.btn{display:inline-flex!important;align-items:center;justify-content:center;gap:5px;box-sizing:border-box;height:30px!important;min-height:0!important;padding:0 10px!important;font-size:12px!important;font-weight:600!important;line-height:1!important;border-radius:8px!important;border:1.5px solid #94A3B8!important;background:#F1F5F9!important;color:#0B1220!important;box-shadow:none!important;filter:none!important;transform:none!important;text-decoration:none;transition:border-color .15s ease,background-color .15s ease}
 .oa:hover{border-color:#475569!important;transform:none!important}
 .oa-view{background:#DBEAFE!important;color:#1E40AF!important;border-color:#3B82F6!important}.oa-view:hover{border-color:#1D4ED8!important}
 .oa-primary,.btn-convert{background:#FFEDD5!important;color:#C2410C!important;border-color:#FB923C!important}.oa-primary:hover,.btn-convert:hover{border-color:#C2410C!important}
@@ -197,7 +197,7 @@ document.getElementById('cmSave').addEventListener('click',function(){var b=docu
 #qaPop .qa-note{font-size:10.5px;color:#6B7280;padding:3px 8px;line-height:1.3}
 #qaPop .qa-sep{height:1px;background:#E5E7EB;margin:4px 2px}
 #qaPop a{color:#334155}#qaPop button.lock{opacity:.5}#qaPop button.lock:after{content:"🔒";margin-left:auto;font-size:10px}#qaPop input[type=date],#qaPop input[type=time]{display:block;width:100%;height:26px;margin:3px 0;padding:0 6px;font-size:11.5px;border:1px solid #CBD5E1;border-radius:6px;box-sizing:border-box}#qaPop .stgo{justify-content:center;background:#16A34A;color:#fff;font-weight:600;margin-top:3px}#qaPop .stgo:hover{background:#15803D}
-.order-action-group .oa-status{background:#F7FEF9;color:#0F172A;border:1px solid #BBD9C4}.order-action-group .oa-status:hover{background:#ECFDF3;border-color:#4ADE80}td.action-column .oar{display:flex;gap:6px;justify-content:flex-end;align-items:center}td.action-column{min-width:196px}
+.order-action-group .oa.oa-status{background:#F7FEF9!important;color:#0F172A!important;border:1px solid #BBD9C4!important}.order-action-group .oa.oa-status:hover{background:#ECFDF3!important;border-color:#4ADE80!important}td.action-column .oar{display:flex;gap:6px;justify-content:flex-end;align-items:center}td.action-column{min-width:196px}
 </style>
 <div id="qaPop"></div>
 <script>(function(){var pop=document.getElementById('qaPop'),cur=null,tok=document.querySelector('meta[name=csrf-token]'),T=tok?tok.content:'';
