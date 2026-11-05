@@ -109,6 +109,7 @@ footer{background:var(--ink);color:#fff;padding:56px 0 32px}
 .banners{position:relative;aspect-ratio:1600/625;overflow:hidden;background:#0f1b2d}.bnr{position:absolute;inset:0;opacity:0;transition:opacity 1.2s ease}.bnr.on{opacity:1}.bnr img{width:100%;height:100%;object-fit:cover;display:block}.bnr.on img{animation:nkKen 9s ease-out both}@keyframes nkKen{from{transform:scale(1.08)}to{transform:scale(1)}}
 @media (prefers-reduced-motion:reduce){.bnr{transition:none}.bnr.on img{animation:none}}
 .cimg{height:180px;width:auto;align-self:center;margin-bottom:6px;transition:transform .4s ease}.card:hover .cimg{transform:translateY(-6px)}
+.ntc{background:#123a86;color:#fff;font-size:14px;line-height:20px;padding:9px 0;text-align:center}.ntc .bn{color:#ffe7a8;margin-left:8px}
 .copy{margin-top:40px;padding-top:20px;border-top:1px solid #2a3a55;font-size:12px;color:#9fb0cf}
 </style>
 </head>
@@ -231,6 +232,7 @@ footer{background:var(--ink);color:#fff;padding:56px 0 32px}
     {size:'35 KG',img:'/img/cyl-35.webp',h:390,en:'For hotels, restaurants and tea stalls.',bn:'হোটেল, রেস্টুরেন্ট ও চায়ের দোকানের জন্য।'},
     {size:'45 KG',img:'/img/cyl-45.webp',h:430,en:'For large kitchens and industry. Bulk and dealer orders welcome.',bn:'বড় রান্নাঘর ও কারখানার জন্য।'}
   ];
+  var TEL='+8801901168777';
   var H={'12 KG':330,'35 KG':390,'45 KG':430};
   function esc(x){return String(x==null?'':x).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function cyl(s,k){return s.img?'<img src="'+esc(s.img)+'" alt="'+esc((s.brand||'Aygaz United')+' '+s.size)+' LPG cylinder" style="height:'+(s.h||H[s.size]||360)+'px;width:auto;display:block" '+(k?'loading="lazy"':'fetchpriority="high"')+'>':'';}
@@ -243,7 +245,7 @@ footer{background:var(--ink);color:#fff;padding:56px 0 32px}
     L.forEach(function(s,k){
       var d=document.createElement('div');d.className='slide'+(s.anim==='fade'?' a-fade':(s.anim==='fade-float'?' a-ff':''));d.setAttribute('role','group');d.setAttribute('aria-roledescription','slide');d.setAttribute('aria-label',(k+1)+' of '+N);
       d.innerHTML='<div class="txt"><span class="tag">'+esc((s.brand||'Aygaz United').toUpperCase())+' · LPG</span><h1>'+head(s)+'</h1>'+(s.en?'<p>'+esc(s.en)+'</p>':'')+(s.bn?'<p class="bn">'+esc(s.bn)+'</p>':'')+
-        '<div class="acts"><a class="btn dark" href="'+link(s)+'" data-size="'+esc(String(s.size).toLowerCase())+'">'+esc(s.btn||('Order '+s.size))+'</a><a class="btn" href="tel:+8801901168777">Call for today\'s price</a></div></div>'+
+        '<div class="acts"><a class="btn dark" href="'+link(s)+'" data-size="'+esc(String(s.size).toLowerCase())+'">'+esc(s.btn||('Order '+s.size))+'</a><a class="btn" href="tel:'+TEL+'">Call for today\'s price</a></div></div>'+
         '<div class="cyl"><div class="float">'+cyl(s,k)+'</div><div class="shadow" aria-hidden="true"></div></div>';
       stage.appendChild(d);
       var b=document.createElement('button');b.type='button';b.className='dot';b.setAttribute('aria-label','Show slide '+(k+1));b.onclick=function(){go(k);};dots.appendChild(b);
@@ -264,6 +266,18 @@ footer{background:var(--ink);color:#fff;padding:56px 0 32px}
   build(S);
   // Slides published from the admin (Hero slider) replace the built-in ones.
   if(window.fetch){fetch('/api/hero',{headers:{'Accept':'application/json'}}).then(function(r){return r.ok?r.json():null;}).then(function(L){if(L&&L.length&&sig(L)!==sig(S))build(L);}).catch(function(){});}
+  // Notice bar, order form status and contact details from the admin (Public website).
+  if(window.fetch){fetch('/api/site',{headers:{'Accept':'application/json'}}).then(function(r){return r.ok?r.json():null;}).then(function(c){
+    if(!c)return;
+    if(c.notice&&(c.notice.en||c.notice.bn)){var nb=document.createElement('div');nb.className='ntc';nb.setAttribute('role','note');nb.innerHTML='<div class="wrap">'+esc(c.notice.en)+(c.notice.bn?'<span class="bn">'+esc(c.notice.bn)+'</span>':'')+'</div>';document.body.insertBefore(nb,document.body.firstChild);}
+    if(c.orders_open===false){var fb=document.getElementById('fSend'),fo=document.getElementById('fOut');fb.disabled=true;fb.textContent='Online orders paused';fo.className='note bad';fo.innerHTML=esc(c.closed_msg)+' <a href="tel:'+esc(c.phone||'01901168777')+'">Call us</a>';}
+    var ph=(c.phone||'').replace(/\D+/g,''),old='1901168777';
+    if(ph.length>=11&&ph.slice(-10)!==old){var intl='+880'+ph.slice(-10);TEL=intl;var disp=ph.slice(-11,-6)+'-'+ph.slice(-6);
+      document.querySelectorAll('a[href^="tel:"]').forEach(function(a){a.href='tel:'+intl;a.innerHTML=a.innerHTML.replace(/\+?880 ?1901-168777|01901-168777/g,function(m){return m.indexOf('880')>=0?'+880 '+disp.slice(1):disp;});if(a.getAttribute('aria-label'))a.setAttribute('aria-label','Call '+disp);});}
+    var wa=(c.whatsapp||'').replace(/\D+/g,'');
+    if(wa.length>=12&&wa!=='8801901168777'){document.querySelectorAll('a[href*="wa.me/8801901168777"]').forEach(function(a){a.href=a.href.replace('8801901168777',wa);});}
+    var ad=document.querySelector('.ft .mut');if(c.address&&ad)ad.textContent=c.address;
+  }).catch(function(){});}
   document.addEventListener('click',function(e){var a=e.target.closest('[data-size]');if(!a)return;var v=a.getAttribute('data-size').replace('kg',' kg').replace('  ',' ');var sel=document.getElementById('fSize');for(var k=0;k<sel.options.length;k++){if(sel.options[k].text===v.trim())sel.selectedIndex=k;}});
   document.getElementById('orderForm').addEventListener('submit',function(e){
     e.preventDefault();
@@ -280,7 +294,7 @@ footer{background:var(--ink);color:#fff;padding:56px 0 32px}
       .then(function(r){return r.json().then(function(j){return {ok:r.ok,j:j};});})
       .then(function(res){
         if(res.ok&&res.j.ok){document.getElementById('orderForm').reset();out.className='note ok';out.innerHTML='Thank you! Your order'+(res.j.id?' #'+res.j.id:'')+' is received. We will call you soon. <span class="bn">ধন্যবাদ! আমরা শীঘ্রই কল করব।</span> <a href="'+wa+'" target="_blank" rel="noopener">Also send on WhatsApp</a>';}
-        else{var m=res.j&&res.j.errors?Object.values(res.j.errors)[0][0]:'Could not send.';out.className='note bad';out.innerHTML=m+' <a href="'+wa+'" target="_blank" rel="noopener">Send on WhatsApp instead</a>';}
+        else{var m=res.j&&res.j.errors?Object.values(res.j.errors)[0][0]:(res.j&&res.j.message?esc(res.j.message):'Could not send.');out.className='note bad';out.innerHTML=m+' <a href="'+wa+'" target="_blank" rel="noopener">Send on WhatsApp instead</a>';}
       })
       .catch(function(){out.className='note bad';out.innerHTML='Could not reach our server. <a href="'+wa+'" target="_blank" rel="noopener">Send on WhatsApp instead</a>';})
       .then(function(){btn.disabled=false;btn.textContent='Send order';});

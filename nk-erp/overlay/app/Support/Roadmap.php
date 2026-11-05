@@ -44,7 +44,7 @@ class Roadmap
             ['exp', 'Expense management', 'expenses.index', 'ExpenseDash · ExpenseEntry · ExpenseSetup'],
         ],
         'WEBSITE' => [
-            ['website', 'Public website', null, 'Website (live at nklpgbd.com; editing from here planned)'],
+            ['website', 'Public website', 'website.index', 'Website (nklpgbd.com: notice bar, order form, contact details)'],
             ['hero', 'Hero slider', 'hero.index', 'Hero · HeroMobile · HeroAdmin'],
         ],
         'ERP MODULES' => [

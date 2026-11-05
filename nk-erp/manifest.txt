@@ -28,6 +28,7 @@ app/Http/Controllers/SmsController.php
 app/Http/Controllers/StockController.php
 app/Http/Controllers/TripController.php
 app/Http/Controllers/UserController.php
+app/Http/Controllers/WebsiteController.php
 app/Http/Controllers/WholesaleController.php
 app/Http/Middleware/CustomerSession.php
 app/Http/Middleware/ForcePasswordChange.php
@@ -189,5 +190,6 @@ resources/views/stock/history.blade.php
 resources/views/stock/index.blade.php
 resources/views/stock/row.blade.php
 resources/views/users.blade.php
+resources/views/website.blade.php
 resources/views/wholesale.blade.php
 routes/web.php

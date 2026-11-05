@@ -30,6 +30,7 @@ use App\Http\Controllers\PortalController;
 use App\Http\Controllers\CustomerOrderController;
 use App\Http\Controllers\ErpController;
 use App\Http\Controllers\TripController;
+use App\Http\Controllers\WebsiteController;
 use Illuminate\Support\Facades\Route;
 
 // Public API used by the nklpgbd.com website order form.
@@ -84,6 +85,7 @@ Route::prefix('my')->name('my.')->group(function () {
     });
 });
 Route::get('/api/hero', [HeroController::class, 'api'])->middleware('throttle:120,1');
+Route::get('/api/site', [WebsiteController::class, 'api'])->middleware('throttle:120,1');
 Route::get('/api/ping', fn () => response()->json(['ok' => true]));
 
 Route::middleware('guest')->group(function () {
@@ -225,6 +227,8 @@ Route::middleware(['auth', 'pwd'])->group(function () {
         Route::post('/sms/notice', [SmsController::class, 'notice'])->name('sms.notice');
     });
     Route::middleware('role:super_admin,admin')->group(function () {
+        Route::get('/website', [WebsiteController::class, 'index'])->name('website.index');
+        Route::post('/website', [WebsiteController::class, 'save'])->name('website.save');
         Route::get('/hero', [HeroController::class, 'index'])->name('hero.index');
         Route::post('/hero', [HeroController::class, 'save'])->name('hero.save');
         Route::post('/hero/publish', [HeroController::class, 'publish'])->name('hero.publish');

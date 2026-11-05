@@ -59,7 +59,7 @@ textarea{padding:8px 10px;min-height:60px}
     @unless($u->must_change_password)
     @php($newCount = \App\Models\WebsiteOrder::where('status', 'new')->count())
     @php($waitX = \App\Models\BrandExchange::where('status', 'waiting')->count())
-    @php($adminOnly = ['company', 'users', 'activity', 'sms', 'hero'])
+    @php($adminOnly = ['company', 'users', 'activity', 'sms', 'hero', 'website'])
     @php($superOnly = ['supplier', 'accounts', 'vpl', 'import'])
     @php($mgrOnly = ['map', 'live', 'corders'])
     @php($officeOnly = ['rdash', 'vehicles', 'loading', 'return', 'settle', 'closing', 'exp', 'export', 'erp'])
