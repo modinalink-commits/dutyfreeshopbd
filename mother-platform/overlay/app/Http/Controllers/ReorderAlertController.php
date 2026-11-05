@@ -26,7 +26,11 @@ class ReorderAlertController extends Controller
     if ($r->filled('q')) { $t = '%'.mb_strtolower(trim((string)$r->query('q'))).'%'; $q->where(fn($w) => $w->whereRaw('lower(p.name) like ?', [$t])->orWhereRaw('lower(coalesce(p.sku,\'\')) like ?', [$t])->orWhereRaw('lower(q.req_no) like ?', [$t])); }
     $rows = $q->orderByRaw("case q.urgency when 'Critical' then 0 when 'High' then 1 when 'Medium' then 2 else 3 end")->orderByDesc('q.id')->limit(300)->get(['q.*','p.name','p.sku','p.stock','p.image','f.rfq_no','f.status as rfq_status']);
     $rows = $rows->map(function ($x) { $x->quotes = $x->rfq_id ? DB::table('supplier_quotes')->where('rfq_id',$x->rfq_id)->count() : 0; $x->invited = $x->rfq_id ? DB::table('supplier_rfq_invites')->where('rfq_id',$x->rfq_id)->count() : 0; return $x; });
-    return view('sp.admin_reorder', ['off'=>false,'c'=>$c,'rows'=>$rows,'below'=>$below,'card'=>$card,'f'=>$r->only('s','u','q','all'),'brand'=>SP::brand()]);
+    $uq = DB::table('products as p')->where('p.published', false)->whereNotExists(fn($e) => $e->select(DB::raw(1))->from('reorder_requests as o')->whereColumn('o.product_id','p.id')->whereNotIn('o.status', R::END));
+    if ($r->filled('pq')) { $t = '%'.mb_strtolower(trim((string)$r->query('pq'))).'%'; $uq->where(fn($w) => $w->whereRaw('lower(p.name) like ?', [$t])->orWhereRaw('lower(coalesce(p.sku,\'\')) like ?', [$t])); }
+    $unpubTotal = (clone $uq)->count();
+    $unpub = $uq->orderByDesc('p.id')->limit(40)->get(['p.id','p.name','p.sku','p.image','p.stock'])->map(function ($x) { $x->nsup = count(SI::suppliersFor((int)$x->id)); return $x; });
+    return view('sp.admin_reorder', ['unpub'=>$unpub,'unpubTotal'=>$unpubTotal,'pq'=>(string)$r->query('pq'),'off'=>false,'c'=>$c,'rows'=>$rows,'below'=>$below,'card'=>$card,'f'=>$r->only('s','u','q','all'),'brand'=>SP::brand()]);
   }
   public function settings(Request $r) {
     $d = $r->validate(['threshold'=>'required|integer|min:1|max:100000','target'=>'required|integer|min:1|max:1000000','days'=>'required|integer|min:1|max:90','hours'=>'required|integer|min:1|max:720','high'=>'required|integer|min:1|max:1000','med'=>'required|integer|min:1|max:1000','send_at'=>['nullable','regex:/^([01]?\d|2[0-3]):[0-5]\d$/']]);
@@ -41,6 +45,13 @@ class ReorderAlertController extends Controller
     if (!P::on('reorder_enabled')) return back()->with('bad','Turn on Auto Reorder first (Settings → Auto reorder enabled).');
     [$made,$nos,$skip] = R::scan(null, auth()->id()); R::sync();
     return back()->with('ok', $made.' request(s) created'.($nos ? ', '.$nos.' with no supplier mapped (admin alert)' : '').'. '.$skip.' product(s) skipped (auto reorder off for them).');
+  }
+  public function preorder(Request $r) {
+    $ids = array_map('intval', (array)$r->input('ids')); if (!$ids) return back()->with('bad','Select at least one product.'); $qty = (array)$r->input('qty'); $ok = 0; $nos = 0; $ex = 0;
+    foreach (DB::table('products')->whereIn('id', $ids)->where('published', false)->get(['id','name','sku','stock']) as $p) {
+      $res = R::createPreorder($p, max(1, (int)($qty[$p->id] ?? 100)), auth()->id()); if ($res === 'ok') $ok++; elseif ($res === 'No Supplier') $nos++; else $ex++;
+    }
+    return back()->with('ok', $ok.' pre-order request(s) created'.($nos ? ', '.$nos.' with no supplier mapped (admin alert)' : '').($ex ? ', '.$ex.' already had an open request' : '').'. They go to suppliers at the daily send time (or press Send).');
   }
   public function override(Request $r) {
     $d = $r->validate(['sku'=>'required|max:120','threshold'=>'nullable|integer|min:0|max:100000','target'=>'nullable|integer|min:0|max:1000000','mode'=>'nullable|in:default,auto,off']);

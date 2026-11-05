@@ -71,6 +71,19 @@ class Reorder
     self::makeRfq($id, $sup, $c);
     return 'ok';
   }
+  /** Unpublished product -> Pre-Order request (same RFQ flow; goes out at the daily send time). Returns ok | No Supplier | exists. */
+  public static function createPreorder(object $p, int $qty, ?int $by = null): string {
+    if (DB::table('reorder_requests')->where('product_id', $p->id)->whereNotIn('status', self::END)->exists()) return 'exists';
+    $c = self::cfg(); $sup = SupplierInsight::suppliersFor((int)$p->id);
+    try {
+      $id = DB::table('reorder_requests')->insertGetId(['product_id' => $p->id, 'kind' => 'preorder', 'stock_at' => (int)$p->stock, 'threshold' => 0, 'target' => $qty, 'req_qty' => max(1, $qty), 'urgency' => 'Pre-order',
+        'status' => $sup ? 'New' : 'No Supplier', 'required_date' => now('Asia/Dhaka')->addDays($c['days'])->toDateString(), 'created_by' => $by, 'created_at' => now(), 'updated_at' => now()]);
+    } catch (\Throwable $e) { return 'exists'; }
+    DB::table('reorder_requests')->where('id', $id)->update(['req_no' => 'PO-R' . str_pad((string)$id, 5, '0', STR_PAD_LEFT)]);
+    Procure::audit('reorder.preorder', 'reorder#' . $id, null, ['product' => $p->name, 'qty' => $qty, 'suppliers' => count($sup)]);
+    if (!$sup) return 'No Supplier';
+    self::makeRfq($id, $sup, $c); return 'ok';
+  }
   /** RFQ for a request (sent right away when auto-send is on). */
   public static function makeRfq(int $id, array $sup, array $c): void {
     $r = DB::table('reorder_requests')->find($id); $p = DB::table('products')->find($r->product_id); if (!$r || !$p) return;
@@ -90,9 +103,9 @@ class Reorder
     DB::table('reorder_requests')->where('id', $id)->update(['status' => 'Sent to Supplier', 'updated_at' => now()]);
     $pri = in_array($r->urgency, ['Critical', 'High'], true) ? 'urgent' : 'action';
     foreach (DB::table('supplier_rfq_invites')->where('rfq_id', $rfq->id)->pluck('supplier_id') as $sid) {
-      SupplierPortal::notify((int)$sid, 'reorder', 'Product needed: ' . $rfq->product, 'Requested qty ' . $r->req_qty . ' · Current stock ' . $r->stock_at . ' · Required by ' . ($r->required_date ?: '—') . ' · Submit your best price before ' . date('d M, g:i A', strtotime((string)$rfq->expires_at)), '/supplier-portal/rfq/' . $rfq->id, $pri);
+      SupplierPortal::notify((int)$sid, 'reorder', ($r->kind === 'preorder' ? 'Pre-order request: ' : 'Product needed: ') . $rfq->product, 'Requested qty ' . $r->req_qty . ($r->kind === 'preorder' ? '' : ' · Current stock ' . $r->stock_at) . ' · Required by ' . ($r->required_date ?: '—') . ' · Submit your best price before ' . date('d M, g:i A', strtotime((string)$rfq->expires_at)), '/supplier-portal/rfq/' . $rfq->id, $pri);
       if ($c['sms'] && Sms::configured()) foreach (DB::table('supplier_users')->where('supplier_id', $sid)->where('status', 'active')->whereIn('role', ['owner', 'sales'])->whereNotNull('mobile')->pluck('mobile') as $m) {
-        try { Sms::queue($m, "Low Stock Purchase Request\nProduct: {$rfq->product}\nRequired Qty: {$r->req_qty}\nPlease submit your best price and available quantity from the Supplier Portal: " . rtrim((string)config('app.url'), '/') . '/supplier-portal', 'reorder'); } catch (\Throwable $e) {}
+        try { Sms::queue($m, ($r->kind === 'preorder' ? "Pre-Order Request" : "Low Stock Purchase Request") . "\nProduct: {$rfq->product}\nRequired Qty: {$r->req_qty}\nPlease submit your best price and available quantity from the Supplier Portal: " . rtrim((string)config('app.url'), '/') . '/supplier-portal', 'reorder'); } catch (\Throwable $e) {}
       }
     }
     Procure::audit('reorder.send', 'reorder#' . $id, null, ['rfq' => $rfq->rfq_no]);
@@ -112,7 +125,7 @@ class Reorder
       try {
         $p = DB::table('products')->find($r->product_id); if (!$p) { self::cancel($r->id, 'Product removed'); continue; }
         $stock = (int)$p->stock; $thr = self::threshold($p, $c); $st = $r->status;
-        if (in_array($st, self::EARLY, true) && $stock >= $thr) { self::cancel($r->id, 'Stock recovered'); DB::table('reorder_requests')->where('id', $r->id)->update(['status' => 'Closed']); continue; }
+        if ($r->kind !== 'preorder' && in_array($st, self::EARLY, true) && $stock >= $thr) { self::cancel($r->id, 'Stock recovered'); DB::table('reorder_requests')->where('id', $r->id)->update(['status' => 'Closed']); continue; }
         if ($st === 'No Supplier') { $sup = SupplierInsight::suppliersFor((int)$r->product_id); if ($sup) self::makeRfq($r->id, $sup, $c); continue; }
         $rfq = $r->rfq_id ? DB::table('supplier_rfqs')->find($r->rfq_id) : null; if (!$rfq) continue;
         $quotes = DB::table('supplier_quotes')->where('rfq_id', $rfq->id)->count(); $new = $st; $end = null;
