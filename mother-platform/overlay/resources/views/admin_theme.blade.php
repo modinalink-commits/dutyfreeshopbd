@@ -276,6 +276,4 @@ details.os-sms .tm{margin-left:auto}
 details.os-sms pre{white-space:pre-wrap;margin:6px 0 2px 18px;font:inherit;font-size:12.5px;line-height:1.6;color:#374151;background:#F8FAFC;border:1px solid #E8EDF3;border-radius:8px;padding:8px 10px}
 details.os-sms small{display:block;margin:4px 0 0 18px}
 @media(max-width:640px){dl.kv{grid-template-columns:104px minmax(0,1fr)}.os-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.os-2{grid-template-columns:minmax(0,1fr)}}
-/* customer card: stats + risk + actions collapse into one dropdown */
-.ci details.cix{margin-top:6px}.ci details.cix>summary{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border:1px solid #94A3B8;border-radius:8px;background:#F8FAFC;color:#0F172A;font-size:12px;font-weight:700;cursor:pointer;list-style:none;user-select:none}.ci details.cix>summary::-webkit-details-marker{display:none}.ci details.cix>summary:hover{background:#EEF2F7}.ci details.cix[open]>summary{background:#EAF1FF;border-color:#2563EB;color:#1D4ED8}.ci details.cix .cix-c{transition:transform .15s}.ci details.cix[open] .cix-c{transform:rotate(180deg)}.ci details.cix>*:not(summary){margin-top:6px}
 </style>
