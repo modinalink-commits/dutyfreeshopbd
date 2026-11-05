@@ -35,7 +35,7 @@ var ov=document.getElementById('aivOv'),dr=document.getElementById('aiv'),B=docu
 function open(){ov.classList.add('on');dr.classList.add('on');dr.setAttribute('aria-hidden','false')}
 function close(){ov.classList.remove('on');dr.classList.remove('on');dr.setAttribute('aria-hidden','true')}
 ov.onclick=close;document.getElementById('aivX').onclick=close;document.getElementById('aivC').onclick=close;document.addEventListener('keydown',function(e){if(e.key==='Escape')close()});
-function paint(btn,st,sc){if(!btn)return;btn.className=btn.className.replace(/\bs-\w+/g,'').trim()+' s-'+st;var t=btn.querySelector('.ai-t');if(t)t.textContent=(IC[st]||'')+' '+(D[st]||'AI Verify')+(sc!=null?' '+sc:'')}
+function paint(btn,st,sc){if(!btn)return;btn.className=btn.className.replace(/\bs-\w+/g,'').trim()+' s-'+st;var t=btn.querySelector('.ai-t');if(t)t.textContent=(IC[st]||'')+' '+(D[st]||'AI Verify')+(sc!=null?' '+sc+'%':'')}
 function render(r){var st=r.status,s=r.summary||{};document.getElementById('aivSub').textContent='Order #'+r.order_id+' · '+r.at+' · '+(r.version||'')+' · run '+r.runs;
 var h='<div class="aiv-top '+st+'"><div class="aiv-sc">'+r.score+'<small>/100</small></div><div><div class="aiv-st">'+esc(r.label)+'</div><p>Risk: '+esc(r.risk||'-')+(r.override?' · manual override by '+esc(r.override.by):'')+'</p></div></div>';
 if(r.override)h+='<div class="aiv-why" style="margin-top:8px">AI result was <b>'+esc(r.ai_label)+'</b>. Staff override to <b>'+esc(r.override.label)+'</b> ('+esc(r.override.by)+', '+esc(r.override.at)+'): '+esc(r.override.reason)+'</div>';
@@ -57,5 +57,6 @@ fetch('/admin/orders/'+id+'/ai-verify'+(run?'?run=1':''),{headers:{Accept:'appli
 document.addEventListener('click',function(e){var b=e.target.closest('.ai-btn');if(b){e.preventDefault();load(parseInt(b.getAttribute('data-id'),10),false)}});
 document.getElementById('aivRe').onclick=function(){if(cur)load(cur,true)};
 var ids=[].map.call(document.querySelectorAll('.ai-btn[data-id]'),function(b){return b.getAttribute('data-id')});
-if(ids.length)fetch('/admin/orders/ai-status?ids='+ids.join(','),{headers:{Accept:'application/json'}}).then(function(x){return x.json()}).then(function(m){document.querySelectorAll('.ai-btn[data-id]').forEach(function(b){var v=m[b.getAttribute('data-id')];if(v)paint(b,v.s,v.n)})}).catch(function(){});
+function stat(n){if(!ids.length)return;fetch('/admin/orders/ai-status?ids='+ids.join(','),{headers:{Accept:'application/json'}}).then(function(x){return x.json()}).then(function(j){var m=j.m||{};document.querySelectorAll('.ai-btn[data-id]').forEach(function(b){var v=m[b.getAttribute('data-id')];if(v)paint(b,v.s,v.n)});if(j.left>0&&n<8)setTimeout(function(){stat(n+1)},800)}).catch(function(){})}
+stat(0);
 })();</script>

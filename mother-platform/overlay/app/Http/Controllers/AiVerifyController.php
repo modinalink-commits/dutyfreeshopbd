@@ -24,9 +24,14 @@ class AiVerifyController extends Controller {
     return response()->json($res);
   }
   public function statuses(Request $r) {
-    $ids = array_slice(array_filter(array_map('intval', explode(',', (string)$r->query('ids')))), 0, 200); if (!$ids) return response()->json([]);
+    $ids = array_slice(array_filter(array_map('intval', explode(',', (string)$r->query('ids')))), 0, 200); if (!$ids) return response()->json(['m' => [], 'left' => 0]);
+    // Every order on the page gets a result: orders without one (admin-created, AI/legacy channels, or placed before AI Verify) are verified now, newest first, a few per request.
+    $have = DB::table('order_ai_verifications')->whereIn('order_id', $ids)->pluck('order_id')->all();
+    $miss = DB::table('orders')->whereIn('id', array_diff($ids, $have))->where('status', '<>', 'Incomplete')->orderByDesc('id')->pluck('id')->all();
+    foreach (array_slice($miss, 0, 8) as $mid) { try { AiVerify::run((int)$mid, 'auto', false, false); } catch (\Throwable $e) {} }
+    $left = max(0, count($miss) - 8);
     $rows = DB::table('order_ai_verifications')->whereIn('order_id', $ids)->get(['order_id', 'verification_status', 'override_status', 'verification_score']);
     $o = []; foreach ($rows as $x) { $s = $x->override_status ?: $x->verification_status; $o[$x->order_id] = ['s' => $s, 'l' => AiVerify::LABEL[$s] ?? $s, 'n' => (int)$x->verification_score]; }
-    return response()->json($o)->header('Cache-Control', 'no-store');
+    return response()->json(['m' => $o, 'left' => $left])->header('Cache-Control', 'no-store');
   }
 }
