@@ -63,7 +63,7 @@ eab3909c69947b17ed5d5f2d5e3d1f7b0b564481 resources/views/store/card.blade.php
 06722f66390bb7e2d70f564ee2dd0dededd9a2b7 resources/views/store/missing.blade.php
 7e4459d82e83e77adfd2c0e6cf94a763cf6ff945 resources/views/store/checkout.blade.php
 489914b032190e3b4829e30e4ecd23d360cba692 resources/views/store/wishlist.blade.php
-d162155635ee8d0ea432ac994aa1a1942c3cbe47 resources/views/store/pager.blade.php
+2ef9d2ce29b5cdba899fa44342de8f0b8559ff13 resources/views/store/pager.blade.php
 e75f162e466d0a2e2958bfaff473552e686e1543 public/logo.webp
 b221e86002b382f45e5dfcc4fa7ad59f06357323 public/og-icon.png
 7cfaa7f28db18b9d9aceca06e00b63221df26e66 public/dutyfree-bd-logo.png
