@@ -184,7 +184,7 @@ class OrderDiscount {
   /** Same lines as tips(), with the colour of each: [['text'=>..., 'fg'=>..., 'bg'=>..., 'bd'=>...], ...]. */
   public static function tipRows(object $o): array {
     $r = []; foreach (self::lines($o) as $x) { $c = self::colorOf((string)($x['name'] ?? '').' '.(empty($x['auto']) ? 'manual' : ''));
-      $r[] = ['text' => $x['name'].(!empty($x['pct']) ? ' '.rtrim(rtrim(number_format((float)$x['pct'], 2), '0'), '.').'%' : '').(($x['amount'] ?? null) !== null ? '  -৳'.number_format((float)$x['amount']) : '').(empty($x['auto']) ? ' (manual)' : ''), 'fg' => $c[0], 'bg' => $c[1], 'bd' => $c[2], 'd' => self::detail($x)]; }
+      $r[] = ['text' => $x['name'].(!empty($x['pct']) ? ' '.rtrim(rtrim(number_format((float)$x['pct'], 2), '0'), '.').'%' : '').(($x['amount'] ?? null) !== null ? '  -৳'.number_format((float)$x['amount']) : '').(empty($x['auto']) ? ' (manual)' : ''), 'fg' => $c[0], 'bg' => $c[1], 'bd' => $c[2], 'd' => self::detail($x), 'label' => (string)($x['name'] ?? 'Discount').(!empty($x['pct']) ? ' '.rtrim(rtrim(number_format((float)$x['pct'], 2), '0'), '.').'%' : '').(empty($x['auto']) ? ' (manual)' : ''), 'amt' => ($x['amount'] ?? null) !== null ? (float)$x['amount'] : null, 'ico' => str_contains(strtolower((string)($x['name'] ?? '')), 'bundle') ? 'bundle' : ((str_contains(strtolower((string)($x['name'] ?? '')), 'amount') || !empty($x['pct'])) ? 'pct' : 'tag')]; }
     return $r;
   }
   /** What the click-to-view popup shows for one discount line: which discount, how much, which area it came from and what it was given for. */
