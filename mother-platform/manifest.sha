@@ -1,5 +1,5 @@
 fe43f8b6cb422cca81ee18b74d3972f77e7852de database/migrations/2026_10_31_000001_mother_core.php
-e15796c3bbb19a2f8375ec8b56911a43d47553e7 routes/web.php
+a5bbf0bffa033c9681ada9d763c7b311586fecf9 routes/web.php
 5ec9cde3d13c963d0d55a626e10bf2e39e36a691 app/Models/Mother.php
 0b91ab314a0a7638b51f1bf5621f5816332488d2 app/Http/Controllers/AdminController.php
 242316b2ef0a0967e6815e39fcbc7377349fdc17 app/Console/Commands/MotherInstall.php
@@ -30,7 +30,7 @@ c1fe97d73322b40c55accfea7deeef698a20c4e2 app/Http/Controllers/ResController.php
 90031b22cae57971a0c16629dd80f61a4ae4358c resources/views/res_list.blade.php
 fb3fe4d17e4370d1184f5daebfa07e5a3423a33a resources/views/res_form.blade.php
 67a76a09307002f6201cc2e684f3161b22c67d9c resources/views/reports.blade.php
-fa9c8b9782e699867d407ea32b8a600002122dbd resources/views/sidebar.blade.php
+6e028b843bbb42c8b60d1ccec5a8b84acfeee444 resources/views/sidebar.blade.php
 85962752c1c36393879cd52b485c2495742f15f0 resources/views/coming.blade.php
 c391e719e9e194b7bf6ecf86ccb4c9a4504c2d17 database/migrations/2026_10_31_000004_catalog_extra.php
 bd753699bbd209d243e7e4b2b82c37d322444553 resources/views/panels/customers.blade.php
@@ -207,7 +207,7 @@ d4c854b85317e1546756f48c07682b2aff90c0b4 app/Support/WebPush.php
 94720ca5becb62d89132d500164c846695572142 app/Support/Push.php
 8cf24ac4090625805f0e40cbbc759e81cf959461 app/Http/Controllers/PushController.php
 dd75d5b8954856426c056ebfd361490b71bdf1cf app/Http/Controllers/PushAdminController.php
-e6394dd239efd70f6080807f749aea29d30ac16a app/Console/Commands/MotherPushWorker.php
+d5b542c1f932e18f72a08e5115eb0451f9ad4764 app/Console/Commands/MotherPushWorker.php
 ff40461167d5b96fc0172d39dcd199e6b29e9a64 database/migrations/2026_11_01_000001_push_notifications.php
 0819c7eaa09cbd487f1dd1f45239004b319fb583 resources/views/push_admin.blade.php
 081513244ade8e2729bcd8c1ea91ee04d5a4e72a app/Http/Controllers/DeployController.php
@@ -679,9 +679,9 @@ c79650b9874e1353be45d558b62a31f5b6f410f5 resources/views/ai_verify_page.blade.ph
 381c84f37d724af4a1d5fb5fefdc85d7ffea197f database/migrations/2026_11_06_000100_supplier_portal.php
 2aa47f9681b5bd108d1cc22f0218520041a7db4e app/Support/SupplierPortal.php
 cc10ca2a4f17ee7c86990bd3132a648a7e9e2b4d app/Http/Middleware/SupplierPortalAuth.php
-dfdf9dc35d5a7b802cf560d88818153fab937cd5 app/Http/Controllers/SupplierPortalController.php
+458d9e8c92a599bd0db9f9ed17f183a0370dcabb app/Http/Controllers/SupplierPortalController.php
 25250c91fd0dec5caffc1851374f4b7e183da81f app/Http/Controllers/SupplierPortalAdminController.php
-da8f388e5a8f0361f8619073386b197e69385038 resources/views/sp/layout.blade.php
+cef2bcb3497972d619431f44dca5a73281945167 resources/views/sp/layout.blade.php
 0877033df1fa63b814d077ab5729208042d58f5f resources/views/sp/login.blade.php
 a527850b8f72dfc0f00a91a1e7e5e0502843824a resources/views/sp/forgot.blade.php
 c3162f34445adacd59ef97257eb1d97094b392ba resources/views/sp/password.blade.php
@@ -690,7 +690,7 @@ ce95a3f1aaf6e5b66d75ac62ecc6431b8d015f40 resources/views/sp/terms.blade.php
 de652079f06fec2be2075905a3b805788a1f4cb4 resources/views/sp/pos.blade.php
 303a7ef3d146f70b1c53f75ff08eb3c2bbae6ec4 resources/views/sp/po_show.blade.php
 705256d3fb270d947b34cd257670a1c52136e09c resources/views/sp/rfqs.blade.php
-5b621ecc540a47442f2dd0e2429cb4bc682dd7e5 resources/views/sp/rfq_show.blade.php
+3b43c6fe5b9bf0a9c3c639c0cdf792a3c12a4fad resources/views/sp/rfq_show.blade.php
 1ca7f40f78c3de4261ede576807d54c8981cc7b5 resources/views/sp/bills.blade.php
 0898d28829cce565f4313b9f8f995f19794d3105 resources/views/sp/ledger.blade.php
 fb237b28842d08fb5b62250f138a2f66613f06e1 resources/views/sp/ledger_print.blade.php
@@ -707,7 +707,7 @@ c26e8e57800f08a14ab63a3096eeb1c69e3cae18 resources/views/sp/admin_po_show.blade.
 65e266c06a436e29d84b508f9265e35722179613 resources/views/sp/admin_rfq_form.blade.php
 e9691c9efb59de491a062616cb390b5ca9288857 resources/views/sp/admin_rfq_show.blade.php
 2a229b09145bd8a45522981ce16942a841aa7466 resources/views/sp/css.blade.php
-4a33ed883bbbafa0ec8d40f3d7a0aad3c8c1597f resources/views/sp/admin_nav.blade.php
+a7c9b855e6e9683ee979458fcdfb0309f085894c resources/views/sp/admin_nav.blade.php
 6b616989938c5dd2b6ed15c1929f59b7b2f7859f database/migrations/2026_11_06_000110_supplier_portal_phase2_3.php
 71a882568555715ca6ced7339963a983684ca351 app/Support/SupplierInsight.php
 9942c4b81cd9aae28e0178ee5d25a1ec1e070605 app/Http/Controllers/SupplierPortal2Controller.php
@@ -736,3 +736,8 @@ ea89c2b12d67775b814ded1506051013e76aab04 app/Jobs/SendSupplierInvitationSmsJob.p
 63d0b0206dac1af55ed041846ddbf68931f1f3bb app/Http/Controllers/SupplierPortalSetupController.php
 668b9893fa04cf250a4762486ad4553853c6e51c resources/views/sp/activate.blade.php
 8cb741c906f8c76984eeeb3e058879af947f61bf resources/views/sp/admin_setup.blade.php
+d1e696f59c9d72cf7de5b3886568964fc4a3cfd2 app/Support/Reorder.php
+f0e71a16faf84497fa822bb1af9eee58aa1d214c app/Http/Controllers/ReorderAlertController.php
+4f7f94baed1690e46d99e1e61be0c89d82d5b93d database/migrations/2026_11_06_000200_auto_reorder.php
+3b902fc05ccd35200fde3b55244aebf3531d903b resources/views/sp/admin_reorder.blade.php
+c3227577f3c384c044d9605af69d2f514935e87c resources/views/sp/reorder_list.blade.php

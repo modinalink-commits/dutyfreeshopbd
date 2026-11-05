@@ -1,0 +1,48 @@
+@extends('layout')@section('title','Auto Reorder Alerts')
+@section('body')@include('sp.admin_nav')
+<div class="hd"><div><h1>Auto Reorder Alerts</h1><div class="sub" style="margin-bottom:0">Published product below its stock threshold → one reorder request → price request to the mapped suppliers → compare quotes → award → PO. No duplicate requests; no mapped supplier → admin alert.</div></div></div>
+@if(session('ok'))<div class="al ok">{{ session('ok') }}</div>@endif @if(session('bad'))<div class="al bad">{{ session('bad') }}</div>@endif
+@if($off)<div class="card"><b>Not installed yet.</b> The reorder tables are created automatically on the next deploy.</div>@else
+<div class="sk">@foreach([['Products below threshold',$card['below']],['Critical stock (0)',$card['critical']],['Supplier response pending',$card['pending']],['Quotes received',$card['quotes']],['PO pending / ordered',$card['po']],['No supplier mapped',$card['nosup']]] as [$l,$v])<div class="card"><span>{{ $l }}</span><b>{{ $v }}</b></div>@endforeach</div>
+@if(!$c['enabled'])<div class="al bad">Auto reorder is <b>OFF</b>. Nothing is created or sent until you turn it on in Settings below. Review "Products below threshold" first.</div>@endif
+
+<div class="card"><h2 style="margin:0 0 8px;font-size:15px">Reorder requests</h2>
+<form method="get" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center"><input type="search" name="q" value="{{ $f['q'] ?? '' }}" placeholder="Search product, SKU, request no…" style="flex:1;min-width:200px;max-width:340px">
+<select name="s" style="width:auto"><option value="">Open requests</option>@foreach(\App\Support\Reorder::STATUSES as $s)<option @selected(($f['s'] ?? '')===$s)>{{ $s }}</option>@endforeach</select>
+<select name="u" style="width:auto"><option value="">All urgency</option>@foreach(['Critical','High','Medium','Low'] as $u)<option @selected(($f['u'] ?? '')===$u)>{{ $u }}</option>@endforeach</select>
+<label class="chip" style="cursor:pointer"><input type="checkbox" name="all" value="1" @checked(!empty($f['all'])) style="width:auto;min-height:0"> Include closed</label><button class="g sm">Filter</button>
+<span style="flex:1"></span>
+<button type="submit" form="runf" class="sm">Check stock now</button></form>
+<form id="runf" method="post" action="/admin/purchase/portal/reorder-alerts/run" onsubmit="return confirm('Create reorder requests (and notify suppliers when auto-send is on) for every product below its threshold?')">@csrf</form>
+<div class="tw"><table><thead><tr><th>Request</th><th>Product</th><th class="n">Stock</th><th class="n">Req. qty</th><th>Urgency</th><th>Status</th><th>Quotes</th><th>Required</th><th></th></tr></thead><tbody>
+@forelse($rows as $x)@php $uc = ['Critical'=>'cancelled','High'=>'cancelled','Medium'=>'pending','Low'=>'draft'][$x->urgency] ?? 'draft'; $sc = in_array($x->status,['Closed','Received'])?'received':(in_array($x->status,['Cancelled','Expired','No Supplier'])?'cancelled':(in_array($x->status,['New'])?'draft':'pending')); @endphp
+<tr><td><b>{{ $x->req_no }}</b><br><span class="mut">{{ \Carbon\Carbon::parse($x->created_at)->timezone('Asia/Dhaka')->format('d M, g:i A') }}</span></td><td><b>{{ $x->name }}</b><br><span class="mut">{{ $x->sku }}</span></td>
+<td class="n">{{ $x->stock }}<br><span class="mut">at alert {{ $x->stock_at }} / min {{ $x->threshold }}</span></td><td class="n">{{ $x->req_qty }}</td><td><span class="pb pb-{{ $uc }}">{{ $x->urgency }}</span></td>
+<td><span class="pb pb-{{ $sc }}">{{ $x->status }}</span>@if($x->closed_reason)<br><span class="mut">{{ $x->closed_reason }}</span>@endif</td>
+<td>@if($x->rfq_id)<a href="/admin/purchase/portal/rfqs/{{ $x->rfq_id }}">{{ $x->quotes }} / {{ $x->invited }} · {{ $x->rfq_no }}</a>@else<span class="mut">—</span>@endif</td><td>{{ $x->required_date ?: '—' }}</td>
+<td style="white-space:nowrap">@if(!in_array($x->status,\App\Support\Reorder::END))
+@if($x->status==='New' && $x->rfq_id)<form method="post" action="/admin/purchase/portal/reorder-alerts/{{ $x->id }}/send" style="display:inline">@csrf<button class="sm">Send</button></form> @endif
+@if($x->rfq_id && in_array($x->status,['Quote Received','Under Review']))<a class="btn sm" href="/admin/purchase/portal/rfqs/{{ $x->rfq_id }}">Compare</a> @endif
+@if($x->status==='Quote Received')<form method="post" action="/admin/purchase/portal/reorder-alerts/{{ $x->id }}/review" style="display:inline">@csrf<button class="g sm">Under review</button></form> @endif
+@if($x->status==='No Supplier')<a class="btn g sm" href="/admin/purchase/portal">Map supplier</a> @endif
+<form method="post" action="/admin/purchase/portal/reorder-alerts/{{ $x->id }}/cancel" style="display:inline" onsubmit="return confirm('Cancel this reorder request?')">@csrf<button class="g sm">Cancel</button></form>@endif</td></tr>
+@empty<tr><td colspan="9" class="mut">No reorder requests.</td></tr>@endforelse</tbody></table></div></div>
+
+<div class="card"><h2 style="margin:0 0 8px;font-size:15px">Products below threshold ({{ count($below) }})</h2><div class="sub">Published products (and stock-controlled products auto-hidden at zero) under their threshold. "Off" = auto reorder not enabled for that product's category.</div>
+<div class="tw"><table><thead><tr><th>Product</th><th class="n">Stock</th><th class="n">Threshold</th><th>Urgency</th><th>Auto reorder</th><th class="n">Mapped suppliers</th><th>Open request</th></tr></thead><tbody>
+@forelse($below as $p)<tr><td><b>{{ $p->name }}</b><br><span class="mut">{{ $p->sku }}</span></td><td class="n">{{ $p->stock }}</td><td class="n">{{ $p->thr }}</td><td>{{ $p->urg }}</td><td><span class="pb pb-{{ $p->mode==='auto' ? 'received' : 'draft' }}">{{ $p->mode==='auto' ? 'On' : 'Off' }}</span></td><td class="n">{{ $p->nsup }}@if($p->mode==='auto' && !$p->nsup) <span class="pb pb-cancelled">none</span>@endif</td><td>{{ $p->open ?: '—' }}</td></tr>
+@empty<tr><td colspan="7" class="mut">No product is below its threshold.</td></tr>@endforelse</tbody></table></div></div>
+
+<div class="two"><form class="card" method="post" action="/admin/purchase/portal/reorder-alerts/settings">@csrf<h2 style="margin:0 0 8px;font-size:15px">Settings</h2>
+<label class="chip" style="cursor:pointer;margin-bottom:6px"><input type="checkbox" name="enabled" value="1" @checked($c['enabled']) style="width:auto;min-height:0"> Auto reorder enabled</label><br>
+<label class="chip" style="cursor:pointer;margin-bottom:6px"><input type="checkbox" name="auto_send" value="1" @checked($c['auto_send']) style="width:auto;min-height:0"> Send to suppliers automatically (otherwise saved as New for you to send)</label><br>
+<label class="chip" style="cursor:pointer;margin-bottom:6px"><input type="checkbox" name="sourcing" value="1" @checked($c['sourcing']) style="width:auto;min-height:0"> Also apply to sourcing products (they sell at 0 stock)</label><br>
+<label class="chip" style="cursor:pointer;margin-bottom:10px"><input type="checkbox" name="sms" value="1" @checked($c['sms']) style="width:auto;min-height:0"> Also send SMS to supplier owner / sales users</label>
+<div class="fg"><div><label>Global threshold (default 50)</label><input type="number" min="1" name="threshold" value="{{ $c['threshold'] }}"></div><div><label>Target stock</label><input type="number" min="1" name="target" value="{{ $c['target'] }}"></div>
+<div><label>Required in (days)</label><input type="number" min="1" name="days" value="{{ $c['days'] }}"></div><div><label>Quote deadline (hours)</label><input type="number" min="1" name="hours" value="{{ $c['hours'] }}"></div>
+<div><label>High urgency up to stock</label><input type="number" min="1" name="high" value="{{ $c['high'] }}"></div><div><label>Medium urgency up to stock</label><input type="number" min="1" name="med" value="{{ $c['med'] }}"></div></div>
+<div class="sub" style="margin-top:8px">Critical = stock 0. Reorder qty = target stock − current stock. Stock-controlled categories (Cigarette, Vape) are on by default.</div><button style="margin-top:8px">Save settings</button></form>
+<form class="card" method="post" action="/admin/purchase/portal/reorder-alerts/override">@csrf<h2 style="margin:0 0 8px;font-size:15px">Per-product override</h2><div class="sub">Set a product's own threshold / target, or switch auto reorder on or off for it. Blank = use the default.</div>
+<div class="fg"><div><label>Product SKU</label><input name="sku" required></div><div><label>Threshold</label><input type="number" min="0" name="threshold"></div><div><label>Target stock</label><input type="number" min="0" name="target"></div>
+<div><label>Auto reorder</label><select name="mode"><option value="default">Default (by category)</option><option value="auto">Always on</option><option value="off">Off</option></select></div></div><button style="margin-top:8px">Save override</button></form></div>
+@endif @endsection

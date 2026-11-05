@@ -736,3 +736,8 @@ app/Jobs/SendSupplierInvitationSmsJob.php
 app/Http/Controllers/SupplierPortalSetupController.php
 resources/views/sp/activate.blade.php
 resources/views/sp/admin_setup.blade.php
+app/Support/Reorder.php
+app/Http/Controllers/ReorderAlertController.php
+database/migrations/2026_11_06_000200_auto_reorder.php
+resources/views/sp/admin_reorder.blade.php
+resources/views/sp/reorder_list.blade.php

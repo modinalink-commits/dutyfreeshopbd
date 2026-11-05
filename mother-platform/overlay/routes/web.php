@@ -336,6 +336,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
       Route::get('/scores', [$PB,'scores']); Route::post('/scores/visible', [$PB,'perfToggle']);
       Route::get('/forecast', [$PB,'forecast']); Route::post('/reorder', [$PB,'reorder']); Route::get('/prices', [$PB,'prices']); Route::post('/alerts/{id}/seen', [$PB,'alertSeen'])->whereNumber('id');
       Route::get('/suppliers/{sid}/products', [$PB,'products'])->whereNumber('sid'); Route::post('/suppliers/{sid}/products', [$PB,'productSave'])->whereNumber('sid'); Route::post('/suppliers/{sid}/products/{id}/delete', [$PB,'productDelete'])->whereNumber('sid')->whereNumber('id'); Route::post('/suppliers/{sid}/documents', [$PB,'docSave'])->whereNumber('sid'); Route::get('/files/{id}', [$PB,'file'])->whereNumber('id');
+      $RA = \App\Http\Controllers\ReorderAlertController::class; Route::get('/reorder-alerts', [$RA,'index']); Route::post('/reorder-alerts/settings', [$RA,'settings']); Route::post('/reorder-alerts/run', [$RA,'run']); Route::post('/reorder-alerts/override', [$RA,'override']); Route::post('/reorder-alerts/{id}/{a}', [$RA,'act'])->whereNumber('id');
       $PS = \App\Http\Controllers\SupplierPortalSetupController::class; Route::get('/setup', [$PS,'index']); Route::post('/setup', [$PS,'act']); Route::get('/setup/export/{fmt}', [$PS,'export'])->whereIn('fmt',['csv','xls','pdf']);
       Route::get('/rfqs', [$PA,'rfqs']); Route::get('/rfqs/new', [$PA,'rfqForm']); Route::post('/rfqs', [$PA,'rfqSave']); Route::get('/rfqs/{id}', [$PA,'rfqShow'])->whereNumber('id'); Route::post('/rfqs/{id}/{a}', [$PA,'rfqAction'])->whereNumber('id');
     });
@@ -412,6 +413,7 @@ Route::prefix('supplier-portal')->group(function () {
     Route::get('/terms', [$P,'termsForm']); Route::post('/terms', [$P,'terms']);
     Route::get('/', [$P,'home']); Route::get('/api/summary', [$P,'summary']); Route::get('/search', [$P,'search']);
     Route::get('/pos', [$P,'pos']); Route::get('/pos/{id}', [$P,'poShow'])->whereNumber('id'); Route::post('/pos/{id}/respond', [$P,'poRespond'])->whereNumber('id');
+    Route::get('/reorder', [$P,'reorders']);
     Route::get('/rfq', [$P,'rfqs']); Route::get('/rfq/{id}', [$P,'rfqShow'])->whereNumber('id'); Route::post('/rfq/{id}/quote', [$P,'rfqQuote'])->whereNumber('id'); Route::post('/rfq/{id}/decline', [$P,'rfqDecline'])->whereNumber('id');
     Route::get('/bills', [$P,'bills']); Route::get('/ledger', [$P,'ledger']); Route::get('/payments', [$P,'payments']);
     Route::get('/notifications', [$P,'notifications']); Route::post('/notifications/read', [$P,'notificationsRead']);
