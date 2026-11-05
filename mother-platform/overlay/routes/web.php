@@ -450,6 +450,7 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestF
   Route::get('/_health', [\App\Http\Controllers\DeployController::class,'health']);
   Route::get('/manifest.webmanifest', [\App\Http\Controllers\PwaController::class,'manifest']);
   Route::get('/pwa-sw', [\App\Http\Controllers\PwaController::class,'sw']);
+  Route::get('/app', fn() => redirect('/?utm_source=sms&utm_medium=sms&utm_campaign=app_install', 302));
   Route::get('/offline', [\App\Http\Controllers\PwaController::class,'offline']);
   Route::get('/ref/{code}', [\App\Http\Controllers\StoreController::class,'referral'])->where('code','[A-Za-z0-9]+');
   Route::get('/robots.txt', function () { $t = \App\Support\SeoMgr::robotsText(); if (!preg_match('/^\s*sitemap:/im', $t)) $t .= "\n\nSitemap: " . \App\Support\Domain::abs('/sitemap.xml'); return response($t . "\n", 200, ['Content-Type' => 'text/plain; charset=utf-8', 'Cache-Control' => 'public, max-age=300']); });
