@@ -618,3 +618,14 @@ resources/views/ai_brief.blade.php
 app/Support/DeployHealth.php
 database/migrations/2026_11_05_000090_deploy_center_v2.php
 resources/views/admin_table.blade.php
+public/fonts/inter-latin-400-normal.woff2
+public/fonts/inter-latin-500-normal.woff2
+public/fonts/inter-latin-600-normal.woff2
+public/fonts/inter-latin-700-normal.woff2
+public/fonts/hind-siliguri-bengali-400-normal.woff2
+public/fonts/hind-siliguri-bengali-500-normal.woff2
+public/fonts/hind-siliguri-bengali-600-normal.woff2
+public/fonts/hind-siliguri-bengali-700-normal.woff2
+resources/views/typography.blade.php
+resources/views/admin_type.blade.php
+resources/views/store/typography.blade.php

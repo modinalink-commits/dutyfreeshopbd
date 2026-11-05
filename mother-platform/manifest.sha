@@ -3,7 +3,7 @@ fe43f8b6cb422cca81ee18b74d3972f77e7852de database/migrations/2026_10_31_000001_m
 5ec9cde3d13c963d0d55a626e10bf2e39e36a691 app/Models/Mother.php
 b76324a17666c27adca0173ca12081e7edbd859e app/Http/Controllers/AdminController.php
 688025b06769b048f2631fea804aab3bce12b7e8 app/Console/Commands/MotherInstall.php
-f32a6b9e4fd1a723bd568a6fffe3321fe9f273b4 resources/views/layout.blade.php
+709d9964b7d41adbaa2f5bf1f044428b962f9416 resources/views/layout.blade.php
 7ba1a8252b36e7db33e40d8be3ea5ec2cd241fb7 resources/views/login.blade.php
 915ddcceaf8fe7c3f03a0bb0838a6577d31f4578 resources/views/dashboard.blade.php
 e05a55e8e920334c82d21bd647b16f90582e641d resources/views/orders.blade.php
@@ -50,7 +50,7 @@ d787924ace3fa42cc66a3de321e4e94e784006d8 resources/views/panels/employees.blade.
 2f840d53881d8aeaf0c5959161774787e5f540bc database/migrations/2026_10_31_000005_storefront.php
 65414d9e2fbe5f16f1fbf1551cce91276e9f30f9 app/Console/Commands/MotherSyncFeed.php
 6b35f14cbb36da8483717675609a3cac687073b7 app/Http/Controllers/StoreController.php
-f1fe3db5ed72e9e8545860023cb7b90bae040089 resources/views/store/layout.blade.php
+36f4f5d375ff3facd1662b90d964bf7e15acd5a2 resources/views/store/layout.blade.php
 eab3909c69947b17ed5d5f2d5e3d1f7b0b564481 resources/views/store/card.blade.php
 ce0d1f8552836199c028ddef8806c72a2d10ad19 resources/views/store/home_sec.blade.php
 7db99d50a27fffc58c311db99b320f91c9be42b1 resources/views/store/home.blade.php
@@ -618,3 +618,14 @@ c44356a1ceb433ec63f5781230d1aeef871f115c app/Support/AiBrief.php
 3c1889cced51aee6cbfcc96dcb506218883f2bc3 app/Support/DeployHealth.php
 a33b792d41ca0175c19dc468c4636ac4a8877ff6 database/migrations/2026_11_05_000090_deploy_center_v2.php
 c2370679e38e10b2de642e6a2f6b8b6f23ae898e resources/views/admin_table.blade.php
+68f645c6b6ff12e25c54b13d4ed119e631dcbb26 public/fonts/inter-latin-400-normal.woff2
+6b66c741bf8bc3ce248af04b2051a648a38391d6 public/fonts/inter-latin-500-normal.woff2
+e0d61f6dc511d64a072b2f4dc94e155ecf1bb6f6 public/fonts/inter-latin-600-normal.woff2
+5197a7aeb22454110aa1f3ef3ed4c98ca7ef1ba1 public/fonts/inter-latin-700-normal.woff2
+6d9ece0a2fdfccbb1d87dedf091636ea29a445ab public/fonts/hind-siliguri-bengali-400-normal.woff2
+eb39bdd6bfb7a228f447dd408a14742c7fd23220 public/fonts/hind-siliguri-bengali-500-normal.woff2
+b314b82f0a71894932519753cd2689b20e9af908 public/fonts/hind-siliguri-bengali-600-normal.woff2
+55cb13867b419fbd61e295eec0b4ed29113c17a9 public/fonts/hind-siliguri-bengali-700-normal.woff2
+35853338b8e671bd85b2c7f97059aa4f43aedc5f resources/views/typography.blade.php
+951d6610d9409b965973dd64a62ab31e790db878 resources/views/admin_type.blade.php
+52a966487d1f0d7c3a298f0530467f4827c67bc8 resources/views/store/typography.blade.php
