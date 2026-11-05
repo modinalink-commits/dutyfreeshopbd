@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="csrf-token" content="{{ csrf_token() }}">@include('favicon_head')<title>@yield('title','Mother Commerce')</title>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="csrf-token" content="{{ csrf_token() }}">@include('favicon_head')<title>@yield('title','Mother Commerce')</title>
 <style>
 :root{--o:#FF5A00;--n:#0B1220;--bg:#FFFBF8;--bd:#FDC2A5}
 *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;background:var(--bg);color:var(--n);display:flex;min-height:100vh}
@@ -91,6 +91,7 @@ nav[role=navigation] svg,.pagination svg{width:16px!important;height:16px!import
 @include('admin_theme')
 @include('admin_table')
 @include('admin_type')
+@if(!$__emb)@include('admin_mobile')@endif
 <script>if(window.dfSbGo)dfSbGo()</script>
 @endauth
 @if($__emb)

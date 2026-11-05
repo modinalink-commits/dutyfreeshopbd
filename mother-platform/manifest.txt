@@ -645,3 +645,4 @@ resources/views/components/app-live-card.blade.php
 resources/views/app_user_card.blade.php
 resources/views/app_users.blade.php
 resources/views/components/app-notify-form.blade.php
+resources/views/admin_mobile.blade.php
