@@ -197,7 +197,7 @@ document.getElementById('cmSave').addEventListener('click',function(){var b=docu
 #qaPop .qa-note{font-size:10.5px;color:#6B7280;padding:3px 8px;line-height:1.3}
 #qaPop .qa-sep{height:1px;background:#E5E7EB;margin:4px 2px}
 #qaPop a{color:#334155}#qaPop button.lock{opacity:.5}#qaPop button.lock:after{content:"🔒";margin-left:auto;font-size:10px}#qaPop input[type=date],#qaPop input[type=time]{display:block;width:100%;height:26px;margin:3px 0;padding:0 6px;font-size:11.5px;border:1px solid #CBD5E1;border-radius:6px;box-sizing:border-box}#qaPop .stgo{justify-content:center;background:#16A34A;color:#fff;font-weight:600;margin-top:3px}#qaPop .stgo:hover{background:#15803D}
-.order-action-group .oa.oa-status{background:#F7FEF9!important;color:#0F172A!important;border:1px solid #BBD9C4!important}.order-action-group .oa.oa-status:hover{background:#ECFDF3!important;border-color:#4ADE80!important}td.action-column .oar{display:flex;gap:6px;justify-content:flex-end;align-items:center}td.action-column{min-width:196px}
+.order-action-group .oa.oa-status{background:#F7FEF9!important;color:#0F172A!important;border:1px solid #BBD9C4!important}.order-action-group .oa.oa-status:hover{background:#ECFDF3!important;border-color:#4ADE80!important}td.action-column .oar{display:flex;gap:6px;justify-content:flex-end;align-items:center}td.action-column{min-width:160px}
 </style>
 <div id="qaPop"></div>
 <script>(function(){var pop=document.getElementById('qaPop'),cur=null,tok=document.querySelector('meta[name=csrf-token]'),T=tok?tok.content:'';
