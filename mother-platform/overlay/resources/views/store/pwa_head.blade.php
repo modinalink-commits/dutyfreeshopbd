@@ -14,8 +14,8 @@ var v=document.querySelector('meta[name=viewport]');if(v){var w=Math.min(screen.
 .df-app a,.df-app button,.df-app label,.df-app summary{touch-action:manipulation}
 .df-app button,.df-app .btn,.df-app nav a{-webkit-user-select:none;user-select:none}
 .df-app input,.df-app select,.df-app textarea{font-size:16px!important}
-.df-app .bn{padding-bottom:env(safe-area-inset-bottom);height:calc(54px + env(safe-area-inset-bottom))}
-.df-app body{padding-bottom:calc(58px + env(safe-area-inset-bottom))}
+.df-app .bn{padding-bottom:env(safe-area-inset-bottom);height:calc(72px + env(safe-area-inset-bottom))}
+.df-app body{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
 .df-app #dfapp,.df-app .dfs,.df-app #dfi{display:none!important}
 .df-app .call,.df-app .ts{display:none!important}
 .df-app .au{padding-top:14px}
