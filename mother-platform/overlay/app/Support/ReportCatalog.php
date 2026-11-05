@@ -62,6 +62,7 @@ class ReportCatalog
       ['PUR-004', 'Supplier Ledger', 'Supplier', 'grid', 'admin/supplier-ledger-report', 'pcn', 'Reports', 'supplier'],
       ['PUR-005', 'Purchase Overview', 'Overview', 'dashboard', 'admin/purchase', '', 'Purchase', null],
       ['PUR-006', 'Purchase Reports', 'Purchase', 'grid', 'admin/purchase/reports', 'xcn', 'Purchase', null],
+      ['PUR-007', 'Supplier Ledger (Purchase module)', 'Supplier', 'grid', 'admin/purchase/ledger', 'xcn', 'Purchase', 'supplier'],
       // ---------- Customers & Marketing ----------
       ['CUS-001', 'New vs Returning Customer', 'Customers', 'grid', $A('new-returning'), 'pxcn', 'Analytics', null],
       ['CUS-002', 'Repeat Customer Rate', 'Customers', 'grid', $A('repeat-rate'), 'pxcn', 'Analytics', null],
@@ -175,7 +176,7 @@ class ReportCatalog
     foreach (Route::getRoutes() as $r) {
       if (!in_array('GET', $r->methods(), true)) continue;
       $u = $r->uri();
-      if (!str_starts_with($u, 'admin/') || str_contains($u, '{') || preg_match('#(export|print|csv|xls|partial|area-orders/customers)#', $u)) continue;
+      if (!str_starts_with($u, 'admin/') || str_contains($u, '{') || preg_match('#(export|print|csv|xls|partial|area-orders/customers|report-center)#', $u)) continue;
       if (preg_match('#(report|analytics|staff-tracking|ledger|cashbook|courier-dashboard|staff-log|ai-brief$|report-details)#', $u)) $found[self::key($u)] = $u;
     }
     // The staff-tracking pages share one route with a {page} parameter.
