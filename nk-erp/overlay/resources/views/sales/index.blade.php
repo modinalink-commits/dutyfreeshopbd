@@ -8,6 +8,7 @@
     <label class="f">Type<select name="type"><option value="retail" @selected($type === 'retail')>Retail</option><option value="wholesale" @selected($type === 'wholesale')>Wholesale</option></select></label>
     <button class="btn" type="submit">Show</button>
   </form>
+  @include('partials.export-menu', ['r' => 'daily_sales', 'from' => $day ?? null, 'to' => $day ?? null])
 </header>
 @php($live = $sales->where('stage', '!=', 'voided'))
 <div class="kpis">

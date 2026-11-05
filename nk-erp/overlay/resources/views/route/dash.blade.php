@@ -17,6 +17,7 @@
   </div>
   <button class="btn noprint" type="button" onclick="window.print()">Download PDF</button>
   <a class="btn pri noprint" href="{{ route('trips.loading', ['d' => $day]) }}">＋ Morning loading</a>
+  @include('partials.export-menu', ['r' => 'route_vehicle'])
 </header>
 @php($short = ($T['missingEmpty'] ? $T['missingEmpty'].' empty' : '').($T['missingEmpty'] && $T['missingFull'] ? ' · ' : '').($T['missingFull'] ? $T['missingFull'].' full' : ''))
 @php($groups = [

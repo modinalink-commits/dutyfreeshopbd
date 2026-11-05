@@ -31,6 +31,18 @@
       <label class="fld">Online orders<select name="site_orders_open"><option value="1" @selected($c['orders_open'])>Open — accept orders</option><option value="0" @selected(! $c['orders_open'])>Paused — show message</option></select></label>
     </div>
     <label class="fld">Message while paused<input name="site_closed_msg" maxlength="200" value="{{ old('site_closed_msg', $c['site_closed_msg'] ?? '') }}" placeholder="Online orders are paused right now. Please call us."></label>
+    <h2 style="margin:8px 0 0;font-size:var(--fs-15)">Today's prices</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px">
+      <label class="fld">Show prices on the website<select name="site_prices_on"><option value="1" @selected(($c['site_prices_on'] ?? '1') === '1')>Show — from Products &amp; prices</option><option value="0" @selected(($c['site_prices_on'] ?? '1') === '0')>Hide — "call for today's price"</option></select></label>
+    </div>
+    <div class="dt-wrap"><table class="dt"><thead><tr><th>Size</th><th>Refill</th><th>New cylinder with gas</th></tr></thead><tbody>
+      @forelse($prices['sizes'] as $sz => $p)<tr><td class="c">{{ $sz }} kg</td><td class="r">{{ isset($p['refill']) ? \App\Support\Ui::bd($p['refill']) : '—' }}</td><td class="r">{{ isset($p['pkg']) ? \App\Support\Ui::bd($p['pkg']) : '—' }}</td></tr>
+      @empty<tr><td colspan="3" class="empty">No retail prices yet. Set them in Products &amp; prices; the website shows "call for today's price" until then.</td></tr>@endforelse
+    </tbody></table></div>
+    <span class="sub" style="margin:0">Prices come from <a href="{{ route('products.index') }}">Products &amp; prices</a> (retail price){{ $prices['updated'] ? ' · last changed '.$prices['updated'] : '' }}.</span>
+    <h2 style="margin:8px 0 0;font-size:var(--fs-15)">Meet our owners</h2>
+    <label class="fld">Owner names, one per line<textarea name="site_owners" rows="3" maxlength="600" placeholder="Kazi Nuzrul">{{ old('site_owners', $c['site_owners'] ?? '') }}</textarea></label>
+    <span class="sub" style="margin:0">Empty = the website keeps its current owner card.</span>
     <button class="btn pri" type="submit" style="align-self:flex-start">Save website</button>
   </form>
 

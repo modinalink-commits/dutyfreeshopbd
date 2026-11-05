@@ -160,6 +160,7 @@ resources/views/map/_leaflet.blade.php
 resources/views/map/dist.blade.php
 resources/views/map/live.blade.php
 resources/views/orders/index.blade.php
+resources/views/partials/export-menu.blade.php
 resources/views/partials/help.blade.php
 resources/views/partials/pager.blade.php
 resources/views/password.blade.php

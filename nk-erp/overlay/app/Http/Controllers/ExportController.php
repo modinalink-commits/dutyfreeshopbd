@@ -108,6 +108,12 @@ class ExportController extends Controller
         Storage::disk('local')->put($path, $content);
         $e = Export::create(['code' => $code, 'user_id' => $u->id, 'report' => $data['report'], 'format' => $data['fmt'], 'filters' => $f, 'rows' => count($rows), 'path' => $path, 'size' => strlen($content), 'status' => 'ready', 'expires_at' => now()->addDays(7)]);
         AuditLog::record('export', "{$code} {$label} {$data['fmt']}");
+        if ($request->boolean('share')) {
+            $url = URL::temporarySignedRoute('exports.shared', now()->addDays(7), ['export' => $e->id]);
+            AuditLog::record('export_shared', $code);
+            return back()->with('ok', "{$code} share link (valid 7 days): ".$url);
+        }
+        if ($request->boolean('stay')) return back()->with('ok', "{$code} ready.")->with('dl', route('exports.download', $e));
         return redirect()->route('exports.index', ['report' => $data['report'], 'fmt' => $data['fmt']] + $f)->with('ok', "{$code} ready.")->with('dl', route('exports.download', $e));
     }
 

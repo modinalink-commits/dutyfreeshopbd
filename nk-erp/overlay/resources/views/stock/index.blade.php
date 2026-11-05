@@ -9,6 +9,7 @@
   <a class="btn" href="{{ route('stock.create', ['kind' => 'to_company']) }}">Send empties to company</a>
   <a class="btn pri" href="{{ route('stock.create', ['kind' => 'received']) }}">＋ Receive company challan</a>
   @endif
+  @include('partials.export-menu', ['r' => 'inventory'])
 </header>
 <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px" aria-label="Stock by size">
 @foreach($sizes as $z)

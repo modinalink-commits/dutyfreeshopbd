@@ -100,6 +100,12 @@ textarea{padding:8px 10px;min-height:60px}
     @endif
     @php($newCount = \App\Models\WebsiteOrder::where('status', 'new')->count())
     @php($waitX = \App\Models\BrandExchange::where('status', 'waiting')->count())
+    @php($badge = rescue(fn () => [
+        'weborders' => $newCount, 'brands' => $waitX,
+        'wholesale' => \App\Models\Sale::where('type', 'wholesale')->whereIn('stage', ['waiting', 'on_road'])->count(),
+        'corders' => \App\Models\CustomerOrder::where('status', 'new')->count(),
+        'closing' => \App\Models\Trip::whereIn('status', ['returned', 'settled'])->count(),
+    ], ['weborders' => $newCount, 'brands' => $waitX], false))
     @php($adminOnly = ['company', 'users', 'activity', 'sms', 'hero', 'website'])
     @php($superOnly = ['supplier', 'accounts', 'vpl', 'import'])
     @php($mgrOnly = ['map', 'live', 'corders'])
@@ -119,8 +125,7 @@ textarea{padding:8px 10px;min-height:60px}
         @continue(in_array($key, $officeOnly) && ! in_array($u->role, ['super_admin', 'admin', 'manager', 'accounts']))
         @if($route)
           <a class="nav {{ $route === $activeRoute ? 'on' : '' }}" href="{{ route($route) }}">{!! \App\Support\Icons::svg($key) !!}<span style="flex-grow:1">{{ $label }}</span>
-            @if($key === 'weborders' && $newCount)<span class="badge">{{ $newCount }}</span>@endif
-            @if($key === 'brands' && $waitX)<span class="badge">{{ $waitX }}</span>@endif
+            @if(! empty($badge[$key]))<span class="badge" aria-label="{{ $badge[$key] }} waiting">{{ $badge[$key] }}</span>@endif
           </a>
         @else
           <a class="nav soon {{ request()->is('soon/'.$key) ? 'on' : '' }}" href="{{ route('soon', $key) }}">{!! \App\Support\Icons::svg($key) !!}<span style="flex-grow:1">{{ $label }}</span><span class="later">soon</span></a>
@@ -140,7 +145,7 @@ textarea{padding:8px 10px;min-height:60px}
     </div>
   </aside>
   <main>
-    @if(session('ok'))<div class="flash">{{ session('ok') }}</div>@endif
+    @if(session('ok'))<div class="flash">{{ session('ok') }}@if(session('dl') && ! request()->routeIs('exports.index')) · <a href="{{ session('dl') }}" style="color:inherit;font-weight:700">Download</a>@endif</div>@endif
     @if($errors->any())<div class="err">{{ $errors->first() }}@if($el = session('err_link')) <a href="{{ $el[0] }}" style="font-weight:700;color:inherit">{{ $el[1] }}</a>@endif</div>@endif
     @yield('content')
   </main>

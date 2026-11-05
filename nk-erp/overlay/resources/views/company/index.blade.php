@@ -13,6 +13,7 @@
   <a class="btn" href="{{ route('company.rates') }}">Rate Master</a>
   <a class="btn" href="#dep-form">＋ Deposit</a>
   <a class="btn pri" href="#challan-form">＋ Challan</a>
+  @include('partials.export-menu', ['r' => 'company_ledger', 'from' => $start->toDateString(), 'to' => $start->copy()->endOfMonth()->toDateString()])
 </header>
 <section class="kpis">
   <div class="card kpi" style="background:#e6eeff"><span>Balance with company</span><b style="color:#1d4ed8">{{ $tk($balanceToday) }}</b><span>{{ $balanceToday >= 0 ? 'money held by AYGas today' : 'bills above deposits today' }}</span></div>

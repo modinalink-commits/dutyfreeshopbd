@@ -11,6 +11,7 @@
   <div style="flex-grow:1;display:flex;flex-direction:column"><h1>Morning loading &amp; dispatch</h1>
     <span class="sub">Moves full cylinders from the warehouse to a vehicle. Loading is not a sale.</span></div>
   @if($trip)<a class="btn" href="{{ route('trips.slip', $trip) }}" target="_blank">Print loading slip</a>@else<button class="btn" type="button" disabled title="Save the trip first">Print loading slip</button>@endif
+  @include('partials.export-menu', ['r' => 'loading'])
 </header>
 @unless($brand)<div class="err">Mark your own brand as "for sale" in Cylinder brands before loading.</div>@endunless
 

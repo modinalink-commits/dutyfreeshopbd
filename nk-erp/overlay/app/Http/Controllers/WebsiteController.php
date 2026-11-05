@@ -14,7 +14,7 @@ use Illuminate\Http\Request;
  */
 class WebsiteController extends Controller
 {
-    public const KEYS = ['site_notice_en', 'site_notice_bn', 'site_notice_on', 'site_notice_until', 'site_orders_open', 'site_closed_msg'];
+    public const KEYS = ['site_notice_en', 'site_notice_bn', 'site_notice_on', 'site_notice_until', 'site_orders_open', 'site_closed_msg', 'site_prices_on', 'site_owners'];
 
     public static function cfg(): array
     {
@@ -36,7 +36,7 @@ class WebsiteController extends Controller
         ];
         $heroAt = Setting::query()->where('key', 'hero_published')->value('updated_at');
         $log = AuditLog::query()->where('action', 'like', 'website_%')->orWhere('action', 'like', 'hero_%')->latest('id')->limit(8)->get();
-        return view('website', ['c' => $c, 'stats' => $stats, 'heroAt' => $heroAt, 'log' => $log]);
+        return view('website', ['c' => $c, 'stats' => $stats, 'heroAt' => $heroAt, 'log' => $log, 'prices' => self::prices()]);
     }
 
     public function save(Request $request)
@@ -48,6 +48,8 @@ class WebsiteController extends Controller
             'site_notice_until' => ['nullable', 'date'],
             'site_orders_open' => ['required', 'in:0,1'],
             'site_closed_msg' => ['nullable', 'string', 'max:200'],
+            'site_prices_on' => ['required', 'in:0,1'],
+            'site_owners' => ['nullable', 'string', 'max:600'],
         ]);
         $old = self::cfg();
         $changed = [];
@@ -58,6 +60,22 @@ class WebsiteController extends Controller
         }
         if ($changed) AuditLog::record('website_settings', 'Changed: '.implode(', ', str_replace('site_', '', $changed)));
         return back()->with('ok', $changed ? 'Saved. nklpgbd.com shows the change within a minute.' : 'Nothing changed.');
+    }
+
+    /** Retail prices the website shows: the selling brand's active refill and new-cylinder products. */
+    public static function prices(): array
+    {
+        $brand = \App\Models\Brand::query()->where('for_sale', true)->value('id');
+        $ps = \App\Models\Product::query()->where('is_active', true)->whereIn('category', ['refill', 'new_package'])->when($brand, fn ($q) => $q->where('brand_id', $brand))->whereNotNull('retail_price')->get();
+        $out = [];
+        foreach ($ps as $p) $out[(int) $p->size_kg][$p->category === 'refill' ? 'refill' : 'pkg'] = (float) $p->retail_price;
+        ksort($out);
+        return ['sizes' => $out, 'updated' => $ps->max('updated_at')?->timezone('Asia/Dhaka')->format('d-m-Y')];
+    }
+
+    public static function owners(?string $raw): array
+    {
+        return collect(preg_split('/\r?\n/', (string) $raw))->map(fn ($l) => trim($l))->filter()->take(6)->values()->all();
     }
 
     /** Public: what nklpgbd.com shows. Only public facts, never anything internal. */
@@ -77,6 +95,8 @@ class WebsiteController extends Controller
             'notice' => $c['notice_live'] ? ['en' => $c['site_notice_en'] ?? '', 'bn' => $c['site_notice_bn'] ?? ''] : null,
             'orders_open' => $c['orders_open'],
             'closed_msg' => $c['orders_open'] ? null : ($c['site_closed_msg'] ?: 'Online orders are paused right now. Please call us.'),
+            'prices' => ($c['site_prices_on'] ?? '1') === '1' ? self::prices() : null,
+            'owners' => self::owners($c['site_owners'] ?? null),
         ], 200, ['Cache-Control' => 'public, max-age=60']);
     }
 }

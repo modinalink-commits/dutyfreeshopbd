@@ -110,6 +110,8 @@ footer{background:var(--ink);color:#fff;padding:56px 0 32px}
 @media (prefers-reduced-motion:reduce){.bnr{transition:none}.bnr.on img{animation:none}}
 .cimg{height:180px;width:auto;align-self:center;margin-bottom:6px;transition:transform .4s ease}.card:hover .cimg{transform:translateY(-6px)}
 .ntc{background:#123a86;color:#fff;font-size:14px;line-height:20px;padding:9px 0;text-align:center}.ntc .bn{color:#ffe7a8;margin-left:8px}
+.pr{display:flex;flex-direction:column;gap:2px;margin:2px 0 8px}.pr b{font-size:28px;font-weight:800;color:var(--ink)}.pr b small{font-size:13px;font-weight:500;color:var(--muted);margin-left:6px}.pr span{font-size:13px;color:var(--muted)}.pr span strong{color:var(--ink)}
+.owners{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}.ini{width:96px;height:96px;border-radius:999px;background:#e6eeff;color:#1d4ed8;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:26px;flex-shrink:0}
 .copy{margin-top:40px;padding-top:20px;border-top:1px solid #2a3a55;font-size:12px;color:#9fb0cf}
 </style>
 </head>
@@ -277,6 +279,15 @@ footer{background:var(--ink);color:#fff;padding:56px 0 32px}
     var wa=(c.whatsapp||'').replace(/\D+/g,'');
     if(wa.length>=12&&wa!=='8801901168777'){document.querySelectorAll('a[href*="wa.me/8801901168777"]').forEach(function(a){a.href=a.href.replace('8801901168777',wa);});}
     var ad=document.querySelector('.ft .mut');if(c.address&&ad)ad.textContent=c.address;
+    var tk=function(n){n=Math.round(n);var x=String(n),l=x.slice(-3),r=x.slice(0,-3);return '৳'+(r?r.replace(/\B(?=(\d{2})+(?!\d))/g,',')+','+l:l);};
+    if(c.prices&&c.prices.sizes){document.querySelectorAll('#sizes .card').forEach(function(card){var a=card.querySelector('[data-size]');if(!a)return;var p=c.prices.sizes[parseInt(a.getAttribute('data-size'),10)];if(!p||(!p.refill&&!p.pkg))return;
+      var d=document.createElement('div');d.className='pr';d.innerHTML=(p.refill?'<b>'+tk(p.refill)+'<small>refill</small></b>':'')+(p.pkg?'<span>New cylinder with gas: <strong>'+tk(p.pkg)+'</strong></span>':'');card.insertBefore(d,a);});
+      var sub=document.querySelector('#sizes .sub');if(sub)sub.textContent="Today's prices"+(c.prices.updated?' · updated '+c.prices.updated:'')+'. Call or WhatsApp us to order.';}
+    if(c.owners&&c.owners.length){var ow=document.querySelector('#about .owner');if(ow){var box=document.createElement('div');box.className='owners';
+      box.innerHTML=c.owners.map(function(n){var keep=/kazi\s*nuzrul/i.test(n)&&ow.querySelector('img');var ini=n.split(/\s+/).map(function(w){return w.charAt(0);}).join('').slice(0,2).toUpperCase();
+        return '<div class="owner">'+(keep?'<img src="/img/kazi-nuzrul.webp" alt="'+esc(n)+'" width="120" height="120" loading="lazy">':'<div class="ini" aria-hidden="true">'+esc(ini)+'</div>')+'<div><b>'+esc(n)+'</b><span>Owner, NK Corporation</span></div></div>';}).join('');
+      ow.parentNode.replaceChild(box,ow);}}
+    if(c.hours){var ft=document.querySelector('.ft');if(ft&&!ft.querySelector('.hrs')){var h=document.createElement('div');h.className='hrs';h.innerHTML='<span class="lbl">Open</span><span class="mut">'+esc(c.hours)+'</span>';ft.appendChild(h);}}
   }).catch(function(){});}
   document.addEventListener('click',function(e){var a=e.target.closest('[data-size]');if(!a)return;var v=a.getAttribute('data-size').replace('kg',' kg').replace('  ',' ');var sel=document.getElementById('fSize');for(var k=0;k<sel.options.length;k++){if(sel.options[k].text===v.trim())sel.selectedIndex=k;}});
   document.getElementById('orderForm').addEventListener('submit',function(e){

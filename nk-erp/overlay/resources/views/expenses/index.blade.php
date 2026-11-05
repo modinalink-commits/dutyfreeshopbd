@@ -15,6 +15,7 @@
   </form>
   @if(auth()->user()->role !== 'salesman')<a class="btn" href="{{ route('expenses.setup') }}">Settings</a>@endif
   <a class="btn pri" href="{{ route('expenses.create') }}">＋ Add expense</a>
+  @include('partials.export-menu', ['r' => 'expenses'])
 </header>
 
 @php($over = $budgets->filter(fn ($b) => $b['a'] / $b['b'] > $pace + 0.05))

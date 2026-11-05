@@ -9,6 +9,7 @@
   <form method="post" action="{{ route('sms.notice') }}" onsubmit="this.message.value=prompt('Due reminder text','{{ addslashes(\App\Support\Sms::render('due', ['due' => '…'])) }}')||'';return !!this.message.value">@csrf<input type="hidden" name="to" value="due"><input type="hidden" name="message"><button class="btn" type="submit" @disabled(! \App\Support\Sms::configured()) title="{{ \App\Support\Sms::configured() ? 'Send an SMS to every customer with due' : 'Set up the SMS gateway in Invoices & SMS first' }}">Send due SMS ({{ $counts['due'] }})</button></form>
   @else<button class="btn" type="button" disabled title="Super Admin sends due SMS">Send due SMS ({{ $counts['due'] }})</button>@endif
   <a class="btn pri" href="{{ route('customers.index', ['new' => 1]) }}#cust-form">＋ Add customer</a>
+  @include('partials.export-menu', ['r' => 'customer_dues'])
 </header>
 <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
   <section class="card" style="flex:1 1 340px;min-width:290px;overflow:hidden">

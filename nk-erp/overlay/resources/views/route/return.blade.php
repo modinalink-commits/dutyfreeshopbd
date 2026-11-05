@@ -12,6 +12,7 @@
   <button class="btn noprint" type="button" onclick="window.print()">Empty cylinder receipt</button>
   @if($edit)<button class="btn pri" type="submit" onclick="return confirm('Save the return? Unsold, damaged and empty cylinders will move back to the warehouse. This cannot be edited later, only adjusted in Daily closing.')">Save &amp; go to cash →</button>
   @else<a class="btn pri" href="{{ route('trips.settle', ['trip' => $trip->id]) }}">Go to cash →</a>@endif
+  @include('partials.export-menu', ['r' => 'empties'])
 </header>
 @include('route._tripbar', ['routeName' => 'trips.return'])
 @if($trip->status === 'dispatched' && $c['invoices'] === 0)<div class="flash" style="background:#fff1d6;color:#8a4b00">No sales are entered on this trip yet. Enter them in <a href="{{ route('trips.sales', $trip) }}">Trip sales</a> before saving the return.</div>@endif
