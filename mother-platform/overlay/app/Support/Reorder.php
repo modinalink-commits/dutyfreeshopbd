@@ -18,7 +18,7 @@ class Reorder
   public static function ready(): bool { static $r = null; return $r ??= Schema::hasTable('reorder_requests') && Schema::hasColumn('supplier_rfqs', 'reorder_id'); }
   public static function cfg(): array {
     return ['enabled' => Procure::on('reorder_enabled'), 'threshold' => max(1, (int)Procure::set('reorder_threshold', '50')), 'target' => max(1, (int)Procure::set('reorder_target', '150')),
-      'days' => max(1, (int)Procure::set('reorder_days', '7')), 'hours' => max(1, (int)Procure::set('reorder_rfq_hours', '48')), 'auto_send' => Procure::set('reorder_auto_send', '1') === '1',
+      'days' => max(1, (int)Procure::set('reorder_days', '7')), 'hours' => max(1, (int)Procure::set('reorder_rfq_hours', '48')), 'auto_send' => Procure::set('reorder_auto_send', '1') === '1', 'send_at' => trim(Procure::set('reorder_send_at', '14:00')),
       'sourcing' => Procure::on('reorder_sourcing'), 'sms' => Procure::on('reorder_sms'), 'high' => (int)Procure::set('reorder_u_high', '19'), 'med' => (int)Procure::set('reorder_u_med', '39')];
   }
   public static function urgency(int $stock, ?array $c = null): string {
@@ -79,13 +79,14 @@ class Reorder
     DB::table('supplier_rfqs')->where('id', $rid)->update(['rfq_no' => 'RFQ-' . str_pad((string)$rid, 5, '0', STR_PAD_LEFT)]);
     foreach ($sup as $sid) DB::table('supplier_rfq_invites')->insert(['rfq_id' => $rid, 'supplier_id' => $sid, 'status' => 'pending', 'created_at' => now(), 'updated_at' => now()]);
     DB::table('reorder_requests')->where('id', $id)->update(['rfq_id' => $rid, 'status' => 'New', 'updated_at' => now()]);
-    if ($c['auto_send']) self::send($id);
+    if ($c['auto_send'] && $c['send_at'] === '') self::send($id); // with a daily send time the request waits as New until that time
   }
   /** Send the draft RFQ: supplier app notification (+ SMS when enabled). */
   public static function send(int $id): bool {
     $r = DB::table('reorder_requests')->find($id); if (!$r || !$r->rfq_id) return false;
     $rfq = DB::table('supplier_rfqs')->find($r->rfq_id); if (!$rfq || $rfq->status !== 'draft') return false;
-    $c = self::cfg(); DB::table('supplier_rfqs')->where('id', $rfq->id)->update(['status' => 'sent', 'updated_at' => now()]);
+    $c = self::cfg(); DB::table('supplier_rfqs')->where('id', $rfq->id)->update(['status' => 'sent', 'expires_at' => now()->addHours($c['hours']), 'updated_at' => now()]);
+    $rfq->expires_at = now()->addHours($c['hours']);
     DB::table('reorder_requests')->where('id', $id)->update(['status' => 'Sent to Supplier', 'updated_at' => now()]);
     $pri = in_array($r->urgency, ['Critical', 'High'], true) ? 'urgent' : 'action';
     foreach (DB::table('supplier_rfq_invites')->where('rfq_id', $rfq->id)->pluck('supplier_id') as $sid) {
@@ -133,9 +134,19 @@ class Reorder
     if (!self::ready()) return;
     $ids = DB::table('reorder_queue')->pluck('product_id')->all(); if ($ids) DB::table('reorder_queue')->whereIn('product_id', $ids)->delete();
     if (!Procure::on('reorder_enabled')) return;
+    self::dailySend();
     $full = (time() - (int)Procure::set('reorder_scan_last', '0')) >= 1800;
     if ($full) { Procure::put('reorder_scan_last', (string)time()); self::scan(null); self::sync(); }
     elseif ($ids) { self::scan($ids); self::sync(); }
+  }
+  /** Once a day at the configured Dhaka time (default 2:00 PM): send every request that is waiting as New. */
+  public static function dailySend(): int {
+    $c = self::cfg(); if (!$c['auto_send'] || $c['send_at'] === '' || !preg_match('/^\d{1,2}:\d{2}$/', $c['send_at'])) return 0;
+    $now = now('Asia/Dhaka'); $today = $now->toDateString(); if ($now->format('H:i') < str_pad($c['send_at'], 5, '0', STR_PAD_LEFT) || Procure::set('reorder_send_last') === $today) return 0;
+    Procure::put('reorder_send_last', $today); $n = 0;
+    foreach (DB::table('reorder_requests')->where('status', 'New')->whereNotNull('rfq_id')->pluck('id') as $id) if (self::send((int)$id)) $n++;
+    if ($n) Procure::audit('reorder.daily_send', 'reorder', null, ['sent' => $n, 'at' => $c['send_at']]);
+    return $n;
   }
   /** Number of requests that need the admin (badge). */
   public static function attention(): int {
