@@ -123,6 +123,47 @@ body .sec-lv .lo .dl{align-self:flex-start;background:#ECFDF5;color:#047857;font
  body .sec-lv .lo .wh{display:none}body .sec-lv .lo .nm{font-size:10.5px;height:2.7em;line-height:1.35}
  body .sec-lv .lo .rw b{font-size:12.5px}
 }
+/* Recently ordered v2 - light, premium, live */
+body .sec-lv .lvbox{background:#fff;border:1px solid #E7EDF3;border-radius:20px;padding:22px;box-shadow:0 1px 2px rgba(16,24,40,.03),0 8px 24px -16px rgba(16,24,40,.12);display:flex;flex-direction:column;gap:14px}
+body .sec-lv .lvh{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+body .sec-lv .lvh h2{font-size:28px;font-weight:700;color:var(--n)}
+body .sec-lv .lvh h2 em{background:none;-webkit-text-fill-color:var(--o);color:var(--o)}
+body .sec-lv .lvh .su{font-size:13px;font-weight:400;color:#6B7280}
+body .sec-lv .lvc{background:#F1F5F9;font-weight:500;border:1px solid #E7EDF3;bottom:4px}
+body .sec-lv .lg2[data-cr]{--pv:6;--g:12px;padding:4px 2px 8px}
+body .sec-lv .lo{animation:none}
+body .sec-lv .lo .bx{border:1px solid #E1E8EF;border-radius:16px;background:#fff;padding:10px 10px 12px;gap:7px;box-shadow:0 1px 2px rgba(16,24,40,.03);height:100%}
+body .sec-lv .lo .bx:hover{transform:translateY(-2px);border-color:#C9D6E2;box-shadow:0 10px 22px -12px rgba(16,24,40,.22)}
+body .sec-lv .lo .im{position:relative;height:160px;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:12px;background:linear-gradient(135deg,#F0FBF5 0%,#DDF5E7 100%)}
+body .sec-lv .lo .im img{width:auto;height:auto;max-width:86%;max-height:84%;object-fit:contain;filter:drop-shadow(0 6px 8px rgba(16,24,40,.14))}
+body .sec-lv .lo .bx:hover .im img{transform:scale(1.03)}
+body .sec-lv .lo .tg{position:absolute;top:8px;left:8px;z-index:2;height:25px;display:inline-flex;align-items:center;gap:4px;background:#fff;border:1px solid #BBF0D2;color:#047857;font-size:10.5px;font-weight:600;padding:0 9px 0 7px;border-radius:14px;box-shadow:0 2px 6px rgba(16,24,40,.08);backdrop-filter:none}
+body .sec-lv .lo .tg svg{width:12px;height:12px;flex:none}body .sec-lv .lo .tg i{font-style:normal;white-space:nowrap}
+body .sec-lv .lo .nm{color:#111827;font-weight:600;font-size:13.5px}
+body .sec-lv .lo .rw{display:flex;align-items:center;justify-content:space-between;gap:6px}
+body .sec-lv .lo .rw b{font-size:19px;font-weight:700;color:var(--o);white-space:nowrap}
+body .sec-lv .lo .rw span{height:23px;display:inline-flex;align-items:center;border-radius:12px;padding:0 9px;font-size:11px}
+body .sec-lv .lo .dl{display:inline-flex;align-items:center;gap:5px;height:27px;border-radius:14px;background:#E8F8EF;color:#047857;font-size:11px;font-weight:600;padding:0 11px 0 9px}
+body .sec-lv .lo .dl svg{width:15px;height:15px;flex:none}
+body .sec-lv .cra{width:40px;height:40px;border:0;color:var(--n);box-shadow:0 4px 14px rgba(16,24,40,.18);top:44%}
+body .sec-lv .cra.l{left:-17px}body .sec-lv .cra.r{right:-17px}body .sec-lv .cra:hover{background:var(--n);color:#fff}
+body .sec-lv .lvempty{padding:34px 10px;text-align:center;color:#6B7280;font-size:14px}
+body .sec-lv .lvbody{transition:opacity .3s}body .sec-lv .lvbody.sw{opacity:.35}
+@media(max-width:1200px){body .sec-lv .lg2[data-cr]{--pv:5}}
+@media(max-width:980px){body .sec-lv .lg2[data-cr]{--pv:3}body .sec-lv .lo .im{height:150px}}
+@media(max-width:760px){
+ body .sec-lv .lvbox{padding:14px 12px;border-radius:16px}
+ body .sec-lv .lvh h2{font-size:22px}body .sec-lv .lvh .su{font-size:11.5px}
+ body .sec-lv .lvc{display:inline-block;position:static;margin-top:6px;font-size:11px;padding:3px 10px}
+ body .sec-lv .lg2[data-cr]{--pv:2;--g:8px}
+ body .sec-lv .cra{display:none!important}
+ body .sec-lv .lo .bx{padding:6px 6px 9px;border-radius:13px;gap:5px}
+ body .sec-lv .lo .im{height:auto;aspect-ratio:1/1;border-radius:10px}
+ body .sec-lv .lo .tg{top:5px;left:5px;height:21px;font-size:9px;padding:0 7px 0 5px;gap:3px}body .sec-lv .lo .tg svg{width:10px;height:10px}
+ body .sec-lv .lo .wh{display:inline-flex;font-size:10px}body .sec-lv .lo .nm{font-size:12px;height:2.7em}
+ body .sec-lv .lo .rw b{font-size:15px}body .sec-lv .lo .rw span{height:20px;padding:0 7px;font-size:10px}
+ body .sec-lv .lo .dl{height:23px;font-size:10px;padding:0 8px 0 6px}body .sec-lv .lo .dl svg{width:13px;height:13px}
+}
 @media (prefers-reduced-motion:reduce){body .sec-lv .lo,body .sec-lv .chip .dot:after,body .sec-lv .lo .tg .dot:after{animation:none}}
 @media (max-width:760px){.osl .sl-t>a:hover{transform:none}}
 @media (prefers-reduced-motion:reduce){.osl .sl-t>a::before,.osl .sl-t>a::after,.osl .sl-t>a img{animation:none!important}.osl .sl-t>a::before,.osl .sl-t>a::after{opacity:0}}
@@ -326,16 +367,10 @@ body .cs .pc .on{margin-top:auto}
 </template>
 @endif
 
-@if($live->count())
-<div class="hst-p" style="min-height:260px"></div><template class="hst">
-<div class="w sec-lv" style="padding-top:24px;display:flex;flex-direction:column;gap:12px"><div class="lvh"><span class="chip"><span class="dot"></span>LIVE ORDERS</span><h2>Recently <em>ordered</em></h2><span class="su">Bought by shoppers across Bangladesh, updated every minute</span><span class="lvc"><b>{{ $live->count() }}</b> latest orders</span></div>
-<div class="lg2" data-cr>@foreach($live as $l)
-@php $lu = $l->pid ? \App\Http\Controllers\StoreController::url((object)['id'=>$l->pid,'ext_id'=>$l->ext_id,'name'=>$l->pname,'category_id'=>$l->pcat,'sub'=>$l->psub,'sub_sub'=>$l->psubsub ?? null,'path_slug'=>$l->pslug]) : null; @endphp
-<div class="lo"><span class="tg"><span class="dot"></span>{{ \Carbon\Carbon::parse($l->created_at)->diffForHumans(null, true) }} ago</span><a class="bx" @if($lu) href="{{ $lu }}" @endif>
-<div class="im">@if($l->image)<img src="{{ $l->image }}" @php $__ss = \App\Support\Img::srcset($l->image); @endphp @if($__ss) srcset="{{ $__ss }}" sizes="110px" @endif alt="{{ $l->name }}" width="110" height="110" loading="lazy" draggable="false">@endif</div>
-<span class="wh">Verified order</span><span class="nm">{{ $l->name }}</span>
-<div class="rw"><b>{{ number_format($l->price) }} TK</b><span>x{{ $l->qty }}</span></div><span class="dl">{{ (float)$l->shipping > 0 ? 'Delivery ৳'.number_format($l->shipping) : 'FREE delivery' }}</span></a></div>
-@endforeach</div></div>
+@if(($s['home_live_orders'] ?? '') === '1')
+<div class="hst-p" style="min-height:420px"></div><template class="hst">
+<div class="w sec-lv" style="padding-top:24px"><div class="lvbox"><div class="lvh"><span class="chip"><span class="dot"></span>LIVE ORDERS</span><h2>Recently <em>ordered</em></h2><span class="su">Bought by shoppers across Bangladesh, updated every minute</span><span class="lvc"><b>{{ $live->count() }}</b> latest orders</span></div>
+<div class="lvbody">@include('store.live_cards', ['live'=>$live])</div></div></div>
 </template>
 @endif
 
@@ -385,6 +420,12 @@ body .cs .pc .on{margin-top:auto}
 <script>document.addEventListener('click',function(e){document.querySelectorAll('details.vd[open]').forEach(function(d){if(!d.contains(e.target))d.open=false})});</script>
 <script>(function(){if(!matchMedia('(max-width:760px)').matches)return;var t=document.querySelector('.hxs .sl-t');if(!t)return;var ks=[].slice.call(t.children),tall=ks.filter(function(k){return k.classList.contains('hxg')||k.classList.contains('dmz')||k.classList.contains('hxmc')});if(!tall.length||tall.length===ks.length)return;var s=document.createElement('div');s.hidden=true;s.id='dfOff';document.body.appendChild(s);tall.forEach(function(k){s.appendChild(k)})})();</script>
 <script>document.querySelectorAll('[data-ft]').forEach(function(b){b.onclick=function(){var k=b.getAttribute('data-ft');document.querySelectorAll('[data-ft]').forEach(function(x){x.classList.toggle('on',x.getAttribute('data-ft')===k)});document.querySelectorAll('[data-fl]').forEach(function(g){g.style.display=g.getAttribute('data-fl')===k?'':'none'})}});</script>
+<script>(function(){var M=60000;function ago(ts){var m=Math.max(0,Math.floor((Date.now()-Date.parse(ts))/M));if(m<1)return'Just now';if(m<60)return m+' minute'+(m>1?'s':'')+' ago';var h=Math.floor(m/60);if(h<24)return h+' hour'+(h>1?'s':'')+' ago';var d=Math.floor(h/24);return d+' day'+(d>1?'s':'')+' ago'}
+function tick(){document.querySelectorAll('.sec-lv .lo[data-ts]').forEach(function(o){var i=o.querySelector('.ago');if(i)i.textContent=ago(o.getAttribute('data-ts'))})}
+function cur(){var g=document.querySelector('.sec-lv .lg2[data-sig]');return g?g.getAttribute('data-sig'):null}
+function refresh(){var b=document.querySelector('.sec-lv .lvbody');if(!b||document.hidden)return;fetch('/live-orders',{headers:{Accept:'application/json'}}).then(function(r){return r.json()}).then(function(j){if(!j||!j.html)return;var c=cur();if(c===j.sig||(c===null&&!j.n))return;b.classList.add('sw');setTimeout(function(){var t=document.createElement('div');t.innerHTML=j.html;var old=b.querySelector('.crw')||b.firstElementChild;var nu=t.firstElementChild;if(!nu)return;if(old){old.replaceWith(nu)}else{b.appendChild(nu)}if(nu.hasAttribute('data-cr')&&window.__crInit)window.__crInit(nu);var n=document.querySelector('.sec-lv .lvc b');if(n)n.textContent=j.n;b.classList.remove('sw');drag()},300)}).catch(function(){})}
+function drag(){document.querySelectorAll('.sec-lv .lg2[data-cr]').forEach(function(tr){if(tr.__dg)return;tr.__dg=1;var d=0,x0=0,s0=0,mv=0;tr.addEventListener('mousedown',function(e){if(e.button!==0)return;d=1;mv=0;x0=e.clientX;s0=tr.scrollLeft;tr.style.scrollSnapType='none';tr.style.cursor='grabbing'});addEventListener('mousemove',function(e){if(!d)return;var dx=e.clientX-x0;if(Math.abs(dx)>4)mv=1;tr.scrollLeft=s0-dx});addEventListener('mouseup',function(){if(!d)return;d=0;tr.style.scrollSnapType='';tr.style.cursor=''});tr.addEventListener('click',function(e){if(mv){e.preventDefault();e.stopPropagation();mv=0}},true)})}
+setInterval(tick,30000);setInterval(refresh,60000);var n=0,w=setInterval(function(){drag();if(++n>20||document.querySelector('.sec-lv .lg2[data-cr]'))clearInterval(w)},500)})();</script>
 <script>(function(){var rm=matchMedia('(prefers-reduced-motion: reduce)').matches;function mk(c,t){var b=document.createElement('button');b.type='button';b.className='cra '+c;b.setAttribute('aria-label',c==='l'?'Previous':'Next');b.textContent=t;return b}
 function init(tr){var kids=[].slice.call(tr.children);if(kids.length<2)return;var w=document.createElement('div');w.className='crw';var fl=tr.getAttribute('data-fl');tr.parentNode.insertBefore(w,tr);w.appendChild(tr);if(fl!==null){w.setAttribute('data-fl',fl);tr.removeAttribute('data-fl');w.style.display=tr.style.display;tr.style.display=''}
 var L=mk('l','\u2039'),R=mk('r','\u203a');w.appendChild(L);w.appendChild(R);var gap=function(){return parseFloat(getComputedStyle(tr).columnGap)||0},per=function(){return Math.round(parseFloat(getComputedStyle(tr).getPropertyValue('--pv')))||1},loop=kids.length>=per();

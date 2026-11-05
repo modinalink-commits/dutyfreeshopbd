@@ -470,6 +470,7 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestF
   Route::get('/products.xml', [\App\Http\Controllers\CatalogFeedController::class,'feed']);
   Route::post('/ai-chat', [\App\Http\Controllers\AiChatController::class,'ask'])->middleware('throttle:120,1');
   Route::get('/search-suggest', [\App\Http\Controllers\StoreController::class,'suggest'])->middleware('throttle:600,1');
+  Route::get('/live-orders', [\App\Http\Controllers\StoreController::class,'liveFragment'])->middleware('throttle:120,1');
   Route::get('/home-sec/{slug}', [\App\Http\Controllers\StoreController::class,'homeSec'])->where('slug','[A-Za-z0-9_-]+')->middleware('throttle:300,1');
   Route::post('/csp-report', function (\Illuminate\Http\Request $r) { \Illuminate\Support\Facades\Log::info('csp-violation', ['r'=>mb_substr((string)$r->getContent(), 0, 600)]); return response('', 204); })->middleware('throttle:20,1');
   Route::get('/search', [\App\Http\Controllers\StoreController::class,'search']);

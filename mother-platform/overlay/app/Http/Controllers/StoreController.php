@@ -198,8 +198,12 @@ class StoreController extends Controller {
     return response()->view('store.home_sec', $this->base(['c'=>$c, 'items'=>$items, 'lazy'=>false]))->header('X-Robots-Tag', 'noindex')->header('Cache-Control', 'public, max-age=300');
   }
   /** Real recent orders, customer names masked (first letter + ***). */
+  public function liveFragment() {
+    $live = $this->liveOrders();
+    return response()->json(['n'=>$live->count(), 'sig'=>md5(json_encode($live->map(fn($l) => [$l->pid, $l->created_at, $l->qty, $l->price])->all())), 'html'=>view('store.live_cards', ['live'=>$live])->render()])->header('Cache-Control','public, max-age=30');
+  }
   private function liveOrders() {
-    return self::rem('store.live4', 60, fn() => DB::table('orders as o')->join('order_items as i','i.order_id','=','o.id')->leftJoin('products as p','p.id','=','i.product_id')->whereNotIn('o.status',['Cancel','Incomplete'])->where('o.created_at','>=',now()->subDays(3))
+    return self::rem('store.live5', 60, fn() => DB::table('orders as o')->join('order_items as i','i.order_id','=','o.id')->leftJoin('products as p','p.id','=','i.product_id')->whereIn('o.status',['Approved','Packaging','Shipment','Partial Delivered','Delivered'])->where('o.created_at','>=',now()->subDays(7))
       ->select(DB::raw("'' as customer_name"),DB::raw("'' as district"),'o.shipping','o.created_at','i.name','i.qty','i.price','p.image','p.id as pid','p.ext_id','p.name as pname','p.category_id as pcat','p.sub as psub','p.sub_sub as psubsub','p.path_slug as pslug')->orderByDesc('o.id')->limit(6)->get()
       ->map(function ($r) { $r->masked = ''; return $r; }));
   }
@@ -472,7 +476,7 @@ class StoreController extends Controller {
       if ($pk === 'shurjopay' && $ex->pay_status === 'Awaiting Payment') return redirect(\Illuminate\Support\Facades\URL::temporarySignedRoute('pay.shurjopay.start', now()->addHours(2), ['invoice'=>$ex->invoice]));
       return redirect(\Illuminate\Support\Facades\URL::temporarySignedRoute('order.done', now()->addDays(3), ['invoice'=>$ex->invoice, 'dup'=>1]));
     }
-    Cache::forget('store.live3'); Cache::forget('store.live4');
+    Cache::forget('store.live3'); Cache::forget('store.live4'); Cache::forget('store.live5');
     try { \App\Support\Referral::onOrder((int)$id, $phone, $qt); \App\Support\Winback::onOrder($phone, (int)$id, $qt); \App\Support\Voice::onOrder($phone, (int)$id, $qt['applied'] ?? []); } catch (\Throwable $e) {}
     try { \App\Support\AppReward::onOrder($phone, (int)$id, $qt['applied'] ?? [], \App\Support\AppReward::installId()); } catch (\Throwable $e) {}
     $inv = DB::table('orders')->where('id',$id)->value('invoice');
