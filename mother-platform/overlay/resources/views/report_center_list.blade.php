@@ -20,7 +20,7 @@ $win = array_values(array_unique(array_filter([1, 2, 3, $page - 1, $page, $page 
 <tr style="{{ $dim ? 'color:#6B7280' : '' }}">
   <td class="c"><button type="button" class="rc-star" data-code="{{ $x->report_code }}" aria-label="Favorite {{ $x->name }}" aria-pressed="{{ in_array($x->report_code, $favs ?? [], true) ? 'true' : 'false' }}" style="border:0;background:none;cursor:pointer;font-size:17px;line-height:1;min-width:32px;min-height:32px;color:{{ in_array($x->report_code, $favs ?? [], true) ? '#F95505' : '#9CA3AF' }}">{{ in_array($x->report_code, $favs ?? [], true) ? '★' : '☆' }}</button></td>
   <td class="nw"><b>{{ $x->report_code }}</b></td>
-  <td>{{ $x->name }}@if($x->is_legacy && $x->replacement_report_id)<div class="mut">Replaced By: <b>{{ $repl[$x->replacement_report_id] ?? '—' }}</b></div>@endif @if($x->duplicate_group)<div class="mut" title="May overlap with another report. Not decided yet.">Possible overlap · under review</div>@endif</td>
+  <td>{{ $x->name }}@if($x->is_legacy && $x->replacement_report_id)<div class="mut">Replaced By: <b>{{ $repl[$x->replacement_report_id] ?? '—' }}</b></div>@endif @if($x->duplicate_group)<div class="mut" title="Reviewed against its related reports (route, controller, query, purpose, output, permission).">Reviewed: {{ \App\Support\ReportCatalog::review($x->report_code) ?? 'differs from its related reports' }}</div>@endif</td>
   <td>{{ $groups[$x->group_code] ?? $x->group_code }}</td>
   <td>{{ $x->sub_group }}</td>
   <td class="c">{{ $types[$x->report_type] ?? $x->report_type }}</td>

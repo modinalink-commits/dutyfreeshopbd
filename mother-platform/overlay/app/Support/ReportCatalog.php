@@ -22,6 +22,32 @@ class ReportCatalog
   /** The four formats every active report should offer (PDF, Excel, CSV, Print). */
   const MIN_EXPORT = ['supports_pdf', 'supports_xlsx', 'supports_csv', 'supports_print'];
 
+  /**
+   * Result of the six-field review (route, controller, query, purpose, output, permission) of every duplicate candidate.
+   * In none of the 8 groups do all six match, so no report is retired and none is marked Legacy: each one answers a different question or shows it differently.
+   */
+  const REVIEW = [
+    'PRF-001' => 'Period summary statement (valid orders, expenses included). By invoice: PRF-004.',
+    'PRF-004' => 'Invoice-wise detail with product lines, status filter and courier cost. Period summary: PRF-001.',
+    'INV-001' => 'Stock movement per product (opening, sold, returned, in, out). Valuation by category: INV-006.',
+    'INV-006' => 'Current stock with cost and sale value by category. Movement per product: INV-001.',
+    'INV-003' => 'Flat list of stock log entries, newest first. Grouped by product, with damage: INV-007.',
+    'INV-007' => 'Same stock log grouped by product with subtotals, plus damage mode. Flat list: INV-003.',
+    'PUR-001' => 'One row per purchase invoice. With item lines: PUR-003.',
+    'PUR-003' => 'Purchase invoices with item lines and totals. One row per invoice: PUR-001.',
+    'PUR-002' => 'Totals per supplier for the period. Dated ledger: PUR-007.',
+    'PUR-004' => 'Basic ledger: purchases and payments only. It leaves out opening balance, returns, damage claims and notes, so its closing balance can differ from PUR-007.',
+    'PUR-007' => 'Full ledger: opening balance, purchases, payments, returns, damage claims and notes. The complete one.',
+    'CUR-001' => 'Summary per courier (parcels, success rate, COD, settlement). Parcel rows: CUR-009.',
+    'CUR-009' => 'Parcel rows per courier with COD and fee. Summary: CUR-001.',
+    'FIN-001' => 'Income entries as a flat list. Both directions by account: FIN-006.',
+    'FIN-002' => 'Expense entries as a flat list. Both directions by account: FIN-006.',
+    'FIN-006' => 'Income and expense together, grouped by account with totals.',
+    'STF-004' => 'Status changes from the append-only activity log (before and after, IP, device). The reliable record.',
+    'STF-013' => 'Older order_status_logs table (status changes only). Compare with STF-004.',
+  ];
+  public static function review(string $code): ?string { return self::REVIEW[$code] ?? null; }
+
   /** [code, name, sub group, type, route path, exports, owner module, duplicate group] */
   private static function rows(): array
   {

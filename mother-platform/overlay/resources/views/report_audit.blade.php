@@ -29,7 +29,7 @@
 @else
 @php
   $tone = ['Broken Route' => '#FEE2E2;color:#B91C1C', 'Missing Permission' => '#FEE2E2;color:#B91C1C', 'Unregistered' => '#FEE2E2;color:#B91C1C', 'Missing Export' => '#FEF3C7;color:#92400E',
-           'Duplicate Route' => '#FEF3C7;color:#92400E', 'Duplicate Name' => '#FEF3C7;color:#92400E', 'Legacy' => '#E5E7EB;color:#374151'];
+           'Duplicate Route' => '#FEF3C7;color:#92400E', 'Calculation Differs' => '#FEF3C7;color:#92400E', 'Duplicate Name' => '#FEF3C7;color:#92400E', 'Legacy' => '#E5E7EB;color:#374151'];
   $pct = $activeN ? round($full * 100 / $activeN) : 0;
 @endphp
 <div class="top">
@@ -91,17 +91,17 @@
 </div>
 
 <div class="box">
-  <h2>Possible duplicates: side-by-side review</h2>
-  <p class="mut" style="margin:0 0 8px">A same name does not prove the same report, and a different name does not prove a different one. These groups only <b>may</b> overlap. Route, controller and permission are read from the system; query, purpose and output still need a person to compare before anything is marked Legacy. Nothing is hidden or deleted.</p>
+  <h2>Duplicate candidates: reviewed</h2>
+  <p class="mut" style="margin:0 0 8px">All {{ $dups->count() }} groups were compared on six fields: route, controller, query, purpose, output and permission. In none of them do all six match, so <b>no report is retired and none is marked Legacy</b>. Each answers a different question or shows it differently. The result for every report is in the last column. Nothing is hidden or deleted.</p>
   @forelse($dups as $g => $list)
   <div style="margin:0 0 12px"><b>{{ ucwords(str_replace('-', ' ', $g)) }}</b> <span class="mut">· {{ count($list) }} reports</span>
     <div class="tw"><table class="g" style="min-width:760px;margin-top:4px">
-      <thead><tr><th scope="col">Code</th><th scope="col">Report</th><th scope="col">Route</th><th scope="col">Controller · method</th><th scope="col">Module</th><th scope="col" class="c">Type</th><th scope="col">Exports</th><th scope="col">Query / purpose / output</th></tr></thead>
-      <tbody>@foreach($list as $x)<tr><td class="nw"><b>{{ $x->code }}</b></td><td>{{ $x->name }}</td><td class="nw">{{ $x->path }}</td><td class="nw">{{ $x->action }}</td><td>{{ $x->module }}</td><td class="c">{{ $x->type }}</td><td class="nw">{{ $x->exports ?: 'None' }}</td><td class="mut">Needs review</td></tr>@endforeach</tbody>
+      <thead><tr><th scope="col">Code</th><th scope="col">Report</th><th scope="col">Route</th><th scope="col">Controller · method</th><th scope="col">Module</th><th scope="col" class="c">Type</th><th scope="col">Exports</th><th scope="col">Review result</th></tr></thead>
+      <tbody>@foreach($list as $x)<tr><td class="nw"><b>{{ $x->code }}</b></td><td>{{ $x->name }}</td><td class="nw">{{ $x->path }}</td><td class="nw">{{ $x->action }}</td><td>{{ $x->module }}</td><td class="c">{{ $x->type }}</td><td class="nw">{{ $x->exports ?: 'None' }}</td><td class="mut">{{ $x->review ?? "Reviewed" }}</td></tr>@endforeach</tbody>
     </table></div>
   </div>
   @empty<div class="mut">No candidates.</div>@endforelse
-  <p class="mut" style="margin:0">Decision rule: if all six match, keep one visible report and mark the other <b>Legacy · Replaced By [code]</b>. If the calculation differs, keep both and rename each clearly.</p>
+  <p class="mut" style="margin:0">Decision rule for any future report: if all six fields match, keep one visible report and mark the other <b>Legacy · Replaced By [code]</b>. If the calculation differs, keep both and describe the difference.</p>
 </div>
 @endif
 </div>

@@ -190,6 +190,7 @@ class ReportCenterController extends Controller
       if (!C::routeExists($x->route_path)) { $nBroken++; $add('Broken Route', $x, 'Registry only', 'Route not found: fix it or mark the report Legacy'); }
       if (!$x->permission_key || !isset(P::MODULES[$x->permission_key])) { $nPerm++; $add('Missing Permission', $x, 'Registry', 'Assign a permission module'); }
       if ($x->is_active && ($m = self::missing($x))) { $nExport++; $add('Missing Export', $x, 'Missing: ' . implode(', ', $m), 'Add the missing format(s) with the standard export'); }
+      if ($x->report_code === 'PUR-004') $add('Calculation Differs', $x, 'Compared with PUR-007', 'Basic supplier ledger leaves out opening balance, returns, damage claims and notes: its closing balance can differ from the full ledger. Decide whether to switch it to the full calculation.');
       if ($x->is_legacy) $add('Legacy', $x, 'Registry', $x->replacement_report_id ? 'Replaced; kept for history' : 'Legacy without a replacement code');
     }
     $orphans = array_diff_key($found, $regKeys);
@@ -205,7 +206,7 @@ class ReportCenterController extends Controller
       try { $m = Route::getRoutes()->match(\Illuminate\Http\Request::create('/' . trim(strtok($path, '?'), '/'), 'GET')); return $m->isFallback ? '—' : class_basename($m->getActionName()); } catch (\Throwable $e) { return '—'; }
     };
     $dupView = $dups->map(fn($g) => $g->map(fn($x) => (object)['code' => $x->report_code, 'name' => $x->name, 'path' => '/' . $x->route_path, 'action' => $action($x->route_path), 'module' => $x->permission_key, 'owner' => $x->owner_module, 'type' => self::TYPES[$x->report_type] ?? $x->report_type,
-      'exports' => implode(' ', array_filter([$x->supports_pdf ? 'PDF' : '', $x->supports_xlsx ? 'XLSX' : '', $x->supports_csv ? 'CSV' : '', $x->supports_print ? 'Print' : '']))]));
+      'exports' => implode(' ', array_filter([$x->supports_pdf ? 'PDF' : '', $x->supports_xlsx ? 'XLSX' : '', $x->supports_csv ? 'CSV' : '', $x->supports_print ? 'Print' : ''])), 'review' => C::review($x->report_code)]));
 
     $active = $reg->where('is_active', true);
     $full = $active->filter(fn($x) => !self::missing($x))->count();
