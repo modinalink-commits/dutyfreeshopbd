@@ -53,6 +53,21 @@ class ReorderAlertController extends Controller
     }
     return back()->with('ok', $ok.' pre-order request(s) created'.($nos ? ', '.$nos.' with no supplier mapped (admin alert)' : '').($ex ? ', '.$ex.' already had an open request' : '').'. They go to suppliers at the daily send time (or press Send).');
   }
+  /** Every unpublished product that has a mapped supplier and no open request -> Pre-Order request (runs after the response; they go out at the daily send time). */
+  public function preorderAll(Request $r) {
+    $qty = max(1, (int)$r->input('qty', 100)); $by = auth()->id();
+    $total = DB::table('products as p')->where('p.published', false)->whereNotExists(fn($e) => $e->select(DB::raw(1))->from('reorder_requests as o')->whereColumn('o.product_id','p.id')->whereNotIn('o.status', R::END))->count();
+    dispatch(function () use ($qty, $by) {
+      @set_time_limit(0); $ok = 0; $nos = 0;
+      DB::table('products as p')->where('p.published', false)->whereNotExists(fn($e) => $e->select(DB::raw(1))->from('reorder_requests as o')->whereColumn('o.product_id','p.id')->whereNotIn('o.status', R::END))
+        ->orderBy('p.id')->select(['p.id','p.name','p.sku','p.stock'])->chunkById(100, function ($rows) use (&$ok, &$nos, $qty, $by) {
+          foreach ($rows as $p) { if (!SI::suppliersFor((int)$p->id)) { $nos++; continue; } if (R::createPreorder($p, $qty, $by) === 'ok') $ok++; }
+        }, 'p.id', 'id');
+      P::audit('reorder.preorder_all', 'reorder', null, ['created'=>$ok,'no_supplier_skipped'=>$nos]);
+      P::put('reorder_preorder_all_last', now('Asia/Dhaka')->format('d M, g:i A').' — '.$ok.' created, '.$nos.' skipped (no supplier mapped)');
+    })->afterResponse();
+    return back()->with('ok','Creating pre-order requests for '.$total.' unpublished product(s) in the background (products with no mapped supplier are skipped). Refresh in a minute. They go to suppliers at the daily send time.');
+  }
   public function override(Request $r) {
     $d = $r->validate(['sku'=>'required|max:120','threshold'=>'nullable|integer|min:0|max:100000','target'=>'nullable|integer|min:0|max:1000000','mode'=>'nullable|in:default,auto,off']);
     $p = DB::table('products')->where('sku',trim($d['sku']))->first(); if (!$p) return back()->with('bad','No product with SKU '.$d['sku']);
