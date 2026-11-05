@@ -50,35 +50,41 @@ class StoreController extends Controller {
     for ($i = 0; $i < $n; $i++) { if (isset($sm[$i])) $out->push($sm[$i]); if (isset($ot[$i])) $out->push($ot[$i]); }
     return $out->take($max)->values();
   }
-  /** Flash Sale / Today's Deal on the front page: the products people ordered most in the LAST 7 DAYS (ties: last 24 hours, then 30 days; if fewer than needed, the best 30-day sellers fill the rest), refreshed every 10 minutes. Falls back to the biggest discounts when there are no sales yet, or when the admin turns "deal_mode" off. */
+  /** Flash Sale / Today's Deal on the front page: TWO products from EVERY active category (same order as the homepage sections). Inside a category the two are the most ordered in the LAST 7 DAYS (ties: last 24 h, then 30 days; products with no orders follow by biggest discount, then newest). Pinned products come first, excluded ones never show; refreshed every 10 minutes. Falls back to the biggest discounts when the admin turns "deal_mode" off. Each product carries ->cat_rank (0 = best of its category, 1 = second). */
   public static function todayBest(array $s) {
     if (($s['deal_mode'] ?? '1') !== '1') return self::dealList($s);
-    $max = max(1, min(24, (int)($s['deal_max'] ?? 12)));
+    $per = 2;
     $fl = DB::table('deal_flags')->get(['product_id','mode']);
     $ex = $fl->where('mode','exclude')->pluck('product_id')->map(fn($v) => (int)$v)->all();
     $pin = $fl->where('mode','pin')->pluck('product_id')->map(fn($v) => (int)$v)->all();
-    $key = 'store.todaybest5.'.$max.'.'.md5(implode(',', $ex).'|'.implode(',', $pin).'|'.($s['deal_min_off'] ?? '').'|'.($s['deal_smoke'] ?? ''));
-    return self::rem($key, 600, function () use ($max, $ex, $pin, $s) {
+    $key = 'store.todaybest6.'.md5(implode(',', $ex).'|'.implode(',', $pin).'|'.($s['deal_min_off'] ?? '').'|'.($s['deal_smoke'] ?? ''));
+    return self::rem($key, 600, function () use ($per, $ex, $pin) {
       $d1 = now()->subDay(); $d7 = now()->subDays(7); $d30 = now()->subDays(30);
-      $rows = DB::table('order_items as i')->join('orders as o','o.id','=','i.order_id')->whereNotIn('o.status',['Cancel','Incomplete'])->where('o.created_at','>=',$d30)->whereNotNull('i.product_id')
-        ->groupBy('i.product_id')->selectRaw('i.product_id as pid, sum(case when o.created_at >= ? then i.qty else 0 end) as q1, sum(case when o.created_at >= ? then i.qty else 0 end) as q7, sum(i.qty) as q30', [$d1, $d7])
-        ->orderByDesc('q7')->orderByDesc('q1')->orderByDesc('q30')->limit(120)->get();
-      $rank = []; foreach ($rows as $r) $rank[(int)$r->pid] = $r;
-      $ids = array_values(array_diff(array_values(array_unique(array_merge($pin, array_keys($rank)))), $ex));
-      $prods = $ids ? DB::table('products')->whereIn('id', $ids)->where('published', true)->where(function ($w) { $w->whereNull('stock')->orWhere('stock', '>', 0); if ($ci = \App\Support\StockGuard::controlledIds()) $w->orWhereNotIn('category_id', $ci); })->whereNotNull('image')->where('image', '!=', '')->get()->keyBy('id') : collect();
-      $sc = DB::table('categories')->get(['id','slug','name'])->filter(fn($c) => self::isSmokeCat($c))->pluck('id')->map(fn($v) => (int)$v)->all();
-      $out = collect(); $rk = [];
-      foreach ($ids as $id) {
-        if (!isset($prods[$id])) continue; $p = $prods[$id]; $r = $rank[$id] ?? null;
-        $p->bs_q1 = $r ? (int)$r->q1 : 0; $p->bs_q7 = $r ? (int)$r->q7 : 0; $p->bs = $r && ((int)$r->q30 > 0);
-        if (in_array($id, $pin, true)) { $out->push($p); continue; }
-        if (!$p->bs) continue;
-        $rk[] = $p;
+      $cats = DB::table('categories')->whereNotNull('slug')->where('active', true)->orderBy('position')->get(['id','slug','name'])->values()
+        ->sortBy(fn($c) => self::isSmokeCat($c) ? 0 : (preg_match('/perfume|attar|আতর|পারফিউম/iu', ($c->slug ?? '').' '.($c->name ?? '')) ? 1 : 2))->values();
+      if ($cats->isEmpty()) return collect();
+      $agg = DB::table('order_items as i')->join('orders as o','o.id','=','i.order_id')->whereNotIn('o.status',['Cancel','Incomplete'])->where('o.created_at','>=',$d30)->whereNotNull('i.product_id')
+        ->groupBy('i.product_id')->selectRaw('i.product_id as pid, sum(case when o.created_at >= ? then i.qty else 0 end) as q1, sum(case when o.created_at >= ? then i.qty else 0 end) as q7, sum(i.qty) as q30', [$d1, $d7]);
+      $ci = \App\Support\StockGuard::controlledIds();
+      $inner = DB::table('products as p')->leftJoinSub($agg, 's', 's.pid', '=', 'p.id')->where('p.published', true)->whereIn('p.category_id', $cats->pluck('id')->all())
+        ->whereNotNull('p.image')->where('p.image', '!=', '')
+        ->where(function ($w) use ($ci) { $w->whereNull('p.stock')->orWhere('p.stock', '>', 0); if ($ci) $w->orWhereNotIn('p.category_id', $ci); });
+      if ($ex) $inner->whereNotIn('p.id', $ex);
+      $inner->selectRaw('p.*, coalesce(s.q1,0) as q1, coalesce(s.q7,0) as q7, coalesce(s.q30,0) as q30, row_number() over (partition by p.category_id order by '.
+        'coalesce(s.q7,0) desc, coalesce(s.q1,0) desc, coalesce(s.q30,0) desc, case when coalesce(p.compare_price,0) > coalesce(p.price,0) and p.compare_price > 0 then (p.compare_price - p.price) / p.compare_price else 0 end desc, p.id desc) as rn');
+      $rows = DB::query()->fromSub($inner, 'x')->where('rn', '<=', $per)->orderBy('rn')->get()->groupBy('category_id');
+      $out = collect();
+      foreach ($cats as $c) {
+        foreach (($rows[$c->id] ?? collect())->values() as $i => $p) {
+          $p->cat_rank = $i; $p->bs_q1 = (int)$p->q1; $p->bs_q7 = (int)$p->q7; $p->bs = ((int)$p->q30 > 0);
+          $out->push($p);
+        }
       }
-      // strict ranking by the last 7 days' orders (no reserved slots: the most ordered product is always first)
-      $out = $out->take($max);
-      foreach ($rk as $p) { if ($out->count() >= $max) break; $out->push($p); }
-      if ($out->count() < $max) { foreach (self::dealList($s) as $p) { if (in_array($p->id, $ex) || $out->contains('id', $p->id)) continue; $out->push($p); if ($out->count() >= $max) break; } }
+      // pinned products (admin) go first and take their category's slot
+      if ($pin) {
+        $pp = $out->filter(fn($p) => in_array((int)$p->id, $pin, true));
+        $out = $pp->merge($out->reject(fn($p) => in_array((int)$p->id, $pin, true)))->values();
+      }
       return $out->values();
     });
   }

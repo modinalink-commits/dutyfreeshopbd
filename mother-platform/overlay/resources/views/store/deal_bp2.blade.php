@@ -1,5 +1,5 @@
 @php
-  $__d = collect($deals ?? [])->take(12);
+  $__d = collect($deals ?? [])->sortBy(fn($x) => $x->cat_rank ?? 0)->values()->take(12); // best product of each category first
   $__logo = ($s['logo_url'] ?? '') ?: '/logo.webp';
   [$__end, $__fix] = \App\Http\Controllers\StoreController::endAt($s['deal_end_at'] ?? '');
   $__dt = \Carbon\Carbon::now('Asia/Dhaka');
