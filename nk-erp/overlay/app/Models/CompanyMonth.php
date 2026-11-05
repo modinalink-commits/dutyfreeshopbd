@@ -16,7 +16,7 @@ class CompanyMonth extends Model
         return ['flags' => 'array'];
     }
 
-    public function on(string $part, int $size): bool
+    public function earns(string $part, int $size): bool
     {
         if ($part === 'dd') return true; // DD has no condition in the ledger rules
         return (bool) (($this->flags ?? [])[$part.'_'.$size] ?? false);

@@ -7,9 +7,11 @@ R=https://raw.githubusercontent.com/modinalink-commits/dutyfreeshopbd/$REF/nk-er
 CUR=$(readlink -f /srv/app)
 NEW=/srv/releases/$REF
 [ "$CUR" = "$NEW" ] && { echo "$REF" > /srv/deploy/current_ref; exit 0; }
-rm -rf "$NEW.tmp"
-cp -a "$CUR" "$NEW.tmp"
-cd "$NEW.tmp"
+# Build at the final path: Laravel caches absolute paths, so the release must not be renamed afterwards.
+rm -rf "$NEW"
+cp -a "$CUR" "$NEW"
+rm -rf "$NEW/storage/framework/views/"*
+cd "$NEW"
 wget -qO /tmp/manifest.txt "$R/manifest.txt"
 [ -s /tmp/manifest.txt ] || { echo "no manifest"; exit 1; }
 for f in $(cat /tmp/manifest.txt); do
@@ -46,7 +48,6 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 chown -R www-data:www-data storage bootstrap/cache
-rm -rf "$NEW"; mv "$NEW.tmp" "$NEW"
 ln -sfn "$NEW" /srv/app
 echo "$REF" > /srv/deploy/current_ref
 rm -f /srv/deploy/failed_ref

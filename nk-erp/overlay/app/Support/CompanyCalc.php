@@ -29,7 +29,7 @@ class CompanyCalc
             if (! $rate) continue;
             foreach (CompanyRate::PARTS as $p => $label) {
                 $per = (float) $rate->{$p};
-                if ($per <= 0 || ! $m->on($p, $s)) continue;
+                if ($per <= 0 || ! $m->earns($p, $s)) continue;
                 $q = $p === 'deadline' ? $early : ($p === 'late' ? $qty - $early : $qty);
                 if ($q <= 0) continue;
                 $amt = round($per * $q, 2);
