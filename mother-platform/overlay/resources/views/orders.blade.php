@@ -218,10 +218,10 @@ table.ordt td.crc .crs-warn{background:#FEF3C7;border-color:#FCD34D;color:#92400
 table.ordt td.crc .crk{background:#fff;color:#1F2937;cursor:pointer}
 table.ordt td.crc .crk:hover{background:#EEF2FF;border-color:#818CF8;color:#4338CA}
 table.ordt td.crc .crk svg{width:13px;height:13px;flex:none}
-table.ordt td.crc .crn,table.ordt td.crc .crs,table.ordt td.crc .crk{width:148px!important;min-width:148px!important;max-width:148px!important;height:26px!important;box-sizing:border-box!important}
+table.ordt td.crc .crn,table.ordt td.crc .crs,table.ordt td.crc .crk{width:164px!important;min-width:164px!important;max-width:164px!important;height:26px!important;box-sizing:border-box!important}
 table.ordt td.crc .crn{justify-content:space-between}
 table.ordt td.crc .crn>span:first-child{overflow:hidden;text-overflow:ellipsis}
-table.ordt td.crc .crs{display:block!important;text-align:center;line-height:24px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+table.ordt td.crc .crs{display:block!important;padding:0 6px!important;text-align:center;line-height:24px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 table.ordt td.crc .crk{display:flex!important;justify-content:center}
 /* Note button (opens the courier / internal note window) */
 table.ordt td.ost-cell .stn-e.note-btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;height:28px;margin-top:8px;padding:0 11px;box-sizing:border-box;border:1px solid #CBD5E1;border-radius:8px;background:#fff;color:#334155;font-size:12px;font-weight:600;line-height:1;text-decoration:none;white-space:nowrap;transition:background-color .15s ease,border-color .15s ease,color .15s ease}
