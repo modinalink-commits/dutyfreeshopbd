@@ -67,9 +67,9 @@
   </section>
   @endif
 </div>
-<section class="card" style="display:flex;flex-wrap:wrap;overflow:hidden">
-  <div style="flex:2 1 420px;min-width:0;background:#eef6fb">
-    <svg viewBox="0 0 900 400" preserveAspectRatio="none" role="img" aria-label="Schematic map of the distribution zones around Jorarganj, Mirsarai" style="display:block;width:100%;height:220px">
+<section class="card" style="padding:20px;display:flex;flex-wrap:wrap;gap:20px;align-items:center">
+  <div style="position:relative;flex:1 1 360px;min-width:0;aspect-ratio:900 / 400;border-radius:12px;overflow:hidden;background:#eef2e8">
+    <svg viewBox="0 0 900 400" preserveAspectRatio="none" role="img" aria-label="Schematic map of the distribution zones around Jorarganj, Mirsarai" style="position:absolute;inset:0;width:100%;height:100%">
       <polygon points="0,0 130,0 110,140 140,260 120,400 0,400" fill="#d6e6f2"></polygon>
       <polygon points="220,15 470,15 480,80 400,95 250,85" fill="#7aa7e0" fill-opacity=".35" stroke="#fff" stroke-width="2"></polygon>
       <polygon points="480,15 700,22 690,108 560,122 480,80" fill="#e0a96d" fill-opacity=".35" stroke="#fff" stroke-width="2"></polygon>
@@ -82,10 +82,19 @@
       <rect x="420" y="115" width="20" height="20" rx="5" fill="#14213d"></rect>
     </svg>
   </div>
-  <div class="pad" style="flex:1 1 280px;display:flex;flex-direction:column;gap:6px;justify-content:center">
-    <h2 style="margin:0;font-size:15px">Distribution network today</h2>
-    <span class="sub" style="margin:0">Zones, shops on routes and visits start with the Route sales module.</span>
-    <a href="{{ route('soon', 'map') }}" style="font-weight:600;text-decoration:none">Open distribution map →</a>
+  <div style="flex:1 1 260px;display:flex;flex-direction:column;gap:8px">
+    <h2 style="margin:0;font-size:15px;font-weight:700">Distribution network today</h2>
+    @if($net && $net['zones'])
+      <span style="font-size:12px;color:#51607a">{{ $net['zones'] }} zones · {{ number_format($net['shops']) }} shops on routes · {{ number_format($net['visited']) }} visited · {{ number_format($net['unvisited']) }} not visited</span>
+      @if($net['top'])
+        <span style="font-size:12px;color:#51607a">Top zone: {{ $net['top']['name'] }}{{ ', '.\App\Support\Ui::bd($net['top']['amt']) }} · {{ number_format($net['top']['cyl']) }} cylinders</span>
+      @else
+        <span style="font-size:12px;color:#51607a">{{ $net['trips'] ? 'No route sales posted yet today.' : 'No trips dispatched today.' }}</span>
+      @endif
+    @else
+      <span style="font-size:12px;color:#51607a">Add routes in Vehicles &amp; routes to see zones, shops and visits here.</span>
+    @endif
+    @if(in_array(auth()->user()->role, ['super_admin', 'admin', 'manager']))<a href="{{ route('map.dist') }}" style="font-size:12px;font-weight:600;text-decoration:none">Open distribution map →</a>@endif
   </div>
 </section>
 <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">

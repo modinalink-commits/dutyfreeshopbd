@@ -77,7 +77,22 @@ class DashboardController extends Controller
             if (! $calc['commissionReceived'] && $calc['commission'] > 0) $alerts[] = ['t' => "{$mn} commission arrives ".Carbon::parse($calc['commissionDate'])->format('d-m-Y'), 'd' => 'Tk '.rtrim(rtrim(number_format($calc['month']->kg_commission, 2), '0'), '.').' per kg on total '.$mn.' sales.', 'tone' => 'vio'];
         }
 
+        // Distribution network today: routes (zones), planned shops, shops sold to on today's trips.
+        $net = rescue(function () use ($now) {
+            $routes = \App\Models\Route::query()->where('is_active', true)->get();
+            $trips = \App\Models\Trip::query()->whereDate('trip_date', $now->toDateString())->where('status', '!=', 'draft')->get(['id', 'route_id']);
+            $ts = Sale::query()->whereIn('trip_id', $trips->pluck('id'))->where('stage', '!=', 'voided')->with('items')->get();
+            $shops = (int) $routes->sum('shops');
+            $visited = $ts->pluck('customer_id')->filter()->unique()->count();
+            $top = $trips->groupBy('route_id')->map(function ($g, $rid) use ($ts, $routes) {
+                $s = $ts->whereIn('trip_id', $g->pluck('id'));
+                return ['name' => $routes->firstWhere('id', $rid)?->name ?? '—', 'amt' => (float) $s->sum('total'), 'cyl' => (int) $s->flatMap->items->whereNotNull('size_kg')->sum('qty')];
+            })->sortByDesc('amt')->first();
+            return ['zones' => $routes->count(), 'shops' => $shops, 'visited' => $visited, 'unvisited' => max(0, $shops - $visited), 'trips' => $trips->count(), 'top' => $top && $top['amt'] > 0 ? $top : null];
+        }, null, false);
+
         return view('dashboard', [
+            'net' => $net,
             'now' => $now, 'todaySales' => $todaySales, 'todayCyl' => $todayCyl, 'todayKg' => $todayKg,
             'monthCyl' => $monthCyl, 'monthKg' => $monthKg, 'gross' => $gross,
             'balance' => CompanyEntry::balanceUntil($now->toDateString()),
