@@ -80,11 +80,11 @@ class Analytics {
   public static function columns(string $slug): array {
     $T = 'text'; $N = 'num'; $M = 'money'; $P = 'pct'; $I = 'img'; $S = 'badge'; $Dt = 'date';
     return match ($slug) {
-      'sales-summary' => ['date'=>['Date',$Dt],'invoice'=>['Invoice',$T],'customer'=>['Customer',$T],'product'=>['Product',$T],'store'=>['Store',$T],'qty'=>['Qty',$N],'sales'=>['Sales',$M],'cost'=>['Cost',$M],'profit'=>['Profit',$M],'status'=>['Status',$S]],
+      'sales-summary' => ['date'=>['Date',$Dt],'invoice'=>['Invoice',$T],'customer'=>['Customer',$T],'product'=>['Product',$T],'store'=>['Store',$T],'qty'=>['Qty',$N],'sales'=>['Sales',$M],'cost'=>['Cost',$M],'profit'=>['Gross profit',$M],'status'=>['Status',$S]],
       'discount-report' => ['discount'=>['Discount type',$T],'orders'=>['Orders',$N],'amount'=>['Discount given',$M],'share'=>['Share of all discount',$P]],
-      'product-sales' => ['image'=>['',$I],'product'=>['Product',$T],'sku'=>['SKU',$T],'store'=>['Store',$T],'qty'=>['Qty sold',$N],'gross'=>['Gross sales',$M],'discount'=>['Discount',$M],'cost'=>['Cost',$M],'profit'=>['Profit',$M],'margin'=>['Margin %',$P]],
-      'category-sales' => ['category'=>['Category',$T],'store'=>['Store',$T],'products'=>['Total products',$N],'qty'=>['Qty sold',$N],'sales'=>['Total sales',$M],'profit'=>['Profit',$M],'return_rate'=>['Return rate',$P]],
-      'daily-sales','monthly-sales' => ['date'=>[$slug === 'daily-sales' ? 'Date' : 'Month',$Dt],'store'=>['Store',$T],'orders'=>['Orders',$N],'qty'=>['Qty',$N],'sales'=>['Sales',$M],'cost'=>['Cost',$M],'profit'=>['Profit',$M],'aov'=>['Avg order value',$M]],
+      'product-sales' => ['image'=>['',$I],'product'=>['Product',$T],'sku'=>['SKU',$T],'store'=>['Store',$T],'qty'=>['Qty sold',$N],'gross'=>['Gross sales',$M],'discount'=>['Discount',$M],'cost'=>['Cost',$M],'profit'=>['Gross profit',$M],'margin'=>['Margin %',$P]],
+      'category-sales' => ['category'=>['Category',$T],'store'=>['Store',$T],'products'=>['Total products',$N],'qty'=>['Qty sold',$N],'sales'=>['Total sales',$M],'profit'=>['Gross profit',$M],'return_rate'=>['Return rate',$P]],
+      'daily-sales','monthly-sales' => ['date'=>[$slug === 'daily-sales' ? 'Date' : 'Month',$Dt],'store'=>['Store',$T],'orders'=>['Orders',$N],'qty'=>['Qty',$N],'sales'=>['Sales',$M],'cost'=>['Cost',$M],'profit'=>['Gross profit',$M],'aov'=>['Avg order value',$M]],
       'profit-loss' => ['line'=>['Line item',$T],'amount'=>['Amount',$M],'note'=>['How it is counted',$T]],
       'sale-profit' => ['date'=>['Date',$Dt],'invoice'=>['Invoice',$T],'customer'=>['Customer',$T],'store'=>['Store',$T],'sales'=>['Sales',$M],'cost'=>['Product cost',$M],'courier_fee'=>['Courier charge',$M],'profit'=>['Net profit',$M],'margin'=>['Margin %',$P],'status'=>['Status',$S]],
       'margin' => ['image'=>['',$I],'product'=>['Product',$T],'sku'=>['SKU',$T],'category'=>['Category',$T],'price'=>['Sale price',$M],'cost'=>['Cost',$M],'unit_profit'=>['Profit / unit',$M],'margin'=>['Margin %',$P],'sold'=>['Sold (period)',$N]],
@@ -418,7 +418,7 @@ class Analytics {
   }
   public static function dashboard(array $f): array {
     [$w, $b] = self::w($f, 'all'); $v = self::VALID;
-    $sql = "select count(*) placed, sum(case when $v then 1 else 0 end) orders, coalesce(sum(case when $v then x.items - o.discount end),0) sales, coalesce(sum(case when $v then x.cost end),0) cost, coalesce(sum(case when $v then coalesce(o.courier_fee,0) end),0) cfee, sum(case when o.status in ".self::DONE." then 1 else 0 end) delivered, sum(case when $v and o.status not in ".self::DONE." then 1 else 0 end) pending, sum(case when not $v and o.status <> 'Cancel' then 1 else 0 end) returned, sum(case when not $v and o.status = 'Cancel' then 1 else 0 end) cancelled from orders o".self::lat().$w;
+    $sql = "select count(*) placed, sum(case when $v then 1 else 0 end) orders, coalesce(sum(case when $v then x.items - o.discount end),0) sales, coalesce(sum(case when $v then x.cost end),0) cost, coalesce(sum(case when $v then coalesce(o.courier_fee,0) end),0) cfee, coalesce(sum(case when $v then x.qty end),0) qty, sum(case when o.status in ".self::DONE." then 1 else 0 end) delivered, sum(case when $v and o.status not in ".self::DONE." then 1 else 0 end) pending, sum(case when not $v and o.status <> 'Cancel' then 1 else 0 end) returned, sum(case when not $v and o.status = 'Cancel' then 1 else 0 end) cancelled from orders o".self::lat().$w;
     return (array)(self::sel($sql, $b)[0] ?? []);
   }
   /** Category sales after the order discount (the discount is shared across the order's items by value), so the categories add up to Total sales. */

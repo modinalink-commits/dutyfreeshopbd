@@ -66,7 +66,7 @@ class AnalyticsController extends Controller {
     $res = A::rows($slug, $f); $rows = $res['rows']; $cols = A::columns($slug);
     if ($f['view'] === 'store' && !isset($cols['store'])) $cols = $cols;
     $stores = ($f['view'] === 'compare' || count($f['stores']) > 1) ? A::byStore($f) : [];
-    return ['cols'=>$cols, 'rows'=>$rows, 'cards'=>$this->cards($slug, $rows), 'charts'=>$this->charts($slug, $rows, $f, $stores), 'stores'=>$stores, 'truncated'=>$res['truncated'], 'dash'=>false, 'summaryRows'=>[], 'summaryCols'=>[]];
+    return ['cols'=>$cols, 'rows'=>$rows, 'cards'=>$this->cards($slug, $rows, $res['truncated'] && in_array($slug, ['sales-summary','sale-profit'], true) ? A::dashboard($f) : []), 'charts'=>$this->charts($slug, $rows, $f, $stores), 'stores'=>$stores, 'truncated'=>$res['truncated'], 'dash'=>false, 'summaryRows'=>[], 'summaryCols'=>[]];
   }
 
   /* ---------- chart specs ---------- */
@@ -105,17 +105,22 @@ class AnalyticsController extends Controller {
   }
 
   /* ---------- summary cards ---------- */
-  private function cards(string $slug, array $rows): array {
+  private function cards(string $slug, array $rows, array $tot = []): array {
     $sum = fn($k) => array_sum(array_map(fn($r) => (float)($r[$k] ?? 0), $rows)); $n = count($rows);
     $cnt = fn($k, $v) => count(array_filter($rows, fn($r) => ($r[$k] ?? null) === $v));
     $M = 'money'; $N = 'num'; $P = 'pct';
     $rate = fn($a, $b) => $b > 0 ? round($a / $b * 100, 1) : 0;
+    if ($tot) { // the list is cut at 5000 rows, so the totals come from the full-period query (same as the Dashboard)
+      $s = (float)$tot['sales']; $co = (float)$tot['cost']; $cf = (float)$tot['cfee']; $o = (int)$tot['orders'];
+      if ($slug === 'sales-summary') return [['Total sales', $s, $M], ['Total orders', $o, $N], ['Total cost', $co, $M], ['Gross profit', $s - $co, $M], ['Qty sold', (int)$tot['qty'], $N], ['Average order value', $o ? round($s / $o) : 0, $M]];
+      return [['Sales', $s, $M], ['Product cost', $co, $M], ['Courier charge', $cf, $M], ['Net profit', $s - $co - $cf, $M], ['Margin', $rate($s - $co - $cf, $s), $P], ['Orders', $o, $N]];
+    }
     return match ($slug) {
       'sales-summary' => [['Total sales', $sum('sales'), $M], ['Total orders', $n, $N], ['Total cost', $sum('cost'), $M], ['Gross profit', $sum('profit'), $M], ['Qty sold', $sum('qty'), $N], ['Average order value', $n ? round($sum('sales') / $n) : 0, $M]],
       'sale-profit' => [['Sales', $sum('sales'), $M], ['Product cost', $sum('cost'), $M], ['Courier charge', $sum('courier_fee'), $M], ['Net profit', $sum('profit'), $M], ['Margin', $rate($sum('profit'), $sum('sales')), $P], ['Orders', $n, $N]],
-      'product-sales' => [['Qty sold', $sum('qty'), $N], ['Gross sales', $sum('gross'), $M], ['Discount', $sum('discount'), $M], ['Cost', $sum('cost'), $M], ['Profit', $sum('profit'), $M], ['Margin', $rate($sum('profit'), $sum('gross')), $P]],
-      'category-sales' => [['Total sales', $sum('sales'), $M], ['Qty sold', $sum('qty'), $N], ['Profit', $sum('profit'), $M], ['Categories', $n, $N]],
-      'daily-sales','monthly-sales' => [['Total sales', $sum('sales'), $M], ['Total orders', $sum('orders'), $N], ['Total cost', $sum('cost'), $M], ['Profit', $sum('profit'), $M], ['Average order value', $sum('orders') ? round($sum('sales') / $sum('orders')) : 0, $M]],
+      'product-sales' => [['Qty sold', $sum('qty'), $N], ['Gross sales', $sum('gross'), $M], ['Discount', $sum('discount'), $M], ['Cost', $sum('cost'), $M], ['Gross profit', $sum('profit'), $M], ['Margin', $rate($sum('profit'), $sum('gross')), $P]],
+      'category-sales' => [['Total sales', $sum('sales'), $M], ['Qty sold', $sum('qty'), $N], ['Gross profit', $sum('profit'), $M], ['Categories', $n, $N]],
+      'daily-sales','monthly-sales' => [['Total sales', $sum('sales'), $M], ['Total orders', $sum('orders'), $N], ['Total cost', $sum('cost'), $M], ['Gross profit', $sum('profit'), $M], ['Average order value', $sum('orders') ? round($sum('sales') / $sum('orders')) : 0, $M]],
       'profit-loss' => (function () use ($rows) { $g = fn($l) => (float)(collect($rows)->firstWhere('line', $l)['amount'] ?? 0); $ns = $g('Net sales'); return [['Net sales', $ns, 'money'], ['Product cost', abs($g('Product cost')), 'money'], ['Gross profit', $g('Gross profit'), 'money'], ['Net profit', $g('Net profit'), 'money'], ['Net margin', $ns > 0 ? round($g('Net profit') / $ns * 100, 1) : 0, 'pct']]; })(),
       'margin' => [['Products', $n, $N], ['Average margin', $n ? round($sum('margin') / $n, 1) : 0, $P], ['Below 10% margin', count(array_filter($rows, fn($r) => (float)$r['margin'] < 10)), $N], ['Negative margin', count(array_filter($rows, fn($r) => (float)$r['margin'] < 0)), $N]],
       'stock-tracking' => [['Products', $n, $N], ['Units in stock', $sum('current'), $N], ['Stock in', $sum('stock_in'), $N], ['Stock out', $sum('stock_out'), $N], ['Sold', $sum('sold'), $N], ['Returned', $sum('returned'), $N]],
