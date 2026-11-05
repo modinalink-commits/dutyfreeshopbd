@@ -290,6 +290,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
     Route::get('/alt', [$I,'alt']); Route::post('/alt/fill', [$I,'altFill']); Route::post('/alt/{id}', [$I,'altSave'])->whereNumber('id');
     Route::post('/bulk', [$S,'bulk']); Route::post('/redirect', [$S,'redirectSave']); Route::post('/redirect/{id}', [$S,'redirectAct'])->whereNumber('id'); Route::post('/settings', [$S,'settings']); Route::post('/sitemap', [$S,'sitemap']);
   });
+  Route::get('/app-users', [\App\Http\Controllers\AppUsersController::class,'index']); Route::get('/app-users/live', [\App\Http\Controllers\AppUsersController::class,'live']);
   Route::get('/app-rewards', [\App\Http\Controllers\AppRewardController::class,'index']); Route::post('/app-rewards/settings', [\App\Http\Controllers\AppRewardController::class,'save']);
   Route::get('/referral', [\App\Http\Controllers\ReferralController::class,'index']); Route::post('/referral/settings', [\App\Http\Controllers\ReferralController::class,'save']);
   Route::prefix('purchase')->group(function () {

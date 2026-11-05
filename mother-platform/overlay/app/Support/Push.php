@@ -47,6 +47,8 @@ class Push
     switch ($type) {
       case 'all': return null;
       case 'customer': { $p = preg_replace('/\D/', '', $val); if ($p === '') return [0]; $p = substr($p, -10); return DB::table('customers')->where('phone', 'like', '%' . $p)->pluck('id')->all() ?: [0]; }
+      case 'app': return \App\Support\AppUsers::customerIds(false);
+      case 'applive': return \App\Support\AppUsers::customerIds(true);
       case 'new': return array_map(fn($r) => $r->id, DB::select($base . ' and coalesce(o.n,0) <= 1')) ?: [0];
       case 'returning': return array_map(fn($r) => $r->id, DB::select($base . ' and o.n >= 2')) ?: [0];
       case 'regular': return array_map(fn($r) => $r->id, DB::select($base . ' and o.n >= 3')) ?: [0];

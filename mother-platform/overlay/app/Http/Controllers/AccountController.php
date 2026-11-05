@@ -457,10 +457,10 @@ class AccountController extends StoreController {
   /** Used by the storefront (checkout, chat) to pre-fill a logged-in customer. */
   /** The installed App reports itself (page script, standalone mode only). Records the install; a logged-in customer with a verified mobile also unlocks the App Install reward. */
   public function appActivate(Request $r) {
-    $k = 'appact:'.$r->ip(); \Illuminate\Support\Facades\Cache::add($k, 0, 60); if (\Illuminate\Support\Facades\Cache::increment($k) > 40) return response()->json(['ok'=>false])->header('Cache-Control', 'no-store');
+    $k = 'appact:'.$r->ip(); \Illuminate\Support\Facades\Cache::add($k, 0, 60); if (\Illuminate\Support\Facades\Cache::increment($k) > 90) return response()->json(['ok'=>false])->header('Cache-Control', 'no-store');
     $in = json_decode((string)$r->getContent(), true); if (!is_array($in)) $in = $r->all();
     $id = \App\Support\AppReward::validId($in['id'] ?? ''); if (!$id) return response()->json(['ok'=>false])->header('Cache-Control', 'no-store');
-    return response()->json(\App\Support\AppReward::activate($id, $this->me($r), (string)$r->userAgent(), (string)$r->ip()))->header('Cache-Control', 'no-store');
+    return response()->json(\App\Support\AppReward::activate($id, $this->me($r), (string)$r->userAgent(), (string)$r->ip(), !empty($in['beat'])))->header('Cache-Control', 'no-store');
   }
   /** Public: is the App Install reward running, and for how much (the install popup only promises it while it is ON). */
   public function appRewardInfo() { $c = \App\Support\AppReward::cfg(); return response()->json(['on'=>$c['on'] && $c['amt'] > 0, 'amt'=>(int)round($c['amt'])])->header('Cache-Control', 'public, max-age=60'); }

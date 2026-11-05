@@ -30,12 +30,15 @@ class AppReward {
   }
 
   /** Record an install (anonymous) and, when the visitor is a logged-in customer with a verified mobile, unlock the reward. Returns the state for the page. */
-  public static function activate(string $installId, ?object $cust, string $ua = '', string $ip = ''): array {
+  public static function activate(string $installId, ?object $cust, string $ua = '', string $ip = '', bool $beat = false): array {
     if (!self::ready()) return ['ok' => false];
     $now = now();
     $row = DB::table('app_installs')->where('install_id', $installId)->first();
     if (!$row) { try { DB::table('app_installs')->insert(['install_id' => $installId, 'ua' => mb_substr($ua, 0, 160), 'ip' => $ip, 'first_seen_at' => $now, 'last_seen_at' => $now, 'created_at' => $now, 'updated_at' => $now]); } catch (\Throwable $e) {} }
     else DB::table('app_installs')->where('install_id', $installId)->update(['last_seen_at' => $now, 'updated_at' => $now]);
+    // live presence: who is logged in inside the App right now (the App pings every minute)
+    try { if (\App\Support\AppUsers::ready()) { $u = ['login_customer_id' => $cust ? $cust->id : null]; if ($cust && (!$row || (int)$row->login_customer_id !== (int)$cust->id)) $u['login_at'] = $now; DB::table('app_installs')->where('install_id', $installId)->update($u); } } catch (\Throwable $e) {}
+    if ($beat) return ['ok' => true];
     $cfg = self::cfg(); $out = ['ok' => true, 'on' => $cfg['on'], 'unlocked' => false, 'status' => null, 'amount' => $cfg['amt']];
     if (!$cust) return $out + ['login' => true];
     $phone = self::phone((string)$cust->phone); if (!preg_match('/^01\d{9}$/', $phone)) return $out + ['verify' => true];

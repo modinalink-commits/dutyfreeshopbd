@@ -6,6 +6,7 @@
 @if(session('ok'))<div class="card" style="color:#166534">{{ session('ok') }}</div>@endif
 @if($errors->any())<div class="card err">{{ $errors->first() }}</div>@endif
 @if(!empty($c['note']))<p style="font-size:12px;color:#6B7280">{{ $c['note'] }}</p>@endif
+@if($c['slug']==='customers')@include('components.app-live-card')@endif
 @if($sum)<div class="grid" style="margin-bottom:16px">@foreach($sum as [$l,$v])<div class="card k" style="margin:0"><b>{{ $v }}</b><span>{{ $l }}</span></div>@endforeach</div>@endif
 @if(!empty($c['search']) || !empty($c['filters']))<form class="card" style="display:flex;gap:8px;flex-wrap:wrap">
 @if(!empty($c['search']))<input name="q" value="{{ request('q') }}" placeholder="Search" style="flex:1;min-width:160px">@endif

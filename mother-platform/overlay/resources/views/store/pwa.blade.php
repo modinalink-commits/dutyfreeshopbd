@@ -88,7 +88,8 @@ function rwShow(kind,amt,j){var m=$('dfm-rw');if(!m)return;var t=$('rwp-t'),p=$(
 document.querySelectorAll('#dfm-rw [data-x]').forEach(function(b){b.addEventListener('click',function(){$('dfm-rw').classList.remove('on')})});
 function rwInstallPop(){if(ls('dfRwPop1'))return;rwGet(function(i){if(i&&i.on){ls('dfRwPop1','1');rwShow('install',i.amt)}})}
 window.DFPWA.rewardPopup=rwInstallPop;
-function appSync(){if(standalone()){ckSet('df_app',iid());if(!ss('dfActOk'))appSend()}else{ckDel('df_app')}}
+function appBeat(){if(!standalone()||document.hidden)return;fetch('/account/app-activate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:iid(),beat:1}),credentials:'same-origin',keepalive:true})['catch'](function(){})}
+function appSync(){if(standalone()){ckSet('df_app',iid());if(!ss('dfActOk'))appSend();else appBeat();if(!window.__dfBeat){window.__dfBeat=setInterval(appBeat,60000);document.addEventListener('visibilitychange',function(){if(!document.hidden)appBeat()})}}else{ckDel('df_app')}}
 appSync();
 addEventListener('appinstalled',function(){setTimeout(appSend,400);setTimeout(rwInstallPop,600)});
 // polite install popup: after a bit of browsing, once per session, not again for 7 days after "Not Now"

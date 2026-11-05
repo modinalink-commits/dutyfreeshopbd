@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 
 class PushAdminController extends Controller
 {
-  const AUD = ['all' => 'All customers (every subscribed device)', 'customer' => 'Specific customer (phone)', 'vip' => 'VIP customers', 'regular' => 'Regular customers (3+ orders)', 'new' => 'New customers (0-1 order)', 'returning' => 'Returning customers (2+ orders)', 'membership' => 'Membership customers', 'store' => 'Store-specific customers', 'product' => 'Customers who ordered a product', 'category' => 'Customers who ordered from a category'];
+  const AUD = ['all' => 'All customers (every subscribed device)', 'customer' => 'Specific customer (phone)', 'app' => 'App users (installed the App)', 'applive' => 'App users live right now', 'vip' => 'VIP customers', 'regular' => 'Regular customers (3+ orders)', 'new' => 'New customers (0-1 order)', 'returning' => 'Returning customers (2+ orders)', 'membership' => 'Membership customers', 'store' => 'Store-specific customers', 'product' => 'Customers who ordered a product', 'category' => 'Customers who ordered from a category'];
 
   public function index() {
     $tz = 'Asia/Dhaka';

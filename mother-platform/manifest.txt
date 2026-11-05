@@ -638,3 +638,9 @@ resources/views/components/app-reward-card.blade.php
 database/migrations/2026_11_05_000110_chat_quick_templates.php
 database/migrations/2026_11_05_000120_taxonomy_seo_auto.php
 app/Support/SeoAutoGenerator.php
+database/migrations/2026_11_05_000130_app_live_login.php
+app/Support/AppUsers.php
+app/Http/Controllers/AppUsersController.php
+resources/views/components/app-live-card.blade.php
+resources/views/app_user_card.blade.php
+resources/views/app_users.blade.php
