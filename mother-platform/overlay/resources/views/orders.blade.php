@@ -198,7 +198,9 @@ document.getElementById('cmSave').addEventListener('click',function(){var b=docu
 #qaPop .qa-sep{height:1px;background:#E5E7EB;margin:4px 2px}
 #qaPop a{color:#334155}#qaPop button.lock{opacity:.5}#qaPop button.lock:after{content:"🔒";margin-left:auto;font-size:10px}#qaPop input[type=date],#qaPop input[type=time]{display:block;width:100%;height:26px;margin:3px 0;padding:0 6px;font-size:11.5px;border:1px solid #CBD5E1;border-radius:6px;box-sizing:border-box}#qaPop .stgo{justify-content:center;background:#16A34A;color:#fff;font-weight:600;margin-top:3px}#qaPop .stgo:hover{background:#15803D}
 /* Order action grid: View + Edit / Quick + Status, 32px, auto width, one shared two-column grid */
-td.action-column{min-width:150px}table.ordt th.action-column{text-align:center!important}
+td.action-column{min-width:150px}
+/* Status / Note: status pill and note start at the top of the cell */
+table.ordt td.ost-cell{vertical-align:top!important;padding-top:14px!important}table.ordt th.action-column{text-align:center!important}
 td.action-column .order-action-grid{display:grid;grid-template-columns:max-content max-content;align-items:center;justify-content:center;gap:6px}
 td.action-column .order-action-grid .action-btn{box-sizing:border-box!important;height:32px!important;min-height:32px!important;width:auto!important;min-width:max-content;margin:0!important;padding:0 9px!important;display:inline-flex!important;align-items:center;justify-content:center;gap:4px;border:1px solid var(--border-grid,#CED4DA)!important;border-radius:8px!important;font-size:12px!important;font-weight:600!important;line-height:1!important;white-space:nowrap;cursor:pointer;text-decoration:none;box-shadow:none!important;filter:none!important;transition:background-color .15s ease,border-color .15s ease,color .15s ease}
 td.action-column .order-action-grid .action-btn svg{flex:none}.order-action-grid .ab-caret{opacity:.8;margin-left:1px}
