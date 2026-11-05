@@ -76,6 +76,9 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/orders/{id}/courier-info', fn($id) => \App\Support\CourierInfo::json((int)$id))->whereNumber('id');
   Route::get('/orders/{id}/activity', fn($id) => response()->json(\App\Support\OrderActivity::rows((int)$id,100)->map(fn($a) => ['t'=>\Carbon\Carbon::parse($a->created_at)->timezone('Asia/Dhaka')->format('d M Y · h:i A'),'by'=>$a->staff_name,'what'=>\App\Support\OrderActivity::label($a),'note'=>$a->action_type === 'status_changed' ? $a->description : null])->values()))->whereNumber('id');
   Route::get('/orders/live', [\App\Http\Controllers\OrderLiveController::class,'many']);
+  Route::get('/orders/ai-status', [\App\Http\Controllers\AiVerifyController::class,'statuses'])->middleware('throttle:120,1');
+  Route::get('/orders/{id}/ai-verify', [\App\Http\Controllers\AiVerifyController::class,'show'])->whereNumber('id')->middleware('throttle:60,1');
+  Route::post('/orders/{id}/ai-verify/override', [\App\Http\Controllers\AiVerifyController::class,'override'])->whereNumber('id')->middleware('throttle:30,1');
   Route::get('/orders/{id}/live', [\App\Http\Controllers\OrderLiveController::class,'one'])->whereNumber('id');
   Route::get('/orders/{id}/qpop', function ($id) { $o = \Illuminate\Support\Facades\DB::table('orders')->find($id); abort_unless($o, 404); abort_unless(\App\Http\Middleware\ModulePermission::can(auth()->user(), 'orders', 'edit'), 403); $items = \Illuminate\Support\Facades\DB::table('order_items')->where('order_id', $id)->get(); return view('order_qpop', compact('o', 'items')); })->whereNumber('id');
   Route::get('/orders/{id}', [A::class,'orderShow']);

@@ -671,3 +671,7 @@ database/migrations/2026_11_05_000220_orders_store_backfill.php
 app/Support/DataQuality.php
 app/Support/FinancialCalc.php
 app/Http/Middleware/SessionGuard.php
+database/migrations/2026_11_06_000010_order_ai_verify.php
+app/Support/AiVerify.php
+app/Http/Controllers/AiVerifyController.php
+resources/views/ai_verify_ui.blade.php

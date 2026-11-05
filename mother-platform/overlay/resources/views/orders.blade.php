@@ -334,4 +334,5 @@ return false}
 </script>
 @include('discount_modal')
 @include('courier_modal')
+@include('ai_verify_ui')
 @endsection
