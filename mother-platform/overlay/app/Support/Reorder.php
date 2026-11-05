@@ -122,11 +122,16 @@ class Reorder
   }
   /** Move every open request to the status the RFQ / PO / stock say it is in. */
   public static function sync(): void {
-    $c = self::cfg();
+    $c = self::cfg(); $ctrl = self::ctrl();
     foreach (DB::table('reorder_requests')->whereNotIn('status', self::END)->get() as $r) {
       try {
         $p = DB::table('products')->find($r->product_id); if (!$p) { self::cancel($r->id, 'Product removed'); continue; }
         $stock = (int)$p->stock; $thr = self::threshold($p, $c); $st = $r->status;
+        // only Cigarette & Vape (stock-controlled categories, or a product set to Auto) go to suppliers: anything else is closed silently, no notification
+        if (in_array($st, self::EARLY, true) && self::mode($p, $ctrl, $c) !== 'auto') {
+          if ($r->rfq_id) DB::table('supplier_rfqs')->where('id', $r->rfq_id)->whereIn('status', ['draft', 'sent'])->update(['status' => 'closed', 'updated_at' => now()]);
+          DB::table('reorder_requests')->where('id', $r->id)->update(['status' => 'Closed', 'updated_at' => now()]); continue;
+        }
         if ($r->kind !== 'preorder' && !in_array($st, self::END, true)) { $u = self::urgency($stock, $c); if ($u !== $r->urgency || (int)$r->stock_at !== $stock || (int)$r->threshold !== $thr) DB::table('reorder_requests')->where('id', $r->id)->update(['urgency' => $u, 'stock_at' => $stock, 'threshold' => $thr]); }
         // stock back at/above the alert level: the request leaves the supplier list (record kept as Closed / Stock recovered); below it, the request stays visible
         if ($r->kind !== 'preorder' && in_array($st, self::EARLY, true) && $stock >= $thr) { self::cancel($r->id, 'Stock recovered'); DB::table('reorder_requests')->where('id', $r->id)->update(['status' => 'Closed']); continue; }
