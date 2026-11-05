@@ -4,7 +4,7 @@
   $has = fn($k) => in_array($k, $fset, true);
   $qsx = $qs ? '?'.$qs : '';
   $notes = [
-    'dashboard' => 'A quick view of sales, profit, orders, delivery and stores for the selected dates. Sales are product revenue after discount; cancelled and returned orders are left out.',
+    'dashboard' => 'A quick view of sales, profit, orders, delivery and stores for the selected dates. Sales are product revenue after discount. Net profit = Sales − Product cost − Courier cost, everywhere on this page. Valid orders = Delivered + Pending; Orders placed = Valid + Returned + Cancelled. Cancelled and fully returned orders are not counted in sales.',
     'profit-loss' => 'Net sales minus product cost gives gross profit. Net profit also adds delivery charged to customers and takes off courier charges, return fees and expense entries from Accounts.',
     'stock-tracking' => 'All stores share one stock pool, so stock is shown once. Opening and closing come from the stock ledger; Sold and Returned come from orders in the dates.',
     'top-customers' => 'Category: VIP = ৳20,000+ delivered spend or 5+ delivered orders, Regular = 2+ orders, New = first order. Reliability = delivered ÷ (delivered + returned + cancelled). Risk is High below 50% (2+ finished orders) or with 3+ returns or cancels, Medium below 75%.',
@@ -88,11 +88,11 @@
 </form>
 
 @if($truncated)<div class="warn">Showing the first 5,000 rows. Narrow the dates or filters to see everything.</div>@endif
-@if($cards)<div class="cards">@foreach($cards as $i => [$l,$v,$t])<div class="cd {{ $i === 3 && $dash ? 'hl' : '' }}"><span>{{ $l }}</span><b data-v="{{ $v }}" data-t="{{ $t }}">{{ $v }}</b></div>@endforeach</div>@endif
+@if($cards)<div class="cards">@foreach($cards as $i => [$l,$v,$t])<div class="cd {{ $i === 1 && $dash ? 'hl' : '' }}"><span>{{ $l }}</span><b data-v="{{ $v }}" data-t="{{ $t }}">{{ $v }}</b></div>@endforeach</div>@endif
 
 @if($stores)
-<div class="box cmp"><h3 style="margin:0 0 8px;font-size:14px">Store comparison</h3><div class="tw"><table><thead><tr><th>Store</th><th class="r">Orders</th><th class="r">Sales</th><th class="r">Cost</th><th class="r">Profit</th><th class="r">Margin</th><th class="r">Avg order</th></tr></thead><tbody>
-@foreach($stores as $s)<tr><td><b>{{ $s['store'] }}</b></td><td class="r">{{ number_format($s['orders']) }}</td><td class="r">৳{{ number_format($s['sales']) }}</td><td class="r">৳{{ number_format($s['cost']) }}</td><td class="r">৳{{ number_format($s['profit']) }}</td><td class="r">{{ $s['margin'] }}%</td><td class="r">৳{{ number_format($s['aov']) }}</td></tr>@endforeach</tbody></table></div></div>
+<div class="box cmp"><h3 style="margin:0 0 8px;font-size:14px">Store comparison</h3><div class="tw"><table><thead><tr><th>Store</th><th class="r">Orders</th><th class="r">Sales</th><th class="r">Product cost</th><th class="r">Courier cost</th><th class="r">Net profit</th><th class="r">Margin</th><th class="r">Avg order</th></tr></thead><tbody>
+@foreach($stores as $s)<tr><td><b>{{ $s['store'] }}</b></td><td class="r">{{ number_format($s['orders']) }}</td><td class="r">৳{{ number_format($s['sales']) }}</td><td class="r">৳{{ number_format($s['cost']) }}</td><td class="r">৳{{ number_format($s['cfee'] ?? 0) }}</td><td class="r">৳{{ number_format($s['profit']) }}</td><td class="r">{{ $s['margin'] }}%</td><td class="r">৳{{ number_format($s['aov']) }}</td></tr>@endforeach</tbody></table></div></div>
 @endif
 
 @if($charts)<div class="chs">@foreach($charts as $i => $c)<div class="box chb"><h3>{{ $c['title'] }}</h3><div class="leg" id="lg{{ $i }}"></div><div class="ch" id="ch{{ $i }}"></div></div>@endforeach</div>@endif

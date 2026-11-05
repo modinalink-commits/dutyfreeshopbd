@@ -13,6 +13,8 @@ class Analytics {
   const DONE = "('Delivered','Partial Delivered','Late Delivery')";
   const RET  = "('Returned','Return Pending')";
   const LIMIT = 5000;
+  /** The ONE definition of a valid (counted) order: not cancelled/returned, except partial returns. Dashboard sales, cost, profit, orders and the store/category/day splits all use it. */
+  const VALID = "(o.status not in ('Cancel','Returned','Return Pending') or coalesce(o.return_type,'') = 'Partial')";
 
   /** group => [label, [slug => title]] */
   public static function menu(): array {
@@ -402,28 +404,27 @@ class Analytics {
   /** Daily trend used by charts on sales/profit style pages and the dashboard. */
   public static function trend(array $f): array {
     [$w, $b] = self::w($f, 'all');
-    $d = self::day();
-    $v = "(o.status not in ('Cancel','Returned','Return Pending') or o.return_type = 'Partial')";
-    $sql = "select $d date, sum(case when $v then 1 else 0 end) orders, coalesce(sum(case when $v then x.items - o.discount end),0) sales, coalesce(sum(case when $v then x.items - o.discount - x.cost - coalesce(o.courier_fee,0) end),0) profit, sum(case when o.status in ".self::DONE." then 1 else 0 end) delivered, sum(case when o.status in ".self::RET." then 1 else 0 end) returned from orders o".self::lat()."$w group by $d order by 1";
+    $d = self::day(); $v = self::VALID;
+    $sql = "select $d date, count(*) placed, sum(case when $v then 1 else 0 end) orders, coalesce(sum(case when $v then x.items - o.discount end),0) sales, coalesce(sum(case when $v then x.cost end),0) cost, coalesce(sum(case when $v then coalesce(o.courier_fee,0) end),0) cfee, coalesce(sum(case when $v then x.items - o.discount - x.cost - coalesce(o.courier_fee,0) end),0) profit, sum(case when o.status in ".self::DONE." then 1 else 0 end) delivered, sum(case when $v and o.status not in ".self::DONE." then 1 else 0 end) pending, sum(case when not $v and o.status <> 'Cancel' then 1 else 0 end) returned, sum(case when not $v and o.status = 'Cancel' then 1 else 0 end) cancelled from orders o".self::lat()."$w group by $d order by 1";
     return self::arr(self::sel($sql, $b));
   }
   /** Per-store totals for the Comparison view and the store chart. */
   public static function byStore(array $f): array {
     [$w, $b] = self::w($f, 'valid');
-    $sql = "select coalesce(st.name,'No store') store, count(*) orders, coalesce(sum(x.items - o.discount),0) sales, coalesce(sum(x.cost),0) cost, coalesce(sum(x.items - o.discount - x.cost),0) profit from orders o left join stores st on st.id = o.store_id".self::lat()."$w group by st.id, st.name order by 3 desc";
+    $sql = "select coalesce(st.name,'No store') store, count(*) orders, coalesce(sum(x.items - o.discount),0) sales, coalesce(sum(x.cost),0) cost, coalesce(sum(x.items - o.discount - x.cost - coalesce(o.courier_fee,0)),0) profit, coalesce(sum(coalesce(o.courier_fee,0)),0) cfee from orders o left join stores st on st.id = o.store_id".self::lat()."$w group by st.id, st.name order by 3 desc";
     $rows = self::arr(self::sel($sql, $b));
     foreach ($rows as &$r) { $r['margin'] = (float)$r['sales'] > 0 ? round($r['profit'] / $r['sales'] * 100, 1) : 0; $r['aov'] = (int)$r['orders'] > 0 ? round($r['sales'] / $r['orders']) : 0; }
     return $rows;
   }
   public static function dashboard(array $f): array {
-    [$w, $b] = self::w($f, 'all');
-    $v = "(o.status not in ('Cancel','Returned','Return Pending') or o.return_type = 'Partial')";
-    $sql = "select count(*) all_orders, sum(case when $v then 1 else 0 end) orders, coalesce(sum(case when $v then x.items - o.discount end),0) sales, coalesce(sum(case when $v then x.cost end),0) cost, coalesce(sum(case when $v then coalesce(o.courier_fee,0) end),0) cfee, sum(case when o.status in ".self::DONE." then 1 else 0 end) delivered, sum(case when o.status in ".self::RET." then 1 else 0 end) returned, sum(case when o.status = 'Cancel' then 1 else 0 end) cancelled, sum(case when $v and o.status not in ".self::DONE." then 1 else 0 end) pending from orders o".self::lat().$w;
+    [$w, $b] = self::w($f, 'all'); $v = self::VALID;
+    $sql = "select count(*) placed, sum(case when $v then 1 else 0 end) orders, coalesce(sum(case when $v then x.items - o.discount end),0) sales, coalesce(sum(case when $v then x.cost end),0) cost, coalesce(sum(case when $v then coalesce(o.courier_fee,0) end),0) cfee, sum(case when o.status in ".self::DONE." then 1 else 0 end) delivered, sum(case when $v and o.status not in ".self::DONE." then 1 else 0 end) pending, sum(case when not $v and o.status <> 'Cancel' then 1 else 0 end) returned, sum(case when not $v and o.status = 'Cancel' then 1 else 0 end) cancelled from orders o".self::lat().$w;
     return (array)(self::sel($sql, $b)[0] ?? []);
   }
+  /** Category sales after the order discount (the discount is shared across the order's items by value), so the categories add up to Total sales. */
   public static function categorySalesChart(array $f): array {
     [$w, $b] = self::w($f, 'valid', true);
-    $sql = "select coalesce(c.name,'Uncategorised') label, coalesce(sum(i.qty*i.price),0) value from order_items i join orders o on o.id = i.order_id left join products p on p.id = i.product_id left join categories c on c.id = p.category_id $w group by 1 order by 2 desc limit 8";
+    $sql = "select coalesce(c.name,'Uncategorised') label, coalesce(sum(i.qty*i.price*(1 - coalesce(o.discount,0)/nullif(x.items,0))),0) value from order_items i join orders o on o.id = i.order_id left join products p on p.id = i.product_id left join categories c on c.id = p.category_id".self::lat()." $w group by 1 order by 2 desc";
     return self::arr(self::sel($sql, $b));
   }
   public static function courierChart(array $f): array { return self::courierWise($f); }

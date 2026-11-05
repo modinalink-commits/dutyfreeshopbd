@@ -42,18 +42,26 @@ class AnalyticsController extends Controller {
   private function data(string $slug, array $f): array {
     if ($slug === 'dashboard') {
       $x = A::dashboard($f); $trend = A::trend($f); $stores = A::byStore($f);
-      $sales = (float)$x['sales']; $cost = (float)$x['cost']; $net = $sales - $cost - (float)$x['cfee'];
-      $cards = [['Total sales', $sales, 'money'], ['Total orders', (int)$x['orders'], 'num'], ['Net profit', $net, 'money'], ['Total cost', $cost, 'money'], ['Delivered', (int)$x['delivered'], 'num'], ['Returned', (int)$x['returned'], 'num'], ['Pending', (int)$x['pending'], 'num'], ['Average order value', (int)$x['orders'] ? round($sales / $x['orders']) : 0, 'money']];
+      $sales = (float)$x['sales']; $cost = (float)$x['cost']; $cfee = (float)$x['cfee']; $net = $sales - $cost - $cfee; $valid = (int)$x['orders'];
+      // one set of numbers, each shown once: money, then the order counts (Valid = Delivered + Pending; Placed = Valid + Returned + Cancelled)
+      $cards = [['Total sales', $sales, 'money'], ['Net profit', $net, 'money'], ['Product cost', $cost, 'money'], ['Courier cost', $cfee, 'money'], ['Average order value', $valid ? round($sales / $valid) : 0, 'money'],
+        ['Orders placed', (int)$x['placed'], 'num'], ['Valid orders', $valid, 'num'], ['Delivered', (int)$x['delivered'], 'num'], ['Pending', (int)$x['pending'], 'num'], ['Returned', (int)$x['returned'], 'num'], ['Cancelled', (int)$x['cancelled'], 'num']];
       $courier = A::courierChart($f);
+      $cat = A::categorySalesChart($f); $top = array_slice($cat, 0, 7); $rest = array_slice($cat, 7);
+      if ($rest) $top[] = ['label'=>'Others', 'value'=>array_sum(array_map(fn($r) => (float)$r['value'], $rest))];
+      $dates = array_column($trend, 'date'); $fl = fn($k) => array_map('floatval', array_column($trend, $k));
       $charts = [
-        $this->line('Sales trend', $trend, 'sales'), $this->line('Profit trend', $trend, 'profit'), $this->line('Orders trend', $trend, 'orders'),
-        $this->bars('Delivered vs returned', array_column($trend, 'date'), [['Delivered', array_column($trend, 'delivered')], ['Returned', array_column($trend, 'returned')]]),
-        $this->bars('Category wise sales', array_column(A::categorySalesChart($f), 'label'), [['Sales', array_map('floatval', array_column(A::categorySalesChart($f), 'value'))]]),
-        $this->bars('Store wise sales', array_column($stores, 'store'), [['Sales', array_map('floatval', array_column($stores, 'sales'))]]),
+        ['title'=>'Sales and profit by day', 'type'=>'line', 'labels'=>$dates, 'series'=>[['name'=>'Sales', 'data'=>$fl('sales')], ['name'=>'Net profit', 'data'=>$fl('profit')]]],
+        $this->bars('Orders by day', $dates, [['Delivered', array_column($trend, 'delivered')], ['Pending', array_column($trend, 'pending')], ['Returned', array_column($trend, 'returned')], ['Cancelled', array_column($trend, 'cancelled')]]),
+        $this->bars('Category wise sales', array_column($top, 'label'), [['Sales', array_map('floatval', array_column($top, 'value'))]]),
         $this->bars('Courier performance (success %)', array_column($courier, 'courier'), [['Success %', array_map('floatval', array_column($courier, 'success'))]]),
       ];
-      return ['cols'=>[], 'rows'=>[], 'cards'=>$cards, 'charts'=>$charts, 'stores'=>$stores, 'truncated'=>false, 'dash'=>true,
-        'summaryRows'=>array_map(fn($r) => $r, array_reverse($trend)), 'summaryCols'=>['date'=>['Date','date'],'orders'=>['Orders','num'],'sales'=>['Sales','money'],'profit'=>['Profit (after courier)','money'],'delivered'=>['Delivered','num'],'returned'=>['Returned','num']]];
+      $rows = array_map(function ($r) {
+        $s = (float)$r['sales']; $o = (int)$r['orders'];
+        return $r + ['margin'=>$s > 0 ? round((float)$r['profit'] / $s * 100, 1) : 0, 'aov'=>$o ? round($s / $o) : 0];
+      }, array_reverse($trend));
+      return ['cols'=>[], 'rows'=>[], 'cards'=>$cards, 'charts'=>$charts, 'stores'=>$stores, 'truncated'=>false, 'dash'=>true, 'summaryRows'=>$rows,
+        'summaryCols'=>['date'=>['Date','date'],'placed'=>['Orders placed','num'],'orders'=>['Valid orders','num'],'delivered'=>['Delivered','num'],'pending'=>['Pending','num'],'returned'=>['Returned','num'],'cancelled'=>['Cancelled','num'],'sales'=>['Sales','money'],'cost'=>['Product cost','money'],'cfee'=>['Courier cost','money'],'profit'=>['Net profit','money'],'margin'=>['Margin','pct'],'aov'=>['Avg order','money']]];
     }
     $res = A::rows($slug, $f); $rows = $res['rows']; $cols = A::columns($slug);
     if ($f['view'] === 'store' && !isset($cols['store'])) $cols = $cols;
