@@ -35,7 +35,7 @@ class InventoryController extends Controller {
     $worst = isset($x->worst_unit) && (float)$x->worst_unit > 0 ? min($pr, (float)$x->worst_unit) : $pr; // weakest per-unit price among single and Buy 2-5
     [$lab, $col] = \App\Support\ProfitFloor::state($cost, $worst); $pct = ($pr - $cost) / $cost * 100; $fl = \App\Support\ProfitFloor::floor($cost);
     [$bl, $bc] = $worst < $pr - 0.004 ? \App\Support\ProfitFloor::state($cost, $worst) : ['No bundle', '#6B7280'];
-    if ($export) return [9=>round((float)$x->last_cost, 2), 10=>round($avg, 2), 11=>round($cost, 2), 12=>15, 13=>$fl, 14=>round($pr - $cost, 2), 15=>round($pct, 2), 16=>preg_replace('/^[^A-Za-z]+/u', '', $lab), 17=>preg_replace('/^[^A-Za-z]+/u', '', $bl)];
+    if ($export) return [9=>round((float)$x->last_cost, 2), 10=>round($avg, 2), 11=>round($cost, 2), 12=>\App\Support\ProfitFloor::percent(), 13=>$fl, 14=>round($pr - $cost, 2), 15=>round($pct, 2), 16=>preg_replace('/^[^A-Za-z]+/u', '', $lab), 17=>preg_replace('/^[^A-Za-z]+/u', '', $bl)];
     return ['last'=>(float)$x->last_cost, 'avg'=>$avg, 'fifo'=>$cost, 'profit'=>$pr - $cost, 'pct'=>$pct, 'state'=>$lab, 'col'=>$col, 'min'=>$fl, 'bundle'=>$bl, 'bcol'=>$bc];
   }
   public static function statusText($r): string {
@@ -57,7 +57,7 @@ class InventoryController extends Controller {
     $ownN = DB::table('products')->count();
     $outN = DB::table('products')->where('stock','<=',0)->count() + DB::table('store_products')->where(fn($w) => $w->where('stock','<=',0)->orWhere(fn($x) => $x->whereNull('stock')->where('in_stock', false)))->count();
     $stats = [['All products', number_format($ownN + $perStore->sum()), ($stores->count() + 1).' stores'], ['This site', number_format($ownN), 'DutyFreeBD'], ['Other stores', number_format($perStore->sum()), $perStore->count().' scanned'], ['Out of stock', number_format($outN), 'all stores'], ['Unpublished', number_format(DB::table('products')->where('published',false)->count() + DB::table('store_products')->where('published',false)->count()), 'all stores']];
-    if (\App\Support\ProfitFloor::admin()) { try { $stats[] = ['Below Minimum Margin', number_format(DB::table('products')->whereRaw(\App\Support\Costing::fifoSql('products').' > 0 and price + 0.004 < '.\App\Support\Costing::fifoSql('products').' * 1.15')->count()), 'vs current FIFO batch cost']; } catch (\Throwable $e) {} }
+    if (\App\Support\ProfitFloor::admin()) { try { $stats[] = ['Below Minimum Margin', number_format(DB::table('products')->whereRaw(\App\Support\Costing::fifoSql('products').' > 0 and price + 0.004 < '.\App\Support\Costing::fifoSql('products').' * '.\App\Support\ProfitFloor::rate())->count()), 'vs current FIFO batch cost']; } catch (\Throwable $e) {} }
     return view('inventory', compact('rows','stores','stats','grouped','perStore','ownN'));
   }
   public function export(Request $r, $fmt) {

@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Cache;
  * Global Sales Pricing & Bundle Discount Automation.
  *   Bundle unit price = sale price x (1 - discount %);   bundle total = unit price x qty.
  *   The global ratio (default Buy 2 = 1.5%, Buy 3 = 2.5%, Buy 4 = 3.5%, Buy 5 = 4.5%) is calculated from the CURRENT sale price and is
- *   automatically capped so that the bundle unit price never falls below  FIFO cost x 1.15  (the protected 15% profit).
+ *   automatically capped so that the bundle unit price never falls below  FIFO cost x (1 + the central Minimum Protected Profit %).
  *   Per product: rule 'global' (default, automatic), 'custom' (the Buy 2-5 totals typed in the product form, still held at the 15% floor) or 'off'.
  *   Storefront, cart and order always calculate from here (never stale); the Buy 2-5 columns of the products table are a copy kept in sync for the admin lists.
  */
@@ -122,7 +122,7 @@ class BundlePricing {
       $list = $unitPrice * $qty; $tier = min(5, $qty); $cfg = self::cfg(); $req = $qty >= 2 ? (float)($cfg['pct'][$tier] ?? 0) : 0.0;
       $app = $list > 0 ? max(0.0, round((1 - $line / $list) * 100, 2)) : 0.0; $profit = $cost > 0 ? round($line - $cost * $qty, 2) : null;
       return ['original_sale_price' => round($unitPrice, 2), 'bundle_quantity' => $qty, 'requested_bundle_discount' => $req, 'applied_bundle_discount' => $app, 'bundle_unit_price' => round($line / $qty, 2),
-        'bundle_total' => round($line, 2), 'fifo_cost_snapshot' => $cost > 0 ? round($cost, 4) : null, 'minimum_margin_snapshot' => 15, 'minimum_safe_price_snapshot' => $floor > 0 ? $floor : null,
+        'bundle_total' => round($line, 2), 'fifo_cost_snapshot' => $cost > 0 ? round($cost, 4) : null, 'minimum_margin_snapshot' => ProfitFloor::percent(), 'minimum_safe_price_snapshot' => $floor > 0 ? $floor : null,
         'profit_snapshot' => $profit, 'profit_percent_snapshot' => $profit !== null && $cost > 0 ? round($profit / ($cost * $qty) * 100, 2) : null, 'pricing_rule_version' => $cfg['version']];
     } catch (\Throwable $e) { report($e); return []; }
   }

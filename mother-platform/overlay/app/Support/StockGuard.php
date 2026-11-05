@@ -55,7 +55,7 @@ class StockGuard {
   }
   /** Shipment validation (Hybrid Costing): null when the order may ship, otherwise the red alert text.
    *  1. every product must have the stock (No Stock = No Shipment, every category);
-   *  2. revenue after all discounts must stay at or above the ACTUAL FIFO batch cost x 1.15 (protected profit). */
+   *  2. revenue after all discounts must stay at or above the ACTUAL FIFO batch cost x (1 + protected profit %). */
   public static function shipBlock(int $orderId): ?string {
     $o = DB::table('orders')->where('id', $orderId)->first(['id', 'invoice', 'stock_deducted_at', 'duplicate_of_order_id']);
     if (!$o || $o->stock_deducted_at !== null || $o->duplicate_of_order_id !== null) return null;
@@ -76,8 +76,8 @@ class StockGuard {
       if (Cache::add('costing.shipwarn.'.$o->id.'.'.$mode.'.'.md5(json_encode($bad)), 1, 600)) ProfitFloor::audit($mode === 'warn' ? 'Minimum profit warning at shipment' : 'Minimum profit blocked shipment', 'Order '.$o->invoice, null, ['mode'=>$mode, 'lines'=>$bad, 'by'=>auth()->user()->name ?? 'system']);
       if ($mode === 'warn') return null;
       return ProfitFloor::admin()
-        ? '⚠ Minimum Profit Violation – Shipment blocked. This order is below the company\'s protected 15% profit margin on the actual batch cost. '.implode('; ', $d).(count($bad) > 4 ? ' and '.(count($bad) - 4).' more' : '').'. Raise the price or reduce the discount first (or set "Shipment profit protection" to Warn only on Inventory Pricing).'
-        : '⚠ এই অর্ডার Shipment-এ দেওয়া যাবে না — এতে কোম্পানির ন্যূনতম ১৫% প্রফিট সুরক্ষা ভঙ্গ হবে। অনুগ্রহ করে Admin-এর সাথে যোগাযোগ করুন।';
+        ? '⚠ Minimum Profit Violation – Shipment blocked. This order is below the company\'s protected '.ProfitFloor::pct($o->created_at ?? null).'% profit margin on the actual batch cost. '.implode('; ', $d).(count($bad) > 4 ? ' and '.(count($bad) - 4).' more' : '').'. Raise the price or reduce the discount first (or set "Shipment profit protection" to Warn only on Inventory Pricing).'
+        : '⚠ এই অর্ডার Shipment-এ দেওয়া যাবে না — এতে কোম্পানির ন্যূনতম '.ProfitFloor::pctBn($o->created_at ?? null).'% প্রফিট সুরক্ষা ভঙ্গ হবে। অনুগ্রহ করে Admin-এর সাথে যোগাযোগ করুন।';
     } catch (\Throwable $e) { report($e); return null; }
   }
 }

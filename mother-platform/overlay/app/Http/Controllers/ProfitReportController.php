@@ -28,7 +28,7 @@ class ProfitReportController extends Controller {
         $rows[] = ['pid' => $it->sku ?: ($it->product_id ?: '—'), 'name' => $it->name, 'qty' => $qty, 'rate' => $rate, 'buy' => $b, 'price' => (float)$it->price, 'sold' => $s, 'pl' => $s - $b, 'm' => $s > 0 ? round(($s - $b) / $s * 100, 1) : 0, 'nocost' => !$act && ($it->cost === null || (float)$it->cost == 0), 'actual' => $act];
         $buy += $b; $sale += $s;
       }
-      $disc = $fullRet ? 0.0 : (float)$o->discount; $ship = (float)$o->shipping; $pl = $sale - $buy; $net = $pl - $disc; $prot = round($buy * 0.15, 2); $extra = round($net - $prot, 2); // protected 15% of actual cost; the rest (additional profit) pays delivery, staff and other costs
+      $disc = $fullRet ? 0.0 : (float)$o->discount; $ship = (float)$o->shipping; $pl = $sale - $buy; $net = $pl - $disc; $prot = round($buy * \App\Support\ProfitFloor::percent($o->created_at ?? null) / 100, 2); $extra = round($net - $prot, 2); // protected % of actual cost (the % active when the order was created); the rest (additional profit) pays delivery, staff and other costs
       // Money that actually reaches us for a courier parcel: what the customer pays (items - discount + delivery charge) minus the courier's cost. Parcels with no courier keep the old figure.
       $hasCourier = !empty($o->consignment_id); $fee = $hasCourier ? (float)($o->courier_fee ?? 0) : 0.0;
       $recv = $hasCourier ? ($fullRet ? 0.0 : max(0.0, $sale - $disc + $ship)) - $fee : null;

@@ -44,7 +44,7 @@ class PriceReviewController extends Controller {
     }
     if ($r->query('export') === 'csv') {
       $o = fopen('php://temp', 'w+'); fputcsv($o, ['Product ID', 'SKU', 'Product', 'Category', 'Stock', 'Last Purchase Price', 'Average Cost', 'Current FIFO Cost', 'Sale Price', 'Minimum Margin %', 'Minimum Safe Sale', 'Estimated Profit', 'Profit %', 'Discountable Amount', 'Max Safe Discount %', 'Status']);
-      foreach ($rows as $x) fputcsv($o, [$x['id'], $x['sku'], $x['name'], $x['cat'], $x['stock'], $x['last'], round($x['avg'], 2), round($x['fifo'], 2), $x['price'], 15, $x['min'], round($x['profit'], 2), $x['pct'] === null ? '' : round($x['pct'], 2), round($x['disc'], 2), $x['maxd'] === null ? '' : round($x['maxd'], 2), preg_replace('/^[^A-Za-z]+/u', '', $x['state'])]);
+      foreach ($rows as $x) fputcsv($o, [$x['id'], $x['sku'], $x['name'], $x['cat'], $x['stock'], $x['last'], round($x['avg'], 2), round($x['fifo'], 2), $x['price'], \App\Support\ProfitFloor::percent(), $x['min'], round($x['profit'], 2), $x['pct'] === null ? '' : round($x['pct'], 2), round($x['disc'], 2), $x['maxd'] === null ? '' : round($x['maxd'], 2), preg_replace('/^[^A-Za-z]+/u', '', $x['state'])]);
       rewind($o); return response("\xEF\xBB\xBF" . stream_get_contents($o), 200, ['Content-Type' => 'text/csv; charset=UTF-8', 'Content-Disposition' => 'attachment; filename="inventory-pricing.csv"']);
     }
     return view('inventory_pricing', ['rows' => $rows, 'n' => $n, 'q' => $q, 'f' => $f, 'cat' => $cat, 'cats' => DB::table('categories')->orderBy('name')->get(['id', 'name']), 'mode' => \App\Support\Costing::shipMode(), 'adm' => \App\Support\ProfitFloor::admin(), 'batches' => \App\Support\Costing::ready()]);
@@ -55,7 +55,17 @@ class PriceReviewController extends Controller {
     $m = (string)$r->input('mode'); abort_unless(in_array($m, ['block', 'warn', 'off'], true), 422);
     $old = \App\Support\Costing::shipMode(); \App\Support\Procure::put('costing_ship_profit', $m);
     if ($old !== $m) \App\Support\ProfitFloor::audit('Shipment profit protection changed', 'Shipment profit protection', ['mode' => $old], ['mode' => $m, 'by' => auth()->user()->name ?? null]);
-    return redirect('/admin/inventory-pricing')->with('ok', 'Shipment profit protection: ' . ['block' => 'Block (below 15% cannot ship)', 'warn' => 'Warn only (ships, but logged)', 'off' => 'Off'][$m]);
+    return redirect('/admin/inventory-pricing')->with('ok', 'Shipment profit protection: ' . ['block' => 'Block (below ' . \App\Support\ProfitFloor::pct() . '% cannot ship)', 'warn' => 'Warn only (ships, but logged)', 'off' => 'Off'][$m]);
+  }
+  /** Admin: the ONE central Minimum Protected Profit % (Sales & Profit Settings). Takes effect for new orders at once; older orders keep the % that was active when they were placed. */
+  public function minMargin(Request $r) {
+    abort_unless(\App\Support\ProfitFloor::admin(), 403);
+    $d = $r->validate(['percent' => 'required|numeric|min:1|max:60', 'reason' => 'required|string|min:3|max:300']);
+    $new = round((float)$d['percent'], 2); $old = \App\Support\ProfitFloor::percent();
+    if (abs($old - $new) < 0.0001) return redirect('/admin/inventory-pricing')->with('ok', 'Nothing changed: Minimum Protected Profit is already ' . \App\Support\ProfitFloor::pct() . '%.');
+    \App\Support\ProfitFloor::setPercent($new, $d['reason']);
+    \App\Support\BundlePricing::flush(); try { [$ch, $cap] = \App\Support\BundlePricing::sync(); } catch (\Throwable $e) { report($e); $ch = 0; $cap = 0; }
+    return redirect('/admin/inventory-pricing')->with('ok', 'Minimum Protected Profit changed from ' . rtrim(rtrim(number_format($old, 2, '.', ''), '0'), '.') . '% to ' . \App\Support\ProfitFloor::pct() . '%. New orders use it now; older orders keep their original rule. Bundle prices recalculated for ' . $ch . ' products.');
   }
   /** View Batches: every stock batch of one product (FIFO order), what is left of each, and the shipments that consumed them. */
   public function batches(int $id) {

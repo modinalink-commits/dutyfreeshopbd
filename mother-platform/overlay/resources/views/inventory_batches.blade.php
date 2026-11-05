@@ -13,7 +13,7 @@
 <div><span style="color:#6B7280">Current FIFO cost</span><br><b style="font-size:17px">{{ $fifo ? '৳'.number_format($fifo->unit_cost, 2) : '—' }}</b></div>
 <div><span style="color:#6B7280">Average cost (reporting)</span><br><b style="font-size:17px">{{ $remQty > 0 ? '৳'.number_format($remVal / $remQty, 2) : '—' }}</b></div>
 <div><span style="color:#6B7280">Last purchase price</span><br><b style="font-size:17px">{{ (float)$p->cost > 0 ? '৳'.number_format((float)$p->cost, 2) : '—' }}</b></div>
-<div><span style="color:#6B7280">Minimum safe sale (FIFO × 1.15)</span><br><b style="font-size:17px">{{ $fifo && (float)$fifo->unit_cost > 0 ? '৳'.number_format(\App\Support\ProfitFloor::floor((float)$fifo->unit_cost), 2) : '—' }}</b></div>
+<div><span style="color:#6B7280">Minimum safe sale (FIFO × {{ number_format(\App\Support\ProfitFloor::rate(), 2) }})</span><br><b style="font-size:17px">{{ $fifo && (float)$fifo->unit_cost > 0 ? '৳'.number_format(\App\Support\ProfitFloor::floor((float)$fifo->unit_cost), 2) : '—' }}</b></div>
 <div><span style="color:#6B7280">Sale price</span><br><b style="font-size:17px">৳{{ number_format((float)$p->price, 2) }}</b></div></div>
 <div class="rp-body"><div style="overflow:auto;max-height:60vh"><table class="pl"><thead><tr><th>Batch</th><th>Purchase date</th><th>Purchase</th><th>Supplier</th><th class="n">Original qty</th><th class="n">Remaining qty</th><th class="n">Unit cost</th><th class="n">Total remaining value</th><th>Status</th></tr></thead><tbody>
 @forelse($rows as $b)@php $st = $b->qty_remaining > 0 ? ($fifo && $fifo->id == $b->id ? 'Next to ship (FIFO)' : 'Open') : ($b->status === 'reversed' ? 'Reversed' : 'Consumed'); @endphp

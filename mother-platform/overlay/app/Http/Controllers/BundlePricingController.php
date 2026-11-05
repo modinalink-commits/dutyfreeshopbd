@@ -41,7 +41,7 @@ class BundlePricingController extends Controller {
     \App\Support\Procure::put('bundle_unsafe', $new['unsafe']); \App\Support\Procure::put('bundle_round', $d['round']); \App\Support\Procure::put('bundle_rule_version', (string)($old['version'] + 1));
     BundlePricing::flush(); [$ch, $cap, $dis] = BundlePricing::sync();
     ProfitFloor::audit('Global bundle ratio changed', 'Sales & Bundle Pricing Settings', $o, $new + ['by' => auth()->user()->name ?? null, 'recalculated' => $ch, 'auto_reduced' => $cap, 'tiers_unavailable' => $dis]);
-    if ($cap > 0) ProfitFloor::audit('Bundle discount auto-reduced', "$cap products", null, ['reason' => 'protect the 15% minimum profit', 'unsafe_handling' => $new['unsafe']]);
-    return redirect('/admin/bundle-pricing')->with('ok', "Saved. $ch products recalculated; $cap had a bundle discount reduced to protect the 15% minimum profit.");
+    if ($cap > 0) ProfitFloor::audit('Bundle discount auto-reduced', "$cap products", null, ['reason' => 'protect the ' . ProfitFloor::pct() . '% minimum profit', 'unsafe_handling' => $new['unsafe']]);
+    return redirect('/admin/bundle-pricing')->with('ok', "Saved. $ch products recalculated; $cap had a bundle discount reduced to protect the " . ProfitFloor::pct() . "% minimum profit.");
   }
 }

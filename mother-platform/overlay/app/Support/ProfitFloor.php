@@ -2,16 +2,42 @@
 namespace App\Support;
 use Illuminate\Support\Facades\DB;
 
-/** Protected Company Profit (Hybrid Costing Model): nothing (discount, coupon, membership, bundle, delivery, staff or other cost) may take a product's final price below the ACTUAL batch cost x 1.15.
+/** Protected Company Profit (Hybrid Costing Model): nothing (discount, coupon, membership, bundle, delivery, staff or other cost) may take a product's final price below the ACTUAL batch cost x (1 + the central Minimum Protected Profit %, default 10).
  *  The actual batch cost is the cost of the stock batch FIFO will consume next (products.fifo_cost); a quantity that runs over into the next batch is costed batch by batch.
- *  The weighted average (products.avg_cost) is for reporting only. With no stock batch yet the last purchase price is the expected cost. Above the 15% floor there is no upper limit.
+ *  The weighted average (products.avg_cost) is for reporting only. With no stock batch yet the last purchase price is the expected cost. Above the floor there is no upper limit.
  *  One place for the rule; every price entry and every discount path asks it. Products with no purchase price on file cannot be checked and are left alone. */
 class ProfitFloor {
-  const RATE = 1.15;
-  public static function floor(float $cost): float { return $cost > 0 ? ceil(round($cost * self::RATE * 100, 6)) / 100 : 0.0; }
+  /** ONE central setting: Minimum Protected Profit % (Admin: Inventory Pricing). Default 10. Eras before the current one are kept in a history so an old order is still judged by the rule that was active when it was created. */
+  const KEY = 'minimum_protected_profit_percent', FROM = 'minimum_protected_profit_from', HIST = 'minimum_protected_profit_history';
+  public static function percent(?string $at = null): float {
+    $cur = (float)Procure::set(self::KEY, '10'); if ($cur <= 0 || $cur > 100) $cur = 10.0;
+    if ($at === null || $at === '') return $cur;
+    $from = Procure::set(self::FROM, '2026-11-05 12:25:00'); $t = date('Y-m-d H:i:s', strtotime($at) ?: time());
+    if ($t >= $from) return $cur;
+    $h = json_decode(Procure::set(self::HIST, '[{"from":"2000-01-01 00:00:00","percent":15}]'), true); $p = 15.0;
+    if (is_array($h)) { usort($h, fn($a, $b) => strcmp((string)($a['from'] ?? ''), (string)($b['from'] ?? ''))); foreach ($h as $e) if (($e['from'] ?? '') <= $t) $p = (float)($e['percent'] ?? $p); }
+    return $p;
+  }
+  /** 1.10 for 10%. */
+  public static function rate(?string $at = null): float { return 1 + self::percent($at) / 100; }
+  /** "10" / "12.5" for messages. */
+  public static function pct(?string $at = null): string { return rtrim(rtrim(number_format(self::percent($at), 2, '.', ''), '0'), '.'); }
+  /** Same, in Bengali digits. */
+  public static function pctBn(?string $at = null): string { return strtr(self::pct($at), ['0'=>'০','1'=>'১','2'=>'২','3'=>'৩','4'=>'৪','5'=>'৫','6'=>'৬','7'=>'৭','8'=>'৮','9'=>'৯']); }
+  /** Change the central percentage: the old era goes into the history, the new one starts now. Returns the old value. */
+  public static function setPercent(float $new, string $reason = ''): float {
+    $old = self::percent(); $oldFrom = Procure::set(self::FROM, '2026-11-05 12:25:00');
+    $h = json_decode(Procure::set(self::HIST, '[{"from":"2000-01-01 00:00:00","percent":15}]'), true); if (!is_array($h)) $h = [];
+    if ($old != $new) { $h[] = ['from' => $oldFrom, 'percent' => $old]; Procure::put(self::HIST, json_encode($h)); Procure::put(self::FROM, now('UTC')->format('Y-m-d H:i:s')); }
+    Procure::put(self::KEY, (string)$new);
+    try { \Illuminate\Support\Facades\Cache::forget('costing.ready'); } catch (\Throwable $e) {}
+    self::audit('Minimum protected profit changed', 'Minimum protected profit', ['percent' => $old], ['percent' => $new, 'reason' => $reason, 'by' => auth()->user()->name ?? null]);
+    return $old;
+  }
+  public static function floor(float $cost, ?string $at = null): float { return $cost > 0 ? ceil(round($cost * self::rate($at) * 100, 6)) / 100 : 0.0; }
   public static function ok(float $cost, float $price): bool { return $cost <= 0 || $price + 0.004 >= self::floor($cost); }
   public static function tk(float $v): string { return '৳' . number_format($v, 2); }
-  /** The cost the 15% rule is counted on: current FIFO batch cost; before batches exist the average, else the last purchase price. */
+  /** The cost the protected-profit rule is counted on: current FIFO batch cost; before batches exist the average, else the last purchase price. */
   public static function base($p): float { $f = (float)($p->fifo_cost ?? 0); if ($f > 0) return $f; $a = (float)($p->avg_cost ?? 0); return $a > 0 ? $a : (float)($p->cost ?? 0); }
   /** Weighted average cost (reporting): average of the stock on hand, else the last purchase price. */
   public static function avg($p): float { $a = (float)($p->avg_cost ?? 0); return $a > 0 ? $a : (float)($p->cost ?? 0); }
@@ -46,7 +72,7 @@ class ProfitFloor {
     if ($avg <= 0) return ['No cost on file', '#6B7280'];
     $pct = ($price - $avg) / $avg * 100;
     if ($price + 0.004 < self::floor($avg)) return ['🔴 Below Minimum', '#B91C1C'];
-    return $pct < 19.995 ? ['🟠 Near Minimum', '#C2410C'] : ['🟢 Safe', '#166534'];
+    return $pct < self::percent() + 4.995 ? ['🟠 Near Minimum', '#C2410C'] : ['🟢 Safe', '#166534'];
   }
   /** Average after a purchase of $qty units at $cost is reversed. */
   public static function unblend($was, int $qty, float $cost): float {
@@ -107,7 +133,7 @@ class ProfitFloor {
   }
   public static function discountError(array $items, float $disc): ?string {
     if ($disc <= 0) return null; $room = self::room($items); if ($disc <= $room + 0.004) return null;
-    return self::admin() ? "⚠ Discount Not Allowed: এই discount দিলে company profit ১৫%-এর নিচে যাবে। Maximum Allowed Discount: " . self::tk($room) : self::STAFF_MSG;
+    return self::admin() ? "⚠ Discount Not Allowed: এই discount দিলে company profit " . self::pctBn() . "%-এর নিচে যাবে। Maximum Allowed Discount: " . self::tk($room) : self::STAFF_MSG;
   }
   public static function orderError(array $items, float $disc, bool $checkPrices = true): ?string {
     return ($checkPrices ? self::priceError($items) : null) ?: self::discountError($items, $disc);
@@ -116,7 +142,7 @@ class ProfitFloor {
   /** Product save: single price and the Buy 2-5 pack prices. */
   public static function productError(float $cost, float $price, array $packs = []): ?string {
     if ($cost <= 0) return null; $fl = self::floor($cost); $msg = []; $bad = false;
-    if ($price + 0.004 < $fl) { $bad = true; $msg[] = "Batch cost (current FIFO) " . self::tk($cost) . " · Protected profit " . self::tk($cost * 0.15) . " · Minimum price " . self::tk($fl) . " · Entered " . self::tk($price) . " · Difference " . self::tk($fl - $price) . "."; }
+    if ($price + 0.004 < $fl) { $bad = true; $msg[] = "Batch cost (current FIFO) " . self::tk($cost) . " · Protected profit " . self::tk($cost * self::percent() / 100) . " · Minimum price " . self::tk($fl) . " · Entered " . self::tk($price) . " · Difference " . self::tk($fl - $price) . "."; }
     foreach ($packs as $n => $t) if ($t !== null && (float)$t > 0 && (float)$t + 0.004 < $fl * $n) { $bad = true; $msg[] = "Buy $n pack " . self::tk((float)$t) . " is below the minimum " . self::tk($fl * $n) . "."; }
     if (!$bad) return null;
     return self::admin() ? "⚠ Minimum Company Profit Protection: এই রেট দেওয়া যাবে না, কোম্পানির লস হবে। " . implode(" ", $msg) . " Please adjust the price." : self::STAFF_MSG . " দাম বাড়িয়ে আবার চেষ্টা করুন।";

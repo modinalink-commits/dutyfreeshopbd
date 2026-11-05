@@ -6,11 +6,10 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * Hybrid Costing Model (application side). The heavy lifting is in the database functions of CostingSql.
- *   Weighted Average = reporting   |   FIFO batch cost = real COGS   |   Actual batch cost x 1.15 = minimum sale protection.
+ *   Weighted Average = reporting   |   FIFO batch cost = real COGS   |   Actual batch cost x (1 + Minimum Protected Profit %) = minimum sale protection.
  * Every call here is safe to make before the migration ran: it simply does nothing.
  */
 class Costing {
-  const RATE = 1.15;
 
   public static function ready(): bool {
     static $r = null; if ($r !== null) return $r;
@@ -80,9 +79,9 @@ class Costing {
   // ---------- shipment: protected profit on the ACTUAL batch cost ----------
   /** 'block' (default), 'warn' (allow, but log) or 'off'. */
   public static function shipMode(): string { $m = Procure::set('costing_ship_profit', 'block'); return in_array($m, ['block', 'warn', 'off'], true) ? $m : 'block'; }
-  /** Products on this order whose revenue (after the order discount) is below actual FIFO cost x 1.15. [name, qty, cost, min, revenue, short] rows. */
+  /** Products on this order whose revenue (after the order discount) is below actual FIFO cost x (1 + the protected profit % active when the order was created). [name, qty, cost, min, revenue, short] rows. */
   public static function shipViolations(int $orderId): array {
-    $o = DB::table('orders')->where('id', $orderId)->first(['id', 'discount']); if (!$o) return [];
+    $o = DB::table('orders')->where('id', $orderId)->first(['id', 'discount', 'created_at']); if (!$o) return []; $at = $o->created_at ? (string)$o->created_at : null; // the rule that was active when the order was created
     $items = DB::table('order_items')->where('order_id', $orderId)->get(['product_id', 'name', 'qty', 'price']);
     $sub = 0.0; foreach ($items as $i) $sub += (float)$i->qty * (float)$i->price;
     $disc = min((float)($o->discount ?? 0), $sub); $by = [];
@@ -91,7 +90,7 @@ class Costing {
     foreach ($by as $pid => $x) {
       if ($x['qty'] <= 0) continue;
       $unit = self::expectedUnit($pid, $x['qty']); if ($unit <= 0) continue; // no cost on file: cannot be checked
-      $cost = round($unit * $x['qty'], 2); $min = ceil(round($cost * self::RATE * 100, 6)) / 100;
+      $cost = round($unit * $x['qty'], 2); $min = ceil(round($cost * ProfitFloor::rate($at) * 100, 6)) / 100;
       $rev = round($x['val'] - ($sub > 0 ? $disc * $x['val'] / $sub : 0), 2);
       if ($rev + 0.004 < $min) $bad[] = ['name' => $x['name'], 'qty' => $x['qty'], 'cost' => $cost, 'min' => $min, 'rev' => $rev, 'short' => round($min - $rev, 2)];
     }
