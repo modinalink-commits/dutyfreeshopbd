@@ -62,7 +62,7 @@
     @if($sz)<tr class="tot"><td>Total</td><td class="r">{{ $te['e'] }}</td><td class="r">{{ $te['c'] }}</td><td class="r">{{ $te['p'] }}</td><td class="r">{{ $edit ? '' : $te['r'] }}</td><td class="r">{{ $edit ? '' : ($te['d'] < 0 ? '−'.abs($te['d']) : $te['d']) }}</td><td></td></tr>@endif
     </tbody>
   </table></div>
-  <div style="padding:12px 20px;font-size:11px;color:#51607a">Pending = expected − collected. New-cylinder sales expect no empty back. A missing empty must be found or approved as an adjustment in Daily closing.</div>
+  <div style="padding:12px 20px;font-size:var(--fs-11);color:#51607a">Pending = expected − collected. New-cylinder sales expect no empty back. A missing empty must be found or approved as an adjustment in Daily closing.</div>
 </section>
 </form>
 

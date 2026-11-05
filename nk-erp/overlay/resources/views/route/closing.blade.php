@@ -21,7 +21,7 @@
 <section class="card" aria-label="Closing status" style="padding:16px 20px;display:flex;flex-wrap:wrap;align-items:center;gap:8px">
   @foreach($labels as $i => $l)
     <div style="display:flex;align-items:center;gap:8px">
-      <span style="font-size:12px;font-weight:700;padding:6px 14px;border-radius:999px;{{ $i === $cur ? ($i === 2 ? 'background:#b3261e;color:#fff' : 'background:#123a86;color:#fff') : ($i < $cur && ! ($i === 2 && $cur === 3 && false) ? 'background:#e3f6ec;color:#0f6b3c' : 'background:#eef2f9;color:#51607a') }}">{{ $l }}</span>
+      <span style="font-size:var(--fs-12);font-weight:700;padding:6px 14px;border-radius:999px;{{ $i === $cur ? ($i === 2 ? 'background:#b3261e;color:#fff' : 'background:#123a86;color:#fff') : ($i < $cur && ! ($i === 2 && $cur === 3 && false) ? 'background:#e3f6ec;color:#0f6b3c' : 'background:#eef2f9;color:#51607a') }}">{{ $l }}</span>
       @if($i < count($labels) - 1)<span aria-hidden="true" style="color:#7b8aa8">→</span>@endif
     </div>
   @endforeach
@@ -44,7 +44,7 @@
 ])
 <section aria-label="Trip summary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px">
   @foreach($tiles as [$k, $v, $f, $cl])
-    <div class="tile" style="background:{{ $U::bg($cl) }}"><span class="k">{{ $k }}</span><span style="font-size:20px;line-height:26px;font-weight:700;color:{{ $U::ink($cl) }};font-variant-numeric:tabular-nums">{{ $v }}</span><span class="f">{{ $f }}</span></div>
+    <div class="tile" style="background:{{ $U::bg($cl) }}"><span class="k">{{ $k }}</span><span style="font-size:var(--fs-20);line-height:26px;font-weight:700;color:{{ $U::ink($cl) }};font-variant-numeric:tabular-nums">{{ $v }}</span><span class="f">{{ $f }}</span></div>
   @endforeach
 </section>
 
@@ -54,17 +54,17 @@
     @php($any = false)
     @foreach($c['sizes'] as $s => $z)
       @if($z['vehEmpty'] > 0) @php($any = true)
-      <div style="background:#fde9e7;border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:4px"><span style="font-size:13px;font-weight:700;color:#b3261e">Stock — {{ $z['vehEmpty'] }} empty {{ $s }} kg missing</span>
-        <span style="font-size:12px;line-height:18px">Collected {{ $z['collected'] }}, returned to warehouse {{ $z['empty_returned'] }}.{{ $trip->return_remarks ? ' Return note: '.$trip->return_remarks : '' }}</span></div>
+      <div style="background:#fde9e7;border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:4px"><span style="font-size:var(--fs-13);font-weight:700;color:#b3261e">Stock — {{ $z['vehEmpty'] }} empty {{ $s }} kg missing</span>
+        <span style="font-size:var(--fs-12);line-height:18px">Collected {{ $z['collected'] }}, returned to warehouse {{ $z['empty_returned'] }}.{{ $trip->return_remarks ? ' Return note: '.$trip->return_remarks : '' }}</span></div>
       @endif
       @if($z['vehFull'] > 0) @php($any = true)
-      <div style="background:#fde9e7;border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:4px"><span style="font-size:13px;font-weight:700;color:#b3261e">Stock — {{ $z['vehFull'] }} full {{ $s }} kg missing</span>
-        <span style="font-size:12px;line-height:18px">Loaded {{ $z['loaded'] }}, sold {{ $z['exch'] + $z['new'] }}, returned {{ $z['full_returned'] }}, damaged {{ $z['damaged'] }}.</span></div>
+      <div style="background:#fde9e7;border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:4px"><span style="font-size:var(--fs-13);font-weight:700;color:#b3261e">Stock — {{ $z['vehFull'] }} full {{ $s }} kg missing</span>
+        <span style="font-size:var(--fs-12);line-height:18px">Loaded {{ $z['loaded'] }}, sold {{ $z['exch'] + $z['new'] }}, returned {{ $z['full_returned'] }}, damaged {{ $z['damaged'] }}.</span></div>
       @endif
     @endforeach
     @if($c['cashDiff'] !== null && abs($c['cashDiff']) >= .5) @php($any = true)
-      <div style="background:{{ $c['cashAdj'] ? '#e3f6ec' : '#fde9e7' }};border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:4px"><span style="font-size:13px;font-weight:700;color:{{ $c['cashAdj'] ? '#0f6b3c' : '#b3261e' }}">Cash — {{ $U::tk(abs($c['cashDiff'])) }} {{ $c['cashDiff'] < 0 ? 'short' : 'extra' }}{{ $c['cashAdj'] ? ' · adjustment approved' : '' }}</span>
-        <span style="font-size:12px;line-height:18px">Expected {{ $U::tk($c['expected']) }}, counted {{ $U::tk($c['counted']) }}. A shortage is not misconduct until it is looked into.</span></div>
+      <div style="background:{{ $c['cashAdj'] ? '#e3f6ec' : '#fde9e7' }};border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:4px"><span style="font-size:var(--fs-13);font-weight:700;color:{{ $c['cashAdj'] ? '#0f6b3c' : '#b3261e' }}">Cash — {{ $U::tk(abs($c['cashDiff'])) }} {{ $c['cashDiff'] < 0 ? 'short' : 'extra' }}{{ $c['cashAdj'] ? ' · adjustment approved' : '' }}</span>
+        <span style="font-size:var(--fs-12);line-height:18px">Expected {{ $U::tk($c['expected']) }}, counted {{ $U::tk($c['counted']) }}. A shortage is not misconduct until it is looked into.</span></div>
     @endif
     @if($trip->status !== 'settled' && $trip->status !== 'closed')<p class="sub" style="margin:0">{{ $trip->status === 'dispatched' ? 'Vehicle return is not saved yet.' : ($trip->status === 'returned' ? 'Cash settlement is not saved yet.' : 'Loading not dispatched yet.') }}</p>
     @elseif(! $any)<p class="sub" style="margin:0">Nothing to resolve. Stock and cash match.</p>@endif
@@ -72,7 +72,7 @@
     @if($trip->adjustments->isNotEmpty())
       <h2 class="h2" style="margin-top:8px">Approved adjustments</h2>
       @foreach($trip->adjustments as $a)
-        <div class="ln" style="flex-direction:column;align-items:flex-start;border-top:1px solid #dbe3f0"><b style="font-size:12px">{{ $a->detail }}</b><span style="font-size:11px;color:#51607a;flex-grow:0">{{ $a->reason }} · {{ $a->approver?->name }} · {{ $a->created_at->timezone('Asia/Dhaka')->format('d-m-Y H:i') }}</span></div>
+        <div class="ln" style="flex-direction:column;align-items:flex-start;border-top:1px solid #dbe3f0"><b style="font-size:var(--fs-12)">{{ $a->detail }}</b><span style="font-size:var(--fs-11);color:#51607a;flex-grow:0">{{ $a->reason }} · {{ $a->approver?->name }} · {{ $a->created_at->timezone('Asia/Dhaka')->format('d-m-Y H:i') }}</span></div>
       @endforeach
     @endif
 
@@ -93,14 +93,14 @@
   <section class="card" style="flex:1 1 380px;min-width:300px;padding:20px;display:flex;flex-direction:column;gap:8px">
     <h2 class="h2" style="margin:0 0 4px">Audit log</h2>
     @forelse($log as $l)
-      <div style="display:flex;gap:12px;padding:8px 0;border-top:1px solid #dbe3f0;font-size:12px">
+      <div style="display:flex;gap:12px;padding:8px 0;border-top:1px solid #dbe3f0;font-size:var(--fs-12)">
         <span style="width:44px;color:#51607a;font-variant-numeric:tabular-nums">{{ $l->created_at->timezone('Asia/Dhaka')->format('H:i') }}</span>
-        <div style="flex-grow:1;display:flex;flex-direction:column"><span style="font-weight:600">{{ \Illuminate\Support\Str::after($l->details, ' · ') }}</span><span style="color:#51607a;font-size:11px">{{ $l->user?->name ?? 'System' }}{{ $l->user ? ' · '.$l->user->roleLabel() : '' }}</span></div>
+        <div style="flex-grow:1;display:flex;flex-direction:column"><span style="font-weight:600">{{ \Illuminate\Support\Str::after($l->details, ' · ') }}</span><span style="color:#51607a;font-size:var(--fs-11)">{{ $l->user?->name ?? 'System' }}{{ $l->user ? ' · '.$l->user->roleLabel() : '' }}</span></div>
       </div>
     @empty
       <p class="sub" style="margin:0">Nothing logged yet.</p>
     @endforelse
-    <div style="background:#eef2f9;border-radius:12px;padding:12px;font-size:12px;line-height:18px;margin-top:6px">After closing, the trip is locked. A normal user cannot change its sales, stock or cash. Fixes are made only by an approved correction entry, which is logged here.</div>
+    <div style="background:#eef2f9;border-radius:12px;padding:12px;font-size:var(--fs-12);line-height:18px;margin-top:6px">After closing, the trip is locked. A normal user cannot change its sales, stock or cash. Fixes are made only by an approved correction entry, which is logged here.</div>
   </section>
 </div>
 @endsection

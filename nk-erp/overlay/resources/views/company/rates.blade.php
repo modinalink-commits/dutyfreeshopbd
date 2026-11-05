@@ -18,7 +18,7 @@
 </table></div>
 <div class="grid2" style="align-items:start">
   <form class="card pad" method="post" action="{{ route('company.rates.save') }}" style="display:flex;flex-direction:column;gap:10px">@csrf
-    <h2 style="margin:0;font-size:15px">Add or change a rate row</h2>
+    <h2 style="margin:0;font-size:var(--fs-15)">Add or change a rate row</h2>
     <div class="grid2" style="grid-template-columns:repeat(2,minmax(0,1fr))">
       <label class="f">Size<select name="size_kg">@foreach(\App\Models\Brand::SIZES as $s)<option value="{{ $s }}">{{ $s }} kg</option>@endforeach</select></label>
       <label class="f">From date<input type="date" name="from_date" required></label>
@@ -30,7 +30,7 @@
     <button class="btn pri" type="submit">Save rate</button>
   </form>
   <form class="card pad" method="post" action="{{ route('company.month.save') }}" style="display:flex;flex-direction:column;gap:10px">@csrf
-    <h2 style="margin:0;font-size:15px">Month rules (which incentives were earned)</h2>
+    <h2 style="margin:0;font-size:var(--fs-15)">Month rules (which incentives were earned)</h2>
     @php($cur = $months->first())
     <div class="grid2" style="grid-template-columns:repeat(2,minmax(0,1fr))">
       <label class="f">Month<input type="month" name="month" value="{{ $cur?->month ?? now()->format('Y-m') }}" required></label>

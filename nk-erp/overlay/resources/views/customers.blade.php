@@ -25,9 +25,9 @@
     @forelse($list as $c)
       @php($d = (float) ($dues[$c->id] ?? 0))
       <a href="{{ route('customers.index', ['c' => $c->id, 'q' => $q, 'f' => $f]) }}" style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-top:1px solid var(--line);text-decoration:none;color:var(--ink);background:{{ $sel && $sel->id === $c->id ? '#dce8ff' : '#fff' }}">
-        <span style="width:36px;height:36px;border-radius:999px;background:#e6eeff;color:#1d4ed8;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">{{ collect(explode(' ', $c->name))->map(fn ($w) => mb_substr($w, 0, 1))->take(2)->implode('') }}</span>
-        <span style="flex-grow:1;min-width:0;display:flex;flex-direction:column"><b style="font-size:13px">{{ $c->name }}</b><span class="sub" style="font-size:11px;margin:0">{{ \App\Models\Customer::TYPES[$c->type] }} · {{ $c->phone }}</span></span>
-        <b style="font-size:13px;color:{{ $d > 0.004 ? '#b3261e' : '#0f6b3c' }}">{{ $tk($d) }}</b>
+        <span style="width:36px;height:36px;border-radius:999px;background:#e6eeff;color:#1d4ed8;display:flex;align-items:center;justify-content:center;font-size:var(--fs-12);font-weight:700;flex-shrink:0">{{ collect(explode(' ', $c->name))->map(fn ($w) => mb_substr($w, 0, 1))->take(2)->implode('') }}</span>
+        <span style="flex-grow:1;min-width:0;display:flex;flex-direction:column"><b style="font-size:var(--fs-13)">{{ $c->name }}</b><span class="sub" style="font-size:var(--fs-11);margin:0">{{ \App\Models\Customer::TYPES[$c->type] }} · {{ $c->phone }}</span></span>
+        <b style="font-size:var(--fs-13);color:{{ $d > 0.004 ? '#b3261e' : '#0f6b3c' }}">{{ $tk($d) }}</b>
       </a>
     @empty
       <p class="sub" style="padding:16px">No customers yet.</p>
@@ -38,7 +38,7 @@
   @if($edit)
     <form id="cust-form" class="card pad" method="post" action="{{ route('customers.save') }}" style="display:flex;flex-direction:column;gap:12px">
       @csrf
-      <h2 style="margin:0;font-size:15px">{{ $edit->exists ? 'Edit '.$edit->name : 'Add customer' }}</h2>
+      <h2 style="margin:0;font-size:var(--fs-15)">{{ $edit->exists ? 'Edit '.$edit->name : 'Add customer' }}</h2>
       @if($edit->exists)<input type="hidden" name="id" value="{{ $edit->id }}">@endif
       <div class="grid2">
         <label class="f">Name<input type="text" name="name" value="{{ old('name', $edit->name) }}" required></label>
@@ -56,7 +56,7 @@
   @elseif($sel)
     @php($cyl = $detail['cyl'])
     <div class="card pad" style="display:flex;flex-wrap:wrap;gap:16px;align-items:center">
-      <div style="flex-grow:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:18px;font-weight:700">{{ $sel->name }}</span>
+      <div style="flex-grow:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:var(--fs-18);font-weight:700">{{ $sel->name }}</span>
         <span class="sub" style="margin:0">{{ \App\Models\Customer::TYPES[$sel->type] }} @if($sel->area)· {{ $sel->area }}@endif · {{ $sel->phone }} · {{ $sel->code }} · since {{ $sel->created_at->format('m-Y') }}</span></div>
       <a class="btn" href="{{ route('customers.index', ['edit' => $sel->id]) }}#cust-form">Edit</a>
       <a class="btn" href="{{ route('customers.statement', $sel) }}" target="_blank">Statement PDF</a>
@@ -71,7 +71,7 @@
     <div class="grid2" style="align-items:start">
  <form id="pay-form" class="card pad" method="post" action="{{ route('customers.pay', $sel) }}" style="display:flex;flex-direction:column;gap:10px">
         @csrf
-        <h2 style="margin:0;font-size:15px">Receive payment</h2>
+        <h2 style="margin:0;font-size:var(--fs-15)">Receive payment</h2>
         <div class="grid2" style="grid-template-columns:repeat(2,minmax(0,1fr))">
           <label class="f">Amount (৳)<input type="number" name="amount" min="1" step="1" required></label>
           <label class="f">Method<select name="method"><option value="cash">Cash</option><option value="bkash">bKash</option><option value="nagad">Nagad</option><option value="bank">Bank</option></select></label>
@@ -82,7 +82,7 @@
       </form>
       <form class="card pad" method="post" action="{{ route('customers.empties', $sel) }}" style="display:flex;flex-direction:column;gap:10px">
         @csrf
-        <h2 style="margin:0;font-size:15px">Empties returned</h2>
+        <h2 style="margin:0;font-size:var(--fs-15)">Empties returned</h2>
         <div class="grid2" style="grid-template-columns:repeat(3,minmax(0,1fr))">
           <label class="f">Brand<select name="brand_id">@foreach($brands as $b)<option value="{{ $b->id }}">{{ $b->name }}</option>@endforeach</select></label>
           <label class="f">Size<select name="size_kg">@foreach(\App\Models\Brand::SIZES as $s)<option value="{{ $s }}">{{ $s }} kg</option>@endforeach</select></label>
@@ -92,7 +92,7 @@
       </form>
     </div>
     <section class="card">
-      <div class="pad"><h2 style="margin:0;font-size:15px">Statement</h2></div>
+      <div class="pad"><h2 style="margin:0;font-size:var(--fs-15)">Statement</h2></div>
       <div class="dt-wrap"><table class="dt">
         <thead><tr><th>Date</th><th>Detail</th><th>Bill</th><th>Paid</th><th>Due after</th></tr></thead>
         <tbody>

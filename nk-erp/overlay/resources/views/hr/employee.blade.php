@@ -8,8 +8,8 @@
 @php($mLbl = $line ? \Carbon\Carbon::parse($line->payroll->month.'-01')->format('M') : null)
 <header class="card" style="padding:20px;display:flex;flex-wrap:wrap;align-items:center;gap:16px">
   <span style="width:56px;height:56px;border-radius:999px;background:#123a86;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700">{{ strtoupper($ini) }}</span>
-  <div style="flex-grow:1;display:flex;flex-direction:column;gap:2px"><h1 style="font-size:20px">{{ $e->name }}</h1>
-    <span style="font-size:12px;color:#51607a">{{ $e->code }} · {{ \App\Models\Employee::ROLES[$e->role] ?? $e->role }} · {{ $e->department ?: 'no department' }}{{ $vehicle ? ' · '.$vehicle : '' }} · joined {{ $e->joined_on?->format('d-m-Y') ?? '[date]' }} · confidential</span></div>
+  <div style="flex-grow:1;display:flex;flex-direction:column;gap:2px"><h1 style="font-size:var(--fs-20)">{{ $e->name }}</h1>
+    <span style="font-size:var(--fs-12);color:#51607a">{{ $e->code }} · {{ \App\Models\Employee::ROLES[$e->role] ?? $e->role }} · {{ $e->department ?: 'no department' }}{{ $vehicle ? ' · '.$vehicle : '' }} · joined {{ $e->joined_on?->format('d-m-Y') ?? '[date]' }} · confidential</span></div>
   <a class="btn" href="#payslip">Payslip{{ $mLbl ? ' · '.$mLbl : '' }}</a>
   <button class="btn" type="button" onclick="window.print()">Export ▾</button>
   <a class="btn" href="{{ route('hr.index') }}">All employees</a>
@@ -23,12 +23,12 @@
 ])
 <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">
   @foreach($cards as [$l, $v, $f, $bg, $ink])
-    <div style="background:{{ $bg }};border:1px solid #dbe3f0;border-radius:12px;padding:12px;display:flex;flex-direction:column"><span style="font-size:11px;font-weight:600;color:#51607a">{{ $l }}</span><span style="font-size:21px;font-weight:700;color:{{ $ink }};font-variant-numeric:tabular-nums">{{ $v }}</span><span style="font-size:11px;color:#51607a">{{ $f }}</span></div>
+    <div style="background:{{ $bg }};border:1px solid #dbe3f0;border-radius:12px;padding:12px;display:flex;flex-direction:column"><span style="font-size:var(--fs-11);font-weight:600;color:#51607a">{{ $l }}</span><span style="font-size:var(--fs-20);font-weight:700;color:{{ $ink }};font-variant-numeric:tabular-nums">{{ $v }}</span><span style="font-size:var(--fs-11);color:#51607a">{{ $f }}</span></div>
   @endforeach
 </section>
 
 <section class="card" style="overflow:hidden">
-  <div style="padding:16px 20px;display:flex;align-items:center"><h2 class="h2" style="flex-grow:1">Ledger{{ $rows->isNotEmpty() ? ' · '.$rows->first()->entry_date->format('F').' – '.$rows->last()->entry_date->format('F Y') : '' }}</h2><span style="font-size:11px;color:#51607a">Posted lines are locked · fixes by adjustment entry</span></div>
+  <div style="padding:16px 20px;display:flex;align-items:center"><h2 class="h2" style="flex-grow:1">Ledger{{ $rows->isNotEmpty() ? ' · '.$rows->first()->entry_date->format('F').' – '.$rows->last()->entry_date->format('F Y') : '' }}</h2><span style="font-size:var(--fs-11);color:#51607a">Posted lines are locked · fixes by adjustment entry</span></div>
   <div class="dt-wrap" style="margin:0 16px 16px"><table class="dt">
     <thead><tr><th>Date</th><th>Entry</th><th>Reference</th><th class="r">Earned</th><th class="r">Deducted / paid</th><th class="r">Salary payable</th><th class="r">Advance balance</th></tr></thead>
     <tbody>
@@ -56,9 +56,9 @@
     <h2 class="h2" style="margin-bottom:6px">{{ $line ? \Carbon\Carbon::parse($line->payroll->month.'-01')->format('F') : 'Latest' }} payslip</h2>
     @if($line)
       @foreach([['Basic', $line->basic], ['Allowances', $line->allowance], ['Commission (approved)', $line->commission], ['Overtime · bonus', (float) $line->overtime + (float) $line->bonus], ['Expense reimbursement', $line->reimbursement], ['(−) Advance recovery', -$line->advance_recovery], ['(−) Loan recovery', -$line->loan_recovery], ['(−) Authorized deductions', -$line->deductions]] as [$k, $v])
-        <div style="display:flex;font-size:13px;padding:6px 0"><span style="flex-grow:1;color:#51607a">{{ $k }}</span><span style="font-variant-numeric:tabular-nums">{{ $U::tk($v) }}</span></div>
+        <div style="display:flex;font-size:var(--fs-13);padding:6px 0"><span style="flex-grow:1;color:#51607a">{{ $k }}</span><span style="font-variant-numeric:tabular-nums">{{ $U::tk($v) }}</span></div>
       @endforeach
-      <div style="display:flex;font-size:14px;font-weight:700;padding:9px 0 0;border-top:1px solid #dbe3f0"><span style="flex-grow:1">Net {{ $line->payroll->status === 'paid' ? 'paid' : 'payable' }}</span><span>{{ $U::tk($line->net) }}</span></div>
+      <div style="display:flex;font-size:var(--fs-14);font-weight:700;padding:9px 0 0;border-top:1px solid #dbe3f0"><span style="flex-grow:1">Net {{ $line->payroll->status === 'paid' ? 'paid' : 'payable' }}</span><span>{{ $U::tk($line->net) }}</span></div>
     @else
       <p class="sub" style="margin:0">No approved payroll yet.</p>
     @endif
@@ -67,13 +67,13 @@
     <h2 class="h2" style="margin-bottom:6px">Attendance · {{ $line ? \Carbon\Carbon::parse($line->payroll->month.'-01')->format('F') : '—' }}</h2>
     @php($dim = $line ? \Carbon\Carbon::parse($line->payroll->month.'-01')->daysInMonth : null)
     @foreach([['Present', $line ? $line->days.' days' : '—'], ['Approved leave', $line ? $line->leave_days.' day'.($line->leave_days == 1 ? '' : 's') : '—'], ['Weekly off', $line ? max(0, $dim - $line->days - $line->leave_days).' days' : '—'], ['Overtime', $line ? rtrim(rtrim((string) $line->overtime_hours, '0'), '.').' h' : '—']] as [$k, $v])
-      <div style="display:flex;font-size:13px;padding:6px 0"><span style="flex-grow:1;color:#51607a">{{ $k }}</span><span>{{ $v }}</span></div>
+      <div style="display:flex;font-size:var(--fs-13);padding:6px 0"><span style="flex-grow:1;color:#51607a">{{ $k }}</span><span>{{ $v }}</span></div>
     @endforeach
-    <span style="font-size:11px;color:#51607a;margin-top:8px">Entered in the payroll run. From duty start / end in the salesman app once that is live.</span>
+    <span style="font-size:var(--fs-11);color:#51607a;margin-top:8px">Entered in the payroll run. From duty start / end in the salesman app once that is live.</span>
   </section>
   <section class="card" style="padding:20px;display:flex;flex-direction:column;gap:6px">
     <h2 class="h2">Final settlement</h2>
-    <span style="font-size:13px;line-height:20px">{{ $e->left_on ? 'Left on '.$e->left_on->format('d-m-Y').'.' : 'Not applicable.' }} If {{ $e->name }} resigns, the statement will show unpaid salary ({{ $U::tk($bal['payable']) }}), leave encashment, open advance ({{ $U::tk($bal['advance']) }}), loans ({{ $U::tk($bal['loan']) }}) and approved claims, and needs Super Admin approval.</span>
+    <span style="font-size:var(--fs-13);line-height:20px">{{ $e->left_on ? 'Left on '.$e->left_on->format('d-m-Y').'.' : 'Not applicable.' }} If {{ $e->name }} resigns, the statement will show unpaid salary ({{ $U::tk($bal['payable']) }}), leave encashment, open advance ({{ $U::tk($bal['advance']) }}), loans ({{ $U::tk($bal['loan']) }}) and approved claims, and needs Super Admin approval.</span>
   </section>
 </div>
 
@@ -101,7 +101,7 @@
       <label class="f"><span>Commission per cylinder (৳)</span><input type="number" name="commission_rate" min="0" step="0.01" value="{{ $e->commission_rate }}" @disabled(! $isSa)></label>
       <label class="f"><span>Bank account</span><input name="bank_account" maxlength="60" value="{{ $e->bank_account }}"></label>
     </div>
-    @unless($isSa)<span class="sub" style="margin:0;font-size:11px">Only the Super Admin can change salary. Every change is logged.</span>@endunless
+    @unless($isSa)<span class="sub" style="margin:0;font-size:var(--fs-11)">Only the Super Admin can change salary. Every change is logged.</span>@endunless
     <button class="btn pri" type="submit" style="align-self:flex-start">Save</button>
   </form>
 </div>

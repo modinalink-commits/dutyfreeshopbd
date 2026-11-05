@@ -11,9 +11,9 @@
   <div style="flex-grow:1;display:flex;flex-direction:column"><h1>Route sales</h1>
     <span class="sub">{{ $d->format('l, d-m-Y') }} · {{ $vehicles->count() }} vehicles · live, updates as salesmen enter sales</span></div>
   <div role="group" aria-label="Day" class="noprint" style="display:flex;align-items:center;border:1px solid #7b8aa8;border-radius:999px;background:#fff">
-    <a href="{{ route('fleet.dash', ['d' => $d->copy()->subDay()->toDateString()]) }}" aria-label="Previous day" style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;text-decoration:none;color:#14213d;font-size:16px">‹</a>
-    <a href="{{ route('fleet.dash') }}" style="font-size:13px;font-weight:600;padding:0 6px;color:#14213d;text-decoration:none">{{ $isToday ? 'Today' : $d->format('d-m-Y') }}</a>
-    <a href="{{ route('fleet.dash', ['d' => $d->copy()->addDay()->toDateString()]) }}" aria-label="Next day" style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;text-decoration:none;color:#14213d;font-size:16px">›</a>
+    <a href="{{ route('fleet.dash', ['d' => $d->copy()->subDay()->toDateString()]) }}" aria-label="Previous day" style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;text-decoration:none;color:#14213d;font-size:var(--fs-16)">‹</a>
+    <a href="{{ route('fleet.dash') }}" style="font-size:var(--fs-13);font-weight:600;padding:0 6px;color:#14213d;text-decoration:none">{{ $isToday ? 'Today' : $d->format('d-m-Y') }}</a>
+    <a href="{{ route('fleet.dash', ['d' => $d->copy()->addDay()->toDateString()]) }}" aria-label="Next day" style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;text-decoration:none;color:#14213d;font-size:var(--fs-16)">›</a>
   </div>
   <button class="btn noprint" type="button" onclick="window.print()">Download PDF</button>
   <a class="btn pri noprint" href="{{ route('trips.loading', ['d' => $day]) }}">＋ Morning loading</a>
@@ -28,10 +28,10 @@
 <section aria-label="Today's numbers" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px">
   @foreach($groups as $label => $tiles)
   <div class="card" style="padding:14px;display:flex;flex-direction:column;gap:10px">
-    <span style="font-size:10px;font-weight:700;letter-spacing:.08em;color:#51607a">{{ $label }}</span>
+    <span style="font-size:var(--fs-10);font-weight:700;letter-spacing:.08em;color:#51607a">{{ $label }}</span>
     <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
       @foreach($tiles as [$k, $v, $c])
-      <div class="tile" style="background:{{ $U::bg($c) }};border:0"><span class="k">{{ $k }}</span><span style="font-size:20px;line-height:26px;font-weight:700;color:{{ $U::ink($c) }};font-variant-numeric:tabular-nums">{{ $v }}</span></div>
+      <div class="tile" style="background:{{ $U::bg($c) }};border:0"><span class="k">{{ $k }}</span><span style="font-size:var(--fs-20);line-height:26px;font-weight:700;color:{{ $U::ink($c) }};font-variant-numeric:tabular-nums">{{ $v }}</span></div>
       @endforeach
     </div>
   </div>
@@ -49,12 +49,12 @@
       @php($status = $s ? $s['stage'] : ($v->status === 'Maintenance' ? 'Maintenance' : 'Not out today'))
       @php($t = $s['trip'] ?? null)
       <tr @if($status === 'Mismatch found') style="background:#fff8f7" @endif>
-        <td class="nw"><b>{{ $v->code }}</b><br><span class="sub" style="font-size:11px">{{ $v->reg_no }}</span></td>
+        <td class="nw"><b>{{ $v->code }}</b><br><span class="sub" style="font-size:var(--fs-11)">{{ $v->reg_no }}</span></td>
         <td>{{ $t?->route?->name ?? $v->route?->name ?? '—' }}</td><td>{{ $t?->driver?->name ?? $v->driver?->name ?? '—' }}</td><td>{{ $t?->salesman?->name ?? $v->salesman?->name ?? '—' }}</td>
         <td class="r">{{ $s ? $s['c']['loadedTotal'] : 0 }}</td><td class="r">{{ $s ? $s['c']['soldTotal'] : 0 }}</td><td class="r">{{ $s ? $s['c']['collectedTotal'] : 0 }}</td>
         <td class="r">{{ $s && $t->status !== 'draft' ? $U::tk($s['c']['collection']) : '—' }}</td>
         <td class="c"><span class="pill" style="{{ $U::pill($status) }}">{{ $status }}</span></td>
-        <td class="nw" style="font-size:12px"><a href="{{ route('fleet.vehicles', ['v' => $v->id]) }}">View</a>
+        <td class="nw" style="font-size:var(--fs-12)"><a href="{{ route('fleet.vehicles', ['v' => $v->id]) }}">View</a>
           @if($t) · <a href="{{ route('trips.sales', $t) }}">Sales</a> · <a href="{{ route('trips.return', ['trip' => $t->id]) }}">Return</a> · <a href="{{ route('trips.closing', ['trip' => $t->id]) }}">Closing</a>@endif</td>
       </tr>
     @empty
@@ -72,7 +72,7 @@
     <h2 class="h2">Closing queue</h2>
     @php($q = collect($stages)->groupBy('stage'))
     @php($codes = fn ($g) => $g->map(fn ($x) => $x['trip']->vehicle->code)->implode(', '))
-    @php($box = 'border-radius:12px;padding:12px;font-size:12px;line-height:18px')
+    @php($box = 'border-radius:12px;padding:12px;font-size:var(--fs-12);line-height:18px')
     @foreach($q->get('Mismatch found', collect()) as $x)
       @php($why = collect($x['c']['stockDiff'])->map(fn ($z, $sz) => trim(($z['vehEmpty'] > 0 ? $z['vehEmpty'].' empty '.$sz.' kg missing ' : '').($z['vehFull'] > 0 ? $z['vehFull'].' full '.$sz.' kg missing' : '')))->filter()->values()->all())
       @if($x['c']['cashDiff'] !== null && abs($x['c']['cashDiff']) >= .5 && ! $x['c']['cashAdj']) @php($why[] = $U::tk(abs($x['c']['cashDiff'])).' cash '.($x['c']['cashDiff'] < 0 ? 'short' : 'extra')) @endif
@@ -88,9 +88,9 @@
   <section class="card" style="padding:20px;display:flex;flex-direction:column;gap:10px">
     <div style="display:flex;align-items:center"><h2 class="h2" style="flex-grow:1">Live from the market{{ $live ? ' — '.$live['trip']->vehicle->code : '' }}</h2>@if($live)<span class="pill" style="background:#fff1d6;color:#8a4b00">In market</span>@endif</div>
     @forelse($liveSales as $l)
-      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid #dbe3f0;font-size:12px">
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid #dbe3f0;font-size:var(--fs-12)">
         <span style="font-weight:700;color:#51607a;width:42px">{{ $l->created_at->timezone('Asia/Dhaka')->format('H:i') }}</span>
-        <div style="flex-grow:1;display:flex;flex-direction:column"><b style="font-size:13px">{{ $l->buyerName() }}</b><span class="sub" style="margin:0;font-size:11px">{{ $l->items->map(fn ($i) => $i->size_kg.' kg × '.$i->qty.' '.($i->category === 'refill' ? 'exchange' : 'new cylinder'))->implode(' · ') }}{{ $l->due() > 0 ? ' · '.$U::tk($l->due()).' due' : '' }}</span></div>
+        <div style="flex-grow:1;display:flex;flex-direction:column"><b style="font-size:var(--fs-13)">{{ $l->buyerName() }}</b><span class="sub" style="margin:0;font-size:var(--fs-11)">{{ $l->items->map(fn ($i) => $i->size_kg.' kg × '.$i->qty.' '.($i->category === 'refill' ? 'exchange' : 'new cylinder'))->implode(' · ') }}{{ $l->due() > 0 ? ' · '.$U::tk($l->due()).' due' : '' }}</span></div>
         <b style="font-variant-numeric:tabular-nums">{{ $U::tk($l->total) }}</b>
       </div>
     @empty

@@ -5,7 +5,7 @@
 @if(session('temp'))
 <div class="card pad" style="border-color:#1d4ed8">
   <b>Temporary password for {{ session('temp')['email'] }}:</b>
-  <code style="font-size:16px;margin-left:8px">{{ session('temp')['password'] }}</code>
+  <code style="font-size:var(--fs-16);margin-left:8px">{{ session('temp')['password'] }}</code>
   <p class="sub">Give it to the person privately. It is shown only once.</p>
 </div>
 @endif
@@ -32,7 +32,7 @@
 @if(auth()->user()->isSuperAdmin())
 <form class="card pad" method="post" action="{{ route('users.store') }}" style="display:flex;flex-direction:column;gap:14px">
   @csrf
-  <h2 style="margin:0;font-size:15px">Add a user</h2>
+  <h2 style="margin:0;font-size:var(--fs-15)">Add a user</h2>
   <div class="grid2">
     <label class="f">Full name<input type="text" name="name" value="{{ old('name') }}" required></label>
     <label class="f">Email (used to log in)<input type="email" name="email" value="{{ old('email') }}" required></label>

@@ -30,7 +30,7 @@
 @if($admin)
 <form id="product-form" class="card pad" method="post" action="{{ route('products.save') }}" style="display:flex;flex-direction:column;gap:12px;max-width:760px">
   @csrf
-  <h2 style="margin:0;font-size:15px">{{ $edit ? 'Edit '.$edit->name : 'Add product' }}</h2>
+  <h2 style="margin:0;font-size:var(--fs-15)">{{ $edit ? 'Edit '.$edit->name : 'Add product' }}</h2>
   @if($edit)<input type="hidden" name="id" value="{{ $edit->id }}">@endif
   <div class="grid2">
     <label class="f">Name<input type="text" name="name" value="{{ old('name', $edit?->name) }}" required></label>

@@ -13,14 +13,14 @@
   <label class="lb" style="display:flex;flex-direction:column;gap:6px">ডেলিভারির ঠিকানা<input class="txt" name="address" required maxlength="255" value="{{ old('address', $c->address) }}"></label>
   <label class="lb" style="display:flex;flex-direction:column;gap:6px">কবে চান<input class="txt" type="date" name="wanted_on" required min="{{ now()->timezone('Asia/Dhaka')->toDateString() }}" value="{{ now()->timezone('Asia/Dhaka')->addDay()->toDateString() }}"></label>
   <label class="lb" style="display:flex;flex-direction:column;gap:6px">মন্তব্য<input class="txt" name="note" maxlength="255" placeholder="যেমন: সকাল ১০টার আগে"></label>
-  <span style="font-size:13px;color:#51607a">অফিস অনুমোদন করলে আপনার রুটের গাড়ি আর সেলসম্যানের সাথে ডেলিভারি হবে। দাম ডেলিভারির দিনের অনুমোদিত তালিকা অনুযায়ী।</span>
+  <span style="font-size:var(--fs-13);color:#51607a">অফিস অনুমোদন করলে আপনার রুটের গাড়ি আর সেলসম্যানের সাথে ডেলিভারি হবে। দাম ডেলিভারির দিনের অনুমোদিত তালিকা অনুযায়ী।</span>
   <button class="big" type="submit" style="background:#b45309">অর্ডার পাঠান</button>
 </form>
-<div class="card" style="display:flex;flex-direction:column;gap:2px"><b style="font-size:14px">আগের অর্ডার</b>
+<div class="card" style="display:flex;flex-direction:column;gap:2px"><b style="font-size:var(--fs-14)">আগের অর্ডার</b>
   @forelse($orders as $o)
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid #eef2f9"><div style="flex-grow:1;display:flex;flex-direction:column"><span style="font-size:14px">{{ $o->itemsText(true) }}</span><span class="n" style="font-size:12px;color:#51607a">{{ $o->order_no }} · {{ $o->created_at->timezone('Asia/Dhaka')->format('d-m-Y') }}</span></div>
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid #eef2f9"><div style="flex-grow:1;display:flex;flex-direction:column"><span style="font-size:var(--fs-14)">{{ $o->itemsText(true) }}</span><span class="n" style="font-size:var(--fs-12);color:#51607a">{{ $o->order_no }} · {{ $o->created_at->timezone('Asia/Dhaka')->format('d-m-Y') }}</span></div>
       <span class="pill" style="{{ ['delivered' => 'background:#e3f6ec;color:#0f6b3c', 'rejected' => 'background:#fde9e7;color:#b3261e', 'new' => 'background:#e6eeff;color:#1d4ed8'][$o->status] ?? 'background:#fff1d6;color:#8a4b00' }}">{{ \App\Models\CustomerOrder::BN[$o->status] }}</span></div>
-  @empty<span style="font-size:13px;color:#51607a">আগে কোনো অর্ডার নেই।</span>@endforelse
+  @empty<span style="font-size:var(--fs-13);color:#51607a">আগে কোনো অর্ডার নেই।</span>@endforelse
 </div>
 @endsection
 @push('js')

@@ -3,7 +3,7 @@
 @section('content')
 @php($can = in_array(auth()->user()->role, ['super_admin', 'admin'], true))
 @php($img = fn ($p) => $p && str_starts_with($p, '/img/') ? 'https://nklpgbd.com'.$p : $p)
-<style>.fld{display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:600;color:#51607a}</style>
+<style>.fld{display:flex;flex-direction:column;gap:4px;font-size:var(--fs-11);font-weight:600;color:#51607a}</style>
 <header style="display:flex;flex-wrap:wrap;align-items:center;gap:12px">
   <div style="flex-grow:1;display:flex;flex-direction:column"><h1>Hero slider</h1><span class="sub">Frontend → homepage · changes go live after Publish, no code needed{{ $publishedAt ? ' · last published '.$publishedAt : '' }}</span></div>
   <a class="btn" href="https://nklpgbd.com/" target="_blank">View live slider</a>
@@ -12,16 +12,16 @@
 </header>
 <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
   <section class="card" style="flex:1 1 300px;min-width:280px;padding:16px;display:flex;flex-direction:column;gap:8px">
-    <h2 style="margin:0 0 4px;font-size:15px">Slides · use ↑ ↓ to reorder</h2>
+    <h2 style="margin:0 0 4px;font-size:var(--fs-15)">Slides · use ↑ ↓ to reorder</h2>
     @forelse($slides as $i => $s)
       @php($on = $cur && $cur->id === $s->id)
       <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;border:1px solid {{ $on ? '#123a86' : '#dbe3f0' }};background:{{ $on ? '#e6eeff' : '#fff' }}">
         @if($can)<span style="display:flex;flex-direction:column">
-          <form method="post" action="{{ route('hero.move', $s) }}">@csrf<input type="hidden" name="dir" value="up"><button type="submit" aria-label="Move up" style="border:0;background:none;cursor:pointer;font-size:11px;padding:0;color:#7b8aa8" @disabled($i === 0)>▲</button></form>
-          <form method="post" action="{{ route('hero.move', $s) }}">@csrf<input type="hidden" name="dir" value="down"><button type="submit" aria-label="Move down" style="border:0;background:none;cursor:pointer;font-size:11px;padding:0;color:#7b8aa8" @disabled($loop->last)>▼</button></form></span>@endif
+          <form method="post" action="{{ route('hero.move', $s) }}">@csrf<input type="hidden" name="dir" value="up"><button type="submit" aria-label="Move up" style="border:0;background:none;cursor:pointer;font-size:var(--fs-11);padding:0;color:#7b8aa8" @disabled($i === 0)>▲</button></form>
+          <form method="post" action="{{ route('hero.move', $s) }}">@csrf<input type="hidden" name="dir" value="down"><button type="submit" aria-label="Move down" style="border:0;background:none;cursor:pointer;font-size:var(--fs-11);padding:0;color:#7b8aa8" @disabled($loop->last)>▼</button></form></span>@endif
         <div style="width:40px;height:48px;border-radius:8px;background:{{ $s->background }};display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden">@if($s->image)<img src="{{ $img($s->image) }}" alt="" style="height:44px;width:auto">@endif</div>
-        <a href="{{ route('hero.index', ['s' => $s->id]) }}" style="flex-grow:1;text-decoration:none;display:flex;flex-direction:column"><span style="font-size:13px;font-weight:700;color:#14213d">{{ $i + 1 }}. {{ $s->heading }}</span><span style="font-size:11px;color:#51607a">{{ $s->brand }} · {{ $s->size }} · {{ $s->duration }} s</span></a>
-        <span style="font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;{{ $s->enabled ? 'background:#e3f6ec;color:#0f6b3c' : 'background:#eef2f9;color:#51607a' }}">{{ $s->enabled ? 'On' : 'Off' }}</span>
+        <a href="{{ route('hero.index', ['s' => $s->id]) }}" style="flex-grow:1;text-decoration:none;display:flex;flex-direction:column"><span style="font-size:var(--fs-13);font-weight:700;color:#14213d">{{ $i + 1 }}. {{ $s->heading }}</span><span style="font-size:var(--fs-11);color:#51607a">{{ $s->brand }} · {{ $s->size }} · {{ $s->duration }} s</span></a>
+        <span style="font-size:var(--fs-11);font-weight:700;padding:3px 9px;border-radius:999px;{{ $s->enabled ? 'background:#e3f6ec;color:#0f6b3c' : 'background:#eef2f9;color:#51607a' }}">{{ $s->enabled ? 'On' : 'Off' }}</span>
       </div>
     @empty
       <p class="sub" style="margin:0">No slides yet.</p>
@@ -31,7 +31,7 @@
   <div style="flex:999 1 560px;min-width:0;display:flex;flex-direction:column;gap:16px">
     <form class="card" method="post" action="{{ route('hero.save') }}" enctype="multipart/form-data" id="slideForm" style="padding:20px;display:flex;flex-direction:column;gap:12px">@csrf
       @if($cur)<input type="hidden" name="id" value="{{ $cur->id }}">@endif
-      <div style="display:flex;align-items:center"><h2 style="margin:0;font-size:15px;flex-grow:1">{{ $cur ? 'Edit slide '.($slides->search(fn ($x) => $x->id === $cur->id) + 1) : 'New slide' }}</h2>
+      <div style="display:flex;align-items:center"><h2 style="margin:0;font-size:var(--fs-15);flex-grow:1">{{ $cur ? 'Edit slide '.($slides->search(fn ($x) => $x->id === $cur->id) + 1) : 'New slide' }}</h2>
         @if($cur && $can)<button class="btn sm" type="submit" form="delForm" onclick="return confirm('Delete this slide?')">Delete</button>@endif</div>
       <fieldset @disabled(! $can) style="border:0;padding:0;margin:0;display:flex;flex-direction:column;gap:12px;min-width:0">
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px">
@@ -57,16 +57,16 @@
     @if($cur)<form id="delForm" method="post" action="{{ route('hero.delete', $cur) }}">@csrf</form>@endif
 
     <section class="card" style="padding:20px;display:flex;flex-direction:column;gap:12px">
-      <div style="display:flex;align-items:center"><h2 style="margin:0;font-size:15px;flex-grow:1">Preview</h2>
+      <div style="display:flex;align-items:center"><h2 style="margin:0;font-size:var(--fs-15);flex-grow:1">Preview</h2>
         <div style="display:flex;border:1px solid #7b8aa8;border-radius:999px;overflow:hidden"><button type="button" id="toDesk" style="min-height:34px;padding:0 14px;border:0;cursor:pointer;font:600 12px 'Plus Jakarta Sans',sans-serif;background:#123a86;color:#fff">Desktop</button><button type="button" id="toMob" style="min-height:34px;padding:0 14px;border:0;cursor:pointer;font:600 12px 'Plus Jakarta Sans',sans-serif;background:#fff;color:#14213d">Mobile</button></div></div>
       <div style="display:flex;justify-content:center;background:#eef2f9;border-radius:12px;padding:16px">
         <div id="pv" style="background:{{ $cur?->background ?? '#f7f4ec' }};border-radius:10px;box-shadow:0 2px 8px rgba(20,33,61,.15);overflow:hidden;width:100%;max-width:640px">
           <div id="pvIn" style="display:flex;gap:14px;padding:22px;align-items:center;flex-direction:row">
             <div style="flex:1;display:flex;flex-direction:column;gap:8px">
-              <span style="align-self:flex-start;font-size:9px;font-weight:800;letter-spacing:.14em;color:#6e5214;background:#efe5cc;padding:4px 8px;border-radius:999px">AYGAZ UNITED · LPG</span>
+              <span style="align-self:flex-start;font-size:var(--fs-10);font-weight:700;letter-spacing:.14em;color:#6e5214;background:#efe5cc;padding:4px 8px;border-radius:999px">AYGAZ UNITED · LPG</span>
               <span id="pvH" style="font-weight:800;color:#0f1b2d;font-size:28px;line-height:1.1">{{ $cur?->heading }}</span>
-              <span id="pvD" style="font-size:12px;color:#3e4756">{{ $cur?->description }}</span>
-              <span id="pvB" style="align-self:flex-start;background:#0f1b2d;color:#fff;font-size:11px;font-weight:700;padding:8px 14px;border-radius:999px">{{ $cur?->button_text }}</span>
+              <span id="pvD" style="font-size:var(--fs-12);color:#3e4756">{{ $cur?->description }}</span>
+              <span id="pvB" style="align-self:flex-start;background:#0f1b2d;color:#fff;font-size:var(--fs-11);font-weight:700;padding:8px 14px;border-radius:999px">{{ $cur?->button_text }}</span>
             </div>
             @if($cur?->image)<img src="{{ $img($cur->image) }}" alt="" style="height:150px;width:auto">@endif
           </div>
@@ -75,7 +75,7 @@
     </section>
   </div>
 </div>
-<p class="sub" style="margin:0;font-size:12px">Only the first slide's image loads with the page; the rest load later. Autoplay pauses when the slider is off-screen or the tab is hidden, and animation turns off for visitors who ask for reduced motion.</p>
+<p class="sub" style="margin:0;font-size:var(--fs-12)">Only the first slide's image loads with the page; the rest load later. Autoplay pauses when the slider is off-screen or the tab is hidden, and animation turns off for visitors who ask for reduced motion.</p>
 <script>
 (function(){
   const f=document.getElementById('slideForm'), map={heading:'pvH',desc:'pvD',btn:'pvB'};

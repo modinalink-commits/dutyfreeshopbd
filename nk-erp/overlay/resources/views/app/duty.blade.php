@@ -3,17 +3,17 @@
 @section('bar')@include('app._back', ['href' => route('app.home'), 'title' => 'ডিউটি ও লোকেশন'])@endsection
 @section('content')
 <div style="border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:6px;background:{{ $d ? '#e3f6ec' : '#f4f7fc' }};color:{{ $d ? '#0f6b3c' : '#14213d' }}">
-  <div style="display:flex;align-items:center;gap:8px"><span style="width:12px;height:12px;border-radius:999px;background:{{ $d ? '#1f9d55' : '#7b8aa8' }}"></span><b style="font-size:18px">{{ $d ? 'ডিউটিতে আছেন' : 'ডিউটি শুরু হয়নি' }}</b></div>
-  <span style="font-size:13px">{{ $d ? 'শুরু '.$d->started_at->timezone('Asia/Dhaka')->format('H:i').($trip ? ' · গাড়ি '.$trip->vehicle->code.' · রুট '.($trip->route?->name ?? '—') : '') : 'ডিউটি শুরু করলে তবেই লোকেশন পাঠানো শুরু হবে।' }}</span>
+  <div style="display:flex;align-items:center;gap:8px"><span style="width:12px;height:12px;border-radius:999px;background:{{ $d ? '#1f9d55' : '#7b8aa8' }}"></span><b style="font-size:var(--fs-18)">{{ $d ? 'ডিউটিতে আছেন' : 'ডিউটি শুরু হয়নি' }}</b></div>
+  <span style="font-size:var(--fs-13)">{{ $d ? 'শুরু '.$d->started_at->timezone('Asia/Dhaka')->format('H:i').($trip ? ' · গাড়ি '.$trip->vehicle->code.' · রুট '.($trip->route?->name ?? '—') : '') : 'ডিউটি শুরু করলে তবেই লোকেশন পাঠানো শুরু হবে।' }}</span>
 </div>
-<div class="card" style="display:flex;flex-direction:column;gap:6px;font-size:14px">
+<div class="card" style="display:flex;flex-direction:column;gap:6px;font-size:var(--fs-14)">
   <div style="display:flex"><span style="flex-grow:1;color:#51607a">লোকেশন অনুমতি</span><b id="perm">দেখা হচ্ছে…</b></div>
   <div style="display:flex"><span style="flex-grow:1;color:#51607a">GPS</span><b id="gps" style="color:#51607a">বন্ধ</b></div>
   <div style="display:flex"><span style="flex-grow:1;color:#51607a">ট্র্যাকিং</span><b id="trk">{{ $d ? 'চালু' : 'বন্ধ' }}</b></div>
   <div style="display:flex"><span style="flex-grow:1;color:#51607a">শেষ সিঙ্ক</span><b class="n" id="sync">{{ $last ? $last->recorded_at->timezone('Asia/Dhaka')->format('H:i:s') : '—' }}</b></div>
 </div>
-<div style="background:#fff1d6;color:#8a4b00;border-radius:12px;padding:12px;font-size:13px;line-height:20px">জেনে রাখুন: ডিউটি চলার সময় প্রতি ১৫–৩০ সেকেন্ডে আপনার ফোনের লোকেশন অফিসে যায়, যাতে ম্যানেজার রুট দেখতে পারেন। ডিউটি শেষ করলে বা লোকেশন অনুমতি না দিলে কিছুই পাঠানো হয় না। অ্যাপ খোলা থাকা অবস্থায় লোকেশন যায়।</div>
-<span style="font-size:13px;color:#51607a">ফোনের Settings → Location থেকে অনুমতি বদলানো যায়।</span>
+<div style="background:#fff1d6;color:#8a4b00;border-radius:12px;padding:12px;font-size:var(--fs-13);line-height:20px">জেনে রাখুন: ডিউটি চলার সময় প্রতি ১৫–৩০ সেকেন্ডে আপনার ফোনের লোকেশন অফিসে যায়, যাতে ম্যানেজার রুট দেখতে পারেন। ডিউটি শেষ করলে বা লোকেশন অনুমতি না দিলে কিছুই পাঠানো হয় না। অ্যাপ খোলা থাকা অবস্থায় লোকেশন যায়।</div>
+<span style="font-size:var(--fs-13);color:#51607a">ফোনের Settings → Location থেকে অনুমতি বদলানো যায়।</span>
 <form method="post" action="{{ route('app.duty.toggle') }}" id="df">@csrf<input type="hidden" name="consent" id="consent" value="0">
   <button class="big" type="submit" style="{{ $d ? 'background:#fff;color:#b3261e;border:2px solid #b3261e' : 'background:#0f6b3c' }}">{{ $d ? 'ডিউটি শেষ করুন' : 'ডিউটি শুরু করুন' }}</button></form>
 @endsection

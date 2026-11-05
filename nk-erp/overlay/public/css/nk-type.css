@@ -1,0 +1,51 @@
+/* NK / Mother ERP — global typography. Every size, weight and text colour comes from these tokens.
+   Change a token here and every page follows; pages never set their own random sizes. */
+:root{
+  --font-ui:'Plus Jakarta Sans','Hind Siliguri','Noto Sans Bengali',Arial,sans-serif;
+  --font-bn:'Hind Siliguri','Noto Sans Bengali','Plus Jakarta Sans',Arial,sans-serif;
+  --fs-10:10px;   /* micro */
+  --fs-11:11px;   /* caption, badge, helper */
+  --fs-12:12px;   /* label, table, compact */
+  --fs-13:13px;   /* admin body, input, button */
+  --fs-14:14px;   /* default body (mobile app / portal) */
+  --fs-15:15px;   /* module header, strong body */
+  --fs-16:16px;   /* small heading, modal title */
+  --fs-18:18px;   /* section heading, compact KPI */
+  --fs-20:20px;   /* module heading */
+  --fs-22:22px;   /* page title, KPI */
+  --fs-24:24px;   /* page heading, big KPI */
+  --fs-28:28px;   /* storefront hero / marketing only */
+  --fw-normal:400;--fw-medium:500;--fw-semibold:600;--fw-bold:700;
+  --lh-heading:1.25;--lh-body:1.45;--lh-table:1.3;--lh-label:1.25;
+  --tx-primary:#14213d;--tx-secondary:#3b4a63;--tx-muted:#51607a;--tx-faint:#7b8aa8;
+  --tx-pos:#0f6b3c;--tx-neg:#b3261e;--tx-zero:#7b8aa8;
+}
+/* Text utilities */
+.text-micro{font-size:var(--fs-10);line-height:var(--lh-label)}
+.text-caption{font-size:var(--fs-11);line-height:var(--lh-label);color:var(--tx-muted)}
+.text-label{font-size:var(--fs-12);font-weight:var(--fw-semibold);line-height:var(--lh-label);color:var(--tx-muted)}
+.text-body{font-size:var(--fs-13);font-weight:var(--fw-normal);line-height:var(--lh-body)}
+.text-body-strong{font-size:var(--fs-13);font-weight:var(--fw-semibold);line-height:var(--lh-body)}
+.text-module-title{font-size:var(--fs-15);font-weight:var(--fw-bold);line-height:var(--lh-heading)}
+.text-section-title{font-size:var(--fs-18);font-weight:var(--fw-bold);line-height:var(--lh-heading)}
+.text-page-title{font-size:clamp(18px,1.5vw,22px);font-weight:var(--fw-bold);line-height:var(--lh-heading)}
+.text-number,.n,.num{font-variant-numeric:tabular-nums}
+.text-price{font-size:var(--fs-20);font-weight:var(--fw-bold);font-variant-numeric:tabular-nums}
+.text-muted{color:var(--tx-muted)}
+.text-pos{color:var(--tx-pos)}.text-neg{color:var(--tx-neg)}.text-zero{color:var(--tx-zero)}
+.bn{font-family:var(--font-bn)}
+/* Forms */
+.form-label{font-size:var(--fs-12);font-weight:var(--fw-semibold);color:var(--tx-muted)}
+.form-control-text{font-size:var(--fs-13)}
+.form-helper{font-size:var(--fs-11);color:var(--tx-muted);line-height:var(--lh-label)}
+.form-error{font-size:var(--fs-12);font-weight:var(--fw-semibold);color:var(--tx-neg)}
+/* Buttons */
+.btn-text{font-size:var(--fs-13);font-weight:var(--fw-semibold)}
+.btn-text-sm{font-size:var(--fs-12);font-weight:var(--fw-semibold)}
+.btn-text-primary{font-size:var(--fs-13);font-weight:var(--fw-bold)}
+/* Customer card */
+.customer-name{font-size:var(--fs-13);font-weight:var(--fw-bold)}
+.customer-meta{font-size:var(--fs-12);font-weight:var(--fw-medium);color:var(--tx-secondary)}
+.customer-address{font-size:var(--fs-12);line-height:1.35;color:var(--tx-muted)}
+.customer-chip{font-size:var(--fs-11);font-weight:var(--fw-semibold)}
+.customer-result{font-size:var(--fs-12);font-weight:var(--fw-bold)}

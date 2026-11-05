@@ -16,9 +16,9 @@
     <thead><tr><th>Code</th><th>Category</th><th>Parent</th><th>Default GL account</th><th>Type</th><th>Approval rule</th><th class="r">Monthly budget</th><th>Status</th>@if($isSa)<th class="no-sort">Edit</th>@endif</tr></thead>
     <tbody>
     @foreach($groups as $g)
-      <tr><td style="background:#f4f7fc;color:#51607a">{{ $g->code }}</td><td style="background:#f4f7fc;font-weight:800">{{ $g->name }} · {{ $g->children->count() }}</td><td style="background:#f4f7fc">—</td><td style="background:#f4f7fc"></td><td style="background:#f4f7fc"></td><td style="background:#f4f7fc"></td><td class="r" style="background:#f4f7fc">{{ $g->children->sum('monthly_budget') > 0 ? $U::tk($g->children->sum('monthly_budget')) : '' }}</td><td style="background:#f4f7fc"></td>@if($isSa)<td style="background:#f4f7fc"></td>@endif</tr>
+      <tr><td style="background:#f4f7fc;color:#51607a">{{ $g->code }}</td><td style="background:#f4f7fc;font-weight:700">{{ $g->name }} · {{ $g->children->count() }}</td><td style="background:#f4f7fc">—</td><td style="background:#f4f7fc"></td><td style="background:#f4f7fc"></td><td style="background:#f4f7fc"></td><td class="r" style="background:#f4f7fc">{{ $g->children->sum('monthly_budget') > 0 ? $U::tk($g->children->sum('monthly_budget')) : '' }}</td><td style="background:#f4f7fc"></td>@if($isSa)<td style="background:#f4f7fc"></td>@endif</tr>
       @foreach($g->children as $c)
-        <tr><td style="color:#51607a">{{ $c->code }}</td><td style="padding-left:24px;font-weight:600">{{ $c->name }}@if($c->source)<br><span class="sub" style="font-size:11px">entered in {{ \App\Models\ExpenseCategory::SOURCES[$c->source] }}</span>@endif</td><td>{{ $g->name }}</td><td>{{ $c->gl_account ?: '—' }}</td><td>{{ $c->type ?: '—' }}</td><td>{{ $c->approval_rule ?: '—' }}</td>
+        <tr><td style="color:#51607a">{{ $c->code }}</td><td style="padding-left:24px;font-weight:600">{{ $c->name }}@if($c->source)<br><span class="sub" style="font-size:var(--fs-11)">entered in {{ \App\Models\ExpenseCategory::SOURCES[$c->source] }}</span>@endif</td><td>{{ $g->name }}</td><td>{{ $c->gl_account ?: '—' }}</td><td>{{ $c->type ?: '—' }}</td><td>{{ $c->approval_rule ?: '—' }}</td>
           <td class="r">{{ $c->monthly_budget !== null ? $U::tk($c->monthly_budget) : '—' }}</td>
           <td class="c"><span class="pill" style="{{ $c->is_active ? 'background:#e3f6ec;color:#0f6b3c' : '' }}">{{ $c->is_active ? 'Active' : 'Inactive' }}</span></td>
           @if($isSa)<td class="c"><button class="btn sm" type="button" onclick='fillCat(@json($c))'>Edit</button></td>@endif</tr>
@@ -26,7 +26,7 @@
     @endforeach
     </tbody>
   </table></div>
-  <div style="padding:10px 20px;font-size:11px;color:#51607a;border-top:1px solid #dbe3f0">Salary, overtime, bonus and commission come from Payroll; vehicle repair from Fleet; stock purchases from Purchase. They show here for reporting but are entered only in their own module. Deposits, loans and asset purchases are not operating expenses.</div>
+  <div style="padding:10px 20px;font-size:var(--fs-11);color:#51607a;border-top:1px solid #dbe3f0">Salary, overtime, bonus and commission come from Payroll; vehicle repair from Fleet; stock purchases from Purchase. They show here for reporting but are entered only in their own module. Deposits, loans and asset purchases are not operating expenses.</div>
 </section>
 
 @if($isSa)
@@ -76,7 +76,7 @@ function fillCat(c){ const s=(k,v)=>document.getElementById(k).value=v??''; s('c
       <button class="btn pri" type="submit">Save</button>
     </form>
     @endif
-    <div style="padding:10px 20px;font-size:11px;color:#51607a;border-top:1px solid #dbe3f0">Each run makes a draft for review with a reminder. Nothing is paid automatically.</div>
+    <div style="padding:10px 20px;font-size:var(--fs-11);color:#51607a;border-top:1px solid #dbe3f0">Each run makes a draft for review with a reminder. Nothing is paid automatically.</div>
   </section>
 
   <section class="card" style="overflow:hidden">
@@ -100,16 +100,16 @@ function fillCat(c){ const s=(k,v)=>document.getElementById(k).value=v??''; s('c
       <button class="btn pri" type="submit">Save rule</button>
     </form>
     @endif
-    <div style="padding:10px 20px;font-size:11px;color:#51607a;border-top:1px solid #dbe3f0">Sample limits — set your own. Checked on the server, not only in the app.</div>
+    <div style="padding:10px 20px;font-size:var(--fs-11);color:#51607a;border-top:1px solid #dbe3f0">Sample limits — set your own. Checked on the server, not only in the app.</div>
   </section>
 </div>
 
 <form class="card" method="post" action="{{ route('expenses.alerts') }}" style="padding:18px 20px;display:flex;flex-wrap:wrap;gap:20px;align-items:center">@csrf
   <h2 class="h2" style="flex-grow:1">Budget alerts</h2>
-  <label style="display:flex;align-items:center;gap:8px;font-size:13px">First alert at <input type="number" name="alert1" value="{{ $alert1 }}" min="1" max="200" aria-label="First alert" style="width:72px;min-height:36px;text-align:center;font-weight:600" @disabled(! $isSa)>%</label>
-  <label style="display:flex;align-items:center;gap:8px;font-size:13px">Second alert at <input type="number" name="alert2" value="{{ $alert2 }}" min="1" max="300" aria-label="Second alert" style="width:72px;min-height:36px;text-align:center;font-weight:600" @disabled(! $isSa)>%</label>
-  <label style="display:flex;align-items:center;gap:8px;font-size:13px">Over budget <select name="over" aria-label="Over budget action" style="width:auto;min-height:36px;font-size:12px;font-weight:600" @disabled(! $isSa)><option value="allow" @selected($over === 'allow')>Allow, needs Super Admin</option><option value="block" @selected($over === 'block')>Block</option></select></label>
-  <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#51607a">Receipts: JPG, PNG or PDF, up to <input type="number" name="mb" value="{{ $mb }}" min="1" max="20" style="width:60px;min-height:36px;text-align:center" @disabled(! $isSa)> MB</label>
+  <label style="display:flex;align-items:center;gap:8px;font-size:var(--fs-13)">First alert at <input type="number" name="alert1" value="{{ $alert1 }}" min="1" max="200" aria-label="First alert" style="width:72px;min-height:36px;text-align:center;font-weight:600" @disabled(! $isSa)>%</label>
+  <label style="display:flex;align-items:center;gap:8px;font-size:var(--fs-13)">Second alert at <input type="number" name="alert2" value="{{ $alert2 }}" min="1" max="300" aria-label="Second alert" style="width:72px;min-height:36px;text-align:center;font-weight:600" @disabled(! $isSa)>%</label>
+  <label style="display:flex;align-items:center;gap:8px;font-size:var(--fs-13)">Over budget <select name="over" aria-label="Over budget action" style="width:auto;min-height:36px;font-size:var(--fs-12);font-weight:600" @disabled(! $isSa)><option value="allow" @selected($over === 'allow')>Allow, needs Super Admin</option><option value="block" @selected($over === 'block')>Block</option></select></label>
+  <label style="display:flex;align-items:center;gap:8px;font-size:var(--fs-12);color:#51607a">Receipts: JPG, PNG or PDF, up to <input type="number" name="mb" value="{{ $mb }}" min="1" max="20" style="width:60px;min-height:36px;text-align:center" @disabled(! $isSa)> MB</label>
   @if($isSa)<button class="btn pri" type="submit">Save</button>@endif
 </form>
 @endsection

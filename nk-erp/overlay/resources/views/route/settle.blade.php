@@ -17,30 +17,30 @@
 
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
   <section class="card" style="padding:20px;display:flex;flex-direction:column">
-    <span class="ttl" style="font-size:10px;margin-bottom:6px">TODAY'S SALES</span>
+    <span class="ttl" style="font-size:var(--fs-10);margin-bottom:6px">TODAY'S SALES</span>
     <div class="ln"><span>Cash sales</span><span>{{ $U::tk($c['cashSales']) }}</span></div>
     <div class="ln"><span>Bank / mobile banking sales</span><span>{{ $U::tk($c['digitalSales']) }}</span></div>
     <div class="ln"><span>Approved credit sales ({{ $c['creditShops']->count() }} shops)</span><span>{{ $U::tk($c['credit']) }}</span></div>
     <div class="tl"><span>Total sales</span><span>{{ $U::tk($c['totalSales']) }}</span></div>
-    <span style="font-size:11px;color:#51607a;margin-top:10px">From {{ $c['invoices'] }} invoices entered on this trip.</span>
+    <span style="font-size:var(--fs-11);color:#51607a;margin-top:10px">From {{ $c['invoices'] }} invoices entered on this trip.</span>
   </section>
   <section class="card" style="padding:20px;display:flex;flex-direction:column">
-    <span class="ttl" style="font-size:10px;margin-bottom:6px">TODAY'S COLLECTION</span>
+    <span class="ttl" style="font-size:var(--fs-10);margin-bottom:6px">TODAY'S COLLECTION</span>
     <div class="ln"><span>Cash from today's sales</span><span>{{ $U::tk($c['cashSales']) }}</span></div>
     <div class="ln"><span>Previous due collected (cash)</span><span>{{ $U::tk($c['prevCash']) }}</span></div>
     <div class="ln"><span>Digital payments{{ $trip->digital_verified !== null ? ' verified' : '' }}</span><span>{{ $U::tk($c['digitalTotal']) }}</span></div>
     <div class="tl"><span>Total collection</span><span>{{ $U::tk($c['collection']) }}</span></div>
-    <div style="background:#def5f7;color:#0b6670;border-radius:12px;padding:10px 12px;font-size:12px;line-height:18px;margin-top:10px">Previous due collected is <strong>not</strong> counted as today's sale. It reduces the shop's due in its ledger.</div>
+    <div style="background:#def5f7;color:#0b6670;border-radius:12px;padding:10px 12px;font-size:var(--fs-12);line-height:18px;margin-top:10px">Previous due collected is <strong>not</strong> counted as today's sale. It reduces the shop's due in its ledger.</div>
   </section>
   <section class="card" style="padding:20px;display:flex;flex-direction:column">
-    <span class="ttl" style="font-size:10px;margin-bottom:6px">CASH HAND-OVER</span>
+    <span class="ttl" style="font-size:var(--fs-10);margin-bottom:6px">CASH HAND-OVER</span>
     <div class="ln"><span>Cash collected</span><span>{{ $U::tk($c['cashCollected']) }}</span></div>
     <div class="ln"><span>(−) Approved expenses paid from cash</span><span>{{ $U::tk(-$c['expFromCash']) }}</span></div>
     <div class="tl"><span>Cash expected</span><span id="expected" data-v="{{ $c['expected'] }}">{{ $U::tk($c['expected']) }}</span></div>
     <div class="ln" style="margin-top:6px"><span>Cash deposited (counted)</span><span style="font-weight:700" id="countedTop">{{ $c['counted'] !== null ? $U::tk($c['counted']) : '—' }}</span></div>
     @php($diff = $c['cashDiff'])
     <div id="diffBox" style="background:{{ $diff !== null && $diff >= 0 ? '#e3f6ec' : '#fde9e7' }};color:{{ $diff !== null && $diff >= 0 ? '#0f6b3c' : '#b3261e' }};border-radius:12px;padding:12px;display:flex;align-items:center;margin-top:8px">
-      <span style="flex-grow:1;font-size:13px;font-weight:700" id="diffLbl">{{ $diff === null ? 'Not counted yet' : ($diff < 0 ? 'Cash short' : ($diff > 0 ? 'Cash extra' : 'Cash matches')) }}</span><span style="font-size:20px;font-weight:700" id="diffVal">{{ $diff === null ? '' : $U::tk(abs($diff)) }}</span></div>
+      <span style="flex-grow:1;font-size:var(--fs-13);font-weight:700" id="diffLbl">{{ $diff === null ? 'Not counted yet' : ($diff < 0 ? 'Cash short' : ($diff > 0 ? 'Cash extra' : 'Cash matches')) }}</span><span style="font-size:var(--fs-20);font-weight:700" id="diffVal">{{ $diff === null ? '' : $U::tk(abs($diff)) }}</span></div>
   </section>
 </div>
 
@@ -48,7 +48,7 @@
   <section class="card" style="padding:20px;display:flex;flex-direction:column;gap:6px">
     <h2 class="h2" style="margin:0 0 6px">Cash count</h2>
     @foreach($notes as $n)
-      <div style="display:flex;align-items:center;gap:10px;font-size:13px;font-variant-numeric:tabular-nums">
+      <div style="display:flex;align-items:center;gap:10px;font-size:var(--fs-13);font-variant-numeric:tabular-nums">
         <span style="width:70px;font-weight:600">৳{{ number_format($n) }}</span><span style="color:#51607a">×</span>
         <input type="number" min="0" name="notes[{{ $n }}]" data-d="{{ $n }}" value="{{ old('notes.'.$n, $saved[$n] ?? '') }}" aria-label="৳{{ $n }} note count" @disabled(! $edit) style="width:80px;min-height:36px;text-align:right;font:600 13px 'Plus Jakarta Sans',sans-serif">
         <span style="flex-grow:1;text-align:right;font-weight:600" class="nt">{{ $U::tk($n * (int) ($saved[$n] ?? 0)) }}</span>
@@ -64,7 +64,7 @@
     @empty
       <div class="ln"><span>No digital payments on this trip</span><span></span></div>
     @endforelse
-    @if($edit && $c['digitalRows']->isNotEmpty())<label style="display:flex;gap:8px;align-items:center;font-size:12px;font-weight:600"><input type="checkbox" name="digital_ok" value="1" style="width:auto;min-height:0"> I checked these in the bKash / Nagad / bank statement</label>@endif
+    @if($edit && $c['digitalRows']->isNotEmpty())<label style="display:flex;gap:8px;align-items:center;font-size:var(--fs-12);font-weight:600"><input type="checkbox" name="digital_ok" value="1" style="width:auto;min-height:0"> I checked these in the bKash / Nagad / bank statement</label>@endif
     <h2 class="h2" style="margin:14px 0 6px">Approved credit</h2>
     @forelse($c['creditShops'] as $r)
       <div class="ln"><span>{{ $r['sale']->buyerName() }} · {{ $r['sale']->invoice_no }}</span><span>{{ $U::tk($r['due']) }}</span></div>

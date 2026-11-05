@@ -4,8 +4,8 @@
 @php($U = \App\Support\Ui::class)
 @php($sa = auth()->user()->isSuperAdmin())
 @php($st = \App\Support\Sms::class)
-<style>.fld{display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:600;color:#51607a}.sec{font-size:10px;font-weight:700;letter-spacing:.08em;color:#51607a}
-.tg{display:flex;align-items:center;gap:10px;font-size:13px;padding:6px 0;border-top:1px solid #dbe3f0}.sw{position:relative;width:34px;height:20px;border-radius:999px;flex-shrink:0}.sw i{position:absolute;top:2px;width:16px;height:16px;border-radius:999px;background:#fff;transition:left .2s}
+<style>.fld{display:flex;flex-direction:column;gap:4px;font-size:var(--fs-11);font-weight:600;color:#51607a}.sec{font-size:var(--fs-10);font-weight:700;letter-spacing:.08em;color:#51607a}
+.tg{display:flex;align-items:center;gap:10px;font-size:var(--fs-13);padding:6px 0;border-top:1px solid #dbe3f0}.sw{position:relative;width:34px;height:20px;border-radius:999px;flex-shrink:0}.sw i{position:absolute;top:2px;width:16px;height:16px;border-radius:999px;background:#fff;transition:left .2s}
 .sw input{position:absolute;inset:0;opacity:0;cursor:pointer;margin:0;min-height:0}</style>
 <form method="post" action="{{ route('sms.gateway') }}" style="display:flex;flex-direction:column;gap:16px">@csrf
 <header style="display:flex;flex-wrap:wrap;align-items:center;gap:12px">
@@ -17,24 +17,24 @@
 @php($rate = (float) \App\Models\Setting::get('sms_rate', '0'))
 @php($kpis = [['Invoices today', $sales->count(), 'blue'], ['POS prints', $sales->sum('pos_prints'), 'info'], ['A4 PDFs', $sales->sum('a4_prints'), 'info'], ['SMS sent', $sms->whereNotIn('status', ['no_mobile', 'off'])->count(), 'blue'], ['Delivered to gateway', $sent, 'pos'], ['Failed', $sms->where('status', 'failed')->count(), 'neg'], ['SMS cost', $rate ? '৳'.number_format($sent * $rate, 2) : '[rate]', 'gray']])
 <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px">
-  @foreach($kpis as [$l, $v, $c])<div style="background:{{ $U::bg($c) }};border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:2px;border:1px solid #dbe3f0"><span style="font-size:11px;font-weight:600;color:#51607a">{{ $l }}</span><span style="font-size:20px;font-weight:700;color:{{ $U::ink($c) }}">{{ $v }}</span></div>@endforeach
+  @foreach($kpis as [$l, $v, $c])<div style="background:{{ $U::bg($c) }};border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:2px;border:1px solid #dbe3f0"><span style="font-size:var(--fs-11);font-weight:600;color:#51607a">{{ $l }}</span><span style="font-size:var(--fs-20);font-weight:700;color:{{ $U::ink($c) }}">{{ $v }}</span></div>@endforeach
 </section>
 @unless($configured)<div class="flash" style="background:#fff1d6;color:#8a4b00">SMS gateway is not set up yet. Messages are written (status "Gateway not set") and go out with "Retry" once the provider is added.</div>@endunless
 
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:16px;align-items:start">
   <fieldset @disabled(! $sa) class="card" style="padding:20px;display:flex;flex-direction:column;gap:12px;border:1px solid #dbe3f0;margin:0;min-width:0">
-    <h2 style="margin:0;font-size:15px">SMS gateway</h2>
+    <h2 style="margin:0;font-size:var(--fs-15)">SMS gateway</h2>
     <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
       <label class="fld">SMS provider<input name="sms_provider" list="prov" value="{{ \App\Models\Setting::get('sms_provider') }}" placeholder="[Choose provider]"><datalist id="prov"><option>BulkSMSBD</option><option>SSL Wireless</option><option>Alpha SMS</option><option>Other (HTTP)</option></datalist></label>
       <label class="fld">Sender ID<input name="sms_sender" value="{{ \App\Models\Setting::get('sms_sender') }}" placeholder="As approved by provider"></label>
     </div>
     <label class="fld">API endpoint<input name="sms_endpoint" value="{{ \App\Models\Setting::get('sms_endpoint') }}" placeholder="Not provided — e.g. https://provider/api?key={api_key}&amp;to={to}&amp;from={sender}&amp;text={message}"></label>
     <label class="fld">API key / token<input type="password" name="sms_key" autocomplete="new-password" placeholder="{{ \App\Models\Setting::get('sms_key') ? 'Saved — leave empty to keep' : 'Not provided' }}"></label>
-    <span style="font-size:11px;color:#51607a">Kept on the server only, encrypted. The mobile app never receives the key. Use {api_key}, {sender}, {to} and {message} in the endpoint.</span>
+    <span style="font-size:var(--fs-11);color:#51607a">Kept on the server only, encrypted. The mobile app never receives the key. Use {api_key}, {sender}, {to} and {message} in the endpoint.</span>
     <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
       <label class="fld">SMS language<select name="sms_lang"><option value="bn" @selected(\App\Models\Setting::get('sms_lang', 'bn') === 'bn')>Bangla</option><option value="en" @selected(\App\Models\Setting::get('sms_lang') === 'en')>English</option></select></label>
       <label class="fld">Cost per SMS (৳)<input name="sms_rate" type="number" step="0.01" min="0" value="{{ \App\Models\Setting::get('sms_rate') }}" placeholder="[rate]"></label>
-      <div class="fld">SMS balance<div style="min-height:40px;display:flex;align-items:center;font-size:13px;color:#51607a">Shows after the provider is connected</div></div>
+      <div class="fld">SMS balance<div style="min-height:40px;display:flex;align-items:center;font-size:var(--fs-13);color:#51607a">Shows after the provider is connected</div></div>
     </div>
     <span class="sec" style="margin-top:4px">AUTO SMS</span>
     @foreach($st::TYPES as $k => [$l, $sched])
@@ -44,12 +44,12 @@
   </fieldset>
 
   <fieldset @disabled(! $sa) class="card" style="padding:20px;display:flex;flex-direction:column;gap:12px;border:1px solid #dbe3f0;margin:0;min-width:0">
-    <div style="display:flex;align-items:center"><h2 style="margin:0;font-size:15px;flex-grow:1">Templates</h2><span style="font-size:12px;color:#51607a">বাংলা · English</span></div>
+    <div style="display:flex;align-items:center"><h2 style="margin:0;font-size:var(--fs-15);flex-grow:1">Templates</h2><span style="font-size:var(--fs-12);color:#51607a">বাংলা · English</span></div>
     <div style="display:flex;flex-wrap:wrap;gap:6px">@foreach($st::TYPES as $k => [$l])<a href="{{ route('sms.index', ['t' => $k]) }}" class="pill" style="text-decoration:none;{{ $k === $kind ? 'background:#123a86;color:#fff' : '' }}">{{ $l }}</a>@endforeach</div>
     <label class="fld">{{ $st::TYPES[$kind][0] }} · বাংলা<textarea name="tpl[{{ $kind }}|bn]" rows="4" style="font-family:'Hind Siliguri',sans-serif;line-height:20px">{{ $st::template($kind, 'bn') }}</textarea></label>
     <label class="fld">{{ $st::TYPES[$kind][0] }} · English<textarea name="tpl[{{ $kind }}|en]" rows="3">{{ $st::template($kind, 'en') }}</textarea></label>
-    <div style="background:#f4f7fc;border-radius:10px;padding:10px 12px;font-size:12px;line-height:18px;font-family:'Hind Siliguri',sans-serif"><b>Preview:</b> {{ $preview }}</div>
-    <span style="font-size:11px;color:#51607a">Fields: {company}, {phone}, {invoice_no}, {total}, {paid}, {due}, {paid_amount}, {empties}, {message}. Other templates are edited the same way — pick one above.</span>
+    <div style="background:#f4f7fc;border-radius:10px;padding:10px 12px;font-size:var(--fs-12);line-height:18px;font-family:'Hind Siliguri',sans-serif"><b>Preview:</b> {{ $preview }}</div>
+    <span style="font-size:var(--fs-11);color:#51607a">Fields: {company}, {phone}, {invoice_no}, {total}, {paid}, {due}, {paid_amount}, {empties}, {message}. Other templates are edited the same way — pick one above.</span>
   </fieldset>
 </div>
 </form>
@@ -63,8 +63,8 @@
 @endif
 
 <section class="card" style="overflow:hidden">
-  <div style="padding:16px 20px;display:flex;align-items:center;gap:10px"><h2 style="margin:0;font-size:15px;flex-grow:1">Invoice &amp; SMS history</h2>
-    <form method="get"><select name="f" onchange="this.form.submit()" style="width:auto;min-height:34px;border-radius:999px;font-size:12px;font-weight:600"><option value="">All</option><option value="failed" @selected($f === 'failed')>SMS failed</option><option value="reprinted" @selected($f === 'reprinted')>Reprinted</option></select></form></div>
+  <div style="padding:16px 20px;display:flex;align-items:center;gap:10px"><h2 style="margin:0;font-size:var(--fs-15);flex-grow:1">Invoice &amp; SMS history</h2>
+    <form method="get"><select name="f" onchange="this.form.submit()" style="width:auto;min-height:34px;border-radius:999px;font-size:var(--fs-12);font-weight:600"><option value="">All</option><option value="failed" @selected($f === 'failed')>SMS failed</option><option value="reprinted" @selected($f === 'reprinted')>Reprinted</option></select></form></div>
   <div class="dt-wrap" style="margin:0 16px 16px"><table class="dt">
     <thead><tr><th>Invoice</th><th>Time</th><th>Customer</th><th>Vehicle</th><th class="r">Total</th><th>POS print</th><th>A4 PDF</th><th>SMS</th></tr></thead>
     <tbody>

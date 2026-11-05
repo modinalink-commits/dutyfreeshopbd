@@ -13,7 +13,7 @@
 </section>
 <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
   <section class="card" style="flex:999 1 560px;min-width:0">
-    <form method="get" class="pad" style="display:flex;align-items:center;gap:8px"><h2 style="margin:0;font-size:15px;flex-grow:1">Orders — last 60 days</h2>
+    <form method="get" class="pad" style="display:flex;align-items:center;gap:8px"><h2 style="margin:0;font-size:var(--fs-15);flex-grow:1">Orders — last 60 days</h2>
       <select name="stage" onchange="this.form.submit()" aria-label="Filter by stage" style="max-width:200px;border-radius:999px"><option value="">All stages</option>@foreach(['waiting' => 'Waiting to load', 'on_road' => 'On the road', 'delivered' => 'Delivered', 'voided' => 'Voided'] as $k => $l)<option value="{{ $k }}" @selected($stage === $k)>{{ $l }}</option>@endforeach</select></form>
     <div class="dt-wrap"><table class="dt">
       <thead><tr><th>Order</th><th>Date</th><th>Dealer</th><th>12 kg</th><th>35 kg</th><th>45 kg</th><th>Empties back</th><th>Bill</th><th>Paid</th><th>Stage</th>@if($mgr)<th class="no-sort">Next step</th>@endif</tr></thead>
@@ -51,9 +51,9 @@
   @if($mgr)
   <form class="card pad" method="post" action="{{ route('wholesale.store') }}" style="flex:1 1 320px;min-width:290px;display:flex;flex-direction:column;gap:12px" id="wform">
     @csrf
-    <h2 style="margin:0;font-size:15px">New dealer order</h2>
+    <h2 style="margin:0;font-size:var(--fs-15)">New dealer order</h2>
     <label class="f">Dealer<select name="customer_id" required><option value="">Choose dealer</option>@foreach($dealers as $d)<option value="{{ $d->id }}" @selected(old('customer_id') == $d->id)>{{ $d->name }}@if($d->area) — {{ $d->area }}@endif</option>@endforeach</select></label>
-    <div id="dinfo" style="display:none;background:#fff1d6;color:#8a4b00;border-radius:12px;padding:10px 12px;font-size:12px;line-height:18px"></div>
+    <div id="dinfo" style="display:none;background:#fff1d6;color:#8a4b00;border-radius:12px;padding:10px 12px;font-size:var(--fs-12);line-height:18px"></div>
     @if($dealers->isEmpty())<span class="sub">Add dealers first in <a href="{{ route('customers.index', ['new' => 1]) }}">Customers</a> (type Dealer or Commercial).</span>@endif
     <div class="grid2" style="grid-template-columns:repeat(2,minmax(0,1fr))">
       @foreach($products as $p)
@@ -66,7 +66,7 @@
       <label class="f">Vehicle<input type="text" name="vehicle" value="{{ old('vehicle') }}"></label>
       <label class="f">Empties to collect<input type="number" min="0" name="empties_collect" id="wemp" value="{{ old('empties_collect') }}"></label>
     </div>
-    <div style="background:#eef2f9;border-radius:12px;padding:12px;display:flex;font-size:16px;font-weight:700"><span style="flex-grow:1">Bill</span><span id="wbill">৳0</span></div>
+    <div style="background:#eef2f9;border-radius:12px;padding:12px;display:flex;font-size:var(--fs-16);font-weight:700"><span style="flex-grow:1">Bill</span><span id="wbill">৳0</span></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn pri" type="submit" name="print" value="1" style="min-height:46px;flex-grow:1">Save &amp; print challan</button><button class="btn" type="submit" style="min-height:46px">Save only</button></div>
     <span class="sub">Stock leaves when you press Loaded. The dealer is billed when the order is delivered.</span>
   </form>

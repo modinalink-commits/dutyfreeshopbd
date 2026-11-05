@@ -20,7 +20,7 @@
 </section>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px;align-items:start">
   <section class="card pad" style="display:flex;flex-direction:column;gap:2px;font-variant-numeric:tabular-nums">
-    <h2 style="margin:0 0 8px;font-size:15px">Profit &amp; loss — month to date</h2>
+    <h2 style="margin:0 0 8px;font-size:var(--fs-15)">Profit &amp; loss — month to date</h2>
     @php($row = fn ($k, $v, $kind = '') => compact('k', 'v', 'kind'))
     @php($lines = [
       $row('SALES', null, 'h'), $row('Refill sales', $pl['refill']), $row('New package sales', $pl['pkg']), $row('Accessories & service', $pl['acc']),
@@ -42,10 +42,10 @@
   </section>
   <section style="display:flex;flex-direction:column;gap:16px">
     <div class="card pad" style="display:flex;flex-direction:column;gap:12px">
-      <h2 style="margin:0;font-size:15px">Profit by investment</h2>
+      <h2 style="margin:0;font-size:var(--fs-15)">Profit by investment</h2>
       <div class="grid2" style="grid-template-columns:repeat(2,minmax(0,1fr))">
-        <div style="background:#e6eeff;border-radius:12px;padding:12px;display:flex;flex-direction:column"><span class="sub" style="margin:0;font-size:11px;font-weight:600">Total investment</span><b style="font-size:20px;color:#1d4ed8">{{ $investment ? $big($investment) : 'Not entered' }}</b></div>
-        <div style="background:#e3f6ec;border-radius:12px;padding:12px;display:flex;flex-direction:column"><span class="sub" style="margin:0;font-size:11px;font-weight:600">Profit per ৳1,00,000</span><b style="font-size:20px;color:#0f6b3c">{{ $investment ? $tk($pl['net'] / $investment * 100000) : '—' }}</b></div>
+        <div style="background:#e6eeff;border-radius:12px;padding:12px;display:flex;flex-direction:column"><span class="sub" style="margin:0;font-size:var(--fs-11);font-weight:600">Total investment</span><b style="font-size:var(--fs-20);color:#1d4ed8">{{ $investment ? $big($investment) : 'Not entered' }}</b></div>
+        <div style="background:#e3f6ec;border-radius:12px;padding:12px;display:flex;flex-direction:column"><span class="sub" style="margin:0;font-size:var(--fs-11);font-weight:600">Profit per ৳1,00,000</span><b style="font-size:var(--fs-20);color:#0f6b3c">{{ $investment ? $tk($pl['net'] / $investment * 100000) : '—' }}</b></div>
       </div>
       <div class="dt-wrap"><table class="dt">
         <thead><tr><th>Partner</th><th>Investment</th><th>Share</th><th>Profit</th></tr></thead>
@@ -65,7 +65,7 @@
       </form>
     </div>
     <form class="card pad" method="post" action="{{ route('accounts.expense') }}" style="display:flex;flex-direction:column;gap:12px">@csrf
-      <h2 style="margin:0;font-size:15px">Add expense</h2>
+      <h2 style="margin:0;font-size:var(--fs-15)">Add expense</h2>
       <div class="grid2" style="grid-template-columns:repeat(2,minmax(0,1fr))">
         <label class="f">Head<select name="head">@foreach(\App\Models\Expense::HEADS as $h)<option>{{ $h }}</option>@endforeach</select></label>
         <label class="f">Amount (৳)<input type="number" step="0.01" min="1" name="amount" required></label>
@@ -79,13 +79,13 @@
   </section>
 </div>
 <section class="card">
-  <div class="pad"><h2 style="margin:0;font-size:15px">Latest expenses</h2></div>
+  <div class="pad"><h2 style="margin:0;font-size:var(--fs-15)">Latest expenses</h2></div>
   <div class="dt-wrap"><table class="dt">
     <thead><tr><th>Date</th><th>Head</th><th>Amount</th><th>Paid from</th><th>Note</th><th class="no-sort"></th></tr></thead>
     <tbody>
     @forelse($recent as $x)
       <tr><td class="c">{{ $x->expense_date->format('d-m-Y') }}</td><td>{{ $x->head }}</td><td class="r">{{ $tk($x->amount) }}</td><td>{{ $x->account?->name }}</td><td>{{ $x->note }}</td>
-        <td class="c">@if(! $x->reversal_of && ! $x->reversedBy)<details><summary style="cursor:pointer;font-size:12px">Reverse</summary><form method="post" action="{{ route('accounts.expense.reverse', $x) }}" style="display:flex;gap:4px;margin-top:4px">@csrf<input type="text" name="reason" placeholder="Reason" required style="min-height:30px;width:120px"><button class="btn sm" type="submit">OK</button></form></details>@elseif($x->reversedBy)<span class="pill st-cancelled">reversed</span>@endif</td></tr>
+        <td class="c">@if(! $x->reversal_of && ! $x->reversedBy)<details><summary style="cursor:pointer;font-size:var(--fs-12)">Reverse</summary><form method="post" action="{{ route('accounts.expense.reverse', $x) }}" style="display:flex;gap:4px;margin-top:4px">@csrf<input type="text" name="reason" placeholder="Reason" required style="min-height:30px;width:120px"><button class="btn sm" type="submit">OK</button></form></details>@elseif($x->reversedBy)<span class="pill st-cancelled">reversed</span>@endif</td></tr>
     @empty
       <tr><td colspan="6" class="empty">No expenses yet.</td></tr>
     @endforelse
@@ -94,7 +94,7 @@
 </section>
 <div id="accounts-setup" class="grid2" style="align-items:start">
   <form class="card pad" method="post" action="{{ route('accounts.account') }}" style="display:flex;flex-direction:column;gap:10px">@csrf
-    <h2 style="margin:0;font-size:15px">Add a money account</h2>
+    <h2 style="margin:0;font-size:var(--fs-15)">Add a money account</h2>
     <div class="grid2" style="grid-template-columns:repeat(2,minmax(0,1fr))">
       <label class="f">Name<input type="text" name="name" placeholder="Cash in hand / BRAC Bank / bKash" required></label>
       <label class="f">Type<select name="type">@foreach(\App\Models\MoneyAccount::TYPES as $k => $l)<option value="{{ $k }}">{{ $l }}</option>@endforeach</select></label>
@@ -105,7 +105,7 @@
     <button class="btn pri" type="submit">Add account</button>
   </form>
   <form class="card pad" method="post" action="{{ route('accounts.transfer') }}" style="display:flex;flex-direction:column;gap:10px">@csrf
-    <h2 style="margin:0;font-size:15px">Move money between accounts</h2>
+    <h2 style="margin:0;font-size:var(--fs-15)">Move money between accounts</h2>
     <div class="grid2" style="grid-template-columns:repeat(2,minmax(0,1fr))">
       <label class="f">From<select name="from_account_id">@foreach($accounts as $a)<option value="{{ $a->id }}">{{ $a->name }}</option>@endforeach</select></label>
       <label class="f">To<select name="to_account_id">@foreach($accounts as $a)<option value="{{ $a->id }}">{{ $a->name }}</option>@endforeach</select></label>

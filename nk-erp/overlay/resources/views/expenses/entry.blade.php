@@ -15,9 +15,9 @@
 </header>
 <section class="card" aria-label="Status" style="padding:12px 16px;display:flex;flex-wrap:wrap;gap:6px;align-items:center">
   @foreach(['Draft', 'Submitted', 'Pending approval', 'Approved', 'Posted', 'Paid'] as $i => $t)
-    <span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;{{ $i === 0 ? 'background:#8a4b00;color:#fff' : 'background:#eef2f9;color:#51607a' }}">{{ $t }}</span>
+    <span style="font-size:var(--fs-11);font-weight:700;padding:4px 10px;border-radius:999px;{{ $i === 0 ? 'background:#8a4b00;color:#fff' : 'background:#eef2f9;color:#51607a' }}">{{ $t }}</span>
   @endforeach
-  <span style="font-size:11px;color:#51607a;margin-left:auto">Approval and payment are separate steps.</span>
+  <span style="font-size:var(--fs-11);color:#51607a;margin-left:auto">Approval and payment are separate steps.</span>
 </section>
 
 <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
@@ -25,7 +25,7 @@
     <div class="f"><span>Expense category</span>
       <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
         @foreach($quick as $q)<button type="button" class="chip" data-id="{{ $q->id }}" style="min-height:38px;padding:0 14px;border-radius:999px;cursor:pointer;font:600 12px 'Plus Jakarta Sans',sans-serif;border:1px solid #7b8aa8;background:#fff;color:#14213d">{{ $q->name }}</button>@endforeach
-        <select id="catSel" aria-label="All categories" style="width:auto;min-height:38px;border-radius:999px;font-size:12px;font-weight:600">
+        <select id="catSel" aria-label="All categories" style="width:auto;min-height:38px;border-radius:999px;font-size:var(--fs-12);font-weight:600">
           @foreach($cats->groupBy(fn ($c) => $c->parent->name) as $gname => $list)<optgroup label="{{ $gname }}">@foreach($list as $c)<option value="{{ $c->id }}" @selected($selCat == $c->id) @disabled($c->source) data-form="{{ $c->form }}" data-gl="{{ $c->gl_account ?: $c->name }}" data-name="{{ $c->name }}" data-budget="{{ (float) $c->monthly_budget }}" data-used="{{ (float) ($used[$c->id] ?? 0) }}" data-group="{{ $gname }}">{{ $c->code }} · {{ $c->name }}{{ $c->source ? ' (from '.\App\Models\ExpenseCategory::SOURCES[$c->source].')' : '' }}</option>@endforeach</optgroup>@endforeach
         </select>
       </div>
@@ -55,7 +55,7 @@
         <div class="f" data-form="reimb"><span>Approval status</span><div class="box auto">{{ $claim ? \App\Models\ExpenseClaim::FLOW[$claim->status] : 'New — will wait for manager' }}</div></div>
         <label class="f" data-form="bill"><span>Bill month</span><input type="month" name="extra[bill_month]" value="{{ $ex['bill_month'] ?? '' }}"></label>
         <label class="f" data-form="bill"><span>Invoice ref.</span><input name="extra[invoice]" maxlength="60" value="{{ $ex['invoice'] ?? '' }}"></label>
-        <label class="f" data-form="general fuel rent reimb bill"><span>Receipt (JPG, PNG or PDF, up to {{ $maxMb }} MB)</span><input type="file" name="receipt" accept=".jpg,.jpeg,.png,.pdf" style="padding:8px">@if($claim?->receipt_path)<a href="{{ route('expenses.receipt', $claim) }}" target="_blank" style="font-size:11px">current receipt</a>@endif</label>
+        <label class="f" data-form="general fuel rent reimb bill"><span>Receipt (JPG, PNG or PDF, up to {{ $maxMb }} MB)</span><input type="file" name="receipt" accept=".jpg,.jpeg,.png,.pdf" style="padding:8px">@if($claim?->receipt_path)<a href="{{ route('expenses.receipt', $claim) }}" target="_blank" style="font-size:var(--fs-11)">current receipt</a>@endif</label>
       </div>
     </div>
     <div style="border-top:1px solid #dbe3f0;padding-top:14px;display:flex;flex-direction:column;gap:8px">
@@ -84,11 +84,11 @@
         <thead><tr><th>Account</th><th class="r">Debit</th><th class="r">Credit</th></tr></thead>
         <tbody><tr><td id="glDr">—</td><td class="r amtV">—</td><td class="r"></td></tr><tr><td id="glCr">—</td><td class="r"></td><td class="r amtV">—</td></tr></tbody>
       </table></div>
-      <div style="padding:10px 16px;font-size:11px;color:#51607a;line-height:16px">Posts only after approval. <span id="src"></span></div>
+      <div style="padding:10px 16px;font-size:var(--fs-11);color:#51607a;line-height:16px">Posts only after approval. <span id="src"></span></div>
     </section>
     <section class="card" style="padding:16px;display:flex;flex-direction:column;gap:8px">
       <h2 class="h2">Budget check</h2>
-      <div style="display:flex;font-size:12px"><span style="flex-grow:1;color:#51607a" id="bName">—</span><span style="font-weight:700" id="bUse">—</span></div>
+      <div style="display:flex;font-size:var(--fs-12)"><span style="flex-grow:1;color:#51607a" id="bName">—</span><span style="font-weight:700" id="bUse">—</span></div>
       <div style="height:10px;border-radius:999px;background:#eef2f9"><div id="bBar" style="height:10px;border-radius:999px;background:#1f9d55;width:0"></div></div>
       <span class="bn" id="bText">—</span>
     </section>

@@ -26,28 +26,28 @@
 @php($pN = $bnMonth[\Carbon\Carbon::parse($prev.'-01')->format('F')] ?? '')
 <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:stretch">
   <details class="card pad" style="flex:2 1 420px;min-width:0">
-    <summary style="display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none"><span style="flex-grow:1;display:flex;flex-direction:column"><span style="font-size:12px;color:var(--muted)">কোম্পানির কাছে জমা · {{ now()->timezone('Asia/Dhaka')->format('d-m-Y') }}</span><b style="font-size:22px">{{ \App\Support\Ui::bd($balanceToday) }}</b></span><span class="btn sm">হিসাব দেখুন ▾</span></summary>
+    <summary style="display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none"><span style="flex-grow:1;display:flex;flex-direction:column"><span style="font-size:var(--fs-12);color:var(--muted)">কোম্পানির কাছে জমা · {{ now()->timezone('Asia/Dhaka')->format('d-m-Y') }}</span><b style="font-size:var(--fs-22)">{{ \App\Support\Ui::bd($balanceToday) }}</b></span><span class="btn sm">হিসাব দেখুন ▾</span></summary>
     <div style="display:flex;flex-direction:column;margin-top:10px">
       @foreach($explain as $x)
-        <a href="{{ route('company.index', ['m' => $x['m']]) }}" style="display:flex;font-size:13px;padding:6px 0;border-bottom:1px solid #eef2f9;text-decoration:none;color:inherit"><span style="flex-grow:1;color:var(--muted)">{{ $x['t'] }} <span style="font-size:11px">({{ $x['n'] }})</span></span><span style="font-weight:600;font-variant-numeric:tabular-nums">{{ $x['a'] >= 0 ? '+' : '−' }} {{ \App\Support\Ui::bd(abs($x['a']), true) }}</span></a>
+        <a href="{{ route('company.index', ['m' => $x['m']]) }}" style="display:flex;font-size:var(--fs-13);padding:6px 0;border-bottom:1px solid #eef2f9;text-decoration:none;color:inherit"><span style="flex-grow:1;color:var(--muted)">{{ $x['t'] }} <span style="font-size:var(--fs-11)">({{ $x['n'] }})</span></span><span style="font-weight:600;font-variant-numeric:tabular-nums">{{ $x['a'] >= 0 ? '+' : '−' }} {{ \App\Support\Ui::bd(abs($x['a']), true) }}</span></a>
       @endforeach
-      <div style="display:flex;font-size:14px;padding:8px 0;font-weight:800"><span style="flex-grow:1">মোট</span><span>{{ \App\Support\Ui::bd($balanceToday, true) }}</span></div>
+      <div style="display:flex;font-size:var(--fs-14);padding:8px 0;font-weight:700"><span style="flex-grow:1">মোট</span><span>{{ \App\Support\Ui::bd($balanceToday, true) }}</span></div>
       <span class="sub" style="margin:0">বিল = সিলিন্ডার × (DO − Transport) · প্রতিটা লাইনে ক্লিক করলে সেই মাসের এন্ট্রিগুলো খোলে।</span>
     </div>
   </details>
   <section class="card pad" style="flex:1 1 280px;min-width:0;display:flex;flex-direction:column;gap:8px">
-    <div style="display:flex;align-items:baseline;gap:8px"><b style="font-size:22px">{{ number_format($tons, 1) }} t</b>@if($pct !== null)<span style="font-weight:700;color:{{ $pct >= 0 ? '#0f6b3c' : '#b42318' }}">{{ $pct >= 0 ? '▲' : '▼' }} {{ number_format(abs($pct), 0) }}%</span>@endif</div>
-    <span style="font-size:13px;line-height:20px">{{ $mN }}ে কোম্পানি থেকে {{ number_format($tons, 1) }} টন গ্যাস তোলা হয়েছে@if($pct !== null), {{ $pN }}ের ({{ number_format($prevTons, 1) }} টন) চেয়ে <b>{{ number_format(abs($pct), 0) }}% {{ $pct >= 0 ? 'বেশি' : 'কম' }}</b>@endif।</span>
+    <div style="display:flex;align-items:baseline;gap:8px"><b style="font-size:var(--fs-22)">{{ number_format($tons, 1) }} t</b>@if($pct !== null)<span style="font-weight:700;color:{{ $pct >= 0 ? '#0f6b3c' : '#b42318' }}">{{ $pct >= 0 ? '▲' : '▼' }} {{ number_format(abs($pct), 0) }}%</span>@endif</div>
+    <span style="font-size:var(--fs-13);line-height:20px">{{ $mN }}ে কোম্পানি থেকে {{ number_format($tons, 1) }} টন গ্যাস তোলা হয়েছে@if($pct !== null), {{ $pN }}ের ({{ number_format($prevTons, 1) }} টন) চেয়ে <b>{{ number_format(abs($pct), 0) }}% {{ $pct >= 0 ? 'বেশি' : 'কম' }}</b>@endif।</span>
     @php($mx = max($tons, $prevTons, 0.1))
     <div style="display:flex;align-items:flex-end;gap:14px;height:70px">
-      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1"><span style="font-size:11px">{{ number_format($prevTons, 1) }}</span><div style="width:100%;max-width:60px;height:{{ max(2, round($prevTons / $mx * 44)) }}px;background:#c9d2e3;border-radius:6px 6px 0 0"></div><span style="font-size:11px;color:var(--muted)">{{ $pN }}</span></div>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1"><span style="font-size:11px;font-weight:700">{{ number_format($tons, 1) }}</span><div style="width:100%;max-width:60px;height:{{ max(2, round($tons / $mx * 44)) }}px;background:#123a86;border-radius:6px 6px 0 0"></div><span style="font-size:11px;color:var(--muted)">{{ $mN }}</span></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1"><span style="font-size:var(--fs-11)">{{ number_format($prevTons, 1) }}</span><div style="width:100%;max-width:60px;height:{{ max(2, round($prevTons / $mx * 44)) }}px;background:#c9d2e3;border-radius:6px 6px 0 0"></div><span style="font-size:var(--fs-11);color:var(--muted)">{{ $pN }}</span></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1"><span style="font-size:var(--fs-11);font-weight:700">{{ number_format($tons, 1) }}</span><div style="width:100%;max-width:60px;height:{{ max(2, round($tons / $mx * 44)) }}px;background:#123a86;border-radius:6px 6px 0 0"></div><span style="font-size:var(--fs-11);color:var(--muted)">{{ $mN }}</span></div>
     </div>
   </section>
 </div>
 <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
   <section class="card" style="flex:999 1 620px;min-width:0">
-    <div class="pad" style="display:flex;align-items:center;gap:8px"><h2 style="margin:0;font-size:15px;flex-grow:1">Ledger — {{ $start->format('F Y') }}</h2><button class="btn sm" type="button" onclick="window.print()">Download PDF</button></div>
+    <div class="pad" style="display:flex;align-items:center;gap:8px"><h2 style="margin:0;font-size:var(--fs-15);flex-grow:1">Ledger — {{ $start->format('F Y') }}</h2><button class="btn sm" type="button" onclick="window.print()">Download PDF</button></div>
     <div class="dt-wrap"><table class="dt">
       <thead><tr><th>Date</th><th>Detail</th><th>12 / 35 / 45 kg</th><th>DO</th><th>Transport</th><th>Bill</th><th>Deposit</th><th>Balance</th><th class="no-sort"></th></tr></thead>
       <tbody>
@@ -60,7 +60,7 @@
           <td class="r">{{ $r['bill'] !== null ? $tk($r['bill']) : '' }}</td><td class="r">{{ $r['dep'] !== null ? $tk($r['dep']) : '' }}</td>
           <td class="r"><b>{{ $tk($r['bal']) }}</b></td>
           <td class="c">@if($r['ids'] && empty($r['rev']))
-            <details><summary style="cursor:pointer;font-size:12px">Reverse</summary><form method="post" action="{{ route('company.reverse') }}" style="display:flex;gap:4px;margin-top:4px">@csrf @foreach($r['ids'] as $id)<input type="hidden" name="ids[]" value="{{ $id }}">@endforeach<input type="text" name="reason" placeholder="Reason" required style="min-height:30px;width:120px"><button class="btn sm" type="submit">OK</button></form></details>
+            <details><summary style="cursor:pointer;font-size:var(--fs-12)">Reverse</summary><form method="post" action="{{ route('company.reverse') }}" style="display:flex;gap:4px;margin-top:4px">@csrf @foreach($r['ids'] as $id)<input type="hidden" name="ids[]" value="{{ $id }}">@endforeach<input type="text" name="reason" placeholder="Reason" required style="min-height:30px;width:120px"><button class="btn sm" type="submit">OK</button></form></details>
           @endif</td>
         </tr>
       @endforeach
@@ -69,20 +69,20 @@
     <p class="sub" style="padding:0 16px 16px;margin:0">Bill = DO − Transport. Purple rows are incentive and commission the company adds back to our balance; faded rows are still to come.</p>
   </section>
   <aside class="card pad" style="flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:12px">
-    <h2 style="margin:0;font-size:15px">{{ \Carbon\Carbon::parse($calc['month']->month.'-01')->format('F') }} incentive — by our rules</h2>
-    <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-variant-numeric:tabular-nums">
+    <h2 style="margin:0;font-size:var(--fs-15)">{{ \Carbon\Carbon::parse($calc['month']->month.'-01')->format('F') }} incentive — by our rules</h2>
+    <div style="display:flex;flex-direction:column;gap:6px;font-size:var(--fs-13);font-variant-numeric:tabular-nums">
       @forelse($calc['parts'] as $p)
         <div style="display:flex;gap:8px"><span style="flex-grow:1">{{ $p['label'] }} <span class="sub">({{ $p['calc'] }})</span></span><span>{{ $tk($p['amount']) }}</span></div>
       @empty
         <span class="sub">No incentive rule is switched on for this month. Set it in Rate Master → Month rules.</span>
       @endforelse
       <div style="display:flex;color:#b3261e"><span style="flex-grow:1">(−) AIT {{ rtrim(rtrim(number_format($calc['month']->ait_pct, 2), '0'), '.') }}%</span><span>−{{ $tk($calc['ait']) }}</span></div>
-      <div style="display:flex;font-weight:700;font-size:15px;border-top:1px solid var(--line);padding-top:8px"><span style="flex-grow:1">Net incentive</span><span>{{ $tk($calc['net']) }}</span></div>
+      <div style="display:flex;font-weight:700;font-size:var(--fs-15);border-top:1px solid var(--line);padding-top:8px"><span style="flex-grow:1">Net incentive</span><span>{{ $tk($calc['net']) }}</span></div>
       <div style="display:flex" class="sub"><span style="flex-grow:1">Commission · {{ number_format($calc['kg']) }} kg</span><span>{{ $tk($calc['commission']) }}</span></div>
     </div>
     @foreach(['incentive' => 'Actual incentive received', 'commission' => 'Actual commission received'] as $k => $l)
       @if($calc[$k.'Received'])
-        <div class="flash" style="font-size:12px">{{ ucfirst($k) }} recorded: {{ $tk($calc[$k.'Received']->amount) }} on {{ $calc[$k.'Received']->entry_date->format('d-m-Y') }}</div>
+        <div class="flash" style="font-size:var(--fs-12)">{{ ucfirst($k) }} recorded: {{ $tk($calc[$k.'Received']->amount) }} on {{ $calc[$k.'Received']->entry_date->format('d-m-Y') }}</div>
       @else
         <form method="post" action="{{ route('company.receive') }}" style="display:flex;flex-direction:column;gap:6px">@csrf
           <input type="hidden" name="for_month" value="{{ $calc['month']->month }}"><input type="hidden" name="kind" value="{{ $k }}">
@@ -95,7 +95,7 @@
 </div>
 <div class="grid2" style="align-items:start">
   <form id="dep-form" class="card pad" method="post" action="{{ route('company.deposit') }}" style="display:flex;flex-direction:column;gap:10px">@csrf
-    <h2 style="margin:0;font-size:15px">＋ Deposit</h2>
+    <h2 style="margin:0;font-size:var(--fs-15)">＋ Deposit</h2>
     <div class="grid2" style="grid-template-columns:repeat(2,minmax(0,1fr))">
       <label class="f">Date<input type="date" name="entry_date" value="{{ now()->timezone('Asia/Dhaka')->toDateString() }}" required></label>
       <label class="f">Amount (৳)<input type="number" step="0.01" name="amount" min="1" required></label>
@@ -106,11 +106,11 @@
     <button class="btn pri" type="submit">Save deposit</button>
   </form>
   <form id="challan-form" class="card pad" method="post" action="{{ route('company.challan') }}" style="display:flex;flex-direction:column;gap:10px">@csrf
-    <h2 style="margin:0;font-size:15px">＋ Challan</h2>
+    <h2 style="margin:0;font-size:var(--fs-15)">＋ Challan</h2>
     @if($dup = session('dup'))
       <div role="alert" style="border:1px solid #f0c36d;background:#fff8e6;border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px">
         <b style="color:#8a4b00">এই চালান আগেই লেখা আছে</b>
-        <span style="font-size:13px;line-height:20px">চালান <b>{{ $dup['no'] }}</b>, {{ $dup['q'] }} — {{ $dup['date'] }} তারিখে সেভ করা। একই এন্ট্রি দুইবার দিলে বিল দুইবার কাটবে।</span>
+        <span style="font-size:var(--fs-13);line-height:20px">চালান <b>{{ $dup['no'] }}</b>, {{ $dup['q'] }} — {{ $dup['date'] }} তারিখে সেভ করা। একই এন্ট্রি দুইবার দিলে বিল দুইবার কাটবে।</span>
         <div style="display:flex;flex-wrap:wrap;gap:8px"><a class="btn" href="{{ route('company.index', ['m' => $dup['m']]) }}">আগেরটা দেখুন</a>
         <button class="btn" type="submit" name="confirm_dup" value="1">ভিন্ন চালান, তবুও সেভ</button></div>
       </div>

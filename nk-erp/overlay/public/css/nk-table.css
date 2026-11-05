@@ -1,25 +1,57 @@
-/* NK / Mother ERP — global data table & grid standard. One shared file for every list, report and ledger. */
-.dt-wrap{position:relative;overflow:auto;border:1px solid #d5dce8;border-radius:8px;background:#fff;-webkit-overflow-scrolling:touch}
+/* NK / Mother ERP — one global table system: compact, bordered enterprise grid.
+   Every list, report and ledger uses .dt-wrap > table.dt. Colours and sizes come from the tokens below. */
+:root{
+  --table-bg:#fff;--table-header-bg:#f1f4f7;--table-group-bg:#eef2f9;--table-sub-bg:#f5f7fa;--table-total-bg:#e6eeff;
+  --table-hover-bg:#f8fafc;--table-select-bg:#eaf1ff;
+  --border-soft:#e2e6ea;--border-grid:#ced4da;--border-strong:#bfc6ce;
+  --table-text:#14213d;--table-muted:#51607a;
+}
+.dt-wrap{position:relative;overflow:auto;width:100%;min-width:0;border:1px solid var(--border-grid);border-radius:8px;background:var(--table-bg);-webkit-overflow-scrolling:touch}
 .card>.dt-wrap{margin:0 16px 16px}
 .dt-wrap.tall{max-height:72vh}
-.dt{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;font-variant-numeric:tabular-nums;color:#14213d}
-.dt th,.dt td{border-right:1px solid #e1e6ef;border-bottom:1px solid #e1e6ef;padding:10px 12px;line-height:1.35;vertical-align:middle;text-align:left}
+.dt-wrap.drag{cursor:grab}.dt-wrap.dragging{cursor:grabbing;user-select:none}
+.dt{width:100%;border-collapse:separate;border-spacing:0;font-size:var(--fs-12,12px);font-variant-numeric:tabular-nums;color:var(--table-text);line-height:var(--lh-table,1.3)}
+.dt th,.dt td{border-right:1px solid var(--border-grid);border-bottom:1px solid var(--border-grid);padding:5px 7px;vertical-align:middle;text-align:left}
 .dt th:last-child,.dt td:last-child{border-right:0}
 .dt tbody tr:last-child td{border-bottom:0}
-.dt thead th{position:sticky;top:0;z-index:2;background:#f1f4f9;color:#3b4a63;font-size:12px;font-weight:600;text-align:center;white-space:nowrap;height:40px}
+.dt thead th{position:sticky;top:0;z-index:2;background:var(--table-header-bg);color:var(--table-text);font-size:var(--fs-12,12px);font-weight:600;text-align:center;white-space:nowrap;height:34px;padding:6px 8px;border-bottom-color:var(--border-strong)}
 .dt thead th:first-child{border-top-left-radius:7px}
 .dt thead th:last-child{border-top-right-radius:7px}
 .dt tbody tr:last-child td:first-child{border-bottom-left-radius:7px}
 .dt tbody tr:last-child td:last-child{border-bottom-right-radius:7px}
-.dt tbody td{background:#fff;min-height:40px}
-.dt tbody tr:hover td{background:#f6f9ff}
-.dt .l{text-align:left}.dt .c{text-align:center}.dt .r{text-align:right}
+.dt tbody td{background:var(--table-bg);height:32px}
+.dt tbody tr:hover td{background:var(--table-hover-bg)}
+.dt tbody tr.sel td{background:var(--table-select-bg)}.dt tbody tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--navy,#123a86)}
+/* Alignment: text left, qty/status/date centre, money right */
+.dt .l{text-align:left}.dt .c{text-align:center}.dt .r,.dt .num{text-align:right;white-space:nowrap}
 .dt td.nw,.dt th.nw{white-space:nowrap}
-.dt td.empty{color:#51607a;text-align:center;padding:22px 12px}
+.dt td.b,.dt .strong{font-weight:600}
+/* Grouped rows, subtotal and grand total */
+.dt tr.grp td,.dt tr.group td{background:var(--table-group-bg);font-weight:600;color:var(--table-text);border-top:1px solid var(--border-strong)}
+.dt tr.sub td,.dt tr.subtotal td{background:var(--table-sub-bg);font-weight:700;font-size:var(--fs-12,12px);border-top:1px solid var(--border-strong)}
+.dt tr.total td,.dt tr.tot td,.dt tfoot td{background:var(--table-total-bg);font-weight:700;font-size:var(--fs-13,13px);border-top:1px solid var(--border-strong)}
+.dt .pos{color:var(--tx-pos,#0f6b3c)}.dt .neg{color:var(--tx-neg,#b3261e)}.dt .zero{color:var(--tx-zero,#7b8aa8)}
+/* Compact parts inside cells */
+.dt .pill{font-size:var(--fs-11,11px);padding:2px 7px;white-space:nowrap}
+.dt .chk,.dt th.chk{width:36px;text-align:center;padding:0}
+.dt .clamp2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.dt img.thumb{width:44px;height:44px;object-fit:contain;background:#fff;border-radius:6px}
+.dt input,.dt select{min-height:30px;font-size:var(--fs-12,12px)}
+.dt .btn.sm{min-height:28px;font-size:var(--fs-12,12px)}
+/* Frozen columns for very wide tables */
+.dt .freeze-first{position:sticky;left:0;z-index:1}.dt thead .freeze-first{z-index:3}
+.dt .freeze-last{position:sticky;right:0;z-index:1}.dt thead .freeze-last{z-index:3}
+/* Empty and loading states */
+.dt td.empty{color:var(--table-muted);text-align:center;padding:16px 12px;font-size:var(--fs-12,12px)}
+.dt tr.loading td{color:var(--table-muted);text-align:center;padding:14px}
+/* Sorting */
 .dt th.sortable{cursor:pointer;user-select:none}
-.dt th.sortable:after{content:" \2195";color:#9aa6bd;font-size:11px}
+.dt th.sortable:after{content:" \2195";color:#9aa6bd;font-size:var(--fs-11,11px)}
 .dt th.sortable[aria-sort=ascending]:after{content:" \25B2";color:#123a86}
 .dt th.sortable[aria-sort=descending]:after{content:" \25BC";color:#123a86}
 .dt th.sortable:focus-visible{outline:2px solid #1d4ed8;outline-offset:-2px}
-.dt input,.dt select{min-height:32px}
-@media (max-width:760px){.dt{min-width:640px}.dt th,.dt td{padding:9px 10px}}
+/* Toolbar above a table */
+.dt-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:var(--fs-12,12px)}
+.dt-tools input,.dt-tools select{min-height:34px;width:auto;font-size:var(--fs-12,12px)}
+.dt-tools input[type=search]{flex:1 1 220px}
+@media (max-width:760px){.dt{min-width:640px}.dt th,.dt td{padding:6px 8px}.dt tbody td{height:36px}}

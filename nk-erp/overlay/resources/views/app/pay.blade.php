@@ -9,15 +9,15 @@
 </div>
 @if($tab === 'today' && ! $cust)
   @forelse($todayDue as $s)
-    <a href="{{ route('app.pay', ['customer' => $s->customer_id, 'sale' => $s->id]) }}" class="card" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit"><div style="flex-grow:1;display:flex;flex-direction:column"><b>{{ $s->buyerName() }}</b><span class="n" style="font-size:12px;color:#51607a">{{ $s->invoice_no }}</span></div><b class="n" style="color:#8a4b00">{{ $U::tk($s->due()) }}</b></a>
+    <a href="{{ route('app.pay', ['customer' => $s->customer_id, 'sale' => $s->id]) }}" class="card" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit"><div style="flex-grow:1;display:flex;flex-direction:column"><b>{{ $s->buyerName() }}</b><span class="n" style="font-size:var(--fs-12);color:#51607a">{{ $s->invoice_no }}</span></div><b class="n" style="color:#8a4b00">{{ $U::tk($s->due()) }}</b></a>
   @empty<p style="color:#51607a;margin:0">আজকের কোনো ইনভয়েসে বাকি নেই।</p>@endforelse
 @elseif(! $cust)
   <p style="color:#51607a;margin:0">"আগের বকেয়া" চেপে দোকান বাছাই করুন।</p>
 @else
 <div class="card" style="display:flex;flex-direction:column;gap:4px">
-  <div style="display:flex;align-items:center"><b style="flex-grow:1;font-size:16px">{{ $cust->name }}</b><span class="n" style="font-size:12px;color:#51607a">{{ $cust->phone }}</span></div>
-  <div style="display:flex;align-items:center"><span style="flex-grow:1;color:#51607a">মোট বকেয়া</span><b class="n" style="font-size:22px;color:#8a4b00">{{ $U::tk($due) }}</b></div>
-  @if($oldest)<span style="font-size:12px;color:#51607a">সবচেয়ে পুরোনো বিল {{ $U::bn((int) $oldest->created_at->diffInDays(now())) }} দিন আগের</span>@endif
+  <div style="display:flex;align-items:center"><b style="flex-grow:1;font-size:var(--fs-16)">{{ $cust->name }}</b><span class="n" style="font-size:var(--fs-12);color:#51607a">{{ $cust->phone }}</span></div>
+  <div style="display:flex;align-items:center"><span style="flex-grow:1;color:#51607a">মোট বকেয়া</span><b class="n" style="font-size:var(--fs-22);color:#8a4b00">{{ $U::tk($due) }}</b></div>
+  @if($oldest)<span style="font-size:var(--fs-12);color:#51607a">সবচেয়ে পুরোনো বিল {{ $U::bn((int) $oldest->created_at->diffInDays(now())) }} দিন আগের</span>@endif
 </div>
 @if($due > 0 && $trip && $trip->status === 'dispatched')
 <form method="post" action="{{ route('app.pay.store') }}" id="pf" style="display:flex;flex-direction:column;gap:12px">@csrf
@@ -27,9 +27,9 @@
   <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px"><button type="button" class="chip qk" data-v="1">পুরোটা</button><button type="button" class="chip qk" data-v=".5">অর্ধেক</button><button type="button" class="chip qk" data-v="0">অন্য পরিমাণ</button></div>
   <span class="lb">কীভাবে পেলেন</span>
   <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px"><button type="button" class="chip mtb on" data-m="cash">নগদ</button><button type="button" class="chip mtb" data-m="bkash">বিকাশ / নগদ</button><button type="button" class="chip mtb" data-m="bank">ব্যাংক</button></div>
-  <div style="display:flex;align-items:center;background:#e3f6ec;border-radius:12px;padding:10px 12px"><span style="flex-grow:1">আদায়ের পরে বকেয়া</span><b class="n" id="after" style="font-size:18px;color:#0f6b3c">৳0</b></div>
-  <span style="font-size:12px;color:#51607a">আগের বকেয়া আদায় আজকের বিক্রিতে যোগ হয় না — শুধু টাকা আদায়ে আর দোকানের লেজারে যায়।</span>
-  @if($hist->isNotEmpty())<div class="card" style="display:flex;flex-direction:column;gap:4px"><b style="font-size:13px">আগের আদায়</b>@foreach($hist as $h)<div style="display:flex;font-size:13px"><span class="n" style="flex-grow:1">{{ $h->created_at->timezone('Asia/Dhaka')->format('d-m-Y') }} · {{ ['cash' => 'নগদ', 'bkash' => 'বিকাশ', 'nagad' => 'নগদ', 'bank' => 'ব্যাংক'][$h->method] ?? $h->method }}</span><b class="n">{{ $U::tk($h->credit) }}</b></div>@endforeach</div>@endif
+  <div style="display:flex;align-items:center;background:#e3f6ec;border-radius:12px;padding:10px 12px"><span style="flex-grow:1">আদায়ের পরে বকেয়া</span><b class="n" id="after" style="font-size:var(--fs-18);color:#0f6b3c">৳0</b></div>
+  <span style="font-size:var(--fs-12);color:#51607a">আগের বকেয়া আদায় আজকের বিক্রিতে যোগ হয় না — শুধু টাকা আদায়ে আর দোকানের লেজারে যায়।</span>
+  @if($hist->isNotEmpty())<div class="card" style="display:flex;flex-direction:column;gap:4px"><b style="font-size:var(--fs-13)">আগের আদায়</b>@foreach($hist as $h)<div style="display:flex;font-size:var(--fs-13)"><span class="n" style="flex-grow:1">{{ $h->created_at->timezone('Asia/Dhaka')->format('d-m-Y') }} · {{ ['cash' => 'নগদ', 'bkash' => 'বিকাশ', 'nagad' => 'নগদ', 'bank' => 'ব্যাংক'][$h->method] ?? $h->method }}</span><b class="n">{{ $U::tk($h->credit) }}</b></div>@endforeach</div>@endif
   <button class="big" type="submit" id="sv" style="background:#0f6b3c">আদায় সংরক্ষণ</button>
 </form>
 @endif

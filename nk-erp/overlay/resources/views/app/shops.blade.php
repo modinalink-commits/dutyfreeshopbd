@@ -8,7 +8,7 @@
 @forelse($shops as $c)
   @php($due = $c->due())
   <a href="{{ $pick === 'view' ? 'tel:'.$c->phone : route('app.'.$pick, ['customer' => $c->id]) }}" class="card" style="display:flex;gap:10px;align-items:center;text-decoration:none;color:inherit">
-    <div style="flex-grow:1;display:flex;flex-direction:column"><b style="font-size:15px">{{ $c->name }}</b><span class="n" style="font-size:12px;color:#51607a">{{ $c->phone }}{{ $c->area ? ' · '.$c->area : '' }}</span></div>
+    <div style="flex-grow:1;display:flex;flex-direction:column"><b style="font-size:var(--fs-15)">{{ $c->name }}</b><span class="n" style="font-size:var(--fs-12);color:#51607a">{{ $c->phone }}{{ $c->area ? ' · '.$c->area : '' }}</span></div>
     @if($due > 0)<span class="pill" style="background:#fff1d6;color:#8a4b00">বকেয়া {{ $U::tk($due) }}</span>@endif
   </a>
 @empty

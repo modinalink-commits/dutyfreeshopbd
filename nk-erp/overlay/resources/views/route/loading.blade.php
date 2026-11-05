@@ -49,7 +49,7 @@
       </table></div>
       <div style="padding:14px 20px;display:flex;flex-direction:column;gap:6px">
         <div style="height:10px;border-radius:999px;background:#eef2f9"><div id="capBar" style="width:0;height:10px;border-radius:999px;background:#1d4ed8"></div></div>
-        <span style="font-size:11px;color:#51607a"><span id="capPct">0</span>% of vehicle capacity. Warehouse full stock goes down and vehicle stock goes up by the same number only when the trip is dispatched.</span>
+        <span style="font-size:var(--fs-11);color:#51607a"><span id="capPct">0</span>% of vehicle capacity. Warehouse full stock goes down and vehicle stock goes up by the same number only when the trip is dispatched.</span>
       </div>
     </div>
 
@@ -57,11 +57,11 @@
       <h2 class="h2">Approval before dispatch</h2>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">
         @php($counter = $trip?->counted_by ? \App\Models\User::find($trip->counted_by) : null)
-        <div style="background:{{ $counter ? '#e3f6ec' : '#eef2f9' }};border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:2px"><span style="font-size:11px;font-weight:600;color:#51607a">Warehouse staff</span>
-          <span style="font-size:14px;font-weight:700;color:{{ $counter ? '#0f6b3c' : '#51607a' }}">{{ $counter ? 'Counted · '.($trip->warehouseStaff?->name ?? $counter->name).' · '.$trip->counted_at->timezone('Asia/Dhaka')->format('H:i') : 'Not counted yet' }}</span></div>
+        <div style="background:{{ $counter ? '#e3f6ec' : '#eef2f9' }};border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:2px"><span style="font-size:var(--fs-11);font-weight:600;color:#51607a">Warehouse staff</span>
+          <span style="font-size:var(--fs-14);font-weight:700;color:{{ $counter ? '#0f6b3c' : '#51607a' }}">{{ $counter ? 'Counted · '.($trip->warehouseStaff?->name ?? $counter->name).' · '.$trip->counted_at->timezone('Asia/Dhaka')->format('H:i') : 'Not counted yet' }}</span></div>
         @php($appr = $trip?->approved_by ? \App\Models\User::find($trip->approved_by) : null)
-        <div style="background:{{ $appr ? '#e3f6ec' : '#fff1d6' }};border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:2px"><span style="font-size:11px;font-weight:600;color:#51607a">Manager</span>
-          <span style="font-size:14px;font-weight:700;color:{{ $appr ? '#0f6b3c' : '#8a4b00' }}">{{ $appr ? 'Approved · '.$appr->name.' · '.$trip->dispatched_at->timezone('Asia/Dhaka')->format('H:i') : 'Waiting for approval' }}</span></div>
+        <div style="background:{{ $appr ? '#e3f6ec' : '#fff1d6' }};border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:2px"><span style="font-size:var(--fs-11);font-weight:600;color:#51607a">Manager</span>
+          <span style="font-size:var(--fs-14);font-weight:700;color:{{ $appr ? '#0f6b3c' : '#8a4b00' }}">{{ $appr ? 'Approved · '.$appr->name.' · '.$trip->dispatched_at->timezone('Asia/Dhaka')->format('H:i') : 'Waiting for approval' }}</span></div>
       </div>
       @unless($locked)
       <div style="display:flex;flex-wrap:wrap;gap:10px">
@@ -79,16 +79,16 @@
     <h2 class="h2">{{ $day === now()->timezone('Asia/Dhaka')->toDateString() ? "Today's loading" : 'Loading on '.\Carbon\Carbon::parse($day)->format('d-m-Y') }}</h2>
     @forelse($list as $l)
       <a href="{{ $l['t'] ? route('trips.loading', ['trip' => $l['t']->id, 'd' => $day]) : '#' }}" style="display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid #dbe3f0;text-decoration:none;color:inherit">
-        <div style="flex-grow:1;display:flex;flex-direction:column"><span style="font-size:13px;font-weight:700">{{ $l['v']->code }} · {{ $l['t']?->trip_no ?? '—' }}</span><span style="font-size:11px;color:#51607a">{{ $l['items'] }}</span></div>
+        <div style="flex-grow:1;display:flex;flex-direction:column"><span style="font-size:var(--fs-13);font-weight:700">{{ $l['v']->code }} · {{ $l['t']?->trip_no ?? '—' }}</span><span style="font-size:var(--fs-11);color:#51607a">{{ $l['items'] }}</span></div>
         <span class="pill" style="{{ $U::pill($l['status']) }}">{{ $l['status'] }}</span>
       </a>
     @empty
       <p class="sub" style="margin:0">Add vehicles first in <a href="{{ route('fleet.vehicles') }}">Vehicles &amp; routes</a>.</p>
     @endforelse
     @if($errors->any())
-      <div style="background:#fde9e7;color:#b3261e;border-radius:12px;padding:12px;font-size:12px;line-height:18px;margin-top:6px"><strong>Blocked:</strong> {{ $errors->first() }}</div>
+      <div style="background:#fde9e7;color:#b3261e;border-radius:12px;padding:12px;font-size:var(--fs-12);line-height:18px;margin-top:6px"><strong>Blocked:</strong> {{ $errors->first() }}</div>
     @else
-      <div style="background:#fde9e7;color:#b3261e;border-radius:12px;padding:12px;font-size:12px;line-height:18px;margin-top:6px"><strong>Blocked rule:</strong> a load larger than warehouse full stock cannot be saved — the screen names how many are left, e.g. "Only 21 × 45 kg left in the warehouse."</div>
+      <div style="background:#fde9e7;color:#b3261e;border-radius:12px;padding:12px;font-size:var(--fs-12);line-height:18px;margin-top:6px"><strong>Blocked rule:</strong> a load larger than warehouse full stock cannot be saved — the screen names how many are left, e.g. "Only 21 × 45 kg left in the warehouse."</div>
     @endif
   </aside>
 </div>

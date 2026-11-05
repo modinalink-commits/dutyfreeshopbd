@@ -28,7 +28,7 @@
   <div class="dt-wrap"><table class="dt"><thead><tr><th>Item</th><th class="r">Price</th><th class="r">Qty</th></tr></thead><tbody>
   @forelse($products as $p)
     @php($pr = $p->dealer_price ?? $p->retail_price)
-    <tr><td>{{ $p->name }} <span class="sub" style="font-size:11px">{{ $p->category === 'refill' ? 'exchange' : 'new cylinder' }}</span></td><td class="r">{{ $pr !== null ? $U::tk($pr) : 'No price' }}</td>
+    <tr><td>{{ $p->name }} <span class="sub" style="font-size:var(--fs-11)">{{ $p->category === 'refill' ? 'exchange' : 'new cylinder' }}</span></td><td class="r">{{ $pr !== null ? $U::tk($pr) : 'No price' }}</td>
       <td class="r"><input class="qin" type="number" min="0" name="qty[{{ $p->id }}]" value="{{ old('qty.'.$p->id, 0) }}" @disabled($pr === null)></td></tr>
   @empty
     <tr><td colspan="3" class="empty">Add cylinder products in Products &amp; prices.</td></tr>

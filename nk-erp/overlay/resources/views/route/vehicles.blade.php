@@ -19,9 +19,9 @@
   <section style="flex:999 1 560px;min-width:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px">
     @forelse($vehicles as $v)
       <a class="card" href="{{ route('fleet.vehicles', ['v' => $v->id]) }}" style="padding:14px;display:flex;flex-direction:column;gap:8px;border-radius:12px;text-decoration:none;color:inherit;{{ $sel && $sel->id === $v->id ? 'border:2px solid #1d4ed8' : '' }}">
-        <div style="display:flex;align-items:center;gap:8px"><span style="font-size:16px;font-weight:700;flex-grow:1">{{ $v->code }}</span><span class="pill" style="{{ $U::pill($v->status) }}">{{ $v->status }}</span></div>
-        <span style="font-size:12px;color:#51607a">{{ $v->reg_no ?: 'No reg. no.' }} · {{ $v->type }} · {{ $v->capacity }} cyl</span>
-        <div style="display:flex;flex-direction:column;gap:4px;font-size:12px;border-top:1px solid #dbe3f0;padding-top:8px">
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-size:var(--fs-16);font-weight:700;flex-grow:1">{{ $v->code }}</span><span class="pill" style="{{ $U::pill($v->status) }}">{{ $v->status }}</span></div>
+        <span style="font-size:var(--fs-12);color:#51607a">{{ $v->reg_no ?: 'No reg. no.' }} · {{ $v->type }} · {{ $v->capacity }} cyl</span>
+        <div style="display:flex;flex-direction:column;gap:4px;font-size:var(--fs-12);border-top:1px solid #dbe3f0;padding-top:8px">
           <div style="display:flex"><span style="flex-grow:1;color:#51607a">Route</span><span style="font-weight:600">{{ $v->route?->name ?? 'Spare' }}</span></div>
           <div style="display:flex"><span style="flex-grow:1;color:#51607a">Driver</span><span style="font-weight:600">{{ $v->driver?->name ?? '—' }}</span></div>
           <div style="display:flex"><span style="flex-grow:1;color:#51607a">Salesman</span><span style="font-weight:600">{{ $v->salesman?->name ?? '—' }}</span></div>
@@ -42,7 +42,7 @@
       <label class="fld">Vehicle type<select name="type">@foreach(\App\Models\Vehicle::TYPES as $t)<option @selected(old('type', $sel?->type) === $t)>{{ $t }}</option>@endforeach</select></label>
       <label class="fld">Capacity (cylinders)<input name="capacity" type="number" min="1" required value="{{ old('capacity', $sel?->capacity ?: 110) }}"></label>
     </div>
-    <span class="ttl" style="font-size:10px;margin-top:4px">ASSIGNMENT</span>
+    <span class="ttl" style="font-size:var(--fs-10);margin-top:4px">ASSIGNMENT</span>
     <label class="fld">Route<select name="route_id"><option value="">Spare / no fixed route</option>@foreach($routes as $r)<option value="{{ $r->id }}" @selected(old('route_id', $sel?->route_id) == $r->id)>{{ $r->name }}</option>@endforeach</select></label>
     <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
       <label class="fld">Driver<select name="driver_id"><option value="">—</option>@foreach($drivers as $e)<option value="{{ $e->id }}" @selected(old('driver_id', $sel?->driver_id) == $e->id)>{{ $e->name }}</option>@endforeach</select></label>
@@ -51,7 +51,7 @@
     <label class="fld">Status<select name="status">@foreach(\App\Models\Vehicle::STATUSES as $s)<option @selected(old('status', $sel?->status ?? 'Available') === $s)>{{ $s }}</option>@endforeach</select></label>
     <label class="fld">Remarks<input name="remarks" maxlength="255" value="{{ old('remarks', $sel?->remarks) }}"></label>
     @if($stats)
-    <div style="background:#eef2f9;border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:4px;font-size:12px">
+    <div style="background:#eef2f9;border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:4px;font-size:var(--fs-12)">
       <div style="display:flex"><span style="flex-grow:1;color:#51607a">Trips this month</span><span style="font-weight:700">{{ $stats['trips'] }}</span></div>
       <div style="display:flex"><span style="flex-grow:1;color:#51607a">Cylinders sold this month</span><span style="font-weight:700">{{ $stats['sold'] }}</span></div>
       <div style="display:flex"><span style="flex-grow:1;color:#51607a">Net profit this month</span><span style="font-weight:700;color:#0f6b3c">{{ auth()->user()->isSuperAdmin() ? $U::tk($stats['net']) : 'Super Admin only' }}</span></div>

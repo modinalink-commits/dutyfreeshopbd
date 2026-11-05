@@ -17,7 +17,7 @@
     <div style="display:flex"><span style="flex-grow:1" class="sub">Subtotal</span><span>৳{{ number_format($sale->subtotal, 2) }}</span></div>
     @if((float) $sale->delivery_charge)<div style="display:flex"><span style="flex-grow:1" class="sub">Delivery</span><span>৳{{ number_format($sale->delivery_charge, 2) }}</span></div>@endif
     @if((float) $sale->discount)<div style="display:flex"><span style="flex-grow:1" class="sub">Discount</span><span>−৳{{ number_format($sale->discount, 2) }}</span></div>@endif
-    <div style="display:flex;font-weight:700;font-size:16px"><span style="flex-grow:1">Total</span><span>৳{{ number_format($sale->total, 2) }}</span></div>
+    <div style="display:flex;font-weight:700;font-size:var(--fs-16)"><span style="flex-grow:1">Total</span><span>৳{{ number_format($sale->total, 2) }}</span></div>
     <div style="display:flex"><span style="flex-grow:1" class="sub">Paid ({{ \App\Models\Sale::METHODS[$sale->payment_method] ?? '—' }})</span><span>৳{{ number_format($sale->paid, 2) }}</span></div>
     @if($sale->due() > 0)<div style="display:flex;color:#b3261e;font-weight:700"><span style="flex-grow:1">Due</span><span>৳{{ number_format($sale->due(), 2) }}</span></div>@endif
   </section>

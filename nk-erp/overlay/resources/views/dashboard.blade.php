@@ -27,19 +27,19 @@
 </section>
 <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:stretch">
   <section class="card pad" style="flex:999 1 520px;min-width:0;display:flex;flex-direction:column;gap:12px">
-    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap"><h2 style="margin:0;font-size:15px;flex-grow:1">Sales by day — {{ $now->format('F') }}</h2>
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap"><h2 style="margin:0;font-size:var(--fs-15);flex-grow:1">Sales by day — {{ $now->format('F') }}</h2>
       <span class="sub" style="margin:0;display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:3px;background:#1d4ed8"></span>Retail</span>
       <span class="sub" style="margin:0;display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:3px;background:#d9730d"></span>Wholesale</span></div>
     @php($max = max(1, collect($bars)->map(fn ($b) => $b['r'] + $b['w'])->max()))
     <div role="img" aria-label="Cylinders sold per day this month, retail and wholesale" style="display:flex;align-items:flex-end;gap:10px;height:200px;overflow-x:auto;padding-top:16px">
       @foreach($bars as $d => $b)
       <a href="{{ route('sales.index', ['day' => $now->copy()->day($d)->toDateString()]) }}" style="display:flex;flex-direction:column;align-items:center;gap:4px;text-decoration:none;color:var(--ink);min-width:34px">
-        <span style="font-size:11px;font-weight:700">{{ $b['r'] + $b['w'] ?: '' }}</span>
+        <span style="font-size:var(--fs-11);font-weight:700">{{ $b['r'] + $b['w'] ?: '' }}</span>
         <div style="display:flex;align-items:flex-end;gap:3px;height:150px">
           <div style="width:14px;border-radius:5px 5px 0 0;background:#1d4ed8;height:{{ round($b['r'] / $max * 150) }}px"></div>
           <div style="width:14px;border-radius:5px 5px 0 0;background:#d9730d;height:{{ round($b['w'] / $max * 150) }}px"></div>
         </div>
-        <span style="font-size:11px;color:var(--muted)">{{ str_pad($d, 2, '0', STR_PAD_LEFT) }}</span>
+        <span style="font-size:var(--fs-11);color:var(--muted)">{{ str_pad($d, 2, '0', STR_PAD_LEFT) }}</span>
       </a>
       @endforeach
     </div>
@@ -47,17 +47,17 @@
   </section>
   @if($sa)
   <section class="card pad" style="flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:14px">
-    <h2 style="margin:0;font-size:15px">Company target — {{ $now->format('F') }}</h2>
+    <h2 style="margin:0;font-size:var(--fs-15)">Company target — {{ $now->format('F') }}</h2>
     @foreach([['Regular target', $month?->tons_target], ['Exclusive target', $month?->excl_target]] as [$l, $t])
       <div style="display:flex;flex-direction:column;gap:6px">
-        <div style="display:flex;font-size:13px"><span style="flex-grow:1">{{ $l }}</span><b>{{ number_format($lifted, 1) }} t of {{ $t ? number_format($t, 0).' t' : 'not set' }}</b></div>
+        <div style="display:flex;font-size:var(--fs-13)"><span style="flex-grow:1">{{ $l }}</span><b>{{ number_format($lifted, 1) }} t of {{ $t ? number_format($t, 0).' t' : 'not set' }}</b></div>
         <div style="height:8px;border-radius:999px;background:#eef2f9"><div style="height:8px;border-radius:999px;background:#123a86;width:{{ $t ? min(100, round($lifted / $t * 100)) : 0 }}%"></div></div>
       </div>
     @endforeach
     @if($month && $month->tons_target > 0)
       @php($need = max(0, 0.6 * $month->tons_target - $lifted))
       @php($daysLeft = max(0, $month->deadline_day - 1 - $now->day))
-      <div style="background:#eef2f9;border-radius:12px;padding:12px;font-size:13px;line-height:20px">
+      <div style="background:#eef2f9;border-radius:12px;padding:12px;font-size:var(--fs-13);line-height:20px">
         @if($need <= 0)<strong>60% reached</strong> for the 01–15 additional incentive.@else<strong>60% by the {{ $month->deadline_day - 1 }}th:</strong> lift {{ number_format($need, 1) }} t more in {{ $daysLeft }} days{{ $daysLeft ? ' ('.number_format($need / $daysLeft, 1).' t a day)' : '' }} to earn the 01–15 additional incentive.@endif
       </div>
     @else
@@ -83,23 +83,23 @@
     </svg>
   </div>
   <div style="flex:1 1 260px;display:flex;flex-direction:column;gap:8px">
-    <h2 style="margin:0;font-size:15px;font-weight:700">Distribution network today</h2>
+    <h2 style="margin:0;font-size:var(--fs-15);font-weight:700">Distribution network today</h2>
     @if($net && $net['zones'])
-      <span style="font-size:12px;color:#51607a">{{ $net['zones'] }} zones · {{ number_format($net['shops']) }} shops on routes · {{ number_format($net['visited']) }} visited · {{ number_format($net['unvisited']) }} not visited</span>
+      <span style="font-size:var(--fs-12);color:#51607a">{{ $net['zones'] }} zones · {{ number_format($net['shops']) }} shops on routes · {{ number_format($net['visited']) }} visited · {{ number_format($net['unvisited']) }} not visited</span>
       @if($net['top'])
-        <span style="font-size:12px;color:#51607a">Top zone: {{ $net['top']['name'] }}{{ ', '.\App\Support\Ui::bd($net['top']['amt']) }} · {{ number_format($net['top']['cyl']) }} cylinders</span>
+        <span style="font-size:var(--fs-12);color:#51607a">Top zone: {{ $net['top']['name'] }}{{ ', '.\App\Support\Ui::bd($net['top']['amt']) }} · {{ number_format($net['top']['cyl']) }} cylinders</span>
       @else
-        <span style="font-size:12px;color:#51607a">{{ $net['trips'] ? 'No route sales posted yet today.' : 'No trips dispatched today.' }}</span>
+        <span style="font-size:var(--fs-12);color:#51607a">{{ $net['trips'] ? 'No route sales posted yet today.' : 'No trips dispatched today.' }}</span>
       @endif
     @else
-      <span style="font-size:12px;color:#51607a">Add routes in Vehicles &amp; routes to see zones, shops and visits here.</span>
+      <span style="font-size:var(--fs-12);color:#51607a">Add routes in Vehicles &amp; routes to see zones, shops and visits here.</span>
     @endif
-    @if(in_array(auth()->user()->role, ['super_admin', 'admin', 'manager']))<a href="{{ route('map.dist') }}" style="font-size:12px;font-weight:600;text-decoration:none">Open distribution map →</a>@endif
+    @if(in_array(auth()->user()->role, ['super_admin', 'admin', 'manager']))<a href="{{ route('map.dist') }}" style="font-size:var(--fs-12);font-weight:600;text-decoration:none">Open distribution map →</a>@endif
   </div>
 </section>
 <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
   <section class="card" style="flex:999 1 560px;min-width:0">
-    <div class="pad" style="display:flex;align-items:center"><h2 style="margin:0;font-size:15px;flex-grow:1">Latest sales</h2><a href="{{ route('sales.index') }}" style="font-weight:600;text-decoration:none">All sales →</a></div>
+    <div class="pad" style="display:flex;align-items:center"><h2 style="margin:0;font-size:var(--fs-15);flex-grow:1">Latest sales</h2><a href="{{ route('sales.index') }}" style="font-weight:600;text-decoration:none">All sales →</a></div>
     <div class="dt-wrap"><table class="dt">
       <thead><tr><th>Memo</th><th>Time</th><th>Customer</th><th>Type</th><th>Items</th><th>Amount</th><th>Payment</th></tr></thead>
       <tbody>
@@ -117,9 +117,9 @@
     </table></div>
   </section>
   <section class="card pad" style="flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:10px">
-    <h2 style="margin:0;font-size:15px">Needs attention</h2>
+    <h2 style="margin:0;font-size:var(--fs-15)">Needs attention</h2>
     @forelse($alerts as $a)
-      <div style="background:{{ $tone[$a['tone']][0] }};border-radius:12px;padding:12px;font-size:13px;line-height:20px"><strong style="color:{{ $tone[$a['tone']][1] }}">{{ $a['t'] }}</strong> — {{ $a['d'] }} @isset($a['link'])<a href="{{ $a['link'] }}">{{ $a['l'] }}</a>@endisset</div>
+      <div style="background:{{ $tone[$a['tone']][0] }};border-radius:12px;padding:12px;font-size:var(--fs-13);line-height:20px"><strong style="color:{{ $tone[$a['tone']][1] }}">{{ $a['t'] }}</strong> — {{ $a['d'] }} @isset($a['link'])<a href="{{ $a['link'] }}">{{ $a['l'] }}</a>@endisset</div>
     @empty
       <span class="sub">Nothing needs attention right now.</span>
     @endforelse

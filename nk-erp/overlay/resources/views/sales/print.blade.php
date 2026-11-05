@@ -14,6 +14,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<link rel="stylesheet" href="/css/nk-type.css?v=1">
 <meta name="robots" content="noindex">
 <title>{{ $sale->invoice_no }}</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Hind+Siliguri:wght@400;600&display=swap">
@@ -25,16 +26,16 @@ body{margin:0;background:#eef2f9;font-family:'Plus Jakarta Sans','Hind Siliguri'
 @page{size:A4;margin:0}
 @media print{body{background:#fff}.bar{display:none}.pg{margin:0!important;box-shadow:none!important}}
 .pg{width:210mm;min-height:297mm;margin:0 auto 24px;box-shadow:0 4px 18px rgba(20,33,61,.12);padding:56px 56px 48px;background:#fff;display:flex;flex-direction:column;gap:24px}
-.tbl{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
-.tbl th{background:#eef2f9;color:#51607a;font-size:11px;font-weight:600;text-align:left;padding:9px 10px;border-bottom:1px solid #dbe3f0}
+.tbl{width:100%;border-collapse:collapse;font-size:var(--fs-12);font-variant-numeric:tabular-nums}
+.tbl th{background:#eef2f9;color:#51607a;font-size:var(--fs-11);font-weight:600;text-align:left;padding:9px 10px;border-bottom:1px solid #dbe3f0}
 .tbl td{padding:10px;border-bottom:1px solid #dbe3f0}
 .tbl .r{text-align:right}
-.kv{display:flex;font-size:12px;padding:4px 0}
+.kv{display:flex;font-size:var(--fs-12);padding:4px 0}
 .kv span:first-child{width:110px;flex-shrink:0;color:#51607a}
-.sm{display:flex;font-size:12px;padding:6px 0;font-variant-numeric:tabular-nums}
+.sm{display:flex;font-size:var(--fs-12);padding:6px 0;font-variant-numeric:tabular-nums}
 .sm span:first-child{flex-grow:1;color:#51607a}
-.lb{font-size:10px;font-weight:700;letter-spacing:.08em;color:#51607a}
-.void{border:2px solid #b42318;color:#b42318;border-radius:10px;padding:8px 12px;font-weight:800;font-size:13px}
+.lb{font-size:var(--fs-10);font-weight:700;letter-spacing:.08em;color:#51607a}
+.void{border:2px solid #b42318;color:#b42318;border-radius:10px;padding:8px 12px;font-weight:700;font-size:var(--fs-13)}
 </style>
 </head>
 <body>
@@ -43,15 +44,15 @@ body{margin:0;background:#eef2f9;font-family:'Plus Jakarta Sans','Hind Siliguri'
   <header style="display:flex;align-items:flex-start;gap:16px;padding-bottom:18px;border-bottom:2px solid #123a86">
     <img src="{{ $s['logo'] ?? '/img/logo.webp' }}" alt="{{ $s['company_name'] ?? 'NK Corporation' }} logo" style="width:72px;height:72px;border-radius:12px;object-fit:cover;flex-shrink:0">
     <div style="flex-grow:1;display:flex;flex-direction:column;gap:3px">
-      <span style="font-size:24px;font-weight:800;color:#123a86">{{ $s['company_name'] ?? 'NK Corporation' }}</span>
-      <span style="font-size:12px;color:#51607a">{{ trim(($s['brand'] ?? '').' LPG') }}{{ ! empty($s['slogan']) ? ' · '.$s['slogan'] : '' }}</span>
-      @if(! empty($s['address_en']))<span style="font-size:11px;color:#51607a;line-height:16px">{{ $s['address_en'] }}</span>@endif
-      <span style="font-size:11px;color:#51607a">Phone: {{ $s['phone'] ?? '' }}{{ ! empty($s['bin']) ? ' · BIN '.$s['bin'] : '' }}{{ ! empty($s['trade_license']) ? ' · Trade license '.$s['trade_license'] : '' }}</span>
+      <span style="font-size:var(--fs-24);font-weight:700;color:#123a86">{{ $s['company_name'] ?? 'NK Corporation' }}</span>
+      <span style="font-size:var(--fs-12);color:#51607a">{{ trim(($s['brand'] ?? '').' LPG') }}{{ ! empty($s['slogan']) ? ' · '.$s['slogan'] : '' }}</span>
+      @if(! empty($s['address_en']))<span style="font-size:var(--fs-11);color:#51607a;line-height:16px">{{ $s['address_en'] }}</span>@endif
+      <span style="font-size:var(--fs-11);color:#51607a">Phone: {{ $s['phone'] ?? '' }}{{ ! empty($s['bin']) ? ' · BIN '.$s['bin'] : '' }}{{ ! empty($s['trade_license']) ? ' · Trade license '.$s['trade_license'] : '' }}</span>
     </div>
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-      <span style="font-size:20px;font-weight:800;letter-spacing:.04em;white-space:nowrap">{{ $sale->type === 'wholesale' ? 'SALES INVOICE' : 'CASH MEMO' }}</span>
-      <span style="font-size:13px;font-weight:700">{{ $sale->invoice_no }}</span>
-      <span style="font-size:12px;color:#51607a">{{ $sale->created_at->timezone('Asia/Dhaka')->format('d-m-Y · H:i') }}</span>
+      <span style="font-size:var(--fs-20);font-weight:700;letter-spacing:.04em;white-space:nowrap">{{ $sale->type === 'wholesale' ? 'SALES INVOICE' : 'CASH MEMO' }}</span>
+      <span style="font-size:var(--fs-13);font-weight:700">{{ $sale->invoice_no }}</span>
+      <span style="font-size:var(--fs-12);color:#51607a">{{ $sale->created_at->timezone('Asia/Dhaka')->format('d-m-Y · H:i') }}</span>
     </div>
   </header>
 
@@ -60,7 +61,7 @@ body{margin:0;background:#eef2f9;font-family:'Plus Jakarta Sans','Hind Siliguri'
   <section style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px">
     <div style="display:flex;flex-direction:column">
       <span class="lb" style="margin-bottom:6px">BILL TO</span>
-      <span style="font-size:15px;font-weight:700">{{ $sale->buyerName() }}</span>
+      <span style="font-size:var(--fs-15);font-weight:700">{{ $sale->buyerName() }}</span>
       <div class="kv"><span>Mobile</span><span>{{ $sale->buyerPhone() ?: '—' }}</span></div>
       <div class="kv"><span>Address</span><span>{{ $sale->customer?->address ?: ($sale->customer?->area ?: '—') }}</span></div>
       <div class="kv"><span>Customer ID</span><span>{{ $sale->customer?->code ?: 'Walk-in' }}</span></div>
@@ -103,32 +104,32 @@ body{margin:0;background:#eef2f9;font-family:'Plus Jakarta Sans','Hind Siliguri'
       <div class="sm"><span>Sub total</span><span>{{ $tk($sale->subtotal) }}</span></div>
       @if((float) $sale->delivery_charge)<div class="sm"><span>Delivery</span><span>{{ $tk($sale->delivery_charge) }}</span></div>@endif
       @if((float) $sale->discount)<div class="sm"><span>Discount</span><span>−{{ $tk($sale->discount) }}</span></div>@endif
-      <div class="sm" style="font-size:15px;font-weight:800;border-top:1px solid #dbe3f0;padding-top:8px"><span style="color:#14213d">Total</span><span>{{ $tk($sale->total) }}</span></div>
+      <div class="sm" style="font-size:var(--fs-15);font-weight:700;border-top:1px solid #dbe3f0;padding-top:8px"><span style="color:#14213d">Total</span><span>{{ $tk($sale->total) }}</span></div>
       <div class="sm"><span>Paid — {{ strtolower(\App\Models\Sale::METHODS[$sale->payment_method] ?? '—') }}</span><span>{{ $tk($sale->paid) }}</span></div>
       <div class="sm"><span>Due on this invoice</span><span>{{ $tk($sale->due()) }}</span></div>
       @if($custDue !== null)<div class="sm" style="background:#fff1d6;border-radius:8px;padding:8px 10px;margin-top:4px"><span style="color:#8a4b00;font-weight:600">Customer total due</span><span style="color:#8a4b00;font-weight:700">{{ $tk($custDue) }}</span></div>@endif
     </div>
   </section>
 
-  <span style="font-size:12px;color:#51607a">Amount in words: {{ \App\Support\Ui::words($sale->total) }}</span>
+  <span style="font-size:var(--fs-12);color:#51607a">Amount in words: {{ \App\Support\Ui::words($sale->total) }}</span>
 
   <footer style="margin-top:auto;display:flex;flex-direction:column;gap:28px">
     <div style="display:flex;justify-content:space-between;align-items:flex-end">
       <div style="display:flex;flex-direction:column;gap:6px;width:200px">
         <div style="border-top:1px solid #14213d"></div>
-        <span style="font-size:11px;color:#51607a">Customer signature</span>
+        <span style="font-size:var(--fs-11);color:#51607a">Customer signature</span>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;width:200px;align-items:flex-end">
         @if(! empty($s['signature']))
         <img src="{{ $s['signature'] }}" alt="Authorized signature" style="height:36px;max-width:100%;object-fit:contain;align-self:center">
         @else
-        <div style="width:100%;height:36px;border:1px dashed #7b8aa8;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#51607a">Signature not uploaded</div>
+        <div style="width:100%;height:36px;border:1px dashed #7b8aa8;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:var(--fs-10);color:#51607a">Signature not uploaded</div>
         @endif
         <div style="border-top:1px solid #14213d;width:100%"></div>
-        <span style="font-size:11px;color:#51607a">Authorized signature · {{ $s['company_name'] ?? 'NK Corporation' }}</span>
+        <span style="font-size:var(--fs-11);color:#51607a">Authorized signature · {{ $s['company_name'] ?? 'NK Corporation' }}</span>
       </div>
     </div>
-    <div style="border-top:1px solid #dbe3f0;padding-top:10px;display:flex;gap:12px;font-size:10px;color:#51607a">
+    <div style="border-top:1px solid #dbe3f0;padding-top:10px;display:flex;gap:12px;font-size:var(--fs-10);color:#51607a">
       <span style="flex-grow:1">Printed {{ now('Asia/Dhaka')->format('d-m-Y H:i') }} · {{ $copy }} · Page 1 of 1</span>
       <span>{{ ! empty($s['invoice_footer']) ? $s['invoice_footer'] : 'Invoice footer: not set in Company settings' }}</span>
     </div>
@@ -142,6 +143,7 @@ body{margin:0;background:#eef2f9;font-family:'Plus Jakarta Sans','Hind Siliguri'
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<link rel="stylesheet" href="/css/nk-type.css?v=1">
 <meta name="robots" content="noindex">
 <title>{{ $sale->invoice_no }}</title>
 <style>
@@ -156,7 +158,7 @@ td,th{padding:4px 0;text-align:left;vertical-align:top}
 .r{text-align:right}.c{text-align:center}
 @if($size === 'a4')
 @page{size:A4;margin:14mm}
-.paper{width:182mm;font-size:12px;padding:0}
+.paper{width:182mm;font-size:var(--fs-12);padding:0}
 .hd{display:flex;gap:14px;align-items:center;border-bottom:2px solid #123a86;padding-bottom:10px}
 .hd img{width:64px;height:64px;border-radius:12px}
 .items th{background:#eef2f9;border:1px solid #c9d2e3;padding:6px 8px;text-align:center}
@@ -177,7 +179,7 @@ td,th{padding:4px 0;text-align:left;vertical-align:top}
   <div class="hd">
     <img src="{{ $s['logo'] ?? '/img/logo.webp' }}" alt="">
     <div>
-      <div style="font-weight:800;font-size:{{ $size === 'a4' ? '20px' : '14px' }}">{{ $s['company_name'] ?? 'NK Corporation' }}</div>
+      <div style="font-weight:700;font-size:{{ $size === 'a4' ? '20px' : '14px' }}">{{ $s['company_name'] ?? 'NK Corporation' }}</div>
       <div>{{ $s['brand'] ?? '' }} LPG · {{ $s['slogan'] ?? '' }}</div>
       <div>{{ $s['address_en'] ?? '' }}</div>
       <div>Phone {{ $s['phone'] ?? '' }}{{ ! empty($s['bin']) ? ' · BIN '.$s['bin'] : '' }}{{ ! empty($s['trade_license']) ? ' · Trade license '.$s['trade_license'] : '' }}</div>

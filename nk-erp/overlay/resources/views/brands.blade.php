@@ -22,7 +22,7 @@
 </section>
 <section class="card">
   <form method="get" class="pad" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px">
-    <h2 style="margin:0;font-size:15px;flex-grow:1">Brand list</h2>
+    <h2 style="margin:0;font-size:var(--fs-15);flex-grow:1">Brand list</h2>
     <input type="search" name="q" value="{{ $q }}" placeholder="Search brand" aria-label="Search brand" style="max-width:200px;border-radius:999px">
     <div class="tabs">
       <a class="{{ ! $filter ? 'on' : '' }}" href="{{ route('brands.index', ['q' => $q]) }}">All</a>
@@ -51,7 +51,7 @@
 </section>
 <div class="grid2" style="align-items:start">
   <section class="card pad" style="display:flex;flex-direction:column;gap:10px">
-    <h2 style="margin:0;font-size:15px">Brand exchange &amp; transfer — needs approval</h2>
+    <h2 style="margin:0;font-size:var(--fs-15)">Brand exchange &amp; transfer — needs approval</h2>
     <span class="sub">An empty of one brand never goes into another brand's stock by itself. Each exchange is its own transaction with a reason and an approver.</span>
     @forelse($exchanges as $x)
       <div style="border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:6px">
@@ -86,7 +86,7 @@
   @if($canEdit)
   <form id="brand-form" class="card pad" method="post" action="{{ route('brands.save') }}" style="display:flex;flex-direction:column;gap:12px">
     @csrf
-    <h2 style="margin:0;font-size:15px">{{ $edit ? 'Edit brand' : 'Add brand' }}</h2>
+    <h2 style="margin:0;font-size:var(--fs-15)">{{ $edit ? 'Edit brand' : 'Add brand' }}</h2>
     @if($edit)<input type="hidden" name="id" value="{{ $edit->id }}">@endif
     <div class="grid2">
       <label class="f">Brand ID<input type="text" value="{{ $edit?->code ?? $nextCode.' (automatic)' }}" disabled></label>

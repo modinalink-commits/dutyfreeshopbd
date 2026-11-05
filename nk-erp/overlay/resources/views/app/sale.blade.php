@@ -10,40 +10,40 @@
 @else
 <div class="card" style="display:flex;align-items:center;gap:10px">
   <div style="flex-grow:1;display:flex;flex-direction:column">
-    @if($cust)<span style="font-size:16px;font-weight:700">{{ $cust->name }}</span><span style="font:500 12px 'Plus Jakarta Sans',sans-serif;color:#51607a">{{ $cust->phone }} · <span style="font-family:'Hind Siliguri'">আগের বকেয়া</span> {{ $U::tk($due) }} · <span style="font-family:'Hind Siliguri'">খালি বাকি</span> {{ $emptyOut }}</span>
-    @else<span style="font-size:16px;font-weight:700">দোকান বাছাই করুন</span><input class="txt" id="walkin" placeholder="অথবা খুচরা ক্রেতার নাম" style="margin-top:6px;min-height:40px">@endif
+    @if($cust)<span style="font-size:var(--fs-16);font-weight:700">{{ $cust->name }}</span><span style="font:500 12px 'Plus Jakarta Sans',sans-serif;color:#51607a">{{ $cust->phone }} · <span style="font-family:'Hind Siliguri'">আগের বকেয়া</span> {{ $U::tk($due) }} · <span style="font-family:'Hind Siliguri'">খালি বাকি</span> {{ $emptyOut }}</span>
+    @else<span style="font-size:var(--fs-16);font-weight:700">দোকান বাছাই করুন</span><input class="txt" id="walkin" placeholder="অথবা খুচরা ক্রেতার নাম" style="margin-top:6px;min-height:40px">@endif
   </div>
   <a href="{{ route('app.shops', ['pick' => 'sale']) }}" style="min-height:40px;padding:0 12px;border-radius:999px;border:1px solid #7b8aa8;display:flex;align-items:center;font:600 13px 'Hind Siliguri',sans-serif;color:#123a86;text-decoration:none">{{ $cust ? 'বদলান' : 'দোকান' }}</a>
 </div>
 <div style="display:flex;align-items:center;gap:10px"><span class="lb" style="flex-grow:1">ব্র্যান্ড</span><span style="min-height:44px;padding:0 14px;border-radius:12px;border:1px solid #7b8aa8;display:flex;align-items:center;font:700 14px 'Plus Jakarta Sans',sans-serif">{{ $brand?->name ?? 'Aygaz United' }}</span></div>
 <div style="display:flex;flex-direction:column;gap:6px"><span class="lb">সিলিন্ডার সাইজ</span>
   <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
-    @foreach($onVeh as $s => $q)<button type="button" class="chip sz" data-s="{{ $s }}" @disabled(! isset($prices[$s]))><span style="font-size:16px">{{ $U::bn($s) }} কেজি</span><span style="font-size:11px">গাড়িতে {{ $q }}</span></button>@endforeach
+    @foreach($onVeh as $s => $q)<button type="button" class="chip sz" data-s="{{ $s }}" @disabled(! isset($prices[$s]))><span style="font-size:var(--fs-16)">{{ $U::bn($s) }} কেজি</span><span style="font-size:var(--fs-11)">গাড়িতে {{ $q }}</span></button>@endforeach
   </div></div>
 <div style="display:flex;flex-direction:column;gap:6px"><span class="lb">বিক্রির ধরন</span>
   <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px"><button type="button" class="chip ty" data-t="ex">রিফিল / এক্সচেঞ্জ</button><button type="button" class="chip ty" data-t="nw">নতুন সিলিন্ডার</button></div></div>
 <div style="display:flex;align-items:center;gap:10px">
-  <div style="flex-grow:1;display:flex;flex-direction:column"><span class="lb">পরিমাণ</span><span style="font-size:12px;color:#51607a">সর্বোচ্চ <span id="maxQ">0</span>টি</span></div>
+  <div style="flex-grow:1;display:flex;flex-direction:column"><span class="lb">পরিমাণ</span><span style="font-size:var(--fs-12);color:#51607a">সর্বোচ্চ <span id="maxQ">0</span>টি</span></div>
   <button class="step" type="button" id="dec" aria-label="একটি কম">−</button><span class="num" id="qty">1</span><button class="step" type="button" id="inc" aria-label="একটি বেশি">+</button>
 </div>
 <div style="background:#f4f7fc;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:6px">
-  <div style="display:flex;align-items:center;font-size:14px"><span style="flex-grow:1;color:#51607a">একক দাম (অনুমোদিত তালিকা)</span><span class="n" style="font-weight:700;font-size:15px" id="price">—</span></div>
-  <div style="display:flex;align-items:center"><span style="flex-grow:1;font-size:16px;font-weight:700">মোট</span><span class="n" style="font-weight:700;font-size:26px;color:#123a86" id="total">—</span></div>
+  <div style="display:flex;align-items:center;font-size:var(--fs-14)"><span style="flex-grow:1;color:#51607a">একক দাম (অনুমোদিত তালিকা)</span><span class="n" style="font-weight:700;font-size:var(--fs-15)" id="price">—</span></div>
+  <div style="display:flex;align-items:center"><span style="flex-grow:1;font-size:var(--fs-16);font-weight:700">মোট</span><span class="n" style="font-weight:700;font-size:var(--fs-24);color:#123a86" id="total">—</span></div>
 </div>
 <div id="exBox" style="display:flex;flex-direction:column;gap:8px">
   <div style="display:flex;align-items:center;gap:10px">
-    <div style="flex-grow:1;display:flex;flex-direction:column"><span class="lb">খালি সিলিন্ডার পেলাম</span><span style="font-size:12px" id="eNote"></span></div>
+    <div style="flex-grow:1;display:flex;flex-direction:column"><span class="lb">খালি সিলিন্ডার পেলাম</span><span style="font-size:var(--fs-12)" id="eNote"></span></div>
     <button class="step" type="button" id="edec" aria-label="খালি একটি কম">−</button><span class="num" id="empty">1</span><button class="step" type="button" id="einc" aria-label="খালি একটি বেশি">+</button>
   </div>
-  <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px">@foreach(['ভালো', 'ভাল্ভ সমস্যা', 'নষ্ট'] as $k)<button type="button" class="chip cd" data-c="{{ $k }}" style="min-height:40px;font-size:13px">{{ $k }}</button>@endforeach</div>
+  <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px">@foreach(['ভালো', 'ভাল্ভ সমস্যা', 'নষ্ট'] as $k)<button type="button" class="chip cd" data-c="{{ $k }}" style="min-height:40px;font-size:var(--fs-13)">{{ $k }}</button>@endforeach</div>
 </div>
 <div style="display:flex;flex-direction:column;gap:6px"><span class="lb">পেমেন্ট</span>
   <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px"><button type="button" class="chip py" data-p="cash">নগদ</button><button type="button" class="chip py" data-p="mfs">বিকাশ / নগদ</button><button type="button" class="chip py" data-p="bank">ব্যাংক</button></div></div>
 <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
   <label class="lb" style="display:flex;flex-direction:column;gap:4px">জমা দিলেন<input class="inp" id="paid" inputmode="numeric"></label>
-  <div style="display:flex;flex-direction:column;gap:4px"><span class="lb">বাকি</span><div id="dueBox" class="n" style="min-height:52px;border-radius:12px;padding:0 12px;display:flex;align-items:center;font-weight:700;font-size:22px">৳0</div></div>
+  <div style="display:flex;flex-direction:column;gap:4px"><span class="lb">বাকি</span><div id="dueBox" class="n" style="min-height:52px;border-radius:12px;padding:0 12px;display:flex;align-items:center;font-weight:700;font-size:var(--fs-22)">৳0</div></div>
 </div>
-<span style="font-size:12px;color:#51607a">বাকি দিতে হলে ম্যানেজারের অনুমতি লাগবে (দোকানের বাকির সীমা অফিস ঠিক করে)।</span>
+<span style="font-size:var(--fs-12);color:#51607a">বাকি দিতে হলে ম্যানেজারের অনুমতি লাগবে (দোকানের বাকির সীমা অফিস ঠিক করে)।</span>
 <div id="msg"></div>
 @endif
 @endsection

@@ -106,6 +106,7 @@ database/migrations/2026_11_05_000015_customer_portal.php
 database/migrations/2026_11_05_000016_erp_records.php
 public/app-sw.js
 public/css/nk-table.css
+public/css/nk-type.css
 public/img/logo.webp
 public/js/nk-table.js
 resources/erp/modules.json

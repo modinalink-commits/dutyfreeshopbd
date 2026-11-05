@@ -24,7 +24,7 @@
           @csrf
           <div style="display:flex;gap:6px"><select name="status" aria-label="Status">@foreach(\App\Models\WebsiteOrder::STATUSES as $k => $label)<option value="{{ $k }}" @selected($o->status === $k)>{{ $label }}</option>@endforeach</select><button class="btn sm pri" type="submit">Save</button></div>
           <input type="text" name="note" value="{{ $o->note }}" placeholder="Note (optional)" aria-label="Note">
-          @if($o->handler)<span style="font-size:11px;color:var(--muted)">Last update: {{ $o->handler->name }}</span>@endif
+          @if($o->handler)<span style="font-size:var(--fs-11);color:var(--muted)">Last update: {{ $o->handler->name }}</span>@endif
         </form>
         @else
         <span class="pill st-{{ $o->status }}">{{ \App\Models\WebsiteOrder::STATUSES[$o->status] ?? $o->status }}</span> {{ $o->note }}

@@ -6,7 +6,7 @@
 .hlp>button[aria-expanded=true]{background:#123a86;color:#fff;border-color:#123a86}
 .hlpb{display:none;position:absolute;z-index:40;top:26px;left:-8px;width:280px;max-width:80vw;background:#fff;border:1px solid #dbe3f0;border-radius:12px;box-shadow:0 8px 24px rgba(20,33,61,.14);padding:12px 14px;flex-direction:column;gap:6px;font:400 13px/20px 'Hind Siliguri','Plus Jakarta Sans',sans-serif;color:#14213d;text-transform:none;letter-spacing:0}
 .hlp>button[aria-expanded=true]+.hlpb{display:flex}
-.hlpb b{font-size:14px}.hlpb .ex{background:#eef2f9;border-radius:8px;padding:6px 8px;font-size:12px}.hlpb .fx{color:#51607a;font-size:12px}
+.hlpb b{font-size:var(--fs-14)}.hlpb .ex{background:#eef2f9;border-radius:8px;padding:6px 8px;font-size:var(--fs-12)}.hlpb .fx{color:#51607a;font-size:var(--fs-12)}
 </style>
 <script>
 document.addEventListener('click',function(e){var b=e.target.closest('.hlp>button');document.querySelectorAll('.hlp>button[aria-expanded=true]').forEach(function(x){if(x!==b)x.setAttribute('aria-expanded','false');});if(!b)return;e.preventDefault();b.setAttribute('aria-expanded',b.getAttribute('aria-expanded')==='true'?'false':'true');});

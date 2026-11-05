@@ -24,3 +24,24 @@
     });
   });
 })();
+
+// Wide tables: click-and-drag (mouse) or swipe (touch) to scroll sideways. Links, buttons and inputs still work.
+(function () {
+  document.querySelectorAll('.dt-wrap').forEach(function (w) {
+    if (w.scrollWidth <= w.clientWidth + 2) return;
+    w.classList.add('drag');
+    var down = false, moved = false, x0 = 0, s0 = 0;
+    w.addEventListener('mousedown', function (e) {
+      if (e.button !== 0 || e.target.closest('a,button,input,select,textarea,label,summary,[contenteditable]')) return;
+      down = true; moved = false; x0 = e.pageX; s0 = w.scrollLeft;
+    });
+    window.addEventListener('mousemove', function (e) {
+      if (!down) return;
+      var dx = e.pageX - x0;
+      if (!moved && Math.abs(dx) < 5) return;
+      moved = true; w.classList.add('dragging'); w.scrollLeft = s0 - dx; e.preventDefault();
+    });
+    window.addEventListener('mouseup', function () { if (down) { down = false; w.classList.remove('dragging'); } });
+    w.addEventListener('click', function (e) { if (moved) { e.preventDefault(); e.stopPropagation(); moved = false; } }, true);
+  });
+})();

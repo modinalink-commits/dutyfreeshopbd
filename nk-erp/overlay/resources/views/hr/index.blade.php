@@ -27,7 +27,7 @@
 ])
 <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">
   @foreach($kpis as [$l, $v, $f, $c])
-    <div style="background:{{ $U::bg($c) }};border:1px solid #dbe3f0;border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:2px"><span style="font-size:11px;font-weight:600;color:#51607a">{{ $l }}</span><span style="font-size:20px;line-height:28px;font-weight:700;color:{{ $U::ink($c) }};font-variant-numeric:tabular-nums">{{ $v }}</span><span style="font-size:11px;color:#51607a">{{ $f }}</span></div>
+    <div style="background:{{ $U::bg($c) }};border:1px solid #dbe3f0;border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:2px"><span style="font-size:var(--fs-11);font-weight:600;color:#51607a">{{ $l }}</span><span style="font-size:var(--fs-20);line-height:28px;font-weight:700;color:{{ $U::ink($c) }};font-variant-numeric:tabular-nums">{{ $v }}</span><span style="font-size:var(--fs-11);color:#51607a">{{ $f }}</span></div>
   @endforeach
 </section>
 
@@ -36,7 +36,7 @@
     <h2 class="h2">Department-wise salary cost · {{ $lastLbl }}</h2>
     @php($dm = max(1, $depts->max() ?? 1))
     @forelse($depts as $n => $v)
-      <div style="display:flex;flex-direction:column;gap:4px"><div style="display:flex;font-size:12px"><span style="flex-grow:1;font-weight:600">{{ $n }}</span><span style="font-weight:700">{{ $U::tk($v) }}</span></div>
+      <div style="display:flex;flex-direction:column;gap:4px"><div style="display:flex;font-size:var(--fs-12)"><span style="flex-grow:1;font-weight:600">{{ $n }}</span><span style="font-weight:700">{{ $U::tk($v) }}</span></div>
         <div style="height:10px;border-radius:999px;background:#eef2f9"><div style="height:10px;border-radius:999px;background:#123a86;width:{{ $v / $dm * 100 }}%"></div></div></div>
     @empty
       <p class="sub" style="margin:0">Shown after the first payroll is approved.</p>
@@ -59,7 +59,7 @@
 </div>
 
 <section class="card" style="padding:20px;display:flex;flex-direction:column;gap:12px">
-  <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px"><h2 class="h2" style="flex-grow:1">HR modules</h2><span class="sub" style="margin:0;font-size:12px">Each opens with the same form, approval and history layout as the ERP modules</span></div>
+  <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px"><h2 class="h2" style="flex-grow:1">HR modules</h2><span class="sub" style="margin:0;font-size:var(--fs-12)">Each opens with the same form, approval and history layout as the ERP modules</span></div>
   @php($emp0 = $active->first())
   @php($mods = [
     ['Employee master profile', $active->count().' employees', '#employees'], ['Department & designation', $active->pluck('department')->filter()->unique()->count().' departments', '#employees'],
@@ -72,14 +72,14 @@
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">
     @foreach($mods as $i => [$n, $s, $h])
       <a href="{{ $h ?? route('soon', 'hr') }}" style="border:1px solid #dbe3f0;border-radius:12px;padding:12px;display:flex;gap:10px;align-items:flex-start;text-decoration:none;color:#14213d;background:{{ $h ? '#fff' : '#f4f7fc' }}">
-        <span style="font-size:11px;font-weight:800;color:#1d4ed8;background:#e6eeff;border-radius:8px;padding:4px 6px">{{ str_pad((string) ($i + 1), 2, '0', STR_PAD_LEFT) }}</span>
-        <span style="display:flex;flex-direction:column;gap:2px"><b style="font-size:13px">{{ $n }}</b><span style="font-size:11px;color:#51607a">{{ $s }}</span></span></a>
+        <span style="font-size:var(--fs-11);font-weight:700;color:#1d4ed8;background:#e6eeff;border-radius:8px;padding:4px 6px">{{ str_pad((string) ($i + 1), 2, '0', STR_PAD_LEFT) }}</span>
+        <span style="display:flex;flex-direction:column;gap:2px"><b style="font-size:var(--fs-13)">{{ $n }}</b><span style="font-size:var(--fs-11);color:#51607a">{{ $s }}</span></span></a>
     @endforeach
   </div>
 </section>
 
 <section class="card" style="overflow:hidden">
-  <div style="padding:16px 20px;display:flex;align-items:center"><h2 class="h2" style="flex-grow:1">Pending expense claims</h2><span class="sub" style="margin:0;font-size:12px">Manager approves → Accounts pays</span></div>
+  <div style="padding:16px 20px;display:flex;align-items:center"><h2 class="h2" style="flex-grow:1">Pending expense claims</h2><span class="sub" style="margin:0;font-size:var(--fs-12)">Manager approves → Accounts pays</span></div>
   <div class="dt-wrap" style="margin:0 16px 16px"><table class="dt">
     <thead><tr><th>Claim</th><th>Employee</th><th>Type</th><th>Date</th><th>Vehicle / route</th><th class="r">Amount</th><th>Receipt</th><th>Status</th></tr></thead>
     <tbody>
@@ -87,7 +87,7 @@
       @php($st = ['draft' => 'Draft', 'submitted' => 'Pending', 'posted' => 'Approved'][$c->status])
       <tr><td class="nw"><a href="{{ route('expenses.index') }}">{{ $c->claim_no }}</a></td><td>{{ $c->extra['employee'] ?? '—' }}</td><td>{{ $c->extra['type'] ?? $c->category->name }}</td><td class="nw">{{ $c->expense_date->format('d-m') }}</td><td>{{ $c->trip?->vehicle?->code ?? $c->cost_center ?? '—' }}</td><td class="r">{{ $U::tk($c->amount) }}</td>
         <td class="c">@if($c->receipt_path)<a href="{{ route('expenses.receipt', $c) }}" target="_blank">{{ str_ends_with($c->receipt_path, '.pdf') ? 'PDF' : 'Photo' }}</a>@else — @endif</td>
-        <td class="c"><span style="font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;{{ ['Pending' => 'background:#fff1d6;color:#8a4b00', 'Approved' => 'background:#e6eeff;color:#1d4ed8', 'Draft' => 'background:#eef2f9;color:#51607a'][$st] }}">{{ $st }}</span></td></tr>
+        <td class="c"><span style="font-size:var(--fs-11);font-weight:700;padding:3px 9px;border-radius:999px;{{ ['Pending' => 'background:#fff1d6;color:#8a4b00', 'Approved' => 'background:#e6eeff;color:#1d4ed8', 'Draft' => 'background:#eef2f9;color:#51607a'][$st] }}">{{ $st }}</span></td></tr>
     @empty
       <tr><td colspan="8" class="empty">No expense claims waiting.</td></tr>
     @endforelse

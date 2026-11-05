@@ -18,10 +18,10 @@
       @forelse($items as $p)
       <button type="button" class="card prod" data-id="{{ $p['id'] }}" data-cat="{{ $p['cat'] }}" style="text-align:left;padding:14px;display:flex;flex-direction:column;gap:8px;cursor:pointer;font-family:inherit;color:var(--ink);min-height:150px" @disabled($p['price'] === null)>
         <div style="display:flex;align-items:center;gap:8px;width:100%"><span class="pill" style="background:{{ $p['cat'] === 'refill' ? '#e6eeff;color:#1d4ed8' : ($p['cat'] === 'new_package' ? '#e3f6ec;color:#0f6b3c' : '#efe7fb;color:#5b2fa8') }}">{{ $p['size'] }}</span><span style="flex-grow:1"></span>
-          @if($p['stock'] !== null)<span style="font-size:11px;font-weight:600;color:{{ $p['stock'] < 10 ? '#b3261e' : 'var(--muted)' }}">{{ $p['stock'] }} in stock</span>@endif</div>
-        <span style="font-size:14px;font-weight:700">{{ $p['name'] }}</span>
-        <span style="font-size:11px;color:var(--muted)">{{ $p['note'] }}</span>
-        <span style="margin-top:auto;font-size:16px;font-weight:700">@if($p['price'] !== null)৳{{ number_format($p['price']) }}@else<span style="color:#b3261e;font-size:12px">No price set</span>@endif</span>
+          @if($p['stock'] !== null)<span style="font-size:var(--fs-11);font-weight:600;color:{{ $p['stock'] < 10 ? '#b3261e' : 'var(--muted)' }}">{{ $p['stock'] }} in stock</span>@endif</div>
+        <span style="font-size:var(--fs-14);font-weight:700">{{ $p['name'] }}</span>
+        <span style="font-size:var(--fs-11);color:var(--muted)">{{ $p['note'] }}</span>
+        <span style="margin-top:auto;font-size:var(--fs-16);font-weight:700">@if($p['price'] !== null)৳{{ number_format($p['price']) }}@else<span style="color:#b3261e;font-size:var(--fs-12)">No price set</span>@endif</span>
       </button>
       @empty
       <p class="sub">No products yet. Add them in Products &amp; prices.</p>
@@ -29,7 +29,7 @@
     </div>
   </section>
   <aside class="card" style="flex:1 1 340px;min-width:300px;padding:20px;display:flex;flex-direction:column;gap:14px">
-    <h2 style="margin:0;font-size:15px">Memo</h2>
+    <h2 style="margin:0;font-size:var(--fs-15)">Memo</h2>
     <div class="grid2" style="grid-template-columns:repeat(2,minmax(0,1fr))">
       <label class="f">Customer phone<input type="tel" id="phone" name="walkin_phone" value="{{ old('walkin_phone') }}" placeholder="01XXXXXXXXX" autocomplete="off"></label>
       <label class="f">Name<input type="text" id="cname" name="walkin_name" value="{{ old('walkin_name') }}"></label>
@@ -45,10 +45,10 @@
       <label class="f">Empty brand<select name="empty_brand_id">@foreach($brands as $b)<option value="{{ $b->id }}" @selected(old('empty_brand_id', $ownBrand) == $b->id)>{{ $b->name }}</option>@endforeach</select></label>
     </div>
     @if(in_array(auth()->user()->role, ['super_admin', 'admin', 'manager']))<label class="f">Discount (৳)<input type="number" name="discount" id="disc" min="0" step="1" value="{{ old('discount', 0) }}"></label>@endif
-    <div style="background:#eef2f9;border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:6px;font-size:13px;font-variant-numeric:tabular-nums">
+    <div style="background:#eef2f9;border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:6px;font-size:var(--fs-13);font-variant-numeric:tabular-nums">
       <div style="display:flex"><span style="flex-grow:1;color:var(--muted)">Subtotal</span><span id="sub">৳0</span></div>
       <div style="display:flex"><span style="flex-grow:1;color:var(--muted)">Refills (empties expected)</span><span id="expEmp">0</span></div>
-      <div style="display:flex;font-size:18px;font-weight:700;padding-top:6px;border-top:1px solid var(--line)"><span style="flex-grow:1">Total</span><span id="tot">৳0</span></div>
+      <div style="display:flex;font-size:var(--fs-18);font-weight:700;padding-top:6px;border-top:1px solid var(--line)"><span style="flex-grow:1">Total</span><span id="tot">৳0</span></div>
     </div>
     <div class="f">Payment
       <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px" id="pays">
@@ -58,7 +58,7 @@
       </div>
     </div>
     <label class="f" id="paidBox" style="display:none">Paid now (rest goes on due)<input type="number" name="paid" min="0" step="1" value="{{ old('paid', 0) }}"></label>
-    <button class="btn pri" type="submit" style="min-height:48px;font-size:15px" id="save" disabled>Save &amp; print memo</button>
+    <button class="btn pri" type="submit" style="min-height:48px;font-size:var(--fs-15)" id="save" disabled>Save &amp; print memo</button>
   </aside>
 </form>
 <style>
@@ -79,7 +79,7 @@
     var box=document.getElementById('lines'),h=document.getElementById('hidden');box.innerHTML='';h.innerHTML='';var sub=0,refill=0;
     Object.keys(cart).forEach(function(id){var p=byId[id],q=cart[id];sub+=p.price*q;if(p.cat==='refill')refill+=q;
       var row=document.createElement('div');row.style.cssText='display:flex;align-items:center;gap:10px';
-      row.innerHTML='<div style="flex-grow:1;display:flex;flex-direction:column"><span style="font-size:13px;font-weight:600"></span><span style="font-size:11px;color:#51607a">'+tk(p.price)+' each</span></div><button class="qty" type="button" aria-label="One less">−</button><span style="width:22px;text-align:center;font-weight:700">'+q+'</span><button class="qty" type="button" aria-label="One more">+</button><span style="width:78px;text-align:right;font-weight:700">'+tk(p.price*q)+'</span>';
+      row.innerHTML='<div style="flex-grow:1;display:flex;flex-direction:column"><span style="font-size:var(--fs-13);font-weight:600"></span><span style="font-size:var(--fs-11);color:#51607a">'+tk(p.price)+' each</span></div><button class="qty" type="button" aria-label="One less">−</button><span style="width:22px;text-align:center;font-weight:700">'+q+'</span><button class="qty" type="button" aria-label="One more">+</button><span style="width:78px;text-align:right;font-weight:700">'+tk(p.price*q)+'</span>';
       row.querySelector('span').textContent=p.name;
       var bs=row.querySelectorAll('button');bs[0].onclick=function(){cart[id]=q-1;if(cart[id]<=0)delete cart[id];draw();};bs[1].onclick=function(){if(p.stock!==null&&q+1>p.stock){alert('Only '+p.stock+' in stock.');return;}cart[id]=q+1;draw();};
       box.appendChild(row);

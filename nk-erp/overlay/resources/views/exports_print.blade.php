@@ -1,12 +1,13 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="robots" content="noindex"><title>{{ $label }} · {{ $f['from'] }} to {{ $f['to'] }}</title>
+<head><meta charset="utf-8">
+<link rel="stylesheet" href="/css/nk-type.css?v=1"><meta name="robots" content="noindex"><title>{{ $label }} · {{ $f['from'] }} to {{ $f['to'] }}</title>
 <style>
 body{margin:0;font-family:'Plus Jakarta Sans','Hind Siliguri',Arial,sans-serif;color:#14213d;font-variant-numeric:tabular-nums}
 .bar{padding:10px;background:#eef2f9;display:flex;gap:8px;justify-content:center}.bar button{min-height:40px;padding:0 18px;border-radius:999px;border:0;background:#123a86;color:#fff;font-weight:700;cursor:pointer}
 @media print{.bar{display:none}}
-@if($size === 'a4')@page{size:A4 {{ ($f['page'] ?? 'landscape') === 'portrait' ? 'portrait' : 'landscape' }};margin:12mm}.paper{max-width:{{ ($f['page'] ?? 'landscape') === 'portrait' ? '186mm' : '273mm' }};margin:0 auto;font-size:11px;padding:10px}
-@else @page{size:80mm auto;margin:2mm}.paper{width:72mm;margin:0 auto;font-size:10.5px}@endif
+@if($size === 'a4')@page{size:A4 {{ ($f['page'] ?? 'landscape') === 'portrait' ? 'portrait' : 'landscape' }};margin:12mm}.paper{max-width:{{ ($f['page'] ?? 'landscape') === 'portrait' ? '186mm' : '273mm' }};margin:0 auto;font-size:var(--fs-11);padding:10px}
+@else @page{size:80mm auto;margin:2mm}.paper{width:72mm;margin:0 auto;font-size:var(--fs-11)}@endif
 table{width:100%;border-collapse:collapse}th{background:#f1f4f9;font-weight:600}th,td{border:1px solid #d5dce8;padding:5px 6px}td.n{text-align:right}tr.t td{font-weight:700;background:#e6eeff}
 </style></head>
 <body>
