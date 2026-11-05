@@ -67,7 +67,7 @@ textarea{padding:8px 10px;min-height:60px}
         @continue(in_array($key, $superOnly) && $u->role !== 'super_admin')
         @if($route)
           <a class="nav {{ request()->routeIs(explode('.', $route)[0].'*') ? 'on' : '' }}" href="{{ route($route) }}">{!! \App\Support\Icons::svg($key) !!}<span style="flex-grow:1">{{ $label }}</span>
-            @if($key === 'corders' && $newCount)<span class="badge">{{ $newCount }}</span>@endif
+            @if($key === 'weborders' && $newCount)<span class="badge">{{ $newCount }}</span>@endif
             @if($key === 'brands' && $waitX)<span class="badge">{{ $waitX }}</span>@endif
           </a>
         @else

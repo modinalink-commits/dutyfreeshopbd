@@ -30,6 +30,7 @@ class Icons
         'wholesale' => 'truck',
         'customers' => 'users',
         'corders' => 'cart',
+        'weborders' => 'globe',
         'sales' => 'book',
         'rdash' => 'route',
         'live' => 'route',
