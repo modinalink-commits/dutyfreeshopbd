@@ -21,8 +21,9 @@ class ChatController extends Controller {
     elseif ($f === 'resolved') $q->where('status', 'resolved');
     if ($f !== 'resolved' && $f !== 'all') $q->where('status', '!=', 'resolved');
     if (in_array($r->query('s'), array_keys(self::STATUSES))) $q->where('status', $r->query('s'));
-    if ($s = trim((string)$r->query('q'))) { $like = '%'.str_replace(['%', '_'], ['\%', '\_'], $s).'%'; $q->where(fn($w) => $w->where('name', 'ilike', $like)->orWhere('phone', 'ilike', $like)->orWhere('username', 'ilike', $like)->orWhere('last_message', 'ilike', $like)); }
-    $rows = $q->orderByDesc('last_at')->limit(120)->get();
+    if ($s = trim((string)$r->query('q'))) { $like = '%'.str_replace(['%', '_'], ['\%', '\_'], $s).'%'; $q->where(fn($w) => $w->where('name', 'ilike', $like)->orWhere('phone', 'ilike', $like)->orWhere('username', 'ilike', $like)->orWhere('last_message', 'ilike', $like)->orWhereIn('phone', fn($o) => $o->from('orders')->where('invoice', 'ilike', $like)->select('phone')->limit(50))); }
+    // Unread first, then waiting for staff, then read/open, then resolved; newest message first inside each group.
+    $rows = $q->orderByRaw("case when status <> 'resolved' and unread > 0 then 1 when status <> 'resolved' and (status = 'waiting' or coalesce(needs_human, false)) then 2 when status <> 'resolved' then 3 else 4 end")->orderByDesc('last_at')->limit(120)->get();
     return response()->json(['threads'=>Chat::cards($rows), 'unread'=>Chat::unreadTotal()]);
   }
 
