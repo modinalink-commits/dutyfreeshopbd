@@ -280,6 +280,7 @@ class AdminController extends Controller {
     DB::table('incomplete_orders')->where('status', 'open')->where('phone', $d['phone'])->update(['status'=>'converted', 'order_id'=>$id, 'updated_at'=>now()]);
     try { \App\Support\Voice::onOrder($d['phone'], (int)$id, $kept); } catch (\Throwable $e) {}
     \App\Support\OrderSms::placed((int)$id);
+    try { $__avId = (int)$id; dispatch(function () use ($__avId) { try { \App\Support\AiVerify::run($__avId, 'order_created', true, false); } catch (\Throwable $e) {} })->afterResponse(); } catch (\Throwable $e) {} // AI Verify runs by itself
     return redirect("/admin/orders/$id");
   }
   public function orderShow($id) {

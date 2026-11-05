@@ -29,8 +29,11 @@ class AiVerifyController extends Controller {
     // Every order on the page gets a result: orders without one (admin-created, AI/legacy channels, or placed before AI Verify) are verified now, newest first, a few per request.
     $have = DB::table('order_ai_verifications')->whereIn('order_id', $ids)->pluck('order_id')->all();
     $miss = DB::table('orders')->whereIn('id', array_diff($ids, $have))->where('status', '<>', 'Incomplete')->orderByDesc('id')->pluck('id')->all();
-    foreach (array_slice($miss, 0, 8) as $mid) { try { AiVerify::run((int)$mid, 'auto', false, false); } catch (\Throwable $e) {} }
-    $left = max(0, count($miss) - 8);
+    foreach (array_slice($miss, 0, 4) as $mid) { try { AiVerify::run((int)$mid, 'auto', true, false); } catch (\Throwable $e) {} }
+    $left = max(0, count($miss) - 4);
+    // Orders edited after their last verification (customer, address, items, payment, discount, status) are re-verified by themselves; unchanged data is skipped by the fingerprint.
+    $stale = DB::table('order_ai_verifications as v')->join('orders as o', 'o.id', '=', 'v.order_id')->whereIn('v.order_id', $ids)->whereColumn('o.updated_at', '>', 'v.verified_at')->orderByDesc('o.updated_at')->limit(4)->pluck('v.order_id')->all();
+    foreach ($stale as $sid) { try { AiVerify::run((int)$sid, 'auto-update', true, false); } catch (\Throwable $e) {} }
     $rows = DB::table('order_ai_verifications')->whereIn('order_id', $ids)->get(['order_id', 'verification_status', 'override_status', 'verification_score']);
     $o = []; foreach ($rows as $x) { $s = $x->override_status ?: $x->verification_status; $o[$x->order_id] = ['s' => $s, 'l' => AiVerify::LABEL[$s] ?? $s, 'n' => (int)$x->verification_score]; }
     return response()->json(['m' => $o, 'left' => $left])->header('Cache-Control', 'no-store');

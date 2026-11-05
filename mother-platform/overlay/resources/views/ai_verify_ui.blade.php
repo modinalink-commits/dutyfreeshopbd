@@ -86,6 +86,6 @@ document.addEventListener('click',function(e){var b=e.target.closest('.ai-btn');
 document.getElementById('aivRe').onclick=function(){if(cur)load(cur,true)};
 var ids=[].map.call(document.querySelectorAll('.ai-btn[data-id]'),function(b){return b.getAttribute('data-id')});
 function stat(n){if(!ids.length)return;fetch('/admin/orders/ai-status?ids='+ids.join(','),{headers:{Accept:'application/json'}}).then(function(x){return x.json()}).then(function(j){var m=j.m||{};document.querySelectorAll('.ai-btn[data-id]').forEach(function(b){var v=m[b.getAttribute('data-id')];if(v)paint(b,v.s,v.n)});if(j.left>0&&n<8)setTimeout(function(){stat(n+1)},800)}).catch(function(){})}
-stat(0);
+stat(0);setInterval(function(){if(!document.hidden)stat(0)},60000);
 var pgE=document.querySelector('[data-aipage]');if(pgE){document.body.classList.add('aipg');dr.classList.add('pg');load(parseInt(pgE.getAttribute('data-aipage'),10),false)}
 })();</script>
