@@ -162,7 +162,8 @@ class SupplierPortalController extends Controller
   public function reorders() {
     $this->need('rfq'); $sid = SP::sid();
     $rows = DB::table('supplier_rfq_invites as i')->join('supplier_rfqs as r','r.id','=','i.rfq_id')->join('reorder_requests as o','o.id','=','r.reorder_id')->leftJoin('products as p','p.id','=','r.product_id')->leftJoin('supplier_quotes as q', fn($j) => $j->on('q.rfq_id','=','r.id')->where('q.supplier_id','=',$sid))
-      ->where('i.supplier_id',$sid)->where('r.status','!=','draft')->orderBy('r.id')->limit(500)
+      ->where('i.supplier_id',$sid)->where('r.status','!=','draft')->orderByRaw('coalesce(p.stock,0)')->orderBy('r.id')->limit(1000)
+      ->selectRaw("(select pi.cost from purchase_items pi join purchases pu on pu.id = pi.purchase_id where pi.product_id = r.product_id and pu.supplier_id = ? order by pu.purchase_date desc, pi.id desc limit 1) as last_cost, (select pu.purchase_date from purchase_items pi join purchases pu on pu.id = pi.purchase_id where pi.product_id = r.product_id and pu.supplier_id = ? order by pu.purchase_date desc, pi.id desc limit 1) as last_date, p.stock as cur_stock, p.published as pub, o.threshold as thr", [$sid, $sid])
       ->get(['r.id','r.rfq_no','r.product','r.sku','r.qty','r.required_date','r.expires_at','r.status as rstatus','i.status as istatus','i.decline_reason','o.urgency','o.kind','o.stock_at','p.image','q.unit_price']);
     $contact = preg_replace('/[^0-9+]/', '', (string)\App\Support\Procure::set('reorder_contact', ''));
     return $this->v('reorder_list', compact('rows', 'contact'));

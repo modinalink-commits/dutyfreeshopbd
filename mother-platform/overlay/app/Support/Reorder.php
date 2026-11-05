@@ -17,9 +17,9 @@ class Reorder
 
   public static function ready(): bool { static $r = null; return $r ??= Schema::hasTable('reorder_requests') && Schema::hasColumn('supplier_rfqs', 'reorder_id'); }
   public static function cfg(): array {
-    return ['enabled' => Procure::on('reorder_enabled'), 'threshold' => max(1, (int)Procure::set('reorder_threshold', '50')), 'target' => max(1, (int)Procure::set('reorder_target', '150')),
+    return ['enabled' => Procure::on('reorder_enabled'), 'threshold' => max(1, (int)Procure::set('reorder_threshold', '100')), 'target' => max(1, (int)Procure::set('reorder_target', '150')),
       'days' => max(1, (int)Procure::set('reorder_days', '7')), 'hours' => max(1, (int)Procure::set('reorder_rfq_hours', '48')), 'auto_send' => Procure::set('reorder_auto_send', '1') === '1', 'send_at' => trim(Procure::set('reorder_send_at', '14:00')),
-      'sourcing' => Procure::on('reorder_sourcing'), 'sms' => Procure::on('reorder_sms'), 'high' => (int)Procure::set('reorder_u_high', '19'), 'med' => (int)Procure::set('reorder_u_med', '39')];
+      'sourcing' => Procure::on('reorder_sourcing'), 'sms' => Procure::on('reorder_sms'), 'high' => (int)Procure::set('reorder_u_high', '24'), 'med' => (int)Procure::set('reorder_u_med', '49')];
   }
   public static function urgency(int $stock, ?array $c = null): string {
     $c ??= self::cfg(); if ($stock <= 0) return 'Critical'; if ($stock <= $c['high']) return 'High'; if ($stock <= $c['med']) return 'Medium'; return 'Low';
@@ -36,13 +36,10 @@ class Reorder
     return in_array((int)$p->category_id, $ctrl, true) || $c['sourcing'] ? 'auto' : 'off';
   }
   /** Products below their threshold: published, or a stock-controlled product that was auto-unpublished at zero and has been bought before. */
-  public static function below(?array $ids = null, int $limit = 600) {
+  public static function below(?array $ids = null, int $limit = 5000) {
     $c = self::cfg(); $ctrl = self::ctrl();
-    $q = DB::table('products as p')->whereRaw('coalesce(p.stock,0) < coalesce(nullif(p.low_stock_alert,0), ?)', [$c['threshold']])
-      ->where(function ($w) use ($ctrl) {
-        $w->where('p.published', true);
-        if ($ctrl) $w->orWhere(fn($x) => $x->whereRaw('coalesce(p.stock,0) <= 0')->whereIn('p.category_id', $ctrl)->whereExists(fn($e) => $e->select(DB::raw(1))->from('purchase_items as i')->whereColumn('i.product_id', 'p.id')));
-      });
+    // every product below the threshold, published or not (publish status is information only)
+    $q = DB::table('products as p')->whereRaw('coalesce(p.stock,0) < coalesce(nullif(p.low_stock_alert,0), ?)', [$c['threshold']]);
     if ($ids !== null) $q->whereIn('p.id', $ids ?: [0]);
     return $q->orderByRaw('coalesce(p.stock,0)')->limit($limit)->get(['p.id', 'p.name', 'p.sku', 'p.image', 'p.stock', 'p.published', 'p.category_id', 'p.low_stock_alert', 'p.reorder_target', 'p.reorder_mode']);
   }
