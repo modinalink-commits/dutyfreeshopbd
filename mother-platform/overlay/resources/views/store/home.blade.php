@@ -246,7 +246,10 @@ body .cs .vm{position:absolute;right:0;top:calc(100% + 8px);min-width:220px;max-
 body .cs .vm a{display:block;padding:9px 12px;border-radius:8px;color:var(--n);font-size:13px;font-weight:600;text-decoration:none}
 body .cs .vm a:hover{background:#FFEEE6;color:#C2410C}
 body .cs .vm a.vall{font-weight:800;color:#C2410C;border-bottom:1px solid #F3E3DA;border-radius:8px 8px 0 0;margin-bottom:4px}
-body .cs .gr{padding:12px}
+body .cs .gr:not([data-cr]){padding:12px}body .cs .crw{padding:12px}
+body .cs .vl{display:inline-flex;align-items:center;gap:6px;background:#fff;color:var(--n);font-size:13px;font-weight:800;padding:8px 16px;border-radius:999px;white-space:nowrap;text-decoration:none}
+body .cs .vl::after{content:"\203A";color:#C2410C}
+body .cs .st-t{display:none}
 body .cs .pc{border-radius:14px}body .cs .pc .ph{background:#F8F8F8}
 body .cs .pc,body .cs .pc:hover{transform:none}
 body .cs .pc{transition:box-shadow .15s}
@@ -260,7 +263,8 @@ body .cs .pc .on{margin-top:auto}
   body .cs .mt span::before{display:none}
   body .cs .vd summary{font-size:11px;padding:5px 11px}
   body .cs .vm{min-width:200px}
-  body .cs .gr{padding:6px;gap:5px}
+  body .cs .gr:not([data-cr]){padding:6px;gap:5px}body .cs .crw{padding:6px}
+  body .cs .vl{font-size:11px;padding:5px 11px}
   body .cs .pc .pr{min-height:26px}
   body .cs .mv{margin:0;padding:0 6px 8px}
 }
@@ -305,7 +309,7 @@ body .cs .pc .on{margin-top:auto}
 <div class="hst-p sec-top" id="top" style="min-height:400px"></div><template class="hst">
 @php $__d = min(8, max(2, (int)$s['top_vis_d'])); $__m = min(4, max(1, (int)$s['top_vis_m'])); $__sp = min(15, max(1, (int)$s['top_speed'])) * 1000; @endphp
 <style>@media(min-width:1201px){#top [data-cr]{--pv:{{ $__d }}}}@media(min-width:981px) and (max-width:1200px){#top [data-cr]{--pv:{{ min($__d, 5) }}}}@media(min-width:761px) and (max-width:980px){#top [data-cr]{--pv:{{ min($__d, 4) }}}}@media(max-width:760px){#top [data-cr]{--pv:{{ $__m }}}}#top .pc .tsb{margin:0 10px;align-self:flex-start;background:#FFF1E8;color:#C2410C;font-size:10.5px;font-weight:700;border-radius:20px;padding:2px 9px}#top .pc .tsn{margin:0 10px;font-size:11px;color:#374151}@media(max-width:760px){#top .pc .tsb{font-size:8.5px;padding:1px 6px;margin:0 6px}#top .pc .tsn{font-size:9px;margin:0 6px}}</style>
-<div class="w sec-st sec-top" id="top" style="padding-top:34px"><div class="st"><h2>{{ $topLabel }}</h2>
+<div class="w sec-st sec-top" id="top" style="padding-top:34px"><div class="st cs"><div class="hh"><span class="t">{{ $topLabel }}</span><span class="sp"></span><a class="vl" href="/search?sort=popular">View All</a></div><div class="mt"><span>{{ $topLabel }}</span><a class="vl" href="/search?sort=popular">View All</a></div>
 <div class="gr" data-cr data-sp="{{ $__sp }}" data-auto="{{ $s['top_auto'] === '1' ? '1' : '0' }}">@foreach($top as $q)@include('store.card', ['fd'=>true, 'tb'=>$s['top_badge']==='1' && isset($topSold[$q->id]), 'ts'=>$s['top_show_sold']==='1' ? (int)($topSold[$q->id] ?? 0) : 0])@endforeach</div></div></div>
 </template>
 @endif
@@ -317,7 +321,7 @@ body .cs .pc .on{margin-top:auto}
 
 @if($s['home_new']==='1' && $new->count())
 <div class="hst-p" id="new" style="min-height:400px"></div><template class="hst">
-<div class="w sec-st" id="new" style="padding-top:34px"><div class="st"><h2><span class="only-d" style="display:inline">New Arrival Products</span><span class="only-m">New Arrival</span></h2>
+<div class="w sec-st" id="new" style="padding-top:34px"><div class="st cs"><div class="hh"><span class="t">New Arrival Products</span><span class="sp"></span><a class="vl" href="/search?sort=new">View All</a></div><div class="mt"><span>New Arrival</span><a class="vl" href="/search?sort=new">View All</a></div>
 <div class="gr" data-cr>@foreach($new as $q)@include('store.card', ['fd'=>false])@endforeach</div></div></div>
 </template>
 @endif
