@@ -143,14 +143,14 @@ class AiBrief
   /** Generate and store one brief. Returns the saved row. */
   public static function generate(string $kind = 'daily', ?string $by = null): ?object {
     if (!self::ready()) return null;
-    @set_time_limit(120);
+    @set_time_limit(150);
     $F = self::facts(); $key = Sms::secret('ai_key'); $body = null; $status = 'ok'; $err = null; $in = 0; $outT = 0; $model = self::model();
     if (!$key) { $status = 'fallback'; $err = 'Claude API key is not set'; }
     else {
       try {
-        $res = Http::withHeaders(['x-api-key' => $key, 'anthropic-version' => '2023-06-01'])->timeout(90)->post('https://api.anthropic.com/v1/messages', ['model' => $model, 'max_tokens' => 2000, 'system' => self::system(),
+        $res = Http::withHeaders(['x-api-key' => $key, 'anthropic-version' => '2023-06-01'])->timeout(110)->post('https://api.anthropic.com/v1/messages', ['model' => $model, 'max_tokens' => 6000, 'system' => self::system(),
           'messages' => [['role' => 'user', 'content' => "FACTS:\n" . json_encode($F, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)]]]);
-        if ($res->ok()) { $body = trim(collect($res->json('content') ?? [])->where('type', 'text')->pluck('text')->implode("\n")); $in = (int)$res->json('usage.input_tokens'); $outT = (int)$res->json('usage.output_tokens'); if ($body === '') { $status = 'fallback'; $err = 'empty reply'; } }
+        if ($res->ok()) { $body = trim(str_replace('**', '', collect($res->json('content') ?? [])->where('type', 'text')->pluck('text')->implode("\n"))); $in = (int)$res->json('usage.input_tokens'); $outT = (int)$res->json('usage.output_tokens'); if ($body === '') { $status = 'fallback'; $err = 'empty reply'; } }
         else { $status = 'fallback'; $err = 'HTTP ' . $res->status() . ' ' . mb_substr((string)($res->json('error.message') ?? ''), 0, 200); }
       } catch (\Throwable $e) { $status = 'fallback'; $err = 'network: ' . mb_substr($e->getMessage(), 0, 160); }
     }
