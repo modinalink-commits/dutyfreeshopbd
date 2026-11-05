@@ -15,11 +15,11 @@ class FraudCheck
     'very_high' => ['Very High Risk', 'Very High Risk', 'অত্যন্ত উচ্চ ঝুঁকি', '#B91C1C', '#FEE2E2', 90],
     'unknown'   => ['Unknown', 'No Courier History', 'কুরিয়ার হিস্ট্রি পাওয়া যায়নি', '#4B5563', '#F3F4F6', null],
   ];
-  const KEYS = ['fc_steadfast_key', 'fc_steadfast_secret', 'fc_redx_token', 'fc_pathao_token'];
+  const KEYS = ['fc_steadfast_key', 'fc_steadfast_secret', 'fc_redx_token', 'fc_pathao_token', 'fc_bdcourier_key'];
   /** Fraud-check token, or the RedX courier API token when none was entered separately. */
   public static function redxToken(): string { $t = trim((string)(Sms::secret('fc_redx_token') ?: Sms::secret('redx_token'))); return preg_replace('/^bearer\s+/i', '', $t); }
   public static function phone(string $p): string { $d = preg_replace('/\D/', '', $p); if (str_starts_with($d, '880')) $d = '0' . substr($d, 3); return substr($d, -11); }
-  public static function configured(): array { return ['steadfast' => (bool)(Sms::secret('fc_steadfast_key') && Sms::secret('fc_steadfast_secret')), 'redx' => self::redxToken() !== '', 'pathao' => (bool)Sms::secret('fc_pathao_token')]; }
+  public static function configured(): array { return ['steadfast' => (bool)(Sms::secret('fc_steadfast_key') && Sms::secret('fc_steadfast_secret')), 'redx' => self::redxToken() !== '', 'pathao' => (bool)Sms::secret('fc_pathao_token'), 'bdcourier' => trim((string)Sms::secret('fc_bdcourier_key')) !== '']; }
 
   public static function level(int $total, float $rate): array {
     if ($total <= 0) return ['unknown', null];
@@ -38,7 +38,7 @@ class FraudCheck
     $phone = self::phone($phone); if (!preg_match('/^01\d{9}$/', $phone)) return ['ok' => false, 'error' => 'Invalid mobile number'];
     if (!$force) { $c = DB::table('fraud_checks')->where('phone', $phone)->where('created_at', '>', now()->subHours(6))->orderByDesc('id')->first(); if ($c && $c->data) return json_decode($c->data, true) + ['cached' => true]; }
     $http = []; $cfg = self::configured(); $ptok = (string)(Sms::secret('fc_pathao_token') ?: (Pathao::configured() ? Pathao::token() : '')); $cfg['pathao'] = $ptok !== ''; $psrc = 'off'; $safe = fn($v) => $v ? (int)$v : 0; $res = ['steadfast' => [0, 0, 0, 'off'], 'redx' => [0, 0, 0, 'off'], 'pathao' => [0, 0, 0, 'off']];
-    if (array_filter($cfg)) {
+    if (array_filter(array_diff_key($cfg, ['bdcourier' => 1]))) {
       try {
         $rs = Http::pool(fn($pool) => [
           $pool->as('s')->timeout(10)->withHeaders(['Api-Key' => (string)Sms::secret('fc_steadfast_key'), 'Secret-Key' => (string)Sms::secret('fc_steadfast_secret'), 'Content-Type' => 'application/json'])->get('https://portal.packzy.com/api/v1/fraud_check/score/' . $phone),
@@ -52,6 +52,18 @@ class FraudCheck
         if ($cfg['pathao']) { $x = $j('p'); $d = $safe($x->data->customer->successful_delivery ?? 0); $t = $safe($x->data->customer->total_delivery ?? 0); $res['pathao'] = [$t, $d, max($t - $d, 0), $x ? 'ok' : 'error']; }
         if ($cfg['pathao'] && $res['pathao'][3] === 'ok') $psrc = 'network';
       } catch (\Throwable $e) {}
+    }
+    // BD Courier (bdcourier.com): one call returns Pathao, Steadfast, RedX, ParcelDex, CourierFast, PaperFly and CarryBee. Where we already have a direct number, the larger total wins (no double counting); the other couriers are added.
+    if ($cfg['bdcourier']) {
+      try {
+        $br = Http::timeout(12)->acceptJson()->withToken(trim((string)Sms::secret('fc_bdcourier_key')))->post('https://api.bdcourier.com/courier-check', ['phone' => $phone]); $http['bdcourier'] = $br->status();
+        $bj = $br->successful() ? $br->json() : null;
+        if (is_array($bj) && ($bj['status'] ?? '') === 'success' && is_array($bj['data'] ?? null)) foreach ($bj['data'] as $bk => $bv) {
+          if (!is_array($bv) || !isset($bv['total_parcel'])) continue; $bk = strtolower((string)$bk); $bt = $safe($bv['total_parcel']); $bd = $safe($bv['success_parcel'] ?? 0); $bc = $safe($bv['cancelled_parcel'] ?? 0);
+          if (!isset($res[$bk])) $res[$bk] = [0, 0, 0, 'off'];
+          if ($bt > ($res[$bk][0] ?? 0) || $res[$bk][3] !== 'ok') { $res[$bk] = [$bt, $bd, $bc, 'ok']; if ($bk === 'pathao' && $bt > 0) $psrc = 'network'; }
+        }
+      } catch (\Throwable $e) { $http['bdcourier'] = 0; }
     }
     // Pathao fallback: when Pathao's network score is unavailable, use this store's own Pathao parcels for the number (official API, our synced parcel results).
     if ($res['pathao'][3] !== 'ok' || $res['pathao'][0] === 0) {

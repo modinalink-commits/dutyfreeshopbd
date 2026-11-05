@@ -16,8 +16,8 @@ class FraudController extends Controller
   }
   public function check(Request $r) { return response()->json(F::check((string)$r->query('phone'), $r->boolean('fresh')))->header('Cache-Control', 'no-store'); }
   public function save(Request $r) {
-    foreach (['fc_steadfast_key' => 'steadfast_key', 'fc_steadfast_secret' => 'steadfast_secret', 'fc_redx_token' => 'redx_token', 'fc_pathao_token' => 'pathao_token'] as $k => $f) if (trim((string)$r->input($f)) !== '') Sms::setSecret($k, trim((string)$r->input($f)));
-    foreach (['steadfast_key', 'steadfast_secret', 'redx_token', 'pathao_token'] as $f) if ($r->boolean('clear_' . $f)) Sms::setSecret('fc_' . $f, null);
+    foreach (['fc_steadfast_key' => 'steadfast_key', 'fc_steadfast_secret' => 'steadfast_secret', 'fc_redx_token' => 'redx_token', 'fc_pathao_token' => 'pathao_token', 'fc_bdcourier_key' => 'bdcourier_key'] as $k => $f) if (trim((string)$r->input($f)) !== '') Sms::setSecret($k, trim((string)$r->input($f)));
+    foreach (['steadfast_key', 'steadfast_secret', 'redx_token', 'pathao_token', 'bdcourier_key'] as $f) if ($r->boolean('clear_' . $f)) Sms::setSecret('fc_' . $f, null);
     Sms::setSecret('fc_internal', $r->boolean('internal') ? '1' : '0');
     \App\Support\Procure::audit('fraud.settings', 'Fraud check API settings updated');
     return redirect('/admin/fraud')->with('ok', 'Saved');
