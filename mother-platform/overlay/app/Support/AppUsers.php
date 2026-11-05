@@ -69,4 +69,10 @@ class AppUsers
     else $ids = array_merge(DB::table('app_installs')->whereNotNull('customer_id')->pluck('customer_id')->all(), DB::table('app_installs')->whereNotNull('login_customer_id')->pluck('login_customer_id')->all());
     return array_values(array_unique(array_map('intval', $ids))) ?: [0];
   }
+
+  /** Profile card HTML; never lets an App-data problem break the customer page. */
+  public static function cardHtml(int $cid, ?string $phone): string {
+    try { return view('app_user_card', ['cid' => $cid, 'phone' => (string)$phone])->render(); }
+    catch (\Throwable $e) { return '<div class="card" style="max-width:640px"><h2>📱 App User</h2><div style="font-size:12.5px;color:#B91C1C">App details could not be loaded: ' . e(mb_substr($e->getMessage(), 0, 300)) . '</div></div>'; }
+  }
 }
