@@ -203,8 +203,9 @@ class ReportCatalog
   {
     try {
       $uid = \Illuminate\Support\Facades\Auth::id(); if (!$uid || !Schema::hasTable('report_views')) return;
-      $k = 'rv_' . $code; $last = (int)session($k, 0); if ($last && time() - $last < 600) return;
-      session([$k => time()]);
+      // The session is stored in the cookie, so never write per-report keys into it; throttle through the cache instead.
+      foreach (array_keys(session()->all()) as $sk) if (is_string($sk) && str_starts_with($sk, 'rv_')) session()->forget($sk);
+      if (!\Illuminate\Support\Facades\Cache::add('rv:' . $uid . ':' . $code, 1, 600)) return;
       DB::table('report_views')->updateOrInsert(['user_id' => $uid, 'report_code' => $code], ['viewed_at' => now()]);
     } catch (\Throwable $e) {}
   }

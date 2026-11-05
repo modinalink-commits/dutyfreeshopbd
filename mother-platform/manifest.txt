@@ -669,3 +669,4 @@ resources/views/report_center_home.blade.php
 database/migrations/2026_11_05_000220_orders_store_backfill.php
 app/Support/DataQuality.php
 app/Support/FinancialCalc.php
+app/Http/Middleware/SessionGuard.php
