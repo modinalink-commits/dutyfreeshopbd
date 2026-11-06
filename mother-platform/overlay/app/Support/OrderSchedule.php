@@ -79,6 +79,7 @@ class OrderSchedule
                 if (!$c) return false; // changed by someone meanwhile — never override
                 DB::table('order_status_logs')->insert(['order_id' => $o->id, 'user_id' => null, 'user_name' => 'System', 'from_status' => 'Scheduled', 'to_status' => 'Approved',
                     'note' => 'Order automatically changed from Scheduled to Approved (scheduled for ' . self::label($o->scheduled_at) . ')', 'created_at' => now(), 'updated_at' => now()]);
+                ApprovalSource::stamp((int)$o->id, 'SYSTEM', null, 'Scheduled approval', 'Automatic approval: scheduled time reached');
                 return true;
             });
             if ($ok) $n++;
