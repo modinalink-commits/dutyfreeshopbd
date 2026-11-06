@@ -176,7 +176,7 @@ class AdminController extends Controller {
     $aiIds = []; try { $nw = collect(method_exists($orders, 'items') ? $orders->items() : $orders)->filter(fn($x) => ($x->status ?? '') === 'New')->pluck('id')->all(); if ($nw) $aiIds = DB::table('order_ai_verifications')->whereIn('order_id', $nw)->whereRaw("coalesce(override_status, verification_status) = 'verified'")->pluck('order_id')->map(fn($v) => (int)$v)->values()->all(); } catch (\Throwable $e) { $aiIds = []; }
     $dupDay = []; try { $dupDay = \App\Support\DupGuard::forPage($orders->items()); } catch (\Throwable $e) { $dupDay = []; }
     $__v = view('orders', compact('orders','counts','vals','items','per','intel','incOpen','cmLast','dupHint','dupInv','aiAp','aiIds','dupDay') + ['isInc'=>$isInc] + ($isInc ? \App\Http\Controllers\IncompleteController::data($r, $range) : \App\Http\Controllers\IncompleteController::mix($r, $orders, $range)));
-    try { $__h = $__v->render(); return response(\App\Support\SvgDedupe::run($__h)); } catch (\Throwable $__e) { throw $__e; }
+    try { $__h = $__v->render(); return response(\App\Support\SvgDedupe::run($__h, 150000, 60)); } catch (\Throwable $__e) { throw $__e; }
   }
   public function orderBulk(Request $r) {
     $d = $r->validate(['ids'=>'required|array|max:500','ids.*'=>'integer','status'=>'required|in:'.implode(',',Mother::STAGES)]);
@@ -377,6 +377,7 @@ class AdminController extends Controller {
   /** Manual permission for a same-day duplicate order (owner rule). Logged with name and time. */
   public function orderDupAllow(Request $r, $id) {
     $o = DB::table('orders')->find($id); abort_unless($o, 404);
+    if (!\App\Http\Middleware\ModulePermission::canRestricted(Auth::user())) return response()->json(['ok'=>false,'message'=>'Only a manager/admin can allow a duplicate order.']);
     if (!\App\Support\DupGuard::ready()) return response()->json(['ok'=>false,'message'=>'Not ready yet, try again in a minute.']);
     DB::table('orders')->where('id',$id)->update(['dup_allowed_at'=>now(),'dup_allowed_by'=>Auth::user()->name,'updated_at'=>now()]);
     try { DB::table('order_status_logs')->insert(['order_id'=>$id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'from_status'=>$o->status,'to_status'=>$o->status,'note'=>'Duplicate order (same customer, same day): manual permission given','created_at'=>now(),'updated_at'=>now()]); } catch (\Throwable $e) {}
