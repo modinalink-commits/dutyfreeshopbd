@@ -135,9 +135,9 @@ class AiVerify {
 
     // ---- Amount / product risk ----
     $total = (float)$o->total; $qtySum = (int)$items->sum('qty');
-    if ($avg > 0 && $total > $avg * 2) $add('Order', 'AMOUNT_HIGH', 'review', 'Order amount', 'Order ' . self::tk($total) . ' is ' . round($total / $avg, 1) . '× this customer\'s average (' . self::tk($avg) . '). Sudden high amount: not auto-verified, staff must check.', $total > $avg * 4 ? 20 : 12, true);
+    if ($avg > 0 && $total > $avg * 2) $add('Order', 'AMOUNT_HIGH', 'review', 'Order amount', 'Order ' . self::tk($total) . ' is ' . round($total / $avg, 1) . '× this customer\'s average (' . self::tk($avg) . '). Sudden high amount: do NOT approve automatically. Talk to the customer manually and confirm before approving.', $total > $avg * 4 ? 20 : 12, true);
     elseif ($avg > 0) $add('Order', 'AMOUNT_NORMAL', 'pass', 'Order amount', 'Order ' . self::tk($total) . ' vs customer average ' . self::tk($avg));
-    elseif ($total >= 20000) $add('Order', 'AMOUNT_NO_BASE', 'review', 'Order amount', 'Order ' . self::tk($total) . ' is large and this customer has no earlier order to compare: not auto-verified, staff must check.', 8, true);
+    elseif ($total >= 20000) $add('Order', 'AMOUNT_NO_BASE', 'review', 'Order amount', 'Order ' . self::tk($total) . ' is large and this customer has no earlier order to compare: do NOT approve automatically. Talk to the customer manually and confirm first.', 8, true);
     else $add('Order', 'AMOUNT_NO_BASE', 'info', 'Order amount', 'Order ' . self::tk($total) . ' (no earlier order to compare)');
     $hv = $items->filter(fn($i) => (float)$i->price * (int)$i->qty >= 10000)->count();
     if ($qtySum >= 10 || $hv) $add('Order', 'PRODUCT_RISK', 'review', 'Product risk', ($qtySum >= 10 ? "Large quantity ($qtySum units). " : '') . ($hv ? "$hv high-value line(s) (৳10,000+). " : '') . 'This raises review priority only.', 4);
