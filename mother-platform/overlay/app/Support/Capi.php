@@ -73,6 +73,7 @@ class Capi
       else { if (!$its) return; $custom += ['value'=>(float)($in['v'] ?? 0), 'content_type'=>'product', 'content_ids'=>array_column($its, 'id'), 'contents'=>$its, 'num_items'=>array_sum(array_column($its, 'quantity'))]; }
       $am = is_array($in['am'] ?? null) ? $in['am'] : []; $c = [];   // returning customer's details kept in their own browser (raw; hashed here, never stored)
       foreach (['em'=>'email','ph'=>'phone','fn'=>'fn','ln'=>'ln','ct'=>'city'] as $k=>$f) if (isset($am[$k]) && is_string($am[$k])) $c[$f] = mb_substr($am[$k], 0, 120);
+      if (isset($am['external_id']) && is_string($am['external_id'])) $c['external_id'] = mb_substr($am['external_id'], 0, 60);
       $c['name'] = trim(($c['fn'] ?? '').' '.($c['ln'] ?? ''));
       $user = self::user($c, $_COOKIE['_fbp'] ?? null, $_COOKIE['_fbc'] ?? null, self::clientIp($r), (string)$r->userAgent());
       $url = (string)($in['u'] ?? ''); $url = str_starts_with($url, url('/')) ? $url : url('/');
