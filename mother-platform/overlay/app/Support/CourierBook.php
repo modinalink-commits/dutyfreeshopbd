@@ -32,7 +32,8 @@ class CourierBook {
     if ($l && (float)$l->fee > 0) return [round((float)$l->fee, 2), 'Pathao invoice'];
     $del = max(0.0, (float)($o->courier_fee ?? 0)); $cf = null; $disc = 0.0;
     $pj = json_decode((string)($o->pathao_raw_payload ?? ''), true);
-    if (is_array($pj)) { foreach (['cod_fee', 'cod_charge', 'cod'] as $k) if (isset($pj[$k]) && is_numeric($pj[$k])) { $cf = (float)$pj[$k]; break; } if (isset($pj['discount']) && is_numeric($pj['discount'])) $disc = (float)$pj['discount']; }
+    if (is_array($pj)) { foreach (['cod_fee', 'cod_charge', 'cod'] as $k) if (isset($pj[$k]) && is_numeric($pj[$k])) { $cf = (float)$pj[$k]; break; } foreach (['discount', 'discount_amount', 'promo_discount'] as $k) if (isset($pj[$k]) && is_numeric($pj[$k])) { $disc = (float)$pj[$k]; break; } }
+    if ($cf === null && $disc > 0) return [max(0.0, round($del - $disc, 2)), 'delivery fee − discount'];
     if ($cf !== null) return [max(0.0, round($del + $cf - $disc, 2)), 'delivery + COD fee'];
     $rate = self::codRate();
     if ($rate > 0 && ($o->courier ?: 'Pathao') === 'Pathao') return [round($del + $cod * $rate, 2), 'delivery + COD fee '.round($rate * 100, 2).'%'];
