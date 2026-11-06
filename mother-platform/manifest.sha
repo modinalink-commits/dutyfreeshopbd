@@ -1,7 +1,7 @@
 fe43f8b6cb422cca81ee18b74d3972f77e7852de database/migrations/2026_10_31_000001_mother_core.php
 d89c19f699cde34afb3e977a99ba169b4ddea519 routes/web.php
 5ec9cde3d13c963d0d55a626e10bf2e39e36a691 app/Models/Mother.php
-0b91ab314a0a7638b51f1bf5621f5816332488d2 app/Http/Controllers/AdminController.php
+b6c2cb81e8b72baa2b94ce5aeb56138622328f4a app/Http/Controllers/AdminController.php
 242316b2ef0a0967e6815e39fcbc7377349fdc17 app/Console/Commands/MotherInstall.php
 46281a83a4c346e36e3cd65bb9098358735e11d0 resources/views/layout.blade.php
 2b227b5ab4047c9018760d3f3da2dc1c31b55cb1 resources/views/login.blade.php
@@ -9,7 +9,7 @@ d89c19f699cde34afb3e977a99ba169b4ddea519 routes/web.php
 04ecadad4bb7ea88bf05689700b8f02e5d031652 resources/views/orders.blade.php
 2f7ea3ee79f25330e98d04fe7bd8aa29c11f208e resources/views/admin/orders/partials/status-tabs.blade.php
 0ab54098f668eecc01828e853264b0190f3d0b1e resources/views/admin/orders/partials/header-system.blade.php
-076c30bc399b52fb737657bd8c650b542aa293f6 resources/views/order_new.blade.php
+9252abc9590fb130352e6be1d6345ab7039e67a8 resources/views/order_new.blade.php
 c029283c0ca5dd1564a6c40dd8f13b610e7323dc resources/views/order_show.blade.php
 10eb707d68bf93154470b38eed25809fbb0ab23e resources/views/stafflog.blade.php
 3ead694e6fd61447be7c3afcb8ddc08f6a7fe495 database/migrations/2026_10_31_000002_catalog_discounts.php
