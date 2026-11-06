@@ -24,6 +24,13 @@ class AiVerifyController extends Controller {
     $res['can_override'] = true; $res['can_cost'] = \App\Support\Costing::canSee();
     return response()->json($res);
   }
+  /** AI Approve button: needs Orders edit permission; Approved is not a restricted status. */
+  public function approve(Request $r, int $id) {
+    abort_unless(\App\Http\Middleware\ModulePermission::can(auth()->user(), 'orders', 'edit'), 403);
+    abort_unless(DB::table('orders')->where('id', $id)->exists(), 404);
+    $lk = \Illuminate\Support\Facades\Cache::lock('ai.approve.' . $id, 30); if (!$lk->get()) return response()->json(['ok' => true, 'already' => true, 'message' => 'Already in progress']);
+    try { return response()->json(AiVerify::approveNow($id))->header('Cache-Control', 'no-store'); } finally { $lk->release(); }
+  }
   public function statuses(Request $r) {
     $ids = array_slice(array_filter(array_map('intval', explode(',', (string)$r->query('ids')))), 0, 200); if (!$ids) return response()->json(['m' => [], 'left' => 0]);
     // Every order on the page gets a result: orders without one (admin-created, AI/legacy channels, or placed before AI Verify) are verified now, newest first, a few per request.

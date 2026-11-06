@@ -268,6 +268,37 @@ class AiVerify {
     } catch (\Throwable $e) { report($e); return false; }
   }
 
+  /** AI Approve button (spec 6 Nov 2026): run AI Verify, and when it passes, move the order to Approved in ONE transaction with history, staff activity and audit.
+   *  Failed checks never approve. Already approved = no duplicate transition. Returns ['ok','message','status','ai','already'?]. */
+  public static function approveNow(int $orderId, ?string $staff = null): array {
+    try {
+      $o = DB::table('orders')->find($orderId); if (!$o) return ['ok' => false, 'message' => 'Order not found'];
+      $v0 = DB::table('order_ai_verifications')->where('order_id', $orderId)->first();
+      if ($o->status === 'Approved' && $v0 && ($v0->override_status ?: $v0->verification_status) === 'verified') return ['ok' => true, 'already' => true, 'message' => 'Already Approved', 'status' => 'Approved', 'ai' => 'verified'];
+      if (!in_array($o->status, ['New', 'Pending', 'Assign', 'AI Order', 'Pre Order'], true)) return ['ok' => false, 'message' => 'This order is already in ' . $o->status . '. AI Approve works on orders that are not approved yet.', 'status' => $o->status];
+      $oldAi = $v0 ? ($v0->override_status ?: $v0->verification_status) : null;
+      self::run($orderId, 'ai-approve', true, true);
+      $v = DB::table('order_ai_verifications')->where('order_id', $orderId)->first(); $ai = $v ? ($v->override_status ?: $v->verification_status) : 'failed';
+      if ($ai !== 'verified') return ['ok' => false, 'message' => 'AI result: ' . (self::LABEL[$ai] ?? $ai) . '. The order was NOT approved and stays in ' . $o->status . '.', 'status' => $o->status, 'ai' => $ai];
+      $o = DB::table('orders')->find($orderId);
+      if ($o->status === 'Approved') return ['ok' => true, 'message' => 'AI verification completed successfully and the order status has been updated to Approved.', 'status' => 'Approved', 'ai' => 'verified'];
+      $items = DB::table('order_items')->where('order_id', $orderId)->count();
+      if (trim((string)$o->customer_name) === '' || trim((string)$o->phone) === '' || trim((string)$o->address) === '' || $items < 1 || (float)$o->total <= 0) return ['ok' => false, 'message' => 'Order data is incomplete (name, phone, address, products or total). Not approved.', 'status' => $o->status, 'ai' => $ai];
+      if ($db = DupGuard::block($o, 'Approved')) return ['ok' => false, 'message' => $db, 'status' => $o->status, 'ai' => $ai];
+      if ($o->phone && in_array(CustomerBenefit::check((string)$o->phone)['status'], ['Suspended', 'Review Required'], true)) return ['ok' => false, 'message' => 'This customer is on Review/Suspended. A manager must approve it manually.', 'status' => $o->status, 'ai' => $ai];
+      $who = $staff ?: (auth()->user()->name ?? 'staff'); $from = $o->status;
+      $moved = DB::transaction(function () use ($o, $v, $who, $from, $oldAi) {
+        if (!DB::table('orders')->where('id', $o->id)->where('status', $from)->update(['status' => 'Approved', 'approved_at' => now(), 'updated_at' => now()])) return false;
+        DB::table('order_status_logs')->insert(['order_id' => $o->id, 'user_id' => auth()->id(), 'user_name' => $who, 'from_status' => $from, 'to_status' => 'Approved', 'note' => 'AI Approve · AI Verified (score ' . (int)$v->verification_score . ')', 'created_at' => now(), 'updated_at' => now()]);
+        OrderActivity::log((int)$o->id, 'ai_approve', $from, 'Approved', 'Order AI Approved by ' . $who . ' · AI ' . ($oldAi ?: 'none') . ' → verified (score ' . (int)$v->verification_score . ')', ['source' => 'ai_approve', 'ai_old' => $oldAi, 'ai_new' => 'verified', 'score' => (int)$v->verification_score]);
+        Procure::audit('AI Approve', 'Order #' . $o->id, ['order_status' => $from, 'ai_status' => $oldAi], ['order_status' => 'Approved', 'ai_status' => 'verified', 'ai_result' => 'approved', 'staff_id' => auth()->id(), 'at' => now()->toDateTimeString()]);
+        return true;
+      });
+      if (!$moved) return ['ok' => true, 'already' => true, 'message' => 'Already Approved (another action finished first)', 'status' => DB::table('orders')->where('id', $orderId)->value('status'), 'ai' => 'verified'];
+      return ['ok' => true, 'message' => 'AI verification completed successfully and the order status has been updated to Approved.', 'status' => 'Approved', 'ai' => 'verified'];
+    } catch (\Throwable $e) { report($e); return ['ok' => false, 'message' => 'Order Status Update Failed. Nothing was changed.']; }
+  }
+
   /** Staff override of the AI status only (never touches the operational order status). */
   public static function override(int $orderId, string $status, string $reason): ?array {
     $v = DB::table('order_ai_verifications')->where('order_id', $orderId)->first(); if (!$v || !isset(self::LABEL[$status])) return null;
