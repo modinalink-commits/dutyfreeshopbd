@@ -22,7 +22,7 @@
 <div><label>Outbound gateway name</label><input name="gateway" value="{{ $s['gateway'] }}" placeholder="e.g. mobile_gw"></div>
 <div><label>Caller ID shown</label><input name="caller_id" value="{{ $s['caller_id'] }}" placeholder="{{ \App\Support\Biz::hotline() }}"></div>
 <div><label>Number format to dial</label><select name="dial_format"><option value="local" @selected($s['dial_format']==='local')>01XXXXXXXXX</option><option value="intl" @selected($s['dial_format']==='intl')>8801XXXXXXXXX</option><option value="plus" @selected($s['dial_format']==='plus')>+8801XXXXXXXXX</option></select></div>
-<div><label>Dialplan extension</label><input name="dialplan_ext" value="{{ $s['dialplan_ext'] }}"></div>
+<div><label><input type="checkbox" name="direct" value="1" @checked(($s['direct'] ?? '0')==='1')> Direct play (no PBX script): the PBX plays the Google-voice audio straight into the call. No key presses, no dialplan needed.</label></div><div><label>Dialplan extension</label><input name="dialplan_ext" value="{{ $s['dialplan_ext'] }}"></div>
 <div><label>Dialplan context</label><input name="context" value="{{ $s['context'] }}"></div>
 <div><label>Agent extension (key 2)</label><input name="agent_ext" value="{{ $s['agent_ext'] }}"></div>
 <div><label>Ring timeout (sec)</label><input name="ring_timeout" value="{{ $s['ring_timeout'] }}"></div>

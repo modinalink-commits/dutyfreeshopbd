@@ -17,13 +17,13 @@ class VoiceCampaignController extends Controller
     return view('voice_campaigns', ['cs' => $cs, 'st' => $st, 'tot' => $tot, 'ready' => V::readiness(), 's' => $this->settings()]);
   }
   private function settings(): array {
-    $o = []; foreach (['on' => '0', 'esl_host' => '', 'esl_port' => '8021', 'gateway' => '', 'caller_id' => '', 'dialplan_ext' => 'voice_offer', 'context' => 'public', 'agent_ext' => '101', 'dial_format' => 'local', 'ring_timeout' => '30', 'base_url' => '', 'pbx_rec_dir' => '', 'tts_provider' => 'none', 'tts_region' => 'southeastasia', 'tts_voice' => '', 'script_ok' => '0'] as $k => $d) $o[$k] = V::set($k, $d);
+    $o = []; foreach (['on' => '0', 'esl_host' => '', 'esl_port' => '8021', 'gateway' => '', 'caller_id' => '', 'dialplan_ext' => 'voice_offer', 'context' => 'public', 'agent_ext' => '101', 'dial_format' => 'local', 'ring_timeout' => '30', 'base_url' => '', 'pbx_rec_dir' => '', 'tts_provider' => 'none', 'tts_region' => 'southeastasia', 'tts_voice' => '', 'script_ok' => '0', 'direct' => '0'] as $k => $d) $o[$k] = V::set($k, $d);
     $o['has_pw'] = (bool)Sms::secret('vc_esl_pass'); $o['has_key'] = (bool)Sms::secret('vc_tts_key'); $o['hook'] = V::baseUrl() . '/webhooks/voice?k=' . V::hookToken(); return $o;
   }
   public function settingsSave(Request $r) {
     foreach (['esl_host', 'esl_port', 'gateway', 'caller_id', 'dialplan_ext', 'context', 'agent_ext', 'ring_timeout', 'base_url', 'pbx_rec_dir', 'tts_region', 'tts_voice'] as $k) V::put($k, trim((string)$r->input($k)));
     V::put('dial_format', in_array($r->input('dial_format'), ['local', 'intl', 'plus']) ? $r->input('dial_format') : 'local'); V::put('tts_provider', in_array($r->input('tts_provider'), ['none', 'azure', 'google']) ? $r->input('tts_provider') : 'none');
-    V::put('on', $r->boolean('on') ? '1' : '0'); V::put('script_ok', $r->boolean('script_ok') ? '1' : '0');
+    V::put('on', $r->boolean('on') ? '1' : '0'); V::put('script_ok', $r->boolean('script_ok') ? '1' : '0'); V::put('direct', $r->boolean('direct') ? '1' : '0');
     if ($r->filled('esl_pass')) Sms::setSecret('vc_esl_pass', $r->input('esl_pass')); if ($r->filled('tts_key')) Sms::setSecret('vc_tts_key', $r->input('tts_key'));
     \App\Support\Procure::audit('voice.settings', 'Voice campaign settings', null, $r->except(['_token', 'esl_pass', 'tts_key']));
     return redirect('/admin/voice')->with('ok', 'Voice settings saved');

@@ -45,7 +45,7 @@ class Voice
   }
   public static function scriptFor(object $c, object $row): string {
     $t = trim((string)$c->script) !== '' ? $c->script : self::SCRIPT; $s = self::render($t, self::vars($c, $row));
-    if ($c->dtmf_on && !str_contains($t, '১ চাপুন')) $s .= self::MENU; return $s;
+    if ($c->dtmf_on && self::set('direct', '0') !== '1' && !str_contains($t, '১ চাপুন')) $s .= self::MENU; return $s;
   }
   /** Local audio file for one customer's call (cached). @return array{?string,string} */
   public static function audio(object $c, object $row): array {
@@ -130,7 +130,10 @@ class Voice
     if ($pp) $url = $pp; else { $aid = self::audioId($f); $url = self::baseUrl() . '/voice-audio/' . $aid . '.' . strtolower(pathinfo($f, PATHINFO_EXTENSION)) . '?t=' . self::audioToken((int)$aid); self::linkAudio($aid, $f); }
     $var = ["origination_uuid=$uuid", 'origination_caller_id_number=' . (self::set('caller_id') ?: '0000'), 'origination_caller_id_name=DutyFreeBD', 'originate_timeout=' . (int)self::set('ring_timeout', '30'), 'ignore_early_media=true',
       "vc_id=$id", "vc_audio='$url'", "vc_hook='" . self::baseUrl() . '/webhooks/voice?k=' . self::hookToken() . "'", 'vc_dtmf=' . ($c->dtmf_on ? '1' : '0'), 'vc_agent=' . (self::set('agent_ext') ?: '101'), 'vc_rec=' . self::recName($id, $row->phone, $uuid)];
-    $cmd = 'originate {' . implode(',', $var) . '}sofia/gateway/' . self::set('gateway') . '/' . self::dialNumber($row->phone) . ' ' . (self::set('dialplan_ext') ?: (string)env('PBX_DESTINATION', 'voice_offer')) . ' XML ' . (self::set('context') ?: (string)env('PBX_CONTEXT', 'public'));
+    if (self::set('direct', '0') === '1' && !$pp) { // no dialplan: the call is answered and the audio is played straight into it, then it hangs up
+      $cmd = 'originate {' . implode(',', array_merge(array_filter($var, fn($x) => !str_starts_with($x, 'vc_')), ['hangup_after_bridge=true'])) . '}sofia/gateway/' . self::set('gateway') . '/' . self::dialNumber($row->phone) . ' &playback(' . $url . ')';
+    } else
+      $cmd = 'originate {' . implode(',', $var) . '}sofia/gateway/' . self::set('gateway') . '/' . self::dialNumber($row->phone) . ' ' . (self::set('dialplan_ext') ?: (string)env('PBX_DESTINATION', 'voice_offer')) . ' XML ' . (self::set('context') ?: (string)env('PBX_CONTEXT', 'public'));
     [$ok, $out] = self::esl($cmd, (int)self::set('ring_timeout', '30') + 15); if (!$ok) return ['failed', $out, $uuid];
     if (str_starts_with($out, '+OK')) { $job = trim(substr($out, 3)); if ($job !== '') self::$lastJob = $job; return ['answered', '', $uuid]; }
     $cause = trim(preg_replace('/^-ERR\s*/', '', $out)); $u = strtoupper($cause);
