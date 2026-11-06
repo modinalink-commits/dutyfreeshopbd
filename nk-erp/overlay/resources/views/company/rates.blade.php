@@ -2,17 +2,17 @@
 @section('title', 'Rate Master')
 @section('content')
 <header style="display:flex;flex-wrap:wrap;align-items:center;gap:12px">
-  <div style="flex-grow:1"><h1>Rate Master</h1><p class="sub">DO and transport per size from a date, plus the per-cylinder incentive rates. A row stays in force until a newer row starts.</p></div>
+  <div style="flex-grow:1"><h1>Rate Master</h1><p class="sub">Refill DO, package DO and transport per size from a date, plus the per-cylinder incentive rates. A row stays in force until a newer row starts.</p></div>
   <a class="btn" href="{{ route('company.index') }}">← Company ledger</a>
 </header>
 <div class="dt-wrap"><table class="dt">
-  <thead><tr><th>From</th><th>Size</th><th>DO</th><th>Transport</th><th>Bill / cylinder</th>@foreach(\App\Models\CompanyRate::PARTS as $p => $l)<th>{{ ucfirst($p) }}</th>@endforeach</tr></thead>
+  <thead><tr><th>From</th><th>Size</th><th>Refill DO</th><th>Package DO</th><th>Transport</th><th>Refill bill / cyl.</th><th>Package bill / cyl.</th>@foreach(\App\Models\CompanyRate::PARTS as $p => $l)<th>{{ ucfirst($p) }}</th>@endforeach</tr></thead>
   <tbody>
   @forelse($rates as $r)
-    <tr><td class="c">{{ $r->from_date->format('d-m-Y') }}</td><td class="c">{{ $r->size_kg }} kg</td><td class="r">৳{{ number_format($r->do_rate, 2) }}</td><td class="r">৳{{ number_format($r->transport, 2) }}</td><td class="r"><b>৳{{ number_format($r->do_rate - $r->transport, 2) }}</b></td>
+    <tr><td class="c">{{ $r->from_date->format('d-m-Y') }}</td><td class="c">{{ $r->size_kg }} kg</td><td class="r">৳{{ number_format($r->do_rate, 2) }}</td><td class="r">{{ (float) $r->pkg_rate ? '৳'.number_format($r->pkg_rate, 2) : '—' }}</td><td class="r">৳{{ number_format($r->transport, 2) }}</td><td class="r"><b>৳{{ number_format($r->do_rate - $r->transport, 2) }}</b></td><td class="r">@if((float) $r->pkg_rate)<b>৳{{ number_format($r->pkg_rate - $r->transport, 2) }}</b>@else — @endif</td>
       @foreach(array_keys(\App\Models\CompanyRate::PARTS) as $p)<td class="r">{{ (float) $r->{$p} ? number_format($r->{$p}, 2) : '—' }}</td>@endforeach</tr>
   @empty
-    <tr><td colspan="11" class="empty">No rates yet.</td></tr>
+    <tr><td colspan="13" class="empty">No rates yet.</td></tr>
   @endforelse
   </tbody>
 </table></div>
@@ -23,6 +23,7 @@
       <label class="f">Size<select name="size_kg">@foreach(\App\Models\Brand::SIZES as $s)<option value="{{ $s }}">{{ $s }} kg</option>@endforeach</select></label>
       <label class="f">From date<input type="date" name="from_date" required></label>
       <label class="f"><span>DO (৳) @include('partials.help', ['t' => 'DO রেট কী?', 'b' => 'কোম্পানির চালানে লেখা প্রতি সিলিন্ডারের দাম, ছাড় বাদ দেওয়ার আগে।', 'e' => 'উদাহরণ: ১২ কেজি, সেপ্টেম্বর ২০২৬ → 1575', 'f' => 'ভুল হলে: চালানের কাগজ দেখে আবার লিখুন। আগের বিল নিজে থেকে ঠিক হয়ে যাবে।'])</span><input type="number" step="0.01" name="do_rate" required></label>
+      <label class="f"><span>Package DO (৳) @include('partials.help', ['t' => 'প্যাকেজ রেট কী?', 'b' => 'নতুন প্যাকেজ সিলিন্ডারের (সিলিন্ডার + গ্যাস) জন্য কোম্পানির চালানে লেখা প্রতি সিলিন্ডারের দাম।', 'e' => 'রিফিলের রেট আলাদা ঘরে থাকে।', 'f' => 'খালি রাখলে ওই সাইজের প্যাকেজ চালান সেভ হবে না।'])</span><input type="number" step="0.01" name="pkg_rate" value="0"></label>
       <label class="f">Transport (৳)<input type="number" step="0.01" name="transport" value="0"></label>
       @foreach(\App\Models\CompanyRate::PARTS as $p => $l)<label class="f">{{ $l }} (৳ per cylinder)<input type="number" step="0.01" name="{{ $p }}" value="0"></label>@endforeach
     </div>

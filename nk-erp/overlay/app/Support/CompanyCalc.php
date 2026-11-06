@@ -20,7 +20,8 @@ class CompanyCalc
             ->whereDoesntHave('reversedBy')->get();
         $parts = []; $gross = 0; $kg = 0; $bySize = [];
         foreach (Brand::SIZES as $s) {
-            $all = $lines->where('size_kg', $s);
+            $kg += (int) $lines->where('size_kg', $s)->where('ctype', 'package')->sum('qty') * $s; // packages count for kg commission, not refill incentives
+            $all = $lines->where('size_kg', $s)->where('ctype', '!=', 'package');
             $qty = (int) $all->sum('qty');
             if (! $qty) continue;
             $early = (int) $all->filter(fn ($l) => $l->entry_date->day <= $m->deadline_day)->sum('qty');

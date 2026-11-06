@@ -40,8 +40,8 @@ class CompanyController extends Controller
             $e = $g->first();
             $amt = (float) $g->sum('amount'); $bal += $amt;
             if ($e->kind === 'challan') {
-                $q = []; foreach (Brand::SIZES as $s) { $q[] = (int) $g->where('size_kg', $s)->sum('qty'); }
-                $rows[] = ['d' => $e->entry_date->format('d-m-Y'), 't' => 'Challan '.$e->challan_no, 'q' => implode(' / ', $q),
+                $q = []; $pq = []; foreach (Brand::SIZES as $s) { $q[] = (int) $g->where('size_kg', $s)->where('ctype', '!=', 'package')->sum('qty'); $pq[] = (int) $g->where('size_kg', $s)->where('ctype', 'package')->sum('qty'); }
+                $rows[] = ['d' => $e->entry_date->format('d-m-Y'), 't' => 'Challan '.$e->challan_no, 'q' => implode(' / ', $q).(array_sum($pq) ? ' · Package '.implode(' / ', $pq) : ''),
                     'do' => $g->sum(fn ($x) => $x->qty * $x->do_rate), 'tr' => $g->sum(fn ($x) => $x->qty * $x->transport), 'bill' => -$amt, 'dep' => null, 'bal' => $bal, 'kind' => '', 'ek' => 'challan', 'ids' => $g->pluck('id')->all(), 'rev' => $g->every(fn ($x) => $x->reversedBy)];
             } else {
                 $label = match ($e->kind) {
@@ -123,6 +123,7 @@ class CompanyController extends Controller
         $data = $request->validate([
             'entry_date' => ['required', 'date'], 'challan_no' => ['required', 'string', 'max:40'],
             'qty' => ['required', 'array'], 'qty.*' => ['nullable', 'integer', 'min:0', 'max:100000'],
+            'pqty' => ['nullable', 'array'], 'pqty.*' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'to_stock' => ['nullable', 'boolean'], 'empties' => ['nullable', 'array'], 'empties.*' => ['nullable', 'integer', 'min:0'],
             'note' => ['nullable', 'string', 'max:255'], 'confirm_dup' => ['nullable', 'boolean'], 'replace' => ['nullable', 'string', 'max:200'],
         ]);
@@ -140,19 +141,22 @@ class CompanyController extends Controller
                 if ($old) self::undo($old, 'Edited', $request->user()->id, ['challan']);
                 $any = false;
                 foreach (Brand::SIZES as $s) {
-                    $q = (int) ($data['qty'][$s] ?? 0);
-                    if (! $q) continue;
-                    $rate = CompanyRate::forDate($s, $data['entry_date']);
-                    if (! $rate) throw new RuntimeException("{$s} কেজির রেট এই তারিখে ({$data['entry_date']}) বসানো হয়নি, তাই বিল তৈরি হয়নি (০ ধরে বিল হবে না)। Rate Master-এ {$s} কেজির রেট লিখুন, তারপর আবার সেভ করুন।");
-                    CompanyEntry::create(['entry_date' => $data['entry_date'], 'kind' => 'challan', 'challan_no' => $data['challan_no'], 'size_kg' => $s, 'qty' => $q,
-                        'do_rate' => $rate->do_rate, 'transport' => $rate->transport, 'amount' => -round($q * ((float) $rate->do_rate - (float) $rate->transport), 2),
-                        'note' => $data['note'] ?? null, 'created_by' => $request->user()->id]);
-                    if (! empty($data['to_stock'])) {
-                        $own = Brand::query()->where('for_sale', true)->orderBy('id')->value('id');
-                        StockMovement::post(['kind' => 'received', 'brand_id' => $own, 'size_kg' => $s, 'full_delta' => $q,
-                            'empty_delta' => -((int) ($data['empties'][$s] ?? 0)), 'reference' => 'Challan '.$data['challan_no'], 'note' => 'From company ledger']);
+                    foreach (['refill' => (int) ($data['qty'][$s] ?? 0), 'package' => (int) ($data['pqty'][$s] ?? 0)] as $ct => $q) {
+                        if (! $q) continue;
+                        $rate = CompanyRate::forDate($s, $data['entry_date']);
+                        if (! $rate) throw new RuntimeException("{$s} কেজির রেট এই তারিখে ({$data['entry_date']}) বসানো হয়নি, তাই বিল তৈরি হয়নি (০ ধরে বিল হবে না)। Rate Master-এ {$s} কেজির রেট লিখুন, তারপর আবার সেভ করুন।");
+                        if ($ct === 'package' && (float) $rate->pkg_rate <= 0) throw new RuntimeException("{$s} কেজির প্যাকেজ সিলিন্ডারের রেট এই তারিখে ({$data['entry_date']}) বসানো হয়নি। Rate Master-এ {$s} কেজির Package DO লিখুন, তারপর আবার সেভ করুন।");
+                        $do = $rate->doFor($ct);
+                        CompanyEntry::create(['entry_date' => $data['entry_date'], 'kind' => 'challan', 'ctype' => $ct, 'challan_no' => $data['challan_no'], 'size_kg' => $s, 'qty' => $q,
+                            'do_rate' => $do, 'transport' => $rate->transport, 'amount' => -round($q * ($do - (float) $rate->transport), 2),
+                            'note' => $data['note'] ?? null, 'created_by' => $request->user()->id]);
+                        if (! empty($data['to_stock'])) {
+                            $own = Brand::query()->where('for_sale', true)->orderBy('id')->value('id');
+                            StockMovement::post(['kind' => 'received', 'brand_id' => $own, 'size_kg' => $s, 'full_delta' => $q,
+                                'empty_delta' => $ct === 'refill' ? -((int) ($data['empties'][$s] ?? 0)) : 0, 'reference' => 'Challan '.$data['challan_no'], 'note' => 'From company ledger']);
+                        }
+                        $any = true;
                     }
-                    $any = true;
                 }
                 if (! $any) throw new RuntimeException('Enter at least one quantity.');
             });
@@ -208,11 +212,11 @@ class CompanyController extends Controller
     {
         $data = $request->validate([
             'size_kg' => ['required', Rule::in(Brand::SIZES)], 'from_date' => ['required', 'date'],
-            'do_rate' => ['required', 'numeric', 'min:0'], 'transport' => ['nullable', 'numeric', 'min:0'],
+            'do_rate' => ['required', 'numeric', 'min:0'], 'pkg_rate' => ['nullable', 'numeric', 'min:0'], 'transport' => ['nullable', 'numeric', 'min:0'],
         ] + collect(array_keys(CompanyRate::PARTS))->mapWithKeys(fn ($p) => [$p => ['nullable', 'numeric', 'min:0']])->all());
         $data = array_map(fn ($v) => $v ?? 0, $data);
         $r = CompanyRate::query()->updateOrCreate(['size_kg' => $data['size_kg'], 'from_date' => $data['from_date']], $data);
-        AuditLog::record('company_rate', "{$r->size_kg}kg from {$data['from_date']} DO {$r->do_rate}");
+        AuditLog::record('company_rate', "{$r->size_kg}kg from {$data['from_date']} DO {$r->do_rate} · package {$r->pkg_rate}");
         return back()->with('ok', 'Rate saved.');
     }
 
@@ -263,7 +267,8 @@ class CompanyController extends Controller
         $e = $g->first();
         return ['kind' => $e->kind, 'ids' => $g->pluck('id')->implode(','), 'date' => $e->entry_date->toDateString(), 'amount' => (float) $e->amount,
             'deposit_kind' => $e->deposit_kind, 'source' => $e->source, 'note' => $e->note, 'challan_no' => $e->challan_no,
-            'qty' => $g->mapWithKeys(fn ($x) => [(int) $x->size_kg => (int) $x->qty])->all()];
+            'qty' => $g->where('ctype', '!=', 'package')->mapWithKeys(fn ($x) => [(int) $x->size_kg => (int) $x->qty])->all(),
+            'pqty' => $g->where('ctype', 'package')->mapWithKeys(fn ($x) => [(int) $x->size_kg => (int) $x->qty])->all()];
     }
 
     /**
@@ -280,7 +285,7 @@ class CompanyController extends Controller
                 'note' => $why.': '.CompanyEntry::KINDS[$e->kind].' of '.$e->entry_date->format('d-m-Y'), 'reversal_of' => $e->id, 'created_by' => $uid]);
             if ($e->kind === 'challan' && $e->challan_no) {
                 $moves = StockMovement::query()->where('kind', 'received')->where('reference', 'Challan '.$e->challan_no)->where('size_kg', $e->size_kg)
-                    ->where('note', 'From company ledger')->whereDoesntHave('reversedBy')->get();
+                    ->where('note', 'From company ledger')->where('full_delta', $e->qty)->whereDoesntHave('reversedBy')->orderBy('id')->limit(1)->get();
                 foreach ($moves as $m) {
                     StockMovement::post(['kind' => 'reversal', 'brand_id' => $m->brand_id, 'size_kg' => $m->size_kg, 'full_delta' => -$m->full_delta, 'empty_delta' => -$m->empty_delta,
                         'reference' => $m->reference, 'note' => $why.' in company ledger', 'reversal_of' => $m->id]);

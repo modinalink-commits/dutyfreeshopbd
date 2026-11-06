@@ -128,10 +128,11 @@
       <label class="f">Date<input type="date" name="entry_date" value="{{ old('entry_date', $ec['date'] ?? now()->timezone('Asia/Dhaka')->toDateString()) }}" required></label>
       <label class="f"><span>Challan number @include('partials.help', ['t' => 'চালান নম্বর কী?', 'b' => 'কোম্পানির চালানের কাগজের উপরে ছাপা নম্বর।', 'e' => 'উদাহরণ: 144794', 'f' => 'একই নম্বর আগেই থাকলে সিস্টেম সতর্ক করবে।'])</span><input type="text" name="challan_no" value="{{ old('challan_no', $ec['challan_no'] ?? '') }}" required></label>
     </div>
-    <div class="grid2" style="grid-template-columns:repeat(3,minmax(0,1fr))">@foreach(\App\Models\Brand::SIZES as $sz)<label class="f">{{ $sz }} kg full<input type="number" min="0" name="qty[{{ $sz }}]" value="{{ old('qty.'.$sz, $ec['qty'][$sz] ?? 0) }}"></label>@endforeach</div>
+    <div class="grid2" style="grid-template-columns:repeat(3,minmax(0,1fr))">@foreach(\App\Models\Brand::SIZES as $sz)<label class="f">{{ $sz }} kg refill<input type="number" min="0" name="qty[{{ $sz }}]" value="{{ old('qty.'.$sz, $ec['qty'][$sz] ?? 0) }}"></label>@endforeach</div>
+    <div class="grid2" style="grid-template-columns:repeat(3,minmax(0,1fr))">@foreach(\App\Models\Brand::SIZES as $sz)<label class="f">{{ $sz }} kg package (new cylinder)<input type="number" min="0" name="pqty[{{ $sz }}]" value="{{ old('pqty.'.$sz, $ec['pqty'][$sz] ?? 0) }}"></label>@endforeach</div>
     <label style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" name="to_stock" value="1" checked style="width:auto;min-height:0"> Also add to godown stock</label>
     <div class="grid2" style="grid-template-columns:repeat(3,minmax(0,1fr))">@foreach(\App\Models\Brand::SIZES as $sz)<label class="f">{{ $sz }} kg empties handed over<input type="number" min="0" name="empties[{{ $sz }}]" value="{{ old('empties.'.$sz, 0) }}"></label>@endforeach</div>
-    <span class="sub">Bill is worked out from the Rate Master row for the challan date.@if($ec) Saving replaces the old challan; stock it added to the godown is taken back and added again if ticked.@endif</span>
+    <span class="sub">Bill is worked out from the Rate Master row for the challan date: refill at the refill DO, package at the package DO (both minus transport). Empties handed over apply to refills only.@if($ec) Saving replaces the old challan; stock it added to the godown is taken back and added again if ticked.@endif</span>
     <button class="btn pri" type="submit">{{ $ec ? 'Save changes' : 'Save challan' }}</button>
   </form>
 </div>

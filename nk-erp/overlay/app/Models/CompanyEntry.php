@@ -11,7 +11,7 @@ class CompanyEntry extends Model
     public const KINDS = ['opening' => 'Opening balance', 'deposit' => 'Deposit', 'challan' => 'Challan', 'incentive' => 'Incentive received', 'commission' => 'Commission received', 'adjustment' => 'Adjustment', 'reversal' => 'Reversal'];
     public const DEPOSIT_KINDS = ['bank' => 'Bank deposit', 'bill_payment' => 'Paid against bill', 'security' => 'Cylinder security deposit'];
 
-    protected $fillable = ['entry_date', 'kind', 'deposit_kind', 'challan_no', 'size_kg', 'qty', 'do_rate', 'transport', 'amount', 'gross', 'ait', 'for_month', 'source', 'note', 'reversal_of', 'created_by'];
+    protected $fillable = ['entry_date', 'kind', 'deposit_kind', 'challan_no', 'size_kg', 'qty', 'do_rate', 'transport', 'amount', 'gross', 'ait', 'for_month', 'source', 'note', 'reversal_of', 'created_by', 'ctype'];
 
     protected function casts(): array
     {

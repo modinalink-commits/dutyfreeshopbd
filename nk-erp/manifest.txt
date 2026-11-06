@@ -120,6 +120,7 @@ database/migrations/2026_11_06_000020_exchange_v2.php
 database/migrations/2026_11_07_000021_brand_position.php
 database/migrations/2026_11_07_000022_customer_shop_name.php
 database/migrations/2026_11_07_000023_customer_geo.php
+database/migrations/2026_11_07_000024_company_package_rate.php
 public/app-sw.js
 public/css/nk-table.css
 public/css/nk-type.css

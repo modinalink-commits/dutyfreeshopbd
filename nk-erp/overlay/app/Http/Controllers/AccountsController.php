@@ -40,8 +40,9 @@ class AccountsController extends Controller
         foreach ($items->whereIn('category', ['refill', 'new_package']) as $i) {
             $r = CompanyRate::forDate((int) $i->size_kg, Carbon::parse($i->sold_at)->timezone($tz)->toDateString());
             if (! $r) continue;
-            if ($i->category === 'new_package') { $pkgUncosted += $i->qty; }
-            $cost += $i->qty * (float) $r->do_rate; $transport += $i->qty * (float) $r->transport;
+            $pkg = $i->category === 'new_package';
+            if ($pkg && (float) $r->pkg_rate <= 0) $pkgUncosted += $i->qty;
+            $cost += $i->qty * ($pkg && (float) $r->pkg_rate > 0 ? (float) $r->pkg_rate : (float) $r->do_rate); $transport += $i->qty * (float) $r->transport;
         }
         $gross = $totalSales - $cost;
         $calc = CompanyCalc::month($ym);

@@ -65,8 +65,10 @@ class LedgerImport
                 if (! empty($e['qty'])) {
                     $rate = CompanyRate::forDate((int) $e['kg'], $e['date']);
                     if (! empty($e['challan']) && CompanyEntry::query()->where('entry_date', $e['date'])->where('challan_no', $e['challan'])->where('size_kg', (int) $e['kg'])->exists()) continue;
-                    CompanyEntry::create(['entry_date' => $e['date'], 'kind' => 'challan', 'challan_no' => ($e['challan'] ?? '') ?: null, 'size_kg' => (int) $e['kg'], 'qty' => (int) $e['qty'],
-                        'do_rate' => $rate->do_rate, 'transport' => $rate->transport, 'amount' => -round($e['qty'] * ((float) $rate->do_rate - (float) $rate->transport), 2), 'note' => ($e['note'] ?? '') ?: null, 'created_by' => $uid]);
+                    $ct = stripos((string) ($e['type'] ?? ''), 'pack') !== false && (float) $rate->pkg_rate > 0 ? 'package' : 'refill';
+                    $do = $rate->doFor($ct);
+                    CompanyEntry::create(['entry_date' => $e['date'], 'kind' => 'challan', 'ctype' => $ct, 'challan_no' => ($e['challan'] ?? '') ?: null, 'size_kg' => (int) $e['kg'], 'qty' => (int) $e['qty'],
+                        'do_rate' => $do, 'transport' => $rate->transport, 'amount' => -round($e['qty'] * ($do - (float) $rate->transport), 2), 'note' => ($e['note'] ?? '') ?: null, 'created_by' => $uid]);
                 } else {
                     $amt = (float) ($e['depPaid'] ?? 0) ?: (float) ($e['deposit'] ?? 0);
                     if (! $amt) continue;
