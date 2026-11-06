@@ -103,6 +103,8 @@ class AiVerify {
     } else { $add('Customer', 'ADDRESS_NEW', 'info', 'Address consistency', 'No previous address to compare'); $sum['address'] = 'New'; }
 
     // ---- Fraud ----
+    $fc = null;
+    if ($validPhone) { try { $fc = $live ? FraudCheck::check($phone) : null; if (!$live) { $row = DB::table('fraud_checks')->where('phone', $phone)->where('created_at', '>', now()->subDay())->orderByDesc('id')->first(); $fc = $row && $row->data ? json_decode($row->data, true) : null; } } catch (\Throwable $e) { $fc = null; } }
     $fraudScore = null; $fraudRisk = 'Unknown';
     if ($validPhone) {
       if ($fc && ($fc['ok'] ?? false) && ($fc['total_parcel'] ?? 0) > 0) {
@@ -153,8 +155,6 @@ class AiVerify {
     $sum['payment'] = $isCod ? 'COD' : ($due <= 1 ? 'Paid' : 'Due ' . self::tk($due)); $sum['due'] = $due;
 
     // ---- Courier history ----
-    $fc = null;
-    if ($validPhone) { try { $fc = $live ? FraudCheck::check($phone) : null; if (!$live) { $row = DB::table('fraud_checks')->where('phone', $phone)->where('created_at', '>', now()->subDay())->orderByDesc('id')->first(); $fc = $row && $row->data ? json_decode($row->data, true) : null; } } catch (\Throwable $e) { $fc = null; } }
     if ($validPhone && self::has('orders', 'consignment_id')) {
       $cr = $same()->whereNotNull('consignment_id')->selectRaw("count(*) as t, count(*) filter (where status in ('Delivered','Partial Delivered')) as ok, count(*) filter (where status in ('Returned','Return')" . (self::has('orders', 'courier_stage') ? " or courier_stage in ('Returned','Failed Delivery')" : '') . ") as bad")->first();
       $t = (int)($cr->ok ?? 0) + (int)($cr->bad ?? 0);
