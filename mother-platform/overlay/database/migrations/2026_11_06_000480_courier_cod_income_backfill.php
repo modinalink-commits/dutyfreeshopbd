@@ -7,6 +7,7 @@ return new class extends Migration {
   public function up(): void {
     try {
       if (!\Illuminate\Support\Facades\Schema::hasTable('pathao_invoice_lines')) return;
+      foreach (DB::table('orders')->where('courier_stage', 'Delivered')->where('courier_delivered_at', '>=', '2026-11-01')->where('collected_amount', '>', 0)->orderBy('id')->pluck('id') as $id) \App\Support\CourierBook::deliver((int)$id);
       foreach (DB::table('pathao_invoice_lines')->where('applied', true)->where('paid_out', '>', 0)->where('line_date', '>=', '2026-11-01')->orderBy('id')->get() as $r) \App\Support\CourierBook::payout($r, null);
     } catch (\Throwable $e) { report($e); }
   }
