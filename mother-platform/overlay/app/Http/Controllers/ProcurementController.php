@@ -427,7 +427,7 @@ class ProcurementController extends Controller {
   public function apiNewProduct(Request $r) {
     $r->validate(['name'=>'required|max:250']); $sku = trim((string)$r->sku) ?: null; if ($sku && DB::table('products')->where('sku',$sku)->exists()) return response()->json(['error'=>'SKU already exists'],422);
     $id = DB::table('products')->insertGetId(['name'=>$r->name,'sku'=>$sku,'barcode'=>$r->barcode ?: null,'cost'=>(float)$r->cost,'price'=>(float)$r->price,'stock'=>0,'published'=>false,'created_at'=>now(),'updated_at'=>now()]);
-    P::audit('proc.product.quick','product#'.$id,null,['name'=>$r->name]); return response()->json(['id'=>$id,'name'=>$r->name,'sku'=>$sku,'barcode'=>$r->barcode,'cost'=>(float)$r->cost,'stock'=>0]);
+    P::audit('proc.product.quick','product#'.$id,null,['name'=>$r->name]); return response()->json(['id'=>$id,'name'=>$r->name,'sku'=>$sku,'barcode'=>$r->barcode,'cost'=>(float)$r->cost,'price'=>(float)$r->price,'stock'=>0]);
   }
   public function apiBulk(Request $r) {
     $out = []; foreach (preg_split('/\R/', (string)$r->input('lines')) as $ln) { $c = array_map('trim', preg_split('/[,\t]/', $ln)); if (($c[0] ?? '') === '') continue;
