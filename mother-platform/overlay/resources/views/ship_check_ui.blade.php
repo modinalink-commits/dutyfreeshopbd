@@ -9,6 +9,7 @@ o.forEach(function(x){if(x.worst==='INFO')ok++;else if(x.worst==='WARNING'){wr++
 h+='<div class="od" data-id="'+x.id+'"><div class="oh"><span>Order #'+esc(x.order)+'</span><span class="s-'+x.worst+'">'+x.passed+' of '+x.total+' checks passed · '+x.worst+'</span></div>';
 x.checks.forEach(function(c){if(c.sev==='INFO'&&x.worst!=='INFO'&&c.key!=='stock'&&c.key!=='margin')return;h+='<div class="ck"><b class="s-'+c.sev+'">'+IC[c.sev]+' '+esc(c.label)+'</b><span>'+esc(c.msg)+'</span></div>';
 if(c.detail&&c.detail.length&&c.sev!=='INFO'){c.detail.forEach(function(d){var t=[];for(var k in d)t.push(k.replace('_',' ')+': '+d[k]);h+='<div class="dt">'+esc(t.join(' · '))+'</div>'})}});
+if(x.note&&x.worst!=='BLOCKED'){h+='<div class="ov" style="background:#F0F9FF"><label style="font-weight:700">Courier note <span style="font-weight:400;color:#6B7280">('+esc(x.note.source)+') — you can edit it</span></label><textarea class="cn" rows="2" maxlength="200" style="width:100%;box-sizing:border-box;margin-top:4px;padding:6px;border:1px solid #CBD5E1;border-radius:6px;font:inherit">'+esc(x.note.text)+'</textarea></div>'}
 if(x.worst==='CRITICAL'){h+='<div class="ov">'+(D.can_override?'<label><input type="checkbox" class="sa"> Send Anyway (I take responsibility)</label><br><select class="rs"><option value="">Override reason *</option><option>Customer-approved special rate</option><option>Management-approved discount</option><option>Price correction</option><option>Campaign order</option><option>Other</option></select><input class="rn" placeholder="Note (required for Other)" size="30">':'You do not have permission to override. Use Hold Shipment and ask an authorised person.')+'</div>'}
 h+='</div>'});
 document.getElementById('scb').innerHTML=h;
@@ -19,6 +20,7 @@ function go(){var f=document.createElement('form');f.method='post';f.action='/ad
 function add(k,v){var i=document.createElement('input');i.type='hidden';i.name=k;i.value=v;f.appendChild(i)}
 add('_token',tk?tk.content:'');var err='';
 D.orders.forEach(function(x){var el=M.querySelector('.od[data-id="'+x.id+'"]');
+var nb=el&&el.querySelector('.cn');if(x.worst!=='BLOCKED'&&nb)add('note['+x.id+']',nb.value);
 if(x.worst==='INFO'||x.worst==='WARNING'){add('ids[]',x.id);n++}
 else if(x.worst==='CRITICAL'&&D.can_override&&el&&el.querySelector('.sa')&&el.querySelector('.sa').checked){var r=el.querySelector('.rs').value,t=el.querySelector('.rn').value.trim();
 if(!r||(r==='Other'&&!t)){err='Choose an override reason (and write a note for Other) for #'+x.order;return}

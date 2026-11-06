@@ -15,13 +15,14 @@ class ShipCheck {
   /** @return array{order:string, checks:array, passed:int, total:int, worst:string, overridable:bool, blocked:bool} */
   public static function run(int $id): array {
     $o = DB::table('orders')->find($id); if (!$o) return ['order'=>(string)$id, 'checks'=>[], 'passed'=>0, 'total'=>0, 'worst'=>'BLOCKED', 'overridable'=>false, 'blocked'=>true];
-    $fns = ['stock', 'margin', 'phone', 'address', 'payment', 'ai', 'duplicate', 'note'];
+    $fns = ['stock', 'margin', 'payment', 'customer', 'ai', 'address', 'phone', 'courier', 'duplicate', 'confirmation', 'special', 'note'];
     $out = [];
     foreach ($fns as $f) { try { $r = self::$f($o); } catch (\Throwable $e) { report($e); $r = self::c($f, ucfirst($f), 'INFO', 'Not checked (temporary problem).'); } $out[] = $r; }
     $worst = 'INFO'; $pass = 0;
     foreach ($out as $r) { if (self::SEV[$r['sev']] > self::SEV[$worst]) $worst = $r['sev']; if ($r['sev'] === 'INFO') $pass++; }
     $blocked = $worst === 'BLOCKED';
-    return ['order'=>(string)Inv::show($o->invoice), 'checks'=>$out, 'passed'=>$pass, 'total'=>count($out), 'worst'=>$worst, 'overridable'=>!$blocked && $worst === 'CRITICAL', 'blocked'=>$blocked];
+    $nt = CourierNote::build($o);
+    return ['order'=>(string)Inv::show($o->invoice), 'note'=>$nt, 'checks'=>$out, 'passed'=>$pass, 'total'=>count($out), 'worst'=>$worst, 'overridable'=>!$blocked && $worst === 'CRITICAL', 'blocked'=>$blocked];
   }
 
   private static function stock(object $o): array {
@@ -54,6 +55,8 @@ class ShipCheck {
   }
   private static function payment(object $o): array {
     $m = strtolower((string)($o->payment_method ?? '')); $cod = $m === '' || str_contains($m, 'cod') || str_contains($m, 'cash');
+    $due = round(PaymentSettle::cod($o), 2);
+    if ($due < 0 || $due > round((float)$o->total, 2) + 0.99) return self::c('payment', 'Payment', 'CRITICAL', 'Payment amount mismatch: courier would collect ৳'.number_format($due).' on an order total of ৳'.number_format((float)$o->total).'. Check the payments on the order.');
     if ($cod) return self::c('payment', 'Payment', 'INFO', 'Cash on Delivery — courier collects ৳'.number_format((float)$o->total).'.');
     $ok = ($o->payment_status ?? '') === 'Paid' || ($o->pay_status ?? '') === 'Verified';
     return $ok ? self::c('payment', 'Payment', 'INFO', 'Online payment verified.') : self::c('payment', 'Payment', 'WARNING', 'Online payment is not verified yet ('.($o->payment_method).').');
@@ -72,8 +75,30 @@ class ShipCheck {
     if (!$x) return self::c('duplicate', 'Duplicate order', 'INFO', 'No similar order today.');
     return !empty($o->dup_allowed_at) ? self::c('duplicate', 'Duplicate order', 'INFO', 'Duplicate was reviewed and allowed.') : self::c('duplicate', 'Duplicate order', 'WARNING', 'Same phone has '.count($x).' other order(s) today: '.implode(', ', array_map(fn($y) => '#'.$y['invoice'], $x)).'.');
   }
+  private static function customer(object $o): array {
+    $c = $o->customer_id ? DB::table('customers')->find($o->customer_id) : null;
+    if ($c && !empty($c->blocked)) return self::c('customer', 'Customer', 'CRITICAL', 'This customer is blocked. Confirm with a manager before shipping.');
+    $b = CustomerBenefit::check((string)$o->phone, $c);
+    return self::c('customer', 'Customer', 'INFO', 'Benefit status: '.$b['status'].' · received '.$b['received'].' parcel(s)'.($b['rate'] !== null ? ', success '.$b['rate'].'%' : '').'.');
+  }
+  private static function courier(object $o): array {
+    if (!Pathao::configured()) return self::c('courier', 'Courier', 'BLOCKED', 'Courier API is not ready (Pathao login details missing). Nothing can be booked.');
+    if (!Pathao::storeId()) return self::c('courier', 'Courier', 'BLOCKED', 'No Pathao pickup store is chosen (Courier setup page).');
+    if (!empty($o->consignment_id)) return self::c('courier', 'Courier', 'BLOCKED', 'Already sent to the courier: '.$o->consignment_id.'.');
+    return self::c('courier', 'Courier', 'INFO', 'Pathao is ready'.(trim((string)$o->district) !== '' ? ' · delivery area: '.$o->district : '').'. COD supported.');
+  }
+  private static function confirmation(object $o): array {
+    if (DB::table('settings')->where('key', 'ship_require_confirmation')->value('value') !== '1') return self::c('confirmation', 'Customer confirmation', 'INFO', 'Not required (switch it on in settings if you want a call/message confirmation before shipping).');
+    $ok = DB::getSchemaBuilder()->hasTable('order_activity_logs') && DB::table('order_activity_logs')->where('order_id', $o->id)->where(fn($q) => $q->where('action_type', 'like', 'call_%')->orWhere('action_type', 'like', 'whatsapp_%')->orWhere('action_type', 'like', 'message_%')->orWhere('action_type', 'customer_confirmed'))->exists();
+    return $ok ? self::c('confirmation', 'Customer confirmation', 'INFO', 'A call or message with the customer is on record.') : self::c('confirmation', 'Customer confirmation', 'WARNING', 'Customer Confirmation Pending: no call or message confirmation is recorded for this order.');
+  }
+  private static function special(object $o): array {
+    $f = CourierNote::flags($o); $t = [];
+    if ($f['urgent']) $t[] = 'Urgent'; if ($f['fragile']) $t[] = 'Fragile'; if ($f['high_value']) $t[] = 'High value (৳'.number_format((float)$o->total).')';
+    return $t ? self::c('special', 'Special handling', 'INFO', implode(' · ', $t).' — the courier note is adjusted automatically.') : self::c('special', 'Special handling', 'INFO', 'No special handling flags.');
+  }
   private static function note(object $o): array {
-    $n = trim((string)$o->note);
-    return $n !== '' ? self::c('note', 'Courier note', 'INFO', 'Courier note: '.mb_substr($n, 0, 90)) : self::c('note', 'Courier note', 'INFO', 'No customer note; the courier gets the order without a note.');
+    $n = CourierNote::build($o);
+    return self::c('note', 'Courier note', 'INFO', ($n['source'] === 'Customer' ? 'Customer note will be sent: ' : 'No customer note — automatic Take Care note: ').mb_substr($n['text'], 0, 120));
   }
 }

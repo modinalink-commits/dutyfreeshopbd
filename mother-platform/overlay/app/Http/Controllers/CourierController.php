@@ -38,15 +38,15 @@ class CourierController extends Controller {
   }
   private function canOverride(): bool { try { return \App\Support\ProfitFloor::admin() || \App\Http\Middleware\ModulePermission::canOverrideMargin(auth()->user()); } catch (\Throwable $e) { return false; } }
   public function sendOne(Request $r, $id) {
-    [$ok, $msg] = $this->book($id, trim((string)$r->input('override_reason', '')) ?: null);
+    [$ok, $msg] = $this->book($id, trim((string)$r->input('override_reason', '')) ?: null, (string)$r->input('courier_note', ''));
     return back()->with($ok ? 'ok' : 'bad', $msg);
   }
   public function sendBulk(Request $r) {
     @ignore_user_abort(true); @set_time_limit(240);
     $d = $r->validate(['ids'=>'required|array|max:100', 'ids.*'=>'integer']);
     $okN = 0; $fail = [];
-    $ov = (array)$r->input('override', []);
-    foreach ($d['ids'] as $id) { [$ok, $msg] = $this->book((int)$id, trim((string)($ov[$id] ?? '')) ?: null); if ($ok) $okN++; else $fail[] = '#'.$id.': '.$msg; }
+    $ov = (array)$r->input('override', []); $nt = (array)$r->input('note', []);
+    foreach ($d['ids'] as $id) { [$ok, $msg] = $this->book((int)$id, trim((string)($ov[$id] ?? '')) ?: null, (string)($nt[$id] ?? '')); if ($ok) $okN++; else $fail[] = '#'.$id.': '.$msg; }
     $m = "$okN order(s) sent to Pathao.".($fail ? ' Not sent: '.implode(' | ', array_slice($fail, 0, 12)) : '');
     return back()->with($fail ? 'bad' : 'ok', $m);
   }
@@ -58,12 +58,12 @@ class CourierController extends Controller {
     return back()->with('ok', 'Pathao status: '.($i['order_status'] ?? $i['order_status_slug'] ?? 'unknown'));
   }
   /** Never lets an exception escape: any failure comes back as a readable message instead of a 500/502 page. */
-  public function book(int $id, ?string $override = null): array {
+  public function book(int $id, ?string $override = null, ?string $note = null): array {
     @ignore_user_abort(true); @set_time_limit(90);
-    try { return $this->bookRaw($id, $override); }
+    try { return $this->bookRaw($id, $override, $note); }
     catch (\Throwable $e) { report($e); return [false, '⚠ Could not send this order to the courier right now ('.mb_substr($e->getMessage(), 0, 140).'). Nothing was changed — please try again or check the Pathao panel.']; }
   }
-  private function bookRaw(int $id, ?string $override = null): array {
+  private function bookRaw(int $id, ?string $override = null, ?string $note = null): array {
     $chk = \App\Support\ShipCheck::run($id);
     if ($chk['blocked']) { $b = collect($chk['checks'])->firstWhere('sev', 'BLOCKED'); return [false, '🔴 Blocked — '.($b['label'] ?? '').': '.($b['msg'] ?? 'cannot ship').' (no override possible)']; }
     $bypass = false;
@@ -80,12 +80,14 @@ class CourierController extends Controller {
     if ($sm) return [false, $sm];
     $o = DB::table('orders')->find($id); if (!$o) return [false, 'Order not found'];
     $items = DB::table('order_items')->where('order_id', $id)->get();
-    [$ok, $msg, $data] = Pathao::send($o, $items);
+    $fn = \App\Support\CourierNote::resolve($o, $note); $sendO = clone $o; $sendO->note = $fn['text']; // the courier gets the final note; the order's own note column is left as written
+    [$ok, $msg, $data] = Pathao::send($sendO, $items);
     if (!$ok) return [false, $msg];
-    DB::transaction(function () use ($o, $id, $data) {
-      DB::table('orders')->where('id', $id)->update(['consignment_id'=>$data['consignment_id'], 'courier'=>'Pathao', 'courier_status'=>$data['order_status'] ?? 'Pending', 'courier_fee'=>$data['delivery_fee'] ?? null, 'courier_sent_at'=>now(), 'courier_stage'=>'Pending', 'courier_cod'=>\App\Support\PaymentSettle::cod($o), 'settlement_status'=>'Pending', 'status'=>'Shipment', 'updated_at'=>now()]);
+    DB::transaction(function () use ($o, $id, $data, $fn) {
+      DB::table('orders')->where('id', $id)->update(['consignment_id'=>$data['consignment_id'], 'courier'=>'Pathao', 'courier_status'=>$data['order_status'] ?? 'Pending', 'courier_fee'=>$data['delivery_fee'] ?? null, 'courier_sent_at'=>now(), 'courier_stage'=>'Pending', 'courier_cod'=>\App\Support\PaymentSettle::cod($o), 'settlement_status'=>'Pending', 'status'=>'Shipment', 'courier_note_final'=>$fn['text'], 'courier_note_source'=>$fn['source'], 'courier_note_sent_at'=>now(), 'updated_at'=>now()]);
       DB::table('order_status_logs')->insert(['order_id'=>$id,'user_id'=>auth()->id(),'user_name'=>auth()->user()->name,'from_status'=>$o->status,'to_status'=>'Shipment','note'=>'Sent to Pathao, consignment '.$data['consignment_id'],'created_at'=>now(),'updated_at'=>now()]);
     });
+    try { \App\Support\OrderActivity::log($id, 'courier_note', null, $fn['source'], 'Courier note sent ('.$fn['source'].'): '.mb_substr($fn['text'], 0, 180)); } catch (\Throwable $e) {}
     return [true, $msg];
   }
   private function audit(Request $r, string $a, string $s): void { DB::table('audit_logs')->insert(['user_id'=>auth()->id(),'user_name'=>auth()->user()->name,'action'=>$a,'subject'=>$s,'ip'=>$r->ip(),'created_at'=>now(),'updated_at'=>now()]); }
