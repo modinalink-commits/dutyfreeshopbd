@@ -13,10 +13,23 @@ class CatalogController extends Controller {
     if ($r->input('stock') === 'out') $q->where('p.stock','<=',0);
     if ($r->filled('category_id')) $q->where('p.category_id', (int)$r->category_id);
     if ($r->filled('brand_id')) $q->where('p.brand_id', (int)$r->brand_id);
+    if ($r->filled('sub')) $q->where('p.sub', (string)$r->sub);
+    if ($r->filled('sub_sub')) $q->where('p.sub_sub', (string)$r->sub_sub);
     $all = DB::table('products')->count(); $act = DB::table('products')->where('published',true)->count();
     $stats = [['Products', number_format($all), 'all stores'], ['Active', number_format($act), $all ? round($act/$all*100).'%' : '0%'], ['Low stock', DB::table('products')->whereBetween('stock',[1,5])->count(), 'needs buying'], ['Out of stock', DB::table('products')->where('stock','<=',0)->count(), 'hidden on site'], ['Reviews waiting', DB::table('reviews')->where('status','pending')->count(), 'approve']];
     $smsOn = (bool) DB::table('settings')->where('key','owner_phone')->value('value');
-    return view('products', ['products'=>$q->paginate(\App\Support\Pg::per(50))->withQueryString(), 'stats'=>$stats, 'cats'=>DB::table('categories')->orderBy('name')->get(), 'brands'=>DB::table('brands')->orderBy('position')->get(), 'smsOn'=>$smsOn]);
+    return view('products', ['products'=>$q->paginate(\App\Support\Pg::per(50))->withQueryString(), 'stats'=>$stats, 'cats'=>DB::table('categories')->orderBy('name')->get(), 'brands'=>DB::table('brands')->orderBy('position')->get(), 'smsOn'=>$smsOn, 'subTree'=>$this->subTree()]);
+  }
+  /** Sub and child category names per main category, for the catalog filter (category tree nodes + names really used on products). */
+  private function subTree(): array {
+    $t = [];
+    $nd = DB::table('category_nodes')->where('active', true)->orderBy('position')->orderBy('name')->get(['id', 'category_id', 'parent_id', 'level', 'name']);
+    foreach ($nd->where('level', 2) as $n) { $t[$n->category_id][$n->name] = $nd->where('parent_id', $n->id)->pluck('name')->all(); }
+    foreach (DB::table('products')->whereNotNull('sub')->where('sub', '!=', '')->select('category_id', 'sub', 'sub_sub')->distinct()->get() as $r) {
+      $t[$r->category_id][$r->sub] = $t[$r->category_id][$r->sub] ?? [];
+      if ($r->sub_sub && !in_array($r->sub_sub, $t[$r->category_id][$r->sub], true)) $t[$r->category_id][$r->sub][] = $r->sub_sub;
+    }
+    return $t;
   }
   public function productForm($id = null) {
     $p = $id ? DB::table('products')->find($id) : null;
