@@ -55,7 +55,14 @@ class AiImageAuto {
     if (self::set('backfill', '1') === '1' && $pc !== '') $row = DB::table('ai_images')->where('ai_status', 'completed')->whereNotNull('processed_image')->where('processed_at', '<', $pc)->orderBy('id')->first();
     if ($row) {
       $r = AiImage::run((int)$row->id);
-      if ($r['ok'] ?? false) { self::flush(); self::note('Redid old image #' . $row->id . ' with the clean standard'); return 1; }
+      if ($r['ok'] ?? false) {
+        // the clean image takes the main-image place automatically when this slot is (or was) the product's main image
+        $o = DB::table('ai_images')->find($row->id); $cur = (string)DB::table('products')->where('id', $row->product_id)->value('image');
+        if ($o && $o->processed_image && ($cur === (string)$row->source_url || strtok($cur, '?') === $o->processed_image || (bool)$row->is_main)) {
+          DB::table('products')->where('id', $row->product_id)->update(['image' => $o->processed_image]);
+          DB::table('ai_images')->where('product_id', $row->product_id)->update(['is_main' => false]); DB::table('ai_images')->where('id', $row->id)->update(['is_main' => true]);
+        }
+        self::flush(); self::note('Redid old image #' . $row->id . ' with the clean standard'); return 1; }
       self::note('Old image #' . $row->id . ' failed: ' . ($r['error'] ?? '')); return 0;
     }
     if (self::set('backfill_all', '0') !== '1') return 0;
