@@ -261,6 +261,7 @@ class AiVerify {
       $moved = DB::transaction(function () use ($o, $v) {
         if (!DB::table('orders')->where('id', $o->id)->where('status', 'New')->update(['status' => 'Approved', 'approved_at' => now(), 'auto_approved' => true, 'updated_at' => now()])) return false;
         DB::table('order_status_logs')->insert(['order_id' => $o->id, 'user_id' => null, 'user_name' => 'System', 'from_status' => 'New', 'to_status' => 'Approved', 'note' => 'Automatically approved: AI Verify passed (score ' . (int)$v->verification_score . ')', 'created_at' => now(), 'updated_at' => now()]);
+        ApprovalSource::stamp((int)$o->id, 'AI', null, 'AI-V#'.$v->id.' score '.(int)$v->verification_score, 'Automatic approval: AI Verify passed');
         return true;
       });
       if ($moved) OrderActivity::log($orderId, 'ai_auto_approve', 'New', 'Approved', 'AI Verify passed (score ' . (int)$v->verification_score . ') · automatic', ['score' => (int)$v->verification_score]);
@@ -291,6 +292,7 @@ class AiVerify {
         if (!DB::table('orders')->where('id', $o->id)->where('status', $from)->update(['status' => 'Approved', 'approved_at' => now(), 'updated_at' => now()])) return false;
         DB::table('order_status_logs')->insert(['order_id' => $o->id, 'user_id' => auth()->id(), 'user_name' => $who, 'from_status' => $from, 'to_status' => 'Approved', 'note' => 'AI Approve · AI Verified (score ' . (int)$v->verification_score . ')', 'created_at' => now(), 'updated_at' => now()]);
         OrderActivity::log((int)$o->id, 'ai_approve', $from, 'Approved', 'Order AI Approved by ' . $who . ' · AI ' . ($oldAi ?: 'none') . ' → verified (score ' . (int)$v->verification_score . ')', ['source' => 'ai_approve', 'ai_old' => $oldAi, 'ai_new' => 'verified', 'score' => (int)$v->verification_score]);
+        ApprovalSource::stamp((int)$o->id, 'AI', null, 'AI-V#'.$v->id.' score '.(int)$v->verification_score, 'AI Approve button pressed by '.$who);
         Procure::audit('AI Approve', 'Order #' . $o->id, ['order_status' => $from, 'ai_status' => $oldAi], ['order_status' => 'Approved', 'ai_status' => 'verified', 'ai_result' => 'approved', 'staff_id' => auth()->id(), 'at' => now()->toDateTimeString()]);
         return true;
       });

@@ -787,3 +787,5 @@ app/Http/Controllers/CheckoutDiscountReportController.php
 resources/views/checkout_discount_report.blade.php
 app/Http/Controllers/CourierTrackController.php
 resources/views/courier_track.blade.php
+app/Support/ApprovalSource.php
+database/migrations/2026_11_07_000100_order_approval_source.php
