@@ -91,9 +91,16 @@ class VoiceCampaignController extends Controller
     else { $row = (object)['product_name' => 'আপনার পছন্দের প্রোডাক্ট', 'discount_value' => $c->discount_value, 'name' => 'গ্রাহক', 'phone' => '', 'id' => 0]; [$f, $err] = V::audio($c, $row); if (!$f) abort(404, $err); }
     return response()->file($f, ['Content-Type' => str_ends_with($f, '.mp3') ? 'audio/mpeg' : 'audio/wav', 'Cache-Control' => 'no-store']);
   }
+  /** Admin: signed link of the campaign's sample audio (used to put the file on the PBX Recordings page). */
+  public function audioLink($id) {
+    $c = DB::table('voice_campaigns')->find($id); abort_unless($c, 404);
+    if ($c->audio_path && is_file(storage_path('app/' . $c->audio_path))) { $f = storage_path('app/' . $c->audio_path); }
+    else { $row = (object)['product_name' => 'আপনার পছন্দের প্রোডাক্ট', 'discount_value' => $c->discount_value, 'name' => 'গ্রাহক', 'phone' => '', 'id' => 0]; [$f, $err] = V::audio($c, $row); if (!$f) return response()->json(['ok' => false, 'error' => $err], 422); }
+    return response()->json(['ok' => true, 'url' => V::publicUrl($f), 'ext' => strtolower(pathinfo($f, PATHINFO_EXTENSION))]);
+  }
   /** Public: the PBX downloads the personalised audio for the call. */
   public function audio(Request $r, $id) {
     if (!hash_equals(V::audioToken((int)$id), (string)$r->query('t'))) abort(403); $f = V::audioFile((int)$id); if (!$f) abort(404);
-    return response()->file($f, ['Content-Type' => str_ends_with($f, '.mp3') ? 'audio/mpeg' : 'audio/wav', 'Cache-Control' => 'private, max-age=600']);
+    return response()->file($f, ['Content-Type' => str_ends_with($f, '.mp3') ? 'audio/mpeg' : 'audio/wav', 'Cache-Control' => 'private, max-age=600', 'Access-Control-Allow-Origin' => '*']);
   }
 }

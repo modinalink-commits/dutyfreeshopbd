@@ -153,6 +153,8 @@ class Voice
     $st = str_contains($u, 'BUSY') ? 'busy' : (preg_match('/NO_ANSWER|NO_USER_RESPONSE|ORIGINATOR_CANCEL|RECOVERY_ON_TIMER/', $u) ? 'not_answered' : 'failed');
     return [$st, $cause, $uuid];
   }
+  /** Public signed URL of an audio file (what the PBX or the uploader fetches). */
+  public static function publicUrl(string $f): string { $aid = self::audioId($f); self::linkAudio($aid, $f); return self::baseUrl() . '/voice-audio/' . $aid . '.' . strtolower(pathinfo($f, PATHINFO_EXTENSION)) . '?t=' . self::audioToken((int)$aid); }
   public static ?string $lastJob = null;
   public static function recName($id, string $phone, string $uuid): string { return preg_replace('/[^A-Za-z0-9_\-]/', '', 'voiceoffer_' . ($uuid ?: $id) . '_' . $phone . '_' . now('Asia/Dhaka')->format('YmdHis')) . '.mp3'; }
   private static function uuid(): string { $b = random_bytes(16); $b[6] = chr(ord($b[6]) & 0x0f | 0x40); $b[8] = chr(ord($b[8]) & 0x3f | 0x80); return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($b), 4)); }
