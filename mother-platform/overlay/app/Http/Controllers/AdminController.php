@@ -313,10 +313,10 @@ class AdminController extends Controller {
     $o = DB::table('orders')->where('id',$id)->first(); abort_unless($o, 404);
     $new = mb_substr(trim((string)$r->input('note')), 0, 200); $old = trim((string)$o->note);
     if ($new !== $old) {
-      DB::table('orders')->where('id',$id)->update(['note'=>$new !== '' ? $new : null, 'courier_note_source'=>$new !== '' ? 'Staff Edited' : null, 'updated_at'=>now()]);
+      DB::table('orders')->where('id',$id)->update(['note'=>$new !== '' ? $new : null, 'updated_at'=>now()]);
       try { \App\Support\OrderActivity::log((int)$id, 'courier_note', $old, $new, 'Courier note '.($new === '' ? 'cleared' : ($old === '' ? 'added' : 'changed'))); } catch (\Throwable $e) {}
     }
-    return response()->json(['ok'=>true, 'note'=>$new, 'booked'=>!empty($o->consignment_id), 'will_send'=>\App\Support\CourierNote::resolve((object)((array)$o + ['note'=>$new, 'courier_note_source'=>$new !== '' ? 'Staff Edited' : null]))[0]]);
+    return response()->json(['ok'=>true, 'note'=>$new, 'booked'=>!empty($o->consignment_id)]);
   }
   public static function commentPayload($id): array {
     $o = DB::table('orders')->find($id); $ph = (string)($o->phone ?? '');
