@@ -105,8 +105,6 @@ class AiVerify {
     // ---- Fraud ----
     $fraudScore = null; $fraudRisk = 'Unknown';
     if ($validPhone) {
-      $fc = null;
-      try { $fc = $live ? FraudCheck::check($phone) : null; if (!$live) { $row = DB::table('fraud_checks')->where('phone', $phone)->where('created_at', '>', now()->subDay())->orderByDesc('id')->first(); $fc = $row && $row->data ? json_decode($row->data, true) : null; } } catch (\Throwable $e) { $fc = null; }
       if ($fc && ($fc['ok'] ?? false) && ($fc['total_parcel'] ?? 0) > 0) {
         $lv = (string)($fc['risk_level'] ?? 'unknown'); $sr = (float)($fc['success_rate'] ?? 0); $fraudScore = (int)round(100 - $sr); $tp = (int)$fc['total_parcel'];
         $txt = "Courier network: $tp parcels, success " . round($sr) . '%, return ' . round((float)($fc['return_rate'] ?? 0)) . '%. Fraud score ' . $fraudScore . '/100';
@@ -154,13 +152,17 @@ class AiVerify {
     $sum['payment'] = $isCod ? 'COD' : ($due <= 1 ? 'Paid' : 'Due ' . self::tk($due)); $sum['due'] = $due;
 
     // ---- Courier history ----
+    $fc = null;
+    if ($validPhone) { try { $fc = $live ? FraudCheck::check($phone) : null; if (!$live) { $row = DB::table('fraud_checks')->where('phone', $phone)->where('created_at', '>', now()->subDay())->orderByDesc('id')->first(); $fc = $row && $row->data ? json_decode($row->data, true) : null; } } catch (\Throwable $e) { $fc = null; } }
     if ($validPhone && self::has('orders', 'consignment_id')) {
       $cr = $same()->whereNotNull('consignment_id')->selectRaw("count(*) as t, count(*) filter (where status in ('Delivered','Partial Delivered')) as ok, count(*) filter (where status in ('Returned','Return')" . (self::has('orders', 'courier_stage') ? " or courier_stage in ('Returned','Failed Delivery')" : '') . ") as bad")->first();
       $t = (int)($cr->ok ?? 0) + (int)($cr->bad ?? 0);
       if ($t >= 2) { $rate = (int)round((int)$cr->ok / $t * 100); $sum['courier_rate'] = $sum['courier_rate'] ?? $rate;
         if ($rate >= 80) $add('Courier', 'COURIER_OK', 'pass', 'Courier history', "Own courier success rate $rate% ($cr->ok delivered, $cr->bad returned/failed)");
         else $add('Courier', 'COURIER_LOW', 'review', 'Courier history', "Own courier success rate $rate% ($cr->ok delivered, $cr->bad returned/failed)", 10); }
-      else $add('Courier', 'COURIER_NONE', 'info', 'Courier history', 'Not enough earlier courier deliveries to judge');
+      elseif ($fc && ($fc['ok'] ?? false) && (int)($fc['total_parcel'] ?? 0) > 0) { $sr = (int)round((float)($fc['success_rate'] ?? 0)); $tp = (int)$fc['total_parcel'];
+        $add('Courier', $sr >= 80 ? 'COURIER_OK' : 'COURIER_LOW', $sr >= 80 ? 'pass' : 'review', 'Courier history', "Courier network: $tp parcels on this number, success $sr%, return " . round((float)($fc['return_rate'] ?? 0)) . '%', $sr >= 80 ? 0 : 10); }
+      else $add('Courier', 'COURIER_NONE', 'info', 'Courier history', 'No earlier courier parcels found for this number (own orders or the courier network)');
     }
 
     // ---- Parcels still with the courier (earlier orders of this phone) ----
