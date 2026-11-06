@@ -183,6 +183,32 @@ class StoreController extends Controller {
     return response()->view('store.home', $this->base($data + ['live'=>$live, 'title'=>self::cleanSeo($s['site_title'] ?? '', self::HOME_TITLE), 'desc'=>self::cleanSeo($s['meta_description'] ?? '', self::HOME_DESC), 'canon'=>url('/').'/', 'home'=>true]))->header('Cache-Control','private, no-cache, max-age=0');
   }
   /** Animated Brand Slider data: active brands (admin order) that have at least one customer-visible product; cached 5 min. A problem here never breaks the homepage. */
+  /** Homepage promo cards: every customer offer that is switched ON right now (Discount Center rules, bundle, app reward). Nothing is invented; text comes from the saved values. */
+  public static function promoOffers(int $maxOff = 0): array {
+    try {
+      $R = self::rem('store.promorules1', 300, function () {
+        $o = []; foreach (DB::table('discount_rules')->where('enabled', true)->get(['key', 'config']) as $r) $o[$r->key] = json_decode((string)$r->config, true) ?: [];
+        return $o;
+      });
+      $n = fn($v) => rtrim(rtrim(number_format((float)$v, 2, '.', ''), '0'), '.');
+      $tk = fn($v) => '৳' . number_format((float)$v);
+      $I = ['truck' => '<path d="M3 6h11v10H3zM14 9h4l3 3v4h-7z"/><circle cx="7" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/>', 'shield' => '<path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M8.5 12l2.5 2.5L15.5 10"/>', 'tag' => '<path d="M19 5L5 19"/><circle cx="7" cy="7" r="2.2"/><circle cx="17" cy="17" r="2.2"/>', 'gift' => '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M5 12v8h14v-8M12 8c-2 0-4-1-4-3s3-2 4 3c1-5 4-5 4-3s-2 3-4 3z"/>', 'card' => '<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 15h3"/>', 'user' => '<circle cx="12" cy="8" r="3.5"/><path d="M5 20c1-4 4-6 7-6s6 2 7 6"/>', 'box' => '<path d="M4 8l8-4 8 4v8l-8 4-8-4z"/><path d="M4 8l8 4 8-4M12 12v8"/>', 'bolt' => '<path d="M13 3L5 13h6l-1 8 8-10h-6z"/>'];
+      $L = [['ic' => $I['shield'], 'h' => '100% Original', 's' => 'Imported and authentic', 'u' => '/about-us/']];
+      if (isset($R['freedelivery']) && (float)($R['freedelivery']['Free over TK'] ?? 0) > 0) $L[] = ['ic' => $I['truck'], 'h' => 'Free Delivery', 's' => 'On orders over ' . $tk($R['freedelivery']['Free over TK']), 'u' => '/delivery-policy/'];
+      if (isset($R['flash']) && $maxOff > 0) $L[] = ['ic' => $I['bolt'], 'h' => 'Flash Sale', 's' => 'Up to ' . $maxOff . '% off today', 'u' => '#flash'];
+      if (isset($R['first']) && (float)($R['first']['Discount %'] ?? 0) > 0) $L[] = ['ic' => $I['gift'], 'h' => 'First Order Offer', 's' => $n($R['first']['Discount %']) . '% off your first order' . ((float)($R['first']['Max TK'] ?? 0) > 0 ? ' (up to ' . $tk($R['first']['Max TK']) . ')' : ''), 'u' => '/search?deals=1'];
+      if (isset($R['membership'])) { $m = max(array_map('floatval', array_filter($R['membership'], 'is_numeric')) ?: [0]); if ($m > 0) $L[] = ['ic' => $I['user'], 'h' => 'Member Discount', 's' => 'Silver to Diamond: up to ' . $n($m) . '% on every order', 'u' => '/account']; }
+      if (isset($R['amount'])) { $m = max(array_map('floatval', array_filter([$R['amount']['Over 5000 TK %'] ?? 0, $R['amount']['Over 10000 TK %'] ?? 0, $R['amount']['Over 20000 TK %'] ?? 0], 'is_numeric')) ?: [0]); if ($m > 0) $L[] = ['ic' => $I['tag'], 'h' => 'Spend More, Save More', 's' => 'Up to ' . $n($m) . '% off on big orders', 'u' => '/search?deals=1']; }
+      if (isset($R['payment'])) { $m = max([(float)($R['payment']['Card %'] ?? 0), (float)($R['payment']['bKash / Nagad %'] ?? 0), (float)($R['payment']['ShurjoPay / Amarpay %'] ?? 0)]); if ($m > 0) $L[] = ['ic' => $I['card'], 'h' => 'Pay Online, Save More', 's' => 'Up to ' . $n($m) . '% off on online payment', 'u' => '/search?deals=1']; }
+      try { $bc = \App\Support\BundlePricing::cfg(); if (!empty($bc['on'])) { $bm = max($bc['pct'] ?: [0]); if ($bm > 0) $L[] = ['ic' => $I['box'], 'h' => 'Buy 2–5 & Save', 's' => 'Bigger pack, bigger saving: up to ' . $n($bm) . '% off', 'u' => '/search?deals=1']; } } catch (\Throwable $e) {}
+      if (isset($R['bulk'])) { $m = max(array_map('floatval', array_filter($R['bulk'], 'is_numeric')) ?: [0]); if ($m > 0) $L[] = ['ic' => $I['box'], 'h' => 'Carton Discount', 's' => 'Buy more cartons, up to ' . $n($m) . '% off', 'u' => '/search?deals=1']; }
+      if (isset($R['bogo']) && (float)($R['bogo']['Get quantity free'] ?? 0) > 0) $L[] = ['ic' => $I['gift'], 'h' => 'Buy ' . (int)($R['bogo']['Buy quantity'] ?? 0) . ' Get ' . (int)$R['bogo']['Get quantity free'] . ' Free', 's' => 'On selected products', 'u' => '/search?deals=1'];
+      if (isset($R['referral']) && (float)($R['referral']['Friend discount TK'] ?? 0) > 0) $L[] = ['ic' => $I['gift'], 'h' => 'Refer a Friend', 's' => 'Your friend gets ' . $tk($R['referral']['Friend discount TK']) . ' off', 'u' => '/account'];
+      if (isset($R['birthday']) && (float)($R['birthday']['Birthday %'] ?? 0) > 0) $L[] = ['ic' => $I['gift'], 'h' => 'Birthday Offer', 's' => $n($R['birthday']['Birthday %']) . '% off around your birthday', 'u' => '/account'];
+      try { $ar = \App\Support\AppReward::cfg(); if (!empty($ar['on']) && ($ar['amt'] ?? 0) > 0) $L[] = ['ic' => $I['gift'], 'h' => 'App Install Reward', 's' => 'Get ' . $tk($ar['amt']) . ' reward on the DutyFree app', 'u' => '/app']; } catch (\Throwable $e) {}
+      return $L;
+    } catch (\Throwable $e) { report($e); return []; }
+  }
   public static function brandSlider(): array {
     try {
       if (\App\Support\Procure::set('brand_slider_enabled', '1') === '0') return [];
