@@ -50,6 +50,7 @@ class ResController extends Controller {
       $opex = DB::table('account_entries as e')->join('expense_purposes as p','p.id','=','e.purpose_id')->where('e.entry_date','>=',$m0)->where('e.direction','expense')->where('p.is_expense',true)->sum('e.amount');
       $moves = DB::table('account_entries')->where('entry_date','>=',$m0)->where('direction','expense')->sum('amount') - $opex;
       $o = [['Income collected','৳'.number_format($in)],['Operating expenses','৳'.number_format($opex)],['Other money out (transfers, supplier bills)','৳'.number_format($moves)],['Net (income − operating expenses)','৳'.number_format($in-$opex)]];
+      try { $rc = \App\Support\CourierBook::receivable(); $t = 0; $parts = []; foreach ($rc as $c => $v) { $t += $v[1]; $parts[] = $c.' ৳'.number_format($v[1]).' ('.$v[0].')'; } $o[] = ['Courier receivable (delivered, not paid yet)', '৳'.number_format($t).($parts ? ' · '.implode(' · ', $parts) : '')]; } catch (\Throwable $e) {}
     } elseif ($k==='purchase') {
       $m0 = now('Asia/Dhaka')->startOfMonth()->toDateString();
       $due = DB::table('purchases')->select('supplier_id', DB::raw('sum(total-paid) d'))->groupBy('supplier_id')->havingRaw('sum(total-paid) > 0')->get();

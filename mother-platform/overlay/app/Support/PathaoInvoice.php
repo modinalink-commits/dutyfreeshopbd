@@ -95,6 +95,7 @@ class PathaoInvoice {
     $upd = ['pathao_invoice_no'=>$row->invoice_no, 'pathao_collected'=>$col, 'pathao_paid_out'=>$out, 'pathao_settled_at'=>($row->line_date ?: now()), 'updated_at'=>now()]; if ($fee > 0) $upd['courier_fee'] = $fee;
     DB::table('orders')->where('id', $o->id)->update($upd);
     DB::table('pathao_invoice_lines')->where('id', $row->id)->update(['order_id'=>$o->id, 'match_status'=>$status, 'applied'=>true, 'note'=>$note, 'updated_at'=>now()]);
+    try { CourierBook::payout($row, $o); } catch (\Throwable $e) { report($e); }
     $prev = OrderActivity::$system; OrderActivity::$system = true;
     try { OrderActivity::log((int)$o->id, 'pathao_invoice', null, $row->invoice_no, 'Pathao invoice '.$row->invoice_no.': collected ৳'.number_format($collected).', courier fee ৳'.number_format((float)$row->fee, 2).', paid out ৳'.number_format((float)$row->paid_out, 2).($recorded > 0 ? ' — COD payment ৳'.number_format($recorded).' recorded' : '').($note ? ' ('.$note.')' : ''), []); } finally { OrderActivity::$system = $prev; }
     return true;
