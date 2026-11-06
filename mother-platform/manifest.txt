@@ -747,4 +747,6 @@ database/migrations/2026_11_06_000230_reorder_threshold_100.php
 database/migrations/2026_11_06_000240_reorder_sourcing_off.php
 database/migrations/2026_11_06_000300_roles_view_general_modules.php
 database/migrations/2026_11_06_000310_incomplete_nudge.php
+database/migrations/2026_11_06_000320_ai_image_auto.php
+app/Support/AiImageAuto.php
 app/Support/IncompleteNudge.php
