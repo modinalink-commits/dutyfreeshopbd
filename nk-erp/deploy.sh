@@ -48,6 +48,11 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 chown -R www-data:www-data storage bootstrap/cache
+# Uploaded pictures (logo, signature, hero, products, brands) live in public/uploads; the web user must be able to write there.
+# Copy over anything uploaded while this release was building, so no upload is lost at the switch.
+mkdir -p public/uploads
+cp -an "$CUR/public/uploads/." public/uploads/ 2>/dev/null || true
+chown -R www-data:www-data public/uploads
 ln -sfn "$NEW" /srv/app
 echo "$REF" > /srv/deploy/current_ref
 rm -f /srv/deploy/failed_ref

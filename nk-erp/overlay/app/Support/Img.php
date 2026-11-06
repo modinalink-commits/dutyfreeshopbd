@@ -10,7 +10,14 @@ class Img
     public static function save(UploadedFile $f, string $folder, string $prefix, int $max = 900): string
     {
         $dir = public_path('uploads/'.$folder);
-        if (! is_dir($dir)) mkdir($dir, 0775, true);
+        if (! is_dir($dir) && ! @mkdir($dir, 0775, true) && ! is_dir($dir)) {
+            report(new \RuntimeException("Upload folder not writable: {$dir}"));
+            throw new \RuntimeException('ছবিটা সেভ করা যায়নি — সার্ভারের ছবির ফোল্ডারে লেখা যাচ্ছে না। কয়েক মিনিট পরে আবার চেষ্টা করুন; বারবার হলে অ্যাডমিনকে জানান।');
+        }
+        if (! is_writable($dir)) {
+            report(new \RuntimeException("Upload folder not writable: {$dir}"));
+            throw new \RuntimeException('ছবিটা সেভ করা যায়নি — সার্ভারের ছবির ফোল্ডারে লেখা যাচ্ছে না। কয়েক মিনিট পরে আবার চেষ্টা করুন; বারবার হলে অ্যাডমিনকে জানান।');
+        }
         $name = preg_replace('/[^a-z0-9-]+/i', '-', $prefix).'-'.now()->format('YmdHis').'-'.substr(bin2hex(random_bytes(3)), 0, 6);
         $ext = strtolower($f->extension() ?: $f->getClientOriginalExtension());
         $src = null;

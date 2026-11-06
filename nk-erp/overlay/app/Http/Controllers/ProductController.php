@@ -59,7 +59,8 @@ class ProductController extends Controller
         }
         if ($request->hasFile('image')) {
             $old = $p->image;
-            $p->forceFill(['image' => Img::save($request->file('image'), 'products', strtolower($p->code))])->save();
+            try { $path = Img::save($request->file('image'), 'products', strtolower($p->code)); } catch (\RuntimeException $e) { return redirect()->route('products.index', ['edit' => $p->id])->withErrors(['image' => 'Product saved, but '.$e->getMessage()]); }
+            $p->forceFill(['image' => $path])->save();
             Img::delete($old);
             AuditLog::record('product_photo', "{$p->code} {$p->name} · photo ".($old ? 'replaced' : 'added'));
         } elseif ($request->boolean('remove_image') && $p->image) {
@@ -78,7 +79,8 @@ class ProductController extends Controller
     {
         $request->validate(['image' => ['required', 'file', 'mimes:png,webp,jpg,jpeg', 'max:5120']], ['image.mimes' => 'Photo must be a JPG, PNG or WebP picture.', 'image.max' => 'Photo is larger than 5 MB. Use a smaller picture.']);
         $old = $product->image;
-        $product->forceFill(['image' => Img::save($request->file('image'), 'products', strtolower($product->code))])->save();
+        try { $path = Img::save($request->file('image'), 'products', strtolower($product->code)); } catch (\RuntimeException $e) { return back()->withErrors(['image' => $e->getMessage()]); }
+        $product->forceFill(['image' => $path])->save();
         Img::delete($old);
         AuditLog::record('product_photo', "{$product->code} {$product->name} · photo ".($old ? 'replaced' : 'added'));
         return back()->with('ok', "{$product->name}: photo saved.");

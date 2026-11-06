@@ -104,7 +104,7 @@ class BrandController extends Controller
         ], ['image.mimes' => 'Photo must be a JPG, PNG or WebP picture.', 'image.max' => 'Photo is larger than 5 MB. Use a smaller picture.']);
         $size = (string) $d['size'];
         $before = $brand->img($size);
-        $path = \App\Support\Img::save($request->file('image'), 'brands', strtolower($brand->code).'-'.$size);
+        try { $path = \App\Support\Img::save($request->file('image'), 'brands', strtolower($brand->code).'-'.$size); } catch (\RuntimeException $e) { return back()->withErrors(['image' => $e->getMessage()]); }
         $imgs = $brand->images ?? [];
         $old = $imgs[$size] ?? null;
         $imgs[$size] = $path;
