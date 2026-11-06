@@ -15,7 +15,7 @@
   $note = $notes[$slug] ?? 'Sales are product revenue after discount (shipping is not included). Cancelled and returned orders are left out unless you pick a status.';
   $srcRows = $dash ? $summaryRows : $rows; $srcCols = $dash ? $summaryCols : $cols;
   $noSum = ['price','unit_profit','aov','alert','avg_days','margin','rate','success','score','new_share'];
-  $showTotals = !in_array($slug, ['margin','low-stock','out-of-stock','top-customers'], true);
+  $showTotals = !in_array($slug, ['margin','low-stock','out-of-stock','top-customers','top-viewed'], true);
 @endphp
 <style>
 .ra{max-width:1440px}

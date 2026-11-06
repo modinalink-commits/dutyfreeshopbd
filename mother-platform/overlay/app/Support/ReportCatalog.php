@@ -94,6 +94,7 @@ class ReportCatalog
       ['CUS-002', 'Repeat Customer Rate', 'Customers', 'grid', $A('repeat-rate'), 'pxcn', 'Analytics', null],
       ['CUS-003', 'Top Customers', 'Customers', 'grid', $A('top-customers'), 'pxcn', 'Analytics', null],
       ['CUS-004', 'Customer Order History', 'Customers', 'grid', $A('customer-orders'), 'pxcn', 'Analytics', null],
+      ['CUS-006', 'Top Viewed Products', 'Customers', 'grid', $A('top-viewed'), 'pxcn', 'Analytics', null],
       ['CUS-005', 'Win-Back Report', 'Campaigns', 'grid', 'admin/winback/report', '', 'Marketing', null],
       // ---------- Courier, Delivery & Returns ----------
       ['CUR-001', 'Courier Wise Delivery Report', 'Courier', 'grid', $A('courier-wise'), 'pxcn', 'Analytics', 'courier'],

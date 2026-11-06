@@ -767,3 +767,5 @@ database/migrations/2026_11_06_000450_purchase_new_selling_rate.php
 resources/views/proc/price_changes.blade.php
 resources/views/store/brand_slider.blade.php
 database/migrations/2026_11_06_000460_apply_pending_purchase_rates.php
+app/Support/ProductTrack.php
+database/migrations/2026_11_06_000470_product_analytics_events.php

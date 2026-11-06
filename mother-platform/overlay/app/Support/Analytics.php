@@ -24,7 +24,7 @@ class Analytics {
       'profit'    => ['Profit & Loss', ['profit-loss'=>'Profit / Loss Report','sale-profit'=>'Sale Profit Report','margin'=>'Margin Report']],
       'inventory' => ['Inventory Reports', ['stock-tracking'=>'Product Stock Tracking','category-stock'=>'Category Wise Stock Report','stock-log'=>'Stock Log History','low-stock'=>'Low Stock Report','out-of-stock'=>'Out of Stock Report']],
       'purchase'  => ['Purchase & Supplier', ['purchase-report'=>'Purchase Report','supplier-report'=>'Supplier Report']],
-      'customer'  => ['Customer Reports', ['new-returning'=>'New vs Returning Customer','repeat-rate'=>'Repeat Customer Rate','top-customers'=>'Top Customers','customer-orders'=>'Customer Order History','cancel-rate'=>'Cancel Rate','return-rate'=>'Return Rate']],
+      'customer'  => ['Customer Reports', ['new-returning'=>'New vs Returning Customer','repeat-rate'=>'Repeat Customer Rate','top-customers'=>'Top Customers','top-viewed'=>'Top Viewed Products','customer-orders'=>'Customer Order History','cancel-rate'=>'Cancel Rate','return-rate'=>'Return Rate']],
       'courier'   => ['Courier & Delivery', ['courier-wise'=>'Courier Wise Delivery Report','delivered-orders'=>'Delivered Orders','returned-orders'=>'Returned Orders','delivery-success'=>'Delivery Success Rate','cod-collection'=>'COD Collection','courier-settlement'=>'Courier Settlement Report']],
       'accounts'  => ['Accounts', ['income'=>'Income','expense'=>'Expense','receivable'=>'Receivable','payable'=>'Payable','payment-collection'=>'Payment Collection']],
     ];
@@ -91,6 +91,7 @@ class Analytics {
       'stock-tracking' => ['image'=>['',$I],'product'=>['Product',$T],'sku'=>['SKU',$T],'store'=>['Store',$T],'current'=>['Current stock',$N],'opening'=>['Opening',$N],'sold'=>['Sold',$N],'returned'=>['Returned',$N],'stock_in'=>['Stock in',$N],'stock_out'=>['Stock out',$N],'closing'=>['Closing',$N]],
       'category-stock' => ['category'=>['Category',$T],'products'=>['Products',$N],'units'=>['Units in stock',$N],'cost_value'=>['Stock value (cost)',$M],'sale_value'=>['Stock value (sale)',$M],'out'=>['Out of stock',$N]],
       'stock-log' => ['date'=>['Date',$Dt],'product'=>['Product',$T],'source'=>['Source',$T],'reference'=>['Reference',$T],'before'=>['Before',$N],'change'=>['Change',$N],'after'=>['After',$N],'by'=>['By',$T]],
+      'top-viewed' => ['image'=>['',$I],'product'=>['Product',$T],'sku'=>['SKU',$T],'category'=>['Category',$T],'brand'=>['Brand',$T],'views'=>['Total views',$N],'uniq'=>['Unique visitors',$N],'mobile'=>['Mobile',$N],'desktop'=>['Desktop',$N],'tablet'=>['Tablet',$N],'orders'=>['Orders',$N],'conv'=>['Conversion %',$P],'growth'=>['View growth %',$P],'stock'=>['Stock',$N],'price'=>['Sale price',$M],'status'=>['Demand status',$S]],
       'low-stock','out-of-stock' => ['image'=>['',$I],'product'=>['Product',$T],'sku'=>['SKU',$T],'category'=>['Category',$T],'stock'=>['Stock',$N],'alert'=>['Alert at',$N],'cost'=>['Cost',$M],'price'=>['Price',$M]],
       'purchase-report' => ['date'=>['Date',$Dt],'invoice'=>['Invoice',$T],'supplier'=>['Supplier',$T],'qty'=>['Qty',$N],'total'=>['Total',$M],'paid'=>['Paid',$M],'due'=>['Due',$M]],
       'supplier-report' => ['supplier'=>['Supplier',$T],'purchases'=>['Purchases',$N],'total'=>['Total purchased',$M],'paid'=>['Paid',$M],'due'=>['Due',$M],'last'=>['Last purchase',$Dt]],
@@ -135,6 +136,7 @@ class Analytics {
       'new-returning' => self::newReturning($f),
       'repeat-rate' => self::repeatRate($f),
       'top-customers' => self::customers($f),
+      'top-viewed' => self::topViewed($f),
       'cancel-rate' => self::rate($f, "('Cancel')", 'cancelled'),
       'return-rate' => self::rate($f, self::RET, 'returned'),
       'courier-wise' => self::courierWise($f),
@@ -278,6 +280,30 @@ class Analytics {
     if ($f['product'] !== '') { $c[] = '(p.name ilike ? or p.sku ilike ?)'; $b[] = '%'.self::esc((string)$f['product']).'%'; $b[] = '%'.self::esc((string)$f['product']).'%'; }
     $sql = "select to_char(l.created_at + interval '6 hours','YYYY-MM-DD HH24:MI') date, coalesce(p.name,'Deleted product') product, l.source, coalesce(l.reference,'') reference, l.before_qty before, l.change_qty change, l.after_qty after, coalesce(l.user_name,'') by from stock_logs l left join products p on p.id = l.product_id where ".implode(' and ', $c)." order by l.id desc limit ".self::LIMIT;
     return self::arr(self::sel($sql, $b));
+  }
+
+  /** Top Viewed Products: valid anonymous product views (bots filtered, 10-minute repeat protection) against real orders. Add-to-cart / search / checkout columns arrive with phase 2 tracking. */
+  private static function topViewed(array $f): array {
+    $a = self::utc($f['from'], false); $z = self::utc($f['to'], true);
+    $days = max(1, (int)((strtotime($z) - strtotime($a)) / 86400)); $pa = date('Y-m-d H:i:s', strtotime($a) - $days * 86400);
+    $c = ["e.event_type = 'product_view'", 'e.created_at >= ?', 'e.created_at < ?']; $b = [$a, $z];
+    if ($f['category']) { $c[] = 'p.category_id = ?'; $b[] = $f['category']; }
+    if ($f['product'] !== '') { $c[] = '(p.name ilike ? or p.sku ilike ?)'; $b[] = '%'.self::esc((string)$f['product']).'%'; $b[] = '%'.self::esc((string)$f['product']).'%'; }
+    $sql = "select p.id, p.name product, coalesce(p.sku,'') sku, coalesce(p.image,'') image, coalesce(c.name,'') category, coalesce(p.sub,'') brand, count(*) views, count(distinct e.visitor_id) uniq,
+      sum((e.device_type = 'mobile')::int) mobile, sum((e.device_type = 'desktop')::int) desktop, sum((e.device_type = 'tablet')::int) tablet,
+      coalesce(p.stock,0) stock, coalesce(p.price,0) price, coalesce(p.low_stock_alert,10) alert,
+      (select count(*) from product_analytics_events x where x.event_type = 'product_view' and x.product_id = p.id and x.created_at >= ? and x.created_at < ?) prev_views,
+      (select count(distinct o.id) from order_items i join orders o on o.id = i.order_id where i.product_id = p.id and o.created_at >= ? and o.created_at < ? and ".self::VALID.") orders
+      from product_analytics_events e join products p on p.id = e.product_id left join categories c on c.id = p.category_id where ".implode(' and ', $c)." group by p.id, c.name order by count(*) desc limit ".self::LIMIT;
+    $rows = self::arr(self::sel($sql, [$pa, $a, $a, $z, ...$b]));
+    foreach ($rows as &$r) {
+      $views = (int)$r['views']; $uniq = (int)$r['uniq']; $orders = (int)$r['orders']; $prev = (int)$r['prev_views'];
+      $r['conv'] = $uniq > 0 ? round(min(100, $orders / $uniq * 100), 2) : 0;
+      $r['growth'] = $prev > 0 ? round(($views - $prev) / $prev * 100, 1) : ($views >= 20 ? 100 : 0);
+      $r['status'] = ProductTrack::status($views, $uniq, $orders, (float)$r['conv'], (int)$r['stock'], (int)$r['alert'], (float)$r['growth']);
+      unset($r['prev_views'], $r['alert'], $r['id']);
+    }
+    return $rows;
   }
 
   private static function lowStock(array $f, bool $out): array {
