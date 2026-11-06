@@ -54,7 +54,7 @@ class StockGuard {
     return self::mode($p->category_id) !== 'STOCK_CONTROLLED';
   }
   /** Storefront listings: hide what a customer cannot order (stock-controlled category at zero stock). Sourcing products stay. Direct product URLs are NOT affected. $a = table alias prefix, e.g. 'p.' */
-  public static function listable($qb, string $a = '') {
+  public static function listable($qb, string $a = 'products.') {
     $ci = self::controlledIds();
     if (!$ci) return $qb;
     return $qb->where(function ($w) use ($ci, $a) { $w->whereNull($a.'stock')->orWhere($a.'stock', '>', 0)->orWhereNotIn($a.'category_id', $ci); });
