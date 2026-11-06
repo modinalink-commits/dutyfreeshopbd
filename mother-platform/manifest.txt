@@ -759,3 +759,4 @@ resources/views/store/brand.blade.php
 database/migrations/2026_11_06_000410_ai_image_cap_600.php
 app/Support/DupGuard.php
 database/migrations/2026_11_06_000420_orders_dup_allowed.php
+database/migrations/2026_11_06_000430_link_products_to_brands.php
