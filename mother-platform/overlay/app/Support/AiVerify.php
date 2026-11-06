@@ -244,7 +244,28 @@ class AiVerify {
       DB::table('order_ai_verification_checks')->insert(array_map(fn($x) => ['history_id' => $hid, 'order_id' => $o->id, 'grp' => $x['g'], 'code' => $x['c'], 'result' => $x['r'], 'title' => $x['t'], 'detail' => $x['d'], 'points' => $x['p']], $checks));
     });
     Procure::audit('AI Verify run', 'Order #' . $o->id, $prevStatus, ['status' => $status, 'score' => $score, 'by' => $by, 'critical' => $sum['critical']]);
+    if ($status === 'verified') self::autoApprove((int)$o->id);
     return self::latest((int)$o->id);
+  }
+
+  /** Owner rule (6 Nov 2026): an order AI Verify passed must really move on, not just wear an "AI Approve" label. New -> Approved automatically, logged as System.
+   *  Held back (stays New for a person): staff override away from Verified, same-day duplicate without permission, duplicate-of order, Suspended / Review Required customer, setting ai_auto_approve = 0. */
+  public static function autoApprove(int $orderId): bool {
+    try {
+      if (Procure::set('ai_auto_approve', '1') === '0') return false;
+      $v = DB::table('order_ai_verifications')->where('order_id', $orderId)->first();
+      if (!$v || ($v->override_status ?: $v->verification_status) !== 'verified') return false;
+      $o = DB::table('orders')->find($orderId); if (!$o || $o->status !== 'New' || !empty($o->duplicate_of_order_id)) return false;
+      if (DupGuard::block($o, 'Approved')) return false;
+      if ($o->phone && in_array(CustomerBenefit::check((string)$o->phone)['status'], ['Suspended', 'Review Required'], true)) return false;
+      $moved = DB::transaction(function () use ($o, $v) {
+        if (!DB::table('orders')->where('id', $o->id)->where('status', 'New')->update(['status' => 'Approved', 'approved_at' => now(), 'auto_approved' => true, 'updated_at' => now()])) return false;
+        DB::table('order_status_logs')->insert(['order_id' => $o->id, 'user_id' => null, 'user_name' => 'System', 'from_status' => 'New', 'to_status' => 'Approved', 'note' => 'Automatically approved: AI Verify passed (score ' . (int)$v->verification_score . ')', 'created_at' => now(), 'updated_at' => now()]);
+        return true;
+      });
+      if ($moved) OrderActivity::log($orderId, 'ai_auto_approve', 'New', 'Approved', 'AI Verify passed (score ' . (int)$v->verification_score . ') · automatic', ['score' => (int)$v->verification_score]);
+      return (bool)$moved;
+    } catch (\Throwable $e) { report($e); return false; }
   }
 
   /** Staff override of the AI status only (never touches the operational order status). */
