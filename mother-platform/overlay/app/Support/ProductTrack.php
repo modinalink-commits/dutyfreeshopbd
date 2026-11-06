@@ -58,6 +58,7 @@ class ProductTrack {
     try {
       $ua = (string)$r->userAgent(); if (self::isBot($ua)) return;
       $in = json_decode((string)$r->getContent(), true); if (!is_array($in)) return;
+      if (($in['e'] ?? '') === 'px') { Capi::browse($r, $in); return; }
       $e = (string)($in['e'] ?? ''); if (!in_array($e, ['add_to_cart','checkout_started','search_click'], true)) return;
       $vid = substr(sha1($r->ip().'|'.$ua.'|'.config('app.key')), 0, 20); $dev = self::device($ua); $ids = []; $meta = null;
       if ($e === 'search_click') {

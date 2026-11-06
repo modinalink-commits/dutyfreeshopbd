@@ -59,4 +59,21 @@ class Capi
     $url = url('/order-placed'); $inv = (string)$o->invoice;
     app()->terminating(fn() => self::send('Purchase', $inv, $user, $custom, $url));
   }
+
+  /** Browser events mirrored server-side (ViewContent, AddToCart, InitiateCheckout, AddPaymentInfo, Search) with the SAME event_id as the browser pixel, so Meta de-duplicates and still counts the event when the browser pixel is blocked (ad blockers, iOS). Runs after the response. */
+  public static function browse(Request $r, array $in): void {
+    try {
+      if (!self::enabled()) return;
+      $n = (string)($in['n'] ?? ''); if (!in_array($n, ['ViewContent','AddToCart','InitiateCheckout','AddPaymentInfo','Search'], true)) return;
+      $id = preg_replace('/[^A-Za-z0-9_\-]/', '', (string)($in['id'] ?? '')); if ($id === '' || strlen($id) > 60) return;
+      if (!\Illuminate\Support\Facades\Cache::add('capi:'.$id, 1, 3600)) return;
+      $its = []; foreach (array_slice((array)($in['items'] ?? []), 0, 30) as $x) { $pid = preg_replace('/[^A-Za-z0-9_\-]/', '', (string)($x['id'] ?? '')); if ($pid === '') continue; $its[] = ['id'=>$pid, 'quantity'=>max(1, min(50, (int)($x['q'] ?? 1))), 'item_price'=>(float)($x['p'] ?? 0)]; }
+      $custom = ['currency'=>'BDT'];
+      if ($n === 'Search') { $custom['search_string'] = mb_substr(trim((string)($in['term'] ?? '')), 0, 80); $custom['content_type'] = 'product'; }
+      else { if (!$its) return; $custom += ['value'=>(float)($in['v'] ?? 0), 'content_type'=>'product', 'content_ids'=>array_column($its, 'id'), 'contents'=>$its, 'num_items'=>array_sum(array_column($its, 'quantity'))]; }
+      $user = self::user([], $_COOKIE['_fbp'] ?? null, $_COOKIE['_fbc'] ?? null, self::clientIp($r), (string)$r->userAgent());
+      $url = (string)($in['u'] ?? ''); $url = str_starts_with($url, url('/')) ? $url : url('/');
+      app()->terminating(fn() => self::send($n, $id, $user, $custom, $url));
+    } catch (\Throwable $e) {}
+  }
 }
