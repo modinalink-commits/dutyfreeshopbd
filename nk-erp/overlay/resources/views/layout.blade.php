@@ -105,7 +105,7 @@ textarea{padding:8px 10px;min-height:60px}
         'wholesale' => \App\Models\Sale::where('type', 'wholesale')->whereIn('stage', ['waiting', 'on_road'])->count(),
         'corders' => \App\Models\CustomerOrder::where('status', 'new')->count(),
         'closing' => \App\Models\Trip::whereIn('status', ['returned', 'settled'])->count(),
-        'cx' => \App\Models\CylinderExchange::where('status', 'pending')->count(),
+        'cx' => \App\Models\CylinderExchange::whereIn('status', ['pending', 'held'])->count(),
     ], ['weborders' => $newCount, 'brands' => $waitX], false))
     @php($adminOnly = ['company', 'users', 'activity', 'sms', 'hero', 'website'])
     @php($superOnly = ['supplier', 'accounts', 'vpl', 'import'])

@@ -17,7 +17,6 @@ class Roadmap
             ['pos', 'Retail sale (POS)', 'pos.index', 'POS · MobilePrint (58/80 mm) · CompanyDoc (A4)'],
             ['wholesale', 'Wholesale orders', 'wholesale.index', 'Wholesale'],
             ['customers', 'Customers & dues', 'customers.index', 'Customers'],
-            ['cx', 'Cylinder exchange', 'cx.index', 'Brand exchange: customer gives one brand empty, takes another brand full (office approval)'],
             ['sales', 'Sales list & invoices', 'sales.index', 'POS · CompanyDoc'],
             ['weborders', 'Website orders', 'orders.index', 'Order form on nklpgbd.com'],
             ['corders', 'Customer orders', 'corders.index', 'CustomerOrders (customer app requests, needs Route sales and Customer portal)'],
@@ -32,9 +31,10 @@ class Roadmap
             ['closing', 'Daily closing', 'trips.closing', 'Closing · ClosingWizard'],
             ['vpl', 'Vehicle profit', 'fleet.profit', 'VehiclePL'],
         ],
-        'STOCK' => [
+        'INVENTORY & CYLINDERS' => [
             ['stock', 'Stock & cylinders', 'stock.index', 'Stock'],
             ['brands', 'Cylinder brands', 'brands.index', 'BrandMaster'],
+            ['cx', 'Cylinder exchange', 'cx.index', 'Exchange dashboard · entry · approval · brand settlement · reports (NK spec: Cylinder Exchange & Brand Settlement)'],
             ['products', 'Products & prices', 'products.index', 'POS · Wholesale price lists'],
         ],
         'COMPANY' => [

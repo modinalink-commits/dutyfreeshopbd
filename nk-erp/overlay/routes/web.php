@@ -132,14 +132,21 @@ Route::middleware(['auth', 'pwd'])->group(function () {
         Route::get('/wholesale', [WholesaleController::class, 'index'])->name('wholesale.index');
         Route::get('/products', [ProductController::class, 'index'])->name('products.index');
         Route::get('/cylinder-exchange', [CylinderExchangeController::class, 'index'])->name('cx.index');
-        Route::get('/cylinder-exchange/quote', [CylinderExchangeController::class, 'quote'])->name('cx.quote');
+        Route::post('/cylinder-exchange/quote', [CylinderExchangeController::class, 'quote'])->name('cx.quote')->middleware('throttle:120,1');
+        Route::get('/cylinder-exchange/doc', [CylinderExchangeController::class, 'doc'])->name('cx.doc');
         Route::post('/cylinder-exchange', [CylinderExchangeController::class, 'store'])->name('cx.store');
     });
     Route::middleware('role:super_admin,admin,manager')->group(function () {
         Route::post('/cylinder-exchange/{exchange}/approve', [CylinderExchangeController::class, 'approve'])->name('cx.approve');
         Route::post('/cylinder-exchange/{exchange}/reject', [CylinderExchangeController::class, 'reject'])->name('cx.reject');
     });
-    Route::post('/cylinder-exchange/charges', [CylinderExchangeController::class, 'saveCharges'])->name('cx.charges')->middleware('role:super_admin,admin');
+    Route::middleware('role:super_admin,admin')->group(function () {
+        Route::post('/cylinder-exchange/charges', [CylinderExchangeController::class, 'saveCharges'])->name('cx.charges');
+        Route::post('/cylinder-exchange/types', [CylinderExchangeController::class, 'saveTypes'])->name('cx.types');
+        Route::post('/cylinder-exchange/rule/{brand}', [CylinderExchangeController::class, 'saveRule'])->name('cx.rule');
+        Route::post('/cylinder-exchange/settle', [CylinderExchangeController::class, 'settle'])->name('cx.settle');
+        Route::post('/cylinder-exchange/{exchange}/reverse', [CylinderExchangeController::class, 'reverse'])->name('cx.reverse');
+    });
 
     Route::middleware('role:super_admin,admin,manager')->group(function () {
         Route::post('/wholesale', [WholesaleController::class, 'store'])->name('wholesale.store');

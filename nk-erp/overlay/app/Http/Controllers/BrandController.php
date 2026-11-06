@@ -131,9 +131,9 @@ class BrandController extends Controller
             'customer cylinders' => \App\Models\CustomerCylinder::query()->where('brand_id', $brand->id)->count(),
             'brand exchanges' => BrandExchange::query()->where('from_brand_id', $brand->id)->orWhere('to_brand_id', $brand->id)->count(),
         ];
-        if (class_exists(\App\Models\CylinderExchange::class)) {
-            $uses['cylinder exchanges'] = \App\Models\CylinderExchange::query()->where('given_brand_id', $brand->id)->orWhere('taken_brand_id', $brand->id)->count();
-        }
+        $uses['cylinder exchanges'] = \App\Models\CylinderExchange::query()->where('given_brand_id', $brand->id)->orWhere('taken_brand_id', $brand->id)->count()
+            + \App\Models\CylinderExchangeLine::query()->where('in_brand_id', $brand->id)->orWhere('out_brand_id', $brand->id)->count();
+        $uses['brand settlement entries'] = \App\Models\BrandSettlement::query()->where('brand_id', $brand->id)->count();
         $used = array_filter($uses);
         if ($used) {
             $list = implode(', ', array_map(fn ($k, $v) => "{$v} {$k}", array_keys($used), $used));

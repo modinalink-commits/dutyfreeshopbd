@@ -8,11 +8,17 @@ class Brand extends Model
 {
     public const SIZES = [12, 35, 45];
 
-    protected $fillable = ['code', 'name', 'company_name', 'sizes', 'is_active', 'for_sale', 'empty_collection', 'remarks', 'images'];
+    protected $fillable = ['code', 'name', 'company_name', 'sizes', 'is_active', 'for_sale', 'empty_collection', 'remarks', 'images',
+        'exchange_allowed', 'exchange_partner', 'ownership_policy', 'agreement_ref', 'deposit_rule', 'settlement_rule', 'fee_rule'];
+
+    public const OWNERSHIP = ['swap' => 'Ownership passes with the swap', 'brand_owned' => 'Stays with the brand (settle with them)', 'deposit' => 'Customer deposit cylinder'];
+
+    /** Cross-brand exchange with this brand is allowed only with an approved agreement on record. */
+    public function exchangeAuthorized(): bool { return $this->for_sale || ($this->is_active && $this->exchange_allowed && $this->exchange_partner && trim((string) $this->agreement_ref) !== ''); }
 
     protected function casts(): array
     {
-        return ['sizes' => 'array', 'is_active' => 'boolean', 'for_sale' => 'boolean', 'empty_collection' => 'boolean', 'images' => 'array'];
+        return ['sizes' => 'array', 'is_active' => 'boolean', 'for_sale' => 'boolean', 'empty_collection' => 'boolean', 'images' => 'array', 'exchange_allowed' => 'boolean', 'exchange_partner' => 'boolean'];
     }
 
     public function movements()
