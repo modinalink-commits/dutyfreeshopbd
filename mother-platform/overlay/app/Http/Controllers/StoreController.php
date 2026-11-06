@@ -90,16 +90,16 @@ class StoreController extends Controller {
   }
   /** Front-page globe banner: every published product of the Cigarette & Vape category (in-stock first), cached 5 minutes. */
   public static function globeProducts() {
-    return self::rem('store.globe_products', 300, function () {
+    return self::rem('store.globe_products2', 300, function () {
       $sc = DB::table('categories')->get(['id','slug','name'])->filter(fn($c) => self::isSmokeCat($c))->pluck('id')->all();
-      $q = DB::table('products')->where('published', true)->whereNotNull('image')->where('image', '!=', '')->where(function ($w) use ($sc) { $w->where('group_key', 'smoke'); if ($sc) $w->orWhereIn('category_id', $sc); });
+      $q = \App\Support\StockGuard::listable(DB::table('products')->where('published', true))->whereNotNull('image')->where('image', '!=', '')->where(function ($w) use ($sc) { $w->where('group_key', 'smoke'); if ($sc) $w->orWhereIn('category_id', $sc); });
       return $q->orderByRaw('coalesce(stock,0) > 0 desc')->orderByDesc('id')->limit(60)->get();
     });
   }
   public static function dealBase(float $min = 0, ?string $scope = null) {
     $ex = DB::table('deal_flags')->where('mode','exclude')->pluck('product_id')->all();
     $pin = array_map('intval', DB::table('deal_flags')->where('mode','pin')->pluck('product_id')->all());
-    $q = DB::table('products')->where('published',true)->whereColumn('compare_price','>','price')->where('compare_price','>',0);
+    $q = \App\Support\StockGuard::listable(DB::table('products')->where('published',true))->whereColumn('compare_price','>','price')->where('compare_price','>',0);
     if ($scope !== null) {
       $sc = DB::table('categories')->get(['id','slug','name'])->filter(fn($c) => self::isSmokeCat($c))->pluck('id')->all();
       if ($scope === 'smoke') $q->where(function ($w) use ($sc) { $w->where('group_key','smoke'); if ($sc) $w->orWhereIn('category_id', $sc); });
@@ -135,7 +135,7 @@ class StoreController extends Controller {
     $areas = \App\Support\Delivery::options();
     return $x + ['s'=>$s, 'cats'=>$this->cats(), 'subs'=>$this->subs(), 'wa'=>$wa, 'areas'=>$areas, 'rules'=>$this->rules()];
   }
-  private function q() { return DB::table('products')->where('published',true); }
+  private function q() { return \App\Support\StockGuard::listable(DB::table('products')->where('published',true)); }
   private function sorted($q, $sort) {
     return match ($sort) { 'price_asc'=>$q->orderBy('price'), 'price_desc'=>$q->orderByDesc('price'), 'popular'=>$q->orderByDesc('stock'), default=>$q->orderByDesc('id') };
   }
@@ -152,8 +152,8 @@ class StoreController extends Controller {
   const HOME_DESC = 'আন্তর্জাতিক মানের সকল অরিজিনাল ইমপোর্টেড পণ্য এক জায়গায়: পারফিউম, আতর, স্কিন কেয়ার, হেয়ার কেয়ার, বেবি প্রোডাক্ট ও ডেইলি নিডস। ক্যাশ অন ডেলিভারি, সারা বাংলাদেশে হোম ডেলিভারি।';
   public function home() {
     $s = self::set();
-    $data = self::rem('store.home9', 300, function () use ($s) {
-      $pub = fn() => DB::table('products')->where('published',true);
+    $data = self::rem('store.home10', 300, function () use ($s) {
+      $pub = fn() => \App\Support\StockGuard::listable(DB::table('products')->where('published',true));
       $sold = DB::table('order_items as i')->join('orders as o','o.id','=','i.order_id')->whereNotIn('o.status',['Cancel','Incomplete'])->where('o.created_at','>=',now()->subDays(7))->groupBy('i.product_id')->selectRaw('i.product_id as pid, sum(i.qty) as q')->pluck('q','pid');
       $deals = self::todayBest($s)
         ->map(function ($p) use ($sold) { $p->sold = (int)($sold[$p->id] ?? 0); return $p; });
@@ -212,8 +212,8 @@ class StoreController extends Controller {
   public static function brandSlider(): array {
     try {
       if (\App\Support\Procure::set('brand_slider_enabled', '1') === '0') return [];
-      return self::rem('store.brandslider1', 300, function () {
-        $ids = DB::table('products')->where('published', true)->whereNotNull('brand_id')->distinct()->pluck('brand_id')->all();
+      return self::rem('store.brandslider2', 300, function () {
+        $ids = \App\Support\StockGuard::listable(DB::table('products')->where('published', true))->whereNotNull('brand_id')->distinct()->pluck('brand_id')->all();
         if (!$ids) return [];
         return DB::table('brands')->where('active', true)->whereIn('id', $ids)->orderBy('position')->orderBy('name')->get(['name', 'slug'])->filter(fn($b) => trim((string)$b->slug) !== '')->map(fn($b) => ['name' => (string)$b->name, 'slug' => (string)$b->slug])->values()->all();
       });
@@ -240,7 +240,7 @@ class StoreController extends Controller {
   public function homeSec(string $slug) {
     $c = $this->cats()[$slug] ?? null; $s = self::set();
     if (!$c || $s['home_cat_sections'] !== '1') abort(404);
-    $items = self::rem('store.hsec.'.$slug, 300, fn() => DB::table('products')->where('published', true)->where('category_id', $c->id)->orderByDesc('id')->limit(6)->get());
+    $items = self::rem('store.hsec2.'.$slug, 300, fn() => \App\Support\StockGuard::listable(DB::table('products')->where('published', true))->where('category_id', $c->id)->orderByDesc('id')->limit(6)->get());
     if (!$items->count()) abort(404);
     return response()->view('store.home_sec', $this->base(['c'=>$c, 'items'=>$items, 'lazy'=>false]))->header('X-Robots-Tag', 'noindex')->header('Cache-Control', 'public, max-age=300');
   }
@@ -400,7 +400,7 @@ class StoreController extends Controller {
     $out = [];
     foreach ($this->searchRank($this->searchWhere($this->q(), $t), $t)->orderByDesc('id')->limit(8)->get(['id','ext_id','sku','name','price','image','sub','stock','category_id']) as $p) $out[] = ['t'=>'p','n'=>$p->name,'u'=>self::url($p),'i'=>$p->image,'x'=>number_format($p->price).' TK','s'=>(string)($p->sku ?: '')];
     foreach ($this->cats() as $c) if (stripos($c->name, $t) !== false) $out[] = ['t'=>'c','n'=>$c->name,'u'=>'/'.$c->slug.'/'];
-    foreach (DB::table('products')->where('published',true)->where('sub','ilike',$like)->select('category_id','sub')->distinct()->limit(3)->get() as $b) { $c = $this->cats()->firstWhere('id',$b->category_id); if ($c) $out[] = ['t'=>'b','n'=>$b->sub,'u'=>'/'.$c->slug.'/?sub='.rawurlencode($b->sub)]; }
+    foreach (\App\Support\StockGuard::listable(DB::table('products')->where('published',true))->where('sub','ilike',$like)->select('category_id','sub')->distinct()->limit(3)->get() as $b) { $c = $this->cats()->firstWhere('id',$b->category_id); if ($c) $out[] = ['t'=>'b','n'=>$b->sub,'u'=>'/'.$c->slug.'/?sub='.rawurlencode($b->sub)]; }
     return response()->json($out)->header('Cache-Control','public, max-age=60');
   }
   public function checkout() {

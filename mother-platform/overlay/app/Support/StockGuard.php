@@ -53,6 +53,12 @@ class StockGuard {
     if (!isset($p->category_id)) return false; // category unknown: keep the old behaviour
     return self::mode($p->category_id) !== 'STOCK_CONTROLLED';
   }
+  /** Storefront listings: hide what a customer cannot order (stock-controlled category at zero stock). Sourcing products stay. Direct product URLs are NOT affected. $a = table alias prefix, e.g. 'p.' */
+  public static function listable($qb, string $a = '') {
+    $ci = self::controlledIds();
+    if (!$ci) return $qb;
+    return $qb->where(function ($w) use ($ci, $a) { $w->whereNull($a.'stock')->orWhere($a.'stock', '>', 0)->orWhereNotIn($a.'category_id', $ci); });
+  }
   /** Shipment validation (Hybrid Costing): null when the order may ship, otherwise the red alert text.
    *  1. every product must have the stock (No Stock = No Shipment, every category);
    *  2. revenue after all discounts must stay at or above the ACTUAL FIFO batch cost x (1 + protected profit %). */

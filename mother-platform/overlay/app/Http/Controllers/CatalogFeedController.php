@@ -12,7 +12,7 @@ class CatalogFeedController extends Controller {
       $brands = DB::table('brands')->pluck('name', 'id')->all();
       $cats = DB::table('categories')->pluck('name', 'id')->all();
       $o = '<?xml version="1.0" encoding="UTF-8"?>' . "\n" . '<rss xmlns:g="http://base.google.com/ns/1.0" version="2.0"><channel><title>DutyFreeBD</title><link>' . self::BASE . '</link><description>DutyFreeBD product feed</description>' . "\n";
-      foreach (DB::table('products')->where('published', true)->where('price', '>', 0)->where(fn($q) => $q->whereNull('group_key')->orWhere('group_key', '!=', 'smoke'))->whereNotIn('ext_id', self::BLOCKED)->orderBy('id')->cursor() as $p) {
+      foreach (\App\Support\StockGuard::listable(DB::table('products')->where('published', true))->where('price', '>', 0)->where(fn($q) => $q->whereNull('group_key')->orWhere('group_key', '!=', 'smoke'))->whereNotIn('ext_id', self::BLOCKED)->orderBy('id')->cursor() as $p) {
         $id = (string)(($p->ext_id ?? null) ?: $p->id);
         $img = trim((string)$p->image); if ($img === '') continue;
         if (!preg_match('#^https?://#i', $img)) $img = self::BASE . '/' . ltrim($img, '/');
