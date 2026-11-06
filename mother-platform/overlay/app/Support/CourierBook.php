@@ -43,7 +43,7 @@ class CourierBook {
   }
   /** Delivered parcels whose money the courier has not paid yet, per courier: [courier => [parcels, amount]]. */
   public static function receivable(): array {
-    $rows = DB::table('orders')->where('courier_stage', 'Delivered')->whereNull('pathao_settled_at')->whereNotNull('consignment_id')
+    $rows = DB::table('orders')->where('courier_stage', 'Delivered')->whereNull('pathao_settled_at')->whereNotNull('consignment_id')->where('courier_delivered_at', '>=', '2026-11-01')
       ->groupBy('courier')->selectRaw("coalesce(courier,'Pathao') c, count(*) n, coalesce(sum(coalesce(collected_amount, courier_cod, total)),0) s")->get();
     $o = []; foreach ($rows as $r) $o[$r->c] = [(int)$r->n, (float)$r->s]; return $o;
   }
