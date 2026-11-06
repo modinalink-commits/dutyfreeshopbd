@@ -50,7 +50,7 @@ d787924ace3fa42cc66a3de321e4e94e784006d8 resources/views/panels/employees.blade.
 16d44d41f6b845877a906678b144cbc1233a96f5 resources/views/report_details.blade.php
 2f840d53881d8aeaf0c5959161774787e5f540bc database/migrations/2026_10_31_000005_storefront.php
 65414d9e2fbe5f16f1fbf1551cce91276e9f30f9 app/Console/Commands/MotherSyncFeed.php
-a7de61b278521681ceaa50861ddb98405a6da773 app/Http/Controllers/StoreController.php
+e691cb034fc330b214705ca09f2040c3e5d8819e app/Http/Controllers/StoreController.php
 e1ff7cb5e1c7465547a1830f4ee1795766cc7be9 resources/views/store/layout.blade.php
 eab3909c69947b17ed5d5f2d5e3d1f7b0b564481 resources/views/store/card.blade.php
 4a5eb7ee8d7960886fcb97c690bbb604ec69eb1f resources/views/store/home_sec.blade.php
@@ -61,7 +61,7 @@ a4a66cd469107a9c95152e10ebaa760f3b656316 resources/views/store/home.blade.php
 4b9c2c9d102c4157f1559bb68f4665d1899a329d resources/views/store/track.blade.php
 1aa52e9a1cc85e3723d11055b65e301c5f2dc0c1 resources/views/store/page.blade.php
 06722f66390bb7e2d70f564ee2dd0dededd9a2b7 resources/views/store/missing.blade.php
-564d9ff1d6752162aed0a4f360ac9f66c5b983c8 resources/views/store/checkout.blade.php
+b47ba8398ec4e888a37776900c72daffe541a371 resources/views/store/checkout.blade.php
 489914b032190e3b4829e30e4ecd23d360cba692 resources/views/store/wishlist.blade.php
 235faa7782db79978ab56db0a0ec2e7bcaf1f769 resources/views/store/live_cards.blade.php
 2ef9d2ce29b5cdba899fa44342de8f0b8559ff13 resources/views/store/pager.blade.php
@@ -782,3 +782,4 @@ f00c74b891a2be41811c78203e1e8bb4a6a2bbb2 database/migrations/2026_11_06_000510_c
 818dff3bb81cba3626cf7408278d15ac3c9ea3a2 app/Http/Controllers/CustomerBenefitController.php
 24a59692504405ef7ccb83745bb8dca3a5d46059 resources/views/customer_benefit.blade.php
 a831ad5914e8ef7bf7f9b311ab1cced217d72b4b database/migrations/2026_11_06_000520_order_benefit_snapshot.php
+506e8b5d92dd76117334e2d9d647835670e3fd3f database/migrations/2026_11_06_000530_order_checkout_snapshot.php

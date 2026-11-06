@@ -426,13 +426,35 @@ class StoreController extends Controller {
     $tot += $left >= 2 ? $tier($left) : $u * $left;
     return round(min($tot, $plain), 2);
   }
-  /** Policy snapshot saved with the order so later benefit changes never rewrite history. */
-  private static function benefitSnap(?string $phone, array $app, $profile): array {
+  /** Policy snapshot saved with the order so later benefit changes never rewrite history (spec: checkout pricing snapshot + discount breakdown). */
+  private static function benefitSnap(?string $phone, array $app, $profile, array $cand = []): array {
     try {
-      if (!$phone || !self::rem('store.bsnapcol', 600, fn() => \Illuminate\Support\Facades\Schema::hasColumn('orders', 'benefit_status_snapshot'))) return [];
+      if (!$phone) return [];
+      $cols = self::rem('store.orders.cols', 600, fn() => array_flip(\Illuminate\Support\Facades\Schema::getColumnListing('orders')));
       $b = \App\Support\CustomerBenefit::check($phone);
-      return ['benefit_status_snapshot'=>$b['status'], 'benefit_reason_snapshot'=>mb_substr(implode(',', $b['reasons']), 0, 190), 'membership_snapshot'=>mb_substr((string)($profile['membership_name'] ?? ''), 0, 60) ?: null, 'discount_type_snapshot'=>mb_substr(implode(', ', array_map(fn($l) => (string)($l['type'] ?? $l['key'] ?? ''), $app)), 0, 190) ?: null];
+      $row = ['benefit_status_snapshot'=>$b['status'], 'benefit_reason_snapshot'=>mb_substr(implode(',', $b['reasons']), 0, 190), 'membership_snapshot'=>mb_substr((string)($profile['membership_name'] ?? ''), 0, 60) ?: null, 'discount_type_snapshot'=>mb_substr(implode(', ', array_map(fn($l) => (string)($l['type'] ?? $l['key'] ?? ''), $app)), 0, 190) ?: null,
+        'successful_received_count_snapshot'=>(int)$b['received'],
+        'applied_discounts_snapshot'=>json_encode(array_map(fn($l) => ['type'=>$l['type'] ?? null, 'source'=>$l['source'] ?? null, 'name'=>$l['label'] ?? null, 'value'=>$l['pct'] ?? null, 'amount'=>$l['amount'] ?? null, 'rule'=>$l['rule'] ?? null, 'reason'=>'Eligible: '.$b['status'].', received '.$b['received']], $app), JSON_UNESCAPED_UNICODE),
+        'available_discounts_snapshot'=>json_encode(array_map(fn($l) => ['type'=>$l['type'] ?? null, 'amount'=>$l['amount'] ?? null, 'applied'=>!empty($l['applied'])], $cand), JSON_UNESCAPED_UNICODE)];
+      return array_intersect_key($row, $cols);
     } catch (\Throwable $e) { return []; }
+  }
+  /** Customer-friendly benefits block for the checkout panel. Never carries fraud / risk / staff details. */
+  private static function benefitsView(string $phone, array $q, \Illuminate\Http\Request $r): array {
+    try {
+      $items = [];
+      foreach (($q['cand'] ?? []) as $l) { $ap = !empty($l['applied']); if (!$ap && ($l['key'] ?? '') === 'coupon') continue; $items[] = ['label'=>(string)($l['label'] ?? $l['type'] ?? ''), 'state'=>$ap ? 'applied' : 'available', 'amount'=>(float)($l['amount'] ?? 0)]; }
+      if (!empty($q['ship_free']) && (float)($q['ship_orig'] ?? 0) > 0) array_unshift($items, ['label'=>'Free Delivery', 'state'=>'applied', 'amount'=>0]);
+      $c = \App\Support\OrderDiscount::customer($phone);
+      if (!$c) return ['state'=>'new', 'msg'=>'New Customer — loyalty benefits begin after your first successfully received order.', 'items'=>$items];
+      $k = 'co.bn.'.md5((string)$r->ip()); \Illuminate\Support\Facades\Cache::add($k, 0, 3600); $show = (int)\Illuminate\Support\Facades\Cache::get($k, 0) < 60; \Illuminate\Support\Facades\Cache::increment($k);
+      $b = \App\Support\CustomerBenefit::check($phone, $c); $held = in_array($b['status'], ['Review Required', 'Suspended'], true);
+      $tier = \App\Support\OrderDiscount::tier($phone, $c);
+      $out = ['state'=>'known', 'status'=>$held ? 'Not Eligible' : $b['status'], 'items'=>$held ? [] : $items, 'msg'=>$held ? 'Some customer benefits are currently unavailable for this order.' : ($b['received'] < 1 ? 'Membership and loyalty offers start after your first successfully received order.' : '✓ Welcome back. Your saved information and eligible benefits have been loaded.')];
+      if ($show) { $out['membership'] = $tier['name'] ?? null; $out['received'] = (int)$b['received']; $out['rate'] = $b['rate'] !== null ? (int)round($b['rate']) : null; }
+      if ($held) $out['items'] = array_values(array_filter($items, fn($i) => !preg_match('/Membership|VIP|Returning|Birthday|Welcome|Referral/i', $i['label'])));
+      return $out;
+    } catch (\Throwable $e) { return ['state'=>'error', 'msg'=>'Unable to load customer benefits right now.', 'items'=>[]]; }
   }
   /** One price calculation for the cart, the checkout and the saved order. */
   private function quote(array $want, int $area, string $code, ?string $phone = null, bool $verified = false, string $addr = ''): array {
@@ -448,7 +470,7 @@ class StoreController extends Controller {
     $cOk = null; $cmsg = $eng['coupon_error'] ?? ''; foreach ($app as $l) if (($l['key'] ?? '') === 'coupon') { $cOk = $l['code']; $cmsg = 'Coupon applied: '.self::tk($l['amount']).' off'; }
     if ($code !== '' && !$cOk && !$cmsg) $cmsg = $eng['free_ship'] ? 'Free delivery applied' : 'Coupon is valid but another discount is already better for this order';
     $disc = min($disc, $sub);
-    return ['items'=>$items, 'sub'=>$sub, 'ship'=>$items ? $ship : 0, 'disc'=>$disc, 'total'=>$items ? $sub + $ship - $disc : 0, 'coupon'=>$cOk, 'coupon_msg'=>$cmsg, 'notes'=>$notes, 'applied'=>$app, 'profile'=>$eng['profile'], 'zone'=>$dv['zone'], 'ship_orig'=>$dv['original'], 'ship_free'=>(bool)$dv['free'], 'ship_unlocked'=>(bool)$dv['unlocked'], 'dv'=>$dv, 'bsnap'=>self::benefitSnap($phone, $app, $eng['profile'] ?? null)];
+    return ['items'=>$items, 'sub'=>$sub, 'ship'=>$items ? $ship : 0, 'disc'=>$disc, 'total'=>$items ? $sub + $ship - $disc : 0, 'coupon'=>$cOk, 'coupon_msg'=>$cmsg, 'notes'=>$notes, 'applied'=>$app, 'profile'=>$eng['profile'], 'zone'=>$dv['zone'], 'ship_orig'=>$dv['original'], 'ship_free'=>(bool)$dv['free'], 'ship_unlocked'=>(bool)$dv['unlocked'], 'dv'=>$dv, 'cand'=>$eng['lines'] ?? [], 'bsnap'=>self::benefitSnap($phone, $app, $eng['profile'] ?? null, $eng['lines'] ?? [])];
   }
   public function cartItems(Request $r) {
     $sp = \App\Support\OrderDiscount::sessionPhone($r); $ph = null;
@@ -458,6 +480,7 @@ class StoreController extends Controller {
     elseif (!$sp && $t) $ph = $t;
     $q = $this->quote($this->parseItems($r->input('ids')), (int)$r->input('area', 1), trim(mb_substr((string)$r->input('code'), 0, 40)), $sp ?: $ph, (bool)$sp, mb_substr((string)$r->input('addr'), 0, 300));
     if ($ph) $q['profile'] = null;
+    $q['benefits'] = $t ? self::benefitsView($t, $q, $r) : null; unset($q['cand'], $q['bsnap']);
     return response()->json($q)->header('Cache-Control','no-store');
   }
   /** Checkout progress tracking: one "incomplete order" per browser session, updated as the customer types. Never confirms, never sends SMS, never touches stock or courier. */
@@ -538,6 +561,7 @@ class StoreController extends Controller {
       foreach ($qt['items'] as $it) DB::table('order_items')->insert(['order_id'=>$id,'product_id'=>$it['id'],'name'=>$it['name'],'qty'=>$it['qty'],'price'=>$it['price'],'created_at'=>now(),'updated_at'=>now()] + \App\Support\BundlePricing::snapshot((int)$it['id'], (int)$it['qty'], (float)$it['price'], (float)$it['line']));
       if ($qt['coupon'] && !DB::table('coupons')->where('code',$qt['coupon'])->where(fn($q) => $q->whereNull('usage_limit')->orWhere('usage_limit', 0)->orWhereColumn('used_count', '<', 'usage_limit'))->increment('used_count')) throw new \RuntimeException('coupon_used_up'); // atomic: the last use cannot be taken twice
       DB::table('order_status_logs')->insert(['order_id'=>$id,'user_id'=>null,'user_name'=>'Website','from_status'=>null,'to_status'=>'New','note'=>$pm['status'] === 'Awaiting Payment' ? 'Order placed on website. Awaiting online payment (ShurjoPay)' : ($pm['status'] ? 'Order placed on website. Payment Verification Pending ('.$pm['label'].', ref '.$pm['txn'].')' : 'Order placed on website'),'created_at'=>now(),'updated_at'=>now()]);
+      try { \App\Support\OrderActivity::log((int)$id, 'checkout_discounts', null, null, 'Benefits checked at checkout · applied: '.(implode(', ', array_map(fn($l) => ($l['type'] ?? '').' ৳'.number_format((float)($l['amount'] ?? 0)), $qt['applied'])) ?: 'none').' · total discount ৳'.number_format((float)$qt['disc']).' · payable ৳'.number_format((float)$qt['total'])); } catch (\Throwable $e) {}
       return $id;
     });
     } catch (\Illuminate\Database\QueryException $e) {

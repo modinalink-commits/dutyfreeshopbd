@@ -782,3 +782,4 @@ database/migrations/2026_11_06_000510_courier_note_audit.php
 app/Http/Controllers/CustomerBenefitController.php
 resources/views/customer_benefit.blade.php
 database/migrations/2026_11_06_000520_order_benefit_snapshot.php
+database/migrations/2026_11_06_000530_order_checkout_snapshot.php
