@@ -28,6 +28,7 @@
       <p class="sub">No products yet. Add them in Products &amp; prices.</p>
       @endforelse
     </div>
+    @if(! empty($hiddenUnpriced))<p class="sub" style="margin:8px 0 0">{{ $hiddenUnpriced }} other-brand products are hidden until they have a price in <a href="{{ route('products.index') }}">Products &amp; prices</a>.</p>@endif
   </section>
   <aside class="card" style="flex:1 1 340px;min-width:min(300px,100%);padding:20px;display:flex;flex-direction:column;gap:14px">
     <h2 style="margin:0;font-size:var(--fs-15)">Memo</h2>

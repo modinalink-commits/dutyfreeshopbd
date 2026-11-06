@@ -92,7 +92,8 @@ class BrandController extends Controller
             AuditLog::record('brand_created', $brand->code.' '.$brand->name);
         }
 
-        return redirect()->route('brands.index')->with('ok', "{$brand->name} saved.");
+        $made = \App\Models\Product::syncBrand($brand);
+        return redirect()->route('brands.index')->with('ok', "{$brand->name} saved.".($made ? " {$made} products added to Products & prices — set their prices there." : ''));
     }
 
     /** Upload or replace the photo of one brand's cylinder at one size. Products of that brand and size that used the old picture follow. */

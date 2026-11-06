@@ -103,6 +103,11 @@ class NkInstall extends Command
             $this->info("{$n} brands set Active.");
         }
 
+        // Every active brand gets its Refill / New package products (with photo) in Products & prices.
+        $made = 0;
+        foreach (Brand::query()->where('is_active', true)->orderBy('code')->get() as $b) $made += Product::syncBrand($b);
+        if ($made) $this->info("{$made} brand products added.");
+
         return self::SUCCESS;
     }
 }

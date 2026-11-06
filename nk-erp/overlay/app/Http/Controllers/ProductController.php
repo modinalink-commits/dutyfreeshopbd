@@ -14,7 +14,8 @@ class ProductController extends Controller
 {
     public function index(Request $request)
     {
-        $products = Product::query()->with('brand')->orderBy('category')->orderBy('size_kg')->orderBy('name')->get();
+        $products = Product::query()->with('brand')->get()
+            ->sortBy(fn ($p) => [$p->brand ? ($p->brand->for_sale ? 0 : 1) : 2, $p->brand?->name ?? 'zzz', $p->category === 'refill' ? 0 : ($p->category === 'new_package' ? 1 : 2), (float) $p->size_kg, $p->name])->values();
         return view('products', [
             'products' => $products,
             'brands' => Brand::query()->where('for_sale', true)->orderBy('code')->get(),

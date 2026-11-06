@@ -18,12 +18,18 @@ label.pup:hover{background:#eef2f9}
 .ph-drop img,.ph-drop .ph0{width:96px;height:96px;border-radius:10px;object-fit:contain;background:#fff;border:1px solid var(--border-soft,#e2e6ea);flex-shrink:0}
 .ph-drop .ph0{display:flex;align-items:center;justify-content:center;color:#9aa6bd;font-size:var(--fs-12)}
 </style>
-<div class="dt-wrap"><table class="dt">
+<div class="dt-tools">
+  <input type="search" id="pq" placeholder="Search product, brand or code…" aria-label="Search products">
+  <select id="pb" aria-label="Brand"><option value="">All brands</option>@foreach($products->pluck('brand.name')->filter()->unique()->sort() as $bn)<option>{{ $bn }}</option>@endforeach</select>
+  <select id="pp" aria-label="Price"><option value="">All prices</option><option value="set">Price set</option><option value="none">No price yet</option></select>
+  <span class="sub" id="pn" style="margin:0"></span>
+</div>
+<div class="dt-wrap"><table class="dt" id="ptab">
   <thead><tr><th class="no-sort">Photo</th><th>Code</th><th>Product</th><th>Category</th><th>Brand</th><th>Size</th><th>Retail price</th><th>Dealer price</th><th>In stock</th><th>Status</th>@if($admin)<th class="no-sort"></th>@endif</tr></thead>
   <tbody>
   @foreach($products as $p)
     @php($av = $p->available())
-    <tr>
+    <tr data-brand="{{ $p->brand?->name }}" data-price="{{ $p->retail_price !== null ? 'set' : 'none' }}">
       <td class="c pcell">
         @if($admin)
           <form method="post" action="{{ route('products.photo', $p) }}" enctype="multipart/form-data">@csrf
@@ -52,6 +58,11 @@ label.pup:hover{background:#eef2f9}
   @endforeach
   </tbody>
 </table></div>
+<script>
+(function(){var q=document.getElementById('pq'),b=document.getElementById('pb'),pp=document.getElementById('pp'),n=document.getElementById('pn'),rows=[].slice.call(document.querySelectorAll('#ptab tbody tr'));
+function f(){var t=q.value.trim().toLowerCase(),c=0;rows.forEach(function(r){var ok=(!t||r.innerText.toLowerCase().indexOf(t)>=0)&&(!b.value||r.dataset.brand===b.value)&&(!pp.value||r.dataset.price===pp.value);r.hidden=!ok;if(ok)c++;});n.textContent=c+' of '+rows.length+' products';}
+[q,b,pp].forEach(function(e){e.addEventListener('input',f);});f();})();
+</script>
 @if($admin)
 <form id="product-form" class="card pad" method="post" action="{{ route('products.save') }}" enctype="multipart/form-data" style="display:flex;flex-direction:column;gap:12px;max-width:760px">
   @csrf

@@ -35,7 +35,8 @@ class WholesaleController extends Controller
             ],
             'dealers' => $dealers = Customer::query()->where('is_active', true)->whereIn('type', ['dealer', 'commercial'])->orderBy('name')->get(),
             'dealerInfo' => $dealers->mapWithKeys(fn ($d) => [$d->id => ['due' => $d->due(), 'limit' => (float) $d->credit_limit, 'out' => array_sum($d->cylindersOut())]]),
-            'products' => Product::query()->where('is_active', true)->whereIn('category', ['refill', 'new_package', 'accessory'])->orderBy('category')->orderBy('size_kg')->get(),
+            'products' => Product::query()->with('brand')->where('is_active', true)->whereIn('category', ['refill', 'new_package', 'accessory'])->orderBy('category')->orderBy('size_kg')->get()
+                ->reject(fn ($p) => $p->brand && ! $p->brand->for_sale && $p->retail_price === null && $p->dealer_price === null)->values(),
             'brands' => Brand::query()->where('empty_collection', true)->orderBy('code')->get(),
             'ownBrand' => Brand::query()->where('for_sale', true)->value('id'),
         ]);

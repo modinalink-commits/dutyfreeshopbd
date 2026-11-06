@@ -30,4 +30,28 @@ class Product extends Model
         }
         return null;
     }
+
+    /**
+     * Make sure an active brand has a Refill and a New package product for each of its sizes, with the brand's cylinder photo.
+     * Only adds what is missing; never changes prices or existing products. New ones have no price, so they cannot be sold until priced.
+     */
+    public static function syncBrand(Brand $brand): int
+    {
+        if (! $brand->is_active) return 0;
+        $made = 0;
+        foreach ([['refill', 'Refill', 'Customer returns an empty cylinder'], ['new_package', 'New package', 'Cylinder + gas, no empty needed']] as [$cat, $label, $note]) {
+            foreach (array_map('intval', $brand->sizes ?: [12]) as $size) {
+                $q = static::query()->where('brand_id', $brand->id)->where('category', $cat)->where('size_kg', $size);
+                if ($q->exists()) continue;
+                $n = (int) static::query()->max('id') + 1;
+                $code = 'P-'.str_pad((string) $n, 3, '0', STR_PAD_LEFT);
+                while (static::query()->where('code', $code)->exists()) { $n++; $code = 'P-'.str_pad((string) $n, 3, '0', STR_PAD_LEFT); }
+                $name = ($brand->for_sale ? '' : $brand->name.' ').$label.' '.$size.' kg';
+                $p = static::create(['code' => $code, 'name' => $name, 'category' => $cat, 'brand_id' => $brand->id, 'size_kg' => $size, 'note' => $note, 'is_active' => true]);
+                if ($img = $brand->img($size)) $p->forceFill(['image' => $img])->save();
+                $made++;
+            }
+        }
+        return $made;
+    }
 }

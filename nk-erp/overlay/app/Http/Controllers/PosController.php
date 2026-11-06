@@ -20,13 +20,17 @@ class PosController extends Controller
     public function index()
     {
         $products = Product::query()->with('brand')->where('is_active', true)->orderByRaw("case category when 'refill' then 1 when 'new_package' then 2 when 'accessory' then 3 else 4 end")->orderBy('size_kg')->get();
+        // Unpriced products of other brands would fill the grid with cards that cannot be sold; hide them and say how many.
+        $hidden = $products->filter(fn ($p) => $p->retail_price === null && $p->brand && ! $p->brand->for_sale)->count();
+        $products = $products->reject(fn ($p) => $p->retail_price === null && $p->brand && ! $p->brand->for_sale)
+            ->sortBy(fn ($p) => [$p->brand ? ($p->brand->for_sale ? 0 : 1) : 2, ['refill' => 1, 'new_package' => 2, 'accessory' => 3][$p->category] ?? 4, $p->brand?->name ?? '', (float) $p->size_kg])->values();
         $items = $products->map(fn ($p) => [
             'id' => $p->id, 'name' => $p->name, 'cat' => $p->category, 'img' => $p->image, 'size' => $p->size_kg ? $p->size_kg.' kg' : ($p->category === 'service' ? 'Service' : 'Part'),
             'note' => $p->note, 'price' => $p->retail_price !== null ? (float) $p->retail_price : null, 'stock' => $p->available(),
         ])->values();
 
         return view('pos', [
-            'items' => $items,
+            'items' => $items, 'hiddenUnpriced' => $hidden,
             'brands' => Brand::query()->where('empty_collection', true)->orderBy('code')->get(),
             'ownBrand' => Brand::query()->where('for_sale', true)->value('id'),
             'todayCount' => Sale::query()->where('type', 'retail')->where('stage', '!=', 'voided')->where('created_at', '>=', now()->timezone('Asia/Dhaka')->startOfDay()->utc())->count(),

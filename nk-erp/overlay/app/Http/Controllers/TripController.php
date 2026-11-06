@@ -147,7 +147,8 @@ class TripController extends Controller
     {
         $trip->load(['vehicle', 'route', 'salesman']);
         $c = TripCalc::of($trip);
-        $products = Product::query()->where('is_active', true)->whereIn('category', ['refill', 'new_package'])->orderBy('category')->orderBy('size_kg')->get();
+        $own = Brand::query()->where('for_sale', true)->value('id');
+        $products = Product::query()->where('is_active', true)->whereIn('category', ['refill', 'new_package'])->when($own, fn ($q) => $q->where('brand_id', $own))->orderBy('category')->orderBy('size_kg')->get();
         $onVehicle = [];
         foreach (Brand::SIZES as $s) $onVehicle[$s] = (int) StockMovement::query()->where('trip_id', $trip->id)->where('size_kg', $s)->sum('full_delta');
         return view('route.sales', ['trip' => $trip, 'c' => $c, 'products' => $products, 'onVehicle' => $onVehicle,

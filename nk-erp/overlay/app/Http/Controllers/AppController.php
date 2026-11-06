@@ -94,7 +94,9 @@ class AppController extends Controller
     private function prices(): array
     {
         $out = [];
-        foreach (Product::query()->where('is_active', true)->whereIn('category', ['refill', 'new_package'])->get() as $p) {
+        // The route vehicle carries our own brand only, so the app sells our brand's products.
+        $own = Brand::query()->where('for_sale', true)->value('id');
+        foreach (Product::query()->where('is_active', true)->whereIn('category', ['refill', 'new_package'])->when($own, fn ($q) => $q->where('brand_id', $own))->orderBy('id')->get() as $p) {
             $price = $p->dealer_price ?? $p->retail_price;
             if ($price === null || ! $p->size_kg) continue;
             $out[$p->size_kg][$p->category === 'refill' ? 'ex' : 'nw'] = ['id' => $p->id, 'price' => (float) $price, 'brand' => $p->brand_id, 'img' => $p->image];
