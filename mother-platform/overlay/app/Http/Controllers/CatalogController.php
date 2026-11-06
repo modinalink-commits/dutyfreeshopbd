@@ -150,7 +150,7 @@ class CatalogController extends Controller {
       }
     } catch (\Throwable $e) { report($e); } }
     if ((bool)($old->published ?? false) !== $pub && ($old || $pub)) $this->notifyStatus([$row['name']], $pub);
-    \Illuminate\Support\Facades\Cache::forget('store.home6'); \Illuminate\Support\Facades\Cache::forget('store.sitemap5');
+    \Illuminate\Support\Facades\Cache::forget('store.home6'); \Illuminate\Support\Facades\Cache::forget('store.sitemap5'); \App\Http\Controllers\StoreController::bust();
     if ($act === 'preview') return redirect('/admin/products/'.$id.'/preview');
     return redirect($act === 'draft' ? '/admin/products/'.$id.'/edit?saved=1' : '/admin/products/'.$id.'/edit?saved=1');
   }
@@ -165,6 +165,7 @@ class CatalogController extends Controller {
       DB::table('products')->where('id',$id)->update(['published'=>$new,'updated_at'=>now()] + \App\Support\StockGuard::lockCol($new));
       DB::table('product_status_logs')->insert(['product_id'=>$id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'action'=>$new?'Published':'Unpublished','created_at'=>now(),'updated_at'=>now()]);
     });
+    \App\Http\Controllers\StoreController::bust();
     $this->notifyStatus([$p->name], $new);
     return back();
   }
@@ -182,6 +183,7 @@ class CatalogController extends Controller {
     }
     \Illuminate\Support\Facades\Log::info('product deleted', ['id'=>$id,'name'=>$p->name,'by'=>Auth::user()->name ?? null]);
     foreach (['store.home6','store.sitemap5','store.globe_products','store.catalogfeed4','card_second_imgs2','ai.catalog'] as $k) \Illuminate\Support\Facades\Cache::forget($k);
+    \App\Http\Controllers\StoreController::bust();
     return back()->with('ok','Deleted: '.$p->name);
   }
   private function notifyStatus(array $names, bool $published) {
@@ -202,6 +204,7 @@ class CatalogController extends Controller {
         $names[] = $p->name;
       }
     });
+    \App\Http\Controllers\StoreController::bust();
     if ($names) $this->notifyStatus($names, $new);
     return back()->with('ok', count($names).' products '.($new?'published':'unpublished'));
   }

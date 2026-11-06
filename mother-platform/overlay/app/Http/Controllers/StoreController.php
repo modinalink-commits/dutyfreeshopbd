@@ -6,7 +6,10 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 class StoreController extends Controller {
   /** Cache helper: stores a serialized string so cached collections/objects come back intact. */
+  /** Storefront cache version: bust() makes every cached storefront block (home sections, brands, globe...) stale at once, so a publish/unpublish shows immediately. */
+  public static function bust(): void { try { Cache::forever('store.ver', (int)(microtime(true) * 1000)); } catch (\Throwable $e) {} }
   public static function rem(string $k, int $ttl, \Closure $fn) {
+    try { $k = 'v' . (Cache::get('store.ver') ?: 0) . '.' . $k; } catch (\Throwable $e) {}
     $raw = Cache::get($k);
     if (is_string($raw) && ($v = @unserialize($raw)) !== false) return $v;
     $v = $fn(); Cache::put($k, serialize($v), $ttl); return $v;
