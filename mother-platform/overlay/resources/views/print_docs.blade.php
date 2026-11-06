@@ -20,10 +20,10 @@ img{max-width:100%}.bc svg{display:block;width:100%;height:100%}
 .lbl .phone{font-size:19px;font-weight:900;letter-spacing:.3px;margin:5px 0;border-top:1px solid #000;padding-top:5px}.lbl .addr{font-size:13px;font-weight:800;border:2px solid #000;border-radius:6px;padding:7px 9px;margin:6px 0;line-height:1.35}
 .lbl .cod{border:3px solid #000;border-radius:8px;text-align:center;font-size:23px;font-weight:900;padding:4px;margin:6px 0}.lbl .cod small{display:block;font-size:11px;font-weight:700;letter-spacing:1px}
 .lbl .ex{display:flex;flex-wrap:wrap;gap:2px 16px;font-size:10.5px;border-top:1px solid #000;padding-top:5px}.lbl .ex b{color:#000}
-.inv .pcode{font-size:13px;font-weight:900;letter-spacing:.4px;margin-top:2px;line-height:1.2;color:#000;border-top:1px solid #000;padding-top:2px}
+.inv .pcode{font-size:8.5px;font-weight:600;letter-spacing:0;margin-top:2px;line-height:1.2;color:#000;white-space:nowrap}
 /* Black & white only: no colour anywhere in the printed invoice / label (barcode and QR stay black). */
 .inv .hd .brand,.lbl .hd .brand{font-weight:900;letter-spacing:.3px;color:#000;line-height:36px;font-size:20px}.lbl .hd .brand{line-height:34px;font-size:19px}
-@media print{*{color:#000 !important;background:#fff !important;box-shadow:none !important;text-shadow:none !important;-webkit-print-color-adjust:economy;print-color-adjust:economy}.inv small{color:#333 !important}.bar{display:none}.inv *,.lbl *{border-color:#000}.inv td,.inv table.items td,.inv table.items th{border-color:#777}.status-badge,.payment-badge{color:#000 !important;background:#fff !important;border:1px solid #000 !important}.bc svg,.qr svg{fill:#000 !important}.qr svg *,.bc svg *{fill:#000 !important;background:none !important}}
+@media print{*{color:#000 !important;background:#fff !important;box-shadow:none !important;text-shadow:none !important;-webkit-print-color-adjust:economy;print-color-adjust:economy}.inv small{color:#333 !important}.bar{display:none}.inv *,.lbl *{border-color:#000}.inv td,.inv table.items td,.inv table.items th{border-color:#777}.status-badge,.payment-badge{color:#000 !important;background:#fff !important;border:1px solid #000 !important}.bc svg{fill:#000 !important}.bc svg *{fill:#000 !important;background:none !important}.qr svg rect{fill:#fff !important}.qr svg path{fill:#000 !important}}
 
 </style></head><body><span id="bx-wm" hidden></span>
 <script>(function(){var ids={!! json_encode($sheets->pluck('o.id')->values()) !!},type={!! json_encode($type) !!},last=0;function log(){if(Date.now()-last<4000)return;last=Date.now();var b=(self.crypto&&crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random()).replace(/-/g,"").slice(0,32);var t=document.querySelector('meta[name=csrf-token]').content;try{fetch('/admin/orders/print-log',{method:'POST',credentials:'same-origin',keepalive:true,headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':t},body:JSON.stringify({type:type,ids:ids,batch:b,device:(navigator.platform||"").slice(0,60)})})}catch(e){}}window.addEventListener('beforeprint',log)})();</script>
@@ -59,7 +59,7 @@ img{max-width:100%}.bc svg{display:block;width:100%;height:100%}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script>
 (function(){
- function qr(){try{document.querySelectorAll('[data-qr]').forEach(function(e){var q=qrcode(0,'M');q.addData(e.getAttribute('data-qr'));q.make();e.innerHTML=q.createSvgTag({cellSize:2,margin:0,scalable:true})})}catch(x){}}
+ function qr(){try{document.querySelectorAll('[data-qr]').forEach(function(e){var q=qrcode(0,'M');q.addData(e.getAttribute('data-qr'));q.make();var n=q.getModuleCount(),m=2,d='';for(var r=0;r<n;r++)for(var c=0;c<n;c++)if(q.isDark(r,c))d+='M'+(c+m)+' '+(r+m)+'h1v1h-1z';e.innerHTML='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+(n+2*m)+' '+(n+2*m)+'" shape-rendering="crispEdges"><rect width="100%" height="100%" fill="#fff"/><path d="'+d+'" fill="#000"/></svg>'})}catch(x){}}
  qr();var done=false;function go(){if(done)return;done=true;setTimeout(function(){window.print()},400)}
  var imgs=[].slice.call(document.images),n=imgs.length;if(!n)return go();imgs.forEach(function(i){if(i.complete)--n;else{i.onload=i.onerror=function(){if(--n<=0)go()}}});if(n<=0)go();setTimeout(go,3000);
 })();
