@@ -22,6 +22,10 @@ class LedgerImport
         foreach ($ch as $x) {
             if (! empty($x['challan']) && CompanyEntry::query()->where('entry_date', $x['date'])->where('challan_no', $x['challan'])->where('size_kg', (int) $x['kg'])->exists()) $dups++;
         }
+        foreach ($dep as $x) {
+            $amt = (float) ($x['depPaid'] ?? 0) ?: (float) ($x['deposit'] ?? 0);
+            if (($x['depKind'] ?? '') !== 'comm' && CompanyEntry::query()->where('kind', 'deposit')->where('entry_date', $x['date'])->where('amount', $amt)->exists()) $dups++;
+        }
         $months = collect($j['months'] ?? []);
         $rates = collect($j['rates'] ?? []);
         $emptyRates = $rates->filter(fn ($r) => ! (float) ($r['target'] ?? 0) && ! (float) ($r['slab'] ?? 0) && ! (float) ($r['deadline'] ?? 0) && ! (float) ($r['late'] ?? 0) && ! (float) ($r['dd'] ?? 0))
@@ -75,6 +79,9 @@ class LedgerImport
                             'source' => $e['source'] ?? null, 'note' => 'Imported. Old ledger label: '.($e['challan'] ?? ''), 'created_by' => $uid]);
                     } else {
                         $paid = isset($e['depPaid']);
+                        // Same deposit already in the ledger (earlier import or typed in by hand): skip, never count it twice.
+                        if (CompanyEntry::query()->where('kind', 'deposit')->where('entry_date', $e['date'])->where('amount', $amt)
+                            ->when(($e['challan'] ?? '') !== '', fn ($q) => $q->where(fn ($w) => $w->where('challan_no', $e['challan'])->orWhereNull('challan_no')))->exists()) continue;
                         CompanyEntry::create(['entry_date' => $e['date'], 'kind' => 'deposit', 'deposit_kind' => $paid ? $o['dep_paid'] : 'bank',
                             'source' => $e['source'] ?? ($paid ? 'Deposit paid' : null), 'amount' => $amt, 'challan_no' => ($e['challan'] ?? '') ?: null,
                             'note' => $paid ? 'Imported "Deposit paid" as '.\App\Models\CompanyEntry::DEPOSIT_KINDS[$o['dep_paid']] : null, 'created_by' => $uid]);
