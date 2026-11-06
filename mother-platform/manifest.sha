@@ -5,7 +5,7 @@ fa49347714932832a112bb1104a4ec513955cb31 routes/web.php
 242316b2ef0a0967e6815e39fcbc7377349fdc17 app/Console/Commands/MotherInstall.php
 69afa4aa062c2914b68a06b4b5fb3f4c54257496 resources/views/layout.blade.php
 2b227b5ab4047c9018760d3f3da2dc1c31b55cb1 resources/views/login.blade.php
-d5cbb4ea5f122d1107433989f773d4ad7c33bc20 resources/views/dashboard.blade.php
+3db9641ae59521fbceaa9ae6a1a5589fe823eace resources/views/dashboard.blade.php
 ac24595d05812bf2746f7bee104cd94019384d65 resources/views/orders.blade.php
 c2b0402e6f704a352e9454051eb6ad9572a238ad resources/views/admin/orders/partials/status-tabs.blade.php
 0ab54098f668eecc01828e853264b0190f3d0b1e resources/views/admin/orders/partials/header-system.blade.php

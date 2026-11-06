@@ -10,7 +10,7 @@ $q = http_build_query(array_filter(['range'=>$range, 'store'=>$storeId ?: null, 
 $nT = count($trend);
 $spark = function ($a, $col, $w = 62, $h = 22) { if (!$a || count($a) < 2) return ''; $m = max(1, max($a)); $pp = []; foreach (array_values($a) as $i => $y) $pp[] = round($i/(count($a)-1)*$w,1).','.round($h-2-($y/$m)*($h-5),1); return '<svg class="sp" width="'.$w.'" height="'.$h.'" viewBox="0 0 '.$w.' '.$h.'" aria-hidden="true"><polyline points="'.implode(' ',$pp).'" fill="none" stroke="'.$col.'" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>'; };
 $P5C = ['New'=>['#1D5FA8','#E6EFF9','plus'],'Pending'=>['#C2410C','#FFF1E8','clock'],'Processing'=>['#5B3FA6','#F1EAF8','box'],'Shipment'=>['#0E7490','#E0F2FE','truck'],'Delivered'=>['#166534','#DCFCE7','check']];
-$PIPE = ['New'=>'plus','Incomplete'=>'alert','Assign'=>'users','Pending'=>'clock','AI Approve'=>'check','Scheduled'=>'clock','WFP'=>'clock','Approved'=>'check','Packaging'=>'box','Shipment'=>'truck','Partial Delivered'=>'truck','Delivered'=>'check','Late Delivery'=>'alert','Return Pending'=>'undo','Returned'=>'undo','Cancel'=>'x'];
+$PIPE = ['New'=>'plus','Incomplete'=>'alert','Assign'=>'users','Pending'=>'clock','AI Approve'=>'check','Approved'=>'check','Scheduled'=>'clock','WFP'=>'clock','Packaging'=>'box','Shipment'=>'truck','Partial Delivered'=>'truck','Delivered'=>'check','Late Delivery'=>'alert','Return Pending'=>'undo','Returned'=>'undo','Cancel'=>'x'];
 $qs = fn($extra = []) => http_build_query(array_filter(array_merge(['store'=>$storeId ?: null, 'channel'=>$ch ?: null], $extra)));
 @endphp
 <style>
