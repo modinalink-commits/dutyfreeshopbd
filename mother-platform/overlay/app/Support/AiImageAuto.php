@@ -114,9 +114,12 @@ class AiImageAuto {
       $sc = DB::table('categories')->get(['id', 'slug', 'name'])->filter(fn($c) => \App\Http\Controllers\StoreController::isSmokeCat($c))->pluck('id')->all();
       $q = DB::table('products')->where(function ($w) use ($sc) { $w->where('group_key', 'smoke'); if ($sc) $w->orWhereIn('category_id', $sc); })
         ->whereNotNull('image')->where('image', '<>', '')->where('image', 'not like', '%/uploads/ai/%')
-        ->whereNotExists(fn($x) => $x->select(DB::raw(1))->from('ai_images')->whereColumn('ai_images.product_id', 'products.id'))->orderBy('id');
-      $p = $q->first(['id', 'image']);
-      if ($p) return $claim ? [$ins($p->id, $p->image), (int)$p->id, (string)$p->image, 'smoke', null] : [0];
+        ->orderBy('id');
+      // a product still showing its original image is done only when an AI record exists for THAT image (any status, so safety-rejected ones are not retried forever)
+      foreach ($q->limit(600)->get(['id', 'image']) as $p) {
+        if ($done((int)$p->id, (string)$p->image)) continue;
+        return $claim ? [$ins($p->id, $p->image), (int)$p->id, (string)$p->image, 'smoke', null] : [0];
+      }
     }
     return null;
   }

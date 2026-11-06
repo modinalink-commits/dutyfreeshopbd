@@ -756,3 +756,4 @@ database/migrations/2026_11_06_000350_ai_image_cap_today.php
 app/Console/Commands/MotherAiImageOne.php
 database/migrations/2026_11_06_000400_brand_seo_extra.php
 resources/views/store/brand.blade.php
+database/migrations/2026_11_06_000410_ai_image_cap_600.php
