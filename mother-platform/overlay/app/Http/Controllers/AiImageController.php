@@ -48,6 +48,13 @@ class AiImageController extends Controller {
     else $id = $row->id;
     return response()->json(['id'=>$id] + AiImage::run($id));
   }
+  /** Product not saved yet: clean the image anyway; the form then uses the returned file as the cover. */
+  public function processNew(Request $r) {
+    $d = $r->validate(['url'=>'required|string|max:900']);
+    abort_unless(str_starts_with($d['url'], '/uploads/'), 422);
+    $id = DB::table('ai_images')->insertGetId(['product_id'=>0, 'source_hash'=>sha1($d['url']), 'source_url'=>$d['url'], 'ai_status'=>'pending', 'created_at'=>now(), 'updated_at'=>now()]);
+    return response()->json(['id'=>$id, 'new'=>true] + AiImage::run($id));
+  }
   public function setMain(Request $r, $id) {
     $row = DB::table('ai_images')->find($id); abort_unless($row && $row->ai_status === 'completed' && $row->processed_image, 404);
     DB::table('products')->where('id', $row->product_id)->update(['image'=>$row->processed_image, 'updated_at'=>now()]);
