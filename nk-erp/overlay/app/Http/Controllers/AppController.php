@@ -229,7 +229,7 @@ class AppController extends Controller
         [$e, $trip] = $this->ctx($request);
         $q = trim((string) $request->query('q', ''));
         $shops = Customer::query()->where('is_active', true)
-            ->when($q, fn ($x) => $x->where(fn ($w) => $w->where('name', 'ilike', "%$q%")->orWhere('phone', 'like', '%'.preg_replace('/\D/', '', $q).'%')))
+            ->when($q, fn ($x) => $x->where(fn ($w) => $w->where('name', 'ilike', "%$q%")->orWhere('shop_name', 'ilike', "%$q%")->orWhere('owner_name', 'ilike', "%$q%")->orWhere('phone', 'like', '%'.preg_replace('/\D/', '', $q).'%')))
             ->when(! $q && $trip?->route, fn ($x) => $x->where(fn ($w) => $w->whereIn('id', Sale::query()->whereIn('trip_id', Trip::query()->where('route_id', $trip->route_id)->pluck('id'))->pluck('customer_id'))->orWhere('area', 'ilike', '%'.explode(' ', $trip->route->name)[0].'%')))
             ->orderBy('name')->limit(60)->get();
         return view('app.shops', ['e' => $e, 'trip' => $trip, 'shops' => $shops, 'q' => $q, 'pick' => $request->query('pick', 'sale')]);

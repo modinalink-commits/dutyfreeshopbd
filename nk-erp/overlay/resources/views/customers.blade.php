@@ -27,7 +27,7 @@
       @php($d = (float) ($dues[$c->id] ?? 0))
       <a href="{{ route('customers.index', ['c' => $c->id, 'q' => $q, 'f' => $f]) }}" style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-top:1px solid var(--line);text-decoration:none;color:var(--ink);background:{{ $sel && $sel->id === $c->id ? '#dce8ff' : '#fff' }}">
         <span style="width:36px;height:36px;border-radius:999px;background:#e6eeff;color:#1d4ed8;display:flex;align-items:center;justify-content:center;font-size:var(--fs-12);font-weight:700;flex-shrink:0">{{ collect(explode(' ', $c->name))->map(fn ($w) => mb_substr($w, 0, 1))->take(2)->implode('') }}</span>
-        <span style="flex-grow:1;min-width:0;display:flex;flex-direction:column"><b style="font-size:var(--fs-13)">{{ $c->name }}</b><span class="sub" style="font-size:var(--fs-11);margin:0">{{ \App\Models\Customer::TYPES[$c->type] }} · {{ $c->phone }}</span></span>
+        <span style="flex-grow:1;min-width:0;display:flex;flex-direction:column"><b style="font-size:var(--fs-13)">{{ $c->name }}</b>@if($c->shop_name || $c->owner_name)<span class="sub" style="font-size:var(--fs-11);margin:0">{{ collect([$c->shop_name, $c->owner_name ? 'Owner: '.$c->owner_name : null])->filter()->implode(' · ') }}</span>@endif<span class="sub" style="font-size:var(--fs-11);margin:0">{{ \App\Models\Customer::TYPES[$c->type] }} · {{ $c->phone }}</span></span>
         <b style="font-size:var(--fs-13);color:{{ $d > 0.004 ? '#b3261e' : '#0f6b3c' }}">{{ $tk($d) }}</b>
       </a>
     @empty
@@ -42,7 +42,9 @@
       <h2 style="margin:0;font-size:var(--fs-15)">{{ $edit->exists ? 'Edit '.$edit->name : 'Add customer' }}</h2>
       @if($edit->exists)<input type="hidden" name="id" value="{{ $edit->id }}">@endif
       <div class="grid2">
-        <label class="f">Name<input type="text" name="name" value="{{ old('name', $edit->name) }}" required></label>
+        <label class="f">Customer name<input type="text" name="name" value="{{ old('name', $edit->name) }}" required></label>
+        <label class="f">Shop name<input type="text" name="shop_name" value="{{ old('shop_name', $edit->shop_name) }}" placeholder="e.g. Rahim Store"></label>
+        <label class="f">Owner name<input type="text" name="owner_name" value="{{ old('owner_name', $edit->owner_name) }}" placeholder="Shop owner"></label>
         <label class="f">Mobile<input type="tel" name="phone" value="{{ old('phone', $edit->phone) }}" placeholder="01XXXXXXXXX" required></label>
         <label class="f">Type<select name="type">@foreach(\App\Models\Customer::TYPES as $k => $l)<option value="{{ $k }}" @selected(old('type', $edit->type) === $k)>{{ $l }}</option>@endforeach</select></label>
         <label class="f">Area / bazar<input type="text" name="area" value="{{ old('area', $edit->area) }}"></label>
@@ -58,6 +60,7 @@
     @php($cyl = $detail['cyl'])
     <div class="card pad" style="display:flex;flex-wrap:wrap;gap:16px;align-items:center">
       <div style="flex-grow:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:var(--fs-18);font-weight:700">{{ $sel->name }}</span>
+        @if($sel->shop_name || $sel->owner_name)<span style="font-size:var(--fs-13);font-weight:600;color:var(--ink)">{{ collect([$sel->shop_name ? 'Shop: '.$sel->shop_name : null, $sel->owner_name ? 'Owner: '.$sel->owner_name : null])->filter()->implode(' · ') }}</span>@endif
         <span class="sub" style="margin:0">{{ \App\Models\Customer::TYPES[$sel->type] }} @if($sel->area)· {{ $sel->area }}@endif · {{ $sel->phone }} · {{ $sel->code }} · since {{ $sel->created_at->format('m-Y') }}</span></div>
       <a class="btn" href="{{ route('customers.index', ['edit' => $sel->id]) }}#cust-form">Edit</a>
       <a class="btn" href="{{ route('customers.statement', $sel) }}" target="_blank">Statement PDF</a>

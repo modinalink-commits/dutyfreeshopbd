@@ -8,7 +8,7 @@ class Customer extends Model
 {
     public const TYPES = ['retail' => 'Retail', 'commercial' => 'Commercial', 'dealer' => 'Dealer'];
 
-    protected $fillable = ['code', 'name', 'phone', 'type', 'area', 'address', 'credit_limit', 'is_active', 'note', 'lat', 'lng', 'portal_enabled', 'portal_last_seen', 'owner_name'];
+    protected $fillable = ['code', 'name', 'shop_name', 'phone', 'type', 'area', 'address', 'credit_limit', 'is_active', 'note', 'lat', 'lng', 'portal_enabled', 'portal_last_seen', 'owner_name'];
 
     protected function casts(): array
     {

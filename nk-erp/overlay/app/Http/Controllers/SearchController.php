@@ -18,7 +18,7 @@ class SearchController extends Controller
         $digits = preg_replace('/\D+/', '', $q);
 
         $cust = Customer::query()->where(function ($w) use ($like, $digits) {
-            $w->where('name', 'ilike', $like)->orWhere('code', 'ilike', $like)->orWhere('area', 'ilike', $like);
+            $w->where('name', 'ilike', $like)->orWhere('shop_name', 'ilike', $like)->orWhere('owner_name', 'ilike', $like)->orWhere('code', 'ilike', $like)->orWhere('area', 'ilike', $like);
             if (strlen($digits) >= 4) $w->orWhere('phone', 'like', '%'.$digits.'%');
         })->orderBy('name')->limit(6)->get()->map(function ($c) {
             $due = $c->due();

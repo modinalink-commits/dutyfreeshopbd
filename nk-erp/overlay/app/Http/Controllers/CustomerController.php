@@ -24,7 +24,7 @@ class CustomerController extends Controller
         $outs = CustomerCylinder::query()->selectRaw('customer_id, sum(qty_delta) q')->groupBy('customer_id')->pluck('q', 'customer_id');
 
         $list = Customer::query()
-            ->when($q !== '', fn ($w) => $w->where(fn ($x) => $x->where('name', 'ilike', "%{$q}%")->orWhere('phone', 'like', '%'.Customer::normalisePhone($q).'%')->orWhere('area', 'ilike', "%{$q}%")))
+            ->when($q !== '', fn ($w) => $w->where(fn ($x) => $x->where('name', 'ilike', "%{$q}%")->orWhere('shop_name', 'ilike', "%{$q}%")->orWhere('owner_name', 'ilike', "%{$q}%")->orWhere('phone', 'like', '%'.Customer::normalisePhone($q).'%')->orWhere('area', 'ilike', "%{$q}%")))
             ->when($f === 'dealer', fn ($w) => $w->where('type', 'dealer'))
             ->orderBy('name')->get()
             ->when($f === 'due', fn ($c) => $c->filter(fn ($x) => ($dues[$x->id] ?? 0) > 0.004))
@@ -83,6 +83,8 @@ class CustomerController extends Controller
         $data = $request->validate([
             'id' => ['nullable', 'exists:customers,id'],
             'name' => ['required', 'string', 'max:120'],
+            'shop_name' => ['nullable', 'string', 'max:150'],
+            'owner_name' => ['nullable', 'string', 'max:120'],
             'phone' => ['required', 'regex:/^01[3-9]\d{8}$/', Rule::unique('customers', 'phone')->ignore($id)],
             'type' => ['required', Rule::in(array_keys(Customer::TYPES))],
             'area' => ['nullable', 'string', 'max:80'],
