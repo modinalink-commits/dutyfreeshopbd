@@ -179,6 +179,15 @@ class AdminController extends Controller {
     try { $__h = $__v->render(); return response(\App\Support\SvgDedupe::run($__h, 150000, 60)); } catch (\Throwable $__e) { throw $__e; }
   }
   public function orderBulk(Request $r) {
+    if ($r->input('status') === 'AI Approve') {   // Bulk AI Approve: each selected order is verified and approved on its own; failures stay where they are
+      abort_unless(\App\Http\Middleware\ModulePermission::can(auth()->user(), 'orders', 'edit'), 403);
+      $ids = array_values(array_unique(array_map('intval', (array)$r->input('ids', [])))); if (!$ids) return response()->json(['success' => false, 'message' => 'Select orders first'], 422);
+      if (count($ids) > 50) return response()->json(['success' => false, 'message' => 'Select at most 50 orders for AI Approve at a time'], 422);
+      @set_time_limit(240); $ok = 0; $already = 0; $fail = [];
+      foreach ($ids as $oid) { $res = \App\Support\AiVerify::approveNow($oid); if (!empty($res['ok'])) { if (!empty($res['already'])) $already++; else $ok++; } else $fail[] = '#'.$oid.': '.($res['message'] ?? 'not approved'); }
+      $sum = 'AI Approve: '.$ok.' approved'.($already ? ', '.$already.' already approved' : '').($fail ? ', '.count($fail).' NOT approved (stay as they were):'."\n".implode("\n", array_slice($fail, 0, 15)) : '');
+      return response()->json(['success' => true, 'parcel_errors' => [], 'ai_summary' => $sum, 'message' => $sum]);
+    }
     $d = $r->validate(['ids'=>'required|array|max:500','ids.*'=>'integer','status'=>'required|in:'.implode(',',Mother::STAGES)]);
     if (in_array($d['status'], \App\Support\ShipmentOutcome::SYSTEM_ONLY, true)) return back()->with('bad', 'Partial Return statuses are calculated from the items. Open the order and use Delivery Outcome.');
     if ($d['status'] === 'Scheduled') return back()->with('bad', 'Scheduled needs a date/time. Open the order (or use the quick-action menu on its row) and pick Scheduled with a date.');
