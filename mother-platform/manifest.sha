@@ -5,7 +5,7 @@ fe43f8b6cb422cca81ee18b74d3972f77e7852de database/migrations/2026_10_31_000001_m
 242316b2ef0a0967e6815e39fcbc7377349fdc17 app/Console/Commands/MotherInstall.php
 69afa4aa062c2914b68a06b4b5fb3f4c54257496 resources/views/layout.blade.php
 2b227b5ab4047c9018760d3f3da2dc1c31b55cb1 resources/views/login.blade.php
-521e0a76424e4b5c1f52abc17471067292766afb resources/views/dashboard.blade.php
+6a2ce48a4bbb5d453e864c0341b39badeae5298f resources/views/dashboard.blade.php
 ac24595d05812bf2746f7bee104cd94019384d65 resources/views/orders.blade.php
 c2b0402e6f704a352e9454051eb6ad9572a238ad resources/views/admin/orders/partials/status-tabs.blade.php
 0ab54098f668eecc01828e853264b0190f3d0b1e resources/views/admin/orders/partials/header-system.blade.php
