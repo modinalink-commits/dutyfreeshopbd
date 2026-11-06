@@ -47,15 +47,27 @@ class AiImageAuto {
       return 0;
     }
     if (self::set('backfill_all', '0') !== '1') return 0;
-    $p = DB::table('products')->whereNotNull('image')->where('image', '<>', '')->where('image', 'not like', '%/uploads/ai/%')
-      ->whereNotExists(fn($q) => $q->select(DB::raw(1))->from('ai_images')->whereColumn('ai_images.product_id', 'products.id'))->orderBy('id')->first(['id', 'image']);
-    if (!$p) return 0;
-    $url = (string)$p->image;
-    $id = DB::table('ai_images')->insertGetId(['product_id' => (int)$p->id, 'source_hash' => sha1($url), 'source_url' => $url, 'ai_status' => 'pending', 'created_at' => now(), 'updated_at' => now()]);
+    // second stage, limited to the Cigarette & Vape category (owner decision 6 Nov 2026): main image first, then gallery images
+    $sc = DB::table('categories')->get(['id', 'slug', 'name'])->filter(fn($c) => \App\Http\Controllers\StoreController::isSmokeCat($c))->pluck('id')->all();
+    $smoke = fn($q) => $q->where(function ($w) use ($sc) { $w->where('group_key', 'smoke'); if ($sc) $w->orWhereIn('category_id', $sc); });
+    $done = fn($pid, $url) => DB::table('ai_images')->where('product_id', $pid)->where('source_hash', sha1($url))->exists();
+    $p = $smoke(DB::table('products'))->whereNotNull('image')->where('image', '<>', '')->where('image', 'not like', '%/uploads/ai/%')
+      ->whereNotExists(fn($q) => $q->select(DB::raw(1))->from('ai_images')->whereColumn('ai_images.product_id', 'products.id')->where('ai_images.ai_status', 'completed'))->orderBy('id')->first(['id', 'image']);
+    $main = true; $pid = $p->id ?? 0; $url = (string)($p->image ?? '');
+    if (!$p || $done((int)$pid, $url)) {
+      $main = false; $pid = 0; $url = '';
+      $ids = $smoke(DB::table('products'))->pluck('id')->all();
+      if (!$ids) return 0;
+      foreach (DB::table('product_images')->whereIn('product_id', $ids)->where('path', 'not like', '%/uploads/ai/%')->orderBy('id')->limit(400)->get(['product_id', 'path']) as $g) {
+        if ((string)$g->path !== '' && !$done((int)$g->product_id, (string)$g->path)) { $pid = (int)$g->product_id; $url = (string)$g->path; break; }
+      }
+      if (!$pid) return 0;
+    }
+    $id = DB::table('ai_images')->insertGetId(['product_id' => (int)$pid, 'source_hash' => sha1($url), 'source_url' => $url, 'ai_status' => 'pending', 'created_at' => now(), 'updated_at' => now()]);
     $r = AiImage::run($id); if (!($r['ok'] ?? false)) return 0;
     $o = DB::table('ai_images')->find($id); if (!$o || !$o->processed_image) return 0;
-    DB::table('products')->where('id', $p->id)->where('image', $url)->update(['image' => $o->processed_image]);
-    DB::table('ai_images')->where('id', $id)->update(['is_main' => true]);
+    if ($main) { DB::table('products')->where('id', $pid)->where('image', $url)->update(['image' => $o->processed_image]); DB::table('ai_images')->where('id', $id)->update(['is_main' => true]); }
+    else DB::table('product_images')->where('product_id', $pid)->where('path', $url)->update(['path' => $o->processed_image, 'updated_at' => now()]);
     self::flush(); return 1;
   }
 }

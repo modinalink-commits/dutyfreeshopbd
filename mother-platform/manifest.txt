@@ -751,3 +751,4 @@ database/migrations/2026_11_06_000320_ai_image_auto.php
 database/migrations/2026_11_06_000330_ai_image_backfill.php
 app/Support/AiImageAuto.php
 app/Support/IncompleteNudge.php
+database/migrations/2026_11_06_000340_ai_image_backfill_smoke.php
