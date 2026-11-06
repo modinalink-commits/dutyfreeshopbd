@@ -7,12 +7,23 @@ use Illuminate\Support\Facades\Cache;
 class AiImageAuto {
   public static function set(string $k, string $d = ''): string { $v = DB::table('settings')->where('key', 'ai_auto_' . $k)->value('value'); return ($v === null || $v === '') ? $d : (string)$v; }
   private static function flush(): void { foreach (['store.home2','store.home4','store.home6','store.home5','store.cats','store.live2','store.live3','store.live4'] as $k) Cache::forget($k); }
-  public static function tick(): int {
-    if (self::set('on', '1') !== '1' || !AiImage::key() || !Img::ok()) return 0;
-    $cut = self::set('cutoff', ''); if ($cut === '') return 0;
+  /** Last result of the automatic worker, shown on the AI Product Images page. */
+  private static function note(string $m): void { try { DB::table('settings')->updateOrInsert(['key' => 'ai_auto_last'], ['value' => now()->toDateTimeString() . '|' . $m, 'updated_at' => now(), 'created_at' => now()]); } catch (\Throwable $e) {} }
+  public static function status(): array {
+    $last = explode('|', (string)self::set('last', '|Worker has not reached this job yet'), 2);
     $cap = max(1, (int)self::set('daily_cap', '60'));
-    if (DB::table('ai_images')->where('processed_at', '>=', now()->startOfDay())->count() >= $cap) return 0;
-    $lock = Cache::lock('ai-image-auto', 400); if (!$lock->get()) return 0;
+    return ['on' => self::set('on', '1') === '1', 'cap' => $cap, 'today' => DB::table('ai_images')->where('processed_at', '>=', now()->startOfDay())->count(), 'at' => $last[0] ?? '', 'msg' => $last[1] ?? '',
+      'old_left' => DB::table('ai_images')->where('ai_status', 'completed')->whereNotNull('processed_image')->where('processed_at', '<', self::set('prompt_cutoff', '2000-01-01'))->count(),
+      'all_on' => self::set('backfill_all', '0') === '1'];
+  }
+  public static function tick(): int {
+    if (self::set('on', '1') !== '1') { self::note('Automatic mode is switched off'); return 0; }
+    if (!AiImage::key()) { self::note('OpenAI key is not set'); return 0; }
+    if (!Img::ok()) { self::note('PHP GD is not enabled'); return 0; }
+    $cut = self::set('cutoff', ''); if ($cut === '') { self::note('No start time saved (cutoff)'); return 0; }
+    $cap = max(1, (int)self::set('daily_cap', '60'));
+    if (DB::table('ai_images')->where('processed_at', '>=', now()->startOfDay())->count() >= $cap) { self::note('Daily cap reached, continues tomorrow'); return 0; }
+    $lock = Cache::lock('ai-image-auto', 400); if (!$lock->get()) { self::note('Another image is still being processed'); return 0; }
     try {
       $cands = [];
       foreach (DB::table('products')->where('updated_at', '>=', $cut)->whereNotNull('image')->where('image', '<>', '')->orderBy('id')->limit(60)->get(['id', 'image']) as $p) $cands[] = [(int)$p->id, (string)$p->image, true];
@@ -28,11 +39,12 @@ class AiImageAuto {
         $row = DB::table('ai_images')->find($id); if (!$row || !$row->processed_image) return 0;
         if ($main) { DB::table('products')->where('id', $pid)->where('image', $url)->update(['image' => $row->processed_image]); DB::table('ai_images')->where('product_id', $pid)->update(['is_main' => false]); DB::table('ai_images')->where('id', $id)->update(['is_main' => true]); }
         else DB::table('product_images')->where('product_id', $pid)->where('path', $url)->update(['path' => $row->processed_image, 'updated_at' => now()]);
-        self::flush();
+        self::flush(); self::note('Processed new image #' . $id);
         return 1; // one image per tick (each AI call takes up to a minute)
       }
-      return self::backfill();
+      $n = self::backfill(); if (!$n) self::note('Nothing left to process right now'); return $n;
     } catch (\Throwable $e) {
+      self::note('Error: ' . mb_substr($e->getMessage(), 0, 200));
       return 0;
     } finally { try { $lock->release(); } catch (\Throwable $e) {} }
     return 0;
@@ -43,8 +55,8 @@ class AiImageAuto {
     if (self::set('backfill', '1') === '1' && $pc !== '') $row = DB::table('ai_images')->where('ai_status', 'completed')->whereNotNull('processed_image')->where('processed_at', '<', $pc)->orderBy('id')->first();
     if ($row) {
       $r = AiImage::run((int)$row->id);
-      if ($r['ok'] ?? false) { self::flush(); return 1; }
-      return 0;
+      if ($r['ok'] ?? false) { self::flush(); self::note('Redid old image #' . $row->id . ' with the clean standard'); return 1; }
+      self::note('Old image #' . $row->id . ' failed: ' . ($r['error'] ?? '')); return 0;
     }
     if (self::set('backfill_all', '0') !== '1') return 0;
     // second stage, limited to the Cigarette & Vape category (owner decision 6 Nov 2026): main image first, then gallery images
@@ -64,8 +76,9 @@ class AiImageAuto {
       if (!$pid) return 0;
     }
     $id = DB::table('ai_images')->insertGetId(['product_id' => (int)$pid, 'source_hash' => sha1($url), 'source_url' => $url, 'ai_status' => 'pending', 'created_at' => now(), 'updated_at' => now()]);
-    $r = AiImage::run($id); if (!($r['ok'] ?? false)) return 0;
+    $r = AiImage::run($id); if (!($r['ok'] ?? false)) { self::note('Image #' . $id . ' failed: ' . ($r['error'] ?? '')); return 0; }
     $o = DB::table('ai_images')->find($id); if (!$o || !$o->processed_image) return 0;
+    self::note('Cigarette & Vape: processed ' . ($main ? 'main' : 'gallery') . ' image #' . $id);
     if ($main) { DB::table('products')->where('id', $pid)->where('image', $url)->update(['image' => $o->processed_image]); DB::table('ai_images')->where('id', $id)->update(['is_main' => true]); }
     else DB::table('product_images')->where('product_id', $pid)->where('path', $url)->update(['path' => $o->processed_image, 'updated_at' => now()]);
     self::flush(); return 1;

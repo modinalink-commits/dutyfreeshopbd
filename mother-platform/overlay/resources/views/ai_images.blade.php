@@ -5,6 +5,9 @@
 @if(session('ok'))<div class="card" style="margin-top:12px;background:#ECFDF5;border-color:#A7F3D0">{{ session('ok') }}</div>@endif
 @if(!$gd)<div class="card err" style="margin-top:12px">PHP GD is not enabled on the server, so AI processing is paused.</div>@endif
 @if(!$hasKey)<div class="card err" style="margin-top:12px">OpenAI API key is not set yet. Paste it in the AI settings box below to start.</div>@endif
+<div class="card" style="margin-top:12px"><b>Automatic mode</b> <span style="font-size:12px;color:#6B7280">(runs on the server every ~30 seconds, one image at a time)</span>
+<div style="margin-top:6px;font-size:13px;display:flex;flex-wrap:wrap;gap:6px 18px"><span>Status: <b>{{ $auto['on'] ? 'ON' : 'OFF' }}</b></span><span>Today: <b>{{ $auto['today'] }}</b> / {{ $auto['cap'] }}</span><span>Old logo images left: <b>{{ $auto['old_left'] }}</b></span><span>Cigarette &amp; Vape stage: <b>{{ $auto['all_on'] ? 'ON' : 'OFF' }}</b></span></div>
+<div style="margin-top:4px;font-size:12.5px;color:#374151">Last check: {{ $auto['at'] ?: '-' }} · {{ $auto['msg'] }}</div></div>
 <div class="card" style="margin-top:12px"><b>AI settings</b>
 <form method="post" action="/admin/ai-images/settings" style="display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin-top:8px">@csrf
 <label>OpenAI API key <small style="color:#6B7280">{{ $hasKey ? 'saved: '.$keyMask : 'not set' }}</small><input type="password" name="openai_api_key" autocomplete="off" placeholder="{{ $hasKey ? 'leave empty to keep the saved key' : 'sk-...' }}"></label>
