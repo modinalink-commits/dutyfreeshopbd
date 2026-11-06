@@ -5,16 +5,21 @@
 @if(session('ok'))<div class="card" style="margin-top:12px;background:#ECFDF5;border-color:#A7F3D0">{{ session('ok') }}</div>@endif
 @if(!$gd)<div class="card err" style="margin-top:12px">PHP GD is not enabled on the server, so AI processing is paused.</div>@endif
 @if(!$hasKey)<div class="card err" style="margin-top:12px">OpenAI API key is not set yet. Paste it in the AI settings box below to start.</div>@endif
-<div class="card" style="margin-top:12px"><b>Automatic mode</b> <span style="font-size:12px;color:#6B7280">(runs on the server every ~30 seconds, one image at a time)</span>
-<div style="margin-top:6px;font-size:13px;display:flex;flex-wrap:wrap;gap:6px 18px"><span>Status: <b>{{ $auto['on'] ? 'ON' : 'OFF' }}</b></span><span>Today: <b>{{ $auto['today'] }}</b> / {{ $auto['cap'] }}</span><span>Old logo images left: <b>{{ $auto['old_left'] }}</b></span><span>Current job: <b>Cigarette &amp; Vape category — {{ $auto['all_on'] ? 'ON' : 'OFF' }}</b> (main image first, then gallery; the clean image becomes the main image automatically)</span></div>
-<div style="margin-top:4px;font-size:12.5px;color:#374151">Last check: {{ $auto['at'] ?: '-' }} · {{ $auto['msg'] }}</div></div>
-<div class="card" style="margin-top:12px"><b>AI settings</b>
+<style>.aiT{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:10px}.aiT>div{border:1px solid #CED4DA;border-radius:10px;padding:9px 12px;background:#fff}.aiT small{display:block;color:#6B7280;font-size:11px;font-weight:600}.aiT b{font-size:20px;color:#0B1220}</style>
+<div class="card" style="margin-top:12px"><div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><b style="font-size:14px">Automatic mode</b><span class="pill" style="background:{{ $auto['on'] ? '#DCFCE7' : '#FEE2E2' }}">{{ $auto['on'] ? 'ON' : 'OFF' }}</span><span style="font-size:12px;color:#6B7280">runs on the server every ~30 seconds, one image at a time, even when this page is closed</span></div>
+@php $pct = min(100, (int)round($auto['today'] / max(1, $auto['cap']) * 100)); @endphp
+<div class="aiT"><div><small>Current job</small><b style="font-size:14px">Cigarette &amp; Vape</b><small style="font-weight:400">{{ $auto['all_on'] ? 'ON: main image first, then gallery' : 'OFF' }}</small></div>
+<div><small>Done today</small><b>{{ $auto['today'] }}</b> <span style="color:#6B7280">/ {{ $auto['cap'] }}</span><div style="height:6px;background:#E5E7EB;border-radius:6px;margin-top:6px;overflow:hidden"><div style="height:6px;width:{{ $pct }}%;background:#16A34A"></div></div></div>
+<div><small>Old logo images left</small><b>{{ $auto['old_left'] }}</b></div>
+<div><small>Completed in total</small><b>{{ $counts['completed'] ?? 0 }}</b></div></div>
+<div style="margin-top:8px;font-size:12.5px;color:#374151">Last worker check: <b>{{ $auto['at'] ?: 'waiting for the next cycle' }}</b>{{ $auto['msg'] ? ' · '.$auto['msg'] : '' }}. The clean image becomes the product's main image automatically; the original is kept, so Delete brings it back.</div></div>
+<details class="card" style="margin-top:12px"><summary style="cursor:pointer"><b>AI settings</b> <span style="font-size:12px;color:#6B7280">key, model, quality, instruction</span></summary>
 <form method="post" action="/admin/ai-images/settings" style="display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin-top:8px">@csrf
 <label>OpenAI API key <small style="color:#6B7280">{{ $hasKey ? 'saved: '.$keyMask : 'not set' }}</small><input type="password" name="openai_api_key" autocomplete="off" placeholder="{{ $hasKey ? 'leave empty to keep the saved key' : 'sk-...' }}"></label>
 <label>Model<input name="ai_img_model" value="{{ $model }}"></label>
 <label>Quality<select name="ai_img_quality">@foreach(['low','medium','high'] as $qq)<option {{ $quality===$qq ? 'selected' : '' }}>{{ $qq }}</option>@endforeach</select></label>
 <label style="grid-column:1/-1">AI instruction<textarea name="ai_img_prompt" rows="4">{{ $prompt }}</textarea></label>
-<div><button>Save settings</button></div></form></div>
+<div><button>Save settings</button></div></form></details>
 <div class="card" style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center">
 <form method="get" style="display:flex;gap:6px;margin:0"><input name="q" value="{{ $q }}" placeholder="Search product" style="max-width:200px"><select name="f" onchange="this.form.submit()" style="width:auto">@foreach(['all'=>'All','pending'=>'Pending','processing'=>'Processing','completed'=>'Completed','failed'=>'Failed'] as $k=>$l)<option value="{{ $k }}" {{ $f===$k ? 'selected' : '' }}>{{ $l }}{{ $k!=='all' ? ' ('.($counts[$k] ?? 0).')' : '' }}</option>@endforeach</select><select name="cat" onchange="this.form.submit()" style="width:auto"><option value="">All categories</option><option value="smoke" {{ $cat==='smoke' ? 'selected' : '' }}>Cigarette and Vape (current job)</option>@foreach($cats as $cc)<option value="{{ $cc->id }}" {{ $cat===(string)$cc->id ? 'selected' : '' }}>{{ $cc->name }}</option>@endforeach</select><button>Search</button></form>
 <span style="margin-left:auto"></span>
