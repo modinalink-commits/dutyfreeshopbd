@@ -652,9 +652,9 @@ class StoreController extends Controller {
     return response()->view('store.missing', $this->base(['title'=>'পেজ পাওয়া যায়নি | DutyFree BD', 'desc'=>'', 'canon'=>url('/'), 'noindex'=>true]), 404);
   }
   public function sitemap() {
-    $xml = self::rem('store.sitemap12', 3600, function () {
+    $xml = self::rem('store.sitemap13', 3600, function () {
       $B = \App\Support\Domain::main(); $ul = fn($p) => $B.'/'.ltrim($p, '/'); /* sitemap always lists the main domain, whichever domain asked */
-      $u = fn($loc, $img = null, $lm = null) => '<url><loc>'.e($loc).'</loc>'.($lm ? '<lastmod>'.date('c', strtotime((string)$lm)).'</lastmod>' : '').'<changefreq>daily</changefreq>'.($img ? '<image:image><image:loc>'.e($img).'</image:loc></image:image>' : '').'</url>';
+      $u = fn($loc, $img = null, $lm = null) => '<url><loc>'.e($loc).'</loc>'.($lm ? '<lastmod>'.date('c', strtotime((string)$lm)).'</lastmod>' : '').'<changefreq>daily</changefreq>'.($img ? '<image:image><image:loc>'.e(preg_match('#^https?://#i', (string)$img) ? $img : $B.'/'.ltrim((string)$img, '/')).'</image:loc></image:image>' : '').'</url>';
       $o = $u($ul('/'));
       foreach ($this->cats() as $c) { if (self::isSmokeCat($c)) continue; $o .= $u($ul($c->slug.'/')); }
       foreach ($this->subs() as $cid => $rows) { $cs = $this->cats()->firstWhere('id', $cid); if ($cs && !self::isSmokeCat($cs)) foreach ($rows as $rw) $o .= $u($ul($cs->slug.'/'.\App\Support\Slugs::subSlug($rw->sub))); }
