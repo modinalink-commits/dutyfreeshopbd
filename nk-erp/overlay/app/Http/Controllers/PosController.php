@@ -21,7 +21,7 @@ class PosController extends Controller
     {
         $products = Product::query()->with('brand')->where('is_active', true)->orderByRaw("case category when 'refill' then 1 when 'new_package' then 2 when 'accessory' then 3 else 4 end")->orderBy('size_kg')->get();
         $items = $products->map(fn ($p) => [
-            'id' => $p->id, 'name' => $p->name, 'cat' => $p->category, 'size' => $p->size_kg ? $p->size_kg.' kg' : ($p->category === 'service' ? 'Service' : 'Part'),
+            'id' => $p->id, 'name' => $p->name, 'cat' => $p->category, 'img' => $p->image, 'size' => $p->size_kg ? $p->size_kg.' kg' : ($p->category === 'service' ? 'Service' : 'Part'),
             'note' => $p->note, 'price' => $p->retail_price !== null ? (float) $p->retail_price : null, 'stock' => $p->available(),
         ])->values();
 

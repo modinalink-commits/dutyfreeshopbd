@@ -79,6 +79,7 @@ app/Models/WebsiteOrder.php
 app/Providers/AppServiceProvider.php
 app/Support/CompanyCalc.php
 app/Support/Icons.php
+app/Support/Img.php
 app/Support/LedgerImport.php
 app/Support/Money.php
 app/Support/Reports.php
@@ -104,6 +105,7 @@ database/migrations/2026_11_05_000013_salesman_app.php
 database/migrations/2026_11_05_000014_map.php
 database/migrations/2026_11_05_000015_customer_portal.php
 database/migrations/2026_11_05_000016_erp_records.php
+database/migrations/2026_11_06_000017_product_images.php
 public/app-sw.js
 public/css/nk-table.css
 public/css/nk-type.css

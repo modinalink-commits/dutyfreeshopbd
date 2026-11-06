@@ -68,7 +68,10 @@ class WebsiteController extends Controller
         $brand = \App\Models\Brand::query()->where('for_sale', true)->value('id');
         $ps = \App\Models\Product::query()->where('is_active', true)->whereIn('category', ['refill', 'new_package'])->when($brand, fn ($q) => $q->where('brand_id', $brand))->whereNotNull('retail_price')->get();
         $out = [];
-        foreach ($ps as $p) $out[(int) $p->size_kg][$p->category === 'refill' ? 'refill' : 'pkg'] = (float) $p->retail_price;
+        foreach ($ps as $p) {
+            $out[(int) $p->size_kg][$p->category === 'refill' ? 'refill' : 'pkg'] = (float) $p->retail_price;
+            if ($p->image && ($p->category === 'refill' || empty($out[(int) $p->size_kg]['img']))) $out[(int) $p->size_kg]['img'] = url($p->image);
+        }
         ksort($out);
         return ['sizes' => $out, 'updated' => $ps->max('updated_at')?->timezone('Asia/Dhaka')->format('d-m-Y')];
     }

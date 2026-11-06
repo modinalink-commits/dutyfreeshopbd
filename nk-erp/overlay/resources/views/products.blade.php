@@ -6,12 +6,37 @@
   <div style="flex-grow:1"><h1>Products &amp; prices</h1><p class="sub">What the POS and dealer orders can sell. A product without a price cannot be sold.</p></div>
   @if($admin)<a class="btn pri" href="{{ route('products.index') }}#product-form">＋ Add product</a>@endif
 </header>
+<style>
+.pph{width:44px;height:44px;border-radius:8px;border:1px solid var(--border-soft,#e2e6ea);background:#fff;object-fit:contain;display:block;margin:auto}
+.pph.none{display:flex;align-items:center;justify-content:center;color:#9aa6bd;background:#f4f7fc}
+label.pup{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:8px;border:1px dashed #7b8aa8;color:#123a86;font-size:var(--fs-11);font-weight:600;cursor:pointer;text-align:center;line-height:1.1;background:#fff}
+label.pup:hover{background:#eef2f9}
+.pcell{position:relative;width:60px}
+.pcell form{margin:0}
+.pcell .chg{position:absolute;right:2px;bottom:2px;width:20px;height:20px;border-radius:999px;background:#123a86;color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px solid #fff}
+.ph-drop{display:flex;gap:14px;align-items:center;border:1px dashed #7b8aa8;border-radius:12px;padding:12px;background:#f8fafc}
+.ph-drop img,.ph-drop .ph0{width:96px;height:96px;border-radius:10px;object-fit:contain;background:#fff;border:1px solid var(--border-soft,#e2e6ea);flex-shrink:0}
+.ph-drop .ph0{display:flex;align-items:center;justify-content:center;color:#9aa6bd;font-size:var(--fs-12)}
+</style>
 <div class="dt-wrap"><table class="dt">
-  <thead><tr><th>Code</th><th>Product</th><th>Category</th><th>Brand</th><th>Size</th><th>Retail price</th><th>Dealer price</th><th>In stock</th><th>Status</th>@if($admin)<th class="no-sort"></th>@endif</tr></thead>
+  <thead><tr><th class="no-sort">Photo</th><th>Code</th><th>Product</th><th>Category</th><th>Brand</th><th>Size</th><th>Retail price</th><th>Dealer price</th><th>In stock</th><th>Status</th>@if($admin)<th class="no-sort"></th>@endif</tr></thead>
   <tbody>
   @foreach($products as $p)
     @php($av = $p->available())
     <tr>
+      <td class="c pcell">
+        @if($admin)
+          <form method="post" action="{{ route('products.photo', $p) }}" enctype="multipart/form-data">@csrf
+            @if($p->image)
+              <img class="pph" src="{{ $p->image }}" alt="{{ $p->name }}" loading="lazy" width="44" height="44">
+              <label class="chg" title="Change photo" aria-label="Change photo of {{ $p->name }}">✎<input type="file" name="image" accept="image/png,image/jpeg,image/webp" hidden onchange="this.form.submit()"></label>
+            @else
+              <label class="pup" title="Upload photo" aria-label="Upload photo of {{ $p->name }}">＋<br>Photo<input type="file" name="image" accept="image/png,image/jpeg,image/webp" hidden onchange="this.form.submit()"></label>
+            @endif
+          </form>
+        @elseif($p->image)<img class="pph" src="{{ $p->image }}" alt="{{ $p->name }}" loading="lazy" width="44" height="44">
+        @else<span class="pph none" aria-label="No photo">—</span>@endif
+      </td>
       <td class="c">{{ $p->code }}</td><td><b>{{ $p->name }}</b>@if($p->note)<br><span class="sub">{{ $p->note }}</span>@endif</td>
       <td>{{ \App\Models\Product::CATEGORIES[$p->category] }}</td><td>{{ $p->brand?->name }}</td><td class="c">{{ $p->size_kg ? $p->size_kg.' kg' : '—' }}</td>
       <td class="r">@if($p->retail_price !== null)৳{{ number_format($p->retail_price) }}@else<span style="color:#b3261e;font-weight:600">Set price</span>@endif</td>
@@ -28,7 +53,7 @@
   </tbody>
 </table></div>
 @if($admin)
-<form id="product-form" class="card pad" method="post" action="{{ route('products.save') }}" style="display:flex;flex-direction:column;gap:12px;max-width:760px">
+<form id="product-form" class="card pad" method="post" action="{{ route('products.save') }}" enctype="multipart/form-data" style="display:flex;flex-direction:column;gap:12px;max-width:760px">
   @csrf
   <h2 style="margin:0;font-size:var(--fs-15)">{{ $edit ? 'Edit '.$edit->name : 'Add product' }}</h2>
   @if($edit)<input type="hidden" name="id" value="{{ $edit->id }}">@endif
@@ -42,6 +67,17 @@
     <label class="f">Note<input type="text" name="note" value="{{ old('note', $edit?->note) }}"></label>
     <label class="f">Status<select name="is_active"><option value="1" @selected(old('is_active', $edit?->is_active ?? true))>Active</option><option value="0" @selected(! old('is_active', $edit?->is_active ?? true))>Off</option></select></label>
   </div>
+  <div class="ph-drop">
+    @if($edit?->image)<img id="phPrev" src="{{ $edit->image }}" alt="{{ $edit->name }}">@else<div class="ph0" id="phNone">No photo</div><img id="phPrev" alt="" hidden>@endif
+    <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+      <label class="f" style="margin:0">Product photo<input type="file" name="image" id="phFile" accept="image/png,image/jpeg,image/webp"></label>
+      <span class="sub" style="margin:0">JPG, PNG or WebP, up to 5 MB. Saved small (WebP) so POS and the app load fast. Shown on POS, the salesman app and the website.</span>
+      @if($edit?->image)<label style="display:flex;gap:6px;align-items:center;font-size:var(--fs-12)"><input type="checkbox" name="remove_image" value="1" style="width:auto;min-height:0"> Remove this photo</label>@endif
+    </div>
+  </div>
+  <script>
+  document.getElementById('phFile').addEventListener('change',function(){var f=this.files&&this.files[0];if(!f)return;var im=document.getElementById('phPrev'),n=document.getElementById('phNone');im.src=URL.createObjectURL(f);im.hidden=false;if(n)n.remove();});
+  </script>
   <span class="sub">Every price change is written to the Activity log with the old and new price.</span>
   <div style="display:flex;gap:8px"><button class="btn pri" type="submit">Save product</button>@if($edit)<a class="btn" href="{{ route('products.index') }}">Cancel</a>@endif</div>
 </form>

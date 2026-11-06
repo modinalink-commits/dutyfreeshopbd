@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\Brand;
 use App\Models\ItemMovement;
 use App\Models\Product;
+use App\Support\Img;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -34,8 +35,10 @@ class ProductController extends Controller
             'dealer_price' => ['nullable', 'numeric', 'min:0', 'max:10000000'],
             'note' => ['nullable', 'string', 'max:160'],
             'is_active' => ['required', 'boolean'],
-        ]);
-        unset($data['id']);
+            'image' => ['nullable', 'file', 'mimes:png,webp,jpg,jpeg', 'max:5120'],
+            'remove_image' => ['nullable', 'boolean'],
+        ], ['image.mimes' => 'Photo must be a JPG, PNG or WebP picture.', 'image.max' => 'Photo is larger than 5 MB. Use a smaller picture.']);
+        unset($data['id'], $data['image'], $data['remove_image']);
         if (in_array($data['category'], ['refill', 'new_package'], true) && $data['is_active']) {
             $twin = Product::query()->where('is_active', true)->where('category', $data['category'])->where('brand_id', $data['brand_id'])->where('size_kg', $data['size_kg'])
                 ->when($id, fn ($q) => $q->where('id', '!=', $id))->first();
@@ -54,7 +57,28 @@ class ProductController extends Controller
             $p = Product::create($data + ['code' => 'P-'.str_pad((string) $n, 3, '0', STR_PAD_LEFT)]);
             AuditLog::record('product_created', "{$p->code} {$p->name}");
         }
+        if ($request->hasFile('image')) {
+            $old = $p->image;
+            $p->forceFill(['image' => Img::save($request->file('image'), 'products', strtolower($p->code))])->save();
+            Img::delete($old);
+            AuditLog::record('product_photo', "{$p->code} {$p->name} · photo ".($old ? 'replaced' : 'added'));
+        } elseif ($request->boolean('remove_image') && $p->image) {
+            Img::delete($p->image);
+            $p->forceFill(['image' => null])->save();
+            AuditLog::record('product_photo', "{$p->code} {$p->name} · photo removed");
+        }
         return redirect()->route('products.index')->with('ok', "{$p->name} saved.");
+    }
+
+    /** Quick photo upload from the product list row. */
+    public function photo(Request $request, Product $product)
+    {
+        $request->validate(['image' => ['required', 'file', 'mimes:png,webp,jpg,jpeg', 'max:5120']], ['image.mimes' => 'Photo must be a JPG, PNG or WebP picture.', 'image.max' => 'Photo is larger than 5 MB. Use a smaller picture.']);
+        $old = $product->image;
+        $product->forceFill(['image' => Img::save($request->file('image'), 'products', strtolower($product->code))])->save();
+        Img::delete($old);
+        AuditLog::record('product_photo', "{$product->code} {$product->name} · photo ".($old ? 'replaced' : 'added'));
+        return back()->with('ok', "{$product->name}: photo saved.");
     }
 
     public function receive(Request $request, Product $product)

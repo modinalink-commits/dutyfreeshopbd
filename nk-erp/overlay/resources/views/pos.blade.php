@@ -19,6 +19,7 @@
       <button type="button" class="card prod" data-id="{{ $p['id'] }}" data-cat="{{ $p['cat'] }}" style="text-align:left;padding:14px;display:flex;flex-direction:column;gap:8px;cursor:pointer;font-family:inherit;color:var(--ink);min-height:150px" @disabled($p['price'] === null)>
         <div style="display:flex;align-items:center;gap:8px;width:100%"><span class="pill" style="background:{{ $p['cat'] === 'refill' ? '#e6eeff;color:#1d4ed8' : ($p['cat'] === 'new_package' ? '#e3f6ec;color:#0f6b3c' : '#efe7fb;color:#5b2fa8') }}">{{ $p['size'] }}</span><span style="flex-grow:1"></span>
           @if($p['stock'] !== null)<span style="font-size:var(--fs-11);font-weight:600;color:{{ $p['stock'] < 10 ? '#b3261e' : 'var(--muted)' }}">{{ $p['stock'] }} in stock</span>@endif</div>
+        @if(! empty($p['img']))<img src="{{ $p['img'] }}" alt="" loading="lazy" style="width:100%;height:84px;object-fit:contain;border-radius:8px;background:#f8fafc">@endif
         <span style="font-size:var(--fs-14);font-weight:700">{{ $p['name'] }}</span>
         <span style="font-size:var(--fs-11);color:var(--muted)">{{ $p['note'] }}</span>
         <span style="margin-top:auto;font-size:var(--fs-16);font-weight:700">@if($p['price'] !== null)৳{{ number_format($p['price']) }}@else<span style="color:#b3261e;font-size:var(--fs-12)">No price set</span>@endif</span>

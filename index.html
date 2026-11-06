@@ -280,7 +280,7 @@ footer{background:var(--ink);color:#fff;padding:56px 0 32px}
     if(wa.length>=12&&wa!=='8801901168777'){document.querySelectorAll('a[href*="wa.me/8801901168777"]').forEach(function(a){a.href=a.href.replace('8801901168777',wa);});}
     var ad=document.querySelector('.ft .mut');if(c.address&&ad)ad.textContent=c.address;
     var tk=function(n){n=Math.round(n);var x=String(n),l=x.slice(-3),r=x.slice(0,-3);return '৳'+(r?r.replace(/\B(?=(\d{2})+(?!\d))/g,',')+','+l:l);};
-    if(c.prices&&c.prices.sizes){document.querySelectorAll('#sizes .card').forEach(function(card){var a=card.querySelector('[data-size]');if(!a)return;var p=c.prices.sizes[parseInt(a.getAttribute('data-size'),10)];if(!p||(!p.refill&&!p.pkg))return;
+    if(c.prices&&c.prices.sizes){document.querySelectorAll('#sizes .card').forEach(function(card){var a=card.querySelector('[data-size]');if(!a)return;var p=c.prices.sizes[parseInt(a.getAttribute('data-size'),10)];if(p&&p.img){var ci=card.querySelector('.cimg');if(ci){var ni=new Image();ni.onload=function(){ci.src=p.img;};ni.src=p.img;}}if(!p||(!p.refill&&!p.pkg))return;
       var d=document.createElement('div');d.className='pr';d.innerHTML=(p.refill?'<b>'+tk(p.refill)+'<small>refill</small></b>':'')+(p.pkg?'<span>New cylinder with gas: <strong>'+tk(p.pkg)+'</strong></span>':'');card.insertBefore(d,a);});
       var sub=document.querySelector('#sizes .sub');if(sub)sub.textContent="Today's prices"+(c.prices.updated?' · updated '+c.prices.updated:'')+'. Call or WhatsApp us to order.';}
     if(c.owners&&c.owners.length){var ow=document.querySelector('#about .owner');if(ow){var box=document.createElement('div');box.className='owners';

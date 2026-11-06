@@ -140,6 +140,7 @@ Route::middleware(['auth', 'pwd'])->group(function () {
     Route::middleware('role:super_admin,admin')->group(function () {
         Route::post('/products', [ProductController::class, 'save'])->name('products.save');
         Route::post('/products/{product}/stock', [ProductController::class, 'receive'])->name('products.stock');
+        Route::post('/products/{product}/photo', [ProductController::class, 'photo'])->name('products.photo');
     });
 
     Route::middleware('role:super_admin,admin,manager')->group(function () {

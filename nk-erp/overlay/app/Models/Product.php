@@ -8,7 +8,7 @@ class Product extends Model
 {
     public const CATEGORIES = ['refill' => 'Refill', 'new_package' => 'New package', 'accessory' => 'Accessories', 'service' => 'Service'];
 
-    protected $fillable = ['code', 'name', 'category', 'brand_id', 'size_kg', 'retail_price', 'dealer_price', 'note', 'is_active'];
+    protected $fillable = ['code', 'name', 'category', 'brand_id', 'size_kg', 'retail_price', 'dealer_price', 'note', 'is_active', 'image'];
 
     protected function casts(): array
     {

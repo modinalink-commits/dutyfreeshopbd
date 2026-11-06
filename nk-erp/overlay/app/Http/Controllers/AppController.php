@@ -97,7 +97,7 @@ class AppController extends Controller
         foreach (Product::query()->where('is_active', true)->whereIn('category', ['refill', 'new_package'])->get() as $p) {
             $price = $p->dealer_price ?? $p->retail_price;
             if ($price === null || ! $p->size_kg) continue;
-            $out[$p->size_kg][$p->category === 'refill' ? 'ex' : 'nw'] = ['id' => $p->id, 'price' => (float) $price, 'brand' => $p->brand_id];
+            $out[$p->size_kg][$p->category === 'refill' ? 'ex' : 'nw'] = ['id' => $p->id, 'price' => (float) $price, 'brand' => $p->brand_id, 'img' => $p->image];
         }
         return $out;
     }

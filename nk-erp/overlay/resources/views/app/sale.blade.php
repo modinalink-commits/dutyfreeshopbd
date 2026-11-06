@@ -20,6 +20,7 @@
   <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
     @foreach($onVeh as $s => $q)<button type="button" class="chip sz" data-s="{{ $s }}" @disabled(! isset($prices[$s]))><span style="font-size:var(--fs-16)">{{ $U::bn($s) }} কেজি</span><span style="font-size:var(--fs-11)">গাড়িতে {{ $q }}</span></button>@endforeach
   </div></div>
+<img id="pImg" alt="" hidden style="width:100%;height:120px;object-fit:contain;border-radius:12px;background:#f8fafc;border:1px solid #dbe3f0">
 <div style="display:flex;flex-direction:column;gap:6px"><span class="lb">বিক্রির ধরন</span>
   <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px"><button type="button" class="chip ty" data-t="ex">রিফিল / এক্সচেঞ্জ</button><button type="button" class="chip ty" data-t="nw">নতুন সিলিন্ডার</button></div></div>
 <div style="display:flex;align-items:center;gap:10px">
@@ -71,6 +72,7 @@
     $('dueBox').textContent=tk(due); $('dueBox').style.background=due>0?'#fff1d6':'#e3f6ec'; $('dueBox').style.color=due>0?'#8a4b00':'#0f6b3c';
     $('exBox').style.display=st.type==='ex'?'flex':'none';
     const pend=st.qty-st.empty; $('eNote').textContent=pend>0?pend+'টি খালি দোকানে বাকি থাকবে':'সব খালি পাওয়া গেছে'; $('eNote').style.color=pend>0?'#8a4b00':'#0f6b3c';
+    const im=$('pImg'); if(p&&p.img){ if(im.getAttribute('src')!==p.img) im.src=p.img; im.hidden=false; } else im.hidden=true;
     $('save').textContent='বিক্রি সংরক্ষণ — '+tk(total); $('save').disabled=!p||max<1;
   }
   document.querySelectorAll('.sz').forEach(b=>b.onclick=()=>{st.size=b.dataset.s;st.qty=1;st.empty=1;st.paid=null;if(!cur())st.type=st.type==='ex'?'nw':'ex';draw();});
