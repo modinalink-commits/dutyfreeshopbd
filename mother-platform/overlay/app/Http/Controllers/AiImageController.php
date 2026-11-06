@@ -11,7 +11,7 @@ class AiImageController extends Controller {
     $cats = DB::table('categories')->orderBy('name')->get(['id', 'slug', 'name']);
     $smokeIds = $cats->filter(fn($x) => \App\Http\Controllers\StoreController::isSmokeCat($x))->pluck('id')->all();
     $catName = $cats->pluck('name', 'id')->all();
-    $prods = DB::table('products')->when($q !== '', fn($w) => $w->where('name', 'ilike', '%'.$q.'%'))
+    $prods = DB::table('products')->when($q !== '', function ($w) use ($q) { foreach (array_slice(preg_split('/[\s()\[\],]+/u', $q, -1, PREG_SPLIT_NO_EMPTY), 0, 8) as $tk) { if (!preg_match('/[\p{L}\p{N}]/u', $tk)) continue; $l = '%'.str_replace(['\\','%','_'], ['\\\\','\\%','\\_'], $tk).'%'; $w->where(fn($x) => $x->where('name', 'ilike', $l)->orWhere('sku', 'ilike', $l)); } })
       ->when($cat === 'smoke', fn($w) => $w->where(function ($x) use ($smokeIds) { $x->where('group_key', 'smoke'); if ($smokeIds) $x->orWhereIn('category_id', $smokeIds); }))
       ->when($cat !== '' && $cat !== 'smoke' && ctype_digit($cat), fn($w) => $w->where('category_id', (int)$cat))->whereNotNull('image')->where('image', '<>', '')->orderByDesc('id')->paginate(\App\Support\Pg::per(24))->withQueryString();
     $ids = collect($prods->items())->pluck('id')->all();
