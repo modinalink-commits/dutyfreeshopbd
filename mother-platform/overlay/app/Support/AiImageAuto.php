@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Cache;
 /** Owner rules (6 Nov 2026): every NEW product image is automatically turned into the standard AI Product Image (no watermark/logo/overlay, white background, centred, 600x600 web-optimised JPG + WebP + thumbnails) and set as the product's main image at once. Old images that still carry the shop logo are redone, then every Cigarette & Vape product image. One image per product (gallery images are not processed). Cost guard: daily cap. Speed: several images are processed in parallel by small child processes (mother:ai-image-one). */
 class AiImageAuto {
   public static function set(string $k, string $d = ''): string { $v = DB::table('settings')->where('key', 'ai_auto_' . $k)->value('value'); return ($v === null || $v === '') ? $d : (string)$v; }
-  private static function flush(): void { foreach (['store.home2','store.home4','store.home6','store.home5','store.cats','store.live2','store.live3','store.live4','store.globe_products','store.catalogfeed4','card_second_imgs','ai.catalog'] as $k) Cache::forget($k); }
+  private static function flush(): void { foreach (['store.home2','store.home4','store.home6','store.home5','store.cats','store.live2','store.live3','store.live4','store.globe_products','store.catalogfeed4','card_second_imgs2','ai.catalog'] as $k) Cache::forget($k); }
   /** Last result of the automatic worker, shown on the AI Product Images page. */
   private static function note(string $m): void { try { DB::table('settings')->updateOrInsert(['key' => 'ai_auto_last'], ['value' => now()->toDateTimeString() . '|' . $m, 'updated_at' => now(), 'created_at' => now()]); } catch (\Throwable $e) {} }
   public static function fail(string $m): void { self::note('Error: ' . mb_substr($m, 0, 200)); }
