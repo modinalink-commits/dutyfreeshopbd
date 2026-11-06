@@ -31,9 +31,31 @@ class AiImageAuto {
         self::flush();
         return 1; // one image per tick (each AI call takes up to a minute)
       }
+      return self::backfill();
     } catch (\Throwable $e) {
       return 0;
     } finally { try { $lock->release(); } catch (\Throwable $e) {} }
     return 0;
+  }
+  /** Owner rule (6 Nov 2026): images processed with the OLD instruction (they still carry the shop logo) are redone with the new standard, one per tick, inside the same daily cap. Optional second stage (ai_auto_backfill_all=1): every other product whose main image is still an original. */
+  private static function backfill(): int {
+    $row = null; $pc = self::set('prompt_cutoff', '');
+    if (self::set('backfill', '1') === '1' && $pc !== '') $row = DB::table('ai_images')->where('ai_status', 'completed')->whereNotNull('processed_image')->where('processed_at', '<', $pc)->orderBy('id')->first();
+    if ($row) {
+      $r = AiImage::run((int)$row->id);
+      if ($r['ok'] ?? false) { self::flush(); return 1; }
+      return 0;
+    }
+    if (self::set('backfill_all', '0') !== '1') return 0;
+    $p = DB::table('products')->whereNotNull('image')->where('image', '<>', '')->where('image', 'not like', '%/uploads/ai/%')
+      ->whereNotExists(fn($q) => $q->select(DB::raw(1))->from('ai_images')->whereColumn('ai_images.product_id', 'products.id'))->orderBy('id')->first(['id', 'image']);
+    if (!$p) return 0;
+    $url = (string)$p->image;
+    $id = DB::table('ai_images')->insertGetId(['product_id' => (int)$p->id, 'source_hash' => sha1($url), 'source_url' => $url, 'ai_status' => 'pending', 'created_at' => now(), 'updated_at' => now()]);
+    $r = AiImage::run($id); if (!($r['ok'] ?? false)) return 0;
+    $o = DB::table('ai_images')->find($id); if (!$o || !$o->processed_image) return 0;
+    DB::table('products')->where('id', $p->id)->where('image', $url)->update(['image' => $o->processed_image]);
+    DB::table('ai_images')->where('id', $id)->update(['is_main' => true]);
+    self::flush(); return 1;
   }
 }
