@@ -95,6 +95,14 @@ class NkInstall extends Command
             $this->info("Cylinder photos set on {$n} products.");
         }
 
+        // One time, asked by the owner on 06-11-2026: every cylinder brand active (empty collection and exchange for all brands).
+        if (Setting::get('brands_all_active_v1') === null) {
+            $n = Brand::query()->where('is_active', false)->update(['is_active' => true]);
+            Setting::put('brands_all_active_v1', now()->toDateTimeString());
+            if ($n) \App\Models\AuditLog::record('brands_activated', "{$n} cylinder brands set Active (owner request)");
+            $this->info("{$n} brands set Active.");
+        }
+
         return self::SUCCESS;
     }
 }
