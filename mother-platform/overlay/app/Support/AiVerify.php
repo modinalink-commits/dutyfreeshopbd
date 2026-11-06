@@ -85,7 +85,7 @@ class AiVerify {
     elseif ($rel >= 80) $add('Customer', 'RELIABILITY_GOOD', 'pass', 'Customer reliability', "$rel% (delivered $d, cancelled $c, returned $r)");
     elseif ($rel >= 60) $add('Customer', 'RELIABILITY_LOW', 'review', 'Customer reliability', "$rel% (delivered $d, cancelled $c, returned $r)", 10);
     else $add('Customer', 'RELIABILITY_POOR', 'review', 'Customer reliability', "$rel% (delivered $d, cancelled $c, returned $r)", 22);
-    $add('Customer', 'TIER', 'info', 'Customer tier', $tier . ' (tier supports confidence only; it never overrides fraud evidence)', in_array($tier, ['Gold', 'Platinum', 'Diamond', 'VIP'], true) ? -3 : 0);
+    $add('Customer', 'TIER', 'pass', 'Customer tier', $tier . ' customer (supports confidence only, never overrides fraud evidence)', in_array($tier, ['Gold', 'Platinum', 'Diamond', 'VIP'], true) ? -3 : 0);
 
     // ---- Name / address consistency ----
     $names = $validPhone ? $same()->whereNotNull('customer_name')->distinct()->pluck('customer_name')->all() : [];
@@ -206,7 +206,7 @@ class AiVerify {
     $call = null;
     if ($validPhone && self::tbl('call_logs')) { try { $call = DB::table('call_logs')->whereRaw('right(phone,11) = ?', [$phone])->where('status', 'answered')->where(function ($q) use ($o, $created) { $q->where('order_id', $o->id)->orWhere('started_at', '>=', \Carbon\Carbon::parse($created)->subHours(2)); })->orderByDesc('id')->first(); } catch (\Throwable $e) { $call = null; } }
     if ($call) $add('Communication', 'CALL_CONFIRMED', 'pass', 'Call verification', 'Call answered by the customer' . ($call->user_name ? ' (staff: ' . $call->user_name . ')' : '') . ($call->started_at ? ', ' . \Carbon\Carbon::parse($call->started_at)->timezone('Asia/Dhaka')->format('d M, h:i A') : '') . '. Strong supporting evidence.', -8);
-    else $add('Communication', 'NO_CALL', 'info', 'Call verification', 'No answered call with this customer recorded for this order yet');
+    else $add('Communication', 'NO_CALL', 'info', 'Call verification', 'Confirmation call pending: call the customer to confirm this order. An answered call here turns this green (-8 risk).');
 
     // ---- Status consistency ----
     if (in_array($o->status, ['Shipment', 'Delivered'], true) && !$deducted && $short) $add('Order', 'STATUS_STOCK', 'review', 'Order status consistency', 'Order is ' . $o->status . ' but stock is short', 10);
