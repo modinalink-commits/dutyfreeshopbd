@@ -35,7 +35,11 @@ class SeoItemsController extends Controller
   public function index(Request $r) {
     $t = in_array($r->query('type'), array_keys(self::T), true) ? $r->query('type') : 'category'; $f = (string)$r->query('f', 'all');
     $q = $this->items($t, $r); $all = $q->get(); $gt = self::GT[$t] ?? null;
-    $rows = $all->map(function ($x) use ($t, $gt) { $x->iss = $this->status($x, $t); $x->seo = $gt ? G::status($gt, $x) : null; $x->modes = $gt ? G::modes($x) : []; return $x; });
+    $tc = $this->tcol($t); $dupT = []; $dupD = [];
+    foreach ($all as $x) { $a = mb_strtolower(trim((string)($x->$tc ?? ''))); $b = mb_strtolower(trim((string)($x->meta_description ?? ''))); if ($a !== '') $dupT[$a] = ($dupT[$a] ?? 0) + 1; if ($b !== '') $dupD[$b] = ($dupD[$b] ?? 0) + 1; }
+    $rows = $all->map(function ($x) use ($t, $gt, $tc, $dupT, $dupD) { $x->iss = $this->status($x, $t);
+      $a = mb_strtolower(trim((string)($x->$tc ?? ''))); $b = mb_strtolower(trim((string)($x->meta_description ?? '')));
+      if ($a !== '' && ($dupT[$a] ?? 0) > 1) $x->iss[] = 'Duplicate title (' . $dupT[$a] . ')'; if ($b !== '' && ($dupD[$b] ?? 0) > 1) $x->iss[] = 'Duplicate description (' . $dupD[$b] . ')'; $x->seo = $gt ? G::status($gt, $x) : null; $x->modes = $gt ? G::modes($x) : []; return $x; });
     $tot = $rows->count(); $bad = $rows->filter(fn($x) => count($x->iss))->count();
     $miss = $gt ? $rows->filter(fn($x) => $x->seo['state'] === 'missing')->count() : 0;
     if ($f === 'bad') $rows = $rows->filter(fn($x) => count($x->iss)); elseif ($f === 'nokw') $rows = $rows->filter(fn($x) => trim((string)$x->focus_keyword) === '');
@@ -81,6 +85,7 @@ class SeoItemsController extends Controller
       if ($v === $cur) { $modes[$f] = $modes[$f] ?? 'manual'; continue; }
       $modes[$f] = $v === (string)$gen[$f] ? 'auto' : 'manual';
     }
+    if ($t === 'brand') { $row['short_description'] = mb_substr(trim((string)$r->input('short')), 0, 300) ?: null; $row['seo_content'] = mb_substr(trim((string)$r->input('content')), 0, 4000) ?: null; $row['nofollow'] = $r->boolean('nofollow'); }
     $row['seo_modes'] = json_encode($modes); $row['seo_auto_at'] = now();
     DB::table(G::table($gt))->where('id', $id)->update($row); $this->clear(); S::audit('item.save', $t . '#' . $id . ' ' . ($o->name ?? ''), null, $row);
     return back()->with('ok', 'Saved: ' . ($o->name ?? ''));
