@@ -53,6 +53,9 @@ class CourierBook {
       try { $r = DB::table('pathao_invoice_lines')->where('collected', '>', 0)->selectRaw('coalesce(sum(cod_fee),0) c, coalesce(sum(collected),0) s')->first(); return $r && $r->s > 0 ? min(0.05, max(0, round($r->c / $r->s, 4))) : 0; } catch (\Throwable $e) { return 0; }
     });
   }
+  /** Income-list helpers: split the " — Track: <url>" suffix from a comment. Safe for any value. */
+  public static function trackUrl($v): ?string { return is_string($v) && preg_match('~ — Track: (https://\S+)~u', $v, $m) ? $m[1] : null; }
+  public static function trackText($v) { return is_string($v) ? trim((string)preg_replace('~ — Track: \S+~u', '', $v)) : $v; }
   /** Public courier tracking link for the Income comment. */
   public static function track(object $o): string {
     $c = trim((string)($o->consignment_id ?? '')); if ($c === '') return '';
