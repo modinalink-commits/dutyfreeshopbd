@@ -91,7 +91,7 @@ class AiImage {
     if (!$xs || !$ys) throw new \RuntimeException('No product found in the processed image');
     $x0 = min($xs); $x1 = max($xs); $y0 = min($ys); $y1 = max($ys);
     $cw = min($w - $x0, $x1 - $x0 + $st + 1); $ch = min($h - $y0, $y1 - $y0 + $st + 1);
-    $box = 500; $sc = min($box / $cw, $box / $ch); $nw = max(1, (int)round($cw * $sc)); $nh = max(1, (int)round($ch * $sc));
+    $box = 500; $sc = min($box / $cw, $box / $ch, sqrt(190000 / max(1, $cw * $ch))); /* by product shape: slim items (vape, single pack) use the full height, wide or boxy items (cartons) are scaled down a little so every product has about the same visual size */ $nw = max(1, (int)round($cw * $sc)); $nh = max(1, (int)round($ch * $sc));
     $cv = imagecreatetruecolor(600, 600); imagefill($cv, 0, 0, imagecolorallocate($cv, 255, 255, 255));
     $px = (int)round((600 - $nw) / 2); $py = (int)round((600 - $nh) / 2);
     // soft natural shadow under the product
