@@ -54,6 +54,7 @@ class CourierSync {
       DB::table('order_status_logs')->insert(['order_id'=>$o->id, 'user_id'=>null, 'user_name'=>'Courier (auto)', 'from_status'=>$o->status, 'to_status'=>$new, 'note'=>($o->courier ?: 'Pathao').': '.$raw, 'created_at'=>$now, 'updated_at'=>$now]);
     }
     DB::table('orders')->where('id', $o->id)->update($upd);
+    if ($stage !== $o->courier_stage && in_array($stage, ['Delivered', 'Returned'], true)) { try { Capi::outcome($o, $stage); } catch (\Throwable $e) {} }
     if ($unknown && ($o->courier_flag ?? null) !== 'Courier Status Mapping Required') { try { OrderActivity::log((int)$o->id, 'courier_flag', null, 'Courier Status Mapping Required', 'Pathao sent a status that is not mapped yet: "'.$raw.'". Map it in Courier & Delivery > Pathao Status Map.'); } catch (\Throwable $e) { report($e); } }
     if ($action) { try { PathaoStatusSync::outcome((int)$o->id, $action, $i); } catch (\Throwable $e) { report($e); } }
     return $changed || $action !== null;

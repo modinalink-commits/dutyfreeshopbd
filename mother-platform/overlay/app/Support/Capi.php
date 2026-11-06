@@ -64,12 +64,13 @@ class Capi
   public static function browse(Request $r, array $in): void {
     try {
       if (!self::enabled()) return;
-      $n = (string)($in['n'] ?? ''); if (!in_array($n, ['ViewContent','AddToCart','InitiateCheckout','AddPaymentInfo','Search'], true)) return;
+      $n = (string)($in['n'] ?? ''); if (!in_array($n, ['ViewContent','AddToCart','InitiateCheckout','AddPaymentInfo','Search','Contact'], true)) return;
       $id = preg_replace('/[^A-Za-z0-9_\-]/', '', (string)($in['id'] ?? '')); if ($id === '' || strlen($id) > 60) return;
       if (!\Illuminate\Support\Facades\Cache::add('capi:'.$id, 1, 3600)) return;
       $its = []; foreach (array_slice((array)($in['items'] ?? []), 0, 30) as $x) { $pid = preg_replace('/[^A-Za-z0-9_\-]/', '', (string)($x['id'] ?? '')); if ($pid === '') continue; $its[] = ['id'=>$pid, 'quantity'=>max(1, min(50, (int)($x['q'] ?? 1))), 'item_price'=>(float)($x['p'] ?? 0)]; }
       $custom = ['currency'=>'BDT'];
-      if ($n === 'Search') { $custom['search_string'] = mb_substr(trim((string)($in['term'] ?? '')), 0, 80); $custom['content_type'] = 'product'; }
+      if ($n === 'Contact') { $custom['content_name'] = in_array(($in['ch'] ?? ''), ['whatsapp','call','messenger'], true) ? $in['ch'] : 'contact'; }
+      elseif ($n === 'Search') { $custom['search_string'] = mb_substr(trim((string)($in['term'] ?? '')), 0, 80); $custom['content_type'] = 'product'; }
       else { if (!$its) return; $custom += ['value'=>(float)($in['v'] ?? 0), 'content_type'=>'product', 'content_ids'=>array_column($its, 'id'), 'contents'=>$its, 'num_items'=>array_sum(array_column($its, 'quantity'))]; }
       $am = is_array($in['am'] ?? null) ? $in['am'] : []; $c = [];   // returning customer's details kept in their own browser (raw; hashed here, never stored)
       foreach (['em'=>'email','ph'=>'phone','fn'=>'fn','ln'=>'ln','ct'=>'city'] as $k=>$f) if (isset($am[$k]) && is_string($am[$k])) $c[$f] = mb_substr($am[$k], 0, 120);
@@ -78,6 +79,17 @@ class Capi
       $user = self::user($c, $_COOKIE['_fbp'] ?? null, $_COOKIE['_fbc'] ?? null, self::clientIp($r), (string)$r->userAgent());
       $url = (string)($in['u'] ?? ''); $url = str_starts_with($url, url('/')) ? $url : url('/');
       app()->terminating(fn() => self::send($n, $id, $user, $custom, $url));
+    } catch (\Throwable $e) {}
+  }
+
+  /** Real-world result of a parcel (Delivered / Returned) sent to Meta as custom events, so Meta can learn who actually keeps an order (COD). Runs once per order and result; matched by hashed phone/name/email, no browser needed. */
+  public static function outcome(object $o, string $stage): void {
+    try {
+      $ev = $stage === 'Delivered' ? 'OrderDelivered' : ($stage === 'Returned' ? 'OrderReturned' : null); if (!$ev || !self::enabled()) return;
+      $id = $ev.'_'.($o->invoice ?? $o->id); $k = 'capi:out:'.$id; if (\Illuminate\Support\Facades\Cache::has($k)) return;
+      $user = self::user(['phone' => $o->phone ?? '', 'name' => $o->customer_name ?? '', 'email' => $o->email ?? '', 'city' => $o->district ?? '', 'external_id' => $o->customer_id ?? ''], null, null, null, null);
+      $r = self::send($ev, $id, $user, ['currency' => 'BDT', 'value' => (float)($o->total ?? 0), 'order_id' => (string)($o->invoice ?? $o->id)], url('/'));
+      if (!empty($r['ok'])) \Illuminate\Support\Facades\Cache::put($k, 1, 86400 * 60);
     } catch (\Throwable $e) {}
   }
 }

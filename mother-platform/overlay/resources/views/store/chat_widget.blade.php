@@ -86,7 +86,7 @@ function bubble(cls,html,at,id,status,img){var d=document.createElement('div');d
 function setStatus(el,seen){var b=el&&el.querySelector('small b');if(!b)return;b.textContent=seen?'✓✓ Seen':'✓✓ Delivered';b.className=seen?'seen':''}
 /* quick actions */
 var QA=[['🛒 Order করতে চাই','msg','আমি অর্ডার করতে চাই। কীভাবে অর্ডার করব?'],['📦 Track Order','track'],['ℹ️ Product Info','msg','আমি একটি প্রোডাক্ট সম্পর্কে জানতে চাই।'],['💳 Payment Help','msg','পেমেন্ট সংক্রান্ত সাহায্য দরকার।'],['🚚 Delivery Info','msg','ডেলিভারি চার্জ ও সময় সম্পর্কে জানতে চাই।'],['💬 WhatsApp Chat','wa']];
-function qaClick(a){if(a[1]==='wa'){window.open('https://wa.me/'+(D.wa||''),'_blank','noopener');return}
+function qaClick(a){if(a[1]==='wa'){try{window.dfContact&&dfContact('whatsapp')}catch(e){}window.open('https://wa.me/'+(D.wa||''),'_blank','noopener');return}
  if(a[1]==='track'){botSay('আপনার অর্ডার নম্বরটি লিখুন (যেমন INV-000123)। আমি স্ট্যাটাস দেখে দিচ্ছি।');Q.placeholder='অর্ডার নম্বর, যেমন INV-000123';Q.focus();S.track=1;return}
  send(a[2])}
 var VC=D.vc||{};if(VC.on&&VC.handoff)QA.push(['🧑 মানুষের সাথে কথা বলুন','msg','আমি একজন মানুষের সাথে কথা বলতে চাই।']);
