@@ -18,6 +18,7 @@ class PermissionController extends Controller {
       $in = (array)$r->input("p.{$role->id}", []); $p = [];
       foreach (MP::MODULES as $k => $l) { $lv = $in[$k] ?? 'none'; $p[$k] = array_key_exists($lv, MP::LEVELS) ? $lv : 'none'; $p[$k.'_download'] = !empty($in[$k.'_download']); }
       $p['orders_restricted_status'] = !empty($in['orders_restricted_status']);
+      $p['purchase_set_rate'] = !empty($in['purchase_set_rate']); $p['purchase_override_margin'] = !empty($in['purchase_override_margin']);
       DB::table('roles')->where('id',$role->id)->update(['permissions'=>json_encode($p), 'updated_at'=>now()]);
     }
     foreach ((array)$r->input('ur', []) as $uid => $rid) {

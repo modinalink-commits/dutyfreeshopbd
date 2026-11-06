@@ -58,6 +58,9 @@ class ModulePermission {
     $r = self::rules($user); if ($r === null) return true;
     return $r['orders_restricted_status'] ?? true;
   }
+  /** Purchase entry: who may type a New Selling Rate (absent flag = allowed, as before) and who may override the protected margin (absent flag = Super/Admin only until ticked for a role, e.g. Manager). */
+  public static function canSetRate($user): bool { $r = self::rules($user); if ($r === null) return true; return $r['purchase_set_rate'] ?? true; }
+  public static function canOverrideMargin($user): bool { $r = self::rules($user); if ($r === null) return true; return !empty($r['purchase_override_margin']); }
   public static function can($user, ?string $module, string $need = 'view'): bool {
     if ($module === null) return true;
     $r = self::rules($user); if ($r === null) return true;
