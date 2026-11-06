@@ -7,7 +7,13 @@ class AiImageController extends Controller {
   private function flush(): void { foreach (['store.home2','store.home4','store.home6','store.home5','store.cats','store.live2','store.live3','store.live4'] as $k) \Illuminate\Support\Facades\Cache::forget($k); }
   public function index(Request $r) {
     $q = trim((string)$r->query('q', '')); $f = $r->query('f', 'all');
-    $prods = DB::table('products')->when($q !== '', fn($w) => $w->where('name', 'ilike', '%'.$q.'%'))->whereNotNull('image')->where('image', '<>', '')->orderByDesc('id')->paginate(\App\Support\Pg::per(24))->withQueryString();
+    $cat = (string)$r->query('cat', '');
+    $cats = DB::table('categories')->orderBy('name')->get(['id', 'slug', 'name']);
+    $smokeIds = $cats->filter(fn($x) => \App\Http\Controllers\StoreController::isSmokeCat($x))->pluck('id')->all();
+    $catName = $cats->pluck('name', 'id')->all();
+    $prods = DB::table('products')->when($q !== '', fn($w) => $w->where('name', 'ilike', '%'.$q.'%'))
+      ->when($cat === 'smoke', fn($w) => $w->where(function ($x) use ($smokeIds) { $x->where('group_key', 'smoke'); if ($smokeIds) $x->orWhereIn('category_id', $smokeIds); }))
+      ->when($cat !== '' && $cat !== 'smoke' && ctype_digit($cat), fn($w) => $w->where('category_id', (int)$cat))->whereNotNull('image')->where('image', '<>', '')->orderByDesc('id')->paginate(\App\Support\Pg::per(24))->withQueryString();
     $ids = collect($prods->items())->pluck('id')->all();
     $gal = $ids ? DB::table('product_images')->whereIn('product_id', $ids)->orderBy('position')->get()->groupBy('product_id') : collect();
     $recs = $ids ? DB::table('ai_images')->whereIn('product_id', $ids)->get() : collect();
@@ -22,7 +28,7 @@ class AiImageController extends Controller {
     if ($f !== 'all') $slots = array_values(array_filter($slots, fn($s) => ($s['rec']->ai_status ?? 'pending') === $f));
     $counts = DB::table('ai_images')->select('ai_status', DB::raw('count(*) n'))->groupBy('ai_status')->pluck('n', 'ai_status');
     $key = AiImage::key();
-    return view('ai_images', ['slots'=>$slots, 'prods'=>$prods, 'q'=>$q, 'f'=>$f, 'counts'=>$counts, 'hasKey'=>(bool)$key, 'keyMask'=>$key ? substr($key, 0, 5).'••••'.substr($key, -4) : '', 'model'=>AiImage::set('ai_img_model', AiImage::MODEL), 'quality'=>AiImage::set('ai_img_quality', 'medium'), 'prompt'=>AiImage::prompt(), 'gd'=>\App\Support\Img::ok(), 'auto'=>\App\Support\AiImageAuto::status()]);
+    return view('ai_images', ['slots'=>$slots, 'prods'=>$prods, 'q'=>$q, 'f'=>$f, 'counts'=>$counts, 'hasKey'=>(bool)$key, 'keyMask'=>$key ? substr($key, 0, 5).'••••'.substr($key, -4) : '', 'model'=>AiImage::set('ai_img_model', AiImage::MODEL), 'quality'=>AiImage::set('ai_img_quality', 'medium'), 'prompt'=>AiImage::prompt(), 'gd'=>\App\Support\Img::ok(), 'auto'=>\App\Support\AiImageAuto::status(), 'cat'=>$cat, 'cats'=>$cats, 'catName'=>$catName, 'smokeIds'=>$smokeIds]);
   }
   public function settings(Request $r) {
     $d = $r->validate(['openai_api_key'=>'nullable|string|max:300', 'ai_img_model'=>'nullable|string|max:60', 'ai_img_quality'=>'nullable|in:low,medium,high', 'ai_img_prompt'=>'nullable|string|max:3000']);
