@@ -363,7 +363,7 @@ class Analytics {
       $r['score'] = $fin > 0 ? round($r['delivered'] / $fin * 100) : 100;
       $bad = (int)$r['returned'] + (int)$r['cancelled'];
       $r['risk'] = ($fin >= 2 && $r['score'] < 50) || $bad >= 3 ? 'High' : ($fin >= 2 && $r['score'] < 75 ? 'Medium' : 'Low');
-      $r['category'] = (float)$r['spend'] >= 20000 || (int)$r['delivered'] >= 5 ? 'VIP' : ((int)$r['orders'] >= 2 ? 'Regular' : 'New');
+      $r['category'] = (int)$r['delivered'] >= 5 || ((int)$r['delivered'] >= 1 && (float)$r['spend'] >= 20000) ? 'VIP' : ((int)$r['delivered'] >= 1 ? 'Regular' : 'New'); // owner rule 2026-11-06: a real customer = received a parcel; orders alone count for nothing
     }
     return $rows;
   }

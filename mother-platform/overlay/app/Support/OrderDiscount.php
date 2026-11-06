@@ -56,7 +56,7 @@ class OrderDiscount {
   /** Customer Type (VIP / Regular / New) and Membership (Active / Inactive). */
   public static function profile(string $p): array {
     $c = self::customer($p); $st = self::stats($p, $c); $t = self::tier($p, $c);
-    $cat = ($c && strtolower((string)($c->type ?? '')) === 'vip') ? 'VIP' : ($st['n'] > 0 ? 'Regular' : 'New');
+    $cat = ($c && strtolower((string)($c->type ?? '')) === 'vip') ? 'VIP' : (CustomerBenefit::check($p, $c)['received'] > 0 ? 'Regular' : 'New');
     return ['category' => $cat, 'membership' => $t ? 'Active' : 'Inactive', 'membership_name' => $t['name'] ?? null, 'orders' => $st['n'], 'found' => (bool)$c];
   }
   /** Applies the product "Quantity prices" (Buy 2-5) for every channel that did not already do it (website cart does it itself and sets ctx qprice). Lines priced by hand are left alone. */
