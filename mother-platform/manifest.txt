@@ -785,3 +785,5 @@ database/migrations/2026_11_06_000520_order_benefit_snapshot.php
 database/migrations/2026_11_06_000530_order_checkout_snapshot.php
 app/Http/Controllers/CheckoutDiscountReportController.php
 resources/views/checkout_discount_report.blade.php
+app/Http/Controllers/CourierTrackController.php
+resources/views/courier_track.blade.php
