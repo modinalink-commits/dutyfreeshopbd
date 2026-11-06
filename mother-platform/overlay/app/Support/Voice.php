@@ -131,7 +131,16 @@ class Voice
     $var = ["origination_uuid=$uuid", 'origination_caller_id_number=' . (self::set('caller_id') ?: '0000'), 'origination_caller_id_name=DutyFreeBD', 'originate_timeout=' . (int)self::set('ring_timeout', '30'), 'ignore_early_media=true',
       "vc_id=$id", "vc_audio='$url'", "vc_hook='" . self::baseUrl() . '/webhooks/voice?k=' . self::hookToken() . "'", 'vc_dtmf=' . ($c->dtmf_on ? '1' : '0'), 'vc_agent=' . (self::set('agent_ext') ?: '101'), 'vc_rec=' . self::recName($id, $row->phone, $uuid)];
     if (self::set('direct', '0') === '1' && !$pp) { // no dialplan: the call is answered and the audio is played straight into it, then it hangs up
-      $cmd = 'originate {' . implode(',', array_merge(array_filter($var, fn($x) => !str_starts_with($x, 'vc_')), ['hangup_after_bridge=true'])) . '}sofia/gateway/' . self::set('gateway') . '/' . self::dialNumber($row->phone) . ' &playback(' . $url . ')';
+      // this PBX has no http_cache module, so the audio is fetched into /tmp on the PBX first (over the same ESL link), then played from there
+      $local = '/tmp/vc_' . substr(md5($url), 0, 16) . '.wav';
+      self::esl('system find /tmp -maxdepth 1 -name "vc_*.wav" -mmin +120 -delete', 15);
+      [$ok0, $o0] = self::esl('system test -s ' . $local . ' && echo HAVE', 15);
+      if (!($ok0 && str_contains($o0, 'HAVE'))) {
+        self::esl('system curl -sSLk -m 20 -o ' . $local . ' ' . escapeshellarg($url), 30);
+        [$ok1, $o1] = self::esl('system test -s ' . $local . ' && echo HAVE', 15);
+        if (!($ok1 && str_contains($o1, 'HAVE'))) return ['failed', 'The PBX could not download the voice audio (curl missing or the site is not reachable from the PBX).', $uuid];
+      }
+      $cmd = 'originate {' . implode(',', array_merge(array_filter($var, fn($x) => !str_starts_with($x, 'vc_')), ['hangup_after_bridge=true'])) . '}sofia/gateway/' . self::set('gateway') . '/' . self::dialNumber($row->phone) . ' &playback(' . $local . ')';
     } else
       $cmd = 'originate {' . implode(',', $var) . '}sofia/gateway/' . self::set('gateway') . '/' . self::dialNumber($row->phone) . ' ' . (self::set('dialplan_ext') ?: (string)env('PBX_DESTINATION', 'voice_offer')) . ' XML ' . (self::set('context') ?: (string)env('PBX_CONTEXT', 'public'));
     [$ok, $out] = self::esl($cmd, (int)self::set('ring_timeout', '30') + 15); if (!$ok) return ['failed', $out, $uuid];
