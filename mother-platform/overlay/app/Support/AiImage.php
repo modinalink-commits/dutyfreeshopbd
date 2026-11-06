@@ -80,13 +80,16 @@ class AiImage {
     $im = @imagecreatefromstring($bin); if (!$im) throw new \RuntimeException('Could not read the processed image');
     $w = imagesx($im); $h = imagesy($im); imagealphablending($im, false); imagesavealpha($im, true);
     $alpha = false; foreach ([[2,2],[$w-3,2],[2,$h-3],[$w-3,$h-3],[(int)($w/2),2],[2,(int)($h/2)]] as [$x,$y]) if (((imagecolorat($im, $x, $y) >> 24) & 127) > 100) { $alpha = true; break; }
-    $x0 = $w; $y0 = $h; $x1 = -1; $y1 = -1; $st = 2;
+    // product bounding box: rows/columns need a few product pixels, so a stray speck or faint halo can never shrink the product
+    $st = 2; $col = []; $row = [];
     for ($y = 0; $y < $h; $y += $st) for ($x = 0; $x < $w; $x += $st) {
       $c = imagecolorat($im, $x, $y); $a = ($c >> 24) & 127;
-      $fg = $alpha ? ($a < 100) : (!(((($c >> 16) & 255) > 244) && ((($c >> 8) & 255) > 244) && (($c & 255) > 244)));
-      if ($fg) { if ($x < $x0) $x0 = $x; if ($x > $x1) $x1 = $x; if ($y < $y0) $y0 = $y; if ($y > $y1) $y1 = $y; }
+      $fg = $alpha ? ($a < 100) : (!(((($c >> 16) & 255) > 240) && ((($c >> 8) & 255) > 240) && (($c & 255) > 240)));
+      if ($fg) { $col[$x] = ($col[$x] ?? 0) + 1; $row[$y] = ($row[$y] ?? 0) + 1; }
     }
-    if ($x1 < 0) throw new \RuntimeException('No product found in the processed image');
+    $xs = array_keys(array_filter($col, fn($n) => $n >= 3)); $ys = array_keys(array_filter($row, fn($n) => $n >= 3));
+    if (!$xs || !$ys) throw new \RuntimeException('No product found in the processed image');
+    $x0 = min($xs); $x1 = max($xs); $y0 = min($ys); $y1 = max($ys);
     $cw = min($w - $x0, $x1 - $x0 + $st + 1); $ch = min($h - $y0, $y1 - $y0 + $st + 1);
     $box = 500; $sc = min($box / $cw, $box / $ch); $nw = max(1, (int)round($cw * $sc)); $nh = max(1, (int)round($ch * $sc));
     $cv = imagecreatetruecolor(600, 600); imagefill($cv, 0, 0, imagecolorallocate($cv, 255, 255, 255));
