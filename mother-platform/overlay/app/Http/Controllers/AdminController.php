@@ -175,7 +175,8 @@ class AdminController extends Controller {
     $incOpen = (int)DB::table('incomplete_orders')->where('status', 'open')->count(); try { $vals['Incomplete'] = (float)DB::table('incomplete_orders')->where('status', 'open')->sum('total'); } catch (\Throwable $e) { $vals['Incomplete'] = 0; }
     $aiIds = []; try { $nw = collect(method_exists($orders, 'items') ? $orders->items() : $orders)->filter(fn($x) => ($x->status ?? '') === 'New')->pluck('id')->all(); if ($nw) $aiIds = DB::table('order_ai_verifications')->whereIn('order_id', $nw)->whereRaw("coalesce(override_status, verification_status) = 'verified'")->pluck('order_id')->map(fn($v) => (int)$v)->values()->all(); } catch (\Throwable $e) { $aiIds = []; }
     $dupDay = []; try { $dupDay = \App\Support\DupGuard::forPage($orders->items()); } catch (\Throwable $e) { $dupDay = []; }
-    return view('orders', compact('orders','counts','vals','items','per','intel','incOpen','cmLast','dupHint','dupInv','aiAp','aiIds','dupDay') + ['isInc'=>$isInc] + ($isInc ? \App\Http\Controllers\IncompleteController::data($r, $range) : \App\Http\Controllers\IncompleteController::mix($r, $orders, $range)));
+    $__v = view('orders', compact('orders','counts','vals','items','per','intel','incOpen','cmLast','dupHint','dupInv','aiAp','aiIds','dupDay') + ['isInc'=>$isInc] + ($isInc ? \App\Http\Controllers\IncompleteController::data($r, $range) : \App\Http\Controllers\IncompleteController::mix($r, $orders, $range)));
+    try { $__h = $__v->render(); return response(\App\Support\SvgDedupe::run($__h)); } catch (\Throwable $__e) { throw $__e; }
   }
   public function orderBulk(Request $r) {
     $d = $r->validate(['ids'=>'required|array|max:500','ids.*'=>'integer','status'=>'required|in:'.implode(',',Mother::STAGES)]);
