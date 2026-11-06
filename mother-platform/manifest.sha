@@ -1,11 +1,11 @@
 fe43f8b6cb422cca81ee18b74d3972f77e7852de database/migrations/2026_10_31_000001_mother_core.php
 9fdfb58e60a0543ff4a7bb4fbf1617aab4a78507 routes/web.php
 5ec9cde3d13c963d0d55a626e10bf2e39e36a691 app/Models/Mother.php
-ad0feb2a87eef35d52a7b7cf1901a3686a973626 app/Http/Controllers/AdminController.php
+4a015eb5ada93670c23fd08eccd42df0a2191a84 app/Http/Controllers/AdminController.php
 242316b2ef0a0967e6815e39fcbc7377349fdc17 app/Console/Commands/MotherInstall.php
 46281a83a4c346e36e3cd65bb9098358735e11d0 resources/views/layout.blade.php
 2b227b5ab4047c9018760d3f3da2dc1c31b55cb1 resources/views/login.blade.php
-915ddcceaf8fe7c3f03a0bb0838a6577d31f4578 resources/views/dashboard.blade.php
+bb9b7dc898af8e6388431ad613dd3192d82b85c1 resources/views/dashboard.blade.php
 04ecadad4bb7ea88bf05689700b8f02e5d031652 resources/views/orders.blade.php
 c2b0402e6f704a352e9454051eb6ad9572a238ad resources/views/admin/orders/partials/status-tabs.blade.php
 0ab54098f668eecc01828e853264b0190f3d0b1e resources/views/admin/orders/partials/header-system.blade.php
