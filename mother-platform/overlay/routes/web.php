@@ -542,6 +542,7 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestF
   Route::get('/purchase/invoice/{no}', [\App\Http\Controllers\ProcurementController::class,'publicInvoice'])->where('no','PUR-[0-9]+')->middleware('throttle:60,1');
   Route::get('/supplier/statement/{token}', [\App\Http\Controllers\ProcurementController::class,'statement'])->where('token','[a-f0-9]+')->middleware('throttle:60,1');
   Route::get('/p/{key}', [\App\Http\Controllers\StoreController::class,'product'])->where('key','[A-Za-z0-9\-]+');
+  Route::get('/brand/{slug}', [\App\Http\Controllers\StoreController::class,'brand'])->where('slug','[a-z0-9\-]+');
   Route::get('/{slug}', [\App\Http\Controllers\StoreController::class,'category'])->where('slug','[a-z0-9\-]+');
   Route::get('/{cat}/{sub}', [\App\Http\Controllers\StoreController::class,'categorySub'])->where(['cat'=>'[a-z0-9\-]+','sub'=>'[a-z0-9\-]+']);
   Route::get('/{cat}/{sub}/{slug}', [\App\Http\Controllers\StoreController::class,'productByPath'])->where(['cat'=>'[a-z0-9\-]+','sub'=>'[a-z0-9\-]+','slug'=>'[a-z0-9\-]+']);

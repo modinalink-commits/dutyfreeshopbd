@@ -4,7 +4,7 @@
 <meta name="description" content="{{ $desc }}">
 @endif
 @if(!empty($keywords))<meta name="keywords" content="{{ $keywords }}">@endif
-<link rel="canonical" href="{{ $canon }}"><meta name="robots" content="{{ !empty($noindex) ? 'noindex,follow' : 'index,follow,max-image-preview:large' }}">
+<link rel="canonical" href="{{ $canon }}"><meta name="robots" content="{{ $robots ?? (!empty($noindex) ? 'noindex,follow' : 'index,follow,max-image-preview:large') }}">
 <meta name="theme-color" content="#0B1220"><meta property="og:type" content="{{ isset($p) ? 'product' : 'website' }}"><meta property="og:site_name" content="DutyFree BD"><meta property="og:locale" content="bn_BD">
 <meta name="twitter:title" content="{{ $title }}"><meta name="twitter:description" content="{{ $desc ?? '' }}"><meta property="og:title" content="{{ $ogtitle ?? $title }}"><meta property="og:description" content="{{ $ogdesc ?? $desc ?? '' }}"><meta property="og:url" content="{{ $canon }}"><meta property="og:image" content="{{ $ogimg ?? url('/og-icon.png?v=2') }}">@if(empty($ogimg))<meta property="og:image:type" content="image/png"><meta property="og:image:width" content="630"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="DutyFree BD"><meta name="twitter:card" content="summary"><meta name="twitter:image" content="{{ url('/og-icon.png?v=2') }}">@else<meta name="twitter:card" content="summary_large_image">@endif
 @include('favicon_head')@include('store.pwa_head')

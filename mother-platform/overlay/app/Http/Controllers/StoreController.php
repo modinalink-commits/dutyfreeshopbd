@@ -260,6 +260,26 @@ class StoreController extends Controller {
     $ov = $this->autoSeo($subSlug === null ? $c : $seoNode, $subSlug === null ? 'title' : 'meta_title');
     return response()->view('store.category', $this->base(array_replace(['c'=>$c, 'subName'=>$subName, 'subSlug'=>$subSlug, 'items'=>$items, 'hasPos'=>$hasPos, 'groups'=>collect($items->items())->groupBy(fn($p) => $p->sub ?: $c->name), 'title'=>$title, 'desc'=>$subName ? $subName.' – original imported products in '.$c->name.' at DutyFree BD. Cash on delivery, nationwide delivery.' : $c->meta_description, 'canon'=>(!$subName && !empty($c->canonical)) ? $c->canonical : $canon, 'noindex'=>(!empty($c->noindex) && !$subName) || self::isSmokeCat($c), 'keywords'=>$c->focus_keyword ?? null, 'ogimg'=>(!empty($c->og_image) ? $c->og_image : null)], $ov)))->header('Cache-Control','public, max-age=120');
   }
+  /** Public brand page /brand/{slug}: published products of one brand + the brand's own SEO (auto or manual). */
+  public function brand(Request $r, string $slug) {
+    $b = DB::table('brands')->where('slug', $slug)->where('active', true)->first(); if (!$b) return $this->notFound();
+    $s = self::set(); $per = max(12, (int)$s['per_page']);
+    $q = $this->q()->where('products.brand_id', $b->id);
+    if (is_numeric($r->min)) $q->where('price','>=',(float)$r->min); if (is_numeric($r->max)) $q->where('price','<=',(float)$r->max);
+    $sort = (string)$r->input('sort', '');
+    $items = ($sort === '' || $sort === 'position') ? (clone $q)->orderByDesc('products.id')->paginate($per)->withQueryString() : $this->sorted($q, $sort === 'new' ? 'new' : $sort)->paginate($per)->withQueryString();
+    $catIds = $this->q()->where('brand_id', $b->id)->distinct()->pluck('category_id')->all();
+    $smoke = DB::table('categories')->get(['id','slug','name'])->filter(fn($c) => self::isSmokeCat($c))->pluck('id')->all();
+    $onlySmoke = $catIds && !array_diff($catIds, $smoke);
+    $noindex = !empty($b->noindex) || $onlySmoke || $items->total() === 0;
+    $name = trim($b->name); $site = 'DutyFreeBD';
+    $title = trim((string)($b->meta_title ?? '')) ?: "$name Products in Bangladesh | $site";
+    $desc = trim((string)($b->meta_description ?? '')) ?: "Explore $name products at $site with product details, current pricing and convenient ordering in Bangladesh.";
+    $canon = trim((string)($b->canonical ?? '')) ?: url('/brand/'.$b->slug);
+    $img = trim((string)($b->og_image ?? '')) ?: (trim((string)($b->logo ?? '')) ?: null);
+    $robots = ($noindex ? 'noindex' : 'index').','.(!empty($b->nofollow) ? 'nofollow' : 'follow').($noindex ? '' : ',max-image-preview:large');
+    return response()->view('store.brand', $this->base(['b'=>$b, 'items'=>$items, 'title'=>$title, 'desc'=>$desc, 'canon'=>$canon, 'noindex'=>$noindex, 'robots'=>$robots, 'keywords'=>trim((string)($b->meta_keywords ?? '')) ?: null, 'ogimg'=>$img, 'ogtitle'=>trim((string)($b->og_title ?? '')) ?: $title, 'ogdesc'=>trim((string)($b->og_description ?? '')) ?: $desc, 'crumb'=>trim((string)($b->breadcrumb_title ?? '')) ?: $name, 'alt'=>trim((string)($b->image_alt ?? '')) ?: "$name brand products"]))->header('Cache-Control','public, max-age=120');
+  }
   /** /category/secondary-category */
   public function categorySub(Request $r, string $cat, string $sub) { return $this->category($r, $cat, $sub); }
   /** /category/secondary-category/product-name */
