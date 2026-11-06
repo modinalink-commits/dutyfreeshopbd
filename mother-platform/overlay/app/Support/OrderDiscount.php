@@ -83,7 +83,7 @@ class OrderDiscount {
     return $r;
   }
   public static function computeCore(?string $phone, float $sub, ?string $coupon = null, array $ctx = []): array {
-    $web = !empty($ctx['web']); $qty = (int)($ctx['qty'] ?? 0); $prof = !$web || !empty($ctx['verified']);
+    $web = !empty($ctx['web']); $qty = (int)($ctx['qty'] ?? 0); $prof = !$web || !empty($ctx['verified']) || !empty($ctx['known']); // owner rule 2026-11-06: a guest whose phone is already in our customer data gets that customer's discounts
     $c = $phone ? self::customer($phone) : null; $ex = !empty($ctx['exclude_order']) ? (int)$ctx['exclude_order'] : null; $st = $phone ? self::stats($phone, $c, $ex) : ['n' => 0, 's' => 0.0]; $profile = $phone ? self::profile($phone) : ['category' => 'New', 'membership' => 'Inactive', 'membership_name' => null, 'orders' => 0, 'found' => false];
     $cand = []; $cerr = null; $free = false;
     $add = function ($key, $type, $rule, $source, $pct, $cap = null, $fixed = null) use (&$cand, $sub) {
@@ -135,7 +135,7 @@ class OrderDiscount {
       elseif ($mode === 'priority') $sel = [$cand[0]['key']];
       else { $best = $cand[0]; foreach ($cand as $x) if ($x['amount'] > $best['amount']) $best = $x; $sel = [$best['key']]; }
     }
-    if ($web && $prof && $phone && Referral::on() && Referral::set('credit_use', '1') === '1' && ($bal = Referral::balance($phone)) > 0) {
+    if ($web && !empty($ctx['verified']) && $phone && Referral::on() && Referral::set('credit_use', '1') === '1' && ($bal = Referral::balance($phone)) > 0) {
       $paid = 0; foreach ($cand as $x0) if (in_array($x0['key'], $sel)) $paid += $x0['amount'];
       $ca = round(min($bal, max(0, $sub - $paid)), 2); if ($ca > 0) { $cand[] = ['key' => 'refcredit', 'type' => 'Referral Credit', 'rule' => 'Referral wallet', 'source' => 'Referral credit', 'pct' => null, 'amount' => $ca, 'label' => 'Referral credit – ৳'.number_format($ca)]; $sel[] = 'refcredit'; }
     }
