@@ -174,7 +174,8 @@ class AdminController extends Controller {
     if ($__ids) foreach (DB::table('order_staff_comments')->whereIn('order_id', $__ids)->orderByDesc('id')->select('body','order_id')->get() as $c) { if (!isset($cmLast[$c->order_id])) $cmLast[$c->order_id] = $c->body; }
     $incOpen = (int)DB::table('incomplete_orders')->where('status', 'open')->count(); try { $vals['Incomplete'] = (float)DB::table('incomplete_orders')->where('status', 'open')->sum('total'); } catch (\Throwable $e) { $vals['Incomplete'] = 0; }
     $aiIds = []; try { $nw = collect(method_exists($orders, 'items') ? $orders->items() : $orders)->filter(fn($x) => ($x->status ?? '') === 'New')->pluck('id')->all(); if ($nw) $aiIds = DB::table('order_ai_verifications')->whereIn('order_id', $nw)->whereRaw("coalesce(override_status, verification_status) = 'verified'")->pluck('order_id')->map(fn($v) => (int)$v)->values()->all(); } catch (\Throwable $e) { $aiIds = []; }
-    return view('orders', compact('orders','counts','vals','items','per','intel','incOpen','cmLast','dupHint','dupInv','aiAp','aiIds') + ['isInc'=>$isInc] + ($isInc ? \App\Http\Controllers\IncompleteController::data($r, $range) : \App\Http\Controllers\IncompleteController::mix($r, $orders, $range)));
+    $dupDay = []; try { $dupDay = \App\Support\DupGuard::forPage($orders->items()); } catch (\Throwable $e) { $dupDay = []; }
+    return view('orders', compact('orders','counts','vals','items','per','intel','incOpen','cmLast','dupHint','dupInv','aiAp','aiIds','dupDay') + ['isInc'=>$isInc] + ($isInc ? \App\Http\Controllers\IncompleteController::data($r, $range) : \App\Http\Controllers\IncompleteController::mix($r, $orders, $range)));
   }
   public function orderBulk(Request $r) {
     $d = $r->validate(['ids'=>'required|array|max:500','ids.*'=>'integer','status'=>'required|in:'.implode(',',Mother::STAGES)]);
@@ -183,6 +184,7 @@ class AdminController extends Controller {
     $n = 0; $okB = 0; $failB = []; @set_time_limit(240);
     if ($d['status'] === 'Shipment') {
       $skip = []; $tried = 0;
+      foreach (DB::table('orders')->whereIn('id',$d['ids'])->where('status','!=','Shipment')->get() as $so) { if ($dm = \App\Support\DupGuard::block($so, 'Shipment')) { $skip[] = (int)$so->id; $failB[] = '#'.$so->id.': '.$dm; } }
       foreach (DB::table('orders')->whereIn('id',$d['ids'])->where('status','!=','Shipment')->pluck('id') as $sid) { if ($sm = \App\Support\StockGuard::shipBlock((int)$sid)) { $skip[] = (int)$sid; $failB[] = '#'.$sid.': '.$sm.' (stays in its old status)'; } }
       foreach (DB::table('orders')->whereIn('id',$d['ids'])->where('status','!=','Shipment')->whereNull('consignment_id')->whereNotIn('id', $skip)->orderBy('id')->pluck('id') as $bid) {
         if ($tried >= 60) { $skip[] = (int)$bid; $failB[] = '#'.$bid.': over the 60-parcel limit per click, stays in its old status'; continue; }
@@ -191,17 +193,18 @@ class AdminController extends Controller {
       }
       $d['ids'] = array_values(array_diff($d['ids'], $skip));
     }
-    $locked = 0;
-    DB::transaction(function () use ($d, &$n, &$locked) {
+    $locked = 0; $dupHeld = 0;
+    DB::transaction(function () use ($d, &$n, &$locked, &$dupHeld) {
       foreach (DB::table('orders')->whereIn('id',$d['ids'])->lockForUpdate()->get() as $o) {
         if ($o->status === $d['status']) continue;
         if (\App\Support\ShipmentOutcome::manualBlock($o, $d['status'])) { $locked++; continue; }
+        if (\App\Support\DupGuard::block($o, $d['status'])) { $dupHeld++; continue; }
         DB::table('orders')->where('id',$o->id)->update(['status'=>$d['status'],'updated_at'=>now()]);
         DB::table('order_status_logs')->insert(['order_id'=>$o->id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'from_status'=>$o->status,'to_status'=>$d['status'],'note'=>'Bulk action','created_at'=>now(),'updated_at'=>now()]);
         $n++;
       }
     });
-    if ($r->expectsJson()) return response()->json(['success'=>true,'moved'=>$n,'status'=>$d['status'],'booked'=>$okB,'parcel_errors'=>array_slice($failB, 0, 6) + ($locked ? [$locked.' order(s) skipped: the courier decides their delivery/return status'] : [])]);
+    if ($r->expectsJson()) return response()->json(['success'=>true,'moved'=>$n,'status'=>$d['status'],'booked'=>$okB,'parcel_errors'=>array_slice($failB, 0, 6) + ($dupHeld ? [$dupHeld.' duplicate order(s) held: same customer ordered again today, allow them manually first'] : []) + ($locked ? [$locked.' order(s) skipped: the courier decides their delivery/return status'] : [])]);
     return back()->with('ok', "$n orders moved to {$d['status']}".($locked ? " · $locked skipped (courier decides their delivery/return status)" : ''));
   }
   public function orderNew(Request $r) {
@@ -324,6 +327,7 @@ class AdminController extends Controller {
     $d = $r->validate(['status'=>'required|in:'.implode(',',Mother::STAGES),'note'=>'nullable|string|max:500','sched_date'=>'nullable|date_format:Y-m-d','sched_time'=>'nullable|string|max:8']);
     $o = DB::table('orders')->find($id); abort_unless($o, 404);
     if ($mb = \App\Support\ShipmentOutcome::manualBlock($o, $d['status'])) return back()->with('bad', $mb);
+    if ($db = \App\Support\DupGuard::block($o, $d['status'])) return back()->with('bad', $db);
     if (in_array($d['status'], \App\Support\ShipmentOutcome::SYSTEM_ONLY, true) && $o->status !== $d['status']) return back()->with('bad', 'Partial Return statuses are calculated from the items. Use "Delivery Outcome" on the order page, then "Receive Partial Return".');
     if ($d['status'] === 'Scheduled') {
       [$sok, $smsg] = \App\Support\OrderSchedule::set((int)$id, $d['sched_date'] ?? null, $d['sched_time'] ?? null, $d['note'] ?? null, Auth::id(), Auth::user()->name);
@@ -352,6 +356,7 @@ class AdminController extends Controller {
     $src = $d['source'] ?? null; $src = $src === 'Order List' ? 'Order List' : null;
     if ($o->status !== $d['status'] && in_array($d['status'], \App\Http\Middleware\ModulePermission::RESTRICTED_STATUSES, true) && !\App\Http\Middleware\ModulePermission::canRestricted(Auth::user())) return response()->json(['success'=>false,'message'=>'Your role does not allow changing an order to '.$d['status'].'. Ask an admin for the Restricted status permission.']);
     if ($mb = \App\Support\ShipmentOutcome::manualBlock($o, $d['status'])) return response()->json(['success'=>false,'message'=>$mb]);
+    if ($db = \App\Support\DupGuard::block($o, $d['status'])) return response()->json(['success'=>false,'message'=>$db]);
     if (in_array($d['status'], \App\Support\ShipmentOutcome::SYSTEM_ONLY, true) && $o->status !== $d['status']) return response()->json(['success'=>false,'message'=>'Partial Return statuses are calculated from the items. Use Delivery Outcome on the order page.']);
     if ($d['status'] === 'Scheduled') {
       if (empty($d['sched_date'])) return response()->json(['success'=>false,'need_schedule'=>true,'message'=>'Scheduled date is required']);
@@ -367,6 +372,14 @@ class AdminController extends Controller {
     });
     if ($src && $o->status !== $d['status']) $this->auditOrderStatus($r, $o, $d['status'], $src);
     return response()->json(['success'=>true,'status'=>$d['status'],'cls'=>'s-'.\Illuminate\Support\Str::slug($d['status'])]);
+  }
+  /** Manual permission for a same-day duplicate order (owner rule). Logged with name and time. */
+  public function orderDupAllow(Request $r, $id) {
+    $o = DB::table('orders')->find($id); abort_unless($o, 404);
+    if (!\App\Support\DupGuard::ready()) return response()->json(['ok'=>false,'message'=>'Not ready yet, try again in a minute.']);
+    DB::table('orders')->where('id',$id)->update(['dup_allowed_at'=>now(),'dup_allowed_by'=>Auth::user()->name,'updated_at'=>now()]);
+    try { DB::table('order_status_logs')->insert(['order_id'=>$id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'from_status'=>$o->status,'to_status'=>$o->status,'note'=>'Duplicate order (same customer, same day): manual permission given','created_at'=>now(),'updated_at'=>now()]); } catch (\Throwable $e) {}
+    return response()->json(['ok'=>true,'by'=>Auth::user()->name]);
   }
   public function orderSchedule(Request $r, $id) {
     $d = $r->validate(['sched_date'=>'required|date_format:Y-m-d','sched_time'=>'nullable|string|max:8','note'=>'nullable|string|max:500']);

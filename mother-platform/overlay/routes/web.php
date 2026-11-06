@@ -87,6 +87,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/orders/{id}/return-receive', [\App\Http\Controllers\ShipmentOutcomeController::class,'receive'])->whereNumber('id');
   Route::post('/orders/{id}/return-complete', [\App\Http\Controllers\ShipmentOutcomeController::class,'complete'])->whereNumber('id');
   Route::post('/orders/{id}/status', [A::class,'orderStatus']);
+  Route::post('/orders/{id}/dup-allow', [A::class,'orderDupAllow'])->whereNumber('id');
   Route::post('/orders/{id}/schedule', [A::class,'orderSchedule'])->whereNumber('id');
   Route::post('/orders/{id}/schedule/cancel', [A::class,'orderScheduleCancel'])->whereNumber('id');
   Route::post('/orders/{id}/quick-status', [A::class,'orderQuickStatus'])->whereNumber('id');
