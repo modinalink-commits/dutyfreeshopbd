@@ -16,7 +16,18 @@ class AiImageAuto {
       'old_left' => DB::table('ai_images')->where('ai_status', 'completed')->whereNotNull('processed_image')->where('processed_at', '<', self::set('prompt_cutoff', '2000-01-01'))->count(),
       'all_on' => self::set('backfill_all', '0') === '1'];
   }
+  /** Thumbnails the site actually uses (name-300.webp / name-150.webp) for AI images made before they were written: GD only, no API cost. */
+  private static function repairThumbs(): void {
+    try {
+      $n = 0;
+      foreach (DB::table('ai_images')->where('ai_status', 'completed')->whereNotNull('processed_image')->orderByDesc('id')->limit(300)->get(['id']) as $r) {
+        if (is_file(public_path('uploads/ai/ai-' . $r->id . '-300.webp')) || !is_file(public_path('uploads/ai/ai-' . $r->id . '.jpg'))) continue;
+        AiImage::thumbs((int)$r->id); if (++$n >= 20) break;
+      }
+    } catch (\Throwable $e) {}
+  }
   public static function tick(): int {
+    self::repairThumbs();
     if (self::set('on', '1') !== '1') { self::note('Automatic mode is switched off'); return 0; }
     if (!AiImage::key()) { self::note('OpenAI key is not set'); return 0; }
     if (!Img::ok()) { self::note('PHP GD is not enabled'); return 0; }

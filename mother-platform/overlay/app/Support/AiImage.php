@@ -99,14 +99,14 @@ class AiImage {
     $d = self::dir(); $base = 'ai-'.$id; $p = $d.'/'.$base.'.jpg';
     imagejpeg($cv, $p, 90); @chmod($p, 0664);
     foreach ([300, 150] as $s) { $t = imagecreatetruecolor($s, $s); imagecopyresampled($t, $cv, 0, 0, 0, 0, $s, $s, 600, 600); imagejpeg($t, $d.'/'.$base.'-'.$s.'.jpg', 86); @chmod($d.'/'.$base.'-'.$s.'.jpg', 0664); }
-    if (function_exists('imagewebp')) { imagewebp($cv, $d.'/'.$base.'.jpg.webp', 82); foreach ([300, 150] as $s) { $t = imagecreatetruecolor($s, $s); imagecopyresampled($t, $cv, 0, 0, 0, 0, $s, $s, 600, 600); imagewebp($t, $d.'/'.$base.'-'.$s.'.jpg.webp', 80); } }
+    if (function_exists('imagewebp')) { imagewebp($cv, $d.'/'.$base.'.jpg.webp', 82); foreach ([300, 150] as $s) { $t = imagecreatetruecolor($s, $s); imagecopyresampled($t, $cv, 0, 0, 0, 0, $s, $s, 600, 600); imagewebp($t, $d.'/'.$base.'-'.$s.'.jpg.webp', 80); imagewebp($t, $d.'/'.$base.'-'.$s.'.webp', 78); } }
     return ['p'=>'/uploads/ai/'.$base.'.jpg', 't'=>'/uploads/ai/'.$base.'-300.jpg'];
   }
   /** Rebuild only the thumbnails from an already processed image. */
   public static function thumbs(int $id): bool {
     $r = DB::table('ai_images')->find($id); if (!$r || !$r->processed_image) return false;
     $abs = public_path(ltrim($r->processed_image, '/')); $im = self::load($abs); if (!$im) return false; $d = self::dir();
-    foreach ([300, 150] as $s) { $t = imagecreatetruecolor($s, $s); imagecopyresampled($t, $im, 0, 0, 0, 0, $s, $s, imagesx($im), imagesy($im)); imagejpeg($t, $d.'/ai-'.$id.'-'.$s.'.jpg', 86); }
+    foreach ([300, 150] as $s) { $t = imagecreatetruecolor($s, $s); imagecopyresampled($t, $im, 0, 0, 0, 0, $s, $s, imagesx($im), imagesy($im)); imagejpeg($t, $d.'/ai-'.$id.'-'.$s.'.jpg', 86); if (function_exists('imagewebp')) { imagewebp($t, $d.'/ai-'.$id.'-'.$s.'.webp', 78); imagewebp($t, $d.'/ai-'.$id.'-'.$s.'.jpg.webp', 80); } }
     DB::table('ai_images')->where('id', $id)->update(['thumbnail_image'=>'/uploads/ai/ai-'.$id.'-300.jpg']); return true;
   }
 }
