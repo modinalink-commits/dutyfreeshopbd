@@ -96,7 +96,7 @@ class AiImage {
     for ($i = 0; $i < 7; $i++) { $sw = (int)($nw * (0.80 - $i * 0.07)); $sh = (int)(10 + (6 - $i) * 1.4); imagefilledellipse($cv, 300, min(594, $py + $nh + 2), max(10, $sw), $sh, imagecolorallocatealpha($cv, 90, 90, 90, 120 - $i * 2)); }
     imagealphablending($cv, true);
     imagecopyresampled($cv, $im, $px, $py, $x0, $y0, $nw, $nh, $cw, $ch);
-    $d = self::dir(); $base = 'ai-'.$id; $p = $d.'/'.$base.'.jpg';
+    $d = self::dir(); $base = 'ai-'.$id; if (is_file($d.'/'.$base.'.jpg')) $base .= '-r'.time(); /* a redo gets a NEW file name so browsers and any CDN show the clean image at once */ $p = $d.'/'.$base.'.jpg';
     imagejpeg($cv, $p, 90); @chmod($p, 0664);
     foreach ([300, 150] as $s) { $t = imagecreatetruecolor($s, $s); imagecopyresampled($t, $cv, 0, 0, 0, 0, $s, $s, 600, 600); imagejpeg($t, $d.'/'.$base.'-'.$s.'.jpg', 86); @chmod($d.'/'.$base.'-'.$s.'.jpg', 0664); }
     if (function_exists('imagewebp')) { imagewebp($cv, $d.'/'.$base.'.jpg.webp', 82); foreach ([300, 150] as $s) { $t = imagecreatetruecolor($s, $s); imagecopyresampled($t, $cv, 0, 0, 0, 0, $s, $s, 600, 600); imagewebp($t, $d.'/'.$base.'-'.$s.'.jpg.webp', 80); imagewebp($t, $d.'/'.$base.'-'.$s.'.webp', 78); } }
@@ -105,8 +105,8 @@ class AiImage {
   /** Rebuild only the thumbnails from an already processed image. */
   public static function thumbs(int $id): bool {
     $r = DB::table('ai_images')->find($id); if (!$r || !$r->processed_image) return false;
-    $abs = public_path(ltrim($r->processed_image, '/')); $im = self::load($abs); if (!$im) return false; $d = self::dir();
-    foreach ([300, 150] as $s) { $t = imagecreatetruecolor($s, $s); imagecopyresampled($t, $im, 0, 0, 0, 0, $s, $s, imagesx($im), imagesy($im)); imagejpeg($t, $d.'/ai-'.$id.'-'.$s.'.jpg', 86); if (function_exists('imagewebp')) { imagewebp($t, $d.'/ai-'.$id.'-'.$s.'.webp', 78); imagewebp($t, $d.'/ai-'.$id.'-'.$s.'.jpg.webp', 80); } }
-    DB::table('ai_images')->where('id', $id)->update(['thumbnail_image'=>'/uploads/ai/ai-'.$id.'-300.jpg']); return true;
+    $abs = public_path(ltrim($r->processed_image, '/')); $im = self::load($abs); if (!$im) return false; $d = self::dir(); $b = pathinfo($abs, PATHINFO_FILENAME);
+    foreach ([300, 150] as $s) { $t = imagecreatetruecolor($s, $s); imagecopyresampled($t, $im, 0, 0, 0, 0, $s, $s, imagesx($im), imagesy($im)); imagejpeg($t, $d.'/'.$b.'-'.$s.'.jpg', 86); if (function_exists('imagewebp')) { imagewebp($t, $d.'/'.$b.'-'.$s.'.webp', 78); imagewebp($t, $d.'/'.$b.'-'.$s.'.jpg.webp', 80); } }
+    DB::table('ai_images')->where('id', $id)->update(['thumbnail_image'=>'/uploads/ai/'.$b.'-300.jpg']); return true;
   }
 }

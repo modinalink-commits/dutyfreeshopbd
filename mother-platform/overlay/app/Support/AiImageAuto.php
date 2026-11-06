@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Cache;
 /** Owner rule (6 Nov 2026): every NEW product image (main or gallery) is automatically turned into the standard AI Product Image (no watermark/logo/overlay, white background, centred, 600x600 web-optimised JPG + WebP + thumbnails) and used on the site. Only images added after the rule went live; old images stay as they are until processed by hand. Cost guard: one image per worker tick and a daily cap. */
 class AiImageAuto {
   public static function set(string $k, string $d = ''): string { $v = DB::table('settings')->where('key', 'ai_auto_' . $k)->value('value'); return ($v === null || $v === '') ? $d : (string)$v; }
-  private static function flush(): void { foreach (['store.home2','store.home4','store.home6','store.home5','store.cats','store.live2','store.live3','store.live4'] as $k) Cache::forget($k); }
+  private static function flush(): void { foreach (['store.home2','store.home4','store.home6','store.home5','store.cats','store.live2','store.live3','store.live4','store.globe_products','store.catalogfeed4','card_second_imgs','ai.catalog'] as $k) Cache::forget($k); }
   /** Last result of the automatic worker, shown on the AI Product Images page. */
   private static function note(string $m): void { try { DB::table('settings')->updateOrInsert(['key' => 'ai_auto_last'], ['value' => now()->toDateTimeString() . '|' . $m, 'updated_at' => now(), 'created_at' => now()]); } catch (\Throwable $e) {} }
   public static function status(): array {
@@ -20,8 +20,9 @@ class AiImageAuto {
   private static function repairThumbs(): void {
     try {
       $n = 0;
-      foreach (DB::table('ai_images')->where('ai_status', 'completed')->whereNotNull('processed_image')->orderByDesc('id')->limit(300)->get(['id']) as $r) {
-        if (is_file(public_path('uploads/ai/ai-' . $r->id . '-300.webp')) || !is_file(public_path('uploads/ai/ai-' . $r->id . '.jpg'))) continue;
+      foreach (DB::table('ai_images')->where('ai_status', 'completed')->whereNotNull('processed_image')->orderByDesc('id')->limit(300)->get(['id', 'processed_image']) as $r) {
+        $b = preg_replace('/\.jpg$/', '', (string)$r->processed_image);
+        if (is_file(public_path(ltrim($b, '/') . '-300.webp')) || !is_file(public_path(ltrim($r->processed_image, '/')))) continue;
         AiImage::thumbs((int)$r->id); if (++$n >= 20) break;
       }
     } catch (\Throwable $e) {}
