@@ -43,4 +43,15 @@ function dfFill(f,j,only){var el=f.querySelector('[data-f="'+only+'"]');if(!el)r
 function dfRegen(f){fetch(f.dataset.prev,{credentials:'same-origin',headers:{Accept:'application/json'}}).then(function(r){return r.json()}).then(function(j){var kept=0;f.querySelectorAll('[data-f]').forEach(function(el){if(el.dataset.mode==='manual'&&el.value.trim()!==''){kept++;return}dfFill(f,j,el.dataset.f)});alert('নতুন SEO সাজেশন বসানো হয়েছে'+(kept?' ('+kept+'টি Manual ঘর অপরিবর্তিত)':'')+'। দেখে Save করুন।')})}
 function dfReset(f,k){fetch(f.dataset.prev,{credentials:'same-origin',headers:{Accept:'application/json'}}).then(function(r){return r.json()}).then(function(j){dfFill(f,j,k)})}
 </script>
+<script>
+(function(){function E(t){return String(t).replace(/[<>&"]/g,function(c){return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]})}
+function lim(n,a,b){return n===0?'#6B7280':(n>=a&&n<=b?'#166534':'#B45309')}
+document.querySelectorAll('form[data-prev]').forEach(function(f){var t=f.querySelector('[name=title]'),d=f.querySelector('[name=desc]'),c=f.querySelector('[name=canonical]');if(!t||!d)return;
+var pv=document.createElement('div');pv.style.cssText='border:1px solid #E5E7EB;border-radius:8px;padding:10px 12px;margin:8px 0;background:#fff;max-width:640px';pv.innerHTML='<div style="font-size:10.5px;color:#6B7280;margin-bottom:4px">Google preview</div><div class="pu" style="font-size:12px;color:#188038;word-break:break-all"></div><div class="pt" style="font-size:17px;color:#1A0DAB;line-height:1.3"></div><div class="pd" style="font-size:13px;color:#4D5156"></div><div class="pc" style="font-size:11.5px;margin-top:5px"></div>';
+f.insertBefore(pv,f.children[1]||null);
+function up(){var tv=t.value.trim(),dv=d.value.trim();pv.querySelector('.pt').textContent=tv.length>65?tv.slice(0,62)+'…':(tv||'(no title)');pv.querySelector('.pd').textContent=dv.length>160?dv.slice(0,157)+'…':(dv||'(no description)');pv.querySelector('.pu').textContent=(c&&c.value.trim())||location.origin;
+pv.querySelector('.pc').innerHTML='<span style="color:'+lim(tv.length,30,65)+'">Title '+tv.length+' / 30–65</span> · <span style="color:'+lim(dv.length,70,160)+'">Description '+dv.length+' / 70–160</span>'}
+['input','change'].forEach(function(ev){f.addEventListener(ev,up)});up();setTimeout(up,1500)});
+})();
+</script>
 @endsection

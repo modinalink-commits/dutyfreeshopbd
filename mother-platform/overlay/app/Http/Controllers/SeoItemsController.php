@@ -15,7 +15,7 @@ class SeoItemsController extends Controller
   /** Admin type -> SEOAutoGenerator type (products are not generated here). */
   private const GT = ['category' => 'main', 'sub' => 'sub', 'child' => 'child', 'brand' => 'brand'];
   private function tbl(string $t): string { abort_unless(isset(self::T[$t]), 404); return self::T[$t]; }
-  private function clear(): void { foreach (['store.home6', 'store.home4', 'store.home5', 'store.sitemap5'] as $k) Cache::forget($k); }
+  private function clear(): void { foreach (['store.home6', 'store.home4', 'store.home5', 'store.sitemap5', 'store.sitemap10'] as $k) Cache::forget($k); }
   /** Map to unified [title,desc,kw] columns per type. */
   private function tcol(string $t): string { return $t === 'category' ? 'title' : 'meta_title'; }
   private function status(object $x, string $t): array {
