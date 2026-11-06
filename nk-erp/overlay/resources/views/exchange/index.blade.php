@@ -206,7 +206,7 @@
         <td class="r">@if($x->deposit_adj)৳{{ $bd($x->deposit_adj) }}@else — @endif</td>
         <td><span class="pill" style="{{ $stTone[$x->status] }}">{{ $X::STATUS[$x->status] }}</span>
           @if($x->hold_reason && in_array($x->status, ['held', 'pending'], true))<br><span class="sub" style="color:#8a4b00">{{ $x->hold_reason }}</span>@endif
-          @if(! empty($x->blockers))<br><span class="sub" style="color:#b3261e">{{ implode(' ', $x->blockers) }}</span>@endif
+          @if(! empty($blockers[$x->id] ?? null))<br><span class="sub" style="color:#b3261e">{{ implode(' ', $blockers[$x->id]) }}</span>@endif
           @if($x->decision_note)<br><span class="sub">{{ $x->decision_note }}</span>@endif
           @if($x->decider)<br><span class="sub">{{ $x->decider->name }}</span>@endif
           @if($x->reverse_reason)<br><span class="sub">Reversed: {{ $x->reverse_reason }}</span>@endif</td>

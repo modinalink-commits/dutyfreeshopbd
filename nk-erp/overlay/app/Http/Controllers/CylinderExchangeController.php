@@ -70,7 +70,7 @@ class CylinderExchangeController extends Controller
                 ->when($s && isset(CylinderExchange::STATUS[$s]), fn ($q) => $q->where('status', $s))
                 ->when($request->query('q'), fn ($q, $t) => $q->where(fn ($w) => $w->where('ref_no', 'ilike', "%$t%")->orWhere('walkin_name', 'ilike', "%$t%")->orWhereHas('customer', fn ($c) => $c->where('name', 'ilike', "%$t%"))))
                 ->orderByRaw("case when status in ('pending','held') then 0 else 1 end")->orderByDesc('id')->paginate(30)->withQueryString();
-            if ($v === 'approve') foreach ($d['list'] as $x) $x->blockers = ExchangeService::blockers($x);
+            if ($v === 'approve') $d['blockers'] = $d['list']->mapWithKeys(fn ($x) => [$x->id => ExchangeService::blockers($x)])->all();
         } elseif ($v === 'new') {
             $d['customers'] = Customer::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'phone', 'type']);
             $d['trips'] = Trip::query()->with(['vehicle', 'salesman', 'driver'])->where('status', 'dispatched')->orderByDesc('id')->get();
