@@ -152,25 +152,35 @@ class StoreController extends Controller {
   const HOME_DESC = 'আন্তর্জাতিক মানের সকল অরিজিনাল ইমপোর্টেড পণ্য এক জায়গায়: পারফিউম, আতর, স্কিন কেয়ার, হেয়ার কেয়ার, বেবি প্রোডাক্ট ও ডেইলি নিডস। ক্যাশ অন ডেলিভারি, সারা বাংলাদেশে হোম ডেলিভারি।';
   public function home() {
     $s = self::set();
-    $data = self::rem('store.home8', 300, function () use ($s) {
+    $data = self::rem('store.home9', 300, function () use ($s) {
       $pub = fn() => DB::table('products')->where('published',true);
       $sold = DB::table('order_items as i')->join('orders as o','o.id','=','i.order_id')->whereNotIn('o.status',['Cancel','Incomplete'])->where('o.created_at','>=',now()->subDays(7))->groupBy('i.product_id')->selectRaw('i.product_id as pid, sum(i.qty) as q')->pluck('q','pid');
       $deals = self::todayBest($s)
         ->map(function ($p) use ($sold) { $p->sold = (int)($sold[$p->id] ?? 0); return $p; });
       $sec = []; $i = 0;
       $ordC = $this->cats()->values()->sortBy(fn($c) => self::isSmokeCat($c) ? 0 : (preg_match('/perfume|attar|আতর|পারফিউম/iu', ($c->slug ?? '').' '.($c->name ?? '')) ? 1 : 2))->values();
-      foreach ($ordC as $c) { $sec[] = [$c, $pub()->where('category_id',$c->id)->orderByDesc('id')->limit($i < 2 ? 12 : 6)->get()]; $i++; }
+      foreach ($ordC as $c) { $sec[] = [$c, $pub()->where('category_id',$c->id)->orderByDesc('id')->limit($i < 2 ? 24 : 14)->get()]; $i++; }
       $offers = [];
       foreach ($this->cats() as $c) { $mx = (int)$pub()->where('category_id',$c->id)->whereColumn('compare_price','>','price')->where('compare_price','>',0)->max(DB::raw('round((compare_price - price) / compare_price * 100)')); if ($mx > 0) $offers[] = [$c, $mx]; }
       usort($offers, fn($a, $b) => $b[1] <=> $a[1]);
-      return ['new'=>$pub()->where(fn($q)=>$q->whereNull('group_key')->orWhere('group_key','!=','smoke'))->orderByDesc('id')->limit(12)->get(), 'deals'=>$deals, 'top'=>collect(), 'topLabel'=>'Top Selling Products', 'sec'=>$sec, 'offers'=>array_slice($offers, 0, 2), 'slides'=>DB::table('sliders')->where('active',true)->where(fn($q)=>$q->whereNotNull('image')->orWhereNotNull('video_id'))->where(fn($q)=>$q->whereNull('type')->orWhere('type','main'))->where(fn($q)=>$q->whereNull('starts_at')->orWhere('starts_at','<=',now()))->where(fn($q)=>$q->whereNull('ends_at')->orWhere('ends_at','>=',now()))->orderBy('position')->get(), 'offerSlides'=>DB::table('sliders')->where('active',true)->whereNotNull('image')->where('type','offer')->where(fn($q)=>$q->whereNull('starts_at')->orWhere('starts_at','<=',now()))->where(fn($q)=>$q->whereNull('ends_at')->orWhere('ends_at','>=',now()))->orderBy('position')->get(), 'stores'=>DB::table('stores')->where('active',true)->orderBy('id')->get(['id','name','domain','scan_published'])->all(), 'best'=>DB::table('order_items as i')->join('orders as o','o.id','=','i.order_id')->join('products as p','p.id','=','i.product_id')->where('p.published',true)->where('o.status','!=','Cancel')->where('o.created_at','>=',now()->subDays(60))->select('p.*', DB::raw('sum(i.qty) q'))->groupBy('p.id')->orderByDesc('q')->limit(12)->get(), 'count'=>$pub()->count(), 'maxOff'=>$deals->count() ? self::off($deals[0]) : 0];
+      return ['new'=>$pub()->where(fn($q)=>$q->whereNull('group_key')->orWhere('group_key','!=','smoke'))->orderByDesc('id')->limit(36)->get(), 'deals'=>$deals, 'top'=>collect(), 'topLabel'=>'Top Selling Products', 'sec'=>$sec, 'offers'=>array_slice($offers, 0, 2), 'slides'=>DB::table('sliders')->where('active',true)->where(fn($q)=>$q->whereNotNull('image')->orWhereNotNull('video_id'))->where(fn($q)=>$q->whereNull('type')->orWhere('type','main'))->where(fn($q)=>$q->whereNull('starts_at')->orWhere('starts_at','<=',now()))->where(fn($q)=>$q->whereNull('ends_at')->orWhere('ends_at','>=',now()))->orderBy('position')->get(), 'offerSlides'=>DB::table('sliders')->where('active',true)->whereNotNull('image')->where('type','offer')->where(fn($q)=>$q->whereNull('starts_at')->orWhere('starts_at','<=',now()))->where(fn($q)=>$q->whereNull('ends_at')->orWhere('ends_at','>=',now()))->orderBy('position')->get(), 'stores'=>DB::table('stores')->where('active',true)->orderBy('id')->get(['id','name','domain','scan_published'])->all(), 'best'=>DB::table('order_items as i')->join('orders as o','o.id','=','i.order_id')->join('products as p','p.id','=','i.product_id')->where('p.published',true)->where('o.status','!=','Cancel')->where('o.created_at','>=',now()->subDays(60))->select('p.*', DB::raw('sum(i.qty) q'))->groupBy('p.id')->orderByDesc('q')->limit(12)->get(), 'count'=>$pub()->count(), 'maxOff'=>$deals->count() ? self::off($deals[0]) : 0];
     });
     // daily ranking is read outside the 5-minute page cache so a new Dhaka day starts at midnight
     try { [$data['top'], $data['topSold']] = \App\Support\TopSellers::products($s); } catch (\Throwable $e) { report($e); $data['top'] = collect(); $data['topSold'] = []; } // a ranking problem must never take the homepage down
     $data['topLabel'] = 'Top Selling Products';
+    // Dynamic Product Shuffle: the eligible pool is cached, the ORDER is a fresh seed on every full page load (never ORDER BY RANDOM()). Eligibility, stock, price and publish rules are untouched; category / brand / search pages are not shuffled.
+    try {
+      if (\App\Support\Procure::set('shuffle_home', '1') !== '0' && \App\Support\Procure::set('shuffle_general', '1') !== '0') {
+        $seed = random_int(1, 2147483646);
+        $data['new'] = $data['new']->shuffle($seed)->take(12)->values();
+        $data['deals'] = $data['deals']->shuffle($seed + 1)->values();
+        $data['top'] = $data['top']->shuffle($seed + 2)->values();
+        $k = 0; $data['sec'] = array_map(function ($row) use (&$k, $seed) { $lim = $k < 2 ? 12 : 6; $row[1] = $row[1]->shuffle($seed + 10 + $k)->take($lim)->values(); $k++; return $row; }, $data['sec']);
+      } else { $data['new'] = $data['new']->take(12)->values(); $k = 0; $data['sec'] = array_map(function ($row) use (&$k) { $row[1] = $row[1]->take($k < 2 ? 12 : 6)->values(); $k++; return $row; }, $data['sec']); }
+    } catch (\Throwable $e) { report($e); }
     if ($data['count'] === 0) return response()->view('coming', [], 503)->header('Retry-After','3600');
     $live = $s['home_live_orders'] === '1' ? $this->liveOrders() : collect();
-    return response()->view('store.home', $this->base($data + ['live'=>$live, 'title'=>self::cleanSeo($s['site_title'] ?? '', self::HOME_TITLE), 'desc'=>self::cleanSeo($s['meta_description'] ?? '', self::HOME_DESC), 'canon'=>url('/').'/', 'home'=>true]))->header('Cache-Control','public, max-age=60');
+    return response()->view('store.home', $this->base($data + ['live'=>$live, 'title'=>self::cleanSeo($s['site_title'] ?? '', self::HOME_TITLE), 'desc'=>self::cleanSeo($s['meta_description'] ?? '', self::HOME_DESC), 'canon'=>url('/').'/', 'home'=>true]))->header('Cache-Control','private, no-cache, max-age=0');
   }
   /** Animated Brand Slider data: active brands (admin order) that have at least one customer-visible product; cached 5 min. A problem here never breaks the homepage. */
   public static function brandSlider(): array {

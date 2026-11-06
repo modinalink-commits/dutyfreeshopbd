@@ -61,6 +61,22 @@
 .ra .pg{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:12px;font-size:13px}.ra .pg button{background:#fff;color:var(--n);border:1px solid var(--bd);padding:6px 11px;min-width:34px}.ra .pg button.on{background:var(--n);color:#fff;border-color:var(--n)}.ra .pg button:disabled{opacity:.4}.ra .pg .tot{margin-left:auto;color:#6B7280;font-size:12px}
 .ra .warn{background:#FFF7ED;border:1px solid #FED7AA;color:#9A3412;border-radius:10px;padding:8px 12px;font-size:12.5px;margin-bottom:12px}
 .ra .cmp table th{cursor:default}
+/* Typography scale (Inter + Hind Siliguri from the shared typography include; no extra font) */
+.ra,.ra input,.ra select,.ra button,.ra table{font-family:'Inter','Hind Siliguri','Noto Sans Bengali',system-ui,sans-serif}
+.ra .hd1 h1{font-size:21px;font-weight:700;line-height:1.3}
+.ra .note{font-size:12px;font-weight:400;line-height:1.45}
+.ra .chb h3,.ra .box>h2,.ra .box>h3{font-size:15px;font-weight:700}
+.ra .cd span{font-size:11px;font-weight:500}
+.ra .cd b{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums}
+.ra .pre button,.ra .vw label{font-size:11px;font-weight:600}
+.ra .acts .btn,.ra .acts button{font-size:12px;font-weight:600}
+.ra table{font-size:12px;font-weight:400}
+.ra th{font-size:12px;font-weight:600;text-transform:none;letter-spacing:0}
+.ra td{font-weight:500;font-variant-numeric:tabular-nums}
+.ra td.r{font-weight:600}
+.ra td.w{font-size:12.5px;font-weight:600}
+.ra .bg{font-size:11px;font-weight:700}
+.ra .leg{font-size:10.5px;font-weight:500}
 @media(max-width:700px){.ra .chs{grid-template-columns:1fr}.ra .cd b{font-size:18px}}
 @media print{aside,.noprint{display:none!important}}
 </style>
