@@ -18,7 +18,7 @@ class CourierBook {
   /** Delivered COD parcel: book (COD collected - courier charge) as income once. Returns the amount booked. */
   public static function deliver(int $orderId): float {
     $o = DB::table('orders')->find($orderId); if (!$o || ($o->courier_stage ?? '') !== 'Delivered') return 0.0;
-    $cod = (float)($o->collected_amount ?? 0); if ($cod <= 0) return 0.0;
+    $cod = (float)($o->collected_amount ?? $o->courier_cod ?? 0); if ($cod <= 0) return 0.0;
     $ref = 'DEL-'.$o->invoice; if (DB::table('account_entries')->where('reference', $ref)->exists()) return 0.0;
     if ($o->consignment_id && DB::table('account_entries')->where('reference', 'like', 'PAY-%-'.$o->consignment_id)->exists()) return 0.0; // payout already booked
     $fee = max(0.0, (float)($o->courier_fee ?? 0)); $amt = round($cod - $fee, 2); if ($amt <= 0) return 0.0;
