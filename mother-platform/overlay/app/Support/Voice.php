@@ -137,6 +137,8 @@ class Voice
       [$ok0, $o0] = self::esl('system test -s ' . $local . ' && echo HAVE', 15);
       if (!($ok0 && str_contains($o0, 'HAVE'))) {
         self::esl('system curl -sSLk -m 20 -o ' . $local . ' ' . escapeshellarg($url), 30);
+        self::esl('system test -s ' . $local . ' || wget -q --no-check-certificate -T 20 -O ' . $local . ' ' . escapeshellarg($url), 30);
+        self::esl('system test -s ' . $local . ' || python3 -c "import ssl,urllib.request as u;c=ssl._create_unverified_context();open(\'' . $local . '\',\'wb\').write(u.urlopen(\'' . $url . '\',context=c,timeout=20).read())"', 40);
         [$ok1, $o1] = self::esl('system test -s ' . $local . ' && echo HAVE', 15);
         if (!($ok1 && str_contains($o1, 'HAVE'))) return ['failed', 'The PBX could not download the voice audio (curl missing or the site is not reachable from the PBX).', $uuid];
       }
@@ -260,7 +262,7 @@ class Voice
     $h = self::set('esl_host') ?: (string)env('PBX_ESL_HOST', ''); $port = (int)(self::set('esl_port') ?: env('PBX_ESL_PORT', 8021)); $out = ['host' => $h, 'port' => $port];
     $fp = @fsockopen($h ?: 'invalid', $port, $en, $es, 6); $out['tcp'] = (bool)$fp; if (!$fp) { $out['error'] = $es ?: 'timeout'; return $out; } fclose($fp);
     [$ok, $r] = self::esl('status', 15); $out['auth_and_command'] = $ok; $out['response'] = $ok ? mb_substr($r, 0, 200) : $r;
-    if ($ok) { $m = []; foreach (['mod_http_cache', 'mod_httapi', 'mod_curl', 'mod_lua', 'mod_flite', 'mod_tts_commandline'] as $x) { [, $v] = self::esl('module_exists ' . $x, 10); $m[$x] = trim($v); } $out['modules'] = $m; [, $g] = self::esl('show channels count', 10); $out['channels'] = mb_substr(trim($g), 0, 80); }
+    if ($ok) { $m = []; foreach (['mod_http_cache', 'mod_httapi', 'mod_curl', 'mod_lua', 'mod_flite', 'mod_tts_commandline'] as $x) { [, $v] = self::esl('module_exists ' . $x, 10); $m[$x] = trim($v); } $out['modules'] = $m; [, $g] = self::esl('show channels count', 10); $out['channels'] = mb_substr(trim($g), 0, 80); $t = []; foreach (['echo SYSTEM_OK' => 'echo', 'command -v curl' => 'curl', 'command -v wget' => 'wget', 'command -v python3' => 'python3', 'id -un' => 'user'] as $c => $k) { [, $v] = self::esl('system ' . $c, 10); $t[$k] = mb_substr(trim($v), 0, 80); } $out['shell'] = $t; }
     return $out;
   }
 
