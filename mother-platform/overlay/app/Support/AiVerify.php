@@ -11,6 +11,12 @@ use Illuminate\Support\Facades\Schema;
 class AiVerify {
   const VERSION = 'v1.2';
   const NEW_CUSTOMER_LIMIT = 5000; // owner rule (6 Nov 2026): a new customer (no delivered order yet) ordering above this stays in New, never AI Approve
+  /** After a rule change, New orders checked with an older rule version are verified again by the worker (3 per cycle, newest first), so the AI Approve list never keeps an order the new rule would hold back. */
+  public static function rerunStale(): int {
+    $ids = DB::table('order_ai_verifications as v')->join('orders as o', 'o.id', '=', 'v.order_id')->where('o.status', 'New')->where('v.rule_version', '<>', self::VERSION)->whereNull('v.override_status')->orderByDesc('v.order_id')->limit(3)->pluck('v.order_id')->all();
+    foreach ($ids as $id) { try { self::run((int)$id, 'rule-update', true, true); } catch (\Throwable $e) {} }
+    return count($ids);
+  }
   const LABEL = ['verified' => 'AI Verified', 'review' => 'Review Required', 'high' => 'High Risk', 'failed' => 'Verification Failed', 'pending' => 'Pending Verification'];
   const CANCEL = ['Cancel', 'Cancelled', 'Canceled'];
   const RET = ['Returned', 'Return'];
