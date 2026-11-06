@@ -3,18 +3,19 @@ namespace App\Support;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 
-/** Owner rule (6 Nov 2026): every NEW product image (main or gallery) is automatically turned into the standard AI Product Image (no watermark/logo/overlay, white background, centred, 600x600 web-optimised JPG + WebP + thumbnails) and used on the site. Only images added after the rule went live; old images stay as they are until processed by hand. Cost guard: one image per worker tick and a daily cap. */
+/** Owner rules (6 Nov 2026): every NEW product image is automatically turned into the standard AI Product Image (no watermark/logo/overlay, white background, centred, 600x600 web-optimised JPG + WebP + thumbnails) and set as the product's main image at once. Old images that still carry the shop logo are redone, then every Cigarette & Vape product image. One image per product (gallery images are not processed). Cost guard: daily cap. Speed: several images are processed in parallel by small child processes (mother:ai-image-one). */
 class AiImageAuto {
   public static function set(string $k, string $d = ''): string { $v = DB::table('settings')->where('key', 'ai_auto_' . $k)->value('value'); return ($v === null || $v === '') ? $d : (string)$v; }
   private static function flush(): void { foreach (['store.home2','store.home4','store.home6','store.home5','store.cats','store.live2','store.live3','store.live4','store.globe_products','store.catalogfeed4','card_second_imgs','ai.catalog'] as $k) Cache::forget($k); }
   /** Last result of the automatic worker, shown on the AI Product Images page. */
   private static function note(string $m): void { try { DB::table('settings')->updateOrInsert(['key' => 'ai_auto_last'], ['value' => now()->toDateTimeString() . '|' . $m, 'updated_at' => now(), 'created_at' => now()]); } catch (\Throwable $e) {} }
+  public static function fail(string $m): void { self::note('Error: ' . mb_substr($m, 0, 200)); }
   public static function status(): array {
     $last = explode('|', (string)self::set('last', '|Worker has not reached this job yet'), 2);
     $cap = max(1, (int)self::set('daily_cap', '60'));
     return ['on' => self::set('on', '1') === '1', 'cap' => $cap, 'today' => DB::table('ai_images')->where('processed_at', '>=', now()->startOfDay())->count(), 'at' => $last[0] ?? '', 'msg' => $last[1] ?? '',
       'old_left' => DB::table('ai_images')->where('ai_status', 'completed')->whereNotNull('processed_image')->where('processed_at', '<', self::set('prompt_cutoff', '2000-01-01'))->count(),
-      'all_on' => self::set('backfill_all', '0') === '1'];
+      'all_on' => self::set('backfill_all', '0') === '1', 'busy' => DB::table('ai_images')->where('ai_status', 'processing')->count()];
   }
   /** Thumbnails the site actually uses (name-300.webp / name-150.webp) for AI images made before they were written: GD only, no API cost. */
   private static function repairThumbs(): void {
@@ -27,80 +28,85 @@ class AiImageAuto {
       }
     } catch (\Throwable $e) {}
   }
+  private static function canSpawn(): bool { return function_exists('exec') && !in_array('exec', array_map('trim', explode(',', (string)ini_get('disable_functions'))), true) && is_file(base_path('artisan')); }
+
+  /** Called by the worker every ~30 s: starts up to ai_auto_parallel child processes (default 4). */
   public static function tick(): int {
     self::repairThumbs();
     if (self::set('on', '1') !== '1') { self::note('Automatic mode is switched off'); return 0; }
     if (!AiImage::key()) { self::note('OpenAI key is not set'); return 0; }
     if (!Img::ok()) { self::note('PHP GD is not enabled'); return 0; }
-    $cut = self::set('cutoff', ''); if ($cut === '') { self::note('No start time saved (cutoff)'); return 0; }
-    $cap = max(1, (int)self::set('daily_cap', '60'));
-    if (DB::table('ai_images')->where('processed_at', '>=', now()->startOfDay())->count() >= $cap) { self::note('Daily cap reached, continues tomorrow'); return 0; }
-    $lock = Cache::lock('ai-image-auto', 400); if (!$lock->get()) { self::note('Another image is still being processed'); return 0; }
-    try {
-      $cands = [];
-      foreach (DB::table('products')->where('updated_at', '>=', $cut)->whereNotNull('image')->where('image', '<>', '')->orderBy('id')->limit(60)->get(['id', 'image']) as $p) $cands[] = [(int)$p->id, (string)$p->image, true];
-      if (self::set('gallery', '0') === '1') foreach (DB::table('product_images')->where('created_at', '>=', $cut)->orderBy('id')->limit(60)->get(['product_id', 'path']) as $g) $cands[] = [(int)$g->product_id, (string)$g->path, false];
-      foreach ($cands as [$pid, $url, $main]) {
-        if ($url === '' || str_contains($url, '/uploads/ai/')) continue; // already a processed image
-        $h = sha1($url);
-        if (DB::table('ai_images')->where('product_id', $pid)->where('source_hash', $h)->exists()) continue;
-        $path = parse_url($url, PHP_URL_PATH); if ($path && DB::table('ai_images')->where('product_id', $pid)->where('processed_image', $path)->exists()) continue;
-        $id = DB::table('ai_images')->insertGetId(['product_id' => $pid, 'source_hash' => $h, 'source_url' => $url, 'ai_status' => 'pending', 'created_at' => now(), 'updated_at' => now()]);
-        $r = AiImage::run($id);
-        if (!($r['ok'] ?? false)) return 0;
-        $row = DB::table('ai_images')->find($id); if (!$row || !$row->processed_image) return 0;
-        if ($main) { DB::table('products')->where('id', $pid)->where('image', $url)->update(['image' => $row->processed_image]); DB::table('ai_images')->where('product_id', $pid)->update(['is_main' => false]); DB::table('ai_images')->where('id', $id)->update(['is_main' => true]); }
-        else DB::table('product_images')->where('product_id', $pid)->where('path', $url)->update(['path' => $row->processed_image, 'updated_at' => now()]);
-        self::flush(); self::note('Processed new image #' . $id);
-        return 1; // one image per tick (each AI call takes up to a minute)
-      }
-      $n = self::backfill(); if (!$n) self::note('Nothing left to process right now'); return $n;
-    } catch (\Throwable $e) {
-      self::note('Error: ' . mb_substr($e->getMessage(), 0, 200));
-      return 0;
-    } finally { try { $lock->release(); } catch (\Throwable $e) {} }
-    return 0;
+    // an image stuck in "processing" for 20 minutes (a child process died) is marked failed so it can be retried by hand
+    DB::table('ai_images')->where('ai_status', 'processing')->where('updated_at', '<', now()->subMinutes(20))->update(['ai_status' => 'failed', 'processing_error' => 'Interrupted, press Reprocess', 'updated_at' => now()]);
+    $n = max(1, min(8, (int)self::set('parallel', '4'))); $started = 0;
+    if (!self::canSpawn()) { try { return self::work() ? 1 : 0; } catch (\Throwable $e) { self::fail($e->getMessage()); return 0; } }
+    for ($i = 1; $i <= $n; $i++) {
+      if (Cache::has('ai-img-child-' . $i)) continue;
+      if (self::idle()) { if ($started === 0) self::note('Nothing left to process right now'); break; }
+      Cache::put('ai-img-child-' . $i, 1, 300);
+      @exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(base_path('artisan')) . ' mother:ai-image-one ' . $i . ' > /dev/null 2>&1 &');
+      $started++;
+    }
+    return $started;
   }
-  /** Owner rule (6 Nov 2026): images processed with the OLD instruction (they still carry the shop logo) are redone with the new standard, one per tick, inside the same daily cap. Optional second stage (ai_auto_backfill_all=1): every other product whose main image is still an original. */
-  private static function backfill(): int {
-    $row = null; $pc = self::set('prompt_cutoff', '');
-    if (self::set('backfill', '1') === '1' && $pc !== '') $row = DB::table('ai_images')->where('ai_status', 'completed')->whereNotNull('processed_image')->where('processed_at', '<', $pc)->orderBy('id')->first();
-    if ($row) {
-      $r = AiImage::run((int)$row->id);
-      if ($r['ok'] ?? false) {
-        // the clean image takes the main-image place automatically when this slot is (or was) the product's main image
-        $o = DB::table('ai_images')->find($row->id); $cur = (string)DB::table('products')->where('id', $row->product_id)->value('image');
-        if ($o && $o->processed_image && ($cur === (string)$row->source_url || strtok($cur, '?') === $o->processed_image || (bool)$row->is_main)) {
-          DB::table('products')->where('id', $row->product_id)->update(['image' => $o->processed_image]);
-          DB::table('ai_images')->where('product_id', $row->product_id)->update(['is_main' => false]); DB::table('ai_images')->where('id', $row->id)->update(['is_main' => true]);
-        }
-        self::flush(); self::note('Redid old image #' . $row->id . ' with the clean standard'); return 1; }
-      self::note('Old image #' . $row->id . ' failed: ' . ($r['error'] ?? '')); return 0;
+  private static function idle(): bool {
+    $cap = max(1, (int)self::set('daily_cap', '60'));
+    return DB::table('ai_images')->where(fn($w) => $w->where('processed_at', '>=', now()->startOfDay())->orWhere('ai_status', 'processing'))->count() >= $cap || self::candidates(false) === null;
+  }
+
+  /** Process exactly one image (claimed under a short lock so parallel children never take the same one). */
+  public static function work(): bool {
+    if (self::set('on', '1') !== '1' || !AiImage::key() || !Img::ok()) return false;
+    $cap = max(1, (int)self::set('daily_cap', '60'));
+    $lock = Cache::lock('ai-image-pick', 30);
+    try { $lock->block(15); } catch (\Throwable $e) { return false; }
+    try {
+      if (DB::table('ai_images')->where(fn($w) => $w->where('processed_at', '>=', now()->startOfDay())->orWhere('ai_status', 'processing'))->count() >= $cap) { self::note('Daily cap reached, continues tomorrow'); return false; }
+      $c = self::candidates(true);
+    } finally { try { $lock->release(); } catch (\Throwable $e) {} }
+    if (!$c) return false;
+    [$id, $pid, $url, $kind, $oldPath] = $c;
+    $r = AiImage::run($id);
+    if (!($r['ok'] ?? false)) { self::note('Image #' . $id . ' failed: ' . ($r['error'] ?? '')); return false; }
+    $o = DB::table('ai_images')->find($id); if (!$o || !$o->processed_image) return false;
+    $new = $o->processed_image; $cur = (string)DB::table('products')->where('id', $pid)->value('image');
+    // the clean image takes the main-image place at once (and everywhere the old file was used)
+    if ($kind === 'gallery') DB::table('product_images')->where('product_id', $pid)->where('path', $url)->update(['path' => $new, 'updated_at' => now()]);
+    elseif ($cur === $url || ($oldPath && strtok($cur, '?') === $oldPath) || $kind !== 'old') {
+      DB::table('products')->where('id', $pid)->update(['image' => $new]);
+      DB::table('ai_images')->where('product_id', $pid)->update(['is_main' => false]); DB::table('ai_images')->where('id', $id)->update(['is_main' => true]);
     }
-    if (self::set('backfill_all', '0') !== '1') return 0;
-    // second stage, limited to the Cigarette & Vape category (owner decision 6 Nov 2026): main image first, then gallery images
-    $sc = DB::table('categories')->get(['id', 'slug', 'name'])->filter(fn($c) => \App\Http\Controllers\StoreController::isSmokeCat($c))->pluck('id')->all();
-    $smoke = fn($q) => $q->where(function ($w) use ($sc) { $w->where('group_key', 'smoke'); if ($sc) $w->orWhereIn('category_id', $sc); });
-    $done = fn($pid, $url) => DB::table('ai_images')->where('product_id', $pid)->where('source_hash', sha1($url))->exists();
-    $p = $smoke(DB::table('products'))->whereNotNull('image')->where('image', '<>', '')->where('image', 'not like', '%/uploads/ai/%')
-      ->whereNotExists(fn($q) => $q->select(DB::raw(1))->from('ai_images')->whereColumn('ai_images.product_id', 'products.id')->where('ai_images.ai_status', 'completed'))->orderBy('id')->first(['id', 'image']);
-    $main = true; $pid = $p->id ?? 0; $url = (string)($p->image ?? '');
-    if (!$p || $done((int)$pid, $url)) {
-      if (self::set('gallery', '0') !== '1') return 0; // owner rule: one image per product, gallery images are not processed
-      $main = false; $pid = 0; $url = '';
-      $ids = $smoke(DB::table('products'))->pluck('id')->all();
-      if (!$ids) return 0;
-      foreach (DB::table('product_images')->whereIn('product_id', $ids)->where('path', 'not like', '%/uploads/ai/%')->orderBy('id')->limit(400)->get(['product_id', 'path']) as $g) {
-        if ((string)$g->path !== '' && !$done((int)$g->product_id, (string)$g->path)) { $pid = (int)$g->product_id; $url = (string)$g->path; break; }
-      }
-      if (!$pid) return 0;
+    if ($oldPath && $oldPath !== $new) DB::table('product_images')->where('product_id', $pid)->where('path', $oldPath)->update(['path' => $new, 'updated_at' => now()]);
+    self::flush();
+    self::note(['new' => 'Processed new image', 'old' => 'Redid old logo image', 'smoke' => 'Cigarette & Vape: processed image', 'gallery' => 'Processed gallery image'][$kind] . ' #' . $id . ' (product #' . $pid . '), now the main image');
+    return true;
+  }
+
+  /** Next image to process: new images first, then old logo images, then the Cigarette & Vape category. $claim=false only tells whether something is left. */
+  private static function candidates(bool $claim): ?array {
+    $ins = fn($pid, $url) => DB::table('ai_images')->insertGetId(['product_id' => (int)$pid, 'source_hash' => sha1($url), 'source_url' => $url, 'ai_status' => 'processing', 'created_at' => now(), 'updated_at' => now()]);
+    $done = fn($pid, $url) => DB::table('ai_images')->where('product_id', $pid)->where(fn($w) => $w->where('source_hash', sha1($url))->orWhere('processed_image', parse_url($url, PHP_URL_PATH) ?: '#'))->exists();
+    $cut = self::set('cutoff', '');
+    // 1) new images (owner rule: from the day the rule went live)
+    if ($cut !== '') foreach (DB::table('products')->where('created_at', '>=', $cut)->whereNotNull('image')->where('image', '<>', '')->where('image', 'not like', '%/uploads/ai/%')->orderBy('id')->limit(60)->get(['id', 'image']) as $p) {
+      if ($done((int)$p->id, (string)$p->image)) continue;
+      return $claim ? [$ins($p->id, $p->image), (int)$p->id, (string)$p->image, 'new', null] : [0];
     }
-    $id = DB::table('ai_images')->insertGetId(['product_id' => (int)$pid, 'source_hash' => sha1($url), 'source_url' => $url, 'ai_status' => 'pending', 'created_at' => now(), 'updated_at' => now()]);
-    $r = AiImage::run($id); if (!($r['ok'] ?? false)) { self::note('Image #' . $id . ' failed: ' . ($r['error'] ?? '')); return 0; }
-    $o = DB::table('ai_images')->find($id); if (!$o || !$o->processed_image) return 0;
-    self::note('Cigarette & Vape: processed ' . ($main ? 'main' : 'gallery') . ' image #' . $id);
-    if ($main) { DB::table('products')->where('id', $pid)->where('image', $url)->update(['image' => $o->processed_image]); DB::table('ai_images')->where('id', $id)->update(['is_main' => true]); }
-    else DB::table('product_images')->where('product_id', $pid)->where('path', $url)->update(['path' => $o->processed_image, 'updated_at' => now()]);
-    self::flush(); return 1;
+    // 2) old images processed before the clean standard (they still carry the shop logo)
+    $pc = self::set('prompt_cutoff', '');
+    if (self::set('backfill', '1') === '1' && $pc !== '') {
+      $row = DB::table('ai_images')->where('ai_status', 'completed')->whereNotNull('processed_image')->where('processed_at', '<', $pc)->orderBy('id')->first();
+      if ($row) { if (!$claim) return [0]; DB::table('ai_images')->where('id', $row->id)->update(['ai_status' => 'processing', 'updated_at' => now()]); return [(int)$row->id, (int)$row->product_id, (string)$row->source_url, 'old', (string)$row->processed_image]; }
+    }
+    // 3) the Cigarette & Vape category (owner decision): the single main image of every product
+    if (self::set('backfill_all', '0') === '1') {
+      $sc = DB::table('categories')->get(['id', 'slug', 'name'])->filter(fn($c) => \App\Http\Controllers\StoreController::isSmokeCat($c))->pluck('id')->all();
+      $q = DB::table('products')->where(function ($w) use ($sc) { $w->where('group_key', 'smoke'); if ($sc) $w->orWhereIn('category_id', $sc); })
+        ->whereNotNull('image')->where('image', '<>', '')->where('image', 'not like', '%/uploads/ai/%')
+        ->whereNotExists(fn($x) => $x->select(DB::raw(1))->from('ai_images')->whereColumn('ai_images.product_id', 'products.id'))->orderBy('id');
+      $p = $q->first(['id', 'image']);
+      if ($p) return $claim ? [$ins($p->id, $p->image), (int)$p->id, (string)$p->image, 'smoke', null] : [0];
+    }
+    return null;
   }
 }

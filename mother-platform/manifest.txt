@@ -753,3 +753,4 @@ app/Support/AiImageAuto.php
 app/Support/IncompleteNudge.php
 database/migrations/2026_11_06_000340_ai_image_backfill_smoke.php
 database/migrations/2026_11_06_000350_ai_image_cap_today.php
+app/Console/Commands/MotherAiImageOne.php
