@@ -121,6 +121,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/products/{id}', [C::class,'productSave']);
   Route::post('/products/{id}/toggle', [C::class,'productToggle']); Route::post('/products/{id}/delete', [C::class,'productDelete'])->whereNumber('id');
   Route::get('/products-export.csv', [C::class,'productsCsv']);
+  Route::get('/a/{h}.css', fn($h) => \App\Support\CssSplit::serve($h))->where('h','[a-f0-9]{16}');
   Route::get('/taxonomy', [\App\Http\Controllers\TaxonomyController::class,'index']);
   Route::get('/categories/{level}', [\App\Http\Controllers\TaxonomyController::class,'level'])->where('level','main|sub|child');
   Route::get('/brands', [\App\Http\Controllers\TaxonomyController::class,'index']);
