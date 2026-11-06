@@ -48,7 +48,7 @@
 </div>
 <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
   <section class="card" style="flex:999 1 620px;min-width:0">
-    <div class="pad" style="display:flex;align-items:center;gap:8px"><h2 style="margin:0;font-size:var(--fs-15);flex-grow:1">Ledger — {{ $start->format('F Y') }}</h2><button class="btn sm" type="button" onclick="window.print()">Download PDF</button></div>
+    <div class="pad" style="display:flex;align-items:center;gap:8px"><h2 style="margin:0;font-size:var(--fs-15);flex-grow:1">Ledger — {{ $start->format('F Y') }}</h2>@if($hiddenRev)<a class="btn sm" href="{{ route('company.index', ['m' => $ym] + ($showRev ? [] : ['rev' => 1])) }}">{{ $showRev ? 'Hide reversed entries' : 'Show reversed entries ('.$hiddenRev.')' }}</a>@endif<button class="btn sm" type="button" onclick="window.print()">Download PDF</button></div>
     <div class="dt-wrap"><table class="dt">
       <thead><tr><th>Date</th><th>Detail</th><th>12 / 35 / 45 kg</th><th>DO</th><th>Transport</th><th>Bill</th><th>Deposit</th><th>Balance</th><th class="no-sort"></th></tr></thead>
       <tbody>

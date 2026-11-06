@@ -24,7 +24,14 @@ class CompanyController extends Controller
         $start = Carbon::parse($ym.'-01'); $end = (clone $start)->endOfMonth();
         $prev = (clone $start)->subMonth()->format('Y-m'); $next = (clone $start)->addMonth()->format('Y-m');
         $opening = (float) CompanyEntry::query()->where('entry_date', '<', $start->toDateString())->sum('amount');
-        $entries = CompanyEntry::query()->with('reversedBy')->whereBetween('entry_date', [$start->toDateString(), $end->toDateString()])->orderBy('entry_date')->orderBy('id')->get();
+        $all = CompanyEntry::query()->with('reversedBy')->whereBetween('entry_date', [$start->toDateString(), $end->toDateString()])->orderBy('entry_date')->orderBy('id')->get();
+        // An entry and its reversal inside the same month cancel out: hidden by default (both stay on record, "Show reversed" brings them back).
+        $pairIds = [];
+        foreach ($all as $e) {
+            if ($e->reversedBy && $all->contains('id', $e->reversedBy->id)) { $pairIds[] = $e->id; $pairIds[] = $e->reversedBy->id; }
+        }
+        $showRev = $request->boolean('rev');
+        $entries = $showRev ? $all : $all->reject(fn ($e) => in_array($e->id, $pairIds, true))->values();
 
         // Group challan lines of the same challan and day into one row like the design.
         $rows = [['d' => $start->format('d-m-Y'), 't' => 'Opening balance', 'q' => '', 'do' => null, 'tr' => null, 'bill' => null, 'dep' => null, 'bal' => $opening, 'kind' => 'o', 'ids' => []]];
@@ -45,7 +52,7 @@ class CompanyController extends Controller
                 };
                 $rows[] = ['d' => $e->entry_date->format('d-m-Y'), 't' => $label, 'q' => '', 'do' => null, 'tr' => null,
                     'bill' => $amt < 0 ? -$amt : null, 'dep' => $amt >= 0 ? $amt : null, 'bal' => $bal,
-                    'kind' => in_array($e->kind, ['incentive', 'commission']) ? 'p' : ($e->kind === 'deposit' ? 'd' : ''), 'ids' => [$e->id], 'rev' => (bool) $e->reversedBy];
+                    'kind' => in_array($e->kind, ['incentive', 'commission']) ? 'p' : ($e->kind === 'deposit' ? 'd' : ''), 'ids' => [$e->id], 'rev' => (bool) $e->reversedBy || $e->kind === 'reversal'];
             }
         }
 
@@ -82,7 +89,7 @@ class CompanyController extends Controller
 
         return view('company.index', [
             'explain' => $explain, 'prevTons' => $prevChal->sum(fn ($x) => $x->qty * $x->size_kg) / 1000, 'bnMonth' => $bn,
-            'ym' => $ym, 'start' => $start, 'prev' => $prev, 'next' => $next, 'rows' => $rows,
+            'ym' => $ym, 'start' => $start, 'hiddenRev' => count($pairIds), 'showRev' => $showRev, 'prev' => $prev, 'next' => $next, 'rows' => $rows,
             'balanceToday' => CompanyEntry::balanceUntil($today),
             'deposited' => (float) $deps->sum('amount'), 'depCount' => $deps->count(),
             'tons' => $chal->sum(fn ($x) => $x->qty * $x->size_kg) / 1000, 'challans' => $chal->pluck('challan_no')->unique()->count(), 'billed' => -(float) $chal->sum('amount'),
