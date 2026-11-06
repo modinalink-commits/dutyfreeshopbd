@@ -11,6 +11,11 @@ use Illuminate\Support\Facades\DB;
  */
 class CourierBook {
   public static function account(?string $courier = null): int {
+    // Owner rule (6 Nov 2026): courier money is deposited into the BRAC Bank account, so it is booked there directly.
+    try {
+      $bid = DB::table('money_accounts')->where('active', true)->whereRaw("name ilike '%brac%'")->orderByRaw("case when type = 'bank' then 0 else 1 end")->orderBy('id')->value('id');
+      if ($bid) return (int)$bid;
+    } catch (\Throwable $e) { report($e); }
     $name = trim((string)($courier ?: 'Pathao')).' Courier';
     $id = DB::table('money_accounts')->where('name', $name)->value('id');
     return $id ? (int)$id : (int)DB::table('money_accounts')->insertGetId(['name'=>$name, 'type'=>'courier', 'opening'=>0, 'active'=>true, 'created_at'=>now(), 'updated_at'=>now()]);
