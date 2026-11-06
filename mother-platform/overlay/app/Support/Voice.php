@@ -250,7 +250,9 @@ class Voice
   public static function pbxTest(): array {
     $h = self::set('esl_host') ?: (string)env('PBX_ESL_HOST', ''); $port = (int)(self::set('esl_port') ?: env('PBX_ESL_PORT', 8021)); $out = ['host' => $h, 'port' => $port];
     $fp = @fsockopen($h ?: 'invalid', $port, $en, $es, 6); $out['tcp'] = (bool)$fp; if (!$fp) { $out['error'] = $es ?: 'timeout'; return $out; } fclose($fp);
-    [$ok, $r] = self::esl('status', 15); $out['auth_and_command'] = $ok; $out['response'] = $ok ? mb_substr($r, 0, 200) : $r; return $out;
+    [$ok, $r] = self::esl('status', 15); $out['auth_and_command'] = $ok; $out['response'] = $ok ? mb_substr($r, 0, 200) : $r;
+    if ($ok) { $m = []; foreach (['mod_http_cache', 'mod_httapi', 'mod_curl', 'mod_lua', 'mod_flite', 'mod_tts_commandline'] as $x) { [, $v] = self::esl('module_exists ' . $x, 10); $m[$x] = trim($v); } $out['modules'] = $m; [, $g] = self::esl('show channels count', 10); $out['channels'] = mb_substr(trim($g), 0, 80); }
+    return $out;
   }
 
   // ---------- offer at checkout
