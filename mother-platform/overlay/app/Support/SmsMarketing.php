@@ -26,8 +26,9 @@ class SmsMarketing {
     return is_numeric($b) ? (float)$b : null;
   }
 
+  /** Owner rule 2026-11-06: order count / spend here = successfully received parcels only. */
   private static function base() {
-    $o = DB::table('orders')->whereNotIn('status', ['Cancel', 'Returned', 'Incomplete'])->select('phone', DB::raw('count(*) n'), DB::raw('coalesce(sum(total),0) s'), DB::raw('max(created_at) last'))->groupBy('phone');
+    $o = DB::table('orders')->whereNotIn('status', ['Cancel', 'Returned', 'Incomplete'])->select('phone', DB::raw("count(*) filter (where status = 'Delivered' or (status = 'Partial Delivered' and coalesce(collected_amount,0) > 0)) n"), DB::raw("coalesce(sum(case when status = 'Delivered' then total when status = 'Partial Delivered' then coalesce(collected_amount,0) else 0 end),0) s"), DB::raw('max(created_at) last'))->groupBy('phone');
     return DB::table('customers as c')->leftJoinSub($o, 'o', 'o.phone', '=', 'c.phone')
       ->where('c.blocked', false)->whereNotNull('c.phone')
       ->select('c.id', 'c.name', 'c.phone', 'c.membership', 'c.created_at', DB::raw('coalesce(o.n,0)+coalesce(c.legacy_orders,0) as orders'), DB::raw('coalesce(o.s,0)+coalesce(c.legacy_spent,0) as spend'), DB::raw('coalesce(c.legacy_orders,0) as legacy'), 'o.last as last_order');

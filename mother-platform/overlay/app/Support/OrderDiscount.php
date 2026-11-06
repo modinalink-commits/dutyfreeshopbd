@@ -138,7 +138,7 @@ class OrderDiscount {
       elseif ($mode === 'priority') $sel = [$cand[0]['key']];
       else { $best = $cand[0]; foreach ($cand as $x) if ($x['amount'] > $best['amount']) $best = $x; $sel = [$best['key']]; }
     }
-    if ($web && !empty($ctx['verified']) && $phone && Referral::on() && Referral::set('credit_use', '1') === '1' && ($bal = Referral::balance($phone)) > 0) {
+    if ($web && !empty($ctx['verified']) && $phone && Referral::on() && Referral::set('credit_use', '1') === '1' && (!CustomerBenefit::on('abuse') || CustomerBenefit::check($phone)['status'] !== 'Suspended') && ($bal = Referral::balance($phone)) > 0) {
       $paid = 0; foreach ($cand as $x0) if (in_array($x0['key'], $sel)) $paid += $x0['amount'];
       $ca = round(min($bal, max(0, $sub - $paid)), 2); if ($ca > 0) { $cand[] = ['key' => 'refcredit', 'type' => 'Referral Credit', 'rule' => 'Referral wallet', 'source' => 'Referral credit', 'pct' => null, 'amount' => $ca, 'label' => 'Referral credit – ৳'.number_format($ca)]; $sel[] = 'refcredit'; }
     }
