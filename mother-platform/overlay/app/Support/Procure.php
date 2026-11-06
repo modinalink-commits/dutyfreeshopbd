@@ -109,19 +109,21 @@ class Procure {
     if (!\Illuminate\Support\Facades\Schema::hasColumn('purchase_items', 'new_selling_rate')) return;
     $p = DB::table('purchases')->where('id', $p->id)->first(); if (!$p || in_array($p->status, self::BAD, true)) return;
     if (self::set('price_update_trigger', 'stockin') === 'approved' && $p->status !== 'approved') return;
-    $ch = 0;
-    foreach (DB::table('purchase_items')->where('purchase_id', $p->id)->whereNotNull('new_selling_rate')->where('price_update_status', 'pending')->get() as $i) {
+    $ch = 0; $pids = [];
+    foreach (DB::table('purchase_items')->where('purchase_id', $p->id)->whereNotNull('new_selling_rate')->where(fn($q) => $q->where('price_update_status', 'pending')->orWhereNull('price_update_status'))->get() as $i) {
       if (!$i->product_id) continue;
       $pr = DB::table('products')->where('id', $i->product_id)->lockForUpdate()->first(); if (!$pr) continue;
       $old = (float)$pr->price; $new = (float)$i->new_selling_rate; $cost = (float)$i->cost;
       if (abs($old - $new) < 0.005) { DB::table('purchase_items')->where('id', $i->id)->update(['price_update_status' => 'unchanged']); continue; }
       if ($cost > 0 && !ProfitFloor::ok($cost, $new) && trim((string)$i->margin_override_reason) === '') { DB::table('purchase_items')->where('id', $i->id)->update(['price_update_status' => 'blocked']); self::audit('proc.price_blocked', 'Selling rate NOT updated (below minimum margin): ' . $p->invoice . ' · product#' . $i->product_id, ['price' => $old], ['new_rate' => $new, 'min_safe' => ProfitFloor::floor($cost)]); continue; }
-      DB::table('products')->where('id', $i->product_id)->update(['price' => $new, 'updated_at' => now()]);
+      $up = ['price' => $new, 'updated_at' => now()]; if ($pr->compare_price !== null && (float)$pr->compare_price <= $new) $up['compare_price'] = null; // a struck-through regular price must stay above the sale price
+      DB::table('products')->where('id', $i->product_id)->update($up); $pids[] = (int)$i->product_id;
       DB::table('purchase_items')->where('id', $i->id)->update(['price_update_status' => 'applied', 'old_selling_rate' => $old]);
       DB::table('product_price_history')->insert(['product_id' => $i->product_id, 'old_rate' => $old, 'new_rate' => $new, 'purchase_rate' => $cost, 'purchase_id' => $p->id, 'purchase_invoice' => $p->invoice, 'changed_by' => auth()->user()->name ?? 'system', 'source' => 'Purchase Entry', 'note' => $i->margin_override_reason ?: null, 'created_at' => now(), 'updated_at' => now()]);
       self::audit('proc.price_updated', 'Product Selling Price Updated: ' . $pr->name . ' · ' . $p->invoice, ['price' => $old], ['price' => $new, 'purchase' => $p->invoice, 'by' => auth()->user()->name ?? null, 'source' => 'Purchase Stock-In', 'override' => $i->margin_override_reason]);
       $ch++;
     }
+    if ($pids) { try { BundlePricing::flush(); BundlePricing::sync(array_values(array_unique($pids))); } catch (\Throwable $e) { report($e); } } // Buy 2-5 bundle prices follow the new sale price straight away
     if ($ch) foreach (['store.home6', 'store.home4', 'store.home5', 'store.catalogfeed4', 'card_second_imgs2', 'ai.catalog'] as $k) { try { \Illuminate\Support\Facades\Cache::forget($k); } catch (\Throwable $e) {} }
   }
   /** Purchase reversed / edited / cancelled: stock goes down and the purchase's batches leave the FIFO queue. */
