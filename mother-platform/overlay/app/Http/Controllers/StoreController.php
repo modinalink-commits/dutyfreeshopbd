@@ -603,13 +603,14 @@ class StoreController extends Controller {
     return response()->view('store.missing', $this->base(['title'=>'পেজ পাওয়া যায়নি | DutyFree BD', 'desc'=>'', 'canon'=>url('/'), 'noindex'=>true]), 404);
   }
   public function sitemap() {
-    $xml = self::rem('store.sitemap9', 3600, function () {
+    $xml = self::rem('store.sitemap10', 3600, function () {
       $B = \App\Support\Domain::main(); $ul = fn($p) => $B.'/'.ltrim($p, '/'); /* sitemap always lists the main domain, whichever domain asked */
       $u = fn($loc, $img = null, $lm = null) => '<url><loc>'.e($loc).'</loc>'.($lm ? '<lastmod>'.date('c', strtotime((string)$lm)).'</lastmod>' : '').'<changefreq>daily</changefreq>'.($img ? '<image:image><image:loc>'.e($img).'</image:loc></image:image>' : '').'</url>';
       $o = $u($ul('/'));
       foreach ($this->cats() as $c) { if (self::isSmokeCat($c)) continue; $o .= $u($ul($c->slug.'/')); }
       foreach ($this->subs() as $cid => $rows) { $cs = $this->cats()->firstWhere('id', $cid); if ($cs && !self::isSmokeCat($cs)) foreach ($rows as $rw) $o .= $u($ul($cs->slug.'/'.\App\Support\Slugs::subSlug($rw->sub))); }
       if (\Illuminate\Support\Facades\Schema::hasTable('category_nodes')) foreach (DB::table('category_nodes as t')->join('category_nodes as s', 's.id', '=', 't.parent_id')->join('categories as c', 'c.id', '=', 't.category_id')->where('t.level', 3)->where('c.slug', '!=', 'cigarette-vape')->where('t.active', true)->where('s.active', true)->whereExists(fn($q) => $q->select(DB::raw(1))->from('products as p')->whereColumn('p.category_id', 't.category_id')->whereColumn('p.sub', 's.name')->whereColumn('p.sub_sub', 't.name')->where('p.published', true))->select('c.slug as cs', 's.name as sn', 't.name as tn')->get() as $ch) $o .= $u($ul($ch->cs.'/'.\App\Support\Slugs::subSlug($ch->sn).'/'.\App\Support\Slugs::slug($ch->tn, 60)));
+      try { if (\Illuminate\Support\Facades\Schema::hasColumn('brands', 'noindex')) { $smk = $this->cats()->filter(fn($c) => self::isSmokeCat($c))->pluck('id')->all(); foreach (DB::table('brands')->where('active', true)->where(fn($q) => $q->whereNull('noindex')->orWhere('noindex', false))->whereExists(fn($q) => $q->select(DB::raw(1))->from('products as p')->whereColumn('p.brand_id', 'brands.id')->where('p.published', true)->where(fn($w) => $w->whereNull('p.group_key')->orWhere('p.group_key', '!=', 'smoke'))->when($smk, fn($w) => $w->whereNotIn('p.category_id', $smk)))->get(['slug', 'logo', 'updated_at']) as $br) if (trim((string)$br->slug) !== '') $o .= $u($ul('/brand/' . $br->slug), $br->logo ?: null, $br->updated_at ?? null); } } catch (\Throwable $e) {}
       $o .= $u($ul('/blog'));
       foreach (DB::table('posts')->where('active',true)->get(['slug']) as $bp) $o .= $u($ul('/blog/'.$bp->slug));
       foreach (DB::table('pages')->where('active',true)->where(fn($q)=>$q->whereNull('robots_index')->orWhere('robots_index',true))->get(['slug']) as $pg) $o .= $u($ul($pg->slug.'/'));

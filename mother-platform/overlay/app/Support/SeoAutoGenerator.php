@@ -81,6 +81,7 @@ class SeoAutoGenerator {
     // canonical = final public URL (brands have no public page yet)
     $canon = '';
     if ($type === 'main' && $x['slug'] !== '') $canon = url('/' . $x['slug']) . '/';
+    elseif ($type === 'brand' && $x['slug'] !== '') $canon = url('/brand/' . $x['slug']);
     elseif ($type === 'sub' && !empty($x['mainSlug']) && $x['slug'] !== '') $canon = url('/' . $x['mainSlug'] . '/' . $x['slug']);
     elseif ($type === 'child' && !empty($x['mainSlug']) && !empty($x['subSlug']) && $x['slug'] !== '') $canon = url('/' . $x['mainSlug'] . '/' . $x['subSlug'] . '/' . $x['slug']);
     $img = $x['image']; $alt = '';
@@ -130,7 +131,7 @@ class SeoAutoGenerator {
   /** Admin list status: ['state' => complete|missing, 'origin' => auto|manual, 'missing' => [labels]]. */
   public static function status(string $type, object $row): array {
     $modes = self::modes($row); $miss = []; $man = 0;
-    $core = self::CORE; if ($type !== 'brand') $core[] = 'canonical'; if (trim((string)($row->image ?? $row->logo ?? '')) !== '') $core[] = 'alt';
+    $core = self::CORE; $core[] = 'canonical'; if (trim((string)($row->image ?? $row->logo ?? '')) !== '') $core[] = 'alt';
     foreach ($core as $f) if (trim((string)($row->{self::col($type, $f)} ?? '')) === '') $miss[] = self::LABELS[$f];
     foreach (self::FIELDS as $f) if (in_array($modes[$f] ?? null, ['manual', 'legacy'], true) && trim((string)($row->{self::col($type, $f)} ?? '')) !== '') $man++;
     return ['state' => $miss ? 'missing' : 'complete', 'origin' => $man ? 'manual' : 'auto', 'missing' => $miss, 'manual' => $man];
