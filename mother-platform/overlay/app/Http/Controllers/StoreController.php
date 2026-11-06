@@ -68,7 +68,7 @@ class StoreController extends Controller {
       $ci = \App\Support\StockGuard::controlledIds();
       $inner = DB::table('products as p')->leftJoinSub($agg, 's', 's.pid', '=', 'p.id')->where('p.published', true)->whereIn('p.category_id', $cats->pluck('id')->all())
         ->whereNotNull('p.image')->where('p.image', '!=', '')
-        ->where(function ($w) { $w->whereNull('p.stock')->orWhere('p.stock', '>', 0); });
+        ->where(function ($w) use ($ci) { $w->whereNull('p.stock')->orWhere('p.stock', '>', 0); if ($ci) $w->orWhereNotIn('p.category_id', $ci); });
       if ($ex) $inner->whereNotIn('p.id', $ex);
       $inner->selectRaw('p.*, coalesce(s.q1,0) as q1, coalesce(s.q7,0) as q7, coalesce(s.q30,0) as q30, row_number() over (partition by p.category_id order by '.
         'coalesce(s.q7,0) desc, coalesce(s.q1,0) desc, coalesce(s.q30,0) desc, case when coalesce(p.compare_price,0) > coalesce(p.price,0) and p.compare_price > 0 then (p.compare_price - p.price) / p.compare_price else 0 end desc, p.id desc) as rn');
