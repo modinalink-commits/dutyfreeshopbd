@@ -112,7 +112,7 @@ class CompanyController extends Controller
         ]);
         // Same challan number saved before? Ask first: the bill would be cut twice.
         if (empty($data['confirm_dup'])) {
-            $prev = CompanyEntry::query()->where('kind', 'challan')->where('challan_no', trim($data['challan_no']))->orderBy('id')->get();
+            $prev = CompanyEntry::query()->where('kind', 'challan')->where('challan_no', trim($data['challan_no']))->whereDoesntHave('reversedBy')->orderBy('id')->get();
             if ($prev->isNotEmpty()) {
                 return back()->withInput()->with('dup', ['no' => $data['challan_no'], 'date' => $prev->first()->entry_date->format('d-m-Y'), 'm' => $prev->first()->entry_date->format('Y-m'),
                     'q' => $prev->map(fn ($e) => $e->size_kg.' কেজি × '.$e->qty)->implode(', ')]);
