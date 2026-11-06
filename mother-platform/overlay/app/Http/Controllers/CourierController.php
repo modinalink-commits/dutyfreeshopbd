@@ -36,10 +36,11 @@ class CourierController extends Controller {
     return back()->with($ok ? 'ok' : 'bad', $msg);
   }
   public function sendBulk(Request $r) {
+    @ignore_user_abort(true); @set_time_limit(240);
     $d = $r->validate(['ids'=>'required|array|max:100', 'ids.*'=>'integer']);
     $okN = 0; $fail = [];
     foreach ($d['ids'] as $id) { [$ok, $msg] = $this->book((int)$id); if ($ok) $okN++; else $fail[] = '#'.$id.': '.$msg; }
-    $m = "$okN order(s) sent to Pathao.".($fail ? ' Not sent: '.implode(' | ', array_slice($fail, 0, 5)) : '');
+    $m = "$okN order(s) sent to Pathao.".($fail ? ' Not sent: '.implode(' | ', array_slice($fail, 0, 12)) : '');
     return back()->with($fail ? 'bad' : 'ok', $m);
   }
   public function refresh(Request $r, $id) {
@@ -49,7 +50,13 @@ class CourierController extends Controller {
     \App\Support\CourierSync::apply($o, $i);
     return back()->with('ok', 'Pathao status: '.($i['order_status'] ?? $i['order_status_slug'] ?? 'unknown'));
   }
+  /** Never lets an exception escape: any failure comes back as a readable message instead of a 500/502 page. */
   public function book(int $id): array {
+    @ignore_user_abort(true); @set_time_limit(90);
+    try { return $this->bookRaw($id); }
+    catch (\Throwable $e) { report($e); return [false, '⚠ Could not send this order to the courier right now ('.mb_substr($e->getMessage(), 0, 140).'). Nothing was changed — please try again or check the Pathao panel.']; }
+  }
+  private function bookRaw(int $id): array {
     if ($sm = \App\Support\StockGuard::shipBlock($id)) return [false, $sm];
     $o = DB::table('orders')->find($id); if (!$o) return [false, 'Order not found'];
     $items = DB::table('order_items')->where('order_id', $id)->get();
