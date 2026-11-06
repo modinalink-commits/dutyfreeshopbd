@@ -65,7 +65,7 @@ class WebsiteController extends Controller
     /** Retail prices the website shows: the selling brand's active refill and new-cylinder products. */
     public static function prices(): array
     {
-        $brand = \App\Models\Brand::query()->where('for_sale', true)->value('id');
+        $brand = \App\Models\Brand::query()->where('for_sale', true)->orderBy('id')->value('id');
         $ps = \App\Models\Product::query()->where('is_active', true)->whereIn('category', ['refill', 'new_package'])->when($brand, fn ($q) => $q->where('brand_id', $brand))->whereNotNull('retail_price')->get();
         $out = [];
         foreach ($ps as $p) {

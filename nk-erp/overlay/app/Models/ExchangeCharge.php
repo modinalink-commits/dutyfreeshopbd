@@ -16,7 +16,7 @@ class ExchangeCharge extends Model
     public static function for(int $givenBrandId, int $takenBrandId, int $size): float
     {
         if ($givenBrandId === $takenBrandId) return 0.0;
-        $own = (int) Brand::query()->where('for_sale', true)->value('id');
+        $own = (int) Brand::query()->where('for_sale', true)->orderBy('id')->value('id');
         $other = $givenBrandId !== $own ? $givenBrandId : $takenBrandId;
         return (float) (static::query()->where('brand_id', $other)->where('size_kg', $size)->value('charge') ?? 0);
     }

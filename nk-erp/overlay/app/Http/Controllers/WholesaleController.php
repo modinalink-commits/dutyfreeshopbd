@@ -38,7 +38,7 @@ class WholesaleController extends Controller
             'products' => Product::query()->with('brand')->where('is_active', true)->whereIn('category', ['refill', 'new_package', 'accessory'])->orderBy('category')->orderBy('size_kg')->get()
                 ->reject(fn ($p) => $p->brand && ! $p->brand->for_sale && $p->retail_price === null && $p->dealer_price === null)->values(),
             'brands' => Brand::query()->where('empty_collection', true)->orderBy('code')->get(),
-            'ownBrand' => Brand::query()->where('for_sale', true)->value('id'),
+            'ownBrand' => Brand::query()->where('for_sale', true)->orderBy('id')->value('id'),
         ]);
     }
 

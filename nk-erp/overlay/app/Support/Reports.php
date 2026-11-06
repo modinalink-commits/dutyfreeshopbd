@@ -199,7 +199,7 @@ class Reports
                 return [['Date', 'Customer', 'Exchange', 'Deposit taken', 'Deposit returned', 'Method', 'Note'], $rows,
                     ['Total (liability, not revenue)', '', '', array_sum(array_column($rows, 3)), array_sum(array_column($rows, 4)), '', 'Net held: '.(array_sum(array_column($rows, 3)) - array_sum(array_column($rows, 4)))]];
             case 'cx_profit':
-                $own = (int) Brand::query()->where('for_sale', true)->value('id');
+                $own = (int) Brand::query()->where('for_sale', true)->orderBy('id')->value('id');
                 $rows = $lines()->map(function ($l) use ($own) {
                     $rev = round($l->out_qty * $l->refill_price, 2); $fee = round($l->out_qty * $l->fee, 2);
                     $cost = null;

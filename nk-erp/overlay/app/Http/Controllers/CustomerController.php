@@ -154,7 +154,7 @@ class CustomerController extends Controller
             DB::transaction(function () use ($data, $customer) {
                 $ref = 'EMP-'.$customer->code;
                 StockMovement::post(['kind' => 'empty_in', 'brand_id' => $data['brand_id'], 'size_kg' => $data['size_kg'], 'empty_delta' => $data['qty'], 'reference' => $ref, 'note' => 'Returned by '.$customer->name]);
-                $own = Brand::query()->where('for_sale', true)->value('id');
+                $own = Brand::query()->where('for_sale', true)->orderBy('id')->value('id');
                 CustomerCylinder::create(['customer_id' => $customer->id, 'brand_id' => $own, 'size_kg' => $data['size_kg'], 'qty_delta' => -$data['qty'], 'reference' => $ref]);
             });
         } catch (RuntimeException $e) {

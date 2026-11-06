@@ -123,7 +123,7 @@ class BrandController extends Controller
      */
     public function delete(Brand $brand)
     {
-        if ($brand->for_sale) return back()->withErrors(['name' => "{$brand->name} is our own selling brand and cannot be deleted."]);
+        if ($brand->id === \App\Support\ExchangeService::ownId()) return back()->withErrors(['name' => "{$brand->name} is our own brand and cannot be deleted."]);
         $uses = [
             'stock movements' => \App\Models\StockMovement::query()->where('brand_id', $brand->id)->count(),
             'sale lines' => \App\Models\SaleItem::query()->where('brand_id', $brand->id)->count(),

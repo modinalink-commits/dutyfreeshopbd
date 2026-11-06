@@ -136,7 +136,7 @@ class PortalController extends Controller
         }
         $newPkg = \App\Models\SaleItem::query()->whereIn('sale_id', $saleIds)->where('category', 'new_package')->selectRaw('size_kg, sum(qty) q')->groupBy('size_kg')->pluck('q', 'size_kg');
         $tx = Sale::query()->with('items')->where('customer_id', $c->id)->where('stage', '!=', 'voided')->where('empties_expected', '>', 0)->latest('id')->limit(8)->get();
-        return view('portal.empty', ['c' => $c, 'bySize' => $bySize, 'newPkg' => $newPkg, 'tx' => $tx, 'brand' => \App\Models\Brand::query()->where('for_sale', true)->value('name') ?? 'Aygaz United']);
+        return view('portal.empty', ['c' => $c, 'bySize' => $bySize, 'newPkg' => $newPkg, 'tx' => $tx, 'brand' => \App\Models\Brand::query()->where('for_sale', true)->orderBy('id')->value('name') ?? 'Aygaz United']);
     }
 
     public function statement(Request $request)
@@ -160,7 +160,7 @@ class PortalController extends Controller
     public function order(Request $request)
     {
         $c = $this->me($request);
-        return view('portal.order', ['c' => $c, 'orders' => CustomerOrder::query()->where('customer_id', $c->id)->latest('id')->limit(6)->get(), 'brand' => \App\Models\Brand::query()->where('for_sale', true)->value('name') ?? 'Aygaz United']);
+        return view('portal.order', ['c' => $c, 'orders' => CustomerOrder::query()->where('customer_id', $c->id)->latest('id')->limit(6)->get(), 'brand' => \App\Models\Brand::query()->where('for_sale', true)->orderBy('id')->value('name') ?? 'Aygaz United']);
     }
 
     public function storeOrder(Request $request)

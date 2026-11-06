@@ -130,7 +130,7 @@ class CompanyController extends Controller
                         'do_rate' => $rate->do_rate, 'transport' => $rate->transport, 'amount' => -round($q * ((float) $rate->do_rate - (float) $rate->transport), 2),
                         'note' => $data['note'] ?? null, 'created_by' => $request->user()->id]);
                     if (! empty($data['to_stock'])) {
-                        $own = Brand::query()->where('for_sale', true)->value('id');
+                        $own = Brand::query()->where('for_sale', true)->orderBy('id')->value('id');
                         StockMovement::post(['kind' => 'received', 'brand_id' => $own, 'size_kg' => $s, 'full_delta' => $q,
                             'empty_delta' => -((int) ($data['empties'][$s] ?? 0)), 'reference' => 'Challan '.$data['challan_no'], 'note' => 'From company ledger']);
                     }

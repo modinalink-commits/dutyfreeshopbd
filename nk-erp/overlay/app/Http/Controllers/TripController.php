@@ -147,13 +147,13 @@ class TripController extends Controller
     {
         $trip->load(['vehicle', 'route', 'salesman']);
         $c = TripCalc::of($trip);
-        $own = Brand::query()->where('for_sale', true)->value('id');
+        $own = Brand::query()->where('for_sale', true)->orderBy('id')->value('id');
         $products = Product::query()->where('is_active', true)->whereIn('category', ['refill', 'new_package'])->when($own, fn ($q) => $q->where('brand_id', $own))->orderBy('category')->orderBy('size_kg')->get();
         $onVehicle = [];
         foreach (Brand::SIZES as $s) $onVehicle[$s] = (int) StockMovement::query()->where('trip_id', $trip->id)->where('size_kg', $s)->sum('full_delta');
         return view('route.sales', ['trip' => $trip, 'c' => $c, 'products' => $products, 'onVehicle' => $onVehicle,
             'customers' => Customer::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'phone', 'code']),
-            'brands' => Brand::query()->where('empty_collection', true)->orderBy('code')->get(), 'ownBrand' => Brand::query()->where('for_sale', true)->value('id')]);
+            'brands' => Brand::query()->where('empty_collection', true)->orderBy('code')->get(), 'ownBrand' => Brand::query()->where('for_sale', true)->orderBy('id')->value('id')]);
     }
 
     public function storeSale(Request $request, Trip $trip)
@@ -381,7 +381,7 @@ class TripController extends Controller
     {
         $brandId = (int) StockMovement::query()->where('trip_id', $trip->id)->where('size_kg', $size)->groupBy('brand_id')->havingRaw('sum(empty_delta) > 0')->value('brand_id');
         $this->moveFromVehicle($trip, $size, 'empty', $n, 'none', 'adjustment', 'Left at shop: '.$reason);
-        CustomerCylinder::create(['customer_id' => $customerId, 'brand_id' => $brandId ?: Brand::query()->where('for_sale', true)->value('id'), 'size_kg' => $size, 'qty_delta' => $n, 'reference' => $trip->trip_no.' adj']);
+        CustomerCylinder::create(['customer_id' => $customerId, 'brand_id' => $brandId ?: Brand::query()->where('for_sale', true)->orderBy('id')->value('id'), 'size_kg' => $size, 'qty_delta' => $n, 'reference' => $trip->trip_no.' adj']);
     }
 
     public function close(Request $request, Trip $trip)

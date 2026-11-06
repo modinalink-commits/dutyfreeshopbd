@@ -24,7 +24,7 @@ use RuntimeException;
  */
 class ExchangeService
 {
-    public static function ownId(): int { return (int) Brand::query()->where('for_sale', true)->value('id'); }
+    public static function ownId(): int { return (int) Brand::query()->where('for_sale', true)->orderBy('id')->value('id'); }
 
     public static function typeOf(int $in, int $out, string $outKind, int $own): string
     {

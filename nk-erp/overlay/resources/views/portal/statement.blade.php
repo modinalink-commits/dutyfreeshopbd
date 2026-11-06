@@ -13,6 +13,6 @@
     <div style="display:flex;gap:8px;padding:7px 0;border-top:1px solid #eef2f9;font-size:var(--fs-14)"><span class="n" style="color:#51607a;width:44px">{{ $r->created_at->timezone('Asia/Dhaka')->format('d-m') }}</span><span style="flex-grow:1">{{ ['sale' => 'ক্রয়', 'payment' => 'পরিশোধ', 'void' => 'বাতিল', 'opening' => 'শুরুর বকেয়া'][$r->kind] ?? 'সমন্বয়' }} {{ $r->reference }}</span><b class="n" style="color:{{ $amt < 0 ? '#0f6b3c' : '#14213d' }}">{{ $amt < 0 ? '−' : '+' }}{{ number_format(abs($amt)) }}</b></div>
   @empty<span style="font-size:var(--fs-13);color:#51607a">এই সময়ে লেনদেন নেই।</span>@endforelse
 </div>
-@if($cyl)<div class="card"><b style="font-size:var(--fs-14)">সিলিন্ডার ({{ \App\Models\Brand::query()->where('for_sale', true)->value('name') ?? 'Aygaz United' }})</b>@foreach($cyl as $s => [$b, $g]){!! $kv($U::bn($s).' কেজি কেনা / খালি দিলাম', $b.' / '.$g) !!}@endforeach</div>@endif
+@if($cyl)<div class="card"><b style="font-size:var(--fs-14)">সিলিন্ডার ({{ \App\Models\Brand::query()->where('for_sale', true)->orderBy('id')->value('name') ?? 'Aygaz United' }})</b>@foreach($cyl as $s => [$b, $g]){!! $kv($U::bn($s).' কেজি কেনা / খালি দিলাম', $b.' / '.$g) !!}@endforeach</div>@endif
 <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px"><button class="chip" type="button" onclick="window.print()">PDF ডাউনলোড</button><button class="chip" type="button" onclick="window.print()">A4 প্রিন্ট</button></div>
 @endsection

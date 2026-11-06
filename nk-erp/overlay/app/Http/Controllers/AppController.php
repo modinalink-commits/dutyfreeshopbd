@@ -95,7 +95,7 @@ class AppController extends Controller
     {
         $out = [];
         // The route vehicle carries our own brand only, so the app sells our brand's products.
-        $own = Brand::query()->where('for_sale', true)->value('id');
+        $own = Brand::query()->where('for_sale', true)->orderBy('id')->value('id');
         foreach (Product::query()->where('is_active', true)->whereIn('category', ['refill', 'new_package'])->when($own, fn ($q) => $q->where('brand_id', $own))->orderBy('id')->get() as $p) {
             $price = $p->dealer_price ?? $p->retail_price;
             if ($price === null || ! $p->size_kg) continue;
@@ -112,7 +112,7 @@ class AppController extends Controller
         if ($trip) foreach (Brand::SIZES as $s) $onVeh[$s] = (int) StockMovement::query()->where('trip_id', $trip->id)->where('size_kg', $s)->sum('full_delta');
         $draftNo = 'D-'.str_pad((string) ((int) Sale::query()->where('trip_id', $trip?->id)->count() + 1), 3, '0', STR_PAD_LEFT);
         return view('app.sale', ['e' => $e, 'trip' => $trip, 'cust' => $cust, 'due' => $cust?->due() ?? 0, 'emptyOut' => $cust ? array_sum($cust->cylindersOut()) : 0,
-            'onVeh' => $onVeh, 'prices' => $this->prices(), 'brand' => Brand::query()->where('for_sale', true)->first(), 'draftNo' => $draftNo]);
+            'onVeh' => $onVeh, 'prices' => $this->prices(), 'brand' => Brand::query()->where('for_sale', true)->orderBy('id')->first(), 'draftNo' => $draftNo]);
     }
 
     /** Saves one sale. Called by the page (online) or by the phone's sync queue later (offline). Same tx id never posts twice. */
@@ -142,7 +142,7 @@ class AppController extends Controller
                 \App\Support\Ui::lockNumbers();
                 $sale = Sale::create(['invoice_no' => Sale::nextNo('retail'), 'type' => 'retail', 'customer_id' => $customer?->id, 'trip_id' => $trip->id, 'client_tx' => $data['tx'],
                     'walkin_name' => $customer ? null : ($data['walkin_name'] ?? 'Walk-in'), 'stage' => 'posted', 'subtotal' => $total, 'discount' => 0, 'delivery_charge' => 0,
-                    'total' => $total, 'paid' => $paid, 'payment_method' => $paid < $total && $paid == 0 ? 'due' : $method, 'empty_brand_id' => Brand::query()->where('for_sale', true)->value('id'),
+                    'total' => $total, 'paid' => $paid, 'payment_method' => $paid < $total && $paid == 0 ? 'due' : $method, 'empty_brand_id' => Brand::query()->where('for_sale', true)->orderBy('id')->value('id'),
                     'empties_expected' => array_sum($refills), 'empties_received' => $empties, 'vehicle' => $trip->vehicle->code,
                     'note' => trim(($data['condition'] ?? '') && $data['condition'] !== 'ভালো' ? 'Empty: '.$data['condition'] : '').(($data['draft'] ?? null) ? ' · draft '.$data['draft'] : ''),
                     'created_by' => $request->user()->id, 'delivered_at' => $data['at'] ?? now()]);
@@ -246,7 +246,7 @@ class AppController extends Controller
                 ->groupBy('customer_id', 'size_kg')->havingRaw('sum(qty_delta) > 0')->get();
         }
         return view('app.empty', ['e' => $e, 'trip' => $trip, 'collected' => $collected, 'holders' => $holders, 'brands' => Brand::query()->where('empty_collection', true)->orderBy('code')->get(),
-            'own' => Brand::query()->where('for_sale', true)->first(), 'sel' => $request->query('c') ? $holders->first(fn ($h) => $h->customer_id == $request->query('c') && $h->size_kg == $request->query('s')) : $holders->first()]);
+            'own' => Brand::query()->where('for_sale', true)->orderBy('id')->first(), 'sel' => $request->query('c') ? $holders->first(fn ($h) => $h->customer_id == $request->query('c') && $h->size_kg == $request->query('s')) : $holders->first()]);
     }
 
     public function storeEmpty(Request $request)
@@ -258,7 +258,7 @@ class AppController extends Controller
         $c = Customer::find($data['customer_id']);
         $owed = (int) CustomerCylinder::query()->where('customer_id', $c->id)->where('size_kg', $data['size'])->sum('qty_delta');
         if ($data['qty'] > $owed) return back()->withErrors(['qty' => "{$c->name}-এর কাছে {$data['size']} কেজির মাত্র {$owed}টি খালি বাকি।"]);
-        $own = Brand::query()->where('for_sale', true)->value('id');
+        $own = Brand::query()->where('for_sale', true)->orderBy('id')->value('id');
         DB::transaction(function () use ($data, $trip, $c, $own) {
             StockMovement::post(['kind' => 'empty_in', 'brand_id' => $data['brand_id'], 'size_kg' => $data['size'], 'empty_delta' => $data['qty'], 'reference' => $trip->trip_no,
                 'note' => 'Empty collected from '.$c->name.' · '.$data['condition'].((int) $data['brand_id'] !== (int) $own ? ' · other brand, kept separate' : ''), 'trip_id' => $trip->id]);
@@ -403,7 +403,7 @@ class AppController extends Controller
     public function exchange(Request $request)
     {
         [$e, $trip] = $this->ctx($request);
-        $own = Brand::query()->where('for_sale', true)->first();
+        $own = Brand::query()->where('for_sale', true)->orderBy('id')->first();
         $active = Brand::query()->where('is_active', true)->orderByDesc('for_sale')->orderBy('name')->get();
         $cust = $request->query('customer') ? Customer::find((int) $request->query('customer')) : null;
         $mine = $trip ? \App\Models\CylinderExchange::query()->with(['lines.inBrand', 'lines.outBrand', 'sale'])->where('trip_id', $trip->id)->orderByDesc('id')->get() : collect();
@@ -429,7 +429,7 @@ class AppController extends Controller
         ], ['ack_name.required' => 'ক্রেতার নাম লিখে স্বীকৃতি নিন।', 'qty.max' => 'একবারে ১০০টির বেশি নয়।']);
         if (\App\Models\CylinderExchange::query()->where('client_tx', $data['tx'])->exists()) return redirect()->route('app.exchange')->with('ok', 'আগেই পাঠানো হয়েছে।');
         if (! $trip || $trip->status !== 'dispatched') return back()->withInput()->withErrors(['qty' => 'চালু ট্রিপ ছাড়া এক্সচেঞ্জ করা যাবে না।']);
-        $own = (int) Brand::query()->where('for_sale', true)->value('id');
+        $own = (int) Brand::query()->where('for_sale', true)->orderBy('id')->value('id');
         try {
             $x = DB::transaction(function () use ($data, $trip, $own, $request) {
                 $p = \App\Support\ExchangeService::prepare([['in_brand_id' => $data['given_brand_id'], 'in_size' => $data['size_kg'], 'in_qty' => $data['qty'], 'in_condition' => $data['condition'], 'in_ownership' => $data['ownership'],

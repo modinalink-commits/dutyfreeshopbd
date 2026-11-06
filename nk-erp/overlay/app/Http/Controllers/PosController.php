@@ -21,7 +21,8 @@ class PosController extends Controller
     {
         $products = Product::query()->with('brand')->where('is_active', true)->orderByRaw("case category when 'refill' then 1 when 'new_package' then 2 when 'accessory' then 3 else 4 end")->orderBy('size_kg')->get();
         // Retail sale sells our own brand only (Aygaz United); other brands' cylinders go through Cylinder exchange.
-        $products = $products->reject(fn ($p) => $p->brand && ! $p->brand->for_sale)
+        $ownB = \App\Support\ExchangeService::ownId();
+        $products = $products->reject(fn ($p) => $p->brand_id && $p->brand_id !== $ownB)
             ->sortBy(fn ($p) => [['refill' => 1, 'new_package' => 2, 'accessory' => 3][$p->category] ?? 4, (float) $p->size_kg])->values();
         $items = $products->map(fn ($p) => [
             'id' => $p->id, 'name' => $p->name, 'cat' => $p->category, 'img' => $p->image, 'size' => $p->size_kg ? $p->size_kg.' kg' : ($p->category === 'service' ? 'Service' : 'Part'),
@@ -31,7 +32,7 @@ class PosController extends Controller
         return view('pos', [
             'items' => $items,
             'brands' => Brand::query()->where('empty_collection', true)->orderBy('code')->get(),
-            'ownBrand' => Brand::query()->where('for_sale', true)->value('id'),
+            'ownBrand' => Brand::query()->where('for_sale', true)->orderBy('id')->value('id'),
             'todayCount' => Sale::query()->where('type', 'retail')->where('stage', '!=', 'voided')->where('created_at', '>=', now()->timezone('Asia/Dhaka')->startOfDay()->utc())->count(),
             'nextNo' => Sale::nextNo('retail'),
         ]);

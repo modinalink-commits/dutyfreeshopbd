@@ -94,7 +94,7 @@ class SalesService
                 $s = array_key_first($refillBySize) ?? 12;
                 StockMovement::post(['kind' => 'empty_in', 'brand_id' => $emptyBrandId, 'size_kg' => $s, 'empty_delta' => $left, 'reference' => $sale->invoice_no, 'note' => 'Extra empty with sale', 'trip_id' => $sale->trip_id]);
                 if ($sale->customer_id) {
-                    $own = Brand::query()->where('for_sale', true)->value('id');
+                    $own = Brand::query()->where('for_sale', true)->orderBy('id')->value('id');
                     CustomerCylinder::create(['customer_id' => $sale->customer_id, 'brand_id' => $own, 'size_kg' => $s, 'qty_delta' => -$left, 'reference' => $sale->invoice_no, 'sale_id' => $sale->id]);
                 }
             }
@@ -102,7 +102,7 @@ class SalesService
         $short = $expected - $received;
         if ($short > 0) {
             if (! $sale->customer_id) throw new RuntimeException('A walk-in customer must hand over an empty for every refill. Pick a saved customer to let them owe empties.');
-            $own = Brand::query()->where('for_sale', true)->value('id');
+            $own = Brand::query()->where('for_sale', true)->orderBy('id')->value('id');
             $left = $received;
             foreach ($refillBySize as $size => $q) {
                 $got = min($q, $left); $left -= $got;

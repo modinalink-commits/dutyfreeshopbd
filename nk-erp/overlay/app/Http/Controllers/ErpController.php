@@ -141,7 +141,7 @@ class ErpController extends Controller
     /** Reorder suggestion per size: 7-day average sales against what is in the godown. */
     private function suggest(): array
     {
-        $own = Brand::query()->where('for_sale', true)->value('id');
+        $own = Brand::query()->where('for_sale', true)->orderBy('id')->value('id');
         $out = [];
         foreach (Brand::SIZES as $s) {
             $avail = $own ? StockMovement::balance($own, $s)['full'] : 0;
@@ -196,7 +196,7 @@ class ErpController extends Controller
                 }
                 break;
             case 'm10':
-                $own = Brand::query()->where('for_sale', true)->value('id');
+                $own = Brand::query()->where('for_sale', true)->orderBy('id')->value('id');
                 $b = fn ($s) => $own ? StockMovement::balance($own, $s)['full'] : 0;
                 $rows[] = [['Main warehouse', '—', $b(12), $b(35), $b(45), (int) StockMovement::query()->whereNull('trip_id')->sum('empty_delta')], 'Active'];
                 foreach ($this->recs('m10', 0)->get() as $r) $rows[] = [[$r->val('Warehouse name') ?: $r->record_no, $r->val('Manager') ?: '—', '—', '—', '—', '—'], ErpRecord::STATUS[$r->status]];
