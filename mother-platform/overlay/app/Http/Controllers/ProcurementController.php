@@ -310,6 +310,14 @@ class ProcurementController extends Controller {
     elseif ($a === 'cancel') { DB::transaction(function () use ($id) { P::reverseStock($id); DB::table('purchases')->where('id',$id)->update(['status'=>'cancelled','updated_at'=>now()]); }); $m = 'Cancelled and stock reversed'; if (DB::table('purchase_items')->where('purchase_id',$id)->where('price_update_status','applied')->exists()) $m .= ' — Price was updated from this purchase. The selling rate was NOT reverted automatically; review the current selling rate.'; }
     elseif ($a === 'delete') { if (DB::table('payment_allocations')->where('purchase_id',$id)->exists()) return back()->with('bad','This invoice has payments — cancel it instead of deleting.');
       DB::transaction(function () use ($id) { P::reverseStock($id); DB::table('purchase_items')->where('purchase_id',$id)->delete(); DB::table('purchases')->where('id',$id)->delete(); }); P::audit('proc.purchase.delete','purchase#'.$id,['invoice'=>$p->invoice,'total'=>$p->total]); return redirect('/admin/purchase/invoices')->with('ok','Purchase deleted and stock reversed'); }
+    elseif ($a === 'rates') {
+      if (!\App\Http\Middleware\ModulePermission::canSetRate(auth()->user())) abort(403);
+      if (in_array($p->status, P::BAD)) return back()->with('bad', 'This purchase is '.$p->status.' — selling prices change only after stock-in.');
+      if (!P::on('auto_update_sale_price_from_purchase') && P::set('auto_update_sale_price_from_purchase','1') !== '1') return back()->with('bad', 'Auto Update Sale Price from Purchase is OFF in Purchase Settings.');
+      try { DB::transaction(fn() => P::applyNewRates($p)); } catch (\Throwable $e) { report($e); return back()->with('bad', 'Price update failed: '.mb_substr($e->getMessage(),0,200)); }
+      $rows = DB::table('purchase_items as i')->leftJoin('products as pr','pr.id','=','i.product_id')->where('i.purchase_id',$id)->whereNotNull('i.new_selling_rate')->get(['i.name','i.new_selling_rate','i.price_update_status','pr.price']);
+      $m = 'Selling price check: '.($rows->map(fn($x) => $x->name.' → ৳'.number_format((float)$x->new_selling_rate,2).' ['.($x->price_update_status ?: 'no change').'; now ৳'.number_format((float)$x->price,2).']')->implode(' · ') ?: 'no New Selling Rate on this purchase.');
+    }
     elseif ($a === 'sms') { $ok = P::notify('purchase',$p->supplier_id,[],$id,true); return back()->with($ok ? 'ok' : 'bad', $ok ? 'Invoice link SMS queued' : 'Could not send — check the supplier mobile number.'); }
     else abort(404);
     P::audit('proc.purchase.'.$a,'purchase#'.$id,$prev,['status'=>DB::table('purchases')->where('id',$id)->value('status')]); return back()->with('ok',$m);

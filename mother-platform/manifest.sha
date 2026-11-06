@@ -236,7 +236,7 @@ a0f2a7c9d110e69ffe18337a0e6235f3e336fa0e resources/views/smsmk/reports.blade.php
 d8901d6a206e7ba539de8546b84a4c292e0c8728 resources/views/proc/dashboard.blade.php
 66bf8e2a0109469a1f6db4d7704b86e7e061bf28 resources/views/proc/invoice_doc.blade.php
 fa71f5b713eb48db8706158fe0040e5f09ce8d0c resources/views/proc/invoice_public.blade.php
-5d28a996daeaa1f87dcbb2f3b9a88826908f89f5 resources/views/proc/invoice_show.blade.php
+c1e2a0c528ab712ebde16367e1eeff0fa2c62c71 resources/views/proc/invoice_show.blade.php
 90020cfb710c52c9ccba2f99e9d4e5267f5232c6 resources/views/proc/list.blade.php
 bfa5313978a8ff1c3f3ba7b9df3c06309a77279a resources/views/proc/nav.blade.php
 0445410328b3d39d65679223cd68b27c7eec0ddc resources/views/proc/note_form.blade.php
@@ -248,7 +248,7 @@ bcaa09b8dc69e29174359aede4e960904e43bf3c resources/views/proc/settings.blade.php
 db52bf018848f94fc1e822d5e49e64dab784c0ab resources/views/proc/supplier.blade.php
 e997286d95bfbc1fc2f79bd8ff874a74fb955e6d resources/views/proc/supplier_form.blade.php
 7ddbcacca64d2320bf812ed92b504a72d7262705 app/Support/Procure.php
-99cdcd5e4ab8c013a8f0e2a67f64f7edca38655d app/Http/Controllers/ProcurementController.php
+45ea23735b4702314015a9847074932c1e33d5d9 app/Http/Controllers/ProcurementController.php
 e231e437bd695cd4d2946f94828c7f16dffb07b1 database/migrations/2026_11_01_000006_procurement.php
 2c14a47ea046e2f4ef126b750112da95e88d7d78 database/migrations/2026_11_01_000008_referral.php
 e4a4bf38aa25dde2353c90c8dd5b7f93cf60c7aa app/Support/Referral.php
