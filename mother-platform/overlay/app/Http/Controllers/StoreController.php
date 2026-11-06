@@ -443,14 +443,15 @@ class StoreController extends Controller {
   private static function benefitsView(string $phone, array $q, \Illuminate\Http\Request $r): array {
     try {
       $items = [];
-      foreach (($q['cand'] ?? []) as $l) { $ap = !empty($l['applied']); if (!$ap && ($l['key'] ?? '') === 'coupon') continue; $items[] = ['label'=>(string)($l['label'] ?? $l['type'] ?? ''), 'state'=>$ap ? 'applied' : 'available', 'amount'=>(float)($l['amount'] ?? 0)]; }
+      foreach (($q['cand'] ?? []) as $l) { $ap = !empty($l['applied']); if (!$ap && ($l['key'] ?? '') === 'coupon') continue; $items[] = ['key'=>(string)($l['key'] ?? ''), 'label'=>(string)($l['label'] ?? $l['type'] ?? ''), 'state'=>$ap ? 'applied' : 'available', 'amount'=>(float)($l['amount'] ?? 0)]; }
+      $mx = 0; foreach ($items as $it) $mx = max($mx, $it['amount']); foreach ($items as &$it) $it['best'] = $mx > 0 && $it['amount'] >= $mx; unset($it);
       if (!empty($q['ship_free']) && (float)($q['ship_orig'] ?? 0) > 0) array_unshift($items, ['label'=>'Free Delivery', 'state'=>'applied', 'amount'=>0]);
       $c = \App\Support\OrderDiscount::customer($phone);
-      if (!$c) return ['state'=>'new', 'msg'=>'New Customer — loyalty benefits begin after your first successfully received order.', 'items'=>$items];
+      if (!$c) return ['mode'=>$q['mode'] ?? null, 'state'=>'new', 'msg'=>'New Customer — loyalty benefits begin after your first successfully received order.', 'items'=>$items];
       $k = 'co.bn.'.md5((string)$r->ip()); \Illuminate\Support\Facades\Cache::add($k, 0, 3600); $show = (int)\Illuminate\Support\Facades\Cache::get($k, 0) < 60; \Illuminate\Support\Facades\Cache::increment($k);
       $b = \App\Support\CustomerBenefit::check($phone, $c); $held = in_array($b['status'], ['Review Required', 'Suspended'], true);
       $tier = \App\Support\OrderDiscount::tier($phone, $c);
-      $out = ['state'=>'known', 'status'=>$held ? 'Not Eligible' : $b['status'], 'items'=>$held ? [] : $items, 'msg'=>$held ? 'Some customer benefits are currently unavailable for this order.' : ($b['received'] < 1 ? 'Membership and loyalty offers start after your first successfully received order.' : '✓ Welcome back. Your saved information and eligible benefits have been loaded.')];
+      $out = ['mode'=>$q['mode'] ?? null, 'state'=>'known', 'status'=>$held ? 'Not Eligible' : $b['status'], 'items'=>$held ? [] : $items, 'msg'=>$held ? 'Some customer benefits are currently unavailable for this order.' : ($b['received'] < 1 ? 'Membership and loyalty offers start after your first successfully received order.' : '✓ Welcome back. Your saved information and eligible benefits have been loaded.')];
       if ($show) { $out['membership'] = $tier['name'] ?? null; $out['received'] = (int)$b['received']; $out['rate'] = $b['rate'] !== null ? (int)round($b['rate']) : null; }
       if ($held) $out['items'] = array_values(array_filter($items, fn($i) => !preg_match('/Membership|VIP|Returning|Birthday|Welcome|Referral/i', $i['label'])));
       return $out;
@@ -470,9 +471,10 @@ class StoreController extends Controller {
     $cOk = null; $cmsg = $eng['coupon_error'] ?? ''; foreach ($app as $l) if (($l['key'] ?? '') === 'coupon') { $cOk = $l['code']; $cmsg = 'Coupon applied: '.self::tk($l['amount']).' off'; }
     if ($code !== '' && !$cOk && !$cmsg) $cmsg = $eng['free_ship'] ? 'Free delivery applied' : 'Coupon is valid but another discount is already better for this order';
     $disc = min($disc, $sub);
-    return ['items'=>$items, 'sub'=>$sub, 'ship'=>$items ? $ship : 0, 'disc'=>$disc, 'total'=>$items ? $sub + $ship - $disc : 0, 'coupon'=>$cOk, 'coupon_msg'=>$cmsg, 'notes'=>$notes, 'applied'=>$app, 'profile'=>$eng['profile'], 'zone'=>$dv['zone'], 'ship_orig'=>$dv['original'], 'ship_free'=>(bool)$dv['free'], 'ship_unlocked'=>(bool)$dv['unlocked'], 'dv'=>$dv, 'cand'=>$eng['lines'] ?? [], 'bsnap'=>self::benefitSnap($phone, $app, $eng['profile'] ?? null, $eng['lines'] ?? [])];
+    return ['items'=>$items, 'sub'=>$sub, 'ship'=>$items ? $ship : 0, 'disc'=>$disc, 'total'=>$items ? $sub + $ship - $disc : 0, 'coupon'=>$cOk, 'coupon_msg'=>$cmsg, 'notes'=>$notes, 'applied'=>$app, 'profile'=>$eng['profile'], 'zone'=>$dv['zone'], 'ship_orig'=>$dv['original'], 'ship_free'=>(bool)$dv['free'], 'ship_unlocked'=>(bool)$dv['unlocked'], 'dv'=>$dv, 'mode'=>$eng['mode'] ?? null, 'cand'=>$eng['lines'] ?? [], 'bsnap'=>self::benefitSnap($phone, $app, $eng['profile'] ?? null, $eng['lines'] ?? [])];
   }
   public function cartItems(Request $r) {
+    \App\Support\OrderDiscount::$pick = preg_match('/^[a-z]{3,20}$/', (string)$r->input('pick')) ? (string)$r->input('pick') : null;
     $sp = \App\Support\OrderDiscount::sessionPhone($r); $ph = null;
     // The preview must equal what the order will save. Order submit uses the TYPED number and counts the customer profile only when that number is the logged-in one; so the preview does the same (a typed number that is not the logged-in number gets only the non-profile discounts, and the profile is not revealed).
     $t = substr(preg_replace('/\D/', '', (string)$r->input('ph')), -11); if (!preg_match('/^01\d{9}$/', $t)) $t = null;
@@ -537,6 +539,7 @@ class StoreController extends Controller {
     if (DB::table('customers')->where('phone',$phone)->where('blocked',true)->exists()) return $back('অনুগ্রহ করে কল করে অর্ডার করুন।');
     if (DB::table('orders')->where('phone',$phone)->where('created_at','>',now()->subMinutes(10))->count() >= 10) return $back('এই নম্বর থেকে অল্প সময়ে অনেকগুলো অর্ডার এসেছে। দয়া করে কল করে অর্ডার করুন।');
     $b = $this->base(); $area = (int)($d['area'] ?? 1);
+    \App\Support\OrderDiscount::$pick = preg_match('/^[a-z]{3,20}$/', (string)$r->input('pick')) ? (string)$r->input('pick') : null;
     $sp = \App\Support\OrderDiscount::sessionPhone($r); $qt = $this->quote($want, $area, trim((string)($d['coupon'] ?? '')), $phone, $sp !== null && $sp === \App\Support\Chat::phone($phone), (string)$d['address']);
     if (!$qt['items']) return $back('These products are no longer available');
     if ($oos = array_values(array_filter($qt['items'], fn($i) => !empty($i['oos'])))) return $back(implode(', ', array_map(fn($i) => $i['name'], array_slice($oos, 0, 3))).' — Out of Stock right now. Remove it from the cart or call us for the next arrival. / এই পণ্যটি এখন স্টক আউট।');

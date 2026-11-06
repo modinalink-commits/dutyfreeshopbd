@@ -60,6 +60,8 @@ class OrderDiscount {
     return ['category' => $cat, 'membership' => $t ? 'Active' : 'Inactive', 'membership_name' => $t['name'] ?? null, 'orders' => $st['n'], 'found' => (bool)$c];
   }
   /** Applies the product "Quantity prices" (Buy 2-5) for every channel that did not already do it (website cart does it itself and sets ctx qprice). Lines priced by hand are left alone. */
+  /** Offer the customer picked at checkout (only among offers that are already valid for them). */
+  public static ?string $pick = null;
   public static function compute(?string $phone, float $sub, ?string $coupon = null, array $ctx = []): array {
     $r = ProfitFloor::enforce(self::computeRaw($phone, $sub, $coupon, $ctx), array_values((array)($ctx['items'] ?? [])), (float)($ctx['bsave'] ?? 0));
     // App Install Welcome Discount: after bundle / membership / campaign discounts and the 15% protected-profit rule, capped to what is still safe (Auto Safe-Cap).
@@ -140,6 +142,7 @@ class OrderDiscount {
       elseif ($mode === 'priority') $sel = [$cand[0]['key']];
       else { $best = $cand[0]; foreach ($cand as $x) if ($x['amount'] > $best['amount']) $best = $x; $sel = [$best['key']]; }
     }
+    if (self::$pick !== null && $mode !== 'stack' && in_array(self::$pick, array_column($cand, 'key'), true) && self::$pick !== 'refcredit') $sel = [self::$pick]; // customer's own choice among valid offers (checkout spec); margin guard still runs after
     if ($web && !empty($ctx['verified']) && $phone && Referral::on() && Referral::set('credit_use', '1') === '1' && (!CustomerBenefit::on('abuse') || CustomerBenefit::check($phone)['status'] !== 'Suspended') && ($bal = Referral::balance($phone)) > 0) {
       $paid = 0; foreach ($cand as $x0) if (in_array($x0['key'], $sel)) $paid += $x0['amount'];
       $ca = round(min($bal, max(0, $sub - $paid)), 2); if ($ca > 0) { $cand[] = ['key' => 'refcredit', 'type' => 'Referral Credit', 'rule' => 'Referral wallet', 'source' => 'Referral credit', 'pct' => null, 'amount' => $ca, 'label' => 'Referral credit – ৳'.number_format($ca)]; $sel[] = 'refcredit'; }

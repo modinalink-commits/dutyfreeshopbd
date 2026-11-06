@@ -363,6 +363,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/m/{slug}/{id}/edit', [R::class,'form']);
   Route::post('/m/{slug}/{id}', [R::class,'save']);
   Route::post('/m/{slug}/{id}/delete', [R::class,'destroy']);
+  Route::get('/checkout-discounts', [\App\Http\Controllers\CheckoutDiscountReportController::class,'index']);
   Route::get('/customer-benefit', [\App\Http\Controllers\CustomerBenefitController::class,'index']);
   Route::get('/customer-benefit/export', [\App\Http\Controllers\CustomerBenefitController::class,'csv']);
   Route::post('/customer-benefit/settings', [\App\Http\Controllers\CustomerBenefitController::class,'saveSwitches']);
