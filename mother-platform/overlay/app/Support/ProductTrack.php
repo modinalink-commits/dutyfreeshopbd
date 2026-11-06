@@ -53,18 +53,46 @@ class ProductTrack {
     return 'Normal';
   }
 
-  /** Compact numbers for the dashboard widget: last 30 days, cached 5 minutes. */
-  public static function dash(int $days = 30): array {
-    return Cache::remember('pt.dash.'.$days, 300, function () use ($days) {
-      $tz = new \DateTimeZone('Asia/Dhaka');
-      $to = (new \DateTime('now', $tz))->format('Y-m-d'); $from = (new \DateTime('now', $tz))->modify('-'.($days - 1).' days')->format('Y-m-d');
-      $f = Analytics::filters(['from'=>$from, 'to'=>$to]);
-      $rows = Analytics::rows('top-viewed', $f)['rows'];
-      $tot = ['views'=>array_sum(array_column($rows, 'views')), 'uniq'=>array_sum(array_column($rows, 'uniq')), 'orders'=>array_sum(array_column($rows, 'orders'))];
-      $top = array_slice($rows, 0, 6);
+  /** add_to_cart / checkout_started / search_click from the storefront beacon. Anonymous, bot-filtered, deduped, never blocks. */
+  public static function event($r): void {
+    try {
+      $ua = (string)$r->userAgent(); if (self::isBot($ua)) return;
+      $in = json_decode((string)$r->getContent(), true); if (!is_array($in)) return;
+      $e = (string)($in['e'] ?? ''); if (!in_array($e, ['add_to_cart','checkout_started','search_click'], true)) return;
+      $vid = substr(sha1($r->ip().'|'.$ua.'|'.config('app.key')), 0, 20); $dev = self::device($ua); $ids = []; $meta = null;
+      if ($e === 'search_click') {
+        $slug = trim((string)basename(parse_url((string)($in['path'] ?? ''), PHP_URL_PATH) ?: ''), '/'); if ($slug === '') return;
+        $pid = (int)DB::table('products')->where('path_slug', $slug)->value('id'); if (!$pid) return;
+        $ids = [$pid]; $meta = json_encode(['term'=>mb_substr(trim((string)($in['term'] ?? '')), 0, 80)], JSON_UNESCAPED_UNICODE);
+      } elseif ($e === 'add_to_cart') { $ids = [(int)($in['p'] ?? 0)]; }
+      else { $ids = array_map('intval', array_slice((array)($in['ids'] ?? []), 0, 20)); }
+      $ids = array_values(array_unique(array_filter($ids, fn($x) => $x > 0))); if (!$ids) return;
+      $rows = [];
+      foreach ($ids as $pid) {
+        if (!Cache::add('pe:'.$e.':'.$vid.':'.$pid, 1, $e === 'checkout_started' ? 600 : 30)) continue;
+        $rows[] = ['event_type'=>$e, 'product_id'=>$pid, 'visitor_id'=>$vid, 'device_type'=>$dev, 'metadata'=>$meta, 'created_at'=>now()];
+      }
+      if ($rows) app()->terminating(function () use ($rows) { try { DB::table('product_analytics_events')->insert($rows); } catch (\Throwable $x) {} });
+    } catch (\Throwable $x) {}
+  }
+
+  /** Dashboard widget data for a range (today | yesterday | 7 | 30 | custom from/to); cached 5 minutes. Five insight lists from one query. */
+  public static function dash(string $range = '30', ?string $cf = null, ?string $ct = null): array {
+    $tz = new \DateTimeZone('Asia/Dhaka'); $now = new \DateTime('now', $tz);
+    if ($range === 'today') { $from = $to = $now->format('Y-m-d'); }
+    elseif ($range === 'yesterday') { $from = $to = (clone $now)->modify('-1 day')->format('Y-m-d'); }
+    elseif ($range === 'custom' && $cf && $ct && preg_match('/^\d{4}-\d{2}-\d{2}$/', $cf) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $ct)) { $from = $cf; $to = $ct; }
+    else { $range = $range === '7' ? '7' : '30'; $to = $now->format('Y-m-d'); $from = (clone $now)->modify('-'.((int)$range - 1).' days')->format('Y-m-d'); }
+    return Cache::remember('pt.dash.'.$from.'.'.$to, 300, function () use ($from, $to, $range) {
+      $rows = Analytics::rows('top-viewed', Analytics::filters(['from'=>$from, 'to'=>$to]))['rows'];
+      $by = fn($k, $min = 0) => array_slice(array_values(array_filter($rows, fn($r) => (float)$r[$k] > $min)), 0, 6);
+      $sorted = fn($k, $f = null) => (function () use ($rows, $k, $f) { $x = array_values(array_filter($rows, $f ?: fn($r) => (float)$r[$k] > 0)); usort($x, fn($a, $b) => (float)$b[$k] <=> (float)$a[$k]); return array_slice($x, 0, 6); })();
       $opp = null; foreach ($rows as $r) if ($r['status'] === 'High Interest / Low Conversion') { $opp = $r; break; }
-      $rise = null; foreach ($rows as $r) if ((float)($r['growth'] ?? 0) >= 40 && $r['views'] >= 20 && (!$rise || $r['growth'] > $rise['growth'])) $rise = $r;
-      return ['tot'=>$tot, 'top'=>$top, 'high'=>$rows[0] ?? null, 'opp'=>$opp, 'rise'=>$rise, 'days'=>$days, 'from'=>$from, 'to'=>$to];
+      $rise = null; foreach ($rows as $r) if ((float)$r['growth'] >= 40 && $r['views'] >= 20 && (!$rise || $r['growth'] > $rise['growth'])) $rise = $r;
+      return [
+        'tot'=>['views'=>array_sum(array_column($rows, 'views')), 'uniq'=>array_sum(array_column($rows, 'uniq')), 'cart'=>array_sum(array_column($rows, 'cart')), 'orders'=>array_sum(array_column($rows, 'orders'))],
+        'lists'=>['top'=>array_slice($rows, 0, 6), 'search'=>$sorted('search'), 'cart'=>$sorted('cart'), 'low'=>$sorted('views', fn($r) => $r['status'] === 'High Interest / Low Conversion'), 'rise'=>$sorted('growth', fn($r) => (float)$r['growth'] >= 40 && $r['views'] >= 20)],
+        'high'=>$rows[0] ?? null, 'opp'=>$opp, 'rise'=>$rise, 'range'=>$range, 'from'=>$from, 'to'=>$to];
     });
   }
 }

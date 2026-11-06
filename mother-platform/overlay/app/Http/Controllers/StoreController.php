@@ -453,6 +453,7 @@ class StoreController extends Controller {
     return response()->json($q)->header('Cache-Control','no-store');
   }
   /** Checkout progress tracking: one "incomplete order" per browser session, updated as the customer types. Never confirms, never sends SMS, never touches stock or courier. */
+  public function trackEvent(Request $r) { \App\Support\ProductTrack::event($r); return response()->noContent(); }
   public function trackCheckout(Request $r) {
     $in = json_decode((string)$r->getContent(), true); if (!is_array($in)) $in = $r->all();
     $tok = (string)($in['token'] ?? ''); if (!preg_match('/^[A-Za-z0-9]{16,40}$/', $tok)) return response()->json(['ok'=>false]);

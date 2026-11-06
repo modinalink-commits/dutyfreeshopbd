@@ -43,7 +43,7 @@ class Analytics {
     $s = fn($k) => trim((string)($in[$k] ?? ''));
     $view = in_array($in['view'] ?? '', ['store','compare'], true) ? $in['view'] : 'combined';
     return ['from'=>$from, 'to'=>$to, 'stores'=>$stores, 'category'=>(int)($in['category'] ?? 0), 'product'=>mb_substr($s('product'), 0, 80), 'customer'=>mb_substr($s('customer'), 0, 80),
-      'courier'=>mb_substr($s('courier'), 0, 40), 'source'=>mb_substr($s('source'), 0, 40), 'status'=>mb_substr($s('status'), 0, 40), 'pay'=>mb_substr($s('pay'), 0, 40), 'view'=>$view];
+      'courier'=>mb_substr($s('courier'), 0, 40), 'source'=>mb_substr($s('source'), 0, 40), 'status'=>mb_substr($s('status'), 0, 40), 'pay'=>mb_substr($s('pay'), 0, 40), 'device'=>in_array($s('device'), ['mobile','desktop','tablet'], true) ? $s('device') : '', 'vsource'=>mb_substr($s('vsource'), 0, 20), 'view'=>$view];
   }
   private static function utc(string $date, bool $end): string {
     $d = new \DateTime($date.' 00:00:00', new \DateTimeZone('Asia/Dhaka')); if ($end) $d->modify('+1 day');
@@ -91,7 +91,7 @@ class Analytics {
       'stock-tracking' => ['image'=>['',$I],'product'=>['Product',$T],'sku'=>['SKU',$T],'store'=>['Store',$T],'current'=>['Current stock',$N],'opening'=>['Opening',$N],'sold'=>['Sold',$N],'returned'=>['Returned',$N],'stock_in'=>['Stock in',$N],'stock_out'=>['Stock out',$N],'closing'=>['Closing',$N]],
       'category-stock' => ['category'=>['Category',$T],'products'=>['Products',$N],'units'=>['Units in stock',$N],'cost_value'=>['Stock value (cost)',$M],'sale_value'=>['Stock value (sale)',$M],'out'=>['Out of stock',$N]],
       'stock-log' => ['date'=>['Date',$Dt],'product'=>['Product',$T],'source'=>['Source',$T],'reference'=>['Reference',$T],'before'=>['Before',$N],'change'=>['Change',$N],'after'=>['After',$N],'by'=>['By',$T]],
-      'top-viewed' => ['image'=>['',$I],'product'=>['Product',$T],'sku'=>['SKU',$T],'category'=>['Category',$T],'brand'=>['Brand',$T],'views'=>['Total views',$N],'uniq'=>['Unique visitors',$N],'mobile'=>['Mobile',$N],'desktop'=>['Desktop',$N],'tablet'=>['Tablet',$N],'orders'=>['Orders',$N],'conv'=>['Conversion %',$P],'growth'=>['View growth %',$P],'stock'=>['Stock',$N],'price'=>['Sale price',$M],'status'=>['Demand status',$S]],
+      'top-viewed' => ['image'=>['',$I],'product'=>['Product',$T],'sku'=>['SKU',$T],'category'=>['Category',$T],'brand'=>['Brand',$T],'views'=>['Total views',$N],'uniq'=>['Unique visitors',$N],'mobile'=>['Mobile',$N],'desktop'=>['Desktop',$N],'tablet'=>['Tablet',$N],'search'=>['Search clicks',$N],'cart'=>['Add to cart',$N],'checkout'=>['Checkout',$N],'orders'=>['Orders',$N],'cart_rate'=>['Cart rate %',$P],'conv'=>['Conversion %',$P],'growth'=>['View growth %',$P],'stock'=>['Stock',$N],'price'=>['Sale price',$M],'status'=>['Demand status',$S]],
       'low-stock','out-of-stock' => ['image'=>['',$I],'product'=>['Product',$T],'sku'=>['SKU',$T],'category'=>['Category',$T],'stock'=>['Stock',$N],'alert'=>['Alert at',$N],'cost'=>['Cost',$M],'price'=>['Price',$M]],
       'purchase-report' => ['date'=>['Date',$Dt],'invoice'=>['Invoice',$T],'supplier'=>['Supplier',$T],'qty'=>['Qty',$N],'total'=>['Total',$M],'paid'=>['Paid',$M],'due'=>['Due',$M]],
       'supplier-report' => ['supplier'=>['Supplier',$T],'purchases'=>['Purchases',$N],'total'=>['Total purchased',$M],'paid'=>['Paid',$M],'due'=>['Due',$M],'last'=>['Last purchase',$Dt]],
@@ -285,21 +285,28 @@ class Analytics {
   /** Top Viewed Products: valid anonymous product views (bots filtered, 10-minute repeat protection) against real orders. Add-to-cart / search / checkout columns arrive with phase 2 tracking. */
   private static function topViewed(array $f): array {
     $a = self::utc($f['from'], false); $z = self::utc($f['to'], true);
+    if (($f['device'] ?? '') !== '') { $c_dev = true; }
     $days = max(1, (int)((strtotime($z) - strtotime($a)) / 86400)); $pa = date('Y-m-d H:i:s', strtotime($a) - $days * 86400);
     $c = ["e.event_type = 'product_view'", 'e.created_at >= ?', 'e.created_at < ?']; $b = [$a, $z];
     if ($f['category']) { $c[] = 'p.category_id = ?'; $b[] = $f['category']; }
     if ($f['product'] !== '') { $c[] = '(p.name ilike ? or p.sku ilike ?)'; $b[] = '%'.self::esc((string)$f['product']).'%'; $b[] = '%'.self::esc((string)$f['product']).'%'; }
+    if (!empty($c_dev)) { $c[] = 'e.device_type = ?'; $b[] = $f['device']; }
+    if (($f['vsource'] ?? '') !== '') { $c[] = 'e.source = ?'; $b[] = $f['vsource']; }
     $sql = "select p.id, p.name product, coalesce(p.sku,'') sku, coalesce(p.image,'') image, coalesce(c.name,'') category, coalesce(p.sub,'') brand, count(*) views, count(distinct e.visitor_id) uniq,
       sum((e.device_type = 'mobile')::int) mobile, sum((e.device_type = 'desktop')::int) desktop, sum((e.device_type = 'tablet')::int) tablet,
       coalesce(p.stock,0) stock, coalesce(p.price,0) price, coalesce(p.low_stock_alert,10) alert,
       (select count(*) from product_analytics_events x where x.event_type = 'product_view' and x.product_id = p.id and x.created_at >= ? and x.created_at < ?) prev_views,
-      (select count(distinct o.id) from order_items i join orders o on o.id = i.order_id where i.product_id = p.id and o.created_at >= ? and o.created_at < ? and ".self::VALID.") orders
+      (select count(distinct o.id) from order_items i join orders o on o.id = i.order_id where i.product_id = p.id and o.created_at >= ? and o.created_at < ? and ".self::VALID.") orders,
+      (select count(*) from product_analytics_events x where x.event_type = 'add_to_cart' and x.product_id = p.id and x.created_at >= ? and x.created_at < ?) cart,
+      (select count(*) from product_analytics_events x where x.event_type = 'checkout_started' and x.product_id = p.id and x.created_at >= ? and x.created_at < ?) checkout,
+      (select count(*) from product_analytics_events x where x.event_type = 'search_click' and x.product_id = p.id and x.created_at >= ? and x.created_at < ?) search
       from product_analytics_events e join products p on p.id = e.product_id left join categories c on c.id = p.category_id where ".implode(' and ', $c)." group by p.id, c.name order by count(*) desc limit ".self::LIMIT;
-    $rows = self::arr(self::sel($sql, [$pa, $a, $a, $z, ...$b]));
+    $rows = self::arr(self::sel($sql, [$pa, $a, $a, $z, $a, $z, $a, $z, $a, $z, ...$b]));
     foreach ($rows as &$r) {
       $views = (int)$r['views']; $uniq = (int)$r['uniq']; $orders = (int)$r['orders']; $prev = (int)$r['prev_views'];
       $r['conv'] = $uniq > 0 ? round(min(100, $orders / $uniq * 100), 2) : 0;
       $r['growth'] = $prev > 0 ? round(($views - $prev) / $prev * 100, 1) : ($views >= 20 ? 100 : 0);
+      $r['cart_rate'] = $uniq > 0 ? round(min(100, (int)$r['cart'] / $uniq * 100), 2) : 0;
       $r['status'] = ProductTrack::status($views, $uniq, $orders, (float)$r['conv'], (int)$r['stock'], (int)$r['alert'], (float)$r['growth']);
       unset($r['prev_views'], $r['alert'], $r['id']);
     }

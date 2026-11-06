@@ -138,5 +138,7 @@ function later(){clearTimeout(t);t=setTimeout(function(){send(false)},1200)}
 document.querySelectorAll('input[name=pay]').forEach(function(r){r.addEventListener('change',function(){touched=true;later()})});document.querySelectorAll('input[name=area]').forEach(function(r){r.addEventListener('change',later)});
 document.getElementById('rows').addEventListener('click',function(){later()});document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')send(true)});window.addEventListener('pagehide',function(){send(true)});setTimeout(later,1500);
 })();
+
+;addEventListener('load',function(){try{var c=DF.cart(),ids=Object.keys(c).map(Number).filter(Boolean);if(ids.length&&window.dfT&&!sessionStorage.getItem('dfcs')){sessionStorage.setItem('dfcs','1');dfT({e:'checkout_started',ids:ids})}}catch(e){}});
 </script>
 @endsection

@@ -231,6 +231,7 @@ function add(c,t){var d=document.createElement('div');d.className=c;var re=/(\/p
 f.onsubmit=function(e){e.preventDefault();var t=q.value.trim();if(!t||busy)return;q.value='';add('u',t);h.push({role:'user',content:t});busy=1;var w=add('b','...');
 fetch('/ai-chat',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({messages:h.slice(-8)})}).then(function(r){return r.json()}).then(function(j){w.remove();var r=j.reply||'দুঃখিত, অনুগ্রহ করে কল করুন: {{ \App\Support\Biz::hotline() }}';add('b',r);h.push({role:'assistant',content:r})}).catch(function(){w.remove();add('b','নেটওয়ার্ক সমস্যা হয়েছে, আবার চেষ্টা করুন।')}).then(function(){busy=0})}})();</script>
 @endif
+<script>(function(){function t(o){try{if(navigator.sendBeacon)navigator.sendBeacon('/t/e',new Blob([JSON.stringify(o)],{type:'text/plain'}))}catch(e){}}var a=window.DF&&DF.add;if(a)DF.add=function(id,q,p,set,ext){var r=a.apply(this,arguments);if(!set)t({e:'add_to_cart',p:parseInt(id)||0});return r};window.dfT=t;document.addEventListener('click',function(e){var l=e.target.closest&&e.target.closest('.pc a[href]');if(!l)return;var q=new URLSearchParams(location.search).get('q');if(location.pathname.indexOf('/search')===0&&q)t({e:'search_click',term:q,path:l.getAttribute('href')})},true)})();</script>
 @include('store.chat_widget')
 <style id="m2col">
 /* Mobile = 2 products per row, everywhere the shared product card (.pc) is used: homepage grids + sliders, category, sub/child category, brand, search, offers, related, wishlist.

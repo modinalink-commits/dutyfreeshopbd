@@ -96,6 +96,8 @@
 @if($has('customer'))<div><label>{{ $flabel['customer'] }}</label><input name="customer" value="{{ $f['customer'] }}" placeholder="Search"></div>@endif
 @if($has('courier'))<div><label>Courier</label><select name="courier"><option value="">All couriers</option>@foreach($opts['couriers'] as $c)<option @selected($f['courier']===$c)>{{ $c }}</option>@endforeach</select></div>@endif
 @if($has('status'))<div><label>Order status</label><select name="status"><option value="">Default</option>@foreach($opts['statuses'] as $c)<option @selected($f['status']===$c)>{{ $c }}</option>@endforeach</select></div>@endif
+@if($has('device'))<div><label>Device</label><select name="device"><option value="">All</option>@foreach(['mobile','desktop','tablet'] as $c)<option value="{{ $c }}" @selected(($f['device'] ?? '')===$c)>{{ ucfirst($c) }}</option>@endforeach</select></div>@endif
+@if($has('vsource'))<div><label>Traffic source</label><select name="vsource"><option value="">All</option>@foreach(['Homepage','Category','Brand','Search','Direct Link','Campaign','Other'] as $c)<option @selected(($f['vsource'] ?? '')===$c)>{{ $c }}</option>@endforeach</select></div>@endif
 @if($has('pay'))<div><label>Payment status</label><select name="pay"><option value="">Any</option>@foreach($opts['pays'] as $c)<option @selected($f['pay']===$c)>{{ $c }}</option>@endforeach</select></div>@endif
 </div>
 <div class="acts">

@@ -540,6 +540,7 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestF
   Route::post('/checkout/lookup', [\App\Http\Controllers\CheckoutLookupController::class,'lookup'])->middleware('throttle:40,10');
   Route::post('/checkout/otp', [\App\Http\Controllers\CheckoutLookupController::class,'otp'])->middleware('throttle:20,10');
   Route::post('/checkout/verify', [\App\Http\Controllers\CheckoutLookupController::class,'verify'])->middleware('throttle:40,10');
+  Route::post('/t/e', [\App\Http\Controllers\StoreController::class,'trackEvent'])->middleware('throttle:120,1');
   Route::post('/checkout/track', [\App\Http\Controllers\StoreController::class,'trackCheckout'])->middleware('throttle:120,1');
   Route::post('/order', [\App\Http\Controllers\StoreController::class,'order'])->middleware('throttle:30,1');
   Route::get('/purchase/invoice/{no}', [\App\Http\Controllers\ProcurementController::class,'publicInvoice'])->where('no','PUR-[0-9]+')->middleware('throttle:60,1');
