@@ -426,6 +426,14 @@ class StoreController extends Controller {
     $tot += $left >= 2 ? $tier($left) : $u * $left;
     return round(min($tot, $plain), 2);
   }
+  /** Policy snapshot saved with the order so later benefit changes never rewrite history. */
+  private static function benefitSnap(?string $phone, array $app, $profile): array {
+    try {
+      if (!$phone || !self::rem('store.bsnapcol', 600, fn() => \Illuminate\Support\Facades\Schema::hasColumn('orders', 'benefit_status_snapshot'))) return [];
+      $b = \App\Support\CustomerBenefit::check($phone);
+      return ['benefit_status_snapshot'=>$b['status'], 'benefit_reason_snapshot'=>mb_substr(implode(',', $b['reasons']), 0, 190), 'membership_snapshot'=>mb_substr((string)($profile['membership_name'] ?? ''), 0, 60) ?: null, 'discount_type_snapshot'=>mb_substr(implode(', ', array_map(fn($l) => (string)($l['type'] ?? $l['key'] ?? ''), $app)), 0, 190) ?: null];
+    } catch (\Throwable $e) { return []; }
+  }
   /** One price calculation for the cart, the checkout and the saved order. */
   private function quote(array $want, int $area, string $code, ?string $phone = null, bool $verified = false, string $addr = ''): array {
     $b = $this->base(); $rules = $b['rules'];
@@ -440,7 +448,7 @@ class StoreController extends Controller {
     $cOk = null; $cmsg = $eng['coupon_error'] ?? ''; foreach ($app as $l) if (($l['key'] ?? '') === 'coupon') { $cOk = $l['code']; $cmsg = 'Coupon applied: '.self::tk($l['amount']).' off'; }
     if ($code !== '' && !$cOk && !$cmsg) $cmsg = $eng['free_ship'] ? 'Free delivery applied' : 'Coupon is valid but another discount is already better for this order';
     $disc = min($disc, $sub);
-    return ['items'=>$items, 'sub'=>$sub, 'ship'=>$items ? $ship : 0, 'disc'=>$disc, 'total'=>$items ? $sub + $ship - $disc : 0, 'coupon'=>$cOk, 'coupon_msg'=>$cmsg, 'notes'=>$notes, 'applied'=>$app, 'profile'=>$eng['profile'], 'zone'=>$dv['zone'], 'ship_orig'=>$dv['original'], 'ship_free'=>(bool)$dv['free'], 'ship_unlocked'=>(bool)$dv['unlocked'], 'dv'=>$dv];
+    return ['items'=>$items, 'sub'=>$sub, 'ship'=>$items ? $ship : 0, 'disc'=>$disc, 'total'=>$items ? $sub + $ship - $disc : 0, 'coupon'=>$cOk, 'coupon_msg'=>$cmsg, 'notes'=>$notes, 'applied'=>$app, 'profile'=>$eng['profile'], 'zone'=>$dv['zone'], 'ship_orig'=>$dv['original'], 'ship_free'=>(bool)$dv['free'], 'ship_unlocked'=>(bool)$dv['unlocked'], 'dv'=>$dv, 'bsnap'=>self::benefitSnap($phone, $app, $eng['profile'] ?? null)];
   }
   public function cartItems(Request $r) {
     $sp = \App\Support\OrderDiscount::sessionPhone($r); $ph = null;
@@ -526,7 +534,7 @@ class StoreController extends Controller {
       }
       $cust = DB::table('customers')->where('phone',$phone)->value('id'); if ($cust) { DB::table('customers')->where('id',$cust)->update(array_filter(['email'=>$d['email'] ?? null],'strlen')+['updated_at'=>now()]); } else $cust = DB::table('customers')->insertGetId(['name'=>$d['name'],'phone'=>$phone,'email'=>($d['email'] ?? null) ?: null,'address'=>$d['address'],'ip'=>$ip,'created_at'=>now(),'updated_at'=>now()]);
       $invNo = \App\Support\InvoiceNumber::reserved($incTok, null, $phone) ?: \App\Support\InvoiceNumber::next();
-      $id = DB::table('orders')->insertGetId(['invoice'=>$invNo,'idempotency_key'=>$idemKey,'order_fingerprint'=>$fp,'store_id'=>DB::table('stores')->value('id'),'customer_id'=>$cust,'customer_name'=>$d['name'],'phone'=>$phone,'email'=>($d['email'] ?? null) ?: null,'address'=>$d['address'],'district'=>$where,'source'=>'Web Site','shipping'=>$qt['ship'],'delivery_zone'=>mb_substr((string)$qt['zone'],0,160),'delivery_original'=>$qt['ship_orig'],'delivery_free_discount'=>$qt['dv']['free_discount'],'delivery_note'=>$qt['dv']['reason'] ? mb_substr($qt['dv']['reason'],0,200) : null,'discount'=>$qt['disc'],'coupon'=>$qt['coupon'],'total'=>$qt['total'],'status'=>'New','note'=>$note ?: null,'payment_method'=>$pm['label'],'pay_txn'=>$pm['txn'],'pay_account'=>$pm['acct'],'pay_proof'=>$pm['proof'],'pay_status'=>$pm['status'],'ip'=>$ip,'courier'=>\App\Support\CourierSync::defaultName(),'created_at'=>now(),'updated_at'=>now()] + $meta);
+      $id = DB::table('orders')->insertGetId(['invoice'=>$invNo,'idempotency_key'=>$idemKey,'order_fingerprint'=>$fp,'store_id'=>DB::table('stores')->value('id'),'customer_id'=>$cust,'customer_name'=>$d['name'],'phone'=>$phone,'email'=>($d['email'] ?? null) ?: null,'address'=>$d['address'],'district'=>$where,'source'=>'Web Site','shipping'=>$qt['ship'],'delivery_zone'=>mb_substr((string)$qt['zone'],0,160),'delivery_original'=>$qt['ship_orig'],'delivery_free_discount'=>$qt['dv']['free_discount'],'delivery_note'=>$qt['dv']['reason'] ? mb_substr($qt['dv']['reason'],0,200) : null,'discount'=>$qt['disc'],'coupon'=>$qt['coupon'],'total'=>$qt['total'],'status'=>'New','note'=>$note ?: null,'payment_method'=>$pm['label'],'pay_txn'=>$pm['txn'],'pay_account'=>$pm['acct'],'pay_proof'=>$pm['proof'],'pay_status'=>$pm['status'],'ip'=>$ip,'courier'=>\App\Support\CourierSync::defaultName(),'created_at'=>now(),'updated_at'=>now()] + $meta + ($qt['bsnap'] ?? []));
       foreach ($qt['items'] as $it) DB::table('order_items')->insert(['order_id'=>$id,'product_id'=>$it['id'],'name'=>$it['name'],'qty'=>$it['qty'],'price'=>$it['price'],'created_at'=>now(),'updated_at'=>now()] + \App\Support\BundlePricing::snapshot((int)$it['id'], (int)$it['qty'], (float)$it['price'], (float)$it['line']));
       if ($qt['coupon'] && !DB::table('coupons')->where('code',$qt['coupon'])->where(fn($q) => $q->whereNull('usage_limit')->orWhere('usage_limit', 0)->orWhereColumn('used_count', '<', 'usage_limit'))->increment('used_count')) throw new \RuntimeException('coupon_used_up'); // atomic: the last use cannot be taken twice
       DB::table('order_status_logs')->insert(['order_id'=>$id,'user_id'=>null,'user_name'=>'Website','from_status'=>null,'to_status'=>'New','note'=>$pm['status'] === 'Awaiting Payment' ? 'Order placed on website. Awaiting online payment (ShurjoPay)' : ($pm['status'] ? 'Order placed on website. Payment Verification Pending ('.$pm['label'].', ref '.$pm['txn'].')' : 'Order placed on website'),'created_at'=>now(),'updated_at'=>now()]);
