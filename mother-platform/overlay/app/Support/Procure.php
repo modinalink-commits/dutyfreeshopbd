@@ -101,6 +101,26 @@ class Procure {
         self::audit('costing.batch_in', 'Batch in: '.$p->invoice.' · product#'.$i->product_id, ['stock'=>(int)($was->stock ?? 0), 'average'=>$oldAvg, 'fifo'=>(float)($was->fifo_cost ?? 0)], ['qty'=>$in, 'unit_cost'=>$cost, 'batch'=>$bid, 'average'=>$na, 'fifo'=>(float)($after->fifo_cost ?? 0), 'last_purchase'=>$cost, 'source'=>'purchase']);
       } }
     DB::table('purchases')->where('id',$purchaseId)->update(['stock_applied'=>true]);
+    try { self::applyNewRates($p); } catch (\Throwable $e) { report($e); }
+  }
+  /** New Selling Rate: only after the stock-in is applied (never for draft / cancelled / pending purchases). Re-checks the protected-profit floor; unchanged or blank rates create no event. */
+  public static function applyNewRates($p): void {
+    if (!self::on('auto_update_sale_price_from_purchase') && self::set('auto_update_sale_price_from_purchase', '1') !== '1') return;
+    if (!\Illuminate\Support\Facades\Schema::hasColumn('purchase_items', 'new_selling_rate')) return;
+    $ch = 0;
+    foreach (DB::table('purchase_items')->where('purchase_id', $p->id)->whereNotNull('new_selling_rate')->where('price_update_status', 'pending')->get() as $i) {
+      if (!$i->product_id) continue;
+      $pr = DB::table('products')->where('id', $i->product_id)->lockForUpdate()->first(); if (!$pr) continue;
+      $old = (float)$pr->price; $new = (float)$i->new_selling_rate; $cost = (float)$i->cost;
+      if (abs($old - $new) < 0.005) { DB::table('purchase_items')->where('id', $i->id)->update(['price_update_status' => 'unchanged']); continue; }
+      if ($cost > 0 && !ProfitFloor::ok($cost, $new) && trim((string)$i->margin_override_reason) === '') { DB::table('purchase_items')->where('id', $i->id)->update(['price_update_status' => 'blocked']); self::audit('purchase.price_blocked', 'Selling rate NOT updated (below minimum margin): ' . $p->invoice . ' · product#' . $i->product_id, ['price' => $old], ['new_rate' => $new, 'min_safe' => ProfitFloor::floor($cost)]); continue; }
+      DB::table('products')->where('id', $i->product_id)->update(['price' => $new, 'updated_at' => now()]);
+      DB::table('purchase_items')->where('id', $i->id)->update(['price_update_status' => 'applied', 'old_selling_rate' => $old]);
+      DB::table('product_price_history')->insert(['product_id' => $i->product_id, 'old_rate' => $old, 'new_rate' => $new, 'purchase_rate' => $cost, 'purchase_id' => $p->id, 'purchase_invoice' => $p->invoice, 'changed_by' => auth()->user()->name ?? 'system', 'source' => 'Purchase Entry', 'note' => $i->margin_override_reason ?: null, 'created_at' => now(), 'updated_at' => now()]);
+      self::audit('purchase.price_updated', 'Product Selling Price Updated: ' . $pr->name . ' · ' . $p->invoice, ['price' => $old], ['price' => $new, 'purchase' => $p->invoice, 'by' => auth()->user()->name ?? null, 'source' => 'Purchase Stock-In', 'override' => $i->margin_override_reason]);
+      $ch++;
+    }
+    if ($ch) foreach (['store.home6', 'store.home4', 'store.home5', 'store.catalogfeed4', 'card_second_imgs2', 'ai.catalog'] as $k) { try { \Illuminate\Support\Facades\Cache::forget($k); } catch (\Throwable $e) {} }
   }
   /** Purchase reversed / edited / cancelled: stock goes down and the purchase's batches leave the FIFO queue. */
   public static function reverseStock(int $purchaseId): void {

@@ -245,12 +245,17 @@ class ProcurementController extends Controller {
     $p = $id ? DB::table('purchases')->find($id) : null; if ($id && !$p) abort(404);
     $items = $p ? DB::table('purchase_items')->where('purchase_id',$id)->orderBy('id')->get() : collect();
     $due = []; foreach (P::dueMap() as $sid=>$v) $due[$sid] = round($v,2);
-    return view('proc.purchase_form', ['p'=>$p,'items'=>$items,'sup'=>DB::table('suppliers')->where('active',true)->orWhere('id',$p->supplier_id ?? 0)->orderBy('name')->get(['id','name','code','payment_terms','credit_limit']),'stores'=>$this->stores(),'dues'=>$due,'pre'=>(int)request('supplier')]);
+    $pm = DB::table('products')->whereIn('id',$items->pluck('product_id')->filter()->all())->pluck('price','id'); return view('proc.purchase_form', ['p'=>$p,'items'=>$items,'pm'=>$pm,'sup'=>DB::table('suppliers')->where('active',true)->orWhere('id',$p->supplier_id ?? 0)->orderBy('name')->get(['id','name','code','payment_terms','credit_limit']),'stores'=>$this->stores(),'dues'=>$due,'pre'=>(int)request('supplier')]);
   }
   public function save(Request $r) {
     $r->validate(['supplier_id'=>'required|integer','purchase_date'=>'required|date','items'=>'required|array|min:1']);
     $items = []; foreach ((array)$r->input('items') as $i) { $qty = (int)($i['qty'] ?? 0); if ($qty <= 0 || trim((string)($i['name'] ?? '')) === '') continue; $cost = (float)($i['cost'] ?? 0); $dis = (float)($i['discount'] ?? 0); $tax = (float)($i['tax'] ?? 0);
-      $items[] = ['product_id'=>(int)($i['product_id'] ?? 0) ?: null,'name'=>mb_substr(trim($i['name']),0,250),'sku'=>$i['sku'] ?? null,'barcode'=>$i['barcode'] ?? null,'qty'=>$qty,'cost'=>$cost,'discount'=>$dis,'tax'=>$tax,'batch'=>$i['batch'] ?? null,'expiry'=>($i['expiry'] ?? '') ?: null,'damage_qty'=>min($qty,max(0,(int)($i['damage_qty'] ?? 0))),'line_total'=>round($qty*$cost-$dis+$tax,2)]; }
+      $nr = trim((string)($i['new_rate'] ?? '')); $pid0 = (int)($i['product_id'] ?? 0); $px = ['price_update_status'=>null];
+      if ($nr !== '' && is_numeric($nr) && $pid0) { $nr = round((float)$nr, 2); $cur = (float)DB::table('products')->where('id',$pid0)->value('price');
+        if ($nr > 0 && abs($nr - $cur) >= 0.005) { $min = $cost > 0 ? \App\Support\ProfitFloor::floor($cost) : 0.0; $below = $cost > 0 && !\App\Support\ProfitFloor::ok($cost, $nr);
+          if ($below) { $why = trim((string)$r->input('margin_override_reason')); if (!P::canApprove() || $why === '') return back()->withInput()->with('bad', mb_substr(trim($i['name']),0,60).': New Selling Rate ৳'.number_format($nr,2).' is below the minimum safe price ৳'.number_format($min,2).' ('.\App\Support\ProfitFloor::pct().'% protected margin). '.(P::canApprove() ? 'Enter an override reason to continue.' : 'Only an admin can override.')); $px['margin_override_reason'] = mb_substr($why,0,300); }
+          $px += ['old_selling_rate'=>$cur,'new_selling_rate'=>$nr,'min_safe_snapshot'=>$min ?: null,'expected_margin_snapshot'=>$cost > 0 ? round(($nr-$cost)/$cost*100,2) : null,'price_update_status'=>'pending']; } }
+      $items[] = $px + ['product_id'=>(int)($i['product_id'] ?? 0) ?: null,'name'=>mb_substr(trim($i['name']),0,250),'sku'=>$i['sku'] ?? null,'barcode'=>$i['barcode'] ?? null,'qty'=>$qty,'cost'=>$cost,'discount'=>$dis,'tax'=>$tax,'batch'=>$i['batch'] ?? null,'expiry'=>($i['expiry'] ?? '') ?: null,'damage_qty'=>min($qty,max(0,(int)($i['damage_qty'] ?? 0))),'line_total'=>round($qty*$cost-$dis+$tax,2)]; }
     if (!$items) return back()->withInput()->with('bad','Add at least one product with a quantity.');
     $sub = array_sum(array_map(fn($x) => $x['qty']*$x['cost'], $items)); $idis = array_sum(array_column($items,'discount')); $tax = array_sum(array_column($items,'tax'));
     $edis = (float)$r->input('extra_discount',0); $tr = (float)$r->input('transport',0); $oc = (float)$r->input('other_cost',0); $total = round($sub-$idis-$edis+$tax+$tr+$oc,2);
@@ -400,7 +405,7 @@ class ProcurementController extends Controller {
   // ---------------- JSON helpers for the forms ----------------
   public function apiProducts(Request $r) {
     $q = trim((string)$r->input('q')); if ($q === '') return response()->json([]);
-    $x = DB::table('products')->where(fn($w) => $w->where('barcode',$q)->orWhere('sku',$q)->orWhere('name','ilike','%'.$q.'%')->orWhere('sku','ilike','%'.$q.'%')->orWhere('barcode','ilike','%'.$q.'%')->orWhere(fn($z) => \App\Support\SkuSearch::orSku($z, $q)))->orderByRaw('(barcode = ? or sku = ?) desc',[$q,$q])->limit(15)->get(['id','name','sku','barcode','cost','stock']);
+    $x = DB::table('products')->where(fn($w) => $w->where('barcode',$q)->orWhere('sku',$q)->orWhere('name','ilike','%'.$q.'%')->orWhere('sku','ilike','%'.$q.'%')->orWhere('barcode','ilike','%'.$q.'%')->orWhere(fn($z) => \App\Support\SkuSearch::orSku($z, $q)))->orderByRaw('(barcode = ? or sku = ?) desc',[$q,$q])->limit(15)->get(['id','name','sku','barcode','cost','stock','price']);
     return response()->json($x);
   }
   public function apiNewProduct(Request $r) {
