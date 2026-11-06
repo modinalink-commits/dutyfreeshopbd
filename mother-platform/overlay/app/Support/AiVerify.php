@@ -9,7 +9,8 @@ use Illuminate\Support\Facades\Schema;
  * communication, stores an explainable result (reason codes + every check) and NEVER cancels, blocks, refunds or blacklists anything.
  */
 class AiVerify {
-  const VERSION = 'v1.1';
+  const VERSION = 'v1.2';
+  const NEW_CUSTOMER_LIMIT = 5000; // owner rule (6 Nov 2026): a new customer (no delivered order yet) ordering above this stays in New, never AI Approve
   const LABEL = ['verified' => 'AI Verified', 'review' => 'Review Required', 'high' => 'High Risk', 'failed' => 'Verification Failed', 'pending' => 'Pending Verification'];
   const CANCEL = ['Cancel', 'Cancelled', 'Canceled'];
   const RET = ['Returned', 'Return'];
@@ -135,7 +136,8 @@ class AiVerify {
 
     // ---- Amount / product risk ----
     $total = (float)$o->total; $qtySum = (int)$items->sum('qty');
-    if ($avg > 0 && $total > $avg * 2) $add('Order', 'AMOUNT_HIGH', 'review', 'Order amount', 'Order ' . self::tk($total) . ' is ' . round($total / $avg, 1) . '× this customer\'s average (' . self::tk($avg) . '). Sudden high amount: do NOT approve automatically. Talk to the customer manually and confirm before approving.', $total > $avg * 4 ? 20 : 12, true);
+    if ($d === 0 && $total > self::NEW_CUSTOMER_LIMIT) $add('Order', 'AMOUNT_NEW_CUSTOMER', 'review', 'Order amount', 'New customer (no delivered order yet) ordering ' . self::tk($total) . ', above ' . self::tk(self::NEW_CUSTOMER_LIMIT) . ': stays in New. Talk to the customer manually and confirm before approving.', 12, true);
+    elseif ($avg > 0 && $total > $avg * 2) $add('Order', 'AMOUNT_HIGH', 'review', 'Order amount', 'Order ' . self::tk($total) . ' is ' . round($total / $avg, 1) . '× this customer\'s average (' . self::tk($avg) . '). Sudden high amount: do NOT approve automatically. Talk to the customer manually and confirm before approving.', $total > $avg * 4 ? 20 : 12, true);
     elseif ($avg > 0) $add('Order', 'AMOUNT_NORMAL', 'pass', 'Order amount', 'Order ' . self::tk($total) . ' vs customer average ' . self::tk($avg));
     elseif ($total >= 20000) $add('Order', 'AMOUNT_NO_BASE', 'review', 'Order amount', 'Order ' . self::tk($total) . ' is large and this customer has no earlier order to compare: do NOT approve automatically. Talk to the customer manually and confirm first.', 8, true);
     else $add('Order', 'AMOUNT_NO_BASE', 'info', 'Order amount', 'Order ' . self::tk($total) . ' (no earlier order to compare)');
