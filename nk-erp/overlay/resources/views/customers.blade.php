@@ -53,6 +53,39 @@
         @unless($edit->exists)<label class="f">Opening due (৳, if any)<input type="number" name="opening_due" min="0" step="1" value="{{ old('opening_due', 0) }}"></label>@endunless
         <label class="f" style="grid-column:1/-1">Note<input type="text" name="note" value="{{ old('note', $edit->note) }}"></label>
       </div>
+      @include('map._leaflet')
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+          <b style="flex-grow:1;font-size:var(--fs-13)">Shop location on the map</b>
+          <button type="button" class="btn sm" id="geoFind">Find from address</button>
+          <button type="button" class="btn sm" id="geoMe" title="Uses this device's location — only if you are standing at the shop">I am at the shop</button>
+        </div>
+        <div id="cmap" style="height:260px;border-radius:12px;border:1px solid var(--line)"></div>
+        <span class="sub" id="geoMsg" style="margin:0">{{ $edit->lat ? (['manual' => 'Pin placed by hand.', 'gps' => 'Pin from a phone at the shop.', 'address' => 'Found from the address.', 'area' => 'Approximate — found from the area only.'][$edit->geo_source] ?? 'Location saved.').' Drag the pin or click the map to correct it.' : 'When you save, the address is looked up and the shop is placed on the map automatically. You can also click the map to drop the pin yourself.' }}</span>
+        <input type="hidden" name="pin_lat" id="pinLat" value="{{ old('pin_lat') }}"><input type="hidden" name="pin_lng" id="pinLng" value="{{ old('pin_lng') }}"><input type="hidden" name="pin_set" id="pinSet" value="{{ old('pin_set', 0) }}">
+      </div>
+      <script>
+      (function(){
+        const start=@json($edit->lat ? [(float) $edit->lat, (float) $edit->lng] : null), m=L.map('cmap').setView(start||[22.77,91.56],start?16:11);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(m);
+        let mk=null; const msg=document.getElementById('geoMsg'), f=document.getElementById('cust-form');
+        function put(lat,lng,text,zoom){ if(!mk){ mk=L.marker([lat,lng],{draggable:true}).addTo(m); mk.on('dragend',()=>{ const p=mk.getLatLng(); set(p.lat,p.lng); msg.textContent='Pin moved — it will be saved with the customer.'; }); } else mk.setLatLng([lat,lng]);
+          set(lat,lng); m.setView([lat,lng],zoom||Math.max(m.getZoom(),16)); if(text) msg.textContent=text; }
+        function set(lat,lng){ document.getElementById('pinLat').value=lat.toFixed(7); document.getElementById('pinLng').value=lng.toFixed(7); document.getElementById('pinSet').value=1; }
+        if(start){ mk=L.marker(start,{draggable:true}).addTo(m); mk.on('dragend',()=>{ const p=mk.getLatLng(); set(p.lat,p.lng); msg.textContent='Pin moved — it will be saved with the customer.'; }); }
+        m.on('click',e=>put(e.latlng.lat,e.latlng.lng,'Pin placed — it will be saved with the customer.'));
+        document.getElementById('geoFind').onclick=async()=>{ msg.textContent='Looking up the address…';
+          const q=new URLSearchParams({address:f.address.value,area:f.area.value});
+          try{ const r=await fetch(@json(route('customers.geocode'))+'?'+q,{headers:{Accept:'application/json'}}); const j=await r.json();
+            if(j.ok) put(j.lat,j.lng,(j.level==='address'?'Found from the address: ':'Approximate (area only): ')+j.label+'. Drag the pin onto the exact shop if needed.',j.level==='address'?17:14); else msg.textContent=j.msg; }
+          catch(e){ msg.textContent='Could not reach the map service. Click the map to drop the pin.'; } };
+        document.getElementById('geoMe').onclick=()=>{ if(!navigator.geolocation){ msg.textContent='This device cannot share its location.'; return; }
+          msg.textContent='Asking this device for its location…';
+          navigator.geolocation.getCurrentPosition(p=>put(p.coords.latitude,p.coords.longitude,'Pin set from this device (±'+Math.round(p.coords.accuracy)+' m). Save to keep it.',18),
+            ()=>{ msg.textContent='Location permission was not given, so nothing was taken. Drop the pin on the map instead.'; },{enableHighAccuracy:true,timeout:15000}); };
+        setTimeout(()=>m.invalidateSize(),200);
+      })();
+      </script>
       @unless($admin)<span class="sub">Only Super Admin or Admin can turn on credit.</span>@endunless
       <div style="display:flex;gap:8px"><button class="btn pri" type="submit">Save customer</button><a class="btn" href="{{ route('customers.index') }}">Cancel</a></div>
     </form>
@@ -61,7 +94,8 @@
     <div class="card pad" style="display:flex;flex-wrap:wrap;gap:16px;align-items:center">
       <div style="flex-grow:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:var(--fs-18);font-weight:700">{{ $sel->name }}</span>
         @if($sel->shop_name || $sel->owner_name)<span style="font-size:var(--fs-13);font-weight:600;color:var(--ink)">{{ collect([$sel->shop_name ? 'Shop: '.$sel->shop_name : null, $sel->owner_name ? 'Owner: '.$sel->owner_name : null])->filter()->implode(' · ') }}</span>@endif
-        <span class="sub" style="margin:0">{{ \App\Models\Customer::TYPES[$sel->type] }} @if($sel->area)· {{ $sel->area }}@endif · {{ $sel->phone }} · {{ $sel->code }} · since {{ $sel->created_at->format('m-Y') }}</span></div>
+        <span class="sub" style="margin:0">{{ \App\Models\Customer::TYPES[$sel->type] }} @if($sel->area)· {{ $sel->area }}@endif · {{ $sel->phone }} · {{ $sel->code }} · since {{ $sel->created_at->format('m-Y') }}</span>
+        <span class="sub" style="margin:0">@if($sel->lat)📍 On the map · {{ ['manual' => 'pin placed by hand', 'gps' => 'pin from phone at the shop', 'address' => 'found from address', 'area' => 'approximate (area only)'][$sel->geo_source] ?? 'location saved' }} @if(in_array(auth()->user()->role, ['super_admin', 'admin', 'manager'], true))· <a href="{{ route('map.dist') }}?c={{ $sel->id }}">Distribution map</a>@endif · <a href="https://www.google.com/maps/search/?api=1&query={{ $sel->lat }},{{ $sel->lng }}" target="_blank" rel="noopener">Google Maps</a>@else No map location yet — <a href="{{ route('customers.index', ['edit' => $sel->id]) }}#cust-form">add address or drop a pin</a>@endif</span></div>
       <a class="btn" href="{{ route('customers.index', ['edit' => $sel->id]) }}#cust-form">Edit</a>
       <a class="btn" href="{{ route('customers.statement', $sel) }}" target="_blank">Statement PDF</a>
       <a class="btn pri" href="#pay-form">Receive payment</a>

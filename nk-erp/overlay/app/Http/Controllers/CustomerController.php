@@ -92,6 +92,7 @@ class CustomerController extends Controller
             'credit_limit' => ['nullable', 'numeric', 'min:0', 'max:100000000'],
             'opening_due' => ['nullable', 'numeric', 'min:0', 'max:100000000'],
             'note' => ['nullable', 'string', 'max:255'],
+            'pin_lat' => ['nullable', 'numeric', 'between:20,27'], 'pin_lng' => ['nullable', 'numeric', 'between:88,93'], 'pin_set' => ['nullable', 'boolean'],
         ], ['phone.regex' => 'Enter an 11-digit mobile number like 01XXXXXXXXX.']);
         $limit = (float) ($data['credit_limit'] ?? 0);
         if ($limit > 0 && ! in_array($request->user()->role, ['super_admin', 'admin'], true)) {
@@ -99,7 +100,8 @@ class CustomerController extends Controller
             if (abs($current - $limit) > 0.004) abort(403, 'Only Super Admin or Admin can set a credit limit.');
         }
         $opening = (float) ($data['opening_due'] ?? 0);
-        unset($data['id'], $data['opening_due']);
+        $pin = ! empty($data['pin_set']) && isset($data['pin_lat'], $data['pin_lng']) ? [(float) $data['pin_lat'], (float) $data['pin_lng']] : null;
+        unset($data['id'], $data['opening_due'], $data['pin_lat'], $data['pin_lng'], $data['pin_set']);
         $data['credit_limit'] = $limit;
 
         $c = DB::transaction(function () use ($id, $data, $opening, $request) {
@@ -115,8 +117,38 @@ class CustomerController extends Controller
             return $c;
         });
         AuditLog::record($id ? 'customer_updated' : 'customer_created', "{$c->code} {$c->name}");
+        $where = $this->locate($c, $pin);
 
-        return redirect()->route('customers.index', ['c' => $c->id])->with('ok', "{$c->name} saved.");
+        return redirect()->route('customers.index', ['c' => $c->id])->with('ok', "{$c->name} saved.".($where ? ' '.$where : ''));
+    }
+
+    /**
+     * Put the shop on the map: a pin placed by hand wins; otherwise a new or changed address is looked up automatically.
+     * The point then shows on the distribution map and on the salesman's live tracking map.
+     */
+    private function locate(Customer $c, ?array $pin): ?string
+    {
+        if ($pin) {
+            $c->forceFill(['lat' => $pin[0], 'lng' => $pin[1], 'geo_source' => 'manual', 'geo_label' => null])->save();
+            AuditLog::record('customer_location', "{$c->code} {$c->name} · pin");
+            return 'Map location saved from the pin.';
+        }
+        $changed = $c->wasRecentlyCreated || $c->wasChanged(['address', 'area']);
+        $auto = in_array($c->geo_source, [null, 'address', 'area'], true);
+        if (! (($changed && ($auto || $c->wasChanged('address'))) || ($c->lat === null && ($c->address || $c->area)))) return null;
+        if (! $c->address && ! $c->area) return null;
+        $hit = \App\Support\Geo::find($c->address, $c->area);
+        if (! $hit) return 'Could not find this address on the map — open Edit and drop the pin on the shop.';
+        $c->forceFill(['lat' => $hit['lat'], 'lng' => $hit['lng'], 'geo_source' => $hit['level'], 'geo_label' => mb_substr($hit['label'], 0, 255)])->save();
+        AuditLog::record('customer_location', "{$c->code} {$c->name} · found from {$hit['level']}");
+        return $hit['level'] === 'address' ? 'Shop placed on the map from its address.' : 'Shop placed on the map at its area (approximate) — drop the pin on the exact shop when you can.';
+    }
+
+    /** Address → map point for the "Find on map" button in the customer form. */
+    public function geocode(Request $request)
+    {
+        $hit = \App\Support\Geo::find($request->query('address'), $request->query('area'));
+        return response()->json($hit ? ['ok' => true] + $hit : ['ok' => false, 'msg' => 'Not found on the map. Drop the pin on the shop yourself.']);
     }
 
     public function pay(Request $request, Customer $customer)

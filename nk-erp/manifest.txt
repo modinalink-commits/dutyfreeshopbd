@@ -85,6 +85,7 @@ app/Models/WebsiteOrder.php
 app/Providers/AppServiceProvider.php
 app/Support/CompanyCalc.php
 app/Support/ExchangeService.php
+app/Support/Geo.php
 app/Support/Icons.php
 app/Support/Img.php
 app/Support/LedgerImport.php
@@ -118,6 +119,7 @@ database/migrations/2026_11_06_000019_cylinder_exchange.php
 database/migrations/2026_11_06_000020_exchange_v2.php
 database/migrations/2026_11_07_000021_brand_position.php
 database/migrations/2026_11_07_000022_customer_shop_name.php
+database/migrations/2026_11_07_000023_customer_geo.php
 public/app-sw.js
 public/css/nk-table.css
 public/css/nk-type.css

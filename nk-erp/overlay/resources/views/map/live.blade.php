@@ -20,6 +20,9 @@
 (function(){
   const ST={active:['GPS active','#e3f6ec','#0f6b3c','#1f9d55'],stale:['Location stale','#fff1d6','#8a4b00','#c46f00'],offline:['Offline','#fde9e7','#b3261e','#d93a2f'],waiting:['Waiting for GPS','#e6eeff','#1d4ed8','#1d4ed8'],ended:['Duty ended','#eef2f9','#51607a','#7b8aa8']};
   const map=L.map('map').setView([22.77,91.56],12); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(map);
+  const shopL=L.layerGroup().addTo(map), SH=@json($shops);
+  SH.forEach(c=>L.circleMarker([c.lat,c.lng],{radius:5,color:'#fff',weight:1.5,fillColor:c.ap?'#c46f00':'#7b8aa8',fillOpacity:.95}).bindTooltip(c.n+(c.n!==c.o?' · '+c.o:'')+(c.a?' · '+c.a:'')+(c.ap?' (approximate)':'')).on('click',()=>{ location.href='/customers?c='+c.id; }).addTo(shopL));
+  L.control.layers(null,{'Customer shops ('+SH.length+')':shopL},{collapsed:false,position:'topright'}).addTo(map);
   const marks=L.layerGroup().addTo(map), trailL=L.layerGroup().addTo(map); let sel=null, data=[], fitted=false;
   const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])), ini=n=>n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
   function side(p){ const c=ST[p.st]; document.getElementById('side').innerHTML='<div style="display:flex;gap:10px;align-items:center"><span class="mk" style="width:40px;height:40px;background:'+c[3]+'">'+esc(ini(p.name))+'</span><div style="flex-grow:1"><b>'+esc(p.name)+'</b><br><span class="sub" style="font-size:var(--fs-11)">'+esc(p.emp)+'</span></div><span class="pill" style="background:'+c[1]+';color:'+c[2]+'">'+c[0]+'</span></div>'+

@@ -50,7 +50,9 @@ class MapController extends Controller
     public function live(Request $request)
     {
         AuditLog::record('location_view', 'Live tracking opened');
-        return view('map.live', ['people' => $this->people(), 'routes' => RouteModel::query()->orderBy('name')->get()]);
+        $shops = Customer::query()->where('is_active', true)->whereNotNull('lat')->get(['id', 'code', 'name', 'shop_name', 'lat', 'lng', 'area', 'geo_source'])
+            ->map(fn ($c) => ['id' => $c->id, 'n' => $c->shop_name ?: $c->name, 'o' => $c->name, 'a' => $c->area, 'lat' => (float) $c->lat, 'lng' => (float) $c->lng, 'ap' => $c->geo_source === 'area'])->values();
+        return view('map.live', ['people' => $this->people(), 'routes' => RouteModel::query()->orderBy('name')->get(), 'shops' => $shops]);
     }
 
     public function liveJson(Request $request)
@@ -127,7 +129,7 @@ class MapController extends Controller
     public function placeCustomer(Request $request, Customer $customer)
     {
         $data = $request->validate(['lat' => ['required', 'numeric', 'between:-90,90'], 'lng' => ['required', 'numeric', 'between:-180,180']]);
-        $customer->update($data);
+        $customer->forceFill($data + ['geo_source' => 'manual', 'geo_label' => null])->save();
         AuditLog::record('customer_location', $customer->code.' '.$customer->name);
         return response()->json(['ok' => true]);
     }

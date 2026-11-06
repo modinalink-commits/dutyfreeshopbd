@@ -109,6 +109,25 @@ class NkInstall extends Command
         foreach (Brand::query()->where('is_active', true)->orderBy('code')->get() as $b) $made += Product::syncBrand($b);
         if ($made) $this->info("{$made} brand products added.");
 
+        // Customers saved before auto-location: look their address up once (1 request a second, the map service's limit).
+        if (Setting::get('customer_geo_v1') === null) {
+            $probe = \App\Support\Geo::find(null, 'Jorarganj');
+            $this->info('Map lookup check: '.($probe ? "ok ({$probe['lat']}, {$probe['lng']})" : 'no answer — will retry on the next deploy'));
+            if ($probe) {
+                $found = 0; $tried = 0;
+                foreach (\App\Models\Customer::query()->whereNull('lat')->where(fn ($q) => $q->whereNotNull('address')->orWhereNotNull('area'))->orderBy('id')->limit(120)->get() as $c) {
+                    if (! trim((string) $c->address) && ! trim((string) $c->area)) continue;
+                    $tried++; sleep(1);
+                    if ($hit = \App\Support\Geo::find($c->address, $c->area)) {
+                        $c->forceFill(['lat' => $hit['lat'], 'lng' => $hit['lng'], 'geo_source' => $hit['level'], 'geo_label' => mb_substr($hit['label'], 0, 255)])->save();
+                        $found++;
+                    }
+                }
+                Setting::put('customer_geo_v1', now()->toDateTimeString());
+                $this->info("Customers placed on the map from address: {$found} of {$tried}.");
+            }
+        }
+
         return self::SUCCESS;
     }
 }
