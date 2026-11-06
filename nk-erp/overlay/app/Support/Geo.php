@@ -35,26 +35,44 @@ class Geo
         return null;
     }
 
+    /** Last problem talking to the map services (shown in the deploy log). */
+    public static ?string $lastError = null;
+
     private static function lookup(string $q): ?array
     {
-        $key = 'geo:'.md5(mb_strtolower($q));
+        $key = 'geo2:'.md5(mb_strtolower($q));
         $cached = Cache::get($key);
         if ($cached !== null) return $cached ?: null;
-        try {
-            $res = Http::timeout(8)->withHeaders(['User-Agent' => 'NK-Corporation-ERP/1.0 (admin.nklpgbd.com)', 'Accept-Language' => 'en,bn'])
-                ->get('https://nominatim.openstreetmap.org/search', [
-                    'q' => $q, 'format' => 'jsonv2', 'limit' => 1, 'countrycodes' => 'bd',
-                    // Prefer results near the Mirsarai / Chattogram area without excluding the rest of the country.
-                    'viewbox' => '91.20,23.10,91.95,22.30', 'bounded' => 0,
-                ]);
-            if (! $res->ok()) return null; // do not cache a failed call; try again next save
-            $r = $res->json()[0] ?? null;
-            $out = $r ? ['lat' => round((float) $r['lat'], 7), 'lng' => round((float) $r['lon'], 7), 'label' => (string) ($r['display_name'] ?? $q)] : [];
-            Cache::put($key, $out, now()->addDays(30));
-            return $out ?: null;
-        } catch (\Throwable $e) {
-            report($e);
-            return null;
+        $answered = false; $out = null;
+        // OpenStreetMap Nominatim first, then Photon (also OpenStreetMap data) if Nominatim is unreachable.
+        foreach (['nominatim', 'photon'] as $svc) {
+            try {
+                $http = Http::timeout(8)->withHeaders(['User-Agent' => 'NK-Corporation-ERP/1.0 (admin.nklpgbd.com; nkcorporation25@gmail.com)', 'Accept-Language' => 'en']);
+                if ($svc === 'nominatim') {
+                    $res = $http->get('https://nominatim.openstreetmap.org/search', ['q' => $q, 'format' => 'jsonv2', 'limit' => 1, 'countrycodes' => 'bd',
+                        'viewbox' => '91.20,23.10,91.95,22.30', 'bounded' => 0]);
+                    if (! $res->ok()) { self::$lastError = "nominatim HTTP {$res->status()}"; continue; }
+                    $answered = true;
+                    $r = $res->json()[0] ?? null;
+                    if ($r) { $out = ['lat' => round((float) $r['lat'], 7), 'lng' => round((float) $r['lon'], 7), 'label' => (string) ($r['display_name'] ?? $q)]; break; }
+                } else {
+                    $res = $http->get('https://photon.komoot.io/api/', ['q' => $q, 'limit' => 5, 'lat' => 22.77, 'lon' => 91.56]);
+                    if (! $res->ok()) { self::$lastError = trim(self::$lastError.' · photon HTTP '.$res->status()); continue; }
+                    $answered = true;
+                    foreach (($res->json()['features'] ?? []) as $f) {
+                        if (strtoupper((string) ($f['properties']['countrycode'] ?? '')) !== 'BD') continue;
+                        [$lng, $lat] = $f['geometry']['coordinates'];
+                        $p = $f['properties'];
+                        $out = ['lat' => round((float) $lat, 7), 'lng' => round((float) $lng, 7), 'label' => implode(', ', array_filter([$p['name'] ?? null, $p['city'] ?? ($p['county'] ?? null), $p['state'] ?? null, 'Bangladesh']))];
+                        break 2;
+                    }
+                }
+            } catch (\Throwable $e) {
+                self::$lastError = trim(self::$lastError.' · '.$svc.': '.mb_substr($e->getMessage(), 0, 160));
+            }
         }
+        if (! $answered) return null; // nothing reachable: do not cache, try again next time
+        Cache::put($key, $out ?? [], now()->addDays(30));
+        return $out;
     }
 }
