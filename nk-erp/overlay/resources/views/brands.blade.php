@@ -32,6 +32,12 @@
     </div>
   </form>
   <style>
+  .bpos{display:flex;align-items:center;gap:3px;justify-content:center}
+  .bpos form{margin:0}
+  .bpos .mv{width:26px;height:26px;border-radius:7px;border:1px solid var(--line);background:#fff;color:var(--navy);font-size:10px;line-height:1;cursor:pointer;padding:0}
+  .bpos .mv:hover:not(:disabled){background:#e6eeff}
+  .bpos .mv:disabled{opacity:.35;cursor:default}
+  .bpos input{width:46px;min-height:26px;height:26px;padding:0 4px;text-align:center;border-radius:7px;font-weight:700}
   .bph{display:flex;gap:4px;justify-content:center}
   .bph form{margin:0;position:relative}
   .bph img{width:30px;height:44px;object-fit:cover;border-radius:5px;border:1px solid var(--border-soft,#e2e6ea);display:block;background:#0b1220}
@@ -40,10 +46,17 @@
   .bph .add{width:30px;height:44px;border:1px dashed #7b8aa8;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:var(--fs-11);color:#123a86;background:#fff}
   </style>
   <div class="dt-wrap"><table class="dt">
-    <thead><tr><th class="no-sort">Photos</th><th>Brand ID</th><th>Brand</th>@if($canEdit)<th class="no-sort">Action</th>@endif<th>Company name</th><th>Sizes</th><th>Status</th><th>For sale</th><th>Empty collection</th><th>Full stock</th><th>Empty stock</th><th>Remarks</th></tr></thead>
+    <thead><tr><th class="no-sort">Position</th><th class="no-sort">Photos</th><th>Brand ID</th><th>Brand</th>@if($canEdit)<th class="no-sort">Action</th>@endif<th>Company name</th><th>Sizes</th><th>Status</th><th>For sale</th><th>Empty collection</th><th>Full stock</th><th>Empty stock</th><th>Remarks</th></tr></thead>
     <tbody>
     @foreach($brands as $b)
-      <tr @if($b->for_sale) style="background:#f5f8ff" @endif>
+      <tr id="b{{ $b->id }}" @if($b->id === $ownId) style="background:#f5f8ff" @endif>
+        <td class="c">@if($canEdit)
+          <div class="bpos">
+            <form method="post" action="{{ route('brands.move', $b) }}">@csrf<input type="hidden" name="dir" value="up"><input type="hidden" name="q" value="{{ $q }}"><input type="hidden" name="f" value="{{ $filter }}"><button type="submit" class="mv" @disabled($loop->first && ! $q && ! $filter) aria-label="Move {{ $b->name }} up" title="Move up">▲</button></form>
+            <form method="post" action="{{ route('brands.move', $b) }}" class="to">@csrf<input type="hidden" name="q" value="{{ $q }}"><input type="hidden" name="f" value="{{ $filter }}"><input type="number" name="to" value="{{ $b->position }}" min="1" max="999" aria-label="Position of {{ $b->name }}" onchange="this.form.submit()"></form>
+            <form method="post" action="{{ route('brands.move', $b) }}">@csrf<input type="hidden" name="dir" value="down"><input type="hidden" name="q" value="{{ $q }}"><input type="hidden" name="f" value="{{ $filter }}"><button type="submit" class="mv" @disabled($loop->last && ! $q && ! $filter) aria-label="Move {{ $b->name }} down" title="Move down">▼</button></form>
+          </div>
+        @else<b>{{ $b->position }}</b>@endif</td>
         <td class="c"><div class="bph">
           @foreach(\App\Models\Brand::SIZES as $sz)
             @php($im = $b->img($sz))
@@ -129,7 +142,11 @@
       <label class="f">For sale<select name="for_sale"><option value="0" @selected(! old('for_sale', $edit?->for_sale))>No</option><option value="1" @selected(old('for_sale', $edit?->for_sale))>Yes</option></select></label>
       <label class="f">Empty collection<select name="empty_collection"><option value="1" @selected(old('empty_collection', $edit?->empty_collection ?? true))>Yes</option><option value="0" @selected(! old('empty_collection', $edit?->empty_collection ?? true))>No</option></select></label>
     </div>
-    <label class="f">Remarks<input type="text" name="remarks" value="{{ old('remarks', $edit?->remarks) }}" placeholder="Optional"></label>
+    <div class="grid2">
+      <label class="f">Position in lists<input type="number" name="position" min="1" max="999" value="{{ old('position', $edit?->position) }}" placeholder="{{ $edit ? '' : 'Last (automatic)' }}"></label>
+      <label class="f">Remarks<input type="text" name="remarks" value="{{ old('remarks', $edit?->remarks) }}" placeholder="Optional"></label>
+    </div>
+    <span class="sub">Position 1 shows first. The same order is used in every brand list: exchange, stock, empties, products and reports.</span>
     <span class="sub">Set Active only after checking that the brand is really being supplied.</span>
     <div style="display:flex;gap:8px"><button class="btn pri" type="submit">Save brand</button>@if($edit)<a class="btn" href="{{ route('brands.index') }}">Cancel</a>@endif</div>
   </form>

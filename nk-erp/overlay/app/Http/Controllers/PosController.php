@@ -31,7 +31,7 @@ class PosController extends Controller
 
         return view('pos', [
             'items' => $items,
-            'brands' => Brand::query()->where('empty_collection', true)->orderBy('code')->get(),
+            'brands' => Brand::query()->where('empty_collection', true)->orderBy('position')->orderBy('code')->get(),
             'ownBrand' => Brand::query()->where('for_sale', true)->orderBy('id')->value('id'),
             'todayCount' => Sale::query()->where('type', 'retail')->where('stage', '!=', 'voided')->where('created_at', '>=', now()->timezone('Asia/Dhaka')->startOfDay()->utc())->count(),
             'nextNo' => Sale::nextNo('retail'),

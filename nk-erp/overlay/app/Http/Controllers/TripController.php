@@ -153,7 +153,7 @@ class TripController extends Controller
         foreach (Brand::SIZES as $s) $onVehicle[$s] = (int) StockMovement::query()->where('trip_id', $trip->id)->where('size_kg', $s)->sum('full_delta');
         return view('route.sales', ['trip' => $trip, 'c' => $c, 'products' => $products, 'onVehicle' => $onVehicle,
             'customers' => Customer::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'phone', 'code']),
-            'brands' => Brand::query()->where('empty_collection', true)->orderBy('code')->get(), 'ownBrand' => Brand::query()->where('for_sale', true)->orderBy('id')->value('id')]);
+            'brands' => Brand::query()->where('empty_collection', true)->orderBy('position')->orderBy('code')->get(), 'ownBrand' => Brand::query()->where('for_sale', true)->orderBy('id')->value('id')]);
     }
 
     public function storeSale(Request $request, Trip $trip)

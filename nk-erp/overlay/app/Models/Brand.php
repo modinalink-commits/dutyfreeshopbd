@@ -9,7 +9,7 @@ class Brand extends Model
     public const SIZES = [12, 35, 45];
 
     protected $fillable = ['code', 'name', 'company_name', 'sizes', 'is_active', 'for_sale', 'empty_collection', 'remarks', 'images',
-        'exchange_allowed', 'exchange_partner', 'ownership_policy', 'agreement_ref', 'deposit_rule', 'settlement_rule', 'fee_rule'];
+        'position', 'exchange_allowed', 'exchange_partner', 'ownership_policy', 'agreement_ref', 'deposit_rule', 'settlement_rule', 'fee_rule'];
 
     public const OWNERSHIP = ['swap' => 'Ownership passes with the swap', 'brand_owned' => 'Stays with the brand (settle with them)', 'deposit' => 'Customer deposit cylinder'];
 

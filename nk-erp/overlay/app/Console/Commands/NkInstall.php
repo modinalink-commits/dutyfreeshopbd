@@ -65,6 +65,7 @@ class NkInstall extends Command
                     'for_sale' => $own,
                     'empty_collection' => true,
                     'remarks' => $own ? 'Our brand · distributor' : null,
+                    'position' => $i + 1,
                 ]);
             }
             $this->info('Brand list created.');

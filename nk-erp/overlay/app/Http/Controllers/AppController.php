@@ -245,7 +245,7 @@ class AppController extends Controller
             $holders = CustomerCylinder::query()->with('customer')->whereIn('customer_id', $routeCust)->selectRaw('customer_id, size_kg, sum(qty_delta) q, max(created_at) last')
                 ->groupBy('customer_id', 'size_kg')->havingRaw('sum(qty_delta) > 0')->get();
         }
-        return view('app.empty', ['e' => $e, 'trip' => $trip, 'collected' => $collected, 'holders' => $holders, 'brands' => Brand::query()->where('empty_collection', true)->orderBy('code')->get(),
+        return view('app.empty', ['e' => $e, 'trip' => $trip, 'collected' => $collected, 'holders' => $holders, 'brands' => Brand::query()->where('empty_collection', true)->orderBy('position')->orderBy('code')->get(),
             'own' => Brand::query()->where('for_sale', true)->orderBy('id')->first(), 'sel' => $request->query('c') ? $holders->first(fn ($h) => $h->customer_id == $request->query('c') && $h->size_kg == $request->query('s')) : $holders->first()]);
     }
 
@@ -404,7 +404,7 @@ class AppController extends Controller
     {
         [$e, $trip] = $this->ctx($request);
         $own = Brand::query()->where('for_sale', true)->orderBy('id')->first();
-        $active = Brand::query()->where('is_active', true)->orderByDesc('for_sale')->orderBy('name')->get();
+        $active = Brand::query()->where('is_active', true)->orderBy('position')->orderBy('position')->orderBy('code')->get();
         $cust = $request->query('customer') ? Customer::find((int) $request->query('customer')) : null;
         $mine = $trip ? \App\Models\CylinderExchange::query()->with(['lines.inBrand', 'lines.outBrand', 'sale'])->where('trip_id', $trip->id)->orderByDesc('id')->get() : collect();
         $types = \App\Models\CylinderExchange::enabledTypes();

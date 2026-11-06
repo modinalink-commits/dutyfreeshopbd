@@ -39,7 +39,7 @@ class CylinderExchangeController extends Controller
     {
         $v = array_key_exists($request->query('v'), self::VIEWS) ? $request->query('v') : 'dash';
         $u = $request->user();
-        $brands = Brand::query()->orderByDesc('for_sale')->orderBy('name')->get();
+        $brands = Brand::query()->orderBy('position')->orderBy('position')->orderBy('code')->get();
         $active = $brands->where('is_active', true)->values();
         $own = $brands->firstWhere('for_sale', true);
         $pendingCount = CylinderExchange::query()->whereIn('status', ['pending', 'held'])->count();

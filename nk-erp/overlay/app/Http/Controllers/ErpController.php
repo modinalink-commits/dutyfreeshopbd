@@ -56,8 +56,8 @@ class ErpController extends Controller
         $l = strtolower($label);
         $sizes = ['12 KG', '35 KG', '45 KG'];
         return match (true) {
-            str_contains($l, 'brand · size') || str_contains($l, 'brand/size') => Brand::query()->where('is_active', true)->orderBy('code')->get()->flatMap(fn ($b) => collect($b->sizes ?? [12, 35, 45])->map(fn ($s) => $b->name.' · '.$s.' KG'))->all(),
-            str_contains($l, 'brand') => Brand::query()->where('is_active', true)->orderBy('code')->pluck('name')->all(),
+            str_contains($l, 'brand · size') || str_contains($l, 'brand/size') => Brand::query()->where('is_active', true)->orderBy('position')->orderBy('code')->get()->flatMap(fn ($b) => collect($b->sizes ?? [12, 35, 45])->map(fn ($s) => $b->name.' · '.$s.' KG'))->all(),
+            str_contains($l, 'brand') => Brand::query()->where('is_active', true)->orderBy('position')->orderBy('code')->pluck('name')->all(),
             $l === 'size' || str_contains($l, 'cylinder size') => $sizes,
             str_contains($l, 'vehicle') => Vehicle::query()->orderBy('code')->get()->map(fn ($v) => $v->code.' · '.$v->reg_no)->all(),
             str_contains($l, 'customer') || str_contains($l, 'party') || str_contains($l, 'shop') => Customer::query()->where('is_active', true)->orderBy('name')->limit(500)->pluck('name')->all(),

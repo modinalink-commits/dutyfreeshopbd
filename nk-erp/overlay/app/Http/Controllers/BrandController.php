@@ -21,7 +21,7 @@ class BrandController extends Controller
             ->when($q !== '', fn ($w) => $w->where('name', 'ilike', "%{$q}%"))
             ->when($filter === 'active', fn ($w) => $w->where('is_active', true))
             ->when($filter === 'inactive', fn ($w) => $w->where('is_active', false))
-            ->orderBy('code')->get();
+            ->orderBy('position')->orderBy('code')->get();
 
         $all = Brand::query()->get();
         $own = $all->where('for_sale', true)->pluck('id');
@@ -44,7 +44,7 @@ class BrandController extends Controller
             'exchanges' => BrandExchange::query()->with(['fromBrand', 'toBrand', 'requester'])->where('status', 'waiting')->latest()->get(),
             'edit' => $edit,
             'nextCode' => Brand::nextCode(),
-            'allBrands' => $all->sortBy('code'),
+            'allBrands' => $all->sortBy(fn ($b) => [$b->position, $b->code]),
         ]);
     }
 
@@ -78,7 +78,9 @@ class BrandController extends Controller
             'for_sale' => ['required', 'boolean'],
             'empty_collection' => ['required', 'boolean'],
             'remarks' => ['nullable', 'string', 'max:255'],
+            'position' => ['nullable', 'integer', 'min:1', 'max:9999'],
         ]);
+        $pos = $data['position'] ?? null; unset($data['position']);
         $data['sizes'] = array_values(array_map('intval', $data['sizes']));
         sort($data['sizes']);
         unset($data['id']);
@@ -88,10 +90,11 @@ class BrandController extends Controller
             $brand->fill($data)->save();
             AuditLog::record('brand_updated', $brand->code.' '.$brand->name);
         } else {
-            $brand = Brand::create($data + ['code' => Brand::nextCode()]);
+            $brand = Brand::create($data + ['code' => Brand::nextCode(), 'position' => (int) Brand::query()->max('position') + 1]);
             AuditLog::record('brand_created', $brand->code.' '.$brand->name);
         }
 
+        if ($pos !== null && (int) $pos !== (int) $brand->position) self::placeAt($brand, (int) $pos);
         $made = \App\Models\Product::syncBrand($brand);
         return redirect()->route('brands.index')->with('ok', "{$brand->name} saved.".($made ? " {$made} products added to Products & prices — set their prices there." : ''));
     }
@@ -151,5 +154,28 @@ class BrandController extends Controller
         });
         AuditLog::record('brand_deleted', $name);
         return redirect()->route('brands.index')->with('ok', "{$name} deleted.");
+    }
+
+    /** Put a brand at a list position (1 = top) and renumber the rest 1..n, so every list follows the same order. */
+    public static function placeAt(Brand $brand, int $pos): void
+    {
+        \Illuminate\Support\Facades\DB::transaction(function () use ($brand, $pos) {
+            $ids = Brand::query()->where('id', '!=', $brand->id)->orderBy('position')->orderBy('code')->lockForUpdate()->pluck('id')->all();
+            $pos = max(1, min($pos, count($ids) + 1));
+            array_splice($ids, $pos - 1, 0, [$brand->id]);
+            foreach ($ids as $i => $id) Brand::query()->whereKey($id)->update(['position' => $i + 1]);
+        });
+    }
+
+    /** ▲ / ▼ buttons and the position box in the brand list. */
+    public function move(Request $request, Brand $brand)
+    {
+        $data = $request->validate(['dir' => ['nullable', Rule::in(['up', 'down', 'top', 'bottom'])], 'to' => ['nullable', 'integer', 'min:1', 'max:9999']]);
+        $cur = (int) Brand::query()->where(fn ($q) => $q->where('position', '<', $brand->position)->orWhere(fn ($w) => $w->where('position', $brand->position)->where('code', '<', $brand->code)))->count() + 1;
+        $to = $data['to'] ?? match ($data['dir'] ?? null) { 'up' => $cur - 1, 'down' => $cur + 1, 'top' => 1, 'bottom' => 9999, default => $cur };
+        self::placeAt($brand, (int) $to);
+        $now = $brand->fresh()->position;
+        AuditLog::record('brand_position', "{$brand->code} {$brand->name} → position {$now}");
+        return redirect()->to(route('brands.index', array_filter(['q' => $request->input('q'), 'f' => $request->input('f')])).'#b'.$brand->id)->with('ok', "{$brand->name} is now at position {$now}.");
     }
 }

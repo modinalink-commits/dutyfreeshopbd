@@ -53,7 +53,7 @@ class CustomerController extends Controller
             'counts' => ['all' => Customer::count(), 'dealer' => Customer::where('type', 'dealer')->count(),
                 'due' => $dues->filter(fn ($d) => $d > 0.004)->count(), 'empties' => $outs->filter(fn ($q) => $q > 0)->count()],
             'edit' => $request->boolean('new') ? new Customer(['type' => 'retail', 'credit_limit' => 0]) : ($request->query('edit') ? Customer::find($request->query('edit')) : null),
-            'brands' => Brand::query()->where('empty_collection', true)->orderBy('code')->get(),
+            'brands' => Brand::query()->where('empty_collection', true)->orderBy('position')->orderBy('code')->get(),
         ]);
     }
 

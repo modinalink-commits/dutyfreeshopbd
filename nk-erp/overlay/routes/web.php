@@ -172,6 +172,7 @@ Route::middleware(['auth', 'pwd'])->group(function () {
         Route::post('/brands', [BrandController::class, 'save'])->name('brands.save');
         Route::post('/brands/{brand}/photo', [BrandController::class, 'photo'])->name('brands.photo');
         Route::post('/brands/{brand}/delete', [BrandController::class, 'delete'])->name('brands.delete');
+        Route::post('/brands/{brand}/move', [BrandController::class, 'move'])->name('brands.move');
         Route::post('/stock/{movement}/reverse', [StockController::class, 'reverse'])->name('stock.reverse');
     });
 

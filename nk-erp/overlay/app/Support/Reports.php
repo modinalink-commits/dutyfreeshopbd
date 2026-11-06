@@ -119,7 +119,7 @@ class Reports
                 return [['Date', 'Category', 'Cost center', 'Amount', 'Status'], $rows, ['Total', '', '', array_sum(array_column($rows, 3)), '']];
             case 'inventory':
                 $rows = [];
-                foreach (Brand::query()->orderBy('code')->get() as $b) {
+                foreach (Brand::query()->orderBy('position')->orderBy('code')->get() as $b) {
                     foreach (($b->sizes ?? []) as $s) {
                         $x = StockMovement::balance($b->id, (int) $s);
                         if (! array_sum($x)) continue;

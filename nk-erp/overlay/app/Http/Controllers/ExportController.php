@@ -64,7 +64,7 @@ class ExportController extends Controller
         }
         return view('exports', ['report' => $report, 'f' => $f, 'head' => $head, 'rows' => $rows, 'total' => $total, 'hist' => $hist, 'docs' => $docs, 'q' => $q, 'tab' => $tab,
             'fmt' => in_array($request->query('fmt'), self::FORMATS, true) ? $request->query('fmt') : 'PDF', 'zip' => class_exists(\ZipArchive::class),
-            'brands' => Brand::query()->orderBy('code')->get(), 'customers' => Customer::query()->orderBy('name')->get(['id', 'name']), 'vehicles' => Vehicle::query()->orderBy('code')->get(), 'routes' => RouteModel::query()->orderBy('name')->get()]);
+            'brands' => Brand::query()->orderBy('position')->orderBy('code')->get(), 'customers' => Customer::query()->orderBy('name')->get(['id', 'name']), 'vehicles' => Vehicle::query()->orderBy('position')->orderBy('code')->get(), 'routes' => RouteModel::query()->orderBy('name')->get()]);
     }
 
     public function generate(Request $request)

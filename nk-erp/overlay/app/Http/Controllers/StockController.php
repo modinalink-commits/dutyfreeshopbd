@@ -81,7 +81,7 @@ class StockController extends Controller
         }
         return view('stock.create', [
             'kind' => $kind,
-            'brands' => Brand::query()->where(fn ($q) => $q->where('is_active', true)->orWhere('empty_collection', true))->orderBy('code')->get(),
+            'brands' => Brand::query()->where(fn ($q) => $q->where('is_active', true)->orWhere('empty_collection', true))->orderBy('position')->orderBy('code')->get(),
         ]);
     }
 
