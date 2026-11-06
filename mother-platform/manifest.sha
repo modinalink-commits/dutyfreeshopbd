@@ -241,7 +241,7 @@ fa71f5b713eb48db8706158fe0040e5f09ce8d0c resources/views/proc/invoice_public.bla
 bfa5313978a8ff1c3f3ba7b9df3c06309a77279a resources/views/proc/nav.blade.php
 0445410328b3d39d65679223cd68b27c7eec0ddc resources/views/proc/note_form.blade.php
 44cef8af51f02cd4ca665e549865f04cc09b7973 resources/views/proc/payment_form.blade.php
-dc0507b7b7753deafc6b3f4abca30fed4d8eef48 resources/views/proc/purchase_form.blade.php
+f427231456a9fc776507423253e0eebf2d5bc3a9 resources/views/proc/purchase_form.blade.php
 0dd6e6c0515cbf3560fe4633319c57fe7504061a resources/views/proc/return_form.blade.php
 bcaa09b8dc69e29174359aede4e960904e43bf3c resources/views/proc/settings.blade.php
 69fbb9b24c7515d898c0b1df756804da752faa90 resources/views/proc/statement.blade.php

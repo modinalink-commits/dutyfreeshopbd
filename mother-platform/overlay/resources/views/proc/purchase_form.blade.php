@@ -8,7 +8,7 @@
 <div><label>Purchase date *</label><input type="date" name="purchase_date" id="pdate" required value="{{ old('purchase_date',$p->purchase_date ?? now('Asia/Dhaka')->toDateString()) }}"></div>
 <div class="adv"><label>Invoice number</label><input value="{{ $p->invoice ?? 'Auto (PUR-000001…)' }}" disabled></div>
 <div><label>Supplier invoice number</label><input name="supplier_invoice" value="{{ old('supplier_invoice',$p->supplier_invoice ?? '') }}"></div>
-<div><label>Store / Warehouse</label><select name="store_id"><option value="">—</option>@foreach($stores as $s)<option value="{{ $s->id }}" @selected(old('store_id',$p->store_id ?? '')==$s->id)>{{ $s->name }}</option>@endforeach</select></div>
+<div><label>Store / Warehouse</label><select name="store_id"><option value="">—</option>@php $__ds = old('store_id', $p->store_id ?? ''); if ($__ds === '' || $__ds === null) { $__d = collect($stores)->first(fn($x) => stripos($x->name, 'dutyfreebd') !== false) ?? collect($stores)->first(); $__ds = $__d ? $__d->id : ''; } @endphp @foreach($stores as $s)<option value="{{ $s->id }}" @selected($__ds==$s->id)>{{ $s->name }}</option>@endforeach</select></div>
 <div class="adv"><label>Purchase type</label><select name="ptype">@foreach(['Local','Import','Wholesale','Sample'] as $o)<option @selected(($p->ptype ?? 'Local')===$o)>{{ $o }}</option>@endforeach</select></div>
 <div class="adv"><label>Payment type</label><select name="pay_type">@foreach(['Credit','Cash','Bank','Mobile banking'] as $o)<option @selected(($p->pay_type ?? 'Credit')===$o)>{{ $o }}</option>@endforeach</select></div>
 <div class="adv"><label>Due date</label><input type="date" name="due_date" id="ddate" value="{{ old('due_date',$p->due_date ?? '') }}"></div>
