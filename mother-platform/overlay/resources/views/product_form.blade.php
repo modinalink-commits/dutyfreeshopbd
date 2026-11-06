@@ -107,6 +107,7 @@
 <div class="imgs" id="imgs"></div>
 <input type="file" id="imgFile" accept="image/jpeg,image/png,image/webp" multiple style="display:none">
 <p class="hint" id="imgHint">Recommended 600 × 600 px, square (1:1). JPG, PNG or WebP. Images are resized and converted to WebP automatically.</p>
+<div style="margin:8px 0"><button type="button" id="aiBtn" class="btn g" style="font-weight:600">✨ AI Clean Image (OpenAI)</button> <span class="hint" id="aiMsg" style="margin-left:8px">{{ ($p && $p->id) ? 'Cleans the cover image (white background, no watermark) and makes it the main image automatically.' : 'Save the product once, then use this button to clean its cover image.' }}</span></div>
 <div id="imgVals"></div>
 </div>
 
@@ -194,6 +195,15 @@ function toWebp(file,max){return new Promise(function(res){if(!/^image\/(jpeg|pn
 createImageBitmap(file).then(function(b){var side=Math.max(b.width,b.height),sc=Math.min(1,max/side),W=Math.round(b.width*sc),H=Math.round(b.height*sc),S=Math.max(W,H);var c=document.createElement('canvas');c.width=S;c.height=S;var x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,S,S);x.drawImage(b,(S-W)/2,(S-H)/2,W,H);
 c.toBlob(function(bl){res(bl?new File([bl],(file.name.replace(/\.[^.]+$/,'')||'image')+'.webp',{type:'image/webp'}):file)},'image/webp',.86)}).catch(function(){res(file)})})}
 function up(file,max){return toWebp(file,max).then(function(f){var d=new FormData();d.append('file',f);d.append('slug','products');d.append('field','image');d.append('_token',document.querySelector('input[name=_token]').value);return fetch('/admin/upload-image',{method:'POST',body:d,headers:{'Accept':'application/json'}}).then(function(r){return r.json()}).then(function(j){if(!j.url)throw 0;return j.url})})}
+/* AI clean image: one click -> OpenAI edit -> becomes the main image */
+(function(){var b=document.getElementById('aiBtn');if(!b)return;var PID={{ ($p && $p->id) ? (int)$p->id : 0 }};
+b.onclick=function(){var m=document.getElementById('aiMsg'),tk=document.querySelector('input[name=_token]').value;
+if(!PID){m.textContent='Save the product first, then press this button.';return}
+if(!IMGS.length){m.textContent='Add an image first.';return}
+if(/\/uploads\/ai\/ai-\d+(-r\d+)?\.jpg/.test(IMGS[0])&&!confirm('The cover image is already AI-cleaned. Run it again (uses OpenAI credit)?'))return;
+b.disabled=true;m.textContent='Cleaning image with OpenAI… this takes about 30–60 seconds.';
+fetch('/admin/ai-images/process',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':tk,'Accept':'application/json'},body:JSON.stringify({product_id:PID,url:IMGS[0]})}).then(function(r){return r.json().then(function(j){return[r.ok,j]})}).then(function(x){var j=x[1];if(!x[0]||!j.ok){throw new Error(j.error||j.message||'AI could not process this image (it may have been rejected by the safety filter). Upload a different image or edit it by hand.')}
+return fetch('/admin/ai-images/'+j.id+'/main',{method:'POST',headers:{'X-CSRF-TOKEN':tk,'Accept':'application/json'}}).then(function(r){if(!r.ok)throw new Error('Could not set it as the main image.');IMGS[0]=j.processed.split('?')[0];renderImgs();m.textContent='Done ✓ The cleaned image is now the main image.'})}).catch(function(e){m.textContent=e.message}).then(function(){b.disabled=false})}})();
 $('imgFile').onchange=function(){var fs=Array.prototype.slice.call(this.files).slice(0,MAXI-IMGS.length);this.value='';if(!fs.length)return;imgHint('Uploading '+fs.length+' image(s)...');
 fs.reduce(function(p,f){return p.then(function(){return up(f,1000).then(function(u){IMGS.push(u);renderImgs()})})},Promise.resolve()).then(function(){imgHint('Recommended 600 × 600 px, square (1:1). JPG, PNG or WebP. Images are resized and converted to WebP automatically.')}).catch(function(){imgHint('Upload failed. Use JPG, PNG or WebP under 8 MB.',true)})};
 renderImgs();
