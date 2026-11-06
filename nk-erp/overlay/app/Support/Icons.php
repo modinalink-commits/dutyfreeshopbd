@@ -42,6 +42,7 @@ class Icons
         'vpl' => 'chart',
         'stock' => 'cyl',
         'brands' => 'cyl',
+        'cx' => 'ret',
         'products' => 'cyl',
         'supplier' => 'book',
         'accounts' => 'wallet',

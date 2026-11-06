@@ -43,7 +43,7 @@
 <section style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
   <a class="qa" href="{{ route('app.empty') }}">খালি সংগ্রহ</a><a class="qa" href="{{ route('app.pay') }}">টাকা আদায়</a><a class="qa" href="{{ route('app.shops', ['pick' => 'view']) }}">দোকানের তালিকা</a>
   <a class="qa" href="{{ route('app.sales') }}">আজকের বিক্রি</a><a class="qa" href="{{ route('app.summary') }}">দিনের সারাংশ</a>
-  <a class="qa" href="{{ route('app.duty') }}">ডিউটি ও লোকেশন</a><a class="qa" href="{{ route('app.expense') }}">খরচের দাবি</a>
+  <a class="qa" href="{{ route('app.duty') }}">ডিউটি ও লোকেশন</a><a class="qa" href="{{ route('app.expense') }}">খরচের দাবি</a><a class="qa" href="{{ route('app.exchange') }}">এক্সচেঞ্জ</a>
   <form method="post" action="{{ route('app.logout') }}" style="display:contents">@csrf<button class="qa" type="submit" style="color:#51607a;cursor:pointer">লগআউট</button></form>
 </section>
 @endsection

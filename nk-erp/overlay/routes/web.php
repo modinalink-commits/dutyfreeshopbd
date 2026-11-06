@@ -12,6 +12,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\SaleController;
 use App\Http\Controllers\WholesaleController;
 use App\Http\Controllers\ExchangeController;
+use App\Http\Controllers\CylinderExchangeController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\RoadmapController;
 use App\Http\Controllers\StockController;
@@ -66,6 +67,8 @@ Route::middleware(['auth', 'pwd', 'role:salesman,driver,super_admin,admin,manage
     Route::get('/expense', [AppController::class, 'expense'])->name('expense');
     Route::post('/expense', [AppController::class, 'storeExpense'])->name('expense.store');
     Route::get('/notify', [AppController::class, 'notify'])->name('notify');
+    Route::get('/exchange', [AppController::class, 'exchange'])->name('exchange');
+    Route::post('/exchange', [AppController::class, 'storeExchange'])->name('exchange.store')->middleware('throttle:30,1');
 });
 // Customer self-service portal (OTP login, separate from staff accounts).
 Route::prefix('my')->name('my.')->group(function () {
@@ -128,7 +131,15 @@ Route::middleware(['auth', 'pwd'])->group(function () {
         Route::post('/customers/{customer}/empties', [CustomerController::class, 'empties'])->name('customers.empties');
         Route::get('/wholesale', [WholesaleController::class, 'index'])->name('wholesale.index');
         Route::get('/products', [ProductController::class, 'index'])->name('products.index');
+        Route::get('/cylinder-exchange', [CylinderExchangeController::class, 'index'])->name('cx.index');
+        Route::get('/cylinder-exchange/quote', [CylinderExchangeController::class, 'quote'])->name('cx.quote');
+        Route::post('/cylinder-exchange', [CylinderExchangeController::class, 'store'])->name('cx.store');
     });
+    Route::middleware('role:super_admin,admin,manager')->group(function () {
+        Route::post('/cylinder-exchange/{exchange}/approve', [CylinderExchangeController::class, 'approve'])->name('cx.approve');
+        Route::post('/cylinder-exchange/{exchange}/reject', [CylinderExchangeController::class, 'reject'])->name('cx.reject');
+    });
+    Route::post('/cylinder-exchange/charges', [CylinderExchangeController::class, 'saveCharges'])->name('cx.charges')->middleware('role:super_admin,admin');
 
     Route::middleware('role:super_admin,admin,manager')->group(function () {
         Route::post('/wholesale', [WholesaleController::class, 'store'])->name('wholesale.store');
@@ -153,6 +164,7 @@ Route::middleware(['auth', 'pwd'])->group(function () {
     Route::middleware('role:super_admin,admin')->group(function () {
         Route::post('/brands', [BrandController::class, 'save'])->name('brands.save');
         Route::post('/brands/{brand}/photo', [BrandController::class, 'photo'])->name('brands.photo');
+        Route::post('/brands/{brand}/delete', [BrandController::class, 'delete'])->name('brands.delete');
         Route::post('/stock/{movement}/reverse', [StockController::class, 'reverse'])->name('stock.reverse');
     });
 

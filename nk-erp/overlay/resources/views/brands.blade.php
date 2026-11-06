@@ -67,7 +67,9 @@
         <td class="c" style="font-weight:700">{{ number_format((int) ($totals[$b->id]->f ?? 0)) }}</td>
         <td class="c">{{ number_format((int) ($totals[$b->id]->e ?? 0)) }}</td>
         <td style="color:var(--muted)">{{ $b->remarks }}</td>
-        @if($canEdit)<td><a class="btn sm" href="{{ route('brands.index', ['edit' => $b->id]) }}#brand-form">Edit</a></td>@endif
+        @if($canEdit)<td class="nw"><a class="btn sm" href="{{ route('brands.index', ['edit' => $b->id]) }}#brand-form">Edit</a>
+          @unless($b->for_sale)<form method="post" action="{{ route('brands.delete', $b) }}" style="display:inline" onsubmit="return confirm('Delete {{ addslashes($b->name) }}? Its unsold products and photos are removed too. This cannot be undone.')">@csrf<button class="btn sm" type="submit" style="color:#b3261e;border-color:#e3b4ae" aria-label="Delete {{ $b->name }}">Delete</button></form>@endunless
+        </td>@endif
       </tr>
     @endforeach
     </tbody>
@@ -77,6 +79,7 @@
   <section class="card pad" style="display:flex;flex-direction:column;gap:10px">
     <h2 style="margin:0;font-size:var(--fs-15)">Brand exchange &amp; transfer — needs approval</h2>
     <span class="sub">An empty of one brand never goes into another brand's stock by itself. Each exchange is its own transaction with a reason and an approver.</span>
+    <span class="sub">Selling to a customer who gives another brand's empty? Use <a href="{{ route('cx.index') }}" style="font-weight:700">Cylinder exchange</a> — it prices, invoices and moves stock.</span>
     @forelse($exchanges as $x)
       <div style="border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:6px">
         <div style="display:flex;align-items:center"><b style="flex-grow:1">{{ $x->ref_no }}@if($x->party) · {{ $x->party }}@endif</b><span class="pill" style="background:#efe7fb;color:#5b2fa8">Waiting</span></div>

@@ -116,4 +116,40 @@ class BrandController extends Controller
         \App\Models\AuditLog::record('brand_photo', "{$brand->code} {$brand->name} {$size} kg · photo ".($old ? 'replaced' : 'added'));
         return back()->with('ok', "{$brand->name} {$size} kg: photo saved.");
     }
+
+    /**
+     * Delete a brand that was never used. A brand with stock, sales, empties owed or exchanges keeps its history:
+     * the owner is told to set it Inactive instead. Its unused products and uploaded photos go with it.
+     */
+    public function delete(Brand $brand)
+    {
+        if ($brand->for_sale) return back()->withErrors(['name' => "{$brand->name} is our own selling brand and cannot be deleted."]);
+        $uses = [
+            'stock movements' => \App\Models\StockMovement::query()->where('brand_id', $brand->id)->count(),
+            'sale lines' => \App\Models\SaleItem::query()->where('brand_id', $brand->id)->count(),
+            'sales (empties received)' => \App\Models\Sale::query()->where('empty_brand_id', $brand->id)->count(),
+            'customer cylinders' => \App\Models\CustomerCylinder::query()->where('brand_id', $brand->id)->count(),
+            'brand exchanges' => BrandExchange::query()->where('from_brand_id', $brand->id)->orWhere('to_brand_id', $brand->id)->count(),
+        ];
+        if (class_exists(\App\Models\CylinderExchange::class)) {
+            $uses['cylinder exchanges'] = \App\Models\CylinderExchange::query()->where('given_brand_id', $brand->id)->orWhere('taken_brand_id', $brand->id)->count();
+        }
+        $used = array_filter($uses);
+        if ($used) {
+            $list = implode(', ', array_map(fn ($k, $v) => "{$v} {$k}", array_keys($used), $used));
+            return back()->withErrors(['name' => "{$brand->name} cannot be deleted — it already has history ({$list}). Set it Inactive instead; the history stays correct."]);
+        }
+        $name = $brand->code.' '.$brand->name;
+        \Illuminate\Support\Facades\DB::transaction(function () use ($brand) {
+            foreach (\App\Models\Product::query()->where('brand_id', $brand->id)->get() as $p) {
+                \App\Support\Img::delete($p->image);
+                $p->delete();
+            }
+            foreach (($brand->images ?? []) as $img) \App\Support\Img::delete($img);
+            if (\Illuminate\Support\Facades\Schema::hasTable('exchange_charges')) \Illuminate\Support\Facades\DB::table('exchange_charges')->where('brand_id', $brand->id)->delete();
+            $brand->delete();
+        });
+        AuditLog::record('brand_deleted', $name);
+        return redirect()->route('brands.index')->with('ok', "{$name} deleted.");
+    }
 }

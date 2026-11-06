@@ -17,6 +17,7 @@ class Roadmap
             ['pos', 'Retail sale (POS)', 'pos.index', 'POS · MobilePrint (58/80 mm) · CompanyDoc (A4)'],
             ['wholesale', 'Wholesale orders', 'wholesale.index', 'Wholesale'],
             ['customers', 'Customers & dues', 'customers.index', 'Customers'],
+            ['cx', 'Cylinder exchange', 'cx.index', 'Brand exchange: customer gives one brand empty, takes another brand full (office approval)'],
             ['sales', 'Sales list & invoices', 'sales.index', 'POS · CompanyDoc'],
             ['weborders', 'Website orders', 'orders.index', 'Order form on nklpgbd.com'],
             ['corders', 'Customer orders', 'corders.index', 'CustomerOrders (customer app requests, needs Route sales and Customer portal)'],

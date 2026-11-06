@@ -7,6 +7,7 @@ app/Http/Controllers/BrandController.php
 app/Http/Controllers/CompanyController.php
 app/Http/Controllers/CustomerController.php
 app/Http/Controllers/CustomerOrderController.php
+app/Http/Controllers/CylinderExchangeController.php
 app/Http/Controllers/DashboardController.php
 app/Http/Controllers/ErpController.php
 app/Http/Controllers/ExchangeController.php
@@ -45,10 +46,12 @@ app/Models/Customer.php
 app/Models/CustomerCylinder.php
 app/Models/CustomerLedger.php
 app/Models/CustomerOrder.php
+app/Models/CylinderExchange.php
 app/Models/DutySession.php
 app/Models/Employee.php
 app/Models/EmployeeLedger.php
 app/Models/ErpRecord.php
+app/Models/ExchangeCharge.php
 app/Models/Expense.php
 app/Models/ExpenseCategory.php
 app/Models/ExpenseClaim.php
@@ -78,6 +81,7 @@ app/Models/Vehicle.php
 app/Models/WebsiteOrder.php
 app/Providers/AppServiceProvider.php
 app/Support/CompanyCalc.php
+app/Support/ExchangeService.php
 app/Support/Icons.php
 app/Support/Img.php
 app/Support/LedgerImport.php
@@ -107,6 +111,7 @@ database/migrations/2026_11_05_000015_customer_portal.php
 database/migrations/2026_11_05_000016_erp_records.php
 database/migrations/2026_11_06_000017_product_images.php
 database/migrations/2026_11_06_000018_brand_images.php
+database/migrations/2026_11_06_000019_cylinder_exchange.php
 public/app-sw.js
 public/css/nk-table.css
 public/css/nk-type.css
@@ -209,6 +214,7 @@ resources/views/activity.blade.php
 resources/views/app/_back.blade.php
 resources/views/app/duty.blade.php
 resources/views/app/empty.blade.php
+resources/views/app/exchange.blade.php
 resources/views/app/expense.blade.php
 resources/views/app/home.blade.php
 resources/views/app/invoice.blade.php
@@ -237,6 +243,7 @@ resources/views/errors/429.blade.php
 resources/views/errors/500.blade.php
 resources/views/errors/503.blade.php
 resources/views/errors/minimal.blade.php
+resources/views/exchange/index.blade.php
 resources/views/expenses/_css.blade.php
 resources/views/expenses/entry.blade.php
 resources/views/expenses/index.blade.php

@@ -105,11 +105,12 @@ textarea{padding:8px 10px;min-height:60px}
         'wholesale' => \App\Models\Sale::where('type', 'wholesale')->whereIn('stage', ['waiting', 'on_road'])->count(),
         'corders' => \App\Models\CustomerOrder::where('status', 'new')->count(),
         'closing' => \App\Models\Trip::whereIn('status', ['returned', 'settled'])->count(),
+        'cx' => \App\Models\CylinderExchange::where('status', 'pending')->count(),
     ], ['weborders' => $newCount, 'brands' => $waitX], false))
     @php($adminOnly = ['company', 'users', 'activity', 'sms', 'hero', 'website'])
     @php($superOnly = ['supplier', 'accounts', 'vpl', 'import'])
     @php($mgrOnly = ['map', 'live', 'corders'])
-    @php($officeOnly = ['rdash', 'vehicles', 'loading', 'return', 'settle', 'closing', 'exp', 'export', 'erp'])
+    @php($officeOnly = ['cx', 'rdash', 'vehicles', 'loading', 'return', 'settle', 'closing', 'exp', 'export', 'erp'])
     @php($cur = request()->route()?->getName() ?? '')
     @php($cur = ['trips.wizard' => 'trips.closing', 'trips.sales' => 'fleet.dash', 'trips.slip' => 'trips.loading'][$cur] ?? $cur)
     @php($allRoutes = collect(\App\Support\Roadmap::MENU)->flatten(1)->pluck(2)->filter())

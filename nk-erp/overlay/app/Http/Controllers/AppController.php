@@ -398,4 +398,61 @@ class AppController extends Controller
         return response()->json(['name' => 'NK Corporation সেলসম্যান', 'short_name' => 'NK সেলস', 'start_url' => '/app', 'scope' => '/app', 'display' => 'standalone',
             'background_color' => '#ffffff', 'theme_color' => '#123a86', 'icons' => [['src' => '/img/logo.webp', 'sizes' => '512x512', 'type' => 'image/webp']]], 200, ['Content-Type' => 'application/manifest+json']);
     }
+
+    /** Brand exchange on the route: shop gives another brand's empty, takes our full. Waits for office approval. */
+    public function exchange(Request $request)
+    {
+        [$e, $trip] = $this->ctx($request);
+        $own = Brand::query()->where('for_sale', true)->first();
+        $others = Brand::query()->where('is_active', true)->where('for_sale', false)->orderBy('name')->get();
+        $cust = $request->query('customer') ? Customer::find((int) $request->query('customer')) : null;
+        $mine = $trip ? \App\Models\CylinderExchange::query()->with(['givenBrand', 'sale'])->where('trip_id', $trip->id)->orderByDesc('id')->get() : collect();
+        $quotes = [];
+        if ($own) {
+            foreach ($others as $b) {
+                foreach (array_map('intval', $b->sizes ?? []) as $s) {
+                    try { $q = \App\Support\ExchangeService::quote($b->id, $own->id, $s, 'route'); $quotes[$b->id][$s] = ['unit' => $q['unit'], 'charge' => $q['charge']]; } catch (\Throwable) {}
+                }
+            }
+        }
+        return view('app.exchange', ['e' => $e, 'trip' => $trip, 'own' => $own, 'others' => $others, 'cust' => $cust, 'mine' => $mine, 'quotes' => $quotes]);
+    }
+
+    public function storeExchange(Request $request)
+    {
+        [$e, $trip] = $this->ctx($request);
+        $data = $request->validate([
+            'given_brand_id' => ['required', 'exists:brands,id'], 'size_kg' => ['required', Rule::in(Brand::SIZES)], 'qty' => ['required', 'integer', 'min:1', 'max:100'],
+            'customer_id' => ['nullable', 'exists:customers,id'], 'walkin_name' => ['nullable', 'string', 'max:120'], 'walkin_phone' => ['nullable', 'string', 'max:20'],
+            'method' => ['required', Rule::in(['cash', 'bkash', 'due'])], 'paid' => ['nullable', 'numeric', 'min:0'], 'note' => ['nullable', 'string', 'max:255'], 'tx' => ['required', 'string', 'max:40'],
+        ]);
+        if (! $trip || $trip->status !== 'dispatched') return back()->withErrors(['qty' => 'চালু ট্রিপ ছাড়া এক্সচেঞ্জ করা যাবে না।']);
+        $own = Brand::query()->where('for_sale', true)->value('id');
+        if ((int) $data['given_brand_id'] === (int) $own) return back()->withErrors(['qty' => 'একই ব্র্যান্ড হলে এটা সাধারণ রিফিল — বিক্রি পাতা থেকে করুন।']);
+        $dup = \App\Models\CylinderExchange::query()->where('note', 'like', '%#'.$data['tx'])->first();
+        if ($dup) return redirect()->route('app.exchange')->with('ok', 'আগেই পাঠানো হয়েছে।');
+        try {
+            $x = DB::transaction(function () use ($data, $trip, $own, $request) {
+                $q = \App\Support\ExchangeService::quote((int) $data['given_brand_id'], (int) $own, (int) $data['size_kg'], 'route');
+                $total = round($data['qty'] * ($q['unit'] + $q['charge']), 2);
+                $paid = $data['method'] === 'due' ? (float) ($data['paid'] ?? 0) : $total;
+                if ($paid > $total + 0.004) throw new RuntimeException('বিলের চেয়ে বেশি টাকা নেওয়া যাবে না।');
+                if (empty($data['customer_id']) && $paid < $total - 0.004) throw new RuntimeException('দোকান বাছাই না করলে পুরো টাকা নিতে হবে।');
+                $vehFull = (int) StockMovement::balance($own, (int) $data['size_kg'], $trip->id)['full'];
+                $waiting = (int) \App\Models\CylinderExchange::query()->where('trip_id', $trip->id)->where('status', 'pending')->where('size_kg', $data['size_kg'])->sum('qty');
+                if ($vehFull - $waiting < $data['qty']) throw new RuntimeException('গাড়িতে '.\App\Support\Ui::bn($data['size_kg']).' কেজির ভরা সিলিন্ডার যথেষ্ট নেই (আছে '.\App\Support\Ui::bn(max(0, $vehFull - $waiting)).'টি)।');
+                \App\Support\Ui::lockNumbers();
+                return \App\Models\CylinderExchange::create([
+                    'ref_no' => \App\Models\CylinderExchange::nextRef(), 'channel' => 'route', 'trip_id' => $trip->id, 'customer_id' => $data['customer_id'] ?? null,
+                    'walkin_name' => $data['walkin_name'] ?? null, 'walkin_phone' => $data['walkin_phone'] ?? null, 'size_kg' => $data['size_kg'], 'qty' => $data['qty'],
+                    'given_brand_id' => $data['given_brand_id'], 'taken_brand_id' => $own, 'unit_price' => $q['unit'], 'charge_unit' => $q['charge'], 'total' => $total, 'paid' => $paid,
+                    'method' => $data['method'], 'status' => 'pending', 'note' => trim(($data['note'] ?? '').' #'.$data['tx']), 'requested_by' => $request->user()->id,
+                ]);
+            });
+        } catch (RuntimeException $ex) {
+            return back()->withInput()->withErrors(['qty' => \App\Support\Ui::msgBn($ex)]);
+        }
+        AuditLog::record('cylinder_exchange', "{$x->ref_no} requested from {$trip->trip_no} · {$x->qty} × {$x->size_kg} kg");
+        return redirect()->route('app.exchange')->with('ok', "{$x->ref_no} অফিসে অনুমোদনের জন্য পাঠানো হয়েছে।");
+    }
 }
