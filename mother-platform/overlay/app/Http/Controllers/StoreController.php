@@ -299,7 +299,7 @@ class StoreController extends Controller {
     foreach ($rel as $r0) { $x = $rst->get($r0->id); $r0->rv_avg = $x ? round((float)$x->av, 1) : 0; $r0->rv_n = $x ? (int)$x->n : 0; }
     DB::table('product_views')->insert(['product_id'=>$p->id,'day'=>now('Asia/Dhaka')->toDateString(),'created_at'=>now(),'updated_at'=>now()]);
     $price = (float)$p->price;
-    $gallery = DB::table('product_images')->where('product_id',$p->id)->orderBy('position')->orderBy('id')->pluck('path')->all();
+    $gallery = DB::table('product_images')->where('product_id',$p->id)->orderBy('position')->orderBy('id')->pluck('path')->all(); if (str_contains((string)$p->image, '/uploads/ai/')) $gallery = []; // owner rule: a product with a clean AI image shows that ONE image only (no old photos with the old background)
     return response()->view('store.product', $this->base(['preview'=>$preview, 'gallery'=>$gallery, 'p'=>$p, 'c'=>$c, 'rel'=>$rel, 'reviews'=>$reviews, 'title'=>(mb_strlen((string)$p->meta_title) >= 10 && mb_strlen((string)$p->meta_title) <= 66 ? $p->meta_title : self::fitTitle($p->name, ' দাম ৳'.number_format($price).' | DutyFree BD')), 'keywords'=>$p->meta_keywords ?? null, 'desc'=>($p->meta_description ?: $p->name.' – দাম ৳ '.number_format($price).'। অরিজিনাল ইমপোর্টেড পণ্য, অর্ডার করুন, সারা বাংলাদেশে ডেলিভারি। DutyFree BD.'), 'canon'=>($p->canonical ?? null) ?: url(self::url($p)), 'noindex'=>!empty($p->noindex) || ($p->group_key ?? null) === 'smoke', 'ogimg'=>($p->og_image ?? null) ?: ($p->image ? (preg_match('#^https?://#i', $p->image) ? $p->image : url($p->image)) : url('/og.png'))]))->header('Cache-Control','public, max-age=120');
   }
   public function search(Request $r) {

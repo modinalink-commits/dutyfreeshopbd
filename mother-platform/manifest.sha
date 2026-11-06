@@ -50,7 +50,7 @@ d787924ace3fa42cc66a3de321e4e94e784006d8 resources/views/panels/employees.blade.
 16d44d41f6b845877a906678b144cbc1233a96f5 resources/views/report_details.blade.php
 2f840d53881d8aeaf0c5959161774787e5f540bc database/migrations/2026_10_31_000005_storefront.php
 65414d9e2fbe5f16f1fbf1551cce91276e9f30f9 app/Console/Commands/MotherSyncFeed.php
-28d754b144779d1f1a24917b71b15cec62eb7d48 app/Http/Controllers/StoreController.php
+4e8934085e0382dea6973813f5dbed361c52a8d9 app/Http/Controllers/StoreController.php
 bac684fdec09482cc8dde719c5d14c6bdd131227 resources/views/store/layout.blade.php
 eab3909c69947b17ed5d5f2d5e3d1f7b0b564481 resources/views/store/card.blade.php
 4a5eb7ee8d7960886fcb97c690bbb604ec69eb1f resources/views/store/home_sec.blade.php
@@ -186,7 +186,7 @@ df8c09076466870665b8e80f5ebeacccd9739829 resources/views/call_history.blade.php
 bdbb50b672be2f97c2bdcf20f76809a2a8ec15f2 resources/views/softphone_fab.blade.php
 d60cc2488e9d1428806a53b4a367beb5d0ec79c6 public/js/jssip.min.js
 0d08f983964dad6b45cf99cc4e75679053b8a2ec public/js/df-export.js
-2d1736bd9f1ad4cef1ee2b2f34388ff37f78d001 app/Support/CardImg.php
+70abe7d2f8535f2e115177e8fb8c75de9ca9b215 app/Support/CardImg.php
 c3732a3e2c27a150b4d0b55a8245c04f686ef706 app/Support/Seo.php
 9c47b100afa2523480b6bbb4131db18160331b34 resources/views/store/zoom.blade.php
 6151f41455dfd0d4ca95474718eece991d8804a3 config/trustedproxy.php
