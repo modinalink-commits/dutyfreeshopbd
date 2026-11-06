@@ -73,7 +73,7 @@ class ShipCheck {
   private static function duplicate(object $o): array {
     $x = DupGuard::others($o);
     if (!$x) return self::c('duplicate', 'Duplicate order', 'INFO', 'No similar order today.');
-    return !empty($o->dup_allowed_at) ? self::c('duplicate', 'Duplicate order', 'INFO', 'Duplicate was reviewed and allowed.') : self::c('duplicate', 'Duplicate order', 'WARNING', 'Same phone has '.count($x).' other order(s) today: '.implode(', ', array_map(fn($y) => '#'.$y['invoice'], $x)).'.');
+    return !empty($o->dup_allowed_at) ? self::c('duplicate', 'Duplicate order', 'INFO', 'Duplicate was reviewed and allowed.') : self::c('duplicate', 'Duplicate order', 'BLOCKED', 'Same phone has '.count($x).' other order(s) today: '.implode(', ', array_map(fn($y) => '#'.$y['invoice'], $x)).'. A manager must press "Allow" on the order first (owner rule).');
   }
   private static function customer(object $o): array {
     $c = $o->customer_id ? DB::table('customers')->find($o->customer_id) : null;

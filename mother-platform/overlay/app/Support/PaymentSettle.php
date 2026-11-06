@@ -32,7 +32,7 @@ class PaymentSettle {
       $paid = (float)$o->paid_total; $total = (float)$o->total; $due = max(0, round($total - $paid, 2));
       $changed = (float)$before->paid_total !== $paid || (string)$before->payment_status !== (string)$o->payment_status;
       $moved = null;
-      if ($o->payment_status === 'Paid' && in_array($o->status, self::ELIGIBLE, true) && empty($o->duplicate_of_order_id)) {
+      if ($o->payment_status === 'Paid' && in_array($o->status, self::ELIGIBLE, true) && empty($o->duplicate_of_order_id) && !DupGuard::block($o, 'Approved')) {
         $moved = DB::transaction(function () use ($o, $source, $paid) {
           $c = DB::table('orders')->where('id', $o->id)->where('status', $o->status)->update(['status' => 'Approved', 'approved_at' => now(), 'auto_approved' => true, 'updated_at' => now()]);
           if (!$c) return null; // someone changed it meanwhile; never override

@@ -33,6 +33,7 @@ class SteadfastController extends Controller {
     CourierSync::apply($o, $i); return back()->with('ok', 'Steadfast status: ' . $i['order_status']);
   }
   public function book(int $id): array {
+    if (($o0 = DB::table('orders')->find($id)) && ($db = \App\Support\DupGuard::block($o0, 'Shipment'))) return [false, $db];
     if ($sm = \App\Support\StockGuard::shipBlock($id)) return [false, $sm];
     $o = DB::table('orders')->find($id); if (!$o) return [false, 'Order not found'];
     $items = DB::table('order_items')->where('order_id', $id)->get();

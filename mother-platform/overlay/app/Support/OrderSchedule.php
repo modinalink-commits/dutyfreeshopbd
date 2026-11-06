@@ -72,6 +72,7 @@ class OrderSchedule
         $n = 0;
         foreach ($due as $o) {
             if ($guard && $o->pay_status === 'Verification Pending') continue; // stays Scheduled until the payment is verified
+            if (DupGuard::block($o, 'Approved')) continue; // same-day duplicate: a person must press Allow first (owner rule)
             $ok = DB::transaction(function () use ($o) {
                 $c = DB::table('orders')->where('id', $o->id)->where('status', 'Scheduled')->whereNotNull('scheduled_at')->where('scheduled_at', '<=', now())
                     ->update(['status' => 'Approved', 'approved_at' => now(), 'auto_approved' => true, 'updated_at' => now()]);

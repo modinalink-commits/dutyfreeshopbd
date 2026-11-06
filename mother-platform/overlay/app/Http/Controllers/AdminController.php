@@ -194,10 +194,11 @@ class AdminController extends Controller {
       }
       $d['ids'] = array_values(array_diff($d['ids'], $skip));
     }
-    $locked = 0; $dupHeld = 0;
-    DB::transaction(function () use ($d, &$n, &$locked, &$dupHeld) {
+    $locked = 0; $dupHeld = 0; $noPerm = 0; $restrictedNo = in_array($d['status'], \App\Http\Middleware\ModulePermission::RESTRICTED_STATUSES, true) && !\App\Http\Middleware\ModulePermission::canRestricted(Auth::user());
+    DB::transaction(function () use ($d, &$n, &$locked, &$dupHeld, &$noPerm, $restrictedNo) {
       foreach (DB::table('orders')->whereIn('id',$d['ids'])->lockForUpdate()->get() as $o) {
         if ($o->status === $d['status']) continue;
+        if ($restrictedNo) { $noPerm++; continue; }
         if (\App\Support\ShipmentOutcome::manualBlock($o, $d['status'])) { $locked++; continue; }
         if (\App\Support\DupGuard::block($o, $d['status'])) { $dupHeld++; continue; }
         DB::table('orders')->where('id',$o->id)->update(['status'=>$d['status'],'updated_at'=>now()]);
@@ -205,7 +206,7 @@ class AdminController extends Controller {
         $n++;
       }
     });
-    if ($r->expectsJson()) return response()->json(['success'=>true,'moved'=>$n,'status'=>$d['status'],'booked'=>$okB,'parcel_errors'=>array_slice($failB, 0, 6) + ($dupHeld ? [$dupHeld.' duplicate order(s) held: same customer ordered again today, allow them manually first'] : []) + ($locked ? [$locked.' order(s) skipped: the courier decides their delivery/return status'] : [])]);
+    if ($r->expectsJson()) return response()->json(['success'=>true,'moved'=>$n,'status'=>$d['status'],'booked'=>$okB,'parcel_errors'=>array_slice($failB, 0, 6) + ($dupHeld ? [$dupHeld.' duplicate order(s) held: same customer ordered again today, allow them manually first'] : []) + ($locked ? [$locked.' order(s) skipped: the courier decides their delivery/return status'] : []) + ($noPerm ? [$noPerm.' order(s) not moved: you do not have permission to set '.$d['status']] : [])]);
     return back()->with('ok', "$n orders moved to {$d['status']}".($locked ? " · $locked skipped (courier decides their delivery/return status)" : ''));
   }
   public function orderNew(Request $r) {
@@ -327,6 +328,7 @@ class AdminController extends Controller {
   public function orderStatus(Request $r, $id) {
     $d = $r->validate(['status'=>'required|in:'.implode(',',Mother::STAGES),'note'=>'nullable|string|max:500','sched_date'=>'nullable|date_format:Y-m-d','sched_time'=>'nullable|string|max:8']);
     $o = DB::table('orders')->find($id); abort_unless($o, 404);
+    if ($o->status !== $d['status'] && in_array($d['status'], \App\Http\Middleware\ModulePermission::RESTRICTED_STATUSES, true) && !\App\Http\Middleware\ModulePermission::canRestricted(Auth::user())) return back()->with('bad', 'You do not have permission to set '.$d['status'].'. Ask a manager/admin.');
     if ($mb = \App\Support\ShipmentOutcome::manualBlock($o, $d['status'])) return back()->with('bad', $mb);
     if ($db = \App\Support\DupGuard::block($o, $d['status'])) return back()->with('bad', $db);
     if (in_array($d['status'], \App\Support\ShipmentOutcome::SYSTEM_ONLY, true) && $o->status !== $d['status']) return back()->with('bad', 'Partial Return statuses are calculated from the items. Use "Delivery Outcome" on the order page, then "Receive Partial Return".');
