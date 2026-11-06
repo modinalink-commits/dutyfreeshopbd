@@ -38,7 +38,7 @@ class AiImageAuto {
     try {
       $cands = [];
       foreach (DB::table('products')->where('updated_at', '>=', $cut)->whereNotNull('image')->where('image', '<>', '')->orderBy('id')->limit(60)->get(['id', 'image']) as $p) $cands[] = [(int)$p->id, (string)$p->image, true];
-      foreach (DB::table('product_images')->where('created_at', '>=', $cut)->orderBy('id')->limit(60)->get(['product_id', 'path']) as $g) $cands[] = [(int)$g->product_id, (string)$g->path, false];
+      if (self::set('gallery', '0') === '1') foreach (DB::table('product_images')->where('created_at', '>=', $cut)->orderBy('id')->limit(60)->get(['product_id', 'path']) as $g) $cands[] = [(int)$g->product_id, (string)$g->path, false];
       foreach ($cands as [$pid, $url, $main]) {
         if ($url === '' || str_contains($url, '/uploads/ai/')) continue; // already a processed image
         $h = sha1($url);
@@ -85,6 +85,7 @@ class AiImageAuto {
       ->whereNotExists(fn($q) => $q->select(DB::raw(1))->from('ai_images')->whereColumn('ai_images.product_id', 'products.id')->where('ai_images.ai_status', 'completed'))->orderBy('id')->first(['id', 'image']);
     $main = true; $pid = $p->id ?? 0; $url = (string)($p->image ?? '');
     if (!$p || $done((int)$pid, $url)) {
+      if (self::set('gallery', '0') !== '1') return 0; // owner rule: one image per product, gallery images are not processed
       $main = false; $pid = 0; $url = '';
       $ids = $smoke(DB::table('products'))->pluck('id')->all();
       if (!$ids) return 0;
