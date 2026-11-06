@@ -168,6 +168,22 @@ class CatalogController extends Controller {
     $this->notifyStatus([$p->name], $new);
     return back();
   }
+  public function productDelete($id) {
+    $p = DB::table('products')->find($id); abort_unless($p, 404);
+    if (DB::table('order_items')->where('product_id',$id)->exists())
+      return back()->with('err','"'.$p->name.'" has order history, so it cannot be deleted. Use Unpublish instead.');
+    try {
+      DB::transaction(function () use ($id) {
+        foreach (['product_images','ai_images','product_status_logs'] as $t) { if (\Illuminate\Support\Facades\Schema::hasTable($t)) DB::table($t)->where('product_id',$id)->delete(); }
+        DB::table('products')->where('id',$id)->delete();
+      });
+    } catch (\Throwable $e) {
+      return back()->with('err','"'.$p->name.'" is linked to other records (stock, purchases or reports), so it cannot be deleted. Use Unpublish instead.');
+    }
+    \Illuminate\Support\Facades\Log::info('product deleted', ['id'=>$id,'name'=>$p->name,'by'=>Auth::user()->name ?? null]);
+    foreach (['store.home6','store.sitemap5','store.globe_products','store.catalogfeed4','card_second_imgs2','ai.catalog'] as $k) \Illuminate\Support\Facades\Cache::forget($k);
+    return back()->with('ok','Deleted: '.$p->name);
+  }
   private function notifyStatus(array $names, bool $published) {
     $set = DB::table('settings')->whereIn('key',['owner_phone','manager_phones','store_name'])->pluck('value','key');
     $to = array_filter(array_map('trim', array_merge([$set['owner_phone'] ?? ''], explode(',', $set['manager_phones'] ?? ''))));

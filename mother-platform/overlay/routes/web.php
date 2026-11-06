@@ -118,7 +118,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/products/{id}/edit', [C::class,'productForm']);
   Route::get('/products/{id}/preview', [C::class,'productPreview']);
   Route::post('/products/{id}', [C::class,'productSave']);
-  Route::post('/products/{id}/toggle', [C::class,'productToggle']);
+  Route::post('/products/{id}/toggle', [C::class,'productToggle']); Route::post('/products/{id}/delete', [C::class,'productDelete'])->whereNumber('id');
   Route::get('/products-export.csv', [C::class,'productsCsv']);
   Route::get('/taxonomy', [\App\Http\Controllers\TaxonomyController::class,'index']);
   Route::get('/categories/{level}', [\App\Http\Controllers\TaxonomyController::class,'level'])->where('level','main|sub|child');
