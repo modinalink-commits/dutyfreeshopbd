@@ -172,6 +172,17 @@ class StoreController extends Controller {
     $live = $s['home_live_orders'] === '1' ? $this->liveOrders() : collect();
     return response()->view('store.home', $this->base($data + ['live'=>$live, 'title'=>self::cleanSeo($s['site_title'] ?? '', self::HOME_TITLE), 'desc'=>self::cleanSeo($s['meta_description'] ?? '', self::HOME_DESC), 'canon'=>url('/').'/', 'home'=>true]))->header('Cache-Control','public, max-age=60');
   }
+  /** Animated Brand Slider data: active brands (admin order) that have at least one customer-visible product; cached 5 min. A problem here never breaks the homepage. */
+  public static function brandSlider(): array {
+    try {
+      if (\App\Support\Procure::set('brand_slider_enabled', '1') === '0') return [];
+      return self::rem('store.brandslider1', 300, function () {
+        $ids = DB::table('products')->where('published', true)->whereNotNull('brand_id')->distinct()->pluck('brand_id')->all();
+        if (!$ids) return [];
+        return DB::table('brands')->where('active', true)->whereIn('id', $ids)->orderBy('position')->orderBy('name')->get(['name', 'slug'])->filter(fn($b) => trim((string)$b->slug) !== '')->map(fn($b) => ['name' => (string)$b->name, 'slug' => (string)$b->slug])->values()->all();
+      });
+    } catch (\Throwable $e) { report($e); return []; }
+  }
   /** Below-the-fold home category section, lazy-loaded by the home page so the first HTML stays small. */
   /** Private preview of the globe section before it goes on the front page. */
   public function dealPreview() {
