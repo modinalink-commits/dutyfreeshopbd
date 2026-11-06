@@ -36,6 +36,12 @@ class AiImageAuto {
     if (self::set('on', '1') !== '1') { self::note('Automatic mode is switched off'); return 0; }
     if (!AiImage::key()) { self::note('OpenAI key is not set'); return 0; }
     if (!Img::ok()) { self::note('PHP GD is not enabled'); return 0; }
+    // OpenAI credits finished: rows that failed only for that reason go back to the queue; the worker waits (checks again every 15 minutes) instead of failing every product
+    foreach (DB::table('ai_images')->where('ai_status', 'failed')->where('processing_error', 'like', '%no credits%')->get(['id', 'processed_image']) as $f) {
+      if ($f->processed_image) DB::table('ai_images')->where('id', $f->id)->update(['ai_status' => 'completed', 'processing_error' => null]); else DB::table('ai_images')->where('id', $f->id)->delete();
+    }
+    $pu = self::set('pause_until', '');
+    if ($pu !== '' && now()->lt(\Carbon\Carbon::parse($pu))) { self::note('PAUSED: OpenAI credits are finished. Add credits at platform.openai.com/settings/organization/billing; the job continues by itself (next check ' . \Carbon\Carbon::parse($pu)->format('H:i') . ')'); return 0; }
     // an image stuck in "processing" for 20 minutes (a child process died) is marked failed so it can be retried by hand
     DB::table('ai_images')->where('ai_status', 'processing')->where('updated_at', '<', now()->subMinutes(20))->update(['ai_status' => 'failed', 'processing_error' => 'Interrupted, press Reprocess', 'updated_at' => now()]);
     $n = max(1, min(8, (int)self::set('parallel', '4'))); $started = 0;
@@ -67,7 +73,12 @@ class AiImageAuto {
     if (!$c) return false;
     [$id, $pid, $url, $kind, $oldPath] = $c;
     $r = AiImage::run($id);
-    if (!($r['ok'] ?? false)) { self::note('Image #' . $id . ' failed: ' . ($r['error'] ?? '')); return false; }
+    if (!($r['ok'] ?? false)) {
+      $err = (string)($r['error'] ?? '');
+      if (preg_match('/no credits|insufficient_quota|billing/i', $err)) { DB::table('settings')->updateOrInsert(['key' => 'ai_auto_pause_until'], ['value' => now()->addMinutes(15)->toDateTimeString(), 'updated_at' => now(), 'created_at' => now()]); self::note('PAUSED: OpenAI credits are finished. Add credits at platform.openai.com/settings/organization/billing; the job continues by itself'); }
+      else self::note('Image #' . $id . ' failed: ' . $err);
+      return false;
+    }
     $o = DB::table('ai_images')->find($id); if (!$o || !$o->processed_image) return false;
     $new = $o->processed_image; $cur = (string)DB::table('products')->where('id', $pid)->value('image');
     // the clean image takes the main-image place at once (and everywhere the old file was used)
