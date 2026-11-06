@@ -27,7 +27,7 @@ function morph(a,b){
   sameAttrs(a,b);if(tg!=='SELECT'&&a.type!=='checkbox'&&a.type!=='radio'&&b.value!==undefined&&a.value!==b.value)a.value=b.value;return}
  sameAttrs(a,b);
  var ac=a.childNodes,bc=b.childNodes,i=0,j=0;
- var A=[].slice.call(ac).filter(function(n){return !(n.nodeType===8)}),B=[].slice.call(bc).filter(function(n){return !(n.nodeType===8)});
+ var A=[].slice.call(ac).filter(function(n){return !(n.nodeType===8)&&!(n.nodeType===1&&n.className&&typeof n.className==='string'&&/(^|\s)(dfx-bar|dfx-c)(\s|$)/.test(n.className))}),B=[].slice.call(bc).filter(function(n){return !(n.nodeType===8)});
  var list=(tg==='TBODY'||tg==='UL'||tg==='OL'||tg==='SELECT'||tg==='TABLE'||tg==='THEAD');
  var n=Math.min(A.length,B.length);
  for(i=0;i<n;i++){var x=A[i],y=B[i];
