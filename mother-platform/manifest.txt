@@ -771,3 +771,5 @@ app/Support/ProductTrack.php
 database/migrations/2026_11_06_000470_product_analytics_events.php
 app/Support/ShipCheck.php
 resources/views/ship_check_ui.blade.php
+app/Support/CourierBook.php
+database/migrations/2026_11_06_000480_courier_cod_income_backfill.php
