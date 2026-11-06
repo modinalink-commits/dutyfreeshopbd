@@ -268,6 +268,7 @@ if(document.readyState==='complete')setTimeout(first,300);else addEventListener(
 </div>
 @endif
 
+<style>.cs,.osl,.sec-ct,.faq-w{content-visibility:auto;contain-intrinsic-size:auto 560px}</style>
 @include('store.brand_slider')
 @if($s['home_promos']==='1')<?php $__po = \App\Http\Controllers\StoreController::promoOffers((int)($maxOff ?? 0)); ?>
 @if(count($__po) >= 3)

@@ -173,10 +173,10 @@ class StoreController extends Controller {
       if (\App\Support\Procure::set('shuffle_home', '1') !== '0' && \App\Support\Procure::set('shuffle_general', '1') !== '0') {
         $seed = random_int(1, 2147483646);
         $data['new'] = $data['new']->shuffle($seed)->take(12)->values();
-        $data['deals'] = $data['deals']->shuffle($seed + 1)->values();
-        $data['top'] = $data['top']->shuffle($seed + 2)->values();
-        $k = 0; $data['sec'] = array_map(function ($row) use (&$k, $seed) { $lim = $k < 2 ? 12 : 6; $row[1] = $row[1]->shuffle($seed + 10 + $k)->take($lim)->values(); $k++; return $row; }, $data['sec']);
-      } else { $data['new'] = $data['new']->take(12)->values(); $k = 0; $data['sec'] = array_map(function ($row) use (&$k) { $row[1] = $row[1]->take($k < 2 ? 12 : 6)->values(); $k++; return $row; }, $data['sec']); }
+        $data['deals'] = $data['deals']->shuffle($seed + 1)->take(16)->values();
+        $data['top'] = $data['top']->shuffle($seed + 2)->take(12)->values();
+        $k = 0; $data['sec'] = array_map(function ($row) use (&$k, $seed) { $lim = $k < 2 ? 8 : 6; $row[1] = $row[1]->shuffle($seed + 10 + $k)->take($lim)->values(); $k++; return $row; }, $data['sec']);
+      } else { $data['new'] = $data['new']->take(12)->values(); $k = 0; $data['sec'] = array_map(function ($row) use (&$k) { $row[1] = $row[1]->take($k < 2 ? 8 : 6)->values(); $k++; return $row; }, $data['sec']); }
     } catch (\Throwable $e) { report($e); }
     if ($data['count'] === 0) return response()->view('coming', [], 503)->header('Retry-After','3600');
     $live = $s['home_live_orders'] === '1' ? $this->liveOrders() : collect();
