@@ -8,6 +8,7 @@
 <label>Customer Phone</label><input name="phone" id="onp" data-bdphone required inputmode="numeric" maxlength="11" autocomplete="off" value="{{ old('phone') }}" placeholder="Enter customer 11 digit mobile number">
 <div id="onx" style="display:none;margin-top:8px;border-radius:10px;padding:9px 12px;font-size:13px"></div>@include('fraud_widget',['fcInput'=>'#onp'])
 <label>Name</label><input name="customer_name" id="onn" required value="{{ old('customer_name') }}" placeholder="Name">
+<details id="onmore" style="margin-top:12px" @if($pre || old('address') || old('district') || old('courier') || old('note')) open @endif><summary style="cursor:pointer;font-weight:600;font-size:13px;color:#0F2748">More details (address, courier, source, note) — optional</summary>
 <label>Address</label><textarea name="address" id="ona" rows="2" placeholder="address">{{ old('address') }}</textarea>
 <label>Courier</label><select name="courier" id="onc"><option value="">Select Courier</option>@foreach(\DB::table('couriers')->orderByDesc('is_default')->orderBy('name')->pluck('name') as $cn)<option {{ old('courier')===$cn ? 'selected' : '' }}>{{ $cn }}</option>@endforeach</select>
 <label>City</label><select name="district" id="ond"><option value="">Select City</option>@foreach(\DB::table('districts')->where('active', true)->orderBy('name')->get(['name','delivery_charge']) as $dn)<option data-ch="{{ (float)$dn->delivery_charge }}" {{ old('district')===$dn->name ? 'selected' : '' }}>{{ $dn->name }}</option>@endforeach</select>
@@ -15,6 +16,7 @@
 <label>Admins</label><select name="assigned_admin" id="onad"><option value="">Select Assign Admin</option>@foreach(\DB::table('users')->where('active', true)->orderBy('name')->pluck('name') as $un)<option {{ old('assigned_admin')===$un ? 'selected' : '' }}>{{ $un }}</option>@endforeach</select>
 <label>Order Source</label><select name="source">@foreach(['Web Site','messenger','Whatsapp','FB','youtube','google','tiktok','instagram','Landing Page'] as $s)<option>{{ $s }}</option>@endforeach</select>
 <label>Note <small style="color:#6B7280">(the courier sees this note on the parcel, max 200 characters)</small></label><textarea name="note" rows="2" maxlength="200" placeholder="note for the courier"></textarea>
+</details>
 </div>
 <div class="card"><h3 style="margin:0 0 4px;text-align:center">Product information</h3>
 <label>Scan Barcode || product code</label><div style="position:relative"><input id="ops" autocomplete="off" placeholder="type product code or name"><div class="opt" id="opo" style="display:none"></div></div>
