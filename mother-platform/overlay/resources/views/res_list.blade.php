@@ -20,7 +20,7 @@
 <div class="card" style="overflow-x:auto"><table><thead><tr><th>#</th>@foreach($c['fields'] as $f)@if(($f['t']??'')!=='password' && empty($f['noList']))<th>{{ $f['l'] }}</th>@endif @endforeach @foreach($c['extra'] ?? [] as [$xk,$xl])<th>{{ $xl }}</th>@endforeach<th></th></tr></thead><tbody>
 @forelse($rows as $row)<tr><td>{{ $row->id }}</td>
 @foreach($c['fields'] as $f)@if(($f['t']??'')!=='password' && empty($f['noList']))<td>@php $v = $ctl->cell($c,$row,$f,$lk); @endphp
-@if($f['t']==='bool')<span class="pill {{ $v==='Yes'?'ok':'' }}">{{ $v }}</span>@else{{ \Illuminate\Support\Str::limit($v, 70) }}@endif</td>@endif @endforeach
+@if($f['t']==='bool')<span class="pill {{ $v==='Yes'?'ok':'' }}">{{ $v }}</span>@else @php $tu = null; if (is_string($v) && preg_match('/ — Track: (https:\/\/\S+)/u', $v, $tm)) { $tu = $tm[1]; $v = trim(preg_replace('/ — Track: \S+/u', '', $v)); } @endphp{{ \Illuminate\Support\Str::limit($v, 70) }}@if($tu) <a href="{{ $tu }}" target="_blank" rel="noopener" class="btn g" style="padding:1px 8px;font-size:11px">Track ↗</a>@endif @endif</td>@endif @endforeach
 @foreach($c['extra'] ?? [] as [$xk,$xl])<td>{{ $ex[$row->id][$xk] ?? '' }}</td>@endforeach
 <td style="white-space:nowrap">@if(empty($c['ro']) && empty($c['noEdit']))<a class="btn g" href="/admin/m/{{ $c['slug'] }}/{{ $row->id }}/edit">Edit</a>@endif
 @if(empty($c['ro']) && empty($c['noCreate']))<form method="post" action="/admin/m/{{ $c['slug'] }}/{{ $row->id }}/delete" style="display:inline" onsubmit="return confirm('Delete this record?')">@csrf<button class="g">Delete</button></form>@endif</td></tr>
