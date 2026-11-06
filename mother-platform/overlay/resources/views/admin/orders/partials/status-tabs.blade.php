@@ -29,6 +29,12 @@
 .ocb .chip{height:42px!important;line-height:1.15!important;padding:3px 10px!important;border-radius:12px!important;display:inline-flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:1px}
 .ocb .chip .cl{font-size:11px;font-weight:600;color:#000!important}.ocb .chip .cl b{font-size:16px;font-weight:800;margin-left:3px}
 .ocb .chip .cv{font-size:9.5px;font-weight:600;color:#000!important;opacity:.85;white-space:nowrap}
+/* v1.4 status tabs: neat rows (6 per row = 3 lines) instead of one long scrolling line, so nothing is cut at 100% zoom */
+.ocb .strip{display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px!important;height:auto!important;overflow:visible!important;white-space:normal!important;align-items:stretch!important;padding-bottom:0!important}
+.ocb .strip .chip{width:100%!important;flex:none!important;min-width:0;height:44px!important;border-radius:10px!important}
+.ocb .strip .chip .sl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;display:inline-block;vertical-align:bottom}
+@media (max-width:1100px){.ocb .strip{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (max-width:640px){.ocb .strip{grid-template-columns:repeat(3,minmax(0,1fr))}}
 </style>
 @endonce
 <div class="r2"><div class="strip" id="ostrip"><a class="chip status-card status-card-sm {{ $activeStatus ? '' : 'on' }}" href="/admin/orders?{{ http_build_query($oq) }}"><span class="cl"><span class="sl">All</span> <b>{{ collect($counts)->sum() }}</b></span><small class="cv" title="Total parcel value">{{ $mv(collect($vals)->sum()) }}</small></a>
