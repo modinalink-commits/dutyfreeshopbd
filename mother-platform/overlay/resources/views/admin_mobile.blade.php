@@ -6,7 +6,7 @@ html,body{max-width:100%;overflow-x:hidden}
 body{display:block!important;padding-top:calc(54px + env(safe-area-inset-top));padding-bottom:calc(70px + env(safe-area-inset-bottom));-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
 body.mnav-open{overflow:hidden}
 /* menu becomes a slide-in drawer */
-aside,aside.sbx{position:fixed!important;left:0;top:0;bottom:0;width:min(86vw,330px)!important;min-width:0!important;max-width:none!important;height:100vh!important;height:100dvh!important;max-height:none!important;overflow:hidden!important;z-index:1300;transform:translateX(-104%);transition:transform .26s cubic-bezier(.2,.8,.2,1)!important;box-shadow:none;padding-top:calc(10px + env(safe-area-inset-top))}
+aside,aside.sbx{position:fixed!important;left:0;top:0;bottom:0;width:min(86vw,330px)!important;min-width:0!important;max-width:none!important;height:calc(100vh / var(--z,1))!important;height:100dvh!important;max-height:none!important;overflow:hidden!important;z-index:1300;transform:translateX(-104%);transition:transform .26s cubic-bezier(.2,.8,.2,1)!important;box-shadow:none;padding-top:calc(10px + env(safe-area-inset-top))}
 body.mnav-open aside{transform:none;box-shadow:12px 0 40px rgba(0,0,0,.35)}
 aside nav{overflow-y:auto!important;flex:1 1 auto!important;-webkit-overflow-scrolling:touch}
 aside a.nv,aside details summary{padding:13px 12px;font-size:15px}aside a.sub,aside details.rpg>summary{padding:11px 12px 11px 42px;font-size:14px}

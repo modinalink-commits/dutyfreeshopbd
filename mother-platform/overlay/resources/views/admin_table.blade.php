@@ -30,8 +30,8 @@ main .pill{min-height:22px;padding:2px 7px;font-size:11px}
 main td.empty,main td.g-empty{text-align:center;padding:16px 8px;font-size:12px}
 .mc-loading{opacity:.55;transition:opacity .15s;pointer-events:none}
 /* 5. wide tables scroll inside their own box, never the whole page */
-.mc-ts{overflow:auto;max-height:calc(100vh - 110px);width:100%;max-width:100%;min-width:0;-webkit-overflow-scrolling:touch}
-.mc-sbox{max-height:calc(100vh - 110px)}
+.mc-ts{overflow:auto;max-height:calc(100vh / var(--z,1) - 110px);width:100%;max-width:100%;min-width:0;-webkit-overflow-scrolling:touch}
+.mc-sbox{max-height:calc(100vh / var(--z,1) - 110px)}
 main pre{max-width:100%;overflow-x:auto}
 main{min-width:0}
 /* frozen first / action columns on tables that scroll sideways (opaque cells only; no colour added) */

@@ -1,7 +1,7 @@
 @extends('layout')@section('title','Order Management')
 @section('body')
 <style>
-.oc{display:flex;flex-direction:column;height:calc(100vh - var(--ocbh,82px) - 52px);min-height:320px;padding:10px 12px;margin-bottom:0}.oc>*{flex:none}.oc>form#bulk{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}.oc>form#bulk>*{flex:none}.oc>form#bulk>.otw{flex:1 1 auto;min-height:0;overflow:auto}.oc .pgx{margin:4px 0 0;padding:3px 8px;gap:4px 12px;min-height:0}.oc .pgx .inf{font-size:12px;line-height:1.2}.oc .pgx .bar{gap:4px;flex-wrap:nowrap}.oc .pgx .b{min-width:26px;height:26px;padding:0 9px;font-size:12px;border-radius:7px;box-shadow:none}.oc .pgx .b.on{box-shadow:none}.oc .pgx .ps{font-size:12px}.oc .pgx .ps select{height:26px;padding:0 6px;font-size:12px}
+.oc{display:flex;flex-direction:column;height:calc(100vh / var(--z,1) - var(--ocbh,82px) - 52px);min-height:320px;padding:10px 12px;margin-bottom:0}.oc>*{flex:none}.oc>form#bulk{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}.oc>form#bulk>*{flex:none}.oc>form#bulk>.otw{flex:1 1 auto;min-height:0;overflow:auto}.oc .pgx{margin:4px 0 0;padding:3px 8px;gap:4px 12px;min-height:0}.oc .pgx .inf{font-size:12px;line-height:1.2}.oc .pgx .bar{gap:4px;flex-wrap:nowrap}.oc .pgx .b{min-width:26px;height:26px;padding:0 9px;font-size:12px;border-radius:7px;box-shadow:none}.oc .pgx .b.on{box-shadow:none}.oc .pgx .ps{font-size:12px}.oc .pgx .ps select{height:26px;padding:0 6px;font-size:12px}
 .oc table.ordt thead th{position:sticky;top:0;z-index:5;background:#F8FAFC;border-bottom:1px solid #E5E7EB;padding:7px 8px;font-size:12px}.oc table.ordt{border-spacing:0 6px}
 .obk button{padding:5px 10px;font-size:12px}.obk select{height:30px;font-size:12px}.obk button{border:1.5px solid transparent!important;font-weight:600;border-radius:8px}.obk button:nth-of-type(1){background:#DBEAFE!important;color:#1E40AF!important;border-color:#2563EB!important}.obk button:nth-of-type(2){background:#DCFCE7!important;color:#166534!important;border-color:#16A34A!important}.obk button:nth-of-type(3){background:#FEF3C7!important;color:#92400E!important;border-color:#D97706!important}.obk button:nth-of-type(4){background:#EDE9FE!important;color:#5B21B6!important;border-color:#7C3AED!important}.obk button:hover{filter:brightness(.95)}
 #osel{font-size:12px;font-weight:700;color:#FF5A00}
@@ -268,7 +268,7 @@ td.action-column .order-action-grid .action-btn-status.is-open{background:#CDEFD
 #qaPop button,#qaPop a{height:32px!important;font-size:12px!important;padding:0 10px!important;gap:9px!important}
 #qaPop button[data-s]:before{width:9px!important;height:9px!important}
 /* Quick / Status menus: one typography scale (title 14/700, subtitle 11/400, group 11.5/700, item 12/500, selected 12/700), 36px rows, 16px icons */
-#qaPop.qm,#qaPop.sm{padding:0!important;max-height:calc(100vh - 16px);overflow-y:auto;font-family:inherit;color:#111827}
+#qaPop.qm,#qaPop.sm{padding:0!important;max-height:calc(100vh / var(--z,1) - 16px);overflow-y:auto;font-family:inherit;color:#111827}
 #qaPop.qm{width:268px!important}#qaPop.sm{width:252px!important}
 #qaPop .mh{display:flex;align-items:flex-start;gap:9px;padding:10px 12px 8px}
 #qaPop .mh>svg{flex:none;margin-top:1px}

@@ -1,7 +1,7 @@
 @extends('layout')@section('title','Messages')
 @section('body')
 <style>
-.mbx{display:grid;grid-template-columns:340px 1fr;gap:14px;height:calc(100vh - 150px);min-height:480px}
+.mbx{display:grid;grid-template-columns:340px 1fr;gap:14px;height:calc(100vh / var(--z,1) - 150px);min-height:480px}
 .mbx .ls,.mbx .cv{background:#fff;border:1px solid var(--bd);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;min-height:0}
 .mbx .ls .stk{flex:none;background:#fff;border-bottom:1px solid #FFE7D6;position:relative;z-index:1}
 .mbx .fl{display:flex;flex-wrap:wrap;gap:5px;padding:9px 10px 7px}
@@ -29,8 +29,8 @@
 @media(max-width:900px){.mbx{grid-template-columns:1fr;height:auto}.mbx .cv{height:78vh}.mbx .ls{max-height:75vh}}
 #ibback{display:none}body.ibsel #ibback{display:inline-block}
 @if(request()->boolean('embed'))
-.mbx{display:block;height:calc(100vh - 20px);min-height:0}.mbx .ls,.mbx .cv{height:100%}.mbx .cv{display:none}
-.mbx.sel .ls{display:none}.mbx.sel .cv{display:flex}body.ibsel .mbx{height:calc(100vh - 62px)}
+.mbx{display:block;height:calc(100vh / var(--z,1) - 20px);min-height:0}.mbx .ls,.mbx .cv{height:100%}.mbx .cv{display:none}
+.mbx.sel .ls{display:none}.mbx.sel .cv{display:flex}body.ibsel .mbx{height:calc(100vh / var(--z,1) - 62px)}
 #ibtop{display:none!important}#ibback{margin:0 0 6px;padding:6px 12px;border-radius:9px;border:1.5px solid #0B1220;background:#fff;color:#0B1220;font-weight:700;font-size:12.5px;cursor:pointer}
 @endif
 </style>
