@@ -152,6 +152,7 @@ Route::middleware(['auth', 'pwd'])->group(function () {
 
     Route::middleware('role:super_admin,admin')->group(function () {
         Route::post('/brands', [BrandController::class, 'save'])->name('brands.save');
+        Route::post('/brands/{brand}/photo', [BrandController::class, 'photo'])->name('brands.photo');
         Route::post('/stock/{movement}/reverse', [StockController::class, 'reverse'])->name('stock.reverse');
     });
 

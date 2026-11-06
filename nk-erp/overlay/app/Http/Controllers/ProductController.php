@@ -67,6 +67,9 @@ class ProductController extends Controller
             $p->forceFill(['image' => null])->save();
             AuditLog::record('product_photo', "{$p->code} {$p->name} · photo removed");
         }
+        if (! $p->image && $p->brand_id && in_array($p->category, ['refill', 'new_package'], true) && ($bi = $p->brand?->img($p->size_kg))) {
+            $p->forceFill(['image' => $bi])->save();
+        }
         return redirect()->route('products.index')->with('ok', "{$p->name} saved.");
     }
 

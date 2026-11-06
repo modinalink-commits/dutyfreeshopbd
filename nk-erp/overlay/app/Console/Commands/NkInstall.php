@@ -84,6 +84,17 @@ class NkInstall extends Command
             }
         }
 
+        // One time: give every cylinder product without a photo its brand's picture (brand name and size on the body).
+        // Runs once, so a photo the owner removes on purpose is not put back on the next update.
+        if (Setting::get('cylinder_photos_v1') === null) {
+            $n = 0;
+            foreach (Product::query()->with('brand')->whereNull('image')->whereIn('category', ['refill', 'new_package'])->whereNotNull('brand_id')->get() as $p) {
+                if ($img = $p->brand?->img($p->size_kg)) { $p->forceFill(['image' => $img])->save(); $n++; }
+            }
+            Setting::put('cylinder_photos_v1', now()->toDateTimeString());
+            $this->info("Cylinder photos set on {$n} products.");
+        }
+
         return self::SUCCESS;
     }
 }

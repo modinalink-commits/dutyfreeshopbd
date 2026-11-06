@@ -30,11 +30,35 @@
       <a class="{{ $filter === 'inactive' ? 'on' : '' }}" href="{{ route('brands.index', ['q' => $q, 'f' => 'inactive']) }}">Inactive</a>
     </div>
   </form>
+  <style>
+  .bph{display:flex;gap:4px;justify-content:center}
+  .bph form{margin:0;position:relative}
+  .bph img{width:30px;height:44px;object-fit:cover;border-radius:5px;border:1px solid var(--border-soft,#e2e6ea);display:block;background:#0b1220}
+  .bph label{cursor:pointer;display:block;position:relative}
+  .bph .kg{position:absolute;left:0;right:0;bottom:-1px;text-align:center;font-size:9px;font-weight:700;color:#fff;background:rgba(20,33,61,.75);border-radius:0 0 5px 5px;line-height:12px}
+  .bph .add{width:30px;height:44px;border:1px dashed #7b8aa8;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:var(--fs-11);color:#123a86;background:#fff}
+  </style>
   <div class="dt-wrap"><table class="dt">
-    <thead><tr><th>Brand ID</th><th>Brand</th><th>Company name</th><th>Sizes</th><th>Status</th><th>For sale</th><th>Empty collection</th><th>Full stock</th><th>Empty stock</th><th>Remarks</th>@if($canEdit)<th></th>@endif</tr></thead>
+    <thead><tr><th class="no-sort">Photos</th><th>Brand ID</th><th>Brand</th><th>Company name</th><th>Sizes</th><th>Status</th><th>For sale</th><th>Empty collection</th><th>Full stock</th><th>Empty stock</th><th>Remarks</th>@if($canEdit)<th></th>@endif</tr></thead>
     <tbody>
     @foreach($brands as $b)
       <tr @if($b->for_sale) style="background:#f5f8ff" @endif>
+        <td class="c"><div class="bph">
+          @foreach(\App\Models\Brand::SIZES as $sz)
+            @php($im = $b->img($sz))
+            @if($canEdit)
+              <form method="post" action="{{ route('brands.photo', $b) }}" enctype="multipart/form-data">@csrf<input type="hidden" name="size" value="{{ $sz }}">
+                <label title="{{ $b->name }} {{ $sz }} kg — click to {{ $im ? 'change' : 'upload' }} photo">
+                  @if($im)<img src="{{ $im }}" alt="{{ $b->name }} {{ $sz }} kg" loading="lazy" width="30" height="44">@else<span class="add">＋</span>@endif
+                  <span class="kg">{{ $sz }}</span>
+                  <input type="file" name="image" accept="image/png,image/jpeg,image/webp" hidden onchange="this.form.submit()">
+                </label>
+              </form>
+            @elseif($im)
+              <span style="position:relative;display:block"><img src="{{ $im }}" alt="{{ $b->name }} {{ $sz }} kg" loading="lazy" width="30" height="44"><span class="kg">{{ $sz }}</span></span>
+            @endif
+          @endforeach
+        </div></td>
         <td style="color:var(--muted)">{{ $b->code }}</td><td><b>{{ $b->name }}</b></td>
         <td>@if($b->company_name){{ $b->company_name }}@else<i style="color:var(--muted)">Not entered</i>@endif</td>
         <td style="white-space:nowrap">{{ implode(' · ', $b->sizes ?? []) }} kg</td>

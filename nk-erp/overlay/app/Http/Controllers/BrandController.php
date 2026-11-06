@@ -94,4 +94,25 @@ class BrandController extends Controller
 
         return redirect()->route('brands.index')->with('ok', "{$brand->name} saved.");
     }
+
+    /** Upload or replace the photo of one brand's cylinder at one size. Products of that brand and size that used the old picture follow. */
+    public function photo(\Illuminate\Http\Request $request, Brand $brand)
+    {
+        $d = $request->validate([
+            'size' => ['required', \Illuminate\Validation\Rule::in(Brand::SIZES)],
+            'image' => ['required', 'file', 'mimes:png,webp,jpg,jpeg', 'max:5120'],
+        ], ['image.mimes' => 'Photo must be a JPG, PNG or WebP picture.', 'image.max' => 'Photo is larger than 5 MB. Use a smaller picture.']);
+        $size = (string) $d['size'];
+        $before = $brand->img($size);
+        $path = \App\Support\Img::save($request->file('image'), 'brands', strtolower($brand->code).'-'.$size);
+        $imgs = $brand->images ?? [];
+        $old = $imgs[$size] ?? null;
+        $imgs[$size] = $path;
+        $brand->forceFill(['images' => $imgs])->save();
+        \App\Models\Product::query()->where('brand_id', $brand->id)->where('size_kg', $size)->whereIn('category', ['refill', 'new_package'])
+            ->where(fn ($q) => $q->whereNull('image')->orWhere('image', $before))->update(['image' => $path]);
+        \App\Support\Img::delete($old);
+        \App\Models\AuditLog::record('brand_photo', "{$brand->code} {$brand->name} {$size} kg · photo ".($old ? 'replaced' : 'added'));
+        return back()->with('ok', "{$brand->name} {$size} kg: photo saved.");
+    }
 }
