@@ -304,9 +304,9 @@ class ProcurementController extends Controller {
   }
   public function action(Request $r, $id) {
     $p = DB::table('purchases')->find($id); if (!$p) abort(404); $a = $r->input('a'); $prev = ['status'=>$p->status];
-    if ($a === 'approve') { if (!P::canApprove()) abort(403); DB::transaction(function () use ($id) { DB::table('purchases')->where('id',$id)->update(['status'=>'approved','approved_by'=>auth()->user()->name,'updated_at'=>now()]); P::applyStock($id); }); $m = 'Approved & stock added'; }
+    if ($a === 'approve') { if (!P::canApprove()) abort(403); DB::transaction(function () use ($id) { DB::table('purchases')->where('id',$id)->update(['status'=>'approved','approved_by'=>auth()->user()->name,'updated_at'=>now()]); P::applyStock($id); }); try { P::applyNewRates(DB::table('purchases')->find($id)); } catch (\Throwable $e) { report($e); } $m = 'Approved & stock added'; }
     elseif ($a === 'receive') { DB::table('purchases')->where('id',$id)->update(['status'=>'received','updated_at'=>now()]); DB::transaction(fn() => P::applyStock($id)); $m = 'Marked received'; }
-    elseif ($a === 'cancel') { DB::transaction(function () use ($id) { P::reverseStock($id); DB::table('purchases')->where('id',$id)->update(['status'=>'cancelled','updated_at'=>now()]); }); $m = 'Cancelled and stock reversed'; }
+    elseif ($a === 'cancel') { DB::transaction(function () use ($id) { P::reverseStock($id); DB::table('purchases')->where('id',$id)->update(['status'=>'cancelled','updated_at'=>now()]); }); $m = 'Cancelled and stock reversed'; if (DB::table('purchase_items')->where('purchase_id',$id)->where('price_update_status','applied')->exists()) $m .= ' — Price was updated from this purchase. The selling rate was NOT reverted automatically; review the current selling rate.'; }
     elseif ($a === 'delete') { if (DB::table('payment_allocations')->where('purchase_id',$id)->exists()) return back()->with('bad','This invoice has payments — cancel it instead of deleting.');
       DB::transaction(function () use ($id) { P::reverseStock($id); DB::table('purchase_items')->where('purchase_id',$id)->delete(); DB::table('purchases')->where('id',$id)->delete(); }); P::audit('proc.purchase.delete','purchase#'.$id,['invoice'=>$p->invoice,'total'=>$p->total]); return redirect('/admin/purchase/invoices')->with('ok','Purchase deleted and stock reversed'); }
     elseif ($a === 'sms') { $ok = P::notify('purchase',$p->supplier_id,[],$id,true); return back()->with($ok ? 'ok' : 'bad', $ok ? 'Invoice link SMS queued' : 'Could not send — check the supplier mobile number.'); }
@@ -393,9 +393,16 @@ class ProcurementController extends Controller {
   public function settings() { return view('proc.settings', ['v'=>fn($k,$d='') => P::set($k,$d),'tpl'=>P::TPL]); }
   public function settingsSave(Request $r) {
     $prev = []; foreach (['proc_sms_purchase','proc_sms_payment','proc_sms_due','proc_sms_return','proc_sms_damage','proc_sms_statement','proc_approval'] as $k) { $prev[$k] = P::set($k); P::put($k, $r->boolean($k) ? '1' : '0'); }
+    P::put('auto_update_sale_price_from_purchase', $r->boolean('auto_update_sale_price_from_purchase') ? '1' : '0'); P::put('price_update_confirm', $r->boolean('price_update_confirm') ? '1' : '0'); P::put('price_update_trigger', $r->input('price_update_trigger') === 'approved' ? 'approved' : 'stockin');
     P::put('proc_due_offsets', preg_replace('/[^0-9,\-]/','',(string)$r->input('proc_due_offsets','-3,0,3')) ?: '-3,0,3'); P::put('proc_approval_limit', (string)(float)$r->input('proc_approval_limit',100000)); P::put('proc_pay_approval_limit', (string)(float)$r->input('proc_pay_approval_limit',100000));
     foreach (array_keys(P::TPL) as $k) if ($r->has('tpl_'.$k)) P::put('tpl_'.$k, trim((string)$r->input('tpl_'.$k)));
     P::audit('proc.settings','settings',$prev,$r->except(['_token'])); return back()->with('ok','Settings saved');
+  }
+  public function priceChanges(Request $r) {
+    $q = DB::table('product_price_history as h')->leftJoin('products as p', 'p.id', '=', 'h.product_id');
+    if ($r->filled('from')) $q->where('h.created_at', '>=', \Carbon\Carbon::parse($r->from, 'Asia/Dhaka')->utc()); if ($r->filled('to')) $q->where('h.created_at', '<', \Carbon\Carbon::parse($r->to, 'Asia/Dhaka')->addDay()->utc());
+    if ($s = trim((string)$r->input('q'))) $q->where(fn($w) => $w->where('p.name', 'ilike', '%'.$s.'%')->orWhere('h.purchase_invoice', 'ilike', '%'.$s.'%'));
+    return view('proc.price_changes', ['rows'=>$q->orderByDesc('h.id')->paginate(50, ['h.*', 'p.name as pname', 'p.sku as psku'])->withQueryString()]);
   }
   public function audit(Request $r) {
     $q = DB::table('audit_logs')->where('action','like','proc.%'); if ($r->filled('from')) $q->where('created_at','>=',$r->from); if ($r->filled('to')) $q->where('created_at','<',\Carbon\Carbon::parse($r->to)->addDay()); if ($r->filled('a')) $q->where('action','like','%'.$r->a.'%'); if ($r->filled('u')) $q->where('user_name','ilike','%'.$r->u.'%');

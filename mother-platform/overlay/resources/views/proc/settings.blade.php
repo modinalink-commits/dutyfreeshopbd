@@ -10,6 +10,11 @@
 <label style="display:flex;gap:8px;align-items:center;font-size:14px;color:var(--n)"><input type="checkbox" style="width:auto" name="proc_approval" value="1" @checked($v('proc_approval','0')==='1')> Require admin approval for large purchases and payments</label>
 <div class="fg"><div><label>Purchase approval needed from (৳)</label><input type="number" name="proc_approval_limit" value="{{ $v('proc_approval_limit','100000') }}"></div><div><label>Payment approval needed from (৳)</label><input type="number" name="proc_pay_approval_limit" value="{{ $v('proc_pay_approval_limit','100000') }}"></div></div>
 <p class="mut">Only Super/Admin roles can approve. Stock is added when a purchase is approved.</p>
+<hr style="border:0;border-top:1px solid #FFE7D6;margin:16px 0"><b>New Selling Rate (Purchase entry)</b>
+<label style="display:flex;gap:8px;align-items:center;font-size:14px;color:var(--n)"><input type="checkbox" style="width:auto" name="auto_update_sale_price_from_purchase" value="1" @checked($v('auto_update_sale_price_from_purchase','1')==='1')> Auto Update Sale Price from Purchase</label>
+<label style="display:flex;gap:8px;align-items:center;font-size:14px;color:var(--n)"><input type="checkbox" style="width:auto" name="price_update_confirm" value="1" @checked($v('price_update_confirm','1')==='1')> Require Price Update Confirmation</label>
+<label>Price Update Trigger</label><select name="price_update_trigger"><option value="stockin" @selected($v('price_update_trigger','stockin')==='stockin')>Stock-In (purchase received or approved)</option><option value="approved" @selected($v('price_update_trigger','stockin')==='approved')>Stock-In Approved only</option></select>
+<p class="mut">The price changes only after stock-in, never for draft / cancelled / pending purchases. With partial receiving, the rate becomes active at the first confirmed stock-in. A rate below the protected margin needs an admin override reason.</p>
 <hr style="border:0;border-top:1px solid #FFE7D6;margin:16px 0"><b>SMS wording</b><p class="mut">Variables: {supplier_name} {invoice_no} {invoice_total} {amount} {due} {date} {invoice_link} {statement_link}</p>
 @foreach($tpl as $k=>$d)<label>{{ ucfirst($k) }}</label><textarea name="tpl_{{ $k }}" rows="2">{{ $v('tpl_'.$k) ?: $d }}</textarea>@endforeach
 <div style="margin-top:14px"><button>Save settings</button></div></form>
