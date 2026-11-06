@@ -39,7 +39,7 @@
   .bph .add{width:30px;height:44px;border:1px dashed #7b8aa8;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:var(--fs-11);color:#123a86;background:#fff}
   </style>
   <div class="dt-wrap"><table class="dt">
-    <thead><tr><th class="no-sort">Photos</th><th>Brand ID</th><th>Brand</th><th>Company name</th><th>Sizes</th><th>Status</th><th>For sale</th><th>Empty collection</th><th>Full stock</th><th>Empty stock</th><th>Remarks</th>@if($canEdit)<th></th>@endif</tr></thead>
+    <thead><tr><th class="no-sort">Photos</th><th>Brand ID</th><th>Brand</th>@if($canEdit)<th class="no-sort">Action</th>@endif<th>Company name</th><th>Sizes</th><th>Status</th><th>For sale</th><th>Empty collection</th><th>Full stock</th><th>Empty stock</th><th>Remarks</th></tr></thead>
     <tbody>
     @foreach($brands as $b)
       <tr @if($b->for_sale) style="background:#f5f8ff" @endif>
@@ -60,6 +60,8 @@
           @endforeach
         </div></td>
         <td style="color:var(--muted)">{{ $b->code }}</td><td><b>{{ $b->name }}</b></td>
+@if($canEdit)<td class="nw"><div style="display:flex;gap:4px"><a class="btn sm" href="{{ route('brands.index', ['edit' => $b->id]) }}#brand-form">Edit</a>
+          @if($b->for_sale)<span class="sub" title="Our own selling brand cannot be deleted">—</span>@else<form method="post" action="{{ route('brands.delete', $b) }}" style="margin:0" onsubmit="return confirm('Delete {{ addslashes($b->name) }}? Its unsold products and photos are removed too. A brand that already has stock, sales or exchange history cannot be deleted — set it Inactive instead.')">@csrf<button class="btn sm" type="submit" style="color:#b3261e;border-color:#e3b4ae" aria-label="Delete {{ $b->name }}">Delete</button></form>@endif</div></td>@endif
         <td>@if($b->company_name){{ $b->company_name }}@else<i style="color:var(--muted)">Not entered</i>@endif</td>
         <td style="white-space:nowrap">{{ implode(' · ', $b->sizes ?? []) }} kg</td>
         <td><span class="pill {{ $b->is_active ? 'st-delivered' : '' }}">{{ $b->is_active ? 'Active' : 'Inactive' }}</span></td>
@@ -67,9 +69,7 @@
         <td class="c" style="font-weight:700">{{ number_format((int) ($totals[$b->id]->f ?? 0)) }}</td>
         <td class="c">{{ number_format((int) ($totals[$b->id]->e ?? 0)) }}</td>
         <td style="color:var(--muted)">{{ $b->remarks }}</td>
-        @if($canEdit)<td class="nw"><a class="btn sm" href="{{ route('brands.index', ['edit' => $b->id]) }}#brand-form">Edit</a>
-          @unless($b->for_sale)<form method="post" action="{{ route('brands.delete', $b) }}" style="display:inline" onsubmit="return confirm('Delete {{ addslashes($b->name) }}? Its unsold products and photos are removed too. This cannot be undone.')">@csrf<button class="btn sm" type="submit" style="color:#b3261e;border-color:#e3b4ae" aria-label="Delete {{ $b->name }}">Delete</button></form>@endunless
-        </td>@endif
+
       </tr>
     @endforeach
     </tbody>
@@ -132,6 +132,12 @@
     <span class="sub">Set Active only after checking that the brand is really being supplied.</span>
     <div style="display:flex;gap:8px"><button class="btn pri" type="submit">Save brand</button>@if($edit)<a class="btn" href="{{ route('brands.index') }}">Cancel</a>@endif</div>
   </form>
+  @if($edit && ! $edit->for_sale)
+  <form method="post" action="{{ route('brands.delete', $edit) }}" class="card pad" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-color:#e3b4ae" onsubmit="return confirm('Delete {{ addslashes($edit->name) }}? This cannot be undone.')">@csrf
+    <span style="flex-grow:1"><b>Delete {{ $edit->name }}</b><br><span class="sub">Only a brand with no stock, sales or exchange history can be deleted. Otherwise set it Inactive.</span></span>
+    <button class="btn" type="submit" style="color:#b3261e;border-color:#e3b4ae">Delete brand</button>
+  </form>
+  @endif
   @endif
 </div>
 @endsection
