@@ -204,7 +204,6 @@ class OrderRevisionController extends Controller {
       if ($confirmOrder && in_array($o->status, self::OPEN)) {
         DB::table('orders')->where('id', $o->id)->update(['status'=>'Approved', 'updated_at'=>now()]);
         DB::table('order_status_logs')->insert(['order_id'=>$o->id, 'user_id'=>Auth::id(), 'user_name'=>Auth::user()->name, 'from_status'=>$o->status, 'to_status'=>'Approved', 'note'=>'Confirmed with order revision #'.$rid, 'created_at'=>now(), 'updated_at'=>now()]);
-        \App\Support\ApprovalSource::manual((int)$o->id, $o->status, 'Approved', 'Confirmed with order revision');
       }
       if ($call) DB::table('call_logs')->where('id', $call)->update(['order_id'=>$o->id, 'updated_at'=>now()]);
       if ($sendSms && (DB::table('settings')->where('key', 'order_update_sms')->value('value') ?? '0') === '1' && $fresh->phone) {

@@ -38,7 +38,6 @@ class PaymentSettle {
           if (!$c) return null; // someone changed it meanwhile; never override
           DB::table('order_status_logs')->insert(['order_id' => $o->id, 'user_id' => null, 'user_name' => 'System', 'from_status' => $o->status, 'to_status' => 'Approved',
             'note' => 'Automatically approved: payment fully verified (৳'.number_format($paid).' paid, due ৳0) · '.$source, 'created_at' => now(), 'updated_at' => now()]);
-          ApprovalSource::stamp((int)$o->id, 'SYSTEM', null, 'Payment verified · '.$source, 'Automatic approval: payment fully verified');
           return $o->status;
         });
       }

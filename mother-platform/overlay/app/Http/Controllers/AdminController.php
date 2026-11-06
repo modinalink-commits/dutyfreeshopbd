@@ -159,7 +159,6 @@ class AdminController extends Controller {
     if ($r->filled('q')) { $qs = trim((string)$r->q); $qd = preg_replace('/\D/', '', $qs); if (str_starts_with($qd, '880')) $qd = substr($qd, 2); $qInv = \App\Support\Inv::candidates($qs); $q->where(fn($w) => $w->where('invoice','ilike','%'.$qs.'%')->when(preg_match('/^(INV-?)?\d{6,8}$/i', $qs) && $qInv, fn($x) => $x->orWhereIn('invoice', $qInv))->orWhere('phone','like','%'.($qd !== '' ? $qd : $qs).'%')->orWhere('customer_name','ilike','%'.$qs.'%')); }
     $rt = (string)$r->input('rtype'); $rs = (string)$r->input('rstat');
     if (in_array($rt, ['partial','full'], true) || in_array($rs, ['pending','received','completed'], true)) { $rset = ['Return Pending','Returned']; if ($rs === 'pending') $rset = ['Return Pending']; elseif ($rs !== '') $rset = ['Returned']; $q->whereIn('status', $rset); if ($rt === 'partial') $q->where('return_type', 'Partial'); elseif ($rt === 'full') $q->where(fn($w) => $w->whereNull('return_type')->orWhere('return_type', 'Full')); }
-    $as = (string)$r->input('asrc'); if (\App\Support\ApprovalSource::ready() && $as !== '') { $pre = \App\Support\ApprovalSource::PRE; if ($as === 'AI' || $as === 'MANUAL') $q->where('approval_source', $as)->whereNotIn('status', array_merge($pre, ['Cancel'])); elseif ($as === 'NONE') $q->where(fn($w) => $w->whereNull('approval_source')->orWhereIn('status', $pre)); }
     $pf = (string)$r->input('print'); if ($pf === 'inv_not') $q->where('invoice_print_count', 0); elseif ($pf === 'inv') $q->where('invoice_print_count', '>', 0); elseif ($pf === 'lbl_not') $q->where('label_print_count', 0); elseif ($pf === 'lbl') $q->where('label_print_count', '>', 0);
     $per = in_array((int)$r->input('per'), [25,50,100,200]) ? (int)$r->input('per') : 50;
     $range = null; try { if ($r->filled('from') || $r->filled('to')) { $tz = 'Asia/Dhaka'; $ft = preg_match('/^\d{2}:\d{2}$/', (string)$r->ft) ? $r->ft : '00:00'; $tt = preg_match('/^\d{2}:\d{2}$/', (string)$r->tt) ? $r->tt : '23:59';
@@ -174,10 +173,9 @@ class AdminController extends Controller {
     $cmLast = []; // a note belongs to the order it was written on: last comment per order id
     if ($__ids) foreach (DB::table('order_staff_comments')->whereIn('order_id', $__ids)->orderByDesc('id')->select('body','order_id')->get() as $c) { if (!isset($cmLast[$c->order_id])) $cmLast[$c->order_id] = $c->body; }
     $incOpen = (int)DB::table('incomplete_orders')->where('status', 'open')->count(); try { $vals['Incomplete'] = (float)DB::table('incomplete_orders')->where('status', 'open')->sum('total'); } catch (\Throwable $e) { $vals['Incomplete'] = 0; }
-    $apprB = []; $apprC = null; try { $apprB = \App\Support\ApprovalSource::badges($orders->items()); if (\App\Support\ApprovalSource::ready()) { $ac = DB::table('orders')->whereNotNull('approval_source')->whereNotIn('status', array_merge(\App\Support\ApprovalSource::PRE, ['Cancel'])); if ($range) { if ($range[0]) $ac->where('created_at', '>=', $range[0]); if ($range[1]) $ac->where('created_at', '<=', $range[1]); } $g = $ac->select('approval_source', DB::raw('count(*) c'))->groupBy('approval_source')->pluck('c', 'approval_source'); $tot = (int)$g->sum(); $apprC = ['total' => $tot, 'AI' => (int)($g['AI'] ?? 0), 'MANUAL' => (int)($g['MANUAL'] ?? 0), 'other' => $tot - (int)($g['AI'] ?? 0) - (int)($g['MANUAL'] ?? 0), 'rate' => $tot ? round(((int)($g['AI'] ?? 0)) / $tot * 100, 1) : 0]; } } catch (\Throwable $e) { report($e); }
     $aiIds = []; try { $nw = collect(method_exists($orders, 'items') ? $orders->items() : $orders)->filter(fn($x) => ($x->status ?? '') === 'New')->pluck('id')->all(); if ($nw) $aiIds = DB::table('order_ai_verifications')->whereIn('order_id', $nw)->whereRaw("coalesce(override_status, verification_status) = 'verified'")->pluck('order_id')->map(fn($v) => (int)$v)->values()->all(); } catch (\Throwable $e) { $aiIds = []; }
     $dupDay = []; try { $dupDay = \App\Support\DupGuard::forPage($orders->items()); } catch (\Throwable $e) { $dupDay = []; }
-    $__v = view('orders', compact('orders','counts','vals','items','per','intel','incOpen','cmLast','dupHint','dupInv','aiAp','aiIds','dupDay','apprB','apprC') + ['isInc'=>$isInc] + ($isInc ? \App\Http\Controllers\IncompleteController::data($r, $range) : \App\Http\Controllers\IncompleteController::mix($r, $orders, $range)));
+    $__v = view('orders', compact('orders','counts','vals','items','per','intel','incOpen','cmLast','dupHint','dupInv','aiAp','aiIds','dupDay') + ['isInc'=>$isInc] + ($isInc ? \App\Http\Controllers\IncompleteController::data($r, $range) : \App\Http\Controllers\IncompleteController::mix($r, $orders, $range)));
     try { $__h = $__v->render(); return response(\App\Support\SvgDedupe::run($__h, 150000, 60)); } catch (\Throwable $__e) { throw $__e; }
   }
   public function orderBulk(Request $r) {
@@ -214,7 +212,6 @@ class AdminController extends Controller {
         if (\App\Support\DupGuard::block($o, $d['status'])) { $dupHeld++; continue; }
         DB::table('orders')->where('id',$o->id)->update(['status'=>$d['status'],'updated_at'=>now()]);
         DB::table('order_status_logs')->insert(['order_id'=>$o->id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'from_status'=>$o->status,'to_status'=>$d['status'],'note'=>'Bulk action','created_at'=>now(),'updated_at'=>now()]);
-        \App\Support\ApprovalSource::manual((int)$o->id, $o->status, (string)$d['status'], 'Bulk status change');
         $n++;
       }
     });
@@ -353,7 +350,6 @@ class AdminController extends Controller {
     if ($o->status !== $d['status']) DB::transaction(function () use ($o, $d, $id) {
       DB::table('orders')->where('id',$id)->update(['status'=>$d['status'],'updated_at'=>now()] + ($o->status === 'Scheduled' ? ['scheduled_at'=>null,'scheduled_note'=>null] : []));
       DB::table('order_status_logs')->insert(['order_id'=>$id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'from_status'=>$o->status,'to_status'=>$d['status'],'note'=>$d['note']??null,'created_at'=>now(),'updated_at'=>now()]);
-      \App\Support\ApprovalSource::manual((int)$id, $o->status, (string)$d['status'], 'Order page status change');
     });
     if ($r->input('go') === 'list') {
       parse_str(ltrim((string)$r->input('ret'), '?'), $keep);
@@ -385,7 +381,6 @@ class AdminController extends Controller {
     if ($o->status !== $d['status']) DB::transaction(function () use ($o, $d, $id, $src) {
       DB::table('orders')->where('id',$id)->update(['status'=>$d['status'],'updated_at'=>now()] + ($o->status === 'Scheduled' ? ['scheduled_at'=>null,'scheduled_note'=>null] : []));
       DB::table('order_status_logs')->insert(['order_id'=>$id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'from_status'=>$o->status,'to_status'=>$d['status'],'note'=>trim(($src ? 'Order List · Status button ' : 'Quick Action ').($d['note'] ?? '')),'created_at'=>now(),'updated_at'=>now()]);
-      \App\Support\ApprovalSource::manual((int)$id, $o->status, (string)$d['status'], $src ? 'Order List status button' : 'Quick Action');
     });
     if ($src && $o->status !== $d['status']) $this->auditOrderStatus($r, $o, $d['status'], $src);
     return response()->json(['success'=>true,'status'=>$d['status'],'cls'=>'s-'.\Illuminate\Support\Str::slug($d['status'])]);
