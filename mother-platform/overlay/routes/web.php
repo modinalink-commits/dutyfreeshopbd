@@ -266,6 +266,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/carrybee/send-bulk', [\App\Http\Controllers\CarrybeeController::class,'sendBulk']);
   Route::post('/orders/{id}/carrybee-send', [\App\Http\Controllers\CarrybeeController::class,'sendOne']);
   Route::post('/orders/{id}/carrybee-refresh', [\App\Http\Controllers\CarrybeeController::class,'refresh']);
+  Route::post('/courier/ship-check', [\App\Http\Controllers\CourierController::class,'shipCheck']);
   Route::post('/courier/send-bulk', [\App\Http\Controllers\CourierController::class,'sendBulk']);
   Route::post('/orders/{id}/courier-send', [\App\Http\Controllers\CourierController::class,'sendOne']);
   Route::post('/orders/{id}/courier-refresh', [\App\Http\Controllers\CourierController::class,'refresh']);

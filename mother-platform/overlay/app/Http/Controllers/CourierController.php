@@ -31,15 +31,22 @@ class CourierController extends Controller {
     if (!Pathao::storeId()) { $def = collect($stores)->firstWhere('is_default_store', true) ?: $stores[0]; Sms::setSecret('pathao_store_id', (string)$def['store_id']); }
     return back()->with('ok', 'Connected to Pathao. '.count($stores).' store(s) found.')->with('stores', $stores);
   }
+  public function shipCheck(Request $r) {
+    $ids = array_slice(array_map('intval', (array)$r->input('ids', [])), 0, 100);
+    $can = $this->canOverride();
+    return response()->json(['can_override'=>$can, 'orders'=>array_map(fn($i) => ['id'=>$i] + \App\Support\ShipCheck::run($i), $ids)]);
+  }
+  private function canOverride(): bool { try { return \App\Support\ProfitFloor::admin() || \App\Http\Middleware\ModulePermission::canOverrideMargin(auth()->user()); } catch (\Throwable $e) { return false; } }
   public function sendOne(Request $r, $id) {
-    [$ok, $msg] = $this->book($id);
+    [$ok, $msg] = $this->book($id, trim((string)$r->input('override_reason', '')) ?: null);
     return back()->with($ok ? 'ok' : 'bad', $msg);
   }
   public function sendBulk(Request $r) {
     @ignore_user_abort(true); @set_time_limit(240);
     $d = $r->validate(['ids'=>'required|array|max:100', 'ids.*'=>'integer']);
     $okN = 0; $fail = [];
-    foreach ($d['ids'] as $id) { [$ok, $msg] = $this->book((int)$id); if ($ok) $okN++; else $fail[] = '#'.$id.': '.$msg; }
+    $ov = (array)$r->input('override', []);
+    foreach ($d['ids'] as $id) { [$ok, $msg] = $this->book((int)$id, trim((string)($ov[$id] ?? '')) ?: null); if ($ok) $okN++; else $fail[] = '#'.$id.': '.$msg; }
     $m = "$okN order(s) sent to Pathao.".($fail ? ' Not sent: '.implode(' | ', array_slice($fail, 0, 12)) : '');
     return back()->with($fail ? 'bad' : 'ok', $m);
   }
@@ -51,13 +58,26 @@ class CourierController extends Controller {
     return back()->with('ok', 'Pathao status: '.($i['order_status'] ?? $i['order_status_slug'] ?? 'unknown'));
   }
   /** Never lets an exception escape: any failure comes back as a readable message instead of a 500/502 page. */
-  public function book(int $id): array {
+  public function book(int $id, ?string $override = null): array {
     @ignore_user_abort(true); @set_time_limit(90);
-    try { return $this->bookRaw($id); }
+    try { return $this->bookRaw($id, $override); }
     catch (\Throwable $e) { report($e); return [false, '⚠ Could not send this order to the courier right now ('.mb_substr($e->getMessage(), 0, 140).'). Nothing was changed — please try again or check the Pathao panel.']; }
   }
-  private function bookRaw(int $id): array {
-    if ($sm = \App\Support\StockGuard::shipBlock($id)) return [false, $sm];
+  private function bookRaw(int $id, ?string $override = null): array {
+    $chk = \App\Support\ShipCheck::run($id);
+    if ($chk['blocked']) { $b = collect($chk['checks'])->firstWhere('sev', 'BLOCKED'); return [false, '🔴 Blocked — '.($b['label'] ?? '').': '.($b['msg'] ?? 'cannot ship').' (no override possible)']; }
+    $bypass = false;
+    if ($chk['worst'] === 'CRITICAL') {
+      $cr = collect($chk['checks'])->where('sev', 'CRITICAL')->map(fn($x) => $x['label'].': '.$x['msg'])->implode(' | ');
+      if (!$override) return [false, '⚠ Needs an authorised override with a reason — '.$cr];
+      if (!$this->canOverride()) return [false, '⚠ You do not have permission to override ('.$cr.'). Ask an authorised person.'];
+      $bypass = true;
+      \App\Support\ProfitFloor::audit('Shipment rule override (Send Anyway)', 'Order '.($chk['order'] ?? $id), null, ['reason'=>mb_substr($override, 0, 300), 'issues'=>$cr, 'by'=>auth()->user()->name ?? null]);
+      try { \App\Support\OrderActivity::log($id, 'ship_override', null, 'Send Anyway', 'Shipment rule override by '.(auth()->user()->name ?? '?').'. Reason: '.mb_substr($override, 0, 200)); } catch (\Throwable $e) {}
+    }
+    \App\Support\StockGuard::$bypassMargin = $bypass;
+    try { $sm = \App\Support\StockGuard::shipBlock($id); } finally { \App\Support\StockGuard::$bypassMargin = false; }
+    if ($sm) return [false, $sm];
     $o = DB::table('orders')->find($id); if (!$o) return [false, 'Order not found'];
     $items = DB::table('order_items')->where('order_id', $id)->get();
     [$ok, $msg, $data] = Pathao::send($o, $items);

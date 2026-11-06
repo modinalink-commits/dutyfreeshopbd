@@ -68,8 +68,11 @@ class StockGuard {
     return self::profitBlock($o);
   }
   /** Protected profit at shipment. Mode (Admin setting on Inventory Pricing): block (default) / warn (allow and log) / off. */
+  /** Set by an authorised Send Anyway (Pre-Shipment Validation) for ONE booking only. */
+  public static bool $bypassMargin = false;
   private static function profitBlock(object $o): ?string {
     try {
+      if (self::$bypassMargin) return null;
       if (!Costing::ready()) return null; $mode = Costing::shipMode(); if ($mode === 'off') return null;
       $bad = Costing::shipViolations((int)$o->id); if (!$bad) return null;
       $d = array_map(fn($x) => $x['name'].' ×'.$x['qty'].' – Actual FIFO batch cost '.ProfitFloor::tk($x['cost']).', Minimum allowed revenue '.ProfitFloor::tk($x['min']).', Revenue after discount '.ProfitFloor::tk($x['rev']).', Shortfall '.ProfitFloor::tk($x['short']), array_slice($bad, 0, 4));
