@@ -37,7 +37,10 @@ class AiVerifyController extends Controller {
     // Results that could not get a fraud answer yet (older automatic runs without the live courier check) are completed by themselves.
     $nofraud = DB::table('order_ai_verifications')->whereIn('order_id', $ids)->whereRaw("summary->>'fraud_risk' = 'Unknown'")->whereNull('override_status')->orderByDesc('order_id')->limit(4)->pluck('order_id')->all();
     foreach ($nofraud as $nid) { try { AiVerify::run((int)$nid, 'auto-fraud', true, true); } catch (\Throwable $e) {} }
-    $left += count($nofraud) ? 1 : 0;
+    // Results made by an older rule version (e.g. before the sudden-high-amount block) are checked again with the current rules.
+    $oldv = DB::table('order_ai_verifications')->whereIn('order_id', $ids)->where('rule_version', '<>', AiVerify::VERSION)->whereNull('override_status')->orderByDesc('order_id')->limit(4)->pluck('order_id')->all();
+    foreach ($oldv as $vid) { try { AiVerify::run((int)$vid, 'rule-update', true, true); } catch (\Throwable $e) {} }
+    $left += (count($nofraud) || count($oldv)) ? 1 : 0;
     $rows = DB::table('order_ai_verifications')->whereIn('order_id', $ids)->get(['order_id', 'verification_status', 'override_status', 'verification_score']);
     $o = []; foreach ($rows as $x) { $s = $x->override_status ?: $x->verification_status; $o[$x->order_id] = ['s' => $s, 'l' => AiVerify::LABEL[$s] ?? $s, 'n' => (int)$x->verification_score]; }
     return response()->json(['m' => $o, 'left' => $left])->header('Cache-Control', 'no-store');

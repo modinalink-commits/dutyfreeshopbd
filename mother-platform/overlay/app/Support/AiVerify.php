@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Schema;
  * communication, stores an explainable result (reason codes + every check) and NEVER cancels, blocks, refunds or blacklists anything.
  */
 class AiVerify {
-  const VERSION = 'v1.0';
+  const VERSION = 'v1.1';
   const LABEL = ['verified' => 'AI Verified', 'review' => 'Review Required', 'high' => 'High Risk', 'failed' => 'Verification Failed', 'pending' => 'Pending Verification'];
   const CANCEL = ['Cancel', 'Cancelled', 'Canceled'];
   const RET = ['Returned', 'Return'];
@@ -133,8 +133,9 @@ class AiVerify {
 
     // ---- Amount / product risk ----
     $total = (float)$o->total; $qtySum = (int)$items->sum('qty');
-    if ($avg > 0 && $total > $avg * 3) $add('Order', 'AMOUNT_HIGH', 'review', 'Order amount', 'Order ' . self::tk($total) . ' is ' . round($total / $avg, 1) . '× this customer\'s average (' . self::tk($avg) . ')', $total > $avg * 4 ? 15 : 10);
+    if ($avg > 0 && $total > $avg * 2) $add('Order', 'AMOUNT_HIGH', 'review', 'Order amount', 'Order ' . self::tk($total) . ' is ' . round($total / $avg, 1) . '× this customer\'s average (' . self::tk($avg) . '). Sudden high amount: not auto-verified, staff must check.', $total > $avg * 4 ? 20 : 12, true);
     elseif ($avg > 0) $add('Order', 'AMOUNT_NORMAL', 'pass', 'Order amount', 'Order ' . self::tk($total) . ' vs customer average ' . self::tk($avg));
+    elseif ($total >= 20000) $add('Order', 'AMOUNT_NO_BASE', 'review', 'Order amount', 'Order ' . self::tk($total) . ' is large and this customer has no earlier order to compare: not auto-verified, staff must check.', 8, true);
     else $add('Order', 'AMOUNT_NO_BASE', 'info', 'Order amount', 'Order ' . self::tk($total) . ' (no earlier order to compare)');
     $hv = $items->filter(fn($i) => (float)$i->price * (int)$i->qty >= 10000)->count();
     if ($qtySum >= 10 || $hv) $add('Order', 'PRODUCT_RISK', 'review', 'Product risk', ($qtySum >= 10 ? "Large quantity ($qtySum units). " : '') . ($hv ? "$hv high-value line(s) (৳10,000+). " : '') . 'This raises review priority only.', 4);
