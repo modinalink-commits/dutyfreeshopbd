@@ -23,6 +23,7 @@ class OrderDiscount {
   /** Saved tier name, or the level the customer's spend has earned. */
   public static function tier(string $p, $c): ?array {
     if (!$c) return null; $st = self::stats($p, $c);
+    if (CustomerBenefit::on('membership')) { $bk = CustomerBenefit::check($p, $c); $st = ['n' => $bk['received'], 's' => $bk['amount']]; } // policy: tier from successfully received parcels only, never order count
     $lv = DB::table('membership_levels')->where('active', true)->orderByDesc('min_spent')->get();
     if (!empty($c->membership)) { $l = $lv->first(fn($x) => strcasecmp($x->name, $c->membership) === 0); return ['name' => $c->membership, 'pct' => (float)($l->discount_percent ?? 0), 'stars' => self::starsOf((string)$c->membership, (int)($l->stars ?? 0))]; }
     if ($st['n'] > 1) { $l = $lv->first(fn($x) => $st['s'] >= $x->min_spent); if ($l) return ['name' => $l->name, 'pct' => (float)$l->discount_percent, 'stars' => self::starsOf((string)$l->name, (int)($l->stars ?? 0))]; }
@@ -86,19 +87,21 @@ class OrderDiscount {
     $web = !empty($ctx['web']); $qty = (int)($ctx['qty'] ?? 0); $prof = !$web || !empty($ctx['verified']) || !empty($ctx['known']); // owner rule 2026-11-06: a guest whose phone is already in our customer data gets that customer's discounts
     $c = $phone ? self::customer($phone) : null; $ex = !empty($ctx['exclude_order']) ? (int)$ctx['exclude_order'] : null; $st = $phone ? self::stats($phone, $c, $ex) : ['n' => 0, 's' => 0.0]; $profile = $phone ? self::profile($phone) : ['category' => 'New', 'membership' => 'Inactive', 'membership_name' => null, 'orders' => 0, 'found' => false];
     $cand = []; $cerr = null; $free = false;
+    // Customer Benefit Eligibility policy: loyalty benefits need status Eligible (parcels successfully received); acquisition offers (first order, bundle, amount, typed coupon) are unaffected.
+    $loy = !$phone || !CustomerBenefit::on('discount') || CustomerBenefit::allows($phone, $c, $ex);
     $add = function ($key, $type, $rule, $source, $pct, $cap = null, $fixed = null) use (&$cand, $sub) {
       if ($fixed !== null) { if ($fixed <= 0) return; $amt = min((float)$fixed, $sub); $pct = null; } else { if ($pct <= 0) return; $amt = round($sub * $pct / 100, 2); if ($cap !== null && $cap > 0) $amt = min($amt, (float)$cap); }
       if ($amt <= 0) return;
       $cand[] = ['key' => $key, 'type' => $type, 'rule' => $rule, 'source' => $source, 'pct' => $pct !== null ? (float)$pct : null, 'amount' => round($amt, 2), 'label' => $type.' – '.($pct !== null ? rtrim(rtrim(number_format($pct, 2), '0'), '.').'%' : '৳'.number_format($amt))];
     };
-    if ($prof && $c && (float)($c->discount_pct ?? 0) > 0) $add('special', 'Special Customer Discount', 'Customer profile', 'Customer profile – special discount', (float)$c->discount_pct);
-    if ($prof && $c && strtolower((string)($c->type ?? '')) === 'vip' && ($R = self::rule('vip'))) $add('vip', 'VIP Customer Discount', $R['title'], 'VIP customer rule', (float)($R['cfg']['Discount %'] ?? 0), null, (float)($R['cfg']['Fixed TK'] ?? 0) > 0 ? (float)$R['cfg']['Fixed TK'] : null);
-    if ($prof && ($R = self::rule('membership')) && ($t = self::tier($phone, $c))) {
+    if ($prof && $loy && $c && (float)($c->discount_pct ?? 0) > 0) $add('special', 'Special Customer Discount', 'Customer profile', 'Customer profile – special discount', (float)$c->discount_pct);
+    if ($prof && $loy && $c && strtolower((string)($c->type ?? '')) === 'vip' && ($R = self::rule('vip'))) $add('vip', 'VIP Customer Discount', $R['title'], 'VIP customer rule', (float)($R['cfg']['Discount %'] ?? 0), null, (float)($R['cfg']['Fixed TK'] ?? 0) > 0 ? (float)$R['cfg']['Fixed TK'] : null);
+    if ($prof && $loy && ($R = self::rule('membership')) && ($t = self::tier($phone, $c))) {
       $pct = $t['pct']; if ($pct <= 0) foreach ($R['cfg'] as $k => $v) if (stripos($t['name'], strtok($k, ' ')) !== false) { $pct = (float)$v; break; }
       $add('membership', 'Membership Discount', $R['title'], 'Membership Plan – '.$t['name'], $pct);
     }
-    if ($prof && $st['n'] > 0 && ($R = self::rule('returning'))) $add('returning', 'Returning Customer Offer', $R['title'], 'Returning customer rule', (float)($R['cfg']['Discount %'] ?? 0), (float)($R['cfg']['Max TK'] ?? 0));
-    if ($prof && $c && !empty($c->dob) && ($R = self::rule('birthday'))) {
+    if ($prof && $loy && $phone && CustomerBenefit::check($phone, $c, $ex)['received'] > 0 && ($R = self::rule('returning'))) $add('returning', 'Returning Customer Offer', $R['title'], 'Returning customer rule', (float)($R['cfg']['Discount %'] ?? 0), (float)($R['cfg']['Max TK'] ?? 0));
+    if ($prof && $loy && $c && !empty($c->dob) && ($R = self::rule('birthday'))) {
       try { $b = \Carbon\Carbon::parse($c->dob); $d = now('Asia/Dhaka')->startOfDay(); if (abs($d->diffInDays($b->copy()->year($d->year), false)) <= (int)($R['cfg']['Valid days'] ?? 0)) $add('birthday', 'Birthday Discount', $R['title'], 'Birthday rule', (float)($R['cfg']['Birthday %'] ?? 0)); } catch (\Throwable $e) {}
     }
     if ($phone && $st['n'] === 0 && ($R = self::rule('first'))) $add('first', 'First Order Discount', $R['title'], 'First order rule', (float)($R['cfg']['Discount %'] ?? 0), (float)($R['cfg']['Max TK'] ?? 0));
@@ -120,7 +123,7 @@ class OrderDiscount {
           'label' => 'Coupon '.$cp->code.' – '.($cp->type === 'percent' ? rtrim(rtrim(number_format((float)$cp->value, 2), '0'), '.').'%' : '৳'.number_format($amt))];
       }
     }
-    if ($prof && $phone && Winback::set('mode', 'auto') === 'auto' && ($we = Winback::active($phone) ?: ($ex ? DB::table('winback_events')->where('used_order_id', $ex)->first() : null)) && $sub >= (float)Winback::set('min_order', '0')) {
+    if ($prof && $loy && $phone && Winback::set('mode', 'auto') === 'auto' && ($we = Winback::active($phone) ?: ($ex ? DB::table('winback_events')->where('used_order_id', $ex)->first() : null)) && $sub >= (float)Winback::set('min_order', '0')) {
       $wa = round($sub * (float)$we->pct / 100, 2); $wm = (float)Winback::set('max_discount', '0'); if ($wm > 0) $wa = min($wa, $wm);
       if ($wa > 0) $cand[] = ['key' => 'winback', 'type' => 'Win-Back Discount', 'rule' => 'Customer reactivation', 'source' => 'Win-back offer', 'pct' => (float)$we->pct, 'amount' => $wa, 'wbid' => $we->id, 'label' => 'Welcome Back Discount: '.rtrim(rtrim(number_format((float)$we->pct, 2), '0'), '.').'%'];
     }
