@@ -23,7 +23,7 @@ class CourierBook {
     if ($o->consignment_id && DB::table('account_entries')->where('reference', 'like', 'PAY-%-'.$o->consignment_id)->exists()) return 0.0; // payout already booked
     $fee = max(0.0, (float)($o->courier_fee ?? 0)); $amt = round($cod - $fee, 2); if ($amt <= 0) return 0.0;
     $d = $o->courier_delivered_at ? \Carbon\Carbon::parse($o->courier_delivered_at)->setTimezone('Asia/Dhaka')->toDateString() : now('Asia/Dhaka')->toDateString();
-    DB::table('account_entries')->insert(['reference'=>$ref, 'direction'=>'income', 'account_id'=>self::account($o->courier), 'amount'=>$amt, 'comment'=>'COD delivered ৳'.number_format($cod).' − courier charge ৳'.number_format($fee, 2).' — order '.Inv::show($o->invoice), 'entry_date'=>$d, 'user_name'=>'System (Courier delivered)', 'created_at'=>now(), 'updated_at'=>now()]);
+    DB::table('account_entries')->insert(['reference'=>$ref, 'invoice'=>(string)Inv::show($o->invoice), 'direction'=>'income', 'account_id'=>self::account($o->courier), 'amount'=>$amt, 'comment'=>'COD delivered ৳'.number_format($cod).' − courier charge ৳'.number_format($fee, 2).' — order '.Inv::show($o->invoice), 'entry_date'=>$d, 'user_name'=>'System (Courier delivered)', 'created_at'=>now(), 'updated_at'=>now()]);
     return $amt;
   }
   /** Payout invoice line: if delivery already booked this order, book only the difference; otherwise book the payout. Safe to call twice. */
@@ -35,10 +35,10 @@ class CourierBook {
     $del = $o ? DB::table('account_entries')->where('reference', 'DEL-'.$o->invoice)->first() : null;
     if ($del) {
       $diff = round($amt - (float)$del->amount, 2); if (abs($diff) < 0.5) return 0.0;
-      DB::table('account_entries')->insert(['reference'=>$ref, 'direction'=>$diff > 0 ? 'income' : 'expense', 'account_id'=>$del->account_id, 'amount'=>abs($diff), 'comment'=>'Adjustment: actual payout ৳'.number_format($amt, 2).' vs booked ৳'.number_format((float)$del->amount, 2).', invoice '.$row->invoice_no.' — order '.Inv::show($o->invoice), 'entry_date'=>$d, 'user_name'=>'System (Pathao invoice)', 'created_at'=>now(), 'updated_at'=>now()]);
+      DB::table('account_entries')->insert(['reference'=>$ref, 'invoice'=>$o ? (string)Inv::show($o->invoice) : null, 'direction'=>$diff > 0 ? 'income' : 'expense', 'account_id'=>$del->account_id, 'amount'=>abs($diff), 'comment'=>'Adjustment: actual payout ৳'.number_format($amt, 2).' vs booked ৳'.number_format((float)$del->amount, 2).', invoice '.$row->invoice_no.' — order '.Inv::show($o->invoice), 'entry_date'=>$d, 'user_name'=>'System (Pathao invoice)', 'created_at'=>now(), 'updated_at'=>now()]);
       return $diff;
     }
-    DB::table('account_entries')->insert(['reference'=>$ref, 'direction'=>'income', 'account_id'=>self::account($o->courier ?? null), 'amount'=>$amt, 'comment'=>'Pathao payout, invoice '.$row->invoice_no.($o ? ' — order '.Inv::show($o->invoice) : '').' (charges already deducted)', 'entry_date'=>$d, 'user_name'=>'System (Pathao invoice)', 'created_at'=>now(), 'updated_at'=>now()]);
+    DB::table('account_entries')->insert(['reference'=>$ref, 'invoice'=>$o ? (string)Inv::show($o->invoice) : null, 'direction'=>'income', 'account_id'=>self::account($o->courier ?? null), 'amount'=>$amt, 'comment'=>'Pathao payout, invoice '.$row->invoice_no.($o ? ' — order '.Inv::show($o->invoice) : '').' (charges already deducted)', 'entry_date'=>$d, 'user_name'=>'System (Pathao invoice)', 'created_at'=>now(), 'updated_at'=>now()]);
     return $amt;
   }
   /** Delivered parcels whose money the courier has not paid yet, per courier: [courier => [parcels, amount]]. */
