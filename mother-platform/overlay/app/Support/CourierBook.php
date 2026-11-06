@@ -35,6 +35,9 @@ class CourierBook {
   public static function fee(object $o, float $cod): array {
     try { $l = $o->consignment_id ? DB::table('pathao_invoice_lines')->where('consignment_id', $o->consignment_id)->orderByDesc('id')->first() : null; } catch (\Throwable $e) { $l = null; }
     if ($l && (float)$l->fee > 0) return [round((float)$l->fee, 2), 'Pathao invoice'];
+    if (($o->courier ?: 'Pathao') === 'Pathao') {   // Owner rule (6 Nov 2026): Pathao charge is fixed at the panel's "Charge" (৳90) until the payout invoice brings the exact figure
+      $flat = (float)(Procure::set('pathao_flat_charge', '90') ?? 90); if ($flat > 0) return [round($flat, 2), 'Pathao fixed charge'];
+    }
     $del = max(0.0, (float)($o->courier_fee ?? 0)); $cf = null; $disc = 0.0;
     $pj = json_decode((string)($o->pathao_raw_payload ?? ''), true);
     if (is_array($pj)) { foreach (['cod_fee', 'cod_charge', 'cod'] as $k) if (isset($pj[$k]) && is_numeric($pj[$k])) { $cf = (float)$pj[$k]; break; } foreach (['discount', 'discount_amount', 'promo_discount'] as $k) if (isset($pj[$k]) && is_numeric($pj[$k])) { $disc = (float)$pj[$k]; break; } }
