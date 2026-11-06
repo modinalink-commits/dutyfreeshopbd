@@ -310,6 +310,7 @@ Route::middleware(['auth', 'pwd'])->group(function () {
         Route::post('/company/challan', [CompanyController::class, 'storeChallan'])->name('company.challan');
         Route::post('/company/receive', [CompanyController::class, 'receive'])->name('company.receive');
         Route::post('/company/reverse', [CompanyController::class, 'reverse'])->name('company.reverse');
+        Route::post('/company/delete', [CompanyController::class, 'delete'])->name('company.delete');
         Route::post('/company/import', [CompanyController::class, 'import'])->name('company.import');
         Route::get('/company/rates', [CompanyController::class, 'rates'])->name('company.rates');
         Route::post('/company/rates', [CompanyController::class, 'saveRate'])->name('company.rates.save');

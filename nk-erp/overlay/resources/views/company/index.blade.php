@@ -60,8 +60,11 @@
           <td class="r">{{ $r['do'] !== null ? $tk($r['do']) : '' }}</td><td class="r">{{ $r['tr'] !== null ? $tk($r['tr']) : '' }}</td>
           <td class="r">{{ $r['bill'] !== null ? $tk($r['bill']) : '' }}</td><td class="r">{{ $r['dep'] !== null ? $tk($r['dep']) : '' }}</td>
           <td class="r"><b>{{ $tk($r['bal']) }}</b></td>
-          <td class="c">@if($r['ids'] && empty($r['rev']))
-            <details><summary style="cursor:pointer;font-size:var(--fs-12)">Reverse</summary><form method="post" action="{{ route('company.reverse') }}" style="display:flex;gap:4px;margin-top:4px">@csrf @foreach($r['ids'] as $id)<input type="hidden" name="ids[]" value="{{ $id }}">@endforeach<input type="text" name="reason" placeholder="Reason" required style="min-height:30px;width:120px"><button class="btn sm" type="submit">OK</button></form></details>
+          <td class="c nw">@if($r['ids'] && empty($r['rev']))
+            <div style="display:flex;gap:4px;justify-content:center">
+              @if(in_array($r['ek'] ?? '', ['deposit', 'challan'], true))<a class="btn sm" href="{{ route('company.index', ['m' => $ym, 'edit' => implode(',', $r['ids'])]) }}#{{ $r['ek'] === 'deposit' ? 'dep-form' : 'challan-form' }}" aria-label="Edit {{ $r['t'] }}">Edit</a>@endif
+              <form method="post" action="{{ route('company.delete') }}" style="margin:0" onsubmit="return confirm('Delete this entry? The balance will be worked out again without it.')">@csrf @foreach($r['ids'] as $id)<input type="hidden" name="ids[]" value="{{ $id }}">@endforeach<button class="btn sm" type="submit" style="color:#b3261e;border-color:#e3b4ae" aria-label="Delete {{ $r['t'] }}">Delete</button></form>
+            </div>
           @endif</td>
         </tr>
       @endforeach
@@ -95,18 +98,23 @@
   </aside>
 </div>
 <div class="grid2" style="align-items:start">
-  <form id="dep-form" class="card pad" method="post" action="{{ route('company.deposit') }}" style="display:flex;flex-direction:column;gap:10px">@csrf
+  @php($ed = $edit && $edit['kind'] === 'deposit' ? $edit : null)
+  @php($ec = $edit && $edit['kind'] === 'challan' ? $edit : null)
+  <form id="dep-form" class="card pad" method="post" action="{{ route('company.deposit') }}" style="display:flex;flex-direction:column;gap:10px;{{ $ed ? 'outline:2px solid #1d4ed8' : '' }}">@csrf
+    @if($ed)<input type="hidden" name="replace" value="{{ $ed['ids'] }}"><div style="display:flex;align-items:center;gap:8px;background:#e6eeff;border-radius:10px;padding:8px 10px;font-size:var(--fs-13)"><b style="flex-grow:1">Editing deposit of {{ \Carbon\Carbon::parse($ed['date'])->format('d-m-Y') }}</b><a class="btn sm" href="{{ route('company.index', ['m' => $ym]) }}">Cancel</a></div>@endif
     <h2 style="margin:0;font-size:var(--fs-15)">＋ Deposit</h2>
     <div class="grid2" style="grid-template-columns:repeat(2,minmax(0,1fr))">
-      <label class="f">Date<input type="date" name="entry_date" value="{{ now()->timezone('Asia/Dhaka')->toDateString() }}" required></label>
-      <label class="f">Amount (৳)<input type="number" step="0.01" name="amount" min="1" required></label>
-      <label class="f">Type<select name="deposit_kind">@foreach(\App\Models\CompanyEntry::DEPOSIT_KINDS as $k => $l)<option value="{{ $k }}">{{ $l }}</option>@endforeach</select></label>
-      <label class="f">From<input type="text" name="source" value="NK Corporation · BRAC Bank"></label>
+      <label class="f">Date<input type="date" name="entry_date" value="{{ $ed['date'] ?? now()->timezone('Asia/Dhaka')->toDateString() }}" required></label>
+      <label class="f">Amount (৳)<input type="number" step="0.01" name="amount" min="1" value="{{ $ed ? rtrim(rtrim(number_format($ed['amount'], 2, '.', ''), '0'), '.') : '' }}" required></label>
+      <label class="f">Type<select name="deposit_kind">@foreach(\App\Models\CompanyEntry::DEPOSIT_KINDS as $k => $l)<option value="{{ $k }}" @selected(($ed['deposit_kind'] ?? null) === $k)>{{ $l }}</option>@endforeach</select></label>
+      <label class="f">From<input type="text" name="source" value="{{ $ed ? $ed['source'] : 'NK Corporation · BRAC Bank' }}"></label>
     </div>
-    <label class="f">Note<input type="text" name="note"></label>
-    <button class="btn pri" type="submit">Save deposit</button>
+    <label class="f">Note<input type="text" name="note" value="{{ $ed['note'] ?? '' }}"></label>
+    <button class="btn pri" type="submit">{{ $ed ? 'Save changes' : 'Save deposit' }}</button>
   </form>
-  <form id="challan-form" class="card pad" method="post" action="{{ route('company.challan') }}" style="display:flex;flex-direction:column;gap:10px">@csrf
+  <form id="challan-form" class="card pad" method="post" action="{{ route('company.challan') }}" style="display:flex;flex-direction:column;gap:10px;{{ $ec ? 'outline:2px solid #1d4ed8' : '' }}">@csrf
+    @if($ec || old('replace'))<input type="hidden" name="replace" value="{{ old('replace', $ec['ids'] ?? '') }}">@endif
+    @if($ec)<div style="display:flex;align-items:center;gap:8px;background:#e6eeff;border-radius:10px;padding:8px 10px;font-size:var(--fs-13)"><b style="flex-grow:1">Editing challan {{ $ec['challan_no'] }} of {{ \Carbon\Carbon::parse($ec['date'])->format('d-m-Y') }}</b><a class="btn sm" href="{{ route('company.index', ['m' => $ym]) }}">Cancel</a></div>@endif
     <h2 style="margin:0;font-size:var(--fs-15)">＋ Challan</h2>
     @if($dup = session('dup'))
       <div role="alert" style="border:1px solid #f0c36d;background:#fff8e6;border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px">
@@ -117,14 +125,14 @@
       </div>
     @endif
     <div class="grid2" style="grid-template-columns:repeat(2,minmax(0,1fr))">
-      <label class="f">Date<input type="date" name="entry_date" value="{{ old('entry_date', now()->timezone('Asia/Dhaka')->toDateString()) }}" required></label>
-      <label class="f"><span>Challan number @include('partials.help', ['t' => 'চালান নম্বর কী?', 'b' => 'কোম্পানির চালানের কাগজের উপরে ছাপা নম্বর।', 'e' => 'উদাহরণ: 144794', 'f' => 'একই নম্বর আগেই থাকলে সিস্টেম সতর্ক করবে।'])</span><input type="text" name="challan_no" value="{{ old('challan_no') }}" required></label>
+      <label class="f">Date<input type="date" name="entry_date" value="{{ old('entry_date', $ec['date'] ?? now()->timezone('Asia/Dhaka')->toDateString()) }}" required></label>
+      <label class="f"><span>Challan number @include('partials.help', ['t' => 'চালান নম্বর কী?', 'b' => 'কোম্পানির চালানের কাগজের উপরে ছাপা নম্বর।', 'e' => 'উদাহরণ: 144794', 'f' => 'একই নম্বর আগেই থাকলে সিস্টেম সতর্ক করবে।'])</span><input type="text" name="challan_no" value="{{ old('challan_no', $ec['challan_no'] ?? '') }}" required></label>
     </div>
-    <div class="grid2" style="grid-template-columns:repeat(3,minmax(0,1fr))">@foreach(\App\Models\Brand::SIZES as $sz)<label class="f">{{ $sz }} kg full<input type="number" min="0" name="qty[{{ $sz }}]" value="{{ old('qty.'.$sz, 0) }}"></label>@endforeach</div>
+    <div class="grid2" style="grid-template-columns:repeat(3,minmax(0,1fr))">@foreach(\App\Models\Brand::SIZES as $sz)<label class="f">{{ $sz }} kg full<input type="number" min="0" name="qty[{{ $sz }}]" value="{{ old('qty.'.$sz, $ec['qty'][$sz] ?? 0) }}"></label>@endforeach</div>
     <label style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" name="to_stock" value="1" checked style="width:auto;min-height:0"> Also add to godown stock</label>
     <div class="grid2" style="grid-template-columns:repeat(3,minmax(0,1fr))">@foreach(\App\Models\Brand::SIZES as $sz)<label class="f">{{ $sz }} kg empties handed over<input type="number" min="0" name="empties[{{ $sz }}]" value="{{ old('empties.'.$sz, 0) }}"></label>@endforeach</div>
-    <span class="sub">Bill is worked out from the Rate Master row for the challan date.</span>
-    <button class="btn pri" type="submit">Save challan</button>
+    <span class="sub">Bill is worked out from the Rate Master row for the challan date.@if($ec) Saving replaces the old challan; stock it added to the godown is taken back and added again if ticked.@endif</span>
+    <button class="btn pri" type="submit">{{ $ec ? 'Save changes' : 'Save challan' }}</button>
   </form>
 </div>
 @unless(\App\Models\CompanyEntry::query()->exists())

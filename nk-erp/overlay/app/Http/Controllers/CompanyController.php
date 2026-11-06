@@ -42,7 +42,7 @@ class CompanyController extends Controller
             if ($e->kind === 'challan') {
                 $q = []; foreach (Brand::SIZES as $s) { $q[] = (int) $g->where('size_kg', $s)->sum('qty'); }
                 $rows[] = ['d' => $e->entry_date->format('d-m-Y'), 't' => 'Challan '.$e->challan_no, 'q' => implode(' / ', $q),
-                    'do' => $g->sum(fn ($x) => $x->qty * $x->do_rate), 'tr' => $g->sum(fn ($x) => $x->qty * $x->transport), 'bill' => -$amt, 'dep' => null, 'bal' => $bal, 'kind' => '', 'ids' => $g->pluck('id')->all(), 'rev' => $g->every(fn ($x) => $x->reversedBy)];
+                    'do' => $g->sum(fn ($x) => $x->qty * $x->do_rate), 'tr' => $g->sum(fn ($x) => $x->qty * $x->transport), 'bill' => -$amt, 'dep' => null, 'bal' => $bal, 'kind' => '', 'ek' => 'challan', 'ids' => $g->pluck('id')->all(), 'rev' => $g->every(fn ($x) => $x->reversedBy)];
             } else {
                 $label = match ($e->kind) {
                     'deposit' => 'Deposit · '.($e->source ?: (CompanyEntry::DEPOSIT_KINDS[$e->deposit_kind] ?? 'Deposit')),
@@ -52,7 +52,7 @@ class CompanyController extends Controller
                 };
                 $rows[] = ['d' => $e->entry_date->format('d-m-Y'), 't' => $label, 'q' => '', 'do' => null, 'tr' => null,
                     'bill' => $amt < 0 ? -$amt : null, 'dep' => $amt >= 0 ? $amt : null, 'bal' => $bal,
-                    'kind' => in_array($e->kind, ['incentive', 'commission']) ? 'p' : ($e->kind === 'deposit' ? 'd' : ''), 'ids' => [$e->id], 'rev' => (bool) $e->reversedBy || $e->kind === 'reversal'];
+                    'kind' => in_array($e->kind, ['incentive', 'commission']) ? 'p' : ($e->kind === 'deposit' ? 'd' : ''), 'ek' => $e->kind, 'ids' => [$e->id], 'rev' => (bool) $e->reversedBy || $e->kind === 'reversal'];
             }
         }
 
@@ -89,7 +89,7 @@ class CompanyController extends Controller
 
         return view('company.index', [
             'explain' => $explain, 'prevTons' => $prevChal->sum(fn ($x) => $x->qty * $x->size_kg) / 1000, 'bnMonth' => $bn,
-            'ym' => $ym, 'start' => $start, 'hiddenRev' => count($pairIds), 'showRev' => $showRev, 'prev' => $prev, 'next' => $next, 'rows' => $rows,
+            'edit' => $this->editing($request), 'ym' => $ym, 'start' => $start, 'hiddenRev' => count($pairIds), 'showRev' => $showRev, 'prev' => $prev, 'next' => $next, 'rows' => $rows,
             'balanceToday' => CompanyEntry::balanceUntil($today),
             'deposited' => (float) $deps->sum('amount'), 'depCount' => $deps->count(),
             'tons' => $chal->sum(fn ($x) => $x->qty * $x->size_kg) / 1000, 'challans' => $chal->pluck('challan_no')->unique()->count(), 'billed' => -(float) $chal->sum('amount'),
@@ -103,10 +103,19 @@ class CompanyController extends Controller
             'entry_date' => ['required', 'date'], 'amount' => ['required', 'numeric', 'min:1'],
             'deposit_kind' => ['required', Rule::in(array_keys(CompanyEntry::DEPOSIT_KINDS))],
             'source' => ['nullable', 'string', 'max:120'], 'note' => ['nullable', 'string', 'max:255'],
+            'replace' => ['nullable', 'string', 'max:200'],
         ]);
-        $e = CompanyEntry::create($data + ['kind' => 'deposit', 'created_by' => $request->user()->id]);
-        AuditLog::record('company_deposit', "#{$e->id} ৳{$e->amount}");
-        return redirect()->route('company.index', ['m' => $e->entry_date->format('Y-m')])->with('ok', 'Deposit saved.');
+        $old = $this->ids($data['replace'] ?? null); unset($data['replace']);
+        try {
+            $e = DB::transaction(function () use ($data, $old, $request) {
+                if ($old) self::undo($old, 'Edited', $request->user()->id, ['deposit']);
+                return CompanyEntry::create($data + ['kind' => 'deposit', 'created_by' => $request->user()->id]);
+            });
+        } catch (RuntimeException $ex) {
+            return back()->withInput()->withErrors(['amount' => \App\Support\Ui::msg($ex)]);
+        }
+        AuditLog::record($old ? 'company_deposit_edit' : 'company_deposit', "#{$e->id} ৳{$e->amount}".($old ? ' (replaces #'.implode(',#', $old).')' : ''));
+        return redirect()->route('company.index', ['m' => $e->entry_date->format('Y-m')])->with('ok', $old ? 'Deposit updated.' : 'Deposit saved.');
     }
 
     public function storeChallan(Request $request)
@@ -115,18 +124,20 @@ class CompanyController extends Controller
             'entry_date' => ['required', 'date'], 'challan_no' => ['required', 'string', 'max:40'],
             'qty' => ['required', 'array'], 'qty.*' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'to_stock' => ['nullable', 'boolean'], 'empties' => ['nullable', 'array'], 'empties.*' => ['nullable', 'integer', 'min:0'],
-            'note' => ['nullable', 'string', 'max:255'], 'confirm_dup' => ['nullable', 'boolean'],
+            'note' => ['nullable', 'string', 'max:255'], 'confirm_dup' => ['nullable', 'boolean'], 'replace' => ['nullable', 'string', 'max:200'],
         ]);
+        $old = $this->ids($data['replace'] ?? null);
         // Same challan number saved before? Ask first: the bill would be cut twice.
         if (empty($data['confirm_dup'])) {
-            $prev = CompanyEntry::query()->where('kind', 'challan')->whereDoesntHave('reversedBy')->where('challan_no', trim($data['challan_no']))->whereDoesntHave('reversedBy')->orderBy('id')->get();
+            $prev = CompanyEntry::query()->where('kind', 'challan')->whereDoesntHave('reversedBy')->where('challan_no', trim($data['challan_no']))->whereNotIn('id', $old)->orderBy('id')->get();
             if ($prev->isNotEmpty()) {
                 return back()->withInput()->with('dup', ['no' => $data['challan_no'], 'date' => $prev->first()->entry_date->format('d-m-Y'), 'm' => $prev->first()->entry_date->format('Y-m'),
                     'q' => $prev->map(fn ($e) => $e->size_kg.' কেজি × '.$e->qty)->implode(', ')]);
             }
         }
         try {
-            DB::transaction(function () use ($data, $request) {
+            DB::transaction(function () use ($data, $request, $old) {
+                if ($old) self::undo($old, 'Edited', $request->user()->id, ['challan']);
                 $any = false;
                 foreach (Brand::SIZES as $s) {
                     $q = (int) ($data['qty'][$s] ?? 0);
@@ -149,8 +160,8 @@ class CompanyController extends Controller
             $r = back()->withInput()->withErrors(['qty' => \App\Support\Ui::msg($e)]);
             return str_contains(\App\Support\Ui::msg($e), 'Rate Master') ? $r->with('err_link', [route('company.rates'), 'Rate Master খুলুন →']) : $r;
         }
-        AuditLog::record('company_challan', $data['challan_no']);
-        return redirect()->route('company.index', ['m' => substr($data['entry_date'], 0, 7)])->with('ok', "Challan {$data['challan_no']} saved.");
+        AuditLog::record($old ? 'company_challan_edit' : 'company_challan', $data['challan_no'].($old ? ' (replaces #'.implode(',#', $old).')' : ''));
+        return redirect()->route('company.index', ['m' => substr($data['entry_date'], 0, 7)])->with('ok', "Challan {$data['challan_no']} ".($old ? 'updated.' : 'saved.'));
     }
 
     public function receive(Request $request)
@@ -235,5 +246,60 @@ class CompanyController extends Controller
         $n = \App\Support\LedgerImport::run($j, $request->user()->id, ['dep_paid' => 'bill_payment', 'comm' => 'incentive', 'opening' => 0, 'opening_date' => now()->toDateString()]);
         AuditLog::record('company_import', "{$n} entries");
         return redirect()->route('company.index')->with('ok', "{$n} ledger entries imported. Check the balance against your old ledger.");
+    }
+
+    private function ids(?string $s): array
+    {
+        return array_values(array_filter(array_map('intval', explode(',', (string) $s))));
+    }
+
+    /** Entries being edited (from ?edit=1,2), to fill the deposit or challan form. */
+    private function editing(Request $request): ?array
+    {
+        $ids = $this->ids($request->query('edit'));
+        if (! $ids) return null;
+        $g = CompanyEntry::query()->whereIn('id', $ids)->whereDoesntHave('reversedBy')->whereIn('kind', ['deposit', 'challan'])->get();
+        if ($g->isEmpty() || $g->pluck('kind')->unique()->count() > 1) return null;
+        $e = $g->first();
+        return ['kind' => $e->kind, 'ids' => $g->pluck('id')->implode(','), 'date' => $e->entry_date->toDateString(), 'amount' => (float) $e->amount,
+            'deposit_kind' => $e->deposit_kind, 'source' => $e->source, 'note' => $e->note, 'challan_no' => $e->challan_no,
+            'qty' => $g->mapWithKeys(fn ($x) => [(int) $x->size_kg => (int) $x->qty])->all()];
+    }
+
+    /**
+     * Delete / edit = a reversing entry on the SAME date as the original, so the month reads as if the entry was never there.
+     * Both rows stay on record (hidden by default); stock that a challan added to the godown is taken back too.
+     */
+    public static function undo(array $ids, string $why, int $uid, ?array $kinds = null): int
+    {
+        $n = 0;
+        foreach (CompanyEntry::query()->whereIn('id', $ids)->lockForUpdate()->get() as $e) {
+            if ($e->kind === 'reversal' || $e->reversedBy()->exists()) continue;
+            if ($kinds && ! in_array($e->kind, $kinds, true)) throw new RuntimeException('Only a '.implode(' or ', $kinds).' can be edited here.');
+            CompanyEntry::create(['entry_date' => $e->entry_date->toDateString(), 'kind' => 'reversal', 'amount' => -$e->amount, 'challan_no' => $e->challan_no,
+                'note' => $why.': '.CompanyEntry::KINDS[$e->kind].' of '.$e->entry_date->format('d-m-Y'), 'reversal_of' => $e->id, 'created_by' => $uid]);
+            if ($e->kind === 'challan' && $e->challan_no) {
+                $moves = StockMovement::query()->where('kind', 'received')->where('reference', 'Challan '.$e->challan_no)->where('size_kg', $e->size_kg)
+                    ->where('note', 'From company ledger')->whereDoesntHave('reversedBy')->get();
+                foreach ($moves as $m) {
+                    StockMovement::post(['kind' => 'reversal', 'brand_id' => $m->brand_id, 'size_kg' => $m->size_kg, 'full_delta' => -$m->full_delta, 'empty_delta' => -$m->empty_delta,
+                        'reference' => $m->reference, 'note' => $why.' in company ledger', 'reversal_of' => $m->id]);
+                }
+            }
+            $n++;
+        }
+        return $n;
+    }
+
+    public function delete(Request $request)
+    {
+        $data = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer', 'exists:company_entries,id'], 'reason' => ['nullable', 'string', 'max:200']]);
+        try {
+            $n = DB::transaction(fn () => self::undo($data['ids'], 'Deleted'.(! empty($data['reason']) ? ' ('.$data['reason'].')' : ''), $request->user()->id));
+        } catch (RuntimeException $e) {
+            return back()->withErrors(['amount' => \App\Support\Ui::msg($e)]);
+        }
+        AuditLog::record('company_delete', '#'.implode(',#', $data['ids']).(! empty($data['reason']) ? ' '.$data['reason'] : ''));
+        return back()->with('ok', $n ? 'Deleted. The balance is worked out again without it (kept in the audit record).' : 'Already deleted.');
     }
 }
