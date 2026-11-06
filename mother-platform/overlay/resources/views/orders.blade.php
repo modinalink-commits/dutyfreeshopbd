@@ -332,6 +332,7 @@ function fb(){var x=document.createElement('textarea');x.value=t;x.style.cssText
 try{if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(t).then(done,fb);else fb()}catch(e){fb()}
 return false}
 </script>
+<script>(function(){var ids={!! json_encode($aiIds ?? []) !!};if(!ids.length)return;document.querySelectorAll('td.ost-cell').forEach(function(td){var id=parseInt(td.getAttribute('data-oid'),10),p=td.querySelector('.pill');if(p&&td.getAttribute('data-st')==='New'&&ids.indexOf(id)>-1){p.textContent='AI Approve';p.style.background='#DCFCE7';p.style.color='#15803D'}})})();</script>
 @include('discount_modal')
 @include('courier_modal')
 @include('ai_verify_ui')

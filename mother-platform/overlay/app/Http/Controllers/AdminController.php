@@ -173,7 +173,8 @@ class AdminController extends Controller {
     $cmLast = []; // a note belongs to the order it was written on: last comment per order id
     if ($__ids) foreach (DB::table('order_staff_comments')->whereIn('order_id', $__ids)->orderByDesc('id')->select('body','order_id')->get() as $c) { if (!isset($cmLast[$c->order_id])) $cmLast[$c->order_id] = $c->body; }
     $incOpen = (int)DB::table('incomplete_orders')->where('status', 'open')->count(); try { $vals['Incomplete'] = (float)DB::table('incomplete_orders')->where('status', 'open')->sum('total'); } catch (\Throwable $e) { $vals['Incomplete'] = 0; }
-    return view('orders', compact('orders','counts','vals','items','per','intel','incOpen','cmLast','dupHint','dupInv','aiAp') + ['isInc'=>$isInc] + ($isInc ? \App\Http\Controllers\IncompleteController::data($r, $range) : \App\Http\Controllers\IncompleteController::mix($r, $orders, $range)));
+    $aiIds = []; try { $nw = collect(method_exists($orders, 'items') ? $orders->items() : $orders)->filter(fn($x) => ($x->status ?? '') === 'New')->pluck('id')->all(); if ($nw) $aiIds = DB::table('order_ai_verifications')->whereIn('order_id', $nw)->whereRaw("coalesce(override_status, verification_status) = 'verified'")->pluck('order_id')->map(fn($v) => (int)$v)->values()->all(); } catch (\Throwable $e) { $aiIds = []; }
+    return view('orders', compact('orders','counts','vals','items','per','intel','incOpen','cmLast','dupHint','dupInv','aiAp','aiIds') + ['isInc'=>$isInc] + ($isInc ? \App\Http\Controllers\IncompleteController::data($r, $range) : \App\Http\Controllers\IncompleteController::mix($r, $orders, $range)));
   }
   public function orderBulk(Request $r) {
     $d = $r->validate(['ids'=>'required|array|max:500','ids.*'=>'integer','status'=>'required|in:'.implode(',',Mother::STAGES)]);
