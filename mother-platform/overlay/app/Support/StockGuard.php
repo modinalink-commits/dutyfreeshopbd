@@ -49,15 +49,11 @@ class StockGuard {
   }
   /** Storefront: can the customer still order this product? (sourcing categories always can; stock-controlled ones only with stock) */
   public static function sellable($p): bool {
-    if (!isset($p->stock) || $p->stock === null || (int)$p->stock > 0) return true;
-    if (!isset($p->category_id)) return false; // category unknown: keep the old behaviour
-    return self::mode($p->category_id) !== 'STOCK_CONTROLLED';
+    return !isset($p->stock) || $p->stock === null || (int)$p->stock > 0; // zero stock = unavailable in every category (owner decision 7 Nov 2026)
   }
-  /** Storefront listings: hide what a customer cannot order (stock-controlled category at zero stock). Sourcing products stay. Direct product URLs are NOT affected. $a = table alias prefix, e.g. 'p.' */
+  /** Storefront listings (owner decision 7 Nov 2026): every product with zero stock is hidden from lists, search, brands, deals and feeds. Untracked stock (null) stays. Direct product URLs are NOT affected. $a = table alias prefix. */
   public static function listable($qb, string $a = 'products.') {
-    $ci = self::controlledIds();
-    if (!$ci) return $qb;
-    return $qb->where(function ($w) use ($ci, $a) { $w->whereNull($a.'stock')->orWhere($a.'stock', '>', 0)->orWhereNotIn($a.'category_id', $ci); });
+    return $qb->where(function ($w) use ($a) { $w->whereNull($a.'stock')->orWhere($a.'stock', '>', 0); });
   }
   /** Shipment validation (Hybrid Costing): null when the order may ship, otherwise the red alert text.
    *  1. every product must have the stock (No Stock = No Shipment, every category);
