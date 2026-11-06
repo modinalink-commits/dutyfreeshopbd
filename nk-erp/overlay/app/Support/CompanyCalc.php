@@ -16,7 +16,7 @@ class CompanyCalc
         $start = Carbon::parse($ym.'-01');
         $end = (clone $start)->endOfMonth();
         $m = CompanyMonth::find($ym) ?? new CompanyMonth(['month' => $ym, 'kg_commission' => 0, 'deadline_day' => 16, 'flags' => [], 'ait_pct' => 10]);
-        $lines = CompanyEntry::query()->where('kind', 'challan')->whereBetween('entry_date', [$start->toDateString(), $end->toDateString()])
+        $lines = CompanyEntry::query()->where('kind', 'challan')->whereDoesntHave('reversedBy')->whereBetween('entry_date', [$start->toDateString(), $end->toDateString()])
             ->whereDoesntHave('reversedBy')->get();
         $parts = []; $gross = 0; $kg = 0; $bySize = [];
         foreach (Brand::SIZES as $s) {

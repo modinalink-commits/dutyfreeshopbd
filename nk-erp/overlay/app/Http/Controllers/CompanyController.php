@@ -65,8 +65,8 @@ class CompanyController extends Controller
         foreach ($coming as $c) { $run += $c['amt']; $rows[] = ['d' => Carbon::parse($c['d'])->format('d-m-Y'), 't' => $c['t'], 'q' => '', 'do' => null, 'tr' => null, 'bill' => null, 'dep' => $c['amt'], 'bal' => $run, 'kind' => 'pf', 'ids' => []]; }
 
         $calcPrev = CompanyCalc::month($prev);
-        $deps = $entries->where('kind', 'deposit');
-        $chal = $entries->where('kind', 'challan');
+        $deps = $entries->where('kind', 'deposit')->reject(fn ($e) => $e->reversedBy);
+        $chal = $entries->where('kind', 'challan')->reject(fn ($e) => $e->reversedBy);
         $today = now()->timezone('Asia/Dhaka')->toDateString();
 
         // "View calculation": how today's balance adds up, month by month and kind by kind.
@@ -78,7 +78,7 @@ class CompanyController extends Controller
             ->sortBy(fn ($r) => $r->ym.sprintf('%02d', $order[$r->kind] ?? 9))
             ->filter(fn ($r) => abs((float) $r->amt) > 0.004)
             ->map(fn ($r) => ['t' => ($r->kind === 'opening' ? '' : ($bn[Carbon::parse($r->ym.'-01')->format('F')] ?? $r->ym).'-এর ').($kindBn[$r->kind] ?? $r->kind), 'a' => (float) $r->amt, 'n' => (int) $r->n, 'm' => $r->ym])->values();
-        $prevChal = CompanyEntry::query()->where('kind', 'challan')->whereBetween('entry_date', [Carbon::parse($prev.'-01')->toDateString(), Carbon::parse($prev.'-01')->endOfMonth()->toDateString()])->get();
+        $prevChal = CompanyEntry::query()->where('kind', 'challan')->whereDoesntHave('reversedBy')->whereBetween('entry_date', [Carbon::parse($prev.'-01')->toDateString(), Carbon::parse($prev.'-01')->endOfMonth()->toDateString()])->get();
 
         return view('company.index', [
             'explain' => $explain, 'prevTons' => $prevChal->sum(fn ($x) => $x->qty * $x->size_kg) / 1000, 'bnMonth' => $bn,
@@ -112,7 +112,7 @@ class CompanyController extends Controller
         ]);
         // Same challan number saved before? Ask first: the bill would be cut twice.
         if (empty($data['confirm_dup'])) {
-            $prev = CompanyEntry::query()->where('kind', 'challan')->where('challan_no', trim($data['challan_no']))->whereDoesntHave('reversedBy')->orderBy('id')->get();
+            $prev = CompanyEntry::query()->where('kind', 'challan')->whereDoesntHave('reversedBy')->where('challan_no', trim($data['challan_no']))->whereDoesntHave('reversedBy')->orderBy('id')->get();
             if ($prev->isNotEmpty()) {
                 return back()->withInput()->with('dup', ['no' => $data['challan_no'], 'date' => $prev->first()->entry_date->format('d-m-Y'), 'm' => $prev->first()->entry_date->format('Y-m'),
                     'q' => $prev->map(fn ($e) => $e->size_kg.' কেজি × '.$e->qty)->implode(', ')]);

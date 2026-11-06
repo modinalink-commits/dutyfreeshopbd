@@ -42,7 +42,7 @@ class Money
             $add($pick($methodType[$m] ?? 'cash'), $d($r->created_at), -(float) $r->debit);
         }
         $bank = $pick('bank');
-        foreach (CompanyEntry::query()->where('kind', 'deposit')->get(['entry_date', 'amount']) as $e) $add($bank, $e->entry_date->toDateString(), -(float) $e->amount);
+        foreach (CompanyEntry::query()->where('kind', 'deposit')->whereDoesntHave('reversedBy')->get(['entry_date', 'amount']) as $e) $add($bank, $e->entry_date->toDateString(), -(float) $e->amount);
         foreach (Expense::query()->get(['account_id', 'expense_date', 'amount']) as $x) $add($x->account_id, $x->expense_date->toDateString(), -(float) $x->amount);
         foreach (\App\Models\EmployeeLedger::query()->whereNotNull('account_id')->get(['account_id', 'entry_date', 'cash_out']) as $x) $add($x->account_id, $x->entry_date->toDateString(), -(float) $x->cash_out);
         foreach (AccountTransfer::query()->get() as $t) {

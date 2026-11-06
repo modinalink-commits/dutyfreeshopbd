@@ -92,7 +92,7 @@ class ErpController extends Controller
                 return [[$j->count(), 'manual journals'], [abs($dr - $cr) < 0.01 ? 'Balanced' : $tk($dr - $cr).' off', 'debit = credit'], [$bank ? $tk($bank['balance']) : 'No bank account', $bank['account']->name ?? 'add in Accounts'], [$this->open('m02', 2), 'bank lines to match']];
             case 'm03':
                 $held = $this->recs('m03', 0)->where('status', 'posted')->get()->sum(fn ($r) => $r->num('Amount')) - $this->recs('m03', 1)->where('status', 'posted')->get()->sum(fn ($r) => $r->num('Amount'));
-                return [[$tk($held), 'refundable, not income'], [$tk(CompanyEntry::query()->where('kind', 'deposit')->where('deposit_kind', 'security')->sum('amount')), 'cylinder security with company'],
+                return [[$tk($held), 'refundable, not income'], [$tk(CompanyEntry::query()->where('kind', 'deposit')->whereDoesntHave('reversedBy')->where('deposit_kind', 'security')->sum('amount')), 'cylinder security with company'],
                     [$tk($this->recs('m03', 1)->where('created_at', '>=', $mStart)->get()->sum(fn ($r) => $r->num('Amount'))), $now->format('F')], [$this->open('m03', 1), 'waiting']];
             case 'm04':
                 $t = Trip::query()->whereDate('trip_date', $now->toDateString())->where('status', '!=', 'draft')->get()->map(fn ($x) => TripCalc::of($x));

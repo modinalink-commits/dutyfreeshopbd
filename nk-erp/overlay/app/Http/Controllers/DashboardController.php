@@ -57,7 +57,7 @@ class DashboardController extends Controller
 
         // Company target this month (tons lifted from company challans).
         $month = CompanyMonth::find($ym);
-        $lifted = (float) CompanyEntry::query()->where('kind', 'challan')->whereBetween('entry_date', [$now->copy()->startOfMonth()->toDateString(), $now->copy()->endOfMonth()->toDateString()])
+        $lifted = (float) CompanyEntry::query()->where('kind', 'challan')->whereDoesntHave('reversedBy')->whereBetween('entry_date', [$now->copy()->startOfMonth()->toDateString(), $now->copy()->endOfMonth()->toDateString()])
             ->whereDoesntHave('reversedBy')->selectRaw('coalesce(sum(qty * size_kg),0) kg')->value('kg') / 1000;
 
         // Needs attention.

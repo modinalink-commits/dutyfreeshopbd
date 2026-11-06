@@ -42,7 +42,7 @@ class StockController extends Controller
         });
         $deposit = null;
         if (auth()->user()->isSuperAdmin()) {
-            $sec = fn ($from, $to) => (float) \App\Models\CompanyEntry::query()->where('kind', 'deposit')->where('deposit_kind', 'security')->whereBetween('entry_date', [$from, $to])->sum('amount');
+            $sec = fn ($from, $to) => (float) \App\Models\CompanyEntry::query()->where('kind', 'deposit')->whereDoesntHave('reversedBy')->where('deposit_kind', 'security')->whereBetween('entry_date', [$from, $to])->sum('amount');
             $lm = $now->copy()->subMonthNoOverflow();
             $deposit = [
                 'last' => ['name' => $lm->format('F'), 'amt' => $sec($lm->copy()->startOfMonth()->toDateString(), $lm->copy()->endOfMonth()->toDateString()), 'on' => $now->copy()->day(15)],

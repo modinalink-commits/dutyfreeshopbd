@@ -24,7 +24,7 @@ class LedgerImport
         }
         foreach ($dep as $x) {
             $amt = (float) ($x['depPaid'] ?? 0) ?: (float) ($x['deposit'] ?? 0);
-            if (($x['depKind'] ?? '') !== 'comm' && CompanyEntry::query()->where('kind', 'deposit')->where('entry_date', $x['date'])->where('amount', $amt)->exists()) $dups++;
+            if (($x['depKind'] ?? '') !== 'comm' && CompanyEntry::query()->where('kind', 'deposit')->whereDoesntHave('reversedBy')->where('entry_date', $x['date'])->where('amount', $amt)->exists()) $dups++;
         }
         $months = collect($j['months'] ?? []);
         $rates = collect($j['rates'] ?? []);
@@ -80,7 +80,7 @@ class LedgerImport
                     } else {
                         $paid = isset($e['depPaid']);
                         // Same deposit already in the ledger (earlier import or typed in by hand): skip, never count it twice.
-                        if (CompanyEntry::query()->where('kind', 'deposit')->where('entry_date', $e['date'])->where('amount', $amt)
+                        if (CompanyEntry::query()->where('kind', 'deposit')->whereDoesntHave('reversedBy')->where('entry_date', $e['date'])->where('amount', $amt)
                             ->when(($e['challan'] ?? '') !== '', fn ($q) => $q->where(fn ($w) => $w->where('challan_no', $e['challan'])->orWhereNull('challan_no')))->exists()) continue;
                         CompanyEntry::create(['entry_date' => $e['date'], 'kind' => 'deposit', 'deposit_kind' => $paid ? $o['dep_paid'] : 'bank',
                             'source' => $e['source'] ?? ($paid ? 'Deposit paid' : null), 'amount' => $amt, 'challan_no' => ($e['challan'] ?? '') ?: null,
@@ -105,9 +105,9 @@ class LedgerImport
             $a = $m->toDateString(); $b = $m->copy()->endOfMonth()->toDateString();
             $q = fn () => CompanyEntry::query()->whereBetween('entry_date', [$a, $b]);
             $opening = (float) CompanyEntry::query()->where('entry_date', '<', $a)->sum('amount') + (float) $q()->where('kind', 'opening')->sum('amount');
-            $ch = $q()->where('kind', 'challan')->get();
+            $ch = $q()->where('kind', 'challan')->whereDoesntHave('reversedBy')->get();
             $rows[] = ['m' => $m->format('M Y'), 'opening' => $opening, 'hasOpening' => CompanyEntry::query()->where('kind', 'opening')->exists(),
-                'deposits' => (float) $q()->where('kind', 'deposit')->sum('amount'), 'credits' => (float) $q()->whereIn('kind', ['incentive', 'commission'])->sum('amount'),
+                'deposits' => (float) $q()->where('kind', 'deposit')->whereDoesntHave('reversedBy')->sum('amount'), 'credits' => (float) $q()->whereIn('kind', ['incentive', 'commission'])->sum('amount'),
                 'bill' => -(float) $ch->sum('amount'), 'tons' => $ch->sum(fn ($c) => $c->qty * $c->size_kg) / 1000, 'close' => (float) CompanyEntry::query()->where('entry_date', '<=', $b)->sum('amount')];
             $m->addMonth();
         }
