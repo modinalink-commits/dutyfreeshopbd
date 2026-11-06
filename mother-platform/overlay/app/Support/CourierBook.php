@@ -21,10 +21,36 @@ class CourierBook {
     $cod = (float)($o->collected_amount ?? $o->courier_cod ?? 0); if ($cod <= 0) return 0.0;
     $ref = 'DEL-'.$o->invoice; if (DB::table('account_entries')->where('reference', $ref)->exists()) return 0.0;
     if ($o->consignment_id && DB::table('account_entries')->where('reference', 'like', 'PAY-%-'.$o->consignment_id)->exists()) return 0.0; // payout already booked
-    $fee = max(0.0, (float)($o->courier_fee ?? 0)); $amt = round($cod - $fee, 2); if ($amt <= 0) return 0.0;
+    [$fee, $basis] = self::fee($o, $cod); $amt = round($cod - $fee, 2); if ($amt <= 0) return 0.0;
     $d = $o->courier_delivered_at ? \Carbon\Carbon::parse($o->courier_delivered_at)->setTimezone('Asia/Dhaka')->toDateString() : now('Asia/Dhaka')->toDateString();
-    DB::table('account_entries')->insert(['reference'=>$ref, 'invoice'=>(string)Inv::show($o->invoice), 'direction'=>'income', 'account_id'=>self::account($o->courier), 'amount'=>$amt, 'comment'=>'COD delivered ৳'.number_format($cod).' − courier charge ৳'.number_format($fee, 2).' — order '.Inv::show($o->invoice), 'entry_date'=>$d, 'user_name'=>'System (Courier delivered)', 'created_at'=>now(), 'updated_at'=>now()]);
+    DB::table('account_entries')->insert(['reference'=>$ref, 'invoice'=>(string)Inv::show($o->invoice), 'direction'=>'income', 'account_id'=>self::account($o->courier), 'amount'=>$amt, 'comment'=>'COD delivered ৳'.number_format($cod).' − courier charge ৳'.number_format($fee, 2).' ('.$basis.') — order '.Inv::show($o->invoice).self::track($o), 'entry_date'=>$d, 'user_name'=>'System (Courier delivered)', 'created_at'=>now(), 'updated_at'=>now()]);
     return $amt;
+  }
+  /** Courier charge actually deducted from the COD. Order: real payout-invoice line > delivery fee + COD fee (+ discount) from the courier payload > delivery fee + learned COD rate. Returns [fee, basis]. */
+  public static function fee(object $o, float $cod): array {
+    try { $l = $o->consignment_id ? DB::table('pathao_invoice_lines')->where('consignment_id', $o->consignment_id)->orderByDesc('id')->first() : null; } catch (\Throwable $e) { $l = null; }
+    if ($l && (float)$l->fee > 0) return [round((float)$l->fee, 2), 'Pathao invoice'];
+    $del = max(0.0, (float)($o->courier_fee ?? 0)); $cf = null; $disc = 0.0;
+    $pj = json_decode((string)($o->pathao_raw_payload ?? ''), true);
+    if (is_array($pj)) { foreach (['cod_fee', 'cod_charge', 'cod'] as $k) if (isset($pj[$k]) && is_numeric($pj[$k])) { $cf = (float)$pj[$k]; break; } if (isset($pj['discount']) && is_numeric($pj['discount'])) $disc = (float)$pj['discount']; }
+    if ($cf !== null) return [max(0.0, round($del + $cf - $disc, 2)), 'delivery + COD fee'];
+    $rate = self::codRate();
+    if ($rate > 0 && ($o->courier ?: 'Pathao') === 'Pathao') return [round($del + $cod * $rate, 2), 'delivery + COD fee '.round($rate * 100, 2).'%'];
+    return [$del, 'delivery fee only'];
+  }
+  /** COD fee share learned from imported Pathao invoice lines (sum cod_fee / sum collected). 0 when no data. */
+  public static function codRate(): float {
+    return (float)\Illuminate\Support\Facades\Cache::remember('courier.cod.rate', 3600, function () {
+      try { $r = DB::table('pathao_invoice_lines')->where('collected', '>', 0)->selectRaw('coalesce(sum(cod_fee),0) c, coalesce(sum(collected),0) s')->first(); return $r && $r->s > 0 ? min(0.05, max(0, round($r->c / $r->s, 4))) : 0; } catch (\Throwable $e) { return 0; }
+    });
+  }
+  /** Public courier tracking link for the Income comment. */
+  public static function track(object $o): string {
+    $c = trim((string)($o->consignment_id ?? '')); if ($c === '') return '';
+    $cr = $o->courier ?: 'Pathao';
+    if ($cr === 'Pathao') return ' — Track: https://merchant.pathao.com/tracking?consignment_id='.rawurlencode($c).'&phone='.preg_replace('/\D/', '', (string)($o->phone ?? ''));
+    if ($cr === 'Steadfast') return ' — Track: https://steadfast.com.bd/t/'.rawurlencode((string)($o->tracking_code ?? $c));
+    return ' — Consignment '.$c;
   }
   /** Payout invoice line: if delivery already booked this order, book only the difference; otherwise book the payout. Safe to call twice. */
   public static function payout(object $row, ?object $o = null): float {
