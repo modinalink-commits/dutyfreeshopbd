@@ -779,3 +779,5 @@ database/migrations/2026_11_06_000495_customer_benefit_flag.php
 database/migrations/2026_11_06_000500_courier_cod_income_backfill2.php
 app/Support/CourierNote.php
 database/migrations/2026_11_06_000510_courier_note_audit.php
+app/Http/Controllers/CustomerBenefitController.php
+resources/views/customer_benefit.blade.php

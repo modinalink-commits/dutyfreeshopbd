@@ -37,13 +37,18 @@ class CustomerBenefit {
       $rc = (int)$a->rc + (int)($c->legacy_orders ?? 0); $amt = (float)$a->amt + (float)($c->legacy_spent ?? 0);
       $final = (int)$a->rc + (int)$a->cn + (int)$a->rt; $rate = $final > 0 ? round((int)$a->rc / $final * 100, 1) : null;
       $r = ['status'=>'Eligible', 'reasons'=>['ELIGIBLE_LOYAL_CUSTOMER'], 'received'=>$rc, 'amount'=>round($amt, 2), 'total'=>(int)$a->total, 'cancelled'=>(int)$a->cn, 'returned'=>(int)$a->rt, 'rate'=>$rate];
-      $flag = strtolower((string)($c->benefit_flag ?? ''));
-      if (self::on('abuse') && ($c && !empty($c->blocked) || $flag === 'suspended')) { $r['status'] = 'Suspended'; $r['reasons'] = ['CONFIRMED_FRAUD']; }
-      elseif (self::on('abuse') && $flag === 'review') { $r['status'] = 'Review Required'; $r['reasons'] = ['FRAUD_REVIEW']; }
-      elseif ($rc < 1) { $r['status'] = 'Limited'; $r['reasons'] = ['NO_SUCCESSFUL_DELIVERY']; }
-      elseif ($final >= 4 && $rate !== null && $rate < 50.0) { $r['status'] = 'Limited'; $r['reasons'] = ['LOW_RECEIVING_HISTORY']; }
+      [$r['status'], $r['reasons']] = self::classify($rc, (int)$a->rc, (int)$a->cn, (int)$a->rt, $c);
       return self::$memo[$key] = $r;
     } catch (\Throwable $e) { report($e); return ['status'=>'Eligible', 'reasons'=>['ELIGIBLE_LOYAL_CUSTOMER']] + $blank; } // a failed check never blocks an order
+  }
+  /** Status + reason codes from received count (incl. imported history), live received/cancelled/returned counts and the customer row. @return array{0:string,1:array} */
+  public static function classify(int $rc, int $liveRc, int $cn, int $rt, $c): array {
+    $flag = strtolower((string)($c->benefit_flag ?? '')); $final = $liveRc + $cn + $rt; $rate = $final > 0 ? $liveRc / $final * 100 : null;
+    if (self::on('abuse') && (($c && !empty($c->blocked)) || $flag === 'suspended')) return ['Suspended', ['CONFIRMED_FRAUD']];
+    if (self::on('abuse') && $flag === 'review') return ['Review Required', ['FRAUD_REVIEW']];
+    if ($rc < 1) return ['Limited', ['NO_SUCCESSFUL_DELIVERY']];
+    if ($final >= 4 && $rate !== null && $rate < 50.0) return ['Limited', ['LOW_RECEIVING_HISTORY']];
+    return ['Eligible', ['ELIGIBLE_LOYAL_CUSTOMER']];
   }
   public static function allows(?string $phone, $customer = null, ?int $exclude = null): bool { return self::check($phone, $customer, $exclude)['status'] === 'Eligible'; }
 }

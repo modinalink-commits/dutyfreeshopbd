@@ -363,6 +363,10 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/m/{slug}/{id}/edit', [R::class,'form']);
   Route::post('/m/{slug}/{id}', [R::class,'save']);
   Route::post('/m/{slug}/{id}/delete', [R::class,'destroy']);
+  Route::get('/customer-benefit', [\App\Http\Controllers\CustomerBenefitController::class,'index']);
+  Route::get('/customer-benefit/export', [\App\Http\Controllers\CustomerBenefitController::class,'csv']);
+  Route::post('/customer-benefit/settings', [\App\Http\Controllers\CustomerBenefitController::class,'saveSwitches']);
+  Route::post('/customer-benefit/flag', [\App\Http\Controllers\CustomerBenefitController::class,'flag']);
   Route::get('/shurjopay', [\App\Http\Controllers\ShurjoPayController::class,'settings']);
   Route::post('/shurjopay', [\App\Http\Controllers\ShurjoPayController::class,'save']);
   Route::post('/shurjopay/test', [\App\Http\Controllers\ShurjoPayController::class,'test']);
