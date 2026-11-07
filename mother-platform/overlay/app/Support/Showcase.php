@@ -14,7 +14,7 @@ class Showcase {
         if ($r->product_id) { $p = DB::table('products')->where('id', $r->product_id)->where('published', true)->first(); if (!$p && $u === '') continue; }
         if ($u === '' && $p) $u = \App\Http\Controllers\StoreController::url($p);
         if ($u === '') continue;
-        $out[] = ['n' => (int)$r->position, 'pid' => (int)($r->product_id ?? 0), 'title' => (string)($p->name ?? $r->title ?? ''), 'img' => (string)$r->image, 'c' => preg_match('/^#[0-9a-fA-F]{6}$/', (string)$r->theme) ? $r->theme : '#B45309', 'u' => $u, 'm' => (($r->mode ?? 'cutout') === 'poster') ? 'poster' : 'cutout', 'v' => strtotime((string)$r->updated_at) ?: 1];
+        $out[] = ['n' => (int)$r->position, 'pid' => (int)($r->product_id ?? 0), 'title' => (string)($p->name ?? $r->title ?? ''), 'img' => (string)$r->image, 'c' => preg_match('/^#[0-9a-fA-F]{6}$/', (string)$r->theme) ? $r->theme : '#B45309', 'u' => $u, 'm' => (($r->mode ?? 'cutout') === 'poster') ? 'poster' : 'cutout', 'v' => (is_file($f = public_path(ltrim((string)$r->image, '/'))) ? (int)filemtime($f) : 0) ?: (strtotime((string)$r->updated_at) ?: 1)];
       }
       return $out;
     } catch (\Throwable $e) { return []; }
