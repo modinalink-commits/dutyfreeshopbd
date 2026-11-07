@@ -387,8 +387,13 @@ class ChatController extends Controller {
               $from = (string)($m['from'] ?? ''); if ($from === '') continue;
               $type = $m['type'] ?? 'text';
               $body = $type === 'text' ? (string)($m['text']['body'] ?? '') : ($type === 'button' ? (string)($m['button']['text'] ?? '') : '['.$type.' received — open WhatsApp to view]');
-              if (!empty($m['image']['caption'])) $body = $m['image']['caption'].' [image]';
-              Chat::ingest('whatsapp', $from, $names[$from] ?? null, $body, null, $m['id'] ?? null);
+              $att = null; $meta = [];
+              if (in_array($type, ['image', 'sticker', 'document', 'audio', 'video'], true) && !empty($m[$type]['id']) && !DB::table('chat_messages')->where('ext_id', $m['id'] ?? '-')->exists()) {
+                $got = Chat::waMedia((string)$m[$type]['id']);
+                if ($got) { $att = $got[0]; $meta['att_type'] = $got[1]; $cap = trim((string)($m[$type]['caption'] ?? '')); $body = $cap !== '' ? $cap : ['image'=>'', 'sticker'=>'', 'document'=>(string)($m[$type]['filename'] ?? ''), 'audio'=>'Voice message', 'video'=>''][$type]; }
+              }
+              if (!$att && !empty($m['image']['caption'])) $body = $m['image']['caption'].' [image]';
+              Chat::ingest('whatsapp', $from, $names[$from] ?? null, $body, $att, $m['id'] ?? null, $meta);
             }
           }
         }

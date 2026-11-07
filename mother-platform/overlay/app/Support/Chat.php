@@ -39,11 +39,26 @@ class Chat {
       DB::table('chat_threads')->where('id', $t->id)->update(['name'=>$name]);
     }
     DB::table('chat_messages')->insert(['thread_id'=>$t->id, 'dir'=>'in', 'kind'=>$att ? 'file' : 'text', 'body'=>mb_substr($body, 0, 4000), 'attachment_url'=>$att,
-      'attachment_type'=>$att ? 'image' : null, 'ext_id'=>$mid, 'created_at'=>now(), 'updated_at'=>now()]);
+      'attachment_type'=>$att ? ($meta['att_type'] ?? 'image') : null, 'ext_id'=>$mid, 'created_at'=>now(), 'updated_at'=>now()]);
     $st = $t->status === 'resolved' ? 'new' : ($t->status === 'waiting' ? 'open' : $t->status);
     DB::table('chat_threads')->where('id', $t->id)->update(['unread'=>DB::raw('unread + 1'), 'last_message'=>mb_substr($body !== '' ? $body : '[attachment]', 0, 300),
       'last_dir'=>'in', 'last_at'=>now(), 'status'=>$st, 'updated_at'=>now()]);
     return DB::table('chat_threads')->find($t->id);
+  }
+  /** Download an incoming WhatsApp media file (image, sticker, document, audio, video) and keep a local copy. Returns [url, type] or null. */
+  public static function waMedia(string $mediaId): ?array {
+    try {
+      $tok = self::sec('chat_wa_token'); if (!$tok || $mediaId === '') return null;
+      $m = Http::timeout(15)->withToken($tok)->get(self::API.'/'.rawurlencode($mediaId)); if (!$m->ok()) return null;
+      $src = (string)$m->json('url'); $mime = strtolower((string)$m->json('mime_type')); if ($src === '' || (int)$m->json('file_size') > 16 * 1048576) return null;
+      $f = Http::timeout(30)->withToken($tok)->get($src); if (!$f->ok() || $f->body() === '' || strlen($f->body()) > 16 * 1048576) return null;
+      $ext = ['image/jpeg'=>'jpg', 'image/png'=>'png', 'image/webp'=>'webp', 'image/gif'=>'gif', 'application/pdf'=>'pdf', 'audio/ogg'=>'ogg', 'audio/mpeg'=>'mp3', 'audio/mp4'=>'m4a', 'audio/aac'=>'aac', 'audio/amr'=>'amr', 'video/mp4'=>'mp4', 'video/3gpp'=>'3gp'][strtok($mime, ';')] ?? null;
+      if (!$ext) return null; // unknown type: never store an arbitrary file under the public folder
+      $dir = public_path('uploads/chat'); if (!is_dir($dir)) @mkdir($dir, 0775, true);
+      $name = 'in-'.date('ymd').'-'.bin2hex(random_bytes(6)).'.'.$ext; file_put_contents($dir.'/'.$name, $f->body());
+      $type = str_starts_with($mime, 'image/') ? 'image' : (str_starts_with($mime, 'audio/') ? 'audio' : (str_starts_with($mime, 'video/') ? 'video' : 'file'));
+      return [url('/uploads/chat/'.$name), $type];
+    } catch (\Throwable $e) { return null; }
   }
   /** Claude answers a website chat message, unless a staff member has taken the thread over. Runs after the response is sent. */
   public static function aiReply(int $tid): void {
