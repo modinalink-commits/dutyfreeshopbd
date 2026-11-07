@@ -20,6 +20,8 @@ class AiChat {
     elseif (isset($names[$pf])) $r .= "LEARNED CUSTOMER PREFERENCE: this customer mostly writes {$names[$pf]}; use it when the latest message does not make the style clear.\n";
     return $r;
   }
+  /** Claude AI answers WhatsApp and Facebook Messenger too (on by default; Chat Settings has the switch). */
+  public static function chanOn(): bool { return self::on() && Sms::secret('ai_chat_chan') !== '0'; }
   public static function chatOn(): bool { return self::on() && Sms::secret('ai_chat_auto') !== '0'; }
   public static function model(): string { return Sms::secret('ai_model') ?: 'claude-haiku-5-5'; }
   /** Store-wide facts the assistant may quote (cached 5 min): contact, delivery, payment, policies, offers, categories. */

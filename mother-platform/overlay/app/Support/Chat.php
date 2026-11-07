@@ -136,11 +136,25 @@ class Chat {
     } catch (\Throwable $e) { return null; }
   }
   /** Claude answers a website chat message, unless a staff member has taken the thread over. Runs after the response is sent. */
-  public static function aiReply(int $tid): void {
+  public static function aiReply(int $tid, int $depth = 0): void {
+    $lock = null;
     try {
       if (!AiChat::chatOn()) return;
       $t = DB::table('chat_threads')->find($tid);
-      if (!$t || $t->channel !== 'web' || $t->ai_paused) return;
+      if (!$t || $t->ai_paused || !in_array($t->channel, ['web', 'whatsapp', 'facebook'], true)) return;
+      $ext = $t->channel !== 'web'; // WhatsApp / Facebook Messenger: the reply is sent to the customer through the platform
+      if ($ext) {
+        if (!AiChat::chanOn()) return;
+        // one answer at a time per conversation; a second quick message waits briefly, then is picked up by the follow-up run below
+        $lk = 'ai.lock.'.$tid;
+        if (!\Illuminate\Support\Facades\Cache::add($lk, 1, 90)) { sleep(6); if (!\Illuminate\Support\Facades\Cache::add($lk, 1, 90)) return; }
+        $lock = $lk;
+        $li = DB::table('chat_messages')->where('thread_id', $tid)->orderByDesc('id')->first();
+        if (!$li || $li->dir !== 'in') return;
+        $lb = trim((string)$li->body);
+        // staff handle these: voice/video/files, unsupported or system placeholders, and plain thank-you / ok messages
+        if (($li->attachment_url && $li->attachment_type !== 'image') || preg_match('/^\[(unsupported|[a-z]+ received)/iu', $lb) || preg_match('/^(ok|okay|thanks?|thank you|thx|ধন্যবাদ|থ্যাংকস|👍|🙏|❤️?)[\s.!]*$/iu', $lb)) return;
+      }
       $k = 'ai.t.'.$tid.'.'.now()->format('YmdH'); \Illuminate\Support\Facades\Cache::add($k, 0, 4000);
       if (\Illuminate\Support\Facades\Cache::increment($k) > 25) return;
       $d = 'ai.n.'.now()->format('Ymd'); \Illuminate\Support\Facades\Cache::add($d, 0, 90000);
@@ -161,11 +175,17 @@ class Chat {
         if ($txt === null) goto legacy;
         // a hand-off pauses the AI on purpose; its own closing message must still reach the customer
         if (DB::table('chat_threads')->where('id', $tid)->value('ai_paused') && !DB::table('chat_handoffs')->where('thread_id', $tid)->where('created_at', '>', now()->subMinutes(2))->exists()) return;
-        DB::table('chat_messages')->insert(['thread_id'=>$tid, 'dir'=>'out', 'kind'=>'text', 'body'=>mb_substr($txt, 0, 3500), 'user_name'=>'Claude AI', 'is_ai'=>true, 'status'=>'sent', 'created_at'=>now(), 'updated_at'=>now()]);
-        DB::table('chat_threads')->where('id', $tid)->update(['last_message'=>mb_substr($txt, 0, 300), 'last_dir'=>'out', 'last_at'=>now(), 'updated_at'=>now()]);
+        $sent = true; $err = null;
+        if ($ext) { $txt = mb_substr($txt, 0, 1900); [$sent, $err] = self::deliver($t, $txt); }
+        DB::table('chat_messages')->insert(['thread_id'=>$tid, 'dir'=>'out', 'kind'=>'text', 'body'=>mb_substr($txt, 0, 3500), 'user_name'=>'Claude AI', 'is_ai'=>true, 'status'=>$sent ? 'sent' : 'failed', 'error'=>$err, 'created_at'=>now(), 'updated_at'=>now()]);
+        if ($sent) DB::table('chat_threads')->where('id', $tid)->update(['last_message'=>mb_substr($txt, 0, 300), 'last_dir'=>'out', 'last_at'=>now(), 'updated_at'=>now()]);
+        if ($lock) \Illuminate\Support\Facades\Cache::forget($lock);
+        // a customer message that arrived while the AI was answering gets its own answer (once)
+        if ($ext && $sent && $depth < 1 && DB::table('chat_messages')->where('thread_id', $tid)->orderByDesc('id')->value('dir') === 'in') self::aiReply($tid, $depth + 1);
         return;
       }
       legacy:
+      if ($ext) return; // WhatsApp / Messenger are answered by the agent only (the legacy path cannot send through the platform)
       [$ok, $txt] = AiChat::reply($hist, "You are answering inside the live chat. If the customer wants a person, has a complaint, wants to change/cancel an order, or you are not sure, say a team member will reply shortly and give the phone/WhatsApp number. Do not claim to be human.\n", (string)($t->ai_lang ?? ''));
       if (!$ok) return;
       // a staff member may have replied while Claude was thinking
@@ -173,6 +193,7 @@ class Chat {
       DB::table('chat_messages')->insert(['thread_id'=>$tid, 'dir'=>'out', 'kind'=>'text', 'body'=>mb_substr($txt, 0, 3500), 'user_name'=>'Claude AI', 'is_ai'=>true, 'status'=>'sent', 'created_at'=>now(), 'updated_at'=>now()]);
       DB::table('chat_threads')->where('id', $tid)->update(['last_message'=>mb_substr($txt, 0, 300), 'last_dir'=>'out', 'last_at'=>now(), 'updated_at'=>now()]);
     } catch (\Throwable $e) { report($e); }
+    finally { if ($lock) \Illuminate\Support\Facades\Cache::forget($lock); }
   }
   /** Name / photo from the Graph API (best effort). */
   public static function profile(string $ch, string $id, ?string $ref = null): array {

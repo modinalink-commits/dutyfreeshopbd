@@ -176,7 +176,7 @@ class ChatController extends Controller {
     $has = fn($k) => (bool)Chat::sec($k);
     if (!Chat::sec('chat_verify_token')) Sms::setSecret('chat_verify_token', bin2hex(random_bytes(12)));
     return view('chat_settings', ['verify'=>Chat::sec('chat_verify_token'), 'hook'=>url('/webhooks/meta'), 'app_id'=>Chat::sec('chat_app_id'), 'redir'=>url('/admin/chat-settings/fb-callback'), 'pages'=>$this->pages(), 'has'=>['fb'=>$has('chat_fb_token') || $this->pages()->isNotEmpty(), 'ig'=>$has('chat_ig_token'), 'wa'=>$has('chat_wa_token'), 'secret'=>$has('chat_app_secret')],
-      'hook_last'=>DB::table('settings')->where('key', 'chat_hook_last')->value('value'), 'wa_phone'=>Chat::sec('chat_wa_phone_id'), 'ai_auto'=>\App\Support\AiChat::chatOn() || (\App\Support\Sms::secret('ai_chat_auto') !== '0'), 'web_on'=>(DB::table('settings')->where('key', 'chat_web_on')->value('value') ?? '1') === '1',
+      'hook_last'=>DB::table('settings')->where('key', 'chat_hook_last')->value('value'), 'wa_phone'=>Chat::sec('chat_wa_phone_id'), 'ai_chan'=>\App\Support\AiChat::chanOn(), 'ai_auto'=>\App\Support\AiChat::chatOn() || (\App\Support\Sms::secret('ai_chat_auto') !== '0'), 'web_on'=>(DB::table('settings')->where('key', 'chat_web_on')->value('value') ?? '1') === '1',
       'quick'=>DB::table('chat_quick_replies')->orderBy('id')->get(), 'counts'=>DB::table('chat_threads')->select('channel', DB::raw('count(*) n'))->groupBy('channel')->pluck('n', 'channel')]);
   }
   public function waSubscribe(Request $r) {
@@ -309,6 +309,7 @@ class ChatController extends Controller {
     $d = $r->validate(['fb_token'=>'nullable|string|max:600', 'ig_token'=>'nullable|string|max:600', 'wa_token'=>'nullable|string|max:600', 'wa_phone_id'=>'nullable|string|max:40', 'app_secret'=>'nullable|string|max:100', 'app_id'=>'nullable|string|max:40']);
     foreach (['fb_token'=>'chat_fb_token', 'ig_token'=>'chat_ig_token', 'wa_token'=>'chat_wa_token', 'app_secret'=>'chat_app_secret', 'app_id'=>'chat_app_id', 'wa_phone_id'=>'chat_wa_phone_id'] as $k => $sk) if (!empty($d[$k])) Sms::setSecret($sk, trim($d[$k]));
     Sms::setSecret('ai_chat_auto', $r->boolean('ai_auto') ? '1' : '0');
+    Sms::setSecret('ai_chat_chan', $r->boolean('ai_chan') ? '1' : '0');
     DB::table('settings')->updateOrInsert(['key'=>'chat_web_on'], ['value'=>$r->boolean('web_on') ? '1' : '0', 'updated_at'=>now(), 'created_at'=>now()]);
     \Illuminate\Support\Facades\Cache::forget('store.settings2'); \Illuminate\Support\Facades\Cache::forget('chat.web_on');
     DB::table('audit_logs')->insert(['user_id'=>auth()->id(), 'user_name'=>auth()->user()->name, 'action'=>'chat.settings', 'subject'=>'Chat channel settings saved', 'ip'=>$r->ip(), 'created_at'=>now(), 'updated_at'=>now()]);
@@ -398,7 +399,7 @@ class ChatController extends Controller {
                 && !DB::table('chat_messages')->where('ext_id', $m['message']['mid'] ?? '-')->exists()) {
                 $eb = (string)($m['message']['text'] ?? ''); if ($eb === '') $eb = '[attachment]';
                 DB::table('chat_messages')->insert(['thread_id'=>$tt->id, 'dir'=>'out', 'kind'=>'text', 'body'=>mb_substr($eb, 0, 4000), 'ext_id'=>$m['message']['mid'] ?? null, 'user_name'=>'Page inbox', 'status'=>'sent', 'created_at'=>now(), 'updated_at'=>now()]);
-                DB::table('chat_threads')->where('id', $tt->id)->update(['last_message'=>mb_substr($eb, 0, 300), 'last_dir'=>'out', 'last_at'=>now()]);
+                DB::table('chat_threads')->where('id', $tt->id)->update(['last_message'=>mb_substr($eb, 0, 300), 'last_dir'=>'out', 'last_at'=>now(), 'ai_paused'=>true]); // a person answered from the Page inbox: the AI steps back
                 Chat::replied((int)$tt->id, now());
               }
               continue;
@@ -410,6 +411,7 @@ class ChatController extends Controller {
             $body = (string)($msg['text'] ?? ''); if ($body === '' && !$att) $body = '[unsupported message]';
             $th = Chat::ingest($ch, (string)$m['sender']['id'], null, $body, $att, $msg['mid'] ?? null, ['page_ref'=>(string)($e['id'] ?? ''), 'att_type'=>$atype]);
             if ($th && $att && $atype === 'audio' && ($vid = DB::table('chat_messages')->where('ext_id', $msg['mid'] ?? '-')->value('id'))) { $vid = (int)$vid; app()->terminating(fn() => Chat::transcribe($vid)); }
+            if ($th && $ch === 'facebook' && !$th->ai_paused && !($att && $atype !== 'image')) { $tid = (int)$th->id; app()->terminating(fn() => Chat::aiReply($tid)); }
           }
         } elseif ($obj === 'whatsapp_business_account') {
           foreach ($e['changes'] ?? [] as $c) {
@@ -428,6 +430,7 @@ class ChatController extends Controller {
               if (!$att && !empty($m['image']['caption'])) $body = $m['image']['caption'].' [image]';
               $th = Chat::ingest('whatsapp', $from, $names[$from] ?? null, $body, $att, $m['id'] ?? null, $meta);
               if ($th && $att && ($meta['att_type'] ?? '') === 'audio' && ($vid = DB::table('chat_messages')->where('ext_id', $m['id'] ?? '-')->value('id'))) { $vid = (int)$vid; app()->terminating(fn() => Chat::transcribe($vid)); }
+              if ($th && !$th->ai_paused && !($att && ($meta['att_type'] ?? 'image') !== 'image') && in_array($type, ['text', 'button', 'image'], true)) { $tid = (int)$th->id; app()->terminating(fn() => Chat::aiReply($tid)); }
             }
           }
         }
