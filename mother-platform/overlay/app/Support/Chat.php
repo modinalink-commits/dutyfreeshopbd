@@ -279,7 +279,14 @@ class Chat {
     $phones = $rows->pluck('phone')->filter()->unique()->values();
     $oc = $phones->isEmpty() ? collect() : DB::table('orders')->whereIn('phone', $phones)->select('phone', DB::raw('count(*) n'))->groupBy('phone')->pluck('n', 'phone');
     $agents = DB::table('users')->whereIn('id', $rows->pluck('assigned_to')->filter()->unique())->pluck('name', 'id');
-    return $rows->map(function ($t) use ($intel, $oc, $agents) {
+    // SLA: waiting since the first customer message that no human reply has followed (opening the chat never stops it).
+    $ws = collect(); $slaW = 5; $slaR = 15;
+    try {
+      $slaW = max(1, (int)(Sms::secret('sla_warn_min') ?: 5)); $slaR = max($slaW + 1, (int)(Sms::secret('sla_red_min') ?: 15));
+      $aw = $rows->filter(fn($t) => !empty($t->awaiting_reply) && $t->status !== 'resolved')->pluck('id')->all();
+      if ($aw) $ws = collect(DB::select("select m.thread_id, min(m.created_at) as since from chat_messages m where m.thread_id in (".implode(',', array_map('intval', $aw)).") and m.dir = 'in' and m.id > coalesce((select max(o.id) from chat_messages o where o.thread_id = m.thread_id and o.dir = 'out' and coalesce(o.is_ai, false) = false and o.status <> 'failed'), 0) group by m.thread_id"))->pluck('since', 'thread_id');
+    } catch (\Throwable $e) { report($e); }
+    return $rows->map(function ($t) use ($intel, $oc, $agents, $ws, $slaW, $slaR) {
       $i = $intel[$t->id] ?? null; $n = (int)($oc[$t->phone] ?? 0) + (int)($i['legacy'] ?? 0);
       return ['id'=>$t->id, 'channel'=>$t->channel, 'channel_name'=>self::CH[$t->channel] ?? $t->channel, 'name'=>$t->name, 'phone'=>$t->phone, 'username'=>$t->username, 'avatar'=>$t->avatar,
         'status'=>$t->status, 'awaiting'=>(bool)($t->awaiting_reply ?? false) && $t->status !== 'resolved', 'unread'=>!empty($t->awaiting_reply) ? (int)$t->unread : 0,
@@ -288,7 +295,7 @@ class Chat {
         'ai'=>!($t->ai_paused ?? false), 'ai_lang'=>$t->ai_lang ?? null, 'ai_detected'=>$t->ai_detected ?? null, 'assigned_to'=>$t->assigned_to, 'assigned_name'=>$agents[$t->assigned_to] ?? null, 'customer_id'=>$t->customer_id,
         'cat'=>$n > 0 && $i ? $i['cat'] : 'New', 'orders'=>$n, 'risk'=>$n > 0 && $i ? $i['risk'] : 'Low',
         'intent'=>$t->intent ?? null, 'mood'=>$t->mood ?? null, 'priority'=>$t->priority ?? 'normal', 'needs_human'=>(bool)($t->needs_human ?? false),
-        'handoff_at'=>!empty($t->handoff_at) ? \Carbon\Carbon::parse($t->handoff_at)->toIso8601String() : null, 'handoff_reason'=>$t->handoff_reason ?? null, 'ai_summary'=>$t->ai_summary ?? null];
+        'waiting_since'=>isset($ws[$t->id]) ? \Carbon\Carbon::parse($ws[$t->id])->toIso8601String() : null, 'sla_w'=>$slaW, 'sla_r'=>$slaR, 'handoff_at'=>!empty($t->handoff_at) ? \Carbon\Carbon::parse($t->handoff_at)->toIso8601String() : null, 'handoff_reason'=>$t->handoff_reason ?? null, 'ai_summary'=>$t->ai_summary ?? null];
     })->all();
   }
   /** Number of customers currently waiting for a staff reply (not a message count, and never reduced by opening a chat). */
