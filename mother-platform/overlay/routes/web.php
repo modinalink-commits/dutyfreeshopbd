@@ -179,6 +179,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/courier/ship-audit', [\App\Http\Controllers\CourierController::class,'shipAudit']);
   Route::get('/late-delivery', [\App\Http\Controllers\LateDeliveryController::class,'index']);
   Route::post('/late-delivery/{id}/follow', [\App\Http\Controllers\LateDeliveryController::class,'follow'])->whereNumber('id');
+  Route::get('/courier/income-backfill', [\App\Http\Controllers\CourierBackfillController::class,'preview']); Route::post('/courier/income-backfill', [\App\Http\Controllers\CourierBackfillController::class,'apply']);
   Route::get('/courier/pathao-invoices', [\App\Http\Controllers\PathaoInvoiceController::class,'index']);
   Route::post('/courier/pathao-invoices/import', [\App\Http\Controllers\PathaoInvoiceController::class,'import']);
   Route::post('/courier/pathao-invoices/probe', [\App\Http\Controllers\PathaoInvoiceController::class,'probe']);
