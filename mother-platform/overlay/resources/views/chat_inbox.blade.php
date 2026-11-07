@@ -52,7 +52,7 @@
 .mbx .th{padding:9px 10px;margin:0 0 5px;border-radius:10px;border-color:#F1E9E2;gap:0 10px}
 .mbx .th.un{background:#fff;border-color:#F1E9E2;box-shadow:inset 3px 0 0 #FF5A00}.mbx .th.un:hover{background:#FFFBF7}
 .mbx .th.on{background:#FFF1E8;border-color:#FDBA8C;box-shadow:inset 3px 0 0 #FF5A00}
-.mbx .nm{font-size:12.5px;font-weight:600}.mbx .th.un .nm{font-weight:700}
+.mbx .nm{font-size:13.5px;font-weight:600}.mbx .th.un .nm{font-weight:700}
 .mbx .lm{font-size:11.5px;color:#6B7280}.mbx .th.un .lm{color:#0B1220;font-weight:600}
 .mbx .l3{font-size:11px;color:#6B7280;margin-top:3px}
 .mbx .l4{flex-wrap:wrap;gap:4px;margin-top:5px}
