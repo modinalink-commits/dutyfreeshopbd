@@ -14,7 +14,8 @@ class OrderWaConfirmController extends Controller {
       $s = DB::table('order_whatsapp_confirmations')->where('seq', 1)->where('created_at', '>=', now()->subDays(7))->selectRaw("send_status, count(*) c")->groupBy('send_status')->pluck('c', 'send_status');
       $stats = ['total' => $s->sum(), 'by' => $s];
     }
-    return view('wa_confirm_settings', ['c' => fn($k, $d = '') => W::cfg($k, $d), 'tplStatus' => W::cfg('tpl_status', 'NOT SUBMITTED'), 'stats' => $stats, 'body' => W::BODY, 'ready' => W::ready()]);
+    $failed = W::ready() ? DB::table('order_whatsapp_confirmations as f')->join('orders as o', 'o.id', '=', 'f.order_id')->where('f.send_status', 'FAILED')->where('f.created_at', '>=', now()->subDays(7))->orderByDesc('f.id')->limit(30)->get(['f.order_id', 'o.invoice', 'f.mobile', 'f.failure_reason', 'f.permanent', 'f.failed_at']) : collect();
+    return view('wa_confirm_settings', ['c' => fn($k, $d = '') => W::cfg($k, $d), 'tplStatus' => W::cfg('tpl_status', 'NOT SUBMITTED'), 'stats' => $stats, 'body' => W::BODY, 'ready' => W::ready(), 'failed' => $failed]);
   }
   public function save(Request $r) {
     $d = $r->validate(['template' => 'required|string|max:80|regex:/^[a-z0-9_]+$/', 'lang' => 'required|string|max:10', 'brand' => 'required|string|max:60', 'waba' => 'required|string|max:30']);
