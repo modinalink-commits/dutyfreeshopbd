@@ -794,10 +794,5 @@ database/migrations/2026_11_07_000200_recurring_expenses.php
 app/Support/RecurringExpense.php
 app/Http/Controllers/RecurringExpenseController.php
 resources/views/recurring_expenses.blade.php
-database/migrations/2026_11_07_000300_mcp_server.php
-app/Support/Mcp.php
-app/Http/Controllers/McpAdminController.php
-resources/views/mcp_admin.blade.php
-database/migrations/2026_11_07_000400_mcp_oauth.php
-app/Http/Controllers/McpOAuthController.php
-resources/views/mcp_consent.blade.php
+
+database/migrations/2026_11_07_000500_drop_mcp.php
