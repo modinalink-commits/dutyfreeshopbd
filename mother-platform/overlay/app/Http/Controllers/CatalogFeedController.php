@@ -8,7 +8,7 @@ class CatalogFeedController extends Controller {
   const BLOCKED = [1796, 2284, 2394, 2944, 2945, 2946, 2947, 2948, 2989, 2990, 2991, 2992, 2994, 2995, 2996, 2049, 2047, 2143, 2285, 2410, 2759, 2755];
   private static function x(?string $s): string { $s = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/u', '', (string)$s); return htmlspecialchars($s, ENT_XML1 | ENT_QUOTES, 'UTF-8'); }
   public function feed() {
-    $xml = StoreController::rem('store.catalogfeed8', 1800, function () {
+    $xml = StoreController::rem('store.catalogfeed9', 1800, function () {
       $brands = DB::table('brands')->pluck('name', 'id')->all();
       $cats = DB::table('categories')->pluck('name', 'id')->all();
       $o = '<?xml version="1.0" encoding="UTF-8"?>' . "\n" . '<rss xmlns:g="http://base.google.com/ns/1.0" version="2.0"><channel><title>DutyFreeBD</title><link>' . self::BASE . '</link><description>DutyFreeBD product feed</description>' . "\n";
