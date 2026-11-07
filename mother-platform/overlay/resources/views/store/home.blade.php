@@ -124,7 +124,7 @@ body .sec-lv .lo .dl{align-self:flex-start;background:#ECFDF5;color:#047857;font
  body .sec-lv .lo .rw b{font-size:12.5px}
 }
 /* Recently ordered v2 - light, premium, live */
-body .sec-lv .lvbox{background:#fff;border:1px solid #E7EDF3;border-radius:20px;padding:22px;box-shadow:0 1px 2px rgba(16,24,40,.03),0 8px 24px -16px rgba(16,24,40,.12);display:flex;flex-direction:column;gap:14px}
+body .sec-lv .lvbox{background:#fff;border:1.25px solid var(--bd);border-radius:12px;padding:22px;box-shadow:0 1px 2px rgba(16,24,40,.03),0 8px 24px -16px rgba(16,24,40,.12);display:flex;flex-direction:column;gap:14px}
 body .sec-lv .lvh{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:4px}
 body .sec-lv .lvh h2{font-size:28px;font-weight:700;color:var(--n)}
 body .sec-lv .lvh h2 em{background:none;-webkit-text-fill-color:var(--o);color:var(--o)}
@@ -152,7 +152,7 @@ body .sec-lv .lvbody{transition:opacity .3s}body .sec-lv .lvbody.sw{opacity:.35}
 @media(max-width:1200px){body .sec-lv .lg2[data-cr]{--pv:5}}
 @media(max-width:980px){body .sec-lv .lg2[data-cr]{--pv:3}body .sec-lv .lo .im{height:150px}}
 @media(max-width:760px){
- body .sec-lv .lvbox{padding:14px 12px;border-radius:16px}
+ body .sec-lv .lvbox{padding:14px 12px;border-radius:10px}
  body .sec-lv .lvh h2{font-size:22px}body .sec-lv .lvh .su{font-size:11.5px}
  body .sec-lv .lvc{display:inline-block;position:static;margin-top:6px;font-size:11px;padding:3px 10px}
  body .sec-lv .lg2[data-cr]{--pv:2;--g:8px}
