@@ -13,7 +13,7 @@ class Mcp {
   public static function enabled(): bool { return Procure::set('mcp_enabled', '0') === '1'; }
   public static function newToken(string $name, ?string $expires, ?int $by): string {
     $raw = 'mcp_'.bin2hex(random_bytes(24));
-    DB::table('mcp_tokens')->insert(['name' => mb_substr($name, 0, 120), 'token_hash' => hash('sha256', $raw), 'token_hint' => substr($raw, 0, 8).'…'.substr($raw, -4), 'scope' => 'read', 'expires_at' => $expires ?: null, 'created_by' => $by, 'created_at' => now(), 'updated_at' => now()]);
+    DB::table('mcp_tokens')->insert(['name' => mb_substr($name, 0, 120), 'token_hash' => hash('sha256', $raw), 'token_hint' => substr($raw, 0, 6).'…'.substr($raw, -4), 'scope' => 'read', 'expires_at' => $expires ?: null, 'created_by' => $by, 'created_at' => now(), 'updated_at' => now()]);
     return $raw;
   }
   private static function money($v) { return round((float)$v, 2); }
