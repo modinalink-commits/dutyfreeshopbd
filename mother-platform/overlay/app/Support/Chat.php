@@ -238,7 +238,7 @@ class Chat {
                 if ($ip !== '' && str_starts_with($ip, '/uploads/') && is_file(public_path(ltrim($ip, '/')))) $img = 'https://www.dutyfreebd.com'.$ip;
               } catch (\Throwable $e) { $img = null; }
             }
-            $out[] = $img ? ['type'=>'image', 'image'=>['link'=>$img, 'caption'=>mb_substr($c, 0, 900)]] : ['type'=>'text', 'text'=>['body'=>$c, 'preview_url'=>true]];
+            $out[] = $img ? ['type'=>'image', 'image'=>['link'=>$img, 'caption'=>mb_substr(preg_replace('#\s*[:：\-–]?\s*(https?://\S+)\s*$#u', "\n$1", trim($c)), 0, 900)]] : ['type'=>'text', 'text'=>['body'=>$c, 'preview_url'=>true]];
           }
         }
         foreach ($out as $k => $m) {
