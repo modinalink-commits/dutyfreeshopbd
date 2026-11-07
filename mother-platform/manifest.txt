@@ -790,3 +790,7 @@ resources/views/courier_track.blade.php
 app/Support/ApprovalSource.php
 database/migrations/2026_11_07_000100_order_approval_source.php
 app/Http/Controllers/CourierBackfillController.php
+database/migrations/2026_11_07_000200_recurring_expenses.php
+app/Support/RecurringExpense.php
+app/Http/Controllers/RecurringExpenseController.php
+resources/views/recurring_expenses.blade.php
