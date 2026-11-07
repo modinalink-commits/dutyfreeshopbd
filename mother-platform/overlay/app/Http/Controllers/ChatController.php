@@ -163,8 +163,10 @@ class ChatController extends Controller {
     $pc = $g('get', $ph, ['fields'=>'webhook_configuration,display_phone_number,status']);
     $names = collect($b['data'] ?? [])->map(fn($x) => $x['whatsapp_business_api_data']['name'] ?? ($x['name'] ?? '?'))->implode(', ');
     DB::table('audit_logs')->insert(['user_id'=>auth()->id(), 'user_name'=>auth()->user()->name, 'action'=>'chat.wa_subscribe', 'subject'=>'WhatsApp app subscribe (WABA '.$waba.')', 'ip'=>$r->ip(), 'created_at'=>now(), 'updated_at'=>now()]);
-    if (!empty($a['success'])) return back()->with('ok', 'App subscribed to WhatsApp account '.$waba.'. Subscribed apps now: '.($names ?: 'none listed').'. Phone override set: '.json_encode($p).'. Phone webhook config: '.json_encode($pc['webhook_configuration'] ?? $pc).'. WABA apps: '.json_encode($b['data'] ?? $b));
-    return back()->with('err', 'Subscribe failed for '.$waba.': '.json_encode($a['error'] ?? $a).' Subscribed apps: '.($names ?: 'none'));
+    // keep flash messages short: a long one overflows the response header and the proxy answers 502
+    $cut = fn($v) => mb_substr((string)(is_string($v) ? $v : json_encode($v)), 0, 300);
+    if (!empty($a['success'])) return back()->with('ok', 'App subscribed to WhatsApp account '.$waba.'. Subscribed apps now: '.($names ?: 'none listed').'. Phone override: '.$cut($p).'. Phone webhook config: '.$cut($pc['webhook_configuration'] ?? $pc));
+    return back()->with('err', 'Subscribe failed for '.$waba.': '.$cut($a['error'] ?? $a).' Subscribed apps: '.($names ?: 'none'));
   }
   public function waRegister(Request $r) {
     $d = $r->validate(['reg_pin'=>['required', 'regex:/^\d{6}$/']]);
