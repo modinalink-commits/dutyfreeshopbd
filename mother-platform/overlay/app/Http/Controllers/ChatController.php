@@ -174,6 +174,11 @@ class ChatController extends Controller {
     if (!$tok || !$ph) return back()->with('err', 'Save the WhatsApp Cloud API token and phone number ID first.');
     $h = fn($m, $u, $q = []) => \Illuminate\Support\Facades\Http::timeout(25)->withToken($tok)->{$m}('https://graph.facebook.com/v21.0/'.$u, $q)->json();
     $res = $h('post', $ph.'/register', ['messaging_product'=>'whatsapp', 'pin'=>$d['reg_pin']]);
+    // number was used by another tool (e.g. LazyChat) that set its own two-step PIN: set ours, then register again
+    if (empty($res['success']) && (int)($res['error']['code'] ?? 0) === 133005) {
+      $h('post', $ph, ['pin'=>$d['reg_pin']]);
+      $res = $h('post', $ph.'/register', ['messaging_product'=>'whatsapp', 'pin'=>$d['reg_pin']]);
+    }
     $st = $h('get', $ph, ['fields'=>'status,code_verification_status,platform_type,throughput,display_phone_number']);
     DB::table('audit_logs')->insert(['user_id'=>auth()->id(), 'user_name'=>auth()->user()->name, 'action'=>'chat.wa_register', 'subject'=>'WhatsApp number register attempt', 'ip'=>$r->ip(), 'created_at'=>now(), 'updated_at'=>now()]);
     if (!empty($res['success'])) return back()->with('ok', 'WhatsApp number registered. Status now: '.json_encode($st));
