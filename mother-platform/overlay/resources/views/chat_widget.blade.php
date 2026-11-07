@@ -269,7 +269,8 @@ document.addEventListener('click',function(){try{if(!M._a){var A=window.AudioCon
 window.addEventListener('storage',function(e){if(e.key==='mchat_unread'&&e.newValue){var v=+e.newValue.split('|')[0];if(v!==M.unread)M.badge(v,true)}else if(e.key==='mchat_smode'&&SL[e.newValue]){M.smode=e.newValue;M.mute=e.newValue==='off'}});
 /* ---------- real-time poll ---------- */
 var since=null,busy=false;
-function tick(){if(busy)return;busy=true;api('/admin/chat/poll'+(since===null?'':'?since='+since)).then(function(j){busy=false;if(j.last_id===undefined)return;
+var pdelay=4000;
+function tick(){if(busy)return;busy=true;var t0=Date.now();api('/admin/chat/poll'+(since===null?'':'?since='+since)).then(function(j){busy=false;pdelay=Date.now()-t0>1500?12000:4000;if(j.last_id===undefined)return;
   var first=since===null;since=j.last_id;M.badge(j.unread);
   if(!document.hidden){try{localStorage.setItem('mchat_vis',String(Date.now()))}catch(e){}}
   if(!first&&j.items&&j.items.length){var any=false,snd=false,claim=true;
@@ -280,8 +281,8 @@ function tick(){if(busy)return;busy=true;api('/admin/chat/poll'+(since===null?''
     j.items.forEach(function(it){if(M.current===it.id&&!document.hidden){return}any=true;showCard(it);if(claim){if(M.wantsSound(it))snd=true;
       try{if(document.hidden&&window.Notification&&Notification.permission==='granted'&&M.smode!=='off'){var nt=new Notification(it.channel_name+' — '+it.name,{body:(it.preview||'').slice(0,120),tag:'mc'+it.id});nt.onclick=function(){window.focus();M.open(it.id);nt.close()}}}catch(e){}}});
     if(any&&claim&&snd)beep();if(M.onNew)M.onNew(j.items)}
-  }).catch(function(){busy=false})}
-if(!window.DF_EMBED){tick();setInterval(function(){if(!document.hidden||Math.random()<.15)tick()},2000);
+  }).catch(function(){busy=false;pdelay=12000})}
+if(!window.DF_EMBED){tick();(function sched(){setTimeout(function(){if(!document.hidden||Math.random()<.3)tick();sched()},pdelay)})();
 document.addEventListener('visibilitychange',function(){if(!document.hidden)tick()});}
 })();
 </script>
