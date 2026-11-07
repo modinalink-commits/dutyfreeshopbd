@@ -55,7 +55,7 @@ e1ff7cb5e1c7465547a1830f4ee1795766cc7be9 resources/views/store/layout.blade.php
 eab3909c69947b17ed5d5f2d5e3d1f7b0b564481 resources/views/store/card.blade.php
 4a5eb7ee8d7960886fcb97c690bbb604ec69eb1f resources/views/store/home_sec.blade.php
 a4a66cd469107a9c95152e10ebaa760f3b656316 resources/views/store/home.blade.php
-491190955a7dc5d735fa21b3d82c02e8479fe979 resources/views/store/category.blade.php
+a3fda55131097dd278c03972b2394df2efd753e9 resources/views/store/category.blade.php
 7970abc1ce69bbf88e8d32f3299c21534d820409 resources/views/store/product.blade.php
 7ad9d9502d41f54d6784414a9aa3f16a8ab0ec13 resources/views/store/search.blade.php
 4b9c2c9d102c4157f1559bb68f4665d1899a329d resources/views/store/track.blade.php
