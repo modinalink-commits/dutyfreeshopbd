@@ -173,7 +173,7 @@ M.mount=function(el,id,opt){
     if(!CAN){$('#mf').innerHTML='<div class="ro">You have view-only access to chats.</div>';return}
     $('#mf').innerHTML='<div class="pk" id="mpk"><input id="mpq" placeholder="Search product name or SKU…" style="margin-bottom:6px;padding:7px 9px"><div id="mpl"></div></div>'+
     '<div class="tb"><span class="qrw">'+ic('bolt')+'<select id="mq" title="Quick reply"><option value="">Quick reply</option>'+d.quick.map(function(q){return '<option value="'+q.id+'">'+esc(q.title)+'</option>'}).join('')+'</select></span>'+
-    '<button class="tg" type="button" id="mpb">'+ic('bag')+'Product</button><button class="tg" type="button" id="mib">'+ic('doc')+'Invoice</button><button class="tg" type="button" id="mtb">'+ic('truck')+'Tracking</button><label class="tg" style="margin:0;cursor:pointer">'+ic('clip')+'Attach<input type="file" id="mfi" accept="image/*,.pdf" style="display:none"></label><button class="tg" type="button" id="mvb">'+ic('mic')+'Voice</button></div><div class="vr" id="mvr" hidden></div>'+
+    '<button class="tg" type="button" id="mpb">'+ic('bag')+'Product</button><button class="tg" type="button" id="mib">'+ic('doc')+'Invoice</button><button class="tg" type="button" id="mtb">'+ic('truck')+'Tracking</button><label class="tg" style="margin:0;cursor:pointer">'+ic('clip')+'Attach<input type="file" id="mfi" accept="image/*,.pdf" style="display:none"></label><button class="tg" type="button" id="mvb">'+ic('mic')+'Voice</button><button class="tg" type="button" id="mdb" title="Speak in Bangla and it is typed for you (Chrome / Edge)">'+ic('mic')+'বাংলা টাইপ</button></div><div class="vr" id="mvr" hidden></div>'+
     '<div class="sd"><button type="button" class="pl" id="mtl" aria-label="More tools">+</button><textarea id="mt" placeholder="Type a reply… (Enter to send, Shift+Enter for a new line)"></textarea><button type="button" id="ms">'+ic('send')+'<span class="sl">Send</span></button></div><div id="mer" class="err"></div>';
     var qm={};d.quick.forEach(function(q){qm[q.id]=q.body});
     $('#mq').onchange=function(){if(this.value){$('#mt').value=qm[this.value];S.kind='quick';$('#mt').focus();this.value=''}};
@@ -200,6 +200,18 @@ M.mount=function(el,id,opt){
         function paint(){var el=(Date.now()-rc.t0)/1000;vrBar('<span class="rd"></span><b>'+fmtT(el)+' · Recording…</b><button class="mini" type="button" id="vrc">Cancel</button><button class="mini pr" type="button" id="vrs">Stop</button>');$('#vrc').onclick=function(){rc.cancel=true;mr.stop()};$('#vrs').onclick=function(){mr.stop()};if(el>=119)mr.stop()}
         paint();rc.tick=setInterval(paint,500)}).catch(function(){$('#mer').textContent='Microphone is blocked. Allow the microphone for this site in the browser.'})}
     $('#mvb').onclick=function(){if(rc){rc.mr.stop()}else startRec()};
+    // Bangla speech-to-text: speak and the words are typed into the reply box (browser speech recognition, Chrome / Edge; nothing is sent until you press Send)
+    (function(){var db=$('#mdb'),SR=window.SpeechRecognition||window.webkitSpeechRecognition,rg=null;if(!db)return;
+      if(!SR){db.disabled=true;db.title='Voice typing needs Chrome or Edge';return}
+      db.onclick=function(){var ta=$('#mt');if(rg){rg.stop();return}
+        rg=new SR();rg.lang='bn-BD';rg.continuous=true;rg.interimResults=true;var base=ta.value,fin='';
+        rg.onstart=function(){db.classList.add('rec');db.lastChild.nodeValue=' থামান'};
+        rg.onresult=function(e){var im='';for(var i=e.resultIndex;i<e.results.length;i++){var tx=e.results[i][0].transcript;if(e.results[i].isFinal)fin+=tx+' ';else im+=tx}
+          ta.value=(base?base.replace(/\s*$/,' '):'')+fin+im;ta.dispatchEvent(new Event('input',{bubbles:true}))};
+        rg.onerror=function(e){if(e.error==='not-allowed'||e.error==='service-not-allowed')db.title='Allow the microphone for this site'};
+        rg.onend=function(){db.classList.remove('rec');db.lastChild.nodeValue='বাংলা টাইপ';rg=null;ta.focus()};
+        try{rg.start()}catch(x){rg=null}};
+    })();
     S.vstop=function(){if(rc){rc.cancel=true;try{rc.mr.stop()}catch(e){}}};
     $('#ms').onclick=function(){send()};$('#mtl').onclick=function(){$('#mf').classList.toggle('tools')};
     $('#mt').onkeydown=function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}};
