@@ -12,7 +12,7 @@ class Voice
   const SCRIPT = 'আসসালামু আলাইকুম। DutyFreeBD থেকে বলছি। আপনার সর্বশেষ অর্ডার করা {product}-এর উপর আপনার জন্য বিশেষ {pct} শতাংশ ডিসকাউন্ট রয়েছে। অফারটি সীমিত সময়ের জন্য। আপনার অফারটি আগামী {days} দিন পর্যন্ত কার্যকর থাকবে। অর্ডার করতে DutyFreeBD ওয়েবসাইটে ভিজিট করুন অথবা আমাদের প্রতিনিধির সাথে যোগাযোগ করুন। ধন্যবাদ।';
   const MENU = ' অফারটি নিতে ১ চাপুন। আমাদের প্রতিনিধির সাথে কথা বলতে ২ চাপুন। এই ধরনের অফার কল আর পেতে না চাইলে ৯ চাপুন।';
   const SMS = 'DutyFreeBD: আপনার সর্বশেষ অর্ডার করা {product} এর উপর {pct}% বিশেষ ডিসকাউন্ট রয়েছে। অফারটি {date} পর্যন্ত কার্যকর।';
-  const SEGMENTS = ['all' => 'All eligible customers', 'inactive_15' => 'Inactive 15–29 days', 'inactive_30' => 'Inactive 30–44 days', 'inactive_45' => 'Inactive 45–54 days', 'inactive_55' => 'Inactive 55+ days', 'vip' => 'VIP customers', 'regular' => 'Regular customers', 'selected' => 'Selected customers (phone list)', 'custom' => 'Custom filter'];
+  const SEGMENTS = ['all' => 'All eligible customers', 'inactive_15' => 'Inactive 15–29 days', 'inactive_30' => 'Inactive 30–44 days', 'inactive_45' => 'Inactive 45–54 days', 'inactive_55' => 'Inactive 55+ days', 'vip' => 'VIP customers', 'diamond' => 'Diamond members', 'regular' => 'Regular customers', 'selected' => 'Selected customers (phone list)', 'custom' => 'Custom filter'];
   const STATUS = ['pending' => 'Pending', 'calling' => 'Calling', 'answered' => 'Answered', 'not_answered' => 'Not Answered', 'busy' => 'Busy', 'failed' => 'Failed', 'interested' => 'Interested', 'transferred' => 'Transferred to Agent', 'accepted' => 'Offer Accepted', 'opted_out' => 'Opted Out'];
 
   public static function set(string $k, string $def = ''): string { $v = DB::table('settings')->where('key', 'vc_' . $k)->value('value'); return $v === null ? $def : (string)$v; }
@@ -71,26 +71,34 @@ class Voice
   public static function lastProduct(int $orderId): ?object {
     return DB::table('order_items as i')->join('products as p', 'p.id', '=', 'i.product_id')->where('i.order_id', $orderId)->orderByRaw('i.qty * i.price desc')->first(['p.id as pid', 'p.name as pname', 'p.published', 'p.stock', 'i.price', 'i.name as iname']);
   }
+  /** Diamond member: level set by an admin on the customer, else from received-parcel spend (same rule as the membership card). */
+  public static function isDiamond(string $p, object $cu): bool {
+    try { $lv = OrderDiscount::levelOf($cu->customer_level ?? null, (int)(OrderDiscount::tier($p, $cu)['stars'] ?? 0)); return $lv && $lv['key'] === 'diamond'; } catch (\Throwable $e) { return false; }
+  }
   /** Eligible customers for a campaign. @return array{rows:array,skipped:array} */
   public static function candidates(object $c, int $limit = 100000): array {
     $cfg = json_decode((string)$c->segment_cfg, true) ?: []; $rows = []; $skip = []; $seg = $c->segment;
     $sel = null; if ($seg === 'selected') { $sel = array_values(array_filter(array_map(fn($x) => self::norm($x), preg_split('/[\s,;]+/', (string)$c->segment_phones)))); }
     $last = $sel !== null ? [] : Winback::lastDelivered(); if ($sel !== null) foreach ($sel as $p) { $x = Winback::lastDelivered($p); if ($x) $last += $x; else $skip[$p] = 'No delivered order, or a newer open order exists'; }
+    $needP = trim((string)$c->script) === '' || str_contains((string)$c->script, '{product}'); // a general offer call that never names a product does not need an active, in-stock last product
     $cool = now()->subDays(max(0, (int)$c->cooldown_days)); $already = DB::table('voice_campaign_customers')->where('campaign_id', $c->id)->pluck('phone')->flip()->all();
     $recent = DB::table('voice_call_attempts')->where('test', false)->where('started_at', '>', $cool)->pluck('phone')->flip()->all();
     $custs = DB::table('customers')->whereIn(DB::raw('right(phone,11)'), array_keys($last) ?: ['0'])->get()->keyBy(fn($x) => self::norm($x->phone));
     foreach ($last as $p => $x) {
       if (isset($already[$p])) continue; $d = Winback::days($x['at']); $cu = $custs[$p] ?? null;
-      $ok = match ($seg) { 'inactive_15' => $d >= 15 && $d < 30, 'inactive_30' => $d >= 30 && $d < 45, 'inactive_45' => $d >= 45 && $d < 55, 'inactive_55' => $d >= 55, 'vip' => $cu && strtolower((string)($cu->type ?? '')) === 'vip', 'regular' => $cu && strtolower((string)($cu->type ?? '')) !== 'vip',
+      $ok = match ($seg) { 'inactive_15' => $d >= 15 && $d < 30, 'inactive_30' => $d >= 30 && $d < 45, 'inactive_45' => $d >= 45 && $d < 55, 'inactive_55' => $d >= 55, 'vip' => $cu && strtolower((string)($cu->type ?? '')) === 'vip', 'diamond' => $cu && self::isDiamond($p, $cu), 'regular' => $cu && strtolower((string)($cu->type ?? '')) !== 'vip',
         'custom' => $d >= (int)($cfg['min_days'] ?? 0) && $d <= ((int)($cfg['max_days'] ?? 0) ?: 100000) && (!($cfg['category'] ?? '') || (($cfg['category'] === 'vip') === ($cu && strtolower((string)($cu->type ?? '')) === 'vip'))), default => true };
       if (!$ok) continue;
       if (!$cu) { $skip[$p] = 'No customer account'; continue; } if ($cu->blocked) { $skip[$p] = 'Customer blocked'; continue; }
       if (!($cu->promo_call ?? true) || self::optedOut($p)) { $skip[$p] = 'Voice offer opt-out'; continue; } if (!self::validPhone($p)) { $skip[$p] = 'Invalid phone number'; continue; }
       if (isset($recent[$p])) { $skip[$p] = 'Called within the last ' . $c->cooldown_days . ' days'; continue; }
       if (($cfg['min_orders'] ?? 0) && OrderDiscount::stats($p, $cu)['n'] < (int)$cfg['min_orders']) { $skip[$p] = 'Fewer orders than required'; continue; }
-      $pr = self::lastProduct($x['oid']); if (!$pr) { $skip[$p] = 'Last order has no catalogue product'; continue; }
-      if (!$pr->published) { $skip[$p] = 'Product is not active'; continue; } if ((int)$pr->stock <= 0) { $skip[$p] = 'Product out of stock'; continue; }
-      $rows[] = ['customer_id' => $cu->id, 'name' => $cu->name, 'phone' => $p, 'product_id' => $pr->pid, 'product_name' => $pr->pname, 'last_price' => (float)$pr->price, 'order_id' => $x['oid'], 'last_order_at' => $x['at'], 'days' => $d];
+      $pr = self::lastProduct($x['oid']);
+      if ($needP) {
+        if (!$pr) { $skip[$p] = 'Last order has no catalogue product'; continue; }
+        if (!$pr->published) { $skip[$p] = 'Product is not active'; continue; } if ((int)$pr->stock <= 0) { $skip[$p] = 'Product out of stock'; continue; }
+      }
+      $rows[] = ['customer_id' => $cu->id, 'name' => $cu->name, 'phone' => $p, 'product_id' => $pr->pid ?? null, 'product_name' => $pr->pname ?? '', 'last_price' => (float)($pr->price ?? 0), 'order_id' => $x['oid'], 'last_order_at' => $x['at'], 'days' => $d];
       if (count($rows) >= $limit) break;
     }
     return ['rows' => $rows, 'skipped' => $skip];
