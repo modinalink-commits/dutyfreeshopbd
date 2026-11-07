@@ -124,5 +124,17 @@ class AiChat {
     $t = trim(collect($res->json('content') ?? [])->where('type','text')->pluck('text')->implode("\n"));
     return $t === '' ? [false, 'empty reply'] : [true, $t];
   }
+  /** Staff drafting aid: fixes spelling, grammar, punctuation and wording of a (voice-typed) reply while keeping the meaning, language and every number / price / link exactly. */
+  public static function polish(string $text): array {
+    $key = Sms::secret('ai_key'); if (!$key) return [false, 'AI key is not set'];
+    $n = 'ai.polish.'.now()->format('Ymd'); if ((int)Cache::get($n, 0) >= 600) return [false, 'daily limit reached']; Cache::put($n, (int)Cache::get($n, 0) + 1, 90000);
+    $sys = "You polish a customer-service reply typed by a DutyFreeBD staff member, often by voice dictation, so it may contain wrong or missing words, mis-heard words, no punctuation or broken sentences. Rewrite it as a clear, polite, natural message a friendly shopkeeper would send. Rules: keep the same language and script as the draft (Bengali stays Bengali, English stays English, Banglish stays Banglish; a Bengali draft with English business words may keep them); keep the exact meaning and DO NOT add any new fact, promise, price, discount, date or link; keep every number, price, phone number, order number and link exactly as written; keep it short; never use the words ভাইয়া, ভাই, আপু, বোন, bhai, bon, apu; no markdown. Output ONLY the corrected message, nothing else.";
+    try {
+      $res = Http::withHeaders(['x-api-key'=>$key, 'anthropic-version'=>'2023-06-01'])->timeout(25)->post('https://api.anthropic.com/v1/messages', ['model'=>self::model(), 'max_tokens'=>900, 'system'=>$sys, 'messages'=>[['role'=>'user', 'content'=>mb_substr($text, 0, 3000)]]]);
+    } catch (\Throwable $e) { return [false, 'network']; }
+    if (!$res->ok()) return [false, 'HTTP '.$res->status()];
+    $t = trim(collect($res->json('content') ?? [])->where('type', 'text')->pluck('text')->implode("\n"));
+    return $t === '' ? [false, 'empty reply'] : [true, $t];
+  }
 }
 class StoreFallback { public static function phone(): string { return Biz::hotline(); } }

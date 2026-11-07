@@ -173,7 +173,7 @@ M.mount=function(el,id,opt){
     if(!CAN){$('#mf').innerHTML='<div class="ro">You have view-only access to chats.</div>';return}
     $('#mf').innerHTML='<div class="pk" id="mpk"><input id="mpq" placeholder="Search product name or SKU…" style="margin-bottom:6px;padding:7px 9px"><div id="mpl"></div></div>'+
     '<div class="tb"><span class="qrw">'+ic('bolt')+'<select id="mq" title="Quick reply"><option value="">Quick reply</option>'+d.quick.map(function(q){return '<option value="'+q.id+'">'+esc(q.title)+'</option>'}).join('')+'</select></span>'+
-    '<button class="tg" type="button" id="mpb">'+ic('bag')+'Product</button><button class="tg" type="button" id="mib">'+ic('doc')+'Invoice</button><button class="tg" type="button" id="mtb">'+ic('truck')+'Tracking</button><label class="tg" style="margin:0;cursor:pointer">'+ic('clip')+'Attach<input type="file" id="mfi" accept="image/*,.pdf" style="display:none"></label><button class="tg" type="button" id="mvb">'+ic('mic')+'Voice</button><button class="tg" type="button" id="mdb" title="Speak in Bangla and it is typed for you (Chrome / Edge)">'+ic('mic')+'বাংলা টাইপ</button></div><div class="vr" id="mvr" hidden></div>'+
+    '<button class="tg" type="button" id="mpb">'+ic('bag')+'Product</button><button class="tg" type="button" id="mib">'+ic('doc')+'Invoice</button><button class="tg" type="button" id="mtb">'+ic('truck')+'Tracking</button><label class="tg" style="margin:0;cursor:pointer">'+ic('clip')+'Attach<input type="file" id="mfi" accept="image/*,.pdf" style="display:none"></label><button class="tg" type="button" id="mvb">'+ic('mic')+'Voice</button><button class="tg" type="button" id="mdb" title="Speak in Bangla and it is typed for you (Chrome / Edge)">'+ic('mic')+'বাংলা টাইপ</button><button class="tg" type="button" id="mfx" title="AI fixes spelling and wording of what is written">✨ AI ঠিক করুন</button><button class="tg" type="button" id="mdu" hidden title="Bring back the text as it was before AI correction">↩ মূল লেখা</button></div><div class="vr" id="mvr" hidden></div>'+
     '<div class="sd"><button type="button" class="pl" id="mtl" aria-label="More tools">+</button><textarea id="mt" placeholder="Type a reply… (Enter to send, Shift+Enter for a new line)"></textarea><button type="button" id="ms">'+ic('send')+'<span class="sl">Send</span></button></div><div id="mer" class="err"></div>';
     var qm={};d.quick.forEach(function(q){qm[q.id]=q.body});
     $('#mq').onchange=function(){if(this.value){$('#mt').value=String(qm[this.value]).replace(/\{agent\}/g,d.me||'');S.kind='quick';$('#mt').focus();this.value=''}};
@@ -200,17 +200,33 @@ M.mount=function(el,id,opt){
         function paint(){var el=(Date.now()-rc.t0)/1000;vrBar('<span class="rd"></span><b>'+fmtT(el)+' · Recording…</b><button class="mini" type="button" id="vrc">Cancel</button><button class="mini pr" type="button" id="vrs">Stop</button>');$('#vrc').onclick=function(){rc.cancel=true;mr.stop()};$('#vrs').onclick=function(){mr.stop()};if(el>=119)mr.stop()}
         paint();rc.tick=setInterval(paint,500)}).catch(function(){$('#mer').textContent='Microphone is blocked. Allow the microphone for this site in the browser.'})}
     $('#mvb').onclick=function(){if(rc){rc.mr.stop()}else startRec()};
-    // Bangla speech-to-text: speak and the words are typed into the reply box (browser speech recognition, Chrome / Edge; nothing is sent until you press Send)
-    (function(){var db=$('#mdb'),SR=window.SpeechRecognition||window.webkitSpeechRecognition,rg=null;if(!db)return;
+    // Bangla speech-to-text (browser speech recognition, Chrome / Edge). Keeps listening through pauses, rebuilds the text from every result so nothing is lost or doubled, then the AI tidies spelling and wording. Nothing is sent until Send is pressed.
+    (function(){var db=$('#mdb'),fx=$('#mfx'),un=$('#mdu'),SR=window.SpeechRecognition||window.webkitSpeechRecognition,rg=null,want=false,base='',orig=null,busy=false;if(!db)return;
+      var ta=function(){return $('#mt')};
+      function lbl(t){db.lastChild.nodeValue=t}
+      function join(a,b){a=(a||'').replace(/\s+$/,'');return a?(b?a+' '+b:a):(b||'')}
+      function setv(v){var t=ta();t.value=v;t.dispatchEvent(new Event('input',{bubbles:true}))}
+      function polish(auto){var t=ta(),v=t.value.trim();if(busy||v.length<3)return;busy=true;var before=t.value;if(fx)fx.disabled=true;lbl(' AI ঠিক করছে…');db.disabled=true;
+        var tok=(document.querySelector('meta[name=csrf-token]')||{}).content||'';
+        fetch('/admin/chat/polish',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':tok,'Accept':'application/json'},body:JSON.stringify({text:v})})
+          .then(function(r){return r.json()}).then(function(j){if(j&&j.ok&&j.text&&ta().value===before){orig=before;setv(j.text);if(un)un.hidden=false}}).catch(function(){})
+          .then(function(){busy=false;db.disabled=false;if(fx)fx.disabled=false;lbl(want?' থামান':'বাংলা টাইপ');ta().focus()})}
+      if(un)un.onclick=function(){if(orig!==null){setv(orig);orig=null}un.hidden=true;ta().focus()};
+      if(fx)fx.onclick=function(){polish(false)};
       if(!SR){db.disabled=true;db.title='Voice typing needs Chrome or Edge';return}
-      db.onclick=function(){var ta=$('#mt');if(rg){rg.stop();return}
-        rg=new SR();rg.lang='bn-BD';rg.continuous=true;rg.interimResults=true;var base=ta.value,fin='';
-        rg.onstart=function(){db.classList.add('rec');db.lastChild.nodeValue=' থামান'};
-        rg.onresult=function(e){var im='';for(var i=e.resultIndex;i<e.results.length;i++){var tx=e.results[i][0].transcript;if(e.results[i].isFinal)fin+=tx+' ';else im+=tx}
-          ta.value=(base?base.replace(/\s*$/,' '):'')+fin+im;ta.dispatchEvent(new Event('input',{bubbles:true}))};
-        rg.onerror=function(e){if(e.error==='not-allowed'||e.error==='service-not-allowed')db.title='Allow the microphone for this site'};
-        rg.onend=function(){db.classList.remove('rec');db.lastChild.nodeValue='বাংলা টাইপ';rg=null;ta.focus()};
-        try{rg.start()}catch(x){rg=null}};
+      function begin(){var r=new SR();rg=r;r.lang='bn-BD';r.continuous=true;r.interimResults=true;r.maxAlternatives=1;
+        r.onstart=function(){db.classList.add('rec');lbl(' থামান')};
+        r.onresult=function(e){var fin='',im='';for(var i=0;i<e.results.length;i++){var x=e.results[i][0].transcript;if(e.results[i].isFinal)fin+=x+' ';else im+=x}
+          setv(join(join(base,fin.trim()),im.trim()))};
+        r.onerror=function(e){if(e.error==='not-allowed'||e.error==='service-not-allowed'){want=false;db.title='Allow the microphone for this site'}else if(e.error==='network'){want=false;db.title='Voice typing needs an internet connection'}};
+        r.onend=function(){rg=null;if(want){base=ta().value.replace(/\s+$/,'');setTimeout(function(){if(want&&!rg){try{begin()}catch(x){want=false;finish()}}},200)}else finish()};
+        r.start()}
+      function finish(){db.classList.remove('rec');lbl('বাংলা টাইপ');var t=ta();if(t.value.trim()!==(base0||'').trim())polish(true)}
+      var base0='';
+      db.onclick=function(){if(busy)return;if(want){want=false;if(rg)rg.stop();else finish();return}
+        orig=null;if(un)un.hidden=true;base=ta().value.replace(/\s+$/,'');base0=base;want=true;try{begin()}catch(x){want=false;rg=null}};
+      // typing by hand while listening stops the dictation so it never overwrites what was typed
+      document.addEventListener('keydown',function(e){if(want&&e.target&&e.target.id==='mt'){want=false;if(rg)rg.stop()}},true);
     })();
     S.vstop=function(){if(rc){rc.cancel=true;try{rc.mr.stop()}catch(e){}}};
     $('#ms').onclick=function(){send()};$('#mtl').onclick=function(){$('#mf').classList.toggle('tools')};

@@ -118,6 +118,11 @@ class ChatController extends Controller {
   }
 
   /** Turn Claude's automatic replies on or off for one conversation. */
+  public function polish(Request $r) {
+    $d = $r->validate(['text'=>'required|string|max:3500']);
+    [$ok, $t] = \App\Support\AiChat::polish($d['text']);
+    return response()->json($ok ? ['ok'=>true, 'text'=>$t] : ['ok'=>false, 'error'=>$t]);
+  }
   public function ai(Request $r, $id) {
     $on = $r->boolean('on'); if ($on) \Illuminate\Support\Facades\Cache::forget('ai.manual_off.'.(int)$id); else \Illuminate\Support\Facades\Cache::forever('ai.manual_off.'.(int)$id, 1);
     DB::table('chat_threads')->where('id', $id)->update(['ai_paused'=>!$on, 'updated_at'=>now()]);
