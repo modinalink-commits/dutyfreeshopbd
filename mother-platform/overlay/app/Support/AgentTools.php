@@ -17,7 +17,7 @@ class AgentTools {
       $s('cart_remove', 'Remove a product from the cart.', ['product_id'=>$int], ['product_id']),
       $s('cart_show', 'Show the cart with live prices and the order total (no delivery).'),
       $s('prepare_order', 'Validate the customer details and build the order summary for the customer to confirm. Nothing is placed yet.', ['name'=>$str, 'phone'=>$str, 'address'=>$str, 'area'=>['type'=>'integer', 'description'=>'1 = inside Chattogram city, 2 = outside'], 'note'=>$str], ['name', 'phone', 'address', 'area']),
-      $s('report_conversation', 'Call once per customer message: classify the conversation. intent: greeting|product_question|price|availability|order_status|order_request|delivery|payment|complaint|refund|cancel|change_order|human_request|other. mood: calm|happy|confused|impatient|angry|upset. confidence 0-100 = how sure you are your answer is correct and complete.', ['intent'=>$str, 'mood'=>$str, 'confidence'=>$int], ['intent', 'mood', 'confidence']),
+      $s('report_conversation', 'Call once per customer message: classify the conversation. intent: greeting|product_question|price|availability|order_status|order_request|delivery|payment|complaint|refund|cancel|change_order|human_request|other. mood: calm|happy|confused|impatient|angry|upset. confidence 0-100 = how sure you are your answer is correct and complete. language = the style of the customer\'s latest message: bangla (Bengali script) | english | banglish (Bengali in English letters) | mixed.', ['intent'=>$str, 'mood'=>$str, 'confidence'=>$int, 'language'=>$str], ['intent', 'mood', 'confidence']),
       $s('handoff_to_human', 'Pass the conversation to a human agent. Use for: refund, payment verification, cancel or change of an order, complaint, angry customer, discount demands, anything you are not sure about, or when the customer asks for a person. Give a short Bengali summary for the agent.', ['reason'=>$str, 'summary'=>$str, 'priority'=>['type'=>'string', 'enum'=>['normal', 'high', 'urgent']]], ['reason', 'summary']),
     ];
     if ($orders) $t[] = $s('place_order', 'Place the prepared order. Works ONLY after prepare_order AND after the customer\'s latest message clearly confirms it (e.g. "হ্যাঁ", "confirm"). The server re-checks this.');
@@ -116,7 +116,8 @@ class AgentTools {
         $okI = ['greeting', 'product_question', 'price', 'availability', 'order_status', 'order_request', 'delivery', 'payment', 'complaint', 'refund', 'cancel', 'change_order', 'human_request', 'other'];
         $okM = ['calm', 'happy', 'confused', 'impatient', 'angry', 'upset'];
         $i = in_array($in['intent'] ?? '', $okI, true) ? $in['intent'] : 'other'; $m = in_array($in['mood'] ?? '', $okM, true) ? $in['mood'] : 'calm'; $conf = max(0, min(100, (int)($in['confidence'] ?? 50)));
-        $st['meta'] = ['intent'=>$i, 'mood'=>$m, 'confidence'=>$conf];
+        $lg = strtolower((string)($in['language'] ?? '')); $lg = in_array($lg, ['bangla', 'english', 'banglish', 'mixed'], true) ? $lg : null;
+        $st['meta'] = ['intent'=>$i, 'mood'=>$m, 'confidence'=>$conf, 'lang'=>$lg];
         // server-side safety net: these always need a person, whatever the model says
         $st['force_handoff'] = in_array($i, ['refund', 'cancel', 'change_order', 'complaint', 'human_request'], true) || in_array($m, ['angry', 'upset'], true) || $conf < 40;
         return ['ok'=>true, 'handoff_required'=>$st['force_handoff']];

@@ -9,13 +9,24 @@ class AiChat {
     return Cache::remember('ai.on', 300, fn() => Sms::secret('ai_enabled') === '1' && (bool) Sms::secret('ai_key'));
   }
   /** Automatic replies inside the website live chat (can be switched off in Chat Settings). */
+  /** Language rule shared by the website chat and the commerce agent: reply in the customer's own style (Bangla / English / Banglish / mixed). $st may hold lang_override (staff setting) and lang_pref (learned). Only wording changes, never facts. */
+  public static function langRule(array $st = []): string {
+    $names = ['bangla'=>'Bangla (Bengali script)', 'english'=>'English', 'banglish'=>'Banglish (Bengali typed in English letters)'];
+    $ov = (string)($st['lang_override'] ?? ''); $pf = (string)($st['lang_pref'] ?? '');
+    $r = "LANGUAGE: customers write in Bengali script, English, Banglish (Bengali typed in English letters, e.g. 'dam koto', 'bhai amar order ta kothay') or a mix; understand all of them including spelling mistakes. Reply in the SAME language and style as the customer's latest message: Bangla -> natural polite Bengali script (আপনি-form); English -> simple polite English; Banglish -> natural everyday Bangladeshi customer-service Banglish in English letters (e.g. 'Ji bhai, apnar order ta ekhon courier e In Transit ache. Notun update ashle janano hobe.'), never stiff literary words like 'bahon prokriyay royeche'; mixed -> match their natural mix. If the latest message is too short to tell (e.g. 'ok', 'dam?'), follow the style of the earlier customer messages in this chat, otherwise reply in Bengali script. A customer who clearly asks for a language (e.g. 'English please', 'বাংলায় বলুন') gets that language. "
+      ."Common business words may stay in English where natural (Order, Approved, Pending, Courier, Tracking, Payment, Membership, Discount, Delivery, Refund, Return, Invoice). When replying in Bengali script, write statuses in simple Bengali (Processing -> আপনার অর্ডারটি বর্তমানে প্রস্তুত করা হচ্ছে; Ready to Ship -> আপনার অর্ডারটি কুরিয়ারে পাঠানোর জন্য প্রস্তুত; Payment Pending -> আপনার পেমেন্টটি এখনো যাচাইয়ের অপেক্ষায় আছে). "
+      ."The language changes only the wording: never change or add any fact, price, discount, stock, order / payment / courier / delivery status, membership or promise, and never promise more in one language than in another. Use the customer's name or 'ভাই/bhai' naturally, not in every reply. Tone: respectful, warm, short, natural, never robotic.\n";
+    if (isset($names[$ov])) $r .= "STAFF LANGUAGE SETTING: a staff member fixed the reply language for this chat to {$names[$ov]}. Use it for every reply, whatever language the customer writes in.\n";
+    elseif (isset($names[$pf])) $r .= "LEARNED CUSTOMER PREFERENCE: this customer mostly writes {$names[$pf]}; use it when the latest message does not make the style clear.\n";
+    return $r;
+  }
   public static function chatOn(): bool { return self::on() && Sms::secret('ai_chat_auto') !== '0'; }
   public static function model(): string { return Sms::secret('ai_model') ?: 'claude-haiku-5-5'; }
   /** Store-wide facts the assistant may quote (cached 5 min): contact, delivery, payment, policies, offers, categories. */
   public static function facts(): string {
     return Cache::remember('ai.facts2', 300, function () {
       $s = \App\Http\Controllers\StoreController::set(); $o = [];
-      $o[] = 'STORE: DutyFree Shop BD (dutyfreebd.com), Child City. Hotline: '.Biz::hotline().'. Mobile: '.Biz::mobile().'. WhatsApp: '.Biz::whatsapp().'. Email: '.($s['contact_email'] ?? '').'. Address: '.preg_replace('/\s+/', ' ', (string)($s['contact_address'] ?? '')).'. Hours: '.($s['business_hours'] ?? '').'.';
+      $o[] = 'STORE: DutyFreeBD (dutyfreebd.com), Child City. Hotline: '.Biz::hotline().'. Mobile: '.Biz::mobile().'. WhatsApp: '.Biz::whatsapp().'. Email: '.($s['contact_email'] ?? '').'. Address: '.preg_replace('/\s+/', ' ', (string)($s['contact_address'] ?? '')).'. Hours: '.($s['business_hours'] ?? '').'.';
       // the live delivery engine (Admin > Delivery) is the single source of truth, not the old ship_N settings
       try {
         $dc = \App\Support\Delivery::cfg();
@@ -62,7 +73,7 @@ class AiChat {
     }
     return $out;
   }
-  public static function reply(array $history, string $extra = ''): array {
+  public static function reply(array $history, string $extra = '', ?string $lang = null): array {
     $key = Sms::secret('ai_key'); if (!$key) return [false, 'not configured'];
     $msgs = []; $all = '';
     foreach (array_slice($history, -12) as $m) {
@@ -75,9 +86,9 @@ class AiChat {
     while ($msgs && $msgs[0]['role'] !== 'user') array_shift($msgs);
     if (!$msgs || end($msgs)['role'] !== 'user') return [false, 'empty'];
     $call = StoreFallback::phone();
-    $sys = "IMPORTANT: You are the customer support AI for DutyFreeBD. You must reply to customers in Bangla by default. Do not reply in English unless the customer explicitly requests English. Understand English and Banglish but respond in natural Bangla.\n"
-      ."You are the customer assistant of DutyFree Shop BD (dutyfreebd.com), a Bangladeshi online store for imported and duty-free perfume, skin care, hair care, lifestyle items and cigarettes (cigarettes are sold only by the carton of 200 sticks, never single packs).\n"
-      ."LANGUAGE: customers write in Bengali (বাংলা), English, or Banglish (Bengali typed in English letters, e.g. 'dam koto', 'delivery koto din lagbe', 'ei perfume ache?'). Understand all three, including spelling mistakes, and ALWAYS reply in natural, polite Bengali script (বাংলা, আপনি-form) by default (preferred_language=bn). Do NOT reply in English or Banglish, even if the customer wrote in English or Banglish, even if earlier assistant messages in this chat were in English (this rule overrides the previous chat style), and even if the data blocks below are in English: translate statuses into simple Bengali (e.g. Processing -> আপনার অর্ডারটি বর্তমানে প্রস্তুত করা হচ্ছে; Ready to Ship -> আপনার অর্ডারটি কুরিয়ারে পাঠানোর জন্য প্রস্তুত; Payment Pending -> আপনার পেমেন্টটি এখনো যাচাইয়ের অপেক্ষায় আছে). The ONLY exception: reply in English if the customer explicitly asks for it (e.g. 'reply in English', 'English please', 'ইংরেজিতে বলুন'). Never mix unnecessary English words into Bengali sentences (write অর্ডার, ডেলিভারি, পেমেন্ট - not order processing / delivery soon). Product names, brand names, order IDs and technical identifiers may stay in their original form. Tone: simple, polite, short, natural Bangladeshi Bengali, not robotic.\n"
+    $sys = "IMPORTANT: You are the customer support AI for DutyFreeBD. Reply in the customer's own language and style (Bangla, English or Banglish); Bangla is the default.\n"
+      ."You are the customer assistant of DutyFreeBD (dutyfreebd.com), a Bangladeshi online store for imported and duty-free perfume, skin care, hair care, lifestyle items and cigarettes (cigarettes are sold only by the carton of 200 sticks, never single packs).\n"
+      .self::langRule(['lang_override'=>$lang ?? null])
       ."STYLE: warm, short and direct, at most 6 short lines. Answer exactly what was asked first. Use plain text only (no markdown, no asterisks).\n"
       ."TRUTH: answer ONLY from the STORE FACTS, CATALOGUE, PRODUCT DETAILS and VERIFIED ORDER blocks below. Quote prices, stock, delivery charges, payment options and links exactly as written. Never invent a product, price, discount, delivery time, policy or stock. If the data does not contain the answer, say you are not sure and give the phone/WhatsApp number $call.\n"
       ."PRODUCTS: when the customer asks about a product or category, search the whole CATALOGUE (match Bengali/Banglish names to the English product names, e.g. 'পারফিউম'/'perfume', 'সিগারেট'/'cigarette'). Recommend up to 3 matching items, each with name, price, stock status and its link path exactly as given (e.g. /p/123-name/). To order: open the product and press ORDER NOW (cash on delivery is available where listed). If an item is OUT OF STOCK say so and suggest in-stock alternatives.\n"

@@ -838,3 +838,4 @@ resources/views/home_banners.blade.php
 database/migrations/2026_11_07_005000_home_banner_switches.php
 database/migrations/2026_11_07_006000_single_packet_paid_delivery.php
 database/migrations/2026_11_07_007000_single_packet_section_paid.php
+database/migrations/2026_11_07_008000_chat_ai_language.php

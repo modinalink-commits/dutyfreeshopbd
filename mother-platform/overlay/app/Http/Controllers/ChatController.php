@@ -123,6 +123,12 @@ class ChatController extends Controller {
     if ($on) { $tid = (int)$id; app()->terminating(fn() => Chat::aiReply($tid)); }
     return response()->json(['ok'=>true, 'ai'=>$on]);
   }
+  /** Fix the AI reply language for one conversation (auto = follow the customer). Only wording changes; facts stay the same. */
+  public function lang(Request $r, $id) {
+    $v = (string)$r->input('lang', 'auto'); if (!in_array($v, ['auto', 'bangla', 'english', 'banglish'], true)) return response()->json(['ok'=>false], 422);
+    DB::table('chat_threads')->where('id', $id)->update(['ai_lang'=>$v === 'auto' ? null : $v, 'updated_at'=>now()]);
+    return response()->json(['ok'=>true, 'lang'=>$v]);
+  }
   public function assign(Request $r, $id) {
     $d = $r->validate(['user_id'=>'nullable|integer|exists:users,id']);
     DB::table('chat_threads')->where('id', $id)->update(['assigned_to'=>$d['user_id'] ?? null, 'updated_at'=>now()]);

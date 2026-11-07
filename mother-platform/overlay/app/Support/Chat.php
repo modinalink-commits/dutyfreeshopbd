@@ -148,6 +148,14 @@ class Chat {
       $rows = DB::table('chat_messages')->where('thread_id', $tid)->orderByDesc('id')->limit(10)->get()->reverse()->values();
       if ($rows->isEmpty() || $rows->last()->dir !== 'in') return;
       $hist = $rows->map(fn($m) => ['role'=>$m->dir === 'in' ? 'user' : 'assistant', 'content'=>$m->body !== '' ? $m->body : '[ছবি]'])->all();
+      // the customer's latest photo goes to the model as an image (jpeg/png/webp/gif up to 3.5 MB); anything else stays the text placeholder
+      try {
+        $li = $rows->last(); $ix = $rows->count() - 1;
+        if ($li && $li->attachment_type === 'image' && $li->attachment_url) {
+          $ip = public_path('uploads/chat/'.basename((string)parse_url((string)$li->attachment_url, PHP_URL_PATH)));
+          if (is_file($ip) && filesize($ip) <= 3500000) { $mt = (string)@mime_content_type($ip); if (in_array($mt, ['image/jpeg', 'image/png', 'image/webp', 'image/gif'], true)) $hist[$ix]['img'] = [$mt, base64_encode((string)file_get_contents($ip))]; }
+        }
+      } catch (\Throwable $e) {}
       if (AiAgent::on()) {
         $lastIn = $rows->last(); $txt = AiAgent::replyThread($tid, $hist, (int)$lastIn->id, (string)$lastIn->body);
         if ($txt === null) goto legacy;
@@ -158,7 +166,7 @@ class Chat {
         return;
       }
       legacy:
-      [$ok, $txt] = AiChat::reply($hist, "You are answering inside the live chat. If the customer wants a person, has a complaint, wants to change/cancel an order, or you are not sure, say a team member will reply shortly and give the phone/WhatsApp number. Do not claim to be human.\n");
+      [$ok, $txt] = AiChat::reply($hist, "You are answering inside the live chat. If the customer wants a person, has a complaint, wants to change/cancel an order, or you are not sure, say a team member will reply shortly and give the phone/WhatsApp number. Do not claim to be human.\n", (string)($t->ai_lang ?? ''));
       if (!$ok) return;
       // a staff member may have replied while Claude was thinking
       if (DB::table('chat_threads')->where('id', $tid)->value('ai_paused')) return;
@@ -223,7 +231,7 @@ class Chat {
         'status'=>$t->status, 'awaiting'=>(bool)($t->awaiting_reply ?? false) && $t->status !== 'resolved', 'unread'=>!empty($t->awaiting_reply) ? (int)$t->unread : 0,
         'replied'=>empty($t->awaiting_reply) && !empty($t->last_successful_agent_reply_at) && !empty($t->last_customer_message_at) && $t->last_successful_agent_reply_at >= $t->last_customer_message_at,
         'stale'=>empty($t->awaiting_reply) && ($t->last_dir ?? null) === 'in' && $t->status !== 'resolved' && !empty($t->last_at) && \Carbon\Carbon::parse($t->last_at)->lt(now()->subDays(7)), 'last'=>$t->last_message, 'last_dir'=>$t->last_dir, 'last_at'=>$t->last_at ? \Carbon\Carbon::parse($t->last_at)->toIso8601String() : null,
-        'ai'=>!($t->ai_paused ?? false), 'assigned_to'=>$t->assigned_to, 'assigned_name'=>$agents[$t->assigned_to] ?? null, 'customer_id'=>$t->customer_id,
+        'ai'=>!($t->ai_paused ?? false), 'ai_lang'=>$t->ai_lang ?? null, 'ai_detected'=>$t->ai_detected ?? null, 'assigned_to'=>$t->assigned_to, 'assigned_name'=>$agents[$t->assigned_to] ?? null, 'customer_id'=>$t->customer_id,
         'cat'=>$n > 0 && $i ? $i['cat'] : 'New', 'orders'=>$n, 'risk'=>$n > 0 && $i ? $i['risk'] : 'Low',
         'intent'=>$t->intent ?? null, 'mood'=>$t->mood ?? null, 'priority'=>$t->priority ?? 'normal', 'needs_human'=>(bool)($t->needs_human ?? false),
         'handoff_at'=>!empty($t->handoff_at) ? \Carbon\Carbon::parse($t->handoff_at)->toIso8601String() : null, 'handoff_reason'=>$t->handoff_reason ?? null, 'ai_summary'=>$t->ai_summary ?? null];

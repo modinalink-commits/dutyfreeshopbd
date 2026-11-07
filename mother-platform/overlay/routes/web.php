@@ -151,6 +151,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/chat/thread/{id}/read', [\App\Http\Controllers\ChatController::class,'read']);
   Route::post('/chat/thread/{id}/reply', [\App\Http\Controllers\ChatController::class,'reply']);
   Route::post('/chat/thread/{id}/ai', [\App\Http\Controllers\ChatController::class,'ai']);
+  Route::post('/chat/thread/{id}/lang', [\App\Http\Controllers\ChatController::class,'lang']);
   Route::post('/chat/thread/{id}/assign', [\App\Http\Controllers\ChatController::class,'assign']);
   Route::post('/chat/thread/{id}/status', [\App\Http\Controllers\ChatController::class,'status']);
   Route::post('/chat/thread/{id}/phone', [\App\Http\Controllers\ChatController::class,'phone']);
