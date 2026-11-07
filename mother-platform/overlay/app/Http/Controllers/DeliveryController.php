@@ -37,7 +37,7 @@ class DeliveryController extends Controller
     D::flush(); \App\Support\Procure::audit('delivery.zone.' . $r->input('do', 'toggle'), $z->name); return redirect('/admin/delivery#zones')->with('ok', 'Updated');
   }
   public function ovSave(Request $r) {
-    $v = $r->validate(['kind' => 'required|in:product,category,campaign', 'ref' => 'nullable|string|max:160', 'mode' => 'required|in:free,custom', 'charge' => 'nullable|numeric|min:0', 'label' => 'nullable|string|max:120', 'starts_at' => 'nullable|date', 'ends_at' => 'nullable|date']);
+    $v = $r->validate(['kind' => 'required|in:product,category,campaign', 'ref' => 'nullable|string|max:160', 'mode' => 'required|in:free,custom,paid', 'charge' => 'nullable|numeric|min:0', 'label' => 'nullable|string|max:120', 'starts_at' => 'nullable|date', 'ends_at' => 'nullable|date']);
     $refId = null; $refName = null;
     if ($v['kind'] === 'product') { $q = trim((string)$v['ref']); $p = DB::table('products')->where(fn($x) => $x->where('sku', $q)->orWhere('id', ctype_digit($q) ? (int)$q : 0)->orWhere('name', 'ilike', $q))->first(['id', 'name']); if (!$p) return back()->with('ok', 'Product not found (enter ID, SKU or exact name)'); $refId = $p->id; $refName = $p->name; }
     if ($v['kind'] === 'category') { $c = DB::table('categories')->find((int)$v['ref']); if (!$c) return back()->with('ok', 'Choose a category'); $refId = $c->id; $refName = $c->name; }

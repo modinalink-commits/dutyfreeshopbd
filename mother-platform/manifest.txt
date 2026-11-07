@@ -836,3 +836,4 @@ public/showcase/poster-dunhill-switch.webp
 app/Http/Controllers/HomeBannersController.php
 resources/views/home_banners.blade.php
 database/migrations/2026_11_07_005000_home_banner_switches.php
+database/migrations/2026_11_07_006000_single_packet_paid_delivery.php

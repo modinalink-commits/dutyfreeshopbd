@@ -45,10 +45,14 @@ class Delivery
     if (self::$freeRows === null) {
       self::$freeRows = Schema::hasTable('delivery_overrides') ? Cache::remember('delv.freeRows', 60, function () {
         $now = now();
-        return DB::table('delivery_overrides')->where('active', true)->where('mode', 'free')->where(fn($q) => $q->whereNull('starts_at')->orWhere('starts_at', '<=', $now))->where(fn($q) => $q->whereNull('ends_at')->orWhere('ends_at', '>=', $now))->get(['kind', 'ref_id'])->map(fn($r) => [$r->kind, (int)$r->ref_id])->all();
+        return DB::table('delivery_overrides')->where('active', true)->whereIn('mode', ['free', 'paid'])->where(fn($q) => $q->whereNull('starts_at')->orWhere('starts_at', '<=', $now))->where(fn($q) => $q->whereNull('ends_at')->orWhere('ends_at', '>=', $now))->get(['kind', 'ref_id', 'mode'])->map(fn($r) => [$r->kind, (int)$r->ref_id, $r->mode])->all();
       }) : [];
     }
-    foreach (self::$freeRows as [$k, $ref]) {
+    foreach (self::$freeRows as [$k, $ref, $m]) {
+      if ($m === 'paid' && (($k === 'product' && $ref === (int)($p->id ?? 0)) || ($k === 'category' && $ref === (int)($p->category_id ?? -1)))) return false;
+    }
+    foreach (self::$freeRows as [$k, $ref, $m]) {
+      if ($m !== 'free') continue;
       if ($k === 'campaign') return true;
       if ($k === 'product' && $ref === (int)($p->id ?? 0)) return true;
       if ($k === 'category' && $ref === (int)($p->category_id ?? -1)) return true;
@@ -75,7 +79,7 @@ class Delivery
   }
   public static function compute(float $sub, int $area, string $addr = '', string $district = '', array $pids = []): array {
     $c = self::cfg(); $text = trim($district . ' ' . $addr); $z = self::match($text);
-    $r = ['zone' => null, 'original' => 0.0, 'free_discount' => 0.0, 'charge' => 0.0, 'free' => false, 'unlocked' => false, 'reason' => null, 'zone_id' => $z->id ?? null];
+    $r = ['paid' => false, 'zone' => null, 'original' => 0.0, 'free_discount' => 0.0, 'charge' => 0.0, 'free' => false, 'unlocked' => false, 'reason' => null, 'zone_id' => $z->id ?? null];
     if (!$c['on']) { $r['zone'] = 'Delivery charge off'; return $r; }
     $express = $area === 3 && $c['express'] > 0;
     if ($express) { $r['zone'] = $c['l_ex'] . ($z ? ' · ' . $z->name : ''); $orig = $z && $z->express_charge !== null ? (float)$z->express_charge : $c['express']; }
@@ -89,9 +93,10 @@ class Delivery
       if ($in) { $r['zone'] = $c['l_in']; $orig = $c['inside']; } elseif ($text !== '') { $r['zone'] = $c['l_out']; $orig = $c['outside']; } else { $r['zone'] = 'Default delivery'; $orig = $c['default']; }
     }
     $r['original'] = $orig; $final = $orig; $ov = self::overrides($pids);
-    $custom = null; foreach ($ov as $o) if ($o->mode === 'free') { $r['free'] = true; $r['reason'] = $o->label ?: ('Free delivery · ' . $o->kind); break; } elseif ($o->charge !== null) $custom = max((float)$custom, (float)$o->charge);
-    if (!$r['free'] && $custom !== null) { $final = $custom; $r['reason'] = 'Custom delivery charge (' . $ov[0]->kind . ')'; }
-    if (!$r['free'] && !$express && $c['free_on'] && $c['free_min'] > 0 && $sub >= $c['free_min']) { $r['free'] = true; $r['unlocked'] = true; $r['reason'] = 'Free delivery over ৳' . number_format($c['free_min']); }
+    $paid = false; foreach ($ov as $o) if ($o->mode === 'paid') { $paid = true; $r['paid'] = true; $r['reason'] = $o->label ?: 'Delivery charge applies (no free delivery)'; break; }
+    $custom = null; foreach ($ov as $o) if ($paid) { if ($o->mode === 'custom' && $o->charge !== null) $custom = max((float)$custom, (float)$o->charge); } elseif ($o->mode === 'free') { $r['free'] = true; $r['reason'] = $o->label ?: ('Free delivery · ' . $o->kind); break; } elseif ($o->charge !== null) $custom = max((float)$custom, (float)$o->charge);
+    if (!$r['free'] && $custom !== null) { $final = $custom; if (!$paid) $r['reason'] = 'Custom delivery charge (' . $ov[0]->kind . ')'; }
+    if (!$r['free'] && !$paid && !$express && $c['free_on'] && $c['free_min'] > 0 && $sub >= $c['free_min']) { $r['free'] = true; $r['unlocked'] = true; $r['reason'] = 'Free delivery over ৳' . number_format($c['free_min']); }
     if ($r['free']) { $r['free_discount'] = $orig; $final = 0; }
     $r['charge'] = round(max(0, $final), 2); return $r;
   }

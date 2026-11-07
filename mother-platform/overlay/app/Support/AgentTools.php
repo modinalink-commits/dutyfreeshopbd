@@ -96,12 +96,12 @@ class AgentTools {
         if (!self::validPhone($ph)) return ['error'=>'a valid Bangladeshi mobile number (01XXXXXXXXX) is needed'];
         $opts = \App\Support\Delivery::options(); if (!isset($opts[$area])) return ['error'=>'area must be 1 (inside Chattogram city) or 2 (outside)'];
         $ship = (float)$opts[$area]['c'];
-        try { $dv = \App\Support\Delivery::compute((float)$c['subtotal_raw'], $area, $addr, '', array_keys($st['cart'] ?? [])); $ship = (float)$dv['charge']; } catch (\Throwable $e) { report($e); }
+        $dvPaid = false; try { $dv = \App\Support\Delivery::compute((float)$c['subtotal_raw'], $area, $addr, '', array_keys($st['cart'] ?? [])); $ship = (float)$dv['charge']; $dvPaid = !empty($dv['paid']); } catch (\Throwable $e) { report($e); }
         $disc = 0.0; $dnotes = [];
         try {
           $eng = \App\Support\OrderDiscount::compute($ph, (float)$c['subtotal_raw'], null, ['web'=>true, 'verified'=>false, 'qty'=>array_sum($st['cart'] ?? []), 'items'=>array_map(fn($i) => ['product_id'=>$i['id'], 'price'=>(float)\Illuminate\Support\Facades\DB::table('products')->where('id', $i['id'])->value('price'), 'qty'=>$i['qty']], $c['items'])]);
           $disc = min((float)$eng['total'], (float)$c['subtotal_raw']); $dnotes = array_column(array_filter($eng['lines'], fn($l) => $l['applied']), 'label');
-          if (!empty($eng['free_ship']) && $ship > 0) $ship = 0.0;
+          if (!empty($eng['free_ship']) && $ship > 0 && !$dvPaid) $ship = 0.0;
         } catch (\Throwable $e) { report($e); }
         $total = $c['subtotal_raw'] + $ship - $disc;
         $pd = $st['pending'] ?? null;
