@@ -63,7 +63,7 @@
 .mbx .av .mcb.ico{background:#fff!important;border-radius:50%;width:15px;height:15px;padding:0;right:-3px;bottom:-3px}
 .mbx .cv .mc .ms{padding:14px 18px}
 @media(max-width:900px){.mbx{grid-template-columns:1fr}}
-#ibback{display:none}body.ibsel #ibback{display:inline-block}
+#ibback{display:none}@media(max-width:900px){body.ibsel #ibback{display:inline-block}}
 @if(request()->boolean('embed'))
 .mbx{display:block;height:calc(100vh / var(--z,1) - 20px);min-height:0}.mbx .ls,.mbx .cv{height:100%}.mbx .cv{display:none}
 .mbx.sel .ls{display:none}.mbx.sel .cv{display:flex}body.ibsel .mbx{height:calc(100vh / var(--z,1) - 62px)}

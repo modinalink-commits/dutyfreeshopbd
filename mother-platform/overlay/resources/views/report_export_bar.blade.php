@@ -135,7 +135,7 @@
   if (own) { var hold = bar.parentNode; bar.remove(); return; }
   function tables() {
     var all = [].slice.call(main.querySelectorAll('table')).filter(function (t) {
-      if (t.closest('.rxh') || t.closest('#rxb-ph') || t.closest('[hidden]')) return false;
+      if (t.closest('.rxh') || t.closest('#rxb-ph') || t.closest('[hidden]') || t.closest('[data-noexport]')) return false;
       if (t.offsetParent === null) return false;
       return t.rows.length >= 2 && t.querySelectorAll('th').length > 0;
     });

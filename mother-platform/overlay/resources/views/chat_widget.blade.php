@@ -129,7 +129,7 @@ M.wantsSound=function(it){if(M.smode==='off')return false;if(M.smode==='assigned
 M.mount=function(el,id,opt){
   opt=opt||{};if(el._mc)el._mc.stop();
   var S={id:id,last:0,timer:null,d:null,kind:'text'};el._mc=S;
-  el.innerHTML='<div class="mc"><div class="mcbd" id="mcbd"></div><div class="hd" id="mh"></div><details class="cb" id="mcu"'+(window.DF_EMBED?'':' open')+'></details><div class="ms" id="mm"></div><div class="cm" id="mf"></div></div>';
+  el.innerHTML='<div class="mc"><div class="mcbd" id="mcbd"></div><div class="hd" id="mh"></div><details class="cb" data-noexport="1" id="mcu"'+(window.DF_EMBED?'':' open')+'></details><div class="ms" id="mm"></div><div class="cm" id="mf"></div></div>';
   var $=function(s){return el.querySelector(s)};
   S.stop=function(){clearInterval(S.timer);if(M.current===id)M.current=null;if(M._cur===S)M._cur=null};
   M.current=id;
