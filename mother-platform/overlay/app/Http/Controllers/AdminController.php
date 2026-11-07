@@ -86,7 +86,7 @@ class AdminController extends Controller {
     $channels = $safe(fn() => collect(\Illuminate\Support\Facades\Cache::remember('dash.channels.v2', 600, fn() => DB::table('orders')->whereNotNull('source')->where('source','<>','')->distinct()->orderBy('source')->pluck('source')->all())), collect());
     $vipN = $safe(fn() => (int)\Illuminate\Support\Facades\Cache::remember('dash.vipn.v1', 300, fn() => DB::table('customers')->whereRaw("lower(coalesce(type,'')) = 'vip'")->count()), 0);
     $memN = $safe(fn() => (int)\Illuminate\Support\Facades\Cache::remember('dash.memn.v1', 300, fn() => DB::table('customers')->whereNotNull('membership')->where('membership','<>','')->count()), 0);
-    $chatUnread = \Illuminate\Support\Facades\Schema::hasTable('chat_threads') ? (int)DB::table('chat_threads')->sum('unread') : 0;
+    $chatUnread = \Illuminate\Support\Facades\Schema::hasTable('chat_threads') ? \App\Support\Chat::unreadTotal() : 0;
     $counts = collect(\Illuminate\Support\Facades\Cache::remember('dash.counts.v2.'.(int)$storeId.'.'.md5((string)$ch), 20, fn() => $oq()->select('status', DB::raw('count(*) c'))->groupBy('status')->pluck('c','status')->all()));
     $counts['Incomplete'] = $incOpen;
     $aiN = $safe(fn() => (int)$oq()->where('status', 'New')->whereExists(fn($x) => $x->select(DB::raw(1))->from('order_ai_verifications as av')->whereColumn('av.order_id', 'orders.id')->whereRaw("coalesce(av.override_status, av.verification_status) = 'verified'"))->count(), 0); $counts['AI Approve'] = $aiN;

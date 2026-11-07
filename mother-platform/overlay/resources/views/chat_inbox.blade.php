@@ -4,8 +4,19 @@
 .mbx{display:grid;grid-template-columns:340px 1fr;gap:14px;height:calc(100vh / var(--z,1) - 150px);min-height:480px}
 .mbx .ls,.mbx .cv{background:#fff;border:1px solid var(--bd);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;min-height:0}
 .mbx .ls .stk{flex:none;background:#fff;border-bottom:1px solid #FFE7D6;position:relative;z-index:1}
-.mbx .fl{display:flex;flex-wrap:wrap;gap:5px;padding:9px 10px 7px}
-.mbx .fl a{height:28px;line-height:26px;padding:0 11px;border-radius:15px;font-size:11px;font-weight:600;border:1px solid #FF5A00;color:#C2410C;text-decoration:none;background:#fff;cursor:pointer;white-space:nowrap;box-sizing:border-box;transition:background .15s,color .15s}.mbx .fl a:hover{background:#FFF1E8}.mbx .fl a.on{background:#FF5A00;border-color:#FF5A00;color:#fff}
+.fbar{background:#fff;border:1px solid #FDD9C2;border-radius:18px;box-shadow:0 8px 24px rgba(255,90,0,.06);padding:10px 12px;margin:0 0 12px;display:flex;flex-direction:column;gap:8px}
+.fbar .fr{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.fbar .fr .sp{flex:1}
+.fbar a,.fbar button.fa{display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 15px;border-radius:19px;border:1px solid #E5E7EB;background:#fff;color:#1F2937;font-size:13px;font-weight:600;text-decoration:none;cursor:pointer;white-space:nowrap;box-sizing:border-box;box-shadow:0 2px 6px rgba(15,23,42,.05);transition:background .15s,box-shadow .15s,transform .1s;font-family:inherit}
+.fbar a:hover,.fbar button.fa:hover{background:#FFF8F2;box-shadow:0 4px 10px rgba(15,23,42,.09)}
+.fbar a svg,.fbar button.fa svg{width:19px;height:19px;flex:none}
+.fbar a.on{background:linear-gradient(135deg,#FF7A1A,#F05200);border-color:#F05200;color:#fff;box-shadow:0 6px 14px rgba(240,82,0,.32)}.fbar a.on svg *{stroke:#fff}.fbar a.on svg .kp{fill:#fff}
+.fbar .cn{min-width:20px;height:20px;line-height:20px;border-radius:10px;background:#DC2626;color:#fff;font-size:11px;font-weight:700;text-align:center;padding:0 6px;box-sizing:border-box}
+.fbar a.on .cn{background:#fff;color:#C2410C}
+.fbar button.fa:disabled{opacity:.7;cursor:default}.fbar button.fa.ok{color:#166534;border-color:#BBF7D0;background:#F0FDF4}
+.mbx .stk{border-bottom:0}
+@media(max-width:900px){.fbar .fr{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px}.fbar .fr::-webkit-scrollbar{display:none}.fbar a,.fbar button.fa{height:44px}.fbar .fr .sp{display:none}}
+.mbx .st2{display:inline-flex;align-items:center;height:17px;line-height:17px;border-radius:9px;padding:0 8px;font-size:10px;font-weight:700}.mbx .st2.aw{background:#FFEDD5;color:#C2410C}.mbx .st2.rp{background:#F0FDF4;color:#166534}.mbx .st2.old{background:#F3F4F6;color:#6B7280}
 .mbx .sq{padding:0 10px 9px}.mbx .sq input{height:34px;font-size:12px;border-radius:7px;padding:0 10px;width:100%;box-sizing:border-box}
 .mbx .lt{flex:1;overflow:auto;padding:6px 6px 10px}
 .mbx .sep{font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#6B7280;padding:8px 8px 4px}.mbx .sep.u{color:#B91C1C}
@@ -36,45 +47,64 @@
 @endif
 </style>
 <div id="ibtop" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px"><div style="flex:1"><h1 style="margin:0">Messages <span id="ibu"></span></h1><span style="font-size:12px;color:#6B7280">Facebook, Instagram, WhatsApp and Website Chat in one inbox.</span></div>
-<button class="btn g" type="button" id="ibm">🔔 Sound on</button><a class="btn g" href="/admin/chat-settings">Chat settings</a></div>
+</div>
+<div class="fbar" id="ibfb"><div class="fr" id="ibf1"></div><div class="fr" id="ibf2"></div></div>
 <button type="button" id="ibback">← All conversations</button>
-<div class="mbx" id="ibx"><div class="ls"><div class="stk"><div class="fl" id="ibf"></div><div class="sq"><input id="ibq" type="search" placeholder="Search name, mobile, invoice, message..."></div></div><div class="lt" id="ibl"></div></div>
+<div class="mbx" id="ibx"><div class="ls"><div class="stk"><div class="sq" style="padding-top:9px"><input id="ibq" type="search" placeholder="Search name, mobile, invoice, message..."></div></div><div class="lt" id="ibl"></div></div>
 <div class="cv" id="ibc"><div class="emp" style="margin:auto">Select a conversation to read and reply.<br>New messages appear here and as a popup anywhere in the dashboard.</div></div></div>
 @endsection
 @section('js')
 @verbatim
 <script>
 (function(){
-var F=[['all','All'],['facebook','Facebook'],['instagram','Instagram'],['whatsapp','WhatsApp'],['web','Website Chat'],['unread','Unread'],['assigned','Assigned to me'],['resolved','Resolved']];
+var I={
+all:'<svg viewBox="0 0 24 24" fill="none" stroke="#F05200" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 16 9 5 9-5"/></svg>',
+facebook:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#1877F2"/><path class="kp" d="M13.2 20v-7h2.3l.4-2.8h-2.7V8.5c0-.8.3-1.3 1.4-1.3H16V4.7c-.3 0-1.1-.1-2.1-.1-2.1 0-3.5 1.3-3.5 3.6v2H8v2.8h2.4v7" fill="#fff"/></svg>',
+instagram:'<svg viewBox="0 0 24 24"><defs><linearGradient id="ig" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#FEC053"/><stop offset=".4" stop-color="#F2203E"/><stop offset=".7" stop-color="#B729A8"/><stop offset="1" stop-color="#5342D6"/></linearGradient></defs><rect x="2" y="2" width="20" height="20" rx="6" fill="none" stroke="url(#ig)" stroke-width="2.2"/><circle cx="12" cy="12" r="4.4" fill="none" stroke="url(#ig)" stroke-width="2.2"/><circle cx="17.4" cy="6.6" r="1.3" fill="#B729A8"/></svg>',
+whatsapp:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#25D366"/><path class="kp" d="M16.7 14.3c-.2-.1-1.4-.7-1.6-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1-1.4-.7-2.4-1.5-3.2-3-.1-.2 0-.3.1-.4l.5-.6.2-.4c0-.1 0-.3 0-.4l-.7-1.7c-.2-.4-.4-.4-.6-.4h-.4c-.2 0-.4.1-.6.3-.6.6-.9 1.4-.8 2.3.2 1.1.8 2.1 1.5 3 1.1 1.4 2.5 2.4 4.2 3 .8.2 1.5.2 2.2-.1.6-.3 1.1-.9 1.2-1.5 0-.2 0-.3-.1-.4l-.4-.1Z" fill="#fff"/></svg>',
+web:'<svg viewBox="0 0 24 24" fill="none" stroke="#F05200" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M21 12a8 8 0 0 1-11.8 7L4 20l1.2-4.4A8 8 0 1 1 21 12Z"/><circle cx="9" cy="12" r=".6" fill="#F05200"/><circle cx="12.2" cy="12" r=".6" fill="#F05200"/><circle cx="15.4" cy="12" r=".6" fill="#F05200"/></svg>',
+unread:'<svg viewBox="0 0 24 24" fill="none" stroke="#4B5563" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.5 7 8.5 6 8.5-6"/></svg>',
+assigned:'<svg viewBox="0 0 24 24" fill="none" stroke="#4B5563" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4.5 20c.8-3.6 3.8-5.5 7.5-5.5s6.7 1.9 7.5 5.5"/></svg>',
+resolved:'<svg viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="m8 12.3 2.6 2.6L16.2 9"/></svg>'};
+var F1=[['all','All'],['facebook','Facebook'],['instagram','Instagram'],['whatsapp','WhatsApp'],['web','Website Chat']],F2=[['unread','Unread'],['assigned','Assigned to me'],['resolved','Resolved']],waiting=0;
 var f=new URLSearchParams(location.search).get('f')||'all',q='',sel=null,tmr;
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function ago(iso){if(!iso)return '';var s=(Date.now()-new Date(iso).getTime())/1000;if(s<60)return 'now';if(s<3600)return Math.floor(s/60)+'m';if(s<86400)return Math.floor(s/3600)+'h';return new Date(iso).toLocaleDateString([], {day:'numeric',month:'short'})}
 var CHL={facebook:'f',instagram:'IG',whatsapp:'W',web:'💬'};
-function drawF(){document.getElementById('ibf').innerHTML=F.map(function(x){return '<a data-f="'+x[0]+'" class="'+(f===x[0]?'on':'')+'">'+x[1]+'</a>'}).join('');document.querySelectorAll('#ibf a').forEach(function(a){a.onclick=function(){f=a.dataset.f;drawF();load()}})}
+function pill(x){return '<a data-f="'+x[0]+'" class="'+(f===x[0]?'on':'')+'" role="button" tabindex="0">'+I[x[0]]+'<span>'+x[1]+'</span>'+(x[0]==='unread'&&waiting>0?'<span class="cn">'+waiting+'</span>':'')+'</a>'}
+function drawF(){document.getElementById('ibf1').innerHTML=F1.map(pill).join('');
+  document.getElementById('ibf2').innerHTML=F2.map(pill).join('')+'<span class="sp"></span><button class="fa" type="button" id="ibup" title="Fetch the latest messages. This never marks anything as seen.">↻ Update</button><button class="fa" type="button" id="ibm">🔔 Sound on</button><a href="/admin/chat-settings" style="height:38px">Chat settings</a>';
+  document.querySelectorAll('#ibfb a[data-f]').forEach(function(a){a.onclick=function(){f=a.dataset.f;drawF();load()};a.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();a.click()}}});
+  var bm=document.getElementById('ibm');bm.onclick=function(){MChat.cycleSound();mm()};mm();
+  document.getElementById('ibup').onclick=doUpdate}
+/* Manual synchronisation only: refreshes the list and the open conversation. It never marks anything as seen or replied. */
+var upBusy=false;function doUpdate(){if(upBusy)return;upBusy=true;var b=document.getElementById('ibup');b.disabled=true;b.textContent='↻ Updating…';
+  Promise.all([load(),(window.MChat&&MChat.refresh)?MChat.refresh():null]).catch(function(){}).then(function(){b=document.getElementById('ibup');if(b){b.textContent='✓ Updated';b.classList.add('ok')}setTimeout(function(){upBusy=false;var c=document.getElementById('ibup');if(c){c.disabled=false;c.classList.remove('ok');c.textContent='↻ Update'}},1400)})}
 var seen={},first=true;
 function row(t){var st=t.needs_human?'waiting':(t.status||'open');var stL={new:'New',open:'Open',waiting:'Waiting',resolved:'Resolved'}[st]||st;
   var h=t.needs_human?'<span class="bg need" title="'+esc(t.handoff_reason||'')+'">Needs human</span>':'<span class="bg '+(t.ai?'ai':'human')+'">'+(t.ai?'AI':'Human')+'</span>';
-  var un=t.unread>0&&t.status!=='resolved';
+  var un=!!t.awaiting&&t.status!=='resolved';
   return '<div class="th'+(un?' un':'')+(sel===t.id?' on':'')+'" data-id="'+t.id+'"><div class="av"><span class="mcav">'+(t.avatar?'<img src="'+esc(t.avatar)+'" alt="" referrerpolicy="no-referrer" onerror="this.remove()">':'')+esc((t.name||'?').charAt(0).toUpperCase())+'</span><span class="mcb '+t.channel+'">'+CHL[t.channel]+'</span></div>'
   +'<div class="bd"><div class="l1"><span class="nm">'+esc(t.name)+'</span><span class="tm">'+ago(t.last_at)+'</span></div>'
   +'<div class="l2"><span class="lm">'+(t.last_dir==='out'?'You: ':'')+esc(t.last||'')+'</span>'+(un?'<span class="ub">'+t.unread+'</span>':'')+'</div>'
   +'<div class="l3">'+esc(t.cat)+' · '+t.orders+' order'+(t.orders===1?'':'s')+'</div>'
-  +'<div class="l4"><span class="bg '+st+'">'+stL+'</span>'+h+(t.assigned_name?'<span class="bg human" title="Assigned to">👤 '+esc(t.assigned_name)+'</span>':'<span class="bg" style="color:#9CA3AF">Unassigned</span>')+'</div></div></div>'}
-function load(){fetch('/admin/chat/threads?f='+f+'&q='+encodeURIComponent(q),{headers:{Accept:'application/json'},credentials:'same-origin'}).then(function(r){return r.json()}).then(function(j){
-  var u=document.getElementById('ibu');u.innerHTML=j.unread?'<span class="ub">'+j.unread+' unread</span>':'';if(window.MChat)MChat.badge(j.unread);
+  +'<div class="l4">'+(un?'<span class="st2 aw">● Unread · Awaiting Reply</span>':(t.replied?'<span class="st2 rp">✓ Replied</span>':(t.stale?'<span class="st2 old" title="Customer message older than 7 days">Old</span>':'')))+'<span class="bg '+st+'">'+stL+'</span>'+h+(t.assigned_name?'<span class="bg human" title="Assigned to">👤 '+esc(t.assigned_name)+'</span>':'<span class="bg" style="color:#9CA3AF">Unassigned</span>')+'</div></div></div>'}
+function load(){return fetch('/admin/chat/threads?f='+f+'&q='+encodeURIComponent(q),{headers:{Accept:'application/json'},credentials:'same-origin'}).then(function(r){return r.json()}).then(function(j){
+  var u=document.getElementById('ibu');u.innerHTML=j.unread?'<span class="ub">'+j.unread+' waiting</span>':'';if(window.MChat)MChat.badge(j.unread);
+  if(waiting!==j.unread){waiting=j.unread;var uf=document.querySelector('#ibfb a[data-f=unread]');if(uf){var cn=uf.querySelector('.cn');if(waiting>0){if(!cn){cn=document.createElement('span');cn.className='cn';uf.appendChild(cn)}cn.textContent=waiting}else if(cn)cn.remove()}}
   var l=document.getElementById('ibl');if(!j.threads.length){l.innerHTML='<div class="emp">No conversations here yet.</div>';return}
-  var ur=j.threads.filter(function(t){return t.unread>0&&t.status!=='resolved'}),rd=j.threads.filter(function(t){return !(t.unread>0&&t.status!=='resolved')});
+  var ur=j.threads.filter(function(t){return t.awaiting&&t.status!=='resolved'}),rd=j.threads.filter(function(t){return !(t.awaiting&&t.status!=='resolved')});
   var top=l.scrollTop,html='';
-  if(ur.length){html+='<div class="sep u">Unread — '+ur.length+'</div>'+ur.map(row).join('');if(rd.length)html+='<div class="sep">Read</div>'}
+  if(ur.length){html+='<div class="sep u">Waiting for reply — '+ur.length+'</div>'+ur.map(row).join('');if(rd.length)html+='<div class="sep">Others</div>'}
   html+=rd.map(row).join('');l.innerHTML=html;l.scrollTop=top;
   if(!first)l.querySelectorAll('.th.un').forEach(function(n){var id=n.dataset.id,t=j.threads.filter(function(x){return String(x.id)===id})[0];if(t&&(seen[id]===undefined||t.unread>seen[id]))n.classList.add('fl8')});
   first=false;j.threads.forEach(function(t){seen[t.id]=t.unread});
-  l.querySelectorAll('.th').forEach(function(n){n.onclick=function(){sel=+n.dataset.id;l.querySelectorAll('.th').forEach(function(x){x.classList.toggle('on',x===n)});n.classList.remove('un');document.getElementById('ibx').classList.add('sel');document.body.classList.add('ibsel');MChat.mount(document.getElementById('ibc'),sel,{onchange:load,focus:true})}})})}
+  l.querySelectorAll('.th').forEach(function(n){n.onclick=function(){sel=+n.dataset.id;l.querySelectorAll('.th').forEach(function(x){x.classList.toggle('on',x===n)});document.getElementById('ibx').classList.add('sel');document.body.classList.add('ibsel');MChat.mount(document.getElementById('ibc'),sel,{onchange:load,focus:true})}})})}
 document.getElementById('ibq').oninput=function(){clearTimeout(tmr);q=this.value;tmr=setTimeout(load,300)};
-var bm=document.getElementById('ibm');function mm(){bm.textContent=MChat.soundLabel?MChat.soundLabel():(MChat.mute?'🔕 Sound off':'🔔 Sound on')}bm.onclick=function(){MChat.cycleSound();mm()};
+function mm(){var bm=document.getElementById('ibm');if(bm&&window.MChat)bm.textContent=MChat.soundLabel?MChat.soundLabel():(MChat.mute?'🔕 Sound off':'🔔 Sound on')}
 document.getElementById('ibback').onclick=function(){document.getElementById('ibx').classList.remove('sel');document.body.classList.remove('ibsel');sel=null;load()};
-drawF();load();mm();setInterval(function(){if(!document.hidden)load()},8000);
-var wait=setInterval(function(){if(window.MChat){clearInterval(wait);MChat.onNew=load}},300);
+drawF();load();setInterval(function(){if(!document.hidden)load()},8000);
+var wait=setInterval(function(){if(window.MChat){clearInterval(wait);MChat.onNew=load;mm()}},300);
 var oid=new URLSearchParams(location.search).get('open');if(oid){var w2=setInterval(function(){if(window.MChat){clearInterval(w2);sel=+oid;MChat.mount(document.getElementById('ibc'),sel,{onchange:load})}},300)}
 })();
 </script>

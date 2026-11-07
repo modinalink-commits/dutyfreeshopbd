@@ -47,7 +47,8 @@ class Chat {
     DB::table('chat_messages')->insert(['thread_id'=>$t->id, 'dir'=>'in', 'kind'=>$att ? 'file' : 'text', 'body'=>mb_substr($body, 0, 4000), 'attachment_url'=>$att,
       'attachment_type'=>$att ? ($meta['att_type'] ?? 'image') : null, 'ext_id'=>$mid, 'created_at'=>now(), 'updated_at'=>now()]);
     $st = $t->status === 'resolved' ? 'new' : ($t->status === 'waiting' ? 'open' : $t->status);
-    DB::table('chat_threads')->where('id', $t->id)->update(['unread'=>DB::raw('unread + 1'), 'last_message'=>mb_substr($body !== '' ? $body : '[attachment]', 0, 300),
+    // Every new customer message puts the conversation back into "waiting for a reply".
+    DB::table('chat_threads')->where('id', $t->id)->update(['unread'=>DB::raw('unread + 1'), 'awaiting_reply'=>true, 'last_customer_message_at'=>now(), 'last_message'=>mb_substr($body !== '' ? $body : '[attachment]', 0, 300),
       'last_dir'=>'in', 'last_at'=>now(), 'status'=>$st, 'updated_at'=>now()]);
     return DB::table('chat_threads')->find($t->id);
   }
@@ -167,14 +168,23 @@ class Chat {
     return $rows->map(function ($t) use ($intel, $oc, $agents) {
       $i = $intel[$t->id] ?? null; $n = (int)($oc[$t->phone] ?? 0) + (int)($i['legacy'] ?? 0);
       return ['id'=>$t->id, 'channel'=>$t->channel, 'channel_name'=>self::CH[$t->channel] ?? $t->channel, 'name'=>$t->name, 'phone'=>$t->phone, 'username'=>$t->username, 'avatar'=>$t->avatar,
-        'status'=>$t->status, 'unread'=>(int)$t->unread, 'last'=>$t->last_message, 'last_dir'=>$t->last_dir, 'last_at'=>$t->last_at ? \Carbon\Carbon::parse($t->last_at)->toIso8601String() : null,
+        'status'=>$t->status, 'awaiting'=>(bool)($t->awaiting_reply ?? false) && $t->status !== 'resolved', 'unread'=>!empty($t->awaiting_reply) ? (int)$t->unread : 0,
+        'replied'=>empty($t->awaiting_reply) && !empty($t->last_successful_agent_reply_at) && !empty($t->last_customer_message_at) && $t->last_successful_agent_reply_at >= $t->last_customer_message_at,
+        'stale'=>empty($t->awaiting_reply) && ($t->last_dir ?? null) === 'in' && $t->status !== 'resolved' && !empty($t->last_at) && \Carbon\Carbon::parse($t->last_at)->lt(now()->subDays(7)), 'last'=>$t->last_message, 'last_dir'=>$t->last_dir, 'last_at'=>$t->last_at ? \Carbon\Carbon::parse($t->last_at)->toIso8601String() : null,
         'ai'=>!($t->ai_paused ?? false), 'assigned_to'=>$t->assigned_to, 'assigned_name'=>$agents[$t->assigned_to] ?? null, 'customer_id'=>$t->customer_id,
         'cat'=>$n > 0 && $i ? $i['cat'] : 'New', 'orders'=>$n, 'risk'=>$n > 0 && $i ? $i['risk'] : 'Low',
         'intent'=>$t->intent ?? null, 'mood'=>$t->mood ?? null, 'priority'=>$t->priority ?? 'normal', 'needs_human'=>(bool)($t->needs_human ?? false),
         'handoff_at'=>!empty($t->handoff_at) ? \Carbon\Carbon::parse($t->handoff_at)->toIso8601String() : null, 'handoff_reason'=>$t->handoff_reason ?? null, 'ai_summary'=>$t->ai_summary ?? null];
     })->all();
   }
-  public static function unreadTotal(): int { return (int)DB::table('chat_threads')->where('unread', '>', 0)->sum('unread'); }
+  /** Number of customers currently waiting for a staff reply (not a message count, and never reduced by opening a chat). */
+  public static function unreadTotal(): int { try { return (int)DB::table('chat_threads')->where('awaiting_reply', true)->where('status', '!=', 'resolved')->count(); } catch (\Throwable $e) { return 0; } }
+  /** A staff member's reply was accepted by the platform: customer messages that arrived up to $t0 are answered; anything newer stays waiting. */
+  public static function replied(int $tid, $t0, bool $echo = false): void {
+    $left = (int)DB::table('chat_messages')->where('thread_id', $tid)->where('dir', 'in')->where('created_at', '>', $t0)->count();
+    DB::table('chat_messages')->where('thread_id', $tid)->where('dir', 'in')->whereNull('read_at')->where('created_at', '<=', $t0)->update(['read_at'=>now()]);
+    DB::table('chat_threads')->where('id', $tid)->update(['unread'=>$left, 'awaiting_reply'=>$left > 0, 'last_successful_agent_reply_at'=>now(), 'updated_at'=>now()]);
+  }
   public static function productUrl(object $p): string { return url(\App\Http\Controllers\StoreController::url($p)); }
   public static function invoiceUrl(string $invoice): string { return URL::signedRoute('order.invoice', ['invoice'=>$invoice]); }
 }

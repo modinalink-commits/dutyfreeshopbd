@@ -16,14 +16,14 @@ class ChatController extends Controller {
     $q = DB::table('chat_threads');
     $f = (string)$r->query('f', 'all');
     if (in_array($f, ['facebook', 'instagram', 'whatsapp', 'web'])) $q->where('channel', $f);
-    elseif ($f === 'unread') $q->where('unread', '>', 0);
+    elseif ($f === 'unread') $q->where('awaiting_reply', true);
     elseif ($f === 'assigned') $q->where('assigned_to', auth()->id());
     elseif ($f === 'resolved') $q->where('status', 'resolved');
     if ($f !== 'resolved' && $f !== 'all') $q->where('status', '!=', 'resolved');
     if (in_array($r->query('s'), array_keys(self::STATUSES))) $q->where('status', $r->query('s'));
     if ($s = trim((string)$r->query('q'))) { $like = '%'.str_replace(['%', '_'], ['\%', '\_'], $s).'%'; $q->where(fn($w) => $w->where('name', 'ilike', $like)->orWhere('phone', 'ilike', $like)->orWhere('username', 'ilike', $like)->orWhere('last_message', 'ilike', $like)->orWhereIn('phone', fn($o) => $o->from('orders')->where('invoice', 'ilike', $like)->select('phone')->limit(50))); }
     // Unread first, then waiting for staff, then read/open, then resolved; newest message first inside each group.
-    $rows = $q->orderByRaw("case when status <> 'resolved' and unread > 0 then 1 when status <> 'resolved' and (status = 'waiting' or coalesce(needs_human, false)) then 2 when status <> 'resolved' then 3 else 4 end")->orderByDesc('last_at')->limit(120)->get();
+    $rows = $q->orderByRaw("case when status <> 'resolved' and awaiting_reply then 1 when status <> 'resolved' and (status = 'waiting' or coalesce(needs_human, false)) then 2 when status <> 'resolved' then 3 else 4 end")->orderByDesc('last_at')->limit(120)->get();
     return response()->json(['threads'=>Chat::cards($rows), 'unread'=>Chat::unreadTotal()]);
   }
 
@@ -69,13 +69,13 @@ class ChatController extends Controller {
     $after = (int)$r->query('after');
     $m = DB::table('chat_messages')->where('thread_id', $id)->where('id', '>', $after)->orderBy('id')->get()->map($map);
     $t = DB::table('chat_threads')->find($id);
-    return response()->json(['messages'=>$m, 'status'=>$t->status ?? null, 'unread'=>$t ? (int)$t->unread : 0]);
+    return response()->json(['messages'=>$m, 'status'=>$t->status ?? null, 'unread'=>$t && $t->awaiting_reply ? (int)$t->unread : 0, 'awaiting'=>$t ? (bool)$t->awaiting_reply : false, 'replied'=>$t ? (!$t->awaiting_reply && !empty($t->last_successful_agent_reply_at)) : false]);
   }
 
+  /** Records that a staff member opened the chat (activity data only). It NEVER clears unread: only a successful staff reply or an explicit Resolve does. */
   public function read($id) {
     $t = DB::table('chat_threads')->find($id); abort_unless($t, 404);
-    DB::table('chat_messages')->where('thread_id', $id)->where('dir', 'in')->whereNull('read_at')->update(['read_at'=>now()]);
-    DB::table('chat_threads')->where('id', $id)->update(['unread'=>0, 'status'=>$t->status === 'new' ? 'open' : $t->status, 'updated_at'=>now()]);
+    DB::table('chat_threads')->where('id', $id)->update(['last_opened_at'=>now(), 'status'=>$t->status === 'new' ? 'open' : $t->status]);
     return response()->json(['ok'=>true, 'unread'=>Chat::unreadTotal()]);
   }
 
@@ -95,11 +95,15 @@ class ChatController extends Controller {
       $att = url('/uploads/chat/'.$name); $type = str_starts_with((string)$mime, 'image/') ? 'image' : 'file';
     } elseif (!empty($d['image_url']) && str_starts_with($d['image_url'], '/')) { $att = url($d['image_url']); $type = 'image'; }
     if ($body === '' && !$att) return response()->json(['ok'=>false, 'error'=>'Write a message first.'], 422);
+    $t0 = now(); // customer messages that arrive after this moment were not answered by this reply
     [$ok, $err] = Chat::deliver($t, $body, $att, $type ?? 'image');
     $mid = DB::table('chat_messages')->insertGetId(['thread_id'=>$id, 'dir'=>'out', 'kind'=>$d['kind'] ?? ($att ? 'file' : 'text'), 'body'=>$body, 'attachment_url'=>$att, 'attachment_type'=>$type,
       'user_id'=>auth()->id(), 'user_name'=>auth()->user()->name, 'status'=>$ok ? 'sent' : 'failed', 'error'=>$err, 'created_at'=>now(), 'updated_at'=>now()]);
-    DB::table('chat_threads')->where('id', $id)->update(['last_message'=>mb_substr($body !== '' ? $body : '[attachment]', 0, 300), 'last_dir'=>'out', 'last_at'=>now(), 'unread'=>0,
-      'status'=>in_array($t->status, ['new', 'open']) ? 'waiting' : $t->status, 'assigned_to'=>$t->assigned_to ?: auth()->id(), 'ai_paused'=>true, 'updated_at'=>now()]);
+    // A failed send leaves the conversation waiting for a reply; only an accepted message answers the customer.
+    $upd = ['assigned_to'=>$t->assigned_to ?: auth()->id(), 'ai_paused'=>true, 'updated_at'=>now()];
+    if ($ok) $upd += ['last_message'=>mb_substr($body !== '' ? $body : '[attachment]', 0, 300), 'last_dir'=>'out', 'last_at'=>now(), 'status'=>in_array($t->status, ['new', 'open']) ? 'waiting' : $t->status];
+    DB::table('chat_threads')->where('id', $id)->update($upd);
+    if ($ok) Chat::replied((int)$id, $t0);
     $res = ['ok'=>$ok, 'error'=>$err, 'id'=>$mid, 'ai'=>false];
     if ($ck) \Illuminate\Support\Facades\Cache::put($ck, $res, 600);
     return response()->json($res);
@@ -119,7 +123,10 @@ class ChatController extends Controller {
   }
   public function status(Request $r, $id) {
     $d = $r->validate(['status'=>'required|in:new,open,waiting,resolved']);
-    DB::table('chat_threads')->where('id', $id)->update(['status'=>$d['status'], 'unread'=>$d['status'] === 'resolved' ? 0 : DB::raw('unread'), 'updated_at'=>now()]);
+    // Resolve is a deliberate staff decision ("no reply needed"), so it is the only other action that clears the waiting state.
+    $upd = ['status'=>$d['status'], 'updated_at'=>now()];
+    if ($d['status'] === 'resolved') $upd += ['unread'=>0, 'awaiting_reply'=>false];
+    DB::table('chat_threads')->where('id', $id)->update($upd);
     return response()->json(['ok'=>true, 'unread'=>Chat::unreadTotal()]);
   }
   /** Link a social conversation to a customer by phone number. */
@@ -372,7 +379,18 @@ class ChatController extends Controller {
         if ($obj === 'page' || $obj === 'instagram') {
           $ch = $obj === 'page' ? 'facebook' : 'instagram';
           foreach ($e['messaging'] ?? [] as $m) {
-            if (empty($m['message']) || !empty($m['message']['is_echo']) || empty($m['sender']['id'])) continue;
+            if (!empty($m['message']['is_echo'])) { // a staff member answered from the Page inbox app: that counts as a human reply (our own API sends carry our app id and are ignored)
+              $aid = (string)($m['message']['app_id'] ?? '');
+              if (($aid === '' || $aid === '263902037430900') && !empty($m['recipient']['id']) && ($tt = DB::table('chat_threads')->where(['channel'=>$ch, 'external_id'=>(string)$m['recipient']['id']])->first())
+                && !DB::table('chat_messages')->where('ext_id', $m['message']['mid'] ?? '-')->exists()) {
+                $eb = (string)($m['message']['text'] ?? ''); if ($eb === '') $eb = '[attachment]';
+                DB::table('chat_messages')->insert(['thread_id'=>$tt->id, 'dir'=>'out', 'kind'=>'text', 'body'=>mb_substr($eb, 0, 4000), 'ext_id'=>$m['message']['mid'] ?? null, 'user_name'=>'Page inbox', 'status'=>'sent', 'created_at'=>now(), 'updated_at'=>now()]);
+                DB::table('chat_threads')->where('id', $tt->id)->update(['last_message'=>mb_substr($eb, 0, 300), 'last_dir'=>'out', 'last_at'=>now()]);
+                Chat::replied((int)$tt->id, now());
+              }
+              continue;
+            }
+            if (empty($m['message']) || empty($m['sender']['id'])) continue;
             $msg = $m['message']; $att = null;
             foreach ($msg['attachments'] ?? [] as $a) if (!empty($a['payload']['url'])) { $att = $a['payload']['url']; break; }
             $body = (string)($msg['text'] ?? ''); if ($body === '' && !$att) $body = '[unsupported message]';
