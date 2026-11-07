@@ -35,6 +35,20 @@
 </div>
 @php $sl = \Schema::hasColumn('sms_logs','order_id') ? \DB::table('sms_logs')->where('order_id',$o->id)->orderBy('id')->get() : collect(); @endphp
 @if($sl->count())<div class="card os"><div class="os-h">SMS log <span class="mu">({{ $sl->count() }})</span></div>@foreach($sl as $m)<details class="os-sms"><summary><b style="color:{{ $m->status==='sent' ? '#16A34A' : ($m->status==='failed' ? '#DC2626' : '#6B7280') }}">{{ ucfirst($m->status) }}</b><span class="ev">{{ $m->event }}</span><span class="mu">{{ $m->to }}</span>@if($m->discount_mentioned)<span class="chip">{{ $m->discount_mentioned }}</span>@endif<span class="mu tm">{{ \Carbon\Carbon::parse($m->created_at)->timezone('Asia/Dhaka')->format('d M Y, h:i A') }}</span></summary>@if($m->provider_response)<small class="mu">Provider: {{ $m->provider_response }}</small>@endif<pre>{{ $m->body }}</pre></details>@endforeach</div>@endif
+@php
+$wcs = collect(); $wms = collect();
+try {
+  if (\Schema::hasTable('order_whatsapp_confirmations')) $wcs = \DB::table('order_whatsapp_confirmations')->where('order_id',$o->id)->orderBy('id')->get();
+  $wn = \App\Support\WhatsApp::norm((string)($o->phone ?? ''));
+  if ($wn && \Schema::hasTable('chat_threads')) {
+    $wt = \DB::table('chat_threads')->where('channel','whatsapp')->where(function($q) use($wn){ $q->where('phone',$wn)->orWhere('external_id',$wn); })->pluck('id');
+    if ($wt->count()) $wms = \DB::table('chat_messages')->whereIn('thread_id',$wt)->where('created_at','>=',\Carbon\Carbon::parse($o->created_at)->subMinutes(5))->orderBy('id')->limit(30)->get();
+  }
+} catch (\Throwable $e) {}
+@endphp
+@if($wcs->count() || $wms->count())<div class="card os"><div class="os-h">WhatsApp log <span class="mu">({{ $wcs->count() + $wms->count() }})</span></div>
+@foreach($wcs as $m)@php $stc = in_array($m->send_status,['SENT','DELIVERED','READ']) ? '#16A34A' : ($m->send_status==='FAILED' ? '#DC2626' : '#6B7280'); $when = $m->read_at ?: ($m->delivered_at ?: ($m->sent_at ?: ($m->failed_at ?: $m->created_at))); @endphp<details class="os-sms"><summary><b style="color:{{ $stc }}">{{ ucfirst(strtolower($m->send_status)) }}</b><span class="ev">order_confirmation{{ $m->seq > 1 ? ' #'.$m->seq : '' }}</span><span class="mu">{{ $m->mobile }}</span><span class="chip">{{ $m->approval_source }}</span><span class="mu tm">{{ \Carbon\Carbon::parse($when)->timezone('Asia/Dhaka')->format('d M Y, h:i A') }}</span></summary>@if($m->failure_reason)<small class="mu">Reason: {{ $m->failure_reason }}</small>@endif<pre>{{ \App\Support\OrderWaConfirm::render(\App\Support\OrderWaConfirm::params($o)) }}</pre></details>@endforeach
+@foreach($wms as $m)@php $out = $m->dir==='out'; @endphp<details class="os-sms"><summary><b style="color:{{ $m->status==='failed' ? '#DC2626' : ($out ? '#16A34A' : '#2563EB') }}">{{ $out ? 'Sent' : 'Received' }}</b><span class="ev">{{ $out ? ($m->user_name ?: 'AI / system') : 'Customer' }}</span><span class="mu">{{ \Illuminate\Support\Str::limit((string)$m->body, 70) ?: '['.$m->kind.']' }}</span><span class="mu tm">{{ \Carbon\Carbon::parse($m->created_at)->timezone('Asia/Dhaka')->format('d M Y, h:i A') }}</span></summary>@if($m->error)<small class="mu">{{ $m->error }}</small>@endif<pre>{{ $m->body }}</pre></details>@endforeach</div>@endif
 <div class="card"><table><thead><tr><th style="width:70px">Image</th><th>Product</th><th>Qty</th><th>Price</th></tr></thead><tbody>@foreach($items as $i)<tr><td><img src="{{ $i->image ?: \App\Support\StoreScanner::ph() }}" alt="" width="56" height="56" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='{{ \App\Support\StoreScanner::ph() }}'" style="object-fit:cover;border-radius:8px;border:1px solid #FDC2A5;background:#fff"></td><td><b>{{ $i->name }}</b>@if(!empty($i->sku))<br><small style="color:#6B7280">{{ $i->sku }}</small>@endif</td><td>{{ $i->qty }}</td><td>৳{{ number_format($i->price) }}</td></tr>@endforeach</tbody></table><p>Shipping ৳{{ number_format($o->shipping) }} · <b>Total ৳{{ number_format($o->total) }}</b></p></div>
 @include('order_amount_block',['o'=>$o])
 @include('order_outcome')
