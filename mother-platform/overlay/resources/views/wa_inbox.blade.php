@@ -56,5 +56,5 @@
 <form method="post" action="/admin/whatsapp/{{ $cur->id }}/assign" style="margin-top:6px">@csrf<select name="user_id"><option value="0">— Unassigned —</option>@foreach($users as $u)<option value="{{ $u->id }}" @selected($cur->assigned_to==$u->id)>{{ $u->name }}</option>@endforeach</select><button class="g" type="submit" style="margin-top:6px">Save</button></form>@endif
 @else<span style="color:#6B7280;font-size:13px">Customer and order details appear here.</span>@endif
 </div></div>
-<script>@if(!$cur)setTimeout(function(){location.reload()},60000);@endif</script>
+<script>@if(!$cur)setInterval(function(){var a=document.activeElement,t=a&&a.tagName;if(document.hidden||t==='INPUT'||t==='TEXTAREA'||t==='SELECT')return;if(window.dfSoft)dfSoft({quiet:true})},60000);@endif</script>
 @endsection
