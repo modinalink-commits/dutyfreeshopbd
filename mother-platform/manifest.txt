@@ -840,3 +840,4 @@ database/migrations/2026_11_07_006000_single_packet_paid_delivery.php
 database/migrations/2026_11_07_007000_single_packet_section_paid.php
 database/migrations/2026_11_07_008000_chat_ai_language.php
 resources/ai/kb_default.txt
+database/migrations/2026_11_07_009000_chat_salam_quick_reply.php

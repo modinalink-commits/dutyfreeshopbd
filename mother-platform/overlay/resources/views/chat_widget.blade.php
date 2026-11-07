@@ -176,7 +176,7 @@ M.mount=function(el,id,opt){
     '<button class="tg" type="button" id="mpb">'+ic('bag')+'Product</button><button class="tg" type="button" id="mib">'+ic('doc')+'Invoice</button><button class="tg" type="button" id="mtb">'+ic('truck')+'Tracking</button><label class="tg" style="margin:0;cursor:pointer">'+ic('clip')+'Attach<input type="file" id="mfi" accept="image/*,.pdf" style="display:none"></label><button class="tg" type="button" id="mvb">'+ic('mic')+'Voice</button><button class="tg" type="button" id="mdb" title="Speak in Bangla and it is typed for you (Chrome / Edge)">'+ic('mic')+'বাংলা টাইপ</button></div><div class="vr" id="mvr" hidden></div>'+
     '<div class="sd"><button type="button" class="pl" id="mtl" aria-label="More tools">+</button><textarea id="mt" placeholder="Type a reply… (Enter to send, Shift+Enter for a new line)"></textarea><button type="button" id="ms">'+ic('send')+'<span class="sl">Send</span></button></div><div id="mer" class="err"></div>';
     var qm={};d.quick.forEach(function(q){qm[q.id]=q.body});
-    $('#mq').onchange=function(){if(this.value){$('#mt').value=qm[this.value];S.kind='quick';$('#mt').focus();this.value=''}};
+    $('#mq').onchange=function(){if(this.value){$('#mt').value=String(qm[this.value]).replace(/\{agent\}/g,d.me||'');S.kind='quick';$('#mt').focus();this.value=''}};
     function pickOrder(k){var o=S.d.orders;if(!o.length){$('#mer').textContent='This customer has no orders yet.';return}fillOrder(o[0].id,k)}
     $('#mib').onclick=function(){pickOrder('invoice')};$('#mtb').onclick=function(){pickOrder('tracking')};
     var tmr;$('#mpb').onclick=function(){var p=$('#mpk');p.style.display=p.style.display==='block'?'none':'block';if(p.style.display==='block')$('#mpq').focus()};

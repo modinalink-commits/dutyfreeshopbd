@@ -55,6 +55,7 @@ class ChatController extends Controller {
     return response()->json(['thread'=>$card, 'messages'=>$msgs, 'has_more'=>$hasMore, 'customer'=>$cust ? ['id'=>$cust->id, 'name'=>$cust->name, 'phone'=>$cust->phone, 'email'=>$cust->email, 'address'=>$cust->address ?? null] : null,
       'orders'=>$orders, 'intel'=>$intel ? ['delivered'=>$intel['delivered'], 'returned'=>$intel['returned'], 'cancelled'=>$intel['cancelled'], 'rate'=>$intel['rate'], 'spent'=>$intel['spent'], 'fraud'=>$intel['fraud']] : null,
       'agents'=>DB::table('users')->where('active', true)->orderBy('name')->get(['id', 'name']), 'statuses'=>self::STATUSES,
+      'me'=>(string)(auth()->user()->name ?? ''),
       'quick'=>DB::table('chat_quick_replies')->where('active', true)->orderBy('id')->get(['id', 'title', 'body'])]);
   }
 
