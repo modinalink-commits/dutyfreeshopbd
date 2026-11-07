@@ -44,26 +44,32 @@ class ChatController extends Controller {
   public function thread($id) {
     $t = DB::table('chat_threads')->find($id); abort_unless($t, 404);
     $card = Chat::cards([$t])[0];
-    $msgs = DB::table('chat_messages')->where('thread_id', $id)->orderByDesc('id')->limit(250)->get()->reverse()->values()->map(fn($m) => [
-      'id'=>$m->id, 'dir'=>$m->dir, 'kind'=>$m->kind, 'body'=>$m->body, 'att'=>$m->attachment_url, 'att_type'=>$m->attachment_type, 'by'=>$m->user_name, 'is_ai'=>(bool)($m->is_ai ?? false), 'status'=>$m->status, 'error'=>$m->error,
+    $msgs = DB::table('chat_messages')->where('thread_id', $id)->orderByDesc('id')->limit(61)->get()->take(60)->reverse()->values()->map(fn($m) => [
+      'id'=>$m->id, 'dir'=>$m->dir, 'kind'=>$m->kind, 'body'=>$m->body, 'att'=>$m->attachment_url, 'att_type'=>$m->attachment_type, 'by'=>$m->user_name, 'is_ai'=>(bool)($m->is_ai ?? false), 'status'=>$m->status, 'error'=>$m->error, 'read'=>!empty($m->read_at),
       'at'=>\Carbon\Carbon::parse($m->created_at)->toIso8601String()]);
+    $hasMore = DB::table('chat_messages')->where('thread_id', $id)->count() > 60;
     $cust = $t->customer_id ? DB::table('customers')->find($t->customer_id) : ($t->phone ? DB::table('customers')->where('phone', $t->phone)->first() : null);
     $orders = $t->phone ? DB::table('orders')->where('phone', $t->phone)->orderByDesc('id')->limit(8)->get(['id', 'invoice', 'status', 'total', 'created_at', 'courier', 'consignment_id', 'tracking_code', 'courier_status'])->map(fn($o) => (array)$o + ['date'=>\Carbon\Carbon::parse($o->created_at)->timezone('Asia/Dhaka')->format('d M Y')]) : collect();
     $intel = null;
     if ($t->phone && ($first = DB::table('orders')->where('phone', $t->phone)->orderByDesc('id')->first(['id', 'phone', 'total']))) $intel = CustomerIntel::forOrders([$first])[$first->id] ?? null;
-    return response()->json(['thread'=>$card, 'messages'=>$msgs, 'customer'=>$cust ? ['id'=>$cust->id, 'name'=>$cust->name, 'phone'=>$cust->phone, 'email'=>$cust->email, 'address'=>$cust->address ?? null] : null,
+    return response()->json(['thread'=>$card, 'messages'=>$msgs, 'has_more'=>$hasMore, 'customer'=>$cust ? ['id'=>$cust->id, 'name'=>$cust->name, 'phone'=>$cust->phone, 'email'=>$cust->email, 'address'=>$cust->address ?? null] : null,
       'orders'=>$orders, 'intel'=>$intel ? ['delivered'=>$intel['delivered'], 'returned'=>$intel['returned'], 'cancelled'=>$intel['cancelled'], 'rate'=>$intel['rate'], 'spent'=>$intel['spent'], 'fraud'=>$intel['fraud']] : null,
       'agents'=>DB::table('users')->where('active', true)->orderBy('name')->get(['id', 'name']), 'statuses'=>self::STATUSES,
       'quick'=>DB::table('chat_quick_replies')->where('active', true)->orderBy('id')->get(['id', 'title', 'body'])]);
   }
 
   public function messagesAfter(Request $r, $id) {
+    $map = fn($m) => [
+      'id'=>$m->id, 'dir'=>$m->dir, 'kind'=>$m->kind, 'body'=>$m->body, 'att'=>$m->attachment_url, 'att_type'=>$m->attachment_type, 'by'=>$m->user_name, 'is_ai'=>(bool)($m->is_ai ?? false), 'status'=>$m->status, 'error'=>$m->error, 'read'=>!empty($m->read_at),
+      'at'=>\Carbon\Carbon::parse($m->created_at)->toIso8601String()];
+    if ($r->query('before')) { // older history, newest-first page of 40 (lazy "load older")
+      $rows = DB::table('chat_messages')->where('thread_id', $id)->where('id', '<', (int)$r->query('before'))->orderByDesc('id')->limit(41)->get();
+      return response()->json(['messages'=>$rows->take(40)->reverse()->values()->map($map), 'has_more'=>$rows->count() > 40]);
+    }
     $after = (int)$r->query('after');
-    $m = DB::table('chat_messages')->where('thread_id', $id)->where('id', '>', $after)->orderBy('id')->get()->map(fn($m) => [
-      'id'=>$m->id, 'dir'=>$m->dir, 'kind'=>$m->kind, 'body'=>$m->body, 'att'=>$m->attachment_url, 'att_type'=>$m->attachment_type, 'by'=>$m->user_name, 'status'=>$m->status, 'error'=>$m->error,
-      'at'=>\Carbon\Carbon::parse($m->created_at)->toIso8601String()]);
+    $m = DB::table('chat_messages')->where('thread_id', $id)->where('id', '>', $after)->orderBy('id')->get()->map($map);
     $t = DB::table('chat_threads')->find($id);
-    return response()->json(['messages'=>$m, 'status'=>$t->status ?? null]);
+    return response()->json(['messages'=>$m, 'status'=>$t->status ?? null, 'unread'=>$t ? (int)$t->unread : 0]);
   }
 
   public function read($id) {
@@ -75,6 +81,11 @@ class ChatController extends Controller {
 
   public function reply(Request $r, $id) {
     $t = DB::table('chat_threads')->find($id); abort_unless($t, 404);
+    // Idempotency: the same client token (double click, retry after a slow response) never sends twice.
+    $tok = preg_replace('/[^A-Za-z0-9_-]/', '', (string)$r->input('client_token', ''));
+    $ck = $tok !== '' ? 'chat.reply.'.auth()->id().'.'.$id.'.'.substr($tok, 0, 40) : null;
+    if ($ck && ($prev = \Illuminate\Support\Facades\Cache::get($ck))) return response()->json($prev);
+    if ($ck && !\Illuminate\Support\Facades\Cache::add($ck.'.lock', 1, 20)) return response()->json(['ok'=>true, 'dup'=>true, 'id'=>0, 'error'=>null, 'ai'=>false]);
     $d = $r->validate(['body'=>'nullable|string|max:3500', 'kind'=>'nullable|in:text,product,invoice,tracking,quick', 'file'=>'nullable|file|mimes:jpg,jpeg,png,webp,gif,pdf|max:8192', 'image_url'=>'nullable|string|max:400']);
     $body = trim((string)($d['body'] ?? '')); $att = null; $type = null;
     if ($f = $r->file('file')) {
@@ -89,7 +100,9 @@ class ChatController extends Controller {
       'user_id'=>auth()->id(), 'user_name'=>auth()->user()->name, 'status'=>$ok ? 'sent' : 'failed', 'error'=>$err, 'created_at'=>now(), 'updated_at'=>now()]);
     DB::table('chat_threads')->where('id', $id)->update(['last_message'=>mb_substr($body !== '' ? $body : '[attachment]', 0, 300), 'last_dir'=>'out', 'last_at'=>now(), 'unread'=>0,
       'status'=>in_array($t->status, ['new', 'open']) ? 'waiting' : $t->status, 'assigned_to'=>$t->assigned_to ?: auth()->id(), 'ai_paused'=>true, 'updated_at'=>now()]);
-    return response()->json(['ok'=>$ok, 'error'=>$err, 'id'=>$mid, 'ai'=>false]);
+    $res = ['ok'=>$ok, 'error'=>$err, 'id'=>$mid, 'ai'=>false];
+    if ($ck) \Illuminate\Support\Facades\Cache::put($ck, $res, 600);
+    return response()->json($res);
   }
 
   /** Turn Claude's automatic replies on or off for one conversation. */

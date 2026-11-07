@@ -26,7 +26,7 @@
 .mbx .bg.ai{background:#E0F2FE;color:#075985}.mbx .bg.human{background:#F1F5F9;color:#334155}.mbx .bg.need{background:#FEE2E2;color:#B91C1C}
 .mbx .emp{padding:40px 20px;text-align:center;color:#6B7280;font-size:13px}
 #ibtop h1{font-size:19px;font-weight:700}#ibtop #ibu .ub{display:inline-block;min-width:20px;height:19px;line-height:19px;border-radius:10px;background:#DC2626;color:#fff;font-size:11px;font-weight:700;padding:0 8px;margin-left:6px;box-sizing:border-box;vertical-align:middle}
-@media(max-width:900px){.mbx{grid-template-columns:1fr;height:auto}.mbx .cv{height:78vh}.mbx .ls{max-height:75vh}.mbx.sel .ls{display:none}.mbx:not(.sel) .cv{display:none}.mbx.sel .cv{height:calc(100vh - 110px)}}
+@media(max-width:900px){.mbx{grid-template-columns:1fr;height:auto}.mbx .cv{height:78vh}.mbx .ls{max-height:75vh}.mbx.sel .ls{display:none}.mbx:not(.sel) .cv{display:none}.mbx.sel .cv{height:calc(100vh - 110px);height:calc(100dvh - 110px)}.mbx .th{min-height:64px}#ibback{min-height:44px}}
 @media(prefers-reduced-motion:reduce){.mbx .th,.mbx .fl a{transition:none}.mbx .th.fl8{animation:none}}
 #ibback{display:none}body.ibsel #ibback{display:inline-block}
 @if(request()->boolean('embed'))
@@ -59,7 +59,7 @@ function row(t){var st=t.needs_human?'waiting':(t.status||'open');var stL={new:'
   +'<div class="bd"><div class="l1"><span class="nm">'+esc(t.name)+'</span><span class="tm">'+ago(t.last_at)+'</span></div>'
   +'<div class="l2"><span class="lm">'+(t.last_dir==='out'?'You: ':'')+esc(t.last||'')+'</span>'+(un?'<span class="ub">'+t.unread+'</span>':'')+'</div>'
   +'<div class="l3">'+esc(t.cat)+' · '+t.orders+' order'+(t.orders===1?'':'s')+'</div>'
-  +'<div class="l4"><span class="bg '+st+'">'+stL+'</span>'+h+'</div></div></div>'}
+  +'<div class="l4"><span class="bg '+st+'">'+stL+'</span>'+h+(t.assigned_name?'<span class="bg human" title="Assigned to">👤 '+esc(t.assigned_name)+'</span>':'<span class="bg" style="color:#9CA3AF">Unassigned</span>')+'</div></div></div>'}
 function load(){fetch('/admin/chat/threads?f='+f+'&q='+encodeURIComponent(q),{headers:{Accept:'application/json'},credentials:'same-origin'}).then(function(r){return r.json()}).then(function(j){
   var u=document.getElementById('ibu');u.innerHTML=j.unread?'<span class="ub">'+j.unread+' unread</span>':'';if(window.MChat)MChat.badge(j.unread);
   var l=document.getElementById('ibl');if(!j.threads.length){l.innerHTML='<div class="emp">No conversations here yet.</div>';return}
