@@ -24,6 +24,11 @@ class CourierBackfillController extends Controller {
       $out['diag'] = DB::table('orders')->selectRaw("status, coalesce(courier,'-') courier, coalesce(courier_stage,'-') stage, (consignment_id is not null) has_cn, (coalesce(collected_amount,courier_cod,0) > 0) has_cod, count(*) n, to_char(min(coalesce(courier_delivered_at, created_at)),'YYYY-MM-DD') d1, to_char(max(coalesce(courier_delivered_at, created_at)),'YYYY-MM-DD') d2")
         ->whereIn('status', ['Delivered','Partial Delivered','Completed'])->groupBy('status','courier','stage','has_cn','has_cod')->orderByDesc('n')->limit(40)->get();
     }
+    if ($r->query('legacy')) {
+      $out['legacy_orders'] = DB::table('orders')->where('status','Delivered')->whereNull('courier_stage')->selectRaw("coalesce(courier,'-') c, to_char(created_at at time zone 'Asia/Dhaka','YYYY-MM') m, count(*) n, round(sum(total)) tot, round(sum(coalesce(paid_total,0))) paid")->groupBy('c','m')->orderBy('m')->get();
+      $out['ledger_by_prefix'] = DB::table('account_entries')->selectRaw("split_part(reference,'-',1) p, direction, to_char(min(entry_date),'YYYY-MM-DD') d1, to_char(max(entry_date),'YYYY-MM-DD') d2, count(*) n, round(sum(amount)) amt")->groupBy('p','direction')->orderBy('p')->get();
+      $out['sample'] = DB::table('account_entries')->where('direction','income')->where('reference','like','OLD-%')->orderByDesc('amount')->limit(5)->get(['reference','amount','entry_date','comment']);
+    }
     return response()->json($out);
   }
   public function apply(Request $r) {
