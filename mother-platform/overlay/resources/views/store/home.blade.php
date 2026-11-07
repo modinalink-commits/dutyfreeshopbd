@@ -400,7 +400,9 @@ body .cs .pc .on{margin-top:auto}
 </div></div></div>
 @endif
 
-@if($offerSlides->count())
+@if(!empty($showcase) && count($showcase))
+@include('store.showcase')
+@elseif($offerSlides->count())
 <div class="w osl" style="padding-top:34px"><div class="sld" data-auto="5000"><div class="sl-t">@foreach($offerSlides as $os)
 @php $__om = (is_string($os->image) && str_starts_with($os->image, '/banners/') && is_file(public_path(preg_replace('/\.\w+$/', '.mp4', ltrim($os->image, '/'))))) ? preg_replace('/\.\w+$/', '.mp4', $os->image) : null; @endphp
 <a href="{{ $os->link ?: '#flash' }}"@if($__om) class="osv"@endif><img src="{{ $os->image }}" alt="DutyFree BD offer" loading="lazy" width="1266" height="650">@if($__om)<video class="osvv" data-src="{{ $__om }}" muted loop playsinline preload="none" aria-hidden="true" tabindex="-1"></video>@endif</a>

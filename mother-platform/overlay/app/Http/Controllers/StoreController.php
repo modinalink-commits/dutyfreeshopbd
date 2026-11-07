@@ -183,7 +183,7 @@ class StoreController extends Controller {
     } catch (\Throwable $e) { report($e); }
     if ($data['count'] === 0) return response()->view('coming', [], 503)->header('Retry-After','3600');
     $live = $s['home_live_orders'] === '1' ? $this->liveOrders() : collect();
-    return response()->view('store.home', $this->base($data + ['live'=>$live, 'title'=>self::cleanSeo($s['site_title'] ?? '', self::HOME_TITLE), 'desc'=>self::cleanSeo($s['meta_description'] ?? '', self::HOME_DESC), 'canon'=>url('/').'/', 'home'=>true]))->header('Cache-Control','private, no-cache, max-age=0');
+    return response()->view('store.home', $this->base($data + ['showcase'=>\App\Support\Showcase::slots(), 'live'=>$live, 'title'=>self::cleanSeo($s['site_title'] ?? '', self::HOME_TITLE), 'desc'=>self::cleanSeo($s['meta_description'] ?? '', self::HOME_DESC), 'canon'=>url('/').'/', 'home'=>true]))->header('Cache-Control','private, no-cache, max-age=0');
   }
   /** Animated Brand Slider data: active brands (admin order) that have at least one customer-visible product; cached 5 min. A problem here never breaks the homepage. */
   /** Homepage promo cards: every customer offer that is switched ON right now (Discount Center rules, bundle, app reward). Nothing is invented; text comes from the saved values. */

@@ -815,3 +815,14 @@ resources/views/wa_confirm_settings.blade.php
 database/migrations/2026_11_07_001000_order_whatsapp_confirmations.php
 database/migrations/2026_11_07_001100_fix_stale_verification_pending.php
 database/migrations/2026_11_07_002000_chat_awaiting_reply.php
+database/migrations/2026_11_07_003000_home_showcase_slots.php
+app/Support/Showcase.php
+app/Http/Controllers/ShowcaseController.php
+resources/views/showcase_admin.blade.php
+resources/views/store/showcase.blade.php
+public/showcase/555-original.webp
+public/showcase/555-gold.webp
+public/showcase/mevius-sky-blue.webp
+public/showcase/mevius-wind-blue.webp
+public/showcase/marlboro-gold.webp
+public/showcase/dunhill-switch.webp
