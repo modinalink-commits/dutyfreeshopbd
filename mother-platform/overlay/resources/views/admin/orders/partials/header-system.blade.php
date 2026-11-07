@@ -21,6 +21,7 @@
 #ocb#ocb #oexs{height:34px!important;min-width:0!important;flex:0 0 auto!important}
 #ocb#ocb #oexs .dfx-btn.toolbar-control{height:34px!important;min-height:34px!important;padding:0 12px!important;font-size:12px!important;font-weight:600!important;line-height:1!important;border:1px solid var(--border-grid,#CED4DA)!important;border-radius:8px!important}
 #ocb#ocb select.toolbar-control{max-width:130px!important}
+#ocb#ocb select.toolbar-control[name=rtype],#ocb#ocb select.toolbar-control[name=rstat],#ocb#ocb select.toolbar-control[name=asrc]{max-width:190px!important;min-width:max-content!important;text-overflow:clip}
 #ocb#ocb .toolbar-control-sm[name=per]{min-width:0!important;padding-right:22px!important}
 #ocb#ocb .pre{flex:0 0 auto!important;margin:0!important}
 /* Create Order: strongest primary action, same height */
