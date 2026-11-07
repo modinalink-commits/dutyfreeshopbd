@@ -136,6 +136,36 @@ class Chat {
     } catch (\Throwable $e) { return null; }
   }
   /** Claude answers a website chat message, unless a staff member has taken the thread over. Runs after the response is sent. */
+  /** Staff-only help: the customer sent a product photo while a human owns the chat. The AI identifies it, finds matching in-stock products and stores a ready reply the agent can send with one click. Never sent to the customer. */
+  public static function imageHint(int $tid, int $mid): void {
+    try {
+      if (!AiChat::chatOn()) return;
+      $m = DB::table('chat_messages')->where('id', $mid)->first(); if (!$m || $m->dir !== 'in' || $m->attachment_type !== 'image' || !$m->attachment_url) return;
+      $ip = public_path('uploads/chat/'.basename((string)parse_url((string)$m->attachment_url, PHP_URL_PATH)));
+      if (!is_file($ip) || filesize($ip) > 3500000) return;
+      $mt = (string)@mime_content_type($ip); if (!in_array($mt, ['image/jpeg', 'image/png', 'image/webp', 'image/gif'], true)) return;
+      $key = Sms::secret('ai_key'); if (!$key) return;
+      $n = 'ai.hint.n.'.now()->format('Ymd'); \Illuminate\Support\Facades\Cache::add($n, 0, 90000); if (\Illuminate\Support\Facades\Cache::increment($n) > 400) return;
+      $res = Http::withHeaders(['x-api-key'=>$key, 'anthropic-version'=>'2023-06-01'])->timeout(25)->post('https://api.anthropic.com/v1/messages', ['model'=>AiChat::model(), 'max_tokens'=>200,
+        'system'=>'You look at a photo a customer sent to a Bangladeshi duty-free / cosmetics / perfume / cigarette store. Reply with ONE line only: the brand and product name exactly as printed on the pack, then 3-6 short English search keywords separated by commas. Format: "Brand Product | keyword, keyword, keyword". If it is not a product photo, reply: NONE',
+        'messages'=>[['role'=>'user', 'content'=>[['type'=>'image', 'source'=>['type'=>'base64', 'media_type'=>$mt, 'data'=>base64_encode((string)file_get_contents($ip))]], ['type'=>'text', 'text'=>trim((string)$m->body) ?: 'Which product is this?']]]]]);
+      if (!$res->ok()) return;
+      $line = trim(collect($res->json('content') ?? [])->where('type', 'text')->pluck('text')->implode(' '));
+      if ($line === '' || stripos($line, 'NONE') === 0) { \Illuminate\Support\Facades\Cache::put('ai.hint.'.$tid, ['mid'=>$mid, 'found'=>'Not a clear product photo', 'items'=>[], 'reply'=>''], 43200); return; }
+      [$nm, $kw] = array_pad(array_map('trim', explode('|', $line, 2)), 2, '');
+      $words = array_values(array_unique(array_filter(preg_split('/[\s,]+/u', mb_strtolower($nm.' '.$kw)), fn($w) => mb_strlen($w) >= 3)));
+      $items = [];
+      if ($words) {
+        $rows = StockGuard::listable(DB::table('products')->where('published', true))->where(function ($w) use ($words) { foreach (array_slice($words, 0, 8) as $t) { $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $t).'%'; $w->orWhere('name', 'ilike', $like); } })->limit(60)->get(['id', 'name', 'price', 'offer_price', 'stock', 'category_id', 'path_slug', 'sub', 'sub_sub']);
+        $nmw = array_values(array_filter(preg_split('/[\s,]+/u', mb_strtolower($nm)), fn($w) => mb_strlen($w) >= 3));
+        $scored = $rows->map(function ($p) use ($nmw, $words) { $l = mb_strtolower($p->name); $sc = 0; foreach ($nmw as $w) if (str_contains($l, $w)) $sc += 3; foreach ($words as $w) if (str_contains($l, $w)) $sc += 1; return [$sc, $p]; })->sortByDesc(fn($x) => $x[0])->take(3);
+        foreach ($scored as [$sc, $p]) { if ($sc <= 0) continue; $pr = (float)($p->offer_price ?: $p->price); $items[] = ['name'=>$p->name, 'price'=>number_format($pr), 'link'=>url(\App\Http\Controllers\StoreController::url($p))]; }
+      }
+      $reply = $items ? implode("\n", array_map(fn($i) => $i['name'].', '.$i['price'].' TK: '.$i['link'], $items)) : '';
+      \Illuminate\Support\Facades\Cache::put('ai.hint.'.$tid, ['mid'=>$mid, 'found'=>$nm, 'items'=>$items, 'reply'=>$reply], 43200);
+    } catch (\Throwable $e) { report($e); }
+  }
+
   public static function aiReply(int $tid, int $depth = 0): void {
     $lock = null;
     try {
