@@ -225,7 +225,7 @@ class ChatController extends Controller {
     if (!$id) return redirect('/admin/chat-settings')->with('err', 'Save the Meta App ID first (Chat Settings > Meta app).');
     $st = bin2hex(random_bytes(16)); session(['fb_oauth_state'=>$st]);
     return redirect('https://www.facebook.com/v21.0/dialog/oauth?'.http_build_query(['client_id'=>$id, 'redirect_uri'=>url('/admin/chat-settings/fb-callback'), 'state'=>$st, 'response_type'=>'code',
-      'scope'=>'pages_show_list,pages_messaging,pages_manage_metadata,pages_read_engagement,instagram_basic,instagram_manage_messages,business_management']));
+      'config_id'=>'1507276531459571', 'override_default_response_type'=>'true']));
   }
   public function fbCallback(Request $r) {
     $back = redirect('/admin/chat-settings');
