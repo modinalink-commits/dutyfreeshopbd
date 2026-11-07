@@ -32,7 +32,7 @@ class AiImageAuto {
 
   /** Called by the worker every ~30 s: starts up to ai_auto_parallel child processes (default 4). */
   /** A product whose main image went back to the ORIGINAL photo that already has a clean AI image (a product-form save, an import, a manual swap) gets the clean image again. Only the exact original is reverted, a different new photo is never touched. */
-  private static function repairMain(): void {
+  public static function repairMain(): void {
     if (!Cache::add('ai-img-repair-main', 1, 300)) return;
     try {
       $path = fn($u) => strtok((string)(parse_url((string)$u, PHP_URL_PATH) ?: (string)$u), '?');

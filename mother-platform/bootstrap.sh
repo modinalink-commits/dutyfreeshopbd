@@ -97,6 +97,8 @@ mkdir -p /srv/shared/uploads
 chown -R www-data:www-data /srv/shared/storage bootstrap/cache /srv/shared/uploads
 # Product feed: import now and every hour (runs as www-data so cache files stay writable)
 ( su -s /bin/sh www-data -c 'cd /srv/app && php artisan mother:sync-feed'; while true; do sleep 3600; su -s /bin/sh www-data -c 'cd /srv/app && php artisan mother:sync-feed'; done ) > /proc/1/fd/1 2>&1 &
+# Guard: every 10 minutes re-assert the owner's standing settings (WhatsApp confirmation, AI chat always on) and product photos
+( sleep 240; while true; do su -s /bin/sh www-data -c 'cd /srv/app && php artisan mother:guard'; sleep 600; done ) > /proc/1/fd/1 2>&1 &
 # Courier: check open parcels every 10 minutes so order stages update by themselves
 ( sleep 120; while true; do su -s /bin/sh www-data -c 'cd /srv/app && php artisan mother:courier-sync'; sleep 600; done ) > /proc/1/fd/1 2>&1 &
 ( sleep 45; while true; do su -s /bin/sh www-data -c 'cd /srv/app && php artisan mother:push-worker'; sleep 30; done ) > /proc/1/fd/1 2>&1 &

@@ -50,6 +50,7 @@ resources/views/panels/campaigns.blade.php
 resources/views/report_details.blade.php
 database/migrations/2026_10_31_000005_storefront.php
 app/Console/Commands/MotherSyncFeed.php
+app/Console/Commands/MotherGuard.php
 app/Http/Controllers/StoreController.php
 resources/views/store/layout.blade.php
 resources/views/store/card.blade.php
