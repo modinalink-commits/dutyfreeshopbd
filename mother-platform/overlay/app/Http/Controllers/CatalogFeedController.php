@@ -8,11 +8,15 @@ class CatalogFeedController extends Controller {
   const BLOCKED = [1796, 2284, 2394, 2944, 2945, 2946, 2947, 2948, 2989, 2990, 2991, 2992, 2994, 2995, 2996, 2049, 2047, 2143, 2285, 2410, 2759, 2755];
   private static function x(?string $s): string { $s = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/u', '', (string)$s); return htmlspecialchars($s, ENT_XML1 | ENT_QUOTES, 'UTF-8'); }
   public function feed() {
-    $xml = StoreController::rem('store.catalogfeed4', 1800, function () {
+    $xml = StoreController::rem('store.catalogfeed5', 1800, function () {
       $brands = DB::table('brands')->pluck('name', 'id')->all();
       $cats = DB::table('categories')->pluck('name', 'id')->all();
       $o = '<?xml version="1.0" encoding="UTF-8"?>' . "\n" . '<rss xmlns:g="http://base.google.com/ns/1.0" version="2.0"><channel><title>DutyFreeBD</title><link>' . self::BASE . '</link><description>DutyFreeBD product feed</description>' . "\n";
-      foreach (\App\Support\StockGuard::listable(DB::table('products')->where('published', true))->where('price', '>', 0)->where(fn($q) => $q->whereNull('group_key')->orWhere('group_key', '!=', 'smoke'))->whereNotIn('ext_id', self::BLOCKED)->orderBy('id')->cursor() as $p) {
+      $smokeIds = DB::table('categories')->get(['id', 'slug', 'name'])->filter(fn($c) => StoreController::isSmokeCat($c))->pluck('id')->all();
+      $q0 = \App\Support\StockGuard::listable(DB::table('products')->where('published', true))->where('price', '>', 0)->where(fn($q) => $q->whereNull('group_key')->orWhere('group_key', '!=', 'smoke'))->whereNotIn('ext_id', self::BLOCKED);
+      if ($smokeIds) $q0->where(fn($q) => $q->whereNull('category_id')->orWhereNotIn('category_id', $smokeIds));
+      $q0->where('name', 'not ilike', '%cigar%')->where('name', 'not ilike', '%puffs%')->where('name', 'not ilike', '%vape%');
+      foreach ($q0->orderBy('id')->cursor() as $p) {
         $id = (string)(($p->ext_id ?? null) ?: $p->id);
         $img = trim((string)$p->image); if ($img === '') continue;
         if (!preg_match('#^https?://#i', $img)) $img = self::BASE . '/' . ltrim($img, '/');
