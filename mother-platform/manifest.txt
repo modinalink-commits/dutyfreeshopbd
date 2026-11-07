@@ -800,3 +800,9 @@ app/Support/Transfers.php
 app/Http/Controllers/TransferController.php
 resources/views/transfers.blade.php
 database/migrations/2026_11_07_000600_account_transfers.php
+app/Support/WhatsApp.php
+app/Http/Controllers/WhatsAppWebhookController.php
+app/Http/Controllers/WhatsAppInboxController.php
+resources/views/wa_inbox.blade.php
+resources/views/wa_admin.blade.php
+database/migrations/2026_11_07_000700_whatsapp_inbox.php
