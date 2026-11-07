@@ -246,6 +246,7 @@ M.mount=function(el,id,opt){
     })();
     S.vstop=function(){if(rc){rc.cancel=true;try{rc.mr.stop()}catch(e){}}};
     $('#ms').onclick=function(){send()};$('#mtl').onclick=function(){$('#mf').classList.toggle('tools')};
+    $('#mt').addEventListener('input',function(){if(!this.value.trim())return;var n=Date.now();if(n-(window._mtyp||0)<4000)return;window._mtyp=n;post('/admin/chat/thread/'+id+'/typing',{}).catch(function(){})});
     $('#mt').onkeydown=function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}};
     S.send=send;
     function send(file,retry){if(S.sending&&!retry)return;var ta=$('#mt'),body=retry?retry.body:ta.value.trim(),kind=retry?retry.kind:(S.kind||'text'),img=retry?retry.img:S.img;file=retry?retry.file:file;if(!body&&!file)return;

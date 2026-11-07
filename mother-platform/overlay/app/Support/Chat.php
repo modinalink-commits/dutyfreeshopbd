@@ -301,6 +301,20 @@ class Chat {
       return [true, null];
     } catch (\Throwable $e) { return [false, 'Could not reach the platform: '.mb_substr($e->getMessage(), 0, 120)]; }
   }
+  /** Customer-side "typing…" signal while a staff member writes: web widget dots, Messenger/Instagram typing_on, WhatsApp typing indicator (WhatsApp also shows the customer's last message as read, by design of that API). */
+  public static function typing(object $t): void {
+    try {
+      if ($t->channel === 'web') { \Illuminate\Support\Facades\Cache::put('chat.typing.'.$t->id, 1, 7); return; }
+      if ($t->channel === 'whatsapp') {
+        $tok = self::sec('chat_wa_token'); $pid = self::sec('chat_wa_phone_id'); if (!$tok || !$pid) return;
+        $mid = DB::table('chat_messages')->where('thread_id', $t->id)->where('dir', 'in')->whereNotNull('ext_id')->where('created_at', '>', now()->subHours(23))->orderByDesc('id')->value('ext_id'); if (!$mid) return;
+        Http::timeout(6)->withToken($tok)->post(self::API.'/'.$pid.'/messages', ['messaging_product'=>'whatsapp', 'status'=>'read', 'message_id'=>$mid, 'typing_indicator'=>['type'=>'text']]);
+        return;
+      }
+      $tok = self::pageTok($t->channel, $t->page_ref ?? null); if (!$tok) return;
+      Http::timeout(6)->post(self::API.'/me/messages?access_token='.urlencode($tok), ['recipient'=>['id'=>$t->external_id], 'sender_action'=>'typing_on']);
+    } catch (\Throwable $e) {}
+  }
   private static function err($r): string { return mb_substr((string)($r->json('error.message') ?? $r->body()), 0, 220); }
 
   /** Card data for lists and popups: customer category, order count and risk. */

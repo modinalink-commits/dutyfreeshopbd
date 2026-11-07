@@ -110,6 +110,7 @@ class ChatController extends Controller {
       'user_id'=>auth()->id(), 'user_name'=>auth()->user()->name, 'status'=>$ok ? 'sent' : 'failed', 'error'=>$err, 'created_at'=>now(), 'updated_at'=>now()]);
     // A failed send leaves the conversation waiting for a reply; only an accepted message answers the customer.
     $upd = ['assigned_to'=>$t->assigned_to ?: auth()->id(), 'ai_paused'=>true, 'updated_at'=>now()];
+    if ($ok) \Illuminate\Support\Facades\Cache::forget('chat.typing.'.$t->id);
     if ($ok) $upd += ['last_message'=>mb_substr($body !== '' ? $body : '[attachment]', 0, 300), 'last_dir'=>'out', 'last_at'=>now(), 'status'=>in_array($t->status, ['new', 'open']) ? 'waiting' : $t->status];
     DB::table('chat_threads')->where('id', $id)->update($upd);
     if ($ok) Chat::replied((int)$id, $t0);
@@ -374,12 +375,13 @@ class ChatController extends Controller {
     $m = DB::table('chat_messages')->where('thread_id', $t->id)->where('dir', 'in')->orderByDesc('id')->first(['id', 'created_at']);
     return response()->json(['ok'=>true, 'id'=>$m->id ?? null, 'url'=>$url, 'at'=>$m ? \Carbon\Carbon::parse($m->created_at)->toIso8601String() : null]);
   }
+  public function typing($id) { $t = DB::table('chat_threads')->find($id); if ($t && !\Illuminate\Support\Facades\Cache::add('chat.typing.sent.'.$id, 1, 4)) return response()->json(['ok'=>true]); if ($t) Chat::typing($t); return response()->json(['ok'=>true]); }
   public function webPoll(Request $r) {
     $t = $this->webThread((string)$r->query('token'));
     $m = DB::table('chat_messages')->where('thread_id', $t->id)->where('id', '>', (int)$r->query('after'))->orderBy('id')->get(['id', 'dir', 'body', 'attachment_url', 'attachment_type', 'created_at', 'read_at', 'user_name'])
       ->map(fn($m) => ['id'=>$m->id, 'dir'=>$m->dir, 'body'=>$m->body, 'att'=>$m->attachment_url, 'att_type'=>$m->attachment_type, 'at'=>\Carbon\Carbon::parse($m->created_at)->toIso8601String(), 'seen'=>(bool)$m->read_at]);
     $seen = (int)DB::table('chat_messages')->where('thread_id', $t->id)->where('dir', 'in')->whereNotNull('read_at')->max('id');
-    return response()->json(['messages'=>$m, 'seen_upto'=>$seen, 'closed'=>$t->status === 'resolved']);
+    return response()->json(['messages'=>$m, 'seen_upto'=>$seen, 'closed'=>$t->status === 'resolved', 'typing'=>\Illuminate\Support\Facades\Cache::has('chat.typing.'.$t->id)]);
   }
   /** Status of the visitor's own order: released only when invoice and mobile number both match. */
   public function webOrder(Request $r) {
