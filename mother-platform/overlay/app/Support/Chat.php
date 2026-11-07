@@ -237,6 +237,15 @@ class Chat {
     } catch (\Throwable $e) { return []; }
   }
   /** Send an admin reply. Returns [ok, error]. Website chat needs no API: the visitor's widget fetches it. */
+  /** Public URL of the main photo of the product a "name, price: link" line points to (null when it cannot be resolved or the file is missing). */
+  public static function productImage(string $c): ?string {
+    try {
+      if (!preg_match('#https?://(?:www\.)?dutyfreebd\.com/[^\s]+/([a-z0-9\-]+)/?(?=\s|$)#iu', $c, $mm)) return null;
+      $pr = DB::table('products')->where('published', true)->where(fn($q) => $q->where('slug', $mm[1])->orWhere('path_slug', $mm[1]))->first(['image']);
+      $ip = $pr ? strtok((string)$pr->image, '?') : '';
+      return ($ip !== '' && str_starts_with($ip, '/uploads/') && is_file(public_path(ltrim($ip, '/')))) ? 'https://www.dutyfreebd.com'.$ip : null;
+    } catch (\Throwable $e) { return null; }
+  }
   /** Product photo caption: name on line 1, price (and stock) on line 2, order link alone on the last line. */
   private static function productCaption(string $c): string {
     $c = trim($c);
@@ -293,7 +302,17 @@ class Chat {
       if (!$tok) return [false, ucfirst($t->channel).' is not connected (Chat Settings).'];
       $msgs = [];
       if ($att) $msgs[] = ['attachment'=>['type'=>in_array($attType, ['image', 'audio'], true) ? $attType : 'file', 'payload'=>['url'=>$att, 'is_reusable'=>true]]];
-      if ($body !== '') $msgs[] = ['text'=>$body];
+      if ($body !== '' && !$att && preg_match_all('#https?://(?:www\.)?dutyfreebd\.com/\S+#iu', $body) >= 1) {
+        // product lines go as the product photo followed by "name / price / link"; other lines stay plain text
+        $plain = [];
+        foreach (preg_split('/\R/u', $body) as $ln) {
+          if (trim($ln) === '') continue;
+          $img = preg_match('#https?://(?:www\.)?dutyfreebd\.com/\S+#iu', $ln) ? self::productImage($ln) : null;
+          if ($img) { if ($plain) { $msgs[] = ['text'=>implode("\n", $plain)]; $plain = []; } $msgs[] = ['attachment'=>['type'=>'image', 'payload'=>['url'=>$img, 'is_reusable'=>true]]]; $msgs[] = ['text'=>self::productCaption($ln)]; }
+          else $plain[] = $ln;
+        }
+        if ($plain) $msgs[] = ['text'=>implode("\n", $plain)];
+      } elseif ($body !== '') $msgs[] = ['text'=>$body];
       foreach ($msgs as $m) {
         $r = Http::timeout(15)->post(self::API.'/me/messages?access_token='.urlencode($tok), ['recipient'=>['id'=>$t->external_id], 'messaging_type'=>'RESPONSE', 'message'=>$m]);
         if (!$r->ok()) return [false, self::err($r)];
