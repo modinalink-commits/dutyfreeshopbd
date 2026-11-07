@@ -43,27 +43,28 @@ class VoiceChatController extends Controller
 
   public function stt(Request $r) {
     $this->sameOrigin($r);
-    if (!VoiceChat::ready() || VoiceChat::set('mic') !== '1') return $this->fail('ভয়েস সেবা এখন চালু নেই। অনুগ্রহ করে লিখে জানান।', 404);
+    if (VoiceChat::set('mic') !== '1') return $this->fail('ভয়েস সেবা এখন চালু নেই। অনুগ্রহ করে লিখে জানান।', 404);
     $tok = (string)$r->input('token'); if (!preg_match('/^[a-f0-9]{32}$/', $tok)) return $this->fail('Bad request', 400);
     $t = $this->thread($tok);
     $f = $r->file('audio'); if (!$f || !$f->isValid()) return $this->fail('অডিও পাওয়া যায়নি। আবার চেষ্টা করুন।');
     if ($f->getSize() > VoiceChat::MAX_BYTES || $f->getSize() < 800) return $this->fail('রেকর্ডিং খুব বড় বা খুব ছোট। ৪০ সেকেন্ডের মধ্যে বলুন।');
     $dur = (float)$r->input('duration', 0); if ($dur > VoiceChat::MAX_SECONDS + 3) return $this->fail('রেকর্ডিং ৪০ সেকেন্ডের বেশি হতে পারবে না।');
     $bytes = (string)file_get_contents($f->getRealPath());
-    // per-conversation cap on top of the route throttle: keeps one visitor from running up the speech bill
+    $fmt = VoiceChat::sniff($bytes); if (!$fmt) return $this->fail('অডিও ফাইলটি গ্রহণযোগ্য নয়। আবার চেষ্টা করুন।');
+    // per-conversation cap: keeps one visitor from filling the disk or running up the speech bill
     $k = 'vchat.t.' . $t->id . '.' . now()->format('YmdH'); Cache::add($k, 0, 4000); if (Cache::increment($k) > 40) return $this->fail('অনেক ভয়েস মেসেজ হয়ে গেছে। কিছুক্ষণ পর আবার চেষ্টা করুন, অথবা লিখে জানান।', 429);
     $dk = 'vchat.n.' . now()->format('Ymd'); Cache::add($dk, 0, 90000); if (Cache::increment($dk) > 1500) return $this->fail('আজকের ভয়েস সীমা শেষ। অনুগ্রহ করে লিখে জানান।', 429);
 
-    [$text, $err, $dl] = VoiceChat::transcribe($bytes, (int)$t->id);
-    if ($text === null) return $this->fail($err);
-    $text = mb_substr(trim(strip_tags($text)), 0, 1000);   // untrusted, exactly like typed text
-
-    $path = null;
-    if (VoiceChat::set('store_audio') === '1') { $dir = storage_path('app/voicechat/in'); if (!is_dir($dir)) @mkdir($dir, 0775, true); $name = bin2hex(random_bytes(12)) . '.' . (VoiceChat::sniff($bytes) ?: 'webm'); @file_put_contents($dir . '/' . $name, $bytes); $path = 'voicechat/in/' . $name; }
-    $th = Chat::ingest('web', $tok, null, $text);
+    // The recording is always kept so the support team can listen to it in the chat; the written transcript is an optional extra.
+    $dir = public_path('uploads/chat'); if (!is_dir($dir)) @mkdir($dir, 0775, true);
+    $name = 'v-' . date('ymd') . '-' . bin2hex(random_bytes(8)) . '.' . $fmt; @file_put_contents($dir . '/' . $name, $bytes);
+    $url = url('/uploads/chat/' . $name);
+    $text = '';
+    if (VoiceChat::ready()) { [$tx, $err, $dl] = VoiceChat::transcribe($bytes, (int)$t->id); if ($tx !== null) $text = mb_substr(trim(strip_tags($tx)), 0, 1000); }   // untrusted, exactly like typed text
+    $th = Chat::ingest('web', $tok, null, $text, $url, null, ['att_type' => 'audio']);
     $m = DB::table('chat_messages')->where('thread_id', $t->id)->where('dir', 'in')->orderByDesc('id')->first(['id', 'created_at']);
-    if ($m) DB::table('chat_messages')->where('id', $m->id)->update(['input_type' => 'voice', 'transcript' => $text, 'audio_path' => $path, 'detected_language' => $dl, 'metadata' => json_encode(['duration' => round($dur, 1), 'bytes' => strlen($bytes)])]);
-    if ($th && !$th->ai_paused) { $tid = (int)$th->id; app()->terminating(fn() => Chat::aiReply($tid)); }
+    if ($m) DB::table('chat_messages')->where('id', $m->id)->update(['input_type' => 'voice', 'transcript' => $text !== '' ? $text : null, 'detected_language' => $dl ?? null, 'metadata' => json_encode(['duration' => round($dur, 1), 'bytes' => strlen($bytes)])]);
+    if ($th && $text !== '' && !$th->ai_paused) { $tid = (int)$th->id; app()->terminating(fn() => Chat::aiReply($tid)); }
     if (random_int(1, 40) === 1) VoiceChat::prune();
     return response()->json(['ok' => true, 'id' => $m->id ?? null, 'text' => $text, 'at' => $m ? \Carbon\Carbon::parse($m->created_at)->toIso8601String() : null]);
   }

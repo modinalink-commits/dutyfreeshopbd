@@ -186,6 +186,7 @@ resources/views/call_history.blade.php
 resources/views/softphone_fab.blade.php
 public/js/jssip.min.js
 public/js/df-export.js
+public/js/lame.min.js
 app/Support/CardImg.php
 app/Support/Seo.php
 resources/views/store/zoom.blade.php

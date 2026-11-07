@@ -29,7 +29,7 @@ class VoiceChat
   public static function widgetCfg(): array {
     return Cache::remember('vchat.cfg', 60, function () {
       $on = self::ready();
-      return ['on' => $on, 'mic' => $on && self::set('mic') === '1', 'auto' => $on && self::set('auto') === '1', 'speaker' => $on && self::set('speaker') === '1', 'handoff' => self::set('handoff') === '1', 'max' => self::MAX_SECONDS];
+      return ['on' => $on, 'rec' => self::set('mic') === '1', 'mic' => $on && self::set('mic') === '1', 'auto' => $on && self::set('auto') === '1', 'speaker' => $on && self::set('speaker') === '1', 'handoff' => self::set('handoff') === '1', 'max' => self::MAX_SECONDS];
     });
   }
 
@@ -45,16 +45,18 @@ class VoiceChat
   }
 
   /** Speech to text. @return array{0:?string,1:string,2:?string} [transcript, error (Bengali, customer-safe), detected language] */
-  public static function transcribe(string $bytes, ?int $tid): array {
-    $key = self::key(); $t0 = microtime(true);
+  public static int $lastStatus = 0;
+  public static function transcribe(string $bytes, ?int $tid, ?int $rate = null): array {
+    $key = self::key(); $t0 = microtime(true); self::$lastStatus = 0;
     if (!$key) return [null, 'ভয়েস সেবা এখন বন্ধ আছে। অনুগ্রহ করে লিখে জানান।', null];
     $fmt = self::sniff($bytes); if (!$fmt) return [null, 'অডিও ফাইলটি গ্রহণযোগ্য নয়। আবার চেষ্টা করুন।', null];
     $lang = array_key_exists(self::set('lang'), self::LANGS) ? self::set('lang') : 'bn-BD';
-    $cfg = ['encoding' => $fmt === 'webm' ? 'WEBM_OPUS' : 'OGG_OPUS', 'sampleRateHertz' => 48000, 'languageCode' => $lang, 'enableAutomaticPunctuation' => true, 'maxAlternatives' => 1];
+    $cfg = ['encoding' => $fmt === 'webm' ? 'WEBM_OPUS' : 'OGG_OPUS', 'sampleRateHertz' => $rate ?: 48000, 'languageCode' => $lang, 'enableAutomaticPunctuation' => true, 'maxAlternatives' => 1];
     if ($lang !== 'en-US') $cfg['alternativeLanguageCodes'] = ['en-US'];
     try {
       $r = Http::timeout(25)->post('https://speech.googleapis.com/v1/speech:recognize?key=' . urlencode($key), ['config' => $cfg, 'audio' => ['content' => base64_encode($bytes)]]);
       $ms = (int)((microtime(true) - $t0) * 1000);
+      self::$lastStatus = $r->status();
       if (!$r->ok()) { self::log($tid, null, 'stt', false, 'HTTP ' . $r->status() . ' ' . ($r->json('error.status') ?? ''), $ms, strlen($bytes)); return [null, 'আপনার কথা বুঝতে পারিনি। অনুগ্রহ করে লিখে জানান।', null]; }
       $res = $r->json('results.0.alternatives.0') ?? []; $text = trim((string)($res['transcript'] ?? '')); $dl = $r->json('results.0.languageCode');
       if ($text === '') { self::log($tid, null, 'stt', false, 'empty transcript', $ms, strlen($bytes)); return [null, 'আপনার কথা শোনা যায়নি। আবার বলুন, অথবা লিখে জানান।', null]; }

@@ -48,7 +48,8 @@ class Chat {
       'attachment_type'=>$att ? ($meta['att_type'] ?? 'image') : null, 'ext_id'=>$mid, 'created_at'=>now(), 'updated_at'=>now()]);
     $st = $t->status === 'resolved' ? 'new' : ($t->status === 'waiting' ? 'open' : $t->status);
     // Every new customer message puts the conversation back into "waiting for a reply".
-    DB::table('chat_threads')->where('id', $t->id)->update(['unread'=>DB::raw('unread + 1'), 'awaiting_reply'=>true, 'last_customer_message_at'=>now(), 'last_message'=>mb_substr($body !== '' ? $body : '[attachment]', 0, 300),
+    $prev = $body !== '' ? $body : ($att ? (($meta['att_type'] ?? 'image') === 'audio' ? '🎤 Voice message' : '[attachment]') : '');
+    DB::table('chat_threads')->where('id', $t->id)->update(['unread'=>DB::raw('unread + 1'), 'awaiting_reply'=>true, 'last_customer_message_at'=>now(), 'last_message'=>mb_substr($prev, 0, 300),
       'last_dir'=>'in', 'last_at'=>now(), 'status'=>$st, 'updated_at'=>now()]);
     return DB::table('chat_threads')->find($t->id);
   }
@@ -68,6 +69,56 @@ class Chat {
       DB::table('chat_messages')->insert(['thread_id'=>$t->id, 'dir'=>'out', 'kind'=>$kind, 'body'=>mb_substr($body, 0, 4000), 'ext_id'=>$mid, 'user_name'=>$by, 'status'=>'sent', 'created_at'=>now(), 'updated_at'=>now()]);
       DB::table('chat_threads')->where('id', $t->id)->update(['last_message'=>mb_substr($body, 0, 300), 'last_dir'=>'out', 'last_at'=>now(), 'updated_at'=>now()]);
     } catch (\Throwable $e) { report($e); }
+  }
+  /** What kind of audio file these bytes are (by content, never by the name the sender gave it). */
+  public static function audioExt(string $b): ?string {
+    if (substr($b, 0, 4) === 'OggS') return 'ogg';
+    if (substr($b, 0, 4) === "\x1A\x45\xDF\xA3") return 'webm';
+    if (substr($b, 4, 4) === 'ftyp') return 'm4a';
+    if (substr($b, 0, 3) === 'ID3' || (strlen($b) > 1 && ord($b[0]) === 0xFF && (ord($b[1]) & 0xE0) === 0xE0)) return 'mp3';
+    if (substr($b, 0, 4) === 'RIFF' && substr($b, 8, 4) === 'WAVE') return 'wav';
+    if (substr($b, 0, 6) === "#!AMR\n") return 'amr';
+    return null;
+  }
+  /** Keep our own copy of a Messenger / Instagram voice clip so it still plays after the platform link expires. Returns the local URL, or null. */
+  public static function mirrorAudio(string $url): ?string {
+    try {
+      $r = Http::timeout(20)->get($url); if (!$r->ok()) return null;
+      $b = $r->body(); if ($b === '' || strlen($b) > 12 * 1048576) return null;
+      $ext = self::audioExt($b); if (!$ext) return null;
+      $dir = public_path('uploads/chat'); if (!is_dir($dir)) @mkdir($dir, 0775, true);
+      $name = 'in-'.date('ymd').'-'.bin2hex(random_bytes(6)).'.'.$ext; file_put_contents($dir.'/'.$name, $b);
+      return url('/uploads/chat/'.$name);
+    } catch (\Throwable $e) { return null; }
+  }
+  /** Speech-to-text for one stored incoming voice message. Best effort, runs after the webhook response; the result is shown under the player as an AI transcript. */
+  public static function transcribe(int $mid): void {
+    try {
+      $m = DB::table('chat_messages')->find($mid);
+      if (!$m || $m->dir !== 'in' || $m->attachment_type !== 'audio' || !empty($m->transcript) || !VoiceChat::key()) return;
+      $d = 'inbox.stt.'.now()->format('Ymd'); \Illuminate\Support\Facades\Cache::add($d, 0, 90000); if (\Illuminate\Support\Facades\Cache::increment($d) > 800) return;
+      $path = public_path('uploads/chat/'.basename((string)parse_url((string)$m->attachment_url, PHP_URL_PATH)));
+      if (!is_file($path) || filesize($path) > 950000) return; // longer than a minute or so: skip rather than pay for a failing request
+      $b = (string)file_get_contents($path); $fmt = self::audioExt($b);
+      if (!in_array($fmt, ['ogg', 'webm'], true)) { $b = (string)self::toOpus($path); if ($b === '') return; }
+      [$t] = VoiceChat::transcribe($b, (int)$m->thread_id, 16000);
+      if ($t === null && VoiceChat::$lastStatus === 400) [$t] = VoiceChat::transcribe($b, (int)$m->thread_id, 48000);
+      if ($t === null) return;
+      $t = mb_substr(trim(strip_tags($t)), 0, 1000); if ($t === '') return;
+      DB::table('chat_messages')->where('id', $mid)->update(['transcript'=>$t, 'input_type'=>'voice', 'updated_at'=>now()]);
+      // keep the list preview useful: the words instead of "Voice message", while this is still the latest message
+      if ((int)DB::table('chat_messages')->where('thread_id', $m->thread_id)->max('id') === $mid) DB::table('chat_threads')->where('id', $m->thread_id)->update(['last_message'=>'🎤 '.mb_substr($t, 0, 280)]);
+    } catch (\Throwable $e) { report($e); }
+  }
+  /** Converts other audio types to Ogg Opus for speech recognition, only when ffmpeg exists on the server. */
+  private static function toOpus(string $path): ?string {
+    try {
+      if (!function_exists('exec') || !is_file($path)) return null;
+      $out = tempnam(sys_get_temp_dir(), 'stt').'.ogg'; $o = []; $rc = 1;
+      @exec('ffmpeg -y -loglevel error -i '.escapeshellarg($path).' -t 58 -ac 1 -ar 16000 -c:a libopus '.escapeshellarg($out).' 2>&1', $o, $rc);
+      $b = ($rc === 0 && is_file($out)) ? (string)file_get_contents($out) : ''; @unlink($out);
+      return $b !== '' ? $b : null;
+    } catch (\Throwable $e) { return null; }
   }
   /** Download an incoming WhatsApp media file (image, sticker, document, audio, video) and keep a local copy. Returns [url, type] or null. */
   public static function waMedia(string $mediaId): ?array {
@@ -135,7 +186,8 @@ class Chat {
         if (!$tok || !$pid) return [false, 'WhatsApp is not connected (Chat Settings).'];
         $to = preg_replace('/\D/', '', $t->external_id);
         $out = [];
-        if ($att) $out[] = $attType === 'image' ? ['type'=>'image', 'image'=>['link'=>$att, 'caption'=>mb_substr($body, 0, 900)]] : ['type'=>'document', 'document'=>['link'=>$att, 'caption'=>mb_substr($body, 0, 900)]];
+        if ($att && $attType === 'audio') { $out[] = ['type'=>'audio', 'audio'=>['link'=>$att]]; if ($body !== '') $out[] = ['type'=>'text', 'text'=>['body'=>$body, 'preview_url'=>true]]; } // WhatsApp audio cannot carry a caption
+        elseif ($att) $out[] = $attType === 'image' ? ['type'=>'image', 'image'=>['link'=>$att, 'caption'=>mb_substr($body, 0, 900)]] : ['type'=>'document', 'document'=>['link'=>$att, 'caption'=>mb_substr($body, 0, 900)]];
         else $out[] = ['type'=>'text', 'text'=>['body'=>$body, 'preview_url'=>true]];
         foreach ($out as $m) {
           $r = Http::timeout(15)->withToken($tok)->post(self::API.'/'.$pid.'/messages', ['messaging_product'=>'whatsapp', 'to'=>$to] + $m);
@@ -146,7 +198,7 @@ class Chat {
       $tok = self::pageTok($t->channel, $t->page_ref ?? null);
       if (!$tok) return [false, ucfirst($t->channel).' is not connected (Chat Settings).'];
       $msgs = [];
-      if ($att) $msgs[] = ['attachment'=>['type'=>$attType === 'image' ? 'image' : 'file', 'payload'=>['url'=>$att, 'is_reusable'=>true]]];
+      if ($att) $msgs[] = ['attachment'=>['type'=>in_array($attType, ['image', 'audio'], true) ? $attType : 'file', 'payload'=>['url'=>$att, 'is_reusable'=>true]]];
       if ($body !== '') $msgs[] = ['text'=>$body];
       foreach ($msgs as $m) {
         $r = Http::timeout(15)->post(self::API.'/me/messages?access_token='.urlencode($tok), ['recipient'=>['id'=>$t->external_id], 'messaging_type'=>'RESPONSE', 'message'=>$m]);

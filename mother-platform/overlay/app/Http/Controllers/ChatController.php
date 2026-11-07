@@ -32,10 +32,10 @@ class ChatController extends Controller {
     $max = (int)DB::table('chat_messages')->max('id'); $out = ['last_id'=>$max, 'unread'=>Chat::unreadTotal(), 'items'=>[]];
     if ($r->has('since')) {
       $since = (int)$r->query('since');
-      $ids = DB::table('chat_messages')->where('id', '>', $since)->where('dir', 'in')->orderBy('id')->get(['thread_id', 'body', 'attachment_url', 'created_at'])->groupBy('thread_id');
+      $ids = DB::table('chat_messages')->where('id', '>', $since)->where('dir', 'in')->orderBy('id')->get(['thread_id', 'body', 'attachment_url', 'attachment_type', 'created_at'])->groupBy('thread_id');
       if ($ids->isNotEmpty()) {
         $cards = collect(Chat::cards(DB::table('chat_threads')->whereIn('id', $ids->keys())->get()))->keyBy('id');
-        foreach ($ids as $tid => $ms) if (isset($cards[$tid])) $out['items'][] = $cards[$tid] + ['new_count'=>$ms->count(), 'preview'=>($ms->last()->body ?: '[attachment]'), 'at'=>\Carbon\Carbon::parse($ms->last()->created_at)->toIso8601String()];
+        foreach ($ids as $tid => $ms) if (isset($cards[$tid])) $out['items'][] = $cards[$tid] + ['new_count'=>$ms->count(), 'preview'=>($ms->last()->body ?: ($ms->last()->attachment_type === 'audio' ? '🎤 Voice message' : '[attachment]')), 'at'=>\Carbon\Carbon::parse($ms->last()->created_at)->toIso8601String()];
       }
     }
     return response()->json($out);
@@ -45,7 +45,7 @@ class ChatController extends Controller {
     $t = DB::table('chat_threads')->find($id); abort_unless($t, 404);
     $card = Chat::cards([$t])[0];
     $msgs = DB::table('chat_messages')->where('thread_id', $id)->orderByDesc('id')->limit(61)->get()->take(60)->reverse()->values()->map(fn($m) => [
-      'id'=>$m->id, 'dir'=>$m->dir, 'kind'=>$m->kind, 'body'=>$m->body, 'att'=>$m->attachment_url, 'att_type'=>$m->attachment_type, 'by'=>$m->user_name, 'is_ai'=>(bool)($m->is_ai ?? false), 'status'=>$m->status, 'error'=>$m->error, 'read'=>!empty($m->read_at),
+      'id'=>$m->id, 'dir'=>$m->dir, 'kind'=>$m->kind, 'body'=>$m->body, 'att'=>$m->attachment_url, 'att_type'=>$m->attachment_type, 'by'=>$m->user_name, 'is_ai'=>(bool)($m->is_ai ?? false), 'status'=>$m->status, 'error'=>$m->error, 'read'=>!empty($m->read_at), 'transcript'=>$m->transcript ?? null,
       'at'=>\Carbon\Carbon::parse($m->created_at)->toIso8601String()]);
     $hasMore = DB::table('chat_messages')->where('thread_id', $id)->count() > 60;
     $cust = $t->customer_id ? DB::table('customers')->find($t->customer_id) : ($t->phone ? DB::table('customers')->where('phone', $t->phone)->first() : null);
@@ -60,7 +60,7 @@ class ChatController extends Controller {
 
   public function messagesAfter(Request $r, $id) {
     $map = fn($m) => [
-      'id'=>$m->id, 'dir'=>$m->dir, 'kind'=>$m->kind, 'body'=>$m->body, 'att'=>$m->attachment_url, 'att_type'=>$m->attachment_type, 'by'=>$m->user_name, 'is_ai'=>(bool)($m->is_ai ?? false), 'status'=>$m->status, 'error'=>$m->error, 'read'=>!empty($m->read_at),
+      'id'=>$m->id, 'dir'=>$m->dir, 'kind'=>$m->kind, 'body'=>$m->body, 'att'=>$m->attachment_url, 'att_type'=>$m->attachment_type, 'by'=>$m->user_name, 'is_ai'=>(bool)($m->is_ai ?? false), 'status'=>$m->status, 'error'=>$m->error, 'read'=>!empty($m->read_at), 'transcript'=>$m->transcript ?? null,
       'at'=>\Carbon\Carbon::parse($m->created_at)->toIso8601String()];
     if ($r->query('before')) { // older history, newest-first page of 40 (lazy "load older")
       $rows = DB::table('chat_messages')->where('thread_id', $id)->where('id', '<', (int)$r->query('before'))->orderByDesc('id')->limit(41)->get();
@@ -69,7 +69,8 @@ class ChatController extends Controller {
     $after = (int)$r->query('after');
     $m = DB::table('chat_messages')->where('thread_id', $id)->where('id', '>', $after)->orderBy('id')->get()->map($map);
     $t = DB::table('chat_threads')->find($id);
-    return response()->json(['messages'=>$m, 'status'=>$t->status ?? null, 'unread'=>$t && $t->awaiting_reply ? (int)$t->unread : 0, 'awaiting'=>$t ? (bool)$t->awaiting_reply : false, 'replied'=>$t ? (!$t->awaiting_reply && !empty($t->last_successful_agent_reply_at)) : false]);
+    return response()->json(['messages'=>$m, 'status'=>$t->status ?? null, 'unread'=>$t && $t->awaiting_reply ? (int)$t->unread : 0, 'awaiting'=>$t ? (bool)$t->awaiting_reply : false, 'replied'=>$t ? (!$t->awaiting_reply && !empty($t->last_successful_agent_reply_at)) : false,
+      'transcripts'=>DB::table('chat_messages')->where('thread_id', $id)->where('dir', 'in')->where('attachment_type', 'audio')->whereNotNull('transcript')->orderByDesc('id')->limit(5)->get(['id', 'transcript'])]);
   }
 
   /** Records that a staff member opened the chat (activity data only). It NEVER clears unread: only a successful staff reply or an explicit Resolve does. */
@@ -86,13 +87,19 @@ class ChatController extends Controller {
     $ck = $tok !== '' ? 'chat.reply.'.auth()->id().'.'.$id.'.'.substr($tok, 0, 40) : null;
     if ($ck && ($prev = \Illuminate\Support\Facades\Cache::get($ck))) return response()->json($prev);
     if ($ck && !\Illuminate\Support\Facades\Cache::add($ck.'.lock', 1, 20)) return response()->json(['ok'=>true, 'dup'=>true, 'id'=>0, 'error'=>null, 'ai'=>false]);
-    $d = $r->validate(['body'=>'nullable|string|max:3500', 'kind'=>'nullable|in:text,product,invoice,tracking,quick', 'file'=>'nullable|file|mimes:jpg,jpeg,png,webp,gif,pdf|max:8192', 'image_url'=>'nullable|string|max:400']);
+    $d = $r->validate(['body'=>'nullable|string|max:3500', 'kind'=>'nullable|in:text,product,invoice,tracking,quick', 'file'=>'nullable|file|mimes:jpg,jpeg,png,webp,gif,pdf,mp3,mpga,mpeg,m4a,ogg,oga,wav|max:8192', 'image_url'=>'nullable|string|max:400']);
     $body = trim((string)($d['body'] ?? '')); $att = null; $type = null;
     if ($f = $r->file('file')) {
       $dir = public_path('uploads/chat'); if (!is_dir($dir)) @mkdir($dir, 0775, true);
-      $ext = strtolower($f->getClientOriginalExtension() ?: 'jpg'); $mime = $f->getMimeType();
+      $ext = strtolower($f->getClientOriginalExtension() ?: 'jpg'); $mime = (string)$f->getMimeType();
+      $isAudio = str_starts_with($mime, 'audio/') || in_array($ext, ['mp3', 'm4a', 'ogg', 'oga', 'wav', 'mpga'], true);
+      if ($isAudio) { // a voice reply: verify the real content, then keep a safe extension
+        $head = (string)file_get_contents($f->getRealPath(), false, null, 0, 16); $real = Chat::audioExt($head);
+        if (!$real) return response()->json(['ok'=>false, 'error'=>'This audio file is not supported. Record again or use an MP3.'], 422);
+        $ext = $real;
+      }
       $name = date('ymd').'-'.bin2hex(random_bytes(6)).'.'.$ext; $f->move($dir, $name);
-      $att = url('/uploads/chat/'.$name); $type = str_starts_with((string)$mime, 'image/') ? 'image' : 'file';
+      $att = url('/uploads/chat/'.$name); $type = $isAudio ? 'audio' : (str_starts_with($mime, 'image/') ? 'image' : 'file');
     } elseif (!empty($d['image_url']) && str_starts_with($d['image_url'], '/')) { $att = url($d['image_url']); $type = 'image'; }
     if ($body === '' && !$att) return response()->json(['ok'=>false, 'error'=>'Write a message first.'], 422);
     $t0 = now(); // customer messages that arrive after this moment were not answered by this reply
@@ -391,10 +398,12 @@ class ChatController extends Controller {
               continue;
             }
             if (empty($m['message']) || empty($m['sender']['id'])) continue;
-            $msg = $m['message']; $att = null;
-            foreach ($msg['attachments'] ?? [] as $a) if (!empty($a['payload']['url'])) { $att = $a['payload']['url']; break; }
+            $msg = $m['message']; $att = null; $atype = 'image';
+            foreach ($msg['attachments'] ?? [] as $a) if (!empty($a['payload']['url'])) { $att = $a['payload']['url']; $atype = in_array($a['type'] ?? '', ['audio', 'video', 'image', 'file'], true) ? $a['type'] : 'image'; break; }
+            if ($att && $atype === 'audio') $att = Chat::mirrorAudio($att) ?: $att;
             $body = (string)($msg['text'] ?? ''); if ($body === '' && !$att) $body = '[unsupported message]';
-            Chat::ingest($ch, (string)$m['sender']['id'], null, $body, $att, $msg['mid'] ?? null, ['page_ref'=>(string)($e['id'] ?? '')]);
+            $th = Chat::ingest($ch, (string)$m['sender']['id'], null, $body, $att, $msg['mid'] ?? null, ['page_ref'=>(string)($e['id'] ?? ''), 'att_type'=>$atype]);
+            if ($th && $att && $atype === 'audio' && ($vid = DB::table('chat_messages')->where('ext_id', $msg['mid'] ?? '-')->value('id'))) { $vid = (int)$vid; app()->terminating(fn() => Chat::transcribe($vid)); }
           }
         } elseif ($obj === 'whatsapp_business_account') {
           foreach ($e['changes'] ?? [] as $c) {
@@ -408,10 +417,11 @@ class ChatController extends Controller {
               $att = null; $meta = [];
               if (in_array($type, ['image', 'sticker', 'document', 'audio', 'video'], true) && !empty($m[$type]['id']) && !DB::table('chat_messages')->where('ext_id', $m['id'] ?? '-')->exists()) {
                 $got = Chat::waMedia((string)$m[$type]['id']);
-                if ($got) { $att = $got[0]; $meta['att_type'] = $got[1]; $cap = trim((string)($m[$type]['caption'] ?? '')); $body = $cap !== '' ? $cap : ['image'=>'', 'sticker'=>'', 'document'=>(string)($m[$type]['filename'] ?? ''), 'audio'=>'Voice message', 'video'=>''][$type]; }
+                if ($got) { $att = $got[0]; $meta['att_type'] = $got[1]; $cap = trim((string)($m[$type]['caption'] ?? '')); $body = $cap !== '' ? $cap : ['image'=>'', 'sticker'=>'', 'document'=>(string)($m[$type]['filename'] ?? ''), 'audio'=>'', 'video'=>''][$type]; }
               }
               if (!$att && !empty($m['image']['caption'])) $body = $m['image']['caption'].' [image]';
-              Chat::ingest('whatsapp', $from, $names[$from] ?? null, $body, $att, $m['id'] ?? null, $meta);
+              $th = Chat::ingest('whatsapp', $from, $names[$from] ?? null, $body, $att, $m['id'] ?? null, $meta);
+              if ($th && $att && ($meta['att_type'] ?? '') === 'audio' && ($vid = DB::table('chat_messages')->where('ext_id', $m['id'] ?? '-')->value('id'))) { $vid = (int)$vid; app()->terminating(fn() => Chat::transcribe($vid)); }
             }
           }
         }
