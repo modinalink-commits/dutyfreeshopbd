@@ -216,6 +216,7 @@ class Chat {
     return mb_substr($c, 0, 900);
   }
 
+  public static array $dlog = [];
   public static function deliver(object $t, string $body, ?string $att = null, string $attType = 'image'): array {
     try {
       if ($t->channel === 'web') return [true, null];
@@ -253,6 +254,7 @@ class Chat {
         foreach ($out as $k => $m) {
           if ($k > 0) usleep(400000);
           $r = Http::timeout(15)->withToken($tok)->post(self::API.'/'.$pid.'/messages', ['messaging_product'=>'whatsapp', 'to'=>$to] + $m);
+          self::$dlog[] = [$m['type'], $r->status(), mb_substr($r->body(), 0, 220), $m['image']['link'] ?? null];
           if (!$r->ok()) return [false, self::err($r)];
         }
         return [true, null];

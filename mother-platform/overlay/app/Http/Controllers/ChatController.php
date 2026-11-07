@@ -118,6 +118,13 @@ class ChatController extends Controller {
   }
 
   /** Turn Claude's automatic replies on or off for one conversation. */
+  /** Admin diagnostic: sends the given product-link lines to a thread and returns what WhatsApp answered for each message. */
+  public function photoTest(Request $r, $id) {
+    abort_unless(auth()->check(), 403);
+    $t = DB::table('chat_threads')->find($id); abort_unless($t, 404);
+    Chat::$dlog = []; $res = Chat::deliver($t, (string)$r->input('body', ''));
+    return response()->json(['ok'=>$res[0], 'err'=>$res[1], 'log'=>Chat::$dlog]);
+  }
   public function polish(Request $r) {
     $d = $r->validate(['text'=>'required|string|max:3500']);
     [$ok, $t] = \App\Support\AiChat::polish($d['text']);
