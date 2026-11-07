@@ -31,9 +31,29 @@ class AiImageAuto {
   private static function canSpawn(): bool { return function_exists('exec') && !in_array('exec', array_map('trim', explode(',', (string)ini_get('disable_functions'))), true) && is_file(base_path('artisan')); }
 
   /** Called by the worker every ~30 s: starts up to ai_auto_parallel child processes (default 4). */
+  /** A product whose main image went back to the ORIGINAL photo that already has a clean AI image (a product-form save, an import, a manual swap) gets the clean image again. Only the exact original is reverted, a different new photo is never touched. */
+  private static function repairMain(): void {
+    if (!Cache::add('ai-img-repair-main', 1, 300)) return;
+    try {
+      $path = fn($u) => strtok((string)(parse_url((string)$u, PHP_URL_PATH) ?: (string)$u), '?');
+      $rows = DB::table('ai_images as a')->join('products as p', 'p.id', '=', 'a.product_id')->where('a.ai_status', 'completed')->whereNotNull('a.processed_image')->where('a.processed_image', '<>', '')
+        ->whereNotNull('p.image')->where('p.image', 'not like', '%/uploads/ai/%')->orderByDesc('a.id')->limit(2000)->get(['a.id', 'a.product_id', 'a.source_url', 'a.processed_image', 'p.image']);
+      $seen = []; $n = 0;
+      foreach ($rows as $r) {
+        if (isset($seen[$r->product_id])) continue; $seen[$r->product_id] = 1;
+        if ($r->source_url === null || $r->source_url === '' || $path($r->source_url) !== $path($r->image)) continue;
+        if (!is_file(public_path(ltrim($path($r->processed_image), '/')))) continue;
+        DB::table('products')->where('id', $r->product_id)->update(['image' => $r->processed_image]);
+        DB::table('ai_images')->where('product_id', $r->product_id)->update(['is_main' => false]); DB::table('ai_images')->where('id', $r->id)->update(['is_main' => true]);
+        $n++;
+      }
+      if ($n) { self::flush(); self::note('Restored the clean image on ' . $n . ' product(s) whose main image had gone back to the original photo'); }
+    } catch (\Throwable $e) {}
+  }
   public static function tick(): int {
     self::repairThumbs();
     if (self::set('on', '1') !== '1') { self::note('Automatic mode is switched off'); return 0; }
+    self::repairMain();
     if (!AiImage::key()) { self::note('OpenAI key is not set'); return 0; }
     if (!Img::ok()) { self::note('PHP GD is not enabled'); return 0; }
     // OpenAI credits finished: rows that failed only for that reason go back to the queue; the worker waits (checks again every 15 minutes) instead of failing every product
