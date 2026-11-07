@@ -12,7 +12,8 @@ class WhatsAppInboxController extends Controller {
   private function ev(?int $cid, string $act, ?string $meta = null) { DB::table('wa_events')->insert(['conversation_id' => $cid, 'user_name' => Auth::user()->name, 'action' => $act, 'meta' => $meta ? mb_substr($meta, 0, 290) : null, 'created_at' => now(), 'updated_at' => now()]); }
 
   public function index(Request $r) {
-    $this->chk(); $me = Auth::user(); $f = $r->query('f', 'open'); $q = trim((string)$r->query('q', ''));
+    $this->chk(); if (!$r->query('legacy')) return redirect('/admin/chat?f=whatsapp'); // the live WhatsApp inbox is Messages; this older screen only duplicated it
+    $me = Auth::user(); $f = $r->query('f', 'open'); $q = trim((string)$r->query('q', ''));
     $l = DB::table('wa_conversations')->orderByDesc('last_message_at');
     if ($f === 'open') $l->where('status', 'open'); elseif ($f === 'closed') $l->where('status', 'closed'); elseif ($f === 'mine') $l->where('status', 'open')->where('assigned_to', $me->id); elseif ($f === 'unassigned') $l->where('status', 'open')->whereNull('assigned_to'); elseif ($f === 'unread') $l->where('unread', '>', 0);
     if ($q !== '') { $d = preg_replace('/\D/', '', $q); $l->where(fn($w) => $w->where('name', 'ilike', '%' . $q . '%')->orWhere('last_text', 'ilike', '%' . $q . '%')->when($d !== '', fn($x) => $x->orWhere('wa_id', 'like', '%' . $d . '%'))); }

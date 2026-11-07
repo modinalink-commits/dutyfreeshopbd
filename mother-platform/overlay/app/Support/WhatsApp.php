@@ -8,7 +8,16 @@ use Illuminate\Support\Facades\Schema;
 class WhatsApp {
   const API = 'https://graph.facebook.com/v21.0';
   public static function ready(): bool { try { return Schema::hasTable('wa_conversations'); } catch (\Throwable $e) { return false; } }
-  public static function cfg(string $k): string { return trim(Procure::set('wa_' . $k, '')); }
+  /** Own value first; when empty, reuse the connection already made in Chat Settings (one WhatsApp number, one set of credentials). */
+  public static function cfg(string $k): string {
+    $v = trim(Procure::set('wa_' . $k, '')); if ($v !== '') return $v;
+    try {
+      if ($k === 'token') return trim((string)Chat::sec('chat_wa_token'));
+      if ($k === 'phone_id') return trim((string)Chat::sec('chat_wa_phone_id'));
+      if ($k === 'waba_id') return OrderWaConfirm::waba();
+    } catch (\Throwable $e) {}
+    return '';
+  }
   public static function enabled(): bool { return self::cfg('phone_id') !== '' && self::cfg('token') !== ''; }
   public static function verifyToken(): string { $v = self::cfg('verify'); if ($v === '') { $v = bin2hex(random_bytes(12)); Procure::put('wa_verify', $v); } return $v; }
   public static function mask(string $s): string { return $s === '' ? '' : (strlen($s) <= 8 ? '••••' : substr($s, 0, 4) . '••••••••' . substr($s, -3)); }
