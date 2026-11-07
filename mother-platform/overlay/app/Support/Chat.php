@@ -217,8 +217,21 @@ class Chat {
         $out = [];
         if ($att && $attType === 'audio') { $out[] = ['type'=>'audio', 'audio'=>['link'=>$att]]; if ($body !== '') $out[] = ['type'=>'text', 'text'=>['body'=>$body, 'preview_url'=>true]]; } // WhatsApp audio cannot carry a caption
         elseif ($att) $out[] = $attType === 'image' ? ['type'=>'image', 'image'=>['link'=>$att, 'caption'=>mb_substr($body, 0, 900)]] : ['type'=>'document', 'document'=>['link'=>$att, 'caption'=>mb_substr($body, 0, 900)]];
-        else $out[] = ['type'=>'text', 'text'=>['body'=>$body, 'preview_url'=>true]];
-        foreach ($out as $m) {
+        else {
+          // WhatsApp shows a picture card for only ONE link per message: when the text holds several links, send each product line (name, price, link) as its own message so every link shows its photo preview.
+          $lines = preg_split('/\R/u', $body); $chunks = []; $buf = []; $nl = 0;
+          foreach ($lines as $ln) { if (preg_match('#https?://\S+#u', $ln)) $nl++; }
+          if ($nl >= 2 && $nl <= 6) {
+            foreach ($lines as $ln) {
+              if (preg_match('#https?://\S+#u', $ln)) { if ($buf) { $pre = trim(implode("\n", $buf)); if ($pre !== '') $chunks[] = $pre; $buf = []; } $chunks[] = trim($ln); }
+              else $buf[] = $ln;
+            }
+            if ($buf) { $pre = trim(implode("\n", $buf)); if ($pre !== '') $chunks[] = $pre; }
+          } else $chunks[] = $body;
+          foreach ($chunks as $c) $out[] = ['type'=>'text', 'text'=>['body'=>$c, 'preview_url'=>true]];
+        }
+        foreach ($out as $k => $m) {
+          if ($k > 0) usleep(400000);
           $r = Http::timeout(15)->withToken($tok)->post(self::API.'/'.$pid.'/messages', ['messaging_product'=>'whatsapp', 'to'=>$to] + $m);
           if (!$r->ok()) return [false, self::err($r)];
         }
