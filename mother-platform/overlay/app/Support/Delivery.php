@@ -17,7 +17,7 @@ class Delivery
         'pathao' => $g('delv_pathao', '1') === '1', 'names' => array_values(array_filter(array_map('trim', explode(',', $g('delv_inside_names', 'Chattogram,Chittagong'))))) ];
     });
   }
-  public static function flush(): void { Cache::forget('delv.cfg'); Cache::forget('delv.zones'); Cache::forget('store.rules'); Cache::forget('delv.freeRows'); }
+  public static function flush(): void { Cache::forget('delv.cfg'); Cache::forget('delv.zones'); Cache::forget('store.rules'); Cache::forget('delv.freeRows'); Cache::forget('delv.paidSec'); }
   public static function zones() {
     $rows = Cache::remember('delv.zones', 60, fn() => Schema::hasTable('delivery_zones') ? DB::table('delivery_zones')->where('active', true)->get()->map(fn($z) => (array)$z)->all() : []);
     return collect($rows)->map(fn($z) => (object)(array)$z);
@@ -48,6 +48,7 @@ class Delivery
         return DB::table('delivery_overrides')->where('active', true)->whereIn('mode', ['free', 'paid'])->where(fn($q) => $q->whereNull('starts_at')->orWhere('starts_at', '<=', $now))->where(fn($q) => $q->whereNull('ends_at')->orWhere('ends_at', '>=', $now))->get(['kind', 'ref_id', 'mode'])->map(fn($r) => [$r->kind, (int)$r->ref_id, $r->mode])->all();
       }) : [];
     }
+    foreach (self::paidSectionIds() as $pid) if ($pid === (int)($p->id ?? 0)) return false;
     foreach (self::$freeRows as [$k, $ref, $m]) {
       if ($m === 'paid' && (($k === 'product' && $ref === (int)($p->id ?? 0)) || ($k === 'category' && $ref === (int)($p->category_id ?? -1)))) return false;
     }
@@ -59,12 +60,22 @@ class Delivery
     }
     return false;
   }
+  /** Product ids that sit in a section (category + sub) with an active "Always charge" override. Cached for a minute. */
+  public static function paidSectionIds(): array {
+    if (!Schema::hasTable('delivery_overrides')) return [];
+    return Cache::remember('delv.paidSec', 60, function () {
+      $now = now(); $ids = [];
+      $rows = DB::table('delivery_overrides')->where('active', true)->where('kind', 'section')->where('mode', 'paid')->where(fn($q) => $q->whereNull('starts_at')->orWhere('starts_at', '<=', $now))->where(fn($q) => $q->whereNull('ends_at')->orWhere('ends_at', '>=', $now))->get(['ref_id', 'ref_name']);
+      foreach ($rows as $r) foreach (DB::table('products')->where('category_id', (int)$r->ref_id)->where('sub', 'ilike', (string)$r->ref_name)->pluck('id') as $id) $ids[] = (int)$id;
+      return array_values(array_unique($ids));
+    });
+  }
   public static function overrides(array $pids): array {
     if (!Schema::hasTable('delivery_overrides')) return [];
     $now = now(); $rows = DB::table('delivery_overrides')->where('active', true)->where(fn($q) => $q->whereNull('starts_at')->orWhere('starts_at', '<=', $now))->where(fn($q) => $q->whereNull('ends_at')->orWhere('ends_at', '>=', $now))->get();
     if (!$rows->count()) return [];
     $cats = $pids && Schema::hasColumn('products', 'category_id') ? DB::table('products')->whereIn('id', $pids)->pluck('category_id')->filter()->all() : [];
-    return $rows->filter(fn($r) => $r->kind === 'campaign' || ($r->kind === 'product' && in_array((int)$r->ref_id, array_map('intval', $pids), true)) || ($r->kind === 'category' && in_array((int)$r->ref_id, array_map('intval', $cats), true)))->values()->all();
+    $sec = self::paidSectionIds(); return $rows->filter(fn($r) => $r->kind === 'campaign' || ($r->kind === 'section' && $r->mode === 'paid' && array_intersect($sec, array_map('intval', $pids)) && DB::table('products')->whereIn('id', array_map('intval', $pids))->where('category_id', (int)$r->ref_id)->where('sub', 'ilike', (string)$r->ref_name)->exists()) || ($r->kind === 'product' && in_array((int)$r->ref_id, array_map('intval', $pids), true)) || ($r->kind === 'category' && in_array((int)$r->ref_id, array_map('intval', $cats), true)))->values()->all();
   }
 
   /**

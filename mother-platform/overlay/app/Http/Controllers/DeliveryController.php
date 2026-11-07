@@ -37,10 +37,11 @@ class DeliveryController extends Controller
     D::flush(); \App\Support\Procure::audit('delivery.zone.' . $r->input('do', 'toggle'), $z->name); return redirect('/admin/delivery#zones')->with('ok', 'Updated');
   }
   public function ovSave(Request $r) {
-    $v = $r->validate(['kind' => 'required|in:product,category,campaign', 'ref' => 'nullable|string|max:160', 'mode' => 'required|in:free,custom,paid', 'charge' => 'nullable|numeric|min:0', 'label' => 'nullable|string|max:120', 'starts_at' => 'nullable|date', 'ends_at' => 'nullable|date']);
+    $v = $r->validate(['kind' => 'required|in:product,category,campaign,section', 'ref' => 'nullable|string|max:160', 'mode' => 'required|in:free,custom,paid', 'charge' => 'nullable|numeric|min:0', 'label' => 'nullable|string|max:120', 'starts_at' => 'nullable|date', 'ends_at' => 'nullable|date']);
     $refId = null; $refName = null;
     if ($v['kind'] === 'product') { $q = trim((string)$v['ref']); $p = DB::table('products')->where(fn($x) => $x->where('sku', $q)->orWhere('id', ctype_digit($q) ? (int)$q : 0)->orWhere('name', 'ilike', $q))->first(['id', 'name']); if (!$p) return back()->with('ok', 'Product not found (enter ID, SKU or exact name)'); $refId = $p->id; $refName = $p->name; }
     if ($v['kind'] === 'category') { $c = DB::table('categories')->find((int)$v['ref']); if (!$c) return back()->with('ok', 'Choose a category'); $refId = $c->id; $refName = $c->name; }
+    if ($v['kind'] === 'section') { $c = DB::table('categories')->find((int)$r->input('cat')); $sub = trim((string)$r->input('sub')); if (!$c || $sub === '' || !DB::table('products')->where('category_id', $c->id)->where('sub', 'ilike', $sub)->exists()) return back()->with('ok', 'Choose a category and an existing section name'); if ($v['mode'] !== 'paid') return back()->with('ok', 'Sections support "Always charge" only'); $refId = $c->id; $refName = $sub; }
     $t = fn($x) => $x ? \Carbon\Carbon::parse($x, 'Asia/Dhaka')->utc()->toDateTimeString() : null;
     DB::table('delivery_overrides')->insert(['kind' => $v['kind'], 'ref_id' => $refId, 'ref_name' => $refName, 'mode' => $v['mode'], 'charge' => $v['mode'] === 'custom' ? (float)($v['charge'] ?? 0) : null, 'label' => $v['label'] ?? null, 'starts_at' => $t($v['starts_at'] ?? null), 'ends_at' => $t($v['ends_at'] ?? null), 'active' => true, 'created_at' => now(), 'updated_at' => now()]);
     \App\Support\Procure::audit('delivery.override.add', $v['kind'] . ' ' . ($refName ?? ''), null, $v); return redirect('/admin/delivery#ov')->with('ok', 'Override added');
