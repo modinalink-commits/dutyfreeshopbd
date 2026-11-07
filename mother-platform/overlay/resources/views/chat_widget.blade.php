@@ -43,7 +43,7 @@
 .mc .ro{padding:10px 14px;color:#6B7280;font-size:12px;border-top:1px solid #FFE7D6}
 @media(max-width:600px){.mcp{top:56px;right:8px;left:8px;width:auto;max-width:none}}
 /* ===== premium messenger redesign (visual only) ===== */
-.mc,.mbx,.fbar,#mcp,.mcp{font-family:Inter,'Noto Sans Bengali','Segoe UI',Arial,sans-serif}.mc button,.mc input,.mc textarea,.mc select,.mbx button,.mbx input,.mbx select,.fbar button,.mcp button{font-family:inherit}.mbx .lm{font-size:12.5px}.mbx .l3{font-size:11.5px}.mbx .bg,.mbx .st2{font-size:11px}.msla{font-size:11px}
+.mc,.mbx,.fbar,#mcp,.mcp{font-family:Inter,'Hind Siliguri','Noto Sans Bengali','Segoe UI',Arial,sans-serif}.mc button,.mc input,.mc textarea,.mc select,.mbx button,.mbx input,.mbx select,.fbar button,.mcp button{font-family:inherit}.mbx .lm{font-size:12.5px}.mbx .l3{font-size:11.5px}.mbx .bg,.mbx .st2{font-size:11px}.msla{font-size:11px}
 .mc .ic{width:15px;height:15px;flex:none;fill:none;stroke:#F05200;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .mcb.ico{background:none!important;width:auto;height:auto}.mcb.ico svg{width:100%;height:100%;display:block}.mcc .h .mcb.ico{width:22px;height:22px}.mc .hd .r1 b .mcb.ico{width:18px;height:18px;vertical-align:-3px;margin-left:4px}
 .mc .hd{padding:12px 44px 10px 14px;gap:9px;background:#fff}
