@@ -228,7 +228,18 @@ class Chat {
             }
             if ($buf) { $pre = trim(implode("\n", $buf)); if ($pre !== '') $chunks[] = $pre; }
           } else $chunks[] = $body;
-          foreach ($chunks as $c) $out[] = ['type'=>'text', 'text'=>['body'=>$c, 'preview_url'=>true]];
+          foreach ($chunks as $c) {
+            // a product line (name, price, link) goes as the product PHOTO with that line as its caption: WhatsApp link cards often show only the link, a real photo always shows
+            $img = null;
+            if (preg_match('#https?://(?:www\.)?dutyfreebd\.com/[^\s]+/([a-z0-9\-]+)/?(?=\s|$)#iu', $c, $mm)) {
+              try {
+                $pr = DB::table('products')->where('published', true)->where(fn($q) => $q->where('slug', $mm[1])->orWhere('path_slug', $mm[1]))->first(['image']);
+                $ip = $pr ? strtok((string)$pr->image, '?') : '';
+                if ($ip !== '' && str_starts_with($ip, '/uploads/') && is_file(public_path(ltrim($ip, '/')))) $img = 'https://www.dutyfreebd.com'.$ip;
+              } catch (\Throwable $e) { $img = null; }
+            }
+            $out[] = $img ? ['type'=>'image', 'image'=>['link'=>$img, 'caption'=>mb_substr($c, 0, 900)]] : ['type'=>'text', 'text'=>['body'=>$c, 'preview_url'=>true]];
+          }
         }
         foreach ($out as $k => $m) {
           if ($k > 0) usleep(400000);
