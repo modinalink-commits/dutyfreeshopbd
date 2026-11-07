@@ -833,3 +833,6 @@ public/showcase/poster-mevius-sky-blue.webp
 public/showcase/poster-mevius-wind-blue.webp
 public/showcase/poster-marlboro-gold.webp
 public/showcase/poster-dunhill-switch.webp
+app/Http/Controllers/HomeBannersController.php
+resources/views/home_banners.blade.php
+database/migrations/2026_11_07_005000_home_banner_switches.php

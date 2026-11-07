@@ -1,5 +1,5 @@
 fe43f8b6cb422cca81ee18b74d3972f77e7852de database/migrations/2026_10_31_000001_mother_core.php
-fb7cc4130c61f30b87a5f5d9994377f4ba940cec routes/web.php
+9eb0c8ff5bf405f7b45ee8aea22c87e930d88923 routes/web.php
 46ac6330ace84450b442d0d57c5c06f20c41f945 app/Models/Mother.php
 112c9b7169d975b313bf424ceeef538ee8f7cbed app/Http/Controllers/AdminController.php
 242316b2ef0a0967e6815e39fcbc7377349fdc17 app/Console/Commands/MotherInstall.php
@@ -30,7 +30,7 @@ fc3568db08725a38056a08be87cb325d92aebb5f database/migrations/2026_10_31_000003_a
 90031b22cae57971a0c16629dd80f61a4ae4358c resources/views/res_list.blade.php
 fb3fe4d17e4370d1184f5daebfa07e5a3423a33a resources/views/res_form.blade.php
 67a76a09307002f6201cc2e684f3161b22c67d9c resources/views/reports.blade.php
-dc3a933b102c829bbe7c7e749f31605eb37fc9db resources/views/sidebar.blade.php
+d9708a1091f89d82456570f73b36bfc474f66c78 resources/views/sidebar.blade.php
 85962752c1c36393879cd52b485c2495742f15f0 resources/views/coming.blade.php
 c391e719e9e194b7bf6ecf86ccb4c9a4504c2d17 database/migrations/2026_10_31_000004_catalog_extra.php
 bd753699bbd209d243e7e4b2b82c37d322444553 resources/views/panels/customers.blade.php
@@ -40,9 +40,9 @@ bd753699bbd209d243e7e4b2b82c37d322444553 resources/views/panels/customers.blade.
 c25a13956ea9946159b80572e41bd26d65050c7a resources/views/panels/accounts.blade.php
 9ae8274960b21c06102f045e43f6906ea60ee6cc resources/views/panels/suppliers.blade.php
 1cb9863e39bdf894fc9136ae20d93aea9105a087 resources/views/panels/stock-log.blade.php
-7b487e8aa3f85f98d7594f8f9e4c8ecd32e07247 app/Http/Controllers/SiteController.php
+79ed8abea4ae4de5a7bda7f5898cddb7028deefd app/Http/Controllers/SiteController.php
 83f7d91e3943f758a5cc593ff2b2c3f4a34c500e resources/views/site.blade.php
-99558d8bd25b202c3756051726244065a4f2daff app/Http/Middleware/ModulePermission.php
+15ee1f216813e35a9a0cf6d0e359238e22c70d69 app/Http/Middleware/ModulePermission.php
 1a7db56eae065413bf74eae15bdddb9c0bf42d20 app/Http/Controllers/PermissionController.php
 ba4c6c85637f784f98a6258a2f99c23c2745282c resources/views/permissions.blade.php
 d787924ace3fa42cc66a3de321e4e94e784006d8 resources/views/panels/employees.blade.php
@@ -54,7 +54,7 @@ b8be03dae9338a2399ba2b66ee3d8acd52a6e3bf app/Http/Controllers/StoreController.ph
 e1ff7cb5e1c7465547a1830f4ee1795766cc7be9 resources/views/store/layout.blade.php
 eab3909c69947b17ed5d5f2d5e3d1f7b0b564481 resources/views/store/card.blade.php
 4a5eb7ee8d7960886fcb97c690bbb604ec69eb1f resources/views/store/home_sec.blade.php
-a46f3a2aac2c63fe2da84135f449e01efb327518 resources/views/store/home.blade.php
+c3dc6361d81afc0b2c55b7cb2112bc91bb6b9ae9 resources/views/store/home.blade.php
 a3fda55131097dd278c03972b2394df2efd753e9 resources/views/store/category.blade.php
 7970abc1ce69bbf88e8d32f3299c21534d820409 resources/views/store/product.blade.php
 7ad9d9502d41f54d6784414a9aa3f16a8ab0ec13 resources/views/store/search.blade.php
@@ -832,3 +832,6 @@ ab0dc9400c7d118257f01fd49f7aa02e27036331 public/showcase/poster-mevius-sky-blue.
 7ba1b32899baf6d37d186bc9f524c20e61c440cb public/showcase/poster-mevius-wind-blue.webp
 f55292c8dfbc074e9eb5a576b249b65c5ad5c174 public/showcase/poster-marlboro-gold.webp
 a4f5c97f51d712bb68663f0fa53dec236d76814d public/showcase/poster-dunhill-switch.webp
+af31b3540b096e3715875ed74225da56d272d54d app/Http/Controllers/HomeBannersController.php
+a86770e00227cbe5ff082bd4c6ff50eadc093171 resources/views/home_banners.blade.php
+08553093af6863b09594b31522e64c60ae6608af database/migrations/2026_11_07_005000_home_banner_switches.php
