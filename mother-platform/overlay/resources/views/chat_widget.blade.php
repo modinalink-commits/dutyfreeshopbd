@@ -42,6 +42,58 @@
 .mc .pk{border:1px solid #FFE7D6;border-radius:10px;padding:6px;max-height:170px;overflow:auto;display:none}.mc .pk div.it{padding:6px 8px;border-radius:8px;cursor:pointer;display:flex;justify-content:space-between;gap:8px}.mc .pk div.it:hover{background:#FFF1E8}
 .mc .ro{padding:10px 14px;color:#6B7280;font-size:12px;border-top:1px solid #FFE7D6}
 @media(max-width:600px){.mcp{bottom:8px;right:8px;left:8px;width:auto;max-width:none}}
+/* ===== premium messenger redesign (visual only) ===== */
+.mc,.mbx,.fbar{font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Hind Siliguri',Arial,sans-serif}
+.mc .ic{width:15px;height:15px;flex:none;fill:none;stroke:#F05200;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.mcb.ico{background:none!important;width:auto;height:auto}.mcb.ico svg{width:100%;height:100%;display:block}.mcc .h .mcb.ico{width:22px;height:22px}.mc .hd .r1 b .mcb.ico{width:18px;height:18px;vertical-align:-3px;margin-left:4px}
+.mc .hd{padding:12px 44px 10px 14px;gap:9px;background:#fff}
+.mc .hd .r1 b{font-size:14px;font-weight:700}.mc .hd .r1 small{font-size:11.5px}
+.mc .hd .r2{gap:6px}.mc .hd select{height:32px;border-radius:8px;border:1px solid #E5E7EB;background:#fff;font-size:12px;color:#0B1220}
+.mc .lk{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 11px;border-radius:8px;border:1px solid #E5E7EB;background:#fff;color:#0B1220;font-size:12px;font-weight:600;box-shadow:none}.mc .lk:hover{background:#FFF8F2;border-color:#FDC2A5}
+.mc .lk.rs{border-color:#BBF7D0;background:#fff;color:#166534}.mc .lk.rs:hover{background:#F0FDF4}
+.mc .lk.dt{display:none}
+.mc .aw{height:32px;border-radius:8px;font-size:12px}.mc .rp{height:32px;border-radius:8px;font-size:12px}
+.mc .cb{padding:8px 14px 10px;background:#fff;max-height:42%}.mc .cb summary{font-size:12.5px;color:#0B1220}
+.mc .cb .chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.mc .cb .ch{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 11px;border-radius:999px;border:1px solid #F1E3D8;background:#fff;color:#0B1220;font-size:11px;font-weight:600;white-space:nowrap}
+.mc .cb .ch.rk-Low{color:#15803D}.mc .cb .ch.rk-Medium{color:#B45309}.mc .cb .ch.rk-High{color:#B91C1C}
+.mc .cb .idl{display:flex;align-items:flex-start;gap:7px;font-size:11.5px;color:#6B7280;margin:2px 0 8px;line-height:1.4}.mc .cb .idl .ic{margin-top:1px}
+.mc .cb .cur{display:flex;align-items:center;gap:9px;background:#FFF4EC;border:1px solid #FBE1D0;border-radius:9px;padding:8px 11px;margin:0 0 9px;font-size:12.5px}.mc .cb .cur b{font-weight:700}.mc .cb .cur .cs{color:#6B7280;font-size:11px}.mc .cb .cur .amt{margin-left:auto;font-weight:700}
+.mc .sb{display:inline-block;height:20px;line-height:20px;padding:0 9px;border-radius:999px;font-size:10.5px;font-weight:700;white-space:nowrap}
+.mc .sb.warn{background:#FFEFD9;color:#B45309}.mc .sb.ok{background:#DCFCE7;color:#166534}.mc .sb.bad{background:#FEE2E2;color:#B91C1C}.mc .sb.mut{background:#F1F5F9;color:#475569}
+.mc .cb table.ot{width:100%;border-collapse:separate;border-spacing:0;font-size:12px;border:1px solid #F1E3D8;border-radius:9px}
+.mc .cb table.ot th{position:sticky;top:0;z-index:1;background:#FAF6F2;text-align:left;font-size:11px;font-weight:700;color:#475569;padding:7px 9px;border-bottom:1px solid #F1E3D8}
+.mc .cb table.ot td{padding:6px 9px;border-bottom:1px solid #F5EEE8;vertical-align:middle}.mc .cb table.ot tr:last-child td{border-bottom:0}
+.mc .cb table.ot td a{color:#1D4ED8;font-weight:600;text-decoration:none}
+.mc .cb table.ot td.ac{white-space:nowrap;display:flex;gap:6px}
+.mc .cb .mini{display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 10px;border-radius:8px;border:1px solid #F1D4C0;background:#fff;color:#0B1220;font-size:11.5px;font-weight:600}.mc .cb .mini:hover{background:#FFF8F2}
+.mc .ms{background:#FAFAFA;padding:14px 16px;gap:9px}
+.mc .b{border-radius:12px;font-size:13px;box-shadow:0 1px 2px rgba(15,23,42,.05)}
+.mc .b.in{background:#fff;border:1px solid #EEE8E2;border-radius:12px 12px 12px 4px}
+.mc .b.out{background:#FFF1E8;border:1px solid #FBDCC7;border-radius:12px 12px 4px 12px}
+.mc .b small{color:#9CA3AF;font-size:10.5px}.mc .b .at{display:inline-block;height:15px;line-height:15px;padding:0 6px;border-radius:8px;background:#E0F2FE;color:#075985;font-size:9.5px;font-weight:700}
+.mc .cm{padding:10px 12px;gap:8px;border-top:1px solid #F1E3D8}
+.mc .cm .tb{gap:6px}
+.mc .cm .tb .tg,.mc .cm .tb .qrw select{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:8px;border:1px solid #E5E7EB;background:#fff;color:#0B1220;font-size:12.5px;font-weight:600;box-shadow:none}
+.mc .cm .tb .tg:hover{background:#FFF8F2;border-color:#FDC2A5}
+.mc .cm .tb .qrw{position:relative;display:inline-flex;align-items:center}.mc .cm .tb .qrw .ic{position:absolute;left:10px;pointer-events:none}.mc .cm .tb .qrw select{padding-left:30px;max-width:170px}
+.mc .cm textarea{min-height:48px;border-radius:8px;border:1px solid #E5E7EB;background:#fff;font-size:13px;padding:12px 13px}
+.mc .cm .sd{align-items:stretch}
+.mc .cm .sd button#ms{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:92px;height:48px;padding:0 20px;border-radius:8px;border:0;background:#FF5A00;color:#fff;font-size:14px;font-weight:700;cursor:pointer;align-self:flex-end}.mc .cm .sd button#ms:hover{background:#E85100}.mc .cm .sd button#ms .ic{stroke:#fff}
+.mc .cm .sd .pl{display:none}
+.mcbd{display:none}
+@media(max-width:900px){
+  .mc .lk.dt{display:inline-flex}
+  .mc .cb{position:fixed;left:0;right:0;bottom:0;max-height:78vh;max-height:78dvh;z-index:9996;border-radius:16px 16px 0 0;border:0;box-shadow:0 -12px 36px rgba(11,18,32,.28);transform:translateY(110%);transition:transform .2s;padding-bottom:max(14px,env(safe-area-inset-bottom))}
+  .mc .cb.sheet{transform:none}
+  .mc .mcbd.sh{display:block;position:fixed;inset:0;background:rgba(11,18,32,.38);z-index:9995}
+}
+@media(max-width:600px){
+  .mc .cm .tb{display:none}.mc .cm.tools .tb{display:flex}
+  .mc .cm .sd{gap:6px}.mc .cm .sd .pl{display:inline-flex;align-items:center;justify-content:center;width:44px;height:48px;border-radius:8px;border:1px solid #E5E7EB;background:#fff;color:#0B1220;font-size:22px;font-weight:600;cursor:pointer;flex:none;align-self:flex-end}
+  .mc .cm .sd button#ms{min-width:48px;padding:0 14px}.mc .cm .sd button#ms .sl{display:none}
+}
+@media(prefers-reduced-motion:reduce){.mc .cb{transition:none}}
 </style>
 <div class="mcp" id="mcp" aria-live="polite"><div class="mcs" id="mcs"><span class="sp"></span><button type="button" data-s="open">Open</button><button type="button" class="gh" data-s="all">View All</button></div></div>
 <div class="mcd" id="mcd" role="dialog" aria-label="Customer chat"><button class="cls" type="button" id="mcx" aria-label="Close chat">×</button><div id="mcdb" style="height:100%"></div></div>
@@ -56,12 +108,19 @@ function api(u,o){o=o||{};o.headers=Object.assign({'Accept':'application/json','
 function post(u,obj){return api(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(obj||{})})}
 function tm(iso){try{return new Date(iso).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}catch(e){return ''}}
 function av(c){var l=(c.name||'?').trim().charAt(0).toUpperCase();return '<span class="mcav">'+(c.avatar?'<img src="'+esc(c.avatar)+'" alt="" referrerpolicy="no-referrer" onerror="this.remove()">':'')+esc(l)+'</span>'}
-function badge(ch){var c=CH[ch]||['?',ch];return '<span class="mcb '+esc(ch)+'" title="'+esc(c[1])+'">'+c[0]+'</span>'}
+var ICO={facebook:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#1877F2"/><path d="M13.2 20v-7h2.3l.4-2.8h-2.7V8.5c0-.8.3-1.3 1.4-1.3H16V4.7c-.3 0-1.1-.1-2.1-.1-2.1 0-3.5 1.3-3.5 3.6v2H8v2.8h2.4v7" fill="#fff"/></svg>',
+instagram:'<svg viewBox="0 0 24 24"><defs><linearGradient id="ig2" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#FEC053"/><stop offset=".4" stop-color="#F2203E"/><stop offset=".7" stop-color="#B729A8"/><stop offset="1" stop-color="#5342D6"/></linearGradient></defs><rect x="2" y="2" width="20" height="20" rx="6" fill="none" stroke="url(#ig2)" stroke-width="2.4"/><circle cx="12" cy="12" r="4.4" fill="none" stroke="url(#ig2)" stroke-width="2.4"/><circle cx="17.4" cy="6.6" r="1.3" fill="#B729A8"/></svg>',
+whatsapp:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#25D366"/><path d="M16.7 14.3c-.2-.1-1.4-.7-1.6-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1-1.4-.7-2.4-1.5-3.2-3-.1-.2 0-.3.1-.4l.5-.6.2-.4c0-.1 0-.3 0-.4l-.7-1.7c-.2-.4-.4-.4-.6-.4h-.4c-.2 0-.4.1-.6.3-.6.6-.9 1.4-.8 2.3.2 1.1.8 2.1 1.5 3 1.1 1.4 2.5 2.4 4.2 3 .8.2 1.5.2 2.2-.1.6-.3 1.1-.9 1.2-1.5 0-.2 0-.3-.1-.4l-.4-.1Z" fill="#fff"/></svg>',
+web:'<svg viewBox="0 0 24 24" fill="none" stroke="#F05200" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M21 12a8 8 0 0 1-11.8 7L4 20l1.2-4.4A8 8 0 1 1 21 12Z"/><circle cx="9" cy="12" r=".7" fill="#F05200"/><circle cx="12.2" cy="12" r=".7" fill="#F05200"/><circle cx="15.4" cy="12" r=".7" fill="#F05200"/></svg>'};
+var ICN={crown:'<path d="M3 8l4 4 5-7 5 7 4-4-2 11H5L3 8Z"/>',cart:'<path d="M3 4h2l2.4 11h10l2-8H6.5"/><circle cx="9" cy="19.5" r="1.4"/><circle cx="17" cy="19.5" r="1.4"/>',shield:'<path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/>',truck:'<path d="M3 6h11v10H3zM14 9h4l3 3v4h-7"/><circle cx="7" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/>',ret:'<path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/>',coin:'<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3 3 7 3s7-1.3 7-3v-6"/>',pin:'<path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11Z"/><circle cx="12" cy="10" r="2.4"/>',box:'<path d="M3 8l9-5 9 5v9l-9 5-9-5V8Z"/><path d="M3 8l9 5 9-5M12 13v9"/>',doc:'<path d="M7 3h8l4 4v14H7V3Z"/><path d="M15 3v4h4M10 12h6M10 16h6"/>',bag:'<path d="M5 8h14l-1 12H6L5 8Z"/><path d="M9 8a3 3 0 0 1 6 0"/>',clip:'<path d="M20 12l-7.5 7.5a5 5 0 0 1-7-7L13 5a3.4 3.4 0 0 1 5 5l-7.5 7.5a1.7 1.7 0 0 1-2.4-2.4L15 8.5"/>',bolt:'<path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/>',send:'<path d="M21 3 3 10.5l7 2.5 2.5 7L21 3Z"/><path d="M10 13 21 3"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4.5 20c.8-3.6 3.8-5.5 7.5-5.5s6.7 1.9 7.5 5.5"/>',info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>',ok:'<circle cx="12" cy="12" r="9" stroke="#16A34A"/><path d="m8 12.3 2.6 2.6L16.2 9" stroke="#16A34A"/>'};
+function ic(n){return '<svg class="ic" viewBox="0 0 24 24">'+(ICN[n]||'')+'</svg>'}
+function sbadge(s){s=String(s||'');var k=/deliver/i.test(s)?'ok':(/cancel|return|reject|fail/i.test(s)?'bad':(/approv|process|confirm|ship|dispatch|courier|hold|new/i.test(s)?'warn':'mut'));return '<span class="sb '+k+'">'+esc(s)+'</span>'}
+function badge(ch){var c=CH[ch]||['?',ch];return '<span class="mcb ico '+esc(ch)+'" title="'+esc(c[1])+'">'+(ICO[ch]||c[0])+'</span>'}
 var M=window.MChat={current:null,mute:false,smode:'on',_tid:Math.random().toString(36).slice(2,8)};
 var SM=['on','assigned','urgent','off'],SL={on:'🔔 Sound on',assigned:'🔔 Assigned only',urgent:'🔔 Urgent only',off:'🔕 Sound off'};
 try{var _m=localStorage.getItem('mchat_smode');if(!_m&&localStorage.getItem('mchat_mute')==='1')_m='off';if(SL[_m])M.smode=_m}catch(e){}
 M.mute=M.smode==='off';
-M.soundLabel=function(){return SL[M.smode]};
+M.soundLabel=function(){return SL[M.smode]};M.ico=ICO;
 M.cycleSound=function(){M.smode=SM[(SM.indexOf(M.smode)+1)%SM.length];M.mute=M.smode==='off';try{localStorage.setItem('mchat_smode',M.smode);localStorage.setItem('mchat_mute',M.mute?'1':'0')}catch(e){}
   try{if(M.smode!=='off'&&window.Notification&&Notification.permission==='default')Notification.requestPermission()}catch(e){}return M.smode};
 M.toggleMute=function(){M.cycleSound();return M.mute};
@@ -70,13 +129,13 @@ M.wantsSound=function(it){if(M.smode==='off')return false;if(M.smode==='assigned
 M.mount=function(el,id,opt){
   opt=opt||{};if(el._mc)el._mc.stop();
   var S={id:id,last:0,timer:null,d:null,kind:'text'};el._mc=S;
-  el.innerHTML='<div class="mc"><div class="hd" id="mh"></div><details class="cb" id="mcu"'+(window.DF_EMBED?'':' open')+'></details><div class="ms" id="mm"></div><div class="cm" id="mf"></div></div>';
+  el.innerHTML='<div class="mc"><div class="mcbd" id="mcbd"></div><div class="hd" id="mh"></div><details class="cb" id="mcu"'+(window.DF_EMBED?'':' open')+'></details><div class="ms" id="mm"></div><div class="cm" id="mf"></div></div>';
   var $=function(s){return el.querySelector(s)};
   S.stop=function(){clearInterval(S.timer);if(M.current===id)M.current=null;if(M._cur===S)M._cur=null};
   M.current=id;
   el.addEventListener('click',function(e){var b=e.target.closest('[data-rb]');if(!b||!S.send)return;var bb=b.closest('.b');S.send(null,{body:bb.dataset.b||'',kind:'text'});b.remove()});
   function bub(m){var a=m.att?(m.att_type==='image'?'<a href="'+esc(m.att)+'" target="_blank"><img src="'+esc(m.att)+'" alt="" loading="lazy"></a>':(m.att_type==='audio'?'<audio controls preload="none" src="'+esc(m.att)+'" style="max-width:100%"></audio>':(m.att_type==='video'?'<video controls preload="none" src="'+esc(m.att)+'" style="max-width:100%;border-radius:8px"></video>':'<a href="'+esc(m.att)+'" target="_blank">📎 Attachment</a><br>'))):'';
-    return '<div class="b '+(m.dir==='in'?'in':'out')+(m.status==='failed'?' fail':'')+'" data-id="'+m.id+'" data-b="'+esc(m.body||'')+'">'+a+lnk(m.body||'')+'<small>'+(m.dir==='out'&&m.by?(m.is_ai?'🤖 ':'')+esc(m.by)+' · ':'')+tm(m.at)+(m.dir==='out'&&m.status!=='failed'?(m.read?' · ✓✓ Read':' · ✓ Sent'):'')+(m.status==='failed'?' · ⚠ not delivered: '+esc(m.error||'')+(m.body?' <button type="button" class="rt" data-rb="1">Retry</button>':''):'')+'</small></div>'}
+    return '<div class="b '+(m.dir==='in'?'in':'out')+(m.status==='failed'?' fail':'')+'" data-id="'+m.id+'" data-b="'+esc(m.body||'')+'">'+a+lnk(m.body||'')+'<small>'+(m.dir==='out'&&m.by?(m.is_ai?'<span class="at">AI Auto</span> ':esc(m.by)+' · '):'')+tm(m.at)+(m.dir==='out'&&m.status!=='failed'?(m.read?' · ✓✓ Read':' · ✓ Sent'):'')+(m.status==='failed'?' · ⚠ not delivered: '+esc(m.error||'')+(m.body?' <button type="button" class="rt" data-rb="1">Retry</button>':''):'')+'</small></div>'}
   function addMsgs(list){var box=$('#mm'),near=box.scrollHeight-box.scrollTop-box.clientHeight<120||!S.last,pill=box.querySelector('.mnp'),hadIn=false,fresh=!!S.last;list.forEach(function(m){if(m.id>S.last){var h=bub(m);if(pill)pill.insertAdjacentHTML('beforebegin',h);else box.insertAdjacentHTML('beforeend',h);S.last=m.id;if(m.dir==='in')hadIn=true}});
     if(near){box.scrollTop=box.scrollHeight;if(pill)pill.style.display='none'}else if(hadIn&&fresh&&pill)pill.style.display='block'}
   function head(){var d=S.d,t=d.thread,opts=Object.keys(d.statuses).map(function(k){return '<option value="'+k+'"'+(t.status===k?' selected':'')+'>'+d.statuses[k]+'</option>'}).join('');
@@ -85,29 +144,30 @@ M.mount=function(el,id,opt){
     var hs=t.needs_human?'<div style="margin:6px 0 0;padding:6px 9px;border:1px solid #FCA5A5;background:#FEF2F2;border-radius:8px;font-size:12px;line-height:1.4;color:#7F1D1D"><b>Handoff'+(t.priority==='high'?' · HIGH':'')+':</b> '+esc(t.handoff_reason||'')+(t.ai_summary?'<br>'+esc(t.ai_summary):'')+'</div>':'';
     $('#mh').innerHTML='<div class="r1">'+av(t)+'<div style="flex:1;min-width:0"><b>'+esc(t.name)+' '+badge(t.channel)+'</b><small>'+esc(t.phone||t.username||'No number yet')+' · '+esc(t.channel_name)+'</small></div></div>'+
       '<div class="r2"><select id="hs" title="Status"'+(CAN?'':' disabled')+'>'+opts+'</select><select id="ha" title="Assigned to"'+(CAN?'':' disabled')+'>'+ag+'</select>'+
-      (d.customer?'<a class="lk" href="/admin/m/customers/'+d.customer.id+'/edit">View Customer</a>':(t.phone?'<a class="lk" href="/admin/m/customers?q='+encodeURIComponent(t.phone)+'">Find Customer</a>':''))+
-      (lo?'<a class="lk" href="/admin/orders/'+lo.id+'">View Order</a>':'')+(t.awaiting?'<span class="aw" title="The customer is waiting for a staff reply. Opening the chat does not clear this.">● Unread · Awaiting Reply</span>'+(CAN?'<button class="lk" type="button" id="hrs" title="Mark as handled without replying (for example the customer only said thanks)">✓ Resolve · no reply needed</button>':''):(t.replied?'<span class="rp">✓ Replied</span>':''))+(t.channel==='web'&&CAN?'<button class="lk" type="button" id="hai" title="Claude AI auto-reply for this chat">'+(t.ai?'🤖 AI: ON':'🤖 AI: OFF')+'</button>':'')+(opt.drawer?'<button class="lk" type="button" id="hm" title="'+M.soundLabel()+'">'+(M.mute?'🔕':'🔔')+'</button>':'')+'</div>'+hs;
+      (d.customer?'<a class="lk" href="/admin/m/customers/'+d.customer.id+'/edit">'+ic('user')+'View Customer</a>':(t.phone?'<a class="lk" href="/admin/m/customers?q='+encodeURIComponent(t.phone)+'">'+ic('user')+'Find Customer</a>':''))+
+      (lo?'<a class="lk" href="/admin/orders/'+lo.id+'">'+ic('box')+'View Order</a>':'')+'<button class="lk dt" type="button" id="hdt">'+ic('info')+'Details</button>'+(t.awaiting?'<span class="aw" title="The customer is waiting for a staff reply. Opening the chat does not clear this.">● Unread · Awaiting Reply</span>'+(CAN?'<button class="lk rs" type="button" id="hrs" title="Mark as handled without replying (for example the customer only said thanks)">'+ic('ok')+'Resolve · no reply needed</button>':''):(t.replied?'<span class="rp">✓ Replied</span>':''))+(t.channel==='web'&&CAN?'<button class="lk" type="button" id="hai" title="Claude AI auto-reply for this chat">'+(t.ai?'🤖 AI: ON':'🤖 AI: OFF')+'</button>':'')+(opt.drawer?'<button class="lk" type="button" id="hm" title="'+M.soundLabel()+'">'+(M.mute?'🔕':'🔔')+'</button>':'')+'</div>'+hs;
     $('#hs').onchange=function(){post('/admin/chat/thread/'+id+'/status',{status:this.value}).then(function(j){if(opt.onchange)opt.onchange();M.badge(j.unread);pull()})};
+    var hdt=$('#hdt');if(hdt)hdt.onclick=function(){var u=$('#mcu'),bd=$('#mcbd');u.open=true;u.classList.add('sheet');bd.classList.add('sh');bd.onclick=function(){u.classList.remove('sheet');bd.classList.remove('sh')}};
     var hrs=$('#hrs');if(hrs)hrs.onclick=function(){hrs.disabled=true;post('/admin/chat/thread/'+id+'/status',{status:'resolved'}).then(function(j){S.d.thread.status='resolved';S.d.thread.awaiting=false;head();if(opt.onchange)opt.onchange();M.badge(j.unread)})};
     $('#ha').onchange=function(){post('/admin/chat/thread/'+id+'/assign',{user_id:this.value||null}).then(function(){if(opt.onchange)opt.onchange()})};
     var hai=$('#hai');if(hai)hai.onclick=function(){var on=!t.ai;post('/admin/chat/thread/'+id+'/ai',{on:on?1:0}).then(function(j){t.ai=j.ai;hai.textContent=j.ai?'🤖 AI: ON':'🤖 AI: OFF'})};
     var hm=$('#hm');if(hm)hm.onclick=function(){M.cycleSound();this.textContent=M.mute?'🔕':'🔔';this.title=M.soundLabel()}}
   function cust(){var d=S.d,t=d.thread,i=d.intel,o=d.orders,cur=o[0];
-    var h='<summary>Customer · '+esc(t.cat)+' · '+t.orders+' orders · '+esc(t.risk)+' risk</summary><div class="st"><span>'+esc(t.cat)+' customer</span><span>Orders: '+t.orders+'</span><span class="rk-'+esc(t.risk)+'">Risk: '+esc(t.risk)+(i?' ('+i.fraud+')':'')+'</span>'+(i&&i.rate!=null?'<span>Delivered: '+i.rate+'%</span>':'')+(i?'<span>Returned: '+i.returned+'</span><span>Spent: ৳'+Math.round(i.spent).toLocaleString()+'</span>':'')+'</div>';
+    var h='<summary>Customer · '+esc(t.cat)+' · '+t.orders+' orders · '+esc(t.risk)+' risk</summary><div class="chips"><span class="ch">'+ic('crown')+esc(t.cat)+' customer</span><span class="ch">'+ic('cart')+'Orders: '+t.orders+'</span><span class="ch rk-'+esc(t.risk)+'">'+ic('shield')+'Risk: '+esc(t.risk)+(i?' ('+i.fraud+')':'')+'</span>'+(i&&i.rate!=null?'<span class="ch">'+ic('truck')+'Delivered: '+i.rate+'%</span>':'')+(i?'<span class="ch">'+ic('ret')+'Returned: '+i.returned+'</span><span class="ch">'+ic('coin')+'Spent: ৳'+Math.round(i.spent).toLocaleString()+'</span>':'')+'</div>';
     if(!t.phone&&CAN)h+='<div style="display:flex;gap:6px;margin:6px 0"><input id="hp" placeholder="Customer mobile (01XXXXXXXXX)" style="padding:6px 8px;font-size:12px"><button class="mini" id="hpb" type="button" style="padding:6px 10px">Link</button></div>';
-    if(d.customer)h+='<div style="font-size:12px;margin:4px 0">'+esc(d.customer.name)+(d.customer.address?' · '+esc(d.customer.address):'')+'</div>';
-    if(cur)h+='<div class="cur"><b>Current order</b> '+esc(cur.invoice)+' · <span class="pill">'+esc(cur.status)+'</span> · ৳'+Math.round(cur.total).toLocaleString()+(cur.courier_status?' · '+esc(cur.courier_status):'')+'</div>';
-    if(o.length){h+='<table>'+o.map(function(x){return '<tr><td><a href="/admin/orders/'+x.id+'">'+esc(x.invoice)+'</a><br><small style="color:#6B7280">'+esc(x.date)+'</small></td><td><span class="pill">'+esc(x.status)+'</span></td><td>৳'+Math.round(x.total).toLocaleString()+'</td>'+(CAN?'<td style="white-space:nowrap"><button class="mini" data-o="'+x.id+'" data-k="invoice" type="button">Invoice</button> <button class="mini" data-o="'+x.id+'" data-k="tracking" type="button">Track</button></td>':'')+'</tr>'}).join('')+'</table>'}else h+='<div style="color:#6B7280;font-size:12px;padding:4px 0">No previous orders.</div>';
+    if(d.customer)h+='<div class="idl">'+ic('pin')+'<span>'+esc(d.customer.name)+(d.customer.address?' · '+esc(d.customer.address):'')+'</span></div>';
+    if(cur)h+='<div class="cur">'+ic('box')+'<b>Current Order #'+esc(cur.invoice)+'</b>'+sbadge(cur.status)+(cur.courier_status?'<span class="cs">'+esc(cur.courier_status)+'</span>':'')+'<span class="amt">৳'+Math.round(cur.total).toLocaleString()+'</span></div>';
+    if(o.length){h+='<table class="ot"><thead><tr><th>Order ID</th><th>Date</th><th>Status</th><th>Amount</th>'+(CAN?'<th>Actions</th>':'')+'</tr></thead><tbody>'+o.map(function(x){return '<tr><td><a href="/admin/orders/'+x.id+'">'+esc(x.invoice)+'</a></td><td>'+esc(x.date)+'</td><td>'+sbadge(x.status)+'</td><td>৳'+Math.round(x.total).toLocaleString()+'</td>'+(CAN?'<td class="ac"><button class="mini" data-o="'+x.id+'" data-k="invoice" type="button">'+ic('doc')+'Invoice</button><button class="mini" data-o="'+x.id+'" data-k="tracking" type="button">'+ic('pin')+'Track</button></td>':'')+'</tr>'}).join('')+'</tbody></table>'}
     var u=$('#mcu');u.innerHTML=h;
-    u.querySelectorAll('button[data-o]').forEach(function(b){b.onclick=function(){fillOrder(b.dataset.o,b.dataset.k)}});
+    u.querySelectorAll('button[data-o]').forEach(function(b){b.onclick=function(){fillOrder(b.dataset.o,b.dataset.k);var bd=$('#mcbd');if(bd&&bd.classList.contains('sh')){u.classList.remove('sheet');bd.classList.remove('sh')}}});
     var pb=$('#hpb');if(pb)pb.onclick=function(){post('/admin/chat/thread/'+id+'/phone',{phone:$('#hp').value}).then(function(j){if(j.ok)load();else alert(j.error||'Invalid number')})}}
   function fillOrder(oid,k){api('/admin/chat/order/'+oid+'/text?kind='+k).then(function(j){var ta=$('#mt');ta.value=j.text||'';S.kind=k;ta.focus()})}
   function composer(){var d=S.d;
     if(!CAN){$('#mf').innerHTML='<div class="ro">You have view-only access to chats.</div>';return}
     $('#mf').innerHTML='<div class="pk" id="mpk"><input id="mpq" placeholder="Search product name or SKU…" style="margin-bottom:6px;padding:7px 9px"><div id="mpl"></div></div>'+
-    '<div class="tb"><select id="mq" title="Quick reply"><option value="">⚡ Quick reply</option>'+d.quick.map(function(q){return '<option value="'+q.id+'">'+esc(q.title)+'</option>'}).join('')+'</select>'+
-    '<button class="tg" type="button" id="mpb">🛍 Product</button><button class="tg" type="button" id="mib">🧾 Invoice</button><button class="tg" type="button" id="mtb">🚚 Tracking</button><label class="tg" style="margin:0;cursor:pointer;color:#0B1220">📎 Attach<input type="file" id="mfi" accept="image/*,.pdf" style="display:none"></label></div>'+
-    '<div class="sd"><textarea id="mt" placeholder="Type a reply… (Enter to send, Shift+Enter for a new line)"></textarea><button type="button" id="ms">Send</button></div><div id="mer" class="err"></div>';
+    '<div class="tb"><span class="qrw">'+ic('bolt')+'<select id="mq" title="Quick reply"><option value="">Quick reply</option>'+d.quick.map(function(q){return '<option value="'+q.id+'">'+esc(q.title)+'</option>'}).join('')+'</select></span>'+
+    '<button class="tg" type="button" id="mpb">'+ic('bag')+'Product</button><button class="tg" type="button" id="mib">'+ic('doc')+'Invoice</button><button class="tg" type="button" id="mtb">'+ic('truck')+'Tracking</button><label class="tg" style="margin:0;cursor:pointer">'+ic('clip')+'Attach<input type="file" id="mfi" accept="image/*,.pdf" style="display:none"></label></div>'+
+    '<div class="sd"><button type="button" class="pl" id="mtl" aria-label="More tools">+</button><textarea id="mt" placeholder="Type a reply… (Enter to send, Shift+Enter for a new line)"></textarea><button type="button" id="ms">'+ic('send')+'<span class="sl">Send</span></button></div><div id="mer" class="err"></div>';
     var qm={};d.quick.forEach(function(q){qm[q.id]=q.body});
     $('#mq').onchange=function(){if(this.value){$('#mt').value=qm[this.value];S.kind='quick';$('#mt').focus();this.value=''}};
     function pickOrder(k){var o=S.d.orders;if(!o.length){$('#mer').textContent='This customer has no orders yet.';return}fillOrder(o[0].id,k)}
@@ -115,7 +175,7 @@ M.mount=function(el,id,opt){
     var tmr;$('#mpb').onclick=function(){var p=$('#mpk');p.style.display=p.style.display==='block'?'none':'block';if(p.style.display==='block')$('#mpq').focus()};
     $('#mpq').oninput=function(){clearTimeout(tmr);var q=this.value;tmr=setTimeout(function(){api('/admin/chat/products?q='+encodeURIComponent(q)).then(function(r){$('#mpl').innerHTML=(r||[]).map(function(p,i){return '<div class="it" data-i="'+i+'"><span>'+esc(p.name)+'</span><b>৳'+Math.round(p.price).toLocaleString()+'</b></div>'}).join('')||'<div style="color:#6B7280;padding:6px">No product found</div>';$('#mpl').querySelectorAll('.it').forEach(function(n){n.onclick=function(){var p=r[n.dataset.i];S.kind='product';S.img=p.image&&p.image.charAt(0)==='/'?p.image:null;$('#mt').value=p.name+'\n৳'+Math.round(p.price).toLocaleString()+'\n'+p.url;$('#mpk').style.display='none'}})})},250)};
     $('#mfi').onchange=function(){if(this.files[0])send(this.files[0])};
-    $('#ms').onclick=function(){send()};
+    $('#ms').onclick=function(){send()};$('#mtl').onclick=function(){$('#mf').classList.toggle('tools')};
     $('#mt').onkeydown=function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}};
     S.send=send;
     function send(file,retry){if(S.sending&&!retry)return;var ta=$('#mt'),body=retry?retry.body:ta.value.trim(),kind=retry?retry.kind:(S.kind||'text'),img=retry?retry.img:S.img;file=retry?retry.file:file;if(!body&&!file)return;

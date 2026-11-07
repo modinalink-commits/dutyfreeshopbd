@@ -1,5 +1,6 @@
 @extends('layout')@section('title','Messages')
 @section('body')
+<style>@import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap');</style>
 <style>
 .mbx{display:grid;grid-template-columns:340px 1fr;gap:14px;height:calc(100vh / var(--z,1) - 150px);min-height:480px}
 .mbx .ls,.mbx .cv{background:#fff;border:1px solid var(--bd);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;min-height:0}
@@ -39,6 +40,29 @@
 #ibtop h1{font-size:19px;font-weight:700}#ibtop #ibu .ub{display:inline-block;min-width:20px;height:19px;line-height:19px;border-radius:10px;background:#DC2626;color:#fff;font-size:11px;font-weight:700;padding:0 8px;margin-left:6px;box-sizing:border-box;vertical-align:middle}
 @media(max-width:900px){.mbx{grid-template-columns:1fr;height:auto}.mbx .cv{height:78vh}.mbx .ls{max-height:75vh}.mbx.sel .ls{display:none}.mbx:not(.sel) .cv{display:none}.mbx.sel .cv{height:calc(100vh - 110px);height:calc(100dvh - 110px)}.mbx .th{min-height:64px}#ibback{min-height:44px}}
 @media(prefers-reduced-motion:reduce){.mbx .th,.mbx .fl a{transition:none}.mbx .th.fl8{animation:none}}
+
+/* ===== premium inbox list ===== */
+.mbx{grid-template-columns:330px 1fr;gap:12px}
+.mbx .ls,.mbx .cv{border-radius:12px;border-color:#EFE7E0}
+.mbx .stk .tp{padding:10px 10px 0}
+#iball{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 13px;border-radius:999px;border:0;background:linear-gradient(135deg,#FF7A1A,#F05200);color:#fff;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 3px 8px rgba(240,82,0,.25)}
+.mbx .sq input{height:36px;border-radius:8px;border:1px solid #E5E7EB;font-size:12.5px;background:#fff}
+.mbx .sep{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;letter-spacing:0;text-transform:none;color:#0B1220;padding:10px 8px 5px}.mbx .sep.u{color:#0B1220}.mbx .sep b{color:#F05200;font-weight:700;margin-left:auto}
+.mbx .sep.u::before{content:"";width:8px;height:8px;border-radius:50%;background:#F05200;flex:none}
+.mbx .th{padding:9px 10px;margin:0 0 5px;border-radius:10px;border-color:#F1E9E2;gap:0 10px}
+.mbx .th.un{background:#fff;border-color:#F1E9E2;box-shadow:inset 3px 0 0 #FF5A00}.mbx .th.un:hover{background:#FFFBF7}
+.mbx .th.on{background:#FFF1E8;border-color:#FDBA8C;box-shadow:inset 3px 0 0 #FF5A00}
+.mbx .nm{font-size:12.5px;font-weight:600}.mbx .th.un .nm{font-weight:700}
+.mbx .lm{font-size:11.5px;color:#6B7280}.mbx .th.un .lm{color:#0B1220;font-weight:600}
+.mbx .l3{font-size:11px;color:#6B7280;margin-top:3px}
+.mbx .l4{flex-wrap:wrap;gap:4px;margin-top:5px}
+.mbx .bg,.mbx .st2{height:18px;line-height:18px;padding:0 8px;font-size:10.5px;font-weight:600}
+.mbx .st2.aw{background:#FFF1E8;border:1px solid #FDBA8C;color:#C2410C;line-height:16px}
+.mbx .bg.open,.mbx .bg.new,.mbx .bg.waiting{background:#FFF4EC;color:#C2410C}.mbx .bg.ai{background:#EAF4FF;color:#1E5FA8}.mbx .bg.human{background:#F3F4F6;color:#475569}
+.mbx .ub{min-width:20px;height:20px;line-height:20px;border-radius:50%;padding:0;font-size:11px}
+.mbx .av .mcb.ico{background:#fff!important;border-radius:50%;width:15px;height:15px;padding:0;right:-3px;bottom:-3px}
+.mbx .cv .mc .ms{padding:14px 18px}
+@media(max-width:900px){.mbx{grid-template-columns:1fr}}
 #ibback{display:none}body.ibsel #ibback{display:inline-block}
 @if(request()->boolean('embed'))
 .mbx{display:block;height:calc(100vh / var(--z,1) - 20px);min-height:0}.mbx .ls,.mbx .cv{height:100%}.mbx .cv{display:none}
@@ -50,7 +74,7 @@
 </div>
 <div class="fbar" id="ibfb"><div class="fr" id="ibf1"></div><div class="fr" id="ibf2"></div></div>
 <button type="button" id="ibback">← All conversations</button>
-<div class="mbx" id="ibx"><div class="ls"><div class="stk"><div class="sq" style="padding-top:9px"><input id="ibq" type="search" placeholder="Search name, mobile, invoice, message..."></div></div><div class="lt" id="ibl"></div></div>
+<div class="mbx" id="ibx"><div class="ls"><div class="stk"><div class="tp"><button type="button" id="iball">← All conversations</button></div><div class="sq" style="padding-top:9px"><input id="ibq" type="search" placeholder="Search name, mobile, invoice, message..."></div></div><div class="lt" id="ibl"></div></div>
 <div class="cv" id="ibc"><div class="emp" style="margin:auto">Select a conversation to read and reply.<br>New messages appear here and as a popup anywhere in the dashboard.</div></div></div>
 @endsection
 @section('js')
@@ -83,19 +107,19 @@ var upBusy=false;function doUpdate(){if(upBusy)return;upBusy=true;var b=document
 var seen={},first=true;
 function row(t){var st=t.needs_human?'waiting':(t.status||'open');var stL={new:'New',open:'Open',waiting:'Waiting',resolved:'Resolved'}[st]||st;
   var h=t.needs_human?'<span class="bg need" title="'+esc(t.handoff_reason||'')+'">Needs human</span>':'<span class="bg '+(t.ai?'ai':'human')+'">'+(t.ai?'AI':'Human')+'</span>';
-  var un=!!t.awaiting&&t.status!=='resolved';
-  return '<div class="th'+(un?' un':'')+(sel===t.id?' on':'')+'" data-id="'+t.id+'"><div class="av"><span class="mcav">'+(t.avatar?'<img src="'+esc(t.avatar)+'" alt="" referrerpolicy="no-referrer" onerror="this.remove()">':'')+esc((t.name||'?').charAt(0).toUpperCase())+'</span><span class="mcb '+t.channel+'">'+CHL[t.channel]+'</span></div>'
+  var un=!!t.awaiting&&t.status!=='resolved',ico=(window.MChat&&MChat.ico&&MChat.ico[t.channel])||CHL[t.channel];
+  return '<div class="th'+(un?' un':'')+(sel===t.id?' on':'')+'" data-id="'+t.id+'"><div class="av"><span class="mcav">'+(t.avatar?'<img src="'+esc(t.avatar)+'" alt="" referrerpolicy="no-referrer" onerror="this.remove()">':'')+esc((t.name||'?').charAt(0).toUpperCase())+'</span><span class="mcb ico '+t.channel+'" title="'+esc(t.channel_name)+'">'+ico+'</span></div>'
   +'<div class="bd"><div class="l1"><span class="nm">'+esc(t.name)+'</span><span class="tm">'+ago(t.last_at)+'</span></div>'
   +'<div class="l2"><span class="lm">'+(t.last_dir==='out'?'You: ':'')+esc(t.last||'')+'</span>'+(un?'<span class="ub">'+t.unread+'</span>':'')+'</div>'
-  +'<div class="l3">'+esc(t.cat)+' · '+t.orders+' order'+(t.orders===1?'':'s')+'</div>'
-  +'<div class="l4">'+(un?'<span class="st2 aw">● Unread · Awaiting Reply</span>':(t.replied?'<span class="st2 rp">✓ Replied</span>':(t.stale?'<span class="st2 old" title="Customer message older than 7 days">Old</span>':'')))+'<span class="bg '+st+'">'+stL+'</span>'+h+(t.assigned_name?'<span class="bg human" title="Assigned to">👤 '+esc(t.assigned_name)+'</span>':'<span class="bg" style="color:#9CA3AF">Unassigned</span>')+'</div></div></div>'}
+  +'<div class="l3">'+esc(t.channel_name)+' · Holding: '+(t.orders>0?t.orders+' order'+(t.orders===1?'':'s'):'--')+'</div>'
+  +'<div class="l4">'+(un?'<span class="st2 aw">Awaiting</span>':(t.replied?'<span class="st2 rp">✓ Replied</span>':(t.stale?'<span class="st2 old" title="Customer message older than 7 days">Old</span>':'')))+'<span class="bg '+st+'">'+stL+'</span>'+h+(t.assigned_name?'<span class="bg human" title="Assigned to">👤 '+esc(t.assigned_name)+'</span>':'<span class="bg" style="color:#9CA3AF">Unassigned</span>')+'</div></div></div>'}
 function load(){return fetch('/admin/chat/threads?f='+f+'&q='+encodeURIComponent(q),{headers:{Accept:'application/json'},credentials:'same-origin'}).then(function(r){return r.json()}).then(function(j){
   var u=document.getElementById('ibu');u.innerHTML=j.unread?'<span class="ub">'+j.unread+' waiting</span>':'';if(window.MChat)MChat.badge(j.unread);
   if(waiting!==j.unread){waiting=j.unread;var uf=document.querySelector('#ibfb a[data-f=unread]');if(uf){var cn=uf.querySelector('.cn');if(waiting>0){if(!cn){cn=document.createElement('span');cn.className='cn';uf.appendChild(cn)}cn.textContent=waiting}else if(cn)cn.remove()}}
   var l=document.getElementById('ibl');if(!j.threads.length){l.innerHTML='<div class="emp">No conversations here yet.</div>';return}
   var ur=j.threads.filter(function(t){return t.awaiting&&t.status!=='resolved'}),rd=j.threads.filter(function(t){return !(t.awaiting&&t.status!=='resolved')});
   var top=l.scrollTop,html='';
-  if(ur.length){html+='<div class="sep u">Waiting for reply — '+ur.length+'</div>'+ur.map(row).join('');if(rd.length)html+='<div class="sep">Others</div>'}
+  if(ur.length){html+='<div class="sep u">Waiting for Reply<b>'+ur.length+'</b></div>'+ur.map(row).join('');if(rd.length)html+='<div class="sep">Others</div>'}
   html+=rd.map(row).join('');l.innerHTML=html;l.scrollTop=top;
   if(!first)l.querySelectorAll('.th.un').forEach(function(n){var id=n.dataset.id,t=j.threads.filter(function(x){return String(x.id)===id})[0];if(t&&(seen[id]===undefined||t.unread>seen[id]))n.classList.add('fl8')});
   first=false;j.threads.forEach(function(t){seen[t.id]=t.unread});
@@ -103,6 +127,7 @@ function load(){return fetch('/admin/chat/threads?f='+f+'&q='+encodeURIComponent
 document.getElementById('ibq').oninput=function(){clearTimeout(tmr);q=this.value;tmr=setTimeout(load,300)};
 function mm(){var bm=document.getElementById('ibm');if(bm&&window.MChat)bm.textContent=MChat.soundLabel?MChat.soundLabel():(MChat.mute?'🔕 Sound off':'🔔 Sound on')}
 document.getElementById('ibback').onclick=function(){document.getElementById('ibx').classList.remove('sel');document.body.classList.remove('ibsel');sel=null;load()};
+document.getElementById('iball').onclick=function(){f='all';q='';document.getElementById('ibq').value='';drawF();load()};
 drawF();load();setInterval(function(){if(!document.hidden)load()},8000);
 var wait=setInterval(function(){if(window.MChat){clearInterval(wait);MChat.onNew=load;mm()}},300);
 var oid=new URLSearchParams(location.search).get('open');if(oid){var w2=setInterval(function(){if(window.MChat){clearInterval(w2);sel=+oid;MChat.mount(document.getElementById('ibc'),sel,{onchange:load})}},300)}
