@@ -81,12 +81,17 @@ class Voice
     $sel = null; if ($seg === 'selected') { $sel = array_values(array_filter(array_map(fn($x) => self::norm($x), preg_split('/[\s,;]+/', (string)$c->segment_phones)))); }
     $last = $sel !== null ? [] : Winback::lastDelivered(); if ($sel !== null) foreach ($sel as $p) { $x = Winback::lastDelivered($p); if ($x) $last += $x; else $skip[$p] = 'No delivered order, or a newer open order exists'; }
     $needP = trim((string)$c->script) === '' || str_contains((string)$c->script, '{product}'); // a general offer call that never names a product does not need an active, in-stock last product
+    $dia = []; if ($seg === 'diamond') { // cheap pre-filter so the exact (slow) level check only runs for likely Diamond customers
+      $min = (float)(DB::table('membership_levels')->where('active', true)->whereRaw("lower(name) like 'diamond%'")->value('min_spent') ?? 400000);
+      foreach (DB::select("select right(phone,11) p from orders where phone is not null and status in ('Delivered','Partial Delivered') group by 1 having sum(case when status = 'Delivered' then total else coalesce(collected_amount,0) end) >= ?", [$min]) as $r) $dia[$r->p] = 1;
+      foreach (DB::select("select right(phone,11) p from customers where lower(coalesce(customer_level,'')) = 'diamond' or lower(coalesce(membership,'')) like 'diamond%'") as $r) $dia[$r->p] = 1;
+    }
     $cool = now()->subDays(max(0, (int)$c->cooldown_days)); $already = DB::table('voice_campaign_customers')->where('campaign_id', $c->id)->pluck('phone')->flip()->all();
     $recent = DB::table('voice_call_attempts')->where('test', false)->where('started_at', '>', $cool)->pluck('phone')->flip()->all();
     $custs = DB::table('customers')->whereIn(DB::raw('right(phone,11)'), array_keys($last) ?: ['0'])->get()->keyBy(fn($x) => self::norm($x->phone));
     foreach ($last as $p => $x) {
       if (isset($already[$p])) continue; $d = Winback::days($x['at']); $cu = $custs[$p] ?? null;
-      $ok = match ($seg) { 'inactive_15' => $d >= 15 && $d < 30, 'inactive_30' => $d >= 30 && $d < 45, 'inactive_45' => $d >= 45 && $d < 55, 'inactive_55' => $d >= 55, 'vip' => $cu && strtolower((string)($cu->type ?? '')) === 'vip', 'diamond' => $cu && self::isDiamond($p, $cu), 'regular' => $cu && strtolower((string)($cu->type ?? '')) !== 'vip',
+      $ok = match ($seg) { 'inactive_15' => $d >= 15 && $d < 30, 'inactive_30' => $d >= 30 && $d < 45, 'inactive_45' => $d >= 45 && $d < 55, 'inactive_55' => $d >= 55, 'vip' => $cu && strtolower((string)($cu->type ?? '')) === 'vip', 'diamond' => $cu && isset($dia[$p]) && self::isDiamond($p, $cu), 'regular' => $cu && strtolower((string)($cu->type ?? '')) !== 'vip',
         'custom' => $d >= (int)($cfg['min_days'] ?? 0) && $d <= ((int)($cfg['max_days'] ?? 0) ?: 100000) && (!($cfg['category'] ?? '') || (($cfg['category'] === 'vip') === ($cu && strtolower((string)($cu->type ?? '')) === 'vip'))), default => true };
       if (!$ok) continue;
       if (!$cu) { $skip[$p] = 'No customer account'; continue; } if ($cu->blocked) { $skip[$p] = 'Customer blocked'; continue; }
