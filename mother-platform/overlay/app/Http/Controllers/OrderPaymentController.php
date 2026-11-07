@@ -16,6 +16,7 @@ class OrderPaymentController extends Controller {
     $upd = ['paid_total' => $paid, 'payment_status' => $st, 'updated_at' => now()];
     if ($st === 'Paid') $upd += ['pay_status' => 'Verified', 'pay_by' => Auth::user()->name ?? null, 'pay_at' => now()];
     elseif (DB::table('order_payments')->where('order_id', $oid)->where('status', 'pending')->exists()) $upd += ['pay_status' => 'Verification Pending'];
+    elseif ($o->pay_status === 'Verification Pending') $upd += ['pay_status' => DB::table('order_payments')->where('order_id', $oid)->where('status', 'rejected')->exists() ? 'Rejected' : null]; // nothing left to verify: do not leave the order (and the sidebar badge) stuck on Verification Pending
     DB::table('orders')->where('id', $oid)->update($upd);
   }
   /** Customer-submitted payments (website checkout) and approvals made from the order list still live on the order row. Mirror them into the ledger so Manual Payments always shows them. */
