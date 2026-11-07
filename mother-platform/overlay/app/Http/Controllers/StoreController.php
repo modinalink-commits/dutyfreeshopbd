@@ -60,7 +60,7 @@ class StoreController extends Controller {
     $fl = DB::table('deal_flags')->get(['product_id','mode']);
     $ex = $fl->where('mode','exclude')->pluck('product_id')->map(fn($v) => (int)$v)->all();
     $pin = $fl->where('mode','pin')->pluck('product_id')->map(fn($v) => (int)$v)->all();
-    $key = 'store.todaybest6.'.md5(implode(',', $ex).'|'.implode(',', $pin).'|'.($s['deal_min_off'] ?? '').'|'.($s['deal_smoke'] ?? ''));
+    $key = 'store.todaybest7.'.md5(implode(',', $ex).'|'.implode(',', $pin).'|'.($s['deal_min_off'] ?? '').'|'.($s['deal_smoke'] ?? ''));
     return self::rem($key, 600, function () use ($per, $ex, $pin) {
       $d1 = now()->subDay(); $d7 = now()->subDays(7); $d30 = now()->subDays(30);
       $cats = DB::table('categories')->whereNotNull('slug')->where('active', true)->orderBy('position')->get(['id','slug','name'])->values()
@@ -69,12 +69,14 @@ class StoreController extends Controller {
       $agg = DB::table('order_items as i')->join('orders as o','o.id','=','i.order_id')->whereNotIn('o.status',['Cancel','Incomplete'])->where('o.created_at','>=',$d30)->whereNotNull('i.product_id')
         ->groupBy('i.product_id')->selectRaw('i.product_id as pid, sum(case when o.created_at >= ? then i.qty else 0 end) as q1, sum(case when o.created_at >= ? then i.qty else 0 end) as q7, sum(i.qty) as q30', [$d1, $d7]);
       $ci = \App\Support\StockGuard::controlledIds();
-      $inner = DB::table('products as p')->leftJoinSub($agg, 's', 's.pid', '=', 'p.id')->where('p.published', true)->whereIn('p.category_id', $cats->pluck('id')->all())
+      // Flash Sale follows what customers actually look at: product page views of the last 7 days (the same numbers as Reports > Top Viewed Products) come first, sales break ties
+      $vw = DB::table('product_analytics_events')->where('event_type', 'product_view')->where('created_at', '>=', $d7)->groupBy('product_id')->selectRaw('product_id as vpid, count(*) as v7');
+      $inner = DB::table('products as p')->leftJoinSub($agg, 's', 's.pid', '=', 'p.id')->leftJoinSub($vw, 'vv', 'vv.vpid', '=', 'p.id')->where('p.published', true)->whereIn('p.category_id', $cats->pluck('id')->all())
         ->whereNotNull('p.image')->where('p.image', '!=', '')
         ->where(function ($w) use ($ci) { $w->whereNull('p.stock')->orWhere('p.stock', '>', 0); if ($ci) $w->orWhereNotIn('p.category_id', $ci); });
       if ($ex) $inner->whereNotIn('p.id', $ex);
       $inner->selectRaw('p.*, coalesce(s.q1,0) as q1, coalesce(s.q7,0) as q7, coalesce(s.q30,0) as q30, row_number() over (partition by p.category_id order by '.
-        'coalesce(s.q7,0) desc, coalesce(s.q1,0) desc, coalesce(s.q30,0) desc, case when coalesce(p.compare_price,0) > coalesce(p.price,0) and p.compare_price > 0 then (p.compare_price - p.price) / p.compare_price else 0 end desc, p.id desc) as rn');
+        'coalesce(vv.v7,0) desc, coalesce(s.q7,0) desc, coalesce(s.q1,0) desc, coalesce(s.q30,0) desc, case when coalesce(p.compare_price,0) > coalesce(p.price,0) and p.compare_price > 0 then (p.compare_price - p.price) / p.compare_price else 0 end desc, p.id desc) as rn');
       $rows = DB::query()->fromSub($inner, 'x')->where('rn', '<=', $per)->orderBy('rn')->get()->groupBy('category_id');
       $out = collect();
       foreach ($cats as $c) {
