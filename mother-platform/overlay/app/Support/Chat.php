@@ -38,12 +38,35 @@ class Chat {
     } elseif ($name && (str_ends_with((string)$t->name, ' user') || !$t->name)) {
       DB::table('chat_threads')->where('id', $t->id)->update(['name'=>$name]);
     }
+    // A customer typed their mobile number in the message: link this conversation to the customer profile automatically.
+    if (!$t->phone && $body !== '' && preg_match('/(?<!\d)(?:\+?88)?(01[3-9]\d{8})(?!\d)/', strtr($body, ['০'=>'0','১'=>'1','২'=>'2','৩'=>'3','৪'=>'4','৫'=>'5','৬'=>'6','৭'=>'7','৮'=>'8','৯'=>'9']), $pm)) {
+      $c2 = DB::table('customers')->where('phone', $pm[1])->orderBy('id')->first();
+      DB::table('chat_threads')->where('id', $t->id)->update(['phone'=>$pm[1], 'customer_id'=>$c2->id ?? $t->customer_id, 'updated_at'=>now()]);
+      $t->phone = $pm[1];
+    }
     DB::table('chat_messages')->insert(['thread_id'=>$t->id, 'dir'=>'in', 'kind'=>$att ? 'file' : 'text', 'body'=>mb_substr($body, 0, 4000), 'attachment_url'=>$att,
       'attachment_type'=>$att ? ($meta['att_type'] ?? 'image') : null, 'ext_id'=>$mid, 'created_at'=>now(), 'updated_at'=>now()]);
     $st = $t->status === 'resolved' ? 'new' : ($t->status === 'waiting' ? 'open' : $t->status);
     DB::table('chat_threads')->where('id', $t->id)->update(['unread'=>DB::raw('unread + 1'), 'last_message'=>mb_substr($body !== '' ? $body : '[attachment]', 0, 300),
       'last_dir'=>'in', 'last_at'=>now(), 'status'=>$st, 'updated_at'=>now()]);
     return DB::table('chat_threads')->find($t->id);
+  }
+  /** Record a WhatsApp message sent by the system (order confirmation, template, campaign) in the customer's chat, so staff see exactly what the customer was told. */
+  public static function logOut(string $wa, string $body, string $by, ?string $mid = null, string $kind = 'text'): void {
+    try {
+      $wa = preg_replace('/\D/', '', $wa); if ($wa === '' || trim($body) === '') return;
+      if ($mid && DB::table('chat_messages')->where('ext_id', $mid)->exists()) return;
+      $t = DB::table('chat_threads')->where(['channel'=>'whatsapp', 'external_id'=>$wa])->first();
+      $phone = self::phone($wa);
+      if (!$t) {
+        $cust = $phone ? DB::table('customers')->where('phone', $phone)->orderBy('id')->first() : null;
+        $id = DB::table('chat_threads')->insertGetId(['channel'=>'whatsapp', 'external_id'=>$wa, 'customer_id'=>$cust->id ?? null, 'name'=>($cust->name ?? null) ?: ($phone ?: 'WhatsApp user'), 'phone'=>$phone,
+          'status'=>'open', 'unread'=>0, 'created_at'=>now(), 'updated_at'=>now()]);
+        $t = DB::table('chat_threads')->find($id);
+      }
+      DB::table('chat_messages')->insert(['thread_id'=>$t->id, 'dir'=>'out', 'kind'=>$kind, 'body'=>mb_substr($body, 0, 4000), 'ext_id'=>$mid, 'user_name'=>$by, 'status'=>'sent', 'created_at'=>now(), 'updated_at'=>now()]);
+      DB::table('chat_threads')->where('id', $t->id)->update(['last_message'=>mb_substr($body, 0, 300), 'last_dir'=>'out', 'last_at'=>now(), 'updated_at'=>now()]);
+    } catch (\Throwable $e) { report($e); }
   }
   /** Download an incoming WhatsApp media file (image, sticker, document, audio, video) and keep a local copy. Returns [url, type] or null. */
   public static function waMedia(string $mediaId): ?array {

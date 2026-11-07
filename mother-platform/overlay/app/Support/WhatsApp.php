@@ -78,6 +78,7 @@ class WhatsApp {
     foreach (array_values($params) as $i => $p) $body = str_replace('{{' . ($i + 1) . '}}', (string)$p, (string)$body);
     self::store($c->id, ['wamid' => $wamid, 'direction' => 'out', 'type' => 'template', 'body' => $body, 'template_name' => $name, 'status' => $ok ? 'sent' : 'failed', 'error' => $ok ? null : self::err($j), 'sent_by' => $by, 'campaign_id' => $campaignId, 'ts' => now()]);
     DB::table('wa_conversations')->where('id', $c->id)->update(['last_message_at' => now(), 'last_text' => mb_substr('📋 ' . $body, 0, 190), 'updated_at' => now()]);
+    if ($ok) Chat::logOut($wa, $body, $by, $wamid, 'text');
     return [$ok, $ok ? 'Sent' : self::err($j), $wamid];
   }
 

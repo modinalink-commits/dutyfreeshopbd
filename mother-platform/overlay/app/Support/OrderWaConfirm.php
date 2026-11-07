@@ -87,7 +87,8 @@ class OrderWaConfirm {
       [$ok, $wamid, $err, $code] = self::call($to, $p);
       if ($ok) {
         DB::table('order_whatsapp_confirmations')->where('id', $id)->update(['send_status' => 'SENT', 'external_message_id' => $wamid, 'sent_at' => now(), 'failure_reason' => null, 'failed_at' => null, 'retry_count' => $i - 1, 'updated_at' => now()]);
-        self::ev($id, (int)$c->order_id, 'sent', 'Message ID ' . $wamid); return;
+        self::ev($id, (int)$c->order_id, 'sent', 'Message ID ' . $wamid);
+        Chat::logOut($to, $body, 'Order confirmation (auto)', $wamid, 'invoice'); return;
       }
       if (in_array((int)$code, self::PERMANENT, true)) break;
       DB::table('order_whatsapp_confirmations')->where('id', $id)->update(['retry_count' => $i]);
@@ -117,6 +118,7 @@ class OrderWaConfirm {
       if ($new !== 'SENT' && !$c->sent_at) $up['sent_at'] = $ts;
       if ($new === 'READ' && !$c->delivered_at) $up['delivered_at'] = $ts;
       DB::table('order_whatsapp_confirmations')->where('id', $c->id)->update($up + ($c->send_status === 'FAILED' ? ['failure_reason' => null] : []));
+      if ($new === 'READ') { try { DB::table('chat_messages')->where('ext_id', $wamid)->update(['read_at' => $ts]); } catch (\Throwable $e) {} }
       if ($new !== 'SENT') self::ev((int)$c->id, (int)$c->order_id, strtolower($new), null);
     } catch (\Throwable $e) { report($e); }
   }
