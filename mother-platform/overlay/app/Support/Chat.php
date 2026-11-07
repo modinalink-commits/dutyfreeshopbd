@@ -139,7 +139,7 @@ class Chat {
   public static function aiReply(int $tid, int $depth = 0): void {
     $lock = null;
     try {
-      if (!AiChat::chatOn()) return;
+      if (!AiChat::chatOn() || !AiChat::hoursOk()) return;
       $t = DB::table('chat_threads')->find($tid);
       if (!$t || $t->ai_paused || !in_array($t->channel, ['web', 'whatsapp', 'facebook'], true)) return;
       $ext = $t->channel !== 'web'; // WhatsApp / Facebook Messenger: the reply is sent to the customer through the platform

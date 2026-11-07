@@ -22,6 +22,12 @@ class AiChat {
   }
   /** Claude AI answers WhatsApp and Facebook Messenger too (on by default; Chat Settings has the switch). */
   public static function chanOn(): bool { return self::on() && Sms::secret('ai_chat_chan') !== '0'; }
+  /** AI answers only outside the support team's hours (Dhaka time): 00:00-10:00 and 21:00-24:00, Friday 00:00-14:00 and 21:00-24:00. Chat Settings can switch the schedule off (AI then answers all day). */
+  public static function hoursOk(): bool {
+    if (Sms::secret('ai_chat_hours') === '0') return true;
+    $n = now('Asia/Dhaka'); $h = (int)$n->format('G');
+    return $h < ($n->dayOfWeek === 5 ? 14 : 10) || $h >= 21;
+  }
   public static function chatOn(): bool { return self::on() && Sms::secret('ai_chat_auto') !== '0'; }
   public static function model(): string { return Sms::secret('ai_model') ?: 'claude-haiku-5-5'; }
   /** Store-wide facts the assistant may quote (cached 5 min): contact, delivery, payment, policies, offers, categories. */
