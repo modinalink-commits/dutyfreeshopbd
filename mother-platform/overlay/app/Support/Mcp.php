@@ -117,6 +117,7 @@ class Mcp {
     if (!$tok || $tok->revoked_at || ($tok->expires_at && now()->gt($tok->expires_at))) { self::audit($rid, null, null, null, 'auth_failed', 'bad or expired token', $ip, 0); return self::err(null, -32001, 'Unauthorized', 401)->header('WWW-Authenticate', 'Bearer resource_metadata="https://'.$r->getHost().'/.well-known/oauth-protected-resource"'); }
     $k = 'mcp.rl.'.$tok->id.'.'.now()->format('YmdHi'); Cache::add($k, 0, 90); if (Cache::increment($k) > self::LIMIT) { self::audit($rid, $tok, null, null, 'rate_limited', null, $ip, 0); return self::err(null, -32002, 'RATE_LIMITED', 429); }
     DB::table('mcp_tokens')->where('id', $tok->id)->update(['last_used_at' => now()]);
+    if (!$r->isMethod('POST')) return response()->json(['error' => 'Use POST with a JSON-RPC body'], 405)->header('Allow', 'POST');
     $b = json_decode((string)$r->getContent(), true); if (!is_array($b)) return self::err(null, -32700, 'Parse error');
     $id = $b['id'] ?? null; $m = (string)($b['method'] ?? ''); $p = is_array($b['params'] ?? null) ? $b['params'] : [];
     if (str_starts_with($m, 'notifications/')) return response('', 202);
