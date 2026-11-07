@@ -328,14 +328,14 @@ class ProcurementController extends Controller {
   public function paySave(Request $r) {
     $r->validate(['supplier_id'=>'required|integer','pay_date'=>'required|date','amount'=>'required|numeric|min:0.01','method'=>'required','proof'=>'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:8192']);
     $proof = null; if ($r->hasFile('proof')) { $dir = public_path('uploads/proc'); if (!is_dir($dir)) @mkdir($dir,0775,true); $f = $r->file('proof'); $n = date('ymd').'-'.bin2hex(random_bytes(5)).'.'.strtolower($f->getClientOriginalExtension()); $f->move($dir,$n); $proof = '/uploads/proc/'.$n; }
-    $id = P::pay(['supplier_id'=>(int)$r->supplier_id,'purchase_id'=>(int)$r->purchase_id ?: null,'pay_date'=>$r->pay_date,'amount'=>(float)$r->amount,'method'=>$r->method,'account'=>$r->account,'txn_id'=>$r->txn_id,'reference'=>$r->reference,'note'=>$r->note,'proof'=>$proof], !$r->has('nosms'));
+    $id = P::pay(['supplier_id'=>(int)$r->supplier_id,'purchase_id'=>(int)$r->purchase_id ?: null,'pay_date'=>$r->pay_date,'amount'=>(float)$r->amount,'method'=>$r->method,'account'=>$r->account,'txn_id'=>$r->txn_id,'reference'=>$r->reference,'note'=>$r->note,'proof'=>$proof,'money_account_id'=>$r->filled('money_account_id') ? (int)$r->money_account_id : null], !$r->has('nosms'));
     $st = DB::table('supplier_payments')->where('id',$id)->value('status');
     return redirect('/admin/purchase/payments')->with('ok', $st === 'pending' ? 'Payment sent for approval' : 'Payment saved, ledger updated'.($r->has('nosms') ? '' : (P::on('proc_sms_payment') ? ' and SMS queued' : '')));
   }
   public function payAction(Request $r, $id, $a) {
     $p = DB::table('supplier_payments')->find($id); if (!$p) abort(404);
-    if ($a === 'approve') { if (!P::canApprove()) abort(403); DB::table('supplier_payments')->where('id',$id)->update(['status'=>'paid','approved_by'=>auth()->user()->name,'updated_at'=>now()]); P::allocate($id); P::audit('proc.payment.approve','payment#'.$id,['status'=>'pending'],['status'=>'paid']); P::notify('payment',$p->supplier_id,['amount'=>number_format($p->amount,2)],$p->purchase_id); return back()->with('ok','Payment approved'); }
-    if ($a === 'delete') { if ($p->status === 'paid' && !P::canApprove()) abort(403); $pids = DB::table('payment_allocations')->where('payment_id',$id)->pluck('purchase_id'); DB::table('payment_allocations')->where('payment_id',$id)->delete(); DB::table('supplier_payments')->where('id',$id)->delete();
+    if ($a === 'approve') { if (!P::canApprove()) abort(403); DB::table('supplier_payments')->where('id',$id)->update(['status'=>'paid','approved_by'=>auth()->user()->name,'updated_at'=>now()]); P::allocate($id); \App\Support\Transfers::supplierPaid((int)$id); P::audit('proc.payment.approve','payment#'.$id,['status'=>'pending'],['status'=>'paid']); P::notify('payment',$p->supplier_id,['amount'=>number_format($p->amount,2)],$p->purchase_id); return back()->with('ok','Payment approved'); }
+    if ($a === 'delete') { if ($p->status === 'paid' && !P::canApprove()) abort(403); \App\Support\Transfers::supplierUnpaid((int)$id); $pids = DB::table('payment_allocations')->where('payment_id',$id)->pluck('purchase_id'); DB::table('payment_allocations')->where('payment_id',$id)->delete(); DB::table('supplier_payments')->where('id',$id)->delete();
       foreach ($pids as $pid) DB::table('purchases')->where('id',$pid)->update(['paid'=>P::paidOf($pid)]); P::audit('proc.payment.delete','payment#'.$id,['amount'=>$p->amount,'code'=>$p->code]); return back()->with('ok','Payment deleted'); }
     abort(404);
   }

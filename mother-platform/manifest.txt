@@ -796,3 +796,7 @@ app/Http/Controllers/RecurringExpenseController.php
 resources/views/recurring_expenses.blade.php
 
 database/migrations/2026_11_07_000500_drop_mcp.php
+app/Support/Transfers.php
+app/Http/Controllers/TransferController.php
+resources/views/transfers.blade.php
+database/migrations/2026_11_07_000600_account_transfers.php

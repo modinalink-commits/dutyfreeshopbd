@@ -7,6 +7,7 @@
 <div><label>Payment date *</label><input type="date" name="pay_date" required value="{{ old('pay_date',now('Asia/Dhaka')->toDateString()) }}"></div>
 <div><label>Amount (৳) *</label><input type="number" step="0.01" min="0.01" name="amount" id="amt" required value="{{ old('amount') }}"></div>
 <div><label>Payment method *</label><select name="method">@foreach($methods as $m)<option>{{ $m }}</option>@endforeach</select></div>
+<div><label>Paid from account (your money account)</label><select name="money_account_id"><option value="">— not linked —</option>@foreach(\DB::table('money_accounts')->where('active',true)->orderBy('name')->get(['id','name']) as $ma)<option value="{{ $ma->id }}" @selected(old('money_account_id') == $ma->id)>{{ $ma->name }}</option>@endforeach</select></div>
 <div><label>Bank / account</label><input name="account" value="{{ old('account') }}"></div>
 <div><label>Transaction ID</label><input name="txn_id" value="{{ old('txn_id') }}"></div>
 <div><label>Reference</label><input name="reference" value="{{ old('reference') }}"></div>

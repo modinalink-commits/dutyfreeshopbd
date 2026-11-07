@@ -146,9 +146,10 @@ class Procure {
   public static function pay(array $d, bool $sms = true): int {
     return DB::transaction(function () use ($d, $sms) {
       $limit = (float)self::set('proc_pay_approval_limit', '100000'); $needs = self::on('proc_approval') && (float)$d['amount'] >= $limit && !self::canApprove();
+      if (!\Illuminate\Support\Facades\Schema::hasColumn('supplier_payments', 'money_account_id')) unset($d['money_account_id']);
       $id = DB::table('supplier_payments')->insertGetId($d + ['status'=>$needs ? 'pending' : 'paid','user_id'=>auth()->id(),'user_name'=>auth()->user()->name ?? null,'created_at'=>now(),'updated_at'=>now()]);
       DB::table('supplier_payments')->where('id',$id)->update(['code'=>'PAY-'.str_pad($id,6,'0',STR_PAD_LEFT)]);
-      if (!$needs) self::allocate($id);
+      if (!$needs) { self::allocate($id); \App\Support\Transfers::supplierPaid($id); }
       self::audit('proc.payment.add', 'payment#'.$id, null, ['amount'=>$d['amount'],'supplier'=>$d['supplier_id'],'status'=>$needs?'pending':'paid']);
       if (!$needs && $sms) self::notify('payment', $d['supplier_id'], ['amount'=>number_format($d['amount'],2),'payment_id'=>$id], $d['purchase_id'] ?? null);
       return $id;
