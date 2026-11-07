@@ -24,7 +24,7 @@ class ShowcaseController extends Controller
     foreach ((array)$r->input('slots') as $id => $d) {
       $row = DB::table('showcase_slots')->where('id', (int)$id)->first(); if (!$row) continue;
       $up = ['title' => mb_substr(trim((string)($d['title'] ?? '')), 0, 120) ?: null, 'link' => mb_substr(trim((string)($d['link'] ?? '')), 0, 255) ?: null,
-        'theme' => preg_match('/^#[0-9a-fA-F]{6}$/', (string)($d['theme'] ?? '')) ? $d['theme'] : $row->theme, 'active' => !empty($d['active']), 'position' => max(1, min(6, (int)($d['position'] ?? $row->position))), 'updated_at' => now()];
+        'theme' => preg_match('/^#[0-9a-fA-F]{6}$/', (string)($d['theme'] ?? '')) ? $d['theme'] : $row->theme, 'mode' => (($d['mode'] ?? '') === 'poster') ? 'poster' : 'cutout', 'active' => !empty($d['active']), 'position' => max(1, min(6, (int)($d['position'] ?? $row->position))), 'updated_at' => now()];
       $pid = (int)($d['product_id'] ?? 0); $up['product_id'] = $pid > 0 && DB::table('products')->where('id', $pid)->exists() ? $pid : null;
       $f = $r->file("slots.$id.image_file");
       if ($f && $f->isValid()) { $ext = strtolower($f->getClientOriginalExtension() ?: 'webp'); $name = 'slot' . (int)$id . '-' . substr(md5(uniqid('', true)), 0, 8) . '.' . $ext; $f->move(public_path('showcase'), $name); $up['image'] = '/showcase/' . $name; }

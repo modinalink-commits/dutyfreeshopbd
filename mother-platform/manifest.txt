@@ -826,3 +826,10 @@ public/showcase/mevius-sky-blue.webp
 public/showcase/mevius-wind-blue.webp
 public/showcase/marlboro-gold.webp
 public/showcase/dunhill-switch.webp
+database/migrations/2026_11_07_004000_showcase_poster_mode.php
+public/showcase/poster-555-original.webp
+public/showcase/poster-555-gold.webp
+public/showcase/poster-mevius-sky-blue.webp
+public/showcase/poster-mevius-wind-blue.webp
+public/showcase/poster-marlboro-gold.webp
+public/showcase/poster-dunhill-switch.webp

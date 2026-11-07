@@ -2,7 +2,7 @@
 /* 6-product animated showcase: transform/opacity only, fixed aspect ratio (no layout shift), paused when off screen */
 .sxw{padding-top:22px;padding-bottom:26px}
 .sxr{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
-.sxc{position:relative;display:block;aspect-ratio:20/33;border-radius:14px;overflow:hidden;border:1px solid color-mix(in srgb,var(--c) 45%,#fff 0%);background:linear-gradient(165deg,color-mix(in srgb,var(--c) 55%,#0b1220) 0%,#0b1220 78%);isolation:isolate;opacity:0;transform:translateY(12px);transition:opacity .4s ease,transform .4s ease,border-color .2s;-webkit-tap-highlight-color:transparent}
+.sxc{position:relative;display:block;aspect-ratio:941/1672;border-radius:14px;overflow:hidden;border:1px solid color-mix(in srgb,var(--c) 45%,#fff 0%);background:linear-gradient(165deg,color-mix(in srgb,var(--c) 55%,#0b1220) 0%,#0b1220 78%);isolation:isolate;opacity:0;transform:translateY(12px);transition:opacity .4s ease,transform .4s ease,border-color .2s;-webkit-tap-highlight-color:transparent}
 .sxc.in{opacity:1;transform:none}
 .sxc.in:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--c) 85%,#fff)}
 .sxg{position:absolute;left:-20%;top:12%;width:140%;height:70%;background:radial-gradient(closest-side,color-mix(in srgb,var(--c) 75%,#fff 10%),transparent 72%);opacity:.55;animation:sxg 9s ease-in-out infinite;z-index:0}
@@ -15,14 +15,16 @@
 @keyframes sxo{to{transform:rotate(360deg)}}
 @keyframes sxs{0%,62%{transform:translateX(-120%)}86%,100%{transform:translateX(120%)}}
 .sxr.pz .sxg,.sxr.pz .sxo,.sxr.pz .sxp,.sxr.pz .sxs{animation-play-state:paused}
+.sxc.p .sxg,.sxc.p .sxo{display:none}.sxc.p .sxp{left:0;top:0;width:100%;height:100%;max-width:none;object-fit:cover;filter:none;transform:none;animation:sxk 16s ease-in-out infinite}.sxc.p:hover .sxp{scale:1.02}
+@keyframes sxk{0%,100%{transform:scale(1)}50%{transform:scale(1.035)}}
 .sxd{display:none}
 @media(max-width:1199px){.sxr{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch}.sxr::-webkit-scrollbar{display:none}.sxc{flex:0 0 calc((100% - 16px)/3);scroll-snap-align:start}
 .sxd{display:flex;justify-content:center;gap:5px;margin-top:8px}.sxd i{width:5px;height:5px;border-radius:50%;background:#D1D5DB;transition:background .2s,width .2s}.sxd i.on{background:#FF5A00;width:14px;border-radius:3px}}
-@media(max-width:700px){.sxc{flex-basis:64%;aspect-ratio:3/4.1}.sxg{animation-duration:12s}.sxo{display:none}}
+@media(max-width:700px){.sxc{flex-basis:60%}.sxg{animation-duration:12s}.sxo{display:none}}
 @media(prefers-reduced-motion:reduce){.sxc{opacity:1;transform:none;transition:none}.sxg,.sxo,.sxp,.sxs{animation:none}.sxs{display:none}}
 </style>
 <div class="w sxw" id="sx"><div class="sxr" role="list">@foreach($showcase as $i => $sc)
-<a class="sxc" role="listitem" href="{{ $sc['u'] }}" data-sx="{{ $sc['n'] }}" data-pid="{{ $sc['pid'] }}" style="--c:{{ $sc['c'] }};transition-delay:{{ $i * 70 }}ms" aria-label="{{ $sc['title'] }}"><span class="sxg"></span><span class="sxo"></span><img class="sxp" src="{{ $sc['img'] }}?v={{ $sc['v'] }}" alt="{{ $sc['title'] }}" width="400" height="1000" @if($i < 3) fetchpriority="high" @else loading="lazy" @endif decoding="async"><span class="sxs"></span></a>
+<a class="sxc{{ ($sc['m'] ?? '') === 'poster' ? ' p' : '' }}" role="listitem" href="{{ $sc['u'] }}" data-sx="{{ $sc['n'] }}" data-pid="{{ $sc['pid'] }}" style="--c:{{ $sc['c'] }};transition-delay:{{ $i * 70 }}ms" aria-label="{{ $sc['title'] }}"><span class="sxg"></span><span class="sxo"></span><img class="sxp" src="{{ $sc['img'] }}?v={{ $sc['v'] }}" alt="{{ $sc['title'] }}" width="640" height="1137" @if($i < 3) fetchpriority="high" @else loading="lazy" @endif decoding="async"><span class="sxs"></span></a>
 @endforeach</div><div class="sxd" aria-hidden="true">@foreach($showcase as $sc)<i></i>@endforeach</div></div>
 <script>(function(){var w=document.getElementById('sx');if(!w)return;var r=w.querySelector('.sxr'),cs=[].slice.call(r.children),dots=[].slice.call(w.querySelectorAll('.sxd i')),dev=innerWidth<700?'mobile':innerWidth<1200?'tablet':'desktop',seen=false,paused=false,tm=null;
 function dl(n,c){try{(window.dataLayer=window.dataLayer||[]).push(c)}catch(e){}}

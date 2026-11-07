@@ -20,8 +20,9 @@
 </div></div>
 <div style="display:flex;gap:10px;align-items:center;margin-top:8px;flex-wrap:wrap">
 <label style="font-size:12px">Colour <input type="color" name="slots[{{ $x->id }}][theme]" value="{{ $x->theme }}"></label>
+<label style="font-size:12px">Style <select name="slots[{{ $x->id }}][mode]"><option value="poster" {{ ($x->mode ?? 'cutout') === 'poster' ? 'selected' : '' }}>Finished poster</option><option value="cutout" {{ ($x->mode ?? 'cutout') !== 'poster' ? 'selected' : '' }}>Cut-out on colour</option></select></label>
 <label style="font-size:12px">Order <input type="number" min="1" max="6" name="slots[{{ $x->id }}][position]" value="{{ $x->position }}" style="width:56px"></label>
-<label style="font-size:12px">Image (transparent PNG/WebP) <input type="file" name="slots[{{ $x->id }}][image_file]" accept="image/png,image/webp,image/jpeg"></label>
+<label style="font-size:12px">Image (poster, or transparent PNG/WebP) <input type="file" name="slots[{{ $x->id }}][image_file]" accept="image/png,image/webp,image/jpeg"></label>
 </div>
 <input type="hidden" name="slots[{{ $x->id }}][title]" value="{{ $x->title }}">
 </div>
