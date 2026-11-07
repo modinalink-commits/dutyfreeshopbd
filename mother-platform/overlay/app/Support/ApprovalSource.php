@@ -19,7 +19,8 @@ class ApprovalSource {
       if ($byName === null && $by) $byName = auth()->id() === $by ? (auth()->user()->name ?? null) : DB::table('users')->where('id', $by)->value('name');
       DB::table('orders')->where('id', $orderId)->update(['approval_source' => $source, 'approved_by' => $source === 'MANUAL' ? $by : null, 'approved_at' => now(), 'approval_reference' => $ref ? mb_substr($ref, 0, 120) : null]);
       DB::table('order_approval_history')->insert(['order_id' => $orderId, 'source' => $source, 'approved_by' => $source === 'MANUAL' ? $by : null, 'approved_by_name' => $byName ? mb_substr($byName, 0, 120) : null, 'approved_at' => now(), 'reference' => $ref ? mb_substr($ref, 0, 120) : null, 'note' => $note ? mb_substr($note, 0, 300) : null, 'created_at' => now()]);
-    } catch (\Throwable $e) { report($e); }
+    } catch (\Throwable $e) { report($e); return; }
+    try { OrderWaConfirm::onApproved($orderId, $source); } catch (\Throwable $e) { report($e); }
   }
   /** Manual path helper: stamp MANUAL when a staff change moved an order into Approved. */
   public static function manual(int $orderId, ?string $fromStatus, string $toStatus, ?string $note = null): void {

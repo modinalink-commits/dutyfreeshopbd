@@ -382,6 +382,7 @@ class ChatController extends Controller {
           foreach ($e['changes'] ?? [] as $c) {
             $v = $c['value'] ?? []; $names = [];
             foreach ($v['contacts'] ?? [] as $ct) $names[$ct['wa_id'] ?? ''] = $ct['profile']['name'] ?? null;
+            foreach ($v['statuses'] ?? [] as $stt) \App\Support\OrderWaConfirm::status((array)$stt);
             foreach ($v['messages'] ?? [] as $m) {
               $from = (string)($m['from'] ?? ''); if ($from === '') continue;
               $type = $m['type'] ?? 'text';

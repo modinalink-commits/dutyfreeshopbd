@@ -85,6 +85,12 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/orders/{id}/qpop', function ($id) { $o = \Illuminate\Support\Facades\DB::table('orders')->find($id); abort_unless($o, 404); abort_unless(\App\Http\Middleware\ModulePermission::can(auth()->user(), 'orders', 'edit'), 403); $items = \Illuminate\Support\Facades\DB::table('order_items')->where('order_id', $id)->get(); return view('order_qpop', compact('o', 'items')); })->whereNumber('id');
   Route::get('/orders/{id}', [A::class,'orderShow']);
   Route::post('/orders/{id}/outcome', [\App\Http\Controllers\ShipmentOutcomeController::class,'save'])->whereNumber('id');
+  Route::post('/orders/{id}/wa-confirm/resend', [\App\Http\Controllers\OrderWaConfirmController::class,'resend'])->whereNumber('id')->middleware('throttle:20,1');
+  Route::get('/wa-confirm-settings', [\App\Http\Controllers\OrderWaConfirmController::class,'settings']);
+  Route::post('/wa-confirm-settings', [\App\Http\Controllers\OrderWaConfirmController::class,'save']);
+  Route::post('/wa-confirm-settings/submit', [\App\Http\Controllers\OrderWaConfirmController::class,'submit']);
+  Route::post('/wa-confirm-settings/sync', [\App\Http\Controllers\OrderWaConfirmController::class,'sync']);
+  Route::post('/wa-confirm-settings/test', [\App\Http\Controllers\OrderWaConfirmController::class,'test'])->middleware('throttle:10,1');
   Route::post('/orders/{id}/return-receive', [\App\Http\Controllers\ShipmentOutcomeController::class,'receive'])->whereNumber('id');
   Route::post('/orders/{id}/return-complete', [\App\Http\Controllers\ShipmentOutcomeController::class,'complete'])->whereNumber('id');
   Route::post('/orders/{id}/status', [A::class,'orderStatus']);
