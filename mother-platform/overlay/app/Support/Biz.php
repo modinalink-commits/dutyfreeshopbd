@@ -4,7 +4,7 @@ use App\Http\Controllers\StoreController;
 /** Single source of truth for DutyFreeBD contact details. Edit them once in Admin > Site settings > "Business contact". */
 class Biz {
   const DEFAULTS = [
-    'hotline' => '09613828081', 'mobile' => '01871600600', 'whatsapp' => '01872404040',
+    'hotline' => '09613828081', 'mobile' => '01871600600', 'whatsapp' => '01871600600',
     'email' => 'info@dutyfreebd.com', 'address' => 'Al Sabka, Deira, Dubai, United Arab Emirates', 'business_hours' => '10:00 AM – 10:00 PM',
   ];
   /** setting key behind each field */
@@ -19,7 +19,7 @@ class Biz {
   public static function email(): string { return self::get('email'); }
   public static function address(): string { return preg_replace('/\s+/', ' ', self::get('address')); }
   public static function hours(): string { return self::get('business_hours'); }
-  /** 01872404040 -> 8801872404040 (wa.me format) */
+  /** 01871600600 -> 8801871600600 (wa.me format) */
   public static function waIntl(?string $n = null): string { $d = preg_replace('/\D/', '', $n ?? self::whatsapp()); return str_starts_with($d, '880') ? $d : '880'.ltrim($d, '0'); }
   public static function waUrl(string $text = ''): string { return 'https://wa.me/'.self::waIntl().($text !== '' ? '?text='.rawurlencode($text) : ''); }
   /** 01871600600 -> +8801871600600 (tel: format) */

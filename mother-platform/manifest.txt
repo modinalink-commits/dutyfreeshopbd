@@ -806,3 +806,4 @@ app/Http/Controllers/WhatsAppInboxController.php
 resources/views/wa_inbox.blade.php
 resources/views/wa_admin.blade.php
 database/migrations/2026_11_07_000700_whatsapp_inbox.php
+database/migrations/2026_11_07_000800_whatsapp_number_01871600600.php
