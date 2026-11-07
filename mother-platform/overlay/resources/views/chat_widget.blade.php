@@ -2,11 +2,11 @@
 @if($__P::can($__cu, 'orders', 'view'))
 <script>window.MCSRF=@json(csrf_token());window.MCAN=@json($__P::can($__cu, 'orders', 'edit'));window.MUID=@json($__cu->id);</script>
 <style>
-.mcp{position:fixed;bottom:18px;right:18px;z-index:9990;display:flex;flex-direction:column;gap:10px;width:350px;max-width:calc(100vw - 28px)}
+.mcp{position:fixed;top:64px;right:18px;z-index:9990;display:flex;flex-direction:column;gap:10px;width:350px;max-width:calc(100vw - 28px)}
 .mcc{background:#fff;border:1.5px solid #FDC2A5;border-radius:16px;box-shadow:0 14px 34px rgba(11,18,32,.22);padding:12px;animation:mcin .22s ease-out;font-size:13px;color:#0B1220}
 .mcs{background:#0B1220;color:#fff;border-radius:14px;padding:10px 12px;font-size:12.5px;display:none;align-items:center;gap:8px;box-shadow:0 10px 26px rgba(11,18,32,.28);animation:mcin .22s ease-out}.mcs b{font-weight:700}.mcs .sp{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mcs button{padding:5px 10px;font-size:12px;border-radius:8px;border:1px solid #FF5A00;background:#FF5A00;color:#fff;font-weight:600;cursor:pointer}.mcs button.gh{background:transparent;border-color:#475569}
 @media(prefers-reduced-motion:reduce){.mcc,.mcs{animation:none!important}}
-@keyframes mcin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes mcin{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
 .mcc .h{display:flex;align-items:center;gap:8px;font-weight:700;font-size:12.5px}.mcc .h .x{margin-left:auto;background:none;color:#6B7280;padding:0 4px;font-size:18px;line-height:1}
 .mcc .cnt{background:#FF5A00;color:#fff;border-radius:20px;font-size:11px;padding:1px 8px}
 .mcc .who{display:flex;gap:10px;align-items:center;margin:10px 0 6px}.mcc .who b{display:block;font-size:14px}.mcc .who small{color:#6B7280}
@@ -41,7 +41,7 @@
 .mc .cm textarea{min-height:44px;max-height:120px;resize:vertical;font-size:13px}.mc .cm .sd{display:flex;gap:8px;align-items:flex-end}.mc .cm .sd textarea{flex:1}
 .mc .pk{border:1px solid #FFE7D6;border-radius:10px;padding:6px;max-height:170px;overflow:auto;display:none}.mc .pk div.it{padding:6px 8px;border-radius:8px;cursor:pointer;display:flex;justify-content:space-between;gap:8px}.mc .pk div.it:hover{background:#FFF1E8}
 .mc .ro{padding:10px 14px;color:#6B7280;font-size:12px;border-top:1px solid #FFE7D6}
-@media(max-width:600px){.mcp{bottom:8px;right:8px;left:8px;width:auto;max-width:none}}
+@media(max-width:600px){.mcp{top:56px;right:8px;left:8px;width:auto;max-width:none}}
 /* ===== premium messenger redesign (visual only) ===== */
 .mc,.mbx,.fbar{font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Hind Siliguri',Arial,sans-serif}
 .mc .ic{width:15px;height:15px;flex:none;fill:none;stroke:#F05200;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
