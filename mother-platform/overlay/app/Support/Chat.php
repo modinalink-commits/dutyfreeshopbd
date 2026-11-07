@@ -207,6 +207,15 @@ class Chat {
     } catch (\Throwable $e) { return []; }
   }
   /** Send an admin reply. Returns [ok, error]. Website chat needs no API: the visitor's widget fetches it. */
+  /** Product photo caption: name on line 1, price (and stock) on line 2, order link alone on the last line. */
+  private static function productCaption(string $c): string {
+    $c = trim($c);
+    $c = preg_replace('#\s*[:：\-–]?\s*(https?://\S+)\s*$#u', "\n$1", $c);
+    $c = preg_replace('#,\s*(?=(?:দাম:?\s*)?(?:৳\s*)?[\d,০-৯]+\s*(?:TK|Tk|tk|টাকা|৳))#u', "\nদাম: ", $c, 1);
+    $c = preg_replace('#দাম:\s*দাম:?\s*#u', 'দাম: ', $c);
+    return mb_substr($c, 0, 900);
+  }
+
   public static function deliver(object $t, string $body, ?string $att = null, string $attType = 'image'): array {
     try {
       if ($t->channel === 'web') return [true, null];
@@ -238,7 +247,7 @@ class Chat {
                 if ($ip !== '' && str_starts_with($ip, '/uploads/') && is_file(public_path(ltrim($ip, '/')))) $img = 'https://www.dutyfreebd.com'.$ip;
               } catch (\Throwable $e) { $img = null; }
             }
-            $out[] = $img ? ['type'=>'image', 'image'=>['link'=>$img, 'caption'=>mb_substr(preg_replace('#\s*[:：\-–]?\s*(https?://\S+)\s*$#u', "\n$1", trim($c)), 0, 900)]] : ['type'=>'text', 'text'=>['body'=>$c, 'preview_url'=>true]];
+            $out[] = $img ? ['type'=>'image', 'image'=>['link'=>$img, 'caption'=>self::productCaption($c)]] : ['type'=>'text', 'text'=>['body'=>$c, 'preview_url'=>true]];
           }
         }
         foreach ($out as $k => $m) {
