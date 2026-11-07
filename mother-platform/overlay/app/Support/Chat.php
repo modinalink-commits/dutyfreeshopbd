@@ -141,7 +141,7 @@ class Chat {
     try {
       if (!AiChat::chatOn() || !AiChat::hoursOk()) return;
       $t = DB::table('chat_threads')->find($tid);
-      if (!$t || $t->ai_paused || !in_array($t->channel, ['web', 'whatsapp', 'facebook'], true)) return;
+      if (!$t || AiChat::paused($t) || !in_array($t->channel, ['web', 'whatsapp', 'facebook'], true)) return;
       $ext = $t->channel !== 'web'; // WhatsApp / Facebook Messenger: the reply is sent to the customer through the platform
       if ($ext) {
         if (!AiChat::chanOn()) return;
@@ -174,7 +174,7 @@ class Chat {
         $lastIn = $rows->last(); $txt = AiAgent::replyThread($tid, $hist, (int)$lastIn->id, (string)$lastIn->body);
         if ($txt === null) goto legacy;
         // a hand-off pauses the AI on purpose; its own closing message must still reach the customer
-        if (DB::table('chat_threads')->where('id', $tid)->value('ai_paused') && !DB::table('chat_handoffs')->where('thread_id', $tid)->where('created_at', '>', now()->subMinutes(2))->exists()) return;
+        if (AiChat::paused(DB::table('chat_threads')->find($tid)) && !DB::table('chat_handoffs')->where('thread_id', $tid)->where('created_at', '>', now()->subMinutes(2))->exists()) return;
         $sent = true; $err = null;
         if ($ext) { $txt = mb_substr($txt, 0, 1900); [$sent, $err] = self::deliver($t, $txt); }
         DB::table('chat_messages')->insert(['thread_id'=>$tid, 'dir'=>'out', 'kind'=>'text', 'body'=>mb_substr($txt, 0, 3500), 'user_name'=>'Claude AI', 'is_ai'=>true, 'status'=>$sent ? 'sent' : 'failed', 'error'=>$err, 'created_at'=>now(), 'updated_at'=>now()]);
@@ -189,7 +189,7 @@ class Chat {
       [$ok, $txt] = AiChat::reply($hist, "You are answering inside the live chat. If the customer wants a person, has a complaint, wants to change/cancel an order, or you are not sure, say a team member will reply shortly and give the phone/WhatsApp number. Do not claim to be human.\n", (string)($t->ai_lang ?? ''));
       if (!$ok) return;
       // a staff member may have replied while Claude was thinking
-      if (DB::table('chat_threads')->where('id', $tid)->value('ai_paused')) return;
+      if (AiChat::paused(DB::table('chat_threads')->find($tid))) return;
       DB::table('chat_messages')->insert(['thread_id'=>$tid, 'dir'=>'out', 'kind'=>'text', 'body'=>mb_substr($txt, 0, 3500), 'user_name'=>'Claude AI', 'is_ai'=>true, 'status'=>'sent', 'created_at'=>now(), 'updated_at'=>now()]);
       DB::table('chat_threads')->where('id', $tid)->update(['last_message'=>mb_substr($txt, 0, 300), 'last_dir'=>'out', 'last_at'=>now(), 'updated_at'=>now()]);
     } catch (\Throwable $e) { report($e); }

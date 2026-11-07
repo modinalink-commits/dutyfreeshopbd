@@ -28,6 +28,13 @@ class AiChat {
     $n = now('Asia/Dhaka'); $h = (int)$n->format('G');
     return $h < ($n->dayOfWeek === 5 ? 14 : 10) || $h >= 21;
   }
+  /** Is the AI held back in this conversation? A staff reply or a hand-over pauses it; with the hours schedule on, a staff reply only holds it for 30 minutes (the schedule separates staff and AI hours), while a hand-over (needs_human) or the manual OFF switch hold it until staff turn it on. */
+  public static function paused($t): bool {
+    if (!$t || !$t->ai_paused) return false;
+    if (Sms::secret('ai_chat_hours') === '0' || !empty($t->needs_human) || Cache::has('ai.manual_off.'.$t->id)) return true;
+    $last = DB::table('chat_messages')->where('thread_id', $t->id)->where('dir', 'out')->where(fn($q) => $q->whereNull('is_ai')->orWhere('is_ai', false))->max('created_at');
+    return $last && \Illuminate\Support\Carbon::parse($last)->gt(now()->subMinutes(30));
+  }
   public static function chatOn(): bool { return self::on() && Sms::secret('ai_chat_auto') !== '0'; }
   public static function model(): string { return Sms::secret('ai_model') ?: 'claude-haiku-5-5'; }
   /** Store-wide facts the assistant may quote (cached 5 min): contact, delivery, payment, policies, offers, categories. */

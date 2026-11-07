@@ -118,7 +118,7 @@ class ChatController extends Controller {
 
   /** Turn Claude's automatic replies on or off for one conversation. */
   public function ai(Request $r, $id) {
-    $on = $r->boolean('on');
+    $on = $r->boolean('on'); if ($on) \Illuminate\Support\Facades\Cache::forget('ai.manual_off.'.(int)$id); else \Illuminate\Support\Facades\Cache::forever('ai.manual_off.'.(int)$id, 1);
     DB::table('chat_threads')->where('id', $id)->update(['ai_paused'=>!$on, 'updated_at'=>now()]);
     if ($on) { $tid = (int)$id; app()->terminating(fn() => Chat::aiReply($tid)); }
     return response()->json(['ok'=>true, 'ai'=>$on]);
@@ -345,7 +345,7 @@ class ChatController extends Controller {
     $d = $r->validate(['token'=>'required|string|size:32', 'body'=>'required|string|max:1000']);
     $t = $this->webThread($d['token']);
     $th = Chat::ingest('web', $d['token'], null, strip_tags($d['body']));
-    if ($th && !$th->ai_paused) { $tid = (int)$th->id; app()->terminating(fn() => Chat::aiReply($tid)); }
+    if ($th && !\App\Support\AiChat::paused($th)) { $tid = (int)$th->id; app()->terminating(fn() => Chat::aiReply($tid)); }
     $m = DB::table('chat_messages')->where('thread_id', $t->id)->where('dir', 'in')->orderByDesc('id')->first(['id', 'created_at']);
     return response()->json(['ok'=>true, 'id'=>$m->id ?? null, 'at'=>$m ? \Carbon\Carbon::parse($m->created_at)->toIso8601String() : null]);
   }
@@ -412,7 +412,7 @@ class ChatController extends Controller {
             $body = (string)($msg['text'] ?? ''); if ($body === '' && !$att) $body = '[unsupported message]';
             $th = Chat::ingest($ch, (string)$m['sender']['id'], null, $body, $att, $msg['mid'] ?? null, ['page_ref'=>(string)($e['id'] ?? ''), 'att_type'=>$atype]);
             if ($th && $att && $atype === 'audio' && ($vid = DB::table('chat_messages')->where('ext_id', $msg['mid'] ?? '-')->value('id'))) { $vid = (int)$vid; app()->terminating(fn() => Chat::transcribe($vid)); }
-            if ($th && $ch === 'facebook' && !$th->ai_paused && !($att && $atype !== 'image')) { $tid = (int)$th->id; app()->terminating(fn() => Chat::aiReply($tid)); }
+            if ($th && $ch === 'facebook' && !\App\Support\AiChat::paused($th) && !($att && $atype !== 'image')) { $tid = (int)$th->id; app()->terminating(fn() => Chat::aiReply($tid)); }
           }
         } elseif ($obj === 'whatsapp_business_account') {
           foreach ($e['changes'] ?? [] as $c) {
@@ -431,7 +431,7 @@ class ChatController extends Controller {
               if (!$att && !empty($m['image']['caption'])) $body = $m['image']['caption'].' [image]';
               $th = Chat::ingest('whatsapp', $from, $names[$from] ?? null, $body, $att, $m['id'] ?? null, $meta);
               if ($th && $att && ($meta['att_type'] ?? '') === 'audio' && ($vid = DB::table('chat_messages')->where('ext_id', $m['id'] ?? '-')->value('id'))) { $vid = (int)$vid; app()->terminating(fn() => Chat::transcribe($vid)); }
-              if ($th && !$th->ai_paused && !($att && ($meta['att_type'] ?? 'image') !== 'image') && in_array($type, ['text', 'button', 'image'], true)) { $tid = (int)$th->id; app()->terminating(fn() => Chat::aiReply($tid)); }
+              if ($th && !\App\Support\AiChat::paused($th) && !($att && ($meta['att_type'] ?? 'image') !== 'image') && in_array($type, ['text', 'button', 'image'], true)) { $tid = (int)$th->id; app()->terminating(fn() => Chat::aiReply($tid)); }
             }
           }
         }
