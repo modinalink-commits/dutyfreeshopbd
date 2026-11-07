@@ -81,6 +81,9 @@ class AgentTools {
       case 'cart_add': {
         $p = DB::table('products')->where('published', true)->find((int)($in['product_id'] ?? 0)); if (!$p) return ['error'=>'product not found'];
         if ($p->stock <= 0) return ['error'=>'this product is OUT OF STOCK'];
+        // age-restricted goods (cigarette / vape / tobacco): the owner's rule is that the assistant answers questions but never takes the order itself
+        try { $cn = (string)DB::table('categories')->where('id', $p->category_id ?? 0)->value('name'); } catch (\Throwable $e) { $cn = ''; }
+        if (preg_match('/cigarette|vape|tobacco|nicotine/i', $cn.' '.$p->name)) return ['error'=>'AGE-RESTRICTED product (cigarette / vape): the assistant must not take this order. Give the price, stock and link from the tools, then call handoff_to_human with product, quantity, name, phone, address so a staff member completes the order, and tell the customer a team member will contact them.'];
         $q = max(1, min(20, (int)($in['qty'] ?? 1))); if (StockGuard::mode($p->category_id ?? null) === 'STOCK_CONTROLLED' && $p->stock < $q) return ['error'=>'only '.(int)$p->stock.' in stock'];
         if (time() - (int)($st['cart_at'] ?? 0) > 21600) $st['cart'] = []; $st['cart_at'] = time();
         $st['cart'][$p->id] = min(20, $q); unset($st['pending']);

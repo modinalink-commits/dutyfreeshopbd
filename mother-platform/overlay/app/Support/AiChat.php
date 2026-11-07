@@ -13,9 +13,9 @@ class AiChat {
   public static function langRule(array $st = []): string {
     $names = ['bangla'=>'Bangla (Bengali script)', 'english'=>'English', 'banglish'=>'Banglish (Bengali typed in English letters)'];
     $ov = (string)($st['lang_override'] ?? ''); $pf = (string)($st['lang_pref'] ?? '');
-    $r = "LANGUAGE: customers write in Bengali script, English, Banglish (Bengali typed in English letters, e.g. 'dam koto', 'bhai amar order ta kothay') or a mix; understand all of them including spelling mistakes. Reply in the SAME language and style as the customer's latest message: Bangla -> natural polite Bengali script (আপনি-form); English -> simple polite English; Banglish -> natural everyday Bangladeshi customer-service Banglish in English letters (e.g. 'Ji bhai, apnar order ta ekhon courier e In Transit ache. Notun update ashle janano hobe.'), never stiff literary words like 'bahon prokriyay royeche'; mixed -> match their natural mix. If the latest message is too short to tell (e.g. 'ok', 'dam?'), follow the style of the earlier customer messages in this chat, otherwise reply in Bengali script. A customer who clearly asks for a language (e.g. 'English please', 'বাংলায় বলুন') gets that language. "
+    $r = "LANGUAGE: customers write in Bengali script, English, Banglish (Bengali typed in English letters, e.g. 'dam koto', 'amar order ta kothay') or a mix; understand all of them including spelling mistakes. Reply in the SAME language and style as the customer's latest message: Bangla -> natural polite Bengali script (আপনি-form); English -> simple polite English; Banglish -> natural everyday Bangladeshi customer-service Banglish in English letters (e.g. 'Ji, apnar order ta ekhon courier e In Transit ache. Notun update ashle janano hobe.'), never stiff literary words like 'bahon prokriyay royeche'; mixed -> match their natural mix. If the latest message is too short to tell (e.g. 'ok', 'dam?'), follow the style of the earlier customer messages in this chat, otherwise reply in Bengali script. A customer who clearly asks for a language (e.g. 'English please', 'বাংলায় বলুন') gets that language. "
       ."Common business words may stay in English where natural (Order, Approved, Pending, Courier, Tracking, Payment, Membership, Discount, Delivery, Refund, Return, Invoice). When replying in Bengali script, write statuses in simple Bengali (Processing -> আপনার অর্ডারটি বর্তমানে প্রস্তুত করা হচ্ছে; Ready to Ship -> আপনার অর্ডারটি কুরিয়ারে পাঠানোর জন্য প্রস্তুত; Payment Pending -> আপনার পেমেন্টটি এখনো যাচাইয়ের অপেক্ষায় আছে). "
-      ."The language changes only the wording: never change or add any fact, price, discount, stock, order / payment / courier / delivery status, membership or promise, and never promise more in one language than in another. Use the customer's name or 'ভাই/bhai' naturally, not in every reply. Tone: respectful, warm, short, natural, never robotic.\n";
+      ."The language changes only the wording: never change or add any fact, price, discount, stock, order / payment / courier / delivery status, membership or promise, and never promise more in one language than in another. Use the customer's name naturally, not in every reply. NEVER use the words ভাইয়া, ভাই, আপু, বোন, bhai, bon, apu (any spelling) to address anyone; without a known name just reply politely with no address word. Tone: respectful, warm, short, natural, never robotic.\n";
     if (isset($names[$ov])) $r .= "STAFF LANGUAGE SETTING: a staff member fixed the reply language for this chat to {$names[$ov]}. Use it for every reply, whatever language the customer writes in.\n";
     elseif (isset($names[$pf])) $r .= "LEARNED CUSTOMER PREFERENCE: this customer mostly writes {$names[$pf]}; use it when the latest message does not make the style clear.\n";
     return $r;
@@ -26,7 +26,7 @@ class AiChat {
   public static function model(): string { return Sms::secret('ai_model') ?: 'claude-haiku-5-5'; }
   /** Store-wide facts the assistant may quote (cached 5 min): contact, delivery, payment, policies, offers, categories. */
   public static function facts(): string {
-    return Cache::remember('ai.facts2', 300, function () {
+    return Cache::remember('ai.facts3', 300, function () {
       $s = \App\Http\Controllers\StoreController::set(); $o = [];
       $o[] = 'STORE: DutyFreeBD (dutyfreebd.com), Child City. Hotline: '.Biz::hotline().'. Mobile: '.Biz::mobile().'. WhatsApp: '.Biz::whatsapp().'. Email: '.($s['contact_email'] ?? '').'. Address: '.preg_replace('/\s+/', ' ', (string)($s['contact_address'] ?? '')).'. Hours: '.($s['business_hours'] ?? '').'.';
       // the live delivery engine (Admin > Delivery) is the single source of truth, not the old ship_N settings
@@ -42,8 +42,14 @@ class AiChat {
       try { foreach (DB::table('discount_rules')->where('enabled', true)->get(['title', 'help', 'config']) as $r) $o[] = 'OFFER: '.$r->title.' - '.mb_substr(strip_tags((string)$r->help), 0, 160).' '.mb_substr((string)$r->config, 0, 200); } catch (\Throwable $e) {}
       try { foreach (DB::table('pages')->where('active', true)->limit(14)->get(['title', 'body']) as $pg) { $t = trim(preg_replace('/\s+/u', ' ', strip_tags((string)$pg->body))); if ($t !== '') $o[] = 'PAGE "'.$pg->title.'": '.mb_substr($t, 0, 700); } } catch (\Throwable $e) {}
       try { $o[] = 'CATEGORIES: '.DB::table('categories')->orderBy('name')->limit(60)->pluck('name')->implode(', ').'.'; $o[] = 'BRANDS: '.DB::table('brands')->where('active', true)->orderBy('name')->limit(80)->pluck('name')->implode(', ').'.'; } catch (\Throwable $e) {}
+      $kb = self::kb(); if ($kb !== '') $o[] = "OWNER KNOWLEDGE BASE (written by the owner; live price, stock, offers, delivery charge and order data from the tools always win over it):\n".$kb;
       return implode("\n", $o);
     });
+  }
+  /** Owner-editable knowledge base (Admin > AI Chat); the built-in default is used until the owner saves their own. */
+  public static function kb(): string {
+    $v = Sms::secret('ai_kb'); if ($v !== null && trim($v) !== '') return trim($v);
+    $f = resource_path('ai/kb_default.txt'); return is_file($f) ? trim((string)file_get_contents($f)) : '';
   }
   /** Whole published catalogue in compact form (cached 5 min). */
   private static function catalog(): array {

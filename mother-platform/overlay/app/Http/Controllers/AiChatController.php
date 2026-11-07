@@ -11,9 +11,17 @@ class AiChatController extends Controller {
       foreach (\Illuminate\Support\Facades\DB::table('chat_threads')->where('channel', 'web')->where('updated_at', '>=', now()->subDays(7))->whereNotNull('ai_detected')
         ->selectRaw("ai_detected as l, count(*) as n, sum(case when ai_paused then 1 else 0 end) as taken, sum(case when ai_lang is not null then 1 else 0 end) as fixed")->groupBy('ai_detected')->get() as $x) $lr[$x->l] = ['n'=>(int)$x->n, 'taken'=>(int)$x->taken, 'fixed'=>(int)$x->fixed];
     } catch (\Throwable $e) {}
-    return view('ai_chat', ['langRows'=>$lr, 'hasKey'=>(bool)Sms::secret('ai_key'), 'on'=>Sms::secret('ai_enabled') === '1', 'model'=>AiChat::model(), 'today'=>(int)Cache::get('ai.n.'.now()->format('Ymd'), 0), 'agentTools'=>Sms::secret('ai_agent_tools') === '1', 'agentOrders'=>Sms::secret('ai_agent_orders') === '1']);
+    return view('ai_chat', ['langRows'=>$lr, 'hasKey'=>(bool)Sms::secret('ai_key'), 'on'=>Sms::secret('ai_enabled') === '1', 'model'=>AiChat::model(), 'today'=>(int)Cache::get('ai.n.'.now()->format('Ymd'), 0), 'agentTools'=>Sms::secret('ai_agent_tools') === '1', 'agentOrders'=>Sms::secret('ai_agent_orders') === '1', 'kb'=>AiChat::kb(), 'kbCustom'=>trim((string)Sms::secret('ai_kb')) !== '']);
   }
   private function audit(Request $r, string $a, string $sub): void { try { \Illuminate\Support\Facades\DB::table('audit_logs')->insert(['user_id'=>auth()->id(),'user_name'=>auth()->user()->name,'action'=>$a,'subject'=>$sub,'ip'=>$r->ip(),'created_at'=>now(),'updated_at'=>now()]); } catch (\Throwable $e) {} }
+  public function saveKb(Request $r) {
+    $d = $r->validate(['kb'=>'nullable|string|max:60000']);
+    $v = trim((string)($d['kb'] ?? ''));
+    Sms::setSecret('ai_kb', $r->boolean('reset') ? null : ($v === '' ? null : $v));
+    Cache::forget('ai.facts3'); Cache::forget('ai.facts2');
+    $this->audit($r, 'ai.kb', 'AI knowledge base saved');
+    return back()->with('ok', 'Knowledge base saved. The AI uses it within a minute.');
+  }
   public function save(Request $r) {
     $d = $r->validate(['api_key'=>'nullable|string|max:300', 'model'=>'required|in:claude-haiku-5-5,claude-sonnet-5-5', 'enabled'=>'nullable|boolean', 'agent_tools'=>'nullable|boolean', 'agent_orders'=>'nullable|boolean']);
     if (!empty($d['api_key'])) Sms::setSecret('ai_key', trim($d['api_key']));
