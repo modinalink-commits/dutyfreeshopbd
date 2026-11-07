@@ -77,7 +77,9 @@ class ModulePermission {
     elseif ($request->isMethod('post') && $path === 'admin/report-center/xlsx') $need = 'download';
     elseif ($request->isMethod('post') && in_array($path, ['admin/report-center/favorite', 'admin/report-center/log-export'], true)) $need = 'view';
     elseif ($request->isMethod('post')) $need = str_ends_with($path, '/delete') ? 'all' : 'edit';
-    if (!self::can($u, $mod, $need)) abort(403, 'Your role does not allow this.');
+    // Product photos: upload / media library / AI images are filed under Settings, but whoever may edit Products (e.g. Manager) must be able to add and edit pictures without a Settings grant.
+    $pic = (bool)preg_match('#^admin/(upload-image|media|ai-images|image-audit)#', $path);
+    if (!self::can($u, $mod, $need) && !($pic && self::can($u, 'products', $need))) abort(403, 'Your role does not allow this.');
     return $next($request);
   }
 }
