@@ -798,3 +798,6 @@ database/migrations/2026_11_07_000300_mcp_server.php
 app/Support/Mcp.php
 app/Http/Controllers/McpAdminController.php
 resources/views/mcp_admin.blade.php
+database/migrations/2026_11_07_000400_mcp_oauth.php
+app/Http/Controllers/McpOAuthController.php
+resources/views/mcp_consent.blade.php

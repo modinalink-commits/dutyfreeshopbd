@@ -112,9 +112,9 @@ class Mcp {
   }
   public static function handle(Request $r) {
     $t0 = microtime(true); $rid = 'mcp-'.bin2hex(random_bytes(6)); $ip = (string)$r->ip();
-    if (!self::ready() || !self::enabled()) return self::err(null, -32000, 'MCP is disabled', 503);
+    if (!self::ready() || !self::enabled()) return self::err(null, -32000, 'MCP is disabled', 503);   // enabled from /admin/mcp
     $raw = (string)preg_replace('/^Bearer\s+/i', '', (string)$r->header('Authorization')); $tok = $raw !== '' ? DB::table('mcp_tokens')->where('token_hash', hash('sha256', $raw))->first() : null;
-    if (!$tok || $tok->revoked_at || ($tok->expires_at && now()->gt($tok->expires_at))) { self::audit($rid, null, null, null, 'auth_failed', 'bad or expired token', $ip, 0); return self::err(null, -32001, 'Unauthorized', 401); }
+    if (!$tok || $tok->revoked_at || ($tok->expires_at && now()->gt($tok->expires_at))) { self::audit($rid, null, null, null, 'auth_failed', 'bad or expired token', $ip, 0); return self::err(null, -32001, 'Unauthorized', 401)->header('WWW-Authenticate', 'Bearer resource_metadata="https://'.$r->getHost().'/.well-known/oauth-protected-resource"'); }
     $k = 'mcp.rl.'.$tok->id.'.'.now()->format('YmdHi'); Cache::add($k, 0, 90); if (Cache::increment($k) > self::LIMIT) { self::audit($rid, $tok, null, null, 'rate_limited', null, $ip, 0); return self::err(null, -32002, 'RATE_LIMITED', 429); }
     DB::table('mcp_tokens')->where('id', $tok->id)->update(['last_used_at' => now()]);
     $b = json_decode((string)$r->getContent(), true); if (!is_array($b)) return self::err(null, -32700, 'Parse error');
