@@ -169,7 +169,8 @@ class ChatController extends Controller {
     return back()->with('err', 'Subscribe failed for '.$waba.': '.$cut($a['error'] ?? $a).' Subscribed apps: '.($names ?: 'none'));
   }
   public function waRegister(Request $r) {
-    $d = $r->validate(['reg_pin'=>['required', 'regex:/^\d{6}$/']]);
+    $d = $r->validate(['reg_pin'=>['nullable', 'regex:/^\d{6}$/']]);
+    if (empty($d['reg_pin'])) $d['reg_pin'] = str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
     $tok = Chat::sec('chat_wa_token'); $ph = Chat::sec('chat_wa_phone_id');
     if (!$tok || !$ph) return back()->with('err', 'Save the WhatsApp Cloud API token and phone number ID first.');
     $h = fn($m, $u, $q = []) => \Illuminate\Support\Facades\Http::timeout(25)->withToken($tok)->{$m}('https://graph.facebook.com/v21.0/'.$u, $q)->json();
