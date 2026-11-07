@@ -61,9 +61,11 @@ class MotherSyncFeed extends Command {
       if (!isset($catId[$grp])) $grp = 'other';
       $ex = DB::table('products')->where('ext_id',$pid)->first();
       // keep a working local image (the feed only knows the old-server URL); own-domain old paths live on the old server
-      $keep = $ex && in_array(\App\Support\ImageAudit::check($ex->image)['state'], ['ok','thumb_missing'], true);
+      // a clean AI image (/uploads/ai/...) is never replaced by the supplier photo; its '?v=' cache suffix used to make the file check fail and the feed then put the original photo back
+      $keep = $ex && (str_contains((string)$ex->image, '/uploads/ai/') || in_array(\App\Support\ImageAudit::check(strtok((string)$ex->image, '?'))['state'], ['ok','thumb_missing'], true));
       if ($img && preg_match('#^https?://(www\.)?(dutyfreebd|dutyfreeshopbd)\.com(/public/storage/images/.*)$#i', $img, $mm)) $img = \App\Support\ImageAudit::OLD . $mm[3];
       $data = ['name'=>mb_substr($title,0,200), 'price'=>$sale, 'compare_price'=>$cmp, 'group_key'=>$grp, 'sub'=>mb_substr($sub,0,120), 'category_id'=>$catId[$grp], 'description'=>mb_substr($desc,0,5000), 'published'=>true, 'synced_at'=>$now, 'updated_at'=>$now];
+      if ($ex && !empty($ex->manual_unpublish_lock)) unset($data['published']); // a product a person unpublished by hand stays unpublished
       if (!$keep) $data['image'] = \App\Support\Img::mirrored($img) ?: $img;
       if ($ex) DB::table('products')->where('id',$ex->id)->update($data);
       else DB::table('products')->insert($data + ['ext_id'=>$pid, 'sku'=>'DF-'.$pid, 'slug'=>Str::slug($title) ?: 'product', 'stock'=>100, 'cost'=>0, 'created_at'=>$now]);
