@@ -47,9 +47,9 @@ class AgentTools {
       case 'search_products': {
         $q = trim(mb_substr((string)($in['query'] ?? ''), 0, 80)); if ($q === '') return ['error'=>'empty query'];
         $words = array_slice(array_values(array_filter(preg_split('/[\s,.?!]+/u', mb_strtolower($q)), fn($w) => mb_strlen($w) >= 2)), 0, 5);
-        $rows = DB::table('products')->where('published', true)->where(function ($w) use ($words) { foreach ($words as $t) { $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $t).'%'; $w->orWhere('name', 'ilike', $like)->orWhere('sub', 'ilike', $like)->orWhere('size', 'ilike', $like); } })
+        $rows = StockGuard::listable(DB::table('products')->where('published', true))->where(function ($w) use ($words) { foreach ($words as $t) { $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $t).'%'; $w->orWhere('name', 'ilike', $like)->orWhere('sub', 'ilike', $like)->orWhere('size', 'ilike', $like); } })
           ->orderByRaw('case when stock > 0 then 0 else 1 end')->orderByDesc('id')->limit(max(1, min(6, (int)($in['limit'] ?? 4))))->get(['id', 'name', 'price', 'compare_price', 'stock', 'sub', 'category_id', 'path_slug', 'sub_sub']);
-        return ['count'=>$rows->count(), 'products'=>$rows->map(fn($p) => self::row($p))->all()];
+        return ['count'=>$rows->count(), 'products'=>$rows->map(fn($p) => self::row($p))->all(), 'note'=>$rows->count() ? 'only in-stock published products are listed' : 'no available product matches: say it is currently not available, never mention or link anything else out of stock']; 
       }
       case 'product_details': {
         $p = DB::table('products')->where('published', true)->find((int)($in['product_id'] ?? 0)); if (!$p) return ['error'=>'product not found'];

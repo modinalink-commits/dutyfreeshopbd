@@ -62,7 +62,7 @@ class AiChat {
   private static function catalog(): array {
     return Cache::remember('ai.catalog', 300, function () {
       $cat = DB::table('categories')->pluck('name', 'id');
-      $rows = DB::table('products')->where('published', true)->orderByDesc('stock')->orderBy('id')->limit(900)
+      $rows = StockGuard::listable(DB::table('products')->where('published', true))->orderByDesc('stock')->orderBy('id')->limit(900)
         ->get(['id', 'ext_id', 'name', 'price', 'offer_price', 'compare_price', 'stock', 'sub', 'sub_sub', 'category_id', 'path_slug', 'size']);
       return $rows->map(function ($p) use ($cat) {
         $now = (float)($p->offer_price ?: $p->price); $was = (float)$p->compare_price > $now ? ' (was '.number_format($p->compare_price).')' : '';
