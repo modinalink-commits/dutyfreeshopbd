@@ -51,7 +51,7 @@ class VoiceChat
     if (!$key) return [null, 'ভয়েস সেবা এখন বন্ধ আছে। অনুগ্রহ করে লিখে জানান।', null];
     $fmt = self::sniff($bytes); if (!$fmt) return [null, 'অডিও ফাইলটি গ্রহণযোগ্য নয়। আবার চেষ্টা করুন।', null];
     $lang = array_key_exists(self::set('lang'), self::LANGS) ? self::set('lang') : 'bn-BD';
-    $cfg = ['encoding' => $fmt === 'webm' ? 'WEBM_OPUS' : 'OGG_OPUS', 'sampleRateHertz' => $rate ?: 48000, 'languageCode' => $lang, 'enableAutomaticPunctuation' => true, 'maxAlternatives' => 1];
+    $cfg = ['encoding' => $fmt === 'webm' ? 'WEBM_OPUS' : 'OGG_OPUS', 'languageCode' => $lang, 'enableAutomaticPunctuation' => true, 'maxAlternatives' => 1];
     if ($lang !== 'en-US') $cfg['alternativeLanguageCodes'] = ['en-US'];
     try {
       $r = Http::timeout(25)->post('https://speech.googleapis.com/v1/speech:recognize?key=' . urlencode($key), ['config' => $cfg, 'audio' => ['content' => base64_encode($bytes)]]);
@@ -59,6 +59,11 @@ class VoiceChat
       self::$lastStatus = $r->status();
       if (!$r->ok()) { self::log($tid, null, 'stt', false, 'HTTP ' . $r->status() . ' ' . ($r->json('error.status') ?? ''), $ms, strlen($bytes)); return [null, 'আপনার কথা বুঝতে পারিনি। অনুগ্রহ করে লিখে জানান।', null]; }
       $res = $r->json('results.0.alternatives.0') ?? []; $text = trim((string)($res['transcript'] ?? '')); $dl = $r->json('results.0.languageCode');
+      if ($text === '' && !empty($cfg['alternativeLanguageCodes'])) { // retry once with the main language only
+        unset($cfg['alternativeLanguageCodes']);
+        $r2 = Http::timeout(25)->post('https://speech.googleapis.com/v1/speech:recognize?key=' . urlencode($key), ['config' => $cfg, 'audio' => ['content' => base64_encode($bytes)]]);
+        if ($r2->ok()) { $text = trim((string)$r2->json('results.0.alternatives.0.transcript')); $dl = $r2->json('results.0.languageCode'); }
+      }
       if ($text === '') { self::log($tid, null, 'stt', false, 'empty transcript', $ms, strlen($bytes)); return [null, 'আপনার কথা শোনা যায়নি। আবার বলুন, অথবা লিখে জানান।', null]; }
       self::log($tid, null, 'stt', true, '', $ms, strlen($bytes), mb_strlen($text));
       return [$text, '', $dl ? (string)$dl : $lang];
