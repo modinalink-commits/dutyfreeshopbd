@@ -17,7 +17,26 @@
 <div class="card" style="max-width:760px"><b>WhatsApp numbers (Facebook login)</b>
 <p style="font-size:12.5px;color:#6B7280;margin:4px 0 10px">Connect one or more WhatsApp numbers the same way as Facebook Pages. Customers get replies from the number they wrote to. The original number below keeps working.</p>
 <form method="post" action="/admin/chat-settings/wa-config" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">@csrf<input name="wa_config_id" value="{{ $wa_cfg }}" placeholder="WhatsApp login Configuration ID" style="flex:1;min-width:200px" inputmode="numeric"><button class="g">Save ID</button></form>
-@if($wa_cfg && $app_id)<a class="btn" href="/admin/chat-settings/fb-connect?wa=1" style="display:inline-block;background:#16A34A">Connect WhatsApp number</a>@endif
+@if($wa_cfg && $app_id)<button type="button" class="btn" id="waOpen" style="background:#16A34A">Connect WhatsApp number</button> <a href="/admin/chat-settings/fb-connect?wa=1" style="font-size:11.5px;color:#6B7280">(older login method)</a>
+<div id="waModal" style="display:none;position:fixed;inset:0;background:rgba(17,24,39,.55);z-index:9999;align-items:center;justify-content:center;padding:16px"><div style="background:#fff;border-radius:14px;max-width:470px;width:100%;padding:20px 22px;box-shadow:0 20px 50px rgba(0,0,0,.3)">
+<div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:17px">Connect WhatsApp</b><button type="button" id="waX" class="g" style="border:0;background:none;font-size:20px;cursor:pointer">&times;</button></div>
+<p style="font-size:13px;color:#6B7280;margin:6px 0 12px">Add any number: one still used in the WhatsApp Business app, an API-only number, or a fresh number.</p>
+<label style="display:flex;gap:8px;margin:8px 0;font-size:14px"><input type="radio" name="wamode" value="coex" checked> <span><b>Keep Business App + inbox messaging</b><br><small style="color:#6B7280">The number keeps working in the WhatsApp Business app (2.24.17 or newer) and also feeds this inbox. Keep the app open during sync.</small></span></label>
+<label style="display:flex;gap:8px;margin:8px 0;font-size:14px"><input type="radio" name="wamode" value="api"> <span><b>Connect an API-only or fresh number</b><br><small style="color:#6B7280">A number already on WhatsApp Cloud API, or a new number you register now.</small></span></label>
+<p style="font-size:13px;margin:12px 0 8px">Complete Meta signup, then select the numbers to connect.</p>
+<button type="button" id="waGo" class="btn" style="background:#6D28D9">Continue with Meta</button> <span id="waMsg" style="font-size:12.5px;margin-left:8px"></span></div></div>
+<script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
+<script>(function(){var cfg="{{ $wa_cfg }}",appId="{{ $app_id }}",tok=document.querySelector('meta[name=csrf-token]').content,sess={};
+var m=document.getElementById('waModal'),msg=document.getElementById('waMsg');
+document.getElementById('waOpen').onclick=function(){m.style.display='flex'};document.getElementById('waX').onclick=function(){m.style.display='none'};
+window.fbAsyncInit=function(){FB.init({appId:appId,autoLogAppEvents:true,xfbml:false,version:'v21.0'})};
+window.addEventListener('message',function(e){if(!/facebook\.com$/.test(e.origin))return;try{var d=typeof e.data==='string'?JSON.parse(e.data):e.data;if(d&&d.type==='WA_EMBEDDED_SIGNUP'&&d.data){sess=d.data}}catch(x){}});
+document.getElementById('waGo').onclick=function(){if(!window.FB){msg.textContent='Facebook is still loading, try again.';return}
+var coex=document.querySelector('input[name=wamode]:checked').value==='coex';msg.style.color='#6B7280';msg.textContent='Waiting for Meta...';
+FB.login(function(r){if(!r.authResponse||!r.authResponse.code){msg.style.color='#B91C1C';msg.textContent='Signup was cancelled.';return}
+msg.textContent='Connecting numbers...';
+fetch('/admin/chat-settings/wa-embedded',{method:'POST',headers:{'X-CSRF-TOKEN':tok,'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify({code:r.authResponse.code,waba_id:sess.waba_id||''})}).then(function(x){return x.json()}).then(function(j){msg.style.color=j.ok?'#15803D':'#B91C1C';msg.textContent=j.message;if(j.ok)setTimeout(function(){location.reload()},1800)}).catch(function(){msg.style.color='#B91C1C';msg.textContent='Could not reach the server.'})},
+{config_id:cfg,response_type:'code',override_default_response_type:true,extras:coex?{setup:{},featureType:'whatsapp_business_app_onboarding',sessionInfoVersion:'3'}:{setup:{},sessionInfoVersion:'3'}})};})();</script>@endif
 @if($wa_numbers->isNotEmpty())<table style="width:100%;margin-top:12px;font-size:13px"><tr><th align="left">Number</th><th align="left">Name</th><th align="left">Status</th><th></th></tr>
 @foreach($wa_numbers as $n)<tr><td>{{ $n->display_phone ?: $n->phone_id }}<div style="color:#6B7280;font-size:11px">{{ $n->phone_id }}</div></td><td>{{ $n->verified_name ?: '-' }}</td><td>{{ $n->subscribed ? 'Receiving messages' : 'Not subscribed' }}@if($n->note)<div style="color:#B91C1C;font-size:11px">{{ $n->note }}</div>@endif</td><td><form method="post" action="/admin/chat-settings/wa-disconnect/{{ $n->id }}" onsubmit="return confirm('Disconnect this WhatsApp number from the inbox?')">@csrf<button class="g">Disconnect</button></form></td></tr>@endforeach</table>@endif</div>
 <form class="card" method="post" action="/admin/chat-settings" style="max-width:760px">@csrf

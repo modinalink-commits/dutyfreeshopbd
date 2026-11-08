@@ -286,28 +286,7 @@ class ChatController extends Controller {
     $G = 'https://graph.facebook.com/v21.0/'; $H = fn() => \Illuminate\Support\Facades\Http::timeout(25);
     $a = $H()->get($G.'oauth/access_token', ['client_id'=>$id, 'client_secret'=>$sec, 'redirect_uri'=>url('/admin/chat-settings/fb-callback'), 'code'=>(string)$r->query('code')])->json();
     if (empty($a['access_token'])) return $back->with('err', 'Facebook did not accept the login: '.mb_substr((string)($a['error']['message'] ?? json_encode($a)), 0, 250));
-    if (session()->pull('fb_oauth_wa')) { // WhatsApp login: every WhatsApp Business account the owner ticked, with each of its numbers
-      $tok = $a['access_token'];
-      $dbg = $H()->get($G.'debug_token', ['input_token'=>$tok, 'access_token'=>$id.'|'.$sec])->json();
-      $wabas = [];
-      foreach (($dbg['data']['granular_scopes'] ?? []) as $gs) if (in_array($gs['scope'] ?? '', ['whatsapp_business_management', 'whatsapp_business_messaging'], true)) foreach (($gs['target_ids'] ?? []) as $t) $wabas[(string)$t] = 1;
-      $wabas = array_keys($wabas);
-      if (!$wabas) return $back->with('err', 'WhatsApp login worked, but no WhatsApp Business account was granted. Tick the account and numbers in the login window. '.mb_substr(json_encode($dbg['data']['granular_scopes'] ?? ($dbg['error'] ?? 'no scopes')), 0, 250));
-      $added = []; $bad = [];
-      foreach ($wabas as $wb) {
-        $sub = $H()->withToken($tok)->post($G.$wb.'/subscribed_apps')->json(); $sok = !empty($sub['success']);
-        $nums = $H()->withToken($tok)->get($G.$wb.'/phone_numbers', ['fields'=>'id,display_phone_number,verified_name', 'limit'=>25])->json();
-        foreach (($nums['data'] ?? []) as $pn) {
-          $pid = (string)($pn['id'] ?? ''); if ($pid === '') continue;
-          DB::table('chat_wa_numbers')->updateOrInsert(['phone_id'=>$pid], ['waba_id'=>$wb, 'display_phone'=>$pn['display_phone_number'] ?? null, 'verified_name'=>$pn['verified_name'] ?? null,
-            'token'=>\Illuminate\Support\Facades\Crypt::encryptString($tok), 'subscribed'=>$sok, 'note'=>$sok ? null : mb_substr((string)($sub['error']['message'] ?? 'subscribe failed'), 0, 250), 'updated_at'=>now(), 'created_at'=>now()]);
-          $added[] = ($pn['display_phone_number'] ?? $pid); if (!$sok) $bad[] = $pn['display_phone_number'] ?? $pid;
-        }
-        if (empty($nums['data'])) $bad[] = 'WABA '.$wb.': '.mb_substr((string)($nums['error']['message'] ?? 'no numbers'), 0, 120);
-      }
-      try { DB::table('audit_logs')->insert(['user_id'=>auth()->id(), 'user_name'=>auth()->user()->name, 'action'=>'chat.wa_connect', 'subject'=>'WhatsApp numbers connected: '.implode(', ', $added), 'ip'=>$r->ip(), 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {}
-      return $back->with($added ? 'ok' : 'err', count($added).' WhatsApp number(s) connected: '.implode(', ', $added).($bad ? ' Attention: '.implode(' | ', $bad) : ''));
-    }
+    if (session()->pull('fb_oauth_wa')) { [$okw, $mw] = $this->waImport($a['access_token'], [], $r); return $back->with($okw ? 'ok' : 'err', $mw); }
     if (session()->pull('fb_oauth_ig')) { // Instagram connection (unified login): system-user token for the Instagram account(s)
       $tok = $a['access_token'];
       $dbg = $H()->get($G.'debug_token', ['input_token'=>$tok, 'access_token'=>$id.'|'.$sec])->json();
@@ -361,6 +340,41 @@ class ChatController extends Controller {
     if ($t === '') return back()->with('err', 'Paste the token first.');
     [$ok, $msg] = $this->importPages($t, $r);
     return back()->with($ok ? 'ok' : 'err', $msg);
+  }
+  /** Takes a WhatsApp login token, finds every WhatsApp Business account it can reach and stores/subscribes each of its numbers. Returns [ok, message]. */
+  private function waImport(string $tok, array $hintWabas, Request $r): array {
+    $id = trim((string)Chat::sec('chat_app_id')); $sec = trim((string)Chat::sec('chat_app_secret'));
+    $G = 'https://graph.facebook.com/v21.0/'; $H = fn() => \Illuminate\Support\Facades\Http::timeout(25);
+    $dbg = $H()->get($G.'debug_token', ['input_token'=>$tok, 'access_token'=>$id.'|'.$sec])->json();
+    $wabas = [];
+    foreach (($dbg['data']['granular_scopes'] ?? []) as $gs) if (in_array($gs['scope'] ?? '', ['whatsapp_business_management', 'whatsapp_business_messaging'], true)) foreach (($gs['target_ids'] ?? []) as $t) $wabas[(string)$t] = 1;
+    foreach ($hintWabas as $w) if (preg_match('/^\d{6,25}$/', (string)$w)) $wabas[(string)$w] = 1;
+    $wabas = array_keys($wabas);
+    if (!$wabas) return [false, 'WhatsApp signup finished, but no WhatsApp Business account was granted. '.mb_substr(json_encode($dbg['data']['granular_scopes'] ?? ($dbg['error'] ?? 'no scopes')), 0, 250)];
+    $added = []; $bad = [];
+    foreach ($wabas as $wb) {
+      $sub = $H()->withToken($tok)->post($G.$wb.'/subscribed_apps')->json(); $sok = !empty($sub['success']);
+      $nums = $H()->withToken($tok)->get($G.$wb.'/phone_numbers', ['fields'=>'id,display_phone_number,verified_name', 'limit'=>25])->json();
+      foreach (($nums['data'] ?? []) as $pn) {
+        $pid = (string)($pn['id'] ?? ''); if ($pid === '') continue;
+        DB::table('chat_wa_numbers')->updateOrInsert(['phone_id'=>$pid], ['waba_id'=>$wb, 'display_phone'=>$pn['display_phone_number'] ?? null, 'verified_name'=>$pn['verified_name'] ?? null,
+          'token'=>\Illuminate\Support\Facades\Crypt::encryptString($tok), 'subscribed'=>$sok, 'note'=>$sok ? null : mb_substr((string)($sub['error']['message'] ?? 'subscribe failed'), 0, 250), 'updated_at'=>now(), 'created_at'=>now()]);
+        $added[] = ($pn['display_phone_number'] ?? $pid); if (!$sok) $bad[] = $pn['display_phone_number'] ?? $pid;
+      }
+      if (empty($nums['data'])) $bad[] = 'WABA '.$wb.': '.mb_substr((string)($nums['error']['message'] ?? 'no numbers'), 0, 120);
+    }
+    try { DB::table('audit_logs')->insert(['user_id'=>auth()->id(), 'user_name'=>auth()->user()->name, 'action'=>'chat.wa_connect', 'subject'=>'WhatsApp numbers connected: '.implode(', ', $added), 'ip'=>$r->ip(), 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {}
+    return [(bool)$added, count($added).' WhatsApp number(s) connected: '.implode(', ', $added).($bad ? ' Attention: '.implode(' | ', $bad) : '')];
+  }
+  /** Embedded Signup (Facebook JS popup) finished: exchange its code and connect the numbers. */
+  public function waEmbedded(Request $r) {
+    $d = $r->validate(['code'=>'required|string|max:1000', 'waba_id'=>'nullable|string|max:40']);
+    $id = trim((string)Chat::sec('chat_app_id')); $sec = trim((string)Chat::sec('chat_app_secret'));
+    if (!$id || !$sec) return response()->json(['ok'=>false, 'message'=>'Save both the Meta App ID and the App secret first.']);
+    $a = \Illuminate\Support\Facades\Http::timeout(25)->get('https://graph.facebook.com/v21.0/oauth/access_token', ['client_id'=>$id, 'client_secret'=>$sec, 'code'=>$d['code']])->json();
+    if (empty($a['access_token'])) return response()->json(['ok'=>false, 'message'=>'Meta did not accept the signup: '.mb_substr((string)($a['error']['message'] ?? json_encode($a)), 0, 250)]);
+    [$ok, $m] = $this->waImport($a['access_token'], array_filter([(string)($d['waba_id'] ?? '')]), $r);
+    return response()->json(['ok'=>$ok, 'message'=>$m]);
   }
   public function waDisconnect(Request $r, $id) {
     $n = DB::table('chat_wa_numbers')->find($id); if (!$n) return back();
