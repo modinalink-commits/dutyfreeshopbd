@@ -15,4 +15,14 @@ class PrepaidOnly {
       return DB::table('categories')->whereIn('id', $all)->where('prepaid_only', true)->exists();
     } catch (\Throwable $e) { return false; }
   }
+  /** Owner rule (8 Nov 2026): no customer discount of any kind (membership, coupon, bundle, app reward ...) on prepaid-only (Watch) products. Returns [category_id => true] for those categories and their sub categories. */
+  public static function catSet(): array {
+    if (!self::ready()) return [];
+    try {
+      return \Illuminate\Support\Facades\Cache::remember('prepaid.catset', 300, function () {
+        $top = DB::table('categories')->where('prepaid_only', true)->pluck('id')->all(); if (!$top) return [];
+        $all = array_merge($top, DB::table('categories')->whereIn('parent_id', $top)->pluck('id')->all()); return array_fill_keys(array_map('intval', $all), true);
+      });
+    } catch (\Throwable $e) { return []; }
+  }
 }
