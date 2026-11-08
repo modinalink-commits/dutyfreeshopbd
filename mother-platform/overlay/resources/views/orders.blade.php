@@ -161,6 +161,9 @@ var bk=document.getElementById('bulk');if(bk)bk.addEventListener('submit',functi
 #qaPop a{color:#334155}#qaPop button.lock{opacity:.5}#qaPop button.lock:after{content:"🔒";margin-left:auto;font-size:10px}#qaPop input[type=date],#qaPop input[type=time]{display:block;width:100%;height:26px;margin:3px 0;padding:0 6px;font-size:11.5px;border:1px solid #CBD5E1;border-radius:6px;box-sizing:border-box}#qaPop .stgo{justify-content:center;background:#16A34A;color:#fff;font-weight:600;margin-top:3px}#qaPop .stgo:hover{background:#15803D}
 /* Order action grid: View + Edit / Quick + Status, 32px, auto width, one shared two-column grid */
 td.action-column{min-width:150px}
+/* Hover: the button under the mouse stands out clearly (owner 8 Nov 2026) */
+td.action-column .action-btn,table.ordt .qa-btn,table.ordt .qk-btn,table.ordt .ai-btn{transition:box-shadow .12s,transform .12s,filter .12s}
+td.action-column .action-btn:hover,table.ordt .qa-btn:hover,table.ordt .qk-btn:hover,table.ordt .ai-btn:hover{filter:brightness(.9) saturate(1.25)!important;box-shadow:0 3px 10px rgba(15,23,42,.28)!important;transform:translateY(-1px);cursor:pointer;outline:2px solid rgba(255,90,0,.55);outline-offset:0}
 /* Status / Note: status pill and note start at the top of the cell */
 table.ordt td.ost-cell{vertical-align:top!important;padding-top:14px!important}
 /* Courier column: name 12/600, then consignment ID / courier status / tracking link as three identical 26px controls (11/600, radius 7, 4px gap) */
