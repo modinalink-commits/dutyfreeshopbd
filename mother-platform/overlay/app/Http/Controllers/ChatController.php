@@ -561,6 +561,23 @@ class ChatController extends Controller {
             $wpid = (string)($v['metadata']['phone_number_id'] ?? ''); [$wtok, ] = Chat::waCred($wpid); $wref = ($wpid !== '' && $wpid !== (string)Chat::sec('chat_wa_phone_id') && DB::table('chat_wa_numbers')->where('phone_id', $wpid)->exists()) ? $wpid : null;
             foreach ($v['contacts'] ?? [] as $ct) $names[$ct['wa_id'] ?? ''] = $ct['profile']['name'] ?? null;
             foreach ($v['statuses'] ?? [] as $stt) \App\Support\OrderWaConfirm::status((array)$stt);
+            // Old conversations the WhatsApp Business app shares when it is linked (history): stored quietly, never answered by the AI
+            foreach ($v['history'] ?? [] as $hb) foreach ($hb['threads'] ?? [] as $ht) {
+              $cw = preg_replace('/\D/', '', (string)($ht['id'] ?? '')); if ($cw === '') continue;
+              foreach ($ht['messages'] ?? [] as $hm) {
+                try {
+                  $hid = (string)($hm['id'] ?? ''); if ($hid === '' || DB::table('chat_messages')->where('ext_id', $hid)->exists()) continue;
+                  $hty = (string)($hm['type'] ?? 'text'); $hbd = $hty === 'text' ? (string)($hm['text']['body'] ?? '') : '['.$hty.']'; if (trim($hbd) === '') continue;
+                  $hfrom = preg_replace('/\D/', '', (string)($hm['from'] ?? '')); $mine = $hfrom !== '' && $hfrom !== $cw; $hat = !empty($hm['timestamp']) ? \Carbon\Carbon::createFromTimestamp((int)$hm['timestamp']) : now();
+                  if ($mine) { \App\Support\Chat::logOut($cw, $hbd, 'WhatsApp app', $hid); }
+                  else {
+                    $tt = DB::table('chat_threads')->where(['channel'=>'whatsapp', 'external_id'=>$cw])->first();
+                    if (!$tt) { $ph = \App\Support\Chat::phone($cw); $cu = $ph ? DB::table('customers')->where('phone', $ph)->orderBy('id')->first() : null; $nid = DB::table('chat_threads')->insertGetId(['channel'=>'whatsapp', 'external_id'=>$cw, 'customer_id'=>$cu->id ?? null, 'name'=>($cu->name ?? null) ?: ($ph ?: 'WhatsApp user'), 'phone'=>$ph, 'status'=>'resolved', 'unread'=>0, 'created_at'=>$hat, 'updated_at'=>$hat]); $tt = DB::table('chat_threads')->find($nid); }
+                    DB::table('chat_messages')->insert(['thread_id'=>$tt->id, 'dir'=>'in', 'kind'=>'text', 'body'=>mb_substr($hbd, 0, 4000), 'ext_id'=>$hid, 'read_at'=>now(), 'created_at'=>$hat, 'updated_at'=>$hat]);
+                  }
+                } catch (\Throwable $e) { report($e); }
+              }
+            }
             // Messages typed by staff in the WhatsApp Business app on the phone (coexistence): shown here as sent messages, and the AI steps back from that chat
             foreach ($v['message_echoes'] ?? [] as $me) {
               $to = preg_replace('/\D/', '', (string)($me['to'] ?? '')); if ($to === '') continue;
