@@ -59,7 +59,7 @@ class WatchImportController extends Controller {
             $ext = strtolower(pathinfo(parse_url($x->image, PHP_URL_PATH) ?: '', PATHINFO_EXTENSION)); if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp'], true)) $ext = 'jpg';
             if (@file_put_contents($dir . '/' . $code . '.' . $ext, $g['body'])) $upd['image'] = '/uploads/' . $this->cfg()['dir'] . '/' . $code . '.' . $ext;
           }
-          DB::table('products')->where('id', $pid)->update($upd);
+          $upd['ext_id'] = 1000000 + $pid; DB::table('products')->where('id', $pid)->update($upd);
           DB::table('watch_source')->insert(['product_id' => $pid, 'store_product_id' => $x->id, 'store_id' => $s->id, 'source_name' => $x->name, 'source_sku' => $x->sku, 'source_url' => $x->url, 'source_price' => $x->price, 'our_price' => $our, 'markup_pct' => $pct, 'source_in_stock' => $x->in_stock, 'created_at' => now(), 'updated_at' => now()]);
           $made++;
         } catch (\Throwable $e) { report($e); DB::table('watch_source')->insert(['product_id' => null, 'store_product_id' => $x->id, 'store_id' => $s->id, 'source_name' => $x->name, 'source_price' => $x->price, 'note' => mb_substr($e->getMessage(), 0, 200), 'created_at' => now(), 'updated_at' => now()]); }
