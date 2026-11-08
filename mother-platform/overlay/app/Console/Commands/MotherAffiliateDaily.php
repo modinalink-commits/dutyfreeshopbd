@@ -25,7 +25,9 @@ class MotherAffiliateDaily extends Command {
     $lock = Cache::lock('affiliate-daily', 14400); if (!$lock->get()) return 0;
     try {
       $jobs = []; foreach (array_filter(explode(',', (string)$this->option('jobs'))) as $j) { [$jc, $js] = array_pad(explode(':', $j), 2, '1'); $jobs[$jc] = $js !== '0'; }
-      foreach (['watch' => 'timeaccess-store.com', 'gadget' => 'startech.com.bd', 'sunglass' => 'luxotix.com'] as $c => $dom) {
+      $gd = strtolower((string)(DB::table('settings')->where('key', 'gadget_source_domain')->value('value') ?? 'startech.com.bd'));
+      foreach (['watch' => 'timeaccess-store.com', 'gadget' => $gd, 'sunglass' => 'luxotix.com'] as $c => $dom) {
+        if ($dom === '') continue;
         if ($jobs && !array_key_exists($c, $jobs)) continue; $doScan = $jobs ? $jobs[$c] : true;
         $s = DB::table('stores')->whereRaw('lower(domain) = ? or lower(domain) = ?', [$dom, 'www.' . $dom])->first(); if (!$s) continue;
         try {
