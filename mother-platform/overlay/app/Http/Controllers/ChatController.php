@@ -610,6 +610,7 @@ class ChatController extends Controller {
   public function orderRequestCreate(Request $r, $id) {
     $x = DB::table('chat_order_requests')->find($id); abort_unless($x, 404);
     if ($x->status !== 'review') return response()->json(['ok'=>false, 'error'=>'already handled'], 409);
+    if (trim((string)$x->address) === '' || $x->cart === '[]' || !json_decode($x->cart, true)) return response()->json(['ok'=>false, 'error'=>'This request has no product or address yet. Open the chat, collect the details, then create the order.'], 422);
     if (!DB::table('chat_order_requests')->where('id', $id)->where('status', 'review')->update(['status'=>'creating', 'updated_at'=>now()])) return response()->json(['ok'=>false, 'error'=>'already handled'], 409);
     $p = ['name'=>$x->name, 'phone'=>$x->phone, 'address'=>$x->address, 'area'=>$x->area, 'note'=>$x->note, 'cart'=>json_decode($x->cart, true), 'total'=>$x->total];
     $res = \App\Support\AgentTools::make($p, (int)$x->thread_id, 'req-'.$x->id, null, auth()->user()->name, '[Order Request #'.$x->id.' by '.auth()->user()->name.']');

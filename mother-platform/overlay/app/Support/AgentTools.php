@@ -174,10 +174,12 @@ class AgentTools {
       DB::table('orders')->where('id', $o->id)->update($upd);
       if ($status) DB::table('order_status_logs')->insert(['order_id'=>$o->id, 'user_id'=>null, 'user_name'=>$by, 'from_status'=>'New', 'to_status'=>$status, 'note'=>'Placed by '.$by.' after the customer confirmed in chat. Staff: please verify before processing.', 'created_at'=>now(), 'updated_at'=>now()]);
     }
+    OrderIntent::close($threadId, $o->id ?? null, $inv);
     return ['ok'=>true, 'invoice'=>$inv, 'order_id'=>$o->id ?? null, 'total'=>(float)($o->total ?? $p['total'] ?? 0)];
   }
   private static function saveRequest(array $p, array $st, array $ctx, string $reason): int {
     $c = self::cart($st); $ch = null; try { $ch = DB::table('chat_threads')->where('id', (int)($ctx['thread_id'] ?? 0))->value('channel'); } catch (\Throwable $e) {}
+    try { DB::table('chat_order_requests')->where('thread_id', (int)($ctx['thread_id'] ?? 0))->where('status', 'review')->where('cart', '[]')->update(['status'=>'dismissed', 'handled_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {}
     return (int)DB::table('chat_order_requests')->insertGetId(['thread_id'=>(int)($ctx['thread_id'] ?? 0), 'channel'=>$ch, 'name'=>$p['name'], 'phone'=>$p['phone'], 'address'=>$p['address'], 'area'=>(int)$p['area'], 'note'=>$p['note'] ?? null, 'cart'=>json_encode($p['cart']), 'items'=>json_encode($c['items'] ?? []), 'total'=>(float)($p['total'] ?? 0), 'status'=>'review', 'reason'=>mb_substr($reason, 0, 200), 'created_at'=>now(), 'updated_at'=>now()]);
   }
   private static function place(array &$st, array $ctx): array {
