@@ -561,6 +561,14 @@ class ChatController extends Controller {
             $wpid = (string)($v['metadata']['phone_number_id'] ?? ''); [$wtok, ] = Chat::waCred($wpid); $wref = ($wpid !== '' && $wpid !== (string)Chat::sec('chat_wa_phone_id') && DB::table('chat_wa_numbers')->where('phone_id', $wpid)->exists()) ? $wpid : null;
             foreach ($v['contacts'] ?? [] as $ct) $names[$ct['wa_id'] ?? ''] = $ct['profile']['name'] ?? null;
             foreach ($v['statuses'] ?? [] as $stt) \App\Support\OrderWaConfirm::status((array)$stt);
+            // Messages typed by staff in the WhatsApp Business app on the phone (coexistence): shown here as sent messages, and the AI steps back from that chat
+            foreach ($v['message_echoes'] ?? [] as $me) {
+              $to = preg_replace('/\D/', '', (string)($me['to'] ?? '')); if ($to === '') continue;
+              $mt = (string)($me['type'] ?? 'text'); $eb = $mt === 'text' ? (string)($me['text']['body'] ?? '') : ($mt === 'button' ? (string)($me['button']['text'] ?? '') : '['.$mt.' sent from the WhatsApp app]');
+              if (trim($eb) === '') $eb = '[message sent from the WhatsApp app]';
+              \App\Support\Chat::logOut($to, $eb, 'WhatsApp app', (string)($me['id'] ?? '') ?: null);
+              if ($tt = DB::table('chat_threads')->where(['channel'=>'whatsapp', 'external_id'=>$to])->first()) { DB::table('chat_threads')->where('id', $tt->id)->update(['ai_paused'=>true, 'updated_at'=>now()]); \App\Support\Chat::replied((int)$tt->id, now()); }
+            }
             foreach ($v['messages'] ?? [] as $m) {
               $from = (string)($m['from'] ?? ''); if ($from === '') continue;
               $type = $m['type'] ?? 'text';
