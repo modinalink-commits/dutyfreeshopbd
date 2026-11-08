@@ -147,6 +147,38 @@ class AgentTools {
     if ($t === '' || preg_match('/(না(?![\p{L}\p{M}])|করবেন না|বাতিল|cancel|(?<![\p{L}\p{M}])no(?![\p{L}\p{M}])|not now|change|পরিবর্তন|দাম কত|\?|কি(?![\p{L}\p{M}])|কত)/iu', $t)) return false;
     return (bool)preg_match('/^(হ্যাঁ|হ্যা|হা|ঠিক আছে|কনফার্ম|confirm|confirmed|yes|yep|ok|okay|ওকে|জি|জ্বি|করুন|অর্ডার করুন|place order|done)(?![\p{L}\p{M}])/iu', $t) || (bool)preg_match('/(কনফার্ম|confirm|অর্ডার.*(করুন|করে দিন)|হ্যাঁ)/iu', $t);
   }
+  /** The customer-side rules of Auto Approve (AI Verify) decide whether the AI may place the order itself: blocked / suspended / review-required customers, and a new customer (no delivered order) above the new-customer limit, become an Order Request for staff. All other checks (fraud, duplicate, stock, price...) still run on the created order exactly as for any order. */
+  public static function aiEligible(string $phone, float $total = 0): array {
+    try {
+      $c = DB::table('customers')->where('phone', $phone)->first(); if ($c && !empty($c->blocked)) return [false, 'blocked customer'];
+      $st = (string)(\App\Support\CustomerBenefit::check($phone)['status'] ?? '');
+      if (in_array($st, ['Suspended', 'Review Required'], true)) return [false, 'customer status: '.$st];
+      $d = (int)DB::table('orders')->where('phone', $phone)->where('status', 'Delivered')->count();
+      if ($d === 0 && $total > \App\Support\AiVerify::NEW_CUSTOMER_LIMIT) return [false, 'new customer above the new-customer limit ('.number_format(\App\Support\AiVerify::NEW_CUSTOMER_LIMIT).' TK)'];
+      return [true, ''];
+    } catch (\Throwable $e) { report($e); return [false, 'eligibility check failed']; }
+  }
+  /** Creates the real order through the storefront order service (single source of truth). $status: 'AI Order' for AI-created, null = normal New for staff-created. */
+  public static function make(array $p, int $threadId, string $incKey, ?string $status, string $by, string $tag): array {
+    $req = \Illuminate\Http\Request::create('/order', 'POST', ['items'=>$p['cart'], 'name'=>$p['name'], 'phone'=>$p['phone'], 'address'=>$p['address'], 'area'=>$p['area'], 'note'=>trim($tag.' '.($p['note'] ?? '')), 'pay'=>'cod', 'inc'=>$incKey]);
+    $res = app(\App\Http\Controllers\StoreController::class)->order($req);
+    $url = $res instanceof \Illuminate\Http\RedirectResponse ? $res->getTargetUrl() : '';
+    if ($url !== '' && str_contains($url, '/checkout')) { parse_str((string)parse_url($url, PHP_URL_QUERY), $q); return ['ok'=>false, 'error'=>'the system rejected the order: '.mb_substr((string)($q['e'] ?? 'unknown'), 0, 160)]; }
+    $inv = null; if (preg_match('#(INV-\d+)#', $url, $m)) $inv = $m[1];
+    if (!$inv) $inv = DB::table('orders')->where('phone', $p['phone'])->where('created_at', '>', now()->subMinutes(3))->orderByDesc('id')->value('invoice');
+    if (!$inv) return ['ok'=>false, 'error'=>'could not confirm the order was created'];
+    $o = DB::table('orders')->where('invoice', $inv)->first(['id', 'total']);
+    if ($o) {
+      $upd = ['source'=>'AI Chat', 'updated_at'=>now()]; if ($status) $upd['status'] = $status;
+      DB::table('orders')->where('id', $o->id)->update($upd);
+      if ($status) DB::table('order_status_logs')->insert(['order_id'=>$o->id, 'user_id'=>null, 'user_name'=>$by, 'from_status'=>'New', 'to_status'=>$status, 'note'=>'Placed by '.$by.' after the customer confirmed in chat. Staff: please verify before processing.', 'created_at'=>now(), 'updated_at'=>now()]);
+    }
+    return ['ok'=>true, 'invoice'=>$inv, 'order_id'=>$o->id ?? null, 'total'=>(float)($o->total ?? $p['total'] ?? 0)];
+  }
+  private static function saveRequest(array $p, array $st, array $ctx, string $reason): int {
+    $c = self::cart($st); $ch = null; try { $ch = DB::table('chat_threads')->where('id', (int)($ctx['thread_id'] ?? 0))->value('channel'); } catch (\Throwable $e) {}
+    return (int)DB::table('chat_order_requests')->insertGetId(['thread_id'=>(int)($ctx['thread_id'] ?? 0), 'channel'=>$ch, 'name'=>$p['name'], 'phone'=>$p['phone'], 'address'=>$p['address'], 'area'=>(int)$p['area'], 'note'=>$p['note'] ?? null, 'cart'=>json_encode($p['cart']), 'items'=>json_encode($c['items'] ?? []), 'total'=>(float)($p['total'] ?? 0), 'status'=>'review', 'reason'=>mb_substr($reason, 0, 200), 'created_at'=>now(), 'updated_at'=>now()]);
+  }
   private static function place(array &$st, array $ctx): array {
     if (empty($ctx['orders_on'])) return ['error'=>'order placing by the assistant is switched off; hand over to a human agent', 'handoff_required'=>true];
     $p = $st['pending'] ?? null; if (!$p) return ['error'=>'call prepare_order first'];
@@ -155,18 +187,16 @@ class AgentTools {
     if (!self::isConfirm((string)($ctx['last_msg_text'] ?? ''))) return ['error'=>'the customer\'s last message is not a clear confirmation; ask again'];
     if (($p['cart'] ?? []) != ($st['cart'] ?? [])) { unset($st['pending']); return ['error'=>'the cart changed after the summary; prepare the order again'];}
     if (!empty($ctx['sim'])) return ['simulated'=>true, 'message'=>'Simulation: all checks passed, no real order was created.'];
-    $req = \Illuminate\Http\Request::create('/order', 'POST', ['items'=>$p['cart'], 'name'=>$p['name'], 'phone'=>$p['phone'], 'address'=>$p['address'], 'area'=>$p['area'], 'note'=>trim('[AI Chat] '.$p['note']), 'pay'=>'cod',
-      'inc'=>'ai-'.($ctx['thread_id'] ?? 0).'-'.md5(json_encode($p['cart']).$p['phone'].(int)$p['after_msg'])]);
-    $res = app(\App\Http\Controllers\StoreController::class)->order($req);
-    $url = $res instanceof \Illuminate\Http\RedirectResponse ? $res->getTargetUrl() : '';
-    if ($url !== '' && str_contains($url, '/checkout')) { parse_str((string)parse_url($url, PHP_URL_QUERY), $q); return ['error'=>'the system rejected the order: '.mb_substr((string)($q['e'] ?? 'unknown'), 0, 160).' - hand over to a human agent', 'handoff_required'=>true]; }
-    $inv = null; if (preg_match('#(INV-\d+)#', $url, $m)) $inv = $m[1]; else { parse_str((string)parse_url($url, PHP_URL_QUERY), $q); $inv = null; }
-    if (!$inv) { $inv = DB::table('orders')->where('phone', $p['phone'])->where('created_at', '>', now()->subMinutes(3))->orderByDesc('id')->value('invoice'); }
-    if (!$inv) return ['error'=>'could not confirm the order was created; hand over to a human agent', 'handoff_required'=>true];
-    $o = DB::table('orders')->where('invoice', $inv)->first(['id', 'total']);
-    if ($o) { DB::table('orders')->where('id', $o->id)->update(['source'=>'AI Chat', 'status'=>'AI Order', 'updated_at'=>now()]);
-      DB::table('order_status_logs')->insert(['order_id'=>$o->id, 'user_id'=>null, 'user_name'=>'Claude AI', 'from_status'=>'New', 'to_status'=>'AI Order', 'note'=>'Placed by the AI assistant after the customer confirmed in chat. Staff: please verify before processing.', 'created_at'=>now(), 'updated_at'=>now()]); }
+    [$ok, $why] = self::aiEligible((string)$p['phone'], (float)($p['total'] ?? 0));
+    if (!$ok) {
+      $rid = self::saveRequest($p, $st, $ctx, $why);
+      $h = AgentHandoff::create($ctx, $st, 'order_request', 'Order Request #'.$rid.' (not placed: '.$why.'): '.$p['name'].' '.$p['phone'].', total '.self::money($p['total'] ?? 0).'. Review it in Messages > Order Requests.', 'normal');
+      $st['cart'] = []; unset($st['pending']);
+      return ['request_saved'=>true, 'order_created'=>false, 'tell_customer'=>'আপনার অর্ডার রিকোয়েস্টটি পেয়েছি। আমাদের টিম যাচাই করে কনফার্ম করবে। (Say it is a request. Never say the order is placed or give an invoice number.)'] + $h;
+    }
+    $r = self::make($p, (int)($ctx['thread_id'] ?? 0), 'ai-'.($ctx['thread_id'] ?? 0).'-'.md5(json_encode($p['cart']).$p['phone'].(int)$p['after_msg']), 'AI Order', 'Claude AI', '[AI Chat]');
+    if (empty($r['ok'])) return ['error'=>$r['error'].' - hand over to a human agent', 'handoff_required'=>true];
     $st['cart'] = []; unset($st['pending']);
-    return ['placed'=>true, 'invoice'=>$inv, 'total'=>self::money($o->total ?? $p['total']), 'payment'=>'Cash on delivery', 'note'=>'A team member will confirm shortly. Do not promise a delivery time.'];
+    return ['placed'=>true, 'invoice'=>$r['invoice'], 'total'=>self::money($r['total']), 'payment'=>'Cash on delivery', 'note'=>'A team member will confirm shortly. Do not promise a delivery time.'];
   }
 }

@@ -24,7 +24,8 @@ class ChatController extends Controller {
     if ($s = trim((string)$r->query('q'))) { $like = '%'.str_replace(['%', '_'], ['\%', '\_'], $s).'%'; $q->where(fn($w) => $w->where('name', 'ilike', $like)->orWhere('phone', 'ilike', $like)->orWhere('username', 'ilike', $like)->orWhere('last_message', 'ilike', $like)->orWhereIn('phone', fn($o) => $o->from('orders')->where('invoice', 'ilike', $like)->select('phone')->limit(50))); }
     // Unread first, then waiting for staff, then read/open, then resolved; newest message first inside each group.
     $rows = $q->orderByRaw("case when status <> 'resolved' and awaiting_reply then 1 when status <> 'resolved' and (status = 'waiting' or coalesce(needs_human, false)) then 2 when status <> 'resolved' then 3 else 4 end")->orderByDesc('last_at')->limit(120)->get();
-    return response()->json(['threads'=>Chat::cards($rows), 'unread'=>Chat::unreadTotal()]);
+    $orq = 0; try { $orq = (int)DB::table('chat_order_requests')->where('status', 'review')->count(); } catch (\Throwable $e) {}
+    return response()->json(['threads'=>Chat::cards($rows), 'unread'=>Chat::unreadTotal(), 'order_requests'=>$orq]);
   }
 
   /** Light poll used on every admin page: unread total plus threads with new incoming messages since the last id. */
@@ -581,5 +582,30 @@ class ChatController extends Controller {
       }
     } catch (\Throwable $e) { \Log::error('chat webhook: '.$e->getMessage()); }
     return response('OK', 200);
+  }
+
+  // ---- Order Requests: orders the AI collected but did not place (Auto Approve rules said staff must decide) ----
+  public function orderRequests(Request $r) {
+    $st = in_array($r->query('s'), ['review', 'created', 'dismissed'], true) ? $r->query('s') : 'review';
+    $rows = DB::table('chat_order_requests')->where('status', $st)->orderByDesc('id')->limit(100)->get();
+    return response()->json(['requests'=>$rows->map(fn($x) => ['id'=>$x->id, 'thread_id'=>$x->thread_id, 'channel'=>$x->channel, 'name'=>$x->name, 'phone'=>$x->phone, 'address'=>$x->address, 'area'=>$x->area, 'note'=>$x->note,
+      'items'=>json_decode($x->items ?: '[]', true), 'total'=>(float)$x->total, 'status'=>$x->status, 'reason'=>$x->reason, 'invoice'=>$x->invoice, 'order_id'=>$x->order_id, 'at'=>\Carbon\Carbon::parse($x->created_at)->toIso8601String()])]);
+  }
+  public function orderRequestCreate(Request $r, $id) {
+    $x = DB::table('chat_order_requests')->find($id); abort_unless($x, 404);
+    if ($x->status !== 'review') return response()->json(['ok'=>false, 'error'=>'already handled'], 409);
+    if (!DB::table('chat_order_requests')->where('id', $id)->where('status', 'review')->update(['status'=>'creating', 'updated_at'=>now()])) return response()->json(['ok'=>false, 'error'=>'already handled'], 409);
+    $p = ['name'=>$x->name, 'phone'=>$x->phone, 'address'=>$x->address, 'area'=>$x->area, 'note'=>$x->note, 'cart'=>json_decode($x->cart, true), 'total'=>$x->total];
+    $res = \App\Support\AgentTools::make($p, (int)$x->thread_id, 'req-'.$x->id, null, auth()->user()->name, '[Order Request #'.$x->id.' by '.auth()->user()->name.']');
+    if (empty($res['ok'])) { DB::table('chat_order_requests')->where('id', $id)->update(['status'=>'review', 'updated_at'=>now()]); return response()->json(['ok'=>false, 'error'=>$res['error']], 422); }
+    DB::table('chat_order_requests')->where('id', $id)->update(['status'=>'created', 'order_id'=>$res['order_id'], 'invoice'=>$res['invoice'], 'handled_by'=>auth()->id(), 'handled_at'=>now(), 'updated_at'=>now()]);
+    try { DB::table('audit_logs')->insert(['user_id'=>auth()->id(), 'user_name'=>auth()->user()->name, 'action'=>'chat.order_request_create', 'subject'=>'Order Request #'.$id.' -> '.$res['invoice'], 'ip'=>$r->ip(), 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {}
+    return response()->json(['ok'=>true, 'invoice'=>$res['invoice'], 'order_id'=>$res['order_id']]);
+  }
+  public function orderRequestDismiss(Request $r, $id) {
+    $x = DB::table('chat_order_requests')->find($id); abort_unless($x, 404);
+    DB::table('chat_order_requests')->where('id', $id)->where('status', 'review')->update(['status'=>'dismissed', 'handled_by'=>auth()->id(), 'handled_at'=>now(), 'updated_at'=>now()]);
+    try { DB::table('audit_logs')->insert(['user_id'=>auth()->id(), 'user_name'=>auth()->user()->name, 'action'=>'chat.order_request_dismiss', 'subject'=>'Order Request #'.$id, 'ip'=>$r->ip(), 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {}
+    return response()->json(['ok'=>true]);
   }
 }

@@ -144,6 +144,9 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/chat', [\App\Http\Controllers\ChatController::class,'inbox']);
   Route::get('/chat/threads', [\App\Http\Controllers\ChatController::class,'threads']);
   Route::get('/chat/poll', [\App\Http\Controllers\ChatController::class,'poll']);
+  Route::get('/chat/order-requests', [\App\Http\Controllers\ChatController::class,'orderRequests']);
+  Route::post('/chat/order-requests/{id}/create', [\App\Http\Controllers\ChatController::class,'orderRequestCreate'])->whereNumber('id')->middleware('throttle:30,1');
+  Route::post('/chat/order-requests/{id}/dismiss', [\App\Http\Controllers\ChatController::class,'orderRequestDismiss'])->whereNumber('id');
   Route::get('/chat/products', [\App\Http\Controllers\ChatController::class,'products']);
   Route::get('/chat/order/{oid}/text', [\App\Http\Controllers\ChatController::class,'orderText']);
   Route::get('/chat/thread/{id}', [\App\Http\Controllers\ChatController::class,'thread']);
