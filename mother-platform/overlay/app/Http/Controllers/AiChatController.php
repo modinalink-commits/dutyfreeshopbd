@@ -14,6 +14,19 @@ class AiChatController extends Controller {
     return view('ai_chat', ['langRows'=>$lr, 'hasKey'=>(bool)Sms::secret('ai_key'), 'on'=>Sms::secret('ai_enabled') === '1', 'model'=>AiChat::model(), 'today'=>(int)Cache::get('ai.n.'.now()->format('Ymd'), 0), 'agentTools'=>Sms::secret('ai_agent_tools') === '1', 'agentOrders'=>Sms::secret('ai_agent_orders') === '1', 'kb'=>AiChat::kb(), 'kbCustom'=>trim((string)Sms::secret('ai_kb')) !== '']);
   }
   private function audit(Request $r, string $a, string $sub): void { try { \Illuminate\Support\Facades\DB::table('audit_logs')->insert(['user_id'=>auth()->id(),'user_name'=>auth()->user()->name,'action'=>$a,'subject'=>$sub,'ip'=>$r->ip(),'created_at'=>now(),'updated_at'=>now()]); } catch (\Throwable $e) {} }
+  /** Rewrites the knowledge base text in a warmer, better-designed layout without changing any fact or rule. Returns a draft only; nothing is saved until the owner presses Save. */
+  public function beautifyKb(Request $r) {
+    $kb = trim((string)$r->input('kb')); if ($kb === '') return response()->json(['ok'=>false, 'error'=>'Knowledge base is empty.']);
+    $key = Sms::secret('ai_key'); if (!$key) return response()->json(['ok'=>false, 'error'=>'Claude API key is not saved yet.']);
+    $sys = "You are an editor for the DutyFreeBD (Bangladeshi online store) AI-assistant knowledge base, written mainly in Bangla. Rewrite the text line by line so it reads beautifully, warmly and clearly: natural, graceful, kind Bangla with a gentle, caring shop-keeper feel, clean short sentences, consistent punctuation. Design it well: keep each section as a heading line starting with '== ' and ending with ' ==' and put ONE fitting emoji at the start of the heading text (for example 🏢 company, 🚚 delivery, 💳 payment, 🎁 offers, 🛍️ products, 📝 taking orders, 🔁 returns, 🚫 never say, 🤝 hand-over, 📷 photos, 💬 language and manner). Inside a section use short lines, each starting with '• ' (one idea per line), keep step lists as '১) ২) ৩)'. Put a blank line between sections.\nSTRICT RULES: (1) Do NOT add, remove, weaken or change ANY fact, number, price, phone number, bank/bKash/Nagad detail, URL, time, percentage, condition, prohibition or instruction; every rule must keep exactly the same meaning and strength (words like never/always/must/only keep their force). (2) Keep every example phrase the AI is told to say, the forbidden-word list, and every tool name (such as delivery_info, current_offers, handoff) exactly as written. (3) Do not invent anything new. (4) The result is a prompt for another AI, so it must stay complete: do not shorten it into a summary; the result should be about the same length or slightly longer. (5) Output ONLY the rewritten knowledge base text, no explanation, no code fences.";
+    try {
+      $res = \Illuminate\Support\Facades\Http::withHeaders(['x-api-key'=>$key, 'anthropic-version'=>'2023-06-01'])->timeout(170)->post('https://api.anthropic.com/v1/messages', ['model'=>'claude-sonnet-5-5', 'max_tokens'=>16000, 'system'=>$sys, 'messages'=>[['role'=>'user', 'content'=>$kb]]]);
+      if (!$res->ok()) return response()->json(['ok'=>false, 'error'=>'AI error '.$res->status().': '.mb_substr((string)($res->json('error.message') ?? ''), 0, 160)]);
+      $t = trim(collect($res->json('content') ?? [])->where('type', 'text')->pluck('text')->implode("\n"));
+      if (mb_strlen($t) < mb_strlen($kb) * 0.7) return response()->json(['ok'=>false, 'error'=>'The rewrite came back too short, so it was discarded to protect your rules. Try again.']);
+      return response()->json(['ok'=>true, 'text'=>$t]);
+    } catch (\Throwable $e) { return response()->json(['ok'=>false, 'error'=>'The AI did not answer in time. Try again.']); }
+  }
   public function saveKb(Request $r) {
     $d = $r->validate(['kb'=>'nullable|string|max:60000']);
     $v = trim((string)($d['kb'] ?? ''));
