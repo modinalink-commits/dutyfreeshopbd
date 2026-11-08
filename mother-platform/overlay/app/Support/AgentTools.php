@@ -179,7 +179,7 @@ class AgentTools {
   }
   private static function saveRequest(array $p, array $st, array $ctx, string $reason): int {
     $c = self::cart($st); $ch = null; try { $ch = DB::table('chat_threads')->where('id', (int)($ctx['thread_id'] ?? 0))->value('channel'); } catch (\Throwable $e) {}
-    try { DB::table('chat_order_requests')->where('thread_id', (int)($ctx['thread_id'] ?? 0))->where('status', 'review')->where('cart', '[]')->update(['status'=>'dismissed', 'handled_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {}
+    try { DB::table('chat_order_requests')->where('thread_id', (int)($ctx['thread_id'] ?? 0))->where('status', 'review')->where('reason', 'like', 'Wants to order (word:%')->update(['status'=>'dismissed', 'handled_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {}
     return (int)DB::table('chat_order_requests')->insertGetId(['thread_id'=>(int)($ctx['thread_id'] ?? 0), 'channel'=>$ch, 'name'=>$p['name'], 'phone'=>$p['phone'], 'address'=>$p['address'], 'area'=>(int)$p['area'], 'note'=>$p['note'] ?? null, 'cart'=>json_encode($p['cart']), 'items'=>json_encode($c['items'] ?? []), 'total'=>(float)($p['total'] ?? 0), 'status'=>'review', 'reason'=>mb_substr($reason, 0, 200), 'created_at'=>now(), 'updated_at'=>now()]);
   }
   private static function place(array &$st, array $ctx): array {

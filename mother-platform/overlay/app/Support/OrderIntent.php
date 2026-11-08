@@ -37,6 +37,6 @@ class OrderIntent {
   }
   /** An order now exists for this conversation (AI or staff): close its open leads. */
   public static function close(int $threadId, ?int $orderId = null, ?string $invoice = null): void {
-    try { DB::table('chat_order_requests')->where('thread_id', $threadId)->where('status', 'review')->where('cart', '[]')->update(['status'=>'created', 'order_id'=>$orderId, 'invoice'=>$invoice, 'handled_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) { report($e); }
+    try { DB::table('chat_order_requests')->where('thread_id', $threadId)->where('status', 'review')->where('reason', 'like', 'Wants to order (word:%')->update(['status'=>'created', 'order_id'=>$orderId, 'invoice'=>$invoice, 'handled_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) { report($e); }
   }
 }
