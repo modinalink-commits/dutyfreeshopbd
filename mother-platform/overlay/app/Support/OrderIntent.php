@@ -3,24 +3,26 @@ namespace App\Support;
 use Illuminate\Support\Facades\DB;
 /** Safety net: any customer message that sounds like "I want to order" becomes either a real order (AI flow) or an Order Request lead, so no buyer is lost. */
 class OrderIntent {
-  /** Words/phrases that mean "I want to buy / please send" in Bangla, Banglish and English. */
-  const WORDS = [
-    'অর্ডার', 'অর্ডার করব', 'অর্ডার করতে চাই', 'অর্ডার দিব', 'অর্ডার দিতে চাই', 'অর্ডার করে দিন', 'অর্ডার করে দেন', 'অর্ডার কনফার্ম', 'অর্ডার নিন', 'অর্ডার নিবেন',
-    'নিব', 'নিবো', 'নিমু', 'নেব', 'নেবো', 'নিতে চাই', 'কিনব', 'কিনবো', 'কিনতে চাই', 'কিনে নিব', 'কিনে দিন', 'চাই', 'লাগবে', 'লাগবো', 'দরকার', 'দিন ভাই', 'দেন ভাই', 'দিয়েন', 'দিবেন',
-    'দিয়ে দিন', 'দিয়ে দেন', 'পাঠিয়ে দিন', 'পাঠিয়ে দেন', 'পাঠান', 'পাঠাবেন', 'পাঠায় দেন', 'পাঠায় দিন', 'ডেলিভারি দিন', 'ডেলিভারি দেন', 'হোম ডেলিভারি', 'কার্টন', 'পিস', 'একটা দিন', 'দুইটা দিন',
-    'ক্যাশ অন ডেলিভারি', 'কনফার্ম করুন', 'কনফার্ম করে দিন', 'বুক করুন', 'বুক করে দিন', 'রেডি করুন', 'প্যাক করুন', 'আজই চাই', 'এখনই চাই', 'ঠিকানা দিচ্ছি', 'ঠিকানায় পাঠান', 'আমার ঠিকানা',
-    'order', 'order kori', 'order korbo', 'order korte', 'order kore den', 'order kore din', 'order dibo', 'order dite', 'order confirm', 'confirm order', 'place order', 'place an order', 'new order',
-    'nibo', 'nebo', 'niboo', 'nimu', 'niye nibo', 'kinbo', 'kinte chai', 'kinte pari', 'chai', 'lagbe', 'lagbo', 'dorkar', 'den vai', 'din vai', 'dien', 'diben', 'diye din', 'diye den',
-    'pathan', 'pathaben', 'pathay den', 'pathay din', 'pathiye din', 'pathiye den', 'send kore den', 'send kore din', 'send me', 'delivery din', 'delivery den', 'home delivery', 'cod', 'cash on delivery',
-    'carton', 'caron', 'carten', 'pcs', 'piece', 'dozen', 'confirm kore', 'confirm korun', 'book kore', 'ready korun', 'pack korun', 'ajke chai', 'ekhoni chai', 'ei product', 'eta nibo', 'eta chai', 'eta din',
-    'i want', 'i need', 'i would like', "i'll take", 'i will take', 'i want to buy', 'want to order', 'want to buy', 'need 1', 'need 2', 'need 3', 'buy', 'purchase', 'please send', 'send it', 'deliver it', 'ship it', 'take 1', 'take 2', 'give me',
-  ];
+  /** STRONG: the customer states he wants to order / buy. Counts even when the sentence also asks how. */
+  const STRONG = ['অর্ডার করব', 'অর্ডার করবো', 'অর্ডার করতে চাই', 'অর্ডার দিব', 'অর্ডার দিবো', 'অর্ডার দিতে চাই', 'অর্ডার করে দিন', 'অর্ডার করে দেন', 'অর্ডার নিন', 'অর্ডার কনফার্ম', 'অর্ডার করছি', 'অর্ডার করলাম',
+    'কিনতে চাই', 'কিনব', 'কিনবো', 'কিনে নিব', 'কিনে দিন', 'নিতে চাই', 'কিনে দেন',
+    'order korbo', 'order korte chai', 'order dibo', 'order dite chai', 'order kore den', 'order kore din', 'order confirm', 'confirm order', 'place order', 'place an order', 'new order dibo',
+    'kinte chai', 'kinbo', 'niye nibo', 'send kore den', 'send kore din', 'want to order', 'want to buy', 'like to order', 'like to buy', "i'll take", 'i will take', 'i want to purchase', 'ready to order'];
+  /** COMMIT: short commitment words ("I'll take it", "send it"). Ignored if the message is a question. */
+  const COMMIT = ['নিব', 'নিবো', 'নিমু', 'নেব', 'নেবো', 'লাগবে', 'লাগবো', 'দিন ভাই', 'দেন ভাই', 'দিয়ে দিন', 'দিয়ে দেন', 'পাঠিয়ে দিন', 'পাঠিয়ে দেন', 'পাঠান', 'পাঠাবেন', 'পাঠায় দেন', 'পাঠায় দিন', 'কনফার্ম করুন', 'কনফার্ম করে দিন', 'রেডি করুন', 'প্যাক করুন', 'ঠিকানায় পাঠান', 'চাইতেছি', 'চাচ্ছি',
+    'nibo', 'nebo', 'niboo', 'nimu', 'lagbe', 'lagbo', 'den vai', 'din vai', 'diye din', 'diye den', 'pathan', 'pathaben', 'pathay den', 'pathay din', 'pathiye din', 'pathiye den', 'send it', 'send me', 'deliver it', 'ship it', 'confirm korun', 'confirm kore din', 'ready korun', 'pack korun', 'please send', 'give me', 'need 1', 'need 2', 'need 3', 'i need a carton', 'i want a carton'];
+  /** A number with a unit ("2 carton", "৩ কার্টন", "5 pcs") is an order line. */
+  const QTY = '/(\d+|[০-৯]+|এক|দুই|তিন|চার|পাঁচ)\s*(carton|ctn|cartoon|caron|carten|pcs|pc|piece|pis|dozen|কার্টন|কাটন|কার্টুন|পিস|ডজন)/iu';
+  const QUESTION = ['?', '？', 'কিভাবে', 'কীভাবে', 'কি ভাবে', 'কবে', 'কেন', 'করা যাবে', 'করা যায়', 'jabe', 'jay ', 'how ', 'can i', 'can you', 'do you', 'কত', 'koto', 'দাম', 'price', 'আছে কি', 'ache ki', 'আছে?', 'জানতে', 'jante', 'sales rep', 'representative', 'help', 'সাহায্য'];
   /** Messages about an order that already exists are not new-order requests. */
-  const NOT = ['status', 'স্ট্যাটাস', 'cancel', 'বাতিল', 'ক্যান্সেল', 'track', 'ট্র্যাক', 'কোথায়', 'kothay', 'kobe pabo', 'কবে পাব', 'কবে পাবো', 'refund', 'ফেরত', 'return', 'complain', 'অভিযোগ', 'পৌঁছায়নি', 'pouchay', 'পাইনি', 'pai ni', 'invoice dekhan'];
+  const NOT = ['status', 'স্ট্যাটাস', 'cancel', 'বাতিল', 'ক্যান্সেল', 'track', 'ট্র্যাক', 'কোথায়', 'kothay', 'kobe pabo', 'কবে পাব', 'কবে পাবো', 'refund', 'ফেরত', 'return', 'complain', 'অভিযোগ', 'পৌঁছায়নি', 'pouchay', 'পাইনি', 'pai ni', 'invoice', 'order number', 'অর্ডার নম্বর', 'অর্ডার ডেলিভারি', 'order delivery', 'chilo', 'ছিল'];
   public static function detect(string $body): ?string {
-    $b = mb_strtolower(trim($body)); if ($b === '' || mb_strlen($b) > 600) return null;
+    $b = mb_strtolower(trim($body)); if ($b === '' || mb_strlen($b) > 220) return null;
     foreach (self::NOT as $n) if (mb_strpos($b, $n) !== false) return null;
-    foreach (self::WORDS as $w) if (mb_strpos($b, $w) !== false) return $w;
+    foreach (self::STRONG as $w) if (mb_strpos($b, $w) !== false) return $w;
+    foreach (self::QUESTION as $q) if (mb_strpos($b, $q) !== false) return null;
+    foreach (self::COMMIT as $w) if (mb_strpos($b, $w) !== false) return $w;
+    if (preg_match(self::QTY, $b, $m)) return trim($m[0]);
     return null;
   }
   /** Called for every customer message. Makes one open lead per conversation; the AI order flow or staff upgrades/closes it later. */
