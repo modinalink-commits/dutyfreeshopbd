@@ -120,6 +120,30 @@ class WatchImportController extends Controller {
     foreach (['store.cats', 'store.catslugs', 'store.subs', 'store.home11', 'store.sitemap5'] as $k) \Illuminate\Support\Facades\Cache::forget($k); \App\Http\Controllers\StoreController::bust();
     return response()->json(['ok' => true, 'moved' => $n, 'total' => $rows->count()]);
   }
+  /** Facts that really are in the product name (capacity, memory type, Wi-Fi, power, size ...). */
+  private static function facts(string $name): array {
+    $f = []; $n = $name;
+    if (preg_match_all('/\b(\d+(?:\.\d+)?\s?(?:TB|GB|MB|MP|mAh|MHz|GHz|Hz|W|Watt|V|inch|"|mm|cm|m|Mbps|Gbps|RPM|L|ml|pcs?|pack))\b/i', $n, $m)) foreach (array_slice(array_unique(array_map(fn($x) => trim(preg_replace('/\s+/', '', $x)), $m[1])), 0, 6) as $x) $f[] = $x;
+    foreach (['DDR5', 'DDR4', 'DDR3', 'Wi-Fi 7', 'Wi-Fi 6E', 'Wi-Fi 6', 'Bluetooth', 'USB Type-C', 'USB 3.0', 'HDMI', 'NVMe', 'SSD', 'RGB', 'Gaming', 'Wireless', 'Noise Cancelling', 'ANC', 'Polarized', 'Photochromic', 'Blue Light', 'Stainless Steel', 'Leather', 'Automatic', 'Analog', 'Digital'] as $k) if (stripos($n, $k) !== false) $f[] = $k;
+    return array_values(array_unique($f));
+  }
+  /** Write a product description (HTML) for every product of an affiliate category that has none: only what the name, category and code say, plus the shop's own delivery / payment terms. */
+  public function describe(Request $r) {
+    @set_time_limit(120); $cf = $this->cfg(); $cat = DB::table('categories')->where('slug', $cf['cat'])->first(); abort_unless($cat, 404);
+    $rows = DB::table('products')->where('category_id', $cat->id)->where(fn($w) => $w->whereNull('description')->orWhere('description', ''))->orderBy('id')->limit(1500)->get(['id', 'name', 'sub', 'sku']);
+    $pre = !empty(\App\Support\PrepaidOnly::catSet()[$cat->id]); $n = 0;
+    foreach ($rows as $p) {
+      $nm = e(trim($p->name)); $sub = e((string)($p->sub ?: $cat->name)); $facts = self::facts((string)$p->name);
+      $h = '<p><strong>' . $nm . '</strong> — ' . e($cat->name) . ' › ' . $sub . ' বিভাগের পণ্য। DutyFree BD থেকে সহজে অর্ডার করুন, সারা বাংলাদেশে ডেলিভারি।</p>';
+      $h .= '<h3>পণ্যের তথ্য</h3><ul><li>পণ্য: ' . $nm . '</li><li>ক্যাটাগরি: ' . e($cat->name) . ' › ' . $sub . '</li>' . ($p->sku ? '<li>পণ্য কোড: ' . e($p->sku) . '</li>' : '');
+      if ($facts) $h .= '<li>বৈশিষ্ট্য: ' . e(implode(', ', $facts)) . '</li>';
+      $h .= '</ul><h3>অর্ডার ও ডেলিভারি</h3><ul><li>সারা বাংলাদেশে কুরিয়ারে ডেলিভারি দেওয়া হয়।</li>' . ($pre ? '<li>এই পণ্যে ক্যাশ অন ডেলিভারি নেই; অনলাইনে সম্পূর্ণ পেমেন্ট করে অর্ডার করতে হবে (bKash, Nagad, কার্ড, ব্যাংক ট্রান্সফার)।</li>' : '') . '<li>অর্ডারের আগে বা পরে প্রয়োজনে হটলাইন ০৯৬১৩৮২৮০৮১ বা WhatsApp ০১৮৭১৬০০৬০০-এ যোগাযোগ করুন।</li></ul>';
+      DB::table('products')->where('id', $p->id)->update(['description' => $h, 'updated_at' => now()]); $n++;
+    }
+    $left = DB::table('products')->where('category_id', $cat->id)->where(fn($w) => $w->whereNull('description')->orWhere('description', ''))->count();
+    if (!$left) \App\Http\Controllers\StoreController::bust();
+    return response()->json(['ok' => true, 'written' => $n, 'left' => $left]);
+  }
   private function slugFor(int $catId, string $base, string $sub, int $selfId) { $subSlug = \App\Support\Slugs::subSlug($sub); $slug = $base; $i = 2; while (DB::table('products')->where('category_id', $catId)->where('id', '!=', $selfId)->whereRaw(\App\Support\Slugs::subSql() . ' = ?', [$subSlug])->where('path_slug', $slug)->exists()) $slug = $base . '-' . $i++; return $slug; }
   private static function cleanHtml(string $h, array $bad): string {
     $h = preg_replace('#<(script|style|iframe|noscript|form|svg)\b.*?</\1>#is', '', $h);
