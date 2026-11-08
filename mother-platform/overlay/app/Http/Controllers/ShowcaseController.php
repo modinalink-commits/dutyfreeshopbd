@@ -30,7 +30,7 @@ class ShowcaseController extends Controller
       if ($f && $f->isValid()) { $ext = strtolower($f->getClientOriginalExtension() ?: 'webp'); $name = 'slot' . (int)$id . '-' . substr(md5(uniqid('', true)), 0, 8) . '.' . $ext; $f->move(public_path('showcase'), $name); $up['image'] = '/showcase/' . $name; }
       DB::table('showcase_slots')->where('id', $row->id)->update($up);
     }
-    foreach (['store.home10', 'store.home5', 'store.home6'] as $k) { try { Cache::forget($k); } catch (\Throwable $e) {} }
+    foreach (['store.home11', 'store.home10', 'store.home5', 'store.home6'] as $k) { try { Cache::forget($k); } catch (\Throwable $e) {} }
     return redirect('/admin/showcase')->with('ok', 'Showcase saved. The homepage shows the change now.');
   }
 }

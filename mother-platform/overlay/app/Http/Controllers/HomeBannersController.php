@@ -32,7 +32,7 @@ class HomeBannersController extends Controller
       DB::table('settings')->updateOrInsert(['key' => $k], ['value' => $v, 'updated_at' => $now, 'created_at' => $now]); $n++;
     }
     try { DB::table('audit_logs')->insert(['user_id' => Auth::id(), 'user_name' => Auth::user()->name, 'action' => 'home.banners', 'subject' => "$n banner switches", 'meta' => json_encode([]), 'ip' => $r->ip(), 'created_at' => $now, 'updated_at' => $now]); } catch (\Throwable $e) {}
-    foreach (['store.settings2', 'store.home10', 'store.home8', 'store.home5', 'store.home6', 'store.home4'] as $c) { try { Cache::forget($c); } catch (\Throwable $e) {} }
+    foreach (['store.settings2', 'store.home11', 'store.home10', 'store.home8', 'store.home5', 'store.home6', 'store.home4'] as $c) { try { Cache::forget($c); } catch (\Throwable $e) {} }
     return redirect('/admin/home-banners')->with('ok', 'Saved. The home page shows this now.');
   }
 }
