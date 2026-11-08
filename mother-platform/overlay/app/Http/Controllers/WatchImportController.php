@@ -57,6 +57,33 @@ class WatchImportController extends Controller {
       return response()->json(['finished' => false, 'note' => "+$made"] + $this->stat($s->id));
     } finally { $lock->release(); }
   }
+  /** Download images with Laravel's HTTP client (several at once). Returns [url => ['file'=>'/uploads/watch/..']|['err'=>..]]. */
+  private function fetchImages(array $map): array {
+    $dir = public_path('uploads/watch'); if (!is_dir($dir)) @mkdir($dir, 0775, true); $res = [];
+    try {
+      $resp = \Illuminate\Support\Facades\Http::pool(function ($pool) use ($map) { $o = []; foreach ($map as $code => $url) $o[] = $pool->as((string)$code)->timeout(25)->withHeaders(['User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36', 'Accept' => 'image/avif,image/webp,image/*,*/*;q=0.8'])->get($url); return $o; });
+      foreach ($map as $code => $url) {
+        $r = $resp[(string)$code] ?? null;
+        if (!$r || $r instanceof \Throwable || !method_exists($r, 'ok') || !$r->ok()) { $res[$code] = ['err' => ($r instanceof \Throwable) ? mb_substr($r->getMessage(), 0, 100) : 'http ' . (method_exists($r, 'status') ? $r->status() : '?')]; continue; }
+        $b = $r->body(); $i = @getimagesizefromstring($b); $ext = [IMAGETYPE_JPEG => 'jpg', IMAGETYPE_PNG => 'png', IMAGETYPE_WEBP => 'webp'][$i[2] ?? 0] ?? null;
+        if (!$ext || strlen($b) < 200) { $res[$code] = ['err' => 'not an image']; continue; }
+        if (@file_put_contents($dir . '/' . $code . '.' . $ext, $b) === false) { $res[$code] = ['err' => 'cannot write ' . $dir]; continue; }
+        @chmod($dir . '/' . $code . '.' . $ext, 0664); $res[$code] = ['file' => '/uploads/watch/' . $code . '.' . $ext];
+      }
+    } catch (\Throwable $e) { foreach ($map as $code => $url) $res[$code] = ['err' => mb_substr($e->getMessage(), 0, 120)]; }
+    return $res;
+  }
+  /** Repair step: products imported without an image get theirs now. */
+  public function images(Request $r) {
+    @set_time_limit(90);
+    $rows = DB::table('watch_source as w')->join('products as p', 'p.id', '=', 'w.product_id')->join('store_products as sp', 'sp.id', '=', 'w.store_product_id')
+      ->where(fn($q) => $q->whereNull('p.image')->orWhere('p.image', ''))->whereNotNull('sp.image')->orderBy('p.id')->limit(10)->get(['p.id as pid', 'p.sku', 'sp.image as src']);
+    $left = DB::table('watch_source as w')->join('products as p', 'p.id', '=', 'w.product_id')->where(fn($q) => $q->whereNull('p.image')->orWhere('p.image', ''))->count();
+    if ($rows->isEmpty()) return response()->json(['finished' => true, 'left' => $left]);
+    $map = []; foreach ($rows as $x) $map[$x->sku] = $x->src; $res = $this->fetchImages($map); $ok = 0; $err = null;
+    foreach ($rows as $x) { $g = $res[$x->sku] ?? []; if (!empty($g['file'])) { DB::table('products')->where('id', $x->pid)->update(['image' => $g['file'], 'updated_at' => now()]); $ok++; } else $err = $g['err'] ?? 'unknown'; }
+    return response()->json(['finished' => $ok === 0, 'ok' => $ok, 'left' => $left - $ok, 'err' => $err]);
+  }
   /** Keep live state equal to the source shop: out of stock there = not live here; back in stock = live again; price follows source +markup. */
   private function sync(int $sid): void {
     try {
