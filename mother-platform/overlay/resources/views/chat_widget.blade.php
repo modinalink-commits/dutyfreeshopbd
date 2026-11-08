@@ -213,7 +213,8 @@ M.mount=function(el,id,opt){
         paint();rc.tick=setInterval(paint,500)}).catch(function(){$('#mer').textContent='Microphone is blocked. Allow the microphone for this site in the browser.'})}
     $('#mvb').onclick=function(){if(rc){rc.mr.stop()}else startRec()};
     // Bangla speech-to-text (browser speech recognition, Chrome / Edge). Keeps listening through pauses, rebuilds the text from every result so nothing is lost or doubled, then the AI tidies spelling and wording. Nothing is sent until Send is pressed.
-    (function(){var db=$('#mdb'),fx=$('#mfx'),un=$('#mdu'),SR=window.SpeechRecognition||window.webkitSpeechRecognition,rg=null,want=false,base='',orig=null,busy=false;if(!db)return;
+    (function(){var db=$('#mdb'),fx=$('#mfx'),un=$('#mdu'),SR=window.SpeechRecognition||window.webkitSpeechRecognition,rg=null,want=false,base='',orig=null,busy=false,st=null;if(!db)return;
+      function quiet(ms){clearTimeout(st);st=setTimeout(function(){if(want){want=false;if(rg)rg.stop()}},ms)}
       var ta=function(){return $('#mt')};
       var mode='refine',vl='bn',vlf='';try{}catch(x){}
       var mb=$('#mvm'),lb=$('#mvl');
@@ -233,9 +234,9 @@ M.mount=function(el,id,opt){
       if(fx)fx.onclick=function(){polish(false)};
       if(!SR){db.disabled=true;db.title='Voice typing needs Chrome or Edge';return}
       function begin(){var r=new SR();rg=r;r.lang=vl==='en'?'en-US':(vlf||'bn-BD');r.continuous=true;r.interimResults=true;r.maxAlternatives=1;
-        r.onstart=function(){db.classList.add('rec');lbl(' থামান');var er=$('#mer');if(er)er.textContent=''};
+        r.onstart=function(){db.classList.add('rec');lbl(' শুনছি… বলুন');quiet(9000);var er=$('#mer');if(er)er.textContent=''};
         r.onresult=function(e){var fin='',im='';for(var i=0;i<e.results.length;i++){var x=e.results[i][0].transcript;if(e.results[i].isFinal)fin+=x+' ';else im+=x}
-          setv(join(join(base,fin.trim()),im.trim()))};
+          setv(join(join(base,fin.trim()),im.trim()));quiet(2600)};
         r.onerror=function(e){var er=$('#mer'),say=function(t){db.title=t;if(er)er.textContent=t};
           if(e.error==='not-allowed'||e.error==='service-not-allowed'){want=false;say('মাইক্রোফোনের অনুমতি দিন: ঠিকানার বারের তালা আইকনে চাপ দিয়ে Microphone = Allow করুন, তারপর পেজ রিফ্রেশ করুন।')}
           else if(e.error==='network'){want=false;say('ভয়েস টাইপের জন্য ইন্টারনেট লাগে (Google সার্ভার)। কানেকশন দেখে আবার চেষ্টা করুন।')}
@@ -244,7 +245,7 @@ M.mount=function(el,id,opt){
           else if(e.error==='no-speech'&&er){er.textContent='কথা শোনা যায়নি, স্পষ্ট করে বলুন।'}};
         r.onend=function(){rg=null;if(want){base=ta().value.replace(/\s+$/,'');setTimeout(function(){if(want&&!rg){try{begin()}catch(x){want=false;finish()}}},200)}else finish()};
         r.start()}
-      function finish(){db.classList.remove('rec');lbl('বাংলা টাইপ');var t=ta();if(mode==='refine'&&t.value.trim()!==(base0||'').trim())polish(true)}
+      function finish(){clearTimeout(st);db.classList.remove('rec');lbl('বাংলা টাইপ');var t=ta();if(mode==='refine'&&t.value.trim()!==(base0||'').trim())polish(true)}
       var base0='';
       db.onclick=function(){if(busy)return;if(want){want=false;if(rg)rg.stop();else finish();return}
         orig=null;if(un)un.hidden=true;base=ta().value.replace(/\s+$/,'');base0=base;want=true;try{begin()}catch(x){want=false;rg=null;var er=$('#mer');if(er)er.textContent='ভয়েস টাইপ চালু করা যায়নি, পেজ রিফ্রেশ করে আবার চাপুন।'}};
