@@ -46,7 +46,7 @@ class WatchImportController extends Controller {
         try {
           $our = (int)ceil((float)$x->price * (1 + $pct / 100));
           $name = trim(preg_replace('/\s+/u', ' ', (string)$x->name)); $name = trim(str_ireplace(['timeaccess-store.com', 'timeaccess store', 'timeaccess'], '', $name)); if ($name === '') $name = 'Watch';
-          $sub = $x->category ? mb_convert_case(trim((string)$x->category), MB_CASE_TITLE) : 'Watch'; if (mb_strtolower($sub) === 'timeaccess' || $sub === '') $sub = 'Watch';
+          $sub = self::subFor((string)$name, $x->category, $this->cfg()['cat']);
           $base = \App\Support\Slugs::slug($name) ?: 'watch'; $slug = $base; $i = 2; $subSlug = \App\Support\Slugs::subSlug($sub);
           while (DB::table('products')->where('category_id', $cat->id)->whereRaw(\App\Support\Slugs::subSql() . ' = ?', [$subSlug])->where('path_slug', $slug)->exists()) $slug = $base . '-' . $i++;
           $pid = DB::table('products')->insertGetId(['name' => mb_substr($name, 0, 200), 'category_id' => $cat->id, 'price' => $our, 'cost' => $x->price, 'stock' => 0, 'published' => true, 'sub' => $sub, 'slug' => $base, 'path_slug' => $slug, 'created_at' => now(), 'updated_at' => now()]);
@@ -63,6 +63,34 @@ class WatchImportController extends Controller {
       }
       return response()->json(['finished' => false, 'note' => "+$made"] + $this->stat($s->id));
     } finally { $lock->release(); }
+  }
+  /** Clean sub category from the product itself (source shop categories are messy: "Watche", "watch" ...). */
+  public static function subFor(string $name, ?string $srcCat, string $cat): string {
+    $n = mb_strtolower($name); $c = mb_strtolower(trim((string)$srcCat));
+    if ($cat === 'watch') {
+      if (preg_match('/strap|band|bracelet|box|case|organizer|organiser|winder|tool|battery|pin|buckle|accessor/i', $n . ' ' . $c) && !preg_match('/watch\s*\|/i', $n) && preg_match('/accessor|strap|box|case|organizer|winder|tool|band\b/i', $n . ' ' . $c)) return 'Watch Accessories';
+      if (preg_match("/women|ladies|lady|girl|female/i", $n)) return "Women's Watches";
+      if (preg_match("/couple/i", $n)) return 'Couple Watches';
+      if (preg_match("/\bmen'?s?\b|man\b|gents|male/i", $n)) return "Men's Watches";
+      return 'Watches';
+    }
+    $t = trim((string)$srcCat); return $t !== '' ? mb_convert_case($t, MB_CASE_TITLE) : 'Gadgets';
+  }
+  private function slugFor(int $catId, string $base, string $sub, int $selfId) { $subSlug = \App\Support\Slugs::subSlug($sub); $slug = $base; $i = 2; while (DB::table('products')->where('category_id', $catId)->where('id', '!=', $selfId)->whereRaw(\App\Support\Slugs::subSql() . ' = ?', [$subSlug])->where('path_slug', $slug)->exists()) $slug = $base . '-' . $i++; return $slug; }
+  /** Re-sort existing imported products into clean sub categories and report duplicates. */
+  public function tidy(Request $r) {
+    @set_time_limit(120); $cf = $this->cfg(); $cat = DB::table('categories')->where('slug', $cf['cat'])->first(); abort_unless($cat, 404); $s = $this->src();
+    $rows = DB::table('watch_source as w')->join('products as p', 'p.id', '=', 'w.product_id')->join('store_products as sp', 'sp.id', '=', 'w.store_product_id')->where('w.store_id', $s->id ?? 0)->get(['p.id', 'p.name', 'p.slug', 'p.sub', 'p.path_slug', 'sp.category as scat']);
+    $changed = 0; $subs = [];
+    foreach ($rows as $x) {
+      $sub = self::subFor((string)$x->name, $x->scat, $cf['cat']); $subs[$sub] = ($subs[$sub] ?? 0) + 1;
+      if ($sub === $x->sub) continue;
+      $slug = $this->slugFor($cat->id, (string)($x->slug ?: \App\Support\Slugs::slug($x->name)), $sub, (int)$x->id);
+      DB::table('products')->where('id', $x->id)->update(['sub' => $sub, 'path_slug' => $slug, 'updated_at' => now()]); $changed++;
+    }
+    $dups = DB::table('watch_source as w')->join('products as p', 'p.id', '=', 'w.product_id')->where('w.store_id', $s->id ?? 0)->select(DB::raw('lower(p.name) n'), DB::raw('count(*) c'))->groupBy(DB::raw('lower(p.name)'))->havingRaw('count(*) > 1')->limit(30)->get();
+    foreach (['store.cats', 'store.catslugs', 'store.home11', 'store.hsec3.' . $cf['cat']] as $k) { try { Cache::forget($k); } catch (\Throwable $e) {} }
+    return response()->json(['total' => count($rows), 'changed' => $changed, 'subs' => $subs, 'duplicate_names' => $dups]);
   }
   /** Download images with Laravel's HTTP client (several at once). Returns [url => ['file'=>'/uploads/watch/..']|['err'=>..]]. */
   private function fetchImages(array $map): array {
