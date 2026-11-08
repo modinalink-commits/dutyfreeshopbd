@@ -394,7 +394,7 @@ class AdminController extends Controller {
   /** Manual permission for a same-day duplicate order (owner rule). Logged with name and time. */
   public function orderDupAllow(Request $r, $id) {
     $o = DB::table('orders')->find($id); abort_unless($o, 404);
-    if (!\App\Http\Middleware\ModulePermission::canRestricted(Auth::user())) return response()->json(['ok'=>false,'message'=>'Only a manager/admin can allow a duplicate order.']);
+    if (!\App\Http\Middleware\ModulePermission::canDupAllow(Auth::user())) return response()->json(['ok'=>false,'message'=>'Only a manager/admin can allow a duplicate order.']);
     if (!\App\Support\DupGuard::ready()) return response()->json(['ok'=>false,'message'=>'Not ready yet, try again in a minute.']);
     DB::table('orders')->where('id',$id)->update(['dup_allowed_at'=>now(),'dup_allowed_by'=>Auth::user()->name,'updated_at'=>now()]);
     try { DB::table('order_status_logs')->insert(['order_id'=>$id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'from_status'=>$o->status,'to_status'=>$o->status,'note'=>'Duplicate order (same customer, same day): manual permission given','created_at'=>now(),'updated_at'=>now()]); } catch (\Throwable $e) {}
