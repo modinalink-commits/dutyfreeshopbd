@@ -135,7 +135,7 @@ class InventoryController extends Controller {
       $t = microtime(true); $err = null; $r = null;
       try { $r = StoreScanner::get($u, 12, 700000); } catch (\Throwable $e) { $err = $e->getMessage(); }
       $pg = StoreScanner::pget([$u], 10)[$u] ?? null; $le = error_get_last(); $host = parse_url($u, PHP_URL_HOST);
-      $out['tests'][] = ['url'=>$u, 'safeHost'=>StoreScanner::safeHost((string)$host), 'ips'=>@gethostbynamel((string)$host), 'code'=>$r['code'] ?? null, 'final'=>$r['url'] ?? null, 'len'=>isset($r['body']) ? strlen($r['body']) : null, 'sec'=>round(microtime(true)-$t, 2), 'pget_code'=>$pg['code'] ?? null, 'pget_len'=>isset($pg['body']) ? strlen($pg['body']) : null, 'err'=>$err, 'php'=>$le['message'] ?? null, 'head'=>isset($r['body']) ? mb_substr(strip_tags((string)$r['body']), 0, 160) : null];
+      $out['tests'][] = ['url'=>$u, 'safeHost'=>StoreScanner::safeHost((string)$host), 'ips'=>@gethostbynamel((string)$host), 'code'=>$r['code'] ?? null, 'final'=>$r['url'] ?? null, 'len'=>isset($r['body']) ? strlen($r['body']) : null, 'sec'=>round(microtime(true)-$t, 2), 'pget_code'=>$pg['code'] ?? null, 'pget_len'=>isset($pg['body']) ? strlen($pg['body']) : null, 'err'=>$err, 'php'=>$le['message'] ?? null, 'head'=>isset($r['body']) ? mb_substr(strip_tags((string)$r['body']), 0, 160) : null, 'grep'=>(request('g') && isset($r['body']) && preg_match_all('#.{0,160}(?:'.request('g').').{0,160}#is', (string)$r['body'], $gm)) ? array_slice(array_map(fn($x) => preg_replace('/\s+/', ' ', $x), $gm[0]), 0, 6) : null];
     }
     return response()->json($out);
   }
