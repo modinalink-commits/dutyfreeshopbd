@@ -369,12 +369,13 @@ class Chat {
     $srcWa = collect(); $srcPg = collect(); $srcIg = collect();
     try { $srcWa = DB::table('chat_wa_numbers')->get(['phone_id','display_phone','verified_name'])->keyBy('phone_id'); } catch (\Throwable $e) {}
     try { foreach (DB::table('chat_pages')->get(['page_id','name','ig_id','ig_username']) as $pg) { $srcPg[$pg->page_id] = $pg; if ($pg->ig_id) $srcIg[$pg->ig_id] = $pg; } } catch (\Throwable $e) {}
+    $srcAcc = []; try { $j = json_decode((string)self::sec('chat_ig_accounts'), true); if (is_array($j)) $srcAcc = $j; } catch (\Throwable $e) {}
     $srcOne = $srcPg->count() === 1 ? $srcPg->first() : null;
-    return $rows->map(function ($t) use ($intel, $oc, $agents, $ws, $slaW, $slaR, $srcWa, $srcPg, $srcIg, $srcOne) {
+    return $rows->map(function ($t) use ($intel, $oc, $agents, $ws, $slaW, $slaR, $srcWa, $srcPg, $srcIg, $srcOne, $srcAcc) {
       $i = $intel[$t->id] ?? null; $ref = $t->page_ref ?? null; $src = null;
       if ($t->channel === 'whatsapp') { $w = $ref ? ($srcWa[$ref] ?? null) : null; if (!$w && !$ref) $w = $srcWa[(string)self::sec('chat_wa_phone_id')] ?? null; $src = $w ? trim(($w->display_phone ?: $w->phone_id).($w->verified_name ? ' · '.$w->verified_name : '')) : ($ref ? $ref : 'Main number'); }
       elseif ($t->channel === 'facebook') { $g = $ref ? ($srcPg[$ref] ?? null) : $srcOne; $src = $g ? $g->name : null; }
-      elseif ($t->channel === 'instagram') { $g = $ref ? ($srcIg[$ref] ?? $srcPg[$ref] ?? null) : $srcOne; $src = $g ? ($g->ig_username ? '@'.$g->ig_username : $g->name) : null; } $n = (int)($oc[$t->phone] ?? 0) + (int)($i['legacy'] ?? 0);
+      elseif ($t->channel === 'instagram') { $g = $ref ? ($srcIg[$ref] ?? $srcPg[$ref] ?? null) : $srcOne; $src = $g ? ($g->ig_username ? '@'.$g->ig_username : $g->name) : null; if (!$src) { foreach ($srcAcc as $ac) if (!$ref || ($ac['id'] ?? '') === (string)$ref) { $src = !empty($ac['username']) ? '@'.$ac['username'] : null; break; } } } $n = (int)($oc[$t->phone] ?? 0) + (int)($i['legacy'] ?? 0);
       return ['id'=>$t->id, 'channel'=>$t->channel, 'channel_name'=>self::CH[$t->channel] ?? $t->channel, 'source'=>$src, 'name'=>$t->name, 'phone'=>$t->phone, 'username'=>$t->username, 'avatar'=>$t->avatar,
         'status'=>$t->status, 'awaiting'=>(bool)($t->awaiting_reply ?? false) && $t->status !== 'resolved', 'unread'=>!empty($t->awaiting_reply) ? (int)$t->unread : 0,
         'replied'=>empty($t->awaiting_reply) && !empty($t->last_successful_agent_reply_at) && !empty($t->last_customer_message_at) && $t->last_successful_agent_reply_at >= $t->last_customer_message_at,

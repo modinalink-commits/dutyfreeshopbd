@@ -190,7 +190,7 @@ class ChatController extends Controller {
   public function settings() {
     $has = fn($k) => (bool)Chat::sec($k);
     if (!Chat::sec('chat_verify_token')) Sms::setSecret('chat_verify_token', bin2hex(random_bytes(12)));
-    return view('chat_settings', ['verify'=>Chat::sec('chat_verify_token'), 'hook'=>url('/webhooks/meta'), 'wa_numbers'=>(function(){ try { return DB::table('chat_wa_numbers')->orderBy('id')->get(['id','phone_id','display_phone','verified_name','subscribed','note']); } catch (\Throwable $e) { return collect(); } })(), 'wa_cfg'=>(string)Chat::sec('chat_wa_config_id'), 'app_id'=>Chat::sec('chat_app_id'), 'redir'=>url('/admin/chat-settings/fb-callback'), 'pages'=>$this->pages(), 'has'=>['fb'=>$has('chat_fb_token') || $this->pages()->isNotEmpty(), 'ig'=>$has('chat_ig_token'), 'wa'=>$has('chat_wa_token'), 'secret'=>$has('chat_app_secret')],
+    return view('chat_settings', ['ig_accts'=>(function(){ $j = json_decode((string)Chat::sec('chat_ig_accounts'), true); return is_array($j) ? $j : []; })(), 'verify'=>Chat::sec('chat_verify_token'), 'hook'=>url('/webhooks/meta'), 'wa_numbers'=>(function(){ try { return DB::table('chat_wa_numbers')->orderBy('id')->get(['id','phone_id','display_phone','verified_name','subscribed','note']); } catch (\Throwable $e) { return collect(); } })(), 'wa_cfg'=>(string)Chat::sec('chat_wa_config_id'), 'app_id'=>Chat::sec('chat_app_id'), 'redir'=>url('/admin/chat-settings/fb-callback'), 'pages'=>$this->pages(), 'has'=>['fb'=>$has('chat_fb_token') || $this->pages()->isNotEmpty(), 'ig'=>$has('chat_ig_token'), 'wa'=>$has('chat_wa_token'), 'secret'=>$has('chat_app_secret')],
       'hook_last'=>DB::table('settings')->where('key', 'chat_hook_last')->value('value'), 'wa_phone'=>Chat::sec('chat_wa_phone_id'), 'ai_chan'=>\App\Support\AiChat::chanOn(), 'sla_warn'=>(int)(Sms::secret('sla_warn_min') ?: 5), 'sla_red'=>(int)(Sms::secret('sla_red_min') ?: 15), 'ai_auto'=>\App\Support\AiChat::chatOn() || (\App\Support\Sms::secret('ai_chat_auto') !== '0'), 'web_on'=>(DB::table('settings')->where('key', 'chat_web_on')->value('value') ?? '1') === '1',
       'quick'=>DB::table('chat_quick_replies')->orderBy('id')->get(), 'counts'=>DB::table('chat_threads')->select('channel', DB::raw('count(*) n'))->groupBy('channel')->pluck('n', 'channel')]);
   }
@@ -317,6 +317,9 @@ class ChatController extends Controller {
         $res = $H()->withToken($tok)->post($G.$igid.'/subscribed_apps', ['subscribed_fields'=>'messages,messaging_postbacks,message_reactions'])->json();
         $okk = !empty($res['success']); $msgs[] = $igid.($okk ? ': receiving messages' : ': subscribe failed - '.mb_substr((string)($res['error']['message'] ?? json_encode($res)), 0, 160));
       }
+      $acc = [];
+      foreach ($ids as $igid) { $u = $H()->withToken($tok)->get($G.$igid, ['fields'=>'username,name'])->json(); $acc[] = ['id'=>(string)$igid, 'username'=>$u['username'] ?? ($u['name'] ?? null), 'ok'=>str_contains(implode('|', $msgs), $igid.': receiving')]; }
+      \App\Support\Sms::setSecret('chat_ig_accounts', json_encode($acc));
       try { DB::table('audit_logs')->insert(['user_id'=>auth()->id(), 'user_name'=>auth()->user()->name, 'action'=>'chat.ig_connect', 'subject'=>'Instagram login: '.implode(' | ', $msgs), 'ip'=>$r->ip(), 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {}
       return $back->with('ok', 'Instagram connected. '.implode(' | ', $msgs));
     }
