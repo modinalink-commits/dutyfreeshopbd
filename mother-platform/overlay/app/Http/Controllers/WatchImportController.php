@@ -9,7 +9,8 @@ use Illuminate\Support\Facades\DB;
 class WatchImportController extends Controller {
   /** Which source feeds which category: watch <- timeaccess-store.com, gadget <- startech.com.bd (owner, 8 Nov 2026; both +5%, prepaid only, no discount). */
   private function cfg(): array {
-    $c = request('c') === 'gadget' ? 'gadget' : 'watch'; $set = fn($k, $d) => (string)(DB::table('settings')->where('key', $k)->value('value') ?? $d);
+    $c = in_array(request('c'), ['gadget', 'sunglass'], true) ? request('c') : 'watch'; $set = fn($k, $d) => (string)(DB::table('settings')->where('key', $k)->value('value') ?? $d);
+    if ($c === 'sunglass') return ['c' => 'sunglass', 'domain' => 'luxotix.com', 'cat' => 'sunglass', 'prefix' => 'DFS', 'pct' => (float)($set('sunglass_markup_pct', '5') ?: 5), 'max' => 0.0, 'dir' => 'sunglass'];
     return $c === 'gadget'
       ? ['c' => 'gadget', 'domain' => 'startech.com.bd', 'cat' => 'gadget-electronics', 'prefix' => 'DFG', 'pct' => (float)($set('mobile_markup_pct', '5') ?: 5), 'max' => 0.0, 'dir' => 'gadget']
       : ['c' => 'watch', 'domain' => strtolower($set('watch_source_domain', 'timeaccess-store.com')), 'cat' => 'watch', 'prefix' => 'DFW', 'pct' => (float)($set('watch_markup_pct', '5') ?: 5), 'max' => (float)($set('watch_max_price', '50000') ?: 50000), 'dir' => 'watch'];
