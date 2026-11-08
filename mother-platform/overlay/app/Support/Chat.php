@@ -209,6 +209,9 @@ class Chat {
         // staff handle these: voice/video/files, unsupported or system placeholders, and plain thank-you / ok messages
         if (($li->attachment_url && $li->attachment_type !== 'image') || preg_match('/^\[(unsupported|[a-z]+ received)/iu', $lb) || preg_match('/^(ok|okay|thanks?|thank you|thx|ধন্যবাদ|থ্যাংকস|👍|🙏|❤️?)[\s.!]*$/iu', $lb)) return;
       }
+      // a short "yes / হ্যাঁ / confirm" right after our order-confirmation message answers THAT order: staff handle it, the AI must never start a new order from it
+      if ($ext && isset($lb) && mb_strlen($lb) <= 40 && preg_match('/^(yes|yeah|y|ji|jii|han|ha|haa|hya|hyan|confirm(ed)?|ok(ay)?|ঠিক আছে|হ্যাঁ|হ্যা|হা|জি|জী|কনফার্ম)[\s.!]*$/iu', $lb)
+        && DB::table('chat_messages')->where('thread_id', $tid)->where('dir', 'out')->where('kind', 'invoice')->where('created_at', '>=', now()->subHours(48))->exists()) return;
       $k = 'ai.t.'.$tid.'.'.now()->format('YmdH'); \Illuminate\Support\Facades\Cache::add($k, 0, 4000);
       if (\Illuminate\Support\Facades\Cache::increment($k) > 25) return;
       $d = 'ai.n.'.now()->format('Ymd'); \Illuminate\Support\Facades\Cache::add($d, 0, 90000);
