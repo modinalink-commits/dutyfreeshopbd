@@ -271,9 +271,9 @@ class ChatController extends Controller {
   public function fbConnect(Request $r) {
     $id = trim((string)Chat::sec('chat_app_id'));
     if (!$id) return redirect('/admin/chat-settings')->with('err', 'Save the Meta App ID first (Chat Settings > Meta app).');
-    $st = bin2hex(random_bytes(16)); session(['fb_oauth_state'=>$st]);
+    $st = bin2hex(random_bytes(16)); $ig = (bool)$r->query('ig'); session(['fb_oauth_state'=>$st, 'fb_oauth_ig'=>$ig]);
     return redirect('https://www.facebook.com/v21.0/dialog/oauth?'.http_build_query(['client_id'=>$id, 'redirect_uri'=>url('/admin/chat-settings/fb-callback'), 'state'=>$st, 'response_type'=>'code',
-      'config_id'=>'1507276531459571', 'override_default_response_type'=>'true']));
+      'config_id'=>$ig ? '989295444231024' : '1507276531459571', 'override_default_response_type'=>'true']));
   }
   public function fbCallback(Request $r) {
     $back = redirect('/admin/chat-settings');
@@ -285,6 +285,22 @@ class ChatController extends Controller {
     $G = 'https://graph.facebook.com/v21.0/'; $H = fn() => \Illuminate\Support\Facades\Http::timeout(25);
     $a = $H()->get($G.'oauth/access_token', ['client_id'=>$id, 'client_secret'=>$sec, 'redirect_uri'=>url('/admin/chat-settings/fb-callback'), 'code'=>(string)$r->query('code')])->json();
     if (empty($a['access_token'])) return $back->with('err', 'Facebook did not accept the login: '.mb_substr((string)($a['error']['message'] ?? json_encode($a)), 0, 250));
+    if (session()->pull('fb_oauth_ig')) { // Instagram connection (unified login): system-user token for the Instagram account(s)
+      $tok = $a['access_token'];
+      $dbg = $H()->get($G.'debug_token', ['input_token'=>$tok, 'access_token'=>$id.'|'.$sec])->json();
+      $ids = [];
+      foreach (($dbg['data']['granular_scopes'] ?? []) as $gs) if (in_array($gs['scope'] ?? '', ['instagram_basic', 'instagram_manage_messages'], true)) foreach (($gs['target_ids'] ?? []) as $t) $ids[(string)$t] = 1;
+      $ids = array_keys($ids);
+      if (!$ids) return $back->with('err', 'Instagram login worked, but no Instagram account was granted. Tick the Instagram account in the login window. '.mb_substr(json_encode($dbg['data']['granular_scopes'] ?? ($dbg['error'] ?? 'no scopes')), 0, 250));
+      \App\Support\Sms::setSecret('chat_ig_token', $tok);
+      $msgs = [];
+      foreach ($ids as $igid) {
+        $res = $H()->withToken($tok)->post($G.$igid.'/subscribed_apps', ['subscribed_fields'=>'messages,messaging_postbacks,message_reactions'])->json();
+        $okk = !empty($res['success']); $msgs[] = $igid.($okk ? ': receiving messages' : ': subscribe failed - '.mb_substr((string)($res['error']['message'] ?? json_encode($res)), 0, 160));
+      }
+      try { DB::table('audit_logs')->insert(['user_id'=>auth()->id(), 'user_name'=>auth()->user()->name, 'action'=>'chat.ig_connect', 'subject'=>'Instagram login: '.implode(' | ', $msgs), 'ip'=>$r->ip(), 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {}
+      return $back->with('ok', 'Instagram connected. '.implode(' | ', $msgs));
+    }
     $l = $H()->get($G.'oauth/access_token', ['grant_type'=>'fb_exchange_token', 'client_id'=>$id, 'client_secret'=>$sec, 'fb_exchange_token'=>$a['access_token']])->json();
     $ut = $l['access_token'] ?? $a['access_token'];
     [$ok, $msg] = $this->importPages($ut, $r);
