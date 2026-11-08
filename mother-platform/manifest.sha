@@ -6,7 +6,7 @@ e240585389702355284c3e3a35c1a3aaaac60aa5 routes/web.php
 7c254b2b4b42ad9faa4dfc06544c469868f5035b resources/views/layout.blade.php
 2b227b5ab4047c9018760d3f3da2dc1c31b55cb1 resources/views/login.blade.php
 4f9c63c1d553a171eb063ecbdd0b9572f64a1692 resources/views/dashboard.blade.php
-cbd447a1d7bb261e76589f1bd257e98d302b1317 resources/views/orders.blade.php
+4376485e4c60354100e7504736bdc27f7c0396d1 resources/views/orders.blade.php
 f76f7611feff00df29656bfe6c9fdb5f1d36ba71 resources/views/admin/orders/partials/status-tabs.blade.php
 c7ea3d4ee955b7f2ae9f0ec689ce06ba077ea395 resources/views/admin/orders/partials/header-system.blade.php
 9252abc9590fb130352e6be1d6345ab7039e67a8 resources/views/order_new.blade.php
