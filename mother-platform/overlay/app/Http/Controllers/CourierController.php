@@ -34,7 +34,8 @@ class CourierController extends Controller {
   public function shipCheck(Request $r) {
     $ids = array_slice(array_map('intval', (array)$r->input('ids', [])), 0, 100);
     $can = $this->canOverride();
-    return response()->json(['can_override'=>$can, 'orders'=>array_map(fn($i) => ['id'=>$i] + \App\Support\ShipCheck::run($i), $ids)]);
+    $dup = false; try { $dup = \App\Http\Middleware\ModulePermission::canDupAllow(auth()->user()); } catch (\Throwable $e) {}
+    return response()->json(['can_override'=>$can, 'can_dup'=>$dup, 'orders'=>array_map(fn($i) => ['id'=>$i] + \App\Support\ShipCheck::run($i), $ids)]);
   }
   private function canOverride(): bool { try { return \App\Support\ProfitFloor::admin() || \App\Http\Middleware\ModulePermission::canShipOverride(auth()->user()); } catch (\Throwable $e) { return false; } }
   public function sendOne(Request $r, $id) {

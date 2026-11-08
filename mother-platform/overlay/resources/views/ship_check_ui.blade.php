@@ -4,30 +4,35 @@
 var M=document.getElementById('scm');if(!M)return;var D=null,tk=document.querySelector('meta[name=csrf-token]');
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 var IC={INFO:'✔',WARNING:'⚠',CRITICAL:'⛔',BLOCKED:'🔴'};
-function draw(){var o=D.orders,ok=0,wr=0,cr=0,bl=0,h='';
+function draw(){var o=D.orders,ok=0,wr=0,cr=0,bl=0,dn=0,h='';
 o.forEach(function(x){if(x.worst==='INFO')ok++;else if(x.worst==='WARNING'){wr++}else if(x.worst==='CRITICAL')cr++;else bl++;
 h+='<div class="od" data-id="'+x.id+'"><div class="oh"><span>Order #'+esc(x.order)+'</span><span class="s-'+x.worst+'">'+x.passed+' of '+x.total+' checks passed · '+x.worst+'</span></div>';
-x.checks.forEach(function(c){if(x.worst==='CRITICAL'&&D.can_override)return;if(c.sev==='INFO'&&x.worst!=='INFO'&&c.key!=='stock'&&c.key!=='margin')return;h+='<div class="ck"><b class="s-'+c.sev+'">'+IC[c.sev]+' '+esc(c.label)+'</b><span>'+esc(c.msg)+'</span></div>';
+var dupOnly=x.worst==='BLOCKED'&&D.can_dup&&x.checks.some(function(c){return c.key==='duplicate'&&c.sev==='BLOCKED'})&&!x.checks.some(function(c){return c.sev==='BLOCKED'&&c.key!=='duplicate'});if(dupOnly)dn++;
+x.checks.forEach(function(c){if(dupOnly||(x.worst==='CRITICAL'&&D.can_override))return;if(c.sev==='INFO'&&x.worst!=='INFO'&&c.key!=='stock'&&c.key!=='margin')return;h+='<div class="ck"><b class="s-'+c.sev+'">'+IC[c.sev]+' '+esc(c.label)+'</b><span>'+esc(c.msg)+'</span></div>';
 if(c.detail&&c.detail.length&&c.sev!=='INFO'){c.detail.forEach(function(d){var t=[];for(var k in d)t.push(k.replace('_',' ')+': '+d[k]);h+='<div class="dt">'+esc(t.join(' · '))+'</div>'})}});
 if(x.note&&x.worst!=='BLOCKED'){h+='<div class="ov" style="background:#F0F9FF"><label style="font-weight:700">Courier note <span style="font-weight:400;color:#6B7280">('+esc(x.note.source)+') — you can edit it</span></label><textarea class="cn" rows="2" maxlength="200" style="width:100%;box-sizing:border-box;margin-top:4px;padding:6px;border:1px solid #CBD5E1;border-radius:6px;font:inherit">'+esc(x.note.text)+'</textarea></div>'}
+if(dupOnly){h+='<div class="tkw"><label class="tk" data-tip="'+esc(x.checks.filter(function(c){return c.sev==='BLOCKED'}).map(function(c){return c.label+': '+c.msg}).join('\n')+'\nTick = Allow this duplicate and ship')+'"><input type="checkbox" class="sd" data-id="'+x.id+'"><i>✓</i></label></div>'}
 if(x.worst==='CRITICAL'){if(D.can_override){var tp=[];x.checks.forEach(function(c){if(c.sev==='CRITICAL'||c.sev==='WARNING')tp.push(c.label+': '+c.msg)});h+='<div class="tkw"><label class="tk" data-tip="'+esc(tp.join('\n'))+'"><input type="checkbox" class="sa" data-id="'+x.id+'"><i>✓</i></label></div>'}else{h+='<div class="ov">You do not have permission to override. Use Hold Shipment and ask an authorised person.</div>'}}
 h+='</div>'});
-if(cr>1&&D.can_override)h='<div class="tkw" style="margin:0 20px 10px;border:1px solid #FED7AA;border-radius:10px;justify-content:flex-start;gap:10px"><label class="tk" data-tip="Mark all '+cr+' critical orders and send them together"><input type="checkbox" id="sall"><i>✓</i></label><b style="font-size:13px">Tick all ('+cr+' critical)</b></div>'+h;
+var tc=(D.can_override?cr:0)+dn;if(tc>1)h='<div class="tkw" style="margin:0 20px 10px;border:1px solid #FED7AA;border-radius:10px;justify-content:flex-start;gap:10px"><label class="tk" data-tip="Mark all '+tc+' orders and send them together"><input type="checkbox" id="sall"><i>✓</i></label><b style="font-size:13px">Tick all ('+tc+' orders)</b></div>'+h;
 document.getElementById('scb').innerHTML=h;
 document.getElementById('scs').textContent=o.length+' order(s) selected';
 document.getElementById('scsum').innerHTML='<span style="background:#DCFCE7;color:#15803D">Passed: '+ok+'</span><span style="background:#FEF3C7;color:#B45309">Warning: '+wr+'</span><span style="background:#FFEDD5;color:#C2410C">Critical: '+cr+'</span><span style="background:#FEE2E2;color:#B91C1C">Blocked: '+bl+'</span>';
 var n=ok+wr;document.getElementById('scgo').textContent='Send '+n+' order(s) that can ship'+(cr&&D.can_override?' (+ checked overrides)':'')}
-function go(){var f=document.createElement('form');f.method='post';f.action='/admin/courier/send-bulk';var n=0;
+function allowDup(ids,cb){if(!ids.length)return cb();var T=tk?tk.content:'';Promise.all(ids.map(function(i){return fetch('/admin/orders/'+i+'/dup-allow',{method:'POST',headers:{'X-CSRF-TOKEN':T,'X-Requested-With':'XMLHttpRequest',Accept:'application/json'}}).then(function(r){return r.json()}).catch(function(){return{ok:false}})})).then(function(rs){if(rs.some(function(r){return !r.ok})){alert('Could not allow some duplicate orders: '+((rs.find(function(r){return !r.ok})||{}).message||'permission or server error'));return}cb()})}
+function go(){var dids=[].map.call(M.querySelectorAll('.sd:checked'),function(c){return c.dataset.id});if(dids.length&&!window.__dupDone){return allowDup(dids,function(){window.__dupDone=1;go()})}window.__dupDone=0;var f=document.createElement('form');f.method='post';f.action='/admin/courier/send-bulk';var n=0;
 function add(k,v){var i=document.createElement('input');i.type='hidden';i.name=k;i.value=v;f.appendChild(i)}
 add('_token',tk?tk.content:'');var err='';
 D.orders.forEach(function(x){var el=M.querySelector('.od[data-id="'+x.id+'"]');
 var nb=el&&el.querySelector('.cn');if(x.worst!=='BLOCKED'&&nb)add('note['+x.id+']',nb.value);
 if(x.worst==='INFO'||x.worst==='WARNING'){add('ids[]',x.id);n++}
+else if(x.worst==='BLOCKED'&&el&&el.querySelector('.sd')&&el.querySelector('.sd').checked){add('ids[]',x.id);add('override['+x.id+']','Duplicate allowed by tick');n++}
 else if(x.worst==='CRITICAL'&&D.can_override&&el&&el.querySelector('.sa')&&el.querySelector('.sa').checked){add('ids[]',x.id);add('override['+x.id+']','Warning acknowledged by tick (ticked by '+(D.user||'staff')+')');n++}});
 if(err){alert(err);return}if(!n){alert('Nothing can be sent. Fix the issues or use Hold Shipment.');return}
 document.body.appendChild(f);f.submit()}
 M.addEventListener('change',function(e){var t=e.target;if(!t.classList||!t.classList.contains('sa')||!t.checked)return;var f=document.createElement('form');f.method='post';f.action='/admin/courier/send-bulk';function add(k,v){var i=document.createElement('input');i.type='hidden';i.name=k;i.value=v;f.appendChild(i)}add('_token',tk?tk.content:'');add('ids[]',t.dataset.id);add('override['+t.dataset.id+']','Warning acknowledged by tick');var el=t.closest('.od'),nb=el&&el.querySelector('.cn');if(nb)add('note['+t.dataset.id+']',nb.value);document.body.appendChild(f);f.submit()});document.getElementById('scgo').onclick=go;document.getElementById('schold').onclick=function(){M.classList.remove('on')};
-M.addEventListener('change',function(e){var t=e.target;if(t.id!=='sall'||!t.checked)return;M.querySelectorAll('.sa').forEach(function(c){c.checked=true});go()});
+M.addEventListener('change',function(e){var t=e.target;if(t.id!=='sall'||!t.checked)return;M.querySelectorAll('.sa,.sd').forEach(function(c){c.checked=true});go()});
+M.addEventListener('change',function(e){var t=e.target;if(!t.classList||!t.classList.contains('sd')||!t.checked)return;M.querySelectorAll('.sd,.sa').forEach(function(c){if(c!==t)c.checked=false});go()});
 M.addEventListener('click',function(e){if(e.target===M)M.classList.remove('on')});
 window.dfShipCheck=function(ev){var ids=[].map.call(document.querySelectorAll('#bulk input[name="ids[]"]:checked'),function(i){return i.value});
 if(!ids.length){alert('Select orders first');return false}
