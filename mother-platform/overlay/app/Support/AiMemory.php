@@ -98,4 +98,32 @@ class AiMemory {
       return $out;
     } catch (\Throwable $e) { return ''; }
   }
+  /** One-time catch-up from the chats that already exist (time-boxed, safe to run again: it only fills threads that have no memory yet). */
+  public static function backfill(int $seconds = 90): int {
+    $t0 = time(); $n = 0;
+    try {
+      $threads = DB::table('chat_threads')->whereNotExists(fn($q) => $q->select(DB::raw(1))->from('ai_customer_memory as m')->whereRaw("m.mkey = case when chat_threads.phone is not null and chat_threads.phone <> '' then 'p:' || chat_threads.phone else 't:' || chat_threads.id end"))->orderByDesc('last_at')->limit(4000)->get();
+      foreach ($threads as $t) {
+        if (time() - $t0 > $seconds) break;
+        $msgs = DB::table('chat_messages')->where('thread_id', $t->id)->orderBy('id')->limit(400)->get(['id', 'dir', 'body', 'is_ai', 'user_id', 'user_name', 'status', 'created_at', 'kind']);
+        $ln = []; $cnt = 0; $last = null; $ex = []; $waits = []; $lastIn = null;
+        foreach ($msgs as $m) {
+          if ($m->dir === 'in') { $cnt++; $lastIn = $m; $l = self::lang((string)$m->body); if ($l) $ln[$l] = ($ln[$l] ?? 0) + 1; $last = $m->created_at; }
+          elseif (!$m->is_ai && $m->user_id && $m->status !== 'failed' && $lastIn) {
+            $w = max(0, \Carbon\Carbon::parse($lastIn->created_at)->diffInSeconds($m->created_at)); $waits[] = $w;
+            $b = trim((string)$m->body);
+            if (in_array($m->kind, ['text', 'quick'], true) && mb_strlen($b) >= 8 && trim((string)$lastIn->body) !== '' && !preg_match('/\d{6,}/u', $b)) $ex[] = ['thread_id'=>$t->id, 'staff'=>$m->user_name, 'intent'=>$t->intent ?? null, 'channel'=>$t->channel, 'lang'=>self::lang($b), 'customer_text'=>self::mask((string)$lastIn->body), 'reply_text'=>self::mask($b), 'wait_sec'=>$w, 'created_at'=>$m->created_at];
+            $lastIn = null;
+          }
+        }
+        $tot = array_sum($ln); $pref = null; if ($tot >= 3) { arsort($ln); $top = array_key_first($ln); if ($top !== 'mixed' && $ln[$top] / $tot >= 0.7) $pref = $top; }
+        $k = self::key($t);
+        DB::table('ai_customer_memory')->insertOrIgnore(['mkey'=>$k, 'phone'=>$t->phone ?: null, 'name'=>$t->name, 'channel'=>$t->channel, 'msg_count'=>$cnt, 'lang_n'=>json_encode($ln), 'lang_pref'=>$pref,
+          'intents'=>json_encode(!empty($t->intent) ? [$t->intent=>1] : new \stdClass), 'moods'=>json_encode(!empty($t->mood) ? [$t->mood=>1] : new \stdClass), 'avg_staff_wait_min'=>$waits ? (int)round(array_sum($waits) / count($waits) / 60) : null, 'last_seen_at'=>$last, 'created_at'=>now(), 'updated_at'=>now()]);
+        foreach (array_slice($ex, -5) as $e) DB::table('ai_staff_examples')->insert($e);
+        self::refresh($k); $n++;
+      }
+    } catch (\Throwable $e) { report($e); }
+    return $n;
+  }
 }
