@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 
 /** Category tree (Main -> Sub -> Sub Sub) and independent Brands. Products keep text sub / sub_sub; nodes add order, status, image and flags. */
 class TaxonomyController extends Controller {
-  private function bust(): void { foreach (['store.cats', 'store.subs', 'store.catslugs', 'store.home6', 'store.home5', 'store.home4', 'store.sitemap5'] as $k) Cache::forget($k); }
+  private function bust(): void { foreach (['store.cats', 'store.subs', 'store.catslugs', 'store.home6', 'store.home5', 'store.home4', 'store.sitemap5', 'prepaid.catset', 'stock.modes'] as $k) Cache::forget($k); try { \App\Http\Controllers\StoreController::bust(); } catch (\Throwable $e) {} }
   private function err(string $m, int $c = 422) { return response()->json(['ok' => false, 'message' => $m], $c); }
 
   /** Create nodes for any (category, sub, sub_sub) found on products but missing in the tree. */
