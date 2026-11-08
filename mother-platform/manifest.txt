@@ -877,3 +877,4 @@ app/Console/Commands/MotherAffiliateDaily.php
 database/migrations/2026_11_08_014000_affiliate_run_now.php
 database/migrations/2026_11_08_015000_manager_ship_override.php
 database/migrations/2026_11_08_016000_remove_startech.php
+database/migrations/2026_11_08_017000_gadget_ryans.php
