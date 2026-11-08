@@ -136,6 +136,7 @@ body .sec-lv .lo .bx{border:1px solid #E1E8EF;border-radius:16px;background:#fff
 body .sec-lv .lo .bx:hover{transform:translateY(-2px);border-color:#C9D6E2;box-shadow:0 10px 22px -12px rgba(16,24,40,.22)}
 body .sec-lv .lo .im{position:relative;height:160px;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:12px;background:linear-gradient(135deg,#F0FBF5 0%,#DDF5E7 100%)}
 body .sec-lv .lo .im img{width:auto;height:auto;max-width:86%;max-height:84%;object-fit:contain;filter:drop-shadow(0 6px 8px rgba(16,24,40,.14))}
+body .sec-lv .lo .im{height:auto!important;aspect-ratio:1/1;background:#fff!important;border-radius:6px!important}body .sec-lv .lo .im img{width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;object-fit:contain}
 body .sec-lv .lo .bx:hover .im img{transform:scale(1.03)}
 body .sec-lv .lo .tg{position:absolute;top:8px;left:8px;z-index:2;height:25px;display:inline-flex;align-items:center;gap:4px;background:#fff;border:1px solid #BBF0D2;color:#047857;font-size:10.5px;font-weight:600;padding:0 9px 0 7px;border-radius:14px;box-shadow:0 2px 6px rgba(16,24,40,.08);backdrop-filter:none}
 body .sec-lv .lo .tg svg{width:12px;height:12px;flex:none}body .sec-lv .lo .tg i{font-style:normal;white-space:nowrap}
