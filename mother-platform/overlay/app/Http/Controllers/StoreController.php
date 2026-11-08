@@ -245,9 +245,11 @@ class StoreController extends Controller {
   public function homeSec(string $slug) {
     $c = $this->cats()[$slug] ?? null; $s = self::set();
     if (!$c || $s['home_cat_sections'] !== '1') abort(404);
-    $items = self::rem('store.hsec2.'.$slug, 300, fn() => \App\Support\StockGuard::listable(DB::table('products')->where('published', true))->where('category_id', $c->id)->orderByDesc('id')->limit(6)->get());
-    if (!$items->count()) abort(404);
-    return response()->view('store.home_sec', $this->base(['c'=>$c, 'items'=>$items, 'lazy'=>false]))->header('X-Robots-Tag', 'noindex')->header('Cache-Control', 'public, max-age=300');
+    // pool of up to 80 listable products is cached; the 6 shown are re-drawn on EVERY load, so each homepage reload shows different products from inside the category
+    $pool = self::rem('store.hsec3.'.$slug, 300, fn() => \App\Support\StockGuard::listable(DB::table('products')->where('published', true))->where('category_id', $c->id)->orderByDesc('id')->limit(80)->get());
+    if (!$pool->count()) abort(404);
+    $items = (\App\Support\Procure::set('shuffle_home', '1') !== '0' && \App\Support\Procure::set('shuffle_general', '1') !== '0') ? $pool->shuffle(random_int(1, 2147483646))->take(6)->values() : $pool->take(6)->values();
+    return response()->view('store.home_sec', $this->base(['c'=>$c, 'items'=>$items, 'lazy'=>false]))->header('X-Robots-Tag', 'noindex')->header('Cache-Control', 'private, no-store, max-age=0');
   }
   /** Real recent orders, customer names masked (first letter + ***). */
   public function liveFragment() {
