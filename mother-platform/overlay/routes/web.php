@@ -433,6 +433,27 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/coupons/{id}/usage', [\App\Http\Controllers\CouponController::class,'usageReport'])->whereNumber('id');
 });
 // ---- Storefront: order form has no CSRF token (pages stay cacheable); orders are rate limited per IP and honeypot-protected
+// ---- Staff mobile app API (bearer token, no cookies/CSRF; same users + role permissions as the admin; chat/order actions reuse the admin controllers) ----
+Route::prefix('api/staff')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class, \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class, \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class, \Illuminate\Session\Middleware\StartSession::class, \Illuminate\View\Middleware\ShareErrorsFromSession::class, \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class])->group(function () {
+  $S = \App\Http\Controllers\StaffApiController::class; $C = \App\Http\Controllers\ChatController::class;
+  Route::post('/login', [$S,'login'])->middleware('throttle:10,1');
+  Route::middleware([\App\Http\Middleware\StaffApi::class, 'throttle:240,1'])->group(function () use ($S, $C) {
+    Route::post('/logout', [$S,'logout']); Route::get('/me', [$S,'me']);
+    Route::get('/devices', [$S,'devices']); Route::post('/devices/push-token', [$S,'pushToken']); Route::post('/devices/{id}/revoke', [$S,'deviceRevoke'])->whereNumber('id');
+    Route::get('/dashboard', [$S,'dashboard']);
+    Route::get('/orders', [$S,'orders']); Route::get('/orders/{id}', [$S,'order'])->whereNumber('id');
+    Route::post('/orders/{id}/status', [\App\Http\Controllers\AdminController::class,'orderQuickStatus'])->whereNumber('id')->middleware('throttle:60,1');
+    Route::get('/orders/{id}/courier', fn($id) => \App\Support\CourierInfo::json((int)$id))->whereNumber('id');
+    Route::get('/customers', [$S,'customers']); Route::get('/customers/{id}', [$S,'customer'])->whereNumber('id');
+    Route::get('/tasks', [$S,'tasks']); Route::post('/tasks', [$S,'taskCreate']); Route::post('/tasks/{id}', [$S,'taskUpdate'])->whereNumber('id');
+    // Messenger: same controller as the web inbox. No "read" route on purpose: opening a chat never clears Awaiting Reply, only a successful staff reply does.
+    Route::get('/chat/threads', [$C,'threads']); Route::get('/chat/poll', [$C,'poll']); Route::get('/chat/thread/{id}', [$C,'thread'])->whereNumber('id');
+    Route::get('/chat/thread/{id}/messages', [$C,'messagesAfter'])->whereNumber('id');
+    Route::post('/chat/thread/{id}/reply', [$C,'reply'])->whereNumber('id')->middleware('throttle:60,1');
+    Route::post('/chat/thread/{id}/ai', [$C,'ai'])->whereNumber('id')->middleware('throttle:30,1');
+    Route::post('/chat/thread/{id}/assign', [$C,'assign'])->whereNumber('id'); Route::post('/chat/thread/{id}/status', [$C,'status'])->whereNumber('id');
+  });
+});
 // ---- Supplier Partner Portal (public login; everything else behind SupplierPortalAuth) ----
 Route::prefix('supplier-portal')->group(function () {
   $P = \App\Http\Controllers\SupplierPortalController::class;
