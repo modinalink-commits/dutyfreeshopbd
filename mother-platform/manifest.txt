@@ -846,3 +846,4 @@ database/migrations/2026_11_08_000100_chat_wa_numbers.php
 app/Http/Controllers/StaffApiController.php
 app/Http/Middleware/StaffApi.php
 database/migrations/2026_11_08_000200_staff_app_api.php
+resources/views/staff_app.blade.php

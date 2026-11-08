@@ -433,6 +433,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/coupons/{id}/usage', [\App\Http\Controllers\CouponController::class,'usageReport'])->whereNumber('id');
 });
 // ---- Storefront: order form has no CSRF token (pages stay cacheable); orders are rate limited per IP and honeypot-protected
+Route::get('/staff', fn() => response()->view('staff_app')->header('Cache-Control', 'no-store'));
 // ---- Staff mobile app API (bearer token, no cookies/CSRF; same users + role permissions as the admin; chat/order actions reuse the admin controllers) ----
 Route::prefix('api/staff')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class, \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class, \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class, \Illuminate\Session\Middleware\StartSession::class, \Illuminate\View\Middleware\ShareErrorsFromSession::class, \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class])->group(function () {
   $S = \App\Http\Controllers\StaffApiController::class; $C = \App\Http\Controllers\ChatController::class;
