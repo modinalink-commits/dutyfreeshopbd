@@ -158,9 +158,9 @@ class WatchImportController extends Controller {
   public function details(Request $r) {
     @set_time_limit(100); $cf = $this->cfg(); $s = $this->src(); abort_unless($s, 404);
     DB::table('watch_source')->where('store_id', $s->id)->where('note', 'no details')->update(['details_at' => null, 'note' => null]);
-    $rows = DB::table('watch_source as w')->join('products as p', 'p.id', '=', 'w.product_id')->where('w.store_id', $s->id)->whereNull('w.details_at')->whereNotNull('w.source_url')->orderBy('w.id')->limit(6)->get(['w.id as wid', 'w.source_url', 'p.id as pid', 'p.sku', 'p.name']);
+    $rows = DB::table('watch_source as w')->join('products as p', 'p.id', '=', 'w.product_id')->where('w.store_id', $s->id)->whereNull('w.details_at')->whereNotNull('w.source_url')->orderBy('w.id')->limit(60)->get(['w.id as wid', 'w.source_url', 'p.id as pid', 'p.sku', 'p.name'])->filter(fn($x) => \Illuminate\Support\Facades\Cache::add('det-' . $x->wid, 1, 150))->take(8)->values(); // claimed, so several workers can run in parallel
     $left = DB::table('watch_source')->where('store_id', $s->id)->whereNull('details_at')->whereNotNull('source_url')->count();
-    if ($rows->isEmpty()) return response()->json(['finished' => true, 'left' => 0]);
+    if ($rows->isEmpty()) return response()->json(['finished' => $left <= 0, 'busy' => $left > 0, 'left' => $left]);
     $urls = []; foreach ($rows as $x) { $u = preg_replace('#[?\#].*$#', '', (string)$x->source_url); $urls[$x->wid] = rtrim($u, '/') . '.json'; }
     try { $resp = \Illuminate\Support\Facades\Http::pool(function ($pool) use ($urls) { $o = []; foreach ($urls as $k => $u) $o[] = $pool->as((string)$k)->timeout(25)->withHeaders(['User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36', 'Accept' => 'application/json'])->get($u); return $o; }); } catch (\Throwable $e) { return response()->json(['finished' => false, 'err' => mb_substr($e->getMessage(), 0, 150), 'left' => $left]); }
     $dbg = []; $bad = [$cf['domain'], preg_replace('/\..*$/', '', $cf['domain']), 'timeaccess', 'time access', 'ryans', 'luxotix', 'amour']; $ok = 0; $imgMap = []; $imgFor = [];
