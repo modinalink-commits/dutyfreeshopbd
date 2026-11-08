@@ -200,12 +200,15 @@ class Chat {
       $rows = DB::table('chat_messages')->where('thread_id', $tid)->orderByDesc('id')->limit(10)->get()->reverse()->values();
       if ($rows->isEmpty() || $rows->last()->dir !== 'in') return;
       $hist = $rows->map(fn($m) => ['role'=>$m->dir === 'in' ? 'user' : 'assistant', 'content'=>$m->body !== '' ? $m->body : '[ছবি]'])->all();
-      // the customer's latest photo goes to the model as an image (jpeg/png/webp/gif up to 3.5 MB); anything else stays the text placeholder
+      // the customer's most recent photo (this message or one of the last few) goes to the model as an image, so a follow-up like "price?" still refers to what the photo shows
       try {
-        $li = $rows->last(); $ix = $rows->count() - 1;
-        if ($li && $li->attachment_type === 'image' && $li->attachment_url) {
-          $ip = public_path('uploads/chat/'.basename((string)parse_url((string)$li->attachment_url, PHP_URL_PATH)));
-          if (is_file($ip) && filesize($ip) <= 3500000) { $mt = (string)@mime_content_type($ip); if (in_array($mt, ['image/jpeg', 'image/png', 'image/webp', 'image/gif'], true)) $hist[$ix]['img'] = [$mt, base64_encode((string)file_get_contents($ip))]; }
+        for ($ix = $rows->count() - 1; $ix >= max(0, $rows->count() - 8); $ix--) {
+          $li = $rows[$ix];
+          if ($li->dir === 'in' && $li->attachment_type === 'image' && $li->attachment_url) {
+            $ip = public_path('uploads/chat/'.basename((string)parse_url((string)$li->attachment_url, PHP_URL_PATH)));
+            if (is_file($ip) && filesize($ip) <= 3500000) { $mt = (string)@mime_content_type($ip); if (in_array($mt, ['image/jpeg', 'image/png', 'image/webp', 'image/gif'], true)) $hist[$ix]['img'] = [$mt, base64_encode((string)file_get_contents($ip))]; }
+            break;
+          }
         }
       } catch (\Throwable $e) {}
       if (AiAgent::on()) {
