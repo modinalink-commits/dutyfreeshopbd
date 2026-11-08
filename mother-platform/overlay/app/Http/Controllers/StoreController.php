@@ -532,7 +532,7 @@ class StoreController extends Controller {
     $d = $v->validated();
     $pm = ['label'=>'COD','txn'=>null,'acct'=>null,'proof'=>null,'status'=>null];
     $pk = $d['pay'] ?? 'cod';
-    if ($pk === 'cod' && \App\Support\PrepaidOnly::any(array_keys($want))) return $back('ঘড়ি (Watch) ক্যাটাগরির পণ্যে ক্যাশ অন ডেলিভারি নেই। সম্পূর্ণ পেমেন্ট করে অর্ডার করুন।');
+    if ($pk === 'cod' && \App\Support\PrepaidOnly::any(array_keys($want))) return $back('এই ক্যাটাগরির পণ্যে ক্যাশ অন ডেলিভারি নেই। সম্পূর্ণ পেমেন্ট করে অর্ডার করুন।');
     if (in_array($pk, ['cod', 'shurjopay'], true) && DB::table('payment_methods')->where('kind', $pk)->where('active', false)->exists()) return $back('এই পেমেন্ট মেথডটি এখন চালু নেই।');
     if ($pk === 'shurjopay') {
       if (!\App\Support\ShurjoPay::enabled()) return $back('অনলাইন পেমেন্ট এখন চালু নেই।');
