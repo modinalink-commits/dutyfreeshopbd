@@ -1,9 +1,9 @@
 @php
- $__wc = \App\Http\Controllers\StoreController::rem('store.watchslide1', 900, function () {
+ $__wc = \App\Http\Controllers\StoreController::rem('store.watchslide2', 900, function () {
    try {
      $cat = \Illuminate\Support\Facades\DB::table('categories')->where('slug', 'watch')->value('id'); if (!$cat) return [];
-     $rows = \Illuminate\Support\Facades\DB::table('products')->where('category_id', $cat)->where('published', true)->where('price', '>=', 2500)->whereNotNull('image')->where('image', '!=', '')->orderByDesc('price')->limit(80)->get(['name', 'price', 'image']);
-     return $rows->shuffle()->take(8)->map(fn($r) => ['n' => $r->name, 'p' => (int)$r->price, 'i' => $r->image])->values()->all();
+     $rows = \Illuminate\Support\Facades\DB::table('products')->where('category_id', $cat)->where('published', true)->whereBetween('price', [45000, 50000])->whereNotNull('image')->where('image', '!=', '')->orderByDesc('price')->limit(80)->get(['name', 'price', 'image']);
+     return $rows->shuffle()->take(10)->map(fn($r) => ['n' => $r->name, 'p' => (int)$r->price, 'i' => $r->image])->values()->all();
    } catch (\Throwable $e) { return []; }
  });
  $__bn2 = fn($v) => strtr((string)$v, ['0'=>'০','1'=>'১','2'=>'২','3'=>'৩','4'=>'৪','5'=>'৫','6'=>'৬','7'=>'৭','8'=>'৮','9'=>'৯']);
