@@ -380,6 +380,14 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/inventory', [\App\Http\Controllers\InventoryController::class,'index']);
   Route::get('/inventory/export/{fmt}', [\App\Http\Controllers\InventoryController::class,'export']);
   Route::get('/stores', [\App\Http\Controllers\InventoryController::class,'stores']);
+  Route::get('/traffic-today', function () { // visitors by source today (Asia/Dhaka), from product page views
+    $from = now('Asia/Dhaka')->startOfDay()->setTimezone(config('app.timezone'))->toDateTimeString();
+    $by = DB::select("select coalesce(nullif(referrer,''),'(direct / none)') ref, source, count(distinct visitor_id) visitors, count(*) views from product_analytics_events where event_type='product_view' and created_at >= ? group by 1,2 order by 3 desc limit 60", [$from]);
+    $g = DB::select("select count(distinct visitor_id) v, count(*) n from product_analytics_events where event_type='product_view' and created_at >= ? and lower(coalesce(referrer,'')) like '%google.%'", [$from])[0];
+    $all = DB::select("select count(distinct visitor_id) v from product_analytics_events where event_type='product_view' and created_at >= ?", [$from])[0];
+    $ord = DB::select("select count(*) n from orders where created_at >= ?", [$from])[0];
+    return response()->json(['since' => $from, 'google_visitors' => (int)$g->v, 'google_views' => (int)$g->n, 'all_visitors' => (int)$all->v, 'orders_today' => (int)$ord->n, 'by_source' => $by]);
+  });
   Route::get('/watch-import', [\App\Http\Controllers\WatchImportController::class,'page']);
   Route::post('/watch-import/images', [\App\Http\Controllers\WatchImportController::class,'images']);
   Route::get('/watch-import/tidy', [\App\Http\Controllers\WatchImportController::class,'tidy']);
