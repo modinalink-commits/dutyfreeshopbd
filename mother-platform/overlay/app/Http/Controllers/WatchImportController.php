@@ -67,12 +67,9 @@ class WatchImportController extends Controller {
   /** Clean sub category from the product itself (source shop categories are messy: "Watche", "watch" ...). */
   public static function subFor(string $name, ?string $srcCat, string $cat): string {
     $n = mb_strtolower($name); $c = mb_strtolower(trim((string)$srcCat));
-    if ($cat === 'watch') {
-      if (preg_match('/strap|band|bracelet|box|case|organizer|organiser|winder|tool|battery|pin|buckle|accessor/i', $n . ' ' . $c) && !preg_match('/watch\s*\|/i', $n) && preg_match('/accessor|strap|box|case|organizer|winder|tool|band\b/i', $n . ' ' . $c)) return 'Watch Accessories';
-      if (preg_match("/women|ladies|lady|girl|female/i", $n)) return "Women's Watches";
-      if (preg_match("/couple/i", $n)) return 'Couple Watches';
-      if (preg_match("/\bmen'?s?\b|man\b|gents|male/i", $n)) return "Men's Watches";
-      return 'Watches';
+    if ($cat === 'watch') { // owner (8 Nov 2026): the Watch category has only two sub categories: Watch and Accessories
+      $acc = str_contains($c, 'accessor') || preg_match('/^\d+\s*slots?\b|\bstrap\s+for\b|\bwatch\s+(box|case|organi[sz]er|winder|roll)\b|organi[sz]er|\bwinder\b|\bwatch\s+tool|\bspring\s*bar|\bbuckle\b/i', $n);
+      return $acc ? 'Accessories' : 'Watch';
     }
     $t = trim((string)$srcCat); return $t !== '' ? mb_convert_case($t, MB_CASE_TITLE) : 'Gadgets';
   }
