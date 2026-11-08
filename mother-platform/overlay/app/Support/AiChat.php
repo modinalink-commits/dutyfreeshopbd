@@ -88,6 +88,18 @@ class AiChat {
     }
     return $out;
   }
+  /** Reply tone chosen by the owner in Chat Settings (applies to every AI reply). */
+  public static function toneRule(): string {
+    try {
+      $k = (string)Sms::secret('ai_tone'); $c = trim((string)Sms::secret('ai_tone_custom'));
+      $p = ['friendly'=>'Friendly and warm, like a helpful shop assistant; simple everyday words, a light emoji only when natural.',
+        'respectful'=>'Very polite and respectful: always address the customer as "আপনি" (never "তুমি"), use "স্যার/ম্যাডাম" only when the gender is clear, formal but kind Bangla.',
+        'professional'=>'Professional and businesslike, calm and precise, no emoji, no slang.',
+        'short'=>'Very short and direct: one to three short lines, answer first, no filler words, no emoji.'];
+      $r = $p[$k] ?? ''; if ($c !== '') $r .= ($r ? ' ' : '').mb_substr($c, 0, 400);
+      return $r === '' ? '' : "TONE (set by the owner, follow it in every reply): ".$r."\n";
+    } catch (\Throwable $e) { return ''; }
+  }
   public static function reply(array $history, string $extra = '', ?string $lang = null): array {
     $key = Sms::secret('ai_key'); if (!$key) return [false, 'not configured'];
     $msgs = []; $all = '';
@@ -108,7 +120,7 @@ class AiChat {
       ."TRUTH: answer ONLY from the STORE FACTS, CATALOGUE, PRODUCT DETAILS and VERIFIED ORDER blocks below. Quote prices, stock, delivery charges, payment options and links exactly as written. Never invent a product, price, discount, delivery time, policy or stock. If the data does not contain the answer, say you are not sure and give the phone/WhatsApp number $call.\n"
       ."PRODUCTS: when the customer asks about a product or category, search the whole CATALOGUE (match Bengali/Banglish names to the English product names, e.g. 'পারফিউম'/'perfume', 'সিগারেট'/'cigarette'). Recommend up to 3 matching items, each with name, price, stock status and its link path exactly as given (e.g. /p/123-name/). To order: open the product and press ORDER NOW (cash on delivery is available where listed). If an item is OUT OF STOCK say so and suggest in-stock alternatives.\n"
       ."ORDERS: you can only show an order's status if a VERIFIED ORDER block is present. Otherwise ask the customer for the invoice number (INV-xxxxxx) and the phone number used for the order, or send them to /track. Never share any customer's personal data. Never ask for passwords, OTP or card numbers.\n"
-      .$extra."\nSTORE FACTS:\n".self::facts()."\n\nCATALOGUE (name | category | price | stock | link):\n".implode("\n", array_column(self::catalog(), 'line'));
+      .self::toneRule().$extra."\nSTORE FACTS:\n".self::facts()."\n\nCATALOGUE (name | category | price | stock | link):\n".implode("\n", array_column(self::catalog(), 'line'));
     $detail = self::detail(end($msgs)['content'], $all);
     $sys2 = $detail !== '' ? $detail : '';
     try {

@@ -173,6 +173,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/chat-settings/fb-disconnect/{id}', [\App\Http\Controllers\ChatController::class,'fbDisconnect']);
   Route::post('/chat-settings/ig-disconnect/{id}', [\App\Http\Controllers\ChatController::class,'igDisconnect']);
   Route::post('/chat-settings/quick', [\App\Http\Controllers\ChatController::class,'quickSave']);
+  Route::post('/chat-settings/tone', [\App\Http\Controllers\ChatController::class,'toneSave']);
   Route::post('/chat-settings/quick/{id}/delete', [\App\Http\Controllers\ChatController::class,'quickDelete']);
   Route::get('/analytics', [\App\Http\Controllers\AnalyticsController::class,'index']);
   Route::get('/analytics/area-orders', [\App\Http\Controllers\AreaOrdersController::class,'index']);
