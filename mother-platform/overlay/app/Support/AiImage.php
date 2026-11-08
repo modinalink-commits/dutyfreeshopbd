@@ -39,7 +39,10 @@ class AiImage {
   }
   private static function load(string $abs) {
     $i = @getimagesize($abs); if (!$i) return null;
-    return match ($i[2]) { IMAGETYPE_JPEG => @imagecreatefromjpeg($abs), IMAGETYPE_PNG => @imagecreatefrompng($abs), IMAGETYPE_WEBP => @imagecreatefromwebp($abs), default => null };
+    $im = match ($i[2]) { IMAGETYPE_JPEG => @imagecreatefromjpeg($abs), IMAGETYPE_PNG => @imagecreatefrompng($abs), IMAGETYPE_WEBP => @imagecreatefromwebp($abs), IMAGETYPE_GIF => @imagecreatefromgif($abs), IMAGETYPE_BMP => @imagecreatefrombmp($abs), default => (defined('IMAGETYPE_AVIF') && $i[2] === IMAGETYPE_AVIF && function_exists('imagecreatefromavif')) ? @imagecreatefromavif($abs) : null };
+    if (!$im && class_exists('Imagick')) { try { $k = new \Imagick($abs . '[0]'); $k->setImageFormat('png'); $im = @imagecreatefromstring($k->getImageBlob()) ?: null; } catch (\Throwable $e) { $im = null; } }
+    if (!$im) { $b = @file_get_contents($abs); $im = $b ? (@imagecreatefromstring($b) ?: null) : null; }
+    return $im;
   }
   /** Square PNG (max 1024) of the original, centred on white, ready to send to the API. */
   private static function prepare(string $abs): string {

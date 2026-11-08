@@ -234,7 +234,7 @@ class WatchImportController extends Controller {
     $busy = false;
     foreach ($rows as $x) {
       $h = sha1($x->image); $row = DB::table('ai_images')->where('product_id', $x->pid)->where('source_hash', $h)->first();
-      if ($row && $row->ai_status === 'failed' && now()->diffInMinutes($row->updated_at) < 360) continue;
+      if ($row && $row->ai_status === 'failed' && !$r->boolean('force') && now()->diffInMinutes($row->updated_at) < 360) continue;
       if (!\Illuminate\Support\Facades\Cache::add('amour-clean-' . $x->pid, 1, 170)) { $busy = true; continue; }
       try {
         $id = $row ? $row->id : DB::table('ai_images')->insertGetId(['product_id' => $x->pid, 'source_hash' => $h, 'source_url' => $x->image, 'ai_status' => 'pending', 'created_at' => now(), 'updated_at' => now()]);

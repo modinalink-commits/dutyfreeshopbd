@@ -63,8 +63,9 @@ class StockGuard {
    *  1. every product must have the stock (No Stock = No Shipment, every category);
    *  2. revenue after all discounts must stay at or above the ACTUAL FIFO batch cost x (1 + protected profit %). */
   public static function shipBlock(int $orderId): ?string {
-    $o = DB::table('orders')->where('id', $orderId)->first(['id', 'invoice', 'stock_deducted_at', 'duplicate_of_order_id']);
+    $o = DB::table('orders')->where('id', $orderId)->first(['id', 'invoice', 'stock_deducted_at', 'duplicate_of_order_id', 'dup_allowed_at']);
     if (!$o || $o->stock_deducted_at !== null || $o->duplicate_of_order_id !== null) return null;
+    if (!empty($o->dup_allowed_at)) return self::profitBlock($o); // a manager/admin allowed this shipment by tick after manual verification (owner 8 Nov 2026): no-stock rule is waived for this order
     $rows = DB::table('order_items as i')->join('products as p', 'p.id', '=', 'i.product_id')->where('i.order_id', $orderId)->whereNotNull('p.stock')
       ->groupBy('p.id', 'p.name', 'p.stock')->havingRaw('sum(i.qty) > p.stock')->selectRaw('p.name, p.stock, sum(i.qty) need')->get();
     if (!$rows->isEmpty()) {

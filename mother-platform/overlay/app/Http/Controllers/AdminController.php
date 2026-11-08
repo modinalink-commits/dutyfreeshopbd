@@ -397,7 +397,7 @@ class AdminController extends Controller {
     if (!\App\Http\Middleware\ModulePermission::canDupAllow(Auth::user())) return response()->json(['ok'=>false,'message'=>'Only a manager/admin can allow a duplicate order.']);
     if (!\App\Support\DupGuard::ready()) return response()->json(['ok'=>false,'message'=>'Not ready yet, try again in a minute.']);
     DB::table('orders')->where('id',$id)->update(['dup_allowed_at'=>now(),'dup_allowed_by'=>Auth::user()->name,'updated_at'=>now()]);
-    try { DB::table('order_status_logs')->insert(['order_id'=>$id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'from_status'=>$o->status,'to_status'=>$o->status,'note'=>'Duplicate order (same customer, same day): manual permission given','created_at'=>now(),'updated_at'=>now()]); } catch (\Throwable $e) {}
+    try { DB::table('order_status_logs')->insert(['order_id'=>$id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'from_status'=>$o->status,'to_status'=>$o->status,'note'=>'Manual permission given to ship (duplicate order / no stock) after manual verification','created_at'=>now(),'updated_at'=>now()]); } catch (\Throwable $e) {}
     return response()->json(['ok'=>true,'by'=>Auth::user()->name]);
   }
   public function orderSchedule(Request $r, $id) {

@@ -31,6 +31,7 @@ class ShipCheck {
       ->groupBy('p.id', 'p.name', 'p.stock')->selectRaw('p.name, p.stock, sum(i.qty) need')->get();
     $short = []; $low = [];
     foreach ($rows as $r) { $need = (int)$r->need; $have = max(0, (int)$r->stock); if ($need > $have) $short[] = ['product'=>$r->name, 'required'=>$need, 'available'=>$have, 'short'=>$need - $have]; elseif ($have - $need <= 2) $low[] = $r->name; }
+    if ($short && !empty($o->dup_allowed_at)) return self::c('stock', 'Stock', 'WARNING', 'Stock is short but a manager/admin allowed this shipment by tick ('.($o->dup_allowed_by ?? '').'): '.implode(', ', array_map(fn($x) => $x['product'], array_slice($short, 0, 3))).'.', $short);
     if ($short) return self::c('stock', 'Stock', 'BLOCKED', 'Insufficient stock — No Stock = No Shipment. Stock In the product first.', $short);
     if ($low) return self::c('stock', 'Stock', 'WARNING', 'Stock is enough but almost finished: '.implode(', ', array_slice($low, 0, 3)).'.');
     return self::c('stock', 'Stock', 'INFO', 'Required quantity is available.');

@@ -7,11 +7,11 @@ var IC={INFO:'✔',WARNING:'⚠',CRITICAL:'⛔',BLOCKED:'🔴'};
 function draw(){var o=D.orders,ok=0,wr=0,cr=0,bl=0,dn=0,h='';
 o.forEach(function(x){if(x.worst==='INFO')ok++;else if(x.worst==='WARNING'){wr++}else if(x.worst==='CRITICAL')cr++;else bl++;
 h+='<div class="od" data-id="'+x.id+'"><div class="oh"><span>Order #'+esc(x.order)+'</span><span class="s-'+x.worst+'">'+x.passed+' of '+x.total+' checks passed · '+x.worst+'</span></div>';
-var dupOnly=x.worst==='BLOCKED'&&D.can_dup&&x.checks.some(function(c){return c.key==='duplicate'&&c.sev==='BLOCKED'})&&!x.checks.some(function(c){return c.sev==='BLOCKED'&&c.key!=='duplicate'});if(dupOnly)dn++;
+var dupOnly=x.worst==='BLOCKED'&&D.can_dup&&x.checks.some(function(c){return (c.key==='duplicate'||c.key==='stock')&&c.sev==='BLOCKED'})&&!x.checks.some(function(c){return c.sev==='BLOCKED'&&c.key!=='duplicate'&&c.key!=='stock'});if(dupOnly)dn++;
 x.checks.forEach(function(c){if(dupOnly||(x.worst==='CRITICAL'&&D.can_override))return;if(c.sev==='INFO'&&x.worst!=='INFO'&&c.key!=='stock'&&c.key!=='margin')return;h+='<div class="ck"><b class="s-'+c.sev+'">'+IC[c.sev]+' '+esc(c.label)+'</b><span>'+esc(c.msg)+'</span></div>';
 if(c.detail&&c.detail.length&&c.sev!=='INFO'){c.detail.forEach(function(d){var t=[];for(var k in d)t.push(k.replace('_',' ')+': '+d[k]);h+='<div class="dt">'+esc(t.join(' · '))+'</div>'})}});
 if(x.note&&x.worst!=='BLOCKED'){h+='<div class="ov" style="background:#F0F9FF"><label style="font-weight:700">Courier note <span style="font-weight:400;color:#6B7280">('+esc(x.note.source)+') — you can edit it</span></label><textarea class="cn" rows="2" maxlength="200" style="width:100%;box-sizing:border-box;margin-top:4px;padding:6px;border:1px solid #CBD5E1;border-radius:6px;font:inherit">'+esc(x.note.text)+'</textarea></div>'}
-if(dupOnly){h+='<div class="tkw"><label class="tk" data-tip="'+esc(x.checks.filter(function(c){return c.sev==='BLOCKED'}).map(function(c){return c.label+': '+c.msg}).join('\n')+'\nTick = Allow this duplicate and ship')+'"><input type="checkbox" class="sd" data-id="'+x.id+'"><i>✓</i></label></div>'}
+if(dupOnly){h+='<div class="tkw"><label class="tk" data-tip="'+esc(x.checks.filter(function(c){return c.sev==='BLOCKED'}).map(function(c){return c.label+': '+c.msg}).join('\n')+'\nTick = Allow (duplicate / no stock) and ship')+'"><input type="checkbox" class="sd" data-id="'+x.id+'"><i>✓</i></label></div>'}
 if(x.worst==='CRITICAL'){if(D.can_override){var tp=[];x.checks.forEach(function(c){if(c.sev==='CRITICAL'||c.sev==='WARNING')tp.push(c.label+': '+c.msg)});h+='<div class="tkw"><label class="tk" data-tip="'+esc(tp.join('\n'))+'"><input type="checkbox" class="sa" data-id="'+x.id+'"><i>✓</i></label></div>'}else{h+='<div class="ov">You do not have permission to override. Use Hold Shipment and ask an authorised person.</div>'}}
 h+='</div>'});
 var tc=(D.can_override?cr:0)+dn;if(tc>1)h='<div class="tkw" style="margin:0 20px 10px;border:1px solid #FED7AA;border-radius:10px;justify-content:flex-start;gap:10px"><label class="tk" data-tip="Mark all '+tc+' orders and send them together"><input type="checkbox" id="sall"><i>✓</i></label><b style="font-size:13px">Tick all ('+tc+' orders)</b></div>'+h;
@@ -26,7 +26,7 @@ add('_token',tk?tk.content:'');var err='';
 D.orders.forEach(function(x){var el=M.querySelector('.od[data-id="'+x.id+'"]');
 var nb=el&&el.querySelector('.cn');if(x.worst!=='BLOCKED'&&nb)add('note['+x.id+']',nb.value);
 if(x.worst==='INFO'||x.worst==='WARNING'){add('ids[]',x.id);n++}
-else if(x.worst==='BLOCKED'&&el&&el.querySelector('.sd')&&el.querySelector('.sd').checked){add('ids[]',x.id);add('override['+x.id+']','Duplicate allowed by tick');n++}
+else if(x.worst==='BLOCKED'&&el&&el.querySelector('.sd')&&el.querySelector('.sd').checked){add('ids[]',x.id);add('override['+x.id+']','Allowed by tick (duplicate / no stock)');n++}
 else if(x.worst==='CRITICAL'&&D.can_override&&el&&el.querySelector('.sa')&&el.querySelector('.sa').checked){add('ids[]',x.id);add('override['+x.id+']','Warning acknowledged by tick (ticked by '+(D.user||'staff')+')');n++}});
 if(err){alert(err);return}if(!n){alert('Nothing can be sent. Fix the issues or use Hold Shipment.');return}
 document.body.appendChild(f);f.submit()}
