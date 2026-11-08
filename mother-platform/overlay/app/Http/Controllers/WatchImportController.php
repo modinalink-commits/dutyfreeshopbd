@@ -48,7 +48,7 @@ class WatchImportController extends Controller {
         try {
           $our = (int)ceil((float)$x->price * (1 + $pct / 100));
           $name = trim(preg_replace('/\s+/u', ' ', (string)$x->name)); $name = trim(str_ireplace(['timeaccess-store.com', 'timeaccess store', 'timeaccess'], '', $name)); $name = trim(preg_replace('/\s*(?:\|\s*Star\s*Tech.*|Price in (?:Bangladesh|BD)\b.*)$/iu', '', $name)); $name = trim(preg_replace('/\bStar\s*Tech\b/iu', '', $name)); if ($name === '') $name = 'Watch';
-          $sub = self::subFor((string)$name, $x->category, $this->cfg()['cat']);
+          $sub = self::subFor((string)$name, $x->category, $this->cfg()['cat'], (string)$x->url);
           $base = \App\Support\Slugs::slug($name) ?: 'watch'; $slug = $base; $i = 2; $subSlug = \App\Support\Slugs::subSlug($sub);
           while (DB::table('products')->where('category_id', $cat->id)->whereRaw(\App\Support\Slugs::subSql() . ' = ?', [$subSlug])->where('path_slug', $slug)->exists()) $slug = $base . '-' . $i++;
           $pid = DB::table('products')->insertGetId(['name' => mb_substr($name, 0, 200), 'category_id' => $cat->id, 'price' => $our, 'cost' => $x->price, 'stock' => 0, 'published' => true, 'sub' => $sub, 'slug' => $base, 'path_slug' => $slug, 'created_at' => now(), 'updated_at' => now()]);
@@ -67,13 +67,58 @@ class WatchImportController extends Controller {
     } finally { $lock->release(); }
   }
   /** Clean sub category from the product itself (source shop categories are messy: "Watche", "watch" ...). */
-  public static function subFor(string $name, ?string $srcCat, string $cat): string {
+  public static function subFor(string $name, ?string $srcCat, string $cat, string $url = ''): string {
+    if ($cat === 'gadget-electronics') return self::gadgetSub($name);
+    if ($cat === 'lighter-accessories') return self::amourSub($name, $url);
     $n = mb_strtolower($name); $c = mb_strtolower(trim((string)$srcCat));
     if ($cat === 'watch') { // owner (8 Nov 2026): the Watch category has only two sub categories: Watch and Accessories
       $acc = str_contains($c, 'accessor') || preg_match('/^\d+\s*slots?\b|\bstrap\s+for\b|\bwatch\s+(box|case|organi[sz]er|winder|roll)\b|organi[sz]er|\bwinder\b|\bwatch\s+tool|\bspring\s*bar|\bbuckle\b/i', $n);
       return $acc ? 'Accessories' : 'Watch';
     }
     $t = trim((string)$srcCat); return $t !== '' ? mb_convert_case($t, MB_CASE_TITLE) : ($cat === 'lighter-accessories' ? 'Accessories' : 'Gadgets');
+  }
+  /** Gadget & Electronics sub category from the product name (the source shop gives no category). */
+  public static function gadgetSub(string $name): string {
+    $n = mb_strtolower($name);
+    $rules = [
+      'Motherboard' => '/mother\s*board|\b[a-z]\d{3}[a-z]?m?\b.*\b(ddr[45]|am[45]|lga)/', 'Processor' => '/\bprocessor\b|\bryzen\b|\bcore\s*i[3579]\b|\bintel\s+(core|celeron|pentium)|\bcpu\b/',
+      'Graphics Card' => '/graphics\s*card|\bgpu\b|geforce|radeon|\brtx\b|\bgtx\b/', 'RAM' => '/\bram\b|\bddr[345]\b.*\b(\d+gb)\b|memory\s*kit|so-?dimm/', 'SSD & Storage' => '/\bssd\b|\bhdd\b|hard\s*disk|nvme|portable\s*(drive|disk)|pen\s*drive|flash\s*drive|memory\s*card|micro\s*sd|\bsd\s*card\b/',
+      'Power Supply' => '/power\s*supply|\bpsu\b/', 'Casing & Cooling' => '/\bcasing\b|\bcase\b|cooler|\bfan\b|radiator|thermal\s*paste|\baio\b/',
+      'Laptop' => '/laptop|notebook|macbook|thinkpad|vivobook|zenbook|ideapad|\bvictus\b|\bnitro\b|\bpavilion\b/', 'Desktop PC' => '/desktop|all[\s-]*in[\s-]*one|mini\s*pc|\bbrand\s*pc\b|workstation/',
+      'Monitor' => '/monitor|\bdisplay\b.*\b(hz|inch)/', 'Printer & Scanner' => '/printer|toner|cartridge|\bink\b|scanner|\bphotocopier\b|label/',
+      'Camera & CCTV' => '/\bcamera\b|cctv|\bdvr\b|\bnvr\b|webcam|dash\s*cam|\bgopro\b|\bdrone\b/', 'Networking' => '/router|\bswitch\b|access\s*point|\bmodem\b|wi-?fi\s*(adapter|extender|repeater)|lan\s*card|network|\bonu\b|\bsfp\b|\blan\s*cable\b|\bcat\s*[5-7]/',
+      'UPS & Power' => '/\bups\b|\bavr\b|stabilizer|power\s*bank|\bcharger\b|adapter|\bbattery\b|power\s*strip|\bsocket\b/', 'Keyboard & Mouse' => '/keyboard|\bmouse\b|mousepad|mouse\s*pad|combo\s*(set|kit)/',
+      'Headphone & Speaker' => '/headphone|headset|earphone|earbud|\bairpod|\bneckband|speaker|soundbar|\bmic(rophone)?\b|\bbuds\b|\btws\b/', 'Smart Watch & Wearable' => '/smart\s*watch|smartwatch|\bband\b|\bfitness\b/',
+      'Mobile & Tablet' => '/smartphone|\bphone\b|\bipad\b|\btablet\b|\biphone\b|\bgalaxy\b|\bredmi\b|\btab\b/', 'TV & Projector' => '/\btv\b|television|projector|\bandroid\s*box|tv\s*box|streaming/',
+      'Gaming' => '/gaming\s*(chair|controller|pad)|gamepad|joystick|controller|console|playstation|\bps[45]\b|xbox|\bsteering\b|\bchair\b|\bdesk\b/', 'Cable & Converter' => '/\bcable\b|converter|\bhub\b|\bdock\b|hdmi|\busb\b|\botg\b|\bvga\b|\bdisplayport\b|adaptor/',
+      'Software' => '/software|antivirus|windows\s*\d+|\boffice\b|license|licence|subscription/', 'Smart Home' => '/smart\s*(plug|bulb|lock|home|switch)|\bsensor\b|\balarm\b|doorbell|robot\s*vacuum|\bvacuum\b|trimmer|\bshaver\b|hair\s*dryer|\biron\b|\bkettle\b|\bblender\b/',
+    ];
+    foreach ($rules as $sub => $re) if (preg_match($re, $n)) return $sub;
+    return 'Others';
+  }
+  /** Lighter & Accessories sub category: from the source shop's own collection (map handle~letter saved in settings), keywords as fallback. */
+  public static function amourSub(string $name, string $url): string {
+    static $L = ['L' => 'Lighter', 'K' => 'Keychains', 'A' => 'Ash Trays', 'B' => 'Bags', 'I' => 'Islamic Items', 'R' => 'Bracelets', 'G' => 'Gadgets', 'C' => 'Cigarette Boxes', 'S' => 'Socks', 'P' => 'Chains & Pendants', 'H' => 'Hindu Items', 'W' => 'Pocket Watches', 'X' => 'Caps', 'D' => 'Home Decor', 'N' => 'Rings', 'O' => 'Others'];
+    static $map = null; if ($map === null) { $map = []; try { foreach (explode(',', (string)DB::table('settings')->where('key', 'amour_sub_map')->value('value')) as $e) { $p = explode('~', $e); if (count($p) === 2) $map[$p[0]] = $p[1]; } } catch (\Throwable $e) {} }
+    $h = trim((string)preg_replace('#[?\#].*$#', '', $url), '/'); $h = substr($h, (int)strrpos($h, '/') + 1);
+    if ($h !== '' && isset($map[$h]) && isset($L[$map[$h]]) && $map[$h] !== 'O') return $L[$map[$h]];
+    $n = mb_strtolower($name);
+    foreach (['Lighter' => '/lighter|zippo/', 'Keychains' => '/keychain/', 'Socks' => '/socks?\b/', 'Ash Trays' => '/ash\s*tray/', 'Cigarette Boxes' => '/cig(ar|arette)?\s*box/', 'Pocket Watches' => '/pocket\s*watch/', 'Bracelets' => '/bracelet|bangle|cuff/', 'Chains & Pendants' => '/pendant|pendent|locket|chain/', 'Rings' => '/\bring\b/', 'Earrings' => '/earring/', 'Necklaces' => '/necklace/', 'Islamic Items' => '/ayatul|islamic|allah/', 'Hindu Items' => '/hindu|\bom\b|trishul/', 'Bags' => '/bag|backpack/', 'Caps' => '/\bcap\b|bandana/', 'Home Decor' => '/decor|money\s*bank|box\b/'] as $sub => $re) if (preg_match($re, $n)) return $sub;
+    return 'Others';
+  }
+  /** Re-sort the products of an affiliate category into the right sub categories (after a rule change). POST map=handle~letter,... saves the Amour collection map first. */
+  public function resub(Request $r) {
+    @set_time_limit(120); $cf = $this->cfg(); $s = $this->src(); abort_unless($s && in_array($cf['c'], ['gadget', 'amour'], true), 404);
+    if ($r->filled('map') && $cf['c'] === 'amour') DB::table('settings')->updateOrInsert(['key' => 'amour_sub_map'], ['value' => (string)$r->input('map'), 'updated_at' => now(), 'created_at' => now()]);
+    $cat = DB::table('categories')->where('slug', $cf['cat'])->first(); abort_unless($cat, 404);
+    $rows = DB::table('watch_source as w')->join('products as p', 'p.id', '=', 'w.product_id')->where('w.store_id', $s->id)->where('p.category_id', $cat->id)->get(['p.id', 'p.name', 'p.sub', 'p.slug', 'w.source_url', 'w.source_name']); $n = 0;
+    foreach ($rows as $x) {
+      $sub = self::subFor((string)($x->source_name ?: $x->name), null, $cf['cat'], (string)$x->source_url);
+      if ($sub === $x->sub) continue;
+      DB::table('products')->where('id', $x->id)->update(['sub' => $sub, 'sub_sub' => null, 'path_slug' => $this->slugFor($cat->id, (string)($x->slug ?: \App\Support\Slugs::slug($x->name)), $sub, (int)$x->id), 'updated_at' => now()]); $n++;
+    }
+    foreach (['store.cats', 'store.catslugs', 'store.subs', 'store.home11', 'store.sitemap5'] as $k) \Illuminate\Support\Facades\Cache::forget($k); \App\Http\Controllers\StoreController::bust();
+    return response()->json(['ok' => true, 'moved' => $n, 'total' => $rows->count()]);
   }
   private function slugFor(int $catId, string $base, string $sub, int $selfId) { $subSlug = \App\Support\Slugs::subSlug($sub); $slug = $base; $i = 2; while (DB::table('products')->where('category_id', $catId)->where('id', '!=', $selfId)->whereRaw(\App\Support\Slugs::subSql() . ' = ?', [$subSlug])->where('path_slug', $slug)->exists()) $slug = $base . '-' . $i++; return $slug; }
   private static function cleanHtml(string $h, array $bad): string {
