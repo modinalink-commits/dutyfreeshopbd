@@ -107,6 +107,14 @@ class WatchImportController extends Controller {
     foreach (['Lighter' => '/lighter|zippo/', 'Keychains' => '/keychain/', 'Socks' => '/socks?\b/', 'Ash Trays' => '/ash\s*tray/', 'Cigarette Boxes' => '/cig(ar|arette)?\s*box/', 'Pocket Watches' => '/pocket\s*watch/', 'Bracelets' => '/bracelet|bangle|cuff/', 'Chains & Pendants' => '/pendant|pendent|locket|chain/', 'Rings' => '/\bring\b/', 'Earrings' => '/earring/', 'Necklaces' => '/necklace/', 'Islamic Items' => '/ayatul|islamic|allah/', 'Hindu Items' => '/hindu|\bom\b|trishul/', 'Bags' => '/bag|backpack/', 'Caps' => '/\bcap\b|bandana/', 'Home Decor' => '/decor|money\s*bank|box\b/'] as $sub => $re) if (preg_match($re, $n)) return $sub;
     return 'Others';
   }
+  /** Diagnostic: source category list vs imported sub categories (admin only). */
+  public function diag(Request $r) {
+    $cf = $this->cfg(); $s = $this->src(); abort_unless($s, 404);
+    $src = DB::table('store_products')->where('store_id', $s->id)->selectRaw('coalesce(category,\'-\') c, count(*) n, sum(case when in_stock and price>0 then 1 else 0 end) ok')->groupBy('c')->orderByDesc('n')->limit(80)->get();
+    $cat = DB::table('categories')->where('slug', $cf['cat'])->first();
+    $imp = $cat ? DB::table('products')->where('category_id', $cat->id)->selectRaw('coalesce(sub,\'-\') s, count(*) n, sum(case when published then 1 else 0 end) pub')->groupBy('s')->orderByDesc('n')->get() : [];
+    return response()->json(['domain' => $cf['domain'], 'source_categories' => $src, 'imported_subs' => $imp]);
+  }
   /** Re-sort the products of an affiliate category into the right sub categories (after a rule change). POST map=handle~letter,... saves the Amour collection map first. */
   public function resub(Request $r) {
     @set_time_limit(120); $cf = $this->cfg(); $s = $this->src(); abort_unless($s && in_array($cf['c'], ['gadget', 'amour'], true), 404);

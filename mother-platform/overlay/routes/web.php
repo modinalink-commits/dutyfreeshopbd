@@ -390,6 +390,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   });
   Route::get('/watch-import', [\App\Http\Controllers\WatchImportController::class,'page']);
   Route::post('/watch-import/images', [\App\Http\Controllers\WatchImportController::class,'images']);
+  Route::get('/watch-import/diag', [\App\Http\Controllers\WatchImportController::class,'diag']);
   Route::get('/watch-import/tidy', [\App\Http\Controllers\WatchImportController::class,'tidy']);
   Route::post('/watch-import/details', [\App\Http\Controllers\WatchImportController::class,'details']);
   Route::post('/watch-import/resub', [\App\Http\Controllers\WatchImportController::class,'resub']);
