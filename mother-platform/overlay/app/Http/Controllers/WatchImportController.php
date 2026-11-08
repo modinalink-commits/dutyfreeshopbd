@@ -239,6 +239,10 @@ class WatchImportController extends Controller {
       try {
         $id = $row ? $row->id : DB::table('ai_images')->insertGetId(['product_id' => $x->pid, 'source_hash' => $h, 'source_url' => $x->image, 'ai_status' => 'pending', 'created_at' => now(), 'updated_at' => now()]);
         $res = \App\Support\AiImage::run((int)$id);
+        if (empty($res['ok']) && preg_match('/Unsupported|corrupted|Invalid image/i', (string)($res['error'] ?? ''))) { // the saved photo is damaged: fetch it again from the source shop, then retry once
+          $sp = DB::table('watch_source as w')->join('products as p', 'p.id', '=', 'w.product_id')->join('store_products as sp', 'sp.id', '=', 'w.store_product_id')->where('p.id', $x->pid)->first(['p.sku', 'sp.image as src']);
+          if ($sp && $sp->src) { $g = $this->fetchImages([$sp->sku => $sp->src])[$sp->sku] ?? []; if (!empty($g['file'])) { DB::table('products')->where('id', $x->pid)->update(['image' => $g['file'], 'updated_at' => now()]); $nh = sha1($g['file']); DB::table('ai_images')->where('id', $id)->update(['source_url' => $g['file'], 'source_hash' => $nh, 'original_image' => null, 'ai_status' => 'pending', 'updated_at' => now()]); $res = \App\Support\AiImage::run((int)$id); } else $res['error'] = ($res['error'] ?? '') . ' / refetch: ' . ($g['err'] ?? '?'); }
+        }
         if (empty($res['ok'])) { $err = (string)($res['error'] ?? ''); return response()->json(['finished' => (bool)preg_match('/API key|GD is not enabled/i', $err), 'ok' => 0, 'error' => $err, 'left' => $left]); }
         $pi = DB::table('ai_images')->where('id', $id)->value('processed_image');
         if ($pi) {
