@@ -157,14 +157,14 @@ class StoreController extends Controller {
   const HOME_DESC = 'আন্তর্জাতিক মানের সকল অরিজিনাল ইমপোর্টেড পণ্য এক জায়গায়: পারফিউম, আতর, স্কিন কেয়ার, হেয়ার কেয়ার, বেবি প্রোডাক্ট ও ডেইলি নিডস। ক্যাশ অন ডেলিভারি, সারা বাংলাদেশে হোম ডেলিভারি।';
   public function home() {
     $s = self::set();
-    $data = self::rem('store.home10', 300, function () use ($s) {
+    $data = self::rem('store.home11', 300, function () use ($s) {
       $pub = fn() => \App\Support\StockGuard::listable(DB::table('products')->where('published',true));
       $sold = DB::table('order_items as i')->join('orders as o','o.id','=','i.order_id')->whereNotIn('o.status',['Cancel','Incomplete'])->where('o.created_at','>=',now()->subDays(7))->groupBy('i.product_id')->selectRaw('i.product_id as pid, sum(i.qty) as q')->pluck('q','pid');
       $deals = self::todayBest($s)
         ->map(function ($p) use ($sold) { $p->sold = (int)($sold[$p->id] ?? 0); return $p; });
       $sec = []; $i = 0;
       $ordC = $this->cats()->values()->sortBy(fn($c) => self::isSmokeCat($c) ? 0 : (preg_match('/perfume|attar|আতর|পারফিউম/iu', ($c->slug ?? '').' '.($c->name ?? '')) ? 1 : 2))->values();
-      foreach ($ordC as $c) { $sec[] = [$c, $pub()->where('category_id',$c->id)->orderByDesc('id')->limit($i < 2 ? 24 : 14)->get()]; $i++; }
+      foreach ($ordC as $c) { $sec[] = [$c, $pub()->where('category_id',$c->id)->orderByDesc('id')->limit(80)->get()]; $i++; }
       $offers = [];
       foreach ($this->cats() as $c) { $mx = (int)$pub()->where('category_id',$c->id)->whereColumn('compare_price','>','price')->where('compare_price','>',0)->max(DB::raw('round((compare_price - price) / compare_price * 100)')); if ($mx > 0) $offers[] = [$c, $mx]; }
       usort($offers, fn($a, $b) => $b[1] <=> $a[1]);
