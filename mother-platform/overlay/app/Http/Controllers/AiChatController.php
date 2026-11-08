@@ -35,13 +35,20 @@ class AiChatController extends Controller {
     $this->audit($r, 'ai.kb', 'AI knowledge base saved');
     return back()->with('ok', 'Knowledge base saved. The AI uses it within a minute.');
   }
+  /** One-click ON/OFF switch from the top panel; changes exactly one setting and logs it. */
+  public function toggle(Request $r) {
+    $d = $r->validate(['key'=>'required|in:enabled,agent_tools,agent_orders', 'on'=>'required|boolean']);
+    $map = ['enabled'=>'ai_enabled', 'agent_tools'=>'ai_agent_tools', 'agent_orders'=>'ai_agent_orders'];
+    $v = $r->boolean('on');
+    Sms::setSecret($map[$d['key']], $v ? '1' : '0');
+    Cache::forget('ai.on');
+    $this->audit($r, 'ai.switch', $d['key'].' '.($v ? 'ON' : 'OFF'));
+    return response()->json(['ok'=>true, 'key'=>$d['key'], 'on'=>$v]);
+  }
   public function save(Request $r) {
     $d = $r->validate(['api_key'=>'nullable|string|max:300', 'model'=>'required|in:claude-haiku-5-5,claude-sonnet-5-5', 'enabled'=>'nullable|boolean', 'agent_tools'=>'nullable|boolean', 'agent_orders'=>'nullable|boolean']);
     if (!empty($d['api_key'])) Sms::setSecret('ai_key', trim($d['api_key']));
     Sms::setSecret('ai_model', $d['model']);
-    Sms::setSecret('ai_enabled', $r->boolean('enabled') ? '1' : '0');
-    Sms::setSecret('ai_agent_tools', $r->boolean('agent_tools') ? '1' : '0');
-    Sms::setSecret('ai_agent_orders', $r->boolean('agent_orders') ? '1' : '0');
     Cache::forget('ai.on');
     $this->audit($r, 'ai.settings', 'AI chat settings saved');
     return back()->with('ok', 'AI chat settings saved.');

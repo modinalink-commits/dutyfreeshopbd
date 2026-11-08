@@ -217,6 +217,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/ai-chat', [\App\Http\Controllers\AiChatController::class,'show']);
   Route::get('/voice-chat', [\App\Http\Controllers\VoiceChatController::class,'settings']); Route::post('/voice-chat', [\App\Http\Controllers\VoiceChatController::class,'saveSettings']); Route::post('/voice-chat/test', [\App\Http\Controllers\VoiceChatController::class,'test']);
   Route::post('/ai-chat', [\App\Http\Controllers\AiChatController::class,'save']);
+  Route::post('/ai-chat/toggle', [\App\Http\Controllers\AiChatController::class,'toggle']);
   Route::post('/ai-chat/kb', [\App\Http\Controllers\AiChatController::class,'saveKb']);
   Route::post('/ai-chat/kb-beautify', [\App\Http\Controllers\AiChatController::class,'beautifyKb'])->middleware('throttle:6,1');
   Route::get('/call-center/my-status', [\App\Http\Controllers\CallCenterController::class,'myStatus']);
