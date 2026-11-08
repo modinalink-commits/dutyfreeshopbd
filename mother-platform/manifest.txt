@@ -859,3 +859,4 @@ app/Support/AiSchedule.php
 database/migrations/2026_11_08_001000_confirmed_previews_to_requests.php
 database/migrations/2026_11_08_000400_ai_memory.php
 database/migrations/2026_11_08_000500_ai_memory_backfill.php
+database/migrations/2026_11_08_002000_discount_stack_mode.php
