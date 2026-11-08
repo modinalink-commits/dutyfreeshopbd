@@ -200,9 +200,8 @@ class StoreScanner {
   }
   /** Product data from a single page: JSON-LD Product first, Open Graph as fallback. */
   public static function parsePage(int $sid, string $url, string $html): ?array {
-    $prod = null;
+    $prod = null; $crumbs = null;
     if (preg_match_all('#<script[^>]+type=["\']application/ld\+json["\'][^>]*>(.*?)</script>#is', $html, $m)) {
-      $crumbs = null;
       $walk = function ($n) use (&$walk, &$prod, &$crumbs) {
         if (!is_array($n)) return;
         $t = $n['@type'] ?? null; $t = is_array($t) ? $t : [$t];
@@ -226,7 +225,13 @@ class StoreScanner {
       return self::row($sid, 'u:'.$url, $name, is_scalar($sku) ? (string)$sku : null, is_string($img) ? $img : null, is_scalar($price) ? preg_replace('/[^0-9.]/', '', (string)$price) : null, null, $in, is_string($cat) ? $cat : null, $url, true);
     }
     $price = $og('product:price:amount') ?? $og('og:price:amount');
-    if (($og('og:type') === 'product' || $price) && ($t = $og('og:title'))) return self::row($sid, 'u:'.$url, $t, null, $og('og:image'), $price ? preg_replace('/[^0-9.]/', '', $price) : null, null, null, null, $url, true);
+    if (($og('og:type') === 'product' || $price) && ($t = $og('og:title'))) {
+      $t = trim(preg_replace('/\s*(?:\|\s*Star\s*Tech.*|Price in (?:Bangladesh|BD)\b.*)$/iu', '', $t)); $t = trim(preg_replace('/\s*(?:\|\s*Star\s*Tech.*|Price in (?:Bangladesh|BD)\b.*)$/iu', '', $t));
+      $av = strtolower((string)($og('product:availability') ?? '')); $in = $av === '' ? null : !preg_match('/out|up\s*coming|upcoming|discontinued|pre-?order|sold/', $av);
+      if ($price === null || $price === '') { if (preg_match('#<meta[^>]+itemprop=["\']price["\'][^>]+content=["\']([\d.,]+)#i', $html, $pm)) $price = $pm[1]; }
+      $cat = null; if (!empty($crumbs['itemListElement'])) { $it = $crumbs['itemListElement']; $k = count($it) - 2; if ($k >= 0) $cat = $it[$k]['name'] ?? ($it[$k]['item']['name'] ?? null); }
+      return self::row($sid, 'u:'.$url, $t, null, $og('og:image'), $price ? preg_replace('/[^0-9.]/', '', $price) : null, null, $in, is_string($cat) ? $cat : null, $url, true);
+    }
     return null;
   }
 }
