@@ -129,12 +129,13 @@ class InventoryController extends Controller {
   public function scanDiag($id) {
     $s = DB::table('stores')->find($id); abort_unless($s && $s->domain, 404);
     $q = json_decode((string)@file_get_contents(storage_path('app/scan-'.(int)$id.'.json')), true) ?: []; $out = ['domain'=>$s->domain, 'queue'=>count($q), 'tests'=>[]];
-    $urls = array_slice($q, 0, 3) ?: ['https://'.$s->domain.'/'];
+    $urls = request('u') ? [(string)request('u')] : (array_slice($q, 0, 3) ?: ['https://'.$s->domain.'/']);
+    if (request('sm')) { $r = StoreScanner::get('https://'.$s->domain.'/'.ltrim((string)request('sm'), '/'), 15, 3000000); preg_match_all('#<loc>\s*([^<\s]+)#i', (string)($r['body'] ?? ''), $mm); $out['sitemap'] = ['code'=>$r['code'] ?? null, 'len'=>isset($r['body']) ? strlen($r['body']) : null, 'locs'=>array_slice($mm[1] ?? [], 0, 12)]; }
     foreach ($urls as $u) {
       $t = microtime(true); $err = null; $r = null;
       try { $r = StoreScanner::get($u, 12, 700000); } catch (\Throwable $e) { $err = $e->getMessage(); }
-      $le = error_get_last(); $host = parse_url($u, PHP_URL_HOST);
-      $out['tests'][] = ['url'=>$u, 'safeHost'=>StoreScanner::safeHost((string)$host), 'ips'=>@gethostbynamel((string)$host), 'code'=>$r['code'] ?? null, 'final'=>$r['url'] ?? null, 'len'=>isset($r['body']) ? strlen($r['body']) : null, 'sec'=>round(microtime(true)-$t, 2), 'err'=>$err, 'php'=>$le['message'] ?? null, 'head'=>isset($r['body']) ? mb_substr(strip_tags((string)$r['body']), 0, 160) : null];
+      $pg = StoreScanner::pget([$u], 10)[$u] ?? null; $le = error_get_last(); $host = parse_url($u, PHP_URL_HOST);
+      $out['tests'][] = ['url'=>$u, 'safeHost'=>StoreScanner::safeHost((string)$host), 'ips'=>@gethostbynamel((string)$host), 'code'=>$r['code'] ?? null, 'final'=>$r['url'] ?? null, 'len'=>isset($r['body']) ? strlen($r['body']) : null, 'sec'=>round(microtime(true)-$t, 2), 'pget_code'=>$pg['code'] ?? null, 'pget_len'=>isset($pg['body']) ? strlen($pg['body']) : null, 'err'=>$err, 'php'=>$le['message'] ?? null, 'head'=>isset($r['body']) ? mb_substr(strip_tags((string)$r['body']), 0, 160) : null];
     }
     return response()->json($out);
   }
