@@ -42,7 +42,7 @@ class MotherAffiliateDaily extends Command {
           request()->merge(['c' => $c]); $ctl = app(\App\Http\Controllers\WatchImportController::class); $n = 0;
           $jobs[$c] = false; $setPend($jobs);
           while ($n++ < 4000) { Cache::put('affiliate-alive', 1, 150); $j = $ctl->step(request())->getData(true); if (!empty($j['finished'])) break; }
-          if ($c === 'amour') { $m = 0; while ($m++ < 400) { Cache::put('affiliate-alive', 1, 150); $j = $ctl->clean(request())->getData(true); if (!empty($j['finished']) || !empty($j['error'])) break; if (empty($j['ok']) && empty($j['busy'])) break; } }
+          if ($c === 'amour') { $m = 0; while ($m++ < 4000) { Cache::put('affiliate-alive', 1, 150); $j = $ctl->clean(request())->getData(true); if (!empty($j['finished']) || !empty($j['error'])) break; if (empty($j['ok']) && empty($j['busy'])) break; if (!empty($j['busy'])) sleep(5); } }
           unset($jobs[$c]); $setPend($jobs);
           $this->info("$c done");
         } catch (\Throwable $e) { report($e); }

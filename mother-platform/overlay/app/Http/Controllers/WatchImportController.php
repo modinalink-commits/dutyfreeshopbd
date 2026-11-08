@@ -156,25 +156,33 @@ class WatchImportController extends Controller {
     foreach ($rows as $x) { $g = $res[$x->sku] ?? []; if (!empty($g['file'])) { DB::table('products')->where('id', $x->pid)->update(['image' => $g['file'], 'updated_at' => now()]); $ok++; } else $err = $g['err'] ?? 'unknown'; }
     return response()->json(['finished' => $ok === 0, 'ok' => $ok, 'left' => $left - $ok, 'err' => $err]);
   }
-  /** Amour only (owner 8 Nov 2026): every photo is cleaned by AI (watermark, logo, text and background removed, product kept) before the product goes live. */
+  /** Amour only (owner 8 Nov 2026): every photo is cleaned by AI (watermark, logo, text and background removed, product kept) before the product goes live. One photo per call (many calls can run in parallel, each photo is claimed so none is done twice). */
   public function clean(Request $r) {
-    @set_time_limit(280); $s = $this->src(); abort_unless($s && $this->cfg()['c'] === 'amour', 404);
-    $lock = \Illuminate\Support\Facades\Cache::lock('amour-clean', 290); if (!$lock->get()) return response()->json(['finished' => false, 'busy' => true]);
-    try {
-      $rows = DB::table('watch_source as w')->join('products as p', 'p.id', '=', 'w.product_id')->where('w.store_id', $s->id)->where('p.image', 'like', '/uploads/amour/%')->orderBy('w.id')->limit(40)->get(['p.id as pid', 'p.image']);
-      $ok = 0; $t0 = time(); $left = DB::table('watch_source as w')->join('products as p', 'p.id', '=', 'w.product_id')->where('w.store_id', $s->id)->where('p.image', 'like', '/uploads/amour/%')->count();
-      foreach ($rows as $x) {
-        if (time() - $t0 > 230) break;
-        $h = sha1($x->image); $row = DB::table('ai_images')->where('product_id', $x->pid)->where('source_hash', $h)->first();
-        if ($row && $row->ai_status === 'failed') { $age = now()->diffInMinutes($row->updated_at); if ($age < 360) continue; }
+    @set_time_limit(170); ignore_user_abort(true); $s = $this->src(); abort_unless($s && $this->cfg()['c'] === 'amour', 404);
+    $base = DB::table('watch_source as w')->join('products as p', 'p.id', '=', 'w.product_id')->where('w.store_id', $s->id)->where('p.image', 'like', '/uploads/amour/%');
+    $left = (clone $base)->count();
+    $rows = (clone $base)->orderBy('w.id')->limit(60)->get(['p.id as pid', 'p.image']);
+    $busy = false;
+    foreach ($rows as $x) {
+      $h = sha1($x->image); $row = DB::table('ai_images')->where('product_id', $x->pid)->where('source_hash', $h)->first();
+      if ($row && $row->ai_status === 'failed' && now()->diffInMinutes($row->updated_at) < 360) continue;
+      if (!\Illuminate\Support\Facades\Cache::add('amour-clean-' . $x->pid, 1, 170)) { $busy = true; continue; }
+      try {
         $id = $row ? $row->id : DB::table('ai_images')->insertGetId(['product_id' => $x->pid, 'source_hash' => $h, 'source_url' => $x->image, 'ai_status' => 'pending', 'created_at' => now(), 'updated_at' => now()]);
         $res = \App\Support\AiImage::run((int)$id);
-        if (!empty($res['ok'])) { $pi = DB::table('ai_images')->where('id', $id)->value('processed_image'); if ($pi) { DB::table('products')->where('id', $x->pid)->update(['image' => $pi, 'updated_at' => now()]); $ok++; } }
-        elseif (preg_match('/API key|GD is not enabled/i', (string)($res['error'] ?? ''))) return response()->json(['finished' => true, 'ok' => 0, 'error' => $res['error'], 'left' => $left]);
-      }
-      if ($ok) { $this->sync($s->id); foreach (['store.cats', 'store.catslugs', 'store.home11', 'stock.modes'] as $k) \Illuminate\Support\Facades\Cache::forget($k); \App\Http\Controllers\StoreController::bust(); }
-      return response()->json(['finished' => $rows->isEmpty(), 'ok' => $ok, 'left' => max(0, $left - $ok)]);
-    } finally { $lock->release(); }
+        if (empty($res['ok'])) { $err = (string)($res['error'] ?? ''); return response()->json(['finished' => (bool)preg_match('/API key|GD is not enabled/i', $err), 'ok' => 0, 'error' => $err, 'left' => $left]); }
+        $pi = DB::table('ai_images')->where('id', $id)->value('processed_image');
+        if ($pi) {
+          $u = ['image' => $pi, 'updated_at' => now()];
+          $w = DB::table('watch_source as w')->join('store_products as sp', 'sp.id', '=', 'w.store_product_id')->where('w.product_id', $x->pid)->first(['sp.in_stock', 'sp.published']);
+          if ($w && $w->in_stock && $w->published) $u['published'] = true;
+          DB::table('products')->where('id', $x->pid)->update($u);
+          if (\Illuminate\Support\Facades\Cache::add('amour-bust', 1, 15)) { foreach (['store.cats', 'store.catslugs', 'stock.modes'] as $k) \Illuminate\Support\Facades\Cache::forget($k); \App\Http\Controllers\StoreController::bust(); }
+        }
+        return response()->json(['finished' => false, 'ok' => 1, 'left' => max(0, $left - 1)]);
+      } finally { \Illuminate\Support\Facades\Cache::forget('amour-clean-' . $x->pid); }
+    }
+    return response()->json(['finished' => !$busy, 'ok' => 0, 'busy' => $busy, 'left' => $left]);
   }
   /** Keep live state equal to the source shop: out of stock there = not live here; back in stock = live again; price follows source +markup. */
   private function sync(int $sid): void {
