@@ -873,3 +873,4 @@ database/migrations/2026_11_08_010000_watch_above_perfume.php
 database/migrations/2026_11_08_011000_gadget_category.php
 database/migrations/2026_11_08_012000_watch_source_details.php
 database/migrations/2026_11_08_013000_sunglass_category.php
+app/Console/Commands/MotherAffiliateDaily.php
