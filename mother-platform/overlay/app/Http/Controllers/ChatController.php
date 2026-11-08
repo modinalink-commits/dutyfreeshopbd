@@ -45,7 +45,7 @@ class ChatController extends Controller {
     $t = DB::table('chat_threads')->find($id); abort_unless($t, 404);
     $card = Chat::cards([$t])[0];
     $msgs = DB::table('chat_messages')->where('thread_id', $id)->orderByDesc('id')->limit(61)->get()->take(60)->reverse()->values()->map(fn($m) => [
-      'id'=>$m->id, 'dir'=>$m->dir, 'kind'=>$m->kind, 'body'=>$m->body, 'att'=>$m->attachment_url, 'att_type'=>$m->attachment_type, 'by'=>$m->user_name, 'is_ai'=>(bool)($m->is_ai ?? false), 'status'=>$m->status, 'error'=>$m->error, 'read'=>!empty($m->read_at), 'transcript'=>$m->transcript ?? null,
+      'id'=>$m->id, 'dir'=>$m->dir, 'kind'=>$m->kind, 'body'=>$m->body, 'att'=>$m->attachment_url, 'att_type'=>$m->attachment_type, 'by'=>$m->user_name, 'is_ai'=>(bool)($m->is_ai ?? false), 'status'=>$m->status, 'error'=>$m->error, 'read'=>!empty($m->read_at), 'transcript'=>$m->transcript ?? null, 'cards'=>Chat::productCards($m->body),
       'at'=>\Carbon\Carbon::parse($m->created_at)->toIso8601String()]);
     $hasMore = DB::table('chat_messages')->where('thread_id', $id)->count() > 60;
     $cust = $t->customer_id ? DB::table('customers')->find($t->customer_id) : ($t->phone ? DB::table('customers')->where('phone', $t->phone)->first() : null);
@@ -62,7 +62,7 @@ class ChatController extends Controller {
 
   public function messagesAfter(Request $r, $id) {
     $map = fn($m) => [
-      'id'=>$m->id, 'dir'=>$m->dir, 'kind'=>$m->kind, 'body'=>$m->body, 'att'=>$m->attachment_url, 'att_type'=>$m->attachment_type, 'by'=>$m->user_name, 'is_ai'=>(bool)($m->is_ai ?? false), 'status'=>$m->status, 'error'=>$m->error, 'read'=>!empty($m->read_at), 'transcript'=>$m->transcript ?? null,
+      'id'=>$m->id, 'dir'=>$m->dir, 'kind'=>$m->kind, 'body'=>$m->body, 'att'=>$m->attachment_url, 'att_type'=>$m->attachment_type, 'by'=>$m->user_name, 'is_ai'=>(bool)($m->is_ai ?? false), 'status'=>$m->status, 'error'=>$m->error, 'read'=>!empty($m->read_at), 'transcript'=>$m->transcript ?? null, 'cards'=>Chat::productCards($m->body),
       'at'=>\Carbon\Carbon::parse($m->created_at)->toIso8601String()];
     if ($r->query('before')) { // older history, newest-first page of 40 (lazy "load older")
       $rows = DB::table('chat_messages')->where('thread_id', $id)->where('id', '<', (int)$r->query('before'))->orderByDesc('id')->limit(41)->get();

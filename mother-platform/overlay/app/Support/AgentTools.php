@@ -48,7 +48,9 @@ class AgentTools {
         $q = trim(mb_substr((string)($in['query'] ?? ''), 0, 80)); if ($q === '') return ['error'=>'empty query'];
         $words = array_slice(array_values(array_filter(preg_split('/[\s,.?!]+/u', mb_strtolower($q)), fn($w) => mb_strlen($w) >= 2)), 0, 5);
         $rows = StockGuard::listable(DB::table('products')->where('published', true))->where(function ($w) use ($words) { foreach ($words as $t) { $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $t).'%'; $w->orWhere('name', 'ilike', $like)->orWhere('sub', 'ilike', $like)->orWhere('size', 'ilike', $like); } })
-          ->orderByRaw('case when stock > 0 then 0 else 1 end')->orderByDesc('id')->limit(max(1, min(6, (int)($in['limit'] ?? 4))))->get(['id', 'name', 'price', 'compare_price', 'stock', 'sub', 'category_id', 'path_slug', 'sub_sub']);
+          ->limit(80)->get(['id', 'name', 'price', 'compare_price', 'stock', 'sub', 'category_id', 'path_slug', 'sub_sub', 'size']);
+        // best match first: the product whose name holds the most of the customer's words (e.g. 'dunhill switch blue' finds Dunhill Switch 8 Mg (Blue) before any other Dunhill)
+        $rows = $rows->map(function ($p) use ($words) { $l = mb_strtolower($p->name.' '.($p->size ?? '')); $sc = 0; foreach ($words as $w) if (str_contains($l, $w)) $sc++; return [$sc, $p]; })->sort(fn($a, $b) => [$b[0], ($b[1]->stock > 0 ? 1 : 0), $b[1]->id] <=> [$a[0], ($a[1]->stock > 0 ? 1 : 0), $a[1]->id])->take(max(1, min(6, (int)($in['limit'] ?? 4))))->map(fn($x) => $x[1])->values();
         return ['count'=>$rows->count(), 'products'=>$rows->map(fn($p) => self::row($p))->all(), 'note'=>$rows->count() ? 'only in-stock published products are listed' : 'no available product matches: say it is currently not available, never mention or link anything else out of stock']; 
       }
       case 'product_details': {

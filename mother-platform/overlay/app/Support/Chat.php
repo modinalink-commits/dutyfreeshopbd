@@ -31,6 +31,22 @@ class Chat {
     } catch (\Throwable $e) {}
     return self::sec($ch === 'instagram' && self::sec('chat_ig_token') ? 'chat_ig_token' : 'chat_fb_token');
   }
+  /** Product cards (photo, name, price, link) for every store product link in a message, so staff see what the customer sees. */
+  public static function productCards(?string $body): array {
+    try {
+      if (!$body || stripos($body, 'dutyfreebd.com/') === false) return [];
+      if (!preg_match_all('#https?://(?:www\.)?dutyfreebd\.com/[^\s]+/([a-z0-9\-]+)/?(?=\s|$)#iu', $body, $m, PREG_SET_ORDER)) return [];
+      $urls = []; foreach ($m as $x) { $urls[strtolower($x[1])] = rtrim($x[0], '/'); } $urls = array_slice($urls, 0, 6, true);
+      $rows = DB::table('products')->where(fn($q) => $q->whereIn('slug', array_keys($urls))->orWhereIn('path_slug', array_keys($urls)))->get(['name', 'price', 'offer_price', 'image', 'slug', 'path_slug']);
+      $out = [];
+      foreach ($urls as $slug => $u) {
+        $p = $rows->first(fn($r) => strtolower((string)$r->slug) === $slug || strtolower((string)$r->path_slug) === $slug); if (!$p) continue;
+        $img = strtok((string)$p->image, '?'); if ($img !== '' && str_starts_with($img, '/')) $img = 'https://www.dutyfreebd.com'.$img;
+        $out[] = ['name'=>$p->name, 'price'=>number_format((float)($p->offer_price ?: $p->price)), 'image'=>$img ?: null, 'url'=>$u];
+      }
+      return $out;
+    } catch (\Throwable $e) { return []; }
+  }
   /** Store one incoming message and (re)open its thread. Returns the thread, or null for a duplicate. */
   public static function ingest(string $ch, string $ext, ?string $name, string $body, ?string $att = null, ?string $mid = null, array $meta = []): ?object {
     if ($mid && DB::table('chat_messages')->where('ext_id', $mid)->exists()) return null;
