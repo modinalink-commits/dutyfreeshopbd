@@ -271,7 +271,8 @@ class ChatController extends Controller {
   private function igHeal(): void {
     try {
       $tok = (string)Chat::sec('chat_ig_token'); if (!$tok) return;
-      $j = json_decode((string)Chat::sec('chat_ig_accounts'), true); if (is_array($j) && $j) return;
+      $j = json_decode((string)Chat::sec('chat_ig_accounts'), true);
+      if (is_array($j) && $j) { $ch = false; foreach ($j as $k => $a) if (empty($a['token'])) { $j[$k]['token'] = \Illuminate\Support\Facades\Crypt::encryptString($tok); $ch = true; } if ($ch) \App\Support\Sms::setSecret('chat_ig_accounts', json_encode($j)); return; }
       $G = 'https://graph.facebook.com/v21.0/'; $H = fn() => \Illuminate\Support\Facades\Http::timeout(12); $ids = [];
       foreach (['me/instagram_accounts', 'me/accounts'] as $ep) {
         $q = $H()->withToken($tok)->get($G.$ep, ['fields'=>$ep === 'me/accounts' ? 'instagram_business_account{id}' : 'id,username', 'limit'=>50])->json();
@@ -283,7 +284,7 @@ class ChatController extends Controller {
       foreach ($ids as $igid) {
         $res = $H()->withToken($tok)->post($G.$igid.'/subscribed_apps', ['subscribed_fields'=>'messages,messaging_postbacks,message_reactions'])->json();
         $u = $H()->withToken($tok)->get($G.$igid, ['fields'=>'username,name'])->json();
-        $acc[] = ['id'=>(string)$igid, 'username'=>$u['username'] ?? ($u['name'] ?? null), 'ok'=>!empty($res['success'])];
+        $acc[] = ['id'=>(string)$igid, 'username'=>$u['username'] ?? ($u['name'] ?? null), 'ok'=>!empty($res['success']), 'token'=>\Illuminate\Support\Facades\Crypt::encryptString($tok)];
       }
       if ($acc && array_filter($acc, fn($a) => !empty($a['username']) || !empty($a['ok']))) \App\Support\Sms::setSecret('chat_ig_accounts', json_encode($acc));
     } catch (\Throwable $e) {}
@@ -339,8 +340,10 @@ class ChatController extends Controller {
         $res = $H()->withToken($tok)->post($G.$igid.'/subscribed_apps', ['subscribed_fields'=>'messages,messaging_postbacks,message_reactions'])->json();
         $okk = !empty($res['success']); $msgs[] = $igid.($okk ? ': receiving messages' : ': subscribe failed - '.mb_substr((string)($res['error']['message'] ?? json_encode($res)), 0, 160));
       }
-      $acc = [];
-      foreach ($ids as $igid) { $u = $H()->withToken($tok)->get($G.$igid, ['fields'=>'username,name'])->json(); $acc[] = ['id'=>(string)$igid, 'username'=>$u['username'] ?? ($u['name'] ?? null), 'ok'=>str_contains(implode('|', $msgs), $igid.': receiving')]; }
+      $old = json_decode((string)Chat::sec('chat_ig_accounts'), true); $keep = [];
+      foreach ((is_array($old) ? $old : []) as $o) if (!in_array((string)($o['id'] ?? ''), array_map('strval', $ids), true)) $keep[] = $o;
+      $acc = $keep;
+      foreach ($ids as $igid) { $u = $H()->withToken($tok)->get($G.$igid, ['fields'=>'username,name'])->json(); $acc[] = ['id'=>(string)$igid, 'username'=>$u['username'] ?? ($u['name'] ?? null), 'ok'=>str_contains(implode('|', $msgs), $igid.': receiving'), 'token'=>\Illuminate\Support\Facades\Crypt::encryptString($tok)]; }
       \App\Support\Sms::setSecret('chat_ig_accounts', json_encode($acc));
       try { DB::table('audit_logs')->insert(['user_id'=>auth()->id(), 'user_name'=>auth()->user()->name, 'action'=>'chat.ig_connect', 'subject'=>'Instagram login: '.implode(' | ', $msgs), 'ip'=>$r->ip(), 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {}
       return $back->with('ok', 'Instagram connected. '.implode(' | ', $msgs));
@@ -419,6 +422,14 @@ class ChatController extends Controller {
     $d = $r->validate(['wa_config_id'=>'required|digits_between:8,25']);
     \App\Support\Sms::setSecret('chat_wa_config_id', $d['wa_config_id']);
     return back()->with('ok', 'WhatsApp login configuration saved.');
+  }
+  public function igDisconnect(Request $r, $id) {
+    $j = json_decode((string)Chat::sec('chat_ig_accounts'), true); $j = is_array($j) ? $j : []; $name = null;
+    $j = array_values(array_filter($j, function ($a) use ($id, &$name) { if ((string)($a['id'] ?? '') === (string)$id) { $name = $a['username'] ?? $id; return false; } return true; }));
+    \App\Support\Sms::setSecret('chat_ig_accounts', json_encode($j));
+    if (!$j) \App\Support\Sms::setSecret('chat_ig_token', '');
+    try { DB::table('audit_logs')->insert(['user_id'=>auth()->id(), 'user_name'=>auth()->user()->name, 'action'=>'chat.ig_disconnect', 'subject'=>'Instagram disconnected: '.$name, 'ip'=>$r->ip(), 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {}
+    return back()->with('ok', 'Disconnected '.($name ? '@'.ltrim((string)$name, '@') : 'the account').'. (Its old conversations stay in the inbox.)');
   }
   public function fbDisconnect(Request $r, $id) {
     $p = DB::table('chat_pages')->find($id); if (!$p) return back();

@@ -27,6 +27,7 @@ class Chat {
       $p = $ref ? DB::table('chat_pages')->where('page_id', $ref)->orWhere('ig_id', $ref)->first() : null;
       if (!$p && !$ref && DB::table('chat_pages')->count() === 1) $p = DB::table('chat_pages')->first();
       if ($p && $p->token) return \Illuminate\Support\Facades\Crypt::decryptString($p->token);
+      if ($ch === 'instagram' && $ref) { $j = json_decode((string)self::sec('chat_ig_accounts'), true); foreach ((is_array($j) ? $j : []) as $a) if ((string)($a['id'] ?? '') === (string)$ref && !empty($a['token'])) return \Illuminate\Support\Facades\Crypt::decryptString($a['token']); }
     } catch (\Throwable $e) {}
     return self::sec($ch === 'instagram' && self::sec('chat_ig_token') ? 'chat_ig_token' : 'chat_fb_token');
   }
