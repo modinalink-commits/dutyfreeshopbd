@@ -7,10 +7,17 @@ use Illuminate\Support\Facades\DB;
 
 /** Watch category import (owner, 8 Nov 2026): every scanned product of the source shop priced 0-50,000 BDT becomes OUR product (our code, our URL, our image copy, price = source +15%). Source details live only in watch_source (admin only). */
 class WatchImportController extends Controller {
-  private function src() { return DB::table('stores')->whereRaw('lower(domain) = ?', [strtolower((string)(DB::table('settings')->where('key', 'watch_source_domain')->value('value') ?: 'timeaccess-store.com'))])->first(); }
+  /** Which source feeds which category: watch <- timeaccess-store.com, gadget <- startech.com.bd (owner, 8 Nov 2026; both +5%, prepaid only, no discount). */
+  private function cfg(): array {
+    $c = request('c') === 'gadget' ? 'gadget' : 'watch'; $set = fn($k, $d) => (string)(DB::table('settings')->where('key', $k)->value('value') ?? $d);
+    return $c === 'gadget'
+      ? ['c' => 'gadget', 'domain' => 'startech.com.bd', 'cat' => 'gadget-electronics', 'prefix' => 'DFG', 'pct' => (float)($set('mobile_markup_pct', '5') ?: 5), 'max' => 0.0, 'dir' => 'gadget']
+      : ['c' => 'watch', 'domain' => strtolower($set('watch_source_domain', 'timeaccess-store.com')), 'cat' => 'watch', 'prefix' => 'DFW', 'pct' => (float)($set('watch_markup_pct', '5') ?: 5), 'max' => (float)($set('watch_max_price', '50000') ?: 50000), 'dir' => 'watch'];
+  }
+  private function src() { return DB::table('stores')->whereRaw('lower(domain) = ? or lower(domain) = ?', [$this->cfg()['domain'], 'www.' . $this->cfg()['domain']])->first(); }
   private function cond($q, $sid) {
-    $max = (float)(DB::table('settings')->where('key', 'watch_max_price')->value('value') ?: 50000); $min = (float)(DB::table('settings')->where('key', 'watch_min_price')->value('value') ?: 0);
-    return $q->where('store_id', $sid)->where('in_stock', true)->where('price', '>', max(0, $min))->where('price', '<=', $max);
+    $cf = $this->cfg(); $q = $q->where('store_id', $sid)->where('in_stock', true)->where('price', '>', 0);
+    return $cf['max'] > 0 ? $q->where('price', '<=', $cf['max']) : $q;
   }
   private function stat($sid): array {
     $total = $this->cond(DB::table('store_products'), $sid)->count();
@@ -20,20 +27,20 @@ class WatchImportController extends Controller {
   public function page() {
     $s = $this->src(); abort_unless($s, 404); $st = $this->stat($s->id);
     $csrf = csrf_token();
-    return response('<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Watch Import</title><body style="font-family:system-ui;max-width:640px;margin:30px auto;padding:0 16px"><h2>⌚ Watch Import</h2><p>Source shop products (০–৫০,০০০ টাকা) → আমাদের Watch ক্যাটাগরি, দাম +১৫%।</p><p id=s>Imported <b id=d>'.$st['done'].'</b> / <b>'.$st['total'].'</b></p><div style="background:#eee;height:14px;border-radius:7px"><div id=b style="height:14px;border-radius:7px;background:#f97316;width:'.($st['total'] ? round($st['done'] / $st['total'] * 100) : 0).'%"></div></div><p><button id=go style="padding:10px 18px;font-size:15px">Start / Resume</button> <a href="/admin/watch-sources">Source list (admin only)</a></p><pre id=m></pre><script>var T='.$st['total'].',run=false;async function step(){var r=await fetch("/admin/watch-import/step",{method:"POST",headers:{"X-CSRF-TOKEN":"'.$csrf.'","Accept":"application/json"}});var j=await r.json();document.getElementById("d").textContent=j.done;document.getElementById("b").style.width=(T?j.done/T*100:0)+"%";document.getElementById("m").textContent=j.note||"";return j}document.getElementById("go").onclick=async function(){if(run)return;run=true;try{while(true){var j=await step();if(j.finished)break}document.getElementById("m").textContent="Finished ✔ "+document.getElementById("m").textContent}catch(e){document.getElementById("m").textContent="Stopped: "+e}run=false}</script>');
+    return response('<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Watch Import</title><body style="font-family:system-ui;max-width:640px;margin:30px auto;padding:0 16px"><h2>⌚ Watch Import</h2><p>Source shop products (০–৫০,০০০ টাকা) → আমাদের Watch ক্যাটাগরি, দাম +১৫%।</p><p id=s>Imported <b id=d>'.$st['done'].'</b> / <b>'.$st['total'].'</b></p><div style="background:#eee;height:14px;border-radius:7px"><div id=b style="height:14px;border-radius:7px;background:#f97316;width:'.($st['total'] ? round($st['done'] / $st['total'] * 100) : 0).'%"></div></div><p><button id=go style="padding:10px 18px;font-size:15px">Start / Resume</button> <a href="/admin/watch-sources">Source list (admin only)</a></p><pre id=m></pre><script>var T='.$st['total'].',run=false;async function step(){var r=await fetch("/admin/watch-import/step?c='.$this->cfg()['c'].'",{method:"POST",headers:{"X-CSRF-TOKEN":"'.$csrf.'","Accept":"application/json"}});var j=await r.json();document.getElementById("d").textContent=j.done;document.getElementById("b").style.width=(T?j.done/T*100:0)+"%";document.getElementById("m").textContent=j.note||"";return j}document.getElementById("go").onclick=async function(){if(run)return;run=true;try{while(true){var j=await step();if(j.finished)break}document.getElementById("m").textContent="Finished ✔ "+document.getElementById("m").textContent}catch(e){document.getElementById("m").textContent="Stopped: "+e}run=false}</script>');
   }
   public function step(Request $r) {
     @set_time_limit(90);
     $s = $this->src(); abort_unless($s, 404);
-    $cat = DB::table('categories')->where('slug', 'watch')->first(); if (!$cat) return response()->json(['finished' => true, 'done' => 0, 'note' => 'Watch category not found (deploy migration first).']);
+    $cat = DB::table('categories')->where('slug', $this->cfg()['cat'])->first(); if (!$cat) return response()->json(['finished' => true, 'done' => 0, 'note' => 'Watch category not found (deploy migration first).']);
     $lock = Cache::lock('watch-import', 80); if (!$lock->get()) return response()->json(['finished' => false] + $this->stat($s->id));
     try {
-      $pct = (float)(DB::table('settings')->where('key', 'watch_markup_pct')->value('value') ?: 15);
+      $pct = $this->cfg()['pct'];
       $rows = $this->cond(DB::table('store_products'), $s->id)->whereNotIn('id', DB::table('watch_source')->select('store_product_id'))->orderBy('id')->limit(12)->get();
-      if ($rows->isEmpty()) { $this->sync($s->id); foreach (['store.cats', 'store.catslugs', 'store.home11', 'stock.modes'] as $k) Cache::forget($k); Cache::forget('store.hsec3.watch'); return response()->json(['finished' => true, 'note' => 'All products imported.'] + $this->stat($s->id)); }
+      if ($rows->isEmpty()) { $this->sync($s->id); foreach (['store.cats', 'store.catslugs', 'store.home11', 'stock.modes'] as $k) Cache::forget($k); Cache::forget('store.hsec3.' . $this->cfg()['cat']); return response()->json(['finished' => true, 'note' => 'All products imported.'] + $this->stat($s->id)); }
       $imgs = []; foreach ($rows as $x) if ($x->image && preg_match('#^https?://#i', $x->image)) $imgs[$x->image] = $x->image;
       $got = $imgs ? StoreScanner::pget(array_values($imgs), 12) : [];
-      $dir = public_path('uploads/watch'); if (!is_dir($dir)) @mkdir($dir, 0775, true);
+      $dir = public_path('uploads/' . $this->cfg()['dir']); if (!is_dir($dir)) @mkdir($dir, 0775, true);
       $made = 0;
       foreach ($rows as $x) {
         try {
@@ -43,11 +50,11 @@ class WatchImportController extends Controller {
           $base = \App\Support\Slugs::slug($name) ?: 'watch'; $slug = $base; $i = 2; $subSlug = \App\Support\Slugs::subSlug($sub);
           while (DB::table('products')->where('category_id', $cat->id)->whereRaw(\App\Support\Slugs::subSql() . ' = ?', [$subSlug])->where('path_slug', $slug)->exists()) $slug = $base . '-' . $i++;
           $pid = DB::table('products')->insertGetId(['name' => mb_substr($name, 0, 200), 'category_id' => $cat->id, 'price' => $our, 'cost' => $x->price, 'stock' => 0, 'published' => true, 'sub' => $sub, 'slug' => $base, 'path_slug' => $slug, 'created_at' => now(), 'updated_at' => now()]);
-          $code = 'DFW' . str_pad((string)$pid, 6, '0', STR_PAD_LEFT); $upd = ['sku' => $code];
+          $code = $this->cfg()['prefix'] . str_pad((string)$pid, 6, '0', STR_PAD_LEFT); $upd = ['sku' => $code];
           $g = $x->image ? ($got[$x->image] ?? null) : null;
           if ($g && ($g['code'] ?? 0) == 200 && !empty($g['body']) && @getimagesizefromstring($g['body'])) {
             $ext = strtolower(pathinfo(parse_url($x->image, PHP_URL_PATH) ?: '', PATHINFO_EXTENSION)); if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp'], true)) $ext = 'jpg';
-            if (@file_put_contents($dir . '/' . $code . '.' . $ext, $g['body'])) $upd['image'] = '/uploads/watch/' . $code . '.' . $ext;
+            if (@file_put_contents($dir . '/' . $code . '.' . $ext, $g['body'])) $upd['image'] = '/uploads/' . $this->cfg()['dir'] . '/' . $code . '.' . $ext;
           }
           DB::table('products')->where('id', $pid)->update($upd);
           DB::table('watch_source')->insert(['product_id' => $pid, 'store_product_id' => $x->id, 'store_id' => $s->id, 'source_name' => $x->name, 'source_sku' => $x->sku, 'source_url' => $x->url, 'source_price' => $x->price, 'our_price' => $our, 'markup_pct' => $pct, 'source_in_stock' => $x->in_stock, 'created_at' => now(), 'updated_at' => now()]);
@@ -59,7 +66,7 @@ class WatchImportController extends Controller {
   }
   /** Download images with Laravel's HTTP client (several at once). Returns [url => ['file'=>'/uploads/watch/..']|['err'=>..]]. */
   private function fetchImages(array $map): array {
-    $dir = public_path('uploads/watch'); if (!is_dir($dir)) @mkdir($dir, 0775, true); $res = [];
+    $dir = public_path('uploads/' . $this->cfg()['dir']); if (!is_dir($dir)) @mkdir($dir, 0775, true); $res = [];
     try {
       $resp = \Illuminate\Support\Facades\Http::pool(function ($pool) use ($map) { $o = []; foreach ($map as $code => $url) $o[] = $pool->as((string)$code)->timeout(25)->withHeaders(['User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36', 'Accept' => 'image/avif,image/webp,image/*,*/*;q=0.8'])->get($url); return $o; });
       foreach ($map as $code => $url) {
@@ -68,7 +75,7 @@ class WatchImportController extends Controller {
         $b = $r->body(); $i = @getimagesizefromstring($b); $ext = [IMAGETYPE_JPEG => 'jpg', IMAGETYPE_PNG => 'png', IMAGETYPE_WEBP => 'webp'][$i[2] ?? 0] ?? null;
         if (!$ext || strlen($b) < 200) { $res[$code] = ['err' => 'not an image']; continue; }
         if (@file_put_contents($dir . '/' . $code . '.' . $ext, $b) === false) { $res[$code] = ['err' => 'cannot write ' . $dir]; continue; }
-        @chmod($dir . '/' . $code . '.' . $ext, 0664); $res[$code] = ['file' => '/uploads/watch/' . $code . '.' . $ext];
+        @chmod($dir . '/' . $code . '.' . $ext, 0664); $res[$code] = ['file' => '/uploads/' . $this->cfg()['dir'] . '/' . $code . '.' . $ext];
       }
     } catch (\Throwable $e) { foreach ($map as $code => $url) $res[$code] = ['err' => mb_substr($e->getMessage(), 0, 120)]; }
     return $res;
@@ -77,8 +84,8 @@ class WatchImportController extends Controller {
   public function images(Request $r) {
     @set_time_limit(90);
     $rows = DB::table('watch_source as w')->join('products as p', 'p.id', '=', 'w.product_id')->join('store_products as sp', 'sp.id', '=', 'w.store_product_id')
-      ->where(fn($q) => $q->whereNull('p.image')->orWhere('p.image', ''))->whereNotNull('sp.image')->orderBy('p.id')->limit(10)->get(['p.id as pid', 'p.sku', 'sp.image as src']);
-    $left = DB::table('watch_source as w')->join('products as p', 'p.id', '=', 'w.product_id')->where(fn($q) => $q->whereNull('p.image')->orWhere('p.image', ''))->count();
+      ->where('w.store_id', $this->src()->id ?? 0)->where(fn($q) => $q->whereNull('p.image')->orWhere('p.image', ''))->whereNotNull('sp.image')->orderBy('p.id')->limit(10)->get(['p.id as pid', 'p.sku', 'sp.image as src']);
+    $left = DB::table('watch_source as w')->join('products as p', 'p.id', '=', 'w.product_id')->where('w.store_id', $this->src()->id ?? 0)->where(fn($q) => $q->whereNull('p.image')->orWhere('p.image', ''))->count();
     if ($rows->isEmpty()) return response()->json(['finished' => true, 'left' => $left]);
     $map = []; foreach ($rows as $x) $map[$x->sku] = $x->src; $res = $this->fetchImages($map); $ok = 0; $err = null;
     foreach ($rows as $x) { $g = $res[$x->sku] ?? []; if (!empty($g['file'])) { DB::table('products')->where('id', $x->pid)->update(['image' => $g['file'], 'updated_at' => now()]); $ok++; } else $err = $g['err'] ?? 'unknown'; }
