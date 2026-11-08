@@ -12,6 +12,7 @@ if(c.detail&&c.detail.length&&c.sev!=='INFO'){c.detail.forEach(function(d){var t
 if(x.note&&x.worst!=='BLOCKED'){h+='<div class="ov" style="background:#F0F9FF"><label style="font-weight:700">Courier note <span style="font-weight:400;color:#6B7280">('+esc(x.note.source)+') — you can edit it</span></label><textarea class="cn" rows="2" maxlength="200" style="width:100%;box-sizing:border-box;margin-top:4px;padding:6px;border:1px solid #CBD5E1;border-radius:6px;font:inherit">'+esc(x.note.text)+'</textarea></div>'}
 if(x.worst==='CRITICAL'){if(D.can_override){var tp=[];x.checks.forEach(function(c){if(c.sev==='CRITICAL'||c.sev==='WARNING')tp.push(c.label+': '+c.msg)});h+='<div class="tkw"><label class="tk" data-tip="'+esc(tp.join('\n'))+'"><input type="checkbox" class="sa" data-id="'+x.id+'"><i>✓</i></label></div>'}else{h+='<div class="ov">You do not have permission to override. Use Hold Shipment and ask an authorised person.</div>'}}
 h+='</div>'});
+if(cr>1&&D.can_override)h='<div class="tkw" style="margin:0 20px 10px;border:1px solid #FED7AA;border-radius:10px;justify-content:flex-start;gap:10px"><label class="tk" data-tip="Mark all '+cr+' critical orders and send them together"><input type="checkbox" id="sall"><i>✓</i></label><b style="font-size:13px">Tick all ('+cr+' critical)</b></div>'+h;
 document.getElementById('scb').innerHTML=h;
 document.getElementById('scs').textContent=o.length+' order(s) selected';
 document.getElementById('scsum').innerHTML='<span style="background:#DCFCE7;color:#15803D">Passed: '+ok+'</span><span style="background:#FEF3C7;color:#B45309">Warning: '+wr+'</span><span style="background:#FFEDD5;color:#C2410C">Critical: '+cr+'</span><span style="background:#FEE2E2;color:#B91C1C">Blocked: '+bl+'</span>';
@@ -26,6 +27,7 @@ else if(x.worst==='CRITICAL'&&D.can_override&&el&&el.querySelector('.sa')&&el.qu
 if(err){alert(err);return}if(!n){alert('Nothing can be sent. Fix the issues or use Hold Shipment.');return}
 document.body.appendChild(f);f.submit()}
 M.addEventListener('change',function(e){var t=e.target;if(!t.classList||!t.classList.contains('sa')||!t.checked)return;var f=document.createElement('form');f.method='post';f.action='/admin/courier/send-bulk';function add(k,v){var i=document.createElement('input');i.type='hidden';i.name=k;i.value=v;f.appendChild(i)}add('_token',tk?tk.content:'');add('ids[]',t.dataset.id);add('override['+t.dataset.id+']','Warning acknowledged by tick');var el=t.closest('.od'),nb=el&&el.querySelector('.cn');if(nb)add('note['+t.dataset.id+']',nb.value);document.body.appendChild(f);f.submit()});document.getElementById('scgo').onclick=go;document.getElementById('schold').onclick=function(){M.classList.remove('on')};
+M.addEventListener('change',function(e){var t=e.target;if(t.id!=='sall'||!t.checked)return;M.querySelectorAll('.sa').forEach(function(c){c.checked=true});go()});
 M.addEventListener('click',function(e){if(e.target===M)M.classList.remove('on')});
 window.dfShipCheck=function(ev){var ids=[].map.call(document.querySelectorAll('#bulk input[name="ids[]"]:checked'),function(i){return i.value});
 if(!ids.length){alert('Select orders first');return false}
