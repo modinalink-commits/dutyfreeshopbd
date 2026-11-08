@@ -82,15 +82,19 @@ class WatchImportController extends Controller {
   public static function gadgetSub(string $name): string {
     $n = mb_strtolower($name);
     $rules = [
+      'Laptop' => '/laptop|notebook|macbook|thinkpad|vivobook|zenbook|ideapad|\bvictus\b|\bnitro\b|\bpavilion\b|chromebook|\binspiron\b|\blatitude\b|\bvostro\b|\bxps\b|\bprobook\b|\belitebook\b|\bomen\b|\blegion\b|\bthinkbook\b|\bloq\b|\baspire\b|\bswift\b|\bpredator\b|\bkatana\b|\bcyborg\b|\bprestige\b|\btuf\s*(gaming\s*)?f\d|\brog\s*(strix|zephyrus|flow)|\bexpertbook\b|\bsurface\s*(laptop|pro|go)|\bhp\s*(14|15|16|17)s?-|\bgram\b/',
+      'Appliances' => '/steamer|sewing|dehumidifier|air\s*(purifier|cooler|fryer)|refrigerator|\bfridge\b|microwave|\boven\b|rice\s*cooker|cooker|\bfreezer\b|washing\s*machine|water\s*(heater|purifier|dispenser)|\bgeyser\b|\bheater\b|ceiling\s*fan|pedestal|\bac\b|air\s*conditioner|juicer|\bmixer\b|toaster|\bkettle\b|blender|vacuum|\biron\b/',
+      'Office Items' => '/safe\s*box|locker|vault|shredder|bill\s*counter|money\s*counter|laminat|stapler|whiteboard|calculator|paper\s*cutter|binding|fingerprint\s*(attendance|machine)|attendance|\bpos\b|barcode|receipt|cash\s*drawer|trolley/',
+      'Security' => '/door\s*lock|smart\s*lock|access\s*control|intercom|video\s*door|metal\s*detector|alarm|\bsiren\b|gps\s*tracker|tracker/',
       'Motherboard' => '/mother\s*board|\b[a-z]\d{3}[a-z]?m?\b.*\b(ddr[45]|am[45]|lga)/', 'Processor' => '/\bprocessor\b|\bryzen\b|\bcore\s*i[3579]\b|\bintel\s+(core|celeron|pentium)|\bcpu\b/',
       'Graphics Card' => '/graphics\s*card|\bgpu\b|geforce|radeon|\brtx\b|\bgtx\b/', 'RAM' => '/\bram\b|\bddr[345]\b.*\b(\d+gb)\b|memory\s*kit|so-?dimm/', 'SSD & Storage' => '/\bssd\b|\bhdd\b|hard\s*disk|nvme|portable\s*(drive|disk)|pen\s*drive|flash\s*drive|memory\s*card|micro\s*sd|\bsd\s*card\b/',
       'Power Supply' => '/power\s*supply|\bpsu\b/', 'Casing & Cooling' => '/\bcasing\b|\bcase\b|cooler|\bfan\b|radiator|thermal\s*paste|\baio\b/',
-      'Laptop' => '/laptop|notebook|macbook|thinkpad|vivobook|zenbook|ideapad|\bvictus\b|\bnitro\b|\bpavilion\b/', 'Desktop PC' => '/desktop|all[\s-]*in[\s-]*one|mini\s*pc|\bbrand\s*pc\b|workstation/',
+      'Desktop PC' => '/desktop|all[\s-]*in[\s-]*one|mini\s*pc|\bbrand\s*pc\b|workstation/',
       'Monitor' => '/monitor|\bdisplay\b.*\b(hz|inch)/', 'Printer & Scanner' => '/printer|toner|cartridge|\bink\b|scanner|\bphotocopier\b|label/',
-      'Camera & CCTV' => '/\bcamera\b|cctv|\bdvr\b|\bnvr\b|webcam|dash\s*cam|\bgopro\b|\bdrone\b/', 'Networking' => '/router|\bswitch\b|access\s*point|\bmodem\b|wi-?fi\s*(adapter|extender|repeater)|lan\s*card|network|\bonu\b|\bsfp\b|\blan\s*cable\b|\bcat\s*[5-7]/',
+      'Camera & CCTV' => '/\bcamera\b|video\s*light|\bgodox\b|tripod|gimbal|ring\s*light|lens\b|cctv|\bdvr\b|\bnvr\b|webcam|dash\s*cam|\bgopro\b|\bdrone\b/', 'Networking' => '/mikrotik|tp-?link|tenda|ubiquiti|d-?link|\brb\d{3,4}|router|\bswitch\b|access\s*point|\bmodem\b|wi-?fi\s*(adapter|extender|repeater)|lan\s*card|network|\bonu\b|\bsfp\b|\blan\s*cable\b|\bcat\s*[5-7]/',
       'UPS & Power' => '/\bups\b|\bavr\b|stabilizer|power\s*bank|\bcharger\b|adapter|\bbattery\b|power\s*strip|\bsocket\b/', 'Keyboard & Mouse' => '/keyboard|\bmouse\b|mousepad|mouse\s*pad|combo\s*(set|kit)/',
       'Headphone & Speaker' => '/headphone|headset|earphone|earbud|\bairpod|\bneckband|speaker|soundbar|\bmic(rophone)?\b|\bbuds\b|\btws\b/', 'Smart Watch & Wearable' => '/smart\s*watch|smartwatch|\bband\b|\bfitness\b/',
-      'Mobile & Tablet' => '/smartphone|\bphone\b|\bipad\b|\btablet\b|\biphone\b|\bgalaxy\b|\bredmi\b|\btab\b/', 'TV & Projector' => '/\btv\b|television|projector|\bandroid\s*box|tv\s*box|streaming/',
+      'Mobile & Tablet' => '/smartphone|\bphone\b|\bipad\b|\btablet\b|\biphone\b|\bgalaxy\b|\bredmi\b|\btab\b/', 'TV & Projector' => '/digital\s*signage|interactive\s*flat|\bifp\b|\btv\b|television|projector|\bandroid\s*box|tv\s*box|streaming/',
       'Gaming' => '/gaming\s*(chair|controller|pad)|gamepad|joystick|controller|console|playstation|\bps[45]\b|xbox|\bsteering\b|\bchair\b|\bdesk\b/', 'Cable & Converter' => '/\bcable\b|converter|\bhub\b|\bdock\b|hdmi|\busb\b|\botg\b|\bvga\b|\bdisplayport\b|adaptor/',
       'Software' => '/software|antivirus|windows\s*\d+|\boffice\b|license|licence|subscription/', 'Smart Home' => '/smart\s*(plug|bulb|lock|home|switch)|\bsensor\b|\balarm\b|doorbell|robot\s*vacuum|\bvacuum\b|trimmer|\bshaver\b|hair\s*dryer|\biron\b|\bkettle\b|\bblender\b/',
     ];
