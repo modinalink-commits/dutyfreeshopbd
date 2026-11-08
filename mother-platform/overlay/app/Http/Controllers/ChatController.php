@@ -271,7 +271,9 @@ class ChatController extends Controller {
   public function fbConnect(Request $r) {
     $id = trim((string)Chat::sec('chat_app_id'));
     if (!$id) return redirect('/admin/chat-settings')->with('err', 'Save the Meta App ID first (Chat Settings > Meta app).');
-    $st = bin2hex(random_bytes(16)); $ig = (bool)$r->query('ig'); $wa = (bool)$r->query('wa'); session(['fb_oauth_state'=>$st, 'fb_oauth_ig'=>$ig, 'fb_oauth_wa'=>$wa]);
+    $ig = (bool)$r->query('ig'); $wa = (bool)$r->query('wa');
+    $pl = rtrim(strtr(base64_encode(json_encode(['t'=>time(), 'i'=>$ig ? 1 : 0, 'w'=>$wa ? 1 : 0, 'n'=>bin2hex(random_bytes(6))])), '+/', '-_'), '='); $st = $pl.'.'.hash_hmac('sha256', $pl, (string)config('app.key')); // signed state: no dependence on the browser session
+    session(['fb_oauth_state'=>$st, 'fb_oauth_ig'=>$ig, 'fb_oauth_wa'=>$wa]);
     if ($wa && !trim((string)Chat::sec('chat_wa_config_id'))) return redirect('/admin/chat-settings')->with('err', 'Save the WhatsApp login Configuration ID first.');
     return redirect('https://www.facebook.com/v21.0/dialog/oauth?'.http_build_query(['client_id'=>$id, 'redirect_uri'=>url('/admin/chat-settings/fb-callback'), 'state'=>$st, 'response_type'=>'code',
       'config_id'=>$wa ? trim((string)Chat::sec('chat_wa_config_id')) : ($ig ? '989295444231024' : '1507276531459571'), 'override_default_response_type'=>'true']));
@@ -280,7 +282,13 @@ class ChatController extends Controller {
     $back = redirect('/admin/chat-settings');
     if ($r->query('error')) return $back->with('err', 'Facebook login was cancelled or refused: '.mb_substr((string)($r->query('error_description') ?: $r->query('error')), 0, 220));
     $st = (string)session('fb_oauth_state'); session()->forget('fb_oauth_state');
-    if ($st === '' || !hash_equals($st, (string)$r->query('state'))) return $back->with('err', 'The login session expired. Press "Connect with Facebook" again.');
+    $qs = (string)$r->query('state'); $parts = explode('.', $qs, 2); $sd = null;
+    if (count($parts) === 2 && hash_equals(hash_hmac('sha256', $parts[0], (string)config('app.key')), $parts[1])) $sd = json_decode((string)base64_decode(strtr($parts[0], '-_', '+/')), true);
+    if (!is_array($sd) || (time() - (int)($sd['t'] ?? 0)) > 1800) {
+      if ($st === '' || !hash_equals($st, $qs)) return $back->with('err', 'The login session expired. Press the connect button again (once, in one window).');
+      $sd = ['i'=>(int)session('fb_oauth_ig'), 'w'=>(int)session('fb_oauth_wa')];
+    }
+    session(['fb_oauth_ig'=>!empty($sd['i']), 'fb_oauth_wa'=>!empty($sd['w'])]);
     $id = trim((string)Chat::sec('chat_app_id')); $sec = trim((string)Chat::sec('chat_app_secret'));
     if (!$id || !$sec) return $back->with('err', 'Save both the Meta App ID and the App secret first.');
     $G = 'https://graph.facebook.com/v21.0/'; $H = fn() => \Illuminate\Support\Facades\Http::timeout(25);
