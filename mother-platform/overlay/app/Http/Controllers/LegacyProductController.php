@@ -35,6 +35,18 @@ class LegacyProductController extends Controller
     if (!$this->ok($r)) abort(404);
     return response()->json(['rows' => DB::table('legacy_products')->count(), 'pages' => DB::table('legacy_products')->distinct()->count('src_page')]);
   }
+  /** Read-only: what the old database holds about product photos, next to what the new product has. Nothing is changed. */
+  public function peek(Request $r) {
+    $rows = DB::table('legacy_products as l')->join('products as p', 'p.id', '=', 'l.new_product_id')->leftJoin('categories as c', 'c.id', '=', 'p.category_id')
+      ->orderBy('l.old_id')->limit(max(1, min(30, (int)($r->query('n') ?: 8))))->offset((int)$r->query('o'))->get(['l.old_id', 'l.thumbnail_img', 'l.raw', 'p.id as pid', 'p.name', 'p.image', 'c.slug as cat']);
+    $out = [];
+    foreach ($rows as $x) {
+      $raw = json_decode((string)$x->raw, true) ?: [];
+      $ph = []; foreach ($raw as $k => $v) if (preg_match('/photo|image|img|gallery|thumb/i', (string)$k)) $ph[$k] = is_string($v) ? mb_substr($v, 0, 400) : $v;
+      $out[] = ['pid'=>$x->pid, 'name'=>mb_substr((string)$x->name, 0, 50), 'cat'=>$x->cat, 'now_image'=>$x->image, 'gallery_now'=>DB::table('product_images')->where('product_id', $x->pid)->orderBy('position')->orderBy('id')->pluck('path')->all(), 'old_thumbnail'=>$x->thumbnail_img, 'old_photo_fields'=>$ph];
+    }
+    return response()->json(['rows'=>$out, 'total'=>DB::table('legacy_products')->whereNotNull('new_product_id')->count()]);
+  }
   public function review() {
     $q = fn($sql) => (int)DB::selectOne($sql)->n;
     $d = [
