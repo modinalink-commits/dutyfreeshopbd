@@ -48,6 +48,7 @@ class WatchImportController extends Controller {
         try {
           $our = (int)ceil((float)$x->price * (1 + $pct / 100));
           $name = trim(preg_replace('/\s+/u', ' ', (string)$x->name)); $name = trim(str_ireplace(['timeaccess-store.com', 'timeaccess store', 'timeaccess'], '', $name)); $name = trim(preg_replace('/\s*(?:\|\s*Star\s*Tech.*|Price in (?:Bangladesh|BD)\b.*)$/iu', '', $name)); $name = trim(preg_replace('/\bStar\s*Tech\b/iu', '', $name)); if ($name === '') $name = 'Watch';
+          $name = trim(preg_replace('/\s{2,}/u', ' ', preg_replace(['/\s*[|\-–]\s*Time\s*Access\b.*$/iu', '/\bTime\s*-?\s*Access\b/iu', '/\bLuxotix\b\s*/iu'], '', $name)), " \t-|–"); // no trace of the source shop in our product names
           $sub = self::subFor((string)$name, $x->category, $this->cfg()['cat'], (string)$x->url);
           $base = \App\Support\Slugs::slug($name) ?: 'watch'; $slug = $base; $i = 2; $subSlug = \App\Support\Slugs::subSlug($sub);
           while (DB::table('products')->where('category_id', $cat->id)->whereRaw(\App\Support\Slugs::subSql() . ' = ?', [$subSlug])->where('path_slug', $slug)->exists()) $slug = $base . '-' . $i++;
@@ -182,7 +183,7 @@ class WatchImportController extends Controller {
       $html = self::cleanHtml((string)($j['body_html'] ?? ''), $bad);
       // option table (strap, size ...) from variants
       $opts = []; foreach ((array)($j['options'] ?? []) as $o) { $vals = array_values(array_unique(array_map('strval', (array)($o['values'] ?? [])))); if (($o['name'] ?? '') !== '' && $o['name'] !== 'Title' && $vals) $opts[] = '<li><strong>' . e($o['name']) . ':</strong> ' . e(implode(', ', array_slice($vals, 0, 12))) . '</li>'; }
-      $spec = []; if (!empty($j['vendor'])) { $v = trim((string)$j['vendor']); if (stripos($v, 'timeaccess') === false) $spec[] = '<li><strong>Brand:</strong> ' . e($v) . '</li>'; }
+      $spec = []; if (!empty($j['vendor'])) { $v = trim((string)$j['vendor']); if (!preg_match('/time\s*-?\s*access|luxotix|amour|ryans|startech/i', $v)) $spec[] = '<li><strong>Brand:</strong> ' . e($v) . '</li>'; }
       if (!empty($j['product_type']) && stripos((string)$j['product_type'], 'timeaccess') === false) $spec[] = '<li><strong>Type:</strong> ' . e((string)$j['product_type']) . '</li>';
       $desc = ($html !== '' ? $html : '') . ($spec || $opts ? '<h3>Specifications</h3><ul>' . implode('', $spec) . implode('', $opts) . '</ul>' : '');
       $upd = ['updated_at' => now()]; if ($desc !== '') { $upd['description'] = $desc; $txt = trim(preg_replace('/\s+/u', ' ', strip_tags($html))); if ($txt !== '') $upd['meta_description'] = mb_substr($txt, 0, 155); }
