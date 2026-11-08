@@ -75,7 +75,7 @@ class Chat {
     $prev = $body !== '' ? $body : ($att ? (($meta['att_type'] ?? 'image') === 'audio' ? '🎤 Voice message' : '[attachment]') : '');
     DB::table('chat_threads')->where('id', $t->id)->update(['unread'=>DB::raw('unread + 1'), 'awaiting_reply'=>true, 'last_customer_message_at'=>now(), 'last_message'=>mb_substr($prev, 0, 300),
       'last_dir'=>'in', 'last_at'=>now(), 'status'=>$st, 'updated_at'=>now()]);
-    $fresh = DB::table('chat_threads')->find($t->id); AiMemory::onCustomer($fresh, $body, $att); if ($body !== '') OrderIntent::onCustomer($fresh, $body);
+    $fresh = DB::table('chat_threads')->find($t->id); AiMemory::onCustomer($fresh, $body, $att);
     return $fresh;
   }
   /** Record a WhatsApp message sent by the system (order confirmation, template, campaign) in the customer's chat, so staff see exactly what the customer was told. */

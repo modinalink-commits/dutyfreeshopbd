@@ -853,5 +853,6 @@ app/Support/OrderIntent.php
 app/Support/OpcacheGuard.php
 database/migrations/2026_11_08_000600_order_intent_backfill.php
 database/migrations/2026_11_08_000700_order_intent_cleanup.php
+database/migrations/2026_11_08_000800_remove_keyword_leads.php
 database/migrations/2026_11_08_000400_ai_memory.php
 database/migrations/2026_11_08_000500_ai_memory_backfill.php
