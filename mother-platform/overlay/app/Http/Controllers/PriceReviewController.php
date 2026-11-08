@@ -47,7 +47,8 @@ class PriceReviewController extends Controller {
       foreach ($rows as $x) fputcsv($o, [$x['id'], $x['sku'], $x['name'], $x['cat'], $x['stock'], $x['last'], round($x['avg'], 2), round($x['fifo'], 2), $x['price'], \App\Support\ProfitFloor::percent(), $x['min'], round($x['profit'], 2), $x['pct'] === null ? '' : round($x['pct'], 2), round($x['disc'], 2), $x['maxd'] === null ? '' : round($x['maxd'], 2), preg_replace('/^[^A-Za-z]+/u', '', $x['state'])]);
       rewind($o); return response("\xEF\xBB\xBF" . stream_get_contents($o), 200, ['Content-Type' => 'text/csv; charset=UTF-8', 'Content-Disposition' => 'attachment; filename="inventory-pricing.csv"']);
     }
-    return view('inventory_pricing', ['rows' => $rows, 'n' => $n, 'q' => $q, 'f' => $f, 'cat' => $cat, 'cats' => DB::table('categories')->orderBy('name')->get(['id', 'name']), 'mode' => \App\Support\Costing::shipMode(), 'adm' => \App\Support\ProfitFloor::admin(), 'batches' => \App\Support\Costing::ready()]);
+    $total = count($rows); $per = 200; $page = max(1, min((int)ceil(max(1, $total) / $per), (int)$r->query('page', 1))); $rows = array_slice($rows, ($page - 1) * $per, $per); // 6000 rows at once froze the browser
+    return view('inventory_pricing', ['total' => $total, 'page' => $page, 'per' => $per, 'rows' => $rows, 'n' => $n, 'q' => $q, 'f' => $f, 'cat' => $cat, 'cats' => DB::table('categories')->orderBy('name')->get(['id', 'name']), 'mode' => \App\Support\Costing::shipMode(), 'adm' => \App\Support\ProfitFloor::admin(), 'batches' => \App\Support\Costing::ready()]);
   }
   /** Admin: how shipment treats an order that would sell below actual batch cost x 1.15. */
   public function shipMode(Request $r) {
