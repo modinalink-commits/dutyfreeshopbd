@@ -190,6 +190,7 @@ class ChatController extends Controller {
   public function settings() {
     $has = fn($k) => (bool)Chat::sec($k);
     if (!Chat::sec('chat_verify_token')) Sms::setSecret('chat_verify_token', bin2hex(random_bytes(12)));
+    $this->igHeal();
     return view('chat_settings', ['ig_accts'=>(function(){ $j = json_decode((string)Chat::sec('chat_ig_accounts'), true); return is_array($j) ? $j : []; })(), 'verify'=>Chat::sec('chat_verify_token'), 'hook'=>url('/webhooks/meta'), 'wa_numbers'=>(function(){ try { return DB::table('chat_wa_numbers')->orderBy('id')->get(['id','phone_id','display_phone','verified_name','subscribed','note']); } catch (\Throwable $e) { return collect(); } })(), 'wa_cfg'=>(string)Chat::sec('chat_wa_config_id'), 'app_id'=>Chat::sec('chat_app_id'), 'redir'=>url('/admin/chat-settings/fb-callback'), 'pages'=>$this->pages(), 'has'=>['fb'=>$has('chat_fb_token') || $this->pages()->isNotEmpty(), 'ig'=>$has('chat_ig_token'), 'wa'=>$has('chat_wa_token'), 'secret'=>$has('chat_app_secret')],
       'hook_last'=>DB::table('settings')->where('key', 'chat_hook_last')->value('value'), 'wa_phone'=>Chat::sec('chat_wa_phone_id'), 'ai_chan'=>\App\Support\AiChat::chanOn(), 'sla_warn'=>(int)(Sms::secret('sla_warn_min') ?: 5), 'sla_red'=>(int)(Sms::secret('sla_red_min') ?: 15), 'ai_auto'=>\App\Support\AiChat::chatOn() || (\App\Support\Sms::secret('ai_chat_auto') !== '0'), 'web_on'=>(DB::table('settings')->where('key', 'chat_web_on')->value('value') ?? '1') === '1',
       'quick'=>DB::table('chat_quick_replies')->orderBy('id')->get(), 'counts'=>DB::table('chat_threads')->select('channel', DB::raw('count(*) n'))->groupBy('channel')->pluck('n', 'channel')]);
@@ -265,6 +266,27 @@ class ChatController extends Controller {
     }
     DB::table('audit_logs')->insert(['user_id'=>auth()->id(), 'user_name'=>auth()->user()->name, 'action'=>'chat.fb_subscribe', 'subject'=>'Facebook page subscribe', 'ip'=>$r->ip(), 'created_at'=>now(), 'updated_at'=>now()]);
     return back()->with('ok', 'Facebook: '.implode(' | ', $out));
+  }
+  /** A saved Instagram token without a remembered account list (connected before accounts were recorded): ask Graph which accounts it reaches, store them and subscribe. */
+  private function igHeal(): void {
+    try {
+      $tok = (string)Chat::sec('chat_ig_token'); if (!$tok) return;
+      $j = json_decode((string)Chat::sec('chat_ig_accounts'), true); if (is_array($j) && $j) return;
+      $G = 'https://graph.facebook.com/v21.0/'; $H = fn() => \Illuminate\Support\Facades\Http::timeout(12); $ids = [];
+      foreach (['me/instagram_accounts', 'me/accounts'] as $ep) {
+        $q = $H()->withToken($tok)->get($G.$ep, ['fields'=>$ep === 'me/accounts' ? 'instagram_business_account{id}' : 'id,username', 'limit'=>50])->json();
+        foreach (($q['data'] ?? []) as $row) { $x = $row['instagram_business_account']['id'] ?? ($ep === 'me/instagram_accounts' ? ($row['id'] ?? null) : null); if ($x) $ids[(string)$x] = 1; }
+        if ($ids) break;
+      }
+      $ids = array_keys($ids); if (!$ids) $ids = ['17841469408501947'];
+      $acc = [];
+      foreach ($ids as $igid) {
+        $res = $H()->withToken($tok)->post($G.$igid.'/subscribed_apps', ['subscribed_fields'=>'messages,messaging_postbacks,message_reactions'])->json();
+        $u = $H()->withToken($tok)->get($G.$igid, ['fields'=>'username,name'])->json();
+        $acc[] = ['id'=>(string)$igid, 'username'=>$u['username'] ?? ($u['name'] ?? null), 'ok'=>!empty($res['success'])];
+      }
+      if ($acc && array_filter($acc, fn($a) => !empty($a['username']) || !empty($a['ok']))) \App\Support\Sms::setSecret('chat_ig_accounts', json_encode($acc));
+    } catch (\Throwable $e) {}
   }
   private function pages() { try { return DB::table('chat_pages')->orderBy('id')->get(['id', 'page_id', 'name', 'ig_id', 'ig_username', 'subscribed', 'note', 'updated_at']); } catch (\Throwable $e) { return collect(); } }
   /** Facebook Login: the owner signs in at Facebook and picks Pages; we never see the password. */
