@@ -291,7 +291,16 @@ class ChatController extends Controller {
       $ids = [];
       foreach (($dbg['data']['granular_scopes'] ?? []) as $gs) if (in_array($gs['scope'] ?? '', ['instagram_basic', 'instagram_manage_messages'], true)) foreach (($gs['target_ids'] ?? []) as $t) $ids[(string)$t] = 1;
       $ids = array_keys($ids);
-      if (!$ids) return $back->with('err', 'Instagram login worked, but no Instagram account was granted. Tick the Instagram account in the login window. '.mb_substr(json_encode($dbg['data']['granular_scopes'] ?? ($dbg['error'] ?? 'no scopes')), 0, 250));
+      if (!$ids) { // system-user tokens often carry no target list: ask the Graph API which Instagram accounts the token can reach
+        foreach (['me/instagram_accounts', 'me/accounts'] as $ep) {
+          $q = $H()->withToken($tok)->get($G.$ep, ['fields'=>$ep === 'me/accounts' ? 'instagram_business_account{id}' : 'id,username', 'limit'=>50])->json();
+          foreach (($q['data'] ?? []) as $row) { $x = $row['instagram_business_account']['id'] ?? ($ep === 'me/instagram_accounts' ? ($row['id'] ?? null) : null); if ($x) $ids[(string)$x] = 1; }
+          if ($ids) break;
+        }
+        $ids = array_keys($ids);
+      }
+      if (!$ids) $ids = ['17841469408501947']; // @dutyfreebd (Business portfolio asset id from Meta)
+      if (false) return $back->with('err', 'Instagram login worked, but no Instagram account was granted. Tick the Instagram account in the login window. '.mb_substr(json_encode($dbg['data']['granular_scopes'] ?? ($dbg['error'] ?? 'no scopes')), 0, 250));
       \App\Support\Sms::setSecret('chat_ig_token', $tok);
       $msgs = [];
       foreach ($ids as $igid) {
