@@ -75,7 +75,8 @@ class Chat {
     $prev = $body !== '' ? $body : ($att ? (($meta['att_type'] ?? 'image') === 'audio' ? '🎤 Voice message' : '[attachment]') : '');
     DB::table('chat_threads')->where('id', $t->id)->update(['unread'=>DB::raw('unread + 1'), 'awaiting_reply'=>true, 'last_customer_message_at'=>now(), 'last_message'=>mb_substr($prev, 0, 300),
       'last_dir'=>'in', 'last_at'=>now(), 'status'=>$st, 'updated_at'=>now()]);
-    return DB::table('chat_threads')->find($t->id);
+    $fresh = DB::table('chat_threads')->find($t->id); AiMemory::onCustomer($fresh, $body, $att);
+    return $fresh;
   }
   /** Record a WhatsApp message sent by the system (order confirmation, template, campaign) in the customer's chat, so staff see exactly what the customer was told. */
   public static function logOut(string $wa, string $body, string $by, ?string $mid = null, string $kind = 'text', string $status = 'sent', ?string $err = null): void {
@@ -240,6 +241,7 @@ class Chat {
         DB::table('chat_messages')->insert(['thread_id'=>$tid, 'dir'=>'out', 'kind'=>'text', 'body'=>mb_substr($txt, 0, 3500), 'user_name'=>'Claude AI', 'is_ai'=>true, 'status'=>$sent ? 'sent' : 'failed', 'error'=>$err, 'created_at'=>now(), 'updated_at'=>now()]);
         if ($sent) DB::table('chat_threads')->where('id', $tid)->update(['last_message'=>mb_substr($txt, 0, 300), 'last_dir'=>'out', 'last_at'=>now(), 'updated_at'=>now()]);
         if ($lock) \Illuminate\Support\Facades\Cache::forget($lock);
+        AiMemory::onAi((int)$tid, ['sent'=>(bool)$sent]);
         // an order the AI just placed: send the secure invoice link as its own message (only after the backend confirmed the order exists)
         if ($sent && ($invNo = \Illuminate\Support\Facades\Cache::pull('ai.invoice.'.$tid)) && DB::table('orders')->where('invoice', $invNo)->exists()) {
           $itx = "আপনার ইনভয়েস (".\App\Support\Inv::show($invNo)."): ".self::invoiceUrl($invNo); $ie = null; $is = true;

@@ -114,7 +114,7 @@ class ChatController extends Controller {
     if ($ok) \Illuminate\Support\Facades\Cache::forget('chat.typing.'.$t->id);
     if ($ok) $upd += ['last_message'=>mb_substr($body !== '' ? $body : '[attachment]', 0, 300), 'last_dir'=>'out', 'last_at'=>now(), 'status'=>in_array($t->status, ['new', 'open']) ? 'waiting' : $t->status];
     DB::table('chat_threads')->where('id', $id)->update($upd);
-    if ($ok) Chat::replied((int)$id, $t0);
+    if ($ok) { Chat::replied((int)$id, $t0); \App\Support\AiMemory::onStaff($t, $body, auth()->user()->name); }
     $res = ['ok'=>$ok, 'error'=>$err, 'id'=>$mid, 'ai'=>false];
     if ($ck) \Illuminate\Support\Facades\Cache::put($ck, $res, 600);
     return response()->json($res);
@@ -584,6 +584,22 @@ class ChatController extends Controller {
     return response('OK', 200);
   }
 
+  /** Everything the AI has recorded in one place: customer memory, how staff answer, and the behaviour timeline. */
+  public function memory(Request $r) {
+    $e = fn($v) => e((string)$v);
+    $cnt = ['customers'=>DB::table('ai_customer_memory')->count(), 'examples'=>DB::table('ai_staff_examples')->count(), 'events'=>DB::table('ai_behavior_events')->count()];
+    $cust = DB::table('ai_customer_memory')->orderByDesc('last_seen_at')->limit(60)->get();
+    $ex = DB::table('ai_staff_examples')->orderByDesc('id')->limit(40)->get();
+    $ev = DB::table('ai_behavior_events')->orderByDesc('id')->limit(60)->get();
+    $by = DB::table('ai_behavior_events')->selectRaw('actor, type, count(*) n')->groupBy('actor', 'type')->orderByDesc('n')->get();
+    $h = '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AI Memory</title><style>body{font:14px system-ui;margin:0;background:#f4f5f8;color:#1b2238}main{max-width:1100px;margin:auto;padding:16px}h1{margin:0 0 4px}h2{margin:22px 0 8px;font-size:16px}table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #e3e6ee;border-radius:10px}td,th{padding:7px 9px;border-bottom:1px solid #eef0f6;text-align:left;vertical-align:top;font-size:13px}th{background:#fafbfd}.k{display:inline-block;background:#fff;border:1px solid #e3e6ee;border-radius:10px;padding:8px 14px;margin:0 8px 8px 0}.k b{font-size:20px;display:block}a{color:#f26b1d}</style><main><a href="/admin/chat">&larr; Messages</a><h1>AI Memory</h1><p style="color:#6b7390">What the AI has recorded from chats, and uses in its next answers. Customer memory only helps that same customer; staff examples are masked (no long numbers) and used for wording style only.</p>';
+    $h .= '<div><span class="k"><b>'.$cnt['customers'].'</b>customers remembered</span><span class="k"><b>'.$cnt['examples'].'</b>staff answers learned</span><span class="k"><b>'.$cnt['events'].'</b>behaviour events</span></div>';
+    $h .= '<h2>Behaviour counts</h2><table><tr><th>Who</th><th>What</th><th>Times</th></tr>'.$by->map(fn($x) => '<tr><td>'.$e($x->actor).'</td><td>'.$e($x->type).'</td><td>'.$x->n.'</td></tr>')->implode('').'</table>';
+    $h .= '<h2>Customers (latest 60)</h2><table><tr><th>Customer</th><th>Channel</th><th>Msgs</th><th>Memory summary</th></tr>'.$cust->map(fn($x) => '<tr><td>'.$e($x->name).'<br><small>'.$e($x->phone).'</small></td><td>'.$e($x->channel).'</td><td>'.$x->msg_count.'</td><td>'.$e($x->summary).'</td></tr>')->implode('').'</table>';
+    $h .= '<h2>How our team answers (latest 40)</h2><table><tr><th>Intent</th><th>Customer</th><th>Staff reply</th><th>Wait</th></tr>'.$ex->map(fn($x) => '<tr><td>'.$e($x->intent).'<br><small>'.$e($x->staff).'</small></td><td>'.$e($x->customer_text).'</td><td>'.$e($x->reply_text).'</td><td>'.($x->wait_sec !== null ? round($x->wait_sec / 60).' min' : '').'</td></tr>')->implode('').'</table>';
+    $h .= '<h2>Timeline (latest 60)</h2><table><tr><th>Time</th><th>Who</th><th>What</th><th>Details</th></tr>'.$ev->map(fn($x) => '<tr><td>'.\Carbon\Carbon::parse($x->created_at)->timezone('Asia/Dhaka')->format('d M H:i').'</td><td>'.$e($x->actor).'</td><td>'.$e($x->type).' '.$e($x->channel).'</td><td><small>'.$e($x->meta).'</small></td></tr>')->implode('').'</table></main>';
+    return response($h);
+  }
   // ---- Order Requests: orders the AI collected but did not place (Auto Approve rules said staff must decide) ----
   public function orderRequests(Request $r) {
     $st = in_array($r->query('s'), ['review', 'created', 'dismissed'], true) ? $r->query('s') : 'review';

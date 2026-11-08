@@ -28,6 +28,7 @@ class AgentHandoff {
     $upd = ['needs_human'=>true, 'handoff_at'=>now(), 'handoff_reason'=>$reason, 'ai_summary'=>$summary, 'priority'=>$priority, 'ai_paused'=>true, 'status'=>'open', 'updated_at'=>now()];
     if ($pick) $upd['assigned_to'] = $pick['id'];
     DB::table('chat_threads')->where('id', $tid)->update($upd);
+    AiMemory::event($tid, null, 'ai', 'handoff', null, ['reason'=>$reason, 'priority'=>$priority]);
     return ['handed_over'=>true, 'assigned_to_agent'=>(bool)$pick, 'tell_customer'=>$tell];
   }
 }

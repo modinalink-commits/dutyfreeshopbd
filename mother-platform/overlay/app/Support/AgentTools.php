@@ -189,14 +189,14 @@ class AgentTools {
     if (!empty($ctx['sim'])) return ['simulated'=>true, 'message'=>'Simulation: all checks passed, no real order was created.'];
     [$ok, $why] = self::aiEligible((string)$p['phone'], (float)($p['total'] ?? 0));
     if (!$ok) {
-      $rid = self::saveRequest($p, $st, $ctx, $why);
+      $rid = self::saveRequest($p, $st, $ctx, $why); AiMemory::event((int)($ctx['thread_id'] ?? 0), null, 'ai', 'order_request', null, ['request'=>$rid, 'why'=>$why, 'total'=>$p['total'] ?? 0]);
       $h = AgentHandoff::create($ctx, $st, 'order_request', 'Order Request #'.$rid.' (not placed: '.$why.'): '.$p['name'].' '.$p['phone'].', total '.self::money($p['total'] ?? 0).'. Review it in Messages > Order Requests.', 'normal');
       $st['cart'] = []; unset($st['pending']);
       return ['request_saved'=>true, 'order_created'=>false, 'tell_customer'=>'আপনার অর্ডার রিকোয়েস্টটি পেয়েছি। আমাদের টিম যাচাই করে কনফার্ম করবে। (Say it is a request. Never say the order is placed or give an invoice number.)'] + $h;
     }
     $r = self::make($p, (int)($ctx['thread_id'] ?? 0), 'ai-'.($ctx['thread_id'] ?? 0).'-'.md5(json_encode($p['cart']).$p['phone'].(int)$p['after_msg']), 'AI Order', 'Claude AI', '[AI Chat]');
     if (empty($r['ok'])) return ['error'=>$r['error'].' - hand over to a human agent', 'handoff_required'=>true];
-    $st['cart'] = []; unset($st['pending']);
+    $st['cart'] = []; unset($st['pending']); AiMemory::event((int)($ctx['thread_id'] ?? 0), null, 'ai', 'order_created', null, ['invoice'=>$r['invoice'], 'total'=>$r['total']]);
     \Illuminate\Support\Facades\Cache::put('ai.invoice.'.(int)($ctx['thread_id'] ?? 0), $r['invoice'], 600); // Chat::aiReply sends the secure invoice link right after the AI's message
     return ['placed'=>true, 'invoice'=>$r['invoice'], 'total'=>self::money($r['total']), 'payment'=>'Cash on delivery', 'note'=>'The system sends the invoice link by itself right after your message: do not paste any link. A team member will confirm shortly. Do not promise a delivery time.'];
   }

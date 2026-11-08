@@ -98,7 +98,7 @@ function ago(iso){if(!iso)return '';var s=(Date.now()-new Date(iso).getTime())/1
 var CHL={facebook:'f',instagram:'IG',whatsapp:'W',web:'💬'};
 function pill(x){return '<a data-f="'+x[0]+'" class="'+(f===x[0]?'on':'')+'" role="button" tabindex="0">'+I[x[0]]+'<span>'+x[1]+'</span>'+(x[0]==='unread'&&waiting>0?'<span class="cn">'+waiting+'</span>':'')+(x[0]==='orders'&&orq>0?'<span class="cn">'+orq+'</span>':'')+'</a>'}
 function drawF(){document.getElementById('ibf1').innerHTML=F1.map(pill).join('');
-  document.getElementById('ibf2').innerHTML=F2.map(pill).join('')+'<span class="sp"></span><button class="fa" type="button" id="ibup" title="Fetch the latest messages. This never marks anything as seen.">↻ Update</button><button class="fa" type="button" id="ibm">🔔 Sound on</button><a href="/admin/chat-settings" style="height:38px">Chat settings</a>';
+  document.getElementById('ibf2').innerHTML=F2.map(pill).join('')+'<span class="sp"></span><button class="fa" type="button" id="ibup" title="Fetch the latest messages. This never marks anything as seen.">↻ Update</button><button class="fa" type="button" id="ibm">🔔 Sound on</button><a href="/admin/chat/memory" style="height:38px">AI Memory</a><a href="/admin/chat-settings" style="height:38px">Chat settings</a>';
   document.querySelectorAll('#ibfb a[data-f]').forEach(function(a){a.onclick=function(){f=a.dataset.f;drawF();load()};a.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();a.click()}}});
   var bm=document.getElementById('ibm');bm.onclick=function(){MChat.cycleSound();mm()};mm();
   document.getElementById('ibup').onclick=doUpdate}

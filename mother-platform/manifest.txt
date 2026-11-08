@@ -848,3 +848,5 @@ app/Http/Middleware/StaffApi.php
 database/migrations/2026_11_08_000200_staff_app_api.php
 resources/views/staff_app.blade.php
 database/migrations/2026_11_08_000300_chat_order_requests.php
+app/Support/AiMemory.php
+database/migrations/2026_11_08_000400_ai_memory.php
