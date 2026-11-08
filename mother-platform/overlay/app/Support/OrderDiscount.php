@@ -147,6 +147,8 @@ class OrderDiscount {
       $paid = 0; foreach ($cand as $x0) if (in_array($x0['key'], $sel)) $paid += $x0['amount'];
       $ca = round(min($bal, max(0, $sub - $paid)), 2); if ($ca > 0) { $cand[] = ['key' => 'refcredit', 'type' => 'Referral Credit', 'rule' => 'Referral wallet', 'source' => 'Referral credit', 'pct' => null, 'amount' => $ca, 'label' => 'Referral credit – ৳'.number_format($ca)]; $sel[] = 'refcredit'; }
     }
+    // Owner rule (8 Nov 2026): no single discount may exceed 3% of the order, including fixed-Taka ones (VIP fixed, referral, returning max, coupons are left to their own limits only when percent based <= 3).
+    $cap3 = round($sub * 0.03, 2); foreach ($cand as &$cx) { if (in_array($cx['key'], ['coupon', 'refcredit'], true)) continue; if ((float)$cx['amount'] > $cap3 + 0.004) { $cx['amount'] = $cap3; $cx['pct'] = null; $cx['label'] = ($cx['type'] ?? 'Discount') . ' – ৳' . number_format($cap3); } } unset($cx);
     $sum = 0; foreach ($cand as &$x) { $x['applied'] = in_array($x['key'], $sel); if ($x['applied']) $sum += $x['amount']; } unset($x);
     return ['mode' => $mode, 'lines' => $cand, 'total' => min(round($sum, 2), $sub), 'coupon_error' => $cerr, 'free_ship' => $free, 'profile' => $profile];
   }

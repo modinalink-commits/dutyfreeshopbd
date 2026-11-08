@@ -77,7 +77,7 @@ class AppReward {
       $taken = (float)$r['total'] + ($bsIn > 0 ? 0 : (float)($ctx['bsave'] ?? 0));
       $left = max(0.0, $sub - (float)$r['total']); // what is still payable on the engine's subtotal
       $room = $items ? ProfitFloor::room($items) - $taken : $left;
-      $amt = round(min($bal, $left, max(0.0, $room)), 2);
+      $amt = round(min($bal, $left, max(0.0, $room), $sub * 0.03), 2); // owner 8 Nov 2026: no discount above 3% of the order
       if ($amt <= 0) return $r;
       $safe = $amt + 0.004 < min($bal, $left);
       $r['lines'][] = ['key' => self::KEY, 'type' => self::TYPE, 'rule' => 'App Install Reward (first App order)', 'source' => self::SRC, 'pct' => null, 'amount' => $amt, 'applied' => true, 'arid' => (int)$rw->id, 'safecap' => $safe,
