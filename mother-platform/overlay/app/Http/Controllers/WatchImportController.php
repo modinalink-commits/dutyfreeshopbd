@@ -74,6 +74,44 @@ class WatchImportController extends Controller {
     $t = trim((string)$srcCat); return $t !== '' ? mb_convert_case($t, MB_CASE_TITLE) : 'Gadgets';
   }
   private function slugFor(int $catId, string $base, string $sub, int $selfId) { $subSlug = \App\Support\Slugs::subSlug($sub); $slug = $base; $i = 2; while (DB::table('products')->where('category_id', $catId)->where('id', '!=', $selfId)->whereRaw(\App\Support\Slugs::subSql() . ' = ?', [$subSlug])->where('path_slug', $slug)->exists()) $slug = $base . '-' . $i++; return $slug; }
+  private static function cleanHtml(string $h, array $bad): string {
+    $h = preg_replace('#<(script|style|iframe|noscript|form|svg)\b.*?</\1>#is', '', $h);
+    $h = preg_replace('#<img\b[^>]*>#i', '', $h);
+    $h = strip_tags($h, '<p><br><ul><ol><li><strong><b><em><i><h2><h3><h4><table><thead><tbody><tr><th><td><span><div>');
+    $h = preg_replace('/\s(?:style|class|id|on\w+|data-[\w-]+)\s*=\s*("[^"]*"|\'[^\']*\')/i', '', $h);
+    foreach ($bad as $b) if ($b !== '') $h = preg_replace('/' . preg_quote($b, '/') . '/i', '', $h);
+    $h = preg_replace('#(<(p|div|span|li)>\s*(&nbsp;|<br\s*/?>)*\s*</\2>)+#i', '', $h);
+    return trim($h);
+  }
+  /** Product details (description, extra photos) from the source shop (Shopify .json), stored as OUR content: no links, no source name, our own image copies. */
+  public function details(Request $r) {
+    @set_time_limit(100); $cf = $this->cfg(); $s = $this->src(); abort_unless($s, 404);
+    $rows = DB::table('watch_source as w')->join('products as p', 'p.id', '=', 'w.product_id')->where('w.store_id', $s->id)->whereNull('w.details_at')->whereNotNull('w.source_url')->orderBy('w.id')->limit(6)->get(['w.id as wid', 'w.source_url', 'p.id as pid', 'p.sku', 'p.name']);
+    $left = DB::table('watch_source')->where('store_id', $s->id)->whereNull('details_at')->whereNotNull('source_url')->count();
+    if ($rows->isEmpty()) return response()->json(['finished' => true, 'left' => 0]);
+    $urls = []; foreach ($rows as $x) { $u = preg_replace('#[?\#].*$#', '', (string)$x->source_url); $urls[$x->wid] = rtrim($u, '/') . '.json'; }
+    try { $resp = \Illuminate\Support\Facades\Http::pool(function ($pool) use ($urls) { $o = []; foreach ($urls as $k => $u) $o[] = $pool->as((string)$k)->timeout(25)->withHeaders(['User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36', 'Accept' => 'application/json'])->get($u); return $o; }); } catch (\Throwable $e) { return response()->json(['finished' => false, 'err' => mb_substr($e->getMessage(), 0, 150), 'left' => $left]); }
+    $bad = [$cf['domain'], preg_replace('/\..*$/', '', $cf['domain']), 'timeaccess', 'time access']; $ok = 0; $imgMap = []; $imgFor = [];
+    foreach ($rows as $x) {
+      $res = $resp[(string)$x->wid] ?? null; $j = ($res && method_exists($res, 'ok') && $res->ok()) ? $res->json('product') : null;
+      if (!is_array($j)) { DB::table('watch_source')->where('id', $x->wid)->update(['details_at' => now(), 'note' => 'no details']); continue; }
+      $html = self::cleanHtml((string)($j['body_html'] ?? ''), $bad);
+      // option table (strap, size ...) from variants
+      $opts = []; foreach ((array)($j['options'] ?? []) as $o) { $vals = array_values(array_unique(array_map('strval', (array)($o['values'] ?? [])))); if (($o['name'] ?? '') !== '' && $o['name'] !== 'Title' && $vals) $opts[] = '<li><strong>' . e($o['name']) . ':</strong> ' . e(implode(', ', array_slice($vals, 0, 12))) . '</li>'; }
+      $spec = []; if (!empty($j['vendor'])) { $v = trim((string)$j['vendor']); if (stripos($v, 'timeaccess') === false) $spec[] = '<li><strong>Brand:</strong> ' . e($v) . '</li>'; }
+      if (!empty($j['product_type']) && stripos((string)$j['product_type'], 'timeaccess') === false) $spec[] = '<li><strong>Type:</strong> ' . e((string)$j['product_type']) . '</li>';
+      $desc = ($html !== '' ? $html : '') . ($spec || $opts ? '<h3>Specifications</h3><ul>' . implode('', $spec) . implode('', $opts) . '</ul>' : '');
+      $upd = ['updated_at' => now()]; if ($desc !== '') { $upd['description'] = $desc; $txt = trim(preg_replace('/\s+/u', ' ', strip_tags($html))); if ($txt !== '') $upd['meta_description'] = mb_substr($txt, 0, 155); }
+      DB::table('products')->where('id', $x->pid)->update($upd);
+      $n = 0; foreach (array_slice((array)($j['images'] ?? []), 1, 4) as $im) { $src = $im['src'] ?? null; if (!$src) continue; $n++; $code = $x->sku . '-' . $n; $imgMap[$code] = $src; $imgFor[$code] = $x->pid; }
+      DB::table('watch_source')->where('id', $x->wid)->update(['details_at' => now()]); $ok++;
+    }
+    if ($imgMap) {
+      $res = $this->fetchImages($imgMap);
+      foreach ($res as $code => $g) if (!empty($g['file'])) { $pid = $imgFor[$code]; if (!DB::table('product_images')->where('product_id', $pid)->where('path', $g['file'])->exists()) DB::table('product_images')->insert(['product_id' => $pid, 'path' => $g['file'], 'position' => (int)substr($code, strrpos($code, '-') + 1), 'created_at' => now(), 'updated_at' => now()]); }
+    }
+    return response()->json(['finished' => false, 'ok' => $ok, 'left' => $left - count($rows)]);
+  }
   /** Re-sort existing imported products into clean sub categories and report duplicates. */
   public function tidy(Request $r) {
     @set_time_limit(120); $cf = $this->cfg(); $cat = DB::table('categories')->where('slug', $cf['cat'])->first(); abort_unless($cat, 404); $s = $this->src();

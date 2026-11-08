@@ -871,3 +871,4 @@ database/migrations/2026_11_08_008000_watch_markup_5.php
 database/migrations/2026_11_08_009000_mobile_category.php
 database/migrations/2026_11_08_010000_watch_above_perfume.php
 database/migrations/2026_11_08_011000_gadget_category.php
+database/migrations/2026_11_08_012000_watch_source_details.php
