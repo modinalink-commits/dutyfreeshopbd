@@ -7,7 +7,7 @@
   $price = (float)$p->price; $cmp = $p->compare_price && $p->compare_price > $p->price ? (float)$p->compare_price : 0; $save = $cmp ? $cmp - $price : 0;
   $code = $p->sku ?: $p->ext_id;
   $bd = $rules['bundle'] ?? null; $bpct = $bd ? (float)($bd['Bundle %'] ?? 0) : 0; $bmin = $bd ? (int)($bd['Minimum products'] ?? 2) : 99;
-  $bundles = [];
+  $bundles = []; $__noB = isset(\App\Support\PrepaidOnly::catSet()[(int)($p->category_id ?? 0)]);
   $bt = \App\Support\BundlePricing::forProduct((int)$p->id);
   foreach ([2,3,4,5] as $n) { $lst = $price * $n; $fin = 0;
     if (!empty($bt[$n])) $fin = (float)$bt[$n]['total']; elseif (!\App\Support\BundlePricing::ready() && ($tp = (float)($p->{'buy'.$n.'_price'} ?? 0)) > 0 && $tp < $lst) $fin = $tp; elseif ($bpct > 0 && $n >= $bmin) $fin = round($lst * (1 - $bpct / 100), 2);
@@ -69,7 +69,7 @@
 <h1>{{ $p->name }}@if($code) - ( {{ $code }} )@endif</h1>
 <p style="font-size:13px;color:#6B7280;margin:2px 0 8px">Sold by <a href="/" style="color:#FF5A00;font-weight:700">DutyFree BD</a></p>
 <div class="pz"><b>Tk {{ number_format($price) }}</b>@if($cmp)<s>Tk {{ number_format($cmp) }}</s>@endif @if($save > 0 && $s['pp_save_badge']==='1')<span>SAVE TK {{ number_format($save) }}</span>@endif</div>
-@if($s['pp_bundle']==='1' && count($bundles))
+@if($s['pp_bundle']==='1' && count($bundles) && !$__noB)
 <div class="bnl"><span><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.2"/></svg>BUNDLE &amp; SAVE</span></div>
 <div class="bq" role="radiogroup" aria-label="Bundle and save">
 @foreach($bundles as $b)
