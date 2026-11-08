@@ -883,3 +883,4 @@ database/migrations/2026_11_08_019000_manager_dup_allow.php
 database/migrations/2026_11_08_020000_admin_roles_ship_dup.php
 database/migrations/2026_11_08_021000_sunglass_above_gadget.php
 database/migrations/2026_11_08_022000_affiliate_resume.php
+database/migrations/2026_11_08_023000_amour_category.php

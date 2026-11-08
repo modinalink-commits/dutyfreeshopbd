@@ -9,7 +9,8 @@ use Illuminate\Support\Facades\DB;
 class WatchImportController extends Controller {
   /** Which source feeds which category: watch <- timeaccess-store.com, gadget <- startech.com.bd (owner, 8 Nov 2026; both +5%, prepaid only, no discount). */
   private function cfg(): array {
-    $c = in_array(request('c'), ['gadget', 'sunglass'], true) ? request('c') : 'watch'; $set = fn($k, $d) => (string)(DB::table('settings')->where('key', $k)->value('value') ?? $d);
+    $c = in_array(request('c'), ['gadget', 'sunglass', 'amour'], true) ? request('c') : 'watch'; $set = fn($k, $d) => (string)(DB::table('settings')->where('key', $k)->value('value') ?? $d);
+    if ($c === 'amour') return ['c' => 'amour', 'domain' => 'amour.com.bd', 'cat' => 'lighter-accessories', 'prefix' => 'DFA', 'pct' => (float)($set('amour_markup_pct', '10') ?: 10), 'max' => 0.0, 'dir' => 'amour'];
     if ($c === 'sunglass') return ['c' => 'sunglass', 'domain' => 'luxotix.com', 'cat' => 'sunglass', 'prefix' => 'DFS', 'pct' => (float)($set('sunglass_markup_pct', '5') ?: 5), 'max' => 0.0, 'dir' => 'sunglass'];
     return $c === 'gadget'
       ? ['c' => 'gadget', 'domain' => strtolower($set('gadget_source_domain', 'startech.com.bd')), 'cat' => 'gadget-electronics', 'prefix' => 'DFG', 'pct' => (float)($set('mobile_markup_pct', '5') ?: 5), 'max' => 0.0, 'dir' => 'gadget']
@@ -72,7 +73,7 @@ class WatchImportController extends Controller {
       $acc = str_contains($c, 'accessor') || preg_match('/^\d+\s*slots?\b|\bstrap\s+for\b|\bwatch\s+(box|case|organi[sz]er|winder|roll)\b|organi[sz]er|\bwinder\b|\bwatch\s+tool|\bspring\s*bar|\bbuckle\b/i', $n);
       return $acc ? 'Accessories' : 'Watch';
     }
-    $t = trim((string)$srcCat); return $t !== '' ? mb_convert_case($t, MB_CASE_TITLE) : 'Gadgets';
+    $t = trim((string)$srcCat); return $t !== '' ? mb_convert_case($t, MB_CASE_TITLE) : ($cat === 'lighter-accessories' ? 'Accessories' : 'Gadgets');
   }
   private function slugFor(int $catId, string $base, string $sub, int $selfId) { $subSlug = \App\Support\Slugs::subSlug($sub); $slug = $base; $i = 2; while (DB::table('products')->where('category_id', $catId)->where('id', '!=', $selfId)->whereRaw(\App\Support\Slugs::subSql() . ' = ?', [$subSlug])->where('path_slug', $slug)->exists()) $slug = $base . '-' . $i++; return $slug; }
   private static function cleanHtml(string $h, array $bad): string {
@@ -155,13 +156,34 @@ class WatchImportController extends Controller {
     foreach ($rows as $x) { $g = $res[$x->sku] ?? []; if (!empty($g['file'])) { DB::table('products')->where('id', $x->pid)->update(['image' => $g['file'], 'updated_at' => now()]); $ok++; } else $err = $g['err'] ?? 'unknown'; }
     return response()->json(['finished' => $ok === 0, 'ok' => $ok, 'left' => $left - $ok, 'err' => $err]);
   }
+  /** Amour only (owner 8 Nov 2026): every photo is cleaned by AI (watermark, logo, text and background removed, product kept) before the product goes live. */
+  public function clean(Request $r) {
+    @set_time_limit(280); $s = $this->src(); abort_unless($s && $this->cfg()['c'] === 'amour', 404);
+    $lock = \Illuminate\Support\Facades\Cache::lock('amour-clean', 290); if (!$lock->get()) return response()->json(['finished' => false, 'busy' => true]);
+    try {
+      $rows = DB::table('watch_source as w')->join('products as p', 'p.id', '=', 'w.product_id')->where('w.store_id', $s->id)->where('p.image', 'like', '/uploads/amour/%')->orderBy('w.id')->limit(40)->get(['p.id as pid', 'p.image']);
+      $ok = 0; $t0 = time(); $left = DB::table('watch_source as w')->join('products as p', 'p.id', '=', 'w.product_id')->where('w.store_id', $s->id)->where('p.image', 'like', '/uploads/amour/%')->count();
+      foreach ($rows as $x) {
+        if (time() - $t0 > 230) break;
+        $h = sha1($x->image); $row = DB::table('ai_images')->where('product_id', $x->pid)->where('source_hash', $h)->first();
+        if ($row && $row->ai_status === 'failed') { $age = now()->diffInMinutes($row->updated_at); if ($age < 360) continue; }
+        $id = $row ? $row->id : DB::table('ai_images')->insertGetId(['product_id' => $x->pid, 'source_hash' => $h, 'source_url' => $x->image, 'ai_status' => 'pending', 'created_at' => now(), 'updated_at' => now()]);
+        $res = \App\Support\AiImage::run((int)$id);
+        if (!empty($res['ok'])) { $pi = DB::table('ai_images')->where('id', $id)->value('processed_image'); if ($pi) { DB::table('products')->where('id', $x->pid)->update(['image' => $pi, 'updated_at' => now()]); $ok++; } }
+        elseif (preg_match('/API key|GD is not enabled/i', (string)($res['error'] ?? ''))) return response()->json(['finished' => true, 'ok' => 0, 'error' => $res['error'], 'left' => $left]);
+      }
+      if ($ok) { $this->sync($s->id); foreach (['store.cats', 'store.catslugs', 'store.home11', 'stock.modes'] as $k) \Illuminate\Support\Facades\Cache::forget($k); \App\Http\Controllers\StoreController::bust(); }
+      return response()->json(['finished' => $rows->isEmpty(), 'ok' => $ok, 'left' => max(0, $left - $ok)]);
+    } finally { $lock->release(); }
+  }
   /** Keep live state equal to the source shop: out of stock there = not live here; back in stock = live again; price follows source +markup. */
   private function sync(int $sid): void {
     try {
       $lock = \Illuminate\Support\Facades\Schema::hasColumn('products', 'manual_unpublish_lock');
-      $rows = DB::table('watch_source as w')->join('store_products as sp', 'sp.id', '=', 'w.store_product_id')->join('products as p', 'p.id', '=', 'w.product_id')->where('w.store_id', $sid)->get(['w.id as wid', 'w.markup_pct', 'w.our_price', 'sp.price as sprice', 'sp.in_stock', 'sp.published as sppub', 'p.id as pid', 'p.published as ppub']);
+      $rows = DB::table('watch_source as w')->join('store_products as sp', 'sp.id', '=', 'w.store_product_id')->join('products as p', 'p.id', '=', 'w.product_id')->where('w.store_id', $sid)->get(['w.id as wid', 'w.markup_pct', 'w.our_price', 'sp.price as sprice', 'sp.in_stock', 'sp.published as sppub', 'p.id as pid', 'p.published as ppub', 'p.image as pimg']);
+      $needClean = strtolower((string)(DB::table('stores')->where('id', $sid)->value('domain'))) === 'amour.com.bd';
       foreach ($rows as $x) {
-        $live = (bool)$x->in_stock && (bool)$x->sppub; $u = ['updated_at' => now()];
+        $live = (bool)$x->in_stock && (bool)$x->sppub && (!$needClean || str_starts_with((string)$x->pimg, '/uploads/ai/')); $u = ['updated_at' => now()];
         if ($live !== (bool)$x->ppub) { $u['published'] = $live; if ($lock) $u['manual_unpublish_lock'] = !$live; }
         $our = (int)ceil((float)$x->sprice * (1 + (float)$x->markup_pct / 100));
         if ($x->sprice > 0 && $our != (int)$x->our_price) { $u['price'] = $our; $u['cost'] = $x->sprice; DB::table('watch_source')->where('id', $x->wid)->update(['our_price' => $our, 'source_price' => $x->sprice]); }

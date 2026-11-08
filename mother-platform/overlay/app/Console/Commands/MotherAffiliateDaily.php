@@ -19,7 +19,7 @@ class MotherAffiliateDaily extends Command {
       if ((string)(DB::table('settings')->where('key', 'affiliate_daily_date')->value('value') ?? '') === $today) return;
       DB::table('settings')->updateOrInsert(['key' => 'affiliate_daily_date'], ['value' => $today, 'updated_at' => now(), 'created_at' => now()]);
       $cmd = 'cd ' . escapeshellarg(base_path()) . ' && nohup php artisan mother:affiliate-daily > /dev/null 2>&1 &';
-      DB::table('settings')->updateOrInsert(['key' => 'affiliate_pending'], ['value' => 'watch:1,gadget:1,sunglass:1', 'updated_at' => now(), 'created_at' => now()]);
+      DB::table('settings')->updateOrInsert(['key' => 'affiliate_pending'], ['value' => 'watch:1,gadget:1,sunglass:1,amour:1', 'updated_at' => now(), 'created_at' => now()]);
       @exec($cmd);
     } catch (\Throwable $e) { report($e); }
   }
@@ -30,9 +30,9 @@ class MotherAffiliateDaily extends Command {
     try {
       $setPend = function (array $j) { $v = []; foreach ($j as $k => $sc) $v[] = $k . ':' . ($sc ? '1' : '0'); DB::table('settings')->updateOrInsert(['key' => 'affiliate_pending'], ['value' => implode(',', $v), 'updated_at' => now(), 'created_at' => now()]); };
       $jobs = []; foreach (array_filter(explode(',', (string)$this->option('jobs'))) as $j) { [$jc, $js] = array_pad(explode(':', $j), 2, '1'); $jobs[$jc] = $js !== '0'; }
-      if (!$jobs) $jobs = ['watch' => true, 'gadget' => true, 'sunglass' => true];
+      if (!$jobs) $jobs = ['watch' => true, 'gadget' => true, 'sunglass' => true, 'amour' => true];
       $gd = strtolower((string)(DB::table('settings')->where('key', 'gadget_source_domain')->value('value') ?? 'startech.com.bd'));
-      foreach (['watch' => 'timeaccess-store.com', 'gadget' => $gd, 'sunglass' => 'luxotix.com'] as $c => $dom) {
+      foreach (['watch' => 'timeaccess-store.com', 'gadget' => $gd, 'sunglass' => 'luxotix.com', 'amour' => 'amour.com.bd'] as $c => $dom) {
         if ($dom === '') continue;
         if ($jobs && !array_key_exists($c, $jobs)) continue; $doScan = $jobs ? $jobs[$c] : true; $setPend($jobs);
         $s = DB::table('stores')->whereRaw('lower(domain) = ? or lower(domain) = ?', [$dom, 'www.' . $dom])->first(); if (!$s) continue;
@@ -42,6 +42,7 @@ class MotherAffiliateDaily extends Command {
           request()->merge(['c' => $c]); $ctl = app(\App\Http\Controllers\WatchImportController::class); $n = 0;
           $jobs[$c] = false; $setPend($jobs);
           while ($n++ < 4000) { Cache::put('affiliate-alive', 1, 150); $j = $ctl->step(request())->getData(true); if (!empty($j['finished'])) break; }
+          if ($c === 'amour') { $m = 0; while ($m++ < 400) { Cache::put('affiliate-alive', 1, 150); $j = $ctl->clean(request())->getData(true); if (!empty($j['finished']) || !empty($j['error'])) break; if (empty($j['ok']) && empty($j['busy'])) break; } }
           unset($jobs[$c]); $setPend($jobs);
           $this->info("$c done");
         } catch (\Throwable $e) { report($e); }
