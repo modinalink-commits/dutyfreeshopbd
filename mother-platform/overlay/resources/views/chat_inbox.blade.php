@@ -54,7 +54,7 @@
 .mbx .th.on{background:#FFF1E8;border-color:#FDBA8C;box-shadow:inset 3px 0 0 #FF5A00}
 .mbx .nm{font-size:13.5px;font-weight:600}.mbx .th.un .nm{font-weight:700}
 .mbx .lm{font-size:11.5px;color:#6B7280}.mbx .th.un .lm{color:#0B1220;font-weight:600}
-.mbx .l3{font-size:11px;color:#6B7280;margin-top:3px}
+.mbx .l3{font-size:11px;color:#6B7280;margin-top:3px}.srcb{display:inline-block;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom;padding:0 6px;border-radius:6px;font-size:10px;font-weight:600;background:#EEF2FF;color:#3730A3}.srcb.s-whatsapp{background:#DCFCE7;color:#166534}.srcb.s-facebook{background:#DBEAFE;color:#1E40AF}.srcb.s-instagram{background:#FCE7F3;color:#9D174D}
 .mbx .l4{flex-wrap:wrap;gap:4px;margin-top:5px}
 .mbx .bg,.mbx .st2{height:18px;line-height:18px;padding:0 8px;font-size:10.5px;font-weight:600}
 .mbx .st2.aw{background:#FFF1E8;border:1px solid #FDBA8C;color:#C2410C;line-height:16px}
@@ -111,7 +111,7 @@ function row(t){var st=t.needs_human?'waiting':(t.status||'open');var stL={new:'
   return '<div class="th'+(un?' un':'')+(sel===t.id?' on':'')+'" data-id="'+t.id+'"><div class="av"><span class="mcav">'+(t.avatar?'<img src="'+esc(t.avatar)+'" alt="" referrerpolicy="no-referrer" onerror="this.remove()">':'')+esc((t.name||'?').charAt(0).toUpperCase())+'</span><span class="mcb ico '+t.channel+'" title="'+esc(t.channel_name)+'">'+ico+'</span></div>'
   +'<div class="bd"><div class="l1"><span class="nm">'+esc(t.name)+'</span><span class="tm">'+ago(t.last_at)+'</span></div>'
   +'<div class="l2"><span class="lm">'+(t.last_dir==='out'?'You: ':'')+esc(t.last||'')+'</span>'+(un?'<span class="ub">'+t.unread+'</span>':'')+'</div>'
-  +'<div class="l3">'+esc(t.channel_name)+' · Holding: '+(t.orders>0?t.orders+' order'+(t.orders===1?'':'s'):'--')+'</div>'
+  +'<div class="l3">'+esc(t.channel_name)+(t.source?' <span class="srcb s-'+t.channel+'" title="Received on: '+esc(t.source)+'">'+esc(t.source)+'</span>':'')+' · Holding: '+(t.orders>0?t.orders+' order'+(t.orders===1?'':'s'):'--')+'</div>'
   +'<div class="l4">'+(un&&window.MSla?MSla.chip(t):'')+(un?'<span class="st2 aw">Awaiting</span>':(t.replied?'<span class="st2 rp">✓ Replied</span>':(t.stale?'<span class="st2 old" title="Customer message older than 7 days">Old</span>':'')))+'<span class="bg '+st+'">'+stL+'</span>'+h+(t.assigned_name?'<span class="bg human" title="Assigned to">👤 '+esc(t.assigned_name)+'</span>':'<span class="bg" style="color:#9CA3AF">Unassigned</span>')+'</div></div></div>'}
 function load(){return fetch('/admin/chat/threads?f='+f+'&q='+encodeURIComponent(q),{headers:{Accept:'application/json'},credentials:'same-origin'}).then(function(r){return r.json()}).then(function(j){
   var u=document.getElementById('ibu');u.innerHTML=j.unread?'<span class="ub">'+j.unread+' waiting</span>':'';if(window.MChat)MChat.badge(j.unread);
