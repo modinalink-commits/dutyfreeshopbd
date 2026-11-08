@@ -861,3 +861,4 @@ database/migrations/2026_11_08_000400_ai_memory.php
 database/migrations/2026_11_08_000500_ai_memory_backfill.php
 database/migrations/2026_11_08_002000_discount_stack_mode.php
 database/migrations/2026_11_08_003000_bring_prices_to_safe.php
+database/migrations/2026_11_08_004000_below_to_near.php
