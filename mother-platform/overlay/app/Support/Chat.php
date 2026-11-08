@@ -62,7 +62,7 @@ class Chat {
     return DB::table('chat_threads')->find($t->id);
   }
   /** Record a WhatsApp message sent by the system (order confirmation, template, campaign) in the customer's chat, so staff see exactly what the customer was told. */
-  public static function logOut(string $wa, string $body, string $by, ?string $mid = null, string $kind = 'text'): void {
+  public static function logOut(string $wa, string $body, string $by, ?string $mid = null, string $kind = 'text', string $status = 'sent', ?string $err = null): void {
     try {
       $wa = preg_replace('/\D/', '', $wa); if ($wa === '' || trim($body) === '') return;
       if ($mid && DB::table('chat_messages')->where('ext_id', $mid)->exists()) return;
@@ -74,7 +74,7 @@ class Chat {
           'status'=>'open', 'unread'=>0, 'created_at'=>now(), 'updated_at'=>now()]);
         $t = DB::table('chat_threads')->find($id);
       }
-      DB::table('chat_messages')->insert(['thread_id'=>$t->id, 'dir'=>'out', 'kind'=>$kind, 'body'=>mb_substr($body, 0, 4000), 'ext_id'=>$mid, 'user_name'=>$by, 'status'=>'sent', 'created_at'=>now(), 'updated_at'=>now()]);
+      DB::table('chat_messages')->insert(['thread_id'=>$t->id, 'dir'=>'out', 'kind'=>$kind, 'body'=>mb_substr($body, 0, 4000), 'ext_id'=>$mid, 'user_name'=>$by, 'status'=>$status, 'error'=>$err, 'created_at'=>now(), 'updated_at'=>now()]);
       DB::table('chat_threads')->where('id', $t->id)->update(['last_message'=>mb_substr($body, 0, 300), 'last_dir'=>'out', 'last_at'=>now(), 'updated_at'=>now()]);
     } catch (\Throwable $e) { report($e); }
   }

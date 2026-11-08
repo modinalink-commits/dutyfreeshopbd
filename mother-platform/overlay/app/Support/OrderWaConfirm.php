@@ -95,6 +95,7 @@ class OrderWaConfirm {
       if ($i < $attempts) { self::ev($id, (int)$c->order_id, 'retry', "Attempt $i failed: $err"); sleep($i === 1 ? 3 : 8); }
     }
     self::fail($c, (string)$err, in_array((int)$code, self::PERMANENT, true));
+    Chat::logOut($to, $body, 'Order confirmation (auto)', null, 'invoice', 'failed', mb_substr((string)$err, 0, 250));
   }
 
   private static function fail(object $c, string $why, bool $perm, ?string $note = null): void {
@@ -110,7 +111,8 @@ class OrderWaConfirm {
       $c = DB::table('order_whatsapp_confirmations')->where('external_message_id', $wamid)->first(); if (!$c) return;
       $st = strtolower((string)($s['status'] ?? '')); $ts = !empty($s['timestamp']) ? \Carbon\Carbon::createFromTimestampUTC((int)$s['timestamp']) : now();
       if ($st === 'failed') { $msg = mb_substr((string)(($s['errors'][0]['title'] ?? '') . ' ' . ($s['errors'][0]['message'] ?? '')), 0, 300);
-        DB::table('order_whatsapp_confirmations')->where('id', $c->id)->update(['send_status' => 'FAILED', 'failed_at' => $ts, 'failure_reason' => trim($msg) ?: 'Delivery failed', 'updated_at' => now()]); self::ev((int)$c->id, (int)$c->order_id, 'failed', trim($msg)); return; }
+        DB::table('order_whatsapp_confirmations')->where('id', $c->id)->update(['send_status' => 'FAILED', 'failed_at' => $ts, 'failure_reason' => trim($msg) ?: 'Delivery failed', 'updated_at' => now()]); self::ev((int)$c->id, (int)$c->order_id, 'failed', trim($msg));
+        try { DB::table('chat_messages')->where('ext_id', $wamid)->update(['status' => 'failed', 'error' => trim($msg) ?: 'Number not reachable on WhatsApp', 'updated_at' => now()]); } catch (\Throwable $e) {} return; }
       $new = strtoupper($st); if (!in_array($new, ['SENT', 'DELIVERED', 'READ'], true)) return;
       if ((self::RANK[$new] ?? 0) <= (self::RANK[$c->send_status] ?? 0) && $c->send_status !== 'FAILED') return;
       $col = ['SENT' => 'sent_at', 'DELIVERED' => 'delivered_at', 'READ' => 'read_at'][$new];
