@@ -196,6 +196,7 @@ class Chat {
     $lock = null;
     try {
       if (!AiChat::chatOn()) return;
+      if (!AiSchedule::activeNow()) return; // outside the owner's AI hours: staff answer
       $t = DB::table('chat_threads')->find($tid);
       if (!$t || AiChat::paused($t) || !in_array($t->channel, ['web', 'whatsapp', 'facebook'], true)) return;
       $ext = $t->channel !== 'web'; // WhatsApp / Facebook Messenger: the reply is sent to the customer through the platform
