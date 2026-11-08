@@ -380,6 +380,9 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/inventory', [\App\Http\Controllers\InventoryController::class,'index']);
   Route::get('/inventory/export/{fmt}', [\App\Http\Controllers\InventoryController::class,'export']);
   Route::get('/stores', [\App\Http\Controllers\InventoryController::class,'stores']);
+  Route::get('/watch-import', [\App\Http\Controllers\WatchImportController::class,'page']);
+  Route::post('/watch-import/step', [\App\Http\Controllers\WatchImportController::class,'step']);
+  Route::get('/watch-sources', [\App\Http\Controllers\WatchImportController::class,'sources']);
   Route::post('/stores', [\App\Http\Controllers\InventoryController::class,'storeAdd']);
   Route::post('/stores/{id}/scan', [\App\Http\Controllers\InventoryController::class,'scanStart']);
   Route::post('/stores/{id}/scan-step', [\App\Http\Controllers\InventoryController::class,'scanStep']);
