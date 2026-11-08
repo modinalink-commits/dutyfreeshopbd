@@ -478,7 +478,7 @@ class StoreController extends Controller {
     $cOk = null; $cmsg = $eng['coupon_error'] ?? ''; foreach ($app as $l) if (($l['key'] ?? '') === 'coupon') { $cOk = $l['code']; $cmsg = 'Coupon applied: '.self::tk($l['amount']).' off'; }
     if ($code !== '' && !$cOk && !$cmsg) $cmsg = ($eng['free_ship'] && empty($dv['paid'])) ? 'Free delivery applied' : 'Coupon is valid but another discount is already better for this order';
     $disc = min($disc, $sub);
-    return ['items'=>$items, 'sub'=>$sub, 'ship'=>$items ? $ship : 0, 'disc'=>$disc, 'total'=>$items ? $sub + $ship - $disc : 0, 'coupon'=>$cOk, 'coupon_msg'=>$cmsg, 'notes'=>$notes, 'applied'=>$app, 'profile'=>$eng['profile'], 'zone'=>$dv['zone'], 'ship_orig'=>$dv['original'], 'ship_free'=>(bool)$dv['free'], 'ship_unlocked'=>(bool)$dv['unlocked'], 'dv'=>$dv, 'mode'=>$eng['mode'] ?? null, 'cand'=>$eng['lines'] ?? [], 'bsnap'=>self::benefitSnap($phone, $app, $eng['profile'] ?? null, $eng['lines'] ?? [])];
+    return ['prepaid_only'=>\App\Support\PrepaidOnly::any(array_column($items, 'id')), 'items'=>$items, 'sub'=>$sub, 'ship'=>$items ? $ship : 0, 'disc'=>$disc, 'total'=>$items ? $sub + $ship - $disc : 0, 'coupon'=>$cOk, 'coupon_msg'=>$cmsg, 'notes'=>$notes, 'applied'=>$app, 'profile'=>$eng['profile'], 'zone'=>$dv['zone'], 'ship_orig'=>$dv['original'], 'ship_free'=>(bool)$dv['free'], 'ship_unlocked'=>(bool)$dv['unlocked'], 'dv'=>$dv, 'mode'=>$eng['mode'] ?? null, 'cand'=>$eng['lines'] ?? [], 'bsnap'=>self::benefitSnap($phone, $app, $eng['profile'] ?? null, $eng['lines'] ?? [])];
   }
   public function cartItems(Request $r) {
     \App\Support\OrderDiscount::$pick = preg_match('/^[a-z]{3,20}$/', (string)$r->input('pick')) ? (string)$r->input('pick') : null;
@@ -530,6 +530,7 @@ class StoreController extends Controller {
     $d = $v->validated();
     $pm = ['label'=>'COD','txn'=>null,'acct'=>null,'proof'=>null,'status'=>null];
     $pk = $d['pay'] ?? 'cod';
+    if ($pk === 'cod' && \App\Support\PrepaidOnly::any(array_keys($want))) return $back('ঘড়ি (Watch) ক্যাটাগরির পণ্যে ক্যাশ অন ডেলিভারি নেই। সম্পূর্ণ পেমেন্ট করে অর্ডার করুন।');
     if (in_array($pk, ['cod', 'shurjopay'], true) && DB::table('payment_methods')->where('kind', $pk)->where('active', false)->exists()) return $back('এই পেমেন্ট মেথডটি এখন চালু নেই।');
     if ($pk === 'shurjopay') {
       if (!\App\Support\ShurjoPay::enabled()) return $back('অনলাইন পেমেন্ট এখন চালু নেই।');

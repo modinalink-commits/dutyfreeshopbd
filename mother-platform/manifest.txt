@@ -863,3 +863,5 @@ database/migrations/2026_11_08_002000_discount_stack_mode.php
 database/migrations/2026_11_08_003000_bring_prices_to_safe.php
 database/migrations/2026_11_08_004000_below_to_near.php
 database/migrations/2026_11_08_005000_discounts_1_to_3.php
+app/Support/PrepaidOnly.php
+database/migrations/2026_11_08_006000_watch_category.php
