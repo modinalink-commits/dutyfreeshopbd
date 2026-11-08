@@ -13,6 +13,7 @@ class HomeBannersController extends Controller
     ['home_hero', 'Hero banner area (the big top banner)', 'Turns the whole top banner area off or on. Everything below stays.', '/admin/hero-slider', 'Edit slides'],
     ['home_globe', 'Globe slide: "Duty Free Exceptional Offers"', 'The world-map slide with the offers list. OFF shows the normal slider slides instead.', null, null],
     ['hero_offers_slide', 'Slide: Exceptional Offers list', 'Offer list slide inside the hero banner.', null, null],
+    ['hero_watch_slide', 'Slide: Watch collection', 'Animated slide with Watch category products sliding across.', '/watch/', 'Open Watch'],
     ['hero_member_slide', 'Slide: Membership', 'Membership slide inside the hero banner.', null, null],
     ['hero_district_slide', 'Slide: District delivery', 'District delivery slide inside the hero banner.', null, null],
     ['home_promos', 'Three promo cards under the brand strip', 'Pay Online Save More, Buy 2-5 and Save, Carton Discount.', null, null],
