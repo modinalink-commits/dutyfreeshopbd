@@ -91,7 +91,7 @@ class AiChat {
   /** Reply tone chosen by the owner in Chat Settings (applies to every AI reply). */
   public static function toneRule(): string {
     try {
-      $k = (string)Sms::secret('ai_tone'); $c = trim((string)Sms::secret('ai_tone_custom'));
+      $k = (string)Sms::secret('ai_tone'); $raw = (string)Sms::secret('ai_tone_custom'); $c = $raw === '' ? 'প্রতিটি উত্তরের একদম শেষে ধন্যবাদ লিখবে।' : ($raw === '-' ? '' : trim($raw));
       $p = ['friendly'=>'Friendly and warm, like a helpful shop assistant; simple everyday words, a light emoji only when natural.',
         'respectful'=>'Very polite and respectful: always address the customer as "আপনি" (never "তুমি"), use "স্যার/ম্যাডাম" only when the gender is clear, formal but kind Bangla.',
         'professional'=>'Professional and businesslike, calm and precise, no emoji, no slang.',
