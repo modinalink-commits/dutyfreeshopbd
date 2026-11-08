@@ -12,7 +12,7 @@ class OrderSearch {
       if ($l === 'today' || $l === 'আজ') $d = now($tz); elseif ($l === 'yesterday' || $l === 'গতকাল') $d = now($tz)->subDay();
       elseif (preg_match('/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})$/', $t, $m)) $d = \Carbon\Carbon::create((int)$m[1], (int)$m[2], (int)$m[3], 0, 0, 0, $tz);
       elseif (preg_match('/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})$/', $t, $m)) $d = \Carbon\Carbon::create((int)$m[3], (int)$m[2], (int)$m[1], 0, 0, 0, $tz);
-      elseif (preg_match('/^(\d{1,2})[-\/. ]?([a-z]{3,9})[-\/. ]?(\d{4})?$/i', $t, $m) && ($mo = self::mon($m[2]))) $d = \Carbon\Carbon::create((int)($m[3] ?: now($tz)->year), (int)$mo, (int)$m[1], 0, 0, 0, $tz);
+      elseif (preg_match('/^(\d{1,2})[-\/. ]?([a-z]{3,9})[-\/. ]?(\d{4})?$/i', $t, $m) && ($mo = self::mon($m[2]))) $d = \Carbon\Carbon::create((int)(($m[3] ?? null) ?: now($tz)->year), (int)$mo, (int)$m[1], 0, 0, 0, $tz);
       elseif (preg_match('/^([a-z]{3,9})[-\/. ]?(\d{1,2})(?:[-\/. ,]+(\d{4}))?$/i', $t, $m) && ($mo = self::mon($m[1]))) $d = \Carbon\Carbon::create((int)($m[3] ?? now($tz)->year), (int)$mo, (int)$m[2], 0, 0, 0, $tz);
     } catch (\Throwable $e) { $d = null; }
     return $d ? [$d->copy()->startOfDay()->utc(), $d->copy()->endOfDay()->utc()] : null;
