@@ -892,3 +892,6 @@ database/migrations/2026_11_09_020000_details_background.php
 database/migrations/2026_11_09_030000_clean_source_traces.php
 public/img/special-discount.webp
 database/migrations/2026_11_09_040000_ext_id_fill.php
+database/migrations/2026_11_09_050000_category_banners.php
+app/Http/Controllers/CategoryBannerController.php
+resources/views/category_banners.blade.php
