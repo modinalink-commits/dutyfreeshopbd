@@ -258,7 +258,7 @@ if(document.readyState==='complete')setTimeout(first,300);else addEventListener(
 @endif
 @endforeach</div>@if($slides->count()+($__ms?1:0)+($__dm?1:0)+($__om?1:0)+($__wt?1:0)>1)<div class="sl-d"></div><button type="button" class="sl-a pv" aria-label="Previous slide">‹</button><button type="button" class="sl-a nx" aria-label="Next slide">›</button>@endif</div>
 @elseif($__ms || $__dm || $__om || $__wt)
-<div class="sld hxs" data-auto="10000"><div class="sl-t"><div class="hxa hxd"><span class="k" data-end="{{ $fFix ? $fEnd * 1000 : '' }}">{{ $s['hero_kicker'] }} <span data-cd="all">{{ $fmt($fEnd) }}</span></span><h1>{!! nl2br(e(str_replace(', ', ",\n", $s['hero_title']))) !!}</h1><span class="sb">{{ $hsub }}</span><a class="bt" href="#flash">{{ $s['hero_button'] }} →</a></div>
+<div class="sld hxs" data-auto="10000"><div class="sl-t">@if(($s['hero_text_slide'] ?? '1') !== '0')<div class="hxa hxd"><span class="k" data-end="{{ $fFix ? $fEnd * 1000 : '' }}">{{ $s['hero_kicker'] }} <span data-cd="all">{{ $fmt($fEnd) }}</span></span><h1>{!! nl2br(e(str_replace(', ', ",\n", $s['hero_title']))) !!}</h1><span class="sb">{{ $hsub }}</span><a class="bt" href="#flash">{{ $s['hero_button'] }} →</a></div>@endif
 @if($__dm)
 @include('store.district_slide')
 @endif

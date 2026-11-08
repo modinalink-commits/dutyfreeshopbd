@@ -896,3 +896,4 @@ database/migrations/2026_11_09_050000_category_banners.php
 app/Http/Controllers/CategoryBannerController.php
 resources/views/category_banners.blade.php
 resources/views/store/watch_slide.blade.php
+database/migrations/2026_11_09_060000_hero_only_watch.php
