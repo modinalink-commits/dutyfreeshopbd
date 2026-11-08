@@ -845,4 +845,4 @@ afdb82a2fa3b6d4d7be09620b533c33b07a676ca resources/ai/kb_default.txt
 9b3bfa795354a77e0f2bf29a5e3baa92d7740b04 app/Http/Controllers/StaffApiController.php
 52ae72944163a8566bf03c3fe14387d66d872f2a app/Http/Middleware/StaffApi.php
 f997ce5a3fa7df55eec607932c53ee0d23357b82 database/migrations/2026_11_08_000200_staff_app_api.php
-2286a97924804d5fe3774adb13da1318b3914a7a resources/views/staff_app.blade.php
+1c59be455b1b64545bf5d92797bac78bfdd13bb4 resources/views/staff_app.blade.php
