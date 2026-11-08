@@ -81,7 +81,16 @@ class InventoryController extends Controller {
     $stores = DB::table('stores')->orderBy('name')->get();
     $counts = DB::table('store_products')->select('store_id', DB::raw('count(*) n'), DB::raw('sum(case when published then 1 else 0 end) pub'))->groupBy('store_id')->get()->keyBy('store_id');
     $own = ['n'=>DB::table('products')->count(), 'pub'=>DB::table('products')->where('published',true)->count()];
-    return view('stores', compact('stores','counts','own'));
+    $get = fn($k, $d) => (string)(DB::table('settings')->where('key', $k)->value('value') ?? $d);
+    $auto = ['on' => $get('auto_scan_on', '1') === '1', 'time' => $get('auto_scan_time', '03:00'), 'last' => $get('auto_scan_last', ''), 'running' => \Illuminate\Support\Facades\Cache::has('affiliate-alive')];
+    return view('stores', compact('stores','counts','own','auto'));
+  }
+  /** Daily automatic scan: time of day (Asia/Dhaka), on/off, and a Run now button. Stock and price of every source store are synced; out-of-stock products are unpublished. */
+  public function autoScan(Request $r) {
+    $t = preg_match('/^\d{1,2}:\d{2}$/', (string)$r->input('time')) ? str_pad((string)$r->input('time'), 5, '0', STR_PAD_LEFT) : '03:00';
+    foreach (['auto_scan_time' => $t, 'auto_scan_on' => $r->boolean('on') ? '1' : '0'] as $k => $v) DB::table('settings')->updateOrInsert(['key' => $k], ['value' => $v, 'updated_at' => now(), 'created_at' => now()]);
+    if ($r->input('run') === '1' && !\Illuminate\Support\Facades\Cache::has('affiliate-alive')) { DB::table('settings')->updateOrInsert(['key' => 'affiliate_now'], ['value' => 'watch:1,gadget:1,sunglass:1,amour:1,all:1', 'updated_at' => now(), 'created_at' => now()]); return back()->with('ok', 'Auto scan started now - it runs in the background (takes a while).'); }
+    return back()->with('ok', 'Auto scan saved: every day at ' . $t . ' (Dhaka).');
   }
   public function storeAdd(Request $r) {
     $d = $r->validate(['name'=>'required|string|max:120','domain'=>'required|string|max:200']);

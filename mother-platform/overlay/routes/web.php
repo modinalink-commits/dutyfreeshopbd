@@ -380,6 +380,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/inventory', [\App\Http\Controllers\InventoryController::class,'index']);
   Route::get('/inventory/export/{fmt}', [\App\Http\Controllers\InventoryController::class,'export']);
   Route::get('/stores', [\App\Http\Controllers\InventoryController::class,'stores']);
+  Route::post('/stores/auto-scan', [\App\Http\Controllers\InventoryController::class,'autoScan']);
   Route::get('/traffic-today', function () { // visitors by source today (Asia/Dhaka), from product page views
     $from = now('Asia/Dhaka')->startOfDay()->setTimezone(config('app.timezone'))->toDateTimeString();
     $by = DB::select("select coalesce(nullif(referrer,''),'(direct / none)') ref, source, count(distinct visitor_id) visitors, count(*) views from product_analytics_events where event_type='product_view' and created_at >= ? group by 1,2 order by 3 desc limit 60", [$from]);

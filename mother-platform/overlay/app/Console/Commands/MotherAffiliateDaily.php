@@ -15,11 +15,14 @@ class MotherAffiliateDaily extends Command {
       if ($nowJobs !== '') { DB::table('settings')->where('key', 'affiliate_now')->update(['value' => '', 'updated_at' => now()]); @exec('cd ' . escapeshellarg(base_path()) . ' && nohup php artisan mother:affiliate-daily --jobs=' . escapeshellarg($nowJobs) . ' > /dev/null 2>&1 &'); return; }
       $pend = (string)(DB::table('settings')->where('key', 'affiliate_pending')->value('value') ?? '');
       if ($pend !== '' && !Cache::has('affiliate-alive')) { @exec('cd ' . escapeshellarg(base_path()) . ' && nohup php artisan mother:affiliate-daily --jobs=' . escapeshellarg($pend) . ' > /dev/null 2>&1 &'); return; }
-      $now = now('Asia/Dhaka'); if ($now->hour < 3) return; $today = $now->format('Y-m-d');
+      $set = fn($k, $d) => (string)(DB::table('settings')->where('key', $k)->value('value') ?? $d);
+      if ($set('auto_scan_on', '1') !== '1') return;
+      $now = now('Asia/Dhaka'); $tm = preg_match('/^(\d{1,2}):(\d{2})$/', $set('auto_scan_time', '03:00'), $mm) ? [(int)$mm[1], (int)$mm[2]] : [3, 0];
+      if ($now->hour * 60 + $now->minute < $tm[0] * 60 + $tm[1]) return; $today = $now->format('Y-m-d');
       if ((string)(DB::table('settings')->where('key', 'affiliate_daily_date')->value('value') ?? '') === $today) return;
       DB::table('settings')->updateOrInsert(['key' => 'affiliate_daily_date'], ['value' => $today, 'updated_at' => now(), 'created_at' => now()]);
       $cmd = 'cd ' . escapeshellarg(base_path()) . ' && nohup php artisan mother:affiliate-daily > /dev/null 2>&1 &';
-      DB::table('settings')->updateOrInsert(['key' => 'affiliate_pending'], ['value' => 'watch:1,gadget:1,sunglass:1,amour:1', 'updated_at' => now(), 'created_at' => now()]);
+      DB::table('settings')->updateOrInsert(['key' => 'affiliate_pending'], ['value' => 'watch:1,gadget:1,sunglass:1,amour:1,all:1', 'updated_at' => now(), 'created_at' => now()]);
       @exec($cmd);
     } catch (\Throwable $e) { report($e); }
   }
@@ -49,6 +52,15 @@ class MotherAffiliateDaily extends Command {
           $this->info("$c done");
         } catch (\Throwable $e) { report($e); }
       }
+      // every other source store registered in Stores & Scan: re-scan so its stock/price stays equal to the source (central inventory)
+      $own = ['timeaccess-store.com', $gd, 'luxotix.com', 'amour.com.bd'];
+      foreach (DB::table('stores')->whereNotNull('last_scan_at')->orderBy('id')->get() as $o) {
+        $d = strtolower(preg_replace('#^www\.#', '', (string)$o->domain)); if ($d === '' || in_array($d, $own, true) || str_contains($d, 'dutyfreebd')) continue;
+        if ($this->option('jobs') !== null && $this->option('jobs') !== '' && !str_contains((string)$this->option('jobs'), 'all')) continue;
+        try { StoreScanner::begin($o); $t0 = time(); while (time() - $t0 < 3000) { Cache::put('affiliate-alive', 1, 150); $r = StoreScanner::step((int)$o->id); if (($r->scan_status ?? '') !== 'running') break; } } catch (\Throwable $e) { report($e); }
+      }
+      unset($jobs['all']); $setPend($jobs);
+      DB::table('settings')->updateOrInsert(['key' => 'auto_scan_last'], ['value' => now('Asia/Dhaka')->format('Y-m-d H:i'), 'updated_at' => now(), 'created_at' => now()]);
     } finally { Cache::forget('affiliate-alive'); }
     return 0;
   }

@@ -6,6 +6,11 @@
 <a class="btn" href="/admin/inventory">Open Central Inventory</a></div>
 @if(session('ok'))<div class="card" style="color:#166534">{{ session('ok') }}</div>@endif
 @if($errors->any())<div class="card err">{{ $errors->first() }}</div>@endif
+<form class="card" method="post" action="/admin/stores/auto-scan" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">@csrf
+<div style="flex:1;min-width:260px"><b>Daily Auto Scan</b><br><span style="font-size:12px;color:#6B7280">Every source store is re-scanned automatically each day. In-stock products stay published, out-of-stock products are unpublished, new products and price changes come in, so our site always matches the source websites.</span><br><span style="font-size:12px">Last auto scan: <b>{{ $auto['last'] ?: 'not yet' }}</b>@if($auto['running']) · <span style="color:#FF5A00">running now…</span>@endif</span></div>
+<label style="display:flex;gap:6px;align-items:center"><input type="checkbox" name="on" value="1" {{ $auto['on'] ? 'checked' : '' }}> On</label>
+<div><label>Time (Dhaka)</label><input type="time" name="time" value="{{ $auto['time'] }}" style="max-width:130px"></div>
+<button>Save time</button><button name="run" value="1" class="btn g" onclick="return confirm('Start the scan of all stores now?')">Scan all now</button></form>
 <form class="card" method="post" action="/admin/stores" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">@csrf
 <div style="flex:1;min-width:180px"><label>Store name</label><input name="name" placeholder="e.g. Perfume Store" required maxlength="120"></div>
 <div style="flex:1;min-width:220px"><label>Domain</label><input name="domain" placeholder="example.com" required maxlength="200"></div><button>Add store</button></form>
