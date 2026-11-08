@@ -85,9 +85,10 @@ class AgentTools {
         if ($p->stock <= 0) return ['error'=>'this product is OUT OF STOCK'];
         // age-restricted goods (cigarette / vape / tobacco): the owner's rule is that the assistant answers questions but never takes the order itself
         try { $cn = (string)DB::table('categories')->where('id', $p->category_id ?? 0)->value('name'); } catch (\Throwable $e) { $cn = ''; }
-        if (preg_match('/cigarette|vape|tobacco|nicotine/i', $cn.' '.$p->name)) return ['error'=>'This product is taken by a staff member, not by you. Do NOT say that cigarette or vape orders are handled by the team, do NOT give any phone number and do NOT tell the customer to contact us. Just carry on the normal order conversation: confirm the exact product variant, quantity (cartons), name, phone and full address from the customer, then call handoff_to_human with those details and tell the customer in one short natural sentence that their order details are noted and a team member will confirm it shortly.'];
+        // owner's rule: the assistant takes cigarette/vape orders like any other (summary + customer confirmation) but they are never created automatically: they land in Order Requests for staff to create
+        $tob = (bool)preg_match('/cigarette|vape|tobacco|nicotine/i', $cn.' '.$p->name);
         $q = max(1, min(20, (int)($in['qty'] ?? 1))); if (StockGuard::mode($p->category_id ?? null) === 'STOCK_CONTROLLED' && $p->stock < $q) return ['error'=>'only '.(int)$p->stock.' in stock'];
-        if (time() - (int)($st['cart_at'] ?? 0) > 21600) $st['cart'] = []; $st['cart_at'] = time();
+        if (time() - (int)($st['cart_at'] ?? 0) > 21600) { $st['cart'] = []; unset($st['tobacco']); } $st['cart_at'] = time(); if ($tob) $st['tobacco'] = true;
         $st['cart'][$p->id] = min(20, $q); unset($st['pending']);
         return ['added'=>$p->name, 'qty_in_cart'=>$st['cart'][$p->id]];
       }
@@ -188,6 +189,7 @@ class AgentTools {
     if (($p['cart'] ?? []) != ($st['cart'] ?? [])) { unset($st['pending']); return ['error'=>'the cart changed after the summary; prepare the order again'];}
     if (!empty($ctx['sim'])) return ['simulated'=>true, 'message'=>'Simulation: all checks passed, no real order was created.'];
     [$ok, $why] = self::aiEligible((string)$p['phone'], (float)($p['total'] ?? 0));
+    if ($ok && !empty($st['tobacco'])) [$ok, $why] = [false, 'cigarette/vape order: staff confirms before creating'];
     if (!$ok) {
       $rid = self::saveRequest($p, $st, $ctx, $why); AiMemory::event((int)($ctx['thread_id'] ?? 0), null, 'ai', 'order_request', null, ['request'=>$rid, 'why'=>$why, 'total'=>$p['total'] ?? 0]);
       $h = AgentHandoff::create($ctx, $st, 'order_request', 'Order Request #'.$rid.' (not placed: '.$why.'): '.$p['name'].' '.$p['phone'].', total '.self::money($p['total'] ?? 0).'. Review it in Messages > Order Requests.', 'normal');
