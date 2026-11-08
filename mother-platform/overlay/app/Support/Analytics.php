@@ -218,7 +218,8 @@ class Analytics {
     $v = "(o.status not in ('Cancel','Returned','Return Pending') or o.return_type = 'Partial')";
     $sql = "select coalesce(sum(case when $v then x.items end),0) items, coalesce(sum(case when $v then o.discount end),0) disc, coalesce(sum(case when $v then x.cost end),0) cost, coalesce(sum(case when $v then o.shipping end),0) ship, coalesce(sum(case when $v then o.delivery_free_discount end),0) dfree, coalesce(sum(case when $v then o.delivery_manual_adj end),0) dadj, coalesce(sum(case when $v then coalesce(o.courier_fee,0) end),0) cfee, coalesce(sum(case when o.status in ".self::RET." then coalesce(o.courier_return_fee,0) end),0) rfee, coalesce(sum(case when o.status in ".self::RET." then x.items - o.discount end),0) ret from orders o".self::lat().$w;
     $r = (array)(self::sel($sql, $b)[0] ?? []);
-    $exp = (float)(DB::select("select coalesce(sum(amount),0) s from account_entries where direction = 'expense' and coalesce(reference,'') not like 'TRF-%' and entry_date between ? and ?", [$f['from'], $f['to']])[0]->s ?? 0);
+    // real operating expenses only: purchase / supplier payments and transfers are NOT expenses (the product cost is already in COGS), so entries whose purpose is marked "not an expense" are left out
+    $exp = (float)(DB::select("select coalesce(sum(e.amount),0) s from account_entries e left join expense_purposes pu on pu.id = e.purpose_id where e.direction = 'expense' and coalesce(e.reference,'') not like 'TRF-%' and coalesce(pu.is_expense, true) = true and e.entry_date between ? and ?", [$f['from'], $f['to']])[0]->s ?? 0);
     $rev = (float)$r['items'] - (float)$r['disc']; $gross = $rev - (float)$r['cost'];
     $net = $gross + (float)$r['ship'] - (float)$r['cfee'] - (float)$r['rfee'] - $exp;
     $L = fn($l, $a, $n = '') => ['line'=>$l, 'amount'=>$a, 'note'=>$n, 'bold'=>0];
