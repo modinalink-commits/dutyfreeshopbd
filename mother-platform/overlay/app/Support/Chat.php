@@ -272,7 +272,15 @@ class Chat {
           foreach ($lines as $ln) { if (preg_match('#https?://\S+#u', $ln)) $nl++; }
           if ($nl >= 2 && $nl <= 6) {
             foreach ($lines as $ln) {
-              if (preg_match('#https?://\S+#u', $ln)) { if ($buf) { $pre = trim(implode("\n", $buf)); if ($pre !== '') $chunks[] = $pre; $buf = []; } $chunks[] = trim($ln); }
+              if (preg_match('#https?://\S+#u', $ln)) {
+                $own = trim($ln); $last = '';
+                if (trim(preg_replace('#https?://\S+#u', '', $ln), " \t:-–：") === '') { // bare link: the line right above it is its product name / price
+                  while ($buf && trim((string)end($buf)) === '') array_pop($buf);
+                  if ($buf) { $last = trim((string)array_pop($buf)); if ($last !== '') $own = $last."\n".$own; }
+                }
+                if ($buf) { $pre = trim(implode("\n", $buf)); if ($pre !== '') $chunks[] = $pre; $buf = []; }
+                $chunks[] = $own;
+              }
               else $buf[] = $ln;
             }
             if ($buf) { $pre = trim(implode("\n", $buf)); if ($pre !== '') $chunks[] = $pre; }
