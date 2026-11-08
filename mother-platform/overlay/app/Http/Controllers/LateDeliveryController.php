@@ -11,7 +11,7 @@ class LateDeliveryController extends Controller {
   public function index(Request $r) {
     LateDelivery::auto();
     $q = DB::table('orders')->where('status', 'Late Delivery');
-    if ($s = trim((string)$r->query('q'))) { $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $s).'%'; $q->where(fn($w) => $w->where('invoice', 'ilike', $like)->orWhere('phone', 'like', $like)->orWhere('customer_name', 'ilike', $like)->orWhere('consignment_id', 'ilike', $like)); }
+    if ($s = trim((string)$r->query('q'))) { $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $s).'%'; $q->where(fn($w) => $w->where('invoice', 'ilike', $like)->orWhere('phone', 'like', $like)->orWhere('customer_name', 'ilike', $like)->orWhere('address', 'ilike', $like)->orWhere('consignment_id', 'ilike', $like)); }
     if ($c = $r->query('courier')) $q->where('courier', $c);
     $rows = (clone $q)->orderByRaw('coalesce(shipment_at, courier_sent_at) asc nulls last')->orderBy('id')->paginate(100)->withQueryString();
     $items = DB::table('order_items')->whereIn('order_id', collect($rows->items())->pluck('id'))->get(['order_id', 'name', 'qty'])->groupBy('order_id');
