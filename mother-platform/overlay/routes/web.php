@@ -384,6 +384,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/watch-import/step', [\App\Http\Controllers\WatchImportController::class,'step']);
   Route::get('/watch-sources', [\App\Http\Controllers\WatchImportController::class,'sources']);
   Route::post('/stores', [\App\Http\Controllers\InventoryController::class,'storeAdd']);
+  Route::get('/stores/{id}/diag', [\App\Http\Controllers\InventoryController::class,'scanDiag']);
   Route::post('/stores/{id}/scan', [\App\Http\Controllers\InventoryController::class,'scanStart']);
   Route::post('/stores/{id}/scan-step', [\App\Http\Controllers\InventoryController::class,'scanStep']);
   Route::get('/stores/{id}/edit', [\App\Http\Controllers\InventoryController::class,'storeEdit']);
