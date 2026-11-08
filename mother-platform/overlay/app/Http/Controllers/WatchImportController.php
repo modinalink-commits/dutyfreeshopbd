@@ -157,15 +157,28 @@ class WatchImportController extends Controller {
   /** Product details (description, extra photos) from the source shop (Shopify .json), stored as OUR content: no links, no source name, our own image copies. */
   public function details(Request $r) {
     @set_time_limit(100); $cf = $this->cfg(); $s = $this->src(); abort_unless($s, 404);
+    DB::table('watch_source')->where('store_id', $s->id)->where('note', 'no details')->update(['details_at' => null, 'note' => null]);
     $rows = DB::table('watch_source as w')->join('products as p', 'p.id', '=', 'w.product_id')->where('w.store_id', $s->id)->whereNull('w.details_at')->whereNotNull('w.source_url')->orderBy('w.id')->limit(6)->get(['w.id as wid', 'w.source_url', 'p.id as pid', 'p.sku', 'p.name']);
     $left = DB::table('watch_source')->where('store_id', $s->id)->whereNull('details_at')->whereNotNull('source_url')->count();
     if ($rows->isEmpty()) return response()->json(['finished' => true, 'left' => 0]);
     $urls = []; foreach ($rows as $x) { $u = preg_replace('#[?\#].*$#', '', (string)$x->source_url); $urls[$x->wid] = rtrim($u, '/') . '.json'; }
     try { $resp = \Illuminate\Support\Facades\Http::pool(function ($pool) use ($urls) { $o = []; foreach ($urls as $k => $u) $o[] = $pool->as((string)$k)->timeout(25)->withHeaders(['User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36', 'Accept' => 'application/json'])->get($u); return $o; }); } catch (\Throwable $e) { return response()->json(['finished' => false, 'err' => mb_substr($e->getMessage(), 0, 150), 'left' => $left]); }
-    $bad = [$cf['domain'], preg_replace('/\..*$/', '', $cf['domain']), 'timeaccess', 'time access']; $ok = 0; $imgMap = []; $imgFor = [];
+    $bad = [$cf['domain'], preg_replace('/\..*$/', '', $cf['domain']), 'timeaccess', 'time access', 'ryans', 'luxotix', 'amour']; $ok = 0; $imgMap = []; $imgFor = [];
     foreach ($rows as $x) {
       $res = $resp[(string)$x->wid] ?? null; $j = ($res && method_exists($res, 'ok') && $res->ok()) ? $res->json('product') : null;
-      if (!is_array($j)) { DB::table('watch_source')->where('id', $x->wid)->update(['details_at' => now(), 'note' => 'no details']); continue; }
+      $st = ($res && method_exists($res, 'status')) ? $res->status() : 0; $page = null;
+      if (!is_array($j)) { // not a Shopify shop (or blocked): read the product page itself (JSON-LD description, meta description, spec tables)
+        try { $pu = preg_replace('#[?\#].*$#', '', (string)$x->source_url); $pr = \Illuminate\Support\Facades\Http::timeout(25)->withHeaders(['User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36', 'Accept' => 'text/html'])->get($pu); $page = $pr->ok() ? (string)$pr->body() : null; $st2 = $pr->status(); } catch (\Throwable $e) { $st2 = 'err'; }
+        $ld = ''; $tbl = '';
+        if ($page) {
+          if (preg_match_all('#<script[^>]+application/ld\+json[^>]*>(.*?)</script>#is', $page, $mm)) foreach ($mm[1] as $jj) { $d = json_decode(trim($jj), true); $q = [$d]; while ($q) { $z = array_shift($q); if (!is_array($z)) continue; if (isset($z['@graph'])) foreach ($z['@graph'] as $g) $q[] = $g; $ty = $z['@type'] ?? ''; if ((is_array($ty) ? in_array('Product', $ty) : $ty === 'Product') && !empty($z['description'])) { $ld = (string)$z['description']; break 2; } if (array_is_list($z)) foreach ($z as $g) $q[] = $g; } }
+          if ($ld === '' && preg_match('#<meta[^>]+(?:property|name)=["\'](?:og:)?description["\'][^>]+content=["\']([^"\']+)#i', $page, $m1)) $ld = html_entity_decode($m1[1]);
+          if (preg_match_all('#<table\b.*?</table>#is', $page, $tt)) foreach (array_slice($tt[0], 0, 3) as $t1) { $c1 = self::cleanHtml($t1, $bad); if (mb_strlen(strip_tags($c1)) > 60) { $tbl .= $c1; break; } }
+        }
+        $ld = trim(preg_replace('/\s+/u', ' ', strip_tags($ld)));
+        if ($ld === '' && $tbl === '') { DB::table('watch_source')->where('id', $x->wid)->update(['details_at' => now(), 'note' => 'no details http ' . $st . '/' . ($st2 ?? '?')]); continue; }
+        $j = ['body_html' => ($ld !== '' ? '<p>' . e($ld) . '</p>' : '') . ($tbl !== '' ? '<h3>Specifications</h3>' . $tbl : ''), 'images' => [], 'options' => []];
+      }
       $html = self::cleanHtml((string)($j['body_html'] ?? ''), $bad);
       // option table (strap, size ...) from variants
       $opts = []; foreach ((array)($j['options'] ?? []) as $o) { $vals = array_values(array_unique(array_map('strval', (array)($o['values'] ?? [])))); if (($o['name'] ?? '') !== '' && $o['name'] !== 'Title' && $vals) $opts[] = '<li><strong>' . e($o['name']) . ':</strong> ' . e(implode(', ', array_slice($vals, 0, 12))) . '</li>'; }
