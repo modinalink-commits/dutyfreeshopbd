@@ -190,7 +190,7 @@ class ChatController extends Controller {
   public function settings() {
     $has = fn($k) => (bool)Chat::sec($k);
     if (!Chat::sec('chat_verify_token')) Sms::setSecret('chat_verify_token', bin2hex(random_bytes(12)));
-    return view('chat_settings', ['verify'=>Chat::sec('chat_verify_token'), 'hook'=>url('/webhooks/meta'), 'app_id'=>Chat::sec('chat_app_id'), 'redir'=>url('/admin/chat-settings/fb-callback'), 'pages'=>$this->pages(), 'has'=>['fb'=>$has('chat_fb_token') || $this->pages()->isNotEmpty(), 'ig'=>$has('chat_ig_token'), 'wa'=>$has('chat_wa_token'), 'secret'=>$has('chat_app_secret')],
+    return view('chat_settings', ['verify'=>Chat::sec('chat_verify_token'), 'hook'=>url('/webhooks/meta'), 'wa_numbers'=>(function(){ try { return DB::table('chat_wa_numbers')->orderBy('id')->get(['id','phone_id','display_phone','verified_name','subscribed','note']); } catch (\Throwable $e) { return collect(); } })(), 'wa_cfg'=>(string)Chat::sec('chat_wa_config_id'), 'app_id'=>Chat::sec('chat_app_id'), 'redir'=>url('/admin/chat-settings/fb-callback'), 'pages'=>$this->pages(), 'has'=>['fb'=>$has('chat_fb_token') || $this->pages()->isNotEmpty(), 'ig'=>$has('chat_ig_token'), 'wa'=>$has('chat_wa_token'), 'secret'=>$has('chat_app_secret')],
       'hook_last'=>DB::table('settings')->where('key', 'chat_hook_last')->value('value'), 'wa_phone'=>Chat::sec('chat_wa_phone_id'), 'ai_chan'=>\App\Support\AiChat::chanOn(), 'sla_warn'=>(int)(Sms::secret('sla_warn_min') ?: 5), 'sla_red'=>(int)(Sms::secret('sla_red_min') ?: 15), 'ai_auto'=>\App\Support\AiChat::chatOn() || (\App\Support\Sms::secret('ai_chat_auto') !== '0'), 'web_on'=>(DB::table('settings')->where('key', 'chat_web_on')->value('value') ?? '1') === '1',
       'quick'=>DB::table('chat_quick_replies')->orderBy('id')->get(), 'counts'=>DB::table('chat_threads')->select('channel', DB::raw('count(*) n'))->groupBy('channel')->pluck('n', 'channel')]);
   }
@@ -271,9 +271,10 @@ class ChatController extends Controller {
   public function fbConnect(Request $r) {
     $id = trim((string)Chat::sec('chat_app_id'));
     if (!$id) return redirect('/admin/chat-settings')->with('err', 'Save the Meta App ID first (Chat Settings > Meta app).');
-    $st = bin2hex(random_bytes(16)); $ig = (bool)$r->query('ig'); session(['fb_oauth_state'=>$st, 'fb_oauth_ig'=>$ig]);
+    $st = bin2hex(random_bytes(16)); $ig = (bool)$r->query('ig'); $wa = (bool)$r->query('wa'); session(['fb_oauth_state'=>$st, 'fb_oauth_ig'=>$ig, 'fb_oauth_wa'=>$wa]);
+    if ($wa && !trim((string)Chat::sec('chat_wa_config_id'))) return redirect('/admin/chat-settings')->with('err', 'Save the WhatsApp login Configuration ID first.');
     return redirect('https://www.facebook.com/v21.0/dialog/oauth?'.http_build_query(['client_id'=>$id, 'redirect_uri'=>url('/admin/chat-settings/fb-callback'), 'state'=>$st, 'response_type'=>'code',
-      'config_id'=>$ig ? '989295444231024' : '1507276531459571', 'override_default_response_type'=>'true']));
+      'config_id'=>$wa ? trim((string)Chat::sec('chat_wa_config_id')) : ($ig ? '989295444231024' : '1507276531459571'), 'override_default_response_type'=>'true']));
   }
   public function fbCallback(Request $r) {
     $back = redirect('/admin/chat-settings');
@@ -285,6 +286,28 @@ class ChatController extends Controller {
     $G = 'https://graph.facebook.com/v21.0/'; $H = fn() => \Illuminate\Support\Facades\Http::timeout(25);
     $a = $H()->get($G.'oauth/access_token', ['client_id'=>$id, 'client_secret'=>$sec, 'redirect_uri'=>url('/admin/chat-settings/fb-callback'), 'code'=>(string)$r->query('code')])->json();
     if (empty($a['access_token'])) return $back->with('err', 'Facebook did not accept the login: '.mb_substr((string)($a['error']['message'] ?? json_encode($a)), 0, 250));
+    if (session()->pull('fb_oauth_wa')) { // WhatsApp login: every WhatsApp Business account the owner ticked, with each of its numbers
+      $tok = $a['access_token'];
+      $dbg = $H()->get($G.'debug_token', ['input_token'=>$tok, 'access_token'=>$id.'|'.$sec])->json();
+      $wabas = [];
+      foreach (($dbg['data']['granular_scopes'] ?? []) as $gs) if (in_array($gs['scope'] ?? '', ['whatsapp_business_management', 'whatsapp_business_messaging'], true)) foreach (($gs['target_ids'] ?? []) as $t) $wabas[(string)$t] = 1;
+      $wabas = array_keys($wabas);
+      if (!$wabas) return $back->with('err', 'WhatsApp login worked, but no WhatsApp Business account was granted. Tick the account and numbers in the login window. '.mb_substr(json_encode($dbg['data']['granular_scopes'] ?? ($dbg['error'] ?? 'no scopes')), 0, 250));
+      $added = []; $bad = [];
+      foreach ($wabas as $wb) {
+        $sub = $H()->withToken($tok)->post($G.$wb.'/subscribed_apps')->json(); $sok = !empty($sub['success']);
+        $nums = $H()->withToken($tok)->get($G.$wb.'/phone_numbers', ['fields'=>'id,display_phone_number,verified_name', 'limit'=>25])->json();
+        foreach (($nums['data'] ?? []) as $pn) {
+          $pid = (string)($pn['id'] ?? ''); if ($pid === '') continue;
+          DB::table('chat_wa_numbers')->updateOrInsert(['phone_id'=>$pid], ['waba_id'=>$wb, 'display_phone'=>$pn['display_phone_number'] ?? null, 'verified_name'=>$pn['verified_name'] ?? null,
+            'token'=>\Illuminate\Support\Facades\Crypt::encryptString($tok), 'subscribed'=>$sok, 'note'=>$sok ? null : mb_substr((string)($sub['error']['message'] ?? 'subscribe failed'), 0, 250), 'updated_at'=>now(), 'created_at'=>now()]);
+          $added[] = ($pn['display_phone_number'] ?? $pid); if (!$sok) $bad[] = $pn['display_phone_number'] ?? $pid;
+        }
+        if (empty($nums['data'])) $bad[] = 'WABA '.$wb.': '.mb_substr((string)($nums['error']['message'] ?? 'no numbers'), 0, 120);
+      }
+      try { DB::table('audit_logs')->insert(['user_id'=>auth()->id(), 'user_name'=>auth()->user()->name, 'action'=>'chat.wa_connect', 'subject'=>'WhatsApp numbers connected: '.implode(', ', $added), 'ip'=>$r->ip(), 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {}
+      return $back->with($added ? 'ok' : 'err', count($added).' WhatsApp number(s) connected: '.implode(', ', $added).($bad ? ' Attention: '.implode(' | ', $bad) : ''));
+    }
     if (session()->pull('fb_oauth_ig')) { // Instagram connection (unified login): system-user token for the Instagram account(s)
       $tok = $a['access_token'];
       $dbg = $H()->get($G.'debug_token', ['input_token'=>$tok, 'access_token'=>$id.'|'.$sec])->json();
@@ -338,6 +361,17 @@ class ChatController extends Controller {
     if ($t === '') return back()->with('err', 'Paste the token first.');
     [$ok, $msg] = $this->importPages($t, $r);
     return back()->with($ok ? 'ok' : 'err', $msg);
+  }
+  public function waDisconnect(Request $r, $id) {
+    $n = DB::table('chat_wa_numbers')->find($id); if (!$n) return back();
+    DB::table('chat_wa_numbers')->where('id', $id)->delete();
+    DB::table('audit_logs')->insert(['user_id'=>auth()->id(), 'user_name'=>auth()->user()->name, 'action'=>'chat.wa_disconnect', 'subject'=>'WhatsApp number disconnected: '.($n->display_phone ?: $n->phone_id), 'ip'=>$r->ip(), 'created_at'=>now(), 'updated_at'=>now()]);
+    return back()->with('ok', 'Disconnected '.($n->display_phone ?: $n->phone_id).'. (Its old conversations stay in the inbox.)');
+  }
+  public function waConfigSave(Request $r) {
+    $d = $r->validate(['wa_config_id'=>'required|digits_between:8,25']);
+    \App\Support\Sms::setSecret('chat_wa_config_id', $d['wa_config_id']);
+    return back()->with('ok', 'WhatsApp login configuration saved.');
   }
   public function fbDisconnect(Request $r, $id) {
     $p = DB::table('chat_pages')->find($id); if (!$p) return back();
@@ -459,6 +493,7 @@ class ChatController extends Controller {
         } elseif ($obj === 'whatsapp_business_account') {
           foreach ($e['changes'] ?? [] as $c) {
             $v = $c['value'] ?? []; $names = [];
+            $wpid = (string)($v['metadata']['phone_number_id'] ?? ''); [$wtok, ] = Chat::waCred($wpid); $wref = ($wpid !== '' && $wpid !== (string)Chat::sec('chat_wa_phone_id') && DB::table('chat_wa_numbers')->where('phone_id', $wpid)->exists()) ? $wpid : null;
             foreach ($v['contacts'] ?? [] as $ct) $names[$ct['wa_id'] ?? ''] = $ct['profile']['name'] ?? null;
             foreach ($v['statuses'] ?? [] as $stt) \App\Support\OrderWaConfirm::status((array)$stt);
             foreach ($v['messages'] ?? [] as $m) {
@@ -467,11 +502,13 @@ class ChatController extends Controller {
               $body = $type === 'text' ? (string)($m['text']['body'] ?? '') : ($type === 'button' ? (string)($m['button']['text'] ?? '') : '['.$type.' received — open WhatsApp to view]');
               $att = null; $meta = [];
               if (in_array($type, ['image', 'sticker', 'document', 'audio', 'video'], true) && !empty($m[$type]['id']) && !DB::table('chat_messages')->where('ext_id', $m['id'] ?? '-')->exists()) {
-                $got = Chat::waMedia((string)$m[$type]['id']);
+                $got = Chat::waMedia((string)$m[$type]['id'], $wtok);
                 if ($got) { $att = $got[0]; $meta['att_type'] = $got[1]; $cap = trim((string)($m[$type]['caption'] ?? '')); $body = $cap !== '' ? $cap : ['image'=>'', 'sticker'=>'', 'document'=>(string)($m[$type]['filename'] ?? ''), 'audio'=>'', 'video'=>''][$type]; }
               }
               if (!$att && !empty($m['image']['caption'])) $body = $m['image']['caption'].' [image]';
+              $meta['page_ref'] = $wref;
               $th = Chat::ingest('whatsapp', $from, $names[$from] ?? null, $body, $att, $m['id'] ?? null, $meta);
+              if ($th && ($th->page_ref ?? null) !== $wref) { DB::table('chat_threads')->where('id', $th->id)->update(['page_ref'=>$wref]); $th->page_ref = $wref; } // replies go out from the number the customer wrote to
               if ($th && $att && ($meta['att_type'] ?? '') === 'audio' && ($vid = DB::table('chat_messages')->where('ext_id', $m['id'] ?? '-')->value('id'))) { $vid = (int)$vid; app()->terminating(fn() => Chat::transcribe($vid)); }
               if ($th && $att && ($meta['att_type'] ?? '') === 'image' && \App\Support\AiChat::paused($th) && ($hid = DB::table('chat_messages')->where('ext_id', $m['id'] ?? '-')->value('id'))) { $hid = (int)$hid; $htid = (int)$th->id; app()->terminating(fn() => Chat::imageHint($htid, $hid)); }
               if ($th && !\App\Support\AiChat::paused($th) && !($att && ($meta['att_type'] ?? 'image') !== 'image') && in_array($type, ['text', 'button', 'image'], true)) { $tid = (int)$th->id; app()->terminating(fn() => Chat::aiReply($tid)); }

@@ -167,6 +167,8 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/chat-settings/fb-connect', [\App\Http\Controllers\ChatController::class,'fbConnect']);
   Route::post('/chat-settings/fb-import', [\App\Http\Controllers\ChatController::class,'fbImport']);
   Route::get('/chat-settings/fb-callback', [\App\Http\Controllers\ChatController::class,'fbCallback']);
+  Route::post('/chat-settings/wa-disconnect/{id}', [\App\Http\Controllers\ChatController::class,'waDisconnect']);
+  Route::post('/chat-settings/wa-config', [\App\Http\Controllers\ChatController::class,'waConfigSave']);
   Route::post('/chat-settings/fb-disconnect/{id}', [\App\Http\Controllers\ChatController::class,'fbDisconnect']);
   Route::post('/chat-settings/quick', [\App\Http\Controllers\ChatController::class,'quickSave']);
   Route::post('/chat-settings/quick/{id}/delete', [\App\Http\Controllers\ChatController::class,'quickDelete']);

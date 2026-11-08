@@ -14,6 +14,13 @@ class Chat {
     return $d;
   }
   public static function sec(string $k): ?string { return Sms::secret($k); }
+  /** WhatsApp credentials for a conversation: an extra connected number (thread page_ref = its phone id) or the original single number. Returns [token, phoneId]. */
+  public static function waCred(?string $ref): array {
+    try {
+      if ($ref && $ref !== self::sec('chat_wa_phone_id') && ($n = DB::table('chat_wa_numbers')->where('phone_id', $ref)->first()) && $n->token) return [\Illuminate\Support\Facades\Crypt::decryptString($n->token), (string)$n->phone_id];
+    } catch (\Throwable $e) {}
+    return [self::sec('chat_wa_token'), self::sec('chat_wa_phone_id')];
+  }
   /** Token for the Page / Instagram account a conversation belongs to (Facebook Login connections), else the single saved token. */
   public static function pageTok(string $ch, ?string $ref): ?string {
     try {
@@ -121,9 +128,9 @@ class Chat {
     } catch (\Throwable $e) { return null; }
   }
   /** Download an incoming WhatsApp media file (image, sticker, document, audio, video) and keep a local copy. Returns [url, type] or null. */
-  public static function waMedia(string $mediaId): ?array {
+  public static function waMedia(string $mediaId, ?string $useTok = null): ?array {
     try {
-      $tok = self::sec('chat_wa_token'); if (!$tok || $mediaId === '') return null;
+      $tok = $useTok ?: self::sec('chat_wa_token'); if (!$tok || $mediaId === '') return null;
       $m = Http::timeout(15)->withToken($tok)->get(self::API.'/'.rawurlencode($mediaId)); if (!$m->ok()) return null;
       $src = (string)$m->json('url'); $mime = strtolower((string)$m->json('mime_type')); if ($src === '' || (int)$m->json('file_size') > 16 * 1048576) return null;
       $f = Http::timeout(30)->withToken($tok)->get($src); if (!$f->ok() || $f->body() === '' || strlen($f->body()) > 16 * 1048576) return null;
@@ -260,7 +267,7 @@ class Chat {
     try {
       if ($t->channel === 'web') return [true, null];
       if ($t->channel === 'whatsapp') {
-        $tok = self::sec('chat_wa_token'); $pid = self::sec('chat_wa_phone_id');
+        [$tok, $pid] = self::waCred($t->page_ref ?? null);
         if (!$tok || !$pid) return [false, 'WhatsApp is not connected (Chat Settings).'];
         $to = preg_replace('/\D/', '', $t->external_id);
         $out = [];
@@ -333,7 +340,7 @@ class Chat {
     try {
       if ($t->channel === 'web') { \Illuminate\Support\Facades\Cache::put('chat.typing.'.$t->id, 1, 7); return; }
       if ($t->channel === 'whatsapp') {
-        $tok = self::sec('chat_wa_token'); $pid = self::sec('chat_wa_phone_id'); if (!$tok || !$pid) return;
+        [$tok, $pid] = self::waCred($t->page_ref ?? null); if (!$tok || !$pid) return;
         $mid = DB::table('chat_messages')->where('thread_id', $t->id)->where('dir', 'in')->whereNotNull('ext_id')->where('created_at', '>', now()->subHours(23))->orderByDesc('id')->value('ext_id'); if (!$mid) return;
         Http::timeout(6)->withToken($tok)->post(self::API.'/'.$pid.'/messages', ['messaging_product'=>'whatsapp', 'status'=>'read', 'message_id'=>$mid, 'typing_indicator'=>['type'=>'text']]);
         return;
