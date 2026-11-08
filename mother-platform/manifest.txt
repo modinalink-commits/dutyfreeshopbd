@@ -850,6 +850,7 @@ resources/views/staff_app.blade.php
 database/migrations/2026_11_08_000300_chat_order_requests.php
 app/Support/AiMemory.php
 app/Support/OrderIntent.php
+app/Support/OpcacheGuard.php
 database/migrations/2026_11_08_000600_order_intent_backfill.php
 database/migrations/2026_11_08_000400_ai_memory.php
 database/migrations/2026_11_08_000500_ai_memory_backfill.php

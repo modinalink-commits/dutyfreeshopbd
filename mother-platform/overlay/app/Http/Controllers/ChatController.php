@@ -13,6 +13,7 @@ class ChatController extends Controller {
   public function inbox() { return view('chat_inbox', ['statuses'=>self::STATUSES]); }
 
   public function threads(Request $r) {
+    \App\Support\OpcacheGuard::tick();
     $q = DB::table('chat_threads');
     $f = (string)$r->query('f', 'all');
     if (in_array($f, ['facebook', 'instagram', 'whatsapp', 'web'])) $q->where('channel', $f);
