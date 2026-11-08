@@ -43,6 +43,8 @@ class MotherAffiliateDaily extends Command {
           $jobs[$c] = false; $setPend($jobs);
           while ($n++ < 4000) { Cache::put('affiliate-alive', 1, 150); $j = $ctl->step(request())->getData(true); if (!empty($j['finished'])) break; }
           if ($c === 'amour') { $m = 0; while ($m++ < 4000) { Cache::put('affiliate-alive', 1, 150); $j = $ctl->clean(request())->getData(true); if (!empty($j['finished']) || !empty($j['error'])) break; if (empty($j['ok']) && empty($j['busy'])) break; if (!empty($j['busy'])) sleep(5); } }
+          // real product descriptions and extra photos from the source page (a few products per call, resumes after a restart)
+          $d = 0; $bad = 0; while ($d++ < 3000) { Cache::put('affiliate-alive', 1, 150); $j = $ctl->details(request())->getData(true); if (!empty($j['finished'])) break; if (!empty($j['busy'])) { sleep(2); continue; } if (empty($j['ok'])) { if (++$bad > 40) break; } else $bad = 0; usleep(400000); }
           unset($jobs[$c]); $setPend($jobs);
           $this->info("$c done");
         } catch (\Throwable $e) { report($e); }
