@@ -46,7 +46,12 @@ class AiImage {
   }
   /** Square PNG (max 1024) of the original, centred on white, ready to send to the API. */
   private static function prepare(string $abs): string {
-    $s = self::load($abs); if (!$s) throw new \RuntimeException('Unsupported or corrupted image');
+    $s = self::load($abs);
+    if (!$s) { // GD/Imagick could not decode it: send the raw bytes when the API can read that format itself
+      $raw = (string)@file_get_contents($abs); $gi = @getimagesizefromstring($raw);
+      if ($raw !== '' && strlen($raw) < 18 * 1048576 && $gi && in_array($gi[2], [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_WEBP], true)) return $raw;
+      throw new \RuntimeException('Unsupported or corrupted image (' . ($gi ? 'type ' . $gi[2] : 'unreadable') . ', ' . strlen($raw) . ' bytes)');
+    }
     $w = imagesx($s); $h = imagesy($s); $sc = min(1, 1024 / max($w, $h)); $nw = max(1, (int)round($w * $sc)); $nh = max(1, (int)round($h * $sc));
     $c = imagecreatetruecolor(1024, 1024); imagefill($c, 0, 0, imagecolorallocate($c, 255, 255, 255));
     imagecopyresampled($c, $s, (int)((1024 - $nw) / 2), (int)((1024 - $nh) / 2), 0, 0, $nw, $nh, $w, $h);
