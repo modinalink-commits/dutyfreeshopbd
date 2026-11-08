@@ -240,6 +240,13 @@ class Chat {
         DB::table('chat_messages')->insert(['thread_id'=>$tid, 'dir'=>'out', 'kind'=>'text', 'body'=>mb_substr($txt, 0, 3500), 'user_name'=>'Claude AI', 'is_ai'=>true, 'status'=>$sent ? 'sent' : 'failed', 'error'=>$err, 'created_at'=>now(), 'updated_at'=>now()]);
         if ($sent) DB::table('chat_threads')->where('id', $tid)->update(['last_message'=>mb_substr($txt, 0, 300), 'last_dir'=>'out', 'last_at'=>now(), 'updated_at'=>now()]);
         if ($lock) \Illuminate\Support\Facades\Cache::forget($lock);
+        // an order the AI just placed: send the secure invoice link as its own message (only after the backend confirmed the order exists)
+        if ($sent && ($invNo = \Illuminate\Support\Facades\Cache::pull('ai.invoice.'.$tid)) && DB::table('orders')->where('invoice', $invNo)->exists()) {
+          $itx = "আপনার ইনভয়েস (".\App\Support\Inv::show($invNo)."): ".self::invoiceUrl($invNo); $ie = null; $is = true;
+          if ($ext) [$is, $ie] = self::deliver($t, $itx);
+          DB::table('chat_messages')->insert(['thread_id'=>$tid, 'dir'=>'out', 'kind'=>'invoice', 'body'=>$itx, 'user_name'=>'Claude AI', 'is_ai'=>true, 'status'=>$is ? 'sent' : 'failed', 'error'=>$ie, 'created_at'=>now(), 'updated_at'=>now()]);
+          if ($is) DB::table('chat_threads')->where('id', $tid)->update(['last_message'=>mb_substr($itx, 0, 300), 'last_dir'=>'out', 'last_at'=>now(), 'updated_at'=>now()]);
+        }
         // a customer message that arrived while the AI was answering gets its own answer (once)
         if ($ext && $sent && $depth < 1 && DB::table('chat_messages')->where('thread_id', $tid)->orderByDesc('id')->value('dir') === 'in') self::aiReply($tid, $depth + 1);
         return;

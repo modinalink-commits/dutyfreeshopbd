@@ -197,6 +197,7 @@ class AgentTools {
     $r = self::make($p, (int)($ctx['thread_id'] ?? 0), 'ai-'.($ctx['thread_id'] ?? 0).'-'.md5(json_encode($p['cart']).$p['phone'].(int)$p['after_msg']), 'AI Order', 'Claude AI', '[AI Chat]');
     if (empty($r['ok'])) return ['error'=>$r['error'].' - hand over to a human agent', 'handoff_required'=>true];
     $st['cart'] = []; unset($st['pending']);
-    return ['placed'=>true, 'invoice'=>$r['invoice'], 'total'=>self::money($r['total']), 'payment'=>'Cash on delivery', 'note'=>'A team member will confirm shortly. Do not promise a delivery time.'];
+    \Illuminate\Support\Facades\Cache::put('ai.invoice.'.(int)($ctx['thread_id'] ?? 0), $r['invoice'], 600); // Chat::aiReply sends the secure invoice link right after the AI's message
+    return ['placed'=>true, 'invoice'=>$r['invoice'], 'total'=>self::money($r['total']), 'payment'=>'Cash on delivery', 'note'=>'The system sends the invoice link by itself right after your message: do not paste any link. A team member will confirm shortly. Do not promise a delivery time.'];
   }
 }
