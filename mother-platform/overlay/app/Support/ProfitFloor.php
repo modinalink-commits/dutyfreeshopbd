@@ -100,13 +100,18 @@ class ProfitFloor {
       $allow = max(0, round(self::room($items) - ($bsIn > 0 ? $bsIn : $bsave), 2));
       $sum = 0.0; foreach ($r['lines'] as $l) if (!empty($l['applied']) && ($l['key'] ?? '') !== 'qprice') $sum += (float)$l['amount'];
       if ($sum <= $allow + 0.004) return $r;
-      $f = $allow > 0 ? $allow / $sum : 0; $new = 0.0; $dropCoupon = false;
-      foreach ($r['lines'] as &$l) {
-        if (empty($l['applied']) || ($l['key'] ?? '') === 'qprice') continue;
-        $a = round((float)$l['amount'] * $f, 2);
-        if ($a <= 0) { $l['applied'] = false; if (($l['key'] ?? '') === 'coupon') $dropCoupon = true; continue; }
-        $l['amount'] = $a; $l['pct'] = null; $l['label'] = ($l['type'] ?? 'Discount') . ' – ৳' . number_format($a); $l['floor'] = true; $new += $a;
-      } unset($l);
+      // Owner rule (8 Nov 2026): keep the protected margin by dropping (hiding) discounts, not by shrinking all of them. Bundle price is already in; Membership (VIP / special) next; the rest by normal priority while room remains.
+      $pri = ['membership', 'vip', 'special']; $order = OrderDiscount::ORDER; $rank = fn($k) => in_array($k, $pri, true) ? array_search($k, $pri, true) : 10 + (int)array_search($k, $order, true);
+      $idx = []; foreach ($r['lines'] as $i => $l) if (!empty($l['applied']) && ($l['key'] ?? '') !== 'qprice') $idx[] = $i;
+      usort($idx, fn($x, $y) => $rank($r['lines'][$x]['key'] ?? '') <=> $rank($r['lines'][$y]['key'] ?? ''));
+      $left = $allow; $new = 0.0; $dropCoupon = false; $first = true;
+      foreach ($idx as $i) {
+        $l = &$r['lines'][$i]; $amt = (float)$l['amount'];
+        if ($amt <= $left + 0.004) { $left -= $amt; $new += $amt; }
+        elseif ($first && in_array($l['key'] ?? '', $pri, true) && $left > 0) { $l['amount'] = round($left, 2); $l['pct'] = null; $l['label'] = ($l['type'] ?? 'Discount') . ' – ৳' . number_format($left); $l['floor'] = true; $new += $left; $left = 0; }
+        else { $l['applied'] = false; $l['floor_hidden'] = true; if (($l['key'] ?? '') === 'coupon') $dropCoupon = true; }
+        $first = false; unset($l);
+      }
       $r['total'] = round($new + $bsIn, 2);
       if ($dropCoupon) $r['coupon_error'] = 'This coupon cannot be applied to the items in this order';
     } catch (\Throwable $e) { report($e); }

@@ -450,7 +450,7 @@ class StoreController extends Controller {
   private static function benefitsView(string $phone, array $q, \Illuminate\Http\Request $r): array {
     try {
       $items = [];
-      foreach (($q['cand'] ?? []) as $l) { $ap = !empty($l['applied']); if (!$ap && ($l['key'] ?? '') === 'coupon') continue; $items[] = ['key'=>(string)($l['key'] ?? ''), 'label'=>(string)($l['label'] ?? $l['type'] ?? ''), 'state'=>$ap ? 'applied' : 'available', 'amount'=>(float)($l['amount'] ?? 0)]; }
+      foreach (($q['cand'] ?? []) as $l) { $ap = !empty($l['applied']); if (!$ap && (($l['key'] ?? '') === 'coupon' || !empty($l['floor_hidden']))) continue; $items[] = ['key'=>(string)($l['key'] ?? ''), 'label'=>(string)($l['label'] ?? $l['type'] ?? ''), 'state'=>$ap ? 'applied' : 'available', 'amount'=>(float)($l['amount'] ?? 0)]; }
       $mx = 0; foreach ($items as $it) $mx = max($mx, $it['amount']); foreach ($items as &$it) $it['best'] = $mx > 0 && $it['amount'] >= $mx; unset($it);
       if (!empty($q['ship_free']) && (float)($q['ship_orig'] ?? 0) > 0) array_unshift($items, ['label'=>'Free Delivery', 'state'=>'applied', 'amount'=>0]);
       $c = \App\Support\OrderDiscount::customer($phone);
