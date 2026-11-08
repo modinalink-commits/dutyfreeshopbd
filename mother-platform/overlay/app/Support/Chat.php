@@ -211,7 +211,7 @@ class Chat {
       }
       // a short "yes / হ্যাঁ / confirm" right after our order-confirmation message answers THAT order: staff handle it, the AI must never start a new order from it
       if ($ext && isset($lb) && mb_strlen($lb) <= 40 && preg_match('/^(yes|yeah|y|ji|jii|han|ha|haa|hya|hyan|confirm(ed)?|ok(ay)?|ঠিক আছে|হ্যাঁ|হ্যা|হা|জি|জী|কনফার্ম)[\s.!]*$/iu', $lb)
-        && DB::table('chat_messages')->where('thread_id', $tid)->where('dir', 'out')->where('kind', 'invoice')->where('created_at', '>=', now()->subHours(48))->exists()) return;
+        && ($lo = DB::table('chat_messages')->where('thread_id', $tid)->where('dir', 'out')->orderByDesc('id')->first(['kind', 'created_at'])) && $lo->kind === 'invoice' && $lo->created_at >= now()->subHours(48)->toDateTimeString()) return;
       $k = 'ai.t.'.$tid.'.'.now()->format('YmdH'); \Illuminate\Support\Facades\Cache::add($k, 0, 4000);
       if (\Illuminate\Support\Facades\Cache::increment($k) > 25) return;
       $d = 'ai.n.'.now()->format('Ymd'); \Illuminate\Support\Facades\Cache::add($d, 0, 90000);
