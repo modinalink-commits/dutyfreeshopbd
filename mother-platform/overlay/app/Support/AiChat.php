@@ -33,7 +33,7 @@ class AiChat {
   public static function model(): string { return Sms::secret('ai_model') ?: 'claude-haiku-5-5'; }
   /** Store-wide facts the assistant may quote (cached 5 min): contact, delivery, payment, policies, offers, categories. */
   public static function facts(): string {
-    return Cache::remember('ai.facts3', 300, function () {
+    return Cache::remember('ai.facts4', 300, function () {
       $s = \App\Http\Controllers\StoreController::set(); $o = [];
       $o[] = 'STORE: DutyFreeBD (dutyfreebd.com), Child City. Hotline: '.Biz::hotline().'. Mobile: '.Biz::mobile().'. WhatsApp: '.Biz::whatsapp().'. Email: '.($s['contact_email'] ?? '').'. Address: '.preg_replace('/\s+/', ' ', (string)($s['contact_address'] ?? '')).'. Hours: '.($s['business_hours'] ?? '').'.';
       // the live delivery engine (Admin > Delivery) is the single source of truth, not the old ship_N settings
@@ -48,6 +48,14 @@ class AiChat {
       if ($pay) $o[] = 'PAYMENT OPTIONS: '.implode('; ', $pay).'.';
       try { foreach (DB::table('discount_rules')->where('enabled', true)->get(['title', 'help', 'config']) as $r) $o[] = 'OFFER: '.$r->title.' - '.mb_substr(strip_tags((string)$r->help), 0, 160).' '.mb_substr((string)$r->config, 0, 200); } catch (\Throwable $e) {}
       try { foreach (DB::table('pages')->where('active', true)->limit(14)->get(['title', 'body']) as $pg) { $t = trim(preg_replace('/\s+/u', ' ', strip_tags((string)$pg->body))); if ($t !== '') $o[] = 'PAGE "'.$pg->title.'": '.mb_substr($t, 0, 700); } } catch (\Throwable $e) {}
+      try {
+        $cm = []; $pre = \App\Support\PrepaidOnly::catSet();
+        foreach (DB::table('categories')->orderBy('position')->limit(40)->get(['id', 'name']) as $c) { $subs = DB::table('products')->where('published', true)->where('category_id', $c->id)->whereNotNull('sub')->where('sub', '<>', '')->select('sub', DB::raw('count(*) n'))->groupBy('sub')->orderByDesc('n')->limit(10)->pluck('sub')->implode(', '); $cm[] = $c->name.($subs !== '' ? ' ('.$subs.')' : '').(isset($pre[$c->id]) ? ' [PREPAID ONLY]' : ''); }
+        if ($cm) $o[] = 'CATEGORY MAP (main category with its sub categories; all of these are sold on the website): '.implode('; ', $cm).'.';
+        $pn = DB::table('categories')->where('prepaid_only', true)->pluck('name')->implode(', ');
+        if ($pn !== '') $o[] = 'PREPAID-ONLY CATEGORIES ('.$pn.'): products here are imported on request, so they are sold with FULL ONLINE PAYMENT ONLY (bKash, Nagad, card or bank transfer), NO cash on delivery and no discount. They are available to order on the website. NEVER say they are out of stock or unavailable just because the stock number is zero: when the CATALOGUE or a tool lists one, it is available. You cannot take these orders in chat: send the product link and ask the customer to order and pay on the website.';
+        $o[] = 'Skin Care and Hair Care are now ONE category: Skin & Hair Care (link /skin-care/). Old hair-care links redirect to it.';
+      } catch (\Throwable $e) {}
       try { $o[] = 'CATEGORIES: '.DB::table('categories')->orderBy('name')->limit(60)->pluck('name')->implode(', ').'.'; $o[] = 'BRANDS: '.DB::table('brands')->where('active', true)->orderBy('name')->limit(80)->pluck('name')->implode(', ').'.'; } catch (\Throwable $e) {}
       $kb = self::kb(); if ($kb !== '') $o[] = "OWNER KNOWLEDGE BASE (written by the owner; live price, stock, offers, delivery charge and order data from the tools always win over it):\n".$kb;
       return implode("\n", $o);
@@ -60,10 +68,11 @@ class AiChat {
   }
   /** Whole published catalogue in compact form (cached 5 min). */
   private static function catalog(): array {
-    return Cache::remember('ai.catalog', 300, function () {
+    return Cache::remember('ai.catalog2', 300, function () {
       $cat = DB::table('categories')->pluck('name', 'id');
-      $rows = StockGuard::listable(DB::table('products')->where('published', true))->orderByDesc('stock')->orderBy('id')->limit(900)
-        ->get(['id', 'ext_id', 'name', 'price', 'offer_price', 'compare_price', 'stock', 'sub', 'sub_sub', 'category_id', 'path_slug', 'size']);
+      // balanced: up to 60 products from EVERY category (in-stock first) so new categories (Watch, Sunglass, Gadget, Lighter, Skin & Hair Care ...) are never crowded out by the big ones
+      $rows = collect(); $cols = ['id', 'ext_id', 'name', 'price', 'offer_price', 'compare_price', 'stock', 'sub', 'sub_sub', 'category_id', 'path_slug', 'size'];
+      foreach ($cat as $cid => $cn) { $rows = $rows->concat(StockGuard::listable(DB::table('products')->where('published', true))->where('category_id', $cid)->orderByDesc('stock')->orderByDesc('id')->limit(60)->get($cols)); }
       return $rows->map(function ($p) use ($cat) {
         $now = (float)($p->offer_price ?: $p->price); $was = (float)$p->compare_price > $now ? ' (was '.number_format($p->compare_price).')' : '';
         return ['id'=>$p->id, 'line'=>$p->name.' | '.($cat[$p->category_id] ?? '').($p->sub ? '/'.$p->sub : '').($p->size ? ' | '.$p->size : '').' | '.number_format($now).' TK'.$was.' | '.(\App\Support\StockGuard::sellable($p) ? 'in stock' : 'OUT OF STOCK').' | '.parse_url(\App\Http\Controllers\StoreController::url($p), PHP_URL_PATH)];

@@ -82,7 +82,8 @@ class AgentTools {
       }
       case 'cart_add': {
         $p = DB::table('products')->where('published', true)->find((int)($in['product_id'] ?? 0)); if (!$p) return ['error'=>'product not found'];
-        if ($p->stock <= 0) return ['error'=>'this product is OUT OF STOCK'];
+        if (!StockGuard::sellable($p)) return ['error'=>'this product is OUT OF STOCK'];
+        if (\App\Support\PrepaidOnly::any([(int)$p->id])) return ['error'=>'This product is in a prepaid-only category (Watch, Sunglass, Gadget & Electronics, Lighter & Accessories ...): it is AVAILABLE, but it cannot be ordered through chat. Do not say it is out of stock. Send the product link and ask the customer to order on the website and pay fully online (bKash, Nagad, card or bank transfer); there is no cash on delivery.'];
         // age-restricted goods (cigarette / vape / tobacco): the owner's rule is that the assistant answers questions but never takes the order itself
         try { $cn = (string)DB::table('categories')->where('id', $p->category_id ?? 0)->value('name'); } catch (\Throwable $e) { $cn = ''; }
         // owner's rule: the assistant takes cigarette/vape orders like any other (summary + customer confirmation) but they are never created automatically: they land in Order Requests for staff to create
@@ -189,7 +190,7 @@ class AgentTools {
     if ((int)($ctx['last_msg_id'] ?? 0) <= (int)$p['after_msg']) return ['error'=>'the customer has not confirmed yet; show the summary and wait for a clear yes'];
     if (!self::isConfirm((string)($ctx['last_msg_text'] ?? ''))) return ['error'=>'the customer\'s last message is not a clear confirmation; ask again'];
     if (($p['cart'] ?? []) != ($st['cart'] ?? [])) { unset($st['pending']); return ['error'=>'the cart changed after the summary; prepare the order again'];}
-    if (\App\Support\PrepaidOnly::any(array_map('intval', array_keys((array)($p['cart'] ?? []))))) return ['error'=>'Watch/Mobile products cannot be ordered through chat: they need full online payment on the website. Do not place this order; send the customer the product link and ask them to order and pay online.', 'order_created'=>false];
+    if (\App\Support\PrepaidOnly::any(array_map('intval', array_keys((array)($p['cart'] ?? []))))) return ['error'=>'Prepaid-only products (Watch, Sunglass, Gadget, Lighter) cannot be ordered through chat: they need full online payment on the website. Do not place this order; send the customer the product link and ask them to order and pay online.', 'order_created'=>false];
     if (!empty($ctx['sim'])) return ['simulated'=>true, 'message'=>'Simulation: all checks passed, no real order was created.'];
     [$ok, $why] = self::aiEligible((string)$p['phone'], (float)($p['total'] ?? 0));
     if ($ok && !empty($st['tobacco'])) [$ok, $why] = [false, 'cigarette/vape order: staff confirms before creating'];
