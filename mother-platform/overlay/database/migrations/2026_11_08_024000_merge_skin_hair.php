@@ -14,7 +14,7 @@ return new class extends Migration {
             foreach ($prods as $p) $old[$p->id] = \App\Http\Controllers\StoreController::url($p);
             $oldSubs = DB::table('category_nodes')->where('category_id', $hair->id)->where('level', 2)->get(['id', 'name', 'slug']);
             // 2. sub category nodes: move (merge by name when the same name already exists in Skin Care)
-            $have = DB::table('category_nodes')->where('category_id', $skin->id)->where('level', 2)->pluck('id', DB::raw('lower(name)'))->all();
+            $have = []; foreach (DB::table('category_nodes')->where('category_id', $skin->id)->where('level', 2)->get(['id', 'name']) as $x) $have[mb_strtolower($x->name)] = $x->id;
             $pos = (int)DB::table('category_nodes')->where('category_id', $skin->id)->where('level', 2)->max('position');
             foreach (DB::table('category_nodes')->where('category_id', $hair->id)->where('level', 2)->orderBy('position')->get() as $n) {
                 $k = mb_strtolower($n->name);

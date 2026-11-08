@@ -886,3 +886,4 @@ database/migrations/2026_11_08_022000_affiliate_resume.php
 database/migrations/2026_11_08_023000_amour_category.php
 app/Support/OrderSearch.php
 database/migrations/2026_11_08_024000_merge_skin_hair.php
+database/migrations/2026_11_08_025000_merge_skin_hair_fix.php
