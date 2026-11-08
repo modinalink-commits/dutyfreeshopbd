@@ -36,7 +36,7 @@ class CourierController extends Controller {
     $can = $this->canOverride();
     return response()->json(['can_override'=>$can, 'orders'=>array_map(fn($i) => ['id'=>$i] + \App\Support\ShipCheck::run($i), $ids)]);
   }
-  private function canOverride(): bool { try { return \App\Support\ProfitFloor::admin() || \App\Http\Middleware\ModulePermission::canOverrideMargin(auth()->user()); } catch (\Throwable $e) { return false; } }
+  private function canOverride(): bool { try { return \App\Support\ProfitFloor::admin() || \App\Http\Middleware\ModulePermission::canShipOverride(auth()->user()); } catch (\Throwable $e) { return false; } }
   public function sendOne(Request $r, $id) {
     [$ok, $msg] = $this->book($id, trim((string)$r->input('override_reason', '')) ?: null, (string)$r->input('courier_note', ''));
     return back()->with($ok ? 'ok' : 'bad', $msg);

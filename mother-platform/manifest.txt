@@ -875,3 +875,4 @@ database/migrations/2026_11_08_012000_watch_source_details.php
 database/migrations/2026_11_08_013000_sunglass_category.php
 app/Console/Commands/MotherAffiliateDaily.php
 database/migrations/2026_11_08_014000_affiliate_run_now.php
+database/migrations/2026_11_08_015000_manager_ship_override.php

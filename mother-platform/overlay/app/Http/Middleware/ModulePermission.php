@@ -60,6 +60,8 @@ class ModulePermission {
   }
   /** Purchase entry: who may type a New Selling Rate (absent flag = allowed, as before) and who may override the protected margin (absent flag = Super/Admin only until ticked for a role, e.g. Manager). */
   public static function canSetRate($user): bool { $r = self::rules($user); if ($r === null) return true; return $r['purchase_set_rate'] ?? true; }
+  /** May ship an order that has a Critical shipment warning (Shipment Validation tick). Super/Admin always; other roles only when ticked on the Permissions page (Orders row, truck icon). */
+  public static function canShipOverride($user): bool { $r = self::rules($user); if ($r === null) return true; return !empty($r['ship_override']); }
   public static function canOverrideMargin($user): bool { $r = self::rules($user); if ($r === null) return true; return !empty($r['purchase_override_margin']); }
   public static function can($user, ?string $module, string $need = 'view'): bool {
     if ($module === null) return true;
