@@ -697,7 +697,7 @@ class StoreController extends Controller {
     return response()->view('store.missing', $this->base(['title'=>'পেজ পাওয়া যায়নি | DutyFree BD', 'desc'=>'', 'canon'=>url('/'), 'noindex'=>true]), 404);
   }
   public function sitemap() {
-    $xml = self::rem('store.sitemap13', 3600, function () {
+    $xml = self::rem('store.sitemap14', 3600, function () {
       $B = \App\Support\Domain::main(); $ul = fn($p) => $B.'/'.ltrim($p, '/'); /* sitemap always lists the main domain, whichever domain asked */
       $u = fn($loc, $img = null, $lm = null) => '<url><loc>'.e($loc).'</loc>'.($lm ? '<lastmod>'.date('c', strtotime((string)$lm)).'</lastmod>' : '').'<changefreq>daily</changefreq>'.($img ? '<image:image><image:loc>'.e(preg_match('#^https?://#i', (string)$img) ? $img : $B.'/'.ltrim((string)$img, '/')).'</image:loc></image:image>' : '').'</url>';
       $o = $u($ul('/'));
@@ -708,7 +708,11 @@ class StoreController extends Controller {
       $o .= $u($ul('/blog'));
       foreach (DB::table('posts')->where('active',true)->get(['slug']) as $bp) $o .= $u($ul('/blog/'.$bp->slug));
       foreach (DB::table('pages')->where('active',true)->where(fn($q)=>$q->whereNull('robots_index')->orWhere('robots_index',true))->get(['slug']) as $pg) $o .= $u($ul($pg->slug.'/'));
-      foreach (DB::table('products')->where('published',true)->where(fn($q)=>$q->whereNull('group_key')->orWhere('group_key','!=','smoke'))->orderBy('id')->cursor() as $p) $o .= $u($ul(self::url($p)), $p->image, $p->updated_at ?? null);
+      // only pages that really open: tobacco/vape stays off Google (also when its group_key is empty), and a stock-controlled product at zero stock has no public page (404), so it must not be in the sitemap
+      $smkIds = $this->cats()->filter(fn($c) => self::isSmokeCat($c))->pluck('id')->all();
+      $pq = \App\Support\StockGuard::listable(DB::table('products')->where('published',true))->where(fn($q)=>$q->whereNull('group_key')->orWhere('group_key','!=','smoke'));
+      if ($smkIds) $pq->where(fn($q) => $q->whereNull('category_id')->orWhereNotIn('category_id', $smkIds));
+      foreach ($pq->orderBy('id')->cursor() as $p) $o .= $u($ul(self::url($p)), $p->image, $p->updated_at ?? null);
       return '<?xml version="1.0" encoding="UTF-8"?>'."\n".'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">'.$o.'</urlset>';
     });
     return response($xml, 200, ['Content-Type'=>'application/xml; charset=utf-8']);
