@@ -163,7 +163,7 @@ class WatchImportController extends Controller {
     if ($rows->isEmpty()) return response()->json(['finished' => true, 'left' => 0]);
     $urls = []; foreach ($rows as $x) { $u = preg_replace('#[?\#].*$#', '', (string)$x->source_url); $urls[$x->wid] = rtrim($u, '/') . '.json'; }
     try { $resp = \Illuminate\Support\Facades\Http::pool(function ($pool) use ($urls) { $o = []; foreach ($urls as $k => $u) $o[] = $pool->as((string)$k)->timeout(25)->withHeaders(['User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36', 'Accept' => 'application/json'])->get($u); return $o; }); } catch (\Throwable $e) { return response()->json(['finished' => false, 'err' => mb_substr($e->getMessage(), 0, 150), 'left' => $left]); }
-    $bad = [$cf['domain'], preg_replace('/\..*$/', '', $cf['domain']), 'timeaccess', 'time access', 'ryans', 'luxotix', 'amour']; $ok = 0; $imgMap = []; $imgFor = [];
+    $dbg = []; $bad = [$cf['domain'], preg_replace('/\..*$/', '', $cf['domain']), 'timeaccess', 'time access', 'ryans', 'luxotix', 'amour']; $ok = 0; $imgMap = []; $imgFor = [];
     foreach ($rows as $x) {
       $res = $resp[(string)$x->wid] ?? null; $j = ($res && method_exists($res, 'ok') && $res->ok()) ? $res->json('product') : null;
       $st = ($res && method_exists($res, 'status')) ? $res->status() : 0; $page = null;
@@ -176,7 +176,7 @@ class WatchImportController extends Controller {
           if (preg_match_all('#<table\b.*?</table>#is', $page, $tt)) foreach (array_slice($tt[0], 0, 3) as $t1) { $c1 = self::cleanHtml($t1, $bad); if (mb_strlen(strip_tags($c1)) > 60) { $tbl .= $c1; break; } }
         }
         $ld = trim(preg_replace('/\s+/u', ' ', strip_tags($ld)));
-        if ($ld === '' && $tbl === '') { DB::table('watch_source')->where('id', $x->wid)->update(['details_at' => now(), 'note' => 'no details http ' . $st . '/' . ($st2 ?? '?')]); continue; }
+        if ($ld === '' && $tbl === '') { DB::table('watch_source')->where('id', $x->wid)->update(['details_at' => now(), 'note' => 'no details http ' . $st . '/' . ($st2 ?? '?')]); $dbg[] = $x->sku . ' ' . $st . '/' . ($st2 ?? '?') . ' len' . strlen((string)$page); continue; }
         $j = ['body_html' => ($ld !== '' ? '<p>' . e($ld) . '</p>' : '') . ($tbl !== '' ? '<h3>Specifications</h3>' . $tbl : ''), 'images' => [], 'options' => []];
       }
       $html = self::cleanHtml((string)($j['body_html'] ?? ''), $bad);
@@ -194,7 +194,7 @@ class WatchImportController extends Controller {
       $res = $this->fetchImages($imgMap);
       foreach ($res as $code => $g) if (!empty($g['file'])) { $pid = $imgFor[$code]; if (!DB::table('product_images')->where('product_id', $pid)->where('path', $g['file'])->exists()) DB::table('product_images')->insert(['product_id' => $pid, 'path' => $g['file'], 'position' => (int)substr($code, strrpos($code, '-') + 1), 'created_at' => now(), 'updated_at' => now()]); }
     }
-    return response()->json(['finished' => false, 'ok' => $ok, 'left' => $left - count($rows)]);
+    return response()->json(['finished' => false, 'ok' => $ok, 'left' => $left - count($rows), 'dbg' => $dbg]);
   }
   /** Re-sort existing imported products into clean sub categories and report duplicates. */
   public function tidy(Request $r) {
