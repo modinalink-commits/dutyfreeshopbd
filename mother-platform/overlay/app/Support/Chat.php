@@ -131,6 +131,7 @@ class Chat {
       if ($t === null) return;
       $t = mb_substr(trim(strip_tags($t)), 0, 1000); if ($t === '') return;
       DB::table('chat_messages')->where('id', $mid)->update(['transcript'=>$t, 'input_type'=>'voice', 'updated_at'=>now()]);
+      try { if ($th = DB::table('chat_threads')->find($m->thread_id)) AiMemory::onCustomer($th, $t, null); } catch (\Throwable $e) {}
       // keep the list preview useful: the words instead of "Voice message", while this is still the latest message
       if ((int)DB::table('chat_messages')->where('thread_id', $m->thread_id)->max('id') === $mid) DB::table('chat_threads')->where('id', $m->thread_id)->update(['last_message'=>'🎤 '.mb_substr($t, 0, 280)]);
     } catch (\Throwable $e) { report($e); }
@@ -207,8 +208,14 @@ class Chat {
         $li = DB::table('chat_messages')->where('thread_id', $tid)->orderByDesc('id')->first();
         if (!$li || $li->dir !== 'in') return;
         $lb = trim((string)$li->body);
+        // a customer voice message: turn it into words first (synchronously), then answer exactly what was said; if it cannot be understood, staff take it
+        if ($li->attachment_type === 'audio' && $li->attachment_url) {
+          if (empty($li->transcript)) { self::transcribe((int)$li->id); $li = DB::table('chat_messages')->find($li->id); }
+          if (!empty($li->transcript)) { $lb = trim((string)$li->transcript); }
+          else { DB::table('chat_threads')->where('id', $tid)->update(['needs_human'=>true, 'updated_at'=>now()]); return; }
+        }
         // staff handle these: voice/video/files, unsupported or system placeholders, and plain thank-you / ok messages
-        if (($li->attachment_url && $li->attachment_type !== 'image') || preg_match('/^\[(unsupported|[a-z]+ received)/iu', $lb) || preg_match('/^(ok|okay|thanks?|thank you|thx|ধন্যবাদ|থ্যাংকস|👍|🙏|❤️?)[\s.!]*$/iu', $lb)) return;
+        if (($li->attachment_url && !in_array($li->attachment_type, ['image', 'audio'], true)) || preg_match('/^\[(unsupported|[a-z]+ received)/iu', $lb) || preg_match('/^(ok|okay|thanks?|thank you|thx|ধন্যবাদ|থ্যাংকস|👍|🙏|❤️?)[\s.!]*$/iu', $lb)) return;
       }
       // a short "yes / হ্যাঁ / confirm" right after our order-confirmation message answers THAT order: staff handle it, the AI must never start a new order from it
       if ($ext && isset($lb) && mb_strlen($lb) <= 40 && preg_match('/^(yes|yeah|y|ji|jii|han|ha|haa|hya|hyan|confirm(ed)?|ok(ay)?|ঠিক আছে|হ্যাঁ|হ্যা|হা|জি|জী|কনফার্ম)[\s.!]*$/iu', $lb)
@@ -219,7 +226,7 @@ class Chat {
       if (\Illuminate\Support\Facades\Cache::increment($d) > 1500) return;
       $rows = DB::table('chat_messages')->where('thread_id', $tid)->orderByDesc('id')->limit(10)->get()->reverse()->values();
       if ($rows->isEmpty() || $rows->last()->dir !== 'in') return;
-      $hist = $rows->map(fn($m) => ['role'=>$m->dir === 'in' ? 'user' : 'assistant', 'content'=>$m->body !== '' ? $m->body : '[ছবি]'])->all();
+      $hist = $rows->map(fn($m) => ['role'=>$m->dir === 'in' ? 'user' : 'assistant', 'content'=>$m->body !== '' ? $m->body : (!empty($m->transcript) ? $m->transcript : ($m->attachment_type === 'audio' ? '[ভয়েস মেসেজ বোঝা যায়নি]' : '[ছবি]'))])->all();
       // the customer's most recent photo (this message or one of the last few) goes to the model as an image, so a follow-up like "price?" still refers to what the photo shows
       try {
         for ($ix = $rows->count() - 1; $ix >= max(0, $rows->count() - 8); $ix--) {
@@ -232,7 +239,7 @@ class Chat {
         }
       } catch (\Throwable $e) {}
       if (AiAgent::on()) {
-        $lastIn = $rows->last(); $txt = AiAgent::replyThread($tid, $hist, (int)$lastIn->id, (string)$lastIn->body);
+        $lastIn = $rows->last(); $txt = AiAgent::replyThread($tid, $hist, (int)$lastIn->id, (string)($lastIn->body !== '' ? $lastIn->body : ($lastIn->transcript ?? '')));
         if ($txt === null) goto legacy;
         // a hand-off pauses the AI on purpose; its own closing message must still reach the customer
         if (AiChat::paused(DB::table('chat_threads')->find($tid)) && !DB::table('chat_handoffs')->where('thread_id', $tid)->where('created_at', '>', now()->subMinutes(2))->exists()) return;
