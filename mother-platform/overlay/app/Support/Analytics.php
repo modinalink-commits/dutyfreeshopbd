@@ -160,7 +160,7 @@ class Analytics {
     if ($slug === 'delivered-orders') $w .= ' and o.status in '.self::DONE;
     if ($slug === 'returned-orders') $w .= ' and o.status in '.self::RET;
     $dlc = \App\Support\OrderDiscount::hasLines() ? 'o.discount_lines' : 'null';
-    $sql = "select ".self::day()." date, o.invoice, o.customer_name customer, o.phone, x.names product, st.name store, x.qty qty, (x.items - o.discount) sales, x.cost cost, coalesce(o.courier_fee,0) courier_fee, (x.items - o.discount - x.cost) profit, o.total total, x.items items, o.discount discount, o.discount_type dtype, $dlc dlines, coalesce(o.courier,'') courier, o.status status from orders o left join stores st on st.id = o.store_id".self::lat().$w." order by o.created_at desc limit ".self::LIMIT;
+    $sql = "select ".self::day()." date, o.invoice, o.customer_name customer, o.phone, x.names product, st.name store, x.qty qty, (x.items - o.discount) sales, x.cost cost, coalesce(o.courier_fee,0) courier_fee, (x.items - o.discount - x.cost) profit, o.total total, x.items items, o.discount discount, o.discount_type dtype, $dlc dlines, coalesce(o.courier,'') courier, o.status status from orders o left join (select s0.id, case when s0.id in (select store_id from watch_source where store_id is not null) then 'DutyFreeBD' else s0.name end as name from stores s0) st on st.id = o.store_id".self::lat().$w." order by o.created_at desc limit ".self::LIMIT;
     $rows = self::arr(self::sel($sql, $b));
     foreach ($rows as &$r) {
       if ($slug === 'customer-orders') { $r['items'] = round((float)$r['items']); $r['discount'] = round((float)$r['discount']); $r['dtext'] = (float)$r['discount'] > 0 ? implode('; ', \App\Support\OrderDiscount::tips((object)['discount'=>$r['discount'], 'discount_lines'=>$r['dlines'], 'discount_type'=>$r['dtype'], 'discount_pct'=>null, 'discount_source'=>null, 'discount_rule'=>null, 'discount_by'=>null])) : ''; }
@@ -172,7 +172,7 @@ class Analytics {
   private static function productSales(array $f, bool $split): array {
     [$w, $b] = self::w($f, 'valid', true);
     $st = $split ? ', st.name store' : ", coalesce(string_agg(distinct st.name, ', '),'') store"; $g = $split ? ', st.name' : '';
-    $sql = "select coalesce(p.name,i.name) product, max(coalesce(p.sku,'')) sku, max(coalesce(p.image,'')) image $st, sum(i.qty) qty, sum(i.qty*i.price) gross, coalesce(sum(o.discount * (i.qty*i.price) / nullif(t.items,0)),0) discount, sum(coalesce(i.cogs, i.qty*coalesce(p.cost,0))) cost from order_items i join orders o on o.id = i.order_id left join products p on p.id = i.product_id left join stores st on st.id = o.store_id left join lateral (select sum(qty*price) items from order_items where order_id = o.id) t on true $w group by coalesce(p.name,i.name) $g order by sum(i.qty*i.price) desc limit ".self::LIMIT;
+    $sql = "select coalesce(p.name,i.name) product, max(coalesce(p.sku,'')) sku, max(coalesce(p.image,'')) image $st, sum(i.qty) qty, sum(i.qty*i.price) gross, coalesce(sum(o.discount * (i.qty*i.price) / nullif(t.items,0)),0) discount, sum(coalesce(i.cogs, i.qty*coalesce(p.cost,0))) cost from order_items i join orders o on o.id = i.order_id left join products p on p.id = i.product_id left join (select s0.id, case when s0.id in (select store_id from watch_source where store_id is not null) then 'DutyFreeBD' else s0.name end as name from stores s0) st on st.id = o.store_id left join lateral (select sum(qty*price) items from order_items where order_id = o.id) t on true $w group by coalesce(p.name,i.name) $g order by sum(i.qty*i.price) desc limit ".self::LIMIT;
     $rows = self::arr(self::sel($sql, $b));
     foreach ($rows as &$r) { $r['discount'] = round((float)$r['discount']); $r['profit'] = (float)$r['gross'] - $r['discount'] - (float)$r['cost']; $r['margin'] = (float)$r['gross'] > 0 ? round($r['profit'] / (float)$r['gross'] * 100, 1) : 0; }
     return $rows;
@@ -182,7 +182,7 @@ class Analytics {
     [$w, $b] = self::w($f, 'nocancel', true);
     $st = $split ? ', st.name store' : ", '' store"; $g = $split ? ', st.name' : '';
     $v = "o.status not in ('Returned','Return Pending')";
-    $sql = "select coalesce(c.name,'Uncategorised') category, max(c.id) cid $st, sum(case when $v then i.qty else 0 end) qty, sum(case when $v then i.qty*i.price - coalesce(o.discount * (i.qty*i.price) / nullif(t.items,0),0) else 0 end) sales, sum(case when $v then coalesce(i.cogs, i.qty*coalesce(p.cost,0)) else 0 end) cost, sum(case when o.status in ".self::RET." then i.qty else 0 end) ret_qty, sum(i.qty) all_qty from order_items i join orders o on o.id = i.order_id left join products p on p.id = i.product_id left join categories c on c.id = p.category_id left join stores st on st.id = o.store_id left join lateral (select sum(qty*price) items from order_items where order_id = o.id) t on true $w group by coalesce(c.name,'Uncategorised') $g order by 5 desc";
+    $sql = "select coalesce(c.name,'Uncategorised') category, max(c.id) cid $st, sum(case when $v then i.qty else 0 end) qty, sum(case when $v then i.qty*i.price - coalesce(o.discount * (i.qty*i.price) / nullif(t.items,0),0) else 0 end) sales, sum(case when $v then coalesce(i.cogs, i.qty*coalesce(p.cost,0)) else 0 end) cost, sum(case when o.status in ".self::RET." then i.qty else 0 end) ret_qty, sum(i.qty) all_qty from order_items i join orders o on o.id = i.order_id left join products p on p.id = i.product_id left join categories c on c.id = p.category_id left join (select s0.id, case when s0.id in (select store_id from watch_source where store_id is not null) then 'DutyFreeBD' else s0.name end as name from stores s0) st on st.id = o.store_id left join lateral (select sum(qty*price) items from order_items where order_id = o.id) t on true $w group by coalesce(c.name,'Uncategorised') $g order by 5 desc";
     $rows = self::arr(self::sel($sql, $b));
     $cnt = []; foreach (self::arr(DB::select('select category_id, count(*) n from products group by category_id')) as $x) $cnt[$x['category_id']] = $x['n'];
     foreach ($rows as &$r) { $r['products'] = (int)($cnt[$r['cid']] ?? 0); $r['sales'] = round((float)$r['sales']); $r['profit'] = $r['sales'] - (float)$r['cost']; $r['return_rate'] = (float)$r['all_qty'] > 0 ? round($r['ret_qty'] / $r['all_qty'] * 100, 1) : 0; }
@@ -206,7 +206,7 @@ class Analytics {
     [$w, $b] = self::w($f, 'valid');
     $st = $split ? ', st.name store' : ", '' store"; $g = $split ? ', st.name' : '';
     $d = self::day($fmt);
-    $sql = "select $d date $st, count(*) orders, sum(x.qty) qty, sum(x.items - o.discount) sales, sum(x.cost) cost, sum(x.items - o.discount - x.cost) profit from orders o left join stores st on st.id = o.store_id".self::lat()."$w group by $d $g order by 1 desc";
+    $sql = "select $d date $st, count(*) orders, sum(x.qty) qty, sum(x.items - o.discount) sales, sum(x.cost) cost, sum(x.items - o.discount - x.cost) profit from orders o left join (select s0.id, case when s0.id in (select store_id from watch_source where store_id is not null) then 'DutyFreeBD' else s0.name end as name from stores s0) st on st.id = o.store_id".self::lat()."$w group by $d $g order by 1 desc";
     $rows = self::arr(self::sel($sql, $b));
     foreach ($rows as &$r) $r['aov'] = (int)$r['orders'] > 0 ? round((float)$r['sales'] / (int)$r['orders']) : 0;
     return $rows;
@@ -445,7 +445,7 @@ class Analytics {
   /** Per-store totals for the Comparison view and the store chart. */
   public static function byStore(array $f): array {
     [$w, $b] = self::w($f, 'valid');
-    $sql = "select coalesce(st.name,'No store') store, count(*) orders, coalesce(sum(x.items - o.discount),0) sales, coalesce(sum(x.cost),0) cost, coalesce(sum(x.items - o.discount - x.cost - coalesce(o.courier_fee,0)),0) profit, coalesce(sum(coalesce(o.courier_fee,0)),0) cfee from orders o left join stores st on st.id = o.store_id".self::lat()."$w group by st.id, st.name order by 3 desc";
+    $sql = "select coalesce(st.name,'No store') store, count(*) orders, coalesce(sum(x.items - o.discount),0) sales, coalesce(sum(x.cost),0) cost, coalesce(sum(x.items - o.discount - x.cost - coalesce(o.courier_fee,0)),0) profit, coalesce(sum(coalesce(o.courier_fee,0)),0) cfee from orders o left join (select s0.id, case when s0.id in (select store_id from watch_source where store_id is not null) then 'DutyFreeBD' else s0.name end as name from stores s0) st on st.id = o.store_id".self::lat()."$w group by st.name order by 3 desc";
     $rows = self::arr(self::sel($sql, $b));
     foreach ($rows as &$r) { $r['margin'] = (float)$r['sales'] > 0 ? round($r['profit'] / $r['sales'] * 100, 1) : 0; $r['aov'] = (int)$r['orders'] > 0 ? round($r['sales'] / $r['orders']) : 0; }
     return $rows;
