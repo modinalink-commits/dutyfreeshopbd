@@ -41,6 +41,16 @@ class StoreScanner {
   }
   /** Fetch many URLs at once using small child PHP processes (no curl extension needed). */
   public static function pget(array $urls, int $timeout = 10): array {
+    // In-process parallel fetch (Laravel HTTP pool). The old child-process version returned nothing for big pages (e.g. dazzle.com.bd, 700KB+ pages) - kept as pgetProc.
+    $out = []; $ok = []; foreach ($urls as $u) { $p = parse_url($u); if ($p && in_array($p['scheme'] ?? '', ['http', 'https'], true) && self::safeHost($p['host'] ?? '')) $ok[] = $u; else $out[$u] = null; }
+    if (!$ok) return $out;
+    try {
+      $resp = \Illuminate\Support\Facades\Http::pool(function ($pool) use ($ok, $timeout) { $o = []; foreach ($ok as $i => $u) $o[] = $pool->as((string)$i)->timeout($timeout)->withOptions(['allow_redirects' => ['max' => 4, 'protocols' => ['http', 'https']]])->withHeaders(['User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36', 'Accept' => 'text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8', 'Accept-Language' => 'en'])->get($u); return $o; });
+      foreach ($ok as $i => $u) { $r = $resp[(string)$i] ?? null; $out[$u] = ($r && method_exists($r, 'status')) ? ['code' => $r->status(), 'url' => $u, 'body' => substr($r->body(), 0, 1500000), 'h' => []] : null; }
+    } catch (\Throwable $e) { foreach ($ok as $u) $out[$u] = null; }
+    return $out;
+  }
+  public static function pgetProc(array $urls, int $timeout = 10): array {
     $out = []; $procs = [];
     $code = 'require $argv[1]; $r=\\App\\Support\\StoreScanner::get($argv[2],(int)$argv[3],700000); echo $r ? $r["code"]."\n".$r["url"]."\n".$r["body"] : "0\n\n";';
     $file = base_path('app/Support/StoreScanner.php');
