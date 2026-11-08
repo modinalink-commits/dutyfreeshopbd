@@ -819,7 +819,7 @@ e2a0c50f104fd5d240f3e6b9c352590620b5c7a8 database/migrations/2026_11_07_001100_f
 4cb3e3d5707536cc512304ef083499cf78f1e895 app/Support/Showcase.php
 f360a8f53947e244700d7c801a2ea8dd69ded85a app/Http/Controllers/ShowcaseController.php
 aa7f2afa9d146b49a293a2db07fcf88fd17020cf resources/views/showcase_admin.blade.php
-757d6a47266d180b168843bf3336a1ceefd32709 resources/views/store/showcase.blade.php
+2810b25c08f4168252fc86306f74d58d3661896d resources/views/store/showcase.blade.php
 60bccb0b5f73dedfbeff65e3cd1625530a5892ea public/showcase/555-original.webp
 92f8ef9eb293307626339a98e8c52d98715a2274 public/showcase/555-gold.webp
 63c3da2eb28c1d9708d9690aa21664ad617f79a1 public/showcase/mevius-sky-blue.webp
