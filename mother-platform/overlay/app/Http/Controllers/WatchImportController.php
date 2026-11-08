@@ -10,7 +10,7 @@ class WatchImportController extends Controller {
   private function src() { return DB::table('stores')->whereRaw('lower(domain) = ?', [strtolower((string)(DB::table('settings')->where('key', 'watch_source_domain')->value('value') ?: 'timeaccess-store.com'))])->first(); }
   private function cond($q, $sid) {
     $max = (float)(DB::table('settings')->where('key', 'watch_max_price')->value('value') ?: 50000); $min = (float)(DB::table('settings')->where('key', 'watch_min_price')->value('value') ?: 0);
-    return $q->where('store_id', $sid)->where('price', '>', max(0, $min))->where('price', '<=', $max);
+    return $q->where('store_id', $sid)->where('in_stock', true)->where('price', '>', max(0, $min))->where('price', '<=', $max);
   }
   private function stat($sid): array {
     $total = $this->cond(DB::table('store_products'), $sid)->count();
@@ -30,7 +30,7 @@ class WatchImportController extends Controller {
     try {
       $pct = (float)(DB::table('settings')->where('key', 'watch_markup_pct')->value('value') ?: 15);
       $rows = $this->cond(DB::table('store_products'), $s->id)->whereNotIn('id', DB::table('watch_source')->select('store_product_id'))->orderBy('id')->limit(12)->get();
-      if ($rows->isEmpty()) { foreach (['store.cats', 'store.catslugs', 'store.home11', 'stock.modes'] as $k) Cache::forget($k); Cache::forget('store.hsec3.watch'); return response()->json(['finished' => true, 'note' => 'All products imported.'] + $this->stat($s->id)); }
+      if ($rows->isEmpty()) { $this->sync($s->id); foreach (['store.cats', 'store.catslugs', 'store.home11', 'stock.modes'] as $k) Cache::forget($k); Cache::forget('store.hsec3.watch'); return response()->json(['finished' => true, 'note' => 'All products imported.'] + $this->stat($s->id)); }
       $imgs = []; foreach ($rows as $x) if ($x->image && preg_match('#^https?://#i', $x->image)) $imgs[$x->image] = $x->image;
       $got = $imgs ? StoreScanner::pget(array_values($imgs), 12) : [];
       $dir = public_path('uploads/watch'); if (!is_dir($dir)) @mkdir($dir, 0775, true);
@@ -56,6 +56,21 @@ class WatchImportController extends Controller {
       }
       return response()->json(['finished' => false, 'note' => "+$made"] + $this->stat($s->id));
     } finally { $lock->release(); }
+  }
+  /** Keep live state equal to the source shop: out of stock there = not live here; back in stock = live again; price follows source +markup. */
+  private function sync(int $sid): void {
+    try {
+      $lock = \Illuminate\Support\Facades\Schema::hasColumn('products', 'manual_unpublish_lock');
+      $rows = DB::table('watch_source as w')->join('store_products as sp', 'sp.id', '=', 'w.store_product_id')->join('products as p', 'p.id', '=', 'w.product_id')->where('w.store_id', $sid)->get(['w.id as wid', 'w.markup_pct', 'w.our_price', 'sp.price as sprice', 'sp.in_stock', 'sp.published as sppub', 'p.id as pid', 'p.published as ppub']);
+      foreach ($rows as $x) {
+        $live = (bool)$x->in_stock && (bool)$x->sppub; $u = ['updated_at' => now()];
+        if ($live !== (bool)$x->ppub) { $u['published'] = $live; if ($lock) $u['manual_unpublish_lock'] = !$live; }
+        $our = (int)ceil((float)$x->sprice * (1 + (float)$x->markup_pct / 100));
+        if ($x->sprice > 0 && $our != (int)$x->our_price) { $u['price'] = $our; $u['cost'] = $x->sprice; DB::table('watch_source')->where('id', $x->wid)->update(['our_price' => $our, 'source_price' => $x->sprice]); }
+        if (count($u) > 1) DB::table('products')->where('id', $x->pid)->update($u);
+        DB::table('watch_source')->where('id', $x->wid)->update(['source_in_stock' => $x->in_stock]);
+      }
+    } catch (\Throwable $e) { report($e); }
   }
   /** Admin-only history: which product came from where, at what price. */
   public function sources(Request $r) {
