@@ -83,6 +83,13 @@ class AdminController extends Controller {
       return $oq()->where('created_at','>=',$s0)->where('created_at','<=',$e0)->select('store_id', DB::raw("sum(case when status in ('Delivered','Partial Delivered','Late Delivery') then 1 else 0 end) d"), DB::raw("sum(case when status in ('Returned','Return Pending') then 1 else 0 end) r"))->groupBy('store_id')->get()->keyBy('store_id'); }, collect());
     $storeNames = $safe(fn() => DB::table('stores')->pluck('name','id'), collect());
     $storePerf = collect($safe(fn() => $A::byStore($f)))->map(function ($r) use ($sb, $storeNames) { $id = $storeNames->search($r['store']); $q = $id !== false ? ($sb[$id] ?? null) : null; $fin = $q ? (int)$q->d + (int)$q->r : 0; return [$r['store'], (int)$r['orders'], (float)$r['sales'], $fin ? round($q->d / $fin * 100) : null]; })->values();
+    // owner 8 Nov 2026: affiliate source shops (Watch, Sunglass, Gadget, Lighter) are not separate stores for customers: their orders are DutyFreeBD orders, so fold them (and 'No store') into DutyFreeBD
+    $storePerf = $safe(function () use ($storePerf) {
+      $src = collect(\Illuminate\Support\Facades\Cache::remember('dash.srcstores.v1', 600, fn() => DB::table('watch_source as w')->join('stores as s', 's.id', '=', 'w.store_id')->distinct()->pluck('s.name')->all()))->map(fn($n) => mb_strtolower((string)$n))->all();
+      $fold = fn($r) => in_array(mb_strtolower($r[0]), $src, true) || mb_strtolower($r[0]) === 'no store';
+      $oo = 0; $ss = 0.0; foreach ($storePerf as $r) if ($fold($r)) { $oo += $r[1]; $ss += $r[2]; }
+      return $storePerf->reject($fold)->map(function ($r) use ($oo, $ss) { if (mb_strtolower($r[0]) === 'dutyfreebd') { $r[1] += $oo; $r[2] += $ss; } return $r; })->sortByDesc(2)->values();
+    }, $storePerf);
     $channels = $safe(fn() => collect(\Illuminate\Support\Facades\Cache::remember('dash.channels.v2', 600, fn() => DB::table('orders')->whereNotNull('source')->where('source','<>','')->distinct()->orderBy('source')->pluck('source')->all())), collect());
     $vipN = $safe(fn() => (int)\Illuminate\Support\Facades\Cache::remember('dash.vipn.v1', 300, fn() => DB::table('customers')->whereRaw("lower(coalesce(type,'')) = 'vip'")->count()), 0);
     $memN = $safe(fn() => (int)\Illuminate\Support\Facades\Cache::remember('dash.memn.v1', 300, fn() => DB::table('customers')->whereNotNull('membership')->where('membership','<>','')->count()), 0);
