@@ -24,7 +24,8 @@ class HomeBannersController extends Controller
   public function index() {
     $cur = DB::table('settings')->pluck('value', 'key'); $rows = [];
     foreach (self::ITEMS as [$k, $t, $d, $u, $ul]) $rows[] = ['k' => $k, 't' => $t, 'd' => $d, 'u' => $u, 'ul' => $ul, 'on' => ($cur[$k] ?? '1') !== '0'];
-    return view('home_banners', ['rows' => $rows]);
+    $sl = []; try { foreach (DB::table('sliders')->where(fn($q) => $q->whereNull('type')->orWhere('type', 'main'))->orderBy('position')->orderBy('id')->get() as $x) $sl[] = ['id' => $x->id, 'pos' => $x->position, 'kind' => $x->video_id ? 'YouTube video' : 'Image', 'img' => $x->image, 'title' => trim((string)($x->title ?? '')), 'on' => (bool)$x->active]; } catch (\Throwable $e) {}
+    return view('home_banners', ['rows' => $rows, 'sl' => $sl]);
   }
   public function save(Request $r) {
     $now = now(); $n = 0; $cur = DB::table('settings')->pluck('value', 'key');
@@ -33,6 +34,7 @@ class HomeBannersController extends Controller
       if (($cur[$k] ?? '1') === $v && isset($cur[$k])) continue;
       DB::table('settings')->updateOrInsert(['key' => $k], ['value' => $v, 'updated_at' => $now, 'created_at' => $now]); $n++;
     }
+    try { foreach (DB::table('sliders')->where(fn($q) => $q->whereNull('type')->orWhere('type', 'main'))->get(['id', 'active']) as $x) { $v = (bool)$r->input('ss.' . $x->id); if ((bool)$x->active !== $v) { DB::table('sliders')->where('id', $x->id)->update(['active' => $v, 'updated_at' => $now]); $n++; } } } catch (\Throwable $e) { report($e); }
     try { DB::table('audit_logs')->insert(['user_id' => Auth::id(), 'user_name' => Auth::user()->name, 'action' => 'home.banners', 'subject' => "$n banner switches", 'meta' => json_encode([]), 'ip' => $r->ip(), 'created_at' => $now, 'updated_at' => $now]); } catch (\Throwable $e) {}
     foreach (['store.settings2', 'store.home11', 'store.home10', 'store.home8', 'store.home5', 'store.home6', 'store.home4'] as $c) { try { Cache::forget($c); } catch (\Throwable $e) {} }
     \App\Http\Controllers\StoreController::bust();
