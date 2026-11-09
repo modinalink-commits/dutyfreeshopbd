@@ -265,11 +265,11 @@ class StoreController extends Controller {
   }
   private function liveOrders() {
     $L = $this->liveOrdersRaw();
-    return \App\Support\CleanSite::on() ? $L->filter(fn($l) => \App\Support\CleanSite::keep((object)['category_id' => $l->pcat ?? null, 'name' => trim(($l->name ?? '').' '.($l->pname ?? '')), 'sub' => $l->psub ?? '', 'sub_sub' => $l->psubsub ?? '']))->values() : $L;
+    return \App\Support\CleanSite::on() ? $L->filter(fn($l) => \App\Support\CleanSite::keep((object)['category_id' => $l->pcat ?? null, 'name' => trim(($l->name ?? '').' '.($l->pname ?? '')), 'sub' => $l->psub ?? '', 'sub_sub' => $l->psubsub ?? '']))->values()->take(6) : $L->take(6)->values();
   }
   private function liveOrdersRaw() {
-    return self::rem('store.live5', 60, fn() => DB::table('orders as o')->join('order_items as i','i.order_id','=','o.id')->leftJoin('products as p','p.id','=','i.product_id')->whereIn('o.status',['Approved','Packaging','Shipment','Partial Delivered','Delivered'])->where('o.created_at','>=',now()->subDays(7))
-      ->select(DB::raw("'' as customer_name"),DB::raw("'' as district"),'o.shipping','o.created_at','i.name','i.qty','i.price','p.image','p.id as pid','p.ext_id','p.name as pname','p.category_id as pcat','p.sub as psub','p.sub_sub as psubsub','p.path_slug as pslug')->orderByDesc('o.id')->limit(6)->get()
+    return self::rem('store.live6', 60, fn() => DB::table('orders as o')->join('order_items as i','i.order_id','=','o.id')->leftJoin('products as p','p.id','=','i.product_id')->whereIn('o.status',['Approved','Packaging','Shipment','Partial Delivered','Delivered'])->where('o.created_at','>=',now()->subDays(7))
+      ->select(DB::raw("'' as customer_name"),DB::raw("'' as district"),'o.shipping','o.created_at','i.name','i.qty','i.price','p.image','p.id as pid','p.ext_id','p.name as pname','p.category_id as pcat','p.sub as psub','p.sub_sub as psubsub','p.path_slug as pslug')->orderByDesc('o.id')->limit(60)->get()
       ->map(function ($r) { $r->masked = ''; return $r; }));
   }
   /** Category / sub / child page SEO written by the auto generator (fields tracked in seo_modes). Legacy rows without tracking keep the old logic. */
