@@ -10,7 +10,19 @@ use Illuminate\Support\Facades\DB;
 class CategoryProfitController extends Controller {
   public function index(Request $r) {
     if ($r->query('export') === 'csv') return $this->export($r);
+    if ($r->query('export') === 'uncat') return $this->uncat($r);
     return view('category_profit', ['f' => CategoryProfit::filters($r), 'opts' => CategoryProfit::options(), 'prot' => ProfitFloor::percent()]);
+  }
+
+  /** CSV (opens in Excel): every product / order line that has no category, so the owner can set categories by hand. */
+  public function uncat(Request $r) {
+    $rows = CategoryProfit::uncategorized(CategoryProfit::filters($r));
+    return response()->streamDownload(function () use ($rows) {
+      $o = fopen('php://output', 'w'); fwrite($o, "\xEF\xBB\xBF");
+      fputcsv($o, ['Product name', 'Product ID', 'SKU', 'Orders', 'Qty sold', 'Gross sales', 'Avg price', 'Product link', 'Suggested category (fill in)']);
+      foreach ($rows as $x) fputcsv($o, [$x->name, $x->pid ?: '', $x->sku ?? '', $x->orders, $x->qty, round((float)$x->gross, 2), round((float)$x->avgp, 2), $x->pid ? 'linked' : 'NO PRODUCT LINK', '']);
+      fclose($o);
+    }, 'uncategorized-products-' . date('Ymd') . '.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
   }
 
   /** JSON for the page: level main (with cards, insights, comparison, reconcile) or a lazy drill level. */

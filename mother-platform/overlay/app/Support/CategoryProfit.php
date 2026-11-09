@@ -107,6 +107,13 @@ class CategoryProfit {
     $t = self::shape($x, [], $prot); $t['profit_share'] = $t['profit'] != 0 ? 100.0 : 0.0; $t['sales_share'] = $t['net'] != 0 ? 100.0 : 0.0; return $t;
   }
 
+  /** Lines with no category at all (after the name match), grouped by name. */
+  public static function uncategorized(array $f) {
+    return self::lines($f)->whereRaw('coalesce(i.cat_id, p.category_id) is null')
+      ->selectRaw("max(coalesce(p.name, i.name)) as name, coalesce(p.id, 0) as pid, max(p.sku) as sku, count(distinct o.id) as orders, sum(i.qty) as qty, sum(i.price * i.qty) as gross, sum(i.price * i.qty) / nullif(sum(i.qty), 0) as avgp")
+      ->groupByRaw('coalesce(p.id, 0), lower(trim(coalesce(p.name, i.name)))')->orderByDesc('gross')->get();
+  }
+
   /** level: main | sub | child | product | order. $p = the parent keys picked on the way down. */
   public static function rows(array $f, string $level, array $p): array {
     $key = 'catprofit.' . md5(json_encode([$f, $level, $p]));
