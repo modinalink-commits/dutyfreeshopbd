@@ -244,6 +244,9 @@ function call(n){n=clean(n||$('num').value);if(!n){err('Enter a phone number fir
 function pbxId(){try{return ses._request&&ses._request.call_id||''}catch(e){return ''}}
 function wire(s){ses=s;
  s.on('sdp',function(e){if(e&&e.sdp)e.sdp=tuneSdp(e.sdp,e.originator==='local'&&e.type==='offer')});
+ var sent=false;s.on('sending',function(){sent=true});
+ /* watchdog: an outgoing call that is still "Connecting" after 12 s says WHERE it is stuck (never sent = browser/ICE side, sent = no answer from the PBX) */
+ if(dir==='out')setTimeout(function(){if(ses!==s||phase!=='connecting')return;var pc=s.connection,st='';try{st=(pc?'ice-gather '+pc.iceGatheringState+', ice '+pc.iceConnectionState+', sig '+pc.signalingState:'no peer connection')+', INVITE '+(sent?'sent':'NOT sent')+', registered '+(ua&&ua.isRegistered())}catch(x){}console.warn('dialer stuck:',st);err('No reply yet ('+st+')')},12000);
  s.on('progress',function(){if(phase==='connecting')setPhase('ringing')});
  var up=function(){if(phase==='connected')return;setPhase('connected');startTimer();qStart(s);if(logId)post('/admin/call-center/log/'+logId+'/connected',{pbx_call_id:pbxId()});recInd();err('')};
  s.on('accepted',up);s.on('confirmed',up);
