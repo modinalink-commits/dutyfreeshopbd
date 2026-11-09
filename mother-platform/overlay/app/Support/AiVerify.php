@@ -9,8 +9,8 @@ use Illuminate\Support\Facades\Schema;
  * communication, stores an explainable result (reason codes + every check) and NEVER cancels, blocks, refunds or blacklists anything.
  */
 class AiVerify {
-  const VERSION = 'v1.2';
-  const NEW_CUSTOMER_LIMIT = 5000; // owner rule (6 Nov 2026): a new customer (no delivered order yet) ordering above this stays in New, never AI Approve
+  const VERSION = 'v1.3';
+  // Owner rule (9 Nov 2026, replaces the 5,000 TK limit of 6 Nov): EVERY new customer (no delivered order yet) is verified by a person, whatever the amount, and approved manually. Never AI Approve / auto-approve.
   /** After a rule change, New orders checked with an older rule version are verified again by the worker (3 per cycle, newest first), so the AI Approve list never keeps an order the new rule would hold back. */
   public static function rerunStale(): int {
     $ids = DB::table('order_ai_verifications as v')->join('orders as o', 'o.id', '=', 'v.order_id')->where('o.status', 'New')->where('v.rule_version', '<>', self::VERSION)->whereNull('v.override_status')->orderByDesc('v.order_id')->limit(3)->pluck('v.order_id')->all();
@@ -142,7 +142,7 @@ class AiVerify {
 
     // ---- Amount / product risk ----
     $total = (float)$o->total; $qtySum = (int)$items->sum('qty');
-    if ($d === 0 && $total > self::NEW_CUSTOMER_LIMIT) $add('Order', 'AMOUNT_NEW_CUSTOMER', 'review', 'Order amount', 'New customer (no delivered order yet) ordering ' . self::tk($total) . ', above ' . self::tk(self::NEW_CUSTOMER_LIMIT) . ': stays in New. Talk to the customer manually and confirm before approving.', 12, true);
+    if ($d === 0) $add('Order', 'NEW_CUSTOMER_MANUAL', 'review', 'New customer', 'New customer (no delivered order yet) ordering ' . self::tk($total) . ': manual verification is required for every new customer, whatever the amount. It stays in New. Verify the customer by hand, then approve manually.', 12, true);
     elseif ($avg > 0 && $total > $avg * 2) $add('Order', 'AMOUNT_HIGH', 'review', 'Order amount', 'Order ' . self::tk($total) . ' is ' . round($total / $avg, 1) . '× this customer\'s average (' . self::tk($avg) . '). Sudden high amount: do NOT approve automatically. Talk to the customer manually and confirm before approving.', $total > $avg * 4 ? 20 : 12, true);
     elseif ($avg > 0) $add('Order', 'AMOUNT_NORMAL', 'pass', 'Order amount', 'Order ' . self::tk($total) . ' vs customer average ' . self::tk($avg));
     elseif ($total >= 20000) $add('Order', 'AMOUNT_NO_BASE', 'review', 'Order amount', 'Order ' . self::tk($total) . ' is large and this customer has no earlier order to compare: do NOT approve automatically. Talk to the customer manually and confirm first.', 8, true);

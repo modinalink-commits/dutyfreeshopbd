@@ -149,14 +149,14 @@ class AgentTools {
     if ($t === '' || preg_match('/(না(?![\p{L}\p{M}])|করবেন না|বাতিল|cancel|(?<![\p{L}\p{M}])no(?![\p{L}\p{M}])|not now|change|পরিবর্তন|দাম কত|\?|কি(?![\p{L}\p{M}])|কত)/iu', $t)) return false;
     return (bool)preg_match('/^(হ্যাঁ|হ্যা|হা|ঠিক আছে|কনফার্ম|confirm|confirmed|yes|yep|ok|okay|ওকে|জি|জ্বি|করুন|অর্ডার করুন|place order|done)(?![\p{L}\p{M}])/iu', $t) || (bool)preg_match('/(কনফার্ম|confirm|অর্ডার.*(করুন|করে দিন)|হ্যাঁ)/iu', $t);
   }
-  /** The customer-side rules of Auto Approve (AI Verify) decide whether the AI may place the order itself: blocked / suspended / review-required customers, and a new customer (no delivered order) above the new-customer limit, become an Order Request for staff. All other checks (fraud, duplicate, stock, price...) still run on the created order exactly as for any order. */
+  /** The customer-side rules of Auto Approve (AI Verify) decide whether the AI may place the order itself: blocked / suspended / review-required customers, and every new customer (no delivered order, any amount), become an Order Request for staff. All other checks (fraud, duplicate, stock, price...) still run on the created order exactly as for any order. */
   public static function aiEligible(string $phone, float $total = 0): array {
     try {
       $c = DB::table('customers')->where('phone', $phone)->first(); if ($c && !empty($c->blocked)) return [false, 'blocked customer'];
       $st = (string)(\App\Support\CustomerBenefit::check($phone)['status'] ?? '');
       if (in_array($st, ['Suspended', 'Review Required'], true)) return [false, 'customer status: '.$st];
       $d = (int)DB::table('orders')->where('phone', $phone)->where('status', 'Delivered')->count();
-      if ($d === 0 && $total > \App\Support\AiVerify::NEW_CUSTOMER_LIMIT) return [false, 'new customer above the new-customer limit ('.number_format(\App\Support\AiVerify::NEW_CUSTOMER_LIMIT).' TK)'];
+      if ($d === 0) return [false, 'new customer: manual verification required'];
       return [true, ''];
     } catch (\Throwable $e) { report($e); return [false, 'eligibility check failed']; }
   }
