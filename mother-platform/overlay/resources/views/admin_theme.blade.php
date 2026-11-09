@@ -13,7 +13,7 @@
   /* 5-level ladder: 1 normal row < 2 group row < 3 working bar < 4 module/section bar < 5 table header */
   --grid-bg-level-1:#FAFBFC;--grid-bg-level-2:#F5F7F9;--toolbar-bg-level-3:#F0F3F6;--module-bg-level-4:#E8ECF1;--header-bg-level-5:#E3E8EE;
   /* 3-level border ladder (thin 1px lines, darker not thicker): soft inner < grid (main table/grid line) < strong (header bottom, group, totals, module edges) */
-  --grid-border-soft:#E2E6EA;--grid-border-main:#CED4DA;--border-grid:var(--grid-border-main);--border-strong:#BFC6CE;
+  --grid-border-soft:#D1D5DB;--grid-border-main:#B8BFC9;--border-grid:var(--grid-border-main);--border-strong:#9CA3AF;
   --toolbar-border:var(--border-grid);--module-border:var(--border-grid);
   --border-main:var(--grid-border-main);--border-soft:var(--grid-border-soft);
   --head-bg:var(--header-bg-level-5);--group-bg:var(--grid-bg-level-2);--total-bg:var(--toolbar-bg-level-3);

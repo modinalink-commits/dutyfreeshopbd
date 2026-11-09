@@ -182,3 +182,24 @@ aside.sbx nav details.mg[data-g="11"]>summary{background:#F3E8FF!important;color
 aside.sbx nav details.mg[data-g="12"]>summary{background:#ECFCCB!important;color:#3F6212!important;border-bottom:1px solid #BEF264!important;box-shadow:inset 3px 0 0 #BEF264}aside.sbx nav details.mg[data-g="12"]>summary:hover{background:#D9F99D!important;color:#3F6212!important}aside.sbx nav details.mg[data-g="12"][open]>summary{background:#D9F99D!important}
 aside.sbx nav details.mg[data-g="13"]>summary{background:#E5E7EB!important;color:#4B5563!important;border-bottom:1px solid #D1D5DB!important;box-shadow:inset 3px 0 0 #CBD5E1}aside.sbx nav details.mg[data-g="13"]>summary:hover{background:#CBD5E1!important;color:#4B5563!important}aside.sbx nav details.mg[data-g="13"][open]>summary{background:#CBD5E1!important}
 </style>
+<style>/* FINAL: one colour language for the whole sidebar = the dashboard palette (navy text, brand orange accent, neutral bars). No per-group tints. */
+aside.sbx{background:#F8FAFC!important;border-right:1px solid #9CA3AF!important}
+aside.sbx .sbx-brand{background:#0B1220!important;box-shadow:none!important}
+aside.sbx .sbx-sub{color:#D1D5DB!important}
+aside.sbx .sbx-mo{background:#FF5A00!important;border:0!important;color:#fff!important}
+aside.sbx .sbs input{border:1px solid #9CA3AF!important}aside.sbx .sbs input:focus{border-color:#FF5A00!important;box-shadow:0 0 0 3px rgba(255,90,0,.15)!important}
+aside.sbx nav details.mg,aside.sbx nav .sbx-ov{border:1px solid #9CA3AF!important;box-shadow:none!important}
+aside.sbx nav details.mg>summary,aside.sbx nav details.mg[data-g]>summary,aside.sbx nav .sbx-oh{background:#F3F4F6!important;color:#0B1220!important;border-bottom:1px solid #CBD0D8!important;box-shadow:inset 3px 0 0 #FF5A00!important}
+aside.sbx nav details.mg>summary:hover,aside.sbx nav details.mg[data-g]>summary:hover,aside.sbx nav details.mg[open]>summary,aside.sbx nav details.mg[data-g][open]>summary{background:#FFF1E8!important;color:#C2410C!important;box-shadow:inset 3px 0 0 #FF5A00!important}
+aside.sbx nav details.mg>summary::after{color:#C2410C!important}
+aside.sbx nav a.nv,aside.sbx nav a.sub{color:#0B1220!important;border-top:1px solid #D1D5DB!important}
+aside.sbx nav a.nv svg,aside.sbx nav a.sub svg{color:#4B5563!important}
+aside.sbx nav a.nv:hover,aside.sbx nav a.sub:hover{background:#FFF1E8!important;color:#0B1220!important}
+aside.sbx nav a.nv:hover svg,aside.sbx nav a.sub:hover svg{color:#C2410C!important}
+aside.sbx nav a.nv.on,aside.sbx nav a.sub.on{background:#FFF1E8!important;color:#C2410C!important;box-shadow:inset 3px 0 0 #FF5A00!important}
+aside.sbx nav a.nv.on svg,aside.sbx nav a.sub.on svg{color:#C2410C!important}
+aside.sbx nav details.rpg>summary{background:#F3F4F6!important;color:#374151!important;border-top:1px solid #D1D5DB!important}
+aside.sbx nav details.rpg>summary:hover{background:#FFF1E8!important;color:#C2410C!important}
+aside.sbx .me{border-top:1px solid #9CA3AF!important;color:#0B1220!important}
+aside.sbx .me button{border-color:#FF5A00!important;color:#C2410C!important;background:#fff!important}aside.sbx .me button:hover{background:#FFF1E8!important}
+</style>

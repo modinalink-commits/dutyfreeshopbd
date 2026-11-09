@@ -6,7 +6,7 @@
   --primary:var(--o,#FF5A00);--primary-soft:#FFF1E8;--secondary:#374151;
   --bg:#FFFBF8;--surface:#FFFFFF;--surface-2:#F8FAFC;
   --text-primary:#111827;--text-secondary:#374151;--text-muted:#6B7280;
-  --border-color:#D5DBE3;--border-soft:#E8ECF1;
+  --border-color:#B8BFC9;--border-soft:#D1D5DB;
   --row-hover:#FFF8F3;--row-selected:#FFF1E8;
   --success:#16A34A;--warning:#D97706;--danger:#DC2626;--info:#2563EB;
   --g-radius:8px;--g-ctl-h:34px;--g-btn-h:32px;
