@@ -266,7 +266,7 @@ class ResController extends Controller {
         } else $this->audit('sms', 'payroll#'.$id.' not sent: employee has no phone');
       } catch (\Throwable $e) {}
     }
-    if ($slugName==='users' && $r->has('ext_username')) { $er = \App\Http\Controllers\CallCenterController::setExt((int)$id, $r->input('ext_username'), $r->input('ext_password')); if ($er) return redirect('/admin/m/users/'.$id.'/edit')->withErrors(['db'=>'User saved, but extension not saved: '.$er]); }
+    if ($slugName==='users' && $r->has('ext_username')) { $er = \App\Http\Controllers\CallCenterController::setExt((int)$id, $r->input('ext_username'), \App\Http\Controllers\CallCenterController::rawPost($r, 'ext_password')); if ($er) return redirect('/admin/m/users/'.$id.'/edit')->withErrors(['db'=>'User saved, but extension not saved: '.$er]); }
     return redirect('/admin/m/'.$slugName)->with('ok', 'Saved');
   }
   private function stock($pid, $delta, $source, $ref) { \App\Support\Procure::stock((int)$pid, (int)$delta, (string)$source, (string)$ref); }

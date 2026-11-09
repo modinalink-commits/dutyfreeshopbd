@@ -25,12 +25,12 @@ class CallCenterController extends Controller {
   }
   public function phone(Request $r) { return view('softphone', ['embed'=>$r->boolean('embed'), 'has'=>(bool)($this->mine()->username ?? null) && (bool)($this->acct()->wss_url ?? null), 'n'=>preg_replace('/[^0-9+*#]/', '', (string)$r->query('n', '')), 'agst'=>self::agentStatus((int)$r->user()->id), 'agname'=>(string)$r->user()->name]); }
   public function account() {
-    $a = $this->acct(); return view('sip_account', ['a'=>$a, 'hasPw'=>(bool)($a->password_enc ?? null)]);
+    $a = $this->acct(); return view('sip_account', ['a'=>$a, 'hasPw'=>(bool)($a->password_enc ?? null), 'pwPlain'=>self::pwPlain($a)]);
   }
   public function saveAccount(Request $r) {
     $d = $r->validate(['account_name'=>'nullable|string|max:120', 'sip_server'=>'nullable|string|max:255', 'wss_url'=>['nullable', 'string', 'max:400', 'regex:#^wss://[^\s]+$#i'], 'username'=>'required|string|max:120', 'auth_username'=>'nullable|string|max:120', 'password'=>'nullable|string|max:200', 'domain'=>'required|string|max:255', 'display_name'=>'nullable|string|max:120', 'outbound_proxy'=>'nullable|string|max:255', 'dial_prefix'=>'nullable|string|max:20', 'caller_id'=>'nullable|string|max:60', 'stun_server'=>'nullable|string|max:255'], ['wss_url.regex'=>'The WebSocket URL must start with wss:// (secure WebSocket), for example wss://pbx.example.com:8089/ws']);
     $row = ['account_name'=>$d['account_name'] ?? null, 'sip_server'=>$d['sip_server'] ?? null, 'wss_url'=>$d['wss_url'] ?? null, 'username'=>$d['username'], 'auth_username'=>$d['auth_username'] ?? null, 'domain'=>$d['domain'], 'display_name'=>$d['display_name'] ?? null, 'outbound_proxy'=>$d['outbound_proxy'] ?? null, 'dial_prefix'=>$d['dial_prefix'] ?? null, 'caller_id'=>$d['caller_id'] ?? null, 'stun_server'=>$d['stun_server'] ?? null, 'updated_at'=>now()];
-    if (!empty($d['password'])) $row['password_enc'] = Crypt::encryptString($d['password']);
+    $rp = self::rawPost($r, 'password'); if ($rp !== null && $rp !== '') $row['password_enc'] = Crypt::encryptString($rp);
     DB::table('settings')->updateOrInsert(['key'=>'cc_recording_on'], ['value'=>$r->boolean('recording_on') ? '1' : '0', 'updated_at'=>now(), 'created_at'=>now()]);
     $a = $this->acct(); if ($a) DB::table('sip_accounts')->where('id', $a->id)->update($row); else DB::table('sip_accounts')->insert($row + ['created_at'=>now()]);
     return back()->with('ok', 'SIP account saved');
@@ -43,6 +43,10 @@ class CallCenterController extends Controller {
     try { $pw = Crypt::decryptString($a->password_enc); } catch (\Throwable $e) { return response()->json(['ok'=>false, 'error'=>'Saved extension password could not be read. Ask admin to save it again.']); }
     return response()->json(['ok'=>true, 'wss'=>$b->wss_url, 'user'=>$a->username, 'auth'=>$a->auth_username ?: $a->username, 'pw'=>$pw, 'domain'=>$b->domain, 'name'=>$a->display_name ?: Auth::user()->name, 'prefix'=>$b->dial_prefix, 'stun'=>$b->stun_server, 'ext'=>$a->username, 'rec'=>$this->recOn(), 'staff'=>Auth::user()->name])->header('Cache-Control', 'no-store');
   }
+  /** Saved SIP password in plain text (admin-only screens). Empty string if none / unreadable. */
+  public static function pwPlain($row): string { if (!$row || empty($row->password_enc)) return ''; try { return Crypt::decryptString($row->password_enc); } catch (\Throwable $e) { return ''; } }
+  /** Raw posted value, byte-for-byte (Laravel's TrimStrings would strip spaces). */
+  public static function rawPost(Request $r, string $k): ?string { return array_key_exists($k, $_POST) && is_string($_POST[$k]) ? $_POST[$k] : ($r->has($k) ? (string)$r->input($k) : null); }
   /** Used by the Admin-users form: set / change / remove the extension of one user. Returns an error text or null. */
   public static function setExt(int $uid, ?string $ext, ?string $pw): ?string {
     $ext = trim((string)$ext); $ex = DB::table('sip_accounts')->where('user_id', $uid)->first();
@@ -82,13 +86,15 @@ class CallCenterController extends Controller {
   public function saveExtension(Request $r, $uid) {
     abort_unless(DB::table('users')->where('id', $uid)->exists(), 404);
     $d = $r->validate(['username'=>'nullable|string|max:40|regex:/^[A-Za-z0-9_.-]+$/', 'auth_username'=>'nullable|string|max:60', 'display_name'=>'nullable|string|max:120', 'password'=>'nullable|string|max:200']);
+    $rawPw = self::rawPost($r, 'password'); if ($rawPw !== null && mb_strlen($rawPw) > 200) return back()->withErrors(['password'=>'Password too long.']);
     $ex = DB::table('sip_accounts')->where('user_id', $uid)->first();
     if (empty($d['username'])) { if ($ex) DB::table('sip_accounts')->where('id', $ex->id)->delete(); return back()->with('ok', 'Extension removed'); }
     if (DB::table('sip_accounts')->where('username', $d['username'])->whereNotNull('user_id')->where('user_id', '!=', $uid)->exists()) return back()->withErrors(['username'=>'Extension '.$d['username'].' is already given to another user.']);
     $row = ['username'=>$d['username'], 'auth_username'=>$d['auth_username'] ?? null, 'display_name'=>$d['display_name'] ?? null, 'updated_at'=>now()];
-    if (!empty($d['password'])) $row['password_enc'] = Crypt::encryptString($d['password']); elseif (!$ex || !$ex->password_enc) return back()->withErrors(['password'=>'Password is required for a new extension.']);
+    if ($rawPw !== null && $rawPw !== '') $row['password_enc'] = Crypt::encryptString($rawPw); elseif (!$ex || !$ex->password_enc) return back()->withErrors(['password'=>'Password is required for a new extension.']);
     if ($ex) DB::table('sip_accounts')->where('id', $ex->id)->update($row); else { $b = $this->acct(); DB::table('sip_accounts')->insert($row + ['user_id'=>$uid, 'domain'=>$b->domain ?? '', 'created_at'=>now()]); }
-    return back()->with('ok', 'Extension saved');
+    try { if ($rawPw !== null && $rawPw !== '') DB::table('audit_logs')->insert(['user_id'=>Auth::id(), 'user_name'=>Auth::user()->name ?? 'admin', 'action'=>'Extension password saved', 'subject'=>'ext '.$d['username'].' · user#'.$uid.' · '.mb_strlen($rawPw).' chars', 'ip'=>$r->ip(), 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {}
+    return back()->with('ok', 'Extension saved — password '.($rawPw !== null && $rawPw !== '' ? 'updated ('.mb_strlen($rawPw).' characters)' : 'unchanged'));
   }
   private function norm(string $v): string { $d = preg_replace('/\D/', '', $v); return preg_match('/(01\d{9})$/', $d, $m) ? $m[1] : $d; }
   private function cat(string $ph, int $n): string { try { $p = \App\Support\OrderDiscount::profile($ph); if (!empty($p['category'])) return (string)$p['category']; } catch (\Throwable $e) {} return $n > 0 ? 'Regular' : 'New'; }

@@ -12,7 +12,7 @@
 <td><input name="username" value="{{ $x->username ?? '' }}" placeholder="{{ $next }}" style="width:90px"></td>
 <td><input name="auth_username" value="{{ $x->auth_username ?? '' }}" placeholder="same" style="width:90px"></td>
 <td><input name="display_name" value="{{ $x->display_name ?? '' }}" placeholder="{{ $u->name }}" style="width:130px"></td>
-<td><input type="password" name="password" autocomplete="new-password" placeholder="{{ ($x->password_enc ?? null) ? 'saved (hidden)' : 'required' }}" style="width:130px"></td>
+<td><input type="text" name="password" value="{{ \App\Http\Controllers\CallCenterController::pwPlain($x ?? null) }}" autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" placeholder="required" style="width:150px;font-family:ui-monospace,Menlo,monospace"></td>
 <td><button class="btn" type="submit">Save</button></td></form></tr>
 @endforeach</table>
 <div style="margin-top:8px;font-size:12px;color:#6B7280">Extension ফাঁকা রেখে Save করলে ওই ইউজারের এক্সটেনশন সরে যায়। একই এক্সটেনশন দুজনকে দেওয়া যাবে না।</div></div>
