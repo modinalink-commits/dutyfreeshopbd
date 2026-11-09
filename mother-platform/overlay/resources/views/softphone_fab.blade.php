@@ -24,14 +24,18 @@ function mk(n,x){if(fr)return;fr=document.createElement('iframe');fr.allow='micr
 function show(n,x){mk(n,x);dock.classList.add('on');document.body.classList.add('dfp-open');sv(1)}
 function hide(){dock.classList.remove('on');document.body.classList.remove('dfp-open');sv(0)}
 function kill(){hide();sawCall=false;sumOpen=false;if(fr){fr.remove();fr=null}busy=false;edge.classList.remove('busy')}
-if(ch)ch.onmessage=function(m){var d=m.data||{};if(d.type==='here'&&!fr)popHere=true};
+var tk='';if(ch)ch.onmessage=function(m){var d=m.data||{};if(d.type==='here'&&!fr)popHere=true;if(d.type==='takeover-ok')tk='ok';if(d.type==='takeover-busy')tk='busy'};
+function toast(t){var e=document.createElement('div');e.textContent=t;e.style.cssText='position:fixed;right:16px;bottom:16px;z-index:2147483000;background:#0B1220;color:#fff;border-radius:8px;padding:10px 14px;font:600 13px Inter,Arial,sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.25)';document.body.appendChild(e);setTimeout(function(){e.remove()},4500)}
 var seq=0,acked={};
 /* reliable delivery into the embedded dialer: the iframe may still be loading right after a page change, so keep re-sending until it confirms (it ignores repeats) */
 function send(m){var id=(++seq)+'_'+Date.now(),t=0;m=Object.assign({dfcall:1,id:id},m);(function go(){if(!fr||acked[id]||t++>16)return;try{fr.contentWindow.postMessage(m,location.origin)}catch(e){}setTimeout(go,500)})()}
 window.dfCall=function(n,c){n=clean(n);c=c||{};var m={type:'call',n:n,o:c.order||'',cn:c.name||''};
  if(fr){show();send(m);if(ch)ch.postMessage(m);return false}
  popHere=false;if(ch)ch.postMessage({type:'ping'});
- setTimeout(function(){if(popHere&&ch){ch.postMessage(m)}else{show(n,{auto:1,o:c.order,cn:c.name})}},200);return false};
+ setTimeout(function(){if(popHere&&ch){ /* another dialer window is open (maybe hidden in a background tab): ask it to hand over so the dialer opens HERE; if it is on a call, leave it alone */
+   tk='';ch.postMessage({type:'takeover'});
+   setTimeout(function(){if(tk==='busy'){toast('Another dialer window has an active call. Finish it first, then press Call again.')}else{show(n,{auto:1,o:c.order,cn:c.name})}},450)
+  }else{show(n,{auto:1,o:c.order,cn:c.name})}},200);return false};
 edge.addEventListener('click',function(){show()});
 function setSt(v){var b=v==='busy';edge.classList.toggle('st-busy',b);var t=document.getElementById('dfSt');if(t)t.textContent=b?'Busy':'Available'}
 try{fetch('/admin/call-center/my-status',{headers:{Accept:'application/json'},credentials:'same-origin'}).then(function(r){return r.json()}).then(function(j){if(j&&j.status)setSt(j.status)}).catch(function(){})}catch(e){}
