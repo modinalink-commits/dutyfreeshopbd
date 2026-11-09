@@ -55,6 +55,7 @@ class StockGuard {
   }
   /** Storefront listings: hide what a customer cannot order (stock-controlled category at zero stock). Sourcing products stay. Direct product URLs are NOT affected. $a = table alias prefix, e.g. 'p.' */
   public static function listable($qb, string $a = 'products.') {
+    \App\Support\CleanSite::apply($qb, $a); // tobacco-free domain: tobacco never lists
     $ci = self::controlledIds();
     if (!$ci) return $qb;
     return $qb->where(function ($w) use ($ci, $a) { $w->whereNull($a.'stock')->orWhere($a.'stock', '>', 0)->orWhereNotIn($a.'category_id', $ci); });

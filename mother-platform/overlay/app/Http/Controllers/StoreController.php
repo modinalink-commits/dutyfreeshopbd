@@ -9,7 +9,7 @@ class StoreController extends Controller {
   /** Storefront cache version: bust() makes every cached storefront block (home sections, brands, globe...) stale at once, so a publish/unpublish shows immediately. */
   public static function bust(): void { try { Cache::forever('store.ver', (int)(microtime(true) * 1000)); } catch (\Throwable $e) {} }
   public static function rem(string $k, int $ttl, \Closure $fn) {
-    try { $k = 'v' . (Cache::get('store.ver') ?: 0) . '.' . $k; } catch (\Throwable $e) {}
+    try { $k = 'v' . (Cache::get('store.ver') ?: 0) . '.' . (\App\Support\CleanSite::on() ? 'clean.' : '') . $k; } catch (\Throwable $e) {}
     $raw = Cache::get($k);
     if (is_string($raw) && ($v = @unserialize($raw)) !== false) return $v;
     $v = $fn(); Cache::put($k, serialize($v), $ttl); return $v;
@@ -64,7 +64,7 @@ class StoreController extends Controller {
     $key = 'store.todaybest7.'.md5(implode(',', $ex).'|'.implode(',', $pin).'|'.($s['deal_min_off'] ?? '').'|'.($s['deal_smoke'] ?? ''));
     return self::rem($key, 600, function () use ($per, $ex, $pin) {
       $d1 = now()->subDay(); $d7 = now()->subDays(7); $d30 = now()->subDays(30);
-      $cats = DB::table('categories')->whereNotNull('slug')->where('active', true)->orderBy('position')->get(['id','slug','name'])->values()
+      $cats = DB::table('categories')->whereNotNull('slug')->where('active', true)->orderBy('position')->get(['id','slug','name'])->reject(fn($x) => \App\Support\CleanSite::on() && in_array((int)$x->id, \App\Support\CleanSite::catIds(), true))->values()
         ->sortBy(fn($c) => self::isSmokeCat($c) ? 0 : (($c->slug ?? '') === 'watch' ? 1 : ((($c->slug ?? '') === 'gadget-electronics') ? 2 : (preg_match('/perfume|attar|আতর|পারফিউম/iu', ($c->slug ?? '').' '.($c->name ?? '')) ? 3 : 4))))->values();
       if ($cats->isEmpty()) return collect();
       $agg = DB::table('order_items as i')->join('orders as o','o.id','=','i.order_id')->whereNotIn('o.status',['Cancel','Incomplete'])->where('o.created_at','>=',$d30)->whereNotNull('i.product_id')
@@ -73,7 +73,7 @@ class StoreController extends Controller {
       // Flash Sale follows what customers actually look at: product page views of the last 7 days (the same numbers as Reports > Top Viewed Products) come first, sales break ties
       $vw = DB::table('product_analytics_events')->where('event_type', 'product_view')->where('created_at', '>=', $d7)->groupBy('product_id')->selectRaw('product_id as vpid, count(*) as v7');
       $inner = DB::table('products as p')->leftJoinSub($agg, 's', 's.pid', '=', 'p.id')->leftJoinSub($vw, 'vv', 'vv.vpid', '=', 'p.id')->where('p.published', true)->whereIn('p.category_id', $cats->pluck('id')->all())
-        ->whereNotNull('p.image')->where('p.image', '!=', '')
+        ->whereNotNull('p.image')->where('p.image', '!=', '')->tap(fn($z) => \App\Support\CleanSite::apply($z, 'p.'))
         ->where(function ($w) use ($ci) { $w->whereNull('p.stock')->orWhere('p.stock', '>', 0); if ($ci) $w->orWhereNotIn('p.category_id', $ci); });
       if ($ex) $inner->whereNotIn('p.id', $ex);
       $inner->selectRaw('p.*, coalesce(s.q1,0) as q1, coalesce(s.q7,0) as q7, coalesce(s.q30,0) as q30, row_number() over (partition by p.category_id order by '.
@@ -97,6 +97,7 @@ class StoreController extends Controller {
   /** Front-page globe banner: every published product of the Cigarette & Vape category (in-stock first), cached 5 minutes. */
   public static function globeProducts() {
     return self::rem('store.globe_products2', 300, function () {
+      if (\App\Support\CleanSite::on()) return collect();
       $sc = DB::table('categories')->get(['id','slug','name'])->filter(fn($c) => self::isSmokeCat($c))->pluck('id')->all();
       $q = \App\Support\StockGuard::listable(DB::table('products')->where('published', true))->whereNotNull('image')->where('image', '!=', '')->where(function ($w) use ($sc) { $w->where('group_key', 'smoke'); if ($sc) $w->orWhereIn('category_id', $sc); });
       return $q->orderByRaw('coalesce(stock,0) > 0 desc')->orderByDesc('id')->limit(60)->get();
@@ -119,7 +120,7 @@ class StoreController extends Controller {
   public static function off($p): int { return $p->compare_price && $p->compare_price > $p->price ? (int)round(($p->compare_price - $p->price) / $p->compare_price * 100) : 0; }
   public static function tk($v): string { return number_format((float)$v).' TK'; }
   private function cats() {
-    return self::rem('store.cats', 300, fn() => DB::table('categories')->whereNotNull('slug')->where('active',true)->orderBy('position')->get()->keyBy('slug'));
+    return self::rem('store.cats', 300, fn() => DB::table('categories')->whereNotNull('slug')->where('active',true)->orderBy('position')->get()->when(\App\Support\CleanSite::on(), fn($c) => $c->reject(fn($x) => in_array((int)$x->id, \App\Support\CleanSite::catIds(), true)))->keyBy('slug'));
   }
   /** Top brands (sub groups) per category, used by the menu dropdowns, brand tabs and brand chips. */
   private function subs() {
@@ -127,7 +128,7 @@ class StoreController extends Controller {
       $o = [];
       $nodes = \Illuminate\Support\Facades\Schema::hasTable('category_nodes') ? DB::table('category_nodes')->where('level', 2)->get()->keyBy(fn($n) => $n->category_id.'|'.$n->name) : collect();
       foreach (DB::table('products')->where('published',true)->whereNotNull('sub')->select('category_id','sub', DB::raw('count(*) n'))->groupBy('category_id','sub')->orderByDesc('n')->get() as $r) {
-        $nd = $nodes[$r->category_id.'|'.$r->sub] ?? null; if ($nd && !$nd->active) continue; $r->pos = $nd->position ?? 100000; $o[$r->category_id][] = $r;
+        $nd = $nodes[$r->category_id.'|'.$r->sub] ?? null; if ($nd && !$nd->active) continue; if (\App\Support\CleanSite::on() && \App\Support\CleanSite::bad((string)$r->sub)) continue; $r->pos = $nd->position ?? 100000; $o[$r->category_id][] = $r;
       }
       foreach ($o as $k => $rows) { usort($rows, fn($x, $y) => [$x->pos, -$x->n] <=> [$y->pos, -$y->n]); $o[$k] = $rows; }
       return $o;

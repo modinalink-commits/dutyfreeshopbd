@@ -11,7 +11,7 @@ class CanonicalHost {
     $resp = $next($r);
     try {
       $h = strtolower($r->getHost());
-      if ($h === Domain::HOST || !str_contains($h, '.') || !$r->isMethod('GET') || $r->is('admin', 'admin/*', 'api/*') || $resp->getStatusCode() !== 200) return $resp;
+      if ($h === Domain::HOST || \App\Support\CleanSite::on() || !str_contains($h, '.') || !$r->isMethod('GET') || $r->is('admin', 'admin/*', 'api/*') || $resp->getStatusCode() !== 200) return $resp;
       if (stripos((string)$resp->headers->get('Content-Type'), 'text/html') === false || $resp instanceof \Symfony\Component\HttpFoundation\StreamedResponse || $resp instanceof \Symfony\Component\HttpFoundation\BinaryFileResponse) return $resp;
       $html = $resp->getContent(); if (!is_string($html) || $html === '') return $resp;
       $from = ['https://' . $h, 'http://' . $h]; $to = Domain::main();
