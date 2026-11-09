@@ -1,7 +1,8 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><meta name="csrf" content="{{ csrf_token() }}"><title>DutyFree BD Dialer</title>
+@include('typography')
 <style>
 :root{--n:#0F1F3D;--n2:#1B2F55;--o:#F26B1D;--g:#16A34A;--r:#DC2626;--bd:#E5E7EB;--gr:#F3F4F6;--mu:#6B7280}*{box-sizing:border-box}
-body{margin:0;font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Noto Sans Bengali',Arial,sans-serif;background:#EEF0F4;color:var(--n);font-size:13px}
+body{margin:0;font-family:Inter,'Hind Siliguri','Noto Sans Bengali',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;background:#F8FAFC;color:var(--n);font-size:13px}
 button{font-family:inherit}button:disabled{opacity:.5;cursor:not-allowed}
 .ph{max-width:400px;margin:0 auto;height:100vh;background:#fff;display:flex;flex-direction:column;overflow:hidden}.ph.emb{max-width:none}
 .top{background:var(--n);color:#fff;padding:10px 12px;display:flex;align-items:center;gap:8px}.top .tt{flex:1;min-width:0}.top b{display:block;font-size:15px;letter-spacing:.2px}.top small{display:flex;align-items:center;gap:6px;font-size:11px;color:#C5CEE0;margin-top:2px}
