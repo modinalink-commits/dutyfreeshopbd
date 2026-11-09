@@ -40,7 +40,7 @@
 .hxwt .wb{align-self:center;height:8cqw;padding:0 4.4cqw;font-size:max(11px,3.4cqw)}
 .hxwt .wv{position:relative;left:auto;right:auto;top:auto;bottom:auto;width:100%;height:38cqw;flex:none}
 .hxwt .wt{gap:5cqw}.hxwt .wc{width:30cqw;gap:1.4cqw}.hxwt .wi{width:25cqw;height:25cqw;box-shadow:0 2cqw 4cqw rgba(0,0,0,.45),0 0 0 .8cqw rgba(255,179,71,.55)}
-.hxwt .wn{font-size:max(10px,3cqw)}.hxwt .wp{font-size:max(11px,3.4cqw)}.hxwt .wg{width:100cqw;height:80cqw}
+.df-app .hxwt,.df-app .hxs .sl-t>a.hxwt{padding-bottom:6cqw}.hxwt .wn{font-size:max(10px,3cqw)}.hxwt .wp{font-size:max(11px,3.4cqw)}.hxwt .wg{width:100cqw;height:80cqw}
 }
 @media(prefers-reduced-motion:reduce){.hxwt .wg,.hxwt .ws,.hxwt .wb,.hxwt .wt,.hxwt .wc{animation:none!important}}
 </style>
