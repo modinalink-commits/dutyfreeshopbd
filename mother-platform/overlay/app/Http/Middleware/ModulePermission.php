@@ -36,6 +36,7 @@ class ModulePermission {
     if (preg_match('#^(discounts|coupons|deals|payment-methods)#', $p)) return 'marketing';
     if (preg_match('#^(reports|modules|report-details|analytics|report-center)#', $p)) return 'reports';
     // Report pages that sit in the Reports & Analytics menu but used to fall through to the catch-all 'users' permission. Pages only: the AI Brief run/settings actions stay admin-level.
+    if (str_starts_with($p, 'category-profit')) return 'costs'; // category sales, COGS and profit: only roles given the cost/profit permission (Admin always)
     if (preg_match('#^(order-history-report|profit-report|stock-report|stock-movement-report|purchase-report|supplier-ledger-report|cashbook-report|ai-brief)$#', $p)) return 'reports';
     // Courier work (send/sync/settle/status map/invoices/dashboard/report) belongs to the Couriers permission; only the API-credential screen (/courier, /courier/connect) stays under Settings.
     if (preg_match('#^courier(-dashboard|-report)?(/|$)#', $p) && !preg_match('#^courier(/connect)?$#', $p)) return 'couriers';

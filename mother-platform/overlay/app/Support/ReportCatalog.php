@@ -70,6 +70,7 @@ class ReportCatalog
       ['PRF-002', 'Sale Profit Report', 'Profit & Loss', 'grid', $A('sale-profit'), 'pxcn', 'Analytics', null],
       ['PRF-003', 'Margin Report', 'Margin', 'grid', $A('margin'), 'pxcn', 'Analytics', null],
       ['PRF-004', 'Profit & Loss Statement', 'Profit & Loss', 'document', 'admin/profit-report', 'pcn', 'Reports', 'profit-loss'],
+      ['PRF-005', 'Category Wise Profit', 'Profit & Loss', 'grid', 'admin/category-profit', 'pcn', 'Reports', null],
       // ---------- Inventory & Stock ----------
       ['INV-001', 'Product Stock Tracking', 'Stock', 'grid', $A('stock-tracking'), 'pxcn', 'Analytics', 'stock-view'],
       ['INV-002', 'Category Wise Stock Report', 'Stock', 'grid', $A('category-stock'), 'pxcn', 'Analytics', null],
@@ -193,7 +194,7 @@ class ReportCatalog
   {
     $path = self::key($r->path()); $qs = http_build_query($r->query()); $out = ['csv' => null, 'xls' => null];
     $q = fn(array $x = []) => ($m = array_merge($r->query(), $x)) ? '?' . http_build_query($m) : '';
-    if (preg_match('#^admin/(profit-report|stock-report|stock-movement-report|purchase-report|supplier-ledger-report|courier-report|cashbook-report|order-history-report)$#', $path)) $out['csv'] = url('/' . $path) . $q(['export' => 'csv']);
+    if (preg_match('#^admin/(profit-report|category-profit|stock-report|stock-movement-report|purchase-report|supplier-ledger-report|courier-report|cashbook-report|order-history-report)$#', $path)) $out['csv'] = url('/' . $path) . $q(['export' => 'csv']);
     elseif (preg_match('#^admin/analytics/([a-z0-9-]+)$#', $path, $m) && $m[1] !== 'area-orders') { $out['csv'] = url('/admin/analytics/' . $m[1] . '/export/csv') . ($qs ? '?' . $qs : ''); $out['xls'] = url('/admin/analytics/' . $m[1] . '/export/xls') . ($qs ? '?' . $qs : ''); }
     elseif (preg_match('#^admin/staff-tracking/(activity|status|payment|courier|price|comm|logins|audit|reports)$#', $path, $m)) $out['csv'] = url('/admin/staff-tracking-export/' . $m[1]) . ($qs ? '?' . $qs : '');
     return $out;

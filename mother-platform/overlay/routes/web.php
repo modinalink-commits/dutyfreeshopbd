@@ -276,6 +276,8 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/legacy-key', [\App\Http\Controllers\LegacyKeyController::class,'show']);
   Route::get('/purchase-report', [\App\Http\Controllers\PurchaseReportController::class,'index']);
   Route::get('/profit-report', [\App\Http\Controllers\ProfitReportController::class,'index']);
+  Route::get('/category-profit', [\App\Http\Controllers\CategoryProfitController::class,'index']);
+  Route::get('/category-profit/data', [\App\Http\Controllers\CategoryProfitController::class,'data']);
   Route::get('/migration', [\App\Http\Controllers\MigrationDashboardController::class,'index']);
   Route::get('/courier', [\App\Http\Controllers\CourierController::class,'show']);
   Route::post('/courier', [\App\Http\Controllers\CourierController::class,'save']);
