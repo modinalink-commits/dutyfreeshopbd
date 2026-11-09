@@ -140,6 +140,10 @@ class ResController extends Controller {
     $this->audit('import', "customers new=$new updated=$upd skipped=$skip");
     return back()->with('ok', "Customers imported: $new new, $upd updated, $skip rows skipped (invalid phone).");
   }
+  public function payrollSheet($month) {
+    $rows = DB::table('payroll_entries as p')->join('employees as e','e.id','=','p.employee_id')->where('p.month',$month)->select('p.*','e.name','e.department','e.phone')->orderBy('e.name')->get();
+    return view('payroll_sheet', ['month'=>$month,'rows'=>$rows]);
+  }
   public function payrollGenerate() {
     $mon = \App\Support\PayrollDue::lastMonth(); $n = \App\Support\PayrollDue::create($mon);
     $this->audit('create','payroll.'.$mon.' x'.$n);
@@ -249,6 +253,7 @@ class ResController extends Controller {
         if ($pe0) DB::table('payroll_entries')->where('id',$id)->update(['purpose'=>\App\Support\PayrollDue::purpose($em0->pay_type ?? 'salary'), 'due_date'=>\App\Support\PayrollDue::dueDate($pe0->month), 'paid_at'=>$pe0->status==='paid' ? ($pe0->paid_at ?: now('Asia/Dhaka')->toDateString()) : null]);
       } catch (\Throwable $e) { report($e); }
     }
+    if ($slugName==='payroll') { try { \App\Support\PayrollDue::syncLedger((int)$id); } catch (\Throwable $e) { report($e); } } // paid salary is booked as an expense; unpaid reverses it
     if ($slugName==='payroll' && ($data['status'] ?? '')==='paid' && !$oldPaid) { // salary submitted: SMS the staff member
       try {
         $pe = DB::table('payroll_entries')->where('id',$id)->first(); $em = $pe ? DB::table('employees')->where('id',$pe->employee_id)->first() : null;

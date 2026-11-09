@@ -24,4 +24,20 @@ class PayrollDue {
   public static function tick(): void {
     try { if (!Schema::hasTable('payroll_entries') || !Cache::add('payroll.due.tick', 1, 3600)) return; self::create(); } catch (\Throwable $e) { report($e); }
   }
+
+  /** Paid salary reduces company profit: one expense entry (purpose "Salary") per payroll row, taken from the chosen account (default Brac Bank). Marking it unpaid again removes the entry. */
+  public static function syncLedger(int $id): void {
+    $p = DB::table('payroll_entries')->where('id', $id)->first(); if (!$p) return;
+    $ref = 'SAL-'.str_pad((string)$id, 6, '0', STR_PAD_LEFT);
+    if ($p->status !== 'paid') { DB::table('account_entries')->where('reference', $ref)->delete(); DB::table('payroll_entries')->where('id', $id)->update(['entry_ref' => null]); return; }
+    $acc = $p->account_id ?: DB::table('money_accounts')->where('active', true)->whereRaw("lower(name) like '%brac%'")->value('id') ?: DB::table('money_accounts')->where('active', true)->where('type', 'bank')->orderBy('id')->value('id');
+    if (!$acc) return;
+    $e = DB::table('employees')->where('id', $p->employee_id)->first();
+    $row = ['reference' => $ref, 'direction' => 'expense', 'purpose_id' => \App\Support\RecurringExpense::purpose('Salary'), 'account_id' => $acc, 'amount' => $p->amount,
+      'comment' => 'Salary · '.($e->name ?? '#'.$p->employee_id).' · '.\Carbon\Carbon::createFromFormat('Y-m-d', $p->month.'-01')->format('M Y').' · '.($p->purpose ?: 'Salary'),
+      'entry_date' => $p->paid_at ?: now('Asia/Dhaka')->toDateString(), 'user_name' => optional(\Illuminate\Support\Facades\Auth::user())->name ?: 'Payroll', 'updated_at' => now()];
+    if (DB::table('account_entries')->where('reference', $ref)->exists()) DB::table('account_entries')->where('reference', $ref)->update($row);
+    else DB::table('account_entries')->insert($row + ['created_at' => now()]);
+    DB::table('payroll_entries')->where('id', $id)->update(['entry_ref' => $ref, 'account_id' => $acc]);
+  }
 }

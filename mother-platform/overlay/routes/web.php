@@ -192,6 +192,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/site', [S::class,'save']);
   Route::post('/m-districts/charge', [R::class,'districtCharge']);
   Route::post('/m-payroll/generate', [R::class,'payrollGenerate']);
+  Route::get('/payroll-sheet/{month}', [R::class,'payrollSheet'])->where('month','\d{4}-\d{2}');
   Route::post('/m-customers/import', [R::class,'customerImport']);
   Route::get('/courier-dashboard', [\App\Http\Controllers\CourierController::class,'dashboard']);
   Route::get('/courier-dashboard/export/{fmt}', [\App\Http\Controllers\CourierController::class,'export'])->where('fmt','csv|xls|doc|pdf');

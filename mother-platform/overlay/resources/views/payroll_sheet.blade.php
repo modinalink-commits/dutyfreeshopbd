@@ -1,0 +1,8 @@
+@extends('layout')@section('title','Salary sheet')
+@section('body')@php $lab = \Carbon\Carbon::createFromFormat('Y-m-d', $month.'-01')->format('F Y'); $tot = $rows->sum('amount'); $paid = $rows->where('status','paid')->sum('amount'); @endphp
+<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px"><h1 style="margin:0;flex:1">Salary sheet — {{ $lab }}</h1><a class="btn g" href="/admin/m/employees">← HR and Payroll</a><button class="btn" onclick="window.print()">Print</button></div>
+<div class="card" style="overflow-x:auto"><table><thead><tr><th>#</th><th>Employee</th><th>Department</th><th>Purpose</th><th style="text-align:right">Amount</th><th>Due date</th><th>Paid or Unpaid</th><th>Payment date</th></tr></thead><tbody>
+@forelse($rows as $i=>$r)<tr><td>{{ $i+1 }}</td><td>{{ $r->name }}</td><td>{{ $r->department }}</td><td>{{ $r->purpose ?: 'Salary' }}</td><td style="text-align:right">৳{{ number_format($r->amount) }}</td><td>{{ $r->due_date }}</td><td><b style="color:{{ $r->status==='paid' ? '#166534' : '#B91C1C' }}">{{ $r->status==='paid' ? 'Paid' : 'Unpaid' }}</b></td><td>{{ $r->paid_at }}</td></tr>@empty<tr><td colspan="8" style="color:#6B7280">No salary rows for this month.</td></tr>@endforelse
+</tbody><tfoot><tr><td colspan="4"><b>Total</b></td><td style="text-align:right"><b>৳{{ number_format($tot) }}</b></td><td colspan="3">Paid ৳{{ number_format($paid) }} · Due <b>৳{{ number_format($tot-$paid) }}</b></td></tr></tfoot></table></div>
+<p style="font-size:12px;color:#6B7280">Paid salary is booked as a "Salary" expense in Income and Expenses, so it reduces the company's profit.</p>
+@endsection

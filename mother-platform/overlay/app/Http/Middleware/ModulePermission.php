@@ -40,7 +40,7 @@ class ModulePermission {
     // Courier work (send/sync/settle/status map/invoices/dashboard/report) belongs to the Couriers permission; only the API-credential screen (/courier, /courier/connect) stays under Settings.
     if (preg_match('#^courier(-dashboard|-report)?(/|$)#', $p) && !preg_match('#^courier(/connect)?$#', $p)) return 'couriers';
     if (preg_match('#^m-districts#', $p)) return 'couriers';
-    if (preg_match('#^m-payroll#', $p)) return 'hr';
+    if (preg_match('#^(m-payroll|payroll-sheet)#', $p)) return 'hr';
     if (preg_match('#^m-customers#', $p)) return 'customers';
     if (str_starts_with($p, 'upload-image') || str_starts_with($p, 'site') || str_starts_with($p, 'sms') || str_starts_with($p, 'courier') || str_starts_with($p, 'ai-chat') || str_starts_with($p, 'media') || str_starts_with($p, 'ai-images') || str_starts_with($p, 'stores')) return 'settings';
     if (str_starts_with($p, 'profit-check/order')) return 'orders'; // live "this rate is not allowed" notice while editing an order
