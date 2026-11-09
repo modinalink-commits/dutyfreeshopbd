@@ -59,7 +59,7 @@ eab3909c69947b17ed5d5f2d5e3d1f7b0b564481 resources/views/store/card.blade.php
 53cd8679c576b994e8cc7ecae8e2947286ed143d resources/views/store/category.blade.php
 4281d0b4a78b068add9bd0fe2f49077561840ba5 resources/views/store/product.blade.php
 7ad9d9502d41f54d6784414a9aa3f16a8ab0ec13 resources/views/store/search.blade.php
-d08c6fb80e7b3e464a1390799a40744f717eb959 resources/views/store/track.blade.php
+7350aac0376cb9c973bca1ca89f86cf7b3dc894e resources/views/store/track.blade.php
 1aa52e9a1cc85e3723d11055b65e301c5f2dc0c1 resources/views/store/page.blade.php
 06722f66390bb7e2d70f564ee2dd0dededd9a2b7 resources/views/store/missing.blade.php
 6d3aef549a7ae95adbf596d4d19ba8c7ad3e4eec resources/views/store/checkout.blade.php

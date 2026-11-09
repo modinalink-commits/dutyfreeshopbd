@@ -6,7 +6,7 @@
   $at = $o ? ($map[$o->status] ?? 0) : -1; $bad = $o && in_array($o->status, ['Cancel','Return Pending','Returned']);
 @endphp
 <style>.tk2{padding:24px 12px 40px;display:flex;justify-content:center}.tkc{width:926px;max-width:100%;background:#fff;border:1px solid #FED7AA;border-radius:16px;box-shadow:0 2px 10px rgba(15,23,42,.05);padding:22px 24px}
-.tkc h1{font-size:19px;font-weight:700;color:#0F172A;margin:0}.tkc .sub{font-size:12.5px;color:#64748B;margin:3px 0 16px}
+.tkc h1{font-size:20px;font-weight:700;color:#0F172A;margin:0}.tkc .sub{font-size:12.5px;color:#64748B;margin:3px 0 16px}
 .tkf{display:flex;gap:8px}.tkf input{flex:1;height:42px;border:1px solid #D1D5DB;border-radius:10px;padding:0 14px;font-size:13px;color:#111827;outline:0;min-width:0}.tkf input:focus{border-color:#FF5A00;box-shadow:0 0 0 3px rgba(255,90,0,.12)}
 .tkf button{background:#FF5A00;color:#fff;border:0;border-radius:10px;padding:0 20px;height:42px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:7px;cursor:pointer;transition:.15s}.tkf button:hover{background:#E04F00}
 .tkm{margin-top:18px;border:1px solid #FED7AA;background:#FFF7ED;border-radius:12px;padding:12px 14px;display:flex;flex-wrap:wrap;gap:6px 22px;font-size:12.5px;color:#111827}.tkm b{color:#0F172A}.tkm small{display:block;color:#64748B;font-size:11px}
