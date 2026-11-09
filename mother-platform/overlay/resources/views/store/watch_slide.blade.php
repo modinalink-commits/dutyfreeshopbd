@@ -34,7 +34,7 @@
 @keyframes wtGlow{to{opacity:.6;transform:scale(1.08)}}
 @keyframes wtPulse{50%{transform:scale(1.05)}}
 @media(max-width:760px){
-.hxwt,.hxs .sl-t>a.hxwt{aspect-ratio:auto;display:flex!important;flex-direction:column;align-items:center;gap:3cqw;padding:5cqw 0 5cqw}
+.hxwt,.hxs .sl-t>a.hxwt{aspect-ratio:auto;display:flex!important;flex-direction:column;align-items:center;gap:3cqw;padding:5cqw 0 max(62px,15cqw)}
 .hxwt .wl{position:static;width:100%;padding:0 5cqw;align-items:center;text-align:center;gap:2cqw}
 .hxwt .wk,.hxwt .wd{display:none}.hxwt .wh{font-size:7cqw}.hxwt .wh em{display:inline;margin-left:1.4cqw}
 .hxwt .wb{align-self:center;height:8cqw;padding:0 4.4cqw;font-size:max(11px,3.4cqw)}
