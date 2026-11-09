@@ -11,6 +11,7 @@ class CategoryProfitController extends Controller {
   public function index(Request $r) {
     if ($r->query('export') === 'csv') return $this->export($r);
     if ($r->query('export') === 'uncat') return $this->uncat($r);
+    if ($r->query('export') === 'cats') return $this->catAudit();
     return view('category_profit', ['f' => CategoryProfit::filters($r), 'opts' => CategoryProfit::options(), 'prot' => ProfitFloor::percent()]);
   }
 
@@ -23,6 +24,39 @@ class CategoryProfitController extends Controller {
       foreach ($rows as $x) fputcsv($o, [$x->name, $x->pid ?: '', $x->sku ?? '', $x->orders, $x->qty, round((float)$x->gross, 2), round((float)$x->avgp, 2), $x->pid ? 'linked' : 'NO PRODUCT LINK', '']);
       fclose($o);
     }, 'uncategorized-products-' . date('Ymd') . '.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+  }
+
+  /** CSV audit of every main / sub / child category: counts, odd names, empty slugs, and (for odd main categories) their products. Read-only. */
+  public function catAudit() {
+    $sent = function (string $n) { $t = trim(preg_replace('/\s+/u', ' ', $n)); if ($t === '') return $t; if ($t !== mb_strtoupper($t) && $t !== mb_strtolower($t)) return $t; $w = explode(' ', mb_strtolower($t)); foreach ($w as $i => $x) { if (mb_strlen($x) <= 3 && preg_match('/^[a-z0-9&]+$/u', $x) && mb_strtoupper($x) === mb_strtoupper($x) && in_array($x, ['lm', 'xso', 'uk', 'usa', 'edt', 'edp'], true)) $w[$i] = mb_strtoupper($x); } $o = implode(' ', $w); return mb_strtoupper(mb_substr($o, 0, 1)) . mb_substr($o, 1); };
+    $mains = DB::table('categories')->whereNull('parent_id')->orderBy('position')->get();
+    $nodes = DB::table('category_nodes')->orderBy('position')->get();
+    $cnt = []; foreach (DB::table('products')->select('category_id', 'sub', 'sub_sub', DB::raw('count(*) n'))->groupBy('category_id', 'sub', 'sub_sub')->get() as $x) { $cnt['m' . $x->category_id] = ($cnt['m' . $x->category_id] ?? 0) + $x->n; if ($x->sub) $cnt['s' . $x->category_id . '|' . $x->sub] = ($cnt['s' . $x->category_id . '|' . $x->sub] ?? 0) + $x->n; if ($x->sub && $x->sub_sub) $cnt['t' . $x->category_id . '|' . $x->sub . '|' . $x->sub_sub] = $x->n; }
+    $norm = fn($n) => preg_replace('/[^a-z0-9]+/', '', str_replace('&', 'and', mb_strtolower((string)$n)));
+    $dupMain = []; foreach ($mains as $m) $dupMain[$norm($m->name)][] = $m->name;
+    $mainNames = $mains->pluck('name', 'id');
+    $rows = [];
+    $issue = function (string $name, $slug, int $n, array $extra = []) use ($sent) { $i = $extra; if ($name === mb_strtoupper($name) && preg_match('/[A-Za-z]{4,}/', $name)) $i[] = 'ALL CAPS name'; if ($slug === null || $slug === '' || $slug === '/') $i[] = 'Empty slug'; if ($n === 0) $i[] = 'No products'; return implode('; ', $i); };
+    foreach ($mains as $m) {
+      $n = (int)($cnt['m' . $m->id] ?? 0); $ex = count($dupMain[$norm($m->name)]) > 1 ? ['Similar name exists twice'] : [];
+      $rows[] = ['Main', $m->id, $m->name, '', $m->slug, $n, $m->active ? 'Active' : 'Inactive', $sent($m->name), $issue($m->name, $m->slug, $n, $ex)];
+      foreach ($nodes->where('category_id', $m->id)->where('level', 2) as $sN) {
+        $n2 = (int)($cnt['s' . $m->id . '|' . $sN->name] ?? 0);
+        $rows[] = ['Sub', $sN->id, $sN->name, $m->name, $sN->slug, $n2, $sN->active ? 'Active' : 'Inactive', $sent($sN->name), $issue($sN->name, $sN->slug, $n2)];
+        foreach ($nodes->where('parent_id', $sN->id)->where('level', 3) as $t) { $n3 = (int)($cnt['t' . $m->id . '|' . $sN->name . '|' . $t->name] ?? 0); $rows[] = ['Child', $t->id, $t->name, $m->name . ' > ' . $sN->name, $t->slug, $n3, $t->active ? 'Active' : 'Inactive', $sent($t->name), $issue($t->name, $t->slug, $n3)]; }
+      }
+    }
+    $odd = $mains->filter(fn($m) => $m->slug === null || $m->slug === '' || $m->slug === '/' || mb_strtoupper($m->name) === $m->name)->pluck('id')->all();
+    $prods = $odd ? DB::table('products')->whereIn('category_id', $odd)->orderBy('category_id')->orderBy('name')->get(['id', 'sku', 'name', 'category_id', 'sub', 'sub_sub']) : collect();
+    return response()->streamDownload(function () use ($rows, $prods, $mainNames) {
+      $o = fopen('php://output', 'w'); fwrite($o, "\xEF\xBB\xBF");
+      fputcsv($o, ['SECTION 1 - ALL CATEGORIES']); fputcsv($o, ['Level', 'ID', 'Current name', 'Parent', 'Slug', 'Products', 'Status', 'Proposed name (sentence case)', 'Issues']);
+      foreach ($rows as $r) fputcsv($o, $r);
+      fputcsv($o, []); fputcsv($o, ['SECTION 2 - PRODUCTS INSIDE ODD MAIN CATEGORIES (ALL CAPS or empty slug) - fill the right main/sub category']);
+      fputcsv($o, ['Product ID', 'SKU', 'Product name', 'Current main', 'Current sub', 'Current child', 'Correct main category (fill in)', 'Correct sub category (fill in)']);
+      foreach ($prods as $p) fputcsv($o, [$p->id, $p->sku, $p->name, $mainNames[$p->category_id] ?? '', $p->sub, $p->sub_sub, '', '']);
+      fclose($o);
+    }, 'category-audit-' . date('Ymd') . '.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
   }
 
   /** JSON for the page: level main (with cards, insights, comparison, reconcile) or a lazy drill level. */
