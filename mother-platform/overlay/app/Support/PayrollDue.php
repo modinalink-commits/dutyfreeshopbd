@@ -5,6 +5,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 /** Every month each active employee gets one unpaid payroll row (their "due"). Fixed salary = salary; commission staff start at 0 and the amount is entered from the month's accounts. Idempotent. */
 class PayrollDue {
+  public static function purpose(string $payType): string { return ['commission' => 'Commission', 'both' => 'Salary + commission'][$payType] ?? 'Salary'; }
+  public static function dueDate(string $mon): string { try { return \Carbon\Carbon::createFromFormat('Y-m-d', $mon.'-01')->endOfMonth()->toDateString(); } catch (\Throwable $e) { return now('Asia/Dhaka')->toDateString(); } }
   public static function create(?string $mon = null): int {
     $mon = $mon ?: now('Asia/Dhaka')->format('Y-m'); $n = 0;
     foreach (DB::table('employees')->where('active', true)->get() as $e) {
@@ -12,7 +14,7 @@ class PayrollDue {
       $pt = $e->pay_type ?? 'salary';
       DB::table('payroll_entries')->insert(['employee_id' => $e->id, 'month' => $mon, 'amount' => $pt === 'commission' ? 0 : $e->salary,
         'note' => $pt === 'both' ? "Fixed salary + commission: add this month's commission to the amount" : ($pt === 'commission' ? "Commission: enter this month's amount from the accounts" : null),
-        'status' => 'unpaid', 'created_at' => now(), 'updated_at' => now()]); $n++;
+        'purpose' => self::purpose($pt), 'due_date' => self::dueDate($mon), 'status' => 'unpaid', 'created_at' => now(), 'updated_at' => now()]); $n++;
     }
     return $n;
   }

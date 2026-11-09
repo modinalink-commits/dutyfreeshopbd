@@ -201,6 +201,11 @@ class ResController extends Controller {
         $data['video_id'] = $vid;
       } else { $data['video_id'] = null; $data['media_type'] = 'image'; if (empty($data['image'])) throw \Illuminate\Validation\ValidationException::withMessages(['image'=>'Add a banner image for an image slide.']); }
     }
+    if ($c['slug']==='payroll') { // month, amount default automatically
+      if (empty($data['month'])) $data['month'] = now('Asia/Dhaka')->format('Y-m');
+      if (!preg_match('/^\d{4}-\d{2}$/', $data['month'])) throw \Illuminate\Validation\ValidationException::withMessages(['month'=>'Month must look like 2026-11']);
+      if (!isset($data['amount']) || $data['amount']==='') { $em0 = DB::table('employees')->where('id',$data['employee_id'])->first(); $data['amount'] = ($em0 && ($em0->pay_type ?? 'salary')!=='commission') ? $em0->salary : 0; }
+    }
     $new = !$id; $slugName = $c['slug'];
     $oldPaid = ($slugName==='payroll' && $id) ? (DB::table('payroll_entries')->where('id',$id)->value('status') === 'paid') : false;
     // empty optional values must not overwrite NOT NULL columns that have a default (e.g. "Display order")
@@ -231,6 +236,12 @@ class ResController extends Controller {
       $m = $e->getMessage(); $col = preg_match('/column "(\w+)"/', $m, $mm) ? $mm[1] : null; $lab = $col ? (collect($c['fields'])->firstWhere('n', $col)['l'] ?? $col) : null;
       $why = str_contains($m, 'unique') ? 'this value already exists' : (str_contains($m, 'too long') ? 'text is too long' : (str_contains($m, 'null value') ? 'this field cannot be empty' : 'check the values'));
       return back()->withInput()->withErrors(['db'=>'Could not save'.($lab ? ' — "'.$lab.'": ' : ': ').$why]);
+    }
+    if ($slugName==='payroll') { // purpose, due date and paid date fill in automatically
+      try {
+        $pe0 = DB::table('payroll_entries')->where('id',$id)->first(); $em0 = $pe0 ? DB::table('employees')->where('id',$pe0->employee_id)->first() : null;
+        if ($pe0) DB::table('payroll_entries')->where('id',$id)->update(['purpose'=>\App\Support\PayrollDue::purpose($em0->pay_type ?? 'salary'), 'due_date'=>\App\Support\PayrollDue::dueDate($pe0->month), 'paid_at'=>$pe0->status==='paid' ? ($pe0->paid_at ?: now('Asia/Dhaka')->toDateString()) : null]);
+      } catch (\Throwable $e) { report($e); }
     }
     if ($slugName==='payroll' && ($data['status'] ?? '')==='paid' && !$oldPaid) { // salary submitted: SMS the staff member
       try {
