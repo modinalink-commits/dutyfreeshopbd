@@ -75,6 +75,8 @@ class AiAgent {
     }
     // only the part inside <reply> reaches the customer; any thinking-aloud outside it is dropped
     if (preg_match('/<reply>(.*?)<\/reply>/su', $text, $mm)) $text = trim($mm[1]); else $text = trim(preg_replace('/<\/?reply>/u', '', $text));
+    // never leak tool-call markup (the model sometimes writes it as plain text) to the customer
+    $text = trim(preg_replace(['/<(function_calls|antml:function_calls)\b.*?<\/\1>/su', '/<invoke\b.*?<\/invoke>/su', '/<\/?(function_calls|invoke|parameter|antml:[a-z_]+)\b[^>]*>/iu'], '', $text));
     // server-side safety net: refund / cancel / complaint / angry / low confidence always reach a person, even if the model forgot to hand off
     if (!empty($st['force_handoff']) && empty($st['handed_off'])) {
       $last = '';  foreach (array_reverse($hist) as $m) if (($m['role'] ?? '') === 'user') { $last = (string)$m['content']; break; }
