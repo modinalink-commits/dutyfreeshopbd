@@ -38,6 +38,14 @@ main{min-width:0}
 main table .mc-fl{position:sticky;left:0;z-index:2}main table .mc-fr{position:sticky;right:0;z-index:2}
 main table th.mc-fl,main table th.mc-fr{z-index:4}
 .mc-drag{cursor:grab}.mc-drag.mc-dragging{cursor:grabbing;user-select:none}.mc-drag.mc-dragging *{pointer-events:none}
+/* 6. fit to screen: low-priority columns fold into a per-row ▸ drawer instead of scrolling the page sideways */
+main table .mc-h{display:none!important}
+main table .mc-xc{position:relative}
+main table .mc-x{border:0;background:transparent;color:var(--text-primary,#0C161F);cursor:pointer;padding:0 5px 0 0;margin:0;font-size:12px;line-height:1;vertical-align:baseline}
+main table .mc-det{position:absolute;left:0;top:100%;z-index:30;min-width:260px;max-width:min(520px,86vw);padding:8px 10px;background:var(--surface-main,#fff);border:1px solid var(--border-grid);box-shadow:0 6px 18px rgba(12,22,31,.14);font-size:12px;font-weight:400;text-align:left;white-space:normal;cursor:default}
+main table .mc-dr{display:flex;gap:10px;padding:3px 0;border-bottom:1px solid var(--border-grid)}main table .mc-dr:last-child{border-bottom:0}
+main table .mc-dl{flex:0 0 38%;color:var(--text-muted);font-weight:600}main table .mc-dv{flex:1;min-width:0;word-break:break-word}
+@media print{main table .mc-h{display:table-cell!important}main table .mc-x,main table .mc-det{display:none!important}}
 </style>
 <script>
 (function(){
@@ -150,6 +158,71 @@ main table th.mc-fl,main table th.mc-fr{z-index:4}
       }catch(e){}
     });
   }
+  /* H. fit to screen: when a plain table is wider than its box, hide the lowest-priority columns and give each row a small ▸ button that opens the hidden columns right under that row. No sideways scrolling, nothing removed, print shows everything. */
+  var KEEP=/^(status|state|actions?|total|amount|net sales|net profit|profit|name|product|customer|order|date|invoice|phone|price|payment)/i;
+  function fitInfo(tb){
+    var head=tb.tHead&&tb.tHead.rows[0];if(!head)return null;var n=head.cells.length;if(n<5)return null;
+    var rows=[].slice.call(tb.tBodies[0]?tb.tBodies[0].rows:[]);if(!rows.length)return null;
+    if(rows.slice(0,40).some(function(r){return r.cells.length!==n||[].some.call(r.cells,function(c){return c.colSpan>1})}))return null;
+    return {head:head,n:n,rows:rows};
+  }
+  function colHasInput(rows,i){return rows.slice(0,40).some(function(r){return r.cells[i]&&r.cells[i].querySelector('input,select,textarea,button')})}
+  function setHidden(tb,info,set){
+    var all=[info.head].concat(info.rows);
+    all.forEach(function(r){for(var i=0;i<info.n;i++){var c=r.cells[i];if(c)c.classList.toggle('mc-h',set.indexOf(i)>-1)}});
+  }
+  function addToggles(tb,info,set){
+    var lab=set.map(function(i){return (info.head.cells[i].textContent||'').replace(/\s+/g,' ').trim()});
+    info.rows.forEach(function(r){
+      var c=r.cells[0];if(!c||c.querySelector('.mc-x'))return;
+      var b=document.createElement('button');b.type='button';b.className='mc-x';b.title='More columns';b.setAttribute('aria-label','Show more columns');b.textContent='▸';
+      c.insertBefore(b,c.firstChild);c.classList.add('mc-xc');
+    });
+    tb.__mcLab=lab;tb.__mcSet=set;
+  }
+  function fit(tb){
+    if(tb.closest('td')||tb.classList.contains('ordt')||tb.closest('[data-nogrid],[data-nofit]')||tb.hasAttribute('data-nofit'))return;
+    var info=fitInfo(tb);if(!info)return;
+    var p=tb.parentElement;if(!p)return;
+    var set=[];setHidden(tb,info,set);
+    var avail=p.clientWidth;if(!avail)return; /* same unit as offsetWidth (the admin runs with html zoom) */
+    if(tb.offsetWidth<=avail+1){[].forEach.call(tb.querySelectorAll('.mc-x'),function(b){b.parentNode.classList.remove('mc-xc');b.remove()});tb.dataset.mcf='0';return}
+    var cand=[];for(var i=info.n-1;i>=1;i--){
+      var h=(info.head.cells[i].textContent||'').replace(/\s+/g,' ').trim();
+      if(KEEP.test(h)||h===''||colHasInput(info.rows,i))continue;cand.push(i);
+    }
+    var minVis=4;
+    for(var k=0;k<cand.length&&info.n-set.length>minVis;k++){
+      set.push(cand[k]);setHidden(tb,info,set);
+      if(tb.offsetWidth<=avail+1)break;
+    }
+    if(!set.length){tb.dataset.mcf='0';return}
+    tb.dataset.mcf='1';addToggles(tb,info,set);
+  }
+  function fitAll(){document.querySelectorAll('main table.mc-t').forEach(function(tb){
+    if(tb.dataset.mcf==='1'){ /* new rows from an ajax refresh: re-apply the same hidden columns */
+      var info=fitInfo(tb);if(info&&tb.__mcSet){setHidden(tb,info,tb.__mcSet);addToggles(tb,info,tb.__mcSet)}return}
+    if(tb.dataset.mcf==='0'&&!tb.__mcRe)return;fit(tb);
+  })}
+  var openD=null;
+  function closeD(){if(openD){openD.remove();openD=null}}
+  document.addEventListener('click',function(e){
+    var b=e.target.closest&&e.target.closest('.mc-x');
+    if(!b){if(openD&&!e.target.closest('.mc-det'))closeD();return}
+    e.preventDefault();e.stopPropagation();
+    var c=b.parentNode,had=openD&&openD.parentNode===c;closeD();if(had)return;
+    var tr=c.parentNode,tb=tr.closest('table'),set=tb.__mcSet||[],lab=tb.__mcLab||[];
+    var d=document.createElement('div');d.className='mc-det';
+    set.forEach(function(i,j){
+      var cell=tr.cells[i];if(!cell)return;
+      var row=document.createElement('div');row.className='mc-dr';
+      var l=document.createElement('span');l.className='mc-dl';l.textContent=lab[j]||'';
+      var v=document.createElement('span');v.className='mc-dv';v.innerHTML=cell.innerHTML;[].forEach.call(v.querySelectorAll('[id]'),function(x){x.removeAttribute('id')});
+      row.appendChild(l);row.appendChild(v);d.appendChild(row);
+    });
+    c.appendChild(d);openD=d;
+  },true);
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')closeD()});
   /* tag every admin table so the one CSS above reaches it, whatever local class it carries */
   function tag(){
     document.querySelectorAll('main table').forEach(function(tb){
@@ -157,10 +230,10 @@ main table th.mc-fl,main table th.mc-fr{z-index:4}
       if(tb.querySelector('th'))tb.classList.add('mc-t');else if(tb.querySelector('td'))tb.classList.add('mc-kv');
     });
   }
-  function run(){try{normHead();tag();centre();wrap();sbox();freeze();pageSize()}catch(e){}}
-  window.addEventListener('resize',function(){clearTimeout(window.__mcr);window.__mcr=setTimeout(function(){try{freeze()}catch(e){}},150)});
+  function run(){try{normHead();tag();centre();fitAll();wrap();sbox();freeze();pageSize()}catch(e){}}
+  window.addEventListener('resize',function(){clearTimeout(window.__mcr);window.__mcr=setTimeout(function(){try{closeD();document.querySelectorAll('main table.mc-t').forEach(function(t){delete t.dataset.mcf});fitAll();freeze()}catch(e){}},150)});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run);else run();
-  window.addEventListener('load',run);
+  window.addEventListener('load',function(){try{document.querySelectorAll('main table.mc-t').forEach(function(t){if(t.dataset.mcf==='0')delete t.dataset.mcf})}catch(e){}run()});
   /* ajax-refreshed report bodies: re-apply */
   new MutationObserver(function(){clearTimeout(window.__mct);window.__mct=setTimeout(run,120)}).observe(document.documentElement,{childList:true,subtree:true});
 })();
