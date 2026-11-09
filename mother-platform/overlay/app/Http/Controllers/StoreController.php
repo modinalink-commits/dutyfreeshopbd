@@ -36,6 +36,7 @@ class StoreController extends Controller {
     $o = self::rem('store.settings2', 300, function () {
       $cur = DB::table('settings')->pluck('value','key'); $o = [];
       foreach (SiteController::schema() as [$k,$l,$t,$d,$g]) $o[$k] = $cur[$k] ?? $d;
+      foreach (['hero_offers_slide','hero_member_slide','hero_district_slide','hero_watch_slide','hero_text_slide'] as $k) if (isset($cur[$k])) $o[$k] = $cur[$k]; // hero switches live outside the schema
       return $o;
     });
     // a cached copy from before a deploy may lack newer keys: fill them with their defaults
