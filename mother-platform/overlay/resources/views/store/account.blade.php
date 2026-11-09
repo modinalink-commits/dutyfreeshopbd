@@ -61,6 +61,7 @@ table.t.rs thead{display:none}table.t.rs,table.t.rs tbody,table.t.rs tr,table.t.
 .nrow{flex-wrap:wrap}.nbtn{padding:10px 16px}
 .f input,.f select,.f textarea{font-size:16px}
 .ads .ad,.cpc{padding:12px 13px}
+.dfc-hl,.dfc-wa,.dfc-l{transform:scale(.78);transform-origin:right center}#dfsb,#ai0{display:none!important}.ac{padding-bottom:96px}
 }
 </style>
 <div class="w"><div class="ac">
