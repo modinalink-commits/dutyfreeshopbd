@@ -203,6 +203,7 @@ function look(n){return getj('/admin/call-center/lookup?phone='+encodeURICompone
 function connect(){if(ua)return;badge('Connecting','b-wait');
  getj('/admin/call-center/creds').then(function(c){if(!c.ok){badge('Disconnected','b-bad');err(c.error);return}cfg=c;try{$('dfx').textContent=c.ext||'—'}catch(e){}
   try{var sock=new JsSIP.WebSocketInterface(c.wss);ua=new JsSIP.UA({sockets:[sock],uri:'sip:'+c.user+'@'+c.domain,password:c.pw,authorization_user:c.auth,display_name:c.name,register:true,session_timers:false})}catch(e){console.warn('dialer',e);badge('Registration Failed','b-bad');err('Registration Failed. Please contact admin.');ua=null;return}
+  try{var _s=sock.send.bind(sock);sock.send=function(m){try{trc('tx',m)}catch(x){}return _s(m)};ua.on('connected',function(){try{var w=sock._ws;if(w&&!w._bdT){w._bdT=1;w.addEventListener('message',function(ev){trc('rx',ev.data)})}}catch(x){}trc('ws','connected')});ua.on('disconnected',function(){trc('ws','DISCONNECTED')})}catch(x){}
   ua.on('registered',function(){badge('Connected','b-ok');err('');if(!inCall())setPhase('idle');if(tmpReg&&pendCall){tmpReg=false;var qc=pendCall;pendCall=null;setTimeout(function(){call(qc)},120);return}if(agBusy&&!pend){setTimeout(busyUnreg,300);badge('Busy · not receiving calls','b-bad')}if(pend){var px=pend;pend=null;setTimeout(function(){dialNum(px)},150)}});
   ua.on('unregistered',function(){badge(agBusy?'Busy · not receiving calls':'Disconnected','b-bad')});
   ua.on('registrationFailed',function(e){console.warn('dialer reg fail',e&&e.cause);badge('Registration Failed','b-bad');err('Registration Failed. Please contact admin.')});
@@ -213,6 +214,7 @@ function disconnect(){if(ua){try{ua.stop()}catch(e){}ua=null}badge('Disconnected
 function reconnect(){err('');disconnect();setTimeout(connect,300)}
 /* ---------- call flow ---------- */
 function target(n){var p=cfg.prefix||'';n=clean(n);if(p&&n.indexOf(p)!==0&&n.charAt(0)!=='+')n=p+n;return 'sip:'+n+'@'+cfg.domain}
+var SIPT=[];function trc(d,m){var t=typeof m==='string'?m.split('\r\n')[0]:String(m);SIPT.push(d+' '+t.slice(0,48));if(SIPT.length>8)SIPT.shift()}
 function iceCfg(){return {iceServers:cfg.stun?[{urls:'stun:'+cfg.stun.replace(/^stun:/,'')}]:[{urls:'stun:stun.l.google.com:19302'}]}}
 /* voice quality: explicit echo cancel / noise suppression / auto gain, mono (ideal = never fails on devices without it) */
 var AC={echoCancellation:{ideal:true},noiseSuppression:{ideal:true},autoGainControl:{ideal:true},channelCount:{ideal:1}};
@@ -246,7 +248,7 @@ function wire(s){ses=s;
  s.on('sdp',function(e){if(e&&e.sdp)e.sdp=tuneSdp(e.sdp,e.originator==='local'&&e.type==='offer')});
  var sent=false;s.on('sending',function(){sent=true});
  /* watchdog: an outgoing call that is still "Connecting" after 12 s says WHERE it is stuck (never sent = browser/ICE side, sent = no answer from the PBX) */
- if(dir==='out')setTimeout(function(){if(ses!==s||phase!=='connecting')return;var pc=s.connection,st='';try{st=(pc?'ice-gather '+pc.iceGatheringState+', ice '+pc.iceConnectionState+', sig '+pc.signalingState:'no peer connection')+', INVITE '+(sent?'sent':'NOT sent')+', registered '+(ua&&ua.isRegistered())}catch(x){}console.warn('dialer stuck:',st);err('No reply yet ('+st+')')},12000);
+ if(dir==='out')setTimeout(function(){if(ses!==s||phase!=='connecting')return;var pc=s.connection,st='';try{st=(pc?'ice-gather '+pc.iceGatheringState+', ice '+pc.iceConnectionState+', sig '+pc.signalingState:'no peer connection')+', INVITE '+(sent?'sent':'NOT sent')+', registered '+(ua&&ua.isRegistered())+', socket '+(ua&&ua.isConnected())+' | '+SIPT.join(' | ')}catch(x){}console.warn('dialer stuck:',st);err('No reply yet ('+st+')')},12000);
  s.on('progress',function(){if(phase==='connecting')setPhase('ringing')});
  var up=function(){if(phase==='connected')return;setPhase('connected');startTimer();qStart(s);if(logId)post('/admin/call-center/log/'+logId+'/connected',{pbx_call_id:pbxId()});recInd();err('')};
  s.on('accepted',up);s.on('confirmed',up);
