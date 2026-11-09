@@ -75,6 +75,7 @@ body,button,input,textarea,select{font-family:Inter,"Noto Sans Bengali","Segoe U
 #tp-act .qa{gap:5px}#tp-act .qa a{padding:5px;font-size:12px}
 #tp-act .ctl{gap:5px}#tp-act .ctl button{padding:4px 2px;font-size:11px;gap:0}#tp-act .ctl button i{font-size:14px}
 #tp-act .go.big{height:38px;font-size:14px}
+@media(max-height:640px){#tp-act .wv{display:none}#tp-act .act .av{display:none}#tp-act .qa a{padding:4px}}
 #tp-act .msg{min-height:0;font-size:11px}
 #tp-act .cn{padding:6px 8px;border-radius:10px}#tp-act .cnh{font-size:12px;margin-bottom:3px}#tp-act .cn textarea{height:38px;padding:5px 7px;border-radius:8px}#tp-act .cnb{margin-top:3px}#tp-act .cnb button{padding:4px 14px}
 #tAct{display:none}#tAct.live{display:block}
@@ -191,7 +192,7 @@ function ui(){var r=reg(),ic=inCall(),cn=connected();
 function startTimer(){connAt=Date.now();clearInterval(tick);tick=setInterval(function(){var s=fmt(Math.floor((Date.now()-connAt)/1000));$('tmr').textContent=s;$('aT').textContent=s},500)}
 function secs(){return connAt?Math.floor((Date.now()-connAt)/1000):0}
 var lastLeft='pad';
-function tab(t){if(window.innerWidth>=900){if(t==='act')t=lastLeft;else lastLeft=t}document.querySelectorAll('.tabs button').forEach(function(b){b.classList.toggle('on',b.dataset.t===t)});document.querySelectorAll('.tp').forEach(function(p){p.style.display=p.id==='tp-'+t?'':'none'});if(t==='rec')recent();if(t==='con')contacts()}
+function tab(t){if(window.innerWidth>=900){if(t==='act')t=lastLeft;else lastLeft=t}document.querySelectorAll('.tabs button').forEach(function(b){b.classList.toggle('on',b.dataset.t===t)});document.querySelectorAll('.tp').forEach(function(p){p.style.display=p.id==='tp-'+t?'':'none'});var tpe=document.getElementById('tp-'+t);if(tpe)tpe.scrollTop=0;if(t==='rec')recent();if(t==='con')contacts()}
 document.querySelectorAll('.tabs button').forEach(function(b){b.onclick=function(){tab(b.dataset.t)}});
 /* ---------- customer info ---------- */
 function tagCls(c){c=String(c||'').toLowerCase();return c==='vip'?'vip':(c==='new'?'new':'')}
