@@ -28,7 +28,7 @@ fc3568db08725a38056a08be87cb325d92aebb5f database/migrations/2026_10_31_000003_a
 ef7eb4fe29b25adea65b1875c2a01aa8c26916be app/Models/Res.php
 c61be48142fd7ef5973b66e5eae964ba8c65c781 app/Http/Controllers/ResController.php
 90031b22cae57971a0c16629dd80f61a4ae4358c resources/views/res_list.blade.php
-fb3fe4d17e4370d1184f5daebfa07e5a3423a33a resources/views/res_form.blade.php
+3c7e87883368d783e43e8a91218c661d7aeec6fa resources/views/res_form.blade.php
 67a76a09307002f6201cc2e684f3161b22c67d9c resources/views/reports.blade.php
 829ef1c0a0411ca99f53c8cb4681d19e89b15087 resources/views/sidebar.blade.php
 85962752c1c36393879cd52b485c2495742f15f0 resources/views/coming.blade.php
