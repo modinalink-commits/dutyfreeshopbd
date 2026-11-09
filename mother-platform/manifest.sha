@@ -913,3 +913,4 @@ fc0b5eb8d512ba62f1c644a039550fad190df29c public/banners/hero-offers-m.webp
 635238ad8150817134b38b0f1f63f18783eb00c9 public/banners/hero-offers.webp
 169f8c3eb68ae1a8091b16ad467eba5dcbf90a5d public/banners/hero-watch-m.webp
 93f40b4d6d09a98d82a5e3e31a41e60cd4807053 public/banners/hero-watch.webp
+26360f65febbfe0207ffdde7efcebc7e99cf8307 database/migrations/2026_11_09_200000_employees_from_admin_users.php
