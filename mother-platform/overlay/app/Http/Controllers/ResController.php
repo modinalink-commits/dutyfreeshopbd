@@ -144,10 +144,11 @@ class ResController extends Controller {
     $mon = now('Asia/Dhaka')->format('Y-m'); $n = 0;
     foreach (DB::table('employees')->where('active',true)->get() as $e) {
       if (DB::table('payroll_entries')->where('employee_id',$e->id)->where('month',$mon)->exists()) continue;
-      DB::table('payroll_entries')->insert(['employee_id'=>$e->id,'month'=>$mon,'amount'=>$e->salary,'status'=>'unpaid','created_at'=>now(),'updated_at'=>now()]); $n++;
+      DB::table('payroll_entries')->insert(['employee_id'=>$e->id,'month'=>$mon,'amount'=>(($e->pay_type ?? 'salary')==='commission' ? 0 : $e->salary),'note'=>(($e->pay_type ?? 'salary')==='commission' ? 'Commission: enter this month\'s amount from the accounts' : null),'status'=>'unpaid','created_at'=>now(),'updated_at'=>now()]); $n++;
     }
     $this->audit('create','payroll.'.$mon.' x'.$n);
-    return back()->with('ok', "$n payroll rows created for $mon");
+    $c = DB::table('payroll_entries')->where('month',$mon)->where('amount',0)->count();
+    return back()->with('ok', "$n payroll rows created for $mon".($c ? ". $c commission row(s) need this month's amount: open Payroll, Edit, enter the amount." : ''));
   }
   public function districtCharge(Request $r) {
     $d = $r->validate(['charge'=>'required|numeric|min:0|max:100000']);

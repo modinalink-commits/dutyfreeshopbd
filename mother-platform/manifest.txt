@@ -916,3 +916,4 @@ public/banners/hero-watch-m.webp
 public/banners/hero-watch.webp
 database/migrations/2026_11_09_200000_employees_from_admin_users.php
 database/migrations/2026_11_09_201500_employees_five_staff.php
+database/migrations/2026_11_09_210000_payroll_commission.php
