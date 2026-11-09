@@ -72,6 +72,7 @@ class RecurringExpenseController extends Controller {
   public function pay(Request $r, $iid) {
     $this->chk('edit'); $i = DB::table('recurring_expense_instances')->find($iid); abort_unless($i, 404); $m = DB::table('recurring_expenses')->find($i->recurring_id);
     $acc = (int)($r->input('account_id') ?: $i->account_id ?: $m->account_id);
+    if (!$m->is_loan && is_numeric($r->input('amount')) && (float)$r->input('amount') > 0) DB::table('recurring_expense_instances')->where('id', $iid)->update(['amount' => (float)$r->input('amount'), 'updated_at' => now()]); // the real bill amount typed for this month
     DB::table('recurring_expense_instances')->where('id', $iid)->update(['status' => $i->status === 'due' ? 'posted' : $i->status, 'posted_at' => $i->posted_at ?: now()]);
     [$ok, $msg] = R::settle(DB::table('recurring_expense_instances')->find($iid), $m, $acc, Auth::user()->name, true);
     if (!$ok) DB::table('recurring_expense_instances')->where('id', $iid)->update(['payment_status' => 'failed', 'note' => $msg]);
@@ -84,6 +85,7 @@ class RecurringExpenseController extends Controller {
     R::post($m, $d['period'], $d['due']);
     $i = DB::table('recurring_expense_instances')->where('recurring_id', $m->id)->where('billing_period', $d['period'])->first(); abort_unless($i, 404);
     $acc = (int)($d['account_id'] ?? 0) ?: (int)($i->account_id ?: $m->account_id);
+    if (!$m->is_loan && is_numeric($r->input('amount')) && (float)$r->input('amount') > 0) DB::table('recurring_expense_instances')->where('id', $i->id)->update(['amount' => (float)$r->input('amount'), 'updated_at' => now()]);
     DB::table('recurring_expense_instances')->where('id', $i->id)->update(['status' => $i->status === 'due' ? 'posted' : $i->status, 'posted_at' => $i->posted_at ?: now()]);
     [$ok, $msg] = R::settle(DB::table('recurring_expense_instances')->find($i->id), $m, $acc, Auth::user()->name, true);
     if (!$ok) DB::table('recurring_expense_instances')->where('id', $i->id)->update(['payment_status' => 'failed', 'note' => $msg]);

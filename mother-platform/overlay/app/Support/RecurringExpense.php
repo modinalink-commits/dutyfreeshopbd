@@ -64,7 +64,7 @@ class RecurringExpense {
       'status' => $m->auto_post ? 'posted' : 'due', 'payment_status' => 'pending', 'account_id' => $m->account_id, 'posted_at' => $m->auto_post ? now() : null, 'created_at' => now(), 'updated_at' => now()]);
     if (!$new) return false;
     $i = DB::table('recurring_expense_instances')->where('recurring_id', $m->id)->where('billing_period', $period)->first();
-    if ($m->auto_post && $m->auto_deduct && $m->account_id) { [$ok, $msg] = self::settle($i, $m, (int)$m->account_id, $by); if (!$ok) DB::table('recurring_expense_instances')->where('id', $i->id)->update(['payment_status' => 'failed', 'note' => $msg, 'updated_at' => now()]); }
+    if ($m->auto_post && $m->auto_deduct && $m->account_id && ($m->expense_type ?? '') !== 'variable') {   // variable bills (e.g. electricity) wait for the real amount to be typed, then Pay [$ok, $msg] = self::settle($i, $m, (int)$m->account_id, $by); if (!$ok) DB::table('recurring_expense_instances')->where('id', $i->id)->update(['payment_status' => 'failed', 'note' => $msg, 'updated_at' => now()]); }
     try { DB::table('audit_logs')->insert(['user_name' => $by, 'action' => 'recurring.post', 'subject' => $m->name.' '.$period, 'ip' => null, 'created_at' => now(), 'updated_at' => now()]); } catch (\Throwable $e) {}
     return true;
   }
