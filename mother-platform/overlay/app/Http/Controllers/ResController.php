@@ -201,7 +201,12 @@ class ResController extends Controller {
         $data['video_id'] = $vid;
       } else { $data['video_id'] = null; $data['media_type'] = 'image'; if (empty($data['image'])) throw \Illuminate\Validation\ValidationException::withMessages(['image'=>'Add a banner image for an image slide.']); }
     }
-    if ($c['slug']==='payroll') { // month, amount default automatically
+    if ($c['slug']==='payroll') { // month, amount default automatically; base salary can be changed from this form
+      $bs = $r->input('base_salary');
+      if ($bs !== null && $bs !== '' && is_numeric($bs) && (float)$bs >= 0 && !empty($data['employee_id'])) {
+        $em1 = DB::table('employees')->where('id',$data['employee_id'])->first();
+        if ($em1 && abs((float)$em1->salary - (float)$bs) > 0.004) { DB::table('employees')->where('id',$em1->id)->update(['salary'=>(float)$bs,'updated_at'=>now()]); $this->audit('update','employees#'.$em1->id.' salary '.$em1->salary.' -> '.$bs.' (from payroll)'); }
+      }
       if (empty($data['month'])) $data['month'] = now('Asia/Dhaka')->format('Y-m');
       if (!preg_match('/^\d{4}-\d{2}$/', $data['month'])) throw \Illuminate\Validation\ValidationException::withMessages(['month'=>'Month must look like 2026-11']);
       if (!isset($data['amount']) || $data['amount']==='') { $em0 = DB::table('employees')->where('id',$data['employee_id'])->first(); $data['amount'] = ($em0 && ($em0->pay_type ?? 'salary')!=='commission') ? $em0->salary : 0; }
