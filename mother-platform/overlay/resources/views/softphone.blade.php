@@ -169,7 +169,7 @@ if($('stSel')){$('stSel').onclick=function(){var v=agBusy?'available':'busy';stA
 (function(){var b=$('bdg'),f=$('dfc');if(!b||!f||!window.MutationObserver)return;var u=function(){var t=b.textContent.trim();f.textContent='●';f.title=t;f.className=/connected|registered|ready/i.test(t)&&!/dis/i.test(t)?'ok':'no'};new MutationObserver(u).observe(b,{childList:true,characterData:true,subtree:true});u()})();
 
 function ctxShow(o,nm){var e=$('ctxL');if(!e)return;var t=[o,nm].filter(Boolean).join(' · ');e.textContent=t?'📄 '+t:'';e.style.display=t?'block':'none'}
-function autoDial(n,d){n=clean(n);ctxShow(d&&d.o,d&&d.cn);if(!n)return;if(inCall()){tab('act');err('An active call is currently in progress. End or hold the current call first.');return}$('num').value=n;lastN='';found();if(reg()){dialNum(n)}else{pend=n;tab('act');err('Connecting to PBX… the call starts automatically.')}}
+function autoDial(n,d){n=clean(n);ctxShow(d&&d.o,d&&d.cn);if(!n)return;if(inCall()){tab('act');err('An active call is currently in progress. End or hold the current call first.');return}$('num').value=n;lastN='';found();tab('pad');try{$('num').focus()}catch(e){}} /* Call button elsewhere only opens the dialer with the number filled in; the staff member decides and presses Call */
 function esc(t){return String(t==null?'':t).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function post(u,o){var f=new FormData();f.append('_token',T);for(var k in o||{})if(o[k]!=null)f.append(k,o[k]);return fetch(u,{method:'POST',body:f,headers:{Accept:'application/json'}}).then(function(r){return r.json().then(function(j){j._s=r.status;return j})})}
 function getj(u){return fetch(u,{headers:{Accept:'application/json'}}).then(function(r){return r.json()})}
