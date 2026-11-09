@@ -55,7 +55,7 @@ acd089bbd2ff2400c384fec20e54b4585ecfc474 app/Console/Commands/MotherSyncFeed.php
 752ba7fedf5b1a8a9e4c93c2b69869cf6879cf71 resources/views/store/layout.blade.php
 eab3909c69947b17ed5d5f2d5e3d1f7b0b564481 resources/views/store/card.blade.php
 4a5eb7ee8d7960886fcb97c690bbb604ec69eb1f resources/views/store/home_sec.blade.php
-70a37af4dc05aa887521a3966eda7bf6c870a753 resources/views/store/home.blade.php
+a5d40e83b8cdfadb71332a8dc3feb0a0a0951be7 resources/views/store/home.blade.php
 53cd8679c576b994e8cc7ecae8e2947286ed143d resources/views/store/category.blade.php
 4281d0b4a78b068add9bd0fe2f49077561840ba5 resources/views/store/product.blade.php
 7ad9d9502d41f54d6784414a9aa3f16a8ab0ec13 resources/views/store/search.blade.php
