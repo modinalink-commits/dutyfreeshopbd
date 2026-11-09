@@ -3,7 +3,7 @@ fe43f8b6cb422cca81ee18b74d3972f77e7852de database/migrations/2026_10_31_000001_m
 46ac6330ace84450b442d0d57c5c06f20c41f945 app/Models/Mother.php
 55586b66fb71e5f741bcaafa0f3eb4ef37074899 app/Http/Controllers/AdminController.php
 242316b2ef0a0967e6815e39fcbc7377349fdc17 app/Console/Commands/MotherInstall.php
-a2d40ef125d1b572e37319104641e7c50be95de4 resources/views/layout.blade.php
+af5aa7ccaf507024092d6f89ac0cecdef43d661a resources/views/layout.blade.php
 2b227b5ab4047c9018760d3f3da2dc1c31b55cb1 resources/views/login.blade.php
 4f9c63c1d553a171eb063ecbdd0b9572f64a1692 resources/views/dashboard.blade.php
 32c8523c56e3db792605faf1a3927e31d3882db7 resources/views/orders.blade.php
