@@ -67,6 +67,10 @@ body,button,input,textarea,select{font-family:Inter,"Noto Sans Bengali","Segoe U
 .badge{font-size:15px;font-weight:700;padding:5px 12px;border-radius:16px}.badge.b-ok{background:rgba(34,197,94,.18);color:#4ADE80}
 .tabs{padding:0;background:#fff}.tabs button{font-size:16px;font-weight:600;color:#4B5563;padding:12px 2px;border-radius:0}.tabs button.on{color:#FF6600;font-weight:700;background:#FFF4EA;border-bottom-color:#FF6600}.tabs button svg{width:17px;height:17px;margin-right:6px;vertical-align:-3px}
 /* compact active-call panel: everything fits the popup without up/down scrolling */
+#ovSum .card{padding:9px 11px}#ovSum h3{margin:0;font-size:15px}#ovSum .sub{font-size:11px;margin:0 0 5px}
+#ovSum .sg{grid-template-columns:1fr 1fr 1fr;gap:4px;margin-bottom:4px}#ovSum .sg div{padding:3px 6px;min-width:0}#ovSum .sg span{font-size:9.5px}#ovSum .sg b{font-size:11px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#ovSum .lb{margin:5px 0 3px;font-size:11px}#ovSum .oc{grid-template-columns:repeat(4,1fr);gap:4px}#ovSum .oc button{padding:6px 2px;font-size:11px}
+#ovSum .chip{padding:2px 7px;font-size:11px}#ovSum #ocR,#ovSum #ocC{gap:3px}#ovSum textarea{height:44px;padding:5px 7px}#ovSum .acts{margin-top:6px}#ovSum .pri{padding:8px 10px}#ovSum #sEdit{padding:5px;margin-bottom:3px}
 #tp-act{padding:8px 10px;gap:5px}#aBox{gap:5px!important}
 #tp-act .cidr{font-size:11px}#tp-act .actb{padding:1px 8px}
 #tp-act .wv{height:18px;border-radius:9px}#tp-act .wv.on i{animation-name:wvc}@keyframes wvc{0%,100%{height:4px}50%{height:13px}}
@@ -140,7 +144,7 @@ body,button,input,textarea,select{font-family:Inter,"Noto Sans Bengali","Segoe U
 <div id="cwrap" style="display:none"><div class="lb">Cancel Reason</div><div id="ocC">@foreach(['Price Issue','Delivery Charge Issue','Changed Mind','Duplicate Order','Ordered by Mistake','Product Unavailable','Delay','Not Needed','Suspicious','Other'] as $c)<span class="chip" data-v="{{ $c }}">{{ $c }}</span>@endforeach</div></div>
 <div class="lb">Customer Response</div>
 <div id="ocR">@foreach(['Customer Received Call','Busy','No Answer','Phone Off','Unreachable','Wrong Number','Call Later','WhatsApp Required','Need More Information'] as $c)<span class="chip" data-v="{{ $c }}">{{ $c }}</span>@endforeach</div>
-<div class="lb">Call Note</div><textarea id="sNote" rows="3" maxlength="1000" placeholder="কাস্টমারের সাথে কী কথা হয়েছে, সংক্ষেপে লিখুন..."></textarea>
+<div class="lb">Call Note</div><textarea id="sNote" rows="2" maxlength="1000" placeholder="কাস্টমারের সাথে কী কথা হয়েছে, সংক্ষেপে লিখুন..."></textarea>
 <div class="err" id="sErr"></div>
 <div class="acts"><button type="button" class="pri" id="sSave">Save &amp; Close</button><button type="button" class="pri" id="sNext" style="background:var(--n)">Save &amp; Next</button><button type="button" class="sec" id="sSkip">Skip</button></div></div></div>
 
