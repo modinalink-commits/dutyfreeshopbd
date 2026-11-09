@@ -109,7 +109,7 @@ body,button,input,textarea,select{font-family:Inter,"Noto Sans Bengali","Segoe U
 <div class="keys">@foreach([['1',''],['2','ABC'],['3','DEF'],['4','GHI'],['5','JKL'],['6','MNO'],['7','PQRS'],['8','TUV'],['9','WXYZ'],['*',''],['0','+'],['#','']] as $k)<button type="button" data-k="{{ $k[0] }}"><span class="kn">{{ $k[0] }}</span><small{!! $k[1]==='+' ? ' class="pl"' : '' !!}>{{ $k[1] ?: ' ' }}</small></button>@endforeach</div>
 <div class="crow"><button type="button" class="go call" id="bGo"><svg class="ph1i" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg><span>Call</span></button><button type="button" class="go mq sm" id="bMuteQ" title="Mute" disabled><svg class="mi" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><svg class="mo" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M4 4l16 16"/></svg></button><button type="button" class="go hang sm" id="bHang1" title="Hang Up" disabled><svg viewBox="0 0 24 24" class="hg"><path d="M3 14c5-5 13-5 18 0l-2 3-3-1v-2c-3-1-7-1-10 0v2l-3 1z"/></svg></button></div>
 <div class="msg" id="msg">@if(!$has)আপনার এক্সটেনশন সেট করা নেই। অ্যাডমিনকে বলুন Call Center → Extensions থেকে দিতে।@endif</div>
-<div class="mut"><button type="button" id="bBk" style="background:none;border:1px solid #D1D5DB;color:#0B1F3A;border-radius:8px;padding:5px 9px;font-size:11.5px;font-weight:700;cursor:pointer;margin-bottom:4px" title="ব্রাউজারে না লাগলে PBX আগে আপনাকে কল করে তারপর কাস্টমারকে যুক্ত করবে">📞 ব্যাকআপ: PBX আগে আমাকে কল করুক</button> <a href="/admin/call-center/history" target="_blank">Call history</a></div>
+<div class="mut"><a href="/admin/call-center/history" target="_blank">Call history</a></div>
 </div>
 
 <div class="box tp" id="tp-con" style="display:none"><input id="cq" placeholder="Search name, phone or customer ID" class="srch"><div id="cl" class="lst"></div></div>
@@ -124,7 +124,7 @@ body,button,input,textarea,select{font-family:Inter,"Noto Sans Bengali","Segoe U
  <div class="kp" id="kp">@foreach(['1','2','3','4','5','6','7','8','9','*','0','#'] as $k)<button type="button" data-d="{{ $k }}">{{ $k }}</button>@endforeach</div>
  <div class="ctl" id="ctl"><button type="button" id="bMute" disabled><i>🎙</i><span>Mute</span></button><button type="button" id="bHold" disabled><i>⏸</i><span>Hold</span></button><button type="button" id="bKp" disabled><i>⌨</i><span>Keypad</span></button><button type="button" id="bTr" disabled><i>↗</i><span>Transfer</span></button><button type="button" id="bSpk" style="display:none"><i>🔊</i><span>Speaker</span></button></div>
  <button type="button" class="go hang big" id="bHang2" disabled>⛔ End Call</button>
- <div class="msg" id="msg2"></div><button type="button" id="bBk2" style="display:none;background:#fff;border:1.5px solid #0B1F3A;color:#0B1F3A;border-radius:8px;padding:6px;font-size:12px;font-weight:800;cursor:pointer">📞 ব্যাকআপ: PBX আগে আমাকে কল করুক</button>
+ <div class="msg" id="msg2"></div>
 </div>
 <div class="cn"><div class="cnh">Call Notes</div><textarea id="cNote" rows="2" maxlength="1000" placeholder="Write a note..."></textarea><div class="cnb"><span id="cNm"></span><button type="button" id="cSave">Save</button></div></div>
 </div>
@@ -156,7 +156,7 @@ body,button,input,textarea,select{font-family:Inter,"Noto Sans Bengali","Segoe U
 <script>
 (function(){
 var $=function(i){return document.getElementById(i)},T=document.querySelector('meta[name=csrf]').content,emb=!!document.querySelector('.ph.emb');
-var cancelReq=false,ua=null,cfg=null,ses=null,logId=null,connAt=0,tick=null,dir='out',phase='idle',muted=false,held=false,cur='',info=null,ring=null,inCtx=null,sum=null,lastBusy=null,okCount=0;
+var tries=0,retrying=false,cancelReq=false,ua=null,cfg=null,ses=null,logId=null,connAt=0,tick=null,dir='out',phase='idle',muted=false,held=false,cur='',info=null,ring=null,inCtx=null,sum=null,lastBusy=null,okCount=0;
 var ch=window.BroadcastChannel?new BroadcastChannel('dfphone'):null,pend=null;
 /* ---------- availability (Available / Busy) ---------- */
 var agBusy=($('stSel')||{}).value==='busy';
@@ -233,9 +233,6 @@ function reconnect(){err('');disconnect();setTimeout(connect,300)}
 function target(n){var p=cfg.prefix||'';n=clean(n);if(p&&n.indexOf(p)!==0&&n.charAt(0)!=='+')n=p+n;return 'sip:'+n+'@'+cfg.domain}
 var SIPT=[],TS0=Date.now();function trc(d,m){var t='';if(typeof m==='string'){var L=m.split('\r\n');t=L[0].replace(/ SIP\/2\.0$/,'').replace(/^(INVITE|ACK|REGISTER|CANCEL|BYE) sip:[^ ]*@/,'$1 ');var hv=function(n){for(var i=1;i<L.length;i++)if(L[i].toLowerCase().indexOf(n+':')===0)return L[i].slice(n.length+1).trim();return ''};
  if(/^(INVITE|SIP\/2\.0 [45])/.test(L[0])){var fr=hv('from').match(/sip:([^@>;]*)/i),pa=hv('proxy-authorization'),pc=hv('proxy-authenticate'),cs=hv('cseq');t+=' ['+(cs?'cseq '+cs.split(' ')[0]+' ':'')+(fr?'from '+fr[1]+' ':'')+(pa?'auth-user '+((pa.match(/username="([^"]*)"/)||[])[1]||'?')+' ':(L[0].indexOf('INVITE')===0?'NO-AUTH ':''))+(pc?'realm '+((pc.match(/realm="([^"]*)"/)||[])[1]||'?')+(/stale=true/i.test(pc)?' STALE':''):'')+']'}}else t=String(m);SIPT.push(((Date.now()-TS0)/1000).toFixed(1)+'s '+d+' '+t.slice(0,110));if(SIPT.length>14)SIPT.shift()}
-/* backup path: PBX rings the agent (mobile/extension) first, then connects the customer — works even if browser audio/WebRTC fails */
-$('bBk2').onclick=function(){$('bBk').click()};
-$('bBk').onclick=function(){var n=clean($('num').value);if(!n){err('আগে কাস্টমারের নম্বর দিন।');return}var b=this;b.disabled=true;err('ব্যাকআপ কল শুরু হচ্ছে…');post('/admin/call-center/backup-call',{phone:n}).then(function(j){b.disabled=false;err(j&&j.ok?('✔ PBX এখন আপনার '+(j.via==='ext'?'এক্সটেনশনে':'মোবাইলে')+' কল করছে। রিসিভ করলে কাস্টমারকে যুক্ত করবে।'):('ব্যাকআপ কল হয়নি: '+((j&&j.error)||'সার্ভার ত্রুটি')))}).catch(function(){b.disabled=false;err('ব্যাকআপ কল হয়নি: সার্ভারে পৌঁছানো যায়নি।')})};
 function iceCfg(){return {iceServers:cfg.stun?[{urls:'stun:'+cfg.stun.replace(/^stun:/,'')}]:[{urls:'stun:stun.l.google.com:19302'}]}}
 /* voice quality: explicit echo cancel / noise suppression / auto gain, mono (ideal = never fails on devices without it) */
 var AC={echoCancellation:{ideal:true},noiseSuppression:{ideal:true},autoGainControl:{ideal:true},channelCount:{ideal:1}};
@@ -260,7 +257,7 @@ function mic(){if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)
 function micErr(){setPhase('failed','Failed');err('Microphone access is required to make calls.')}
 function resetCtl(){setTimeout(busyUnreg,1500);muted=false;held=false;var q=$('bMuteQ');if(q){q.classList.remove('on')}$('bMute').classList.remove('on');$('bHold').classList.remove('on');$('bMute').lastChild.textContent='Mute';$('bHold').lastChild.textContent='Hold';$('bKp').classList.remove('on');$('kp').classList.remove('on')}
 function begin(n,d){cancelReq=false;cur=n;dir=d;info=null;connAt=0;clearInterval(tick);$('tmr').textContent='00:00:00';$('aT').textContent='00:00:00';resetCtl();renderAct();look(n).then(function(c){if(cur===n){info=c;renderAct();if(d==='in'){$('icN').textContent=c.found&&c.name?c.name:'Unknown Customer';$('icI').textContent=c.found?((c.category||'Customer')+' · '+c.orders+' orders'+(c.last?' · Last: '+c.last.invoice+' ('+c.last.status+')':'')):'No customer record'}}})}
-function call(n){n=clean(n||$('num').value);if(!n){err('Enter a phone number first.');return}if(inCall())return;if(!reg()){if(agBusy&&ua&&!tmpReg){tmpReg=true;pendCall=n;err('');try{ua.register()}catch(e){tmpReg=false;pendCall=null;err('PBX connection required')}setTimeout(function(){if(tmpReg){tmpReg=false;pendCall=null;err('PBX connection required')}},8000);return}err('PBX connection required');return}err('');
+function call(n){n=clean(n||$('num').value);if(!retrying)tries=0;retrying=false;if(!n){err('Enter a phone number first.');return}if(inCall())return;if(!reg()){if(agBusy&&ua&&!tmpReg){tmpReg=true;pendCall=n;err('');try{ua.register()}catch(e){tmpReg=false;pendCall=null;err('PBX connection required')}setTimeout(function(){if(tmpReg){tmpReg=false;pendCall=null;err('PBX connection required')}},8000);return}err('PBX connection required');return}err('');
  begin(n,'out');setPhase('connecting');tab('act');
  mic().then(function(){return post('/admin/call-center/log',{direction:'out',phone:n,extension:cfg.ext})}).then(function(j){logId=j.id;lastLog=j.id;
   if(cancelReq){cancelReq=false;if(j.id)post('/admin/call-center/log/'+j.id+'/end',{status:'missed',duration:0});return}
@@ -269,13 +266,18 @@ function pbxId(){try{return ses._request&&ses._request.call_id||''}catch(e){retu
 function wire(s){ses=s;
  s.on('sdp',function(e){if(e&&e.sdp)e.sdp=tuneSdp(e.sdp,e.originator==='local'&&e.type==='offer')});
  var sent=false;s.on('sending',function(){sent=true});
+ /* AUTO-RETRY: the PBX sometimes never answers the authenticated INVITE (stale WSS / lost packet). No 100/18x within 6 s -> silently drop this attempt and redial (1st: re-register, 2nd: fresh WSS connection). The agent just sees "Connecting". */
+ if(dir==='out')setTimeout(function(){if(ses!==s||phase!=='connecting'||s._dead||tries>=2||!sent)return;tries++;var n2=cur,id0=logId;console.warn('dialer auto-retry '+tries+' | '+SIPT.join(' | '));s._dead=1;try{s.terminate()}catch(e){}if(id0)post('/admin/call-center/log/'+id0+'/end',{status:'missed',duration:0,fail_reason:'auto-retry'});ses=null;logId=null;clearInterval(tick);
+  var again=function(){retrying=true;phase='idle';call(n2)};
+  if(tries===1){try{ua.register()}catch(e){}setTimeout(again,900)}
+  else{try{ua.stop()}catch(e){}setTimeout(function(){try{ua.start()}catch(e){}var k=0,iv=setInterval(function(){k++;if(reg()||k>16){clearInterval(iv);again()}},500)},400)}},6000);
  /* watchdog: an outgoing call that is still "Connecting" after 12 s says WHERE it is stuck (never sent = browser/ICE side, sent = no answer from the PBX) */
- if(dir==='out'){var wd0=Date.now(),wdI=0;var wdF=function(){if(ses!==s||phase!=='connecting'){clearInterval(wdI);return;}var pc=s.connection,st='';try{st=(pc?'ice-gather '+pc.iceGatheringState+', ice '+pc.iceConnectionState+', sig '+pc.signalingState:'no peer connection')+', INVITE '+(sent?'sent':'NOT sent')+', registered '+(ua&&ua.isRegistered())+', socket '+(ua&&ua.isConnected())+' | '+SIPT.join(' | ')}catch(x){}console.warn('dialer stuck:',st);$('bBk2').style.display='';err('No reply yet '+Math.round((Date.now()-wd0)/1000)+'s ('+st+')')};setTimeout(function(){wdF();wdI=setInterval(wdF,3000)},12000)}
+ if(dir==='out'){var wd0=Date.now(),wdI=0;var wdF=function(){if(ses!==s||phase!=='connecting'){clearInterval(wdI);return;}var pc=s.connection,st='';try{st=(pc?'ice-gather '+pc.iceGatheringState+', ice '+pc.iceConnectionState+', sig '+pc.signalingState:'no peer connection')+', INVITE '+(sent?'sent':'NOT sent')+', registered '+(ua&&ua.isRegistered())+', socket '+(ua&&ua.isConnected())+' | '+SIPT.join(' | ')}catch(x){}console.warn('dialer stuck:',st);err('No reply yet '+Math.round((Date.now()-wd0)/1000)+'s ('+st+')')};setTimeout(function(){wdF();wdI=setInterval(wdF,3000)},12000)}
  s.on('progress',function(){if(phase==='connecting')setPhase('ringing')});
  var up=function(){if(phase==='connected')return;setPhase('connected');startTimer();qStart(s);if(logId)post('/admin/call-center/log/'+logId+'/connected',{pbx_call_id:pbxId()});recInd();err('')};
  s.on('accepted',up);s.on('confirmed',up);
- s.on('ended',function(e){finish('ended',e&&e.cause)});
- s.on('failed',function(e){finish('failed',(e&&e.cause)||'')});
+ s.on('ended',function(e){if(s._dead)return;finish('ended',e&&e.cause)});
+ s.on('failed',function(e){if(s._dead)return;finish('failed',(e&&e.cause)||'')});
  s.on('hold',function(e){if(e.originator==='local'){held=true;$('bHold').classList.add('on');$('bHold').lastChild.textContent='Resume'}});
  s.on('unhold',function(e){if(e.originator==='local'){held=false;$('bHold').classList.remove('on');$('bHold').lastChild.textContent='Hold'}});
  /* remote audio: an INCOMING call has no RTCPeerConnection yet when it is wired (JsSIP creates it on answer), so listen for 'peerconnection' too; build a stream from the track when the PBX sends none; always (re)start playback */
