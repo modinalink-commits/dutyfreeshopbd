@@ -34,7 +34,8 @@ class CategoryProfit {
       ->leftJoin('categories as c', 'c.id', '=', DB::raw('coalesce(i.cat_id, p.category_id)'))
       ->joinSub($og, 'og', 'og.order_id', '=', 'i.order_id')
       ->whereDate('o.created_at', '>=', $f['from'])->whereDate('o.created_at', '<=', $f['to']);
-    if ($f['status'] === 'delivered') $q->where('o.status', 'Delivered'); else $q->whereNotIn('o.status', ['Cancelled', 'Canceled', 'Failed', 'Cancelled by Customer']);
+    // delivered mode also keeps parcels that came back: their sale is reversed by the return, and the courier cost they cost us is still a parcel loss
+    if ($f['status'] === 'delivered') $q->whereIn('o.status', ['Delivered', 'Returned', 'Return Pending']); else $q->whereNotIn('o.status', ['Cancelled', 'Canceled', 'Failed', 'Cancelled by Customer']);
     if ($f['store'] === 'main') $q->whereNull('o.store_id'); elseif (ctype_digit($f['store'])) $q->where('o.store_id', (int)$f['store']);
     if (ctype_digit($f['cat'])) $q->whereRaw('coalesce(i.cat_id, p.category_id) = ?', [(int)$f['cat']]);
     if ($f['sub'] !== '') $q->whereRaw("coalesce(nullif(i.cat_sub,''), nullif(p.sub,''), '—') = ?", [$f['sub']]);
@@ -59,10 +60,12 @@ class CategoryProfit {
     $disc = "(case when ($full) then 0 else coalesce(o.discount,0) * $gross / nullif(og.g,0) end)";
     $retAmt = "(i.price * $ret)";
     $cogsKept = "(case when i.cogs is not null and i.qty > 0 then i.cogs * (i.qty - $ret) / i.qty else coalesce(p.cost,0) * (i.qty - $ret) end)";
+    // courier cost of the parcel (as in the Profit & Loss Statement: only parcels that have a consignment), spread over the order's lines by their share of the order gross
+    $cour = "(case when coalesce(o.consignment_id::text,'') <> '' then coalesce(o.courier_fee,0) * $gross / nullif(og.g,0) else 0 end)";
     $cogsRet = "(case when i.cogs is not null and i.qty > 0 then i.cogs * $ret / i.qty else coalesce(p.cost,0) * $ret end)";
     return "count(distinct o.id) as orders, count(distinct case when o.status = 'Delivered' then o.id end) as delivered, sum(i.qty) as qty, sum($ret) as ret_qty,
       sum($gross) as gross, sum($disc) as disc, sum($retAmt) as ret_amt, sum($gross - $disc - $retAmt) as net, sum($cogsKept) as cogs, sum($cogsRet) as cogs_rev,
-      sum($gross - $disc - $retAmt - $cogsKept) as profit, sum(case when coalesce(i.cogs,0) = 0 and coalesce(p.cost,0) = 0 then $gross - $disc - $retAmt else 0 end) as nocost_sales";
+      sum($gross - $disc - $retAmt - $cogsKept) as profit, sum($cour) as courier, sum(case when coalesce(i.cogs,0) = 0 and coalesce(p.cost,0) = 0 then $gross - $disc - $retAmt else 0 end) as nocost_sales";
   }
 
   private static function setting(string $k, string $d): float { try { return (float)Procure::set($k, $d); } catch (\Throwable $e) { return (float)$d; } }
@@ -78,7 +81,7 @@ class CategoryProfit {
     $net = (float)$x->net; $gp = (float)$x->profit; $qty = (int)$x->qty; $gross = (float)$x->gross; $del = (int)$x->delivered;
     $margin = $net > 0 ? round($gp / $net * 100, 2) : 0.0;
     return ['orders' => (int)$x->orders, 'delivered' => $del, 'qty' => $qty, 'gross' => round($gross, 2), 'disc' => round((float)$x->disc, 2), 'ret_qty' => (int)$x->ret_qty, 'ret_amt' => round((float)$x->ret_amt, 2),
-      'net' => round($net, 2), 'cogs' => round((float)$x->cogs, 2), 'cogs_rev' => round((float)$x->cogs_rev, 2), 'profit' => round($gp, 2), 'margin' => $margin,
+      'net' => round($net, 2), 'cogs' => round((float)$x->cogs, 2), 'cogs_rev' => round((float)$x->cogs_rev, 2), 'profit' => round($gp, 2), 'margin' => $margin, 'courier' => round((float)$x->courier, 2), 'net_profit' => round($gp - (float)$x->courier, 2), 'net_margin' => $net > 0 ? round(($gp - (float)$x->courier) / $net * 100, 2) : 0.0,
       'avg_order' => $del > 0 ? round($gp / $del, 2) : 0.0, 'avg_unit' => $qty > 0 ? round($gp / $qty, 2) : 0.0,
       'ret_rate' => $qty > 0 ? round((int)$x->ret_qty / $qty * 100, 2) : 0.0, 'disc_rate' => $gross > 0 ? round((float)$x->disc / $gross * 100, 2) : 0.0,
       'profit_share' => ($tot['profit'] ?? 0) != 0 ? round($gp / $tot['profit'] * 100, 2) : 0.0, 'sales_share' => ($tot['net'] ?? 0) != 0 ? round($net / $tot['net'] * 100, 2) : 0.0,
@@ -149,18 +152,19 @@ class CategoryProfit {
   /** Second, independent calculation (the same line rules as the Profit & Loss Statement, done in PHP) to prove the SQL totals. */
   public static function reconcile(array $f, array $tot): array {
     $n = (clone self::lines($f))->count(); if ($n > 60000) return ['ok' => null, 'note' => 'Skipped: more than 60,000 lines in this range.'];
-    $net = 0.0; $cogs = 0.0;
+    $net = 0.0; $cogs = 0.0; $cour = 0.0;
     $og = [];
-    foreach (self::lines($f)->selectRaw('i.id as iid, i.order_id, i.qty, i.price, i.ret_qty, i.cogs, p.cost, o.status, o.return_type, o.discount, og.g')->orderBy('i.id')->cursor() as $x) {
+    foreach (self::lines($f)->selectRaw('i.id as iid, i.order_id, i.qty, i.price, i.ret_qty, i.cogs, p.cost, o.status, o.return_type, o.discount, og.g, o.courier_fee, o.consignment_id')->orderBy('i.id')->cursor() as $x) {
       $full = in_array($x->status, ['Return Pending', 'Returned'], true) && ($x->return_type ?? '') !== 'Partial';
       $q0 = (int)$x->qty; $kept = $full ? 0 : max(0, $q0 - max(0, (int)$x->ret_qty));
       $b = ($x->cogs !== null && $q0 > 0) ? (float)$x->cogs * $kept / $q0 : (float)($x->cost ?? 0) * $kept;
       $gross = (float)$x->price * $q0; $disc = $full || (float)$x->g == 0.0 ? 0.0 : (float)$x->discount * $gross / (float)$x->g;
       $net += (float)$x->price * $kept - $disc; $cogs += $b;
+      if (!empty($x->consignment_id) && (float)$x->g != 0.0) $cour += (float)($x->courier_fee ?? 0) * $gross / (float)$x->g;
     }
     $d = fn($a, $b) => abs($a - $b) <= 1.0;
-    $ok = $d($net, $tot['net']) && $d($cogs, $tot['cogs']) && $d($net - $cogs, $tot['profit']);
-    return ['ok' => $ok, 'note' => $ok ? 'Net sales, COGS and gross profit match the line-by-line check.' : 'Report Reconciliation Issue: SQL net ' . round($tot['net']) . ' / COGS ' . round($tot['cogs']) . ' vs check ' . round($net) . ' / ' . round($cogs)];
+    $ok = $d($net, $tot['net']) && $d($cogs, $tot['cogs']) && $d($net - $cogs, $tot['profit']) && $d($net - $cogs - $cour, $tot['net_profit']);
+    return ['ok' => $ok, 'note' => $ok ? 'Net sales, COGS, gross profit and net profit (after courier) match the line-by-line check.' : 'Report Reconciliation Issue: SQL net ' . round($tot['net']) . ' / COGS ' . round($tot['cogs']) . ' vs check ' . round($net) . ' / ' . round($cogs)];
   }
 
   public static function previous(array $f): array {
