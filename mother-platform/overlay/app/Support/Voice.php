@@ -125,7 +125,7 @@ class Voice
     $rd = function () use ($fp) { $hd = ''; while (($l = fgets($fp)) !== false) { if (trim($l) === '') break; $hd .= $l; } $len = 0; if (preg_match('/Content-Length:\s*(\d+)/i', $hd, $m)) $len = (int)$m[1]; return [$hd, $len ? fread($fp, $len) : '']; };
     try {
       $rd(); fwrite($fp, "auth $pw\n\n"); [$h1] = $rd(); if (!str_contains($h1, '+OK')) { fclose($fp); return [false, 'PBX rejected the password']; }
-      fwrite($fp, "api $cmd\n\n"); [, $body] = $rd(); fclose($fp); return [true, trim($body)];
+      fwrite($fp, (str_starts_with($cmd, 'bgapi ') ? $cmd : "api $cmd") . "\n\n"); [, $body] = $rd(); fclose($fp); return [true, trim($body)];
     } catch (\Throwable $e) { return [false, 'PBX connection lost']; }
   }
   public static function dialNumber(string $p): string { $f = self::set('dial_format', 'local'); return $f === 'intl' ? '88' . $p : ($f === 'plus' ? '+88' . $p : $p); }

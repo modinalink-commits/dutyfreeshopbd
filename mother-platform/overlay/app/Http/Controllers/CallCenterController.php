@@ -60,6 +60,19 @@ class CallCenterController extends Controller {
     else { $b = DB::table('sip_accounts')->whereNull('user_id')->orderBy('id')->first(); DB::table('sip_accounts')->insert($row + ['user_id'=>$uid, 'domain'=>$b->domain ?? '', 'created_at'=>now()]); }
     return null;
   }
+  /** BACKUP calling path (no browser audio): the PBX rings the agent first (own mobile, else own extension), then bridges the customer. Same Event Socket + gateway the voice offers use. */
+  public function backupCall(Request $r) {
+    $d = $r->validate(['phone'=>'required|string|max:40']); $cust = \App\Support\Voice::norm($d['phone']);
+    if (!\App\Support\Voice::validPhone($cust)) return response()->json(['ok'=>false, 'error'=>'কাস্টমারের নম্বর সঠিক নয় (01XXXXXXXXX)।']);
+    $b = $this->acct(); $a = $this->mine(); $gw = \App\Support\Voice::set('gateway'); if (!$gw) return response()->json(['ok'=>false, 'error'=>'PBX গেটওয়ে সেট করা নেই।']);
+    $mob = \App\Support\Voice::norm((string)(Auth::user()->phone ?? '')); $legA = \App\Support\Voice::validPhone($mob) ? 'sofia/gateway/'.$gw.'/'.\App\Support\Voice::dialNumber($mob) : (($a && $a->username) ? 'user/'.$a->username.'@'.($b->domain ?? '') : '');
+    if ($legA === '') return response()->json(['ok'=>false, 'error'=>'আপনার মোবাইল নম্বর বা এক্সটেনশন সেট নেই।']);
+    $cid = \App\Support\Voice::set('caller_id') ?: '0000';
+    $cmd = 'bgapi originate {origination_caller_id_number='.$cid.',origination_caller_id_name=DutyFreeBD,originate_timeout=30,ignore_early_media=true,hangup_after_bridge=true}'.$legA.' &bridge({origination_caller_id_number='.$cid.',originate_timeout=40,ignore_early_media=true}sofia/gateway/'.$gw.'/'.\App\Support\Voice::dialNumber($cust).')';
+    [$ok, $out] = \App\Support\Voice::esl($cmd, 15);
+    try { DB::table('audit_logs')->insert(['user_id'=>Auth::id(), 'user_name'=>Auth::user()->name ?? '', 'action'=>'Backup call '.($ok ? 'started' : 'failed'), 'subject'=>$cust.' via '.(str_starts_with($legA, 'user/') ? 'extension' : 'mobile').($ok ? '' : ' · '.mb_substr((string)$out, 0, 80)), 'ip'=>$r->ip(), 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {}
+    return response()->json(['ok'=>$ok, 'via'=>str_starts_with($legA, 'user/') ? 'ext' : 'mobile', 'error'=>$ok ? null : (string)$out]);
+  }
   /** Agent scoreboard: who answers first, talks most and confirms most. */
   public function agents(Request $r) {
     $p = in_array($r->query('p'), ['today', '7', '30', 'all']) ? $r->query('p') : '7';

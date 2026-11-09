@@ -235,6 +235,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/call-center/account', [\App\Http\Controllers\CallCenterController::class,'saveAccount']);
   Route::get('/call-center/creds', [\App\Http\Controllers\CallCenterController::class,'creds']);
   Route::get('/call-center/lookup', [\App\Http\Controllers\CallCenterController::class,'lookup']);
+  Route::post('/call-center/backup-call', [\App\Http\Controllers\CallCenterController::class,'backupCall'])->middleware('throttle:8,1');
   Route::post('/call-center/log', [\App\Http\Controllers\CallCenterController::class,'logStart']);
   Route::post('/call-center/log/{id}/end', [\App\Http\Controllers\CallCenterController::class,'logEnd']);
   Route::post('/call-center/log/{id}/note', [\App\Http\Controllers\CallCenterController::class,'logNote']);
