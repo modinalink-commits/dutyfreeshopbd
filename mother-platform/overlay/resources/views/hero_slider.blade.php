@@ -1,6 +1,6 @@
 @extends('layout')@section('title','Hero Media Slider')
 @section('body')
-<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px"><div style="flex:1"><h1 style="margin:0">Hero Media Slider</h1><div style="font-size:12px;color:#6B7280">Image and YouTube video slides in one carousel. Drag a row by the ⠿ handle to change the order. Videos play muted, stop when the slide changes, and move on when they end.</div></div><a class="btn" href="/admin/m/sliders/new">+ Add slide</a></div>
+<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px"><div style="flex:1"><h1 style="margin:0">Hero Media Slider</h1><div style="font-size:12px;color:#6B7280">Every home hero slide in one list: uploaded image and YouTube slides, plus the site's BUILT-IN slides (they follow their own fixed order, after the uploaded ones). Drag a row by the ⠿ handle to change the order. Videos play muted, stop when the slide changes, and move on when they end.</div></div><a class="btn" href="/admin/m/sliders/new">+ Add slide</a></div>
 @if(session('ok'))<div class="card" style="color:#166534">{{ session('ok') }}</div>@endif
 <div class="card" style="overflow-x:auto"><table><thead><tr><th></th><th>Preview</th><th>Type</th><th>Title</th><th>Pos</th><th>Desktop</th><th>Mobile</th><th>Status</th><th></th></tr></thead><tbody id="rows">
 @forelse($rows as $x)@php $v=($x->media_type??'image')==='video'&&$x->video_id; $th=$x->image ?: ($v?'https://i.ytimg.com/vi/'.$x->video_id.'/hqdefault.jpg':''); @endphp
@@ -11,9 +11,13 @@
 <td>{{ $x->image ? '✓' : ($v ? 'poster auto' : '—') }}</td><td>{{ $x->mobile_image ? '✓' : ($v ? ($x->v_mobile ? 'video' : 'fallback') : '—') }}</td>
 <td>{{ $x->active ? 'Active' : 'Paused' }}</td>
 <td style="white-space:nowrap">@if($v)<a href="#" data-pv="{{ $x->video_id }}">Preview</a> · @endif<a href="/admin/m/sliders/{{ $x->id }}/edit">Edit</a> · <form method="post" action="/admin/hero-slider/{{ $x->id }}/toggle" style="display:inline">@csrf<button style="all:unset;color:#2563EB;cursor:pointer">{{ $x->active?'Pause':'Publish' }}</button></form> · <form method="post" action="/admin/m/sliders/{{ $x->id }}/delete" style="display:inline" onsubmit="return confirm('Delete this slide?')">@csrf<button style="all:unset;color:#B91C1C;cursor:pointer">Delete</button></form></td></tr>
-@empty<tr><td colspan="9" style="color:#6B7280">No slides yet. Add the first image or YouTube slide.</td></tr>@endforelse</tbody></table></div>
-<div class="card" style="overflow-x:auto;margin-top:12px"><div style="font-weight:700;margin-bottom:2px">Built-in slides (same home carousel)</div><div style="font-size:12px;color:#6B7280;margin-bottom:8px">These slides are made by the site, not uploaded. Pause or Publish each one here.</div><table><thead><tr><th>Slide</th><th>Status</th><th></th></tr></thead><tbody>
-@foreach($bi as $b)<tr style="{{ $b['on']?'':'opacity:.55' }}"><td>{{ $b['label'] }}</td><td>{{ $b['on']?'Active':'Paused' }}</td><td><form method="post" action="/admin/hero-slider/builtin/{{ $b['key'] }}/toggle" style="display:inline">@csrf<button style="all:unset;color:#2563EB;cursor:pointer">{{ $b['on']?'Pause':'Publish' }}</button></form></td></tr>@endforeach
+@empty<tr><td colspan="9" style="color:#6B7280">No uploaded slides yet. Add the first image or YouTube slide.</td></tr>@endforelse
+@foreach($bi as $b)<tr style="{{ $b['on']?'':'opacity:.55' }}"><td style="color:#D1D5DB">⠿</td>
+<td><div style="width:110px;height:37px;border-radius:6px;background:#F3F4F6;color:#6B7280;font-size:10px;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.1">Built-in</div></td>
+<td><b style="font-size:11px;padding:2px 8px;border-radius:999px;background:#EDE9FE;color:#5B21B6">BUILT-IN</b></td>
+<td>{{ $b['label'] }}</td><td>auto</td><td>✓</td><td>✓</td>
+<td>{{ $b['on']?'Active':'Paused' }}</td>
+<td style="white-space:nowrap"><a href="/admin/home-banners">Settings</a> · <form method="post" action="/admin/hero-slider/builtin/{{ $b['key'] }}/toggle" style="display:inline">@csrf<button style="all:unset;color:#2563EB;cursor:pointer">{{ $b['on']?'Pause':'Publish' }}</button></form></td></tr>@endforeach
 </tbody></table></div>
 <div id="pvm" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:99;align-items:center;justify-content:center"><div style="width:min(900px,92vw);aspect-ratio:16/9;background:#000;position:relative"><button type="button" id="pvx" style="position:absolute;right:-6px;top:-34px;background:#fff;border:0;border-radius:6px;padding:4px 10px;cursor:pointer">Close ✕</button><div id="pvb" style="width:100%;height:100%"></div></div></div>
 <script>(function(){var tb=document.getElementById('rows'),drag=null,tok=document.querySelector('meta[name=csrf-token]'),T=tok?tok.content:'{{ csrf_token() }}';
