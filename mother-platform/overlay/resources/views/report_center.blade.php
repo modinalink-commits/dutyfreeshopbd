@@ -20,7 +20,7 @@
 .rc .box{background:#fff;border:1px solid #E6E7E9;border-radius:12px;padding:12px 14px}
 .rc .rc-tw{overflow-x:auto}
 .rc table.rc-g{width:100%;border-collapse:collapse;font-size:12px;min-width:860px}
-.rc .rc-g th{height:34px;padding:0 10px;background:#F3F4F6;border:1px solid #D1D5DB;font-weight:700;color:#374151;text-align:left;white-space:nowrap;position:sticky;top:0}
+.rc .rc-g th{height:34px;padding:0 10px;background:var(--head-bg,#E3E8EE);border:1px solid #D1D5DB;font-weight:700;color:#374151;text-align:left;white-space:nowrap;position:sticky;top:0}
 .rc .rc-g td{min-height:32px;padding:5px 10px;border:1px solid #E5E7EB;vertical-align:middle}
 .rc .rc-g .c{text-align:center}.rc .rc-g .nw{white-space:nowrap}
 .rc .rc-g tbody tr:hover td{background:#FAFAFB}
