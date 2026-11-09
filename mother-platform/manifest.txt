@@ -937,3 +937,4 @@ app/Http/Controllers/CategoryProfitController.php
 resources/views/category_profit.blade.php
 database/migrations/2026_11_10_000100_backfill_order_item_product_id.php
 database/migrations/2026_11_10_010000_category_cleanup.php
+database/migrations/2026_11_10_020000_remove_empty_categories.php
