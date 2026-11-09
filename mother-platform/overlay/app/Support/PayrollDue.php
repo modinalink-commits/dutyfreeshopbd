@@ -30,7 +30,7 @@ class PayrollDue {
     $p = DB::table('payroll_entries')->where('id', $id)->first(); if (!$p) return;
     $ref = 'SAL-'.str_pad((string)$id, 6, '0', STR_PAD_LEFT);
     if ($p->status !== 'paid') { DB::table('account_entries')->where('reference', $ref)->delete(); DB::table('payroll_entries')->where('id', $id)->update(['entry_ref' => null]); return; }
-    $acc = $p->account_id ?: DB::table('money_accounts')->where('active', true)->whereRaw("lower(name) like '%brac%'")->value('id') ?: DB::table('money_accounts')->where('active', true)->where('type', 'bank')->orderBy('id')->value('id');
+    $acc = $p->account_id ?: DB::table('money_accounts')->where('active', true)->whereRaw("lower(name) = 'brac bank limited'")->value('id') ?: DB::table('money_accounts')->where('active', true)->whereRaw("lower(name) like '%brac%'")->orderByRaw("lower(name) like '%limited%' desc")->orderBy('id')->value('id') ?: DB::table('money_accounts')->where('active', true)->where('type', 'bank')->orderBy('id')->value('id');
     if (!$acc) return;
     $e = DB::table('employees')->where('id', $p->employee_id)->first();
     $row = ['reference' => $ref, 'direction' => 'expense', 'purpose_id' => \App\Support\RecurringExpense::purpose('Salary'), 'account_id' => $acc, 'amount' => $p->amount,
