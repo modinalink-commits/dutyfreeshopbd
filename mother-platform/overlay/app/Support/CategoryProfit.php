@@ -33,6 +33,7 @@ class CategoryProfit {
     $q = DB::table('order_items as i')->join('orders as o', 'o.id', '=', 'i.order_id')->leftJoin('products as p', 'p.id', '=', 'i.product_id')
       ->leftJoin('categories as c', 'c.id', '=', DB::raw('coalesce(i.cat_id, p.category_id)'))
       ->joinSub($og, 'og', 'og.order_id', '=', 'i.order_id')
+      ->when(self::hasInv(), fn($qq) => $qq->leftJoinSub(DB::table('pathao_invoice_lines')->selectRaw('consignment_id, max(fee) as fee')->where('fee', '>', 0)->groupBy('consignment_id'), 'pl', 'pl.consignment_id', '=', 'o.consignment_id'))
       ->whereDate('o.created_at', '>=', $f['from'])->whereDate('o.created_at', '<=', $f['to']);
     // delivered mode also keeps parcels that came back: their sale is reversed by the return, and the courier cost they cost us is still a parcel loss
     if ($f['status'] === 'delivered') $q->whereIn('o.status', ['Delivered', 'Returned', 'Return Pending']); else $q->whereNotIn('o.status', ['Cancelled', 'Canceled', 'Failed', 'Cancelled by Customer']);
@@ -54,14 +55,23 @@ class CategoryProfit {
   private const M = [
     'ret' => "(case when (FULL) then i.qty else least(i.qty, greatest(0, coalesce(i.ret_qty,0))) end)",
   ];
+  private static function hasInv(): bool { static $v = null; try { return $v ??= Schema::hasTable('pathao_invoice_lines') && Schema::hasColumn('pathao_invoice_lines', 'fee') && Schema::hasColumn('pathao_invoice_lines', 'consignment_id'); } catch (\Throwable $e) { return false; } }
+  private static function hasRet(): bool { static $v = null; try { return $v ??= Schema::hasColumn('orders', 'courier_return_fee'); } catch (\Throwable $e) { return false; } }
+  /** Courier cost of one parcel (the whole order), same order of rules as CourierBook::fee. */
+  public static function courierOrderSql(?float $flat = null, ?bool $inv = null, ?bool $ret = null): string {
+    $flat = $flat ?? max(0.0, (float)self::setting('pathao_flat_charge', '90')); $inv = $inv ?? self::hasInv(); $ret = $ret ?? self::hasRet();
+    $fee = ($inv ? 'nullif(pl.fee,0), ' : '') . "(case when coalesce(nullif(o.courier,''),'Pathao') = 'Pathao' and " . (float)$flat . " > 0 then " . (float)$flat . " else coalesce(o.courier_fee,0) end)";
+    $full = self::FULL_RET;
+    return "(case when coalesce(o.consignment_id::text,'') = '' then 0 else coalesce($fee) + (case when ($full) then " . ($ret ? 'coalesce(o.courier_return_fee,0)' : '0') . " else 0 end) end)";
+  }
   private static function agg(): string {
     $full = self::FULL_RET; $ret = str_replace('FULL', $full, self::M['ret']);
     $gross = '(i.price * i.qty)';
     $disc = "(case when ($full) then 0 else coalesce(o.discount,0) * $gross / nullif(og.g,0) end)";
     $retAmt = "(i.price * $ret)";
     $cogsKept = "(case when i.cogs is not null and i.qty > 0 then i.cogs * (i.qty - $ret) / i.qty else coalesce(p.cost,0) * (i.qty - $ret) end)";
-    // courier cost of the parcel (as in the Profit & Loss Statement: only parcels that have a consignment), spread over the order's lines by their share of the order gross
-    $cour = "(case when coalesce(o.consignment_id::text,'') <> '' then coalesce(o.courier_fee,0) * $gross / nullif(og.g,0) else 0 end)";
+    // parcel cost per order = the real Pathao payout-invoice fee, else the fixed Pathao charge (setting pathao_flat_charge), else the saved courier fee; a fully returned parcel also pays its return fee. Spread over the order's lines by their share of the order gross.
+    $cour = '(' . self::courierOrderSql() . " * $gross / nullif(og.g,0))";
     $cogsRet = "(case when i.cogs is not null and i.qty > 0 then i.cogs * $ret / i.qty else coalesce(p.cost,0) * $ret end)";
     return "count(distinct o.id) as orders, count(distinct case when o.status = 'Delivered' then o.id end) as delivered, sum(i.qty) as qty, sum($ret) as ret_qty,
       sum($gross) as gross, sum($disc) as disc, sum($retAmt) as ret_amt, sum($gross - $disc - $retAmt) as net, sum($cogsKept) as cogs, sum($cogsRet) as cogs_rev,
@@ -154,13 +164,18 @@ class CategoryProfit {
     $n = (clone self::lines($f))->count(); if ($n > 60000) return ['ok' => null, 'note' => 'Skipped: more than 60,000 lines in this range.'];
     $net = 0.0; $cogs = 0.0; $cour = 0.0;
     $og = [];
-    foreach (self::lines($f)->selectRaw('i.id as iid, i.order_id, i.qty, i.price, i.ret_qty, i.cogs, p.cost, o.status, o.return_type, o.discount, og.g, o.courier_fee, o.consignment_id')->orderBy('i.id')->cursor() as $x) {
+    foreach (self::lines($f)->selectRaw('i.id as iid, i.order_id, i.qty, i.price, i.ret_qty, i.cogs, p.cost, o.status, o.return_type, o.discount, og.g, o.courier_fee, o.consignment_id, o.courier, ' . (self::hasInv() ? 'pl.fee' : 'null') . ' as plfee, ' . (self::hasRet() ? 'o.courier_return_fee' : 'null') . ' as retfee')->orderBy('i.id')->cursor() as $x) {
       $full = in_array($x->status, ['Return Pending', 'Returned'], true) && ($x->return_type ?? '') !== 'Partial';
       $q0 = (int)$x->qty; $kept = $full ? 0 : max(0, $q0 - max(0, (int)$x->ret_qty));
       $b = ($x->cogs !== null && $q0 > 0) ? (float)$x->cogs * $kept / $q0 : (float)($x->cost ?? 0) * $kept;
       $gross = (float)$x->price * $q0; $disc = $full || (float)$x->g == 0.0 ? 0.0 : (float)$x->discount * $gross / (float)$x->g;
       $net += (float)$x->price * $kept - $disc; $cogs += $b;
-      if (!empty($x->consignment_id) && (float)$x->g != 0.0) $cour += (float)($x->courier_fee ?? 0) * $gross / (float)$x->g;
+      if (!empty($x->consignment_id) && (float)$x->g != 0.0) {
+        $flat = max(0.0, (float)self::setting('pathao_flat_charge', '90'));
+        $pc = (float)($x->plfee ?? 0) > 0 ? (float)$x->plfee : ((($x->courier ?: 'Pathao') === 'Pathao' && $flat > 0) ? $flat : (float)($x->courier_fee ?? 0));
+        if ($full) $pc += (float)($x->retfee ?? 0);
+        $cour += $pc * $gross / (float)$x->g;
+      }
     }
     $d = fn($a, $b) => abs($a - $b) <= 1.0;
     $ok = $d($net, $tot['net']) && $d($cogs, $tot['cogs']) && $d($net - $cogs, $tot['profit']) && $d($net - $cogs - $cour, $tot['net_profit']);

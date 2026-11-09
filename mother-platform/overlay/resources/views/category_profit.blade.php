@@ -49,7 +49,7 @@
 <div class="box noprint"><div class="tg" id="tg"></div><div id="chart" class="sub">Loading…</div></div>
 <div class="tw"><table><thead><tr id="hd"></tr></thead><tbody id="tb"><tr><td class="load" colspan="20">Loading…</td></tr></tbody></table></div>
 <div class="mc" id="mc"></div>
-<div class="sub" style="margin-top:8px" id="note">Net sales = gross − discount − return · Gross profit = net sales − FIFO COGS · Net profit = gross profit − courier cost (parcels with a consignment, spread over the order's lines) · Margin = gross profit ÷ net sales · Overall margin = total profit ÷ total sales (not an average of category margins). Order date is the basis. General expenses (rent, salary, marketing) are not deducted here. Delivery charge collected from customers is not added. Returned parcels are included: their sale is reversed and their courier cost stays as a loss.</div>
+<div class="sub" style="margin-top:8px" id="note">Net sales = gross − discount − return · Gross profit = net sales − FIFO COGS · Net profit = gross profit − courier cost (per parcel: the real Pathao payout-invoice fee, else the fixed Pathao charge from Courier settings; a returned parcel also pays its return fee; spread over the order's lines) · Margin = gross profit ÷ net sales · Overall margin = total profit ÷ total sales (not an average of category margins). Order date is the basis. General expenses (rent, salary, marketing) are not deducted here. Delivery charge collected from customers is not added. Returned parcels are included: their sale is reversed and their courier cost stays as a loss.</div>
 </div>
 <script>
 (function(){
