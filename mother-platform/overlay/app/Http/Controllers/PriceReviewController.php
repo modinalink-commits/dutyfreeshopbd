@@ -31,15 +31,16 @@ class PriceReviewController extends Controller {
     $qb = DB::table('products as p')->leftJoin('categories as c', 'c.id', '=', 'p.category_id')->selectRaw('p.id, p.sku, p.name, p.stock, p.price, p.published, p.cost as last_cost, '.\App\Support\Costing::avgSql('p').' as avg, '.\App\Support\Costing::fifoSql('p').' as fifo, '.\App\Support\Costing::fifoRawSql('p').' as fifo_raw, p.buy2_price, p.buy3_price, p.buy4_price, p.buy5_price, c.name as cat');
     if ($cat) $qb->where('p.category_id', $cat);
     if ($q !== '') { $like = '%' . $q . '%'; $qb->where(fn($w) => \App\Support\SkuSearch::orSku($w->where('p.name', 'ilike', $like)->orWhere('p.sku', 'ilike', $like), $q, 'p.sku')); }
-    $rows = []; $n = ['safe' => 0, 'near' => 0, 'below' => 0, 'none' => 0];
+    $rows = []; $n = ['safe' => 0, 'near' => 0, 'below' => 0, 'none' => 0, 'none_sold' => 0]; $sold = []; $soldAmt = 0.0;
+    try { foreach (DB::table('order_items as i')->join('orders as o', 'o.id', '=', 'i.order_id')->whereRaw(\App\Support\Analytics::VALID)->whereNotNull('i.product_id')->groupBy('i.product_id')->selectRaw('i.product_id as pid, sum(i.qty * i.price) as amt')->get() as $sx) $sold[(int)$sx->pid] = (float)$sx->amt; } catch (\Throwable $e) {}
     foreach ($qb->orderBy('p.name')->limit(6000)->get() as $x) {
       $cost = (float)$x->fifo; $pr = (float)$x->price; $worst = $pr; $bl = '—'; $bc = '#6B7280';
       foreach ([2, 3, 4, 5] as $kk) { $bp = (float)($x->{"buy{$kk}_price"} ?? 0); if ($bp > 0) $worst = min($worst, $bp / $kk); }
       if ($cost > 0 && $worst < $pr - 0.004) { [$bl, $bc] = \App\Support\ProfitFloor::state($cost, $worst); } elseif ($cost > 0) { $bl = 'No bundle'; }
       [$lab, $col] = \App\Support\ProfitFloor::state($cost, $pr); // overall status = the single sale price on the current FIFO batch cost (bundle tiers may sit on the 15% line by design; a bundle BELOW it still turns the status red)
       if ($cost > 0 && $worst < $pr - 0.004 && str_contains($bl, 'Below')) { $lab = $bl; $col = $bc; }
-      $k = $cost <= 0 ? 'none' : (str_contains($lab, 'Below') ? 'below' : (str_contains($lab, 'Near') ? 'near' : 'safe')); $n[$k]++;
-      if ($f !== '' && $f !== $k) continue;
+      $k = $cost <= 0 ? 'none' : (str_contains($lab, 'Below') ? 'below' : (str_contains($lab, 'Near') ? 'near' : 'safe')); $n[$k]++; $isNs = $k === 'none' && isset($sold[(int)$x->id]); if ($isNs) { $n['none_sold']++; $soldAmt += $sold[(int)$x->id]; }
+      if ($f === 'none_sold') { if (!$isNs) continue; } elseif ($f !== '' && $f !== $k) continue;
       $rows[] = ['id' => $x->id, 'sku' => $x->sku ?: $x->id, 'name' => $x->name, 'cat' => $x->cat ?: '-', 'stock' => (int)$x->stock, 'last' => (float)$x->last_cost, 'avg' => (float)$x->avg, 'fifo' => $cost, 'fifo_raw' => (float)$x->fifo_raw, 'price' => $pr, 'min' => $cost > 0 ? \App\Support\ProfitFloor::floor($cost) : 0, 'disc' => $cost > 0 ? max(0, $pr - \App\Support\ProfitFloor::floor($cost)) : 0, 'maxd' => $cost > 0 && $pr > 0 ? max(0, ($pr - \App\Support\ProfitFloor::floor($cost)) / $pr * 100) : null, 'profit' => $cost > 0 ? $pr - $cost : 0, 'pct' => $cost > 0 ? ($pr - $cost) / $cost * 100 : null, 'state' => $lab, 'col' => $col, 'bundle' => $bl, 'bcol' => $bc];
     }
     if ($r->query('export') === 'csv') {
@@ -48,7 +49,7 @@ class PriceReviewController extends Controller {
       rewind($o); return response("\xEF\xBB\xBF" . stream_get_contents($o), 200, ['Content-Type' => 'text/csv; charset=UTF-8', 'Content-Disposition' => 'attachment; filename="inventory-pricing.csv"']);
     }
     $total = count($rows); $per = 200; $page = max(1, min((int)ceil(max(1, $total) / $per), (int)$r->query('page', 1))); $rows = array_slice($rows, ($page - 1) * $per, $per); // 6000 rows at once froze the browser
-    return view('inventory_pricing', ['total' => $total, 'page' => $page, 'per' => $per, 'rows' => $rows, 'n' => $n, 'q' => $q, 'f' => $f, 'cat' => $cat, 'cats' => DB::table('categories')->orderBy('name')->get(['id', 'name']), 'mode' => \App\Support\Costing::shipMode(), 'adm' => \App\Support\ProfitFloor::admin(), 'batches' => \App\Support\Costing::ready()]);
+    return view('inventory_pricing', ['total' => $total, 'page' => $page, 'per' => $per, 'rows' => $rows, 'n' => $n, 'soldAmt' => $soldAmt, 'q' => $q, 'f' => $f, 'cat' => $cat, 'cats' => DB::table('categories')->orderBy('name')->get(['id', 'name']), 'mode' => \App\Support\Costing::shipMode(), 'adm' => \App\Support\ProfitFloor::admin(), 'batches' => \App\Support\Costing::ready()]);
   }
   /** Admin: how shipment treats an order that would sell below actual batch cost x 1.15. */
   public function shipMode(Request $r) {
