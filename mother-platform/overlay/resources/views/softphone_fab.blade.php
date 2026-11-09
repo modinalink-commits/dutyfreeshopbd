@@ -25,8 +25,11 @@ function show(n,x){mk(n,x);dock.classList.add('on');document.body.classList.add(
 function hide(){dock.classList.remove('on');document.body.classList.remove('dfp-open');sv(0)}
 function kill(){hide();sawCall=false;sumOpen=false;if(fr){fr.remove();fr=null}busy=false;edge.classList.remove('busy')}
 if(ch)ch.onmessage=function(m){var d=m.data||{};if(d.type==='here'&&!fr)popHere=true};
+var seq=0,acked={};
+/* reliable delivery into the embedded dialer: the iframe may still be loading right after a page change, so keep re-sending until it confirms (it ignores repeats) */
+function send(m){var id=(++seq)+'_'+Date.now(),t=0;m=Object.assign({dfcall:1,id:id},m);(function go(){if(!fr||acked[id]||t++>16)return;try{fr.contentWindow.postMessage(m,location.origin)}catch(e){}setTimeout(go,500)})()}
 window.dfCall=function(n,c){n=clean(n);c=c||{};var m={type:'call',n:n,o:c.order||'',cn:c.name||''};
- if(fr){show();if(ch)ch.postMessage(m);return false}
+ if(fr){show();send(m);if(ch)ch.postMessage(m);return false}
  popHere=false;if(ch)ch.postMessage({type:'ping'});
  setTimeout(function(){if(popHere&&ch){ch.postMessage(m)}else{show(n,{auto:1,o:c.order,cn:c.name})}},200);return false};
 edge.addEventListener('click',function(){show()});
@@ -34,6 +37,7 @@ function setSt(v){var b=v==='busy';edge.classList.toggle('st-busy',b);var t=docu
 try{fetch('/admin/call-center/my-status',{headers:{Accept:'application/json'},credentials:'same-origin'}).then(function(r){return r.json()}).then(function(j){if(j&&j.status)setSt(j.status)}).catch(function(){})}catch(e){}
 document.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('a[href^="tel:"],[data-dfcall]');if(!t||t.hasAttribute('onclick'))return;var n=t.getAttribute('data-dfcall')||t.getAttribute('href').slice(4);if(!clean(n))return;e.preventDefault();window.dfCall(n,{order:t.getAttribute('data-order')||'',name:t.getAttribute('data-name')||''})});
 window.addEventListener('message',function(e){if(e.origin!==location.origin||!e.data||!e.data.dfdial)return;var a=e.data.dfdial;
+ if(a==='callack'){acked[e.data.id]=1;return}
  if(a==='min')hide();
  else if(a==='close'){if(busy&&!confirm('A call is active. Close the dialer and hang up?'))return;kill()}
  else if(a==='pop'){var n=fr?'':'';kill();window.open('/admin/call-center/phone','dfphone','width=400,height=720')}

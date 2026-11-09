@@ -395,6 +395,7 @@ function chk(){if(inCall()||!cfg)return;getj('/admin/call-center/creds').then(fu
 document.addEventListener('visibilitychange',function(){if(!document.hidden)chk()});window.addEventListener('focus',chk);setInterval(chk,60000);
 setPhase('idle');ui();
 if($('num').value)found();
+(function(){var seen={};window.addEventListener('message',function(e){var d=e.data;if(e.origin!==location.origin||!d||!d.dfcall)return;try{parent.postMessage({dfdial:'callack',id:d.id},location.origin)}catch(x){}if(seen[d.id])return;seen[d.id]=1;window.focus();autoDial(d.n,d)})})();
 (function(){var q=new URLSearchParams(location.search);if(q.get('auto')==='1'&&q.get('n'))autoDial(q.get('n'),{o:q.get('o'),cn:q.get('cn')})})();
 if($('msg').textContent==='')connect();else badge('Disconnected','b-bad');
 })();
