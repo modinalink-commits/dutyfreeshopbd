@@ -208,7 +208,7 @@ class OrderRevisionController extends Controller {
       }
       if ($call) DB::table('call_logs')->where('id', $call)->update(['order_id'=>$o->id, 'updated_at'=>now()]);
       if ($sendSms && (DB::table('settings')->where('key', 'order_update_sms')->value('value') ?? '0') === '1' && $fresh->phone) {
-        try { \App\Support\Sms::queue(\App\Support\Chat::phone($fresh->phone) ?: $fresh->phone, 'DutyFreeBD: Your order '.$fresh->invoice.' has been updated. Updated payable amount: Tk '.number_format($c['total']).'. Our representative has confirmed the changes with you.', 'order_updated', ['order_id'=>$o->id]); DB::table('order_revisions')->where('id', $rid)->update(['sms_sent'=>true]); } catch (\Throwable $e) {}
+        try { \App\Support\Sms::queue(\App\Support\Chat::phone($fresh->phone) ?: $fresh->phone, 'DutyFreeBD: Order '.$fresh->invoice.' updated. New payable: Tk '.number_format($c['total']).'.', 'order_updated', ['order_id'=>$o->id]); DB::table('order_revisions')->where('id', $rid)->update(['sms_sent'=>true]); } catch (\Throwable $e) {}
       }
     });
   }

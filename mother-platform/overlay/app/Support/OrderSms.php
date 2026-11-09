@@ -5,17 +5,11 @@ use Illuminate\Support\Facades\DB;
 class OrderSms {
   private static function tk($n): string { return 'Tk '.number_format((float)$n, (float)$n == floor((float)$n) ? 0 : 2); }
   public static function build(object $o): string {
-    $ship = (float)$o->shipping; $disc = (float)($o->discount ?? 0); $sub = round((float)$o->total + $disc - $ship, 2);
-    $L = ['DutyFreeBD: Your Order '.Inv::show($o->invoice).' has been received.', 'Subtotal: '.self::tk($sub)];
-    if ($disc > 0) {
-      $t = trim((string)($o->discount_type ?? '')); if ($t === '' || $t === 'Manual Discount') $t = 'Discount'; $pct = $o->discount_pct ?? null;
-      $L[] = $t.': '.($pct !== null && (float)$pct > 0 ? rtrim(rtrim(number_format((float)$pct, 2), '0'), '.').'% ' : '').'(-'.self::tk($disc).')';
-      $L[] = 'You Saved: '.self::tk($disc);
-    }
-    if ($ship > 0) $L[] = 'Delivery: '.self::tk($ship);
-    $L[] = 'Payable: '.self::tk($o->total);
-    if (!empty($o->pay_status) && $o->pay_status === 'Verification Pending') $L[] = 'Payment verification is pending.';
-    $L[] = 'Our representative will contact you shortly for confirmation. Track: '.preg_replace('#^https?://#','',Inv::trackUrl($o->invoice));
+    $ship = (float)$o->shipping; $disc = (float)($o->discount ?? 0);
+    $L = ['DutyFreeBD: Order '.Inv::show($o->invoice).' received.'];
+    $L[] = 'Payable: '.self::tk($o->total).($disc > 0 ? ' (You saved '.self::tk($disc).')' : '').($ship > 0 ? ', incl. delivery '.self::tk($ship) : '');
+    if (!empty($o->pay_status) && $o->pay_status === 'Verification Pending') $L[] = 'Payment verification pending.';
+    $L[] = 'We will call you to confirm. Track: '.preg_replace('#^https?://#','',Inv::trackUrl($o->invoice));
     $L[] = 'Help: '.Biz::hotline();
     return implode("\n", $L);
   }
