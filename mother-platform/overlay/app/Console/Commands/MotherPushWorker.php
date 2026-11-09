@@ -41,6 +41,7 @@ class MotherPushWorker extends Command
     try { \App\Support\AiBrief::tick(); } catch (\Throwable $e) { $this->error('aibrief: ' . $e->getMessage()); }
     try { \App\Support\AiImageAuto::tick(); } catch (\Throwable $e) { $this->error('aiimg: ' . $e->getMessage()); }
     try { \App\Support\AiVerify::rerunStale(); } catch (\Throwable $e) { $this->error('aiverify: ' . $e->getMessage()); }
+    try { \App\Support\AiNudge::tick(); } catch (\Throwable $e) { $this->error('ainudge: ' . $e->getMessage()); }
     try { \App\Support\IncompleteNudge::tick(); } catch (\Throwable $e) { $this->error('incnudge: ' . $e->getMessage()); }
     try { \App\Support\Reorder::tick(); } catch (\Throwable $e) { $this->error('reorder: ' . $e->getMessage()); }
     try { \App\Support\RecurringExpense::tick(); } catch (\Throwable $e) { $this->error('recurring: ' . $e->getMessage()); }
