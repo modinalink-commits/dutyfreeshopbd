@@ -152,6 +152,7 @@ class ResController extends Controller {
     return back()->with('ok','Charge set for all districts');
   }
   public function index($slug, Request $r) {
+    if ($slug==='payroll' || $slug==='employees') \App\Support\PayrollDue::tick(); // current month's dues appear as soon as HR/Payroll is opened
     $c = $this->cfg($slug); $lk = $this->lookups($c);
     $rows = $this->query($c, $r)->paginate(\App\Support\Pg::per(50))->withQueryString();
     return view('res_list', ['c'=>$c,'rows'=>$rows,'lk'=>$lk,'sum'=>$this->summary($c),'ctl'=>$this,'ex'=>$this->extras($c,$rows)]);
