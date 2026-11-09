@@ -23,7 +23,7 @@ class CourierNote {
   /** @return array{text:string, source:string} source = Customer | Auto */
   public static function build(object $o): array {
     $c = trim((string)($o->note ?? ''));
-    if ($c !== '') return ['text'=>mb_substr(preg_match('/^(customer note|note)\s*:/i', $c) ? $c : 'Customer Note: '.$c, 0, self::MAX_API), 'source'=>'Customer'];
+    if ($c !== '') return ['text'=>mb_substr(preg_replace('/^\s*(customer note|note)\s*:\s*/iu', '', $c), 0, self::MAX_API), 'source'=>'Customer'];
     $f = self::flags($o);
     $t = ($f['urgent'] && $f['fragile']) ? self::BOTH : ($f['urgent'] ? self::URGENT : ($f['fragile'] ? self::FRAGILE : self::DEFAULT));
     return ['text'=>mb_strlen($t) > self::MAX_AUTO ? self::DEFAULT : $t, 'source'=>'Auto'];
