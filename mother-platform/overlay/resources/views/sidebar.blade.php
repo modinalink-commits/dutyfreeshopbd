@@ -91,11 +91,11 @@ aside .viewing{background:#243247;border-color:rgba(255,255,255,.08)}aside .view
 aside .sbs input{background:#243247;border-color:rgba(255,255,255,.08);color:#F8FAFC}aside .sbs input::placeholder{color:#9CA3AF}
 aside nav{scrollbar-color:#3B4A60 transparent}
 aside a.nv,aside details summary{color:#CBD5E1}aside a.nv svg,aside details summary svg{color:#9CA3AF;opacity:1}
-aside a.nv:hover,aside details summary:hover{background:#2B3A4F;color:#fff}aside a.nv:hover svg,aside details summary:hover svg{color:#FF6B1A}
-aside a.nv.on{background:#334155;color:#fff;box-shadow:inset 3px 0 0 #FF6B1A}aside a.nv.on svg{color:#FF6B1A}
+aside a.nv:hover,aside details summary:hover{background:#2B3A4F;color:#fff}aside a.nv:hover svg,aside details summary:hover svg{color:#FF5A00}
+aside a.nv.on{background:#334155;color:#fff;box-shadow:inset 3px 0 0 #FF5A00}aside a.nv.on svg{color:#FF5A00}
 aside details.mg[open]{background:#243247;border-radius:10px}aside details.mg[open]>summary{color:#F8FAFC}aside details.mg[open]>summary:hover{background:#2B3A4F}
 aside a.sub,aside details.rpg>summary{color:#CBD5E1}aside a.sub:hover,aside details.rpg>summary:hover{background:#2B3A4F;color:#fff}
-aside a.sub.on{background:#334155;color:#fff;box-shadow:inset 3px 0 0 #FF6B1A}
+aside a.sub.on{background:#334155;color:#fff;box-shadow:inset 3px 0 0 #FF5A00}
 aside .gh{color:#9CA3AF}aside .me{border-top-color:rgba(255,255,255,.08);color:#F8FAFC}</style>
 <style>/* white sidebar theme (final override) */
 aside{background:#fff;color:#0B1220;border-right:1px solid #E5E7EB;box-shadow:1px 0 4px rgba(0,0,0,.03);font-family:"Inter","Hind Siliguri","Segoe UI","Noto Sans Bengali",Arial,sans-serif}
@@ -129,7 +129,7 @@ aside.sbx .sbx-mo{display:inline-block;font-size:11px;font-weight:600;line-heigh
 aside.sbx .viewing{margin:0!important;border-radius:10px!important}
 aside.sbx .sbs{margin:0!important}
 aside.sbx .sbs input{background:#fff!important;border:1px solid #D1D5DB!important;border-radius:999px!important;padding:9px 14px!important;font-size:12.5px!important;color:#0B1220!important}
-aside.sbx .sbs input:focus{border-color:#2563EB!important;box-shadow:0 0 0 3px rgba(37,99,235,.15)!important;outline:0!important}
+aside.sbx .sbs input:focus{border-color:#1D5FA8!important;box-shadow:0 0 0 3px rgba(37,99,235,.15)!important;outline:0!important}
 aside.sbx nav{gap:10px!important;border-top:0!important;padding:0 6px 10px!important;margin:0 -6px!important;scrollbar-color:#CBD5E1 transparent}
 /* cards */
 aside.sbx nav>details.mg,aside.sbx nav>.sbx-ov{flex:none!important}
@@ -143,7 +143,7 @@ aside.sbx nav details.mg:not([open])>summary{border-bottom:0!important}
 aside.sbx nav details.mg>summary:hover{background:#CFDDF2!important;color:#172554!important}
 aside.sbx nav details.mg>summary::after{content:'›';position:absolute;right:12px;top:50%;margin-top:-10px;font-size:16px;line-height:20px;color:#1D5FA8!important;opacity:1;transition:transform .15s}
 aside.sbx nav details.mg[open]>summary::after{transform:rotate(90deg)}
-aside.sbx nav details.mg[open]>summary{background:#C9DAF3!important;color:#172554!important;box-shadow:inset 3px 0 0 #2563EB!important}
+aside.sbx nav details.mg[open]>summary{background:#C9DAF3!important;color:#172554!important;box-shadow:inset 3px 0 0 #1D5FA8!important}
 /* rows */
 aside.sbx nav a.nv,aside.sbx nav a.sub{display:flex!important;align-items:center;gap:10px!important;box-sizing:border-box;position:relative;min-height:36px!important;margin:0!important;padding:0 12px!important;background:#fff!important;color:#1F2937!important;border:0!important;border-top:1px solid #CBD3DF!important;border-radius:0!important;font-size:12.5px!important;font-weight:500!important;line-height:1.25;box-shadow:none!important;text-decoration:none}
 aside.sbx nav .sbx-oh+a.nv,aside.sbx nav details.mg>summary+a.sub{border-top:0!important}
@@ -152,7 +152,7 @@ aside.sbx nav a.nv svg,aside.sbx nav a.sub svg{width:16px!important;height:16px!
 aside.sbx nav a.nv span,aside.sbx nav a.sub .sl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 aside.sbx nav a.nv:hover,aside.sbx nav a.sub:hover{background:#F5F8FD!important;color:#0B1220!important}
 aside.sbx nav a.nv:hover svg,aside.sbx nav a.sub:hover svg{color:#1D5FA8!important}
-aside.sbx nav a.nv.on,aside.sbx nav a.sub.on{background:#EAF1FF!important;color:#1D5FA8!important;font-weight:600!important;box-shadow:inset 3px 0 0 #2563EB!important;border-left:0!important}
+aside.sbx nav a.nv.on,aside.sbx nav a.sub.on{background:#EAF1FF!important;color:#1D5FA8!important;font-weight:600!important;box-shadow:inset 3px 0 0 #1D5FA8!important;border-left:0!important}
 aside.sbx nav a.nv.on svg,aside.sbx nav a.sub.on svg{color:#1D5FA8!important}
 aside.sbx nav a.nv em,aside.sbx nav a.sub em{flex:none;margin-left:auto}
 /* sub-groups (Analytics, Products) inside a card */
@@ -164,7 +164,7 @@ aside.sbx nav details.rpg a.sub.on{padding-left:30px!important}
 aside.sbx nav details.mg>a.rp1,aside.sbx nav details.mg>a.sub.on{padding-left:12px!important}
 aside.sbx .gh{display:none}
 aside.sbx .me{background:transparent!important;border-top:1px solid #A9B4C4!important;color:#1F2937!important}
-aside.sbx .me button{border-color:#2563EB!important;color:#1D5FA8!important;background:#fff!important}aside.sbx .me button:hover{background:#EAF1FF!important}
+aside.sbx .me button{border-color:#1D5FA8!important;color:#1D5FA8!important;background:#fff!important}aside.sbx .me button:hover{background:#EAF1FF!important}
 </style>
 <style>/* one soft colour per top-level menu group (owner request, 6 Nov 2026): light tint, thin border, same weight; hover slightly deeper */
 aside.sbx nav details.mg[data-g="0"]>summary{background:#E0F2FE!important;color:#075985!important;border-bottom:1px solid #7DD3FC!important;box-shadow:inset 3px 0 0 #7DD3FC}aside.sbx nav details.mg[data-g="0"]>summary:hover{background:#BAE6FD!important;color:#075985!important}aside.sbx nav details.mg[data-g="0"][open]>summary{background:#BAE6FD!important}
