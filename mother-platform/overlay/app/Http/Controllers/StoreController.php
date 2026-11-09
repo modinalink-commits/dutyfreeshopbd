@@ -264,6 +264,10 @@ class StoreController extends Controller {
     return response()->json(['n'=>$live->count(), 'sig'=>md5(json_encode($live->map(fn($l) => [$l->pid, $l->created_at, $l->qty, $l->price])->all())), 'html'=>view('store.live_cards', ['live'=>$live])->render()])->header('Cache-Control','public, max-age=30');
   }
   private function liveOrders() {
+    $L = $this->liveOrdersRaw();
+    return \App\Support\CleanSite::on() ? $L->filter(fn($l) => \App\Support\CleanSite::keep((object)['category_id' => $l->pcat ?? null, 'name' => trim(($l->name ?? '').' '.($l->pname ?? '')), 'sub' => $l->psub ?? '', 'sub_sub' => $l->psubsub ?? '']))->values() : $L;
+  }
+  private function liveOrdersRaw() {
     return self::rem('store.live5', 60, fn() => DB::table('orders as o')->join('order_items as i','i.order_id','=','o.id')->leftJoin('products as p','p.id','=','i.product_id')->whereIn('o.status',['Approved','Packaging','Shipment','Partial Delivered','Delivered'])->where('o.created_at','>=',now()->subDays(7))
       ->select(DB::raw("'' as customer_name"),DB::raw("'' as district"),'o.shipping','o.created_at','i.name','i.qty','i.price','p.image','p.id as pid','p.ext_id','p.name as pname','p.category_id as pcat','p.sub as psub','p.sub_sub as psubsub','p.path_slug as pslug')->orderByDesc('o.id')->limit(6)->get()
       ->map(function ($r) { $r->masked = ''; return $r; }));
@@ -709,7 +713,7 @@ class StoreController extends Controller {
     return response()->view('store.missing', $this->base(['title'=>'পেজ পাওয়া যায়নি | DutyFree BD', 'desc'=>'', 'canon'=>url('/'), 'noindex'=>true]), 404);
   }
   public function sitemap() {
-    $xml = self::rem('store.sitemap14', 3600, function () {
+    $xml = self::rem('store.sitemap15', 3600, function () {
       $B = \App\Support\Domain::main(); $ul = fn($p) => $B.'/'.ltrim($p, '/'); /* sitemap always lists the main domain, whichever domain asked */
       $u = fn($loc, $img = null, $lm = null) => '<url><loc>'.e($loc).'</loc>'.($lm ? '<lastmod>'.date('c', strtotime((string)$lm)).'</lastmod>' : '').'<changefreq>daily</changefreq>'.($img ? '<image:image><image:loc>'.e(preg_match('#^https?://#i', (string)$img) ? $img : $B.'/'.ltrim((string)$img, '/')).'</image:loc></image:image>' : '').'</url>';
       $o = $u($ul('/'));
