@@ -6,7 +6,7 @@
   $types = ['fixed'=>'Fixed Expense','variable'=>'Recurring Variable','loan'=>'Loan Installment','payroll'=>'Payroll','subscription'=>'Subscription','utility'=>'Utility'];
   $freqs = ['monthly'=>'Monthly','weekly'=>'Weekly (day 1=Mon…7=Sun)','quarterly'=>'Quarterly','half_yearly'=>'Half-Yearly','yearly'=>'Yearly','custom'=>'Custom (every N months)'];
 @endphp
-<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px"><div style="flex:1;min-width:260px"><h1 style="margin:0">Recurring Fixed Expenses</h1><span style="font-size:13px;color:#6B7280">Set up once — posted automatically on the due day, missed days are recovered, each month posts only once. Cash/bank changes only when Auto Deduct is ON and the balance covers it.</span></div>
+<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px"><div style="flex:1;min-width:260px"><h1 style="margin:0">Recurring Fixed Expenses</h1><span style="font-size:13px;color:#6B7280">Set up once. Every month's bill appears in Upcoming — type the real amount, pick the payment date and account, then press Post. The amount is deducted from the account and written to Expense history.</span></div>
 @if($can)<form method="post" action="/admin/recurring-expenses/run">@csrf<button class="g" type="submit">Post due items now</button></form>@endif
 <a class="btn g" href="/admin/m/entries">Income &amp; Expenses</a></div>
 @if(session('ok'))<div class="card" style="color:#166534">{{ session('ok') }}</div>@endif @if(session('bad'))<div class="card err">{{ session('bad') }}</div>@endif @if($errors->any())<div class="card err">{{ $errors->first() }}</div>@endif
