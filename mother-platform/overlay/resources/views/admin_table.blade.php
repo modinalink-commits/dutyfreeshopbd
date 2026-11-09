@@ -159,7 +159,7 @@ main table .mc-dl{flex:0 0 38%;color:var(--text-muted);font-weight:600}main tabl
     });
   }
   /* H. fit to screen: when a plain table is wider than its box, hide the lowest-priority columns and give each row a small ▸ button that opens the hidden columns right under that row. No sideways scrolling, nothing removed, print shows everything. */
-  var KEEP=/^(status|state|actions?|total|amount|net sales|net profit|profit|name|product|customer|order|date|invoice|phone|price|payment)/i;
+  var KEEP_O=/^(status|action|total|customer|invoice|product)/i;var KEEP=/^(status|state|actions?|total|amount|net sales|net profit|profit|name|product|customer|order|date|invoice|phone|price|payment)/i;
   function fitInfo(tb){
     var head=tb.tHead&&tb.tHead.rows[0];if(!head)return null;var n=head.cells.length;if(n<5)return null;
     var rows=[].slice.call(tb.tBodies[0]?tb.tBodies[0].rows:[]);if(!rows.length)return null;
@@ -181,7 +181,7 @@ main table .mc-dl{flex:0 0 38%;color:var(--text-muted);font-weight:600}main tabl
     tb.__mcLab=lab;tb.__mcSet=set;
   }
   function fit(tb){
-    if(tb.closest('td')||tb.classList.contains('ordt')||tb.closest('[data-nogrid],[data-nofit]')||tb.hasAttribute('data-nofit'))return;
+    if(tb.closest('td')||tb.closest('[data-nogrid],[data-nofit]')||tb.hasAttribute('data-nofit'))return;
     var info=fitInfo(tb);if(!info)return;
     var p=tb.parentElement;if(!p)return;
     var set=[];setHidden(tb,info,set);
@@ -189,7 +189,7 @@ main table .mc-dl{flex:0 0 38%;color:var(--text-muted);font-weight:600}main tabl
     if(tb.offsetWidth<=avail+1){[].forEach.call(tb.querySelectorAll('.mc-x'),function(b){b.parentNode.classList.remove('mc-xc');b.remove()});tb.dataset.mcf='0';return}
     var cand=[];for(var i=info.n-1;i>=1;i--){
       var h=(info.head.cells[i].textContent||'').replace(/\s+/g,' ').trim();
-      if(KEEP.test(h)||h===''||colHasInput(info.rows,i))continue;cand.push(i);
+      if((tb.classList.contains('ordt')?KEEP_O:KEEP).test(h)||h===''||colHasInput(info.rows,i))continue;cand.push(i);
     }
     var minVis=4;
     for(var k=0;k<cand.length&&info.n-set.length>minVis;k++){
@@ -199,7 +199,7 @@ main table .mc-dl{flex:0 0 38%;color:var(--text-muted);font-weight:600}main tabl
     if(!set.length){tb.dataset.mcf='0';return}
     tb.dataset.mcf='1';addToggles(tb,info,set);
   }
-  function fitAll(){document.querySelectorAll('main table.mc-t').forEach(function(tb){
+  function fitAll(){document.querySelectorAll('main table.mc-t,main table.ordt').forEach(function(tb){
     if(tb.dataset.mcf==='1'){ /* new rows from an ajax refresh: re-apply the same hidden columns */
       var info=fitInfo(tb);if(info&&tb.__mcSet){setHidden(tb,info,tb.__mcSet);addToggles(tb,info,tb.__mcSet)}return}
     if(tb.dataset.mcf==='0'&&!tb.__mcRe)return;fit(tb);
@@ -231,7 +231,7 @@ main table .mc-dl{flex:0 0 38%;color:var(--text-muted);font-weight:600}main tabl
     });
   }
   function run(){try{normHead();tag();centre();fitAll();wrap();sbox();freeze();pageSize()}catch(e){}}
-  window.addEventListener('resize',function(){clearTimeout(window.__mcr);window.__mcr=setTimeout(function(){try{closeD();document.querySelectorAll('main table.mc-t').forEach(function(t){delete t.dataset.mcf});fitAll();freeze()}catch(e){}},150)});
+  window.addEventListener('resize',function(){clearTimeout(window.__mcr);window.__mcr=setTimeout(function(){try{closeD();document.querySelectorAll('main table.mc-t,main table.ordt').forEach(function(t){delete t.dataset.mcf});fitAll();freeze()}catch(e){}},150)});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run);else run();
   window.addEventListener('load',function(){try{document.querySelectorAll('main table.mc-t').forEach(function(t){if(t.dataset.mcf==='0')delete t.dataset.mcf})}catch(e){}run()});
   /* ajax-refreshed report bodies: re-apply */

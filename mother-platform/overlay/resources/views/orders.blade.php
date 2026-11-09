@@ -6,6 +6,7 @@
 .obk button{padding:5px 10px;font-size:12px}.obk select{height:30px;font-size:12px}.obk button{border:1.5px solid transparent!important;font-weight:600;border-radius:8px}.obk button:nth-of-type(1){background:#DBEAFE!important;color:#1E40AF!important;border-color:#2563EB!important}.obk button:nth-of-type(2){background:#DCFCE7!important;color:#166534!important;border-color:#16A34A!important}.obk button:nth-of-type(3){background:#FEF3C7!important;color:#92400E!important;border-color:#D97706!important}.obk button:nth-of-type(4){background:#EDE9FE!important;color:#5B21B6!important;border-color:#7C3AED!important}.obk button:hover{filter:brightness(.95)}
 #osel{font-size:12px;font-weight:700;color:#FF5A00}
 @media(max-width:800px){.oc{height:auto;min-height:0}.oc>form#bulk>.otw{max-height:70vh}}
+@media(max-width:1500px){table.ordt .ci{min-width:150px!important;max-width:200px!important}table.ordt .tcw{min-width:150px;max-width:170px}table.ordt .order-product{max-width:190px}table.ordt .order-product img{width:44px!important;height:44px!important}td.action-column{min-width:0}table.ordt th,table.ordt td{padding-left:6px!important;padding-right:6px!important}}
 .ocb form{margin:0}.ocb .r1{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .ocb .obc{display:flex;align-items:baseline;gap:10px;margin:0 0 4px;font-size:14px}.ocb .obc span{font-size:12px;color:#6B7280}.ocb h1{margin:0;font-size:17px}.ocb .dt{font-size:12px;color:#6B7280}
 .ocb input[type=date],.ocb input[type=time],.ocb select{width:auto;height:30px;padding:2px 6px;font-size:12px}

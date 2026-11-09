@@ -6,7 +6,7 @@ fe43f8b6cb422cca81ee18b74d3972f77e7852de database/migrations/2026_10_31_000001_m
 7c254b2b4b42ad9faa4dfc06544c469868f5035b resources/views/layout.blade.php
 2b227b5ab4047c9018760d3f3da2dc1c31b55cb1 resources/views/login.blade.php
 4f9c63c1d553a171eb063ecbdd0b9572f64a1692 resources/views/dashboard.blade.php
-122d45df47e28bacb915bb2ebfa56779c22f16e5 resources/views/orders.blade.php
+3c967ade1a9de11f50b9fff0a5990683c285eea1 resources/views/orders.blade.php
 f76f7611feff00df29656bfe6c9fdb5f1d36ba71 resources/views/admin/orders/partials/status-tabs.blade.php
 c7ea3d4ee955b7f2ae9f0ec689ce06ba077ea395 resources/views/admin/orders/partials/header-system.blade.php
 9252abc9590fb130352e6be1d6345ab7039e67a8 resources/views/order_new.blade.php
@@ -622,7 +622,7 @@ c44356a1ceb433ec63f5781230d1aeef871f115c app/Support/AiBrief.php
 937402430ab011a971b8d31b37ceee984d00ebec resources/views/ai_brief.blade.php
 3c1889cced51aee6cbfcc96dcb506218883f2bc3 app/Support/DeployHealth.php
 a33b792d41ca0175c19dc468c4636ac4a8877ff6 database/migrations/2026_11_05_000090_deploy_center_v2.php
-f07aafdb48643b5dee327ddc331a7fc5407f9296 resources/views/admin_table.blade.php
+51a05405c8cf01cd16233ba648fe3aa98c47e3b8 resources/views/admin_table.blade.php
 68f645c6b6ff12e25c54b13d4ed119e631dcbb26 public/fonts/inter-latin-400-normal.woff2
 6b66c741bf8bc3ce248af04b2051a648a38391d6 public/fonts/inter-latin-500-normal.woff2
 e0d61f6dc511d64a072b2f4dc94e155ecf1bb6f6 public/fonts/inter-latin-600-normal.woff2
