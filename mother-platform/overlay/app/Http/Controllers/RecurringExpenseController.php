@@ -18,7 +18,7 @@ class RecurringExpenseController extends Controller {
       ->get(['i.*', 'm.name', 'm.category', 'm.expense_type', 'm.is_loan']);
     $month = $inst->filter(fn($x) => $x->due_date >= $m0->toDateString() && $x->due_date <= $m1->toDateString());
     $upcoming = [];
-    foreach ($masters->where('status', 'active') as $m) foreach (R::occurrences($m, $today, $today->copy()->addDays(45)) as [$p, $d]) {
+    foreach ($masters->where('status', 'active') as $m) foreach (R::occurrences($m, \Carbon\Carbon::parse($m->start_date)->max(\Carbon\Carbon::parse($m->created_at)->setTimezone('Asia/Dhaka')->startOfMonth()), $today->copy()->addDays(45)) as [$p, $d]) {
       if (DB::table('recurring_expense_instances')->where('recurring_id', $m->id)->where('billing_period', $p)->exists()) continue;
       [$a] = R::amountOn($m, $d); $upcoming[] = (object)['mid' => $m->id, 'period' => $p, 'acc' => $m->account_id, 'name' => $m->name, 'category' => $m->category, 'due' => $d, 'amount' => $m->is_loan ? ($m->principal + $m->interest + $m->fee ?: $a) : $a, 'auto' => $m->auto_post, 'type' => $m->expense_type];
     }
@@ -74,22 +74,40 @@ class RecurringExpenseController extends Controller {
     $acc = (int)($r->input('account_id') ?: $i->account_id ?: $m->account_id);
     if (!$m->is_loan && is_numeric($r->input('amount')) && (float)$r->input('amount') > 0) DB::table('recurring_expense_instances')->where('id', $iid)->update(['amount' => (float)$r->input('amount'), 'updated_at' => now()]); // the real bill amount typed for this month
     DB::table('recurring_expense_instances')->where('id', $iid)->update(['status' => $i->status === 'due' ? 'posted' : $i->status, 'posted_at' => $i->posted_at ?: now()]);
-    [$ok, $msg] = R::settle(DB::table('recurring_expense_instances')->find($iid), $m, $acc, Auth::user()->name, true);
+    [$ok, $msg] = R::settle(DB::table('recurring_expense_instances')->find($iid), $m, $acc, Auth::user()->name, true, $r->filled('date') ? $r->validate(['date' => 'date'])['date'] : null);
     if (!$ok) DB::table('recurring_expense_instances')->where('id', $iid)->update(['payment_status' => 'failed', 'note' => $msg]);
     return back()->with($ok ? 'ok' : 'bad', $ok ? 'Paid from the account.' : 'Not paid: '.$msg);
   }
   /** Pay an upcoming period straight from the list: creates that period's item and pays it from the chosen account (booked in the item's own month). */
   public function payUpcoming(Request $r, $id) {
-    $this->chk('edit'); $d = $r->validate(['period' => 'required|string|max:20', 'due' => 'required|date', 'account_id' => 'nullable|integer']);
+    $this->chk('edit'); $d = $r->validate(['period' => 'required|string|max:20', 'due' => 'required|date', 'account_id' => 'nullable|integer', 'date' => 'nullable|date']);
     $m = DB::table('recurring_expenses')->find($id); abort_unless($m, 404);
     R::post($m, $d['period'], $d['due']);
     $i = DB::table('recurring_expense_instances')->where('recurring_id', $m->id)->where('billing_period', $d['period'])->first(); abort_unless($i, 404);
     $acc = (int)($d['account_id'] ?? 0) ?: (int)($i->account_id ?: $m->account_id);
     if (!$m->is_loan && is_numeric($r->input('amount')) && (float)$r->input('amount') > 0) DB::table('recurring_expense_instances')->where('id', $i->id)->update(['amount' => (float)$r->input('amount'), 'updated_at' => now()]);
     DB::table('recurring_expense_instances')->where('id', $i->id)->update(['status' => $i->status === 'due' ? 'posted' : $i->status, 'posted_at' => $i->posted_at ?: now()]);
-    [$ok, $msg] = R::settle(DB::table('recurring_expense_instances')->find($i->id), $m, $acc, Auth::user()->name, true);
+    [$ok, $msg] = R::settle(DB::table('recurring_expense_instances')->find($i->id), $m, $acc, Auth::user()->name, true, $d['date'] ?? null);
     if (!$ok) DB::table('recurring_expense_instances')->where('id', $i->id)->update(['payment_status' => 'failed', 'note' => $msg]);
     return back()->with($ok ? 'ok' : 'bad', $ok ? 'Paid from the account.' : 'Not paid: '.$msg);
+  }
+  /** Edit a posted item: real amount, payment date and account. The ledger entry (expense history / account balance) is updated with it. */
+  public function editInstance(Request $r, $iid) {
+    $this->chk('edit'); $i = DB::table('recurring_expense_instances')->find($iid); abort_unless($i, 404);
+    $d = $r->validate(['amount' => 'required|numeric|min:0', 'date' => 'required|date', 'account_id' => 'required|integer']);
+    DB::table('recurring_expense_instances')->where('id', $iid)->update(['amount' => $d['amount'], 'account_id' => $d['account_id'], 'paid_at' => $i->payment_status === 'paid' ? \Carbon\Carbon::parse($d['date'])->startOfDay()->addHours(6) : $i->paid_at, 'updated_at' => now()]);
+    if ($i->entry_ref) DB::table('account_entries')->where('reference', $i->entry_ref)->update(['amount' => $d['amount'], 'entry_date' => $d['date'], 'account_id' => $d['account_id'], 'updated_at' => now()]);
+    try { DB::table('audit_logs')->insert(['user_name' => Auth::user()->name, 'action' => 'recurring.edit', 'subject' => '#'.$iid.' amount '.$d['amount'].' date '.$d['date'], 'ip' => null, 'created_at' => now(), 'updated_at' => now()]); } catch (\Throwable $e) {}
+    return back()->with('ok', 'Updated (ledger entry updated too).');
+  }
+  /** Delete a posted item: its ledger expense is removed (balance goes back) and the item leaves the history; the period returns to Upcoming so it can be posted again. */
+  public function deleteInstance(Request $r, $iid) {
+    $this->chk('edit'); $i = DB::table('recurring_expense_instances')->find($iid); abort_unless($i, 404); $m = DB::table('recurring_expenses')->find($i->recurring_id);
+    if ($i->entry_ref) DB::table('account_entries')->where('reference', $i->entry_ref)->delete();
+    if ($i->payment_status === 'paid' && $m && $m->is_loan && $i->principal > 0) DB::table('recurring_expenses')->where('id', $m->id)->update(['remaining_balance' => DB::raw('coalesce(remaining_balance,0) + '.(float)$i->principal)]);
+    DB::table('recurring_expense_instances')->where('id', $iid)->delete();
+    try { DB::table('audit_logs')->insert(['user_name' => Auth::user()->name, 'action' => 'recurring.delete', 'subject' => '#'.$iid.' '.($m->name ?? '').' '.$i->billing_period, 'ip' => null, 'created_at' => now(), 'updated_at' => now()]); } catch (\Throwable $e) {}
+    return back()->with('ok', 'Deleted. The period is back in Upcoming.');
   }
   public function skip(Request $r, $iid) {
     $this->chk('edit'); $i = DB::table('recurring_expense_instances')->find($iid); abort_unless($i && $i->payment_status !== 'paid', 404);

@@ -44,15 +44,15 @@ class RecurringExpense {
     return $id ? (int)$id : (int)DB::table('expense_purposes')->insertGetId(['name' => $category, 'is_expense' => true, 'created_at' => now(), 'updated_at' => now()]);
   }
   /** Take the money out of the account (one ledger expense entry for the full amount). Returns [ok, message]. */
-  public static function settle(object $i, object $m, int $accId, string $by, bool $force = false): array {
+  public static function settle(object $i, object $m, int $accId, string $by, bool $force = false, ?string $date = null): array {
     if ($i->payment_status === 'paid') return [true, 'already paid'];
     if (!DB::table('money_accounts')->where('id', $accId)->exists()) return [false, 'No payment account'];
     if (!$force && self::balance($accId) + 0.005 < (float)$i->amount) return [false, 'Insufficient balance'];
     $ref = 'REC-'.$m->id.'-'.Carbon::parse($i->billing_period)->format('Ymd');
     DB::table('account_entries')->insertOrIgnore(['reference' => $ref, 'direction' => 'expense', 'purpose_id' => self::purpose($m->category), 'account_id' => $accId, 'amount' => $i->amount,
       'comment' => $m->name.' · '.Carbon::parse($i->billing_period)->format('M Y').($m->is_loan ? ' · principal ৳'.number_format($i->principal, 2).' + interest ৳'.number_format($i->interest, 2).' + fee ৳'.number_format($i->fee, 2) : ''),
-      'entry_date' => (Carbon::parse($i->due_date)->lte(self::today()) ? Carbon::parse($i->due_date) : self::today())->toDateString(), 'user_name' => $by, 'created_at' => now(), 'updated_at' => now()]);
-    DB::table('recurring_expense_instances')->where('id', $i->id)->update(['payment_status' => 'paid', 'account_id' => $accId, 'entry_ref' => $ref, 'paid_at' => now(), 'note' => null, 'updated_at' => now()]);
+      'entry_date' => $date ?: (Carbon::parse($i->due_date)->lte(self::today()) ? Carbon::parse($i->due_date) : self::today())->toDateString(), 'user_name' => $by, 'created_at' => now(), 'updated_at' => now()]);
+    DB::table('recurring_expense_instances')->where('id', $i->id)->update(['payment_status' => 'paid', 'account_id' => $accId, 'entry_ref' => $ref, 'paid_at' => $date ? Carbon::parse($date)->setTimezone('UTC')->startOfDay()->addHours(6) : now(), 'note' => null, 'updated_at' => now()]);
     if ($m->is_loan && $i->principal > 0) DB::table('recurring_expenses')->where('id', $m->id)->update(['remaining_balance' => DB::raw('greatest(coalesce(remaining_balance,0) - '.(float)$i->principal.', 0)')]);
     return [true, 'paid'];
   }

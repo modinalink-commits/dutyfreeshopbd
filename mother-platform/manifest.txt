@@ -926,3 +926,5 @@ database/migrations/2026_11_09_215000_payroll_ledger_columns.php
 resources/views/payroll_sheet.blade.php
 database/migrations/2026_11_09_220000_payroll_deduction.php
 database/migrations/2026_11_09_223000_recurring_use_brac_limited.php
+database/migrations/2026_11_09_224000_recurring_manual_posting.php
+database/migrations/2026_11_09_230000_merge_duplicate_money_accounts.php
