@@ -6,7 +6,7 @@ fe43f8b6cb422cca81ee18b74d3972f77e7852de database/migrations/2026_10_31_000001_m
 af5aa7ccaf507024092d6f89ac0cecdef43d661a resources/views/layout.blade.php
 2b227b5ab4047c9018760d3f3da2dc1c31b55cb1 resources/views/login.blade.php
 4f9c63c1d553a171eb063ecbdd0b9572f64a1692 resources/views/dashboard.blade.php
-32c8523c56e3db792605faf1a3927e31d3882db7 resources/views/orders.blade.php
+1cd2ce14224d0b42148d680e905be20f46783dad resources/views/orders.blade.php
 b816a0df6dc93edf4202866b05638c10081638ca resources/views/admin/orders/partials/status-tabs.blade.php
 c7ea3d4ee955b7f2ae9f0ec689ce06ba077ea395 resources/views/admin/orders/partials/header-system.blade.php
 8a3929eabd7ad76546ef31e20f36eabcb3a9e632 resources/views/order_new.blade.php
