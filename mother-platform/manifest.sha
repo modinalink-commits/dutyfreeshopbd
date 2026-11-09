@@ -1,5 +1,5 @@
 fe43f8b6cb422cca81ee18b74d3972f77e7852de database/migrations/2026_10_31_000001_mother_core.php
-905434515140fd37d0f4d78c8676fd71ff2a8961 routes/web.php
+782ffdd98974b0e79b5bfa98a5ede83f903eae07 routes/web.php
 46ac6330ace84450b442d0d57c5c06f20c41f945 app/Models/Mother.php
 55586b66fb71e5f741bcaafa0f3eb4ef37074899 app/Http/Controllers/AdminController.php
 242316b2ef0a0967e6815e39fcbc7377349fdc17 app/Console/Commands/MotherInstall.php
@@ -30,7 +30,7 @@ fc3568db08725a38056a08be87cb325d92aebb5f database/migrations/2026_10_31_000003_a
 90031b22cae57971a0c16629dd80f61a4ae4358c resources/views/res_list.blade.php
 fb3fe4d17e4370d1184f5daebfa07e5a3423a33a resources/views/res_form.blade.php
 67a76a09307002f6201cc2e684f3161b22c67d9c resources/views/reports.blade.php
-43159fc68e91cd090c7fee0be84ed42c7281d196 resources/views/sidebar.blade.php
+829ef1c0a0411ca99f53c8cb4681d19e89b15087 resources/views/sidebar.blade.php
 85962752c1c36393879cd52b485c2495742f15f0 resources/views/coming.blade.php
 c391e719e9e194b7bf6ecf86ccb4c9a4504c2d17 database/migrations/2026_10_31_000004_catalog_extra.php
 bd753699bbd209d243e7e4b2b82c37d322444553 resources/views/panels/customers.blade.php
@@ -42,7 +42,7 @@ c25a13956ea9946159b80572e41bd26d65050c7a resources/views/panels/accounts.blade.p
 1cb9863e39bdf894fc9136ae20d93aea9105a087 resources/views/panels/stock-log.blade.php
 79ed8abea4ae4de5a7bda7f5898cddb7028deefd app/Http/Controllers/SiteController.php
 83f7d91e3943f758a5cc593ff2b2c3f4a34c500e resources/views/site.blade.php
-906ced50ae612bcaa14a63f704b81e53c8734c86 app/Http/Middleware/ModulePermission.php
+affa9f5fcf5d3b38bad3d039e31830ab5435f430 app/Http/Middleware/ModulePermission.php
 df85a1f19b3129d847e30c8dab6ea00fbc2e8101 app/Http/Controllers/PermissionController.php
 6ddfaf6350e5c8865b0eec5c6c7b0ba4a0f12e20 resources/views/permissions.blade.php
 d787924ace3fa42cc66a3de321e4e94e784006d8 resources/views/panels/employees.blade.php
@@ -913,6 +913,3 @@ fc0b5eb8d512ba62f1c644a039550fad190df29c public/banners/hero-offers-m.webp
 635238ad8150817134b38b0f1f63f18783eb00c9 public/banners/hero-offers.webp
 169f8c3eb68ae1a8091b16ad467eba5dcbf90a5d public/banners/hero-watch-m.webp
 93f40b4d6d09a98d82a5e3e31a41e60cd4807053 public/banners/hero-watch.webp
-3b66fe345b9cadcca6b3d1b013dbd3552c35e6bd app/Http/Controllers/AdVideoController.php
-1d912d54623539a8b2746b669de3c7e0862abe4f resources/views/ad_video.blade.php
-00791eee0bc4a3e2187fdd4038e5122ac86f4237 public/ad-audio/offer-voice.mp3

@@ -914,6 +914,3 @@ public/banners/hero-offers-m.webp
 public/banners/hero-offers.webp
 public/banners/hero-watch-m.webp
 public/banners/hero-watch.webp
-app/Http/Controllers/AdVideoController.php
-resources/views/ad_video.blade.php
-public/ad-audio/offer-voice.mp3
