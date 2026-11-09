@@ -88,7 +88,9 @@ class AiAgent {
   public static function replyThread(int $tid, array $hist, int $lastId, string $lastText): ?string {
     $t = DB::table('chat_threads')->find($tid); if (!$t) return null;
     $st = $t->ai_state ? (json_decode($t->ai_state, true) ?: []) : [];
-    $st['lang_override'] = (string)($t->ai_lang ?? ''); if ($st['lang_override'] === '' && preg_match('/[\x{0980}-\x{09FF}]/u', $lastText)) $st['lang_override'] = 'bangla'; // hard rule: a message typed in Bengali script is always answered in Bengali script (staff setting still wins) $st['chat_phone'] = (string)($t->phone ?? ''); try { $st['voice_in'] = $lastId > 0 && DB::table('chat_messages')->where('id', $lastId)->value('input_type') === 'voice'; } catch (\Throwable $e) { $st['voice_in'] = false; } $ctx = ['thread_id'=>$tid, 'customer_id'=>$t->customer_id, 'last_msg_id'=>$lastId, 'last_msg_text'=>$lastText];
+    $st['lang_override'] = (string)($t->ai_lang ?? ''); if ($st['lang_override'] === '' && preg_match('/[\x{0980}-\x{09FF}]/u', $lastText)) $st['lang_override'] = 'bangla';
+    // hard rule above: a message typed in Bengali script is always answered in Bengali script (staff setting still wins)
+    $st['chat_phone'] = (string)($t->phone ?? ''); try { $st['voice_in'] = $lastId > 0 && DB::table('chat_messages')->where('id', $lastId)->value('input_type') === 'voice'; } catch (\Throwable $e) { $st['voice_in'] = false; } $ctx = ['thread_id'=>$tid, 'customer_id'=>$t->customer_id, 'last_msg_id'=>$lastId, 'last_msg_text'=>$lastText];
     unset($st['meta']['lang']); // counted once per answer
     $st['mem'] = AiMemory::prompt($tid);
     [$ok, $txt] = self::converse($hist, $st, $ctx); if (!$ok) return null;
