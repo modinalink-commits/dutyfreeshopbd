@@ -203,6 +203,21 @@ table.ordt .tc-cod{display:flex;align-items:center;flex-wrap:wrap;gap:2px 7px;pa
 table.ordt .tc-cod svg{flex:none}table.ordt .tc-cod b{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;color:#166534}table.ordt .tc-cod small{font-size:11px;font-weight:400;color:#4B6B57}
 table.ordt .tc-pd{margin-top:4px;font-size:11px;font-weight:700;line-height:1.3}table.ordt .tc-pd-ok{color:#166534}table.ordt .tc-pd-part{color:#B45309}
 table.ordt .tc-ship{margin-top:4px;font-size:12px;font-weight:700;color:#4B5563}
+/* simple open layout (no boxes/icons): total, dotted discount lines, green COD */
+table.ordt .tc-amt{font-size:17px;margin:0 0 3px}
+table.ordt .tc-dc{border:0;background:none;border-radius:0;overflow:visible}
+table.ordt .tc-dh,table.ordt .tc-di{display:none}
+table.ordt .tc-dl{padding:0}
+table.ordt .tc-dr{min-height:18px;padding:0;gap:6px;font-size:12px;color:#374151}
+table.ordt .tc-dr::before{display:none}
+table.ordt .tc-dr .tc-dn{order:1;flex:0 1 auto;-webkit-line-clamp:1}
+table.ordt .tc-dr::after,table.ordt .tc-dr:not(:last-child)::after{content:"";order:2;flex:1;position:static;border:0;border-bottom:1px dotted #9CA3AF;transform:translateY(-3px);min-width:10px}
+table.ordt .tc-dr:not(:has(b))::after{display:none}
+table.ordt .tc-dr b{order:3}
+table.ordt .tc-sep{border-top:1px solid #E5E7EB;margin:4px 0}
+table.ordt .tc-cod{border:0;background:none;padding:2px 0;border-radius:0}
+table.ordt .tc-cod svg{display:none}
+table.ordt .tc-cod b{font-size:14.5px}
 table.ordt td.crc .crk svg{width:13px;height:13px;flex:none}
 table.ordt td.crc .crn,table.ordt td.crc .crs,table.ordt td.crc .crk{width:164px!important;min-width:164px!important;max-width:164px!important;height:26px!important;box-sizing:border-box!important}
 table.ordt td.crc .crn{justify-content:space-between}
