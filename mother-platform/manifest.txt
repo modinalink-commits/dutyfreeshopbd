@@ -901,3 +901,16 @@ database/migrations/2026_11_09_070000_bust_home_cache.php
 database/migrations/2026_11_09_080000_bust_hero_switches.php
 app/Support/AiNudge.php
 app/Support/CleanSite.php
+database/migrations/2026_11_09_150000_hero_builtin_to_custom.php
+public/banners/hero-district-m.webp
+public/banners/hero-district.webp
+public/banners/hero-flash-m.webp
+public/banners/hero-flash.webp
+public/banners/hero-globe-m.webp
+public/banners/hero-globe.webp
+public/banners/hero-member-m.webp
+public/banners/hero-member.webp
+public/banners/hero-offers-m.webp
+public/banners/hero-offers.webp
+public/banners/hero-watch-m.webp
+public/banners/hero-watch.webp
