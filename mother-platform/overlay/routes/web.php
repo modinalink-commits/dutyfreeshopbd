@@ -526,6 +526,7 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestF
   Route::post('/api/pbx/voice-offer/webhook', [\App\Http\Controllers\VoiceCampaignController::class,'hook'])->middleware('throttle:120,1');
   Route::post('/webhooks/voice', [\App\Http\Controllers\VoiceCampaignController::class,'hook'])->middleware('throttle:120,1');
   Route::get('/voice-audio/{id}.{ext}', [\App\Http\Controllers\VoiceCampaignController::class,'audio'])->whereNumber('id')->middleware('throttle:120,1');
+  Route::get('/voice-audio/{id}-{t}.{ext}', [\App\Http\Controllers\VoiceCampaignController::class,'audio'])->whereNumber('id')->where('t','[A-Za-z0-9]+')->middleware('throttle:120,1');
   Route::post('/webhooks/pathao', [\App\Http\Controllers\CourierController::class,'webhook'])->middleware('throttle:120,1');
   Route::post('/api/pathao-webhook', [\App\Http\Controllers\CourierController::class,'webhook'])->middleware('throttle:120,1'); // callback URL already registered in the Pathao panel (old site path)
   Route::post('/webhooks/steadfast', [\App\Http\Controllers\SteadfastController::class,'webhook'])->middleware('throttle:120,1');

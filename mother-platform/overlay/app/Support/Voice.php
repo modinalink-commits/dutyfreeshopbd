@@ -140,7 +140,7 @@ class Voice
     if (!empty($c->pbx_audio) && !$pp) return ['failed', 'The PBX recording name is not valid, or the PBX recordings folder is not set in Voice settings.', ''];
     if ($pp) { $f = null; $err = ''; } else { [$f, $err] = self::audio($c, $row); if (!$f) return ['failed', $err, '']; }
     $id = (int)($row->id ?? 0); $uuid = self::uuid();
-    if ($pp) $url = $pp; else { $aid = self::audioId($f); $url = self::baseUrl() . '/voice-audio/' . $aid . '.' . strtolower(pathinfo($f, PATHINFO_EXTENSION)) . '?t=' . self::audioToken((int)$aid); self::linkAudio($aid, $f); }
+    if ($pp) $url = $pp; else { $aid = self::audioId($f); $url = self::baseUrl() . '/voice-audio/' . $aid . '-' . self::audioToken((int)$aid) . '.' . strtolower(pathinfo($f, PATHINFO_EXTENSION)); self::linkAudio($aid, $f); }
     $var = ["origination_uuid=$uuid", 'origination_caller_id_number=' . (self::set('caller_id') ?: '0000'), 'origination_caller_id_name=DutyFreeBD', 'originate_timeout=' . (int)self::set('ring_timeout', '30'), 'ignore_early_media=true',
       "vc_id=$id", "vc_audio='$url'", "vc_hook='" . self::baseUrl() . '/webhooks/voice?k=' . self::hookToken() . "'", 'vc_dtmf=' . ($c->dtmf_on ? '1' : '0'), 'vc_agent=' . (self::set('agent_ext') ?: '101'), 'vc_rec=' . self::recName($id, $row->phone, $uuid)];
     if (self::set('direct', '0') === '1' && $pp) { // an audio file already on the PBX (Recordings page): play it straight into the call, no dialplan, no download

@@ -99,8 +99,8 @@ class VoiceCampaignController extends Controller
     return response()->json(['ok' => true, 'url' => V::publicUrl($f), 'ext' => strtolower(pathinfo($f, PATHINFO_EXTENSION))]);
   }
   /** Public: the PBX downloads the personalised audio for the call. */
-  public function audio(Request $r, $id) {
-    if (!hash_equals(V::audioToken((int)$id), (string)$r->query('t'))) abort(403); $f = V::audioFile((int)$id); if (!$f) abort(404);
+  public function audio(Request $r, $id, $t = null) {
+    if (!hash_equals(V::audioToken((int)$id), (string)($t ?? $r->query('t')))) abort(403); $f = V::audioFile((int)$id); if (!$f) abort(404);
     return response()->file($f, ['Content-Type' => str_ends_with($f, '.mp3') ? 'audio/mpeg' : 'audio/wav', 'Cache-Control' => 'private, max-age=600', 'Access-Control-Allow-Origin' => '*']);
   }
 }
