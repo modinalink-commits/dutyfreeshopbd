@@ -66,6 +66,17 @@ body,button,input,textarea,select{font-family:Inter,"Noto Sans Bengali","Segoe U
 .stsel{max-width:none;font-size:15px;font-weight:700;padding:7px 12px;border-radius:18px}.stsel.st-available{background:#16A34A}
 .badge{font-size:15px;font-weight:700;padding:5px 12px;border-radius:16px}.badge.b-ok{background:rgba(34,197,94,.18);color:#4ADE80}
 .tabs{padding:0;background:#fff}.tabs button{font-size:16px;font-weight:600;color:#4B5563;padding:12px 2px;border-radius:0}.tabs button.on{color:#FF6600;font-weight:700;background:#FFF4EA;border-bottom-color:#FF6600}.tabs button svg{width:17px;height:17px;margin-right:6px;vertical-align:-3px}
+/* compact active-call panel: everything fits the popup without up/down scrolling */
+#tp-act{padding:8px 10px;gap:5px}#aBox{gap:5px!important}
+#tp-act .cidr{font-size:11px}#tp-act .actb{padding:1px 8px}
+#tp-act .wv{height:18px;border-radius:9px}#tp-act .wv.on i{animation-name:wvc}@keyframes wvc{0%,100%{height:4px}50%{height:13px}}
+#tp-act .act{padding:0}#tp-act .act .av{width:34px;height:34px;font-size:15px;margin:0 auto 2px}#tp-act .act .nm{font-size:15px;line-height:1.2}#tp-act .act .ph1{margin-top:0;font-size:12.5px}#tp-act .act .as{margin-top:2px;font-size:12px}#tp-act .act .at{font-size:22px;margin-top:0;line-height:1.15}
+#tp-act .card2{padding:4px 8px;font-size:11.5px}#tp-act .card2 .r{padding:1px 0}
+#tp-act .qa{gap:5px}#tp-act .qa a{padding:5px;font-size:12px}
+#tp-act .ctl{gap:5px}#tp-act .ctl button{padding:4px 2px;font-size:11px;gap:0}#tp-act .ctl button i{font-size:14px}
+#tp-act .go.big{height:38px;font-size:14px}
+#tp-act .msg{min-height:0;font-size:11px}
+#tp-act .cn{padding:6px 8px;border-radius:10px}#tp-act .cnh{font-size:12px;margin-bottom:3px}#tp-act .cn textarea{height:38px;padding:5px 7px;border-radius:8px}#tp-act .cnb{margin-top:3px}#tp-act .cnb button{padding:4px 14px}
 #tAct{display:none}#tAct.live{display:block}
 .stt{font-size:14px;font-weight:600;color:#6B7280}
 .num{max-width:none}.num input{font-size:22px;font-weight:500;color:#263952;text-align:left;letter-spacing:0;height:52px;padding:0 12px 0 46px;background:#fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z'/></svg>") no-repeat 14px center;border-radius:12px}
@@ -110,7 +121,7 @@ body,button,input,textarea,select{font-family:Inter,"Noto Sans Bengali","Segoe U
  <button type="button" class="go hang big" id="bHang2" disabled>⛔ End Call</button>
  <div class="msg" id="msg2"></div>
 </div>
-<div class="cn"><div class="cnh">Call Notes</div><textarea id="cNote" rows="3" maxlength="1000" placeholder="Write a note..."></textarea><div class="cnb"><span id="cNm"></span><button type="button" id="cSave">Save</button></div></div>
+<div class="cn"><div class="cnh">Call Notes</div><textarea id="cNote" rows="2" maxlength="1000" placeholder="Write a note..."></textarea><div class="cnb"><span id="cNm"></span><button type="button" id="cSave">Save</button></div></div>
 </div>
 </div>
 <div class="dfoot"><span class="fl"><i id="dfc" class="no">●</i> <span id="dfw">WSS</span> · Ext: <b id="dfx">—</b></span><span class="sep"></span><span>Agent: <b>{{ explode(' ', trim((string)($agname ?? '')))[0] }}</b></span><span class="sep"></span><a href="/admin/call-center/history" target="_blank">☰ History</a></div>
