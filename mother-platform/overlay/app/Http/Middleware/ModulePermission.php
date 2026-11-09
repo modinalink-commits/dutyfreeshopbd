@@ -17,6 +17,7 @@ class ModulePermission {
     if (preg_match('#^(referral|winback|voice|app-rewards)(/|$)#', $p)) return 'marketing';
     if (preg_match('#^(seo|commands|announcements|hero-slider|showcase|home-banners|legacy-import|legacy-products|legacy-orders|shurjopay)(/|$)#', $p)) return 'settings';
     if (preg_match('#^delivery(/|$)#', $p)) return 'couriers';
+    if (preg_match('#^fraud/check#', $p)) return 'orders'; // customer return-risk warning shown on every order / invoice page: whoever may open orders must see it (Manager)
     if (preg_match('#^(fraud|app-users|whatsapp)(/|$)#', $p)) return 'customers';
     if (preg_match('#^customer-auth(/|$)#', $p)) return 'settings';
     if (preg_match('#^dob-requests(/|$)#', $p)) return 'customers';
