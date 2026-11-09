@@ -1,10 +1,10 @@
 @extends('layout')@section('title','Manual Payments')
 @section('body')
 <style>
-.mpk{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:10px}.mpk div{background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:8px 10px}.mpk small{display:block;color:#6B7280;font-size:11px}.mpk b{font-size:18px}.mpk .w b{color:#D97706}
+.mpk{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:10px}.mpk div{background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:8px 10px}.mpk small{display:block;color:#6B7280;font-size:11px}.mpk b{font-size:18px}.mpk .w b{color:#B45309}
 .mpf{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px}.mpf input,.mpf select{width:auto!important;margin:0!important;padding:6px 8px;border:1px solid #D1D5DB;border-radius:8px;font-size:13px}
-table.mpt{width:100%;border-collapse:collapse;font-size:13px;background:#fff}.mpt th,.mpt td{padding:7px 8px;border-bottom:1px solid #F1F5F9;text-align:left;vertical-align:middle}.mpt th{background:#F8FAFC;font-size:12px;color:#475569;white-space:nowrap}.mpt tr:hover td{background:#FFFBEB}
-.tg{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;white-space:nowrap}.tg.p{background:#FEF3C7;color:#92400E}.tg.v{background:#DCFCE7;color:#166534}.tg.r{background:#FEE2E2;color:#991B1B}.tg.d{background:#FFE4E6;color:#BE123C}.tg.m{background:#EDE9FE;color:#5B21B6}.tg.c{background:#E5E7EB;color:#374151}
+table.mpt{width:100%;border-collapse:collapse;font-size:13px;background:#fff}.mpt th,.mpt td{padding:7px 8px;border-bottom:1px solid #F1F5F9;text-align:left;vertical-align:middle}.mpt th{background:#F8FAFC;font-size:12px;color:#4B5563;white-space:nowrap}.mpt tr:hover td{background:#FEF3C7}
+.tg{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;white-space:nowrap}.tg.p{background:#FEF3C7;color:#B45309}.tg.v{background:#DCFCE7;color:#166534}.tg.r{background:#FEE2E2;color:#B91C1C}.tg.d{background:#FEE2E2;color:#BE123C}.tg.m{background:#F1EAF8;color:#5B3FA6}.tg.c{background:#E5E7EB;color:#374151}
 #mpd{border:0;border-radius:14px;padding:16px;max-width:520px;width:94%;box-shadow:0 20px 60px rgba(0,0,0,.3)}#mpd::backdrop{background:rgba(15,23,42,.5)}#mpd dl{display:grid;grid-template-columns:130px 1fr;gap:4px 10px;margin:8px 0;font-size:13px}#mpd dt{color:#6B7280}#mpd dd{margin:0;word-break:break-word}
 .mpa a,.mpa button{font-size:12px;padding:3px 8px}
 </style>
@@ -44,7 +44,7 @@ table.mpt{width:100%;border-collapse:collapse;font-size:13px;background:#fff}.mp
 const mpd=document.getElementById('mpd'),CSRF=@json(csrf_token()),CAN=@json($canAct),REASONS=@json($reasons);
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 function mpOpen(tr){const j=JSON.parse(tr.dataset.j);document.getElementById('mpt').textContent=j.inv+' · '+j.st;
- let h='<dl><dt>Customer</dt><dd>'+esc(j.cust)+' · '+esc(j.ph)+'</dd><dt>Order total</dt><dd>৳'+Math.round(j.tot).toLocaleString()+'</dd><dt>Submitted amount</dt><dd>'+(j.amt!=null?'৳'+Math.round(j.amt).toLocaleString():'Not entered (same as total)')+(j.mm?' <b style="color:#5B21B6">Amount Mismatch</b>':'')+'</dd><dt>Method</dt><dd>'+esc(j.m)+'</dd><dt>Bank / Wallet no.</dt><dd>'+esc(j.acc||'—')+'</dd><dt>Transaction ID</dt><dd><b>'+esc(j.tx||'—')+'</b>'+(j.dup?' <b style="color:#BE123C">Possible Duplicate</b>':'')+'</dd><dt>Submitted</dt><dd>'+esc(j.at)+'</dd>'+(j.by?'<dt>'+esc(j.st)+' by</dt><dd>'+esc(j.by)+' · '+esc(j.pat)+'</dd>':'')+(j.rs?'<dt>Reason</dt><dd>'+esc(j.rs)+'</dd>':'')+'<dt>Notes</dt><dd style="white-space:pre-wrap">'+esc(j.note||'—')+'</dd></dl>';
+ let h='<dl><dt>Customer</dt><dd>'+esc(j.cust)+' · '+esc(j.ph)+'</dd><dt>Order total</dt><dd>৳'+Math.round(j.tot).toLocaleString()+'</dd><dt>Submitted amount</dt><dd>'+(j.amt!=null?'৳'+Math.round(j.amt).toLocaleString():'Not entered (same as total)')+(j.mm?' <b style="color:#5B3FA6">Amount Mismatch</b>':'')+'</dd><dt>Method</dt><dd>'+esc(j.m)+'</dd><dt>Bank / Wallet no.</dt><dd>'+esc(j.acc||'—')+'</dd><dt>Transaction ID</dt><dd><b>'+esc(j.tx||'—')+'</b>'+(j.dup?' <b style="color:#BE123C">Possible Duplicate</b>':'')+'</dd><dt>Submitted</dt><dd>'+esc(j.at)+'</dd>'+(j.by?'<dt>'+esc(j.st)+' by</dt><dd>'+esc(j.by)+' · '+esc(j.pat)+'</dd>':'')+(j.rs?'<dt>Reason</dt><dd>'+esc(j.rs)+'</dd>':'')+'<dt>Notes</dt><dd style="white-space:pre-wrap">'+esc(j.note||'—')+'</dd></dl>';
  if(j.proof)h+='<div style="margin:6px 0"><a href="/admin/orders/'+j.id+'/pay-proof" target="_blank"><img src="/admin/orders/'+j.id+'/pay-proof" alt="" style="max-width:100%;max-height:220px;border:1px solid #E5E7EB;border-radius:8px" onerror="this.parentNode.textContent=\'Open proof\'"></a></div>';
  document.getElementById('mpb').innerHTML=h;
  let a='';if(CAN){const A='/admin/manual-payments/'+j.id+'/';
@@ -67,7 +67,7 @@ function mpOpen(tr){const j=JSON.parse(tr.dataset.j);document.getElementById('mp
 <dialog id="mpAdd" style="border:0;border-radius:14px;padding:16px;max-width:560px;width:94%"><form method="post" action="/admin/manual-payments/entry" enctype="multipart/form-data" id="mpAf">@csrf
 <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:16px">+ Add Manual Payment</b><button type="button" onclick="this.closest('dialog').close()">✕</button></div>
 <label>Customer Mobile</label><div style="display:flex;gap:6px"><input id="mpPh" placeholder="01XXXXXXXXX" inputmode="tel"><button type="button" id="mpFind">Find</button></div>
-<div id="mpCu" style="font-size:13px;color:#475569;margin:6px 0"></div>
+<div id="mpCu" style="font-size:13px;color:#4B5563;margin:6px 0"></div>
 <label>Order / Invoice</label><select name="order_id" id="mpOr" required><option value="">Find customer first</option></select>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div><label>Payment Method</label><select name="method"><option>bKash Personal</option><option>Nagad Personal</option><option>{{ \App\Support\Brand::BANK_LABEL }}</option><option>Cash</option><option>Other</option></select></div>
 <div><label>Amount (৳)</label><input name="amount" id="mpAm" type="number" step="0.01" min="1" required></div>

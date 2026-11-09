@@ -43,7 +43,7 @@ main table.ordt>thead>tr>th{position:sticky;top:0;z-index:3;background:var(--sur
 main table.ordt>tbody>tr>td{background:var(--surface);border:0;border-bottom:1px solid var(--border-soft);border-right:1px solid var(--border-soft);border-radius:0;padding:8px 9px;vertical-align:top}
 main table.ordt>tbody>tr>td:first-child{border-left:3px solid var(--border-color);border-radius:0;padding-left:9px}
 main table.ordt>tbody>tr>td:last-child{border-right:0;border-radius:0;padding-right:9px}
-main table.ordt>tbody>tr[style*="FFFBEB"]>td{background:#FFFBEB}main table.ordt>tbody>tr[style*="FFFBEB"]>td:first-child{border-left-color:var(--warning)}
+main table.ordt>tbody>tr[style*="FFFBEB"]>td{background:#FEF3C7}main table.ordt>tbody>tr[style*="FFFBEB"]>td:first-child{border-left-color:var(--warning)}
 main table.ordt>tbody>tr:hover>td{background:var(--row-hover)}main table.ordt>tbody>tr:hover{filter:none}
 main table.ordt>tbody>tr:has(input[type=checkbox]:checked)>td{background:var(--row-selected)}main table.ordt>tbody>tr:has(input[type=checkbox]:checked)>td:first-child{border-left-color:var(--primary)}
 main table.ordt>tbody>tr>td.action-column,main table.ordt>thead>tr>th.action-column{text-align:right}

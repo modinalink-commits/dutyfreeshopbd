@@ -10,14 +10,14 @@
 <td>{{ $x->title ?: ($v ? 'YouTube '.$x->video_id : '—') }}</td><td class="pos">{{ $x->position }}</td>
 <td>{{ $x->image ? '✓' : ($v ? 'poster auto' : '—') }}</td><td>{{ $x->mobile_image ? '✓' : ($v ? ($x->v_mobile ? 'video' : 'fallback') : '—') }}</td>
 <td>{{ $x->active ? 'Active' : 'Paused' }}</td>
-<td style="white-space:nowrap">@if($v)<a href="#" data-pv="{{ $x->video_id }}">Preview</a> · @endif<a href="/admin/m/sliders/{{ $x->id }}/edit">Edit</a> · <form method="post" action="/admin/hero-slider/{{ $x->id }}/toggle" style="display:inline">@csrf<button style="all:unset;color:#2563EB;cursor:pointer">{{ $x->active?'Pause':'Publish' }}</button></form> · <form method="post" action="/admin/m/sliders/{{ $x->id }}/delete" style="display:inline" onsubmit="return confirm('Delete this slide?')">@csrf<button style="all:unset;color:#B91C1C;cursor:pointer">Delete</button></form></td></tr>
+<td style="white-space:nowrap">@if($v)<a href="#" data-pv="{{ $x->video_id }}">Preview</a> · @endif<a href="/admin/m/sliders/{{ $x->id }}/edit">Edit</a> · <form method="post" action="/admin/hero-slider/{{ $x->id }}/toggle" style="display:inline">@csrf<button style="all:unset;color:#1D5FA8;cursor:pointer">{{ $x->active?'Pause':'Publish' }}</button></form> · <form method="post" action="/admin/m/sliders/{{ $x->id }}/delete" style="display:inline" onsubmit="return confirm('Delete this slide?')">@csrf<button style="all:unset;color:#B91C1C;cursor:pointer">Delete</button></form></td></tr>
 @empty<tr><td colspan="9" style="color:#6B7280">No uploaded slides yet. Add the first image or YouTube slide.</td></tr>@endforelse
 @foreach($bi as $b)<tr style="{{ $b['on']?'':'opacity:.55' }}"><td style="color:#D1D5DB">⠿</td>
 <td><div style="width:110px;height:37px;border-radius:6px;background:#F3F4F6;color:#6B7280;font-size:10px;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.1">Built-in</div></td>
-<td><b style="font-size:11px;padding:2px 8px;border-radius:999px;background:#EDE9FE;color:#5B21B6">BUILT-IN</b></td>
+<td><b style="font-size:11px;padding:2px 8px;border-radius:999px;background:#F1EAF8;color:#5B3FA6">BUILT-IN</b></td>
 <td>{{ $b['label'] }}</td><td>auto</td><td>✓</td><td>✓</td>
 <td>{{ $b['on']?'Active':'Paused' }}</td>
-<td style="white-space:nowrap"><a href="/admin/home-banners">Settings</a> · <form method="post" action="/admin/hero-slider/builtin/{{ $b['key'] }}/toggle" style="display:inline">@csrf<button style="all:unset;color:#2563EB;cursor:pointer">{{ $b['on']?'Pause':'Publish' }}</button></form></td></tr>@endforeach
+<td style="white-space:nowrap"><a href="/admin/home-banners">Settings</a> · <form method="post" action="/admin/hero-slider/builtin/{{ $b['key'] }}/toggle" style="display:inline">@csrf<button style="all:unset;color:#1D5FA8;cursor:pointer">{{ $b['on']?'Pause':'Publish' }}</button></form></td></tr>@endforeach
 </tbody></table></div>
 <div id="pvm" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:99;align-items:center;justify-content:center"><div style="width:min(900px,92vw);aspect-ratio:16/9;background:#000;position:relative"><button type="button" id="pvx" style="position:absolute;right:-6px;top:-34px;background:#fff;border:0;border-radius:6px;padding:4px 10px;cursor:pointer">Close ✕</button><div id="pvb" style="width:100%;height:100%"></div></div></div>
 <script>(function(){var tb=document.getElementById('rows'),drag=null,tok=document.querySelector('meta[name=csrf-token]'),T=tok?tok.content:'{{ csrf_token() }}';

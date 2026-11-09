@@ -2,14 +2,14 @@
 @section('body')
 <style>
 .aif{max-width:980px}.aif .box{background:#fff;border:1px solid var(--bd);border-radius:16px;padding:20px 22px;margin-bottom:16px}
-.aif .drop{border:2px dashed #CBD5E1;border-radius:14px;padding:34px 16px;text-align:center;cursor:pointer;background:#F8FAFC;transition:.15s}.aif .drop.on{border-color:#FF5A00;background:#FFF7F0}
+.aif .drop{border:2px dashed #D1D5DB;border-radius:14px;padding:34px 16px;text-align:center;cursor:pointer;background:#F8FAFC;transition:.15s}.aif .drop.on{border-color:#FF5A00;background:#FFF7F0}
 .aif .drop b{display:block;font-size:16px;margin-bottom:4px}.aif .drop small{color:#6B7280}
 .aif .prev{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}.aif .prev img{width:200px;height:200px;object-fit:contain;border:1px solid var(--bd);border-radius:12px;background:#fff}
 .aif table{width:100%;border-collapse:collapse;font-size:14px}.aif td{padding:7px 8px;border-bottom:1px solid #EEF0F3;vertical-align:top}.aif td.l{width:170px;color:#6B7280}
-.aif .cf{font-size:11px;font-weight:700;border-radius:8px;padding:2px 7px;white-space:nowrap}.aif .hi{background:#DCFCE7;color:#166534}.aif .lo{background:#FEF3C7;color:#92400E}
-.aif input.e,.aif textarea.e{width:100%;margin:0}.aif .steps{font-size:14px;color:#475569}.aif .steps div{padding:3px 0}.aif .steps .d{color:#16A34A}
-.aif .mt{display:flex;gap:12px;align-items:center;border:1px solid #FCD34D;background:#FFFBEB;border-radius:12px;padding:10px 12px;margin:8px 0}.aif .mt img{width:56px;height:56px;object-fit:contain;background:#fff;border-radius:8px;border:1px solid var(--bd)}
-.aif .err{background:#FEF2F2;border:1px solid #FCA5A5;color:#991B1B;border-radius:12px;padding:12px 14px}.aif .wn{background:#FFFBEB;border:1px solid #FCD34D;color:#92400E;border-radius:12px;padding:10px 14px;margin:8px 0}
+.aif .cf{font-size:11px;font-weight:700;border-radius:8px;padding:2px 7px;white-space:nowrap}.aif .hi{background:#DCFCE7;color:#166534}.aif .lo{background:#FEF3C7;color:#B45309}
+.aif input.e,.aif textarea.e{width:100%;margin:0}.aif .steps{font-size:14px;color:#4B5563}.aif .steps div{padding:3px 0}.aif .steps .d{color:#16A34A}
+.aif .mt{display:flex;gap:12px;align-items:center;border:1px solid #FCD34D;background:#FEF3C7;border-radius:12px;padding:10px 12px;margin:8px 0}.aif .mt img{width:56px;height:56px;object-fit:contain;background:#fff;border-radius:8px;border:1px solid var(--bd)}
+.aif .err{background:#FEE2E2;border:1px solid #FCA5A5;color:#B91C1C;border-radius:12px;padding:12px 14px}.aif .wn{background:#FEF3C7;border:1px solid #FCD34D;color:#B45309;border-radius:12px;padding:10px 14px;margin:8px 0}
 .aif .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
 </style>
 <div class="aif">

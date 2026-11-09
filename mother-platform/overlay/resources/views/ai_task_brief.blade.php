@@ -10,13 +10,13 @@
 .tb .pill{border:1px solid #CED4DA;background:#F8FAFC;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600;white-space:nowrap}
 .tb .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .tb .btn{border:1px solid #CED4DA;background:#fff;color:#0F2748;border-radius:8px;padding:7px 12px;font-weight:700;font-size:13px;cursor:pointer}
-.tb .btn:hover{background:#F1F5F9}.tb .btn.go{background:#EA580C;border-color:#EA580C;color:#fff}.tb .btn.go:hover{background:#C2410C}.tb .btn:disabled{opacity:.55;cursor:wait}
+.tb .btn:hover{background:#F3F4F6}.tb .btn.go{background:#C2410C;border-color:#EA580C;color:#fff}.tb .btn.go:hover{background:#C2410C}.tb .btn:disabled{opacity:.55;cursor:wait}
 .tb .sec{border:1px solid #CED4DA;border-radius:12px;background:#fff;overflow:hidden}
 .tb .sh{padding:6px 12px;font-weight:800;font-size:12px;letter-spacing:.2px;border-bottom:1px solid #CED4DA;display:flex;gap:8px;align-items:center}
 .tb .sb{padding:10px 12px;display:grid;gap:10px}
 .tb .g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.tb .g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 @media(max-width:900px){.tb .g2,.tb .g3{grid-template-columns:1fr}}
-.tb label{display:block;font-weight:700;font-size:12px;margin:0 0 3px}.tb label i{color:#DC2626;font-style:normal}
+.tb label{display:block;font-weight:700;font-size:12px;margin:0 0 3px}.tb label i{color:#B91C1C;font-style:normal}
 .tb input[type=text],.tb select,.tb textarea{width:100%;border:1px solid #CED4DA;border-radius:8px;padding:7px 9px;font:inherit;background:#fff;color:#0F2748}
 .tb textarea{min-height:70px;resize:vertical}.tb input:focus,.tb select:focus,.tb textarea:focus{outline:2px solid #BFDBFE;border-color:#2563EB}
 .tb .hint{color:#6B7280;font-size:11.5px;margin-top:2px}
@@ -27,12 +27,12 @@
 .tb .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .tb .ar{display:grid;grid-template-columns:150px minmax(0,1fr) auto;gap:6px;align-items:center;margin-bottom:6px}
 @media(max-width:600px){.tb .ar{grid-template-columns:1fr}}
-.tb .fcts{font-size:12px;color:#334155;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:6px 9px;margin:0 0 6px;white-space:pre-wrap;word-break:break-word}
-.tb .fcts.er{background:#FEF2F2;border-color:#FECACA;color:#991B1B}
-.tb .res{white-space:pre-wrap;word-break:break-word;line-height:1.55;border:1px solid #E2E8F0;border-radius:8px;padding:10px 12px;background:#FFFEFB;max-height:520px;overflow:auto}
+.tb .fcts{font-size:12px;color:#4B5563;background:#F8FAFC;border:1px solid #E5E7EB;border-radius:8px;padding:6px 9px;margin:0 0 6px;white-space:pre-wrap;word-break:break-word}
+.tb .fcts.er{background:#FEE2E2;border-color:#FECACA;color:#B91C1C}
+.tb .res{white-space:pre-wrap;word-break:break-word;line-height:1.55;border:1px solid #E5E7EB;border-radius:8px;padding:10px 12px;background:#FFFEFB;max-height:520px;overflow:auto}
 .tb .ok{color:#166534}.tb .no{color:#B91C1C}.tb .wn{color:#B45309}
-.tb .tbl{width:100%;border-collapse:collapse;font-size:12px}.tb .tbl td,.tb .tbl th{border:1px solid #E2E8F0;padding:5px 8px;text-align:left;vertical-align:top}.tb .tbl th{background:#F1F5F9}
-.tb .msg{border-radius:10px;padding:8px 12px;font-size:13px}.tb .msg.er{background:#FEF2F2;border:1px solid #FECACA;color:#991B1B}.tb .msg.ok{background:#ECFDF5;border:1px solid #A7F3D0;color:#065F46}
+.tb .tbl{width:100%;border-collapse:collapse;font-size:12px}.tb .tbl td,.tb .tbl th{border:1px solid #E5E7EB;padding:5px 8px;text-align:left;vertical-align:top}.tb .tbl th{background:#F3F4F6}
+.tb .msg{border-radius:10px;padding:8px 12px;font-size:13px}.tb .msg.er{background:#FEE2E2;border:1px solid #FECACA;color:#B91C1C}.tb .msg.ok{background:#DCFCE7;border:1px solid #A7F3D0;color:#166534}
 .tb .modal{position:fixed;inset:0;background:rgba(15,39,72,.45);display:none;align-items:center;justify-content:center;z-index:9999;padding:14px}.tb .modal.on{display:flex}
 .tb .mb{background:#fff;border-radius:14px;max-width:900px;width:100%;max-height:88vh;overflow:auto;padding:14px 16px;border:1px solid #CED4DA}
 </style>
@@ -58,7 +58,7 @@
  @unless($hasKey)<div class="msg er">The Claude API key is not set (Site settings &gt; AI Chat). You can write and save briefs, but Run AI and Improve Brief need the key.</div>@endunless
  <div id="note"></div>
 
- <div class="sec"><div class="sh" style="background:#EFF6FF">① Title · Type · Objective</div><div class="sb">
+ <div class="sec"><div class="sh" style="background:#E6EFF9">① Title · Type · Objective</div><div class="sb">
   <div class="g2"><div><label>Brief Title <i>*</i></label><input type="text" id="f_title" maxlength="200" placeholder="Create Win-Back SMS Campaign for Inactive Customers"></div>
    <div><label>Brief Type <small style="font-weight:400;color:#6B7280">(optional)</small></label><select id="f_type"><option value="">Select…</option>@foreach(B::TYPES as $x)<option>{{ $x }}</option>@endforeach</select></div></div>
   <div><label>What do you want AI to achieve? <i>*</i></label><textarea id="f_objective" maxlength="4000" placeholder="Create a short Bangla win-back SMS for customers who have not ordered for 15 days."></textarea></div>
@@ -73,18 +73,18 @@
   <div><label>Source Priority</label><textarea id="f_source_priority" maxlength="1000" style="min-height:52px" placeholder="1. Current Order Data&#10;2. Customer Profile&#10;3. Courier Live Status&#10;4. Message History"></textarea></div>
  </div></div>
 
- <div class="sec"><div class="sh" style="background:#FFFBEB">③ Must Know</div><div class="sb"><textarea id="f_must_know" maxlength="4000" style="min-height:92px" placeholder="Facts AI must not miss, one per line:&#10;Customer has placed 11 orders&#10;Current order is in Shipment&#10;Payment is COD&#10;Do not promise exact delivery time"></textarea></div></div>
+ <div class="sec"><div class="sh" style="background:#FEF3C7">③ Must Know</div><div class="sb"><textarea id="f_must_know" maxlength="4000" style="min-height:92px" placeholder="Facts AI must not miss, one per line:&#10;Customer has placed 11 orders&#10;Current order is in Shipment&#10;Payment is COD&#10;Do not promise exact delivery time"></textarea></div></div>
 
  <div class="g2">
-  <div class="sec"><div class="sh" style="background:#F0FDF4">④ Must Include</div><div class="sb"><input type="text" id="in_include" list="dl_inc" placeholder="Type and press Enter"><div class="tags" id="tg_include"></div>
+  <div class="sec"><div class="sh" style="background:#DCFCE7">④ Must Include</div><div class="sb"><input type="text" id="in_include" list="dl_inc" placeholder="Type and press Enter"><div class="tags" id="tg_include"></div>
    <datalist id="dl_inc"><option>Customer Name</option><option>Invoice Number</option><option>Current Status</option><option>Offer Amount</option><option>Tracking Link</option><option>Company Name</option><option>CTA</option></datalist></div></div>
-  <div class="sec"><div class="sh" style="background:#FEF2F2">⑤ Must NOT Include</div><div class="sb"><input type="text" id="in_not" list="dl_not" placeholder="Type and press Enter"><div class="tags" id="tg_not"></div>
+  <div class="sec"><div class="sh" style="background:#FEE2E2">⑤ Must NOT Include</div><div class="sb"><input type="text" id="in_not" list="dl_not" placeholder="Type and press Enter"><div class="tags" id="tg_not"></div>
    <datalist id="dl_not"><option>Internal FIFO Cost</option><option>Fraud Score</option><option>Staff Notes</option><option>Internal Profit</option><option>API Information</option><option>Private Customer Data</option><option>Unverified Claims</option></datalist></div></div>
  </div>
 
  <div class="sec"><div class="sh" style="background:#F3F4F6">⑥ Business Rules <span class="sub" style="font-weight:500">(loaded from the Brief Type; you may edit)</span></div><div class="sb"><textarea id="f_rules" maxlength="4000" style="min-height:96px"></textarea></div></div>
 
- <div class="sec"><div class="sh" style="background:#FFF7ED">⑦ Output</div><div class="sb">
+ <div class="sec"><div class="sh" style="background:#FFF1E8">⑦ Output</div><div class="sb">
   <div class="g3"><div><label>Output Type <i>*</i></label><select id="f_output"><option value="">Select…</option>@foreach(B::OUTPUTS as $x)<option>{{ $x }}</option>@endforeach</select></div>
    <div><label>Output Length</label><select id="f_length">@foreach(B::LENGTHS as $x)<option>{{ $x }}</option>@endforeach</select></div>
    <div><label>Language <i>*</i></label><select id="f_language">@foreach(B::LANGS as $x)<option>{{ $x }}</option>@endforeach</select></div></div>
@@ -97,7 +97,7 @@
    <div class="hint">Images, PDF, DOCX and XLSX attachments are not supported yet in this version; paste the important text or export the sheet as CSV.</div></div>
  </div></div>
 
- <div class="sec"><div class="sh" style="background:#F5F3FF">⑨ Permissions · confirmation · confidence</div><div class="sb">
+ <div class="sec"><div class="sh" style="background:#F1EAF8">⑨ Permissions · confirmation · confidence</div><div class="sb">
   <div class="g3"><div><label>Permission Level <i>*</i></label><select id="f_permission">@foreach(B::PERMS as $x)<option>{{ $x }}</option>@endforeach</select></div>
    <div><label>Minimum Confidence</label><select id="f_confidence">@foreach(B::CONF as $x)<option>{{ $x }}</option>@endforeach</select></div>
    <div><label>If AI cannot confidently complete this task</label><select id="f_escalation">@foreach(B::ESC as $x)<option>{{ $x }}</option>@endforeach</select></div></div>
@@ -106,9 +106,9 @@
   <div class="hint">This version of the tool only drafts and suggests. It never sends a message, changes an order, a payment or a price; for action levels the AI writes the proposed steps for a human to carry out.</div>
  </div></div>
 
- <div class="sec"><div class="sh" style="background:#EFF6FF">⑩ Expected result / Acceptance criteria</div><div class="sb"><textarea id="f_accept" maxlength="3000" style="min-height:80px" placeholder="How will we know the result is correct? One per line:&#10;Message under 160 characters&#10;Mentions the ৳100 offer&#10;Natural Bangla"></textarea></div></div>
+ <div class="sec"><div class="sh" style="background:#E6EFF9">⑩ Expected result / Acceptance criteria</div><div class="sb"><textarea id="f_accept" maxlength="3000" style="min-height:80px" placeholder="How will we know the result is correct? One per line:&#10;Message under 160 characters&#10;Mentions the ৳100 offer&#10;Natural Bangla"></textarea></div></div>
 
- <div class="sec" id="resSec" style="display:none"><div class="sh" style="background:#FFF7ED">AI Result <span id="resBadge" class="pill"></span></div><div class="sb">
+ <div class="sec" id="resSec" style="display:none"><div class="sh" style="background:#FFF1E8">AI Result <span id="resBadge" class="pill"></span></div><div class="sb">
   <div id="resMiss"></div><div class="res" id="resTxt"></div><textarea id="resEdit" style="display:none;min-height:160px"></textarea><div id="resChk"></div>
   <div class="bar"><button class="btn" id="rAcc">Accept</button><button class="btn" id="rEdit">Edit</button><button class="btn" id="rRegen">Regenerate</button><button class="btn" id="rCopy">Copy</button><button class="btn" id="rTpl">Save Template</button><span class="sub" id="resMeta"></span></div>
   <div class="hint" id="resHint"></div>

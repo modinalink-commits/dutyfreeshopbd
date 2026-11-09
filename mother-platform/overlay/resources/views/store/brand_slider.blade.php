@@ -8,7 +8,7 @@
 .bsl .bt::-webkit-scrollbar{display:none}
 .bsl .bt.dr{cursor:grabbing;user-select:none}
 .bsl a.bp{flex:none;display:inline-flex;align-items:center;height:34px;padding:0 16px;border:1.25px solid var(--bd);border-radius:10px;background:#fff;color:var(--n);font-size:12px;font-weight:600;letter-spacing:.15px;white-space:nowrap;text-decoration:none;transition:border-color .15s,color .15s,background .15s}
-.bsl a.bp:hover,.bsl a.bp:focus-visible{border-color:var(--o);color:var(--o);background:#FFF4EC}
+.bsl a.bp:hover,.bsl a.bp:focus-visible{border-color:var(--o);color:var(--o);background:#FFF1E8}
 .bsl a.bp.on{border-color:var(--o);background:var(--o);color:#fff}
 @media(max-width:700px){.bsl{padding-top:10px}.bsl a.bp{height:32px;padding:0 13px;font-size:11.5px}}
 </style>

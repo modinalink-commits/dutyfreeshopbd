@@ -1,11 +1,11 @@
 <style>
-.inc-ab{font-size:10px;color:#92400E;background:#FEF3C7;border-radius:8px;padding:0 6px;margin-left:4px}
+.inc-ab{font-size:10px;color:#B45309;background:#FEF3C7;border-radius:8px;padding:0 6px;margin-left:4px}
 .incomplete-actions .oar{display:flex;gap:6px;justify-content:flex-end;align-items:center}
 .iqm{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:10001;display:none;align-items:center;justify-content:center;padding:16px}.iqm.on{display:flex}
 .iqm .iqb{position:relative;background:#fff;border-radius:14px;width:420px;max-width:100%;padding:18px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
 .iqm h3{margin:0 0 10px;font-size:16px}.iqm label{display:block;font-size:12px;font-weight:600;color:#374151;margin:8px 0 3px}.iqm input,.iqm textarea{width:100%;box-sizing:border-box}
 .iqm .iqx{position:absolute;top:10px;right:12px;border:0;background:#FEE2E2;color:#B91C1C;width:26px;height:26px;border-radius:50%;font-size:15px;line-height:1;cursor:pointer;padding:0}
-.iqm .iql{display:flex;gap:8px;margin:0 0 4px}.iqm .iql a{font-size:12px;font-weight:600;text-decoration:none;border:1px solid #E5E7EB;border-radius:8px;padding:4px 10px;color:#111827}
+.iqm .iql{display:flex;gap:8px;margin:0 0 4px}.iqm .iql a{font-size:12px;font-weight:600;text-decoration:none;border:1px solid #E5E7EB;border-radius:8px;padding:4px 10px;color:#0B1220}
 .iqm .iqm-msg{font-size:12px;margin-top:8px;min-height:16px}
 </style>
 <div class="iqm" id="iqm" role="dialog" aria-modal="true"><div class="iqb"><button type="button" class="iqx" id="iqx" aria-label="Close">×</button>

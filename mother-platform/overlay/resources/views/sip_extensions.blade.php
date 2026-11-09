@@ -2,7 +2,7 @@
 @section('body')
 <h1 style="margin:0 0 4px">Extensions</h1>
 <span style="font-size:13px;color:#6B7280">প্রতিটি ইউজারের নিজস্ব এক্সটেনশন। PBX (FusionPBX) এ এক্সটেনশন তৈরি করে এখানে নম্বর ও পাসওয়ার্ড দিন — ইউজার লগইন করলে তার ডায়ালার নিজের এক্সটেনশনে কানেক্ট হবে। পাসওয়ার্ড এনক্রিপ্টেড থাকে। সার্ভার (WSS/Domain) সেটিং: <a href="/admin/call-center/account">PBX Settings</a>।</span>
-@if(session('ok'))<div class="card" style="margin-top:12px;background:#ECFDF5;border-color:#A7F3D0">{{ session('ok') }}</div>@endif
+@if(session('ok'))<div class="card" style="margin-top:12px;background:#DCFCE7;border-color:#A7F3D0">{{ session('ok') }}</div>@endif
 @if($errors->any())<div class="card err" style="margin-top:12px">@foreach($errors->all() as $e){{ $e }}<br>@endforeach</div>@endif
 <div class="card" style="margin-top:12px;overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">
 <tr style="text-align:left;color:#6B7280"><th>User</th><th>Extension</th><th>Auth username</th><th>Display name</th><th>Password</th><th></th></tr>

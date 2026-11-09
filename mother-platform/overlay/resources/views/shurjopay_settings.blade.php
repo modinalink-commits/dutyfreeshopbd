@@ -2,7 +2,7 @@
 @section('body')
 <h1 class="h">ShurjoPay Online Payment</h1>
 @if(session('ok'))<div class="ok">{{ session('ok') }}</div>@endif
-@if(session('err'))<div class="err" style="background:#FEE2E2;color:#991B1B;padding:10px;border-radius:8px;margin-bottom:10px">{{ session('err') }}</div>@endif
+@if(session('err'))<div class="err" style="background:#FEE2E2;color:#B91C1C;padding:10px;border-radius:8px;margin-bottom:10px">{{ session('err') }}</div>@endif
 <form class="card" method="post" action="/admin/shurjopay" style="max-width:560px">@csrf
 <p style="margin-top:0;color:#6b7280">Customers can pay by bKash, Nagad, card and more through ShurjoPay. The password is stored encrypted and never shown again.</p>
 <label>Mode</label><select name="mode"><option value="sandbox" @selected($s['mode']==='sandbox')>Sandbox (test, no real money)</option><option value="live" @selected($s['mode']==='live')>Live (real payments)</option></select>

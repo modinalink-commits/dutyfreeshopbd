@@ -14,7 +14,7 @@ $__tk = fn($n) => '৳'.number_format((float)$n);
 <b>Order Change History</b>
 @foreach($__r as $v)
 <div style="border-top:1px solid #E5E7EB;margin-top:8px;padding-top:8px">
-<div><b>{{ $__tz($v->applied_at ?? $v->created_at) }}</b> @if($v->status==='pending')<span class="pill" style="background:#FEF3C7;color:#92400E">Pending revision</span>@endif · Employee: <b>{{ $v->user_name }}</b>@if($v->ip) <small style="color:#9CA3AF">({{ $v->ip }})</small>@endif · Change type: {{ ucfirst($v->revision_type) }}@if($v->call_log_id) · 📞 call #{{ $v->call_log_id }}@endif</div>
+<div><b>{{ $__tz($v->applied_at ?? $v->created_at) }}</b> @if($v->status==='pending')<span class="pill" style="background:#FEF3C7;color:#B45309">Pending revision</span>@endif · Employee: <b>{{ $v->user_name }}</b>@if($v->ip) <small style="color:#9CA3AF">({{ $v->ip }})</small>@endif · Change type: {{ ucfirst($v->revision_type) }}@if($v->call_log_id) · 📞 call #{{ $v->call_log_id }}@endif</div>
 @foreach(($__it[$v->id] ?? collect()) as $x)
 <div style="margin-left:10px">
 @if($x->action==='added')➕ Added: <b>{{ $x->name }}</b> × {{ $x->new_quantity }} @ {{ $__tk($x->new_price) }}

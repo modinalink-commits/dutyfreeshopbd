@@ -41,7 +41,7 @@ main table th.mc-fl,main table th.mc-fr{z-index:4}
 /* 6. fit to screen: low-priority columns fold into a per-row ▸ drawer instead of scrolling the page sideways */
 main table .mc-h{display:none!important}
 main table .mc-xc{position:relative}
-main table .mc-x{border:0;background:transparent;color:var(--text-primary,#0C161F);cursor:pointer;padding:0 5px 0 0;margin:0;font-size:12px;line-height:1;vertical-align:baseline}
+main table .mc-x{border:0;background:transparent;color:var(--text-primary,#0B1220);cursor:pointer;padding:0 5px 0 0;margin:0;font-size:12px;line-height:1;vertical-align:baseline}
 main table .mc-det{position:absolute;left:0;top:100%;z-index:30;min-width:260px;max-width:min(520px,86vw);padding:8px 10px;background:var(--surface-main,#fff);border:1px solid var(--border-grid);box-shadow:0 6px 18px rgba(12,22,31,.14);font-size:12px;font-weight:400;text-align:left;white-space:normal;cursor:default}
 main table .mc-dr{display:flex;gap:10px;padding:3px 0;border-bottom:1px solid var(--border-grid)}main table .mc-dr:last-child{border-bottom:0}
 main table .mc-dl{flex:0 0 38%;color:var(--text-muted);font-weight:600}main table .mc-dv{flex:1;min-width:0;word-break:break-word}

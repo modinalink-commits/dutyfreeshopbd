@@ -10,24 +10,24 @@ $selBr = array_map('strval', old('brand_ids', $c ? $R::ids($c->brand_ids ?? '') 
 $aud = $v('audience', 'all'); $act = old('active', $c ? (int)$c->active : 1); $pub = old('is_public', $c ? (int)$c->is_public : 0);
 @endphp
 <style>
-.cf .sec{border:1px solid #E6EAF0;border-radius:12px;padding:14px;margin-bottom:12px;background:#fff}.cf .sec h3{margin:0 0 4px;font-size:15px}.cf .sec>p{margin:0 0 8px;color:#6B7280;font-size:12px}
-.cf .row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}.cf .opt{display:flex;gap:8px;align-items:flex-start;padding:8px 10px;border:1px solid #E2E8F0;border-radius:10px;margin:4px 0;cursor:pointer;color:#000}.cf .opt input{width:auto;margin-top:3px}.cf .opt.on{border:2px solid #000;background:#FFF7ED}
-.cf .q{display:inline-block;margin:4px 4px 0 0;padding:4px 10px;border-radius:999px;border:1px solid #CBD5E1;background:#F1F5F9;color:#000;font-size:12px;font-weight:700;cursor:pointer}
-.cf .chip{display:inline-flex;gap:6px;align-items:center;padding:3px 8px;margin:3px 4px 0 0;border-radius:999px;background:#EAF2FF;border:1px solid #BFD6FA;color:#000;font-size:12px;font-weight:600}.cf .chip button{padding:0 4px;background:none;border:0;color:#000;font-size:14px;cursor:pointer}
-.cf #psr{border:1px solid #E2E8F0;border-radius:8px;max-height:180px;overflow:auto;display:none;margin-top:4px}.cf #psr div{padding:6px 10px;cursor:pointer;font-size:13px;color:#000}.cf #psr div:hover{background:#FFF1E8}
+.cf .sec{border:1px solid #E5E7EB;border-radius:12px;padding:14px;margin-bottom:12px;background:#fff}.cf .sec h3{margin:0 0 4px;font-size:15px}.cf .sec>p{margin:0 0 8px;color:#6B7280;font-size:12px}
+.cf .row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}.cf .opt{display:flex;gap:8px;align-items:flex-start;padding:8px 10px;border:1px solid #E5E7EB;border-radius:10px;margin:4px 0;cursor:pointer;color:#0B1220}.cf .opt input{width:auto;margin-top:3px}.cf .opt.on{border:2px solid #000;background:#FFF1E8}
+.cf .q{display:inline-block;margin:4px 4px 0 0;padding:4px 10px;border-radius:999px;border:1px solid #D1D5DB;background:#F3F4F6;color:#0B1220;font-size:12px;font-weight:700;cursor:pointer}
+.cf .chip{display:inline-flex;gap:6px;align-items:center;padding:3px 8px;margin:3px 4px 0 0;border-radius:999px;background:#EAF2FF;border:1px solid #BFD6FA;color:#0B1220;font-size:12px;font-weight:600}.cf .chip button{padding:0 4px;background:none;border:0;color:#0B1220;font-size:14px;cursor:pointer}
+.cf #psr{border:1px solid #E5E7EB;border-radius:8px;max-height:180px;overflow:auto;display:none;margin-top:4px}.cf #psr div{padding:6px 10px;cursor:pointer;font-size:13px;color:#0B1220}.cf #psr div:hover{background:#FFF1E8}
 .cf .hint{font-size:11.5px;color:#6B7280;margin-top:3px}.cf select[multiple]{min-height:130px}
 </style>
 <div class="cf">
 <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px"><h1 style="margin:0;flex:1">{{ $c ? 'Edit coupon '.$c->code : 'New coupon' }}</h1><a class="btn g" href="/admin/coupons">Back to coupons</a></div>
-@if($errors->any())<div class="card" style="background:#FEF2F2;border-color:#FECACA;color:#000">@foreach($errors->all() as $e)<div>{{ $e }}</div>@endforeach</div>@endif
+@if($errors->any())<div class="card" style="background:#FEE2E2;border-color:#FECACA;color:#0B1220">@foreach($errors->all() as $e)<div>{{ $e }}</div>@endforeach</div>@endif
 <form method="post" action="{{ $c ? '/admin/coupons/'.$c->id : '/admin/coupons' }}" id="cfm">@csrf
 
 <div class="sec"><h3>1. Coupon</h3><p>The code the customer types at checkout.</p>
 <div class="row"><div><label>Code *</label><div style="display:flex;gap:6px"><input name="code" id="ccode" value="{{ $v('code') }}" maxlength="40" required style="text-transform:uppercase"><button type="button" class="g" id="cgen" style="white-space:nowrap">Make code</button></div></div>
 <div><label>Name (for staff only)</label><input name="name" value="{{ $v('name') }}" maxlength="120" placeholder="e.g. Eid offer 2026"></div></div>
 <label>Note (for staff only)</label><textarea name="description" rows="2" maxlength="1000">{{ $v('description') }}</textarea>
-<div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:8px"><label style="display:flex;gap:6px;align-items:center;color:#000;font-size:13px"><input type="checkbox" name="active" value="1" {{ $act ? 'checked' : '' }} style="width:auto"> Active (customers can use it)</label>
-<label style="display:flex;gap:6px;align-items:center;color:#000;font-size:13px"><input type="checkbox" name="is_public" value="1" {{ $pub ? 'checked' : '' }} style="width:auto"> Show in the customer's My Coupons page (only to customers it is made for)</label></div></div>
+<div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:8px"><label style="display:flex;gap:6px;align-items:center;color:#0B1220;font-size:13px"><input type="checkbox" name="active" value="1" {{ $act ? 'checked' : '' }} style="width:auto"> Active (customers can use it)</label>
+<label style="display:flex;gap:6px;align-items:center;color:#0B1220;font-size:13px"><input type="checkbox" name="is_public" value="1" {{ $pub ? 'checked' : '' }} style="width:auto"> Show in the customer's My Coupons page (only to customers it is made for)</label></div></div>
 
 <div class="sec"><h3>2. How much discount</h3><p>Percent, fixed taka, or free delivery.</p>
 <div class="row"><div><label>Discount type *</label><select name="type" id="ctype">@foreach($R::TYPES as $k=>$l)<option value="{{ $k }}" {{ $v('type','percent')===$k?'selected':'' }}>{{ $l }}</option>@endforeach</select></div>
@@ -60,9 +60,9 @@ $aud = $v('audience', 'all'); $act = old('active', $c ? (int)$c->active : 1); $p
 
 @if($c)
 <div class="sec"><h3>Test this coupon</h3><p>Check if it works for a customer before you send it.</p>
-<div class="row"><div><label>Customer mobile</label><input id="tph" placeholder="01XXXXXXXXX"></div><div><label>Order amount (৳)</label><input id="tsub" type="number" min="0" value="1000"></div><div style="align-self:end"><button type="button" id="tgo">Check</button></div></div><div id="tres" style="margin-top:8px;font-weight:700;color:#000"></div></div>
+<div class="row"><div><label>Customer mobile</label><input id="tph" placeholder="01XXXXXXXXX"></div><div><label>Order amount (৳)</label><input id="tsub" type="number" min="0" value="1000"></div><div style="align-self:end"><button type="button" id="tgo">Check</button></div></div><div id="tres" style="margin-top:8px;font-weight:700;color:#0B1220"></div></div>
 <div class="sec"><h3>Make many codes like this one</h3><p>Creates new codes with the same rules and downloads them as a CSV file.</p>
-<form method="post" action="/admin/coupons/{{ $c->id }}/bulk">@csrf<div class="row"><div><label>Code prefix</label><input name="prefix" maxlength="12" value="{{ substr($c->code, 0, 8) }}" required></div><div><label>How many (max 500)</label><input name="count" type="number" min="1" max="500" value="50" required></div><div style="align-self:end"><label style="display:flex;gap:6px;align-items:center;color:#000"><input type="checkbox" name="single_use" value="1" checked style="width:auto"> One use per code</label></div></div><div style="margin-top:8px"><button class="g">Generate and download</button></div></form></div>
+<form method="post" action="/admin/coupons/{{ $c->id }}/bulk">@csrf<div class="row"><div><label>Code prefix</label><input name="prefix" maxlength="12" value="{{ substr($c->code, 0, 8) }}" required></div><div><label>How many (max 500)</label><input name="count" type="number" min="1" max="500" value="50" required></div><div style="align-self:end"><label style="display:flex;gap:6px;align-items:center;color:#0B1220"><input type="checkbox" name="single_use" value="1" checked style="width:auto"> One use per code</label></div></div><div style="margin-top:8px"><button class="g">Generate and download</button></div></form></div>
 @endif
 </div>
 <script>

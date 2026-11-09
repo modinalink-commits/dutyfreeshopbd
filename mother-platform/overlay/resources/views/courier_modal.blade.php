@@ -7,22 +7,22 @@
 #cpbx .dh b{font-size:15px}#cpbx .dh small{color:#6B7280;font-weight:600;margin-left:6px}
 #cpbx .cb{overflow:auto;flex:1 1 auto}
 #cpbx .top{padding:12px 16px;background:#F8FAFC;border-bottom:1px solid #E5E7EB}
-#cpbx .top .nm{font-size:13px;color:#475569;font-weight:700}
-#cpbx .top .id{display:flex;align-items:center;gap:8px;margin-top:3px;font-size:16px;font-weight:800;color:#0F172A;word-break:break-all}
-#cpbx .st{display:inline-block;margin-top:8px;padding:4px 12px;border-radius:999px;font-weight:800;font-size:13px;color:#000;background:#E0F2FE;border:1px solid #BAE6FD}
+#cpbx .top .nm{font-size:13px;color:#4B5563;font-weight:700}
+#cpbx .top .id{display:flex;align-items:center;gap:8px;margin-top:3px;font-size:16px;font-weight:800;color:#0B1220;word-break:break-all}
+#cpbx .st{display:inline-block;margin-top:8px;padding:4px 12px;border-radius:999px;font-weight:800;font-size:13px;color:#0B1220;background:#E0F2FE;border:1px solid #BAE6FD}
 #cpbx .st.s-delivered{background:#DCFCE7;border-color:#BBF7D0}#cpbx .st.s-returned,#cpbx .st.s-return{background:#F3E8FF;border-color:#E9D5FF}#cpbx .st.s-hold,#cpbx .st.s-pending{background:#FEF3C7;border-color:#FDE68A}#cpbx .st.s-cancelled{background:#FEE2E2;border-color:#FECACA}
 #cpbx .dr{display:flex;gap:10px;padding:8px 16px;border-bottom:1px solid #F1F5F9;font-size:13px;line-height:1.35}
-#cpbx .dr span{flex:0 0 110px;color:#6B7280;font-weight:600}#cpbx .dr div{flex:1;color:#0F172A;font-weight:600;word-break:break-word}
-#cpbx .tl{padding:10px 16px 6px}#cpbx .tl h4{margin:0 0 8px;font-size:12px;color:#475569;text-transform:uppercase;letter-spacing:.04em}
-#cpbx .ev{position:relative;padding:0 0 12px 18px;border-left:2px solid #E2E8F0;margin-left:5px;font-size:13px}
+#cpbx .dr span{flex:0 0 110px;color:#6B7280;font-weight:600}#cpbx .dr div{flex:1;color:#0B1220;font-weight:600;word-break:break-word}
+#cpbx .tl{padding:10px 16px 6px}#cpbx .tl h4{margin:0 0 8px;font-size:12px;color:#4B5563;text-transform:uppercase;letter-spacing:.04em}
+#cpbx .ev{position:relative;padding:0 0 12px 18px;border-left:2px solid #E5E7EB;margin-left:5px;font-size:13px}
 #cpbx .ev:before{content:"";position:absolute;left:-6px;top:3px;width:10px;height:10px;border-radius:50%;background:#94A3B8;border:2px solid #fff;box-shadow:0 0 0 1px #CBD5E1}
 #cpbx .ev:first-of-type:before{background:#16A34A;box-shadow:0 0 0 1px #86EFAC}
-#cpbx .ev b{display:block;color:#0F172A}#cpbx .ev small{color:#64748B;display:block;font-size:11.5px}
+#cpbx .ev b{display:block;color:#0B1220}#cpbx .ev small{color:#6B7280;display:block;font-size:11.5px}
 #cpbx .ft{display:flex;gap:8px;padding:12px 16px;border-top:1px solid #E5E7EB;flex:none;flex-wrap:wrap}
-#cpbx .ft a,#cpbx .ft button{flex:1 1 auto;text-align:center;padding:8px 12px;border-radius:9px;font-weight:700;font-size:13px;cursor:pointer;text-decoration:none;color:#000;border:1px solid #BFD6FA;background:#EAF2FF}
+#cpbx .ft a,#cpbx .ft button{flex:1 1 auto;text-align:center;padding:8px 12px;border-radius:9px;font-weight:700;font-size:13px;cursor:pointer;text-decoration:none;color:#0B1220;border:1px solid #BFD6FA;background:#EAF2FF}
 #cpbx .ft a{background:#E7F8EC;border-color:#B5E3C2}
-#cpbx .ms{padding:22px 16px;text-align:center;color:#475569;font-size:13px}
-#cpbx .cc{border:1px solid #CBD5E1;background:#fff;border-radius:7px;padding:2px 8px;font-size:11px;font-weight:700;cursor:pointer;color:#000}
+#cpbx .ms{padding:22px 16px;text-align:center;color:#4B5563;font-size:13px}
+#cpbx .cc{border:1px solid #D1D5DB;background:#fff;border-radius:7px;padding:2px 8px;font-size:11px;font-weight:700;cursor:pointer;color:#0B1220}
 </style>
 <div id="cpov" role="dialog" aria-modal="true" aria-label="Courier tracking"><div id="cpbx"></div></div>
 <script>

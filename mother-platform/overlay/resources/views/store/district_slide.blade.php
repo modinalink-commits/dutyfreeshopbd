@@ -32,9 +32,9 @@
 .dm .tk .sw{flex:none;width:3.2cqw;height:3.2cqw;border-radius:50%;background:var(--c,#cbd5e1);box-shadow:0 0 0 .5cqw color-mix(in srgb,var(--c,#cbd5e1) 28%,transparent);transition:background .25s,box-shadow .25s}
 .dm .tk .tx{min-width:0;flex:1}
 .dm .tk .nm{font-size:max(13px,2.3cqw);line-height:1.1;font-weight:700;color:#0B2A5B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dm .tk .sb{font-size:max(9px,1.2cqw);line-height:1.35;font-weight:500;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dm .tk .sb{font-size:max(9px,1.2cqw);line-height:1.35;font-weight:500;color:#4B5563;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dm .tk .dct{flex:none;white-space:nowrap;text-align:right;font-weight:700;color:#0B3D91;font-size:max(11px,1.7cqw);line-height:1.1}
-.dm .tk .dct small{display:block;font-size:max(8px,.95cqw);font-weight:500;color:#64748B}
+.dm .tk .dct small{display:block;font-size:max(8px,.95cqw);font-weight:500;color:#6B7280}
 .dm .tk .pb{position:absolute;left:1.6cqw;right:1.6cqw;bottom:.55cqw;height:.3cqw;border-radius:9cqw;background:rgba(11,61,145,.12);overflow:hidden}
 .dm .tk .pb i{display:block;height:100%;width:0;background:linear-gradient(90deg,#E6197A,#FF7A00);transition:width .12s linear}
 .dm .tk .sw.pop,.dm .tk .nm.pop,.dm .tk .sb.pop{animation:dmPop .3s ease-out}

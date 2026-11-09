@@ -6,7 +6,7 @@
 .wa .col{background:#fff;border:1px solid #E5E7EB;border-radius:12px;overflow:hidden}
 .wa .list{max-height:72vh;overflow:auto}
 .wa .cv{display:block;padding:10px 12px;border-bottom:1px solid #F3F4F6;color:inherit;text-decoration:none}
-.wa .cv.on{background:#ECFDF5}.wa .cv b{font-size:14px}.wa .cv small{display:block;color:#6B7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wa .cv.on{background:#DCFCE7}.wa .cv b{font-size:14px}.wa .cv small{display:block;color:#6B7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .wa .un{background:#16A34A;color:#fff;border-radius:99px;font-size:11px;padding:1px 7px;float:right}
 .wa .msgs{height:56vh;overflow:auto;padding:12px;background:#F3F4F6;display:flex;flex-direction:column;gap:6px}
 .wa .m{max-width:78%;padding:7px 10px;border-radius:10px;font-size:14px;white-space:pre-wrap;word-break:break-word;background:#fff}
@@ -36,7 +36,7 @@
 @if($can)
 <div style="padding:10px;border-top:1px solid #E5E7EB">
 @if($win)<form method="post" action="/admin/whatsapp/{{ $cur->id }}/send" style="display:flex;gap:8px">@csrf<input type="hidden" name="f" value="{{ $f }}"><textarea name="text" rows="2" maxlength="4000" required placeholder="Type a reply…" style="flex:1"></textarea><button type="submit">Send</button></form>
-@else<div style="font-size:13px;color:#92400E;margin-bottom:6px">Customer has not written in the last 24 hours — only an approved template can be sent.</div>@endif
+@else<div style="font-size:13px;color:#B45309;margin-bottom:6px">Customer has not written in the last 24 hours — only an approved template can be sent.</div>@endif
 <details style="margin-top:6px"><summary style="cursor:pointer;font-size:13px">Send a template</summary>
 <form method="post" action="/admin/whatsapp/{{ $cur->id }}/send" style="margin-top:6px">@csrf<input type="hidden" name="f" value="{{ $f }}">
 <select name="template" required><option value="">Choose approved template…</option>@foreach($tpls as $t)<option value="{{ $t->name }}|{{ $t->language }}">{{ $t->name }} ({{ $t->language }}) — {{ $t->params }} param</option>@endforeach</select>

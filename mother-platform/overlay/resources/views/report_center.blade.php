@@ -2,22 +2,22 @@
 @section('body')
 <?php $f = fn($k) => request()->query($k); $exportUrl = url('/admin/report-center/export') . '?' . http_build_query(request()->except('partial', 'page')); ?>
 <style>
-.rc{font-size:13px;color:#0C161F}
+.rc{font-size:13px;color:#0B1220}
 .rc .top{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;justify-content:space-between;margin-bottom:12px}
 .rc .top h1{margin:2px 0 0;font-size:22px;line-height:1.2}.rc .mut{color:#6B7280;font-size:11.5px}
 .rc .crumb{font-size:12px;color:#6B7280}
-.rc .btn2{display:inline-flex;align-items:center;min-height:40px;padding:0 14px;border:1px solid #D5D8DC;border-radius:8px;background:#fff;color:#0C161F;font-weight:600;text-decoration:none;cursor:pointer;font-size:13px}
+.rc .btn2{display:inline-flex;align-items:center;min-height:40px;padding:0 14px;border:1px solid #D5D8DC;border-radius:8px;background:#fff;color:#0B1220;font-weight:600;text-decoration:none;cursor:pointer;font-size:13px}
 .rc .btn2.p{background:#C2410C;border-color:#C2410C;color:#fff;font-weight:700}
-.rc .kp{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));border:1px solid #E6E7E9;border-radius:10px;overflow:hidden;background:#fff;margin-bottom:12px}
-.rc .kp>div{padding:8px 12px;border-right:1px solid #E6E7E9}.rc .kp>div:last-child{border-right:0}
+.rc .kp{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));border:1px solid #E5E7EB;border-radius:10px;overflow:hidden;background:#fff;margin-bottom:12px}
+.rc .kp>div{padding:8px 12px;border-right:1px solid #E5E7EB}.rc .kp>div:last-child{border-right:0}
 .rc .kp span{display:block;font-size:11.5px;color:#4B5563}.rc .kp b{display:block;font-size:19px;line-height:1.25}
 .rc .gc{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
-.rc .gc a{border:1px solid #F5C4AA;background:#FFEEE6;color:#0C161F;border-radius:999px;padding:5px 12px;font-size:12px;font-weight:600;text-decoration:none;white-space:nowrap}
-.rc .gc a.on{background:#0C161F;border-color:#0C161F;color:#fff}
-.rc form.flt{display:flex;flex-wrap:wrap;gap:8px;align-items:end;background:#fff;border:1px solid #E6E7E9;border-radius:12px;padding:10px 12px;margin-bottom:12px}
+.rc .gc a{border:1px solid #F5C4AA;background:#FFEEE6;color:#0B1220;border-radius:999px;padding:5px 12px;font-size:12px;font-weight:600;text-decoration:none;white-space:nowrap}
+.rc .gc a.on{background:#0B1220;border-color:#0C161F;color:#fff}
+.rc form.flt{display:flex;flex-wrap:wrap;gap:8px;align-items:end;background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:10px 12px;margin-bottom:12px}
 .rc form.flt label{display:block;margin:0 0 3px;font-size:11.5px;color:#4B5563}
 .rc form.flt select,.rc form.flt input{width:auto;min-width:120px;min-height:40px;padding:0 10px;border:1px solid #D5D8DC;border-radius:8px;font:inherit;background:#fff;box-sizing:border-box}
-.rc .box{background:#fff;border:1px solid #E6E7E9;border-radius:12px;padding:12px 14px}
+.rc .box{background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:12px 14px}
 .rc .rc-tw{overflow-x:auto}
 .rc table.rc-g{width:100%;border-collapse:collapse;font-size:12px;min-width:860px}
 .rc .rc-g th{height:34px;padding:0 10px;background:var(--head-bg,#E3E8EE);border:1px solid #D1D5DB;font-weight:700;color:#374151;text-align:left;white-space:nowrap;position:sticky;top:0}
@@ -27,8 +27,8 @@
 .rc .rc-tg{padding:1px 8px;font-weight:600;display:inline-block;margin:1px}
 .rc .rc-foot{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-top:10px}
 .rc .rc-pg{display:flex;gap:4px;flex-wrap:wrap}
-.rc .rc-pg a,.rc .rc-pg .off{border:1px solid #D5D8DC;background:#fff;border-radius:6px;min-width:36px;min-height:34px;padding:0 10px;display:inline-flex;align-items:center;justify-content:center;color:#0C161F;text-decoration:none;font-size:12px}
-.rc .rc-pg a.on{background:#0C161F;border-color:#0C161F;color:#fff}.rc .rc-pg .off{color:#9CA3AF}
+.rc .rc-pg a,.rc .rc-pg .off{border:1px solid #D5D8DC;background:#fff;border-radius:6px;min-width:36px;min-height:34px;padding:0 10px;display:inline-flex;align-items:center;justify-content:center;color:#0B1220;text-decoration:none;font-size:12px}
+.rc .rc-pg a.on{background:#0B1220;border-color:#0C161F;color:#fff}.rc .rc-pg .off{color:#9CA3AF}
 .rc .empty{padding:18px;text-align:center;color:#6B7280}
 </style>
 <div class="rc">

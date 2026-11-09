@@ -1,7 +1,7 @@
 @extends('layout')@section('title','Customer Authentication')
 @section('body')
 <div style="margin-bottom:10px"><h1 style="margin:0">Customer Authentication</h1><div style="font-size:12px;color:#6B7280">Customer login methods: Email + Password, Google ও Facebook। একজন customer = একটি account।</div></div>
-@if(session('ok'))<div class="card" style="background:#ECFDF5;border-color:#A7F3D0;color:#065F46">{{ session('ok') }}</div>@endif
+@if(session('ok'))<div class="card" style="background:#DCFCE7;border-color:#A7F3D0;color:#166534">{{ session('ok') }}</div>@endif
 <form method="post" action="/admin/customer-auth" class="card" style="max-width:640px">@csrf
 <h3 style="margin-top:0">Email Login</h3>
 <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" name="email_on" value="1" {{ $emailOn ? 'checked' : '' }}> Email Login & Registration ON</label>

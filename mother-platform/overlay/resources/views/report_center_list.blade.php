@@ -25,12 +25,12 @@ $win = array_values(array_unique(array_filter([1, 2, 3, $page - 1, $page, $page 
   <td>{{ $x->sub_group }}</td>
   <td class="c">{{ $types[$x->report_type] ?? $x->report_type }}</td>
   <td class="c nw">{{ \Carbon\Carbon::parse($x->updated_at)->timezone('Asia/Dhaka')->format('d M Y') }}</td>
-  <td class="c nw">{{ $has ? implode(' · ', $has) : 'None' }}<div class="mut">{{ \App\Support\ReportCatalog::nativeFull($x->native_export ?? '') ? 'Built in' : 'Standard Export bar' }}</div>@if($x->is_active && $miss)<div class="mut" style="color:#92400E">Missing: {{ implode(', ', $miss) }}</div>@endif</td>
+  <td class="c nw">{{ $has ? implode(' · ', $has) : 'None' }}<div class="mut">{{ \App\Support\ReportCatalog::nativeFull($x->native_export ?? '') ? 'Built in' : 'Standard Export bar' }}</div>@if($x->is_active && $miss)<div class="mut" style="color:#B45309">Missing: {{ implode(', ', $miss) }}</div>@endif</td>
   <td class="c">
     @if($x->is_legacy)<span class="rc-tg" style="background:#E5E7EB;color:#374151">Legacy</span>
     @elseif(!$x->is_active)<span class="rc-tg" style="background:#E5E7EB;color:#374151">Inactive</span>
     @else<span class="rc-tg" style="background:#DCFCE7;color:#166534">Active</span>@endif
-    @if($x->is_hidden_from_sidebar)<span class="rc-tg" style="background:#E0E7FF;color:#3730A3">Hidden</span>@endif
+    @if($x->is_hidden_from_sidebar)<span class="rc-tg" style="background:#E6EFF9;color:#5B3FA6">Hidden</span>@endif
   </td>
   <td class="c"><a href="{{ url('/admin/report-center/open/' . $x->report_code) }}">Open</a></td>
 </tr>

@@ -22,6 +22,6 @@
 <tr><td>Due / Collectable</td><td style="text-align:right">{{ $__f($__due) }}</td></tr>
 <tr><td>Courier COD</td><td style="text-align:right">{{ $__f($__cod) }}</td></tr>
 @if(!empty($o->consignment_id) && ($o->courier_cod ?? null) !== null && !in_array($o->status, ['Cancel','Returned','Delivered'], true) && abs((float)$o->courier_cod - $__cod) > 0.99)
-<tr><td colspan="2" style="padding-top:6px"><div style="background:#FEF3C7;color:#92400E;border-radius:8px;padding:6px 10px;font-size:12px"><b>Check the courier parcel:</b> {{ $o->courier }} was booked to collect {{ $__f((float)$o->courier_cod) }}, but the amount to collect is now {{ $__f($__cod) }}. Change the COD amount on the courier parcel so the customer is not charged wrongly.</div></td></tr>
+<tr><td colspan="2" style="padding-top:6px"><div style="background:#FEF3C7;color:#B45309;border-radius:8px;padding:6px 10px;font-size:12px"><b>Check the courier parcel:</b> {{ $o->courier }} was booked to collect {{ $__f((float)$o->courier_cod) }}, but the amount to collect is now {{ $__f($__cod) }}. Change the COD amount on the courier parcel so the customer is not charged wrongly.</div></td></tr>
 @endif
 </tbody></table></div>

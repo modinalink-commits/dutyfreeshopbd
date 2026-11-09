@@ -12,7 +12,7 @@
 .sl-g .card>b{font-size:15px}
 .sl-g table{width:100%;border-collapse:collapse;margin-top:8px}
 .sl-g th{font-size:12px;color:#6B7280;font-weight:700;text-align:left;padding:9px 12px;background:#F8FAFC;border-bottom:1px solid #E5E7EB;white-space:nowrap}
-.sl-g td{padding:10px 12px;border-bottom:1px solid #F1F3F6;vertical-align:middle;font-size:13px;line-height:1.35}
+.sl-g td{padding:10px 12px;border-bottom:1px solid #E5E7EB;vertical-align:middle;font-size:13px;line-height:1.35}
 .sl-g tbody tr:last-child td{border-bottom:0}
 .sl-g tbody tr:hover td{background:#FFFBF7}
 .sl-g td.nw,.sl-g th.nw{white-space:nowrap}

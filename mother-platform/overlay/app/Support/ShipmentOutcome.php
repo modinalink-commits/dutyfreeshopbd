@@ -56,7 +56,7 @@ class ShipmentOutcome {
     if ($o->status === 'Late Delivery' && ($lh = LateDelivery::hours($o)) !== null) $flag = '<br><small style="color:#B45309;font-weight:700">'.$lh.'h since shipment</small>'.$flag;
     if (!in_array($o->status, self::RETURN_STATUSES, true) || empty($o->return_type)) return $flag;
     $s = self::summary($o, $items);
-    return '<br><small style="color:#9A3412;font-weight:700">'.($o->return_type === 'Partial' ? 'Partial Return' : 'Full Return').' · '.$s['ret'].' of '.$s['total'].' item'.($s['total'] == 1 ? '' : 's').' '.($o->status === 'Returned' ? 'returned' : 'returning').'</small>'.$flag;
+    return '<br><small style="color:#B45309;font-weight:700">'.($o->return_type === 'Partial' ? 'Partial Return' : 'Full Return').' · '.$s['ret'].' of '.$s['total'].' item'.($s['total'] == 1 ? '' : 's').' '.($o->status === 'Returned' ? 'returned' : 'returning').'</small>'.$flag;
   }
   /** Partial: total = received items only. Anything else: put the original figures back if they had been replaced. */
   private static function moneyFor(object $o, array $c, float $recV): array {

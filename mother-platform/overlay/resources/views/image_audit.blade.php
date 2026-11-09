@@ -6,7 +6,7 @@
 @if($rep)
 <div class="iak">
 <div><small>Total products</small><b>{{ $rep['total'] }}</b></div><div><small>With images</small><b>{{ $rep['with_images'] }}</b></div><div><small>Working</small><b style="color:#16A34A">{{ $rep['working'] }}</b></div>
-<div><small>Broken (file missing / corrupt / bad path)</small><b style="color:#DC2626">{{ $rep['broken'] }}</b></div><div><small>No image assigned</small><b style="color:#D97706">{{ $rep['missing'] }}</b></div><div><small>Old / external server</small><b>{{ $rep['old_server'] }}</b></div><div><small>Thumbnail missing</small><b>{{ $rep['thumb_missing'] }}</b></div><div><small>Fixed so far</small><b style="color:#16A34A">{{ $fixed }}</b></div><div><small>Repair failed</small><b>{{ $failed }}</b></div>
+<div><small>Broken (file missing / corrupt / bad path)</small><b style="color:#B91C1C">{{ $rep['broken'] }}</b></div><div><small>No image assigned</small><b style="color:#B45309">{{ $rep['missing'] }}</b></div><div><small>Old / external server</small><b>{{ $rep['old_server'] }}</b></div><div><small>Thumbnail missing</small><b>{{ $rep['thumb_missing'] }}</b></div><div><small>Fixed so far</small><b style="color:#16A34A">{{ $fixed }}</b></div><div><small>Repair failed</small><b>{{ $failed }}</b></div>
 </div>
 <div style="font-size:12px;color:#6B7280;margin-bottom:6px">Last scan: {{ $rep['at'] }}</div>
 <h3>Products that still need attention ({{ count($rep['bad']) }}@if(count($rep['bad'])>=400)+@endif)</h3>

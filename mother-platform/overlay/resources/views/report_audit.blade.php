@@ -1,15 +1,15 @@
 @extends('layout')@section('title', 'Report System Audit')
 @section('body')
 <style>
-.ra{font-size:13px;color:#0C161F}
+.ra{font-size:13px;color:#0B1220}
 .ra .top{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;justify-content:space-between;margin-bottom:12px}
 .ra .top h1{margin:2px 0 0;font-size:22px;line-height:1.2}.ra .mut{color:#6B7280;font-size:11.5px}.ra .crumb{font-size:12px;color:#6B7280}
-.ra .btn2{display:inline-flex;align-items:center;min-height:40px;padding:0 14px;border:1px solid #D5D8DC;border-radius:8px;background:#fff;color:#0C161F;font-weight:600;text-decoration:none;cursor:pointer;font-size:13px}
+.ra .btn2{display:inline-flex;align-items:center;min-height:40px;padding:0 14px;border:1px solid #D5D8DC;border-radius:8px;background:#fff;color:#0B1220;font-weight:600;text-decoration:none;cursor:pointer;font-size:13px}
 .ra .btn2.p{background:#C2410C;border-color:#C2410C;color:#fff;font-weight:700}
-.ra .kp{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));border:1px solid #E6E7E9;border-radius:10px;overflow:hidden;background:#fff;margin-bottom:14px}
-.ra .kp>div{padding:8px 12px;border-right:1px solid #E6E7E9;border-bottom:1px solid #E6E7E9;margin:0 -1px -1px 0}
+.ra .kp{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));border:1px solid #E5E7EB;border-radius:10px;overflow:hidden;background:#fff;margin-bottom:14px}
+.ra .kp>div{padding:8px 12px;border-right:1px solid #E5E7EB;border-bottom:1px solid #E5E7EB;margin:0 -1px -1px 0}
 .ra .kp span{display:block;font-size:11.5px;color:#4B5563}.ra .kp b{display:block;font-size:19px;line-height:1.25}
-.ra .box{background:#fff;border:1px solid #E6E7E9;border-radius:12px;padding:12px 14px;margin-bottom:14px}
+.ra .box{background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:12px 14px;margin-bottom:14px}
 .ra .box h2{margin:0 0 6px;font-size:14px}
 .ra .two{display:flex;flex-wrap:wrap;gap:14px}.ra .two>.box{flex:1 1 340px;min-width:0}
 .ra .tw{overflow-x:auto}
@@ -18,18 +18,18 @@
 .ra .g td{min-height:32px;padding:5px 10px;border:1px solid #E5E7EB;vertical-align:top}
 .ra .g .c{text-align:center}.ra .g .nw{white-space:nowrap}
 .ra .tg{padding:1px 8px;font-weight:600;display:inline-block;white-space:nowrap}
-.ra .bar{height:10px;background:#F1F3F6}.ra .bar i{display:block;height:10px;background:#15803D}
+.ra .bar{height:10px;background:#F3F4F6}.ra .bar i{display:block;height:10px;background:#166534}
 .ra .ok{background:#DCFCE7;border:1px solid #BBF7D0;border-radius:10px;padding:10px 12px;margin-bottom:12px;color:#166534}
 .ra .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
-.ra .chips a{border:1px solid #D5D8DC;background:#fff;color:#0C161F;border-radius:999px;padding:4px 12px;font-size:12px;font-weight:600;text-decoration:none}
-.ra .chips a.on{background:#0C161F;border-color:#0C161F;color:#fff}
+.ra .chips a{border:1px solid #D5D8DC;background:#fff;color:#0B1220;border-radius:999px;padding:4px 12px;font-size:12px;font-weight:600;text-decoration:none}
+.ra .chips a.on{background:#0B1220;border-color:#0C161F;color:#fff}
 </style>
 <div class="ra">
 @if(!$ready)<div class="box">The report registry is not set up on this server yet.</div>
 @else
 @php
-  $tone = ['Broken Route' => '#FEE2E2;color:#B91C1C', 'Missing Permission' => '#FEE2E2;color:#B91C1C', 'Unregistered' => '#FEE2E2;color:#B91C1C', 'Missing Export' => '#FEF3C7;color:#92400E',
-           'Duplicate Route' => '#FEF3C7;color:#92400E', 'Calculation Differs' => '#FEF3C7;color:#92400E', 'Duplicate Name' => '#FEF3C7;color:#92400E', 'Legacy' => '#E5E7EB;color:#374151'];
+  $tone = ['Broken Route' => '#FEE2E2;color:#B91C1C', 'Missing Permission' => '#FEE2E2;color:#B91C1C', 'Unregistered' => '#FEE2E2;color:#B91C1C', 'Missing Export' => '#FEF3C7;color:#B45309',
+           'Duplicate Route' => '#FEF3C7;color:#B45309', 'Calculation Differs' => '#FEF3C7;color:#B45309', 'Duplicate Name' => '#FEF3C7;color:#B45309', 'Legacy' => '#E5E7EB;color:#374151'];
   $pct = $activeN ? round($full * 100 / $activeN) : 0;
 @endphp
 <div class="top">
@@ -55,7 +55,7 @@
   <div><span>Missing route</span><b style="color:{{ $c['broken'] ? '#B91C1C' : '#166534' }}">{{ $c['broken'] }}</b></div>
   <div><span>Missing permission</span><b style="color:{{ $c['perm'] ? '#B91C1C' : '#166534' }}">{{ $c['perm'] }}</b></div>
   <div><span>Missing export</span><b style="color:{{ $c['export'] ? '#B91C1C' : '#166534' }}">{{ $c['export'] }}</b></div>
-  <div><span>Duplicate candidate</span><b style="color:#92400E">{{ $c['dup'] }}</b></div>
+  <div><span>Duplicate candidate</span><b style="color:#B45309">{{ $c['dup'] }}</b></div>
   <div><span>Unregistered</span><b style="color:{{ $c['orphans'] ? '#B91C1C' : '#166534' }}">{{ $c['orphans'] }}</b></div>
 </div>
 
@@ -73,7 +73,7 @@
     <div style="display:grid;grid-template-columns:1fr auto;gap:6px 14px;align-items:center">
       <span>Report pages found by scanning routes and menus</span><b>{{ $c['discovered'] }}</b>
       <span>Rows in the registry</span><b>{{ $c['registered'] }}</b>
-      <span style="border-top:1px solid #E6E7E9;padding-top:6px"><b>Found in code but not registered</b></span><b style="border-top:1px solid #E6E7E9;padding-top:6px;color:{{ $c['orphans'] ? '#B91C1C' : '#166534' }}">{{ $c['orphans'] }} {{ $c['orphans'] ? '(must be 0)' : '✓' }}</b>
+      <span style="border-top:1px solid #E5E7EB;padding-top:6px"><b>Found in code but not registered</b></span><b style="border-top:1px solid #E5E7EB;padding-top:6px;color:{{ $c['orphans'] ? '#B91C1C' : '#166534' }}">{{ $c['orphans'] }} {{ $c['orphans'] ? '(must be 0)' : '✓' }}</b>
     </div>
     <p class="mut" style="margin:8px 0 0">The registry also lists pages the scan cannot recognise by name (calls, SMS, AI, documents), so it can be larger than the scan. What matters is that the unregistered number is 0.</p>
   </div>

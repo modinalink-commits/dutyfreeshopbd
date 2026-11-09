@@ -9,15 +9,15 @@
 @once
 <style>
 .pgx{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;margin:18px 0 6px;font-family:inherit}
-.pgx .inf{font-size:13px;color:#6B7280}.pgx .inf b{color:var(--n,#0B1F3A)}
+.pgx .inf{font-size:13px;color:#6B7280}.pgx .inf b{color:var(--n,#0B1220)}
 .pgx .bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.pgx .b{min-width:38px;height:38px;padding:0 13px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--bd,#E5E7EB);border-radius:10px;background:#fff;color:var(--n,#0B1F3A);font-size:13.5px;font-weight:700;text-decoration:none;transition:all .15s;line-height:1}
+.pgx .b{min-width:38px;height:38px;padding:0 13px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--bd,#E5E7EB);border-radius:10px;background:#fff;color:var(--n,#0B1220);font-size:13.5px;font-weight:700;text-decoration:none;transition:all .15s;line-height:1}
 .pgx a.b:hover{background:#FFF1E8;border-color:var(--o,#FF5A00);color:var(--o,#FF5A00);transform:translateY(-1px)}
 .pgx .b.on{background:var(--o,#FF5A00);border-color:var(--o,#FF5A00);color:#fff;box-shadow:0 2px 8px rgba(255,90,0,.35)}
 .pgx .b.dis{opacity:.4;cursor:not-allowed;background:#F9FAFB}
 .pgx .dots{padding:0 4px;color:#9CA3AF;font-weight:700}
-.pgx .pm{display:none;font-weight:700;color:var(--n,#0B1F3A);padding:0 6px;font-size:14px}
-.pgx .ps{display:flex;align-items:center;gap:6px;font-size:13px;color:#6B7280}.pgx .ps select{width:auto;height:36px;border-radius:9px;padding:0 8px;font-weight:700;color:var(--n,#0B1F3A)}
+.pgx .pm{display:none;font-weight:700;color:var(--n,#0B1220);padding:0 6px;font-size:14px}
+.pgx .ps{display:flex;align-items:center;gap:6px;font-size:13px;color:#6B7280}.pgx .ps select{width:auto;height:36px;border-radius:9px;padding:0 8px;font-weight:700;color:var(--n,#0B1220)}
 @media(max-width:640px){.pgx{justify-content:center}.pgx .inf{width:100%;text-align:center}.pgx .pn{display:none}.pgx .pm{display:inline}.pgx .b{min-width:44px;height:44px}.pgx .bar{justify-content:center;flex-wrap:nowrap}.pgx .lbl{display:none}}
 </style>
 @endonce

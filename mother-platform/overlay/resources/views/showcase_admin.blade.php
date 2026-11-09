@@ -2,7 +2,7 @@
 @section('body')
 <div style="margin-bottom:10px"><h1 style="margin:0">Homepage Product Showcase</h1><div style="font-size:12px;color:#6B7280">Six animated product cards between "Recently ordered" and "Cigarette and Vape". Change the product, image, colour or link here; it appears on the homepage straight away.</div></div>
 @if(session('ok'))<div class="card" style="color:#166534">{{ session('ok') }}</div>@endif
-@if($errors->any())<div class="card" style="color:#991B1B">{{ $errors->first() }}</div>@endif
+@if($errors->any())<div class="card" style="color:#B91C1C">{{ $errors->first() }}</div>@endif
 <form method="post" action="/admin/showcase" enctype="multipart/form-data">@csrf
 <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px">
 @foreach($rows as $x)@php $p = $prods[$x->product_id] ?? null; @endphp

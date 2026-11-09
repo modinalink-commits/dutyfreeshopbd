@@ -12,20 +12,20 @@ foreach ($rows as $x) $heat[$x['name']] = ['bn'=>$x['bn'], 'c'=>$x['customers'],
 .ar-h{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:12px}
 .ar-h h1{margin:0;font-size:20px}
 .ar-seg{display:inline-flex;border:1px solid #E5E7EB;border-radius:9px;overflow:hidden;background:#fff}
-.ar-seg a{padding:6px 11px;font-size:12.5px;font-weight:600;color:#475569;text-decoration:none;border-left:1px solid #E5E7EB}.ar-seg a:first-child{border-left:0}
+.ar-seg a{padding:6px 11px;font-size:12.5px;font-weight:600;color:#4B5563;text-decoration:none;border-left:1px solid #E5E7EB}.ar-seg a:first-child{border-left:0}
 .ar-seg a.on{background:#FFF1E8;color:#C2410C}
 .ar-t{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:12px}
 .ar-t>div{background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:10px 12px}
 .ar-t small{display:block;color:#6B7280;font-size:11.5px;font-weight:600}.ar-t b{font-size:20px;display:block;margin-top:2px}
 .ar-g{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:12px;align-items:start}
-.ar-b{display:flex;align-items:center;gap:9px;padding:7px 0;border-top:1px solid #F1F3F6}.ar-b:first-of-type{border-top:0}
+.ar-b{display:flex;align-items:center;gap:9px;padding:7px 0;border-top:1px solid #E5E7EB}.ar-b:first-of-type{border-top:0}
 .ar-rk{width:22px;height:22px;border-radius:50%;background:#FFF1E8;color:#C2410C;font-size:11.5px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none}
 .ar-bar{height:9px;background:#EEF1F5;border-radius:5px;overflow:hidden;margin-top:4px}.ar-bar i{display:block;height:100%;background:linear-gradient(90deg,#FFB27A,#FF5A00);border-radius:5px}
 .ar-m{display:flex;gap:10px;font-size:11.5px;color:#6B7280;flex-wrap:wrap;margin-top:2px}
 .ar-map{width:100%;max-height:520px;display:block;margin:0 auto}
 .ar-map path{stroke:#fff;stroke-width:.6;transition:opacity .15s}.ar-map path:hover{opacity:.75;stroke:#0B1220;stroke-width:1}
 .ar-lg{display:flex;align-items:center;gap:6px;font-size:11px;color:#6B7280;justify-content:center;margin-top:6px}.ar-lg i{display:block;width:120px;height:8px;border-radius:4px;background:linear-gradient(90deg,#FFE9D9,#FF5A00)}
-table.ar-tb{width:100%;border-collapse:collapse;font-size:13px}.ar-tb th{text-align:left;font-size:11.5px;color:#6B7280;padding:6px 8px;border-bottom:1px solid #E5E7EB}.ar-tb td{padding:6px 8px;border-bottom:1px solid #F1F3F6}.ar-tb td.n,.ar-tb th.n{text-align:right}
+table.ar-tb{width:100%;border-collapse:collapse;font-size:13px}.ar-tb th{text-align:left;font-size:11.5px;color:#6B7280;padding:6px 8px;border-bottom:1px solid #E5E7EB}.ar-tb td{padding:6px 8px;border-bottom:1px solid #E5E7EB}.ar-tb td.n,.ar-tb th.n{text-align:right}
 .ar-dl{font-size:11.5px;font-weight:700;color:#1D5FA8;text-decoration:none;white-space:nowrap}
 @media (max-width:900px){.ar-g{grid-template-columns:minmax(0,1fr)}.ar-t{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>

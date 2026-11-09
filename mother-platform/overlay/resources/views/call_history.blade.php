@@ -11,7 +11,7 @@
 <div class="card"><b>By day</b><table style="width:100%;margin-top:6px"><tr><th align=left>Day</th><th>Calls</th><th>Answered</th></tr>@foreach($rep['days'] as $d)<tr><td>{{ $d->d }}</td><td align=center>{{ $d->n }}</td><td align=center>{{ $d->ans }}</td></tr>@endforeach</table></div></div>
 @else
 <form method="get" style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0">
-@foreach(['all'=>'All','answered'=>'Answered','missed'=>'Missed','busy'=>'Busy','failed'=>'Failed'] as $k=>$l)<a class="chip" href="?f={{ $k }}" style="padding:6px 12px;border-radius:14px;border:1px solid #D1D5DB;text-decoration:none;{{ $f===$k ? 'background:#0B1F3A;color:#fff' : 'color:#0B1F3A' }}">{{ $l }}</a>@endforeach
+@foreach(['all'=>'All','answered'=>'Answered','missed'=>'Missed','busy'=>'Busy','failed'=>'Failed'] as $k=>$l)<a class="chip" href="?f={{ $k }}" style="padding:6px 12px;border-radius:14px;border:1px solid #D1D5DB;text-decoration:none;{{ $f===$k ? 'background:#0B1220;color:#fff' : 'color:#0B1220' }}">{{ $l }}</a>@endforeach
 <input type="hidden" name="f" value="{{ $f }}"><input name="q" value="{{ $q }}" placeholder="Search phone or customer" style="max-width:240px"><button class="btn" type="submit">Search</button></form>
 <div class="card" style="overflow:auto"><table style="width:100%;border-collapse:collapse;min-width:760px">
 <tr style="text-align:left;font-size:12px;color:#6B7280"><th>Customer</th><th>Phone</th><th>Extension</th><th>Staff</th><th>Direction</th><th>Start time</th><th>Duration</th><th>Status</th><th>Note</th></tr>

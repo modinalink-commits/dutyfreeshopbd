@@ -5,9 +5,9 @@
 #ddov.on{display:flex}
 #ddbx{background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.35);width:min(420px,100%);overflow:hidden;font-family:inherit}
 #ddbx .dh{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:1px solid #E5E7EB}
-#ddbx .dh b{font-size:15px}#ddbx .dh button{border:0;background:#F1F5F9;border-radius:8px;width:28px;height:28px;font-size:16px;cursor:pointer}
+#ddbx .dh b{font-size:15px}#ddbx .dh button{border:0;background:#F3F4F6;border-radius:8px;width:28px;height:28px;font-size:16px;cursor:pointer}
 #ddbx .dr{display:flex;gap:10px;padding:9px 16px;border-bottom:1px solid #F1F5F9;font-size:13px;line-height:1.35}
-#ddbx .dr span{flex:0 0 120px;color:#6B7280;font-weight:600}#ddbx .dr div{flex:1;color:#0F172A;font-weight:600;word-break:break-word}
+#ddbx .dr span{flex:0 0 120px;color:#6B7280;font-weight:600}#ddbx .dr div{flex:1;color:#0B1220;font-weight:600;word-break:break-word}
 #ddbx .dn{padding:8px 16px 12px;font-size:11px;color:#6B7280}
 </style>
 <div id="ddov" role="dialog" aria-modal="true"><div id="ddbx"></div></div>

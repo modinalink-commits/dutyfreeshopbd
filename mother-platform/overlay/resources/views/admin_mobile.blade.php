@@ -20,7 +20,7 @@ body.mnav-open .mbd{opacity:1;pointer-events:auto}
 .mtb b{flex:1;min-width:0;font-size:14.5px;color:#0B1220;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}
 /* bottom tabs */
 .mbn{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:1200;height:calc(64px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);background:#fff;border-top:1px solid #F3E4D8;box-shadow:0 -6px 18px rgba(11,18,32,.06)}
-.mbn a,.mbn button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11.5px;font-weight:700;color:#475569;text-decoration:none;background:none;border:0;border-radius:0;padding:0;min-height:0;position:relative}
+.mbn a,.mbn button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11.5px;font-weight:700;color:#4B5563;text-decoration:none;background:none;border:0;border-radius:0;padding:0;min-height:0;position:relative}
 .mbn svg{width:24px;height:24px}.mbn .on{color:#FF5A00}.mbn .on:before{content:"";position:absolute;top:0;left:30%;right:30%;height:3px;border-radius:0 0 3px 3px;background:#FF5A00}
 /* content */
 main{padding:12px!important;overflow-x:auto;max-width:100vw}

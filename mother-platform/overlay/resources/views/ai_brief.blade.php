@@ -10,7 +10,7 @@
 .ab .t{border:1px solid #CED4DA;border-radius:10px;padding:9px 11px;background:#FAFBFC}.ab .t b{display:block;font-size:20px;line-height:1.2;color:#0B1220}.ab .t span{font-size:11.5px;color:#6B7280}
 .ab .ok{color:#166534}.ab .wn{color:#B45309}.ab .bd{color:#B91C1C}
 .ab button.b{height:32px;padding:0 12px;border-radius:9px;border:1px solid #CED4DA;background:#fff;font-weight:700;font-size:12px;cursor:pointer;width:auto;margin:0;color:#0B1220}.ab button.pri{background:#FF5A00;color:#fff;border-color:#FF5A00}
-.ab table{width:100%;border-collapse:collapse;font-size:12px}.ab th{text-align:left;color:#6B7280;font-size:10.5px;padding:5px 8px}.ab td{padding:6px 8px;border-top:1px solid #F1F3F6;vertical-align:top}
+.ab table{width:100%;border-collapse:collapse;font-size:12px}.ab th{text-align:left;color:#6B7280;font-size:10.5px;padding:5px 8px}.ab td{padding:6px 8px;border-top:1px solid #E5E7EB;vertical-align:top}
 .ab .txt{white-space:pre-wrap;line-height:1.65;font-size:13.5px;color:#0B1220}
 .ab input,.ab select{height:32px;border:1px solid #CED4DA;border-radius:9px;padding:0 9px;font-size:12px;width:auto;margin:0;background:#fff}
 .ab .pl{display:inline-block;font-size:10.5px;font-weight:800;border-radius:6px;padding:2px 8px}

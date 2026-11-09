@@ -23,7 +23,7 @@
 .pf .side{position:sticky;top:16px}.pf .side .sec{padding:18px}
 .pf .side .btn,.pf .side button{width:100%;text-align:center;margin-top:8px;padding:11px 14px}
 .pf .side .dk{background:var(--n)}
-.pf .disc{display:inline-block;margin-top:8px;font-size:13px;font-weight:700;color:#15803D;background:#DCFCE7;border-radius:8px;padding:5px 10px}
+.pf .disc{display:inline-block;margin-top:8px;font-size:13px;font-weight:700;color:#166534;background:#DCFCE7;border-radius:8px;padding:5px 10px}
 .pf .imgs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:10px}
 .pf .im{position:relative;aspect-ratio:1;border:1.25px solid var(--bd);border-radius:12px;overflow:hidden;background:#FFF7F1;cursor:grab}
 .pf .im img{width:100%;height:100%;object-fit:cover;display:block}
@@ -39,7 +39,7 @@
 .pf .ed:focus{outline:2px solid #FFD2B8}
 .pf .ed table{border-collapse:collapse;width:100%}.pf .ed td,.pf .ed th{border:1px solid #E5E7EB;padding:6px 8px}.pf .ed img{max-width:100%;height:auto}
 .pf .vt{width:100%}.pf .vt td{padding:6px 6px 6px 0;border:0}.pf .vt th{font-size:11px}.pf .vt input,.pf .vt select{padding:7px 8px}
-.pf .url{font-size:12px;color:#166534;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:8px;padding:8px 10px;margin-top:8px;word-break:break-all}
+.pf .url{font-size:12px;color:#166534;background:#DCFCE7;border:1px solid #BBF7D0;border-radius:8px;padding:8px 10px;margin-top:8px;word-break:break-all}
 .pf .shr{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}.pf .shr a,.pf .shr button{width:auto;margin:0;padding:8px 12px;font-size:12px}
 .pf .okb{background:#DCFCE7;color:#166534;border-radius:10px;padding:9px 14px;margin-bottom:12px;font-size:13px;font-weight:600;max-width:1180px}
 .pf .tg{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;color:var(--n)}.pf .tg input{width:auto}
@@ -68,13 +68,13 @@
 </div>
 
 <div class="sec"><h2><i>2</i>Pricing</h2><p class="sub">Regular price is the full price. Add a sale price and the discount is calculated for you.</p>
-@if($errors->has('regular_price'))<div id="pErr" style="margin:8px 0;padding:12px 14px;border-radius:10px;background:#FEF2F2;border:2px solid #DC2626;color:#991B1B;font-size:15px;font-weight:700;white-space:pre-line">{{ $errors->first('regular_price') }}</div><script>document.addEventListener('DOMContentLoaded',function(){var e=document.getElementById('pErr');if(e)e.scrollIntoView({block:'center'})})</script>@endif
+@if($errors->has('regular_price'))<div id="pErr" style="margin:8px 0;padding:12px 14px;border-radius:10px;background:#FEE2E2;border:2px solid #DC2626;color:#B91C1C;font-size:15px;font-weight:700;white-space:pre-line">{{ $errors->first('regular_price') }}</div><script>document.addEventListener('DOMContentLoaded',function(){var e=document.getElementById('pErr');if(e)e.scrollIntoView({block:'center'})})</script>@endif
 <div class="g2"><div><label>Regular price (TK) *</label><input name="regular_price" id="pReg" type="number" step="0.01" min="0" value="{{ $regular }}" required></div>
 <div><label>Sale price (TK)</label><input name="sale_price" id="pSale" type="number" step="0.01" min="0" value="{{ $sale }}"></div></div>
 @php($__c = ($p && \App\Support\ProfitFloor::admin()) ? \App\Support\ProfitFloor::base($p) : 0)@if($__c > 0)@php($__f = \App\Support\ProfitFloor::floor($__c))@php($__pr = (float)$p->price)@php($__ok = $__pr + 0.004 >= $__f)
 <div style="margin:8px 0;padding:9px 12px;border-radius:10px;font-size:13px;border:1px solid {{ $__ok ? '#BBF7D0' : '#FCA5A5' }};background:{{ $__ok ? '#F0FDF4' : '#FEF2F2' }};color:{{ $__ok ? '#166534' : '#991B1B' }}"><b>{{ \App\Support\ProfitFloor::state($__c, $__pr)[0] }}</b>@if(!$__ok) – PRICE REVIEW REQUIRED<br>এই product-এর Selling Price কোম্পানির minimum {{ \App\Support\ProfitFloor::pct() }}% profit margin-এর নিচে।@endif<br>Current FIFO Batch Cost ৳{{ number_format($__c, 2) }}@if((float)($p->cost ?? 0) > 0) (Last Purchase ৳{{ number_format((float)$p->cost, 2) }})@endif · Minimum Margin {{ \App\Support\ProfitFloor::pct() }}% · Minimum Safe Price ৳{{ number_format($__f, 2) }} · Profit ৳{{ number_format($__pr - $__c, 2) }} · Profit Margin {{ number_format(($__pr - $__c) / $__c * 100, 2) }}% · Discountable ৳{{ number_format(max(0, $__pr - $__f), 2) }} · <a href="/admin/inventory-pricing/{{ $p->id }}/history">Average history</a></div>@endif
 <span class="disc" id="pDisc" style="display:none"></span>
-<div id="pFloorW" style="display:none;margin:8px 0;padding:10px 12px;border-radius:10px;background:#FEF2F2;border:2px solid #DC2626;color:#991B1B;font-size:14px;font-weight:700;white-space:pre-line"></div>
+<div id="pFloorW" style="display:none;margin:8px 0;padding:10px 12px;border-radius:10px;background:#FEE2E2;border:2px solid #DC2626;color:#B91C1C;font-size:14px;font-weight:700;white-space:pre-line"></div>
 <?php $bpOn = \App\Support\BundlePricing::ready(); $bpRule = ($p->bundle_rule ?? 'global') ?: 'global'; $bpAdm = \App\Support\ProfitFloor::admin(); $bpT = ($p && $p->id && $bpOn) ? \App\Support\BundlePricing::forProduct((int)$p->id) : []; ?>
 <label style="margin-top:14px">Bundle pricing <small>(Buy 2-5)</small></label>
 @if($bpOn)

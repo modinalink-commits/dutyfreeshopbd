@@ -57,9 +57,9 @@
 .ra td img{width:34px;height:34px;border-radius:8px;object-fit:cover;display:block;background:#F3F4F6}
 .ra td.w{white-space:normal;min-width:180px;max-width:320px}
 .ra .bg{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;background:#F3F4F6;color:#374151}
-.ra .bg.g{background:#DCFCE7;color:#166534}.ra .bg.r{background:#FEE2E2;color:#B91C1C}.ra .bg.o{background:#FFEDD5;color:#C2410C}.ra .bg.b{background:#E0E7FF;color:#3730A3}
+.ra .bg.g{background:#DCFCE7;color:#166534}.ra .bg.r{background:#FEE2E2;color:#B91C1C}.ra .bg.o{background:#FFF1E8;color:#C2410C}.ra .bg.b{background:#E6EFF9;color:#5B3FA6}
 .ra .pg{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:12px;font-size:13px}.ra .pg button{background:#fff;color:var(--n);border:1px solid var(--bd);padding:6px 11px;min-width:34px}.ra .pg button.on{background:var(--n);color:#fff;border-color:var(--n)}.ra .pg button:disabled{opacity:.4}.ra .pg .tot{margin-left:auto;color:#6B7280;font-size:12px}
-.ra .warn{background:#FFF7ED;border:1px solid #FED7AA;color:#9A3412;border-radius:10px;padding:8px 12px;font-size:12.5px;margin-bottom:12px}
+.ra .warn{background:#FFF1E8;border:1px solid #FED7AA;color:#B45309;border-radius:10px;padding:8px 12px;font-size:12.5px;margin-bottom:12px}
 .ra .cmp table th{cursor:default}
 /* Typography scale (Inter + Hind Siliguri from the shared typography include; no extra font) */
 .ra,.ra input,.ra select,.ra button,.ra table{font-family:'Inter','Hind Siliguri','Noto Sans Bengali',system-ui,sans-serif}

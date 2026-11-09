@@ -1,9 +1,9 @@
 @extends('layout')@section('title','Bundle Pricing')
 @section('body')
 <div class="noprint" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:8px"><div style="flex:1;min-width:240px"><h1 style="margin:0">Sales &amp; Bundle Pricing Settings</h1><span style="font-size:13px;color:#6B7280">One global rule for every product. Bundle price = sale price × (1 − discount %), calculated from the <b>current sale price</b> and automatically capped so the unit price never goes below <b>FIFO cost × {{ number_format(\App\Support\ProfitFloor::rate(), 2) }}</b>.</span></div><a class="btn g" href="/admin/inventory-pricing">Inventory Pricing</a></div>
-@if(session('ok'))<div style="background:#ECFDF5;border:1px solid #A7F3D0;color:#065F46;border-radius:10px;padding:8px 12px;margin-bottom:8px;font-size:13px">{{ session('ok') }}</div>@endif
-@if($errors->any())<div style="background:#FEF2F2;border:1px solid #FCA5A5;color:#991B1B;border-radius:10px;padding:8px 12px;margin-bottom:8px;font-size:13px">{{ $errors->first() }}</div>@endif
-@if(!$ready)<div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;padding:8px 12px;margin-bottom:8px;font-size:13px">Bundle pricing is being installed. Reload in a minute.</div>@endif
+@if(session('ok'))<div style="background:#DCFCE7;border:1px solid #A7F3D0;color:#166534;border-radius:10px;padding:8px 12px;margin-bottom:8px;font-size:13px">{{ session('ok') }}</div>@endif
+@if($errors->any())<div style="background:#FEE2E2;border:1px solid #FCA5A5;color:#B91C1C;border-radius:10px;padding:8px 12px;margin-bottom:8px;font-size:13px">{{ $errors->first() }}</div>@endif
+@if(!$ready)<div style="background:#FEF3C7;border:1px solid #FDE68A;border-radius:10px;padding:8px 12px;margin-bottom:8px;font-size:13px">Bundle pricing is being installed. Reload in a minute.</div>@endif
 <form method="post" action="/admin/bundle-pricing" style="background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:14px;margin-bottom:12px;max-width:760px">@csrf
 <label class="tg"><input type="checkbox" name="bundle_on" value="1" {{ $cfg['on'] ? 'checked' : '' }}> Bundle pricing ON (Buy 2 / 3 / 4 / 5 offers on the product page)</label>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:10px 0">

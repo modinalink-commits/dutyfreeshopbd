@@ -2,9 +2,9 @@
 @section('body')
 <h1 style="margin:0 0 4px">SIP Account</h1>
 <span style="font-size:13px;color:#6B7280">Connect the admin web softphone to your PBX. The password is stored encrypted on the server and is never written into the page.</span>
-@if(session('ok'))<div class="card" style="margin-top:12px;background:#ECFDF5;border-color:#A7F3D0">{{ session('ok') }}</div>@endif
+@if(session('ok'))<div class="card" style="margin-top:12px;background:#DCFCE7;border-color:#A7F3D0">{{ session('ok') }}</div>@endif
 @if($errors->any())<div class="card err" style="margin-top:12px">@foreach($errors->all() as $e){{ $e }}<br>@endforeach</div>@endif
-<div class="card" style="margin-top:12px;background:#FFFBEB;border-color:#FDE68A;font-size:13px"><b>Before you start:</b> a browser cannot use the UDP connection MicroSIP uses. Your PBX must support <b>WebRTC</b> and <b>SIP over WSS</b> (secure WebSocket), for example <code>wss://pbx.example.com:8089/ws</code>. Ask your PBX provider: <i>"Does this SIP account/PBX support WebRTC and SIP over WSS for a browser softphone?"</i> and request the WSS address.</div>
+<div class="card" style="margin-top:12px;background:#FEF3C7;border-color:#FDE68A;font-size:13px"><b>Before you start:</b> a browser cannot use the UDP connection MicroSIP uses. Your PBX must support <b>WebRTC</b> and <b>SIP over WSS</b> (secure WebSocket), for example <code>wss://pbx.example.com:8089/ws</code>. Ask your PBX provider: <i>"Does this SIP account/PBX support WebRTC and SIP over WSS for a browser softphone?"</i> and request the WSS address.</div>
 <div class="card" style="margin-top:12px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><b>Connection status</b><span id="bdg" class="chip" style="background:#6B7280;color:#fff;border:0;font-weight:800">Disconnected</span></div>
 <form method="post" action="/admin/call-center/account" style="display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">@csrf
 @php($f=fn($k)=>old($k, $a->$k ?? ''))
@@ -22,7 +22,7 @@
 <label>Caller ID<input name="caller_id" value="{{ $f('caller_id') }}"></label>
 <label>STUN/TURN Server (optional)<input name="stun_server" value="{{ $f('stun_server') }}" placeholder="stun.l.google.com:19302"></label>
 <label style="grid-column:1/-1;display:flex;gap:8px;align-items:center"><input type="checkbox" name="recording_on" value="1" style="width:auto" @checked(\Illuminate\Support\Facades\DB::table('settings')->where('key','cc_recording_on')->value('value')==='1')> আমাদের PBX কল রেকর্ড করে (ডায়ালারে "Recording" সূচক দেখাবে)। রেকর্ডিং লিংক PBX থেকে না এলে "Processing" দেখাবে — লিংক ছাড়া "Available" দেখানো হয় না।</label></div></details>
-<div style="grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" type="submit">Save Account</button><button class="btn" type="button" id="bTest" style="background:#fff;color:#0B1F3A;border:1px solid #D1D5DB">Test Connection</button><button class="btn" type="button" id="bCon" style="background:#16A34A">Connect</button><button class="btn" type="button" id="bDis" style="background:#6B7280">Disconnect</button></div>
+<div style="grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" type="submit">Save Account</button><button class="btn" type="button" id="bTest" style="background:#fff;color:#0B1220;border:1px solid #D1D5DB">Test Connection</button><button class="btn" type="button" id="bCon" style="background:#16A34A">Connect</button><button class="btn" type="button" id="bDis" style="background:#6B7280">Disconnect</button></div>
 </form><div id="tres" style="margin-top:10px;font-size:13px"></div></div>
 @verbatim
 <script src="/js/jssip.min.js"></script>
