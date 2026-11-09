@@ -34,6 +34,12 @@ class CleanSite {
     return Cache::remember('clean.catids2', 300, fn() => DB::table('categories')->get(['id', 'slug', 'name'])->filter(fn($c) => ($c->slug ?? '') === 'cigarette-vape' || str_contains((string)($c->slug ?? ''), 'lighter') || preg_match('/cigarette|vape|lighter|সিগারেট|ভেপ|লাইটার/iu', (string)($c->name ?? '')) === 1)->pluck('id')->map(fn($v) => (int)$v)->all());
   }
   public static function bad(?string $s): bool { return $s !== null && $s !== '' && preg_match('/\b(cigar|cigarette|vape|vaping|nicotin\w*|tobacco|smoking|lighter|ash ?tray|hookah|shisha)|সিগারেট|ভেপ|লাইটার|তামাক|অ্যাশট্রে/iu', $s) === 1; }
+  /** true when a product row object may be shown on the clean site */
+  public static function keep($p): bool {
+    if (!self::on()) return true;
+    if (in_array((int)($p->category_id ?? 0), self::catIds(), true) || ($p->group_key ?? '') === 'smoke') return false;
+    return !(self::bad($p->name ?? '') || self::bad($p->sub ?? '') || self::bad($p->sub_sub ?? ''));
+  }
   /** Add the tobacco exclusion to a products query ($a = alias prefix, 'products.' or 'p.'). No-op outside the clean site. */
   public static function apply($qb, string $a = 'products.') {
     if (!self::on()) return $qb;
