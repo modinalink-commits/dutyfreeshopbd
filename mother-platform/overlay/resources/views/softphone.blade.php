@@ -140,7 +140,7 @@ body,button,input,textarea,select{font-family:Inter,"Noto Sans Bengali","Segoe U
 <script>
 (function(){
 var $=function(i){return document.getElementById(i)},T=document.querySelector('meta[name=csrf]').content,emb=!!document.querySelector('.ph.emb');
-var ua=null,cfg=null,ses=null,logId=null,connAt=0,tick=null,dir='out',phase='idle',muted=false,held=false,cur='',info=null,ring=null,inCtx=null,sum=null,lastBusy=null,okCount=0;
+var cancelReq=false,ua=null,cfg=null,ses=null,logId=null,connAt=0,tick=null,dir='out',phase='idle',muted=false,held=false,cur='',info=null,ring=null,inCtx=null,sum=null,lastBusy=null,okCount=0;
 var ch=window.BroadcastChannel?new BroadcastChannel('dfphone'):null,pend=null;
 /* ---------- availability (Available / Busy) ---------- */
 var agBusy=($('stSel')||{}).value==='busy';
@@ -172,7 +172,8 @@ function setPhase(p,label){phase=p;var t=label||LBL[p];$('cst').textContent=t;va
 function ui(){var r=reg(),ic=inCall(),cn=connected();
  $('disc').classList.toggle('on',!r&&!ic&&!agBusy);
  var g=$('bGo');if(ic){g.innerHTML='<span>'+(phase==='connected'?'✔ Connected':LBL[phase])+'</span>';g.disabled=true;g.className='go call busyb'}else{g.innerHTML='<svg class="ph1i" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg><span>Call</span>';g.disabled=!r&&!(agBusy&&!!ua);g.className='go call'}
- $('bHang1').disabled=!ic;$('bMuteQ').disabled=!cn;$('bHang2').disabled=!ic;
+ var pa=(phase==='connecting'||phase==='ringing'||phase==='connected'); /* cancel must work from the very first second, even before the call object exists */
+ $('bHang1').disabled=!pa;$('bMuteQ').disabled=!cn;$('bHang2').disabled=!pa;
  ['bMute','bHold','bKp','bTr'].forEach(function(i){$(i).disabled=!cn});
  $('tAct').classList.toggle('live',ic);try{$('cid').textContent=ic&&logId?'Call ID: #'+logId:'';$('wv').className='wv'+(phase==='connected'?' on':'')}catch(e){}
  var b=ic?'busy':'idle';if(b!==lastBusy){lastBusy=b;if(emb)parent.postMessage({dfdial:b},location.origin)}}
@@ -238,11 +239,12 @@ function qStart(s){qStop();var pc=s&&s.connection;if(!pc||!pc.getStats)return;va
 function mic(){if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)return Promise.reject({name:'NoMedia'});return navigator.mediaDevices.getUserMedia({audio:AC}).then(function(s){s.getTracks().forEach(function(t){t.stop()})})}
 function micErr(){setPhase('failed','Failed');err('Microphone access is required to make calls.')}
 function resetCtl(){setTimeout(busyUnreg,1500);muted=false;held=false;var q=$('bMuteQ');if(q){q.classList.remove('on')}$('bMute').classList.remove('on');$('bHold').classList.remove('on');$('bMute').lastChild.textContent='Mute';$('bHold').lastChild.textContent='Hold';$('bKp').classList.remove('on');$('kp').classList.remove('on')}
-function begin(n,d){cur=n;dir=d;info=null;connAt=0;clearInterval(tick);$('tmr').textContent='00:00:00';$('aT').textContent='00:00:00';resetCtl();renderAct();look(n).then(function(c){if(cur===n){info=c;renderAct();if(d==='in'){$('icN').textContent=c.found&&c.name?c.name:'Unknown Customer';$('icI').textContent=c.found?((c.category||'Customer')+' · '+c.orders+' orders'+(c.last?' · Last: '+c.last.invoice+' ('+c.last.status+')':'')):'No customer record'}}})}
+function begin(n,d){cancelReq=false;cur=n;dir=d;info=null;connAt=0;clearInterval(tick);$('tmr').textContent='00:00:00';$('aT').textContent='00:00:00';resetCtl();renderAct();look(n).then(function(c){if(cur===n){info=c;renderAct();if(d==='in'){$('icN').textContent=c.found&&c.name?c.name:'Unknown Customer';$('icI').textContent=c.found?((c.category||'Customer')+' · '+c.orders+' orders'+(c.last?' · Last: '+c.last.invoice+' ('+c.last.status+')':'')):'No customer record'}}})}
 function call(n){n=clean(n||$('num').value);if(!n){err('Enter a phone number first.');return}if(inCall())return;if(!reg()){if(agBusy&&ua&&!tmpReg){tmpReg=true;pendCall=n;err('');try{ua.register()}catch(e){tmpReg=false;pendCall=null;err('PBX connection required')}setTimeout(function(){if(tmpReg){tmpReg=false;pendCall=null;err('PBX connection required')}},8000);return}err('PBX connection required');return}err('');
  begin(n,'out');setPhase('connecting');tab('act');
  mic().then(function(){return post('/admin/call-center/log',{direction:'out',phone:n,extension:cfg.ext})}).then(function(j){logId=j.id;lastLog=j.id;
-  var s=ua.call(target(n),{mediaConstraints:{audio:AC,video:false},pcConfig:iceCfg(),rtcOfferConstraints:{offerToReceiveAudio:true}});wire(s)}).catch(function(e){ses=null;if(e&&(e.name==='NotAllowedError'||e.name==='NotFoundError'||e.name==='NoMedia'||e.name==='SecurityError'))micErr();else{console.warn('dialer call',e);setPhase('failed','PBX Error');err('PBX Error. Please try again.')}})}
+  if(cancelReq){cancelReq=false;if(j.id)post('/admin/call-center/log/'+j.id+'/end',{status:'missed',duration:0});return}
+  var s=ua.call(target(n),{mediaConstraints:{audio:AC,video:false},pcConfig:iceCfg(),rtcOfferConstraints:{offerToReceiveAudio:true}});wire(s);ui()}).catch(function(e){ses=null;if(e&&(e.name==='NotAllowedError'||e.name==='NotFoundError'||e.name==='NoMedia'||e.name==='SecurityError'))micErr();else{console.warn('dialer call',e);setPhase('failed','PBX Error');err('PBX Error. Please try again.')}})}
 function pbxId(){try{return ses._request&&ses._request.call_id||''}catch(e){return ''}}
 function wire(s){ses=s;
  s.on('sdp',function(e){if(e&&e.sdp)e.sdp=tuneSdp(e.sdp,e.originator==='local'&&e.type==='offer')});
@@ -282,7 +284,7 @@ function finish(kind,cause){if(!ses&&phase!=='connecting'&&phase!=='ringing'&&ph
  ses=null;logId=null;recInd();ui();
  if(id&&(wasConn||dir==='out')&&!(isFail&&/Registration/.test(label)))setTimeout(function(){openSum(sc)},350)}
 function hang(){if(ses){try{ses.terminate()}catch(e){console.warn(e)}
- setTimeout(function(){if(ses&&inCall())finish('ended','Canceled')},1500)}}
+ setTimeout(function(){if(ses&&inCall())finish('ended','Canceled')},1500)}else if(phase==='connecting'||phase==='ringing'){cancelReq=true;finish('ended','Canceled')}}
 /* ---------- incoming ---------- */
 function ringStart(){try{inCtx=inCtx||new (window.AudioContext||window.webkitAudioContext)();if(inCtx.state==='suspended')inCtx.resume();
  var cp=inCtx.createDynamicsCompressor(),mg=inCtx.createGain();mg.gain.value=1;cp.connect(mg);mg.connect(inCtx.destination);
