@@ -15,8 +15,9 @@ class ReorderAlertController extends Controller
     if (!R::ready()) return view('sp.admin_reorder', ['off'=>true,'brand'=>SP::brand()]);
     $c = R::cfg(); $ctrl = R::ctrl();
     $below = R::below(); $open = DB::table('reorder_requests')->whereNotIn('status', R::END)->pluck('status','product_id');
-    $below = $below->map(function ($p) use ($c, $ctrl, $open) {
-      $p->thr = R::threshold($p, $c); $p->mode = R::mode($p, $ctrl, $c); $p->urg = R::urgency((int)$p->stock, $c); $p->open = $open[$p->id] ?? null; $p->nsup = count(SI::suppliersFor((int)$p->id)); return $p; });
+    $nsup = SI::supplierCounts($below->pluck('id')->all());
+    $below = $below->map(function ($p) use ($c, $ctrl, $open, $nsup) {
+      $p->thr = R::threshold($p, $c); $p->mode = R::mode($p, $ctrl, $c); $p->urg = R::urgency((int)$p->stock, $c); $p->open = $open[$p->id] ?? null; $p->nsup = $nsup[(int)$p->id] ?? 0; return $p; });
     $st = DB::table('reorder_requests')->whereNotIn('status', R::END)->selectRaw('status, count(*) n')->groupBy('status')->pluck('n','status');
     $card = ['below'=>$below->where('mode','auto')->count(),'critical'=>$below->where('mode','auto')->where('urg','Critical')->count(),'pending'=>(int)($st['Sent to Supplier'] ?? 0),
       'quotes'=>(int)(($st['Quote Received'] ?? 0)+($st['Under Review'] ?? 0)),'po'=>(int)(($st['Supplier Selected'] ?? 0)+($st['PO Created'] ?? 0)+($st['Ordered'] ?? 0)),'nosup'=>(int)($st['No Supplier'] ?? 0)];
@@ -25,11 +26,13 @@ class ReorderAlertController extends Controller
     if ($r->filled('u')) $q->where('q.urgency', $r->query('u'));
     if ($r->filled('q')) { $t = '%'.mb_strtolower(trim((string)$r->query('q'))).'%'; $q->where(fn($w) => $w->whereRaw('lower(p.name) like ?', [$t])->orWhereRaw('lower(coalesce(p.sku,\'\')) like ?', [$t])->orWhereRaw('lower(q.req_no) like ?', [$t])); }
     $rows = $q->orderByRaw("case q.urgency when 'Critical' then 0 when 'High' then 1 when 'Medium' then 2 else 3 end")->orderByDesc('q.id')->limit(300)->get(['q.*','p.name','p.sku','p.stock','p.image','f.rfq_no','f.status as rfq_status']);
-    $rows = $rows->map(function ($x) { $x->quotes = $x->rfq_id ? DB::table('supplier_quotes')->where('rfq_id',$x->rfq_id)->count() : 0; $x->invited = $x->rfq_id ? DB::table('supplier_rfq_invites')->where('rfq_id',$x->rfq_id)->count() : 0; return $x; });
+    $rf = $rows->pluck('rfq_id')->filter()->unique()->values()->all();
+    $qc = $rf ? DB::table('supplier_quotes')->whereIn('rfq_id',$rf)->selectRaw('rfq_id, count(*) n')->groupBy('rfq_id')->pluck('n','rfq_id') : collect(); $ic = $rf ? DB::table('supplier_rfq_invites')->whereIn('rfq_id',$rf)->selectRaw('rfq_id, count(*) n')->groupBy('rfq_id')->pluck('n','rfq_id') : collect();
+    $rows = $rows->map(function ($x) use ($qc, $ic) { $x->quotes = $x->rfq_id ? (int)($qc[$x->rfq_id] ?? 0) : 0; $x->invited = $x->rfq_id ? (int)($ic[$x->rfq_id] ?? 0) : 0; return $x; });
     $uq = DB::table('products as p')->where('p.published', false)->whereNotExists(fn($e) => $e->select(DB::raw(1))->from('reorder_requests as o')->whereColumn('o.product_id','p.id')->whereNotIn('o.status', R::END));
     if ($r->filled('pq')) { $t = '%'.mb_strtolower(trim((string)$r->query('pq'))).'%'; $uq->where(fn($w) => $w->whereRaw('lower(p.name) like ?', [$t])->orWhereRaw('lower(coalesce(p.sku,\'\')) like ?', [$t])); }
     $unpubTotal = (clone $uq)->count();
-    $unpub = $uq->orderByDesc('p.id')->limit(40)->get(['p.id','p.name','p.sku','p.image','p.stock'])->map(function ($x) { $x->nsup = count(SI::suppliersFor((int)$x->id)); return $x; });
+    $unpub = $uq->orderByDesc('p.id')->limit(40)->get(['p.id','p.name','p.sku','p.image','p.stock']); $un = SI::supplierCounts($unpub->pluck('id')->all()); $unpub = $unpub->map(function ($x) use ($un) { $x->nsup = $un[(int)$x->id] ?? 0; return $x; });
     return view('sp.admin_reorder', ['unpub'=>$unpub,'unpubTotal'=>$unpubTotal,'pq'=>(string)$r->query('pq'),'off'=>false,'c'=>$c,'rows'=>$rows,'below'=>$below,'card'=>$card,'f'=>$r->only('s','u','q','all'),'brand'=>SP::brand()]);
   }
   public function settings(Request $r) {

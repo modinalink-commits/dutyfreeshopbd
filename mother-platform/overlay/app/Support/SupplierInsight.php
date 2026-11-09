@@ -85,4 +85,17 @@ class SupplierInsight
     $ids = array_values(array_unique(array_merge($a,$b)));
     return $ids ? DB::table('suppliers')->whereIn('id',$ids)->where('active',true)->pluck('id')->all() : [];
   }
+  /** Same result as count(suppliersFor($id)) for many products at once (3 queries instead of 3 per product). Returns [productId => count]. */
+  public static function supplierCounts(array $ids): array {
+    $ids = array_values(array_unique(array_map('intval', $ids))); if (!$ids) return [];
+    $map = []; foreach ($ids as $i) $map[$i] = [];
+    foreach (array_chunk($ids, 2000) as $ch) {
+      foreach (DB::table('supplier_products')->whereIn('product_id', $ch)->get(['product_id', 'supplier_id']) as $r) $map[(int)$r->product_id][(int)$r->supplier_id] = 1;
+      foreach (DB::table('purchase_items as i')->join('purchases as p', 'p.id', '=', 'i.purchase_id')->whereIn('i.product_id', $ch)->whereNotIn('p.status', Procure::BAD)->distinct()->get(['i.product_id', 'p.supplier_id']) as $r) $map[(int)$r->product_id][(int)$r->supplier_id] = 1;
+    }
+    $all = []; foreach ($map as $m) foreach ($m as $sid => $_) $all[$sid] = 1;
+    $active = $all ? array_flip(DB::table('suppliers')->whereIn('id', array_keys($all))->where('active', true)->pluck('id')->map(fn($v) => (int)$v)->all()) : [];
+    $out = []; foreach ($map as $pid => $m) { $n = 0; foreach ($m as $sid => $_) if (isset($active[$sid])) $n++; $out[$pid] = $n; }
+    return $out;
+  }
 }
