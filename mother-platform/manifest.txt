@@ -924,3 +924,4 @@ database/migrations/2026_11_09_213000_payroll_purpose_dates.php
 database/migrations/2026_11_09_214000_payroll_previous_month_rule.php
 database/migrations/2026_11_09_215000_payroll_ledger_columns.php
 resources/views/payroll_sheet.blade.php
+database/migrations/2026_11_09_220000_payroll_deduction.php

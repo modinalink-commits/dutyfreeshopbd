@@ -207,13 +207,16 @@ class ResController extends Controller {
       } else { $data['video_id'] = null; $data['media_type'] = 'image'; if (empty($data['image'])) throw \Illuminate\Validation\ValidationException::withMessages(['image'=>'Add a banner image for an image slide.']); }
     }
     if ($c['slug']==='payroll') { // month, amount default automatically; base salary can be changed from this form
-      $bs = $r->input('base_salary');
+      $bs = $r->input('base_salary'); $payBase = 0;
       if ($bs !== null && $bs !== '' && is_numeric($bs) && (float)$bs >= 0 && !empty($data['employee_id'])) {
         $em1 = DB::table('employees')->where('id',$data['employee_id'])->first();
         if ($em1 && abs((float)$em1->salary - (float)$bs) > 0.004) { DB::table('employees')->where('id',$em1->id)->update(['salary'=>(float)$bs,'updated_at'=>now()]); $this->audit('update','employees#'.$em1->id.' salary '.$em1->salary.' -> '.$bs.' (from payroll)'); }
       }
       if (empty($data['month'])) $data['month'] = now('Asia/Dhaka')->format('Y-m');
       if (!preg_match('/^\d{4}-\d{2}$/', $data['month'])) throw \Illuminate\Validation\ValidationException::withMessages(['month'=>'Month must look like 2026-11']);
+      $payBase = (is_numeric($bs) && $bs !== '') ? (float)$bs : (float)(DB::table('employees')->where('id',$data['employee_id'] ?? 0)->value('salary') ?? 0);
+      $ded = (float)($data['deduction'] ?? 0); $data['deduction'] = $ded;
+      if ($ded > 0 && $payBase > 0) $data['amount'] = max(0, $payBase - $ded); // reduced pay (half salary, leave, etc.): payable = full salary − deduction
       if (!isset($data['amount']) || $data['amount']==='') { $em0 = DB::table('employees')->where('id',$data['employee_id'])->first(); $data['amount'] = ($em0 && ($em0->pay_type ?? 'salary')!=='commission') ? $em0->salary : 0; }
     }
     $new = !$id; $slugName = $c['slug'];
@@ -250,7 +253,7 @@ class ResController extends Controller {
     if ($slugName==='payroll') { // purpose, due date and paid date fill in automatically
       try {
         $pe0 = DB::table('payroll_entries')->where('id',$id)->first(); $em0 = $pe0 ? DB::table('employees')->where('id',$pe0->employee_id)->first() : null;
-        if ($pe0) DB::table('payroll_entries')->where('id',$id)->update(['purpose'=>\App\Support\PayrollDue::purpose($em0->pay_type ?? 'salary'), 'due_date'=>\App\Support\PayrollDue::dueDate($pe0->month), 'paid_at'=>$pe0->status==='paid' ? ($pe0->paid_at ?: now('Asia/Dhaka')->toDateString()) : null]);
+        if ($pe0) DB::table('payroll_entries')->where('id',$id)->update(['base_amount'=>(isset($payBase) && $payBase > 0) ? $payBase : ($pe0->base_amount ?? $pe0->amount),'purpose'=>\App\Support\PayrollDue::purpose($em0->pay_type ?? 'salary'), 'due_date'=>\App\Support\PayrollDue::dueDate($pe0->month), 'paid_at'=>$pe0->status==='paid' ? ($pe0->paid_at ?: now('Asia/Dhaka')->toDateString()) : null]);
       } catch (\Throwable $e) { report($e); }
     }
     if ($slugName==='payroll') { try { \App\Support\PayrollDue::syncLedger((int)$id); } catch (\Throwable $e) { report($e); } } // paid salary is booked as an expense; unpaid reverses it
