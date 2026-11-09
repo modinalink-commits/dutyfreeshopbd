@@ -41,15 +41,37 @@ table.t{width:100%;border-collapse:collapse;font-size:13px}table.t th{text-align
 table.t.rs thead{display:none}table.t.rs,table.t.rs tbody,table.t.rs tr,table.t.rs td{display:block;width:100%;box-sizing:border-box}table.t.rs tr{border:1.25px solid #F1E3D8;border-radius:13px;padding:8px 12px;margin-bottom:10px}table.t.rs td{border:0;padding:4px 0;display:flex;justify-content:space-between;gap:10px;align-items:center}table.t.rs td:before{content:attr(data-l);color:var(--mut);font-size:12px}
 .tl div{font-size:9.5px}.tl i{width:22px;height:22px;line-height:22px}.tl div:before{top:10px}}
 </style>
+<style>
+.bx,.k,.qa a,.hello,.ad,.cpc,.wc{box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 14px rgba(16,24,40,.04)}
+.k{position:relative;overflow:hidden}.k:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--o)}
+.cards .k:nth-child(2):before{background:#16A34A}.cards .k:nth-child(3):before{background:#EA580C}.cards .k:nth-child(4):before{background:#DC2626}.cards .k:nth-child(5):before{background:#9333EA}.cards .k:nth-child(6):before{background:#0F172A}
+.k b{font-variant-numeric:tabular-nums}
+@media(max-width:760px){
+.acs{background:linear-gradient(135deg,#0B1220,#1B2740);border:0;border-radius:20px;padding:14px 12px 12px;box-shadow:0 10px 24px rgba(11,18,32,.22)}
+.acp b{color:#fff;font-size:16px}.acp small{color:#B8C2D6;word-break:break-all}
+.acp .av{background:linear-gradient(135deg,#FF8A00,#FF5A00);box-shadow:0 0 0 3px rgba(255,255,255,.18)}
+.navs{padding:2px 2px 4px;scroll-snap-type:x proximity}
+.acs a.i{background:rgba(255,255,255,.1);color:#E5EAF3;border-radius:999px;scroll-snap-align:start}
+.acs a.i.on{background:var(--o);color:#fff}
+.hello{border-radius:18px;padding:14px 16px}
+.cards{grid-template-columns:repeat(3,1fr);gap:8px}.k{padding:11px 8px 10px 12px;border-radius:13px}.k small{font-size:11px}.k b{font-size:17px}
+.bx{padding:14px;border-radius:18px}.bx h2{font-size:15px}
+.b1{padding:8px 13px}
+.qa{gap:8px}.qa a{padding:12px;gap:9px}.qa i{width:36px;height:36px;flex:none}.qa b{font-size:13px}
+.nrow{flex-wrap:wrap}.nbtn{padding:10px 16px}
+.f input,.f select,.f textarea{font-size:16px}
+.ads .ad,.cpc{padding:12px 13px}
+}
+</style>
 <div class="w"><div class="ac">
-<aside class="acs"><div class="acp"><div class="av">{{ mb_strtoupper(mb_substr($c->name, 0, 1)) }}</div><div><b>{{ $c->name }}</b><small>{{ $c->phone }} · {{ $cid }}</small><span class="cb" style="background:{{ $catc[0] }};color:{{ $catc[1] }}">{{ $cat }} Customer</span>@if(!empty($tier))<span class="cb" style="background:#FEF3C7;color:#B45309;margin-left:4px">{{ \App\Support\OrderDiscount::starText($tier['stars']) }} {{ $tier['name'] }}</span>@endif</div></div>
+<aside class="acs"><div class="acp"><div class="av">{{ mb_strtoupper(mb_substr($c->name, 0, 1)) }}</div><div><b>{{ $c->name }}</b><small>{{ $c->phone ? $c->phone.' · ' : '' }}{{ $cid }}</small><span class="cb" style="background:{{ $catc[0] }};color:{{ $catc[1] }}">{{ $cat }} Customer</span>@if(!empty($tier))<span class="cb" style="background:#FEF3C7;color:#B45309;margin-left:4px">{{ \App\Support\OrderDiscount::starText($tier['stars']) }} {{ $tier['name'] }}</span>@endif</div></div>
 <div class="navs">@foreach($nav as [$k,$l,$ic])<a class="i {{ $tab===$k ? 'on' : '' }}" href="{{ $k==='track' ? '/track' : '/account'.($k==='dashboard' ? '' : '/'.$k) }}"><span>{{ $ic }}</span>{{ $l }}</a>@endforeach<a class="i" href="/account/logout"><span>⎋</span>Logout</a></div></aside>
 <div class="acm">
 
 @if($tab==='dashboard')
 <div class="hello"><h1>আসসালামু আলাইকুম, {{ $c->name }}! 👋</h1><p>আপনার অ্যাকাউন্টে স্বাগতম। আমরা সবসময় আপনার সেবায় প্রস্তুত।</p></div>
 @if(!empty($tier))<div style="margin:0 0 16px">@include('components.membership-card',['name'=>$c->name,'id'=>$cid,'stars'=>$tier['stars'],'key'=>strtolower($tier['name'])])</div>@endif
-<div class="cards"><div class="k"><small>Total Orders</small><b>{{ $totalOrders }}</b></div><div class="k"><small>Delivered</small><b style="color:#15803D">{{ $cnt['Delivered'] }}</b></div><div class="k"><small>Pending</small><b style="color:#C2410C">{{ $cnt['Pending'] + $cnt['Confirmed'] + $cnt['Processing'] + $cnt['Shipment'] }}</b></div><div class="k"><small>Cancelled</small><b style="color:#B91C1C">{{ $cnt['Cancelled'] }}</b></div><div class="k"><small>Returned</small><b style="color:#7E22CE">{{ $cnt['Returned'] }}</b></div><div class="k"><small>Total Spend</small><b>{{ $tk($spend) }}</b></div></div>
+<div class="cards"><div class="k"><small>Total Orders</small><b>{{ $totalOrders }}</b></div><div class="k"><small>Delivered</small><b style="color:#15803D">{{ $cnt['Delivered'] }}</b></div><div class="k"><small>In Progress</small><b style="color:#C2410C">{{ $cnt['Pending'] + $cnt['Confirmed'] + $cnt['Processing'] + $cnt['Shipment'] }}</b></div><div class="k"><small>Cancelled</small><b style="color:#B91C1C">{{ $cnt['Cancelled'] }}</b></div><div class="k"><small>Returned</small><b style="color:#7E22CE">{{ $cnt['Returned'] }}</b></div><div class="k"><small>Total Spend</small><b>{{ $tk($spend) }}</b></div></div>
 @include('components.app-reward-card')
 <div class="bx" id="appN"><h2>App &amp; Notifications</h2>
 <div class="nrow"><div><b id="aiT">Install DutyFreeBD App</b><small id="aiS">হোম স্ক্রিন থেকে অ্যাপের মতো খুলুন।</small></div><button type="button" class="nbtn" id="aiB">Install App</button></div>
