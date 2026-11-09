@@ -86,6 +86,17 @@ class AiAgent {
     if ($text === '') $text = 'আপনার বার্তাটি পেয়েছি। আমাদের টিম সদস্য শীঘ্রই রিপ্লাই দেবেন। জরুরি হলে কল/WhatsApp করুন: '.Biz::hotline();
     return [true, $text, $trace];
   }
+  /** Verified facts about the customer's newest order (last 3 days), so the assistant never says "cart is empty" to someone whose order was just placed/approved/invoiced. Never throws. */
+  private static function recentOrder(object $t): string {
+    try {
+      $ph = preg_replace('/\D+/', '', (string)($t->phone ?? '')); if (strlen($ph) < 10) return '';
+      $o = DB::table('orders')->where('phone', 'like', '%'.substr($ph, -10))->where('created_at', '>=', now()->subDays(3))->orderByDesc('id')->first(['invoice', 'status', 'total', 'created_at']);
+      if (!$o) return '';
+      $mins = (int)now()->diffInMinutes($o->created_at);
+      $ago = $mins < 90 ? $mins.' minutes ago' : round($mins / 60).' hours ago';
+      return "\nRECENT ORDER (verified by the system): invoice #{$o->invoice}, status {$o->status}, total ".number_format((float)$o->total).' BDT, placed '.$ago.". If the customer's message is a confirmation or follow-up (confirm, 'please confirm it', ok, 'kore den', 'dekhen', 'update ki') and no order summary is waiting in this chat, they mean THIS order: tell them in their language that order #{$o->invoice} is already received (status: {$o->status}) and the team is processing it. NEVER say the cart is empty and never ask which product to order in that case. Do not promise delivery time and do not invent any status. Start a new order only if the customer clearly asks for a new or different product.";
+    } catch (\Throwable $e) { return ''; }
+  }
   /** Website chat: answer the latest customer message of one thread and store state, intent and mood on the thread. */
   public static function replyThread(int $tid, array $hist, int $lastId, string $lastText): ?string {
     $t = DB::table('chat_threads')->find($tid); if (!$t) return null;
@@ -94,7 +105,7 @@ class AiAgent {
     // hard rule above: a message typed in Bengali script is always answered in Bengali script (staff setting still wins)
     $st['chat_phone'] = (string)($t->phone ?? ''); try { $st['voice_in'] = $lastId > 0 && DB::table('chat_messages')->where('id', $lastId)->value('input_type') === 'voice'; } catch (\Throwable $e) { $st['voice_in'] = false; } $ctx = ['thread_id'=>$tid, 'customer_id'=>$t->customer_id, 'last_msg_id'=>$lastId, 'last_msg_text'=>$lastText];
     unset($st['meta']['lang']); // counted once per answer
-    $st['mem'] = AiMemory::prompt($tid);
+    $st['mem'] = AiMemory::prompt($tid).self::recentOrder($t);
     [$ok, $txt] = self::converse($hist, $st, $ctx); if (!$ok) return null;
     unset($st['mem']);
     $m = $st['meta'] ?? [];
