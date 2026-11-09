@@ -30,7 +30,10 @@ class CategoryProfit {
   /** Order date is the basis, like the Profit & Loss Statement. */
   private static function lines(array $f) {
     $og = DB::table('order_items')->selectRaw('order_id, sum(price * qty) as g')->groupBy('order_id');
-    $q = DB::table('order_items as i')->join('orders as o', 'o.id', '=', 'i.order_id')->leftJoin('products as p', 'p.id', '=', 'i.product_id')
+    $q = DB::table('order_items as i')->join('orders as o', 'o.id', '=', 'i.order_id')
+      // old order lines that lost their product link are matched to a product by exact (unique) name
+      ->leftJoinSub(DB::table('products')->selectRaw('min(id) as id, lower(trim(name)) as nm')->groupByRaw('lower(trim(name))')->havingRaw('count(*) = 1'), 'pn', function ($j) { $j->whereRaw('i.product_id is null and pn.nm = lower(trim(i.name))'); })
+      ->leftJoin('products as p', 'p.id', '=', DB::raw('coalesce(i.product_id, pn.id)'))
       ->leftJoin('categories as c', 'c.id', '=', DB::raw('coalesce(i.cat_id, p.category_id)'))
       ->joinSub($og, 'og', 'og.order_id', '=', 'i.order_id')
       ->when(self::hasInv(), fn($qq) => $qq->leftJoinSub(DB::table('pathao_invoice_lines')->selectRaw('consignment_id, max(fee) as fee')->where('fee', '>', 0)->groupBy('consignment_id'), 'pl', 'pl.consignment_id', '=', 'o.consignment_id'))
@@ -115,7 +118,7 @@ class CategoryProfit {
       if (isset($p['sub']) && $p['sub'] !== '') $q->whereRaw("$subExpr = ?", [$p['sub']]);
       if (isset($p['child']) && $p['child'] !== '') $q->whereRaw("$childExpr = ?", [$p['child']]);
       if ($level === 'order') {
-        if (isset($p['product'])) $q->where('i.product_id', (int)$p['product']);
+        if (isset($p['product'])) $q->whereRaw('coalesce(p.id, 0) = ?', [(int)$p['product']]);
         $full = self::FULL_RET; $ret = str_replace('FULL', $full, self::M['ret']);
         $rows = $q->selectRaw("o.id as oid, o.invoice, o.created_at, o.status, i.qty, i.price, ($ret) as ret_qty, (i.price * i.qty) as gross,
           (case when ($full) then 0 else coalesce(o.discount,0) * (i.price * i.qty) / nullif(og.g,0) end) as disc,
@@ -128,7 +131,7 @@ class CategoryProfit {
           })->all();
         return ['rows' => $rows];
       }
-      if ($level === 'product') $q->selectRaw("i.product_id as k, max(i.name) as name, max(p.sku) as sku, " . self::agg())->groupBy('i.product_id');
+      if ($level === 'product') $q->selectRaw("coalesce(p.id, 0) as k, max(coalesce(p.name, i.name)) as name, max(p.sku) as sku, " . self::agg())->groupByRaw('coalesce(p.id, 0)');
       elseif ($level === 'sub') $q->selectRaw("$subExpr as k, $subExpr as name, " . self::agg())->groupByRaw($subExpr);
       elseif ($level === 'child') $q->selectRaw("$childExpr as k, $childExpr as name, " . self::agg())->groupByRaw($childExpr);
       else $q->selectRaw("$mainExpr as k, max(coalesce(c.name, 'Uncategorized')) as name, " . self::agg())->groupByRaw($mainExpr);
