@@ -250,7 +250,10 @@ function wire(s){ses=s;
  s.on('failed',function(e){finish('failed',(e&&e.cause)||'')});
  s.on('hold',function(e){if(e.originator==='local'){held=true;$('bHold').classList.add('on');$('bHold').lastChild.textContent='Resume'}});
  s.on('unhold',function(e){if(e.originator==='local'){held=false;$('bHold').classList.remove('on');$('bHold').lastChild.textContent='Hold'}});
- var pc=s.connection;if(pc)pc.addEventListener('track',function(ev){if(ev.streams&&ev.streams[0])$('aud').srcObject=ev.streams[0];if(phase==='connecting'&&dir==='out')setPhase('ringing')})}
+ /* remote audio: an INCOMING call has no RTCPeerConnection yet when it is wired (JsSIP creates it on answer), so listen for 'peerconnection' too; build a stream from the track when the PBX sends none; always (re)start playback */
+ var attach=function(pc){if(!pc||pc._bdA)return;pc._bdA=1;pc.addEventListener('track',function(ev){var a=$('aud'),st=ev.streams&&ev.streams[0];if(!st){st=a.srcObject instanceof MediaStream?a.srcObject:new MediaStream();if(ev.track&&st.getTracks().indexOf(ev.track)<0)st.addTrack(ev.track)}a.srcObject=st;try{var pr=a.play();if(pr&&pr.catch)pr.catch(function(){})}catch(x){}if(phase==='connecting'&&dir==='out')setPhase('ringing')})};
+ attach(s.connection);s.on('peerconnection',function(e){attach(e.peerconnection)});
+ s.on('confirmed',function(){attach(s.connection);var a=$('aud');try{if(a.srcObject===null&&s.connection){var ts=s.connection.getReceivers().map(function(r){return r.track}).filter(function(t){return t&&t.kind==='audio'});if(ts.length)a.srcObject=new MediaStream(ts)}var pr=a.play();if(pr&&pr.catch)pr.catch(function(){})}catch(x){}})}
 function friendly(c){c=String(c||'');
  if(/busy|rejected|decline/i.test(c))return 'Call Rejected';
  if(/unavailable|not found|address incomplete|no answer|timeout|expired/i.test(c))return 'Number Unreachable';
