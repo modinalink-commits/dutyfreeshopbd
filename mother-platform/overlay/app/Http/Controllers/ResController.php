@@ -141,11 +141,7 @@ class ResController extends Controller {
     return back()->with('ok', "Customers imported: $new new, $upd updated, $skip rows skipped (invalid phone).");
   }
   public function payrollGenerate() {
-    $mon = now('Asia/Dhaka')->format('Y-m'); $n = 0;
-    foreach (DB::table('employees')->where('active',true)->get() as $e) {
-      if (DB::table('payroll_entries')->where('employee_id',$e->id)->where('month',$mon)->exists()) continue;
-      DB::table('payroll_entries')->insert(['employee_id'=>$e->id,'month'=>$mon,'amount'=>(($e->pay_type ?? 'salary')==='commission' ? 0 : $e->salary),'note'=>(in_array($e->pay_type ?? 'salary',['commission','both']) ? (($e->pay_type)==='both' ? 'Fixed salary + commission: add this month\'s commission to the amount' : 'Commission: enter this month\'s amount from the accounts') : null),'status'=>'unpaid','created_at'=>now(),'updated_at'=>now()]); $n++;
-    }
+    $mon = now('Asia/Dhaka')->format('Y-m'); $n = \App\Support\PayrollDue::create($mon);
     $this->audit('create','payroll.'.$mon.' x'.$n);
     $c = DB::table('payroll_entries')->where('month',$mon)->where('amount',0)->count();
     return back()->with('ok', "$n payroll rows created for $mon".($c ? ". $c commission row(s) need this month's amount: open Payroll, Edit, enter the amount." : ''));
