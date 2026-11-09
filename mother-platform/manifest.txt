@@ -943,3 +943,4 @@ resources/views/error_log.blade.php
 resources/views/chat_memory.blade.php
 resources/views/admin_raw.blade.php
 database/migrations/2026_11_10_040000_pae_type_product_time_index.php
+database/migrations/2026_11_10_050000_move_lifestyle_essentials.php
