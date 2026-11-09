@@ -144,7 +144,7 @@ class ResController extends Controller {
     $mon = now('Asia/Dhaka')->format('Y-m'); $n = 0;
     foreach (DB::table('employees')->where('active',true)->get() as $e) {
       if (DB::table('payroll_entries')->where('employee_id',$e->id)->where('month',$mon)->exists()) continue;
-      DB::table('payroll_entries')->insert(['employee_id'=>$e->id,'month'=>$mon,'amount'=>(($e->pay_type ?? 'salary')==='commission' ? 0 : $e->salary),'note'=>(($e->pay_type ?? 'salary')==='commission' ? 'Commission: enter this month\'s amount from the accounts' : null),'status'=>'unpaid','created_at'=>now(),'updated_at'=>now()]); $n++;
+      DB::table('payroll_entries')->insert(['employee_id'=>$e->id,'month'=>$mon,'amount'=>(($e->pay_type ?? 'salary')==='commission' ? 0 : $e->salary),'note'=>(in_array($e->pay_type ?? 'salary',['commission','both']) ? (($e->pay_type)==='both' ? 'Fixed salary + commission: add this month\'s commission to the amount' : 'Commission: enter this month\'s amount from the accounts') : null),'status'=>'unpaid','created_at'=>now(),'updated_at'=>now()]); $n++;
     }
     $this->audit('create','payroll.'.$mon.' x'.$n);
     $c = DB::table('payroll_entries')->where('month',$mon)->where('amount',0)->count();
@@ -206,6 +206,7 @@ class ResController extends Controller {
       } else { $data['video_id'] = null; $data['media_type'] = 'image'; if (empty($data['image'])) throw \Illuminate\Validation\ValidationException::withMessages(['image'=>'Add a banner image for an image slide.']); }
     }
     $new = !$id; $slugName = $c['slug'];
+    $oldPaid = ($slugName==='payroll' && $id) ? (DB::table('payroll_entries')->where('id',$id)->value('status') === 'paid') : false;
     // empty optional values must not overwrite NOT NULL columns that have a default (e.g. "Display order")
     try { $nn = collect(DB::select("select column_name from information_schema.columns where table_name = ? and is_nullable = 'NO' and column_default is not null", [$c['table']]))->pluck('column_name')->all(); foreach ($data as $k => $v) if ($v === null && in_array($k, $nn)) unset($data[$k]); } catch (\Throwable $e) {}
     try {
@@ -234,6 +235,15 @@ class ResController extends Controller {
       $m = $e->getMessage(); $col = preg_match('/column "(\w+)"/', $m, $mm) ? $mm[1] : null; $lab = $col ? (collect($c['fields'])->firstWhere('n', $col)['l'] ?? $col) : null;
       $why = str_contains($m, 'unique') ? 'this value already exists' : (str_contains($m, 'too long') ? 'text is too long' : (str_contains($m, 'null value') ? 'this field cannot be empty' : 'check the values'));
       return back()->withInput()->withErrors(['db'=>'Could not save'.($lab ? ' — "'.$lab.'": ' : ': ').$why]);
+    }
+    if ($slugName==='payroll' && ($data['status'] ?? '')==='paid' && !$oldPaid) { // salary submitted: SMS the staff member
+      try {
+        $pe = DB::table('payroll_entries')->where('id',$id)->first(); $em = $pe ? DB::table('employees')->where('id',$pe->employee_id)->first() : null;
+        if ($em && !empty($em->phone)) {
+          [$ok, $msg] = \App\Support\Sms::send((string)$em->phone, 'DutyFreeBD: '.$em->name.', আপনার '.$pe->month.' মাসের বেতন/কমিশন ৳'.number_format((float)$pe->amount).' পরিশোধ করা হয়েছে। ধন্যবাদ।');
+          $this->audit('sms', 'payroll#'.$id.' '.($ok ? 'sent' : 'failed: '.$msg));
+        } else $this->audit('sms', 'payroll#'.$id.' not sent: employee has no phone');
+      } catch (\Throwable $e) {}
     }
     if ($slugName==='users' && $r->has('ext_username')) { $er = \App\Http\Controllers\CallCenterController::setExt((int)$id, $r->input('ext_username'), $r->input('ext_password')); if ($er) return redirect('/admin/m/users/'.$id.'/edit')->withErrors(['db'=>'User saved, but extension not saved: '.$er]); }
     return redirect('/admin/m/'.$slugName)->with('ok', 'Saved');
