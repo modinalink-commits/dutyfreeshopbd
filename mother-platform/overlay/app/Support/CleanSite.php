@@ -24,7 +24,7 @@ class CleanSite {
       if ($r->is('admin', 'admin/*', 'api/*', 'webhook/*')) return self::$on = false;
       $h = preg_replace('/^www\./', '', strtolower($r->getHost()));
       $on = in_array($h, self::hosts(), true);
-      if (!$on) { $q = $r->query('cleanpreview'); $on = $q !== null ? $q === '1' : $r->cookie('cleanpreview') === '1'; if ($q !== null) \Illuminate\Support\Facades\Cookie::queue('cleanpreview', $q === '1' ? '1' : '0', 1440); }
+      if (!$on) { $q = $r->query('cleanpreview'); $on = $q !== null ? $q === '1' : $r->cookie('cleanpreview') === '1'; if ($q !== null) \Illuminate\Support\Facades\Cookie::queue('cleanpreview', $q === '1' ? '1' : '0', 5); }
       return self::$on = $on;
     } catch (\Throwable $e) { return self::$on = false; }
   }
