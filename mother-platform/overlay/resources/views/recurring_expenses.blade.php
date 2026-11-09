@@ -18,9 +18,9 @@
 </div>
 
 <div class="card" style="overflow:auto"><b>Upcoming (next 45 days)</b>
-<table><thead><tr><th>Due</th><th>Expense</th><th>Category</th><th>Amount</th><th>Auto post</th></tr></thead><tbody>
-@forelse($upcoming as $u)<tr><td>{{ \Carbon\Carbon::parse($u->due)->format('d M Y') }}</td><td>{{ $u->name }}</td><td>{{ $u->category }}</td><td>{{ $tk($u->amount) }}</td><td>{{ $u->auto ? 'ON' : 'OFF' }}</td></tr>
-@empty<tr><td colspan="5">Nothing scheduled.</td></tr>@endforelse</tbody></table></div>
+<table><thead><tr><th>Due</th><th>Expense</th><th>Category</th><th>Amount</th><th>Auto post</th><th></th></tr></thead><tbody>
+@forelse($upcoming as $u)<tr><td>{{ \Carbon\Carbon::parse($u->due)->format('d M Y') }}</td><td>{{ $u->name }}</td><td>{{ $u->category }}</td><td>{{ $tk($u->amount) }}</td><td>{{ $u->auto ? 'ON' : 'OFF' }}</td><td>@if($can && ($u->type ?? '') !== 'payroll')<form method="post" action="/admin/recurring-expenses/{{ $u->mid }}/pay-upcoming" style="display:inline-flex;gap:4px">@csrf<input type="hidden" name="period" value="{{ $u->period }}"><input type="hidden" name="due" value="{{ $u->due }}"><select name="account_id" style="max-width:150px">@foreach($acc as $a)<option value="{{ $a->id }}" @selected($a->id == $u->acc)>{{ $a->name }}</option>@endforeach</select><button type="submit">Pay</button></form>@endif</td></tr>
+@empty<tr><td colspan="6">Nothing scheduled.</td></tr>@endforelse</tbody></table></div>
 
 <div class="card" style="overflow:auto"><b>Posted / waiting for payment</b>
 <table><thead><tr><th>Due</th><th>Expense</th><th>Amount</th><th>Principal / Interest / Fee</th><th>Status</th><th>Note</th><th></th></tr></thead><tbody>

@@ -20,7 +20,7 @@ class RecurringExpenseController extends Controller {
     $upcoming = [];
     foreach ($masters->where('status', 'active') as $m) foreach (R::occurrences($m, $today, $today->copy()->addDays(45)) as [$p, $d]) {
       if (DB::table('recurring_expense_instances')->where('recurring_id', $m->id)->where('billing_period', $p)->exists()) continue;
-      [$a] = R::amountOn($m, $d); $upcoming[] = (object)['name' => $m->name, 'category' => $m->category, 'due' => $d, 'amount' => $m->is_loan ? ($m->principal + $m->interest + $m->fee ?: $a) : $a, 'auto' => $m->auto_post, 'type' => $m->expense_type];
+      [$a] = R::amountOn($m, $d); $upcoming[] = (object)['mid' => $m->id, 'period' => $p, 'acc' => $m->account_id, 'name' => $m->name, 'category' => $m->category, 'due' => $d, 'amount' => $m->is_loan ? ($m->principal + $m->interest + $m->fee ?: $a) : $a, 'auto' => $m->auto_post, 'type' => $m->expense_type];
     }
     usort($upcoming, fn($a, $b) => strcmp($a->due, $b->due));
     $owing = $inst->filter(fn($x) => $x->payment_status !== 'paid' && !in_array($x->status, ['skipped', 'cancelled']));
@@ -73,8 +73,20 @@ class RecurringExpenseController extends Controller {
     $this->chk('edit'); $i = DB::table('recurring_expense_instances')->find($iid); abort_unless($i, 404); $m = DB::table('recurring_expenses')->find($i->recurring_id);
     $acc = (int)($r->input('account_id') ?: $i->account_id ?: $m->account_id);
     DB::table('recurring_expense_instances')->where('id', $iid)->update(['status' => $i->status === 'due' ? 'posted' : $i->status, 'posted_at' => $i->posted_at ?: now()]);
-    [$ok, $msg] = R::settle(DB::table('recurring_expense_instances')->find($iid), $m, $acc, Auth::user()->name);
+    [$ok, $msg] = R::settle(DB::table('recurring_expense_instances')->find($iid), $m, $acc, Auth::user()->name, true);
     if (!$ok) DB::table('recurring_expense_instances')->where('id', $iid)->update(['payment_status' => 'failed', 'note' => $msg]);
+    return back()->with($ok ? 'ok' : 'bad', $ok ? 'Paid from the account.' : 'Not paid: '.$msg);
+  }
+  /** Pay an upcoming period straight from the list: creates that period's item and pays it from the chosen account (booked in the item's own month). */
+  public function payUpcoming(Request $r, $id) {
+    $this->chk('edit'); $d = $r->validate(['period' => 'required|string|max:20', 'due' => 'required|date', 'account_id' => 'nullable|integer']);
+    $m = DB::table('recurring_expenses')->find($id); abort_unless($m, 404);
+    R::post($m, $d['period'], $d['due']);
+    $i = DB::table('recurring_expense_instances')->where('recurring_id', $m->id)->where('billing_period', $d['period'])->first(); abort_unless($i, 404);
+    $acc = (int)($d['account_id'] ?? 0) ?: (int)($i->account_id ?: $m->account_id);
+    DB::table('recurring_expense_instances')->where('id', $i->id)->update(['status' => $i->status === 'due' ? 'posted' : $i->status, 'posted_at' => $i->posted_at ?: now()]);
+    [$ok, $msg] = R::settle(DB::table('recurring_expense_instances')->find($i->id), $m, $acc, Auth::user()->name, true);
+    if (!$ok) DB::table('recurring_expense_instances')->where('id', $i->id)->update(['payment_status' => 'failed', 'note' => $msg]);
     return back()->with($ok ? 'ok' : 'bad', $ok ? 'Paid from the account.' : 'Not paid: '.$msg);
   }
   public function skip(Request $r, $iid) {
