@@ -942,3 +942,4 @@ database/migrations/2026_11_10_030000_category_title_case.php
 resources/views/error_log.blade.php
 resources/views/chat_memory.blade.php
 resources/views/admin_raw.blade.php
+database/migrations/2026_11_10_040000_pae_type_product_time_index.php
