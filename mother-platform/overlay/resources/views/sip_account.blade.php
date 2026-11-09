@@ -8,19 +8,20 @@
 <div class="card" style="margin-top:12px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><b>Connection status</b><span id="bdg" class="chip" style="background:#6B7280;color:#fff;border:0;font-weight:800">Disconnected</span></div>
 <form method="post" action="/admin/call-center/account" style="display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">@csrf
 @php($f=fn($k)=>old($k, $a->$k ?? ''))
-<label>Account Name<input name="account_name" value="{{ $f('account_name') }}" placeholder="Child City PBX"></label>
+<details style="grid-column:1/-1"><summary style="cursor:pointer;font-size:13px;color:#6B7280">Advanced — অটো সেট করা আছে (PBX: childcity.pbx.com.bd · WSS port 443), সাধারণত বদলাতে হবে না</summary><div style="display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));margin-top:8px"><label>Account Name<input name="account_name" value="{{ $f('account_name') }}" placeholder="Child City PBX"></label>
 <label>SIP Server<input name="sip_server" value="{{ $f('sip_server') }}" placeholder="childcity.pbx.com.bd"></label>
 <label>SIP WebSocket / WSS URL<input name="wss_url" id="wss" value="{{ $f('wss_url') }}" placeholder="wss://pbx.example.com:8089/ws"></label>
+</div></details>
 <label>Username / Extension<input name="username" id="usr" value="{{ $f('username') }}" required></label>
-<label>Auth Username<input name="auth_username" id="aus" value="{{ $f('auth_username') }}" placeholder="same as username if empty"></label>
 <label>Password <small style="color:#6B7280">{{ $hasPw ? 'saved — shown as stored' : 'not set' }}</small><input type="text" name="password" id="pwd" value="{{ $pwPlain ?? '' }}" autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" style="font-family:ui-monospace,Menlo,monospace"></label>
+<details style="grid-column:1/-1"><summary style="cursor:pointer;font-size:13px;color:#6B7280">Advanced 2 — Domain, Auth, Caller ID, STUN</summary><div style="display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));margin-top:8px"><label>Auth Username<input name="auth_username" id="aus" value="{{ $f('auth_username') }}" placeholder="same as username if empty"></label>
 <label>Domain<input name="domain" id="dom" value="{{ $f('domain') }}" placeholder="childcity.pbx.com.bd" required></label>
 <label>Display Name<input name="display_name" value="{{ $f('display_name') }}" placeholder="Forhad"></label>
 <label>Outbound Proxy (optional)<input name="outbound_proxy" value="{{ $f('outbound_proxy') }}"></label>
 <label>Dialing Prefix (optional)<input name="dial_prefix" value="{{ $f('dial_prefix') }}"></label>
 <label>Caller ID<input name="caller_id" value="{{ $f('caller_id') }}"></label>
 <label>STUN/TURN Server (optional)<input name="stun_server" value="{{ $f('stun_server') }}" placeholder="stun.l.google.com:19302"></label>
-<label style="grid-column:1/-1;display:flex;gap:8px;align-items:center"><input type="checkbox" name="recording_on" value="1" style="width:auto" @checked(\Illuminate\Support\Facades\DB::table('settings')->where('key','cc_recording_on')->value('value')==='1')> আমাদের PBX কল রেকর্ড করে (ডায়ালারে "Recording" সূচক দেখাবে)। রেকর্ডিং লিংক PBX থেকে না এলে "Processing" দেখাবে — লিংক ছাড়া "Available" দেখানো হয় না।</label>
+<label style="grid-column:1/-1;display:flex;gap:8px;align-items:center"><input type="checkbox" name="recording_on" value="1" style="width:auto" @checked(\Illuminate\Support\Facades\DB::table('settings')->where('key','cc_recording_on')->value('value')==='1')> আমাদের PBX কল রেকর্ড করে (ডায়ালারে "Recording" সূচক দেখাবে)। রেকর্ডিং লিংক PBX থেকে না এলে "Processing" দেখাবে — লিংক ছাড়া "Available" দেখানো হয় না।</label></div></details>
 <div style="grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" type="submit">Save Account</button><button class="btn" type="button" id="bTest" style="background:#fff;color:#0B1F3A;border:1px solid #D1D5DB">Test Connection</button><button class="btn" type="button" id="bCon" style="background:#16A34A">Connect</button><button class="btn" type="button" id="bDis" style="background:#6B7280">Disconnect</button></div>
 </form><div id="tres" style="margin-top:10px;font-size:13px"></div></div>
 @verbatim
