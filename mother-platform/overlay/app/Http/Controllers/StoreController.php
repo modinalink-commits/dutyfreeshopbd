@@ -493,6 +493,11 @@ class StoreController extends Controller {
     $q = $this->quote($this->parseItems($r->input('ids')), (int)$r->input('area', 1), trim(mb_substr((string)$r->input('code'), 0, 40)), $sp ?: $ph, (bool)$sp, mb_substr((string)$r->input('addr'), 0, 300));
     if ($ph) $q['profile'] = null;
     $q['benefits'] = $t ? self::benefitsView($t, $q, $r) : null; unset($q['cand'], $q['bsnap']);
+    // customers see which benefits apply and the TOTAL discount, never the percentage of each benefit
+    $np = fn($x) => trim(preg_replace(['/\s*[–—-]\s*\d+(?:\.\d+)?\s*%/u', '/\(?\s*\d+(?:\.\d+)?\s*%\s*\)?/u'], '', (string)$x));
+    foreach (($q['applied'] ?? []) as $i => $l) { $q['applied'][$i]['pct'] = null; foreach (['label', 'type', 'rule'] as $f) if (isset($l[$f])) $q['applied'][$i][$f] = $np($l[$f]); }
+    if (!empty($q['notes'])) $q['notes'] = array_map($np, $q['notes']);
+    if (!empty($q['benefits']['items'])) foreach ($q['benefits']['items'] as $i => $it) $q['benefits']['items'][$i]['label'] = $np($it['label'] ?? '');
     return response()->json($q)->header('Cache-Control','no-store');
   }
   /** Checkout progress tracking: one "incomplete order" per browser session, updated as the customer types. Never confirms, never sends SMS, never touches stock or courier. */
