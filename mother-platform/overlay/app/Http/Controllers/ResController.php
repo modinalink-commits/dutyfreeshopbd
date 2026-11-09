@@ -141,7 +141,7 @@ class ResController extends Controller {
     return back()->with('ok', "Customers imported: $new new, $upd updated, $skip rows skipped (invalid phone).");
   }
   public function payrollGenerate() {
-    $mon = now('Asia/Dhaka')->format('Y-m'); $n = \App\Support\PayrollDue::create($mon);
+    $mon = \App\Support\PayrollDue::lastMonth(); $n = \App\Support\PayrollDue::create($mon);
     $this->audit('create','payroll.'.$mon.' x'.$n);
     $c = DB::table('payroll_entries')->where('month',$mon)->where('amount',0)->count();
     return back()->with('ok', "$n payroll rows created for $mon".($c ? ". $c commission row(s) need this month's amount: open Payroll, Edit, enter the amount." : ''));

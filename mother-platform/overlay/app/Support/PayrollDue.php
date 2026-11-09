@@ -3,12 +3,14 @@ namespace App\Support;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-/** Every month each active employee gets one unpaid payroll row (their "due"). Fixed salary = salary; commission staff start at 0 and the amount is entered from the month's accounts. Idempotent. */
+/** After each month ends (from the 1st of the next month) every active employee gets one unpaid payroll row for the completed month, due on the 5th. Fixed salary = salary; commission staff start at 0 and the amount is entered from the month's accounts. Idempotent. */
 class PayrollDue {
   public static function purpose(string $payType): string { return ['commission' => 'Commission', 'both' => 'Salary + commission'][$payType] ?? 'Salary'; }
-  public static function dueDate(string $mon): string { try { return \Carbon\Carbon::createFromFormat('Y-m-d', $mon.'-01')->endOfMonth()->toDateString(); } catch (\Throwable $e) { return now('Asia/Dhaka')->toDateString(); } }
+  public static function dueDate(string $mon): string { try { return \Carbon\Carbon::createFromFormat('Y-m-d', $mon.'-01')->addMonthNoOverflow()->day(5)->toDateString(); } catch (\Throwable $e) { return now('Asia/Dhaka')->toDateString(); } }
+  /** Salary is for a completed month: it is generated after the month ends and paid by the 5th of the next month. */
+  public static function lastMonth(): string { return now('Asia/Dhaka')->startOfMonth()->subMonthNoOverflow()->format('Y-m'); }
   public static function create(?string $mon = null): int {
-    $mon = $mon ?: now('Asia/Dhaka')->format('Y-m'); $n = 0;
+    $mon = $mon ?: self::lastMonth(); $n = 0;
     foreach (DB::table('employees')->where('active', true)->get() as $e) {
       if (DB::table('payroll_entries')->where('employee_id', $e->id)->where('month', $mon)->exists()) continue;
       $pt = $e->pay_type ?? 'salary';
