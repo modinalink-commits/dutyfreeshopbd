@@ -162,4 +162,12 @@ configs:
       </document>
       XML
       echo "relay ready. MODE=$$MODE client=$$CLIENT_IP prefix=$$PREFIX max=$$MAX_CALLS public=$$PUBLIC_IP"
+      # Live-call snapshot: every 3 s push the relay's channel list to the admin panel (Call Clients live board + running-minute count).
+      if [ -n "$$RELAY_TOKEN" ]; then
+        RELAY_LIVE_URL="$${RELAY_LIVE_URL:-$${RELAY_CONFIG_URL%relay-config}relay-live}"
+        ( sleep 25; while sleep 3; do
+            fs_cli -p "$$ESLPW" -x 'show channels as json' > /tmp/live.json 2>/dev/null
+            [ -s /tmp/live.json ] && wget -q -t 1 -T 5 -O /dev/null --header="Authorization: Bearer $$RELAY_TOKEN" --header="Content-Type: application/json" --post-file=/tmp/live.json "$$RELAY_LIVE_URL"
+          done ) &
+      fi
       exec freeswitch -nonat -nf -c -conf /etc/freeswitch -log /var/log/freeswitch -db /var/lib/freeswitch/db -run /var/run/freeswitch

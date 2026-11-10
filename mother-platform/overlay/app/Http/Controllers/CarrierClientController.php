@@ -9,13 +9,13 @@ class CarrierClientController extends Controller {
   private function guard() { abort_unless(\App\Support\ProfitFloor::admin(), 403); }
   private static function set(string $k, string $v) { DB::table('settings')->updateOrInsert(['key' => 'vc_' . $k], ['value' => $v]); }
   public function index() {
-    $this->guard();
+    $this->guard(); $lv = self::liveAnswered();
     $rows = DB::table('voice_carrier_clients')->orderBy('id')->get();
     $gw = Voice::set('gateway', '');
     $cfg = ['ip' => Voice::set('carrier_ip', ''), 'port' => Voice::set('carrier_port', '5060'), 'gateway' => $gw];
     $exts = array_filter(array_map('trim', explode("\n", (string)Sms::secret('vc_relay_exts')))); $names = array_map(fn($l) => explode(':', $l, 2)[0], $exts);
     $relay = ['host' => Voice::set('relay_host', '103.125.255.33'), 'port' => Voice::set('relay_port', '5080'), 'transport' => Voice::set('relay_transport', 'tcp'), 'realm' => Voice::set('relay_realm', ''), 'caller_id' => Voice::set('relay_caller_id', ''), 'mode' => Voice::set('relay_mode', 'test'), 'exts' => implode("\n", $names)];
-    return view('carrier_clients', ['rows' => $rows, 'cfg' => $cfg, 'relay' => $relay, 'pbx' => self::pbxConfig($rows, $gw), 'usage' => $rows->mapWithKeys(fn($c) => [$c->id => self::usage($c)])->all()]);
+    return view('carrier_clients', ['rows' => $rows, 'cfg' => $cfg, 'relay' => $relay, 'pbx' => self::pbxConfig($rows, $gw), 'usage' => $rows->mapWithKeys(fn($c) => [$c->id => self::usage($c, $lv ?? [])])->all()]);
   }
   /** Billing cycle window containing today: starts at cycle_start (or the day the client was added) and repeats every cycle_days. */
   public static function cycleWindow($c): array {
@@ -26,18 +26,34 @@ class CarrierClientController extends Controller {
     return [$start, $start->copy()->addDays($days)];
   }
   /** Connected (answered) call usage for the client's current cycle, from relay CDRs. Billed minutes round each call up to a whole minute. */
-  public static function usage($c): array {
+  /** Answered calls still in progress, per client id => list of elapsed seconds (from the first time we saw the call ACTIVE). */
+  public static function liveAnswered(): array {
+    [$ok, $rows] = self::relayChannels(); if (!$ok) return []; $byIp = [];
+    foreach (DB::table('voice_carrier_clients')->get() as $c) $byIp[explode('/', $c->ip)[0]] = $c->id;
+    $res = [];
+    foreach ($rows as $r) {
+      if (($r['direction'] ?? '') !== 'inbound' || strtoupper((string)($r['callstate'] ?? '')) !== 'ACTIVE' || empty($r['uuid'])) continue;
+      $cid = $byIp[$r['ip_addr'] ?? ''] ?? null; if (!$cid) continue;
+      $k = 'vc_ans_' . preg_replace('/[^0-9a-f-]/i', '', (string)$r['uuid']);
+      $t0 = \Illuminate\Support\Facades\Cache::get($k); if (!$t0) { $t0 = time(); \Illuminate\Support\Facades\Cache::put($k, $t0, 21600); }
+      $res[$cid][] = max(0, time() - (int)$t0);
+    }
+    return $res;
+  }
+  public static function usage($c, array $live = []): array {
     [$from, $to] = self::cycleWindow($c);
     $r = DB::table('voice_call_cdrs')->where('client_id', $c->id)->where('billsec', '>', 0)->where('ended_at', '>=', $from->copy()->utc())->where('ended_at', '<', $to->copy()->utc())
       ->selectRaw('COUNT(*) AS calls, COALESCE(SUM(billsec),0) AS secs, COALESCE(SUM(CEIL(billsec / 60.0)),0) AS bmin')->first();
-    $billed = (int)$r->bmin; $pre = $c->prepaid_minutes === null ? null : (int)$c->prepaid_minutes;
-    return ['from' => $from->format('d M Y'), 'to' => $to->copy()->subDay()->format('d M Y'), 'calls' => (int)$r->calls, 'secs' => (int)$r->secs, 'billed_min' => $billed,
+    $billed = (int)$r->bmin; $calls = (int)$r->calls; $secs = (int)$r->secs; $lv = $live[$c->id] ?? [];
+    foreach ($lv as $ls) { $billed += max(1, (int)ceil($ls / 60)); $secs += $ls; $calls++; } // calls in progress count live, rounded up like finished ones
+    $pre = $c->prepaid_minutes === null ? null : (int)$c->prepaid_minutes;
+    return ['from' => $from->format('d M Y'), 'to' => $to->copy()->subDay()->format('d M Y'), 'calls' => $calls, 'live' => count($lv), 'secs' => $secs, 'billed_min' => $billed,
       'prepaid' => $pre, 'remaining' => $pre === null ? null : $pre - $billed, 'amount' => $c->rate_per_min === null ? null : round($billed * (float)$c->rate_per_min, 2)];
   }
   /** Live-refresh JSON for the billing card. */
   public function billing() {
     $this->guard();
-    $out = []; foreach (DB::table('voice_carrier_clients')->orderBy('id')->get() as $c) $out[$c->id] = self::usage($c);
+    $out = []; $lv = self::liveAnswered(); foreach (DB::table('voice_carrier_clients')->orderBy('id')->get() as $c) $out[$c->id] = self::usage($c, $lv);
     return response()->json(['ok' => true, 'usage' => $out, 'at' => now('Asia/Dhaka')->format('H:i:s')]);
   }
   /** Connected minutes between two Dhaka date-times (any client), for the filter on the billing card. */
@@ -73,6 +89,22 @@ class CarrierClientController extends Controller {
     return back()->with('ok', 'Billing cycle saved.');
   }
   /** Public, token-protected: the relay reports each answered call here (uuid, billable seconds, dialled digits). Idempotent per uuid. */
+  /** Public, token-protected: the relay pushes its channel list every few seconds; the live board and running minutes read it. */
+  public function relayLive(Request $r) {
+    $tok = (string)Sms::secret('vc_relay_token'); $given = (string)$r->bearerToken();
+    if ($tok === '' || !hash_equals($tok, $given)) return response('forbidden', 403)->header('Content-Type', 'text/plain');
+    $body = (string)$r->getContent(); if (strlen($body) > 300000) return response('too large', 413);
+    $j = json_decode($body, true); if (!is_array($j)) $j = ['rows' => []];
+    \Illuminate\Support\Facades\Cache::put('vc_relay_live', ['at' => time(), 'rows' => array_slice($j['rows'] ?? [], 0, 400)], 60);
+    return response('ok', 200)->header('Content-Type', 'text/plain');
+  }
+  /** Latest relay channel snapshot: [ok, rows, error]. Stale (>20 s) means the relay is not reporting. */
+  public static function relayChannels(): array {
+    $c = \Illuminate\Support\Facades\Cache::get('vc_relay_live');
+    if (!$c) return [false, [], 'The relay is not reporting live calls (relay offline or updating)'];
+    if (time() - (int)$c['at'] > 20) return [false, [], 'The relay stopped reporting ' . (time() - (int)$c['at']) . ' s ago'];
+    return [true, $c['rows'], ''];
+  }
   public function relayCdr(Request $r) {
     $tok = (string)Sms::secret('vc_relay_token'); $given = (string)$r->bearerToken();
     if ($tok === '' || !hash_equals($tok, $given)) return response('forbidden', 403)->header('Content-Type', 'text/plain');
@@ -154,9 +186,8 @@ class CarrierClientController extends Controller {
   /** Live calls from the PBX (Event Socket "show channels"), grouped by client IP. Read-only. */
   public function live() {
     $this->guard();
-    [$ok, $out] = Voice::esl('show channels as json', 8);
-    if (!$ok) return response()->json(['ok' => false, 'error' => $out]);
-    $j = json_decode($out, true); $rows = is_array($j) ? ($j['rows'] ?? []) : [];
+    [$ok, $rows, $err] = self::relayChannels();
+    if (!$ok) return response()->json(['ok' => false, 'error' => $err]);
     $cl = DB::table('voice_carrier_clients')->get(); $byIp = [];
     foreach ($cl as $c) $byIp[explode('/', $c->ip)[0]] = $c;
     $calls = []; $per = []; $unk = [];
