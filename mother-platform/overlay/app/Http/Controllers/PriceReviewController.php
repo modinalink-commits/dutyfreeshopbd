@@ -86,6 +86,17 @@ class PriceReviewController extends Controller {
     }
     return view('category_margin', ['cats' => DB::table('categories')->orderBy('name')->get(['id', 'name']), 'cat' => $cat, 'pct' => $pct, 'step' => $step, 'plan' => $plan, 'name' => $name]);
   }
+  /** Admin: correct the unit cost of a product's OPEN batches that carry a wrong cost (old orders keep the cost they shipped with). POST product_id, from, to. */
+  public function fixBatchCost(Request $r) {
+    abort_unless(\App\Support\ProfitFloor::admin(), 403);
+    $d = $r->validate(['product_id' => 'required|integer', 'from' => 'required|numeric|min:0', 'to' => 'required|numeric|min:1', 'reason' => 'nullable|string|max:300']);
+    $q = DB::table('stock_batches')->where('product_id', $d['product_id'])->where('status', 'open')->where('qty_remaining', '>', 0)->whereRaw('abs(unit_cost - ?) < 0.005', [$d['from']]);
+    $ids = $q->pluck('id')->all(); if (!$ids) return response()->json(['changed' => 0]);
+    DB::transaction(function () use ($ids, $d) { DB::table('stock_batches')->whereIn('id', $ids)->update(['unit_cost' => $d['to'], 'updated_at' => now()]); });
+    \App\Support\ProfitFloor::audit('costing.batch_cost_fixed', 'Open batch cost corrected: product#' . $d['product_id'], ['unit_cost' => $d['from'], 'batches' => $ids], ['unit_cost' => $d['to'], 'reason' => $d['reason'] ?? null, 'by' => auth()->user()->name ?? null]);
+    $diff = \App\Support\Costing::sync((int)$d['product_id']);
+    return response()->json(['changed' => count($ids), 'batches' => $ids, 'sync' => $diff]);
+  }
   public function minMargin(Request $r) {
     abort_unless(\App\Support\ProfitFloor::admin(), 403);
     $d = $r->validate(['percent' => 'required|numeric|min:1|max:60', 'reason' => 'required|string|min:3|max:300']);
