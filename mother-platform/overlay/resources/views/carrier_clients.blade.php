@@ -23,6 +23,19 @@ if(!d.calls.length){B.innerHTML='<tr><td colspan="5" style="padding:8px;color:#6
 B.innerHTML='';d.calls.forEach(function(c){var tr=document.createElement('tr');tr.style.borderTop='1px solid #E5E7EB';[c.client,c.from,c.to,c.state,f(c.secs)].forEach(function(v){var td=document.createElement('td');td.style.padding='6px';td.textContent=v;tr.appendChild(td)});B.appendChild(tr)})}).catch(function(){})}
 tick();setInterval(function(){if(!document.hidden)tick()},3000)})();</script>
 
+<div class="card" style="margin-top:12px"><b>Relay লাইন (PBX এক্সটেনশন)</b> <small style="color:#6B7280">— রিলে এই এক্সটেনশনগুলো দিয়ে PBX-এ রেজিস্টার হয়ে কাস্টমারের মোবাইলে কল পাঠায়। পাসওয়ার্ড সেভের পর আর দেখানো হয় না (ফাঁকা রাখলে আগেরটা থাকে)।</small>
+<form method="post" action="/admin/call-center/clients/relay" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:flex-start">@csrf
+<input name="host" value="{{ old('host',$relay['host']) }}" placeholder="PBX host" style="width:190px" required>
+<input name="port" value="{{ old('port',$relay['port']) }}" style="width:70px" required>
+<select name="transport" style="padding:6px 8px;border:1px solid #E5E7EB;border-radius:6px"><option value="tcp" @selected($relay['transport']==='tcp')>TCP</option><option value="udp" @selected($relay['transport']==='udp')>UDP</option></select>
+<input name="realm" value="{{ old('realm',$relay['realm']) }}" placeholder="Realm/Domain (ঐচ্ছিক)" style="width:190px">
+<input name="caller_id" value="{{ old('caller_id',$relay['caller_id']) }}" placeholder="Caller ID (ঐচ্ছিক)" style="width:150px">
+<select name="mode" style="padding:6px 8px;border:1px solid #E5E7EB;border-radius:6px"><option value="test" @selected($relay['mode']!=='live')>TEST (কোথাও যাবে না)</option><option value="live" @selected($relay['mode']==='live')>LIVE (কাস্টমারকে কল যাবে)</option></select>
+<textarea name="exts" rows="4" placeholder="প্রতি লাইনে একটা: এক্সটেনশন:পাসওয়ার্ড&#10;যেমন 1001:xxxxxx&#10;পাসওয়ার্ড ফাঁকা (শুধু 1001) = আগেরটা থাকবে" style="width:320px;padding:6px 8px;border:1px solid #E5E7EB;border-radius:6px;font-size:13px">{{ old('exts', $relay['exts']) }}</textarea>
+<button class="btn" type="submit">Save</button></form>
+<div style="margin-top:8px;font-size:12px;color:#6B7280">সেভ করা এক্সটেনশন: <b>{{ $relay['exts'] ? str_replace("\n", ', ', trim($relay['exts'])) : 'নেই' }}</b> ·
+<form method="post" action="/admin/call-center/clients/relay-token" style="display:inline">@csrf<button class="btn" type="submit" onclick="return confirm('নতুন টোকেন বানালে পুরনোটা বাতিল হবে। চালিয়ে যাবেন?')">Relay টোকেন নতুন করে বানান</button></form></div></div>
+
 <div class="card" style="margin-top:12px"><b>আমাদের PBX endpoint</b> <small style="color:#6B7280">(ক্লায়েন্টকে এই IP ও port দেওয়া হবে)</small>
 <form method="post" action="/admin/call-center/clients/endpoint" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">@csrf
 <input name="ip" value="{{ old('ip',$cfg['ip']) }}" placeholder="PBX public IP" style="width:200px" required>

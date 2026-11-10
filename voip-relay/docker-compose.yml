@@ -17,6 +17,8 @@ services:
       PBX_REALM: ${PBX_REALM:-}
       PBX_EXTS: ${PBX_EXTS:-}
       CALLER_ID: ${CALLER_ID:-}
+      RELAY_TOKEN: ${RELAY_TOKEN:-}
+      RELAY_CONFIG_URL: ${RELAY_CONFIG_URL:-https://dutyfreebd.com/api/voice/relay-config}
     command: ["bash", "/entry.sh"]
     configs:
       - source: entry
@@ -42,6 +44,21 @@ configs:
         apt-get install -y -qq freeswitch freeswitch-mod-console freeswitch-mod-logfile freeswitch-mod-event-socket freeswitch-mod-sofia freeswitch-mod-commands freeswitch-mod-dptools freeswitch-mod-dialplan-xml freeswitch-mod-hash freeswitch-mod-db freeswitch-mod-sndfile >/dev/null
         rm -f /etc/apt/auth.conf
       fi
+      # Optional: pull live settings (PBX line, extensions, mode) from the admin Call Center. Needs RELAY_TOKEN (environment only).
+      RELAY_CONFIG_URL="$${RELAY_CONFIG_URL:-https://dutyfreebd.com/api/voice/relay-config}"
+      pull_cfg() { wget -q -T 15 -O - --header="Authorization: Bearer $$RELAY_TOKEN" "$$RELAY_CONFIG_URL" 2>/dev/null; }
+      if [ -n "$$RELAY_TOKEN" ]; then
+        CFG=$$(pull_cfg || true)
+        if [ -n "$$CFG" ]; then
+          while IFS='=' read -r k v; do
+            case "$$k" in MODE|PBX_HOST|PBX_PORT|PBX_TRANSPORT|PBX_REALM|PBX_EXTS|CALLER_ID|CLIENT_IP|MAX_CALLS) export "$$k=$$v" ;; esac
+          done <<< "$$CFG"
+          echo "relay config pulled from admin panel (mode=$$MODE host=$${PBX_HOST:-none})"
+        else echo "relay config pull failed or empty - using environment values"; fi
+        CFGSUM=$$(printf '%s' "$$CFG" | md5sum | cut -d' ' -f1)
+        ( while sleep 60; do N=$$(pull_cfg || true); [ -n "$$N" ] && [ "$$(printf '%s' "$$N" | md5sum | cut -d' ' -f1)" != "$$CFGSUM" ] && { echo "relay config changed - restarting"; pkill -x freeswitch; kill 1; }; done ) &
+      fi
+      MODE="$${MODE:-test}"; PBX_PORT="$${PBX_PORT:-5080}"; PBX_TRANSPORT="$${PBX_TRANSPORT:-tcp}"
       IPRE=$$(printf '%s' "$$CLIENT_IP" | sed 's/\./\\./g')
       ESLPW=$$(head -c 24 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 20)
       # Optional PBX leg (MODE=live): the relay registers as ordinary PBX extension(s), like a softphone, and sends calls out through them.

@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers;
 use App\Support\Voice;
+use App\Support\Sms;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 /** Call Center > Call Clients (TEST MODE). Admin adds a client's IP, port and prefix; the page generates the client document and the FreeSWITCH config. It never pushes anything to the PBX. */
@@ -12,7 +13,9 @@ class CarrierClientController extends Controller {
     $rows = DB::table('voice_carrier_clients')->orderBy('id')->get();
     $gw = Voice::set('gateway', '');
     $cfg = ['ip' => Voice::set('carrier_ip', ''), 'port' => Voice::set('carrier_port', '5060'), 'gateway' => $gw];
-    return view('carrier_clients', ['rows' => $rows, 'cfg' => $cfg, 'pbx' => self::pbxConfig($rows, $gw)]);
+    $exts = array_filter(array_map('trim', explode("\n", (string)Sms::secret('vc_relay_exts')))); $names = array_map(fn($l) => explode(':', $l, 2)[0], $exts);
+    $relay = ['host' => Voice::set('relay_host', '103.125.255.33'), 'port' => Voice::set('relay_port', '5080'), 'transport' => Voice::set('relay_transport', 'tcp'), 'realm' => Voice::set('relay_realm', ''), 'caller_id' => Voice::set('relay_caller_id', ''), 'mode' => Voice::set('relay_mode', 'test'), 'exts' => implode("\n", $names)];
+    return view('carrier_clients', ['rows' => $rows, 'cfg' => $cfg, 'relay' => $relay, 'pbx' => self::pbxConfig($rows, $gw)]);
   }
   public static function pbxConfig($rows, string $gw): string {
     $act = $rows->where('status', 'active');
@@ -120,5 +123,46 @@ class CarrierClientController extends Controller {
     $this->guard(); $d = $r->validate(['ip' => ['required', 'regex:/^[A-Za-z0-9.\-]{3,100}$/'], 'port' => 'required|integer|min:1|max:65535']);
     self::set('carrier_ip', $d['ip']); self::set('carrier_port', (string)$d['port']);
     return back()->with('ok', 'আমাদের IP/Port সেভ হয়েছে।');
+  }
+
+  /** Relay PBX line settings (the FreeSWITCH relay registers as these PBX extensions in live mode). Passwords are stored encrypted and never shown again. */
+  public function relaySave(Request $r) {
+    $this->guard();
+    $d = $r->validate(['host' => ['required', 'regex:/^[A-Za-z0-9.\-]{3,100}$/'], 'port' => 'required|integer|min:1|max:65535', 'transport' => 'required|in:tcp,udp',
+      'realm' => ['nullable', 'regex:/^[A-Za-z0-9.\-]{0,100}$/'], 'caller_id' => ['nullable', 'regex:/^\d{0,20}$/'], 'mode' => 'required|in:test,live', 'exts' => 'nullable|string|max:2000']);
+    $old = array_filter(array_map(fn($l) => trim($l), explode("\n", (string)Sms::secret('vc_relay_exts'))));
+    $oldMap = []; foreach ($old as $l) { [$u, $p] = array_pad(explode(':', $l, 2), 2, ''); $oldMap[$u] = $p; }
+    $lines = []; $seen = [];
+    foreach (preg_split('/\r?\n/', (string)($d['exts'] ?? '')) as $l) {
+      $l = trim($l); if ($l === '') continue;
+      [$u, $p] = array_pad(explode(':', $l, 2), 2, '');
+      abort_unless(preg_match('/^[A-Za-z0-9_.\-]{1,40}$/', $u), 422, 'এক্সটেনশন নম্বর ভুল: ' . $u);
+      if ($p === '' && isset($oldMap[$u])) $p = $oldMap[$u]; // blank password = keep the saved one
+      abort_unless($p !== '' && preg_match('/^[^\s,]{1,80}$/', $p), 422, 'পাসওয়ার্ড দিন (ফাঁকা/কমা ছাড়া): ' . $u);
+      if (isset($seen[$u])) continue; $seen[$u] = 1; $lines[] = $u . ':' . $p;
+    }
+    self::set('relay_host', $d['host']); self::set('relay_port', (string)$d['port']); self::set('relay_transport', $d['transport']);
+    self::set('relay_realm', (string)($d['realm'] ?? '')); self::set('relay_caller_id', (string)($d['caller_id'] ?? '')); self::set('relay_mode', $d['mode']);
+    Sms::setSecret('vc_relay_exts', implode("\n", $lines));
+    \App\Support\ProfitFloor::audit('voice.relay_config', 'Relay PBX line saved: ' . $d['host'] . ':' . $d['port'] . ' ' . $d['transport'] . ' mode ' . $d['mode'] . ' ext ' . implode(',', array_keys($seen)), null, ['mode' => $d['mode']]);
+    return back()->with('ok', 'Relay লাইন সেভ হয়েছে (' . count($lines) . 'টি এক্সটেনশন)। রিলে ১ মিনিটের মধ্যে নিজে নিয়ে নেবে।');
+  }
+  /** One-time token the relay uses to fetch its config. Shown once. */
+  public function relayToken() {
+    $this->guard(); $t = bin2hex(random_bytes(20));
+    Sms::setSecret('vc_relay_token', $t);
+    \App\Support\ProfitFloor::audit('voice.relay_token', 'Relay token regenerated', null, []);
+    return back()->with('ok', 'নতুন Relay টোকেন: ' . $t . ' — এটা এখনই কপি করে রাখুন (আর দেখানো হবে না)।');
+  }
+  /** Public, token-protected: the relay pulls its settings here (plain text KEY=VALUE). */
+  public function relayConfig(Request $r) {
+    $tok = (string)Sms::secret('vc_relay_token'); $given = (string)$r->bearerToken();
+    if ($tok === '' || !hash_equals($tok, $given)) return response('forbidden', 403)->header('Content-Type', 'text/plain');
+    $exts = implode(',', array_filter(array_map('trim', explode("\n", (string)Sms::secret('vc_relay_exts')))));
+    $rows = DB::table('voice_carrier_clients')->where('status', 'active')->get();
+    $o = "MODE=" . (Voice::set('relay_mode', 'test') === 'live' ? 'live' : 'test') . "\nPBX_HOST=" . Voice::set('relay_host', '') . "\nPBX_PORT=" . Voice::set('relay_port', '5080')
+      . "\nPBX_TRANSPORT=" . Voice::set('relay_transport', 'tcp') . "\nPBX_REALM=" . Voice::set('relay_realm', '') . "\nCALLER_ID=" . Voice::set('relay_caller_id', '') . "\nPBX_EXTS=" . $exts . "\n";
+    if ($rows->isNotEmpty()) $o .= "CLIENT_IP=" . explode('/', $rows[0]->ip)[0] . "\nMAX_CALLS=" . (int)$rows[0]->max_calls . "\n";
+    return response($o, 200)->header('Content-Type', 'text/plain')->header('Cache-Control', 'no-store');
   }
 }
