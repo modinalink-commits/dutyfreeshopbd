@@ -71,11 +71,11 @@
 @endif
 /* Owner request 10 Nov 2026: bigger, easier-to-read chat text on desktop; regular Bangladesh Bangla web font */
 .mbx,.mbx *,.mc .b,.mc textarea,.mc input{font-family:'Hind Siliguri','Noto Sans Bengali','Kalpurush',system-ui,'Segoe UI',Arial,sans-serif}
-.mc .b{font-size:16.5px;line-height:1.55;padding:10px 14px;max-width:78%}
-.mc .cm textarea,.mc .cm input[type=text]{font-size:16px}
-.mbx .nm{font-size:16px}.mbx .lm{font-size:14.5px}.mbx .tm{font-size:12.5px}.mbx .l3{font-size:12.5px}.mbx .sep{font-size:14px}
-.mbx .bg,.mbx .st2{font-size:12px;height:20px;line-height:20px}.mbx .sq input{font-size:15px;height:38px}.mbx .ub{font-size:12px}
-.mc .hd{font-size:15px}.mc .lk{font-size:13.5px}
+.mc .b{font-size:20px;line-height:1.6;padding:12px 16px;max-width:80%}
+.mc .cm textarea,.mc .cm input[type=text]{font-size:19px}
+.mbx .nm{font-size:18.5px}.mbx .lm{font-size:16.5px}.mbx .tm{font-size:14px}.mbx .l3{font-size:14px}.mbx .sep{font-size:15.5px}
+.mbx .bg,.mbx .st2{font-size:13px;height:22px;line-height:22px}.mbx .sq input{font-size:17px;height:42px}.mbx .ub{font-size:13px}
+.mc .hd{font-size:17px}.mc .lk{font-size:15px}
 /* Owner request 10 Nov 2026 (desktop): the Messages page is ONE fixed screen - no page up/down scrolling; only the conversation list and the open chat scroll inside their own panels. Fits the viewport at any zoom. */
 @media(min-width:901px){
 html,body{height:calc(100vh / var(--z,1));overflow:hidden!important}
