@@ -1,7 +1,7 @@
 @extends('layout')@section('title','Call Clients')
 @section('body')
 @php($tc=collect($usage)->sum('calls'))@php($ts=collect($usage)->sum('secs'))@php($tb=collect($usage)->sum('billed_min'))@php($rem=collect($usage)->pluck('remaining')->filter(fn($v)=>$v!==null)->sum())
-<style>.cc input,.cc select,.cc textarea{padding:5px 8px;border:1px solid #E5E7EB;border-radius:6px;font-size:12px}.cc .sec{margin-top:12px;overflow-x:auto}.cc .sec>.h{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px}.cc .sec>.h b{font-size:14px}.cc .sub{font-size:12px;color:#6B7280}.cc .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:12px;color:#6B7280}.cc .tbl{width:100%;border-collapse:collapse;font-size:12px}.cc .tbl th{text-align:left;color:#6B7280;padding:6px}.cc .tbl td{padding:6px}.cc .tbl tr+tr td{border-top:1px solid #E5E7EB}.cc pre{background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;padding:10px;font-size:12px;white-space:pre-wrap;margin:6px 0 0}.cc .n{text-align:right}</style>
+<style>.cc input,.cc select,.cc textarea{padding:5px 8px;border:1px solid #E5E7EB;border-radius:6px;font-size:12px}.cc .sec{margin-top:12px;overflow-x:auto}.cc .sec>.h{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px}.cc .sec>.h b{font-size:14px}.cc .sub{font-size:12px;color:#6B7280}.cc .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:12px;color:#6B7280}.cc .tbl{width:100%;border-collapse:collapse;font-size:12px}.cc .tbl th{text-align:left;color:#6B7280;padding:6px}.cc .tbl td{padding:6px}.cc .tbl tr+tr td{border-top:1px solid #E5E7EB}.cc pre{background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;padding:10px;font-size:12px;white-space:pre-wrap;margin:6px 0 0}.cc .n{text-align:right}.cc .sw{display:inline-flex;align-items:center;gap:6px;border:1px solid #E5E7EB;border-radius:99px;padding:2px 10px 2px 3px;background:#F3F4F6;color:#6B7280;font-size:11px;font-weight:700;cursor:pointer}.cc .sw i{width:26px;height:14px;border-radius:99px;background:#D1D5DB;position:relative;display:inline-block}.cc .sw i:after{content:'';position:absolute;top:2px;left:2px;width:10px;height:10px;border-radius:50%;background:#fff;transition:left .15s}.cc .sw.on{background:#DCFCE7;color:#166534;border-color:#A7F3D0}.cc .sw.on i{background:#16A34A}.cc .sw.on i:after{left:14px}</style>
 <div class="cc">
 <h1 style="margin:0 0 4px">Call Clients</h1>
 <span class="sub">Wholesale call-termination clients: live calls, connected minutes, billing cycle and relay line.</span>
@@ -30,7 +30,7 @@ tick();setInterval(function(){if(!document.hidden)tick()},3000)})();</script>
 <div class="card sec"><div class="h"><b>Billing cycle</b> <span class="sub">Only connected (answered) calls are counted; each call rounds up to the next full minute. <span id="bcAt"></span></span></div>
 <table class="tbl"><thead><tr><th>Client</th><th>Cycle</th><th class="n">Connected calls</th><th class="n">Talk time</th><th class="n">Billable min</th><th class="n">Prepaid</th><th class="n">Remaining</th><th class="n">Amount</th></tr></thead><tbody>
 @forelse($rows as $c)@php($u=$usage[$c->id])
-<tr data-bc="{{ $c->id }}"><td><b>{{ $c->name }}</b></td><td data-f="range">{{ $u['from'] }} – {{ $u['to'] }}</td><td class="n" data-f="calls">{{ $u['calls'] }}</td><td class="n" data-f="time">{{ intdiv($u['secs'],60) }}:{{ str_pad($u['secs']%60,2,'0',STR_PAD_LEFT) }}</td><td class="n" data-f="bmin"><b>{{ $u['billed_min'] }}</b></td><td class="n" data-f="pre">{{ $u['prepaid'] ?? '—' }}</td>
+<tr data-bc="{{ $c->id }}"><td><b>{{ $c->name }}</b> <span class="pill {{ $c->status==='active'?'ok':'red' }}">{{ $c->status==='active'?'ON':'OFF' }}</span></td><td data-f="range">{{ $u['from'] }} – {{ $u['to'] }}</td><td class="n" data-f="calls">{{ $u['calls'] }}</td><td class="n" data-f="time">{{ intdiv($u['secs'],60) }}:{{ str_pad($u['secs']%60,2,'0',STR_PAD_LEFT) }}</td><td class="n" data-f="bmin"><b>{{ $u['billed_min'] }}</b></td><td class="n" data-f="pre">{{ $u['prepaid'] ?? '—' }}</td>
 <td class="n" data-f="rem" style="font-weight:700;color:{{ ($u['remaining'] ?? 1) < 0 ? '#B91C1C' : '#059669' }}">{{ $u['remaining'] ?? '—' }}</td><td class="n" data-f="amt">{{ $u['amount'] === null ? '—' : number_format($u['amount'],2) }}</td></tr>
 <tr><td colspan="8"><form method="post" action="/admin/call-center/clients/{{ $c->id }}/billing" class="row">@csrf
 Cycle start <input type="date" name="cycle_start" value="{{ $c->cycle_start }}" style="width:140px"> every <input name="cycle_days" value="{{ $c->cycle_days ?? 30 }}" style="width:55px" required> days · Prepaid minutes <input name="prepaid_minutes" value="{{ $c->prepaid_minutes }}" placeholder="blank = unlimited" style="width:120px"> · Rate / min <input name="rate_per_min" value="{{ $c->rate_per_min }}" placeholder="BDT" style="width:80px"> <button class="btn" type="submit">Save</button></form></td></tr>
@@ -78,16 +78,15 @@ o.textContent='Connected calls '+d.calls+' · Talk time '+f(d.secs)+' · Billabl
 <input name="max_calls" value="20" title="Max concurrent calls" style="width:70px" required>
 <input name="note" placeholder="Note" style="width:160px"><button class="btn" type="submit">Add client</button></form></div>
 
-<div class="card sec"><div class="h"><b>Clients</b></div><table class="tbl">
+<div class="card sec"><div class="h"><b>Clients</b> <span class="sub">Use the switch to turn a client ON or OFF. An OFF client's calls are rejected (the relay applies the change within about a minute).</span></div><table class="tbl">
 <thead><tr><th>Name</th><th>IP</th><th>Port</th><th>Prefix</th><th>Max calls</th><th>Status</th><th></th></tr></thead>
 @forelse($rows as $c)
 <tr><form method="post" action="/admin/call-center/clients/{{ $c->id }}">@csrf
 <td><input name="name" value="{{ $c->name }}" style="width:130px"></td><td><input name="ip" value="{{ $c->ip }}" style="width:130px"></td>
 <td><input name="port" value="{{ $c->port }}" style="width:65px"></td><td><input name="prefix" value="{{ $c->prefix }}" style="width:90px"></td>
 <td><input name="max_calls" value="{{ $c->max_calls }}" style="width:60px"><input type="hidden" name="note" value="{{ $c->note }}"></td>
-<td><span class="pill {{ $c->status==='active'?'ok':'' }}">{{ ucfirst($c->status) }}</span></td>
+<td><button type="submit" class="sw {{ $c->status==='active'?'on':'' }}" formaction="/admin/call-center/clients/{{ $c->id }}/toggle" formnovalidate title="Switch this client {{ $c->status==='active'?'OFF':'ON' }}"><i></i>{{ $c->status==='active'?'ON':'OFF' }}</button></td>
 <td style="white-space:nowrap"><button class="btn" type="submit">Save</button>
-<button class="btn g" type="submit" formaction="/admin/call-center/clients/{{ $c->id }}/toggle" formnovalidate>{{ $c->status==='active'?'Pause':'Resume' }}</button>
 <button class="btn g" type="submit" formaction="/admin/call-center/clients/{{ $c->id }}/delete" formnovalidate onclick="return confirm('Delete this client?')">Delete</button></td></form></tr>
 <tr><td colspan="7"><details><summary style="cursor:pointer;color:#C2410C">Client document (send to the client)</summary>
 <pre>{{ \App\Http\Controllers\CarrierClientController::document((array)$c, $cfg) }}</pre></details></td></tr>

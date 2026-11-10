@@ -132,7 +132,7 @@ class CarrierClientController extends Controller {
     $n = $c->status === 'active' ? 'paused' : 'active';
     DB::table('voice_carrier_clients')->where('id', $id)->update(['status' => $n, 'updated_at' => now()]);
     \App\Support\ProfitFloor::audit('voice.client_' . $n, 'Call client #' . $id . ' ' . $n, null, ['id' => $id]);
-    return back()->with('ok', $n === 'active' ? 'Client resumed.' : 'Client paused.');
+    return back()->with('ok', $n === 'active' ? 'Client switched ON.' : 'Client switched OFF.');
   }
   public function destroy($id) {
     $this->guard(); DB::table('voice_carrier_clients')->where('id', $id)->delete();
@@ -217,6 +217,7 @@ class CarrierClientController extends Controller {
     $o = "MODE=" . (Voice::set('relay_mode', 'test') === 'live' ? 'live' : 'test') . "\nPBX_HOST=" . Voice::set('relay_host', '') . "\nPBX_PORT=" . Voice::set('relay_port', '5080')
       . "\nPBX_TRANSPORT=" . Voice::set('relay_transport', 'tcp') . "\nPBX_REALM=" . Voice::set('relay_realm', '') . "\nCALLER_ID=" . Voice::set('relay_caller_id', '') . "\nPBX_EXTS=" . $exts . "\n";
     if ($rows->isNotEmpty()) $o .= "CLIENT_IP=" . explode('/', $rows[0]->ip)[0] . "\nMAX_CALLS=" . (int)$rows[0]->max_calls . "\n";
+    else $o .= "CLIENT_IP=192.0.2.1\nMAX_CALLS=0\n"; // every client is OFF: allow only an unroutable TEST-NET address so no real client is accepted
     return response($o, 200)->header('Content-Type', 'text/plain')->header('Cache-Control', 'no-store');
   }
 
