@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 /** Supplier ledger in grid layout: one group per supplier with opening balance, dated purchase/payment rows and running balance. */
 class SupplierLedgerReportController extends Controller {
   public function index(Request $r) {
-    $from = $r->query('from') ?: now()->subDays(29)->toDateString(); $to = $r->query('to') ?: now()->toDateString();
+    $from = $r->query('from') ?: now('Asia/Dhaka')->startOfMonth()->toDateString(); $to = $r->query('to') ?: now('Asia/Dhaka')->toDateString();
     $sup = (int)$r->query('supplier', 0); $q = trim((string)$r->query('q', ''));
     $sq = DB::table('suppliers')->orderBy('name'); if ($sup) $sq->where('id', $sup); if ($q !== '') $sq->where('name', 'ilike', '%' . $q . '%');
     $suppliers = $sq->limit(60)->get(['id', 'name', 'phone']); $ids = $suppliers->pluck('id')->all();

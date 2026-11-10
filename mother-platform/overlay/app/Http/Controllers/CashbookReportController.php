@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 /** Income and expense (daily cash) in grid layout: one group per account with dated rows, subtotal and grand total. */
 class CashbookReportController extends Controller {
   public function index(Request $r) {
-    $from = $r->query('from') ?: now()->subDays(29)->toDateString(); $to = $r->query('to') ?: now()->toDateString();
+    $from = $r->query('from') ?: now('Asia/Dhaka')->startOfMonth()->toDateString(); $to = $r->query('to') ?: now('Asia/Dhaka')->toDateString();
     $acc = (int)$r->query('account', 0); $dir = (string)$r->query('dir', ''); $q = trim((string)$r->query('q', '')); $per = max(50, min(2000, (int)($r->query('per') ?: 500)));
     $eq = DB::table('account_entries as e')->leftJoin('money_accounts as a', 'a.id', '=', 'e.account_id')->whereDate('e.entry_date', '>=', $from)->whereDate('e.entry_date', '<=', $to);
     if ($acc) $eq->where('e.account_id', $acc); if (in_array($dir, ['income', 'expense'], true)) $eq->where('e.direction', $dir);

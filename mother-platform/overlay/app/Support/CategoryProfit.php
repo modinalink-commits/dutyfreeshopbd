@@ -17,8 +17,8 @@ class CategoryProfit {
   public const FULL_RET = "o.status in ('Return Pending','Returned') and coalesce(o.return_type,'') <> 'Partial'";
 
   public static function filters(Request $r): array {
-    $from = (string)$r->query('from') ?: now()->subDays(29)->toDateString(); $to = (string)$r->query('to') ?: now()->toDateString();
-    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $from)) $from = now()->subDays(29)->toDateString();
+    $from = (string)$r->query('from') ?: now('Asia/Dhaka')->startOfMonth()->toDateString(); $to = (string)$r->query('to') ?: now('Asia/Dhaka')->toDateString();
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $from)) $from = now('Asia/Dhaka')->startOfMonth()->toDateString();
     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $to)) $to = now()->toDateString();
     if ($from > $to) [$from, $to] = [$to, $from];
     $s = fn($k) => trim((string)$r->query($k, ''));

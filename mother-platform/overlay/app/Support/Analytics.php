@@ -37,7 +37,7 @@ class Analytics {
     $tz = new \DateTimeZone('Asia/Dhaka');
     $d = fn($k, $def) => (isset($in[$k]) && preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)$in[$k])) ? $in[$k] : $def;
     $today = (new \DateTime('now', $tz))->format('Y-m-d');
-    $from = $d('from', (new \DateTime('now', $tz))->modify('-29 days')->format('Y-m-d')); $to = $d('to', $today);
+    $from = $d('from', (new \DateTime('now', $tz))->modify('first day of this month')->format('Y-m-d')); $to = $d('to', $today);
     if ($from > $to) [$from, $to] = [$to, $from];
     $stores = array_values(array_unique(array_filter(array_map('intval', (array)($in['stores'] ?? [])))));
     $s = fn($k) => trim((string)($in[$k] ?? ''));

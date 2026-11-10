@@ -52,8 +52,8 @@ class StaffTrack {
       case '7': $a = (clone $today)->modify('-6 days'); $b = clone $today; break;
       case 'custom':
         $ok = fn($v) => is_string($v) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $v);
-        $a = $ok($from) ? new \DateTime($from, $tz) : (clone $today)->modify('-29 days'); $b = $ok($to) ? new \DateTime($to, $tz) : clone $today; if ($a > $b) [$a, $b] = [$b, $a]; break;
-      default: $a = (clone $today)->modify('-29 days'); $b = clone $today;
+        $a = $ok($from) ? new \DateTime($from, $tz) : (clone $today)->modify('first day of this month'); $b = $ok($to) ? new \DateTime($to, $tz) : clone $today; if ($a > $b) [$a, $b] = [$b, $a]; break;
+      default: $a = (clone $today)->modify('first day of this month'); $b = clone $today;
     }
     $e = (clone $b)->modify('+1 day'); $u = fn(\DateTime $d) => (clone $d)->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
     $names = ['today' => 'Today', 'yesterday' => 'Yesterday', '7' => 'Last 7 Days', '30' => 'Last 30 Days', 'custom' => 'Custom'];
