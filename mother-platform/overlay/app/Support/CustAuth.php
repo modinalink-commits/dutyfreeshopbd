@@ -60,7 +60,7 @@ class CustAuth
     $hist = DB::table('orders')->where('phone', $phone)->exists();
     if ($o && $o->password) return 'এই নম্বরটি অন্য একটি অ্যাকাউন্টে ব্যবহৃত।';
     if (($o || $hist) && !$otpOk) return Sms::configured() ? 'NEED_CODE' : 'এই নম্বরে আগের অর্ডার আছে, তাই নিরাপত্তার জন্য কোড লাগবে। সাপোর্টে কল করুন।';
-    DB::transaction(function () use ($c, $phone, $o) {
+    DB::transaction(function () use ($c, $phone, $o, $otpOk) {
       if ($o) { // merge the old guest record into this account
         $set = []; foreach (['dob', 'address'] as $k) if (empty($c->$k) && !empty($o->$k)) $set[$k] = $o->$k;
         foreach (['points', 'legacy_orders', 'legacy_spent', 'ref_balance'] as $k) if (isset($o->$k) && (float)$o->$k > 0) $set[$k] = (float)($c->$k ?? 0) + (float)$o->$k;
