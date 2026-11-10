@@ -18,7 +18,7 @@ PBX: ① IP চেনে (ACL) ② prefix কেটে ফেলে ③ concurre
 <script>(function(){var B=document.getElementById('lvB'),N=document.getElementById('lvN'),T=document.getElementById('lvT');function f(s){return Math.floor(s/60)+':'+('0'+s%60).slice(-2)}
 function tick(){fetch('/admin/call-center/clients/live',{headers:{Accept:'application/json'}}).then(function(r){return r.json()}).then(function(d){
 if(!d.ok){B.innerHTML='<tr><td colspan="5" style="padding:8px;color:#B45309"></td></tr>';B.firstChild.firstChild.textContent='PBX থেকে লাইভ তথ্য পাওয়া যায়নি: '+d.error;N.textContent='-';return}
-N.textContent=d.total;T.textContent='আপডেট '+d.at;
+N.textContent=d.total;T.textContent='আপডেট '+d.at+' · PBX-এ মোট চ্যানেল '+d.channels+(d.unknown.length?' · অচেনা IP থেকে কল: '+d.unknown.map(function(u){return u.ip+' → '+u.to}).join(', '):'');
 if(!d.calls.length){B.innerHTML='<tr><td colspan="5" style="padding:8px;color:#6B7280">এখন কোনো কল চলছে না।</td></tr>';return}
 B.innerHTML='';d.calls.forEach(function(c){var tr=document.createElement('tr');tr.style.borderTop='1px solid #E5E7EB';[c.client,c.from,c.to,c.state,f(c.secs)].forEach(function(v){var td=document.createElement('td');td.style.padding='6px';td.textContent=v;tr.appendChild(td)});B.appendChild(tr)})}).catch(function(){})}
 tick();setInterval(function(){if(!document.hidden)tick()},3000)})();</script>

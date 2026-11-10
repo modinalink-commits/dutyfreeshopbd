@@ -90,16 +90,16 @@ class CarrierClientController extends Controller {
     $j = json_decode($out, true); $rows = is_array($j) ? ($j['rows'] ?? []) : [];
     $cl = DB::table('voice_carrier_clients')->get(); $byIp = [];
     foreach ($cl as $c) $byIp[explode('/', $c->ip)[0]] = $c;
-    $calls = []; $per = [];
+    $calls = []; $per = []; $unk = [];
     foreach ($rows as $r) {
       if (($r['direction'] ?? '') !== 'inbound') continue;
-      $c = $byIp[$r['ip_addr'] ?? ''] ?? null; if (!$c) continue;
+      $c = $byIp[$r['ip_addr'] ?? ''] ?? null; if (!$c) { if (count($unk) < 20) $unk[] = ['ip' => $r['ip_addr'] ?? '', 'to' => $r['dest'] ?? '', 'from' => $r['cid_num'] ?? '', 'state' => $r['callstate'] ?? '']; continue; }
       $dest = preg_replace('/^' . preg_quote($c->prefix, '/') . '/', '', (string)($r['dest'] ?? ''));
       $age = max(0, time() - (int)($r['created_epoch'] ?? time()));
       $calls[] = ['client' => $c->name, 'from' => $r['cid_num'] ?? '', 'to' => $dest, 'state' => $r['callstate'] ?? '', 'secs' => $age];
       $per[$c->id] = ($per[$c->id] ?? 0) + 1;
     }
-    return response()->json(['ok' => true, 'total' => count($calls), 'calls' => array_slice($calls, 0, 100), 'per' => $per, 'at' => now('Asia/Dhaka')->format('H:i:s')]);
+    return response()->json(['ok' => true, 'total' => count($calls), 'calls' => array_slice($calls, 0, 100), 'per' => $per, 'channels' => count($rows), 'unknown' => $unk, 'at' => now('Asia/Dhaka')->format('H:i:s')]);
   }
   public function saveEndpoint(Request $r) {
     $this->guard(); $d = $r->validate(['ip' => ['required', 'regex:/^[A-Za-z0-9.\-]{3,100}$/'], 'port' => 'required|integer|min:1|max:65535']);
