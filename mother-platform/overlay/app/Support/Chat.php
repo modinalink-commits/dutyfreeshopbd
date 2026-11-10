@@ -192,6 +192,36 @@ class Chat {
     } catch (\Throwable $e) { report($e); }
   }
 
+  /** A short, clear goodbye / thank-you from the customer (Bangla, English, Banglish). */
+  public static function isFarewell(string $b, bool $asked = false): bool {
+    $b = trim($b); if ($b === '' || mb_strlen($b) > 80) return false;
+    if ($asked && preg_match('/^(না|নাই|নেই|no|nope|nah|na|nai|না,? ?(ধন্যবাদ|থ্যাংকস|thanks?))[\s.!]*$/iu', $b)) return true;  // a plain "no" only answers our "any other question?" line
+    return (bool)preg_match('/^(ok|okay|okk?|thanks?|thank you|thank u|thx|tnx|ty|bye|good ?night|allah hafez|khoda hafez|dhonnobad|dhonnyobad|ধন্যবাদ|থ্যাংকস|থ্যাঙ্ক ইউ|শুভ রাত্রি|আল্লাহ হাফেজ|খোদা হাফেজ|ঠিক আছে|আচ্ছা|জি|জী|ওকে|👍|🙏|❤️?)([\s.!,]*(thanks?|thank you|thx|ধন্যবাদ|ok|okay|ওকে|bye|বাই|ভালো থাকবেন|আর কিছু (লাগবে|জানার) না|আর কিছু না|nothing else|that.s all|all good|🙏|👍))*[\s.!]*$/iu', $b)
+      || (bool)preg_match('/(আর কিছু (লাগবে|জানার|দরকার) না|আর কিছু না|কিছু লাগবে না|nothing else|that.?s all|no more (question|help))/iu', $b);
+  }
+  /** Night / AI-hours auto-resolve: after the customer's clear goodbye and when nothing is pending, send one short courtesy line, then resolve the chat (no unread / Awaiting Reply left). A failed send changes nothing. */
+  public static function autoClose(object $t): bool {
+    try {
+      if (Sms::secret('ai_auto_close') === '0') return false;
+      $tid = (int)$t->id; $t = DB::table('chat_threads')->find($tid); if (!$t || $t->status === 'resolved') return false;
+      // never close while anything is open: hand-off / manager review, needs-human, complaint, refund, cancel, order change, payment, human request, order request
+      if (!empty($t->needs_human) || !empty($t->handoff_at) || AiChat::paused($t)) return false;
+      if (in_array((string)($t->intent ?? ''), ['complaint', 'refund', 'cancel', 'change_order', 'human_request', 'payment', 'order_request'], true)) return false;
+      if (DB::table('chat_handoffs')->where('thread_id', $tid)->whereIn('status', ['open', 'accepted'])->exists()) return false;
+      // only after we actually helped: at least one reply of ours exists and the last message is the customer's goodbye
+      if (!DB::table('chat_messages')->where('thread_id', $tid)->where('dir', 'out')->where('status', '!=', 'failed')->exists()) return false;
+      $li = DB::table('chat_messages')->where('thread_id', $tid)->orderByDesc('id')->first(['id', 'dir', 'body', 'created_at']);
+      if (!$li || $li->dir !== 'in') return false;
+      $bn = (bool)preg_match('/[\x{0980}-\x{09FF}]/u', (string)$li->body);
+      $txt = $bn ? 'স্যার, যদি কোনো কিছুর প্রয়োজন হয় আমাকে জানাবেন। ধন্যবাদ। 🙏' : 'Sir, please let me know if you need anything. Thank you. 🙏';
+      [$sent, $err] = self::deliver($t, $txt);
+      DB::table('chat_messages')->insert(['thread_id'=>$tid, 'dir'=>'out', 'kind'=>'text', 'body'=>$txt, 'user_name'=>'Claude AI', 'is_ai'=>true, 'status'=>$sent ? 'sent' : 'failed', 'error'=>$err, 'created_at'=>now(), 'updated_at'=>now()]);
+      if (!$sent) return false; // sending failed: stays unread / Awaiting Reply
+      self::replied($tid, $li->created_at);
+      DB::table('chat_threads')->where('id', $tid)->update(['status'=>'resolved', 'unread'=>0, 'awaiting_reply'=>false, 'last_message'=>mb_substr($txt, 0, 300), 'last_dir'=>'out', 'last_at'=>now(), 'updated_at'=>now()]);
+      return true;
+    } catch (\Throwable $e) { report($e); return false; }
+  }
   public static function aiReply(int $tid, int $depth = 0): void {
     $lock = null;
     try {
@@ -215,6 +245,9 @@ class Chat {
           if (!empty($li->transcript)) { $lb = trim((string)$li->transcript); }
           else { DB::table('chat_threads')->where('id', $tid)->update(['needs_human'=>true, 'updated_at'=>now()]); return; }
         }
+        // the customer's clear goodbye (or "no" to our "any other question?" line): courtesy reply + resolve, when nothing is pending
+        $askedClose = (bool)preg_match('/(আর কোনো প্রশ্ন|any other question|anything else)/iu', (string)DB::table('chat_messages')->where('thread_id', $tid)->where('dir', 'out')->orderByDesc('id')->value('body'));
+        if (self::isFarewell($lb, $askedClose) && self::autoClose($t)) { \Illuminate\Support\Facades\Cache::forget($lock); return; }
         // staff handle these: voice/video/files, unsupported or system placeholders, and plain thank-you / ok messages
         if (($li->attachment_url && !in_array($li->attachment_type, ['image', 'audio'], true)) || preg_match('/^\[(unsupported|[a-z]+ received)/iu', $lb) || preg_match('/^(ok|okay|thanks?|thank you|thx|ধন্যবাদ|থ্যাংকস|👍|🙏|❤️?)[\s.!]*$/iu', $lb)) return;
       }

@@ -106,7 +106,8 @@ class AiChat {
         'professional'=>'Professional and businesslike, calm and precise, no emoji, no slang.',
         'short'=>'Very short and direct: one to three short lines, answer first, no filler words, no emoji.'];
       $r = $p[$k] ?? ''; if ($c !== '') $r .= ($r ? ' ' : '').mb_substr($c, 0, 400);
-      return $r === '' ? '' : "TONE (set by the owner, follow it in every reply): ".$r."\n";
+      $cl = Sms::secret('ai_closing') === '0' ? '' : "CLOSING (owner rule): once you have fully answered what the customer asked and nothing is pending, end that reply with ONE short closing question in the customer's own language and style, e.g. Bangla: \"স্যার, আপনার আর কোনো প্রশ্ন আছে? না থাকলে আমি এখন বিদায় নিচ্ছি।\" / English: \"Sir, do you have any other question? If not, I'll take your leave now.\". Use it only when the topic is finished: never while you are still collecting order details, never while a complaint, refund, return, payment check or hand-off is open, and not after every single message.\n";
+      return ($r === '' ? '' : "TONE (set by the owner, follow it in every reply): ".$r."\n").$cl;
     } catch (\Throwable $e) { return ''; }
   }
   public static function reply(array $history, string $extra = '', ?string $lang = null): array {
