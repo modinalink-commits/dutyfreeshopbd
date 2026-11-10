@@ -19,7 +19,7 @@ class ManualPaymentController extends Controller {
   }
   public function count() { \App\Http\Controllers\OrderPaymentController::syncLegacy(); return response()->json(['pending' => (int)DB::table('order_payments')->where('status', 'pending')->count()]); }
 
-  public function index(Request $r) {
+  public function index(Request $r) { \App\Support\DateDefault::month($r);
     \App\Http\Controllers\OrderPaymentController::syncLegacy();
     $q = DB::table('order_payments as p')->join('orders as o', 'o.id', '=', 'p.order_id')->whereRaw("lower(p.method) not like '%shurjo%'");
     if ($s = trim((string)$r->query('q'))) {

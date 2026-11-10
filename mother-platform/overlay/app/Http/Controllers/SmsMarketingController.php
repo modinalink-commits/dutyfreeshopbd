@@ -117,6 +117,7 @@ class SmsMarketingController extends Controller {
   }
 
   private function reportQuery(Request $r) {
+    \App\Support\DateDefault::month($r);
     $q = DB::table('sms_logs as l')->leftJoin('sms_campaigns as c', 'c.id', '=', 'l.campaign_id')->select('l.*', 'c.name as campaign');
     if ($v = $r->query('from')) $q->where('l.created_at', '>=', \Carbon\Carbon::parse($v, 'Asia/Dhaka')->startOfDay()->utc());
     if ($v = $r->query('to')) $q->where('l.created_at', '<=', \Carbon\Carbon::parse($v, 'Asia/Dhaka')->endOfDay()->utc());

@@ -57,7 +57,7 @@ class ProcurementController extends Controller {
   }
   private function dateF() { return [['from','From','date'],['to','To','date']]; }
 
-  private function dInvoices(Request $r): array {
+  private function dInvoices(Request $r): array { \App\Support\DateDefault::month($r);
     $q = DB::table('purchases as p')->join('suppliers as s','s.id','=','p.supplier_id')->select('p.*','s.name as sname','s.code as scode');
     if ($r->filled('from')) $q->where('p.purchase_date','>=',$r->from); if ($r->filled('to')) $q->where('p.purchase_date','<=',$r->to);
     if ($r->filled('supplier')) $q->where('p.supplier_id',(int)$r->supplier); if ($r->filled('store')) $q->where('p.store_id',(int)$r->store); if ($r->filled('status')) $q->where('p.status',$r->status);
@@ -87,7 +87,7 @@ class ProcurementController extends Controller {
     return ['title'=>'Suppliers','sub'=>'Manage purchases, supplier payments and dues','head'=>['Supplier','Mobile','Total Purchase','Paid','Due','Last Purchase','Status','Action'],'rows'=>$rows,'noExportCol'=>7,'num'=>[2,3,4],'new'=>['Supplier','/admin/purchase/suppliers/new'],
       'filters'=>[['q','Name / mobile','text'],['pay','Status','select',['paid'=>'Paid','partial'=>'Partial','due'=>'Due','overdue'=>'Overdue']],['due','Balance','select',['open'=>'Has due','clear'=>'No due']]]];
   }
-  private function dPayments(Request $r): array {
+  private function dPayments(Request $r): array { \App\Support\DateDefault::month($r);
     $q = DB::table('supplier_payments as p')->join('suppliers as s','s.id','=','p.supplier_id')->leftJoin('purchases as u','u.id','=','p.purchase_id')->select('p.*','s.name as sname','u.invoice as inv');
     if ($r->filled('from')) $q->where('p.pay_date','>=',$r->from); if ($r->filled('to')) $q->where('p.pay_date','<=',$r->to); if ($r->filled('supplier')) $q->where('p.supplier_id',(int)$r->supplier);
     if ($r->filled('method')) $q->where('p.method',$r->method); if ($r->filled('status')) $q->where('p.status',$r->status);
@@ -123,7 +123,7 @@ class ProcurementController extends Controller {
     return ['new'=>['Make Payment','/admin/purchase/payments/new'],'title'=>'Payments & Due','sub'=>'What we owe each supplier. Overdue = an invoice past its due date and still unpaid.','head'=>['Supplier','Total purchase','Total paid','Current due','Overdue','Last payment','Next due date','Status','Actions'],'rows'=>$rows,'num'=>[1,2,3,4],'noExportCol'=>8,'foot'=>['Total',1,[number_format($T['p'],2),number_format($T['pd'],2),number_format($T['d'],2),number_format($T['o'],2)]],
       'filters'=>[['supplier','Supplier','supplier'],['q','Name / mobile','text'],['status','Status','select',['paid'=>'Paid','partial'=>'Partial','due'=>'Due','overdue'=>'Overdue']]]];
   }
-  private function dDamages(Request $r): array {
+  private function dDamages(Request $r): array { \App\Support\DateDefault::month($r);
     $q = DB::table('damaged_products as d')->leftJoin('suppliers as s','s.id','=','d.supplier_id')->leftJoin('products as pr','pr.id','=','d.product_id')->leftJoin('purchases as u','u.id','=','d.purchase_id')->select('d.*','s.name as sname','pr.name as pname','u.invoice as inv');
     if ($r->filled('from')) $q->where('d.dmg_date','>=',$r->from); if ($r->filled('to')) $q->where('d.dmg_date','<=',$r->to); if ($r->filled('supplier')) $q->where('d.supplier_id',(int)$r->supplier);
     if ($r->filled('reason')) $q->where('d.reason_type',$r->reason); if ($r->filled('resp')) $q->where('d.responsibility',$r->resp); if ($r->filled('store')) $q->where('d.store_id',(int)$r->store);
@@ -135,7 +135,7 @@ class ProcurementController extends Controller {
     return ['title'=>'Damage / Return','sub'=>'Damaged stock leaves saleable stock and is tracked separately. Supplier claims reduce the supplier balance automatically.','head'=>['Damage','Date','Product','Supplier','Invoice','Batch','Qty','Value','Reason','Treatment','Photo','Actions'],'rows'=>$rows,'num'=>[6,7],'noExportCol'=>11,'foot'=>['Total',6,[$qt,number_format($T,2)]],'new'=>['Add Damage / Return','/admin/purchase/damages/new'],
       'filters'=>array_merge($this->dateF(),[['supplier','Supplier','supplier'],['q','Product / invoice / batch','text'],['reason','Reason','select',array_combine(P::REASONS,P::REASONS)],['resp','Treatment','select',['company'=>'Company loss','supplier'=>'Supplier claim']],['store','Store','store']])];
   }
-  private function dReturns(Request $r): array {
+  private function dReturns(Request $r): array { \App\Support\DateDefault::month($r);
     $q = DB::table('purchase_returns as t')->join('suppliers as s','s.id','=','t.supplier_id')->leftJoin('purchases as u','u.id','=','t.purchase_id')->select('t.*','s.name as sname','u.invoice as inv');
     if ($r->filled('from')) $q->where('t.return_date','>=',$r->from); if ($r->filled('to')) $q->where('t.return_date','<=',$r->to); if ($r->filled('supplier')) $q->where('t.supplier_id',(int)$r->supplier);
     if ($r->filled('q')) { $t = '%'.$r->q.'%'; $q->where(fn($w) => $w->where('t.name','ilike',$t)->orWhere('u.invoice','ilike',$t)->orWhere('t.code','ilike',$t)); }
@@ -146,7 +146,7 @@ class ProcurementController extends Controller {
     return ['title'=>'Damage / Return','sub'=>'Goods sent back to suppliers. Stock goes down and the supplier balance is reduced.','head'=>['Return','Date','Supplier','Invoice','Product','Qty','Rate','Value','Reason','Actions'],'rows'=>$rows,'num'=>[5,6,7],'noExportCol'=>9,'foot'=>['Total',7,[number_format($T,2)]],'new'=>['Add Damage / Return','/admin/purchase/damages/new'],
       'filters'=>array_merge($this->dateF(),[['supplier','Supplier','supplier'],['q','Product / invoice','text']])];
   }
-  private function dNotes(Request $r): array {
+  private function dNotes(Request $r): array { \App\Support\DateDefault::month($r);
     $q = DB::table('supplier_notes as n')->join('suppliers as s','s.id','=','n.supplier_id')->leftJoin('purchases as u','u.id','=','n.purchase_id')->select('n.*','s.name as sname','u.invoice as inv');
     if ($r->filled('from')) $q->where('n.note_date','>=',$r->from); if ($r->filled('to')) $q->where('n.note_date','<=',$r->to); if ($r->filled('supplier')) $q->where('n.supplier_id',(int)$r->supplier); if ($r->filled('kind')) $q->where('n.kind',$r->kind);
     $rows = [];
@@ -407,13 +407,13 @@ class ProcurementController extends Controller {
     foreach (array_keys(P::TPL) as $k) if ($r->has('tpl_'.$k)) P::put('tpl_'.$k, trim((string)$r->input('tpl_'.$k)));
     P::audit('proc.settings','settings',$prev,$r->except(['_token'])); return back()->with('ok','Settings saved');
   }
-  public function priceChanges(Request $r) {
+  public function priceChanges(Request $r) { \App\Support\DateDefault::month($r);
     $q = DB::table('product_price_history as h')->leftJoin('products as p', 'p.id', '=', 'h.product_id');
     if ($r->filled('from')) $q->where('h.created_at', '>=', \Carbon\Carbon::parse($r->from, 'Asia/Dhaka')->utc()); if ($r->filled('to')) $q->where('h.created_at', '<', \Carbon\Carbon::parse($r->to, 'Asia/Dhaka')->addDay()->utc());
     if ($s = trim((string)$r->input('q'))) $q->where(fn($w) => $w->where('p.name', 'ilike', '%'.$s.'%')->orWhere('h.purchase_invoice', 'ilike', '%'.$s.'%'));
     return view('proc.price_changes', ['rows'=>$q->orderByDesc('h.id')->paginate(50, ['h.*', 'p.name as pname', 'p.sku as psku'])->withQueryString()]);
   }
-  public function audit(Request $r) {
+  public function audit(Request $r) { \App\Support\DateDefault::month($r);
     $q = DB::table('audit_logs')->where('action','like','proc.%'); if ($r->filled('from')) $q->where('created_at','>=',$r->from); if ($r->filled('to')) $q->where('created_at','<',\Carbon\Carbon::parse($r->to)->addDay()); if ($r->filled('a')) $q->where('action','like','%'.$r->a.'%'); if ($r->filled('u')) $q->where('user_name','ilike','%'.$r->u.'%');
     return view('proc.audit', ['rows'=>$q->orderByDesc('id')->paginate(50)->withQueryString()]);
   }

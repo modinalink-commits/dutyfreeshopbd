@@ -50,7 +50,7 @@ class WinbackController extends Controller
     return view('winback', $d);
   }
   /** Who used the Win-Back offers + results by stage; ?csv=1 downloads it. */
-  public function report(Request $r) {
+  public function report(Request $r) { \App\Support\DateDefault::month($r);
     $from = $r->query('from'); $to = $r->query('to');
     $ev = fn() => DB::table('winback_events as e')->when($from, fn($q) => $q->whereDate('e.created_at', '>=', $from))->when($to, fn($q) => $q->whereDate('e.created_at', '<=', $to));
     $stages = $ev()->selectRaw('e.stage_days, max(e.pct) as pct, count(*) as sent, sum(case when e.used_at is not null then 1 else 0 end) as used, coalesce(sum(e.used_total),0) as rev, coalesce(sum(e.used_discount),0) as disc')->groupBy('e.stage_days')->orderBy('e.stage_days')->get();

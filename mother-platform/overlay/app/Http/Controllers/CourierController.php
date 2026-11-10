@@ -122,7 +122,7 @@ class CourierController extends Controller {
     $this->audit($r, 'courier.settle', "$n parcels marked paid".(!empty($d['ref']) ? ' ref '.$d['ref'] : ''));
     return back()->with('ok', "$n delivered parcel(s) marked as paid / settled.");
   }
-  private function dash(Request $r): array {
+  private function dash(Request $r): array { \App\Support\DateDefault::month($r);
     \App\Support\CourierSync::auto();
     $q = DB::table('orders as o')->leftJoin('stores as s', 's.id', '=', 'o.store_id')->whereNotNull('o.consignment_id')
       ->when($r->filled('courier'), fn($x) => $x->where('o.courier', $r->courier))->when($r->filled('store'), fn($x) => $x->where('o.store_id', (int)$r->store))

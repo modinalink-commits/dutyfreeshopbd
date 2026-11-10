@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 
 /** Courier income with tracking links. Read-only: joins the DEL-* income entries to their orders, so old entries get links too without changing any data. */
 class CourierTrackController extends Controller {
-  public function index(Request $r) {
+  public function index(Request $r) { \App\Support\DateDefault::month($r);
     $q = trim((string)$r->query('q', '')); $from = $this->d($r->query('from')); $to = $this->d($r->query('to')); $rows = null; $sum = 0.0; $cnt = 0;
     try {
       $base = DB::table('account_entries as e')->leftJoin('orders as o', DB::raw("o.invoice"), '=', DB::raw("substr(e.reference, 5)"))->leftJoin('money_accounts as a', 'a.id', '=', 'e.account_id')

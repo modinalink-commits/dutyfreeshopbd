@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 
 class TransferController extends Controller {
   private function chk(string $need = 'view') { abort_unless(P::can(Auth::user(), 'accounts', $need), 403); abort_unless(T::ready(), 503, 'Transfers are not set up yet'); }
-  public function index(Request $r) {
+  public function index(Request $r) { \App\Support\DateDefault::month($r);
     $this->chk();
     $acc = DB::table('money_accounts')->where('active', true)->orderBy('name')->get(['id', 'name']);
     $bal = []; foreach ($acc as $a) $bal[$a->id] = T::balance($a->id);
