@@ -228,10 +228,10 @@ class Chat {
         if ($li->dir !== 'out' || empty($li->is_ai) && !preg_match('/(আর কোনো প্রশ্ন|any other question|anything else)/iu', (string)$li->body)) return false;
         if (!preg_match('/(আর কোনো প্রশ্ন|any other question|anything else)/iu', (string)$li->body)) return false;
         $cb = (string)DB::table('chat_messages')->where('thread_id', $tid)->where('dir', 'in')->orderByDesc('id')->value('body');
-        $bn = (bool)preg_match('/[\x{0980}-\x{09FF}]/u', $cb !== '' ? $cb : (string)$li->body);
+        $bn = AiChat::banglaOnly() ? true : (bool)preg_match('/[\x{0980}-\x{09FF}]/u', $cb !== '' ? $cb : (string)$li->body);
       } else {
         if ($li->dir !== 'in') return false;
-        $bn = (bool)preg_match('/[\x{0980}-\x{09FF}]/u', (string)$li->body);
+        $bn = AiChat::banglaOnly() ? true : (bool)preg_match('/[\x{0980}-\x{09FF}]/u', (string)$li->body);
       }
       $txt = $bn ? 'স্যার, যদি কোনো কিছুর প্রয়োজন হয় আমাকে জানাবেন। ধন্যবাদ। 🙏' : 'Sir, please let me know if you need anything. Thank you. 🙏';
       [$sent, $err] = self::deliver($t, $txt);
@@ -258,7 +258,7 @@ class Chat {
       if (!$t || $t->channel !== 'whatsapp' || $t->status === 'resolved' || !$t->awaiting_reply || self::unansweredBlock($t) !== null) return false;
       $li = DB::table('chat_messages')->where('thread_id', $tid)->orderByDesc('id')->first(['id', 'dir', 'body', 'created_at']);
       if (!$li || $li->dir !== 'in') return false;
-      $bn = (bool)preg_match('/[\x{0980}-\x{09FF}]/u', (string)$li->body) || !preg_match('/[a-z]{3,}/i', (string)$li->body);
+      $bn = AiChat::banglaOnly() ? true : ((bool)preg_match('/[\x{0980}-\x{09FF}]/u', (string)$li->body) || !preg_match('/[a-z]{3,}/i', (string)$li->body));
       $txt = $bn ? 'স্যার, উত্তর দিতে দেরি হওয়ার জন্য আন্তরিকভাবে দুঃখিত। যদি কোনো কিছুর প্রয়োজন হয় আমাকে জানাবেন। ধন্যবাদ। 🙏' : 'Sir, sorry for the late reply. Please let me know if you need anything. Thank you. 🙏';
       [$sent, $err] = self::deliver($t, $txt);
       DB::table('chat_messages')->insert(['thread_id'=>$tid, 'dir'=>'out', 'kind'=>'text', 'body'=>$txt, 'user_name'=>auth()->user()->name ?? 'Owner', 'is_ai'=>false, 'status'=>$sent ? 'sent' : 'failed', 'error'=>$err, 'created_at'=>now(), 'updated_at'=>now()]);
