@@ -95,7 +95,8 @@ class CallCenterController extends Controller {
   public function extensions() {
     $users = DB::table('users')->orderBy('id')->get(['id', 'name', 'email', 'role', 'active']); $rows = DB::table('sip_accounts')->whereNotNull('user_id')->get()->keyBy('user_id');
     $used = $rows->pluck('username')->filter()->all(); $next = 101; while (in_array((string)$next, $used)) $next++;
-    return view('sip_extensions', ['users'=>$users, 'rows'=>$rows, 'next'=>$next]);
+    $pool = DB::table('pbx_extensions')->orderBy('id')->get();
+    return view('sip_extensions', ['users'=>$users, 'rows'=>$rows, 'next'=>$next, 'pool'=>$pool]);
   }
   public function saveExtension(Request $r, $uid) {
     abort_unless(DB::table('users')->where('id', $uid)->exists(), 404);
@@ -109,6 +110,30 @@ class CallCenterController extends Controller {
     if ($ex) DB::table('sip_accounts')->where('id', $ex->id)->update($row); else { $b = $this->acct(); DB::table('sip_accounts')->insert($row + ['user_id'=>$uid, 'domain'=>$b->domain ?? '', 'created_at'=>now()]); }
     try { if ($rawPw !== null && $rawPw !== '') DB::table('audit_logs')->insert(['user_id'=>Auth::id(), 'user_name'=>Auth::user()->name ?? 'admin', 'action'=>'Extension password saved', 'subject'=>'ext '.$d['username'].' · user#'.$uid.' · '.mb_strlen($rawPw).' chars', 'ip'=>$r->ip(), 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {}
     return back()->with('ok', 'Extension saved — password '.($rawPw !== null && $rawPw !== '' ? 'updated ('.mb_strlen($rawPw).' characters)' : 'unchanged'));
+  }
+  /** Extension pool: one form, many rows. Blank extension on a saved row removes it; blank password keeps the old one. */
+  public function savePool(Request $r) {
+    $in = $r->input('rows', []); if (!is_array($in)) $in = []; $raw = $_POST['rows'] ?? []; $err = []; $seen = []; $n = 0;
+    $userExt = DB::table('sip_accounts')->whereNotNull('user_id')->pluck('username')->map(fn($v) => (string)$v)->all();
+    foreach (array_slice($in, 0, 60, true) as $i => $row) {
+      $id = (int)($row['id'] ?? 0); $ex = trim((string)($row['extension'] ?? '')); $cur = $id ? DB::table('pbx_extensions')->find($id) : null;
+      if ($ex === '') { if ($cur) { DB::table('pbx_extensions')->where('id', $id)->delete(); $n++; } continue; }
+      $line = 'Row '.((int)$i + 1).': ';
+      if (!preg_match('/^[A-Za-z0-9_.-]{1,40}$/', $ex)) { $err[] = $line.'extension must be letters/numbers only.'; continue; }
+      if (isset($seen[$ex]) || in_array($ex, $userExt, true)) { $err[] = $line.'extension '.$ex.' is already in use.'; continue; }
+      $seen[$ex] = 1;
+      $pw = (isset($raw[$i]['password']) && is_string($raw[$i]['password'])) ? $raw[$i]['password'] : (string)($row['password'] ?? '');
+      if (mb_strlen($pw) > 200) { $err[] = $line.'password too long.'; continue; }
+      if ($pw === '' && (!$cur || !$cur->password_enc)) { $err[] = $line.'password is required.'; continue; }
+      if (DB::table('pbx_extensions')->where('extension', $ex)->when($cur, fn($q) => $q->where('id', '!=', $cur->id))->exists()) { $err[] = $line.'extension '.$ex.' already exists.'; continue; }
+      $d = ['extension'=>$ex, 'auth_username'=>trim((string)($row['auth_username'] ?? '')) ?: null, 'display_name'=>trim((string)($row['display_name'] ?? '')) ?: null, 'updated_at'=>now()];
+      if ($pw !== '') $d['password_enc'] = Crypt::encryptString($pw);
+      if ($cur) DB::table('pbx_extensions')->where('id', $cur->id)->update($d); else DB::table('pbx_extensions')->insert($d + ['created_at'=>now()]);
+      $n++;
+    }
+    try { if ($n) DB::table('audit_logs')->insert(['user_id'=>Auth::id(), 'user_name'=>Auth::user()->name ?? 'admin', 'action'=>'Extension pool saved', 'subject'=>$n.' row(s) changed', 'ip'=>$r->ip(), 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {}
+    $back = back()->with('ok', $n.' extension row(s) saved.');
+    return $err ? $back->withErrors($err) : $back;
   }
   private function norm(string $v): string { $d = preg_replace('/\D/', '', $v); return preg_match('/(01\d{9})$/', $d, $m) ? $m[1] : $d; }
   private function cat(string $ph, int $n): string { try { $p = \App\Support\OrderDiscount::profile($ph); if (!empty($p['category'])) return (string)$p['category']; } catch (\Throwable $e) {} return $n > 0 ? 'Regular' : 'New'; }

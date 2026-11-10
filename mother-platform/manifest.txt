@@ -965,3 +965,4 @@ resources/views/carrier_clients.blade.php
 database/migrations/2026_11_11_000001_voice_call_billing.php
 database/migrations/2026_11_11_000002_voice_cdr_cause.php
 database/migrations/2026_11_11_000003_voice_cdr_caller.php
+database/migrations/2026_11_11_000004_pbx_extensions_pool.php
