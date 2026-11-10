@@ -26,6 +26,11 @@ class CarrierClientController extends Controller {
     return [$start, $start->copy()->addDays($days)];
   }
   /** Connected (answered) call usage for the client's current cycle, from relay CDRs. Billed minutes round each call up to a whole minute. */
+  /** Customer mobile as dialled to the customer: the client dials PREFIX-without-trailing-1 + mobile without its leading 0 (9901690173684 -> 01690173684). */
+  public static function mobile(string $dest, string $prefix): string {
+    $base = str_ends_with($prefix, '1') ? substr($prefix, 0, -1) : $prefix;
+    return str_starts_with($dest, $base) ? '0' . substr($dest, strlen($base)) : $dest;
+  }
   /** Answered calls still in progress, per client id => list of elapsed seconds (from the first time we saw the call ACTIVE). */
   public static function liveAnswered(): array {
     [$ok, $rows] = self::relayChannels(); if (!$ok) return []; $byIp = [];
@@ -77,7 +82,7 @@ class CarrierClientController extends Controller {
     $total = (clone $q)->count();
     $rows = $q->orderByDesc('d.id')->offset(($page - 1) * $per)->limit($per)->get(['d.uuid', 'd.dest', 'd.billsec', 'd.cause', 'd.ended_at', 'c.name as client', 'c.prefix']);
     $out = $rows->map(fn($x) => ['time' => \Illuminate\Support\Carbon::parse($x->ended_at, 'UTC')->setTimezone($tz)->format('d M H:i:s'), 'client' => $x->client ?? '—',
-      'number' => preg_replace('/^' . preg_quote((string)$x->prefix, '/') . '/', '', (string)$x->dest), 'secs' => (int)$x->billsec, 'billed' => (int)ceil($x->billsec / 60), 'cause' => (string)$x->cause])->values();
+      'number' => self::mobile((string)$x->dest, (string)$x->prefix), 'secs' => (int)$x->billsec, 'billed' => (int)ceil($x->billsec / 60), 'cause' => (string)$x->cause])->values();
     return response()->json(['ok' => true, 'rows' => $out, 'total' => $total, 'page' => $page, 'pages' => max(1, (int)ceil($total / $per))]);
   }
   public function billingSave(Request $r, $id) {
@@ -194,7 +199,7 @@ class CarrierClientController extends Controller {
     foreach ($rows as $r) {
       if (($r['direction'] ?? '') !== 'inbound') continue;
       $c = $byIp[$r['ip_addr'] ?? ''] ?? null; if (!$c) { if (count($unk) < 20) $unk[] = ['ip' => $r['ip_addr'] ?? '', 'to' => $r['dest'] ?? '', 'from' => $r['cid_num'] ?? '', 'state' => $r['callstate'] ?? '']; continue; }
-      $dest = preg_replace('/^' . preg_quote($c->prefix, '/') . '/', '', (string)($r['dest'] ?? ''));
+      $dest = self::mobile((string)($r['dest'] ?? ''), (string)$c->prefix);
       // Duration counts only after the customer answers (callstate ACTIVE); ringing shows no timer. First ACTIVE sighting is remembered per call.
       $age = null;
       if (strtoupper((string)($r['callstate'] ?? '')) === 'ACTIVE' && !empty($r['uuid'])) {
