@@ -26,13 +26,14 @@ class RecurringExpenseController extends Controller {
     $owing = $inst->filter(fn($x) => $x->payment_status !== 'paid' && !in_array($x->status, ['skipped', 'cancelled']));
     $overdue = $owing->filter(fn($x) => $x->due_date < $today->toDateString());
     $monthUp = collect($upcoming)->filter(fn($x) => $x->due <= $m1->toDateString());
+    $upcomingList = collect($upcoming)->filter(fn($x) => $x->due <= $m1->toDateString())->values()->all(); // only this month (plus anything still unpaid from earlier months, marked overdue); next month's costs appear when that month starts
     $k = ['total' => $month->whereNotIn('status', ['skipped', 'cancelled'])->sum('amount') + $monthUp->sum('amount'), 'paid' => $month->where('payment_status', 'paid')->sum('amount'),
       'upcoming' => $monthUp->sum('amount'), 'overdue' => $overdue->sum('amount'),
       'loan' => $month->where('is_loan', 1)->whereNotIn('status', ['skipped', 'cancelled'])->sum('amount') + $monthUp->where('type', 'loan')->sum('amount'),
       'salary' => $month->where('expense_type', 'payroll')->sum('amount') + $monthUp->where('type', 'payroll')->sum('amount'),
       'subs' => $month->where('expense_type', 'subscription')->sum('amount') + $monthUp->where('type', 'subscription')->sum('amount')];
     $cats = DB::table('expense_purposes')->where('is_expense', true)->orderBy('name')->pluck('name');
-    return view('recurring_expenses', compact('masters', 'acc', 'accName', 'inst', 'upcoming', 'owing', 'k', 'cats', 'today') + ['can' => P::can(Auth::user(), 'accounts', 'edit')]);
+    return view('recurring_expenses', compact('masters', 'acc', 'accName', 'inst', 'upcoming', 'upcomingList', 'm0', 'm1', 'owing', 'k', 'cats', 'today') + ['can' => P::can(Auth::user(), 'accounts', 'edit')]);
   }
   private function rules(): array {
     return ['name' => 'required|string|max:160', 'category' => 'required|string|max:80', 'expense_type' => 'required|in:fixed,variable,loan,payroll,subscription,utility', 'amount' => 'required|numeric|min:0',
