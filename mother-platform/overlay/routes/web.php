@@ -168,6 +168,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/chat/thread/{id}/phone', [\App\Http\Controllers\ChatController::class,'phone']);
   Route::get('/chat-settings', [\App\Http\Controllers\ChatController::class,'settings']);
   Route::post('/chat-settings', [\App\Http\Controllers\ChatController::class,'saveSettings']);
+  Route::match(['get','post'], '/chat-unanswered', [\App\Http\Controllers\ChatController::class,'unanswered']);
   Route::post('/chat-settings/wa-subscribe', [\App\Http\Controllers\ChatController::class,'waSubscribe']);
   Route::post('/chat-settings/wa-register', [\App\Http\Controllers\ChatController::class,'waRegister']);
   Route::post('/chat-settings/wa-code', [\App\Http\Controllers\ChatController::class,'waCode']);

@@ -242,6 +242,32 @@ class Chat {
       return true;
     } catch (\Throwable $e) { report($e); return false; }
   }
+  /** Why a never-answered WhatsApp chat can NOT be closed with a last courtesy message (null = it can). */
+  public static function unansweredBlock(object $t): ?string {
+    if (!empty($t->needs_human) || !empty($t->handoff_at)) return 'hand-off / needs a person';
+    if (in_array((string)($t->intent ?? ''), ['complaint', 'refund', 'cancel', 'change_order', 'human_request', 'payment', 'order_request'], true)) return 'open '.($t->intent).' request';
+    if (DB::table('chat_handoffs')->where('thread_id', $t->id)->whereIn('status', ['open', 'accepted'])->exists()) return 'open hand-off';
+    $lc = $t->last_customer_message_at ?? $t->last_at;
+    if (!$lc || \Carbon\Carbon::parse($lc)->lt(now()->subHours(23))) return 'outside the 24-hour WhatsApp window';
+    return null;
+  }
+  /** Owner action: a WhatsApp chat whose customer message was never answered gets one short last courtesy message and is resolved. A failed send changes nothing (stays Awaiting Reply). */
+  public static function closeUnanswered(object $t): bool {
+    try {
+      $tid = (int)$t->id; $t = DB::table('chat_threads')->find($tid);
+      if (!$t || $t->channel !== 'whatsapp' || $t->status === 'resolved' || !$t->awaiting_reply || self::unansweredBlock($t) !== null) return false;
+      $li = DB::table('chat_messages')->where('thread_id', $tid)->orderByDesc('id')->first(['id', 'dir', 'body', 'created_at']);
+      if (!$li || $li->dir !== 'in') return false;
+      $bn = (bool)preg_match('/[\x{0980}-\x{09FF}]/u', (string)$li->body) || !preg_match('/[a-z]{3,}/i', (string)$li->body);
+      $txt = $bn ? 'স্যার, উত্তর দিতে দেরি হওয়ার জন্য আন্তরিকভাবে দুঃখিত। যদি কোনো কিছুর প্রয়োজন হয় আমাকে জানাবেন। ধন্যবাদ। 🙏' : 'Sir, sorry for the late reply. Please let me know if you need anything. Thank you. 🙏';
+      [$sent, $err] = self::deliver($t, $txt);
+      DB::table('chat_messages')->insert(['thread_id'=>$tid, 'dir'=>'out', 'kind'=>'text', 'body'=>$txt, 'user_name'=>auth()->user()->name ?? 'Owner', 'is_ai'=>false, 'status'=>$sent ? 'sent' : 'failed', 'error'=>$err, 'created_at'=>now(), 'updated_at'=>now()]);
+      if (!$sent) return false;
+      self::replied($tid, now());
+      DB::table('chat_threads')->where('id', $tid)->update(['status'=>'resolved', 'unread'=>0, 'awaiting_reply'=>false, 'last_message'=>mb_substr($txt, 0, 300), 'last_dir'=>'out', 'last_at'=>now(), 'updated_at'=>now()]);
+      return true;
+    } catch (\Throwable $e) { report($e); return false; }
+  }
   public static function aiReply(int $tid, int $depth = 0): void {
     $lock = null;
     try {

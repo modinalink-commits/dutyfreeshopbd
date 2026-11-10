@@ -439,6 +439,19 @@ class ChatController extends Controller {
     DB::table('audit_logs')->insert(['user_id'=>auth()->id(), 'user_name'=>auth()->user()->name, 'action'=>'chat.fb_disconnect', 'subject'=>'Page disconnected: '.$p->name, 'ip'=>$r->ip(), 'created_at'=>now(), 'updated_at'=>now()]);
     return back()->with('ok', 'Disconnected '.$p->name.'. (Its old conversations stay in the inbox.)');
   }
+  /** Preview (GET) and run (POST) of "close every never-answered WhatsApp chat with one last courtesy message". */
+  public function unanswered(Request $r) {
+    $rows = DB::table('chat_threads')->where('channel', 'whatsapp')->where('awaiting_reply', true)->whereNotIn('status', ['resolved'])->orderBy('last_at')->limit(400)->get();
+    $ok = []; $blocked = [];
+    foreach ($rows as $t) { $b = Chat::unansweredBlock($t); if ($b === null) $ok[] = $t; else $blocked[$b][] = $t; }
+    $done = 0; $failed = 0;
+    if ($r->isMethod('post')) {
+      foreach (array_slice($ok, 0, 40) as $t) { if (Chat::closeUnanswered($t)) $done++; else $failed++; usleep(300000); }
+      DB::table('audit_logs')->insert(['user_id'=>auth()->id(), 'user_name'=>auth()->user()->name, 'action'=>'chat.close_unanswered', 'subject'=>"Closed $done unanswered WhatsApp chats with a courtesy message ($failed failed)", 'ip'=>$r->ip(), 'created_at'=>now(), 'updated_at'=>now()]);
+      return redirect('/admin/chat-unanswered')->with('ok', "$done chats closed with the last message" . ($failed ? ", $failed could not be sent and stay open" : '') . '.');
+    }
+    return view('chat_unanswered', ['ok'=>$ok, 'blocked'=>$blocked]);
+  }
   public function saveSettings(Request $r) {
     $d = $r->validate(['fb_token'=>'nullable|string|max:600', 'ig_token'=>'nullable|string|max:600', 'wa_token'=>'nullable|string|max:600', 'wa_phone_id'=>'nullable|string|max:40', 'app_secret'=>'nullable|string|max:100', 'app_id'=>'nullable|string|max:40']);
     foreach (['fb_token'=>'chat_fb_token', 'ig_token'=>'chat_ig_token', 'wa_token'=>'chat_wa_token', 'app_secret'=>'chat_app_secret', 'app_id'=>'chat_app_id', 'wa_phone_id'=>'chat_wa_phone_id'] as $k => $sk) if (!empty($d[$k])) Sms::setSecret($sk, trim($d[$k]));
