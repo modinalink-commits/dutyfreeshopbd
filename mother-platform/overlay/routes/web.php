@@ -275,6 +275,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/bundle-pricing', [\App\Http\Controllers\BundlePricingController::class,'index']); Route::post('/bundle-pricing', [\App\Http\Controllers\BundlePricingController::class,'save']);
   Route::match(['get','post'],'/category-margin', [\App\Http\Controllers\PriceReviewController::class,'categoryMargin']);
   Route::post('/inventory-pricing/fix-batch-cost', [\App\Http\Controllers\PriceReviewController::class,'fixBatchCost']);
+  Route::post('/inventory-pricing/set-price', [\App\Http\Controllers\PriceReviewController::class,'setPrice']);
   Route::get('/inventory-pricing', [\App\Http\Controllers\PriceReviewController::class,'inventory']); Route::get('/inventory-pricing/{id}/history', [\App\Http\Controllers\PriceReviewController::class,'history'])->whereNumber('id'); Route::get('/inventory-pricing/{id}/batches', [\App\Http\Controllers\PriceReviewController::class,'batches'])->whereNumber('id'); Route::post('/inventory-pricing/ship-mode', [\App\Http\Controllers\PriceReviewController::class,'shipMode']); Route::post('/inventory-pricing/min-margin', [\App\Http\Controllers\PriceReviewController::class,'minMargin']);
   Route::get('/profit-check/product', [\App\Http\Controllers\PriceReviewController::class,'checkProduct']); Route::get('/profit-check/order', [\App\Http\Controllers\PriceReviewController::class,'checkOrder']);
   Route::get('/ship-check/{id}', [\App\Http\Controllers\StockHistoryController::class,'shipCheck'])->whereNumber('id');

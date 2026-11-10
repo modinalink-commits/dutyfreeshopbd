@@ -97,6 +97,21 @@ class PriceReviewController extends Controller {
     $diff = \App\Support\Costing::sync((int)$d['product_id']);
     return response()->json(['changed' => count($ids), 'batches' => $ids, 'sync' => $diff]);
   }
+  /** Admin: set one product's sale price (never below the protected minimum). Old price goes to price history. */
+  public function setPrice(Request $r) {
+    abort_unless(\App\Support\ProfitFloor::admin(), 403);
+    $d = $r->validate(['product_id' => 'required|integer', 'price' => 'required|numeric|min:1', 'reason' => 'nullable|string|max:300']);
+    $pr = DB::table('products')->where('id', $d['product_id'])->first(); abort_unless($pr, 404);
+    $cost = (float)(DB::table('products as p')->where('p.id', $pr->id)->selectRaw(\App\Support\Costing::fifoSql('p') . ' as c')->value('c') ?? 0);
+    if ($cost > 0 && !\App\Support\ProfitFloor::ok($cost, (float)$d['price'])) return response()->json(['error' => 'below minimum safe price ' . \App\Support\ProfitFloor::floor($cost)], 422);
+    $old = (float)$pr->price; $new = (float)$d['price']; $up = ['price' => $new, 'updated_at' => now()]; if ($pr->compare_price !== null && (float)$pr->compare_price <= $new) $up['compare_price'] = null;
+    DB::table('products')->where('id', $pr->id)->update($up);
+    DB::table('product_price_history')->insert(['product_id' => $pr->id, 'old_rate' => $old, 'new_rate' => $new, 'purchase_rate' => $cost, 'changed_by' => auth()->user()->name ?? 'admin', 'source' => 'Admin price set', 'note' => $d['reason'] ?? null, 'created_at' => now(), 'updated_at' => now()]);
+    \App\Support\ProfitFloor::audit('price.set', 'Sale price set: ' . $pr->name, ['price' => $old], ['price' => $new, 'reason' => $d['reason'] ?? null, 'by' => auth()->user()->name ?? null]);
+    try { \App\Support\BundlePricing::flush(); \App\Support\BundlePricing::sync([(int)$pr->id]); } catch (\Throwable $e) { report($e); }
+    \App\Http\Controllers\StoreController::bust();
+    return response()->json(['ok' => true, 'old' => $old, 'new' => $new]);
+  }
   public function minMargin(Request $r) {
     abort_unless(\App\Support\ProfitFloor::admin(), 403);
     $d = $r->validate(['percent' => 'required|numeric|min:1|max:60', 'reason' => 'required|string|min:3|max:300']);
