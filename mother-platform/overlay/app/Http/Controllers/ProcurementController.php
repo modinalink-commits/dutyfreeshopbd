@@ -439,6 +439,16 @@ class ProcurementController extends Controller {
     $inv = DB::table('purchases')->where('supplier_id',$id)->whereNotIn('status',P::BAD)->orderBy('purchase_date')->get()->map(fn($p) => ['id'=>$p->id,'invoice'=>$p->invoice,'date'=>$p->purchase_date,'total'=>(float)$p->total,'due'=>round($p->total-($paid[$p->id] ?? 0),2)])->all();
     return response()->json(['due'=>round(P::due($id),2),'credit_limit'=>(float)$s->credit_limit,'terms'=>(int)$s->payment_terms,'invoices'=>$inv]);
   }
+  /** Earlier purchase prices of one product: how many times each rate was paid, newest first, plus the last purchase. Read-only; cancelled / draft purchases and the invoice being edited are left out. */
+  public function apiHistory(Request $r, $pid) {
+    $rows = DB::table('purchase_items as i')->join('purchases as p','p.id','=','i.purchase_id')->leftJoin('suppliers as s','s.id','=','p.supplier_id')
+      ->where('i.product_id',$pid)->whereNotIn('p.status',P::BAD)->where('i.cost','>',0)
+      ->when($r->filled('exclude'), fn($q) => $q->where('p.id','!=',(int)$r->exclude))
+      ->orderByDesc('p.purchase_date')->orderByDesc('p.id')->limit(200)->get(['i.cost','i.qty','p.purchase_date','s.name as supplier']);
+    $g = []; foreach ($rows as $x) { $k = number_format((float)$x->cost, 2, '.', ''); if (!isset($g[$k])) $g[$k] = ['cost'=>(float)$x->cost,'times'=>0,'qty'=>0,'last'=>$x->purchase_date]; $g[$k]['times']++; $g[$k]['qty'] += (int)$x->qty; }
+    $f = $rows->first();
+    return response()->json(['last'=>$f ? ['cost'=>(float)$f->cost,'date'=>$f->purchase_date,'supplier'=>$f->supplier] : null,'rates'=>array_slice(array_values($g),0,4),'total'=>$rows->count()]);
+  }
   public function apiItems(Request $r, $id) {
     $ret = DB::table('purchase_returns')->where('purchase_id',$id)->whereNotNull('product_id')->groupBy('product_id')->selectRaw('product_id, sum(qty) q')->pluck('q','product_id');
     return response()->json(DB::table('purchase_items')->where('purchase_id',$id)->get()->map(fn($i) => ['product_id'=>$i->product_id,'name'=>$i->name,'qty'=>(int)$i->qty,'cost'=>(float)$i->cost,'batch'=>$i->batch,'returned'=>(int)($ret[$i->product_id] ?? 0)])->all());

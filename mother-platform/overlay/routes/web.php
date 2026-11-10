@@ -386,7 +386,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
       $PS = \App\Http\Controllers\SupplierPortalSetupController::class; Route::get('/setup', [$PS,'index']); Route::post('/setup', [$PS,'act']); Route::post('/setup/password', [$PS,'setPassword']); Route::get('/setup/export/{fmt}', [$PS,'export'])->whereIn('fmt',['csv','xls','pdf']);
       Route::get('/rfqs', [$PA,'rfqs']); Route::get('/rfqs/new', [$PA,'rfqForm']); Route::post('/rfqs', [$PA,'rfqSave']); Route::get('/rfqs/{id}', [$PA,'rfqShow'])->whereNumber('id'); Route::post('/rfqs/{id}/{a}', [$PA,'rfqAction'])->whereNumber('id');
     });
-    Route::get('/api/products', [$C,'apiProducts']); Route::post('/api/product', [$C,'apiNewProduct']); Route::post('/api/bulk', [$C,'apiBulk']); Route::get('/api/supplier/{id}', [$C,'apiSupplier'])->whereNumber('id'); Route::get('/api/items/{id}', [$C,'apiItems'])->whereNumber('id');
+    Route::get('/api/products', [$C,'apiProducts']); Route::get('/api/history/{pid}', [$C,'apiHistory'])->whereNumber('pid'); Route::post('/api/product', [$C,'apiNewProduct']); Route::post('/api/bulk', [$C,'apiBulk']); Route::get('/api/supplier/{id}', [$C,'apiSupplier'])->whereNumber('id'); Route::get('/api/items/{id}', [$C,'apiItems'])->whereNumber('id');
   });
   Route::get('/inventory', [\App\Http\Controllers\InventoryController::class,'index']);
   Route::get('/inventory/export/{fmt}', [\App\Http\Controllers\InventoryController::class,'export']);
