@@ -5,6 +5,7 @@
 <div class="cc">
 <h1 style="margin:0 0 4px">Call Clients</h1>
 <span class="sub">Wholesale call-termination clients: live calls, connected minutes, billing cycle and relay line.</span>
+<div style="margin-top:8px"><button class="btn g" type="button" id="sysBtn">⚙ System settings</button></div>
 @if(session('ok'))<div class="card" style="margin-top:12px;background:#DCFCE7;border-color:#A7F3D0">{{ session('ok') }}</div>@endif
 @if($errors->any())<div class="card err" style="margin-top:12px">@foreach($errors->all() as $e){{ $e }}<br>@endforeach</div>@endif
 
@@ -65,6 +66,8 @@ document.getElementById('brGo').onclick=function(){var a=document.getElementById
 fetch('/admin/call-center/clients/billing/range?from='+encodeURIComponent(a)+'&to='+encodeURIComponent(b),{headers:{Accept:'application/json'}}).then(function(r){return r.json()}).then(function(d){if(!d.ok){o.textContent=d.msg||'Invalid range';return}
 o.textContent='Connected calls '+d.calls+' · Talk time '+f(d.secs)+' · Billable minutes '+d.billed_min+(d.rows.length>1?' ('+d.rows.map(function(x){return x.client+': '+x.billed_min}).join(', ')+')':'')}).catch(function(){o.textContent='Could not load'})}})();</script>
 
+<div id="sysBox" hidden>
+<div class="card sec" style="border-left:3px solid #C2410C"><b style="font-size:14px">Internal system settings</b> <span class="sub">Relay line and SIP endpoint. Change only if you know what you are doing.</span></div>
 <div class="card sec"><div class="h"><b>Relay line (PBX extensions)</b> <span class="sub">The relay registers with these extensions on the PBX and sends calls to customers' mobiles. Passwords are never shown after saving (leave blank to keep the existing one).</span></div>
 <form method="post" action="/admin/call-center/clients/relay" class="row" style="align-items:flex-start">@csrf
 <input name="host" value="{{ old('host',$relay['host']) }}" placeholder="PBX host" style="width:190px" required>
@@ -83,6 +86,8 @@ o.textContent='Connected calls '+d.calls+' · Talk time '+f(d.secs)+' · Billabl
 <form method="post" action="/admin/call-center/clients/endpoint" class="row">@csrf
 <input name="ip" value="{{ old('ip',$cfg['ip']) }}" placeholder="Public IP" style="width:200px" required>
 <input name="port" value="{{ old('port',$cfg['port']) }}" style="width:80px" required><button class="btn" type="submit">Save</button></form></div>
+
+</div>
 
 <div class="card sec"><div class="h"><b>Add client</b></div>
 <form method="post" action="/admin/call-center/clients" class="row">@csrf
@@ -107,5 +112,6 @@ o.textContent='Connected calls '+d.calls+' · Talk time '+f(d.secs)+' · Billabl
 <pre>{{ \App\Http\Controllers\CarrierClientController::document((array)$c, $cfg) }}</pre></details></td></tr>
 @empty<tr><td colspan="7" class="sub">No clients yet.</td></tr>@endforelse
 </table></div>
+<script>(function(){var b=document.getElementById('sysBtn'),x=document.getElementById('sysBox');b.onclick=function(){x.hidden=!x.hidden;b.textContent=x.hidden?'⚙ System settings':'✕ Hide system settings'};try{x.querySelectorAll('form').forEach(function(f){f.addEventListener('submit',function(){sessionStorage.setItem('ccSys','1')})});if(sessionStorage.getItem('ccSys')==='1'){sessionStorage.removeItem('ccSys');b.click()}}catch(e){}})();</script>
 </div>
 @endsection
