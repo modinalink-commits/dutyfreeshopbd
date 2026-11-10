@@ -45,7 +45,7 @@ class CarrierClientController extends Controller {
     $this->guard();
     $d = $r->validate(['from' => 'required|date', 'to' => 'required|date']);
     $tz = 'Asia/Dhaka'; $f = \Illuminate\Support\Carbon::parse($d['from'], $tz); $t = \Illuminate\Support\Carbon::parse($d['to'], $tz);
-    if ($t->lessThanOrEqualTo($f)) return response()->json(['ok' => false, 'msg' => 'শেষ সময় শুরুর পরে হতে হবে'], 422);
+    if ($t->lessThanOrEqualTo($f)) return response()->json(['ok' => false, 'msg' => 'End time must be after start time'], 422);
     $rows = DB::table('voice_call_cdrs')->where('ended_at', '>=', $f->copy()->utc())->where('ended_at', '<', $t->copy()->utc())->groupBy('client_id')
       ->selectRaw('client_id, COUNT(*) AS calls, COALESCE(SUM(billsec),0) AS secs, COALESCE(SUM(CEIL(billsec / 60.0)),0) AS bmin')->get();
     $names = DB::table('voice_carrier_clients')->pluck('name', 'id');
@@ -58,7 +58,7 @@ class CarrierClientController extends Controller {
     DB::table('voice_carrier_clients')->where('id', $id)->update(['cycle_start' => $d['cycle_start'] ?: null, 'cycle_days' => (int)$d['cycle_days'],
       'prepaid_minutes' => ($d['prepaid_minutes'] ?? '') === '' ? null : (int)$d['prepaid_minutes'], 'rate_per_min' => ($d['rate_per_min'] ?? '') === '' ? null : $d['rate_per_min'], 'updated_at' => now()]);
     \App\Support\ProfitFloor::audit('voice.client_billing', 'Call client #' . $id . ' billing cycle saved (' . $d['cycle_days'] . ' days, prepaid ' . ($d['prepaid_minutes'] ?? '-') . ' min)', null, ['id' => $id]);
-    return back()->with('ok', 'বিলিং সার্কেল সেভ হয়েছে।');
+    return back()->with('ok', 'Billing cycle saved.');
   }
   /** Public, token-protected: the relay reports each answered call here (uuid, billable seconds, dialled digits). Idempotent per uuid. */
   public function relayCdr(Request $r) {
@@ -73,7 +73,7 @@ class CarrierClientController extends Controller {
   }
   public static function pbxConfig($rows, string $gw): string {
     $act = $rows->where('status', 'active');
-    if ($act->isEmpty()) return '(কোনো active ক্লায়েন্ট নেই)';
+    if ($act->isEmpty()) return '(no active clients)';
     $acl = '<list name="vos_clients" default="deny">' . "\n";
     foreach ($act->pluck('ip')->unique() as $ip) $acl .= '  <node type="allow" cidr="' . (str_contains($ip, '/') ? $ip : $ip . '/32') . '"/>' . "\n";
     $acl .= "</list>   <!-- autoload_configs/acl.conf.xml → <network-lists> -->\n\n";
@@ -91,7 +91,7 @@ class CarrierClientController extends Controller {
     return $acl . $dp;
   }
   public static function document(array $c, array $cfg): string {
-    $ip = $cfg['ip'] ?: '<আমাদের সার্ভার IP>'; $port = $cfg['port'] ?: '5060';
+    $ip = $cfg['ip'] ?: '<our server IP>'; $port = $cfg['port'] ?: '5060';
     return "Call Termination Details — DutyFreeBD\n"
       . "Client            : {$c['name']}\n"
       . "Our SIP IP        : {$ip}\n"
@@ -100,7 +100,7 @@ class CarrierClientController extends Controller {
       . "Authentication    : IP based (no username/password)\n"
       . "Tech Prefix       : {$c['prefix']}\n"
       . "Dial format       : {$c['prefix']} + 01XXXXXXXXX   (example: {$c['prefix']}01712345678)\n"
-      . "Codec             : G.711a (PCMA) / G.711u (PCMU)\n"
+      . "Codec             : G.729 / G.711a (PCMA) / G.711u (PCMU)\n"
       . "DTMF              : RFC2833\n"
       . "Max concurrent    : {$c['max_calls']} calls\n"
       . "Route             : Bangladesh mobile (01X) only\n"
@@ -111,33 +111,33 @@ class CarrierClientController extends Controller {
       'name' => 'required|string|max:120', 'ip' => ['required', 'string', 'max:64', 'regex:/^(\d{1,3}\.){3}\d{1,3}(\/(\d|[12]\d|3[0-2]))?$/'],
       'port' => 'required|integer|min:1|max:65535', 'prefix' => ['required', 'regex:/^\d{2,10}$/', 'unique:voice_carrier_clients,prefix' . ($id ? ',' . $id : '')],
       'max_calls' => 'required|integer|min:1|max:1000', 'note' => 'nullable|string|max:300']);
-    foreach (explode('/', explode('/', $d['ip'])[0])[0] === '' ? [] : explode('.', explode('/', $d['ip'])[0]) as $o) if ((int)$o > 255) abort(422, 'IP ভুল।');
+    foreach (explode('/', explode('/', $d['ip'])[0])[0] === '' ? [] : explode('.', explode('/', $d['ip'])[0]) as $o) if ((int)$o > 255) abort(422, 'Invalid IP.');
     return $d;
   }
   public function store(Request $r) {
     $this->guard(); $d = $this->rules($r); $d['created_by'] = $r->user()->id; $d['created_at'] = $d['updated_at'] = now();
     $id = DB::table('voice_carrier_clients')->insertGetId($d);
     \App\Support\ProfitFloor::audit('voice.client_added', 'Call client ' . $d['name'] . ' ' . $d['ip'] . ' prefix ' . $d['prefix'], null, ['id' => $id]);
-    return back()->with('ok', 'ক্লায়েন্ট যোগ হয়েছে।');
+    return back()->with('ok', 'Client added.');
   }
   public function update(Request $r, $id) {
     $this->guard(); abort_unless(DB::table('voice_carrier_clients')->where('id', $id)->exists(), 404);
     $d = $this->rules($r, (int)$id); $d['updated_at'] = now();
     DB::table('voice_carrier_clients')->where('id', $id)->update($d);
     \App\Support\ProfitFloor::audit('voice.client_updated', 'Call client #' . $id . ' updated', null, ['id' => $id]);
-    return back()->with('ok', 'সেভ হয়েছে।');
+    return back()->with('ok', 'Saved.');
   }
   public function toggle($id) {
     $this->guard(); $c = DB::table('voice_carrier_clients')->where('id', $id)->first(); abort_unless($c, 404);
     $n = $c->status === 'active' ? 'paused' : 'active';
     DB::table('voice_carrier_clients')->where('id', $id)->update(['status' => $n, 'updated_at' => now()]);
     \App\Support\ProfitFloor::audit('voice.client_' . $n, 'Call client #' . $id . ' ' . $n, null, ['id' => $id]);
-    return back()->with('ok', $n === 'active' ? 'চালু হয়েছে।' : 'বন্ধ (pause) হয়েছে।');
+    return back()->with('ok', $n === 'active' ? 'Client resumed.' : 'Client paused.');
   }
   public function destroy($id) {
     $this->guard(); DB::table('voice_carrier_clients')->where('id', $id)->delete();
     \App\Support\ProfitFloor::audit('voice.client_deleted', 'Call client #' . $id . ' deleted', null, ['id' => $id]);
-    return back()->with('ok', 'মুছে ফেলা হয়েছে।');
+    return back()->with('ok', 'Client deleted.');
   }
   /** Live calls from the PBX (Event Socket "show channels"), grouped by client IP. Read-only. */
   public function live() {
@@ -176,7 +176,7 @@ class CarrierClientController extends Controller {
   public function saveEndpoint(Request $r) {
     $this->guard(); $d = $r->validate(['ip' => ['required', 'regex:/^[A-Za-z0-9.\-]{3,100}$/'], 'port' => 'required|integer|min:1|max:65535']);
     self::set('carrier_ip', $d['ip']); self::set('carrier_port', (string)$d['port']);
-    return back()->with('ok', 'আমাদের IP/Port সেভ হয়েছে।');
+    return back()->with('ok', 'Endpoint IP/Port saved.');
   }
 
   /** Relay PBX line settings (the FreeSWITCH relay registers as these PBX extensions in live mode). Passwords are stored encrypted and never shown again. */
@@ -190,23 +190,23 @@ class CarrierClientController extends Controller {
     foreach (preg_split('/\r?\n/', (string)($d['exts'] ?? '')) as $l) {
       $l = trim($l); if ($l === '') continue;
       [$u, $p] = array_pad(explode(':', $l, 2), 2, '');
-      abort_unless(preg_match('/^[A-Za-z0-9_.\-]{1,40}$/', $u), 422, 'এক্সটেনশন নম্বর ভুল: ' . $u);
+      abort_unless(preg_match('/^[A-Za-z0-9_.\-]{1,40}$/', $u), 422, 'Invalid extension number: ' . $u);
       if ($p === '' && isset($oldMap[$u])) $p = $oldMap[$u]; // blank password = keep the saved one
-      abort_unless($p !== '' && preg_match('/^[^\s,]{1,80}$/', $p), 422, 'পাসওয়ার্ড দিন (ফাঁকা/কমা ছাড়া): ' . $u);
+      abort_unless($p !== '' && preg_match('/^[^\s,]{1,80}$/', $p), 422, 'Enter a password (no spaces or commas): ' . $u);
       if (isset($seen[$u])) continue; $seen[$u] = 1; $lines[] = $u . ':' . $p;
     }
     self::set('relay_host', $d['host']); self::set('relay_port', (string)$d['port']); self::set('relay_transport', $d['transport']);
     self::set('relay_realm', (string)($d['realm'] ?? '')); self::set('relay_caller_id', (string)($d['caller_id'] ?? '')); self::set('relay_mode', $d['mode']);
     Sms::setSecret('vc_relay_exts', implode("\n", $lines));
     \App\Support\ProfitFloor::audit('voice.relay_config', 'Relay PBX line saved: ' . $d['host'] . ':' . $d['port'] . ' ' . $d['transport'] . ' mode ' . $d['mode'] . ' ext ' . implode(',', array_keys($seen)), null, ['mode' => $d['mode']]);
-    return back()->with('ok', 'Relay লাইন সেভ হয়েছে (' . count($lines) . 'টি এক্সটেনশন)। রিলে ১ মিনিটের মধ্যে নিজে নিয়ে নেবে।');
+    return back()->with('ok', 'Relay line saved (' . count($lines) . ' extensions). The relay picks it up within 1 minute.');
   }
   /** One-time token the relay uses to fetch its config. Shown once. */
   public function relayToken() {
     $this->guard(); $t = bin2hex(random_bytes(20));
     Sms::setSecret('vc_relay_token', $t);
     \App\Support\ProfitFloor::audit('voice.relay_token', 'Relay token regenerated', null, []);
-    return back()->with('ok', 'নতুন Relay টোকেন: ' . $t . ' — এটা এখনই কপি করে রাখুন (আর দেখানো হবে না)।');
+    return back()->with('ok', 'New relay token: ' . $t . ' — copy it now (it will not be shown again).');
   }
   /** Public, token-protected: the relay pulls its settings here (plain text KEY=VALUE). */
   public function relayConfig(Request $r) {
@@ -224,14 +224,14 @@ class CarrierClientController extends Controller {
   public function relayFromAgent(Request $r) {
     $this->guard(); $d = $r->validate(['ext' => ['required', 'regex:/^[A-Za-z0-9_.\-]{1,40}$/']]);
     $a = DB::table('sip_accounts')->where('username', $d['ext'])->first();
-    abort_unless($a && $a->password_enc, 422, 'এই এক্সটেনশন পাওয়া যায়নি বা পাসওয়ার্ড নেই।');
-    try { $pw = \Illuminate\Support\Facades\Crypt::decryptString($a->password_enc); } catch (\Throwable $e) { abort(422, 'পাসওয়ার্ড পড়া যায়নি।'); }
-    abort_unless(preg_match('/^[^\s,]{1,80}$/', $pw), 422, 'পাসওয়ার্ডে কমা/ফাঁকা আছে, হাতে বসান।');
+    abort_unless($a && $a->password_enc, 422, 'Extension not found or has no password.');
+    try { $pw = \Illuminate\Support\Facades\Crypt::decryptString($a->password_enc); } catch (\Throwable $e) { abort(422, 'Could not read the password.'); }
+    abort_unless(preg_match('/^[^\s,]{1,80}$/', $pw), 422, 'Password contains a comma or space; enter it manually.');
     $map = []; foreach (array_filter(array_map('trim', explode("\n", (string)Sms::secret('vc_relay_exts')))) as $l) { [$u, $p] = array_pad(explode(':', $l, 2), 2, ''); $map[$u] = $p; }
     $map[$d['ext']] = $pw; $lines = []; foreach ($map as $u => $p) $lines[] = $u . ':' . $p;
     Sms::setSecret('vc_relay_exts', implode("\n", $lines));
     if (Voice::set('relay_realm', '') === '' && !empty($a->domain)) self::set('relay_realm', (string)$a->domain);
     \App\Support\ProfitFloor::audit('voice.relay_ext_added', 'Relay line: agent extension ' . $d['ext'] . ' copied (password not shown)', null, ['ext' => $d['ext']]);
-    return back()->with('ok', 'এক্সটেনশন ' . $d['ext'] . ' রিলে লাইনে যোগ হয়েছে। (realm: ' . (Voice::set('relay_realm', '') ?: 'host') . ')');
+    return back()->with('ok', 'Extension ' . $d['ext'] . ' added to the relay line. (realm: ' . (Voice::set('relay_realm', '') ?: 'host') . ')');
   }
 }
