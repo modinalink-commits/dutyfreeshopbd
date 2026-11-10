@@ -239,6 +239,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/call-center/clients/diag', [\App\Http\Controllers\CarrierClientController::class,'diag']);
   Route::get('/call-center/clients/live', [\App\Http\Controllers\CarrierClientController::class,'live']);
   Route::get('/call-center/clients/billing', [\App\Http\Controllers\CarrierClientController::class,'billing']);
+  Route::get('/call-center/clients/billing/range', [\App\Http\Controllers\CarrierClientController::class,'billingRange']);
   Route::post('/call-center/clients/{id}/billing', [\App\Http\Controllers\CarrierClientController::class,'billingSave'])->whereNumber('id');
   Route::post('/call-center/clients', [\App\Http\Controllers\CarrierClientController::class,'store']);
   Route::post('/call-center/clients/endpoint', [\App\Http\Controllers\CarrierClientController::class,'saveEndpoint']);

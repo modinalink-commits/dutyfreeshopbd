@@ -44,13 +44,20 @@ tick();setInterval(function(){if(!document.hidden)tick()},3000)})();</script>
 <tr><td colspan="8"><form method="post" action="/admin/call-center/clients/{{ $c->id }}/billing" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:12px;color:#6B7280">@csrf
 সার্কেল শুরু <input type="date" name="cycle_start" value="{{ $c->cycle_start }}" style="width:140px"> প্রতি <input name="cycle_days" value="{{ $c->cycle_days ?? 30 }}" style="width:55px" required> দিন · প্রিপেইড মিনিট <input name="prepaid_minutes" value="{{ $c->prepaid_minutes }}" placeholder="ফাঁকা = সীমাহীন" style="width:120px"> · রেট/মিনিট <input name="rate_per_min" value="{{ $c->rate_per_min }}" placeholder="টাকা" style="width:80px"> <button class="btn" type="submit">সেভ</button></form></td></tr>
 @empty<tr><td colspan="8" style="padding:10px;color:#6B7280">ক্লায়েন্ট যোগ করলে এখানে বিলিং দেখাবে।</td></tr>@endforelse
-</tbody></table></div>
+</tbody></table>
+<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:12px;color:#6B7280;margin-top:10px;border-top:1px solid #E5E7EB;padding-top:10px"><b style="color:#111827">সময় ধরে মিনিট হিসাব</b> শুরু <input type="datetime-local" id="brF" style="width:190px"> শেষ <input type="datetime-local" id="brT" style="width:190px"> <button class="btn" type="button" id="brGo">হিসাব দেখুন</button> <button class="btn" type="button" id="brToday">আজ</button> <span id="brOut" style="color:#111827;font-weight:600"></span></div>
+</div>
 <script>(function(){function f(s){return Math.floor(s/60)+':'+('0'+s%60).slice(-2)}
 function tick(){fetch('/admin/call-center/clients/billing',{headers:{Accept:'application/json'}}).then(function(r){return r.json()}).then(function(d){if(!d.ok)return;document.getElementById('bcAt').textContent='আপডেট '+d.at;
 Object.keys(d.usage).forEach(function(id){var u=d.usage[id],tr=document.querySelector('tr[data-bc="'+id+'"]');if(!tr)return;function s(k,v){var e=tr.querySelector('[data-f="'+k+'"]');if(e)e.textContent=v}
 s('range',u.from+' – '+u.to);s('calls',u.calls);s('time',f(u.secs));s('bmin',u.billed_min);s('pre',u.prepaid===null?'—':u.prepaid);s('rem',u.remaining===null?'—':u.remaining);s('amt',u.amount===null?'—':u.amount.toFixed(2));
 var r=tr.querySelector('[data-f="rem"]');if(r)r.style.color=(u.remaining!==null&&u.remaining<0)?'#B91C1C':'#059669'})}).catch(function(){})}
-setInterval(function(){if(!document.hidden)tick()},5000)})();</script>
+setInterval(function(){if(!document.hidden)tick()},5000);
+var o=document.getElementById('brOut');function pad(n){return ('0'+n).slice(-2)}function loc(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes())}
+document.getElementById('brToday').onclick=function(){var a=new Date();a.setHours(0,0,0,0);document.getElementById('brF').value=loc(a);document.getElementById('brT').value=loc(new Date());document.getElementById('brGo').click()};
+document.getElementById('brGo').onclick=function(){var a=document.getElementById('brF').value,b=document.getElementById('brT').value;if(!a||!b){o.textContent='শুরু ও শেষ সময় দিন';return}o.textContent='...';
+fetch('/admin/call-center/clients/billing/range?from='+encodeURIComponent(a)+'&to='+encodeURIComponent(b),{headers:{Accept:'application/json'}}).then(function(r){return r.json()}).then(function(d){if(!d.ok){o.textContent=d.msg||'ভুল সময়';return}
+o.textContent='কানেক্ট কল '+d.calls+' · কথা '+f(d.secs)+' · বিলযোগ্য মিনিট '+d.billed_min+(d.rows.length>1?' ('+d.rows.map(function(x){return x.client+': '+x.billed_min}).join(', ')+')':'')}).catch(function(){o.textContent='লোড হয়নি'})}})();</script>
 
 <div class="card" style="margin-top:12px"><b>আমাদের PBX endpoint</b> <small style="color:#6B7280">(ক্লায়েন্টকে এই IP ও port দেওয়া হবে)</small>
 <form method="post" action="/admin/call-center/clients/endpoint" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">@csrf

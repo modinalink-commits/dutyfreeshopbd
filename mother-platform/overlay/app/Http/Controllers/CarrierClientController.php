@@ -40,6 +40,18 @@ class CarrierClientController extends Controller {
     $out = []; foreach (DB::table('voice_carrier_clients')->orderBy('id')->get() as $c) $out[$c->id] = self::usage($c);
     return response()->json(['ok' => true, 'usage' => $out, 'at' => now('Asia/Dhaka')->format('H:i:s')]);
   }
+  /** Connected minutes between two Dhaka date-times (any client), for the filter on the billing card. */
+  public function billingRange(Request $r) {
+    $this->guard();
+    $d = $r->validate(['from' => 'required|date', 'to' => 'required|date']);
+    $tz = 'Asia/Dhaka'; $f = \Illuminate\Support\Carbon::parse($d['from'], $tz); $t = \Illuminate\Support\Carbon::parse($d['to'], $tz);
+    if ($t->lessThanOrEqualTo($f)) return response()->json(['ok' => false, 'msg' => 'শেষ সময় শুরুর পরে হতে হবে'], 422);
+    $rows = DB::table('voice_call_cdrs')->where('ended_at', '>=', $f->copy()->utc())->where('ended_at', '<', $t->copy()->utc())->groupBy('client_id')
+      ->selectRaw('client_id, COUNT(*) AS calls, COALESCE(SUM(billsec),0) AS secs, COALESCE(SUM(CEIL(billsec / 60.0)),0) AS bmin')->get();
+    $names = DB::table('voice_carrier_clients')->pluck('name', 'id');
+    $out = $rows->map(fn($x) => ['client' => $names[$x->client_id] ?? '—', 'calls' => (int)$x->calls, 'secs' => (int)$x->secs, 'billed_min' => (int)$x->bmin])->values();
+    return response()->json(['ok' => true, 'rows' => $out, 'calls' => (int)$out->sum('calls'), 'secs' => (int)$out->sum('secs'), 'billed_min' => (int)$out->sum('billed_min')]);
+  }
   public function billingSave(Request $r, $id) {
     $this->guard(); abort_unless(DB::table('voice_carrier_clients')->where('id', $id)->exists(), 404);
     $d = $r->validate(['cycle_start' => 'nullable|date', 'cycle_days' => 'required|integer|min:1|max:366', 'prepaid_minutes' => 'nullable|integer|min:0|max:100000000', 'rate_per_min' => 'nullable|numeric|min:0|max:100000']);
