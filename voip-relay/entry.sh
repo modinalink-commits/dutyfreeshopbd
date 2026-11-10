@@ -17,6 +17,25 @@ if ! command -v freeswitch >/dev/null 2>&1; then
 fi
 IPRE=$(printf '%s' "$CLIENT_IP" | sed 's/\./\\./g')
 ESLPW=$(head -c 24 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 20)
+# Optional PBX leg (MODE=live): the relay registers as ordinary PBX extension(s), like a softphone, and sends calls out through them.
+# PBX_HOST, PBX_PORT(5080), PBX_TRANSPORT(tcp), PBX_REALM(optional), PBX_EXTS="ext1:pass1,ext2:pass2" (secrets: environment only), CALLER_ID(optional)
+PBX_PORT="${PBX_PORT:-5080}"; PBX_TRANSPORT="${PBX_TRANSPORT:-tcp}"
+xe() { printf '%s' "$1" | sed 's/&/\&amp;/g;s/</\&lt;/g;s/"/\&quot;/g'; }
+GWXML=""; BRIDGE=""; i=0
+if [ -n "$PBX_HOST" ] && [ -n "$PBX_EXTS" ]; then
+  IFS=',' read -ra EXA <<< "$PBX_EXTS"
+  for e in "${EXA[@]}"; do
+    i=$((i+1)); u=$(xe "${e%%:*}"); p=$(xe "${e#*:}")
+    GWXML="$GWXML<gateway name=\"pbx$i\"><param name=\"username\" value=\"$u\"/><param name=\"password\" value=\"$p\"/><param name=\"realm\" value=\"${PBX_REALM:-$PBX_HOST}\"/><param name=\"proxy\" value=\"$PBX_HOST:$PBX_PORT;transport=$PBX_TRANSPORT\"/><param name=\"register\" value=\"true\"/><param name=\"register-transport\" value=\"$PBX_TRANSPORT\"/><param name=\"retry-seconds\" value=\"30\"/><param name=\"caller-id-in-from\" value=\"true\"/></gateway>"
+    BRIDGE="${BRIDGE:+$BRIDGE,}sofia/gateway/pbx$i/0\$1"
+  done
+fi
+CID=""; [ -n "$CALLER_ID" ] && CID="<action application=\"set\" data=\"effective_caller_id_number=$CALLER_ID\"/>"
+if [ "$MODE" = "live" ] && [ -n "$BRIDGE" ]; then
+  CALLACTS="$CID<action application=\"set\" data=\"bypass_media=true\"/><action application=\"set\" data=\"continue_on_fail=true\"/><action application=\"set\" data=\"call_timeout=45\"/><action application=\"bridge\" data=\"$BRIDGE\"/><action application=\"hangup\" data=\"NORMAL_TEMPORARY_FAILURE\"/>"
+else
+  CALLACTS="<action application=\"ring_ready\"/><action application=\"sleep\" data=\"8000\"/><action application=\"hangup\" data=\"NO_ROUTE_DESTINATION\"/>"
+fi
 rm -rf /etc/freeswitch; mkdir -p /etc/freeswitch /var/log/freeswitch
 cat > /etc/freeswitch/freeswitch.xml <<XML
 <?xml version="1.0"?>
@@ -47,6 +66,13 @@ cat > /etc/freeswitch/freeswitch.xml <<XML
   <param name="inbound-codec-prefs" value="PCMA,PCMU"/><param name="outbound-codec-prefs" value="PCMA,PCMU"/>
   <param name="inbound-codec-negotiation" value="generous"/><param name="inbound-late-negotiation" value="true"/><param name="rtp-timeout-sec" value="60"/><param name="rtp-hold-timeout-sec" value="120"/>
   <param name="disable-register" value="true"/><param name="manage-presence" value="false"/><param name="nonce-ttl" value="60"/>
+</settings></profile>
+<profile name="pbx"><gateways>$GWXML</gateways><settings>
+  <param name="sip-ip" value="\$\${local_ip_v4}"/><param name="rtp-ip" value="\$\${local_ip_v4}"/>
+  <param name="ext-sip-ip" value="$PUBLIC_IP"/><param name="ext-rtp-ip" value="$PUBLIC_IP"/>
+  <param name="sip-port" value="5070"/><param name="context" value="pbxin"/><param name="dialplan" value="XML"/>
+  <param name="apply-inbound-acl" value="relay_clients"/><param name="disable-register" value="true"/><param name="manage-presence" value="false"/>
+  <param name="inbound-late-negotiation" value="true"/><param name="inbound-codec-negotiation" value="generous"/>
 </settings></profile></profiles></configuration>
 </section>
 <section name="dialplan" description="Dialplan"><context name="public">
@@ -55,8 +81,7 @@ cat > /etc/freeswitch/freeswitch.xml <<XML
     <condition field="destination_number" expression="^${PREFIX%1}(?:10)?(1[3-9]\\d{8})\$">
       <action application="limit" data="hash relay_in $CLIENT_IP $MAX_CALLS !USER_BUSY"/>
       <action application="log" data="NOTICE RELAY-HIT from \${network_addr} to \${destination_number} -> \$1"/>
-      <action application="ring_ready"/><action application="sleep" data="8000"/>
-      <action application="hangup" data="NO_ROUTE_DESTINATION"/>
+      $CALLACTS
     </condition>
   </extension>
   <extension name="deny"><condition field="destination_number" expression=".*"><action application="respond" data="403"/></condition></extension>
