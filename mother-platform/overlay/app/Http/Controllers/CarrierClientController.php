@@ -104,7 +104,7 @@ class CarrierClientController extends Controller {
   /** Read-only PBX diagnostics (whitelisted Event Socket commands). */
   public function diag() {
     $this->guard(); $o = [];
-    foreach (['sofia status', 'sofia status profile external', 'show acl', 'status'] as $cmd) { [$ok, $t] = Voice::esl($cmd, 8); $o[$cmd] = $ok ? mb_substr($t, 0, 3000) : 'ERR: ' . $t; }
+    foreach (['sofia status', 'sofia xmlstatus profile external', 'status'] as $cmd) { [$ok, $t] = Voice::esl($cmd, 8); if ($ok && str_contains($cmd, 'xmlstatus')) { $k = []; foreach (['calls-in', 'calls-out', 'failed-calls-in', 'failed-calls-out', 'bind-url', 'ext-sip-ip', 'sip-port', 'auth-calls', 'apply-inbound-acl', 'context', 'dialplan'] as $tag) if (preg_match('/<' . $tag . '>([^<]*)<\/' . $tag . '>/', $t, $m)) $k[$tag] = $m[1]; $o[$cmd] = $k; } else $o[$cmd] = $ok ? mb_substr($t, 0, 1500) : 'ERR: ' . $t; }
     return response()->json($o);
   }
   public function saveEndpoint(Request $r) {
