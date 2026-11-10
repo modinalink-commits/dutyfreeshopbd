@@ -241,6 +241,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/call-center/clients', [\App\Http\Controllers\CarrierClientController::class,'store']);
   Route::post('/call-center/clients/endpoint', [\App\Http\Controllers\CarrierClientController::class,'saveEndpoint']);
   Route::post('/call-center/clients/relay', [\App\Http\Controllers\CarrierClientController::class,'relaySave']);
+  Route::post('/call-center/clients/relay-agent', [\App\Http\Controllers\CarrierClientController::class,'relayFromAgent']);
   Route::post('/call-center/clients/relay-token', [\App\Http\Controllers\CarrierClientController::class,'relayToken']);
   Route::post('/call-center/clients/{id}', [\App\Http\Controllers\CarrierClientController::class,'update'])->whereNumber('id');
   Route::post('/call-center/clients/{id}/toggle', [\App\Http\Controllers\CarrierClientController::class,'toggle'])->whereNumber('id');

@@ -165,4 +165,19 @@ class CarrierClientController extends Controller {
     if ($rows->isNotEmpty()) $o .= "CLIENT_IP=" . explode('/', $rows[0]->ip)[0] . "\nMAX_CALLS=" . (int)$rows[0]->max_calls . "\n";
     return response($o, 200)->header('Content-Type', 'text/plain')->header('Cache-Control', 'no-store');
   }
+
+  /** Copy an existing agent extension (its encrypted softphone credentials) into the relay line, without showing the password. */
+  public function relayFromAgent(Request $r) {
+    $this->guard(); $d = $r->validate(['ext' => ['required', 'regex:/^[A-Za-z0-9_.\-]{1,40}$/']]);
+    $a = DB::table('sip_accounts')->where('username', $d['ext'])->first();
+    abort_unless($a && $a->password_enc, 422, 'এই এক্সটেনশন পাওয়া যায়নি বা পাসওয়ার্ড নেই।');
+    try { $pw = \Illuminate\Support\Facades\Crypt::decryptString($a->password_enc); } catch (\Throwable $e) { abort(422, 'পাসওয়ার্ড পড়া যায়নি।'); }
+    abort_unless(preg_match('/^[^\s,]{1,80}$/', $pw), 422, 'পাসওয়ার্ডে কমা/ফাঁকা আছে, হাতে বসান।');
+    $map = []; foreach (array_filter(array_map('trim', explode("\n", (string)Sms::secret('vc_relay_exts')))) as $l) { [$u, $p] = array_pad(explode(':', $l, 2), 2, ''); $map[$u] = $p; }
+    $map[$d['ext']] = $pw; $lines = []; foreach ($map as $u => $p) $lines[] = $u . ':' . $p;
+    Sms::setSecret('vc_relay_exts', implode("\n", $lines));
+    if (Voice::set('relay_realm', '') === '' && !empty($a->domain)) self::set('relay_realm', (string)$a->domain);
+    \App\Support\ProfitFloor::audit('voice.relay_ext_added', 'Relay line: agent extension ' . $d['ext'] . ' copied (password not shown)', null, ['ext' => $d['ext']]);
+    return back()->with('ok', 'এক্সটেনশন ' . $d['ext'] . ' রিলে লাইনে যোগ হয়েছে। (realm: ' . (Voice::set('relay_realm', '') ?: 'host') . ')');
+  }
 }

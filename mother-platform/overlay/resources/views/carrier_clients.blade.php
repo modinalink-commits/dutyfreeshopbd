@@ -34,7 +34,7 @@ tick();setInterval(function(){if(!document.hidden)tick()},3000)})();</script>
 <textarea name="exts" rows="4" placeholder="প্রতি লাইনে একটা: এক্সটেনশন:পাসওয়ার্ড&#10;যেমন 1001:xxxxxx&#10;পাসওয়ার্ড ফাঁকা (শুধু 1001) = আগেরটা থাকবে" style="width:320px;padding:6px 8px;border:1px solid #E5E7EB;border-radius:6px;font-size:13px">{{ old('exts', $relay['exts']) }}</textarea>
 <button class="btn" type="submit">Save</button></form>
 <div style="margin-top:8px;font-size:12px;color:#6B7280">সেভ করা এক্সটেনশন: <b>{{ $relay['exts'] ? str_replace("\n", ', ', trim($relay['exts'])) : 'নেই' }}</b> ·
-<form method="post" action="/admin/call-center/clients/relay-token" style="display:inline">@csrf<button class="btn" type="submit" onclick="return confirm('নতুন টোকেন বানালে পুরনোটা বাতিল হবে। চালিয়ে যাবেন?')">Relay টোকেন নতুন করে বানান</button></form></div></div>
+<form method="post" action="/admin/call-center/clients/relay-agent" style="display:inline">@csrf<input name="ext" placeholder="এজেন্ট এক্সটেনশন (যেমন 101)" style="width:170px" required> <button class="btn" type="submit">এজেন্ট এক্সটেনশন থেকে নিন</button></form> · <form method="post" action="/admin/call-center/clients/relay-token" style="display:inline">@csrf<button class="btn" type="submit" onclick="return confirm('নতুন টোকেন বানালে পুরনোটা বাতিল হবে। চালিয়ে যাবেন?')">Relay টোকেন নতুন করে বানান</button></form></div></div>
 
 <div class="card" style="margin-top:12px"><b>আমাদের PBX endpoint</b> <small style="color:#6B7280">(ক্লায়েন্টকে এই IP ও port দেওয়া হবে)</small>
 <form method="post" action="/admin/call-center/clients/endpoint" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">@csrf
