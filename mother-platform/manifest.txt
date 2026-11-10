@@ -963,3 +963,4 @@ app/Http/Controllers/CarrierClientController.php
 database/migrations/2026_11_10_130000_voice_carrier_clients.php
 resources/views/carrier_clients.blade.php
 database/migrations/2026_11_11_000001_voice_call_billing.php
+database/migrations/2026_11_11_000002_voice_cdr_cause.php

@@ -28,7 +28,7 @@ class CarrierClientController extends Controller {
   /** Connected (answered) call usage for the client's current cycle, from relay CDRs. Billed minutes round each call up to a whole minute. */
   public static function usage($c): array {
     [$from, $to] = self::cycleWindow($c);
-    $r = DB::table('voice_call_cdrs')->where('client_id', $c->id)->where('ended_at', '>=', $from->copy()->utc())->where('ended_at', '<', $to->copy()->utc())
+    $r = DB::table('voice_call_cdrs')->where('client_id', $c->id)->where('billsec', '>', 0)->where('ended_at', '>=', $from->copy()->utc())->where('ended_at', '<', $to->copy()->utc())
       ->selectRaw('COUNT(*) AS calls, COALESCE(SUM(billsec),0) AS secs, COALESCE(SUM(CEIL(billsec / 60.0)),0) AS bmin')->first();
     $billed = (int)$r->bmin; $pre = $c->prepaid_minutes === null ? null : (int)$c->prepaid_minutes;
     return ['from' => $from->format('d M Y'), 'to' => $to->copy()->subDay()->format('d M Y'), 'calls' => (int)$r->calls, 'secs' => (int)$r->secs, 'billed_min' => $billed,
@@ -46,11 +46,23 @@ class CarrierClientController extends Controller {
     $d = $r->validate(['from' => 'required|date', 'to' => 'required|date']);
     $tz = 'Asia/Dhaka'; $f = \Illuminate\Support\Carbon::parse($d['from'], $tz); $t = \Illuminate\Support\Carbon::parse($d['to'], $tz);
     if ($t->lessThanOrEqualTo($f)) return response()->json(['ok' => false, 'msg' => 'End time must be after start time'], 422);
-    $rows = DB::table('voice_call_cdrs')->where('ended_at', '>=', $f->copy()->utc())->where('ended_at', '<', $t->copy()->utc())->groupBy('client_id')
+    $rows = DB::table('voice_call_cdrs')->where('billsec', '>', 0)->where('ended_at', '>=', $f->copy()->utc())->where('ended_at', '<', $t->copy()->utc())->groupBy('client_id')
       ->selectRaw('client_id, COUNT(*) AS calls, COALESCE(SUM(billsec),0) AS secs, COALESCE(SUM(CEIL(billsec / 60.0)),0) AS bmin')->get();
     $names = DB::table('voice_carrier_clients')->pluck('name', 'id');
     $out = $rows->map(fn($x) => ['client' => $names[$x->client_id] ?? '—', 'calls' => (int)$x->calls, 'secs' => (int)$x->secs, 'billed_min' => (int)$x->bmin])->values();
     return response()->json(['ok' => true, 'rows' => $out, 'calls' => (int)$out->sum('calls'), 'secs' => (int)$out->sum('secs'), 'billed_min' => (int)$out->sum('billed_min')]);
+  }
+  /** CDR list (all finished calls, newest first). Optional from/to (Dhaka), status=answered|missed, page. */
+  public function cdrs(Request $r) {
+    $this->guard(); $tz = 'Asia/Dhaka'; $per = 25; $page = max(1, (int)$r->query('page', 1));
+    $q = DB::table('voice_call_cdrs as d')->leftJoin('voice_carrier_clients as c', 'c.id', '=', 'd.client_id');
+    try { if ($r->query('from')) $q->where('d.ended_at', '>=', \Illuminate\Support\Carbon::parse($r->query('from'), $tz)->utc()); if ($r->query('to')) $q->where('d.ended_at', '<', \Illuminate\Support\Carbon::parse($r->query('to'), $tz)->utc()); } catch (\Throwable $e) {}
+    if ($r->query('status') === 'answered') $q->where('d.billsec', '>', 0); elseif ($r->query('status') === 'missed') $q->where('d.billsec', 0);
+    $total = (clone $q)->count();
+    $rows = $q->orderByDesc('d.id')->offset(($page - 1) * $per)->limit($per)->get(['d.uuid', 'd.dest', 'd.billsec', 'd.cause', 'd.ended_at', 'c.name as client', 'c.prefix']);
+    $out = $rows->map(fn($x) => ['time' => \Illuminate\Support\Carbon::parse($x->ended_at, 'UTC')->setTimezone($tz)->format('d M H:i:s'), 'client' => $x->client ?? '—',
+      'number' => preg_replace('/^' . preg_quote((string)$x->prefix, '/') . '/', '', (string)$x->dest), 'secs' => (int)$x->billsec, 'billed' => (int)ceil($x->billsec / 60), 'cause' => (string)$x->cause])->values();
+    return response()->json(['ok' => true, 'rows' => $out, 'total' => $total, 'page' => $page, 'pages' => max(1, (int)ceil($total / $per))]);
   }
   public function billingSave(Request $r, $id) {
     $this->guard(); abort_unless(DB::table('voice_carrier_clients')->where('id', $id)->exists(), 404);
@@ -64,11 +76,11 @@ class CarrierClientController extends Controller {
   public function relayCdr(Request $r) {
     $tok = (string)Sms::secret('vc_relay_token'); $given = (string)$r->bearerToken();
     if ($tok === '' || !hash_equals($tok, $given)) return response('forbidden', 403)->header('Content-Type', 'text/plain');
-    $d = $r->validate(['uuid' => ['required', 'regex:/^[0-9a-fA-F-]{8,40}$/'], 'billsec' => 'required|integer|min:1|max:86400', 'dest' => ['required', 'regex:/^\d{6,20}$/']]);
+    $d = $r->validate(['uuid' => ['required', 'regex:/^[0-9a-fA-F-]{8,40}$/'], 'billsec' => 'required|integer|min:0|max:86400', 'dest' => ['required', 'regex:/^\d{6,20}$/'], 'cause' => ['nullable', 'regex:/^[A-Z_]{1,40}$/']]);
     $client = null;
     foreach (DB::table('voice_carrier_clients')->orderByRaw('LENGTH(prefix) DESC')->get() as $c) if (str_starts_with($d['dest'], $c->prefix)) { $client = $c; break; }
     $client = $client ?: DB::table('voice_carrier_clients')->where('status', 'active')->orderBy('id')->first();
-    DB::table('voice_call_cdrs')->insertOrIgnore(['uuid' => strtolower($d['uuid']), 'client_id' => $client->id ?? null, 'dest' => $d['dest'], 'billsec' => (int)$d['billsec'], 'ended_at' => now(), 'created_at' => now(), 'updated_at' => now()]);
+    DB::table('voice_call_cdrs')->insertOrIgnore(['uuid' => strtolower($d['uuid']), 'client_id' => $client->id ?? null, 'dest' => $d['dest'], 'billsec' => (int)$d['billsec'], 'cause' => $d['cause'] ?? null, 'ended_at' => now(), 'created_at' => now(), 'updated_at' => now()]);
     return response('ok', 200)->header('Content-Type', 'text/plain');
   }
   public static function pbxConfig($rows, string $gw): string {
