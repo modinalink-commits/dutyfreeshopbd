@@ -105,6 +105,7 @@ class CarrierClientController extends Controller {
   public function diag() {
     $this->guard(); $o = [];
     foreach (['sofia status', 'sofia xmlstatus profile external', 'status'] as $cmd) { [$ok, $t] = Voice::esl($cmd, 8); if ($ok && str_contains($cmd, 'xmlstatus')) { $k = []; foreach (['calls-in', 'calls-out', 'failed-calls-in', 'failed-calls-out', 'bind-url', 'ext-sip-ip', 'sip-port', 'auth-calls', 'apply-inbound-acl', 'context', 'dialplan'] as $tag) if (preg_match('/<' . $tag . '>([^<]*)<\/' . $tag . '>/', $t, $m)) $k[$tag] = $m[1]; $o[$cmd] = $k; } else $o[$cmd] = $ok ? mb_substr($t, 0, 1500) : 'ERR: ' . $t; }
+    $tp = []; foreach ([5060, 5061, 5080, 5081, 8090, 7443, 443, 8021] as $pt) { $f = @stream_socket_client('tcp://103.125.255.33:' . $pt, $e1, $e2, 3); $tp[$pt] = $f ? 'OPEN' : 'closed'; if ($f) fclose($f); } $o['tcp_ports'] = $tp;
     $o['sip_probe_5080'] = self::sipProbe('103.125.255.33', 5080); $o['sip_probe_5060'] = self::sipProbe('103.125.255.33', 5060);
     return response()->json($o);
   }
