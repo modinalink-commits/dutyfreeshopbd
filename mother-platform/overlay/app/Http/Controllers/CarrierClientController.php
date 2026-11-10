@@ -101,6 +101,12 @@ class CarrierClientController extends Controller {
     }
     return response()->json(['ok' => true, 'total' => count($calls), 'calls' => array_slice($calls, 0, 100), 'per' => $per, 'channels' => count($rows), 'unknown' => $unk, 'at' => now('Asia/Dhaka')->format('H:i:s')]);
   }
+  /** Read-only PBX diagnostics (whitelisted Event Socket commands). */
+  public function diag() {
+    $this->guard(); $o = [];
+    foreach (['sofia status', 'sofia status profile external', 'show acl', 'status'] as $cmd) { [$ok, $t] = Voice::esl($cmd, 8); $o[$cmd] = $ok ? mb_substr($t, 0, 3000) : 'ERR: ' . $t; }
+    return response()->json($o);
+  }
   public function saveEndpoint(Request $r) {
     $this->guard(); $d = $r->validate(['ip' => ['required', 'regex:/^[A-Za-z0-9.\-]{3,100}$/'], 'port' => 'required|integer|min:1|max:65535']);
     self::set('carrier_ip', $d['ip']); self::set('carrier_port', (string)$d['port']);
