@@ -152,7 +152,13 @@ class CarrierClientController extends Controller {
       if (($r['direction'] ?? '') !== 'inbound') continue;
       $c = $byIp[$r['ip_addr'] ?? ''] ?? null; if (!$c) { if (count($unk) < 20) $unk[] = ['ip' => $r['ip_addr'] ?? '', 'to' => $r['dest'] ?? '', 'from' => $r['cid_num'] ?? '', 'state' => $r['callstate'] ?? '']; continue; }
       $dest = preg_replace('/^' . preg_quote($c->prefix, '/') . '/', '', (string)($r['dest'] ?? ''));
-      $age = max(0, time() - (int)($r['created_epoch'] ?? time()));
+      // Duration counts only after the customer answers (callstate ACTIVE); ringing shows no timer. First ACTIVE sighting is remembered per call.
+      $age = null;
+      if (strtoupper((string)($r['callstate'] ?? '')) === 'ACTIVE' && !empty($r['uuid'])) {
+        $k = 'vc_ans_' . preg_replace('/[^0-9a-f-]/i', '', (string)$r['uuid']);
+        $t0 = \Illuminate\Support\Facades\Cache::get($k); if (!$t0) { $t0 = time(); \Illuminate\Support\Facades\Cache::put($k, $t0, 21600); }
+        $age = max(0, time() - (int)$t0);
+      }
       $calls[] = ['client' => $c->name, 'from' => $r['cid_num'] ?? '', 'to' => $dest, 'state' => $r['callstate'] ?? '', 'secs' => $age];
       $per[$c->id] = ($per[$c->id] ?? 0) + 1;
     }
