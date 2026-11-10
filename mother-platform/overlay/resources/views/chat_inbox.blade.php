@@ -76,6 +76,16 @@
 .mbx .nm{font-size:16px}.mbx .lm{font-size:14.5px}.mbx .tm{font-size:12.5px}.mbx .l3{font-size:12.5px}.mbx .sep{font-size:14px}
 .mbx .bg,.mbx .st2{font-size:12px;height:20px;line-height:20px}.mbx .sq input{font-size:15px;height:38px}.mbx .ub{font-size:12px}
 .mc .hd{font-size:15px}.mc .lk{font-size:13.5px}
+/* Owner request 10 Nov 2026 (desktop): the Messages page is ONE fixed screen - no page up/down scrolling; only the conversation list and the open chat scroll inside their own panels. Fits the viewport at any zoom. */
+@media(min-width:901px){
+html,body{height:calc(100vh / var(--z,1));overflow:hidden!important}
+body{min-height:0!important}
+main{height:calc(100vh / var(--z,1));overflow:hidden;display:flex;flex-direction:column;padding-top:12px!important;padding-bottom:10px!important}
+#ibtop{margin-bottom:6px!important}#ibtop h1{font-size:20px}#ibtop span[style]{display:none}
+.mbx{flex:1;min-height:0!important;height:auto!important}
+.mbx .ls{max-height:none;height:100%;min-height:0;overflow:auto}
+.mbx .cv{height:100%!important;min-height:0}
+}
 </style>
 <div id="ibtop" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px"><div style="flex:1"><h1 style="margin:0">Messages <span id="ibu"></span></h1><span style="font-size:12px;color:#6B7280">Facebook, Instagram, WhatsApp and Website Chat in one inbox.</span></div>
 </div>
