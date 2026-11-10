@@ -19,7 +19,7 @@
   --head-bg:var(--header-bg-level-5);--group-bg:var(--grid-bg-level-2);--total-bg:var(--toolbar-bg-level-3);
   --accent-tint:#FFF4EC;
   /* text must read clearly stronger than any border: primary near-black, secondary dark slate, muted still dark enough */
-  --text-primary:#0B1220;--text-secondary:#1F2937;--text-muted:#4B5563;
+  --text-primary:#0B1220;--text-secondary:#374151;--text-muted:#4B5563;
   /* module / section / working bars: one step darker than normal grid rows (6-10 % tint) */
   --module-bar-bg:var(--module-bg-level-4);--module-bar-border:var(--module-border);--module-bar-text:#111827;
   /* map the tokens onto the variables admin_grid already reads */
@@ -129,16 +129,16 @@ main td{color:#111827}
 main label,main small,main .muted,main .k span,main .sub-t{color:#374151}
 main label{font-weight:600}
 main h1,main h2,main h3,main h4{color:#0B1220}
-/* inline light-gray text colours (#6B7280 / #9CA3AF / #94A3B8 / #64748B) -> dark slate; #475569 -> darker */
-main [style*="color:#6B7280" i],main [style*="color:#9CA3AF" i],main [style*="color:#94A3B8" i],main [style*="color:#64748B" i],main [style*="color: #6B7280" i],main [style*="color: #9CA3AF" i]{color:#4B5563!important}
-main [style*="color:#475569" i],main [style*="color:#4B5563" i]{color:#334155!important}
+/* inline light-gray text colours (#6B7280 / #9CA3AF / #9CA3AF / #64748B) -> dark slate; #4B5563 -> darker */
+main [style*="color:#6B7280" i],main [style*="color:#9CA3AF" i],main [style*="color:#9CA3AF" i],main [style*="color:#64748B" i],main [style*="color: #6B7280" i],main [style*="color: #9CA3AF" i]{color:#4B5563!important}
+main [style*="color:#4B5563" i],main [style*="color:#4B5563" i]{color:#334155!important}
 main .pill,main .chip{font-weight:700}
 /* icons follow text colour; make the grey ones clearly darker */
 main svg{stroke-opacity:1}
 main .ib{color:#111827}
 main td svg,main .ocb svg{opacity:1}
 aside a.sub,aside details.rpg>summary{color:#111827!important}
-aside a.nv svg,aside details summary svg{color:#1F2937!important}
+aside a.nv svg,aside details summary svg{color:#374151!important}
 aside details.mg>summary::after,aside details.rpg>summary::after{color:#374151!important}
 aside .brand small,aside .viewing small{color:#4B5563!important}
 aside .sbs input::placeholder{color:#4B5563}
@@ -153,7 +153,7 @@ main .ibar a.ib.wa{background:#F0FDF4;color:#22A06B}
 main .ibar a.ib.pf{background:#F5F3FF;color:#7C6FDB}
 main .ibar a.ib.hs{background:#FFF7ED;color:#E07B39}
 main .ibar a.ib.cp{background:#F8FAFC;color:#64748B}
-main .ibar a.ib-call{background:#ECFDF5;color:#15803D!important}
+main .ibar a.ib-call{background:#ECFDF5;color:#166534!important}
 main .ibar a.ib:hover,main .ibar a.ib-call:hover{box-shadow:0 3px 8px rgba(11,18,32,.12)!important}
 /* ===== 10. compact customer card: stat chips + quiet action buttons ===== */
 .ci .cs-row{display:flex;gap:5px;align-items:center;margin-top:5px;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;max-width:100%;scrollbar-width:none;-webkit-overflow-scrolling:touch}.ci .cs-row::-webkit-scrollbar{display:none}
@@ -162,7 +162,7 @@ main .ibar a.ib:hover,main .ibar a.ib-call:hover{box-shadow:0 3px 8px rgba(11,18
 .ci .cs b{font-weight:700;color:inherit}
 .ci .cs svg{flex:0 0 auto}
 .ci .cs{justify-content:center;min-width:44px;font-size:12.5px;font-weight:700}
-.ci .cs.t-n{background:#F6F7F9;border-color:#D5DAE0;color:#1F2937}
+.ci .cs.t-n{background:#F6F7F9;border-color:#D5DAE0;color:#374151}
 .ci .cs.t-g{background:#F1FBF4;border-color:#BFE8CA;color:#138A3D}
 .ci .cs.t-r{background:#FFF3F3;border-color:#F3B6B6;color:#C62828}
 .ci .cs.t-a{background:#FFF8E8;border-color:#F0D48C;color:#A96A00}
@@ -223,11 +223,11 @@ aside nav{scrollbar-color:transparent transparent}aside nav:hover{scrollbar-colo
 <style>
 /* 11. note + comment live under the status (one column) */
 table.ordt td.ost-cell,table.ordt td:has(>.stn){min-width:180px;max-width:230px;position:relative}
-.stn{margin-top:6px;position:relative;font-size:11.5px;line-height:1.35;color:#475569}
+.stn{margin-top:6px;position:relative;font-size:11.5px;line-height:1.35;color:#4B5563}
 .stn-r{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:210px}
 .stn-r b{font-weight:700;color:#334155;margin-right:3px}.stn-r.c b{color:#B45309}
-.stn-e{display:inline-flex;align-items:center;margin-top:3px;color:#94A3B8}.stn-e:hover{color:#1D4ED8}
-.stn-p{display:none;position:absolute;left:0;top:100%;z-index:30;width:260px;max-width:70vw;padding:9px 11px;background:#fff;border:1px solid #CBD5E1;border-radius:9px;box-shadow:0 8px 24px rgba(15,23,42,.14);color:#0F172A;font-size:12px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.stn-e{display:inline-flex;align-items:center;margin-top:3px;color:#9CA3AF}.stn-e:hover{color:#1D4ED8}
+.stn-p{display:none;position:absolute;left:0;top:100%;z-index:30;width:260px;max-width:70vw;padding:9px 11px;background:#fff;border:1px solid #D1D5DB;border-radius:9px;box-shadow:0 8px 24px rgba(15,23,42,.14);color:#0F172A;font-size:12px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
 .stn-p b{font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:#64748B}
 .stn:hover .stn-p{display:block}
 </style>
@@ -268,7 +268,7 @@ details.os-sms{border-top:1px solid #EEF2F7;padding:6px 0}
 details.os-sms:first-of-type{border-top:0}
 details.os-sms summary{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;cursor:pointer;list-style:none}
 details.os-sms summary::-webkit-details-marker{display:none}
-details.os-sms summary:before{content:"▸";color:#94A3B8;font-size:11px}
+details.os-sms summary:before{content:"▸";color:#9CA3AF;font-size:11px}
 details.os-sms[open] summary:before{content:"▾"}
 details.os-sms .ev{font-weight:600;color:#0F172A}
 details.os-sms .chip{background:#EEF2FF;color:#4338CA;border-radius:999px;padding:0 8px;font-size:11.5px;font-weight:600}

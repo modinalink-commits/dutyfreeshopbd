@@ -27,7 +27,7 @@ body{font-family:var(--font-ui)}
 .text-section-title{font-size:var(--fs-18);font-weight:var(--fw-bold);line-height:var(--lh-heading)}
 .text-page-title{font-size:clamp(18px,1.5vw,22px);font-weight:var(--fw-bold);line-height:var(--lh-heading)}
 .text-number,.table-number,.text-price{font-variant-numeric:tabular-nums}
-.text-muted{color:var(--text-muted,#667085)}
+.text-muted{color:var(--text-muted,#6B7280)}
 .table-text{font-size:var(--fs-12);line-height:var(--lh-table)}
 .table-header-text{font-size:var(--fs-12);font-weight:var(--fw-semibold)}
 .table-total{font-size:var(--fs-13);font-weight:var(--fw-bold);font-variant-numeric:tabular-nums}

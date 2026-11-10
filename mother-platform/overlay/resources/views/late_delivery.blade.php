@@ -2,13 +2,13 @@
 @section('body')
 <style>
 /* Late Delivery controls use the same design as the Manage Order toolbar */
-.ld .btn,.ld button,.ld .dfx-btn{display:inline-flex!important;align-items:center;justify-content:center;box-sizing:border-box;height:26px!important;min-height:0!important;padding:0 10px!important;font-size:11px!important;font-weight:600!important;line-height:1!important;border-radius:8px!important;border:1.5px solid #94A3B8!important;background:#F3F4F6!important;color:#0B1220!important;box-shadow:none!important;filter:none!important;text-decoration:none;white-space:nowrap;cursor:pointer;transition:border-color .15s ease,background-color .15s ease}
-.ld .btn:hover,.ld button:hover,.ld .dfx-btn:hover{border-color:#475569!important}
+.ld .btn,.ld button,.ld .dfx-btn{display:inline-flex!important;align-items:center;justify-content:center;box-sizing:border-box;height:26px!important;min-height:0!important;padding:0 10px!important;font-size:11px!important;font-weight:600!important;line-height:1!important;border-radius:8px!important;border:1.5px solid #9CA3AF!important;background:#F3F4F6!important;color:#0B1220!important;box-shadow:none!important;filter:none!important;text-decoration:none;white-space:nowrap;cursor:pointer;transition:border-color .15s ease,background-color .15s ease}
+.ld .btn:hover,.ld button:hover,.ld .dfx-btn:hover{border-color:#4B5563!important}
 .ld .ldbar{display:flex;flex-wrap:nowrap;align-items:center;gap:4px;padding:4px 8px;background:#F3F4F6;border:1px solid #D1D5DB;border-radius:10px;overflow-x:auto}.ld .ldbar label{display:none}.ld .ldbar>div{margin:0}.ld .ldbar>div:first-child{flex:1 1 260px;min-width:200px}
-.ld .ldbar input,.ld .ldbar select,.ld td form input{box-sizing:border-box;height:26px!important;min-height:0!important;font-size:11px!important;padding:0 8px!important;border:1.5px solid #94A3B8!important;border-radius:8px!important;background:#F8FAFC!important;margin:0;width:auto;line-height:1}
-.ld .ldbar input[name=q]{width:100%}.ld .ldbar input:hover,.ld .ldbar select:hover,.ld td form input:hover{border-color:#475569!important}.ld .ldbar input:focus,.ld td form input:focus{border-color:#FF5A00!important;outline:0}
+.ld .ldbar input,.ld .ldbar select,.ld td form input{box-sizing:border-box;height:26px!important;min-height:0!important;font-size:11px!important;padding:0 8px!important;border:1.5px solid #9CA3AF!important;border-radius:8px!important;background:#F8FAFC!important;margin:0;width:auto;line-height:1}
+.ld .ldbar input[name=q]{width:100%}.ld .ldbar input:hover,.ld .ldbar select:hover,.ld td form input:hover{border-color:#4B5563!important}.ld .ldbar input:focus,.ld td form input:focus{border-color:#FF5A00!important;outline:0}
 .ld .ldbar button[type=submit]{background:#E6EFF9!important;color:#1D5FA8!important;border-color:#3B82F6!important}.ld .ldbar button[type=submit]:hover{border-color:#1D4ED8!important}
-.ld td form button{background:#DCFCE7!important;color:#166534!important;border-color:#22C55E!important}.ld td form button:hover{border-color:#15803D!important}
+.ld td form button{background:#DCFCE7!important;color:#166534!important;border-color:#22C55E!important}.ld td form button:hover{border-color:#166534!important}
 .ld .dfx-btn{background:#FFF1E8!important;color:#C2410C!important;border-color:#FB923C!important}.ld .dfx-btn:hover{border-color:#C2410C!important}
 </style><div class="ld">
 <div class="ocb" id="ocb">@include('admin.orders.partials.status-tabs', ['oq'=>[], 'counts'=>$counts, 'vals'=>$vals ?? collect(), 'incOpen'=>$incOpen, 'isInc'=>false, 'activeStatus'=>'Late Delivery'])</div>

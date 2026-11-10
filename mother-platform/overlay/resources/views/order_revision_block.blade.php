@@ -25,7 +25,7 @@ $__tk = fn($n) => '৳'.number_format((float)$n);
 </div>
 @endforeach
 <div style="margin-left:10px">Subtotal {{ $__tk($v->old_subtotal) }} → {{ $__tk($v->new_subtotal) }} · Discount {{ $__tk($v->old_discount) }} → {{ $__tk($v->new_discount) }} · Delivery {{ $__tk($v->old_delivery_charge) }} → {{ $__tk($v->new_delivery_charge) }}</div>
-<div style="margin-left:10px"><b>Previous Total: {{ $__tk($v->old_grand_total) }} · New Total: {{ $__tk($v->new_grand_total) }}</b> · Difference: <b style="color:{{ $v->amount_difference > 0 ? '#B45309' : '#15803D' }}">{{ $v->amount_difference > 0 ? '+' : ($v->amount_difference < 0 ? '−' : '±') }}{{ $__tk(abs($v->amount_difference)) }}</b></div>
+<div style="margin-left:10px"><b>Previous Total: {{ $__tk($v->old_grand_total) }} · New Total: {{ $__tk($v->new_grand_total) }}</b> · Difference: <b style="color:{{ $v->amount_difference > 0 ? '#B45309' : '#166534' }}">{{ $v->amount_difference > 0 ? '+' : ($v->amount_difference < 0 ? '−' : '±') }}{{ $__tk(abs($v->amount_difference)) }}</b></div>
 <div style="margin-left:10px;color:#4B5563">Reason: {{ $v->reason }}@if($v->note) — {{ $v->note }}@endif · Customer confirmation: <b>{{ $v->customer_confirmed ? 'Yes' : 'Not yet' }}</b>@if($v->sms_sent) · SMS sent @endif @if($v->courier_warning)· <span style="color:#B45309">⚠ courier parcel needed an update</span>@endif</div>
 @if($v->discount_note || $v->delivery_note)<div style="margin-left:10px;color:#6B7280;font-size:12px">@if($v->discount_note)Discount: {{ $v->discount_note }} @endif @if($v->delivery_note)· Delivery: {{ $v->delivery_note }}@endif</div>@endif
 @if($v->status==='pending')

@@ -10,7 +10,7 @@
 .hxmc .mx{font-family:'Anek Bangla',Inter,system-ui,-apple-system,'Segoe UI',sans-serif;position:absolute;left:8.3cqw;top:0;bottom:0;width:41cqw;display:flex;flex-direction:column;justify-content:center;gap:1.25cqw}
 .hxmc .mk{font-size:max(9px,.9cqw);letter-spacing:.2em;font-weight:600;color:#FDC2A5}
 .hxmc .mh{margin:0;font-size:max(15px,3.5cqw);line-height:1.22;font-weight:700;letter-spacing:-.01em;color:#fff}.hxmc .mh em{display:block;font-style:normal;color:#FF8A4C}
-.hxmc .ms{font-size:max(11px,1.35cqw);line-height:1.65;font-weight:500;color:#CBD5E1;max-width:34cqw}
+.hxmc .ms{font-size:max(11px,1.35cqw);line-height:1.65;font-weight:500;color:#D1D5DB;max-width:34cqw}
 .hxmc .mt{display:flex;align-items:center;margin:.4cqw 0 .3cqw}
 .hxmc .mt i{position:relative;display:flex;align-items:center;gap:.6cqw;font-style:normal;font-size:max(8px,.85cqw);font-weight:600;letter-spacing:.06em;color:rgba(255,255,255,.45)}
 .hxmc .mt i:before{content:"";width:.9cqw;height:.9cqw;min-width:6px;min-height:6px;border-radius:50%;background:rgba(255,255,255,.3)}

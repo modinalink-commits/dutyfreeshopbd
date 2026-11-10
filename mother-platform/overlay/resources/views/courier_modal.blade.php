@@ -15,7 +15,7 @@
 #cpbx .dr span{flex:0 0 110px;color:#6B7280;font-weight:600}#cpbx .dr div{flex:1;color:#0B1220;font-weight:600;word-break:break-word}
 #cpbx .tl{padding:10px 16px 6px}#cpbx .tl h4{margin:0 0 8px;font-size:12px;color:#4B5563;text-transform:uppercase;letter-spacing:.04em}
 #cpbx .ev{position:relative;padding:0 0 12px 18px;border-left:2px solid #E5E7EB;margin-left:5px;font-size:13px}
-#cpbx .ev:before{content:"";position:absolute;left:-6px;top:3px;width:10px;height:10px;border-radius:50%;background:#94A3B8;border:2px solid #fff;box-shadow:0 0 0 1px #CBD5E1}
+#cpbx .ev:before{content:"";position:absolute;left:-6px;top:3px;width:10px;height:10px;border-radius:50%;background:#9CA3AF;border:2px solid #fff;box-shadow:0 0 0 1px #D1D5DB}
 #cpbx .ev:first-of-type:before{background:#16A34A;box-shadow:0 0 0 1px #86EFAC}
 #cpbx .ev b{display:block;color:#0B1220}#cpbx .ev small{color:#6B7280;display:block;font-size:11.5px}
 #cpbx .ft{display:flex;gap:8px;padding:12px 16px;border-top:1px solid #E5E7EB;flex:none;flex-wrap:wrap}

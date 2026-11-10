@@ -25,7 +25,7 @@
 .dc .pb{height:8px;background:#EEF1F5;border-radius:5px;overflow:hidden;margin:6px 0 3px;border:1px solid #E2E6EB}.dc .pb i{display:block;height:100%;background:#FF5A00;transition:width .6s}
 .dc table{width:100%;border-collapse:collapse;font-size:12px}.dc th{text-align:left;color:var(--mu);font-size:10.5px;padding:5px 8px;border-bottom:1px solid var(--bd);white-space:nowrap}.dc td{padding:6px 8px;border-bottom:1px solid #EEF1F4;vertical-align:middle}
 .dc input,.dc select,.dc textarea{height:30px;border:1px solid var(--bd);border-radius:8px;padding:0 9px;font-size:12px;width:auto;margin:0;background:#fff}.dc textarea{height:auto;padding:7px 9px;width:100%;font-family:inherit}
-.dc pre{white-space:pre-wrap;word-break:break-word;font-size:11px;max-height:150px;overflow:auto;margin:6px 0 0;background:#F8FAFC;color:#1F2937;border:1px solid var(--bd);border-radius:8px;padding:8px;font-family:ui-monospace,Menlo,Consolas,monospace}
+.dc pre{white-space:pre-wrap;word-break:break-word;font-size:11px;max-height:150px;overflow:auto;margin:6px 0 0;background:#F8FAFC;color:#374151;border:1px solid var(--bd);border-radius:8px;padding:8px;font-family:ui-monospace,Menlo,Consolas,monospace}
 .dc pre.big{max-height:60vh}
 .dc .ov{position:fixed;inset:0;background:rgba(11,18,32,.42);z-index:80;display:none;align-items:center;justify-content:center;padding:14px}.dc .ov.on{display:flex}
 .dc .md{background:#fff;border:1px solid var(--bg2);border-radius:12px;max-width:680px;width:100%;max-height:90vh;overflow:auto;padding:14px 16px}

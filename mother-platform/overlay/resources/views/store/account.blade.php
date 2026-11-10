@@ -1,10 +1,10 @@
 @extends('store.layout')
 @section('main')
 @php
-  $bd = ['Delivered'=>['#DCFCE7','#15803D'], 'Pending'=>['#FFEDD5','#C2410C'], 'Confirmed'=>['#E0F2FE','#0369A1'], 'Processing'=>['#E0F2FE','#0369A1'], 'Shipment'=>['#DBEAFE','#1D4ED8'], 'Cancelled'=>['#FEE2E2','#B91C1C'], 'Returned'=>['#F3E8FF','#7E22CE']];
+  $bd = ['Delivered'=>['#DCFCE7','#166534'], 'Pending'=>['#FFEDD5','#C2410C'], 'Confirmed'=>['#E0F2FE','#0369A1'], 'Processing'=>['#E0F2FE','#0369A1'], 'Shipment'=>['#DBEAFE','#1D4ED8'], 'Cancelled'=>['#FEE2E2','#B91C1C'], 'Returned'=>['#F3E8FF','#7E22CE']];
   $badge = fn($g) => 'background:'.($bd[$g][0] ?? '#F3F4F6').';color:'.($bd[$g][1] ?? '#374151');
   $gl = ['Pending'=>'Pending','Confirmed'=>'Confirmed','Processing'=>'Processing','Shipment'=>'Shipment','Delivered'=>'Delivered','Cancelled'=>'Cancelled','Returned'=>'Returned'];
-  $catc = ['VIP'=>['#FEF3C7','#B45309'], 'High Value'=>['#EDE9FE','#6D28D9'], 'Regular'=>['#DBEAFE','#1D4ED8'], 'New'=>['#DCFCE7','#15803D']][$cat] ?? ['#F3F4F6','#374151'];
+  $catc = ['VIP'=>['#FEF3C7','#B45309'], 'High Value'=>['#EDE9FE','#6D28D9'], 'Regular'=>['#DBEAFE','#1D4ED8'], 'New'=>['#DCFCE7','#166534']][$cat] ?? ['#F3F4F6','#374151'];
   $tk = fn($n) => '৳'.number_format((float)$n);
   $nav = [['dashboard','Dashboard','▦'],['profile','My Profile','👤'],['orders','My Orders','🧾'],['track','Track Order','📍'],['addresses','Address Book','🏠'],['wishlist','My Wishlist','♡'],['coupons','My Coupons','🎟'],['refer','Refer & Earn','🎁'],['reviews','My Reviews','★'],['support','Support / Chat','💬'],['notifications','Notifications','🔔'],['security','Login & Security','🔒']];
   $dt = fn($v) => \Carbon\Carbon::parse($v)->timezone('Asia/Dhaka');
@@ -36,7 +36,7 @@ table.t{width:100%;border-collapse:collapse;font-size:13px}table.t th{text-align
 .mo{display:none;position:fixed;inset:0;background:rgba(11,18,32,.5);z-index:80;align-items:center;justify-content:center;padding:12px}.mo.op{display:flex}.mo .bd{background:#fff;border-radius:16px;padding:18px 20px;width:520px;max-width:100%;max-height:92vh;overflow:auto}
 .mnav{display:none}
 @media(max-width:900px){.cards{grid-template-columns:repeat(3,1fr)}.wg{grid-template-columns:repeat(3,1fr)}.qa{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:760px){.ac{grid-template-columns:minmax(0,1fr);gap:12px;padding:10px 0 26px}.ac>*{min-width:0}.acs{position:static;padding:10px}.acp{display:flex;gap:12px;align-items:center;text-align:left;padding:2px 4px 8px}.acp .av{width:46px;height:46px;font-size:19px;margin:0}.navs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}.navs::-webkit-scrollbar{display:none}.acs a.i{white-space:nowrap;padding:8px 12px;background:#F9FAFB;font-size:13px}
+@media(max-width:760px){.ac{grid-template-columns:minmax(0,1fr);gap:12px;padding:10px 0 26px}.ac>*{min-width:0}.acs{position:static;padding:10px}.acp{display:flex;gap:12px;align-items:center;text-align:left;padding:2px 4px 8px}.acp .av{width:46px;height:46px;font-size:19px;margin:0}.navs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}.navs::-webkit-scrollbar{display:none}.acs a.i{white-space:nowrap;padding:8px 12px;background:#F8FAFC;font-size:13px}
 .cards{grid-template-columns:repeat(2,1fr)}.ads,.cp,.g2{grid-template-columns:1fr}.wg{grid-template-columns:repeat(2,1fr)}.qa{grid-template-columns:repeat(2,1fr)}.hello{padding:14px}.hello h1{font-size:17px}
 table.t.rs thead{display:none}table.t.rs,table.t.rs tbody,table.t.rs tr,table.t.rs td{display:block;width:100%;box-sizing:border-box}table.t.rs tr{border:1.25px solid #F1E3D8;border-radius:13px;padding:8px 12px;margin-bottom:10px}table.t.rs td{border:0;padding:4px 0;display:flex;justify-content:space-between;gap:10px;align-items:center}table.t.rs td:before{content:attr(data-l);color:var(--mut);font-size:12px}
 .tl div{font-size:9.5px}.tl i{width:22px;height:22px;line-height:22px}.tl div:before{top:10px}}
@@ -149,7 +149,7 @@ if(!sup()){pt.textContent='Not supported'}else{navigator.serviceWorker.ready.the
 @if($tab==='wishlist')
 <div class="bx"><h2>My Wishlist</h2><div id="wl">
 @if($wish->isEmpty())<p style="color:#6B7280;font-size:13.5px" id="wle">উইশলিস্ট খালি। প্রোডাক্টের ♡ চাপলে এখানে জমা হবে।</p>@endif
-<div class="wg">@foreach($wish as $p)<div class="wc"><a href="{{ $p->url }}"><img src="{{ $img($p->image) }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='/product-placeholder'"></a><b>{{ $p->name }}</b><div style="color:var(--o);font-weight:800">{{ $tk($p->offer_price ?: $p->price) }}</div><div style="font-size:12px;color:{{ $p->stock>0 ? '#15803D' : '#B91C1C' }}">{{ $p->stock>0 ? 'In Stock' : 'Out of Stock' }}</div>
+<div class="wg">@foreach($wish as $p)<div class="wc"><a href="{{ $p->url }}"><img src="{{ $img($p->image) }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='/product-placeholder'"></a><b>{{ $p->name }}</b><div style="color:var(--o);font-weight:800">{{ $tk($p->offer_price ?: $p->price) }}</div><div style="font-size:12px;color:{{ $p->stock>0 ? '#166534' : '#B91C1C' }}">{{ $p->stock>0 ? 'In Stock' : 'Out of Stock' }}</div>
 <div style="display:flex;gap:6px;justify-content:center;margin-top:8px">@if($p->stock>0)<button class="b1 p" type="button" data-cart="{{ $p->id }}" data-price="{{ $p->offer_price ?: $p->price }}">Add to Cart</button>@endif<button class="b1 r" type="button" data-wrm="{{ $p->id }}">✕</button></div></div>@endforeach</div></div></div>
 @endif
 
@@ -180,7 +180,7 @@ if(!sup()){pt.textContent='Not supported'}else{navigator.serviceWorker.ready.the
 @foreach($todo as $t)<div style="border-bottom:1px solid #F8EFE8;padding:12px 0"><div style="display:flex;gap:10px;align-items:center"><img src="{{ $img($t->image) }}" width="44" height="44" style="border-radius:8px;object-fit:cover" alt="" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='/product-placeholder'"><b style="font-size:13.5px">{{ $t->name }}</b></div>
 <form class="rv f" data-pid="{{ $t->product_id }}"><div class="stars">@for($i=1;$i<=5;$i++)<button type="button" data-s="{{ $i }}">★</button>@endfor</div><textarea rows="2" maxlength="1000" placeholder="আপনার মতামত লিখুন (ঐচ্ছিক)"></textarea><div style="margin-top:8px"><button class="b1 p">Submit Review</button> <span class="msg"></span></div></form></div>@endforeach</div>
 <div class="bx"><h2>আমার আগের রিভিউ</h2>@if($mine->isEmpty())<p style="color:#6B7280;font-size:13.5px;margin:0">এখনো কোনো রিভিউ নেই।</p>@endif
-@foreach($mine as $m)<div style="border-bottom:1px solid #F8EFE8;padding:10px 0;font-size:13.5px"><b>{{ $m->pname }}</b> · <span style="color:#F59E0B">{{ str_repeat('★', $m->rating) }}</span><span style="color:#D1D5DB">{{ str_repeat('★', 5-$m->rating) }}</span> <span class="st" style="{{ $m->status==='approved' ? 'background:#DCFCE7;color:#166534' : 'background:#FFF1E8;color:#C2410C' }}">{{ $m->status==='approved' ? 'Published' : 'Under review' }}</span>@if($m->body)<div style="color:#4B5563;margin-top:3px">{{ $m->body }}</div>@endif @if($m->reply)<div style="background:#F9FAFB;border-radius:8px;padding:7px 10px;margin-top:5px;font-size:12.5px"><b>DutyFreeBD:</b> {{ $m->reply }}</div>@endif</div>@endforeach</div>
+@foreach($mine as $m)<div style="border-bottom:1px solid #F8EFE8;padding:10px 0;font-size:13.5px"><b>{{ $m->pname }}</b> · <span style="color:#F59E0B">{{ str_repeat('★', $m->rating) }}</span><span style="color:#D1D5DB">{{ str_repeat('★', 5-$m->rating) }}</span> <span class="st" style="{{ $m->status==='approved' ? 'background:#DCFCE7;color:#166534' : 'background:#FFF1E8;color:#C2410C' }}">{{ $m->status==='approved' ? 'Published' : 'Under review' }}</span>@if($m->body)<div style="color:#4B5563;margin-top:3px">{{ $m->body }}</div>@endif @if($m->reply)<div style="background:#F8FAFC;border-radius:8px;padding:7px 10px;margin-top:5px;font-size:12.5px"><b>DutyFreeBD:</b> {{ $m->reply }}</div>@endif</div>@endforeach</div>
 @endif
 
 @if($tab==='support')

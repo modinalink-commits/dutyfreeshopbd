@@ -3,7 +3,7 @@
   try { if (\App\Support\OrderWaConfirm::ready()) { $__wc = \Illuminate\Support\Facades\DB::table('order_whatsapp_confirmations')->where('order_id', $o->id)->orderBy('seq')->get(); $__wev = \Illuminate\Support\Facades\DB::table('order_whatsapp_events')->where('order_id', $o->id)->orderBy('id')->get(); } } catch (\Throwable $e) {}
   $__wl = $__wc->last();
   $__fmt = fn($t) => $t ? \Carbon\Carbon::parse($t, 'UTC')->timezone('Asia/Dhaka')->format('d M Y, h:i A') : '—';
-  $__col = ['SENT'=>'#2563EB','DELIVERED'=>'#16A34A','READ'=>'#15803D','FAILED'=>'#DC2626','QUEUED'=>'#B45309','PENDING'=>'#B45309'];
+  $__col = ['SENT'=>'#2563EB','DELIVERED'=>'#16A34A','READ'=>'#166534','FAILED'=>'#DC2626','QUEUED'=>'#B45309','PENDING'=>'#B45309'];
 @endphp
 @if(\App\Support\OrderWaConfirm::ready() && ($__wl || ($o->approval_source ?? null)))
 <div class="card" style="max-width:720px;border-left:4px solid #25D366" id="waConf"><b>WhatsApp Confirmation</b>

@@ -23,7 +23,7 @@
 .dfmc .bar{position:absolute;left:0;right:0;bottom:0;height:1.1cqw;background:#FF5A00}
 .dfmc.silver{color:#0B1220}.dfmc.silver .s2{color:#3B4658}
 .dfmc.gold{color:#2B1D00}.dfmc.gold .s2{color:#5A3E00}
-.dfmc.platinum{color:#F1F5F9}.dfmc.platinum .s2{color:#CBD5E1}
+.dfmc.platinum{color:#F1F5F9}.dfmc.platinum .s2{color:#D1D5DB}
 .dfmc.diamond{color:#fff}.dfmc.diamond .s2{color:#9FDCFF}
 .dfmc.silver .bg{background:linear-gradient(135deg,#F4F6F9 0%,#C9D0DA 38%,#9AA4B2 70%,#DDE2E9 100%)}
 .dfmc.gold .bg{background:linear-gradient(135deg,#FBEBB5 0%,#E3B84E 34%,#B98512 68%,#F0D07A 100%)}

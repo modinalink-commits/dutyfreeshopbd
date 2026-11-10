@@ -36,6 +36,6 @@
 <p><button>Save settings</button></p></form>
 <details style="margin-top:8px"><summary style="cursor:pointer;font-weight:600;font-size:12.5px">PBX one-time setup (voice_offer.lua)</summary>
 <div style="font-size:12px;color:#6B7280;margin:6px 0">1) Allow this server to reach the Event Socket (port {{ $s['esl_port'] }}). 2) FusionPBX → Advanced → Script Manager: create <code>voice_offer.lua</code> with the code below. 3) Dialplan: destination <code>^voice_offer$</code> → action <code>lua voice_offer.lua</code>. 4) Tick "PBX script installed" above.<br>Webhook used by the script: <code>{{ $s['hook'] }}</code></div>
-<pre style="background:#0B1220;color:#E2E8F0;padding:10px;border-radius:8px;font-size:11.5px;overflow:auto;white-space:pre">{{ file_get_contents(resource_path('views/voice_offer_lua.txt')) }}</pre></details></div>
+<pre style="background:#0B1220;color:#E5E7EB;padding:10px;border-radius:8px;font-size:11.5px;overflow:auto;white-space:pre">{{ file_get_contents(resource_path('views/voice_offer_lua.txt')) }}</pre></details></div>
 </div></div></div>
 @endsection

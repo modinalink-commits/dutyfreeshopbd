@@ -262,7 +262,7 @@ td.action-column .order-action-grid .action-btn-status.is-open{background:#CDEFD
 #qaPop.qm a,#qaPop.sm button[data-s]{display:flex;align-items:center;gap:8px;width:calc(100% - 12px)!important;height:36px!important;margin:0 6px!important;padding:8px 10px!important;border-radius:6px;font-size:12px!important;font-weight:500!important;line-height:1.2;color:#0B1220!important;text-decoration:none;text-align:left;background:transparent;border:0;cursor:pointer;box-sizing:border-box;transition:background-color .12s ease}
 #qaPop.qm a:hover,#qaPop.sm button[data-s]:hover,#qaPop.sm a:hover{background:#F3F4F6}
 #qaPop.sm a{display:flex;align-items:center;gap:8px;width:calc(100% - 12px)!important;height:36px!important;margin:0 6px 6px!important;padding:8px 10px!important;border-radius:6px;font-size:12px!important;line-height:1.2;text-decoration:none;box-sizing:border-box}
-#qaPop.qm a>svg:first-child{flex:none;color:#C2410C}#qaPop.qm a>span{flex:1}#qaPop .chv{flex:none;color:#98A2B3;margin-left:auto}
+#qaPop.qm a>svg:first-child{flex:none;color:#C2410C}#qaPop.qm a>span{flex:1}#qaPop .chv{flex:none;color:#9CA3AF;margin-left:auto}
 #qaPop.sm button[data-s]:before{flex:none;margin:0 3px 0 0}
 #qaPop.sm button[data-s] span{flex:1}
 #qaPop.sm button.cur{background:#E6F6EB!important;font-weight:700!important;cursor:default}#qaPop.sm button.cur:after{content:"";margin-left:auto;width:14px;height:14px;background:no-repeat center/14px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2316A34A' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E")}

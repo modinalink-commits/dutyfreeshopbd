@@ -2,7 +2,7 @@
 <style>
 /* Order Management header system: one panel, equal-height controls (34px), content-based width, 6px rhythm, status cards 58px.
    Reusable classes: .toolbar-control(-xs|-sm|-md|-lg) and .status-card(-sm|-md). Loaded last so it wins over older layered rules. */
-#ocb#ocb{background:#F8FAFC!important;border:2px solid #475569!important;border-radius:10px!important;padding:7px!important;box-shadow:none!important;margin:0 0 8px!important}
+#ocb#ocb{background:#F8FAFC!important;border:2px solid #4B5563!important;border-radius:10px!important;padding:7px!important;box-shadow:none!important;margin:0 0 8px!important}
 #ocb#ocb form{margin:0}
 #ocb#ocb .r1{display:flex!important;flex-wrap:wrap!important;align-items:center!important;justify-content:flex-start!important;gap:6px!important;min-height:0!important;position:relative}
 #ocb#ocb .r1>.owt,#ocb#ocb .r1 .owt .obk,#ocb#ocb .r1 .owt .owf,#ocb#ocb .r1 .owt .q{display:contents!important}
@@ -10,7 +10,7 @@
 #ocb#ocb .r1 #osel{height:34px!important;min-width:28px}
 /* toolbar controls */
 #ocb#ocb .toolbar-control{box-sizing:border-box!important;display:inline-flex!important;align-items:center;justify-content:center;gap:6px;flex:0 0 auto!important;height:34px!important;min-height:34px!important;width:auto!important;min-width:max-content;max-width:none!important;margin:0!important;padding:0 12px!important;border:1px solid var(--border-grid,#CED4DA)!important;border-radius:8px!important;font-size:12px!important;font-weight:600!important;line-height:1!important;white-space:nowrap;box-shadow:none!important;transition:border-color .15s ease,background-color .15s ease}
-#ocb#ocb .toolbar-control:hover{border-color:#94A3B8!important}
+#ocb#ocb .toolbar-control:hover{border-color:#9CA3AF!important}
 #ocb#ocb select.toolbar-control{display:inline-block!important;padding:0 26px 0 10px!important;max-width:170px!important;text-align:left;text-overflow:ellipsis}
 #ocb#ocb .toolbar-control-xs{width:34px!important;min-width:34px!important;padding:0!important}
 #ocb#ocb .toolbar-control-sm{min-width:64px}
@@ -36,7 +36,7 @@
 /* cards share any spare width equally so the row reaches the panel's right edge; when space is short they keep their min width and the row scrolls */
 .ocb .strip a.status-card,.ocb .strip a.status-card-sm,.ocb .strip a.status-card-md{flex:1 0 auto!important;max-width:none!important}
 .ocb .strip a.status-card-sm{min-width:72px}
-.ocb .strip a.status-card:hover{border-color:var(--c,#475569)!important}
+.ocb .strip a.status-card:hover{border-color:var(--c,#4B5563)!important}
 .ocb .strip a.status-card.on{border-color:var(--c,#0B1220)!important;box-shadow:0 0 0 2px color-mix(in srgb,var(--c,#0B1220) 28%,transparent)!important}
 .ocb .strip a.status-card .cl{display:flex;flex-direction:column;align-items:center;gap:1px;max-width:100%}
 .ocb .strip a.status-card .sl{font-size:11px;font-weight:600;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}

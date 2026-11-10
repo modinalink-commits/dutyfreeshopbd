@@ -16,7 +16,7 @@
 <div class="card" style="overflow:auto"><table style="width:100%;border-collapse:collapse;min-width:760px">
 <tr style="text-align:left;font-size:12px;color:#6B7280"><th>Customer</th><th>Phone</th><th>Extension</th><th>Staff</th><th>Direction</th><th>Start time</th><th>Duration</th><th>Status</th><th>Note</th></tr>
 @forelse($rows as $r)<tr style="border-top:1px solid #E5E7EB"><td style="padding:8px 4px">{{ $r->customer_name ?: 'Unknown' }}</td><td>{{ $r->phone }} <a href="#" onclick="dfCall('{{ $r->phone }}');return false" title="Call">📞</a></td><td>{{ $r->extension }}</td><td>{{ $r->user_name }}</td><td>{{ $r->direction==='in' ? '↙ Incoming' : '↗ Outgoing' }}</td><td>{{ \Carbon\Carbon::parse($r->started_at)->timezone('Asia/Dhaka')->format('d M Y, h:i A') }}</td><td>{{ gmdate('H:i:s',(int)$r->duration) }}</td>
-<td><span style="font-weight:700;color:{{ ['answered'=>'#15803D','missed'=>'#B91C1C','busy'=>'#B45309','failed'=>'#6B7280','rejected'=>'#6B7280'][$r->status] ?? '#6B7280' }}">{{ ucfirst($r->status) }}</span></td><td style="font-size:12px;max-width:220px">{{ $r->note }}</td></tr>
+<td><span style="font-weight:700;color:{{ ['answered'=>'#166534','missed'=>'#B91C1C','busy'=>'#B45309','failed'=>'#6B7280','rejected'=>'#6B7280'][$r->status] ?? '#6B7280' }}">{{ ucfirst($r->status) }}</span></td><td style="font-size:12px;max-width:220px">{{ $r->note }}</td></tr>
 @empty<tr><td colspan="9" style="padding:20px;text-align:center;color:#6B7280">No calls yet.</td></tr>@endforelse</table></div>
 <div style="margin-top:12px">{{ $rows->links('pagination.global') }}</div>
 @endif

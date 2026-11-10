@@ -37,7 +37,7 @@ $('bTest').onclick=function(){
  var res=$('tres'),w=$('wss').value.trim();
  if(!/^wss:\/\//i.test(w)){res.innerHTML='<span style="color:#B91C1C">Enter a WSS URL that starts with wss:// first.</span>';return}
  badge('Connecting','b-connecting');res.textContent='Testing… (up to 10 seconds)';
- var done=false,ws;function end(ok,msg){if(done)return;done=true;try{ws&&ws.close()}catch(e){}badge(ok?'Connected':'Registration Failed',ok?'b-connected':'b-failed');res.innerHTML='<span style="color:'+(ok?'#15803D':'#B91C1C')+'">'+msg+'</span>'}
+ var done=false,ws;function end(ok,msg){if(done)return;done=true;try{ws&&ws.close()}catch(e){}badge(ok?'Connected':'Registration Failed',ok?'b-connected':'b-failed');res.innerHTML='<span style="color:'+(ok?'#166534':'#B91C1C')+'">'+msg+'</span>'}
  try{ws=new WebSocket(w,'sip')}catch(e){end(false,'Invalid WebSocket address.');return}
  var timer=setTimeout(function(){end(false,'No answer from the PBX within 10 seconds. The WSS port is probably closed or not a SIP WebSocket. Ask the PBX provider for the correct WSS address.')},10000);
  ws.onopen=function(){

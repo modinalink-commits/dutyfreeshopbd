@@ -16,7 +16,7 @@
 .ocb .strip{gap:4px;height:26px;padding-bottom:0;box-sizing:border-box;scrollbar-width:none;-ms-overflow-style:none}.ocb .strip::-webkit-scrollbar{display:none;height:0}
 .ocb .chip{flex:0 0 auto;height:24px;line-height:21px;padding:0 8px;border-radius:12px;font-size:11px;white-space:nowrap;box-sizing:border-box;border:1.5px solid color-mix(in srgb,var(--c,#64748B) 55%,#fff);transition:border-color .15s ease,background-color .15s ease}
 .ocb .chip b{font-weight:700}
-.ocb .chip:hover{border-color:var(--c,#475569)}
+.ocb .chip:hover{border-color:var(--c,#4B5563)}
 .ocb .chip.on{font-weight:700;border-color:var(--c,#0B1220);box-shadow:0 0 0 1px color-mix(in srgb,var(--c,#0B1220) 25%,transparent)}
 /* v1.375 very light per-status fill, always black text; active chip = bolder ring */
 .ocb .chip,.ocb .chip b{color:#0B1220!important}
