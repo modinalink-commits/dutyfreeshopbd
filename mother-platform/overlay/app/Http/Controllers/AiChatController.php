@@ -5,6 +5,24 @@ use App\Support\Sms;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 class AiChatController extends Controller {
+  /** Read-only: words/phrases customers wrote (incoming messages) at least N times, with a flag whether the knowledge base already covers them. */
+  public function keywords(Request $r) {
+    $min = max(3, min(200, (int)($r->input('min') ?: 10)));
+    $days = max(7, min(720, (int)($r->input('days') ?: 180)));
+    $stop = array_flip(['আমি','আমার','আপনি','আপনার','আপনাকে','এই','এটা','এটি','ওই','সেই','কি','কী','কে','কেন','কোন','কোনো','না','হ্যাঁ','হা','জি','ভাই','আপু','স্যার','সার','করে','করা','করুন','করব','করবো','দিন','দিবেন','দেন','দেবেন','আছে','নাই','নেই','হবে','হয়','হলো','থেকে','জন্য','এবং','আর','তো','টা','টি','খুব','একটা','একটি','আপনাদের','আমাদের','আসসালামু','আলাইকুম','ধন্যবাদ','ok','okay','the','and','you','for','are','how','what','can','that','this','with','have','please','sir','bhai','kore','den','ache','nai','ami','apni','apnar','amar','koto','hobe','hoy','jonno','the','is','to','of','in','it','my','me','i','a']);
+    $uni = []; $bi = []; $thr = []; $total = 0;
+    foreach (\Illuminate\Support\Facades\DB::table('chat_messages')->where('dir', 'in')->where('kind', 'text')->where('created_at', '>=', now()->subDays($days))->whereNotNull('body')->orderBy('id')->select('id', 'thread_id', 'body')->cursor() as $m) {
+      $total++;
+      preg_match_all('/[\p{L}\p{M}\p{N}]+/u', mb_strtolower(mb_substr((string)$m->body, 0, 600)), $mm);
+      $w = array_values(array_filter($mm[0], fn($x) => mb_strlen($x) >= 2 && !isset($stop[$x]) && !ctype_digit($x)));
+      $seen = [];
+      foreach ($w as $i => $x) { $uni[$x] = ($uni[$x] ?? 0) + 1; $seen[$x] = 1; if (isset($w[$i + 1])) { $b = $x.' '.$w[$i + 1]; $bi[$b] = ($bi[$b] ?? 0) + 1; $seen[$b] = 1; } }
+      foreach ($seen as $k => $_) { $thr[$k][$m->thread_id] = 1; }
+    }
+    $kb = mb_strtolower(AiChat::kb());
+    $mk = function (array $arr) use ($min, $thr, $kb) { $o = []; foreach ($arr as $k => $n) if ($n >= $min) $o[] = ['w'=>$k, 'n'=>$n, 'c'=>count($thr[$k] ?? []), 'kb'=>mb_substr_count($kb, (string)$k)]; usort($o, fn($a, $b) => $b['n'] <=> $a['n']); return array_slice($o, 0, 400); };
+    return view('ai_keywords', ['min'=>$min, 'days'=>$days, 'total'=>$total, 'uni'=>$mk($uni), 'bi'=>$mk($bi)]);
+  }
   public function show() {
     $lr = [];
     try { // last 7 days: conversations by the style the AI detected, how many a person had to take over (AI paused) and how many were staff-fixed to a language

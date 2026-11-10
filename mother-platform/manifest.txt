@@ -953,4 +953,5 @@ database/migrations/2026_11_10_100000_orders_without_store_to_main_store.php
 app/Support/OrderCancelNotice.php
 resources/views/cancel_reason_js.blade.php
 database/migrations/2026_11_10_110000_order_cancel_notices.php
+resources/views/ai_keywords.blade.php
 database/migrations/2026_11_10_120000_remove_chat_placeholder_bubbles.php
