@@ -10,14 +10,15 @@ function save(){try{sessionStorage.setItem(K,JSON.stringify({t:Date.now(),x:wind
 function load(){try{return JSON.parse(sessionStorage.getItem(K)||'null')}catch(e){return null}}
 var nav='navigate';try{nav=(performance.getEntriesByType('navigation')[0]||{}).type||'navigate'}catch(e){}
 var d=load(),fresh=d&&(Date.now()-d.t<12000);
-function apply(){if(!d)return;if(!(nav==='reload'||fresh))return;
+var stop=false;['wheel','touchstart','keydown','mousedown','pointerdown'].forEach(function(ev){window.addEventListener(ev,function(){stop=true},{passive:true,capture:true})});
+function apply(){if(!d||stop)return;if(!(nav==='reload'||fresh))return;
  var c=cands(),m={};c.forEach(function(e,n){m[key(e,n)]=e});
  d.s.forEach(function(r){var el=m[r[0]];if(el){el.scrollTop=r[1];el.scrollLeft=r[2]}});
- window.scrollTo(d.x||0,d.y||0)}
-function run(){apply();setTimeout(apply,120);setTimeout(apply,500);setTimeout(apply,1400)}
+ if(Math.abs(window.scrollY-(d.y||0))>4||Math.abs(window.scrollX-(d.x||0))>4)window.scrollTo({left:d.x||0,top:d.y||0,behavior:'instant'})}
+function run(){apply();setTimeout(apply,150);setTimeout(apply,600)}
 if('scrollRestoration' in history)try{history.scrollRestoration='manual'}catch(e){}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run);else run();
-window.addEventListener('load',apply);
+window.addEventListener('load',function(){setTimeout(apply,50)});
 window.addEventListener('pagehide',save);window.addEventListener('beforeunload',save);
 document.addEventListener('visibilitychange',function(){if(document.hidden)save()});
 var tm;window.addEventListener('scroll',function(){clearTimeout(tm);tm=setTimeout(save,300)},{passive:true});
