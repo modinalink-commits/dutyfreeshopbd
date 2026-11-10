@@ -8,7 +8,7 @@
 .fbar{background:#fff;border:1px solid #FDD9C2;border-radius:18px;box-shadow:0 8px 24px rgba(255,90,0,.06);padding:10px 12px;margin:0 0 12px;display:flex;flex-direction:column;gap:8px}
 .fbar .fr{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .fbar .fr .sp{flex:1}
-.fbar a,.fbar button.fa{display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 15px;border-radius:19px;border:1px solid #E5E7EB;background:#fff;color:#1F2937;font-size:13px;font-weight:600;text-decoration:none;cursor:pointer;white-space:nowrap;box-sizing:border-box;box-shadow:0 2px 6px rgba(15,23,42,.05);transition:background .15s,box-shadow .15s,transform .1s;font-family:inherit}
+.fbar a,.fbar button.fa{display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 15px;border-radius:19px;border:1px solid #E5E7EB;background:#fff;color:#374151;font-size:13px;font-weight:600;text-decoration:none;cursor:pointer;white-space:nowrap;box-sizing:border-box;box-shadow:0 2px 6px rgba(15,23,42,.05);transition:background .15s,box-shadow .15s,transform .1s;font-family:inherit}
 .fbar a:hover,.fbar button.fa:hover{background:#FFF8F2;box-shadow:0 4px 10px rgba(15,23,42,.09)}
 .fbar a svg,.fbar button.fa svg{width:19px;height:19px;flex:none}
 .fbar a.on{background:linear-gradient(135deg,#FF7A1A,#FF5A00);border-color:#F05200;color:#fff;box-shadow:0 6px 14px rgba(240,82,0,.32)}.fbar a.on svg *{stroke:#fff}.fbar a.on svg .kp{fill:#fff}

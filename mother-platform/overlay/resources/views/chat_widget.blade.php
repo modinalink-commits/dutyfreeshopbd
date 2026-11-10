@@ -4,7 +4,7 @@
 <style>
 .mcp{position:fixed;top:64px;right:18px;z-index:9990;display:flex;flex-direction:column;gap:10px;width:350px;max-width:calc(100vw - 28px)}
 .mcc{background:#fff;border:1.5px solid #FDC2A5;border-radius:16px;box-shadow:0 14px 34px rgba(11,18,32,.22);padding:12px;animation:mcin .22s ease-out;font-size:13px;color:#0B1220}
-.mcs{background:#0B1220;color:#fff;border-radius:14px;padding:10px 12px;font-size:12.5px;display:none;align-items:center;gap:8px;box-shadow:0 10px 26px rgba(11,18,32,.28);animation:mcin .22s ease-out}.mcs b{font-weight:700}.mcs .sp{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mcs button{padding:5px 10px;font-size:12px;border-radius:8px;border:1px solid #FF5A00;background:#FF5A00;color:#fff;font-weight:600;cursor:pointer}.mcs button.gh{background:transparent;border-color:#475569}
+.mcs{background:#0B1220;color:#fff;border-radius:14px;padding:10px 12px;font-size:12.5px;display:none;align-items:center;gap:8px;box-shadow:0 10px 26px rgba(11,18,32,.28);animation:mcin .22s ease-out}.mcs b{font-weight:700}.mcs .sp{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mcs button{padding:5px 10px;font-size:12px;border-radius:8px;border:1px solid #FF5A00;background:#FF5A00;color:#fff;font-weight:600;cursor:pointer}.mcs button.gh{background:transparent;border-color:#4B5563}
 @media(prefers-reduced-motion:reduce){.mcc,.mcs{animation:none!important}}
 @keyframes mcin{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
 .mcc .h{display:flex;align-items:center;gap:8px;font-weight:700;font-size:12.5px}.mcc .h .x{margin-left:auto;background:none;color:#6B7280;padding:0 4px;font-size:18px;line-height:1}
