@@ -28,10 +28,10 @@ draw(cs,cc);cat.addEventListener('change',function(){draw('','')});sub.addEventL
 @unless($smsOn)<p style="font-size:12px;color:#C2410C;margin:0 0 8px">SMS on publish / unpublish: add <b>owner_phone</b> (and optional <b>manager_phones</b>) in <a href="/admin/m/settings">Site settings</a>. SMS are queued and go out once the SMS provider is connected.</p>@endunless
 <style>
 .catalog-table{min-width:880px}.catalog-table thead th{padding:10px 12px;font-size:12px;font-weight:600;background:#FAFBFC;vertical-align:middle}
-.catalog-table th,.catalog-table td{padding-left:12px;padding-right:12px}.catalog-table tbody td{padding-top:9px;padding-bottom:9px;vertical-align:middle;border-top:1px solid #EDF0F3}
-.catalog-table tbody tr:hover{background:#FAFAFA}.catalog-table .pc{min-width:300px}
+.catalog-table th,.catalog-table td{padding-left:12px;padding-right:12px}.catalog-table tbody td{padding-top:9px;padding-bottom:9px;vertical-align:middle;border-top:1px solid #EEF1F5}
+.catalog-table tbody tr:hover{background:#F8FAFC}.catalog-table .pc{min-width:300px}
 .catalog-product-cell{display:flex;align-items:center;gap:10px;min-width:0}.catalog-product-info{min-width:0}
-.catalog-product-thumb{width:44px;height:44px;object-fit:contain;background:#fff;border:1px solid #EDF0F3;border-radius:6px;padding:2px;flex-shrink:0}
+.catalog-product-thumb{width:44px;height:44px;object-fit:contain;background:#fff;border:1px solid #EEF1F5;border-radius:6px;padding:2px;flex-shrink:0}
 .catalog-table .product-name{font-weight:600;line-height:1.25}.catalog-table .product-sku{margin-top:2px;font-size:11px;color:#8B93A1}
 .catalog-table .pcat{font-size:12px;line-height:1.35}.catalog-table .pcat span{color:#8B93A1}
 .catalog-table .pill{font-size:11px;padding:2px 8px}.catalog-table .act .btn,.catalog-table .act button{height:32px;padding:0 10px;font-size:12px}.catalog-table td.act{display:flex;gap:6px;align-items:center;flex-wrap:nowrap}.catalog-table .act .btn,.catalog-table .act button{margin:0;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;line-height:1}

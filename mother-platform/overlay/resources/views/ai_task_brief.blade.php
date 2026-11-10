@@ -10,7 +10,7 @@
 .tb .pill{border:1px solid #CED4DA;background:#F8FAFC;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600;white-space:nowrap}
 .tb .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .tb .btn{border:1px solid #CED4DA;background:#fff;color:#0F2748;border-radius:8px;padding:7px 12px;font-weight:700;font-size:13px;cursor:pointer}
-.tb .btn:hover{background:#F3F4F6}.tb .btn.go{background:#C2410C;border-color:#EA580C;color:#fff}.tb .btn.go:hover{background:#C2410C}.tb .btn:disabled{opacity:.55;cursor:wait}
+.tb .btn:hover{background:#F3F4F6}.tb .btn.go{background:#C2410C;border-color:#C2410C;color:#fff}.tb .btn.go:hover{background:#C2410C}.tb .btn:disabled{opacity:.55;cursor:wait}
 .tb .sec{border:1px solid #CED4DA;border-radius:12px;background:#fff;overflow:hidden}
 .tb .sh{padding:6px 12px;font-weight:800;font-size:12px;letter-spacing:.2px;border-bottom:1px solid #CED4DA;display:flex;gap:8px;align-items:center}
 .tb .sb{padding:10px 12px;display:grid;gap:10px}
@@ -18,7 +18,7 @@
 @media(max-width:900px){.tb .g2,.tb .g3{grid-template-columns:1fr}}
 .tb label{display:block;font-weight:700;font-size:12px;margin:0 0 3px}.tb label i{color:#B91C1C;font-style:normal}
 .tb input[type=text],.tb select,.tb textarea{width:100%;border:1px solid #CED4DA;border-radius:8px;padding:7px 9px;font:inherit;background:#fff;color:#0F2748}
-.tb textarea{min-height:70px;resize:vertical}.tb input:focus,.tb select:focus,.tb textarea:focus{outline:2px solid #BFDBFE;border-color:#2563EB}
+.tb textarea{min-height:70px;resize:vertical}.tb input:focus,.tb select:focus,.tb textarea:focus{outline:2px solid #E6EFF9;border-color:#2563EB}
 .tb .hint{color:#6B7280;font-size:11.5px;margin-top:2px}
 .tb .chips{display:flex;flex-wrap:wrap;gap:6px}
 .tb .chip{border:1px solid #CED4DA;border-radius:999px;padding:3px 10px;font-size:12px;background:#fff;cursor:pointer;user-select:none}

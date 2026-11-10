@@ -5,7 +5,7 @@
 @if(session('err'))<div style="background:#FEE2E2;color:#B91C1C;padding:10px;border-radius:8px;margin-bottom:10px">{{ session('err') }}</div>@endif
 <p style="color:#6B7280;margin-top:0;max-width:860px">Policy: nobody earns a benefit just by placing orders. Membership, returning/VIP/special discounts, birthday and win-back offers depend only on <b>successfully received parcels</b>. Placed, approved, shipped, returned and cancelled orders never count.</p>
 <div style="display:flex;gap:10px;flex-wrap:wrap;margin:10px 0">
-@foreach(['Eligible'=>['#DCFCE7','#166534'],'Limited'=>['#FEF3C7','#B45309'],'Review Required'=>['#FFEDD5','#C2410C'],'Suspended'=>['#FEE2E2','#B91C1C']] as $k=>$c)<div style="background:{{ $c[0] }};color:{{ $c[1] }};padding:10px 16px;border-radius:10px;font-weight:700">{{ $k }}: {{ $sum[$k] }}</div>@endforeach
+@foreach(['Eligible'=>['#DCFCE7','#166534'],'Limited'=>['#FEF3C7','#B45309'],'Review Required'=>['#FFF1E8','#C2410C'],'Suspended'=>['#FEE2E2','#B91C1C']] as $k=>$c)<div style="background:{{ $c[0] }};color:{{ $c[1] }};padding:10px 16px;border-radius:10px;font-weight:700">{{ $k }}: {{ $sum[$k] }}</div>@endforeach
 </div>
 <form method="get" class="card" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
 <input name="q" value="{{ $q }}" placeholder="Search mobile or name"><select name="days">@foreach([30,90,180,365] as $d)<option value="{{ $d }}" @selected($days==$d)>Orders in last {{ $d }} days</option>@endforeach</select>

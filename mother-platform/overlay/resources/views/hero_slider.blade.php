@@ -6,7 +6,7 @@
 @forelse($rows as $x)@php $v=($x->media_type??'image')==='video'&&$x->video_id; $th=$x->image ?: ($v?'https://i.ytimg.com/vi/'.$x->video_id.'/hqdefault.jpg':''); @endphp
 <tr draggable="true" data-id="{{ $x->id }}" style="{{ $x->active?'':'opacity:.55' }}"><td style="cursor:grab;font-size:18px;color:#9CA3AF">⠿</td>
 <td>@if($th)<img src="{{ $th }}" alt="" style="width:110px;height:37px;object-fit:cover;border-radius:6px;display:block" referrerpolicy="no-referrer">@endif</td>
-<td><b style="font-size:11px;padding:2px 8px;border-radius:999px;background:{{ $v?'#FEE2E2':'#DBEAFE' }};color:{{ $v?'#991B1B':'#1E40AF' }}">{{ $v?'VIDEO':'IMAGE' }}</b></td>
+<td><b style="font-size:11px;padding:2px 8px;border-radius:999px;background:{{ $v?'#FEE2E2':'#E6EFF9' }};color:{{ $v?'#B91C1C':'#1D5FA8' }}">{{ $v?'VIDEO':'IMAGE' }}</b></td>
 <td>{{ $x->title ?: ($v ? 'YouTube '.$x->video_id : '—') }}</td><td class="pos">{{ $x->position }}</td>
 <td>{{ $x->image ? '✓' : ($v ? 'poster auto' : '—') }}</td><td>{{ $x->mobile_image ? '✓' : ($v ? ($x->v_mobile ? 'video' : 'fallback') : '—') }}</td>
 <td>{{ $x->active ? 'Active' : 'Paused' }}</td>

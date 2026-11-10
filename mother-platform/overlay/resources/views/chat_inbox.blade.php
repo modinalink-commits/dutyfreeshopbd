@@ -9,9 +9,9 @@
 .fbar .fr{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .fbar .fr .sp{flex:1}
 .fbar a,.fbar button.fa{display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 15px;border-radius:19px;border:1px solid #E5E7EB;background:#fff;color:#374151;font-size:13px;font-weight:600;text-decoration:none;cursor:pointer;white-space:nowrap;box-sizing:border-box;box-shadow:0 2px 6px rgba(15,23,42,.05);transition:background .15s,box-shadow .15s,transform .1s;font-family:inherit}
-.fbar a:hover,.fbar button.fa:hover{background:#FFF8F2;box-shadow:0 4px 10px rgba(15,23,42,.09)}
+.fbar a:hover,.fbar button.fa:hover{background:#FFF1E8;box-shadow:0 4px 10px rgba(15,23,42,.09)}
 .fbar a svg,.fbar button.fa svg{width:19px;height:19px;flex:none}
-.fbar a.on{background:linear-gradient(135deg,#FF7A1A,#FF5A00);border-color:#F05200;color:#fff;box-shadow:0 6px 14px rgba(240,82,0,.32)}.fbar a.on svg *{stroke:#fff}.fbar a.on svg .kp{fill:#fff}
+.fbar a.on{background:linear-gradient(135deg,#FF7A1A,#FF5A00);border-color:#FF5A00;color:#fff;box-shadow:0 6px 14px rgba(240,82,0,.32)}.fbar a.on svg *{stroke:#fff}.fbar a.on svg .kp{fill:#fff}
 .fbar .cn{min-width:20px;height:20px;line-height:20px;border-radius:10px;background:#B91C1C;color:#fff;font-size:11px;font-weight:700;text-align:center;padding:0 6px;box-sizing:border-box}
 .fbar a.on .cn{background:#fff;color:#C2410C}
 .fbar button.fa:disabled{opacity:.7;cursor:default}.fbar button.fa.ok{color:#166534;border-color:#BBF7D0;background:#DCFCE7}
@@ -22,8 +22,8 @@
 .mbx .lt{flex:1;overflow:auto;padding:6px 6px 10px}
 .mbx .sep{font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#6B7280;padding:8px 8px 4px}.mbx .sep.u{color:#B91C1C}
 .mbx .th{display:grid;grid-template-columns:34px 1fr;gap:0 10px;padding:9px 10px;margin:0 0 4px;border:1px solid #F1E9E2;border-radius:10px;cursor:pointer;background:#fff;transition:background .15s,border-color .15s;box-sizing:border-box}
-.mbx .th:hover{background:#FFFBF7;border-color:#E7D5C7}
-.mbx .th.un{background:#FFF8F2;border-color:#FAD3B5;box-shadow:inset 3px 0 0 #FF5A00}.mbx .th.un:hover{background:#FFF1E8;border-color:#F5B98C}
+.mbx .th:hover{background:#FFF1E8;border-color:#E7D5C7}
+.mbx .th.un{background:#FFF1E8;border-color:#FAD3B5;box-shadow:inset 3px 0 0 #FF5A00}.mbx .th.un:hover{background:#FFF1E8;border-color:#F5B98C}
 .mbx .th.on{background:#FFF1E8;border-color:#FDBA8C;box-shadow:inset 3px 0 0 #FF5A00}
 .mbx .th.fl8{animation:mbfl 1.6s ease-out}@keyframes mbfl{from{background:#FFE3A8}}
 .mbx .av{position:relative;width:34px;height:34px}.mbx .av .mcav{width:34px;height:34px;font-size:14px;background:#FFF1E8}.mbx .av .mcb{position:absolute;right:-4px;bottom:-4px;width:16px;height:16px;border-radius:5px;font-size:9px;border:1.5px solid #fff;box-sizing:content-box}
@@ -50,7 +50,7 @@
 .mbx .sep{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;letter-spacing:0;text-transform:none;color:#0B1220;padding:10px 8px 5px}.mbx .sep.u{color:#0B1220}.mbx .sep b{color:#FF5A00;font-weight:700;margin-left:auto}
 .mbx .sep.u::before{content:"";width:8px;height:8px;border-radius:50%;background:#FF5A00;flex:none}
 .mbx .th{padding:9px 10px;margin:0 0 5px;border-radius:10px;border-color:#F1E9E2;gap:0 10px}
-.mbx .th.un{background:#fff;border-color:#F1E9E2;box-shadow:inset 3px 0 0 #FF5A00}.mbx .th.un:hover{background:#FFFBF7}
+.mbx .th.un{background:#fff;border-color:#F1E9E2;box-shadow:inset 3px 0 0 #FF5A00}.mbx .th.un:hover{background:#FFF1E8}
 .mbx .th.on{background:#FFF1E8;border-color:#FDBA8C;box-shadow:inset 3px 0 0 #FF5A00}
 .mbx .nm{font-size:13.5px;font-weight:600}.mbx .th.un .nm{font-weight:700}
 .mbx .lm{font-size:11.5px;color:#6B7280}.mbx .th.un .lm{color:#0B1220;font-weight:600}
@@ -82,11 +82,11 @@
 <script>
 (function(){
 var I={
-all:'<svg viewBox="0 0 24 24" fill="none" stroke="#F05200" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 16 9 5 9-5"/></svg>',
+all:'<svg viewBox="0 0 24 24" fill="none" stroke="#FF5A00" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 16 9 5 9-5"/></svg>',
 facebook:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#1877F2"/><path class="kp" d="M13.2 20v-7h2.3l.4-2.8h-2.7V8.5c0-.8.3-1.3 1.4-1.3H16V4.7c-.3 0-1.1-.1-2.1-.1-2.1 0-3.5 1.3-3.5 3.6v2H8v2.8h2.4v7" fill="#fff"/></svg>',
 instagram:'<svg viewBox="0 0 24 24"><defs><linearGradient id="ig" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#FEC053"/><stop offset=".4" stop-color="#F2203E"/><stop offset=".7" stop-color="#B729A8"/><stop offset="1" stop-color="#5342D6"/></linearGradient></defs><rect x="2" y="2" width="20" height="20" rx="6" fill="none" stroke="url(#ig)" stroke-width="2.2"/><circle cx="12" cy="12" r="4.4" fill="none" stroke="url(#ig)" stroke-width="2.2"/><circle cx="17.4" cy="6.6" r="1.3" fill="#B729A8"/></svg>',
 whatsapp:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#25D366"/><path class="kp" d="M16.7 14.3c-.2-.1-1.4-.7-1.6-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1-1.4-.7-2.4-1.5-3.2-3-.1-.2 0-.3.1-.4l.5-.6.2-.4c0-.1 0-.3 0-.4l-.7-1.7c-.2-.4-.4-.4-.6-.4h-.4c-.2 0-.4.1-.6.3-.6.6-.9 1.4-.8 2.3.2 1.1.8 2.1 1.5 3 1.1 1.4 2.5 2.4 4.2 3 .8.2 1.5.2 2.2-.1.6-.3 1.1-.9 1.2-1.5 0-.2 0-.3-.1-.4l-.4-.1Z" fill="#fff"/></svg>',
-web:'<svg viewBox="0 0 24 24" fill="none" stroke="#F05200" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M21 12a8 8 0 0 1-11.8 7L4 20l1.2-4.4A8 8 0 1 1 21 12Z"/><circle cx="9" cy="12" r=".6" fill="#F05200"/><circle cx="12.2" cy="12" r=".6" fill="#F05200"/><circle cx="15.4" cy="12" r=".6" fill="#F05200"/></svg>',
+web:'<svg viewBox="0 0 24 24" fill="none" stroke="#FF5A00" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M21 12a8 8 0 0 1-11.8 7L4 20l1.2-4.4A8 8 0 1 1 21 12Z"/><circle cx="9" cy="12" r=".6" fill="#FF5A00"/><circle cx="12.2" cy="12" r=".6" fill="#FF5A00"/><circle cx="15.4" cy="12" r=".6" fill="#FF5A00"/></svg>',
 orders:'<svg viewBox="0 0 24 24" fill="none" stroke="#4B5563" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></svg>',
   unread:'<svg viewBox="0 0 24 24" fill="none" stroke="#4B5563" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.5 7 8.5 6 8.5-6"/></svg>',
 assigned:'<svg viewBox="0 0 24 24" fill="none" stroke="#4B5563" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4.5 20c.8-3.6 3.8-5.5 7.5-5.5s6.7 1.9 7.5 5.5"/></svg>',
@@ -98,7 +98,7 @@ function ago(iso){if(!iso)return '';var s=(Date.now()-new Date(iso).getTime())/1
 var CHL={facebook:'f',instagram:'IG',whatsapp:'W',web:'💬'};
 function pill(x){return '<a data-f="'+x[0]+'" class="'+(f===x[0]?'on':'')+'" role="button" tabindex="0">'+I[x[0]]+'<span>'+x[1]+'</span>'+(x[0]==='unread'&&waiting>0?'<span class="cn">'+waiting+'</span>':'')+(x[0]==='orders'&&orq>0?'<span class="cn">'+orq+'</span>':'')+'</a>'}
 function drawF(){document.getElementById('ibf1').innerHTML=F1.map(pill).join('');
-  document.getElementById('ibf2').innerHTML=F2.map(pill).join('')+'<span class="sp"></span><button class="fa" type="button" id="ibup" title="Fetch the latest messages. This never marks anything as seen.">↻ Update</button><button class="fa" type="button" id="ibm">🔔 Sound on</button><a href="/admin/chat/memory" style="height:38px;border-color:#F05200;color:#C2410C">🧠 AI Memory</a><a href="/admin/chat-settings" style="height:38px">Chat settings</a>';
+  document.getElementById('ibf2').innerHTML=F2.map(pill).join('')+'<span class="sp"></span><button class="fa" type="button" id="ibup" title="Fetch the latest messages. This never marks anything as seen.">↻ Update</button><button class="fa" type="button" id="ibm">🔔 Sound on</button><a href="/admin/chat/memory" style="height:38px;border-color:#FF5A00;color:#C2410C">🧠 AI Memory</a><a href="/admin/chat-settings" style="height:38px">Chat settings</a>';
   document.querySelectorAll('#ibfb a[data-f]').forEach(function(a){a.onclick=function(){f=a.dataset.f;drawF();load()};a.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();a.click()}}});
   var bm=document.getElementById('ibm');bm.onclick=function(){MChat.cycleSound();mm()};mm();
   document.getElementById('ibup').onclick=doUpdate}

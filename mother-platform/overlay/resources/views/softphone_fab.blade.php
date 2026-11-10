@@ -4,7 +4,7 @@
 #dfDock iframe{border:0;width:100%;flex:1;background:#fff}
 #dfEdge{position:fixed;right:0;top:auto;bottom:84px;z-index:60;background:#0F1F3D;color:#fff;border:0;border-radius:10px 0 0 10px;padding:10px 7px;cursor:pointer;font:700 12px/1 Inter,Arial,sans-serif;box-shadow:-2px 2px 8px rgba(15,31,61,.2);display:flex;flex-direction:column;align-items:center;gap:6px}
 #dfEdge span{display:none}#dfEdge:hover span{display:inline;writing-mode:vertical-rl}
-#dfEdge:hover{background:#F26B1D}#dfEdge i{font-style:normal;writing-mode:horizontal-tb}
+#dfEdge:hover{background:#FF5A00}#dfEdge i{font-style:normal;writing-mode:horizontal-tb}
 #dfEdge::after{content:"";width:8px;height:8px;border-radius:50%;background:#22C55E;order:3}
 #dfEdge.st-busy::after{background:#EF4444}
 #dfEdge.busy::after{box-shadow:0 0 0 0 rgba(34,197,94,.7);animation:dfp 1.4s infinite}

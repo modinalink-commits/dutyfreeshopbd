@@ -19,8 +19,8 @@
 #cpbx .ev:first-of-type:before{background:#16A34A;box-shadow:0 0 0 1px #86EFAC}
 #cpbx .ev b{display:block;color:#0B1220}#cpbx .ev small{color:#6B7280;display:block;font-size:11.5px}
 #cpbx .ft{display:flex;gap:8px;padding:12px 16px;border-top:1px solid #E5E7EB;flex:none;flex-wrap:wrap}
-#cpbx .ft a,#cpbx .ft button{flex:1 1 auto;text-align:center;padding:8px 12px;border-radius:9px;font-weight:700;font-size:13px;cursor:pointer;text-decoration:none;color:#0B1220;border:1px solid #BFD6FA;background:#EAF2FF}
-#cpbx .ft a{background:#E7F8EC;border-color:#B5E3C2}
+#cpbx .ft a,#cpbx .ft button{flex:1 1 auto;text-align:center;padding:8px 12px;border-radius:9px;font-weight:700;font-size:13px;cursor:pointer;text-decoration:none;color:#0B1220;border:1px solid #E6EFF9;background:#E6EFF9}
+#cpbx .ft a{background:#DCFCE7;border-color:#B5E3C2}
 #cpbx .ms{padding:22px 16px;text-align:center;color:#4B5563;font-size:13px}
 #cpbx .cc{border:1px solid #D1D5DB;background:#fff;border-radius:7px;padding:2px 8px;font-size:11px;font-weight:700;cursor:pointer;color:#0B1220}
 </style>

@@ -25,14 +25,14 @@
 .pf .side .dk{background:var(--n)}
 .pf .disc{display:inline-block;margin-top:8px;font-size:13px;font-weight:700;color:#166534;background:#DCFCE7;border-radius:8px;padding:5px 10px}
 .pf .imgs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:10px}
-.pf .im{position:relative;aspect-ratio:1;border:1.25px solid var(--bd);border-radius:12px;overflow:hidden;background:#FFF7F1;cursor:grab}
+.pf .im{position:relative;aspect-ratio:1;border:1.25px solid var(--bd);border-radius:12px;overflow:hidden;background:#FFF1E8;cursor:grab}
 .pf .im img{width:100%;height:100%;object-fit:cover;display:block}
 .pf .im.drag{opacity:.4}.pf .im .cv{position:absolute;left:6px;top:6px;background:var(--o);color:#fff;font-size:10px;font-weight:700;border-radius:6px;padding:2px 7px}
 .pf .im .ac{position:absolute;right:6px;bottom:6px;display:flex;gap:4px}.pf .im .ac button{width:auto;margin:0;padding:3px 7px;font-size:11px;background:rgba(11,18,32,.82)}
 .pf .add{aspect-ratio:1;border:1.5px dashed var(--bd);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#6B7280;font-size:12px;cursor:pointer;background:#fff}
 .pf .add b{font-size:22px;color:var(--o);line-height:1}
 .pf .hint{font-size:12px;color:#6B7280;margin-top:8px}.pf .hint.bad{color:#B91C1C}
-.pf .tb{display:flex;flex-wrap:wrap;gap:4px;border:1px solid var(--bd);border-bottom:0;border-radius:10px 10px 0 0;padding:6px;background:#FFF7F1}
+.pf .tb{display:flex;flex-wrap:wrap;gap:4px;border:1px solid var(--bd);border-bottom:0;border-radius:10px 10px 0 0;padding:6px;background:#FFF1E8}
 .pf .tb button{width:auto;margin:0;background:#fff;color:var(--n);border:1px solid var(--bd);padding:5px 9px;font-size:12px;min-width:32px}
 .pf .tb button:hover{background:var(--n);color:#fff}
 .pf .ed{border:1px solid var(--bd);border-radius:0 0 10px 10px;min-height:240px;padding:12px 14px;background:#fff;font-size:14px;line-height:1.6;overflow:auto}
@@ -49,7 +49,7 @@
 <h1>{{ $p ? 'Edit product' : 'Add product' }}</h1>
 @if(request('saved'))<div class="okb">Saved. {{ $p && $p->published ? 'This product is live on the store.' : 'It is a draft, not visible to customers.' }}</div>@endif
 @if($errors->any())<div class="card err" style="max-width:1180px;white-space:pre-line">{{ $errors->first() }}</div>@endif
-@if($ai)<div class="card" style="max-width:1180px;border:2px solid #FF5A00;background:#FFF7F0"><b>AI filled this product from the image.</b> Please review every field. <b>Price was not filled</b> – enter the Regular price (and Sale price if any), then Save. Nothing is saved until you press Save.</div>@endif
+@if($ai)<div class="card" style="max-width:1180px;border:2px solid #FF5A00;background:#FFF1E8"><b>AI filled this product from the image.</b> Please review every field. <b>Price was not filled</b> – enter the Regular price (and Sale price if any), then Save. Nothing is saved until you press Save.</div>@endif
 <form id="pf" class="pf" method="post" action="{{ $p ? '/admin/products/'.$p->id : '/admin/products' }}">@csrf
 @if($ai)<input type="hidden" name="ai_scan" value="{{ $ai['_scan'] }}"><input type="hidden" name="dup_ok" id="dupOk" value="{{ old('dup_ok') }}">@endif
 <input type="hidden" name="act" id="act" value="publish">
@@ -72,7 +72,7 @@
 <div class="g2"><div><label>Regular price (TK) *</label><input name="regular_price" id="pReg" type="number" step="0.01" min="0" value="{{ $regular }}" required></div>
 <div><label>Sale price (TK)</label><input name="sale_price" id="pSale" type="number" step="0.01" min="0" value="{{ $sale }}"></div></div>
 @php($__c = ($p && \App\Support\ProfitFloor::admin()) ? \App\Support\ProfitFloor::base($p) : 0)@if($__c > 0)@php($__f = \App\Support\ProfitFloor::floor($__c))@php($__pr = (float)$p->price)@php($__ok = $__pr + 0.004 >= $__f)
-<div style="margin:8px 0;padding:9px 12px;border-radius:10px;font-size:13px;border:1px solid {{ $__ok ? '#BBF7D0' : '#FCA5A5' }};background:{{ $__ok ? '#F0FDF4' : '#FEF2F2' }};color:{{ $__ok ? '#166534' : '#991B1B' }}"><b>{{ \App\Support\ProfitFloor::state($__c, $__pr)[0] }}</b>@if(!$__ok) – PRICE REVIEW REQUIRED<br>এই product-এর Selling Price কোম্পানির minimum {{ \App\Support\ProfitFloor::pct() }}% profit margin-এর নিচে।@endif<br>Current FIFO Batch Cost ৳{{ number_format($__c, 2) }}@if((float)($p->cost ?? 0) > 0) (Last Purchase ৳{{ number_format((float)$p->cost, 2) }})@endif · Minimum Margin {{ \App\Support\ProfitFloor::pct() }}% · Minimum Safe Price ৳{{ number_format($__f, 2) }} · Profit ৳{{ number_format($__pr - $__c, 2) }} · Profit Margin {{ number_format(($__pr - $__c) / $__c * 100, 2) }}% · Discountable ৳{{ number_format(max(0, $__pr - $__f), 2) }} · <a href="/admin/inventory-pricing/{{ $p->id }}/history">Average history</a></div>@endif
+<div style="margin:8px 0;padding:9px 12px;border-radius:10px;font-size:13px;border:1px solid {{ $__ok ? '#BBF7D0' : '#FCA5A5' }};background:{{ $__ok ? '#F0FDF4' : '#FEE2E2' }};color:{{ $__ok ? '#166534' : '#B91C1C' }}"><b>{{ \App\Support\ProfitFloor::state($__c, $__pr)[0] }}</b>@if(!$__ok) – PRICE REVIEW REQUIRED<br>এই product-এর Selling Price কোম্পানির minimum {{ \App\Support\ProfitFloor::pct() }}% profit margin-এর নিচে।@endif<br>Current FIFO Batch Cost ৳{{ number_format($__c, 2) }}@if((float)($p->cost ?? 0) > 0) (Last Purchase ৳{{ number_format((float)$p->cost, 2) }})@endif · Minimum Margin {{ \App\Support\ProfitFloor::pct() }}% · Minimum Safe Price ৳{{ number_format($__f, 2) }} · Profit ৳{{ number_format($__pr - $__c, 2) }} · Profit Margin {{ number_format(($__pr - $__c) / $__c * 100, 2) }}% · Discountable ৳{{ number_format(max(0, $__pr - $__f), 2) }} · <a href="/admin/inventory-pricing/{{ $p->id }}/history">Average history</a></div>@endif
 <span class="disc" id="pDisc" style="display:none"></span>
 <div id="pFloorW" style="display:none;margin:8px 0;padding:10px 12px;border-radius:10px;background:#FEE2E2;border:2px solid #DC2626;color:#B91C1C;font-size:14px;font-weight:700;white-space:pre-line"></div>
 <?php $bpOn = \App\Support\BundlePricing::ready(); $bpRule = ($p->bundle_rule ?? 'global') ?: 'global'; $bpAdm = \App\Support\ProfitFloor::admin(); $bpT = ($p && $p->id && $bpOn) ? \App\Support\BundlePricing::forProduct((int)$p->id) : []; ?>

@@ -2,7 +2,7 @@
 @section('body')
 <style>
 .aif{max-width:980px}.aif .box{background:#fff;border:1px solid var(--bd);border-radius:16px;padding:20px 22px;margin-bottom:16px}
-.aif .drop{border:2px dashed #D1D5DB;border-radius:14px;padding:34px 16px;text-align:center;cursor:pointer;background:#F8FAFC;transition:.15s}.aif .drop.on{border-color:#FF5A00;background:#FFF7F0}
+.aif .drop{border:2px dashed #D1D5DB;border-radius:14px;padding:34px 16px;text-align:center;cursor:pointer;background:#F8FAFC;transition:.15s}.aif .drop.on{border-color:#FF5A00;background:#FFF1E8}
 .aif .drop b{display:block;font-size:16px;margin-bottom:4px}.aif .drop small{color:#6B7280}
 .aif .prev{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}.aif .prev img{width:200px;height:200px;object-fit:contain;border:1px solid var(--bd);border-radius:12px;background:#fff}
 .aif table{width:100%;border-collapse:collapse;font-size:14px}.aif td{padding:7px 8px;border-bottom:1px solid #EEF0F3;vertical-align:top}.aif td.l{width:170px;color:#6B7280}

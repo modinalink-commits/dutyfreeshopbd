@@ -51,9 +51,9 @@
 .ra .tbar input[type=search]{max-width:260px;height:38px;border-radius:10px}.ra .tbar select{width:auto;height:38px;border-radius:10px}
 .ra .tw{overflow:auto;border:1px solid #F1E3D8;border-radius:12px}
 .ra table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
-.ra th{position:sticky;top:0;background:#FFF7F1;color:#6B7280;font-size:11px;text-transform:uppercase;letter-spacing:.04em;padding:10px 12px;white-space:nowrap;cursor:pointer;user-select:none;border-bottom:1px solid #F1E3D8}
+.ra th{position:sticky;top:0;background:#FFF1E8;color:#6B7280;font-size:11px;text-transform:uppercase;letter-spacing:.04em;padding:10px 12px;white-space:nowrap;cursor:pointer;user-select:none;border-bottom:1px solid #F1E3D8}
 .ra th.r,.ra td.r{text-align:right}.ra td{padding:9px 12px;border-top:1px solid #FBEFE6;white-space:nowrap}.ra tbody tr:hover{background:#FFFBF8}
-.ra tfoot td{font-weight:700;background:#FFF7F1;border-top:1px solid #F1E3D8}
+.ra tfoot td{font-weight:700;background:#FFF1E8;border-top:1px solid #F1E3D8}
 .ra td img{width:34px;height:34px;border-radius:8px;object-fit:cover;display:block;background:#F3F4F6}
 .ra td.w{white-space:normal;min-width:180px;max-width:320px}
 .ra .bg{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;background:#F3F4F6;color:#374151}

@@ -27,13 +27,13 @@ $f = fn($k) => request()->query($k);
 .stk table{width:100%;border-collapse:collapse;margin-top:8px}
 .stk th{font-size:11.5px;color:#6B7280;font-weight:700;text-align:left;padding:8px 10px;background:#F8FAFC;border-bottom:1px solid #E5E7EB;white-space:nowrap}
 .stk td{padding:8px 10px;border-top:1px solid #E5E7EB;vertical-align:top;line-height:1.35}
-.stk td.nw{white-space:nowrap}.stk tbody tr:hover td{background:#FFFBF7}
+.stk td.nw{white-space:nowrap}.stk tbody tr:hover td{background:#FFF1E8}
 .stk .mut{color:#6B7280;font-size:11.5px}
 .stk .pill.gr{background:#F3F4F6;color:#4B5563}
 .stk .chg{display:inline-flex;gap:5px;align-items:center;flex-wrap:wrap}.stk .chg s{color:#9CA3AF}
 .stk .tl{position:relative;margin:10px 0 0;padding-left:20px;border-left:2px solid #FDC2A5}
 .stk .ev{position:relative;padding:0 0 14px 12px}.stk .ev:before{content:'';position:absolute;left:-27px;top:3px;width:12px;height:12px;border-radius:50%;background:#FF5A00;border:2px solid #fff;box-shadow:0 0 0 1px #FDC2A5}
-.stk .ev.call:before{background:#16A34A}.stk .ev.sms:before{background:#4F46E5}.stk .ev.flag:before{background:#B91C1C}
+.stk .ev.call:before{background:#16A34A}.stk .ev.sms:before{background:#1D5FA8}.stk .ev.flag:before{background:#B91C1C}
 .stk .ev.hl{background:#FFF1E8;border-radius:8px;padding:6px 8px 14px 12px}
 .stk .ev .h{font-weight:700}.stk .rule{font-size:12px;color:#4B5563;margin:6px 0 0;padding-left:18px}
 .stk .empty{padding:18px;text-align:center;color:#6B7280}

@@ -2,10 +2,10 @@
 @section('body')
 <style>
 .cpx .chip{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:700;color:#0B1220;border:1px solid transparent}
-.cpx .live{background:#DCFCE7;border-color:#BBF7D0}.cpx .sch{background:#E6EFF9;border-color:#BFDBFE}.cpx .exp{background:#F3F4F6;border-color:#E5E7EB}.cpx .off{background:#FEE2E2;border-color:#FECACA}.cpx .used{background:#FEF3C7;border-color:#FDE68A}
+.cpx .live{background:#DCFCE7;border-color:#BBF7D0}.cpx .sch{background:#E6EFF9;border-color:#E6EFF9}.cpx .exp{background:#F3F4F6;border-color:#E5E7EB}.cpx .off{background:#FEE2E2;border-color:#FECACA}.cpx .used{background:#FEF3C7;border-color:#FDE68A}
 .cpx .tab{display:inline-block;padding:6px 12px;border-radius:999px;border:1px solid #E5E7EB;color:#0B1220;font-weight:700;font-size:12.5px;text-decoration:none;background:#fff;margin:0 4px 6px 0}.cpx .tab.on{border:2px solid #000;background:#FFF1E8}
 .cpx td small{color:#6B7280;display:block}.cpx .act{display:flex;gap:4px;flex-wrap:wrap}.cpx .act form{margin:0}.cpx .act a,.cpx .act button{padding:4px 9px;font-size:12px;color:#0B1220;background:#F3F4F6;border:1px solid #E5E7EB;border-radius:8px;font-weight:700;cursor:pointer;text-decoration:none}
-.cpx .act .e{background:#EAF2FF}.cpx .act .u{background:#FFF5DB}.cpx .act .d{background:#F3ECFF}.cpx .act .t{background:#E7F8EC}.cpx .act .x{background:#FEE2E2}
+.cpx .act .e{background:#E6EFF9}.cpx .act .u{background:#FFF5DB}.cpx .act .d{background:#F3ECFF}.cpx .act .t{background:#DCFCE7}.cpx .act .x{background:#FEE2E2}
 </style>
 <div class="cpx">
 <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px"><h1 style="margin:0;flex:1">Coupons</h1><a class="btn g" href="/admin/coupons/export.csv">Download CSV</a><a class="btn" href="/admin/coupons/create">+ New coupon</a></div>

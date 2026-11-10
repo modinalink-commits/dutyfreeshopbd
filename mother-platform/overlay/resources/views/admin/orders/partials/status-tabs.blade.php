@@ -10,7 +10,7 @@
 @once
 <style>
 /* Shared Order Management container + status tab bar (used by All Orders and Late Delivery) */
-.ocb{position:static!important;margin:0 0 8px!important;background:#fff;border:1px solid #EDF0F3;border-radius:12px;box-shadow:0 4px 14px rgba(0,0,0,.06);padding:10px 12px}
+.ocb{position:static!important;margin:0 0 8px!important;background:#fff;border:1px solid #EEF1F5;border-radius:12px;box-shadow:0 4px 14px rgba(0,0,0,.06);padding:10px 12px}
 .ocb .r2{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px}.ocb>.r2:first-child{margin-top:0}
 .ocb .strip{display:flex;flex-wrap:nowrap;align-items:center;gap:6px;flex:1 1 100%;min-width:0;overflow-x:auto;overflow-y:hidden;white-space:nowrap;padding-bottom:3px;scrollbar-width:thin}
 .ocb .strip{gap:4px;height:26px;padding-bottom:0;box-sizing:border-box;scrollbar-width:none;-ms-overflow-style:none}.ocb .strip::-webkit-scrollbar{display:none;height:0}

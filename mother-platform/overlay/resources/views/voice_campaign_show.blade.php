@@ -1,6 +1,6 @@
 @extends('layout')@section('title',$c->name)
 @section('body')
-@php $S = \App\Support\Voice::STATUS; $pill = ['draft'=>['#F3F4F6','#4B5563'],'active'=>['#DCFCE7','#166534'],'paused'=>['#FEF3C7','#92400E'],'completed'=>['#E0E7FF','#3730A3']][$c->status]; $ok = collect($ready)->every(fn($x) => $x[1]); @endphp
+@php $S = \App\Support\Voice::STATUS; $pill = ['draft'=>['#F3F4F6','#4B5563'],'active'=>['#DCFCE7','#166534'],'paused'=>['#FEF3C7','#92400E'],'completed'=>['#E0E7FF','#1D5FA8']][$c->status]; $ok = collect($ready)->every(fn($x) => $x[1]); @endphp
 <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px"><div style="flex:1"><a href="/admin/voice" style="font-size:12px">← Voice Campaigns</a><h1 style="margin:0">{{ $c->name }}</h1>
 <div style="font-size:12px;color:#6B7280">{{ \App\Support\Voice::SEGMENTS[$c->segment] }} · {{ \App\Support\Voice::pct((float)$c->discount_value) }}% on last product · valid {{ $c->expiry_date ? 'until '.substr($c->expiry_date,0,10) : $c->validity_days.' days' }} · calls {{ $c->call_start_time }}–{{ $c->call_end_time }} · max {{ $c->retry_limit }} attempts</div></div>
 <span style="font-size:11px;font-weight:700;border-radius:999px;padding:4px 12px;background:{{ $pill[0] }};color:{{ $pill[1] }}">{{ strtoupper($c->status) }}</span>

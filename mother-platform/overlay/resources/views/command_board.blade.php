@@ -1,6 +1,6 @@
 @extends('layout')@section('title','Command Board')
 @section('body')
-@php $B = ['pending'=>['#FEF3C7','#92400E','Pending'],'working'=>['#DBEAFE','#1E40AF','Working'],'done'=>['#DCFCE7','#166534','✔ Completed by Claude']]; @endphp
+@php $B = ['pending'=>['#FEF3C7','#92400E','Pending'],'working'=>['#E6EFF9','#1D5FA8','Working'],'done'=>['#DCFCE7','#166534','✔ Completed by Claude']]; @endphp
 <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px"><div style="flex:1"><h1 style="margin:0">Command Board</h1><div style="font-size:12px;color:#6B7280">Add commands one after another — each one shows <b>Completed</b> only when Claude has finished it</div></div></div>
 @if(session('ok'))<div class="card" style="color:#166534">{{ session('ok') }}</div>@endif @if($errors->any())<div class="card" style="color:#B91C1C">@foreach($errors->all() as $e)<div>{{ $e }}</div>@endforeach</div>@endif
 <div class="card"><h2>New command</h2><form method="post" action="/admin/commands">@csrf

@@ -13,7 +13,7 @@ $aud = $v('audience', 'all'); $act = old('active', $c ? (int)$c->active : 1); $p
 .cf .sec{border:1px solid #E5E7EB;border-radius:12px;padding:14px;margin-bottom:12px;background:#fff}.cf .sec h3{margin:0 0 4px;font-size:15px}.cf .sec>p{margin:0 0 8px;color:#6B7280;font-size:12px}
 .cf .row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}.cf .opt{display:flex;gap:8px;align-items:flex-start;padding:8px 10px;border:1px solid #E5E7EB;border-radius:10px;margin:4px 0;cursor:pointer;color:#0B1220}.cf .opt input{width:auto;margin-top:3px}.cf .opt.on{border:2px solid #000;background:#FFF1E8}
 .cf .q{display:inline-block;margin:4px 4px 0 0;padding:4px 10px;border-radius:999px;border:1px solid #D1D5DB;background:#F3F4F6;color:#0B1220;font-size:12px;font-weight:700;cursor:pointer}
-.cf .chip{display:inline-flex;gap:6px;align-items:center;padding:3px 8px;margin:3px 4px 0 0;border-radius:999px;background:#EAF2FF;border:1px solid #BFD6FA;color:#0B1220;font-size:12px;font-weight:600}.cf .chip button{padding:0 4px;background:none;border:0;color:#0B1220;font-size:14px;cursor:pointer}
+.cf .chip{display:inline-flex;gap:6px;align-items:center;padding:3px 8px;margin:3px 4px 0 0;border-radius:999px;background:#E6EFF9;border:1px solid #E6EFF9;color:#0B1220;font-size:12px;font-weight:600}.cf .chip button{padding:0 4px;background:none;border:0;color:#0B1220;font-size:14px;cursor:pointer}
 .cf #psr{border:1px solid #E5E7EB;border-radius:8px;max-height:180px;overflow:auto;display:none;margin-top:4px}.cf #psr div{padding:6px 10px;cursor:pointer;font-size:13px;color:#0B1220}.cf #psr div:hover{background:#FFF1E8}
 .cf .hint{font-size:11.5px;color:#6B7280;margin-top:3px}.cf select[multiple]{min-height:130px}
 </style>

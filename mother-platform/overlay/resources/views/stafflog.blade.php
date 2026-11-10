@@ -14,7 +14,7 @@
 .sl-g th{font-size:12px;color:#6B7280;font-weight:700;text-align:left;padding:9px 12px;background:#F8FAFC;border-bottom:1px solid #E5E7EB;white-space:nowrap}
 .sl-g td{padding:10px 12px;border-bottom:1px solid #E5E7EB;vertical-align:middle;font-size:13px;line-height:1.35}
 .sl-g tbody tr:last-child td{border-bottom:0}
-.sl-g tbody tr:hover td{background:#FFFBF7}
+.sl-g tbody tr:hover td{background:#FFF1E8}
 .sl-g td.nw,.sl-g th.nw{white-space:nowrap}
 .sl-g .pill{white-space:nowrap;display:inline-block;min-width:62px;text-align:center}
 .sl-g th:first-child,.sl-g td:first-child{padding-left:12px}
