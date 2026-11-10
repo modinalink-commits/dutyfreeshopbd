@@ -49,7 +49,8 @@ class CourierBackfillController extends Controller {
     $o = DB::select("select to_char(d,'YYYY-MM') m, count(*) n, round(sum(total)) tot, round(sum(total-?)) inc from (select o.total, (coalesce((select min(l.created_at) from order_status_logs l where l.order_id=o.id and l.to_status='Delivered'), o.created_at) at time zone 'Asia/Dhaka') d from orders o where o.status='Delivered' and o.courier='Pathao' and o.courier_stage is null and o.total > ? and not exists (select 1 from account_entries e where e.reference = 'DEL-'||o.invoice)) x group by m order by m", [$f, $f]);
     $l = DB::select("select to_char(entry_date,'YYYY-MM') m, count(*) n, round(sum(amount)) amt from account_entries where reference like 'OLD-I-%' and direction='income' and comment ilike '%pathao%' group by m order by m");
     $oth = DB::select("select count(*) n, round(coalesce(sum(amount),0)) amt from account_entries where reference like 'OLD-I-%' and direction='income' and comment not ilike '%pathao%'");
-    return response()->json(['charge' => $f, 'parcels_to_book' => $o, 'pathao_lumps_to_retire' => $l, 'other_old_income_kept' => $oth]);
+    $fe = DB::selectOne("select count(*) n from orders where status='Delivered' and courier='Pathao' and coalesce(courier_fee,0)=0 and total > ? and (created_at at time zone 'Asia/Dhaka') < '2026-11-02'", [$f]);
+    return response()->json(['courier_fee_to_fill' => (int)($fe->n ?? 0), 'charge' => $f, 'parcels_to_book' => $o, 'pathao_lumps_to_retire' => $l, 'other_old_income_kept' => $oth]);
   }
   public function legacyApply(Request $r) {
     abort_unless(P::can(Auth::user(), 'couriers', 'edit'), 403);
@@ -62,6 +63,10 @@ class CourierBackfillController extends Controller {
         from (select o.invoice, o.total, (coalesce((select min(l.created_at) from order_status_logs l where l.order_id=o.id and l.to_status='Delivered'), o.created_at) at time zone 'Asia/Dhaka') d from orders o where o.status='Delivered' and o.courier='Pathao' and o.courier_stage is null and o.total > ?) x
         where to_char(x.d,'YYYY-MM') = ? on conflict (reference) do nothing", [$acc, $f, $f, $f, $m]);
       $out = ['booked' => $n, 'month' => $m];
+    } elseif ($r->input('step') === 'fee') {
+      // Courier COST for old Pathao parcels: orders.courier_fee was empty, so profit ignored it. Fill only empty values, only up to 1 Nov 2026 (Dhaka), only Delivered Pathao parcels.
+      $n = DB::affectingStatement("update orders set courier_fee = ?, updated_at = now() where status='Delivered' and courier='Pathao' and coalesce(courier_fee,0) = 0 and total > ? and (created_at at time zone 'Asia/Dhaka') < '2026-11-02'", [$f, $f]);
+      $out = ['courier_fee_filled' => $n, 'fee' => $f];
     } elseif ($r->input('step') === 'retire' && $r->input('confirm') === 'yes') {
       DB::statement("create table if not exists account_entries_retired (like account_entries including defaults)");
       DB::statement("alter table account_entries_retired add column if not exists retired_at timestamp default now()");
