@@ -842,6 +842,7 @@ database/migrations/2026_11_07_007000_single_packet_section_paid.php
 database/migrations/2026_11_07_008000_chat_ai_language.php
 resources/ai/kb_default.txt
 resources/ai/kb_faq.txt
+resources/ai/kb_lang.txt
 database/migrations/2026_11_07_009000_chat_salam_quick_reply.php
 database/migrations/2026_11_08_000100_chat_wa_numbers.php
 app/Http/Controllers/StaffApiController.php

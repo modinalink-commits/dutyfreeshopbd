@@ -67,8 +67,10 @@ class AiChat {
     if ($v !== null && trim($v) !== '') $base = trim($v);
     else { $f = resource_path('ai/kb_default.txt'); $base = is_file($f) ? trim((string)file_get_contents($f)) : ''; }
     // frequent-question answers (from chat analysis); added once, also to an owner-edited KB, unless the owner already has that section
-    $q = resource_path('ai/kb_faq.txt');
-    if ($base !== '' && is_file($q) && mb_strpos($base, 'কাস্টমারের বারবার করা প্রশ্ন') === false) $base .= "\n\n".trim((string)file_get_contents($q));
+    foreach (['kb_faq.txt' => 'কাস্টমারের বারবার করা প্রশ্ন', 'kb_lang.txt' => 'কাস্টমারের ভাষা ও ভুল বানান'] as $fn => $mark) {
+      $q = resource_path('ai/'.$fn);
+      if ($base !== '' && is_file($q) && mb_strpos($base, $mark) === false) $base .= "\n\n".trim((string)file_get_contents($q));
+    }
     return $base;
   }
   /** Whole published catalogue in compact form (cached 5 min). */
