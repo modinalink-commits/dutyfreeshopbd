@@ -21,6 +21,16 @@
 <small style="color:#6B7280">Meta must approve the template before messages can go out (minutes to 24 hours). Only the five highlighted values change per order; they always come from the order record.</small></div>
 <form class="card" method="post" action="/admin/wa-confirm-settings/test" style="max-width:720px">@csrf<b>Test message</b><br><small style="color:#6B7280">Sends the real template with sample values. Creates no order record.</small>
 <div style="display:flex;gap:8px;margin-top:6px"><input name="phone" placeholder="01XXXXXXXXX" style="max-width:220px"><button class="btn" type="submit">Send test</button></div></form>
+<div class="card" style="max-width:720px"><b>Order cancelled notice</b> · WhatsApp template status: <b>{{ $cn('wa_tpl_status','NOT SUBMITTED') }}</b>
+<form method="post" action="/admin/wa-confirm-settings/cancel-save" style="margin-top:6px">@csrf
+<label><input type="checkbox" name="enabled" value="1" @checked($cn('enabled','1')==='1')> Notify customer when an order is cancelled</label><br>
+<label><input type="checkbox" name="sms" value="1" @checked($cn('sms','1')==='1')> by SMS</label> &nbsp; <label><input type="checkbox" name="wa" value="1" @checked($cn('wa','1')==='1')> by WhatsApp (after Meta approves the template)</label>
+<div style="margin-top:8px;max-width:260px"><label>Template name</label><input name="template" value="{{ $cn('wa_tpl','order_cancelled') }}"></div>
+<button class="btn" style="margin-top:8px" type="submit">Save</button></form>
+<pre style="white-space:pre-wrap;font-family:inherit;font-size:12.5px;background:#F8FAFC;border:1px solid #E5E7EB;border-radius:8px;padding:8px;margin:8px 0">{{ $cnBody }}</pre>
+<div style="display:flex;gap:8px;flex-wrap:wrap"><form method="post" action="/admin/wa-confirm-settings/cancel-submit" onsubmit="return confirm('Submit the cancel template to Meta for approval?')">@csrf<button class="btn" type="submit">Submit to Meta</button></form>
+<form method="post" action="/admin/wa-confirm-settings/cancel-sync">@csrf<button class="btn g" type="submit">Refresh status</button></form></div>
+<small style="color:#6B7280">SMS goes out immediately; WhatsApp starts only when the status above is APPROVED.</small></div>
 @if($stats)<div class="card" style="max-width:720px"><b>Last 7 days</b> · automatic confirmations: {{ $stats['total'] }}@foreach($stats['by'] as $k=>$v) · {{ $k }}: {{ $v }}@endforeach</div>@endif
 @if(!empty($failed) && count($failed))<div class="card" style="max-width:900px"><b>Failed in the last 7 days</b><table style="width:100%;font-size:12px;margin-top:6px;border-collapse:collapse">@foreach($failed as $f)<tr style="border-top:1px solid #eee"><td style="padding:4px"><a href="/admin/orders/{{ $f->order_id }}">{{ $f->invoice }}</a></td><td style="padding:4px">{{ $f->mobile }}</td><td style="padding:4px">{{ $f->failure_reason }}</td><td style="padding:4px">{{ stripos((string)$f->failure_reason, 'undeliverable') !== false ? 'Number not reachable on WhatsApp — contact by call/SMS' : ($f->permanent ? 'Cannot retry' : 'Needs manual resend') }}</td></tr>@endforeach</table></div>@endif
 @endsection

@@ -15,7 +15,7 @@ class OrderWaConfirmController extends Controller {
       $stats = ['total' => $s->sum(), 'by' => $s];
     }
     $failed = W::ready() ? DB::table('order_whatsapp_confirmations as f')->join('orders as o', 'o.id', '=', 'f.order_id')->where('f.send_status', 'FAILED')->where('f.created_at', '>=', now()->subDays(7))->orderByDesc('f.id')->limit(30)->get(['f.order_id', 'o.invoice', 'f.mobile', 'f.failure_reason', 'f.permanent', 'f.failed_at']) : collect();
-    return view('wa_confirm_settings', ['c' => fn($k, $d = '') => W::cfg($k, $d), 'tplStatus' => W::cfg('tpl_status', 'NOT SUBMITTED'), 'stats' => $stats, 'body' => W::BODY, 'ready' => W::ready(), 'failed' => $failed]);
+    return view('wa_confirm_settings', ['c' => fn($k, $d = '') => W::cfg($k, $d), 'tplStatus' => W::cfg('tpl_status', 'NOT SUBMITTED'), 'stats' => $stats, 'body' => W::BODY, 'ready' => W::ready(), 'failed' => $failed, 'cn' => fn($k, $d = '') => \App\Support\OrderCancelNotice::set($k, $d), 'cnBody' => \App\Support\OrderCancelNotice::WA_BODY]);
   }
   public function save(Request $r) {
     $d = $r->validate(['template' => 'required|string|max:80|regex:/^[a-z0-9_]+$/', 'lang' => 'required|string|max:10', 'brand' => 'required|string|max:60', 'waba' => 'required|string|max:30']);
@@ -25,6 +25,14 @@ class OrderWaConfirmController extends Controller {
   }
   public function submit() { [$ok, $m] = W::submitTemplate(); return back()->with($ok ? 'ok' : 'err', 'Template: ' . $m); }
   public function sync() { [$ok, $m] = W::syncTemplate(); return back()->with($ok ? 'ok' : 'err', 'Template status: ' . $m); }
+  public function cancelSave(Request $r) {
+    $d = $r->validate(['template' => 'required|string|max:80|regex:/^[a-z0-9_]+$/']);
+    Procure::put('cancel_notice_wa_tpl', $d['template']);
+    foreach (['enabled', 'sms', 'wa'] as $k) Procure::put('cancel_notice_' . $k, $r->boolean($k) ? '1' : '0');
+    return back()->with('ok', 'Cancel notice saved.');
+  }
+  public function cancelSubmit() { [$ok, $m] = \App\Support\OrderCancelNotice::submitTemplate(); return back()->with($ok ? 'ok' : 'err', 'Cancel template: ' . $m); }
+  public function cancelSync() { [$ok, $m] = \App\Support\OrderCancelNotice::syncTemplate(); return back()->with($ok ? 'ok' : 'err', 'Cancel template status: ' . $m); }
   /** Sends the real template with sample values to a test number. Creates no order record. */
   public function test(Request $r) {
     $to = WhatsApp::norm((string)$r->validate(['phone' => 'required|string|max:20'])['phone']);

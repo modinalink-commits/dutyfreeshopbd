@@ -45,6 +45,7 @@ class OrderCancelNotice {
   /** Processes waiting notices (called by the worker every ~30 s and right after a request). */
   public static function tick(int $limit = 20): int {
     if (!self::ready()) return 0; $n = 0;
+    try { if (in_array(self::set('wa_tpl_status', ''), ['PENDING', 'IN_APPEAL'], true) && \Illuminate\Support\Facades\Cache::add('cancel_tpl_sync', 1, 600)) self::syncTemplate(); } catch (\Throwable $e) {}
     foreach (DB::table('order_cancel_notices')->where('state', 'pending')->where('tries', '<', 4)->orderBy('id')->limit($limit)->get() as $q) {
       if (!DB::table('order_cancel_notices')->where('id', $q->id)->where('state', 'pending')->update(['tries' => DB::raw('tries + 1')])) continue;
       try { self::one($q); $n++; } catch (\Throwable $e) { report($e); DB::table('order_cancel_notices')->where('id', $q->id)->update(['note' => mb_substr($e->getMessage(), 0, 280)]); }

@@ -90,6 +90,9 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/wa-confirm-settings', [\App\Http\Controllers\OrderWaConfirmController::class,'save']);
   Route::post('/wa-confirm-settings/submit', [\App\Http\Controllers\OrderWaConfirmController::class,'submit']);
   Route::post('/wa-confirm-settings/sync', [\App\Http\Controllers\OrderWaConfirmController::class,'sync']);
+  Route::post('/wa-confirm-settings/cancel-save', [\App\Http\Controllers\OrderWaConfirmController::class,'cancelSave']);
+  Route::post('/wa-confirm-settings/cancel-submit', [\App\Http\Controllers\OrderWaConfirmController::class,'cancelSubmit']);
+  Route::post('/wa-confirm-settings/cancel-sync', [\App\Http\Controllers\OrderWaConfirmController::class,'cancelSync']);
   Route::post('/wa-confirm-settings/test', [\App\Http\Controllers\OrderWaConfirmController::class,'test'])->middleware('throttle:10,1');
   Route::post('/orders/{id}/return-receive', [\App\Http\Controllers\ShipmentOutcomeController::class,'receive'])->whereNumber('id');
   Route::post('/orders/{id}/return-complete', [\App\Http\Controllers\ShipmentOutcomeController::class,'complete'])->whereNumber('id');
