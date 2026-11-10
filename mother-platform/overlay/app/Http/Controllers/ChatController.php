@@ -581,7 +581,8 @@ class ChatController extends Controller {
             // Messages typed by staff in the WhatsApp Business app on the phone (coexistence): shown here as sent messages, and the AI steps back from that chat
             foreach ($v['message_echoes'] ?? [] as $me) {
               $to = preg_replace('/\D/', '', (string)($me['to'] ?? '')); if ($to === '') continue;
-              $mt = (string)($me['type'] ?? 'text'); $eb = $mt === 'text' ? (string)($me['text']['body'] ?? '') : ($mt === 'button' ? (string)($me['button']['text'] ?? '') : '['.$mt.' sent from the WhatsApp app]');
+              $mt = (string)($me['type'] ?? 'text'); if (in_array($mt, ['reaction', 'edit', 'revoke', 'unsupported'], true)) continue; // reactions/edits/deletes are not messages
+              $eb = $mt === 'text' ? (string)($me['text']['body'] ?? '') : ($mt === 'button' ? (string)($me['button']['text'] ?? '') : '['.$mt.' sent from the WhatsApp app]');
               if (trim($eb) === '') $eb = '[message sent from the WhatsApp app]';
               \App\Support\Chat::logOut($to, $eb, 'WhatsApp app', (string)($me['id'] ?? '') ?: null);
               if ($tt = DB::table('chat_threads')->where(['channel'=>'whatsapp', 'external_id'=>$to])->first()) { DB::table('chat_threads')->where('id', $tt->id)->update(['ai_paused'=>true, 'updated_at'=>now()]); \App\Support\Chat::replied((int)$tt->id, now()); }
@@ -589,6 +590,7 @@ class ChatController extends Controller {
             foreach ($v['messages'] ?? [] as $m) {
               $from = (string)($m['from'] ?? ''); if ($from === '') continue;
               $type = $m['type'] ?? 'text';
+              if (in_array($type, ['reaction', 'edit', 'revoke', 'unsupported'], true)) continue; // no bubble, no unread, no awaiting-reply
               $body = $type === 'text' ? (string)($m['text']['body'] ?? '') : ($type === 'button' ? (string)($m['button']['text'] ?? '') : '['.$type.' received — open WhatsApp to view]');
               $att = null; $meta = [];
               if (in_array($type, ['image', 'sticker', 'document', 'audio', 'video'], true) && !empty($m[$type]['id']) && !DB::table('chat_messages')->where('ext_id', $m['id'] ?? '-')->exists()) {
