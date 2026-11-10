@@ -45,14 +45,14 @@ cat > /etc/freeswitch/freeswitch.xml <<XML
   <param name="sip-port" value="5060"/><param name="context" value="public"/><param name="dialplan" value="XML"/>
   <param name="apply-inbound-acl" value="relay_clients"/><param name="auth-calls" value="false"/>
   <param name="inbound-codec-prefs" value="PCMA,PCMU"/><param name="outbound-codec-prefs" value="PCMA,PCMU"/>
-  <param name="inbound-codec-negotiation" value="generous"/><param name="rtp-timeout-sec" value="60"/><param name="rtp-hold-timeout-sec" value="120"/>
+  <param name="inbound-codec-negotiation" value="generous"/><param name="inbound-late-negotiation" value="true"/><param name="rtp-timeout-sec" value="60"/><param name="rtp-hold-timeout-sec" value="120"/>
   <param name="disable-register" value="true"/><param name="manage-presence" value="false"/><param name="nonce-ttl" value="60"/>
 </settings></profile></profiles></configuration>
 </section>
 <section name="dialplan" description="Dialplan"><context name="public">
   <extension name="client_in">
     <condition field="network_addr" expression="^$IPRE\$"/>
-    <condition field="destination_number" expression="^${PREFIX}(0?1[3-9]\\d{8})\$">
+    <condition field="destination_number" expression="^${PREFIX%1}(?:10)?(1[3-9]\\d{8})\$">
       <action application="limit" data="hash relay_in $CLIENT_IP $MAX_CALLS !USER_BUSY"/>
       <action application="log" data="NOTICE RELAY-HIT from \${network_addr} to \${destination_number} -> \$1"/>
       <action application="ring_ready"/><action application="sleep" data="8000"/>
