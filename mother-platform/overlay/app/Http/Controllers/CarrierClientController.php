@@ -101,6 +101,12 @@ class CarrierClientController extends Controller {
     $body = (string)$r->getContent(); if (strlen($body) > 300000) return response('too large', 413);
     $j = json_decode($body, true); if (!is_array($j)) $j = ['rows' => []];
     \Illuminate\Support\Facades\Cache::put('vc_relay_live', ['at' => time(), 'rows' => array_slice($j['rows'] ?? [], 0, 400)], 60);
+    // Remember the first time each inbound call is seen answered (ACTIVE), even when nobody has the admin page open: the CDR uses it for exact billing.
+    foreach (array_slice($j['rows'] ?? [], 0, 400) as $ch) {
+      if (!is_array($ch) || ($ch['direction'] ?? '') !== 'inbound' || strtoupper((string)($ch['callstate'] ?? '')) !== 'ACTIVE' || empty($ch['uuid'])) continue;
+      $k = 'vc_ans_' . preg_replace('/[^0-9a-f-]/i', '', (string)$ch['uuid']);
+      if (!\Illuminate\Support\Facades\Cache::has($k)) \Illuminate\Support\Facades\Cache::put($k, time(), 21600);
+    }
     return response('ok', 200)->header('Content-Type', 'text/plain');
   }
   /** Latest relay channel snapshot: [ok, rows, error]. Stale (>20 s) means the relay is not reporting. */
@@ -114,6 +120,10 @@ class CarrierClientController extends Controller {
     $tok = (string)Sms::secret('vc_relay_token'); $given = (string)$r->bearerToken();
     if ($tok === '' || !hash_equals($tok, $given)) return response('forbidden', 403)->header('Content-Type', 'text/plain');
     $d = $r->validate(['uuid' => ['required', 'regex:/^[0-9a-fA-F-]{8,40}$/'], 'billsec' => 'required|integer|min:0|max:86400', 'dest' => ['required', 'regex:/^\d{6,20}$/'], 'cause' => ['nullable', 'regex:/^[A-Z_]{1,40}$/'], 'caller' => ['nullable', 'regex:/^[0-9+]{1,32}$/']]);
+    // The relay hook can report billsec 0 / no cause for a call that was answered: use the answered time the live snapshot recorded.
+    $ak = 'vc_ans_' . preg_replace('/[^0-9a-f-]/i', '', $d['uuid']); $t0 = (int)\Illuminate\Support\Facades\Cache::get($ak);
+    if ((int)$d['billsec'] === 0 && $t0 > 0) { $d['billsec'] = min(86400, max(1, time() - $t0)); if (empty($d['cause']) || $d['cause'] === 'UNKNOWN') $d['cause'] = 'NORMAL_CLEARING'; }
+    if ($t0 > 0) \Illuminate\Support\Facades\Cache::forget($ak);
     $client = null;
     foreach (DB::table('voice_carrier_clients')->orderByRaw('LENGTH(prefix) DESC')->get() as $c) if (str_starts_with($d['dest'], $c->prefix)) { $client = $c; break; }
     $client = $client ?: DB::table('voice_carrier_clients')->where('status', 'active')->orderBy('id')->first();
