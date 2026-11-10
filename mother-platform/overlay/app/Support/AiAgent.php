@@ -105,7 +105,7 @@ class AiAgent {
     // hard rule above: a message typed in Bengali script is always answered in Bengali script (staff setting still wins)
     $st['chat_phone'] = (string)($t->phone ?? ''); try { $st['voice_in'] = $lastId > 0 && DB::table('chat_messages')->where('id', $lastId)->value('input_type') === 'voice'; } catch (\Throwable $e) { $st['voice_in'] = false; } $ctx = ['thread_id'=>$tid, 'customer_id'=>$t->customer_id, 'last_msg_id'=>$lastId, 'last_msg_text'=>$lastText];
     unset($st['meta']['lang']); // counted once per answer
-    $st['mem'] = AiMemory::prompt($tid).self::recentOrder($t);
+    $st['mem'] = AiMemory::prompt($tid, $lastText).self::recentOrder($t);
     [$ok, $txt] = self::converse($hist, $st, $ctx); if (!$ok) return null;
     unset($st['mem']);
     $m = $st['meta'] ?? [];

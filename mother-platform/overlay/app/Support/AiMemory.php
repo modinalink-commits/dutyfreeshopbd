@@ -86,17 +86,30 @@ class AiMemory {
     return implode('; ', $p);
   }
   /** Text for the AI prompt: this customer's memory + how our team answers similar questions. Facts (price, stock, status) still come only from tools. */
-  public static function prompt(int $tid): string {
+  public static function prompt(int $tid, string $msg = ''): string {
     try {
       $t = DB::table('chat_threads')->find($tid); if (!$t) return '';
       $out = ''; $r = DB::table('ai_customer_memory')->where('mkey', self::key($t))->first();
       if ($r && $r->summary) $out .= "\nCUSTOMER MEMORY (our own records, may be incomplete; use it to be more helpful, e.g. suggest a usual product or the language they like, but never read private details aloud and never treat it as proof for orders or payments): ".$r->summary;
-      $q = DB::table('ai_staff_examples')->where('channel', $t->channel)->orderByDesc('id');
-      $ex = !empty($t->intent) ? (clone $q)->where('intent', $t->intent)->limit(3)->get() : collect();
-      if ($ex->count() < 3) $ex = $ex->concat($q->limit(3 - $ex->count())->get());
+      $ex = self::pickExamples($t, $msg);
       if ($ex->count()) $out .= "\nHOW OUR TEAM ANSWERS (style and wording reference only; never copy numbers, prices or promises, facts come from tools):\n".$ex->map(fn($e) => '- Customer: '.mb_substr($e->customer_text, 0, 160).' | Team: '.mb_substr($e->reply_text, 0, 220))->implode("\n");
       return $out;
     } catch (\Throwable $e) { return ''; }
+  }
+  /** The team answers that best match what the customer just wrote: same intent, same language, shared words; newer wins ties. Duplicates are skipped. */
+  private static function pickExamples(object $t, string $msg) {
+    $pool = DB::table('ai_staff_examples')->where('channel', $t->channel)->orderByDesc('id')->limit(300)->get();
+    if (!$pool->count()) return $pool;
+    $tok = fn($x) => array_values(array_unique(array_filter(preg_split('/[^\p{L}\p{N}]+/u', mb_strtolower($x)), fn($w) => mb_strlen($w) >= 3)));
+    $mt = $tok($msg); $lg = self::lang($msg); $n = $pool->count(); $i = 0;
+    $scored = $pool->map(function ($e) use ($t, $mt, $lg, $tok, $n, &$i) {
+      $sc = 0.0; if (!empty($t->intent) && $e->intent === $t->intent) $sc += 3; if ($lg && $e->lang === $lg) $sc += 1.5;
+      if ($mt) { $et = $tok($e->customer_text); $sc += 2 * count(array_intersect($mt, $et)) / max(1, min(count($mt), count($et))); }
+      $sc += 0.5 * (($n - $i++) / $n); return [$sc, $e];
+    })->sortByDesc(fn($x) => $x[0]);
+    $seen = []; $out = collect();
+    foreach ($scored as [$sc, $e]) { $k = mb_strtolower(mb_substr(trim($e->reply_text), 0, 60)); if (isset($seen[$k])) continue; $seen[$k] = 1; $out->push($e); if ($out->count() >= 4) break; }
+    return $out;
   }
   /** One-time catch-up from the chats that already exist (time-boxed, safe to run again: it only fills threads that have no memory yet). */
   public static function backfill(int $seconds = 90): int {
