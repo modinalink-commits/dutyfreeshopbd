@@ -105,7 +105,15 @@ class CarrierClientController extends Controller {
   public function diag() {
     $this->guard(); $o = [];
     foreach (['sofia status', 'sofia xmlstatus profile external', 'status'] as $cmd) { [$ok, $t] = Voice::esl($cmd, 8); if ($ok && str_contains($cmd, 'xmlstatus')) { $k = []; foreach (['calls-in', 'calls-out', 'failed-calls-in', 'failed-calls-out', 'bind-url', 'ext-sip-ip', 'sip-port', 'auth-calls', 'apply-inbound-acl', 'context', 'dialplan'] as $tag) if (preg_match('/<' . $tag . '>([^<]*)<\/' . $tag . '>/', $t, $m)) $k[$tag] = $m[1]; $o[$cmd] = $k; } else $o[$cmd] = $ok ? mb_substr($t, 0, 1500) : 'ERR: ' . $t; }
+    $o['sip_probe_5080'] = self::sipProbe('103.125.255.33', 5080); $o['sip_probe_5060'] = self::sipProbe('103.125.255.33', 5060);
     return response()->json($o);
+  }
+  /** SIP OPTIONS ping over UDP from this server to a host:port; shows whether the PBX answers us. */
+  private static function sipProbe(string $h, int $port): string {
+    $fp = @stream_socket_client('udp://' . $h . ':' . $port, $en, $es, 3); if (!$fp) return 'ERR ' . $es;
+    $id = bin2hex(random_bytes(6)); $msg = "OPTIONS sip:$h:$port SIP/2.0\r\nVia: SIP/2.0/UDP 0.0.0.0:5099;branch=z9hG4bK$id\r\nMax-Forwards: 70\r\nFrom: <sip:probe@dutyfreebd.com>;tag=$id\r\nTo: <sip:$h:$port>\r\nCall-ID: $id@probe\r\nCSeq: 1 OPTIONS\r\nContent-Length: 0\r\n\r\n";
+    fwrite($fp, $msg); stream_set_timeout($fp, 3); $r = fread($fp, 1500); fclose($fp);
+    return $r === '' || $r === false ? 'NO RESPONSE (3s)' : strtok($r, "\r\n");
   }
   public function saveEndpoint(Request $r) {
     $this->guard(); $d = $r->validate(['ip' => ['required', 'regex:/^[A-Za-z0-9.\-]{3,100}$/'], 'port' => 'required|integer|min:1|max:65535']);
