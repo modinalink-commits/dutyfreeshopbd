@@ -236,6 +236,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/call-center/recent', [\App\Http\Controllers\CallCenterController::class,'recent']);
   Route::get('/call-center/agents', [\App\Http\Controllers\CallCenterController::class,'agents']);
   Route::get('/call-center/clients', [\App\Http\Controllers\CarrierClientController::class,'index']);
+  Route::get('/call-center/clients/live', [\App\Http\Controllers\CarrierClientController::class,'live']);
   Route::post('/call-center/clients', [\App\Http\Controllers\CarrierClientController::class,'store']);
   Route::post('/call-center/clients/endpoint', [\App\Http\Controllers\CarrierClientController::class,'saveEndpoint']);
   Route::post('/call-center/clients/{id}', [\App\Http\Controllers\CarrierClientController::class,'update'])->whereNumber('id');

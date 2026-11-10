@@ -82,6 +82,25 @@ class CarrierClientController extends Controller {
     \App\Support\ProfitFloor::audit('voice.client_deleted', 'Call client #' . $id . ' deleted', null, ['id' => $id]);
     return back()->with('ok', 'মুছে ফেলা হয়েছে।');
   }
+  /** Live calls from the PBX (Event Socket "show channels"), grouped by client IP. Read-only. */
+  public function live() {
+    $this->guard();
+    [$ok, $out] = Voice::esl('show channels as json', 8);
+    if (!$ok) return response()->json(['ok' => false, 'error' => $out]);
+    $j = json_decode($out, true); $rows = is_array($j) ? ($j['rows'] ?? []) : [];
+    $cl = DB::table('voice_carrier_clients')->get(); $byIp = [];
+    foreach ($cl as $c) $byIp[explode('/', $c->ip)[0]] = $c;
+    $calls = []; $per = [];
+    foreach ($rows as $r) {
+      if (($r['direction'] ?? '') !== 'inbound') continue;
+      $c = $byIp[$r['ip_addr'] ?? ''] ?? null; if (!$c) continue;
+      $dest = preg_replace('/^' . preg_quote($c->prefix, '/') . '/', '', (string)($r['dest'] ?? ''));
+      $age = max(0, time() - (int)($r['created_epoch'] ?? time()));
+      $calls[] = ['client' => $c->name, 'from' => $r['cid_num'] ?? '', 'to' => $dest, 'state' => $r['callstate'] ?? '', 'secs' => $age];
+      $per[$c->id] = ($per[$c->id] ?? 0) + 1;
+    }
+    return response()->json(['ok' => true, 'total' => count($calls), 'calls' => array_slice($calls, 0, 100), 'per' => $per, 'at' => now('Asia/Dhaka')->format('H:i:s')]);
+  }
   public function saveEndpoint(Request $r) {
     $this->guard(); $d = $r->validate(['ip' => ['required', 'regex:/^[A-Za-z0-9.\-]{3,100}$/'], 'port' => 'required|integer|min:1|max:65535']);
     self::set('carrier_ip', $d['ip']); self::set('carrier_port', (string)$d['port']);

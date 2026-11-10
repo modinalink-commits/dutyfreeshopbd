@@ -13,6 +13,16 @@
 PBX: ① IP চেনে (ACL) ② prefix কেটে ফেলে ③ concurrent limit দেখে
    ──▶ আমাদের outbound gateway ──▶ কাস্টমারের মোবাইল</pre></div>
 
+<div class="card" style="margin-top:12px"><b>লাইভ কল</b> <span id="lvN" class="tag" style="background:#DCFCE7;color:#166534">0</span> <small id="lvT" style="color:#6B7280"></small>
+<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:6px"><thead><tr style="text-align:left;color:#6B7280"><th>ক্লায়েন্ট</th><th>কলার</th><th>কাস্টমার নম্বর</th><th>অবস্থা</th><th>সময়</th></tr></thead><tbody id="lvB"><tr><td colspan="5" style="padding:8px;color:#6B7280">লোড হচ্ছে…</td></tr></tbody></table></div></div>
+<script>(function(){var B=document.getElementById('lvB'),N=document.getElementById('lvN'),T=document.getElementById('lvT');function f(s){return Math.floor(s/60)+':'+('0'+s%60).slice(-2)}
+function tick(){fetch('/admin/call-center/clients/live',{headers:{Accept:'application/json'}}).then(function(r){return r.json()}).then(function(d){
+if(!d.ok){B.innerHTML='<tr><td colspan="5" style="padding:8px;color:#B45309"></td></tr>';B.firstChild.firstChild.textContent='PBX থেকে লাইভ তথ্য পাওয়া যায়নি: '+d.error;N.textContent='-';return}
+N.textContent=d.total;T.textContent='আপডেট '+d.at;
+if(!d.calls.length){B.innerHTML='<tr><td colspan="5" style="padding:8px;color:#6B7280">এখন কোনো কল চলছে না।</td></tr>';return}
+B.innerHTML='';d.calls.forEach(function(c){var tr=document.createElement('tr');tr.style.borderTop='1px solid #E5E7EB';[c.client,c.from,c.to,c.state,f(c.secs)].forEach(function(v){var td=document.createElement('td');td.style.padding='6px';td.textContent=v;tr.appendChild(td)});B.appendChild(tr)})}).catch(function(){})}
+tick();setInterval(function(){if(!document.hidden)tick()},3000)})();</script>
+
 <div class="card" style="margin-top:12px"><b>আমাদের PBX endpoint</b> <small style="color:#6B7280">(ক্লায়েন্টকে এই IP ও port দেওয়া হবে)</small>
 <form method="post" action="/admin/call-center/clients/endpoint" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">@csrf
 <input name="ip" value="{{ old('ip',$cfg['ip']) }}" placeholder="PBX public IP" style="width:200px" required>
