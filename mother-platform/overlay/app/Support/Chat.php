@@ -199,8 +199,20 @@ class Chat {
     return (bool)preg_match('/^(ok|okay|okk?|thanks?|thank you|thank u|thx|tnx|ty|bye|good ?night|allah hafez|khoda hafez|dhonnobad|dhonnyobad|ধন্যবাদ|থ্যাংকস|থ্যাঙ্ক ইউ|শুভ রাত্রি|আল্লাহ হাফেজ|খোদা হাফেজ|ঠিক আছে|আচ্ছা|জি|জী|ওকে|👍|🙏|❤️?)([\s.!,]*(thanks?|thank you|thx|ধন্যবাদ|ok|okay|ওকে|bye|বাই|ভালো থাকবেন|আর কিছু (লাগবে|জানার) না|আর কিছু না|nothing else|that.s all|all good|🙏|👍))*[\s.!]*$/iu', $b)
       || (bool)preg_match('/(আর কিছু (লাগবে|জানার|দরকার) না|আর কিছু না|কিছু লাগবে না|nothing else|that.?s all|no more (question|help))/iu', $b);
   }
+  /** Worker tick: a chat where we asked "any other question?" and the customer stayed silent for the set time (Chat Settings, default 30 min) gets the short closing line and is resolved. */
+  public static function closeIdleTick(): void {
+    if (Sms::secret('ai_auto_close') === '0' || !AiChat::chatOn()) return;
+    $min = max(5, min(720, (int)(Sms::secret('ai_close_after_min') ?: 30)));
+    $rows = DB::table('chat_threads')->where('last_dir', 'out')->whereIn('status', ['new', 'open', 'waiting'])->where('awaiting_reply', false)
+      ->where('last_at', '<=', now()->subMinutes($min))->where('last_at', '>=', now()->subHours(20))->orderBy('last_at')->limit(15)->get();
+    foreach ($rows as $t) {
+      $k = 'ai.idleclose.'.$t->id.'.'.substr((string)$t->last_at, 0, 16);
+      if (!\Illuminate\Support\Facades\Cache::add($k, 1, 86400)) continue; // once per "any other question?" line, even if sending failed
+      self::autoClose($t, true);
+    }
+  }
   /** Night / AI-hours auto-resolve: after the customer's clear goodbye and when nothing is pending, send one short courtesy line, then resolve the chat (no unread / Awaiting Reply left). A failed send changes nothing. */
-  public static function autoClose(object $t): bool {
+  public static function autoClose(object $t, bool $idle = false): bool {
     try {
       if (Sms::secret('ai_auto_close') === '0') return false;
       $tid = (int)$t->id; $t = DB::table('chat_threads')->find($tid); if (!$t || $t->status === 'resolved') return false;
@@ -211,13 +223,21 @@ class Chat {
       // only after we actually helped: at least one reply of ours exists and the last message is the customer's goodbye
       if (!DB::table('chat_messages')->where('thread_id', $tid)->where('dir', 'out')->where('status', '!=', 'failed')->exists()) return false;
       $li = DB::table('chat_messages')->where('thread_id', $tid)->orderByDesc('id')->first(['id', 'dir', 'body', 'created_at']);
-      if (!$li || $li->dir !== 'in') return false;
-      $bn = (bool)preg_match('/[\x{0980}-\x{09FF}]/u', (string)$li->body);
+      if (!$li) return false;
+      if ($idle) { // the customer went quiet after our "any other question?" line
+        if ($li->dir !== 'out' || empty($li->is_ai) && !preg_match('/(আর কোনো প্রশ্ন|any other question|anything else)/iu', (string)$li->body)) return false;
+        if (!preg_match('/(আর কোনো প্রশ্ন|any other question|anything else)/iu', (string)$li->body)) return false;
+        $cb = (string)DB::table('chat_messages')->where('thread_id', $tid)->where('dir', 'in')->orderByDesc('id')->value('body');
+        $bn = (bool)preg_match('/[\x{0980}-\x{09FF}]/u', $cb !== '' ? $cb : (string)$li->body);
+      } else {
+        if ($li->dir !== 'in') return false;
+        $bn = (bool)preg_match('/[\x{0980}-\x{09FF}]/u', (string)$li->body);
+      }
       $txt = $bn ? 'স্যার, যদি কোনো কিছুর প্রয়োজন হয় আমাকে জানাবেন। ধন্যবাদ। 🙏' : 'Sir, please let me know if you need anything. Thank you. 🙏';
       [$sent, $err] = self::deliver($t, $txt);
       DB::table('chat_messages')->insert(['thread_id'=>$tid, 'dir'=>'out', 'kind'=>'text', 'body'=>$txt, 'user_name'=>'Claude AI', 'is_ai'=>true, 'status'=>$sent ? 'sent' : 'failed', 'error'=>$err, 'created_at'=>now(), 'updated_at'=>now()]);
       if (!$sent) return false; // sending failed: stays unread / Awaiting Reply
-      self::replied($tid, $li->created_at);
+      self::replied($tid, $idle ? now() : $li->created_at);
       DB::table('chat_threads')->where('id', $tid)->update(['status'=>'resolved', 'unread'=>0, 'awaiting_reply'=>false, 'last_message'=>mb_substr($txt, 0, 300), 'last_dir'=>'out', 'last_at'=>now(), 'updated_at'=>now()]);
       return true;
     } catch (\Throwable $e) { report($e); return false; }

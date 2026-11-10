@@ -25,6 +25,7 @@ class MotherPushWorker extends Command
   public function handle(): int {
     try { $this->orders(); } catch (\Throwable $e) { $this->error('orders: ' . $e->getMessage()); }
     try { $this->chat(); } catch (\Throwable $e) { $this->error('chat: ' . $e->getMessage()); }
+    try { \App\Support\Chat::closeIdleTick(); } catch (\Throwable $e) { $this->error('chatclose: ' . $e->getMessage()); }
     try { \App\Support\OrderSchedule::tick(); } catch (\Throwable $e) { $this->error('sched: ' . $e->getMessage()); }
     try { \App\Support\OrderCancelNotice::tick(); } catch (\Throwable $e) { $this->error('cancel-notice: ' . $e->getMessage()); }
     \App\Support\DeployHealth::beat(); // heartbeat: shown as "Scheduler" in the Deployment Center
