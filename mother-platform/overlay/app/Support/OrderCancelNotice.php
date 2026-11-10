@@ -70,6 +70,15 @@ class OrderCancelNotice {
     self::done($q->id, 'done', $upd);
   }
 
+  /** Sample message to one number (no order is touched). Returns [ok, text]. */
+  public static function testSend(string $phone): array {
+    $o = (object)['invoice' => 'INV-TEST', 'customer_name' => 'Test Customer', 'phone' => $phone];
+    $why = self::REASONS['unreachable'][1]; $out = [];
+    Sms::queue($phone, '[TEST] ' . self::sms($o, $why), 'order_cancelled_test', ['type' => 'transactional', 'customer_name' => 'Test', 'ref' => 'cancel-test']);
+    try { Sms::flush(5); } catch (\Throwable $e) {} $out[] = 'SMS queued/sent to ' . $phone;
+    if (self::set('wa_tpl_status', '') === 'APPROVED') { [$ok, , $err] = self::waCall($o, $why); $out[] = $ok ? 'WhatsApp sent' : 'WhatsApp failed: ' . $err; } else $out[] = 'WhatsApp skipped (template not approved yet)';
+    return [true, implode(' · ', $out)];
+  }
   /* ---------- WhatsApp template ---------- */
   public static function tpl(): string { return self::set('wa_tpl', 'order_cancelled'); }
   private static function waVals(object $o, string $why): array {

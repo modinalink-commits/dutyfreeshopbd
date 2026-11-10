@@ -31,6 +31,13 @@ class OrderWaConfirmController extends Controller {
     foreach (['enabled', 'sms', 'wa'] as $k) Procure::put('cancel_notice_' . $k, $r->boolean($k) ? '1' : '0');
     return back()->with('ok', 'Cancel notice saved.');
   }
+  /** Sends the real cancel SMS (and the WhatsApp template when approved) with sample values to one number. Creates no order. */
+  public function cancelTest(Request $r) {
+    $ph = \App\Support\Chat::phone((string)$r->validate(['phone' => 'required|string|max:20'])['phone']);
+    if (!preg_match('/^01[3-9]\d{8}$/', (string)$ph)) return back()->with('err', 'Enter a valid mobile number.');
+    [$m, $t] = \App\Support\OrderCancelNotice::testSend($ph);
+    return back()->with($m ? 'ok' : 'err', $t);
+  }
   public function cancelSubmit() { [$ok, $m] = \App\Support\OrderCancelNotice::submitTemplate(); return back()->with($ok ? 'ok' : 'err', 'Cancel template: ' . $m); }
   public function cancelSync() { [$ok, $m] = \App\Support\OrderCancelNotice::syncTemplate(); return back()->with($ok ? 'ok' : 'err', 'Cancel template status: ' . $m); }
   /** Sends the real template with sample values to a test number. Creates no order record. */
