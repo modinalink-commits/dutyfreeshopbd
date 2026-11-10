@@ -89,6 +89,20 @@ configs:
       else
         CALLACTS="<action application=\"ring_ready\"/><action application=\"sleep\" data=\"8000\"/><action application=\"hangup\" data=\"NO_ROUTE_DESTINATION\"/>"
       fi
+      # Billing CDR: after each hangup, report answered calls (billsec>0) to the admin panel. Only uuid/seconds/dialled digits are passed.
+      if [ -n "$$RELAY_TOKEN" ]; then
+        RELAY_CDR_URL="$${RELAY_CDR_URL:-$${RELAY_CONFIG_URL%relay-config}relay-cdr}"
+        cat > /usr/local/bin/relay-cdr.sh <<CDR
+      #!/bin/sh
+      case "\$$1" in *[!0-9a-fA-F-]*|"") exit 0;; esac
+      case "\$$2" in *[!0-9]*|"") exit 0;; esac
+      [ "\$$2" -gt 0 ] || exit 0
+      case "\$$3" in *[!0-9]*) exit 0;; esac
+      wget -q -t 3 -T 8 -O /dev/null --header="Authorization: Bearer $$RELAY_TOKEN" --post-data="uuid=\$$1&billsec=\$$2&dest=\$$3" "$$RELAY_CDR_URL"
+      CDR
+        chmod 700 /usr/local/bin/relay-cdr.sh
+      fi
+      CDRHOOK=""; [ -x /usr/local/bin/relay-cdr.sh ] && CDRHOOK="<action application=\"set\" data=\"api_hangup_hook=system /usr/local/bin/relay-cdr.sh \$${uuid} \$${billsec} \$${destination_number}\"/>"
       rm -rf /etc/freeswitch; mkdir -p /etc/freeswitch /var/log/freeswitch
       cat > /etc/freeswitch/freeswitch.xml <<XML
       <?xml version="1.0"?>
@@ -135,6 +149,7 @@ configs:
           <condition field="destination_number" expression="^$${PREFIX%1}(?:10)?(1[3-9]\\d{8})\$$">
             <action application="limit" data="hash relay_in $$CLIENT_IP $$MAX_CALLS !USER_BUSY"/>
             <action application="log" data="NOTICE RELAY-HIT from \$${network_addr} to \$${destination_number} -> \$$1"/>
+            $$CDRHOOK
             $$CALLACTS
           </condition>
         </extension>

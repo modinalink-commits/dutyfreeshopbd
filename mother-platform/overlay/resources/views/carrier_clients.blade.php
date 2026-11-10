@@ -36,6 +36,22 @@ tick();setInterval(function(){if(!document.hidden)tick()},3000)})();</script>
 <div style="margin-top:8px;font-size:12px;color:#6B7280">সেভ করা এক্সটেনশন: <b>{{ $relay['exts'] ? str_replace("\n", ', ', trim($relay['exts'])) : 'নেই' }}</b> ·
 <form method="post" action="/admin/call-center/clients/relay-agent" style="display:inline">@csrf<input name="ext" placeholder="এজেন্ট এক্সটেনশন (যেমন 101)" style="width:170px" required> <button class="btn" type="submit">এজেন্ট এক্সটেনশন থেকে নিন</button></form> · <form method="post" action="/admin/call-center/clients/relay-token" style="display:inline">@csrf<button class="btn" type="submit" onclick="return confirm('নতুন টোকেন বানালে পুরনোটা বাতিল হবে। চালিয়ে যাবেন?')">Relay টোকেন নতুন করে বানান</button></form></div></div>
 
+<div class="card" style="margin-top:12px;overflow-x:auto"><b>বিলিং সার্কেল</b> <small style="color:#6B7280">— শুধু কানেক্ট (ধরা) কলের মিনিট গোনা হয়; প্রতি কল পরের পূর্ণ মিনিটে ধরা হয়। প্রিপেইড মিনিট দিলে বাকি মিনিট কমতে থাকবে। <span id="bcAt"></span></small>
+<table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:6px"><thead><tr style="text-align:left;color:#6B7280"><th>ক্লায়েন্ট</th><th>সার্কেল</th><th>কানেক্ট কল</th><th>মোট কথা (মি:সে)</th><th>বিলযোগ্য মিনিট</th><th>প্রিপেইড</th><th>বাকি মিনিট</th><th>বিল (টাকা)</th></tr></thead><tbody>
+@forelse($rows as $c)@php($u=$usage[$c->id])
+<tr style="border-top:1px solid #E5E7EB" data-bc="{{ $c->id }}"><td><b>{{ $c->name }}</b></td><td data-f="range">{{ $u['from'] }} – {{ $u['to'] }}</td><td data-f="calls">{{ $u['calls'] }}</td><td data-f="time">{{ intdiv($u['secs'],60) }}:{{ str_pad($u['secs']%60,2,'0',STR_PAD_LEFT) }}</td><td data-f="bmin"><b>{{ $u['billed_min'] }}</b></td><td data-f="pre">{{ $u['prepaid'] ?? '—' }}</td>
+<td data-f="rem" style="font-weight:700;color:{{ ($u['remaining'] ?? 1) < 0 ? '#B91C1C' : '#059669' }}">{{ $u['remaining'] ?? '—' }}</td><td data-f="amt">{{ $u['amount'] === null ? '—' : number_format($u['amount'],2) }}</td></tr>
+<tr><td colspan="8"><form method="post" action="/admin/call-center/clients/{{ $c->id }}/billing" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:12px;color:#6B7280">@csrf
+সার্কেল শুরু <input type="date" name="cycle_start" value="{{ $c->cycle_start }}" style="width:140px"> প্রতি <input name="cycle_days" value="{{ $c->cycle_days ?? 30 }}" style="width:55px" required> দিন · প্রিপেইড মিনিট <input name="prepaid_minutes" value="{{ $c->prepaid_minutes }}" placeholder="ফাঁকা = সীমাহীন" style="width:120px"> · রেট/মিনিট <input name="rate_per_min" value="{{ $c->rate_per_min }}" placeholder="টাকা" style="width:80px"> <button class="btn" type="submit">সেভ</button></form></td></tr>
+@empty<tr><td colspan="8" style="padding:10px;color:#6B7280">ক্লায়েন্ট যোগ করলে এখানে বিলিং দেখাবে।</td></tr>@endforelse
+</tbody></table></div>
+<script>(function(){function f(s){return Math.floor(s/60)+':'+('0'+s%60).slice(-2)}
+function tick(){fetch('/admin/call-center/clients/billing',{headers:{Accept:'application/json'}}).then(function(r){return r.json()}).then(function(d){if(!d.ok)return;document.getElementById('bcAt').textContent='আপডেট '+d.at;
+Object.keys(d.usage).forEach(function(id){var u=d.usage[id],tr=document.querySelector('tr[data-bc="'+id+'"]');if(!tr)return;function s(k,v){var e=tr.querySelector('[data-f="'+k+'"]');if(e)e.textContent=v}
+s('range',u.from+' – '+u.to);s('calls',u.calls);s('time',f(u.secs));s('bmin',u.billed_min);s('pre',u.prepaid===null?'—':u.prepaid);s('rem',u.remaining===null?'—':u.remaining);s('amt',u.amount===null?'—':u.amount.toFixed(2));
+var r=tr.querySelector('[data-f="rem"]');if(r)r.style.color=(u.remaining!==null&&u.remaining<0)?'#B91C1C':'#059669'})}).catch(function(){})}
+setInterval(function(){if(!document.hidden)tick()},5000)})();</script>
+
 <div class="card" style="margin-top:12px"><b>আমাদের PBX endpoint</b> <small style="color:#6B7280">(ক্লায়েন্টকে এই IP ও port দেওয়া হবে)</small>
 <form method="post" action="/admin/call-center/clients/endpoint" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">@csrf
 <input name="ip" value="{{ old('ip',$cfg['ip']) }}" placeholder="PBX public IP" style="width:200px" required>

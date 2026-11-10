@@ -15,7 +15,49 @@ class CarrierClientController extends Controller {
     $cfg = ['ip' => Voice::set('carrier_ip', ''), 'port' => Voice::set('carrier_port', '5060'), 'gateway' => $gw];
     $exts = array_filter(array_map('trim', explode("\n", (string)Sms::secret('vc_relay_exts')))); $names = array_map(fn($l) => explode(':', $l, 2)[0], $exts);
     $relay = ['host' => Voice::set('relay_host', '103.125.255.33'), 'port' => Voice::set('relay_port', '5080'), 'transport' => Voice::set('relay_transport', 'tcp'), 'realm' => Voice::set('relay_realm', ''), 'caller_id' => Voice::set('relay_caller_id', ''), 'mode' => Voice::set('relay_mode', 'test'), 'exts' => implode("\n", $names)];
-    return view('carrier_clients', ['rows' => $rows, 'cfg' => $cfg, 'relay' => $relay, 'pbx' => self::pbxConfig($rows, $gw)]);
+    return view('carrier_clients', ['rows' => $rows, 'cfg' => $cfg, 'relay' => $relay, 'pbx' => self::pbxConfig($rows, $gw), 'usage' => $rows->mapWithKeys(fn($c) => [$c->id => self::usage($c)])->all()]);
+  }
+  /** Billing cycle window containing today: starts at cycle_start (or the day the client was added) and repeats every cycle_days. */
+  public static function cycleWindow($c): array {
+    $days = max(1, (int)($c->cycle_days ?? 30)); $tz = 'Asia/Dhaka';
+    $start = \Illuminate\Support\Carbon::parse($c->cycle_start ?: ($c->created_at ?? now($tz)), $tz)->startOfDay();
+    $now = now($tz);
+    if ($now->greaterThanOrEqualTo($start)) $start = $start->copy()->addDays(intdiv((int)$start->diffInDays($now), $days) * $days);
+    return [$start, $start->copy()->addDays($days)];
+  }
+  /** Connected (answered) call usage for the client's current cycle, from relay CDRs. Billed minutes round each call up to a whole minute. */
+  public static function usage($c): array {
+    [$from, $to] = self::cycleWindow($c);
+    $r = DB::table('voice_call_cdrs')->where('client_id', $c->id)->where('ended_at', '>=', $from->copy()->utc())->where('ended_at', '<', $to->copy()->utc())
+      ->selectRaw('COUNT(*) AS calls, COALESCE(SUM(billsec),0) AS secs, COALESCE(SUM(CEIL(billsec / 60.0)),0) AS bmin')->first();
+    $billed = (int)$r->bmin; $pre = $c->prepaid_minutes === null ? null : (int)$c->prepaid_minutes;
+    return ['from' => $from->format('d M Y'), 'to' => $to->copy()->subDay()->format('d M Y'), 'calls' => (int)$r->calls, 'secs' => (int)$r->secs, 'billed_min' => $billed,
+      'prepaid' => $pre, 'remaining' => $pre === null ? null : $pre - $billed, 'amount' => $c->rate_per_min === null ? null : round($billed * (float)$c->rate_per_min, 2)];
+  }
+  /** Live-refresh JSON for the billing card. */
+  public function billing() {
+    $this->guard();
+    $out = []; foreach (DB::table('voice_carrier_clients')->orderBy('id')->get() as $c) $out[$c->id] = self::usage($c);
+    return response()->json(['ok' => true, 'usage' => $out, 'at' => now('Asia/Dhaka')->format('H:i:s')]);
+  }
+  public function billingSave(Request $r, $id) {
+    $this->guard(); abort_unless(DB::table('voice_carrier_clients')->where('id', $id)->exists(), 404);
+    $d = $r->validate(['cycle_start' => 'nullable|date', 'cycle_days' => 'required|integer|min:1|max:366', 'prepaid_minutes' => 'nullable|integer|min:0|max:100000000', 'rate_per_min' => 'nullable|numeric|min:0|max:100000']);
+    DB::table('voice_carrier_clients')->where('id', $id)->update(['cycle_start' => $d['cycle_start'] ?: null, 'cycle_days' => (int)$d['cycle_days'],
+      'prepaid_minutes' => ($d['prepaid_minutes'] ?? '') === '' ? null : (int)$d['prepaid_minutes'], 'rate_per_min' => ($d['rate_per_min'] ?? '') === '' ? null : $d['rate_per_min'], 'updated_at' => now()]);
+    \App\Support\ProfitFloor::audit('voice.client_billing', 'Call client #' . $id . ' billing cycle saved (' . $d['cycle_days'] . ' days, prepaid ' . ($d['prepaid_minutes'] ?? '-') . ' min)', null, ['id' => $id]);
+    return back()->with('ok', 'বিলিং সার্কেল সেভ হয়েছে।');
+  }
+  /** Public, token-protected: the relay reports each answered call here (uuid, billable seconds, dialled digits). Idempotent per uuid. */
+  public function relayCdr(Request $r) {
+    $tok = (string)Sms::secret('vc_relay_token'); $given = (string)$r->bearerToken();
+    if ($tok === '' || !hash_equals($tok, $given)) return response('forbidden', 403)->header('Content-Type', 'text/plain');
+    $d = $r->validate(['uuid' => ['required', 'regex:/^[0-9a-fA-F-]{8,40}$/'], 'billsec' => 'required|integer|min:1|max:86400', 'dest' => ['required', 'regex:/^\d{6,20}$/']]);
+    $client = null;
+    foreach (DB::table('voice_carrier_clients')->orderByRaw('LENGTH(prefix) DESC')->get() as $c) if (str_starts_with($d['dest'], $c->prefix)) { $client = $c; break; }
+    $client = $client ?: DB::table('voice_carrier_clients')->where('status', 'active')->orderBy('id')->first();
+    DB::table('voice_call_cdrs')->insertOrIgnore(['uuid' => strtolower($d['uuid']), 'client_id' => $client->id ?? null, 'dest' => $d['dest'], 'billsec' => (int)$d['billsec'], 'ended_at' => now(), 'created_at' => now(), 'updated_at' => now()]);
+    return response('ok', 200)->header('Content-Type', 'text/plain');
   }
   public static function pbxConfig($rows, string $gw): string {
     $act = $rows->where('status', 'active');

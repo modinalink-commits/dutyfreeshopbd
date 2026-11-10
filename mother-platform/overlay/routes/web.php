@@ -238,6 +238,8 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/call-center/clients', [\App\Http\Controllers\CarrierClientController::class,'index']);
   Route::get('/call-center/clients/diag', [\App\Http\Controllers\CarrierClientController::class,'diag']);
   Route::get('/call-center/clients/live', [\App\Http\Controllers\CarrierClientController::class,'live']);
+  Route::get('/call-center/clients/billing', [\App\Http\Controllers\CarrierClientController::class,'billing']);
+  Route::post('/call-center/clients/{id}/billing', [\App\Http\Controllers\CarrierClientController::class,'billingSave'])->whereNumber('id');
   Route::post('/call-center/clients', [\App\Http\Controllers\CarrierClientController::class,'store']);
   Route::post('/call-center/clients/endpoint', [\App\Http\Controllers\CarrierClientController::class,'saveEndpoint']);
   Route::post('/call-center/clients/relay', [\App\Http\Controllers\CarrierClientController::class,'relaySave']);
@@ -542,6 +544,7 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestF
   Route::post('/webhooks/legacy-orders', [\App\Http\Controllers\LegacyOrderController::class,'ingest'])->middleware('throttle:1200,1'); Route::get('/webhooks/legacy-orders', [\App\Http\Controllers\LegacyOrderController::class,'stats'])->middleware('throttle:60,1'); Route::post('/webhooks/legacy-import', [\App\Http\Controllers\LegacyImportController::class,'ingest'])->middleware('throttle:600,1'); Route::post('/webhooks/legacy-products', [\App\Http\Controllers\LegacyProductController::class,'ingest'])->middleware('throttle:600,1'); Route::post('/webhooks/legacy-image', [\App\Http\Controllers\LegacyProductController::class,'imagePush'])->middleware('throttle:1200,1'); Route::get('/webhooks/legacy-image-todo', [\App\Http\Controllers\LegacyProductController::class,'imageTodo'])->middleware('throttle:60,1'); Route::post('/webhooks/legacy-taxonomy', [\App\Http\Controllers\LegacyProductController::class,'taxonomy'])->middleware('throttle:60,1'); Route::get('/webhooks/legacy-products', [\App\Http\Controllers\LegacyProductController::class,'stats'])->middleware('throttle:60,1'); Route::get('/webhooks/legacy-import', [\App\Http\Controllers\LegacyImportController::class,'stats'])->middleware('throttle:60,1');
   Route::get('/webhooks/whatsapp', [\App\Http\Controllers\WhatsAppWebhookController::class,'verify'])->middleware('throttle:120,1'); Route::post('/webhooks/whatsapp', [\App\Http\Controllers\WhatsAppWebhookController::class,'receive'])->middleware('throttle:600,1');
   Route::get('/api/voice/relay-config', [\App\Http\Controllers\CarrierClientController::class,'relayConfig'])->middleware('throttle:30,1');
+  Route::post('/api/voice/relay-cdr', [\App\Http\Controllers\CarrierClientController::class,'relayCdr'])->middleware('throttle:600,1');
   Route::post('/webhooks/legacy-reviews', [\App\Http\Controllers\LegacyImportController::class,'reviews'])->middleware('throttle:60,1');
   Route::post('/webhooks/legacy-procurement', [\App\Http\Controllers\LegacyImportController::class,'procurement'])->middleware('throttle:120,1');
   Route::post('/webhooks/legacy-dedupe-suppliers', [\App\Http\Controllers\LegacyImportController::class,'dedupeSuppliers'])->middleware('throttle:20,1');
