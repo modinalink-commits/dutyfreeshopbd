@@ -103,6 +103,18 @@ class OrderWaConfirm {
     self::ev((int)$c->id, (int)$c->order_id, 'failed', ($note ? $note . ' · ' : '') . $why . ($perm ? '' : ' · Failed — Manual Review'));
   }
 
+  /** The customer's number has no WhatsApp (or WhatsApp failed for good): send the same "order approved" news by SMS, once per order. Respects the order-confirmation SMS switch. */
+  public static function smsFallback(int $orderId, int $cid = 0): void {
+    try {
+      if ((DB::table('settings')->where('key', 'sms_order_confirm')->value('value') ?? '1') !== '1') return;
+      if (DB::table('sms_logs')->where('order_id', $orderId)->where('event', 'order_approved_sms')->exists()) return;
+      $o = DB::table('orders')->find($orderId); if (!$o || !$o->phone) return;
+      $pay = !empty($o->pay_status) ? (string)$o->pay_status : 'Cash on Delivery';
+      $txt = 'DutyFreeBD: Order '.Inv::show($o->invoice).' approved. Total: Tk '.number_format((float)$o->total).' ('.$pay.'). We will update you on shipment. Track: '.preg_replace('#^https?://#', '', Inv::trackUrl($o->invoice)).' Help: '.Biz::hotline();
+      Sms::queue(Chat::phone($o->phone) ?: $o->phone, $txt, 'order_approved_sms', ['order_id' => $orderId]);
+      self::ev($cid, $orderId, 'sms_fallback', 'WhatsApp not reachable — approval sent by SMS');
+    } catch (\Throwable $e) {}
+  }
   /** Meta status webhook: sent / delivered / read / failed for a message we sent. Never downgrades a status. */
   public static function status(array $s): void {
     try {
@@ -112,7 +124,7 @@ class OrderWaConfirm {
       $st = strtolower((string)($s['status'] ?? '')); $ts = !empty($s['timestamp']) ? \Carbon\Carbon::createFromTimestampUTC((int)$s['timestamp']) : now();
       if ($st === 'failed') { $msg = mb_substr((string)(($s['errors'][0]['title'] ?? '') . ' ' . ($s['errors'][0]['message'] ?? '')), 0, 300);
         DB::table('order_whatsapp_confirmations')->where('id', $c->id)->update(['send_status' => 'FAILED', 'failed_at' => $ts, 'failure_reason' => trim($msg) ?: 'Delivery failed', 'updated_at' => now()]); self::ev((int)$c->id, (int)$c->order_id, 'failed', trim($msg));
-        try { DB::table('chat_messages')->where('ext_id', $wamid)->update(['status' => 'failed', 'error' => trim($msg) ?: 'Number not reachable on WhatsApp', 'updated_at' => now()]); } catch (\Throwable $e) {} return; }
+        try { DB::table('chat_messages')->where('ext_id', $wamid)->update(['status' => 'failed', 'error' => trim($msg) ?: 'Number not reachable on WhatsApp', 'updated_at' => now()]); } catch (\Throwable $e) {} self::smsFallback((int)$c->order_id, (int)$c->id); return; }
       $new = strtoupper($st); if (!in_array($new, ['SENT', 'DELIVERED', 'READ'], true)) return;
       if ((self::RANK[$new] ?? 0) <= (self::RANK[$c->send_status] ?? 0) && $c->send_status !== 'FAILED') return;
       $col = ['SENT' => 'sent_at', 'DELIVERED' => 'delivered_at', 'READ' => 'read_at'][$new];
