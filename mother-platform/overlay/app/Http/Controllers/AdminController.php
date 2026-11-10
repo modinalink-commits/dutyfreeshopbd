@@ -212,19 +212,21 @@ class AdminController extends Controller {
       }
       $d['ids'] = array_values(array_diff($d['ids'], $skip));
     }
+    $cx = []; if ($d['status'] === 'Cancel' && \App\Support\OrderCancelNotice::ready()) { [$ck, $cn, $ce] = \App\Support\OrderCancelNotice::check($r->input('cancel_reason'), $r->input('cancel_note')); if ($ce) return $r->expectsJson() ? response()->json(['success'=>false,'need_reason'=>true,'message'=>$ce], 422) : back()->with('bad', $ce); $cx = ['cancel_reason'=>$ck,'cancel_note'=>$cn]; }
     $locked = 0; $dupHeld = 0; $noPerm = 0; $restrictedNo = in_array($d['status'], \App\Http\Middleware\ModulePermission::RESTRICTED_STATUSES, true) && !\App\Http\Middleware\ModulePermission::canRestricted(Auth::user());
-    DB::transaction(function () use ($d, &$n, &$locked, &$dupHeld, &$noPerm, $restrictedNo) {
+    DB::transaction(function () use ($d, &$n, &$locked, &$dupHeld, &$noPerm, $restrictedNo, $cx) {
       foreach (DB::table('orders')->whereIn('id',$d['ids'])->lockForUpdate()->get() as $o) {
         if ($o->status === $d['status']) continue;
         if ($restrictedNo) { $noPerm++; continue; }
         if (\App\Support\ShipmentOutcome::manualBlock($o, $d['status'])) { $locked++; continue; }
         if (\App\Support\DupGuard::block($o, $d['status'])) { $dupHeld++; continue; }
-        DB::table('orders')->where('id',$o->id)->update(['status'=>$d['status'],'updated_at'=>now()]);
+        DB::table('orders')->where('id',$o->id)->update(['status'=>$d['status'],'updated_at'=>now()] + $cx);
         DB::table('order_status_logs')->insert(['order_id'=>$o->id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'from_status'=>$o->status,'to_status'=>$d['status'],'note'=>'Bulk action','created_at'=>now(),'updated_at'=>now()]);
         \App\Support\ApprovalSource::manual((int)$o->id, $o->status, (string)$d['status'], 'Bulk status change');
         $n++;
       }
     });
+    if ($cx && $n) { try { \App\Support\OrderCancelNotice::tick(10); } catch (\Throwable $e) {} }
     if ($r->expectsJson()) return response()->json(['success'=>true,'moved'=>$n,'status'=>$d['status'],'booked'=>$okB,'parcel_errors'=>array_slice($failB, 0, 6) + ($dupHeld ? [$dupHeld.' duplicate order(s) held: same customer ordered again today, allow them manually first'] : []) + ($locked ? [$locked.' order(s) skipped: the courier decides their delivery/return status'] : []) + ($noPerm ? [$noPerm.' order(s) not moved: you do not have permission to set '.$d['status']] : [])]);
     return back()->with('ok', "$n orders moved to {$d['status']}".($locked ? " · $locked skipped (courier decides their delivery/return status)" : ''));
   }
@@ -356,10 +358,11 @@ class AdminController extends Controller {
       [$sok, $smsg] = \App\Support\OrderSchedule::set((int)$id, $d['sched_date'] ?? null, $d['sched_time'] ?? null, $d['note'] ?? null, Auth::id(), Auth::user()->name);
       return back()->with($sok ? 'ok' : 'bad', $smsg);
     }
+    $cx = []; if ($d['status'] === 'Cancel' && $o->status !== 'Cancel' && \App\Support\OrderCancelNotice::ready()) { [$ck, $cn, $ce] = \App\Support\OrderCancelNotice::check($r->input('cancel_reason'), $r->input('cancel_note')); if ($ce) return back()->with('bad', $ce); $cx = ['cancel_reason'=>$ck,'cancel_note'=>$cn]; }
     if ($d['status'] === 'Shipment' && $o->status !== 'Shipment' && ($sm = \App\Support\StockGuard::shipBlock((int)$id))) return back()->with('bad', $sm);
     if ($d['status'] === 'Shipment' && $o->status !== 'Shipment') { $b = \App\Support\CourierSync::autoBook((int)$id); if ($b && !$b[0]) return back()->with('bad', 'Parcel booking failed, the order stays in '.$o->status.': '.$b[1]); $o = DB::table('orders')->find($id); }
-    if ($o->status !== $d['status']) DB::transaction(function () use ($o, $d, $id) {
-      DB::table('orders')->where('id',$id)->update(['status'=>$d['status'],'updated_at'=>now()] + ($o->status === 'Scheduled' ? ['scheduled_at'=>null,'scheduled_note'=>null] : []));
+    if ($o->status !== $d['status']) DB::transaction(function () use ($o, $d, $id, $cx) {
+      DB::table('orders')->where('id',$id)->update(['status'=>$d['status'],'updated_at'=>now()] + $cx + ($o->status === 'Scheduled' ? ['scheduled_at'=>null,'scheduled_note'=>null] : []));
       DB::table('order_status_logs')->insert(['order_id'=>$id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'from_status'=>$o->status,'to_status'=>$d['status'],'note'=>$d['note']??null,'created_at'=>now(),'updated_at'=>now()]);
       \App\Support\ApprovalSource::manual((int)$id, $o->status, (string)$d['status'], 'Order page status change');
     });
@@ -388,14 +391,16 @@ class AdminController extends Controller {
       if ($sok && $src && $o->status !== 'Scheduled') $this->auditOrderStatus($r, $o, 'Scheduled', $src);
       return response()->json(['success'=>$sok,'message'=>$smsg,'status'=>'Scheduled','cls'=>'s-scheduled','sched'=>\App\Support\OrderSchedule::short(DB::table('orders')->where('id',$id)->value('scheduled_at'))]);
     }
+    $cx = []; if ($d['status'] === 'Cancel' && $o->status !== 'Cancel' && \App\Support\OrderCancelNotice::ready()) { [$ck, $cn, $ce] = \App\Support\OrderCancelNotice::check($r->input('cancel_reason'), $r->input('cancel_note')); if ($ce) return response()->json(['success'=>false,'need_reason'=>true,'message'=>$ce]); $cx = ['cancel_reason'=>$ck,'cancel_note'=>$cn]; }
     if ($d['status'] === 'Shipment' && $o->status !== 'Shipment' && ($sm = \App\Support\StockGuard::shipBlock((int)$id))) return response()->json(['success'=>false,'message'=>$sm]);
     if ($d['status'] === 'Shipment' && $o->status !== 'Shipment') { $b = \App\Support\CourierSync::autoBook((int)$id); if ($b && !$b[0]) return response()->json(['success'=>false,'message'=>'Parcel booking failed, the order stays in '.$o->status.': '.$b[1]]); $o = DB::table('orders')->find($id); }
-    if ($o->status !== $d['status']) DB::transaction(function () use ($o, $d, $id, $src) {
-      DB::table('orders')->where('id',$id)->update(['status'=>$d['status'],'updated_at'=>now()] + ($o->status === 'Scheduled' ? ['scheduled_at'=>null,'scheduled_note'=>null] : []));
+    if ($o->status !== $d['status']) DB::transaction(function () use ($o, $d, $id, $src, $cx) {
+      DB::table('orders')->where('id',$id)->update(['status'=>$d['status'],'updated_at'=>now()] + $cx + ($o->status === 'Scheduled' ? ['scheduled_at'=>null,'scheduled_note'=>null] : []));
       DB::table('order_status_logs')->insert(['order_id'=>$id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'from_status'=>$o->status,'to_status'=>$d['status'],'note'=>trim(($src ? 'Order List · Status button ' : 'Quick Action ').($d['note'] ?? '')),'created_at'=>now(),'updated_at'=>now()]);
       \App\Support\ApprovalSource::manual((int)$id, $o->status, (string)$d['status'], $src ? 'Order List status button' : 'Quick Action');
     });
     if ($src && $o->status !== $d['status']) $this->auditOrderStatus($r, $o, $d['status'], $src);
+    if ($cx) { try { \App\Support\OrderCancelNotice::tick(3); } catch (\Throwable $e) {} }
     return response()->json(['success'=>true,'status'=>$d['status'],'cls'=>'s-'.\Illuminate\Support\Str::slug($d['status'])]);
   }
   /** Manual permission for a same-day duplicate order (owner rule). Logged with name and time. */
