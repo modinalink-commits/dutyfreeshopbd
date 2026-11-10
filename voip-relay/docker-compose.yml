@@ -70,7 +70,7 @@ configs:
         IFS=',' read -ra EXA <<< "$$PBX_EXTS"
         for e in "$${EXA[@]}"; do
           i=$$((i+1)); u=$$(xe "$${e%%:*}"); p=$$(xe "$${e#*:}")
-          GWXML="$$GWXML<gateway name=\"pbx$$i\"><param name=\"username\" value=\"$$u\"/><param name=\"password\" value=\"$$p\"/><param name=\"realm\" value=\"$${PBX_REALM:-$$PBX_HOST}\"/><param name=\"proxy\" value=\"$$PBX_HOST:$$PBX_PORT;transport=$$PBX_TRANSPORT\"/><param name=\"register\" value=\"true\"/><param name=\"register-transport\" value=\"$$PBX_TRANSPORT\"/><param name=\"retry-seconds\" value=\"30\"/><param name=\"caller-id-in-from\" value=\"true\"/></gateway>"
+          GWXML="$$GWXML<gateway name=\"pbx$$i\"><param name=\"username\" value=\"$$u\"/><param name=\"password\" value=\"$$p\"/><param name=\"realm\" value=\"$${PBX_REALM:-$$PBX_HOST}\"/><param name=\"proxy\" value=\"$$PBX_HOST:$$PBX_PORT;transport=$$PBX_TRANSPORT\"/><param name=\"register\" value=\"true\"/><param name=\"from-domain\" value=\"$${PBX_REALM:-$$PBX_HOST}\"/><param name=\"register-transport\" value=\"$$PBX_TRANSPORT\"/><param name=\"retry-seconds\" value=\"30\"/><param name=\"caller-id-in-from\" value=\"true\"/></gateway>"
           BRIDGE="$${BRIDGE:+$$BRIDGE,}sofia/gateway/pbx$$i/0\$$1"
         done
       fi
