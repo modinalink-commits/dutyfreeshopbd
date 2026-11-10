@@ -949,3 +949,4 @@ database/migrations/2026_11_10_070000_order_items_product_index.php
 database/migrations/2026_11_10_080000_daily_needs_skin_care_sub.php
 database/migrations/2026_11_10_090000_skin_care_sub_redirect.php
 app/Support/DateDefault.php
+database/migrations/2026_11_10_100000_orders_without_store_to_main_store.php
