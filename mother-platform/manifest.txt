@@ -959,3 +959,6 @@ resources/views/ai_keywords.blade.php
 resources/views/chat_unanswered.blade.php
 resources/views/category_margin.blade.php
 database/migrations/2026_11_10_120000_remove_chat_placeholder_bubbles.php
+app/Http/Controllers/CarrierClientController.php
+database/migrations/2026_11_10_130000_voice_carrier_clients.php
+resources/views/carrier_clients.blade.php

@@ -235,6 +235,12 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/call-center/contacts', [\App\Http\Controllers\CallCenterController::class,'contacts']);
   Route::get('/call-center/recent', [\App\Http\Controllers\CallCenterController::class,'recent']);
   Route::get('/call-center/agents', [\App\Http\Controllers\CallCenterController::class,'agents']);
+  Route::get('/call-center/clients', [\App\Http\Controllers\CarrierClientController::class,'index']);
+  Route::post('/call-center/clients', [\App\Http\Controllers\CarrierClientController::class,'store']);
+  Route::post('/call-center/clients/endpoint', [\App\Http\Controllers\CarrierClientController::class,'saveEndpoint']);
+  Route::post('/call-center/clients/{id}', [\App\Http\Controllers\CarrierClientController::class,'update'])->whereNumber('id');
+  Route::post('/call-center/clients/{id}/toggle', [\App\Http\Controllers\CarrierClientController::class,'toggle'])->whereNumber('id');
+  Route::post('/call-center/clients/{id}/delete', [\App\Http\Controllers\CarrierClientController::class,'destroy'])->whereNumber('id');
   Route::get('/call-center/extensions', [\App\Http\Controllers\CallCenterController::class,'extensions']);
   Route::post('/call-center/extensions/{uid}', [\App\Http\Controllers\CallCenterController::class,'saveExtension'])->whereNumber('uid');
   Route::get('/call-center/account', [\App\Http\Controllers\CallCenterController::class,'account']);

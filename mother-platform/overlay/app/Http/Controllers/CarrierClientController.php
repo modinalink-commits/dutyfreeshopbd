@@ -1,0 +1,90 @@
+<?php
+namespace App\Http\Controllers;
+use App\Support\Voice;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+/** Call Center > Call Clients (TEST MODE). Admin adds a client's IP, port and prefix; the page generates the client document and the FreeSWITCH config. It never pushes anything to the PBX. */
+class CarrierClientController extends Controller {
+  private function guard() { abort_unless(\App\Support\ProfitFloor::admin(), 403); }
+  private static function set(string $k, string $v) { DB::table('settings')->updateOrInsert(['key' => 'vc_' . $k], ['value' => $v]); }
+  public function index() {
+    $this->guard();
+    $rows = DB::table('voice_carrier_clients')->orderBy('id')->get();
+    $gw = Voice::set('gateway', '');
+    $cfg = ['ip' => Voice::set('carrier_ip', ''), 'port' => Voice::set('carrier_port', '5060'), 'gateway' => $gw];
+    return view('carrier_clients', ['rows' => $rows, 'cfg' => $cfg, 'pbx' => self::pbxConfig($rows, $gw)]);
+  }
+  public static function pbxConfig($rows, string $gw): string {
+    $act = $rows->where('status', 'active');
+    if ($act->isEmpty()) return '(কোনো active ক্লায়েন্ট নেই)';
+    $acl = '<list name="vos_clients" default="deny">' . "\n";
+    foreach ($act->pluck('ip')->unique() as $ip) $acl .= '  <node type="allow" cidr="' . (str_contains($ip, '/') ? $ip : $ip . '/32') . '"/>' . "\n";
+    $acl .= "</list>   <!-- autoload_configs/acl.conf.xml → <network-lists> -->\n\n";
+    $dp = '';
+    foreach ($act as $c) {
+      $ip = explode('/', $c->ip)[0];
+      $dp .= '<extension name="client_' . $c->id . '_' . preg_replace('/\W+/', '_', $c->name) . "\">\n"
+        . '  <condition field="network_addr" expression="^' . preg_quote($ip) . '$"/>' . "\n"
+        . '  <condition field="destination_number" expression="^' . $c->prefix . '(0?1\d{9})$">' . "\n"
+        . '    <action application="limit" data="hash vos_in ' . $ip . ' ' . (int)$c->max_calls . ' !USER_BUSY"/>' . "\n"
+        . '    <action application="set" data="effective_caller_id_number=${caller_id_number}"/>' . "\n"
+        . '    <action application="bridge" data="sofia/gateway/' . ($gw ?: '<GATEWAY_UUID>') . '/$1"/>' . "\n"
+        . "  </condition>\n</extension>\n";
+    }
+    return $acl . $dp;
+  }
+  public static function document(array $c, array $cfg): string {
+    $ip = $cfg['ip'] ?: '<আমাদের সার্ভার IP>'; $port = $cfg['port'] ?: '5060';
+    return "Call Termination Details — DutyFreeBD\n"
+      . "Client            : {$c['name']}\n"
+      . "Our SIP IP        : {$ip}\n"
+      . "Our SIP Port      : {$port} (UDP)\n"
+      . "Your IP (allowed) : {$c['ip']}  port {$c['port']}\n"
+      . "Authentication    : IP based (no username/password)\n"
+      . "Tech Prefix       : {$c['prefix']}\n"
+      . "Dial format       : {$c['prefix']} + 01XXXXXXXXX   (example: {$c['prefix']}01712345678)\n"
+      . "Codec             : G.711a (PCMA) / G.711u (PCMU)\n"
+      . "DTMF              : RFC2833\n"
+      . "Max concurrent    : {$c['max_calls']} calls\n"
+      . "Route             : Bangladesh mobile (01X) only\n"
+      . "Note              : Calls from any other IP or without this prefix are rejected.";
+  }
+  private function rules(Request $r, ?int $id = null): array {
+    $d = $r->validate([
+      'name' => 'required|string|max:120', 'ip' => ['required', 'string', 'max:64', 'regex:/^(\d{1,3}\.){3}\d{1,3}(\/(\d|[12]\d|3[0-2]))?$/'],
+      'port' => 'required|integer|min:1|max:65535', 'prefix' => ['required', 'regex:/^\d{2,10}$/', 'unique:voice_carrier_clients,prefix' . ($id ? ',' . $id : '')],
+      'max_calls' => 'required|integer|min:1|max:1000', 'note' => 'nullable|string|max:300']);
+    foreach (explode('/', explode('/', $d['ip'])[0])[0] === '' ? [] : explode('.', explode('/', $d['ip'])[0]) as $o) if ((int)$o > 255) abort(422, 'IP ভুল।');
+    return $d;
+  }
+  public function store(Request $r) {
+    $this->guard(); $d = $this->rules($r); $d['created_by'] = $r->user()->id; $d['created_at'] = $d['updated_at'] = now();
+    $id = DB::table('voice_carrier_clients')->insertGetId($d);
+    \App\Support\ProfitFloor::audit('voice.client_added', 'Call client ' . $d['name'] . ' ' . $d['ip'] . ' prefix ' . $d['prefix'], null, ['id' => $id]);
+    return back()->with('ok', 'ক্লায়েন্ট যোগ হয়েছে।');
+  }
+  public function update(Request $r, $id) {
+    $this->guard(); abort_unless(DB::table('voice_carrier_clients')->where('id', $id)->exists(), 404);
+    $d = $this->rules($r, (int)$id); $d['updated_at'] = now();
+    DB::table('voice_carrier_clients')->where('id', $id)->update($d);
+    \App\Support\ProfitFloor::audit('voice.client_updated', 'Call client #' . $id . ' updated', null, ['id' => $id]);
+    return back()->with('ok', 'সেভ হয়েছে।');
+  }
+  public function toggle($id) {
+    $this->guard(); $c = DB::table('voice_carrier_clients')->where('id', $id)->first(); abort_unless($c, 404);
+    $n = $c->status === 'active' ? 'paused' : 'active';
+    DB::table('voice_carrier_clients')->where('id', $id)->update(['status' => $n, 'updated_at' => now()]);
+    \App\Support\ProfitFloor::audit('voice.client_' . $n, 'Call client #' . $id . ' ' . $n, null, ['id' => $id]);
+    return back()->with('ok', $n === 'active' ? 'চালু হয়েছে।' : 'বন্ধ (pause) হয়েছে।');
+  }
+  public function destroy($id) {
+    $this->guard(); DB::table('voice_carrier_clients')->where('id', $id)->delete();
+    \App\Support\ProfitFloor::audit('voice.client_deleted', 'Call client #' . $id . ' deleted', null, ['id' => $id]);
+    return back()->with('ok', 'মুছে ফেলা হয়েছে।');
+  }
+  public function saveEndpoint(Request $r) {
+    $this->guard(); $d = $r->validate(['ip' => ['required', 'regex:/^[A-Za-z0-9.\-]{3,100}$/'], 'port' => 'required|integer|min:1|max:65535']);
+    self::set('carrier_ip', $d['ip']); self::set('carrier_port', (string)$d['port']);
+    return back()->with('ok', 'আমাদের IP/Port সেভ হয়েছে।');
+  }
+}
