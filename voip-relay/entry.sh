@@ -15,6 +15,15 @@ if ! command -v freeswitch >/dev/null 2>&1; then
   apt-get install -y -qq freeswitch freeswitch-mod-console freeswitch-mod-logfile freeswitch-mod-event-socket freeswitch-mod-sofia freeswitch-mod-commands freeswitch-mod-dptools freeswitch-mod-dialplan-xml freeswitch-mod-hash freeswitch-mod-db freeswitch-mod-sndfile >/dev/null
   rm -f /etc/apt/auth.conf
 fi
+# G729 transcoding (client sends only G729): build the open-source mod_bcg729 once (needs the same SignalWire token for freeswitch dev headers).
+if [ ! -f /usr/lib/freeswitch/mod/mod_bcg729.so ]; then
+  export DEBIAN_FRONTEND=noninteractive
+  printf 'machine freeswitch.signalwire.com login signalwire password %s\n' "$SIGNALWIRE_TOKEN" > /etc/apt/auth.conf; chmod 600 /etc/apt/auth.conf
+  apt-get update -qq || true
+  apt-get install -y -qq git build-essential cmake pkg-config libbcg729-dev libfreeswitch-dev >/dev/null || true
+  rm -f /etc/apt/auth.conf
+  ( cd /usr/src && rm -rf mod_bcg729 && git clone -q https://github.com/xadhoom/mod_bcg729.git && cd mod_bcg729 && make >/dev/null && make install >/dev/null ) || echo "mod_bcg729 build failed - G729 calls will not transcode"
+fi
 # Optional: pull live settings (PBX line, extensions, mode) from the admin Call Center. Needs RELAY_TOKEN (environment only).
 RELAY_CONFIG_URL="${RELAY_CONFIG_URL:-https://dutyfreebd.com/api/voice/relay-config}"
 pull_cfg() { wget -q -T 15 -O - --header="Authorization: Bearer $RELAY_TOKEN" "$RELAY_CONFIG_URL" 2>/dev/null; }
@@ -41,13 +50,13 @@ if [ -n "$PBX_HOST" ] && [ -n "$PBX_EXTS" ]; then
   IFS=',' read -ra EXA <<< "$PBX_EXTS"
   for e in "${EXA[@]}"; do
     i=$((i+1)); u=$(xe "${e%%:*}"); p=$(xe "${e#*:}")
-    GWXML="$GWXML<gateway name=\"pbx$i\"><param name=\"username\" value=\"$u\"/><param name=\"password\" value=\"$p\"/><param name=\"realm\" value=\"${PBX_REALM:-$PBX_HOST}\"/><param name=\"proxy\" value=\"$PBX_HOST:$PBX_PORT;transport=$PBX_TRANSPORT\"/><param name=\"register\" value=\"true\"/><param name=\"from-domain\" value=\"${PBX_REALM:-$PBX_HOST}\"/><param name=\"register-transport\" value=\"$PBX_TRANSPORT\"/><param name=\"retry-seconds\" value=\"30\"/><param name=\"caller-id-in-from\" value=\"true\"/></gateway>"
-    BRIDGE="${BRIDGE:+$BRIDGE,}sofia/gateway/pbx$i/0\$1"
+    GWXML="$GWXML<gateway name=\"pbx$i\"><param name=\"username\" value=\"$u\"/><param name=\"password\" value=\"$p\"/><param name=\"realm\" value=\"${PBX_REALM:-$PBX_HOST}\"/><param name=\"proxy\" value=\"${PBX_REALM:-$PBX_HOST}:$PBX_PORT;transport=$PBX_TRANSPORT\"/><param name=\"register\" value=\"true\"/><param name=\"from-domain\" value=\"${PBX_REALM:-$PBX_HOST}\"/><param name=\"register-transport\" value=\"$PBX_TRANSPORT\"/><param name=\"retry-seconds\" value=\"30\"/><param name=\"caller-id-in-from\" value=\"true\"/></gateway>"
+    BRIDGE="${BRIDGE:+$BRIDGE,}{absolute_codec_string=PCMA,PCMU}sofia/gateway/pbx$i/0\$1"
   done
 fi
 CID=""; [ -n "$CALLER_ID" ] && CID="<action application=\"set\" data=\"effective_caller_id_number=$CALLER_ID\"/>"
 if [ "$MODE" = "live" ] && [ -n "$BRIDGE" ]; then
-  CALLACTS="$CID<action application=\"set\" data=\"bypass_media=true\"/><action application=\"set\" data=\"continue_on_fail=true\"/><action application=\"set\" data=\"call_timeout=45\"/><action application=\"bridge\" data=\"$BRIDGE\"/><action application=\"hangup\" data=\"NORMAL_TEMPORARY_FAILURE\"/>"
+  CALLACTS="$CID<action application=\"set\" data=\"continue_on_fail=true\"/><action application=\"set\" data=\"call_timeout=45\"/><action application=\"bridge\" data=\"$BRIDGE\"/><action application=\"hangup\" data=\"NORMAL_TEMPORARY_FAILURE\"/>"
 else
   CALLACTS="<action application=\"ring_ready\"/><action application=\"sleep\" data=\"8000\"/><action application=\"hangup\" data=\"NO_ROUTE_DESTINATION\"/>"
 fi
@@ -65,6 +74,7 @@ cat > /etc/freeswitch/freeswitch.xml <<XML
 <configuration name="modules.conf" description="Modules"><modules>
   <load module="mod_console"/><load module="mod_logfile"/><load module="mod_event_socket"/><load module="mod_sofia"/>
   <load module="mod_commands"/><load module="mod_dptools"/><load module="mod_dialplan_xml"/><load module="mod_hash"/><load module="mod_db"/><load module="mod_sndfile"/>
+  <load module="mod_bcg729"/>
 </modules></configuration>
 <configuration name="console.conf"><mappings><map name="all" value="console,info,notice,warning,err,crit,alert"/></mappings><settings><param name="colorize" value="false"/></settings></configuration>
 <configuration name="logfile.conf"><settings><param name="rotate-on-hup" value="true"/></settings><profiles><profile name="default"><settings><param name="logfile" value="/var/log/freeswitch/freeswitch.log"/></settings><mappings><map name="all" value="info,notice,warning,err,crit,alert"/></mappings></profile></profiles></configuration>
@@ -78,7 +88,7 @@ cat > /etc/freeswitch/freeswitch.xml <<XML
   <param name="ext-sip-ip" value="$PUBLIC_IP"/><param name="ext-rtp-ip" value="$PUBLIC_IP"/>
   <param name="sip-port" value="5060"/><param name="context" value="public"/><param name="dialplan" value="XML"/>
   <param name="apply-inbound-acl" value="relay_clients"/><param name="auth-calls" value="false"/>
-  <param name="inbound-codec-prefs" value="PCMA,PCMU"/><param name="outbound-codec-prefs" value="PCMA,PCMU"/>
+  <param name="inbound-codec-prefs" value="G729,PCMA,PCMU"/><param name="outbound-codec-prefs" value="PCMA,PCMU"/>
   <param name="inbound-codec-negotiation" value="generous"/><param name="inbound-late-negotiation" value="true"/><param name="rtp-timeout-sec" value="60"/><param name="rtp-hold-timeout-sec" value="120"/>
   <param name="disable-register" value="true"/><param name="manage-presence" value="false"/><param name="nonce-ttl" value="60"/>
 </settings></profile>
