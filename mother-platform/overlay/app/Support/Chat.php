@@ -329,7 +329,7 @@ class Chat {
         $sent = true; $err = null;
         if ($ext) { $txt = mb_substr($txt, 0, 1900); [$sent, $err] = self::deliver($t, $txt); }
         DB::table('chat_messages')->insert(['thread_id'=>$tid, 'dir'=>'out', 'kind'=>'text', 'body'=>mb_substr($txt, 0, 3500), 'user_name'=>'Claude AI', 'is_ai'=>true, 'status'=>$sent ? 'sent' : 'failed', 'error'=>$err, 'created_at'=>now(), 'updated_at'=>now()]);
-        if ($sent) DB::table('chat_threads')->where('id', $tid)->update(['last_message'=>mb_substr($txt, 0, 300), 'last_dir'=>'out', 'last_at'=>now(), 'updated_at'=>now()]);
+        if ($sent) { DB::table('chat_threads')->where('id', $tid)->update(['last_message'=>mb_substr($txt, 0, 300), 'last_dir'=>'out', 'last_at'=>now(), 'updated_at'=>now()]); if ($ext) self::replied((int)$tid, $li->created_at); } // a successfully SENT AI reply answers the customer message (a failed send stays unread)
         if ($lock) \Illuminate\Support\Facades\Cache::forget($lock);
         AiMemory::onAi((int)$tid, ['sent'=>(bool)$sent]);
         // an order the AI just placed: send the secure invoice link as its own message (only after the backend confirmed the order exists)

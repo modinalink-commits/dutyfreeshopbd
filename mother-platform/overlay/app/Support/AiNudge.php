@@ -16,6 +16,7 @@ class AiNudge {
   public static function minutes(): int { $m = (int)(DB::table('settings')->where('key', 'ai_nudge_min')->value('value') ?: 2); return max(1, min(30, $m)); }
   public static function on(): bool { return (DB::table('settings')->where('key', 'ai_nudge_on')->value('value') ?? '1') === '1'; }
   public static function style(string $last, ?string $pref = null): string {
+    if (AiChat::banglaOnly()) return 'bangla'; // owner rule 10 Nov 2026: the bot speaks clear Bengali only
     if (preg_match('/[\x{0980}-\x{09FF}]/u', $last)) return 'bangla';
     if (preg_match('/\b(ki|koto|dam|daam|ache|achhe|ase|ta|kothay|korbo|korben|lagbe|den|dibo|hobe|amar|apni|apnar|bhai|nibo|nite|chai|jante|pathan|pathaben|kemon|ekhon)\b/i', $last)) return 'banglish';
     if (preg_match('/[a-z]{3,}/i', $last)) return 'english';

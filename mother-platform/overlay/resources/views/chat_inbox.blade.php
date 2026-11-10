@@ -69,6 +69,13 @@
 .mbx.sel .ls{display:none}.mbx.sel .cv{display:flex}body.ibsel .mbx{height:calc(100vh / var(--z,1) - 62px)}
 #ibtop{display:none!important}#ibback{margin:0 0 6px;padding:6px 12px;border-radius:9px;border:1.5px solid #0B1220;background:#fff;color:#0B1220;font-weight:700;font-size:12.5px;cursor:pointer}
 @endif
+/* Owner request 10 Nov 2026: bigger, easier-to-read chat text on desktop; regular Bangladesh Bangla web font */
+.mbx,.mbx *,.mc .b,.mc textarea,.mc input{font-family:'Hind Siliguri','Noto Sans Bengali','Kalpurush',system-ui,'Segoe UI',Arial,sans-serif}
+.mc .b{font-size:16.5px;line-height:1.55;padding:10px 14px;max-width:78%}
+.mc .cm textarea,.mc .cm input[type=text]{font-size:16px}
+.mbx .nm{font-size:16px}.mbx .lm{font-size:14.5px}.mbx .tm{font-size:12.5px}.mbx .l3{font-size:12.5px}.mbx .sep{font-size:14px}
+.mbx .bg,.mbx .st2{font-size:12px;height:20px;line-height:20px}.mbx .sq input{font-size:15px;height:38px}.mbx .ub{font-size:12px}
+.mc .hd{font-size:15px}.mc .lk{font-size:13.5px}
 </style>
 <div id="ibtop" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px"><div style="flex:1"><h1 style="margin:0">Messages <span id="ibu"></span></h1><span style="font-size:12px;color:#6B7280">Facebook, Instagram, WhatsApp and Website Chat in one inbox.</span></div>
 </div>
