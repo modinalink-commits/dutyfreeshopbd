@@ -63,8 +63,13 @@ class AiChat {
   }
   /** Owner-editable knowledge base (Admin > AI Chat); the built-in default is used until the owner saves their own. */
   public static function kb(): string {
-    $v = Sms::secret('ai_kb'); if ($v !== null && trim($v) !== '') return trim($v);
-    $f = resource_path('ai/kb_default.txt'); return is_file($f) ? trim((string)file_get_contents($f)) : '';
+    $base = ''; $v = Sms::secret('ai_kb');
+    if ($v !== null && trim($v) !== '') $base = trim($v);
+    else { $f = resource_path('ai/kb_default.txt'); $base = is_file($f) ? trim((string)file_get_contents($f)) : ''; }
+    // frequent-question answers (from chat analysis); added once, also to an owner-edited KB, unless the owner already has that section
+    $q = resource_path('ai/kb_faq.txt');
+    if ($base !== '' && is_file($q) && mb_strpos($base, 'কাস্টমারের বারবার করা প্রশ্ন') === false) $base .= "\n\n".trim((string)file_get_contents($q));
+    return $base;
   }
   /** Whole published catalogue in compact form (cached 5 min). */
   private static function catalog(): array {
