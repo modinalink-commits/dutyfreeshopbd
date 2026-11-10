@@ -60,6 +60,32 @@ class PriceReviewController extends Controller {
     return redirect('/admin/inventory-pricing')->with('ok', 'Shipment profit protection: ' . ['block' => 'Block (below ' . \App\Support\ProfitFloor::pct() . '% cannot ship)', 'warn' => 'Warn only (ships, but logged)', 'off' => 'Off'][$m]);
   }
   /** Admin: the ONE central Minimum Protected Profit % (Sales & Profit Settings). Takes effect for new orders at once; older orders keep the % that was active when they were placed. */
+  /** Admin: raise sale prices of ONE category to a target profit % (on FIFO cost, same as Inventory Pricing "Profit %"). Only raises, rounds up to $step. Preview first, apply with POST. Old price goes to product_price_history. */
+  public function categoryMargin(Request $r) {
+    abort_unless(\App\Support\ProfitFloor::admin(), 403);
+    $cat = (int)$r->input('category', 0); $pct = max(1.0, min(200.0, (float)$r->input('percent', 25))); $step = max(1, (int)$r->input('step', 5)); $apply = $r->isMethod('post');
+    $plan = []; $name = '';
+    if ($cat) {
+      $name = (string)DB::table('categories')->where('id', $cat)->value('name');
+      $rows = DB::table('products as p')->where('p.category_id', $cat)->selectRaw('p.id, p.name, p.price, p.compare_price, '.\App\Support\Costing::fifoSql('p').' as fifo')->orderBy('p.name')->get();
+      foreach ($rows as $x) { $c = (float)$x->fifo; $o = (float)$x->price; if ($c <= 0 || $o <= 0) continue; $np = ceil(round($c * (1 + $pct / 100) / $step, 6)) * $step; if ($np > $o + 0.004) $plan[] = ['id' => (int)$x->id, 'name' => $x->name, 'cost' => $c, 'old' => $o, 'new' => (float)$np, 'cmp' => $x->compare_price]; }
+    }
+    if ($apply && $plan) {
+      $by = auth()->user()->name ?? 'admin';
+      DB::transaction(function () use ($plan, $by, $pct, $name) {
+        foreach ($plan as $x) {
+          $up = ['price' => $x['new'], 'updated_at' => now()]; if ($x['cmp'] !== null && (float)$x['cmp'] <= $x['new']) $up['compare_price'] = null;
+          DB::table('products')->where('id', $x['id'])->update($up);
+          DB::table('product_price_history')->insert(['product_id' => $x['id'], 'old_rate' => $x['old'], 'new_rate' => $x['new'], 'purchase_rate' => $x['cost'], 'changed_by' => $by, 'source' => 'Category margin update', 'note' => $name . ' to ' . $pct . '% profit', 'created_at' => now(), 'updated_at' => now()]);
+        }
+      });
+      \App\Support\ProfitFloor::audit('price.category_margin', 'Category ' . $name . ': ' . count($plan) . ' prices raised to ' . $pct . '% profit', null, ['by' => $by, 'count' => count($plan), 'sample' => array_slice(array_map(fn($x) => [$x['id'], $x['old'], $x['new']], $plan), 0, 5)]);
+      try { \App\Support\BundlePricing::flush(); \App\Support\BundlePricing::sync(array_column($plan, 'id')); } catch (\Throwable $e) { report($e); }
+      \App\Http\Controllers\StoreController::bust();
+      return redirect('/admin/category-margin?category=' . $cat . '&percent=' . $pct . '&step=' . $step)->with('ok', count($plan) . ' prices in ' . $name . ' raised to at least ' . $pct . '% profit.');
+    }
+    return view('category_margin', ['cats' => DB::table('categories')->orderBy('name')->get(['id', 'name']), 'cat' => $cat, 'pct' => $pct, 'step' => $step, 'plan' => $plan, 'name' => $name]);
+  }
   public function minMargin(Request $r) {
     abort_unless(\App\Support\ProfitFloor::admin(), 403);
     $d = $r->validate(['percent' => 'required|numeric|min:1|max:60', 'reason' => 'required|string|min:3|max:300']);
