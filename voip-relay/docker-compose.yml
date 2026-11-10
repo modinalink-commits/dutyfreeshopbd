@@ -94,19 +94,20 @@ configs:
         RELAY_CDR_URL="$${RELAY_CDR_URL:-$${RELAY_CONFIG_URL%relay-config}relay-cdr}"
         cat > /usr/local/bin/relay-cdr.sh <<CDR
       #!/bin/sh
-      # one arg: uuid|billsec|dialled|cause  (every finished call is reported, answered or not)
-      IFS='|' read -r U B D C <<ARGS
+      # one arg: uuid|billsec|dialled|cause|caller  (every finished call is reported, answered or not)
+      IFS='|' read -r U B D C P <<ARGS
       \$$1
       ARGS
       case "\$$U" in *[!0-9a-fA-F-]*|"") exit 0;; esac
       case "\$$B" in *[!0-9]*|"") B=0;; esac
       case "\$$D" in *[!0-9]*|"") exit 0;; esac
       case "\$$C" in *[!A-Z_]*|"") C=UNKNOWN;; esac
-      wget -q -t 3 -T 8 -O /dev/null --header="Authorization: Bearer $$RELAY_TOKEN" --post-data="uuid=\$$U&billsec=\$$B&dest=\$$D&cause=\$$C" "$$RELAY_CDR_URL"
+      case "\$$P" in *[!0-9+]*) P="";; esac
+      wget -q -t 3 -T 8 -O /dev/null --header="Authorization: Bearer $$RELAY_TOKEN" --post-data="uuid=\$$U&billsec=\$$B&dest=\$$D&cause=\$$C&caller=\$$P" "$$RELAY_CDR_URL"
       CDR
         chmod 700 /usr/local/bin/relay-cdr.sh
       fi
-      CDRHOOK=""; [ -x /usr/local/bin/relay-cdr.sh ] && CDRHOOK="<action application=\"set\" data=\"api_hangup_hook=system /usr/local/bin/relay-cdr.sh '\$${uuid}|\$${billsec}|\$${destination_number}|\$${hangup_cause}'\"/>"
+      CDRHOOK=""; [ -x /usr/local/bin/relay-cdr.sh ] && CDRHOOK="<action application=\"set\" data=\"api_hangup_hook=system /usr/local/bin/relay-cdr.sh '\$${uuid}|\$${billsec}|\$${destination_number}|\$${hangup_cause}|\$${caller_id_number}'\"/>"
       rm -rf /etc/freeswitch; mkdir -p /etc/freeswitch /var/log/freeswitch
       cat > /etc/freeswitch/freeswitch.xml <<XML
       <?xml version="1.0"?>

@@ -80,8 +80,8 @@ class CarrierClientController extends Controller {
     try { if ($r->query('from')) $q->where('d.ended_at', '>=', \Illuminate\Support\Carbon::parse($r->query('from'), $tz)->utc()); if ($r->query('to')) $q->where('d.ended_at', '<', \Illuminate\Support\Carbon::parse($r->query('to'), $tz)->utc()); } catch (\Throwable $e) {}
     if ($r->query('status') === 'answered') $q->where('d.billsec', '>', 0); elseif ($r->query('status') === 'missed') $q->where('d.billsec', 0);
     $total = (clone $q)->count();
-    $rows = $q->orderByDesc('d.id')->offset(($page - 1) * $per)->limit($per)->get(['d.uuid', 'd.dest', 'd.billsec', 'd.cause', 'd.ended_at', 'c.name as client', 'c.prefix']);
-    $out = $rows->map(fn($x) => ['time' => \Illuminate\Support\Carbon::parse($x->ended_at, 'UTC')->setTimezone($tz)->format('d M H:i:s'), 'client' => $x->client ?? '—',
+    $rows = $q->orderByDesc('d.id')->offset(($page - 1) * $per)->limit($per)->get(['d.uuid', 'd.dest', 'd.caller', 'd.billsec', 'd.cause', 'd.ended_at', 'c.name as client', 'c.prefix']);
+    $out = $rows->map(fn($x) => ['time' => \Illuminate\Support\Carbon::parse($x->ended_at, 'UTC')->setTimezone($tz)->format('d M H:i:s'), 'client' => $x->client ?? '—', 'caller' => (string)$x->caller,
       'number' => self::mobile((string)$x->dest, (string)$x->prefix), 'secs' => (int)$x->billsec, 'billed' => (int)ceil($x->billsec / 60), 'cause' => (string)$x->cause])->values();
     return response()->json(['ok' => true, 'rows' => $out, 'total' => $total, 'page' => $page, 'pages' => max(1, (int)ceil($total / $per))]);
   }
@@ -113,11 +113,11 @@ class CarrierClientController extends Controller {
   public function relayCdr(Request $r) {
     $tok = (string)Sms::secret('vc_relay_token'); $given = (string)$r->bearerToken();
     if ($tok === '' || !hash_equals($tok, $given)) return response('forbidden', 403)->header('Content-Type', 'text/plain');
-    $d = $r->validate(['uuid' => ['required', 'regex:/^[0-9a-fA-F-]{8,40}$/'], 'billsec' => 'required|integer|min:0|max:86400', 'dest' => ['required', 'regex:/^\d{6,20}$/'], 'cause' => ['nullable', 'regex:/^[A-Z_]{1,40}$/']]);
+    $d = $r->validate(['uuid' => ['required', 'regex:/^[0-9a-fA-F-]{8,40}$/'], 'billsec' => 'required|integer|min:0|max:86400', 'dest' => ['required', 'regex:/^\d{6,20}$/'], 'cause' => ['nullable', 'regex:/^[A-Z_]{1,40}$/'], 'caller' => ['nullable', 'regex:/^[0-9+]{1,32}$/']]);
     $client = null;
     foreach (DB::table('voice_carrier_clients')->orderByRaw('LENGTH(prefix) DESC')->get() as $c) if (str_starts_with($d['dest'], $c->prefix)) { $client = $c; break; }
     $client = $client ?: DB::table('voice_carrier_clients')->where('status', 'active')->orderBy('id')->first();
-    DB::table('voice_call_cdrs')->insertOrIgnore(['uuid' => strtolower($d['uuid']), 'client_id' => $client->id ?? null, 'dest' => $d['dest'], 'billsec' => (int)$d['billsec'], 'cause' => $d['cause'] ?? null, 'ended_at' => now(), 'created_at' => now(), 'updated_at' => now()]);
+    DB::table('voice_call_cdrs')->insertOrIgnore(['uuid' => strtolower($d['uuid']), 'client_id' => $client->id ?? null, 'dest' => $d['dest'], 'billsec' => (int)$d['billsec'], 'cause' => $d['cause'] ?? null, 'caller' => $d['caller'] ?? null, 'ended_at' => now(), 'created_at' => now(), 'updated_at' => now()]);
     return response('ok', 200)->header('Content-Type', 'text/plain');
   }
   public static function pbxConfig($rows, string $gw): string {
