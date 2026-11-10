@@ -249,6 +249,9 @@ class Chat {
     if (DB::table('chat_handoffs')->where('thread_id', $t->id)->whereIn('status', ['open', 'accepted'])->exists()) return 'open hand-off';
     $lc = $t->last_customer_message_at ?? $t->last_at;
     if (!$lc || \Carbon\Carbon::parse($lc)->lt(now()->subHours(23))) return 'outside the 24-hour WhatsApp window';
+    // a real question, order or price request must be answered by a person, never closed with a courtesy line
+    $lb = trim((string)DB::table('chat_messages')->where('thread_id', $t->id)->where('dir', 'in')->orderByDesc('id')->value('body'));
+    if ($lb === '' || !preg_match('/^(hello|hi|hey|helo|hlw|ok|okay|thanks?|thank you|thx|salam|assalamu\S*|ধন্যবাদ|থ্যাংক\S*|হ্যালো|হাই|হ্যাই|জি|আচ্ছা|ওকে|আসসালামু\S*|সালাম|can i get more info on this\??|হ্যালো! আমি কি এই ব্যাপারে আরও তথ্য জানতে পারি\??)[\s!.?🙏👍❤️]*$/iu', $lb) && !preg_match('/more info on this|আরও তথ্য জানতে পারি/iu', $lb)) return 'real question or order — needs a person';
     return null;
   }
   /** Owner action: a WhatsApp chat whose customer message was never answered gets one short last courtesy message and is resolved. A failed send changes nothing (stays Awaiting Reply). */
