@@ -18,7 +18,7 @@ class OrderCancelNotice {
     'duplicate'        => ['Duplicate order', null],
     'other'            => ['Other (write the reason)', ''],
   ];
-  const WA_BODY = "আসসালামু আলাইকুম {{1}}, আপনার অর্ডার {{2}} বাতিল করা হয়েছে।\n\nকারণ: {{3}}\n\nএ বিষয়ে কোনো অভিযোগ বা জানার থাকলে আমাদের হটলাইন {{4}} নম্বরে কল করুন।\n\n— {{5}}";
+  const WA_BODY = "আসসালামু আলাইকুম {{1}}, আপনার অর্ডার {{2}} বাতিল করা হয়েছে।\n\nকারণ: {{3}}\n\nএ বিষয়ে কোনো অভিযোগ বা জানার থাকলে আমাদের হটলাইন {{4}} নম্বরে কল করুন।\n\n— DutyFreeBD টিম, ধন্যবাদ।";
   const API = 'https://graph.facebook.com/v21.0';
 
   public static function ready(): bool { try { return Schema::hasTable('order_cancel_notices') && Schema::hasColumn('orders', 'cancel_reason'); } catch (\Throwable $e) { return false; } }
@@ -84,7 +84,7 @@ class OrderCancelNotice {
   private static function waVals(object $o, string $why): array {
     $name = trim((string)$o->customer_name) ?: 'গ্রাহক';
     $bn = ['it was cancelled at your request' => 'আপনার অনুরোধে বাতিল করা হয়েছে', 'we could not reach you by phone to confirm it' => 'ফোনে আপনার সাথে যোগাযোগ করা সম্ভব হয়নি', 'the address or phone number could not be verified' => 'ঠিকানা বা মোবাইল নম্বর যাচাই করা যায়নি', 'the product is currently out of stock' => 'পণ্যটি বর্তমানে স্টকে নেই', 'of a price or offer issue' => 'দাম বা অফার সংক্রান্ত কারণে', 'we are unable to deliver to your address' => 'আপনার ঠিকানায় ডেলিভারি করা সম্ভব হচ্ছে না', 'we could not complete the order verification' => 'অর্ডারের যাচাই সম্পন্ন করা যায়নি', 'the order was cancelled' => 'অর্ডারটি বাতিল করা হয়েছে'];
-    return [mb_substr($name, 0, 60), Inv::show($o->invoice), $bn[$why] ?? $why, Biz::hotline(), OrderWaConfirm::brand()];
+    return [mb_substr($name, 0, 60), Inv::show($o->invoice), $bn[$why] ?? $why, Biz::hotline()];
   }
   private static function waCall(object $o, string $why): array {
     $tok = Chat::sec('chat_wa_token'); $pid = Chat::sec('chat_wa_phone_id'); if (!$tok || !$pid) return [false, null, 'WhatsApp is not connected'];
@@ -98,7 +98,7 @@ class OrderCancelNotice {
   public static function submitTemplate(): array {
     $tok = Chat::sec('chat_wa_token'); if (!$tok) return [false, 'WhatsApp token missing'];
     try {
-      $r = Http::timeout(25)->withToken($tok)->post(self::API . '/' . OrderWaConfirm::waba() . '/message_templates', ['name' => self::tpl(), 'language' => 'bn', 'category' => 'UTILITY', 'components' => [['type' => 'BODY', 'text' => self::WA_BODY, 'example' => ['body_text' => [['মোহাম্মদ ফারুক', 'DFB-102619', 'ফোনে আপনার সাথে যোগাযোগ করা সম্ভব হয়নি', '09613828081', 'DutyFreeBD']]]]]]);
+      $r = Http::timeout(25)->withToken($tok)->post(self::API . '/' . OrderWaConfirm::waba() . '/message_templates', ['name' => self::tpl(), 'language' => 'bn', 'category' => 'UTILITY', 'components' => [['type' => 'BODY', 'text' => self::WA_BODY, 'example' => ['body_text' => [['Rahim', 'DFB-102619', 'phone could not be reached', '09613828081']]]]]]);
       if ($r->successful()) { Procure::put('cancel_notice_wa_tpl_status', strtoupper((string)$r->json('status', 'PENDING'))); return [true, 'Submitted: ' . $r->json('status', 'PENDING')]; }
       return [false, mb_substr((string)($r->json('error.error_user_msg') ?: $r->json('error.message') ?: $r->body()), 0, 300)];
     } catch (\Throwable $e) { return [false, 'Network error: ' . $e->getMessage()]; }
