@@ -277,7 +277,18 @@ class CarrierClientController extends Controller {
     $tok = (string)Sms::secret('vc_relay_token'); $given = (string)$r->bearerToken();
     if ($tok === '' || !hash_equals($tok, $given)) return response('forbidden', 403)->header('Content-Type', 'text/plain');
     $list = array_values(array_filter(array_map('trim', explode("\n", (string)Sms::secret('vc_relay_exts')))));
-    // Only the extensions the owner entered on the Call Clients relay line are used for client calls. Staff/agent extensions from the Extensions page are never registered here, so they stay free.
+    // Only the extensions the owner chose for client calls are used (setting relay_pool_exts, default 107-110, plus the ones saved on this relay line). Every other staff/agent extension is never registered here, so it stays free.
+    try {
+      $allow = array_filter(array_map('trim', preg_split('/[\s,]+/', (string)Voice::set('relay_pool_exts', '107,108,109,110'))));
+      $have = array_map(fn($l) => explode(':', $l, 2)[0], $list);
+      foreach (DB::table('pbx_extensions')->orderBy('id')->get() as $x) {
+        $u = (string)($x->auth_username ?: $x->extension); if (in_array($u, $have, true) || empty($x->password_enc)) continue;
+        if (!in_array((string)$x->extension, $allow, true) && !in_array($u, $allow, true)) continue;
+        try { $pw = \Illuminate\Support\Facades\Crypt::decryptString($x->password_enc); } catch (\Throwable $e) { continue; }
+        if (!preg_match('/^[^\s,]{1,80}$/', $pw) || !preg_match('/^[A-Za-z0-9_.\-]{1,60}$/', $u)) continue;
+        $list[] = $u . ':' . $pw; $have[] = $u;
+      }
+    } catch (\Throwable $e) {}
     $exts = implode(',', $list);
     $rows = DB::table('voice_carrier_clients')->where('status', 'active')->get();
     $o = "MODE=" . (Voice::set('relay_mode', 'test') === 'live' ? 'live' : 'test') . "\nPBX_HOST=" . Voice::set('relay_host', '') . "\nPBX_PORT=" . Voice::set('relay_port', '5080')
