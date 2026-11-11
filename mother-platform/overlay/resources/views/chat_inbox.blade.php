@@ -69,13 +69,22 @@
 .mbx.sel .ls{display:none}.mbx.sel .cv{display:flex}body.ibsel .mbx{height:calc(100vh / var(--z,1) - 62px)}
 #ibtop{display:none!important}#ibback{margin:0 0 6px;padding:6px 12px;border-radius:9px;border:1.5px solid #0B1220;background:#fff;color:#0B1220;font-weight:700;font-size:12.5px;cursor:pointer}
 @endif
-/* Owner request 10 Nov 2026: bigger, easier-to-read chat text on desktop; regular Bangladesh Bangla web font */
-.mbx,.mbx *,.mc .b,.mc textarea,.mc input{font-family:'Hind Siliguri','Noto Sans Bengali','Kalpurush',system-ui,'Segoe UI',Arial,sans-serif}
-.mc .b{font-size:20px;line-height:1.6;padding:12px 16px;max-width:80%}
-.mc .cm textarea,.mc .cm input[type=text]{font-size:19px}
-.mbx .nm{font-size:18.5px}.mbx .lm{font-size:18.5px;line-height:1.45}.mbx .tm{font-size:14px}.mbx .l3{font-size:14px}.mbx .sep{font-size:15.5px}
-.mbx .bg,.mbx .st2{font-size:13px;height:22px;line-height:22px}.mbx .sq input{font-size:17px;height:42px}.mbx .ub{font-size:13px}
-.mc .hd{font-size:17px}.mc .lk{font-size:15px}
+/* Owner request 11 Nov 2026: Bornomala for Bangla (self-hosted), calmer weights, one readable size scale across list, chat and banners */
+@font-face{font-family:'Bornomala';src:url('/fonts/Bornomala-Regular.ttf') format('truetype');font-weight:400 500;font-style:normal;font-display:swap;unicode-range:U+0980-09FF,U+200C-200D,U+0964-0965}
+@font-face{font-family:'Bornomala';src:url('/fonts/Bornomala-Bold.ttf') format('truetype');font-weight:600 800;font-style:normal;font-display:swap;unicode-range:U+0980-09FF,U+200C-200D,U+0964-0965}
+.mbx,.mbx *,.mbx .mc textarea,.mbx .mc input{font-family:'Bornomala',Inter,'Segoe UI',system-ui,Arial,sans-serif}
+.mbx .mc .b{font-size:16px;line-height:1.65;padding:9px 14px;max-width:78%;font-weight:400}
+.mbx .mc .b small{font-size:11.5px}
+.mbx .mc .cm textarea,.mbx .mc .cm input[type=text]{font-size:16px}
+.mbx .nm{font-size:16px;font-weight:400}.mbx .th.un .nm{font-weight:700}
+.mbx .lm{font-size:14.5px;line-height:1.5;font-weight:400}.mbx .th.un .lm{font-weight:400;color:#0B1220}
+.mbx .tm{font-size:12.5px}.mbx .l3{font-size:12.5px}.mbx .sep{font-size:14.5px;font-weight:700}
+.mbx .bg,.mbx .st2{font-size:12px;height:21px;line-height:21px;font-weight:700}.mbx .sq input{font-size:14.5px;height:40px}.mbx .ub{font-size:12px}
+.mbx .mc .hd .r1 b{font-size:16px;font-weight:700}.mbx .mc .hd .r1 small{font-size:12.5px}
+.mbx .mc .lk,.mbx .mc .aw,.mbx .mc .rp,.mbx .mc .hd select{font-size:13px}
+.mbx .mc .cb summary{font-size:14px}.mbx .mc .cb .ch{font-size:12.5px}
+.mbx .mc .cm .tb .tg,.mbx .mc .cm .tb .qrw select{font-size:13.5px}
+.mbx .mc .hb{font-size:14.5px!important;line-height:1.55!important}.mbx .mc .sumb{font-size:14px!important;line-height:1.55!important}.mbx .mc .sumb b{font-size:11px!important}
 /* Owner request 10 Nov 2026 (desktop): the Messages page is ONE fixed screen - no page up/down scrolling; only the conversation list and the open chat scroll inside their own panels. Fits the viewport at any zoom. */
 @media(min-width:901px){
 html,body{height:calc(100vh / var(--z,1));overflow:hidden!important}

@@ -149,7 +149,7 @@ M.mount=function(el,id,opt){
   function head(){var d=S.d,t=d.thread,opts=Object.keys(d.statuses).map(function(k){return '<option value="'+k+'"'+(t.status===k?' selected':'')+'>'+d.statuses[k]+'</option>'}).join('');
     var ag='<option value="">Unassigned</option>'+d.agents.map(function(a){return '<option value="'+a.id+'"'+(t.assigned_to==a.id?' selected':'')+'>'+esc(a.name)+'</option>'}).join('');
     var lo=d.orders[0];
-    var hs=t.needs_human?'<div style="margin:6px 0 0;padding:6px 9px;border:1px solid #FCA5A5;background:#FEE2E2;border-radius:8px;font-size:12px;line-height:1.4;color:#B91C1C"><b>Handoff'+(t.priority==='high'?' · HIGH':'')+':</b> '+esc(t.handoff_reason||'')+(t.ai_summary?'<br>'+esc(t.ai_summary):'')+'</div>':'';
+    var hs=t.needs_human?'<div class="hb" style="margin:6px 0 0;padding:6px 9px;border:1px solid #FCA5A5;background:#FEE2E2;border-radius:8px;font-size:12px;line-height:1.4;color:#B91C1C"><b>Handoff'+(t.priority==='high'?' · HIGH':'')+':</b> '+esc(t.handoff_reason||'')+(t.ai_summary?'<br>'+esc(t.ai_summary):'')+'</div>':'';
     var sm='';(function(){var L=[];if(lo){L.push('<b>Current Order:</b> #'+esc(lo.invoice||lo.id)+' · '+esc(lo.status||'')+(lo.total?' · ৳'+Number(lo.total).toLocaleString():''));var cr=[lo.courier,lo.courier_status].filter(Boolean).join(' · ');if(cr)L.push('<b>Courier:</b> '+esc(cr)+(lo.tracking_code||lo.consignment_id?' · '+esc(lo.tracking_code||lo.consignment_id):''))}
       var md={calm:'Normal',confused:'Confused',upset:'Upset',angry:'Angry',urgent:'Urgent',happy:'Happy',worried:'Concerned',concerned:'Concerned'}[(t.mood||'').toLowerCase()];
       var it=t.intent&&t.intent!=='other'?String(t.intent).replace(/_/g,' '):'';
