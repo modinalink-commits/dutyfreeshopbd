@@ -138,10 +138,23 @@ echo "relay ready. MODE=$MODE client=$CLIENT_IP prefix=$PREFIX max=$MAX_CALLS pu
 # Live-call snapshot: every 3 s push the relay's channel list to the admin panel (Call Clients live board + running-minute count).
 if [ -n "$RELAY_TOKEN" ]; then
   RELAY_LIVE_URL="${RELAY_LIVE_URL:-${RELAY_CONFIG_URL%relay-config}relay-live}"
-  K=0; ( sleep 25; while sleep 3; do
-      fs_cli -p "$ESLPW" -x 'show channels as json' > /tmp/live.json 2>/dev/null
-      [ -s /tmp/live.json ] && wget -q -t 1 -T 5 -O /dev/null --header="Authorization: Bearer $RELAY_TOKEN" --header="Content-Type: application/json" --post-file=/tmp/live.json "$RELAY_LIVE_URL"
+  # Watchdog: the push loop writes /tmp/live.ok after every successful push; if that goes stale (>45 s) the loop is restarted and the reason is logged.
+  push_loop() { K=0; sleep 25; while sleep 3; do
+      if fs_cli -p "$ESLPW" -x 'show channels as json' > /tmp/live.json 2>/tmp/live.err && [ -s /tmp/live.json ]; then
+        if wget -q -t 1 -T 5 -O /dev/null --header="Authorization: Bearer $RELAY_TOKEN" --header="Content-Type: application/json" --post-file=/tmp/live.json "$RELAY_LIVE_URL"; then date +%s > /tmp/live.ok; else echo "live push failed (wget to $RELAY_LIVE_URL)"; fi
+      else echo "live push: fs_cli show channels failed: $(head -c 120 /tmp/live.err 2>/dev/null)"; fi
       K=$((K+1)); if [ $((K%5)) -eq 1 ]; then fs_cli -p "$ESLPW" -x 'sofia status gateway' > /tmp/gw.txt 2>/dev/null; [ -s /tmp/gw.txt ] && wget -q -t 1 -T 5 -O /dev/null --header="Authorization: Bearer $RELAY_TOKEN" --header="Content-Type: text/plain" --post-file=/tmp/gw.txt "${RELAY_LIVE_URL%relay-live}relay-gw"; fi
+    done; }
+  date +%s > /tmp/live.ok
+  push_loop & echo $! > /tmp/push.pid
+  ( sleep 60; while sleep 15; do
+      NOW=$(date +%s); LAST=$(cat /tmp/live.ok 2>/dev/null || echo 0)
+      if [ $((NOW-LAST)) -gt 45 ]; then
+        echo "watchdog: live push stale for $((NOW-LAST)) s - restarting push loop"
+        kill $(cat /tmp/push.pid 2>/dev/null) 2>/dev/null
+        date +%s > /tmp/live.ok
+        push_loop & echo $! > /tmp/push.pid
+      fi
     done ) &
 fi
 exec freeswitch -nonat -nf -c -conf /etc/freeswitch -log /var/log/freeswitch -db /var/lib/freeswitch/db -run /var/run/freeswitch
