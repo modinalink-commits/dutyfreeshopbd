@@ -26,6 +26,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/deploy/queue-restart', [\App\Http\Controllers\DeployController::class,'queueRestart']);
   Route::get('/deploy/failed-jobs', [\App\Http\Controllers\DeployController::class,'failedJobs']);
   Route::get('/deploy/migrations', [\App\Http\Controllers\DeployController::class,'migrations']);
+  Route::get('/alerts', [\App\Http\Controllers\AdminAlertController::class,'feed']);
   Route::get('/deploy/issues', [\App\Http\Controllers\DeployController::class,'issues']);
   Route::post('/deploy/issue/{id}', [\App\Http\Controllers\DeployController::class,'issueSet'])->whereNumber('id');
   Route::get('/deploy/{id}/changes', [\App\Http\Controllers\DeployController::class,'changes'])->whereNumber('id');

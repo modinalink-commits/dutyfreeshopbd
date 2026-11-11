@@ -986,3 +986,6 @@ resources/views/store/cat_slider.blade.php
 resources/views/store/cat_slider_css.blade.php
 resources/views/store/cat_slider_js.blade.php
 resources/views/store/cat_slider_one.blade.php
+resources/views/admin_bell.blade.php
+app/Support/AdminAlerts.php
+app/Http/Controllers/AdminAlertController.php
