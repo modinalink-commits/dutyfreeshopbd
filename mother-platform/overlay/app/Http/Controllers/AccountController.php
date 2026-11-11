@@ -60,7 +60,7 @@ class AccountController extends StoreController {
   /* ---------------- sign in / register ---------------- */
   public function authForm(Request $r) {
     if ($this->me($r)) return redirect('/account');
-    return $this->view('store.account_auth', ['title'=>'Login / Register | DutyFree Shop BD', 'mode'=>$r->query('mode') === 'register' ? 'register' : 'login', 'smsOn'=>Sms::configured(), 'fbOn'=>\App\Support\CustAuth::fbOn(), 'gOn'=>\App\Support\CustAuth::googleOn(), 'fbErr'=>$r->query('fb') === 'off' ? 'off' : ($r->query('fb') === 'err')]);
+    return $this->view('store.account_auth', ['title'=>'Login / Register | DutyFree BD', 'mode'=>$r->query('mode') === 'register' ? 'register' : 'login', 'smsOn'=>Sms::configured(), 'fbOn'=>\App\Support\CustAuth::fbOn(), 'gOn'=>\App\Support\CustAuth::googleOn(), 'fbErr'=>$r->query('fb') === 'off' ? 'off' : ($r->query('fb') === 'err')]);
   }
   public function otpSend(Request $r) {
     \App\Support\PhoneRule::trim($r);
@@ -197,7 +197,7 @@ class AccountController extends StoreController {
   /** Facebook gave no email: ask for one. */
   public function completeForm(Request $r) {
     $me = Cache::get('fb.pend.' . (string)$r->query('t')); if (!$me) return redirect('/account/login');
-    return $this->view('store.account_complete', ['title'=>'অ্যাকাউন্ট সম্পূর্ণ করুন | DutyFree Shop BD', 't'=>(string)$r->query('t'), 'name'=>$me['name'] ?? '']);
+    return $this->view('store.account_complete', ['title'=>'অ্যাকাউন্ট সম্পূর্ণ করুন | DutyFree BD', 't'=>(string)$r->query('t'), 'name'=>$me['name'] ?? '']);
   }
   public function completeSave(Request $r) {
     $t = (string)$r->input('t'); $me = Cache::get('fb.pend.' . $t); if (!$me) return response()->json(['ok'=>false, 'error'=>'সেশন শেষ হয়েছে। আবার চেষ্টা করুন।'], 422);
@@ -247,7 +247,7 @@ class AccountController extends StoreController {
   }
   public function resetEmailForm(Request $r, $t) {
     $x = DB::table('customer_password_resets')->where('token_hash', hash('sha256', $t))->whereNull('used_at')->where('expires_at', '>', now())->first(); if (!$x) return redirect('/account/login');
-    return $this->view('store.account_complete', ['title'=>'নতুন পাসওয়ার্ড | DutyFree Shop BD', 'reset'=>$t, 't'=>'', 'name'=>'']);
+    return $this->view('store.account_complete', ['title'=>'নতুন পাসওয়ার্ড | DutyFree BD', 'reset'=>$t, 't'=>'', 'name'=>'']);
   }
   public function resetEmailSave(Request $r, $t) {
     $x = DB::table('customer_password_resets')->where('token_hash', hash('sha256', $t))->whereNull('used_at')->where('expires_at', '>', now())->first(); if (!$x) return response()->json(['ok'=>false, 'error'=>'লিংকের মেয়াদ শেষ'], 422);
@@ -281,7 +281,7 @@ class AccountController extends StoreController {
     foreach ($all as $o) { $g = $this->group($o->status); $cnt[$g]++; if (!in_array($g, ['Cancelled', 'Returned'])) $spend += (float)$o->total; }
     $tier = null; try { $t0 = \App\Support\OrderDiscount::tier((string)$c->phone, $c); $lv0 = \App\Support\OrderDiscount::levelOf($c->customer_level ?? null, (int)($t0['stars'] ?? 0)); if ($lv0) $tier = ['name' => $lv0['name'], 'stars' => $lv0['stars']]; } catch (\Throwable $e) {}
     $d = ['c'=>$c, 'tier'=>$tier, 'tab'=>$tab, 'cid'=>$this->cid($c), 'cat'=>$this->custCategory($c->phone, $c), 'cnt'=>$cnt, 'spend'=>$spend + (float)$c->legacy_spent, 'totalOrders'=>$all->count() + (int)$c->legacy_orders,
-      'title'=>'My Account | DutyFree Shop BD', 'groups'=>array_keys(self::GROUPS)];
+      'title'=>'My Account | DutyFree BD', 'groups'=>array_keys(self::GROUPS)];
     if (in_array($tab, ['dashboard', 'coupons'], true)) { try { $d['reward'] = \App\Support\AppReward::view((string)$c->phone); $d['rewardVerified'] = !empty($c->phone_verified_at); } catch (\Throwable $e) { $d['reward'] = null; } }
     if ($tab === 'dashboard') {
       $recent = $all->take(5); $d['recent'] = $recent; $d['items'] = $this->thumbs($recent->pluck('id')->all());

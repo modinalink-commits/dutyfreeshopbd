@@ -115,7 +115,7 @@ class SeoController extends Controller
   }
 
   public function settings(Request $r) {
-    S::put('seo_site_name', trim((string)$r->input('site')) ?: 'DutyFree Shop BD'); S::put('seo_city', trim((string)$r->input('city')));
+    S::put('seo_site_name', trim((string)$r->input('site')) ?: 'DutyFree BD'); S::put('seo_city', trim((string)$r->input('city')));
     S::put('seo_global_index', $r->boolean('index') ? '1' : '0'); S::put('seo_default_og', trim((string)$r->input('og')));
     foreach (array_keys(S::TPL) as $k) S::put('seo_tpl_' . $k, trim((string)$r->input('tpl_' . $k)) ?: S::TPL[$k]);
     $rb = str_replace("\r", '', trim((string)$r->input('robots'))); S::put('seo_robots', mb_substr($rb, 0, 4000));

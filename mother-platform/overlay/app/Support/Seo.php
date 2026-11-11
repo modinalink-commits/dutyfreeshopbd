@@ -7,9 +7,9 @@ use Illuminate\Support\Facades\Cache;
 class Seo {
   public static function gen(object $p, ?string $cat = null, ?string $brand = null): array {
     $name = trim((string)$p->name); $price = number_format((float)$p->price); $sub = trim((string)($p->sub ?? ''));
-    $title = $name.' দাম ৳'.$price.' | '.($cat ?: 'Shop').' | DutyFree Shop BD';
-    if (mb_strlen($title) > 72) $title = $name.' দাম ৳'.$price.' | DutyFree Shop BD';
-    if (mb_strlen($title) > 72) $title = mb_substr($name, 0, 46).'… ৳'.$price.' | DutyFree Shop BD';
+    $title = $name.' দাম ৳'.$price.' | '.($cat ?: 'Shop').' | DutyFree BD';
+    if (mb_strlen($title) > 72) $title = $name.' দাম ৳'.$price.' | DutyFree BD';
+    if (mb_strlen($title) > 72) $title = mb_substr($name, 0, 46).'… ৳'.$price.' | DutyFree BD';
     $where = trim(($cat ?: '').($sub && $sub !== $cat ? ' / '.$sub : ''), ' /');
     $desc = $name.' অরিজিনাল ইমপোর্টেড, ডিউটি ফ্রি দামে মাত্র ৳'.$price.'।'.($where ? ' '.$where.'।' : '').' ক্যাশ অন ডেলিভারি, সারা বাংলাদেশে হোম ডেলিভারি। এখনই অর্ডার করুন।';
     if (mb_strlen($desc) > 158) $desc = mb_substr($desc, 0, 155).'…';
