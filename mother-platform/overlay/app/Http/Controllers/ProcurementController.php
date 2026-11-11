@@ -454,3 +454,5 @@ class ProcurementController extends Controller {
     return response()->json(DB::table('purchase_items')->where('purchase_id',$id)->get()->map(fn($i) => ['product_id'=>$i->product_id,'name'=>$i->name,'qty'=>(int)$i->qty,'cost'=>(float)$i->cost,'batch'=>$i->batch,'returned'=>(int)($ret[$i->product_id] ?? 0)])->all());
   }
 }
+
+// deploy-sync 2026-11-11

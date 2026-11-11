@@ -450,3 +450,5 @@ class AdminController extends Controller {
     return view('stafflog', compact('logs','kpi','live','perf','stages','staffNames'));
   }
 }
+
+// deploy-sync 2026-11-11

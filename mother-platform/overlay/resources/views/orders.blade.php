@@ -360,3 +360,5 @@ return false}
 @include('ship_check_ui')
 @include('ai_verify_ui')
 @endsection
+
+{{-- deploy-sync 2026-11-11 --}}
