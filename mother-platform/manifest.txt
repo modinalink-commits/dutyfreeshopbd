@@ -973,3 +973,7 @@ public/fonts/InterChat-Regular.woff2
 public/fonts/InterChat-Medium.woff2
 public/fonts/InterChat-SemiBold.woff2
 public/fonts/InterChat-Bold.woff2
+app/Http/Controllers/CarrierPortalController.php
+database/migrations/2026_11_11_100000_call_client_portal.php
+resources/views/carrier_portal.blade.php
+resources/views/carrier_portal_login.blade.php

@@ -101,6 +101,16 @@ o.textContent='Connected calls '+d.calls+' · Talk time '+f(d.secs)+' · Billabl
 <input name="max_calls" value="20" title="Max concurrent calls" style="width:70px" required>
 <input name="note" placeholder="Note" style="width:160px"><button class="btn" type="submit">Add client</button></form></div>
 
+<div class="card sec"><div class="h"><b>Client portal access</b> <span class="sub">Give a client a username and password to sign in at <a href="/call-portal/login" target="_blank">/call-portal/login</a> and see only their own calls, minutes, amount, rate and billing cycle.</span></div>
+@foreach($rows as $c)<form method="post" action="/admin/call-center/clients/{{ $c->id }}/portal" class="row" style="margin-top:6px">@csrf
+<b style="min-width:120px">{{ $c->name }}</b>
+<input name="portal_user" value="{{ $c->portal_user ?? '' }}" placeholder="Username" autocomplete="off" style="width:150px">
+<input name="portal_pass" type="password" placeholder="{{ !empty($c->portal_pass) ? 'New password (leave blank to keep)' : 'Password (min 8)' }}" autocomplete="new-password" style="width:210px">
+<label style="display:flex;align-items:center;gap:4px"><input type="checkbox" name="portal_on" value="1" {{ !empty($c->portal_on) ? 'checked' : '' }}> Portal ON</label>
+<button class="btn" type="submit">Save</button>
+<span class="sub">{{ !empty($c->portal_last_login) ? 'Last login '.$c->portal_last_login : 'Never logged in' }}</span></form>
+@endforeach</div>
+
 <div class="card sec"><div class="h"><b>Clients</b> <span class="sub">Use the switch to turn a client ON or OFF. An OFF client's calls are rejected (the relay applies the change within about a minute).</span></div><table class="tbl">
 <thead><tr><th>Name</th><th>IP</th><th>Port</th><th>Prefix</th><th>Max calls</th><th>Status</th><th></th></tr></thead>
 @forelse($rows as $c)

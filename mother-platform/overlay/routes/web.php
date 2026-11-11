@@ -246,6 +246,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/call-center/clients/endpoint', [\App\Http\Controllers\CarrierClientController::class,'saveEndpoint']);
   Route::post('/call-center/clients/relay', [\App\Http\Controllers\CarrierClientController::class,'relaySave']);
   Route::post('/call-center/clients/relay-agent', [\App\Http\Controllers\CarrierClientController::class,'relayFromAgent']);
+  Route::post('/call-center/clients/{id}/portal', [\App\Http\Controllers\CarrierPortalController::class,'adminSave'])->whereNumber('id');
   Route::post('/call-center/clients/relay-token', [\App\Http\Controllers\CarrierClientController::class,'relayToken']);
   Route::post('/call-center/clients/{id}', [\App\Http\Controllers\CarrierClientController::class,'update'])->whereNumber('id');
   Route::post('/call-center/clients/{id}/toggle', [\App\Http\Controllers\CarrierClientController::class,'toggle'])->whereNumber('id');
@@ -515,6 +516,11 @@ Route::prefix('api/staff')->withoutMiddleware([\Illuminate\Foundation\Http\Middl
   });
 });
 // ---- Supplier Partner Portal (public login; everything else behind SupplierPortalAuth) ----
+Route::prefix('call-portal')->group(function () {
+  $CP = \App\Http\Controllers\CarrierPortalController::class;
+  Route::get('/login', [$CP,'loginForm']); Route::post('/login', [$CP,'login'])->middleware('throttle:10,1');
+  Route::get('/', [$CP,'home']); Route::post('/logout', [$CP,'logout']);
+});
 Route::prefix('supplier-portal')->group(function () {
   $P = \App\Http\Controllers\SupplierPortalController::class;
   Route::get('/login', [$P,'loginForm']); Route::post('/login', [$P,'login'])->middleware('throttle:12,1');
