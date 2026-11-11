@@ -114,7 +114,11 @@ class AgentTools {
         $pd = $st['pending'] ?? null;
         if (!empty($ctx['orders_on']) && $pd && $pd['name'] === $name && $pd['phone'] === $ph && $pd['address'] === $addr && (int)$pd['area'] === $area && $pd['cart'] == ($st['cart'] ?? []) && self::isConfirm((string)($ctx['last_msg_text'] ?? '')) && (int)($ctx['last_msg_id'] ?? 0) > (int)$pd['after_msg'])
           return ['error'=>'This exact summary was already shown and the customer has just confirmed it. Do NOT prepare again: call place_order now.'];
-        $st['pending'] = ['name'=>$name, 'phone'=>$ph, 'address'=>$addr, 'area'=>$area, 'note'=>mb_substr((string)($in['note'] ?? ''), 0, 300), 'cart'=>$st['cart'], 'total'=>$total, 'after_msg'=>(int)($ctx['last_msg_id'] ?? 0), 'at'=>time()];
+        // Returning WhatsApp customer (details come from the server, not the model): his own explicit order command is the confirmation, so the order is placed at once on the saved address.
+        $sv = $st['saved'] ?? null; $direct = false;
+        if (!empty($ctx['orders_on']) && $sv && $name === $sv['name'] && $ph === $sv['phone'] && $addr === $sv['address'] && self::isConfirm((string)($ctx['last_msg_text'] ?? '')) && (int)($ctx['last_msg_id'] ?? 0) > 0) $direct = true;
+        $st['pending'] = ['name'=>$name, 'phone'=>$ph, 'address'=>$addr, 'area'=>$area, 'note'=>mb_substr((string)($in['note'] ?? ''), 0, 300), 'cart'=>$st['cart'], 'total'=>$total, 'after_msg'=>$direct ? (int)$ctx['last_msg_id'] - 1 : (int)($ctx['last_msg_id'] ?? 0), 'at'=>time()];
+        if ($direct) return ['summary'=>['items'=>$c['items'], 'total_estimate'=>self::money($total), 'name'=>$name, 'phone'=>$ph, 'address'=>$addr], 'next'=>'The returning customer just asked to place the order, so that counts as his confirmation: call place_order NOW (same turn). Then tell him in your reply the invoice number, total and Cash on delivery.'];
         return ['summary'=>['items'=>$c['items'], 'subtotal'=>self::money($c['subtotal_raw']), 'delivery'=>self::money($ship), 'delivery_note'=>isset($dv) ? ($dv['reason'] ?: ($ship <= 0 ? 'No delivery charge' : $dv['zone'])) : null, 'automatic_discount'=>$disc > 0 ? self::money($disc).' ('.implode(', ', $dnotes).')' : 'none', 'total_estimate'=>self::money($total), 'name'=>$name, 'phone'=>$ph, 'address'=>$addr, 'payment'=>'Cash on delivery'],
           'next'=>'Show this summary (items, delivery, automatic_discount if any, and the exact total_estimate) and ask the customer to confirm. Do NOT place the order until they clearly say yes.'];
       }
