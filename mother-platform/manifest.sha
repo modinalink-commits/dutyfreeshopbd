@@ -3,7 +3,7 @@ fe43f8b6cb422cca81ee18b74d3972f77e7852de database/migrations/2026_10_31_000001_m
 46ac6330ace84450b442d0d57c5c06f20c41f945 app/Models/Mother.php
 e4599e8ca63820a2f09bfce590e5c7a7561fcc75 app/Http/Controllers/AdminController.php
 242316b2ef0a0967e6815e39fcbc7377349fdc17 app/Console/Commands/MotherInstall.php
-8f3bfef536a04849e6b5dda139044be5ba02a99b resources/views/layout.blade.php
+f7ff0f6e52f58103ba378e3c2ff7c6abe0f5ac56 resources/views/layout.blade.php
 78c7dbbe082c3756f0bb680071dfb96c381f4fc8 resources/views/login.blade.php
 50955ff3b5c6b155c9ac77641e042a05fc1bad79 resources/views/dashboard.blade.php
 5a3d1a197f971e2f5476751f9fad08e545882476 resources/views/orders.blade.php
@@ -94,7 +94,7 @@ c6257a7c00c440a714c5f79b82777f9b40ce8448 resources/views/courier_setup.blade.php
 9a261ac1d931b86de2dbbd3ad9e5f189955a8995 database/migrations/2026_10_31_000011_courier_tracking.php
 748c81a8cf51fe9c7bf87b564c8dc050bf7b2dfe app/Support/CourierSync.php
 83d4554fe0d49fe8e860b6c33aa9fdc77199b240 resources/views/courier_dashboard.blade.php
-c8c7514e663273ca64a22a7879dd820771cb0aab app/Support/AiChat.php
+b5f9a5ac7fc01da216f3a7b672cba0632f80f456 app/Support/AiChat.php
 5037b023c469db12efdeeeba4f75d78d7d71551f app/Http/Controllers/AiChatController.php
 27212b867ecface45351ab20e2d6a536e50a190b resources/views/ai_chat.blade.php
 711462c02a514562175db97046a7dd4ff761426a database/migrations/2026_10_31_000012_cigarette_first.php
@@ -186,7 +186,7 @@ b6719a772bb81c71c1d9ebb4be468bde6915700a resources/views/sip_account.blade.php
 66b7e26d3fd910f91bbdd933c80b06a12e99065e resources/views/call_history.blade.php
 fbb6cd84d827af8a34300704a596121f6722c0dc resources/views/softphone_fab.blade.php
 d60cc2488e9d1428806a53b4a367beb5d0ec79c6 public/js/jssip.min.js
-76bb6c71b83ff3afaa0cf67d240775582e7f3425 public/js/df-export.js
+53ba1b995a5252de4f5b381010341da348b6119a public/js/df-export.js
 00d43c063dcf9feed9d0f70ea885452364dbac05 public/js/lame.min.js
 1946a8e81eccc56677f643e84b38901d91516d3d app/Support/CardImg.php
 c3732a3e2c27a150b4d0b55a8245c04f686ef706 app/Support/Seo.php
