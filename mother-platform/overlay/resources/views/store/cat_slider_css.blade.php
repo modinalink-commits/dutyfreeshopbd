@@ -36,4 +36,13 @@
 @media(prefers-reduced-motion:reduce){.cs2e .pc{opacity:1!important;transform:none!important}}
 @media(prefers-reduced-motion:reduce){.cs2-c,.cs2-t span{opacity:1!important;transform:none!important;transition:none!important}.cs2-tr{transition:none}.cs2-im,.cs2-im img,.cs2-pg i,.cs2-im .fds,.cs2-im .dp::before,.cs2-im .dp::after{animation:none!important}.cs2-bg{transform:none!important}}
 .cs2-tm{display:inline-flex;align-items:center;gap:6px;margin-top:6px;font-size:12px;font-weight:700;color:#4b5563}.cs2-tm b{background:#121A2B;color:#fff;border-radius:6px;padding:3px 7px;font-variant-numeric:tabular-nums}.cs2-tm span.c{color:#121A2B}
+/* Recently ordered - same light tinted banner as the sliders */
+body .w.sec-lv{padding-top:34px}
+body .w.sec-lv .lvbox{background:#F6F2FA;border:0;border-radius:20px;padding:22px 22px 26px;box-shadow:none;gap:14px}
+body .w.sec-lv .lvh h2{font:800 clamp(20px,3vw,30px)/1.15 Inter,system-ui,sans-serif;color:#121A2B;letter-spacing:-.01em}
+body .w.sec-lv .lvh h2 em{font-style:normal;-webkit-text-fill-color:#121A2B;color:#121A2B}
+body .w.sec-lv .lvh .chip{background:#fff;border:1px solid #E4D9F1;color:#121A2B}
+body .w.sec-lv .lvc{background:#fff;border:1px solid #E4D9F1}
+body .w.sec-lv .lo .bx{border:1px solid #E4D9F1;border-radius:14px;box-shadow:none}
+@media(max-width:640px){body .w.sec-lv .lvbox{padding:16px 12px 18px;border-radius:16px}}
 </style>
