@@ -242,6 +242,43 @@ class Chat {
       return true;
     } catch (\Throwable $e) { report($e); return false; }
   }
+  /** Worker tick (owner rule 11 Nov 2026): our message is the last one in the chat and the customer has not answered it for the set time (Chat Settings, default 30 min) - there is nothing to wait for, so the chat is closed as "no reply needed": a short last courtesy line (only while the 24-hour channel window is open) and Resolved, no Waiting / Awaiting Reply left. Open hand-offs, complaints, refunds, order requests etc. are never touched. */
+  public static function closeSilentTick(): void {
+    if (Sms::secret('ai_auto_close') === '0') return;
+    $min = max(5, min(720, (int)(Sms::secret('ai_close_after_min') ?: 30)));
+    $rows = DB::table('chat_threads')->where('last_dir', 'out')->whereIn('status', ['new', 'open', 'waiting'])->where(fn($w) => $w->where('awaiting_reply', true)->orWhere('unread', '>', 0))
+      ->where('last_at', '<=', now()->subMinutes($min))->orderBy('last_at')->limit(15)->get();
+    foreach ($rows as $t) {
+      $k = 'ai.silentclose.'.$t->id.'.'.substr((string)$t->last_at, 0, 16);
+      if (!\Illuminate\Support\Facades\Cache::add($k, 1, 86400)) continue;
+      self::closeSilent($t);
+    }
+  }
+  public static function closeSilent(object $t): bool {
+    try {
+      $tid = (int)$t->id; $t = DB::table('chat_threads')->find($tid); if (!$t || $t->status === 'resolved' || ($t->last_dir ?? '') !== 'out') return false;
+      if (!empty($t->needs_human) || !empty($t->handoff_at)) return false;
+      if (in_array((string)($t->intent ?? ''), ['complaint', 'refund', 'cancel', 'change_order', 'human_request', 'payment', 'order_request'], true)) return false;
+      if (DB::table('chat_handoffs')->where('thread_id', $tid)->whereIn('status', ['open', 'accepted'])->exists()) return false;
+      try { if (DB::table('chat_order_requests')->where('thread_id', $tid)->where('status', 'review')->exists()) return false; } catch (\Throwable $e) {}
+      $li = DB::table('chat_messages')->where('thread_id', $tid)->orderByDesc('id')->first(['id', 'dir', 'body', 'status', 'created_at']);
+      if (!$li || $li->dir !== 'out' || $li->status === 'failed') return false; // the customer never got our last message: a person must look
+      $lc = $t->last_customer_message_at ?? null;
+      $open = $t->channel === 'web' || ($lc && \Carbon\Carbon::parse($lc)->gte(now()->subHours(23)));
+      $cb = (string)DB::table('chat_messages')->where('thread_id', $tid)->where('dir', 'in')->orderByDesc('id')->value('body');
+      $bn = AiChat::banglaOnly() ? true : (bool)preg_match('/[\x{0980}-\x{09FF}]/u', $cb);
+      $txt = $bn ? 'স্যার, যদি কোনো কিছুর প্রয়োজন হয় আমাকে জানাবেন। ধন্যবাদ। 🙏' : 'Sir, please let me know if you need anything. Thank you. 🙏';
+      $upd = ['status'=>'resolved', 'unread'=>0, 'awaiting_reply'=>false, 'updated_at'=>now()];
+      if ($open && !preg_match('/(যদি কোনো কিছুর প্রয়োজন|let me know if you need)/iu', (string)$li->body)) {
+        [$sent, $err] = self::deliver($t, $txt);
+        DB::table('chat_messages')->insert(['thread_id'=>$tid, 'dir'=>'out', 'kind'=>'text', 'body'=>$txt, 'user_name'=>'Claude AI', 'is_ai'=>true, 'status'=>$sent ? 'sent' : 'failed', 'error'=>$err, 'created_at'=>now(), 'updated_at'=>now()]);
+        if ($sent) $upd += ['last_message'=>mb_substr($txt, 0, 300), 'last_dir'=>'out', 'last_at'=>now()];
+      }
+      DB::table('chat_threads')->where('id', $tid)->update($upd);
+      try { AiMemory::event($tid, null, 'ai', 'auto_resolved_no_reply', null, ['why'=>'customer silent after our last message']); } catch (\Throwable $e) {}
+      return true;
+    } catch (\Throwable $e) { report($e); return false; }
+  }
   /** Why a never-answered WhatsApp chat can NOT be closed with a last courtesy message (null = it can). */
   public static function unansweredBlock(object $t): ?string {
     if (!empty($t->needs_human) || !empty($t->handoff_at)) return 'hand-off / needs a person';
