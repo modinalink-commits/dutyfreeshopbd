@@ -2,7 +2,7 @@
 <style>
 :root{--o:#FF5A00;--n:#0B1220}
 *{box-sizing:border-box}html,body{height:100%}
-body{margin:0;font-family:'Bornomala',Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:var(--n);background:#FFFAF6;display:flex;align-items:center;justify-content:center;min-height:100vh;min-height:100dvh;padding:20px;overflow:hidden;position:relative}
+body{margin:0;font-family:'Bornomala',Inter,sans-serif;color:var(--n);background:#FFFAF6;display:flex;align-items:center;justify-content:center;min-height:100vh;min-height:100dvh;padding:20px;overflow:hidden;position:relative}
 .bg{position:fixed;inset:0;z-index:0;overflow:hidden;background:radial-gradient(1100px 600px at 50% -10%,#FFE9DA 0%,rgba(255,250,246,0) 60%),#FFFAF6}
 .bg i{position:absolute;border-radius:50%;filter:blur(60px);opacity:.55;animation:drift 16s ease-in-out infinite alternate}
 .bg i:nth-child(1){width:380px;height:380px;background:#FFD2B3;left:-90px;top:-80px}

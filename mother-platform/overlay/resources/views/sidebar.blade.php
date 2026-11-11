@@ -98,7 +98,7 @@ aside a.sub,aside details.rpg>summary{color:#D1D5DB}aside a.sub:hover,aside deta
 aside a.sub.on{background:#334155;color:#fff;box-shadow:inset 3px 0 0 #FF5A00}
 aside .gh{color:#9CA3AF}aside .me{border-top-color:rgba(255,255,255,.08);color:#F8FAFC}</style>
 <style>/* white sidebar theme (final override) */
-aside{background:#fff;color:#0B1220;border-right:1px solid #E5E7EB;box-shadow:1px 0 4px rgba(0,0,0,.03);font-family:"Inter","Bornomala","Segoe UI","Bornomala",Arial,sans-serif}
+aside{background:#fff;color:#0B1220;border-right:1px solid #E5E7EB;box-shadow:1px 0 4px rgba(0,0,0,.03);font-family:'Inter','Bornomala',sans-serif"Bornomala",Arial,sans-serif}
 aside .brand{color:#0B1220;font-weight:700}aside .brand b{background:#FF5A00;color:#fff}aside .brand small{color:#6B7280;font-size:11px;font-weight:400}
 aside .viewing{background:#fff;border:1px solid #E5E7EB}aside .viewing small{color:#6B7280}aside .viewing strong{color:#0B1220}
 aside .sbs input{background:#F8FAFC;border:1px solid #E5E7EB;color:#0B1220}aside .sbs input::placeholder{color:#9CA3AF}aside .sbs input:focus{outline:0;border-color:#FF5A00;box-shadow:0 0 0 2px rgba(255,90,0,.15)}aside .sbs div{color:#6B7280}
@@ -120,7 +120,7 @@ aside .me{background:#fff;border-top:1px solid #E5E7EB;color:#0B1220;font-weight
 aside .me button{background:#fff;color:#0B1220;border:1px solid #FF5A00}aside .me button:hover{background:#FFF1E8}
 </style>
 <style>/* NK-style sidebar: brand card, boxed groups with uppercase header bars, icon rows, soft-blue active item */
-aside.sbx{background:#F6F8FB!important;border-right:1px solid #A9B4C4!important;padding:12px 10px!important;gap:8px!important;font-family:"Inter","Bornomala","Segoe UI","Bornomala",Arial,sans-serif!important}
+aside.sbx{background:#F6F8FB!important;border-right:1px solid #A9B4C4!important;padding:12px 10px!important;gap:8px!important;font-family:'Inter','Bornomala',sans-serif"Bornomala",Arial,sans-serif!important}
 aside.sbx .sbx-brand{display:flex!important;flex-direction:column!important;align-items:flex-start!important;gap:7px!important;padding:12px!important;margin:0!important;border-radius:12px!important;background:linear-gradient(135deg,#1E3FA8,#1D5FA8)!important;text-decoration:none!important;box-shadow:0 2px 6px rgba(37,99,235,.25)}
 aside.sbx .sbx-logo{display:block;width:100%;box-sizing:border-box;background:#fff;border-radius:10px;padding:7px 10px;line-height:0}
 aside.sbx .sbx-logo img{display:block!important;height:28px!important;width:auto!important;max-width:100%!important;margin:0 auto}

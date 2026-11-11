@@ -12,7 +12,7 @@
 <td><input name="username" value="{{ $x->username ?? '' }}" placeholder="{{ $next }}" style="width:90px"></td>
 <td><input name="auth_username" value="{{ $x->auth_username ?? '' }}" placeholder="same" style="width:90px"></td>
 <td><input name="display_name" value="{{ $x->display_name ?? '' }}" placeholder="{{ $u->name }}" style="width:130px"></td>
-<td><input type="text" name="password" value="{{ \App\Http\Controllers\CallCenterController::pwPlain($x ?? null) }}" autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" placeholder="required" style="width:150px;font-family:ui-monospace,Menlo,monospace"></td>
+<td><input type="text" name="password" value="{{ \App\Http\Controllers\CallCenterController::pwPlain($x ?? null) }}" autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" placeholder="required" style="width:150px;font-family:Inter,'Bornomala',sans-serif"></td>
 <td><button class="btn" type="submit">Save</button></td></form></tr>
 @endforeach</table>
 <div style="margin-top:8px;font-size:12px;color:#6B7280">Extension ফাঁকা রেখে Save করলে ওই ইউজারের এক্সটেনশন সরে যায়। একই এক্সটেনশন দুজনকে দেওয়া যাবে না।</div></div>
@@ -26,7 +26,7 @@
 <td><input name="rows[{{ $i }}][extension]" value="{{ $p->extension ?? '' }}" style="width:100px" autocomplete="off"></td>
 <td><input name="rows[{{ $i }}][auth_username]" value="{{ $p->auth_username ?? '' }}" placeholder="same" style="width:100px" autocomplete="off"></td>
 <td><input name="rows[{{ $i }}][display_name]" value="{{ $p->display_name ?? '' }}" style="width:140px" autocomplete="off"></td>
-<td><input type="text" name="rows[{{ $i }}][password]" value="{{ \App\Http\Controllers\CallCenterController::pwPlain($p) }}" autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" style="width:160px;font-family:ui-monospace,Menlo,monospace"></td></tr>
+<td><input type="text" name="rows[{{ $i }}][password]" value="{{ \App\Http\Controllers\CallCenterController::pwPlain($p) }}" autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" style="width:160px;font-family:Inter,'Bornomala',sans-serif"></td></tr>
 @endfor</table>
 <div style="margin-top:10px;display:flex;gap:10px;align-items:center"><button class="btn" type="submit">Save extensions</button><span style="font-size:12px;color:#6B7280">Clear the Extension box of a saved row and Save to remove it.</span></div></form></div>
 @endsection

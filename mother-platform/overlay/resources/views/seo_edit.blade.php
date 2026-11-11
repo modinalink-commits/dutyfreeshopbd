@@ -21,7 +21,7 @@
 <label>Featured image URL</label><input name="featured_image" value="{{ old('featured_image',$pg->featured_image ?? '') }}">
 <label>Content (HTML)</label>
 <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:4px">@foreach([['H2','<h2>','</h2>'],['H3','<h3>','</h3>'],['B','<b>','</b>'],['I','<i>','</i>'],['List','<ul><li>','</li></ul>'],['Link','<a href=&quot;&quot;>','</a>']] as [$l,$a,$b])<button type="button" class="g" onclick="wrap('{{ $a }}','{{ $b }}')">{{ $l }}</button>@endforeach</div>
-<textarea name="body" id="bd" rows="16" style="font-family:monospace">{{ old('body',$pg->body ?? '') }}</textarea></div>
+<textarea name="body" id="bd" rows="16" style="font-family:Inter,'Bornomala',sans-serif">{{ old('body',$pg->body ?? '') }}</textarea></div>
 <div class="card"><h2>Search appearance</h2>
 <div id="gp" style="border:1px solid #E5E7EB;border-radius:8px;padding:10px 12px;margin-bottom:10px;background:#fff;max-width:640px"><div id="gu" style="font-size:12px;color:#188038"></div><div id="gt" style="font-size:18px;color:#1a0dab;line-height:1.25"></div><div id="gd" style="font-size:13px;color:#4d5156"></div></div>
 <label>SEO title <small id="ct" style="color:#6B7280"></small></label><input name="meta_title" id="mt" value="{{ old('meta_title',$pg->meta_title ?? '') }}">

@@ -48,7 +48,7 @@
 @foreach($set['tpl'] as $k=>$v)<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><span style="width:80px;font-size:12px;text-transform:capitalize">{{ $k }}</span><input name="tpl_{{ $k }}" value="{{ $v }}" style="flex:1"></div>@endforeach
 <label style="margin-top:10px">Verification codes (content value only)</label>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px"><div><label>Google Search Console</label><input name="gsc_verify" value="{{ $set['ver']['gsc_verify'] }}"></div><div><label>Bing</label><input name="bing_verify" value="{{ $set['ver']['bing_verify'] }}"></div><div><label>Facebook domain</label><input name="fb_verify" value="{{ $set['ver']['fb_verify'] }}"></div></div>
-<label style="margin-top:10px">robots.txt content (saved; shown for reference at /admin/seo)</label><textarea name="robots" rows="7" style="font-family:monospace">{{ $robots }}</textarea>
+<label style="margin-top:10px">robots.txt content (saved; shown for reference at /admin/seo)</label><textarea name="robots" rows="7" style="font-family:Inter,'Bornomala',sans-serif">{{ $robots }}</textarea>
 <div style="margin-top:10px"><button>Save settings</button></div></form></div>
 @endif
 @endsection

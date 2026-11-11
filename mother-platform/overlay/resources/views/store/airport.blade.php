@@ -9,7 +9,7 @@
 .dfa-k{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.14em;color:#FFB07A;border:1px solid rgba(255,176,122,.5);border-radius:20px;padding:4px 11px;background:rgba(5,11,23,.45)}
 .dfa-head h2{margin:10px 0 6px;font-size:clamp(17px,2.2vw,32px);line-height:1.12;font-weight:800;text-shadow:0 2px 14px rgba(0,0,0,.55)}.dfa-head h2 b{color:#FF7A2E}
 .dfa-head p{margin:0;font-size:clamp(12px,1.05vw,15px);color:#E3EAF6;line-height:1.55;text-shadow:0 1px 8px rgba(0,0,0,.6)}
-.dfa-board{position:absolute;right:2.5%;top:6%;width:30%;z-index:3;background:#04070D;border:2px solid #1E2A44;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.5);font-family:ui-monospace,Menlo,Consolas,monospace;overflow:hidden}
+.dfa-board{position:absolute;right:2.5%;top:6%;width:30%;z-index:3;background:#04070D;border:2px solid #1E2A44;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.5);font-family:Inter,'Bornomala',sans-serif;overflow:hidden}
 .dfa-bh{display:flex;justify-content:space-between;align-items:center;background:#0E1B34;padding:7px 11px;font-size:clamp(9px,.85vw,12px);font-weight:700;letter-spacing:.08em;color:#FFC56B}.dfa-bh i{font-style:normal;color:#8FD3FF}
 .dfa-rows{height:calc(5 * clamp(24px,2.5vw,36px))}
 .dfa-row{display:grid;grid-template-columns:3.6em minmax(0,1fr) auto;gap:8px;align-items:center;height:clamp(24px,2.5vw,36px);padding:0 11px;border-top:1px solid #131D33;color:#FFC56B;text-decoration:none;font-size:clamp(9px,.9vw,13px);white-space:nowrap;animation:dfaIn .6s ease}

@@ -8,7 +8,7 @@
 @font-face{font-family:'Inter';font-weight:600;font-style:normal;font-display:swap;src:url(/fonts/inter-latin-600-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
 @font-face{font-family:'Inter';font-weight:700;font-style:normal;font-display:swap;src:url(/fonts/inter-latin-700-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
 :root{
-  --font-ui:Inter,"Bornomala",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+  --font-ui:Inter,'Bornomala',sans-serif;
   --fs-10:10px;--fs-11:11px;--fs-12:12px;--fs-13:13px;--fs-14:14px;--fs-15:15px;--fs-16:16px;--fs-18:18px;--fs-20:20px;--fs-24:24px;
   --fw-normal:400;--fw-medium:500;--fw-semibold:600;--fw-bold:700;
   --lh-heading:1.25;--lh-body:1.45;--lh-table:1.35;--lh-label:1.25;

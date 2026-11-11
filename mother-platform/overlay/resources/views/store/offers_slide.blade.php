@@ -28,7 +28,7 @@
 @if($__n >= 2)
 <a class="hxa hxof" href="/#flash" aria-label="DutyFreeBD অফারসমূহ: {{ implode(', ', array_column($__of, 1)) }}">
 <style>
-.hxof{container-type:inline-size;position:relative;display:block;overflow:hidden;color:#fff;text-decoration:none;background:linear-gradient(120deg,#0B1220 0%,#1F2A44 58%,#3A2A2A 100%);font-family:'Bornomala',Inter,system-ui,sans-serif}
+.hxof{container-type:inline-size;position:relative;display:block;overflow:hidden;color:#fff;text-decoration:none;background:linear-gradient(120deg,#0B1220 0%,#1F2A44 58%,#3A2A2A 100%);font-family:'Bornomala',Inter,sans-serif}
 .hxof *{box-sizing:border-box}
 .hxof .og{position:absolute;right:-6cqw;top:-12cqw;width:60cqw;height:50cqw;background:radial-gradient(closest-side,rgba(255,90,0,.42),rgba(255,90,0,0) 70%);pointer-events:none;animation:ofGlow 6s ease-in-out infinite alternate}
 .hxof .os{position:absolute;top:0;bottom:0;left:-30%;width:22%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.10),transparent);transform:skewX(-18deg);animation:ofSweep 7s cubic-bezier(.4,0,.2,1) infinite;pointer-events:none}

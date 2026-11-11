@@ -124,7 +124,7 @@
         cx2.fillStyle = big ? '#FF5A00' : '#fff'; cx2.beginPath(); cx2.arc(p[0], p[1], rr, 0, 7); cx2.fill();
         if (big) { cx2.strokeStyle = '#fff'; cx2.lineWidth = dpr; cx2.stroke(); }
         if (k === 'CGP' || p[2] < .3) return;
-        var fs = k === 'DAC' ? fs0 * (small ? 1.5 : 1.75) : fs0; cx2.font = '700 ' + fs + 'px "Bornomala","Nirmala UI",system-ui,sans-serif';
+        var fs = k === 'DAC' ? fs0 * (small ? 1.5 : 1.75) : fs0; cx2.font = '700 ' + fs + 'px "Inter","Bornomala",sans-serif';
         var tw = cx2.measureText(c[0]).width, th = fs * 1.15, sides = [[8 * dpr, -th * .35], [-tw - 8 * dpr, -th * .35], [-tw / 2, -th - 6 * dpr], [-tw / 2, 6 * dpr]], j, bx, by, ok;
         for (j = 0; j < sides.length; j++) {
           bx = p[0] + sides[j][0]; by = p[1] + sides[j][1]; ok = bx > 2 * dpr && bx + tw < W - 2 * dpr;
@@ -143,7 +143,7 @@
         }
         vplanes.forEach(function (e) { if (e[0] === feat) tagP = e[1]; });
         if (tagP) {
-          var txt = tags[active], fs = (small ? 10.5 : 12) * dpr; cx2.font = '800 ' + fs + 'px system-ui,sans-serif'; var tw = cx2.measureText(txt).width + 16 * dpr, th = fs + 10 * dpr;
+          var txt = tags[active], fs = (small ? 10.5 : 12) * dpr; cx2.font = '800 ' + fs + 'px "Inter","Bornomala",sans-serif'; var tw = cx2.measureText(txt).width + 16 * dpr, th = fs + 10 * dpr;
           var tx = Math.min(W - tw - 4 * dpr, Math.max(4 * dpr, tagP[0] + 12 * dpr)), ty = Math.max((small ? 42 : 4) * dpr, tagP[1] - th - 10 * dpr);
           if (dacBox && tx < dacBox[0] + dacBox[2] + 4 * dpr && tx + tw > dacBox[0] - 4 * dpr && ty < dacBox[1] + dacBox[3] + 4 * dpr && ty + th > dacBox[1] - 4 * dpr) ty = Math.max(4 * dpr, dacBox[1] - th - 6 * dpr);
           cx2.strokeStyle = 'rgba(255,255,255,.55)'; cx2.lineWidth = dpr; cx2.beginPath(); cx2.moveTo(tagP[0], tagP[1]); cx2.lineTo(tx + 6 * dpr, ty + th); cx2.stroke();

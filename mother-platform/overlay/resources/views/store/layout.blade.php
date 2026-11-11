@@ -30,7 +30,7 @@
 @endphp
 <style>
 :root{--o:#FF5A00;--n:#0B1220;--bg:#FFFBF8;--bd:#FDC2A5;--pk:#FED7AA;--mut:#6B7280;--red:#DC2626;--grn:#16A34A}
-*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}body{margin:0;font-family:'Bornomala',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;background:var(--bg);color:#0B1220;line-height:1.35}a{color:inherit;text-decoration:none}input,textarea,select,button{font:inherit}button{cursor:pointer}
+*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}body{margin:0;font-family:Inter,'Bornomala',sans-serif;background:var(--bg);color:#0B1220;line-height:1.35}a{color:inherit;text-decoration:none}input,textarea,select,button{font:inherit}button{cursor:pointer}
 img{-webkit-user-drag:none;user-select:none;-webkit-touch-callout:none}
 .w{max-width:1440px;margin:0 auto;padding-left:80px;padding-right:80px}
 .ts{background:#F5F5F5;height:26px;display:flex;align-items:center;gap:20px;font-size:12.5px}.ts .ad{color:var(--o);font-weight:600;white-space:nowrap}.ts .tx{flex-grow:1;text-align:center;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

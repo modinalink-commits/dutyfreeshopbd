@@ -10,7 +10,7 @@
   --row-hover:#FFF8F3;--row-selected:#FFF1E8;
   --success:#16A34A;--warning:#D97706;--danger:#DC2626;--info:#2563EB;
   --g-radius:8px;--g-ctl-h:34px;--g-btn-h:32px;
-  --g-font:"Inter","Bornomala","Segoe UI",system-ui,Arial,sans-serif;
+  --g-font:'Inter','Bornomala',sans-serif;
 }
 body{font-family:var(--g-font)}
 main{padding:14px 16px;color:var(--text-primary);line-height:1.35}

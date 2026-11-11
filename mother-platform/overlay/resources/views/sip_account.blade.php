@@ -13,7 +13,7 @@
 <label>SIP WebSocket / WSS URL<input name="wss_url" id="wss" value="{{ $f('wss_url') }}" placeholder="wss://pbx.example.com:8089/ws"></label>
 </div></details>
 <label>Username / Extension<input name="username" id="usr" value="{{ $f('username') }}" required></label>
-<label>Password <small style="color:#6B7280">{{ $hasPw ? 'saved — shown as stored' : 'not set' }}</small><input type="text" name="password" id="pwd" value="{{ $pwPlain ?? '' }}" autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" style="font-family:ui-monospace,Menlo,monospace"></label>
+<label>Password <small style="color:#6B7280">{{ $hasPw ? 'saved — shown as stored' : 'not set' }}</small><input type="text" name="password" id="pwd" value="{{ $pwPlain ?? '' }}" autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" style="font-family:Inter,'Bornomala',sans-serif"></label>
 <details style="grid-column:1/-1"><summary style="cursor:pointer;font-size:13px;color:#6B7280">Advanced 2 — Domain, Auth, Caller ID, STUN</summary><div style="display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));margin-top:8px"><label>Auth Username<input name="auth_username" id="aus" value="{{ $f('auth_username') }}" placeholder="same as username if empty"></label>
 <label>Domain<input name="domain" id="dom" value="{{ $f('domain') }}" placeholder="childcity.pbx.com.bd" required></label>
 <label>Display Name<input name="display_name" value="{{ $f('display_name') }}" placeholder="Forhad"></label>

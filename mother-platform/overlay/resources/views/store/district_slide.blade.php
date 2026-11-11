@@ -2,7 +2,7 @@
 <style>
 .dmz{position:relative;display:block;text-decoration:none;overflow:hidden}
 .dmw{container:dm/inline-size;position:absolute;inset:0}
-.dm{position:relative;display:block;overflow:hidden;width:100%;height:100%;color:#0B2A5B;text-decoration:none;font-family:'Bornomala',Inter,system-ui,sans-serif;background:linear-gradient(180deg,#3DA8F4 0%,#7CC8F8 52%,#CFEBFF 100%)}
+.dm{position:relative;display:block;overflow:hidden;width:100%;height:100%;color:#0B2A5B;text-decoration:none;font-family:'Bornomala',Inter,sans-serif;background:linear-gradient(180deg,#3DA8F4 0%,#7CC8F8 52%,#CFEBFF 100%)}
 .dm,.dm *{box-sizing:border-box}
 .dm .rays{position:absolute;inset:-30% -10%;background:repeating-conic-gradient(from 0deg at 70% 48%,rgba(255,255,255,.2) 0 5deg,rgba(255,255,255,0) 5deg 10deg);-webkit-mask-image:radial-gradient(circle at 70% 48%,#000 0,transparent 68%);mask-image:radial-gradient(circle at 70% 48%,#000 0,transparent 68%);animation:dmSpin 90s linear infinite}
 @keyframes dmSpin{to{transform:rotate(360deg)}}

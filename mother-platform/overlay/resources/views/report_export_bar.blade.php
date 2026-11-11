@@ -20,7 +20,7 @@
   $__rxQ = collect(request()->query())->except(['page', 'partial', '_token', 'sort', 'dir', 'pp', 'rxdebug'])->filter(fn($v) => is_scalar($v) && $v !== '')->map(fn($v, $k) => ucwords(str_replace('_', ' ', $k)) . ': ' . $v)->values()->implode('  ·  ');
 @endphp
 @if(in_array(auth()->user()->role ?? '', ['super','admin'], true) && request()->query('rxdebug'))
-<div id="rxb-dbg" style="font:11px monospace;padding:4px">{{ 'cur=' . ($__rx->report_code ?? 'null') . ' native=' . (int)$__rxNative . ' export=' . (int)$__rxExp }}</div>
+<div id="rxb-dbg" style="font:11px Inter,sans-serif;padding:4px">{{ 'cur=' . ($__rx->report_code ?? 'null') . ' native=' . (int)$__rxNative . ' export=' . (int)$__rxExp }}</div>
 @endif
 @if($__rx)
 <div id="rxb-ph" style="display:none">

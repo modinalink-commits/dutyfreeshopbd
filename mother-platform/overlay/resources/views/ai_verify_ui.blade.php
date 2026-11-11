@@ -31,7 +31,7 @@ td.action-column .order-action-grid .ai-btn.s-pending{background:#EEF2F7!importa
 .aiv-why{display:flex;gap:12px;align-items:flex-start;background:#DCFCE7;border:1px solid #A7F3D0;border-radius:12px;padding:10px 14px;font-size:14px;font-weight:600;color:#166534}
 .aiv-why.w{background:#FEF3C7;border-color:#FDE68A;color:#78350F;flex-direction:column;gap:6px;font-weight:500}.aiv-why.w div{display:flex;gap:8px;overflow-wrap:anywhere}
 .aiv-wi{width:30px;height:30px;border-radius:50%;background:#16A34A;color:#fff;display:flex;align-items:center;justify-content:center;flex:none}.aiv-wi svg{width:18px;height:18px}
-.aiv .cd{background:none!important;border:0!important;padding:0!important;color:#7C8AA0!important;font-size:10px!important;font-family:ui-monospace,Menlo,monospace;font-weight:600;letter-spacing:.03em;box-shadow:none!important;margin-left:6px}
+.aiv .cd{background:none!important;border:0!important;padding:0!important;color:#7C8AA0!important;font-size:10px!important;font-family:Inter,'Bornomala',sans-serif;font-weight:600;letter-spacing:.03em;box-shadow:none!important;margin-left:6px}
 .aiv-card{border:1px solid #E5E7EB;border-radius:14px;overflow:hidden;background:#fff;margin-bottom:4px}
 .aiv-ck{display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid #EEF2F7}.aiv-ck:last-child{border-bottom:0}
 .aiv-ck .aiv-ic{width:40px;height:40px;border-radius:11px}
