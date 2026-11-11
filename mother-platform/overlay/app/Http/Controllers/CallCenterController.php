@@ -96,7 +96,10 @@ class CallCenterController extends Controller {
     $users = DB::table('users')->orderBy('id')->get(['id', 'name', 'email', 'role', 'active']); $rows = DB::table('sip_accounts')->whereNotNull('user_id')->get()->keyBy('user_id');
     $used = $rows->pluck('username')->filter()->all(); $next = 101; while (in_array((string)$next, $used)) $next++;
     $pool = DB::table('pbx_extensions')->orderBy('id')->get();
-    return view('sip_extensions', ['users'=>$users, 'rows'=>$rows, 'next'=>$next, 'pool'=>$pool]);
+    // Which extensions the Call Clients relay uses (client calls) — same rule as the relay config; everything else is agent/staff.
+    $relay = array_map('trim', preg_split('/[\s,]+/', (string)\App\Support\Voice::set('relay_pool_exts', '106,107,108,109,110')));
+    foreach (explode("\n", (string)\App\Support\Sms::secret('vc_relay_exts')) as $l) { $u = trim(explode(':', $l, 2)[0]); if ($u !== '') $relay[] = $u; }
+    return view('sip_extensions', ['users'=>$users, 'rows'=>$rows, 'next'=>$next, 'pool'=>$pool, 'relay'=>array_values(array_filter(array_unique($relay)))]);
   }
   public function saveExtension(Request $r, $uid) {
     abort_unless(DB::table('users')->where('id', $uid)->exists(), 404);
