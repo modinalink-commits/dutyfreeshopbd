@@ -237,7 +237,7 @@ class AdminController extends Controller {
   public function orderProducts(Request $r) {
     $q = trim((string)$r->query('q', '')); if (mb_strlen($q) < 1) return response()->json([]);
     $like = '%'.str_replace(['%', '_'], '', $q).'%';
-    return response()->json(DB::table('products')->where(fn($w) => \App\Support\SkuSearch::orSku($w->where('name', 'ilike', $like)->orWhere('sku', 'ilike', $like), $q))->orderByRaw('published desc')->limit(12)->get(['id', 'name', 'sku', 'price', 'stock'])->map(fn($p) => ['id'=>$p->id, 'name'=>$p->name, 'sku'=>$p->sku, 'price'=>(float)$p->price, 'stock'=>(int)$p->stock])->all());
+    return response()->json(DB::table('products')->where(fn($w) => \App\Support\SkuSearch::orSku($w->where('name', 'ilike', $like)->orWhere('sku', 'ilike', $like), $q))->orderByRaw('published desc')->limit(12)->get(['id', 'name', 'sku', 'price', 'stock', 'image'])->map(fn($p) => ['id'=>$p->id, 'name'=>$p->name, 'sku'=>$p->sku, 'price'=>(float)$p->price, 'stock'=>(int)$p->stock, 'image'=>$p->image])->all());
   }
   /** Create Order: find a saved customer by mobile number and return what we know about them. */
   public function orderLookup(Request $r) {

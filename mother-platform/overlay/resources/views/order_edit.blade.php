@@ -80,9 +80,10 @@ $('oeBody').addEventListener('input',function(e){var f=e.target.getAttribute('da
  var tr=e.target.closest('tr');var tot=tr.children[5].firstChild;tot.textContent='৳'+fm(r.qty*r.price);if(f==='price'){clearTimeout(window._pr);window._pr=setTimeout(function(){render()},700)}else{shareDisc();quote()}});
 /* ---- add / replace product */
 var repIdx=-1,st=null;
+function th(u){return '<img src="'+esc(u||'/product-placeholder')+'" alt="" loading="lazy" style="width:34px;height:34px;object-fit:contain;border:1px solid #E5E7EB;border-radius:6px;background:#fff;flex:none" onerror="this.onerror=null;this.src=\'/product-placeholder\'">'}
 $('oeAdd').addEventListener('input',function(){var q=this.value.trim();clearTimeout(st);if(!q){$('oeAddRes').style.display='none';return}
  st=setTimeout(function(){fetch('/admin/orders/rev-products?q='+encodeURIComponent(q),{headers:{Accept:'application/json'}}).then(function(r){return r.json()}).then(function(a){var box=$('oeAddRes'),h='';
-  a.forEach(function(p,pi){if(p.variants.length){p.variants.forEach(function(v,vi){h+='<div data-p="'+pi+'" data-v="'+vi+'"><b>'+esc(p.name)+'</b> — '+esc(v.label)+' · ৳'+fm(v.price)+' · stock '+v.stock+(v.sku?' · '+esc(v.sku):'')+'</div>'})}else h+='<div data-p="'+pi+'"><b>'+esc(p.name)+'</b> · ৳'+fm(p.price)+' · stock '+p.stock+(p.sku?' · '+esc(p.sku):'')+(p.barcode?' · '+esc(p.barcode):'')+'</div>'});
+  a.forEach(function(p,pi){if(p.variants.length){p.variants.forEach(function(v,vi){h+='<div data-p="'+pi+'" data-v="'+vi+'" style="display:flex;align-items:center;gap:8px">'+th(p.image)+'<span><b>'+esc(p.name)+'</b> — '+esc(v.label)+' · ৳'+fm(v.price)+' · stock '+v.stock+(v.sku?' · '+esc(v.sku):'')+'</span></div>'})}else h+='<div data-p="'+pi+'" style="display:flex;align-items:center;gap:8px">'+th(p.image)+'<span><b>'+esc(p.name)+'</b> · ৳'+fm(p.price)+' · stock '+p.stock+(p.sku?' · '+esc(p.sku):'')+(p.barcode?' · '+esc(p.barcode):'')+'</span></div>'});
   box.innerHTML=h||'<div style="color:#6B7280">No product found.</div>';box.style.display='block';box._d=a})},250)});
 $('oeAddRes').addEventListener('click',function(e){var d=e.target.closest('[data-p]');if(!d)return;var p=this._d[+d.getAttribute('data-p')],v=d.hasAttribute('data-v')?p.variants[+d.getAttribute('data-v')]:null;
  var nm=p.name+(v?' – '+v.label:''),pr=v?v.price:p.price,stk=v?v.stock:p.stock;

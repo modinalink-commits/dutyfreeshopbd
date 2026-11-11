@@ -29,7 +29,7 @@ class IncompleteController extends Controller {
     $none = ['incHtml'=>[], 'incTailHtml'=>'', 'incTop'=>collect(), 'incTopImgs'=>[]];
     if ($r->filled('status') || $r->filled('print') || !\Illuminate\Support\Facades\Schema::hasTable('incomplete_orders')) return $none;
     $items = collect($orders->items()); $first = $items->first(); $last = $items->last();
-    $q = DB::table('incomplete_orders')->where('status', 'open');
+    $q = DB::table('incomplete_orders')->where($r->filled('q') ? fn($w) => $w->whereIn('status', ['open', 'recovered', 'archived']) : fn($w) => $w->where('status', 'open')); // a search also finds Cancelled / Recovered checkouts, so a cancelled one can be found by phone and restored
     if ($r->filled('q')) { $qs = trim((string)$r->q); $qd = preg_replace('/\D/', '', $qs); $q->where(fn($w) => $w->where('phone', 'like', '%'.($qd !== '' ? $qd : $qs).'%')->orWhere('name', 'ilike', '%'.$qs.'%')); }
     if ($range) { if ($range[0]) $q->where('created_at', '>=', $range[0]); if ($range[1]) $q->where('created_at', '<=', $range[1]); }
     $pg = (int)$r->query('page', 1);
@@ -45,9 +45,9 @@ class IncompleteController extends Controller {
     return ['incHtml'=>$html, 'incTailHtml'=>$tailHtml, 'incTop'=>collect(), 'incTopImgs'=>[]];
   }
   public static function data(Request $r, ?array $range = null): array {
-    $st = array_key_exists($r->query('inc'), self::TABS) ? $r->query('inc') : 'open'; $q = trim((string)$r->query('q', ''));
+    $explicit = array_key_exists($r->query('inc'), self::TABS); $st = $explicit ? $r->query('inc') : 'open'; $q = trim((string)$r->query('q', '')); $all = $q !== '' && !$explicit; // typing a phone/name/invoice searches every tab (Open, Recovered, Cancelled, Converted)
     $qd = preg_replace('/\D/', '', $q); if (str_starts_with($qd, '880')) $qd = substr($qd, 2);
-    $rows = DB::table('incomplete_orders')->where('status', $st)->when($q !== '', fn($w) => $w->where(fn($x) => $x->where('phone', 'like', '%'.($qd !== '' ? $qd : $q).'%')->orWhere('name', 'ilike', '%'.$q.'%')->orWhere('invoice', 'ilike', '%'.$q.'%')))
+    $rows = DB::table('incomplete_orders')->when(!$all, fn($w) => $w->where('status', $st))->when($q !== '', fn($w) => $w->where(fn($x) => $x->where('phone', 'like', '%'.($qd !== '' ? $qd : $q).'%')->orWhere('name', 'ilike', '%'.$q.'%')->orWhere('invoice', 'ilike', '%'.$q.'%')))
       ->when($range && $range[0], fn($w) => $w->where('created_at', '>=', $range[0]))->when($range && $range[1], fn($w) => $w->where('created_at', '<=', $range[1]))
       ->orderByDesc('created_at')->orderByDesc('id')->paginate(\App\Support\Pg::per(24))->withQueryString();
     $counts = DB::table('incomplete_orders')->select('status', DB::raw('count(*) n'))->groupBy('status')->pluck('n', 'status');
@@ -55,7 +55,7 @@ class IncompleteController extends Controller {
     $ph = collect($rows->items())->pluck('phone')->all();
     $cust = $ph ? DB::table('customers')->whereIn('phone', $ph)->pluck('id', 'phone') : collect();
     self::decorate($rows->items());
-    return ['incRows'=>$rows, 'incSt'=>$st, 'incCounts'=>$counts, 'incSum'=>(float)$open->s, 'incTabs'=>self::TABS, 'incCust'=>$cust, 'incImgs'=>self::imgs($rows->items())];
+    return ['incRows'=>$rows, 'incSt'=>$all ? 'all' : $st, 'incCounts'=>$counts, 'incSum'=>(float)$open->s, 'incTabs'=>self::TABS, 'incCust'=>$cust, 'incImgs'=>self::imgs($rows->items())];
   }
   /** Read-only detail page of one incomplete checkout. */
   public function show($id) {

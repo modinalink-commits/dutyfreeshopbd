@@ -1,7 +1,7 @@
 @php
  $it = json_decode($o->items ?: '[]', true) ?: []; $ph = \App\Support\StoreScanner::ph(); $inv = $o->invoice ?: 'INC-'.str_pad($o->id, 5, '0', STR_PAD_LEFT);
  $so = \App\Http\Controllers\IncompleteEditController::asOrder($o); $ci = $o->ci ?? null;
- $stLab = ['open'=>'Open', 'recovered'=>'Recovered', 'archived'=>'Cancel', 'converted'=>'Converted'][$o->status] ?? 'Open';
+ $stLab = ['open'=>'Open', 'recovered'=>'Recovered', 'archived'=>'Cancelled', 'converted'=>'Converted'][$o->status] ?? 'Open';
 @endphp
 <tr class="st-incomplete"><td>@if(!empty($withCheck) && $o->status !== 'converted')<input type="checkbox" name="iids[]" value="{{ $o->id }}" style="width:auto">@endif</td>
 <td><a href="/admin/incomplete/{{ $o->id }}" style="font-weight:600;color:#1D5FA8">{{ $inv }}</a><br><small style="color:#6B7280;font-weight:500">{{ \Carbon\Carbon::parse($o->created_at)->timezone('Asia/Dhaka')->format('d M Y, h:i A') }}</small></td>
