@@ -111,7 +111,7 @@ main{height:calc(100vh / var(--z,1));overflow:hidden;display:flex;flex-direction
 @verbatim
 <script>
 (function(){
-var I={
+var I={human:'<svg viewBox="0 0 24 24" fill="none" stroke="#C2410C" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>',
 all:'<svg viewBox="0 0 24 24" fill="none" stroke="#FF5A00" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 16 9 5 9-5"/></svg>',
 facebook:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#1877F2"/><path class="kp" d="M13.2 20v-7h2.3l.4-2.8h-2.7V8.5c0-.8.3-1.3 1.4-1.3H16V4.7c-.3 0-1.1-.1-2.1-.1-2.1 0-3.5 1.3-3.5 3.6v2H8v2.8h2.4v7" fill="#fff"/></svg>',
 instagram:'<svg viewBox="0 0 24 24"><defs><linearGradient id="ig" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#FEC053"/><stop offset=".4" stop-color="#F2203E"/><stop offset=".7" stop-color="#B729A8"/><stop offset="1" stop-color="#5342D6"/></linearGradient></defs><rect x="2" y="2" width="20" height="20" rx="6" fill="none" stroke="url(#ig)" stroke-width="2.2"/><circle cx="12" cy="12" r="4.4" fill="none" stroke="url(#ig)" stroke-width="2.2"/><circle cx="17.4" cy="6.6" r="1.3" fill="#B729A8"/></svg>',
@@ -121,12 +121,12 @@ orders:'<svg viewBox="0 0 24 24" fill="none" stroke="#4B5563" stroke-width="1.8"
   unread:'<svg viewBox="0 0 24 24" fill="none" stroke="#4B5563" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.5 7 8.5 6 8.5-6"/></svg>',
 assigned:'<svg viewBox="0 0 24 24" fill="none" stroke="#4B5563" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4.5 20c.8-3.6 3.8-5.5 7.5-5.5s6.7 1.9 7.5 5.5"/></svg>',
 resolved:'<svg viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="m8 12.3 2.6 2.6L16.2 9"/></svg>'};
-var F1=[['all','All'],['facebook','Facebook'],['instagram','Instagram'],['whatsapp','WhatsApp'],['web','Website Chat']],F2=[['unread','Unread'],['assigned','Assigned to me'],['resolved','Resolved'],['orders','Order Requests']],waiting=0,orq=0;
+var F1=[['all','All'],['facebook','Facebook'],['instagram','Instagram'],['whatsapp','WhatsApp'],['web','Website Chat']],F2=[['unread','Unread'],['assigned','Assigned to me'],['human','Human Answer'],['resolved','Resolved'],['orders','Order Requests']],waiting=0,orq=0,hum=0;
 var f=new URLSearchParams(location.search).get('f')||'all',q='',sel=null,tmr;
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function ago(iso){if(!iso)return '';var s=(Date.now()-new Date(iso).getTime())/1000;if(s<60)return 'now';if(s<3600)return Math.floor(s/60)+'m';if(s<86400)return Math.floor(s/3600)+'h';return new Date(iso).toLocaleDateString([], {day:'numeric',month:'short'})}
 var CHL={facebook:'f',instagram:'IG',whatsapp:'W',web:'💬'};
-function pill(x){return '<a data-f="'+x[0]+'" class="'+(f===x[0]?'on':'')+'" role="button" tabindex="0">'+I[x[0]]+'<span>'+x[1]+'</span>'+(x[0]==='unread'&&waiting>0?'<span class="cn">'+waiting+'</span>':'')+(x[0]==='orders'&&orq>0?'<span class="cn">'+orq+'</span>':'')+'</a>'}
+function pill(x){return '<a data-f="'+x[0]+'" class="'+(f===x[0]?'on':'')+'" role="button" tabindex="0">'+I[x[0]]+'<span>'+x[1]+'</span>'+(x[0]==='unread'&&waiting>0?'<span class="cn">'+waiting+'</span>':'')+(x[0]==='orders'&&orq>0?'<span class="cn">'+orq+'</span>':'')+(x[0]==='human'&&hum>0?'<span class="cn">'+hum+'</span>':'')+'</a>'}
 function drawF(){document.getElementById('ibf1').innerHTML=F1.map(pill).join('');
   document.getElementById('ibf2').innerHTML=F2.map(pill).join('')+'<span class="sp"></span><button class="fa" type="button" id="ibup" title="Fetch the latest messages. This never marks anything as seen.">↻ Update</button><button class="fa" type="button" id="ibm">🔔 Sound on</button><a href="/admin/chat/memory" style="height:38px;border-color:#FF5A00;color:#C2410C">🧠 AI Memory</a><a href="/admin/chat-settings" style="height:38px">Chat settings</a>';
   document.querySelectorAll('#ibfb a[data-f]').forEach(function(a){a.onclick=function(){f=a.dataset.f;drawF();load()};a.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();a.click()}}});
@@ -154,7 +154,7 @@ function loadOrq(){return fetch('/admin/chat/order-requests?s=review',{headers:{
     b.disabled=true;var tok=(document.querySelector('meta[name=csrf-token]')||{}).content||'';
     fetch('/admin/chat/order-requests/'+id+'/'+a,{method:'POST',headers:{'X-CSRF-TOKEN':tok,'Accept':'application/json'},credentials:'same-origin'}).then(function(r){return r.json()}).then(function(j){if(j.ok){if(a==='create')alert('Order created: '+j.invoice);loadOrq();drawF()}else{alert(j.error||'Failed');b.disabled=false}}).catch(function(){alert('Failed');b.disabled=false})}})})})}
 function load(){if(f==='orders')return loadOrq();return fetch('/admin/chat/threads?f='+f+'&q='+encodeURIComponent(q),{headers:{Accept:'application/json'},credentials:'same-origin'}).then(function(r){return r.json()}).then(function(j){
-  if((j.order_requests||0)!==orq){orq=j.order_requests||0;drawF()}var u=document.getElementById('ibu');u.innerHTML=j.unread?'<span class="ub">'+j.unread+' waiting</span>':'';if(window.MChat)MChat.badge(j.unread);
+  if((j.order_requests||0)!==orq||(j.human||0)!==hum){orq=j.order_requests||0;hum=j.human||0;drawF()}var u=document.getElementById('ibu');u.innerHTML=j.unread?'<span class="ub">'+j.unread+' waiting</span>':'';if(window.MChat)MChat.badge(j.unread);
   if(waiting!==j.unread){waiting=j.unread;var uf=document.querySelector('#ibfb a[data-f=unread]');if(uf){var cn=uf.querySelector('.cn');if(waiting>0){if(!cn){cn=document.createElement('span');cn.className='cn';uf.appendChild(cn)}cn.textContent=waiting}else if(cn)cn.remove()}}
   var l=document.getElementById('ibl');if(!j.threads.length){l.innerHTML='<div class="emp">No conversations here yet.</div>';return}
   var ur=j.threads.filter(function(t){return t.awaiting&&t.status!=='resolved'}),rd=j.threads.filter(function(t){return !(t.awaiting&&t.status!=='resolved')});
