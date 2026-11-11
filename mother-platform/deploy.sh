@@ -21,6 +21,7 @@ cat > "$D/hc.php" <<'PHP'
 $base=$argv[1]; $host=$argv[2]; $paths=array_slice($argv,3); $bad=0;
 function get($u,$host,&$code){ $ctx=stream_context_create(['http'=>['timeout'=>40,'ignore_errors'=>true,'follow_location'=>0,'header'=>"Host: $host\r\nUser-Agent: deploy-check\r\nX-Forwarded-Proto: https\r\n"]]); $b=@file_get_contents($u,false,$ctx); $code=0; if(isset($http_response_header[0]) && preg_match('#\s(\d{3})\s#',$http_response_header[0],$m)) $code=(int)$m[1]; return $b; }
 foreach($paths as $p){
+  if($p==='@category'){ $h=get($base.'/',$host,$c); if($h && preg_match('#href="(/[a-z0-9-]+/[a-z0-9-]+)"#',$h,$m)) $p=$m[1]; else { echo "SKIP no category link\n"; continue; } }
   if($p==='@product'){ $h=get($base.'/',$host,$c); if($h && preg_match('#href="(/[a-z0-9-]+/[a-z0-9-]+/[a-z0-9-]+)"#',$h,$m)) $p=$m[1]; else { echo "SKIP no product link\n"; continue; } }
   $t=microtime(true); $b=get($base.$p,$host,$code);
   $ok=$code>=200 && $code<400 && $b!==false && !preg_match('/Server Error|Whoops|Stack trace|ErrorException|Undefined (variable|array key)/i',(string)$b);
@@ -129,7 +130,7 @@ chown -R www-data:www-data "$REL/bootstrap/cache" /srv/shared/storage 2>/dev/nul
 log "7/9 health check on the NEW release (not live yet)"; stg Testing 72
 su -s /bin/sh www-data -c "cd $REL && exec php -S 127.0.0.1:8099 -t public public/index.php" >"$D/hc-server.log" 2>&1 &
 HPID=$!; sleep 3
-php "$D/hc.php" http://127.0.0.1:8099 dutyfreeshopbd.com / @product /offline /manifest.webmanifest /track /admin/login /account/login /_health | sed 's/^/   /'
+php "$D/hc.php" http://127.0.0.1:8099 dutyfreeshopbd.com / @product @category /search?q=marlboro /search?q=perfume /offline /manifest.webmanifest /track /admin/login /account/login /_health | sed 's/^/   /'
 HC=$?; kill "$HPID" 2>/dev/null; HPID=""; pkill -f 'php -S 127.0.0.1:8099' 2>/dev/null
 [ "$HC" = 0 ] || fail "health check failed on new release (live site untouched)"
 
