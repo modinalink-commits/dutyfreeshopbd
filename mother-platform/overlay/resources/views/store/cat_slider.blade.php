@@ -18,7 +18,7 @@
 .cs2-im img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#fff;padding:8%;box-sizing:border-box;transition:transform .5s cubic-bezier(.2,.8,.2,1)}
 .cs2.in .cs2-im img{animation:cs2fl 5s ease-in-out infinite;animation-delay:calc(var(--k)*-.7s)}
 .cs2-c:hover .cs2-im img{animation:none;transform:scale(1.04)}
-.cs2-sv{position:absolute;top:8px;left:8px;z-index:1;background:#121A2B;color:#fff;font-size:10.5px;font-weight:800;letter-spacing:.04em;padding:4px 8px;border-radius:6px}
+.cs2-im .fds{z-index:3}.cs2-sv{position:absolute;top:8px;left:8px;z-index:1;background:#121A2B;color:#fff;font-size:10.5px;font-weight:800;letter-spacing:.04em;padding:4px 8px;border-radius:6px}
 .cs2-n{padding:10px 12px 0;font-size:13px;font-weight:600;line-height:1.35;height:2.7em;box-sizing:content-box;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .cs2-p{padding:6px 12px 12px;margin-top:auto;font-size:15px;font-weight:800}.cs2-p s{font-size:12px;font-weight:400;color:#6b7280;margin-left:6px}
 .cs2-ar{position:absolute;top:42%;width:38px;height:38px;border-radius:50%;border:1px solid #e5e7eb;background:#fff;color:#121A2B;box-shadow:0 2px 8px rgba(18,26,43,.15);cursor:pointer;z-index:2;display:none;align-items:center;justify-content:center;font-size:18px;line-height:1;padding:0}
