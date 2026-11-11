@@ -208,6 +208,6 @@ class AgentTools {
     if (empty($r['ok'])) return ['error'=>$r['error'].' - hand over to a human agent', 'handoff_required'=>true];
     $st['cart'] = []; unset($st['pending']); AiMemory::event((int)($ctx['thread_id'] ?? 0), null, 'ai', 'order_created', null, ['invoice'=>$r['invoice'], 'total'=>$r['total']]);
     \Illuminate\Support\Facades\Cache::put('ai.invoice.'.(int)($ctx['thread_id'] ?? 0), $r['invoice'], 600); // Chat::aiReply sends the secure invoice link right after the AI's message
-    return ['placed'=>true, 'invoice'=>$r['invoice'], 'total'=>self::money($r['total']), 'payment'=>'Cash on delivery', 'note'=>'The system sends the invoice link by itself right after your message: do not paste any link. A team member will confirm shortly. Do not promise a delivery time.'];
+    return ['placed'=>true, 'ship_to'=>$p['address'], 'invoice'=>$r['invoice'], 'total'=>self::money($r['total']), 'payment'=>'Cash on delivery', 'note'=>'The system sends the invoice link by itself right after your message: do not paste any link. A team member will confirm shortly. Do not promise a delivery time.'];
   }
 }
