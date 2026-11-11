@@ -569,7 +569,7 @@ class ChatController extends Controller {
             $th = Chat::ingest($ch, (string)$m['sender']['id'], null, $body, $att, $msg['mid'] ?? null, ['page_ref'=>(string)($e['id'] ?? ''), 'att_type'=>$atype]);
             if ($th && $att && $atype === 'audio' && ($vid = DB::table('chat_messages')->where('ext_id', $msg['mid'] ?? '-')->value('id'))) { $vid = (int)$vid; app()->terminating(fn() => Chat::transcribe($vid)); }
             if ($th && $att && $atype === 'image' && \App\Support\AiChat::paused($th) && ($hid = DB::table('chat_messages')->where('ext_id', $msg['mid'] ?? '-')->value('id'))) { $hid = (int)$hid; $htid = (int)$th->id; app()->terminating(fn() => Chat::imageHint($htid, $hid)); }
-            if ($th && $ch === 'facebook' && !\App\Support\AiChat::paused($th) && !($att && $atype !== 'image')) { $tid = (int)$th->id; app()->terminating(fn() => Chat::aiReply($tid)); }
+            if ($th && $ch === 'facebook' && !\App\Support\AiChat::paused($th) && !($att && !in_array($atype, ['image', 'audio'], true))) { $tid = (int)$th->id; app()->terminating(fn() => Chat::aiReply($tid)); }
           }
         } elseif ($obj === 'whatsapp_business_account') {
           foreach ($e['changes'] ?? [] as $c) {
@@ -625,7 +625,7 @@ class ChatController extends Controller {
               if ($th && ($th->page_ref ?? null) !== $wref) { DB::table('chat_threads')->where('id', $th->id)->update(['page_ref'=>$wref]); $th->page_ref = $wref; } // replies go out from the number the customer wrote to
               if ($th && $att && ($meta['att_type'] ?? '') === 'audio' && ($vid = DB::table('chat_messages')->where('ext_id', $m['id'] ?? '-')->value('id'))) { $vid = (int)$vid; app()->terminating(fn() => Chat::transcribe($vid)); }
               if ($th && $att && ($meta['att_type'] ?? '') === 'image' && \App\Support\AiChat::paused($th) && ($hid = DB::table('chat_messages')->where('ext_id', $m['id'] ?? '-')->value('id'))) { $hid = (int)$hid; $htid = (int)$th->id; app()->terminating(fn() => Chat::imageHint($htid, $hid)); }
-              if ($th && !\App\Support\AiChat::paused($th) && !($att && ($meta['att_type'] ?? 'image') !== 'image') && in_array($type, ['text', 'button', 'image'], true)) { $tid = (int)$th->id; app()->terminating(fn() => Chat::aiReply($tid)); }
+              if ($th && !\App\Support\AiChat::paused($th) && !($att && !in_array($meta['att_type'] ?? 'image', ['image', 'audio'], true)) && in_array($type, ['text', 'button', 'image', 'audio'], true)) { $tid = (int)$th->id; app()->terminating(fn() => Chat::aiReply($tid)); }
             }
           }
         }

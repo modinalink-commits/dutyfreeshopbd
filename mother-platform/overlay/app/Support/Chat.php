@@ -334,8 +334,12 @@ class Chat {
         $li = DB::table('chat_messages')->where('thread_id', $tid)->orderByDesc('id')->first();
         if (!$li || $li->dir !== 'in') return;
         $lb = trim((string)$li->body);
-        // owner rule 11 Nov 2026: a customer voice message is answered by a person only (Messages > Human Answer); the AI stays silent and never answers it
-        if ($li->attachment_type === 'audio') return;
+        // a customer voice message: turn it into words first (synchronously), then answer exactly what was said; if it cannot be understood, it goes to Messages > Human Answer for staff
+        if ($li->attachment_type === 'audio' && $li->attachment_url) {
+          if (empty($li->transcript)) { self::transcribe((int)$li->id); $li = DB::table('chat_messages')->find($li->id); }
+          if (!empty($li->transcript)) { $lb = trim((string)$li->transcript); }
+          else { DB::table('chat_threads')->where('id', $tid)->update(['needs_human'=>true, 'updated_at'=>now()]); return; }
+        }
         // the customer's clear goodbye (or "no" to our "any other question?" line): courtesy reply + resolve, when nothing is pending
         $askedClose = (bool)preg_match('/(আর কোনো প্রশ্ন|any other question|anything else)/iu', (string)DB::table('chat_messages')->where('thread_id', $tid)->where('dir', 'out')->orderByDesc('id')->value('body'));
         if (self::isFarewell($lb, $askedClose) && self::autoClose($t)) { \Illuminate\Support\Facades\Cache::forget($lock); return; }
