@@ -148,7 +148,7 @@ class StoreController extends Controller {
   }
   /** Tobacco/vape is kept off Google: these pages are noindex and absent from the sitemap, and public titles/descriptions never mention it. */
   public static function isSmokeCat($c): bool { return $c && (($c->slug ?? '') === 'cigarette-vape' || preg_match('/cigarette|vape|সিগারেট|ভেপ/iu', (string)($c->name ?? '')) === 1); }
-  public static function cleanSeo(?string $v, string $fallback): string { $v = trim((string)$v); return ($v === '' || preg_match('/সিগারেট|ভেপ|cigar|vape|tobacco|nicotin|smok/iu', $v)) ? $fallback : $v; }
+  public static function cleanSeo(?string $v, string $fallback): string { $v = trim((string)$v); return $v === '' ? $fallback : $v; } // owner (12 Nov 2026): cigarette wording is allowed in the title and description
   /** Keep <title> within ~60 chars so Google does not truncate it: cut the name part at a word boundary. */
   public static function fitTitle(string $name, string $suffix, int $max = 62): string {
     $name = trim(preg_replace('/\s+/u', ' ', $name)); $room = $max - mb_strlen($suffix);
