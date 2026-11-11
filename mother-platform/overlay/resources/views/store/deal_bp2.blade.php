@@ -112,6 +112,26 @@
 .bpx-sb{padding:20px 12px 10px;gap:8px}.bpx-t div{width:48px}.bpx-bc{display:none}.bpx-all{grid-column:1/-1;padding:7px}
 }
 @media(prefers-reduced-motion:reduce){.bpx-ln i{animation:none;left:calc(50% - 12px);opacity:1}}
+/* Premium First Class skin (owner pick #5): navy pass, orange header, white-on-navy text */
+.bpx-m,.bpx-s{background:#0c1120}
+.bpx-gl{background:repeating-radial-gradient(circle at 100% 0,transparent 0 9px,rgba(255,90,0,.07) 9px 10px)}.bpx-wm{opacity:.07;filter:brightness(2)}
+.bpx-hd:before{content:"";position:absolute;top:0;bottom:0;width:30%;left:-40%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.35),transparent);animation:bpxsh 4.5s ease-in-out infinite;z-index:0}
+@keyframes bpxsh{0%{left:-40%}60%,100%{left:130%}}
+.bpx-cl{background:#121A2B;border:1px solid rgba(255,255,255,.18)}
+.bpx-ti h2,.bpx-rt strong,.bpx-fd b,.bpx-lb .n,.bpx-ft .c,.bpx-pr b,.bpx-bc b,.bpx-sb b{color:#fff}
+.bpx-ti em,.bpx-rt small,.bpx-fd small,.bpx-lb,.bpx-ft,.bpx-pr small,.bpx-bc span{color:#9AA6BD}
+.bpx-fd b.o{color:#FF8A4C}.bpx-ti h2 b{color:#FF6A1A}
+.bpx-ln:before{border-top-color:#3a4562}
+.bpx-lb:after{border-top-color:rgba(255,255,255,.16)}.bpx-ft{border-top-color:rgba(255,255,255,.14)}
+.bpx-c{background:#141c30;border-color:rgba(255,255,255,.1)}.bpx-c:hover{border-color:#FF5A00;box-shadow:0 12px 24px rgba(0,0,0,.4)}
+.bpx-c .im{background:#fff}.bpx-c .k{color:#FF8A4C}.bpx-c h3 a{color:#fff}.bpx-c .pp s{color:#9AA6BD}.bpx-c .sv{color:#4ADE80}
+.bpx-c .bt{background:#FF5A00}.bpx-c .bt:hover{background:#fff;color:#121A2B}
+.bpx-ar{background:#141c30;border-color:rgba(255,255,255,.2);color:#fff}.bpx-ar.r{background:#FF5A00;border-color:#FF5A00}
+.bpx-s{background:#121A2B}.bpx-s:after{border-color:#FF5A00}
+.bpx-sh{background:linear-gradient(100deg,#FF5A00,#ff8a3d)}
+.bpx-cdb{background:rgba(255,90,0,.1);border-color:#FF5A00}.bpx-cdb>small{color:#FF8A4C}
+.bpx-t div{background:#fff;color:#121A2B}.bpx-t small{opacity:.6}.bpx-t u{color:#FF8A4C}
+.bpx-bc rect{fill:#fff}.bpx-all{border-color:#FF5A00;color:#fff}.bpx-all:hover{background:#FF5A00}
 </style>
 <div class="bpx" data-end="{{ $__fix ? $__end * 1000 : '' }}">
 <div class="bpx-m"><div class="bpx-gl"></div><div class="bpx-wm"></div>
