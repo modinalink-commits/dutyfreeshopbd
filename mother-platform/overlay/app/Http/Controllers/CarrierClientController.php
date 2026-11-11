@@ -288,6 +288,13 @@ class CarrierClientController extends Controller {
         if (!preg_match('/^[^\s,]{1,80}$/', $pw) || !preg_match('/^[A-Za-z0-9_.\-]{1,60}$/', $u)) continue;
         $list[] = $u . ':' . $pw; $have[] = $u;
       }
+      // A client-call extension may also be a user's own extension (e.g. 106 given to a staff user): read its credentials from sip_accounts too.
+      foreach (DB::table('sip_accounts')->whereNotNull('user_id')->get() as $x) {
+        $u = (string)$x->username; if (in_array($u, $have, true) || empty($x->password_enc) || !in_array($u, $allow, true)) continue;
+        try { $pw = \Illuminate\Support\Facades\Crypt::decryptString($x->password_enc); } catch (\Throwable $e) { continue; }
+        if (!preg_match('/^[^\s,]{1,80}$/', $pw) || !preg_match('/^[A-Za-z0-9_.\-]{1,60}$/', $u)) continue;
+        $list[] = $u . ':' . $pw; $have[] = $u;
+      }
     } catch (\Throwable $e) {}
     $exts = implode(',', $list);
     $rows = DB::table('voice_carrier_clients')->where('status', 'active')->get();
