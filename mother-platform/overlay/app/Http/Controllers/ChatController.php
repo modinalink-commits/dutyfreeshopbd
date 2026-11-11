@@ -19,7 +19,7 @@ class ChatController extends Controller {
     if (in_array($f, ['facebook', 'instagram', 'whatsapp', 'web'])) $q->where('channel', $f);
     elseif ($f === 'unread') $q->where('awaiting_reply', true);
     elseif ($f === 'assigned') $q->where('assigned_to', auth()->id());
-    elseif ($f === 'human') $q->where('awaiting_reply', true)->where(fn($w) => $w->where('last_message', 'like', '🎤%')->orWhere('needs_human', true));
+    elseif ($f === 'human') Chat::humanScope($q);
     elseif ($f === 'resolved') $q->where('status', 'resolved');
     if ($f !== 'resolved' && $f !== 'all') $q->where('status', '!=', 'resolved');
     if (in_array($r->query('s'), array_keys(self::STATUSES))) $q->where('status', $r->query('s'));
@@ -27,7 +27,7 @@ class ChatController extends Controller {
     // Unread first, then waiting for staff, then read/open, then resolved; newest message first inside each group.
     $rows = $q->orderByRaw("case when status <> 'resolved' and awaiting_reply then 1 when status <> 'resolved' and (status = 'waiting' or coalesce(needs_human, false)) then 2 when status <> 'resolved' then 3 else 4 end")->orderByDesc('last_at')->limit(120)->get();
     $orq = 0; try { $orq = (int)DB::table('chat_order_requests')->where('status', 'review')->count(); } catch (\Throwable $e) {}
-    $hum = 0; try { $hum = (int)DB::table('chat_threads')->where('awaiting_reply', true)->where('status', '!=', 'resolved')->where(fn($w) => $w->where('last_message', 'like', '🎤%')->orWhere('needs_human', true))->count(); } catch (\Throwable $e) {}
+    $hum = 0; try { $hum = (int)Chat::humanScope(DB::table('chat_threads'))->count(); } catch (\Throwable $e) {}
     return response()->json(['threads'=>Chat::cards($rows), 'unread'=>Chat::unreadTotal(), 'order_requests'=>$orq, 'human'=>$hum]);
   }
 

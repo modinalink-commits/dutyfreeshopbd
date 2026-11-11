@@ -242,6 +242,15 @@ class Chat {
       return true;
     } catch (\Throwable $e) { report($e); return false; }
   }
+  /** Messages > Human Answer: chats that need a person - an unanswered voice message, a hand-off / needs-human flag, or a critical open request (complaint, refund, cancel, order change, payment, human request, order request). Owner rule 11 Nov 2026. */
+  public static function humanScope($q) {
+    return $q->where('awaiting_reply', true)->where('status', '!=', 'resolved')->where(function ($w) {
+      $w->where('needs_human', true)->orWhereNotNull('handoff_at')
+        ->orWhereIn('intent', ['complaint', 'refund', 'cancel', 'change_order', 'human_request', 'payment', 'order_request'])
+        ->orWhere('last_message', 'like', '🎤%')
+        ->orWhereRaw("exists (select 1 from chat_messages m where m.thread_id = chat_threads.id and m.dir = 'in' and m.attachment_type = 'audio' and m.id > coalesce((select max(o.id) from chat_messages o where o.thread_id = chat_threads.id and o.dir = 'out' and o.status <> 'failed'), 0))");
+    });
+  }
   /** Worker tick (owner rule 11 Nov 2026): our message is the last one in the chat and the customer has not answered it for the set time (Chat Settings, default 30 min) - there is nothing to wait for, so the chat is closed as "no reply needed": a short last courtesy line (only while the 24-hour channel window is open) and Resolved, no Waiting / Awaiting Reply left. Open hand-offs, complaints, refunds, order requests etc. are never touched. */
   public static function closeSilentTick(): void {
     if (Sms::secret('ai_auto_close') === '0') return;
