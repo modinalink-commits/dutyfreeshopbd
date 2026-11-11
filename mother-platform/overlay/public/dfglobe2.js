@@ -113,7 +113,7 @@
         var g = c.createRadialGradient(p[0], p[1], 0, p[0], p[1], rr * 4); g.addColorStop(0, 'rgba(255,170,80,.75)'); g.addColorStop(1, 'rgba(255,120,30,0)'); c.fillStyle = g; c.beginPath(); c.arc(p[0], p[1], rr * 4, 0, 7); c.fill();
         c.fillStyle = big ? '#FFB066' : '#ffe3c8'; c.beginPath(); c.arc(p[0], p[1], rr * .75, 0, 7); c.fill();
         if (big) { var ph = (T * .7 + (k.charCodeAt(0) % 7) * .3) % 1; c.strokeStyle = 'rgba(255,150,60,' + (.55 * (1 - ph)) + ')'; c.lineWidth = 1.4 * dpr; c.beginPath(); c.arc(p[0], p[1], rr + ph * 13 * dpr, 0, 7); c.stroke(); }
-        if (big && p[2] > .25) { c.font = '700 ' + (11 * dpr) + 'px system-ui,sans-serif'; c.fillStyle = 'rgba(255,255,255,.95)'; c.shadowColor = 'rgba(0,0,0,.85)'; c.shadowBlur = 4 * dpr; var lw = c.measureText(ci[0]).width, ox = k === 'DXB' ? -lw - 8 * dpr : (k === 'DAC' ? -lw * .5 : 8 * dpr), oy = k === 'CGP' ? 15 * dpr : -9 * dpr; c.fillText(ci[0], p[0] + ox, p[1] + oy); c.shadowBlur = 0; }
+        if (big && p[2] > .25) { c.font = '700 ' + (11 * dpr) + 'px Inter,Bornomala,sans-serif'; c.fillStyle = 'rgba(255,255,255,.95)'; c.shadowColor = 'rgba(0,0,0,.85)'; c.shadowBlur = 4 * dpr; var lw = c.measureText(ci[0]).width, ox = k === 'DXB' ? -lw - 8 * dpr : (k === 'DAC' ? -lw * .5 : 8 * dpr), oy = k === 'CGP' ? 15 * dpr : -9 * dpr; c.fillText(ci[0], p[0] + ox, p[1] + oy); c.shadowBlur = 0; }
       }
       // planes: contrail, shadow, airliner
       var vpl = [], sc0 = Math.max(.7, Math.min(1.5, R / 250)) * dpr * .9;
@@ -136,7 +136,7 @@
         if (T - featAt > 4.2 || feat < 0 || !vpl.some(function (e) { return e[0] === feat; })) { if (T - featAt > 4.2 || feat < 0) active = (active + 1) % tags.length; feat = vpl[(Math.random() * vpl.length) | 0][0]; featAt = T; mark(active); }
         var tp = null; vpl.forEach(function (e) { if (e[0] === feat) tp = e[1]; });
         if (tp) {
-          var txt = tags[active], fs2 = 12 * dpr; c.font = '800 ' + fs2 + 'px system-ui,sans-serif'; var tw2 = c.measureText(txt).width + 16 * dpr, th = fs2 + 10 * dpr;
+          var txt = tags[active], fs2 = 12 * dpr; c.font = '800 ' + fs2 + 'px Inter,Bornomala,sans-serif'; var tw2 = c.measureText(txt).width + 16 * dpr, th = fs2 + 10 * dpr;
           var tx = Math.min(W - tw2 - 4 * dpr, Math.max(4 * dpr, tp[0] + 14 * dpr)), ty = Math.max(4 * dpr, tp[1] - th - 12 * dpr);
           c.strokeStyle = 'rgba(255,255,255,.6)'; c.lineWidth = dpr; c.beginPath(); c.moveTo(tp[0], tp[1]); c.lineTo(tx + 6 * dpr, ty + th); c.stroke();
           c.shadowColor = 'rgba(0,0,0,.4)'; c.shadowBlur = 8 * dpr; c.fillStyle = '#FF5A00'; c.beginPath(); (c.roundRect ? c.roundRect(tx, ty, tw2, th, 7 * dpr) : c.rect(tx, ty, tw2, th)); c.fill(); c.shadowBlur = 0;

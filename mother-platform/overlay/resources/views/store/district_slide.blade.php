@@ -15,7 +15,7 @@
 .dmz .dm img.logo{width:16cqw;height:auto;object-fit:contain}
 .dm .tag{position:absolute;left:3.2cqw;top:8.3cqw;width:16cqw;display:flex;align-items:center;gap:.6cqw;font-size:max(8px,1.05cqw);font-weight:500;color:#0B2A5B;white-space:nowrap}
 .dm .tag:before,.dm .tag:after{content:"";height:1px;flex:1;background:rgba(11,42,91,.35)}
-.dm .bd{position:absolute;width:6.8cqw;height:6.8cqw;border-radius:50%;background:#fff;border:.35cqw solid #FF6A00;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font:700 max(7px,.95cqw)/1.15 Inter,system-ui,sans-serif;letter-spacing:.02em;color:#0B2A5B;box-shadow:0 .8cqw 1.8cqw rgba(11,42,91,.18)}
+.dm .bd{position:absolute;width:6.8cqw;height:6.8cqw;border-radius:50%;background:#fff;border:.35cqw solid #FF6A00;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font:700 max(7px,.95cqw)/1.15 Inter,Bornomala,sans-serif;letter-spacing:.02em;color:#0B2A5B;box-shadow:0 .8cqw 1.8cqw rgba(11,42,91,.18)}
 .dm .bd b{font-size:max(8px,1.3cqw);color:#FF6A00;display:block}
 .dm .bd.a{left:4.6cqw;top:15cqw}.dm .bd.b{left:12.2cqw;top:18.6cqw;border-color:#16A34A}.dm .bd.b b{color:#16A34A}
 .dm .route{position:absolute;left:2cqw;top:24cqw;width:20cqw;height:7.4cqw;overflow:visible}

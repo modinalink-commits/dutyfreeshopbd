@@ -26,7 +26,7 @@
 #dfsb span{display:none}
 #dfsb button{position:relative;display:flex;align-items:center;justify-content:center;width:54px;height:54px;padding:0;border:2.5px solid #0B1220;border-radius:50%;background:linear-gradient(135deg,#FF8A00,#FF5A00);color:#fff;font-size:0;box-shadow:0 6px 16px rgba(255,90,0,.42);cursor:pointer}
 #dfsb button svg{width:25px;height:25px}
-#dfsb .bn{position:absolute;top:-7px;right:-7px;min-width:21px;height:21px;padding:0 5px;border-radius:11px;background:#0B1220;color:#fff;border:2px solid #fff;font:800 11px/17px system-ui,-apple-system,Roboto,Arial,sans-serif;text-align:center}
+#dfsb .bn{position:absolute;top:-7px;right:-7px;min-width:21px;height:21px;padding:0 5px;border-radius:11px;background:#0B1220;color:#fff;border:2px solid #fff;font:800 11px/17px Inter,Bornomala,sans-serif;text-align:center}
 #dfat{top:auto;bottom:128px;transform:translate(-50%,40px);opacity:0}#dfat.on{transform:translate(-50%,0);opacity:1}}
 </style>
 <div id="dfmcO"></div>

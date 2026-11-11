@@ -41,7 +41,7 @@
 .hxof .oi{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:1cqw;padding:0 2cqw;border-radius:2cqw;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.18);box-shadow:0 2cqw 4cqw rgba(0,0,0,.28);opacity:0;animation:ofK {{ round($__n * $__dur, 2) }}s infinite both}
 .hxof .oi b{font-size:max(15px,3.2cqw);line-height:1.2;font-weight:700;color:#fff;letter-spacing:-.005em}
 .hxof .oi i{font-style:normal;font-size:max(10px,1.2cqw);letter-spacing:.14em;text-transform:uppercase;color:#FDC2A5;font-weight:600}
-.hxof .oi u{position:absolute;right:1.6cqw;top:1.2cqw;text-decoration:none;font:600 max(9px,.95cqw)/1 Inter,system-ui,sans-serif;color:rgba(255,255,255,.55);letter-spacing:.08em}
+.hxof .oi u{position:absolute;right:1.6cqw;top:1.2cqw;text-decoration:none;font:600 max(9px,.95cqw)/1 Inter,Bornomala,sans-serif;color:rgba(255,255,255,.55);letter-spacing:.08em}
 .hxof .oi s{position:absolute;left:0;bottom:0;height:.35cqw;width:100%;background:#FF5A00;transform-origin:left;transform:scaleX(0);border-radius:0 0 2cqw 2cqw;animation:ofBar {{ round($__n * $__dur, 2) }}s linear infinite both}
 .hxof .om{position:absolute;left:0;right:0;bottom:1.6cqw;height:max(26px,3.6cqw);overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
 .hxof .omt{display:flex;gap:1.2cqw;width:max-content;animation:ofMar {{ max(30, $__n * 4) }}s linear infinite}

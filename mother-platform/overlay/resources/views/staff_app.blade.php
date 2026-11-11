@@ -1,6 +1,6 @@
 <!doctype html><html lang="bn"><head>@include('bn_font')<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#0f1b3d"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><title>Staff App</title>
 <style>
-:root{--n:#0f1b3d;--o:#f26b1d;--g:#f4f5f8;--b:#e3e6ee;--t:#1b2238;--m:#6b7390}*{box-sizing:border-box}body{margin:0;font:15px/1.4 system-ui,-apple-system,"Bornomala",sans-serif;background:var(--g);color:var(--t);padding-bottom:70px}
+:root{--n:#0f1b3d;--o:#f26b1d;--g:#f4f5f8;--b:#e3e6ee;--t:#1b2238;--m:#6b7390}*{box-sizing:border-box}body{margin:0;font:15px/1.4 Inter,Bornomala,sans-serif;background:var(--g);color:var(--t);padding-bottom:70px}
 header{background:var(--n);color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:5}header b{font-size:17px}header button{background:none;border:0;color:#fff;font-size:20px}
 main{padding:12px;max-width:640px;margin:auto}.card{background:#fff;border:1px solid var(--b);border-radius:12px;padding:12px;margin-bottom:10px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.st{background:#fff;border:1px solid var(--b);border-radius:12px;padding:10px 12px}.st b{display:block;font-size:22px;color:var(--n)}.st span{font-size:12px;color:var(--m)}
