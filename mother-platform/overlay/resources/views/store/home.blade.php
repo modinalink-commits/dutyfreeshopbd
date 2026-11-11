@@ -423,7 +423,9 @@ body .cs .pc .on{margin-top:auto}
 <script>(function(){var vs=document.querySelectorAll('.osvv');if(!vs.length||(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches))return;function go(v){if(!v.getAttribute('src'))v.src=v.getAttribute('data-src');var p=v.play();if(p&&p.then)p.then(function(){v.classList.add('on')}).catch(function(){})}if('IntersectionObserver' in window){var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting)go(e.target);else e.target.pause()})},{rootMargin:'120px'});vs.forEach(function(v){io.observe(v)})}else vs.forEach(go)})();</script>
 @endif
 
-@if($s['home_cat_sections']==='1')
+@if(!empty($slider))
+@include('store.cat_slider')
+@elseif($s['home_cat_sections']==='1')
 @foreach($sec as [$c, $items])
 @if($items->count())
 @include('store.home_sec', ['lazy'=>true])

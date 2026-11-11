@@ -178,6 +178,7 @@ class StoreController extends Controller {
     // daily ranking is read outside the 5-minute page cache so a new Dhaka day starts at midnight
     try { [$data['top'], $data['topSold']] = \App\Support\TopSellers::products($s); } catch (\Throwable $e) { report($e); $data['top'] = collect(); $data['topSold'] = []; } // a ranking problem must never take the homepage down
     $data['topLabel'] = 'Top Selling Products';
+    try { $data['slider'] = ($s['home_cat_slider'] ?? '1') !== '0' ? self::catSlider() : []; } catch (\Throwable $e) { report($e); $data['slider'] = []; } // category slider is optional: any problem falls back to the old category sections
     if (\App\Support\CleanSite::on()) { // tobacco-free storefront: ranking / best-seller lists are not built through StockGuard, so strip tobacco here
       $cf = fn($c) => $c instanceof \Illuminate\Support\Collection ? $c->filter(fn($p) => \App\Support\CleanSite::keep($p))->values() : $c;
       foreach (['new', 'deals', 'top', 'best'] as $kk) if (isset($data[$kk])) $data[$kk] = $cf($data[$kk]);
@@ -196,6 +197,23 @@ class StoreController extends Controller {
     if ($data['count'] === 0) return response()->view('coming', [], 503)->header('Retry-After','3600');
     $live = $s['home_live_orders'] === '1' ? $this->liveOrders() : collect();
     return response()->view('store.home', $this->base($data + ['showcase'=>\App\Support\Showcase::slots(), 'live'=>$live, 'title'=>self::cleanSeo($s['site_title'] ?? '', self::HOME_TITLE), 'desc'=>self::cleanSeo($s['meta_description'] ?? '', self::HOME_DESC), 'canon'=>url('/').'/', 'home'=>true]))->header('Cache-Control','private, no-cache, max-age=0');
+  }
+  /** Category Slider (home): one banner per active category with up to 6 customer-visible products, best sellers (last 30 days) first, then newest. Cached 5 minutes; categories without products are skipped. */
+  public static function catSlider(): array {
+    $rows = self::rem('store.catslider1', 300, function () {
+      $cats = DB::table('categories')->whereNotNull('slug')->where('active', true)->orderBy('position')->get();
+      $sold = DB::table('order_items as i')->join('orders as o', 'o.id', '=', 'i.order_id')->whereNotIn('o.status', ['Cancel', 'Incomplete'])->where('o.created_at', '>=', now()->subDays(30))->groupBy('i.product_id')->selectRaw('i.product_id as pid, sum(i.qty) as q')->pluck('q', 'pid');
+      $out = [];
+      foreach ($cats as $c) {
+        $pool = \App\Support\StockGuard::listable(DB::table('products')->where('published', true)->where('category_id', $c->id))->whereNotNull('image')->where('image', '!=', '')->orderByDesc('id')->limit(60)->get()
+          ->filter(fn($p) => \App\Support\StockGuard::sellable($p));
+        $pick = $pool->sortByDesc(fn($p) => [(int)($sold[$p->id] ?? 0), (int)$p->id])->take(6)->values();
+        if ($pick->count()) $out[] = [$c, $pick];
+      }
+      return $out;
+    });
+    if (\App\Support\CleanSite::on()) { $rows = array_values(array_filter(array_map(function ($r) { $r[1] = $r[1]->filter(fn($p) => \App\Support\CleanSite::keep($p))->values(); return $r[1]->count() ? $r : null; }, $rows))); }
+    return $rows;
   }
   /** Animated Brand Slider data: active brands (admin order) that have at least one customer-visible product; cached 5 min. A problem here never breaks the homepage. */
   /** Homepage promo cards: every customer offer that is switched ON right now (Discount Center rules, bundle, app reward). Nothing is invented; text comes from the saved values. */
