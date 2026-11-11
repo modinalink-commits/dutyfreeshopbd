@@ -5,7 +5,7 @@
 @php [$fEnd,$fFix] = \App\Http\Controllers\StoreController::endAt($s['flash_end_at'] ?? ''); [$dEnd,$dFix] = \App\Http\Controllers\StoreController::endAt($s['deal_end_at'] ?? ''); $fOn = !$fFix || $fEnd > time(); $dOn = !$dFix || $dEnd > time(); $fmt = function($e){ $r = max(0, $e - time()); return sprintf('%02d:%02d:%02d', intdiv($r,3600), intdiv($r%3600,60), $r%60); }; @endphp
 @php
   $ini = fn($n) => collect(preg_split('/[\s&\/-]+/', $n))->filter()->map(fn($w) => mb_strtoupper(mb_substr($w, 0, 1)))->take(3)->implode('');
-  $flash = $deals; $plus = collect(); // Flash Sale = 2 products from every category
+  $flash = \App\Http\Controllers\StoreController::flashSlowSmoke(6)->concat($deals->reject(fn($__d) => \App\Http\Controllers\StoreController::isSmokeProduct($__d)))->unique('id')->values(); $plus = collect(); // Flash Sale = slowest-selling Cigarette & Vape products (30 days) first, then 2 products from every other category
   $hsub = str_replace('{max}', (string)$maxOff, $s['hero_sub']);
 @endphp
 <style>

@@ -205,6 +205,19 @@ class StoreController extends Controller {
     return response()->view('store.home', $this->base($data + ['showcase'=>\App\Support\Showcase::slots(), 'live'=>$live, 'title'=>self::cleanSeo($s['site_title'] ?? '', self::HOME_TITLE), 'desc'=>self::cleanSeo($s['meta_description'] ?? '', self::HOME_DESC), 'canon'=>url('/').'/', 'home'=>true]))->header('Cache-Control','private, no-cache, max-age=0');
   }
   /** Category Slider (home): one banner per active category with up to 6 customer-visible products, best sellers (last 30 days) first, then newest. Cached 5 minutes; categories without products are skipped. */
+  /** Flash Sale, Cigarette & Vape part: the sellable products of that category that sold the LEAST in the last 30 days (delivered quantity, then all non-cancelled orders; never-sold first). No price is changed here: only products that already carry a real compare price show a SAVE badge. */
+  public static function flashSlowSmoke(int $n = 6) {
+    return self::rem('store.flashslow1', 600, function () use ($n) {
+      $ids = DB::table('categories')->get(['id','slug','name'])->filter(fn($c) => self::isSmokeCat($c))->pluck('id')->map(fn($v) => (int)$v)->all();
+      if (!$ids) return collect();
+      $d30 = now()->subDays(30);
+      $agg = DB::table('order_items as i')->join('orders as o', 'o.id', '=', 'i.order_id')->whereNotIn('o.status', ['Cancel', 'Incomplete'])->where('o.created_at', '>=', $d30)->whereNotNull('i.product_id')->groupBy('i.product_id')
+        ->selectRaw("i.product_id as pid, sum(i.qty) as q30, sum(case when o.status in ('Delivered','Received','Completed') then i.qty else 0 end) as d30")->get()->keyBy('pid');
+      $pool = \App\Support\StockGuard::listable(DB::table('products')->where('published', true)->whereIn('category_id', $ids))->whereNotNull('image')->where('image', '!=', '')->get()
+        ->filter(fn($p) => \App\Support\StockGuard::sellable($p));
+      return $pool->sortBy(fn($p) => [(int)($agg[$p->id]->d30 ?? 0), (int)($agg[$p->id]->q30 ?? 0), (int)$p->id])->take($n)->values();
+    });
+  }
   public static function catSlider(): array {
     $rows = self::rem('store.catslider1', 300, function () {
       $cats = DB::table('categories')->whereNotNull('slug')->where('active', true)->orderBy('position')->get();
