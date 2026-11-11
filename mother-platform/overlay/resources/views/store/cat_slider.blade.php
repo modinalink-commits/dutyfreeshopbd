@@ -49,7 +49,7 @@
 <div class="cs2-vp"><div class="cs2-tr">
 @foreach($items as $q)@php $off = \App\Http\Controllers\StoreController::off($q); $__ss = \App\Support\Img::srcset($q->image); @endphp
 <div class="cs2-i"><a class="cs2-c" style="--k:{{ $loop->index }}" href="{{ \App\Http\Controllers\StoreController::url($q) }}"><span class="cs2-im">@if($off > 0)<span class="cs2-sv">SAVE {{ $off }}%</span>@endif
-@if(($s['badge_free_delivery'] ?? '0')==='1' && \App\Support\Delivery::freeFor($q))<span class="fds" aria-label="Free Delivery"><b>FREE</b><b>Delivery</b></span>@endif
+@if(($s['badge_free_delivery'] ?? '0')==='1' && \App\Http\Controllers\StoreController::isSmokeProduct($q) && \App\Support\Delivery::freeFor($q))<span class="fds" aria-label="Free Delivery"><b>FREE</b><b>Delivery</b></span>@endif
 <img src="{{ $q->image }}" @if($__ss) srcset="{{ $__ss }}" sizes="(max-width:640px) 45vw, 200px" @endif alt="{{ !empty($q->image_alt) ? $q->image_alt : $q->name }}" width="200" height="200" loading="lazy" decoding="async" draggable="false" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='/product-placeholder'"></span><span class="cs2-n">{{ $q->name }}</span><span class="cs2-p">{{ number_format($q->price) }} TK @if($off > 0)<s>{{ number_format($q->compare_price) }} TK</s>@endif</span></a></div>
 @endforeach
 </div><button type="button" class="cs2-ar p" aria-label="Previous">&lsaquo;</button><button type="button" class="cs2-ar n" aria-label="Next">&rsaquo;</button></div>

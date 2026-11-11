@@ -150,6 +150,12 @@ class StoreController extends Controller {
     return match ($sort) { 'price_asc'=>$q->orderBy('price'), 'price_desc'=>$q->orderByDesc('price'), 'popular'=>$q->orderByDesc('stock'), default=>$q->orderByDesc('id') };
   }
   /** Tobacco/vape is kept off Google: these pages are noindex and absent from the sitemap, and public titles/descriptions never mention it. */
+  /** Product belongs to the Cigarette & Vape category (used to show the Free Delivery badge only there). */
+  public static function isSmokeProduct($p): bool {
+    static $ids = null;
+    if ($ids === null) $ids = self::rem('store.smokecatids', 300, fn() => DB::table('categories')->get(['id','slug','name'])->filter(fn($c) => self::isSmokeCat($c))->pluck('id')->map(fn($v) => (int)$v)->all());
+    return ($p->group_key ?? null) === 'smoke' || in_array((int)($p->category_id ?? 0), $ids, true);
+  }
   public static function isSmokeCat($c): bool { return $c && (($c->slug ?? '') === 'cigarette-vape' || preg_match('/cigarette|vape|সিগারেট|ভেপ/iu', (string)($c->name ?? '')) === 1); }
   public static function cleanSeo(?string $v, string $fallback): string { $v = trim((string)$v); return $v === '' ? $fallback : $v; } // owner (12 Nov 2026): cigarette wording is allowed in the title and description
   /** Keep <title> within ~60 chars so Google does not truncate it: cut the name part at a word boundary. */
