@@ -229,6 +229,15 @@ class CarrierClientController extends Controller {
     if (!$ok) return response()->json(['ok' => false, 'error' => $err]);
     $cl = DB::table('voice_carrier_clients')->get(); $byIp = [];
     foreach ($cl as $c) $byIp[explode('/', $c->ip)[0]] = $c;
+    // Which PBX extension carries each call: the relay sets the outbound leg's caller number to the extension. Match legs by call_uuid / b_uuid / dialled digits.
+    $legExt = []; $legByDigits = [];
+    foreach ($rows as $r) {
+      if (($r['direction'] ?? '') !== 'outbound') continue;
+      $e = (string)($r['cid_num'] ?? ''); if (!preg_match('/^\d{2,8}$/', $e)) continue;
+      foreach (['call_uuid', 'b_uuid'] as $kk) if (!empty($r[$kk])) $legExt[(string)$r[$kk]] = $e;
+      if (preg_match('/(01[3-9]\d{8})/', (string)($r['name'] ?? '') . ' ' . (string)($r['dest'] ?? ''), $mm)) $legByDigits[$mm[1]] = $e;
+    }
+    $extN = [];
     $calls = []; $per = []; $unk = [];
     foreach ($rows as $r) {
       if (($r['direction'] ?? '') !== 'inbound') continue;
@@ -241,10 +250,12 @@ class CarrierClientController extends Controller {
         $t0 = \Illuminate\Support\Facades\Cache::get($k); if (!$t0) { $t0 = time(); \Illuminate\Support\Facades\Cache::put($k, $t0, 21600); }
         $age = max(0, time() - (int)$t0);
       }
-      $calls[] = ['client' => $c->name, 'from' => $r['cid_num'] ?? '', 'to' => $dest, 'state' => $r['callstate'] ?? '', 'secs' => $age];
+      $ext = $legExt[(string)($r['uuid'] ?? '')] ?? ($legByDigits['0' . ltrim($dest, '0')] ?? ($legByDigits[$dest] ?? ''));
+      if ($ext !== '' && strtoupper((string)($r['callstate'] ?? '')) === 'ACTIVE') $extN[$ext] = ($extN[$ext] ?? 0) + 1;
+      $calls[] = ['client' => $c->name, 'from' => $r['cid_num'] ?? '', 'to' => $dest, 'ext' => $ext, 'state' => $r['callstate'] ?? '', 'secs' => $age];
       $per[$c->id] = ($per[$c->id] ?? 0) + 1;
     }
-    return response()->json(['ok' => true, 'total' => count($calls), 'calls' => array_slice($calls, 0, 100), 'per' => $per, 'channels' => count($rows), 'unknown' => $unk, 'at' => now('Asia/Dhaka')->format('H:i:s')]);
+    return response()->json(['ok' => true, 'total' => count($calls), 'calls' => array_slice($calls, 0, 100), 'per' => $per, 'ext' => $extN, 'channels' => count($rows), 'unknown' => $unk, 'at' => now('Asia/Dhaka')->format('H:i:s')]);
   }
   /** Read-only PBX diagnostics (whitelisted Event Socket commands). */
   public function diag() {
