@@ -5,11 +5,12 @@
 @if(session('ok'))<div class="card" style="margin-top:12px;background:#DCFCE7;border-color:#A7F3D0">{{ session('ok') }}</div>@endif
 @if($errors->any())<div class="card err" style="margin-top:12px">@foreach($errors->all() as $e){{ $e }}<br>@endforeach</div>@endif
 <div class="card" style="margin-top:12px;overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">
-<tr style="text-align:left;color:#6B7280"><th>User</th><th>Extension</th><th>Auth username</th><th>Display name</th><th>Password</th><th></th></tr>
+<tr style="text-align:left;color:#6B7280"><th>User</th><th>Extension</th><th>Use</th><th>Auth username</th><th>Display name</th><th>Password</th><th></th></tr>
 @foreach($users as $u)@php($x=$rows[$u->id] ?? null)
 <tr style="border-top:1px solid #E5E7EB"><form method="post" action="/admin/call-center/extensions/{{ $u->id }}">@csrf
-<td style="padding:7px 6px"><b>{{ $u->name }}</b><br><small style="color:#6B7280">{{ $u->email }} · {{ $u->role }}{{ $u->active ? '' : ' · inactive' }}</small></td>
-<td><input name="username" value="{{ $x->username ?? '' }}" placeholder="{{ $next }}" style="width:90px">@if($x && $x->username)<br><small style="font-weight:600;color:{{ in_array((string)$x->username, $relay, true) ? '#B45309' : '#047857' }}">{{ in_array((string)$x->username, $relay, true) ? 'AGENT + RELAY (both)' : 'AGENT only' }}</small>@endif</td>
+<td style="padding:7px 6px;white-space:nowrap"><b>{{ $u->name }}</b> <small style="color:#6B7280">{{ $u->email }} · {{ $u->role }}{{ $u->active ? '' : ' · inactive' }}</small></td>
+<td><input name="username" value="{{ $x->username ?? '' }}" placeholder="{{ $next }}" style="width:90px"></td>
+<td style="white-space:nowrap">@if($x && $x->username)@php($both=in_array((string)$x->username, $relay, true))<span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:{{ $both ? '#FEF3C7' : '#D1FAE5' }};color:{{ $both ? '#B45309' : '#047857' }}">{{ $both ? 'AGENT + RELAY' : 'AGENT' }}</span>@endif</td>
 <td><input name="auth_username" value="{{ $x->auth_username ?? '' }}" placeholder="same" style="width:90px"></td>
 <td><input name="display_name" value="{{ $x->display_name ?? '' }}" placeholder="{{ $u->name }}" style="width:130px"></td>
 <td><input type="text" name="password" value="{{ \App\Http\Controllers\CallCenterController::pwPlain($x ?? null) }}" autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" placeholder="required" style="width:150px;font-family:Inter,'Bornomala',sans-serif"></td>
@@ -19,14 +20,15 @@
 <div class="card" style="margin-top:14px;overflow-x:auto"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap"><b>Extension pool</b><span style="font-size:12px;color:#6B7280">Add up to 10 (or more) extensions at once. Fill the rows you need and press Save. Passwords are stored encrypted.</span></div>
 <form method="post" action="/admin/call-center/extensions-pool">@csrf
 <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:8px">
-<tr style="text-align:left;color:#6B7280"><th style="width:32px">#</th><th>Extension</th><th>Auth username</th><th>Display name</th><th>Password</th></tr>
+<tr style="text-align:left;color:#6B7280"><th style="width:32px">#</th><th>Extension</th><th>Use</th><th>Auth username</th><th>Display name</th><th>Password</th></tr>
 @php($n=max(10,$pool->count()+1))
 @for($i=0;$i<$n;$i++)@php($p=$pool[$i] ?? null)
 <tr style="border-top:1px solid #E5E7EB"><td style="padding:6px;color:#6B7280">{{ $i+1 }}<input type="hidden" name="rows[{{ $i }}][id]" value="{{ $p->id ?? '' }}"></td>
-<td><input name="rows[{{ $i }}][extension]" value="{{ $p->extension ?? '' }}" style="width:100px" autocomplete="off">@if($p && $p->extension)<br><small style="font-weight:600;color:{{ in_array((string)$p->extension, $relay, true) || in_array((string)($p->auth_username ?? ''), $relay, true) ? '#B45309' : '#6B7280' }}">{{ in_array((string)$p->extension, $relay, true) || in_array((string)($p->auth_username ?? ''), $relay, true) ? 'RELAY only · client calls' : 'Free pool' }}</small>@endif</td>
-<td><input name="rows[{{ $i }}][auth_username]" value="{{ $p->auth_username ?? '' }}" placeholder="same" style="width:100px" autocomplete="off"></td>
-<td><input name="rows[{{ $i }}][display_name]" value="{{ $p->display_name ?? '' }}" style="width:140px" autocomplete="off"></td>
-<td><input type="text" name="rows[{{ $i }}][password]" value="{{ \App\Http\Controllers\CallCenterController::pwPlain($p) }}" autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" style="width:160px;font-family:Inter,'Bornomala',sans-serif"></td></tr>
+<td><input name="rows[{{ $i }}][extension]" value="{{ $p->extension ?? '' }}" style="width:90px" autocomplete="off"></td>
+<td style="white-space:nowrap">@if($p && $p->extension)@php($rl=in_array((string)$p->extension, $relay, true) || in_array((string)($p->auth_username ?? ''), $relay, true))<span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:{{ $rl ? '#FFEDD5' : '#F3F4F6' }};color:{{ $rl ? '#B45309' : '#6B7280' }}">{{ $rl ? 'RELAY' : 'FREE' }}</span>@endif</td>
+<td><input name="rows[{{ $i }}][auth_username]" value="{{ $p->auth_username ?? '' }}" placeholder="same" style="width:90px" autocomplete="off"></td>
+<td><input name="rows[{{ $i }}][display_name]" value="{{ $p->display_name ?? '' }}" style="width:130px" autocomplete="off"></td>
+<td><input type="text" name="rows[{{ $i }}][password]" value="{{ \App\Http\Controllers\CallCenterController::pwPlain($p) }}" autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" style="width:150px;font-family:Inter,'Bornomala',sans-serif"></td></tr>
 @endfor</table>
 <div style="margin-top:10px;display:flex;gap:10px;align-items:center"><button class="btn" type="submit">Save extensions</button><span style="font-size:12px;color:#6B7280">Clear the Extension box of a saved row and Save to remove it.</span></div></form></div>
 @endsection
