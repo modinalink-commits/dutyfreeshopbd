@@ -33,7 +33,7 @@ class ChatController extends Controller {
 
   /** Light poll used on every admin page: unread total plus threads with new incoming messages since the last id. */
   public function poll(Request $r) {
-    $max = (int)DB::table('chat_messages')->max('id'); $out = ['last_id'=>$max, 'unread'=>Chat::unreadTotal(), 'items'=>[]];
+    $max = (int)DB::table('chat_messages')->max('id'); $out = ['last_id'=>$max, 'unread'=>Chat::unreadTotal(), 'items'=>[], 'build'=>substr(md5((string)@filemtime(resource_path('views/chat_widget.blade.php')).(string)@filemtime(resource_path('views/chat_inbox.blade.php')).(string)@filemtime(resource_path('views/layout.blade.php'))), 0, 8)];
     if ($r->has('since')) {
       $since = (int)$r->query('since');
       $ids = DB::table('chat_messages')->where('id', '>', $since)->where('dir', 'in')->orderBy('id')->get(['thread_id', 'body', 'attachment_url', 'attachment_type', 'created_at'])->groupBy('thread_id');
