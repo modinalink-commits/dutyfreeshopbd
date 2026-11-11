@@ -155,7 +155,7 @@ class StoreController extends Controller {
     if (mb_strlen($name) > $room) { $cut = mb_substr($name, 0, max(10, $room)); $sp = mb_strrpos($cut, ' '); $name = (string)preg_replace('/[\s,\-–|]+$/u', '', $sp !== false && $sp > 12 ? mb_substr($cut, 0, $sp) : $cut); $name = (string)preg_replace('/\s+(for|and|of|in|with|by|the|a|made|from)$/iu', '', $name); }
     return $name.$suffix;
   }
-  const HOME_TITLE = 'DutyFree BD | অরিজিনাল ইমপোর্টেড পারফিউম ও স্কিন কেয়ার';
+  const HOME_TITLE = 'DutyFree BD | অরিজিনাল ইমপোর্টেড পারফিউম ও স্কিন কেয়ার – দুবাই থেকে সারা বাংলাদেশে';
   const HOME_DESC = 'আন্তর্জাতিক মানের সকল অরিজিনাল ইমপোর্টেড পণ্য এক জায়গায়: পারফিউম, আতর, স্কিন কেয়ার, হেয়ার কেয়ার, বেবি প্রোডাক্ট ও ডেইলি নিডস। ক্যাশ অন ডেলিভারি, সারা বাংলাদেশে হোম ডেলিভারি।';
   public function home() {
     $s = self::set();
