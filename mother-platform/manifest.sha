@@ -631,7 +631,7 @@ e0d61f6dc511d64a072b2f4dc94e155ecf1bb6f6 public/fonts/inter-latin-600-normal.wof
 eb39bdd6bfb7a228f447dd408a14742c7fd23220 public/fonts/hind-siliguri-bengali-500-normal.woff2
 b314b82f0a71894932519753cd2689b20e9af908 public/fonts/hind-siliguri-bengali-600-normal.woff2
 55cb13867b419fbd61e295eec0b4ed29113c17a9 public/fonts/hind-siliguri-bengali-700-normal.woff2
-670d736f67548a97fa7c0b0390f3692d999bca69 resources/views/bn_font.blade.php
+0fc8a327a39362f87859d82b88926ed16643ecc9 resources/views/bn_font.blade.php
 0c954071b0d79e16b39f61956c2a9746a10b60b0 resources/views/typography.blade.php
 549462ade3c4976dbe9b0ac409f4ebb4b24bd259 resources/views/admin_type.blade.php
 52a966487d1f0d7c3a298f0530467f4827c67bc8 resources/views/store/typography.blade.php
