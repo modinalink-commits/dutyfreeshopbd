@@ -29,6 +29,14 @@
 .cs2.multi .cs2-ar{display:flex}.cs2.multi .cs2-pg{display:block}
 @keyframes cs2pg{to{transform:scaleX(1)}}@keyframes cs2sk{to{background-position:-200% 0}}@keyframes cs2fl{50%{transform:translate3d(0,-4px,0)}}
 @media(max-width:1023px){.cs2-vp{--v:3}}@media(max-width:640px){.cs2-vp{--v:2}.cs2-b{padding:16px 12px 18px;border-radius:16px}.cs2-d{display:none}.cs2-all{padding:7px 12px;font-size:12px}.cs2-i{padding:4px 5px 10px}.cs2-n{font-size:12px}.cs2-p{font-size:14px}.cs2-ar{width:32px;height:32px}}
+/* same look for the upper home sections */
+#top .st,#new .st{background:#EEF2FA;border-radius:20px;padding:18px 16px 20px}#new .st{background:#F1F6EE}
+#flash .pc,#top .pc,#new .pc{border:0;border-radius:16px;box-shadow:0 2px 10px rgba(18,26,43,.08);background:#fff;transition:box-shadow .35s,transform .5s cubic-bezier(.2,.8,.2,1),opacity .6s}
+#flash .pc:hover,#top .pc:hover,#new .pc:hover{box-shadow:0 12px 26px rgba(18,26,43,.16);transform:translateY(-2px)}
+#flash .pc .nm,#top .pc .nm,#new .pc .nm{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cs2e .pc{opacity:0;transform:perspective(900px) translate3d(0,22px,0) rotateX(10deg)}
+.cs2e.in .pc{opacity:1;transform:none;transition-delay:calc(var(--k,0)*100ms)}
+@media(prefers-reduced-motion:reduce){.cs2e .pc{opacity:1!important;transform:none!important}}
 @media(prefers-reduced-motion:reduce){.cs2-c,.cs2-t span{opacity:1!important;transform:none!important;transition:none!important}.cs2-tr{transition:none}.cs2-im,.cs2-im img,.cs2-pg i{animation:none!important}.cs2-bg{transform:none!important}}
 </style>
 @foreach($slider as [$c, $items])
@@ -62,4 +70,4 @@ function par(){if(!vis||RM||!bg)return;var r=el.getBoundingClientRect(),h=innerH
 var raf=0;window.addEventListener('scroll',function(){if(raf)return;raf=requestAnimationFrame(function(){raf=0;par()})},{passive:true});
 mark();
 if('IntersectionObserver' in window){new IntersectionObserver(function(es){es.forEach(function(x){vis=x.isIntersecting;if(vis){el.classList.add('in');par()}rst()})},{threshold:.25}).observe(el)}else{vis=true;el.classList.add('in');rst()}}
-S.forEach(init)})();</script>@endverbatim
+S.forEach(init);if(!RM&&'IntersectionObserver' in window){var U=[].slice.call(document.querySelectorAll('#flash,#top,#new'));U.forEach(function(u){u.classList.add('cs2e');[].slice.call(u.querySelectorAll('.pc')).forEach(function(c,i){c.style.setProperty('--k',Math.min(i,8))})});var io=new IntersectionObserver(function(es){es.forEach(function(x){if(x.isIntersecting){x.target.classList.add('in');io.unobserve(x.target)}})},{threshold:.12});U.forEach(function(u){io.observe(u)})}})();</script>@endverbatim
