@@ -16,13 +16,13 @@
 <tr style="border-top:1px solid #E5E7EB"><form method="post" action="/admin/call-center/extensions/{{ $u->id }}">@csrf
 <td style="padding:7px 6px;white-space:nowrap"><b>{{ $u->name }}</b> <small style="color:#6B7280">{{ $u->email }} · {{ $u->role }}{{ $u->active ? '' : ' · inactive' }}</small></td>
 <td><input name="username" value="{{ $x->username ?? '' }}" placeholder="{{ $next }}" style="width:90px"></td>
-<td style="white-space:nowrap">@if($x && $x->username)@php($both=in_array((string)$x->username, $relay, true))<span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:{{ $both ? '#FEF3C7' : '#D1FAE5' }};color:{{ $both ? '#B45309' : '#047857' }}">{{ $both ? 'AGENT + RELAY' : 'AGENT' }}</span>@php $rs = isset($reg[(string)$x->username]) ? $reg[(string)$x->username] : null; @endphp@if(!empty($reg))<span title="PBX registration of the relay line" style="margin-left:6px;font-size:11px;font-weight:600;color:{{ $rs==='REGED' ? '#047857' : '#B91C1C' }}">● {{ $rs==='REGED' ? 'Registered' : ($rs ?: 'Not registered') }}</span>@endif@endif</td>
+<td style="white-space:nowrap">@if($x && $x->username)@php($both=in_array((string)$x->username, $relay, true))<span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:{{ $both ? '#FEF3C7' : '#D1FAE5' }};color:{{ $both ? '#B45309' : '#047857' }}">{{ $both ? 'AGENT + RELAY' : 'AGENT' }}</span>{!! $regTag[(string)$x->username] ?? '' !!}@endif</td>
 <td><input name="auth_username" value="{{ $x->auth_username ?? '' }}" placeholder="same" style="width:90px"></td>
 <td><input name="display_name" value="{{ $x->display_name ?? '' }}" placeholder="{{ $u->name }}" style="width:130px"></td>
 <td><input type="text" name="password" value="{{ \App\Http\Controllers\CallCenterController::pwPlain($x ?? null) }}" autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" placeholder="required" style="width:150px;font-family:Inter,'Bornomala',sans-serif"></td>
 <td><button class="btn" type="submit">Save</button></td></form></tr>
 @endforeach
-@include('sip_pool_rows', ['list'=>$pool, 'cid'=>0, 'min'=>4, 'relay'=>$relay, 'reg'=>$reg])</table>
+@include('sip_pool_rows', ['list'=>$pool, 'cid'=>0, 'min'=>4, 'relay'=>$relay, 'regTag'=>$regTag])</table>
 <form id="poolForm0" method="post" action="/admin/call-center/extensions-pool">@csrf<input type="hidden" name="company_id" value="0"></form>
 <div style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn" type="submit" form="poolForm0">Save extensions</button><button class="btn" type="button" onclick="addPoolRow(this)" style="background:#fff;color:#111827;border:1px solid #D1D5DB">+ Add extension</button><span style="font-size:12px;color:#6B7280">User rows save with their own Save button. Pool rows: fill the rows you need and press Save pool extensions. Agent name left blank = default agent "DutyFreeBD". Clear the Extension box of a saved pool row and Save to remove it. Passwords are stored encrypted. Extension ফাঁকা রেখে Save করলে ইউজারের এক্সটেনশন সরে যায়; একই এক্সটেনশন দুজনকে দেওয়া যাবে না।</span></div></div>
 @endforeach
@@ -33,7 +33,7 @@
 <div style="display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12px;color:#6B7280;margin-bottom:10px">@foreach(['sip_server'=>'SIP server','wss_url'=>'WSS','domain'=>'Domain'] as $k=>$lb)@if(!empty($co->$k))<span><b style="color:#111827">{{ $lb }}</b> {{ $co->$k }}</span>@endif @endforeach</div>
 <table style="width:100%;border-collapse:collapse;font-size:13px">
 <tr style="text-align:left;color:#6B7280"><th>#</th><th>Extension</th><th>Use</th><th>Auth username</th><th>Display name</th><th>Password</th><th></th></tr>
-@include('sip_pool_rows', ['list'=>$clist, 'cid'=>$co->id, 'min'=>2, 'relay'=>[], 'reg'=>[]])
+@include('sip_pool_rows', ['list'=>$clist, 'cid'=>$co->id, 'min'=>2, 'relay'=>[], 'regTag'=>[]])
 </table>
 <form id="poolForm{{ $co->id }}" method="post" action="/admin/call-center/extensions-pool">@csrf<input type="hidden" name="company_id" value="{{ $co->id }}"></form>
 <div style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn" type="submit" form="poolForm{{ $co->id }}">Save extensions</button><button class="btn" type="button" onclick="addPoolRow(this)" style="background:#fff;color:#111827;border:1px solid #D1D5DB">+ Add extension</button><span style="font-size:12px;color:#6B7280">This company's extensions are kept here only; they are not used by the client-call relay.</span></div></div>

@@ -92,6 +92,11 @@ class CallCenterController extends Controller {
     return view('call_agents', ['rows'=>$rows, 'p'=>$p]);
   }
   /** Admin: one extension per user. */
+  /** HTML chips (built server-side, no Blade logic) showing each extension's PBX registration state; empty when the relay is not reporting. */
+  private static function regTags(array $reg): array {
+    $o = []; foreach ($reg as $ext => $st) { $ok = $st === 'REGED'; $o[(string)$ext] = '<span title="PBX registration of the relay line" style="margin-left:6px;font-size:11px;font-weight:600;color:'.($ok ? '#047857' : '#B91C1C').'">&#9679; '.e($ok ? 'Registered' : ($st ?: 'Not registered')).'</span>'; }
+    return $o;
+  }
   public function extensions() {
     $users = DB::table('users')->orderBy('id')->get(['id', 'name', 'email', 'role', 'active']); $rows = DB::table('sip_accounts')->whereNotNull('user_id')->get()->keyBy('user_id');
     $used = $rows->pluck('username')->filter()->all(); $next = 101; while (in_array((string)$next, $used)) $next++;
@@ -101,8 +106,8 @@ class CallCenterController extends Controller {
     foreach (explode("\n", (string)\App\Support\Sms::secret('vc_relay_exts')) as $l) { $u = trim(explode(':', $l, 2)[0]); if ($u !== '') $relay[] = $u; }
     if (in_array('*', $relay, true)) { foreach ($rows as $rr) { if (!empty($rr->username)) $relay[] = (string)$rr->username; } foreach ($pool as $pp) { $relay[] = (string)$pp->extension; if (!empty($pp->auth_username)) $relay[] = (string)$pp->auth_username; } }
     $d = ['companies'=>$companies, 'poolBy'=>$poolBy, 'pbxs'=>[$this->acct() ?: (object)['account_name'=>'FusionPBX']], 'users'=>$users, 'rows'=>$rows, 'next'=>$next, 'pool'=>$pool, 'relay'=>array_values(array_filter(array_unique($relay)))];
-    try { return response(view('sip_extensions', $d + ['reg'=>\App\Http\Controllers\CarrierClientController::relayGwStates(), 'regErr'=>''])->render()); }
-    catch (\Throwable $e) { \Log::error('extensions page: '.$e->getMessage()); return view('sip_extensions', $d + ['reg'=>[], 'regErr'=>substr($e->getMessage().' @ '.basename($e->getFile()).':'.$e->getLine(), 0, 300)]); }
+    try { return response(view('sip_extensions', $d + ['regTag'=>self::regTags(\App\Http\Controllers\CarrierClientController::relayGwStates()), 'regErr'=>''])->render()); }
+    catch (\Throwable $e) { \Log::error('extensions page: '.$e->getMessage()); return view('sip_extensions', $d + ['regTag'=>[], 'regErr'=>substr($e->getMessage().' @ '.basename($e->getFile()).':'.$e->getLine(), 0, 300)]); }
   }
   public function saveExtension(Request $r, $uid) {
     abort_unless(DB::table('users')->where('id', $uid)->exists(), 404);
