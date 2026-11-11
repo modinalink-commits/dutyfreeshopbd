@@ -254,6 +254,19 @@ class Chat {
   /** Worker tick (owner request 11 Nov 2026): the backlog of unanswered chats. The AI reads each one (voice is transcribed first); if it understands and answers, the chat is handled and closes by the normal rules; if it cannot (hand-off, complaint, unreadable voice, any reason) the chat is set aside for a person (Messages > Human Answer). */
   public static function backlogTick(): void {
     if (!AiChat::chatOn() || !AiSchedule::activeNow()) return;
+    // voice messages that could not be heard earlier (speech-to-text was failing): hear them once more, then let the AI answer
+    try {
+      $vm = DB::table('chat_messages')->where('dir', 'in')->where('attachment_type', 'audio')->whereNull('transcript')->where('created_at', '>=', now()->subHours(22))->orderByDesc('id')->limit(3)->get(['id', 'thread_id']);
+      foreach ($vm as $v) {
+        if (!\Illuminate\Support\Facades\Cache::add('ai.stt.retry.'.$v->id, 1, 172800)) continue;
+        self::transcribe((int)$v->id);
+        $th = DB::table('chat_threads')->find($v->thread_id);
+        if ($th && $th->last_dir === 'in' && $th->status !== 'resolved' && empty($th->handoff_at) && !empty(DB::table('chat_messages')->where('id', $v->id)->value('transcript'))) {
+          DB::table('chat_threads')->where('id', $th->id)->update(['needs_human'=>false, 'updated_at'=>now()]);
+          \Illuminate\Support\Facades\Cache::forget('ai.backlog.'.$th->id.'.'.(int)DB::table('chat_messages')->where('thread_id', $th->id)->where('dir', 'in')->max('id'));
+        }
+      }
+    } catch (\Throwable $e) { report($e); }
     $rows = DB::table('chat_threads')->whereIn('channel', ['web', 'whatsapp', 'facebook', 'instagram'])->where('awaiting_reply', true)->where('last_dir', 'in')->where('status', '!=', 'resolved')
       ->where(fn($w) => $w->whereNull('needs_human')->orWhere('needs_human', false))->whereNull('handoff_at')
       ->where('last_at', '>=', now()->subHours(22))->orderByDesc('last_at')->limit(4)->get();
