@@ -45,4 +45,8 @@ body .w.sec-lv .lvh .chip{background:#fff;border:1px solid #E4D9F1;color:#121A2B
 body .w.sec-lv .lvc{background:#fff;border:1px solid #E4D9F1}
 body .w.sec-lv .lo .bx{border:1px solid #E4D9F1;border-radius:14px;box-shadow:none}
 @media(max-width:640px){body .w.sec-lv .lvbox{padding:16px 12px 18px;border-radius:16px}}
+/* Slider density: desktop 5, tablet 3, mobile 1 at a time */
+@media(min-width:1024px){.cs2-vp{--v:5}body .w [data-cr],body #top [data-cr],body .w.sec-lv .lg2[data-cr]{--pv:5}}
+@media(min-width:761px) and (max-width:1023px){.cs2-vp{--v:3}body .w [data-cr],body #top [data-cr],body .w.sec-lv .lg2[data-cr]{--pv:3}}
+@media(max-width:760px){.cs2-vp{--v:1}body .w [data-cr],body #top [data-cr],body .w.sec-lv .lg2[data-cr]{--pv:1;--g:10px}body .cs2-i{padding:4px 8px 10px}}
 </style>
