@@ -1,6 +1,6 @@
 @extends('layout')@section('title','Extensions')
 @section('body')
-<h1 style="margin:0 0 4px">Extensions</h1>
+<h1 style="margin:0 0 4px">Extensions</h1>@if(!empty($regErr))<div style="font-size:11px;color:#B91C1C">Status display error: {{ $regErr }}</div>@endif
 <span style="font-size:13px;color:#6B7280">প্রতিটি ইউজারের নিজস্ব এক্সটেনশন। PBX (FusionPBX) এ এক্সটেনশন তৈরি করে এখানে নম্বর ও পাসওয়ার্ড দিন — ইউজার লগইন করলে তার ডায়ালার নিজের এক্সটেনশনে কানেক্ট হবে। পাসওয়ার্ড এনক্রিপ্টেড থাকে। সার্ভার (WSS/Domain) সেটিং: <a href="/admin/call-center/account">PBX Settings</a>।</span>
 @if(session('ok'))<div class="card" style="margin-top:12px;background:#DCFCE7;border-color:#A7F3D0">{{ session('ok') }}</div>@endif
 @if($errors->any())<div class="card err" style="margin-top:12px">@foreach($errors->all() as $e){{ $e }}<br>@endforeach</div>@endif
