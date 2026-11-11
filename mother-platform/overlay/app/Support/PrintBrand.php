@@ -13,7 +13,7 @@ class PrintBrand {
 
   /** Watermark + header rules. $always = the header is also shown on screen (stand-alone export pages); otherwise print only (admin pages). */
   static function css(bool $always = true): string {
-    return '<style id="bx-css">.bx-wm{display:none}.bx-hd{display:' . ($always ? 'flex' : 'none') . ';align-items:center;justify-content:space-between;gap:12px;padding:0 0 8px;margin:0 0 12px;border-bottom:2px solid #FF5A00;font:11px system-ui,Arial,sans-serif;color:#4B5563}'
+    return '<style id="bx-css">.bx-wm{display:none}.bx-hd{display:' . ($always ? 'flex' : 'none') . ';align-items:center;justify-content:space-between;gap:12px;padding:0 0 8px;margin:0 0 12px;border-bottom:2px solid #FF5A00;font:11px Inter,Bornomala,sans-serif;color:#4B5563}'
       . '.bx-hd img{height:46px;width:auto;display:block}.bx-hd span{text-align:right;line-height:1.5}'
       . '@media print{.bx-hd{display:flex!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
       . '.bx-wm{display:flex!important;position:fixed;left:0;top:0;width:100%;height:100%;align-items:center;justify-content:center;pointer-events:none;z-index:2147483000;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
@@ -37,7 +37,7 @@ class PrintBrand {
 
   static function officeHeader(): string {
     return '<table width="100%" cellspacing="0" cellpadding="0" style="border-bottom:2px solid #FF5A00;margin-bottom:10px"><tr><td align="left"><img src="' . self::url(self::LOGO, true) . '" height="46" alt="DutyFreeBD"></td>'
-      . '<td align="right" style="font:11px Arial,sans-serif;color:#4B5563">www.dutyfreebd.com<br>' . e(now('Asia/Dhaka')->format('d M Y, h:i A')) . '</td></tr></table>';
+      . '<td align="right" style="font:11px Inter,Bornomala,sans-serif;color:#4B5563">www.dutyfreebd.com<br>' . e(now('Asia/Dhaka')->format('d M Y, h:i A')) . '</td></tr></table>';
   }
 
   /** Put the identity into a finished HTML string (used by the middleware). */

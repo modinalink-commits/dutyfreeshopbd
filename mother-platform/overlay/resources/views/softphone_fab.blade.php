@@ -2,7 +2,7 @@
 #dfDock{position:fixed;right:16px;top:50%;width:390px;max-width:calc(100vw - 32px);height:min(680px,calc(100vh - 32px));z-index:70;background:#fff;border:1px solid #E5E7EB;border-radius:14px;overflow:hidden;box-shadow:0 12px 36px rgba(15,31,61,.28);transform:translate(calc(100% + 40px),-50%);opacity:0;pointer-events:none;transition:transform .28s cubic-bezier(.22,.8,.3,1),opacity .2s ease;display:flex;flex-direction:column}
 #dfDock.on{transform:translate(0,-50%);opacity:1;pointer-events:auto}
 #dfDock iframe{border:0;width:100%;flex:1;background:#fff}
-#dfEdge{position:fixed;right:0;top:auto;bottom:84px;z-index:60;background:#0F1F3D;color:#fff;border:0;border-radius:10px 0 0 10px;padding:10px 7px;cursor:pointer;font:700 12px/1 Inter,Arial,sans-serif;box-shadow:-2px 2px 8px rgba(15,31,61,.2);display:flex;flex-direction:column;align-items:center;gap:6px}
+#dfEdge{position:fixed;right:0;top:auto;bottom:84px;z-index:60;background:#0F1F3D;color:#fff;border:0;border-radius:10px 0 0 10px;padding:10px 7px;cursor:pointer;font:700 12px/1 Inter,Bornomala,sans-serif;box-shadow:-2px 2px 8px rgba(15,31,61,.2);display:flex;flex-direction:column;align-items:center;gap:6px}
 #dfEdge span{display:none}#dfEdge:hover span{display:inline;writing-mode:vertical-rl}
 #dfEdge:hover{background:#FF5A00}#dfEdge i{font-style:normal;writing-mode:horizontal-tb}
 #dfEdge::after{content:"";width:8px;height:8px;border-radius:50%;background:#22C55E;order:3}
@@ -26,7 +26,7 @@ function show(n,x){mk(n,x);dock.classList.add('on');document.body.classList.add(
 function hide(){dock.classList.remove('on');document.body.classList.remove('dfp-open');sv(0)}
 function kill(){hide();sawCall=false;sumOpen=false;if(fr){fr.remove();fr=null}busy=false;edge.classList.remove('busy')}
 var tk='';if(ch)ch.onmessage=function(m){var d=m.data||{};if(d.type==='here'&&!fr)popHere=true;if(d.type==='takeover-ok')tk='ok';if(d.type==='takeover-busy')tk='busy'};
-function toast(t){var e=document.createElement('div');e.textContent=t;e.style.cssText='position:fixed;right:16px;bottom:16px;z-index:2147483000;background:#0B1220;color:#fff;border-radius:8px;padding:10px 14px;font:600 13px Inter,Arial,sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.25)';document.body.appendChild(e);setTimeout(function(){e.remove()},4500)}
+function toast(t){var e=document.createElement('div');e.textContent=t;e.style.cssText='position:fixed;right:16px;bottom:16px;z-index:2147483000;background:#0B1220;color:#fff;border-radius:8px;padding:10px 14px;font:600 13px Inter,Bornomala,sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.25)';document.body.appendChild(e);setTimeout(function(){e.remove()},4500)}
 var seq=0,acked={};
 /* reliable delivery into the embedded dialer: the iframe may still be loading right after a page change, so keep re-sending until it confirms (it ignores repeats) */
 function send(m){var id=(++seq)+'_'+Date.now(),t=0;m=Object.assign({dfcall:1,id:id},m);(function go(){if(!fr||acked[id]||t++>16)return;try{fr.contentWindow.postMessage(m,location.origin)}catch(e){}setTimeout(go,500)})()}
