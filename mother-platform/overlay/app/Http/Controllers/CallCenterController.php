@@ -100,7 +100,7 @@ class CallCenterController extends Controller {
     $relay = array_map('trim', preg_split('/[\s,]+/', (string)\App\Support\Voice::set('relay_client_exts', '*')));
     foreach (explode("\n", (string)\App\Support\Sms::secret('vc_relay_exts')) as $l) { $u = trim(explode(':', $l, 2)[0]); if ($u !== '') $relay[] = $u; }
     if (in_array('*', $relay, true)) { foreach ($rows as $rr) { if (!empty($rr->username)) $relay[] = (string)$rr->username; } foreach ($pool as $pp) { $relay[] = (string)$pp->extension; if (!empty($pp->auth_username)) $relay[] = (string)$pp->auth_username; } }
-    return view('sip_extensions', ['users'=>$users, 'rows'=>$rows, 'next'=>$next, 'pool'=>$pool, 'relay'=>array_values(array_filter(array_unique($relay)))]);
+    return view('sip_extensions', ['pbxs'=>[$this->acct() ?: (object)['account_name'=>'FusionPBX']], 'users'=>$users, 'rows'=>$rows, 'next'=>$next, 'pool'=>$pool, 'relay'=>array_values(array_filter(array_unique($relay)))]);
   }
   public function saveExtension(Request $r, $uid) {
     abort_unless(DB::table('users')->where('id', $uid)->exists(), 404);

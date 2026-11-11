@@ -4,7 +4,13 @@
 <span style="font-size:13px;color:#6B7280">প্রতিটি ইউজারের নিজস্ব এক্সটেনশন। PBX (FusionPBX) এ এক্সটেনশন তৈরি করে এখানে নম্বর ও পাসওয়ার্ড দিন — ইউজার লগইন করলে তার ডায়ালার নিজের এক্সটেনশনে কানেক্ট হবে। পাসওয়ার্ড এনক্রিপ্টেড থাকে। সার্ভার (WSS/Domain) সেটিং: <a href="/admin/call-center/account">PBX Settings</a>।</span>
 @if(session('ok'))<div class="card" style="margin-top:12px;background:#DCFCE7;border-color:#A7F3D0">{{ session('ok') }}</div>@endif
 @if($errors->any())<div class="card err" style="margin-top:12px">@foreach($errors->all() as $e){{ $e }}<br>@endforeach</div>@endif
-<div class="card" style="margin-top:12px;overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">
+@foreach($pbxs as $pbx)
+<div class="card" style="margin-top:12px;overflow-x:auto">
+<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:8px"><b>PBX · {{ $pbx->account_name ?: ($pbx->domain ?? 'FusionPBX') }}</b><a href="/admin/call-center/account" style="font-size:12px">Edit PBX settings</a></div>
+<div style="display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12px;color:#6B7280;margin-bottom:10px">
+@foreach(['sip_server'=>'SIP server','wss_url'=>'WSS','domain'=>'Domain','outbound_proxy'=>'Proxy','dial_prefix'=>'Prefix','caller_id'=>'Caller ID','stun_server'=>'STUN'] as $k=>$lb)@if(!empty($pbx->$k))<span><b style="color:#111827">{{ $lb }}</b> {{ $pbx->$k }}</span>@endif @endforeach
+</div>
+<table style="width:100%;border-collapse:collapse;font-size:13px">
 <tr style="text-align:left;color:#6B7280"><th>User</th><th>Extension</th><th>Use</th><th>Auth username</th><th>Display name</th><th>Password</th><th></th></tr>
 @foreach($users as $u)@php($x=$rows[$u->id] ?? null)
 <tr style="border-top:1px solid #E5E7EB"><form method="post" action="/admin/call-center/extensions/{{ $u->id }}">@csrf
@@ -27,4 +33,5 @@
 @endfor</table>
 <form id="poolForm" method="post" action="/admin/call-center/extensions-pool">@csrf</form>
 <div style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn" type="submit" form="poolForm">Save pool extensions</button><span style="font-size:12px;color:#6B7280">User rows save with their own Save button. Pool rows: fill the rows you need and press Save pool extensions. Agent name left blank = default agent "DutyFreeBD". Clear the Extension box of a saved pool row and Save to remove it. Passwords are stored encrypted. Extension ফাঁকা রেখে Save করলে ইউজারের এক্সটেনশন সরে যায়; একই এক্সটেনশন দুজনকে দেওয়া যাবে না।</span></div></div>
+@endforeach
 @endsection
