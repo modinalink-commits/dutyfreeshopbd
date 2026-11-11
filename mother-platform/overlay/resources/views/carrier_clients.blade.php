@@ -81,6 +81,7 @@ o.textContent='Connected calls '+d.calls+' · Talk time '+f(d.secs)+' · Billabl
 <select name="mode"><option value="test" @selected($relay['mode']!=='live')>TEST (no calls leave)</option><option value="live" @selected($relay['mode']==='live')>LIVE (calls reach customers)</option></select>
 <textarea name="exts" rows="3" placeholder="One per line: extension:password&#10;e.g. 1001:secret&#10;Extension only (1001) = keep existing password" style="width:300px">{{ old('exts', $relay['exts']) }}</textarea>
 <button class="btn" type="submit">Save</button></form>
+<div class="row" style="margin-top:8px">Active on relay now (client calls): <b style="color:#B45309">{{ implode(', ', $relay['active'] ?? []) ?: 'none' }}</b></div>
 <div class="row" style="margin-top:8px">Saved extensions: <b style="color:#111827">{{ $relay['exts'] ? str_replace("\n", ', ', trim($relay['exts'])) : 'none' }}</b> ·
 <form method="post" action="/admin/call-center/clients/relay-agent" class="row" style="display:inline-flex">@csrf<input name="ext" placeholder="Agent extension (e.g. 101)" style="width:170px" required> <button class="btn g" type="submit">Copy from agent extension</button></form> ·
 <form method="post" action="/admin/call-center/clients/relay-token" style="display:inline">@csrf<button class="btn g" type="submit" onclick="return confirm('Generating a new token invalidates the old one. Continue?')">Regenerate relay token</button></form></div></div>

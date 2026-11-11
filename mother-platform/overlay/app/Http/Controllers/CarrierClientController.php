@@ -14,8 +14,32 @@ class CarrierClientController extends Controller {
     $gw = Voice::set('gateway', '');
     $cfg = ['ip' => Voice::set('carrier_ip', ''), 'port' => Voice::set('carrier_port', '5060'), 'gateway' => $gw];
     $exts = array_filter(array_map('trim', explode("\n", (string)Sms::secret('vc_relay_exts')))); $names = array_map(fn($l) => explode(':', $l, 2)[0], $exts);
-    $relay = ['host' => Voice::set('relay_host', '103.125.255.33'), 'port' => Voice::set('relay_port', '5080'), 'transport' => Voice::set('relay_transport', 'tcp'), 'realm' => Voice::set('relay_realm', ''), 'caller_id' => Voice::set('relay_caller_id', ''), 'mode' => Voice::set('relay_mode', 'test'), 'exts' => implode("\n", $names)];
+    $relay = ['host' => Voice::set('relay_host', '103.125.255.33'), 'port' => Voice::set('relay_port', '5080'), 'transport' => Voice::set('relay_transport', 'tcp'), 'realm' => Voice::set('relay_realm', ''), 'caller_id' => Voice::set('relay_caller_id', ''), 'mode' => Voice::set('relay_mode', 'test'), 'exts' => implode("\n", $names), 'active' => array_map(fn($l) => explode(':', $l, 2)[0], self::relayExtPairs())];
     return view('carrier_clients', ['rows' => $rows, 'cfg' => $cfg, 'relay' => $relay, 'pbx' => self::pbxConfig($rows, $gw), 'usage' => $rows->mapWithKeys(fn($c) => [$c->id => self::usage($c, $lv ?? [])])->all()]);
+  }
+  /** ext:password pairs the relay registers: the relay-line list plus the owner-chosen client-call extensions (pool and user extensions). */
+  public static function relayExtPairs(): array {
+    $list = array_values(array_filter(array_map('trim', explode("\n", (string)Sms::secret('vc_relay_exts')))));
+    // Only the extensions the owner chose for client calls are used (setting relay_pool_exts, default 106-110, plus the ones saved on this relay line). Every other staff/agent extension is never registered here, so it stays free.
+    try {
+      $allow = array_filter(array_map('trim', preg_split('/[\s,]+/', (string)Voice::set('relay_client_exts', '106,107,108,109,110'))));
+      $have = array_map(fn($l) => explode(':', $l, 2)[0], $list);
+      foreach (DB::table('pbx_extensions')->orderBy('id')->get() as $x) {
+        $u = (string)($x->auth_username ?: $x->extension); if (in_array($u, $have, true) || empty($x->password_enc)) continue;
+        if (!in_array((string)$x->extension, $allow, true) && !in_array($u, $allow, true)) continue;
+        try { $pw = \Illuminate\Support\Facades\Crypt::decryptString($x->password_enc); } catch (\Throwable $e) { continue; }
+        if (!preg_match('/^[^\s,]{1,80}$/', $pw) || !preg_match('/^[A-Za-z0-9_.\-]{1,60}$/', $u)) continue;
+        $list[] = $u . ':' . $pw; $have[] = $u;
+      }
+      // A client-call extension may also be a user's own extension (e.g. 106 given to a staff user): read its credentials from sip_accounts too.
+      foreach (DB::table('sip_accounts')->whereNotNull('user_id')->get() as $x) {
+        $u = (string)$x->username; if (in_array($u, $have, true) || empty($x->password_enc) || !in_array($u, $allow, true)) continue;
+        try { $pw = \Illuminate\Support\Facades\Crypt::decryptString($x->password_enc); } catch (\Throwable $e) { continue; }
+        if (!preg_match('/^[^\s,]{1,80}$/', $pw) || !preg_match('/^[A-Za-z0-9_.\-]{1,60}$/', $u)) continue;
+        $list[] = $u . ':' . $pw; $have[] = $u;
+      }
+    } catch (\Throwable $e) {}
+    return $list;
   }
   /** Billing cycle window containing today: starts at cycle_start (or the day the client was added) and repeats every cycle_days. */
   public static function cycleWindow($c): array {
@@ -276,26 +300,7 @@ class CarrierClientController extends Controller {
   public function relayConfig(Request $r) {
     $tok = (string)Sms::secret('vc_relay_token'); $given = (string)$r->bearerToken();
     if ($tok === '' || !hash_equals($tok, $given)) return response('forbidden', 403)->header('Content-Type', 'text/plain');
-    $list = array_values(array_filter(array_map('trim', explode("\n", (string)Sms::secret('vc_relay_exts')))));
-    // Only the extensions the owner chose for client calls are used (setting relay_pool_exts, default 106-110, plus the ones saved on this relay line). Every other staff/agent extension is never registered here, so it stays free.
-    try {
-      $allow = array_filter(array_map('trim', preg_split('/[\s,]+/', (string)Voice::set('relay_client_exts', '106,107,108,109,110'))));
-      $have = array_map(fn($l) => explode(':', $l, 2)[0], $list);
-      foreach (DB::table('pbx_extensions')->orderBy('id')->get() as $x) {
-        $u = (string)($x->auth_username ?: $x->extension); if (in_array($u, $have, true) || empty($x->password_enc)) continue;
-        if (!in_array((string)$x->extension, $allow, true) && !in_array($u, $allow, true)) continue;
-        try { $pw = \Illuminate\Support\Facades\Crypt::decryptString($x->password_enc); } catch (\Throwable $e) { continue; }
-        if (!preg_match('/^[^\s,]{1,80}$/', $pw) || !preg_match('/^[A-Za-z0-9_.\-]{1,60}$/', $u)) continue;
-        $list[] = $u . ':' . $pw; $have[] = $u;
-      }
-      // A client-call extension may also be a user's own extension (e.g. 106 given to a staff user): read its credentials from sip_accounts too.
-      foreach (DB::table('sip_accounts')->whereNotNull('user_id')->get() as $x) {
-        $u = (string)$x->username; if (in_array($u, $have, true) || empty($x->password_enc) || !in_array($u, $allow, true)) continue;
-        try { $pw = \Illuminate\Support\Facades\Crypt::decryptString($x->password_enc); } catch (\Throwable $e) { continue; }
-        if (!preg_match('/^[^\s,]{1,80}$/', $pw) || !preg_match('/^[A-Za-z0-9_.\-]{1,60}$/', $u)) continue;
-        $list[] = $u . ':' . $pw; $have[] = $u;
-      }
-    } catch (\Throwable $e) {}
+    $list = self::relayExtPairs();
     $exts = implode(',', $list);
     $rows = DB::table('voice_carrier_clients')->where('status', 'active')->get();
     $o = "MODE=" . (Voice::set('relay_mode', 'test') === 'live' ? 'live' : 'test') . "\nPBX_HOST=" . Voice::set('relay_host', '') . "\nPBX_PORT=" . Voice::set('relay_port', '5080')
