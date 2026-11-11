@@ -968,3 +968,7 @@ database/migrations/2026_11_11_000003_voice_cdr_caller.php
 database/migrations/2026_11_11_000004_pbx_extensions_pool.php
 public/fonts/Bornomala-Regular.ttf
 public/fonts/Bornomala-Bold.ttf
+public/fonts/InterChat-Regular.woff2
+public/fonts/InterChat-Medium.woff2
+public/fonts/InterChat-SemiBold.woff2
+public/fonts/InterChat-Bold.woff2
