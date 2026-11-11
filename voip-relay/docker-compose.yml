@@ -75,12 +75,13 @@ configs:
       PBX_PORT="$${PBX_PORT:-5080}"; PBX_TRANSPORT="$${PBX_TRANSPORT:-tcp}"
       xe() { printf '%s' "$$1" | sed 's/&/\&amp;/g;s/</\&lt;/g;s/"/\&quot;/g'; }
       GWXML=""; BRIDGE=""; i=0
+      CNAME="$${CALLER_NAME:-ChildCity}";
       if [ -n "$$PBX_HOST" ] && [ -n "$$PBX_EXTS" ]; then
         IFS=',' read -ra EXA <<< "$$PBX_EXTS"
         for e in "$${EXA[@]}"; do
           i=$$((i+1)); u=$$(xe "$${e%%:*}"); p=$$(xe "$${e#*:}")
           GWXML="$$GWXML<gateway name=\"pbx$$i\"><param name=\"username\" value=\"$$u\"/><param name=\"password\" value=\"$$p\"/><param name=\"realm\" value=\"$${PBX_REALM:-$$PBX_HOST}\"/><param name=\"proxy\" value=\"$${PBX_REALM:-$$PBX_HOST}:$$PBX_PORT;transport=$$PBX_TRANSPORT\"/><param name=\"register\" value=\"true\"/><param name=\"from-domain\" value=\"$${PBX_REALM:-$$PBX_HOST}\"/><param name=\"register-transport\" value=\"$$PBX_TRANSPORT\"/><param name=\"retry-seconds\" value=\"30\"/><param name=\"caller-id-in-from\" value=\"true\"/></gateway>"
-          BRIDGE="$$BRIDGE<action application=\"limit_execute\" data=\"hash relay_pbx pbx$$i $${EXT_MAX:-5} bridge {absolute_codec_string='PCMA,PCMU',origination_caller_id_number=$$u,effective_caller_id_number=$$u}sofia/gateway/pbx$$i/0\$$1\"/>"
+          BRIDGE="$$BRIDGE<action application=\"limit_execute\" data=\"hash relay_pbx pbx$$i $${EXT_MAX:-5} bridge {absolute_codec_string='PCMA,PCMU',origination_caller_id_name=$$CNAME,effective_caller_id_name=$$CNAME,origination_caller_id_number=$$u,effective_caller_id_number=$$u}sofia/gateway/pbx$$i/0\$$1\"/>"
         done
       fi
       CID=""  # caller-id = each extension's own number (PBX applies its outbound caller ID)
