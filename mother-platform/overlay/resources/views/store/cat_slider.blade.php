@@ -18,7 +18,8 @@
 .cs2-im img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#fff;padding:8%;box-sizing:border-box;transition:transform .5s cubic-bezier(.2,.8,.2,1)}
 .cs2.in .cs2-im img{animation:cs2fl 5s ease-in-out infinite;animation-delay:calc(var(--k)*-.7s)}
 .cs2-c:hover .cs2-im img{animation:none;transform:scale(1.04)}
-.cs2-im .fds{z-index:3}.cs2-sv{position:absolute;top:8px;left:8px;z-index:1;background:#121A2B;color:#fff;font-size:10.5px;font-weight:800;letter-spacing:.04em;padding:4px 8px;border-radius:6px}
+.cs2-pbs{position:absolute;left:8px;top:8px;z-index:3;pointer-events:none}.cs2-im .dp{position:relative;display:inline-flex;align-items:center;gap:4px;overflow:hidden;background:#121A2B;color:#fff;font-size:10.5px;font-weight:800;letter-spacing:.3px;border-radius:6px;padding:3px 8px 3px 6px;margin:0}.cs2-im .dp::before{content:"";border-left:4px solid transparent;border-right:4px solid transparent;border-top:6px solid #FF5A00;animation:dpDn 1.4s ease-in-out infinite}.cs2-im .dp::after{content:"";position:absolute;top:0;bottom:0;width:35%;left:-50%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.4),transparent);animation:dpSh 3s ease-in-out infinite}
+.cs2-im .fds{position:absolute;left:0;bottom:8px;display:flex;font-size:10.5px;font-weight:800;line-height:1;letter-spacing:.2px;z-index:3;pointer-events:none;animation:fdsIn 4.5s ease-in-out infinite}.cs2-im .fds b{font-weight:800;padding:5px 8px;background:#FF5A00;color:#fff}.cs2-im .fds b+b{background:#121A2B;padding:5px 10px 5px 8px;border-radius:0 999px 999px 0}@media(max-width:760px){.cs2-im .fds{font-size:9px;bottom:5px}.cs2-im .fds b{padding:4px 6px}.cs2-im .fds b+b{padding:4px 8px 4px 6px}}
 .cs2-n{padding:10px 12px 0;font-size:13px;font-weight:600;line-height:1.35;height:2.7em;box-sizing:content-box;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .cs2-p{padding:6px 12px 12px;margin-top:auto;font-size:15px;font-weight:800}.cs2-p s{font-size:12px;font-weight:400;color:#6b7280;margin-left:6px}
 .cs2-ar{position:absolute;top:42%;width:38px;height:38px;border-radius:50%;border:1px solid #e5e7eb;background:#fff;color:#121A2B;box-shadow:0 2px 8px rgba(18,26,43,.15);cursor:pointer;z-index:2;display:none;align-items:center;justify-content:center;font-size:18px;line-height:1;padding:0}
@@ -40,7 +41,7 @@
 .cs2e .pc{opacity:0;transform:perspective(900px) translate3d(0,22px,0) rotateX(10deg)}
 .cs2e.in .pc{opacity:1;transform:none;transition-delay:calc(var(--k,0)*100ms)}
 @media(prefers-reduced-motion:reduce){.cs2e .pc{opacity:1!important;transform:none!important}}
-@media(prefers-reduced-motion:reduce){.cs2-c,.cs2-t span{opacity:1!important;transform:none!important;transition:none!important}.cs2-tr{transition:none}.cs2-im,.cs2-im img,.cs2-pg i{animation:none!important}.cs2-bg{transform:none!important}}
+@media(prefers-reduced-motion:reduce){.cs2-c,.cs2-t span{opacity:1!important;transform:none!important;transition:none!important}.cs2-tr{transition:none}.cs2-im,.cs2-im img,.cs2-pg i,.cs2-im .fds,.cs2-im .dp::before,.cs2-im .dp::after{animation:none!important}.cs2-bg{transform:none!important}}
 </style>
 @foreach($slider as [$c, $items])
 @php $__k = $__pal[$__n++ % count($__pal)]; $__ds = trim(strip_tags((string)($c->description ?? ''))); @endphp
@@ -48,7 +49,7 @@
 <div class="cs2-h"><div><h2 class="cs2-t"><span>{{ $c->name }}</span></h2>@if($__ds !== '')<p class="cs2-d">{{ \Illuminate\Support\Str::limit($__ds, 140) }}</p>@endif</div><a class="cs2-all" href="/{{ $c->slug }}/">View All Products &rarr;</a></div>
 <div class="cs2-vp"><div class="cs2-tr">
 @foreach($items as $q)@php $off = \App\Http\Controllers\StoreController::off($q); $__ss = \App\Support\Img::srcset($q->image); @endphp
-<div class="cs2-i"><a class="cs2-c" style="--k:{{ $loop->index }}" href="{{ \App\Http\Controllers\StoreController::url($q) }}"><span class="cs2-im">@if($off > 0)<span class="cs2-sv">SAVE {{ $off }}%</span>@endif
+<div class="cs2-i"><a class="cs2-c" style="--k:{{ $loop->index }}" href="{{ \App\Http\Controllers\StoreController::url($q) }}"><span class="cs2-im">@if($off > 0)<span class="cs2-pbs"><span class="dp">SAVE {{ $off }}%</span></span>@endif
 @if(($s['badge_free_delivery'] ?? '0')==='1' && \App\Http\Controllers\StoreController::isSmokeProduct($q) && \App\Support\Delivery::freeFor($q))<span class="fds" aria-label="Free Delivery"><b>FREE</b><b>Delivery</b></span>@endif
 <img src="{{ $q->image }}" @if($__ss) srcset="{{ $__ss }}" sizes="(max-width:640px) 45vw, 200px" @endif alt="{{ !empty($q->image_alt) ? $q->image_alt : $q->name }}" width="200" height="200" loading="lazy" decoding="async" draggable="false" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='/product-placeholder'"></span><span class="cs2-n">{{ $q->name }}</span><span class="cs2-p">{{ number_format($q->price) }} TK @if($off > 0)<s>{{ number_format($q->compare_price) }} TK</s>@endif</span></a></div>
 @endforeach
