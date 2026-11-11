@@ -72,10 +72,10 @@
 /* Owner request 11 Nov 2026: Bornomala for Bangla (self-hosted), calmer weights, one readable size scale across list, chat and banners */
 @font-face{font-family:'Bornomala';src:url('/fonts/Bornomala-Regular.ttf') format('truetype');font-weight:400 500;font-style:normal;font-display:swap;unicode-range:U+0980-09FF,U+200C-200D,U+0964-0965}
 @font-face{font-family:'Bornomala';src:url('/fonts/Bornomala-Bold.ttf') format('truetype');font-weight:600 800;font-style:normal;font-display:swap;unicode-range:U+0980-09FF,U+200C-200D,U+0964-0965}
-@font-face{font-family:'Inter Chat';src:url('/fonts/InterChat-Regular.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}
-@font-face{font-family:'Inter Chat';src:url('/fonts/InterChat-Medium.woff2') format('woff2');font-weight:500;font-style:normal;font-display:swap}
-@font-face{font-family:'Inter Chat';src:url('/fonts/InterChat-SemiBold.woff2') format('woff2');font-weight:600;font-style:normal;font-display:swap}
-@font-face{font-family:'Inter Chat';src:url('/fonts/InterChat-Bold.woff2') format('woff2');font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:'Inter Chat';src:url('/fonts/InterChat-Regular.woff2?v=2') format('woff2');font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'Inter Chat';src:url('/fonts/InterChat-Medium.woff2?v=2') format('woff2');font-weight:500;font-style:normal;font-display:swap}
+@font-face{font-family:'Inter Chat';src:url('/fonts/InterChat-SemiBold.woff2?v=2') format('woff2');font-weight:600;font-style:normal;font-display:swap}
+@font-face{font-family:'Inter Chat';src:url('/fonts/InterChat-Bold.woff2?v=2') format('woff2');font-weight:700;font-style:normal;font-display:swap}
 .mbx,.mbx *,.mbx .mc textarea,.mbx .mc input,.mbx .mc button,.mbx .mc select{font-family:'Bornomala','Inter Chat',Inter,'Segoe UI',system-ui,Arial,sans-serif}
 .mbx .mc .b{font-size:16px;line-height:1.65;padding:9px 14px;max-width:78%;font-weight:400}
 .mbx .mc .b small{font-size:11.5px}
