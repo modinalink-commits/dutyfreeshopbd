@@ -982,6 +982,6 @@ e7414f7dc94cef8c9a519cef6a06b920c6537285 database/migrations/2026_11_11_200000_p
 a8d9fb862806573e632ab3f4431a0936d1437a3e public/preview/deal-designs.html
 bc3611c1d40ecd69a45e9dc01572f7c836cb7020 public/preview/cat-slider.html
 735b5c40bf19d00eae7aa40be5c24c62faf095bb resources/views/store/cat_slider.blade.php
-f18deaf470ac7cb366d4d3a0a14407bbe51fcf5c resources/views/store/cat_slider_css.blade.php
+5612525e91d8a31f77fb6cbabca1a08a179609c5 resources/views/store/cat_slider_css.blade.php
 b635a206556a3b081d4163d5d678c71ff19537e5 resources/views/store/cat_slider_js.blade.php
 0c1ab23abf12d068ae95b924e3091816e6263d48 resources/views/store/cat_slider_one.blade.php
