@@ -141,6 +141,21 @@ class CarrierClientController extends Controller {
     if (time() - (int)$c['at'] > 20) return [false, [], 'The relay stopped reporting ' . (time() - (int)$c['at']) . ' s ago'];
     return [true, $c['rows'], ''];
   }
+  /** Public, token-protected: the relay pushes `sofia status gateway` every ~15 s so the admin can show which extensions are registered on the PBX. */
+  public function relayGw(Request $r) {
+    $tok = (string)Sms::secret('vc_relay_token'); $given = (string)$r->bearerToken();
+    if ($tok === '' || !hash_equals($tok, $given)) return response('forbidden', 403)->header('Content-Type', 'text/plain');
+    $body = (string)$r->getContent(); if (strlen($body) > 60000) return response('too large', 413);
+    \Illuminate\Support\Facades\Cache::put('vc_relay_gw', ['at' => time(), 'text' => $body], 120);
+    return response('ok', 200)->header('Content-Type', 'text/plain');
+  }
+  /** Registration state per extension as reported by the relay: [ext => REGED|NOREG|FAIL_WAIT|...]; empty when the relay is not reporting. */
+  public static function relayGwStates(): array {
+    $c = \Illuminate\Support\Facades\Cache::get('vc_relay_gw'); if (!$c || time() - (int)$c['at'] > 60) return [];
+    $o = [];
+    foreach (preg_split('/\R/', (string)$c['text']) as $l) if (preg_match('/sip:([^@\s]+)@\S+\s+([A-Z_]+)/', $l, $m)) $o[$m[1]] = $m[2];
+    return $o;
+  }
   public function relayCdr(Request $r) {
     $tok = (string)Sms::secret('vc_relay_token'); $given = (string)$r->bearerToken();
     if ($tok === '' || !hash_equals($tok, $given)) return response('forbidden', 403)->header('Content-Type', 'text/plain');

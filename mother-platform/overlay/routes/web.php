@@ -557,6 +557,7 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestF
   Route::get('/api/voice/relay-config', [\App\Http\Controllers\CarrierClientController::class,'relayConfig'])->middleware('throttle:30,1');
   Route::post('/api/voice/relay-cdr', [\App\Http\Controllers\CarrierClientController::class,'relayCdr'])->middleware('throttle:600,1');
   Route::post('/api/voice/relay-live', [\App\Http\Controllers\CarrierClientController::class,'relayLive'])->middleware('throttle:1200,1');
+  Route::post('/api/voice/relay-gw', [\App\Http\Controllers\CarrierClientController::class,'relayGw'])->middleware('throttle:300,1');
   Route::post('/webhooks/legacy-reviews', [\App\Http\Controllers\LegacyImportController::class,'reviews'])->middleware('throttle:60,1');
   Route::post('/webhooks/legacy-procurement', [\App\Http\Controllers\LegacyImportController::class,'procurement'])->middleware('throttle:120,1');
   Route::post('/webhooks/legacy-dedupe-suppliers', [\App\Http\Controllers\LegacyImportController::class,'dedupeSuppliers'])->middleware('throttle:20,1');
