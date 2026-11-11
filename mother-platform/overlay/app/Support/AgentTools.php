@@ -110,6 +110,17 @@ class AgentTools {
           $disc = min((float)$eng['total'], (float)$c['subtotal_raw']); $dnotes = array_column(array_filter($eng['lines'], fn($l) => $l['applied']), 'label');
           if (!empty($eng['free_ship']) && $ship > 0 && !$dvPaid) $ship = 0.0;
         } catch (\Throwable $e) { report($e); }
+        // Same engine and same inputs as the website checkout (StoreController::quote): the quotation must equal what the order will save.
+        $avail = [];
+        try {
+          $q = \App\Http\Controllers\StoreController::aiQuote(array_map('intval', (array)($st['cart'] ?? [])), $area, $ph, $addr);
+          if (!empty($q['items'])) {
+            $disc = (float)$q['disc']; $ship = (float)$q['ship']; $dnotes = array_map('strval', (array)($q['notes'] ?? []));
+            $np = fn($x) => trim(preg_replace('/\s{2,}/u', ' ', preg_replace(['/\s*[–—-]\s*\d+(?:\.\d+)?\s*%/u', '/\(?\s*\d+(?:\.\d+)?\s*%\s*\)?/u'], ['', ' '], (string)$x)));
+            foreach ((array)($q['cand'] ?? []) as $l) { $ap = !empty($l['applied']); if (!$ap && (($l['key'] ?? '') === 'coupon' || !empty($l['floor_hidden']))) continue; $avail[] = ['discount'=>$np($l['label'] ?? $l['type'] ?? ''), 'saves'=>self::money((float)($l['amount'] ?? 0)), 'status'=>$ap ? 'APPLIED to this order' : 'valid for this customer but NOT applied (the system gives the best offer only, unless stacking is on)']; }
+            if (!empty($q['ship_free']) && (float)($q['ship_orig'] ?? 0) > 0) array_unshift($avail, ['discount'=>'Free Delivery', 'saves'=>self::money((float)$q['ship_orig']), 'status'=>'APPLIED to this order']);
+          }
+        } catch (\Throwable $e) { report($e); }
         $total = $c['subtotal_raw'] + $ship - $disc;
         $pd = $st['pending'] ?? null;
         if (!empty($ctx['orders_on']) && $pd && $pd['name'] === $name && $pd['phone'] === $ph && $pd['address'] === $addr && (int)$pd['area'] === $area && $pd['cart'] == ($st['cart'] ?? []) && self::isConfirm((string)($ctx['last_msg_text'] ?? '')) && (int)($ctx['last_msg_id'] ?? 0) > (int)$pd['after_msg'])
@@ -119,8 +130,8 @@ class AgentTools {
         if (!empty($ctx['orders_on']) && $sv && $name === $sv['name'] && $ph === $sv['phone'] && $addr === $sv['address'] && self::isConfirm((string)($ctx['last_msg_text'] ?? '')) && (int)($ctx['last_msg_id'] ?? 0) > 0) $direct = true;
         $st['pending'] = ['name'=>$name, 'phone'=>$ph, 'address'=>$addr, 'area'=>$area, 'note'=>mb_substr((string)($in['note'] ?? ''), 0, 300), 'cart'=>$st['cart'], 'total'=>$total, 'after_msg'=>$direct ? (int)$ctx['last_msg_id'] - 1 : (int)($ctx['last_msg_id'] ?? 0), 'at'=>time()];
         if ($direct) return ['summary'=>['items'=>$c['items'], 'total_estimate'=>self::money($total), 'name'=>$name, 'phone'=>$ph, 'address'=>$addr], 'next'=>'The returning customer just asked to place the order, so that counts as his confirmation: call place_order NOW (same turn). Then tell him in your reply the invoice number, total and Cash on delivery.'];
-        return ['summary'=>['items'=>$c['items'], 'subtotal'=>self::money($c['subtotal_raw']), 'delivery'=>self::money($ship), 'delivery_note'=>isset($dv) ? ($dv['reason'] ?: ($ship <= 0 ? 'No delivery charge' : $dv['zone'])) : null, 'automatic_discount'=>$disc > 0 ? self::money($disc).' ('.implode(', ', $dnotes).')' : 'none', 'total_estimate'=>self::money($total), 'name'=>$name, 'phone'=>$ph, 'address'=>$addr, 'payment'=>'Cash on delivery'],
-          'next'=>'Show this summary (items, delivery, automatic_discount if any, and the exact total_estimate) and ask the customer to confirm. Do NOT place the order until they clearly say yes.'];
+        return ['summary'=>['items'=>$c['items'], 'subtotal'=>self::money($c['subtotal_raw']), 'delivery'=>self::money($ship), 'delivery_note'=>isset($dv) ? ($dv['reason'] ?: ($ship <= 0 ? 'No delivery charge' : $dv['zone'])) : null, 'automatic_discount'=>$disc > 0 ? self::money($disc).' ('.implode(', ', $dnotes).')' : 'none', 'all_discounts_for_this_customer'=>$avail, 'total_estimate'=>self::money($total), 'name'=>$name, 'phone'=>$ph, 'address'=>$addr, 'payment'=>'Cash on delivery'],
+          'next'=>'Show this summary (items, delivery, every entry of all_discounts_for_this_customer with its saving and whether it is applied, and the exact total_estimate; never invent or add a discount that is not listed, never state a percentage) and ask the customer to confirm. Do NOT place the order until they clearly say yes.'];
       }
       case 'place_order': return self::place($st, $ctx);
       case 'report_conversation': {

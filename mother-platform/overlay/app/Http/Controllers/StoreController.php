@@ -479,6 +479,8 @@ class StoreController extends Controller {
       return $out;
     } catch (\Throwable $e) { return ['state'=>'error', 'msg'=>'Unable to load customer benefits right now.', 'items'=>[]]; }
   }
+  /** AI chat quotation: the very same calculation the website checkout uses (customer known by phone). */
+  public static function aiQuote(array $want, int $area, string $phone, string $addr = ''): array { return app(self::class)->quote($want, $area, '', $phone, false, $addr); }
   /** One price calculation for the cart, the checkout and the saved order. */
   private function quote(array $want, int $area, string $code, ?string $phone = null, bool $verified = false, string $addr = ''): array {
     $b = $this->base(); $rules = $b['rules'];
