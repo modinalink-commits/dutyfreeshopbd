@@ -7,7 +7,7 @@
 <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin:14px 0">
 <div class="card k" style="margin:0"><span style="font-size:13px">Voice chat</span><b style="font-size:22px">{{ $on ? 'ON' : 'OFF' }}</b></div>
 <div class="card k" style="margin:0"><span style="font-size:13px">Google key</span><b style="font-size:22px">{{ $hasKey ? 'Saved' : 'Not set' }}</b></div>
-<div class="card k" style="margin:0"><span style="font-size:13px">Voice in (7 days)</span><b style="font-size:22px">{{ $stats['stt'] }}</b><span style="font-size:11px;color:#6B7280">failed {{ $stats['stt_fail'] }}</span></div>
+<div class="card k" style="margin:0"><span style="font-size:13px">Voice in (7 days)</span><b style="font-size:22px">{{ $stats['stt'] }}</b><span style="font-size:11px;color:#6B7280">failed {{ $stats['stt_fail'] }}</span>@foreach(($stats['errors'] ?? []) as $er=>$ec)<span style="font-size:10px;color:#B91C1C;display:block">{{ $er ?: '-' }} ×{{ $ec }}</span>@endforeach</div>
 <div class="card k" style="margin:0"><span style="font-size:13px">Voice out (7 days)</span><b style="font-size:22px">{{ $stats['tts'] }}</b><span style="font-size:11px;color:#6B7280">failed {{ $stats['tts_fail'] }} · cached {{ $stats['cached'] }}</span></div></div>
 <form class="card" method="post" action="/admin/voice-chat" style="max-width:700px">@csrf
 <b>Settings</b>

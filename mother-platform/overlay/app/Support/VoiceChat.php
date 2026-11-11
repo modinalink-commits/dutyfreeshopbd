@@ -53,6 +53,7 @@ class VoiceChat
     $lang = array_key_exists(self::set('lang'), self::LANGS) ? self::set('lang') : 'bn-BD';
     $cfg = ['encoding' => $fmt === 'webm' ? 'WEBM_OPUS' : 'OGG_OPUS', 'languageCode' => $lang, 'enableAutomaticPunctuation' => true, 'maxAlternatives' => 1];
     if ($lang !== 'en-US') $cfg['alternativeLanguageCodes'] = ['en-US'];
+    if ($rate) $cfg['sampleRateHertz'] = $rate; // OGG_OPUS / WEBM_OPUS need the rate (WhatsApp voice notes are 16 kHz Opus)
     try {
       $r = Http::timeout(25)->post('https://speech.googleapis.com/v1/speech:recognize?key=' . urlencode($key), ['config' => $cfg, 'audio' => ['content' => base64_encode($bytes)]]);
       $ms = (int)((microtime(true) - $t0) * 1000);
@@ -113,6 +114,6 @@ class VoiceChat
     if (!Schema::hasTable('voice_chat_logs')) return ['stt' => 0, 'stt_fail' => 0, 'tts' => 0, 'tts_fail' => 0, 'cached' => 0, 'chars' => 0];
     $s = now()->subDays(7);
     $q = fn($k, $ok = null) => DB::table('voice_chat_logs')->where('kind', $k)->where('created_at', '>', $s)->when($ok !== null, fn($x) => $x->where('ok', $ok))->count();
-    return ['stt' => $q('stt'), 'stt_fail' => $q('stt', false), 'tts' => $q('tts'), 'tts_fail' => $q('tts', false), 'cached' => DB::table('voice_chat_logs')->where('kind', 'tts')->where('cached', true)->where('created_at', '>', $s)->count(), 'chars' => (int)DB::table('voice_chat_logs')->where('kind', 'tts')->where('cached', false)->where('created_at', '>', $s)->sum('chars')];
+    return ['stt' => $q('stt'), 'stt_fail' => $q('stt', false), 'tts' => $q('tts'), 'tts_fail' => $q('tts', false), 'cached' => DB::table('voice_chat_logs')->where('kind', 'tts')->where('cached', true)->where('created_at', '>', $s)->count(), 'errors' => DB::table('voice_chat_logs')->where('kind','stt')->where('ok',false)->where('created_at','>',$s)->selectRaw('error, count(*) c')->groupBy('error')->orderByDesc('c')->limit(5)->pluck('c','error')->all(), 'chars' => (int)DB::table('voice_chat_logs')->where('kind', 'tts')->where('cached', false)->where('created_at', '>', $s)->sum('chars')];
   }
 }
