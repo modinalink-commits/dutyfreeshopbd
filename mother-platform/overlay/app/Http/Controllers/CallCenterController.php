@@ -97,7 +97,7 @@ class CallCenterController extends Controller {
     $used = $rows->pluck('username')->filter()->all(); $next = 101; while (in_array((string)$next, $used)) $next++;
     $pool = DB::table('pbx_extensions')->orderBy('id')->get();
     // Which extensions the Call Clients relay uses (client calls) — same rule as the relay config; everything else is agent/staff.
-    $relay = array_map('trim', preg_split('/[\s,]+/', (string)\App\Support\Voice::set('relay_pool_exts', '106,107,108,109,110')));
+    $relay = array_map('trim', preg_split('/[\s,]+/', (string)\App\Support\Voice::set('relay_client_exts', '106,107,108,109,110')));
     foreach (explode("\n", (string)\App\Support\Sms::secret('vc_relay_exts')) as $l) { $u = trim(explode(':', $l, 2)[0]); if ($u !== '') $relay[] = $u; }
     return view('sip_extensions', ['users'=>$users, 'rows'=>$rows, 'next'=>$next, 'pool'=>$pool, 'relay'=>array_values(array_filter(array_unique($relay)))]);
   }

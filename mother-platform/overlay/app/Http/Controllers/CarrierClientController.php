@@ -279,7 +279,7 @@ class CarrierClientController extends Controller {
     $list = array_values(array_filter(array_map('trim', explode("\n", (string)Sms::secret('vc_relay_exts')))));
     // Only the extensions the owner chose for client calls are used (setting relay_pool_exts, default 106-110, plus the ones saved on this relay line). Every other staff/agent extension is never registered here, so it stays free.
     try {
-      $allow = array_filter(array_map('trim', preg_split('/[\s,]+/', (string)Voice::set('relay_pool_exts', '106,107,108,109,110'))));
+      $allow = array_filter(array_map('trim', preg_split('/[\s,]+/', (string)Voice::set('relay_client_exts', '106,107,108,109,110'))));
       $have = array_map(fn($l) => explode(':', $l, 2)[0], $list);
       foreach (DB::table('pbx_extensions')->orderBy('id')->get() as $x) {
         $u = (string)($x->auth_username ?: $x->extension); if (in_array($u, $have, true) || empty($x->password_enc)) continue;
