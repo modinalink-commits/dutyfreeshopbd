@@ -245,7 +245,7 @@ class ProcurementController extends Controller {
     $p = $id ? DB::table('purchases')->find($id) : null; if ($id && !$p) abort(404);
     $items = $p ? DB::table('purchase_items')->where('purchase_id',$id)->orderBy('id')->get() : collect();
     $due = []; foreach (P::dueMap() as $sid=>$v) $due[$sid] = round($v,2);
-    $pm = DB::table('products')->whereIn('id',$items->pluck('product_id')->filter()->all())->pluck('price','id'); return view('proc.purchase_form', ['p'=>$p,'items'=>$items,'pm'=>$pm,'sup'=>DB::table('suppliers')->where('active',true)->orWhere('id',$p->supplier_id ?? 0)->orderBy('name')->get(['id','name','code','payment_terms','credit_limit']),'stores'=>$this->stores(),'dues'=>$due,'pre'=>(int)request('supplier')]);
+    $pm = DB::table('products')->whereIn('id',$items->pluck('product_id')->filter()->all())->pluck('price','id'); $pim = DB::table('products')->whereIn('id',$items->pluck('product_id')->filter()->all())->pluck('image','id'); return view('proc.purchase_form', ['pim'=>$pim,'p'=>$p,'items'=>$items,'pm'=>$pm,'sup'=>DB::table('suppliers')->where('active',true)->orWhere('id',$p->supplier_id ?? 0)->orderBy('name')->get(['id','name','code','payment_terms','credit_limit']),'stores'=>$this->stores(),'dues'=>$due,'pre'=>(int)request('supplier')]);
   }
   public function save(Request $r) {
     $r->validate(['supplier_id'=>'required|integer','purchase_date'=>'required|date','items'=>'required|array|min:1']);
@@ -421,7 +421,7 @@ class ProcurementController extends Controller {
   // ---------------- JSON helpers for the forms ----------------
   public function apiProducts(Request $r) {
     $q = trim((string)$r->input('q')); if ($q === '') return response()->json([]);
-    $x = DB::table('products')->where(fn($w) => $w->where('barcode',$q)->orWhere('sku',$q)->orWhere('name','ilike','%'.$q.'%')->orWhere('sku','ilike','%'.$q.'%')->orWhere('barcode','ilike','%'.$q.'%')->orWhere(fn($z) => \App\Support\SkuSearch::orSku($z, $q)))->orderByRaw('(barcode = ? or sku = ?) desc',[$q,$q])->limit(15)->get(['id','name','sku','barcode','cost','stock','price']);
+    $x = DB::table('products')->where(fn($w) => $w->where('barcode',$q)->orWhere('sku',$q)->orWhere('name','ilike','%'.$q.'%')->orWhere('sku','ilike','%'.$q.'%')->orWhere('barcode','ilike','%'.$q.'%')->orWhere(fn($z) => \App\Support\SkuSearch::orSku($z, $q)))->orderByRaw('(barcode = ? or sku = ?) desc',[$q,$q])->limit(15)->get(['id','name','sku','barcode','cost','stock','price','image']);
     return response()->json($x);
   }
   public function apiNewProduct(Request $r) {
@@ -431,7 +431,7 @@ class ProcurementController extends Controller {
   }
   public function apiBulk(Request $r) {
     $out = []; foreach (preg_split('/\R/', (string)$r->input('lines')) as $ln) { $c = array_map('trim', preg_split('/[,\t]/', $ln)); if (($c[0] ?? '') === '') continue;
-      $p = DB::table('products')->where('sku',$c[0])->orWhere('barcode',$c[0])->first(['id','name','sku','barcode','cost','stock']); if ($p) { $p->qty = (int)($c[1] ?? 1) ?: 1; if (isset($c[2]) && $c[2] !== '') $p->cost = (float)$c[2]; $out[] = $p; } else $out[] = ['missing'=>$c[0]]; }
+      $p = DB::table('products')->where('sku',$c[0])->orWhere('barcode',$c[0])->first(['id','name','sku','barcode','cost','stock','image']); if ($p) { $p->qty = (int)($c[1] ?? 1) ?: 1; if (isset($c[2]) && $c[2] !== '') $p->cost = (float)$c[2]; $out[] = $p; } else $out[] = ['missing'=>$c[0]]; }
     return response()->json($out);
   }
   public function apiSupplier(Request $r, $id) {
