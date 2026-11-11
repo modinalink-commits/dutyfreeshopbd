@@ -336,6 +336,7 @@ body .cs .pc .on{margin-top:auto}
 }
 @media(prefers-reduced-motion:reduce){body .cs .hh::after,body .cs .mt::after{animation:none}}
 </style>
+@include('store.cat_slider_css')
 @if($s['home_flash']==='1' && $flash->count() && $fOn)
 <style>
 /* Flash Sale bar: logo colours (navy #0B1220 + orange #FF5A00). Both ends are lit orange and a soft glow travels end to end and back, so no part of the bar is left dead. Decoration only; content and timer are untouched. */
@@ -353,43 +354,24 @@ body .cs .pc .on{margin-top:auto}
 .fs .pc .on{margin-top:auto}
 @media(max-width:760px){.fs .pc .pr{min-height:26px}}
 </style>
-<div class="w sec-fs" id="flash" data-end="{{ $fFix ? $fEnd * 1000 : '' }}" style="padding-top:22px"><div class="fs">
-<div class="hd2"><b class="t">⚡ FLASH SALE</b><span class="e">ENDS IN</span><div class="tm"><span class="b" data-cd="h">{{ substr($fmt($fEnd),0,2) }}</span><span>:</span><span class="b" data-cd="m">{{ substr($fmt($fEnd),3,2) }}</span><span>:</span><span class="b" data-cd="s">{{ substr($fmt($fEnd),6,2) }}</span></div>
-<div class="tb"><button type="button" class="on" data-ft="f">Flash Sale</button>@if($plus->count())<button type="button" data-ft="p">Plus Sale</button>@endif<a href="/search?deals=1">View All ›</a></div></div>
-<div class="mtb"><button type="button" class="on" data-ft="f">Flash Sale</button>@if($plus->count())<button type="button" data-ft="p">Plus Sale</button>@endif</div>
-@foreach(['f'=>$flash, 'p'=>$plus] as $fk => $list)
-@if($list->count())
-<div class="gr" data-cr data-fl="{{ $fk }}" @if($fk==='p') style="display:none" @endif>@foreach($list as $q)
-@php $off = \App\Http\Controllers\StoreController::off($q); $u = \App\Http\Controllers\StoreController::url($q); $w = $q->sold > 0 ? max(8, min(100, round($q->sold / max(1, $q->sold + max(0, (int)$q->stock)) * 100))) : max(8, min(90, 100 - (int)$q->stock)); @endphp
-<div class="pc"><a class="ph" href="{{ $u }}" style="background:#fff"><img src="{{ $q->image ?: '/product-placeholder' }}" @php $__ss = \App\Support\Img::srcset($q->image); @endphp @if($__ss) srcset="{{ $__ss }}" sizes="150px" @endif alt="{{ $q->name }}" width="150" height="150" loading="lazy" decoding="async" draggable="false"></a>
-<a class="nm" href="{{ $u }}">{{ $q->name }}</a><div class="pr"><b>{{ number_format($q->price) }} TK</b> @if($q->compare_price > $q->price)<s>{{ number_format($q->compare_price) }} TK</s>@endif @if((int)$off > 0) <span class="dp">-{{ $off }}%</span>@endif</div>
-<div style="padding:0 2px"><div class="bar"><i style="width:{{ $w }}%"></i></div><div class="sold">{{ $q->sold > 0 ? $q->sold.' sold this week' : ((int)$q->stock > 0 ? 'In stock' : 'Limited stock') }}</div></div>
-<a class="on" href="/checkout?add={{ $q->id }}&amp;p={{ (float)$q->price }}" rel="nofollow"><svg width="16" height="16" aria-hidden="true"><use href="#dfi-cart"/></svg><i>ORDER NOW</i></a></div>
-@endforeach</div>
-@endif
-@endforeach
-</div></div>
+<div id="flash" data-end="{{ $fFix ? $fEnd * 1000 : '' }}">
+@php $__fx = '<span class="cs2-tm"><span class="c">ENDS IN</span><b data-cd="h">'.substr($fmt($fEnd),0,2).'</b>:<b data-cd="m">'.substr($fmt($fEnd),3,2).'</b>:<b data-cd="s">'.substr($fmt($fEnd),6,2).'</b></span>'; @endphp
+@include('store.cat_slider_one', ['c'=>(object)['name'=>'Flash Sale','description'=>'','link'=>'/search?deals=1','extra'=>$__fx], 'items'=>$flash->take(12)->values(), 'pi'=>0])
+@if($plus->count())@include('store.cat_slider_one', ['c'=>(object)['name'=>'Plus Sale','description'=>'','link'=>'/search?deals=1'], 'items'=>$plus->take(12)->values(), 'pi'=>1])@endif
+</div>
 @endif
 
 @if($s['home_top']==='1' && $top->count())
-<div class="hst-p sec-top" id="top" style="min-height:400px"></div><template class="hst">
-@php $__d = min(8, max(2, (int)$s['top_vis_d'])); $__m = min(4, max(1, (int)$s['top_vis_m'])); $__sp = min(15, max(1, (int)$s['top_speed'])) * 1000; @endphp
-<style>@media(min-width:1201px){#top [data-cr]{--pv:{{ $__d }}}}@media(min-width:981px) and (max-width:1200px){#top [data-cr]{--pv:{{ min($__d, 5) }}}}@media(min-width:761px) and (max-width:980px){#top [data-cr]{--pv:{{ min($__d, 4) }}}}@media(max-width:760px){#top [data-cr]{--pv:{{ $__m }}}}#top .pc .tsb{margin:0 10px;align-self:flex-start;background:#FFF1E8;color:#C2410C;font-size:10.5px;font-weight:700;border-radius:20px;padding:2px 9px}#top .pc .tsn{margin:0 10px;font-size:11px;color:#374151}@media(max-width:760px){#top .pc .tsb{font-size:8.5px;padding:1px 6px;margin:0 6px}#top .pc .tsn{font-size:9px;margin:0 6px}}</style>
-<div class="w sec-st sec-top" id="top" style="padding-top:34px"><div class="st cs"><div class="hh"><span class="t">{{ $topLabel }}</span><span class="sp"></span><a class="vl" href="/search?sort=popular">View All</a></div><div class="mt"><span>{{ $topLabel }}</span><a class="vl" href="/search?sort=popular">View All</a></div>
-<div class="gr" data-cr data-sp="{{ $__sp }}" data-auto="{{ $s['top_auto'] === '1' ? '1' : '0' }}">@foreach($top as $q)@include('store.card', ['fd'=>true, 'tb'=>$s['top_badge']==='1' && isset($topSold[$q->id]), 'ts'=>$s['top_show_sold']==='1' ? (int)($topSold[$q->id] ?? 0) : 0])@endforeach</div></div></div>
-</template>
+@include('store.cat_slider_one', ['c'=>(object)['name'=>$topLabel,'description'=>'','link'=>'/search?sort=popular'], 'items'=>$top->take(12)->values(), 'pi'=>2])
 @endif
 
 @php $__tb = $s['home_todays_deal']==='1' ? \App\Http\Controllers\StoreController::todayBest($s) : collect(); @endphp
 @if($__tb->count() && $dOn)
-<div class="w sec-st" id="deal" style="padding-top:26px">@include('store.deal_bp2', ['deals' => $__tb])</div>
+<div id="deal">@include('store.cat_slider_one', ['c'=>(object)['name'=>"Today's Deal",'description'=>'','link'=>'/search?deals=1'], 'items'=>$__tb->take(12)->values(), 'pi'=>3])</div>
 @endif
 
 @if($s['home_new']==='1' && $new->count())
-<div class="hst-p" id="new" style="min-height:400px"></div><template class="hst">
-<div class="w sec-st" id="new" style="padding-top:34px"><div class="st cs"><div class="hh"><span class="t">New Arrival Products</span><span class="sp"></span><a class="vl" href="/search?sort=new">View All</a></div><div class="mt"><span>New Arrival</span><a class="vl" href="/search?sort=new">View All</a></div>
-<div class="gr" data-cr>@foreach($new as $q)@include('store.card', ['fd'=>false])@endforeach</div></div></div>
-</template>
+@include('store.cat_slider_one', ['c'=>(object)['name'=>'New Arrival Products','description'=>'','link'=>'/search?sort=new'], 'items'=>$new->take(12)->values(), 'pi'=>4])
 @endif
 
 @if(($s['home_live_orders'] ?? '') === '1')
@@ -432,6 +414,7 @@ body .cs .pc .on{margin-top:auto}
 @endif
 @endforeach
 @endif
+@include('store.cat_slider_js')
 @if($s['home_trust']==='1')
 <div class="w" style="padding-top:34px"><div class="tr"><div><i><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h11v10H3zM14 9h4l3 3v4h-7z"/><circle cx="7" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/></svg></i>Free Delivery</div><div><i><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M8.5 12l2.5 2.5L15.5 10"/></svg></i>100% Original</div><div><i><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/><path d="M6 9v.01M18 15v.01"/></svg></i>Cash on Delivery</div><div><i><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/></svg></i>Easy Return</div><div><i><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/><path d="M12 15v2"/></svg></i>Secure Payment</div><div><i><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2z"/></svg></i>Customer Support</div></div></div>
 @endif

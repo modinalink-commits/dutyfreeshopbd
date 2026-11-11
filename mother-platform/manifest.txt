@@ -983,3 +983,6 @@ database/migrations/2026_11_12_000100_brand_name_dutyfree_bd.php
 public/preview/deal-designs.html
 public/preview/cat-slider.html
 resources/views/store/cat_slider.blade.php
+resources/views/store/cat_slider_css.blade.php
+resources/views/store/cat_slider_js.blade.php
+resources/views/store/cat_slider_one.blade.php

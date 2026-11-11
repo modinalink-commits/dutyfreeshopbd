@@ -55,7 +55,7 @@ df85a1f19b3129d847e30c8dab6ea00fbc2e8101 app/Http/Controllers/PermissionControll
 b31aae8aa6f2d211580d93c052e0166c899221b1 resources/views/store/layout.blade.php
 5356b422775064c3de9b13c703f12fbf913a2bd3 resources/views/store/card.blade.php
 4a5eb7ee8d7960886fcb97c690bbb604ec69eb1f resources/views/store/home_sec.blade.php
-e700d4abcb9668498341740aea8034c38dd7b5f1 resources/views/store/home.blade.php
+96af9c41520a301a7a38a517d7b0f7b15ce36b0d resources/views/store/home.blade.php
 9cad8fdec930db3c73278887b3c3aed3bd9ce588 resources/views/store/category.blade.php
 96a849a50b7424385acf297e985284db202c1547 resources/views/store/product.blade.php
 7ad9d9502d41f54d6784414a9aa3f16a8ab0ec13 resources/views/store/search.blade.php
@@ -981,4 +981,7 @@ e7414f7dc94cef8c9a519cef6a06b920c6537285 database/migrations/2026_11_11_200000_p
 1c537beb182f1f5598d2bd3ff3ec8281d4deb924 database/migrations/2026_11_12_000100_brand_name_dutyfree_bd.php
 a8d9fb862806573e632ab3f4431a0936d1437a3e public/preview/deal-designs.html
 bc3611c1d40ecd69a45e9dc01572f7c836cb7020 public/preview/cat-slider.html
-77857a9e0266634df0a26825f958441e0a87584a resources/views/store/cat_slider.blade.php
+735b5c40bf19d00eae7aa40be5c24c62faf095bb resources/views/store/cat_slider.blade.php
+6783b8eaefb6924af998c1cfef03630098528b9e resources/views/store/cat_slider_css.blade.php
+b635a206556a3b081d4163d5d678c71ff19537e5 resources/views/store/cat_slider_js.blade.php
+78afa7d9590b88d998546db24dd9e96d8f938237 resources/views/store/cat_slider_one.blade.php
