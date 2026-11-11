@@ -9,7 +9,7 @@
 @foreach($users as $u)@php($x=$rows[$u->id] ?? null)
 <tr style="border-top:1px solid #E5E7EB"><form method="post" action="/admin/call-center/extensions/{{ $u->id }}">@csrf
 <td style="padding:7px 6px"><b>{{ $u->name }}</b><br><small style="color:#6B7280">{{ $u->email }} · {{ $u->role }}{{ $u->active ? '' : ' · inactive' }}</small></td>
-<td><input name="username" value="{{ $x->username ?? '' }}" placeholder="{{ $next }}" style="width:90px">@if($x && $x->username)<br><small style="font-weight:600;color:{{ in_array((string)$x->username, $relay, true) ? '#B45309' : '#047857' }}">{{ in_array((string)$x->username, $relay, true) ? 'RELAY · client calls' : 'AGENT' }}</small>@endif</td>
+<td><input name="username" value="{{ $x->username ?? '' }}" placeholder="{{ $next }}" style="width:90px">@if($x && $x->username)<br><small style="font-weight:600;color:{{ in_array((string)$x->username, $relay, true) ? '#B45309' : '#047857' }}">{{ in_array((string)$x->username, $relay, true) ? 'AGENT + RELAY (both)' : 'AGENT only' }}</small>@endif</td>
 <td><input name="auth_username" value="{{ $x->auth_username ?? '' }}" placeholder="same" style="width:90px"></td>
 <td><input name="display_name" value="{{ $x->display_name ?? '' }}" placeholder="{{ $u->name }}" style="width:130px"></td>
 <td><input type="text" name="password" value="{{ \App\Http\Controllers\CallCenterController::pwPlain($x ?? null) }}" autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" placeholder="required" style="width:150px;font-family:Inter,'Bornomala',sans-serif"></td>
@@ -23,7 +23,7 @@
 @php($n=max(10,$pool->count()+1))
 @for($i=0;$i<$n;$i++)@php($p=$pool[$i] ?? null)
 <tr style="border-top:1px solid #E5E7EB"><td style="padding:6px;color:#6B7280">{{ $i+1 }}<input type="hidden" name="rows[{{ $i }}][id]" value="{{ $p->id ?? '' }}"></td>
-<td><input name="rows[{{ $i }}][extension]" value="{{ $p->extension ?? '' }}" style="width:100px" autocomplete="off">@if($p && $p->extension)<br><small style="font-weight:600;color:{{ in_array((string)$p->extension, $relay, true) || in_array((string)($p->auth_username ?? ''), $relay, true) ? '#B45309' : '#6B7280' }}">{{ in_array((string)$p->extension, $relay, true) || in_array((string)($p->auth_username ?? ''), $relay, true) ? 'RELAY · client calls' : 'Free pool' }}</small>@endif</td>
+<td><input name="rows[{{ $i }}][extension]" value="{{ $p->extension ?? '' }}" style="width:100px" autocomplete="off">@if($p && $p->extension)<br><small style="font-weight:600;color:{{ in_array((string)$p->extension, $relay, true) || in_array((string)($p->auth_username ?? ''), $relay, true) ? '#B45309' : '#6B7280' }}">{{ in_array((string)$p->extension, $relay, true) || in_array((string)($p->auth_username ?? ''), $relay, true) ? 'RELAY only · client calls' : 'Free pool' }}</small>@endif</td>
 <td><input name="rows[{{ $i }}][auth_username]" value="{{ $p->auth_username ?? '' }}" placeholder="same" style="width:100px" autocomplete="off"></td>
 <td><input name="rows[{{ $i }}][display_name]" value="{{ $p->display_name ?? '' }}" style="width:140px" autocomplete="off"></td>
 <td><input type="text" name="rows[{{ $i }}][password]" value="{{ \App\Http\Controllers\CallCenterController::pwPlain($p) }}" autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" style="width:160px;font-family:Inter,'Bornomala',sans-serif"></td></tr>
