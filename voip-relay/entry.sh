@@ -51,7 +51,7 @@ if [ -n "$PBX_HOST" ] && [ -n "$PBX_EXTS" ]; then
   for e in "${EXA[@]}"; do
     i=$((i+1)); u=$(xe "${e%%:*}"); p=$(xe "${e#*:}")
     GWXML="$GWXML<gateway name=\"pbx$i\"><param name=\"username\" value=\"$u\"/><param name=\"password\" value=\"$p\"/><param name=\"realm\" value=\"${PBX_REALM:-$PBX_HOST}\"/><param name=\"proxy\" value=\"${PBX_REALM:-$PBX_HOST}:$PBX_PORT;transport=$PBX_TRANSPORT\"/><param name=\"register\" value=\"true\"/><param name=\"from-domain\" value=\"${PBX_REALM:-$PBX_HOST}\"/><param name=\"register-transport\" value=\"$PBX_TRANSPORT\"/><param name=\"retry-seconds\" value=\"30\"/><param name=\"caller-id-in-from\" value=\"true\"/></gateway>"
-    BRIDGE="${BRIDGE:+$BRIDGE,}{absolute_codec_string=PCMA,PCMU}sofia/gateway/pbx$i/0\$1"
+    BRIDGE="${BRIDGE:+$BRIDGE,}{absolute_codec_string='PCMA,PCMU'}sofia/gateway/pbx$i/0\$1"
   done
 fi
 CID=""; [ -n "$CALLER_ID" ] && CID="<action application=\"set\" data=\"effective_caller_id_number=$CALLER_ID\"/>"
