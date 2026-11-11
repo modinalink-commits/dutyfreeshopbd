@@ -80,12 +80,12 @@ configs:
         for e in "$${EXA[@]}"; do
           i=$$((i+1)); u=$$(xe "$${e%%:*}"); p=$$(xe "$${e#*:}")
           GWXML="$$GWXML<gateway name=\"pbx$$i\"><param name=\"username\" value=\"$$u\"/><param name=\"password\" value=\"$$p\"/><param name=\"realm\" value=\"$${PBX_REALM:-$$PBX_HOST}\"/><param name=\"proxy\" value=\"$${PBX_REALM:-$$PBX_HOST}:$$PBX_PORT;transport=$$PBX_TRANSPORT\"/><param name=\"register\" value=\"true\"/><param name=\"from-domain\" value=\"$${PBX_REALM:-$$PBX_HOST}\"/><param name=\"register-transport\" value=\"$$PBX_TRANSPORT\"/><param name=\"retry-seconds\" value=\"30\"/><param name=\"caller-id-in-from\" value=\"true\"/></gateway>"
-          BRIDGE="$${BRIDGE:+$$BRIDGE,}{absolute_codec_string='PCMA,PCMU'}sofia/gateway/pbx$$i/0\$$1"
+          BRIDGE="$$BRIDGE<action application=\"limit_execute\" data=\"hash relay_pbx pbx$$i $${EXT_MAX:-5} bridge {absolute_codec_string='PCMA,PCMU',origination_caller_id_number=$$u,effective_caller_id_number=$$u}sofia/gateway/pbx$$i/0\$$1\"/>"
         done
       fi
-      CID=""; [ -n "$$CALLER_ID" ] && CID="<action application=\"set\" data=\"effective_caller_id_number=$$CALLER_ID\"/>"
+      CID=""  # caller-id = each extension's own number (PBX applies its outbound caller ID)
       if [ "$$MODE" = "live" ] && [ -n "$$BRIDGE" ]; then
-        CALLACTS="$$CID<action application=\"set\" data=\"continue_on_fail=true\"/><action application=\"set\" data=\"call_timeout=45\"/><action application=\"bridge\" data=\"$$BRIDGE\"/><action application=\"hangup\" data=\"NORMAL_TEMPORARY_FAILURE\"/>"
+        CALLACTS="$$CID<action application=\"set\" data=\"continue_on_fail=true\"/><action application=\"set\" data=\"call_timeout=45\"/>$$BRIDGE<action application=\"hangup\" data=\"NORMAL_TEMPORARY_FAILURE\"/>"
       else
         CALLACTS="<action application=\"ring_ready\"/><action application=\"sleep\" data=\"8000\"/><action application=\"hangup\" data=\"NO_ROUTE_DESTINATION\"/>"
       fi
