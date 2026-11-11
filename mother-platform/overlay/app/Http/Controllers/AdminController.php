@@ -307,7 +307,7 @@ class AdminController extends Controller {
       return $id;
     });
     if ($dupId) return redirect("/admin/orders/$dupId")->with('ok', 'This order was already saved (duplicate click ignored).');
-    if (!empty($d['inc_id'])) DB::table('incomplete_orders')->where('id', (int)$d['inc_id'])->whereIn('status', ['open','recovered'])->update(['status'=>'converted', 'order_id'=>$id, 'updated_at'=>now()]);
+    if (!empty($d['inc_id'])) DB::table('incomplete_orders')->where('id', (int)$d['inc_id'])->whereIn('status', ['open','recovered','archived'])->update(['status'=>'converted', 'order_id'=>$id, 'updated_at'=>now()]);
     DB::table('incomplete_orders')->where('status', 'open')->where('phone', $d['phone'])->update(['status'=>'converted', 'order_id'=>$id, 'updated_at'=>now()]);
     try { \App\Support\Voice::onOrder($d['phone'], (int)$id, $kept); } catch (\Throwable $e) {}
     \App\Support\OrderSms::placed((int)$id);
