@@ -34,6 +34,9 @@
 #flash .pc,#top .pc,#new .pc{border:0;border-radius:16px;box-shadow:0 2px 10px rgba(18,26,43,.08);background:#fff;transition:box-shadow .35s,transform .5s cubic-bezier(.2,.8,.2,1),opacity .6s}
 #flash .pc:hover,#top .pc:hover,#new .pc:hover{box-shadow:0 12px 26px rgba(18,26,43,.16);transform:translateY(-2px)}
 #flash .pc .nm,#top .pc .nm,#new .pc .nm{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#flash .fs{background:#FFF4EA;border-radius:20px;overflow:hidden;padding-bottom:12px}.sec-lv .lvbox{background:#F6F2FA;border:0;border-radius:20px}
+.cs2r{opacity:0;transform:translate3d(0,22px,0);transition:opacity .7s ease,transform .8s cubic-bezier(.2,.8,.2,1)}.cs2r.in{opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){.cs2r{opacity:1!important;transform:none!important}}
 .cs2e .pc{opacity:0;transform:perspective(900px) translate3d(0,22px,0) rotateX(10deg)}
 .cs2e.in .pc{opacity:1;transform:none;transition-delay:calc(var(--k,0)*100ms)}
 @media(prefers-reduced-motion:reduce){.cs2e .pc{opacity:1!important;transform:none!important}}
@@ -71,4 +74,4 @@ function par(){if(!vis||RM||!bg)return;var r=el.getBoundingClientRect(),h=innerH
 var raf=0;window.addEventListener('scroll',function(){if(raf)return;raf=requestAnimationFrame(function(){raf=0;par()})},{passive:true});
 mark();
 if('IntersectionObserver' in window){new IntersectionObserver(function(es){es.forEach(function(x){vis=x.isIntersecting;if(vis){el.classList.add('in');par()}rst()})},{threshold:.25}).observe(el)}else{vis=true;el.classList.add('in');rst()}}
-S.forEach(init);if(!RM&&'IntersectionObserver' in window){var U=[].slice.call(document.querySelectorAll('#flash,#top,#new'));U.forEach(function(u){u.classList.add('cs2e');[].slice.call(u.querySelectorAll('.pc')).forEach(function(c,i){c.style.setProperty('--k',Math.min(i,8))})});var io=new IntersectionObserver(function(es){es.forEach(function(x){if(x.isIntersecting){x.target.classList.add('in');io.unobserve(x.target)}})},{threshold:.12});U.forEach(function(u){io.observe(u)})}})();</script>@endverbatim
+S.forEach(init);if(!RM&&'IntersectionObserver' in window){var U=[].slice.call(document.querySelectorAll('#flash,#top,#new'));var R=[].slice.call(document.querySelectorAll('#deal,.sec-lv'));R.forEach(function(u){u.classList.add('cs2r')});U.forEach(function(u){u.classList.add('cs2e');[].slice.call(u.querySelectorAll('.pc')).forEach(function(c,i){c.style.setProperty('--k',Math.min(i,8))})});var io=new IntersectionObserver(function(es){es.forEach(function(x){if(x.isIntersecting){x.target.classList.add('in');io.unobserve(x.target)}})},{threshold:.12});U.forEach(function(u){io.observe(u)});R.forEach(function(u){io.observe(u)})}})();</script>@endverbatim
