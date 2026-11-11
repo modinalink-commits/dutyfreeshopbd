@@ -141,6 +141,19 @@ class CarrierClientController extends Controller {
     if (time() - (int)$c['at'] > 20) return [false, [], 'The relay stopped reporting ' . (time() - (int)$c['at']) . ' s ago'];
     return [true, $c['rows'], ''];
   }
+  /** Scheduler tick: once the relay has reported at least once, a live feed that stays silent for 2+ minutes raises a visible Deployment Center issue (and clears itself when the feed returns). It never restarts anything: a relay restart would cut live client calls. */
+  public static function relayWatch(): void {
+    $c = \Illuminate\Support\Facades\Cache::get('vc_relay_live');
+    if ($c && time() - (int)$c['at'] <= 20) {
+      \Illuminate\Support\Facades\Cache::put('vc_relay_seen', time(), 604800);
+      \App\Support\DeployHealth::resolve('relay_live_stale', 'System (relay is reporting again)');
+      return;
+    }
+    $seen = (int)\Illuminate\Support\Facades\Cache::get('vc_relay_seen', 0);
+    if ($seen > 0 && time() - $seen > 120) {
+      \App\Support\DeployHealth::raise('relay_live_stale', 'high', 'Call relay', 'Call Clients live board: the relay stopped reporting', 'No live-call data from the relay for ' . intdiv(time() - $seen, 60) . ' min. Calls and billing may still be working; only the live board is affected.', 'The relay container lost its push to the website (it can happen after the website container is restarted).', 'Restart the sip-relay project in Hostinger Docker Manager when few calls are running (a restart cuts live calls).');
+    }
+  }
   /** Public, token-protected: the relay pushes `sofia status gateway` every ~15 s so the admin can show which extensions are registered on the PBX. */
   public function relayGw(Request $r) {
     $tok = (string)Sms::secret('vc_relay_token'); $given = (string)$r->bearerToken();

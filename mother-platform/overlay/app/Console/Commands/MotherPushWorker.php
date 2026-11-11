@@ -32,6 +32,7 @@ class MotherPushWorker extends Command
     try { \App\Support\OrderCancelNotice::tick(); } catch (\Throwable $e) { $this->error('cancel-notice: ' . $e->getMessage()); }
     \App\Support\DeployHealth::beat(); // heartbeat: shown as "Scheduler" in the Deployment Center
     try { \App\Support\Deployer::tick(); } catch (\Throwable $e) { $this->error('deploy: ' . $e->getMessage()); }
+    try { \App\Http\Controllers\CarrierClientController::relayWatch(); } catch (\Throwable $e) { $this->error('relaywatch: ' . $e->getMessage()); }
     try { \App\Support\DeployHealth::scan(); } catch (\Throwable $e) { $this->error('health: ' . $e->getMessage()); }
     try { $this->campaigns(); } catch (\Throwable $e) { $this->error('campaigns: ' . $e->getMessage()); }
     try { \App\Support\SmsMarketing::tick(); } catch (\Throwable $e) { $this->error('sms: ' . $e->getMessage()); }
