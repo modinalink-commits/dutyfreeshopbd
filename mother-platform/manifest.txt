@@ -977,3 +977,5 @@ app/Http/Controllers/CarrierPortalController.php
 database/migrations/2026_11_11_100000_call_client_portal.php
 resources/views/carrier_portal.blade.php
 resources/views/carrier_portal_login.blade.php
+resources/views/sip_pool_rows.blade.php
+database/migrations/2026_11_11_200000_pbx_companies.php

@@ -25,7 +25,7 @@ class CarrierClientController extends Controller {
       $allow = array_filter(array_map('trim', preg_split('/[\s,]+/', (string)Voice::set('relay_client_exts', '*'))));
       $all = in_array('*', $allow, true); // '*' (default) = every extension is both AGENT and RELAY
       $have = array_map(fn($l) => explode(':', $l, 2)[0], $list);
-      foreach (DB::table('pbx_extensions')->orderBy('id')->get() as $x) {
+      foreach (DB::table('pbx_extensions')->where('company_id', 0)->orderBy('id')->get() as $x) {
         $u = (string)($x->auth_username ?: $x->extension); if (in_array($u, $have, true) || empty($x->password_enc)) continue;
         if (!$all && !in_array((string)$x->extension, $allow, true) && (!$all && !in_array($u, $allow, true))) continue;
         try { $pw = \Illuminate\Support\Facades\Crypt::decryptString($x->password_enc); } catch (\Throwable $e) { continue; }

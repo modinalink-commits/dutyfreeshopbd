@@ -22,16 +22,26 @@
 <td><input type="text" name="password" value="{{ \App\Http\Controllers\CallCenterController::pwPlain($x ?? null) }}" autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" placeholder="required" style="width:150px;font-family:Inter,'Bornomala',sans-serif"></td>
 <td><button class="btn" type="submit">Save</button></td></form></tr>
 @endforeach
-@php($n=max(10,$pool->count()+1))
-@for($i=0;$i<$n;$i++)@php($p=$pool[$i] ?? null)
-<tr style="border-top:1px solid #E5E7EB"><td style="padding:7px 6px;color:#6B7280;white-space:nowrap">Pool #{{ $i+1 }}<input form="poolForm" type="hidden" name="rows[{{ $i }}][id]" value="{{ $p->id ?? '' }}"></td>
-<td><input form="poolForm" name="rows[{{ $i }}][extension]" value="{{ $p->extension ?? '' }}" style="width:90px" autocomplete="off"></td>
-<td style="white-space:nowrap">@if($p && $p->extension)@php($rl=in_array((string)$p->extension, $relay, true) || in_array((string)($p->auth_username ?? ''), $relay, true))<span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:{{ $rl ? '#FFEDD5' : '#F3F4F6' }};color:{{ $rl ? '#B45309' : '#6B7280' }}">{{ $rl ? 'RELAY' : 'FREE' }}</span>@endif</td>
-<td><input form="poolForm" name="rows[{{ $i }}][auth_username]" value="{{ $p->auth_username ?? '' }}" placeholder="same" style="width:90px" autocomplete="off"></td>
-<td><input form="poolForm" name="rows[{{ $i }}][display_name]" value="{{ ($p->display_name ?? '') === 'DutyFreeBD' ? '' : ($p->display_name ?? '') }}" placeholder="DutyFreeBD" style="width:130px" autocomplete="off"></td>
-<td><input form="poolForm" type="text" name="rows[{{ $i }}][password]" value="{{ \App\Http\Controllers\CallCenterController::pwPlain($p) }}" autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" style="width:150px;font-family:Inter,'Bornomala',sans-serif"></td><td></td></tr>
-@endfor</table>
-<form id="poolForm" method="post" action="/admin/call-center/extensions-pool">@csrf</form>
-<div style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn" type="submit" form="poolForm">Save pool extensions</button><span style="font-size:12px;color:#6B7280">User rows save with their own Save button. Pool rows: fill the rows you need and press Save pool extensions. Agent name left blank = default agent "DutyFreeBD". Clear the Extension box of a saved pool row and Save to remove it. Passwords are stored encrypted. Extension ফাঁকা রেখে Save করলে ইউজারের এক্সটেনশন সরে যায়; একই এক্সটেনশন দুজনকে দেওয়া যাবে না।</span></div></div>
+@include('sip_pool_rows', ['list'=>$pool, 'cid'=>0, 'min'=>4, 'relay'=>$relay])</table>
+<form id="poolForm0" method="post" action="/admin/call-center/extensions-pool">@csrf<input type="hidden" name="company_id" value="0"></form>
+<div style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn" type="submit" form="poolForm0">Save extensions</button><button class="btn" type="button" onclick="addPoolRow(this)" style="background:#fff;color:#111827;border:1px solid #D1D5DB">+ Add extension</button><span style="font-size:12px;color:#6B7280">User rows save with their own Save button. Pool rows: fill the rows you need and press Save pool extensions. Agent name left blank = default agent "DutyFreeBD". Clear the Extension box of a saved pool row and Save to remove it. Passwords are stored encrypted. Extension ফাঁকা রেখে Save করলে ইউজারের এক্সটেনশন সরে যায়; একই এক্সটেনশন দুজনকে দেওয়া যাবে না।</span></div></div>
 @endforeach
+@foreach($companies as $co)@php($clist=$poolBy[$co->id] ?? collect())
+<div class="card" style="margin-top:14px;overflow-x:auto">
+<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:8px"><b>Company · {{ $co->name }}</b>
+<form method="post" action="/admin/call-center/extensions-company/{{ $co->id }}/delete" onsubmit="return confirm('Delete this company table? (extensions must be removed first)')">@csrf<button class="btn" type="submit" style="background:#fff;color:#B91C1C;border:1px solid #FCA5A5;padding:2px 10px;font-size:12px">Delete company</button></form></div>
+<div style="display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12px;color:#6B7280;margin-bottom:10px">@foreach(['sip_server'=>'SIP server','wss_url'=>'WSS','domain'=>'Domain'] as $k=>$lb)@if(!empty($co->$k))<span><b style="color:#111827">{{ $lb }}</b> {{ $co->$k }}</span>@endif @endforeach</div>
+<table style="width:100%;border-collapse:collapse;font-size:13px">
+<tr style="text-align:left;color:#6B7280"><th>#</th><th>Extension</th><th>Use</th><th>Auth username</th><th>Display name</th><th>Password</th><th></th></tr>
+@include('sip_pool_rows', ['list'=>$clist, 'cid'=>$co->id, 'min'=>2, 'relay'=>[]])
+</table>
+<form id="poolForm{{ $co->id }}" method="post" action="/admin/call-center/extensions-pool">@csrf<input type="hidden" name="company_id" value="{{ $co->id }}"></form>
+<div style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn" type="submit" form="poolForm{{ $co->id }}">Save extensions</button><button class="btn" type="button" onclick="addPoolRow(this)" style="background:#fff;color:#111827;border:1px solid #D1D5DB">+ Add extension</button><span style="font-size:12px;color:#6B7280">This company's extensions are kept here only; they are not used by the client-call relay.</span></div></div>
+@endforeach
+<div class="card" style="margin-top:14px"><b>Add another company / PBX</b>
+<form method="post" action="/admin/call-center/extensions-company" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;align-items:center">@csrf
+<input name="name" placeholder="Company name" required style="width:180px"><input name="sip_server" placeholder="SIP server (optional)" style="width:200px"><input name="wss_url" placeholder="wss://… (optional)" style="width:220px"><input name="domain" placeholder="Domain (optional)" style="width:180px"><button class="btn" type="submit">Add company table</button></form></div>
+<script>
+function addPoolRow(btn){var card=btn.closest('.card'),t=card.querySelector('table'),rows=t.querySelectorAll('tr.prow'),last=rows[rows.length-1];if(!last)return;var n=rows.length,c=last.cloneNode(true);c.querySelectorAll('input').forEach(function(i){if(i.type==='hidden'){i.value=''}else if(i.name.indexOf('[password]')>-1||i.name.indexOf('[extension]')>-1||i.name.indexOf('[auth_username]')>-1||i.name.indexOf('[display_name]')>-1){i.value=''}i.name=i.name.replace(/rows\[\d+\]/,'rows['+n+']')});var b=c.querySelector('td:nth-child(3)');if(b)b.innerHTML='';var f=c.querySelector('td');if(f){var inp=f.querySelector('input');f.firstChild.textContent='Pool #'+(n+1)}t.appendChild(c)}
+</script>
 @endsection

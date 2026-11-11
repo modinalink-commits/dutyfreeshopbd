@@ -95,12 +95,12 @@ class CallCenterController extends Controller {
   public function extensions() {
     $users = DB::table('users')->orderBy('id')->get(['id', 'name', 'email', 'role', 'active']); $rows = DB::table('sip_accounts')->whereNotNull('user_id')->get()->keyBy('user_id');
     $used = $rows->pluck('username')->filter()->all(); $next = 101; while (in_array((string)$next, $used)) $next++;
-    $pool = DB::table('pbx_extensions')->orderBy('id')->get();
+    $allPool = DB::table('pbx_extensions')->orderBy('id')->get(); $pool = $allPool->where('company_id', 0)->values(); $companies = DB::table('pbx_companies')->orderBy('id')->get(); $poolBy = $allPool->where('company_id', '>', 0)->groupBy('company_id');
     // Which extensions the Call Clients relay uses (client calls) — same rule as the relay config; everything else is agent/staff.
     $relay = array_map('trim', preg_split('/[\s,]+/', (string)\App\Support\Voice::set('relay_client_exts', '*')));
     foreach (explode("\n", (string)\App\Support\Sms::secret('vc_relay_exts')) as $l) { $u = trim(explode(':', $l, 2)[0]); if ($u !== '') $relay[] = $u; }
     if (in_array('*', $relay, true)) { foreach ($rows as $rr) { if (!empty($rr->username)) $relay[] = (string)$rr->username; } foreach ($pool as $pp) { $relay[] = (string)$pp->extension; if (!empty($pp->auth_username)) $relay[] = (string)$pp->auth_username; } }
-    return view('sip_extensions', ['pbxs'=>[$this->acct() ?: (object)['account_name'=>'FusionPBX']], 'users'=>$users, 'rows'=>$rows, 'next'=>$next, 'pool'=>$pool, 'relay'=>array_values(array_filter(array_unique($relay)))]);
+    return view('sip_extensions', ['companies'=>$companies, 'poolBy'=>$poolBy, 'pbxs'=>[$this->acct() ?: (object)['account_name'=>'FusionPBX']], 'users'=>$users, 'rows'=>$rows, 'next'=>$next, 'pool'=>$pool, 'relay'=>array_values(array_filter(array_unique($relay)))]);
   }
   public function saveExtension(Request $r, $uid) {
     abort_unless(DB::table('users')->where('id', $uid)->exists(), 404);
@@ -116,21 +116,35 @@ class CallCenterController extends Controller {
     return back()->with('ok', 'Extension saved — password '.($rawPw !== null && $rawPw !== '' ? 'updated ('.mb_strlen($rawPw).' characters)' : 'unchanged'));
   }
   /** Extension pool: one form, many rows. Blank extension on a saved row removes it; blank password keeps the old one. */
+  /** Add another PBX company (its own PBX details + its own extension table). */
+  public function addCompany(Request $r) {
+    $d = $r->validate(['name'=>'required|string|max:120', 'sip_server'=>'nullable|string|max:255', 'wss_url'=>['nullable', 'string', 'max:400', 'regex:#^wss://[^\s]+$#i'], 'domain'=>'nullable|string|max:255']);
+    $id = DB::table('pbx_companies')->insertGetId(['name'=>trim($d['name']), 'sip_server'=>trim((string)($d['sip_server'] ?? '')) ?: null, 'wss_url'=>trim((string)($d['wss_url'] ?? '')) ?: null, 'domain'=>trim((string)($d['domain'] ?? '')) ?: null, 'created_at'=>now(), 'updated_at'=>now()]);
+    try { DB::table('audit_logs')->insert(['user_id'=>Auth::id(), 'user_name'=>Auth::user()->name ?? 'admin', 'action'=>'PBX company added', 'subject'=>'#'.$id.' '.$d['name'], 'ip'=>$r->ip(), 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {}
+    return back()->with('ok', 'Company added. Add its extensions in its table.');
+  }
+  public function deleteCompany(Request $r, $id) {
+    $id = (int)$id; if (DB::table('pbx_extensions')->where('company_id', $id)->exists()) return back()->withErrors(['Remove this company\'s extensions first.']);
+    DB::table('pbx_companies')->where('id', $id)->delete();
+    try { DB::table('audit_logs')->insert(['user_id'=>Auth::id(), 'user_name'=>Auth::user()->name ?? 'admin', 'action'=>'PBX company deleted', 'subject'=>'#'.$id, 'ip'=>$r->ip(), 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {}
+    return back()->with('ok', 'Company deleted.');
+  }
   public function savePool(Request $r) {
     $in = $r->input('rows', []); if (!is_array($in)) $in = []; $raw = $_POST['rows'] ?? []; $err = []; $seen = []; $n = 0;
+    $cid = (int)$r->input('company_id', 0); if ($cid > 0 && !DB::table('pbx_companies')->where('id', $cid)->exists()) return back()->withErrors(['Company not found.']);
     $userExt = DB::table('sip_accounts')->whereNotNull('user_id')->pluck('username')->map(fn($v) => (string)$v)->all();
     foreach (array_slice($in, 0, 60, true) as $i => $row) {
-      $id = (int)($row['id'] ?? 0); $ex = trim((string)($row['extension'] ?? '')); $cur = $id ? DB::table('pbx_extensions')->find($id) : null;
+      $id = (int)($row['id'] ?? 0); $ex = trim((string)($row['extension'] ?? '')); $cur = $id ? DB::table('pbx_extensions')->where('company_id', $cid)->where('id', $id)->first() : null;
       if ($ex === '') { if ($cur) { DB::table('pbx_extensions')->where('id', $id)->delete(); $n++; } continue; }
       $line = 'Row '.((int)$i + 1).': ';
       if (!preg_match('/^[A-Za-z0-9_.-]{1,40}$/', $ex)) { $err[] = $line.'extension must be letters/numbers only.'; continue; }
-      if (isset($seen[$ex]) || in_array($ex, $userExt, true)) { $err[] = $line.'extension '.$ex.' is already in use.'; continue; }
+      if (isset($seen[$ex]) || ($cid === 0 && in_array($ex, $userExt, true))) { $err[] = $line.'extension '.$ex.' is already in use.'; continue; }
       $seen[$ex] = 1;
       $pw = (isset($raw[$i]['password']) && is_string($raw[$i]['password'])) ? $raw[$i]['password'] : (string)($row['password'] ?? '');
       if (mb_strlen($pw) > 200) { $err[] = $line.'password too long.'; continue; }
       if ($pw === '' && (!$cur || !$cur->password_enc)) { $err[] = $line.'password is required.'; continue; }
-      if (DB::table('pbx_extensions')->where('extension', $ex)->when($cur, fn($q) => $q->where('id', '!=', $cur->id))->exists()) { $err[] = $line.'extension '.$ex.' already exists.'; continue; }
-      $d = ['extension'=>$ex, 'auth_username'=>trim((string)($row['auth_username'] ?? '')) ?: null, 'display_name'=>trim((string)($row['display_name'] ?? '')) ?: null, 'updated_at'=>now()];
+      if (DB::table('pbx_extensions')->where('company_id', $cid)->where('extension', $ex)->when($cur, fn($q) => $q->where('id', '!=', $cur->id))->exists()) { $err[] = $line.'extension '.$ex.' already exists.'; continue; }
+      $d = ['extension'=>$ex, 'company_id'=>$cid, 'auth_username'=>trim((string)($row['auth_username'] ?? '')) ?: null, 'display_name'=>trim((string)($row['display_name'] ?? '')) ?: null, 'updated_at'=>now()];
       if ($pw !== '') $d['password_enc'] = Crypt::encryptString($pw);
       if ($cur) DB::table('pbx_extensions')->where('id', $cur->id)->update($d); else DB::table('pbx_extensions')->insert($d + ['created_at'=>now()]);
       $n++;

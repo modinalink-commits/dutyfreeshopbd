@@ -254,6 +254,8 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/call-center/extensions', [\App\Http\Controllers\CallCenterController::class,'extensions']);
   Route::post('/call-center/extensions/{uid}', [\App\Http\Controllers\CallCenterController::class,'saveExtension'])->whereNumber('uid');
   Route::post('/call-center/extensions-pool', [\App\Http\Controllers\CallCenterController::class,'savePool']);
+  Route::post('/call-center/extensions-company', [\App\Http\Controllers\CallCenterController::class,'addCompany']);
+  Route::post('/call-center/extensions-company/{id}/delete', [\App\Http\Controllers\CallCenterController::class,'deleteCompany'])->whereNumber('id');
   Route::get('/call-center/account', [\App\Http\Controllers\CallCenterController::class,'account']);
   Route::post('/call-center/account', [\App\Http\Controllers\CallCenterController::class,'saveAccount']);
   Route::get('/call-center/creds', [\App\Http\Controllers\CallCenterController::class,'creds']);
