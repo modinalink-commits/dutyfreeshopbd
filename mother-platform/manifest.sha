@@ -40,7 +40,7 @@ bd753699bbd209d243e7e4b2b82c37d322444553 resources/views/panels/customers.blade.
 c25a13956ea9946159b80572e41bd26d65050c7a resources/views/panels/accounts.blade.php
 9ae8274960b21c06102f045e43f6906ea60ee6cc resources/views/panels/suppliers.blade.php
 1cb9863e39bdf894fc9136ae20d93aea9105a087 resources/views/panels/stock-log.blade.php
-79ed8abea4ae4de5a7bda7f5898cddb7028deefd app/Http/Controllers/SiteController.php
+b54f42774229faae29024e28d313fc8b8e646434 app/Http/Controllers/SiteController.php
 83f7d91e3943f758a5cc593ff2b2c3f4a34c500e resources/views/site.blade.php
 7511f9972aa806851b48b5faa076ac8936686f1e app/Http/Middleware/ModulePermission.php
 df85a1f19b3129d847e30c8dab6ea00fbc2e8101 app/Http/Controllers/PermissionController.php
