@@ -20,11 +20,11 @@
 <td><input name="auth_username" value="{{ $x->auth_username ?? '' }}" placeholder="same" style="width:90px"></td>
 <td><input name="display_name" value="{{ $x->display_name ?? '' }}" placeholder="{{ $u->name }}" style="width:130px"></td>
 <td><input type="text" name="password" value="{{ \App\Http\Controllers\CallCenterController::pwPlain($x ?? null) }}" autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" placeholder="required" style="width:150px;font-family:Inter,'Bornomala',sans-serif"></td>
-<td><button class="btn" type="submit">Save</button></td></form></tr>
+<td style="white-space:nowrap"><button class="btn" type="submit">Save</button> @if($x && $x->username)<button class="btn" type="submit" onclick="if(!confirm('Delete extension '+this.form.username.value+' of {{ addslashes($u->name) }}?'))return false;this.form.username.value='';" style="background:#fff;color:#B91C1C;border:1px solid #FCA5A5">Delete</button>@endif</td></form></tr>
 @endforeach
 @include('sip_pool_rows', ['list'=>$pool, 'cid'=>0, 'min'=>4, 'relay'=>$relay, 'regTag'=>$regTag])</table>
 <form id="poolForm0" method="post" action="/admin/call-center/extensions-pool">@csrf<input type="hidden" name="company_id" value="0"></form>
-<div style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn" type="submit" form="poolForm0">Save extensions</button><button class="btn" type="button" onclick="addPoolRow(this)" style="background:#fff;color:#111827;border:1px solid #D1D5DB">+ Add extension</button><span style="font-size:12px;color:#6B7280">User rows save with their own Save button. Pool rows: fill the rows you need and press Save pool extensions. Agent name left blank = default agent "DutyFreeBD". Clear the Extension box of a saved pool row and Save to remove it. Passwords are stored encrypted. Extension ফাঁকা রেখে Save করলে ইউজারের এক্সটেনশন সরে যায়; একই এক্সটেনশন দুজনকে দেওয়া যাবে না।</span></div></div>
+<div style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn" type="submit" form="poolForm0">Save extensions</button><button class="btn" type="button" onclick="addPoolRow(this)" style="background:#fff;color:#111827;border:1px solid #D1D5DB">+ Add extension</button><span style="font-size:12px;color:#6B7280">Every row has its own Save and Delete. + Add extension adds a new row; fill it and press its Save. Agent name left blank = default agent "DutyFreeBD". Passwords are stored encrypted. Extension ফাঁকা রেখে Save করলে ইউজারের এক্সটেনশন সরে যায়; একই এক্সটেনশন দুজনকে দেওয়া যাবে না।</span></div></div>
 @endforeach
 @foreach($companies as $co)@php($clist=$poolBy[$co->id] ?? collect())
 <div class="card" style="margin-top:14px;overflow-x:auto">
@@ -42,6 +42,10 @@
 <form method="post" action="/admin/call-center/extensions-company" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;align-items:center">@csrf
 <input name="name" placeholder="Company name" required style="width:180px"><input name="sip_server" placeholder="SIP server (optional)" style="width:200px"><input name="wss_url" placeholder="wss://… (optional)" style="width:220px"><input name="domain" placeholder="Domain (optional)" style="width:180px"><button class="btn" type="submit">Add company table</button></form></div>
 <script>
+function poolRowAct(btn,act){var tr=btn.closest('tr'),f=tr.querySelector('input[form]');if(!f)return;var fid=f.getAttribute('form'),form=document.getElementById(fid);var ex=tr.querySelector('input[name$="[extension]"]');
+if(act==='delete'){var id=tr.querySelector('input[name$="[id]"]');if(!id||!id.value){ex.value='';tr.querySelectorAll('input[name$="[password]"],input[name$="[auth_username]"],input[name$="[display_name]"]').forEach(function(i){i.value=''});return}if(!confirm('Delete extension '+ex.value+'?'))return;ex.value=''}
+else if(!ex.value.trim()){ex.focus();return}
+document.querySelectorAll('input[form="'+fid+'"]').forEach(function(i){if(i.closest('tr')!==tr)i.disabled=true});form.submit()}
 function addPoolRow(btn){var card=btn.closest('.card'),t=card.querySelector('table'),rows=t.querySelectorAll('tr.prow'),last=rows[rows.length-1];if(!last)return;var n=rows.length,c=last.cloneNode(true);c.querySelectorAll('input').forEach(function(i){if(i.type==='hidden'){i.value=''}else if(i.name.indexOf('[password]')>-1||i.name.indexOf('[extension]')>-1||i.name.indexOf('[auth_username]')>-1||i.name.indexOf('[display_name]')>-1){i.value=''}i.name=i.name.replace(/rows\[\d+\]/,'rows['+n+']')});var b=c.querySelector('td:nth-child(3)');if(b)b.innerHTML='';var f=c.querySelector('td');if(f){var inp=f.querySelector('input');f.firstChild.textContent='Pool #'+(n+1)}t.appendChild(c)}
 </script>
 @endsection
