@@ -2,7 +2,7 @@
 @include('typography')
 <style>
 :root{--n:#0F1F3D;--n2:#1B2F55;--o:#F26B1D;--g:#16A34A;--r:#DC2626;--bd:#E5E7EB;--gr:#F3F4F6;--mu:#6B7280}*{box-sizing:border-box}
-body{margin:0;font-family:Inter,'Hind Siliguri','Noto Sans Bengali',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;background:#F8FAFC;color:var(--n);font-size:13px}
+body{margin:0;font-family:Inter,'Bornomala',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;background:#F8FAFC;color:var(--n);font-size:13px}
 button{font-family:inherit}button:disabled{opacity:.5;cursor:not-allowed}
 .ph{max-width:400px;margin:0 auto;height:100vh;background:#fff;display:flex;flex-direction:column;overflow:hidden}.ph.emb{max-width:none}
 .top{background:var(--n);color:#fff;padding:10px 12px;display:flex;align-items:center;gap:8px}.top .tt{flex:1;min-width:0}.top b{display:block;font-size:15px;letter-spacing:.2px}.top small{display:flex;align-items:center;gap:6px;font-size:11px;color:#C5CEE0;margin-top:2px}
@@ -58,7 +58,7 @@ textarea,.ti{width:100%;border:1.5px solid var(--bd);border-radius:8px;padding:8
 .cn,.cidr+.wv{box-shadow:0 1px 3px rgba(15,23,42,.05)}
 
 /* ---- final softphone typography (reference) ---- */
-body,button,input,textarea,select{font-family:Inter,"Noto Sans Bengali","Segoe UI",Arial,sans-serif}
+body,button,input,textarea,select{font-family:'Bornomala',Inter,"Bornomala","Segoe UI",Arial,sans-serif}
 .ph{max-width:none}
 .top{display:block;padding:12px 14px 12px;background:#0F2748}.tr1{display:flex;align-items:flex-start;gap:8px}.tr1 .tt{flex:1;min-width:0}.top b{font-size:22px;font-weight:700;line-height:1.15;color:#fff;letter-spacing:0}.top .sub{display:block;font-size:16px;font-weight:500;color:#fff;margin-top:1px}
 .tb{width:34px;height:34px;border-radius:9px;font-size:18px;background:rgba(255,255,255,.14)}

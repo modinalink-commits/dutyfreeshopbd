@@ -124,7 +124,7 @@
         cx2.fillStyle = big ? '#FF5A00' : '#fff'; cx2.beginPath(); cx2.arc(p[0], p[1], rr, 0, 7); cx2.fill();
         if (big) { cx2.strokeStyle = '#fff'; cx2.lineWidth = dpr; cx2.stroke(); }
         if (k === 'CGP' || p[2] < .3) return;
-        var fs = k === 'DAC' ? fs0 * (small ? 1.5 : 1.75) : fs0; cx2.font = '700 ' + fs + 'px "Noto Sans Bengali","Hind Siliguri","Nirmala UI",system-ui,sans-serif';
+        var fs = k === 'DAC' ? fs0 * (small ? 1.5 : 1.75) : fs0; cx2.font = '700 ' + fs + 'px "Bornomala","Nirmala UI",system-ui,sans-serif';
         var tw = cx2.measureText(c[0]).width, th = fs * 1.15, sides = [[8 * dpr, -th * .35], [-tw - 8 * dpr, -th * .35], [-tw / 2, -th - 6 * dpr], [-tw / 2, 6 * dpr]], j, bx, by, ok;
         for (j = 0; j < sides.length; j++) {
           bx = p[0] + sides[j][0]; by = p[1] + sides[j][1]; ok = bx > 2 * dpr && bx + tw < W - 2 * dpr;

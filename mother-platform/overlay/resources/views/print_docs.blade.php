@@ -1,6 +1,6 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><meta name="csrf-token" content="{{ csrf_token() }}"><title>{{ $type === 'label' ? 'Label Print' : 'Invoice Print' }}</title>
+<!doctype html><html lang="en"><head>@include('bn_font')<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><meta name="csrf-token" content="{{ csrf_token() }}"><title>{{ $type === 'label' ? 'Label Print' : 'Invoice Print' }}</title>
 <style>
-*{box-sizing:border-box}body{margin:0;font-family:Arial,'Helvetica Neue','Noto Sans Bengali','Nirmala UI',sans-serif;color:#000;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,'Helvetica Neue','Bornomala','Nirmala UI',sans-serif;color:#000;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .bar{position:sticky;top:0;background:#0B1F3A;color:#fff;padding:8px 14px;display:flex;gap:12px;align-items:center;font-size:14px}.bar button{background:#FF5A00;color:#fff;border:0;border-radius:6px;padding:7px 16px;font-weight:700;cursor:pointer}
 .sheet{page-break-after:always;break-after:page}.sheet:last-child{page-break-after:auto;break-after:auto}
 img{max-width:100%}.bc svg{display:block;width:100%;height:100%}

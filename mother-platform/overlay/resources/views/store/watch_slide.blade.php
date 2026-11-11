@@ -11,7 +11,7 @@
 @if(count($__wc) >= 4)
 <a class="hxa hxwt" href="/watch/" aria-label="DutyFreeBD Watch Collection">
 <style>
-.hxwt{container-type:inline-size;position:relative;display:block;overflow:hidden;color:#fff;text-decoration:none;background:radial-gradient(120% 140% at 82% 0%,#3A2A1A 0%,#141B2D 48%,#0B1220 100%);font-family:'Anek Bangla','Hind Siliguri',Inter,system-ui,sans-serif}
+.hxwt{container-type:inline-size;position:relative;display:block;overflow:hidden;color:#fff;text-decoration:none;background:radial-gradient(120% 140% at 82% 0%,#3A2A1A 0%,#141B2D 48%,#0B1220 100%);font-family:'Bornomala',Inter,system-ui,sans-serif}
 .hxwt *{box-sizing:border-box}
 .hxwt .wg{position:absolute;right:-8cqw;top:-14cqw;width:62cqw;height:52cqw;background:radial-gradient(closest-side,rgba(255,170,60,.38),rgba(255,170,60,0) 70%);pointer-events:none;animation:wtGlow 6s ease-in-out infinite alternate}
 .hxwt .ws{position:absolute;top:0;bottom:0;left:-30%;width:20%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.12),transparent);transform:skewX(-18deg);animation:wtSweep 6.5s cubic-bezier(.4,0,.2,1) infinite;pointer-events:none}

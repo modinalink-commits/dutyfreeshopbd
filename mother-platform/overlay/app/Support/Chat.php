@@ -79,9 +79,9 @@ class Chat {
     return $fresh;
   }
   /** Record a WhatsApp message sent by the system (order confirmation, template, campaign) in the customer's chat, so staff see exactly what the customer was told. */
-  public static function logOut(string $wa, string $body, string $by, ?string $mid = null, string $kind = 'text', string $status = 'sent', ?string $err = null): void {
+  public static function logOut(string $wa, string $body, string $by, ?string $mid = null, string $kind = 'text', string $status = 'sent', ?string $err = null, ?string $att = null, ?string $attType = null): void {
     try {
-      $wa = preg_replace('/\D/', '', $wa); if ($wa === '' || trim($body) === '') return;
+      $wa = preg_replace('/\D/', '', $wa); if ($wa === '' || (trim($body) === '' && !$att)) return;
       if ($mid && DB::table('chat_messages')->where('ext_id', $mid)->exists()) return;
       $t = DB::table('chat_threads')->where(['channel'=>'whatsapp', 'external_id'=>$wa])->first();
       $phone = self::phone($wa);
@@ -91,8 +91,8 @@ class Chat {
           'status'=>'open', 'unread'=>0, 'created_at'=>now(), 'updated_at'=>now()]);
         $t = DB::table('chat_threads')->find($id);
       }
-      DB::table('chat_messages')->insert(['thread_id'=>$t->id, 'dir'=>'out', 'kind'=>$kind, 'body'=>mb_substr($body, 0, 4000), 'ext_id'=>$mid, 'user_name'=>$by, 'status'=>$status, 'error'=>$err, 'created_at'=>now(), 'updated_at'=>now()]);
-      DB::table('chat_threads')->where('id', $t->id)->update(['last_message'=>mb_substr($body, 0, 300), 'last_dir'=>'out', 'last_at'=>now(), 'updated_at'=>now()]);
+      DB::table('chat_messages')->insert(['thread_id'=>$t->id, 'dir'=>'out', 'kind'=>$att ? 'file' : $kind, 'body'=>mb_substr($body, 0, 4000), 'attachment_url'=>$att, 'attachment_type'=>$att ? $attType : null, 'ext_id'=>$mid, 'user_name'=>$by, 'status'=>$status, 'error'=>$err, 'created_at'=>now(), 'updated_at'=>now()]);
+      DB::table('chat_threads')->where('id', $t->id)->update(['last_message'=>mb_substr(trim($body) !== '' ? $body : ($attType === 'audio' ? '🎤 Voice message' : '[attachment]'), 0, 300), 'last_dir'=>'out', 'last_at'=>now(), 'updated_at'=>now()]);
     } catch (\Throwable $e) { report($e); }
   }
   /** What kind of audio file these bytes are (by content, never by the name the sender gave it). */

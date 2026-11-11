@@ -1,13 +1,11 @@
 <a class="hxa hxmc{{ !empty($gl) ? ' gl' : '' }}" href="/account" aria-label="DutyFree BD Membership — আমার কার্ড দেখুন">
 <style>
-@font-face{font-family:'Anek Bangla';font-weight:500;font-style:normal;font-display:swap;src:url(/fonts/anek-bangla-500.woff2) format('woff2')}
-@font-face{font-family:'Anek Bangla';font-weight:700;font-style:normal;font-display:swap;src:url(/fonts/anek-bangla-700.woff2) format('woff2')}
 .hxg{flex:0 0 100%;min-width:0;scroll-snap-align:start}
 .sld .sl-t .hxg .dfg-c img{width:44px;height:44px}
 @media(max-width:900px){.sld .sl-t .hxg .dfg-c img{width:38px;height:38px}}
 .hxmc{container-type:inline-size;display:block;position:relative;overflow:hidden;color:#fff;text-decoration:none;background:linear-gradient(120deg,#0B1220 0%,#1F2A44 55%,#3A2A2A 100%)}
 .hxmc .mg{position:absolute;right:-8cqw;top:-10cqw;width:62cqw;height:50cqw;background:radial-gradient(closest-side,rgba(255,90,0,.38),rgba(255,90,0,0) 70%);pointer-events:none}
-.hxmc .mx{font-family:'Anek Bangla',Inter,system-ui,-apple-system,'Segoe UI',sans-serif;position:absolute;left:8.3cqw;top:0;bottom:0;width:41cqw;display:flex;flex-direction:column;justify-content:center;gap:1.25cqw}
+.hxmc .mx{font-family:'Bornomala',Inter,system-ui,-apple-system,'Segoe UI',sans-serif;position:absolute;left:8.3cqw;top:0;bottom:0;width:41cqw;display:flex;flex-direction:column;justify-content:center;gap:1.25cqw}
 .hxmc .mk{font-size:max(9px,.9cqw);letter-spacing:.2em;font-weight:600;color:#FDC2A5}
 .hxmc .mh{margin:0;font-size:max(15px,3.5cqw);line-height:1.22;font-weight:700;letter-spacing:-.01em;color:#fff}.hxmc .mh em{display:block;font-style:normal;color:#FF8A4C}
 .hxmc .ms{font-size:max(11px,1.35cqw);line-height:1.65;font-weight:500;color:#D1D5DB;max-width:34cqw}

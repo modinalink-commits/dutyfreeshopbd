@@ -8,7 +8,7 @@
 @once
 <style>
 .dfmcw{container-type:inline-size;width:100%;max-width:500px}
-.dfmc{position:relative;width:100%;aspect-ratio:500/315;border-radius:4.4cqw;overflow:hidden;font-family:'Inter','Hind Siliguri','Noto Sans Bengali',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;box-shadow:0 14px 34px rgba(11,18,32,.3);isolation:isolate}
+.dfmc{position:relative;width:100%;aspect-ratio:500/315;border-radius:4.4cqw;overflow:hidden;font-family:'Inter','Bornomala',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;box-shadow:0 14px 34px rgba(11,18,32,.3);isolation:isolate}
 .dfmc>i{position:absolute;inset:0;display:block}
 .dfmc .in{position:absolute;inset:0;padding:4.8cqw 5.6cqw;display:flex;flex-direction:column;justify-content:space-between}
 .dfmc .top{display:flex;justify-content:space-between;align-items:flex-start;gap:3cqw}

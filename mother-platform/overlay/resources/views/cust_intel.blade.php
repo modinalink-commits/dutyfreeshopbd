@@ -3,7 +3,7 @@
  $rc = ['Low'=>['#2F7D4F','#F3FBF6','#CDEFD8','#2F7D4F'],'Medium'=>['#A15C1A','#FFFAEB','#FBE3A6','#A15C1A'],'High'=>['#B33A3A','#FEF5F5','#FBCFCF','#B33A3A']][$ci['risk']];
  $wa = \App\Support\CustomerIntel::wa($o->phone);
 @endphp
-<div class="ci" style="min-width:252px;max-width:340px;font-size:12.5px;line-height:1.3;font-family:Inter,'Hind Siliguri','Noto Sans Bengali','Segoe UI',Arial,sans-serif">
+<div class="ci" style="min-width:252px;max-width:340px;font-size:12.5px;line-height:1.3;font-family:Inter,'Bornomala','Segoe UI',Arial,sans-serif">
  <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><b style="font-size:14px;color:#0B1220;font-weight:700">{{ $o->customer_name }}</b><span style="background:{{ $cc[1] }};color:{{ $cc[0] }};border:1px solid {{ $cc[0] }}33;border-radius:999px;padding:1px 8px;font-weight:600;font-size:10.5px">{{ $ci['cat'] }}</span>@if(!empty($ci['nth']))@php($__n = (int)$ci['nth'])@php($__sf = ($__n % 100 >= 11 && $__n % 100 <= 13) ? 'th' : ([1=>'st',2=>'nd',3=>'rd'][$__n % 10] ?? 'th'))<span title="This is the customer's {{ $__n }}{{ $__sf }} order" style="background:#fff;color:#6B7280;border:1px solid #D1D5DB;border-radius:999px;padding:1px 7px;font-weight:700;font-size:10.5px;white-space:nowrap">{{ $__n }}{{ $__sf }} order</span>@endif</div>
  @php($__bf = \App\Support\CustomerBenefit::check($o->phone))@php($__bc = ['Eligible'=>['#166534','#DCFCE7'],'Limited'=>['#B45309','#FEF3C7'],'Review Required'=>['#C2410C','#FFF1E8'],'Suspended'=>['#B91C1C','#FEE2E2']][$__bf['status']] ?? ['#4B5563','#F1F5F9'])
  <div style="color:#0B1220;font-weight:600;display:flex;flex-wrap:wrap;align-items:center;gap:3px 6px;white-space:nowrap">{{ $o->phone }} · ID {{ $ci['cid'] }}<span title="Benefit eligibility: {{ implode(', ', $__bf['reasons']) }} · received {{ $__bf['received'] }} parcel(s)" style="background:{{ $__bc[1] }};color:{{ $__bc[0] }};border-radius:999px;padding:1px 8px;font-weight:700;font-size:10.5px">{{ $__bf['status'] === 'Suspended' ? 'Benefit Suspended' : $__bf['status'] }}</span></div>
@@ -18,7 +18,7 @@
 .ci .sbar .sg.g{background:#DCFCE7;color:#166534}.ci .sbar .sg.r{background:#FEE2E2;color:#B91C1C}.ci .sbar .sg+.sg{border-left:1px solid #fff}
 #dfci-ov{position:fixed;inset:0;background:rgba(11,18,32,.45);display:none;align-items:center;justify-content:center;padding:16px;z-index:99999}
 #dfci-ov.on{display:flex}
-#dfci-ov .pop{background:#fff;border:1px solid #B8BFC9;border-radius:8px;width:100%;max-width:340px;box-shadow:0 12px 32px rgba(11,18,32,.25);font:13px/1.35 Inter,'Hind Siliguri','Segoe UI',Arial,sans-serif;color:#0B1220}
+#dfci-ov .pop{background:#fff;border:1px solid #B8BFC9;border-radius:8px;width:100%;max-width:340px;box-shadow:0 12px 32px rgba(11,18,32,.25);font:13px/1.35 Inter,'Bornomala','Segoe UI',Arial,sans-serif;color:#0B1220}
 #dfci-ov header{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid #B8BFC9;background:#F3F4F6;border-radius:8px 8px 0 0;font-weight:700}
 #dfci-ov header button{border:0;background:none;font-size:18px;cursor:pointer;line-height:1;color:#0B1220}
 #dfci-ov dl{margin:0;padding:6px 12px 12px;display:grid;grid-template-columns:1fr auto}

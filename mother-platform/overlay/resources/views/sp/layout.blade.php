@@ -21,10 +21,10 @@
   $rc = \App\Support\Reorder::ready() ? (int)\Illuminate\Support\Facades\DB::table('supplier_rfq_invites as i')->join('supplier_rfqs as r','r.id','=','i.rfq_id')->where('i.supplier_id',$u->supplier_id)->where('i.status','pending')->where('r.status','sent')->whereNotNull('r.reorder_id')->where(fn($w)=>$w->whereNull('r.expires_at')->orWhere('r.expires_at','>',now()))->count() : 0;
   $bottom = array_values(array_filter($nav, fn($n) => in_array($n[2], ['home','pos','rfq','ledger'])));
 @endphp
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="csrf-token" content="{{ csrf_token() }}"><meta name="robots" content="noindex,nofollow">
+<!doctype html><html lang="en"><head>@include('bn_font')<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="csrf-token" content="{{ csrf_token() }}"><meta name="robots" content="noindex,nofollow">
 <title>@yield('title','Dashboard') · {{ $brand }}</title><meta name="theme-color" content="#FF5A00">
 <link rel="manifest" href="/supplier-portal/manifest.webmanifest"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 @include('sp.css')
 </head><body>
 <div class="shell">

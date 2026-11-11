@@ -62,7 +62,7 @@
 .ra .warn{background:#FFF1E8;border:1px solid #FED7AA;color:#B45309;border-radius:10px;padding:8px 12px;font-size:12.5px;margin-bottom:12px}
 .ra .cmp table th{cursor:default}
 /* Typography scale (Inter + Hind Siliguri from the shared typography include; no extra font) */
-.ra,.ra input,.ra select,.ra button,.ra table{font-family:'Inter','Hind Siliguri','Noto Sans Bengali',system-ui,sans-serif}
+.ra,.ra input,.ra select,.ra button,.ra table{font-family:'Inter','Bornomala',system-ui,sans-serif}
 .ra .hd1 h1{font-size:21px;font-weight:700;line-height:1.3}
 .ra .note{font-size:12px;font-weight:400;line-height:1.45}
 .ra .chb h3,.ra .box>h2,.ra .box>h3{font-size:15px;font-weight:700}

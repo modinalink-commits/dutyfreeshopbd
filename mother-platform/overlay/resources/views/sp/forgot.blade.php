@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Forgot password · {{ $brand }}</title>
+<!doctype html><html lang="en"><head>@include('bn_font')<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Forgot password · {{ $brand }}</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">@include('sp.css')<style>body{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:16px}.box{width:100%;max-width:380px}</style></head><body>
 <div class="box"><h1 style="text-align:center">Reset password</h1>
 @if(session('ok'))<div class="al ok">{{ session('ok') }}</div>@endif @if(session('bad'))<div class="al bad">{{ session('bad') }}</div>@endif

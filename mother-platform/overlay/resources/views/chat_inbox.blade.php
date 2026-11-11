@@ -1,6 +1,5 @@
 @extends('layout')@section('title','Messages')
 @section('body')
-<style>@import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap');</style>
 <style>
 .mbx{display:grid;grid-template-columns:340px 1fr;gap:14px;height:calc(100vh / var(--z,1) - 150px);min-height:480px}
 .mbx .ls,.mbx .cv{background:#fff;border:1px solid var(--bd);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;min-height:0}

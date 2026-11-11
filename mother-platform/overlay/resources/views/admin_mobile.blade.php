@@ -38,7 +38,7 @@ main [style*="grid-template-columns:1fr 1fr"],main [style*="grid-template-column
 @media(max-width:420px){.grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important}}
 </style>
 <div class="mbd" id="mbd" aria-hidden="true"></div>
-<header class="mtb" id="mtb"><button type="button" id="mmenu" aria-label="Menu"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><img src="/dutyfree-bd-logo.png" alt="DutyFree BD"><b id="mtt"></b></header>
+<header class="mtb" id="mtb">@include('bn_font')<button type="button" id="mmenu" aria-label="Menu"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><img src="/dutyfree-bd-logo.png" alt="DutyFree BD"><b id="mtt"></b></header>
 <nav class="mbn" id="mbn" aria-label="Quick menu">
 <a href="/admin" data-p="/admin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Home</a>
 <a href="/admin/orders" data-p="/admin/orders"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>Orders</a>

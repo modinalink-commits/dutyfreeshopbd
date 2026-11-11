@@ -598,9 +598,15 @@ class ChatController extends Controller {
             foreach ($v['message_echoes'] ?? [] as $me) {
               $to = preg_replace('/\D/', '', (string)($me['to'] ?? '')); if ($to === '') continue;
               $mt = (string)($me['type'] ?? 'text'); if (in_array($mt, ['reaction', 'edit', 'revoke', 'unsupported'], true)) continue; // reactions/edits/deletes are not messages
-              $eb = $mt === 'text' ? (string)($me['text']['body'] ?? '') : ($mt === 'button' ? (string)($me['button']['text'] ?? '') : '['.$mt.' sent from the WhatsApp app]');
-              if (trim($eb) === '') $eb = '[message sent from the WhatsApp app]';
-              \App\Support\Chat::logOut($to, $eb, 'WhatsApp app', (string)($me['id'] ?? '') ?: null);
+              $eb = $mt === 'text' ? (string)($me['text']['body'] ?? '') : ($mt === 'button' ? (string)($me['button']['text'] ?? '') : '');
+              $eatt = null; $etype = null;
+              // voice notes / photos / files sent from the phone app: fetch the media so staff can play or open it here
+              if (in_array($mt, ['image', 'sticker', 'document', 'audio', 'video'], true) && !empty($me[$mt]['id'])) {
+                $got = Chat::waMedia((string)$me[$mt]['id'], $wtok);
+                if ($got) { $eatt = $got[0]; $etype = $got[1]; $cap = trim((string)($me[$mt]['caption'] ?? '')); if ($cap !== '') $eb = $cap; }
+              }
+              if (trim($eb) === '' && !$eatt) $eb = $mt === 'text' ? '[message sent from the WhatsApp app]' : '['.$mt.' sent from the WhatsApp app — media could not be loaded]';
+              \App\Support\Chat::logOut($to, $eb, 'WhatsApp app', (string)($me['id'] ?? '') ?: null, 'text', 'sent', null, $eatt, $etype);
               if ($tt = DB::table('chat_threads')->where(['channel'=>'whatsapp', 'external_id'=>$to])->first()) { DB::table('chat_threads')->where('id', $tt->id)->update(['ai_paused'=>true, 'updated_at'=>now()]); \App\Support\Chat::replied((int)$tt->id, now()); }
             }
             foreach ($v['messages'] ?? [] as $m) {

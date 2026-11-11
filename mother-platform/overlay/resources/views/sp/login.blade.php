@@ -1,5 +1,5 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Sign in · {{ $brand }}</title><meta name="theme-color" content="#FF5A00"><link rel="manifest" href="/supplier-portal/manifest.webmanifest">
-<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">@include('sp.css')
+<!doctype html><html lang="en"><head>@include('bn_font')<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Sign in · {{ $brand }}</title><meta name="theme-color" content="#FF5A00"><link rel="manifest" href="/supplier-portal/manifest.webmanifest">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">@include('sp.css')
 <style>body{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:16px}.box{width:100%;max-width:380px}.box .logo{text-align:center;margin-bottom:14px}.box .logo img{height:44px}.box h1{text-align:center;font-size:18px}</style></head><body>
 <div class="box"><div class="logo"><img src="/brand/export-logo.png" alt=""></div><h1>{{ $brand }}</h1><p class="sub" style="text-align:center">Sign in to see your orders, price requests, ledger and payments.</p>
 @if(session('ok'))<div class="al ok">{{ session('ok') }}</div>@endif @if(session('bad'))<div class="al bad">{{ session('bad') }}</div>@endif
