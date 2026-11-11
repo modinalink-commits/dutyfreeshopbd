@@ -27,8 +27,8 @@
 <td><input name="rows[{{ $i }}][extension]" value="{{ $p->extension ?? '' }}" style="width:90px" autocomplete="off"></td>
 <td style="white-space:nowrap">@if($p && $p->extension)@php($rl=in_array((string)$p->extension, $relay, true) || in_array((string)($p->auth_username ?? ''), $relay, true))<span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:{{ $rl ? '#FFEDD5' : '#F3F4F6' }};color:{{ $rl ? '#B45309' : '#6B7280' }}">{{ $rl ? 'RELAY' : 'FREE' }}</span>@endif</td>
 <td><input name="rows[{{ $i }}][auth_username]" value="{{ $p->auth_username ?? '' }}" placeholder="same" style="width:90px" autocomplete="off"></td>
-<td><input name="rows[{{ $i }}][display_name]" value="{{ $p->display_name ?? '' }}" style="width:130px" autocomplete="off"></td>
+<td><input name="rows[{{ $i }}][display_name]" value="{{ ($p->display_name ?? '') === 'DutyFreeBD' ? '' : ($p->display_name ?? '') }}" placeholder="DutyFreeBD" style="width:130px" autocomplete="off"></td>
 <td><input type="text" name="rows[{{ $i }}][password]" value="{{ \App\Http\Controllers\CallCenterController::pwPlain($p) }}" autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" style="width:150px;font-family:Inter,'Bornomala',sans-serif"></td></tr>
 @endfor</table>
-<div style="margin-top:10px;display:flex;gap:10px;align-items:center"><button class="btn" type="submit">Save extensions</button><span style="font-size:12px;color:#6B7280">Clear the Extension box of a saved row and Save to remove it.</span></div></form></div>
+<div style="margin-top:10px;display:flex;gap:10px;align-items:center"><button class="btn" type="submit">Save extensions</button><span style="font-size:12px;color:#6B7280">Agent name left blank = default agent "DutyFreeBD"; type a name when an agent is assigned. Clear the Extension box of a saved row and Save to remove it.</span></div></form></div>
 @endsection
