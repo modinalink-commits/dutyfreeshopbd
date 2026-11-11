@@ -202,7 +202,7 @@ class Chat {
   /** Worker tick: a chat where we asked "any other question?" and the customer stayed silent for the set time (Chat Settings, default 30 min) gets the short closing line and is resolved. */
   public static function closeIdleTick(): void {
     if (Sms::secret('ai_auto_close') === '0' || !AiChat::chatOn()) return;
-    $min = max(5, min(720, (int)(Sms::secret('ai_close_after_min') ?: 30)));
+    $min = max(1, min(720, (int)(Sms::secret('ai_close_after_min') ?: 30)));
     $rows = DB::table('chat_threads')->where('last_dir', 'out')->whereIn('status', ['new', 'open', 'waiting'])->where('awaiting_reply', false)
       ->where('last_at', '<=', now()->subMinutes($min))->where('last_at', '>=', now()->subHours(20))->orderBy('last_at')->limit(15)->get();
     foreach ($rows as $t) {
@@ -284,7 +284,7 @@ class Chat {
   /** Worker tick (owner rule 11 Nov 2026): our message is the last one in the chat and the customer has not answered it for the set time (Chat Settings, default 30 min) - there is nothing to wait for, so the chat is closed as "no reply needed": a short last courtesy line (only while the 24-hour channel window is open) and Resolved, no Waiting / Awaiting Reply left. Open hand-offs, complaints, refunds, order requests etc. are never touched. */
   public static function closeSilentTick(): void {
     if (Sms::secret('ai_auto_close') === '0') return;
-    $min = max(5, min(720, (int)(Sms::secret('ai_close_after_min') ?: 30)));
+    $min = max(1, min(720, (int)(Sms::secret('ai_close_after_min') ?: 30)));
     $rows = DB::table('chat_threads')->where('last_dir', 'out')->whereIn('status', ['new', 'open', 'waiting'])->where(fn($w) => $w->where('awaiting_reply', true)->orWhere('unread', '>', 0))
       ->where('last_at', '<=', now()->subMinutes($min))->orderBy('last_at')->limit(15)->get();
     foreach ($rows as $t) {

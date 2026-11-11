@@ -459,7 +459,7 @@ class ChatController extends Controller {
     foreach (['fb_token'=>'chat_fb_token', 'ig_token'=>'chat_ig_token', 'wa_token'=>'chat_wa_token', 'app_secret'=>'chat_app_secret', 'app_id'=>'chat_app_id', 'wa_phone_id'=>'chat_wa_phone_id'] as $k => $sk) if (!empty($d[$k])) Sms::setSecret($sk, trim($d[$k]));
     Sms::setSecret('ai_chat_auto', $r->boolean('ai_auto') ? '1' : '0');
     Sms::setSecret('ai_chat_chan', $r->boolean('ai_chan') ? '1' : '0');
-    Sms::setSecret('ai_auto_close', $r->boolean('ai_auto_close') ? '1' : '0'); if ($r->filled('ai_close_after')) Sms::setSecret('ai_close_after_min', (string)max(5, min(720, (int)$r->input('ai_close_after'))));
+    Sms::setSecret('ai_auto_close', $r->boolean('ai_auto_close') ? '1' : '0'); if ($r->filled('ai_close_after')) Sms::setSecret('ai_close_after_min', (string)max(1, min(720, (int)$r->input('ai_close_after'))));
     if ($r->filled('sla_warn')) Sms::setSecret('sla_warn_min', (string)max(1, min(600, (int)$r->input('sla_warn')))); if ($r->filled('sla_red')) Sms::setSecret('sla_red_min', (string)max(2, min(1440, (int)$r->input('sla_red'))));
     DB::table('settings')->updateOrInsert(['key'=>'chat_web_on'], ['value'=>$r->boolean('web_on') ? '1' : '0', 'updated_at'=>now(), 'created_at'=>now()]);
     \Illuminate\Support\Facades\Cache::forget('store.settings2'); \Illuminate\Support\Facades\Cache::forget('chat.web_on');
