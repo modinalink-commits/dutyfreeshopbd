@@ -78,7 +78,7 @@ class AccountController extends StoreController {
     Cache::increment('sms.otp.day');
     $c = (string)random_int(100000, 999999);
     Cache::put($this->otpKey($d['purpose'], $p), ['h'=>hash('sha256', $c.$p.config('app.key')), 't'=>0], 300); Cache::put("ac.otp.cool.$p", 1, 60);
-    Sms::queue(Sms::number($p), "DutyFree Shop BD: আপনার কোড {$c} । কোডটি কাউকে দেবেন না।", 'account_otp');
+    Sms::queue(Sms::number($p), "DutyFree BD: আপনার কোড {$c} । কোডটি কাউকে দেবেন না।", 'account_otp');
     return response()->json(['sent'=>true]);
   }
   public function login(Request $r) {
@@ -241,7 +241,7 @@ class AccountController extends StoreController {
     $c = DB::table('customers')->whereRaw('lower(email) = ?', [$em])->whereNotNull('password')->first();
     if ($c) {
       $t = bin2hex(random_bytes(24)); DB::table('customer_password_resets')->insert(['customer_id'=>$c->id, 'token_hash'=>hash('sha256', $t), 'expires_at'=>now()->addMinutes(30), 'created_at'=>now(), 'updated_at'=>now()]);
-      try { \Illuminate\Support\Facades\Mail::raw("DutyFree Shop BD — পাসওয়ার্ড রিসেট লিংক (৩০ মিনিট বৈধ):\n" . url('/account/reset-email/' . $t) . "\nআপনি অনুরোধ না করলে এটি উপেক্ষা করুন।", fn($m) => $m->to($c->email)->subject('Password reset — DutyFree Shop BD')); } catch (\Throwable $e) {}
+      try { \Illuminate\Support\Facades\Mail::raw("DutyFree BD — পাসওয়ার্ড রিসেট লিংক (৩০ মিনিট বৈধ):\n" . url('/account/reset-email/' . $t) . "\nআপনি অনুরোধ না করলে এটি উপেক্ষা করুন।", fn($m) => $m->to($c->email)->subject('Password reset — DutyFree BD')); } catch (\Throwable $e) {}
     }
     return response()->json(['ok'=>true, 'msg'=>'ইমেইলটি আমাদের কাছে থাকলে রিসেট লিংক পাঠানো হয়েছে।']);
   }

@@ -36,7 +36,7 @@ class CheckoutLookupController extends Controller {
     $c = (string)random_int(100000, 999999);
     Cache::put("co.otp.$p", ['h'=>hash('sha256', $c.$p.config('app.key')), 't'=>0], 300);
     Cache::put("co.otp.cool.$p", 1, 60);
-    Sms::queue(Sms::number($p), "DutyFree Shop BD: আপনার ভেরিফিকেশন কোড {$c} । কোডটি কাউকে দেবেন না।", 'checkout_otp');
+    Sms::queue(Sms::number($p), "DutyFree BD: আপনার ভেরিফিকেশন কোড {$c} । কোডটি কাউকে দেবেন না।", 'checkout_otp');
     return response()->json(['sent'=>true]);
   }
   public function verify(Request $r) {

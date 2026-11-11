@@ -34,7 +34,7 @@ class ProductImageAIService {
       'size'=>'Volume or weight printed on the pack (e.g. 100 ml, 50 g), else null.', 'pack_size'=>'Pack size if visible (e.g. 20 sticks, 6 pcs).', 'qty_per_pack'=>'Quantity per pack if visible, else null.',
       'origin'=>'Country of origin / made in, only if printed.', 'product_code'=>'Model or product code printed on the pack, only if readable.', 'barcode'=>'Barcode digits ONLY if fully readable, else null.',
       'short_description'=>'One sentence (max 160 chars) using only visible facts.', 'description'=>'2-4 short plain-text sentences using only visible facts; no medical, health or guarantee claims; no invented specs.',
-      'seo_title'=>'Max 60 chars, e.g. "<Name> Price in Bangladesh | DutyFree Shop BD". No price numbers.', 'seo_description'=>'Max 155 chars, concise and factual, no price numbers.', 'alt_text'=>'Image alt text, max 110 chars, describes the product shown.',
+      'seo_title'=>'Max 60 chars, e.g. "<Name> Price in Bangladesh | DutyFree BD". No price numbers.', 'seo_description'=>'Max 155 chars, concise and factual, no price numbers.', 'alt_text'=>'Image alt text, max 110 chars, describes the product shown.',
     ];
     $p = []; foreach (self::FIELDS as $k) $p[$k] = self::field($d[$k]);
     $p['tags'] = ['type'=>'array', 'items'=>['type'=>'string'], 'maxItems'=>10, 'description'=>'Short lowercase tags (brand, type, variant). Only facts from the pack.'];
