@@ -87,7 +87,7 @@
 .mbx .mc .lk,.mbx .mc .aw,.mbx .mc .rp,.mbx .mc .hd select{font-size:13px}
 .mbx .mc .cb summary{font-size:14px}.mbx .mc .cb .ch{font-size:12.5px}
 .mbx .mc .cm .tb .tg,.mbx .mc .cm .tb .qrw select{font-size:13.5px}
-.mbx .mc .hb{font-size:14.5px!important;line-height:1.55!important}.mbx .mc .sumb{font-size:14px!important;line-height:1.55!important}.mbx .mc .sumb b{font-size:11px!important}
+.mbx .mc .hb{font-size:14.5px!important;line-height:1.55!important}.mbx .mc .sumb{font-size:14px!important;line-height:1.55!important}.mbx .mc .sumb b{font-size:11px!important}.mbx .mc .sumb:not(.x){max-height:44px;box-sizing:content-box}
 /* Owner request 10 Nov 2026 (desktop): the Messages page is ONE fixed screen - no page up/down scrolling; only the conversation list and the open chat scroll inside their own panels. Fits the viewport at any zoom. */
 @media(min-width:901px){
 html,body{height:calc(100vh / var(--z,1));overflow:hidden!important}
