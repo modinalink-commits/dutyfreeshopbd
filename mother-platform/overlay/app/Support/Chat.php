@@ -251,6 +251,23 @@ class Chat {
         ->orWhereRaw("exists (select 1 from chat_messages m where m.thread_id = chat_threads.id and m.dir = 'in' and m.attachment_type = 'audio' and m.id > coalesce((select max(o.id) from chat_messages o where o.thread_id = chat_threads.id and o.dir = 'out' and o.status <> 'failed'), 0))");
     });
   }
+  /** Worker tick (owner request 11 Nov 2026): the backlog of unanswered chats. The AI reads each one (voice is transcribed first); if it understands and answers, the chat is handled and closes by the normal rules; if it cannot (hand-off, complaint, unreadable voice, any reason) the chat is set aside for a person (Messages > Human Answer). */
+  public static function backlogTick(): void {
+    if (!AiChat::chatOn() || !AiSchedule::activeNow()) return;
+    $rows = DB::table('chat_threads')->whereIn('channel', ['web', 'whatsapp', 'facebook', 'instagram'])->where('awaiting_reply', true)->where('last_dir', 'in')->where('status', '!=', 'resolved')
+      ->where(fn($w) => $w->whereNull('needs_human')->orWhere('needs_human', false))->whereNull('handoff_at')
+      ->where('last_at', '>=', now()->subHours(22))->orderByDesc('last_at')->limit(4)->get();
+    foreach ($rows as $t) {
+      $mid = (int)DB::table('chat_messages')->where('thread_id', $t->id)->where('dir', 'in')->max('id');
+      $k = 'ai.backlog.'.$t->id.'.'.$mid; if (!\Illuminate\Support\Facades\Cache::add($k, 1, 172800)) continue;
+      try {
+        if (in_array($t->channel, ['web', 'whatsapp', 'facebook'], true) && !AiChat::paused($t)) self::aiReply((int)$t->id);
+        $n = DB::table('chat_threads')->find($t->id);
+        // still waiting after the AI looked at it: the AI could not answer, so a person takes it
+        if ($n && $n->last_dir === 'in' && $n->awaiting_reply && empty($n->handoff_at)) DB::table('chat_threads')->where('id', $t->id)->update(['needs_human'=>true, 'updated_at'=>now()]);
+      } catch (\Throwable $e) { report($e); }
+    }
+  }
   /** Worker tick (owner rule 11 Nov 2026): our message is the last one in the chat and the customer has not answered it for the set time (Chat Settings, default 30 min) - there is nothing to wait for, so the chat is closed as "no reply needed": a short last courtesy line (only while the 24-hour channel window is open) and Resolved, no Waiting / Awaiting Reply left. Open hand-offs, complaints, refunds, order requests etc. are never touched. */
   public static function closeSilentTick(): void {
     if (Sms::secret('ai_auto_close') === '0') return;
