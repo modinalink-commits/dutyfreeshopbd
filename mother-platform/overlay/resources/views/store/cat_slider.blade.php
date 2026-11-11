@@ -36,6 +36,10 @@
 #flash .pc:hover,#top .pc:hover,#new .pc:hover{box-shadow:0 12px 26px rgba(18,26,43,.16);transform:translateY(-2px)}
 #flash .pc .nm,#top .pc .nm,#new .pc .nm{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 #flash .fs{background:#FFF4EA;border-radius:20px;overflow:hidden;padding-bottom:12px}.sec-lv .lvbox{background:#F6F2FA;border:0;border-radius:20px}
+body #top .hh .t,body #new .hh .t{border-left:0;padding-left:0;font:800 clamp(20px,3vw,30px)/1.15 Inter,system-ui,sans-serif;letter-spacing:-.01em;color:#121A2B}
+#top .hh .vl,#new .hh .vl{display:inline-flex;align-items:center;background:#FF5A00;color:#fff;font-weight:700;font-size:13px;padding:9px 16px;border-radius:999px;text-decoration:none;border:0}
+#flash .hd2 b.t{font:800 clamp(18px,2.6vw,26px)/1.15 Inter,system-ui,sans-serif;letter-spacing:-.01em}
+.sec-lv .lvh h2{font:800 clamp(20px,3vw,30px)/1.15 Inter,system-ui,sans-serif;letter-spacing:-.01em;color:#121A2B}
 .cs2r{opacity:0;transform:translate3d(0,22px,0);transition:opacity .7s ease,transform .8s cubic-bezier(.2,.8,.2,1)}.cs2r.in{opacity:1;transform:none}
 @media(prefers-reduced-motion:reduce){.cs2r{opacity:1!important;transform:none!important}}
 .cs2e .pc{opacity:0;transform:perspective(900px) translate3d(0,22px,0) rotateX(10deg)}
