@@ -8,6 +8,25 @@
 .sx .inv{background:#fff;border:1.5px solid #F3E4DA;border-radius:16px;margin:14px 0;overflow:hidden}.sx .inv .ih{display:flex;justify-content:space-between;align-items:center;background:#0B1220;color:#fff;padding:10px 14px;font-size:12px}.sx .inv .ih b{font-size:14px}.sx .ir{display:flex;justify-content:space-between;gap:10px;padding:6px 14px;font-size:12.5px}.sx .ir span:first-child{color:#6B7280}.sx .ir b{text-align:right}.sx .li{display:flex;gap:10px;align-items:center;padding:8px 14px;border-top:1px solid #F3F4F6}.sx .li img{width:44px;height:44px;border-radius:8px;object-fit:cover;background:#F8F8F8;border:1px solid #EEE}.sx .li .n{flex:1;font-size:12.5px;font-weight:600;color:var(--n)}.sx .li .n small{display:block;color:#6B7280;font-weight:500}.sx .li .p{font-size:12.5px;font-weight:700}.sx .tt{border-top:1px dashed #E5E7EB;margin-top:4px;padding-top:4px}.sx .gt{background:#FFF7F2;font-size:15px;font-weight:800;padding:10px 14px;display:flex;justify-content:space-between;color:var(--n)}
 .sx .bt2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.sx .bt2 a{display:flex;align-items:center;justify-content:center;gap:6px;min-height:46px;border-radius:12px;font-size:13.5px;font-weight:800;text-decoration:none;border:1.5px solid var(--n);color:var(--n);background:#fff}.sx .bt2 a.p{background:var(--o);border-color:var(--o);color:#fff}.sx .bt2 a.d{background:var(--n);color:#fff}.sx .wa{display:block;text-align:center;margin:0 0 12px;background:#16A34A;color:#fff;border-radius:12px;padding:12px;font-weight:800;text-decoration:none;font-size:14px}
 </style>
+<style>
+/* ok-v3: front-page match (CSS + trust strip; order/pixel logic untouched) */
+.sx{max-width:680px}
+.sx .hd2{background:#FFF3EA;border:1px solid #FDC2A5;border-radius:20px;padding:22px 16px;margin-bottom:4px}
+.sx .ck{box-shadow:0 0 0 8px rgba(22,163,74,.15)}
+.sx .no{background:#fff;border:1px solid #FDC2A5}
+.sx .stt{background:#fff;border-color:#FDC2A5;border-radius:18px;box-shadow:0 1px 2px rgba(11,18,32,.05),0 6px 18px rgba(11,18,32,.06)}
+.sx .stt b{color:var(--o)}
+.sx .fl2{gap:6px}.sx .fl2 span i{width:100%;height:5px;border-radius:3px;margin:0 0 6px}
+.sx .fl2 span.on{color:var(--o)}.sx .fl2 span.on i{background:var(--o);box-shadow:none}.sx .fl2 span.dn i{background:#16A34A}
+.sx .msg{background:#fff;border:1px solid #FDC2A5;color:#374151;border-radius:14px}
+.sx .inv{border:1px solid #FDC2A5;border-radius:18px;box-shadow:0 1px 2px rgba(11,18,32,.05),0 6px 18px rgba(11,18,32,.06)}
+.sx .inv .ih{background:#FFF3EA;color:var(--n);border-bottom:1px solid #FDC2A5}
+.sx .li{border-top-color:#F0E6E0}
+.sx .gt{background:#FFF3EA;border-top:1px solid #FDC2A5}.sx .gt span:last-child{color:var(--o);font-size:18px}
+.sx .bt2 a{border-color:#FDC2A5}.sx .bt2 a.p{border-color:var(--o)}.sx .bt2 a.d{border-color:var(--n)}
+.sx .oktr{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}.sx .oktr div{display:flex;gap:9px;align-items:center;border:1px solid #FDC2A5;border-radius:12px;background:#fff;padding:8px 10px;font-size:11px;color:#6B7280;line-height:1.3}.sx .oktr b{display:block;font-size:12px;color:var(--n)}.sx .oktr i{width:26px;height:26px;border-radius:8px;background:#FFF3EA;color:var(--o);display:grid;place-items:center;font-style:normal;font-weight:800;flex:none}
+@media(max-width:760px){.sx .oktr{gap:6px}.sx .oktr div{flex-direction:column;text-align:center;padding:8px 4px;gap:4px}.sx .oktr div span{display:none}}
+</style>
 <div class="sx">
 <div class="hd2"><div class="ck">✓</div><h1>Order Placed Successfully ✅</h1><span class="no">{{ $o->invoice }}</span></div>
 @if(request()->query('dup'))<div class="msg" style="margin:10px 0">ℹ️ এই অর্ডারটি আগেই জমা হয়েছে — নতুন কোনো অর্ডার তৈরি হয়নি। (This order has already been submitted.)</div>@endif
@@ -28,6 +47,7 @@
 <div style="padding:6px 0 8px"><div class="ir"><span>Payment method</span><b>@include('pay_badge',['o'=>$o,'h'=>20])</b></div><div class="ir"><span>Payment status</span><b>{{ $payText }}</b></div></div></div>
 @php $sl=[]; foreach($items as $it){$sl[]='• '.$it->name.' × '.$it->qty;} $sm="*DutyFree BD – Order Invoice*\nInvoice: {$o->invoice}\nName: {$o->customer_name}\n".implode("\n",$sl)."\nGrand Total: ".number_format($o->total)." TK\nPayment: {$o->payment_method} – {$payText}\nOrder Status: Awaiting Confirmation\nInvoice link: {$viewUrl}"; @endphp
 <div class="bt2"><a class="p" href="{{ $viewUrl }}" target="_blank">📄 View Order</a><a class="d" href="{{ $dlUrl }}" target="_blank">⬇ Download Invoice</a><a class="wsh" style="grid-column:1/-1;background:#25D366;border-color:#25D366;color:#fff" href="https://wa.me/?text={{ rawurlencode($sm) }}" target="_blank" rel="noopener">💬 Share Invoice on WhatsApp</a><a href="/track?invoice={{ $o->invoice }}">📍 Track Order</a><a href="/">🛍 Continue Shopping</a></div>
+<div class="oktr"><div><i>✓</i><p style="margin:0"><b>100% Original</b><span>Imported and authentic</span></p></div><div><i>↗</i><p style="margin:0"><b>Nationwide Delivery</b><span>Fast, all over Bangladesh</span></p></div><div><i>৳</i><p style="margin:0"><b>Secure Order</b><span>Verified before dispatch</span></p></div></div>
 <div style="margin-top:14px;text-align:center;font-size:13px;color:#374151;line-height:1.7"><b>Need help with your order?</b><br>Hotline: <a href="{{ \App\Support\Biz::telUrl(\App\Support\Biz::hotline()) }}" style="color:#FF5A00;font-weight:700">{{ \App\Support\Biz::hotline() }}</a><br>WhatsApp: <a href="{{ \App\Support\Biz::waUrl() }}" rel="noopener" style="color:#16A34A;font-weight:700">{{ \App\Support\Biz::whatsapp() }}</a></div>
 </div>
 <script>try{localStorage.removeItem('dfc');localStorage.setItem('df_last',@json($o->invoice))}catch(e){}</script>
