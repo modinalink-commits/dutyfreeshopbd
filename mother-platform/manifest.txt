@@ -1024,3 +1024,4 @@ public/vendor/tryon/models/face_landmark_68_model.bin
 public/vendor/tryon/models/tiny_face_detector_model.bin
 public/vendor/tryon/models/tiny_face_detector_model-weights_manifest.json
 public/vendor/tryon/models/face_landmark_68_model-weights_manifest.json
+database/migrations/2026_11_12_160000_clear_views.php
