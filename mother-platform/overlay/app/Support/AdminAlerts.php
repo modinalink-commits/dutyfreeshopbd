@@ -51,6 +51,17 @@ class AdminAlerts
     else DeployHealth::resolve('courier_unmapped', 'System (all statuses mapped)');
   }
 
+  /** Ads: Meta Conversions API sends (capi_log) – most of the recent ones failed, so ad tracking is losing events. */
+  private static function ads(): void {
+    if (!\App\Support\Capi::enabled()) { DeployHealth::resolve('capi_failing', 'System (CAPI off)'); return; }
+    $a = json_decode((string)DB::table('settings')->where('key', 'capi_log')->value('value'), true) ?: [];
+    $cut = now('Asia/Dhaka')->subMinutes(60); $recent = [];
+    foreach ($a as $x) { try { $t = \Carbon\Carbon::createFromFormat('d M H:i:s', (string)($x['t'] ?? ''), 'Asia/Dhaka'); } catch (\Throwable $e) { continue; } if ($t && $t->gte($cut)) $recent[] = $x; }
+    $bad = count(array_filter($recent, fn($x) => empty($x['ok'])));
+    if (count($recent) >= 5 && $bad / count($recent) >= 0.6) { $last = collect($recent)->first(fn($x) => empty($x['ok'])); DeployHealth::raise('capi_failing', 'high', 'Ads', 'Meta tracking (CAPI) is failing', $bad . ' of the last ' . count($recent) . ' server events to Meta failed in the past hour. Last error: ' . mb_substr((string)($last['m'] ?? ''), 0, 120), 'The Meta access token may have expired or the pixel id is wrong, so ads lose purchase data.', 'Open Pixel settings, paste a fresh Conversions API token and send a test event.'); }
+    else DeployHealth::resolve('capi_failing', 'System (CAPI sends are succeeding)');
+  }
+
   /** Payment: manual payments waiting for verification for more than 24 hours (5 or more). */
   private static function payments(): void {
     if (!Schema::hasTable('order_payments')) return;
