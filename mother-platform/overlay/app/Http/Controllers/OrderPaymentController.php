@@ -77,7 +77,7 @@ class OrderPaymentController extends Controller {
     $proof = $r->file('proof') ? $r->file('proof')->store('payment-proofs', 'public') : null; $u = Auth::user();
     $verify = !empty($d['mark_paid']) && ManualPaymentController::canVerify(); // owner rule: other staff can only submit a request, never verify
     $pid = DB::table('order_payments')->insertGetId(['order_id' => $o->id, 'method' => $d['method'], 'amount' => $amt, 'txn_id' => $d['txn_id'] ?? null, 'sender' => $d['sender'] ?? null, 'paid_at' => $d['paid_at'] ?? now(), 'note' => $d['note'] ?? null,
-      'proof' => $proof, 'status' => $verify ? 'verified' : 'pending', 'received_by' => $d['received_by'] ?? $u->name, 'cod_direct' => $r->boolean('cod_direct'), 'created_by' => $u->id, 'created_by_name' => $u->name, 'verified_by' => $verify ? $u->name : null, 'verified_at' => $verify ? now() : null, 'created_at' => now(), 'updated_at' => now()]);
+      'proof' => $proof, 'status' => $verify ? 'verified' : 'pending', 'received_by' => $d['received_by'] ?? $u->name, 'cod_direct' => $r->boolean('cod_direct'), 'partial_parcel' => $r->boolean('partial_parcel'), 'created_by' => $u->id, 'created_by_name' => $u->name, 'verified_by' => $verify ? $u->name : null, 'verified_at' => $verify ? now() : null, 'created_at' => now(), 'updated_at' => now()]);
     self::recalc((int)$o->id);
     OrderActivity::log((int)$o->id, 'payment_submitted', null, (string)$amt, 'Manual payment added: '.$d['method'].' ৳'.number_format($amt).($d['txn_id'] ?? '' ? ' ref '.$d['txn_id'] : ''), ['payment_id' => $pid]);
     if ($verify) OrderActivity::log((int)$o->id, 'payment_verified', null, (string)$amt, 'Payment verified: '.$d['method'].' ৳'.number_format($amt).' for '.$o->invoice, ['payment_id' => $pid]);
