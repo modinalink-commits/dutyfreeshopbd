@@ -43,10 +43,12 @@ class WatchImportController extends Controller {
     if ($src > 0 && $src <= $max && $pct < $lp) { $pct = $lp; $reg = max($reg, $pct + 10); }
     return [$pct, $reg];
   }
+  /** Owner 13 Nov 2026: vendor products with source price up to low_price_max (default 1000 Tk) are not sold (delivery eats the margin): never imported, and kept unpublished here. */
+  public static function lowMax(): float { return (float)(DB::table('settings')->where('key', 'low_price_max')->value('value') ?: 1000); }
   /** The source store row; if the same domain was added twice (migration + admin), use the one that actually holds scanned products. */
   private function src() { $d = $this->cfg()['domain']; return DB::table('stores')->whereRaw('lower(domain) = ? or lower(domain) = ?', [$d, 'www.' . $d])->orderByRaw('(select count(*) from store_products sp where sp.store_id = stores.id) desc')->orderBy('id')->first(); }
   private function cond($q, $sid) {
-    $cf = $this->cfg(); $q = $q->where('store_id', $sid)->where('in_stock', true)->where('price', '>', 0);
+    $cf = $this->cfg(); $q = $q->where('store_id', $sid)->where('in_stock', true)->where('price', '>', self::lowMax());
     if (($cf['min'] ?? 0) > 0) $q = $q->where('price', '>=', $cf['min']);
     return $cf['max'] > 0 ? $q->where('price', '<=', $cf['max']) : $q;
   }
@@ -406,9 +408,9 @@ class WatchImportController extends Controller {
       $stt = DB::table('stores')->where('id', $sid)->first(); $col = \Illuminate\Support\Facades\Schema::hasColumn('stores', 'sale_pct'); $paused = $col && !empty($stt->paused); $jump = $col && $stt->price_jump_pct ? (float)$stt->price_jump_pct : 0.0;
       $lock = \Illuminate\Support\Facades\Schema::hasColumn('products', 'manual_unpublish_lock');
       $rows = DB::table('watch_source as w')->join('store_products as sp', 'sp.id', '=', 'w.store_product_id')->join('products as p', 'p.id', '=', 'w.product_id')->where('w.store_id', $sid)->get(['w.id as wid', 'w.markup_pct', 'w.our_price', 'sp.price as sprice', 'sp.in_stock', 'sp.published as sppub', 'p.id as pid', 'p.published as ppub', 'p.image as pimg', 'p.compare_price as pcomp', 'w.source_price as prev_sp']); $regPct = ($col && $stt->regular_pct !== null) ? (float)$stt->regular_pct : self::regPct(); $salePct = ($apply && $col && $stt->sale_pct !== null) ? (float)$stt->sale_pct : null;
-      $needClean = strtolower((string)(DB::table('stores')->where('id', $sid)->value('domain'))) === 'amour.com.bd';
+      $lowMax = self::lowMax(); $needClean = strtolower((string)(DB::table('stores')->where('id', $sid)->value('domain'))) === 'amour.com.bd';
       foreach ($rows as $x) {
-        $spike = $jump > 0 && !$apply && (float)$x->prev_sp > 0 && (float)$x->sprice > (float)$x->prev_sp * (1 + $jump / 100); $live = !$paused && !$spike && (bool)$x->in_stock && (bool)$x->sppub && (!$needClean || str_starts_with((string)$x->pimg, '/uploads/ai/')); $u = ['updated_at' => now()];
+        $spike = $jump > 0 && !$apply && (float)$x->prev_sp > 0 && (float)$x->sprice > (float)$x->prev_sp * (1 + $jump / 100); $live = !$paused && !$spike && !((float)$x->sprice <= $lowMax) && (bool)$x->in_stock && (bool)$x->sppub && (!$needClean || str_starts_with((string)$x->pimg, '/uploads/ai/')); $u = ['updated_at' => now()];
         if ($live !== (bool)$x->ppub) { $u['published'] = $live; if ($lock) $u['manual_unpublish_lock'] = !$live; }
         $mp = $salePct ?? (float)$x->markup_pct; [$mp, $rp] = self::lowRule((float)$x->sprice, $mp, $regPct); $our = (int)ceil((float)$x->sprice * (1 + $mp / 100)); $reg = (int)ceil((float)$x->sprice * (1 + $rp / 100));
         if ($x->sprice > 0 && !$spike && ($our != (int)$x->our_price || $reg != (int)$x->pcomp)) { $u['price'] = $our; $u['compare_price'] = $reg; $u['cost'] = $x->sprice; DB::table('watch_source')->where('id', $x->wid)->update(['our_price' => $our, 'source_price' => $x->sprice] + ($salePct !== null ? ['markup_pct' => $salePct] : [])); }
