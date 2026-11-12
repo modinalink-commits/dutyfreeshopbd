@@ -27,6 +27,7 @@
 .sx .oktr{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}.sx .oktr div{display:flex;gap:9px;align-items:center;border:1px solid #FDC2A5;border-radius:12px;background:#fff;padding:8px 10px;font-size:11px;color:#6B7280;line-height:1.3}.sx .oktr b{display:block;font-size:12px;color:var(--n)}.sx .oktr i{width:26px;height:26px;border-radius:8px;background:#FFF3EA;color:var(--o);display:grid;place-items:center;font-style:normal;font-weight:800;flex:none}
 @media(max-width:760px){.sx .oktr{gap:6px}.sx .oktr div{flex-direction:column;text-align:center;padding:8px 4px;gap:4px}.sx .oktr div span{display:none}}
 </style>
+<style>@media(prefers-reduced-motion:no-preference){.sx .hd2 .ck{animation:dfpop .65s cubic-bezier(.2,.9,.3,1.3) both}.sx .hd2 .ck::after{content:'';position:absolute;inset:0;border-radius:50%;border:3px solid rgba(22,163,74,.5);animation:dfrg 1.1s .3s ease-out both}.sx .hd2 .ck{position:relative}}@keyframes dfpop{0%{transform:scale(.3);opacity:0}60%{transform:scale(1.12);opacity:1}100%{transform:scale(1)}}@keyframes dfrg{from{transform:scale(1);opacity:.9}to{transform:scale(1.7);opacity:0}}</style>
 <div class="sx">
 <div class="hd2"><div class="ck">✓</div><h1>Order Placed Successfully ✅</h1><span class="no">{{ $o->invoice }}</span></div>
 @if(request()->query('dup'))<div class="msg" style="margin:10px 0">ℹ️ এই অর্ডারটি আগেই জমা হয়েছে — নতুন কোনো অর্ডার তৈরি হয়নি। (This order has already been submitted.)</div>@endif

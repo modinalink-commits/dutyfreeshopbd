@@ -52,7 +52,7 @@ df85a1f19b3129d847e30c8dab6ea00fbc2e8101 app/Http/Controllers/PermissionControll
 1733682e484af9525c985bdd5b49edd2c98841b1 app/Console/Commands/MotherSyncFeed.php
 2a56eafa359436fdb0b8ffc94324862961a1d307 app/Console/Commands/MotherGuard.php
 d7ee57121d8956f4199849d0ece1dba7723da63e app/Http/Controllers/StoreController.php
-3202e2f35c6150a9c50b24fda4c0fdbd760b373b resources/views/store/layout.blade.php
+802a6ec6a90e83e93f55fcce6d88c5b41bb43c07 resources/views/store/layout.blade.php
 5356b422775064c3de9b13c703f12fbf913a2bd3 resources/views/store/card.blade.php
 4a5eb7ee8d7960886fcb97c690bbb604ec69eb1f resources/views/store/home_sec.blade.php
 67ec1415998d7f1b75c78ee8cb9636bce0a402db resources/views/store/home.blade.php
@@ -113,7 +113,7 @@ d12347a9cf32eb078cee4c7af3033c741868e269 public/pay/ebl.png
 7da9749c724f15b03dcd131fae2e9544804eba31 public/pay/bkash.png
 a757009ad517bc95d5b0e08c9f87c8ff919a3fd5 public/pay/nagad.png
 17a8753e9d19156baf3b2b663f60f4f088f85e90 app/Console/Commands/MotherCourierSync.php
-17d57b79bcefae50fee8e3bef4dee384349194d8 resources/views/store/success.blade.php
+40c308b7689cc81386deea6d7cb3730de8ef753f resources/views/store/success.blade.php
 e1268d04a589247af7e978c578a4d82e5f6a4aab resources/views/store/invoice.blade.php
 98d5ed91f65ff39d5eb3a8fc92c53b8e64c50b66 app/Http/Controllers/CheckoutLookupController.php
 3e4d297e0a791c90ef1a13053c1dc8a3ee9b5116 app/Support/CustomerIntel.php
