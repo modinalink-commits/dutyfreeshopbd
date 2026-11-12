@@ -436,6 +436,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/watch-import/clean', [\App\Http\Controllers\WatchImportController::class,'clean']);
   Route::post('/watch-import/step', [\App\Http\Controllers\WatchImportController::class,'step']);
   Route::get('/watch-sources', [\App\Http\Controllers\WatchImportController::class,'sources']);
+  Route::get('/tryon', [\App\Http\Controllers\TryOnController::class,'index']); Route::post('/tryon/generate', [\App\Http\Controllers\TryOnController::class,'generate']); Route::post('/tryon/settings', [\App\Http\Controllers\TryOnController::class,'settings']); Route::get('/tryon/photo/{id}', [\App\Http\Controllers\TryOnController::class,'photo']); Route::post('/tryon/photo/{id}/delete', [\App\Http\Controllers\TryOnController::class,'photoDelete']);
   Route::post('/stores', [\App\Http\Controllers\InventoryController::class,'storeAdd']);
   Route::get('/stores/{id}/diag', [\App\Http\Controllers\InventoryController::class,'scanDiag']);
   Route::post('/stores/{id}/scan', [\App\Http\Controllers\InventoryController::class,'scanStart']);
@@ -675,6 +676,7 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestF
   Route::post('/order', [\App\Http\Controllers\StoreController::class,'order'])->middleware('throttle:30,1');
   Route::get('/purchase/invoice/{no}', [\App\Http\Controllers\ProcurementController::class,'publicInvoice'])->where('no','PUR-[0-9]+')->middleware('throttle:60,1');
   Route::get('/supplier/statement/{token}', [\App\Http\Controllers\ProcurementController::class,'statement'])->where('token','[a-f0-9]+')->middleware('throttle:60,1');
+  Route::post('/tryon/save', [\App\Http\Controllers\TryOnController::class,'save'])->middleware('throttle:8,1'); Route::post('/tryon/forget', [\App\Http\Controllers\TryOnController::class,'forget'])->middleware('throttle:20,1');
   Route::get('/p/{key}', [\App\Http\Controllers\StoreController::class,'product'])->where('key','[A-Za-z0-9\-]+');
   Route::get('/brand/{slug}', [\App\Http\Controllers\StoreController::class,'brand'])->where('slug','[a-z0-9\-]+');
   Route::get('/{slug}', [\App\Http\Controllers\StoreController::class,'category'])->where('slug','[a-z0-9\-]+');
