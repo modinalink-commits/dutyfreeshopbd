@@ -465,6 +465,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/manual-payments/entry/{pid}/proof', [\App\Http\Controllers\OrderPaymentController::class,'proof'])->whereNumber('pid');
   Route::post('/manual-payments/entry/{pid}/{mode}', [\App\Http\Controllers\OrderPaymentController::class,'act'])->whereNumber('pid')->where('mode','verify|reject');
   Route::get('/manual-payments/count', [\App\Http\Controllers\ManualPaymentController::class,'count']);
+  Route::post('/manual-payments/courier-informed/{oid}', [\App\Http\Controllers\ManualPaymentController::class,'courierInformed'])->whereNumber('oid');
   Route::post('/manual-payments/{id}/{mode}', [\App\Http\Controllers\ManualPaymentController::class,'act'])->where('mode','verify|reject|note');
   Route::get('/payment-methods', [\App\Http\Controllers\PaymentController::class,'index']);
   Route::post('/payment-methods/whatsapp', [\App\Http\Controllers\PaymentController::class,'wa']);

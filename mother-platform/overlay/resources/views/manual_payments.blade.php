@@ -26,11 +26,16 @@ table.mpt{width:100%;border-collapse:collapse;font-size:13px;background:#fff}.mp
 <select name="sort"><option value="">Newest first</option><option value="old" @selected(request('sort')==='old')>Oldest first</option></select>
 <button>Filter</button><a class="btn g" href="/admin/manual-payments">Reset</a>
 </form>
+@if(($toInform ?? collect())->count() || ($mismatch ?? collect())->count())<div style="background:#FEF3C7;border:1px solid #F59E0B;border-radius:10px;padding:8px 12px;margin-bottom:10px;font-size:13px">
+<b>Payment attention needed</b>
+@foreach($toInform as $t)<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:4px"><a href="/admin/orders/{{ $t->id }}#payhist"><b>{{ $t->invoice }}</b></a> {{ $t->customer_name }} · customer paid us ৳{{ number_format((float)$t->cod_direct_amount) }} directly, courier COD now ৳{{ number_format((float)$t->courier_cod) }}. Tell {{ $t->courier ?: 'the courier' }} (consignment {{ $t->consignment_id }}) to collect only this.@if($canAct)<form method="post" action="/admin/manual-payments/courier-informed/{{ $t->id }}" style="display:inline">@csrf <button class="btn g">Courier informed</button></form>@endif</div>@endforeach
+@foreach($mismatch as $m)<div style="margin-top:4px"><a href="/admin/orders/{{ $m->id }}#payhist"><b>{{ $m->invoice }}</b></a> {{ $m->customer_name }} · expected COD ৳{{ number_format((float)$m->courier_cod) }} but courier collected ৳{{ number_format((float)$m->collected_amount) }}. Check this payment.</div>@endforeach
+</div>@endif
 <div id="mpw" style="overflow:auto"><table class="mpt"><thead><tr><th>Date</th><th>Customer</th><th>Mobile</th><th>Invoice</th><th>Method</th><th>Amount</th><th>Txn ID / Ref</th><th>Requested By</th><th>Verification</th><th>Order Payment</th><th>Verified By</th><th>Action</th></tr></thead><tbody>
 @forelse($rows as $p)
 <tr><td style="white-space:nowrap">{{ \Carbon\Carbon::parse($p->paid_at ?? $p->created_at)->timezone('Asia/Dhaka')->format('d M Y, h:i A') }}</td><td>{{ $p->customer_name }}</td><td>{{ $p->phone }}</td>
 <td><a href="/admin/orders/{{ $p->order_id }}#payhist"><b>{{ $p->invoice }}</b></a></td><td>@include('pay_badge',['o'=>(object)['payment_method'=>$p->method,'pay_account'=>$p->order_pay_account ?? null],'h'=>20])</td><td><b>৳{{ number_format((float)$p->amount) }}</b></td><td>{{ $p->txn_id ?: '—' }}@if($p->txn_id && ($dups[$p->txn_id] ?? 0) > 1) <span class="tg d" title="Same Transaction ID used more than once">Possible Duplicate</span>@endif</td>
-<td style="white-space:nowrap">@if($p->created_by)<b>{{ $p->created_by_name }}</b> <small style="color:#6B7280">Staff</small>@else{{ $p->customer_name }} <small style="color:#6B7280">Customer</small>@endif</td>
+<td style="white-space:nowrap">@if($p->created_by)<b>{{ $p->created_by_name }}</b> <small style="color:#6B7280">Staff</small>@else{{ $p->customer_name }} <small style="color:#6B7280">Customer</small>@endif @if($p->cod_direct)<br><small style="color:#B45309">COD parcel · paid directly · collected by {{ $p->received_by ?: $p->created_by_name }}</small>@endif</td>
 <td><span class="tg {{ $p->status==='verified' ? 'v' : ($p->status==='rejected' ? 'r' : 'p') }}">{{ $p->status==='pending' ? 'Pending Verification' : ucfirst($p->status) }}</span>@if($p->reject_reason) <small title="{{ $p->reject_reason }}">ⓘ</small>@endif</td>
 <td>{{ $p->payment_status ?: 'Unpaid' }} <small style="color:#6B7280">৳{{ number_format((float)$p->paid_total) }}/{{ number_format((float)$p->order_total) }}</small></td><td>{{ $p->verified_by ?: '—' }}</td>
 <td class="mpa" style="white-space:nowrap"><a class="btn g" href="/admin/orders/{{ $p->order_id }}#payhist">View Order</a>@if($p->proof) <a class="btn g" href="/admin/manual-payments/entry/{{ $p->id }}/proof" target="_blank">Proof</a>@endif
@@ -76,6 +81,7 @@ function mpOpen(tr){const j=JSON.parse(tr.dataset.j);document.getElementById('mp
 <div><label>Payment Date</label><input name="paid_at" type="datetime-local"></div><div><label>Received By</label><input name="received_by" value="{{ auth()->user()->name }}"></div></div>
 <label>Note</label><input name="note"><label>Payment Proof / Screenshot</label><input type="file" name="proof" accept="image/*">
 <div id="mpOv" style="display:none;background:#FEF3C7;border-radius:8px;padding:8px;margin-top:8px;font-size:13px"></div>
+<label style="display:block;margin-top:8px"><input type="checkbox" name="cod_direct" value="1"> Parcel is COD but the customer paid us directly (COD will be lowered after the owner approves)</label>
 <label style="display:block;margin-top:8px"><input type="checkbox" name="dup_ok" value="1"> I checked the duplicate warning</label>
 @if($canVerify)<label style="display:block"><input type="checkbox" name="mark_paid" value="1"> Save &amp; verify now (authorized staff)</label>@endif
 <div style="margin-top:10px;display:flex;gap:8px"><button class="btn">Save Payment</button><button type="button" class="btn g" onclick="this.closest('dialog').close()">Cancel</button></div></form></dialog>
