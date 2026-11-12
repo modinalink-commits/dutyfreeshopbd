@@ -85,7 +85,7 @@ class InventoryController extends Controller {
     $auto = ['on' => $get('auto_scan_on', '1') === '1', 'time' => $get('auto_scan_time', '03:00'), 'last' => $get('auto_scan_last', ''), 'running' => \Illuminate\Support\Facades\Cache::has('affiliate-alive')];
     // Source-store pricing markup % (same settings + defaults WatchImportController uses): our price = source price + this %.
     $mk = [strtolower($get('watch_source_domain', 'timeaccess-store.com')) => (float)($get('watch_markup_pct', '15') ?: 15), 'luxotix.com' => (float)($get('sunglass_markup_pct', '15') ?: 15), 'amour.com.bd' => (float)($get('amour_markup_pct', '15') ?: 15), 'sundora.com.bd' => (float)($get('beauty_markup_pct', '15') ?: 15), strtolower($get('fashion_source_domain', 'klubhaus.com.bd')) => (float)($get('fashion_markup_pct', '15') ?: 15), strtolower($get('gadget_source_domain', 'startech.com.bd')) => (float)($get('mobile_markup_pct', '15') ?: 15)];
-    $comm = []; foreach ($stores as $st) { $d = preg_replace('/^www\./i', '', strtolower(preg_replace('#^https?://#i', '', trim((string)$st->domain, " /")))); if (isset($mk[$d])) $comm[$st->id] = $mk[$d]; elseif ($d === 'ryans.com') $comm[$st->id] = (float)($get('mobile_markup_pct', '15') ?: 15); }
+    $comm = []; foreach ($stores as $st) { $d = preg_replace('/^www\./i', '', strtolower(preg_replace('#^https?://#i', '', trim((string)$st->domain, " /")))); if (isset($mk[$d])) $comm[$st->id] = $mk[$d]; elseif ($d === 'ryans.com') $comm[$st->id] = (float)($get('mobile_markup_pct', '15') ?: 15); elseif (trim((string)($st->source_category ?? '')) !== '') $comm[$st->id] = (float)($get('source_markup_pct', '15') ?: 15); }
     $regc = (float)($get('source_regular_pct', '25') ?: 25);
     $catNames = DB::table('categories')->whereNull('parent_id')->orderBy('position')->orderBy('id')->pluck('name');
     return view('stores', compact('stores','counts','own','auto','comm','regc','catNames'));
@@ -102,6 +102,19 @@ class InventoryController extends Controller {
     $ok = DB::table('categories')->whereNull('parent_id')->pluck('name')->all();
     $keep = array_values(array_unique(array_filter(array_map('trim', $in), fn($n) => in_array($n, $ok, true))));
     return $keep ? implode(', ', $keep) : null;
+  }
+  /** Create a new main category right from the Stores page (prepaid only, sourcing) so a store can feed it. */
+  public function categoryQuickAdd(Request $r) {
+    $d = $r->validate(['name' => 'required|string|max:80']);
+    $name = trim(preg_replace('/\s+/', ' ', $d['name'])); $slug = \Illuminate\Support\Str::slug($name);
+    if ($slug === '') return back()->withErrors(['name' => 'Enter a valid category name']);
+    if (DB::table('categories')->where('slug', $slug)->orWhereRaw('lower(name) = ?', [mb_strtolower($name)])->exists()) return back()->withErrors(['name' => 'This category already exists']);
+    $row = ['name' => $name, 'slug' => $slug, 'position' => ((int)DB::table('categories')->whereNull('parent_id')->max('position')) + 1, 'active' => true, 'created_at' => now(), 'updated_at' => now()];
+    if (\Illuminate\Support\Facades\Schema::hasColumn('categories', 'prepaid_only')) $row['prepaid_only'] = true;
+    if (\Illuminate\Support\Facades\Schema::hasColumn('categories', 'inventory_mode')) $row['inventory_mode'] = 'SOURCING';
+    DB::table('categories')->insert($row);
+    foreach (['store.cats', 'store.catslugs', 'store.home11', 'store.home12', 'store.home13', 'prepaid.catset', 'stock.modes', 'stock.parents'] as $k) { try { \Illuminate\Support\Facades\Cache::forget($k); } catch (\Throwable $e) {} }
+    return back()->with('ok', 'Category "' . $name . '" created (prepaid only). Pick it as a store\'s Source category, then press Import.');
   }
   public function storeAdd(Request $r) {
     $d = $r->validate(['name'=>'required|string|max:120','domain'=>'required|string|max:200','source_categories'=>'nullable|array','source_categories.*'=>'string|max:120']);

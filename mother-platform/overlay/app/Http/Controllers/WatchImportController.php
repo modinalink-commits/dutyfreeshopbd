@@ -10,6 +10,10 @@ class WatchImportController extends Controller {
   /** Which source feeds which category: watch <- timeaccess-store.com, gadget <- startech.com.bd (owner, 8 Nov 2026; both +5%, prepaid only, no discount). */
   private function cfg(): array {
     $c = in_array(request('c'), ['gadget', 'sunglass', 'amour', 'beauty', 'fashion'], true) ? request('c') : 'watch'; $set = fn($k, $d) => (string)(DB::table('settings')->where('key', $k)->value('value') ?? $d);
+    if (preg_match('/^s(\d+)$/', (string)request('c'), $__m) && ($__st = DB::table('stores')->find((int)$__m[1])) && trim((string)$__st->source_category) !== '') { // owner 13 Nov 2026: any store -> the main category picked as its Source category (first one), same rules: prepaid, sale +15%, regular +25%
+      $__cn = trim(explode(',', (string)$__st->source_category)[0]); $__cat = DB::table('categories')->whereNull('parent_id')->where('name', $__cn)->first();
+      if ($__cat) return ['c' => 's' . $__st->id, 'domain' => strtolower(preg_replace('#^https?://(www\.)?#i', '', trim((string)$__st->domain, ' /'))), 'cat' => $__cat->slug, 'prefix' => 'DX', 'pct' => (float)($set('source_markup_pct', '15') ?: 15), 'max' => 0.0, 'dir' => 'store' . $__st->id];
+    }
     if ($c === 'fashion') return ['c' => 'fashion', 'domain' => strtolower($set('fashion_source_domain', '')), 'cat' => 'fashion', 'prefix' => 'DFF', 'pct' => (float)($set('fashion_markup_pct', '15') ?: 15), 'max' => 0.0, 'dir' => 'fashion']; // owner 13 Nov 2026: Fashion between Gadget & Electronics and Perfume; source domain = setting fashion_source_domain (set when the owner names the shop)
     if ($c === 'beauty') return ['c' => 'beauty', 'domain' => 'sundora.com.bd', 'cat' => 'beauty', 'prefix' => 'DFB', 'pct' => (float)($set('beauty_markup_pct', '15') ?: 15), 'max' => 0.0, 'dir' => 'beauty']; // owner 13 Nov 2026: Beauty <- sundora.com.bd (partner), sale price source +15%, regular (crossed-out) price source +25%
     if ($c === 'amour') return ['c' => 'amour', 'domain' => 'amour.com.bd', 'cat' => 'lighter-accessories', 'prefix' => 'DFA', 'pct' => (float)($set('amour_markup_pct', '15') ?: 15), 'max' => 0.0, 'dir' => 'amour'];
@@ -137,12 +141,12 @@ class WatchImportController extends Controller {
   }
   /** Re-sort the products of an affiliate category into the right sub categories (after a rule change). POST map=handle~letter,... saves the Amour collection map first. */
   public function resub(Request $r) {
-    @set_time_limit(120); $cf = $this->cfg(); $s = $this->src(); abort_unless($s && in_array($cf['c'], ['gadget', 'amour', 'beauty'], true), 404);
+    @set_time_limit(120); $cf = $this->cfg(); $s = $this->src(); abort_unless($s && (in_array($cf['c'], ['gadget', 'amour', 'beauty', 'fashion'], true) || preg_match('/^s\d+$/', $cf['c'])), 404);
     if ($r->filled('map') && $cf['c'] === 'amour') DB::table('settings')->updateOrInsert(['key' => 'amour_sub_map'], ['value' => (string)$r->input('map'), 'updated_at' => now(), 'created_at' => now()]);
     $cat = DB::table('categories')->where('slug', $cf['cat'])->first(); abort_unless($cat, 404);
     $rows = DB::table('watch_source as w')->join('products as p', 'p.id', '=', 'w.product_id')->leftJoin('store_products as sp', 'sp.id', '=', 'w.store_product_id')->where('w.store_id', $s->id)->where('p.category_id', $cat->id)->get(['p.id', 'p.name', 'p.sub', 'p.slug', 'w.source_url', 'w.source_name', 'sp.category as src_cat']); $n = 0;
     foreach ($rows as $x) {
-      $sub = self::subFor((string)($x->source_name ?: $x->name), $cf['c'] === 'beauty' ? $x->src_cat : null, $cf['cat'], (string)$x->source_url);
+      $sub = self::subFor((string)($x->source_name ?: $x->name), in_array($cf['c'], ['gadget', 'amour'], true) ? null : $x->src_cat, $cf['cat'], (string)$x->source_url);
       if ($sub === $x->sub) continue;
       DB::table('products')->where('id', $x->id)->update(['sub' => $sub, 'sub_sub' => null, 'path_slug' => $this->slugFor($cat->id, (string)($x->slug ?: \App\Support\Slugs::slug($x->name)), $sub, (int)$x->id), 'updated_at' => now()]); $n++;
     }

@@ -441,6 +441,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/watch-sources', [\App\Http\Controllers\WatchImportController::class,'sources']);
   Route::get('/tryon', [\App\Http\Controllers\TryOnController::class,'index']); Route::post('/tryon/generate', [\App\Http\Controllers\TryOnController::class,'generate']); Route::post('/tryon/settings', [\App\Http\Controllers\TryOnController::class,'settings']); Route::get('/tryon/photo/{id}', [\App\Http\Controllers\TryOnController::class,'photo']); Route::post('/tryon/photo/{id}/delete', [\App\Http\Controllers\TryOnController::class,'photoDelete']);
   Route::post('/stores', [\App\Http\Controllers\InventoryController::class,'storeAdd']);
+  Route::post('/stores/category', [\App\Http\Controllers\InventoryController::class,'categoryQuickAdd']);
   Route::get('/stores/{id}/diag', [\App\Http\Controllers\InventoryController::class,'scanDiag']);
   Route::post('/stores/{id}/scan', [\App\Http\Controllers\InventoryController::class,'scanStart']);
   Route::post('/stores/{id}/scan-step', [\App\Http\Controllers\InventoryController::class,'scanStep']);
