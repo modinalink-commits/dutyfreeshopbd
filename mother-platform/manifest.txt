@@ -1005,3 +1005,4 @@ database/migrations/2026_11_12_001400_store_cache_bust7.php
 database/migrations/2026_11_12_001500_store_cache_bust8.php
 database/migrations/2026_11_12_001600_store_cache_bust9.php
 database/migrations/2026_11_12_001700_store_cache_bust10.php
+database/migrations/2026_11_12_001800_home_title_shorten.php
