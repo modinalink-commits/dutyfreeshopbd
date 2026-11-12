@@ -47,6 +47,7 @@ main table .mc-dr{display:flex;gap:10px;padding:3px 0;border-bottom:1px solid va
 main table .mc-dl{flex:0 0 38%;color:var(--text-muted);font-weight:600}main table .mc-dv{flex:1;min-width:0;word-break:break-word}
 @media print{main table .mc-h{display:table-cell!important}main table .mc-x,main table .mc-det{display:none!important}}
 </style>
+<style id="admin-cpg">.cpgh{display:none!important}.cpgbar{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap;margin:10px 0 0;font-size:13px;color:#6B7280}.cpgbar button{border:1px solid #D1D5DB;background:#fff;border-radius:8px;padding:5px 12px;cursor:pointer}.cpgbar button:disabled{opacity:.45;cursor:default}@media print{.cpgh{display:table-row!important}.cpgbar{display:none!important}}</style>
 <script>
 (function(){
   /* A. right-align money columns already handled by admin_grid; here: centre Status / Date / SKU columns and wrap wide tables */
@@ -230,7 +231,38 @@ main table .mc-dl{flex:0 0 38%;color:var(--text-muted);font-weight:600}main tabl
       if(tb.querySelector('th'))tb.classList.add('mc-t');else if(tb.querySelector('td'))tb.classList.add('mc-kv');
     });
   }
-  function run(){try{normHead();tag();centre();fitAll();wrap();sbox();freeze();pageSize()}catch(e){}}
+
+  /* 50 rows per page on every long admin table (client-side; export/print/server data untouched). Skips: report grids (.pl), server-paginated pages (.pgx), tables with group/detail rows, [data-nopg]. */
+  var CPER=50;
+  function cpgRender(t){
+    var rs=[].slice.call(t.querySelectorAll(':scope > tbody > tr'));
+    var vis=rs.filter(function(r){return r.style.display!=='none'});
+    var n=vis.length,bar=t.__cbar;
+    rs.forEach(function(r){r.classList.remove('cpgh')});
+    if(n<=CPER){if(bar&&bar.parentNode)bar.remove();t.__cbar=null;return}
+    var pages=Math.ceil(n/CPER),pg=t.__cpg||1;if(pg>pages)pg=pages;if(pg<1)pg=1;t.__cpg=pg;
+    var from=(pg-1)*CPER,to=from+CPER;
+    vis.forEach(function(r,i){if(i<from||i>=to)r.classList.add('cpgh')});
+    var sig=pg+'/'+n;
+    if(bar&&bar.parentNode&&bar.__sig===sig)return;
+    if(bar&&bar.parentNode)bar.remove();
+    bar=document.createElement('div');bar.className='cpgbar';bar.__sig=sig;
+    bar.innerHTML='<span>Rows '+(from+1)+'–'+Math.min(to,n)+' of '+n+'</span><button type="button" data-d="-1"'+(pg<=1?' disabled':'')+'>‹ Previous</button><span>Page '+pg+' / '+pages+'</span><button type="button" data-d="1"'+(pg>=pages?' disabled':'')+'>Next ›</button>';
+    bar.addEventListener('click',function(e){var b=e.target.closest('button');if(!b||b.disabled)return;t.__cpg=pg+parseInt(b.getAttribute('data-d'),10);cpgRender(t);var y=t.getBoundingClientRect().top+window.pageYOffset-80;window.scrollTo({top:Math.max(y,0)})});
+    var host=t.closest('.mc-ts')||t;host.parentNode.insertBefore(bar,host.nextSibling);t.__cbar=bar;
+  }
+  function cpg(){
+    if(document.querySelector('main .pgx'))return;
+    document.querySelectorAll('main table.mc-t').forEach(function(t){
+      if(t.classList.contains('pl')||t.classList.contains('ordt')||t.closest('[data-nopg]')||t.dataset.nopg)return;
+      var rs=t.querySelectorAll(':scope > tbody > tr');
+      if(rs.length<=CPER&&!t.__cbar)return;
+      for(var i=0;i<rs.length;i++){var tds=rs[i].children;if(tds.length===1&&(tds[0].colSpan||1)>=3)return}
+      cpgRender(t);
+    });
+  }
+  ['input','change','keyup'].forEach(function(ev){document.addEventListener(ev,function(e){if(!e.target.closest||!e.target.closest('main'))return;clearTimeout(window.__mcq);window.__mcq=setTimeout(function(){document.querySelectorAll('main table.mc-t').forEach(function(t){t.__cpg=1});try{cpg()}catch(x){}},200)},true)});
+  function run(){try{normHead();tag();centre();fitAll();wrap();sbox();freeze();pageSize();cpg()}catch(e){}}
   window.addEventListener('resize',function(){clearTimeout(window.__mcr);window.__mcr=setTimeout(function(){try{closeD();document.querySelectorAll('main table.mc-t,main table.ordt').forEach(function(t){delete t.dataset.mcf});fitAll();freeze()}catch(e){}},150)});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run);else run();
   window.addEventListener('load',function(){try{document.querySelectorAll('main table.mc-t').forEach(function(t){if(t.dataset.mcf==='0')delete t.dataset.mcf})}catch(e){}run()});
