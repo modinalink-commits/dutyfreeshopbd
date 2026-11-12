@@ -91,7 +91,7 @@ class AdminController extends Controller {
       return $storePerf->reject($fold)->map(function ($r) use ($oo, $ss) { if (mb_strtolower($r[0]) === 'dutyfreebd') { $r[1] += $oo; $r[2] += $ss; } return $r; })->sortByDesc(2)->values();
     }, $storePerf);
     $channels = $safe(fn() => collect(\Illuminate\Support\Facades\Cache::remember('dash.channels.v2', 600, fn() => DB::table('orders')->whereNotNull('source')->where('source','<>','')->distinct()->orderBy('source')->pluck('source')->all())), collect());
-    $vipN = $safe(fn() => (int)\Illuminate\Support\Facades\Cache::remember('dash.vipn.v1', 300, fn() => DB::table('customers')->whereRaw("lower(coalesce(type,'')) = 'vip'")->count()), 0);
+    $vipN = $safe(fn() => (int)\Illuminate\Support\Facades\Cache::remember('dash.vipn.v2', 300, fn() => (int)(DB::selectOne("select count(*) c from (select phone from orders where phone is not null and phone <> '' group by phone having sum(case when status in ('Delivered','Partial Delivered','Late Delivery') then 1 else 0 end) >= 5 or (sum(case when status in ('Delivered','Partial Delivered','Late Delivery') then 1 else 0 end) >= 1 and sum(case when status in ('Delivered','Partial Delivered','Late Delivery') then total else 0 end) >= 20000)) v")->c ?? 0)), 0);
     $memN = $safe(fn() => (int)\Illuminate\Support\Facades\Cache::remember('dash.memn.v1', 300, fn() => DB::table('customers')->whereNotNull('membership')->where('membership','<>','')->count()), 0);
     $chatUnread = \Illuminate\Support\Facades\Schema::hasTable('chat_threads') ? \App\Support\Chat::unreadTotal() : 0;
     $counts = collect(\Illuminate\Support\Facades\Cache::remember('dash.counts.v2.'.(int)$storeId.'.'.md5((string)$ch), 20, fn() => $oq()->select('status', DB::raw('count(*) c'))->groupBy('status')->pluck('c','status')->all()));
@@ -115,7 +115,7 @@ class AdminController extends Controller {
     $payP = $safe(fn() => (int)\Illuminate\Support\Facades\Cache::remember('dash.payp.v1', 20, fn() => DB::table('orders')->where('pay_status','Verification Pending')->count()), 0);
     if ($payP) $alerts[] = ['WARNING', "$payP payments waiting for verification", 'Check the transaction ID and mark verified', '/admin/orders'];
     if ($incOpen) $alerts[] = ['INFO', "$incOpen incomplete checkouts not processed", 'Call these customers to recover the sale', '/admin/orders?status=Incomplete'];
-    $low = (int)\Illuminate\Support\Facades\Cache::remember('dash.low.v1', 120, fn() => DB::table('products')->where('published',true)->where('stock','<=',2)->count());
+    $low = (int)\Illuminate\Support\Facades\Cache::remember('dash.low.v2', 120, function () { $ctrl = \App\Support\Reorder::ctrl(); return DB::table('products')->where('published',true)->where('stock','<=',2)->where(fn($w) => $w->whereNull('reorder_mode')->orWhere('reorder_mode','<>','off'))->where(fn($w) => $w->whereIn('category_id', $ctrl ?: [0])->orWhere('reorder_mode','auto'))->count(); });   // only stock-controlled products (same rule as Auto Reorder): affiliate/pre-order items have no real stock
     if ($low) $alerts[] = ['WARNING', "$low published products low on stock", '2 or fewer left', '/admin/inventory'];
     $noimg = (int)\Illuminate\Support\Facades\Cache::remember('dash.noimg.v1', 120, fn() => DB::table('products')->where('published',true)->where(fn($w)=>$w->whereNull('image')->orWhere('image',''))->count());
     if ($noimg) $alerts[] = ['WARNING', "$noimg published products have a Missing Product Image", 'Open Products and filter by missing image', '/admin/products?missing_image=1'];
@@ -138,7 +138,7 @@ class AdminController extends Controller {
     $phones = $safe(fn() => $oq()->where('created_at','>=',$startUtc)->whereNotIn('status',['Cancel'])->distinct()->pluck('phone')->filter()->values(), collect());
     $ret = $phones->isEmpty() ? 0 : DB::table('orders')->whereIn('phone', $phones)->where('created_at','<',$startUtc)->distinct()->count('phone');
     $cov = $safe(fn() => \App\Support\CourierOverview::get($startUtc->format('Y-m-d H:i:s'), \Carbon\Carbon::parse($f['to'], $tz)->endOfDay()->utc()->format('Y-m-d H:i:s')), ['couriers'=>[], 'outcomes'=>[], 'flagged'=>0]);
-    $cust = ['new'=>max(0, $phones->count()-$ret), 'returning'=>$ret, 'vip'=>$vipN, 'member'=>$memN];
+    $cust = ['new'=>(int)$newC, 'returning'=>max(0, $phones->count()-(int)$newC), 'vip'=>$vipN, 'member'=>$memN];   // new = same first-order count as the New customers KPI card
     $cx = $safe(fn() => \Illuminate\Support\Facades\Cache::remember('dash.cust.v1', 600, function () {
       $r = DB::selectOne("select count(*) as n, coalesce(sum(case when c > 1 then 1 else 0 end),0) as rep from (select phone, count(*) as c from orders where status not in ('Cancel','Incomplete') and phone is not null and phone <> '' group by phone) t");
       $lv = ['silver'=>0, 'gold'=>0, 'platinum'=>0, 'diamond'=>0, 'none'=>0];

@@ -243,7 +243,8 @@ class AiVerify {
       $hid = DB::table('order_ai_verification_history')->insertGetId(['order_id' => $o->id, 'run_no' => $runNo, 'prev_status' => $prevStatus, 'status' => $status, 'score' => $score, 'risk_level' => $risk, 'customer_reliability' => $rel, 'fraud_score' => $fraudScore, 'reason_codes' => json_encode($codesU), 'snapshot' => json_encode($snap, JSON_UNESCAPED_UNICODE), 'rule_version' => self::VERSION, 'triggered_by' => $by, 'user_name' => $user, 'created_at' => $now]);
       DB::table('order_ai_verification_checks')->insert(array_map(fn($x) => ['history_id' => $hid, 'order_id' => $o->id, 'grp' => $x['g'], 'code' => $x['c'], 'result' => $x['r'], 'title' => $x['t'], 'detail' => $x['d'], 'points' => $x['p']], $checks));
     });
-    Procure::audit('AI Verify run', 'Order #' . $o->id, $prevStatus, ['status' => $status, 'score' => $score, 'by' => $by, 'critical' => $sum['critical']]);
+    if ($by === 'manual') Procure::audit('AI Verify run', 'Order #' . $o->id, $prevStatus, ['status' => $status, 'score' => $score, 'by' => $by, 'critical' => $sum['critical']]);
+    else { try { DB::table('audit_logs')->insert(['user_id' => null, 'user_name' => 'AI Verify (auto)', 'action' => 'AI Verify run', 'subject' => 'Order #' . $o->id, 'meta' => json_encode(['previous' => $prevStatus, 'new' => ['status' => $status, 'score' => $score, 'by' => $by, 'critical' => $sum['critical']]], JSON_UNESCAPED_UNICODE), 'ip' => null, 'created_at' => now(), 'updated_at' => now()]); } catch (\Throwable $e) {} }   // automatic runs are the AI's work, not the logged-in admin's
     if ($status === 'verified') self::autoApprove((int)$o->id);
     return self::latest((int)$o->id);
   }

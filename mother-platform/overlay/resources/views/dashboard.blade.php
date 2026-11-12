@@ -137,7 +137,7 @@ $qs = fn($extra = []) => http_build_query(array_filter(array_merge(['store'=>$st
 </section>
 
 <section class="card" id="dxstages" style="padding:10px 14px">
-  <div class="head" style="margin-bottom:8px"><h2>All Order Stages</h2><span class="muted">Click a stage to filter</span></div>
+  <div class="head" style="margin-bottom:8px"><h2>All Order Stages</h2><span class="muted">All time · click a stage to filter</span></div>
     <div class="dx-pipe">@foreach($PIPE as $sg => $pi)@php $cn2 = (int)($counts[$sg] ?? 0); @endphp
       <a href="/admin/orders?status={{ urlencode($sg) }}" style="--c:{{ $ST[$sg][1] ?? '#4B5563' }};--b:{{ $ST[$sg][0] ?? '#F3F4F6' }}"><span class="tp">{!! $ico($pi,13) !!}<span class="nm">{{ $sg }}</span></span><span class="ct">{{ $cn2 }}</span></a>@endforeach</div>
 </section>
@@ -269,7 +269,7 @@ $__am = max(1, $__at ? $__at[0]['customers'] : 1);
     <a href="{{ $lk ?: '#' }}" class="dx-fi"><span class="fi" style="background:{{ $fi[1] }};color:{{ $fi[2] }}">{!! $ico($fi[0],13) !!}</span><div style="min-width:0;flex:1"><div class="t">{{ $tx }}</div><div class="w" title="{{ $abs }}">{{ $ago }}</div></div></a>
     @empty<div class="dx-empty">No activity yet.</div>@endforelse</div></div>
   <div class="card"><div class="head"><h2>Attention Required</h2>@if(count($alerts))<span class="dx-lv" style="background:#FEE2E2;color:#B91C1C">{{ count($alerts) }}</span>@endif</div>
-    @forelse(array_slice($alerts,0,6) as [$lvl,$tt,$sub,$lk])<a href="{{ $lk }}" class="dx-al" style="--b:{{ $LV[$lvl][0] }};--bd:{{ $LV[$lvl][0] }}"><span class="dx-lv" style="background:#fff;color:{{ $LV[$lvl][1] }}">{{ $lvl }}</span><div style="min-width:0"><div style="font-size:12px;font-weight:700;color:{{ $LV[$lvl][1] }}">{{ $tt }}</div><div class="muted">{{ $sub }}</div></div></a>
+    @forelse(array_slice($alerts,0,8) as [$lvl,$tt,$sub,$lk])<a href="{{ $lk }}" class="dx-al" style="--b:{{ $LV[$lvl][0] }};--bd:{{ $LV[$lvl][0] }}"><span class="dx-lv" style="background:#fff;color:{{ $LV[$lvl][1] }}">{{ $lvl }}</span><div style="min-width:0"><div style="font-size:12px;font-weight:700;color:{{ $LV[$lvl][1] }}">{{ $tt }}</div><div class="muted">{{ $sub }}</div></div></a>
     @empty<div style="display:flex;gap:6px;align-items:center;color:#166534;font-weight:700;font-size:12px">{!! $ico('check',14) !!} All clear right now.</div>@endforelse</div>
 </section>
 
