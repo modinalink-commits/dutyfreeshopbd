@@ -25,7 +25,14 @@ class Winback
 
   /** phone => [oid, at] of the latest Delivered order for customers with no newer live order. */
   /** Last order placed per customer phone (any live order, cancelled/returned ignored). Name kept for callers; the countdown starts from the order date. */
+  private static ?array $ldMemo = null; private static float $ldAt = 0;
   public static function lastDelivered(?string $phone = null): array {
+    if (!$phone && self::$ldMemo !== null && microtime(true) - self::$ldAt < 5) return self::$ldMemo;
+    $res = self::lastDeliveredRaw($phone);
+    if (!$phone) { self::$ldMemo = $res; self::$ldAt = microtime(true); }
+    return $res;
+  }
+  private static function lastDeliveredRaw(?string $phone = null): array {
     $sql = "select distinct on (right(o.phone,11)) right(o.phone,11) as p, o.id as oid, o.created_at as at from orders o where o.status not in ('Cancel','Returned') and o.phone is not null and length(o.phone) >= 10" . ($phone ? " and right(o.phone,11) = ?" : '') . " order by right(o.phone,11), o.created_at desc, o.id desc";
     $out = [];
     foreach (DB::select($sql, $phone ? [$phone] : []) as $r) $out[$r->p] = ['oid' => (int)$r->oid, 'at' => $r->at];
