@@ -90,7 +90,7 @@ class AdminController extends Controller {
       $oo = 0; $ss = 0.0; foreach ($storePerf as $r) if ($fold($r)) { $oo += $r[1]; $ss += $r[2]; }
       return $storePerf->reject($fold)->map(function ($r) use ($oo, $ss) { if (mb_strtolower($r[0]) === 'dutyfreebd') { $r[1] += $oo; $r[2] += $ss; } return $r; })->sortByDesc(2)->values();
     }, $storePerf);
-    $channels = $safe(fn() => collect(\Illuminate\Support\Facades\Cache::remember('dash.channels.v2', 600, fn() => DB::table('orders')->whereNotNull('source')->where('source','<>','')->distinct()->orderBy('source')->pluck('source')->all())), collect());
+    $channels = $safe(fn() => collect(\Illuminate\Support\Facades\Cache::remember('dash.channels.v3', 600, fn() => DB::table('orders')->whereNotNull('source')->where('source','<>','')->distinct()->orderBy('source')->pluck('source')->all())), collect());
     $vipN = $safe(fn() => (int)\Illuminate\Support\Facades\Cache::remember('dash.vipn.v2', 300, fn() => (int)(DB::selectOne("select count(*) c from (select phone from orders where phone is not null and phone <> '' group by phone having sum(case when status in ('Delivered','Partial Delivered','Late Delivery') then 1 else 0 end) >= 5 or (sum(case when status in ('Delivered','Partial Delivered','Late Delivery') then 1 else 0 end) >= 1 and sum(case when status in ('Delivered','Partial Delivered','Late Delivery') then total else 0 end) >= 20000)) v")->c ?? 0)), 0);
     $memN = $safe(fn() => (int)\Illuminate\Support\Facades\Cache::remember('dash.memn.v1', 300, fn() => DB::table('customers')->whereNotNull('membership')->where('membership','<>','')->count()), 0);
     $chatUnread = \Illuminate\Support\Facades\Schema::hasTable('chat_threads') ? \App\Support\Chat::unreadTotal() : 0;
