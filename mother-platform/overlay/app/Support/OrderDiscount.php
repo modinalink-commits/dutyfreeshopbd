@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\DB;
 /** THE discount engine. Admin Create Order, website checkout and the customer account all call compute(); nothing else calculates a discount.
  *  Every line comes from a saved rule, membership level, coupon or customer-profile value: nothing is invented. */
 class OrderDiscount {
-  const ORDER = ['special', 'vip', 'membership', 'returning', 'winback', 'voice', 'birthday', 'first', 'referral', 'bundle', 'flash', 'amount', 'coupon', 'refcredit'];
+  const ORDER = ['special', 'vip', 'membership', 'returning', 'winback', 'voice', 'birthday', 'first', 'referral', 'bundle', 'flashsale', 'amount', 'coupon', 'refcredit'];
   const MODES = ['highest' => 'Highest discount only', 'priority' => 'Priority order (first match only)', 'stack' => 'Stackable: multiple discounts allowed'];
   public static function mode(): string { $m = (string)DB::table('settings')->where('key', 'order_disc_mode')->value('value'); return isset(self::MODES[$m]) ? $m : 'highest'; }
   private static function rule(string $k): ?array { $r = DB::table('discount_rules')->where('key', $k)->where('enabled', true)->first(); return $r ? ['cfg' => json_decode($r->config, true) ?: [], 'title' => $r->title] : null; }
@@ -109,14 +109,14 @@ class OrderDiscount {
     if ($phone && $st['n'] === 0 && ($R = self::rule('first'))) $add('first', 'First Order Discount', $R['title'], 'First order rule', (float)($R['cfg']['Discount %'] ?? 0), (float)($R['cfg']['Max TK'] ?? 0));
     if ($qty > 0 && empty($ctx['qprice']) && ($R = self::rule('bundle')) && $qty >= (int)($R['cfg']['Minimum products'] ?? 2)) $add('bundle', 'Bundle Discount', $R['title'], 'Bundle rule', (float)($R['cfg']['Bundle %'] ?? 0));
     // Flash Sale (owner, 12 Nov 2026): the % comes from the saved 'flash' rule (set to 2); it applies only to the Flash Sale products in the cart, and each customer gets it once per day.
-    if (($R = self::rule('flash')) && !empty($ctx['items'])) {
+    if (($R = self::rule('flashsale')) && !empty($ctx['items'])) {
       try {
         $fid = \App\Http\Controllers\StoreController::flashIds(); $fv = 0.0;
         foreach ((array)$ctx['items'] as $i) if (in_array((int)($i['product_id'] ?? 0), $fid, true)) $fv += (float)($i['price'] ?? 0) * (int)($i['qty'] ?? 0);
         $used = false;
         if ($phone && $fv > 0 && self::hasLines()) { $d0 = now('Asia/Dhaka')->startOfDay()->timezone('UTC'); $used = DB::table('orders')->whereIn('phone', self::alt($phone))->where('status', '!=', 'Cancel')->where('created_at', '>=', $d0)->when($ex, fn($q) => $q->where('id', '!=', $ex))->where('discount_lines', 'like', '%Flash Sale Discount%')->exists(); }
         $fp = (float)($R['cfg']['Discount %'] ?? 0);
-        if ($fv > 0 && !$used && $fp > 0) { $amt = round(min($fv, $sub) * $fp / 100, 2); if ($amt > 0) $cand[] = ['key' => 'flash', 'type' => 'Flash Sale Discount', 'rule' => $R['title'], 'source' => 'Flash Sale – once per day', 'pct' => $fp, 'amount' => $amt, 'label' => 'Flash Sale Discount – ' . rtrim(rtrim(number_format($fp, 2), '0'), '.') . '%']; }
+        if ($fv > 0 && !$used && $fp > 0) { $amt = round(min($fv, $sub) * $fp / 100, 2); if ($amt > 0) $cand[] = ['key' => 'flashsale', 'type' => 'Flash Sale Discount', 'rule' => $R['title'], 'source' => 'Flash Sale – once per day', 'pct' => $fp, 'amount' => $amt, 'label' => 'Flash Sale Discount – ' . rtrim(rtrim(number_format($fp, 2), '0'), '.') . '%']; }
       } catch (\Throwable $e) { report($e); }
     }
     if ($R = self::rule('amount')) { $pct = 0; foreach (['Over 20000 TK %' => 20000, 'Over 10000 TK %' => 10000, 'Over 5000 TK %' => 5000] as $k => $min) if ($sub > $min) { $pct = (float)($R['cfg'][$k] ?? 0); break; }
