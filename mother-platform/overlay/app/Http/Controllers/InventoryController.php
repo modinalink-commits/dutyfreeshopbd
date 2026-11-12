@@ -84,7 +84,7 @@ class InventoryController extends Controller {
     $get = fn($k, $d) => (string)(DB::table('settings')->where('key', $k)->value('value') ?? $d);
     $auto = ['on' => $get('auto_scan_on', '1') === '1', 'time' => $get('auto_scan_time', '03:00'), 'last' => $get('auto_scan_last', ''), 'running' => \Illuminate\Support\Facades\Cache::has('affiliate-alive')];
     // Source-store pricing markup % (same settings + defaults WatchImportController uses): our price = source price + this %.
-    $mk = [strtolower($get('watch_source_domain', 'timeaccess-store.com')) => (float)($get('watch_markup_pct', '15') ?: 15), 'luxotix.com' => (float)($get('sunglass_markup_pct', '15') ?: 15), 'amour.com.bd' => (float)($get('amour_markup_pct', '15') ?: 15), strtolower($get('gadget_source_domain', 'startech.com.bd')) => (float)($get('mobile_markup_pct', '15') ?: 15)];
+    $mk = [strtolower($get('watch_source_domain', 'timeaccess-store.com')) => (float)($get('watch_markup_pct', '15') ?: 15), 'luxotix.com' => (float)($get('sunglass_markup_pct', '15') ?: 15), 'amour.com.bd' => (float)($get('amour_markup_pct', '15') ?: 15), 'sundora.com.bd' => (float)($get('beauty_markup_pct', '15') ?: 15), strtolower($get('gadget_source_domain', 'startech.com.bd')) => (float)($get('mobile_markup_pct', '15') ?: 15)];
     $comm = []; foreach ($stores as $st) { $d = preg_replace('/^www\./i', '', strtolower(preg_replace('#^https?://#i', '', trim((string)$st->domain, " /")))); if (isset($mk[$d])) $comm[$st->id] = $mk[$d]; elseif ($d === 'ryans.com') $comm[$st->id] = (float)($get('mobile_markup_pct', '15') ?: 15); }
     $regc = (float)($get('source_regular_pct', '25') ?: 25);
     return view('stores', compact('stores','counts','own','auto','comm','regc'));
@@ -93,7 +93,7 @@ class InventoryController extends Controller {
   public function autoScan(Request $r) {
     $t = preg_match('/^\d{1,2}:\d{2}$/', (string)$r->input('time')) ? str_pad((string)$r->input('time'), 5, '0', STR_PAD_LEFT) : '03:00';
     foreach (['auto_scan_time' => $t, 'auto_scan_on' => $r->boolean('on') ? '1' : '0'] as $k => $v) DB::table('settings')->updateOrInsert(['key' => $k], ['value' => $v, 'updated_at' => now(), 'created_at' => now()]);
-    if ($r->input('run') === '1' && !\Illuminate\Support\Facades\Cache::has('affiliate-alive')) { DB::table('settings')->updateOrInsert(['key' => 'affiliate_now'], ['value' => 'watch:1,gadget:1,sunglass:1,amour:1,all:1', 'updated_at' => now(), 'created_at' => now()]); return back()->with('ok', 'Auto scan started now - it runs in the background (takes a while).'); }
+    if ($r->input('run') === '1' && !\Illuminate\Support\Facades\Cache::has('affiliate-alive')) { DB::table('settings')->updateOrInsert(['key' => 'affiliate_now'], ['value' => 'watch:1,gadget:1,sunglass:1,amour:1,beauty:1,all:1', 'updated_at' => now(), 'created_at' => now()]); return back()->with('ok', 'Auto scan started now - it runs in the background (takes a while).'); }
     return back()->with('ok', 'Auto scan saved: every day at ' . $t . ' (Dhaka).');
   }
   public function storeAdd(Request $r) {

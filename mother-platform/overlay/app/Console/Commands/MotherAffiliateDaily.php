@@ -22,7 +22,7 @@ class MotherAffiliateDaily extends Command {
       if ((string)(DB::table('settings')->where('key', 'affiliate_daily_date')->value('value') ?? '') === $today) return;
       DB::table('settings')->updateOrInsert(['key' => 'affiliate_daily_date'], ['value' => $today, 'updated_at' => now(), 'created_at' => now()]);
       $cmd = 'cd ' . escapeshellarg(base_path()) . ' && nohup php artisan mother:affiliate-daily > /dev/null 2>&1 &';
-      DB::table('settings')->updateOrInsert(['key' => 'affiliate_pending'], ['value' => 'watch:1,gadget:1,sunglass:1,amour:1,all:1', 'updated_at' => now(), 'created_at' => now()]);
+      DB::table('settings')->updateOrInsert(['key' => 'affiliate_pending'], ['value' => 'watch:1,gadget:1,sunglass:1,amour:1,beauty:1,all:1', 'updated_at' => now(), 'created_at' => now()]);
       @exec($cmd);
     } catch (\Throwable $e) { report($e); }
   }
@@ -33,9 +33,9 @@ class MotherAffiliateDaily extends Command {
     try {
       $setPend = function (array $j) { $v = []; foreach ($j as $k => $sc) $v[] = $k . ':' . ($sc ? '1' : '0'); DB::table('settings')->updateOrInsert(['key' => 'affiliate_pending'], ['value' => implode(',', $v), 'updated_at' => now(), 'created_at' => now()]); };
       $jobs = []; foreach (array_filter(explode(',', (string)$this->option('jobs'))) as $j) { [$jc, $js] = array_pad(explode(':', $j), 2, '1'); $jobs[$jc] = $js !== '0'; }
-      if (!$jobs) $jobs = ['watch' => true, 'gadget' => true, 'sunglass' => true, 'amour' => true];
+      if (!$jobs) $jobs = ['watch' => true, 'gadget' => true, 'sunglass' => true, 'amour' => true, 'beauty' => true];
       $gd = strtolower((string)(DB::table('settings')->where('key', 'gadget_source_domain')->value('value') ?? 'startech.com.bd'));
-      foreach (['watch' => 'timeaccess-store.com', 'gadget' => $gd, 'sunglass' => 'luxotix.com', 'amour' => 'amour.com.bd'] as $c => $dom) {
+      foreach (['watch' => 'timeaccess-store.com', 'gadget' => $gd, 'sunglass' => 'luxotix.com', 'amour' => 'amour.com.bd', 'beauty' => 'sundora.com.bd'] as $c => $dom) {
         if ($dom === '') continue;
         if ($jobs && !array_key_exists($c, $jobs)) continue; $doScan = $jobs ? $jobs[$c] : true; $setPend($jobs);
         $s = DB::table('stores')->whereRaw('lower(domain) = ? or lower(domain) = ?', [$dom, 'www.' . $dom])->first(); if (!$s) continue;
@@ -53,7 +53,7 @@ class MotherAffiliateDaily extends Command {
         } catch (\Throwable $e) { report($e); }
       }
       // every other source store registered in Stores & Scan: re-scan so its stock/price stays equal to the source (central inventory)
-      $own = ['timeaccess-store.com', $gd, 'luxotix.com', 'amour.com.bd'];
+      $own = ['timeaccess-store.com', $gd, 'luxotix.com', 'amour.com.bd', 'sundora.com.bd'];
       foreach (DB::table('stores')->whereNotNull('last_scan_at')->orderBy('id')->get() as $o) {
         $d = strtolower(preg_replace('#^www\.#', '', (string)$o->domain)); if ($d === '' || in_array($d, $own, true) || str_contains($d, 'dutyfreebd')) continue;
         if ($this->option('jobs') !== null && $this->option('jobs') !== '' && !str_contains((string)$this->option('jobs'), 'all')) continue;

@@ -9,7 +9,8 @@ use Illuminate\Support\Facades\DB;
 class WatchImportController extends Controller {
   /** Which source feeds which category: watch <- timeaccess-store.com, gadget <- startech.com.bd (owner, 8 Nov 2026; both +5%, prepaid only, no discount). */
   private function cfg(): array {
-    $c = in_array(request('c'), ['gadget', 'sunglass', 'amour'], true) ? request('c') : 'watch'; $set = fn($k, $d) => (string)(DB::table('settings')->where('key', $k)->value('value') ?? $d);
+    $c = in_array(request('c'), ['gadget', 'sunglass', 'amour', 'beauty'], true) ? request('c') : 'watch'; $set = fn($k, $d) => (string)(DB::table('settings')->where('key', $k)->value('value') ?? $d);
+    if ($c === 'beauty') return ['c' => 'beauty', 'domain' => 'sundora.com.bd', 'cat' => 'beauty', 'prefix' => 'DFB', 'pct' => (float)($set('beauty_markup_pct', '15') ?: 15), 'max' => 0.0, 'dir' => 'beauty']; // owner 13 Nov 2026: Beauty <- sundora.com.bd (partner), sale price source +15%, regular (crossed-out) price source +25%
     if ($c === 'amour') return ['c' => 'amour', 'domain' => 'amour.com.bd', 'cat' => 'lighter-accessories', 'prefix' => 'DFA', 'pct' => (float)($set('amour_markup_pct', '15') ?: 15), 'max' => 0.0, 'dir' => 'amour'];
     if ($c === 'sunglass') return ['c' => 'sunglass', 'domain' => 'luxotix.com', 'cat' => 'sunglass', 'prefix' => 'DFS', 'pct' => (float)($set('sunglass_markup_pct', '15') ?: 15), 'max' => 0.0, 'dir' => 'sunglass'];
     return $c === 'gadget'
@@ -50,7 +51,7 @@ class WatchImportController extends Controller {
         try {
           $our = (int)ceil((float)$x->price * (1 + $pct / 100));
           $name = trim(preg_replace('/\s+/u', ' ', (string)$x->name)); $name = trim(str_ireplace(['timeaccess-store.com', 'timeaccess store', 'timeaccess'], '', $name)); $name = trim(preg_replace('/\s*(?:\|\s*Star\s*Tech.*|Price in (?:Bangladesh|BD)\b.*)$/iu', '', $name)); $name = trim(preg_replace('/\bStar\s*Tech\b/iu', '', $name)); if ($name === '') $name = 'Watch';
-          $name = trim(preg_replace('/\s{2,}/u', ' ', preg_replace(['/\s*[|\-–]\s*Time\s*Access\b.*$/iu', '/\bTime\s*-?\s*Access\b/iu', '/\bLuxotix\b\s*/iu'], '', $name)), " \t-|–"); // no trace of the source shop in our product names
+          $name = trim(preg_replace('/\s{2,}/u', ' ', preg_replace(['/\s*[|\-–]\s*Time\s*Access\b.*$/iu', '/\bTime\s*-?\s*Access\b/iu', '/\bLuxotix\b\s*/iu', '/\bSundora\b\s*/iu'], '', $name)), " \t-|–"); // no trace of the source shop in our product names
           $sub = self::subFor((string)$name, $x->category, $this->cfg()['cat'], (string)$x->url);
           $base = \App\Support\Slugs::slug($name) ?: 'watch'; $slug = $base; $i = 2; $subSlug = \App\Support\Slugs::subSlug($sub);
           while (DB::table('products')->where('category_id', $cat->id)->whereRaw(\App\Support\Slugs::subSql() . ' = ?', [$subSlug])->where('path_slug', $slug)->exists()) $slug = $base . '-' . $i++;
@@ -73,6 +74,7 @@ class WatchImportController extends Controller {
   public static function subFor(string $name, ?string $srcCat, string $cat, string $url = ''): string {
     if ($cat === 'gadget-electronics') return self::gadgetSub($name);
     if ($cat === 'lighter-accessories') return self::amourSub($name, $url);
+    if ($cat === 'beauty') return self::beautySub($name, (string)$srcCat);
     $n = mb_strtolower($name); $c = mb_strtolower(trim((string)$srcCat));
     if ($cat === 'watch') { // owner (8 Nov 2026): the Watch category has only two sub categories: Watch and Accessories
       $acc = str_contains($c, 'accessor') || preg_match('/^\d+\s*slots?\b|\bstrap\s+for\b|\bwatch\s+(box|case|organi[sz]er|winder|roll)\b|organi[sz]er|\bwinder\b|\bwatch\s+tool|\bspring\s*bar|\bbuckle\b/i', $n);
@@ -104,6 +106,12 @@ class WatchImportController extends Controller {
     return 'Others';
   }
   /** Lighter & Accessories sub category: from the source shop's own collection (map handle~letter saved in settings), keywords as fallback. */
+  /** Beauty sub category from the source product type + name (Fragrance, Makeup, Skincare, Hair & Body, Candles & Home, Toys, Others). */
+  public static function beautySub(string $name, string $type): string {
+    $t = mb_strtolower($type . ' | ' . $name);
+    foreach (['Toys' => '/\btoys?\b|lego|barbie|hot\s*wheels|crayola|puzzle|doll\b/', 'Candles & Home' => '/candle|diffuser|home\s*fragrance|room\s*spray|air\s*freshener|car\s*fresh|glass|book|appliance|incense/', 'Hair & Body' => '/shampoo|conditioner|hair|body\s*(lotion|wash|butter|scrub|oil|cream)|shower|bath|deodorant|deo\b|sun\s*care|suncare|sunscreen\s*body|lotion|hand\s*(cream|wash)/', 'Makeup' => '/make\s*-?up|lip(stick|gloss|\s*liner|\s*balm)?\b|mascara|foundation|concealer|eye\s*(liner|shadow|brow|pencil)|eyeliner|blush|bronzer|highlighter|palette|brush|primer|setting\s*(spray|powder)|powder|nail|contour|kajal|remover/', 'Skincare' => '/skin\s*care|skincare|serum|cleanser|exfoliat|moisturi[sz]er|cream|mask|toner|essence|sunscreen|spf|eye\s*care|face|anti-?aging|treatment|facial|gel\b/', 'Fragrance' => '/perfume|fragrance|parfum|eau\s*de|edp\b|edt\b|edc\b|attar|ittar|cologne|body\s*mist|oud|scent|extrait/'] as $sub => $re) if (preg_match($re, $t)) return $sub;
+    return 'Others';
+  }
   public static function amourSub(string $name, string $url): string {
     static $L = ['L' => 'Lighter', 'K' => 'Keychains', 'A' => 'Ash Trays', 'B' => 'Bags', 'I' => 'Islamic Items', 'R' => 'Bracelets', 'G' => 'Gadgets', 'C' => 'Cigarette Boxes', 'S' => 'Socks', 'P' => 'Chains & Pendants', 'H' => 'Hindu Items', 'W' => 'Pocket Watches', 'X' => 'Caps', 'D' => 'Home Decor', 'N' => 'Rings', 'O' => 'Others'];
     static $map = null; if ($map === null) { $map = []; try { foreach (explode(',', (string)DB::table('settings')->where('key', 'amour_sub_map')->value('value')) as $e) { $p = explode('~', $e); if (count($p) === 2) $map[$p[0]] = $p[1]; } } catch (\Throwable $e) {} }
@@ -178,7 +186,7 @@ class WatchImportController extends Controller {
     if ($rows->isEmpty()) return response()->json(['finished' => $left <= 0, 'busy' => $left > 0, 'left' => $left]);
     $urls = []; foreach ($rows as $x) { $u = preg_replace('#[?\#].*$#', '', (string)$x->source_url); $urls[$x->wid] = rtrim($u, '/') . '.json'; }
     try { $resp = \Illuminate\Support\Facades\Http::pool(function ($pool) use ($urls) { $o = []; foreach ($urls as $k => $u) $o[] = $pool->as((string)$k)->timeout(25)->withHeaders(['User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36', 'Accept' => 'application/json'])->get($u); return $o; }); } catch (\Throwable $e) { return response()->json(['finished' => false, 'err' => mb_substr($e->getMessage(), 0, 150), 'left' => $left]); }
-    $dbg = []; $bad = [$cf['domain'], preg_replace('/\..*$/', '', $cf['domain']), 'timeaccess', 'time access', 'ryans', 'luxotix', 'amour']; $ok = 0; $imgMap = []; $imgFor = [];
+    $dbg = []; $bad = [$cf['domain'], preg_replace('/\..*$/', '', $cf['domain']), 'timeaccess', 'time access', 'ryans', 'luxotix', 'amour', 'sundora']; $ok = 0; $imgMap = []; $imgFor = [];
     foreach ($rows as $x) {
       $res = $resp[(string)$x->wid] ?? null; $j = ($res && method_exists($res, 'ok') && $res->ok()) ? $res->json('product') : null;
       $st = ($res && method_exists($res, 'status')) ? $res->status() : 0; $page = null;
@@ -197,7 +205,7 @@ class WatchImportController extends Controller {
       $html = self::cleanHtml((string)($j['body_html'] ?? ''), $bad);
       // option table (strap, size ...) from variants
       $opts = []; foreach ((array)($j['options'] ?? []) as $o) { $vals = array_values(array_unique(array_map('strval', (array)($o['values'] ?? [])))); if (($o['name'] ?? '') !== '' && $o['name'] !== 'Title' && $vals) $opts[] = '<li><strong>' . e($o['name']) . ':</strong> ' . e(implode(', ', array_slice($vals, 0, 12))) . '</li>'; }
-      $spec = []; if (!empty($j['vendor'])) { $v = trim((string)$j['vendor']); if (!preg_match('/time\s*-?\s*access|luxotix|amour|ryans|startech/i', $v)) $spec[] = '<li><strong>Brand:</strong> ' . e($v) . '</li>'; }
+      $spec = []; if (!empty($j['vendor'])) { $v = trim((string)$j['vendor']); if (!preg_match('/time\s*-?\s*access|luxotix|amour|ryans|startech|sundora/i', $v)) $spec[] = '<li><strong>Brand:</strong> ' . e($v) . '</li>'; }
       if (!empty($j['product_type']) && stripos((string)$j['product_type'], 'timeaccess') === false) $spec[] = '<li><strong>Type:</strong> ' . e((string)$j['product_type']) . '</li>';
       $desc = ($html !== '' ? $html : '') . ($spec || $opts ? '<h3>Specifications</h3><ul>' . implode('', $spec) . implode('', $opts) . '</ul>' : '');
       $upd = ['updated_at' => now()]; if ($desc !== '') { $upd['description'] = $desc; $txt = trim(preg_replace('/\s+/u', ' ', strip_tags($html))); if ($txt !== '') $upd['meta_description'] = mb_substr($txt, 0, 155); }
