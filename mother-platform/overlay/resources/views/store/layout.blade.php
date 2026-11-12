@@ -206,6 +206,7 @@ body .hh .va:hover{filter:brightness(1.08)}
 @if(count($pays) > 1)<div class="py"><span class="pb">We accept <b>{{ count($pays) > 1 ? 'payment gateway' : 'cash on delivery' }}</b></span>@foreach($pays as $py)<span class="c">{{ $py }}</span>@endforeach</div>@endif
 <div class="shp"><img src="/pay/shurjopay-dark.png" alt="Powered by shurjoPay — payment methods" width="1588" height="241" loading="lazy"></div>
 <div class="bt"><span>All rights reserved</span><span>{{ $s['footer_copyright'] }} · Customer care {{ $s['call_number'] }}</span></div></div></footer>
+<style>/* ftr-v3: refined navy footer — same layout/content */.fg .cols>div:first-child>img{background:#fff;border-radius:10px;padding:6px 12px;box-sizing:content-box}.fn b,.fg .cols b.h{display:block;padding-bottom:4px;margin-bottom:4px;border-bottom:1px solid rgba(255,255,255,.2)}.fn a,.fg .cols a{opacity:.88}.fn a:hover,.fg .cols a:hover{opacity:1;color:#FDC2A5}.fg .so a,.fg .so span{border-color:#FDC2A5}.fg .so a:hover{background:#FF5A00;border-color:#FF5A00;color:#fff}.fnb .shp img{border-radius:10px}</style>
 @include('store.minicart')
 
 @if($s['mobile_bottom_nav']==='1')
