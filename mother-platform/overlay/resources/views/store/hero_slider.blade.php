@@ -1,4 +1,4 @@
-@php $__hn = $c->name ?? ''; @endphp
+@php $__hn = $__label ?? ($c->name ?? ''); @endphp
 <section class="w hm" aria-label="{{ $__hn }} top sellers" data-hm data-n="{{ $tops->count() }}">
 <div class="hm-s">
 @foreach($tops as $q)@php $__ss = \App\Support\Img::srcset($q->image); @endphp
