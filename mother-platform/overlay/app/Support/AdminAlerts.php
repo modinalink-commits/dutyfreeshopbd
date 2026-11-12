@@ -51,7 +51,7 @@ class AdminAlerts
     else DeployHealth::resolve('courier_unmapped', 'System (all statuses mapped)');
   }
 
-  /** Ads: Meta Conversions API sends (capi_log) – most of the recent ones failed, so ad tracking is losing events. */
+  /** Ads: Meta Conversions API (CAPI) sends (capi_log) – most of the recent ones failed, so ad tracking is losing events. */
   private static function ads(): void {
     if (!\App\Support\Capi::enabled()) { DeployHealth::resolve('capi_failing', 'System (CAPI off)'); return; }
     $a = json_decode((string)DB::table('settings')->where('key', 'capi_log')->value('value'), true) ?: [];
