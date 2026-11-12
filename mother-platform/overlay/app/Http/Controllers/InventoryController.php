@@ -87,7 +87,8 @@ class InventoryController extends Controller {
     $mk = [strtolower($get('watch_source_domain', 'timeaccess-store.com')) => (float)($get('watch_markup_pct', '15') ?: 15), 'luxotix.com' => (float)($get('sunglass_markup_pct', '15') ?: 15), 'amour.com.bd' => (float)($get('amour_markup_pct', '15') ?: 15), 'sundora.com.bd' => (float)($get('beauty_markup_pct', '15') ?: 15), strtolower($get('fashion_source_domain', 'klubhaus.com.bd')) => (float)($get('fashion_markup_pct', '15') ?: 15), strtolower($get('gadget_source_domain', 'startech.com.bd')) => (float)($get('mobile_markup_pct', '15') ?: 15)];
     $comm = []; foreach ($stores as $st) { $d = preg_replace('/^www\./i', '', strtolower(preg_replace('#^https?://#i', '', trim((string)$st->domain, " /")))); if (isset($mk[$d])) $comm[$st->id] = $mk[$d]; elseif ($d === 'ryans.com') $comm[$st->id] = (float)($get('mobile_markup_pct', '15') ?: 15); }
     $regc = (float)($get('source_regular_pct', '25') ?: 25);
-    return view('stores', compact('stores','counts','own','auto','comm','regc'));
+    $catNames = DB::table('categories')->whereNull('parent_id')->orderBy('position')->orderBy('id')->pluck('name');
+    return view('stores', compact('stores','counts','own','auto','comm','regc','catNames'));
   }
   /** Daily automatic scan: time of day (Asia/Dhaka), on/off, and a Run now button. Stock and price of every source store are synced; out-of-stock products are unpublished. */
   public function autoScan(Request $r) {
@@ -96,25 +97,32 @@ class InventoryController extends Controller {
     if ($r->input('run') === '1' && !\Illuminate\Support\Facades\Cache::has('affiliate-alive')) { DB::table('settings')->updateOrInsert(['key' => 'affiliate_now'], ['value' => 'watch:1,gadget:1,sunglass:1,amour:1,beauty:1,all:1', 'updated_at' => now(), 'created_at' => now()]); return back()->with('ok', 'Auto scan started now - it runs in the background (takes a while).'); }
     return back()->with('ok', 'Auto scan saved: every day at ' . $t . ' (Dhaka).');
   }
+  /** Source categories chosen for a store: only names from the main category list, saved comma-separated. */
+  private function srcCats(array $in): ?string {
+    $ok = DB::table('categories')->whereNull('parent_id')->pluck('name')->all();
+    $keep = array_values(array_unique(array_filter(array_map('trim', $in), fn($n) => in_array($n, $ok, true))));
+    return $keep ? implode(', ', $keep) : null;
+  }
   public function storeAdd(Request $r) {
-    $d = $r->validate(['name'=>'required|string|max:120','domain'=>'required|string|max:200','source_category'=>'nullable|string|max:160']);
+    $d = $r->validate(['name'=>'required|string|max:120','domain'=>'required|string|max:200','source_categories'=>'nullable|array','source_categories.*'=>'string|max:120']);
     $dom = StoreScanner::cleanDomain($d['domain']);
     if ($dom === '') return back()->withErrors(['domain'=>'Enter a valid domain such as example.com']);
     if (DB::table('stores')->where('domain',$dom)->exists()) return back()->withErrors(['domain'=>'This domain is already added']);
-    DB::table('stores')->insert(['name'=>$d['name'],'domain'=>$dom,'source_category'=>trim((string)($d['source_category'] ?? '')) ?: null,'active'=>true,'created_at'=>now(),'updated_at'=>now()]);
+    DB::table('stores')->insert(['name'=>$d['name'],'domain'=>$dom,'source_category'=>$this->srcCats($d['source_categories'] ?? []),'active'=>true,'created_at'=>now(),'updated_at'=>now()]);
     return redirect('/admin/stores')->with('ok','Store added. Press "Scan Products" to import its products.');
   }
   public function storeEdit($id) {
     $s = DB::table('stores')->find($id); abort_unless($s, 404);
-    return view('store_edit', compact('s'));
+    $catNames = DB::table('categories')->whereNull('parent_id')->orderBy('position')->orderBy('id')->pluck('name');
+    return view('store_edit', compact('s','catNames'));
   }
   public function storeUpdate(Request $r, $id) {
     $s = DB::table('stores')->find($id); abort_unless($s, 404);
-    $d = $r->validate(['name'=>'required|string|max:120','domain'=>'required|string|max:200','source_category'=>'nullable|string|max:160']);
+    $d = $r->validate(['name'=>'required|string|max:120','domain'=>'required|string|max:200','source_categories'=>'nullable|array','source_categories.*'=>'string|max:120']);
     $dom = StoreScanner::cleanDomain($d['domain']);
     if ($dom === '') return back()->withErrors(['domain'=>'Enter a valid domain such as example.com'])->withInput();
     if (DB::table('stores')->where('domain',$dom)->where('id','!=',$id)->exists()) return back()->withErrors(['domain'=>'This domain is already added'])->withInput();
-    DB::table('stores')->where('id',$id)->update(['name'=>$d['name'],'domain'=>$dom,'source_category'=>trim((string)($d['source_category'] ?? '')) ?: null,'active'=>$r->boolean('active'),'updated_at'=>now()]);
+    DB::table('stores')->where('id',$id)->update(['name'=>$d['name'],'domain'=>$dom,'source_category'=>$this->srcCats($d['source_categories'] ?? []),'active'=>$r->boolean('active'),'updated_at'=>now()]);
     DB::table('store_products')->where('store_id',$id)->update(['store_label'=>$d['name']]);
     return redirect('/admin/stores')->with('ok','Store updated.');
   }
