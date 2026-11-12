@@ -32,7 +32,7 @@ $('tryAgain').onclick=function(){$('tryStage').hidden=true;$('tryPick').style.di
 function useBlob(b){orig=b;$('tryPick').style.display='none';$('tryStage').hidden=false;$('tryMsg').textContent='মুখ খোঁজা হচ্ছে…';$('trySt').textContent='';adj={dx:0,dy:0,s:1};$('trySz').value=100;
  (window.createImageBitmap?createImageBitmap(b,{imageOrientation:'from-image'}):Promise.reject()).catch(function(){return new Promise(function(ok){var i=new Image();i.onload=function(){ok(i)};i.src=URL.createObjectURL(b)})}).then(function(bm){
   var W=bm.width||bm.naturalWidth,H=bm.height||bm.naturalHeight,sc=Math.min(1,960/Math.max(W,H)),cw=Math.round(W*sc),ch=Math.round(H*sc),base=$('tryBase');base.width=cw;base.height=ch;base.getContext('2d').drawImage(bm,0,0,cw,ch);var ov=$('tryOv');ov.width=cw;ov.height=ch;
-  return Promise.all([lib(),asset()]).then(function(){return faceapi.detectSingleFace(base,new faceapi.TinyFaceDetectorOptions({inputSize:416,scoreThreshold:0.4})).withFaceLandmarks()})}).then(function(d){
+  return Promise.all([lib(),asset()]).then(function(){var sizes=[320,416,224,512,160],i=0;function nx(){if(i>=sizes.length)return Promise.resolve(null);return faceapi.detectSingleFace(base,new faceapi.TinyFaceDetectorOptions({inputSize:sizes[i++],scoreThreshold:0.3})).withFaceLandmarks().then(function(r){return r||nx()})}return nx()})}).then(function(d){
   if(!d){face=null;draw();$('tryMsg').textContent='মুখ পাওয়া যায়নি। সামনে থেকে, ভালো আলোতে তোলা ছবি দিন।';return}
   face=d.landmarks.positions;$('tryMsg').textContent='';draw()}).catch(function(){$('tryMsg').textContent='Try-On লোড করা যায়নি। আবার চেষ্টা করুন।'})}
 function mean(a,i,j){var x=0,y=0,n=0;for(var k=i;k<=j;k++){x+=a[k].x;y+=a[k].y;n++}return{x:x/n,y:y/n}}
