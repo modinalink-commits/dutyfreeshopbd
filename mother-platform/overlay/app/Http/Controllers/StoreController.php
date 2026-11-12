@@ -206,6 +206,8 @@ class StoreController extends Controller {
   }
   /** Category Slider (home): one banner per active category with up to 6 customer-visible products, best sellers (last 30 days) first, then newest. Cached 5 minutes; categories without products are skipped. */
   /** Flash Sale, Cigarette & Vape part: the sellable products of that category that sold the LEAST in the last 30 days (delivered quantity, then all non-cancelled orders; never-sold first). No price is changed here: only products that already carry a real compare price show a SAVE badge. */
+  /** Product ids on the Flash Sale shelf (the slowest-selling Cigarette & Vape products). The Flash Sale discount applies to these only. */
+  public static function flashIds(): array { return self::flashSlowSmoke(6)->pluck('id')->map(fn($v) => (int)$v)->all(); }
   public static function flashSlowSmoke(int $n = 6) {
     return self::rem('store.flashslow1', 600, function () use ($n) {
       $ids = DB::table('categories')->get(['id','slug','name'])->filter(fn($c) => self::isSmokeCat($c))->pluck('id')->map(fn($v) => (int)$v)->all();

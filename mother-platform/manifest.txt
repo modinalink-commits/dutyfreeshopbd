@@ -989,3 +989,4 @@ resources/views/store/cat_slider_one.blade.php
 resources/views/admin_bell.blade.php
 app/Support/AdminAlerts.php
 app/Http/Controllers/AdminAlertController.php
+database/migrations/2026_11_12_000200_flash_discount_rule.php
