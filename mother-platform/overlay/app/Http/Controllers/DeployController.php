@@ -161,6 +161,11 @@ class DeployController extends Controller
     Deployer::audit($rebuild ? 'Cache Rebuilt' : 'Safe Cache Cleared', count($keys) . ' storefront cache keys', null, ['result' => $rebuild ? ($warm['ok'] ? 'warmed' : 'warm failed') : 'cleared']);
     return response()->json(['ok' => true, 'msg' => $rebuild ? ('Cache cleared and the front page was rebuilt (' . ($warm['ms'] ?? 0) . ' ms).') : 'Safe cache cleared. It refills automatically on the next visits.']);
   }
+  public function viewClear() {
+    $this->guard(); $this->superOnly(); \Illuminate\Support\Facades\Artisan::call('view:clear'); $ok = function_exists('opcache_reset') ? (bool)@opcache_reset() : false;
+    Deployer::audit('Views Cleared', 'Compiled Blade views cleared, OPcache ' . ($ok ? 'reset' : 'n/a'), null, ['result' => 'cleared']);
+    return response()->json(['ok' => true, 'msg' => 'Compiled views cleared.', 'opcache' => $ok]);
+  }
   public function queueRestart() {
     $this->guard(); $this->superOnly(); \Illuminate\Support\Facades\Artisan::call('queue:restart');
     Deployer::audit('Queue Restarted', 'queue:restart signal sent (workers finish the current job, then restart)', null, ['result' => 'signal sent']);

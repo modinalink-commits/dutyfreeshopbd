@@ -23,6 +23,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/deploy/health', [\App\Http\Controllers\DeployController::class,'healthRun']);
   Route::post('/deploy/recover', [\App\Http\Controllers\DeployController::class,'recover']);
   Route::post('/deploy/cache', [\App\Http\Controllers\DeployController::class,'cacheAct']);
+  Route::post('/deploy/view-clear', [\App\Http\Controllers\DeployController::class,'viewClear']);
   Route::post('/deploy/queue-restart', [\App\Http\Controllers\DeployController::class,'queueRestart']);
   Route::get('/deploy/failed-jobs', [\App\Http\Controllers\DeployController::class,'failedJobs']);
   Route::get('/deploy/migrations', [\App\Http\Controllers\DeployController::class,'migrations']);
