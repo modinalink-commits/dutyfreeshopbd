@@ -38,7 +38,7 @@ class MotherAffiliateDaily extends Command {
       foreach (['watch' => 'timeaccess-store.com', 'gadget' => $gd, 'sunglass' => 'luxotix.com', 'amour' => 'amour.com.bd', 'beauty' => 'sundora.com.bd'] as $c => $dom) {
         if ($dom === '') continue;
         if ($jobs && !array_key_exists($c, $jobs)) continue; $doScan = $jobs ? $jobs[$c] : true; $setPend($jobs);
-        $s = DB::table('stores')->whereRaw('lower(domain) = ? or lower(domain) = ?', [$dom, 'www.' . $dom])->first(); if (!$s) continue;
+        $s = DB::table('stores')->whereRaw('lower(domain) = ? or lower(domain) = ?', [$dom, 'www.' . $dom])->orderByRaw('(select count(*) from store_products sp where sp.store_id = stores.id) desc')->orderBy('id')->first(); if (!$s) continue;
         try {
           if ($doScan) { StoreScanner::begin($s); $t0 = time();
           while (time() - $t0 < 5400) { Cache::put('affiliate-alive', 1, 150); $r = StoreScanner::step((int)$s->id); if (($r->scan_status ?? '') !== 'running') break; } }

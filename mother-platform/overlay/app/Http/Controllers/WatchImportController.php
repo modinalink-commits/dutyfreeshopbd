@@ -19,7 +19,8 @@ class WatchImportController extends Controller {
   }
   /** Owner 12 Nov 2026: selling (sale) price = source +15% (setting *_markup_pct), crossed-out regular price = source +25% (setting source_regular_pct). */
   public static function regPct(): float { return (float)(DB::table('settings')->where('key', 'source_regular_pct')->value('value') ?: 25); }
-  private function src() { return DB::table('stores')->whereRaw('lower(domain) = ? or lower(domain) = ?', [$this->cfg()['domain'], 'www.' . $this->cfg()['domain']])->first(); }
+  /** The source store row; if the same domain was added twice (migration + admin), use the one that actually holds scanned products. */
+  private function src() { $d = $this->cfg()['domain']; return DB::table('stores')->whereRaw('lower(domain) = ? or lower(domain) = ?', [$d, 'www.' . $d])->orderByRaw('(select count(*) from store_products sp where sp.store_id = stores.id) desc')->orderBy('id')->first(); }
   private function cond($q, $sid) {
     $cf = $this->cfg(); $q = $q->where('store_id', $sid)->where('in_stock', true)->where('price', '>', 0);
     return $cf['max'] > 0 ? $q->where('price', '<=', $cf['max']) : $q;
