@@ -9,7 +9,7 @@ class TryOn {
   public static function sunglassQuery() {
     return DB::table('products')->join('categories', 'categories.id', '=', 'products.category_id')
       ->where(fn($q) => $q->whereRaw("lower(categories.slug) like '%sunglass%'")->orWhereRaw("lower(categories.name) like '%sunglass%'"))
-      ->select('products.id', 'products.name', 'products.image', 'products.status');
+      ->select('products.id', 'products.name', 'products.image');
   }
   public static function isSunglass(int $productId): bool { return self::sunglassQuery()->where('products.id', $productId)->exists(); }
   public static function ready(int $productId): ?object { return DB::table('tryon_assets')->where('product_id', $productId)->where('status', 'ready')->first(); }
