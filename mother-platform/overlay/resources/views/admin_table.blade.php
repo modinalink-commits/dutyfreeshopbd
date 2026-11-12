@@ -236,13 +236,20 @@ main table .mc-dl{flex:0 0 38%;color:var(--text-muted);font-weight:600}main tabl
   var CPER=50;
   function cpgRender(t){
     var rs=[].slice.call(t.querySelectorAll(':scope > tbody > tr'));
-    var vis=rs.filter(function(r){return r.style.display!=='none'});
+    var isG=function(r){return r.children.length===1&&(r.children[0].colSpan||1)>=3};
+    var vis=rs.filter(function(r){return r.style.display!=='none'&&!isG(r)});
     var n=vis.length,bar=t.__cbar;
     rs.forEach(function(r){r.classList.remove('cpgh')});
     if(n<=CPER){if(bar&&bar.parentNode)bar.remove();t.__cbar=null;return}
     var pages=Math.ceil(n/CPER),pg=t.__cpg||1;if(pg>pages)pg=pages;if(pg<1)pg=1;t.__cpg=pg;
-    var from=(pg-1)*CPER,to=from+CPER;
-    vis.forEach(function(r,i){if(i<from||i>=to)r.classList.add('cpgh')});
+    var from=(pg-1)*CPER,to=from+CPER,idx=0,grp=null,gv=0;
+    function flush(){if(grp&&gv===0)grp.classList.add('cpgh');grp=null;gv=0}
+    rs.forEach(function(r){
+      if(r.style.display==='none')return;
+      if(isG(r)){flush();grp=r;return}
+      var show=idx>=from&&idx<to;idx++;if(!show)r.classList.add('cpgh');else gv++;
+    });
+    flush();
     var sig=pg+'/'+n;
     if(bar&&bar.parentNode&&bar.__sig===sig)return;
     if(bar&&bar.parentNode)bar.remove();
@@ -257,7 +264,8 @@ main table .mc-dl{flex:0 0 38%;color:var(--text-muted);font-weight:600}main tabl
       if((t.classList.contains('pl')&&t.querySelector('tr.det'))||t.classList.contains('ordt')||t.closest('[data-nopg]')||t.dataset.nopg)return;
       var rs=t.querySelectorAll(':scope > tbody > tr');
       if(rs.length<=CPER&&!t.__cbar)return;
-      for(var i=0;i<rs.length;i++){var tds=rs[i].children;if(tds.length===1&&(tds[0].colSpan||1)>=3)return}
+      var g=0;for(var i=0;i<rs.length;i++){var tds=rs[i].children;if(tds.length===1&&(tds[0].colSpan||1)>=3)g++}
+      if(g&&g*3>=rs.length-g)return;
       cpgRender(t);
     });
   }
