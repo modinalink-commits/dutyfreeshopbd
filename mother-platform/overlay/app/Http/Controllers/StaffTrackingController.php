@@ -111,14 +111,15 @@ class StaffTrackingController extends Controller
     $calls = 0; $msgs = 0;
     try { $calls = (int)DB::table('call_logs')->where('started_at', '>=', $rg[0])->where('started_at', '<', $rg[1])->where(fn($w) => $w->where('status', 'answered')->orWhere('duration', '>', 0))->count(); } catch (\Throwable $e) {}
     try { $msgs = (int)DB::table('sms_logs')->where('created_at', '>=', $rg[0])->where('created_at', '<', $rg[1])->where(fn($w) => $w->whereNotNull('sent_at')->orWhereIn('status', ['sent', 'delivered']))->count(); } catch (\Throwable $e) {}
-    $sus = $this->flagged($r, $rg);
+    $ck = md5(json_encode([$rg, $r->query()]));
+    $sus = \Illuminate\Support\Facades\Cache::remember('st_sus_'.$ck, 90, fn() => $this->flagged($r, $rg));
     $v['cards'] = [
       ['Active Staff', (int)$row->active, 'with logged actions'], ['Orders Handled', (int)$row->handled, 'distinct orders touched'], ['Orders Confirmed', (int)$row->confirmed, 'moved to Approved'],
       ['Orders Cancelled', (int)$row->cancelled, 'moved to Cancel'], ['Orders Edited', (int)$row->edited, 'items / price / address'], ['Status Changes', (int)$row->status_ch, 'by staff'],
       ['Payment Changes', (int)$row->pay, 'verify / reject / add'], ['Discount Changes', (int)$row->disc, 'on order lines'], ['Calls Completed', $calls, 'connected calls'],
       ['Messages Sent', $msgs, 'SMS sent'], ['Suspicious Actions', count($sus), count($sus) >= self::SCAN ? 'newest ' . self::SCAN . ' scanned' : 'see rules below'],
     ];
-    $v['sus'] = array_slice($sus, 0, 12); $v['summary'] = $this->staffSummary($rg);
+    $v['sus'] = array_slice($sus, 0, 12); $v['summary'] = \Illuminate\Support\Facades\Cache::remember('st_sum_'.$ck, 90, fn() => $this->staffSummary($rg));
     return view('staff_tracking', $v);
   }
 
