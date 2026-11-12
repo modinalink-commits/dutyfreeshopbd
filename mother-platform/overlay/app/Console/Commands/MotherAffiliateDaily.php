@@ -58,6 +58,7 @@ class MotherAffiliateDaily extends Command {
         $d = strtolower(preg_replace('#^www\.#', '', (string)$o->domain)); if ($d === '' || in_array($d, $own, true) || str_contains($d, 'dutyfreebd')) continue;
         if ($this->option('jobs') !== null && $this->option('jobs') !== '' && !str_contains((string)$this->option('jobs'), 'all')) continue;
         try { StoreScanner::begin($o); $t0 = time(); while (time() - $t0 < 3000) { Cache::put('affiliate-alive', 1, 150); $r = StoreScanner::step((int)$o->id); if (($r->scan_status ?? '') !== 'running') break; } } catch (\Throwable $e) { report($e); }
+        try { request()->merge(['c' => 's' . $o->id]); $ctl = app(\App\Http\Controllers\WatchImportController::class); $n = 0; while ($n++ < 4000) { Cache::put('affiliate-alive', 1, 150); $j = $ctl->step(request())->getData(true); if (!empty($j['finished']) || !empty($j['error'])) break; } $d = 0; $bad = 0; while ($d++ < 3000) { Cache::put('affiliate-alive', 1, 150); $j = $ctl->details(request())->getData(true); if (!empty($j['finished'])) break; if (!empty($j['busy'])) { sleep(2); continue; } if (empty($j['ok'])) { if (++$bad > 40) break; } else $bad = 0; usleep(400000); } } catch (\Throwable $e) { report($e); } // generic source stores: import new products (routed per product) + real descriptions
       }
       unset($jobs['all']); $setPend($jobs);
       DB::table('settings')->updateOrInsert(['key' => 'auto_scan_last'], ['value' => now('Asia/Dhaka')->format('Y-m-d H:i'), 'updated_at' => now(), 'created_at' => now()]);

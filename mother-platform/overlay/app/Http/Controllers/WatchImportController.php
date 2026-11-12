@@ -102,6 +102,9 @@ class WatchImportController extends Controller {
       $acc = str_contains($c, 'accessor') || preg_match('/^\d+\s*slots?\b|\bstrap\s+for\b|\bwatch\s+(box|case|organi[sz]er|winder|roll)\b|organi[sz]er|\bwinder\b|\bwatch\s+tool|\bspring\s*bar|\bbuckle\b/i', $n);
       return $acc ? 'Accessories' : 'Watch';
     }
+    if ($cat === 'skin-care') return preg_match('/\b(baby|babies|infant|newborn|toddler)\b/', $n.' '.$c) ? 'Baby Care' : (preg_match('/shaving|razor|beard|deodorant|roll\s*on|body\s*spray|talc|hair\s*removal|\bwax\b/', $n.' '.$c) ? 'Personal Care' : (preg_match('/shampoo|conditioner|hair/', $n.' '.$c) ? 'Hair Care' : 'Skin Care'));
+    if ($cat === 'others') return self::babySub($name, (string)$srcCat);
+    if ($cat === 'wellness') return self::wellnessSub($name, (string)$srcCat);
     if ($cat === 'fashion') return self::fashionSub($name, (string)$srcCat); // one common sub category list, whichever shop the product comes from (owner 13 Nov 2026)
     $t = trim((string)$srcCat); return $t !== '' ? mb_convert_case($t, MB_CASE_TITLE) : ($cat === 'lighter-accessories' ? 'Accessories' : 'Gadgets');
   }
@@ -115,6 +118,10 @@ class WatchImportController extends Controller {
   /** Product that really belongs to another main category (a fashion shop selling watches, earbuds, skincare ...): its slug, else null. */
   public static function crossRoute(string $name, string $type): ?string {
     $t = mb_strtolower($type . ' | ' . $name);
+    if (preg_match('/\b(baby|babies|infant|newborn|toddler)\b/', $t) && preg_match('/lotion|wash|\boil\b|powder|shampoo|cream|soap|bath|sunscreen|rash|moisturi|skin\s*care|skincare|massage|wipes?\b|care\b/', $t) && !preg_match('/diaper|nappy|nappies|feeding|bottle|toy/', $t)) return 'skin-care'; // owner 13 Nov: baby care -> Skin & Hair Care
+    if (preg_match('/shaving|razor|after\s*shave|beard|deodorant|roll\s*on|body\s*spray|talc|personal\s*care|hair\s*removal|\bwax\b|sanitary/', $t) && !preg_match('/sanitary\s*pad/', $t)) return 'skin-care'; // owner 13 Nov: personal care -> Skin & Hair Care sub category
+    if (preg_match('/\b(kids?|child(?:ren)?|baby|babies|infant|toddler|newborn|junior|nappy|nappies|diapers?)\b|feeding\s*bottle|\bsippy\b/', $t)) return 'others'; // owner 13 Nov 2026: child items -> Baby Care and Others
+    if (preg_match('/vitamin|supplement|\bprotein\b|herbal|first\s*aid|thermometer|blood\s*pressure|sanitary|feminine|toothpaste|tooth\s*brush|toothbrush|mouth\s*wash|mouthwash|oral\s*care|\bhygiene\b/', $t)) return 'wellness'; // Personal Wellness
     if (preg_match('/earbud|earphone|headphone|headset|\bspeaker|power\s*bank|\bcharger\b|smart\s*watch|smartwatch|smart\s*band|fitness\s*band|\btws\b|neckband|\btrimmer|\bshaver\b|hair\s*(dryer|straightener|remover)|\bipl\b|massager|\bcamera\b|\bgimbal/', $t)) return 'gadget-electronics';
     if (preg_match('/\bwatch(es)?\b/', $t)) return 'watch';
     if (preg_match('/sunglass|eyewear|\bshades\b|polari[sz]ed/', $t)) return 'sunglass';
@@ -129,6 +136,18 @@ class WatchImportController extends Controller {
     $beauty = null; $other = null; foreach ($cats as $c) { if ($c->slug === 'beauty') $beauty = $beauty ?: $c; else $other = $other ?: $c; }
     if ($beauty && $other && preg_match('/skin\s*care|skincare|sunscreen|sun\s*block|serum|cleanser|face\s*wash|toner|moisturi[sz]er|\blotion|\bcream\b|\bmask\b|shampoo|conditioner|hair\s*(oil|serum|mask|care|treatment|spray)|body\s*(wash|scrub|butter|oil|mist)|lip\s*(balm|care|stick|gloss)|lipstick|mascara|foundation|concealer|eye\s*liner|eyeliner|kajal|makeup|make-up|nail\s*polish|perfume|deodorant|facial|scrub|essence|\bgel\b|personal\s*care/i', $type . ' | ' . $name)) return $beauty;
     return $other ?: $cats[0];
+  }
+  /** Baby Care and Others: sub category from type + name (the same list for every shop). */
+  public static function babySub(string $name, string $type): string {
+    $t = mb_strtolower($type . ' | ' . $name);
+    foreach (['Feeding' => '/feeding|bottle|nipple|sippy|breast\s*pump|bib\b|sterili[sz]er|formula/', 'Diapers & Wipes' => '/diaper|nappy|nappies|wipes?\b|pampers/', 'Baby Care' => '/baby\s*(lotion|wash|oil|powder|shampoo|cream|care|soap|bath)|sunscreen|rash|massage\s*oil|skin\s*care|skincare|\blotion|shampoo|\bsoap\b|\bbath\b/', 'Toys & Games' => '/\btoys?\b|doll\b|lego|puzzle|\bgames?\b|plush|teddy/', 'Shoes' => '/\bshoes?\b|sandal|boots?\b|slipper|sneaker|loafer/', 'Clothing' => '/shirt|pant|dress|frock|jacket|panjabi|romper|onesie|sweater|\bcap\b|\bsocks?\b|\bset\b|hoodie|jogger|shorts|winter|clothing|cloth|suit/', 'Accessories' => '/hair\s*(clip|band|pin)|\bhairband|bag\b|backpack|bow\b|headband|accessor/'] as $sub => $re) if (preg_match($re, $t)) return $sub;
+    return 'Others';
+  }
+  /** Personal Wellness: sub category from type + name. */
+  public static function wellnessSub(string $name, string $type): string {
+    $t = mb_strtolower($type . ' | ' . $name);
+    foreach (['Oral Care' => '/tooth|mouth|oral|dental/', 'Vitamins & Supplements' => '/vitamin|supplement|protein|herbal|omega|collagen/', 'Feminine Hygiene' => '/sanitary|feminine|\bpad\b|intimate/', 'Health Devices' => '/thermometer|blood\s*pressure|monitor|first\s*aid|oximeter|nebuli/', 'Hygiene' => '/hygiene|sanitizer|soap|hand\s*wash/'] as $sub => $re) if (preg_match($re, $t)) return $sub;
+    return 'Others';
   }
   /** Fashion sub category from product type + name: the same list for every shop, so two shops selling the same kind of item land in one sub category. */
   public static function fashionSub(string $name, string $type): string {
@@ -214,7 +233,7 @@ class WatchImportController extends Controller {
     $cat = DB::table('categories')->where('slug', $cf['cat'])->first(); abort_unless($cat, 404);
     $cm = [$cat->id => $cat->slug]; foreach ($this->storeCats($s) as $__c) $cm[$__c->id] = $__c->slug; // a store feeding several categories: re-sort inside each
     $rows = DB::table('watch_source as w')->join('products as p', 'p.id', '=', 'w.product_id')->leftJoin('store_products as sp', 'sp.id', '=', 'w.store_product_id')->where('w.store_id', $s->id)->whereIn('p.category_id', array_keys($cm))->get(['p.id', 'p.category_id', 'p.name', 'p.sub', 'p.slug', 'w.source_url', 'w.source_name', 'sp.category as src_cat']); $n = 0;
-    $xr = $cf['c'] === 'fashion' || preg_match('/^s\d+$/', $cf['c']); $bySlug = [];
+    $xr = in_array($cf['c'], ['fashion', 'beauty'], true) || preg_match('/^s\d+$/', $cf['c']); $bySlug = [];
     foreach ($rows as $x) {
       $tid = (int)$x->category_id; $tslug = $cm[$x->category_id];
       if ($xr) { $xs = self::crossRoute((string)($x->source_name ?: $x->name), (string)$x->src_cat); if ($xs) { if (!array_key_exists($xs, $bySlug)) $bySlug[$xs] = DB::table('categories')->whereNull('parent_id')->where('slug', $xs)->first(); if ($bySlug[$xs]) { $tid = (int)$bySlug[$xs]->id; $tslug = $xs; } } }
@@ -268,7 +287,7 @@ class WatchImportController extends Controller {
     if ($rows->isEmpty()) return response()->json(['finished' => $left <= 0, 'busy' => $left > 0, 'left' => $left]);
     $urls = []; foreach ($rows as $x) { $u = preg_replace('#[?\#].*$#', '', (string)$x->source_url); $urls[$x->wid] = rtrim($u, '/') . '.json'; }
     try { $resp = \Illuminate\Support\Facades\Http::pool(function ($pool) use ($urls) { $o = []; foreach ($urls as $k => $u) $o[] = $pool->as((string)$k)->timeout(25)->withHeaders(['User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36', 'Accept' => 'application/json'])->get($u); return $o; }); } catch (\Throwable $e) { return response()->json(['finished' => false, 'err' => mb_substr($e->getMessage(), 0, 150), 'left' => $left]); }
-    $dbg = []; $bad = [$cf['domain'], preg_replace('/\..*$/', '', $cf['domain']), 'timeaccess', 'time access', 'ryans', 'luxotix', 'amour', 'sundora']; $ok = 0; $imgMap = []; $imgFor = [];
+    $dbg = []; $bad = [$cf['domain'], preg_replace('/\..*$/', '', $cf['domain']), 'timeaccess', 'time access', 'ryans', 'luxotix', 'amour', 'sundora']; if (!empty($s->name)) { $bad[] = trim((string)$s->name); $w1 = trim((string)explode(' ', trim((string)$s->name))[0]); if (mb_strlen($w1) >= 4) $bad[] = $w1; } // no trace of the source shop in our descriptions $ok = 0; $imgMap = []; $imgFor = [];
     foreach ($rows as $x) {
       $res = $resp[(string)$x->wid] ?? null; $j = ($res && method_exists($res, 'ok') && $res->ok()) ? $res->json('product') : null;
       $st = ($res && method_exists($res, 'status')) ? $res->status() : 0; $page = null;
