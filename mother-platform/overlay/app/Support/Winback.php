@@ -43,7 +43,7 @@ class Winback
     return $e;
   }
 
-  const LINK = 'https://www.dutyfreebd.com';
+  const LINK = 'https://dutyfreebd.com';
   private static function render(string $t, array $v): string { $v['{link}'] = self::LINK; $o = trim(strtr($t, $v)); if (stripos($o, 'dutyfreebd.com') === false) $o .= ' ' . self::LINK; return $o; }
 
   public static function tick(bool $force = false): void {

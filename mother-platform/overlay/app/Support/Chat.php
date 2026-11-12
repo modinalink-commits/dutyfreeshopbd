@@ -41,7 +41,7 @@ class Chat {
       $out = [];
       foreach ($urls as $slug => $u) {
         $p = $rows->first(fn($r) => strtolower((string)$r->slug) === $slug || strtolower((string)$r->path_slug) === $slug); if (!$p) continue;
-        $img = strtok((string)$p->image, '?'); if ($img !== '' && str_starts_with($img, '/')) $img = 'https://www.dutyfreebd.com'.$img;
+        $img = strtok((string)$p->image, '?'); if ($img !== '' && str_starts_with($img, '/')) $img = 'https://dutyfreebd.com'.$img;
         $out[] = ['name'=>$p->name, 'price'=>number_format((float)($p->offer_price ?: $p->price)), 'image'=>$img ?: null, 'url'=>$u];
       }
       return $out;
@@ -448,7 +448,7 @@ class Chat {
       if (!preg_match('#https?://(?:www\.)?dutyfreebd\.com/[^\s]+/([a-z0-9\-]+)/?(?=\s|$)#iu', $c, $mm)) return null;
       $pr = DB::table('products')->where('published', true)->where(fn($q) => $q->where('slug', $mm[1])->orWhere('path_slug', $mm[1]))->first(['image']);
       $ip = $pr ? strtok((string)$pr->image, '?') : '';
-      return ($ip !== '' && str_starts_with($ip, '/uploads/') && is_file(public_path(ltrim($ip, '/')))) ? 'https://www.dutyfreebd.com'.$ip : null;
+      return ($ip !== '' && str_starts_with($ip, '/uploads/') && is_file(public_path(ltrim($ip, '/')))) ? 'https://dutyfreebd.com'.$ip : null;
     } catch (\Throwable $e) { return null; }
   }
   /** Product photo caption: name on line 1, price (and stock) on line 2, order link alone on the last line. */
@@ -497,7 +497,7 @@ class Chat {
               try {
                 $pr = DB::table('products')->where('published', true)->where(fn($q) => $q->where('slug', $mm[1])->orWhere('path_slug', $mm[1]))->first(['image']);
                 $ip = $pr ? strtok((string)$pr->image, '?') : '';
-                if ($ip !== '' && str_starts_with($ip, '/uploads/') && is_file(public_path(ltrim($ip, '/')))) $img = 'https://www.dutyfreebd.com'.$ip;
+                if ($ip !== '' && str_starts_with($ip, '/uploads/') && is_file(public_path(ltrim($ip, '/')))) $img = 'https://dutyfreebd.com'.$ip;
               } catch (\Throwable $e) { $img = null; }
             }
             $out[] = $img ? ['type'=>'image', 'image'=>['link'=>$img, 'caption'=>self::productCaption($c)]] : ['type'=>'text', 'text'=>['body'=>$c, 'preview_url'=>true]];
