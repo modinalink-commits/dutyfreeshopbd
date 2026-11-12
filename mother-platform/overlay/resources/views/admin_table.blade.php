@@ -262,7 +262,9 @@ main table .mc-dl{flex:0 0 38%;color:var(--text-muted);font-weight:600}main tabl
     });
   }
   ['input','change','keyup'].forEach(function(ev){document.addEventListener(ev,function(e){if(!e.target.closest||!e.target.closest('main'))return;clearTimeout(window.__mcq);window.__mcq=setTimeout(function(){document.querySelectorAll('main table.mc-t').forEach(function(t){t.__cpg=1});try{cpg()}catch(x){}},200)},true)});
-  function run(){try{normHead();tag();centre();fitAll();wrap();sbox();freeze();pageSize();cpg()}catch(e){}}
+  /* legacy 'Download: PDF · Excel · Word · CSV' pill whose links were already moved into the Export menu: drop the empty shell */
+  function ghostPill(){document.querySelectorAll('main span').forEach(function(sp){if(sp.style.display==='none')return;var as=sp.querySelectorAll(':scope > a');if(as.length>1&&/Download/.test(sp.textContent)&&[].every.call(as,function(a){return a.style.display==='none'}))sp.style.display='none'})}
+  function run(){try{normHead();tag();centre();fitAll();wrap();sbox();freeze();pageSize();cpg();ghostPill()}catch(e){}}
   window.addEventListener('resize',function(){clearTimeout(window.__mcr);window.__mcr=setTimeout(function(){try{closeD();document.querySelectorAll('main table.mc-t,main table.ordt').forEach(function(t){delete t.dataset.mcf});fitAll();freeze()}catch(e){}},150)});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run);else run();
   window.addEventListener('load',function(){try{document.querySelectorAll('main table.mc-t').forEach(function(t){if(t.dataset.mcf==='0')delete t.dataset.mcf})}catch(e){}run()});

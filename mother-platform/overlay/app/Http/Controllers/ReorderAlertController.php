@@ -33,7 +33,8 @@ class ReorderAlertController extends Controller
     if ($r->filled('pq')) { $t = '%'.mb_strtolower(trim((string)$r->query('pq'))).'%'; $uq->where(fn($w) => $w->whereRaw('lower(p.name) like ?', [$t])->orWhereRaw('lower(coalesce(p.sku,\'\')) like ?', [$t])); }
     $unpubTotal = (clone $uq)->count();
     $unpub = $uq->orderByDesc('p.id')->limit(40)->get(['p.id','p.name','p.sku','p.image','p.stock']); $un = SI::supplierCounts($unpub->pluck('id')->all()); $unpub = $unpub->map(function ($x) use ($un) { $x->nsup = $un[(int)$x->id] ?? 0; return $x; });
-    return view('sp.admin_reorder', ['unpub'=>$unpub,'unpubTotal'=>$unpubTotal,'pq'=>(string)$r->query('pq'),'off'=>false,'c'=>$c,'rows'=>$rows,'below'=>$below,'card'=>$card,'f'=>$r->only('s','u','q','all'),'brand'=>SP::brand()]);
+    $bp = max(1,(int)$r->query('bp',1)); $belowPg = new \Illuminate\Pagination\LengthAwarePaginator($below->forPage($bp,50)->values(), $below->count(), 50, $bp, ['path'=>url()->current(),'query'=>$r->except('bp'),'pageName'=>'bp']);
+    return view('sp.admin_reorder', ['belowPg'=>$belowPg,'unpub'=>$unpub,'unpubTotal'=>$unpubTotal,'pq'=>(string)$r->query('pq'),'off'=>false,'c'=>$c,'rows'=>$rows,'below'=>$below,'card'=>$card,'f'=>$r->only('s','u','q','all'),'brand'=>SP::brand()]);
   }
   public function settings(Request $r) {
     $d = $r->validate(['threshold'=>'required|integer|min:1|max:100000','target'=>'required|integer|min:1|max:1000000','days'=>'required|integer|min:1|max:90','hours'=>'required|integer|min:1|max:720','high'=>'required|integer|min:1|max:1000','med'=>'required|integer|min:1|max:1000','send_at'=>['nullable','regex:/^([01]?\d|2[0-3]):[0-5]\d$/']]);

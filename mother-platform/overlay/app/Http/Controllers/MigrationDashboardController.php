@@ -8,7 +8,7 @@ class MigrationDashboardController extends Controller {
   private function has(string $t, ?string $c = null): bool { return Schema::hasTable($t) && ($c === null || Schema::hasColumn($t, $c)); }
   public function index() {
     $d = request()->query('fresh') ? null : \Illuminate\Support\Facades\Cache::get('mig_dash_v1');
-    if (!$d) { $d = $this->build(); \Illuminate\Support\Facades\Cache::put('mig_dash_v1', $d, 300); }
+    if (!$d) { $d = $this->build(); \Illuminate\Support\Facades\Cache::put('mig_dash_v1', $d, 3600); }
     return view('migration_dashboard', $d);
   }
   private function build(): array {
