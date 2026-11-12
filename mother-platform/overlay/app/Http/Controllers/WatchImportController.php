@@ -37,12 +37,6 @@ class WatchImportController extends Controller {
   }
   /** Owner 12 Nov 2026: selling (sale) price = source +15% (setting *_markup_pct), crossed-out regular price = source +25% (setting source_regular_pct). */
   public static function regPct(): float { return (float)(DB::table('settings')->where('key', 'source_regular_pct')->value('value') ?: 25); }
-  /** Owner 13 Nov 2026: cheap vendor products (source price up to low_price_max, default 1000 Tk) cost too much to deliver at a thin markup, so their sale price is at least source +low_price_markup_pct (default 50%) and the crossed-out price stays 10 points above it. Returns [sale %, regular %]. */
-  public static function lowRule(float $src, float $pct, float $reg): array {
-    $max = (float)(DB::table('settings')->where('key', 'low_price_max')->value('value') ?: 1000); $lp = (float)(DB::table('settings')->where('key', 'low_price_markup_pct')->value('value') ?: 50);
-    if ($src > 0 && $src <= $max && $pct < $lp) { $pct = $lp; $reg = max($reg, $pct + 10); }
-    return [$pct, $reg];
-  }
   /** Owner 13 Nov 2026: vendor products with source price up to low_price_max (default 1000 Tk) are not sold (delivery eats the margin): never imported, and kept unpublished here. */
   public static function lowMax(): float { return (float)(DB::table('settings')->where('key', 'low_price_max')->value('value') ?: 1000); }
   /** The source store row; if the same domain was added twice (migration + admin), use the one that actually holds scanned products. */
@@ -78,14 +72,14 @@ class WatchImportController extends Controller {
       $made = 0;
       foreach ($rows as $x) {
         try {
-          [$pctX, $regX] = self::lowRule((float)$x->price, (float)$pct, (float)$this->cfg()['reg']); $our = (int)ceil((float)$x->price * (1 + $pctX / 100));
+          $our = (int)ceil((float)$x->price * (1 + $pct / 100));
           $name = trim(preg_replace('/\s+/u', ' ', (string)$x->name)); $name = trim(str_ireplace(['timeaccess-store.com', 'timeaccess store', 'timeaccess'], '', $name)); $name = trim(preg_replace('/\s*(?:\|\s*Star\s*Tech.*|Price in (?:Bangladesh|BD)\b.*)$/iu', '', $name)); $name = trim(preg_replace('/\bStar\s*Tech\b/iu', '', $name)); if ($name === '') $name = 'Watch';
           $name = trim(preg_replace('/\s{2,}/u', ' ', preg_replace(['/\s*[|\-–]\s*Time\s*Access\b.*$/iu', '/\bTime\s*-?\s*Access\b/iu', '/\bLuxotix\b\s*/iu', '/\bSundora\b\s*/iu'], '', $name)), " \t-|–"); // no trace of the source shop in our product names
           $tc = ($xr ? $this->routeCat((string)$x->name, (string)$x->category, $cats) : null) ?: $cat; // a store feeding 2-3 main categories: each product goes to the right one (owner 13 Nov 2026)
           $sub = self::subFor((string)$name, $x->category, $tc->slug, (string)$x->url);
           $base = \App\Support\Slugs::slug($name) ?: 'watch'; $slug = $base; $i = 2; $subSlug = \App\Support\Slugs::subSlug($sub);
           while (DB::table('products')->where('category_id', $tc->id)->whereRaw(\App\Support\Slugs::subSql() . ' = ?', [$subSlug])->where('path_slug', $slug)->exists()) $slug = $base . '-' . $i++;
-          $pid = DB::table('products')->insertGetId(['name' => mb_substr($name, 0, 200), 'category_id' => $tc->id, 'price' => $our, 'compare_price' => (int)ceil((float)$x->price * (1 + $regX / 100)), 'cost' => $x->price, 'stock' => 0, 'published' => true, 'sub' => $sub, 'slug' => $base, 'path_slug' => $slug, 'created_at' => now(), 'updated_at' => now()]);
+          $pid = DB::table('products')->insertGetId(['name' => mb_substr($name, 0, 200), 'category_id' => $tc->id, 'price' => $our, 'compare_price' => (int)ceil((float)$x->price * (1 + $this->cfg()['reg'] / 100)), 'cost' => $x->price, 'stock' => 0, 'published' => true, 'sub' => $sub, 'slug' => $base, 'path_slug' => $slug, 'created_at' => now(), 'updated_at' => now()]);
           $code = $this->cfg()['prefix'] . str_pad((string)$pid, 6, '0', STR_PAD_LEFT); $upd = ['sku' => $code];
           $g = $x->image ? ($got[$x->image] ?? null) : null;
           if ($g && ($g['code'] ?? 0) == 200 && !empty($g['body']) && @getimagesizefromstring($g['body'])) {
@@ -412,7 +406,7 @@ class WatchImportController extends Controller {
       foreach ($rows as $x) {
         $spike = $jump > 0 && !$apply && (float)$x->prev_sp > 0 && (float)$x->sprice > (float)$x->prev_sp * (1 + $jump / 100); $live = !$paused && !$spike && !((float)$x->sprice <= $lowMax) && (bool)$x->in_stock && (bool)$x->sppub && (!$needClean || str_starts_with((string)$x->pimg, '/uploads/ai/')); $u = ['updated_at' => now()];
         if ($live !== (bool)$x->ppub) { $u['published'] = $live; if ($lock) $u['manual_unpublish_lock'] = !$live; }
-        $mp = $salePct ?? (float)$x->markup_pct; [$mp, $rp] = self::lowRule((float)$x->sprice, $mp, $regPct); $our = (int)ceil((float)$x->sprice * (1 + $mp / 100)); $reg = (int)ceil((float)$x->sprice * (1 + $rp / 100));
+        $mp = $salePct ?? (float)$x->markup_pct; $our = (int)ceil((float)$x->sprice * (1 + $mp / 100)); $reg = (int)ceil((float)$x->sprice * (1 + $regPct / 100));
         if ($x->sprice > 0 && !$spike && ($our != (int)$x->our_price || $reg != (int)$x->pcomp)) { $u['price'] = $our; $u['compare_price'] = $reg; $u['cost'] = $x->sprice; DB::table('watch_source')->where('id', $x->wid)->update(['our_price' => $our, 'source_price' => $x->sprice] + ($salePct !== null ? ['markup_pct' => $salePct] : [])); }
         if (count($u) > 1) DB::table('products')->where('id', $x->pid)->update($u);
         DB::table('watch_source')->where('id', $x->wid)->update(['source_in_stock' => $x->in_stock]);
