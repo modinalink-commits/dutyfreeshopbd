@@ -100,6 +100,17 @@ $qs = fn($extra = []) => http_build_query(array_filter(array_merge(['store'=>$st
 #dxroot .dx-search input{border:0!important;box-shadow:none!important;background:transparent!important;padding:0!important;height:auto!important;border-radius:0!important;outline:0!important}
 #dxroot .dx-pills a,#dxroot .dx-tabs button{border:0}
 #dxroot .dx-qa a:hover,#dxroot .dx-ibtn:hover{border-color:rgba(11,18,32,.5)!important}
+/* Header: every control the same 34px height, same radius and border; title has no box */
+#dxroot .dx-top{gap:8px;align-items:center}
+#dxroot .dx-top h1{background:none!important;border:0!important;padding:0!important;box-shadow:none!important;border-radius:0!important;height:auto!important;width:auto!important;margin:0!important}
+#dxroot .dx-top select,#dxroot .dx-top input[type=date],#dxroot .dx-search,#dxroot .dx-pills,#dxroot .dx-live,#dxroot .dx-ibtn,#dxroot .dx-menu summary{height:34px!important;box-sizing:border-box!important;border-radius:9px!important;background:#fff}
+#dxroot .dx-pills{background:#F3F5F8!important;align-items:center;padding:2px!important}
+#dxroot .dx-pills a{display:inline-flex;align-items:center;height:28px;padding:0 12px;border-radius:7px;line-height:1}
+#dxroot a.dx-ibtn,#dxroot button#dxref{width:34px!important;padding:0!important}
+#dxroot .dx-menu summary{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 12px!important;width:auto}
+#dxroot .dx-search{min-width:210px;padding:0 11px!important}
+#dxroot .dx-live{display:inline-flex;align-items:center;gap:7px;padding:0 11px;white-space:nowrap;background:#fff}
+#dxroot .dx-live input[type=checkbox]{margin:0!important;width:14px!important;height:14px!important;accent-color:#FF5A00}
 </style>
 <div class="dx" id="dxroot" data-q="{{ $q }}">
 <header class="dx-top">
