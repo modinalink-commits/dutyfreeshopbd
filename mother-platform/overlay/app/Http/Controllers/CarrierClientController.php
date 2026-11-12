@@ -125,25 +125,40 @@ class CarrierClientController extends Controller {
     if ($tok === '' || !hash_equals($tok, $given)) return response('forbidden', 403)->header('Content-Type', 'text/plain');
     $body = (string)$r->getContent(); if (strlen($body) > 300000) return response('too large', 413);
     $j = json_decode($body, true); if (!is_array($j)) $j = ['rows' => []];
-    \Illuminate\Support\Facades\Cache::put('vc_relay_live', ['at' => time(), 'rows' => array_slice($j['rows'] ?? [], 0, 400)], 60);
+    $snap = ['at' => time(), 'rows' => array_slice($j['rows'] ?? [], 0, 400)];
+    \Illuminate\Support\Facades\Cache::put('vc_relay_live', $snap, 60);
+    // Backup copy in the database: if the file cache is ever unreadable (permissions after a deploy, a cache clear) the live board and billing still work.
+    try { \App\Support\Procure::put('vc_relay_live_db', json_encode($snap)); } catch (\Throwable $e) {}
     // Remember the first time each inbound call is seen answered (ACTIVE), even when nobody has the admin page open: the CDR uses it for exact billing.
+    $ansDb = null; $ansDirty = false;
     foreach (array_slice($j['rows'] ?? [], 0, 400) as $ch) {
       if (!is_array($ch) || ($ch['direction'] ?? '') !== 'inbound' || strtoupper((string)($ch['callstate'] ?? '')) !== 'ACTIVE' || empty($ch['uuid'])) continue;
-      $k = 'vc_ans_' . preg_replace('/[^0-9a-f-]/i', '', (string)$ch['uuid']);
+      $u = preg_replace('/[^0-9a-f-]/i', '', (string)$ch['uuid']); $k = 'vc_ans_' . $u;
       if (!\Illuminate\Support\Facades\Cache::has($k)) \Illuminate\Support\Facades\Cache::put($k, time(), 21600);
+      if ($ansDb === null) { $ansDb = json_decode((string)\App\Support\Procure::set('vc_relay_ans_db', '{}'), true); if (!is_array($ansDb)) $ansDb = []; }
+      if (!isset($ansDb[$u])) { $ansDb[$u] = time(); $ansDirty = true; }
     }
+    if ($ansDirty) { foreach ($ansDb as $u => $t) if (time() - (int)$t > 21600) unset($ansDb[$u]); try { \App\Support\Procure::put('vc_relay_ans_db', json_encode($ansDb)); } catch (\Throwable $e) {} }
     return response('ok', 200)->header('Content-Type', 'text/plain');
+  }
+  /** Newest live snapshot: file cache first, database copy when the cache has nothing fresher. */
+  public static function liveSnap(): ?array {
+    $c = \Illuminate\Support\Facades\Cache::get('vc_relay_live');
+    if (!is_array($c) || time() - (int)($c['at'] ?? 0) > 20) {
+      try { $d = json_decode((string)\App\Support\Procure::set('vc_relay_live_db', ''), true); if (is_array($d) && (int)($d['at'] ?? 0) > (int)($c['at'] ?? 0)) $c = $d; } catch (\Throwable $e) {}
+    }
+    return is_array($c) ? $c : null;
   }
   /** Latest relay channel snapshot: [ok, rows, error]. Stale (>20 s) means the relay is not reporting. */
   public static function relayChannels(): array {
-    $c = \Illuminate\Support\Facades\Cache::get('vc_relay_live');
+    $c = self::liveSnap();
     if (!$c) return [false, [], 'The relay is not reporting live calls (relay offline or updating)'];
     if (time() - (int)$c['at'] > 20) return [false, [], 'The relay stopped reporting ' . (time() - (int)$c['at']) . ' s ago'];
     return [true, $c['rows'], ''];
   }
   /** Scheduler tick: once the relay has reported at least once, a live feed that stays silent for 2+ minutes raises a visible Deployment Center issue (and clears itself when the feed returns). It never restarts anything: a relay restart would cut live client calls. */
   public static function relayWatch(): void {
-    $c = \Illuminate\Support\Facades\Cache::get('vc_relay_live');
+    $c = self::liveSnap();
     if ($c && time() - (int)$c['at'] <= 20) {
       \Illuminate\Support\Facades\Cache::put('vc_relay_seen', time(), 604800);
       \App\Support\DeployHealth::resolve('relay_live_stale', 'System (relay is reporting again)');
@@ -160,11 +175,14 @@ class CarrierClientController extends Controller {
     if ($tok === '' || !hash_equals($tok, $given)) return response('forbidden', 403)->header('Content-Type', 'text/plain');
     $body = (string)$r->getContent(); if (strlen($body) > 60000) return response('too large', 413);
     \Illuminate\Support\Facades\Cache::put('vc_relay_gw', ['at' => time(), 'text' => $body], 120);
+    try { \App\Support\Procure::put('vc_relay_gw_db', json_encode(['at' => time(), 'text' => $body])); } catch (\Throwable $e) {}
     return response('ok', 200)->header('Content-Type', 'text/plain');
   }
   /** Registration state per extension as reported by the relay: [ext => REGED|NOREG|FAIL_WAIT|...]; empty when the relay is not reporting. */
   public static function relayGwStates(): array {
-    $c = \Illuminate\Support\Facades\Cache::get('vc_relay_gw'); if (!$c || time() - (int)$c['at'] > 60) return [];
+    $c = \Illuminate\Support\Facades\Cache::get('vc_relay_gw');
+    if (!is_array($c) || time() - (int)$c['at'] > 60) { try { $d = json_decode((string)\App\Support\Procure::set('vc_relay_gw_db', ''), true); if (is_array($d)) $c = $d; } catch (\Throwable $e) {} }
+    if (!is_array($c) || time() - (int)$c['at'] > 60) return [];
     $o = [];
     foreach (preg_split('/\R/', (string)$c['text']) as $l) if (preg_match('/sip:([^@\s]+)@\S+\s+([A-Z_]+)/', $l, $m)) $o[$m[1]] = $m[2];
     return $o;
@@ -175,6 +193,7 @@ class CarrierClientController extends Controller {
     $d = $r->validate(['uuid' => ['required', 'regex:/^[0-9a-fA-F-]{8,40}$/'], 'billsec' => 'required|integer|min:0|max:86400', 'dest' => ['required', 'regex:/^\d{6,20}$/'], 'cause' => ['nullable', 'regex:/^[A-Z_]{1,40}$/'], 'caller' => ['nullable', 'regex:/^[0-9+]{1,32}$/']]);
     // The relay hook can report billsec 0 / no cause for a call that was answered: use the answered time the live snapshot recorded.
     $ak = 'vc_ans_' . preg_replace('/[^0-9a-f-]/i', '', $d['uuid']); $t0 = (int)\Illuminate\Support\Facades\Cache::get($ak);
+    if ($t0 === 0) { try { $am = json_decode((string)\App\Support\Procure::set('vc_relay_ans_db', '{}'), true); $t0 = (int)($am[strtolower(preg_replace('/[^0-9a-f-]/i', '', $d['uuid']))] ?? $am[preg_replace('/[^0-9a-f-]/i', '', $d['uuid'])] ?? 0); } catch (\Throwable $e) {} }
     if ((int)$d['billsec'] === 0 && $t0 > 0) { $d['billsec'] = min(86400, max(1, time() - $t0)); if (empty($d['cause']) || $d['cause'] === 'UNKNOWN') $d['cause'] = 'NORMAL_CLEARING'; }
     if ($t0 > 0) \Illuminate\Support\Facades\Cache::forget($ak);
     $client = null;
