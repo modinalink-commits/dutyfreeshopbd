@@ -89,7 +89,9 @@ class InventoryController extends Controller {
     $comm = []; foreach ($stores as $st) { $d = preg_replace('/^www\./i', '', strtolower(preg_replace('#^https?://#i', '', trim((string)$st->domain, " /")))); if (isset($mk[$d])) $comm[$st->id] = $mk[$d]; elseif ($d === 'ryans.com') $comm[$st->id] = (float)($get('mobile_markup_pct', '15') ?: 15); elseif (trim((string)($st->source_category ?? '')) !== '') $comm[$st->id] = (float)($get('source_markup_pct', '15') ?: 15); }
     $regc = (float)($get('source_regular_pct', '25') ?: 25);
     $catNames = DB::table('categories')->whereNull('parent_id')->orderBy('position')->orderBy('id')->pluck('name');
-    return view('stores', compact('stores','counts','own','auto','comm','regc','catNames'));
+    $imp = []; // per store: imported products, how many already have a real description, and which main categories they sit in (owner 13 Nov 2026)
+    try { if (\Illuminate\Support\Facades\Schema::hasTable('watch_source')) foreach (DB::table('watch_source as w')->join('products as p', 'p.id', '=', 'w.product_id')->leftJoin('categories as c', 'c.id', '=', 'p.category_id')->groupBy('w.store_id', 'c.name')->select('w.store_id', 'c.name as cat', DB::raw('count(*) as n'), DB::raw("sum(case when p.description is not null and p.description <> '' then 1 else 0 end) as d"))->get() as $__r) { $imp[$__r->store_id]['n'] = ($imp[$__r->store_id]['n'] ?? 0) + $__r->n; $imp[$__r->store_id]['d'] = ($imp[$__r->store_id]['d'] ?? 0) + $__r->d; $imp[$__r->store_id]['cats'][(string)($__r->cat ?: 'No category')] = (int)$__r->n; } } catch (\Throwable $e) { report($e); }
+    return view('stores', compact('stores','counts','own','auto','comm','regc','catNames','imp'));
   }
   /** Daily automatic scan: time of day (Asia/Dhaka), on/off, and a Run now button. Stock and price of every source store are synced; out-of-stock products are unpublished. */
   public function autoScan(Request $r) {
