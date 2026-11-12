@@ -254,7 +254,7 @@ main table .mc-dl{flex:0 0 38%;color:var(--text-muted);font-weight:600}main tabl
   function cpg(){
     if(document.querySelector('main .pgx'))return;
     document.querySelectorAll('main table.mc-t').forEach(function(t){
-      if(t.classList.contains('pl')||t.classList.contains('ordt')||t.closest('[data-nopg]')||t.dataset.nopg)return;
+      if((t.classList.contains('pl')&&t.querySelector('tr.det'))||t.classList.contains('ordt')||t.closest('[data-nopg]')||t.dataset.nopg)return;
       var rs=t.querySelectorAll(':scope > tbody > tr');
       if(rs.length<=CPER&&!t.__cbar)return;
       for(var i=0;i<rs.length;i++){var tds=rs[i].children;if(tds.length===1&&(tds[0].colSpan||1)>=3)return}

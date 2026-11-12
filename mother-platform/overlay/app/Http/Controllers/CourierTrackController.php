@@ -15,7 +15,7 @@ class CourierTrackController extends Controller {
       if ($q !== '') $base->where(fn($x) => $x->where('e.invoice', 'like', '%'.$q.'%')->orWhere('e.reference', 'like', '%'.$q.'%')->orWhere('o.consignment_id', 'like', '%'.$q.'%')->orWhere('o.tracking_code', 'like', '%'.$q.'%')->orWhere('o.phone', 'like', '%'.$q.'%'));
       $sum = (float)(clone $base)->sum('e.amount'); $cnt = (int)(clone $base)->count();
       $rows = $base->select('e.id', 'e.reference', 'e.invoice', 'e.amount', 'e.entry_date', 'e.created_at as booked_at', 'e.comment', 'a.name as account', 'o.courier', 'o.consignment_id', 'o.tracking_code', 'o.phone', 'o.collected_amount', 'o.courier_cod')
-        ->orderByDesc('e.entry_date')->orderByDesc('e.id')->paginate(100)->withQueryString();
+        ->orderByDesc('e.entry_date')->orderByDesc('e.id')->paginate(50)->withQueryString();
       $rows->getCollection()->transform(function ($x) {
         $x->shown_consignment = trim((string)($x->consignment_id ?: $x->tracking_code ?: ''));
         $o = clone $x; $o->consignment_id = $x->shown_consignment;
