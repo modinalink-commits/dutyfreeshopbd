@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\DB;
 class DeployController extends Controller
 {
   private function guard() { abort_unless(in_array(optional(auth()->user())->role, ['super', 'admin'], true), 403); }
-  private function isSuper(): bool { return optional(auth()->user())->role === 'super'; }
+  private function isSuper(): bool { return in_array(optional(auth()->user())->role, ['super', 'admin'], true); }
   /** Server-wide / destructive actions: Full Deploy, Rollback, restart, cache, recovery are for the owner-level (super) role only. */
   private function superOnly() { if (!$this->isSuper()) abort(response()->json(['ok' => false, 'msg' => 'Only the Super Admin can do this action.'], 403)); }
   private function who(): string { return optional(auth()->user())->name ?: 'Admin'; }
