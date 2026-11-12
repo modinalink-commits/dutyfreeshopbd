@@ -76,6 +76,7 @@ class StoreScanner {
     return ['store_id'=>$sid, 'ext_key'=>mb_substr($key,0,400), 'name'=>mb_substr(trim(html_entity_decode(strip_tags($name), ENT_QUOTES|ENT_HTML5, 'UTF-8')),0,300), 'sku'=>$sku !== null && $sku !== '' ? mb_substr($sku,0,120) : null, 'image'=>$img, 'price'=>is_numeric($price) ? round((float)$price,2) : null, 'stock'=>$stock !== null && is_numeric($stock) ? (int)$stock : null, 'in_stock'=>$inStock, 'category'=>$cat ? mb_substr(html_entity_decode($cat, ENT_QUOTES|ENT_HTML5, 'UTF-8'),0,200) : null, 'url'=>$url ? mb_substr($url,0,600) : null, 'published'=>$pub, 'seen_at'=>now(), 'created_at'=>now(), 'updated_at'=>now()];
   }
   private static function save(array $rows): void {
+    $u = []; foreach ($rows as $r) $u[($r['store_id'] ?? '').'|'.($r['ext_key'] ?? count($u))] = $r; $rows = array_values($u); // one row per product key: the same product reached by two page URLs in one batch made the upsert fail ("ON CONFLICT ... a second time") and the scan loop on that batch
     foreach (array_chunk($rows, 200) as $ch) DB::table('store_products')->upsert($ch, ['store_id','ext_key'], ['name','sku','image','price','stock','in_stock','category','url','published','seen_at','updated_at']);
   }
   public static function begin(object $s): void {
