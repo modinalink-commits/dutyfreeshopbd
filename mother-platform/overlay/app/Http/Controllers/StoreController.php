@@ -221,7 +221,7 @@ class StoreController extends Controller {
     });
   }
   public static function catSlider(): array {
-    $rows = self::rem('store.catslider2', 300, function () {
+    $rows = self::rem('store.catslider3', 300, function () {
       $cats = DB::table('categories')->whereNotNull('slug')->where('active', true)->orderBy('position')->get();
       $sold = DB::table('order_items as i')->join('orders as o', 'o.id', '=', 'i.order_id')->whereNotIn('o.status', ['Cancel', 'Incomplete'])->where('o.created_at', '>=', now()->subDays(30))->groupBy('i.product_id')->selectRaw('i.product_id as pid, sum(i.qty) as q')->pluck('q', 'pid');
       $out = [];
@@ -229,14 +229,14 @@ class StoreController extends Controller {
         $pool = \App\Support\StockGuard::listable(DB::table('products')->where('published', true)->where('category_id', $c->id))->whereNotNull('image')->where('image', '!=', '')->orderByDesc('id')->limit(60)->get()
           ->filter(fn($p) => \App\Support\StockGuard::sellable($p));
         $pick = $pool->sortByDesc(fn($p) => [(int)($sold[$p->id] ?? 0), (int)$p->id])->values(); // whole sellable pool (best sellers first); the 6 shown are picked per request below
-        if ($pick->count()) $out[] = [$c, $pick];
+        if ($pick->count()) $out[] = [$c, $pick, $pick->take(5)->values()]; // [2] = best sellers (hero slider), never shuffled
       }
       return $out;
     });
     // Dynamic Product Shuffle for the category shelves: the cached pool is every sellable product of the category; each page load shows 6 random ones so products that sit lower still get seen and sold. Shuffle off (settings) = the old best-sellers-first 6.
     $shuf = \App\Support\Procure::set('shuffle_home', '1') !== '0' && \App\Support\Procure::set('shuffle_general', '1') !== '0';
     $rows = array_map(function ($r) use ($shuf) { $r[1] = ($shuf ? $r[1]->shuffle(random_int(1, 2147483646)) : $r[1])->take(6)->values(); return $r; }, $rows);
-    if (\App\Support\CleanSite::on()) { $rows = array_values(array_filter(array_map(function ($r) { $r[1] = $r[1]->filter(fn($p) => \App\Support\CleanSite::keep($p))->values(); return $r[1]->count() ? $r : null; }, $rows))); }
+    if (\App\Support\CleanSite::on()) { $rows = array_values(array_filter(array_map(function ($r) { $r[1] = $r[1]->filter(fn($p) => \App\Support\CleanSite::keep($p))->values(); $r[2] = ($r[2] ?? collect())->filter(fn($p) => \App\Support\CleanSite::keep($p))->values(); return $r[1]->count() ? $r : null; }, $rows))); }
     return $rows;
   }
   /** Animated Brand Slider data: active brands (admin order) that have at least one customer-visible product; cached 5 min. A problem here never breaks the homepage. */
