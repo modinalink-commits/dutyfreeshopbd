@@ -105,7 +105,12 @@ chown -R www-data:www-data /srv/shared/storage bootstrap/cache /srv/shared/uploa
 # Images: optimise every upload and copy outside-hosted product/category/banner images into our own storage, quietly, every 2 minutes
 ( sleep 90; while true; do su -s /bin/sh www-data -c 'cd /srv/app && php artisan mother:images'; sleep 120; done ) > /proc/1/fd/1 2>&1 &
 # Zero-downtime deploys: the admin Deployments page (or Claude) drops a request file; this root loop builds and switches a new release without stopping the site.
-( while true; do
+mkdir -p /srv/deploy
+cat > /srv/deploy/loop.sh <<'LOOP'
+#!/bin/sh
+# Deploy worker: heartbeat every cycle so the watchdog (and the admin alert bell) can tell it is alive.
+while true; do
+  touch /srv/deploy/hb 2>/dev/null; chmod 666 /srv/deploy/hb 2>/dev/null
   if [ -f /srv/deploy/request ]; then
     REQ=$(cat /srv/deploy/request); rm -f /srv/deploy/request
     if echo "$REQ" | grep -Eq '^([0-9a-f]{40}( allow-breaking)?|rollback)$'; then
@@ -116,5 +121,18 @@ chown -R www-data:www-data /srv/shared/storage bootstrap/cache /srv/shared/uploa
     fi
   fi
   sleep 3
+done
+LOOP
+chmod 755 /srv/deploy/loop.sh
+# Zero-downtime deploys: the admin Deployments page (or Claude) drops a request file; this root loop builds and switches a new release without stopping the site.
+( sh /srv/deploy/loop.sh ) > /proc/1/fd/1 2>&1 &
+# Watchdog: if the deploy worker stops beating for 2 minutes while no deploy is running, restart it by itself (a deploy can take minutes, so only restart when no deploy holds the lock).
+( sleep 20; while true; do
+  NOW=$(date +%s); HB=$(stat -c %Y /srv/deploy/hb 2>/dev/null || echo 0)
+  if [ $((NOW - HB)) -gt 120 ] && flock -n /srv/deploy/lock true 2>/dev/null; then
+    pkill -f /srv/deploy/loop.sh 2>/dev/null; sleep 1
+    ( sh /srv/deploy/loop.sh ) > /proc/1/fd/1 2>&1 &
+  fi
+  sleep 10
 done ) > /proc/1/fd/1 2>&1 &
 exec php-fpm

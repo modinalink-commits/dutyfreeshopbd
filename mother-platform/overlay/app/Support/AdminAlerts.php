@@ -75,5 +75,8 @@ class AdminAlerts
     $row = DB::table('deployments')->whereIn('status', \App\Support\Deployer::ACTIVE)->where('updated_at', '<', now()->subMinutes(15))->orderByDesc('id')->first();
     if ($row) DeployHealth::raise('deploy_stuck', 'high', 'Deploy', 'A release is stuck', 'Release ' . ($row->version ?: $row->sha) . ' has been "' . $row->status . '" for more than 15 minutes.', 'The host-side deploy worker is not picking up the request.', 'Open Deployment Center, cancel the pending release and run Quick Deploy; if it stays stuck restart the motherplatform project in Docker Manager.');
     else DeployHealth::resolve('deploy_stuck', 'System (no stuck release)');
+    $hb = '/srv/deploy/hb';
+    if (is_file($hb) && time() - filemtime($hb) > 300 && !\App\Support\Deployer::lockHeld()) DeployHealth::raise('deploy_worker_dead', 'high', 'Deploy', 'Deploy worker stopped', 'The background deploy worker has not responded for over 5 minutes and no release is running.', 'The worker process inside the app container was killed; its watchdog should restart it automatically.', 'If this stays open, restart the motherplatform project in Docker Manager.');
+    else DeployHealth::resolve('deploy_worker_dead', 'System (deploy worker alive)');
   }
 }
