@@ -10,7 +10,7 @@ b275000d2d7f04336914827b1b57bb96b232d131 resources/views/dashboard.blade.php
 d1f16b800c3fbbc24a0851463f7703b38ae37e82 resources/views/admin/orders/partials/status-tabs.blade.php
 6970552dad635e28cb230ffcf5ce25fab9838639 resources/views/admin/orders/partials/header-system.blade.php
 aae96a1e239f0350a377a3a065ec02447383a86e resources/views/order_new.blade.php
-4e2e78bc858f561d11996e24eaf5afe09a924166 resources/views/order_show.blade.php
+2a8c0005fd5ac3e8c19919fecb7f4c0d0fe11418 resources/views/order_show.blade.php
 a381ca5a49d9865c427cf924e1523573ee69d64a resources/views/stafflog.blade.php
 3ead694e6fd61447be7c3afcb8ddc08f6a7fe495 database/migrations/2026_10_31_000002_catalog_discounts.php
 74915bc759a361fe8b6960fa226ba25ea81bacef app/Http/Controllers/CatalogController.php
