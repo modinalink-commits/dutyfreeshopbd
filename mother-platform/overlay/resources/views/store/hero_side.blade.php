@@ -11,7 +11,7 @@ $__ios = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="cu
 <div class="hxfs">
 @foreach($__hf as $__i => $__p)
 @php $__o = \App\Http\Controllers\StoreController::off($__p); $__u = \App\Http\Controllers\StoreController::url($__p); @endphp
-<a class="hxfi{{ $__i === 0 ? ' on' : '' }}" href="{{ $__u }}"@if($__i) tabindex="-1" aria-hidden="true"@endif><span class="hxfp"><img src="{{ $__p->image ?: '/product-placeholder' }}" alt="{{ $__p->name }}" width="86" height="86" @if($__i) loading="lazy" @endif></span><span class="hxft"><span class="hxfn">{{ $__p->name }}</span><span class="hxfr">{{ number_format($__p->price) }} TK@if($__o > 0 && $__p->compare_price)<s>{{ number_format($__p->compare_price) }}</s>@endif</span>@if($__o > 0)<span class="hxfo">SAVE {{ $__o }}%</span>@endif</span></a>
+<a class="hxfi{{ $__i === 0 ? ' on' : '' }}" href="{{ $__u }}"@if($__i) tabindex="-1" aria-hidden="true"@endif><span class="hxfp"><img src="{{ $__p->image ?: '/product-placeholder' }}" alt="{{ $__p->name }}" width="86" height="86" @if($__i) loading="lazy" @endif></span><span class="hxft"><span class="hxfn">{{ $__p->name }}</span><span class="hxfr">{{ number_format($__p->price) }} TK @if($__o > 0 && $__p->compare_price)<s>{{ number_format($__p->compare_price) }}</s>@endif</span>@if($__o > 0)<span class="hxfo">SAVE {{ $__o }}%</span>@endif</span></a>
 @endforeach
 </div>
 <div class="hxfd" aria-hidden="true">@foreach($__hf as $__i => $__p)<i class="{{ $__i === 0 ? 'on' : '' }}"></i>@endforeach</div>
