@@ -7,7 +7,7 @@
 .cs2-d{margin:6px 0 0;font-size:13px;color:#4b5563;max-width:560px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .cs2-all{flex:none;display:inline-flex;align-items:center;gap:6px;background:#FF5A00;color:#fff;font-weight:700;font-size:13px;padding:9px 16px;border-radius:999px;text-decoration:none;transition:transform .3s,box-shadow .3s}
 .cs2-all:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(255,90,0,.3)}
-.cs2-vp{position:relative;overflow:hidden;touch-action:pan-y;--v:6}
+.cs2-vp{position:relative;overflow:hidden;touch-action:pan-y;--v:var(--vd,6)}
 .cs2-tr{display:flex;transition:transform .8s cubic-bezier(.25,.8,.25,1);will-change:transform}
 .cs2-i{flex:0 0 calc(100%/var(--v));padding:6px 7px 14px;box-sizing:border-box;min-width:0}
 .cs2-c{display:flex;flex-direction:column;height:100%;background:#fff;border-radius:16px;box-shadow:0 2px 10px rgba(18,26,43,.08);overflow:hidden;text-decoration:none;color:#121A2B;opacity:0;transform:perspective(900px) translate3d(0,22px,0) rotateX(10deg);transition:opacity .6s ease,transform .7s cubic-bezier(.2,.8,.2,1),box-shadow .35s;transition-delay:calc(var(--k)*100ms)}
@@ -28,7 +28,7 @@
 .cs2.run .cs2-pg i{animation:cs2pg var(--iv,5s) linear forwards}.cs2.hov .cs2-pg i{animation-play-state:paused}
 .cs2.multi .cs2-ar{display:flex}.cs2.multi .cs2-pg{display:block}
 @keyframes cs2pg{to{transform:scaleX(1)}}@keyframes cs2sk{to{background-position:-200% 0}}@keyframes cs2fl{50%{transform:translate3d(0,-4px,0)}}
-@media(max-width:1023px){.cs2-vp{--v:3}}@media(max-width:640px){.cs2-vp{--v:2}.cs2-b{padding:16px 12px 18px;border-radius:16px}.cs2-d{display:none}.cs2-all{padding:7px 12px;font-size:12px}.cs2-i{padding:4px 5px 10px}.cs2-n{font-size:12px}.cs2-p{font-size:14px}.cs2-ar{width:32px;height:32px}}
+@media(max-width:1023px){.cs2-vp{--v:3}}@media(max-width:640px){.cs2-vp{--v:var(--vm,2)}.cs2-b{padding:16px 12px 18px;border-radius:16px}.cs2-d{display:none}.cs2-all{padding:7px 12px;font-size:12px}.cs2-i{padding:4px 5px 10px}.cs2-n{font-size:12px}.cs2-p{font-size:14px}.cs2-ar{width:32px;height:32px}}
 .cs2r{opacity:0;transform:translate3d(0,22px,0);transition:opacity .7s ease,transform .8s cubic-bezier(.2,.8,.2,1)}.cs2r.in{opacity:1;transform:none}
 @media(prefers-reduced-motion:reduce){.cs2r{opacity:1!important;transform:none!important}}
 .cs2e .pc{opacity:0;transform:perspective(900px) translate3d(0,22px,0) rotateX(10deg)}
