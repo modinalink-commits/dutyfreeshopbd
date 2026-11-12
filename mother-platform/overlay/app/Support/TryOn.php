@@ -47,15 +47,19 @@ class TryOn {
     $p = DB::table('products')->find($pid); if (!$p) return ['ok' => false, 'error' => 'Product not found'];
     DB::table('tryon_assets')->updateOrInsert(['product_id' => $pid], ['status' => 'processing', 'error' => null, 'updated_at' => now(), 'created_at' => now()]);
     try {
-      $key = AiImage::key(); if (!$key) throw new \RuntimeException('OpenAI API key is not set (AI settings).');
-      $png = self::prepare(self::srcBytes((string)$p->image));
-      $model = AiImage::set('ai_img_model', AiImage::MODEL);
-      $call = fn(array $f) => Http::timeout(180)->withToken($key)->attach('image', $png, 'product.png')->post('https://api.openai.com/v1/images/edits', $f);
-      $r = $call(['model' => $model, 'prompt' => self::PROMPT, 'size' => '1024x1024', 'quality' => 'high', 'background' => 'transparent', 'output_format' => 'png', 'n' => 1]);
-      if ($r->status() === 400 && preg_match('/background|output_format|quality|unknown parameter|unsupported|invalid value/i', (string)$r->body()) && !preg_match('/does not exist/i', (string)$r->body())) $r = $call(['model' => $model, 'prompt' => self::PROMPT, 'size' => '1024x1024', 'n' => 1]);
-      if (!$r->ok()) throw new \RuntimeException('OpenAI error ' . $r->status() . ': ' . mb_substr((string)($r->json('error.message') ?? $r->body()), 0, 200));
-      $b64 = $r->json('data.0.b64_json'); if (!$b64) throw new \RuntimeException('OpenAI returned no image');
-      $im = @imagecreatefromstring((string)base64_decode($b64)); if (!$im) throw new \RuntimeException('Could not read the result');
+      $png = self::prepare(self::srcBytes((string)$p->image)); $im = null; $note = null;
+      try {
+        $key = AiImage::key(); if (!$key) throw new \RuntimeException('OpenAI API key is not set (AI settings).');
+        $model = AiImage::set('ai_img_model', AiImage::MODEL);
+        $call = fn(array $f) => Http::timeout(180)->withToken($key)->attach('image', $png, 'product.png')->post('https://api.openai.com/v1/images/edits', $f);
+        $r = $call(['model' => $model, 'prompt' => self::PROMPT, 'size' => '1024x1024', 'quality' => 'high', 'background' => 'transparent', 'output_format' => 'png', 'n' => 1]);
+        if ($r->status() === 400 && preg_match('/background|output_format|quality|unknown parameter|unsupported|invalid value/i', (string)$r->body()) && !preg_match('/does not exist/i', (string)$r->body())) $r = $call(['model' => $model, 'prompt' => self::PROMPT, 'size' => '1024x1024', 'n' => 1]);
+        if (!$r->ok()) throw new \RuntimeException('OpenAI error ' . $r->status() . ': ' . mb_substr((string)($r->json('error.message') ?? $r->body()), 0, 160));
+        $b64 = $r->json('data.0.b64_json'); if (!$b64) throw new \RuntimeException('OpenAI returned no image');
+        $im = @imagecreatefromstring((string)base64_decode($b64));
+      } catch (\Throwable $e) { $note = 'Local cut-out (no AI): ' . mb_substr($e->getMessage(), 0, 120); $im = null; }
+      if (!$im) $im = @imagecreatefromstring($png); // fallback: the product photo itself, white background removed locally
+      if (!$im) throw new \RuntimeException('Could not read the result');
       $im = self::ensureAlpha($im); $w = imagesx($im); $h = imagesy($im);
       $x0 = $w; $x1 = 0; $y0 = $h; $y1 = 0;
       for ($y = 0; $y < $h; $y += 2) for ($x = 0; $x < $w; $x += 2) if ((((imagecolorat($im, $x, $y) >> 24) & 127)) < 100) { $x0 = min($x0, $x); $x1 = max($x1, $x); $y0 = min($y0, $y); $y1 = max($y1, $y); }
@@ -64,7 +68,7 @@ class TryOn {
       $o = imagecreatetruecolor($cw, $ch); imagealphablending($o, false); imagesavealpha($o, true); imagefill($o, 0, 0, imagecolorallocatealpha($o, 0, 0, 0, 127));
       imagecopy($o, $im, 0, 0, $x0, $y0, $cw, $ch);
       $f = 'p' . $pid . '-' . time() . '.png'; imagepng($o, self::dir() . '/' . $f, 6); @chmod(self::dir() . '/' . $f, 0664);
-      DB::table('tryon_assets')->where('product_id', $pid)->update(['status' => 'ready', 'png' => '/uploads/tryon/' . $f, 'w' => $cw, 'h' => $ch, 'error' => null, 'updated_at' => now()]);
+      DB::table('tryon_assets')->where('product_id', $pid)->update(['status' => 'ready', 'png' => '/uploads/tryon/' . $f, 'w' => $cw, 'h' => $ch, 'error' => $note, 'updated_at' => now()]);
       return ['ok' => true, 'png' => '/uploads/tryon/' . $f];
     } catch (\Throwable $e) {
       $m = mb_substr($e->getMessage(), 0, 300); DB::table('tryon_assets')->where('product_id', $pid)->update(['status' => 'failed', 'error' => $m, 'updated_at' => now()]); return ['ok' => false, 'error' => $m];
