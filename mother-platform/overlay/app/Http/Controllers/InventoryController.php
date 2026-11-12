@@ -83,7 +83,10 @@ class InventoryController extends Controller {
     $own = ['n'=>DB::table('products')->count(), 'pub'=>DB::table('products')->where('published',true)->count()];
     $get = fn($k, $d) => (string)(DB::table('settings')->where('key', $k)->value('value') ?? $d);
     $auto = ['on' => $get('auto_scan_on', '1') === '1', 'time' => $get('auto_scan_time', '03:00'), 'last' => $get('auto_scan_last', ''), 'running' => \Illuminate\Support\Facades\Cache::has('affiliate-alive')];
-    return view('stores', compact('stores','counts','own','auto'));
+    // Source-store pricing markup % (same settings + defaults WatchImportController uses): our price = source price + this %.
+    $mk = [strtolower($get('watch_source_domain', 'timeaccess-store.com')) => (float)($get('watch_markup_pct', '5') ?: 5), 'luxotix.com' => (float)($get('sunglass_markup_pct', '5') ?: 5), 'amour.com.bd' => (float)($get('amour_markup_pct', '10') ?: 10), strtolower($get('gadget_source_domain', 'startech.com.bd')) => (float)($get('mobile_markup_pct', '5') ?: 5)];
+    $comm = []; foreach ($stores as $st) { $d = preg_replace('/^www\./i', '', strtolower(preg_replace('#^https?://#i', '', trim((string)$st->domain, " /")))); if (isset($mk[$d])) $comm[$st->id] = $mk[$d]; elseif ($d === 'ryans.com') $comm[$st->id] = (float)($get('mobile_markup_pct', '5') ?: 5); }
+    return view('stores', compact('stores','counts','own','auto','comm'));
   }
   /** Daily automatic scan: time of day (Asia/Dhaka), on/off, and a Run now button. Stock and price of every source store are synced; out-of-stock products are unpublished. */
   public function autoScan(Request $r) {
