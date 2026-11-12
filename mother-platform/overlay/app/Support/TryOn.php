@@ -30,6 +30,32 @@ class TryOn {
     imagecopyresampled($c, $s, (int)((1024 - $nw) / 2), (int)((1024 - $nh) / 2), 0, 0, $nw, $nh, $w, $h);
     ob_start(); imagepng($c, null, 6); return (string)ob_get_clean();
   }
+  /** Local cut-out (no AI): remove the photo background by flood fill from the edges (tolerant of grey studio backgrounds), make bright lens interiors see-through, keep only the largest object (drops watermarks / text). */
+  private static function localCutout($src) {
+    $W0 = imagesx($src); $H0 = imagesy($src); $sc = min(1, 640 / max($W0, $H0)); $w = max(1, (int)round($W0 * $sc)); $h = max(1, (int)round($H0 * $sc));
+    $im = imagecreatetruecolor($w, $h); imagealphablending($im, false); imagesavealpha($im, true); imagecopyresampled($im, $src, 0, 0, 0, 0, $w, $h, $W0, $H0);
+    $px = []; for ($y = 0; $y < $h; $y++) for ($x = 0; $x < $w; $x++) { $c = imagecolorat($im, $x, $y); $px[$y * $w + $x] = [($c >> 16) & 255, ($c >> 8) & 255, $c & 255]; }
+    $bs = []; foreach ([[2,2],[$w-3,2],[2,$h-3],[$w-3,$h-3],[(int)($w/2),2],[2,(int)($h/2)],[$w-3,(int)($h/2)]] as [$x,$y]) $bs[] = $px[$y * $w + $x];
+    $bg = [0,0,0]; foreach ($bs as $b) for ($k = 0; $k < 3; $k++) $bg[$k] += $b[$k] / count($bs);
+    $near = fn($p, $t) => max(abs($p[0]-$bg[0]), abs($p[1]-$bg[1]), abs($p[2]-$bg[2])) <= $t;
+    $t = array_fill(0, $w * $h, false); $stack = [];
+    for ($x = 0; $x < $w; $x++) { $stack[] = $x; $stack[] = ($h - 1) * $w + $x; } for ($y = 0; $y < $h; $y++) { $stack[] = $y * $w; $stack[] = $y * $w + $w - 1; }
+    while ($stack) { $i = array_pop($stack); if ($t[$i] || !$near($px[$i], 30)) continue; $t[$i] = true; $x = $i % $w; $y = intdiv($i, $w); if ($x > 0) $stack[] = $i - 1; if ($x < $w - 1) $stack[] = $i + 1; if ($y > 0) $stack[] = $i - $w; if ($y < $h - 1) $stack[] = $i + $w; }
+    for ($pass = 0; $pass < 2; $pass++) { $add = []; for ($y = 1; $y < $h - 1; $y++) for ($x = 1; $x < $w - 1; $x++) { $i = $y * $w + $x; if ($t[$i]) continue; if (($t[$i-1] || $t[$i+1] || $t[$i-$w] || $t[$i+$w]) && $near($px[$i], 60)) $add[] = $i; } foreach ($add as $i) $t[$i] = true; }
+    // largest connected object among the remaining pixels
+    $lab = array_fill(0, $w * $h, 0); $best = 0; $bestN = 0; $n = 0;
+    for ($i0 = 0; $i0 < $w * $h; $i0++) { if ($t[$i0] || $lab[$i0]) continue; $n++; $cnt = 0; $st = [$i0]; $lab[$i0] = $n;
+      while ($st) { $i = array_pop($st); $cnt++; $x = $i % $w; $y = intdiv($i, $w); foreach ([[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[1,1],[-1,1],[1,-1]] as [$dx,$dy]) { $xx = $x + $dx; $yy = $y + $dy; if ($xx < 0 || $yy < 0 || $xx >= $w || $yy >= $h) continue; $j = $yy * $w + $xx; if ($t[$j] || $lab[$j]) continue; $lab[$j] = $n; $st[] = $j; } }
+      if ($cnt > $bestN) { $bestN = $cnt; $best = $n; } }
+    $clear = imagecolorallocatealpha($im, 255, 255, 255, 127);
+    for ($i = 0; $i < $w * $h; $i++) {
+      $x = $i % $w; $y = intdiv($i, $w);
+      if ($t[$i] || $lab[$i] !== $best) { imagesetpixel($im, $x, $y, $clear); continue; }
+      [$r, $g, $b] = $px[$i]; $lum = 0.299 * $r + 0.587 * $g + 0.114 * $b;
+      if ($lum > 200 && (max($r, $g, $b) - min($r, $g, $b)) < 24) imagesetpixel($im, $x, $y, imagecolorallocatealpha($im, $r, $g, $b, 108)); // bright lens interior: ~15% opaque so the eyes show through
+    }
+    return $im;
+  }
   /** If the API returned an opaque white background, make the white area connected to the edges transparent. */
   private static function ensureAlpha($im) {
     $w = imagesx($im); $h = imagesy($im); imagealphablending($im, false); imagesavealpha($im, true);
@@ -58,9 +84,9 @@ class TryOn {
         $b64 = $r->json('data.0.b64_json'); if (!$b64) throw new \RuntimeException('OpenAI returned no image');
         $im = @imagecreatefromstring((string)base64_decode($b64));
       } catch (\Throwable $e) { $note = 'Local cut-out (no AI): ' . mb_substr($e->getMessage(), 0, 120); $im = null; }
-      if (!$im) $im = @imagecreatefromstring($png); // fallback: the product photo itself, white background removed locally
+      $local = false; if (!$im) { $s0 = @imagecreatefromstring(self::srcBytes((string)$p->image)); if ($s0) { $im = self::localCutout($s0); $local = true; } }
       if (!$im) throw new \RuntimeException('Could not read the result');
-      $im = self::ensureAlpha($im); $w = imagesx($im); $h = imagesy($im);
+      if (!$local) $im = self::ensureAlpha($im); $w = imagesx($im); $h = imagesy($im);
       $x0 = $w; $x1 = 0; $y0 = $h; $y1 = 0;
       for ($y = 0; $y < $h; $y += 2) for ($x = 0; $x < $w; $x += 2) if ((((imagecolorat($im, $x, $y) >> 24) & 127)) < 100) { $x0 = min($x0, $x); $x1 = max($x1, $x); $y0 = min($y0, $y); $y1 = max($y1, $y); }
       if ($x1 <= $x0 || $y1 <= $y0) throw new \RuntimeException('No sunglasses found in the result');
