@@ -61,7 +61,7 @@ class OrderPaymentController extends Controller {
     $dup = ($d['txn_id'] ?? '') !== '' && DB::table('order_payments')->where('txn_id', $d['txn_id'])->whereIn('status', ['pending', 'verified'])->where(fn($w) => $w->where('amount', $amt)->orWhere('sender', $d['sender'] ?? '__'))->exists();
     if ($dup && empty($d['dup_ok'])) return back()->withInput()->with('bad', 'Suspicious duplicate: the same Transaction ID (with the same amount or sender) already exists. Tick "I checked the duplicate" to save.');
     $proof = $r->file('proof') ? $r->file('proof')->store('payment-proofs', 'public') : null; $u = Auth::user();
-    $verify = !empty($d['mark_paid']);
+    $verify = !empty($d['mark_paid']) && ManualPaymentController::canVerify(); // owner rule: other staff can only submit a request, never verify
     $pid = DB::table('order_payments')->insertGetId(['order_id' => $o->id, 'method' => $d['method'], 'amount' => $amt, 'txn_id' => $d['txn_id'] ?? null, 'sender' => $d['sender'] ?? null, 'paid_at' => $d['paid_at'] ?? now(), 'note' => $d['note'] ?? null,
       'proof' => $proof, 'status' => $verify ? 'verified' : 'pending', 'received_by' => $d['received_by'] ?? $u->name, 'created_by' => $u->id, 'created_by_name' => $u->name, 'verified_by' => $verify ? $u->name : null, 'verified_at' => $verify ? now() : null, 'created_at' => now(), 'updated_at' => now()]);
     self::recalc((int)$o->id);
