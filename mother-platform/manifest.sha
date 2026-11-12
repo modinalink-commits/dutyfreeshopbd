@@ -986,5 +986,5 @@ bc3611c1d40ecd69a45e9dc01572f7c836cb7020 public/preview/cat-slider.html
 b635a206556a3b081d4163d5d678c71ff19537e5 resources/views/store/cat_slider_js.blade.php
 0c1ab23abf12d068ae95b924e3091816e6263d48 resources/views/store/cat_slider_one.blade.php
 aaf73219fae91e74e813dadb9ab308a15a6ad111 resources/views/admin_bell.blade.php
-9a443b5a3d3a87578583e0709fdcc4759ac7176c app/Support/AdminAlerts.php
+0e20860e138c5aaea6481a10253608e86bce7526 app/Support/AdminAlerts.php
 85d5f3797634535601be328b8f0f6b018835133e app/Http/Controllers/AdminAlertController.php

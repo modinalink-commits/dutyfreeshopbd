@@ -11,7 +11,7 @@ class AdminAlerts
   /** Run every ~5 minutes from the scheduler worker. */
   public static function tick(): void {
     if (!Cache::add('adminalerts.lock', 1, 280)) return;
-    foreach (['orders', 'sms', 'whatsapp'] as $d) { try { self::$d(); } catch (\Throwable $e) {} }
+    foreach (['orders', 'sms', 'whatsapp', 'courier', 'payments'] as $d) { try { self::$d(); } catch (\Throwable $e) {} }
   }
 
   /** No new order for 3 hours in the daytime while the same 3 hours normally bring orders (average of the last 7 days). */
@@ -38,5 +38,24 @@ class AdminAlerts
     $n = DB::table('wa_messages')->where('status', 'failed')->where('ts', '>=', now()->subMinutes(30))->count();
     if ($n >= 5) DeployHealth::raise('wa_failing', 'high', 'Messages', 'WhatsApp sending is failing', $n . ' WhatsApp messages failed in the last 30 minutes.', 'The WhatsApp connection, token or message template may have a problem.', 'Open the WhatsApp inbox/settings and check the connection and the last error.');
     else DeployHealth::resolve('wa_failing', 'System (WhatsApp is working again)');
+  }
+
+  /** Courier: the parcel-status sync has not run for 60+ minutes while parcels are open, or Pathao sent a status nobody mapped yet. */
+  private static function courier(): void {
+    $open = DB::table('orders')->whereNotNull('consignment_id')->where('status', 'Shipment')->count();
+    $last = Cache::get('courier.last_sync'); $age = $last ? now()->diffInMinutes(\Carbon\Carbon::parse($last)) : null;
+    if ($open > 0 && ($age === null || $age >= 60)) DeployHealth::raise('courier_sync_stale', 'high', 'Courier', 'Courier status sync is not running', $open . ' parcels are in Shipment but their courier status was ' . ($age === null ? 'never' : $age . ' minutes ago') . ' updated.', 'The courier API (credentials, token expiry or the courier service) or the background worker may have stopped.', 'Open Courier settings, check the API connection, then run a manual courier sync.');
+    else DeployHealth::resolve('courier_sync_stale', 'System (courier sync is running)');
+    $m = DB::table('orders')->where('courier_flag', 'Courier Status Mapping Required')->count();
+    if ($m > 0) DeployHealth::raise('courier_unmapped', 'warning', 'Courier', 'Courier sent an unknown status', $m . ' orders have a courier status that is not mapped.', 'The courier introduced a new status word.', 'Map the status in the courier status map so these orders update correctly.');
+    else DeployHealth::resolve('courier_unmapped', 'System (all statuses mapped)');
+  }
+
+  /** Payment: manual payments waiting for verification for more than 24 hours (5 or more). */
+  private static function payments(): void {
+    if (!Schema::hasTable('order_payments')) return;
+    $n = DB::table('order_payments')->where('status', 'pending')->where('created_at', '<', now()->subHours(24))->count();
+    if ($n >= 5) DeployHealth::raise('payments_unverified', 'warning', 'Payment', 'Payments waiting for verification', $n . ' payments have been pending verification for more than 24 hours.', 'Staff have not verified or rejected the submitted payments.', 'Open the pending payments list and verify or reject them.');
+    else DeployHealth::resolve('payments_unverified', 'System (payments are being verified)');
   }
 }
