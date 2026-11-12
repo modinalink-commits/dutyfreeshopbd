@@ -11,7 +11,7 @@ class AdminAlerts
   /** Run every ~5 minutes from the scheduler worker. */
   public static function tick(): void {
     if (!Cache::add('adminalerts.lock', 1, 280)) return;
-    foreach (['orders', 'sms', 'whatsapp', 'courier', 'payments'] as $d) { try { self::$d(); } catch (\Throwable $e) {} }
+    foreach (['orders', 'sms', 'whatsapp', 'courier', 'payments', 'deploystuck'] as $d) { try { self::$d(); } catch (\Throwable $e) {} }
   }
 
   /** No new order for 3 hours in the daytime while the same 3 hours normally bring orders (average of the last 7 days). */
@@ -57,5 +57,12 @@ class AdminAlerts
     $n = DB::table('order_payments')->where('status', 'pending')->where('created_at', '<', now()->subHours(24))->count();
     if ($n >= 5) DeployHealth::raise('payments_unverified', 'warning', 'Payment', 'Payments waiting for verification', $n . ' payments have been pending verification for more than 24 hours.', 'Staff have not verified or rejected the submitted payments.', 'Open the pending payments list and verify or reject them.');
     else DeployHealth::resolve('payments_unverified', 'System (payments are being verified)');
+  }
+
+  /** A release that has sat in an active state (Queued, Downloading, Building...) for 15+ minutes: the host-side deploy worker is stuck. */
+  private static function deploystuck(): void {
+    $row = DB::table('deployments')->whereIn('status', \App\Support\Deployer::ACTIVE)->where('updated_at', '<', now()->subMinutes(15))->orderByDesc('id')->first();
+    if ($row) DeployHealth::raise('deploy_stuck', 'high', 'Deploy', 'A release is stuck', 'Release ' . ($row->version ?: $row->sha) . ' has been "' . $row->status . '" for more than 15 minutes.', 'The host-side deploy worker is not picking up the request.', 'Open Deployment Center, cancel the pending release and run Quick Deploy; if it stays stuck restart the motherplatform project in Docker Manager.');
+    else DeployHealth::resolve('deploy_stuck', 'System (no stuck release)');
   }
 }
