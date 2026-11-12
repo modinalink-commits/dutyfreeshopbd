@@ -35,7 +35,7 @@ class MotherAffiliateDaily extends Command {
       $jobs = []; foreach (array_filter(explode(',', (string)$this->option('jobs'))) as $j) { [$jc, $js] = array_pad(explode(':', $j), 2, '1'); $jobs[$jc] = $js !== '0'; }
       if (!$jobs) $jobs = ['watch' => true, 'gadget' => true, 'sunglass' => true, 'amour' => true, 'beauty' => true];
       $gd = strtolower((string)(DB::table('settings')->where('key', 'gadget_source_domain')->value('value') ?? 'startech.com.bd'));
-      foreach (['watch' => 'timeaccess-store.com', 'gadget' => $gd, 'sunglass' => 'luxotix.com', 'amour' => 'amour.com.bd', 'beauty' => 'sundora.com.bd'] as $c => $dom) {
+      foreach (['watch' => 'timeaccess-store.com', 'gadget' => $gd, 'sunglass' => 'luxotix.com', 'amour' => 'amour.com.bd', 'beauty' => 'sundora.com.bd', 'fashion' => strtolower((string)(DB::table('settings')->where('key', 'fashion_source_domain')->value('value') ?? ''))] as $c => $dom) {
         if ($dom === '') continue;
         if ($jobs && !array_key_exists($c, $jobs)) continue; $doScan = $jobs ? $jobs[$c] : true; $setPend($jobs);
         $s = DB::table('stores')->whereRaw('lower(domain) = ? or lower(domain) = ?', [$dom, 'www.' . $dom])->orderByRaw('(select count(*) from store_products sp where sp.store_id = stores.id) desc')->orderBy('id')->first(); if (!$s) continue;

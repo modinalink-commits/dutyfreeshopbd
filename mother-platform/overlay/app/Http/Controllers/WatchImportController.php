@@ -9,7 +9,8 @@ use Illuminate\Support\Facades\DB;
 class WatchImportController extends Controller {
   /** Which source feeds which category: watch <- timeaccess-store.com, gadget <- startech.com.bd (owner, 8 Nov 2026; both +5%, prepaid only, no discount). */
   private function cfg(): array {
-    $c = in_array(request('c'), ['gadget', 'sunglass', 'amour', 'beauty'], true) ? request('c') : 'watch'; $set = fn($k, $d) => (string)(DB::table('settings')->where('key', $k)->value('value') ?? $d);
+    $c = in_array(request('c'), ['gadget', 'sunglass', 'amour', 'beauty', 'fashion'], true) ? request('c') : 'watch'; $set = fn($k, $d) => (string)(DB::table('settings')->where('key', $k)->value('value') ?? $d);
+    if ($c === 'fashion') return ['c' => 'fashion', 'domain' => strtolower($set('fashion_source_domain', '')), 'cat' => 'fashion', 'prefix' => 'DFF', 'pct' => (float)($set('fashion_markup_pct', '15') ?: 15), 'max' => 0.0, 'dir' => 'fashion']; // owner 13 Nov 2026: Fashion between Gadget & Electronics and Perfume; source domain = setting fashion_source_domain (set when the owner names the shop)
     if ($c === 'beauty') return ['c' => 'beauty', 'domain' => 'sundora.com.bd', 'cat' => 'beauty', 'prefix' => 'DFB', 'pct' => (float)($set('beauty_markup_pct', '15') ?: 15), 'max' => 0.0, 'dir' => 'beauty']; // owner 13 Nov 2026: Beauty <- sundora.com.bd (partner), sale price source +15%, regular (crossed-out) price source +25%
     if ($c === 'amour') return ['c' => 'amour', 'domain' => 'amour.com.bd', 'cat' => 'lighter-accessories', 'prefix' => 'DFA', 'pct' => (float)($set('amour_markup_pct', '15') ?: 15), 'max' => 0.0, 'dir' => 'amour'];
     if ($c === 'sunglass') return ['c' => 'sunglass', 'domain' => 'luxotix.com', 'cat' => 'sunglass', 'prefix' => 'DFS', 'pct' => (float)($set('sunglass_markup_pct', '15') ?: 15), 'max' => 0.0, 'dir' => 'sunglass'];
