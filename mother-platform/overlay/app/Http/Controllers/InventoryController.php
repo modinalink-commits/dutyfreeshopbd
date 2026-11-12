@@ -139,7 +139,7 @@ class InventoryController extends Controller {
       'fulfillment'=>'nullable|in:dropship,warehouse','return_days'=>'nullable|integer|min:0|max:90','return_cost_by'=>'nullable|in:customer,us','return_note'=>'nullable|string|max:255',
       'ship_rule'=>'nullable|in:default,flat,free_over','ship_flat'=>'nullable|integer|min:0','ship_free_over'=>'nullable|integer|min:0','price_jump_pct'=>'nullable|integer|min:0|max:500',
       'min_order_value'=>'nullable|integer|min:0','max_qty'=>'nullable|integer|min:0','max_order_value'=>'nullable|integer|min:0','cutoff_time'=>'nullable|date_format:H:i','auth_note'=>'nullable|string|max:160',
-      'vendor_contact'=>'nullable|string|max:60','vendor_pay_terms'=>'nullable|string|max:160','vendor_lead_days'=>'nullable|integer|min:0|max:60','order_channel'=>'nullable|in:manual,whatsapp','internal_note'=>'nullable|string|max:2000']);
+      'vendor_contact'=>'nullable|string|max:60','company_name'=>'nullable|string|max:160','website'=>'nullable|string|max:200','company_email'=>'nullable|string|max:120','company_phone'=>'nullable|string|max:40','support_phone'=>'nullable|string|max:40','company_address'=>'nullable|string|max:300','vendor_pay_terms'=>'nullable|string|max:160','vendor_lead_days'=>'nullable|integer|min:0|max:60','order_channel'=>'nullable|in:manual,whatsapp','internal_note'=>'nullable|string|max:2000']);
     $dom = StoreScanner::cleanDomain($d['domain']);
     if ($dom === '') return back()->withErrors(['domain'=>'Enter a valid domain such as example.com'])->withInput();
     if (DB::table('stores')->where('domain',$dom)->where('id','!=',$id)->exists()) return back()->withErrors(['domain'=>'This domain is already added'])->withInput();
@@ -147,7 +147,7 @@ class InventoryController extends Controller {
     $n = fn($k) => ($d[$k] ?? '') === '' || ($d[$k] ?? null) === null ? null : $d[$k];
     $row = ['name'=>$d['name'],'domain'=>$dom,'source_category'=>$this->srcCats($d['source_categories'] ?? []),'active'=>$r->boolean('active'),'paused'=>$r->boolean('paused'),'updated_at'=>now(),'terms_updated_at'=>now(),
       'pay_mode'=>$d['pay_mode'],'delivery_style'=>$d['delivery_style'] ?? 'range','fulfillment'=>$d['fulfillment'] ?? 'dropship','ship_rule'=>$d['ship_rule'] ?? 'default','order_channel'=>$d['order_channel'] ?? 'manual'];
-    foreach (['sale_pct','regular_pct','price_min','price_max','delivery_min','delivery_max','return_days','return_cost_by','return_note','ship_flat','ship_free_over','price_jump_pct','min_order_value','max_qty','max_order_value','cutoff_time','auth_note','vendor_contact','vendor_pay_terms','vendor_lead_days','internal_note'] as $k) $row[$k] = $n($k);
+    foreach (['sale_pct','regular_pct','price_min','price_max','delivery_min','delivery_max','return_days','return_cost_by','return_note','ship_flat','ship_free_over','price_jump_pct','min_order_value','max_qty','max_order_value','cutoff_time','auth_note','company_name','website','company_email','company_phone','support_phone','company_address','vendor_contact','vendor_pay_terms','vendor_lead_days','internal_note'] as $k) $row[$k] = $n($k);
     $before = (array)$s;
     DB::table('stores')->where('id',$id)->update($row);
     DB::table('store_products')->where('store_id',$id)->update(['store_label'=>$d['name']]);
