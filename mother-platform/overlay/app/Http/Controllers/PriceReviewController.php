@@ -20,7 +20,9 @@ class PriceReviewController extends Controller {
       foreach ($rows as $x) fputcsv($o, [$x['id'], $x['sku'], $x['name'], $x['cat'], $x['cost'], $x['price'], $x['min'], $x['short'], $x['margin'], $x['stock'], $x['pub'] ? 'yes' : 'no']);
       rewind($o); return response("\xEF\xBB\xBF" . stream_get_contents($o), 200, ['Content-Type' => 'text/csv; charset=UTF-8', 'Content-Disposition' => 'attachment; filename="price-review.csv"']);
     }
-    return view('price_review', ['rows' => $rows]);
+    $per = \App\Support\Pg::per(50); $page = max(1, (int)$r->query('page', 1));
+    $pg = new \Illuminate\Pagination\LengthAwarePaginator(array_slice($rows, ($page - 1) * $per, $per), count($rows), $per, $page, ['path' => $r->url(), 'query' => $r->query()]);
+    return view('price_review', ['rows' => $pg]);
   }
 
   /** Inventory pricing (Hybrid Costing): last purchase price (reference), weighted average cost (reporting), current FIFO batch cost (the real cost the 15% rule uses), sale price, minimum safe sale, profit and status. Admin, and roles given the costs permission (view only). */
