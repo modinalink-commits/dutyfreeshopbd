@@ -181,7 +181,8 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape'&&isOpen)clos
 P.onclick=function(e){if(e.target.id==='dfcpx'){P.classList.remove('op');try{sessionStorage.setItem('dfw','1')}catch(x){}return}openChat()};
 /* automatic welcome popup: once per visit, after a short delay, never over an open chat */
 var seenW=false;try{seenW=sessionStorage.getItem('dfw')==='1'}catch(e){}
-if(!seenW&&!S.t){setTimeout(function(){if(!isOpen&&!P.classList.contains('op')){P.classList.add('op');L.classList.add('hint');try{sessionStorage.setItem('dfw','1')}catch(e){}setTimeout(function(){P.classList.remove('op');L.classList.remove('hint')},14000)}},8000)}
+if(!seenW&&!S.t&&window.innerWidth>=761){setTimeout(function(){if(isOpen)return;var touched=false;function t(){touched=true}['pointerdown','keydown','input','wheel'].forEach(function(ev){W.addEventListener(ev,t,{once:true,passive:true})});W.addEventListener('mouseenter',t,{once:true});openChat();try{sessionStorage.setItem('dfw','1')}catch(e){}setTimeout(function chk(){if(!isOpen||touched)return;closeChat();L.classList.add('hint');setTimeout(function(){L.classList.remove('hint')},3500)},8000)},2000)}
+else if(!seenW&&!S.t){setTimeout(function(){if(!isOpen&&!P.classList.contains('op')){P.classList.add('op');L.classList.add('hint');try{sessionStorage.setItem('dfw','1')}catch(e){}setTimeout(function(){P.classList.remove('op');L.classList.remove('hint')},14000)}},8000)}
 else{setTimeout(function(){L.classList.add('hint');setTimeout(function(){L.classList.remove('hint')},3500)},7500)}
 function ping(){poll()}
 setInterval(function(){if(!S.t||document.hidden)return;poll()},4000);
