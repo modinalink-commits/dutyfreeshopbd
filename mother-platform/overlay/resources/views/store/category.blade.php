@@ -26,7 +26,7 @@
 .cl .fl,.cl .tb2{border-color:#FDC2A5}.cl .tb2 select{border-color:#FDC2A5}
 .cl .pc{border:1px solid #FDC2A5;border-radius:16px;box-shadow:0 1px 2px rgba(11,18,32,.05),0 6px 18px rgba(11,18,32,.06)}
 .cl .pc .on{background:var(--o);border-color:var(--o);border-radius:10px;margin:0 10px;font-weight:800;letter-spacing:.03em}
-.cl .pc .dp{background:var(--o)!important;color:#fff!important;border-radius:6px!important}
+
 .cl .pc .fds{background:var(--n)!important;color:#fff!important}
 @media(max-width:900px){.cbn{flex-direction:column!important;align-items:flex-start!important}.cbn .ch{justify-content:flex-start}.tst{grid-template-columns:repeat(3,1fr);gap:6px}.tst div{flex-direction:column;text-align:center;padding:8px 4px;gap:4px}.tst div span{display:none}.cl .pc .on{margin:0 6px}}
 </style>

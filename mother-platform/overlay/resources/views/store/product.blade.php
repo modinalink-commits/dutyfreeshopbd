@@ -65,7 +65,7 @@
 <style>
 /* pp-v3: front-page match (CSS-only restyle, logic untouched) */
 .pp .ph{background:#FFF3EA;border:1px solid #FDC2A5;border-radius:20px}
-.pi .pz span{background:var(--o);color:#fff;border-radius:6px;font-weight:800}
+.pi .pz span{background:#121A2B;color:#fff;border-radius:6px;font-weight:800;letter-spacing:.3px;display:inline-flex;align-items:center;gap:4px;padding:3px 8px 3px 6px}.pi .pz span:before{content:"";border-left:4px solid transparent;border-right:4px solid transparent;border-top:6px solid #FF5A00}
 .pi .bq .bo,.pi .bq .bo.t2,.pi .bq .bo.t3,.pi .bq .bo.t4,.pi .bq .bo.t5{background:#fff;border-color:#FDC2A5;border-radius:12px}
 .pi .bq .bo .sv,.pi .bq .bo.t2 .sv,.pi .bq .bo.t3 .sv,.pi .bq .bo.t4 .sv,.pi .bq .bo.t5 .sv{background:#FFF3EA;color:var(--o)}
 .pi .bq .bo.on,.pi .bq .bo.t2.on,.pi .bq .bo.t3.on,.pi .bq .bo.t4.on,.pi .bq .bo.t5.on{background:#FFF3EA;border-color:var(--o);box-shadow:inset 0 0 0 1px var(--o)}
