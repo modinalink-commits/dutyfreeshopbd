@@ -55,7 +55,7 @@ d7ee57121d8956f4199849d0ece1dba7723da63e app/Http/Controllers/StoreController.ph
 b31aae8aa6f2d211580d93c052e0166c899221b1 resources/views/store/layout.blade.php
 5356b422775064c3de9b13c703f12fbf913a2bd3 resources/views/store/card.blade.php
 4a5eb7ee8d7960886fcb97c690bbb604ec69eb1f resources/views/store/home_sec.blade.php
-68647b41240bbce770c8ce32fb6ff667e549b763 resources/views/store/home.blade.php
+2b8b1f98eab163ff9c4d3c5d6878a1d8cd19d7e1 resources/views/store/home.blade.php
 9cad8fdec930db3c73278887b3c3aed3bd9ce588 resources/views/store/category.blade.php
 96a849a50b7424385acf297e985284db202c1547 resources/views/store/product.blade.php
 7ad9d9502d41f54d6784414a9aa3f16a8ab0ec13 resources/views/store/search.blade.php
@@ -995,3 +995,5 @@ ea1eed366a93b9ce568ebf55d1724dc122a7d338 database/migrations/2026_11_12_000400_f
 1e7c04ab5ac1af892ac8d217dd412b8c5b91def8 database/migrations/2026_11_12_000700_live_orders_on.php
 024ed2a18a41f2ea011faedadb8d3225ca32a595 resources/views/store/hero_side.blade.php
 e8b533407e2ccd290c0935ae464b6f4da82e7113 database/migrations/2026_11_12_000800_store_cache_bust2.php
+68fccf231dcdce3ab1548c5de9b00c565c294588 database/migrations/2026_11_12_000900_store_cache_bust3.php
+3ca09a9576180825e89e38d6d9e17a551052de0a resources/views/store/badge_try.blade.php
