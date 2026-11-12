@@ -7,7 +7,7 @@ set -u
 umask 000
 D=/srv/deploy; mkdir -p "$D"
 exec 9>"$D/lock"
-if ! flock -w 120 9; then echo "another deploy is running"; exit 1; fi # wait up to 2 min for a previous run to release the lock instead of failing at once
+n=0; until flock -n 9; do n=$((n+1)); [ "$n" -ge 60 ] && { echo "another deploy is running"; exit 1; }; sleep 2; done # BusyBox flock has no -w: wait up to 2 min for a previous run to release the lock instead of failing at once
 LOG="$D/last.log"
 log() { echo "[$(date +%H:%M:%S)] $*"; }
 setst() { echo "$1" > "$D/status"; }
