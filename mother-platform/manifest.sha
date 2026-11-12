@@ -622,7 +622,7 @@ c44356a1ceb433ec63f5781230d1aeef871f115c app/Support/AiBrief.php
 2388b84b2a259131082aac640620f7eea8ad173c resources/views/ai_brief.blade.php
 3c1889cced51aee6cbfcc96dcb506218883f2bc3 app/Support/DeployHealth.php
 a33b792d41ca0175c19dc468c4636ac4a8877ff6 database/migrations/2026_11_05_000090_deploy_center_v2.php
-30ebc76bcb33b5f45543679b1af5d2b576abf783 resources/views/admin_table.blade.php
+f0d5e22ed4b0f13ccfd9c2e3c98d8b48f24161b7 resources/views/admin_table.blade.php
 68f645c6b6ff12e25c54b13d4ed119e631dcbb26 public/fonts/inter-latin-400-normal.woff2
 6b66c741bf8bc3ce248af04b2051a648a38391d6 public/fonts/inter-latin-500-normal.woff2
 e0d61f6dc511d64a072b2f4dc94e155ecf1bb6f6 public/fonts/inter-latin-600-normal.woff2

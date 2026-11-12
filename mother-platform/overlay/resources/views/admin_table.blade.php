@@ -252,8 +252,8 @@ main table .mc-dl{flex:0 0 38%;color:var(--text-muted);font-weight:600}main tabl
     var host=t.closest('.mc-ts')||t;host.parentNode.insertBefore(bar,host.nextSibling);t.__cbar=bar;
   }
   function cpg(){
-    if(document.querySelector('main .pgx'))return;
     document.querySelectorAll('main table.mc-t').forEach(function(t){
+      var bx=t.closest('.card')||t.parentNode.parentNode;if(bx&&bx.querySelector('.pgx'))return;
       if((t.classList.contains('pl')&&t.querySelector('tr.det'))||t.classList.contains('ordt')||t.closest('[data-nopg]')||t.dataset.nopg)return;
       var rs=t.querySelectorAll(':scope > tbody > tr');
       if(rs.length<=CPER&&!t.__cbar)return;
