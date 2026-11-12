@@ -332,7 +332,7 @@ class AdminController extends Controller {
       $courier = $o->collected_amount !== null ? (float)$o->collected_amount : $pv;
       if ($ret > 0 || $mv > 0 || $courier > 0) $recon = ['gross' => $gross, 'ret' => $ret, 'lines' => $retLines, 'recv' => $recv, 'mv' => $mv, 'courier' => $courier, 'diff' => round($recv - $mv - $courier, 2)];
     } catch (\Throwable $e) { $recon = null; }
-    return view('order_show', compact('o','items','logs','ci','comments','prints','ops','recon'));
+    try { return response(view('order_show', compact('o','items','logs','ci','comments','prints','ops','recon'))->render()); } catch (\Throwable $e) { report($e); return response('Order page error: ' . mb_substr($e->getMessage(), 0, 400) . ' @ ' . basename($e->getFile()) . ':' . $e->getLine(), 500); } // staff-only page: show the real cause instead of a blank 500
   }
   public function orderComment(Request $r, $id) {
     $d = $r->validate(['body'=>'required|string|max:2000','category'=>'nullable|string|max:80']);
