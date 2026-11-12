@@ -1,4 +1,4 @@
-@verbatim<script>(function(){var S=[].slice.call(document.querySelectorAll('[data-cs2]'));if(!S.length)return;var RM=window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches,IV=5000;
+@verbatim<script>(function(){var S=[].slice.call(document.querySelectorAll('[data-cs2]'));if(!S.length)return;var RM=window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches,IV=9000;
 function init(el){var vp=el.querySelector('.cs2-vp'),tr=el.querySelector('.cs2-tr'),n=+el.getAttribute('data-n'),pg=el.querySelector('.cs2-pg i'),bg=el.querySelector('.cs2-bg'),page=0,timer=0,vis=false,hov=false,sx=null,dx=0,iv=(el.hasAttribute('data-iv')?+el.getAttribute('data-iv'):IV);
 function per(){return Math.max(1,Math.round(parseFloat(getComputedStyle(vp).getPropertyValue('--v'))||6))}
 function pages(){return Math.ceil(n/per())}

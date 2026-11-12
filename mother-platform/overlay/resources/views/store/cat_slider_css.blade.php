@@ -8,7 +8,7 @@
 .cs2-all{flex:none;display:inline-flex;align-items:center;gap:6px;background:#FF5A00;color:#fff;font-weight:700;font-size:13px;padding:9px 16px;border-radius:999px;text-decoration:none;transition:transform .3s,box-shadow .3s}
 .cs2-all:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(255,90,0,.3)}
 .cs2-vp{position:relative;overflow:hidden;touch-action:pan-y;--v:var(--vd,6)}
-.cs2-tr{display:flex;transition:transform .8s cubic-bezier(.25,.8,.25,1);will-change:transform}
+.cs2-tr{display:flex;transition:transform 1.4s cubic-bezier(.3,.7,.25,1);will-change:transform}
 .cs2-i{flex:0 0 calc(100%/var(--v));padding:6px 7px 14px;box-sizing:border-box;min-width:0}
 .cs2-c{display:flex;flex-direction:column;height:100%;background:#fff;border-radius:16px;box-shadow:0 2px 10px rgba(18,26,43,.08);overflow:hidden;text-decoration:none;color:#121A2B;opacity:0;transform:perspective(900px) translate3d(0,22px,0) rotateX(10deg);transition:opacity .6s ease,transform .7s cubic-bezier(.2,.8,.2,1),box-shadow .35s;transition-delay:calc(var(--k)*100ms)}
 .cs2.in .cs2-c{opacity:1;transform:none}.cs2.in .cs2-t span{transform:none;opacity:1}
