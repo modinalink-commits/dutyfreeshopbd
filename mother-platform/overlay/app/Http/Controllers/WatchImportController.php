@@ -82,7 +82,7 @@ class WatchImportController extends Controller {
       $acc = str_contains($c, 'accessor') || preg_match('/^\d+\s*slots?\b|\bstrap\s+for\b|\bwatch\s+(box|case|organi[sz]er|winder|roll)\b|organi[sz]er|\bwinder\b|\bwatch\s+tool|\bspring\s*bar|\bbuckle\b/i', $n);
       return $acc ? 'Accessories' : 'Watch';
     }
-    $t = trim((string)$srcCat); return $t !== '' ? mb_convert_case($t, MB_CASE_TITLE) : ($cat === 'lighter-accessories' ? 'Accessories' : 'Gadgets');
+    $t = trim((string)$srcCat); return $t !== '' ? mb_convert_case($t, MB_CASE_TITLE) : ($cat === 'lighter-accessories' ? 'Accessories' : ($cat === 'fashion' ? 'Others' : 'Gadgets'));
   }
   /** Gadget & Electronics sub category from the product name (the source shop gives no category). */
   public static function gadgetSub(string $name): string {
