@@ -2,7 +2,7 @@
 namespace App\Support;
 /** One main domain for everything public (canonical, sitemap, robots, structured data, footer, links in messages). Other domains the site answers on (dutyfreeshopbd.com, dutyfreebd.shop, dutyfreebd.store ...) are secondary. */
 class Domain {
-  const HOST = 'www.dutyfreebd.com';
+  const HOST = 'dutyfreebd.com';
   public static function main(): string { return 'https://' . (CleanSite::on() ? CleanSite::host() : self::HOST); }
   public static function abs(string $path = '/'): string { return self::main() . '/' . ltrim($path, '/'); }
   /** Same URL on the main domain (scheme, host and port replaced; path and query kept). */
