@@ -59,7 +59,7 @@ class WatchImportController extends Controller {
     $s = $this->src(); abort_unless($s, 404);
     $cat = DB::table('categories')->where('slug', $this->cfg()['cat'])->first(); if (!$cat) return response()->json(['finished' => true, 'done' => 0, 'note' => 'Watch category not found (deploy migration first).']);
     $lock = Cache::lock('watch-import', 80); if (!$lock->get()) return response()->json(['finished' => false] + $this->stat($s->id));
-    $cats = $this->storeCats($s);
+    $cats = $this->storeCats($s); $xr = in_array((string)request('c'), ['fashion'], true) || preg_match('/^s\d+$/', (string)request('c'));
     try {
       $pct = $this->cfg()['pct'];
       $rows = $this->cond(DB::table('store_products'), $s->id)->whereNotIn('id', DB::table('watch_source')->select('store_product_id'))->orderBy('id')->limit(12)->get();
@@ -73,7 +73,7 @@ class WatchImportController extends Controller {
           $our = (int)ceil((float)$x->price * (1 + $pct / 100));
           $name = trim(preg_replace('/\s+/u', ' ', (string)$x->name)); $name = trim(str_ireplace(['timeaccess-store.com', 'timeaccess store', 'timeaccess'], '', $name)); $name = trim(preg_replace('/\s*(?:\|\s*Star\s*Tech.*|Price in (?:Bangladesh|BD)\b.*)$/iu', '', $name)); $name = trim(preg_replace('/\bStar\s*Tech\b/iu', '', $name)); if ($name === '') $name = 'Watch';
           $name = trim(preg_replace('/\s{2,}/u', ' ', preg_replace(['/\s*[|\-–]\s*Time\s*Access\b.*$/iu', '/\bTime\s*-?\s*Access\b/iu', '/\bLuxotix\b\s*/iu', '/\bSundora\b\s*/iu'], '', $name)), " \t-|–"); // no trace of the source shop in our product names
-          $tc = $this->routeCat((string)$x->name, (string)$x->category, $cats) ?: $cat; // a store feeding 2-3 main categories: each product goes to the right one (owner 13 Nov 2026)
+          $tc = ($xr ? $this->routeCat((string)$x->name, (string)$x->category, $cats) : null) ?: $cat; // a store feeding 2-3 main categories: each product goes to the right one (owner 13 Nov 2026)
           $sub = self::subFor((string)$name, $x->category, $tc->slug, (string)$x->url);
           $base = \App\Support\Slugs::slug($name) ?: 'watch'; $slug = $base; $i = 2; $subSlug = \App\Support\Slugs::subSlug($sub);
           while (DB::table('products')->where('category_id', $tc->id)->whereRaw(\App\Support\Slugs::subSql() . ' = ?', [$subSlug])->where('path_slug', $slug)->exists()) $slug = $base . '-' . $i++;
@@ -112,7 +112,19 @@ class WatchImportController extends Controller {
     return $names ? DB::table('categories')->whereNull('parent_id')->whereIn('name', $names)->get()->sortBy(fn($c) => array_search($c->name, array_values($names)))->values()->all() : [];
   }
   /** Picks the category of one product for a store that feeds several. Beauty only for real skin / hair-care / cosmetic items; everything else to the first non-Beauty category. */
+  /** Product that really belongs to another main category (a fashion shop selling watches, earbuds, skincare ...): its slug, else null. */
+  public static function crossRoute(string $name, string $type): ?string {
+    $t = mb_strtolower($type . ' | ' . $name);
+    if (preg_match('/earbud|earphone|headphone|headset|\bspeaker|power\s*bank|\bcharger\b|smart\s*watch|smartwatch|smart\s*band|fitness\s*band|\btws\b|neckband|\btrimmer|\bshaver\b|hair\s*(dryer|straightener|remover)|\bipl\b|massager|\bcamera\b|\bgimbal/', $t)) return 'gadget-electronics';
+    if (preg_match('/\bwatch(es)?\b/', $t)) return 'watch';
+    if (preg_match('/sunglass|eyewear|\bshades\b|polari[sz]ed/', $t)) return 'sunglass';
+    if (preg_match('/\blighter\b|zippo|ash\s*tray/', $t)) return 'lighter-accessories';
+    if (preg_match('/skin\s*care|skincare|sunscreen|sun\s*block|serum|cleanser|face\s*wash|toner|moisturi[sz]er|\blotion|\bcream\b|shampoo|conditioner|hair\s*(oil|serum|mask|care|treatment|spray)|body\s*(wash|scrub|butter|oil|mist)|lip\s*(balm|care|stick|gloss)|lipstick|mascara|foundation|concealer|eye\s*liner|eyeliner|kajal|makeup|make-up|nail\s*polish|perfume|fragrance|attar|deodorant|facial|scrub|essence|face\s*mask|sheet\s*mask/', $t)) return 'beauty';
+    return null;
+  }
   private function routeCat(string $name, string $type, array $cats) {
+    $xs = self::crossRoute($name, $type);
+    if ($xs) { $c = DB::table('categories')->whereNull('parent_id')->where('slug', $xs)->first(); if ($c) return $c; }
     if (count($cats) < 2) return null;
     $beauty = null; $other = null; foreach ($cats as $c) { if ($c->slug === 'beauty') $beauty = $beauty ?: $c; else $other = $other ?: $c; }
     if ($beauty && $other && preg_match('/skin\s*care|skincare|sunscreen|sun\s*block|serum|cleanser|face\s*wash|toner|moisturi[sz]er|\blotion|\bcream\b|\bmask\b|shampoo|conditioner|hair\s*(oil|serum|mask|care|treatment|spray)|body\s*(wash|scrub|butter|oil|mist)|lip\s*(balm|care|stick|gloss)|lipstick|mascara|foundation|concealer|eye\s*liner|eyeliner|kajal|makeup|make-up|nail\s*polish|perfume|deodorant|facial|scrub|essence|\bgel\b|personal\s*care/i', $type . ' | ' . $name)) return $beauty;
@@ -202,10 +214,13 @@ class WatchImportController extends Controller {
     $cat = DB::table('categories')->where('slug', $cf['cat'])->first(); abort_unless($cat, 404);
     $cm = [$cat->id => $cat->slug]; foreach ($this->storeCats($s) as $__c) $cm[$__c->id] = $__c->slug; // a store feeding several categories: re-sort inside each
     $rows = DB::table('watch_source as w')->join('products as p', 'p.id', '=', 'w.product_id')->leftJoin('store_products as sp', 'sp.id', '=', 'w.store_product_id')->where('w.store_id', $s->id)->whereIn('p.category_id', array_keys($cm))->get(['p.id', 'p.category_id', 'p.name', 'p.sub', 'p.slug', 'w.source_url', 'w.source_name', 'sp.category as src_cat']); $n = 0;
+    $xr = $cf['c'] === 'fashion' || preg_match('/^s\d+$/', $cf['c']); $bySlug = [];
     foreach ($rows as $x) {
-      $sub = self::subFor((string)($x->source_name ?: $x->name), in_array($cf['c'], ['gadget', 'amour'], true) ? null : $x->src_cat, $cm[$x->category_id], (string)$x->source_url);
-      if ($sub === $x->sub) continue;
-      DB::table('products')->where('id', $x->id)->update(['sub' => $sub, 'sub_sub' => null, 'path_slug' => $this->slugFor((int)$x->category_id, (string)($x->slug ?: \App\Support\Slugs::slug($x->name)), $sub, (int)$x->id), 'updated_at' => now()]); $n++;
+      $tid = (int)$x->category_id; $tslug = $cm[$x->category_id];
+      if ($xr) { $xs = self::crossRoute((string)($x->source_name ?: $x->name), (string)$x->src_cat); if ($xs) { if (!array_key_exists($xs, $bySlug)) $bySlug[$xs] = DB::table('categories')->whereNull('parent_id')->where('slug', $xs)->first(); if ($bySlug[$xs]) { $tid = (int)$bySlug[$xs]->id; $tslug = $xs; } } }
+      $sub = self::subFor((string)($x->source_name ?: $x->name), in_array($cf['c'], ['gadget', 'amour'], true) ? null : $x->src_cat, $tslug, (string)$x->source_url);
+      if ($sub === $x->sub && $tid === (int)$x->category_id) continue;
+      DB::table('products')->where('id', $x->id)->update(['category_id' => $tid, 'sub' => $sub, 'sub_sub' => null, 'path_slug' => $this->slugFor($tid, (string)($x->slug ?: \App\Support\Slugs::slug($x->name)), $sub, (int)$x->id), 'updated_at' => now()]); $n++;
     }
     foreach (['store.cats', 'store.catslugs', 'store.subs', 'store.home11', 'store.sitemap5'] as $k) \Illuminate\Support\Facades\Cache::forget($k); \App\Http\Controllers\StoreController::bust();
     return response()->json(['ok' => true, 'moved' => $n, 'total' => $rows->count()]);
