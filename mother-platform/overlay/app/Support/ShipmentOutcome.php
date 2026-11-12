@@ -74,7 +74,7 @@ class ShipmentOutcome {
     foreach ($items as $i) { $r = (int)($retQty[$i->id] ?? 0); if ($r < 0 || $r > (int)$i->qty) return [false, 'Return quantity for "'.$i->name.'" must be between 0 and '.(int)$i->qty.'.', $o->status]; $i->ret_qty = $r; }
     $c = self::classify($items); $now = now(); $lines = []; $s = self::summary($o, $items);
     $money = self::moneyFor($o, $c, $s['recV']);
-    DB::transaction(function () use ($items, $c, $o, $orderId, $now, &$lines, $money) {
+    DB::transaction(function () use ($items, $c, $o, $orderId, $now, &$lines, $money, $note) {
       foreach ($items as $i) {
         $out = $i->ret_qty > 0 ? 'Return Pending' : 'Received';
         DB::table('order_items')->where('id', $i->id)->update(['outcome'=>$out, 'ret_qty'=>$i->ret_qty, 'back_qty'=>null, 'outcome_at'=>$now]);
