@@ -117,7 +117,8 @@ class StoreScanner {
       } elseif ($st['mode'] === 'shopify') {
         $page = $st['page']; $rows = [];
         while (microtime(true) < $deadline) {
-          $j = self::json(self::get($st['base']."/products.json?limit=250&page=$page", 20)); $list = is_array($j) ? ($j['products'] ?? []) : [];
+          $j = self::json(self::get($st['base']."/products.json?limit=250&page=$page", 30)); $list = is_array($j) ? ($j['products'] ?? []) : [];
+          if (!$list) { $j = self::json(self::get($st['base']."/products.json?limit=250&page=$page", 45)); $list = is_array($j) ? ($j['products'] ?? []) : []; } // one retry: a slow/failed page must not look like "the end"
           if (!$list) { $done = true; break; }
           foreach ($list as $p) {
             $v = $p['variants'][0] ?? []; $avail = false; foreach ($p['variants'] ?? [] as $vv) if (!empty($vv['available'])) $avail = true;
@@ -125,7 +126,7 @@ class StoreScanner {
             $rows[] = self::row($id, 'sh:'.$p['id'], $p['title'] ?? '', $v['sku'] ?? null, $p['images'][0]['src'] ?? ($p['image']['src'] ?? null), $v['price'] ?? null, $qty, $avail, $p['product_type'] ?? null, $st['base'].'/products/'.($p['handle'] ?? ''), true);
           }
           self::save($rows); $c['imp'] += count($rows); $c['pub'] += count($rows); $c['total'] += count($rows); $rows = [];
-          $page++; if (count($list) < 250) { $done = true; break; }
+          $page++; if ($page > 400) { $done = true; break; } // owner 13 Nov 2026: read EVERY page until Shopify returns an empty one (some shops return fewer than 250 per page)
         }
         $st['page'] = $page; $note = "Reading products page $page…"; $pct = min(95, 5 + $page * 8);
       } elseif ($st['mode'] === 'woo') {

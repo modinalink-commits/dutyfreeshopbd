@@ -109,7 +109,11 @@ class WatchImportController extends Controller {
   /** Lighter & Accessories sub category: from the source shop's own collection (map handle~letter saved in settings), keywords as fallback. */
   /** Beauty sub category from the source product type + name (Fragrance, Makeup, Skincare, Hair & Body, Candles & Home, Toys, Others). */
   public static function beautySub(string $name, string $type): string {
-    $t = mb_strtolower($type . ' | ' . $name);
+    $t = mb_strtolower($type . ' | ' . $name); $ty = mb_strtolower(trim($type));
+    if ($ty !== '') { // the source product type is the strongest signal
+      if (preg_match('/gift|set\b|kit\b|coffret/', $ty)) return 'Gift Sets';
+      foreach (['Fragrance' => '/perfume|fragrance|parfum|attar|cologne|mist/', 'Skincare' => '/skin|serum|cleanser|mask|cream|toner|sun/', 'Makeup' => '/make|lip|eye|face|nail|brush|cosmetic/', 'Hair & Body' => '/hair|body|bath|shampoo|deodorant/', 'Candles & Home' => '/candle|diffuser|home|car|glass|book|appliance/', 'Toys' => '/toy|lego|barbie/'] as $sub => $re) if (preg_match($re, $ty)) return $sub;
+    }
     foreach (['Toys' => '/\btoys?\b|lego|barbie|hot\s*wheels|crayola|puzzle|doll\b/', 'Candles & Home' => '/candle|diffuser|home\s*fragrance|room\s*spray|air\s*freshener|car\s*fresh|glass|book|appliance|incense/', 'Hair & Body' => '/shampoo|conditioner|hair|body\s*(lotion|wash|butter|scrub|oil|cream)|shower|bath|deodorant|deo\b|sun\s*care|suncare|sunscreen\s*body|lotion|hand\s*(cream|wash)/', 'Makeup' => '/make\s*-?up|lip(stick|gloss|\s*liner|\s*balm)?\b|mascara|foundation|concealer|eye\s*(liner|shadow|brow|pencil)|eyeliner|blush|bronzer|highlighter|palette|brush|primer|setting\s*(spray|powder)|powder|nail|contour|kajal|remover/', 'Skincare' => '/skin\s*care|skincare|serum|cleanser|exfoliat|moisturi[sz]er|cream|mask|toner|essence|sunscreen|spf|eye\s*care|face|anti-?aging|treatment|facial|gel\b/', 'Fragrance' => '/perfume|fragrance|parfum|eau\s*de|edp\b|edt\b|edc\b|attar|ittar|cologne|body\s*mist|oud|scent|extrait/'] as $sub => $re) if (preg_match($re, $t)) return $sub;
     return 'Others';
   }
@@ -132,12 +136,12 @@ class WatchImportController extends Controller {
   }
   /** Re-sort the products of an affiliate category into the right sub categories (after a rule change). POST map=handle~letter,... saves the Amour collection map first. */
   public function resub(Request $r) {
-    @set_time_limit(120); $cf = $this->cfg(); $s = $this->src(); abort_unless($s && in_array($cf['c'], ['gadget', 'amour'], true), 404);
+    @set_time_limit(120); $cf = $this->cfg(); $s = $this->src(); abort_unless($s && in_array($cf['c'], ['gadget', 'amour', 'beauty'], true), 404);
     if ($r->filled('map') && $cf['c'] === 'amour') DB::table('settings')->updateOrInsert(['key' => 'amour_sub_map'], ['value' => (string)$r->input('map'), 'updated_at' => now(), 'created_at' => now()]);
     $cat = DB::table('categories')->where('slug', $cf['cat'])->first(); abort_unless($cat, 404);
-    $rows = DB::table('watch_source as w')->join('products as p', 'p.id', '=', 'w.product_id')->where('w.store_id', $s->id)->where('p.category_id', $cat->id)->get(['p.id', 'p.name', 'p.sub', 'p.slug', 'w.source_url', 'w.source_name']); $n = 0;
+    $rows = DB::table('watch_source as w')->join('products as p', 'p.id', '=', 'w.product_id')->leftJoin('store_products as sp', 'sp.id', '=', 'w.store_product_id')->where('w.store_id', $s->id)->where('p.category_id', $cat->id)->get(['p.id', 'p.name', 'p.sub', 'p.slug', 'w.source_url', 'w.source_name', 'sp.category as src_cat']); $n = 0;
     foreach ($rows as $x) {
-      $sub = self::subFor((string)($x->source_name ?: $x->name), null, $cf['cat'], (string)$x->source_url);
+      $sub = self::subFor((string)($x->source_name ?: $x->name), $cf['c'] === 'beauty' ? $x->src_cat : null, $cf['cat'], (string)$x->source_url);
       if ($sub === $x->sub) continue;
       DB::table('products')->where('id', $x->id)->update(['sub' => $sub, 'sub_sub' => null, 'path_slug' => $this->slugFor($cat->id, (string)($x->slug ?: \App\Support\Slugs::slug($x->name)), $sub, (int)$x->id), 'updated_at' => now()]); $n++;
     }
