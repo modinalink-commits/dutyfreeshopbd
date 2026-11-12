@@ -376,6 +376,7 @@ body .cs .pc .on{margin-top:auto}
 @endif
 
 @if(($s['home_live_orders'] ?? '') === '1')
+@include('store.badge_try')
 <div class="hst-p" style="min-height:420px"></div><template class="hst">
 <div class="w sec-lv" style="padding-top:24px"><div class="lvbox"><div class="lvh"><span class="chip"><span class="dot"></span>LIVE ORDERS</span><h2>Recently <em>ordered</em></h2><span class="su">Bought by shoppers across Bangladesh, updated every minute</span><span class="lvc"><b>{{ $live->count() }}</b> latest orders</span></div>
 <div class="lvbody">@include('store.live_cards', ['live'=>$live])</div></div></div>
