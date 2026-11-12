@@ -26,7 +26,7 @@ body{background:#fff}.cf,.cc{border:1px solid #EAEAEA;border-radius:20px;box-sha
 @media(max-width:760px){.cf,.cc{border-radius:16px}.cf .h{font-size:18px}.ip{height:42px}}
 </style>
 <style>
-@media(max-width:760px){.fb a{display:none!important}}/* checkout: floating call/WhatsApp hidden on mobile so they never cover form fields; chat button stays */
+@media(max-width:760px){.dfc-hl,.dfc-wa{display:none!important}}/* checkout: floating call/WhatsApp hidden on mobile so they never cover form fields; chat button stays */
 /* co-v3: front-page match (CSS + trust strip + mobile sticky bar; order logic untouched) */
 .cf,.cc{border-color:#FDC2A5}
 .cf .h:before,.cc .cph:before{content:"";display:inline-block;width:3px;height:18px;background:var(--o);border-radius:2px;margin-right:8px;vertical-align:-2px}
