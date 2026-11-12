@@ -1018,7 +1018,7 @@ database/migrations/2026_11_12_150000_tryon.php
 app/Support/TryOn.php
 app/Http/Controllers/TryOnController.php
 resources/views/tryon_admin.blade.php
-resources/views/store/_tryon.blade.php
+resources/views/store/_tryon2.blade.php
 public/vendor/tryon/face-api.js
 public/vendor/tryon/models/face_landmark_68_model.bin
 public/vendor/tryon/models/tiny_face_detector_model.bin
