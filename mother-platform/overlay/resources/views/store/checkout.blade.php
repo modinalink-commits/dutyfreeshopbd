@@ -25,6 +25,27 @@ body{background:#fff}.cf,.cc{border:1px solid #EAEAEA;border-radius:20px;box-sha
 .sbm{background:var(--o);border-radius:12px;font-size:15px;padding:15px 0}.sbm:hover{background:var(--n)}.cp button{border-radius:10px;font-size:12px;background:var(--n)}.th,.tr{font-size:12px}.sm{font-size:13px}.sm.tt{font-size:16px;color:var(--n)}.tr .pn img{width:44px;height:48px;border-radius:8px}.pm span{border-radius:8px}
 @media(max-width:760px){.cf,.cc{border-radius:16px}.cf .h{font-size:18px}.ip{height:42px}}
 </style>
+<style>
+/* co-v3: front-page match (CSS + trust strip + mobile sticky bar; order logic untouched) */
+.cf,.cc{border-color:#FDC2A5}
+.cf .h:before,.cc .cph:before{content:"";display:inline-block;width:3px;height:18px;background:var(--o);border-radius:2px;margin-right:8px;vertical-align:-2px}
+.ip,.ar{background:#fff;border-color:#FDC2A5}.ip:focus-within{border-color:var(--o);box-shadow:0 0 0 3px rgba(255,90,0,.12)}
+.ar.on,.py.on,.bk:has(input:checked){background:#FFF3EA;border-color:var(--o)}
+.py{border-color:#FDC2A5;border-radius:14px}
+.pdt{border-color:#FDC2A5}
+.sm.tt{background:#FFF3EA;border:1px solid #FDC2A5;border-radius:12px;padding:10px 12px;margin-top:6px}.sm.tt span:last-child{color:var(--o);font-size:18px;font-weight:800}
+.cp button{background:var(--n)}.cp .ip{height:44px}
+.cotr{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}.cotr div{display:flex;gap:9px;align-items:center;border:1px solid #FDC2A5;border-radius:12px;background:#fff;padding:8px 10px;font-size:11px;color:#6B7280;line-height:1.3}.cotr b{display:block;font-size:12px;color:var(--n)}.cotr i{width:26px;height:26px;border-radius:8px;background:#FFF3EA;color:var(--o);display:grid;place-items:center;font-style:normal;font-weight:800;flex:none}
+.sbr{display:none}
+@media(min-width:761px){.cc{position:sticky;top:12px}}
+@media(max-width:760px){
+.co{padding-bottom:96px}
+.cotr{gap:6px}.cotr div{flex-direction:column;text-align:center;padding:8px 4px;gap:4px}.cotr div span{display:none}
+.sbr{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:70;align-items:center;gap:12px;padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));background:#fff;border-top:1px solid #FDC2A5;box-shadow:0 -6px 16px rgba(11,18,32,.08)}
+.sbr small{display:block;font-size:11px;color:#6B7280;line-height:1.1}.sbr b{font-size:18px;color:var(--o);line-height:1.2}
+.sbr button{flex:1;border:0;background:var(--o);color:#fff;font-size:14px;font-weight:800;border-radius:12px;padding:13px 0;letter-spacing:.03em}.sbr button:disabled{opacity:.6}
+}
+</style>
 <form class="w co" id="cof" method="post" action="/order" enctype="multipart/form-data" novalidate><input type="hidden" name="inc" id="incTok">
 <div class="cf"><div class="h">Please Order Now</div>
 @if(request('e'))<div class="er">{{ request('e') }}</div>@endif
@@ -60,11 +81,13 @@ body{background:#fff}.cf,.cc{border:1px solid #EAEAEA;border-radius:20px;box-sha
 <div class="fl" style="margin:8px 0"><label class="l" for="pay-pf">Payment screenshot (optional)</label><div class="ip"><input id="pay-pf" name="pay_proof" type="file" accept="image/*,.pdf"></div></div>
 <div class="wa2">✅ Your order is not processed until we approve the payment on WhatsApp. After you submit, send the payment screenshot on WhatsApp. Status stays <b>Payment Verification Pending</b> until we verify.</div></div>
 @endif</div>
-<button class="sbm" id="sbm">ORDER SUBMIT</button><div style="text-align:center;font-size:12px;color:#6B7280;margin-top:8px">Need help? Hotline: <a href="{{ \App\Support\Biz::telUrl(\App\Support\Biz::hotline()) }}" style="color:#FF5A00;font-weight:700">{{ \App\Support\Biz::hotline() }}</a> · WhatsApp: <a href="{{ \App\Support\Biz::waUrl() }}" rel="noopener" style="color:#16A34A;font-weight:700">{{ \App\Support\Biz::whatsapp() }}</a></div></div>
+<button class="sbm" id="sbm">ORDER SUBMIT</button><div style="text-align:center;font-size:12px;color:#6B7280;margin-top:8px">Need help? Hotline: <a href="{{ \App\Support\Biz::telUrl(\App\Support\Biz::hotline()) }}" style="color:#FF5A00;font-weight:700">{{ \App\Support\Biz::hotline() }}</a> · WhatsApp: <a href="{{ \App\Support\Biz::waUrl() }}" rel="noopener" style="color:#16A34A;font-weight:700">{{ \App\Support\Biz::whatsapp() }}</a></div><div class="cotr"><div><i>✓</i><p style="margin:0"><b>100% Original</b><span>Imported and authentic</span></p></div><div><i>↗</i><p style="margin:0"><b>Nationwide Delivery</b><span>Fast, all over Bangladesh</span></p></div><div><i>৳</i><p style="margin:0"><b>Secure Order</b><span>Verified before dispatch</span></p></div></div></div>
 <div class="cc">@if($s['co_coupon']==='1')<div class="cp"><div class="ip"><input id="cpc" placeholder="Coupon Code" maxlength="40" aria-label="Coupon Code"></div><button type="button" id="cpb">Apply</button></div><div class="cpm" id="cpm"></div>@endif
 <div class="th"><span>PRODUCT</span><span style="text-align:center">QUANTITY</span><span>PRICE</span><span>TOTAL PRICE</span><span style="text-align:right">ACTION</span></div>
 <div id="rows"><div class="emp">Loading…</div></div>
 <div class="sm"><span>Sub Total :</span><span id="sSub">0 TK</span></div><div class="sm"><span>Shipping Charge :</span><span id="sShip">0 TK</span></div><div id="dzm" style="display:none;margin:2px 0 6px;font-size:12px;font-weight:600;color:#166534"></div><div id="sRcv" style="display:none;margin:4px 0 6px;padding:8px 10px;border-radius:8px;background:#DCFCE7;border:1px solid #BBF7D0;color:#166534;font-size:13px;font-weight:600"></div><div id="sDl"></div><div class="sm"><span>Total Discount :</span><span id="sDisc">0 TK</span></div><div class="sm tt"><span>Payable Amount :</span><span id="sTot">0 TK</span></div></div>
+<div class="sbr" id="sbr" aria-hidden="false"><div><small>Payable</small><b id="sbrT">—</b></div><button type="button" id="sbrB">ORDER SUBMIT</button></div>
+<script>(function(){var t=document.getElementById('sTot'),o=document.getElementById('sbrT'),b=document.getElementById('sbrB'),m=document.getElementById('sbm');if(!t||!o||!b||!m)return;function u(){o.textContent=t.textContent||'—';b.disabled=m.disabled}u();try{new MutationObserver(u).observe(t,{childList:true,characterData:true,subtree:true});new MutationObserver(u).observe(m,{attributes:true,attributeFilter:['disabled']})}catch(e){}b.addEventListener('click',function(){m.click()})})();</script>
 </form>
 @endsection
 @section('js')
