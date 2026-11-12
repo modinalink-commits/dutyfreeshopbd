@@ -447,6 +447,8 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/stores/{id}/scan-step', [\App\Http\Controllers\InventoryController::class,'scanStep']);
   Route::get('/stores/{id}/edit', [\App\Http\Controllers\InventoryController::class,'storeEdit']);
   Route::post('/stores/{id}/update', [\App\Http\Controllers\InventoryController::class,'storeUpdate']);
+  Route::post('/stores/{id}/apply', [\App\Http\Controllers\WatchImportController::class,'applyStore'])->whereNumber('id');
+  Route::get('/stores/sales', [\App\Http\Controllers\StoreSalesController::class,'index']);
   Route::post('/stores/{id}/delete', [\App\Http\Controllers\InventoryController::class,'storeDelete']);
   Route::post('/stores/{id}/clear', [\App\Http\Controllers\InventoryController::class,'storeRemoveProducts']);
   Route::get('/m/{slug}', [R::class,'index']);

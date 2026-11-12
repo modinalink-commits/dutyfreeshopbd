@@ -4,6 +4,7 @@ use App\Support\StoreScanner;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 class InventoryController extends Controller {
   /** Every product from every store as one list: this site's own catalogue + all scanned stores. */
   private function union() {
@@ -131,13 +132,43 @@ class InventoryController extends Controller {
   }
   public function storeUpdate(Request $r, $id) {
     $s = DB::table('stores')->find($id); abort_unless($s, 404);
-    $d = $r->validate(['name'=>'required|string|max:120','domain'=>'required|string|max:200','source_categories'=>'nullable|array','source_categories.*'=>'string|max:120']);
+    $d = $r->validate([
+      'name'=>'required|string|max:120','domain'=>'required|string|max:200','source_categories'=>'nullable|array','source_categories.*'=>'string|max:120',
+      'sale_pct'=>'nullable|numeric|min:0|max:300','regular_pct'=>'nullable|numeric|min:0|max:500','price_min'=>'nullable|integer|min:0','price_max'=>'nullable|integer|min:0',
+      'pay_mode'=>'required|in:prepaid,cod,part','delivery_min'=>'nullable|integer|min:0|max:60','delivery_max'=>'nullable|integer|min:0|max:60','delivery_style'=>'nullable|in:range,max',
+      'fulfillment'=>'nullable|in:dropship,warehouse','return_days'=>'nullable|integer|min:0|max:90','return_cost_by'=>'nullable|in:customer,us','return_note'=>'nullable|string|max:255',
+      'ship_rule'=>'nullable|in:default,flat,free_over','ship_flat'=>'nullable|integer|min:0','ship_free_over'=>'nullable|integer|min:0','price_jump_pct'=>'nullable|integer|min:0|max:500',
+      'min_order_value'=>'nullable|integer|min:0','max_qty'=>'nullable|integer|min:0','max_order_value'=>'nullable|integer|min:0','cutoff_time'=>'nullable|date_format:H:i','auth_note'=>'nullable|string|max:160',
+      'vendor_contact'=>'nullable|string|max:60','vendor_pay_terms'=>'nullable|string|max:160','vendor_lead_days'=>'nullable|integer|min:0|max:60','order_channel'=>'nullable|in:manual,whatsapp','internal_note'=>'nullable|string|max:2000']);
     $dom = StoreScanner::cleanDomain($d['domain']);
     if ($dom === '') return back()->withErrors(['domain'=>'Enter a valid domain such as example.com'])->withInput();
     if (DB::table('stores')->where('domain',$dom)->where('id','!=',$id)->exists()) return back()->withErrors(['domain'=>'This domain is already added'])->withInput();
-    DB::table('stores')->where('id',$id)->update(['name'=>$d['name'],'domain'=>$dom,'source_category'=>$this->srcCats($d['source_categories'] ?? []),'active'=>$r->boolean('active'),'updated_at'=>now()]);
+    if (isset($d['delivery_min'], $d['delivery_max']) && (int)$d['delivery_min'] > (int)$d['delivery_max']) return back()->withErrors(['delivery_max'=>'Delivery "to" days must be the same or more than "from"'])->withInput();
+    $n = fn($k) => ($d[$k] ?? '') === '' || ($d[$k] ?? null) === null ? null : $d[$k];
+    $row = ['name'=>$d['name'],'domain'=>$dom,'source_category'=>$this->srcCats($d['source_categories'] ?? []),'active'=>$r->boolean('active'),'paused'=>$r->boolean('paused'),'updated_at'=>now(),'terms_updated_at'=>now(),
+      'pay_mode'=>$d['pay_mode'],'delivery_style'=>$d['delivery_style'] ?? 'range','fulfillment'=>$d['fulfillment'] ?? 'dropship','ship_rule'=>$d['ship_rule'] ?? 'default','order_channel'=>$d['order_channel'] ?? 'manual'];
+    foreach (['sale_pct','regular_pct','price_min','price_max','delivery_min','delivery_max','return_days','return_cost_by','return_note','ship_flat','ship_free_over','price_jump_pct','min_order_value','max_qty','max_order_value','cutoff_time','auth_note','vendor_contact','vendor_pay_terms','vendor_lead_days','internal_note'] as $k) $row[$k] = $n($k);
+    $before = (array)$s;
+    DB::table('stores')->where('id',$id)->update($row);
     DB::table('store_products')->where('store_id',$id)->update(['store_label'=>$d['name']]);
-    return redirect('/admin/stores')->with('ok','Store updated.');
+    // Prepaid store: its categories must block COD at checkout (never loosened here; COD / part payment needs a separate approval on the category).
+    if ($row['pay_mode'] === 'prepaid' && $row['source_category'] && \Illuminate\Support\Facades\Schema::hasColumn('categories', 'prepaid_only')) {
+      DB::table('categories')->whereNull('parent_id')->whereIn('name', array_map('trim', explode(',', $row['source_category'])))->update(['prepaid_only' => true]);
+      try { \Illuminate\Support\Facades\Cache::forget('prepaid.catset'); } catch (\Throwable $e) {}
+    }
+    // Pause / resume: hides or restores the store's products at once.
+    if ((bool)$s->paused !== (bool)$row['paused']) {
+      $pids = DB::table('watch_source')->where('store_id', $id)->pluck('product_id')->all();
+      foreach (array_chunk($pids, 1000) as $ch) {
+        if ($row['paused']) DB::table('products')->whereIn('id', $ch)->update(['published' => false, 'updated_at' => now()]);
+        else DB::table('products')->whereIn('id', $ch)->whereIn('id', DB::table('watch_source')->where('source_in_stock', true)->select('product_id'))->update(['published' => true, 'updated_at' => now()]);
+      }
+      foreach (['store.cats','store.catslugs','store.home11','stock.modes'] as $k) { try { \Illuminate\Support\Facades\Cache::forget($k); } catch (\Throwable $e) {} }
+    }
+    $diff = []; foreach ($row as $k => $v) if (in_array($k, ['updated_at','terms_updated_at'], true) === false && (string)($before[$k] ?? '') !== (string)($v ?? '')) $diff[$k] = [$before[$k] ?? null, $v];
+    try { DB::table('audit_logs')->insert(['user_id'=>Auth::id(),'user_name'=>Auth::user()->name ?? null,'action'=>'Store terms updated','subject'=>$d['name'].' · '.count($diff).' change(s)','meta'=>json_encode($diff),'created_at'=>now(),'updated_at'=>now()]); } catch (\Throwable $e) {}
+    $priceChanged = array_key_exists('sale_pct', $diff) || array_key_exists('regular_pct', $diff);
+    return redirect('/admin/stores')->with('ok','Store updated.'.($priceChanged ? ' Prices change on the next scan, or press "Apply prices now" on the Edit Store page.' : ''));
   }
   public function storeDelete(Request $r, $id) {
     $s = DB::table('stores')->find($id); abort_unless($s, 404);

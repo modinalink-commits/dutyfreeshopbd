@@ -1033,3 +1033,7 @@ database/migrations/2026_11_13_030000_store_source_category.php
 database/migrations/2026_11_13_040000_order_item_vendor_snapshot.php
 app/Http/Controllers/VendorOrderController.php
 resources/views/vendor_orders.blade.php
+database/migrations/2026_11_13_050000_store_terms.php
+app/Support/StoreTerms.php
+app/Http/Controllers/StoreSalesController.php
+resources/views/store_sales.blade.php

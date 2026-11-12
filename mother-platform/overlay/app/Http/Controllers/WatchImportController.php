@@ -8,7 +8,20 @@ use Illuminate\Support\Facades\DB;
 /** Watch category import (owner, 8 Nov 2026): every scanned product of the source shop priced 0-50,000 BDT becomes OUR product (our code, our URL, our image copy, price = source +15%). Source details live only in watch_source (admin only). */
 class WatchImportController extends Controller {
   /** Which source feeds which category: watch <- timeaccess-store.com, gadget <- startech.com.bd (owner, 8 Nov 2026; both +5%, prepaid only, no discount). */
+  /** Per-store terms (Edit Store template) override the global defaults: sale %, regular %, price window. */
   private function cfg(): array {
+    static $memo = []; $k = (string)request('c');
+    if (isset($memo[$k])) return $memo[$k];
+    $r = $this->cfgBase(); $r['reg'] = self::regPct(); $r['min'] = 0.0;
+    try {
+      if ($r['domain'] !== '' && \Illuminate\Support\Facades\Schema::hasColumn('stores', 'sale_pct')) {
+        $st = DB::table('stores')->whereRaw('lower(domain) = ? or lower(domain) = ?', [$r['domain'], 'www.' . $r['domain']])->orderByRaw('(select count(*) from store_products sp where sp.store_id = stores.id) desc')->first();
+        if ($st) { if ($st->sale_pct !== null) $r['pct'] = (float)$st->sale_pct; if ($st->regular_pct !== null) $r['reg'] = (float)$st->regular_pct; if ($st->price_max) $r['max'] = (float)$st->price_max; if ($st->price_min) $r['min'] = (float)$st->price_min; }
+      }
+    } catch (\Throwable $e) { report($e); }
+    return $memo[$k] = $r;
+  }
+  private function cfgBase(): array {
     $c = in_array(request('c'), ['gadget', 'sunglass', 'amour', 'beauty', 'fashion'], true) ? request('c') : 'watch'; $set = fn($k, $d) => (string)(DB::table('settings')->where('key', $k)->value('value') ?? $d);
     if (preg_match('/^s(\d+)$/', (string)request('c'), $__m) && ($__st = DB::table('stores')->find((int)$__m[1])) && trim((string)$__st->source_category) !== '') { // owner 13 Nov 2026: any store -> the main category picked as its Source category (first one), same rules: prepaid, sale +15%, regular +25%
       $__cn = trim(explode(',', (string)$__st->source_category)[0]); $__cat = DB::table('categories')->whereNull('parent_id')->where('name', $__cn)->first();
@@ -28,6 +41,7 @@ class WatchImportController extends Controller {
   private function src() { $d = $this->cfg()['domain']; return DB::table('stores')->whereRaw('lower(domain) = ? or lower(domain) = ?', [$d, 'www.' . $d])->orderByRaw('(select count(*) from store_products sp where sp.store_id = stores.id) desc')->orderBy('id')->first(); }
   private function cond($q, $sid) {
     $cf = $this->cfg(); $q = $q->where('store_id', $sid)->where('in_stock', true)->where('price', '>', 0);
+    if (($cf['min'] ?? 0) > 0) $q = $q->where('price', '>=', $cf['min']);
     return $cf['max'] > 0 ? $q->where('price', '<=', $cf['max']) : $q;
   }
   private function stat($sid): array {
@@ -61,7 +75,7 @@ class WatchImportController extends Controller {
           $sub = self::subFor((string)$name, $x->category, $this->cfg()['cat'], (string)$x->url);
           $base = \App\Support\Slugs::slug($name) ?: 'watch'; $slug = $base; $i = 2; $subSlug = \App\Support\Slugs::subSlug($sub);
           while (DB::table('products')->where('category_id', $cat->id)->whereRaw(\App\Support\Slugs::subSql() . ' = ?', [$subSlug])->where('path_slug', $slug)->exists()) $slug = $base . '-' . $i++;
-          $pid = DB::table('products')->insertGetId(['name' => mb_substr($name, 0, 200), 'category_id' => $cat->id, 'price' => $our, 'compare_price' => (int)ceil((float)$x->price * (1 + self::regPct() / 100)), 'cost' => $x->price, 'stock' => 0, 'published' => true, 'sub' => $sub, 'slug' => $base, 'path_slug' => $slug, 'created_at' => now(), 'updated_at' => now()]);
+          $pid = DB::table('products')->insertGetId(['name' => mb_substr($name, 0, 200), 'category_id' => $cat->id, 'price' => $our, 'compare_price' => (int)ceil((float)$x->price * (1 + $this->cfg()['reg'] / 100)), 'cost' => $x->price, 'stock' => 0, 'published' => true, 'sub' => $sub, 'slug' => $base, 'path_slug' => $slug, 'created_at' => now(), 'updated_at' => now()]);
           $code = $this->cfg()['prefix'] . str_pad((string)$pid, 6, '0', STR_PAD_LEFT); $upd = ['sku' => $code];
           $g = $x->image ? ($got[$x->image] ?? null) : null;
           if ($g && ($g['code'] ?? 0) == 200 && !empty($g['body']) && @getimagesizefromstring($g['body'])) {
@@ -304,20 +318,28 @@ class WatchImportController extends Controller {
     return response()->json(['finished' => !$busy, 'ok' => 0, 'busy' => $busy, 'left' => $left]);
   }
   /** Keep live state equal to the source shop: out of stock there = not live here; back in stock = live again; price follows source +markup. */
-  private function sync(int $sid): void {
+  private function sync(int $sid, bool $apply = false): void {
     try {
+      $stt = DB::table('stores')->where('id', $sid)->first(); $col = \Illuminate\Support\Facades\Schema::hasColumn('stores', 'sale_pct'); $paused = $col && !empty($stt->paused); $jump = $col && $stt->price_jump_pct ? (float)$stt->price_jump_pct : 0.0;
       $lock = \Illuminate\Support\Facades\Schema::hasColumn('products', 'manual_unpublish_lock');
-      $rows = DB::table('watch_source as w')->join('store_products as sp', 'sp.id', '=', 'w.store_product_id')->join('products as p', 'p.id', '=', 'w.product_id')->where('w.store_id', $sid)->get(['w.id as wid', 'w.markup_pct', 'w.our_price', 'sp.price as sprice', 'sp.in_stock', 'sp.published as sppub', 'p.id as pid', 'p.published as ppub', 'p.image as pimg', 'p.compare_price as pcomp']); $regPct = self::regPct();
+      $rows = DB::table('watch_source as w')->join('store_products as sp', 'sp.id', '=', 'w.store_product_id')->join('products as p', 'p.id', '=', 'w.product_id')->where('w.store_id', $sid)->get(['w.id as wid', 'w.markup_pct', 'w.our_price', 'sp.price as sprice', 'sp.in_stock', 'sp.published as sppub', 'p.id as pid', 'p.published as ppub', 'p.image as pimg', 'p.compare_price as pcomp', 'w.source_price as prev_sp']); $regPct = ($col && $stt->regular_pct !== null) ? (float)$stt->regular_pct : self::regPct(); $salePct = ($apply && $col && $stt->sale_pct !== null) ? (float)$stt->sale_pct : null;
       $needClean = strtolower((string)(DB::table('stores')->where('id', $sid)->value('domain'))) === 'amour.com.bd';
       foreach ($rows as $x) {
-        $live = (bool)$x->in_stock && (bool)$x->sppub && (!$needClean || str_starts_with((string)$x->pimg, '/uploads/ai/')); $u = ['updated_at' => now()];
+        $spike = $jump > 0 && !$apply && (float)$x->prev_sp > 0 && (float)$x->sprice > (float)$x->prev_sp * (1 + $jump / 100); $live = !$paused && !$spike && (bool)$x->in_stock && (bool)$x->sppub && (!$needClean || str_starts_with((string)$x->pimg, '/uploads/ai/')); $u = ['updated_at' => now()];
         if ($live !== (bool)$x->ppub) { $u['published'] = $live; if ($lock) $u['manual_unpublish_lock'] = !$live; }
-        $our = (int)ceil((float)$x->sprice * (1 + (float)$x->markup_pct / 100)); $reg = (int)ceil((float)$x->sprice * (1 + $regPct / 100));
-        if ($x->sprice > 0 && ($our != (int)$x->our_price || $reg != (int)$x->pcomp)) { $u['price'] = $our; $u['compare_price'] = $reg; $u['cost'] = $x->sprice; DB::table('watch_source')->where('id', $x->wid)->update(['our_price' => $our, 'source_price' => $x->sprice]); }
+        $mp = $salePct ?? (float)$x->markup_pct; $our = (int)ceil((float)$x->sprice * (1 + $mp / 100)); $reg = (int)ceil((float)$x->sprice * (1 + $regPct / 100));
+        if ($x->sprice > 0 && !$spike && ($our != (int)$x->our_price || $reg != (int)$x->pcomp)) { $u['price'] = $our; $u['compare_price'] = $reg; $u['cost'] = $x->sprice; DB::table('watch_source')->where('id', $x->wid)->update(['our_price' => $our, 'source_price' => $x->sprice] + ($salePct !== null ? ['markup_pct' => $salePct] : [])); }
         if (count($u) > 1) DB::table('products')->where('id', $x->pid)->update($u);
         DB::table('watch_source')->where('id', $x->wid)->update(['source_in_stock' => $x->in_stock]);
       }
     } catch (\Throwable $e) { report($e); }
+  }
+  /** Edit Store -> Apply prices now: re-price every product of the store with the store's sale % / regular %, and accept price jumps held by the guard. */
+  public function applyStore(Request $r, $id) {
+    @set_time_limit(120); abort_unless(DB::table('stores')->where('id', $id)->exists(), 404);
+    $this->sync((int)$id, true);
+    foreach (['store.cats', 'store.catslugs', 'store.home11', 'stock.modes'] as $k) { try { Cache::forget($k); } catch (\Throwable $e) {} }
+    return back()->with('ok', 'Prices and availability re-applied for this store.');
   }
   /** Admin-only history: which product came from where, at what price. */
   public function sources(Request $r) {
