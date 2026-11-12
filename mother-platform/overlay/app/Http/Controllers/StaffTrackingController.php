@@ -42,7 +42,7 @@ class StaffTrackingController extends Controller
     return $q;
   }
 
-  private function roles(): array { try { return DB::table('users')->pluck('role', 'name')->all(); } catch (\Throwable $e) { return []; } }
+  private function roles(): array { try { return \Illuminate\Support\Facades\Cache::remember('st_roles_v1', 300, fn() => DB::table('users')->pluck('role', 'name')->all()); } catch (\Throwable $e) { return []; } }
 
   private function staffNames()
   {
@@ -125,7 +125,7 @@ class StaffTrackingController extends Controller
   private function activity(Request $r, array $rg, array $v, ?string $group)
   {
     $v['group'] = $group;
-    $v['types'] = DB::table('order_activity_logs')->distinct()->orderBy('action_type')->pluck('action_type')->filter(fn($t) => !$group || T::group($t) === $group)->values()->all();
+    $v['types'] = collect(\Illuminate\Support\Facades\Cache::remember('st_types_v1', 600, fn() => DB::table('order_activity_logs')->distinct()->orderBy('action_type')->pluck('action_type')->all()))->filter(fn($t) => !$group || T::group($t) === $group)->values()->all();
     if ($r->boolean('flag') && !$group) {
       $v['flagMode'] = true; $v['flags'] = $this->flagged($r, $rg, 300); $v['rows'] = null;
       return view('staff_tracking', $v);
