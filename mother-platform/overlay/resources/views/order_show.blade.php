@@ -90,7 +90,7 @@ $__show = $__ret > 0 || ($o->collected_amount !== null && $__mv > 0);
 @endphp
 @if($__show)<div style="margin:8px 0;padding:8px 10px;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;font-size:12.5px"><b>Where the money went</b>
 <div style="display:flex;justify-content:space-between"><span>Order value</span><b>৳{{ number_format($__gross) }}</b></div>
-@if($__ret > 0)<div style="display:flex;justify-content:space-between"><span>Returned / not received</span><b>− ৳{{ number_format($__ret) }}</b></div>@endif
+@if($__ret > 0)<div style="display:flex;justify-content:space-between"><span>Products returned / not received</span><b>− ৳{{ number_format($__ret) }}</b></div>@foreach($items as $__i)@if((int)($__i->ret_qty ?? 0) > 0)<div style="color:#B45309;padding-left:10px">↩ {{ $__i->name ?? $__i->product_name ?? 'Item' }} × {{ (int)$__i->ret_qty }} of {{ (int)$__i->qty }}</div>@endif @endforeach @else<div style="color:#16A34A">No product returned: all items received</div>@endif
 <div style="display:flex;justify-content:space-between"><span>Received parcel value</span><b>৳{{ number_format($__recv) }}</b></div>
 <div style="display:flex;justify-content:space-between"><span>Paid to us (verified bKash / bank / cash)</span><b>− ৳{{ number_format($__mv) }}</b></div>
 <div style="display:flex;justify-content:space-between"><span>Collected by courier (COD)</span><b>− ৳{{ number_format($__courier) }}</b></div>
