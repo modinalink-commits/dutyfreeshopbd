@@ -27,7 +27,8 @@ class UploadController extends Controller {
 
   function errorLog() {
     $f = storage_path('logs/laravel.log');
-    $raw = is_file($f) ? (string)file_get_contents($f) : '';
+    $raw = '';
+    if (is_file($f)) { $sz = filesize($f); $fh = fopen($f, 'rb'); if ($fh) { if ($sz > 3000000) fseek($fh, $sz - 3000000); $raw = (string)stream_get_contents($fh); fclose($fh); } }
     if (request()->query('errs') && $raw !== '') { preg_match_all('/^\[20\d\d-[^\n]{0,600}/m', substr($raw, -3000000), $mm); $t = implode("\n", array_slice($mm[0], -15)); }
     elseif (request()->query('hdr') && $raw !== '') { preg_match_all('/^\[20\d\d-[^\n]{0,700}/m', substr($raw, -2000000), $mm); $all = array_filter($mm[0], fn($x) => str_contains($x, 'pixel_purchase')); $t = 'pixel_purchase errors: '.count($all).' | first '.substr((string)reset($all), 0, 21).' | last '.substr((string)end($all), 0, 21)."\n".implode("\n", array_slice($mm[0], -6)); }
     else $t = $raw !== '' ? substr($raw, -14000) : 'No log file yet.';

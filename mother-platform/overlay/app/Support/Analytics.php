@@ -301,7 +301,7 @@ class Analytics {
       (select count(*) from product_analytics_events x where x.event_type = 'add_to_cart' and x.product_id = p.id and x.created_at >= ? and x.created_at < ?) cart,
       (select count(*) from product_analytics_events x where x.event_type = 'checkout_started' and x.product_id = p.id and x.created_at >= ? and x.created_at < ?) checkout,
       (select count(*) from product_analytics_events x where x.event_type = 'search_click' and x.product_id = p.id and x.created_at >= ? and x.created_at < ?) search
-      from product_analytics_events e join products p on p.id = e.product_id left join categories c on c.id = p.category_id where ".implode(' and ', $c)." group by p.id, c.name order by count(*) desc limit ".self::LIMIT;
+      from product_analytics_events e join products p on p.id = e.product_id left join categories c on c.id = p.category_id where ".implode(' and ', $c)." group by p.id, c.name order by count(*) desc limit 500";
     $rows = self::arr(self::sel($sql, [$pa, $a, $a, $z, $a, $z, $a, $z, $a, $z, ...$b]));
     foreach ($rows as &$r) {
       $views = (int)$r['views']; $uniq = (int)$r['uniq']; $orders = (int)$r['orders']; $prev = (int)$r['prev_views'];

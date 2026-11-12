@@ -7,6 +7,11 @@ use Illuminate\Support\Facades\Schema;
 class MigrationDashboardController extends Controller {
   private function has(string $t, ?string $c = null): bool { return Schema::hasTable($t) && ($c === null || Schema::hasColumn($t, $c)); }
   public function index() {
+    $d = request()->query('fresh') ? null : \Illuminate\Support\Facades\Cache::get('mig_dash_v1');
+    if (!$d) { $d = $this->build(); \Illuminate\Support\Facades\Cache::put('mig_dash_v1', $d, 300); }
+    return view('migration_dashboard', $d);
+  }
+  private function build(): array {
     $n = fn($v) => number_format((float)$v); $m = fn($v) => '৳' . number_format((float)$v);
     $rows = []; $add = function ($group, $label, $old, $new, $money = false) use (&$rows, $n, $m) {
       $f = $money ? $m : $n; $diff = ($old === null || $new === null) ? null : (float)$new - (float)$old;
@@ -55,6 +60,6 @@ class MigrationDashboardController extends Controller {
     }
     $stat = $this->has('legacy_orders') ? DB::select("select coalesce(l.status::text,'—') s, count(*) n, coalesce(sum(l.total),0) t from legacy_orders l group by 1 order by 2 desc") : [];
     $live = DB::select("select status s, count(*) n, coalesce(sum(total),0) t from orders where legacy_order_id is not null group by 1 order by 2 desc");
-    return view('migration_dashboard', ['rows' => $rows, 'stat' => $stat, 'live' => $live, 'sup' => $sup, 'noimg' => $noimg]);
+    return ['rows' => $rows, 'stat' => $stat, 'live' => $live, 'sup' => $sup, 'noimg' => $noimg];
   }
 }
