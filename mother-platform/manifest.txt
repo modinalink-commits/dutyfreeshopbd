@@ -1030,3 +1030,6 @@ database/migrations/2026_11_13_010000_beauty_category.php
 database/migrations/2026_11_13_011500_beauty_import_now.php
 database/migrations/2026_11_13_020000_fashion_category.php
 database/migrations/2026_11_13_030000_store_source_category.php
+database/migrations/2026_11_13_040000_order_item_vendor_snapshot.php
+app/Http/Controllers/VendorOrderController.php
+resources/views/vendor_orders.blade.php

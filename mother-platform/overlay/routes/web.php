@@ -86,6 +86,8 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/orders/{id}/live', [\App\Http\Controllers\OrderLiveController::class,'one'])->whereNumber('id');
   Route::get('/orders/{id}/qpop', function ($id) { $o = \Illuminate\Support\Facades\DB::table('orders')->find($id); abort_unless($o, 404); abort_unless(\App\Http\Middleware\ModulePermission::can(auth()->user(), 'orders', 'edit'), 403); $items = \Illuminate\Support\Facades\DB::table('order_items')->where('order_id', $id)->get(); return view('order_qpop', compact('o', 'items')); })->whereNumber('id');
   Route::get('/orders/{id}', [A::class,'orderShow']);
+  Route::get('/vendor-orders', [\App\Http\Controllers\VendorOrderController::class,'index']);
+  Route::post('/vendor-orders/{id}', [\App\Http\Controllers\VendorOrderController::class,'update'])->whereNumber('id');
   Route::post('/orders/{id}/outcome', [\App\Http\Controllers\ShipmentOutcomeController::class,'save'])->whereNumber('id');
   Route::post('/orders/{id}/wa-confirm/resend', [\App\Http\Controllers\OrderWaConfirmController::class,'resend'])->whereNumber('id')->middleware('throttle:20,1');
   Route::get('/wa-confirm-settings', [\App\Http\Controllers\OrderWaConfirmController::class,'settings']);

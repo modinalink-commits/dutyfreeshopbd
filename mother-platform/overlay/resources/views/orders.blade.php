@@ -97,7 +97,7 @@
 <span style="flex:1"></span>
 <span id="oexs"><button type="button" class="dfx-btn toolbar-control toolbar-control-sm" id="oexb" aria-haspopup="true">Export ▾</button></span>
 <span class="qsearch" id="qsearch"><input name="q" class="toolbar-control toolbar-control-lg" data-live="off" value="{{ request('q') }}" placeholder="name / phone / invoice" autocomplete="off"></span>
-<a class="btn toolbar-control toolbar-control-md" href="/admin/orders/new">Create Order</a></div>
+<a class="btn g toolbar-control toolbar-control-md" href="/admin/vendor-orders">Vendor Orders</a> <a class="btn toolbar-control toolbar-control-md" href="/admin/orders/new">Create Order</a></div>
 <style>
 /* v1.375 toolbar buttons: very light individual fills, black text */
 #ocb .r1 .owt .obk button:nth-of-type(1){background:#E6EFF9!important;border-color:#B7D0F7!important;color:#0B1220!important}
