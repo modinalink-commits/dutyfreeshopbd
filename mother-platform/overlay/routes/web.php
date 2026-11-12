@@ -242,6 +242,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/call-center/clients/billing', [\App\Http\Controllers\CarrierClientController::class,'billing']);
   Route::get('/call-center/clients/cdrs', [\App\Http\Controllers\CarrierClientController::class,'cdrs']);
   Route::get('/call-center/clients/billing/range', [\App\Http\Controllers\CarrierClientController::class,'billingRange']);
+  Route::post('/call-center/clients/cdr-fix', [\App\Http\Controllers\CarrierClientController::class,'cdrFix']);
   Route::post('/call-center/clients/{id}/billing', [\App\Http\Controllers\CarrierClientController::class,'billingSave'])->whereNumber('id');
   Route::post('/call-center/clients', [\App\Http\Controllers\CarrierClientController::class,'store']);
   Route::post('/call-center/clients/endpoint', [\App\Http\Controllers\CarrierClientController::class,'saveEndpoint']);

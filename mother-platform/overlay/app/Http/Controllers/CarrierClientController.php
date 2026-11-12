@@ -110,6 +110,22 @@ class CarrierClientController extends Controller {
       'number' => self::mobile((string)$x->dest, (string)$x->prefix), 'secs' => (int)$x->billsec, 'billed' => (int)ceil($x->billsec / 60), 'cause' => (string)$x->cause])->values();
     return response()->json(['ok' => true, 'rows' => $out, 'total' => $total, 'page' => $page, 'pages' => max(1, (int)ceil($total / $per))]);
   }
+  /** Admin-only repair: set the real talk time on CDR rows that were saved as 0s/UNKNOWN while the PBX shows the call was answered. Each item = {dest (last 10 digits), start ('Y-m-d H:i' Dhaka, PBX start), dur (PBX seconds)}. Only rows still at 0s/UNKNOWN are touched, one row per item. dry=1 only counts. */
+  public function cdrFix(Request $r) {
+    $this->guard(); $tz = 'Asia/Dhaka';
+    $d = $r->validate(['items' => 'required|array|min:1|max:300', 'items.*.dest' => ['required', 'regex:/^\d{10}$/'], 'items.*.start' => 'required|date_format:Y-m-d H:i', 'items.*.dur' => 'required|integer|min:1|max:7200', 'dry' => 'nullable|boolean']);
+    $dry = !empty($d['dry']); $fixed = 0; $skipped = []; $mins = 0; $taken = [];
+    foreach ($d['items'] as $it) {
+      $st = \Illuminate\Support\Carbon::createFromFormat('Y-m-d H:i', $it['start'], $tz)->utc();
+      $row = DB::table('voice_call_cdrs')->where('dest', 'like', '%' . $it['dest'])->where('billsec', 0)->whereNotIn('id', $taken ?: [0])
+        ->where('ended_at', '>=', $st->copy())->where('ended_at', '<', $st->copy()->addSeconds((int)$it['dur'] + 150))->orderByRaw('ABS(EXTRACT(EPOCH FROM (ended_at - ?::timestamp)))', [$st->copy()->addSeconds((int)$it['dur'] + 35)->format('Y-m-d H:i:s')])->first(['id']);
+      if (!$row) { $skipped[] = $it['dest'] . '@' . $it['start']; continue; }
+      $taken[] = $row->id; $fixed++; $mins += (int)ceil($it['dur'] / 60);
+      if (!$dry) DB::table('voice_call_cdrs')->where('id', $row->id)->where('billsec', 0)->update(['billsec' => (int)$it['dur'], 'cause' => 'NORMAL_CLEARING', 'updated_at' => now()]);
+    }
+    if (!$dry && $fixed) \App\Support\ProfitFloor::audit('voice.cdr_fix', 'Call Clients CDR repaired from PBX CDR: ' . $fixed . ' rows, ' . $mins . ' billable min', null, ['fixed' => $fixed, 'skipped' => count($skipped)]);
+    return response()->json(['ok' => true, 'dry' => $dry, 'fixed' => $fixed, 'minutes' => $mins, 'skipped' => $skipped]);
+  }
   public function billingSave(Request $r, $id) {
     $this->guard(); abort_unless(DB::table('voice_carrier_clients')->where('id', $id)->exists(), 404);
     $d = $r->validate(['cycle_start' => 'nullable|date', 'cycle_days' => 'required|integer|min:1|max:366', 'prepaid_minutes' => 'nullable|integer|min:0|max:100000000', 'rate_per_min' => 'nullable|numeric|min:0|max:100000']);
