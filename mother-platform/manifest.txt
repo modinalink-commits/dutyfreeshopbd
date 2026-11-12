@@ -1000,3 +1000,4 @@ database/migrations/2026_11_12_000900_store_cache_bust3.php
 database/migrations/2026_11_12_001000_store_cache_bust4.php
 database/migrations/2026_11_12_001100_heal_interrupted_48a0bb2.php
 database/migrations/2026_11_12_001200_store_cache_bust5.php
+database/migrations/2026_11_12_001300_store_cache_bust6.php

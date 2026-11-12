@@ -21,7 +21,7 @@ $__ios = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="cu
 </div>
 <div class="hxa2">
 <div class="hxat"><b>অ্যাপ ইনস্টল করুন</b><span>এক ট্যাপে মোবাইলে</span></div>
-<div class="hxab"><button type="button" class="hxbt" data-hxapp="android" aria-label="Android অ্যাপ ইনস্টল">{!! $__and !!}<span>Android<small>ইনস্টল</small></span></button><button type="button" class="hxbt" data-hxapp="ios" aria-label="iPhone অ্যাপ ইনস্টল">{!! $__ios !!}<span>iPhone<small>ইনস্টল</small></span></button></div>
+<div class="hxab"><button type="button" class="hxbt" data-hxapp="android" aria-label="Android অ্যাপ ইনস্টল">{!! $__and !!}<span><small>ইনস্টল করুন</small><strong>Android</strong></span></button><button type="button" class="hxbt" data-hxapp="ios" aria-label="iPhone অ্যাপ ইনস্টল">{!! $__ios !!}<span><small>ইনস্টল করুন</small><strong>iPhone</strong></span></button></div>
 </div>
 </aside>
 <script>(function(){var s=document.querySelector('.hxside');if(!s)return;var A=s.querySelector('.hxa2');try{if(matchMedia('(display-mode: standalone)').matches&&A)A.remove()}catch(e){}
@@ -50,8 +50,8 @@ if(!(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches))s
 .hxfa{color:#fff;font-weight:700;text-decoration:none;font-size:14px;margin-top:auto}
 .hxat b{display:block;font-size:13px}.hxat span{display:block;font-size:11px;opacity:.75;margin-top:2px}
 .hxab{display:flex;gap:8px}
-.hxbt{flex:1;border:0;border-radius:11px;padding:9px 6px;display:flex;align-items:center;justify-content:center;gap:7px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;color:#fff;background:rgba(255,255,255,.14);min-width:0;min-height:44px;transition:transform .15s,filter .15s}
-.hxbt:hover{transform:translateY(-1px);filter:brightness(1.15)}.hxbt svg{width:20px;height:20px;flex:none}.hxbt span{text-align:left;line-height:1.15}.hxbt small{display:block;font-size:9.5px;font-weight:500;opacity:.8}
+.hxbt{flex:1;border:1px solid #a6a6a6;border-radius:10px;padding:6px 9px;display:flex;align-items:center;justify-content:flex-start;gap:7px;font:inherit;cursor:pointer;color:#fff;background:#000;min-width:0;min-height:44px;transition:transform .15s,filter .15s}
+.hxbt:hover{transform:translateY(-1px);filter:brightness(1.15)}.hxbt svg{width:22px;height:22px;flex:none}.hxbt span{display:flex;flex-direction:column;text-align:left;line-height:1.1;min-width:0}.hxbt small{font-size:8.5px;font-weight:500;opacity:.8;white-space:nowrap}.hxbt strong{font-size:13px;font-weight:700}
 @media (min-width:1024px){.hx:has(.hxside){grid-template-columns:minmax(0,1fr) 250px}.hxside{display:flex;flex-direction:column;gap:10px;min-width:0}.hxf{flex:1.55}.hxa2{flex:1}}
-@media (max-width:1023px){.hx:has(.hxside) .hxside{display:flex;gap:8px;margin-top:8px}.hxf{flex:1.3}.hxa2{flex:1}.hxfp{width:64px;height:64px}.hxfs{min-height:68px}.hxfn{font-size:12px}.hxab{flex-direction:column}.hxbt{justify-content:flex-start;padding:7px 10px}.hxat span{display:none}}
+@media (max-width:1023px){.hx:has(.hxside) .hxside{display:flex;gap:8px;margin-top:8px}.hxf{flex:1.3}.hxa2{flex:1}.hxfp{width:64px;height:64px}.hxfs{min-height:68px}.hxfn{font-size:12px}.hxab{flex-direction:column;gap:6px}.hxbt{min-height:38px;padding:4px 10px}.hxat span{display:none}}
 .pm{padding-top:12px}.pm a{padding:7px 12px}.pm i{width:28px;height:28px}</style>
