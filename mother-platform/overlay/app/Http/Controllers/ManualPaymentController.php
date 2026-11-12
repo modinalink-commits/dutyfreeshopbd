@@ -17,6 +17,8 @@ class ManualPaymentController extends Controller {
     $l = strtolower((string)$label);
     return str_contains($l, 'bkash') ? 'bkash' : (str_contains($l, 'nagad') ? 'nagad' : 'bank');
   }
+  /** Owner rule 2026-11-12: only Mohammad Faruk (user #1) may verify a manual payment. Rejecting and notes stay with order editors. */
+  public static function canVerify($u = null): bool { $u = $u ?: Auth::user(); return $u && (int)$u->id === 1; }
   public function count() { \App\Http\Controllers\OrderPaymentController::syncLegacy(); return response()->json(['pending' => (int)DB::table('order_payments')->where('status', 'pending')->count()]); }
 
   public function index(Request $r) { \App\Support\DateDefault::month($r);
@@ -46,11 +48,12 @@ class ManualPaymentController extends Controller {
     $dups = $txns ? DB::table('order_payments')->whereIn('txn_id', $txns)->whereIn('status', ['pending','verified'])->select('txn_id', DB::raw('count(*) c'))->groupBy('txn_id')->pluck('c', 'txn_id') : collect();
     $k = DB::table('order_payments as p')->whereRaw("lower(p.method) not like '%shurjo%'")->selectRaw("count(*) filter (where p.status='pending') pend, count(*) filter (where p.status='verified' and p.verified_at::date = current_date) vtoday, count(*) filter (where p.status='rejected') rej, coalesce(sum(p.amount) filter (where p.status='pending'),0) pamt, count(*) filter (where lower(p.method) like '%bkash%' and p.status='pending') bk, count(*) filter (where lower(p.method) like '%nagad%' and p.status='pending') ng, count(*) filter (where lower(p.method) like '%bank%' and p.status='pending') bn")->first();
     $banks = DB::table('payment_methods')->where('kind', 'bank')->orderBy('position')->pluck('title');
-    return view('manual_payments', ['rows' => $rows, 'dups' => $dups, 'k' => $k, 'banks' => $banks, 'reasons' => self::REASONS, 'canAct' => P::can(Auth::user(), 'orders', 'edit')]);
+    return view('manual_payments', ['rows' => $rows, 'dups' => $dups, 'k' => $k, 'banks' => $banks, 'reasons' => self::REASONS, 'canAct' => P::can(Auth::user(), 'orders', 'edit'), 'canVerify' => self::canVerify()]);
   }
 
   public function act(Request $r, $id, $mode) {
     abort_unless(P::can(Auth::user(), 'orders', 'edit'), 403);
+    abort_if($mode === 'verify' && !self::canVerify(), 403, 'Only Mohammad Faruk can verify manual payments.');
     $o = DB::table('orders')->find($id); abort_unless($o && $o->pay_status, 404);
     $u = Auth::user(); $note = trim((string)$r->input('note'));
     if ($mode === 'note') {

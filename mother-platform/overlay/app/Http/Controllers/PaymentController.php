@@ -29,6 +29,7 @@ class PaymentController extends Controller {
   }
   public function decide(Request $r, $id, $mode) {
     abort_unless(in_array($mode, ['verify','reject'], true), 404);
+    abort_if($mode === 'verify' && !ManualPaymentController::canVerify(), 403, 'Only Mohammad Faruk can verify manual payments.');
     $o = DB::table('orders')->find($id); abort_unless($o && $o->pay_status, 404);
     $new = $mode === 'verify' ? 'Verified' : 'Rejected';
     if ($o->pay_status === $new) return back()->with('ok', "Payment already $new for ".$o->invoice);

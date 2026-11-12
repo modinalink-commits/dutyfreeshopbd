@@ -80,6 +80,7 @@ class OrderPaymentController extends Controller {
   public function act(Request $r, $pid, $mode) {
     $this->can();
     $p = DB::table('order_payments')->find($pid); abort_unless($p && in_array($mode, ['verify', 'reject']), 404);
+    abort_if($mode === 'verify' && !ManualPaymentController::canVerify(), 403, 'Only Mohammad Faruk can verify manual payments.');
     if ($p->status !== 'pending') return back()->with('bad', 'This payment is already '.$p->status.'.');
     $o = DB::table('orders')->find($p->order_id); $u = Auth::user();
     if ($mode === 'verify') {
