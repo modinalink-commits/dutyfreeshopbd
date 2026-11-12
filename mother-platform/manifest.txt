@@ -1029,3 +1029,4 @@ database/migrations/2026_11_12_160000_clear_views.php
 database/migrations/2026_11_13_010000_beauty_category.php
 database/migrations/2026_11_13_011500_beauty_import_now.php
 database/migrations/2026_11_13_020000_fashion_category.php
+database/migrations/2026_11_13_030000_store_source_category.php

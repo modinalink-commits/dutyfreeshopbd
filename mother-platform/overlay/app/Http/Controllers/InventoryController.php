@@ -97,11 +97,11 @@ class InventoryController extends Controller {
     return back()->with('ok', 'Auto scan saved: every day at ' . $t . ' (Dhaka).');
   }
   public function storeAdd(Request $r) {
-    $d = $r->validate(['name'=>'required|string|max:120','domain'=>'required|string|max:200']);
+    $d = $r->validate(['name'=>'required|string|max:120','domain'=>'required|string|max:200','source_category'=>'nullable|string|max:160']);
     $dom = StoreScanner::cleanDomain($d['domain']);
     if ($dom === '') return back()->withErrors(['domain'=>'Enter a valid domain such as example.com']);
     if (DB::table('stores')->where('domain',$dom)->exists()) return back()->withErrors(['domain'=>'This domain is already added']);
-    DB::table('stores')->insert(['name'=>$d['name'],'domain'=>$dom,'active'=>true,'created_at'=>now(),'updated_at'=>now()]);
+    DB::table('stores')->insert(['name'=>$d['name'],'domain'=>$dom,'source_category'=>trim((string)($d['source_category'] ?? '')) ?: null,'active'=>true,'created_at'=>now(),'updated_at'=>now()]);
     return redirect('/admin/stores')->with('ok','Store added. Press "Scan Products" to import its products.');
   }
   public function storeEdit($id) {
@@ -110,11 +110,11 @@ class InventoryController extends Controller {
   }
   public function storeUpdate(Request $r, $id) {
     $s = DB::table('stores')->find($id); abort_unless($s, 404);
-    $d = $r->validate(['name'=>'required|string|max:120','domain'=>'required|string|max:200']);
+    $d = $r->validate(['name'=>'required|string|max:120','domain'=>'required|string|max:200','source_category'=>'nullable|string|max:160']);
     $dom = StoreScanner::cleanDomain($d['domain']);
     if ($dom === '') return back()->withErrors(['domain'=>'Enter a valid domain such as example.com'])->withInput();
     if (DB::table('stores')->where('domain',$dom)->where('id','!=',$id)->exists()) return back()->withErrors(['domain'=>'This domain is already added'])->withInput();
-    DB::table('stores')->where('id',$id)->update(['name'=>$d['name'],'domain'=>$dom,'active'=>$r->boolean('active'),'updated_at'=>now()]);
+    DB::table('stores')->where('id',$id)->update(['name'=>$d['name'],'domain'=>$dom,'source_category'=>trim((string)($d['source_category'] ?? '')) ?: null,'active'=>$r->boolean('active'),'updated_at'=>now()]);
     DB::table('store_products')->where('store_id',$id)->update(['store_label'=>$d['name']]);
     return redirect('/admin/stores')->with('ok','Store updated.');
   }
