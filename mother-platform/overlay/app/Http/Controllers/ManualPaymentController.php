@@ -67,7 +67,7 @@ class ManualPaymentController extends Controller {
 
   public function act(Request $r, $id, $mode) {
     abort_unless(P::can(Auth::user(), 'orders', 'edit'), 403);
-    abort_if($mode === 'verify' && !self::canVerify(), 403, 'Only Mohammad Faruk can verify manual payments.');
+    abort_if(in_array($mode, ['verify', 'reject'], true) && !self::canVerify(), 403, 'Only Mohammad Faruk can verify or reject manual payments.');
     $o = DB::table('orders')->find($id); abort_unless($o && $o->pay_status, 404);
     $u = Auth::user(); $note = trim((string)$r->input('note'));
     if ($mode === 'note') {
