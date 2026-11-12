@@ -997,4 +997,4 @@ database/migrations/2026_11_12_000700_live_orders_on.php
 resources/views/store/hero_side.blade.php
 database/migrations/2026_11_12_000800_store_cache_bust2.php
 database/migrations/2026_11_12_000900_store_cache_bust3.php
-resources/views/store/badge_try.blade.php
+database/migrations/2026_11_12_001000_store_cache_bust4.php
