@@ -20,7 +20,7 @@
 .sxd{display:flex}
 @media(max-width:1199px){.sxc{flex:0 0 calc((100% - 16px)/3)}.sxr{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch}.sxr::-webkit-scrollbar{display:none}.sxc{flex:0 0 calc((100% - 16px)/3);scroll-snap-align:start}
 .sxd{display:flex;justify-content:center;gap:5px;margin-top:8px}.sxd i{width:5px;height:5px;border-radius:50%;background:#D1D5DB;transition:background .2s,width .2s}.sxd i.on{background:#FF5A00;width:14px;border-radius:3px}}
-@media(max-width:700px){.sxc{flex-basis:100%}.sxg{animation-duration:12s}.sxo{display:none}}
+@media(max-width:700px){.sxw{padding-top:14px;padding-bottom:16px}.sxc{flex:0 0 calc((100% - 8px)/2);border-radius:12px}.sxg{animation-duration:12s}.sxo{display:none}}
 @media(prefers-reduced-motion:reduce){.sxc{opacity:1;transform:none;transition:none}.sxg,.sxo,.sxp,.sxs{animation:none}.sxs{display:none}}
 </style>
 <div class="w sxw" id="sx"><div class="sxr" role="list">@foreach($showcase as $i => $sc)
