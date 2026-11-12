@@ -225,9 +225,9 @@ if(document.readyState==='complete')setTimeout(first,300);else addEventListener(
 @if($__wt)
 @include('store.watch_slide')
 @endif
-</div><div class="sl-d"></div><button type="button" class="sl-a pv" aria-label="Previous slide">‹</button><button type="button" class="sl-a nx" aria-label="Next slide">›</button></div></div></div>
+</div><div class="sl-d"></div><button type="button" class="sl-a pv" aria-label="Previous slide">‹</button><button type="button" class="sl-a nx" aria-label="Next slide">›</button></div></div>@include('store.hero_side')</div>
 @elseif($__gp->count())
-<div class="w hx">@include('store.globe', ['deals' => $__gp])</div>
+<div class="w hx">@include('store.globe', ['deals' => $__gp])@include('store.hero_side')</div>
 @else
 <div class="w hx"><div class="hx-m">
 @if($slides->count())
@@ -276,6 +276,7 @@ if(document.readyState==='complete')setTimeout(first,300);else addEventListener(
 <div class="hxd"><span class="k" data-end="{{ $fFix ? $fEnd * 1000 : '' }}">{{ $s['hero_kicker'] }} <span data-cd="all">{{ $fmt($fEnd) }}</span></span><h1>{!! nl2br(e(str_replace(', ', ",\n", $s['hero_title']))) !!}</h1><span class="sb">{{ $hsub }}</span><a class="bt" href="#flash">{{ $s['hero_button'] }} →</a></div>
 @endif
 </div>
+@include('store.hero_side')
 </div>
 @endif
 @endif
