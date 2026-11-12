@@ -1,3 +1,4 @@
+{{-- tryon v3 marker --}}<!--tryon-v3-->
 @php $__to = \App\Support\TryOn::ready((int)$p->id); @endphp
 @if($__to)
 <button type="button" id="tryBtn" style="display:inline-flex;align-items:center;gap:6px;margin:2px 0 10px;padding:8px 14px;border:1px solid #111827;border-radius:10px;background:#fff;color:#111827;font-weight:700;font-size:13px;cursor:pointer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 11h8M9 15c1.5 1 4.5 1 6 0"/></svg>Try On · নিজের মুখে দেখুন</button>
