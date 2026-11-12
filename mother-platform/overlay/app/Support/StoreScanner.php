@@ -172,7 +172,7 @@ class StoreScanner {
         } else {
           $rows = []; $pos = $st['pos'];
           while ($pos < count($q) && microtime(true) < $deadline - 6) {
-            $batch = array_slice($q, $pos, 48); // 48 pages fetched in parallel per round (was 16) - big sitemap stores (ryans.com, 20k+ pages) scan ~3x faster $pos += count($batch);
+            $batch = array_slice($q, $pos, 48); $pos += count($batch); // 48 pages in parallel per round (was 16)
             foreach (self::pget($batch, 10) as $u => $r) {
               if (!$r || $r['code'] !== 200) { $c['fail']++; $k = $r ? 'http'.$r['code'] : 'noresp'; $st['why'][$k] = ($st['why'][$k] ?? 0) + 1; continue; }
               $row = self::parsePage($id, $u, $r['body']);
