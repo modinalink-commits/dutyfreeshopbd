@@ -30,6 +30,7 @@ class ResController extends Controller {
     $q = DB::table($c['table']);
     if ($r->filled('q') && !empty($c['search'])) $q->where(function ($w) use ($c, $r) { foreach ($c['search'] as $col) $w->orWhere($col, 'ilike', '%'.$r->q.'%'); });
     foreach ($c['filters'] ?? [] as $fn) if ($r->filled($fn)) $q->where($fn, $r->input($fn));
+    if (!empty($c['asc'])) return $q->orderBy($c['order'] ?? 'id')->orderBy('id');
     return $q->orderByDesc($c['order'] ?? 'id')->orderByDesc('id');
   }
   private function audit($act, $subject, $meta = []) {
