@@ -5,7 +5,7 @@ e685676cf19a248fda0972911a3e2fcabfa731d0 app/Http/Controllers/AdminController.ph
 242316b2ef0a0967e6815e39fcbc7377349fdc17 app/Console/Commands/MotherInstall.php
 ba118277d20e490ae9a01aaeb98f5d3c46d910ab resources/views/layout.blade.php
 78c7dbbe082c3756f0bb680071dfb96c381f4fc8 resources/views/login.blade.php
-bf0dc6e5766a29c6303395ae04e3b7fdbd1eb0f1 resources/views/dashboard.blade.php
+52c5bfed2c6e515c27ef5fd1c366fe59f6f63258 resources/views/dashboard.blade.php
 43590a91488414ace247b6260219fb434402ada7 resources/views/orders.blade.php
 d1f16b800c3fbbc24a0851463f7703b38ae37e82 resources/views/admin/orders/partials/status-tabs.blade.php
 6970552dad635e28cb230ffcf5ce25fab9838639 resources/views/admin/orders/partials/header-system.blade.php
@@ -989,3 +989,4 @@ aaf73219fae91e74e813dadb9ab308a15a6ad111 resources/views/admin_bell.blade.php
 57743fdfe5e9eb85407ba9f97424f0203d90a434 app/Support/AdminAlerts.php
 85d5f3797634535601be328b8f0f6b018835133e app/Http/Controllers/AdminAlertController.php
 5d0357f83aea4bbc0a12fe364fd499bfd720c29f database/migrations/2026_11_12_000300_flash_sale_discount_rule.php
+ea1eed366a93b9ce568ebf55d1724dc122a7d338 database/migrations/2026_11_12_000400_fix_whatspapp_source.php
