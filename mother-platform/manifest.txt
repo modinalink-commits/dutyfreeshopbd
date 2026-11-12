@@ -1010,3 +1010,4 @@ database/migrations/2026_11_12_001900_store_cache_bust11.php
 database/migrations/2026_11_12_002000_unverify_payment_104142.php
 database/migrations/2026_11_12_002100_cod_direct_payment.php
 database/migrations/2026_11_12_002200_partial_parcel_payment.php
+database/migrations/2026_11_12_002300_partial_parcel_ack.php

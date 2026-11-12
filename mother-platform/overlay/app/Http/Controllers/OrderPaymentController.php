@@ -21,6 +21,11 @@ class OrderPaymentController extends Controller {
   }
   /** Customer-submitted payments (website checkout) and approvals made from the order list still live on the order row. Mirror them into the ledger so Manual Payments always shows them. */
   /** Customer paid us directly for a parcel that went out as courier COD: after the owner verifies, lower the COD the courier will collect and flag the courier as "to inform". Runs once per payment. */
+  /** A verified partial-parcel payment explains the courier-collection difference on that order. */
+  public static function partialApply(int $pid): void {
+    $p = DB::table('order_payments')->find($pid); if (!$p || !($p->partial_parcel ?? false) || $p->status !== 'verified') return;
+    DB::table('orders')->where('id', $p->order_id)->whereNull('mismatch_ack_at')->update(['mismatch_ack_at' => now(), 'mismatch_ack_by' => ($p->verified_by ?: 'Owner').' (partial parcel payment)']);
+  }
   public static function codDirectApply(int $pid): void {
     try {
       $p = DB::table('order_payments')->find($pid); if (!$p || !$p->cod_direct || $p->status !== 'verified') return;
@@ -81,7 +86,7 @@ class OrderPaymentController extends Controller {
     self::recalc((int)$o->id);
     OrderActivity::log((int)$o->id, 'payment_submitted', null, (string)$amt, 'Manual payment added: '.$d['method'].' ৳'.number_format($amt).($d['txn_id'] ?? '' ? ' ref '.$d['txn_id'] : ''), ['payment_id' => $pid]);
     if ($verify) OrderActivity::log((int)$o->id, 'payment_verified', null, (string)$amt, 'Payment verified: '.$d['method'].' ৳'.number_format($amt).' for '.$o->invoice, ['payment_id' => $pid]);
-    if ($verify) self::codDirectApply((int)$pid);
+    if ($verify) { self::codDirectApply((int)$pid); self::partialApply((int)$pid); }
     $ap = $verify ? \App\Support\PaymentSettle::apply((int)$o->id, 'Manual payment entry') : null;
     return back()->with('ok', 'Payment saved for '.$o->invoice.($verify ? ' (verified)' : ' (pending verification)').($ap ? ' · order moved to Approved' : ''));
   }
@@ -108,7 +113,7 @@ class OrderPaymentController extends Controller {
     }
     self::recalc((int)$o->id);
     OrderActivity::log((int)$o->id, $mode === 'verify' ? 'payment_verified' : 'payment_rejected', null, (string)$p->amount, 'Payment '.($mode === 'verify' ? 'verified' : 'rejected').': '.$p->method.' ৳'.number_format($p->amount).' for '.$o->invoice, ['payment_id' => (int)$pid]);
-    if ($mode === 'verify') self::codDirectApply((int)$pid);
+    if ($mode === 'verify') { self::codDirectApply((int)$pid); self::partialApply((int)$pid); }
     $ap = $mode === 'verify' ? \App\Support\PaymentSettle::apply((int)$o->id, 'Manual Payment Verification') : null;
     return back()->with('ok', 'Payment '.($mode === 'verify' ? 'verified' : 'rejected').'.'.($ap ? ' Order moved to Approved.' : ''));
   }
