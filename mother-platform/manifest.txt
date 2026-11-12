@@ -992,3 +992,4 @@ app/Http/Controllers/AdminAlertController.php
 database/migrations/2026_11_12_000300_flash_sale_discount_rule.php
 database/migrations/2026_11_12_000400_fix_whatspapp_source.php
 database/migrations/2026_11_12_000500_slider_slower.php
+database/migrations/2026_11_12_000600_store_cache_bust.php
