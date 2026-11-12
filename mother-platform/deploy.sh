@@ -6,6 +6,7 @@
 set -u
 umask 000
 D=/srv/deploy; mkdir -p "$D"
+trap 'exit 0' EXIT # the worker loop runs under set -e: a non-zero exit here (a failed deploy) would kill it; the real outcome is in the status file
 exec 9>"$D/lock"
 n=0; until flock -n 9; do n=$((n+1)); [ "$n" -ge 60 ] && { echo "another deploy is running"; exit 1; }; sleep 2; done # BusyBox flock has no -w: wait up to 2 min for a previous run to release the lock instead of failing at once
 LOG="$D/last.log"
