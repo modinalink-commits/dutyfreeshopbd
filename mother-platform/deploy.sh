@@ -7,7 +7,7 @@ set -u
 umask 000
 D=/srv/deploy; mkdir -p "$D"
 exec 9>"$D/lock"
-if ! flock -n 9; then echo "another deploy is running"; exit 1; fi
+if ! flock -w 120 9; then echo "another deploy is running"; exit 1; fi # wait up to 2 min for a previous run to release the lock instead of failing at once
 LOG="$D/last.log"
 log() { echo "[$(date +%H:%M:%S)] $*"; }
 setst() { echo "$1" > "$D/status"; }
@@ -128,7 +128,7 @@ for f in storage/framework/views/*.php; do php -l "$f" >/dev/null 2>&1 || log " 
 chown -R www-data:www-data "$REL/bootstrap/cache" /srv/shared/storage 2>/dev/null
 
 log "7/9 health check on the NEW release (not live yet)"; stg Testing 72
-su -s /bin/sh www-data -c "cd $REL && exec php -S 127.0.0.1:8099 -t public public/index.php" >"$D/hc-server.log" 2>&1 &
+su -s /bin/sh www-data -c "cd $REL && exec php -S 127.0.0.1:8099 -t public public/index.php" >"$D/hc-server.log" 2>&1 9>&- &
 HPID=$!; sleep 3
 php "$D/hc.php" http://127.0.0.1:8099 dutyfreeshopbd.com / @product @category /search?q=marlboro /search?q=perfume /offline /manifest.webmanifest /track /admin/login /account/login /_health >"$D/hc.out" 2>&1
 HC=$?; sed 's/^/   /' "$D/hc.out"; kill "$HPID" 2>/dev/null; HPID=""; pkill -f 'php -S 127.0.0.1:8099' 2>/dev/null
