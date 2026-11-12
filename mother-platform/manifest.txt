@@ -995,3 +995,4 @@ database/migrations/2026_11_12_000500_slider_slower.php
 database/migrations/2026_11_12_000600_store_cache_bust.php
 database/migrations/2026_11_12_000700_live_orders_on.php
 resources/views/store/hero_side.blade.php
+database/migrations/2026_11_12_000800_store_cache_bust2.php
