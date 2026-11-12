@@ -86,7 +86,7 @@ $__recv = (float)$o->total;
 $__mv = 0; $__pv = 0; foreach($ops as $__p){ if($__p->status==='verified'){ if(stripos((string)$__p->method,'pathao')!==false) $__pv += (float)$__p->amount; else $__mv += (float)$__p->amount; } }
 $__courier = $o->collected_amount !== null ? (float)$o->collected_amount : $__pv;
 $__diff = round($__recv - $__mv - $__courier, 2);
-$__show = $__ret > 0 || ($o->collected_amount !== null && $__mv > 0);
+$__show = $__ret > 0 || $__mv > 0 || $__courier > 0;
 @endphp
 @if($__show)<div style="margin:8px 0;padding:8px 10px;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;font-size:12.5px"><b>Where the money went</b>
 <div style="display:flex;justify-content:space-between"><span>Order value</span><b>৳{{ number_format($__gross) }}</b></div>
