@@ -21,6 +21,10 @@ class Deployer
     $got = @flock($h, LOCK_EX | LOCK_NB); if ($got) flock($h, LOCK_UN); fclose($h);
     return !$got;
   }
+  /** True when a deploy.sh process is really running right now (the lock can be free for a moment between the request being picked up and the lock being taken, e.g. while code is fetched). Unknown = false. */
+  public static function procAlive(): bool {
+    try { if (!function_exists('exec')) return false; $o = []; @exec("pgrep -f '/srv/deploy/deploy\\.sh|deploy\\.sh' 2>/dev/null", $o); return count(array_filter($o, fn($x) => (int)$x > 0 && (int)$x !== getmypid())) > 0; } catch (\Throwable $e) { return false; }
+  }
   /** Previous stable release kept by deploy.sh (the target of Rollback), with an integrity check. */
   public static function previous(): ?array {
     $p = self::rd('previous'); if ($p === '' || !is_dir($p)) return null;
@@ -71,7 +75,7 @@ class Deployer
     else {
       $cleared = [];
       if (is_file($req) && time() - (int)@filemtime($req) > 600) { @unlink($req); $cleared[] = 'stale request file'; }
-      if ($act && !is_file($req) && time() - max((int)@filemtime(self::D . '/stage'), (int)@filemtime(self::D . '/status'), strtotime((string)$act->updated_at . ' UTC')) > 120 && !str_starts_with(self::rd('status'), 'ok:')) {
+      if ($act && !is_file($req) && time() - max((int)@filemtime(self::D . '/stage'), (int)@filemtime(self::D . '/status'), strtotime((string)$act->updated_at . ' UTC')) > 120 && !str_starts_with(self::rd('status'), 'ok:') && !self::procAlive()) {
         DB::table('deployments')->where('id', $act->id)->update(['status' => 'Failed', 'stage' => 'Failed', 'error' => 'Interrupted: the deployment process is no longer running (server restart or crash). The last healthy release stayed active.', 'finished_at' => now(), 'updated_at' => now()]);
         DeployHealth::raise('deploy_failed:' . $act->id, 'high', 'Deployment', 'Deployment was interrupted', 'The process stopped before it finished. Production kept the last healthy release.', 'Server or container restart during the deployment.', 'Review the log, then retry the deployment.', (int)$act->id);
         $cleared[] = 'interrupted deployment #' . $act->id;
@@ -164,7 +168,17 @@ class Deployer
 
   /** Move the active deployment forward by reading what deploy.sh wrote. Safe to call often. */
   public static function reconcile(): void {
-    $row = DB::table('deployments')->whereIn('status', self::ACTIVE)->latest('id')->first(); if (!$row) return;
+    $row = DB::table('deployments')->whereIn('status', self::ACTIVE)->latest('id')->first();
+    if (!$row) { // a deployment wrongly marked Interrupted that then finished and is the live release: correct the record
+      try {
+        $bad = DB::table('deployments')->where('status', 'Failed')->where('error', 'like', 'Interrupted:%')->where('finished_at', '>', now()->subHours(2))->latest('id')->first();
+        if ($bad && $bad->sha && str_contains((string)self::liveId(), substr($bad->sha, 0, 7))) {
+          DB::table('deployments')->where('id', $bad->id)->update(['status' => 'Completed', 'stage' => 'Completed', 'progress' => 100, 'error' => null, 'release_id' => self::liveId(), 'updated_at' => now()]);
+          DeployHealth::resolve('deploy_failed:', 'System (release is live)', true);
+        }
+      } catch (\Throwable $e) {}
+      return;
+    }
     $st = self::rd('status'); $mt = (int)@filemtime(self::D . '/status'); $since = strtotime((string)$row->created_at . ' UTC') - 5;
     $fresh = $mt >= $since; $sha7 = $row->sha ? substr($row->sha, 0, 7) : null; $log = self::rd('last.log');
     $u = ['updated_at' => now()];
@@ -182,7 +196,7 @@ class Deployer
       $u += ['status' => $rolled ? 'Rolled Back' : 'Failed', 'stage' => $rolled ? 'Rolled back' : 'Failed', 'error' => trim(substr($st, 7)), 'log' => mb_substr($log, -9000), 'finished_at' => now()];
       self::audit($rolled ? 'Rollback Completed' : 'Deployment Failed', ($row->subject ?? '') . ' — previous version kept', null, ['old' => $row->from_release, 'new' => $row->from_release, 'result' => trim(substr($st, 7)), 'deployment' => $row->id]);
       DeployHealth::raise('deploy_failed:' . $row->id, 'high', 'Deployment', $rolled ? 'Deployment failed - automatic rollback completed' : 'Deployment failed - previous release stays live', trim(substr($st, 7)), $rolled ? 'The new release passed the pre-check but failed the live health check.' : 'A build, migration or health check step failed before the switch.', 'Review the log, fix the cause, then retry. Production was not affected.', (int)$row->id);
-    } elseif ($fresh && $row->status !== 'Queued' && !self::lockHeld() && time() - max((int)@filemtime(self::D . '/stage'), (int)@filemtime(self::D . '/status'), (int)@filemtime(self::D . '/last.log')) > 180) {
+    } elseif ($fresh && $row->status !== 'Queued' && !self::lockHeld() && !self::procAlive() && time() - max((int)@filemtime(self::D . '/stage'), (int)@filemtime(self::D . '/status'), (int)@filemtime(self::D . '/last.log')) > 180) {
       $u += ['status' => 'Failed', 'stage' => 'Failed', 'error' => 'Interrupted: the deployment process is no longer running (server restart or crash). The last healthy release stayed active. Retry when ready.', 'finished_at' => now()];
       self::audit('Deployment Failed', 'Interrupted: ' . $row->subject, null, ['result' => 'interrupted', 'deployment' => $row->id]);
       DeployHealth::raise('deploy_failed:' . $row->id, 'high', 'Deployment', 'Deployment was interrupted', 'The process stopped before it finished. Production kept the last healthy release.', 'Server or container restart during the deployment.', 'Review the log, then retry the deployment.', (int)$row->id);
