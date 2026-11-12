@@ -300,7 +300,7 @@ function draw(){
  else{A=T.map(function(t){return t.orders});Bs=T.map(function(t){return t.delivered});la='Orders';lb='Delivered';fa=function(v){return v+' orders'};fb=function(v){return v+' delivered'}}
  var mxA=Math.max(1,Math.max.apply(null,A)),mxB=Bs?Math.max(1,Math.max.apply(null,Bs)):1;
  var s='<svg viewBox="0 0 '+W+' '+H+'">';
- for(var g=0;g<=4;g++){var y=Tp+ih*(1-g/4);s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y+'" y2="'+y+'" stroke="#EFE9E4" stroke-dasharray="2 4"/><text x="'+(L-6)+'" y="'+(y+3)+'" text-anchor="end" font-size="9.5" fill="#9CA3AF">'+(m==='sales'||m==='profit'?(mxA*g/4>=1000?Math.round(mxA*g/4/1000)+'k':Math.round(mxA*g/4)):Math.round(mxA*g/4))+'</text>'}
+ for(var g=0;g<=4;g++){var y=Tp+ih*(1-g/4);s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y+'" y2="'+y+'" stroke="#EFE9E4" stroke-dasharray="2 4"/><text x="'+(L-6)+'" y="'+(y+3)+'" text-anchor="end" font-size="9.5" fill="#9CA3AF">'+(m==='sales'||m==='profit'?(mxA*g/4>=1000000?(Math.round(mxA*g/4/10000)/100)+'M':mxA*g/4>=1000?Math.round(mxA*g/4/1000)+'k':Math.round(mxA*g/4)):Math.round(mxA*g/4))+'</text>'}
  var cA=(m==='profit'?COL.profit:COL.sales),cB=(m==='sales'?COL.orders:COL.del);
  var pa=A.map(function(v,i){return [L+cw*i+cw/2,Tp+ih*(1-Math.max(0,v)/mxA)]});
  var line=smooth(pa,Tp,Tp+ih),base=Tp+ih;
