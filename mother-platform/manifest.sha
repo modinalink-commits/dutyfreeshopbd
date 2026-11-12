@@ -56,7 +56,7 @@ d7ee57121d8956f4199849d0ece1dba7723da63e app/Http/Controllers/StoreController.ph
 5356b422775064c3de9b13c703f12fbf913a2bd3 resources/views/store/card.blade.php
 4a5eb7ee8d7960886fcb97c690bbb604ec69eb1f resources/views/store/home_sec.blade.php
 ef11c45621509bae0bfd7c9e22195ea8c11903c8 resources/views/store/home.blade.php
-c8a4229fbb2fb19d98c765d7d94bcc7e61fe30a6 resources/views/store/category.blade.php
+cdf77c176d20d578b685960bfbdc12121f59bad8 resources/views/store/category.blade.php
 1982bf0ea0f3afb007649397aee6e47dc4bc7f12 resources/views/store/product.blade.php
 7ad9d9502d41f54d6784414a9aa3f16a8ab0ec13 resources/views/store/search.blade.php
 463415875592bd1232b5c7203c9a42812fc332a3 resources/views/store/track.blade.php

@@ -25,7 +25,7 @@
 .tst{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}.tst div{display:flex;gap:10px;align-items:center;border:1px solid #FDC2A5;border-radius:12px;background:#fff;padding:9px 12px;font-size:11px;color:#6B7280}.tst b{display:block;font-size:12px;color:var(--n)}.tst i{width:28px;height:28px;border-radius:8px;background:#FFF3EA;color:var(--o);display:grid;place-items:center;font-style:normal;font-weight:800;flex:none}
 .cl .fl,.cl .tb2{border-color:#FDC2A5}.cl .tb2 select{border-color:#FDC2A5}
 .cl .pc{border:1px solid #FDC2A5;border-radius:16px;box-shadow:0 1px 2px rgba(11,18,32,.05),0 6px 18px rgba(11,18,32,.06)}
-.cl .pc .on{background:var(--o);border-color:var(--o);border-radius:10px;margin:0 10px;font-weight:800;letter-spacing:.03em}
+.cl .pc .on{background:var(--o);border:1px solid #0B1220;border-radius:10px;margin:0 10px;font-weight:800;letter-spacing:.03em}
 
 .cl .pc .fds{background:var(--n)!important;color:#fff!important}
 @media(max-width:900px){.cbn{flex-direction:column!important;align-items:flex-start!important}.cbn .ch{justify-content:flex-start}.tst{grid-template-columns:repeat(3,1fr);gap:6px}.tst div{flex-direction:column;text-align:center;padding:8px 4px;gap:4px}.tst div span{display:none}.cl .pc .on{margin:0 6px}}
