@@ -439,6 +439,7 @@ class StoreController extends Controller {
   public function search(Request $r) {
     $t = trim(mb_substr((string)$r->q, 0, 80)); $items = collect();
     if ($r->boolean('deals')) { $l = self::todayBest(array_merge(self::set(), ['deal_max' => 24])); $items = new \Illuminate\Pagination\LengthAwarePaginator($l, $l->count(), 48, 1, ['path' => url('/search')]); $t = 'Flash Sale'; }
+    elseif ($t === '' && in_array((string)$r->sort, ['new', 'popular'], true)) { $qq = $this->q(); $qq = (string)$r->sort === 'new' ? $qq->orderByDesc('id') : $qq->orderByDesc('sold')->orderByDesc('id'); try { $items = $qq->paginate(48)->withQueryString(); } catch (\Throwable $e) { $items = $this->q()->orderByDesc('id')->paginate(48)->withQueryString(); } $t = (string)$r->sort === 'new' ? 'New Arrivals' : 'Top Selling'; }
     elseif ($t !== '') { $items = $this->searchRank($this->searchWhere($this->q(), $t), $t)->orderByDesc('id')->paginate(48)->withQueryString(); DB::table('product_views')->insert(['term'=>$t,'day'=>now('Asia/Dhaka')->toDateString(),'created_at'=>now(),'updated_at'=>now()]); }
     return response()->view('store.search', $this->base(['t'=>$t, 'items'=>$items, 'title'=>($t ? $t.' – ' : '').'Search | DutyFree BD', 'desc'=>'', 'canon'=>url('/search'), 'noindex'=>true]));
   }
