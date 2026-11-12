@@ -322,7 +322,17 @@ class AdminController extends Controller {
     $comments = DB::table('order_staff_comments as c')->join('orders as oo','oo.id','=','c.order_id')->where('c.order_id',$id)->orderByDesc('c.id')->select('c.*','oo.invoice as inv')->get();
     $prints = \Illuminate\Support\Facades\Schema::hasTable('order_print_logs') ? DB::table('order_print_logs')->where('order_id',$id)->orderByDesc('printed_at')->orderByDesc('id')->get() : collect();
     $ops = \Illuminate\Support\Facades\Schema::hasTable('order_payments') ? DB::table('order_payments')->where('order_id',$id)->orderByDesc('id')->get() : collect();
-    return view('order_show', compact('o','items','logs','ci','comments','prints','ops'));
+    $recon = null; // where the money went: value, returned, paid to us, courier COD, difference (never breaks the page)
+    try {
+      $retV = 0.0; $retLines = [];
+      foreach ($items as $i) { $q = (int)$i->qty; $r = max(0, min($q, (int)($i->ret_qty ?? 0))); $retV += $r * (float)$i->price; if ($r > 0) $retLines[] = (string)($i->name ?? $i->product_name ?? 'Item').' × '.$r.' of '.$q; }
+      $gross = (float)($o->original_total ?? ((float)$o->total + $retV)); $ret = $o->original_total !== null ? max($gross - (float)$o->total, 0) : $retV; $recv = (float)$o->total;
+      $mv = 0.0; $pv = 0.0;
+      foreach ($ops as $p) { if ($p->status !== 'verified') continue; if (stripos((string)$p->method, 'pathao') !== false) $pv += (float)$p->amount; else $mv += (float)$p->amount; }
+      $courier = $o->collected_amount !== null ? (float)$o->collected_amount : $pv;
+      if ($ret > 0 || $mv > 0 || $courier > 0) $recon = ['gross' => $gross, 'ret' => $ret, 'lines' => $retLines, 'recv' => $recv, 'mv' => $mv, 'courier' => $courier, 'diff' => round($recv - $mv - $courier, 2)];
+    } catch (\Throwable $e) { $recon = null; }
+    return view('order_show', compact('o','items','logs','ci','comments','prints','ops','recon'));
   }
   public function orderComment(Request $r, $id) {
     $d = $r->validate(['body'=>'required|string|max:2000','category'=>'nullable|string|max:80']);
