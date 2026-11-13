@@ -36,7 +36,7 @@ if [ -n "$RELAY_TOKEN" ]; then
     echo "relay config pulled from admin panel (mode=$MODE host=${PBX_HOST:-none})"
   else echo "relay config pull failed or empty - using environment values"; fi
   CFGSUM=$(printf '%s' "$CFG" | md5sum | cut -d' ' -f1)
-  ( while :; do sleep 60 || sleep 60 || true; N=$(pull_cfg || true); [ -n "$N" ] && [ "$(printf '%s' "$N" | md5sum | cut -d' ' -f1)" != "$CFGSUM" ] && { echo "relay config changed - restarting"; pkill -x freeswitch; kill 1; }; done ) &
+  ( set +e; while :; do sleep 60 || sleep 60 || true; N=$(pull_cfg || true); [ -n "$N" ] && [ "$(printf '%s' "$N" | md5sum | cut -d' ' -f1)" != "$CFGSUM" ] && { echo "relay config changed - restarting"; pkill -x freeswitch; kill 1; }; done ) &
 fi
 MODE="${MODE:-test}"; PBX_PORT="${PBX_PORT:-5080}"; PBX_TRANSPORT="${PBX_TRANSPORT:-tcp}"
 IPRE=$(printf '%s' "$CLIENT_IP" | sed 's/\./\\./g')
@@ -154,7 +154,7 @@ echo "relay ready. MODE=$MODE client=$CLIENT_IP prefix=$PREFIX max=$MAX_CALLS pu
 # (2) a watchdog restarts the push when it is stale > 45 s, (3) the hangup hook restarts it when it has been silent for 5 minutes.
 if [ -n "$RELAY_TOKEN" ]; then
   RELAY_LIVE_URL="${RELAY_LIVE_URL:-${RELAY_CONFIG_URL%relay-config}relay-live}"
-  mkfifo /tmp/nap 2>/dev/null
+  mkfifo /tmp/nap 2>/dev/null || true
   cat > /usr/local/bin/relay-push.sh <<PUSH
 #!/bin/bash
 # Singleton: a new start replaces the previous loop. Writes /tmp/live.ok after every successful push.
@@ -174,7 +174,8 @@ PUSH
   chmod 700 /usr/local/bin/relay-push.sh
   date +%s > /tmp/live.ok
   bash /usr/local/bin/relay-push.sh &
-  ( nap() { sleep "$1" 2>/dev/null || read -r -t "$1" _ <> /tmp/nap || true; }
+  # `set -e` is on for this script: without `set +e` one failed command (a wget, a kill of a dead pid) silently ended the old loops for good.
+  ( set +e; nap() { sleep "$1" 2>/dev/null || read -r -t "$1" _ <> /tmp/nap || true; }
     nap 60; while :; do
       nap 15
       NOW=$(date +%s); LAST=$(cat /tmp/live.ok 2>/dev/null)
