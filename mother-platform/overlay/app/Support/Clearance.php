@@ -17,7 +17,8 @@ class Clearance {
   private static ?bool $ready = null; private static ?array $act = null;
 
   public static function ready(): bool { if (self::$ready === null) { try { self::$ready = Schema::hasTable('product_clearances'); } catch (\Throwable $e) { self::$ready = false; } } return self::$ready; }
-  public static function isSuper(): bool { try { return (auth()->user()->role ?? '') === 'super'; } catch (\Throwable $e) { return false; } }
+  /** The owner-level roles (same rule as the Deployment Center's Super Admin actions): super and admin. */
+  public static function isSuper(): bool { try { return in_array(auth()->user()->role ?? '', ['super', 'admin'], true); } catch (\Throwable $e) { return false; } }
   /** @return array<int,object> product id => active clearance row */
   public static function active(): array {
     if (self::$act !== null) return self::$act; if (!self::ready()) return self::$act = [];
