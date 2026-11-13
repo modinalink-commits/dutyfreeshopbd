@@ -1,9 +1,9 @@
 @extends('layout')@section('title','Stores & Scan')
 @section('body')
 @php $PH = \App\Support\StoreScanner::ph(); @endphp
-<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px"><div style="flex:1;min-width:240px"><h1 style="margin:0">Store Scanner</h1><span style="font-size:13px;color:#6B7280">Add a store or domain, press Scan Products, and its products arrive in the Central Inventory.</span></div>
-<span style="display:inline-flex;gap:6px;font-size:12px;font-weight:600;color:#FF5A00;background:#FFF1E8;border-radius:8px;padding:6px 10px">⬇ Download: <a target="_blank" href="/admin/m/stores/export/pdf">PDF</a> · <a href="/admin/m/stores/export/xls">Excel</a> · <a href="/admin/m/stores/export/doc">Word</a> · <a href="/admin/m/stores/export/csv">CSV</a></span>
-<a class="btn" href="/admin/inventory">Open Central Inventory</a></div>
+<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px"><div style="flex:1;min-width:240px"><h1 style="margin:0;font-size:20px">Store Scanner</h1><span style="font-size:12.5px;color:#6B7280">Add a store or domain, press Scan Products, products arrive in Central Inventory.</span></div>
+<div style="display:flex;gap:8px;align-items:center;margin-left:auto"><details style="position:relative"><summary class="btn g" style="list-style:none;cursor:pointer">Export ▾</summary><div style="position:absolute;right:0;top:100%;margin-top:4px;z-index:30;background:#fff;border:1px solid #E5E7EB;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.1);padding:4px;min-width:130px;display:grid"><a target="_blank" href="/admin/m/stores/export/pdf" style="padding:6px 10px;color:#14213d">PDF</a><a href="/admin/m/stores/export/xls" style="padding:6px 10px;color:#14213d">Excel</a><a href="/admin/m/stores/export/doc" style="padding:6px 10px;color:#14213d">Word</a><a href="/admin/m/stores/export/csv" style="padding:6px 10px;color:#14213d">CSV</a></div></details>
+<a class="btn g" href="/admin/inventory">Open Central Inventory</a></div></div>
 @if(session('ok'))<div class="card" style="color:#166534">{{ session('ok') }}</div>@endif
 @if($errors->any())<div class="card err">{{ $errors->first() }}</div>@endif
 <form class="card" method="post" action="/admin/stores/auto-scan" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">@csrf
