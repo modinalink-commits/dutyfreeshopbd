@@ -50,11 +50,11 @@ class OrderWaUpdate {
     $w = array_slice(array_values(array_filter(explode(' ', $n), fn($x) => $x !== '')), 0, 4);
     return mb_substr(implode(' ', $w), 0, 40);
   }
-  /** Tracking number followed by the courier's own tracking link (Pathao etc.); our order-tracking page when the parcel has no number yet. Owner request. */
+  /** Tracking number followed by the link to OUR order-tracking page (owner request: our site's link, under our name). */
   public static function track(object $o): string {
     try {
-      $cid = trim((string)($o->consignment_id ?? '')); $u = $cid !== '' ? (string)TrackLink::url($o) : (string)Inv::trackUrl($o->invoice);
-      return mb_substr(($cid !== '' ? $cid : 'শীঘ্রই জানানো হবে') . ($u !== '' ? ' · ' . $u : ''), 0, 240);
+      $cid = trim((string)($o->consignment_id ?? '')); $u = (string)Inv::trackUrl($o->invoice); // our own tracking page, under our own name
+      return mb_substr(($cid !== '' ? $cid : 'শীঘ্রই জানানো হবে') . ($u !== '' ? ' · ' . OrderWaConfirm::brand() . '-এ ট্র্যাক করুন: ' . $u : ''), 0, 260);
     } catch (\Throwable $e) { return trim((string)($o->consignment_id ?? '')) ?: 'শীঘ্রই জানানো হবে'; }
   }
   public static function render(string $st, array $p): string { $b = self::STAGES[$st][3]; foreach ($p as $i => $v) $b = str_replace('{{' . ($i + 1) . '}}', $v, $b); return $b; }
