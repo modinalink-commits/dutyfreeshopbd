@@ -91,6 +91,8 @@ class Costing {
       if ($x['qty'] <= 0) continue;
       $unit = self::expectedUnit($pid, $x['qty']); if ($unit <= 0) continue; // no cost on file: cannot be checked
       $cost = round($unit * $x['qty'], 2); $min = ceil(round($cost * ProfitFloor::rate($at) * 100, 6)) / 100;
+      // Approved Clearance: the line may ship at the clearance price that was in force when the order was placed (never below it).
+      $cp = Clearance::priceAt((int)$pid, $at); if ($cp !== null) $min = min($min, round($cp * $x['qty'], 2));
       $rev = round($x['val'] - ($sub > 0 ? $disc * $x['val'] / $sub : 0), 2);
       if ($rev + 0.004 < $min) $bad[] = ['name' => $x['name'], 'qty' => $x['qty'], 'cost' => $cost, 'min' => $min, 'rev' => $rev, 'short' => round($min - $rev, 2)];
     }

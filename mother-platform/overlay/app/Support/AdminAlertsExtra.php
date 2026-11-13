@@ -48,6 +48,8 @@ class AdminAlertsExtra
     if (Schema::hasTable('watch_source')) $q->whereNotExists(fn($w) => $w->select(DB::raw(1))->from('watch_source as ws')->whereColumn('ws.product_id', 'p.id'));
     // A price the owner set below the margin on purpose (price history source 'Owner decision', still the current price) is an approved override, not a mistake.
     if (Schema::hasColumn('product_price_history', 'source')) $q->whereNotExists(fn($w) => $w->select(DB::raw(1))->from('product_price_history as oh')->whereColumn('oh.product_id', 'p.id')->where('oh.source', 'Owner decision')->whereColumn('oh.new_rate', 'p.price'));
+    // Products on an approved, active Clearance are sold at cost on purpose.
+    if (Clearance::ready()) $q->whereNotExists(fn($w) => $w->select(DB::raw(1))->from('product_clearances as pc')->whereColumn('pc.product_id', 'p.id')->where('pc.status', 'active'));
     $n = $q->count();
     self::set($n >= 1, 'below_margin', 'high', 'Pricing', 'Products priced below the protected margin', $n . ' published products are priced below the protected margin.', 'A purchase rate went up or a price was set too low.', 'Open Pricing / Profit Floor and raise these prices or use the approved override.', 'all prices are safe');
   }

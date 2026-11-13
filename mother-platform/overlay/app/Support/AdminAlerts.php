@@ -13,6 +13,7 @@ class AdminAlerts
     if (!Cache::add('adminalerts.lock', 1, 280)) return;
     foreach (['orders', 'sms', 'whatsapp', 'courier', 'payments', 'deploystuck'] as $d) { try { self::$d(); } catch (\Throwable $e) {} }
     try { AdminAlertsExtra::tick(); } catch (\Throwable $e) {}
+    try { Clearance::tick(); } catch (\Throwable $e) {}
   }
 
   /** No new order for 3 hours in the daytime while the same 3 hours normally bring orders (average of the last 7 days). */

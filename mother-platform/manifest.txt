@@ -1095,3 +1095,7 @@ database/migrations/2026_11_14_060000_order_61113213_consignment.php
 database/migrations/2026_11_14_070000_sub_category_duplicates.php
 database/migrations/2026_11_14_080000_regular_cigarette_sub_removed.php
 database/migrations/2026_11_14_090000_davidoff_gold_malaysia_owner_price.php
+database/migrations/2026_11_14_100000_product_clearances.php
+app/Support/Clearance.php
+app/Http/Controllers/ClearanceController.php
+resources/views/clearance.blade.php
