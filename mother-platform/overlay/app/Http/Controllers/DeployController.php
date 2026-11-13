@@ -76,13 +76,23 @@ class DeployController extends Controller
     $steps = $focus ? $this->steps($focusLog ?: $raw, $act ? 'Running' : $focus['status']) : [];
     $prev = Deployer::previous(); $prevOut = $prev ? ['id' => $prev['id'], 'version' => $prev['row']->version ?? null, 'subject' => $prev['row']->subject ?? null, 'valid' => $prev['valid'], 'at' => ($prev['row'] && ($t = $tz($prev['row']->finished_at))) ? $t->format('d M Y · g:i A') : ''] : null;
     $issues = DeployHealth::active(); $health = DeployHealth::light();
+    // Work status: pushed but not live yet (pending), deploying now, finished today
+    $pend = [];
+    try {
+      foreach (Deployer::pendingCommits($cur['sha'] ?? null, $head['sha'] ?? null) as $pc) {
+        $pc['running'] = (bool)($act && $act['sha'] === $pc['sha']);
+        $pc['time'] = $pc['at'] ? \Carbon\Carbon::parse($pc['at'])->timezone('Asia/Dhaka')->format('g:i A') : '';
+        $pend[] = $pc;
+      }
+    } catch (\Throwable $e) {}
+    $today = now()->timezone('Asia/Dhaka')->format('d M');
     $d = ['enabled' => Deployer::enabled(), 'liveId' => $live, 'current' => $cur, 'active' => $act, 'history' => $rows, 'head' => $head, 'ts' => time(), 'locked' => Deployer::lockHeld() || (bool)$act,
       'headState' => !$head ? 'unknown' : ($headRow ? ($headRow->release_id === $live ? 'live' : strtolower($headRow->status)) : (Deployer::mode() === 'hold' ? 'waiting' : 'pending')),
       'tasks' => \Illuminate\Support\Facades\Schema::hasTable('work_log') ? DB::table('work_log')->orderBy('id')->get(['id', 'title', 'status', 'percent', 'note', 'updated_at'])->map(fn($t) => (array)$t + ['at' => \Carbon\Carbon::parse($t->updated_at, 'UTC')->timezone('Asia/Dhaka')->format('d M · g:i A')])->all() : [],
       'mode' => Deployer::mode(), 'branch' => Deployer::branch(), 'log' => $log, 'now' => now()->timezone('Asia/Dhaka')->format('h:i:s A'),
       'health' => $health, 'issues' => $issues, 'issueHist' => $hasIssues ? (int)DB::table('deploy_issues')->whereIn('status', ['resolved', 'ignored'])->count() : 0, 'previous' => $prevOut, 'steps' => $steps, 'stepsFor' => $focus['id'] ?? null,
       'super' => $isSuper, 'lastHealth' => \Illuminate\Support\Facades\Cache::get('dh.full'), 'queue' => DeployHealth::queueInfo(), 'cache' => DeployHealth::cacheInfo(),
-      'migs' => count(DeployHealth::pendingMigrations()), 'retention' => 3];
+      'migs' => count(DeployHealth::pendingMigrations()), 'retention' => 3, 'pending' => $pend, 'today' => $today];
     return $d;
   }
 

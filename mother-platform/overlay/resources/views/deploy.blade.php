@@ -49,6 +49,7 @@
   <div class="bar" style="justify-content:space-between"><div style="min-width:220px"><h1>Deployment Center</h1><div class="mu">Manage releases, deployments, health checks and recovery.</div></div><div class="bar" id="hdr"></div></div>
   <div class="sb" id="sb"></div>
   <div class="cd"><div class="bar" id="acts"></div><div id="msg" class="mu" style="margin-top:5px"></div></div>
+  <div class="cd" id="wk"></div>
   <div class="g2"><div id="curBox" style="display:flex;flex-direction:column;gap:10px"></div><div class="cd" id="prog"></div></div>
   <div class="cd" id="iss"></div>
   <div class="cd" style="overflow-x:auto"><div class="bar" style="justify-content:space-between;margin-bottom:4px"><h2 style="margin:0">Recent Deployments</h2><div class="bar" id="flt"></div></div>
@@ -66,7 +67,7 @@
 @verbatim
 <script>
 (function(){
-var $=function(i){return document.getElementById(i)},D=JSON.parse($('dd').textContent),busy=false,F='def',T0=Date.now()/1000-D.ts,lastAct=D.active?D.active.id:null,tTimer=null;
+var $=function(i){return document.getElementById(i)},D=JSON.parse($('dd').textContent),WK='',busy=false,F='def',T0=Date.now()/1000-D.ts,lastAct=D.active?D.active.id:null,tTimer=null;
 var SC={ok:'#16A34A',warn:'#D97706',fail:'#DC2626',na:'#9CA3AF'};
 var C={'Queued':['#4B5563','#F3F4F6','#D5D9DE'],'Downloading':['#1D5FA8','#E6EFF9','#BCD3EE'],'Building':['#1D5FA8','#E6EFF9','#BCD3EE'],'Testing':['#1D5FA8','#E6EFF9','#BCD3EE'],'Deploying':['#1D5FA8','#E6EFF9','#BCD3EE'],'Running':['#1D5FA8','#E6EFF9','#BCD3EE'],'Live':['#166534','#F0FBF4','#BFE6CE'],'Success':['#166534','#F0FBF4','#BFE6CE'],'Completed':['#166534','#F0FBF4','#BFE6CE'],'Rollback':['#5B3FA6','#F5F3FF','#D4CCF5'],'Rolled Back':['#5B3FA6','#F5F3FF','#D4CCF5'],'Failed':['#B42318','#FEF3F2','#F6C4C0'],'Cancelled':['#4B5563','#F3F4F6','#D5D9DE'],
  'critical':['#B42318','#FEF3F2','#F6C4C0'],'high':['#C2410C','#FFF1E8','#FDBA8C'],'warning':['#9A5B0B','#FFF8E8','#F4D79B'],'info':['#1D5FA8','#E6EFF9','#BCD3EE'],
@@ -102,6 +103,12 @@ function render(){
   box+='<div class="cd"><h2>Current Production Release</h2>'+(c?'<div class="kv"><span>Release</span><b>'+rel(c)+' '+pill('Live')+'</b><span>Commit</span><b>'+esc(c.sha?c.sha.slice(0,7):'—')+'</b><span>Status</span><b>'+pill(H.overall==='LIVE'?'Healthy':H.overall,H.overall==='LIVE'?'Healthy':H.overall)+'</b><span>Deployed</span><span style="color:inherit">'+esc(c.at)+'</span><span>Deployed By</span><span style="color:inherit">'+esc(c.by)+'</span><span>Type</span><span style="color:inherit">'+esc(cap(c.dtype)||'—')+'</span><span>Duration</span><span style="color:inherit">'+dur(c.dur)+'</span></div><div style="margin-top:4px" class="mu">'+esc(c.subject||'')+'</div><div class="bar" style="margin-top:8px"><button class="b sm" data-v="'+c.id+'">View Details</button><button class="b sm" data-c="'+c.id+'">View Changes</button></div>':'<div class="kv"><span>Release</span><b>Base release</b><span>Folder</span><span style="color:inherit">'+esc(D.liveId)+'</span></div>')+'</div>';
   box+='<div class="cd"><h2>Previous Stable Release</h2>'+(pv?'<div class="kv"><span>Release</span><b>'+esc(pv.version||pv.id)+'</b><span>Subject</span><span style="color:inherit">'+esc(pv.subject||'—')+'</span><span>Integrity</span><span style="color:inherit">'+(pv.valid?'✓ complete and ready':'✕ incomplete (rollback blocked)')+'</span></div><div class="bar" style="margin-top:8px"><button class="b ro sm" id="bRoll2"'+(sup&&pv.valid&&!lock?'':' disabled')+'>Rollback to '+esc(pv.version||'previous')+'</button></div>':'<div class="mu">No previous release is kept yet.</div>')+'</div>';
   $('curBox').innerHTML=box;
+  // work status (Bengali): waiting -> deploying -> done today; lists open only on "View"
+  var P=(D.pending||[]).filter(function(x){return !x.running}),R=a?[a]:[],TD=(D.history||[]).filter(function(x){return x.short===D.today&&x.cat!=='running'}),OKs=TD.filter(function(x){return x.cat!=='failed'}),BAD=TD.filter(function(x){return x.cat==='failed'});
+  function wrow(t,r,col){return '<div style="display:flex;gap:8px;justify-content:space-between;padding:4px 0;border-bottom:1px solid #EEF1F4;font-size:12px"><span style="min-width:0">'+esc(t)+'</span><span style="color:'+(col||'var(--mu)')+';white-space:nowrap;font-weight:600">'+esc(r)+'</span></div>'}
+  function wbox(k,label,n,col,rows){var open=WK===k;return '<div style="flex:1;min-width:150px;border:1px solid var(--bd);border-radius:10px;padding:8px 10px"><div style="display:flex;align-items:center;justify-content:space-between;gap:6px"><span style="font-size:12px;color:var(--mu)">'+label+'</span><button class="b sm" data-wk="'+k+'"'+(n?'':' disabled')+'>'+(open?'Hide':'View')+'</button></div><b style="font-size:20px;color:'+col+'">'+n+'</b></div>'}
+  var wl={p:P.map(function(x){return wrow(x.subject,'অপেক্ষায় · '+x.time,'#9A5B0B')}),r:R.map(function(x){return wrow(x.subject,'চলছে · '+x.progress+'%','#1D5FA8')}),o:OKs.map(function(x){return wrow(x.subject,'সফল · '+x.time,'#15803D')}),f:BAD.map(function(x){return wrow(x.subject,'ব্যর্থ · '+x.time,'#B91C1C')})};
+  $('wk').innerHTML='<h2 style="margin:0 0 6px">কাজের অবস্থা <span class="mu" style="font-weight:500">· উপরে অপেক্ষায়/চলছে, শেষ হলে নিচে সফল তালিকায় যায়</span></h2><div class="bar" style="align-items:stretch">'+wbox('p','অপেক্ষায় (ডিপ্লয় বাকি)',P.length,'#9A5B0B')+wbox('r','ডিপ্লয় চলছে',R.length,'#1D5FA8')+wbox('o','আজ সফল',OKs.length,'#15803D')+wbox('f','আজ ব্যর্থ',BAD.length,BAD.length?'#B91C1C':'#9CA3AF')+'</div>'+(WK&&wl[WK]&&wl[WK].length?'<div style="margin-top:8px;max-height:260px;overflow:auto">'+wl[WK].join('')+'</div>':'');
   // progress / last result
   var f=a||D.history[0],p='';
   if(a){var el=Math.max(0,Math.round(Date.now()/1000-T0-(a.started_ts||0)));
@@ -179,6 +186,7 @@ function changes(id){jf('/admin/deploy/'+id+'/changes').then(function(j){var i=j
 function issueHistory(){jf('/admin/deploy/issues').then(function(j){modal('<h2>Issue History</h2>'+((j.history||[]).length?'<div style="max-height:60vh;overflow:auto">'+j.history.map(function(x){return '<div class="is" style="grid-template-columns:90px minmax(0,1fr) auto"><div>'+pill(x.severity,SEV[x.severity])+'</div><div><b>'+esc(x.title)+'</b> <span class="mu">· '+esc(x.service||'')+'</span><small>Detected '+esc(x.detected)+' · '+esc(x.status)+' '+esc(x.resolved)+' by '+esc(x.by||'—')+'</small>'+(x.note?'<small>Note: '+esc(x.note)+'</small>':'')+'</div><div>'+pill(x.status)+'</div></div>'}).join('')+'</div>':'<div class="mu">No resolved issues yet. History is never deleted.</div>')+'<div class="bar" style="margin-top:8px"><button class="b" id="mClose">Close</button></div>')})}
 
 $('dc').onclick=function(e){var t=e.target.closest?e.target.closest('button,[data-v]'):e.target;if(!t)return;var d=t.dataset||{};
+  if(d.wk){WK=WK===d.wk?'':d.wk;render();return}
   if(t.id==='mClose')return closeM();
   if(d.d)return startDeploy(d.d);
   if(t.id==='bRoll'||t.id==='bRoll2'||t.id==='bRoll3')return rollbackModal();

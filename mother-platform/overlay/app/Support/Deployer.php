@@ -113,6 +113,20 @@ class Deployer
     } catch (\Throwable $e) { return \Cache::get($key . '_last'); }
   }
 
+  /** Commits on the production branch that are newer than the live release (pushed, not live yet), newest first. Cached 45 s. */
+  public static function pendingCommits(?string $liveSha, ?string $headSha): array {
+    if (!$liveSha || !$headSha || $liveSha === $headSha) return [];
+    $key = 'deploy_pend_' . substr($liveSha, 0, 12) . '_' . substr($headSha, 0, 12);
+    $c = \Cache::get($key); if (is_array($c)) return $c;
+    try {
+      $r = Http::withHeaders(self::gh())->timeout(8)->get('https://api.github.com/repos/' . self::REPO . '/compare/' . $liveSha . '...' . $headSha);
+      if (!$r->ok()) return [];
+      $out = [];
+      foreach (array_slice(array_reverse((array)($r->json()['commits'] ?? [])), 0, 30) as $j) { [$subj] = self::parse((string)($j['commit']['message'] ?? '')); $out[] = ['sha' => (string)($j['sha'] ?? ''), 'subject' => $subj, 'at' => (string)($j['commit']['committer']['date'] ?? '')]; }
+      \Cache::put($key, $out, 45); return $out;
+    } catch (\Throwable $e) { return []; }
+  }
+
   public static function commit(string $sha): ?array {
     try {
       $r = Http::withHeaders(self::gh())->timeout(8)->get('https://api.github.com/repos/' . self::REPO . '/commits/' . $sha);
