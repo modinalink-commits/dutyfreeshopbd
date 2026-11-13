@@ -41,6 +41,8 @@ class ModulePermission {
     // Courier work (send/sync/settle/status map/invoices/dashboard/report) belongs to the Couriers permission; only the API-credential screen (/courier, /courier/connect) stays under Settings.
     if (preg_match('#^courier(-dashboard|-report)?(/|$)#', $p) && !preg_match('#^courier(/connect)?$#', $p)) return 'couriers';
     if (preg_match('#^m-districts#', $p)) return 'couriers';
+    if (str_starts_with($p, 'vendor-orders')) return 'orders'; // sourcing staff enter their buy price here (owner 14 Nov 2026); customers never see it
+    if (str_starts_with($p, 'sourcing-commission')) return 'orders'; // the page itself shows a sourcing person only the own statement; terms and month approval are admin-only inside the controller
     if (preg_match('#^(m-payroll|payroll-sheet)#', $p)) return 'hr';
     if (preg_match('#^m-customers#', $p)) return 'customers';
     if (str_starts_with($p, 'upload-image') || str_starts_with($p, 'site') || str_starts_with($p, 'sms') || str_starts_with($p, 'courier') || str_starts_with($p, 'ai-chat') || str_starts_with($p, 'media') || str_starts_with($p, 'ai-images') || str_starts_with($p, 'stores')) return 'settings';

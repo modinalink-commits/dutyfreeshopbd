@@ -89,6 +89,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/orders/{id}', [A::class,'orderShow']);
   Route::get('/vendor-orders', [\App\Http\Controllers\VendorOrderController::class,'index']);
   Route::post('/vendor-orders/{id}', [\App\Http\Controllers\VendorOrderController::class,'update'])->whereNumber('id');
+  Route::get('/sourcing-commission', [\App\Http\Controllers\SourcingCommissionController::class,'index']); Route::post('/sourcing-commission/agreement', [\App\Http\Controllers\SourcingCommissionController::class,'save']); Route::post('/sourcing-commission/entry/{id}', [\App\Http\Controllers\SourcingCommissionController::class,'check'])->whereNumber('id'); Route::post('/sourcing-commission/approve', [\App\Http\Controllers\SourcingCommissionController::class,'approve']);
   Route::post('/orders/{id}/outcome', [\App\Http\Controllers\ShipmentOutcomeController::class,'save'])->whereNumber('id');
   Route::post('/orders/{id}/wa-confirm/resend', [\App\Http\Controllers\OrderWaConfirmController::class,'resend'])->whereNumber('id')->middleware('throttle:20,1');
   Route::get('/wa-confirm-settings', [\App\Http\Controllers\OrderWaConfirmController::class,'settings']);

@@ -1083,3 +1083,7 @@ database/migrations/2026_11_13_230000_lighter_main_category.php
 app/Support/AdminAlertsExtra.php
 app/Http/Controllers/N8nController.php
 database/migrations/2026_11_13_240000_n8n_alert_webhook.php
+database/migrations/2026_11_14_010000_sourcing_commission.php
+app/Support/SourcingCommission.php
+app/Http/Controllers/SourcingCommissionController.php
+resources/views/sourcing_commission.blade.php
