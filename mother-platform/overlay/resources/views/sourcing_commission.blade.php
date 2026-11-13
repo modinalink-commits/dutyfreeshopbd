@@ -39,11 +39,22 @@
 </tbody></table></div>
 @endif
 
+@if($payable->count())
+<div class="card" style="overflow-x:auto"><b>Suppliers to be paid by DutyFreeBD</b> <span style="color:#6B7280;font-size:12px">· buy cost of {{ $ag->name }}'s approved sourced lines that are not marked paid yet</span>
+<table style="margin-top:8px"><thead><tr><th>Supplier</th><th>Lines</th><th>Amount due</th><th></th></tr></thead><tbody>
+@foreach($payable as $v)<tr><td><b>{{ $v->vendor }}</b></td><td>{{ $v->n }}</td><td>{{ $tk($v->due) }}</td><td>@if($checker)<form method="post" action="/admin/sourcing-commission/vendor-paid" onsubmit="return this.c.checked">@csrf<input type="hidden" name="agreement_id" value="{{ $ag->id }}"><input type="hidden" name="vendor" value="{{ $v->vendor }}"><label style="font-size:12px;margin-right:6px"><input type="checkbox" name="c" required> paid</label><button class="btn g">Mark paid</button></form>@endif</td></tr>@endforeach
+<tr><td colspan="2" style="text-align:right"><b>Total due</b></td><td><b>{{ $tk($payable->sum('due')) }}</b></td><td></td></tr>
+</tbody></table><div style="color:#6B7280;font-size:12px;margin-top:6px">"Mark paid" only records that the supplier was paid. The payment itself is entered in Accounts as usual.</div></div>
+@endif
+
 <div class="card" style="overflow-x:auto"><b>Statement {{ $mon }}</b> <span style="color:#6B7280;font-size:12px">· profit = sale − discount − buy cost − courier + shipping paid by customer − packaging</span>
 @if(count($calc['lines']))
-<table style="margin-top:8px"><thead><tr><th>Order</th><th>Product</th><th>Store</th><th>Qty</th><th>Sale</th><th>Discount</th><th>Buy cost</th><th>Courier</th><th>Shipping in</th><th>Packaging</th><th>Profit</th></tr></thead><tbody>
-@foreach($calc['lines'] as $l)<tr><td><a href="/admin/orders/{{ $l['order_id'] }}">{{ $l['invoice'] }}</a></td><td>{{ $l['name'] }}</td><td style="font-size:12px">{{ $l['store'] }}</td><td>{{ $l['qty'] }}</td><td>{{ $tk($l['sale']) }}</td><td>{{ $l['discount'] ? '−'.$tk($l['discount']) : '—' }}</td><td>−{{ $tk($l['cost']) }}</td><td>−{{ $tk($l['courier']) }}@if(empty($l['courier_known']))<br><small style="color:#B45309">courier bill not synced, delivery charge used</small>@endif</td><td>{{ $l['ship_income'] ? $tk($l['ship_income']) : '—' }}</td><td>−{{ $tk($l['packaging']) }}</td><td><b style="color:{{ $l['profit'] < 0 ? '#B91C1C' : '#14683A' }}">{{ ($l['profit'] < 0 ? '−' : '').$tk(abs($l['profit'])) }}</b></td></tr>@endforeach
-<tr><td colspan="10" style="text-align:right"><b>Profit of sourced lines</b></td><td><b>{{ ($t['gross_profit'] < 0 ? '−' : '').$tk(abs($t['gross_profit'])) }}</b></td></tr>
+<table style="margin-top:8px"><thead><tr><th>Order</th><th>Product</th><th>Supplier</th><th>Qty</th><th>Sale</th><th>Discount</th><th>Buy cost</th><th>Courier</th><th>Shipping in</th><th>Packaging</th><th>Profit</th><th>{{ $ag->name }}'s commission</th></tr></thead><tbody>
+@foreach($calc['lines'] as $l)<tr><td><a href="/admin/orders/{{ $l['order_id'] }}">{{ $l['invoice'] }}</a></td><td>{{ $l['name'] }}</td><td style="font-size:12px">{{ $l['vendor'] ?? $l['store'] }}</td><td>{{ $l['qty'] }}</td><td>{{ $tk($l['sale']) }}</td><td>{{ $l['discount'] ? '−'.$tk($l['discount']) : '—' }}</td><td>−{{ $tk($l['cost']) }}</td><td>−{{ $tk($l['courier']) }}@if(empty($l['courier_known']))<br><small style="color:#B45309">courier bill not synced, delivery charge used</small>@endif</td><td>{{ $l['ship_income'] ? $tk($l['ship_income']) : '—' }}</td><td>−{{ $tk($l['packaging']) }}</td><td><b style="color:{{ $l['profit'] < 0 ? '#B91C1C' : '#14683A' }}">{{ ($l['profit'] < 0 ? '−' : '').$tk(abs($l['profit'])) }}</b></td>@php $__cm = $l['commission'] ?? round($l['profit'] * (float)$ag->share_pct / 100, 2); @endphp<td><b>{{ ($__cm < 0 ? '−' : '').$tk(abs($__cm)) }}</b></td></tr>@endforeach
+@php $__sp = (float)$ag->share_pct / 100; $__cg = round($t['gross_profit'] * $__sp, 2); $__cmk = round(($t['marketing_cost'] + $t['carry_in']) * $__sp, 2); @endphp
+<tr><td colspan="10" style="text-align:right"><b>Total</b></td><td><b>{{ ($t['gross_profit'] < 0 ? '−' : '').$tk(abs($t['gross_profit'])) }}</b></td><td><b>{{ ($__cg < 0 ? '−' : '').$tk(abs($__cg)) }}</b></td></tr>
+<tr><td colspan="11" style="text-align:right">{{ $ag->name }}'s part of the monthly marketing cost{{ $t['carry_in'] > 0 ? ' and amount brought forward' : '' }}</td><td>−{{ $tk($__cmk) }}</td></tr>
+<tr><td colspan="11" style="text-align:right"><b>{{ $ag->name }}'s commission for {{ $mon }}</b></td><td><b style="color:#14683A">{{ $tk($t['staff_share']) }}</b></td></tr>
 </tbody></table>
 @else<div style="color:#6B7280;margin-top:8px">No approved, delivered sourcing lines in this month yet.</div>@endif
 </div>

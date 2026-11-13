@@ -22,7 +22,7 @@ class SourcingCommission {
     $q = DB::table('order_items as i')->join('orders as o', 'o.id', '=', 'i.order_id')->where('i.sourced_by', $ag->user_id)->where('i.sourced_status', 'approved')
       ->whereIn('o.status', $statuses)->whereRaw(self::when().' >= ? and '.self::when().' < ?', [$from, $to]);
     if ($ag->starts_on) $q->where('o.created_at', '>=', $ag->starts_on);
-    $rows = $q->orderBy('o.id')->orderBy('i.id')->get(['i.id', 'i.order_id', 'i.name', 'i.qty', 'i.price', 'i.src_price', 'i.src_store', 'i.sourced_cost', 'o.invoice', 'o.status', 'o.discount',
+    $rows = $q->orderBy('o.id')->orderBy('i.id')->get(['i.id', 'i.order_id', 'i.name', 'i.qty', 'i.price', 'i.src_price', 'i.src_store', 'i.sourced_cost', DB::raw((Schema::hasColumn('order_items', 'sourced_vendor') ? 'i.sourced_vendor' : 'null').' as sourced_vendor'), 'o.invoice', 'o.status', 'o.discount',
       DB::raw(($has('shipping') ? 'o.shipping' : '0').' as shipping'), DB::raw(($has('delivery_charge') ? 'o.delivery_charge' : '0').' as courier_charge'), DB::raw(($has('cod_fee') ? 'o.cod_fee' : '0').' as cod_fee'), DB::raw(self::when().' as done_at')]);
     $orderValue = $rows->isEmpty() ? collect() : DB::table('order_items')->whereIn('order_id', $rows->pluck('order_id')->unique()->all())->groupBy('order_id')->selectRaw('order_id, sum(price * qty) as v')->pluck('v', 'order_id');
     $lines = []; $gross = 0.0;
@@ -33,7 +33,7 @@ class SourcingCommission {
       $courierFull = (float)$r->courier_charge + (float)$r->cod_fee; $courierKnown = $courierFull > 0; if (!$courierKnown) $courierFull = (float)$r->shipping; // courier bill not synced yet: use the delivery charge of the order
       $courier = round($courierFull * $ratio, 2); $shipIn = $ag->add_shipping_income ? round((float)$r->shipping * $ratio, 2) : 0.0; $pack = round((float)$ag->packaging_cost * $ratio, 2);
       $profit = round($sale - $disc - $cost - $courier + $shipIn - $pack, 2); $gross += $profit;
-      $lines[] = ['id' => $r->id, 'order_id' => $r->order_id, 'invoice' => $r->invoice, 'name' => $r->name, 'store' => $r->src_store, 'qty' => (int)$r->qty, 'sale' => $sale, 'discount' => $disc, 'cost' => $cost, 'courier' => $courier, 'courier_known' => $courierKnown, 'ship_income' => $shipIn, 'packaging' => $pack, 'profit' => $profit, 'done_at' => (string)$r->done_at];
+      $lines[] = ['id' => $r->id, 'order_id' => $r->order_id, 'invoice' => $r->invoice, 'name' => $r->name, 'store' => $r->src_store, 'vendor' => ($r->sourced_vendor ?: $r->src_store), 'commission' => round($profit * (float)$ag->share_pct / 100, 2), 'qty' => (int)$r->qty, 'sale' => $sale, 'discount' => $disc, 'cost' => $cost, 'courier' => $courier, 'courier_known' => $courierKnown, 'ship_income' => $shipIn, 'packaging' => $pack, 'profit' => $profit, 'done_at' => (string)$r->done_at];
     }
     $carryIn = 0.0;
     if ($ag->carry_deficit) { $prev = DB::table('sourcing_statements')->where('agreement_id', $ag->id)->where('month', '<', $mon)->whereNotNull('approved_at')->orderByDesc('month')->first(); $carryIn = $prev ? (float)$prev->carry_out : 0.0; }
@@ -57,6 +57,13 @@ class SourcingCommission {
       DB::table('sourcing_statements')->updateOrInsert(['agreement_id' => $ag->id, 'month' => $mon], $t + ['snapshot' => json_encode(['terms' => ['packaging_cost' => (float)$ag->packaging_cost, 'marketing_cost' => (float)$ag->marketing_cost, 'share_pct' => (float)$ag->share_pct, 'count_statuses' => $ag->count_statuses, 'deduct_discount' => (bool)$ag->deduct_discount, 'add_shipping_income' => (bool)$ag->add_shipping_income, 'carry_deficit' => (bool)$ag->carry_deficit], 'lines' => $c['lines']], JSON_UNESCAPED_UNICODE), 'approved_by' => $by, 'approved_at' => now(), 'payroll_entry_id' => $pid, 'updated_at' => now(), 'created_at' => now()]);
       return ['ok' => true, 'msg' => 'Statement '.$mon.' approved. Staff share ৳'.number_format($t['staff_share']).($pid ? ' is now in Payroll.' : ' (no employee linked, so Payroll was not updated).'), 'payroll' => $pid];
     });
+  }
+  /** What DutyFreeBD still owes each supplier for this person's approved sourced lines (cancelled / returned orders left out). */
+  public static function payable(object $ag) {
+    if (!Schema::hasColumn('order_items', 'vendor_paid_at')) return collect();
+    return DB::table('order_items as i')->join('orders as o', 'o.id', '=', 'i.order_id')->where('i.sourced_by', $ag->user_id)->where('i.sourced_status', 'approved')->whereNull('i.vendor_paid_at')
+      ->whereNotIn('o.status', ['Cancel', 'Cancelled', 'Returned', 'Return Pending', 'Draft'])
+      ->selectRaw("coalesce(nullif(i.sourced_vendor, ''), i.src_store, 'Unknown supplier') as vendor, count(*) as n, sum(coalesce(i.sourced_cost, i.src_price, 0) * i.qty) as due")->groupBy('vendor')->orderByDesc('due')->get();
   }
   /** A line of an approved month can no longer be changed. */
   public static function locked(object $line): bool {

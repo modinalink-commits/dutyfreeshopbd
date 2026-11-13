@@ -35,7 +35,8 @@ class SourcingCommissionController extends Controller {
     $users = DB::table('users')->orderBy('name')->get(['id', 'name', 'email']);
     $emps = Schema::hasTable('employees') ? DB::table('employees')->orderBy('name')->get(['id', 'name']) : collect();
     $history = $ag ? DB::table('sourcing_statements')->where('agreement_id', $ag->id)->whereNotNull('approved_at')->orderByDesc('month')->limit(24)->get() : collect();
-    return view('sourcing_commission', ['ags' => $ags, 'ag' => $ag, 'mon' => $mon, 'calc' => $calc, 'locked' => $locked, 'st' => $st, 'pending' => $pending, 'waiting' => $waiting, 'stores' => $stores, 'users' => $users, 'emps' => $emps, 'history' => $history, 'boss' => $this->boss(), 'checker' => $this->checker()]);
+    $payable = $ag ? SC::payable($ag) : collect();
+    return view('sourcing_commission', ['ags' => $ags, 'ag' => $ag, 'mon' => $mon, 'calc' => $calc, 'locked' => $locked, 'st' => $st, 'pending' => $pending, 'waiting' => $waiting, 'stores' => $stores, 'users' => $users, 'emps' => $emps, 'history' => $history, 'boss' => $this->boss(), 'checker' => $this->checker(), 'payable' => $payable]);
   }
 
   /** Create or edit an agreement (admin only). Past approved months keep the terms saved in their snapshot. */
@@ -62,6 +63,18 @@ class SourcingCommissionController extends Controller {
     DB::table('order_items')->where('id', $id)->update($up);
     $this->audit('update', 'sourcing_entry.'.$id.' '.$up['sourced_status'].' cost='.($up['sourced_cost'] ?? $l->sourced_cost));
     return back()->with('ok', 'Entry '.$up['sourced_status'].'.');
+  }
+
+  /** Mark one supplier's open sourced lines as paid by DutyFreeBD (admin / manager). This only records that the supplier was paid; the money entry itself is made in Accounts as usual. */
+  public function vendorPaid(Request $r) {
+    abort_unless($this->checker() && SC::ready() && Schema::hasColumn('order_items', 'vendor_paid_at'), 403);
+    $d = $r->validate(['agreement_id' => 'required|integer', 'vendor' => 'required|string|max:160']);
+    $ag = DB::table('sourcing_agreements')->where('id', $d['agreement_id'])->first(); abort_unless($ag, 404);
+    $ids = DB::table('order_items as i')->join('orders as o', 'o.id', '=', 'i.order_id')->where('i.sourced_by', $ag->user_id)->where('i.sourced_status', 'approved')->whereNull('i.vendor_paid_at')
+      ->whereNotIn('o.status', ['Cancel', 'Cancelled', 'Returned', 'Return Pending', 'Draft'])->whereRaw("coalesce(nullif(i.sourced_vendor, ''), i.src_store, 'Unknown supplier') = ?", [$d['vendor']])->pluck('i.id')->all();
+    if ($ids) DB::table('order_items')->whereIn('id', $ids)->update(['vendor_paid_at' => now(), 'vendor_paid_by' => auth()->id()]);
+    $this->audit('update', 'sourcing_vendor_paid '.$d['vendor'].' lines='.count($ids));
+    return back()->with('ok', count($ids).' line(s) of '.$d['vendor'].' marked as paid.');
   }
 
   /** Lock the month and send the staff share to Payroll (admin only). */

@@ -1087,3 +1087,4 @@ database/migrations/2026_11_14_010000_sourcing_commission.php
 app/Support/SourcingCommission.php
 app/Http/Controllers/SourcingCommissionController.php
 resources/views/sourcing_commission.blade.php
+database/migrations/2026_11_14_020000_sourcing_vendor_payable.php

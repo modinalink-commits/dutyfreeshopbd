@@ -18,6 +18,7 @@
 <span style="flex-basis:100%;display:flex;gap:4px;flex-wrap:wrap;align-items:center;font-size:12px;color:#6B7280">Sourced by
 <select name="sourced_by" style="max-width:130px" {{ $__lock ? 'disabled' : '' }}><option value="">Company</option>@foreach($src['users'] as $uid => $un)@if($src['checker'] || (int)$uid === (int)$src['me'] || (int)$uid === (int)$l->sourced_by)<option value="{{ $uid }}" {{ (int)$__sb === (int)$uid ? 'selected' : '' }}>{{ $un }}</option>@endif @endforeach</select>
 <input name="sourced_cost" type="number" step="0.01" min="0" value="{{ $l->sourced_cost !== null ? (float)$l->sourced_cost : '' }}" placeholder="Buy price / unit" style="max-width:120px" {{ $__lock ? 'disabled' : '' }}>
+<input name="sourced_vendor" value="{{ $l->sourced_vendor ?? $l->src_store }}" placeholder="Supplier bought from" maxlength="160" style="max-width:150px" aria-label="Supplier bought from" {{ $__lock ? 'disabled' : '' }}>
 @if($l->sourced_by)<b style="color:{{ ['approved'=>'#15803D','rejected'=>'#B91C1C'][$l->sourced_status] ?? '#B45309' }}">{{ ucfirst($l->sourced_status ?: 'pending') }}</b>@elseif($__sb)<span>(suggested, press Save)</span>@endif</span>@endif
 <button>Save</button></form></td></tr>@endforeach
 </tbody></table></div>
