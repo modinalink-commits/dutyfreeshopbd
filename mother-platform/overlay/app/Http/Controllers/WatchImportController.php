@@ -77,6 +77,7 @@ class WatchImportController extends Controller {
           $name = trim(preg_replace('/\s{2,}/u', ' ', preg_replace(['/\s*[|\-–]\s*Time\s*Access\b.*$/iu', '/\bTime\s*-?\s*Access\b/iu', '/\bLuxotix\b\s*/iu', '/\bSundora\b\s*/iu'], '', $name)), " \t-|–"); // no trace of the source shop in our product names
           $tc = ($xr ? $this->routeCat((string)$x->name, (string)$x->category, $cats) : null) ?: $cat; // a store feeding 2-3 main categories: each product goes to the right one (owner 13 Nov 2026)
           $sub = self::subFor((string)$name, $x->category, $tc->slug, (string)$x->url);
+          [$tc, $sub] = \App\Support\CatRemap::apply($tc, $sub, (string)$name); // 8 main categories: legacy categories map into their main one (owner 13 Nov 2026)
           $base = \App\Support\Slugs::slug($name) ?: 'watch'; $slug = $base; $i = 2; $subSlug = \App\Support\Slugs::subSlug($sub);
           while (DB::table('products')->where('category_id', $tc->id)->whereRaw(\App\Support\Slugs::subSql() . ' = ?', [$subSlug])->where('path_slug', $slug)->exists()) $slug = $base . '-' . $i++;
           $pid = DB::table('products')->insertGetId(['name' => mb_substr($name, 0, 200), 'category_id' => $tc->id, 'price' => $our, 'compare_price' => (int)ceil((float)$x->price * (1 + $this->cfg()['reg'] / 100)), 'cost' => $x->price, 'stock' => 0, 'published' => true, 'sub' => $sub, 'slug' => $base, 'path_slug' => $slug, 'created_at' => now(), 'updated_at' => now()]);
@@ -125,6 +126,7 @@ class WatchImportController extends Controller {
     if (preg_match('/shaving|razor|after\s*shave|beard|deodorant|roll\s*on|body\s*spray|talc|personal\s*care|hair\s*removal|\bwax\b|sanitary/', $t) && !preg_match('/sanitary\s*pad/', $t)) return 'skin-care'; // owner 13 Nov: personal care -> Skin & Hair Care sub category
     if (preg_match('/\b(kids?|child(?:ren)?|baby|babies|infant|toddler|newborn|junior|nappy|nappies|diapers?)\b|feeding\s*bottle|\bsippy\b|\btoys?\b|\blego\b|barbie|hot\s*wheels|\bpuzzles?\b|\bdolls?\b|play\s*set|playset|action\s*figure|board\s*game/', $t)) return 'others'; // owner 13 Nov 2026: child items -> Baby Care and Others
     if (preg_match('/vitamin|supplement|\bprotein\b|herbal|first\s*aid|thermometer|blood\s*pressure|sanitary|feminine|toothpaste|tooth\s*brush|toothbrush|mouth\s*wash|mouthwash|oral\s*care|\bhygiene\b/', $t)) return 'wellness'; // Personal Wellness
+    if (preg_match('/cartridge|laserjet|copier|photocopier|printer|\\bink\\b|drum\s*unit|\\bkeyboard\\b|\\bmouse\\b(?!\s*(?:&|and)\s*minnie)|\\busb\\b|hdmi|laptop|\\brouter\\b|\\bssd\\b|facial\s*recognition|access\s*control|\\btoner\\b.*(?:black|cyan|magenta|yellow|original|compatible|canon|\\bhp\\b|brother|toshiba|xerox|ricoh)/', $t) && !preg_match('/\\bml\\b|face|skin|serum|cleanser/', $t)) return 'gadget-electronics'; // 13 Nov: printer toner / keyboard 'Cream' colour are NOT beauty
     if (preg_match('/earbud|earphone|headphone|headset|\bspeaker|power\s*bank|\bcharger\b|smart\s*watch|smartwatch|smart\s*band|fitness\s*band|\btws\b|neckband|\btrimmer|\bshaver\b|hair\s*(dryer|straightener|remover)|\bipl\b|massager|\bcamera\b|\bgimbal/', $t)) return 'gadget-electronics';
     if (preg_match('/\blighter\b|zippo|ash\s*tray/', $t)) return 'lighter-accessories';
     if (preg_match('/\bwatch(es)?\b/', $t)) return 'watch';
@@ -243,6 +245,7 @@ class WatchImportController extends Controller {
       $tid = (int)$x->category_id; $tslug = $cm[$x->category_id];
       if ($xr) { $xs = self::crossRoute((string)($x->source_name ?: $x->name), (string)$x->src_cat); if ($xs) { if (!array_key_exists($xs, $bySlug)) $bySlug[$xs] = DB::table('categories')->whereNull('parent_id')->where('slug', $xs)->first(); if ($bySlug[$xs]) { $tid = (int)$bySlug[$xs]->id; $tslug = $xs; } } }
       $sub = self::subFor((string)($x->source_name ?: $x->name), in_array($cf['c'], ['gadget', 'amour'], true) ? null : $x->src_cat, $tslug, (string)$x->source_url);
+      if (isset(\App\Support\CatRemap::LEGACY[$tslug])) { [$ms, $sub] = \App\Support\CatRemap::map($tslug, $sub, (string)($x->source_name ?: $x->name)); $mr = DB::table('categories')->whereNull('parent_id')->where('slug', $ms)->first(); if ($mr) { $tid = (int)$mr->id; $tslug = $ms; } }
       if ($sub === $x->sub && $tid === (int)$x->category_id) continue;
       DB::table('products')->where('id', $x->id)->update(['category_id' => $tid, 'sub' => $sub, 'sub_sub' => null, 'path_slug' => $this->slugFor($tid, (string)($x->slug ?: \App\Support\Slugs::slug($x->name)), $sub, (int)$x->id), 'updated_at' => now()]); $n++;
     }
