@@ -1,6 +1,6 @@
 @extends('layout')@section('title','Hero Media Slider')
 @section('body')
-<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px"><div style="flex:1"><h1 style="margin:0">Hero Media Slider</h1><div style="font-size:12px;color:#6B7280">Every home hero slide in one list: uploaded image and YouTube slides, plus the site's BUILT-IN slides (they follow their own fixed order, after the uploaded ones). Drag a row by the ⠿ handle to change the order. Videos play muted, stop when the slide changes, and move on when they end.</div></div><a class="btn" href="/admin/m/sliders/new">+ Add slide</a></div>
+<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px"><div style="flex:1"><h1 style="margin:0">Hero Media Slider</h1><div style="font-size:12px;color:#6B7280">Every home hero slide in one list: uploaded image and YouTube slides. Drag a row by the ⠿ handle to change the order. Videos play muted, stop when the slide changes, and move on when they end.</div></div><a class="btn" href="/admin/m/sliders/new">+ Add slide</a></div>
 @if(session('ok'))<div class="card" style="color:#166534">{{ session('ok') }}</div>@endif
 <div class="card" style="overflow-x:auto"><table><thead><tr><th></th><th>Preview</th><th>Type</th><th>Title</th><th>Pos</th><th>Desktop</th><th>Mobile</th><th>Status</th><th></th></tr></thead><tbody id="rows">
 @forelse($rows as $x)@php $v=($x->media_type??'image')==='video'&&$x->video_id; $th=$x->image ?: ($v?'https://i.ytimg.com/vi/'.$x->video_id.'/hqdefault.jpg':''); @endphp

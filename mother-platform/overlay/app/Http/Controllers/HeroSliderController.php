@@ -15,8 +15,7 @@ class HeroSliderController extends Controller
   }
   public function index() {
     $rows = DB::table('sliders')->where(fn($q) => $q->whereNull('type')->orWhere('type', 'main'))->orderBy('position')->orderBy('id')->get();
-    $bi = [];
-    foreach (self::BUILTIN as $k => $label) { $v = DB::table('settings')->where('key', $k)->value('value'); $bi[] = ['key' => $k, 'label' => $label, 'on' => ($v ?? '1') !== '0']; }
+    $bi = []; // Owner 13 Nov 2026: built-in slides are switched off and no longer listed here (their on/off settings and routes are untouched; re-list by looping self::BUILTIN again)
     return view('hero_slider', ['rows' => $rows, 'bi' => $bi]);
   }
   /** The built-in hero slides that sit in the same home carousel as the uploaded ones. */
