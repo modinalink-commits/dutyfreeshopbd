@@ -59,7 +59,8 @@ class OrderWaConfirmController extends Controller {
     $st = (string)$r->input('stage'); abort_unless(isset(\App\Support\OrderWaUpdate::STAGES[$st]), 404);
     $to = WhatsApp::norm((string)$r->validate(['phone' => 'required|string|max:20'])['phone']);
     if (!preg_match('/^8801[3-9]\d{8}$/', $to)) return back()->with('err', 'Enter a valid mobile number.');
-    [$ok, $id, $err] = \App\Support\OrderWaUpdate::call($st, $to, \App\Support\OrderWaUpdate::STAGES[$st][4], 0);
+    $sample = \App\Support\OrderWaUpdate::STAGES[$st][4]; if ($st === 'Shipment') $sample[4] .= ' · ' . W::brand() . '-এ ট্র্যাক করুন: ' . url('/track'); // same shape as a real message
+    [$ok, $id, $err] = \App\Support\OrderWaUpdate::call($st, $to, $sample, 0);
     return back()->with($ok ? 'ok' : 'err', $ok ? 'Test sent to ' . $to : 'Test failed: ' . $err);
   }
   public function resend(Request $r, $id) {
