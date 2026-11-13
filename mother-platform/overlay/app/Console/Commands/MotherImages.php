@@ -27,7 +27,7 @@ class MotherImages extends Command {
     }
     if ($done) foreach (['store.home2','store.home4','store.home6','store.home5','store.cats','store.live2','store.live3','store.live4'] as $k) \Illuminate\Support\Facades\Cache::forget($k);
     try { $this->autoRepair($t0); } catch (\Throwable $e) { $this->line('image repair: '.$e->getMessage()); }
-    try { if (microtime(true) - $t0 < 50) { $sb = Img::runStoreBatch(40, 25); if ($sb['processed']) $this->line("IMAGES store folders {$sb['processed']} shrunk, saved ".round($sb['saved'] / 1048576, 1)." MB, failed {$sb['failed']} ({$sb['state']})"); } } catch (\Throwable $e) { $this->line('store images: '.$e->getMessage()); }
+    try { if (microtime(true) - $t0 < 50) { $sb = Img::runStoreBatch(600, 25); if ($sb['processed']) $this->line("IMAGES store folders {$sb['processed']} shrunk, saved ".round($sb['saved'] / 1048576, 1)." MB, failed {$sb['failed']} ({$sb['state']})"); } } catch (\Throwable $e) { $this->line('store images: '.$e->getMessage()); }
     $this->line("IMAGES uploads {$a['processed']} (left {$a['remaining']}), mirrored $done, failed $fail");
     return 0;
   }

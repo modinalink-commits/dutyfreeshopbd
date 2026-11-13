@@ -163,6 +163,11 @@ class Img {
         // The CDN and browsers keep the old heavy file for 30 days under the same address, so the shrunk photo gets a NEW file name (same idea as AiImage) and the product rows are pointed at it.
         $ext = strtolower(pathinfo($f, PATHINFO_EXTENSION)); $nf = preg_replace('/\.[A-Za-z0-9]+$/', '', $f).'-r'.time().'.'.$ext; $nrel = $d.'/'.$nf; $nabs = self::dir().'/'.$nrel;
         if (!@copy($abs, $nabs)) { $fail++; $n++; continue; }
+        if ($stale && $size <= 150 * 1024) { // already light: no need to shrink again, only carry the small variants over to the new name (fast)
+          $ob = preg_replace('/\.[A-Za-z0-9]+$/', '', $abs); $nb = preg_replace('/\.[A-Za-z0-9]+$/', '', $nabs);
+          if (is_file($abs.'.webp')) @copy($abs.'.webp', $nabs.'.webp'); foreach (['-150.webp', '-300.webp'] as $sx) if (is_file($ob.$sx)) @copy($ob.$sx, $nb.$sx);
+          $res = ['ok'=>true];
+        } else
         try { $res = self::process($nabs, 'pfit'); } catch (\Throwable $e) { $res = ['ok'=>false, 'error'=>mb_substr($e->getMessage(), 0, 150), 'before'=>$size]; }
         clearstatcache(true, $nabs); $now = (int)@filesize($nabs);
         $row = fn($bytes, $ok, $err) => ['orig_bytes'=>$size, 'opt_bytes'=>$bytes, 'width'=>$res['w'] ?? null, 'height'=>$res['h'] ?? null, 'format'=>$res['format'] ?? null, 'status'=>$ok ? 'optimized' : 'failed', 'error'=>$ok ? null : mb_substr((string)$err, 0, 150), 'optimized_at'=>now(), 'updated_at'=>now(), 'created_at'=>now()];
