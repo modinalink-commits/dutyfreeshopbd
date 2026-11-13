@@ -60,7 +60,7 @@ class ChatController extends Controller {
       'orders'=>$orders, 'intel'=>$intel ? ['delivered'=>$intel['delivered'], 'returned'=>$intel['returned'], 'cancelled'=>$intel['cancelled'], 'rate'=>$intel['rate'], 'spent'=>$intel['spent'], 'fraud'=>$intel['fraud']] : null,
       'agents'=>DB::table('users')->where('active', true)->orderBy('name')->get(['id', 'name']), 'statuses'=>self::STATUSES,
       'me'=>(string)(auth()->user()->name ?? ''),
-      'hint'=>\Illuminate\Support\Facades\Cache::get('ai.hint.'.$id),
+      'hint'=>\Illuminate\Support\Facades\Cache::get('ai.hint.'.$id), 'payhint'=>\Illuminate\Support\Facades\Cache::get('ai.pay.'.$id),
       'quick'=>DB::table('chat_quick_replies')->where('active', true)->orderBy('id')->get(['id', 'title', 'body'])]);
   }
 
@@ -579,9 +579,11 @@ class ChatController extends Controller {
             $msg = $m['message']; $att = null; $atype = 'image';
             foreach ($msg['attachments'] ?? [] as $a) if (!empty($a['payload']['url'])) { $att = $a['payload']['url']; $atype = in_array($a['type'] ?? '', ['audio', 'video', 'image', 'file'], true) ? $a['type'] : 'image'; break; }
             if ($att && $atype === 'audio') $att = Chat::mirrorAudio($att) ?: $att;
+            if ($att && $atype === 'image') $att = Chat::mirrorImage($att) ?: $att;
             $body = (string)($msg['text'] ?? ''); if ($body === '' && !$att) $body = '[unsupported message]';
             $th = Chat::ingest($ch, (string)$m['sender']['id'], null, $body, $att, $msg['mid'] ?? null, ['page_ref'=>(string)($e['id'] ?? ''), 'att_type'=>$atype]);
             if ($th && $att && $atype === 'audio' && ($vid = DB::table('chat_messages')->where('ext_id', $msg['mid'] ?? '-')->value('id'))) { $vid = (int)$vid; app()->terminating(fn() => Chat::transcribe($vid)); }
+            if ($th && $att && $atype === 'image' && ($pid2 = DB::table('chat_messages')->where('ext_id', $msg['mid'] ?? '-')->value('id'))) { $pid2 = (int)$pid2; $ptid = (int)$th->id; app()->terminating(fn() => \App\Support\PayProof::scan($ptid, $pid2)); }
             if ($th && $att && $atype === 'image' && \App\Support\AiChat::paused($th) && ($hid = DB::table('chat_messages')->where('ext_id', $msg['mid'] ?? '-')->value('id'))) { $hid = (int)$hid; $htid = (int)$th->id; app()->terminating(fn() => Chat::imageHint($htid, $hid)); }
             if ($th && $ch === 'facebook' && !\App\Support\AiChat::paused($th) && !($att && !in_array($atype, ['image', 'audio'], true))) { $tid = (int)$th->id; app()->terminating(fn() => Chat::aiReply($tid)); }
           }
@@ -638,6 +640,7 @@ class ChatController extends Controller {
               $th = Chat::ingest('whatsapp', $from, $names[$from] ?? null, $body, $att, $m['id'] ?? null, $meta);
               if ($th && ($th->page_ref ?? null) !== $wref) { DB::table('chat_threads')->where('id', $th->id)->update(['page_ref'=>$wref]); $th->page_ref = $wref; } // replies go out from the number the customer wrote to
               if ($th && $att && ($meta['att_type'] ?? '') === 'audio' && ($vid = DB::table('chat_messages')->where('ext_id', $m['id'] ?? '-')->value('id'))) { $vid = (int)$vid; app()->terminating(fn() => Chat::transcribe($vid)); }
+              if ($th && $att && ($meta['att_type'] ?? '') === 'image' && ($pid2 = DB::table('chat_messages')->where('ext_id', $m['id'] ?? '-')->value('id'))) { $pid2 = (int)$pid2; $ptid = (int)$th->id; app()->terminating(fn() => \App\Support\PayProof::scan($ptid, $pid2)); }
               if ($th && $att && ($meta['att_type'] ?? '') === 'image' && \App\Support\AiChat::paused($th) && ($hid = DB::table('chat_messages')->where('ext_id', $m['id'] ?? '-')->value('id'))) { $hid = (int)$hid; $htid = (int)$th->id; app()->terminating(fn() => Chat::imageHint($htid, $hid)); }
               if ($th && !\App\Support\AiChat::paused($th) && !($att && !in_array($meta['att_type'] ?? 'image', ['image', 'audio'], true)) && in_array($type, ['text', 'button', 'image', 'audio'], true)) { $tid = (int)$th->id; app()->terminating(fn() => Chat::aiReply($tid)); }
             }

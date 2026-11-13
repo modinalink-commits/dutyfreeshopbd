@@ -116,6 +116,34 @@ class Chat {
       return url('/uploads/chat/'.$name);
     } catch (\Throwable $e) { return null; }
   }
+  /** Facebook / Instagram photos arrive as short-lived Meta links. Keep our own copy so the photo stays visible in the inbox and the AI can actually look at it.
+   *  Only Meta's own media hosts are fetched, and only real images (checked by content) are stored. */
+  public static function mirrorImage(string $url): ?string {
+    try {
+      $h = strtolower((string)parse_url($url, PHP_URL_HOST)); if (!str_starts_with($url, 'https://') || !preg_match('/(^|\.)(fbcdn\.net|fbsbx\.com|cdninstagram\.com|facebook\.com)$/', $h)) return null;
+      $r = Http::timeout(20)->get($url); if (!$r->ok()) return null;
+      $b = $r->body(); if ($b === '' || strlen($b) > 12 * 1048576) return null;
+      $ext = str_starts_with($b, "\xFF\xD8\xFF") ? 'jpg' : (str_starts_with($b, "\x89PNG") ? 'png' : (str_starts_with($b, 'GIF8') ? 'gif' : (substr($b, 0, 4) === 'RIFF' && substr($b, 8, 4) === 'WEBP' ? 'webp' : null))); if (!$ext) return null;
+      $dir = public_path('uploads/chat'); if (!is_dir($dir)) @mkdir($dir, 0775, true);
+      $name = 'in-'.date('ymd').'-'.bin2hex(random_bytes(6)).'.'.$ext; file_put_contents($dir.'/'.$name, $b);
+      return url('/uploads/chat/'.$name);
+    } catch (\Throwable $e) { return null; }
+  }
+  /** A stored chat photo prepared for the AI: [mime, base64] or null. Large phone photos are scaled down (longest side 1568px, JPEG) instead of being skipped, so the AI always gets to see them. */
+  public static function visionData(string $path): ?array {
+    try {
+      if (!is_file($path)) return null; $size = (int)filesize($path); if ($size < 1 || $size > 16 * 1048576) return null;
+      $mt = (string)@mime_content_type($path); if (!in_array($mt, ['image/jpeg', 'image/png', 'image/webp', 'image/gif'], true)) return null;
+      $dim = @getimagesize($path); $big = $dim ? max((int)$dim[0], (int)$dim[1]) : 0;
+      if ($size <= 1500000 && $big > 0 && $big <= 1568) return [$mt, base64_encode((string)file_get_contents($path))];
+      if (!function_exists('imagecreatefromstring') || !$dim || $dim[0] * $dim[1] > 60000000) return $size <= 3500000 ? [$mt, base64_encode((string)file_get_contents($path))] : null;
+      $im = @imagecreatefromstring((string)file_get_contents($path)); if (!$im) return $size <= 3500000 ? [$mt, base64_encode((string)file_get_contents($path))] : null;
+      $k = min(1, 1568 / max(1, $big)); $w = max(1, (int)round($dim[0] * $k)); $h = max(1, (int)round($dim[1] * $k));
+      $out = imagecreatetruecolor($w, $h); imagefill($out, 0, 0, imagecolorallocate($out, 255, 255, 255)); imagecopyresampled($out, $im, 0, 0, 0, 0, $w, $h, $dim[0], $dim[1]);
+      ob_start(); imagejpeg($out, null, 85); $jpg = (string)ob_get_clean(); imagedestroy($im); imagedestroy($out);
+      return $jpg !== '' ? ['image/jpeg', base64_encode($jpg)] : null;
+    } catch (\Throwable $e) { return null; }
+  }
   /** Speech-to-text for one stored incoming voice message. Best effort, runs after the webhook response; the result is shown under the player as an AI transcript. */
   public static function transcribe(int $mid): void {
     try {
@@ -175,13 +203,12 @@ class Chat {
       if (!AiChat::chatOn()) return;
       $m = DB::table('chat_messages')->where('id', $mid)->first(); if (!$m || $m->dir !== 'in' || $m->attachment_type !== 'image' || !$m->attachment_url) return;
       $ip = public_path('uploads/chat/'.basename((string)parse_url((string)$m->attachment_url, PHP_URL_PATH)));
-      if (!is_file($ip) || filesize($ip) > 3500000) return;
-      $mt = (string)@mime_content_type($ip); if (!in_array($mt, ['image/jpeg', 'image/png', 'image/webp', 'image/gif'], true)) return;
+      $vd = self::visionData($ip); if (!$vd) return; [$mt, $b64] = $vd;
       $key = Sms::secret('ai_key'); if (!$key) return;
       $n = 'ai.hint.n.'.now()->format('Ymd'); \Illuminate\Support\Facades\Cache::add($n, 0, 90000); if (\Illuminate\Support\Facades\Cache::increment($n) > 400) return;
       $res = Http::withHeaders(['x-api-key'=>$key, 'anthropic-version'=>'2023-06-01'])->timeout(25)->post('https://api.anthropic.com/v1/messages', ['model'=>AiChat::model(), 'max_tokens'=>200,
         'system'=>'You look at a photo a customer sent to a Bangladeshi duty-free / cosmetics / perfume / cigarette store. Reply with ONE line only: the brand and product name exactly as printed on the pack, then 3-6 short English search keywords separated by commas. Format: "Brand Product | keyword, keyword, keyword". If it is not a product photo, reply: NONE',
-        'messages'=>[['role'=>'user', 'content'=>[['type'=>'image', 'source'=>['type'=>'base64', 'media_type'=>$mt, 'data'=>base64_encode((string)file_get_contents($ip))]], ['type'=>'text', 'text'=>trim((string)$m->body) ?: 'Which product is this?']]]]]);
+        'messages'=>[['role'=>'user', 'content'=>[['type'=>'image', 'source'=>['type'=>'base64', 'media_type'=>$mt, 'data'=>$b64]], ['type'=>'text', 'text'=>trim((string)$m->body) ?: 'Which product is this?']]]]]);
       if (!$res->ok()) return;
       $line = trim(collect($res->json('content') ?? [])->where('type', 'text')->pluck('text')->implode(' '));
       if ($line === '' || stripos($line, 'NONE') === 0) { \Illuminate\Support\Facades\Cache::put('ai.hint.'.$tid, ['mid'=>$mid, 'found'=>'Not a clear product photo', 'items'=>[], 'reply'=>''], 43200); return; }
@@ -401,7 +428,7 @@ class Chat {
           $li = $rows[$ix];
           if ($li->dir === 'in' && $li->attachment_type === 'image' && $li->attachment_url) {
             $ip = public_path('uploads/chat/'.basename((string)parse_url((string)$li->attachment_url, PHP_URL_PATH)));
-            if (is_file($ip) && filesize($ip) <= 3500000) { $mt = (string)@mime_content_type($ip); if (in_array($mt, ['image/jpeg', 'image/png', 'image/webp', 'image/gif'], true)) $hist[$ix]['img'] = [$mt, base64_encode((string)file_get_contents($ip))]; }
+            if ($vd = self::visionData($ip)) $hist[$ix]['img'] = $vd;
             break;
           }
         }
