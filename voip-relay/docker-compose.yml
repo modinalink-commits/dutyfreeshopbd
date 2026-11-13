@@ -108,6 +108,17 @@ configs:
       if [ "\$$B" = 0 ]; then V=\$$(timeout 3 fs_cli -p "$$ESLPW" -x "uuid_getvar \$$U billsec" 2>/dev/null); case "\$$V" in ""|*[!0-9]*) ;; *) B=\$$V;; esac; fi
       if [ "\$$C" = UNKNOWN ]; then V=\$$(timeout 3 fs_cli -p "$$ESLPW" -x "uuid_getvar \$$U hangup_cause" 2>/dev/null); case "\$$V" in ""|*[!A-Z_]*) ;; *) C=\$$V;; esac; fi
       wget -q -t 3 -T 8 -O /dev/null --header="Authorization: Bearer $$RELAY_TOKEN" --post-data="uuid=\$$U&billsec=\$$B&dest=\$$D&cause=\$$C&caller=\$$P" "$$RELAY_CDR_URL"
+      # Self-heal: if the live push has been silent for 5 minutes, start it again (a new start replaces any old loop).
+      [ -x /usr/local/bin/relay-push.sh ] || exit 0
+      L=\$$(cat /tmp/live.ok 2>/dev/null); N=\$$(date +%s)
+      case "\$$L" in ""|*[!0-9]*) L=0;; esac
+      case "\$$N" in ""|*[!0-9]*) exit 0;; esac
+      if [ \$$((N-L)) -gt 300 ] && mkdir /tmp/heal.lock 2>/dev/null; then
+        echo "\$$N" > /tmp/live.ok
+        echo "cdr hook: live push silent for \$$((N-L)) s - starting it again" > /proc/1/fd/1 2>/dev/null
+        setsid bash /usr/local/bin/relay-push.sh > /proc/1/fd/1 2>&1 < /dev/null &
+        rmdir /tmp/heal.lock 2>/dev/null
+      fi
       CDR
         chmod 700 /usr/local/bin/relay-cdr.sh
       fi
@@ -168,25 +179,40 @@ configs:
       XML
       echo "relay ready. MODE=$$MODE client=$$CLIENT_IP prefix=$$PREFIX max=$$MAX_CALLS public=$$PUBLIC_IP"
       # Live-call snapshot: every 3 s push the relay's channel list to the admin panel (Call Clients live board + running-minute count).
+      # Three independent safeguards keep it alive: (1) the loops never exit when a `sleep` fails (a `while sleep` loop ends for good on one failed fork),
+      # (2) a watchdog restarts the push when it is stale > 45 s, (3) the hangup hook restarts it when it has been silent for 5 minutes.
       if [ -n "$$RELAY_TOKEN" ]; then
         RELAY_LIVE_URL="$${RELAY_LIVE_URL:-$${RELAY_CONFIG_URL%relay-config}relay-live}"
-        # Watchdog: the push loop writes /tmp/live.ok after every successful push; if that goes stale (>45 s) the loop is restarted and the reason is logged.
-        push_loop() { K=0; sleep 25; while sleep 3; do
-            if timeout 5 fs_cli -p "$$ESLPW" -x 'show channels as json' > /tmp/live.json 2>/tmp/live.err && [ -s /tmp/live.json ]; then
-              if wget -q -t 1 -T 5 -O /dev/null --header="Authorization: Bearer $$RELAY_TOKEN" --header="Content-Type: application/json" --post-file=/tmp/live.json "$$RELAY_LIVE_URL"; then date +%s > /tmp/live.ok; else echo "live push failed (wget to $$RELAY_LIVE_URL)"; fi
-            else echo "live push: fs_cli show channels failed: $$(head -c 120 /tmp/live.err 2>/dev/null)"; fi
-            K=$$((K+1)); if [ $$((K%5)) -eq 1 ]; then timeout 5 fs_cli -p "$$ESLPW" -x 'sofia status gateway' > /tmp/gw.txt 2>/dev/null; [ -s /tmp/gw.txt ] && wget -q -t 1 -T 5 -O /dev/null --header="Authorization: Bearer $$RELAY_TOKEN" --header="Content-Type: text/plain" --post-file=/tmp/gw.txt "$${RELAY_LIVE_URL%relay-live}relay-gw"; fi
-          done; }
+        mkfifo /tmp/nap 2>/dev/null
+        cat > /usr/local/bin/relay-push.sh <<PUSH
+      #!/bin/bash
+      # Singleton: a new start replaces the previous loop. Writes /tmp/live.ok after every successful push.
+      nap() { sleep "\$$1" 2>/dev/null || read -r -t "\$$1" _ <> /tmp/nap || true; }
+      OLD=\$$(cat /tmp/push.pid 2>/dev/null); echo \$$\$$ > /tmp/push.pid
+      case "\$$OLD" in ""|*[!0-9]*) ;; *) [ "\$$OLD" != "\$$\$$" ] && kill "\$$OLD" 2>/dev/null;; esac
+      K=0; nap 25
+      while :; do
+        nap 3
+        [ "\$$(cat /tmp/push.pid 2>/dev/null)" = "\$$\$$" ] || exit 0
+        if timeout -k 2 5 fs_cli -p "$$ESLPW" -x 'show channels as json' > /tmp/live.json 2>/tmp/live.err && [ -s /tmp/live.json ]; then
+          if wget -q -t 1 -T 5 -O /dev/null --header="Authorization: Bearer $$RELAY_TOKEN" --header="Content-Type: application/json" --post-file=/tmp/live.json "$$RELAY_LIVE_URL"; then date +%s > /tmp/live.ok; else echo "live push failed (wget to $$RELAY_LIVE_URL)"; fi
+        else echo "live push: fs_cli show channels failed: \$$(head -c 120 /tmp/live.err 2>/dev/null)"; fi
+        K=\$$((K+1)); if [ \$$((K%5)) -eq 1 ]; then timeout -k 2 5 fs_cli -p "$$ESLPW" -x 'sofia status gateway' > /tmp/gw.txt 2>/dev/null; [ -s /tmp/gw.txt ] && wget -q -t 1 -T 5 -O /dev/null --header="Authorization: Bearer $$RELAY_TOKEN" --header="Content-Type: text/plain" --post-file=/tmp/gw.txt "$${RELAY_LIVE_URL%relay-live}relay-gw"; fi
+      done
+      PUSH
+        chmod 700 /usr/local/bin/relay-push.sh
         date +%s > /tmp/live.ok
-        push_loop & echo $$! > /tmp/push.pid
-        ( sleep 60; while sleep 15; do
-            NOW=$$(date +%s); LAST=$$(cat /tmp/live.ok 2>/dev/null || echo 0)
+        bash /usr/local/bin/relay-push.sh &
+        ( nap() { sleep "$$1" 2>/dev/null || read -r -t "$$1" _ <> /tmp/nap || true; }
+          nap 60; while :; do
+            nap 15
+            NOW=$$(date +%s); LAST=$$(cat /tmp/live.ok 2>/dev/null)
+            case "$$NOW" in ""|*[!0-9]*) continue;; esac
+            case "$$LAST" in ""|*[!0-9]*) LAST=0;; esac
             if [ $$((NOW-LAST)) -gt 45 ]; then
               echo "watchdog: live push stale for $$((NOW-LAST)) s - restarting push loop"
-              kill $$(cat /tmp/push.pid 2>/dev/null) 2>/dev/null
-              pkill -x fs_cli 2>/dev/null
               date +%s > /tmp/live.ok
-              push_loop & echo $$! > /tmp/push.pid
+              bash /usr/local/bin/relay-push.sh &
             fi
           done ) &
       fi
