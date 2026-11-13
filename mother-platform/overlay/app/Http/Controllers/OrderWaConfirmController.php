@@ -47,6 +47,20 @@ class OrderWaConfirmController extends Controller {
     [$ok, $id, $err] = W::call($to, ['টেস্ট গ্রাহক', 'DFB-TEST', '1,250', 'Cash on Delivery', W::brand()]);
     return back()->with($ok ? 'ok' : 'err', $ok ? 'Test sent to ' . $to . ' (message ' . $id . ')' : 'Test failed: ' . $err);
   }
+  /** Courier / delivered WhatsApp updates: switches, template submit + status, test send. */
+  public function updSave(Request $r) {
+    foreach (['enabled', 'ship_on', 'dlv_on'] as $k) Procure::put('wa_upd_' . $k, $r->boolean($k) ? '1' : '0');
+    return back()->with('ok', 'Order updates saved.');
+  }
+  public function updSubmit(Request $r) { [$ok, $m] = \App\Support\OrderWaUpdate::submitTemplate((string)$r->input('stage')); return back()->with($ok ? 'ok' : 'err', 'Template: ' . $m); }
+  public function updSync(Request $r) { [$ok, $m] = \App\Support\OrderWaUpdate::syncTemplate((string)$r->input('stage')); return back()->with($ok ? 'ok' : 'err', 'Template status: ' . $m); }
+  public function updTest(Request $r) {
+    $st = (string)$r->input('stage'); abort_unless(isset(\App\Support\OrderWaUpdate::STAGES[$st]), 404);
+    $to = WhatsApp::norm((string)$r->validate(['phone' => 'required|string|max:20'])['phone']);
+    if (!preg_match('/^8801[3-9]\d{8}$/', $to)) return back()->with('err', 'Enter a valid mobile number.');
+    [$ok, $id, $err] = \App\Support\OrderWaUpdate::call($st, $to, \App\Support\OrderWaUpdate::STAGES[$st][4]);
+    return back()->with($ok ? 'ok' : 'err', $ok ? 'Test sent to ' . $to : 'Test failed: ' . $err);
+  }
   public function resend(Request $r, $id) {
     $o = DB::table('orders')->find($id); abort_unless($o, 404);
     [$ok, $m] = W::resend((int)$id, (int)auth()->id(), trim((string)$r->input('reason', '')));

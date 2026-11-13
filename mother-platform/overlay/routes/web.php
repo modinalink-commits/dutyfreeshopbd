@@ -100,6 +100,10 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/wa-confirm-settings/cancel-submit', [\App\Http\Controllers\OrderWaConfirmController::class,'cancelSubmit']);
   Route::post('/wa-confirm-settings/cancel-test', [\App\Http\Controllers\OrderWaConfirmController::class,'cancelTest'])->middleware('throttle:6,1');
   Route::post('/wa-confirm-settings/cancel-sync', [\App\Http\Controllers\OrderWaConfirmController::class,'cancelSync']);
+  Route::post('/wa-confirm-settings/upd-save', [\App\Http\Controllers\OrderWaConfirmController::class,'updSave']);
+  Route::post('/wa-confirm-settings/upd-submit', [\App\Http\Controllers\OrderWaConfirmController::class,'updSubmit']);
+  Route::post('/wa-confirm-settings/upd-sync', [\App\Http\Controllers\OrderWaConfirmController::class,'updSync']);
+  Route::post('/wa-confirm-settings/upd-test', [\App\Http\Controllers\OrderWaConfirmController::class,'updTest'])->middleware('throttle:6,1');
   Route::post('/wa-confirm-settings/test', [\App\Http\Controllers\OrderWaConfirmController::class,'test'])->middleware('throttle:10,1');
   Route::post('/orders/{id}/return-receive', [\App\Http\Controllers\ShipmentOutcomeController::class,'receive'])->whereNumber('id');
   Route::post('/orders/{id}/return-complete', [\App\Http\Controllers\ShipmentOutcomeController::class,'complete'])->whereNumber('id');

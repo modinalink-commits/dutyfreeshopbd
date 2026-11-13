@@ -124,7 +124,7 @@ class OrderWaConfirm {
       $st = strtolower((string)($s['status'] ?? '')); $ts = !empty($s['timestamp']) ? \Carbon\Carbon::createFromTimestampUTC((int)$s['timestamp']) : now();
       if ($st === 'failed') { $msg = mb_substr((string)(($s['errors'][0]['title'] ?? '') . ' ' . ($s['errors'][0]['message'] ?? '')), 0, 300);
         DB::table('order_whatsapp_confirmations')->where('id', $c->id)->update(['send_status' => 'FAILED', 'failed_at' => $ts, 'failure_reason' => trim($msg) ?: 'Delivery failed', 'updated_at' => now()]); self::ev((int)$c->id, (int)$c->order_id, 'failed', trim($msg));
-        try { DB::table('chat_messages')->where('ext_id', $wamid)->update(['status' => 'failed', 'error' => trim($msg) ?: 'Number not reachable on WhatsApp', 'updated_at' => now()]); } catch (\Throwable $e) {} self::smsFallback((int)$c->order_id, (int)$c->id); return; }
+        try { DB::table('chat_messages')->where('ext_id', $wamid)->update(['status' => 'failed', 'error' => trim($msg) ?: 'Number not reachable on WhatsApp', 'updated_at' => now()]); } catch (\Throwable $e) {} if ($c->confirmation_type === self::TYPE) self::smsFallback((int)$c->order_id, (int)$c->id); return; }
       $new = strtoupper($st); if (!in_array($new, ['SENT', 'DELIVERED', 'READ'], true)) return;
       if ((self::RANK[$new] ?? 0) <= (self::RANK[$c->send_status] ?? 0) && $c->send_status !== 'FAILED') return;
       $col = ['SENT' => 'sent_at', 'DELIVERED' => 'delivered_at', 'READ' => 'read_at'][$new];

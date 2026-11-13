@@ -30,6 +30,7 @@ class MotherPushWorker extends Command
     try { \App\Support\Chat::closeSilentTick(); } catch (\Throwable $e) { $this->error('chatsilent: ' . $e->getMessage()); }
     try { \App\Support\OrderSchedule::tick(); } catch (\Throwable $e) { $this->error('sched: ' . $e->getMessage()); }
     try { \App\Support\OrderCancelNotice::tick(); } catch (\Throwable $e) { $this->error('cancel-notice: ' . $e->getMessage()); }
+    try { $this->waUpdates(); \App\Support\OrderWaUpdate::tick(); } catch (\Throwable $e) { $this->error('wa-update: ' . $e->getMessage()); }
     \App\Support\DeployHealth::beat(); // heartbeat: shown as "Scheduler" in the Deployment Center
     try { \App\Support\Deployer::tick(); } catch (\Throwable $e) { $this->error('deploy: ' . $e->getMessage()); }
     try { \App\Support\AdminAlerts::tick(); } catch (\Throwable $e) { $this->error('alerts: ' . $e->getMessage()); }
@@ -74,6 +75,14 @@ class MotherPushWorker extends Command
       Push::notify($cid, $type, $title, $body, $url);
     }
     $this->setCursor('push_log_cursor', (int)$cur);
+  }
+
+  /** WhatsApp "handed to courier" / "delivered" updates. Starts from the newest log row, so old orders never get a late message. */
+  private function waUpdates(): void {
+    $cur = $this->cursor('wa_upd_cursor', fn() => (int)DB::table('order_status_logs')->max('id')); if ($cur < 0) return;
+    $logs = DB::table('order_status_logs')->where('id', '>', $cur)->orderBy('id')->limit(100)->get(['id', 'order_id', 'from_status', 'to_status']); if ($logs->isEmpty()) return;
+    foreach ($logs as $l) { $cur = $l->id; if ($l->from_status !== $l->to_status && isset(\App\Support\OrderWaUpdate::STAGES[(string)$l->to_status])) \App\Support\OrderWaUpdate::onStatus((int)$l->order_id, (string)$l->to_status); }
+    $this->setCursor('wa_upd_cursor', (int)$cur);
   }
 
   private function chat(): void {
