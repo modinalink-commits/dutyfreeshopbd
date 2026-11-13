@@ -1064,3 +1064,8 @@ cb37af62e96d210b367c1d6f851b004887e4b2b4 public/banners/hero-perfume.mp4
 fdfd88b9c511a07d4791fc827334cf1934f935b9 public/banners/hero-perfume-m.webp
 78ab780ed7cfd7701df0ebde2a611caee7bbbb1d public/banners/hero-perfume-m.mp4
 c89b2ae98797a985a293375f32e680c0c1cb26ab database/migrations/2026_11_13_220000_hero_perfume_slide.php
+dc11331b1abe4966dd0074d34b0f0ac07fe36d41 public/banners/hero-fashion.webp
+5cfd08cd7c2b7eca1e12426dcca2f6aea8527299 public/banners/hero-fashion.mp4
+a2b2cb277ab6d1eae480d58d1178938f09a16269 public/banners/hero-fashion-m.webp
+feee8cc0d2697d510dade213d6ace110903bdfd7 public/banners/hero-fashion-m.mp4
+fc4f7963aeac38d9925b720503ed31a799d2558a database/migrations/2026_11_13_223000_hero_fashion_slide.php
