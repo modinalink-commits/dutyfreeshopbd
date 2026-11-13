@@ -84,6 +84,9 @@ class VoiceChat
   public static function transcribeAlt(string $bytes, ?int $tid, string $ext = 'ogg'): array {
     $t0 = microtime(true);
     try {
+      // Owner decision (14 Nov 2026): customer voice is NOT sent to OpenAI. The second engine stays off unless the setting vchat_alt_stt is switched to 1 on purpose.
+      $on = false; try { $on = (string)DB::table('settings')->where('key', 'vchat_alt_stt')->value('value') === '1'; } catch (\Throwable $e) {}
+      if (!$on) return [null, 'second engine off'];
       $key = AiImage::key(); if (!$key || $bytes === '' || strlen($bytes) > 24 * 1048576) return [null, 'no second engine'];
       $ext = preg_match('/^(ogg|webm|mp3|mp4|m4a|wav|aac|amr)$/', $ext) ? $ext : 'ogg'; if ($ext === 'aac') $ext = 'm4a';
       $hint = 'DutyFreeBD (Bangladesh online shop) customer voice message in Bengali, Banglish or English about a product, price, order, payment or delivery.';
