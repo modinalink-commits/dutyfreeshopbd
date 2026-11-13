@@ -663,6 +663,35 @@ class ChatController extends Controller {
     $h .= '<h2>Timeline (latest 60)</h2><table><tr><th>Time</th><th>Who</th><th>What</th><th>Details</th></tr>'.$ev->map(fn($x) => '<tr><td>'.\Carbon\Carbon::parse($x->created_at)->timezone('Asia/Dhaka')->format('d M H:i').'</td><td>'.$e($x->actor).'</td><td>'.$e($x->type).' '.$e($x->channel).'</td><td><small>'.$e($x->meta).'</small></td></tr>')->implode('').'</table></div>';
     return view('chat_memory', ['h' => $h]);
   }
+  /**
+   * WhatsApp Calling status of every connected number (read from Meta: GET /<phone id>/settings) and the owner's on/off switch.
+   * Switching calling ON only makes sense once calls are answered somewhere (the admin call screen or the PBX): until then customers would ring with no answer.
+   */
+  public function waCalls(Request $r) {
+    abort_unless(\App\Support\ProfitFloor::admin(), 403); $e = fn($v) => e((string)$v);
+    $nums = []; $main = (string)Chat::sec('chat_wa_phone_id'); if ($main !== '') $nums[$main] = ['label' => 'Main number', 'ref' => null];
+    try { foreach (DB::table('chat_wa_numbers')->orderBy('id')->get() as $n) $nums[(string)$n->phone_id] = ['label' => trim(($n->display_phone ?: '').' '.($n->verified_name ?: '')) ?: 'Number', 'ref' => (string)$n->phone_id]; } catch (\Throwable $x) {}
+    if ($r->isMethod('post')) {
+      $pid = (string)$r->input('phone_id'); $on = $r->input('action') === 'enable'; abort_unless(isset($nums[$pid]), 404);
+      [$tok] = Chat::waCred($nums[$pid]['ref']); $msg = 'Token missing.'; $ok = false;
+      if ($tok) { try { $res = \Illuminate\Support\Facades\Http::timeout(15)->withToken($tok)->post(Chat::API.'/'.$pid.'/settings', ['calling' => ['status' => $on ? 'ENABLED' : 'DISABLED']]); $ok = $res->ok(); $msg = $ok ? ('Calling '.($on ? 'চালু' : 'বন্ধ').' করা হয়েছে: '.$nums[$pid]['label']) : ('Meta: '.mb_substr((string)($res->json('error.message') ?? ('HTTP '.$res->status())), 0, 220)); } catch (\Throwable $x) { $msg = 'Meta-তে পৌঁছানো যায়নি।'; } }
+      try { DB::table('audit_logs')->insert(['user_id'=>auth()->id(), 'user_name'=>auth()->user()->name ?? '', 'action'=>'whatsapp.calling', 'subject'=>'WhatsApp calling '.($on ? 'ENABLE' : 'DISABLE').' '.$pid.' -> '.($ok ? 'ok' : 'failed'), 'ip'=>$r->ip(), 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $x) {}
+      return redirect('/admin/chat/wa-calls')->with($ok ? 'ok' : 'err', $msg);
+    }
+    $h = '<div class="mm" style="max-width:980px"><a href="/admin/chat">&larr; Messages</a><h1>WhatsApp Calls</h1><p style="color:#6b7390">প্রতিটা WhatsApp নম্বরে কল নেওয়ার সুবিধা (WhatsApp Business Calling) এখন কী অবস্থায় আছে, Meta থেকে সরাসরি পড়া। <b>সতর্কতা:</b> কল ধরার ব্যবস্থা (অ্যাডমিনের কল স্ক্রিন বা PBX) তৈরি হওয়ার আগে চালু করলে কাস্টমার কল দেবে কিন্তু কেউ ধরবে না।</p>';
+    if (session('ok')) $h .= '<div style="background:#F0FAF3;border:1px solid #BFE3CC;color:#14683A;border-radius:10px;padding:8px 12px;margin-bottom:8px;font-weight:600">'.$e(session('ok')).'</div>';
+    if (session('err')) $h .= '<div style="background:#FEF3F2;border:1px solid #F6C4C0;color:#B42318;border-radius:10px;padding:8px 12px;margin-bottom:8px;font-weight:600">'.$e(session('err')).'</div>';
+    $h .= '<table><tr><th>নম্বর</th><th>Calling</th><th>কল আইকন</th><th>SIP</th><th>ভয়েসমেইল</th><th>Meta-র বার্তা</th><th></th></tr>';
+    foreach ($nums as $pid => $n) {
+      [$tok] = Chat::waCred($n['ref']); $st = '—'; $ic = '—'; $sip = '—'; $vm = '—'; $note = '';
+      if (!$tok) $note = 'Token নেই';
+      else { try { $res = \Illuminate\Support\Facades\Http::timeout(12)->withToken($tok)->get(Chat::API.'/'.$pid.'/settings'); if ($res->ok()) { $c = (array)$res->json('calling'); $st = (string)($c['status'] ?? 'সেট করা নেই'); $ic = (string)($c['call_icon_visibility'] ?? '—'); $sip = (string)($c['sip']['status'] ?? '—'); $vm = (string)($c['voicemail']['status'] ?? '—'); if (!$c) $note = 'Calling-এর কোনো সেটিং ফেরত আসেনি (এই নম্বরে সুবিধাটা এখনো না-ও থাকতে পারে)'; } else $note = mb_substr((string)($res->json('error.message') ?? ('HTTP '.$res->status())), 0, 200); } catch (\Throwable $x) { $note = 'Meta-তে পৌঁছানো যায়নি'; } }
+      $on = strtoupper($st) === 'ENABLED';
+      $h .= '<tr><td><b>'.$e($n['label']).'</b><br><small>'.$e($pid).'</small></td><td>'.$e($st).'</td><td>'.$e($ic).'</td><td>'.$e($sip).'</td><td>'.$e($vm).'</td><td><small>'.$e($note).'</small></td><td><form method="post">'.csrf_field().'<input type="hidden" name="phone_id" value="'.$e($pid).'"><button name="action" value="'.($on ? 'disable' : 'enable').'"'.($tok ? '' : ' disabled').'>'.($on ? 'বন্ধ করুন' : 'চালু করুন').'</button></form></td></tr>';
+    }
+    $h .= ($nums ? '' : '<tr><td colspan="7" style="color:#6b7390">কোনো WhatsApp নম্বর সংযুক্ত নেই।</td></tr>').'</table><p style="color:#6b7390;margin-top:10px">Meta-র শর্ত: নম্বরের মেসেজিং সীমা অন্তত ২,০০০ হতে হবে, নইলে চালু হবে না।</p></div>';
+    return view('chat_memory', ['h' => $h]);
+  }
   /** AI Chat Playbook: draft written from where the AI stopped + how the team answered; the owner activates it. */
   public function playbook(Request $r) {
     abort_unless(\App\Support\ProfitFloor::admin(), 403); $P = \App\Support\AiPlaybook::class;

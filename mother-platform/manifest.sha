@@ -1,5 +1,5 @@
 fe43f8b6cb422cca81ee18b74d3972f77e7852de database/migrations/2026_10_31_000001_mother_core.php
-69060fe2e11d6b676b7ede3b2eb991759e405bfb routes/web.php
+66ac2c862f7597d1a4a70e3951f764e4fac47031 routes/web.php
 46ac6330ace84450b442d0d57c5c06f20c41f945 app/Models/Mother.php
 1dac7102048511853e687a481a8f198956cd54da app/Http/Controllers/AdminController.php
 242316b2ef0a0967e6815e39fcbc7377349fdc17 app/Console/Commands/MotherInstall.php
@@ -139,7 +139,7 @@ d300ad17a8293f76774dcdd26c3b5ac0236b5bd3 resources/views/store/post.blade.php
 c16a81281ce6450b768f3dee5532305cd4a98710 resources/views/analytics_print.blade.php
 3a07f77e30bfb27532a52db7cf08664a15263301 database/migrations/2026_10_31_000022_chat_inbox.php
 f430fe4faf5168aa8517709b8c9a016203c37053 app/Support/Chat.php
-c0ebd7ecb920925fcc76c5d711ff77868072f0ce app/Http/Controllers/ChatController.php
+7fd65fd6ac64ff189da0cdb855b4fd9e1d1ff96a app/Http/Controllers/ChatController.php
 120e20d36edafdfc6a077d4b9dc3d0031f3a1a83 resources/views/chat_widget.blade.php
 075c26c62e59d88598d498b979da3c546be9524b resources/views/chat_inbox.blade.php
 f17f2e613cdb24b846aca2a1526c5767795d5637 resources/views/chat_settings.blade.php
