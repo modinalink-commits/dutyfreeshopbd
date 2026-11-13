@@ -1055,3 +1055,8 @@ public/banners/hero-manchester.mp4
 public/banners/hero-manchester-m.webp
 public/banners/hero-manchester-m.mp4
 database/migrations/2026_11_13_213000_hero_manchester_slide.php
+public/banners/hero-brands.webp
+public/banners/hero-brands.mp4
+public/banners/hero-brands-m.webp
+public/banners/hero-brands-m.mp4
+database/migrations/2026_11_13_214000_hero_brands_slide.php
