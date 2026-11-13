@@ -310,6 +310,9 @@ class StoreController extends Controller {
     $deals = self::dealList(self::set())->take(6);
     return response()->view('store.globe_preview2', $this->base(['deals'=>$deals, 'title'=>'Globe preview 2 | DutyFree BD', 'desc'=>'', 'canon'=>url('/globe-preview-2'), 'noindex'=>true]))->header('X-Robots-Tag', 'noindex')->header('Cache-Control', 'no-store');
   }
+  public function watchLuxPreview() {
+    return response()->view('store.watch_lux_preview', $this->base(['title'=>'Luxury watch banner preview | DutyFree BD', 'desc'=>'', 'canon'=>url('/watch-banner-preview'), 'noindex'=>true]))->header('X-Robots-Tag', 'noindex')->header('Cache-Control', 'no-store');
+  }
   public function airportPreview() {
     $deals = self::dealList(self::set())->take(6);
     return response()->view('store.airport_preview', $this->base(['deals'=>$deals, 'title'=>'Airport preview | DutyFree BD', 'desc'=>'', 'canon'=>url('/airport-preview'), 'noindex'=>true]))->header('X-Robots-Tag', 'noindex')->header('Cache-Control', 'no-store');
