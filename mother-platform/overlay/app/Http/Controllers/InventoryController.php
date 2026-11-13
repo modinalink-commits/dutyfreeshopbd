@@ -170,7 +170,8 @@ class InventoryController extends Controller {
     $diff = []; foreach ($row as $k => $v) if (in_array($k, ['updated_at','terms_updated_at'], true) === false && (string)($before[$k] ?? '') !== (string)($v ?? '')) $diff[$k] = [$before[$k] ?? null, $v];
     try { DB::table('audit_logs')->insert(['user_id'=>Auth::id(),'user_name'=>Auth::user()->name ?? null,'action'=>'Store terms updated','subject'=>$d['name'].' · '.count($diff).' change(s)','meta'=>json_encode($diff),'created_at'=>now(),'updated_at'=>now()]); } catch (\Throwable $e) {}
     $priceChanged = array_key_exists('sale_pct', $diff) || array_key_exists('regular_pct', $diff);
-    return redirect('/admin/stores')->with('ok','Store updated.'.($priceChanged ? ' Prices change on the next scan, or press "Apply prices now" on the Edit Store page.' : ''));
+    if ($priceChanged) { try { app(\App\Http\Controllers\WatchImportController::class)->applyStore($r, (int)$id); } catch (\Throwable $e) { report($e); } } // owner 13 Nov 2026: a changed commission must show on the storefront at once
+    return redirect('/admin/stores')->with('ok','Store updated.'.($priceChanged ? ' New prices applied to all products of this store.' : ''));
   }
   public function storeDelete(Request $r, $id) {
     $s = DB::table('stores')->find($id); abort_unless($s, 404);
