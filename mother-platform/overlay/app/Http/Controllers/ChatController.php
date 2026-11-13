@@ -663,6 +663,26 @@ class ChatController extends Controller {
     $h .= '<h2>Timeline (latest 60)</h2><table><tr><th>Time</th><th>Who</th><th>What</th><th>Details</th></tr>'.$ev->map(fn($x) => '<tr><td>'.\Carbon\Carbon::parse($x->created_at)->timezone('Asia/Dhaka')->format('d M H:i').'</td><td>'.$e($x->actor).'</td><td>'.$e($x->type).' '.$e($x->channel).'</td><td><small>'.$e($x->meta).'</small></td></tr>')->implode('').'</table></div>';
     return view('chat_memory', ['h' => $h]);
   }
+  /** AI Chat Playbook: draft written from where the AI stopped + how the team answered; the owner activates it. */
+  public function playbook(Request $r) {
+    abort_unless(\App\Support\ProfitFloor::admin(), 403); $P = \App\Support\AiPlaybook::class;
+    if ($r->isMethod('post')) {
+      $a = (string)$r->input('action');
+      if ($a === 'generate') { @set_time_limit(170); [$ok, $msg] = $P::generate(); return redirect('/admin/chat/playbook')->with($ok ? 'ok' : 'err', $msg); }
+      if ($a === 'activate') { $P::activate((string)$r->input('text', ''), (string)(auth()->user()->name ?? '')); return redirect('/admin/chat/playbook')->with('ok', 'Playbook চালু হয়েছে। এখন থেকে AI প্রতিটা উত্তরে এটা মানবে।'); }
+      if ($a === 'off') { $P::activate('', (string)(auth()->user()->name ?? '')); return redirect('/admin/chat/playbook')->with('ok', 'Playbook বন্ধ করা হয়েছে।'); }
+      return redirect('/admin/chat/playbook');
+    }
+    $e = fn($v) => e((string)$v); $m = $P::meta(); $act = $P::active(); $dr = $P::draft(); $ev = $P::evidence();
+    $h = '<div class="mm" style="max-width:980px"><a href="/admin/chat">&larr; Messages</a><h1>AI Chat Playbook</h1><p style="color:#6b7390">AI কোথায় থেমে মানুষের কাছে পাঠিয়েছে এবং আমাদের টিম আসলে কীভাবে উত্তর দিয়েছে, সেখান থেকে নিয়মের একটা খসড়া তৈরি হয়। আপনি পড়ে, দরকার হলে বদলে, তারপর চালু করবেন। দাম, স্টক, ডিসকাউন্ট বা প্রতিশ্রুতি এখানে থাকে না; সেগুলো সবসময় লাইভ ডেটা থেকে আসে। <a href="/admin/chat/ai-report">AI রিপোর্ট</a></p>';
+    if (session('ok')) $h .= '<div style="background:#F0FAF3;border:1px solid #BFE3CC;color:#14683A;border-radius:10px;padding:8px 12px;margin-bottom:8px;font-weight:600">'.$e(session('ok')).'</div>';
+    if (session('err')) $h .= '<div style="background:#FEF3F2;border:1px solid #F6C4C0;color:#B42318;border-radius:10px;padding:8px 12px;margin-bottom:8px;font-weight:600">'.$e(session('err')).'</div>';
+    $h .= '<p><b>অবস্থা:</b> '.($act !== '' ? 'চালু ('.$e($m['active_at'] ?? '').($m['active_by'] ?? '' ? ', '.$e($m['active_by']) : '').')' : 'চালু নেই').' · খসড়ার উৎস: গত '.$ev['days'].' দিনের '.count($ev['handoffs']).'টা Handoff-কারণ, '.count($ev['examples']).'টা টিমের উত্তর'.(!empty($m['draft_at']) ? ' · শেষ খসড়া '.$e($m['draft_at']) : '').'</p>';
+    $h .= '<form method="post" style="margin-bottom:10px">'.csrf_field().'<button name="action" value="generate">নতুন খসড়া তৈরি করুন (১–২ মিনিট)</button></form>';
+    $h .= '<form method="post">'.csrf_field().'<textarea name="text" rows="22" style="width:100%;font-family:inherit;font-size:13px;line-height:1.5" placeholder="খসড়া এখনো নেই। উপরের বাটন চাপুন।">'.$e($dr !== '' ? $dr : $act).'</textarea><div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap"><button name="action" value="activate">এই লেখাটা চালু করুন</button>'.($act !== '' ? '<button name="action" value="off" style="background:#fff;color:#0B1220;border:1px solid #0B1220">Playbook বন্ধ করুন</button>' : '').'</div></form>';
+    $h .= '<h2 style="font-size:15px;margin-top:18px">সবসময় চালু নিয়ম</h2><p style="color:#6b7390">চ্যাটের উত্তর খুব ছোট: এক বাক্য যথেষ্ট হলে এক বাক্য, সর্বোচ্চ দুই ছোট বাক্য (দাম/প্রোডাক্টের তালিকা বা অর্ডার নেওয়ার সময় ছাড়া)।</p></div>';
+    return view('chat_memory', ['h' => $h]);
+  }
   /** Public comments on our posts and what the AI answered (latest 150). */
   public function comments() {
     $e = fn($v) => e((string)$v); $ok = \App\Support\ChatComments::ready();
