@@ -77,6 +77,31 @@ class VoiceChat
     } catch (\Throwable $e) { self::log($tid, null, 'stt', false, 'unreachable', (int)((microtime(true) - $t0) * 1000), strlen($bytes)); return [null, 'এই মুহূর্তে ভয়েস কাজ করছে না। অনুগ্রহ করে লিখে জানান।', null]; }
   }
 
+  public static function scribeKey(): ?string { return Sms::secret('vchat_eleven_key') ?: null; }
+  /**
+   * ElevenLabs Scribe speech-to-text (owner's choice, 14 Nov 2026) for customers' voice messages: any audio format, long clips, language detected automatically
+   * (Bengali, Banglish, English). Only the audio is sent; no customer name or number. @return array{0:?string,1:string} [text, error for the log]
+   */
+  public static function scribe(string $bytes, ?int $tid, string $ext = 'ogg'): array {
+    $t0 = microtime(true);
+    try {
+      $key = self::scribeKey(); if (!$key) return [null, 'no key'];
+      if ($bytes === '' || strlen($bytes) > 24 * 1048576) return [null, 'file too large'];
+      $ext = preg_match('/^[a-z0-9]{2,5}$/', $ext) ? $ext : 'ogg'; $text = ''; $err = '';
+      foreach (['scribe_v2', 'scribe_v1'] as $model) {
+        $r = Http::timeout(60)->withHeaders(['xi-api-key' => $key])->attach('file', $bytes, 'voice.' . $ext)->post('https://api.elevenlabs.io/v1/speech-to-text', ['model_id' => $model, 'tag_audio_events' => 'false', 'timestamps_granularity' => 'none']);
+        if ($r->ok()) { $text = trim((string)$r->json('text')); $err = ''; break; }
+        $msg = $r->json('detail.message') ?? $r->json('detail.0.msg') ?? (is_string($r->json('detail')) ? $r->json('detail') : '');
+        $err = 'SCRIBE HTTP ' . $r->status() . ' ' . mb_substr((string)$msg, 0, 130);
+        if (!in_array($r->status(), [400, 404, 422], true)) break; // only a model / parameter problem is worth trying the older model
+      }
+      $ms = (int)((microtime(true) - $t0) * 1000);
+      if ($text === '') { self::log($tid, null, 'stt', false, $err !== '' ? $err : 'SCRIBE empty transcript', $ms, strlen($bytes)); return [null, $err ?: 'empty transcript']; }
+      self::log($tid, null, 'stt', true, 'Scribe', $ms, strlen($bytes), mb_strlen($text));
+      return [$text, ''];
+    } catch (\Throwable $e) { self::log($tid, null, 'stt', false, 'SCRIBE unreachable', (int)((microtime(true) - $t0) * 1000), strlen($bytes)); return [null, 'unreachable']; }
+  }
+
   /**
    * Second speech-to-text engine (OpenAI, the key already saved for AI Product Images). Used when Google could not turn a customer's voice message into words,
    * and for clips Google's short-audio API cannot take (longer than about a minute, or MP4/AAC from Messenger). @return array{0:?string,1:string}

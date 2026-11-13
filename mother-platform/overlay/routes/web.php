@@ -228,7 +228,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/courier/sync', [\App\Http\Controllers\CourierController::class,'sync']);
   Route::post('/courier/settle', [\App\Http\Controllers\CourierController::class,'settle']);
   Route::get('/ai-chat', [\App\Http\Controllers\AiChatController::class,'show']);
-  Route::get('/voice-chat', [\App\Http\Controllers\VoiceChatController::class,'settings']); Route::post('/voice-chat', [\App\Http\Controllers\VoiceChatController::class,'saveSettings']); Route::post('/voice-chat/test', [\App\Http\Controllers\VoiceChatController::class,'test']);
+  Route::get('/voice-chat', [\App\Http\Controllers\VoiceChatController::class,'settings']); Route::post('/voice-chat', [\App\Http\Controllers\VoiceChatController::class,'saveSettings']); Route::post('/voice-chat/retest', [\App\Http\Controllers\VoiceChatController::class,'retest']); Route::post('/voice-chat/test', [\App\Http\Controllers\VoiceChatController::class,'test']);
   Route::post('/ai-chat', [\App\Http\Controllers\AiChatController::class,'save']);
   Route::post('/ai-chat/schedule', [\App\Http\Controllers\AiChatController::class,'schedule']);
   Route::post('/ai-chat/toggle', [\App\Http\Controllers\AiChatController::class,'toggle']);

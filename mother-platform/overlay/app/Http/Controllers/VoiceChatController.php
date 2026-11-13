@@ -14,15 +14,29 @@ class VoiceChatController extends Controller
   // ---------------- admin ----------------
   public function settings() {
     $s = []; foreach (VoiceChat::DEF as $k => $v) $s[$k] = VoiceChat::set($k);
-    return view('voice_chat_settings', ['s' => $s, 'hasKey' => (bool)VoiceChat::key(), 'langs' => VoiceChat::LANGS, 'stats' => VoiceChat::stats(), 'recent' => \Illuminate\Support\Facades\Schema::hasTable('voice_chat_logs') ? DB::table('voice_chat_logs')->orderByDesc('id')->limit(10)->get() : collect()]);
+    return view('voice_chat_settings', ['s' => $s, 'hasKey' => (bool)VoiceChat::key(), 'hasScribe' => (bool)VoiceChat::scribeKey(), 'langs' => VoiceChat::LANGS, 'stats' => VoiceChat::stats(), 'recent' => \Illuminate\Support\Facades\Schema::hasTable('voice_chat_logs') ? DB::table('voice_chat_logs')->orderByDesc('id')->limit(10)->get() : collect()]);
   }
   public function saveSettings(Request $r) {
-    $d = $r->validate(['api_key' => 'nullable|string|max:300', 'lang' => 'required|in:' . implode(',', array_keys(VoiceChat::LANGS)), 'speed' => 'required|numeric|min:0.75|max:1.25', 'provider' => 'required|in:google', 'retention' => 'required|integer|min:1|max:90', 'voice' => 'required|string|max:40|regex:/^[A-Za-z0-9\-]+$/']);
+    $d = $r->validate(['api_key' => 'nullable|string|max:300', 'eleven_key' => 'nullable|string|max:300', 'lang' => 'required|in:' . implode(',', array_keys(VoiceChat::LANGS)), 'speed' => 'required|numeric|min:0.75|max:1.25', 'provider' => 'required|in:google', 'retention' => 'required|integer|min:1|max:90', 'voice' => 'required|string|max:40|regex:/^[A-Za-z0-9\-]+$/']);
     if (!empty($d['api_key'])) Sms::setSecret('vchat_key', trim($d['api_key']));
+    if (!empty($d['eleven_key'])) Sms::setSecret('vchat_eleven_key', trim($d['eleven_key']));
     foreach (['enabled', 'mic', 'auto', 'speaker', 'store_audio', 'handoff'] as $k) VoiceChat::put($k, $r->boolean($k) ? '1' : '0');
     foreach (['lang', 'speed', 'provider', 'retention', 'voice'] as $k) VoiceChat::put($k, (string)$d[$k]);
     try { DB::table('audit_logs')->insert(['user_id' => auth()->id(), 'user_name' => auth()->user()->name, 'action' => 'voicechat.settings', 'subject' => 'Voice chat settings saved', 'ip' => $r->ip(), 'created_at' => now(), 'updated_at' => now()]); } catch (\Throwable $e) {}
     return back()->with('ok', 'Voice chat settings saved.');
+  }
+  /** Admin check: run speech-to-text again on the newest customer voice messages that have no transcript yet. Nothing is sent to any customer; only the transcript under the voice message is filled in. */
+  public function retest() {
+    if (!VoiceChat::key() && !VoiceChat::scribeKey()) return response()->json(['error' => 'Save a speech-to-text key first.'], 422);
+    @set_time_limit(170); $t0 = time(); $ok = 0; $bad = 0; $n = 0; $from = (int)(DB::table('voice_chat_logs')->max('id') ?? 0);
+    foreach (DB::table('chat_messages')->where('dir', 'in')->where('attachment_type', 'audio')->whereNotNull('attachment_url')->where(fn($w) => $w->whereNull('transcript')->orWhere('transcript', ''))->orderByDesc('id')->limit(12)->pluck('id') as $mid) {
+      if (time() - $t0 > 120) break; $n++;
+      \App\Support\Chat::transcribe((int)$mid);
+      if (trim((string)DB::table('chat_messages')->where('id', $mid)->value('transcript')) !== '') $ok++; else $bad++;
+    }
+    $errs = DB::table('voice_chat_logs')->where('id', '>', $from)->where('kind', 'stt')->where('ok', false)->selectRaw('error, count(*) c')->groupBy('error')->orderByDesc('c')->limit(6)->pluck('c', 'error')->all();
+    try { DB::table('audit_logs')->insert(['user_id' => auth()->id(), 'user_name' => auth()->user()->name, 'action' => 'voicechat.retest', 'subject' => "Voice re-test: $ok understood, $bad not", 'ip' => request()->ip(), 'created_at' => now(), 'updated_at' => now()]); } catch (\Throwable $e) {}
+    return response()->json(['tried' => $n, 'ok' => $ok, 'failed' => $bad, 'errors' => $errs]);
   }
   /** Admin test: speaks a short Bangla line with the saved key and returns the audio. */
   public function test() {

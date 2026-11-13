@@ -120,14 +120,16 @@ class Chat {
   public static function transcribe(int $mid): void {
     try {
       $m = DB::table('chat_messages')->find($mid);
-      if (!$m || $m->dir !== 'in' || $m->attachment_type !== 'audio' || !empty($m->transcript) || !VoiceChat::key()) return;
+      if (!$m || $m->dir !== 'in' || $m->attachment_type !== 'audio' || !empty($m->transcript) || (!VoiceChat::key() && !VoiceChat::scribeKey())) return;
       $d = 'inbox.stt.'.now()->format('Ymd'); \Illuminate\Support\Facades\Cache::add($d, 0, 90000); if (\Illuminate\Support\Facades\Cache::increment($d) > 800) return;
       $path = public_path('uploads/chat/'.basename((string)parse_url((string)$m->attachment_url, PHP_URL_PATH)));
       if (!is_file($path) || filesize($path) > 20 * 1048576) return;
       $raw = (string)file_get_contents($path); $fmt = self::audioExt($raw); $t = null;
-      // Google's short-audio API: Ogg/WebM Opus up to about a minute. Both common sample rates are tried, also when the first one hears nothing.
-      $b = $raw; if (!in_array($fmt, ['ogg', 'webm'], true)) $b = (string)self::toOpus($path);
-      if ($b !== '' && strlen($b) <= 950000) {
+      // 1) ElevenLabs Scribe when its key is saved (owner's chosen engine): the file as it arrived, any format or length.
+      if (VoiceChat::scribeKey()) [$t] = VoiceChat::scribe($raw, (int)$m->thread_id, (string)($fmt ?: pathinfo($path, PATHINFO_EXTENSION)));
+      // 2) Google's short-audio API: Ogg/WebM Opus up to about a minute. Both common sample rates are tried, also when the first one hears nothing.
+      $b = ''; if ($t === null && VoiceChat::key()) { $b = $raw; if (!in_array($fmt, ['ogg', 'webm'], true)) $b = (string)self::toOpus($path); }
+      if ($t === null && $b !== '' && strlen($b) <= 950000) {
         [$t] = VoiceChat::transcribe($b, (int)$m->thread_id, 16000);
         if ($t === null) [$t] = VoiceChat::transcribe($b, (int)$m->thread_id, 48000);
       }
