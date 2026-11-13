@@ -7,8 +7,10 @@ use Illuminate\Support\Facades\Schema;
 class MigrationDashboardController extends Controller {
   private function has(string $t, ?string $c = null): bool { return Schema::hasTable($t) && ($c === null || Schema::hasColumn($t, $c)); }
   public function index() {
-    $d = request()->query('fresh') ? null : \Illuminate\Support\Facades\Cache::get('mig_dash_v1');
-    if (!$d) { @set_time_limit(170); /* the old-vs-new counts scan large tables; the default 30 s limit ended in a 500 page */ $d = $this->build(); \Illuminate\Support\Facades\Cache::put('mig_dash_v1', $d, 86400); }
+    // The page data holds objects, and the cache refuses to rebuild objects it stored itself (that was the 500 on every second visit). Store it as a serialized string, like StoreController::rem().
+    $C = \Illuminate\Support\Facades\Cache::class; $d = null;
+    if (!request()->query('fresh')) { try { $raw = $C::get('mig_dash_v2'); if (is_string($raw)) { $v = @unserialize($raw); if (is_array($v)) $d = $v; } } catch (\Throwable $e) { $d = null; } }
+    if (!$d) { @set_time_limit(170); $d = $this->build(); try { $C::put('mig_dash_v2', serialize($d), 86400); } catch (\Throwable $e) {} }
     return view('migration_dashboard', $d);
   }
   private function build(): array {
