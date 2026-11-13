@@ -57,8 +57,12 @@ class MotherSyncFeed extends Command {
       $catId[$k] = $id;
     }
     $n = 0; $now = now(); $seen = [];
+    // The feed writes sub-category names in its own spelling (often UPPER CASE). Saving that over the product broke the owner's sub-category order:
+    // the name no longer matched the positioned sub-category, so a duplicate was created at the end. Always use the existing sub-category's own spelling.
+    $canon = []; try { if (\Illuminate\Support\Facades\Schema::hasTable('category_nodes')) foreach (DB::table('category_nodes')->where('level', 2)->orderBy('id')->get(['category_id', 'name']) as $nd) { $ck = $nd->category_id.'|'.mb_strtolower(trim((string)$nd->name)); if (!isset($canon[$ck])) $canon[$ck] = $nd->name; } } catch (\Throwable $e) {}
     foreach ($rows as [$pid, $title, $grp, $sub, $sale, $cmp, $img, $desc]) {
       if (!isset($catId[$grp])) $grp = 'other';
+      $sub = $canon[$catId[$grp].'|'.mb_strtolower(trim((string)$sub))] ?? $sub;
       $ex = DB::table('products')->where('ext_id',$pid)->first();
       // keep a working local image (the feed only knows the old-server URL); own-domain old paths live on the old server
       // a clean AI image (/uploads/ai/...) is never replaced by the supplier photo; its '?v=' cache suffix used to make the file check fail and the feed then put the original photo back
