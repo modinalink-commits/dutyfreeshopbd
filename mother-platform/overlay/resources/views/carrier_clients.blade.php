@@ -8,7 +8,11 @@
 <button class="btn g" type="button" id="sysBtn">⚙ System settings</button></div>
 @if(session('ok'))<div class="card" style="margin-top:12px;background:#DCFCE7;border-color:#A7F3D0">{{ session('ok') }}</div>@endif
 @if($errors->any())<div class="card err" style="margin-top:12px">@foreach($errors->all() as $e){{ $e }}<br>@endforeach</div>@endif
+<div class="cctabs">@foreach(['live'=>'Live Calls','cdr'=>'CDR','clients'=>'Clients','customers'=>'Customers'] as $k=>$t)<a href="/admin/call-center/clients?tab={{ $k }}" class="{{ $tab===$k?'on':'' }}">{{ $t }}</a>@endforeach</div>
+<style>.cctabs{display:flex;gap:2px;border-bottom:1px solid #E5E7EB;margin:12px 0;overflow-x:auto}.cctabs a{padding:9px 16px;font-weight:600;font-size:13px;color:#6B7385;text-decoration:none;border-bottom:2px solid transparent;white-space:nowrap}.cctabs a.on{color:#F26A1B;border-bottom-color:#F26A1B}.ccwarn{display:flex;gap:8px;align-items:center;padding:8px 11px;border:1px solid #F5D78A;border-left:3px solid #B7791F;background:#FFF6E0;border-radius:6px;margin-top:10px;font-size:12.5px}</style>
+@if($tab==='live' && $warn)<div class="ccwarn"><b>PBX is not answering calls</b><span>Last 5 min: {{ $warn['n'] }} calls, 0 answered{{ $warn['cause'] ? ' (' . str_replace('_',' ',$warn['cause']) . ')' : '' }}. Check the PBX balance and extension limits.</span></div>@endif
 
+@if($tab==='live')
 <div class="grid" style="margin-top:12px">
 <div class="card k" style="margin:0"><b id="kLive">0</b><span>Live calls</span></div>
 <div class="card k" style="margin:0"><b>{{ $tc }}</b><span>Connected calls (this cycle)</span></div>
@@ -30,6 +34,8 @@ if(!d.calls.length){B.innerHTML='<tr><td colspan="6" class="sub">No active calls
 B.innerHTML='';d.calls.forEach(function(c){var tr=document.createElement('tr');[c.client,c.from,c.to,c.ext||'—',c.state,c.secs].forEach(function(v,i){var td=document.createElement('td');if(i===4){var sp=document.createElement('span'),x=String(v).toUpperCase();sp.className='st '+(/ACTIVE|ANSWER/.test(x)?'act':(/EARLY|RING|DOWN/.test(x)?'ring':'oth'));sp.textContent=/ACTIVE/.test(x)?'ANSWERED':(/EARLY|RING/.test(x)?'RINGING':v);td.appendChild(sp)}else if(i===2){var nm=document.createElement('span');nm.className='num';nm.textContent=v;td.className='numc';td.appendChild(nm)}else{td.textContent=(i===5&&v===null)?'—':(i===5?f(v):v);if(i===5)td.className='dur';if(i===3&&v!=='—')td.style.fontWeight='600'}tr.appendChild(td)});selCell(tr,B);B.appendChild(tr)})}).catch(function(){})}
 tick();setInterval(function(){if(!document.hidden)tick()},3000)})();</script>
 
+@endif
+@if($tab==='cdr')
 <div class="card sec"><details id="cdBox" open><summary style="cursor:pointer;list-style:none;display:flex;gap:8px;align-items:center"><b style="font-size:14px">CDR</b> <span id="cdN" class="pill"></span> <span class="sub">Call records — click to expand</span> <span style="margin-left:auto" class="sub">▾</span></summary><div style="margin-top:10px">
 <div class="row" style="margin-bottom:8px">From <input type="datetime-local" id="cdF" style="width:190px"> To <input type="datetime-local" id="cdT" style="width:190px"> <select id="cdS"><option value="">All calls</option><option value="answered">Answered</option><option value="missed">Not answered</option></select> <button class="btn" type="button" id="cdGo">Apply</button> <button class="btn g" type="button" id="cdRst">Reset</button></div>
 <table class="tbl"><thead><tr><th>Time</th><th>Client</th><th>Caller ID</th><th>Customer number</th><th>Result</th><th class="n">Talk time</th><th class="n">Billed min</th></tr></thead><tbody id="cdB"><tr><td colspan="7" class="sub">Loading…</td></tr></tbody></table>
@@ -45,6 +51,7 @@ document.getElementById('cdGo').onclick=function(){pg=1;load()};document.getElem
 document.getElementById('cdP').onclick=function(){if(pg>1){pg--;load()}};document.getElementById('cdNx').onclick=function(){pg++;load()};
 load();setInterval(function(){if(!document.hidden&&pg===1&&document.getElementById('cdBox').open)load()},8000);document.getElementById('cdBox').addEventListener('toggle',function(){if(this.open)load()})})();</script>
 
+@endif
 <div id="sysBox" hidden>
 <div class="card sec" style="border-left:3px solid #C2410C"><b style="font-size:14px">Internal system settings</b> <span class="sub">Relay line and SIP endpoint. Change only if you know what you are doing.</span></div>
 <div class="card sec"><div class="h"><b>Billing cycle</b> <span class="sub">Only connected (answered) calls are counted; each call rounds up to the next full minute. <span id="bcAt"></span></span></div>
@@ -93,6 +100,7 @@ o.textContent='Connected calls '+d.calls+' · Talk time '+f(d.secs)+' · Billabl
 
 </div>
 
+@if($tab==='clients')
 <div class="card sec"><div class="h"><b>Add client</b></div>
 <form method="post" action="/admin/call-center/clients" class="row">@csrf
 <input name="name" placeholder="Name" style="width:150px" required>
@@ -102,6 +110,8 @@ o.textContent='Connected calls '+d.calls+' · Talk time '+f(d.secs)+' · Billabl
 <input name="max_calls" value="20" title="Max concurrent calls" style="width:70px" required>
 <input name="note" placeholder="Note" style="width:160px"><button class="btn" type="submit">Add client</button></form></div>
 
+@endif
+@if($tab==='customers')
 <div class="card sec"><div class="h"><b>Client portal access</b> <span class="sub">Give a client a username and password to sign in at <a href="/call-portal/login" target="_blank">/call-portal/login</a> and see only their own calls, minutes, amount, rate and billing cycle.</span></div>
 @foreach($rows as $c)<form method="post" action="/admin/call-center/clients/{{ $c->id }}/portal" class="row" style="margin-top:6px">@csrf
 <b style="min-width:120px">{{ $c->name }}</b>
@@ -112,6 +122,8 @@ o.textContent='Connected calls '+d.calls+' · Talk time '+f(d.secs)+' · Billabl
 <span class="sub">{{ !empty($c->portal_last_login) ? 'Last login '.$c->portal_last_login : 'Never logged in' }}</span></form>
 @endforeach</div>
 
+@endif
+@if($tab==='clients')
 <div class="card sec"><div class="h"><b>Clients</b> <span class="sub">Use the switch to turn a client ON or OFF. An OFF client's calls are rejected (the relay applies the change within about a minute).</span></div><table class="tbl">
 <thead><tr><th>Name</th><th>IP</th><th>Port</th><th>Prefix</th><th>Max calls</th><th>Status</th><th></th></tr></thead>
 @forelse($rows as $c)
@@ -126,6 +138,7 @@ o.textContent='Connected calls '+d.calls+' · Talk time '+f(d.secs)+' · Billabl
 <pre>{{ \App\Http\Controllers\CarrierClientController::document((array)$c, $cfg) }}</pre></details></td></tr>
 @empty<tr><td colspan="7" class="sub">No clients yet.</td></tr>@endforelse
 </table></div>
+@endif
 <script>(function(){var b=document.getElementById('sysBtn'),x=document.getElementById('sysBox');b.onclick=function(){x.hidden=!x.hidden;b.textContent=x.hidden?'⚙ System settings':'✕ Hide system settings'};try{x.querySelectorAll('form').forEach(function(f){f.addEventListener('submit',function(){sessionStorage.setItem('ccSys','1')})});if(sessionStorage.getItem('ccSys')==='1'){sessionStorage.removeItem('ccSys');b.click()}}catch(e){}})();</script>
 </div>
 @endsection

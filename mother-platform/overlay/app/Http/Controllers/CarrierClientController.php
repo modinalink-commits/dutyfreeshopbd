@@ -15,7 +15,10 @@ class CarrierClientController extends Controller {
     $cfg = ['ip' => Voice::set('carrier_ip', ''), 'port' => Voice::set('carrier_port', '5060'), 'gateway' => $gw];
     $exts = array_filter(array_map('trim', explode("\n", (string)Sms::secret('vc_relay_exts')))); $names = array_map(fn($l) => explode(':', $l, 2)[0], $exts);
     $relay = ['host' => Voice::set('relay_host', '103.125.255.33'), 'port' => Voice::set('relay_port', '5080'), 'transport' => Voice::set('relay_transport', 'tcp'), 'realm' => Voice::set('relay_realm', ''), 'caller_id' => Voice::set('relay_caller_id', ''), 'mode' => Voice::set('relay_mode', 'test'), 'exts' => implode("\n", $names), 'active' => array_map(fn($l) => explode(':', $l, 2)[0], self::relayExtPairs())];
-    return view('carrier_clients', ['rows' => $rows, 'cfg' => $cfg, 'relay' => $relay, 'pbx' => self::pbxConfig($rows, $gw), 'usage' => $rows->mapWithKeys(fn($c) => [$c->id => self::usage($c, $lv ?? [])])->all()]);
+    $tab = in_array((string)request('tab'), ['live', 'cdr', 'clients', 'customers'], true) ? (string)request('tab') : 'live'; $warn = null;
+    if ($tab === 'live') { try { $q = DB::table('voice_call_cdrs')->where('ended_at', '>=', now()->subMinutes(5)); $n = (clone $q)->count(); $a = (clone $q)->where('billsec', '>', 0)->count();
+      if ($n >= 10 && $a === 0) { $top = (clone $q)->selectRaw('cause, count(*) c')->groupBy('cause')->orderByDesc('c')->first(); $warn = ['n' => $n, 'cause' => $top && $top->cause && $top->cause !== 'UNKNOWN' ? $top->cause : null]; } } catch (\Throwable $e) {} }
+    return view('carrier_clients', ['tab' => $tab, 'warn' => $warn, 'rows' => $rows, 'cfg' => $cfg, 'relay' => $relay, 'pbx' => self::pbxConfig($rows, $gw), 'usage' => $rows->mapWithKeys(fn($c) => [$c->id => self::usage($c, $lv ?? [])])->all()]);
   }
   /** ext:password pairs the relay registers: the relay-line list plus the owner-chosen client-call extensions (pool and user extensions). */
   public static function relayExtPairs(): array {
@@ -100,7 +103,7 @@ class CarrierClientController extends Controller {
   }
   /** CDR list (all finished calls, newest first). Optional from/to (Dhaka), status=answered|missed, page. */
   public function cdrs(Request $r) {
-    $this->guard(); $tz = 'Asia/Dhaka'; $per = 25; $page = max(1, (int)$r->query('page', 1));
+    $this->guard(); $tz = 'Asia/Dhaka'; $per = 50; $page = max(1, (int)$r->query('page', 1));
     $q = DB::table('voice_call_cdrs as d')->leftJoin('voice_carrier_clients as c', 'c.id', '=', 'd.client_id');
     try { if ($r->query('from')) $q->where('d.ended_at', '>=', \Illuminate\Support\Carbon::parse($r->query('from'), $tz)->utc()); if ($r->query('to')) $q->where('d.ended_at', '<', \Illuminate\Support\Carbon::parse($r->query('to'), $tz)->utc()); } catch (\Throwable $e) {}
     if ($r->query('status') === 'answered') $q->where('d.billsec', '>', 0); elseif ($r->query('status') === 'missed') $q->where('d.billsec', 0);
