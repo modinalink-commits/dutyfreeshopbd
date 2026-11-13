@@ -33,8 +33,9 @@ class N8nController extends Controller
 
   /** Published products low or out of stock, and products priced below the protected margin. */
   private function stock(): array {
-    $low = DB::table('products')->where('published', true)->where('stock', '<=', 3)->orderBy('stock')->limit(15)->get(['name', 'stock'])->map(fn($p) => ['name' => $p->name, 'stock' => (int)$p->stock]);
-    $cnt = DB::table('products')->where('published', true)->where('stock', '<=', 0)->count(); $lowc = DB::table('products')->where('published', true)->where('stock', '>', 0)->where('stock', '<=', 3)->count();
+    $ctl = DB::table('categories')->where('inventory_mode', 'STOCK_CONTROLLED')->pluck('id')->all(); $ctl = array_values(array_unique(array_merge($ctl, DB::table('categories')->whereIn('parent_id', $ctl ?: [0])->pluck('id')->all()))); if (!$ctl) $ctl = [0];
+    $low = DB::table('products')->where('published', true)->whereIn('category_id', $ctl)->where('stock', '<=', 3)->orderBy('stock')->limit(15)->get(['name', 'stock'])->map(fn($p) => ['name' => $p->name, 'stock' => (int)$p->stock]);
+    $cnt = DB::table('products')->where('published', true)->whereIn('category_id', $ctl)->where('stock', '<=', 0)->count(); $lowc = DB::table('products')->where('published', true)->whereIn('category_id', $ctl)->where('stock', '>', 0)->where('stock', '<=', 3)->count();
     $c = Costing::fifoSql('p'); $below = DB::table('products as p')->where('p.published', true)->where('p.price', '>', 0)->whereRaw("$c > 0")->whereRaw("p.price + 0.004 < $c * ?", [ProfitFloor::rate()])->count();
     $need = DB::table('orders as o')->whereIn('o.status', ['Approved', 'Packaging'])->whereExists(fn($q) => $q->select(DB::raw(1))->from('order_items as i')->join('products as p', 'p.id', '=', 'i.product_id')->whereColumn('i.order_id', 'o.id')->where('p.stock', '<=', 0))->count();
     return ['out_of_stock_published' => $cnt, 'low_stock_published' => $lowc, 'lowest_stock' => $low, 'below_margin_products' => $below, 'open_orders_waiting_for_stock' => $need];
@@ -47,7 +48,7 @@ class N8nController extends Controller
     foreach ($rule as [$st, $h, $label]) {
       $rows = DB::table('orders')->where('status', $st)->where('updated_at', '<', now()->subHours($h))->orderBy('updated_at')->limit(10)->get(['invoice', 'status', 'updated_at', 'total']);
       $n = DB::table('orders')->where('status', $st)->where('updated_at', '<', now()->subHours($h))->count();
-      if ($n) $out[] = ['rule' => $label, 'status' => $st, 'count' => $n, 'oldest' => $rows->map(fn($x) => ['invoice' => $x->invoice, 'hours' => (int)now()->diffInHours($x->updated_at), 'total' => round((float)$x->total)])];
+      if ($n) $out[] = ['rule' => $label, 'status' => $st, 'count' => $n, 'oldest' => $rows->map(fn($x) => ['invoice' => $x->invoice, 'hours' => (int)abs(now()->diffInHours($x->updated_at)), 'total' => round((float)$x->total)])];
     }
     return ['stuck_groups' => $out, 'total_stuck' => array_sum(array_column($out, 'count'))];
   }
