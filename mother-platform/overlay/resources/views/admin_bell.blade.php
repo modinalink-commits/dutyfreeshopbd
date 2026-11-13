@@ -17,10 +17,25 @@
 #dfBell .it.seen{opacity:.6}
 #dfBell .it button{margin-top:6px;border:1px solid #E5E7EB;background:#fff;border-radius:7px;font-size:11px;padding:3px 8px;cursor:pointer;color:#0F172A}
 #dfBell .em{padding:18px 12px;color:#64748B;text-align:center}
+#dfAl{position:fixed;inset:0;z-index:99990;display:none;align-items:center;justify-content:center;background:rgba(15,23,42,.55);padding:16px;font:14px/1.5 system-ui,sans-serif}
+#dfAl.on{display:flex}
+#dfAl .bx{background:#fff;width:min(720px,100%);max-height:88vh;overflow:auto;border-radius:14px;border:1px solid #E5E7EB;box-shadow:0 24px 60px rgba(15,23,42,.35)}
+#dfAl .hh{display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid #EEF0F3;font-size:16px;font-weight:700;color:#0F172A}
+#dfAl .hh i{width:10px;height:10px;border-radius:50%;background:#E11D48;flex:none}
+#dfAl .ai{padding:16px 20px;border-bottom:1px solid #F1F3F5;color:#0F172A}
+#dfAl .ai .md{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#fff;background:#0F172A;border-radius:6px;padding:2px 8px}
+#dfAl .ai h3{margin:8px 0 2px;font-size:18px;font-weight:700}
+#dfAl .ai .tm{color:#64748B;font-size:12px}
+#dfAl .ai p{margin:10px 0 0;font-size:15px}
+#dfAl .ai .ac{margin-top:10px;background:#F8FAFC;border:1px solid #E5E7EB;border-radius:8px;padding:8px 10px;font-size:13px;color:#334155}
+#dfAl .ft{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 20px;position:sticky;bottom:0;background:#fff}
+#dfAl .ft a{color:#F97316;font-weight:600;text-decoration:none;font-size:13px}
+#dfAl .ft button{background:#F97316;color:#fff;border:0;border-radius:9px;padding:9px 22px;font-size:14px;font-weight:700;cursor:pointer}
 @media(max-width:900px){#dfBell{bottom:76px;right:8px}}
 </style>
 <div id="dfBell"><button class="bt" type="button" aria-label="Alerts"><svg viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><span class="bd"></span></button>
 <div class="pn"><div class="hd"><span>Alerts</span><a href="/admin/deploy/issues">All issues</a></div><div class="ls"><div class="em">Loading…</div></div></div></div>
+<div id="dfAl" role="alertdialog" aria-modal="true"><div class="bx"><div class="hh"><i></i><span>System alert</span></div><div class="al"></div><div class="ft"><a href="/admin/deploy/issues">All issues</a><button type="button">Close</button></div></div></div>
 <script>(function(){
 var r=document.getElementById('dfBell');if(!r||r.dataset.on)return;r.dataset.on=1;
 var bt=r.querySelector('.bt'),bd=r.querySelector('.bd'),ls=r.querySelector('.ls');
@@ -30,7 +45,18 @@ function draw(j){
  if(!j.items.length){ls.innerHTML='<div class="em">No active alerts</div>';return}
  ls.innerHTML=j.items.map(function(i){return '<div class="it'+(i.status==='open'?'':' seen')+'"><b><span class="sv '+esc(i.severity)+'"></span>'+esc(i.title)+'</b><small>'+esc(i.service)+' · '+esc(i.detected)+'</small><small>'+esc(i.description)+'</small>'+(i.action?'<small>→ '+esc(i.action)+'</small>':'')+(i.status==='open'?'<button data-id="'+i.id+'">Mark seen</button>':'')+'</div>'}).join('');
 }
-function load(){fetch('/admin/alerts',{headers:{Accept:'application/json'},credentials:'same-origin'}).then(function(x){return x.ok?x.json():null}).then(function(j){if(j)draw(j)}).catch(function(){})}
+var al=document.getElementById('dfAl'),alL=al.querySelector('.al'),shown=[];
+function popup(j){
+ var o=j.items.filter(function(i){return i.status==='open'&&(i.severity==='critical'||i.severity==='high')});
+ if(!o.length){return}
+ shown=o.map(function(i){return i.id});
+ alL.innerHTML=o.map(function(i){return '<div class="ai"><span class="md">'+esc(i.service)+'</span><h3>'+esc(i.title)+'</h3><div class="tm">'+esc(i.detected)+'</div><p>'+esc(i.description_bn||i.description)+'</p>'+((i.action_bn||i.action)?'<div class="ac">→ '+esc(i.action_bn||i.action)+'</div>':'')+'</div>'}).join('');
+ al.classList.add('on');
+}
+al.querySelector('button').addEventListener('click',function(){
+ var t=document.querySelector('meta[name=csrf-token]'),ids=shown.slice();shown=[];al.classList.remove('on');
+ Promise.all(ids.map(function(id){return fetch('/admin/deploy/issue/'+id,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json',Accept:'application/json','X-CSRF-TOKEN':t?t.content:''},body:JSON.stringify({status:'investigating'})})})).then(load)});
+function load(){fetch('/admin/alerts',{headers:{Accept:'application/json'},credentials:'same-origin'}).then(function(x){return x.ok?x.json():null}).then(function(j){if(j){draw(j);popup(j)}}).catch(function(){})}
 bt.addEventListener('click',function(e){e.stopPropagation();r.classList.toggle('on');if(r.classList.contains('on'))load()});
 document.addEventListener('click',function(e){if(!r.contains(e.target))r.classList.remove('on')});
 ls.addEventListener('click',function(e){var b=e.target.closest('button[data-id]');if(!b)return;var t=document.querySelector('meta[name=csrf-token]');
