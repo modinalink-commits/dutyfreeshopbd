@@ -229,7 +229,7 @@ class StoreController extends Controller {
     });
   }
   public static function catSlider(): array {
-    $rows = self::rem('store.catslider3', 300, function () {
+    $rows = self::rem('store.catslider4', 300, function () {
       $cats = DB::table('categories')->whereNotNull('slug')->where('active', true)->orderBy('position')->get();
       $sold = DB::table('order_items as i')->join('orders as o', 'o.id', '=', 'i.order_id')->whereNotIn('o.status', ['Cancel', 'Incomplete'])->where('o.created_at', '>=', now()->subDays(30))->groupBy('i.product_id')->selectRaw('i.product_id as pid, sum(i.qty) as q')->pluck('q', 'pid');
       $out = [];
@@ -239,7 +239,19 @@ class StoreController extends Controller {
         $pick = $pool->sortByDesc(fn($p) => [(int)($sold[$p->id] ?? 0), (int)$p->id])->values(); // whole sellable pool (best sellers first); the 6 shown are picked per request below
         if ($pick->count()) $out[] = [$c, $pick, $pick->take(5)->values()]; // [2] = best sellers (hero slider), never shuffled
       }
-      return $out;
+      // Owner (13 Nov 2026): the home shelves follow the 8 menu groups. Members of a group are merged into one shelf (up to 60 products from each member, best sellers first); the group takes the lead category's link and slug. A category outside every group keeps its own shelf.
+      $bySlug = []; foreach ($out as $r) $bySlug[$r[0]->slug] = $r;
+      $grouped = []; $used = [];
+      foreach (\App\Support\MenuGroups::GROUPS as [$gname, $lead, $slugs]) {
+        $mem = []; foreach ($slugs as $sl) if (isset($bySlug[$sl])) { $mem[] = $bySlug[$sl]; $used[$sl] = true; }
+        if (!$mem) continue;
+        if (count($mem) === 1) { $grouped[] = $mem[0]; continue; }
+        $base = $bySlug[$lead] ?? $mem[0]; $cat = clone $base[0]; $cat->name = $gname;
+        $pool = collect($mem)->flatMap(fn($r) => $r[1]->all())->sortByDesc(fn($p) => [(int)($sold[$p->id] ?? 0), (int)$p->id])->values();
+        $grouped[] = [$cat, $pool, $pool->take(5)->values()];
+      }
+      foreach ($out as $r) if (!isset($used[$r[0]->slug])) $grouped[] = $r;
+      return $grouped;
     });
     // Dynamic Product Shuffle for the category shelves: the cached pool is every sellable product of the category; each page load shows 6 random ones so products that sit lower still get seen and sold. Shuffle off (settings) = the old best-sellers-first 6.
     $shuf = \App\Support\Procure::set('shuffle_home', '1') !== '0' && \App\Support\Procure::set('shuffle_general', '1') !== '0';

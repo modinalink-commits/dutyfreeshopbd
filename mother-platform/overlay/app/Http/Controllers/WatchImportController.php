@@ -430,7 +430,7 @@ class WatchImportController extends Controller {
   public function applyStore(Request $r, $id) {
     @set_time_limit(120); abort_unless(DB::table('stores')->where('id', $id)->exists(), 404);
     $this->sync((int)$id, true);
-    foreach (['store.cats', 'store.catslugs', 'store.home11', 'store.home13', 'store.catslider3', 'stock.modes'] as $k) { try { Cache::forget($k); } catch (\Throwable $e) {} }
+    foreach (['store.cats', 'store.catslugs', 'store.home11', 'store.home13', 'store.catslider3', 'store.catslider4', 'stock.modes'] as $k) { try { Cache::forget($k); } catch (\Throwable $e) {} }
     return back()->with('ok', 'Prices and availability re-applied for this store.');
   }
   /** Admin-only history: which product came from where, at what price. */
