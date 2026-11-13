@@ -1038,3 +1038,5 @@ database/migrations/2026_11_13_060000_store_company_details.php
 app/Support/StoreTerms.php
 app/Http/Controllers/StoreSalesController.php
 resources/views/store_sales.blade.php
+app/Support/MenuGroups.php
+database/migrations/2026_11_13_000100_flash_sale_three_percent.php
