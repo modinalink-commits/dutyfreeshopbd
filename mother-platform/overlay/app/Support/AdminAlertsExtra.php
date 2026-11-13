@@ -86,7 +86,9 @@ class AdminAlertsExtra
 
   /** Logistics: open orders containing a product that is out of stock. */
   private static function stockMissing(): void {
-    $q = DB::table('orders as o')->whereIn('o.status', ['Approved', 'Packaging'])->where('o.created_at', '>=', now()->subDays(30))->whereExists(fn($q) => $q->select(DB::raw(1))->from('order_items as i')->join('products as p', 'p.id', '=', 'i.product_id')->whereColumn('i.order_id', 'o.id')->where('p.stock', '<=', 0)); $n = (clone $q)->count(); $inv = (clone $q)->orderByDesc('o.id')->limit(5)->pluck('o.invoice')->implode(', ');
+    // Only stock-controlled categories (cigarette/vape) block on zero stock; sourcing products are bought on demand, so they are not an alert.
+    $ctl = DB::table('categories')->where('inventory_mode', 'STOCK_CONTROLLED')->pluck('id')->all(); if ($ctl) { $ctl = array_values(array_unique(array_merge($ctl, DB::table('categories')->whereIn('parent_id', $ctl)->pluck('id')->all()))); } else { $ctl = [0]; }
+    $q = DB::table('orders as o')->whereIn('o.status', ['Approved', 'Packaging'])->where('o.created_at', '>=', now()->subDays(30))->whereExists(fn($q) => $q->select(DB::raw(1))->from('order_items as i')->join('products as p', 'p.id', '=', 'i.product_id')->whereColumn('i.order_id', 'o.id')->where('p.stock', '<=', 0)->whereIn('p.category_id', $ctl)); $n = (clone $q)->count(); $inv = (clone $q)->orderByDesc('o.id')->limit(5)->pluck('o.invoice')->implode(', ');
     self::set($n >= 1, 'stock_missing', 'high', 'Inventory', 'Orders waiting for stock', $n . ' approved orders contain a product with no stock' . ($inv ? ' (' . $inv . ')' : '') . '.', 'Stock ran out or a purchase has not been received.', 'Open Inventory / Purchases and arrange the missing stock.', 'stock is available for open orders');
   }
 }
