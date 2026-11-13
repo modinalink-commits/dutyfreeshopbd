@@ -38,5 +38,36 @@ class MediaController extends Controller {
     if (!Img::ok()) return response()->json(['ok'=>false, 'error'=>'GD is not enabled on the server yet'], 503);
     @set_time_limit(50); return response()->json(['ok'=>true] + Img::runBatch(12, 35));
   }
+  /** Product photos with big empty margins -> crop to the product, centre on a 600x600 frame, rebuild webp + thumbs. Cursor on product id; originals are backed up first. dry=1 only reports. */
+  public function trim(Request $r) {
+    if (!Img::ok()) return response()->json(['ok'=>false, 'error'=>'GD is not enabled'], 503);
+    @set_time_limit(55); @ini_set('memory_limit', '768M');
+    $after = (int)$r->input('after', 0); $dry = $r->boolean('dry'); $lim = max(1, min(60, (int)$r->input('limit', 12))); $t0 = microtime(true);
+    $rows = DB::table('products')->where('id', '>', $after)->where('image', 'like', '/uploads/%')->orderBy('id')->limit($lim)->get(['id', 'image']);
+    $out = ['ok'=>true, 'seen'=>0, 'trim'=>0, 'skip'=>0, 'fail'=>0, 'next'=>$after, 'samples'=>[]]; static $doneFiles = [];
+    foreach ($rows as $row) {
+      if (microtime(true) - $t0 > 38) break;
+      $out['seen']++; $out['next'] = $row->id; $rel = ltrim(strtok($row->image, '?'), '/'); $abs = public_path($rel);
+      if (isset($doneFiles[$rel]) || !is_file($abs) || !preg_match('/\.(jpe?g|png|webp)$/i', $abs)) { $out['skip']++; continue; }
+      $doneFiles[$rel] = 1;
+      try {
+        if ($dry) {
+          $info = @getimagesize($abs); if (!$info || $info[0] * $info[1] > 60000000) { $out['skip']++; continue; }
+          $src = match ($info[2]) { IMAGETYPE_JPEG => @imagecreatefromjpeg($abs), IMAGETYPE_PNG => @imagecreatefrompng($abs), default => @imagecreatefromwebp($abs) };
+          if (!$src) { $out['fail']++; continue; }
+          $bx = Img::trimBox($src, $info[0], $info[1]); imagedestroy($src);
+          if ($bx) { $out['trim']++; if (count($out['samples']) < 8) $out['samples'][] = [$rel, $info[0].'x'.$info[1], $bx]; } else $out['skip']++;
+          continue;
+        }
+        $bk = storage_path('app/img-originals'); if (!is_dir($bk)) @mkdir($bk, 0775, true);
+        $tgt = $bk.'/'.str_replace('/', '__', $rel); $had = is_file($tgt); if (!$had) @copy($abs, $tgt);
+        $res = Img::process($abs, 'product');
+        if (!empty($res['ok']) && !empty($res['trimmed'])) { $out['trim']++; if (count($out['samples']) < 8) $out['samples'][] = [$rel, ($res['w'] ?? 0).'x'.($res['h'] ?? 0)]; }
+        else { $out['skip']++; if (!$had) @unlink($tgt); if (empty($res['ok'])) $out['fail']++; }
+      } catch (\Throwable $e) { $out['fail']++; }
+    }
+    $out['left'] = DB::table('products')->where('id', '>', $out['next'])->where('image', 'like', '/uploads/%')->count();
+    return response()->json($out);
+  }
   public function retry() { DB::table('media_images')->where('status', 'failed')->delete(); return response()->json(['ok'=>true]); }
 }

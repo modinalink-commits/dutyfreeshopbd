@@ -36,16 +36,21 @@ class Img {
       $ex = @exif_read_data($abs); $o = $ex['Orientation'] ?? 1;
       $rot = [3=>180, 6=>-90, 8=>90][$o] ?? 0; if ($rot) { $r = imagerotate($src, $rot, 0); if ($r) { imagedestroy($src); $src = $r; $w = imagesx($src); $h = imagesy($src); } }
     }
-    $s = min(1, $mw ? $mw / $w : 1, $mh ? $mh / $h : 1); // never upscale
+    $trimmed = false;
+    if ($kind === 'product') { // cut away empty margins so the product fills the 600x600 frame (white/transparent background, centred)
+      $bx = self::trimBox($src, $w, $h);
+      if ($bx) { $sq = self::squareCrop($src, $bx, $type === IMAGETYPE_JPEG); if ($sq) { imagedestroy($src); $src = $sq; $w = $h = imagesx($src); $trimmed = true; } }
+    }
+    $s = $trimmed ? ($mw / $w) : min(1, $mw ? $mw / $w : 1, $mh ? $mh / $h : 1); // only trimmed product photos may be enlarged to the frame
     $nw = max(1, (int)round($w * $s)); $nh = max(1, (int)round($h * $s));
     $img = $src;
-    if ($s < 1) { $img = imagecreatetruecolor($nw, $nh); imagealphablending($img, false); imagesavealpha($img, true); imagefill($img, 0, 0, imagecolorallocatealpha($img, 255, 255, 255, 127)); imagecopyresampled($img, $src, 0, 0, 0, 0, $nw, $nh, $w, $h); imagedestroy($src); }
+    if ($s != 1) { $img = imagecreatetruecolor($nw, $nh); imagealphablending($img, false); imagesavealpha($img, true); imagefill($img, 0, 0, imagecolorallocatealpha($img, 255, 255, 255, 127)); imagecopyresampled($img, $src, 0, 0, 0, 0, $nw, $nh, $w, $h); imagedestroy($src); }
     $base = preg_replace('/\.[A-Za-z0-9]+$/', '', $abs);
     $tmp = $abs.'.tmp'; $ok = false;
     if ($type === IMAGETYPE_JPEG) { imageinterlace($img, true); $ok = imagejpeg($img, $tmp, $q); }
     elseif ($type === IMAGETYPE_PNG) { imagealphablending($img, false); imagesavealpha($img, true); $ok = imagepng($img, $tmp, 9); }
     else { $ok = imagewebp($img, $tmp, 80); }
-    if ($ok && is_file($tmp) && filesize($tmp) < $before) rename($tmp, $abs); else @unlink($tmp); // keep whichever is smaller
+    if ($ok && is_file($tmp) && ($trimmed || filesize($tmp) < $before)) rename($tmp, $abs); else @unlink($tmp); // keep whichever is smaller
     if ($type !== IMAGETYPE_WEBP) { imagepalettetotruecolor($img); @imagewebp($img, $abs.'.webp', 80); } // served automatically to browsers that accept WebP
     foreach (self::THUMBS as $tw) {
       if ($nw <= $tw && $nh <= $tw && $tw !== 150) continue;
@@ -55,7 +60,34 @@ class Img {
     }
     imagedestroy($img);
     clearstatcache(true, $abs);
-    return ['ok'=>true, 'before'=>$before, 'after'=>filesize($abs), 'w'=>$nw, 'h'=>$nh, 'format'=>strtolower(pathinfo($abs, PATHINFO_EXTENSION))];
+    return ['ok'=>true, 'before'=>$before, 'after'=>filesize($abs), 'w'=>$nw, 'h'=>$nh, 'format'=>strtolower(pathinfo($abs, PATHINFO_EXTENSION)), 'trimmed'=>$trimmed];
+  }
+  /** Content box of a product photo: [x,y,w,h] in source pixels when the product fills well under 86% of the canvas (big transparent/white margins), else null. */
+  public static function trimBox($src, int $w, int $h): ?array {
+    $k = 256 / max($w, $h); $sw = max(1, (int)round($w * $k)); $sh = max(1, (int)round($h * $k));
+    $t = imagecreatetruecolor($sw, $sh); imagealphablending($t, false); imagesavealpha($t, true); imagefill($t, 0, 0, imagecolorallocatealpha($t, 255, 255, 255, 127));
+    imagecopyresampled($t, $src, 0, 0, 0, 0, $sw, $sh, $w, $h);
+    $x0 = $sw; $x1 = -1; $y0 = $sh; $y1 = -1;
+    for ($y = 0; $y < $sh; $y++) for ($x = 0; $x < $sw; $x++) {
+      $c = imagecolorat($t, $x, $y); $a = ($c >> 24) & 127; if ($a > 100) continue;
+      $r = ($c >> 16) & 255; $g = ($c >> 8) & 255; $b = $c & 255; if ($r > 240 && $g > 240 && $b > 240) continue;
+      if ($x < $x0) $x0 = $x; if ($x > $x1) $x1 = $x; if ($y < $y0) $y0 = $y; if ($y > $y1) $y1 = $y;
+    }
+    imagedestroy($t);
+    if ($x1 < 0) return null;
+    $cw = ($x1 - $x0 + 1) / $sw; $ch = ($y1 - $y0 + 1) / $sh;
+    if ($cw < 0.06 || $ch < 0.06) return null;      // blank / unreadable: leave alone
+    if (max($cw, $ch) >= 0.86) return null;         // already fills the frame: idempotent
+    return [(int)floor($x0 / $k), (int)floor($y0 / $k), (int)min($w, ceil(($x1 + 1) / $k)) - (int)floor($x0 / $k), (int)min($h, ceil(($y1 + 1) / $k)) - (int)floor($y0 / $k)];
+  }
+  /** Crop to the content box and centre it on a square canvas with ~4% breathing room. Returns the new image or null. */
+  public static function squareCrop($src, array $bx, bool $whiteBg) {
+    [$bx0, $by0, $bw, $bh] = $bx; $side = (int)round(max($bw, $bh) * 1.08); if ($side < 1) return null;
+    $c = imagecreatetruecolor($side, $side);
+    if ($whiteBg) { imagefill($c, 0, 0, imagecolorallocate($c, 255, 255, 255)); }
+    else { imagealphablending($c, false); imagesavealpha($c, true); imagefill($c, 0, 0, imagecolorallocatealpha($c, 255, 255, 255, 127)); }
+    imagecopy($c, $src, (int)(($side - $bw) / 2), (int)(($side - $bh) / 2), $bx0, $by0, $bw, $bh);
+    return $c;
   }
   public static function backup(string $abs): void {
     $d = storage_path('app/img-originals'); if (!is_dir($d)) @mkdir($d, 0775, true);

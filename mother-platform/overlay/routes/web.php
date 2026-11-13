@@ -286,6 +286,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/media', [\App\Http\Controllers\MediaController::class,'index']);
   Route::post('/media/optimize', [\App\Http\Controllers\MediaController::class,'batch']);
   Route::post('/media/settings', [\App\Http\Controllers\MediaController::class,'settings']);
+  Route::post('/media/trim', [\App\Http\Controllers\MediaController::class,'trim']);
   Route::post('/media/retry', [\App\Http\Controllers\MediaController::class,'retry']);
   Route::post('/ai-chat/test', [\App\Http\Controllers\AiChatController::class,'test']);
   Route::post('/ai-chat/simulate', [\App\Http\Controllers\AiChatController::class,'simulate']);
