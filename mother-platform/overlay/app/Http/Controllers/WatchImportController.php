@@ -155,6 +155,7 @@ class WatchImportController extends Controller {
   /** Fashion sub category from product type + name: the same list for every shop, so two shops selling the same kind of item land in one sub category. */
   public static function fashionSub(string $name, string $type): string {
     $t = mb_strtolower($type . ' | ' . $name);
+    if (preg_match('/^[A-Z0-9][A-Z0-9 &\'.\-\/:,()#]{9,}$/', trim($name)) && preg_match('/\d/', $name) && !preg_match('/vest|watch|shoe|\bbag|parfum|perfume|gift|luggage|jaket|jacket|sneaker|ballerina|glass|pegasus|stride|shirt|pant|trouser|jean|sock|cap\b|belt|wallet|sandal|heel|boot/', $t)) return "Women's Three Piece & Kameez"; // owner 13 Nov 2026: all-caps designer lawn codes (brand + design no.) are unstitched women's sets
     $g = preg_match('/\b(kids?|child(?:ren)?|baby|infant|junior|toddler)\b/', $t) ? 'Kids' : (preg_match('/\b(women|woman|ladies|lady|female|girls?)\b|women\'?s|ladies/', $t) ? 'Women' : (preg_match('/\b(men|man|gents?|male|boys?)\b|men\'?s/', $t) ? 'Men' : ''));
     $rules = [ // item => [regex, default gender: M men, W women, '' none, '-' never prefixed]
       'Panjabi' => ['/panjabi|punjabi|kabli|fatua/', 'M'], 'Saree' => ['/\bsaree|\bsari\b|\bshari\b/', 'W'],
