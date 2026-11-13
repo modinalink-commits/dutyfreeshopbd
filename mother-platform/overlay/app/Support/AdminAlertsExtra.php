@@ -86,6 +86,8 @@ class AdminAlertsExtra
 
   /** Logistics: open orders containing a product that is out of stock. */
   private static function stockMissing(): void {
+    // Owner decision: stock is added before an order goes to Shipment, so zero stock on Approved/Packaging orders is normal. No alert; any open one is closed.
+    DeployHealth::resolve('stock_missing', 'System (stock is added before shipment)'); return;
     // Only stock-controlled categories (cigarette/vape) block on zero stock; sourcing products are bought on demand, so they are not an alert.
     $ctl = DB::table('categories')->where('inventory_mode', 'STOCK_CONTROLLED')->pluck('id')->all(); if ($ctl) { $ctl = array_values(array_unique(array_merge($ctl, DB::table('categories')->whereIn('parent_id', $ctl)->pluck('id')->all()))); } else { $ctl = [0]; }
     $q = DB::table('orders as o')->whereIn('o.status', ['Approved', 'Packaging'])->where('o.created_at', '>=', now()->subDays(30))->whereExists(fn($q) => $q->select(DB::raw(1))->from('order_items as i')->join('products as p', 'p.id', '=', 'i.product_id')->whereColumn('i.order_id', 'o.id')->where('p.stock', '<=', 0)->whereIn('p.category_id', $ctl)); $n = (clone $q)->count(); $inv = (clone $q)->orderByDesc('o.id')->limit(5)->pluck('o.invoice')->implode(', ');
