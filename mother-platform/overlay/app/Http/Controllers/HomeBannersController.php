@@ -14,6 +14,7 @@ class HomeBannersController extends Controller
     ['home_globe', 'Globe slide: "Duty Free Exceptional Offers"', 'The world-map slide with the offers list. OFF shows the normal slider slides instead.', null, null],
     ['hero_offers_slide', 'Slide: Exceptional Offers list', 'Offer list slide inside the hero banner.', null, null],
     ['hero_watch_slide', 'Slide: Watch collection', 'Animated slide with Watch category products sliding across.', '/watch/', 'Open Watch'],
+    ['hero_lux_slides', 'Slides: Luxury Watch + Premium Cigarette', 'Two animated slides after the uploaded hero slides: the most expensive watches and the highest-priced in-stock cigarettes.', '/watch-banner-preview', 'Preview'],
     ['hero_text_slide', 'Slide: Headline text banner', 'The plain text banner with the sale headline (used when the globe slide is off).', null, null],
     ['hero_member_slide', 'Slide: Membership', 'Membership slide inside the hero banner.', null, null],
     ['hero_district_slide', 'Slide: District delivery', 'District delivery slide inside the hero banner.', null, null],

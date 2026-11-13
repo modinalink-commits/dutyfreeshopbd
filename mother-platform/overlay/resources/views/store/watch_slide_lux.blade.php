@@ -61,6 +61,4 @@
 <span class="xst" aria-hidden="true"><span class="xr2"></span><span class="xr"></span>@foreach($__lx as $__i => $__w)<span class="xw" style="animation-delay:{{ round($__i * $__ls, 2) }}s"><img src="{{ $__w['i'] }}" alt="" width="360" height="360" loading="{{ $__i ? 'lazy' : 'eager' }}" decoding="async" draggable="false"></span>@endforeach</span>
 <span class="xi" aria-hidden="true">@foreach($__lx as $__i => $__w)<span class="xc" style="animation-delay:{{ round($__i * $__ls, 2) }}s"><span class="xbr">{{ $__w['b'] }}</span><span class="xn">{{ \Illuminate\Support\Str::limit($__w['n'], 70) }}</span><span class="xp">৳{{ number_format($__w['p']) }}</span></span>@endforeach</span>
 </a>
-@else
-@include('store.watch_slide')
 @endif

@@ -207,7 +207,7 @@ function first(){var f=tr.children[0];if(f&&f.classList.contains('hxv'))active()
 if(document.readyState==='complete')setTimeout(first,300);else addEventListener('load',function(){setTimeout(first,300)})});</script>
 @if(($s['home_hero'] ?? '1') !== '0')
 @php $__gp = ($s['home_globe'] ?? '1') === '1' ? \App\Http\Controllers\StoreController::globeProducts() : collect(); @endphp
-@php $__ms = ($s['hero_member_slide'] ?? '1') !== '0'; $__dm = ($s['hero_district_slide'] ?? '1') !== '0'; $__om = ($s['hero_offers_slide'] ?? '1') !== '0'; $__wt = ($s['hero_watch_slide'] ?? '1') !== '0'; @endphp
+@php $__ms = ($s['hero_member_slide'] ?? '1') !== '0'; $__dm = ($s['hero_district_slide'] ?? '1') !== '0'; $__om = ($s['hero_offers_slide'] ?? '1') !== '0'; $__wt = ($s['hero_watch_slide'] ?? '1') !== '0'; $__lxs = ($s['hero_lux_slides'] ?? '1') !== '0'; @endphp
 @if($__gp->count() && ($__ms || $__dm || $__om))
 <div class="w hx"><div class="hx-m"><div class="sld hxs" data-auto="10000"><div class="sl-t">@foreach($slides as $sl)
 @include('store.slide_item', ['sl' => $sl, 'first' => $loop->first])
@@ -224,6 +224,9 @@ if(document.readyState==='complete')setTimeout(first,300);else addEventListener(
 @include('store.offers_slide')
 @endif
 @if($__wt)
+@include('store.watch_slide')
+@endif
+@if($__lxs)
 @include('store.watch_slide_lux')
 @include('store.cig_slide_lux')
 @endif
@@ -256,6 +259,9 @@ if(document.readyState==='complete')setTimeout(first,300);else addEventListener(
 @include('store.offers_slide')
 @endif
 @if($loop->first && $__wt)
+@include('store.watch_slide')
+@endif
+@if($loop->last && $__lxs)
 @include('store.watch_slide_lux')
 @include('store.cig_slide_lux')
 @endif
@@ -272,6 +278,9 @@ if(document.readyState==='complete')setTimeout(first,300);else addEventListener(
 @include('store.offers_slide')
 @endif
 @if($__wt)
+@include('store.watch_slide')
+@endif
+@if($__lxs)
 @include('store.watch_slide_lux')
 @include('store.cig_slide_lux')
 @endif
