@@ -1070,3 +1070,8 @@ public/banners/hero-fashion.mp4
 public/banners/hero-fashion-m.webp
 public/banners/hero-fashion-m.mp4
 database/migrations/2026_11_13_223000_hero_fashion_slide.php
+public/banners/hero-watch.webp
+public/banners/hero-watch.mp4
+public/banners/hero-watch-m.webp
+public/banners/hero-watch-m.mp4
+database/migrations/2026_11_13_224500_hero_watch_slide.php
