@@ -1,13 +1,13 @@
 @php
  /* Luxury watch hero slide: the most expensive branded watches (৳50,000+), one in the spotlight at a time. Data comes from the live catalogue; nothing is hard-coded. */
- $__lx = \App\Http\Controllers\StoreController::rem('store.watchlux1', 900, function () {
+ $__lx = \App\Http\Controllers\StoreController::rem('store.watchlux2', 900, function () {
    try {
      $D = \Illuminate\Support\Facades\DB::class;
      $cat = $D::table('categories')->where('slug', 'watch')->value('id'); if (!$cat) return [];
      $base = fn() => $D::table('products')->where('category_id', $cat)->where('published', true)->whereNotNull('image')->where('image', '!=', '');
      $rows = $base()->where('price', '>=', 50000)->orderByDesc('price')->limit(12)->get(['name', 'price', 'image']);
      if ($rows->count() < 4) $rows = $base()->where('price', '>=', 20000)->orderByDesc('price')->limit(10)->get(['name', 'price', 'image']);
-     return $rows->map(function ($r) { $b = trim((string)strtok(trim((string)$r->name), ' ')); if ($b !== '' && mb_strtoupper($b) === $b) $b = mb_convert_case($b, MB_CASE_TITLE); return ['n' => $r->name, 'b' => $b, 'p' => (int)$r->price, 'i' => $r->image]; })->values()->all();
+     return $rows->map(function ($r) { $w = preg_split('/\s+/', trim((string)$r->name)); $b = (string)($w[0] ?? ''); if (in_array(mb_strtolower($b), ['grand', 'frederique', 'tag', 'michael', 'emporio', 'tommy', 'daniel', 'calvin', 'maurice', 'raymond', 'baume', 'jaeger', 'ulysse', 'franck', 'patek', 'audemars', 'vacheron'], true) && isset($w[1])) $b .= ' ' . $w[1]; if ($b !== '' && mb_strtoupper($b) === $b) $b = mb_convert_case($b, MB_CASE_TITLE); $b = mb_convert_case($b, MB_CASE_TITLE); return ['n' => $r->name, 'b' => $b, 'p' => (int)$r->price, 'i' => $r->image]; })->values()->all();
    } catch (\Throwable $e) { return []; }
  });
  $__ln = count($__lx); $__ls = 3.8; $__lp = $__ln ? 100 / $__ln : 100;
