@@ -225,6 +225,7 @@ if(document.readyState==='complete')setTimeout(first,300);else addEventListener(
 @endif
 @if($__wt)
 @include('store.watch_slide_lux')
+@include('store.cig_slide_lux')
 @endif
 </div><div class="sl-d"></div><button type="button" class="sl-a pv" aria-label="Previous slide">‹</button><button type="button" class="sl-a nx" aria-label="Next slide">›</button></div></div>@include('store.hero_side')</div>
 @elseif($__gp->count())
@@ -256,6 +257,7 @@ if(document.readyState==='complete')setTimeout(first,300);else addEventListener(
 @endif
 @if($loop->first && $__wt)
 @include('store.watch_slide_lux')
+@include('store.cig_slide_lux')
 @endif
 @endforeach</div>@if($slides->count()+($__ms?1:0)+($__dm?1:0)+($__om?1:0)+($__wt?1:0)>1)<div class="sl-d"></div><button type="button" class="sl-a pv" aria-label="Previous slide">‹</button><button type="button" class="sl-a nx" aria-label="Next slide">›</button>@endif</div>
 @elseif($__ms || $__dm || $__om || $__wt)
@@ -271,6 +273,7 @@ if(document.readyState==='complete')setTimeout(first,300);else addEventListener(
 @endif
 @if($__wt)
 @include('store.watch_slide_lux')
+@include('store.cig_slide_lux')
 @endif
 </div><div class="sl-d"></div><button type="button" class="sl-a pv" aria-label="Previous slide">‹</button><button type="button" class="sl-a nx" aria-label="Next slide">›</button></div>
 @else
