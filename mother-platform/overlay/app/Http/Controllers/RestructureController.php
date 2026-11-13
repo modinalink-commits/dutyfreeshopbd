@@ -80,9 +80,9 @@ class RestructureController extends Controller {
   /** GET: product counts per main category and sub (the result table). */
   public function counts() {
     $o = [];
-    foreach (DB::table('categories')->whereNull('parent_id')->orderBy('position')->get(['id', 'name', 'slug']) as $c) {
+    foreach (DB::table('categories')->whereNull('parent_id')->orderBy('position')->get(['id', 'name', 'slug', 'prepaid_only']) as $c) {
       $subs = DB::table('products')->where('category_id', $c->id)->where('published', true)->selectRaw("coalesce(nullif(sub,''),'(no sub)') as sub, count(*) n")->groupBy('sub')->orderByDesc('n')->get();
-      $o[] = ['cat' => $c->name, 'slug' => $c->slug, 'published' => (int)$subs->sum('n'), 'all' => DB::table('products')->where('category_id', $c->id)->count(), 'subs' => $subs];
+      $o[] = ['prepaid' => (bool)($c->prepaid_only ?? false), 'cat' => $c->name, 'slug' => $c->slug, 'published' => (int)$subs->sum('n'), 'all' => DB::table('products')->where('category_id', $c->id)->count(), 'subs' => $subs];
     }
     return response()->json($o);
   }
