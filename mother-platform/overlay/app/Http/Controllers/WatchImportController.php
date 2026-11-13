@@ -249,6 +249,16 @@ class WatchImportController extends Controller {
     foreach (['store.cats', 'store.catslugs', 'store.subs', 'store.home11', 'store.sitemap5'] as $k) \Illuminate\Support\Facades\Cache::forget($k); \App\Http\Controllers\StoreController::bust();
     return response()->json(['ok' => true, 'moved' => $n, 'total' => $rows->count()]);
   }
+  /** Admin tool: move every product of one sub category to another (main category + sub), e.g. relocate=Baby Care and Others/Pain Relief -> Personal Wellness/Pain Relief. */
+  public function relocate(Request $r) {
+    @set_time_limit(120); $from = DB::table('categories')->whereNull('parent_id')->where('name', (string)$r->input('fc'))->first(); $to = DB::table('categories')->whereNull('parent_id')->where('name', (string)$r->input('tc'))->first();
+    abort_unless($from && $to, 404); $fs = (string)$r->input('fs'); $ts = (string)$r->input('ts') ?: $fs; $n = 0;
+    foreach (DB::table('products')->where('category_id', $from->id)->where('sub', $fs)->limit(2000)->get(['id', 'name', 'slug']) as $x) {
+      DB::table('products')->where('id', $x->id)->update(['category_id' => $to->id, 'sub' => $ts, 'sub_sub' => null, 'path_slug' => $this->slugFor((int)$to->id, (string)($x->slug ?: \App\Support\Slugs::slug($x->name)), $ts, (int)$x->id), 'updated_at' => now()]); $n++;
+    }
+    foreach (['store.cats', 'store.catslugs', 'store.subs', 'store.home11', 'store.sitemap5'] as $k) \Illuminate\Support\Facades\Cache::forget($k); \App\Http\Controllers\StoreController::bust();
+    return response()->json(['ok' => true, 'moved' => $n]);
+  }
   /** Facts that really are in the product name (capacity, memory type, Wi-Fi, power, size ...). */
   private static function facts(string $name): array {
     $f = []; $n = $name;

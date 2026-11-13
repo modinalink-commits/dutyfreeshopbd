@@ -435,6 +435,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/watch-import/tidy', [\App\Http\Controllers\WatchImportController::class,'tidy']);
   Route::post('/watch-import/details', [\App\Http\Controllers\WatchImportController::class,'details']);
   Route::post('/watch-import/resub', [\App\Http\Controllers\WatchImportController::class,'resub']);
+  Route::post('/watch-import/relocate', [\App\Http\Controllers\WatchImportController::class,'relocate']);
   Route::post('/watch-import/describe', [\App\Http\Controllers\WatchImportController::class,'describe']);
   Route::post('/watch-import/clean', [\App\Http\Controllers\WatchImportController::class,'clean']);
   Route::post('/watch-import/step', [\App\Http\Controllers\WatchImportController::class,'step']);
