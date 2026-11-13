@@ -46,6 +46,8 @@ class AdminAlertsExtra
     $q = DB::table('products as p')->where('p.published', true)->where('p.price', '>', 0)->whereRaw("$c > 0")->whereRaw("p.price + 0.004 < $c * ?", [$rate]);
     // Affiliate/source-store products are priced at the owner's fixed markup (e.g. +5%) by design, so they are not "below margin" mistakes.
     if (Schema::hasTable('watch_source')) $q->whereNotExists(fn($w) => $w->select(DB::raw(1))->from('watch_source as ws')->whereColumn('ws.product_id', 'p.id'));
+    // A price the owner set below the margin on purpose (price history source 'Owner decision', still the current price) is an approved override, not a mistake.
+    if (Schema::hasColumn('product_price_history', 'source')) $q->whereNotExists(fn($w) => $w->select(DB::raw(1))->from('product_price_history as oh')->whereColumn('oh.product_id', 'p.id')->where('oh.source', 'Owner decision')->whereColumn('oh.new_rate', 'p.price'));
     $n = $q->count();
     self::set($n >= 1, 'below_margin', 'high', 'Pricing', 'Products priced below the protected margin', $n . ' published products are priced below the protected margin.', 'A purchase rate went up or a price was set too low.', 'Open Pricing / Profit Floor and raise these prices or use the approved override.', 'all prices are safe');
   }
