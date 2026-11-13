@@ -62,5 +62,5 @@
 <span class="xi" aria-hidden="true">@foreach($__lx as $__i => $__w)<span class="xc" style="animation-delay:{{ round($__i * $__ls, 2) }}s"><span class="xbr">{{ $__w['b'] }}</span><span class="xn">{{ \Illuminate\Support\Str::limit($__w['n'], 70) }}</span><span class="xp">৳{{ number_format($__w['p']) }}</span></span>@endforeach</span>
 </a>
 @else
-<div style="padding:24px;color:#6B7280;font-size:13px">Luxury watch banner: fewer than 4 watches found for this slide.</div>
+@include('store.watch_slide')
 @endif
