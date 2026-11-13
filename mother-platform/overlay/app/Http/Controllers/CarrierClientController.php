@@ -315,7 +315,7 @@ class CarrierClientController extends Controller {
       if (preg_match('/(01[3-9]\d{8})/', (string)($r['name'] ?? '') . ' ' . (string)($r['dest'] ?? ''), $mm)) $legByDigits[$mm[1]] = $e;
     }
     $extN = [];
-    $calls = []; $per = []; $unk = [];
+    $calls = []; $per = []; $unk = []; $lvs = [];
     foreach ($rows as $r) {
       if (($r['direction'] ?? '') !== 'inbound') continue;
       $c = $byIp[$r['ip_addr'] ?? ''] ?? null; if (!$c) { if (count($unk) < 20) $unk[] = ['ip' => $r['ip_addr'] ?? '', 'to' => $r['dest'] ?? '', 'from' => $r['cid_num'] ?? '', 'state' => $r['callstate'] ?? '']; continue; }
@@ -330,9 +330,13 @@ class CarrierClientController extends Controller {
       $ext = $legExt[(string)($r['uuid'] ?? '')] ?? ($legByDigits['0' . ltrim($dest, '0')] ?? ($legByDigits[$dest] ?? ''));
       if ($ext !== '' && strtoupper((string)($r['callstate'] ?? '')) === 'ACTIVE') $extN[$ext] = ($extN[$ext] ?? 0) + 1;
       $calls[] = ['client' => $c->name, 'from' => $r['cid_num'] ?? '', 'to' => $dest, 'ext' => $ext, 'state' => $r['callstate'] ?? '', 'secs' => $age];
+      if ($age !== null) $lvs[$c->id][] = $age;
       $per[$c->id] = ($per[$c->id] ?? 0) + 1;
     }
-    return response()->json(['ok' => true, 'total' => count($calls), 'calls' => array_slice($calls, 0, 100), 'per' => $per, 'ext' => $extN, 'channels' => count($rows), 'unknown' => $unk, 'at' => now('Asia/Dhaka')->format('H:i:s')]);
+    // Running totals for the cards above the board (same numbers as the page load: finished calls of the cycle + calls in progress), refreshed with every poll.
+    $tot = ['calls' => 0, 'secs' => 0, 'billed' => 0, 'remaining' => null, 'active' => 0];
+    try { foreach ($cl as $c) { $u = self::usage($c, $lvs); $tot['calls'] += $u['calls']; $tot['secs'] += $u['secs']; $tot['billed'] += $u['billed_min']; $tot['active'] += $u['live']; if ($u['remaining'] !== null) $tot['remaining'] = ($tot['remaining'] ?? 0) + $u['remaining']; } } catch (\Throwable $e) { $tot = null; }
+    return response()->json(['ok' => true, 'tot' => $tot, 'total' => count($calls), 'calls' => array_slice($calls, 0, 100), 'per' => $per, 'ext' => $extN, 'channels' => count($rows), 'unknown' => $unk, 'at' => now('Asia/Dhaka')->format('H:i:s')]);
   }
   /** Read-only PBX diagnostics (whitelisted Event Socket commands). */
   public function diag() {

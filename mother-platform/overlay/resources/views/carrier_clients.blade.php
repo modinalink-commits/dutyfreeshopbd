@@ -15,10 +15,10 @@
 @if($tab==='live')
 <div class="grid" style="margin-top:12px">
 <div class="card k" style="margin:0"><b id="kLive">0</b><span>Live calls</span></div>
-<div class="card k" style="margin:0"><b>{{ $tc }}</b><span>Connected calls (this cycle)</span></div>
-<div class="card k" style="margin:0"><b>{{ intdiv($ts,60) }}:{{ str_pad($ts%60,2,'0',STR_PAD_LEFT) }}</b><span>Talk time (min:sec)</span></div>
-<div class="card k" style="margin:0"><b>{{ $tb }}</b><span>Billable minutes</span></div>
-<div class="card k" style="margin:0"><b style="color:{{ $rem<0?'#B91C1C':'inherit' }}">{{ collect($usage)->pluck('remaining')->filter(fn($v)=>$v!==null)->isEmpty() ? '—' : $rem }}</b><span>Prepaid minutes left</span></div>
+<div class="card k" style="margin:0"><b id="kCalls">{{ $tc }}</b><span>Connected calls (this cycle)</span></div>
+<div class="card k" style="margin:0"><b id="kTalk">{{ intdiv($ts,60) }}:{{ str_pad($ts%60,2,'0',STR_PAD_LEFT) }}</b><span>Talk time (min:sec) · live</span></div>
+<div class="card k" style="margin:0"><b id="kBill">{{ $tb }}</b><span>Billable minutes</span></div>
+<div class="card k" style="margin:0"><b id="kRem" style="color:{{ $rem<0?'#B91C1C':'inherit' }}">{{ collect($usage)->pluck('remaining')->filter(fn($v)=>$v!==null)->isEmpty() ? '—' : $rem }}</b><span>Prepaid minutes left</span></div>
 <div class="card k" style="margin:0"><b><span style="font-size:13px;color:inherit">{{ strtoupper($relay['mode']==='live'?'live':'test') }}</span></b><span>Relay mode</span></div>
 </div>
 
@@ -26,10 +26,10 @@
 <table class="tbl"><thead><tr><th>Client</th><th>Caller</th><th>Customer number</th><th>Extension</th><th>State</th><th>Duration</th></tr></thead><tbody id="lvB"><tr><td colspan="6" class="sub">Loading…</td></tr></tbody></table></div>
 <script>
 function selCell(tr,B){var t=B.closest('table');if(t&&t.querySelector('th.dfx-c')){var td=document.createElement('td');td.className='dfx-c';td.innerHTML='<input type="checkbox" aria-label="Select row">';tr.insertBefore(td,tr.firstChild)}}
-(function(){var B=document.getElementById('lvB'),N=document.getElementById('lvN'),T=document.getElementById('lvT'),K=document.getElementById('kLive');function f(s){return Math.floor(s/60)+':'+('0'+s%60).slice(-2)}
+(function(){var B=document.getElementById('lvB'),N=document.getElementById('lvN'),T=document.getElementById('lvT'),K=document.getElementById('kLive');function f(s){return Math.floor(s/60)+':'+('0'+s%60).slice(-2)}var TS=null,TA=0;function paint(){var e=document.getElementById('kTalk');if(e&&TS!==null)e.textContent=f(TS)}setInterval(function(){if(TS!==null&&TA>0&&!document.hidden){TS+=TA;paint()}},1000);
 function tick(){fetch('/admin/call-center/clients/live',{headers:{Accept:'application/json'}}).then(function(r){return r.json()}).then(function(d){
 if(!d.ok){B.innerHTML='<tr><td colspan="6" class="sub" style="color:#B45309"></td></tr>';B.firstChild.firstChild.textContent='Live data not available from the PBX: '+d.error;N.textContent='-';return}
-N.textContent=d.total;K.textContent=d.total;T.textContent='Updated '+d.at+' · PBX channels '+d.channels+(d.ext&&Object.keys(d.ext).length?' · Answered by ext: '+Object.keys(d.ext).sort().map(function(k){return k+'×'+d.ext[k]}).join(', '):'')+(d.unknown.length?' · Unknown IP: '+d.unknown.map(function(u){return u.ip+' → '+u.to}).join(', '):'');
+N.textContent=d.total;K.textContent=d.total;if(d.tot){TS=d.tot.secs;TA=d.tot.active;var e;if(e=document.getElementById('kCalls'))e.textContent=d.tot.calls;if(e=document.getElementById('kBill'))e.textContent=d.tot.billed;if((e=document.getElementById('kRem'))&&d.tot.remaining!==null){e.textContent=d.tot.remaining;e.style.color=d.tot.remaining<0?'#B91C1C':'inherit'}paint()}T.textContent='Updated '+d.at+' · PBX channels '+d.channels+(d.ext&&Object.keys(d.ext).length?' · Answered by ext: '+Object.keys(d.ext).sort().map(function(k){return k+'×'+d.ext[k]}).join(', '):'')+(d.unknown.length?' · Unknown IP: '+d.unknown.map(function(u){return u.ip+' → '+u.to}).join(', '):'');
 if(!d.calls.length){B.innerHTML='<tr><td colspan="6" class="sub">No active calls.</td></tr>';return}
 B.innerHTML='';d.calls.forEach(function(c){var tr=document.createElement('tr');[c.client,c.from,c.to,c.ext||'—',c.state,c.secs].forEach(function(v,i){var td=document.createElement('td');if(i===4){var sp=document.createElement('span'),x=String(v).toUpperCase();sp.className='st '+(/ACTIVE|ANSWER/.test(x)?'act':(/EARLY|RING|DOWN/.test(x)?'ring':'oth'));sp.textContent=/ACTIVE/.test(x)?'ANSWERED':(/EARLY|RING/.test(x)?'RINGING':v);td.appendChild(sp)}else if(i===2){var nm=document.createElement('span');nm.className='num';nm.textContent=v;td.className='numc';td.appendChild(nm)}else{td.textContent=(i===5&&v===null)?'—':(i===5?f(v):v);if(i===5)td.className='dur';if(i===3&&v!=='—')td.style.fontWeight='600'}tr.appendChild(td)});selCell(tr,B);B.appendChild(tr)})}).catch(function(){})}
 tick();setInterval(function(){if(!document.hidden)tick()},3000)})();</script>
