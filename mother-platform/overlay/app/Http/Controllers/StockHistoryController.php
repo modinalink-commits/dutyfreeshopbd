@@ -6,6 +6,19 @@ use Illuminate\Support\Facades\DB;
 /** Stock Tracking History for one product: every stock movement from the permanent stock_logs ledger. */
 class StockHistoryController extends Controller {
   const TYPES = ['purchase' => 'PURCHASE_IN', 'order-shipment' => 'SHIPMENT_OUT', 'order-return' => 'RETURN_IN', 'purchase-reversal' => 'MANUAL_ADJUSTMENT', 'damaged' => 'MANUAL_ADJUSTMENT'];
+  /** Admin-only stock correction with a full ledger line: sets stock to an exact quantity, logs who/why, re-aligns FIFO batches. */
+  public function correct(Request $r, $id) {
+    abort_unless(in_array(\Illuminate\Support\Facades\Auth::user()->role ?? '', ['super', 'admin'], true), 403);
+    $d = $r->validate(['qty' => 'required|integer|min:0|max:100000', 'reason' => 'required|string|min:5|max:200']);
+    return DB::transaction(function () use ($id, $d) {
+      $p = DB::table('products')->where('id', (int)$id)->lockForUpdate()->first(); abort_unless($p, 404);
+      $delta = (int)$d['qty'] - (int)$p->stock; if ($delta === 0) return response()->json(['ok' => true, 'unchanged' => true, 'stock' => (int)$p->stock]);
+      \App\Support\Procure::stock((int)$id, $delta, 'manual-correction', mb_substr($d['reason'], 0, 120), false);
+      try { \App\Support\Costing::sync((int)$id); } catch (\Throwable $e) { report($e); }
+      try { \App\Support\Procure::audit('stock.correction', 'Stock correction: '.$p->name, ['stock' => (int)$p->stock], ['stock' => (int)$d['qty'], 'reason' => $d['reason']]); } catch (\Throwable $e) { report($e); }
+      return response()->json(['ok' => true, 'before' => (int)$p->stock, 'after' => (int)$d['qty']]);
+    });
+  }
   public function show(Request $r, $id) {
     $p = DB::table('products as p')->leftJoin('categories as c', 'c.id', '=', 'p.category_id')->where('p.id', (int)$id)->first(array_merge(['p.id', 'p.name', 'p.sku', 'p.stock', 'p.published', 'p.category_id', 'c.name as cat'], \App\Support\StockGuard::lockReady() ? ['p.manual_unpublish_lock'] : []));
     abort_unless($p, 404);
