@@ -140,25 +140,37 @@ class Img {
    *  No backup copy is kept for these (the source store still has the original); a file that grew again (re-imported) is processed again. */
   public static function runStoreBatch(int $max = 40, int $sec = 25): array {
     $C = \Illuminate\Support\Facades\Cache::class; $t0 = microtime(true); $n = 0; $saved = 0; $fail = 0; $renamed = 0;
-    if ($C::get('img.sb.rest')) return ['processed'=>0, 'failed'=>0, 'saved'=>0, 'state'=>'resting'];
+    if ($C::get('img.sb2.rest')) return ['processed'=>0, 'failed'=>0, 'saved'=>0, 'state'=>'resting'];
     $dirs = []; foreach (@scandir(self::dir()) ?: [] as $d) if (preg_match('/^(store\d+|watch)$/', $d) && is_dir(self::dir().'/'.$d)) $dirs[] = $d;
-    sort($dirs); $st = $C::get('img.sb', ['d'=>0, 'after'=>'']); $di = (int)($st['d'] ?? 0); $after = (string)($st['after'] ?? '');
+    sort($dirs); $st = $C::get('img.sb2', ['d'=>0, 'after'=>'']); $di = (int)($st['d'] ?? 0); $after = (string)($st['after'] ?? '');
     while ($di < count($dirs) && $n < $max && microtime(true) - $t0 < $sec) {
       $d = $dirs[$di]; $files = [];
       foreach (@scandir(self::dir().'/'.$d) ?: [] as $f) if ($f[0] !== '.' && strcmp($f, $after) > 0 && self::isOriginal($f) && is_file(self::dir().'/'.$d.'/'.$f)) { $files[] = $f; if (count($files) >= 300) break; }
       if (!$files) { $di++; $after = ''; continue; }
-      $known = DB::table('media_images')->whereIn('path', array_map(fn($f) => $d.'/'.$f, $files))->pluck('opt_bytes', 'path')->all();
+      $known = []; $korig = []; foreach (DB::table('media_images')->whereIn('path', array_map(fn($f) => $d.'/'.$f, $files))->get(['path', 'opt_bytes', 'orig_bytes']) as $mi) { $known[$mi->path] = $mi->opt_bytes; $korig[$mi->path] = (int)$mi->orig_bytes; }
       foreach ($files as $f) {
         if ($n >= $max || microtime(true) - $t0 > $sec) break;
         $rel = $d.'/'.$f; $abs = self::dir().'/'.$rel; $size = (int)@filesize($abs); $after = $f;
-        if ($size <= 150 * 1024) continue;                                                // already light: nothing to gain
-        if (isset($known[$rel]) && $size <= max(1, (int)$known[$rel]) * 1.3) continue;   // already done and not replaced by a bigger file
+        // A photo that the first run shrank IN PLACE is light on the server, but the CDN still serves the old heavy copy under the same address: it only needs the new file name.
+        $stale = !preg_match('/-r\d{9,}\./', $f) && ($korig[$rel] ?? 0) > 150 * 1024 && ($korig[$rel] ?? 0) > $size * 1.3;
+        if (!$stale) {
+          if ($size <= 150 * 1024) continue;                                                // already light: nothing to gain
+          if (isset($known[$rel]) && $size <= max(1, (int)$known[$rel]) * 1.3) continue;   // already done and not replaced by a bigger file
+        }
         // The CDN and browsers keep the old heavy file for 30 days under the same address, so the shrunk photo gets a NEW file name (same idea as AiImage) and the product rows are pointed at it.
         $ext = strtolower(pathinfo($f, PATHINFO_EXTENSION)); $nf = preg_replace('/\.[A-Za-z0-9]+$/', '', $f).'-r'.time().'.'.$ext; $nrel = $d.'/'.$nf; $nabs = self::dir().'/'.$nrel;
         if (!@copy($abs, $nabs)) { $fail++; $n++; continue; }
         try { $res = self::process($nabs, 'pfit'); } catch (\Throwable $e) { $res = ['ok'=>false, 'error'=>mb_substr($e->getMessage(), 0, 150), 'before'=>$size]; }
         clearstatcache(true, $nabs); $now = (int)@filesize($nabs);
         $row = fn($bytes, $ok, $err) => ['orig_bytes'=>$size, 'opt_bytes'=>$bytes, 'width'=>$res['w'] ?? null, 'height'=>$res['h'] ?? null, 'format'=>$res['format'] ?? null, 'status'=>$ok ? 'optimized' : 'failed', 'error'=>$ok ? null : mb_substr((string)$err, 0, 150), 'optimized_at'=>now(), 'updated_at'=>now(), 'created_at'=>now()];
+        if ($stale && $now > 0) {
+          $u1 = DB::table('products')->where('image', '/uploads/'.$rel)->update(['image' => '/uploads/'.$nrel]);
+          $u2 = \Illuminate\Support\Facades\Schema::hasTable('product_images') ? DB::table('product_images')->where('path', '/uploads/'.$rel)->update(['path' => '/uploads/'.$nrel]) : 0;
+          if (!$u1 && !$u2) { @unlink($nabs); foreach (['.webp', '-150.webp', '-300.webp'] as $sx) @unlink($sx === '.webp' ? $nabs.'.webp' : preg_replace('/\.[A-Za-z0-9]+$/', '', $nabs).$sx); }
+          else { DB::table('media_images')->updateOrInsert(['path'=>$nrel], $row($now, true, null)); $renamed++; $saved += max(0, ($korig[$rel] ?? 0) - $now); }
+          DB::table('media_images')->where('path', $rel)->update(['orig_bytes' => $size, 'updated_at' => now()]); // handled: never looked at again
+          $n++; continue;
+        }
         if (!$res['ok'] || $now < 1 || $now >= $size) { // could not be made smaller: keep the original exactly as it was
           @unlink($nabs); foreach (['.webp', '-150.webp', '-300.webp'] as $sx) @unlink($sx === '.webp' ? $nabs.'.webp' : preg_replace('/\.[A-Za-z0-9]+$/', '', $nabs).$sx);
           DB::table('media_images')->updateOrInsert(['path'=>$rel], $row($size, (bool)$res['ok'], $res['error'] ?? 'not smaller')); if (!$res['ok']) $fail++; $n++; continue;
@@ -173,8 +185,8 @@ class Img {
       }
     }
     if ($renamed) foreach (['store.home13', 'store.cats'] as $k) { try { $C::forget($k); } catch (\Throwable $e) {} }
-    if ($di >= count($dirs)) { $C::put('img.sb.rest', 1, 21600); $C::forget('img.sb'); $state = 'cycle done'; } // every folder walked: look again in 6 hours
-    else { $C::put('img.sb', ['d'=>$di, 'after'=>$after], 86400 * 7); $state = ($dirs[$di] ?? '').' after '.$after; }
+    if ($di >= count($dirs)) { $C::put('img.sb2.rest', 1, 21600); $C::forget('img.sb2'); $state = 'cycle done'; } // every folder walked: look again in 6 hours
+    else { $C::put('img.sb2', ['d'=>$di, 'after'=>$after], 86400 * 7); $state = ($dirs[$di] ?? '').' after '.$after; }
     return ['processed'=>$n, 'failed'=>$fail, 'saved'=>$saved, 'state'=>$state];
   }
   /** Local copy of an image that was hosted somewhere else, or null if it has not been copied yet. */
