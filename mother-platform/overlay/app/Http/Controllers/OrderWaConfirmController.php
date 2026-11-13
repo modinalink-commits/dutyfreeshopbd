@@ -15,7 +15,8 @@ class OrderWaConfirmController extends Controller {
       $stats = ['total' => $s->sum(), 'by' => $s];
     }
     $failed = W::ready() ? DB::table('order_whatsapp_confirmations as f')->join('orders as o', 'o.id', '=', 'f.order_id')->where('f.send_status', 'FAILED')->where('f.created_at', '>=', now()->subDays(7))->orderByDesc('f.id')->limit(30)->get(['f.order_id', 'o.invoice', 'f.mobile', 'f.failure_reason', 'f.permanent', 'f.failed_at']) : collect();
-    return view('wa_confirm_settings', ['c' => fn($k, $d = '') => W::cfg($k, $d), 'tplStatus' => W::cfg('tpl_status', 'NOT SUBMITTED'), 'stats' => $stats, 'body' => W::BODY, 'ready' => W::ready(), 'failed' => $failed, 'cn' => fn($k, $d = '') => \App\Support\OrderCancelNotice::set($k, $d), 'cnBody' => \App\Support\OrderCancelNotice::WA_BODY]);
+    $recent = W::ready() ? DB::table('order_whatsapp_confirmations as f')->join('orders as o', 'o.id', '=', 'f.order_id')->orderByDesc('f.id')->limit(60)->get(['f.order_id', 'o.invoice', 'o.customer_name', 'f.mobile', 'f.confirmation_type', 'f.send_status', 'f.failure_reason', 'f.created_at', 'f.message_body']) : collect();
+    return view('wa_confirm_settings', ['recent' => $recent, 'c' => fn($k, $d = '') => W::cfg($k, $d), 'tplStatus' => W::cfg('tpl_status', 'NOT SUBMITTED'), 'stats' => $stats, 'body' => W::BODY, 'ready' => W::ready(), 'failed' => $failed, 'cn' => fn($k, $d = '') => \App\Support\OrderCancelNotice::set($k, $d), 'cnBody' => \App\Support\OrderCancelNotice::WA_BODY]);
   }
   public function save(Request $r) {
     $d = $r->validate(['template' => 'required|string|max:80|regex:/^[a-z0-9_]+$/', 'lang' => 'required|string|max:10', 'brand' => 'required|string|max:60', 'waba' => 'required|string|max:30']);
