@@ -631,6 +631,7 @@ class ChatController extends Controller {
               if (in_array($type, ['reaction', 'edit', 'revoke', 'unsupported'], true)) continue; // no bubble, no unread, no awaiting-reply
               $body = $type === 'text' ? (string)($m['text']['body'] ?? '') : ($type === 'button' ? (string)($m['button']['text'] ?? '') : '['.$type.' received — open WhatsApp to view]');
               $att = null; $meta = [];
+              if ($type === 'button' && !empty($m['button']['payload'])) \App\Support\OrderWaUpdate::onButton((string)$m['button']['payload'], $from);
               if (in_array($type, ['image', 'sticker', 'document', 'audio', 'video'], true) && !empty($m[$type]['id']) && !DB::table('chat_messages')->where('ext_id', $m['id'] ?? '-')->exists()) {
                 $got = Chat::waMedia((string)$m[$type]['id'], $wtok);
                 if ($got) { $att = $got[0]; $meta['att_type'] = $got[1]; $cap = trim((string)($m[$type]['caption'] ?? '')); $body = $cap !== '' ? $cap : ['image'=>'', 'sticker'=>'', 'document'=>(string)($m[$type]['filename'] ?? ''), 'audio'=>'', 'video'=>''][$type]; }
