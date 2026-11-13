@@ -125,9 +125,9 @@ class WatchImportController extends Controller {
     if (preg_match('/\b(kids?|child(?:ren)?|baby|babies|infant|toddler|newborn|junior|nappy|nappies|diapers?)\b|feeding\s*bottle|\bsippy\b|\btoys?\b|\blego\b|barbie|hot\s*wheels|\bpuzzles?\b|\bdolls?\b|play\s*set|playset|action\s*figure|board\s*game/', $t)) return 'others'; // owner 13 Nov 2026: child items -> Baby Care and Others
     if (preg_match('/vitamin|supplement|\bprotein\b|herbal|first\s*aid|thermometer|blood\s*pressure|sanitary|feminine|toothpaste|tooth\s*brush|toothbrush|mouth\s*wash|mouthwash|oral\s*care|\bhygiene\b/', $t)) return 'wellness'; // Personal Wellness
     if (preg_match('/earbud|earphone|headphone|headset|\bspeaker|power\s*bank|\bcharger\b|smart\s*watch|smartwatch|smart\s*band|fitness\s*band|\btws\b|neckband|\btrimmer|\bshaver\b|hair\s*(dryer|straightener|remover)|\bipl\b|massager|\bcamera\b|\bgimbal/', $t)) return 'gadget-electronics';
+    if (preg_match('/\blighter\b|zippo|ash\s*tray/', $t)) return 'lighter-accessories';
     if (preg_match('/\bwatch(es)?\b/', $t)) return 'watch';
     if (preg_match('/sunglass|eyewear|\bshades\b|polari[sz]ed/', $t)) return 'sunglass';
-    if (preg_match('/\blighter\b|zippo|ash\s*tray/', $t)) return 'lighter-accessories';
     if (preg_match('/skin\s*care|skincare|sunscreen|sun\s*block|serum|cleanser|face\s*wash|toner|moisturi[sz]er|\blotion|\bcream\b|shampoo|conditioner|hair\s*(oil|serum|mask|care|treatment|spray)|body\s*(wash|scrub|butter|oil|mist)|lip\s*(balm|care|stick|gloss)|lipstick|mascara|foundation|concealer|eye\s*liner|eyeliner|kajal|makeup|make-up|nail\s*polish|perfume|fragrance|attar|deodorant|facial|scrub|essence|face\s*mask|sheet\s*mask/', $t)) return 'beauty';
     return null;
   }

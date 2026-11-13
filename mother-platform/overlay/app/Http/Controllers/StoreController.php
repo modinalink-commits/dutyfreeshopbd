@@ -226,8 +226,8 @@ class StoreController extends Controller {
       $sold = DB::table('order_items as i')->join('orders as o', 'o.id', '=', 'i.order_id')->whereNotIn('o.status', ['Cancel', 'Incomplete'])->where('o.created_at', '>=', now()->subDays(30))->groupBy('i.product_id')->selectRaw('i.product_id as pid, sum(i.qty) as q')->pluck('q', 'pid');
       $out = [];
       foreach ($cats as $c) {
-        $pool = \App\Support\StockGuard::listable(DB::table('products')->where('published', true)->where('category_id', $c->id))->whereNotNull('image')->where('image', '!=', '')->orderByDesc('id')->limit(60)->get()
-          ->filter(fn($p) => \App\Support\StockGuard::sellable($p));
+        $pool = \App\Support\StockGuard::listable(DB::table('products')->where('published', true)->where('category_id', $c->id))->whereNotNull('image')->where('image', '!=', '')->orderByDesc('id')->limit(800)->get()
+          ->filter(fn($p) => \App\Support\StockGuard::sellable($p))->take(60);
         $pick = $pool->sortByDesc(fn($p) => [(int)($sold[$p->id] ?? 0), (int)$p->id])->values(); // whole sellable pool (best sellers first); the 6 shown are picked per request below
         if ($pick->count()) $out[] = [$c, $pick, $pick->take(5)->values()]; // [2] = best sellers (hero slider), never shuffled
       }
