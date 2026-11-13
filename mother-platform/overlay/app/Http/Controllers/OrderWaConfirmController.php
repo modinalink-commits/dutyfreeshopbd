@@ -59,9 +59,13 @@ class OrderWaConfirmController extends Controller {
     $st = (string)$r->input('stage'); abort_unless(isset(\App\Support\OrderWaUpdate::STAGES[$st]), 404);
     $to = WhatsApp::norm((string)$r->validate(['phone' => 'required|string|max:20'])['phone']);
     if (!preg_match('/^8801[3-9]\d{8}$/', $to)) return back()->with('err', 'Enter a valid mobile number.');
-    $sample = \App\Support\OrderWaUpdate::STAGES[$st][4]; if ($st === 'Shipment') $sample[4] .= ' · ' . W::brand() . '-এ ট্র্যাক করুন: ' . url('/track'); // same shape as a real message
-    [$ok, $id, $err] = \App\Support\OrderWaUpdate::call($st, $to, $sample, 0);
-    return back()->with($ok ? 'ok' : 'err', $ok ? 'Test sent to ' . $to : 'Test failed: ' . $err);
+    $sample = \App\Support\OrderWaUpdate::STAGES[$st][4]; $oid = 0;
+    // When the test number has an order of its own, the test shows that real order (real products, real tracking link that opens directly), exactly as a customer would get it.
+    $lp = \App\Support\Chat::phone('0' . substr($to, -10)); $own = $lp ? DB::table('orders')->where('phone', $lp)->orderByDesc('id')->first() : null;
+    if ($own) { $sample = \App\Support\OrderWaUpdate::params($st, $own); $oid = (int)$own->id; }
+    elseif ($st === 'Shipment') $sample[4] .= ' · ' . W::brand() . '-এ ট্র্যাক করুন: ' . \App\Support\Inv::trackUrl('DFB-102619');
+    [$ok, $id, $err] = \App\Support\OrderWaUpdate::call($st, $to, $sample, 0); // buttons on a test never touch a real order (order id 0)
+    return back()->with($ok ? 'ok' : 'err', $ok ? 'Test sent to ' . $to . ($own ? ' (order ' . \App\Support\Inv::show($own->invoice) . ')' : ' (sample values)') : 'Test failed: ' . $err);
   }
   public function resend(Request $r, $id) {
     $o = DB::table('orders')->find($id); abort_unless($o, 404);
