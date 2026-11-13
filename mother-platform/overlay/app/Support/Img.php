@@ -62,7 +62,7 @@ class Img {
     clearstatcache(true, $abs);
     return ['ok'=>true, 'before'=>$before, 'after'=>filesize($abs), 'w'=>$nw, 'h'=>$nh, 'format'=>strtolower(pathinfo($abs, PATHINFO_EXTENSION)), 'trimmed'=>$trimmed];
   }
-  /** Content box of a product photo: [x,y,w,h] in source pixels when the product fills well under 86% of the canvas (big transparent/white margins), else null. */
+  /** Content box of a product photo: [x,y,w,h] in source pixels when the product fills under 80% of the canvas (big transparent/white margins), else null. */
   public static function trimBox($src, int $w, int $h): ?array {
     $k = 256 / max($w, $h); $sw = max(1, (int)round($w * $k)); $sh = max(1, (int)round($h * $k));
     $t = imagecreatetruecolor($sw, $sh); imagealphablending($t, false); imagesavealpha($t, true); imagefill($t, 0, 0, imagecolorallocatealpha($t, 255, 255, 255, 127));
@@ -77,7 +77,7 @@ class Img {
     if ($x1 < 0) return null;
     $cw = ($x1 - $x0 + 1) / $sw; $ch = ($y1 - $y0 + 1) / $sh;
     if ($cw < 0.06 || $ch < 0.06) return null;      // blank / unreadable: leave alone
-    if (max($cw, $ch) >= 0.86) return null;         // already fills the frame: idempotent
+    if (max($cw, $ch) >= 0.8) return null;          // already fills the frame: idempotent
     return [(int)floor($x0 / $k), (int)floor($y0 / $k), (int)min($w, ceil(($x1 + 1) / $k)) - (int)floor($x0 / $k), (int)min($h, ceil(($y1 + 1) / $k)) - (int)floor($y0 / $k)];
   }
   /** Crop to the content box and centre it on a square canvas with ~4% breathing room. Returns the new image or null. */
