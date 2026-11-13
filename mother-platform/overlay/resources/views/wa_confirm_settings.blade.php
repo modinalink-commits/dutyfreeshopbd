@@ -45,7 +45,7 @@
 <form method="post" action="/admin/wa-confirm-settings/upd-sync">@csrf<input type="hidden" name="stage" value="{{ $st }}"><button class="btn g" type="submit">Refresh status</button></form>
 <form method="post" action="/admin/wa-confirm-settings/upd-test" style="display:flex;gap:8px">@csrf<input type="hidden" name="stage" value="{{ $st }}"><input name="phone" placeholder="01XXXXXXXXX" style="max-width:180px"><button class="btn g" type="submit">Send test</button></form></div></div>
 @endforeach
-<small style="color:#6B7280">প্রতিটা অর্ডারে প্রতি ধাপে একবারই যায়। Meta টেমপ্লেট APPROVED করার পর থেকে নিজে শুরু হয়; পণ্যের নাম বার্তায় থাকে না।</small></div>
+<small style="color:#6B7280">প্রতিটা অর্ডারে প্রতি ধাপে একবারই যায়। Meta টেমপ্লেট APPROVED করার পর থেকে নিজে শুরু হয়।</small></div>
 @if($stats)<div class="card" style="max-width:720px"><b>Last 7 days</b> · automatic confirmations: {{ $stats['total'] }}@foreach($stats['by'] as $k=>$v) · {{ $k }}: {{ $v }}@endforeach</div>@endif
 @if(!empty($failed) && count($failed))<div class="card" style="max-width:900px"><b>Failed in the last 7 days</b><table style="width:100%;font-size:12px;margin-top:6px;border-collapse:collapse">@foreach($failed as $f)<tr style="border-top:1px solid #eee"><td style="padding:4px"><a href="/admin/orders/{{ $f->order_id }}">{{ $f->invoice }}</a></td><td style="padding:4px">{{ $f->mobile }}</td><td style="padding:4px">{{ $f->failure_reason }}</td><td style="padding:4px">{{ stripos((string)$f->failure_reason, 'undeliverable') !== false ? 'Number not reachable on WhatsApp — contact by call/SMS' : ($f->permanent ? 'Cannot retry' : 'Needs manual resend') }}</td></tr>@endforeach</table></div>@endif
 @endsection

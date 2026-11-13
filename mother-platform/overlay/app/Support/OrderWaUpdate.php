@@ -4,15 +4,14 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
 /** WhatsApp order updates after approval: "handed to courier" and "delivered". Same credentials, table and status webhook as OrderWaConfirm.
- *  One automatic message per order per stage. Nothing goes out until Meta has approved that stage's template. Values come from the order record only;
- *  product names are never included. A failure here never touches the order. */
+ *  One automatic message per order per stage. Nothing goes out until Meta has approved that stage's template. Values come from the order record only. A failure here never touches the order. */
 class OrderWaUpdate {
   const API = 'https://graph.facebook.com/v21.0';
   /** to_status => [confirmation_type, setting key, default template name, body, example values, staff label] */
   const STAGES = [
     'Shipment' => ['ORDER_SHIPPED', 'ship', 'order_shipped_update',
-      "আসসালামু আলাইকুম {{1}}, আপনার অর্ডার {{2}} কুরিয়ারে হস্তান্তর করা হয়েছে।\n\nকুরিয়ার: {{3}}\nট্র্যাকিং নম্বর: {{4}}\nমোট: ৳{{5}}\n\nডেলিভারির সময় ফোন খোলা রাখার অনুরোধ রইল। ধন্যবাদ, {{6}}।",
-      ['মোহাম্মদ ফারুক', 'DFB-102619', 'Pathao', 'DT1411263ABCD', '1,250', 'DutyFreeBD'], 'কুরিয়ারে দেওয়া হয়েছে'],
+      "আসসালামু আলাইকুম {{1}}, আপনার অর্ডার {{2}} কুরিয়ারে হস্তান্তর করা হয়েছে।\n\nপণ্য: {{3}}\nকুরিয়ার: {{4}}\nট্র্যাকিং নম্বর: {{5}}\nমোট: ৳{{6}}\n\nডেলিভারির সময় ফোন খোলা রাখার অনুরোধ রইল। ধন্যবাদ, {{7}}।",
+      ['মোহাম্মদ ফারুক', 'DFB-102619', 'Lafz Body Spray x2, Green Seven Perfume x1', 'Pathao', 'DT1411263ABCD', '1,250', 'DutyFreeBD'], 'কুরিয়ারে দেওয়া হয়েছে'],
     'Delivered' => ['ORDER_DELIVERED', 'dlv', 'order_delivered_update',
       "আসসালামু আলাইকুম {{1}}, আপনার অর্ডার {{2}} সফলভাবে ডেলিভারি হয়েছে।\n\nঅর্ডার নিয়ে কোনো সমস্যা হলে এই নম্বরেই আমাদের জানাতে পারেন। {{3}}-এর সাথে থাকার জন্য ধন্যবাদ।",
       ['মোহাম্মদ ফারুক', 'DFB-102619', 'DutyFreeBD'], 'ডেলিভারি হয়েছে'],
@@ -26,7 +25,16 @@ class OrderWaUpdate {
   public static function params(string $st, object $o): array {
     $name = mb_substr(trim((string)($o->customer_name ?? '')) ?: 'গ্রাহক', 0, 60); $inv = Inv::show($o->invoice); $brand = OrderWaConfirm::brand();
     if ($st === 'Delivered') return [$name, $inv, $brand];
-    return [$name, $inv, mb_substr(trim((string)($o->courier ?? '')) ?: 'কুরিয়ার', 0, 40), mb_substr(trim((string)($o->consignment_id ?? '')) ?: 'শীঘ্রই জানানো হবে', 0, 60), number_format((float)$o->total, 0, '.', ','), $brand];
+    return [$name, $inv, self::items((int)$o->id), mb_substr(trim((string)($o->courier ?? '')) ?: 'কুরিয়ার', 0, 40), mb_substr(trim((string)($o->consignment_id ?? '')) ?: 'শীঘ্রই জানানো হবে', 0, 60), number_format((float)$o->total, 0, '.', ','), $brand];
+  }
+  /** Product names with quantity from the order's own lines, one short line (owner decision: names may be shown). */
+  public static function items(int $orderId): string {
+    try {
+      $rows = DB::table('order_items')->where('order_id', $orderId)->orderBy('id')->limit(12)->get(['name', 'qty']);
+      $parts = []; foreach ($rows as $r) { $n = trim(preg_replace('/\s+/u', ' ', (string)$r->name)); if ($n !== '') $parts[] = mb_substr($n, 0, 45) . ' x' . max(1, (int)$r->qty); }
+      $t = implode(', ', $parts); if (mb_strlen($t) > 180) $t = mb_substr($t, 0, 177) . '...';
+      return $t !== '' ? $t : 'আপনার অর্ডারের পণ্য';
+    } catch (\Throwable $e) { return 'আপনার অর্ডারের পণ্য'; }
   }
   public static function render(string $st, array $p): string { $b = self::STAGES[$st][3]; foreach ($p as $i => $v) $b = str_replace('{{' . ($i + 1) . '}}', $v, $b); return $b; }
 
