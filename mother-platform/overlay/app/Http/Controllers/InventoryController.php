@@ -79,7 +79,7 @@ class InventoryController extends Controller {
   }
   // ---------- Stores & scanning ----------
   public function stores() {
-    $stores = DB::table('stores')->orderBy('name')->get();
+    $stores = DB::table('stores')->orderBy('name')->paginate(\App\Support\Pg::per(50))->withQueryString(); // owner 13 Nov 2026: 50 per page, Next/Previous at the bottom, like every other list
     $counts = DB::table('store_products')->select('store_id', DB::raw('count(*) n'), DB::raw('sum(case when published then 1 else 0 end) pub'))->groupBy('store_id')->get()->keyBy('store_id');
     $own = ['n'=>DB::table('products')->count(), 'pub'=>DB::table('products')->where('published',true)->count()];
     $get = fn($k, $d) => (string)(DB::table('settings')->where('key', $k)->value('value') ?? $d);
