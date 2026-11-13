@@ -142,6 +142,16 @@ class ChatController extends Controller {
     if ($on) { $tid = (int)$id; app()->terminating(fn() => Chat::aiReply($tid)); }
     return response()->json(['ok'=>true, 'ai'=>$on]);
   }
+  /** Staff decision: the hand-off is finished, give this conversation back to the AI (clears the Handoff banner; the AI answers the waiting message if there is one). */
+  public function handoffRelease(Request $r, $id) {
+    $tid = (int)$id; $t = DB::table('chat_threads')->find($tid); abort_unless($t, 404);
+    \Illuminate\Support\Facades\Cache::forget('ai.manual_off.'.$tid);
+    DB::table('chat_threads')->where('id', $tid)->update(['needs_human'=>false, 'handoff_at'=>null, 'handoff_reason'=>null, 'ai_paused'=>false, 'updated_at'=>now()]);
+    try { if (\Illuminate\Support\Facades\Schema::hasTable('chat_handoffs')) DB::table('chat_handoffs')->where('thread_id', $tid)->where('status', 'open')->update(['status'=>'done', 'updated_at'=>now()]); } catch (\Throwable $e) {}
+    try { DB::table('audit_logs')->insert(['user_id'=>auth()->id(), 'user_name'=>auth()->user()->name ?? '', 'action'=>'chat.handoff_release', 'subject'=>'Conversation #'.$tid.' given back to the AI', 'ip'=>$r->ip(), 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {}
+    app()->terminating(fn() => Chat::aiReply($tid));
+    return response()->json(['ok'=>true]);
+  }
   /** Fix the AI reply language for one conversation (auto = follow the customer). Only wording changes; facts stay the same. */
   public function lang(Request $r, $id) {
     $v = (string)$r->input('lang', 'auto'); if (!in_array($v, ['auto', 'bangla', 'english', 'banglish'], true)) return response()->json(['ok'=>false], 422);
