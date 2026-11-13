@@ -87,7 +87,7 @@ class Deployer
     return $o;
   }
 
-  private static function rd(string $f): string { return is_file(self::D . '/' . $f) ? trim((string)@file_get_contents(self::D . '/' . $f)) : ''; }
+  private static function rd(string $f): string { return is_file(self::D . '/' . $f) ? trim(mb_scrub((string)@file_get_contents(self::D . '/' . $f), 'UTF-8')) : ''; } // a log line cut in the middle of a Bengali letter must never reach the database as broken bytes
 
   public static function setting(string $k, string $def = ''): string { $v = DB::table('settings')->where('key', $k)->value('value'); return $v === null ? $def : (string)$v; }
   public static function put(string $k, string $v): void { DB::table('settings')->updateOrInsert(['key' => $k], ['value' => $v, 'updated_at' => now(), 'created_at' => now()]); }
