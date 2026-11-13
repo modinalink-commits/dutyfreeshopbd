@@ -1,12 +1,13 @@
 <?php
 namespace App\Support;
-/** Owner rule (13 Nov 2026): the storefront menu shows 8 main groups; the other categories sit inside them. Display only: categories, products, importers, prepaid rules and feeds are untouched. A category not listed here is shown on its own so nothing disappears. */
+/** Owner rule (13 Nov 2026): the storefront menu shows 9 main groups (Lighter & Accessories is its own main group right after Cigarette and Vape, owner 13 Nov 2026 evening); the other categories sit inside them. Display only: categories, products, importers, prepaid rules and feeds are untouched. A category not listed here is shown on its own so nothing disappears. */
 class MenuGroups {
   const GROUPS = [
     ['Cigarette and Vape', 'cigarette-vape', ['cigarette-vape']],
+    ['Lighter and Accessories', 'lighter-accessories', ['lighter-accessories']],
     ['Perfume and Atar', 'perfume', ['perfume']],
     ['Beauty and Care', 'beauty', ['beauty', 'skin-care', 'hair-care', 'wellness']],
-    ['Fashion and Accessories', 'fashion', ['fashion', 'sunglass', 'lighter-accessories']],
+    ['Fashion and Accessories', 'fashion', ['fashion', 'sunglass']],
     ['Watch', 'watch', ['watch']],
     ['Gadget and Electronics', 'gadget-electronics', ['gadget-electronics']],
     ['Baby Care', 'others', ['others']],

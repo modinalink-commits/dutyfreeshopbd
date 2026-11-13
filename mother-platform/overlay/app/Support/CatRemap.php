@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\DB;
 /** One place that says where a product belongs in the 8 main categories. Importers / store scans call apply() so every new store is sorted the same way. */
 class CatRemap {
   /** legacy category slug => main category slug (the 8 mains: cigarette-vape, perfume, beauty, fashion, watch, gadget-electronics, others, daily-needs) */
-  const LEGACY = ['sunglass' => 'fashion', 'lighter-accessories' => 'fashion', 'hair-care' => 'beauty', 'skin-care' => 'beauty', 'wellness' => 'beauty'];
+  const LEGACY = ['sunglass' => 'fashion', 'hair-care' => 'beauty', 'skin-care' => 'beauty', 'wellness' => 'beauty'];
 
   /** @return array [main slug, sub] */
   public static function map(string $slug, string $sub, string $name = '', string $desc = ''): array {
