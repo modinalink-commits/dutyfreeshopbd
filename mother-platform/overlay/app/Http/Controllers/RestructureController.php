@@ -26,9 +26,12 @@ class RestructureController extends Controller {
     $fs = $r->input('fs'); if ($fs !== null && $fs !== '*') $q->where('sub', (string)$fs);
     if ($re = (string)$r->input('re')) $q->whereRaw('name ~* ?', [$re]);
     if ($nre = (string)$r->input('nre')) $q->whereRaw('name !~* ?', [$nre]);
+    if ($dre = (string)$r->input('dre')) $q->whereRaw("(name || ' ' || coalesce(description,'') || ' ' || coalesce(meta_keywords,'')) ~* ?", [$dre]); // name + description + keywords
+    if ($ndre = (string)$r->input('ndre')) $q->whereRaw("(name || ' ' || coalesce(description,'') || ' ' || coalesce(meta_keywords,'')) !~* ?", [$ndre]);
+    if ($r->filled('pub')) $q->where('published', $r->boolean('pub'));
     if ($ids = $r->input('ids')) $q->whereIn('id', array_map('intval', (array)$ids));
     $total = (clone $q)->count(); $ts = trim((string)$r->input('ts'));
-    if (!$r->boolean('commit')) return response()->json(['dry' => true, 'matches' => $total, 'sample' => (clone $q)->limit(15)->pluck('name')]);
+    if (!$r->boolean('commit')) return response()->json(['dry' => true, 'matches' => $total, 'sample' => (clone $q)->limit(min(60, (int)($r->input('sn') ?: 15)))->pluck('name')]);
     $batch = 'b' . now()->format('mdHis') . substr(md5(random_bytes(4)), 0, 4); $n = 0;
     foreach ($q->orderBy('id')->limit((int)($r->input('limit') ?: 1500))->get() as $p) {
       $old = StoreController::url($p); $sub = $ts !== '' ? $ts : (string)$p->sub;
