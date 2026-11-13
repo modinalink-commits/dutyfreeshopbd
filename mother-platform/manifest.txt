@@ -1091,3 +1091,4 @@ database/migrations/2026_11_14_020000_sourcing_vendor_payable.php
 database/migrations/2026_11_14_030000_purchase_sourced_by.php
 database/migrations/2026_11_14_040000_hr_department_fix.php
 database/migrations/2026_11_14_050000_speed_indexes.php
+database/migrations/2026_11_14_060000_order_61113213_consignment.php
