@@ -88,9 +88,16 @@ class VoiceChat
       $key = self::scribeKey(); if (!$key) return [null, 'no key'];
       if ($bytes === '' || strlen($bytes) > 24 * 1048576) return [null, 'file too large'];
       $ext = preg_match('/^[a-z0-9]{2,5}$/', $ext) ? $ext : 'ogg'; $text = ''; $err = '';
+      // The language is fixed to the shop's voice language (Bengali by default): automatic detection mistook Bengali speech for Urdu.
+      $lang = self::set('lang'); $lc = ['language_code' => str_starts_with($lang, 'en') ? 'en' : 'bn'];
       foreach (['scribe_v2', 'scribe_v1'] as $model) {
-        $r = Http::timeout(60)->withHeaders(['xi-api-key' => $key])->attach('file', $bytes, 'voice.' . $ext)->post('https://api.elevenlabs.io/v1/speech-to-text', ['model_id' => $model, 'tag_audio_events' => 'false', 'timestamps_granularity' => 'none']);
-        if ($r->ok()) { $text = trim((string)$r->json('text')); $err = ''; break; }
+        $r = Http::timeout(60)->withHeaders(['xi-api-key' => $key])->attach('file', $bytes, 'voice.' . $ext)->post('https://api.elevenlabs.io/v1/speech-to-text', ['model_id' => $model, 'tag_audio_events' => 'false', 'timestamps_granularity' => 'none'] + $lc);
+        if ($r->ok()) {
+          $text = trim((string)$r->json('text')); $err = '';
+          // Our customers speak Bengali / Banglish / English. Text in another script (the engine once heard Bengali as Urdu) is a wrong hearing, never an answerable message.
+          if ($text !== '' && preg_match('/[\x{0600}-\x{06FF}\x{0750}-\x{077F}\x{0900}-\x{097F}]/u', $text)) { $err = 'SCRIBE wrong language (' . (string)$r->json('language_code') . ')'; $text = ''; }
+          break;
+        }
         $msg = $r->json('detail.message') ?? $r->json('detail.0.msg') ?? (is_string($r->json('detail')) ? $r->json('detail') : '');
         $err = 'SCRIBE HTTP ' . $r->status() . ' ' . mb_substr((string)$msg, 0, 130);
         if (!in_array($r->status(), [400, 404, 422], true)) break; // only a model / parameter problem is worth trying the older model
