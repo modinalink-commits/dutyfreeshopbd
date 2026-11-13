@@ -108,6 +108,7 @@ class ChatController extends Controller {
       $att = url('/uploads/chat/'.$name); $type = $isAudio ? 'audio' : (str_starts_with($mime, 'image/') ? 'image' : 'file');
     } elseif (!empty($d['image_url']) && str_starts_with($d['image_url'], '/')) { $att = url($d['image_url']); $type = 'image'; }
     if ($body === '' && !$att) return response()->json(['ok'=>false, 'error'=>'Write a message first.'], 422);
+    if ($body !== '' && in_array($d['kind'] ?? 'text', ['text', 'quick'], true)) $body = mb_substr(Chat::staffGreet($t, (string)(auth()->user()->name ?? ''), (int)auth()->id()).$body, 0, 3500);
     $t0 = now(); // customer messages that arrive after this moment were not answered by this reply
     [$ok, $err] = Chat::deliver($t, $body, $att, $type ?? 'image');
     $mid = DB::table('chat_messages')->insertGetId(['thread_id'=>$id, 'dir'=>'out', 'kind'=>$d['kind'] ?? ($att ? 'file' : 'text'), 'body'=>$body, 'attachment_url'=>$att, 'attachment_type'=>$type,

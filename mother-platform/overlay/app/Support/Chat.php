@@ -470,6 +470,19 @@ class Chat {
   }
 
   public static array $dlog = [];
+  /** Owner rule: an agent's first message to a customer opens with a salam carrying the customer's name and the agent's own name; the agent's text follows.
+   *  "First" = this agent has not written in this conversation in the last 12 hours. Returns the prefix ('' when none is due). Switch: setting chat_staff_greet. */
+  public static function staffGreet(object $t, string $agent, int $uid): string {
+    try {
+      if (Procure::set('chat_staff_greet', '1') !== '1') return '';
+      if (DB::table('chat_messages')->where('thread_id', $t->id)->where('dir', 'out')->where('user_id', $uid)->where('created_at', '>', now()->subHours(12)->toDateTimeString())->exists()) return '';
+      $n = trim(preg_replace('/\s+/u', ' ', (string)($t->name ?? '')));
+      if ($n === '' || preg_match('/\d{5,}|whatsapp user|guest|visitor|unknown|facebook user|instagram user/iu', $n) || !preg_match('/\p{L}{2,}/u', $n)) $n = '';
+      else $n = mb_substr(implode(' ', array_slice(explode(' ', $n), 0, 3)), 0, 40);
+      $a = trim((string)explode(' ', trim($agent))[0]);
+      return 'আসসালামু আলাইকুম'.($n !== '' ? ' '.$n : '').', DutyFreeBD থেকে '.($a !== '' ? $a.' ' : '').'বলছি।'."\n\n";
+    } catch (\Throwable $e) { return ''; }
+  }
   public static function deliver(object $t, string $body, ?string $att = null, string $attType = 'image'): array {
     try {
       if ($t->channel === 'web') return [true, null];
