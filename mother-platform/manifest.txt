@@ -1060,3 +1060,8 @@ public/banners/hero-brands.mp4
 public/banners/hero-brands-m.webp
 public/banners/hero-brands-m.mp4
 database/migrations/2026_11_13_214000_hero_brands_slide.php
+public/banners/hero-perfume.webp
+public/banners/hero-perfume.mp4
+public/banners/hero-perfume-m.webp
+public/banners/hero-perfume-m.mp4
+database/migrations/2026_11_13_220000_hero_perfume_slide.php
