@@ -4,6 +4,29 @@ $__bolt = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="c
 $__and = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M12 8v6M9.5 11.5 12 14l2.5-2.5"/></svg>';
 $__ios = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="3.5"/><path d="M10 18.5h4M12 7v5M9.5 9.5 12 12l2.5-2.5"/></svg>';
 @endphp
+<style>.hxside{display:none}
+.hxf,.hxa2{border-radius:14px;min-width:0;position:relative;overflow:hidden}
+.hxf{background:#FF5A00;color:#fff;padding:12px;display:flex;flex-direction:column;gap:8px}
+.hxa2{background:#0B1220;color:#fff;padding:12px;display:flex;flex-direction:column;justify-content:space-between;gap:8px}
+.hxfh{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:13px}.hxfh>b{display:inline-flex;align-items:center;gap:5px;font-weight:700}
+.hxf .tm{font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;background:rgba(255,255,255,.2);font-variant-numeric:tabular-nums;color:#fff}.hxf .tm b{font-weight:700;color:#fff!important}
+.hxfs{position:relative;flex:1;min-height:92px}
+.hxfi{position:absolute;inset:0;display:flex;gap:10px;align-items:center;opacity:0;transition:opacity .5s;pointer-events:none;color:#fff;text-decoration:none}
+.hxfi.on{opacity:1;pointer-events:auto}
+.hxfp{width:86px;height:86px;flex:none;border-radius:10px;background:#fff;display:grid;place-items:center;overflow:hidden}.hxfp img{width:100%;height:100%;object-fit:contain;display:block}
+.hxft{display:flex;flex-direction:column;gap:3px;min-width:0}
+.hxfn{font-size:12.5px;font-weight:600;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.hxfr{font-size:15px;font-weight:800}.hxfr s{font-size:11px;font-weight:500;opacity:.8;margin-left:5px}
+.hxfo{font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:99px;background:#fff;color:#C2410C;align-self:flex-start}
+.hxfd{display:flex;gap:5px;justify-content:center}.hxfd i{width:6px;height:6px;border-radius:50%;background:#fff;opacity:.4;transition:.3s;cursor:pointer}.hxfd i.on{opacity:1;width:16px;border-radius:4px}
+.hxfa{color:#fff;font-weight:700;text-decoration:none;font-size:14px;margin-top:auto}
+.hxat b{display:block;font-size:13px}.hxat span{display:block;font-size:11px;opacity:.75;margin-top:2px}
+.hxab{display:flex;gap:8px}
+.hxbt{flex:1;border:1px solid #a6a6a6;border-radius:10px;padding:6px 9px;display:flex;align-items:center;justify-content:flex-start;gap:7px;font:inherit;cursor:pointer;color:#fff;background:#000;min-width:0;min-height:44px;transition:transform .15s,filter .15s}
+.hxbt:hover{transform:translateY(-1px);filter:brightness(1.15)}.hxbt svg{width:22px;height:22px;flex:none}.hxbt span{display:flex;flex-direction:column;text-align:left;line-height:1.1;min-width:0}.hxbt small{font-size:8.5px;font-weight:500;opacity:.8;white-space:nowrap}.hxbt strong{font-size:13px;font-weight:700}
+@media (min-width:1024px){.hx:has(.hxside){grid-template-columns:minmax(0,1fr) 250px}.hxside{display:flex;flex-direction:column;gap:10px;min-width:0}.hxf{flex:1.55}.hxa2{flex:1}}
+@media (max-width:1023px){.hx:has(.hxside) .hxside{display:flex;gap:8px;margin-top:8px}.hxf{flex:1.3}.hxa2{flex:1}.hxfp{width:64px;height:64px}.hxfs{min-height:68px}.hxfn{font-size:12px}.hxab{flex-direction:column;gap:6px}.hxbt{min-height:38px;padding:4px 10px}.hxat span{display:none}}
+.pm{padding-top:12px}.pm a{padding:7px 12px}.pm i{width:28px;height:28px}</style>
 <aside class="hxside" aria-label="Flash Sale and App">
 <div class="hxf">
 <div class="hxfh"><b>{!! $__bolt !!}Flash Sale</b>@if($__hf->count() && isset($fmt) && isset($fEnd))<span class="tm" data-end="{{ !empty($fFix) ? $fEnd * 1000 : '' }}"><b data-cd="h">{{ substr($fmt($fEnd),0,2) }}</b>:<b data-cd="m">{{ substr($fmt($fEnd),3,2) }}</b>:<b data-cd="s">{{ substr($fmt($fEnd),6,2) }}</b></span>@endif</div>
@@ -32,26 +55,3 @@ dt.forEach(function(e,j){e.onclick=function(){show(j)}});
 var f=s.querySelector('.hxf');f.addEventListener('mouseenter',function(){hov=true});f.addEventListener('mouseleave',function(){hov=false});
 if('IntersectionObserver' in window)new IntersectionObserver(function(x){vis=x[0].isIntersecting}).observe(s);
 if(!(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches))setInterval(function(){if(!hov&&vis&&!document.hidden)show(n+1)},3500)})();</script>
-<style>.hxside{display:none}
-.hxf,.hxa2{border-radius:14px;min-width:0;position:relative;overflow:hidden}
-.hxf{background:#FF5A00;color:#fff;padding:12px;display:flex;flex-direction:column;gap:8px}
-.hxa2{background:#0B1220;color:#fff;padding:12px;display:flex;flex-direction:column;justify-content:space-between;gap:8px}
-.hxfh{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:13px}.hxfh>b{display:inline-flex;align-items:center;gap:5px;font-weight:700}
-.hxf .tm{font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;background:rgba(255,255,255,.2);font-variant-numeric:tabular-nums;color:#fff}.hxf .tm b{font-weight:700;color:#fff!important}
-.hxfs{position:relative;flex:1;min-height:92px}
-.hxfi{position:absolute;inset:0;display:flex;gap:10px;align-items:center;opacity:0;transition:opacity .5s;pointer-events:none;color:#fff;text-decoration:none}
-.hxfi.on{opacity:1;pointer-events:auto}
-.hxfp{width:86px;height:86px;flex:none;border-radius:10px;background:#fff;display:grid;place-items:center;overflow:hidden}.hxfp img{width:100%;height:100%;object-fit:contain;display:block}
-.hxft{display:flex;flex-direction:column;gap:3px;min-width:0}
-.hxfn{font-size:12.5px;font-weight:600;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.hxfr{font-size:15px;font-weight:800}.hxfr s{font-size:11px;font-weight:500;opacity:.8;margin-left:5px}
-.hxfo{font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:99px;background:#fff;color:#C2410C;align-self:flex-start}
-.hxfd{display:flex;gap:5px;justify-content:center}.hxfd i{width:6px;height:6px;border-radius:50%;background:#fff;opacity:.4;transition:.3s;cursor:pointer}.hxfd i.on{opacity:1;width:16px;border-radius:4px}
-.hxfa{color:#fff;font-weight:700;text-decoration:none;font-size:14px;margin-top:auto}
-.hxat b{display:block;font-size:13px}.hxat span{display:block;font-size:11px;opacity:.75;margin-top:2px}
-.hxab{display:flex;gap:8px}
-.hxbt{flex:1;border:1px solid #a6a6a6;border-radius:10px;padding:6px 9px;display:flex;align-items:center;justify-content:flex-start;gap:7px;font:inherit;cursor:pointer;color:#fff;background:#000;min-width:0;min-height:44px;transition:transform .15s,filter .15s}
-.hxbt:hover{transform:translateY(-1px);filter:brightness(1.15)}.hxbt svg{width:22px;height:22px;flex:none}.hxbt span{display:flex;flex-direction:column;text-align:left;line-height:1.1;min-width:0}.hxbt small{font-size:8.5px;font-weight:500;opacity:.8;white-space:nowrap}.hxbt strong{font-size:13px;font-weight:700}
-@media (min-width:1024px){.hx:has(.hxside){grid-template-columns:minmax(0,1fr) 250px}.hxside{display:flex;flex-direction:column;gap:10px;min-width:0}.hxf{flex:1.55}.hxa2{flex:1}}
-@media (max-width:1023px){.hx:has(.hxside) .hxside{display:flex;gap:8px;margin-top:8px}.hxf{flex:1.3}.hxa2{flex:1}.hxfp{width:64px;height:64px}.hxfs{min-height:68px}.hxfn{font-size:12px}.hxab{flex-direction:column;gap:6px}.hxbt{min-height:38px;padding:4px 10px}.hxat span{display:none}}
-.pm{padding-top:12px}.pm a{padding:7px 12px}.pm i{width:28px;height:28px}</style>
