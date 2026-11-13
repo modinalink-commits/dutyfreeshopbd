@@ -38,6 +38,31 @@ class VoiceChatController extends Controller
     try { DB::table('audit_logs')->insert(['user_id' => auth()->id(), 'user_name' => auth()->user()->name, 'action' => 'voicechat.retest', 'subject' => "Voice re-test: $ok understood, $bad not", 'ip' => request()->ip(), 'created_at' => now(), 'updated_at' => now()]); } catch (\Throwable $e) {}
     return response()->json(['tried' => $n, 'ok' => $ok, 'failed' => $bad, 'errors' => $errs]);
   }
+  /**
+   * Owner request (14 Nov 2026): answer the customers whose voice message was never answered. Only conversations where that voice message is STILL the last message
+   * (nobody replied, the customer wrote nothing after it) and that are inside the platforms' 24-hour reply window. The normal AI reply is used, with all its own rules
+   * (AI hours, paused conversations, hand-offs, daily limits). dry=1 only counts. A few conversations per call; each one is tried once.
+   */
+  public function replyBacklog(Request $r) {
+    @set_time_limit(170); $t0 = time();
+    $rows = DB::select("select t.id as tid, m.id as mid, m.created_at as at, coalesce(m.transcript,'') as tr from chat_threads t join chat_messages m on m.id = (select max(x.id) from chat_messages x where x.thread_id = t.id)
+      where t.channel in ('whatsapp','facebook') and m.dir = 'in' and m.attachment_type = 'audio' and m.attachment_url is not null and m.created_at >= ? order by m.id desc limit 3000", [now()->subDays(7)->toDateTimeString()]);
+    $cut = now()->subHours(23)->toDateTimeString(); $fresh = []; $old = 0;
+    foreach ($rows as $x) { if ((string)$x->at >= $cut) $fresh[] = $x; else $old++; }
+    $todo = array_values(array_filter($fresh, fn($x) => !\Illuminate\Support\Facades\Cache::has('vb.done.' . $x->tid)));
+    if ($r->boolean('dry')) return response()->json(['in_window' => count($fresh), 'not_tried_yet' => count($todo), 'older_than_24h' => $old, 'ai_hours_now' => \App\Support\AiSchedule::activeNow()]);
+    $sent = 0; $nosend = 0; $notext = 0; $n = 0;
+    foreach ($todo as $x) {
+      if ($n >= 4 || time() - $t0 > 100) break; $n++;
+      \Illuminate\Support\Facades\Cache::put('vb.done.' . $x->tid, 1, 86400);
+      if (trim((string)$x->tr) === '') { \App\Support\Chat::transcribe((int)$x->mid); if (trim((string)DB::table('chat_messages')->where('id', $x->mid)->value('transcript')) === '') { $notext++; continue; } }
+      try { \App\Support\Chat::aiReply((int)$x->tid); } catch (\Throwable $e) { report($e); }
+      $last = DB::table('chat_messages')->where('thread_id', $x->tid)->orderByDesc('id')->first(['dir']);
+      if ($last && $last->dir === 'out') $sent++; else $nosend++;
+    }
+    try { if ($n) DB::table('audit_logs')->insert(['user_id' => auth()->id(), 'user_name' => auth()->user()->name, 'action' => 'voicechat.backlog', 'subject' => "Voice backlog: $sent answered, $nosend not sent by AI rules, $notext not understood", 'ip' => $r->ip(), 'created_at' => now(), 'updated_at' => now()]); } catch (\Throwable $e) {}
+    return response()->json(['tried' => $n, 'answered' => $sent, 'not_sent' => $nosend, 'not_understood' => $notext, 'remaining' => max(0, count($todo) - $n), 'older_than_24h' => $old]);
+  }
   /** Admin test: speaks a short Bangla line with the saved key and returns the audio. */
   public function test() {
     if (!VoiceChat::key()) return response()->json(['error' => 'Save the Google API key first.'], 422);
