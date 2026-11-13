@@ -122,6 +122,14 @@ class DeployHealth
       if (DB::table('deploy_issues')->where('fingerprint', $fp)->where('status', 'ignored')->where('updated_at', '>', now()->subDay())->exists()) return;
       DB::table('deploy_issues')->insert(['fingerprint' => $fp, 'title' => mb_substr($title, 0, 200), 'severity' => $sev, 'service' => $service, 'description' => mb_substr($desc, 0, 1500), 'cause' => mb_substr($cause, 0, 800), 'action' => mb_substr($action, 0, 800),
         'status' => 'open', 'deployment_id' => $dep, 'detected_at' => now(), 'created_at' => now(), 'updated_at' => now()]);
+      if (in_array($sev, ['critical', 'high'], true)) self::forward($title, $sev, $service, $desc, $action);
+    } catch (\Throwable $e) {}
+  }
+  /** New high/critical alert -> n8n webhook (Telegram). Fire-and-forget, 3 s timeout, never breaks the alert itself. */
+  private static function forward(string $title, string $sev, string $service, string $desc, string $action): void {
+    try {
+      $u = (string)DB::table('settings')->where('key', 'n8n_alert_webhook')->value('value'); if (!str_starts_with($u, 'https://')) return;
+      \Illuminate\Support\Facades\Http::timeout(3)->post($u, ['title' => $title, 'severity' => $sev, 'module' => $service, 'description' => $desc, 'action' => $action, 'at' => now('Asia/Dhaka')->format('d M Y H:i')]);
     } catch (\Throwable $e) {}
   }
   public static function resolve(string $fp, string $by = 'System (auto)', bool $like = false): void {
