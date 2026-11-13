@@ -31,10 +31,17 @@ class OrderWaUpdate {
   public static function items(int $orderId): string {
     try {
       $rows = DB::table('order_items')->where('order_id', $orderId)->orderBy('id')->limit(12)->get(['name', 'qty']);
-      $parts = []; foreach ($rows as $r) { $n = trim(preg_replace('/\s+/u', ' ', (string)$r->name)); if ($n !== '') $parts[] = mb_substr($n, 0, 45) . ' x' . max(1, (int)$r->qty); }
+      $parts = []; foreach ($rows as $r) { $n = self::short((string)$r->name); if ($n !== '') $parts[] = $n . ' x' . max(1, (int)$r->qty); }
       $t = implode(', ', $parts); if (mb_strlen($t) > 180) $t = mb_substr($t, 0, 177) . '...';
       return $t !== '' ? $t : 'আপনার অর্ডারের পণ্য';
     } catch (\Throwable $e) { return 'আপনার অর্ডারের পণ্য'; }
+  }
+  /** Short, recognisable name: restricted-category words are dropped and at most four words are kept ("Davidoff Gold Malaysia Cigarette 20s" -> "Davidoff Gold Malaysia"). */
+  public static function short(string $name): string {
+    $n = preg_replace('/\b(cigarettes?|cigars?|tobacco|nicotine|vapes?|e-?liquid|smok(e|ing)|nano|slims?|sticks?|cartons?|\d+\s*s)\b|সিগারেট|তামাক|ভেপ|কার্টন/iu', ' ', $name);
+    $n = trim(preg_replace('/[\s\-–|,()]+/u', ' ', (string)$n));
+    $w = array_slice(array_values(array_filter(explode(' ', $n), fn($x) => $x !== '')), 0, 4);
+    return mb_substr(implode(' ', $w), 0, 40);
   }
   public static function render(string $st, array $p): string { $b = self::STAGES[$st][3]; foreach ($p as $i => $v) $b = str_replace('{{' . ($i + 1) . '}}', $v, $b); return $b; }
 
