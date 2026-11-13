@@ -1050,3 +1050,8 @@ public/banners/hero-marlboro-m.webp
 public/banners/hero-marlboro-m.mp4
 database/migrations/2026_11_13_203500_hero_marlboro_slide.php
 database/migrations/2026_11_13_210000_hero_cache_flush.php
+public/banners/hero-manchester.webp
+public/banners/hero-manchester.mp4
+public/banners/hero-manchester-m.webp
+public/banners/hero-manchester-m.mp4
+database/migrations/2026_11_13_213000_hero_manchester_slide.php
