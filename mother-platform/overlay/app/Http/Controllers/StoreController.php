@@ -786,8 +786,32 @@ class StoreController extends Controller {
     if (preg_match('#^(vape|exclusive-deals|premium-cigarette|nano-cigarette|cigarettes?|cigars?)(/.*)?$#i', $pp)) return redirect('/cigarette-vape/', 301); // old tobacco category URLs -> tobacco hub (noindex)
     return response()->view('store.missing', $this->base(['title'=>'পেজ পাওয়া যায়নি | DutyFree BD', 'desc'=>'', 'canon'=>url('/'), 'noindex'=>true]), 404);
   }
-  public function sitemap() {
-    $xml = self::rem('store.sitemap15', 3600, function () {
+  /**
+   * /sitemap.xml is a sitemap index; /sitemap-pages.xml lists home, categories, brands, blog and pages; /sitemap-<category>.xml lists that category's products.
+   * All parts are built together once an hour (same rules as before: only pages that really open, tobacco/vape never listed).
+   */
+  public function sitemap(?string $part = null) {
+    $B = \App\Support\Domain::main(); $pre = 'smap16.' . (Cache::get('store.ver') ?: 0) . (\App\Support\CleanSite::on() ? '.c' : '') . '.';
+    $idx = Cache::get($pre . 'idx');
+    if (!is_array($idx) || ($part !== null && isset($idx[$part]) && !Cache::has($pre . 'p.' . $part))) {
+      $parts = $this->sitemapParts(); $idx = [];
+      foreach ($parts as $k => $body) { Cache::put($pre . 'p.' . $k, $body, 4200); $idx[$k] = substr_count($body, '<url>'); }
+      Cache::put($pre . 'idx', $idx, 3600);
+      try { Cache::put('store.sitemap.total', array_sum($idx), 86400); } catch (\Throwable $e) {}
+    }
+    $h = ['Content-Type' => 'application/xml; charset=utf-8'];
+    if ($part === null) {
+      $o = ''; $lm = date('c');
+      foreach ($idx as $k => $n) if ($n > 0) $o .= '<sitemap><loc>' . e($B . '/sitemap-' . $k . '.xml') . '</loc><lastmod>' . $lm . '</lastmod></sitemap>';
+      return response('<?xml version="1.0" encoding="UTF-8"?>' . "\n" . '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . $o . '</sitemapindex>', 200, $h);
+    }
+    abort_unless(isset($idx[$part]), 404);
+    return response('<?xml version="1.0" encoding="UTF-8"?>' . "\n" . '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">' . (string)Cache::get($pre . 'p.' . $part, '') . '</urlset>', 200, $h);
+  }
+  /** @return array<string,string> part name => <url> entries ('pages' first, then one part per main category slug). */
+  private function sitemapParts(): array {
+    $parts = [];
+    $xml = (function () use (&$parts) {
       $B = \App\Support\Domain::main(); $ul = fn($p) => $B.'/'.ltrim($p, '/'); /* sitemap always lists the main domain, whichever domain asked */
       $u = fn($loc, $img = null, $lm = null) => '<url><loc>'.e($loc).'</loc>'.($lm ? '<lastmod>'.date('c', strtotime((string)$lm)).'</lastmod>' : '').'<changefreq>daily</changefreq>'.($img ? '<image:image><image:loc>'.e(preg_match('#^https?://#i', (string)$img) ? $img : $B.'/'.ltrim((string)$img, '/')).'</image:loc></image:image>' : '').'</url>';
       $o = $u($ul('/'));
@@ -802,9 +826,10 @@ class StoreController extends Controller {
       $smkIds = $this->cats()->filter(fn($c) => self::isSmokeCat($c))->pluck('id')->all();
       $pq = \App\Support\StockGuard::listable(DB::table('products')->where('published',true))->where(fn($q)=>$q->whereNull('group_key')->orWhere('group_key','!=','smoke'));
       if ($smkIds) $pq->where(fn($q) => $q->whereNull('category_id')->orWhereNotIn('category_id', $smkIds));
-      foreach ($pq->orderBy('id')->cursor() as $p) $o .= $u($ul(self::url($p)), $p->image, $p->updated_at ?? null);
-      return '<?xml version="1.0" encoding="UTF-8"?>'."\n".'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">'.$o.'</urlset>';
-    });
-    return response($xml, 200, ['Content-Type'=>'application/xml; charset=utf-8']);
+      foreach ($pq->orderBy('id')->cursor() as $p) { $pu = self::url($p); $k = explode('/', ltrim($pu, '/'))[0]; if ($k === 'p' || !preg_match('/^[a-z0-9-]{1,60}$/', $k) || $k === 'pages') $k = 'other-products'; $parts[$k] = ($parts[$k] ?? '') . $u($ul($pu), $p->image, $p->updated_at ?? null); }
+      return $o;
+    })();
+    ksort($parts);
+    return ['pages' => $xml] + $parts;
   }
 }

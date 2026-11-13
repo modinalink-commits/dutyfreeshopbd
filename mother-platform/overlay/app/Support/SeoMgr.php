@@ -93,9 +93,9 @@ class SeoMgr
   }
 
   public static function sitemapStats(bool $rebuild = false): array {
-    if ($rebuild) { Cache::forget('store.sitemap5'); try { app(\App\Http\Controllers\StoreController::class)->sitemap(); } catch (\Throwable $e) {} self::put('seo_sitemap_at', now()->toDateTimeString()); }
-    $xml = (string)Cache::get('store.sitemap5', ''); $n = $xml !== '' ? substr_count($xml, '<url>') : 0;
-    return ['at' => self::get('seo_sitemap_at'), 'total' => $n, 'ok' => $n > 0 || $xml === ''];
+    if ($rebuild) { try { \App\Http\Controllers\StoreController::bust(); app(\App\Http\Controllers\StoreController::class)->sitemap(); } catch (\Throwable $e) {} self::put('seo_sitemap_at', now()->toDateTimeString()); }
+    $n = (int)Cache::get('store.sitemap.total', 0);
+    return ['at' => self::get('seo_sitemap_at'), 'total' => $n, 'ok' => true];
   }
   public static function robotsText(): string {
     $t = trim(self::get('seo_robots', self::ROBOTS)); if (self::get('seo_global_index', '1') === '0') $t = "User-agent: *\nDisallow: /";

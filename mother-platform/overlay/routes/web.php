@@ -667,6 +667,7 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestF
   Route::get('/ref/{code}', [\App\Http\Controllers\StoreController::class,'referral'])->where('code','[A-Za-z0-9]+');
   Route::get('/robots.txt', function () { $t = \App\Support\SeoMgr::robotsText(); if (!preg_match('/^\s*sitemap:/im', $t)) $t .= "\n\nSitemap: " . \App\Support\Domain::abs('/sitemap.xml'); return response($t . "\n", 200, ['Content-Type' => 'text/plain; charset=utf-8', 'Cache-Control' => 'public, max-age=300']); });
   Route::get('/sitemap.xml', [\App\Http\Controllers\StoreController::class,'sitemap']);
+  Route::get('/sitemap-{part}.xml', [\App\Http\Controllers\StoreController::class,'sitemap'])->where('part', '[a-z0-9-]{1,60}');
   Route::get('/products.xml', [\App\Http\Controllers\CatalogFeedController::class,'feed']);
   Route::post('/ai-chat', [\App\Http\Controllers\AiChatController::class,'ask'])->middleware('throttle:120,1');
   Route::get('/search-suggest', [\App\Http\Controllers\StoreController::class,'suggest'])->middleware('throttle:600,1');
