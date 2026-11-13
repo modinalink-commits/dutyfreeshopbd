@@ -11,7 +11,10 @@ Route::get('/admin/login', [A::class,'loginForm'])->name('login');
 Route::post('/admin/login', [A::class,'login'])->middleware('throttle:10,1');
 Route::post('/admin/logout', [A::class,'logout']);
 Route::get('/login', fn() => redirect('/admin/login'));
-Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Http\Middleware\PerfProbe::class, \App\Http\Middleware\OrderActivityMw::class])->prefix('admin')->group(function () {
+Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Http\Middleware\PerfProbe::class, \App\Http\Middleware\OrderActivityMw::class, \App\Http\Middleware\StaffIdleMw::class])->prefix('admin')->group(function () {
+  $SI = \App\Http\Controllers\StaffIdleController::class;
+  Route::get('/staff-idle', [$SI,'index']); Route::post('/staff-idle/settings', [$SI,'save']); Route::post('/staff-idle/{id}/review', [$SI,'review'])->whereNumber('id');
+  Route::get('/staff-idle/ping', [$SI,'ping']); Route::get('/staff-idle/notice', [$SI,'notice']); Route::post('/staff-idle/submit', [$SI,'submit']); Route::post('/staff-idle/break', [$SI,'brk']);
   Route::get('/', [A::class,'dashboard']);
   Route::get('/error-log', [\App\Http\Controllers\UploadController::class,'errorLog']);
   Route::get('/db-health', [\App\Http\Controllers\DbHealthController::class,'index']);

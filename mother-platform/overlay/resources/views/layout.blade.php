@@ -91,7 +91,7 @@ nav[role=navigation] svg,.pagination svg{width:16px!important;height:16px!import
 @include('admin_theme')
 @include('admin_table')
 @include('admin_type')
-@if(!$__emb)@include('admin_mobile')@include('admin_bell')@endif
+@if(!$__emb)@include('admin_mobile')@include('admin_bell')@include('staff_idle_js')@endif
 <script>if(window.dfSbGo)dfSbGo()</script>
 @endauth
 @if($__emb)

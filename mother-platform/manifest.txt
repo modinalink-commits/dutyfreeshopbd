@@ -813,6 +813,13 @@ database/migrations/2026_11_07_000800_whatsapp_number_01871600600.php
 app/Support/OrderWaConfirm.php
 app/Support/OrderWaUpdate.php
 app/Support/PayProof.php
+database/migrations/2026_11_14_120000_staff_idle_notices.php
+app/Support/StaffIdle.php
+app/Http/Middleware/StaffIdleMw.php
+app/Http/Controllers/StaffIdleController.php
+resources/views/staff_idle_notice.blade.php
+resources/views/staff_idle_js.blade.php
+resources/views/staff_idle_admin.blade.php
 app/Http/Controllers/OrderWaConfirmController.php
 resources/views/order_wa_confirm.blade.php
 resources/views/wa_confirm_settings.blade.php
