@@ -438,6 +438,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/watch-import/relocate', [\App\Http\Controllers\WatchImportController::class,'relocate']);
   Route::post('/restructure/move', [\App\Http\Controllers\RestructureController::class,'move']);
   Route::post('/restructure/revert', [\App\Http\Controllers\RestructureController::class,'revert']);
+  Route::get('/restructure/verify', [\App\Http\Controllers\RestructureController::class,'verify']);
   Route::get('/restructure/counts', [\App\Http\Controllers\RestructureController::class,'counts']);
   Route::post('/watch-import/describe', [\App\Http\Controllers\WatchImportController::class,'describe']);
   Route::post('/watch-import/clean', [\App\Http\Controllers\WatchImportController::class,'clean']);

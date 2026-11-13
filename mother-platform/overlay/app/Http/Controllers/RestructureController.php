@@ -54,6 +54,13 @@ class RestructureController extends Controller {
     }
     $this->bust(); return response()->json(['ok' => true, 'reverted' => $n]);
   }
+  /** GET n, offset: old URL / new URL pairs of moved products and whether the 301 row exists (the browser then fetches both). */
+  public function verify(Request $r) {
+    $rows = DB::table('product_move_log as l')->join('products as p', 'p.id', '=', 'l.product_id')->orderBy('l.id')->offset((int)$r->query('offset', 0))->limit(min(300, (int)$r->query('n', 20)))->get(['l.old_url', 'l.product_id', 'p.category_id', 'p.sub', 'p.sub_sub', 'p.path_slug', 'p.ext_id', 'p.name', 'p.published']);
+    $out = [];
+    foreach ($rows as $x) { $new = StoreController::url($x); $f = rtrim(strtolower((string)$x->old_url), '/'); $out[] = ['id' => $x->product_id, 'old' => $x->old_url, 'new' => $new, 'pub' => (bool)$x->published, 'redir' => $f === rtrim(strtolower($new), '/') ? 'same' : (DB::table('seo_redirects')->where('from_path', $f)->where('active', true)->exists() ? 'yes' : 'NO')]; }
+    return response()->json(['total' => DB::table('product_move_log')->count(), 'rows' => $out]);
+  }
   /** GET: product counts per main category and sub (the result table). */
   public function counts() {
     $o = [];
