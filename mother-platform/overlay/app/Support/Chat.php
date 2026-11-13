@@ -123,11 +123,16 @@ class Chat {
       if (!$m || $m->dir !== 'in' || $m->attachment_type !== 'audio' || !empty($m->transcript) || !VoiceChat::key()) return;
       $d = 'inbox.stt.'.now()->format('Ymd'); \Illuminate\Support\Facades\Cache::add($d, 0, 90000); if (\Illuminate\Support\Facades\Cache::increment($d) > 800) return;
       $path = public_path('uploads/chat/'.basename((string)parse_url((string)$m->attachment_url, PHP_URL_PATH)));
-      if (!is_file($path) || filesize($path) > 950000) return; // longer than a minute or so: skip rather than pay for a failing request
-      $b = (string)file_get_contents($path); $fmt = self::audioExt($b);
-      if (!in_array($fmt, ['ogg', 'webm'], true)) { $b = (string)self::toOpus($path); if ($b === '') return; }
-      [$t] = VoiceChat::transcribe($b, (int)$m->thread_id, 16000);
-      if ($t === null && VoiceChat::$lastStatus === 400) [$t] = VoiceChat::transcribe($b, (int)$m->thread_id, 48000);
+      if (!is_file($path) || filesize($path) > 20 * 1048576) return;
+      $raw = (string)file_get_contents($path); $fmt = self::audioExt($raw); $t = null;
+      // Google's short-audio API: Ogg/WebM Opus up to about a minute. Both common sample rates are tried, also when the first one hears nothing.
+      $b = $raw; if (!in_array($fmt, ['ogg', 'webm'], true)) $b = (string)self::toOpus($path);
+      if ($b !== '' && strlen($b) <= 950000) {
+        [$t] = VoiceChat::transcribe($b, (int)$m->thread_id, 16000);
+        if ($t === null) [$t] = VoiceChat::transcribe($b, (int)$m->thread_id, 48000);
+      }
+      // Second engine for everything Google could not understand or take (long clips, MP4/AAC without a converter): the AI then answers instead of stopping for staff.
+      if ($t === null) [$t] = VoiceChat::transcribeAlt($raw, (int)$m->thread_id, (string)($fmt ?: pathinfo($path, PATHINFO_EXTENSION)));
       if ($t === null) return;
       $t = mb_substr(trim(strip_tags($t)), 0, 1000); if ($t === '') return;
       DB::table('chat_messages')->where('id', $mid)->update(['transcript'=>$t, 'input_type'=>'voice', 'updated_at'=>now()]);

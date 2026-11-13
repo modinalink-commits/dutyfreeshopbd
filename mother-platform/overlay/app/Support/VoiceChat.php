@@ -58,7 +58,13 @@ class VoiceChat
       $r = Http::timeout(25)->post('https://speech.googleapis.com/v1/speech:recognize?key=' . urlencode($key), ['config' => $cfg, 'audio' => ['content' => base64_encode($bytes)]]);
       $ms = (int)((microtime(true) - $t0) * 1000);
       self::$lastStatus = $r->status();
-      if (!$r->ok()) { self::log($tid, null, 'stt', false, 'HTTP ' . $r->status() . ' ' . ($r->json('error.status') ?? ''), $ms, strlen($bytes)); return [null, 'আপনার কথা বুঝতে পারিনি। অনুগ্রহ করে লিখে জানান।', null]; }
+      // The stable v1 API rejects a second language (HTTP 400): ask again with the main language only before giving up.
+      if ($r->status() === 400 && !empty($cfg['alternativeLanguageCodes'])) {
+        unset($cfg['alternativeLanguageCodes']);
+        $r = Http::timeout(25)->post('https://speech.googleapis.com/v1/speech:recognize?key=' . urlencode($key), ['config' => $cfg, 'audio' => ['content' => base64_encode($bytes)]]);
+        $ms = (int)((microtime(true) - $t0) * 1000); self::$lastStatus = $r->status();
+      }
+      if (!$r->ok()) { self::log($tid, null, 'stt', false, 'HTTP ' . $r->status() . ' ' . ($r->json('error.status') ?? '') . ' ' . mb_substr((string)($r->json('error.message') ?? ''), 0, 120), $ms, strlen($bytes)); return [null, 'আপনার কথা বুঝতে পারিনি। অনুগ্রহ করে লিখে জানান।', null]; }
       $res = $r->json('results.0.alternatives.0') ?? []; $text = trim((string)($res['transcript'] ?? '')); $dl = $r->json('results.0.languageCode');
       if ($text === '' && !empty($cfg['alternativeLanguageCodes'])) { // retry once with the main language only
         unset($cfg['alternativeLanguageCodes']);
@@ -69,6 +75,30 @@ class VoiceChat
       self::log($tid, null, 'stt', true, '', $ms, strlen($bytes), mb_strlen($text));
       return [$text, '', $dl ? (string)$dl : $lang];
     } catch (\Throwable $e) { self::log($tid, null, 'stt', false, 'unreachable', (int)((microtime(true) - $t0) * 1000), strlen($bytes)); return [null, 'এই মুহূর্তে ভয়েস কাজ করছে না। অনুগ্রহ করে লিখে জানান।', null]; }
+  }
+
+  /**
+   * Second speech-to-text engine (OpenAI, the key already saved for AI Product Images). Used when Google could not turn a customer's voice message into words,
+   * and for clips Google's short-audio API cannot take (longer than about a minute, or MP4/AAC from Messenger). @return array{0:?string,1:string}
+   */
+  public static function transcribeAlt(string $bytes, ?int $tid, string $ext = 'ogg'): array {
+    $t0 = microtime(true);
+    try {
+      $key = AiImage::key(); if (!$key || $bytes === '' || strlen($bytes) > 24 * 1048576) return [null, 'no second engine'];
+      $ext = preg_match('/^(ogg|webm|mp3|mp4|m4a|wav|aac|amr)$/', $ext) ? $ext : 'ogg'; if ($ext === 'aac') $ext = 'm4a';
+      $hint = 'DutyFreeBD (Bangladesh online shop) customer voice message in Bengali, Banglish or English about a product, price, order, payment or delivery.';
+      $text = ''; $err = '';
+      foreach (['gpt-4o-transcribe', 'whisper-1'] as $model) {
+        $r = Http::timeout(60)->withToken($key)->attach('file', $bytes, 'voice.' . $ext)->post('https://api.openai.com/v1/audio/transcriptions', ['model' => $model, 'prompt' => $hint, 'response_format' => 'json']);
+        if ($r->ok()) { $text = trim((string)$r->json('text')); $err = ''; break; }
+        $err = 'ALT HTTP ' . $r->status() . ' ' . mb_substr((string)($r->json('error.message') ?? ''), 0, 120);
+        if (!in_array($r->status(), [400, 403, 404], true)) break; // only a model / parameter problem is worth a second model
+      }
+      $ms = (int)((microtime(true) - $t0) * 1000);
+      if ($text === '') { self::log($tid, null, 'stt', false, $err !== '' ? $err : 'ALT empty transcript', $ms, strlen($bytes)); return [null, $err ?: 'empty']; }
+      self::log($tid, null, 'stt', true, 'ALT engine', $ms, strlen($bytes), mb_strlen($text));
+      return [$text, ''];
+    } catch (\Throwable $e) { self::log($tid, null, 'stt', false, 'ALT unreachable', (int)((microtime(true) - $t0) * 1000), strlen($bytes)); return [null, 'unreachable']; }
   }
 
   /** Message text -> what is worth speaking: no links, markup, emoji or ids that sound bad aloud. */
