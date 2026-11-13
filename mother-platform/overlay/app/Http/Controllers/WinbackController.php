@@ -8,7 +8,17 @@ use Illuminate\Support\Facades\DB;
 /** Marketing & Offers -> Win-Back Offers (Customer Reactivation). */
 class WinbackController extends Controller
 {
+  /** Any save/run on this page makes the next page view read fresh figures. */
+  public function __construct() { try { if (!request()->isMethod('GET')) \Illuminate\Support\Facades\Cache::put('wb.ver', microtime(true), 86400); } catch (\Throwable $e) {} }
+  /** The page reads whole-table summaries; they are kept for 60 s (serialized) so reopening / switching tabs is instant. */
   public function index(Request $r) {
+    $k = 'wb.page.' . (\Illuminate\Support\Facades\Cache::get('wb.ver') ?: 0) . '.' . (int)$r->query('stage', 0) . '.' . preg_replace('/[^a-z]/', '', (string)$r->query('view', ''));
+    try { $raw = \Illuminate\Support\Facades\Cache::get($k); if (is_string($raw) && is_array($d = @unserialize($raw))) return view('winback', $d); } catch (\Throwable $e) {}
+    $d = $this->build($r);
+    try { \Illuminate\Support\Facades\Cache::put($k, serialize($d), 60); } catch (\Throwable $e) {}
+    return view('winback', $d);
+  }
+  private function build(Request $r): array {
     $st = W::stages(); $buckets = []; foreach ($st as $s) $buckets[$s[0]] = 0; $over = 0; $rows = []; $flt = (int)$r->query('stage', 0);
     foreach (W::lastDelivered() as $p => $x) {
       $d = W::days($x['at']); $s = W::stageFor($d); if (!$s) continue; $buckets[$s[0]]++;
@@ -47,7 +57,7 @@ class WinbackController extends Controller
       $e->sent_ts = $sent; $e->next_ts = $next; $e->wb_status = $status; $e->left = max(0, (int)ceil(($next - time()) / 86400)); $rows2[] = $e;
     }
     $d['hist2'] = collect($rows2)->when(in_array($view, ['sent', 'converted', 'failed'], true), fn($c) => $c->filter(fn($e) => $view === 'sent' ? $e->wb_status !== 'Failed' : strtolower($e->wb_status) === $view))->take(150)->values();
-    return view('winback', $d);
+    return $d;
   }
   /** Who used the Win-Back offers + results by stage; ?csv=1 downloads it. */
   public function report(Request $r) { \App\Support\DateDefault::month($r);
