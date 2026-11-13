@@ -120,6 +120,7 @@ class WatchImportController extends Controller {
   /** Product that really belongs to another main category (a fashion shop selling watches, earbuds, skincare ...): its slug, else null. */
   public static function crossRoute(string $name, string $type): ?string {
     $t = mb_strtolower($type . ' | ' . $name);
+    if (preg_match('/\b(baby|babies)\b/', preg_replace('/baby[\s-]*(pink|blue|doll|powder\s*blue|yellow|green|lilac|purple|peach)\b/', '', $t))) return 'others'; // owner 13 Nov 2026: anything named baby goes to Baby Care and Others, nowhere else
     if (preg_match('/\b(baby|babies|infant|newborn|toddler)\b/', $t) && preg_match('/lotion|wash|\boil\b|powder|shampoo|cream|soap|bath|sunscreen|rash|moisturi|skin\s*care|skincare|massage|wipes?\b|care\b/', $t) && !preg_match('/diaper|nappy|nappies|feeding|bottle|toy/', $t)) return 'skin-care'; // owner 13 Nov: baby care -> Skin & Hair Care
     if (preg_match('/shaving|razor|after\s*shave|beard|deodorant|roll\s*on|body\s*spray|talc|personal\s*care|hair\s*removal|\bwax\b|sanitary/', $t) && !preg_match('/sanitary\s*pad/', $t)) return 'skin-care'; // owner 13 Nov: personal care -> Skin & Hair Care sub category
     if (preg_match('/\b(kids?|child(?:ren)?|baby|babies|infant|toddler|newborn|junior|nappy|nappies|diapers?)\b|feeding\s*bottle|\bsippy\b|\btoys?\b|\blego\b|barbie|hot\s*wheels|\bpuzzles?\b|\bdolls?\b|play\s*set|playset|action\s*figure|board\s*game/', $t)) return 'others'; // owner 13 Nov 2026: child items -> Baby Care and Others
