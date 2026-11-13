@@ -8,7 +8,11 @@ use Illuminate\Support\Facades\DB;
 /** Hero Media Slider admin: image + YouTube slides in one ordered list with drag and drop sorting. */
 class HeroSliderController extends Controller
 {
-  private static function bust(): void { foreach (['store.home5', 'store.home6'] as $k) Cache::forget($k); }
+  /** Owner 13 Nov 2026: Pause/Publish/Order on uploaded slides left the home page cache stale (only old keys were cleared), so paused banners kept showing. Same full bust the built-in toggle uses. */
+  private static function bust(): void {
+    foreach (['store.settings2', 'store.home11', 'store.home10', 'store.home8', 'store.home5', 'store.home6', 'store.home4'] as $k) { try { Cache::forget($k); } catch (\Throwable $e) {} }
+    try { \App\Http\Controllers\StoreController::bust(); } catch (\Throwable $e) {}
+  }
   public function index() {
     $rows = DB::table('sliders')->where(fn($q) => $q->whereNull('type')->orWhere('type', 'main'))->orderBy('position')->orderBy('id')->get();
     $bi = [];
