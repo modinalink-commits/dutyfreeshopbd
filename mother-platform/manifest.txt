@@ -1044,3 +1044,8 @@ app/Http/Controllers/RestructureController.php
 database/migrations/2026_11_13_200000_product_move_log.php
 app/Support/CatRemap.php
 database/migrations/2026_11_13_000010_ship_stock_floor.php
+public/banners/hero-marlboro.webp
+public/banners/hero-marlboro.mp4
+public/banners/hero-marlboro-m.webp
+public/banners/hero-marlboro-m.mp4
+database/migrations/2026_11_13_203500_hero_marlboro_slide.php
