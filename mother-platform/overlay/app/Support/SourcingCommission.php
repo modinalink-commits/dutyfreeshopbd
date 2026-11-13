@@ -23,7 +23,7 @@ class SourcingCommission {
       ->whereIn('o.status', $statuses)->whereRaw(self::when().' >= ? and '.self::when().' < ?', [$from, $to]);
     if ($ag->starts_on) $q->where('o.created_at', '>=', $ag->starts_on);
     $rows = $q->orderBy('o.id')->orderBy('i.id')->get(['i.id', 'i.order_id', 'i.name', 'i.qty', 'i.price', 'i.src_price', 'i.src_store', 'i.sourced_cost', DB::raw((Schema::hasColumn('order_items', 'sourced_vendor') ? 'i.sourced_vendor' : 'null').' as sourced_vendor'), 'o.invoice', 'o.status', 'o.discount',
-      DB::raw(($has('shipping') ? 'o.shipping' : '0').' as shipping'), DB::raw(($has('delivery_charge') ? 'o.delivery_charge' : '0').' as courier_charge'), DB::raw(($has('cod_fee') ? 'o.cod_fee' : '0').' as cod_fee'), DB::raw(self::when().' as done_at')]);
+      DB::raw(($has('shipping') ? 'o.shipping' : '0').' as shipping'), DB::raw(($has('courier_fee') ? 'coalesce(o.courier_fee, 0)' : '0').' as courier_charge'), DB::raw('0 as cod_fee'), DB::raw(self::when().' as done_at')]);
     $orderValue = $rows->isEmpty() ? collect() : DB::table('order_items')->whereIn('order_id', $rows->pluck('order_id')->unique()->all())->groupBy('order_id')->selectRaw('order_id, sum(price * qty) as v')->pluck('v', 'order_id');
     $lines = []; $gross = 0.0;
     foreach ($rows as $r) {
@@ -43,7 +43,7 @@ class SourcingCommission {
         ->whereRaw($sb ? 'coalesce(pu.sourced_by, pu.user_id) = ?' : 'pu.user_id = ?', [$uid])->whereRaw('ob.qty - ob.returned_qty > 0')->whereIn('o.status', $statuses)->whereRaw(self::when().' >= ? and '.self::when().' < ?', [$from, $to]);
       if ($ag->starts_on) $bq->where('o.created_at', '>=', $ag->starts_on);
       $brows = $bq->orderBy('o.id')->orderBy('ob.id')->get(['ob.id as obid', DB::raw('ob.qty - ob.returned_qty as q'), 'ob.unit_cost', 'i.id', 'i.order_id', 'i.name', 'i.price', 'o.invoice', 'o.discount', 's.name as supplier', 'pu.invoice as pinv',
-        DB::raw(($has('shipping') ? 'o.shipping' : '0').' as shipping'), DB::raw(($has('delivery_charge') ? 'o.delivery_charge' : '0').' as courier_charge'), DB::raw(($has('cod_fee') ? 'o.cod_fee' : '0').' as cod_fee'), DB::raw(self::when().' as done_at')]);
+        DB::raw(($has('shipping') ? 'o.shipping' : '0').' as shipping'), DB::raw(($has('courier_fee') ? 'coalesce(o.courier_fee, 0)' : '0').' as courier_charge'), DB::raw('0 as cod_fee'), DB::raw(self::when().' as done_at')]);
       $ov2 = $brows->isEmpty() ? collect() : DB::table('order_items')->whereIn('order_id', $brows->pluck('order_id')->unique()->all())->groupBy('order_id')->selectRaw('order_id, sum(price * qty) as v')->pluck('v', 'order_id');
       foreach ($brows as $r) {
         if (isset($seen[$r->id])) continue; // already counted through a Vendor Orders entry
