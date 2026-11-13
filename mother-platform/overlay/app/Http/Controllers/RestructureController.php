@@ -96,13 +96,17 @@ class RestructureController extends Controller {
 
   /** Where this product belongs by name (same rules the importers use + perfume). Returns a main category slug or null (= leave). */
   public static function target(string $name, string $cur): ?string {
-    $x = WatchImportController::crossRoute($name, '');
     $t = mb_strtolower($name);
-    if (!$x || $x === 'skin-care') { // perfume markers (deodorant/lotion/etc. are not perfume)
-      if (preg_match('/eau\s*de|parfum|\bedp\b|\bedt\b|cologne|attar|\bperfume|\bperfum|\boud\b|\bbakhoor|\bintensivo\b|\bfragrance\b/', $t) && !preg_match('/deodorant|lotion|shower|body\s*wash|cream|shampoo|candle|diffuser|soap|roll\s*on|body\s*spray|stick|sunscreen|toner|serum|\bkit\b.*(skin|face)/', $t)) return 'perfume';
-    }
-    if (!$x) return null;
-    return \App\Support\CatRemap::LEGACY[$x] ?? $x;
+    $skin = '/acid|hyaluron|\d ?ml|\bskin|face\b|facial (wash|cream|toner|mask)|serum|retinol|niacin|cica|centella|essence|pool|\bpad\b|glow/';
+    $printer = '/(toner|cartridge|drum unit|waste unit|ink\b).*(black|cyan|magenta|yellow|chip|pages|laser|canon|\bhp\b|brother|pantum|sharp|ricoh|xerox|kyocera|konica|epson|lexmark|power print|g&g|safeway|true trust|universal|compatible|printer)|(black|cyan|magenta|yellow|laser|canon|\bhp\b|brother|pantum|g&g|power print|true trust|universal|compatible).*(toner|cartridge|drum unit)|facial.*(biometric|recognition|attendance)|\buface\b/';
+    if ($cur !== 'gadget-electronics' && preg_match($printer, $t) && !preg_match($skin, $t)) return 'gadget-electronics';
+    $fragrance = '/eau\s*de|parfum|\bedp\b|\bedt\b|cologne|attar|\bperfume\b|\boud\b|\bbakhoor|\bintensivo\b/';
+    $notPerfume = '/deodorant|\bdeo\b|lotion|shower|body\s*wash|cream|shampoo|candle|diffuser|soap|roll\s*on|body\s*spray|stick|sunscreen|toner|serum|air\s*freshener|room\s*spray|\bmist\b|hair|talc|powder|oil\s*burner/';
+    if (!in_array($cur, ['perfume', 'fashion', 'watch', 'cigarette-vape'], true) && preg_match($fragrance, $t) && !preg_match($notPerfume, $t) && !preg_match('/\bgift\s*set|\bgiftset|\bset\b/', $t) ) return 'perfume';
+    if (in_array($cur, ['daily-needs', 'others'], true) && preg_match('/lipstick|mascara|foundation|concealer|eye\s*liner|eyeliner|kajal|serum|face\s*wash|cleanser|moisturi[sz]er|sunscreen|sun\s*block|sheet\s*mask|skin\s*care|skincare|shampoo|conditioner|hair\s*(oil|mask|serum)|body\s*(wash|lotion|scrub|butter)|lip\s*(balm|gloss)|nail\s*polish|makeup|make-up/', $t) && !preg_match('/\b(baby|babies|kids?|infant|newborn)\b/', $t)) return 'beauty';
+    if (in_array($cur, ['beauty', 'daily-needs'], true) && preg_match('/earbud|earphone|headphone|headset|power\s*bank|smart\s*watch|smartwatch|\btws\b|neckband|hair\s*(dryer|straightener)|\bipl\b|massager|\bgimbal|\bcharger\b|\btrimmer\b|\bshaver\b|epilator/', $t)) return 'gadget-electronics';
+    if (in_array($cur, ['beauty', 'daily-needs'], true) && preg_match('/\b(baby|babies|infant|newborn|toddler)\b/', preg_replace('/baby[\s-]*(pink|blue|doll|powder\s*blue|yellow|green|lilac|purple|peach)\b/', '', $t))) return 'others';
+    return null;
   }
   /** GET/POST cat ('*' = all main categories), commit, nokids (skip the child-items rule). Lists from>to groups; commit moves every mismatched product (sub is re-sorted afterwards with resub). */
   public function audit(Request $r) {
