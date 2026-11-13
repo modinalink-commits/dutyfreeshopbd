@@ -55,7 +55,7 @@ df85a1f19b3129d847e30c8dab6ea00fbc2e8101 app/Http/Controllers/PermissionControll
 2d88bb06744184e4cb7167f5f20fefb371107e00 resources/views/store/layout.blade.php
 5356b422775064c3de9b13c703f12fbf913a2bd3 resources/views/store/card.blade.php
 4a5eb7ee8d7960886fcb97c690bbb604ec69eb1f resources/views/store/home_sec.blade.php
-1401e1cf5486fa215abafd7f13da7a89a355fbcf resources/views/store/home.blade.php
+94afed970bb7498d41b02dd6672e526149018554 resources/views/store/home.blade.php
 31cec5ff2e39d46ea002e4dd988b42ae0890ebdf resources/views/store/category.blade.php
 4141ae23b6a9ddcf5fd3ac8eff14dee6e28b5d55 resources/views/store/product.blade.php
 762d7221668ae77fc63407c380bc2794e002f740 resources/views/store/search.blade.php
