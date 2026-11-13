@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\DB;
 /** Image optimisation with PHP GD: validate, resize, compress, WebP + thumbnails. Never breaks an upload: on any problem the original file stays as it is. */
 class Img {
   /** kind => [max width, max height, jpeg quality]. 0 = no limit on that side. */
-  const KINDS = ['product'=>[600, 600, 82], 'category'=>[200, 200, 82], 'banner'=>[1900, 0, 82], 'mobile'=>[1080, 0, 80], 'auto'=>[1600, 1600, 82]];
+  const KINDS = ['pfit'=>[600, 600, 82], 'product'=>[600, 600, 82], 'category'=>[200, 200, 82], 'banner'=>[1900, 0, 82], 'mobile'=>[1080, 0, 80], 'auto'=>[1600, 1600, 82]];
   const THUMBS = [150, 300];
   public static function ok(): bool { return extension_loaded('gd') && function_exists('imagewebp') && function_exists('imagecreatefromjpeg'); }
   public static function backupOn(): bool { return (DB::table('settings')->where('key', 'img_backup')->value('value') ?? '1') === '1'; }
@@ -134,6 +134,34 @@ class Img {
       $n++;
     }
     return ['processed'=>$n, 'failed'=>$fail, 'saved'=>$saved, 'remaining'=>max(0, count($todo) - $n)];
+  }
+  /** Source-store product photos live in sub-folders (uploads/store25, uploads/watch ...) that runBatch() never scans, so they stayed at full size (up to 1.5 MB).
+   *  This walks those folders a few hundred files at a time and shrinks each photo to fit 600x600 (no cropping), with a WebP twin and thumbnails.
+   *  No backup copy is kept for these (the source store still has the original); a file that grew again (re-imported) is processed again. */
+  public static function runStoreBatch(int $max = 40, int $sec = 25): array {
+    $C = \Illuminate\Support\Facades\Cache::class; $t0 = microtime(true); $n = 0; $saved = 0; $fail = 0;
+    if ($C::get('img.sb.rest')) return ['processed'=>0, 'failed'=>0, 'saved'=>0, 'state'=>'resting'];
+    $dirs = []; foreach (@scandir(self::dir()) ?: [] as $d) if (preg_match('/^(store\d+|watch)$/', $d) && is_dir(self::dir().'/'.$d)) $dirs[] = $d;
+    sort($dirs); $st = $C::get('img.sb', ['d'=>0, 'after'=>'']); $di = (int)($st['d'] ?? 0); $after = (string)($st['after'] ?? '');
+    while ($di < count($dirs) && $n < $max && microtime(true) - $t0 < $sec) {
+      $d = $dirs[$di]; $files = [];
+      foreach (@scandir(self::dir().'/'.$d) ?: [] as $f) if ($f[0] !== '.' && strcmp($f, $after) > 0 && self::isOriginal($f) && is_file(self::dir().'/'.$d.'/'.$f)) { $files[] = $f; if (count($files) >= 300) break; }
+      if (!$files) { $di++; $after = ''; continue; }
+      $known = DB::table('media_images')->whereIn('path', array_map(fn($f) => $d.'/'.$f, $files))->pluck('opt_bytes', 'path')->all();
+      foreach ($files as $f) {
+        if ($n >= $max || microtime(true) - $t0 > $sec) break;
+        $rel = $d.'/'.$f; $abs = self::dir().'/'.$rel; $size = (int)@filesize($abs); $after = $f;
+        if (isset($known[$rel]) && $size <= max(1, (int)$known[$rel]) * 1.3) continue; // already done and not replaced by a bigger file
+        try { $res = self::process($abs, 'pfit'); } catch (\Throwable $e) { $res = ['ok'=>false, 'error'=>mb_substr($e->getMessage(), 0, 150), 'before'=>$size]; }
+        clearstatcache(true, $abs); $now = (int)@filesize($abs);
+        DB::table('media_images')->updateOrInsert(['path'=>$rel], ['orig_bytes'=>$res['before'] ?? $size, 'opt_bytes'=>$now ?: ($res['after'] ?? $size), 'width'=>$res['w'] ?? null, 'height'=>$res['h'] ?? null, 'format'=>$res['format'] ?? null, 'status'=>$res['ok'] ? 'optimized' : 'failed', 'error'=>$res['ok'] ? null : mb_substr((string)($res['error'] ?? ''), 0, 150), 'optimized_at'=>now(), 'updated_at'=>now(), 'created_at'=>now()]);
+        if ($res['ok']) $saved += max(0, $size - $now); else $fail++;
+        $n++;
+      }
+    }
+    if ($di >= count($dirs)) { $C::put('img.sb.rest', 1, 21600); $C::forget('img.sb'); $state = 'cycle done'; } // every folder walked: look again in 6 hours
+    else { $C::put('img.sb', ['d'=>$di, 'after'=>$after], 86400 * 7); $state = ($dirs[$di] ?? '').' after '.$after; }
+    return ['processed'=>$n, 'failed'=>$fail, 'saved'=>$saved, 'state'=>$state];
   }
   /** Local copy of an image that was hosted somewhere else, or null if it has not been copied yet. */
   public static function mirrored(?string $url): ?string {
