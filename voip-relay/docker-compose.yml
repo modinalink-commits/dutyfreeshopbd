@@ -120,7 +120,7 @@ configs:
       <section name="configuration" description="cfg">
       <configuration name="switch.conf" description="Core"><settings>
         <param name="rtp-start-port" value="16384"/><param name="rtp-end-port" value="32768"/>
-        <param name="max-sessions" value="1000"/><param name="sessions-per-second" value="30"/>
+        <param name="max-sessions" value="1000"/><param name="sessions-per-second" value="200"/>
         <param name="loglevel" value="info"/>
       </settings></configuration>
       <configuration name="modules.conf" description="Modules"><modules>
