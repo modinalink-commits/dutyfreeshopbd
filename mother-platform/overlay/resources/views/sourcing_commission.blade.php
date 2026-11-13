@@ -2,7 +2,7 @@
 @section('body')
 @php $tk = fn($v) => '৳'.number_format((float)$v, 0); $t = $calc['totals'] ?? null; $sids = $ag ? (json_decode((string)$ag->store_ids, true) ?: []) : []; @endphp
 <h1>Sourcing Commission</h1>
-<p style="color:#6B7280;font-size:13px;margin:0 0 10px">Commission of people who source products. It is built only from the order lines they sourced (entered on <a href="/admin/vendor-orders">Vendor Orders</a>) and approved here.</p>
+<p style="color:#6B7280;font-size:13px;margin:0 0 10px">Commission of people who source products. It is built from two sources: stock they bought through Purchase invoices (counted automatically when the order is delivered) and source-shop lines they entered on <a href="/admin/vendor-orders">Vendor Orders</a> and that were approved here.</p>
 @if(session('ok'))<div class="card" style="border-color:#BFE3CC;background:#F0FAF3;color:#14683A;font-weight:600">{{ session('ok') }}</div>@endif
 @if(!$ag)
 <div class="card">No sourcing agreement yet. Create the first one below.</div>
@@ -45,6 +45,14 @@
 @foreach($payable as $v)<tr><td><b>{{ $v->vendor }}</b></td><td>{{ $v->n }}</td><td>{{ $tk($v->due) }}</td><td>@if($checker)<form method="post" action="/admin/sourcing-commission/vendor-paid" onsubmit="return this.c.checked">@csrf<input type="hidden" name="agreement_id" value="{{ $ag->id }}"><input type="hidden" name="vendor" value="{{ $v->vendor }}"><label style="font-size:12px;margin-right:6px"><input type="checkbox" name="c" required> paid</label><button class="btn g">Mark paid</button></form>@endif</td></tr>@endforeach
 <tr><td colspan="2" style="text-align:right"><b>Total due</b></td><td><b>{{ $tk($payable->sum('due')) }}</b></td><td></td></tr>
 </tbody></table><div style="color:#6B7280;font-size:12px;margin-top:6px">"Mark paid" only records that the supplier was paid. The payment itself is entered in Accounts as usual.</div></div>
+@endif
+
+@if($pdues->count())
+<div class="card" style="overflow-x:auto"><b>Unpaid purchase invoices of {{ $ag->name }}</b> <span style="color:#6B7280;font-size:12px">· suppliers DutyFreeBD still has to pay; pay them from <a href="/admin/m/purchases">Purchase invoices</a></span>
+<table style="margin-top:8px"><thead><tr><th>Supplier</th><th>Invoices</th><th>Total</th><th>Paid</th><th>Due</th></tr></thead><tbody>
+@foreach($pdues as $v)<tr><td><b>{{ $v->vendor }}</b></td><td>{{ $v->n }}</td><td>{{ $tk($v->total) }}</td><td>{{ $tk($v->paid) }}</td><td><b style="color:#B91C1C">{{ $tk($v->due) }}</b></td></tr>@endforeach
+<tr><td colspan="4" style="text-align:right"><b>Total due</b></td><td><b>{{ $tk($pdues->sum('due')) }}</b></td></tr>
+</tbody></table></div>
 @endif
 
 <div class="card" style="overflow-x:auto"><b>Statement {{ $mon }}</b> <span style="color:#6B7280;font-size:12px">· profit = sale − discount − buy cost − courier + shipping paid by customer − packaging</span>

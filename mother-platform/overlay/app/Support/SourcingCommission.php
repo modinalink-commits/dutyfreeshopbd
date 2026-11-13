@@ -35,6 +35,26 @@ class SourcingCommission {
       $profit = round($sale - $disc - $cost - $courier + $shipIn - $pack, 2); $gross += $profit;
       $lines[] = ['id' => $r->id, 'order_id' => $r->order_id, 'invoice' => $r->invoice, 'name' => $r->name, 'store' => $r->src_store, 'vendor' => ($r->sourced_vendor ?: $r->src_store), 'commission' => round($profit * (float)$ag->share_pct / 100, 2), 'qty' => (int)$r->qty, 'sale' => $sale, 'discount' => $disc, 'cost' => $cost, 'courier' => $courier, 'courier_known' => $courierKnown, 'ship_income' => $shipIn, 'packaging' => $pack, 'profit' => $profit, 'done_at' => (string)$r->done_at];
     }
+    // Second source: stock the person bought through Purchase invoices. The shipment already recorded exactly which purchase batch each sold unit came from
+    // (order_item_batches, real FIFO cost), so these lines need no extra entry: purchase by this person -> batch -> delivered order line.
+    if (Schema::hasTable('order_item_batches') && Schema::hasTable('stock_batches') && Schema::hasTable('purchases')) {
+      $seen = array_flip(array_map(fn($l) => $l['id'], $lines)); $uid = (int)$ag->user_id; $sb = Schema::hasColumn('purchases', 'sourced_by');
+      $bq = DB::table('order_item_batches as ob')->join('stock_batches as b', 'b.id', '=', 'ob.batch_id')->join('purchases as pu', 'pu.id', '=', 'b.purchase_id')->join('order_items as i', 'i.id', '=', 'ob.order_item_id')->join('orders as o', 'o.id', '=', 'i.order_id')->leftJoin('suppliers as s', 's.id', '=', 'pu.supplier_id')
+        ->whereRaw($sb ? 'coalesce(pu.sourced_by, pu.user_id) = ?' : 'pu.user_id = ?', [$uid])->whereRaw('ob.qty - ob.returned_qty > 0')->whereIn('o.status', $statuses)->whereRaw(self::when().' >= ? and '.self::when().' < ?', [$from, $to]);
+      if ($ag->starts_on) $bq->where('o.created_at', '>=', $ag->starts_on);
+      $brows = $bq->orderBy('o.id')->orderBy('ob.id')->get(['ob.id as obid', DB::raw('ob.qty - ob.returned_qty as q'), 'ob.unit_cost', 'i.id', 'i.order_id', 'i.name', 'i.price', 'o.invoice', 'o.discount', 's.name as supplier', 'pu.invoice as pinv',
+        DB::raw(($has('shipping') ? 'o.shipping' : '0').' as shipping'), DB::raw(($has('delivery_charge') ? 'o.delivery_charge' : '0').' as courier_charge'), DB::raw(($has('cod_fee') ? 'o.cod_fee' : '0').' as cod_fee'), DB::raw(self::when().' as done_at')]);
+      $ov2 = $brows->isEmpty() ? collect() : DB::table('order_items')->whereIn('order_id', $brows->pluck('order_id')->unique()->all())->groupBy('order_id')->selectRaw('order_id, sum(price * qty) as v')->pluck('v', 'order_id');
+      foreach ($brows as $r) {
+        if (isset($seen[$r->id])) continue; // already counted through a Vendor Orders entry
+        $q = (int)$r->q; $sale = (float)$r->price * $q; $ov = (float)($ov2[$r->order_id] ?? 0); $ratio = $ov > 0 ? min(1, $sale / $ov) : 1; $cost = round((float)$r->unit_cost * $q, 2);
+        $disc = $ag->deduct_discount ? round((float)$r->discount * $ratio, 2) : 0.0;
+        $courierFull = (float)$r->courier_charge + (float)$r->cod_fee; $courierKnown = $courierFull > 0; if (!$courierKnown) $courierFull = (float)$r->shipping;
+        $courier = round($courierFull * $ratio, 2); $shipIn = $ag->add_shipping_income ? round((float)$r->shipping * $ratio, 2) : 0.0; $pack = round((float)$ag->packaging_cost * $ratio, 2);
+        $profit = round($sale - $disc - $cost - $courier + $shipIn - $pack, 2); $gross += $profit;
+        $lines[] = ['id' => 'b'.$r->obid, 'order_id' => $r->order_id, 'invoice' => $r->invoice, 'name' => $r->name, 'store' => 'Purchase '.$r->pinv, 'vendor' => ($r->supplier ?: 'Supplier').' · '.$r->pinv, 'commission' => round($profit * (float)$ag->share_pct / 100, 2), 'qty' => $q, 'sale' => $sale, 'discount' => $disc, 'cost' => $cost, 'courier' => $courier, 'courier_known' => $courierKnown, 'ship_income' => $shipIn, 'packaging' => $pack, 'profit' => $profit, 'done_at' => (string)$r->done_at];
+      }
+    }
     $carryIn = 0.0;
     if ($ag->carry_deficit) { $prev = DB::table('sourcing_statements')->where('agreement_id', $ag->id)->where('month', '<', $mon)->whereNotNull('approved_at')->orderByDesc('month')->first(); $carryIn = $prev ? (float)$prev->carry_out : 0.0; }
     $gross = round($gross, 2); $mk = (float)$ag->marketing_cost; $shareable = round($gross - $mk - $carryIn, 2);
@@ -64,6 +84,13 @@ class SourcingCommission {
     return DB::table('order_items as i')->join('orders as o', 'o.id', '=', 'i.order_id')->where('i.sourced_by', $ag->user_id)->where('i.sourced_status', 'approved')->whereNull('i.vendor_paid_at')
       ->whereNotIn('o.status', ['Cancel', 'Cancelled', 'Returned', 'Return Pending', 'Draft'])
       ->selectRaw("coalesce(nullif(i.sourced_vendor, ''), i.src_store, 'Unknown supplier') as vendor, count(*) as n, sum(coalesce(i.sourced_cost, i.src_price, 0) * i.qty) as due")->groupBy('vendor')->orderByDesc('due')->get();
+  }
+  /** Unpaid purchase invoices of this person, per supplier (these are paid from Purchases / Supplier ledger as usual). */
+  public static function purchaseDues(object $ag) {
+    if (!Schema::hasTable('purchases') || !Schema::hasColumn('purchases', 'user_id')) return collect();
+    $sb = Schema::hasColumn('purchases', 'sourced_by');
+    return DB::table('purchases as pu')->leftJoin('suppliers as s', 's.id', '=', 'pu.supplier_id')->whereRaw($sb ? 'coalesce(pu.sourced_by, pu.user_id) = ?' : 'pu.user_id = ?', [(int)$ag->user_id])->whereRaw('pu.total - pu.paid > 0.5')
+      ->selectRaw("coalesce(s.name, 'Unknown supplier') as vendor, count(*) as n, sum(pu.total) as total, sum(pu.paid) as paid, sum(pu.total - pu.paid) as due")->groupBy('vendor')->orderByDesc('due')->get();
   }
   /** A line of an approved month can no longer be changed. */
   public static function locked(object $line): bool {

@@ -35,8 +35,8 @@ class SourcingCommissionController extends Controller {
     $users = DB::table('users')->orderBy('name')->get(['id', 'name', 'email']);
     $emps = Schema::hasTable('employees') ? DB::table('employees')->orderBy('name')->get(['id', 'name']) : collect();
     $history = $ag ? DB::table('sourcing_statements')->where('agreement_id', $ag->id)->whereNotNull('approved_at')->orderByDesc('month')->limit(24)->get() : collect();
-    $payable = $ag ? SC::payable($ag) : collect();
-    return view('sourcing_commission', ['ags' => $ags, 'ag' => $ag, 'mon' => $mon, 'calc' => $calc, 'locked' => $locked, 'st' => $st, 'pending' => $pending, 'waiting' => $waiting, 'stores' => $stores, 'users' => $users, 'emps' => $emps, 'history' => $history, 'boss' => $this->boss(), 'checker' => $this->checker(), 'payable' => $payable]);
+    $payable = $ag ? SC::payable($ag) : collect(); $pdues = $ag ? SC::purchaseDues($ag) : collect();
+    return view('sourcing_commission', ['ags' => $ags, 'ag' => $ag, 'mon' => $mon, 'calc' => $calc, 'locked' => $locked, 'st' => $st, 'pending' => $pending, 'waiting' => $waiting, 'stores' => $stores, 'users' => $users, 'emps' => $emps, 'history' => $history, 'boss' => $this->boss(), 'checker' => $this->checker(), 'payable' => $payable, 'pdues' => $pdues]);
   }
 
   /** Create or edit an agreement (admin only). Past approved months keep the terms saved in their snapshot. */
