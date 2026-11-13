@@ -160,17 +160,17 @@ class WatchImportController extends Controller {
     $rules = [ // item => [regex, default gender: M men, W women, '' none, '-' never prefixed]
       'Panjabi' => ['/panjabi|punjabi|kabli|fatua/', 'M'], 'Saree' => ['/\bsaree|\bsari\b|\bshari\b/', 'W'],
       'Three Piece & Kameez' => ['/3[\s-]*pcs?\b|3[\s-]*piece|three[\s-]*piece|2[\s-]*pcs?\b|2[\s-]*piece|salwar|shalwar|kameez|unstitched|\blawn\b|bridal|chikankari|festive|embroider|luxe\b|nazir|shakira|rasiya|saadia|asad\b|rizwan|kashmee|shahjahan|hussain\s*rehar|maria\.?\s*b\b|summer\s*(in\s*)?bloom|asifa|nabeel|zainab|sable\s*vogue|sablev|charizma|republic|mehar\s*noor|sundas|deyar|nida\s*azwer|maryum|binilyas|mashriq|afrozeh|jade\s*(le|premier)|manara|tabeer|gulkaris|luxury\s*(lawn|collection)|exklusive|exclusive\s*(lawn|summer)|\b1\s*pc\b|florette|elysian|\bd-\d+[ab]?\b|\bvul\d|\bct\d?-\d+|\bsl-\d+|\bel-\d+|\bmws-\d+/', 'W'],
-      'Tops & Kurti' => ['/kaftan|kurti|kurta|tunic|\btops?\b|\bfrock|\bgown|\bdress\b|\bskirt|palazzo|blouse/', 'W'],
-      'Hijab & Scarf' => ['/hijab|scarf|scarves|shawl|orna\b|burk|abaya|niqab|stole/', 'W'], 'Lingerie' => ['/lingerie|\bbra\b|\bbras\b|panty|panties|stocking/', 'W'],
+      'Tops & Kurti' => ['/co-?ord|two[\s-]*piece|kaftan|kurti|kurta|tunic|\btops?\b|\bfrock|\bgown|\bdress\b|\bskirt|palazzo|blouse/', 'W'],
+      'Hijab & Scarf' => ['/hijab|scarf|scarves|shawl|orna\b|burk|abaya|niqab|stole/', 'W'], 'Lingerie' => ['/lingerie|bikini|swimsuit|swimwear|\bbra\b|\bbras\b|panty|panties|stocking/', 'W'],
       'Jewelry' => ['/ear\s*ring|earring|necklace|bracelet|bangle|\brings?\b|jewel|pendant|body\s*chain|nose\s*pin|anklet|tiara/', 'W'],
-      'Shoes' => ['/\bshoes?\b|sandal|loafer|\bheels?\b|\bflats?\b|\bpumps?\b|slipper|sneaker|\bboots?\b|flip[\s-]*flop|oxford|derby|moccasin|kolhapuri|stiletto|wedge/', ''],
+      'Shoes' => ['/\bshoes?\b|sandal|loafer|\bheels?\b|\bflats?\b|\bpumps?\b|slipper|sneaker|\bslides?\b|\bmule|\bjordan\b|\baf-?1\b|yeezy|yezzy|\bdunk\b|trainer|\bboots?\b|flip[\s-]*flop|oxford|derby|moccasin|kolhapuri|stiletto|wedge/', ''],
       'Bags & Wallets' => ['/\bbags?\b|handbag|backpack|purse|wallet|clutch|\btote|satchel|pouch/', ''],
-      'Blazers & Suits' => ['/blazer|\bsuits?\b|waistcoat|tuxedo/', 'M'], 'Jackets & Winter Wear' => ['/jacket|\bcoat|sweater|sweatshirt|hoodie|cardigan|pullover|outerwear|puffer|beanie|gloves|winter|fleece|thermal|\bcap\b/', ''],
+      'Blazers & Suits' => ['/blazer|\bsuits?\b|waistcoat|tuxedo/', 'M'], 'Jackets & Winter Wear' => ['/jacket|overcoat|\bhood(?:ed|ie)?\b|\bcoat|sweater|sweatshirt|hoodie|cardigan|pullover|outerwear|puffer|beanie|gloves|winter|fleece|thermal|\bcap\b/', ''],
       'Leggings' => ['/legging|flared\s*pants|yoga\s*pants|tights/', 'W'],
       'Jerseys & Sportswear' => ['/jersey|football|\bkit\b|track\s*suit|tracksuit|active\s*wear|activewear|sportswear/', 'M'],
-      'Pants & Trousers' => ['/\bpants?\b|bottoms?\b|jeans|trouser|gabardine|chino|jogger|pajama|pyjama|shorts|denim|cargo/', 'M'], 'T-Shirts & Polos' => ['/\bpolo|t-?\s?shirt|\btee\b|\btank\b|singlet/', 'M'], 'Shirts' => ['/shirt/', 'M'],
+      'Pants & Trousers' => ['/\bpants?\b|sweat\s*pants|bottoms?\b|jeans|trouser|gabardine|chino|jogger|pajama|pyjama|shorts|denim|cargo/', 'M'], 'T-Shirts & Polos' => ['/\bpolo|t-?\s?shirt|\btee\b|\btank\b|singlet/', 'M'], 'Shirts' => ['/shirt/', 'M'],
       'Watches & Gadgets' => ['/watch|earbud|headphone|speaker|charger|power\s*bank|smart\s*(band|watch)|\bgadget/', '-'],
-      'Accessories' => ['/\bbelts?\b|\btie\b|\bsocks?\b|boxer|underwear|\bhat\b|sunglass|\bglasses\b|cufflink|handkerchief|keychain|fragrance|perfume|\bhair\b|\bclips?\b|scrunchie|\bcomb\b|\bbrush\b|\bmask\b/', ''],
+      'Accessories' => ['/\bbelts?\b|hairpin|hair\s*pin|headband|pocket\s*square|passport|folder|ear\s*(muff|warmer)|\btie\b|\bsocks?\b|boxer|underwear|\bhat\b|sunglass|\bglasses\b|cufflink|handkerchief|keychain|fragrance|perfume|\bhair\b|\bclips?\b|scrunchie|\bcomb\b|\bbrush\b|\bmask\b/', ''],
     ];
     foreach ($rules as $item => [$re, $def]) {
       if (!preg_match($re, $t)) continue;
