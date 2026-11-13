@@ -14,15 +14,16 @@ use Illuminate\Support\Facades\Schema;
  */
 class Clearance {
   const REASONS = ['near_expiry' => 'মেয়াদ শেষের পথে / নষ্ট হওয়ার পথে', 'damaged' => 'ড্যামেজ / প্যাকেট নষ্ট', 'old_stock' => 'পুরনো স্টক', 'other' => 'অন্য কারণ'];
-  private static ?bool $ready = null; private static ?array $act = null;
+  private static ?bool $ready = null; private static ?array $act = null; private static float $actAt = 0.0;
 
-  public static function ready(): bool { if (self::$ready === null) { try { self::$ready = Schema::hasTable('product_clearances'); } catch (\Throwable $e) { self::$ready = false; } } return self::$ready; }
+  /** Only a positive answer is remembered: a long-running worker that started before the table existed must notice it later. */
+  public static function ready(): bool { if (self::$ready === true) return true; try { self::$ready = Schema::hasTable('product_clearances') ?: null; } catch (\Throwable $e) { self::$ready = null; } return self::$ready === true; }
   /** The owner-level roles (same rule as the Deployment Center's Super Admin actions): super and admin. */
   public static function isSuper(): bool { try { return in_array(auth()->user()->role ?? '', ['super', 'admin'], true); } catch (\Throwable $e) { return false; } }
   /** @return array<int,object> product id => active clearance row */
   public static function active(): array {
-    if (self::$act !== null) return self::$act; if (!self::ready()) return self::$act = [];
-    try { $o = []; foreach (DB::table('product_clearances')->where('status', 'active')->get() as $r) $o[(int)$r->product_id] = $r; return self::$act = $o; } catch (\Throwable $e) { return []; }
+    if (self::$act !== null && microtime(true) - self::$actAt < 5) return self::$act; if (!self::ready()) return [];
+    try { $o = []; foreach (DB::table('product_clearances')->where('status', 'active')->get() as $r) $o[(int)$r->product_id] = $r; self::$actAt = microtime(true); return self::$act = $o; } catch (\Throwable $e) { return []; }
   }
   public static function on(int $pid): bool { return isset(self::active()[$pid]); }
   /** Clearance unit price that was in force for this product at a moment (order time), or null. */
