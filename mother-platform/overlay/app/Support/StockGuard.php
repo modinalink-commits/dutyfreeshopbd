@@ -66,14 +66,13 @@ class StockGuard {
   public static function shipBlock(int $orderId): ?string {
     $o = DB::table('orders')->where('id', $orderId)->first(['id', 'invoice', 'stock_deducted_at', 'duplicate_of_order_id', 'dup_allowed_at']);
     if (!$o || $o->stock_deducted_at !== null || $o->duplicate_of_order_id !== null) return null;
-    if (!empty($o->dup_allowed_at)) return self::profitBlock($o); // a manager/admin allowed this shipment by tick after manual verification (owner 8 Nov 2026): no-stock rule is waived for this order
     $rows = DB::table('order_items as i')->join('products as p', 'p.id', '=', 'i.product_id')->where('i.order_id', $orderId)->whereNotNull('p.stock')
       ->groupBy('p.id', 'p.name', 'p.stock')->havingRaw('sum(i.qty) > p.stock')->selectRaw('p.name, p.stock, sum(i.qty) need')->get();
     if (!$rows->isEmpty()) {
       $l = []; foreach ($rows->take(4) as $r) $l[] = $r->name.' — Required Qty: '.(int)$r->need.', Available Qty: '.max(0, (int)$r->stock);
       return '🔴 Stock Required — This product cannot be moved to Shipment. '.implode('; ', $l).($rows->count() > 4 ? ' and '.($rows->count() - 4).' more' : '').'. Please Stock In the product first.';
     }
-    return self::profitBlock($o);
+    return self::profitBlock($o); // owner 13 Nov 2026: stock can no longer be waived by a duplicate-allowed tick; nothing ships below zero stock
   }
   /** Protected profit at shipment. Mode (Admin setting on Inventory Pricing): block (default) / warn (allow and log) / off. */
   /** Set by an authorised Send Anyway (Pre-Shipment Validation) for ONE booking only. */

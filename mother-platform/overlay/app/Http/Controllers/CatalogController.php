@@ -125,6 +125,9 @@ class CatalogController extends Controller {
     $imgs = array_values(array_filter(array_map('trim', $d['images'] ?? []), fn($u) => preg_match('#^(https?://|/)#', $u)));
     $row['image'] = $imgs[0] ?? ($old->image ?? null);
     if ($d && empty($imgs) && $id) $row['image'] = null;
+    if ($old && !in_array(Auth::user()->role ?? '', ['super', 'admin'], true) && (int)$old->stock !== (int)$row['stock']) { // owner rule 13 Nov 2026: only Admin can change stock (managers and staff cannot, zero included)
+      return back()->withInput()->withErrors(['stock'=>'Only Admin can change stock. Use Purchase / Stock In, or ask an Admin for a stock correction.']);
+    }
     DB::transaction(function () use (&$id, $row, $imgs, $old, $r, $pub) {
       if ($id) DB::table('products')->where('id', $id)->update($row);
       else { $row['created_at'] = now(); $id = DB::table('products')->insertGetId($row); }
@@ -253,7 +256,7 @@ class CatalogController extends Controller {
       $data = ['name'=>mb_substr($x['name'],0,200), 'price'=>$x['price'], 'cost'=>is_numeric($x['cost'] ?? null) ? $x['cost'] : 0, 'offer_price'=>is_numeric($x['offer_price'] ?? null) ? $x['offer_price'] : null, 'stock'=>(int)($x['stock'] ?? 0), 'barcode'=>$x['barcode'] ?? null, 'size'=>$x['size'] ?? null, 'category_id'=>$cat(trim($x['category'] ?? '')), 'brand_id'=>$brand(trim($x['brand'] ?? '')), 'updated_at'=>now()];
       if (\App\Support\ProfitFloor::hasAvg() && is_numeric($x['cost'] ?? null) && (float)$x['cost'] > 0) $data['avg_cost'] = (float)$x['cost']; // a cost typed in an import is the owner's stated average
       $sku = trim($x['sku'] ?? '');
-      if ($sku !== '' && DB::table('products')->where('sku',$sku)->exists()) DB::table('products')->where('sku',$sku)->update($data);
+      if ($sku !== '' && DB::table('products')->where('sku',$sku)->exists()) { if (!in_array(Auth::user()->role ?? '', ['super', 'admin'], true)) unset($data['stock']); DB::table('products')->where('sku',$sku)->update($data); } // stock of existing products is Admin-only
       else DB::table('products')->insert($data + ['sku'=>$sku ?: null, 'slug'=>\Illuminate\Support\Str::slug($data['name']), 'published'=>false, 'created_at'=>now()]);
       $n++;
     }

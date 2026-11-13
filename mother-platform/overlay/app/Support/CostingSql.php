@@ -197,6 +197,7 @@ BEGIN
   FOR r IN SELECT oi.product_id pid, sum(oi.qty)::int q FROM order_items oi WHERE oi.order_id = NEW.id AND oi.product_id IS NOT NULL GROUP BY oi.product_id ORDER BY oi.product_id LOOP
     SELECT stock INTO b FROM products WHERE id = r.pid FOR UPDATE;
     IF b IS NULL THEN CONTINUE; END IF;
+    IF b < r.q THEN RAISE EXCEPTION 'INSUFFICIENT_STOCK: product % has % in stock, order needs %', r.pid, b, r.q USING ERRCODE = 'P0001'; END IF;
     tot := 0;
     FOR it IN SELECT id, qty FROM order_items WHERE order_id = NEW.id AND product_id = r.pid ORDER BY id LOOP
       c := costing_consume(r.pid, it.qty, NEW.id, it.id, NEW.invoice);
