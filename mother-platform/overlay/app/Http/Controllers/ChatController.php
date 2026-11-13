@@ -469,6 +469,7 @@ class ChatController extends Controller {
     foreach (['fb_token'=>'chat_fb_token', 'ig_token'=>'chat_ig_token', 'wa_token'=>'chat_wa_token', 'app_secret'=>'chat_app_secret', 'app_id'=>'chat_app_id', 'wa_phone_id'=>'chat_wa_phone_id'] as $k => $sk) if (!empty($d[$k])) Sms::setSecret($sk, trim($d[$k]));
     Sms::setSecret('ai_chat_auto', $r->boolean('ai_auto') ? '1' : '0');
     Sms::setSecret('ai_chat_chan', $r->boolean('ai_chan') ? '1' : '0');
+    Sms::setSecret('ai_comment_reply', $r->boolean('ai_comment_reply') ? '1' : '0');
     Sms::setSecret('ai_auto_close', $r->boolean('ai_auto_close') ? '1' : '0'); if ($r->filled('ai_close_after')) Sms::setSecret('ai_close_after_min', (string)max(1, min(720, (int)$r->input('ai_close_after'))));
     if ($r->filled('sla_warn')) Sms::setSecret('sla_warn_min', (string)max(1, min(600, (int)$r->input('sla_warn')))); if ($r->filled('sla_red')) Sms::setSecret('sla_red_min', (string)max(2, min(1440, (int)$r->input('sla_red'))));
     DB::table('settings')->updateOrInsert(['key'=>'chat_web_on'], ['value'=>$r->boolean('web_on') ? '1' : '0', 'updated_at'=>now(), 'created_at'=>now()]);
@@ -559,6 +560,8 @@ class ChatController extends Controller {
       foreach ($j['entry'] ?? [] as $e) {
         if ($obj === 'page' || $obj === 'instagram') {
           $ch = $obj === 'page' ? 'facebook' : 'instagram';
+          // public comments on our Page posts (needs the Page's "feed" subscription): stored always, answered by the AI only when switched on in Chat Settings
+          if ($obj === 'page') foreach ($e['changes'] ?? [] as $chg) { if (($chg['field'] ?? '') !== 'feed') continue; $ccid = \App\Support\ChatComments::ingest((string)($e['id'] ?? ''), (array)($chg['value'] ?? [])); if ($ccid && \App\Support\ChatComments::on()) app()->terminating(fn() => \App\Support\ChatComments::reply($ccid)); }
           foreach ($e['messaging'] ?? [] as $m) {
             if (!empty($m['message']['is_echo'])) { // a staff member answered from the Page inbox app: that counts as a human reply (our own API sends carry our app id and are ignored)
               $aid = (string)($m['message']['app_id'] ?? '');
@@ -658,6 +661,38 @@ class ChatController extends Controller {
     $h .= '<h2>Customers (latest 60)</h2><table><tr><th>Customer</th><th>Channel</th><th>Msgs</th><th>Memory summary</th></tr>'.$cust->map(fn($x) => '<tr><td>'.$e($x->name).'<br><small>'.$e($x->phone).'</small></td><td>'.$e($x->channel).'</td><td>'.$x->msg_count.'</td><td>'.$e($x->summary).'</td></tr>')->implode('').'</table>';
     $h .= '<h2>How our team answers (latest 40)</h2><table><tr><th>Intent</th><th>Customer</th><th>Staff reply</th><th>Wait</th></tr>'.$ex->map(fn($x) => '<tr><td>'.$e($x->intent).'<br><small>'.$e($x->staff).'</small></td><td>'.$e($x->customer_text).'</td><td>'.$e($x->reply_text).'</td><td>'.($x->wait_sec !== null ? round($x->wait_sec / 60).' min' : '').'</td></tr>')->implode('').'</table>';
     $h .= '<h2>Timeline (latest 60)</h2><table><tr><th>Time</th><th>Who</th><th>What</th><th>Details</th></tr>'.$ev->map(fn($x) => '<tr><td>'.\Carbon\Carbon::parse($x->created_at)->timezone('Asia/Dhaka')->format('d M H:i').'</td><td>'.$e($x->actor).'</td><td>'.$e($x->type).' '.$e($x->channel).'</td><td><small>'.$e($x->meta).'</small></td></tr>')->implode('').'</table></div>';
+    return view('chat_memory', ['h' => $h]);
+  }
+  /** Public comments on our posts and what the AI answered (latest 150). */
+  public function comments() {
+    $e = fn($v) => e((string)$v); $ok = \App\Support\ChatComments::ready();
+    $rows = $ok ? DB::table('chat_comments')->orderByDesc('id')->limit(150)->get() : collect();
+    $by = $ok ? DB::table('chat_comments')->where('created_at', '>=', now()->subDays(7))->selectRaw('status, count(*) n')->groupBy('status')->pluck('n', 'status')->all() : [];
+    $lab = ['new' => 'অপেক্ষায়', 'replied' => 'উত্তর দেওয়া হয়েছে', 'skipped' => 'স্টাফের জন্য রাখা', 'failed' => 'পাঠানো যায়নি'];
+    $h = '<style>.k{display:inline-block;background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:8px 14px;margin:0 8px 8px 0}.k b{font-size:20px;display:block}.mm td{vertical-align:top}</style><div class="mm"><a href="/admin/chat">&larr; Messages</a><h1>Comment Replies</h1><p style="color:#6b7390">আমাদের পেজের পোস্টে আসা কমেন্ট ও AI-এর উত্তর। AI Comment Reply এখন: <b>'.(\App\Support\ChatComments::on() ? 'চালু' : 'বন্ধ').'</b> (Chat Settings থেকে বদলানো যায়)। সিগারেট/ভেপ নিয়ে পাবলিক কমেন্টে কখনো দাম বলা হয় না, ইনবক্সে ডাকা হয়।</p>';
+    $h .= '<div>'.collect($lab)->map(fn($t, $k) => '<span class="k"><b>'.(int)($by[$k] ?? 0).'</b>'.$t.' (৭ দিন)</span>')->implode('').'</div>';
+    $h .= '<table><tr><th>সময়</th><th>কে</th><th>কমেন্ট</th><th>AI উত্তর</th><th>অবস্থা</th></tr>'.$rows->map(fn($x) => '<tr><td>'.\Carbon\Carbon::parse($x->created_at)->timezone('Asia/Dhaka')->format('d M H:i').'</td><td>'.$e($x->from_name).'</td><td>'.$e(mb_substr((string)$x->message, 0, 300)).'</td><td>'.$e($x->reply_text).'</td><td>'.$e($lab[$x->status] ?? $x->status).($x->note ? '<br><small>'.$e($x->note).'</small>' : '').'</td></tr>')->implode('').($rows->count() ? '' : '<tr><td colspan="5" style="color:#6b7390">এখনো কোনো কমেন্ট আসেনি। কমেন্ট পেতে Meta অ্যাপে পেজের "feed" সাবস্ক্রিপশন চালু থাকতে হবে।</td></tr>').'</table></div>';
+    return view('chat_memory', ['h' => $h]);
+  }
+  /** How much the AI handles alone and where it stops (read-only). */
+  public function aiReport(Request $r) {
+    $days = max(1, min(60, (int)$r->query('days', 7))); $from = now()->subDays($days)->toDateTimeString(); $e = fn($v) => e((string)$v);
+    $q = DB::selectOne("select count(*) as threads,
+        count(*) filter (where ai > 0 and staff = 0) as ai_only, count(*) filter (where ai > 0 and staff > 0) as both_, count(*) filter (where ai = 0 and staff > 0) as staff_only, count(*) filter (where ai = 0 and staff = 0) as none_
+      from (select m.thread_id, count(*) filter (where m.dir = 'out' and m.is_ai is true and m.status <> 'failed') as ai, count(*) filter (where m.dir = 'out' and (m.is_ai is null or m.is_ai is false) and m.status <> 'failed') as staff,
+              count(*) filter (where m.dir = 'in') as inn from chat_messages m where m.created_at >= ? group by m.thread_id) x where x.inn > 0", [$from]);
+    $tot = max(1, (int)$q->threads); $pc = fn($n) => round((int)$n * 100 / $tot) . '%';
+    $ch = DB::select("select t.channel, count(distinct t.id) n from chat_threads t join chat_messages m on m.thread_id = t.id and m.dir = 'in' and m.created_at >= ? group by t.channel order by n desc", [$from]);
+    $ho = \Illuminate\Support\Facades\Schema::hasTable('chat_handoffs') ? DB::table('chat_handoffs')->where('created_at', '>=', $from)->selectRaw('reason, count(*) n')->groupBy('reason')->orderByDesc('n')->limit(12)->get() : collect();
+    $nh = DB::table('chat_threads')->where('needs_human', true)->selectRaw("coalesce(nullif(intent,''),'(unknown)') as intent, count(*) n")->groupBy('intent')->orderByDesc('n')->limit(10)->get();
+    $vo = \Illuminate\Support\Facades\Schema::hasTable('voice_chat_logs') ? DB::selectOne("select count(*) filter (where ok) ok, count(*) filter (where not ok) bad from voice_chat_logs where kind = 'stt' and created_at >= ?", [$from]) : null;
+    $h = '<style>.k{display:inline-block;background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:8px 14px;margin:0 8px 8px 0;min-width:150px}.k b{font-size:20px;display:block}.mm h2{margin:20px 0 8px;font-size:15px}</style><div class="mm"><a href="/admin/chat">&larr; Messages</a><h1>AI Automation Report</h1><p style="color:#6b7390">গত '.$days.' দিনে যেসব কথোপকথনে কাস্টমার লিখেছে, সেগুলো কে সামলেছে। <a href="?days=1">১ দিন</a> · <a href="?days=7">৭ দিন</a> · <a href="?days=30">৩০ দিন</a></p>';
+    $h .= '<div><span class="k"><b>'.(int)$q->threads.'</b>মোট কথোপকথন</span><span class="k"><b>'.(int)$q->ai_only.' ('.$pc($q->ai_only).')</b>শুধু AI উত্তর দিয়েছে</span><span class="k"><b>'.(int)$q->both_.' ('.$pc($q->both_).')</b>AI + স্টাফ দুজনই</span><span class="k"><b>'.(int)$q->staff_only.' ('.$pc($q->staff_only).')</b>শুধু স্টাফ</span><span class="k"><b style="color:#B91C1C">'.(int)$q->none_.' ('.$pc($q->none_).')</b>কেউ উত্তর দেয়নি</span></div>';
+    $h .= '<h2>চ্যানেল অনুযায়ী</h2><table><tr><th>চ্যানেল</th><th>কথোপকথন</th></tr>'.collect($ch)->map(fn($x) => '<tr><td>'.$e($x->channel).'</td><td>'.(int)$x->n.'</td></tr>')->implode('').'</table>';
+    $h .= '<h2>AI কেন মানুষের কাছে পাঠিয়েছে (Handoff-এর কারণ)</h2><table><tr><th>কারণ</th><th>বার</th></tr>'.($ho->count() ? $ho->map(fn($x) => '<tr><td>'.$e($x->reason ?: '(কারণ লেখা নেই)').'</td><td>'.(int)$x->n.'</td></tr>')->implode('') : '<tr><td colspan="2" style="color:#6b7390">এই সময়ে কোনো Handoff নেই।</td></tr>').'</table>';
+    $h .= '<h2>এখন মানুষের অপেক্ষায় থাকা কথোপকথন (বিষয় অনুযায়ী)</h2><table><tr><th>বিষয়</th><th>কথোপকথন</th></tr>'.($nh->count() ? $nh->map(fn($x) => '<tr><td>'.$e(str_replace('_', ' ', $x->intent)).'</td><td>'.(int)$x->n.'</td></tr>')->implode('') : '<tr><td colspan="2" style="color:#6b7390">কিছু নেই।</td></tr>').'</table>';
+    if ($vo) $h .= '<h2>ভয়েস মেসেজ</h2><div><span class="k"><b>'.(int)$vo->ok.'</b>বোঝা গেছে</span><span class="k"><b style="color:#B91C1C">'.(int)$vo->bad.'</b>বোঝা যায়নি (চেষ্টা প্রতি)</span></div>';
+    $h .= '</div>';
     return view('chat_memory', ['h' => $h]);
   }
   // ---- Order Requests: orders the AI collected but did not place (Auto Approve rules said staff must decide) ----

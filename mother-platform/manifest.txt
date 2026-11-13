@@ -1099,3 +1099,5 @@ database/migrations/2026_11_14_100000_product_clearances.php
 app/Support/Clearance.php
 app/Http/Controllers/ClearanceController.php
 resources/views/clearance.blade.php
+database/migrations/2026_11_14_110000_chat_comments.php
+app/Support/ChatComments.php
