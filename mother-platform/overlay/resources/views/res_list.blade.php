@@ -20,7 +20,7 @@
 <div class="card" style="overflow-x:auto"><table><thead><tr><th>#</th>@foreach($c['fields'] as $f)@if(($f['t']??'')!=='password' && empty($f['noList']))<th>{{ $f['l'] }}</th>@endif @endforeach @foreach($c['extra'] ?? [] as [$xk,$xl])<th>{{ $xl }}</th>@endforeach<th></th></tr></thead><tbody>
 @forelse($rows as $row)<tr><td>{{ !empty($c['serial']) ? ((method_exists($rows,'firstItem') ? (int)$rows->firstItem() : 1) + $loop->index) : $row->id }}</td>
 @foreach($c['fields'] as $f)@if(($f['t']??'')!=='password' && empty($f['noList']))<td>@php $v = $ctl->cell($c,$row,$f,$lk); @endphp
-@if($f['t']==='bool')<span class="pill {{ $v==='Yes'?'ok':'' }}">{{ $v }}</span>@else{{ \Illuminate\Support\Str::limit($v, 70) }}@endif</td>@endif @endforeach
+@if($f['t']==='bool')<span class="pill {{ $v==='Yes'?'ok':'' }}">{{ $v }}</span>@else{{ \Illuminate\Support\Str::limit($v, $c['lim'] ?? 70) }}@endif</td>@endif @endforeach
 @foreach($c['extra'] ?? [] as [$xk,$xl])<td>{{ $ex[$row->id][$xk] ?? '' }}</td>@endforeach
 <td style="white-space:nowrap">@if(empty($c['ro']) && empty($c['noEdit']))<a class="btn g" href="/admin/m/{{ $c['slug'] }}/{{ $row->id }}/edit">Edit</a>@endif
 @if(empty($c['ro']) && empty($c['noCreate']))<form method="post" action="/admin/m/{{ $c['slug'] }}/{{ $row->id }}/delete" style="display:inline" onsubmit="return confirm('Delete this record?')">@csrf<button class="g">Delete</button></form>@endif</td></tr>
