@@ -47,6 +47,18 @@ class RestructureController extends Controller {
     $this->bust();
     return response()->json(['ok' => true, 'moved' => $n, 'left' => max(0, $total - $n), 'batch' => $batch, 'errors' => array_slice($errs, 0, 5)]);
   }
+  /** POST cat (slug), fs (sub, '*' = all): re-sort with the same sub rules the importers use (WatchImportController::subFor). commit=1 to apply. */
+  public function resub(Request $r) {
+    @set_time_limit(300); $c = $this->cat((string)$r->input('cat')); abort_unless($c, 404); $fs = (string)($r->input('fs') ?: '*');
+    $q = DB::table('products')->where('category_id', $c->id); if ($fs !== '*') $q->where('sub', $fs);
+    $groups = []; foreach ($q->orderBy('id')->limit((int)($r->input('limit') ?: 1500))->get(['id', 'name', 'sub']) as $p) {
+      $ns = WatchImportController::subFor((string)$p->name, null, $c->slug); if ($ns !== '' && $ns !== (string)$p->sub) $groups[$ns][] = (int)$p->id;
+    }
+    if (!$r->boolean('commit')) return response()->json(['dry' => true, 'groups' => array_map(fn($g) => count($g), $groups)]);
+    $done = [];
+    foreach ($groups as $ns => $ids) { $sub = new Request(['from' => $c->slug, 'to' => $c->slug, 'fs' => '*', 'ts' => $ns, 'ids' => $ids, 'commit' => 1, 'limit' => 2000]); $res = $this->move($sub)->getData(true); $done[$ns] = $res['moved'] ?? 0; }
+    return response()->json(['ok' => true, 'moved' => $done]);
+  }
   /** POST batch: put every product of the batch back where it was (old URL restored, redirect removed). */
   public function revert(Request $r) {
     $b = (string)$r->input('batch'); $n = 0;
