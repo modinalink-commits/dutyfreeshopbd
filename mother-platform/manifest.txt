@@ -988,6 +988,7 @@ resources/views/store/cat_slider_css.blade.php
 resources/views/store/cat_slider_js.blade.php
 resources/views/store/cat_slider_one.blade.php
 resources/views/admin_bell.blade.php
+resources/views/alerts_all.blade.php
 app/Support/AdminAlerts.php
 app/Http/Controllers/AdminAlertController.php
 database/migrations/2026_11_12_000300_flash_sale_discount_rule.php

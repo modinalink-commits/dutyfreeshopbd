@@ -14,8 +14,15 @@ class AdminAlertController extends Controller
     return response()->json(['count' => count($open), 'items' => $items, 'at' => time()])->header('Cache-Control', 'no-store');
   }
 
+  /** Readable page for "All issues": active alerts (Bengali description) and resolved history. */
+  public function page() {
+    abort_unless(in_array(optional(auth()->user())->role, ['super', 'admin'], true), 403);
+    $active = array_map(fn($r) => $r + self::bn($r), DeployHealth::active());
+    return view('alerts_all', ['active' => $active, 'history' => DeployHealth::history(60)]);
+  }
+
   /** Bengali description/action for the popup. Title and module stay English. Numbers are taken from the English description; unknown alerts fall back to the English text. */
-  private static function bn(array $r): array {
+  public static function bn(array $r): array {
     $fp = (string)($r['fp'] ?? ''); preg_match_all('/\d+/', (string)$r['description'], $m); $n = $m[0] ?? [];
     $d = fn($i) => strtr((string)($n[$i] ?? ''), ['0'=>'০','1'=>'১','2'=>'২','3'=>'৩','4'=>'৪','5'=>'৫','6'=>'৬','7'=>'৭','8'=>'৮','9'=>'৯']);
     if ($fp === 'relay_live_stale') return ['description_bn' => 'গত ' . $d(0) . ' মিনিট ধরে রিলে থেকে লাইভ কলের কোনো তথ্য আসছে না। কল ও বিলিং সম্ভবত চলছে, শুধু Call Clients-এর লাইভ বোর্ড বন্ধ।', 'action_bn' => 'কল কম চলার সময় Hostinger Docker Manager থেকে sip-relay প্রজেক্ট রিস্টার্ট করুন (রিস্টার্টে চলমান কল কেটে যায়)।'];
