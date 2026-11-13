@@ -19,7 +19,30 @@ class CustomerBenefit {
   private static array $memo = [];
 
   /** Admin switches (all default ON): membership | discount | delivery | reward | coupon | abuse */
-  public static function on(string $k): bool { try { return (string)DB::table('settings')->where('key', 'benefit_'.$k)->value('value') !== '0'; } catch (\Throwable $e) { return true; } }
+  private static array $onMemo = [];
+  public static function on(string $k): bool { $m = self::$onMemo[$k] ?? null; if ($m && $m[1] > microtime(true) - 5) return $m[0]; try { $v = (string)DB::table('settings')->where('key', 'benefit_'.$k)->value('value') !== '0'; self::$onMemo[$k] = [$v, microtime(true)]; return $v; } catch (\Throwable $e) { return true; } }
+  /** List screens: the same answers as check($phone) for many phones in two queries instead of two per phone (fills the per-request memo; no rule differs). */
+  public static function prime(iterable $phones): void {
+    try {
+      $todo = []; foreach ($phones as $p) { $p = (string)$p; if ($p !== '' && !isset(self::$memo[$p.'|0'])) $todo[$p] = self::alt($p); }
+      if (count($todo) < 2) return;
+      $all = array_values(array_unique(array_merge(...array_values($todo))));
+      $agg = DB::table('orders')->whereIn('phone', $all)->groupBy('phone')->selectRaw("phone, count(*) total,
+          count(*) filter (where status = 'Delivered' or (status = 'Partial Delivered' and coalesce(collected_amount,0) > 0)) rc,
+          coalesce(sum(case when status = 'Delivered' then total when status = 'Partial Delivered' then coalesce(collected_amount,0) else 0 end),0) amt,
+          count(*) filter (where status = 'Cancel') cn, count(*) filter (where status = 'Returned') rt")->get()->keyBy('phone');
+      $cus = []; foreach (DB::table('customers')->whereIn('phone', $all)->orderBy('id')->get() as $c) if (!isset($cus[$c->phone])) $cus[$c->phone] = $c;
+      foreach ($todo as $p => $alts) {
+        $t = 0; $rcL = 0; $amt = 0.0; $cn = 0; $rt = 0; $c = null;
+        foreach ($alts as $a) { if (isset($agg[$a])) { $x = $agg[$a]; $t += (int)$x->total; $rcL += (int)$x->rc; $amt += (float)$x->amt; $cn += (int)$x->cn; $rt += (int)$x->rt; } if (isset($cus[$a]) && (!$c || $cus[$a]->id < $c->id)) $c = $cus[$a]; }
+        $rc = $rcL + (int)($c->legacy_orders ?? 0); $amt += (float)($c->legacy_spent ?? 0);
+        $final = $rcL + $cn + $rt; $rate = $final > 0 ? round($rcL / $final * 100, 1) : null;
+        $r = ['status'=>'Eligible', 'reasons'=>['ELIGIBLE_LOYAL_CUSTOMER'], 'received'=>$rc, 'amount'=>round($amt, 2), 'total'=>$t, 'cancelled'=>$cn, 'returned'=>$rt, 'rate'=>$rate];
+        [$r['status'], $r['reasons']] = self::classify($rc, $rcL, $cn, $rt, $c);
+        self::$memo[$p.'|0'] = $r;
+      }
+    } catch (\Throwable $e) { report($e); }
+  }
   private static function alt(string $p): array { return [$p, '+88'.$p, '88'.$p]; }
 
   /** @return array{status:string, reasons:array, received:int, amount:float, total:int, cancelled:int, returned:int, rate:?float} */

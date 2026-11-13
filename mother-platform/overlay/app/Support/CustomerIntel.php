@@ -10,6 +10,7 @@ class CustomerIntel {
   public static function forOrders(iterable $orders): array {
     $orders = collect($orders); $phones = $orders->pluck('phone')->filter()->unique()->values();
     if ($phones->isEmpty()) return [];
+    CustomerBenefit::prime($phones->all());
     $d = "'".implode("','", array_map(fn($s)=>str_replace("'","''",$s), self::DELIVERED))."'";
     $r = "'".implode("','", self::RETURNED)."'"; $c = "'Cancel'";
     $stats = DB::table('orders')->whereIn('phone', $phones)->select('phone',
