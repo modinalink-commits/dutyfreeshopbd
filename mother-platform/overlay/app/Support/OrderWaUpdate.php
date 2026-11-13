@@ -32,7 +32,7 @@ class OrderWaUpdate {
     $name = mb_substr(trim((string)($o->customer_name ?? '')) ?: 'গ্রাহক', 0, 60); $inv = Inv::show($o->invoice); $brand = OrderWaConfirm::brand();
     if ($st === 'Delivered') return [$name, $inv, $brand];
     if ($st === 'New') return [$name, $inv, self::items((int)$o->id), number_format((float)$o->total, 0, '.', ',')];
-    return [$name, $inv, self::items((int)$o->id), mb_substr(trim((string)($o->courier ?? '')) ?: 'কুরিয়ার', 0, 40), mb_substr(trim((string)($o->consignment_id ?? '')) ?: 'শীঘ্রই জানানো হবে', 0, 60), number_format((float)$o->total, 0, '.', ','), $brand];
+    return [$name, $inv, self::items((int)$o->id), mb_substr(trim((string)($o->courier ?? '')) ?: 'কুরিয়ার', 0, 40), self::track($o), number_format((float)$o->total, 0, '.', ','), $brand];
   }
   /** Product names with quantity from the order's own lines, one short line (owner decision: names may be shown). */
   public static function items(int $orderId): string {
@@ -49,6 +49,13 @@ class OrderWaUpdate {
     $n = trim(preg_replace('/[\s\-–|,()]+/u', ' ', (string)$n));
     $w = array_slice(array_values(array_filter(explode(' ', $n), fn($x) => $x !== '')), 0, 4);
     return mb_substr(implode(' ', $w), 0, 40);
+  }
+  /** Tracking number followed by the courier's own tracking link (Pathao etc.); our order-tracking page when the parcel has no number yet. Owner request. */
+  public static function track(object $o): string {
+    try {
+      $cid = trim((string)($o->consignment_id ?? '')); $u = $cid !== '' ? (string)TrackLink::url($o) : (string)Inv::trackUrl($o->invoice);
+      return mb_substr(($cid !== '' ? $cid : 'শীঘ্রই জানানো হবে') . ($u !== '' ? ' · ' . $u : ''), 0, 240);
+    } catch (\Throwable $e) { return trim((string)($o->consignment_id ?? '')) ?: 'শীঘ্রই জানানো হবে'; }
   }
   public static function render(string $st, array $p): string { $b = self::STAGES[$st][3]; foreach ($p as $i => $v) $b = str_replace('{{' . ($i + 1) . '}}', $v, $b); return $b; }
 
