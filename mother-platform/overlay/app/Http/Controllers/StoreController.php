@@ -207,17 +207,25 @@ class StoreController extends Controller {
   /** Category Slider (home): one banner per active category with up to 6 customer-visible products, best sellers (last 30 days) first, then newest. Cached 5 minutes; categories without products are skipped. */
   /** Flash Sale, Cigarette & Vape part: the sellable products of that category that sold the LEAST in the last 30 days (delivered quantity, then all non-cancelled orders; never-sold first). No price is changed here: only products that already carry a real compare price show a SAVE badge. */
   /** Product ids on the Flash Sale shelf (the slowest-selling Cigarette & Vape products). The Flash Sale discount applies to these only. */
-  public static function flashIds(): array { return self::flashSlowSmoke(6)->pluck('id')->map(fn($v) => (int)$v)->all(); }
-  public static function flashSlowSmoke(int $n = 6) {
-    return self::rem('store.flashslow1', 600, function () use ($n) {
+  public static function flashIds(): array { return array_values(array_unique(array_merge(self::flashSlowSmoke(0)->pluck('id')->map(fn($v) => (int)$v)->all(), self::flashSlowSmoke(0, -1)->pluck('id')->map(fn($v) => (int)$v)->all()))); } // current + previous rotation, so a cart item does not lose its discount the moment the shelf rotates
+  /** Flash Sale (owner, 13 Nov 2026): ALL slow-selling Cigarette & Vape products (no fixed count): sellable products whose delivered units in the last 30 days are at or below the category median. The order is reshuffled every 30 minutes so no product stays in front. $n = 0 means unlimited. $back = -1 gives the previous rotation. */
+  public static function flashSlowSmoke(int $n = 0, int $back = 0) {
+    $slot = intdiv(time(), 1800) + $back;
+    return self::rem('store.flashslow2.' . $slot, 1800, function () use ($n, $slot) {
       $ids = DB::table('categories')->get(['id','slug','name'])->filter(fn($c) => self::isSmokeCat($c))->pluck('id')->map(fn($v) => (int)$v)->all();
       if (!$ids) return collect();
       $d30 = now()->subDays(30);
       $agg = DB::table('order_items as i')->join('orders as o', 'o.id', '=', 'i.order_id')->whereNotIn('o.status', ['Cancel', 'Incomplete'])->where('o.created_at', '>=', $d30)->whereNotNull('i.product_id')->groupBy('i.product_id')
-        ->selectRaw("i.product_id as pid, sum(i.qty) as q30, sum(case when o.status in ('Delivered','Received','Completed') then i.qty else 0 end) as d30")->get()->keyBy('pid');
+        ->selectRaw("i.product_id as pid, sum(case when o.status in ('Delivered','Received','Completed') then i.qty else 0 end) as d30")->get()->keyBy('pid');
       $pool = \App\Support\StockGuard::listable(DB::table('products')->where('published', true)->whereIn('category_id', $ids))->whereNotNull('image')->where('image', '!=', '')->get()
-        ->filter(fn($p) => \App\Support\StockGuard::sellable($p));
-      return $pool->sortBy(fn($p) => [(int)($agg[$p->id]->d30 ?? 0), (int)($agg[$p->id]->q30 ?? 0), (int)$p->id])->take($n)->values();
+        ->filter(fn($p) => \App\Support\StockGuard::sellable($p))->values();
+      if ($pool->isEmpty()) return collect();
+      $q = $pool->map(fn($p) => (int)($agg[$p->id]->d30 ?? 0))->sort()->values();
+      $med = $q[intdiv($q->count() - 1, 2)];
+      $slow = $pool->filter(fn($p) => (int)($agg[$p->id]->d30 ?? 0) <= $med)->values();
+      mt_srand($slot); $arr = $slow->all(); for ($i = count($arr) - 1; $i > 0; $i--) { $j = mt_rand(0, $i); [$arr[$i], $arr[$j]] = [$arr[$j], $arr[$i]]; } mt_srand();
+      $out = collect($arr);
+      return $n > 0 ? $out->take($n)->values() : $out;
     });
   }
   public static function catSlider(): array {
