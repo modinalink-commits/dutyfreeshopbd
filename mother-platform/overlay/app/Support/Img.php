@@ -140,19 +140,22 @@ class Img {
    *  No backup copy is kept for these (the source store still has the original); a file that grew again (re-imported) is processed again. */
   public static function runStoreBatch(int $max = 40, int $sec = 25): array {
     $C = \Illuminate\Support\Facades\Cache::class; $t0 = microtime(true); $n = 0; $saved = 0; $fail = 0; $renamed = 0;
-    if ($C::get('img.sb2.rest')) return ['processed'=>0, 'failed'=>0, 'saved'=>0, 'state'=>'resting'];
+    if ($C::get('img.sb3.rest')) return ['processed'=>0, 'failed'=>0, 'saved'=>0, 'state'=>'resting'];
     $dirs = []; foreach (@scandir(self::dir()) ?: [] as $d) if (preg_match('/^(store\d+|watch)$/', $d) && is_dir(self::dir().'/'.$d)) $dirs[] = $d;
-    sort($dirs); $st = $C::get('img.sb2', ['d'=>0, 'after'=>'']); $di = (int)($st['d'] ?? 0); $after = (string)($st['after'] ?? '');
+    sort($dirs); $st = $C::get('img.sb3', ['d'=>0, 'after'=>'']); $di = (int)($st['d'] ?? 0); $after = (string)($st['after'] ?? '');
     while ($di < count($dirs) && $n < $max && microtime(true) - $t0 < $sec) {
       $d = $dirs[$di]; $files = [];
       foreach (@scandir(self::dir().'/'.$d) ?: [] as $f) if ($f[0] !== '.' && strcmp($f, $after) > 0 && self::isOriginal($f) && is_file(self::dir().'/'.$d.'/'.$f)) { $files[] = $f; if (count($files) >= 300) break; }
       if (!$files) { $di++; $after = ''; continue; }
       $known = []; $korig = []; foreach (DB::table('media_images')->whereIn('path', array_map(fn($f) => $d.'/'.$f, $files))->get(['path', 'opt_bytes', 'orig_bytes']) as $mi) { $known[$mi->path] = $mi->opt_bytes; $korig[$mi->path] = (int)$mi->orig_bytes; }
+      $used = []; try { foreach (DB::table('products')->whereIn('image', array_map(fn($f) => '/uploads/'.$d.'/'.$f, $files))->pluck('image') as $pi) $used[(string)$pi] = 1; } catch (\Throwable $e) {}
       foreach ($files as $f) {
         if ($n >= $max || microtime(true) - $t0 > $sec) break;
         $rel = $d.'/'.$f; $abs = self::dir().'/'.$rel; $size = (int)@filesize($abs); $after = $f;
         // A photo that the first run shrank IN PLACE is light on the server, but the CDN still serves the old heavy copy under the same address: it only needs the new file name.
         $stale = !preg_match('/-r\d{9,}\./', $f) && ($korig[$rel] ?? 0) > 150 * 1024 && ($korig[$rel] ?? 0) > $size * 1.3;
+        // Same case when the earlier size was never recorded: a light photo changed in the last 30 days (the CDN keeps a copy that long) that a product still shows under its old name.
+        if (!$stale && !preg_match('/-r\d{9,}\./', $f) && $size > 0 && $size <= 150 * 1024 && isset($used['/uploads/'.$rel]) && (int)@filemtime($abs) > time() - 30 * 86400) $stale = true;
         if (!$stale) {
           if ($size <= 150 * 1024) continue;                                                // already light: nothing to gain
           if (isset($known[$rel]) && $size <= max(1, (int)$known[$rel]) * 1.3) continue;   // already done and not replaced by a bigger file
@@ -185,8 +188,8 @@ class Img {
       }
     }
     if ($renamed) foreach (['store.home13', 'store.cats'] as $k) { try { $C::forget($k); } catch (\Throwable $e) {} }
-    if ($di >= count($dirs)) { $C::put('img.sb2.rest', 1, 21600); $C::forget('img.sb2'); $state = 'cycle done'; } // every folder walked: look again in 6 hours
-    else { $C::put('img.sb2', ['d'=>$di, 'after'=>$after], 86400 * 7); $state = ($dirs[$di] ?? '').' after '.$after; }
+    if ($di >= count($dirs)) { $C::put('img.sb3.rest', 1, 21600); $C::forget('img.sb3'); $state = 'cycle done'; } // every folder walked: look again in 6 hours
+    else { $C::put('img.sb3', ['d'=>$di, 'after'=>$after], 86400 * 7); $state = ($dirs[$di] ?? '').' after '.$after; }
     return ['processed'=>$n, 'failed'=>$fail, 'saved'=>$saved, 'state'=>$state];
   }
   /** Local copy of an image that was hosted somewhere else, or null if it has not been copied yet. */
