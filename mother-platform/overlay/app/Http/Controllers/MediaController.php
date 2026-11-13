@@ -63,8 +63,8 @@ class MediaController extends Controller {
         $tgt = $bk.'/'.str_replace('/', '__', $rel); $had = is_file($tgt); if (!$had) @copy($abs, $tgt);
         $res = Img::process($abs, 'product');
         if (!empty($res['ok']) && !empty($res['trimmed'])) { $out['trim']++; if (count($out['samples']) < 8) $out['samples'][] = [$rel, ($res['w'] ?? 0).'x'.($res['h'] ?? 0)]; }
-        else { $out['skip']++; if (!$had) @unlink($tgt); if (empty($res['ok'])) $out['fail']++; }
-      } catch (\Throwable $e) { $out['fail']++; }
+        else { $out['skip']++; if (!$had) @unlink($tgt); if (empty($res['ok'])) { $out['fail']++; if (count($out['errs'] ?? []) < 5) $out['errs'][] = [$rel, $res['error'] ?? '?']; } }
+      } catch (\Throwable $e) { $out['fail']++; if (count($out['errs'] ?? []) < 5) $out['errs'][] = [$rel, mb_substr($e->getMessage(), 0, 80)]; }
     }
     $out['left'] = DB::table('products')->where('id', '>', $out['next'])->where('image', 'like', '/uploads/%')->count();
     return response()->json($out);
