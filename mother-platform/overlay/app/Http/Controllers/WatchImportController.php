@@ -157,15 +157,16 @@ class WatchImportController extends Controller {
     $g = preg_match('/\b(kids?|child(?:ren)?|baby|infant|junior|toddler)\b/', $t) ? 'Kids' : (preg_match('/\b(women|woman|ladies|lady|female|girls?)\b|women\'?s|ladies/', $t) ? 'Women' : (preg_match('/\b(men|man|gents?|male|boys?)\b|men\'?s/', $t) ? 'Men' : ''));
     $rules = [ // item => [regex, default gender: M men, W women, '' none, '-' never prefixed]
       'Panjabi' => ['/panjabi|punjabi|kabli|fatua/', 'M'], 'Saree' => ['/\bsaree|\bsari\b|\bshari\b/', 'W'],
-      'Three Piece & Kameez' => ['/3[\s-]*piece|three[\s-]*piece|2[\s-]*pcs?\b|2[\s-]*piece|salwar|shalwar|kameez/', 'W'],
-      'Tops & Kurti' => ['/kurti|kurta|tunic|\btops?\b|\bfrock|\bgown|\bdress\b|\bskirt|palazzo|blouse/', 'W'],
+      'Three Piece & Kameez' => ['/3[\s-]*pcs?\b|3[\s-]*piece|three[\s-]*piece|2[\s-]*pcs?\b|2[\s-]*piece|salwar|shalwar|kameez|unstitched|\blawn\b|bridal|chikankari|festive|embroider|luxe\b|nazir|shakira|rasiya|saadia|asad\b|rizwan|kashmee|shahjahan|hussain\s*rehar|maria\.?\s*b\b|summer\s*(in\s*)?bloom/', 'W'],
+      'Tops & Kurti' => ['/kaftan|kurti|kurta|tunic|\btops?\b|\bfrock|\bgown|\bdress\b|\bskirt|palazzo|blouse/', 'W'],
       'Hijab & Scarf' => ['/hijab|scarf|scarves|shawl|orna\b|burk|abaya|niqab|stole/', 'W'], 'Lingerie' => ['/lingerie|\bbra\b|\bbras\b|panty|panties|stocking/', 'W'],
       'Jewelry' => ['/ear\s*ring|earring|necklace|bracelet|bangle|\brings?\b|jewel|pendant|body\s*chain|nose\s*pin|anklet|tiara/', 'W'],
       'Shoes' => ['/\bshoes?\b|sandal|loafer|\bheels?\b|\bflats?\b|\bpumps?\b|slipper|sneaker|\bboots?\b|flip[\s-]*flop|oxford|derby|moccasin|kolhapuri|stiletto|wedge/', ''],
-      'Bags & Wallets' => ['/\bbags?\b|backpack|purse|wallet|clutch|\btote|satchel|pouch/', ''],
+      'Bags & Wallets' => ['/\bbags?\b|handbag|backpack|purse|wallet|clutch|\btote|satchel|pouch/', ''],
       'Blazers & Suits' => ['/blazer|\bsuits?\b|waistcoat|tuxedo/', 'M'], 'Jackets & Winter Wear' => ['/jacket|\bcoat|sweater|sweatshirt|hoodie|cardigan|pullover|outerwear|puffer|beanie|gloves|winter|fleece|thermal|\bcap\b/', ''],
       'Leggings' => ['/legging|flared\s*pants|yoga\s*pants|tights/', 'W'],
-      'Pants & Trousers' => ['/\bpants?\b|jeans|trouser|gabardine|chino|jogger|pajama|pyjama|shorts|denim|cargo/', 'M'], 'T-Shirts & Polos' => ['/\bpolo|t-?\s?shirt|\btee\b|\btank\b|singlet/', 'M'], 'Shirts' => ['/shirt/', 'M'],
+      'Jerseys & Sportswear' => ['/jersey|football|\bkit\b|track\s*suit|tracksuit|active\s*wear|activewear|sportswear/', 'M'],
+      'Pants & Trousers' => ['/\bpants?\b|bottoms?\b|jeans|trouser|gabardine|chino|jogger|pajama|pyjama|shorts|denim|cargo/', 'M'], 'T-Shirts & Polos' => ['/\bpolo|t-?\s?shirt|\btee\b|\btank\b|singlet/', 'M'], 'Shirts' => ['/shirt/', 'M'],
       'Watches & Gadgets' => ['/watch|earbud|headphone|speaker|charger|power\s*bank|smart\s*(band|watch)|\bgadget/', '-'],
       'Accessories' => ['/\bbelts?\b|\btie\b|\bsocks?\b|boxer|underwear|\bhat\b|sunglass|\bglasses\b|cufflink|handkerchief|keychain|fragrance|perfume|\bhair\b|\bclips?\b|scrunchie|\bcomb\b|\bbrush\b|\bmask\b/', ''],
     ];
