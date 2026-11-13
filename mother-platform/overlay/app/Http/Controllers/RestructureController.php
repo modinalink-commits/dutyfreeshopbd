@@ -33,18 +33,19 @@ class RestructureController extends Controller {
     $total = (clone $q)->count(); $ts = trim((string)$r->input('ts'));
     if (!$r->boolean('commit')) return response()->json(['dry' => true, 'matches' => $total, 'sample' => (clone $q)->limit(min(60, (int)($r->input('sn') ?: 15)))->pluck('name')]);
     $batch = 'b' . now()->format('mdHis') . substr(md5(random_bytes(4)), 0, 4); $n = 0;
-    foreach ($q->orderBy('id')->limit((int)($r->input('limit') ?: 1500))->get() as $p) {
+    $errs = [];
+    foreach ($q->orderBy('id')->limit((int)($r->input('limit') ?: 1500))->get() as $p) { try {
       $old = StoreController::url($p); $sub = $ts !== '' ? $ts : (string)$p->sub;
-      $base = (string)($p->slug ?: Slugs::slug($p->name)); if ($base === '') $base = 'product';
+      $base = Slugs::slug((string)($p->path_slug ?: ($p->slug ?: $p->name)), 80); if ($base === '') $base = 'product';
       $slug = $this->uniq((int)$to->id, $base, $sub, (int)$p->id);
       DB::table('product_move_log')->insert(['batch' => $batch, 'product_id' => $p->id, 'old_category_id' => $p->category_id, 'old_sub' => $p->sub, 'old_sub_sub' => $p->sub_sub, 'old_path_slug' => $p->path_slug, 'old_url' => $old, 'new_category_id' => $to->id, 'new_sub' => $sub, 'created_at' => now(), 'updated_at' => now()]);
       DB::table('products')->where('id', $p->id)->update(['category_id' => $to->id, 'sub' => $sub !== '' ? $sub : null, 'sub_sub' => null, 'path_slug' => $slug, 'updated_at' => now()]);
       $np = DB::table('products')->where('id', $p->id)->first(); $new = StoreController::url($np);
       if (str_starts_with($old, '/') && !str_starts_with($old, '/p/') && $old !== $new) SeoMgr::addRedirect($old, $new, 301, 'restructure');
       $n++;
-    }
+    } catch (\Throwable $e) { $errs[] = $p->id . ': ' . substr($e->getMessage(), 0, 160); } }
     $this->bust();
-    return response()->json(['ok' => true, 'moved' => $n, 'left' => max(0, $total - $n), 'batch' => $batch]);
+    return response()->json(['ok' => true, 'moved' => $n, 'left' => max(0, $total - $n), 'batch' => $batch, 'errors' => array_slice($errs, 0, 5)]);
   }
   /** POST batch: put every product of the batch back where it was (old URL restored, redirect removed). */
   public function revert(Request $r) {
