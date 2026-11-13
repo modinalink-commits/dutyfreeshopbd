@@ -93,4 +93,27 @@ class RestructureController extends Controller {
     }
     return response()->json($o);
   }
+
+  /** Where this product belongs by name (same rules the importers use + perfume). Returns a main category slug or null (= leave). */
+  public static function target(string $name, string $cur): ?string {
+    $x = WatchImportController::crossRoute($name, '');
+    $t = mb_strtolower($name);
+    if (!$x || $x === 'skin-care') { // perfume markers (deodorant/lotion/etc. are not perfume)
+      if (preg_match('/eau\s*de|parfum|\bedp\b|\bedt\b|cologne|attar|\bperfume|\bperfum|\boud\b|\bbakhoor|\bintensivo\b|\bfragrance\b/', $t) && !preg_match('/deodorant|lotion|shower|body\s*wash|cream|shampoo|candle|diffuser|soap|roll\s*on|body\s*spray|stick|sunscreen|toner|serum|\bkit\b.*(skin|face)/', $t)) return 'perfume';
+    }
+    if (!$x) return null;
+    return \App\Support\CatRemap::LEGACY[$x] ?? $x;
+  }
+  /** GET/POST cat ('*' = all main categories), commit, nokids (skip the child-items rule). Lists from>to groups; commit moves every mismatched product (sub is re-sorted afterwards with resub). */
+  public function audit(Request $r) {
+    @set_time_limit(300); $slugs = $r->input('cat') && $r->input('cat') !== '*' ? [(string)$r->input('cat')] : DB::table('categories')->whereNull('parent_id')->where('active', true)->pluck('slug')->all();
+    $skip = array_filter(explode(',', (string)$r->input('skip'))); $groups = []; $ids = [];
+    foreach ($slugs as $sl) { $c = $this->cat($sl); if (!$c) continue;
+      foreach (DB::table('products')->where('category_id', $c->id)->orderBy('id')->get(['id', 'name']) as $p) {
+        $to = self::target((string)$p->name, $sl); if (!$to || $to === $sl || in_array("$sl>$to", $skip, true)) continue;
+        $k = "$sl>$to"; $groups[$k] = ($groups[$k] ?? 0) + 1; $ids[$k][] = (int)$p->id; $samp[$k][] = $p->name; } }
+    if (!$r->boolean('commit')) return response()->json(['groups' => $groups, 'sample' => array_map(fn($a) => array_slice($a, 0, (int)($r->input('sn') ?: 6)), $samp ?? [])]);
+    $done = []; foreach ($ids as $k => $list) { [$f, $t] = explode('>', $k); foreach (array_chunk($list, 400) as $ch) { $res = $this->move(new Request(['from' => $f, 'to' => $t, 'fs' => '*', 'ids' => $ch, 'commit' => 1, 'limit' => 400]))->getData(true); $done[$k] = ($done[$k] ?? 0) + ($res['moved'] ?? 0); } }
+    return response()->json(['ok' => true, 'moved' => $done]);
+  }
 }
