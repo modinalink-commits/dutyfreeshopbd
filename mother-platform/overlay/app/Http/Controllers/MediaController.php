@@ -69,5 +69,46 @@ class MediaController extends Controller {
     $out['left'] = DB::table('products')->where('id', '>', $out['next'])->where('image', 'like', '/uploads/%')->count();
     return response()->json($out);
   }
+  /** Re-download truncated/corrupt product photos from the vendor shop (store_products.image via watch_source or SKU), full size, then optimise. POST after,limit,dry. */
+  public function refetch(Request $r) {
+    if (!Img::ok()) return response()->json(['ok'=>false, 'error'=>'GD is not enabled'], 503);
+    @set_time_limit(58); @ini_set('memory_limit', '768M');
+    $after = (int)$r->input('after', 0); $dry = $r->boolean('dry'); $lim = max(1, min(40, (int)$r->input('limit', 10))); $t0 = microtime(true);
+    $rows = DB::table('products')->where('id', '>', $after)->where('image', 'like', '/uploads/%')->orderBy('id')->limit($lim)->get(['id', 'sku', 'image']);
+    $out = ['ok'=>true, 'seen'=>0, 'good'=>0, 'bad'=>0, 'fixed'=>0, 'nosrc'=>0, 'dlfail'=>0, 'next'=>$after, 'ids'=>[]];
+    foreach ($rows as $row) {
+      if (microtime(true) - $t0 > 40) break;
+      $out['seen']++; $out['next'] = $row->id; $rel = ltrim(strtok($row->image, '?'), '/'); $abs = public_path($rel);
+      if (!is_file($abs)) { continue; }
+      $info = @getimagesize($abs); if (!$info) { $out['bad']++; } else {
+        $full = false; $sz = filesize($abs);
+        if ($sz % 1 === 0 && $sz !== 1500000 && !($info[0] * $info[1] > 30000000 && $sz < 3000000)) { $out['good']++; continue; } // only exactly-cut files, or huge-dimension files with tiny byte size, are suspicious
+        $im = ($info[0] * $info[1] <= 60000000) ? match ($info[2]) { IMAGETYPE_JPEG => @imagecreatefromjpeg($abs), IMAGETYPE_PNG => @imagecreatefrompng($abs), default => @imagecreatefromwebp($abs) } : null;
+        if ($im) { imagedestroy($im); $out['good']++; continue; }
+        $out['bad']++;
+      }
+      $src = DB::table('watch_source as w')->join('store_products as s', 's.id', '=', 'w.store_product_id')->where('w.product_id', $row->id)->value('s.image');
+      if (!$src && $row->sku) $src = DB::table('store_products')->where('sku', $row->sku)->whereNotNull('image')->value('image');
+      if (!$src || !preg_match('#^https?://#i', $src)) { $out['nosrc']++; if (count($out['ids']) < 60) $out['ids'][] = [$row->id, 'nosrc']; continue; }
+      if ($dry) { $out['fixed']++; continue; }
+      try {
+        $resp = \Illuminate\Support\Facades\Http::timeout(30)->withHeaders(['User-Agent'=>'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', 'Accept'=>'image/*'])->get($src);
+        $b = $resp->ok() ? $resp->body() : ''; $gi = $b !== '' ? @getimagesizefromstring($b) : null;
+        $ok = $gi && in_array($gi[2], [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_WEBP], true) && @imagecreatefromstring($b);
+        if (!$ok) { $out['dlfail']++; if (count($out['ids']) < 60) $out['ids'][] = [$row->id, 'dl']; continue; }
+        $bk = storage_path('app/img-originals'); if (!is_dir($bk)) @mkdir($bk, 0775, true); @copy($abs, $bk.'/'.str_replace('/', '__', $rel).'.cut');
+        $ext = [IMAGETYPE_JPEG=>'jpg', IMAGETYPE_PNG=>'png', IMAGETYPE_WEBP=>'webp'][$gi[2]]; $cur = strtolower(pathinfo($abs, PATHINFO_EXTENSION)); $cur = $cur === 'jpeg' ? 'jpg' : $cur;
+        $dst = $abs; $newRel = '/'.$rel;
+        if ($ext !== $cur) { $dst = preg_replace('/\.[A-Za-z0-9]+$/', '', $abs).'.'.$ext; $newRel = '/'.preg_replace('/\.[A-Za-z0-9]+$/', '', $rel).'.'.$ext; }
+        file_put_contents($dst, $b); unset($b); @chmod($dst, 0664);
+        $res = Img::process($dst, 'product');
+        if (empty($res['ok'])) { $out['dlfail']++; if (count($out['ids']) < 60) $out['ids'][] = [$row->id, 'proc']; continue; }
+        if ($newRel !== '/'.$rel) DB::table('products')->where('id', $row->id)->update(['image'=>$newRel, 'updated_at'=>now()]);
+        $out['fixed']++;
+      } catch (\Throwable $e) { $out['dlfail']++; if (count($out['ids']) < 60) $out['ids'][] = [$row->id, mb_substr($e->getMessage(), 0, 60)]; }
+    }
+    $out['left'] = DB::table('products')->where('id', '>', $out['next'])->where('image', 'like', '/uploads/%')->count();
+    return response()->json($out);
+  }
   public function retry() { DB::table('media_images')->where('status', 'failed')->delete(); return response()->json(['ok'=>true]); }
 }

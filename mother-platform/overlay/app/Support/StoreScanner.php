@@ -46,7 +46,7 @@ class StoreScanner {
     if (!$ok) return $out;
     try {
       $resp = \Illuminate\Support\Facades\Http::pool(function ($pool) use ($ok, $timeout) { $o = []; foreach ($ok as $i => $u) $o[] = $pool->as((string)$i)->timeout($timeout)->withOptions(['allow_redirects' => ['max' => 4, 'protocols' => ['http', 'https']]])->withHeaders(['User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36', 'Accept' => 'text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8', 'Accept-Language' => 'en'])->get($u); return $o; });
-      foreach ($ok as $i => $u) { $r = $resp[(string)$i] ?? null; $out[$u] = ($r && method_exists($r, 'status')) ? ['code' => $r->status(), 'url' => $u, 'body' => substr($r->body(), 0, 1500000), 'h' => []] : null; }
+      foreach ($ok as $i => $u) { $r = $resp[(string)$i] ?? null; $out[$u] = ($r && method_exists($r, 'status')) ? ['code' => $r->status(), 'url' => $u, 'body' => substr($r->body(), 0, 15000000), 'h' => []] : null; }
     } catch (\Throwable $e) { foreach ($ok as $u) $out[$u] = null; }
     return $out;
   }
