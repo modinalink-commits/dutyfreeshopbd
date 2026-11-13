@@ -32,6 +32,13 @@ class RestructureController extends Controller {
     if ($ids = $r->input('ids')) $q->whereIn('id', array_map('intval', (array)$ids));
     $total = (clone $q)->count(); $ts = trim((string)$r->input('ts'));
     if (!$r->boolean('commit')) return response()->json(['dry' => true, 'matches' => $total, 'sample' => (clone $q)->limit(min(60, (int)($r->input('sn') ?: 15)))->pluck('name')]);
+    if ($r->boolean('unpub')) { // owner: gift cards/vouchers are not wanted on the site -> unpublish (reversible), logged like the catalog bulk action
+      $n = 0; foreach ($q->orderBy('id')->limit(2000)->get() as $p) { if (!$p->published) continue;
+        DB::table('products')->where('id', $p->id)->update(['published' => false, 'updated_at' => now()] + \App\Support\StockGuard::lockCol(false));
+        try { DB::table('product_status_logs')->insert(['product_id' => $p->id, 'user_id' => \Illuminate\Support\Facades\Auth::id(), 'user_name' => optional(\Illuminate\Support\Facades\Auth::user())->name, 'action' => 'Unpublished', 'created_at' => now(), 'updated_at' => now()]); } catch (\Throwable $e) {}
+        $n++; }
+      $this->bust(); return response()->json(['ok' => true, 'unpublished' => $n]);
+    }
     $batch = 'b' . now()->format('mdHis') . substr(md5(random_bytes(4)), 0, 4); $n = 0;
     $errs = [];
     foreach ($q->orderBy('id')->limit((int)($r->input('limit') ?: 1500))->get() as $p) { try {
