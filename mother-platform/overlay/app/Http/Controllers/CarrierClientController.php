@@ -111,7 +111,17 @@ class CarrierClientController extends Controller {
     $rows = $q->orderByDesc('d.id')->offset(($page - 1) * $per)->limit($per)->get(['d.uuid', 'd.dest', 'd.caller', 'd.billsec', 'd.cause', 'd.ended_at', 'c.name as client', 'c.prefix']);
     $out = $rows->map(fn($x) => ['time' => \Illuminate\Support\Carbon::parse($x->ended_at, 'UTC')->setTimezone($tz)->format('d M H:i:s'), 'client' => $x->client ?? '—', 'caller' => (string)$x->caller,
       'number' => self::mobile((string)$x->dest, (string)$x->prefix), 'secs' => (int)$x->billsec, 'billed' => (int)ceil($x->billsec / 60), 'cause' => (string)$x->cause])->values();
-    return response()->json(['ok' => true, 'rows' => $out, 'total' => $total, 'page' => $page, 'pages' => max(1, (int)ceil($total / $per))]);
+    // Live calls (ringing / answered, not yet in the CDR) are shown on top of page 1 when no filter is set, so the CDR is a live feed.
+    $live = [];
+    if ($page === 1 && !$r->query('from') && !$r->query('to') && !$r->query('status')) {
+      [$lok, $lrows] = self::relayChannels();
+      if ($lok) { $byIp = []; foreach (DB::table('voice_carrier_clients')->get() as $c) $byIp[explode('/', $c->ip)[0]] = $c;
+        foreach ($lrows as $x) { if (($x['direction'] ?? '') !== 'inbound') continue; $c = $byIp[$x['ip_addr'] ?? ''] ?? null; if (!$c) continue;
+          $act = strtoupper((string)($x['callstate'] ?? '')) === 'ACTIVE'; $age = null;
+          if ($act && !empty($x['uuid'])) { $t0 = \Illuminate\Support\Facades\Cache::get('vc_ans_' . preg_replace('/[^0-9a-f-]/i', '', (string)$x['uuid'])); $age = $t0 ? max(0, time() - (int)$t0) : 0; }
+          $live[] = ['client' => $c->name, 'caller' => (string)($x['cid_num'] ?? ''), 'number' => self::mobile((string)($x['dest'] ?? ''), (string)$c->prefix), 'state' => $act ? 'In call' : 'Ringing', 'secs' => $age]; } }
+    }
+    return response()->json(['ok' => true, 'live' => $live, 'rows' => $out, 'total' => $total, 'page' => $page, 'pages' => max(1, (int)ceil($total / $per))]);
   }
   /** Admin-only repair: set the real talk time on CDR rows that were saved as 0s/UNKNOWN while the PBX shows the call was answered. Each item = {dest (last 10 digits), start ('Y-m-d H:i' Dhaka, PBX start), dur (PBX seconds)}. Only rows still at 0s/UNKNOWN are touched, one row per item. dry=1 only counts. */
   public function cdrFix(Request $r) {

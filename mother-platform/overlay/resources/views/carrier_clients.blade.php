@@ -44,12 +44,12 @@ tick();setInterval(function(){if(!document.hidden)tick()},3000)})();</script>
 function q(){var p=['page='+pg],a=document.getElementById('cdF').value,b=document.getElementById('cdT').value,s=document.getElementById('cdS').value;if(a)p.push('from='+encodeURIComponent(a));if(b)p.push('to='+encodeURIComponent(b));if(s)p.push('status='+s);return p.join('&')}
 function load(){fetch('/admin/call-center/clients/cdrs?'+q(),{headers:{Accept:'application/json'}}).then(function(r){return r.json()}).then(function(d){if(!d.ok)return;document.getElementById('cdN').textContent=d.total+' calls';document.getElementById('cdPg').textContent='Page '+d.page+' / '+d.pages;
 document.getElementById('cdP').disabled=d.page<=1;document.getElementById('cdNx').disabled=d.page>=d.pages;
-if(!d.rows.length){B.innerHTML='<tr><td colspan="7" class="sub">No calls in this range.</td></tr>';return}
-B.innerHTML='';d.rows.forEach(function(x){var tr=document.createElement('tr'),ans=x.secs>0;
+if(!d.rows.length&&!(d.live||[]).length){B.innerHTML='<tr><td colspan="7" class="sub">No calls in this range.</td></tr>';return}
+B.innerHTML='';(d.live||[]).forEach(function(x){var tr=document.createElement('tr');tr.style.background='#ECFDF3';[new Date().toLocaleTimeString('en-GB',{timeZone:'Asia/Dhaka'}),x.client,x.caller||'—',x.number,'● LIVE · '+x.state,x.secs!==null?f(x.secs):'—','—'].forEach(function(t,i){var td=document.createElement('td');td.textContent=t;if(i===4)td.style.cssText='color:#15803D;font-weight:700';if(i>=5)td.className='n';tr.appendChild(td)});B.appendChild(tr)});d.rows.forEach(function(x){var tr=document.createElement('tr'),ans=x.secs>0;
 [x.time,x.client,x.caller||'—',x.number,null,ans?f(x.secs):'—',ans?x.billed:'—'].forEach(function(v,i){var td=document.createElement('td');if(i===4){td.textContent=ans?'Answered':((!x.cause||x.cause==='UNKNOWN')?'Not answered':x.cause.replace(/_/g,' ').toLowerCase())}else{td.textContent=v;if(i>=5)td.className='n'}tr.appendChild(td)});selCell(tr,B);B.appendChild(tr)})}).catch(function(){})}
 document.getElementById('cdGo').onclick=function(){pg=1;load()};document.getElementById('cdRst').onclick=function(){['cdF','cdT','cdS'].forEach(function(i){document.getElementById(i).value=''});pg=1;load()};
 document.getElementById('cdP').onclick=function(){if(pg>1){pg--;load()}};document.getElementById('cdNx').onclick=function(){pg++;load()};
-load();setInterval(function(){if(!document.hidden&&pg===1&&document.getElementById('cdBox').open)load()},8000);document.getElementById('cdBox').addEventListener('toggle',function(){if(this.open)load()})})();</script>
+load();setInterval(function(){if(!document.hidden&&pg===1&&document.getElementById('cdBox').open)load()},3000);document.getElementById('cdBox').addEventListener('toggle',function(){if(this.open)load()})})();</script>
 
 @endif
 <div id="sysBox" hidden>
