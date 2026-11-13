@@ -60,7 +60,7 @@
     <div class="mu" style="margin-top:6px">How the engine works: every deployment builds a separate release, tests it before it goes live, switches in one atomic step (no maintenance mode) and rolls back by itself if the live check fails. The server keeps the newest 3 releases; deployment logs and issue history stay in the database.</div></details>
   <div class="ov" id="ov"><div class="md" id="md"></div></div>
 </div>
-<script type="application/json" id="dd">{!! json_encode($d, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) !!}</script>
+<script type="application/json" id="dd">{!! json_encode($d, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE | JSON_PARTIAL_OUTPUT_ON_ERROR) !!}</script>
 <form style="display:none">@csrf</form>
 @endsection
 @section('js')

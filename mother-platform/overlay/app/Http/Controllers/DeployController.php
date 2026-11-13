@@ -93,6 +93,8 @@ class DeployController extends Controller
       'health' => $health, 'issues' => $issues, 'issueHist' => $hasIssues ? (int)DB::table('deploy_issues')->whereIn('status', ['resolved', 'ignored'])->count() : 0, 'previous' => $prevOut, 'steps' => $steps, 'stepsFor' => $focus['id'] ?? null,
       'super' => $isSuper, 'lastHealth' => \Illuminate\Support\Facades\Cache::get('dh.full'), 'queue' => DeployHealth::queueInfo(), 'cache' => DeployHealth::cacheInfo(),
       'migs' => count(DeployHealth::pendingMigrations()), 'retention' => 3, 'pending' => $pend, 'today' => $today];
+    // A log line cut in the middle of a Bengali letter must never blank the page (json_encode fails on broken UTF-8).
+    array_walk_recursive($d, function (&$v) { if (is_string($v) && !mb_check_encoding($v, 'UTF-8')) $v = mb_scrub($v, 'UTF-8'); });
     return $d;
   }
 
