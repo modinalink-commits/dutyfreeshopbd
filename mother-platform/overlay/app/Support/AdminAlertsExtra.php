@@ -70,8 +70,9 @@ class AdminAlertsExtra
 
   /** Logistics: parcels in Shipment with no courier consignment for 30+ minutes. */
   private static function noConsignment(): void {
-    $n = DB::table('orders')->where('status', 'Shipment')->whereNull('consignment_id')->where('updated_at', '<', now()->subMinutes(30))->count();
-    self::set($n >= 1, 'no_consignment', 'high', 'Courier', 'Shipment without a courier consignment', $n . ' orders are in Shipment but have no courier consignment.', 'The courier booking failed or was skipped.', 'Open these orders and book the courier again.', 'all shipments have a consignment');
+    $q = DB::table('orders')->where('status', 'Shipment')->whereNull('consignment_id')->where('updated_at', '<', now()->subMinutes(30))->where('created_at', '>=', now()->subDays(30));
+    $n = (clone $q)->count(); $inv = (clone $q)->orderByDesc('id')->limit(3)->pluck('invoice')->implode(', ');
+    self::set($n >= 1, 'no_consignment', 'high', 'Courier', 'Shipment without a courier consignment', $n . ' orders are in Shipment but have no courier consignment' . ($inv ? ' (' . $inv . ')' : '') . '.', 'The courier booking failed or was skipped.', 'Open these orders and book the courier again.', 'all shipments have a consignment');
   }
 
   /** Logistics: approved/packaging orders with no phone or no address. */
@@ -82,7 +83,7 @@ class AdminAlertsExtra
 
   /** Logistics: open orders containing a product that is out of stock. */
   private static function stockMissing(): void {
-    $n = DB::table('orders as o')->whereIn('o.status', ['Approved', 'Packaging'])->whereExists(fn($q) => $q->select(DB::raw(1))->from('order_items as i')->join('products as p', 'p.id', '=', 'i.product_id')->whereColumn('i.order_id', 'o.id')->where('p.stock', '<=', 0))->count();
-    self::set($n >= 1, 'stock_missing', 'high', 'Inventory', 'Orders waiting for stock', $n . ' approved orders contain a product with no stock.', 'Stock ran out or a purchase has not been received.', 'Open Inventory / Purchases and arrange the missing stock.', 'stock is available for open orders');
+    $q = DB::table('orders as o')->whereIn('o.status', ['Approved', 'Packaging'])->where('o.created_at', '>=', now()->subDays(30))->whereExists(fn($q) => $q->select(DB::raw(1))->from('order_items as i')->join('products as p', 'p.id', '=', 'i.product_id')->whereColumn('i.order_id', 'o.id')->where('p.stock', '<=', 0)); $n = (clone $q)->count(); $inv = (clone $q)->orderByDesc('o.id')->limit(5)->pluck('o.invoice')->implode(', ');
+    self::set($n >= 1, 'stock_missing', 'high', 'Inventory', 'Orders waiting for stock', $n . ' approved orders contain a product with no stock' . ($inv ? ' (' . $inv . ')' : '') . '.', 'Stock ran out or a purchase has not been received.', 'Open Inventory / Purchases and arrange the missing stock.', 'stock is available for open orders');
   }
 }
