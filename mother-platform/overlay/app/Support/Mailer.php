@@ -8,12 +8,12 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * Customer email through the DutyFreeBD mailbox (orders@dutyfreebd.com, Hostinger). Order emails first; nothing is sent while the master switch is off.
- * The mailbox password is kept encrypted with the other integration secrets and is never shown again. Every email is logged in email_logs.
+ * The mailbox password is kept encrypted with the other integration secrets and is never shown again. Every email is logged in mail_outbox.
  */
 class Mailer {
   const KINDS = ['received' => ['New', 'Order received'], 'confirmed' => ['Approved', 'Order confirmed'], 'shipped' => ['Shipment', 'Order shipped'], 'delivered' => ['Delivered', 'Order delivered'], 'cancelled' => ['Cancel', 'Order cancelled'], 'payment' => ['', 'Payment received']];
   public static function set(string $k, string $d = ''): string { return Procure::set('email_' . $k, $d); }
-  public static function tableReady(): bool { try { return Schema::hasTable('email_logs'); } catch (\Throwable $e) { return false; } }
+  public static function tableReady(): bool { try { return Schema::hasTable('mail_outbox'); } catch (\Throwable $e) { return false; } }
   public static function user(): string { return self::set('user', 'orders@dutyfreebd.com'); }
   public static function fromName(): string { return self::set('from_name', 'DutyFree BD'); }
   public static function replyTo(): string { return self::set('reply_to', 'support@dutyfreebd.com'); }
@@ -22,7 +22,7 @@ class Mailer {
   public static function on(): bool { return self::set('on', '0') === '1' && self::ready(); }
   public static function kindOn(string $k): bool { return self::set('kind_' . $k, '1') === '1'; }
   public static function cap(): int { return max(50, min(1000, (int)self::set('daily_cap', '900'))); }
-  public static function sentToday(): int { try { return (int)DB::table('email_logs')->where('status', 'sent')->where('sent_at', '>=', now('Asia/Dhaka')->startOfDay()->utc())->count(); } catch (\Throwable $e) { return 0; } }
+  public static function sentToday(): int { try { return (int)DB::table('mail_outbox')->where('status', 'sent')->where('sent_at', '>=', now('Asia/Dhaka')->startOfDay()->utc())->count(); } catch (\Throwable $e) { return 0; } }
   public static function valid(?string $e): bool { $e = trim((string)$e); return $e !== '' && strlen($e) <= 190 && filter_var($e, FILTER_VALIDATE_EMAIL) !== false; }
 
   private static function mailer() {
@@ -44,8 +44,8 @@ class Mailer {
   public static function enqueue(string $to, string $subject, string $html, string $type, ?string $ref = null, ?int $orderId = null): ?int {
     if (!self::tableReady() || !self::valid($to)) return null;
     try {
-      if ($ref !== null && DB::table('email_logs')->where('ref', $ref)->exists()) return null;
-      return (int)DB::table('email_logs')->insertGetId(['to' => trim($to), 'subject' => mb_substr($subject, 0, 250), 'type' => $type, 'ref' => $ref, 'order_id' => $orderId, 'status' => 'queued', 'html' => $html, 'created_at' => now(), 'updated_at' => now()]);
+      if ($ref !== null && DB::table('mail_outbox')->where('ref', $ref)->exists()) return null;
+      return (int)DB::table('mail_outbox')->insertGetId(['to' => trim($to), 'subject' => mb_substr($subject, 0, 250), 'type' => $type, 'ref' => $ref, 'order_id' => $orderId, 'status' => 'queued', 'html' => $html, 'created_at' => now(), 'updated_at' => now()]);
     } catch (\Throwable $e) { return null; }
   }
   /** Sends a few queued emails per worker tick, inside the daily cap. Order emails go before any other type. */
@@ -53,11 +53,11 @@ class Mailer {
     if (!self::on() || !Cache::add('email.pump', 1, 20)) return;
     try {
       $left = self::cap() - self::sentToday(); if ($left <= 0) return;
-      $rows = DB::table('email_logs')->where('status', 'queued')->where('created_at', '>=', now()->subDays(2))->orderByRaw("case when type like 'order_%' then 0 else 1 end")->orderBy('id')->limit(min($n, $left))->get();
+      $rows = DB::table('mail_outbox')->where('status', 'queued')->where('created_at', '>=', now()->subDays(2))->orderByRaw("case when type like 'order_%' then 0 else 1 end")->orderBy('id')->limit(min($n, $left))->get();
       foreach ($rows as $r) {
-        if (!DB::table('email_logs')->where('id', $r->id)->where('status', 'queued')->update(['status' => 'sending', 'updated_at' => now()])) continue;
+        if (!DB::table('mail_outbox')->where('id', $r->id)->where('status', 'queued')->update(['status' => 'sending', 'updated_at' => now()])) continue;
         [$ok, $err] = self::deliver($r->to, $r->subject, $r->html);
-        DB::table('email_logs')->where('id', $r->id)->update(['status' => $ok ? 'sent' : 'failed', 'error' => $err, 'sent_at' => $ok ? now() : null, 'updated_at' => now()]);
+        DB::table('mail_outbox')->where('id', $r->id)->update(['status' => $ok ? 'sent' : 'failed', 'error' => $err, 'sent_at' => $ok ? now() : null, 'updated_at' => now()]);
       }
     } catch (\Throwable $e) { report($e); } finally { Cache::forget('email.pump'); }
   }

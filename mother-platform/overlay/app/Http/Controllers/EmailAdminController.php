@@ -14,7 +14,7 @@ class EmailAdminController extends Controller {
   private function sample(): ?object { try { return DB::table('orders')->whereExists(fn($q) => $q->select(DB::raw(1))->from('order_items')->whereColumn('order_items.order_id', 'orders.id'))->orderByDesc('id')->first(); } catch (\Throwable $e) { return null; } }
   public function index() {
     $this->gate(); $counts = collect(); $log = collect(); $withEmail = null;
-    if (M::tableReady()) { $counts = DB::table('email_logs')->where('created_at', '>=', now()->subDays(7))->selectRaw('status, count(*) n')->groupBy('status')->pluck('n', 'status'); $log = DB::table('email_logs')->orderByDesc('id')->limit(30)->get(['id', 'to', 'subject', 'type', 'status', 'error', 'created_at', 'sent_at']); }
+    if (M::tableReady()) { $counts = DB::table('mail_outbox')->where('created_at', '>=', now()->subDays(7))->selectRaw('status, count(*) n')->groupBy('status')->pluck('n', 'status'); $log = DB::table('mail_outbox')->orderByDesc('id')->limit(30)->get(['id', 'to', 'subject', 'type', 'status', 'error', 'created_at', 'sent_at']); }
     try { $withEmail = (int)DB::table('customers')->whereNotNull('email')->where('email', '!=', '')->count(); } catch (\Throwable $e) {}
     return view('email_admin', ['on' => M::set('on', '0') === '1', 'ready' => M::ready(), 'hasPw' => M::hasPassword(), 'table' => M::tableReady(), 'user' => M::user(), 'fromName' => M::fromName(), 'replyTo' => M::replyTo(), 'cap' => M::cap(), 'today' => M::sentToday(),
       'kinds' => collect(M::KINDS)->map(fn($v, $k) => ['label' => $v[1], 'on' => M::kindOn($k)]), 'counts' => $counts, 'log' => $log, 'withEmail' => $withEmail, 'hasSample' => (bool)$this->sample()]);
@@ -38,7 +38,7 @@ class EmailAdminController extends Controller {
       $o = $this->sample(); if (!$o) return back()->with('err', 'No order to build the sample from.');
       $kind = isset(M::KINDS[$d['kind'] ?? '']) ? $d['kind'] : 'received'; [$sub, $html] = M::orderHtml($o, $kind);
       [$ok, $err] = M::deliver($d['to'], '[TEST] ' . $sub, $html);
-      if (M::tableReady()) DB::table('email_logs')->insert(['to' => $d['to'], 'subject' => mb_substr('[TEST] ' . $sub, 0, 250), 'type' => 'test', 'status' => $ok ? 'sent' : 'failed', 'html' => '', 'error' => $err, 'sent_at' => $ok ? now() : null, 'created_at' => now(), 'updated_at' => now()]);
+      if (M::tableReady()) DB::table('mail_outbox')->insert(['to' => $d['to'], 'subject' => mb_substr('[TEST] ' . $sub, 0, 250), 'type' => 'test', 'status' => $ok ? 'sent' : 'failed', 'html' => '', 'error' => $err, 'sent_at' => $ok ? now() : null, 'created_at' => now(), 'updated_at' => now()]);
       $audit('Test email to ' . $d['to'] . ': ' . ($ok ? 'sent' : 'failed'));
       return back()->with($ok ? 'ok' : 'err', $ok ? 'Test email sent to ' . $d['to'] . '. Check the inbox (and the spam folder).' : 'The test email could not be sent: ' . $err);
     }
