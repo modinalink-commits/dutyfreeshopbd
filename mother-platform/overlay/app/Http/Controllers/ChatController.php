@@ -16,6 +16,9 @@ class ChatController extends Controller {
     \App\Support\OpcacheGuard::tick();
     $q = DB::table('chat_threads');
     $f = (string)$r->query('f', 'all');
+    // A search (name, mobile number, invoice) always looks through every conversation, open or closed, whatever tab is selected: this is the customer's full message history.
+    if (trim((string)$r->query('q')) !== '' || $f === 'history') $f = 'all';
+    $hist = (string)$r->query('f') === 'history' || trim((string)$r->query('q')) !== '';
     if (in_array($f, ['facebook', 'instagram', 'whatsapp', 'web'])) $q->where('channel', $f);
     elseif ($f === 'unread' || $f === 'late') $q->where('awaiting_reply', true);
     elseif ($f === 'upset') $q->where('awaiting_reply', true)->whereIn(DB::raw('lower(coalesce(mood, \'\'))'), ['upset', 'angry', 'urgent']);
@@ -27,6 +30,7 @@ class ChatController extends Controller {
     if (in_array($r->query('s'), array_keys(self::STATUSES))) $q->where('status', $r->query('s'));
     if ($s = trim((string)$r->query('q'))) { $like = '%'.str_replace(['%', '_'], ['\%', '\_'], $s).'%'; $q->where(fn($w) => $w->where('name', 'ilike', $like)->orWhere('phone', 'ilike', $like)->orWhere('username', 'ilike', $like)->orWhere('last_message', 'ilike', $like)->orWhereIn('phone', fn($o) => $o->from('orders')->where('invoice', 'ilike', $like)->select('phone')->limit(50))); }
     // Unread first, then waiting for staff, then read/open, then resolved; newest message first inside each group.
+    if ($hist) $q->orderByDesc('last_at');
     $rows = $q->orderByRaw("case when status <> 'resolved' and awaiting_reply then 1 when status <> 'resolved' and (status = 'waiting' or coalesce(needs_human, false)) then 2 when status <> 'resolved' then 3 else 4 end")->orderByDesc('last_at')->limit(120)->get();
     $orq = 0; try { $orq = (int)DB::table('chat_order_requests')->where('status', 'review')->count(); } catch (\Throwable $e) {}
     $hum = 0; try { $hum = (int)Chat::humanScope(DB::table('chat_threads'))->count(); } catch (\Throwable $e) {}
