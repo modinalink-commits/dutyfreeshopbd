@@ -1179,3 +1179,5 @@ public/s/layout-b.css
 public/s/layout-c.css
 public/s/layout-a.js
 public/s/layout-b.js
+public/s/orders-a.css
+public/s/orders-b.css
