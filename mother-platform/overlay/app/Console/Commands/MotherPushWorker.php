@@ -52,6 +52,7 @@ class MotherPushWorker extends Command
     try { \App\Support\IncompleteNudge::tick(); } catch (\Throwable $e) { $this->error('incnudge: ' . $e->getMessage()); }
     try { \App\Support\Reorder::tick(); } catch (\Throwable $e) { $this->error('reorder: ' . $e->getMessage()); }
     try { \App\Support\PurchaseList::tick(); } catch (\Throwable $e) { $this->error('purchase-list: ' . $e->getMessage()); }
+    try { \App\Support\CallDaily::tick(); } catch (\Throwable $e) { $this->error('call-daily: ' . $e->getMessage()); }
     \App\Support\PayrollDue::tick();
     try { \App\Support\RecurringExpense::tick(); } catch (\Throwable $e) { $this->error('recurring: ' . $e->getMessage()); }
     try { \App\Support\Procure::tick(); } catch (\Throwable $e) { $this->error('procure: ' . $e->getMessage()); }

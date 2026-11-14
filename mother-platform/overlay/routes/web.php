@@ -10,6 +10,7 @@ use App\Http\Controllers\SiteController as S;
 Route::get('/admin/login', [A::class,'loginForm'])->name('login');
 Route::post('/admin/login', [A::class,'login'])->middleware('throttle:10,1');
 Route::post('/admin/logout', [A::class,'logout']);
+Route::get('/cr/{token}', [\App\Http\Controllers\CallQualityController::class,'dailyOpen'])->where('token', '[0-9a-f]{40}')->middleware('throttle:30,1');
 Route::get('/pl/{token}', [\App\Http\Controllers\PurchaseListController::class,'open'])->where('token', '[0-9a-f]{40}')->middleware('throttle:30,1');
 Route::get('/login', fn() => redirect('/admin/login'));
 Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Http\Middleware\PerfProbe::class, \App\Http\Middleware\OrderActivityMw::class, \App\Http\Middleware\StaffIdleMw::class])->prefix('admin')->group(function () {
@@ -256,6 +257,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/call-center/board', [\App\Http\Controllers\CallQualityController::class,'board']); Route::get('/call-center/board/data', [\App\Http\Controllers\CallQualityController::class,'boardData']);
   Route::get('/call-center/review', [\App\Http\Controllers\CallQualityController::class,'review']); Route::post('/call-center/review/{id}', [\App\Http\Controllers\CallQualityController::class,'saveReview'])->whereNumber('id');
   Route::get('/call-center/play/{id}', [\App\Http\Controllers\CallQualityController::class,'play'])->whereNumber('id');
+  Route::get('/call-center/daily', [\App\Http\Controllers\CallQualityController::class,'daily']); Route::get('/call-center/daily/status', [\App\Http\Controllers\CallQualityController::class,'dailyStatus']); Route::post('/call-center/daily/{act}', [\App\Http\Controllers\CallQualityController::class,'dailyAct'])->where('act', 'submit|sync|send|save')->middleware('throttle:10,1');
   Route::get('/call-center/agents', [\App\Http\Controllers\CallCenterController::class,'agents']);
   Route::get('/call-center/clients', [\App\Http\Controllers\CarrierClientController::class,'index']);
   Route::get('/call-center/clients/diag', [\App\Http\Controllers\CarrierClientController::class,'diag']);

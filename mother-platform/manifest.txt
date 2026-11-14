@@ -1121,3 +1121,5 @@ database/migrations/2026_11_14_140000_call_reviews.php
 app/Http/Controllers/CallQualityController.php
 resources/views/call_board.blade.php
 resources/views/call_review.blade.php
+app/Support/CallDaily.php
+resources/views/call_daily.blade.php

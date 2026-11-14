@@ -4,6 +4,7 @@
 <div class="cc-h"><h1>Call Board</h1><span>Live, today. Refreshes by itself every 15 seconds.</span><span id="cbT" style="margin-left:auto"></span></div>
 <div class="cc-k" id="cbK"></div>
 <div class="cc-box"><table class="cc-t"><thead><tr><th style="width:20%">Staff</th><th style="width:26%">Now</th><th>Calls today</th><th>Answered</th><th>Confirmed</th><th class="hm">Avg talk</th></tr></thead><tbody id="cbA"><tr><td colspan="6" style="color:#475467">Loading…</td></tr></tbody></table></div>
+<div class="cc-note" style="border:1px solid #E5E7EB;border-radius:12px;background:#fff;margin-bottom:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><b style="color:#0B1B33">Daily Call Report</b><span id="cdS">Checking…</span><a href="/admin/call-center/daily" target="_blank" style="font-weight:600;margin-left:auto">See today's report</a></div>
 <div class="cc-two">
 <div class="cc-box"><b class="t">Needs attention</b><div id="cbN" style="padding:0 14px 10px"></div></div>
 <div class="cc-box"><b class="t">Call results today</b><div id="cbR" style="padding:0 14px 12px"></div></div>
@@ -29,6 +30,7 @@ function draw(){var d=data;if(!d)return;var K=d.kpi||{};
  document.getElementById('cbT').textContent=d.error||('Updated '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'}))}
 function load(){if(document.hidden)return;fetch('/admin/call-center/board/data',{headers:{Accept:'application/json'},credentials:'same-origin'}).then(function(r){return r.json()}).then(function(j){data=j;draw()}).catch(function(){document.getElementById('cbT').textContent='Could not refresh. Trying again.'})}
 document.addEventListener('click',function(e){var b=e.target.closest('#cbN .cc-call');if(b&&window.dfCall)dfCall(b.dataset.n)});
+fetch('/admin/call-center/daily/status',{headers:{Accept:'application/json'},credentials:'same-origin'}).then(function(r){return r.json()}).then(function(j){document.getElementById('cdS').textContent=(j.on?'Sent on WhatsApp every day at '+j.send_at+' to '+(j.to||[]).join(', '):'Switched off')+' · WhatsApp template: '+String(j.tpl||'').toLowerCase().replace(/_/g,' ')}).catch(function(){});
 load();setInterval(load,15000);setInterval(draw,1000);document.addEventListener('visibilitychange',function(){if(!document.hidden)load()});
 })();
 </script>

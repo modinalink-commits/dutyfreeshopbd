@@ -74,6 +74,20 @@ class CallQualityController extends Controller {
     return back()->with('ok', 'Review saved: '.$score.' of 5');
   }
 
+  /** Daily Call Report: today's figures as the owner will receive them, plus the WhatsApp template controls. */
+  public function daily() { $this->guard(); return view('call_daily', ['d'=>\App\Support\CallDaily::data()]); }
+  public function dailyOpen(string $token) { $d = \App\Support\CallDaily::read($token); abort_unless($d, 404, 'This report link has expired.'); return response()->view('call_daily', ['d'=>$d])->header('X-Robots-Tag', 'noindex, nofollow')->header('Cache-Control', 'private, no-store'); }
+  public function dailyAct(Request $r, string $act) {
+    $this->guard(); $C = \App\Support\CallDaily::class;
+    if ($act === 'submit') { [$ok, $m] = $C::submitTemplate(); return response()->json(['ok'=>$ok, 'msg'=>$m]); }
+    if ($act === 'sync') { [$ok, $m] = $C::syncTemplate(); return response()->json(['ok'=>$ok, 'msg'=>$m]); }
+    if ($act === 'save') { $d = $r->validate(['send_at'=>['nullable', 'regex:/^\d{1,2}:\d{2}$/'], 'to'=>'nullable|string|max:400', 'enabled'=>'nullable|in:0,1']); foreach ($d as $k => $v) if ($v !== null) \App\Support\Procure::put('call_daily_'.$k, (string)$v); return response()->json(['ok'=>true, 'msg'=>'Saved']); }
+    // send: a test goes only to the fixed test number
+    $res = $C::send([['Faruk', \App\Support\WhatsApp::norm('01884808080')]]); return response()->json(['ok'=>true, 'msg'=>implode('; ', $res)]);
+  }
+  /** Status line for the Call Board. */
+  public function dailyStatus() { $this->guard(); $C = \App\Support\CallDaily::class; return response()->json(['tpl'=>$C::set('tpl_status', 'NOT SUBMITTED'), 'send_at'=>$C::sendAt(), 'on'=>$C::on(), 'to'=>array_map(fn($x) => $x[0].' …'.substr($x[1], -4), $C::recipients())]); }
+
   /** Open a recording. Every play is written to the listening log first. */
   public function play(Request $r, $id) {
     $c = DB::table('call_logs')->find($id); abort_unless($c && !empty($c->recording_url), 404, 'This call has no recording.');
