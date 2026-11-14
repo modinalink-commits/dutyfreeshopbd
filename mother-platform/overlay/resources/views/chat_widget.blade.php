@@ -280,6 +280,8 @@ M.mount=function(el,id,opt){
       var base0='';
       db.onclick=function(){if(busy)return;if(want){want=false;if(rg)rg.stop();else finish();return}
         orig=null;if(un)un.hidden=true;base=ta().value.replace(/\s+$/,'');base0=base;want=true;try{begin()}catch(x){want=false;rg=null;var er=$('#mer');if(er)er.textContent='Voice typing could not start. Refresh the page and press again.'}};
+      // sending ends the dictation: late speech results must never put the sent text back into the box
+      S.vtstop=function(){want=false;base='';base0='';clearTimeout(st);if(rg){rg.onresult=null;try{rg.abort()}catch(x){}}db.classList.remove('rec');lbl('Bangla typing')};
       // typing by hand while listening stops the dictation so it never overwrites what was typed
       document.addEventListener('keydown',function(e){if(want&&e.target&&e.target.id==='mt'){want=false;if(rg)rg.stop()}},true);
     })();
@@ -291,7 +293,7 @@ M.mount=function(el,id,opt){
     function send(file,retry){if(S.mode==='note'&&!retry&&!file){S.saveNote();return}if(S.sending&&!retry)return;var ta=$('#mt'),body=retry?retry.body:ta.value.trim(),kind=retry?retry.kind:(S.kind||'text'),img=retry?retry.img:S.img;file=retry?retry.file:file;if(!body&&!file)return;
       S.sending=true;$('#mer').textContent='';
       var box=$('#mm'),tmp=document.createElement('div');tmp.className='b out pend';tmp.innerHTML=lnk(body||(file?'📎 '+file.name:''))+'<small>Sending…</small>';var pl=box.querySelector('.mnp');if(pl)box.insertBefore(tmp,pl);else box.appendChild(tmp);box.scrollTop=box.scrollHeight;
-      if(!retry){ta.value='';S.kind='text';S.img=null;$('#mfi').value=''}
+      if(!retry){if(S.vtstop)S.vtstop();ta.value='';S.kind='text';S.img=null;$('#mfi').value=''}
       var fd=new FormData();fd.append('client_token',Date.now().toString(36)+Math.random().toString(36).slice(2,10));fd.append('body',body);fd.append('kind',kind);if(file)fd.append('file',file);else if(img)fd.append('image_url',img);
       function fail(msg){S.sending=false;S.goNext=false;tmp.className='b out fail';tmp.innerHTML=lnk(body||(file?'📎 '+file.name:''))+'<small>⚠ Failed: '+esc(msg)+' <button type="button" class="rt">Retry</button></small>';tmp.querySelector('.rt').onclick=function(){tmp.remove();send(null,{body:body,kind:kind,img:img,file:file})}}
       api('/admin/chat/thread/'+id+'/reply',{method:'POST',body:fd}).then(function(j){if(j.error&&!j.id){fail(j.error);return}S.sending=false;tmp.remove();if(j.ok===false)$('#mer').textContent='Saved, but not delivered: '+(j.error||'');else if(window.MChat&&MChat.sentTone)MChat.sentTone();pull();if(opt.onchange)opt.onchange();var gn=S.goNext;S.goNext=false;if(gn&&j.ok!==false&&opt.next)setTimeout(function(){opt.next(id)},350)}).catch(function(){fail('Network error')})}}
