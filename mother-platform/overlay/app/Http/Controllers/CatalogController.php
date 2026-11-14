@@ -6,6 +6,9 @@ use Illuminate\Support\Facades\DB;
 class CatalogController extends Controller {
   public function products(Request $r) {
     $q = DB::table('products as p')->leftJoin('categories as c','c.id','=','p.category_id')->leftJoin('brands as b','b.id','=','p.brand_id')->select('p.*','c.name as category','b.name as brand')->orderByDesc('p.id');
+    // Owner decision 15 Nov 2026: the old Single Packet products (kept only for order history) stay out of the product list; a search or ?archived=1 still finds them.
+    $hideOld = !$r->filled('q') && !$r->boolean('archived') && \Illuminate\Support\Facades\Schema::hasColumn('products', 'legacy_source');
+    if ($hideOld) $q->where(fn($w) => $w->whereNull('p.legacy_source')->orWhere('p.legacy_source', '<>', 'old_single_packet'));
     if ($r->filled('q')) $q->where(fn($w)=>\App\Support\SkuSearch::orSku($w->where('p.name','ilike','%'.$r->q.'%')->orWhere('p.sku','ilike','%'.$r->q.'%'), (string)$r->q, 'p.sku'));
     if ($r->filled('published')) $q->where('p.published', $r->published === '1');
     if ($r->boolean('missing_image')) $q->where(fn($w)=>$w->whereNull('p.image')->orWhere('p.image',''));
@@ -15,7 +18,7 @@ class CatalogController extends Controller {
     if ($r->filled('brand_id')) $q->where('p.brand_id', (int)$r->brand_id);
     if ($r->filled('sub')) $q->where('p.sub', (string)$r->sub);
     if ($r->filled('sub_sub')) $q->where('p.sub_sub', (string)$r->sub_sub);
-    $all = DB::table('products')->count(); $act = DB::table('products')->where('published',true)->count();
+    $all = DB::table('products')->when($hideOld, fn($x) => $x->where(fn($w) => $w->whereNull('legacy_source')->orWhere('legacy_source', '<>', 'old_single_packet')))->count(); $act = DB::table('products')->where('published',true)->count();
     $stats = [['Products', number_format($all), 'all stores'], ['Active', number_format($act), $all ? round($act/$all*100).'%' : '0%'], ['Low stock', DB::table('products')->whereBetween('stock',[1,5])->count(), 'needs buying'], ['Out of stock', DB::table('products')->where('stock','<=',0)->count(), 'hidden on site'], ['Reviews waiting', DB::table('reviews')->where('status','pending')->count(), 'approve']];
     $smsOn = (bool) DB::table('settings')->where('key','owner_phone')->value('value');
     return view('products', ['products'=>$q->paginate(\App\Support\Pg::per(50))->withQueryString(), 'stats'=>$stats, 'cats'=>DB::table('categories')->orderBy('name')->get(), 'brands'=>DB::table('brands')->orderBy('position')->get(), 'smsOn'=>$smsOn, 'subTree'=>$this->subTree()]);
