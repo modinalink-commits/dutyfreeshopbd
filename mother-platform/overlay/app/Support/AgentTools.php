@@ -143,6 +143,7 @@ class AgentTools {
         $i = in_array($in['intent'] ?? '', $okI, true) ? $in['intent'] : 'other'; $m = in_array($in['mood'] ?? '', $okM, true) ? $in['mood'] : 'calm'; $conf = max(0, min(100, (int)($in['confidence'] ?? 50)));
         $lg = strtolower((string)($in['language'] ?? '')); $lg = in_array($lg, ['bangla', 'english', 'banglish', 'mixed'], true) ? $lg : null;
         $st['meta'] = ['intent'=>$i, 'mood'=>$m, 'confidence'=>$conf, 'lang'=>$lg];
+        if (in_array($i, ['complaint', 'refund'], true)) Chat::markReported((int)($ctx['thread_id'] ?? 0), 'AI read this as a '.$i);
         // server-side safety net: these always need a person, whatever the model says
         $st['force_handoff'] = in_array($i, ['refund', 'cancel', 'change_order', 'complaint', 'human_request'], true) || in_array($m, ['angry', 'upset'], true) || $conf < 40;
         return ['ok'=>true, 'handoff_required'=>$st['force_handoff']];

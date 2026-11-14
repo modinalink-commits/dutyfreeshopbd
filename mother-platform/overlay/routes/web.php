@@ -188,6 +188,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/chat/thread/{id}/lang', [\App\Http\Controllers\ChatController::class,'lang']);
   Route::post('/chat/thread/{id}/assign', [\App\Http\Controllers\ChatController::class,'assign']);
   Route::post('/chat/thread/{id}/status', [\App\Http\Controllers\ChatController::class,'status']);
+  Route::post('/chat/thread/{id}/report', [\App\Http\Controllers\ChatController::class,'report'])->whereNumber('id');
   Route::post('/chat/thread/{id}/phone', [\App\Http\Controllers\ChatController::class,'phone']);
   Route::get('/chat-settings', [\App\Http\Controllers\ChatController::class,'settings']);
   Route::post('/chat-settings', [\App\Http\Controllers\ChatController::class,'saveSettings']);
@@ -564,7 +565,7 @@ Route::prefix('api/staff')->withoutMiddleware([\Illuminate\Foundation\Http\Middl
     Route::get('/chat/thread/{id}/messages', [$C,'messagesAfter'])->whereNumber('id');
     Route::post('/chat/thread/{id}/reply', [$C,'reply'])->whereNumber('id')->middleware('throttle:60,1');
     Route::post('/chat/thread/{id}/ai', [$C,'ai'])->whereNumber('id')->middleware('throttle:30,1');
-    Route::post('/chat/thread/{id}/assign', [$C,'assign'])->whereNumber('id'); Route::post('/chat/thread/{id}/status', [$C,'status'])->whereNumber('id');
+    Route::post('/chat/thread/{id}/assign', [$C,'assign'])->whereNumber('id'); Route::post('/chat/thread/{id}/status', [$C,'status'])->whereNumber('id'); Route::post('/chat/thread/{id}/report', [$C,'report'])->whereNumber('id');
   });
 });
 // ---- Supplier Partner Portal (public login; everything else behind SupplierPortalAuth) ----

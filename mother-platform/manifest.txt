@@ -830,6 +830,7 @@ resources/views/emails/order.blade.php
 resources/views/emails/offer.blade.php
 resources/views/emails/unsubscribed.blade.php
 database/migrations/2026_11_14_192000_mail_lists.php
+database/migrations/2026_11_14_200000_chat_reports.php
 database/migrations/2026_11_14_190000_email_logs.php
 database/migrations/2026_11_14_191000_mail_outbox.php
 app/Http/Middleware/StaffIdleMw.php
