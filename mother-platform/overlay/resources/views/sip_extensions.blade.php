@@ -1,6 +1,8 @@
 @extends('layout')@section('title','Extensions')
 @section('body')
-<h1 style="margin:0 0 4px">Extensions</h1>@if(!empty($regErr))<div style="font-size:11px;color:#B91C1C">Status display error: {{ $regErr }}</div>@endif
+@include('cc_ui')
+<style>.ccx .card{overflow:hidden!important}.ccx table{table-layout:fixed;width:100%}.ccx th{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#475467;font-weight:700;padding:6px}.ccx td{padding:6px!important;white-space:normal!important;overflow-wrap:anywhere;vertical-align:middle}.ccx td input:not([type=hidden]){width:100%!important;min-width:0}.ccx td small{display:block}.ccx td .btn{padding:6px 10px;margin:1px 0}.ccx th:nth-child(1){width:22%}.ccx th:nth-child(2){width:10%}.ccx th:nth-child(3){width:13%}.ccx th:nth-child(4){width:12%}.ccx th:nth-child(5){width:14%}.ccx th:nth-child(6){width:15%}@media(max-width:760px){.ccx th:nth-child(4),.ccx td:nth-child(4),.ccx th:nth-child(5),.ccx td:nth-child(5){display:none}}</style>
+<div class="ccx"><div class="cc-h"><h1>Extensions</h1></div>@if(!empty($regErr))<div style="font-size:11px;color:#B91C1C">Status display error: {{ $regErr }}</div>@endif
 <span style="font-size:13px;color:#6B7280">Each user has their own extension. Create the extension in the PBX (FusionPBX), then enter its number and password here. When the user signs in, their dialer connects to their own extension. Passwords are stored encrypted. Server (WSS / Domain) settings: <a href="/admin/call-center/account">PBX Settings</a>.</span>
 @if(session('ok'))<div class="card" style="margin-top:12px;background:#DCFCE7;border-color:#A7F3D0">{{ session('ok') }}</div>@endif
 @if($errors->any())<div class="card err" style="margin-top:12px">@foreach($errors->all() as $e){{ $e }}<br>@endforeach</div>@endif
@@ -24,7 +26,7 @@
 @endforeach
 @include('sip_pool_rows', ['list'=>$pool, 'cid'=>0, 'min'=>4, 'relay'=>$relay, 'regTag'=>$regTag])</table>
 <form id="poolForm0" method="post" action="/admin/call-center/extensions-pool">@csrf<input type="hidden" name="company_id" value="0"></form>
-<div style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn" type="submit" form="poolForm0">Save extensions</button><button class="btn" type="button" onclick="addPoolRow(this)" style="background:#fff;color:#111827;border:1px solid #D1D5DB">+ Add extension</button><span style="font-size:12px;color:#6B7280">Every row has its own Save and Delete. + Add extension adds a new row; fill it and press its Save. Agent name left blank = default agent "DutyFreeBD". Passwords are stored encrypted. Extension ফাঁকা রেখে Save করলে ইউজারের এক্সটেনশন সরে যায়; একই এক্সটেনশন দুজনকে দেওয়া যাবে না।</span></div></div>
+<div style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn" type="submit" form="poolForm0">Save extensions</button><button class="btn" type="button" onclick="addPoolRow(this)" style="background:#fff;color:#111827;border:1px solid #D1D5DB">+ Add extension</button><span style="font-size:12px;color:#6B7280">Every row has its own Save and Delete. + Add extension adds a new row; fill it and press its Save. Agent name left blank = default agent "DutyFreeBD". Passwords are stored encrypted. Saving a user row with an empty Extension removes that user's extension; the same extension cannot be given to two people.</span></div></div>
 @endforeach
 @foreach($companies as $co)@php($clist=$poolBy[$co->id] ?? collect())
 <div class="card" style="margin-top:14px;overflow-x:auto">
@@ -48,4 +50,5 @@ else if(!ex.value.trim()){ex.focus();return}
 document.querySelectorAll('input[form="'+fid+'"]').forEach(function(i){if(i.closest('tr')!==tr)i.disabled=true});form.submit()}
 function addPoolRow(btn){var card=btn.closest('.card'),t=card.querySelector('table'),rows=t.querySelectorAll('tr.prow'),last=rows[rows.length-1];if(!last)return;var n=rows.length,c=last.cloneNode(true);c.querySelectorAll('input').forEach(function(i){if(i.type==='hidden'){i.value=''}else if(i.name.indexOf('[password]')>-1||i.name.indexOf('[extension]')>-1||i.name.indexOf('[auth_username]')>-1||i.name.indexOf('[display_name]')>-1){i.value=''}i.name=i.name.replace(/rows\[\d+\]/,'rows['+n+']')});var b=c.querySelector('td:nth-child(3)');if(b)b.innerHTML='';var f=c.querySelector('td');if(f){var inp=f.querySelector('input');f.firstChild.textContent='Pool #'+(n+1)}t.appendChild(c)}
 </script>
+</div>
 @endsection

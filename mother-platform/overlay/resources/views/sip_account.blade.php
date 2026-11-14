@@ -1,6 +1,7 @@
 @extends('layout')@section('title','SIP Account')
 @section('body')
-<h1 style="margin:0 0 4px">SIP Account</h1>
+@include('cc_ui')
+<div class="cc-h"><h1>SIP &amp; PBX Settings</h1></div>
 <span style="font-size:13px;color:#6B7280">Connect the admin web softphone to your PBX. The password is stored encrypted on the server and is never written into the page.</span>
 @if(session('ok'))<div class="card" style="margin-top:12px;background:#DCFCE7;border-color:#A7F3D0">{{ session('ok') }}</div>@endif
 @if($errors->any())<div class="card err" style="margin-top:12px">@foreach($errors->all() as $e){{ $e }}<br>@endforeach</div>@endif
