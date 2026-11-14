@@ -32,7 +32,7 @@ class PayProof {
       $o = $amount !== null ? $orders->first(fn($x) => abs((float)$x->total - $amount) < 1) : null; $match = (bool)$o; if (!$o) $o = $orders->first();
       $dup = $txn !== '' && DB::table('orders')->where('pay_txn', $txn)->whereIn('pay_status', ['Verification Pending', 'Verified'])->when($o, fn($w) => $w->where('id', '<>', $o->id))->exists();
       $label = ['bkash' => 'bKash', 'nagad' => 'Nagad', 'rocket' => 'Rocket', 'upay' => 'Upay', 'bank' => 'Bank', 'card' => 'Card'][$method] ?? 'Payment';
-      $line = $label . ($amount !== null ? ' · ৳' . number_format($amount) : ' · পরিমাণ পড়া যায়নি') . ($txn !== '' ? ' · TrxID ' . $txn : ' · TrxID পড়া যায়নি');
+      $line = $label . ($amount !== null ? ' · ৳' . number_format($amount) : ' · amount not readable') . ($txn !== '' ? ' · TrxID ' . $txn : ' · TrxID not readable');
       Cache::put('ai.pay.' . $tid, ['mid' => $mid, 'line' => $line, 'order' => $o ? Inv::show($o->invoice) : null, 'order_id' => $o->id ?? null, 'total' => $o ? number_format((float)$o->total) : null,
         'match' => $match, 'dup' => $dup, 'paid' => $o ? (string)($o->pay_status ?? '') : ''], 43200);
       if ($o) { try { OrderActivity::log((int)$o->id, 'pay_proof_chat', null, null, 'কাস্টমার চ্যাটে পেমেন্টের স্ক্রিনশট পাঠিয়েছে · ' . $line . ($match ? ' · অর্ডারের মোটের সাথে মিলেছে' : ' · অর্ডারের মোটের সাথে মেলেনি') . ($dup ? ' · এই TrxID আগে ব্যবহার হয়েছে' : '') . ' · যাচাই বাকি'); } catch (\Throwable $e) {} }

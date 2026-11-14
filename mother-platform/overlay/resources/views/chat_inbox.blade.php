@@ -112,7 +112,7 @@ main{height:calc(100vh / var(--z,1));overflow:hidden;display:flex;flex-direction
 </div>
 <div class="fbar" id="ibfb"><div class="fr" id="ibf1"></div><div class="fr" id="ibf2"></div></div>
 <button type="button" id="ibback">← All conversations</button>
-<div class="mbx" id="ibx"><div class="ls"><div class="stk"><div class="tp"><button type="button" id="iball">← All conversations</button></div><div class="sq" style="padding-top:9px"><input id="ibq" type="search" placeholder="Search name, mobile, invoice, message... (Ctrl K)"></div></div><div class="lt" id="ibl"></div></div>
+<div class="mbx" id="ibx"><div class="ls"><div class="stk"><div class="tp"><button type="button" id="iball">← All conversations</button></div><div class="sq" style="padding-top:9px"><input id="ibq" type="search" placeholder="Search name, mobile, invoice (Ctrl K)"></div></div><div class="lt" id="ibl"></div></div>
 <div class="cv" id="ibc"><div class="emp" style="margin:auto">Select a conversation to read and reply.<br>New messages appear here and as a popup anywhere in the dashboard.</div></div></div>
 @endsection
 @section('js')
