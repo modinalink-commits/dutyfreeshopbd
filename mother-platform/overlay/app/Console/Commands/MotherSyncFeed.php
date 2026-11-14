@@ -21,6 +21,10 @@ class MotherSyncFeed extends Command {
     ];
   }
   public function handle() {
+    // Owner incident 14 Nov 2026: this import belongs to the move from the old site. Once the catalogue lives here it must never touch it again.
+    // The fallback to the saved old feed file used to run whenever our own feed could not be fetched (a restart, a slow minute): it overwrote names, prices and categories with the old file's values
+    // and unpublished every product the old file does not list - in-stock cigarettes disappeared from the store with no lock and no log. The import now runs only on an empty catalogue (first install).
+    try { if (DB::table('products')->whereNotNull('ext_id')->exists()) { $this->line('FEED import retired: the catalogue is managed here, nothing imported or unpublished'); return 0; } } catch (\Throwable $e) { $this->line('FEED import skipped: '.$e->getMessage()); return 0; }
     $xml = null;
     foreach (self::FEEDS as $u) {
       $ctx = stream_context_create(['http'=>['timeout'=>20,'header'=>"User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120 Safari/537.36\r\nAccept: application/xml,text/xml,*/*\r\n"],'ssl'=>['verify_peer'=>true]]);
@@ -75,7 +79,7 @@ class MotherSyncFeed extends Command {
       else DB::table('products')->insert($data + ['ext_id'=>$pid, 'sku'=>'DF-'.$pid, 'slug'=>Str::slug($title) ?: 'product', 'stock'=>100, 'cost'=>0, 'created_at'=>$now]);
       $seen[] = $pid; $n++;
     }
-    if ($n >= 50) DB::table('products')->whereNotNull('ext_id')->whereNotIn('ext_id',$seen)->update(['published'=>false,'updated_at'=>$now]);
+    // (removed 14 Nov 2026) products missing from the feed are no longer unpublished: publish state belongs to the admin and to the stock-in rule only
     \App\Support\Slugs::assignAll();
     foreach (['store.home2','store.home4','store.home6','store.home5','store.cats','store.catslugs','store.subs','store.sitemap','store.sitemap2','store.live2','store.live4'] as $k) \Illuminate\Support\Facades\Cache::forget($k);
     $this->line("FEED imported $n");
