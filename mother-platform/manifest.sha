@@ -3,7 +3,7 @@ fe43f8b6cb422cca81ee18b74d3972f77e7852de database/migrations/2026_10_31_000001_m
 46ac6330ace84450b442d0d57c5c06f20c41f945 app/Models/Mother.php
 9590ee1a830b2a60e42d910a21850a1ea553a4e1 app/Http/Controllers/AdminController.php
 242316b2ef0a0967e6815e39fcbc7377349fdc17 app/Console/Commands/MotherInstall.php
-9b5d102b8eb333b03ec53e59a5e894d5f00b38e5 resources/views/layout.blade.php
+ae9f96eccb15ed3cba8a712d359ec6a52471c441 resources/views/layout.blade.php
 78c7dbbe082c3756f0bb680071dfb96c381f4fc8 resources/views/login.blade.php
 1dc86771726204b329f55d0fac8915cb9350c60e resources/views/dashboard.blade.php
 cee02bf265b779ef1247267cfb35560b0e57a4ee resources/views/orders.blade.php
@@ -466,7 +466,7 @@ b278f9ae0d70401e99545e017c6d94252d80ebcb database/migrations/2026_11_03_000041_v
 1bdc51181c342dbf399b5b10aecd251264bcd4ed app/Http/Controllers/VoiceChatController.php
 e4cc2fdd9eee13fd440957d6644c10ee857633f4 resources/views/voice_chat_settings.blade.php
 73684512b1fddc1a39705424236140bb45d63e81 resources/views/admin_grid.blade.php
-c9fc9dcbe4a8563b1ce9eedf37b7b0dd046a23b6 resources/views/admin_theme.blade.php
+4ec49440ef71090cae5f51d061fb9022add06a95 resources/views/admin_theme.blade.php
 a59052ae0f7a3732dd3608de5bd9daf436b4fb53 app/Support/ShipmentOutcome.php
 066dba270c058d7211f9280a88bf6b63d8ee0f83 app/Support/PathaoStatusSync.php
 d721534a30957a2773833b8c446e36685b82ec7c app/Http/Controllers/ShipmentOutcomeController.php
@@ -1182,3 +1182,6 @@ ca8c8520b3a7a5225add7e109c15acda51ce034b public/s/orders-a.css
 ec3fdd04d7aa5508d4ec0dd022975542ed19a053 public/s/orders-b.css
 293e83fdfce034d365167bbd4d75786e511d0f27 app/Http/Controllers/DataAuditController.php
 5e77caed83ff7948f506b28b501607b552c2ca5a database/migrations/2026_11_15_040000_fix_double_space_product_names.php
+da868c3ccd78003e949f45a1281eaadb5cb5f1af public/s/adm-theme-b.css
+f43e57a5d954c4ab1bc1e63d35ee5824e42c36e4 public/s/adm-theme-a.css
+3c649d19634eff4982c395daf651f3bdea015f8d public/s/adm-layout-a.css
