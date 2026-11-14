@@ -40,7 +40,7 @@ class CallCenterController extends Controller {
   public function creds() {
     $b = $this->acct(); $a = $this->mine();
     if (!$b || !$b->wss_url) return response()->json(['ok'=>false, 'error'=>'PBX server is not set up yet.'], 200);
-    if (!$a || !$a->username || !$a->password_enc) return response()->json(['ok'=>false, 'error'=>'আপনার জন্য কোনো এক্সটেনশন সেট করা নেই। অ্যাডমিনকে বলুন Call Center → Extensions থেকে দিতে।'], 200);
+    if (!$a || !$a->username || !$a->password_enc) return response()->json(['ok'=>false, 'error'=>'No extension is set for you. Ask an admin to add one in Call Center → Extensions.'], 200);
     try { $pw = Crypt::decryptString($a->password_enc); } catch (\Throwable $e) { return response()->json(['ok'=>false, 'error'=>'Saved extension password could not be read. Ask admin to save it again.']); }
     return response()->json(['ok'=>true, 'wss'=>$b->wss_url, 'user'=>$a->username, 'auth'=>$a->auth_username ?: $a->username, 'pw'=>$pw, 'domain'=>$b->domain, 'name'=>$a->display_name ?: Auth::user()->name, 'prefix'=>$b->dial_prefix, 'stun'=>$b->stun_server, 'ext'=>$a->username, 'rec'=>$this->recOn(), 'staff'=>Auth::user()->name])->header('Cache-Control', 'no-store');
   }
@@ -170,13 +170,47 @@ class CallCenterController extends Controller {
     $p = []; try { $p = \App\Support\OrderDiscount::profile($ph) ?: []; } catch (\Throwable $e) {}
     $fr = null; try { $f = DB::table('fraud_checks')->where('phone', $ph)->where('created_at', '>', now()->subDays(7))->orderByDesc('id')->first(); if ($f) { $L = \App\Support\FraudCheck::LEVELS[$f->risk_level] ?? null; $fr = ['level'=>$f->risk_level, 'label'=>$L[0] ?? $f->risk_level, 'color'=>$L[3] ?? '#4B5563', 'bg'=>$L[4] ?? '#F3F4F6', 'total'=>(int)$f->total]; } } catch (\Throwable $e) {}
     $calls = DB::table('call_logs')->whereRaw('right(phone,11) = ?', [$ph])->count();
-    return response()->json(['found'=>(bool)($c || $n), 'phone'=>$ph, 'name'=>$c->name ?? ($last->customer_name ?? null), 'customer_id'=>$c->id ?? null, 'orders'=>$n, 'last'=>$last, 'category'=>$p['category'] ?? ($n > 0 ? 'Regular' : 'New'), 'membership'=>$p['membership'] ?? null, 'fraud'=>$fr, 'calls'=>$calls]);
+    $dl = 0; $th = null;
+    try { $dl = $n ? (int)DB::table('orders')->whereRaw('right(phone,11) = ?', [$ph])->where('status', 'Delivered')->count() : 0; } catch (\Throwable $e) {}
+    try { $th = DB::table('chat_threads')->whereRaw('right(phone,11) = ?', [$ph])->orderByDesc('id')->value('id'); } catch (\Throwable $e) {}
+    return response()->json(['found'=>(bool)($c || $n), 'delivered'=>$dl, 'thread_id'=>$th ? (int)$th : null, 'phone'=>$ph, 'name'=>$c->name ?? ($last->customer_name ?? null), 'customer_id'=>$c->id ?? null, 'orders'=>$n, 'last'=>$last, 'category'=>$p['category'] ?? ($n > 0 ? 'Regular' : 'New'), 'membership'=>$p['membership'] ?? null, 'fraud'=>$fr, 'calls'=>$calls]);
   }
   public function contacts(Request $r) {
     $q = trim((string)$r->query('q', '')); $b = DB::table('customers'); $dg = preg_replace('/\D/', '', $q);
     if ($q !== '') $b->where(fn($w) => $w->where('name', 'ilike', '%'.$q.'%')->orWhere('phone', 'like', '%'.$dg.'%')->when(ctype_digit($q), fn($x) => $x->orWhere('id', (int)$q)));
     $rows = $b->orderByDesc('id')->limit(15)->get(['id', 'name', 'phone', 'membership'])->map(function ($c) { $n = DB::table('orders')->whereRaw('right(phone,11) = ?', [$this->norm((string)$c->phone)])->count(); return ['id'=>$c->id, 'name'=>$c->name, 'phone'=>$c->phone, 'orders'=>$n, 'category'=>$c->membership ?: ($n > 0 ? 'Regular' : 'New')]; });
     return response()->json($rows);
+  }
+  /** Dialer "Up next": who should be called now. New orders nobody has called yet, customers who asked for a call back, orders whose call was not answered, and missed incoming calls nobody returned.
+   *  Read-only list built from orders + call_logs; it never changes an order. The staff member still decides and presses Call. */
+  public function upNext() {
+    $rows = \Illuminate\Support\Facades\Cache::remember('cc.upnext', 20, function () {
+      $out = [];
+      try {
+        $since = now()->subDays(2); $last = [];
+        foreach (DB::table('call_logs')->where('started_at', '>=', $since)->orderBy('id')->get(['id', 'direction', 'phone', 'customer_name', 'status', 'outcome', 'note', 'started_at', 'user_name']) as $c) $last[$this->norm((string)$c->phone)] = $c;
+        $mins = fn($ts) => max(0, (int)\Carbon\Carbon::parse($ts)->diffInMinutes(now())); $seen = [];
+        $orders = DB::table('orders')->where('status', 'New')->where('created_at', '<', now()->subMinutes(10))->where('created_at', '>', $since)->orderBy('id')->limit(60)->get(['id', 'invoice', 'phone', 'customer_name', 'created_at', 'pay_status']);
+        foreach ($orders as $o) {
+          $p = $this->norm((string)$o->phone); if (strlen($p) < 10 || isset($seen[$p]) || (string)($o->pay_status ?? '') === 'Awaiting Payment') continue;
+          $lc = $last[$p] ?? null; $after = $lc && \Carbon\Carbon::parse($lc->started_at)->gte(\Carbon\Carbon::parse($o->created_at));
+          $base = ['name'=>(string)($o->customer_name ?: ''), 'phone'=>$p, 'invoice'=>\App\Support\Inv::show($o->invoice), 'order_id'=>(int)$o->id, 'note'=>''];
+          $seen[$p] = 1;
+          if (!$after) { $out[] = $base + ['type'=>'new', 'mins'=>$mins($o->created_at), 'pr'=>2]; continue; }
+          if (in_array((string)$lc->outcome, ['confirmed', 'cancelled', 'pending'], true)) continue;
+          if ((string)$lc->outcome === 'call_later') { $out[] = ['note'=>mb_substr((string)($lc->note ?? ''), 0, 80)] + $base + ['type'=>'callback', 'mins'=>$mins($lc->started_at), 'pr'=>3]; continue; }
+          if ($mins($lc->started_at) >= 20) $out[] = $base + ['type'=>'noanswer', 'mins'=>$mins($lc->started_at), 'pr'=>4];
+        }
+        foreach ($last as $p => $lc) {
+          $p = (string)$p; if (isset($seen[$p]) || strlen($p) < 10) continue;
+          if ((string)$lc->outcome === 'call_later') $out[] = ['type'=>'callback', 'name'=>(string)($lc->customer_name ?: ''), 'phone'=>$p, 'invoice'=>'', 'order_id'=>null, 'note'=>mb_substr((string)($lc->note ?? ''), 0, 80), 'mins'=>$mins($lc->started_at), 'pr'=>3];
+          elseif ($lc->direction === 'in' && $lc->status === 'missed' && \Carbon\Carbon::parse($lc->started_at)->gt(now()->subDay())) $out[] = ['type'=>'missed', 'name'=>(string)($lc->customer_name ?: ''), 'phone'=>$p, 'invoice'=>'', 'order_id'=>null, 'note'=>'', 'mins'=>$mins($lc->started_at), 'pr'=>1];
+        }
+        usort($out, fn($a, $b) => [$a['pr'], -$a['mins']] <=> [$b['pr'], -$b['mins']]);
+      } catch (\Throwable $e) { report($e); }
+      return array_slice($out, 0, 25);
+    });
+    return response()->json(['items'=>$rows, 'count'=>count($rows)]);
   }
   public function recent() {
     $rows = DB::table('call_logs')->orderByDesc('id')->limit(25)->get()->map(fn($l) => ['id'=>$l->id, 'dir'=>$l->direction, 'phone'=>$l->phone, 'name'=>$l->customer_name, 'status'=>$l->status, 'dur'=>(int)$l->duration, 'outcome'=>$l->outcome, 'rec'=>$l->recording_status ?? 'none',
@@ -215,7 +249,7 @@ class CallCenterController extends Controller {
   public function logSummary(Request $r, $id) {
     $d = $r->validate(['outcome'=>'nullable|in:confirmed,pending,call_later,no_answer,cancelled', 'response'=>'nullable|string|max:40', 'cancel_reason'=>'nullable|string|max:40', 'note'=>'nullable|string|max:1000', 'order_id'=>'nullable|integer']);
     $l = DB::table('call_logs')->find($id); abort_unless($l, 404);
-    if (($d['outcome'] ?? '') === 'cancelled' && ($d['cancel_reason'] ?? '') === 'Other' && trim((string)($d['note'] ?? '')) === '') return response()->json(['ok'=>false, 'error'=>'Other কারণ হলে নোট লিখতে হবে।'], 422);
+    if (($d['outcome'] ?? '') === 'cancelled' && ($d['cancel_reason'] ?? '') === 'Other' && trim((string)($d['note'] ?? '')) === '') return response()->json(['ok'=>false, 'error'=>'Write a note when the reason is Other.'], 422);
     $upd = ['outcome'=>$d['outcome'] ?? null, 'response'=>$d['response'] ?? null, 'cancel_reason'=>($d['outcome'] ?? '') === 'cancelled' ? ($d['cancel_reason'] ?? null) : null, 'summary_at'=>now(), 'updated_at'=>now()];
     if (array_key_exists('note', $d)) $upd['note'] = trim((string)$d['note']) ?: null;
     if (!empty($d['order_id']) && DB::table('orders')->where('id', $d['order_id'])->exists()) $upd['order_id'] = (int)$d['order_id'];

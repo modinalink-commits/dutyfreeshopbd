@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><meta name="csrf" content="{{ csrf_token() }}"><title>DutyFree BD Dialer</title>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><meta name="csrf" content="{{ csrf_token() }}"><title>DutyFree Dialer</title>
 @include('typography')
 <style>
 :root{--n:#0F1F3D;--n2:#1B2F55;--o:#F26B1D;--g:#16A34A;--r:#DC2626;--bd:#E5E7EB;--gr:#F3F4F6;--mu:#6B7280}*{box-sizing:border-box}
@@ -96,6 +96,41 @@ body,button,input,textarea,select{font-family:'Bornomala',Inter,'Bornomala',sans
 .stsel,.stsel:hover,.stsel:focus,.stsel:active{color:#fff!important;-webkit-text-fill-color:#fff!important;opacity:1!important;background:#16A34A!important;border:0!important;text-shadow:0 1px 1px rgba(0,0,0,.25)}
 .stsel.st-busy,.stsel[value="busy"],.stsel.st-busy:hover,.stsel[value="busy"]:hover{background:#DC2626!important}
 .stsel.st-available,.stsel[value="available"]{background:#16A34A!important}
+
+/* ---- v3 (14 Nov 2026): light header, segmented tabs, smart number field, customer card, Up next. Layout and colours only: the call engine below is untouched. ---- */
+body{background:#fff}
+.top{background:#fff!important;border-bottom:1px solid #E5E7EB;padding:10px 12px;display:flex;align-items:center;gap:6px;flex-wrap:nowrap}
+.tr1,.tr2{display:contents}.tr1 .tt{flex:0 0 auto;order:1}.dfl{padding:0;background:none;border-radius:0}.dfl img{height:24px}.vs{display:none}
+button.stsel.stsel{order:2;background:#ECFDF3!important;color:#067647!important;-webkit-text-fill-color:#067647!important;border:1px solid #ABEFC6!important;text-shadow:none;box-shadow:none;font-size:12px;font-weight:700;padding:6px 10px;min-width:0;border-radius:999px}
+button.stsel.stsel.st-busy{background:#FEF3F2!important;color:#B42318!important;-webkit-text-fill-color:#B42318!important;border-color:#FECDCA!important}
+.top .badge{order:3;margin-right:auto;font-size:12px;font-weight:600;padding:5px 10px;border-radius:999px;min-width:0;flex:0 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}button.stsel.stsel{flex:none;white-space:nowrap}.tb{flex:none}.badge.b-ok{background:#F2F4F7;color:#0B1B33}.badge.b-wait{background:#EEF4FF;color:#1E3A8A}.badge.b-bad{background:#FEF3F2;color:#B42318}
+.tb{order:4;width:32px;height:32px;border-radius:8px;background:#F4F5F7;color:#344054;font-size:16px}.tb:hover{background:#E5E7EB}
+.tabs{margin:10px 12px 0;padding:3px;background:#F2F4F7;border-radius:10px;border:0;gap:4px}
+.tabs button{height:34px;padding:0 4px;border:0;border-radius:8px;font-size:13px;font-weight:600;color:#475467;background:transparent}
+.tabs button.on{background:#fff;color:#0B1B33;border:0;border-radius:8px;box-shadow:0 1px 2px rgba(16,24,40,.08);font-weight:700}.tabs button.live{color:#067647}
+.tabs button svg{width:15px;height:15px;margin-right:5px;vertical-align:-3px}
+.stt{font-size:12px;font-weight:600;color:#475467}
+.num input{height:48px;border:1.5px solid #D0D5DD;border-radius:12px;font-size:21px;font-weight:600;color:#0B1B33;letter-spacing:.3px;padding:0 12px 0 42px;background:#fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23667085' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='7'/><path d='M20 20l-3.5-3.5'/></svg>") no-repeat 14px center}
+.num input::placeholder{color:#667085;font-weight:500;font-size:16px;letter-spacing:0}.num input:focus{border-color:#F26B1D;box-shadow:0 0 0 3px #FFEAD9}
+.num button{width:48px;height:48px;border:1px solid #E5E7EB;background:#F4F5F7;border-radius:12px;color:#344054}
+.fnd.on{display:flex;align-items:center;gap:10px;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:12px;padding:8px 10px;color:#0B1B33;font-size:12px}
+.fnd .fav{width:36px;height:36px;border-radius:50%;background:#0B1B33;color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex:none}
+.fnd .fmid{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.fnd .fmid b{font-size:13.5px;font-weight:700}.fnd .fmid small{color:#475467;font-size:12px}.fnd .tg{font-style:normal;margin:0 0 0 4px}.fnd a{color:#C2410C;font-weight:600;flex:none}
+.fnd.sgl{display:flex;flex-direction:column;align-items:stretch;gap:0;padding:4px}.sg1{display:flex;flex-direction:column;gap:1px;text-align:left;border:0;background:none;border-radius:8px;padding:7px 8px;cursor:pointer;color:#0B1B33;min-height:44px;justify-content:center}.sg1:hover{background:#FFF7ED}.sg1 b{font-size:13px}.sg1 span{font-size:12px;color:#475467}.fno{padding:8px;color:#475467}
+.keys button{height:46px;background:#fff;border:1px solid #E5E7EB;border-radius:12px;box-shadow:none}.keys button:hover{background:#FFF7ED;border-color:#FED7AA}.keys .kn{font-size:20px;font-weight:600;color:#0B1B33}.keys small{font-size:9px;color:#667085;margin-top:2px}
+.go{height:50px;border-radius:12px}.go.call{background:#15803D;font-size:16px;font-weight:700}.go.call.busyb{background:#64748B}.go.call svg{width:18px;height:18px}
+.go.sm{width:52px;height:50px}.go.mq{border:1px solid #E5E7EB}.go.hang.sm{background:#B42318}
+a.go.chat{background:#fff;color:#344054;border:1px solid #E5E7EB;text-decoration:none}a.go.chat svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}a.go.chat:hover{border-color:#FDC2A5;color:#C2410C}a.go.chat.off{opacity:.4;pointer-events:none}
+.upn{display:flex;flex-direction:column;gap:6px}.upn:empty{display:none}
+.uh{display:flex;align-items:center;justify-content:space-between;font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:#475467;margin-top:2px}.uh button{border:0;background:none;color:#C2410C;font:600 12px inherit;cursor:pointer;text-transform:none;letter-spacing:0;padding:4px 0}
+.ur{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:8px 8px 8px 10px;text-align:left}.ur.n{border-color:#FED7AA;background:#FFF7ED}
+.ur .um{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.ur .um b{font-size:13px;color:#0B1B33;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ur .um small{font-size:12px;color:#475467;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ur .ut{font-style:normal;font-size:11px;font-weight:700;border-radius:6px;padding:1px 6px;margin-right:6px;background:#F2F4F7;color:#344054;border:1px solid #E5E7EB}.ur.n .ut{background:#fff;border-color:#FED7AA;color:#9A3412}.ur.c .ut{background:#EEF4FF;border-color:#C7D7FE;color:#1E3A8A}.ur.m .ut{background:#FEF3F2;border-color:#FECDCA;color:#B42318}.ur.a .ut{background:#FFFAEB;border-color:#FEDF89;color:#B54708}
+.ur .ub{flex:none;height:44px;padding:0 14px;border:1px solid #ABEFC6;background:#ECFDF3;color:#067647;border-radius:10px;font:700 13px inherit;cursor:pointer}.ur.n .ub{background:#15803D;border-color:#15803D;color:#fff}
+#aNone{padding:18px 0}#upn2{margin-top:12px}
+@media(max-width:480px){.top{padding:9px 10px;gap:5px}.dfl img{height:20px}.tb{width:28px;height:28px;font-size:14px}button.stsel.stsel{padding:5px 8px;font-size:11.5px}.top .badge{padding:5px 8px;font-size:11.5px}}
+@media(min-width:900px){#upn{display:none}.mn #tp-act{background:#F9FAFB}}
+.dfoot{font-size:12px;color:#475467;padding:8px 12px}.dfoot a{color:#C2410C}
 </style></head><body>
 <div class="ph{{ $embed ? ' emb' : '' }}">
 <div class="top"><div class="tr1"><div class="tt"><span class="dfl"><img src="/dutyfree-bd-logo.png" alt="DutyFree BD"></span></div>@if($embed)<button type="button" class="tb" id="pPop" title="Pop out (keeps the call alive while you browse)">⧉</button><button type="button" class="tb" id="pMin" title="Minimize">–</button><button type="button" class="tb" id="pX" title="Close">×</button>@endif</div><div class="tr2"><button type="button" id="stSel" class="stsel st-{{ ($agst ?? 'available') === 'busy' ? 'busy' : 'available' }}" value="{{ ($agst ?? 'available') === 'busy' ? 'busy' : 'available' }}" title="Click to switch Online / Offline">{{ ($agst ?? 'available') === 'busy' ? '● Offline' : '● Online' }}</button><span class="vs"></span><span class="badge b-bad" id="bdg">Disconnected</span></div></div>
@@ -104,19 +139,19 @@ body,button,input,textarea,select{font-family:'Bornomala',Inter,'Bornomala',sans
 
 <div class="mn"><div class="box tp" id="tp-pad">
 <div class="stt"><span id="cst">Ready</span> · <span id="tmr">00:00:00</span></div>
-<div id="ctxL" style="display:none;margin:0 0 6px;padding:6px 10px;border-radius:8px;background:#EFF6FF;color:#1E3A8A;font-size:12.5px;font-weight:600"></div><div class="num"><input id="num" inputmode="tel" autocomplete="off" placeholder="01XXXXXXXXX" value="{{ $n }}"><button type="button" id="bk" title="Backspace">⌫</button></div>
+<div id="ctxL" style="display:none;margin:0 0 6px;padding:6px 10px;border-radius:8px;background:#EFF6FF;color:#1E3A8A;font-size:12.5px;font-weight:600"></div><div class="num"><input id="num" inputmode="tel" autocomplete="off" placeholder="Name or number" value="{{ $n }}"><button type="button" id="bk" title="Backspace">⌫</button></div>
 <div id="found" class="fnd"></div>
 <div class="keys">@foreach([['1',''],['2','ABC'],['3','DEF'],['4','GHI'],['5','JKL'],['6','MNO'],['7','PQRS'],['8','TUV'],['9','WXYZ'],['*',''],['0','+'],['#','']] as $k)<button type="button" data-k="{{ $k[0] }}"><span class="kn">{{ $k[0] }}</span><small{!! $k[1]==='+' ? ' class="pl"' : '' !!}>{{ $k[1] ?: ' ' }}</small></button>@endforeach</div>
-<div class="crow"><button type="button" class="go call" id="bGo"><svg class="ph1i" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg><span>Call</span></button><button type="button" class="go mq sm" id="bMuteQ" title="Mute" disabled><svg class="mi" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><svg class="mo" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M4 4l16 16"/></svg></button><button type="button" class="go hang sm" id="bHang1" title="Hang Up" disabled><svg viewBox="0 0 24 24" class="hg"><path d="M3 14c5-5 13-5 18 0l-2 3-3-1v-2c-3-1-7-1-10 0v2l-3 1z"/></svg></button></div>
-<div class="msg" id="msg">@if(!$has)আপনার এক্সটেনশন সেট করা নেই। অ্যাডমিনকে বলুন Call Center → Extensions থেকে দিতে।@endif</div>
-<div class="mut"><a href="/admin/call-center/history" target="_blank">Call history</a></div>
+<div class="crow"><a class="go chat sm off" id="bChat" href="#" target="_blank" rel="noopener" title="Open this customer's chat in Messages" aria-label="Open chat"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg></a><button type="button" class="go call" id="bGo"><svg class="ph1i" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg><span>Call</span></button><button type="button" class="go mq sm" id="bMuteQ" title="Mute" disabled><svg class="mi" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><svg class="mo" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M4 4l16 16"/></svg></button><button type="button" class="go hang sm" id="bHang1" title="Hang Up" disabled><svg viewBox="0 0 24 24" class="hg"><path d="M3 14c5-5 13-5 18 0l-2 3-3-1v-2c-3-1-7-1-10 0v2l-3 1z"/></svg></button></div>
+<div class="msg" id="msg">@if(!$has)No extension is set for you. Ask an admin to add one in Call Center → Extensions.@endif</div>
+<div class="upn" id="upn"></div>
 </div>
 
 <div class="box tp" id="tp-con" style="display:none"><input id="cq" placeholder="Search name, phone or customer ID" class="srch"><div id="cl" class="lst"></div></div>
 <div class="box tp" id="tp-rec" style="display:none"><div id="rl" class="lst"></div></div>
 
 <div class="box tp" id="tp-act" style="display:none">
-<div id="aNone" class="mut" style="padding:30px 0">No active call. Dial a number or pick a contact to start.</div>
+<div id="aNone" class="mut">No active call. Dial a number or pick a contact to start.<div class="upn" id="upn2"></div></div>
 <div id="aBox" style="display:none;flex-direction:column;gap:9px"><div class="cidr"><span class="actb">● Active Call</span><span id="cid"></span></div><div class="wv" id="wv"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
  <div class="act"><div class="av" id="aAv">?</div><span class="nm" id="aN">Unknown Customer</span><div class="ph1"><span id="aP"></span> <button type="button" class="cpy" id="aCp" title="Copy number">⧉</button></div><div class="as" id="aS">—</div><div class="at" id="aT">00:00:00</div><div id="aQ" style="font-size:11.5px;font-weight:700;color:#6B7280;margin-top:2px"></div><div id="aRec" style="margin-top:2px"></div></div>
  <div class="card2" id="aCard"></div>
@@ -136,7 +171,7 @@ body,button,input,textarea,select{font-family:'Bornomala',Inter,'Bornomala',sans
 
 <div class="ov" id="ovTr"><div class="card"><h3>Transfer to Extension</h3><div class="sub">Connect this call to another extension.</div><input class="ti" id="trExt" inputmode="numeric" placeholder="Extension"><div class="err" id="trErr"></div><div class="acts"><button type="button" class="pri" id="trGo">Transfer Call</button><button type="button" class="sec" id="trX">Cancel</button></div></div></div>
 
-<div class="ov" id="ovSum"><div class="card"><h3>Call Summary</h3><div class="sub">কাস্টমারের সাথে কথোপকথনের ফলাফল সংরক্ষণ করুন</div>
+<div class="ov" id="ovSum"><div class="card"><h3>Call Summary</h3><div class="sub">Save the result of this conversation with the customer</div>
 <div class="sg"><div><span>Customer Name</span><b id="sN">—</b></div><div><span>Phone</span><b id="sP">—</b></div><div><span>Call Duration</span><b id="sD">—</b></div><div><span>Order Number</span><b id="sO">—</b></div><div><span>Agent Name</span><b id="sA">—</b></div><div><span>Recording Status</span><b id="sR">—</b></div></div>
 <a id="sEdit" href="#" target="_blank" style="display:none;margin-bottom:6px;text-align:center;border:1.5px solid var(--o);color:var(--o);border-radius:8px;padding:8px;font-weight:800;text-decoration:none">✏️ Edit Current Order</a>
 <div class="lb">Order Outcome</div>
@@ -144,7 +179,7 @@ body,button,input,textarea,select{font-family:'Bornomala',Inter,'Bornomala',sans
 <div id="cwrap" style="display:none"><div class="lb">Cancel Reason</div><div id="ocC">@foreach(['Price Issue','Delivery Charge Issue','Changed Mind','Duplicate Order','Ordered by Mistake','Product Unavailable','Delay','Not Needed','Suspicious','Other'] as $c)<span class="chip" data-v="{{ $c }}">{{ $c }}</span>@endforeach</div></div>
 <div class="lb">Customer Response</div>
 <div id="ocR">@foreach(['Customer Received Call','Busy','No Answer','Phone Off','Unreachable','Wrong Number','Call Later','WhatsApp Required','Need More Information'] as $c)<span class="chip" data-v="{{ $c }}">{{ $c }}</span>@endforeach</div>
-<div class="lb">Call Note</div><textarea id="sNote" rows="2" maxlength="1000" placeholder="কাস্টমারের সাথে কী কথা হয়েছে, সংক্ষেপে লিখুন..."></textarea>
+<div class="lb">Call Note</div><textarea id="sNote" rows="2" maxlength="1000" placeholder="Briefly, what was said with the customer..."></textarea>
 <div class="err" id="sErr"></div>
 <div class="acts"><button type="button" class="pri" id="sSave">Save &amp; Close</button><button type="button" class="pri" id="sNext" style="background:var(--n)">Save &amp; Next</button><button type="button" class="sec" id="sSkip">Skip</button></div></div></div>
 
@@ -361,16 +396,36 @@ document.querySelectorAll('#ocC .chip').forEach(function(b){b.onclick=function()
 function saveSum(next){if(!sum)return;var note=$('sNote').value.trim();
  if(!sel.out&&!sel.resp&&!note){$('sErr').textContent='Select an outcome or write a note first.';return}
  if(sel.out==='cancelled'&&!sel.can){$('sErr').textContent='Select a cancel reason.';return}
- if(sel.out==='cancelled'&&sel.can==='Other'&&!note){$('sErr').textContent='Other কারণ হলে নোট লিখতে হবে।';return}
+ if(sel.out==='cancelled'&&sel.can==='Other'&&!note){$('sErr').textContent='Write a note when the reason is Other.';return}
  var o={outcome:sel.out,response:sel.resp,cancel_reason:sel.out==='cancelled'?sel.can:null,note:note};if(sum.info&&sum.info.last)o.order_id=sum.info.last.id;
  $('sSave').disabled=true;$('sNext').disabled=true;
- post('/admin/call-center/log/'+sum.id+'/summary',o).then(function(j){$('sSave').disabled=false;$('sNext').disabled=false;if(j&&j.ok){$('ovSum').classList.remove('on');sum=null;if(next){$('num').value='';found();tab('pad');$('num').focus()}else{tab('pad');if(emb)parent.postMessage({dfdial:'done'},location.origin)}}else $('sErr').textContent=(j&&j.error)||'Could not save. Try again.'}).catch(function(){$('sSave').disabled=false;$('sNext').disabled=false;$('sErr').textContent='Could not save. Try again.'})}
+ post('/admin/call-center/log/'+sum.id+'/summary',o).then(function(j){$('sSave').disabled=false;$('sNext').disabled=false;if(j&&j.ok){$('ovSum').classList.remove('on');sum=null;if(next){$('num').value='';found();tab('pad');$('num').focus();upNextFill(cur)}else{tab('pad');if(emb)parent.postMessage({dfdial:'done'},location.origin)}}else $('sErr').textContent=(j&&j.error)||'Could not save. Try again.'}).catch(function(){$('sSave').disabled=false;$('sNext').disabled=false;$('sErr').textContent='Could not save. Try again.'})}
 $('sSave').onclick=function(){saveSum(false)};$('sNext').onclick=function(){saveSum(true)};$('sSkip').onclick=function(){$('ovSum').classList.remove('on');sum=null;tab('pad');if(emb)parent.postMessage({dfdial:'done'},location.origin)};
 /* ---------- dial pad: customer found ---------- */
 var lastN='',ft=null;
-function found(){clearTimeout(ft);ft=setTimeout(function(){var n=($('num').value||'').replace(/\D/g,'');if(n===lastN)return;lastN=n;var f=$('found');if(n.length<6){f.className='fnd';f.innerHTML='';return}
- look(n).then(function(c){if(($('num').value||'').replace(/\D/g,'')!==n)return;if(c.found){f.className='fnd on';f.innerHTML='<b>'+esc(c.name||'Customer')+'</b> · '+esc(c.category||'Regular')+' · '+c.orders+' Orders'+(c.last?'<br>'+esc(c.last.invoice)+' · '+esc(c.last.status):'')+(c.fraud?'<br>'+fr(c.fraud):'')}else if(n.length>=10){f.className='fnd on unk';f.innerHTML='Unknown Customer · <a href="/admin/m/customers/new?phone='+encodeURIComponent(n)+'" target="_blank">Create Customer</a>'}else{f.className='fnd'}})},250)}
+function chatBtn(c){var b=$('bChat');if(!b)return;if(c&&c.thread_id){b.href='/admin/chat?open='+c.thread_id;b.classList.remove('off')}else{b.href='#';b.classList.add('off')}}
+function found(){clearTimeout(ft);ft=setTimeout(function(){var raw=$('num').value||'',f=$('found');
+ if(/[A-Za-zঀ-৿]/.test(raw)){var q=raw.trim();lastN='~'+q;chatBtn(null);if(q.length<2){f.className='fnd';f.innerHTML='';return}
+  getj('/admin/call-center/contacts?q='+encodeURIComponent(q)).then(function(a){if(($('num').value||'').trim()!==q)return;f.className='fnd on sgl';f.innerHTML=a.length?a.slice(0,4).map(function(c){return '<button type="button" class="sg1" data-n="'+esc(c.phone)+'"><b>'+esc(c.name)+'</b><span>'+esc(c.phone)+' · '+esc(c.category)+' · '+c.orders+' orders</span></button>'}).join(''):'<span class="fno">No customer found with this name.</span>'}).catch(function(){});return}
+ var n=raw.replace(/\D/g,'');if(n===lastN)return;lastN=n;if(n.length<6){f.className='fnd';f.innerHTML='';chatBtn(null);return}
+ look(n).then(function(c){if(($('num').value||'').replace(/\D/g,'')!==n)return;chatBtn(c);
+  if(c.found){var nm=c.name||'Customer';f.className='fnd on';f.innerHTML='<span class="fav">'+esc(nm.trim().charAt(0).toUpperCase())+'</span><span class="fmid"><b>'+esc(nm)+'<i class="tg '+tagCls(c.category)+'">'+esc(c.category||'Regular')+'</i></b><small>'+(c.delivered||0)+' received of '+c.orders+' orders'+(c.last?' · Last: '+esc(c.last.invoice)+' · '+esc(c.last.status):'')+'</small>'+(c.fraud?'<small>'+fr(c.fraud)+'</small>':'')+'</span>'+(c.customer_id?'<a href="/admin/m/customers/'+c.customer_id+'/edit" target="_blank">Profile</a>':'')}
+  else if(n.length>=10){f.className='fnd on unk';f.innerHTML='<span class="fmid"><b>Unknown customer</b><small>No order or profile with this number</small></span><a href="/admin/m/customers/new?phone='+encodeURIComponent(n)+'" target="_blank">Create</a>'}else{f.className='fnd'}})},250)}
 $('num').addEventListener('input',found);
+$('num').addEventListener('keydown',function(e){if(e.key==='Enter'&&!inCall()){e.preventDefault();call()}});
+/* ---------- Up next: who should be called now (read-only list; the staff member still presses Call) ---------- */
+var UPL={'new':['New order','n'],callback:['Callback','c'],noanswer:['No answer','a'],missed:['Missed call','m']},upItems=[],upAll=false;
+function ago(m){return m<60?m+' min':(m<1440?Math.floor(m/60)+' h '+(m%60)+' min':Math.floor(m/1440)+' d')}
+function upRow(x){var L=UPL[x.type]||['Call',''];var sub=x.type==='new'?'Waiting '+ago(x.mins)+' to be confirmed':(x.type==='callback'?'Asked for a call back '+ago(x.mins)+' ago'+(x.note?' · '+x.note:''):(x.type==='noanswer'?'Not answered '+ago(x.mins)+' ago, try again':'Called us '+ago(x.mins)+' ago, not called back'));
+ return '<div class="ur '+L[1]+'"><div class="um"><b><i class="ut">'+L[0]+'</i>'+esc(x.name||x.phone)+'</b><small>'+esc(sub)+(x.invoice?' · #'+esc(x.invoice):'')+'</small></div><button type="button" class="ub" data-n="'+esc(x.phone)+'" data-o="'+esc(x.invoice||'')+'" data-cn="'+esc(x.name||'')+'" title="Put this number in the dialer">Dial</button></div>'}
+function upDraw(){var n=upItems.length,a=$('upn'),b=$('upn2');if(!n){if(a)a.innerHTML='';if(b)b.innerHTML='';return}
+ var hd=function(more){return '<div class="uh"><span>Up next · '+n+' waiting</span>'+(more?'<button type="button" id="upMore">'+(upAll?'Show less':'See all')+'</button>':'')+'</div>'};
+ if(a)a.innerHTML=hd(n>2)+upItems.slice(0,upAll?n:2).map(upRow).join('');if(b)b.innerHTML=hd(false)+upItems.map(upRow).join('');
+ var m=$('upMore');if(m)m.onclick=function(){upAll=!upAll;upDraw()}}
+function upLoad(cb){if(document.hidden&&!cb)return;getj('/admin/call-center/up-next').then(function(j){upItems=(j&&j.items)||[];upDraw();if(cb)cb()}).catch(function(){})}
+function upNextFill(skip){var sk=String(skip||'').replace(/\D/g,'').slice(-11);upLoad(function(){var x=upItems.filter(function(i){return i.phone!==sk})[0];if(x&&!inCall())autoDial(x.phone,{o:x.invoice?'#'+x.invoice:'',cn:x.name})})}
+document.addEventListener('click',function(e){var u=e.target.closest('.ub');if(u){autoDial(u.dataset.n,{o:u.dataset.o?'#'+u.dataset.o:'',cn:u.dataset.cn});return}var g=e.target.closest('.sg1');if(g){$('num').value=g.dataset.n;lastN='';found();$('num').focus()}});
+upLoad(function(){});setInterval(function(){upLoad()},45000);
 /* ---------- contacts / recent / details ---------- */
 function contacts(){getj('/admin/call-center/contacts?q='+encodeURIComponent($('cq').value)).then(function(a){$('cl').innerHTML=a.length?a.map(function(c){return '<div class="li"><span class="av2">'+esc((c.name||'?').trim().charAt(0).toUpperCase())+'</span><div class="mid"><b>'+esc(c.name)+'</b><small>'+esc(c.phone)+' · <span class="tg '+tagCls(c.category)+'">'+esc(c.category)+'</span>'+c.orders+' Orders</small></div><button type="button" class="cb" data-n="'+esc(c.phone)+'">Call</button></div>'}).join(''):'<div class="mut" style="padding:14px">No customers found.</div>'})}
 var qt;$('cq').oninput=function(){clearTimeout(qt);qt=setTimeout(contacts,250)};

@@ -12,8 +12,8 @@
 body.dfp-open #dfEdge{display:none}
 @media(max-width:800px){#dfDock{right:0;left:0;bottom:0;width:100%;max-width:100%;height:88vh;border-radius:18px 18px 0 0;border-width:1px 0 0}#dfEdge{padding:12px 6px}#dfEdge span{display:none}#dfEdge::after{order:0}}
 </style>
-<button type="button" id="dfEdge" title="Open Mother Commerce Dialer"><i>📞</i><span>Dialer · <b id="dfSt">Available</b></span></button>
-<div id="dfDock" aria-label="Mother Commerce Dialer"></div>
+<button type="button" id="dfEdge" title="Open DutyFree Dialer"><i>📞</i><span>Dialer · <b id="dfSt">Available</b></span></button>
+<div id="dfDock" aria-label="DutyFree Dialer"></div>
 @verbatim
 <script>
 (function(){
@@ -21,7 +21,7 @@ var ch=window.BroadcastChannel?new BroadcastChannel('dfphone'):null,dock=documen
 function clean(n){return String(n||'').replace(/[^0-9+*#]/g,'')}
 function sv(v){try{localStorage.setItem(ls,v?'1':'0')}catch(e){}}
 function ld(){try{return localStorage.getItem(ls)==='1'}catch(e){return false}}
-function mk(n,x){if(fr)return;fr=document.createElement('iframe');fr.allow='microphone; autoplay';fr.title='Mother Commerce Dialer';fr.src='/admin/call-center/phone?embed=1'+(n?'&n='+encodeURIComponent(n):'')+(x&&x.auto?'&auto=1':'')+(x&&x.o?'&o='+encodeURIComponent(x.o):'')+(x&&x.cn?'&cn='+encodeURIComponent(x.cn):'');dock.appendChild(fr)}
+function mk(n,x){if(fr)return;fr=document.createElement('iframe');fr.allow='microphone; autoplay';fr.title='DutyFree Dialer';fr.src='/admin/call-center/phone?embed=1'+(n?'&n='+encodeURIComponent(n):'')+(x&&x.auto?'&auto=1':'')+(x&&x.o?'&o='+encodeURIComponent(x.o):'')+(x&&x.cn?'&cn='+encodeURIComponent(x.cn):'');dock.appendChild(fr)}
 function show(n,x){mk(n,x);dock.classList.add('on');document.body.classList.add('dfp-open');sv(1)}
 function hide(){dock.classList.remove('on');document.body.classList.remove('dfp-open');sv(0)}
 function kill(){hide();sawCall=false;sumOpen=false;if(fr){fr.remove();fr=null}busy=false;edge.classList.remove('busy')}

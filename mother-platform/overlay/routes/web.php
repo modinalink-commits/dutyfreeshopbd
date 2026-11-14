@@ -250,6 +250,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/call-center/phone', [\App\Http\Controllers\CallCenterController::class,'phone']);
   Route::get('/call-center/contacts', [\App\Http\Controllers\CallCenterController::class,'contacts']);
   Route::get('/call-center/recent', [\App\Http\Controllers\CallCenterController::class,'recent']);
+  Route::get('/call-center/up-next', [\App\Http\Controllers\CallCenterController::class,'upNext']);
   Route::get('/call-center/agents', [\App\Http\Controllers\CallCenterController::class,'agents']);
   Route::get('/call-center/clients', [\App\Http\Controllers\CarrierClientController::class,'index']);
   Route::get('/call-center/clients/diag', [\App\Http\Controllers\CarrierClientController::class,'diag']);
