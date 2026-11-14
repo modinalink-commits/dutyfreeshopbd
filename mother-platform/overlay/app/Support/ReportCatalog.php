@@ -65,6 +65,7 @@ class ReportCatalog
       ['SAL-007', 'Discount Report (by type)', 'Breakdowns', 'grid', $A('discount-report'), 'pxcn', 'Analytics', null],
       ['SAL-008', 'Area Orders', 'Breakdowns', 'grid', 'admin/analytics/area-orders', 'c', 'Analytics', null],
       ['SAL-009', 'Orders (Documents)', 'Documents', 'grid', 'admin/m/r-orders', 'pxcd', 'Documents', null],
+      ['SAL-010', 'Best Seller Orders', 'Breakdowns', 'grid', 'admin/best-sellers/report', '', 'Best Sellers', null],
       // ---------- Profit & Margin ----------
       ['PRF-001', 'Profit / Loss Report', 'Profit & Loss', 'grid', $A('profit-loss'), 'pxcn', 'Analytics', 'profit-loss'],
       ['PRF-002', 'Sale Profit Report', 'Profit & Loss', 'grid', $A('sale-profit'), 'pxcn', 'Analytics', null],

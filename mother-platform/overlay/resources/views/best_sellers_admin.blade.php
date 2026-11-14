@@ -26,6 +26,7 @@
 @if(!$camp['results']['rows'])<div style="color:#6B7280">Starts counting when the automatic offer is switched on.</div>@else
 <div style="overflow-x:auto"><table class="no-export"><tr><th>Product</th><th>Order type</th><th class="n">Orders</th><th class="n">Cartons</th><th class="n">Delivered</th><th class="n">Returned</th><th class="n">Cancelled</th><th class="n">Net at fixed profit</th></tr>
 @foreach($camp['results']['rows'] as $r)@foreach(['pack' => '2 or more cartons (offer)', 'single' => '1 carton'] as $k => $lb)<tr><td>{{ $k === 'pack' ? $r['name'] : '' }}</td><td>{{ $lb }}</td><td class="n">{{ number_format($r[$k]['orders']) }}</td><td class="n">{{ number_format($r[$k]['cartons']) }}</td><td class="n">{{ number_format($r[$k]['delivered']) }}</td><td class="n">{{ number_format($r[$k]['returned']) }}</td><td class="n">{{ number_format($r[$k]['cancelled']) }}</td><td class="n">{{ $k === 'pack' ? number_format($r['pack']['delivered_cartons'] * $profit) : '—' }}</td></tr>@endforeach @endforeach</table></div>
+<a href="/admin/best-sellers/report" style="display:inline-block;margin-top:8px;font-weight:600;color:#C2410C">Open the full Best Seller Orders report →</a>
 <small style="display:block;margin-top:6px">Net at fixed profit = delivered offer cartons × the net profit per carton set above. It does not yet take the cost of returned parcels off; compare it with the Returned column.</small>@endif</div>
 <div class="card"><h2>Campaign messages (SMS)</h2>
 <form method="post" action="/admin/best-sellers">@csrf<input type="hidden" name="act" value="camp">

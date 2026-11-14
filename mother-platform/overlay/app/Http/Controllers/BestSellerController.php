@@ -19,6 +19,16 @@ class BestSellerController extends Controller {
     return view('best_sellers_admin', ['camp' => $camp, 'unit' => \App\Support\SmsMarketing::unit(), 'rows' => AutoPrice::rows(), 'auto' => AutoPrice::on(), 'card' => Procure::set('home_bestseller', '0') === '1', 'pct' => ProfitFloor::pct(), 'parcel' => AutoPrice::parcel(), 'profit' => AutoPrice::profit(), 'ls' => ['on' => \App\Support\BestSellerStock::on(), 'limit' => \App\Support\BestSellerStock::limit(), 'to' => \App\Support\BestSellerStock::set('to', "Mamun|01824522800"), 'status' => \App\Support\BestSellerStock::status(), 'body' => \App\Support\BestSellerStock::BODY],
       'log' => DB::table('audit_logs')->whereIn('action', ['Auto price updated', 'Auto price paused (custom price)', 'Auto price resumed', 'Best Sellers setting changed', 'bestseller.low_stock'])->orderByDesc('id')->limit(15)->get()]);
   }
+  /** Best Seller Orders report (SAL-010): how many orders the flagship products got, by day and by product, with the order list. */
+  public function report(Request $r) {
+    $this->gate(); $C = \App\Support\BestSellerCampaign::class; $tz = 'Asia/Dhaka'; $today = now($tz)->format('Y-m-d');
+    $since = $C::since(); $start = $since ? \Carbon\Carbon::parse($since, 'UTC')->timezone($tz)->format('Y-m-d') : now($tz)->subDays(29)->format('Y-m-d');
+    $ok = fn($v) => is_string($v) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $v) && strtotime($v) !== false;
+    $from = $ok($r->query('from')) ? $r->query('from') : $start; $to = $ok($r->query('to')) ? $r->query('to') : $today; if ($from > $to) [$from, $to] = [$to, $from];
+    $pid = (int)$r->query('product', 0); $type = in_array($r->query('type'), ['pack', 'single'], true) ? $r->query('type') : '';
+    return view('best_sellers_report', ['d' => $C::report($from, $to, $pid, $type), 'from' => $from, 'to' => $to, 'pid' => $pid, 'type' => $type, 'start' => $start, 'today' => $today,
+      'products' => DB::table('products')->whereIn('id', AutoPrice::ids())->pluck('name', 'id'), 'profit' => AutoPrice::profit()]);
+  }
   public function save(Request $r) {
     $this->gate();
     $d = $r->validate(['act' => 'required|in:switches,auto,custom,apply,stock,tpl_submit,tpl_sync,stock_test,camp,once_count,once_send', 'remind_on' => 'nullable|in:0,1', 'remind_days' => 'nullable|integer|min:3|max:60', 'remind_text' => 'nullable|string|max:400', 'once_text' => 'nullable|string|max:400', 'ls_on' => 'nullable|in:0,1', 'limit' => 'nullable|integer|min:1|max:100000', 'to' => 'nullable|string|max:500', 'phone' => 'nullable|string|max:20', 'id' => 'nullable|integer', 'price' => 'nullable|numeric|min:1', 'auto' => 'nullable|in:0,1', 'card' => 'nullable|in:0,1', 'parcel' => 'nullable|numeric|min:0|max:2000', 'profit' => 'nullable|numeric|min:0|max:5000']);
