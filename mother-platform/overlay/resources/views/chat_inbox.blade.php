@@ -98,6 +98,15 @@ main{height:calc(100vh / var(--z,1));overflow:hidden;display:flex;flex-direction
 .mbx .ls{max-height:none;height:100%;min-height:0;overflow:auto}
 .mbx .cv{height:100%!important;min-height:0}
 }
+.mbx .sep.p{color:#7A271A;background:#FEF3F2;border-top:1px solid #F6C4C0;border-bottom:1px solid #F6C4C0;padding:8px 10px;margin:0 0 4px}.mbx .sep.p::before{content:"";width:8px;height:8px;border-radius:50%;background:#D92D20;flex:none}.mbx .sep.p b{color:#B42318}
+.mbx .sep.a{color:#1E3A8A;background:#EEF4FF;border-top:1px solid #C7D7FE;border-bottom:1px solid #C7D7FE;padding:8px 10px;margin:8px 0 4px}.mbx .sep.a::before{content:"";width:8px;height:8px;border-radius:50%;background:#1D4ED8;flex:none}.mbx .sep.a b{color:#1D4ED8}
+.mbx .sep small{font-weight:500;color:inherit;opacity:.8;margin-left:auto}.mbx .sep small+b{margin-left:8px}
+.mbx .th.cp{padding-top:7px;padding-bottom:7px}.mbx .th.cp .l3,.mbx .th.cp .l4{display:none}.mbx .th.cp .nm{font-weight:600}
+.mbx .bg.tp{background:#FFF7ED;color:#9A3412}.mbx .bg.md{background:#FDF2FA;color:#9D174D}
+.mbx .slb{display:flex;align-items:center;gap:8px;margin-top:5px}.mbx .slb i{flex:1;height:4px;border-radius:99px;background:#D92D20;display:block}.mbx .slb span{font-size:11px;font-weight:700;color:#B42318;white-space:nowrap}
+#ibu{display:inline-flex;gap:8px;flex-wrap:wrap;vertical-align:middle;margin-left:8px;font-size:12.5px;font-weight:600}
+#ibu .k{display:inline-flex;align-items:center;gap:6px;border-radius:9px;padding:4px 10px;border:1px solid}#ibu .k b{font-size:15px}
+#ibu .k.p{background:#FEF3F2;border-color:#F6C4C0;color:#7A271A}#ibu .k.p b{color:#B42318}#ibu .k.a{background:#EEF4FF;border-color:#C7D7FE;color:#1E3A8A}#ibu .k.a b{color:#1D4ED8}#ibu .k.o{background:#fff;border-color:#E5E7EB;color:#4B5563}#ibu .k.o b{color:#B42318;font-size:12.5px}
 </style>
 <div id="ibtop" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px"><div style="flex:1"><h1 style="margin:0">Messages <span id="ibu"></span></h1><span style="font-size:12px;color:#6B7280">Facebook, Instagram, WhatsApp and Website Chat in one inbox.</span></div>
 </div>
@@ -135,14 +144,16 @@ function drawF(){document.getElementById('ibf1').innerHTML=F1.map(pill).join('')
 var upBusy=false;function doUpdate(){if(upBusy)return;upBusy=true;var b=document.getElementById('ibup');b.disabled=true;b.textContent='↻ Updating…';
   Promise.all([load(),(window.MChat&&MChat.refresh)?MChat.refresh():null]).catch(function(){}).then(function(){b=document.getElementById('ibup');if(b){b.textContent='✓ Updated';b.classList.add('ok')}setTimeout(function(){upBusy=false;var c=document.getElementById('ibup');if(c){c.disabled=false;c.classList.remove('ok');c.textContent='↻ Update'}},1400)})}
 var seen={},first=true;
-function row(t){var st=t.needs_human?'waiting':(t.status||'open');var stL={new:'New',open:'Open',waiting:'Waiting',resolved:'Resolved'}[st]||st;
+function row(t,cp){var st=t.needs_human?'waiting':(t.status||'open');var stL={new:'New',open:'Open',waiting:'Waiting',resolved:'Resolved'}[st]||st;
   var h=t.needs_human?'<span class="bg need" title="'+esc(t.handoff_reason||'')+'">Needs human</span>':'<span class="bg '+(t.ai?'ai':'human')+'">'+(t.ai?'AI':'Human')+'</span>';
   var un=!!t.awaiting&&t.status!=='resolved',ico=(window.MChat&&MChat.ico&&MChat.ico[t.channel])||CHL[t.channel];
-  return '<div class="th'+(un?' un':'')+(sel===t.id?' on':'')+'" data-id="'+t.id+'"><div class="av"><span class="mcav">'+(t.avatar?'<img src="'+esc(t.avatar)+'" alt="" referrerpolicy="no-referrer" onerror="this.remove()">':'')+esc((t.name||'?').charAt(0).toUpperCase())+'</span><span class="mcb ico '+t.channel+'" title="'+esc(t.channel_name)+'">'+ico+'</span></div>'
+  var late=un&&!cp&&t.waiting_since&&(Date.now()-new Date(t.waiting_since).getTime())>(t.sla_r||15)*60000;
+  var tpc=!cp&&t.intent&&t.intent!=='other'&&t.intent!=='greeting'?'<span class="bg tp">'+esc(String(t.intent).replace(/_/g,' '))+'</span>':'',mdc=!cp&&t.mood&&!/^(neutral|calm|happy|normal)$/i.test(t.mood)?'<span class="bg md">'+esc(t.mood)+'</span>':'';
+  return '<div class="th'+(un?' un':'')+(cp?' cp':'')+(sel===t.id?' on':'')+'" data-id="'+t.id+'"><div class="av"><span class="mcav">'+(t.avatar?'<img src="'+esc(t.avatar)+'" alt="" referrerpolicy="no-referrer" onerror="this.remove()">':'')+esc((t.name||'?').charAt(0).toUpperCase())+'</span><span class="mcb ico '+t.channel+'" title="'+esc(t.channel_name)+'">'+ico+'</span></div>'
   +'<div class="bd"><div class="l1"><span class="nm">'+esc(t.name)+'</span><span class="tm">'+ago(t.last_at)+'</span></div>'
-  +'<div class="l2"><span class="lm">'+(t.last_dir==='out'?'You: ':'')+esc(t.last||'')+'</span>'+(un?'<span class="ub">'+t.unread+'</span>':'')+'</div>'
+  +'<div class="l2"><span class="lm">'+(t.last_dir==='out'?(cp?'AI: ':'You: '):'')+esc(t.last||'')+'</span>'+(un?'<span class="ub">'+t.unread+'</span>':'')+'</div>'
   +'<div class="l3">'+esc(t.channel_name)+(t.source?' <span class="srcb s-'+t.channel+'" title="Received on: '+esc(t.source)+'">'+esc(t.source)+'</span>':'')+' · Holding: '+(t.orders>0?t.orders+' order'+(t.orders===1?'':'s'):'--')+'</div>'
-  +'<div class="l4">'+(un&&window.MSla?MSla.chip(t):'')+(un?'<span class="st2 aw">Awaiting</span>':(t.replied?'<span class="st2 rp">✓ Replied</span>':(t.stale?'<span class="st2 old" title="Customer message older than 7 days">Old</span>':'')))+'<span class="bg '+st+'">'+stL+'</span>'+h+(t.assigned_name?'<span class="bg human" title="Assigned to">👤 '+esc(t.assigned_name)+'</span>':'<span class="bg" style="color:#9CA3AF">Unassigned</span>')+'</div></div></div>'}
+  +'<div class="l4">'+(un&&window.MSla?MSla.chip(t):'')+(un?'<span class="st2 aw">Awaiting</span>':(t.replied?'<span class="st2 rp">✓ Replied</span>':(t.stale?'<span class="st2 old" title="Customer message older than 7 days">Old</span>':'')))+'<span class="bg '+st+'">'+stL+'</span>'+h+tpc+mdc+(t.assigned_name?'<span class="bg human" title="Assigned to">👤 '+esc(t.assigned_name)+'</span>':'<span class="bg" style="color:#9CA3AF">Unassigned</span>')+'</div>'+(late?'<div class="slb"><i></i><span>Reply target missed</span></div>':'')+'</div></div>'}
 function money(n){return '৳'+Math.round(n).toLocaleString('en-US')}
 function loadOrq(){return fetch('/admin/chat/order-requests?s=review',{headers:{Accept:'application/json'},credentials:'same-origin'}).then(function(r){return r.json()}).then(function(j){var l=document.getElementById('ibl');orq=j.requests.length;
   if(!j.requests.length){l.innerHTML='<div class="emp">No order requests waiting.</div>';return}
@@ -153,13 +164,19 @@ function loadOrq(){return fetch('/admin/chat/order-requests?s=review',{headers:{
     b.disabled=true;var tok=(document.querySelector('meta[name=csrf-token]')||{}).content||'';
     fetch('/admin/chat/order-requests/'+id+'/'+a,{method:'POST',headers:{'X-CSRF-TOKEN':tok,'Accept':'application/json'},credentials:'same-origin'}).then(function(r){return r.json()}).then(function(j){if(j.ok){if(a==='create')alert('Order created: '+j.invoice);loadOrq();drawF()}else{alert(j.error||'Failed');b.disabled=false}}).catch(function(){alert('Failed');b.disabled=false})}})})})}
 function load(){if(f==='orders')return loadOrq();return fetch('/admin/chat/threads?f='+f+'&q='+encodeURIComponent(q),{headers:{Accept:'application/json'},credentials:'same-origin'}).then(function(r){return r.json()}).then(function(j){
-  if((j.order_requests||0)!==orq||(j.human||0)!==hum){orq=j.order_requests||0;hum=j.human||0;drawF()}var u=document.getElementById('ibu');u.innerHTML=j.unread?'<span class="ub">'+j.unread+' waiting</span>':'';if(window.MChat)MChat.badge(j.unread);
+  if((j.order_requests||0)!==orq||(j.human||0)!==hum){orq=j.order_requests||0;hum=j.human||0;drawF()}var u=document.getElementById('ibu'),ah=j.ai_handled||0,old=null;(j.threads||[]).forEach(function(t){if(t.person&&t.awaiting&&t.waiting_since){var d=new Date(t.waiting_since).getTime();if(old===null||d<old)old=d}});
+  var oh='';if(old!==null){var mn=Math.floor((Date.now()-old)/60000);oh='<span class="k o">Oldest waiting <b>'+(mn>=60?Math.floor(mn/60)+'h '+(mn%60)+'m':mn+'m')+'</b></span>'}
+  u.innerHTML=j.unread?'<span class="k p"><b>'+(j.human||0)+'</b>need a person</span><span class="k a"><b>'+ah+'</b>answered by AI</span>'+oh:'';if(window.MChat)MChat.badge(j.unread);
   if(waiting!==j.unread){waiting=j.unread;var uf=document.querySelector('#ibfb a[data-f=unread]');if(uf){var cn=uf.querySelector('.cn');if(waiting>0){if(!cn){cn=document.createElement('span');cn.className='cn';uf.appendChild(cn)}cn.textContent=waiting}else if(cn)cn.remove()}}
   var l=document.getElementById('ibl');if(!j.threads.length){l.innerHTML='<div class="emp">No conversations here yet.</div>';return}
   var ur=j.threads.filter(function(t){return t.awaiting&&t.status!=='resolved'}),rd=j.threads.filter(function(t){return !(t.awaiting&&t.status!=='resolved')});
   var top=l.scrollTop,html='';
-  if(ur.length){html+='<div class="sep u">Waiting for Reply<b>'+ur.length+'</b></div>'+ur.map(row).join('');if(rd.length)html+='<div class="sep">Others</div>'}
-  html+=rd.map(row).join('');l.innerHTML=html;l.scrollTop=top;
+  var pp=ur.filter(function(t){return t.person}),ai=ur.filter(function(t){return !t.person});
+  pp.sort(function(a,b){var x=a.waiting_since?new Date(a.waiting_since).getTime():Infinity,y=b.waiting_since?new Date(b.waiting_since).getTime():Infinity;return x-y});
+  if(pp.length)html+='<div class="sep p">Need a person<small>oldest first</small><b>'+pp.length+'</b></div>'+pp.map(function(t){return row(t)}).join('');
+  if(ai.length)html+='<div class="sep a">Answered by AI, waiting on customer<b>'+ai.length+'</b></div>'+ai.map(function(t){return row(t,true)}).join('');
+  if(ur.length&&rd.length)html+='<div class="sep">Others</div>';
+  html+=rd.map(function(t){return row(t)}).join('');l.innerHTML=html;l.scrollTop=top;
   if(!first)l.querySelectorAll('.th.un').forEach(function(n){var id=n.dataset.id,t=j.threads.filter(function(x){return String(x.id)===id})[0];if(t&&(seen[id]===undefined||t.unread>seen[id]))n.classList.add('fl8')});
   first=false;j.threads.forEach(function(t){seen[t.id]=t.unread});
   l.querySelectorAll('.th').forEach(function(n){n.onclick=function(){sel=+n.dataset.id;l.querySelectorAll('.th').forEach(function(x){x.classList.toggle('on',x===n)});document.getElementById('ibx').classList.add('sel');document.body.classList.add('ibsel');MChat.mount(document.getElementById('ibc'),sel,{onchange:load,focus:true})}})})}

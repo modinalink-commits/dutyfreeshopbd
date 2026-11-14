@@ -28,7 +28,12 @@ class ChatController extends Controller {
     $rows = $q->orderByRaw("case when status <> 'resolved' and awaiting_reply then 1 when status <> 'resolved' and (status = 'waiting' or coalesce(needs_human, false)) then 2 when status <> 'resolved' then 3 else 4 end")->orderByDesc('last_at')->limit(120)->get();
     $orq = 0; try { $orq = (int)DB::table('chat_order_requests')->where('status', 'review')->count(); } catch (\Throwable $e) {}
     $hum = 0; try { $hum = (int)Chat::humanScope(DB::table('chat_threads'))->count(); } catch (\Throwable $e) {}
-    return response()->json(['threads'=>Chat::cards($rows), 'unread'=>Chat::unreadTotal(), 'order_requests'=>$orq, 'human'=>$hum]);
+    // Inbox v2: which waiting chats need a person (the rest were answered by the AI and wait on the customer). Display only; the Awaiting rule is unchanged.
+    $cards = Chat::cards($rows); $pp = [];
+    try { $ids = $rows->pluck('id')->all(); if ($ids) $pp = array_flip(Chat::humanScope(DB::table('chat_threads')->whereIn('id', $ids))->pluck('id')->all()); } catch (\Throwable $e) {}
+    foreach ($cards as &$c) $c['person'] = isset($pp[$c['id']]); unset($c);
+    $unread = Chat::unreadTotal();
+    return response()->json(['threads'=>$cards, 'unread'=>$unread, 'order_requests'=>$orq, 'human'=>$hum, 'ai_handled'=>max(0, $unread - $hum)]);
   }
 
   /** Light poll used on every admin page: unread total plus threads with new incoming messages since the last id. */
