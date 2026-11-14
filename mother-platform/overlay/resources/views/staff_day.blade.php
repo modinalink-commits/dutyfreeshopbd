@@ -30,6 +30,11 @@
 @empty<div style="color:#067647;font-weight:600;padding:6px 0">No slips today. Keep it up.</div>@endforelse
 </div></div>
 
+<div class="cc-box" data-nogrid data-no-export style="margin-top:12px;padding:12px 14px"><h2>Team today: who answered customers</h2>
+@if(empty($team))<div style="color:#6B7280">No staff to show.</div>@else<div style="overflow-x:auto"><table class="cc-t no-export"><thead><tr><th>Staff</th><th>Customers answered</th><th>Share of team answers</th><th>Replies sent</th><th>Typical reply wait</th><th>Late replies (over {{ $limit }} min)</th></tr></thead><tbody>
+@foreach($team as $x)<tr @if($x['id'] === (int)$me->id) class="hot" @endif><td><b>{{ $x['name'] }}</b>{{ $x['id'] === (int)$me->id ? ' (you)' : '' }}</td><td class="cc-num">{{ $x['chats'] }}</td><td><span style="display:inline-block;vertical-align:middle;width:90px;height:8px;border-radius:99px;background:#EEF1F4;overflow:hidden;margin-right:6px"><span style="display:block;height:8px;width:{{ $x['share'] }}%;background:#F95505"></span></span><b>{{ $x['share'] }}%</b></td><td class="cc-num">{{ $x['replies'] }}</td><td>{{ $dur($x['reply_s']) }}</td><td>{{ $x['late'] }}</td></tr>@endforeach
+</tbody></table></div><small style="display:block;margin-top:6px;color:#6B7280">Share = this person's answered customers out of all customers the team answered today. AI answers are not counted for anyone.</small>@endif</div>
+
 <div class="cc-box" data-nogrid data-no-export style="margin-top:12px"><table class="cc-t no-export"><thead><tr><th style="width:18%">Day</th><th>Customers answered</th><th>Calls answered</th><th>Orders confirmed</th><th>Typical reply wait</th><th>Late replies</th><th>Idle notices</th><th>Missed calls</th></tr></thead><tbody>
 <tr class="hot"><td><b>Today</b></td><td class="cc-num">{{ $t['chats'] }}</td><td class="cc-num">{{ $t['calls'] }}</td><td class="cc-num">{{ $t['approved'] }}</td><td>{{ $dur($t['reply_s']) }}</td><td>{{ $t['late'] }}</td><td>{{ $t['idle'] }}</td><td>{{ $t['missed'] }}</td></tr>
 @foreach($days as $d)<tr><td>{{ $d['d'] }}</td><td class="cc-num">{{ $d['chats'] }}</td><td class="cc-num">{{ $d['calls'] }}</td><td class="cc-num">{{ $d['approved'] }}</td><td>{{ $dur($d['reply_s']) }}</td><td>{{ $d['late'] }}</td><td>{{ $d['idle'] }}</td><td>{{ $d['missed'] }}</td></tr>@endforeach

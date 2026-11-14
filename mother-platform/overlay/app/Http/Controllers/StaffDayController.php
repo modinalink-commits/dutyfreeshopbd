@@ -36,7 +36,11 @@ class StaffDayController extends Controller
     usort($slips, fn($a, $b) => strcmp((string)$b['at'], (string)$a['at']));
     $limit = max(5, min(240, (int)(\App\Support\Sms::secret('chat_stale_min') ?: 30)));
     $staff = $admin ? DB::table('users')->where('active', true)->orderBy('name')->get(['id', 'name']) : collect();
-    return view('staff_day', compact('u', 'me', 'admin', 'today', 'days', 'slips', 'limit', 'staff'));
+    // Team board, visible to every staff member: who answered how many customers today and what share of the team's answers that is.
+    $team = []; try { foreach (DB::table('users')->where('active', true)->whereNotIn('role', ['super', 'admin'])->orderBy('name')->get(['id', 'name']) as $x) { $s = self::stats($x, $d0->copy()->utc(), $d0->copy()->addDay()->utc()); $team[] = ['id'=>(int)$x->id, 'name'=>$x->name] + $s; } } catch (\Throwable $e) {}
+    $tc = array_sum(array_column($team, 'chats')); foreach ($team as &$x) $x['share'] = $tc > 0 ? round($x['chats'] * 100 / $tc) : 0; unset($x);
+    usort($team, fn($a, $b) => $b['chats'] <=> $a['chats']);
+    return view('staff_day', compact('u', 'me', 'admin', 'today', 'days', 'slips', 'limit', 'staff', 'team'));
   }
   /** Unseen "customer kept waiting" notices for the signed-in person (polled by the popup on every admin page). */
   public function notices() {

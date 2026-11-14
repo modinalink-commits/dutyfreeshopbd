@@ -347,7 +347,8 @@ class Chat {
       }
     } catch (\Throwable $e) {}
     // 2) an ordinary question: the AI answers it now, even inside staff hours
-    $human = !empty($t->needs_human) || !empty($t->handoff_at) || in_array((string)($t->intent ?? ''), ['complaint', 'refund', 'cancel', 'change_order', 'human_request', 'payment', 'order_request'], true) || \Illuminate\Support\Facades\Cache::has('ai.manual_off.'.$tid);
+    // a customer who wants to order is not left waiting: the AI takes the details and files an Order Request (a person creates the order)
+    $human = !empty($t->needs_human) || !empty($t->handoff_at) || in_array((string)($t->intent ?? ''), ['complaint', 'refund', 'cancel', 'change_order', 'human_request', 'payment'], true) || \Illuminate\Support\Facades\Cache::has('ai.manual_off.'.$tid);
     $answered = false;
     if (!$human && AiChat::chatOn() && in_array($t->channel, ['web', 'whatsapp', 'facebook'], true)) {
       self::$force = true; try { self::aiReply($tid); } catch (\Throwable $e) { report($e); } finally { self::$force = false; }
@@ -373,8 +374,9 @@ class Chat {
     // tell the staff too (popup on their screen + their My Day page): the agent the chat was with; nobody assigned = everyone who answers chats
     try {
       $cust = trim((string)($t->name ?: $t->phone ?: 'A customer'));
-      $to = $blame ? DB::table('users')->where('id', $blame)->get(['id', 'name']) : DB::table('users')->where('active', true)->whereNotIn('role', ['super', 'admin'])->whereIn('name', DB::table('chat_messages')->where('dir', 'out')->whereRaw('not coalesce(is_ai, false)')->where('created_at', '>=', now()->subDays(7))->whereNotNull('user_name')->distinct()->pluck('user_name'))->get(['id', 'name']);
-      foreach ($to as $usr) DB::table('chat_wait_notices')->insert(['thread_id'=>$tid, 'user_id'=>$usr->id, 'user_name'=>$usr->name, 'customer'=>mb_substr($cust, 0, 160), 'wait_min'=>$min, 'assigned'=>(bool)$blame, 'created_at'=>now(), 'updated_at'=>now()]);
+      // owner rule (14 Nov 2026): the warning goes to every staff member and manager, not only to the agent it was with; only that agent's row counts as their own late reply
+      $to = DB::table('users')->where('active', true)->whereNotIn('role', ['super', 'admin'])->get(['id', 'name']);
+      foreach ($to as $usr) DB::table('chat_wait_notices')->insert(['thread_id'=>$tid, 'user_id'=>$usr->id, 'user_name'=>$usr->name, 'customer'=>mb_substr($cust, 0, 160), 'wait_min'=>$min, 'assigned'=>$blame && (int)$usr->id === $blame, 'created_at'=>now(), 'updated_at'=>now()]);
     } catch (\Throwable $e) {}
     try { if ($what) DB::table('chat_notes')->insert(['thread_id'=>$tid, 'user_id'=>null, 'user_name'=>'Automation', 'body'=>implode(' ', $what), 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {}
     try { AiMemory::event($tid, null, 'ai', 'stale_wait_handled', null, ['min'=>$min, 'ai_answered'=>$answered]); } catch (\Throwable $e) {}

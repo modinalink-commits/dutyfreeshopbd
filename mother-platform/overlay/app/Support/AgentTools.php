@@ -129,7 +129,7 @@ class AgentTools {
         $sv = $st['saved'] ?? null; $direct = false;
         if (!empty($ctx['orders_on']) && $sv && $name === $sv['name'] && $ph === $sv['phone'] && $addr === $sv['address'] && self::isConfirm((string)($ctx['last_msg_text'] ?? '')) && (int)($ctx['last_msg_id'] ?? 0) > 0) $direct = true;
         $st['pending'] = ['name'=>$name, 'phone'=>$ph, 'address'=>$addr, 'area'=>$area, 'note'=>mb_substr((string)($in['note'] ?? ''), 0, 300), 'cart'=>$st['cart'], 'total'=>$total, 'after_msg'=>$direct ? (int)$ctx['last_msg_id'] - 1 : (int)($ctx['last_msg_id'] ?? 0), 'at'=>time()];
-        if ($direct) return ['summary'=>['items'=>$c['items'], 'total_estimate'=>self::money($total), 'name'=>$name, 'phone'=>$ph, 'address'=>$addr], 'next'=>'The returning customer just asked to place the order, so that counts as his confirmation: call place_order NOW (same turn). Then tell him in your reply the invoice number, total and Cash on delivery.'];
+        if ($direct) return ['summary'=>['items'=>$c['items'], 'total_estimate'=>self::money($total), 'name'=>$name, 'phone'=>$ph, 'address'=>$addr], 'next'=>!empty($ctx['request_only']) ? 'The returning customer just asked to place the order, so that counts as his confirmation: call place_order NOW (same turn). It saves an order request for the staff; then say exactly what tell_customer says, with the total. No invoice number.' : 'The returning customer just asked to place the order, so that counts as his confirmation: call place_order NOW (same turn). Then tell him in your reply the invoice number, total and Cash on delivery.'];
         return ['summary'=>['items'=>$c['items'], 'subtotal'=>self::money($c['subtotal_raw']), 'delivery'=>self::money($ship), 'delivery_note'=>isset($dv) ? ($dv['reason'] ?: ($ship <= 0 ? 'No delivery charge' : $dv['zone'])) : null, 'automatic_discount'=>$disc > 0 ? self::money($disc).' ('.implode(', ', $dnotes).')' : 'none', 'all_discounts_for_this_customer'=>$avail, 'total_estimate'=>self::money($total), 'name'=>$name, 'phone'=>$ph, 'address'=>$addr, 'payment'=>'Cash on delivery'],
           'next'=>'Show this summary (items, delivery, every entry of all_discounts_for_this_customer with its saving and whether it is applied, and the exact total_estimate; never invent or add a discount that is not listed, never state a percentage) and ask the customer to confirm. Do NOT place the order until they clearly say yes.'];
       }
@@ -209,11 +209,12 @@ class AgentTools {
     if (!empty($ctx['sim'])) return ['simulated'=>true, 'message'=>'Simulation: all checks passed, no real order was created.'];
     [$ok, $why] = self::aiEligible((string)$p['phone'], (float)($p['total'] ?? 0));
     if ($ok && !empty($st['tobacco'])) [$ok, $why] = [false, 'cigarette/vape order: staff confirms before creating'];
+    if ($ok && !empty($ctx['request_only'])) [$ok, $why] = [false, 'AI prepares the order, staff creates it'];
     if (!$ok) {
       $rid = self::saveRequest($p, $st, $ctx, $why); AiMemory::event((int)($ctx['thread_id'] ?? 0), null, 'ai', 'order_request', null, ['request'=>$rid, 'why'=>$why, 'total'=>$p['total'] ?? 0]);
       $h = AgentHandoff::create($ctx, $st, 'order_request', 'Order Request #'.$rid.' (not placed: '.$why.'): '.$p['name'].' '.$p['phone'].', total '.self::money($p['total'] ?? 0).'. Review it in Messages > Order Requests.', 'normal');
       $st['cart'] = []; unset($st['pending']);
-      return ['request_saved'=>true, 'order_created'=>false, 'tell_customer'=>'আপনার অর্ডার রিকোয়েস্টটি পেয়েছি। আমাদের টিম যাচাই করে কনফার্ম করবে। (Say it is a request. Never say the order is placed or give an invoice number.)'] + $h;
+      return ['request_saved'=>true, 'order_created'=>false, 'tell_customer'=>'আপনার অর্ডারটি আমি রেডি করে দিয়েছি। আমাদের প্রতিনিধি আপনার অর্ডারটি কমপ্লিট করে দেবেন। (Say this. Never say the order is placed or confirmed, and never give an invoice number.)'] + $h;
     }
     $r = self::make($p, (int)($ctx['thread_id'] ?? 0), 'ai-'.($ctx['thread_id'] ?? 0).'-'.md5(json_encode($p['cart']).$p['phone'].(int)$p['after_msg']), 'AI Order', 'Claude AI', '[AI Chat]');
     if (empty($r['ok'])) return ['error'=>$r['error'].' - hand over to a human agent', 'handoff_required'=>true];

@@ -7,7 +7,7 @@ class AiAgent {
   const MAX_STEPS = 7;
   public static function on(): bool { return AiChat::chatOn() && Sms::secret('ai_agent_tools') === '1'; }
   public static function ordersOn(): bool { return Sms::secret('ai_agent_orders') === '1'; }
-  private static function system(array $st, bool $orders): string {
+  private static function system(array $st, bool $orders, bool $requestOnly = false): string {
     $call = Biz::hotline();
     $cart = !empty($st['cart']) ? 'CURRENT CART (ids and quantities, verified by the server): '.json_encode($st['cart']) : 'CART: empty';
     $vo = !empty($st['voice_in']) ? "\nVOICE: the customer's last message was spoken and transcribed by speech recognition, so it may contain mistakes (names, numbers, addresses, quantities, product names). Keep the reply short (1-3 simple sentences, easy to listen to). Before using a spoken phone number, address, quantity or product choice, read it back and ask the customer to confirm. Never ask the customer to say a password, OTP, card or bank detail aloud. Everything else (confirmation before any order, no invented prices/stock, hand-off to staff) works exactly as in typed chat." : '';
@@ -23,8 +23,9 @@ class AiAgent {
       ."OFFERS & DELIVERY: for any question about offers, deals, discounts, free delivery or delivery charge call current_offers and answer only from it (it is live; STORE FACTS can be a few minutes old). When the order summary is shown, state the delivery charge exactly as the tool returns it and say if delivery is free.\n"
       ."EVERY CUSTOMER MESSAGE: first call report_conversation (intent, mood, confidence), then use other tools if needed, then answer.\n"
       ."ORDER FLOW: find the product with search_products, cart_add, then ask for full name, mobile number, full address and area (1 inside Chattogram city, 2 outside). Call prepare_order, show the summary (items, delivery charge, total, Cash on delivery) and ask the customer to confirm. "
-      .($orders ? "Call place_order ONLY after the customer clearly says yes to the shown summary (the server re-checks). After it succeeds give the invoice number and say a team member will confirm shortly; never promise a delivery time.\n"
-        : "Order placing by the assistant is currently switched off: after the customer confirms the summary, call handoff_to_human with the full order details (items, name, phone, address, area) so a staff member places it, and tell the customer a team member will complete the order shortly.\n")
+      .($requestOnly ? "Call place_order ONLY after the customer clearly says yes to the shown summary (the server re-checks). It does NOT create the order: it saves an ORDER REQUEST for the staff, who create the real order. After it succeeds say exactly what tell_customer says; never give an invoice number, never say the order is placed or confirmed, never promise a delivery time.\n"
+        : ($orders ? "Call place_order ONLY after the customer clearly says yes to the shown summary (the server re-checks). After it succeeds give the invoice number and say a team member will confirm shortly; never promise a delivery time.\n"
+        : "Order placing by the assistant is currently switched off: after the customer confirms the summary, call handoff_to_human with the full order details (items, name, phone, address, area) so a staff member places it, and tell the customer a team member will complete the order shortly.\n"))
       ."ORDER STATUS: if a CUSTOMER ORDERS block is present (WhatsApp, verified by the system) answer from it directly, no invoice or phone needed; otherwise only with BOTH the invoice number and the phone used for the order (order_status). Never share anyone's personal data, saved addresses or internal notes. Never ask for passwords, OTP or card numbers.\n"
       ."ASKING FOR DETAILS: answer the customer's question first; never demand the mobile number just to give a price or information. For an order, look at the whole conversation and ask only for what is still missing; never ask again for something already given; if the customer cannot or will not type details, or wants to talk by phone, stop pressing and hand over to a team member (handoff_to_human). Payment account details (bKash / Nagad / bank) only when the customer asks how to pay that way, exactly as written in the knowledge base or payment options, never invented or changed; never confirm that money has been received (the team verifies). Never ask for OTP, PIN, password or card details. Cigarettes and vape: give price, stock and link, but do not take the order yourself; hand over to staff.\n"
       ."PHOTOS: if the customer sends a photo, look at it. If it clearly shows a product, brand or label, say what you see and call search_products to match it; if you are not sure what it is, say so and ask for the product name; never guess prices or stock. If it looks like a payment screenshot, receipt or proof of transfer, do not confirm any payment: thank them and call handoff_to_human so a team member verifies it. If it is a damaged or wrong item photo, call handoff_to_human. Never describe people in a photo. The photo may be a screenshot of a Facebook post or ad: read the product name, brand and price printed in it. A short follow-up such as 'price', 'দাম', 'koto', 'available?' right after a photo is about the product in that photo: identify it, call search_products with the brand and product words, and answer at once with the matching in-stock product name, price and link (up to 3). Do NOT greet and ask for the product name when the photo already shows it; when the customer sent only a photo, answer directly with what it is, the price, stock and link. Ask for the name only if search_products finds nothing close.\n"
@@ -53,12 +54,13 @@ class AiAgent {
     }
     while ($msgs && $msgs[0]['role'] !== 'user') array_shift($msgs);
     if (!$msgs || end($msgs)['role'] !== 'user') return [false, 'empty', []];
-    $ctx['orders_on'] = $ctx['orders_on'] ?? self::ordersOn(); $trace = []; $text = '';
+    // Owner rule (14 Nov 2026): with AI order placing switched off the AI still takes the order details and files an Order Request; a person creates the order.
+    $real = (bool)($ctx['orders_on'] ?? self::ordersOn()); $ctx['request_only'] = !$real; $ctx['orders_on'] = true; $trace = []; $text = '';
     $tools = AgentTools::schemas((bool)$ctx['orders_on']); $tools[count($tools) - 1]['cache_control'] = ['type'=>'ephemeral'];
     for ($step = 0; $step < self::MAX_STEPS; $step++) {
       try {
         $res = Http::withHeaders(['x-api-key'=>$key, 'anthropic-version'=>'2023-06-01'])->timeout(45)->post('https://api.anthropic.com/v1/messages',
-          ['model'=>AiChat::model(), 'max_tokens'=>500, 'thinking'=>['type'=>'disabled'], 'system'=>[['type'=>'text', 'text'=>self::system($st, (bool)$ctx['orders_on'])]], 'tools'=>$tools, 'messages'=>$msgs]);
+          ['model'=>AiChat::model(), 'max_tokens'=>500, 'thinking'=>['type'=>'disabled'], 'system'=>[['type'=>'text', 'text'=>self::system($st, true, (bool)$ctx['request_only'])]], 'tools'=>$tools, 'messages'=>$msgs]);
       } catch (\Throwable $e) { return [false, 'network', $trace]; }
       if (!$res->ok()) return [false, 'HTTP '.$res->status().' '.mb_substr((string)($res->json('error.message') ?? ''), 0, 160), $trace];
       $blocks = $res->json('content') ?? [];
