@@ -25,7 +25,7 @@ class ChatController extends Controller {
     elseif ($f === 'assigned') $q->where('assigned_to', auth()->id());
     elseif ($f === 'human') Chat::humanScope($q);
     elseif ($f === 'resolved') $q->where('status', 'resolved');
-    elseif ($f === 'report') $q->whereNotNull('reported_at')->where(fn($w) => $w->whereNull('report_solved_at')->orWhere('report_solved_at', '>=', now()->subDays(30)));
+    elseif ($f === 'report') $q->whereNotNull('reported_at')->whereNull('report_solved_at'); // open complaints only: a solved one leaves the box (it keeps its Complaint Solved tag in All History and in search)
     // Closed chats leave the working lists (All included); they stay in Closed, Complaint, All History and in every search.
     if ($f !== 'resolved' && $f !== 'report' && !$hist) $q->where('status', '!=', 'resolved');
     if (in_array($r->query('s'), array_keys(self::STATUSES))) $q->where('status', $r->query('s'));
