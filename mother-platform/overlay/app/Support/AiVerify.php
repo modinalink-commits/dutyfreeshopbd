@@ -257,6 +257,7 @@ class AiVerify {
       $v = DB::table('order_ai_verifications')->where('order_id', $orderId)->first();
       if (!$v || ($v->override_status ?: $v->verification_status) !== 'verified') return false;
       $o = DB::table('orders')->find($orderId); if (!$o || $o->status !== 'New' || !empty($o->duplicate_of_order_id)) return false;
+      if (!empty($o->approved_at)) return false; // already approved once and moved back by staff: it stays where they put it (owner rule 14 Nov 2026)
       if (DupGuard::block($o, 'Approved')) return false;
       if ($o->phone && in_array(CustomerBenefit::check((string)$o->phone)['status'], ['Suspended', 'Review Required'], true)) return false;
       $moved = DB::transaction(function () use ($o, $v) {

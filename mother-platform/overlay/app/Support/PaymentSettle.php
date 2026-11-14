@@ -10,12 +10,14 @@ use Illuminate\Support\Facades\DB;
 class PaymentSettle {
   /** Stages that may still be moved forward to Approved by a full payment (owner's rule: New, Pending, WFP, AI Order, Scheduled; Assign too). Pre Order / Incomplete are left alone. */
   const ELIGIBLE = ['New', 'Pending', 'WFP', 'Assign', 'AI Order', 'Scheduled'];
+  /** Statuses a verified payment may approve by itself. WFP and Scheduled are deliberate holds and are left alone (a schedule is approved by its own date). */
+  const AUTO = ['New', 'Pending', 'Assign', 'AI Order'];
 
   /** Safety net: any fully paid order still waiting in an early stage (paid before auto-approval existed, or verified through a path that did not call apply()) is settled now. Throttled to once every 2 minutes. */
   public static function auto(): void { if (\Illuminate\Support\Facades\Cache::add('shurjopay.verify.sweep', 1, 60)) { try { \App\Http\Controllers\ShurjoPayController::sweep(5); } catch (\Throwable $e) { report($e); } } if (\Illuminate\Support\Facades\Cache::add('payment.settle.sweep', 1, 120)) { try { self::sweep(); } catch (\Throwable $e) { report($e); } } }
   public static function sweep(int $limit = 300): int { $was = OrderActivity::$system; OrderActivity::$system = true; try { return self::sweepRun($limit); } finally { OrderActivity::$system = $was; } }
   private static function sweepRun(int $limit): int {
-    $ids = DB::table('orders')->whereIn('status', self::ELIGIBLE)->whereNull('duplicate_of_order_id')
+    $ids = DB::table('orders')->whereIn('status', self::AUTO)->whereNull('approved_at')->whereNull('duplicate_of_order_id')
       ->where(fn($q) => $q->where('pay_status', 'Verified')->orWhere('payment_status', 'Paid')->orWhereExists(fn($x) => $x->select(DB::raw(1))->from('order_payments as p')->whereColumn('p.order_id', 'orders.id')->where('p.status', 'verified')))
       ->orderBy('id')->limit($limit)->pluck('id'); $n = 0;
     foreach ($ids as $id) if (self::apply((int)$id, 'Payment check (automatic)')) $n++;
@@ -32,7 +34,8 @@ class PaymentSettle {
       $paid = (float)$o->paid_total; $total = (float)$o->total; $due = max(0, round($total - $paid, 2));
       $changed = (float)$before->paid_total !== $paid || (string)$before->payment_status !== (string)$o->payment_status;
       $moved = null;
-      if ($o->payment_status === 'Paid' && in_array($o->status, self::ELIGIBLE, true) && empty($o->duplicate_of_order_id) && !DupGuard::block($o, 'Approved')) {
+      // Owner rule (14 Nov 2026): an order a person placed on hold stays there. Waiting for Product and Scheduled are never auto-approved by a payment, and an order that was already approved once and then moved out by staff is not approved again by itself.
+      if ($o->payment_status === 'Paid' && in_array($o->status, self::AUTO, true) && empty($o->approved_at) && empty($o->duplicate_of_order_id) && !DupGuard::block($o, 'Approved')) {
         $moved = DB::transaction(function () use ($o, $source, $paid) {
           $c = DB::table('orders')->where('id', $o->id)->where('status', $o->status)->update(['status' => 'Approved', 'approved_at' => now(), 'auto_approved' => true, 'updated_at' => now()]);
           if (!$c) return null; // someone changed it meanwhile; never override
