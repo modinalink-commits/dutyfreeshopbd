@@ -61,6 +61,7 @@ class PathaoStatusSync {
       return;
     }
     if ($action === 'returned') {
+      if (in_array((string)$id, array_map('trim', explode(',', (string)(DB::table('settings')->where('key', 'return_auto_hold')->value('value') ?? ''))), true)) return;   // held by the owner for a manual receive test
       if ($o->status === 'Return Pending' && $o->return_type === 'Partial') return;
       if (in_array($o->status, ['Shipment', 'Late Delivery'], true) && !$known) { $all = []; foreach ($items as $x) $all[$x->id] = (int)$x->qty; ShipmentOutcome::save($id, $all, 'Pathao: whole parcel returned (auto)'); }
       $o2 = DB::table('orders')->find($id);
