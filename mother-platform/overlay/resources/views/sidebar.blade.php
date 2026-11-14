@@ -23,7 +23,8 @@ if ($left) $G[count($G)-1][2] = array_merge($G[count($G)-1][2], $left);
 $cur = '/'.trim(request()->path(), '/'); foreach ([['/admin/purchase/new','/admin/purchase/invoices'],['/admin/purchase/edit','/admin/purchase/invoices'],['/admin/purchase/ledger','/admin/purchase/suppliers'],['/admin/purchase/payments','/admin/purchase/dues'],['/admin/purchase/returns','/admin/purchase/damages'],['/admin/purchase/notes','/admin/purchase'],['/admin/purchase/audit','/admin/purchase'],['/admin/purchase/settings','/admin/purchase'],['/admin/purchase/reports','/admin/purchase']] as [$pa,$pb]) if ($cur === $pa || str_starts_with($cur, $pa.'/')) { $cur = $pb; break; } $best = null; $bl = 0;
 foreach ($G as $gi => $g) foreach ($g[2] as $ii => $it) { $h = $it[1]; if (($cur === $h || str_starts_with($cur, $h.'/')) && strlen($h) >= $bl) { $best = $gi.'.'.$ii; $bl = strlen($h); } }
 $P = \App\Http\Middleware\ModulePermission::class;
-$ok = fn($h) => $P::can(auth()->user(), $P::moduleFor(ltrim($h,'/')), 'view');
+$adm = \App\Support\ProfitFloor::admin(); $admOnly = ['/admin/call-center/board'=>1, '/admin/call-center/review'=>1]; // these two pages already refuse staff, so the links are hidden from them too
+$ok = fn($h) => (empty($admOnly[$h]) || $adm) && $P::can(auth()->user(), $P::moduleFor(ltrim($h,'/')), 'view');
 $an = request()->is('admin/analytics*'); $aslug = request()->route('slug'); $agrp = $aslug ? \App\Support\Analytics::groupOf($aslug) : 'overview';
 $canRep = $P::can(auth()->user(), 'reports', 'view');
 $stores = (int)\Illuminate\Support\Facades\Cache::remember('sb.stores.v1', 300, fn() => \DB::table('stores')->where('active',true)->count());
