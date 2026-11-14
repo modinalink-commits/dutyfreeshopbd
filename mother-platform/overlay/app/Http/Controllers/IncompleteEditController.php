@@ -114,7 +114,9 @@ class IncompleteEditController extends Controller {
     if ($r->status === 'converted') return redirect('/admin/incomplete/'.$id)->with('bad', 'Already converted to an order.');
     DB::table('incomplete_orders')->where('id', $id)->update(['status'=>$map[$to], 'updated_at'=>now()]);
     $this->log((int)$id, 'status', $r->status, $map[$to], 'Status: '.$r->status.' -> '.$map[$to].($note !== '' ? ' - '.$note : ''));
-    return redirect('/admin/incomplete/'.$id)->with('ok', 'Status set to '.$to.'.');
+    $msg = $map[$to] === 'archived' ? 'Checkout cancelled. It is now under the Cancelled tab.' : 'Status set to '.$to.'.';
+    if ($map[$to] === 'archived' && $req->input('go') === 'list') return redirect('/admin/orders?status=Incomplete')->with('ok', $msg);
+    return redirect('/admin/incomplete/'.$id)->with('ok', $msg);
   }
   public function comment(Request $req, $id) {
     $r = $this->load($id); $b = mb_substr(trim((string)$req->input('body')), 0, 2000); if ($b === '') return redirect('/admin/incomplete/'.$id)->with('bad', 'Write the note first.');

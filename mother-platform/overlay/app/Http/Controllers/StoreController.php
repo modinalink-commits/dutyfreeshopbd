@@ -614,7 +614,9 @@ class StoreController extends Controller {
     $phone = substr(preg_replace('/\D/', '', (string)($in['phone'] ?? '')), -11);
     $row = DB::table('incomplete_orders')->where('token', $tok)->orderByDesc('id')->first();
     if ($row && $row->status === 'converted') return response()->json(['ok'=>true, 'done'=>true]);
+    if ($row && $row->status === 'archived') return response()->json(['ok'=>true, 'done'=>true]); // cancelled by staff: stays cancelled, the customer's open tab must not reopen it
     if (!preg_match('/^01\d{9}$/', $phone)) return response()->json(['ok'=>false]);
+    if (!$row && DB::table('incomplete_orders')->where('phone', $phone)->where('status', 'archived')->where('updated_at', '>=', now()->subHours(12))->exists()) return response()->json(['ok'=>true]); // just cancelled for this number: a page reload does not bring it back
     if (DB::table('customers')->where('phone', $phone)->where('blocked', true)->exists()) return response()->json(['ok'=>false]); // blocked by phone, never by shared IP
     $want = $this->parseItems($in['items'] ?? ''); if (!$want) return response()->json(['ok'=>false]);
     $area = (int)($in['area'] ?? 1); $sp = \App\Support\OrderDiscount::sessionPhone($r);

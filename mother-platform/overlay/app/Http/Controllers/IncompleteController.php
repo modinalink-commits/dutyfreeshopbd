@@ -100,8 +100,11 @@ class IncompleteController extends Controller {
     $ids = array_values(array_filter(array_map('intval', (array)$r->input('iids', [])))); $to = (string)$r->input('to');
     $map = ['open'=>'open', 'recovered'=>'recovered', 'archived'=>'archived'];
     if (!$ids || !isset($map[$to])) return redirect('/admin/orders?status=Incomplete')->with('bad', 'Select at least one entry and a status first.');
-    $n = DB::table('incomplete_orders')->whereIn('id', $ids)->where('status', '<>', 'converted')->update(['status'=>$map[$to], 'updated_at'=>now()]);
-    return redirect('/admin/orders?status=Incomplete&hl=1')->with('ok', $n.' entr'.($n === 1 ? 'y' : 'ies').' set to '.ucfirst($to).'.');
+    $rows = DB::table('incomplete_orders')->whereIn('id', $ids)->where('status', '<>', 'converted')->where('status', '<>', $map[$to])->get(['id', 'status']);
+    $n = DB::table('incomplete_orders')->whereIn('id', $rows->pluck('id'))->update(['status'=>$map[$to], 'updated_at'=>now()]);
+    try { foreach ($rows as $x) DB::table('incomplete_activity')->insert(['incomplete_id'=>$x->id, 'user_id'=>\Illuminate\Support\Facades\Auth::id(), 'user_name'=>\Illuminate\Support\Facades\Auth::user()->name ?? null, 'kind'=>'status', 'old_value'=>$x->status, 'new_value'=>$map[$to], 'body'=>'Status: '.$x->status.' -> '.$map[$to].' (bulk)', 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {}
+    $lab = ['open'=>'Open', 'recovered'=>'Recovered', 'archived'=>'Cancelled'][$to];
+    return redirect('/admin/orders?status=Incomplete&hl=1')->with('ok', $n.' entr'.($n === 1 ? 'y' : 'ies').' set to '.$lab.'.');
   }
   public function act(Request $r, $id, $act) {
     abort_unless(in_array($act, ['recovered','archive','reopen'], true), 404);
