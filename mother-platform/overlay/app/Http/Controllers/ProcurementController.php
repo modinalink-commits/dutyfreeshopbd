@@ -258,6 +258,8 @@ class ProcurementController extends Controller {
           $px = ['price_update_status'=>'pending'] + $px; $px += ['old_selling_rate'=>$cur,'new_selling_rate'=>$nr,'min_safe_snapshot'=>$min ?: null,'expected_margin_snapshot'=>$cost > 0 ? round(($nr-$cost)/$cost*100,2) : null,'price_update_status'=>'pending']; } }
       $items[] = $px + ['product_id'=>(int)($i['product_id'] ?? 0) ?: null,'name'=>mb_substr(trim($i['name']),0,250),'sku'=>$i['sku'] ?? null,'barcode'=>$i['barcode'] ?? null,'qty'=>$qty,'cost'=>$cost,'discount'=>$dis,'tax'=>$tax,'batch'=>$i['batch'] ?? null,'expiry'=>($i['expiry'] ?? '') ?: null,'damage_qty'=>min($qty,max(0,(int)($i['damage_qty'] ?? 0))),'line_total'=>round($qty*$cost-$dis+$tax,2)]; }
     if (!$items) return back()->withInput()->with('bad','Add at least one product with a quantity.');
+    // Owner rule 15 Nov 2026: a Single Packet can never be purchased or stocked in; its stock comes only from a received partial return.
+    try { $tp = array_values(array_filter(array_column($items, 'product_id'))); if ($tp && \App\Support\ProfitFloor::hasTwin() && DB::table('products')->whereIn('id', $tp)->whereNotNull('parent_product_id')->exists()) return back()->withInput()->with('bad','Single Packet cannot be purchased or stocked in. Its stock comes only from a received partial return.'); } catch (\Throwable $e) {}
     $sub = array_sum(array_map(fn($x) => $x['qty']*$x['cost'], $items)); $idis = array_sum(array_column($items,'discount')); $tax = array_sum(array_column($items,'tax'));
     $edis = (float)$r->input('extra_discount',0); $tr = (float)$r->input('transport',0); $oc = (float)$r->input('other_cost',0); $total = round($sub-$idis-$edis+$tax+$tr+$oc,2);
     $sid = (int)$r->supplier_id; $s = DB::table('suppliers')->find($sid); if (!$s) return back()->withInput()->with('bad','Select a supplier.');
@@ -421,7 +423,7 @@ class ProcurementController extends Controller {
   // ---------------- JSON helpers for the forms ----------------
   public function apiProducts(Request $r) {
     $q = trim((string)$r->input('q')); if ($q === '') return response()->json([]);
-    $x = DB::table('products')->where(fn($w) => $w->where('barcode',$q)->orWhere('sku',$q)->orWhere('name','ilike','%'.$q.'%')->orWhere('sku','ilike','%'.$q.'%')->orWhere('barcode','ilike','%'.$q.'%')->orWhere(fn($z) => \App\Support\SkuSearch::orSku($z, $q)))->orderByRaw('(barcode = ? or sku = ?) desc',[$q,$q])->limit(15)->get(['id','name','sku','barcode','cost','stock','price','image']);
+    $x = DB::table('products')->when(\App\Support\ProfitFloor::hasTwin(), fn($t) => $t->whereNull('parent_product_id'))->where(fn($w) => $w->where('barcode',$q)->orWhere('sku',$q)->orWhere('name','ilike','%'.$q.'%')->orWhere('sku','ilike','%'.$q.'%')->orWhere('barcode','ilike','%'.$q.'%')->orWhere(fn($z) => \App\Support\SkuSearch::orSku($z, $q)))->orderByRaw('(barcode = ? or sku = ?) desc',[$q,$q])->limit(15)->get(['id','name','sku','barcode','cost','stock','price','image']);
     return response()->json($x);
   }
   public function apiNewProduct(Request $r) {
