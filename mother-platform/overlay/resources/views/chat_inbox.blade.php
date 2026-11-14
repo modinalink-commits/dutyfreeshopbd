@@ -175,8 +175,8 @@ main{padding-top:6px!important;padding-bottom:6px!important}
 </div>
 <div class="fbar" id="ibfb"><div class="fr" id="ibf1"></div><div id="ibsh" hidden></div><div class="fr" id="ibf2"></div></div>
 <button type="button" id="ibback">← All conversations</button>
-<div class="mbx" id="ibx"><div class="ls"><div class="stk"><div class="tp"><button type="button" id="iball">← All conversations</button></div><div class="sq" style="padding-top:9px"><input id="ibq" type="search" placeholder="Search name, mobile, invoice (Ctrl K)"></div></div><div class="lt" id="ibl"></div></div>
-<div class="cv" id="ibc"><div class="emp" style="margin:auto">Select a conversation to read and reply.<br>New messages appear here and as a popup anywhere in the dashboard.</div></div></div>
+<div class="mbx" id="ibx"><div class="ls"><div class="stk"><div class="tp"><button type="button" id="iball">← All conversations</button></div><div class="sq" style="padding-top:9px"><input id="ibq" type="search" placeholder="Search name, mobile, invoice (Ctrl K)"></div></div><div class="lt" id="ibl" data-keep></div></div>
+<div class="cv" id="ibc" data-keep><div class="emp" style="margin:auto">Select a conversation to read and reply.<br>New messages appear here and as a popup anywhere in the dashboard.</div></div></div>
 @endsection
 @section('js')
 @verbatim
