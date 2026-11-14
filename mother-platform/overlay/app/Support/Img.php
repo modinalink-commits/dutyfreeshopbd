@@ -155,7 +155,7 @@ class Img {
         // A photo that the first run shrank IN PLACE is light on the server, but the CDN still serves the old heavy copy under the same address: it only needs the new file name.
         $stale = !preg_match('/-r\d{9,}\./', $f) && ($korig[$rel] ?? 0) > 150 * 1024 && ($korig[$rel] ?? 0) > $size * 1.3;
         // Same case when the earlier size was never recorded: a light photo changed in the last 30 days (the CDN keeps a copy that long) that a product still shows under its old name.
-        if (!$stale && !preg_match('/-r\d{9,}\./', $f) && $size > 0 && $size <= 400 * 1024 && isset($used['/uploads/'.$rel]) && (int)@filemtime($abs) > time() - 30 * 86400) $stale = true;
+        if (!$stale && !preg_match('/-r\d{9,}\./', $f) && $size > 0 && $size <= 600 * 1024 && isset($used['/uploads/'.$rel]) && (int)@filemtime($abs) > time() - 30 * 86400) $stale = true;
         if (!$stale) {
           if ($size <= 150 * 1024) continue;                                                // already light: nothing to gain
           if (isset($known[$rel]) && $size <= max(1, (int)$known[$rel]) * 1.3) continue;   // already done and not replaced by a bigger file
