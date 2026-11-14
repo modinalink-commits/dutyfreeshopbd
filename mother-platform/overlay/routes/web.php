@@ -10,6 +10,7 @@ use App\Http\Controllers\SiteController as S;
 Route::get('/admin/login', [A::class,'loginForm'])->name('login');
 Route::post('/admin/login', [A::class,'login'])->middleware('throttle:10,1');
 Route::post('/admin/logout', [A::class,'logout']);
+Route::get('/pl/{token}', [\App\Http\Controllers\PurchaseListController::class,'open'])->where('token', '[0-9a-f]{40}')->middleware('throttle:30,1');
 Route::get('/login', fn() => redirect('/admin/login'));
 Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Http\Middleware\PerfProbe::class, \App\Http\Middleware\OrderActivityMw::class, \App\Http\Middleware\StaffIdleMw::class])->prefix('admin')->group(function () {
   $SI = \App\Http\Controllers\StaffIdleController::class;
@@ -399,6 +400,9 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/app-rewards', [\App\Http\Controllers\AppRewardController::class,'index']); Route::post('/app-rewards/settings', [\App\Http\Controllers\AppRewardController::class,'save']);
   Route::get('/referral', [\App\Http\Controllers\ReferralController::class,'index']); Route::post('/referral/settings', [\App\Http\Controllers\ReferralController::class,'save']);
   Route::prefix('purchase')->group(function () {
+    $PL = \App\Http\Controllers\PurchaseListController::class;
+    Route::get('/daily-list', [$PL,'index']); Route::get('/daily-list/pdf', [$PL,'download']); Route::post('/daily-list/settings', [$PL,'save']);
+    Route::post('/daily-list/submit', [$PL,'submit']); Route::post('/daily-list/sync', [$PL,'sync']); Route::post('/daily-list/send', [$PL,'send'])->middleware('throttle:6,1');
     $C = \App\Http\Controllers\ProcurementController::class;
     Route::get('/', [$C,'dashboard']);
     Route::get('/new', [$C,'form']); Route::get('/edit/{id}', [$C,'form'])->whereNumber('id'); Route::post('/save', [$C,'save']);
