@@ -153,6 +153,18 @@ $qs = fn($extra = []) => http_build_query(array_filter(array_merge(['store'=>$st
 @endforeach
 </section>
 
+@if(!empty($apprCard))
+<section class="dx-appr" id="dxappr">
+@php $aiN = $apprCard['AI']['n'] ?? 0; $mnN = $apprCard['MANUAL']['n'] ?? 0; $tot = max(1, $aiN + $mnN); @endphp
+<a href="/admin/orders" class="card" style="display:block;padding:10px 14px;text-decoration:none;color:inherit"><div style="display:flex;flex-wrap:wrap;gap:6px 22px;align-items:center;font-size:12.5px">
+<strong style="font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:#6B7280">Approval source · {{ $label }}</strong>
+@foreach([['AI','AI approved',$apprCard['AI'] ?? null],['MANUAL','Manual approved',$apprCard['MANUAL'] ?? null]] as [$k,$nm,$a])
+<span><b>{{ $nm }}</b> {{ $a['n'] ?? 0 }} <span style="color:#6B7280">({{ round(($a['n'] ?? 0)/$tot*100) }}%)</span> · delivered {{ $a['d'] ?? 0 }} · returned {{ $a['r'] ?? 0 }} · cancelled {{ $a['c'] ?? 0 }}</span>
+@endforeach
+</div></a>
+</section>
+@endif
+
 <section class="dx-2">
   <div class="card">
     <div class="head"><h2>Sales &amp; Orders Trend · {{ $nT }} days</h2>

@@ -158,7 +158,14 @@ class AdminController extends Controller {
     $safe(function () use (&$feed) { if (\Illuminate\Support\Facades\Schema::hasTable('call_logs')) foreach (DB::table('call_logs')->orderByDesc('id')->limit(3)->get() as $c) $feed->push(['call', ucfirst($c->direction).' call · '.($c->customer_name ?: $c->phone).' · '.$c->status, $c->started_at ?? $c->created_at, '/admin/call-center/history']); });
     $feed = $feed->filter(fn($e) => $e[2])->sortByDesc(fn($e) => \Carbon\Carbon::parse($e[2])->timestamp)->take(10)->values()->map(fn($e) => [$e[0], $e[1], \Carbon\Carbon::parse($e[2])->timezone($tz)->diffForHumans(), \Carbon\Carbon::parse($e[2])->timezone($tz)->format('d M Y, h:i A'), $e[3]]);
     $storeList = $safe(fn() => DB::table('stores')->where('active',true)->orderBy('name')->get(['id','name']), collect());
-    return view('dashboard', compact('pipe5','pipeAct','ch','channels','topCust','storePerf','now','kpis','stores','max','counts','orders','bad','alerts','health','range','label','trend','topProducts','cats','couriers','chatUnread','goal','cust','cov','calls','risk','feed','storeList','storeId','canFin','prev','f','incOpen','newN','stale') + ['isCustom'=>$range === 'custom']);
+    // Approval source split (AI vs Manual) for the selected period: how many orders each approved, and how they ended
+    $apprCard = $safe(function () use ($c60, $f) { if (!\App\Support\ApprovalSource::ready()) return [];
+      return $c60('appr', [$f['from'], $f['to'], $f['stores'] ?? []], function () use ($f) {
+        $q = DB::table('orders')->whereNotNull('approval_source')->whereBetween('created_at', [$f['from'].' 00:00:00', $f['to'].' 23:59:59']);
+        if (!empty($f['stores'])) $q->whereIn('store_id', $f['stores']);
+        $out = []; foreach ($q->selectRaw("approval_source s, count(*) n, sum(case when status in ('Delivered','Partial Delivered') then 1 else 0 end) d, sum(case when status in ('Returned','Return Pending','Partial Returned') then 1 else 0 end) r, sum(case when status='Cancelled' then 1 else 0 end) c")->groupBy('approval_source')->get() as $r) $out[$r->s] = ['n'=>(int)$r->n, 'd'=>(int)$r->d, 'r'=>(int)$r->r, 'c'=>(int)$r->c];
+        return $out; }); });
+    return view('dashboard', compact('pipe5','pipeAct','ch','channels','topCust','storePerf','now','kpis','stores','max','counts','orders','bad','alerts','health','range','label','trend','topProducts','cats','couriers','chatUnread','goal','cust','cov','calls','risk','feed','storeList','storeId','canFin','prev','f','incOpen','newN','stale','apprCard') + ['isCustom'=>$range === 'custom']);
   }
   public function orders(Request $r) { \App\Support\CourierSync::auto(); \App\Support\LateDelivery::auto(); \App\Support\PaymentSettle::auto();
     $isInc = $r->input('status') === 'Incomplete'; $q = DB::table('orders'); $q->orderByDesc('created_at')->orderByDesc('id'); // strict chronological: no batch/status/invoice-match priority
