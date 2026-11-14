@@ -167,7 +167,7 @@ class AdminController extends Controller {
         return $out; }); });
     return view('dashboard', compact('pipe5','pipeAct','ch','channels','topCust','storePerf','now','kpis','stores','max','counts','orders','bad','alerts','health','range','label','trend','topProducts','cats','couriers','chatUnread','goal','cust','cov','calls','risk','feed','storeList','storeId','canFin','prev','f','incOpen','newN','stale','apprCard') + ['isCustom'=>$range === 'custom']);
   }
-  public function orders(Request $r) { \App\Support\CourierSync::auto(); \App\Support\LateDelivery::auto(); \App\Support\PaymentSettle::auto();
+  public function orders(Request $r) { \App\Support\CourierSync::auto(); app()->terminating(function () { try { \App\Support\LateDelivery::auto(); } catch (\Throwable $e) { report($e); } try { \App\Support\PaymentSettle::auto(); } catch (\Throwable $e) { report($e); } }); // background sweeps run AFTER the page is sent, so nobody waits for them
     $isInc = $r->input('status') === 'Incomplete'; $q = DB::table('orders'); $q->orderByDesc('created_at')->orderByDesc('id'); // strict chronological: no batch/status/invoice-match priority
     if ($isInc) $q->whereRaw('1 = 0'); elseif ($r->input('status') === 'AI Approve') { $q->where('status', 'New')->whereExists(fn($x) => $x->select(DB::raw(1))->from('order_ai_verifications as av')->whereColumn('av.order_id', 'orders.id')->whereRaw("coalesce(av.override_status, av.verification_status) = 'verified'")); } elseif ($r->filled('status')) { $sts = array_filter(array_map('trim', explode(',', (string)$r->status))); count($sts) > 1 ? $q->whereIn('status', $sts) : $q->where('status', $r->status); }
     if ($r->filled('q')) \App\Support\OrderSearch::apply($q, (string)$r->q);
