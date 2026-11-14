@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Schema;
 
 /** Single Packet twins. Every normal product P gets a twin "Single Packet <P name>" in Cigarette & Vape > Single Packet.
  *  Twin: own SKU (<sku>-SP), same image, price and cost = carton / pack_size (10), own stock counted in packets, delivery charge always applies (existing section override).
+ *  A twin starts INACTIVE (unpublished, stock 0). When a loose packet comes back and the return is received, the stock-in publishes it automatically (existing stock-in publish rule, products_stock_publish).
  *  Automatic creation for new products is switched on only after the owner has approved the bulk run (setting single_packet_auto = 1). */
 class SinglePacket {
   const SUB = 'Single Packet';
@@ -74,7 +75,7 @@ class SinglePacket {
     $slug = Slugs::slug($f['name']) ?: 'single-packet'; $s = $slug; $i = 2;
     while (DB::table('products')->where('category_id', $cat)->whereRaw(Slugs::subSql().' = ?', [Slugs::subSlug(self::SUB)])->where('path_slug', $s)->exists()) $s = $slug.'-'.$i++;
     $row = $f + ['sku' => $sku, 'category_id' => $cat, 'sub' => self::SUB, 'sub_sub' => $mainName ?: null, 'parent_product_id' => $pid, 'stock' => 0,
-      'stock_status' => 'out_of_stock', 'published' => (bool)$p->published, 'slug' => $slug, 'path_slug' => $s, 'meta_title' => $f['name'], 'created_at' => now()];
+      'stock_status' => 'out_of_stock', 'published' => false, 'manual_unpublish_lock' => false, 'slug' => $slug, 'path_slug' => $s, 'meta_title' => $f['name'], 'created_at' => now()];
     $row = array_intersect_key($row, array_flip($c));
     $nid = DB::table('products')->insertGetId($row);
     if ($p->image && Schema::hasTable('product_images')) DB::table('product_images')->insert(['product_id' => $nid, 'path' => $p->image, 'position' => 0, 'created_at' => now(), 'updated_at' => now()]);
