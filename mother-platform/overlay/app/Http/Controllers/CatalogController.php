@@ -143,6 +143,7 @@ class CatalogController extends Controller {
       $was = $old ? (bool)$old->published : false;
       if ($pub !== $was) DB::table('product_status_logs')->insert(['product_id'=>$id, 'user_id'=>Auth::id(), 'user_name'=>Auth::user()->name, 'action'=>$pub ? 'Published' : 'Unpublished', 'created_at'=>now(), 'updated_at'=>now()]);
     });
+    try { if (\App\Support\SinglePacket::auto()) \App\Support\SinglePacket::sync((int)$id); } catch (\Throwable $e) {} // Single Packet twin follows the carton product
     try { if ($bpOn) { \App\Support\BundlePricing::sync([(int)$id]); if ($old && $bpOld !== $bpRule) \App\Support\ProfitFloor::audit('Bundle rule changed', 'Product '.$row['name'], ['rule'=>$bpOld], ['rule'=>$bpRule, 'by'=>Auth::user()->name ?? null]); } } catch (\Throwable $e) { report($e); }
     try { if ($old && (int)$old->stock !== (int)$row['stock']) { $d0 = \App\Support\Costing::sync((int)$id); if ($d0 !== 0) \App\Support\Procure::audit('costing.manual_adjustment', 'Manual stock edit: '.$row['name'], ['stock'=>(int)$old->stock], ['stock'=>(int)$row['stock'], 'batches_adjusted'=>$d0, 'by'=>Auth::user()->name ?? null]); } elseif (!$old && (int)$row['stock'] > 0) \App\Support\Costing::sync((int)$id); } catch (\Throwable $e) { report($e); }
     if (!$old && $r->filled('ai_scan')) { try {

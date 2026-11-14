@@ -36,7 +36,7 @@ class ModulePermission {
     if (str_starts_with($p, 'staff-log') || str_starts_with($p, 'staff-tracking')) return 'stafflog';
     if (preg_match('#^clearance#', $p)) return 'costs'; // clearance shows purchase cost
     if (preg_match('#^inventory-pricing#', $p)) return 'costs'; // purchase / average price and profit: only roles given this permission (Admin always)
-    if (preg_match('#^(products|product-order|taxonomy|categories|brands|inventory|image-audit)#', $p)) return 'products';
+    if (preg_match('#^(products|product-order|taxonomy|categories|brands|inventory|image-audit|single-packets)#', $p)) return 'products';
     if (preg_match('#^(discounts|coupons|deals|payment-methods)#', $p)) return 'marketing';
     if (preg_match('#^(reports|modules|report-details|analytics|report-center)#', $p)) return 'reports';
     // Report pages that sit in the Reports & Analytics menu but used to fall through to the catch-all 'users' permission. Pages only: the AI Brief run/settings actions stay admin-level.
