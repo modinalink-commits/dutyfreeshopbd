@@ -178,6 +178,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/chat/thread/{id}/photo-test', [\App\Http\Controllers\ChatController::class,'photoTest']);
   Route::post('/chat/polish', [\App\Http\Controllers\ChatController::class,'polish'])->middleware('throttle:60,1');
   Route::post('/chat/thread/{id}/note', [\App\Http\Controllers\ChatController::class,'note'])->whereNumber('id')->middleware('throttle:60,1');
+  Route::get('/back-in-store-sms', [\App\Http\Controllers\PublishNoticeController::class,'index']); Route::post('/back-in-store-sms', [\App\Http\Controllers\PublishNoticeController::class,'save']);
   Route::get('/best-sellers', [\App\Http\Controllers\BestSellerController::class,'index']); Route::post('/best-sellers', [\App\Http\Controllers\BestSellerController::class,'save']);
   Route::get('/my-day', [\App\Http\Controllers\StaffDayController::class,'index']); Route::get('/my-day/notices', [\App\Http\Controllers\StaffDayController::class,'notices']); Route::post('/my-day/notices/seen', [\App\Http\Controllers\StaffDayController::class,'seen'])->middleware('throttle:60,1');
   Route::post('/chat/thread/{id}/draft', [\App\Http\Controllers\ChatController::class,'draft'])->whereNumber('id')->middleware('throttle:20,1');

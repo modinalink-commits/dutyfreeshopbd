@@ -28,6 +28,7 @@ class MotherPushWorker extends Command
     try { \App\Support\Chat::closeIdleTick(); } catch (\Throwable $e) { $this->error('chatclose: ' . $e->getMessage()); }
     try { \App\Support\Chat::backlogTick(); } catch (\Throwable $e) { $this->error('chatbacklog: ' . $e->getMessage()); }
     try { \App\Support\Chat::staleTick(); } catch (\Throwable $e) { $this->error('chatstale: ' . $e->getMessage()); }
+    try { \App\Support\PublishNotice::tick(); } catch (\Throwable $e) { $this->error('pubsms: ' . $e->getMessage()); }
     try { \App\Support\BestSellerStock::tick(); } catch (\Throwable $e) { $this->error('bs-stock: ' . $e->getMessage()); }
     try { \App\Support\AutoPrice::tick(); } catch (\Throwable $e) { $this->error('autoprice: ' . $e->getMessage()); }
     try { \App\Support\Chat::closeSilentTick(); } catch (\Throwable $e) { $this->error('chatsilent: ' . $e->getMessage()); }
