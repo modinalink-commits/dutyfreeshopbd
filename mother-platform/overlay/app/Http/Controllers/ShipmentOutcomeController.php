@@ -15,8 +15,8 @@ class ShipmentOutcomeController extends Controller {
   }
   public function receive(Request $r, $id) {
     if (!$this->allowed()) return $this->deny();
-    $d = $r->validate(['back'=>'nullable|array', 'back.*'=>'nullable|integer|min:0|max:100000']);
-    [$ok, $m, $st] = SO::receive((int)$id, array_map('intval', $d['back'] ?? []));
+    $d = $r->validate(['back'=>'nullable|array', 'back.*'=>'nullable|integer|min:0|max:100000', 'packets'=>'nullable|array', 'packets.*'=>'nullable|integer|min:0|max:100000']);
+    [$ok, $m, $st] = SO::receive((int)$id, array_map('intval', $d['back'] ?? []), array_map('intval', $d['packets'] ?? []));
     return response()->json(['success'=>$ok, 'message'=>$m, 'status'=>$st]);
   }
   public function complete(Request $r, $id) {

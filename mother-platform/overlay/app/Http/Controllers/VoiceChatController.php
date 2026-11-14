@@ -99,7 +99,9 @@ class VoiceChatController extends Controller
     $name = 'v-' . date('ymd') . '-' . bin2hex(random_bytes(8)) . '.' . $fmt; @file_put_contents($dir . '/' . $name, $bytes);
     $url = url('/uploads/chat/' . $name);
     $text = '';
-    if (VoiceChat::ready()) { [$tx, $err, $dl] = VoiceChat::transcribe($bytes, (int)$t->id); if ($tx !== null) $text = mb_substr(trim(strip_tags($tx)), 0, 1000); }   // untrusted, exactly like typed text
+    $dl = null;
+    if (VoiceChat::set('enabled') === '1' && VoiceChat::scribeKey()) { [$tx] = VoiceChat::scribe($bytes, (int)$t->id, $fmt); if ($tx !== null && trim($tx) !== '') $text = mb_substr(trim(strip_tags($tx)), 0, 1000); }   // ElevenLabs first
+    if ($text === '' && VoiceChat::ready()) { [$tx, $err, $dl] = VoiceChat::transcribe($bytes, (int)$t->id); if ($tx !== null) $text = mb_substr(trim(strip_tags($tx)), 0, 1000); }   // Google as the fallback   // untrusted, exactly like typed text
     $th = Chat::ingest('web', $tok, null, $text, $url, null, ['att_type' => 'audio']);
     $m = DB::table('chat_messages')->where('thread_id', $t->id)->where('dir', 'in')->orderByDesc('id')->first(['id', 'created_at']);
     if ($m) DB::table('chat_messages')->where('id', $m->id)->update(['input_type' => 'voice', 'transcript' => $text !== '' ? $text : null, 'detected_language' => $dl ?? null, 'metadata' => json_encode(['duration' => round($dur, 1), 'bytes' => strlen($bytes)])]);

@@ -98,7 +98,7 @@ class ShipmentOutcome {
    * $back = [order_item_id => quantity physically received] (default: everything that was expected). Stock goes up by exactly that, once.
    * Return Pending -> Returned A partial return restores only the returning items.
    */
-  public static function receive(int $orderId, array $back = []): array {
+  public static function receive(int $orderId, array $back = [], array $packets = []): array {
     $o = DB::table('orders')->find($orderId); if (!$o) return [false, 'Order not found.', null];
     if ($o->status !== 'Return Pending') return [false, 'Only an order waiting for its return can be received.', $o->status];
     $items = DB::table('order_items')->where('order_id', $orderId)->orderBy('id')->get(); $exp = self::expected($o, $items);
@@ -106,7 +106,9 @@ class ShipmentOutcome {
     foreach ($exp as [$i, $q]) { $b = array_key_exists($i->id, $back) ? (int)$back[$i->id] : $q; if ($b < 0 || $b > $q) return [false, 'Received quantity for "'.$i->name.'" must be between 0 and '.$q.'.', $o->status]; $back[$i->id] = $b; }
     $ex = false; $full = $o->return_type !== 'Partial'; $to = 'Returned'; $now = now(); $lines = []; $stockDone = false;
     $canStock = $o->stock_deducted_at !== null && $o->stock_returned_at === null;
-    DB::transaction(function () use ($o, $orderId, $exp, $back, $to, $now, $full, $ex, $canStock, &$lines, &$stockDone) {
+    // Loose packets of an opened carton: only the accepted ones, only for a carton that has a Single Packet twin
+    foreach ($exp as [$i, $q]) { $pk = (int)($packets[$i->id] ?? 0); if ($pk < 0 || $pk > (int)$i->qty * 10) return [false, 'Loose packets for "'.$i->name.'" must be between 0 and '.((int)$i->qty * 10).'.', $o->status]; if ($pk > 0 && !DB::table('products')->where('parent_product_id', $i->product_id)->exists()) return [false, '"'.$i->name.'" has no Single Packet product.', $o->status]; }
+    DB::transaction(function () use ($o, $orderId, $exp, $back, $to, $now, $full, $ex, $canStock, $packets, &$lines, &$stockDone) {
       foreach ($exp as [$i, $q]) {
         $b = (int)$back[$i->id];
         DB::table('order_items')->where('id', $i->id)->update(['outcome'=>'Returned', 'ret_qty'=>$q, 'back_qty'=>$b, 'outcome_at'=>$now]);
@@ -117,6 +119,14 @@ class ShipmentOutcome {
           if ($rc > 0) Procure::logCost($lid, $rc / $b, 'Returned to original batch(es)');
           Procure::audit('costing.return_restock', 'Return restock: '.$o->invoice.' · '.$i->name, ['order'=>$o->invoice, 'qty_shipped'=>(int)$i->qty], ['qty_back'=>$b, 'cost_restored'=>$rc, 'source'=>'return']);
           $stockDone = true; }
+        $pk = (int)($packets[$i->id] ?? 0);
+        if ($pk > 0 && $i->product_id) {
+          $twin = DB::table('products')->where('parent_product_id', $i->product_id)->first(['id', 'name']);
+          if ($twin) { Procure::stock((int)$twin->id, $pk, 'order-return', (string)$o->invoice, false); Costing::sync((int)$twin->id);
+            DB::table('products')->where('id', $twin->id)->update(['stock_status'=>'in_stock', 'updated_at'=>$now]);
+            Procure::audit('single_packet.return_stock', 'Single Packet stock from return: '.$o->invoice.' · '.$twin->name, ['order'=>$o->invoice], ['packets_added'=>$pk, 'source'=>'partial return']);
+            $lines[] = $twin->name.' → +'.$pk.' loose packets in stock'; }
+        }
         $lines[] = $i->name.' → Returned'.($b !== $q ? ' (received back '.$b.' of '.$q.')' : '').($canStock && $b > 0 && $i->product_id ? ', stock +'.$b : '');
       }
       DB::table('orders')->where('id', $orderId)->update(['status'=>$to, 'return_received_at'=>$now, 'return_type'=>$o->return_type ?: 'Full', 'updated_at'=>$now] + ($stockDone ? ['stock_returned_at'=>$now] : []));
