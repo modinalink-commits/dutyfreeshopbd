@@ -63,6 +63,8 @@ $__ios = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="cu
 .hxbs a{background:#fff;color:#0B1220;border:1px solid #F0E6E0;border-radius:14px;padding:0 0 10px;gap:7px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.18)}.hxbs a:hover{background:#fff;border-color:#FF5A00}
 .hxbs .im{border-radius:0;background:#F8F8F8;width:100%}.hxbs .nm,.hxbs .pr,.hxbs .go{margin-left:10px;margin-right:10px}.hxbs .nm{font-weight:500}.hxbs .pr{color:#0B1220}.hxbs .pr small{opacity:.6}.hxbs .go.no{background:#9CA3AF}
 .hxbs .im{position:relative}.hxbs .bsof{position:absolute;left:6px;top:6px;right:auto;bottom:auto;width:auto;height:auto;z-index:1;display:inline-block;background:#FF5A00;color:#fff;font-size:10.5px;font-weight:800;border-radius:999px;padding:2px 8px;line-height:1.4;white-space:nowrap}.hxbs .ea{font-size:11px;color:#475467;margin:0 10px;line-height:1.3}.hxbs .ea s{color:#9CA3AF}.hxbs .go{white-space:nowrap;font-size:12.5px}
+/* owner 14 Nov: Flash Sale has its own section lower on the page, so the top shows only the Best Sellers */
+.hxside:has(.hxbs) .hxf{display:none!important}.hxbs .gr{align-content:center}
 @media (max-width:1023px){.hxbs a{border-radius:12px;padding-bottom:8px}.hxbs .tx{gap:3px}.hxbs .nm,.hxbs .pr,.hxbs .go,.hxbs .ea{margin-left:8px;margin-right:8px}.hxbs .go{font-size:12.5px}}</style>
 <div class="hxbs" aria-label="DutyFreeBD Best Sellers">
 <span class="tg"><svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="m12 2 2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2l-6.1 3.4 1.4-6.8L2.2 9.1l6.9-.8z"/></svg>BEST SELLERS</span>
