@@ -104,11 +104,11 @@ class ShipmentOutcome {
     $items = DB::table('order_items')->where('order_id', $orderId)->orderBy('id')->get(); $exp = self::expected($o, $items);
     if (!$exp) return [false, 'No returning items were found on this order.', $o->status];
     foreach ($exp as [$i, $q]) { $b = array_key_exists($i->id, $back) ? (int)$back[$i->id] : $q; if ($b < 0 || $b > $q) return [false, 'Received quantity for "'.$i->name.'" must be between 0 and '.$q.'.', $o->status]; $back[$i->id] = $b; }
-    $ex = false; $full = $o->return_type !== 'Partial'; $to = 'Returned'; $now = now(); $lines = []; $stockDone = false;
+    $ex = false; $full = $o->return_type !== 'Partial'; $to = 'Returned'; $now = now(); $lines = []; $stockDone = false; $lossNote = '';
     $canStock = $o->stock_deducted_at !== null && $o->stock_returned_at === null;
     // Loose packets of an opened carton: only the accepted ones, only for a carton that has a Single Packet twin
     foreach ($exp as [$i, $q]) { $pk = (int)($packets[$i->id] ?? 0); if ($pk < 0 || $pk > (int)$i->qty * 10) return [false, 'Loose packets for "'.$i->name.'" must be between 0 and '.((int)$i->qty * 10).'.', $o->status]; if ($pk > 0 && !DB::table('products')->where('parent_product_id', $i->product_id)->exists()) return [false, '"'.$i->name.'" has no Single Packet product.', $o->status]; }
-    DB::transaction(function () use ($o, $orderId, $exp, $back, $to, $now, $full, $ex, $canStock, $packets, &$lines, &$stockDone) {
+    DB::transaction(function () use ($o, $orderId, $exp, $back, $to, $now, $full, $ex, $canStock, $packets, &$lines, &$stockDone, &$lossNote) {
       foreach ($exp as [$i, $q]) {
         $b = (int)$back[$i->id];
         DB::table('order_items')->where('id', $i->id)->update(['outcome'=>'Returned', 'ret_qty'=>$q, 'back_qty'=>$b, 'outcome_at'=>$now]);
@@ -127,10 +127,15 @@ class ShipmentOutcome {
             Procure::audit('single_packet.return_stock', 'Single Packet stock from return: '.$o->invoice.' · '.$twin->name, ['order'=>$o->invoice], ['packets_added'=>$pk, 'source'=>'partial return']);
             $lines[] = $twin->name.' → +'.$pk.' loose packets in stock'; }
         }
+        // Packets of an opened carton that did not come back are a loss (never stock): written to the audit trail and the order log
+        if ($i->product_id && ($q - $b) > 0 && DB::table('products')->where('parent_product_id', $i->product_id)->exists()) {
+          $lost = max(0, ($q - $b) * 10 - $pk);
+          if ($lost > 0) { Procure::audit('single_packet.return_loss', 'Lost packets on return: '.$o->invoice.' · '.$i->name, ['order'=>$o->invoice, 'product_id'=>(int)$i->product_id], ['packets_lost'=>$lost, 'packets_back'=>$pk, 'cartons_back'=>$b, 'cartons_returning'=>(int)$q]); $lines[] = $i->name.' → '.$lost.' packets lost (not received back)'; $lossNote .= ' · '.$lost.' packets lost'; }
+        }
         $lines[] = $i->name.' → Returned'.($b !== $q ? ' (received back '.$b.' of '.$q.')' : '').($canStock && $b > 0 && $i->product_id ? ', stock +'.$b : '');
       }
       DB::table('orders')->where('id', $orderId)->update(['status'=>$to, 'return_received_at'=>$now, 'return_type'=>$o->return_type ?: 'Full', 'updated_at'=>$now] + ($stockDone ? ['stock_returned_at'=>$now] : []));
-      DB::table('order_status_logs')->insert(['order_id'=>$orderId, 'user_id'=>Auth::id(), 'user_name'=>Auth::user()->name ?? 'System', 'from_status'=>$o->status, 'to_status'=>$to, 'note'=>'Returned goods received at the warehouse'.($stockDone ? ' · stock added' : ''), 'created_at'=>$now, 'updated_at'=>$now]);
+      DB::table('order_status_logs')->insert(['order_id'=>$orderId, 'user_id'=>Auth::id(), 'user_name'=>Auth::user()->name ?? 'System', 'from_status'=>$o->status, 'to_status'=>$to, 'note'=>'Returned goods received at the warehouse'.($stockDone ? ' · stock added' : '').$lossNote, 'created_at'=>$now, 'updated_at'=>$now]);
     });
     $why = $stockDone ? ' Stock added.' : ($o->stock_deducted_at === null ? ' Stock unchanged (this order shipped before automatic stock deduction started).' : ($o->stock_returned_at !== null ? ' Stock was already returned.' : ' Stock unchanged (nothing received back).'));
     OrderActivity::log($orderId, 'return_received', $o->status, $to, ($ex ? 'Exchange Received' : ($full ? 'Return Received' : 'Partial Return Received (order is Returned)')).'.'.$why, ['items'=>$lines]);
