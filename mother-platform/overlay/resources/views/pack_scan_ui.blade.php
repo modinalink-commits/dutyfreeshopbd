@@ -50,6 +50,9 @@
 @media(max-width:820px){#psOv{padding:0}#psOv .ps{border-radius:0;min-height:100vh}#psOv .ps-f{flex-wrap:wrap}#psOv #psIn{flex-basis:100%}#psOv #psGo,#psOv #psCam{flex:1}#psOv #psRes{min-height:150px}#psOv .ps-big{font-size:24px}}
 #psOv .ps-snd{white-space:nowrap}#psOv .ps-snd button{border:1px solid #CBD5E1;background:#fff;color:#0B1B33;border-radius:7px;padding:2px 9px;font-size:12px;font-weight:700;cursor:pointer;width:auto;margin:0}
 #psOv #psS1{color:#15803D;border-color:#15803D}#psOv #psS0{color:#B91C1C;border-color:#B91C1C}
+#psOv #psFl{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px;padding:12px;color:#fff;font-weight:800}
+#psOv #psFl.ok{display:flex;background:rgba(21,128,61,.93)}#psOv #psFl.bad,#psOv #psFl.warn{display:flex;background:rgba(185,28,28,.94)}
+#psOv #psFl .f1{font-size:64px;line-height:1}#psOv #psFl .f2{font-size:26px;line-height:1.15}#psOv #psFl .f3{font-size:15px;font-weight:700}
 #psQ{margin:8px 0 0;padding:6px 10px;border:1px solid #D7DCE3;border-radius:8px;background:#F3F4F6;color:#0B1B33;font-size:12.5px;font-weight:700}
 #psP{margin-top:10px;border:1.5px solid #B91C1C;border-radius:10px;background:#FEF2F2;padding:8px 10px}
 #psP .ps-pt{font-weight:800;color:#B91C1C;font-size:13px;margin-bottom:4px}
@@ -64,7 +67,7 @@ html body button.ps-open:hover,html body .toolbar-control.ps-open:hover,#ocb#ocb
 <div class="ps-b"><div>
 <form class="ps-f" id="psF" autocomplete="off"><input id="psIn" inputmode="numeric" autocomplete="off" placeholder="পার্সেলের লেবেল স্ক্যান করুন" aria-label="Parcel label barcode"><button type="submit" id="psGo">Check</button><button type="button" id="psCam" title="মোবাইলের ক্যামেরা দিয়ে লেবেল স্ক্যান করুন">📷 ক্যামেরা</button></form>
 <div class="ps-hint">স্ক্যানার নম্বর লিখে নিজে Enter দেয়। হাতে ইনভয়েস নম্বর লিখেও Check চাপা যায়। <span class="ps-snd">আওয়াজ শুনুন: <button type="button" id="psS1">✓ সফল (১টা ছোট বিপ)</button> <button type="button" id="psS0">✖ ভুল (২ সেকেন্ড সাইরেন)</button></span></div>
-<div id="psV" hidden><video id="psVd" playsinline muted autoplay></video><div class="ps-ln"></div><div class="ps-vn" id="psVn">লেবেলের বারকোড কমলা দাগের উপর ধরুন।</div></div>
+<div id="psV" hidden><video id="psVd" playsinline muted autoplay></video><div class="ps-ln"></div><div id="psFl"></div><div class="ps-vn" id="psVn">লেবেলের বারকোড কমলা দাগের উপর ধরুন।</div></div>
 <div id="psQ" hidden></div>
 <div id="psRes"><div class="ps-big">স্ক্যানের জন্য প্রস্তুত</div><div class="ps-sub" style="color:#5B6676">সবুজ এলে পার্সেল কুরিয়ারকে দিন। লাল বা হলুদ এলে পার্সেল রেখে দিন।</div></div>
 <div id="psP" hidden><div class="ps-pt">এই পার্সেলগুলো ব্যাগ থেকে বের করে রাখুন</div><div id="psPl"></div></div>
@@ -93,6 +96,7 @@ html body button.ps-open:hover,html body .toolbar-control.ps-open:hover,#ocb#ocb
   try{var o=j.order,card=o?'<div class="ps-o"><span>ইনভয়েস</span><b>'+esc(o.invoice)+'</b><span>গ্রাহক</span><b>'+esc(o.name)+(o.phone?' · '+esc(o.phone):'')+'</b><span>পণ্য</span><b>'+esc(o.items)+'</b><span>মোট</span><b>৳'+esc(o.total)+'</b><span>অবস্থা</span><b>'+esc(o.status)+(o.tracking?' · '+esc(o.courier)+' '+esc(o.tracking):'')+'</b></div>':'';
   res.className=j.result;res.innerHTML='<div class="ps-big">'+(j.result==='ok'?'✓ ':j.result==='bad'?'✖ ':'⚠ ')+esc(j.title)+'</div><div class="ps-sub">'+esc(j.message)+'</div>'+card;
   beep(j.result==='ok');if(j.result==='ok')changed=true;
+  try{var fl=document.getElementById('psFl');if(fl&&!document.getElementById('psV').hidden){fl.className=j.result;fl.innerHTML='<div class="f1">'+(j.result==='ok'?'✓':'✖')+'</div><div class="f2">'+esc(j.title)+'</div><div class="f3">'+esc(o?o.invoice:'')+(j.result==='ok'?'':' · পার্সেল রেখে দিন')+'</div>';clearTimeout(fl._t);fl._t=setTimeout(function(){fl.className=''},j.result==='ok'?1300:3500)}}catch(e){}
   var ml=document.getElementById('psMl');ml.className=j.result;ml.textContent=(j.result==='ok'?'✓ ':j.result==='bad'?'✖ ':'⚠ ')+(o?o.invoice+' · ':'')+j.title+(j.result==='ok'?'':' · পার্সেল রেখে দিন')}catch(e){try{res.className=j.result;res.textContent=j.title+': '+j.message}catch(e2){}}}
  var q=[],run=0,last={},MAXRUN=2;
  var t0s={},tick=null;
