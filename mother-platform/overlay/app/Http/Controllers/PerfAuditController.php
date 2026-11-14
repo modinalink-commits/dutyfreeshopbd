@@ -26,6 +26,23 @@ class PerfAuditController extends Controller {
       ['queue:work processes seen', $this->safe(function () { $n = 0; foreach (glob('/proc/[0-9]*/cmdline') ?: [] as $f) if (str_contains((string)@file_get_contents($f), 'queue:work')) $n++; return $n; })],
       ['FPM pool config', $this->safe(function () { foreach (['/usr/local/etc/php-fpm.d/zz-pool.conf', '/usr/local/etc/php-fpm.d/www.conf', '/usr/local/etc/php-fpm.d/zz-docker.conf', '/etc/php/8.3/fpm/pool.d/www.conf'] as $p) if (is_readable($p)) { preg_match_all('/^\s*(pm(?:\.[a-z_]+)?)\s*=\s*(\S+)/m', (string)file_get_contents($p), $m, PREG_SET_ORDER); return basename($p) . ': ' . implode(', ', array_map(fn($x) => $x[1] . '=' . $x[2], $m)); } return 'config not readable here'; })],
     ];
+    // Who is using the CPU right now: every process this container can see, sampled for one second (read-only).
+    $S['CPU by process (1 second sample)'] = $this->safe(function () use ($cores) {
+      $snap = function () { $o = []; foreach (glob('/proc/[0-9]*/stat') ?: [] as $f) { $t = (string)@file_get_contents($f); $r = strrpos($t, ')'); if ($r === false) continue; $x = explode(' ', trim(substr($t, $r + 1))); $o[basename(dirname($f))] = (int)($x[11] ?? 0) + (int)($x[12] ?? 0); } return $o; };
+      $a = $snap(); usleep(1000000); $b = $snap(); $g = [];
+      foreach ($b as $pid => $v) { $d = $v - ($a[$pid] ?? $v); $cmd = trim(str_replace("\0", ' ', (string)@file_get_contents("/proc/$pid/cmdline"))); if ($cmd === '') $cmd = trim((string)@file_get_contents("/proc/$pid/comm")) ?: 'kernel';
+        $k = str_contains($cmd, 'php-fpm') ? 'php-fpm (web requests)' : (str_contains($cmd, 'artisan') ? 'artisan ' . trim(preg_replace('/^.*artisan\s*/', '', $cmd)) : (str_contains($cmd, 'postgres') ? 'postgres' : mb_substr($cmd, 0, 60)));
+        $g[$k] = ['t' => ($g[$k]['t'] ?? 0) + $d, 'n' => ($g[$k]['n'] ?? 0) + 1]; }
+      uasort($g, fn($x, $y) => $y['t'] <=> $x['t']); $rows = [];
+      foreach (array_slice($g, 0, 8, true) as $k => $v) $rows[] = [$k, round($v['t'] / $cores, 1) . '% of all cores (' . $v['t'] . ' ticks, ' . $v['n'] . ' proc)'];
+      return $rows ?: [['—', 'no process visible']];
+    });
+    if (!is_array($S['CPU by process (1 second sample)'])) $S['CPU by process (1 second sample)'] = [['—', (string)$S['CPU by process (1 second sample)']]];
+    $S['Database activity now'] = [
+      ['Queries running now', $this->safe(fn() => (string)DB::selectOne("select count(*) n from pg_stat_activity where state = 'active' and pid <> pg_backend_pid()")->n)],
+      ['Longest running query', $this->safe(function () { $r = DB::selectOne("select round(extract(epoch from now() - query_start)::numeric, 1) s, left(regexp_replace(query, '\s+', ' ', 'g'), 160) q from pg_stat_activity where state = 'active' and pid <> pg_backend_pid() order by query_start limit 1"); return $r ? $r->s . ' s: ' . $r->q : 'none'; })],
+      ['Waiting on a lock', $this->safe(fn() => (string)DB::selectOne("select count(*) n from pg_stat_activity where wait_event_type = 'Lock'")->n)],
+    ];
     $S['Laravel'] = [
       ['APP_ENV / APP_DEBUG', config('app.env') . ' / ' . (config('app.debug') ? 'TRUE (bad for production)' : 'false')],
       ['config cached', file_exists(base_path('bootstrap/cache/config.php')) ? 'yes' : 'NO'], ['routes cached', glob(base_path('bootstrap/cache/routes-*.php')) ? 'yes' : 'NO'], ['events cached', file_exists(base_path('bootstrap/cache/events.php')) ? 'yes' : 'NO'],
