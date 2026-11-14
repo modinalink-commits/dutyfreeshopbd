@@ -207,7 +207,7 @@ ecee6e2b1941abdeb0f16a8e877fe7b38d4250c7 public/pwa/apple-touch-180.png
 b42bad76c22361c148b61e6ebe7b766bbef2cf39 public/pwa/badge-96.png
 68e7509a4fc7e0dbe9c9c3234f10cdb5a3121c98 public/pwa/logo-240.png
 d4c854b85317e1546756f48c07682b2aff90c0b4 app/Support/WebPush.php
-94720ca5becb62d89132d500164c846695572142 app/Support/Push.php
+f8cdb0bb4478334399abcb4451c5cb9eda572dd5 app/Support/Push.php
 8cf24ac4090625805f0e40cbbc759e81cf959461 app/Http/Controllers/PushController.php
 dd75d5b8954856426c056ebfd361490b71bdf1cf app/Http/Controllers/PushAdminController.php
 e658af4c72a42a86288a0c9fa0ac6b7cfddbc0d0 app/Console/Commands/MotherPushWorker.php

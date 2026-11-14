@@ -72,6 +72,11 @@ class Push
 
   /** Send the next batch of a campaign. Returns true when finished. */
   public static function runCampaign(int $id, int $limit = 150): bool {
+    // one run at a time per campaign: the admin's "send now" and the background worker could both pick the same campaign and notify the same devices twice (seen 14 Nov 2026: 86 devices, 161 attempts)
+    if (!\Illuminate\Support\Facades\Cache::add('push.run.' . $id, 1, 120)) return false;
+    try { return self::runCampaignLocked($id, $limit); } finally { \Illuminate\Support\Facades\Cache::forget('push.run.' . $id); }
+  }
+  private static function runCampaignLocked(int $id, int $limit): bool {
     $c = DB::table('push_campaigns')->find($id);
     if (!$c || !in_array($c->status, ['scheduled', 'sending'], true)) return true;
     if ($c->status === 'scheduled') DB::table('push_campaigns')->where('id', $id)->update(['status' => 'sending', 'targeted' => self::audienceCount($c->audience_type, $c->audience_value), 'updated_at' => now()]);
