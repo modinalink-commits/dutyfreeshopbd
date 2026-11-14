@@ -308,9 +308,14 @@ class Chat {
     $any = collect(DB::select("select m.thread_id, min(m.created_at) since, max(m.id) mid from chat_messages m where m.thread_id in ($ids) and m.dir = 'in' and m.id > coalesce((select max(o.id) from chat_messages o where o.thread_id = m.thread_id and o.dir = 'out' and o.status <> 'failed'), 0) group by m.thread_id"))->keyBy('thread_id');
     // ... and since the last reply by a person (what the alert reports)
     $hum = collect(DB::select("select m.thread_id, min(m.created_at) since from chat_messages m where m.thread_id in ($ids) and m.dir = 'in' and m.id > coalesce((select max(o.id) from chat_messages o where o.thread_id = m.thread_id and o.dir = 'out' and coalesce(o.is_ai, false) = false and o.status <> 'failed'), 0) group by m.thread_id"))->pluck('since', 'thread_id');
+    // A plain thank-you / goodbye after our reply asks for nothing: no holding message and no alert for it (first live case, 14 Nov 2026: "ধন্যবাদ ভাই").
+    $bye = [];
+    try { $mids = $any->pluck('mid')->map(fn($i) => (int)$i)->filter()->all();
+      if ($mids) foreach (DB::table('chat_messages')->whereIn('id', $mids)->get(['thread_id', 'body', 'attachment_type', 'attachment_url']) as $m) if (empty($m->attachment_url) && self::isFarewell((string)$m->body)) $bye[(int)$m->thread_id] = true;
+    } catch (\Throwable $e) {}
     $done = 0;
     foreach ($cand as $t) {
-      if ($done >= 4) break; $a = $any[$t->id] ?? null; if (!$a || ($t->last_dir ?? '') !== 'in') continue;
+      if ($done >= 4) break; $a = $any[$t->id] ?? null; if (!$a || ($t->last_dir ?? '') !== 'in' || isset($bye[(int)$t->id])) continue;
       $since = \Carbon\Carbon::parse($a->since); if ($since->gt($cut) || $since->lt($start)) continue;
       if (!\Illuminate\Support\Facades\Cache::add('chat.stale.'.$t->id.'.'.(int)$a->mid, 1, 172800)) continue;
       $done++;
@@ -318,7 +323,7 @@ class Chat {
     }
     // one alert for the owner: everybody who has had no reply from a person for longer than the limit
     try {
-      $late = $cand->filter(fn($t) => isset($hum[$t->id]) && \Carbon\Carbon::parse($hum[$t->id])->lte($cut) && \Carbon\Carbon::parse($hum[$t->id])->gte($start))->values();
+      $late = $cand->filter(fn($t) => !isset($bye[(int)$t->id]) && isset($hum[$t->id]) && \Carbon\Carbon::parse($hum[$t->id])->lte($cut) && \Carbon\Carbon::parse($hum[$t->id])->gte($start))->values();
       if ($late->isEmpty()) DeployHealth::resolve('chat.stale', 'System (everyone answered)');
       else { $ag = DB::table('users')->whereIn('id', $late->pluck('assigned_to')->filter()->unique())->pluck('name', 'id');
         $list = $late->take(6)->map(fn($t) => trim((string)($t->name ?: $t->phone ?: 'Customer')).' ('.(int)\Carbon\Carbon::parse($hum[$t->id])->diffInMinutes(now()).' min'.(!empty($t->assigned_to) && isset($ag[$t->assigned_to]) ? ', '.$ag[$t->assigned_to] : ', nobody assigned').')')->implode('; ');
