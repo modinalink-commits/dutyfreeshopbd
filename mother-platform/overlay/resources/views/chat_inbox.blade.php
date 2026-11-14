@@ -112,7 +112,7 @@ main{height:calc(100vh / var(--z,1));overflow:hidden;display:flex;flex-direction
 </div>
 <div class="fbar" id="ibfb"><div class="fr" id="ibf1"></div><div class="fr" id="ibf2"></div></div>
 <button type="button" id="ibback">← All conversations</button>
-<div class="mbx" id="ibx"><div class="ls"><div class="stk"><div class="tp"><button type="button" id="iball">← All conversations</button></div><div class="sq" style="padding-top:9px"><input id="ibq" type="search" placeholder="Search name, mobile, invoice, message..."></div></div><div class="lt" id="ibl"></div></div>
+<div class="mbx" id="ibx"><div class="ls"><div class="stk"><div class="tp"><button type="button" id="iball">← All conversations</button></div><div class="sq" style="padding-top:9px"><input id="ibq" type="search" placeholder="Search name, mobile, invoice, message... (Ctrl K)"></div></div><div class="lt" id="ibl"></div></div>
 <div class="cv" id="ibc"><div class="emp" style="margin:auto">Select a conversation to read and reply.<br>New messages appear here and as a popup anywhere in the dashboard.</div></div></div>
 @endsection
 @section('js')
@@ -128,8 +128,10 @@ web:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF5A00
 orders:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4B5563" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></svg>',
   unread:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4B5563" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.5 7 8.5 6 8.5-6"/></svg>',
 assigned:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4B5563" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4.5 20c.8-3.6 3.8-5.5 7.5-5.5s6.7 1.9 7.5 5.5"/></svg>',
+late:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#B42318" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+upset:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#B54708" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 16c1-1.3 2.2-2 3.5-2s2.5.7 3.5 2M9 10h.01M15 10h.01"/></svg>',
 resolved:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="m8 12.3 2.6 2.6L16.2 9"/></svg>'};
-var F1=[['all','All'],['facebook','Facebook'],['instagram','Instagram'],['whatsapp','WhatsApp'],['web','Website Chat']],F2=[['unread','Unread'],['assigned','Assigned to me'],['human','Human Answer'],['resolved','Resolved'],['orders','Order Requests']],waiting=0,orq=0,hum=0;
+var F1=[['all','All'],['facebook','Facebook'],['instagram','Instagram'],['whatsapp','WhatsApp'],['web','Website Chat']],F2=[['unread','Unread'],['late','Late replies'],['upset','Upset customers'],['assigned','Assigned to me'],['human','Human Answer'],['resolved','Resolved'],['orders','Order Requests']],waiting=0,orq=0,hum=0;
 var f=new URLSearchParams(location.search).get('f')||'all',q='',sel=null,tmr;
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function ago(iso){if(!iso)return '';var s=(Date.now()-new Date(iso).getTime())/1000;if(s<60)return 'now';if(s<3600)return Math.floor(s/60)+'m';if(s<86400)return Math.floor(s/3600)+'h';return new Date(iso).toLocaleDateString([], {day:'numeric',month:'short'})}
@@ -166,7 +168,9 @@ function loadOrq(){return fetch('/admin/chat/order-requests?s=review',{headers:{
 function load(){if(f==='orders')return loadOrq();return fetch('/admin/chat/threads?f='+f+'&q='+encodeURIComponent(q),{headers:{Accept:'application/json'},credentials:'same-origin'}).then(function(r){return r.json()}).then(function(j){
   if((j.order_requests||0)!==orq||(j.human||0)!==hum){orq=j.order_requests||0;hum=j.human||0;drawF()}var u=document.getElementById('ibu'),ah=j.ai_handled||0,old=null;(j.threads||[]).forEach(function(t){if(t.person&&t.awaiting&&t.waiting_since){var d=new Date(t.waiting_since).getTime();if(old===null||d<old)old=d}});
   var oh='';if(old!==null){var mn=Math.floor((Date.now()-old)/60000);oh='<span class="k o">Oldest waiting <b>'+(mn>=60?Math.floor(mn/60)+'h '+(mn%60)+'m':mn+'m')+'</b></span>'}
-  u.innerHTML=j.unread?'<span class="k p"><b>'+(j.human||0)+'</b>need a person</span><span class="k a"><b>'+ah+'</b>answered by AI</span>'+oh:'';if(window.MChat)MChat.badge(j.unread);
+  var sv=j.svc,sh='';if(sv&&(sv.staff+sv.ai)>0){sh='<span class="k" title="Replies sent today. Customer messages received today: '+sv.in+'">Today <b>'+sv.staff+'</b>by staff · <b>'+sv.ai+'</b>by AI ('+Math.round(sv.ai*100/(sv.staff+sv.ai))+'%)</span>'}
+  if(f==='late'){var lim=Date.now()-30*60000;j.threads=(j.threads||[]).filter(function(t){return t.awaiting&&t.waiting_since&&new Date(t.waiting_since).getTime()<lim})}
+  u.innerHTML=(j.unread?'<span class="k p"><b>'+(j.human||0)+'</b>need a person</span><span class="k a"><b>'+ah+'</b>answered by AI</span>'+oh:'')+sh;if(window.MChat)MChat.badge(j.unread);
   if(waiting!==j.unread){waiting=j.unread;var uf=document.querySelector('#ibfb a[data-f=unread]');if(uf){var cn=uf.querySelector('.cn');if(waiting>0){if(!cn){cn=document.createElement('span');cn.className='cn';uf.appendChild(cn)}cn.textContent=waiting}else if(cn)cn.remove()}}
   var l=document.getElementById('ibl');if(!j.threads.length){l.innerHTML='<div class="emp">No conversations here yet.</div>';return}
   var ur=j.threads.filter(function(t){return t.awaiting&&t.status!=='resolved'}),rd=j.threads.filter(function(t){return !(t.awaiting&&t.status!=='resolved')});
@@ -186,6 +190,8 @@ function mm(){var bm=document.getElementById('ibm');if(bm&&window.MChat)bm.textC
 document.getElementById('ibback').onclick=function(){document.getElementById('ibx').classList.remove('sel');document.body.classList.remove('ibsel');sel=null;load()};
 document.getElementById('iball').onclick=function(){f='all';q='';document.getElementById('ibq').value='';drawF();load()};
 drawF();load();setInterval(function(){if(!document.hidden)load()},8000);
+/* Ctrl K (or Cmd K): jump to the search box */
+document.addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();var s=document.getElementById('ibq');if(s){s.focus();s.select()}}});
 var wait=setInterval(function(){if(window.MChat){clearInterval(wait);MChat.onNew=load;mm()}},300);
 var oid=new URLSearchParams(location.search).get('open');if(oid){var w2=setInterval(function(){if(window.MChat){clearInterval(w2);sel=+oid;MChat.mount(document.getElementById('ibc'),sel,{onchange:load})}},300)}
 })();

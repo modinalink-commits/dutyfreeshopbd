@@ -17,7 +17,8 @@ class ChatController extends Controller {
     $q = DB::table('chat_threads');
     $f = (string)$r->query('f', 'all');
     if (in_array($f, ['facebook', 'instagram', 'whatsapp', 'web'])) $q->where('channel', $f);
-    elseif ($f === 'unread') $q->where('awaiting_reply', true);
+    elseif ($f === 'unread' || $f === 'late') $q->where('awaiting_reply', true);
+    elseif ($f === 'upset') $q->where('awaiting_reply', true)->whereIn(DB::raw('lower(coalesce(mood, \'\'))'), ['upset', 'angry', 'urgent']);
     elseif ($f === 'assigned') $q->where('assigned_to', auth()->id());
     elseif ($f === 'human') Chat::humanScope($q);
     elseif ($f === 'resolved') $q->where('status', 'resolved');
@@ -33,7 +34,9 @@ class ChatController extends Controller {
     try { $ids = $rows->pluck('id')->all(); if ($ids) $pp = array_flip(Chat::humanScope(DB::table('chat_threads')->whereIn('id', $ids))->pluck('id')->all()); } catch (\Throwable $e) {}
     foreach ($cards as &$c) $c['person'] = isset($pp[$c['id']]); unset($c);
     $unread = Chat::unreadTotal();
-    return response()->json(['threads'=>$cards, 'unread'=>$unread, 'order_requests'=>$orq, 'human'=>$hum, 'ai_handled'=>max(0, $unread - $hum)]);
+    // today's service numbers (Dhaka day), cached for a minute
+    $svc = \Illuminate\Support\Facades\Cache::remember('chat.svc', 60, function () { try { $d = now('Asia/Dhaka')->startOfDay()->utc(); $r = DB::table('chat_messages')->where('created_at', '>=', $d)->selectRaw("count(*) filter (where dir = 'in') inc, count(*) filter (where dir = 'out' and status <> 'failed' and coalesce(is_ai, false)) ai, count(*) filter (where dir = 'out' and status <> 'failed' and not coalesce(is_ai, false)) staff")->first(); return ['in'=>(int)$r->inc, 'ai'=>(int)$r->ai, 'staff'=>(int)$r->staff]; } catch (\Throwable $e) { return null; } });
+    return response()->json(['threads'=>$cards, 'unread'=>$unread, 'order_requests'=>$orq, 'human'=>$hum, 'ai_handled'=>max(0, $unread - $hum), 'svc'=>$svc]);
   }
 
   /** Light poll used on every admin page: unread total plus threads with new incoming messages since the last id. */
@@ -91,7 +94,7 @@ class ChatController extends Controller {
     if (!$ok) return response()->json(['ok'=>false, 'error'=>$txt === 'empty' ? 'The customer has not written anything after the last reply.' : ($txt === 'empty reply' ? 'The AI could not draft a reply for this message. Please write it yourself.' : 'AI draft failed: '.$txt)]);
     $drafts = [trim($txt)];
     foreach (\App\Support\AiChat::variants($drafts[0]) as $v) $drafts[] = $v; // same facts, different length and tone
-    return response()->json(['ok'=>true, 'drafts'=>array_slice($drafts, 0, 3)]);
+    return response()->json(['ok'=>true, 'drafts'=>array_slice($drafts, 0, 3), 'note'=>count($drafts) < 3 ? \App\Support\AiChat::$vErr : null]);
   }
 
   public function messagesAfter(Request $r, $id) {

@@ -177,7 +177,7 @@ class CallCenterController extends Controller {
     $alerts = [];
     try {
       if ($last && in_array((string)$last->status, ['Return', 'Returned', 'Cancel', 'Cancelled'], true)) $alerts[] = 'Last order '.\App\Support\Inv::show($last->invoice).' is '.$last->status.'.';
-      if ($fr && preg_match('/high|risk|danger|fraud/i', (string)$fr['label'].' '.(string)$fr['level'])) $alerts[] = 'Courier reliability: '.$fr['label'].'. Confirm the address and an alternate number.';
+      if ($fr && preg_match('/high|danger|fraud|block/i', (string)$fr['label'].' '.(string)$fr['level']) && !preg_match('/low/i', (string)$fr['label'])) $alerts[] = 'Courier reliability: '.$fr['label'].'. Confirm the address and an alternate number.';
       if ($n === 1 && $last && (string)$last->status === 'New') $alerts[] = 'First order from this number. Confirm the full address.';
       if (DB::table('chat_threads')->whereRaw('right(phone,11) = ?', [$ph])->where('awaiting_reply', true)->where('needs_human', true)->exists()) $alerts[] = 'A chat from this customer is waiting for a person. Read it before promising anything.';
     } catch (\Throwable $e) {}
