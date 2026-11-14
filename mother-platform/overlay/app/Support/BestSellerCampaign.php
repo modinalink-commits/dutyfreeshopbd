@@ -94,10 +94,10 @@ class BestSellerCampaign {
     $rows = $ids ? DB::table('order_items as i')->join('orders as o', 'o.id', '=', 'i.order_id')->whereIn('i.product_id', $ids)->whereBetween('o.created_at', [$a, $b])
       ->groupBy('o.id', 'o.invoice', 'o.customer_name', 'o.phone', 'o.status', 'o.created_at', 'i.product_id')
       ->selectRaw('o.id, o.invoice, o.customer_name, o.phone, o.status, o.created_at, i.product_id, sum(i.qty) as q, sum(i.qty * i.price) as amt')->orderByDesc('o.created_at')->get() : collect();
-    $z = ['orders' => 0, 'pack' => 0, 'single' => 0, 'cartons' => 0, 'pack_cartons' => 0, 'amount' => 0.0, 'delivered' => 0, 'returned' => 0, 'cancelled' => 0, 'progress' => 0, 'delivered_pack_cartons' => 0];
+    $since = self::since(); $z = ['orders' => 0, 'pack' => 0, 'pre' => 0, 'single' => 0, 'cartons' => 0, 'pack_cartons' => 0, 'amount' => 0.0, 'delivered' => 0, 'returned' => 0, 'cancelled' => 0, 'progress' => 0, 'delivered_pack_cartons' => 0];
     $tot = $z; $days = []; $prod = []; $list = [];
     foreach ($rows as $r) {
-      $q = (int)$r->q; $k = $q >= 2 ? 'pack' : 'single'; if ($type !== '' && $type !== $k) continue;
+      $q = (int)$r->q; $k = $q >= 2 ? ($since !== null && (string)$r->created_at >= $since ? 'pack' : 'pre') : 'single'; if ($type !== '' && $type !== $k) continue;
       $st = in_array($r->status, ['Delivered', 'Partial Delivered'], true) ? 'delivered' : (in_array($r->status, ['Returned', 'Return Pending', 'Return'], true) ? 'returned' : (in_array($r->status, ['Cancel', 'Cancelled'], true) ? 'cancelled' : 'progress'));
       $at = \Carbon\Carbon::parse($r->created_at, 'UTC')->timezone($tz); $d = $at->format('Y-m-d'); $nm = (string)($names[$r->product_id] ?? ('#' . $r->product_id));
       foreach ([&$tot, &$days[$d], &$prod[$nm]] as &$t) { if ($t === null) $t = $z; $t['orders']++; $t[$k]++; $t['cartons'] += $q; if ($k === 'pack') $t['pack_cartons'] += $q; $t['amount'] += (float)$r->amt; $t[$st]++; if ($st === 'delivered' && $k === 'pack') $t['delivered_pack_cartons'] += $q; } unset($t);

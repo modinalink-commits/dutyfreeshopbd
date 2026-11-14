@@ -25,9 +25,9 @@ class BestSellerController extends Controller {
     $since = $C::since(); $start = $since ? \Carbon\Carbon::parse($since, 'UTC')->timezone($tz)->format('Y-m-d') : now($tz)->subDays(29)->format('Y-m-d');
     $ok = fn($v) => is_string($v) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $v) && strtotime($v) !== false;
     $from = $ok($r->query('from')) ? $r->query('from') : $start; $to = $ok($r->query('to')) ? $r->query('to') : $today; if ($from > $to) [$from, $to] = [$to, $from];
-    $pid = (int)$r->query('product', 0); $type = in_array($r->query('type'), ['pack', 'single'], true) ? $r->query('type') : '';
+    $pid = (int)$r->query('product', 0); $type = in_array($r->query('type'), ['pack', 'pre', 'single'], true) ? $r->query('type') : '';
     return view('best_sellers_report', ['d' => $C::report($from, $to, $pid, $type), 'from' => $from, 'to' => $to, 'pid' => $pid, 'type' => $type, 'start' => $start, 'today' => $today,
-      'products' => DB::table('products')->whereIn('id', AutoPrice::ids())->pluck('name', 'id'), 'profit' => AutoPrice::profit()]);
+      'products' => DB::table('products')->whereIn('id', AutoPrice::ids())->pluck('name', 'id'), 'profit' => AutoPrice::profit(), 'since' => $since ? \Carbon\Carbon::parse($since, 'UTC')->timezone($tz)->format('d M, h:i A') : null]);
   }
   public function save(Request $r) {
     $this->gate();
