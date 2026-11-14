@@ -107,7 +107,7 @@ class ShipmentOutcome {
     $ex = false; $full = $o->return_type !== 'Partial'; $to = 'Returned'; $now = now(); $lines = []; $stockDone = false; $lossNote = '';
     $canStock = $o->stock_deducted_at !== null && $o->stock_returned_at === null;
     // Loose packets of an opened carton: only the accepted ones, only for a carton that has a Single Packet twin
-    foreach ($exp as [$i, $q]) { $pk = (int)($packets[$i->id] ?? 0); if ($pk < 0 || $pk > (int)$i->qty * 10) return [false, 'Loose packets for "'.$i->name.'" must be between 0 and '.((int)$i->qty * 10).'.', $o->status]; if ($pk > 0 && !DB::table('products')->where('parent_product_id', $i->product_id)->exists()) return [false, '"'.$i->name.'" has no Single Packet product.', $o->status]; }
+    foreach ($exp as [$i, $q]) { $pk = (int)($packets[$i->id] ?? 0); $maxPk = max(0, (int)$q - (int)$back[$i->id]) * 10; if ($pk < 0 || $pk > $maxPk) return [false, 'Loose packets for "'.$i->name.'" must be between 0 and '.$maxPk.' (10 per carton that did not come back whole).', $o->status]; if ($pk > 0 && !DB::table('products')->where('parent_product_id', $i->product_id)->exists()) return [false, '"'.$i->name.'" has no Single Packet product.', $o->status]; }
     DB::transaction(function () use ($o, $orderId, $exp, $back, $to, $now, $full, $ex, $canStock, $packets, &$lines, &$stockDone, &$lossNote) {
       foreach ($exp as [$i, $q]) {
         $b = (int)$back[$i->id];
