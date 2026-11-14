@@ -332,7 +332,7 @@ class Chat {
   }
   /** One customer past the wait limit: reassign, let the AI answer or send the holding message, leave a staff-only note. */
   public static function staleOne(object $t, int $min): void {
-    $tid = (int)$t->id; $what = [];
+    $tid = (int)$t->id; $what = []; $blame = !empty($t->assigned_to) ? (int)$t->assigned_to : 0;
     // 1) move the chat away from an agent who has not replied to anyone for the whole wait
     try {
       if (!empty($t->assigned_to)) {
@@ -370,6 +370,12 @@ class Chat {
         $what[] = $sent ? 'No staff reply for '.$min.' minutes: a holding message was sent. This chat still needs a person.' : 'No staff reply for '.$min.' minutes. The holding message could not be sent ('.mb_substr((string)$err, 0, 80).').';
       } else { DB::table('chat_threads')->where('id', $tid)->update(['needs_human'=>true, 'updated_at'=>now()]); $what[] = 'No staff reply for '.$min.' minutes. Nothing could be sent: the 24-hour channel window is closed.'; }
     }
+    // tell the staff too (popup on their screen + their My Day page): the agent the chat was with; nobody assigned = everyone who answers chats
+    try {
+      $cust = trim((string)($t->name ?: $t->phone ?: 'A customer'));
+      $to = $blame ? DB::table('users')->where('id', $blame)->get(['id', 'name']) : DB::table('users')->where('active', true)->whereNotIn('role', ['super', 'admin'])->whereIn('name', DB::table('chat_messages')->where('dir', 'out')->whereRaw('not coalesce(is_ai, false)')->where('created_at', '>=', now()->subDays(7))->whereNotNull('user_name')->distinct()->pluck('user_name'))->get(['id', 'name']);
+      foreach ($to as $usr) DB::table('chat_wait_notices')->insert(['thread_id'=>$tid, 'user_id'=>$usr->id, 'user_name'=>$usr->name, 'customer'=>mb_substr($cust, 0, 160), 'wait_min'=>$min, 'assigned'=>(bool)$blame, 'created_at'=>now(), 'updated_at'=>now()]);
+    } catch (\Throwable $e) {}
     try { if ($what) DB::table('chat_notes')->insert(['thread_id'=>$tid, 'user_id'=>null, 'user_name'=>'Automation', 'body'=>implode(' ', $what), 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {}
     try { AiMemory::event($tid, null, 'ai', 'stale_wait_handled', null, ['min'=>$min, 'ai_answered'=>$answered]); } catch (\Throwable $e) {}
   }

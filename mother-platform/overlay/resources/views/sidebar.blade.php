@@ -39,6 +39,7 @@ $pickIc = function ($label, $gic) use ($IC) { $l = strtolower($label); foreach (
 @if($stores > 1)<div class="viewing"><small>VIEWING</small><strong>All stores ({{ $stores }}) + {{ $B['channels'] }} channel</strong></div>@endif
 <div class="sbs"><input id="sbq" type="search" placeholder="Search menu… (press /)" autocomplete="off" aria-label="Search menu"><div id="sbn" style="display:none">No match</div></div>
 <nav><div class="sbx-ov"><div class="sbx-oh">Overview</div><a href="/admin" class="nv {{ $cur === '/admin' ? 'on' : '' }}">{!! $svg($IC['dash']) !!}<span>Dashboard</span></a>
+<a href="/admin/my-day" class="nv {{ $cur === '/admin/my-day' ? 'on' : '' }}">{!! $svg($IC['dash']) !!}<span>My Day</span></a>
 @if($ok('/admin/chat'))<a href="/admin/chat" class="nv {{ $cur === '/admin/chat' || str_starts_with($cur, '/admin/chat/') ? 'on' : '' }}">{!! $svg($IC['msg']) !!}<span>Messages</span><em id="chatBadge" style="background:#E11D48;{{ $chatUn ? '' : 'display:none' }}">{{ $chatUn }}</em></a>@endif</div>
 @foreach($G as $gi => [$gl, $gic, $gitems])
 @php $vis = array_values(array_filter(array_keys($gitems), fn($i) => $ok($gitems[$i][1]))); $isRep = $gl === 'Reports & Analytics'; $showRep = $isRep && $canRep; $gopen = $an && $isRep; foreach ($vis as $i) if ($best === $gi.'.'.$i) $gopen = true; @endphp

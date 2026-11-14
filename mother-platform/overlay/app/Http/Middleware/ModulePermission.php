@@ -10,6 +10,7 @@ class ModulePermission {
   public static function moduleFor(string $path): ?string {
     $p = preg_replace('#^admin/?#', '', trim($path, '/'));
     if ($p === '' || $p === 'logout') return null;
+    if (preg_match('#^my-day(/|$)#', $p)) return null; // each staff member's own scorecard and waiting notices
     if (preg_match('#^staff-idle/(ping|notice|submit|break)$#', $p)) return null; // every staff member must reach their own idle notice
     $m = str_starts_with($p, 'm/') ? explode('/', substr($p, 2))[0] : null;
     $map = ['orders'=>['order-sources','order-comments','r-orders'], 'stafflog'=>['r-staff-log'], 'products'=>['attributes','attribute-values','variants','reviews','stock-log','r-products'], 'purchase'=>['suppliers','purchases','purchase-items','damaged'], 'accounts'=>['accounts','purposes','entries','bills','withdrawals'], 'customers'=>['customers','memberships','points','messages','blocked-ips'], 'couriers'=>['couriers','districts','sub-districts'], 'settings'=>['settings','banners','sliders','pages','posts','stores','channels'], 'marketing'=>['sms-log','email-log','campaigns','r-coupons'], 'hr'=>['employees','payroll'], 'users'=>['users','roles','audit-log']];
