@@ -15,7 +15,12 @@ class BestSellerCampaign {
   public static function remindOn(): bool { return self::set('remind_on', '0') === '1'; }
   public static function days(): int { return max(3, min(60, (int)self::set('remind_days', '12'))); }
   public static function text(string $which): string { $t = trim(self::set($which . '_text', '')); return $t !== '' ? $t : ($which === 'remind' ? self::T_REMIND : self::T_ONCE); }
-  public static function since(): ?string { $s = self::set('since', ''); return $s !== '' ? $s : null; }
+  /** When the offer started: the first automatic pack price ever written (audit log), or the stored start if that is earlier. */
+  public static function since(): ?string {
+    $s = self::set('since', ''); $s = $s !== '' ? $s : null;
+    try { $a = DB::table('audit_logs')->where('action', 'Auto price updated')->min('created_at'); if ($a && ($s === null || (string)$a < $s)) $s = (string)$a; } catch (\Throwable $e) {}
+    return $s;
+  }
   public static function markStart(): void { if (self::since() === null) Procure::put('bscamp_since', now('UTC')->format('Y-m-d H:i:s')); }
   /** Offer facts for one product, or null when it has no 2-carton offer right now. */
   public static function offer($p): ?array {

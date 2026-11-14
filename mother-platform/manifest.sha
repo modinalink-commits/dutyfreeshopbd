@@ -1141,4 +1141,4 @@ eb0cd1fc2cdf74e576504811950e25d99cbc5dc7 app/Support/BestSellerStock.php
 37632f2f9b242aacb06e2e790d86cfa920a06314 app/Http/Controllers/PublishNoticeController.php
 e0392e1088a5eda17e9e9af062f0a78ba6e984f6 resources/views/publish_notice.blade.php
 3b2bb0be9402237b799dfd87c36f51bcb7f17fce resources/views/store/best_slide.blade.php
-7b7d722e5d3dc468440c6e00a368ec4df2e35cef app/Support/BestSellerCampaign.php
+a47879e8c242ca8a32c4067fda315b927e51ca70 app/Support/BestSellerCampaign.php
