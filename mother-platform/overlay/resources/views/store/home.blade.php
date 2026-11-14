@@ -230,7 +230,7 @@ if(document.readyState==='complete')setTimeout(first,300);else addEventListener(
 @include('store.watch_slide_lux')
 @include('store.cig_slide_lux')
 @endif
-</div>{{-- owner 14 Nov: on a phone every banner must be the same 16:9 box and show whole. The two animated slides (watch, cigarette) are built taller there and stretched every photo banner with them, so on a phone they are left out before the slider starts. --}}<script>(function(){try{if(matchMedia('(max-width:760px)').matches){var t=document.currentScript.previousElementSibling;if(t&&t.classList.contains('sl-t')){var x=t.querySelectorAll('.hxlx,.hxcg');if(x.length<t.children.length)[].forEach.call(x,function(e){e.remove()})}}}catch(e){}})();</script><div class="sl-d"></div><button type="button" class="sl-a pv" aria-label="Previous slide">‹</button><button type="button" class="sl-a nx" aria-label="Next slide">›</button></div></div>@include('store.hero_side')</div>
+</div><div class="sl-d"></div><button type="button" class="sl-a pv" aria-label="Previous slide">‹</button><button type="button" class="sl-a nx" aria-label="Next slide">›</button></div></div>@include('store.hero_side')</div>
 @elseif($__gp->count())
 <div class="w hx">@include('store.globe', ['deals' => $__gp])@include('store.hero_side')</div>
 @else

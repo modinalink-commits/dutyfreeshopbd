@@ -31,20 +31,20 @@
 .hxcg .cn{font-family:Inter,sans-serif;font-size:max(9px,1.05cqw);font-weight:600;line-height:1.3;height:2.6em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .hxcg .cp{font-family:Inter,sans-serif;font-size:max(11px,1.5cqw);font-weight:700;color:#fff;background:#0B1220;border-radius:999px;padding:.3cqw 1.3cqw}
 @keyframes cgOrbit{0%{opacity:0;transform:translate(-50%,-50%) translateX(36cqw) scale(.5);z-index:1}{{ $__ck(.4) }}%,{{ $__ck(1) }}%{opacity:.8;transform:translate(-50%,-50%) translateX(19cqw) scale(.7);z-index:2}{{ $__ck(1.4) }}%,{{ $__ck(2) }}%{opacity:1;transform:translate(-50%,-50%) translateX(0) scale(1);z-index:4}{{ $__ck(2.4) }}%,{{ $__ck(3) }}%{opacity:.8;transform:translate(-50%,-50%) translateX(-19cqw) scale(.7);z-index:2}{{ $__ck(3.4) }}%,100%{opacity:0;transform:translate(-50%,-50%) translateX(-36cqw) scale(.5);z-index:1}}
-@keyframes cgOrbitM{0%{opacity:0;transform:translate(-50%,-50%) translateX(70cqw) scale(.5);z-index:1}{{ $__ck(.4) }}%,{{ $__ck(1) }}%{opacity:.75;transform:translate(-50%,-50%) translateX(36cqw) scale(.7);z-index:2}{{ $__ck(1.4) }}%,{{ $__ck(2) }}%{opacity:1;transform:translate(-50%,-50%) translateX(0) scale(1);z-index:4}{{ $__ck(2.4) }}%,{{ $__ck(3) }}%{opacity:.75;transform:translate(-50%,-50%) translateX(-36cqw) scale(.7);z-index:2}{{ $__ck(3.4) }}%,100%{opacity:0;transform:translate(-50%,-50%) translateX(-70cqw) scale(.5);z-index:1}}
+@keyframes cgOrbitM{0%{opacity:0;transform:translate(-50%,-50%) translateX(33cqw) scale(.5);z-index:1}{{ $__ck(.4) }}%,{{ $__ck(1) }}%{opacity:.75;transform:translate(-50%,-50%) translateX(17cqw) scale(.7);z-index:2}{{ $__ck(1.4) }}%,{{ $__ck(2) }}%{opacity:1;transform:translate(-50%,-50%) translateX(0) scale(1);z-index:4}{{ $__ck(2.4) }}%,{{ $__ck(3) }}%{opacity:.75;transform:translate(-50%,-50%) translateX(-17cqw) scale(.7);z-index:2}{{ $__ck(3.4) }}%,100%{opacity:0;transform:translate(-50%,-50%) translateX(-33cqw) scale(.5);z-index:1}}
 @keyframes cgSweep{0%{left:-30%}60%,100%{left:130%}}
 @keyframes cgGlow{to{opacity:.55;transform:translate(-50%,-50%) scale(1.1)}}
 @keyframes cgPulse{50%{transform:scale(1.05)}}
 @media(max-width:760px){
-.hxcg,.hxs .sl-t>a.hxcg{aspect-ratio:auto;display:flex!important;flex-direction:column;align-items:center;gap:3cqw;padding:5cqw 0 max(62px,15cqw)}
-.hxcg .cl{position:static;width:100%;padding:0 5cqw;align-items:center;text-align:center;gap:2cqw}
-.hxcg .ck,.hxcg .cd{display:none}.hxcg .ch{font-size:7cqw}.hxcg .ch em{display:inline;margin-left:1.4cqw}
-.hxcg .cb{align-self:center;height:8cqw;padding:0 4.4cqw;font-size:max(11px,3.4cqw)}
-.hxcg .cst{position:relative;left:auto;width:100%;height:64cqw;flex:none}
-.hxcg .cg{left:50%;top:62%;width:100cqw;height:100cqw}
-.hxcg .cc{width:36cqw;padding:2cqw 2cqw 2.6cqw;border-radius:3cqw;gap:1.4cqw;animation-name:cgOrbitM}
-.hxcg .ci{border-radius:2cqw}.hxcg .cn{font-size:max(10px,2.9cqw)}.hxcg .cp{font-size:max(11px,3.6cqw);padding:.6cqw 3cqw}
-.df-app .hxcg,.df-app .hxs .sl-t>a.hxcg{padding-bottom:6cqw}
+/* owner 14 Nov: on a phone this slide is the same 16:9 box as every photo banner (it used to be twice as tall and stretched the whole slider): text left, cards right */
+.hxcg,.hxs .sl-t>a.hxcg{aspect-ratio:16/9;display:block!important;padding:0}
+.hxcg .cl{left:4cqw;width:42cqw;gap:2.6cqw;align-items:flex-start;text-align:left}
+.hxcg .ck,.hxcg .cd{display:none}.hxcg .ch{font-size:5.6cqw;line-height:1.2}
+.hxcg .cb{height:8cqw;padding:0 3.6cqw;font-size:max(11px,3.3cqw)}
+.hxcg .cst{left:46cqw}
+.hxcg .cg{left:73cqw;top:50%;width:74cqw;height:74cqw}
+.hxcg .cc{width:25cqw;padding:1.4cqw 1.4cqw 2cqw;border-radius:2.4cqw;gap:1cqw;animation-name:cgOrbitM}
+.hxcg .ci{border-radius:1.6cqw}.hxcg .cn{font-size:max(9px,2.5cqw);-webkit-line-clamp:1;height:1.3em}.hxcg .cp{font-size:max(11px,3.2cqw);padding:.5cqw 2.4cqw}
 }
 @media(prefers-reduced-motion:reduce){.hxcg .cg,.hxcg .cs,.hxcg .cb{animation:none!important}.hxcg .cc{animation-play-state:paused!important}}
 </style>

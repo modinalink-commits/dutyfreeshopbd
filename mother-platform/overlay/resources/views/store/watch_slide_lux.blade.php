@@ -42,17 +42,18 @@
 @keyframes lxGlow{to{opacity:.55;transform:translate(-50%,-50%) scale(1.1)}}
 @keyframes lxPulse{50%{transform:scale(1.05)}}
 @media(max-width:760px){
-.hxlx,.hxs .sl-t>a.hxlx{aspect-ratio:auto;display:flex!important;flex-direction:column;align-items:center;gap:4cqw;padding:5cqw 0 max(62px,15cqw)}
-.hxlx .xl{position:static;width:100%;padding:0 5cqw;align-items:center;text-align:center;gap:2cqw}
-.hxlx .xk,.hxlx .xd,.hxlx .xbg{display:none}.hxlx .xh{font-size:7cqw}.hxlx .xh em{display:inline;margin-left:1.4cqw}
-.hxlx .xb{align-self:center;height:8cqw;padding:0 4.4cqw;font-size:max(11px,3.4cqw)}
-.hxlx .xst{position:relative;left:auto;top:auto;transform:none;width:44cqw;height:44cqw;flex:none;margin:3cqw 0}
-.hxlx .xg{left:50%;top:60%;width:90cqw;height:90cqw}
-.hxlx .xr{inset:-2cqw}.hxlx .xr2{inset:-5cqw}
-.hxlx .xi{position:relative;left:auto;right:auto;width:100%;height:21cqw;flex:none}
-.hxlx .xc{align-items:center;text-align:center;padding:0 6cqw;gap:1.4cqw}
-.hxlx .xbr{font-size:5.4cqw}.hxlx .xn{font-size:max(10px,3cqw);-webkit-line-clamp:1}.hxlx .xp{align-self:center;font-size:4.2cqw;padding:.8cqw 2.6cqw;border-radius:1.4cqw}
-.df-app .hxlx,.df-app .hxs .sl-t>a.hxlx{padding-bottom:6cqw}
+/* owner 14 Nov: on a phone this slide is the same 16:9 box as every photo banner (it used to be twice as tall and stretched the whole slider): text left, watch right with its brand and price under it */
+.hxlx,.hxs .sl-t>a.hxlx{aspect-ratio:16/9;display:block!important;padding:0}
+.hxlx .xl{left:4cqw;width:40cqw;gap:2.6cqw;align-items:flex-start;text-align:left}
+.hxlx .xk,.hxlx .xd,.hxlx .xbg{display:none}.hxlx .xh{font-size:5.6cqw;line-height:1.2}
+.hxlx .xb{height:8cqw;padding:0 3.6cqw;font-size:max(11px,3.3cqw)}
+.hxlx .xst{left:70cqw;top:35%;width:27cqw;height:27cqw}
+.hxlx .xg{left:70cqw;top:40%;width:70cqw;height:70cqw}
+.hxlx .xr{inset:-1.5cqw}.hxlx .xr2{inset:-3.6cqw}
+.hxlx .xi{left:48cqw;right:4cqw;top:auto;bottom:5cqw;height:13cqw}
+.hxlx .xc{align-items:center;text-align:center;gap:.8cqw}
+.hxlx .xbr{font-size:4.2cqw}.hxlx .xn{display:none}.hxlx .xp{align-self:center;font-size:3.6cqw;padding:.6cqw 2.4cqw;border-radius:1.2cqw}
+}
 }
 @media(prefers-reduced-motion:reduce){.hxlx .xg,.hxlx .xs,.hxlx .xb,.hxlx .xr,.hxlx .xr2{animation:none!important}.hxlx .xw,.hxlx .xc{animation:none!important}.hxlx .xw:first-of-type,.hxlx .xc:first-child{opacity:1}}
 </style>
