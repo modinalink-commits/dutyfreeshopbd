@@ -24,12 +24,12 @@ class PackScanController extends Controller {
     try { if (Schema::hasTable('order_scan_logs')) $this->lastId = (int)DB::table('order_scan_logs')->insertGetId(['order_id'=>$o->id ?? null, 'invoice'=>$o ? Inv::show($o->invoice) : null, 'code'=>mb_substr($code, 0, 80), 'result'=>$res, 'message'=>mb_substr($msg, 0, 300), 'user_id'=>Auth::id(), 'user_name'=>Auth::user()->name ?? null, 'created_at'=>now()], 'id'); } catch (\Throwable $e) {}
   }
   private int $lastId = 0;
-  private function out(string $res, string $title, string $msg, ?object $o, string $code) {
+  private function out(string $res, string $title, string $msg, ?object $o, string $code, array $extra = []) {
     $this->log($o, $code, $res, $title.': '.$msg);
     $card = null;
     if ($o) { $its = DB::table('order_items')->where('order_id', $o->id)->orderBy('id')->get(['name', 'qty']);
       $card = ['invoice'=>Inv::show($o->invoice), 'name'=>(string)($o->customer_name ?? ''), 'phone'=>(string)($o->phone ?? ''), 'items'=>$its->map(fn($i) => $i->name.' × '.(int)$i->qty)->implode(', '), 'total'=>number_format((float)$o->total), 'status'=>(string)DB::table('orders')->where('id', $o->id)->value('status'), 'courier'=>(string)($o->courier ?? ''), 'tracking'=>(string)(DB::table('orders')->where('id', $o->id)->value('consignment_id') ?? '')]; }
-    return response()->json(['result'=>$res, 'title'=>$title, 'message'=>$msg, 'order'=>$card] + $this->today());
+    return response()->json(['result'=>$res, 'title'=>$title, 'message'=>$msg, 'order'=>$card] + $extra + $this->today());
   }
   /** Plain Bengali reason for packing staff; the system's own (English) message is kept at the end for the manager. */
   private static function why(string $m): string {
@@ -55,9 +55,31 @@ class PackScanController extends Controller {
       if (!Schema::hasTable('order_scan_logs')) return ['rows'=>[], 'ok'=>0, 'stopped'=>0, 'waiting'=>0];
       $d0 = now('Asia/Dhaka')->startOfDay()->utc();
       $c = DB::table('order_scan_logs')->where('created_at', '>=', $d0)->selectRaw("count(*) filter (where result = 'ok') ok, count(*) filter (where result not in ('ok','run')) bad")->first();
-      $rows = DB::table('order_scan_logs')->where('created_at', '>=', $d0)->orderByDesc('id')->limit(40)->get()->map(fn($r) => ['t'=>\Carbon\Carbon::parse($r->created_at, 'UTC')->timezone('Asia/Dhaka')->format('h:i:s A'), 'inv'=>$r->invoice ?: $r->code, 'res'=>$r->result, 'msg'=>(string)$r->message, 'by'=>(string)$r->user_name])->all();
+      $rows = DB::table('order_scan_logs')->where('created_at', '>=', $d0)->orderByDesc('id')->limit(40)->get()->map(fn($r) => ['t'=>\Carbon\Carbon::parse($r->created_at, 'UTC')->timezone('Asia/Dhaka')->format('h:i:s A'), 'inv'=>$r->invoice ?: $r->code, 'res'=>$r->result, 'msg'=>(string)$r->message, 'note'=>(preg_match('/কারণ: (.+?)(?: \[|$)/u', (string)$r->message, $mm) ? mb_substr($mm[1], 0, 120) : ''), 'by'=>(string)$r->user_name])->all();
       return ['rows'=>$rows, 'ok'=>(int)($c->ok ?? 0), 'stopped'=>(int)($c->bad ?? 0), 'waiting'=>(int)DB::table('orders')->where('status', 'Packaging')->count()];
     } catch (\Throwable $e) { return ['rows'=>[], 'ok'=>0, 'stopped'=>0, 'waiting'=>0]; }
+  }
+  private function canOv(): bool { try { return \App\Support\ProfitFloor::admin() || MP::canShipOverride(Auth::user()); } catch (\Throwable $e) { return false; } }
+  /** Send Anyway from the scan window (owner 14 Nov 2026): only someone with the shipment-override permission, always with a written reason that stays visible in the scan list and the order log. */
+  public function override(Request $r) {
+    if (!$this->can()) return response()->json(['result'=>'bad', 'title'=>'অনুমতি নেই', 'message'=>'আপনার আইডিতে অর্ডার আপডেট করার অনুমতি নেই।', 'order'=>null] + $this->today(), 403);
+    $code = trim((string)$r->input('code')); $why = trim(preg_replace('/\s+/u', ' ', (string)$r->input('reason')));
+    $cands = Inv::candidates($code);
+    $o = $cands ? DB::table('orders')->whereIn('invoice', $cands)->orderByDesc('id')->first() : null;
+    if (!$o) $o = DB::table('orders')->where('consignment_id', $code)->orderByDesc('id')->first();
+    if (!$o) return $this->out('bad', 'অর্ডার পাওয়া যায়নি', mb_substr($code, 0, 40).' নম্বরের কোনো অর্ডার নেই।', null, $code);
+    $again = ['override'=>['can'=>$this->canOv(), 'code'=>$code]];
+    if (!$this->canOv()) return $this->out('warn', 'অনুমতি নেই', 'কারণ লিখে পাঠানোর অনুমতি আপনার আইডিতে নেই। ম্যানেজার বা অ্যাডমিনকে পার্সেলটা দিন।', $o, $code);
+    if (mb_strlen($why) < 5) return $this->out('warn', 'কারণ লিখুন', 'কেন এই অর্ডারটা পাঠানো হচ্ছে সেটা পরিষ্কার করে লিখুন (কমপক্ষে ৫ অক্ষর)। অর্ডারটা Packaging-এই আছে।', $o, $code, $again);
+    if ($o->status !== 'Packaging') return $this->out(in_array($o->status, self::GONE, true) ? 'bad' : 'warn', 'Packaging-এ নেই', 'অর্ডারটা এখন '.$o->status.' অবস্থায় আছে, তাই এখান থেকে পাঠানো যাবে না।', $o, $code);
+    if (($o->courier ?: \App\Support\CourierSync::defaultName()) !== 'Pathao') return $this->out('warn', 'এখান থেকে হবে না', 'এই অর্ডারের কুরিয়ার Pathao নয়। অর্ডার লিস্ট থেকে পাঠান। পার্সেলটা রেখে দিন।', $o, $code);
+    if (!Cache::add('packscan.'.$o->id, 1, 20)) return $this->out('bad', 'দুইবার চাপা হয়েছে', 'এই অর্ডারটা এখনই পাঠানো হচ্ছে। একটু পরে লিস্ট দেখুন।', $o, $code);
+    try { if (($mb = \App\Support\ShipmentOutcome::manualBlock($o, 'Shipment')) || ($mb = \App\Support\DupGuard::block($o, 'Shipment'))) { Cache::forget('packscan.'.$o->id); return $this->out('warn', 'পাঠানো হয়নি', self::why((string)$mb).' অর্ডারটা Packaging-এই আছে। পার্সেলটা রেখে দিন।', $o, $code); } } catch (\Throwable $e) { report($e); }
+    $this->log($o, $code, 'run', 'কুরিয়ারে পাঠানো হচ্ছে…'); $this->runId = $this->lastId ?: null;
+    try { [$ok, $msg] = app(CourierController::class)->book((int)$o->id, mb_substr($why, 0, 300)); } catch (\Throwable $e) { report($e); $ok = false; $msg = 'The order could not be sent.'; }
+    if (!$ok) { Cache::forget('packscan.'.$o->id); return $this->out('warn', 'পাঠানো হয়নি', self::why((string)$msg).' অর্ডারটা Packaging-এই আছে। পার্সেলটা রেখে দিন।', $o, $code, str_contains((string)$msg, 'override') ? $again : []); }
+    try { DB::table('order_status_logs')->insert(['order_id'=>$o->id, 'user_id'=>Auth::id(), 'user_name'=>Auth::user()->name ?? null, 'from_status'=>'Shipment', 'to_status'=>'Shipment', 'note'=>'Packaging Scan: sent with override. Reason: '.mb_substr($why, 0, 300), 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {}
+    return $this->out('ok', 'কুরিয়ারকে দিন', 'সতর্কতা থাকা সত্ত্বেও পাঠানো হয়েছে ('.(Auth::user()->name ?? '').')। কারণ: '.mb_substr($why, 0, 200), DB::table('orders')->find($o->id), $code);
   }
   public function list() { abort_unless($this->can(), 403); return response()->json($this->today()); }
   public function scan(Request $r) {
@@ -83,7 +105,7 @@ class PackScanController extends Controller {
     try { $resp = app(AdminController::class)->orderQuickStatus($r2, $o->id); $j = json_decode((string)$resp->getContent(), true) ?: []; }
     catch (\Illuminate\Validation\ValidationException $e) { $j = ['success'=>false, 'message'=>implode(' ', \Illuminate\Support\Arr::flatten($e->errors()))]; }
     catch (\Throwable $e) { report($e); $j = ['success'=>false, 'message'=>'The order could not be updated.']; }
-    if (empty($j['success'])) { Cache::forget('packscan.'.$o->id); return $this->out('warn', 'পাঠানো হয়নি', self::why((string)($j['message'] ?? '')).' অর্ডারটা Packaging-এই আছে। পার্সেলটা রেখে দিন, কুরিয়ারকে দেবেন না।', $o, $code); }
+    if (empty($j['success'])) { Cache::forget('packscan.'.$o->id); return $this->out('warn', 'পাঠানো হয়নি', self::why((string)($j['message'] ?? '')).' অর্ডারটা Packaging-এই আছে। পার্সেলটা রেখে দিন, কুরিয়ারকে দেবেন না।', $o, $code, str_contains((string)($j['message'] ?? ''), 'authorised override') ? ['override'=>['can'=>$this->canOv(), 'code'=>$code]] : []); }
     return $this->out('ok', 'কুরিয়ারকে দিন', 'অর্ডারটা Shipment-এ চলে গেছে। পার্সেলটা কুরিয়ারের ব্যাগে দিন।', DB::table('orders')->find($o->id), $code);
   }
 }

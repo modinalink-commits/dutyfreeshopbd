@@ -53,6 +53,11 @@
 #psOv #psFl{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px;padding:12px;color:#fff;font-weight:800}
 #psOv #psFl.ok{display:flex;background:rgba(21,128,61,.93)}#psOv #psFl.bad,#psOv #psFl.warn{display:flex;background:rgba(185,28,28,.94)}
 #psOv #psFl .f1{font-size:64px;line-height:1}#psOv #psFl .f2{font-size:26px;line-height:1.15}#psOv #psFl .f3{font-size:15px;font-weight:700}
+#psOv .ps-ov{margin-top:8px;background:#fff;border:1.5px solid #B45309;border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+#psOv .ps-ov b{font-size:13.5px}#psOv .ps-ov textarea{width:100%;min-height:58px;border:1.5px solid #0B1B33;border-radius:8px;padding:8px 10px;font:600 14px Inter,Bornomala,sans-serif;color:#0B1B33;margin:0;resize:vertical}
+#psOv .ps-ov button{align-self:flex-start;height:40px;padding:0 16px;border-radius:9px;border:1.5px solid #0B1B33;background:#FF5A00;color:#fff;font-weight:800;cursor:pointer;width:auto;margin:0}
+#psOv .ps-ov button:hover{background:#0B1B33;border-color:#FF5A00}#psOv .ps-ov button:disabled{opacity:.6;cursor:default}
+#psOv .ps-nt{display:block;font-weight:500;color:#5B6676;white-space:normal;font-size:11.5px;max-width:260px}
 #psQ{margin:8px 0 0;padding:6px 10px;border:1px solid #D7DCE3;border-radius:8px;background:#F3F4F6;color:#0B1B33;font-size:12.5px;font-weight:700}
 #psP{margin-top:10px;border:1.5px solid #B91C1C;border-radius:10px;background:#FEF2F2;padding:8px 10px}
 #psP .ps-pt{font-weight:800;color:#B91C1C;font-size:13px;margin-bottom:4px}
@@ -92,18 +97,18 @@ html body button.ps-open:hover,html body .toolbar-control.ps-open:hover,#ocb#ocb
  function draw(){var b=document.getElementById('psLog')||ov.querySelector('.ps-w tbody');if(!b)return;var p=Object.keys(pend).reverse().map(function(c){return '<tr class="ps-pd"><td>now</td><td><b>'+esc(c)+'</b></td><td><span class="pp warn">চেক হচ্ছে…</span></td><td></td></tr>'}).join('');b.innerHTML=(p+rowsH)||'<tr><td colspan="4" style="color:#5B6676;padding:12px">এখনো কিছু স্ক্যান হয়নি।</td></tr>'}
  function paint(j){
   if(j.rows){try{document.getElementById('psOk').textContent=j.ok||0;document.getElementById('psBad').textContent=j.stopped||0;document.getElementById('psW').textContent=j.waiting||0}catch(e){}}
-  if(j.rows)try{rowsH=j.rows.length?j.rows.map(function(r){var L={ok:'দেওয়া হয়েছে',bad:'থামানো',warn:'পাঠানো হয়নি',run:'কুরিয়ারে যাচ্ছে…'}[r.res]||r.res;return '<tr title="'+esc(r.msg)+'"><td>'+esc(r.t)+'</td><td><b>'+esc(r.inv)+'</b></td><td><span class="pp '+esc(r.res==='run'?'warn':r.res)+'">'+L+'</span></td><td>'+esc(r.by)+'</td></tr>'}).join(''):'';draw();
+  if(j.rows)try{rowsH=j.rows.length?j.rows.map(function(r){var L={ok:'দেওয়া হয়েছে',bad:'থামানো',warn:'পাঠানো হয়নি',run:'কুরিয়ারে যাচ্ছে…'}[r.res]||r.res;return '<tr title="'+esc(r.msg)+'"><td>'+esc(r.t)+'</td><td><b>'+esc(r.inv)+'</b>'+(r.note?'<span class="ps-nt">কারণ: '+esc(r.note)+'</span>':'')+'</td><td><span class="pp '+esc(r.res==='run'?'warn':r.res)+'">'+L+'</span></td><td>'+esc(r.by)+'</td></tr>'}).join(''):'';draw();
    }catch(e){}
   if(!j.result)return;
   try{var o=j.order,card=o?'<div class="ps-o"><span>ইনভয়েস</span><b>'+esc(o.invoice)+'</b><span>গ্রাহক</span><b>'+esc(o.name)+(o.phone?' · '+esc(o.phone):'')+'</b><span>পণ্য</span><b>'+esc(o.items)+'</b><span>মোট</span><b>৳'+esc(o.total)+'</b><span>অবস্থা</span><b>'+esc(o.status)+(o.tracking?' · '+esc(o.courier)+' '+esc(o.tracking):'')+'</b></div>':'';
-  res.className=j.result;res.innerHTML='<div class="ps-big">'+(j.result==='ok'?'✓ ':j.result==='bad'?'✖ ':'⚠ ')+esc(j.title)+'</div><div class="ps-sub">'+esc(j.message)+'</div>'+card;
+  res.className=j.result;res.innerHTML='<div class="ps-big">'+(j.result==='ok'?'✓ ':j.result==='bad'?'✖ ':'⚠ ')+esc(j.title)+'</div><div class="ps-sub">'+esc(j.message)+'</div>'+card+(j.override?(j.override.can?'<form class="ps-ov" data-code="'+esc(j.override.code)+'"><b>যাচাই করে থাকলে কারণ লিখে পাঠাতে পারেন:</b><textarea maxlength="300" placeholder="যেমন: গ্রাহককে ফোন করে নিশ্চিত হয়েছি"></textarea><button type="submit">কারণ লিখে পাঠাও</button></form>':'<div class="ps-ov"><b>কারণ লিখে পাঠানোর অনুমতি আপনার আইডিতে নেই। পার্সেলটা ম্যানেজার বা অ্যাডমিনকে দিন।</b></div>'):'');
   beep(j.result==='ok');if(j.result==='ok')changed=true;
   try{var fl=document.getElementById('psFl');if(fl&&!document.getElementById('psV').hidden){fl.className=j.result;fl.innerHTML='<div class="f1">'+(j.result==='ok'?'✓':'✖')+'</div><div class="f2">'+esc(j.title)+'</div><div class="f3">'+esc(o?o.invoice:'')+(j.result==='ok'?'':' · পার্সেল রেখে দিন')+'</div>';clearTimeout(fl._t);fl._t=setTimeout(function(){fl.className=''},j.result==='ok'?1300:3500)}}catch(e){}
   var ml=document.getElementById('psMl');ml.className=j.result;ml.textContent=(j.result==='ok'?'✓ ':j.result==='bad'?'✖ ':'⚠ ')+(o?o.invoice+' · ':'')+j.title+(j.result==='ok'?'':' · পার্সেল রেখে দিন')}catch(e){try{res.className=j.result;res.textContent=j.title+': '+j.message}catch(e2){}}}
  var q=[],run=0,last={},MAXRUN=2;
  var t0s={},tick=null;
  function qshow(){var n=q.length+run,e=document.getElementById('psQ');e.hidden=n<1;var ks=Object.keys(pend),now=Date.now();e.textContent=n>0?('চেক হচ্ছে: '+ks.map(function(c){return c+' ('+Math.round((now-(t0s[c]||now))/1000)+'s)'}).join(', ')+' … স্ক্যান করতে থাকুন'):'';if(n>0&&!tick)tick=setInterval(qshow,1000);if(n<1&&tick){clearInterval(tick);tick=null}}
- function prob(j,code){if(j.result==='ok')return;var o=j.order,e=document.getElementById('psPl'),d=document.createElement('div');d.className='ps-pi';d.innerHTML='<b>'+esc(o?o.invoice:code)+'</b>'+(o&&o.name?' · '+esc(o.name):'')+' · '+esc(j.title);d.title=j.message||'';e.insertBefore(d,e.firstChild);document.getElementById('psP').hidden=false}
+ function prob(j,code){if(j.result==='ok'){try{var pl=document.getElementById('psPl'),iv=j.order?j.order.invoice:code;[].slice.call(pl.children).forEach(function(c){if(c.getAttribute('data-inv')===String(iv))c.remove()});if(!pl.children.length)document.getElementById('psP').hidden=true}catch(e){}return}var o=j.order,e=document.getElementById('psPl'),d=document.createElement('div');d.className='ps-pi';d.setAttribute('data-inv',o?o.invoice:code);d.innerHTML='<b>'+esc(o?o.invoice:code)+'</b>'+(o&&o.name?' · '+esc(o.name):'')+' · '+esc(j.title);d.title=j.message||'';e.insertBefore(d,e.firstChild);document.getElementById('psP').hidden=false}
  function done(code,j){run--;delete pend[code];paint(j);if(!j.rows)draw();prob(j,code);qshow();pump()}
  function pump(){while(run<MAXRUN&&q.length){(function(code){run++;qshow();var ab=window.AbortController?new AbortController():null,tm=setTimeout(function(){if(ab)ab.abort()},60000);
    fetch('/admin/packing-scan/scan',{method:'POST',credentials:'same-origin',signal:ab?ab.signal:undefined,headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':tk()},body:JSON.stringify({code:code})})
@@ -130,7 +135,7 @@ html body button.ps-open:hover,html body .toolbar-control.ps-open:hover,#ocb#ocb
   if(e.key&&e.key.length===1){kb+=e.key;if(kb.length>1){e.preventDefault();e.stopPropagation()}}},true);
  document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('.ps-open');if(b){e.preventDefault();open()}});
  // keep the scan box ready: any click inside the window puts the cursor back
- ov.addEventListener('click',function(e){if(ov.classList.contains('min')||strm)return;if(e.target!==inp&&!(e.target.closest&&e.target.closest('button')))inp.focus()});
+ ov.addEventListener('click',function(e){if(ov.classList.contains('min')||strm)return;if(e.target!==inp&&!(e.target.closest&&e.target.closest('button,textarea,.ps-ov')))inp.focus()});
 
  // phone camera: reads the label barcode (or its QR) and sends it like a scanner would
  var cb=document.getElementById('psCam'),vw=document.getElementById('psV'),vd=document.getElementById('psVd'),vn=document.getElementById('psVn'),strm=null,det=null,zr=null,ctm=null,cLast='',cAt=0;
@@ -151,6 +156,11 @@ html body button.ps-open:hover,html body .toolbar-control.ps-open:hover,#ocb#ocb
   }).catch(function(e){var n=e&&e.name;camFail(n==='NotAllowedError'||n==='SecurityError'?'ক্যামেরার অনুমতি দেওয়া হয়নি। ব্রাউজারের ঠিকানার পাশের তালা চিহ্নে চেপে Camera-কে Allow করুন, তারপর আবার চাপুন।':n==='NotFoundError'?'এই যন্ত্রে কোনো ক্যামেরা পাওয়া যায়নি।':'ক্যামেরা খোলা যায়নি। অন্য কোনো অ্যাপ ক্যামেরা ব্যবহার করছে কি না দেখুন।')})}
  cb.addEventListener('click',function(){if(strm||cb.classList.contains('on'))camStop();else camStart()});
  // on a phone the scan page opens straight into the camera: one tap fewer for packing staff
+ res.addEventListener('submit',function(e){var f=e.target.closest&&e.target.closest('.ps-ov');if(!f)return;e.preventDefault();var ta=f.querySelector('textarea'),bt=f.querySelector('button'),why=(ta.value||'').trim(),code=f.getAttribute('data-code');
+  if(why.length<5){ta.focus();ta.style.borderColor='#B91C1C';return}bt.disabled=true;bt.textContent='পাঠানো হচ্ছে…';
+  fetch('/admin/packing-scan/override',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':tk()},body:JSON.stringify({code:code,reason:why})})
+   .then(function(r){if(r.status===401||r.status===419)throw new Error('এই পেজে লগইন নেই। Ctrl+F5 দিয়ে আবার লগইন করুন');return r.json()}).then(function(j){if(!j||!j.result)throw new Error('সার্ভার থেকে ঠিক উত্তর আসেনি');paint(j);prob(j,code);if(j.result==='ok')inp.focus()})
+   .catch(function(er){bt.disabled=false;bt.textContent='কারণ লিখে পাঠাও';paint({result:'bad',title:'উত্তর আসেনি',message:String(er&&er.message||er).slice(0,120)+'। পার্সেলটা রেখে দিন, অর্ডারটা খুলে স্ট্যাটাস দেখুন।'})})});
  window.dfPackScan=function(){open();try{if(window.__psPage&&window.matchMedia&&window.matchMedia('(pointer:coarse)').matches&&!strm)setTimeout(camStart,250)}catch(e){}};
 })();
 </script>
