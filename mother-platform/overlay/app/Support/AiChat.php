@@ -146,7 +146,7 @@ class AiChat {
     $detail = self::detail(end($msgs)['content'], $all);
     $sys2 = $detail !== '' ? $detail : '';
     try {
-      $res = Http::withHeaders(['x-api-key'=>$key, 'anthropic-version'=>'2023-06-01'])->timeout(40)->post('https://api.anthropic.com/v1/messages', ['model'=>self::model(), 'max_tokens'=>max(200, min(1200, $max)), 'system'=>array_values(array_filter([['type'=>'text', 'text'=>$sys, 'cache_control'=>['type'=>'ephemeral']], $sys2 !== '' ? ['type'=>'text', 'text'=>$sys2] : null])), 'messages'=>$msgs]);
+      $res = Http::withHeaders(['x-api-key'=>$key, 'anthropic-version'=>'2023-06-01'])->timeout(40)->post('https://api.anthropic.com/v1/messages', ['model'=>self::model(), 'max_tokens'=>max(200, min(4000, $max)), 'system'=>array_values(array_filter([['type'=>'text', 'text'=>$sys, 'cache_control'=>['type'=>'ephemeral']], $sys2 !== '' ? ['type'=>'text', 'text'=>$sys2] : null])), 'messages'=>$msgs]);
     } catch (\Throwable $e) { return [false, 'network']; }
     if (!$res->ok()) return [false, 'HTTP '.$res->status().' '.mb_substr((string)($res->json('error.message') ?? ''), 0, 160)];
     $t = trim(collect($res->json('content') ?? [])->where('type','text')->pluck('text')->implode("\n"));
@@ -161,7 +161,7 @@ class AiChat {
     for ($try = 0; $try < 2; $try++) {
       try {
         if ($try) usleep(900000);
-        $res = Http::withHeaders(['x-api-key' => $key, 'anthropic-version' => '2023-06-01'])->timeout(25)->post('https://api.anthropic.com/v1/messages', ['model' => self::model(), 'max_tokens' => 800, 'system' => $sys, 'messages' => [['role' => 'user', 'content' => mb_substr($base, 0, 2000)]]]);
+        $res = Http::withHeaders(['x-api-key' => $key, 'anthropic-version' => '2023-06-01'])->timeout(25)->post('https://api.anthropic.com/v1/messages', ['model' => self::model(), 'max_tokens' => 3000, 'system' => $sys, 'messages' => [['role' => 'user', 'content' => mb_substr($base, 0, 2000)]]]);
         if (!$res->ok()) { self::$vErr = 'HTTP '.$res->status().' '.mb_substr((string)($res->json('error.message') ?? ''), 0, 120); continue; }
         $t = trim(collect($res->json('content') ?? [])->where('type', 'text')->pluck('text')->implode("\n"));
         $out = []; self::$vErr = 'unparsed: '.mb_strlen($t).' chars, stop '.(string)$res->json('stop_reason');

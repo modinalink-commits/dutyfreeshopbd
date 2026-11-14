@@ -90,7 +90,7 @@ class ChatController extends Controller {
     $hist = DB::table('chat_messages')->where('thread_id', $id)->orderByDesc('id')->limit(14)->get()->reverse()->values()->map(function ($m) { $c = trim((string)($m->transcript ?: $m->body)); if ($c === '' && $m->attachment_url) $c = '['.($m->attachment_type ?: 'file').' sent]'; return ['role'=>$m->dir === 'in' ? 'user' : 'assistant', 'content'=>$c]; })->all();
     $extra = "\n";
     try { if ($t->phone && ($o = DB::table('orders')->where('phone', $t->phone)->orderByDesc('id')->first(['invoice', 'status', 'total', 'courier', 'courier_status', 'tracking_code', 'consignment_id']))) $extra .= 'VERIFIED ORDER (this customer\'s latest order, from the store database): Invoice '.$o->invoice.' | status '.$o->status.' | total '.(int)round((float)$o->total).' BDT'.($o->courier ? ' | courier '.$o->courier : '').($o->courier_status ? ' | courier status '.$o->courier_status : '').(($o->tracking_code ?: $o->consignment_id) ? ' | tracking '.($o->tracking_code ?: $o->consignment_id) : '')."\n"; } catch (\Throwable $e) {}
-    [$ok, $txt] = \App\Support\AiChat::reply($hist, $extra, $t->ai_lang ?? null);
+    [$ok, $txt] = \App\Support\AiChat::reply($hist, $extra, $t->ai_lang ?? null, 2000); // room for the model's own working before the short answer
     if (!$ok) return response()->json(['ok'=>false, 'error'=>$txt === 'empty' ? 'The customer has not written anything after the last reply.' : ($txt === 'empty reply' ? 'The AI could not draft a reply for this message. Please write it yourself.' : 'AI draft failed: '.$txt)]);
     $drafts = [trim($txt)];
     foreach (\App\Support\AiChat::variants($drafts[0]) as $v) $drafts[] = $v; // same facts, different length and tone
