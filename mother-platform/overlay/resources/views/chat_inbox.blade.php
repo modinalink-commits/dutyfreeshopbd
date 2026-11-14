@@ -120,14 +120,18 @@ main{height:calc(100vh / var(--z,1));overflow:hidden;display:flex;flex-direction
 .mbx .av .mcav{background:#F2F4F7;color:#0B1B33}
 .mbx .mc .hd{border-bottom-color:#E5E7EB;padding:10px 14px}.mbx .mc .hd .r2 .lk,.mbx .mc .hd .r2 select{border-color:#E5E7EB;border-radius:8px}
 .mbx .mc .ms{background:#F9FAFB}.mbx .mc .b.in{border-color:#E5E7EB}.mbx .mc .b.out{background:#FFF1E8}.mbx .mc .cm{border-top-color:#E5E7EB}
-@media(min-width:901px){.mbx .cv .mc .hd .r2{flex-wrap:wrap;overflow:visible}} /* nothing hides off to the side: the action buttons wrap */
+@media(min-width:901px){.mbx .cv .mc .hd .r2{flex-wrap:wrap;overflow:visible}}
+/* keep the conversation itself the biggest part of the screen: compact header buttons, capped hand-off note, slimmer reply tools */
+.mbx .mc .hd{gap:6px;padding:8px 12px}.mbx .mc .hd .r2{gap:5px}.mbx .mc .hd .r2 .lk,.mbx .mc .hd .r2 .aw,.mbx .mc .hd .r2 .rp,.mbx .mc .hd .r2 select{height:28px;padding:0 9px;font-size:12.5px}
+.mbx .mc .hb{max-height:60px;overflow:auto}
+.mbx .mc .cm{padding:8px 10px;gap:6px}.mbx .mc .cm .tb .tg,.mbx .mc .cm .tb .qrw select,.mbx .mc .cm .ax .tg{height:30px;padding:0 9px}.mbx .mc .cm .tb .qrw select{padding-left:28px}.mbx .mc .ms{min-height:180px} /* nothing hides off to the side: the action buttons wrap */
 @media(min-width:1280px){
 .mbx{grid-template-columns:320px minmax(0,1fr)}
 .mbx .cv .mc{display:grid;grid-template-columns:minmax(0,1fr) 300px;grid-template-rows:auto minmax(0,1fr) auto}
 .mbx .cv .mc>.mcbd{display:none}
 .mbx .cv .mc>.hd{grid-column:1;grid-row:1;min-width:0}.mbx .cv .mc>.ms{grid-column:1;grid-row:2;min-height:0}.mbx .cv .mc>.cm{grid-column:1;grid-row:3;min-width:0}
 .mbx .cv .mc #hdt{display:none}
-.mbx .cv .mc>details.cb{grid-column:2;grid-row:1/4;max-height:none;border-bottom:0;border-left:1px solid #E5E7EB;background:#F9FAFB;padding:12px;overflow:auto;min-width:0}
+.mbx .cv .mc>details.cb{grid-column:2;grid-row:1/4;align-self:stretch;height:100%;box-sizing:border-box;max-height:none;border-bottom:0;border-left:1px solid #E5E7EB;background:#F9FAFB;padding:12px;overflow:auto;min-width:0}
 .mbx .cv .mc>details.cb>summary{list-style:none;pointer-events:none;font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;color:#475467;margin-bottom:6px}
 .mbx .cv .mc>details.cb>summary::-webkit-details-marker{display:none}
 .mbx .cv .mc>details.cb .chips{gap:5px}.mbx .cv .mc>details.cb .ch{height:26px;padding:0 9px;border-color:#E5E7EB;border-radius:8px;white-space:normal}
