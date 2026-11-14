@@ -22,7 +22,7 @@ class ChatController extends Controller {
     elseif ($f === 'assigned') $q->where('assigned_to', auth()->id());
     elseif ($f === 'human') Chat::humanScope($q);
     elseif ($f === 'resolved') $q->where('status', 'resolved');
-    elseif ($f === 'report') $q->whereNotNull('reported_at');
+    elseif ($f === 'report') $q->whereNotNull('reported_at')->where(fn($w) => $w->whereNull('report_solved_at')->orWhere('report_solved_at', '>=', now()->subDays(30)));
     if ($f !== 'resolved' && $f !== 'all' && $f !== 'report') $q->where('status', '!=', 'resolved');
     if (in_array($r->query('s'), array_keys(self::STATUSES))) $q->where('status', $r->query('s'));
     if ($s = trim((string)$r->query('q'))) { $like = '%'.str_replace(['%', '_'], ['\%', '\_'], $s).'%'; $q->where(fn($w) => $w->where('name', 'ilike', $like)->orWhere('phone', 'ilike', $like)->orWhere('username', 'ilike', $like)->orWhere('last_message', 'ilike', $like)->orWhereIn('phone', fn($o) => $o->from('orders')->where('invoice', 'ilike', $like)->select('phone')->limit(50))); }
@@ -30,7 +30,7 @@ class ChatController extends Controller {
     $rows = $q->orderByRaw("case when status <> 'resolved' and awaiting_reply then 1 when status <> 'resolved' and (status = 'waiting' or coalesce(needs_human, false)) then 2 when status <> 'resolved' then 3 else 4 end")->orderByDesc('last_at')->limit(120)->get();
     $orq = 0; try { $orq = (int)DB::table('chat_order_requests')->where('status', 'review')->count(); } catch (\Throwable $e) {}
     $hum = 0; try { $hum = (int)Chat::humanScope(DB::table('chat_threads'))->count(); } catch (\Throwable $e) {}
-    $rep = 0; try { $rep = (int)DB::table('chat_threads')->whereNotNull('reported_at')->count(); } catch (\Throwable $e) {}
+    $rep = 0; try { $rep = (int)DB::table('chat_threads')->whereNotNull('reported_at')->whereNull('report_solved_at')->count(); } catch (\Throwable $e) {}
     // Inbox v2: which waiting chats need a person (the rest were answered by the AI and wait on the customer). Display only; the Awaiting rule is unchanged.
     $cards = Chat::cards($rows); $pp = [];
     try { $ids = $rows->pluck('id')->all(); if ($ids) $pp = array_flip(Chat::humanScope(DB::table('chat_threads')->whereIn('id', $ids))->pluck('id')->all()); } catch (\Throwable $e) {}
@@ -219,7 +219,7 @@ class ChatController extends Controller {
       try { if (DB::table('chat_order_requests')->where('thread_id', $id)->where('status', 'review')->exists()) $why[] = 'an Order Request is still open'; } catch (\Throwable $e) {}
       try { if (\Illuminate\Support\Facades\Schema::hasTable('chat_handoffs') && DB::table('chat_handoffs')->where('thread_id', $id)->whereIn('status', ['open', 'accepted'])->exists()) $why[] = 'a hand-off is still open'; } catch (\Throwable $e) {}
       if (in_array((string)($t->intent ?? ''), ['complaint', 'refund'], true) && (!empty($t->awaiting_reply) || !empty($t->needs_human))) $why[] = 'the customer has an unanswered '.$t->intent.' request';
-      if (!empty($t->reported_at)) $why[] = 'the customer\'s complaint is still open';
+      if (!empty($t->reported_at) && empty($t->report_solved_at)) $why[] = 'the customer\'s complaint is still open';
       if ($why && $reason === '') return response()->json(['ok'=>false, 'need_reason'=>true, 'why'=>implode('; ', $why)]);
       $upd += ['unread'=>0, 'awaiting_reply'=>false, 'needs_human'=>false, 'handoff_at'=>null, 'handoff_reason'=>null, 'ai_paused'=>false];
     }
@@ -231,9 +231,9 @@ class ChatController extends Controller {
   /** Report mark: staff can file a conversation under Report by hand, or mark the customer's report as solved. */
   public function report(Request $r, $id) {
     $t = DB::table('chat_threads')->find($id); abort_unless($t, 404); $on = (bool)$r->input('on');
-    DB::table('chat_threads')->where('id', $id)->update($on ? ['reported_at'=>now(), 'report_reason'=>'Marked by '.(auth()->user()->name ?? 'staff'), 'updated_at'=>now()] : ['reported_at'=>null, 'report_reason'=>null, 'updated_at'=>now()]);
+    DB::table('chat_threads')->where('id', $id)->update($on ? ['reported_at'=>now(), 'report_reason'=>'Marked by '.(auth()->user()->name ?? 'staff'), 'report_solved_at'=>null, 'report_solved_by'=>null, 'updated_at'=>now()] : ['report_solved_at'=>now(), 'report_solved_by'=>mb_substr((string)(auth()->user()->name ?? 'staff'), 0, 120), 'updated_at'=>now()]);
     try { DB::table('audit_logs')->insert(['user_id'=>auth()->id(), 'user_name'=>auth()->user()->name ?? '', 'action'=>$on ? 'chat.report' : 'chat.report_solved', 'subject'=>'Conversation #'.$id.($on ? ' filed under Complaint' : ' complaint solved'.(!empty($t->report_reason) ? ' ('.$t->report_reason.')' : '')), 'ip'=>$r->ip(), 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {}
-    return response()->json(['ok'=>true, 'reported'=>$on]);
+    return response()->json(['ok'=>true, 'reported'=>$on, 'by'=>auth()->user()->name ?? 'staff']);
   }
   /** Link a social conversation to a customer by phone number. */
   public function phone(Request $r, $id) {

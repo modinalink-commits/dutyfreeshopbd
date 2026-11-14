@@ -255,7 +255,7 @@ class Chat {
       if (Sms::secret('ai_auto_close') === '0') return false;
       $tid = (int)$t->id; $t = DB::table('chat_threads')->find($tid); if (!$t || $t->status === 'resolved') return false;
       // never close while anything is open: hand-off / manager review, needs-human, complaint, refund, cancel, order change, payment, human request, order request
-      if (!empty($t->needs_human) || !empty($t->handoff_at) || !empty($t->reported_at) || AiChat::paused($t)) return false;
+      if (!empty($t->needs_human) || !empty($t->handoff_at) || (!empty($t->reported_at) && empty($t->report_solved_at)) || AiChat::paused($t)) return false;
       if (in_array((string)($t->intent ?? ''), ['complaint', 'refund', 'cancel', 'change_order', 'human_request', 'payment', 'order_request'], true)) return false;
       if (DB::table('chat_handoffs')->where('thread_id', $tid)->whereIn('status', ['open', 'accepted'])->exists()) return false;
       // only after we actually helped: at least one reply of ours exists and the last message is the customer's goodbye
@@ -431,7 +431,7 @@ class Chat {
   public static function closeSilent(object $t): bool {
     try {
       $tid = (int)$t->id; $t = DB::table('chat_threads')->find($tid); if (!$t || $t->status === 'resolved' || ($t->last_dir ?? '') !== 'out') return false;
-      if (!empty($t->needs_human) || !empty($t->handoff_at) || !empty($t->reported_at)) return false;
+      if (!empty($t->needs_human) || !empty($t->handoff_at) || (!empty($t->reported_at) && empty($t->report_solved_at))) return false;
       if (in_array((string)($t->intent ?? ''), ['complaint', 'refund', 'cancel', 'change_order', 'human_request', 'payment', 'order_request'], true)) return false;
       if (DB::table('chat_handoffs')->where('thread_id', $tid)->whereIn('status', ['open', 'accepted'])->exists()) return false;
       try { if (DB::table('chat_order_requests')->where('thread_id', $tid)->where('status', 'review')->exists()) return false; } catch (\Throwable $e) {}
@@ -461,7 +461,8 @@ class Chat {
     try { if ($tid <= 0 || trim($text) === '' || !preg_match(self::REPORT_RX, $text, $m)) return; self::markReported($tid, 'Customer wrote: "'.mb_substr(trim($text), 0, 120).'"'); } catch (\Throwable $e) {}
   }
   public static function markReported(int $tid, string $why): void {
-    try { if ($tid > 0) DB::table('chat_threads')->where('id', $tid)->whereNull('reported_at')->update(['reported_at'=>now(), 'report_reason'=>mb_substr($why, 0, 200), 'updated_at'=>now()]); } catch (\Throwable $e) {}
+    // files a new complaint, or opens it again when the customer complains after an earlier one was solved
+    try { if ($tid > 0) DB::table('chat_threads')->where('id', $tid)->where(fn($w) => $w->whereNull('reported_at')->orWhereNotNull('report_solved_at'))->update(['reported_at'=>now(), 'report_reason'=>mb_substr($why, 0, 200), 'report_solved_at'=>null, 'report_solved_by'=>null, 'updated_at'=>now()]); } catch (\Throwable $e) {}
   }
   public static function unansweredBlock(object $t): ?string {
     if (!empty($t->needs_human) || !empty($t->handoff_at)) return 'hand-off / needs a person';
@@ -748,7 +749,7 @@ class Chat {
         'stale'=>empty($t->awaiting_reply) && ($t->last_dir ?? null) === 'in' && $t->status !== 'resolved' && !empty($t->last_at) && \Carbon\Carbon::parse($t->last_at)->lt(now()->subDays(7)), 'last'=>$t->last_message, 'last_dir'=>$t->last_dir, 'last_at'=>$t->last_at ? \Carbon\Carbon::parse($t->last_at)->toIso8601String() : null,
         'ai'=>!($t->ai_paused ?? false), 'ai_lang'=>$t->ai_lang ?? null, 'ai_detected'=>$t->ai_detected ?? null, 'assigned_to'=>$t->assigned_to, 'assigned_name'=>$agents[$t->assigned_to] ?? null, 'customer_id'=>$t->customer_id,
         'cat'=>$n > 0 && $i ? $i['cat'] : 'New', 'orders'=>$n, 'risk'=>$n > 0 && $i ? $i['risk'] : 'Low',
-        'intent'=>$t->intent ?? null, 'mood'=>$t->mood ?? null, 'priority'=>$t->priority ?? 'normal', 'needs_human'=>(bool)($t->needs_human ?? false), 'reported'=>!empty($t->reported_at), 'report_reason'=>$t->report_reason ?? null,
+        'intent'=>$t->intent ?? null, 'mood'=>$t->mood ?? null, 'priority'=>$t->priority ?? 'normal', 'needs_human'=>(bool)($t->needs_human ?? false), 'reported'=>!empty($t->reported_at) && empty($t->report_solved_at), 'report_solved'=>!empty($t->reported_at) && !empty($t->report_solved_at), 'report_solved_by'=>$t->report_solved_by ?? null, 'report_reason'=>$t->report_reason ?? null,
         'waiting_since'=>isset($ws[$t->id]) ? \Carbon\Carbon::parse($ws[$t->id])->toIso8601String() : null, 'sla_w'=>$slaW, 'sla_r'=>$slaR, 'handoff_at'=>!empty($t->handoff_at) ? \Carbon\Carbon::parse($t->handoff_at)->toIso8601String() : null, 'handoff_reason'=>$t->handoff_reason ?? null, 'ai_summary'=>$t->ai_summary ?? null];
     })->all();
   }
