@@ -299,14 +299,16 @@ class StoreController extends Controller {
   /** Below-the-fold home category section, lazy-loaded by the home page so the first HTML stays small. */
   /** Private preview of the globe section before it goes on the front page. */
   /** The flagship "Best Seller" products for the home block. Ids come from the setting bestseller_ids ("12,34"); until it is set, the two named cartons are found by name. Never cached, so the price on the block is always the product's current price. */
+  private static $bsMemo = null;
   public static function bestSellers() {
     try {
       $ids = array_values(array_filter(array_map('intval', explode(',', (string)\App\Support\Procure::set('bestseller_ids', '')))));
-      $q = DB::table('products')->where('published', true);
-      if ($ids) $rows = $q->whereIn('id', $ids)->get()->sortBy(fn($p) => array_search((int)$p->id, $ids))->values();
-      else { $rows = collect(); foreach (['Oris Silver Nano Super Slim%', 'Patron Nano White Special%'] as $n) { $p = (clone $q)->where('name', 'ilike', $n)->orderByDesc('stock')->first(); if ($p) $rows->push($p); } }
+      if (self::$bsMemo !== null) return self::$bsMemo;
+      // Speed (14 Nov 2026): the search by name read the whole products table on every page load. The two ids are now found once and kept for 10 minutes; the rows themselves are still read fresh by id, so the price on the block is always current.
+      if (!$ids) $ids = \Illuminate\Support\Facades\Cache::remember('bestseller.ids', 600, function () { $o = []; foreach (['Oris Silver Nano Super Slim%', 'Patron Nano White Special%'] as $n) { $id = DB::table('products')->where('published', true)->where('name', 'ilike', $n)->orderByDesc('stock')->value('id'); if ($id) $o[] = (int)$id; } return $o; });
+      $rows = $ids ? DB::table('products')->where('published', true)->whereIn('id', $ids)->get()->sortBy(fn($p) => array_search((int)$p->id, $ids))->values() : collect();
       $custom = ['patron nano white' => '/images/bestseller/patron-white-3.webp', 'oris silver nano' => '/images/bestseller/oris-silver-2.webp'];
-      return $rows->map(function ($p) use ($custom) { $p->bs_image = null; foreach ($custom as $k => $f) if (str_contains(mb_strtolower((string)$p->name), $k) && is_file(public_path(ltrim($f, '/')))) $p->bs_image = $f; return $p; });
+      return self::$bsMemo = $rows->map(function ($p) use ($custom) { $p->bs_image = null; foreach ($custom as $k => $f) if (str_contains(mb_strtolower((string)$p->name), $k) && is_file(public_path(ltrim($f, '/')))) $p->bs_image = $f; return $p; });
     } catch (\Throwable $e) { return collect(); }
   }
   public function bestSellerPreview() {
