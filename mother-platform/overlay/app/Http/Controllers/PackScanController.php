@@ -18,9 +18,12 @@ class PackScanController extends Controller {
   const DEAD = ['Cancel', 'Returned', 'Return Pending'];
   private function can(): bool { return MP::can(Auth::user(), 'orders', 'edit'); }
   public function page() { abort_unless($this->can(), 403); return view('pack_scan'); }
+  private ?int $runId = null;
   private function log(?object $o, string $code, string $res, string $msg): void {
-    try { if (Schema::hasTable('order_scan_logs')) DB::table('order_scan_logs')->insert(['order_id'=>$o->id ?? null, 'invoice'=>$o ? Inv::show($o->invoice) : null, 'code'=>mb_substr($code, 0, 80), 'result'=>$res, 'message'=>mb_substr($msg, 0, 300), 'user_id'=>Auth::id(), 'user_name'=>Auth::user()->name ?? null, 'created_at'=>now()]); } catch (\Throwable $e) {}
+    try { if ($this->runId && $res !== 'run') { DB::table('order_scan_logs')->where('id', $this->runId)->update(['result'=>$res, 'message'=>mb_substr($msg, 0, 300)]); $this->runId = null; return; } } catch (\Throwable $e) {}
+    try { if (Schema::hasTable('order_scan_logs')) $this->lastId = (int)DB::table('order_scan_logs')->insertGetId(['order_id'=>$o->id ?? null, 'invoice'=>$o ? Inv::show($o->invoice) : null, 'code'=>mb_substr($code, 0, 80), 'result'=>$res, 'message'=>mb_substr($msg, 0, 300), 'user_id'=>Auth::id(), 'user_name'=>Auth::user()->name ?? null, 'created_at'=>now()], 'id'); } catch (\Throwable $e) {}
   }
+  private int $lastId = 0;
   private function out(string $res, string $title, string $msg, ?object $o, string $code) {
     $this->log($o, $code, $res, $title.': '.$msg);
     $card = null;
@@ -32,7 +35,7 @@ class PackScanController extends Controller {
     try {
       if (!Schema::hasTable('order_scan_logs')) return ['rows'=>[], 'ok'=>0, 'stopped'=>0, 'waiting'=>0];
       $d0 = now('Asia/Dhaka')->startOfDay()->utc();
-      $c = DB::table('order_scan_logs')->where('created_at', '>=', $d0)->selectRaw("count(*) filter (where result = 'ok') ok, count(*) filter (where result <> 'ok') bad")->first();
+      $c = DB::table('order_scan_logs')->where('created_at', '>=', $d0)->selectRaw("count(*) filter (where result = 'ok') ok, count(*) filter (where result not in ('ok','run')) bad")->first();
       $rows = DB::table('order_scan_logs')->where('created_at', '>=', $d0)->orderByDesc('id')->limit(40)->get()->map(fn($r) => ['t'=>\Carbon\Carbon::parse($r->created_at, 'UTC')->timezone('Asia/Dhaka')->format('h:i:s A'), 'inv'=>$r->invoice ?: $r->code, 'res'=>$r->result, 'msg'=>(string)$r->message, 'by'=>(string)$r->user_name])->all();
       return ['rows'=>$rows, 'ok'=>(int)($c->ok ?? 0), 'stopped'=>(int)($c->bad ?? 0), 'waiting'=>(int)DB::table('orders')->where('status', 'Packaging')->count()];
     } catch (\Throwable $e) { return ['rows'=>[], 'ok'=>0, 'stopped'=>0, 'waiting'=>0]; }
@@ -53,6 +56,8 @@ class PackScanController extends Controller {
     }
     if (in_array($o->status, self::DEAD, true)) return $this->out('bad', 'STOP: '.strtoupper($o->status), 'This order is '.$o->status.'. It must not be shipped.', $o, $code);
     if ($o->status !== 'Packaging') return $this->out('warn', 'NOT IN PACKAGING', 'Status is '.$o->status.'. Only a Packaging order can be handed over. Print its label (it then moves to Packaging) or correct the status first.', $o, $code);
+    // a 'run' line is written before the courier is contacted, so a slow or lost booking is visible in the list
+    $this->log($o, $code, 'run', 'Sending to the courier…'); $this->runId = $this->lastId ?: null;
     // the normal status change does the work: duplicate permission, stock check, courier booking, logs
     $r2 = Request::create('/admin/orders/'.$o->id.'/quick-status', 'POST', ['status'=>'Shipment', 'note'=>'Packaging Scan (courier handover)', 'source'=>'Order List']);
     $r2->setUserResolver(fn() => Auth::user()); $r2->server->set('REMOTE_ADDR', $r->ip());

@@ -72,7 +72,7 @@ html body button.ps-open:hover,html body .toolbar-control.ps-open:hover,#ocb#ocb
  function draw(){var b=document.getElementById('psLog')||ov.querySelector('.ps-w tbody');if(!b)return;var p=Object.keys(pend).reverse().map(function(c){return '<tr class="ps-pd"><td>now</td><td><b>'+esc(c)+'</b></td><td><span class="pp warn">Checking…</span></td><td></td></tr>'}).join('');b.innerHTML=(p+rowsH)||'<tr><td colspan="4" style="color:#5B6676;padding:12px">Nothing scanned yet.</td></tr>'}
  function paint(j){
   if(j.rows){try{document.getElementById('psOk').textContent=j.ok||0;document.getElementById('psBad').textContent=j.stopped||0;document.getElementById('psW').textContent=j.waiting||0}catch(e){}}
-  if(j.rows)try{rowsH=j.rows.length?j.rows.map(function(r){var L={ok:'Handed over',bad:'Stopped',warn:'Not sent'}[r.res]||r.res;return '<tr title="'+esc(r.msg)+'"><td>'+esc(r.t)+'</td><td><b>'+esc(r.inv)+'</b></td><td><span class="pp '+esc(r.res)+'">'+L+'</span></td><td>'+esc(r.by)+'</td></tr>'}).join(''):'';draw();
+  if(j.rows)try{rowsH=j.rows.length?j.rows.map(function(r){var L={ok:'Handed over',bad:'Stopped',warn:'Not sent',run:'Sending to courier…'}[r.res]||r.res;return '<tr title="'+esc(r.msg)+'"><td>'+esc(r.t)+'</td><td><b>'+esc(r.inv)+'</b></td><td><span class="pp '+esc(r.res==='run'?'warn':r.res)+'">'+L+'</span></td><td>'+esc(r.by)+'</td></tr>'}).join(''):'';draw();
    }catch(e){}
   if(!j.result)return;
   try{var o=j.order,card=o?'<div class="ps-o"><span>Invoice</span><b>'+esc(o.invoice)+'</b><span>Customer</span><b>'+esc(o.name)+(o.phone?' · '+esc(o.phone):'')+'</b><span>Items</span><b>'+esc(o.items)+'</b><span>Total</span><b>৳'+esc(o.total)+'</b><span>Status</span><b>'+esc(o.status)+(o.tracking?' · '+esc(o.courier)+' '+esc(o.tracking):'')+'</b></div>':'';
@@ -80,16 +80,17 @@ html body button.ps-open:hover,html body .toolbar-control.ps-open:hover,#ocb#ocb
   beep(j.result==='ok');if(j.result==='ok')changed=true;
   var ml=document.getElementById('psMl');ml.className=j.result;ml.textContent=(j.result==='ok'?'✓ ':j.result==='bad'?'✖ ':'⚠ ')+(o?o.invoice+' · ':'')+j.title+(j.result==='ok'?'':' · keep this parcel')}catch(e){try{res.className=j.result;res.textContent=j.title+': '+j.message}catch(e2){}}}
  var q=[],run=0,last={},MAXRUN=2;
- function qshow(){var n=q.length+run,e=document.getElementById('psQ');e.hidden=n<1;e.textContent=n>0?('Checking '+n+' parcel'+(n>1?'s':'')+'… keep scanning'):''}
+ var t0s={},tick=null;
+ function qshow(){var n=q.length+run,e=document.getElementById('psQ');e.hidden=n<1;var ks=Object.keys(pend),now=Date.now();e.textContent=n>0?('Checking '+ks.map(function(c){return c+' ('+Math.round((now-(t0s[c]||now))/1000)+'s)'}).join(', ')+' … keep scanning'):'';if(n>0&&!tick)tick=setInterval(qshow,1000);if(n<1&&tick){clearInterval(tick);tick=null}}
  function prob(j,code){if(j.result==='ok')return;var o=j.order,e=document.getElementById('psPl'),d=document.createElement('div');d.className='ps-pi';d.innerHTML='<b>'+esc(o?o.invoice:code)+'</b>'+(o&&o.name?' · '+esc(o.name):'')+' · '+esc(j.title);d.title=j.message||'';e.insertBefore(d,e.firstChild);document.getElementById('psP').hidden=false}
  function done(code,j){run--;delete pend[code];paint(j);if(!j.rows)draw();prob(j,code);qshow();pump()}
  function pump(){while(run<MAXRUN&&q.length){(function(code){run++;qshow();var ab=window.AbortController?new AbortController():null,tm=setTimeout(function(){if(ab)ab.abort()},60000);
    fetch('/admin/packing-scan/scan',{method:'POST',credentials:'same-origin',signal:ab?ab.signal:undefined,headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':tk()},body:JSON.stringify({code:code})})
-    .then(function(r){return r.json()}).then(function(j){clearTimeout(tm);done(code,j)})
-    .catch(function(){clearTimeout(tm);delete last[code];done(code,{result:'bad',title:'NO ANSWER',message:'No answer for '+code+'. Keep this parcel. Check the internet, then open the order: if it is already in Shipment it went through, otherwise scan it again.'})})})(q.shift())}}
+    .then(function(r){if(!r.ok&&r.status!==403)throw new Error('server error '+r.status);return r.json()}).then(function(j){clearTimeout(tm);done(code,j)})
+    .catch(function(e){clearTimeout(tm);delete last[code];done(code,{result:'bad',title:'NO ANSWER',message:'No answer for '+code+' ('+(e&&e.name==='AbortError'?'waited 60 seconds':String(e&&e.message||e).slice(0,80))+'). Keep this parcel. Check the internet, then open the order: if it is already in Shipment it went through, otherwise scan it again.'})})})(q.shift())}}
  // scans never wait for the courier: each one is queued and checked in the background, the box is free at once
- function send(code){if(!code)return;var t=Date.now();if(last[code]&&t-last[code]<4000)return;last[code]=t;q.push(code);pend[code]=1;draw();
-  if(run<1){res.className='';res.innerHTML='<div class="ps-big">Checking…</div>'}pump();qshow()}
+ function send(code){if(!code)return;var t=Date.now();if(last[code]&&t-last[code]<4000)return;last[code]=t;q.push(code);pend[code]=1;t0s[code]=Date.now();draw();
+  if(run<1){res.className='';res.innerHTML='<div class="ps-big">Checking '+esc(code)+'…</div><div class="ps-sub" style="color:#5B6676">The parcel is being sent to the courier. The result shows here and in the list.</div>'}pump();qshow()}
  document.getElementById('psF').addEventListener('submit',function(e){e.preventDefault();var v=inp.value.trim();inp.value='';send(v)});
  function open(){ov.classList.add('on');setMin(false);document.getElementById('psPl').innerHTML='';document.getElementById('psP').hidden=true;res.className='';res.innerHTML='<div class="ps-big">Ready to scan</div><div class="ps-sub" style="color:#5B6676">Green: give the parcel to the courier. Red: keep the parcel.</div>';
   fetch('/admin/packing-scan/today',{credentials:'same-origin',headers:{'Accept':'application/json'}}).then(function(r){return r.json()}).then(paint).catch(function(){});setTimeout(function(){inp.focus()},60)}
