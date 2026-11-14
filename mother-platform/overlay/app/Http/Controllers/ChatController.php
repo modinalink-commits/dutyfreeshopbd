@@ -26,7 +26,8 @@ class ChatController extends Controller {
     elseif ($f === 'human') Chat::humanScope($q);
     elseif ($f === 'resolved') $q->where('status', 'resolved');
     elseif ($f === 'report') $q->whereNotNull('reported_at')->where(fn($w) => $w->whereNull('report_solved_at')->orWhere('report_solved_at', '>=', now()->subDays(30)));
-    if ($f !== 'resolved' && $f !== 'all' && $f !== 'report') $q->where('status', '!=', 'resolved');
+    // Closed chats leave the working lists (All included); they stay in Closed, Complaint, All History and in every search.
+    if ($f !== 'resolved' && $f !== 'report' && !$hist) $q->where('status', '!=', 'resolved');
     if (in_array($r->query('s'), array_keys(self::STATUSES))) $q->where('status', $r->query('s'));
     if ($s = trim((string)$r->query('q'))) { $like = '%'.str_replace(['%', '_'], ['\%', '\_'], $s).'%'; $q->where(fn($w) => $w->where('name', 'ilike', $like)->orWhere('phone', 'ilike', $like)->orWhere('username', 'ilike', $like)->orWhere('last_message', 'ilike', $like)->orWhereIn('phone', fn($o) => $o->from('orders')->where('invoice', 'ilike', $like)->select('phone')->limit(50))); }
     // Unread first, then waiting for staff, then read/open, then resolved; newest message first inside each group.
