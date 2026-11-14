@@ -361,6 +361,7 @@ class AdminController extends Controller {
     $d = $r->validate(['status'=>'required|in:'.implode(',',Mother::STAGES),'note'=>'nullable|string|max:500','sched_date'=>'nullable|date_format:Y-m-d','sched_time'=>'nullable|string|max:8']);
     $o = DB::table('orders')->find($id); abort_unless($o, 404);
     if ($o->status !== $d['status'] && in_array($d['status'], \App\Http\Middleware\ModulePermission::RESTRICTED_STATUSES, true) && !\App\Http\Middleware\ModulePermission::canRestricted(Auth::user())) return back()->with('bad', 'You do not have permission to set '.$d['status'].'. Ask a manager/admin.');
+    if ($d['status'] === 'Return Pending' && $o->status !== 'Return Pending' && in_array($o->status, \App\Support\ShipmentOutcome::RECORDABLE, true)) return response()->json(['success'=>false,'open_outcome'=>true,'url'=>'/admin/orders/'.(int)$id.'?outcome=1','message'=>'Opening Delivery Outcome: choose how many of each product are returning.']);
     if ($mb = \App\Support\ShipmentOutcome::manualBlock($o, $d['status'])) return back()->with('bad', $mb);
     if ($db = \App\Support\DupGuard::block($o, $d['status'])) return back()->with('bad', $db);
     if (in_array($d['status'], \App\Support\ShipmentOutcome::SYSTEM_ONLY, true) && $o->status !== $d['status']) return back()->with('bad', 'Partial Return statuses are calculated from the items. Use "Delivery Outcome" on the order page, then "Receive Partial Return".');
