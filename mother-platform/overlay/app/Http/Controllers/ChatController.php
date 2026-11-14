@@ -832,6 +832,21 @@ class ChatController extends Controller {
     return view('chat_memory', ['h' => $h]);
   }
   // ---- Order Requests: orders the AI collected but did not place (Auto Approve rules said staff must decide) ----
+  /** Automatic Messages: what the system sent by itself on WhatsApp (order confirmation / update, campaigns), searchable by mobile number. Read only. */
+  public function autoMessages(Request $r) {
+    $q = trim((string)$r->query('q')); $type = (string)$r->query('type'); $st = (string)$r->query('st'); $from = (string)$r->query('from'); $to = (string)$r->query('to'); $per = 50; $page = max(1, (int)$r->query('page', 1)); $tz = 'Asia/Dhaka';
+    $base = fn() => DB::table('chat_messages as m')->join('chat_threads as t', 't.id', '=', 'm.thread_id')->where('m.dir', 'out')->where(fn($w) => $w->where('m.user_name', 'like', '%(auto)%')->orWhere('m.user_name', 'like', 'Campaign:%'));
+    $b = $base();
+    if ($q !== '') { $d = preg_replace('/\D+/', '', $q); $like = '%'.str_replace(['%', '_'], ['\%', '\_'], $q).'%'; $b->where(fn($w) => $w->where('t.name', 'ilike', $like)->orWhere('t.phone', 'ilike', $like)->when(strlen($d) >= 6, fn($x) => $x->orWhere('t.phone', 'like', '%'.substr($d, -10))->orWhere('t.external_id', 'like', '%'.substr($d, -10)))); }
+    try { if ($from !== '') $b->where('m.created_at', '>=', \Carbon\Carbon::parse($from, $tz)->startOfDay()->utc()); if ($to !== '') $b->where('m.created_at', '<', \Carbon\Carbon::parse($to, $tz)->addDay()->startOfDay()->utc()); } catch (\Throwable $e) {}
+    $c = (clone $b)->selectRaw("count(*) filter (where m.user_name like 'Order confirmation%') o, count(*) filter (where m.user_name like 'Order update%') u, count(*) filter (where m.user_name like 'Campaign:%') c, count(*) filter (where m.status = 'failed') f")->first();
+    if ($type === 'order') $b->where('m.user_name', 'like', 'Order confirmation%'); elseif ($type === 'update') $b->where('m.user_name', 'like', 'Order update%'); elseif ($type === 'campaign') $b->where('m.user_name', 'like', 'Campaign:%'); else $type = '';
+    if ($st === 'failed') $b->where('m.status', 'failed'); elseif ($st === 'sent') $b->where('m.status', '<>', 'failed'); else $st = '';
+    $total = (clone $b)->count();
+    $rows = $b->orderByDesc('m.id')->offset(($page - 1) * $per)->limit($per)->get(['m.id', 'm.body', 'm.user_name', 'm.status', 'm.error', 'm.created_at', 't.name', 't.phone']);
+    return view('chat_auto', ['rows'=>$rows, 'total'=>$total, 'page'=>$page, 'pages'=>max(1, (int)ceil($total / $per)), 'q'=>$q, 'type'=>$type, 'st'=>$st, 'from'=>$from, 'to'=>$to,
+      'cnt'=>['order'=>(int)($c->o ?? 0), 'update'=>(int)($c->u ?? 0), 'campaign'=>(int)($c->c ?? 0), 'failed'=>(int)($c->f ?? 0)]]);
+  }
   public function orderRequests(Request $r) {
     $st = in_array($r->query('s'), ['review', 'created', 'dismissed'], true) ? $r->query('s') : 'review';
     $rows = DB::table('chat_order_requests')->where('status', $st)->orderByDesc('id')->limit(100)->get();
