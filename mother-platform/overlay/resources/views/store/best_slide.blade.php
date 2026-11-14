@@ -27,12 +27,15 @@
 .hxbsl .bh{font-size:max(17px,3.9cqw);line-height:1.14;font-weight:700}.hxbsl .bh em{display:block;font-style:normal;color:#FFB347}
 .hxbsl .bd{font-size:max(10px,1.25cqw);color:#E3E8F1;line-height:1.5}
 .hxbsl .bt{display:flex;flex-wrap:wrap;gap:.7cqw}.hxbsl .bt span{font-size:max(9px,1.02cqw);font-weight:600;border:1px solid rgba(255,201,138,.5);color:#FFE2BD;border-radius:999px;padding:.28cqw 1cqw;background:rgba(255,255,255,.06)}
-.hxbsl .bc{position:absolute;left:41cqw;right:3cqw;top:0;bottom:0;display:flex;align-items:center;justify-content:center;gap:1.7cqw;z-index:3}
-.hxbsl .bp{position:relative;width:26.2cqw;display:flex;align-items:center;gap:1.1cqw;padding:1.2cqw 1.3cqw 1.2cqw 1.1cqw;border-radius:1.5cqw;background:#fff;color:#0B1220;text-decoration:none;box-shadow:0 2.2cqw 5cqw rgba(0,0,0,.5),0 0 0 .22cqw rgba(255,201,138,.75);overflow:hidden;animation:bslFloat 4.6s ease-in-out infinite}
+.hxbsl .bc{position:absolute;left:40cqw;right:2.6cqw;top:0;bottom:0;display:flex;align-items:center;justify-content:center;gap:1.7cqw;z-index:3}
+.hxbsl .bp{position:relative;width:27.2cqw;display:flex;align-items:center;gap:.6cqw;padding:1.2cqw 1.3cqw 1.2cqw 0;border-radius:1.5cqw;background:#fff;color:#0B1220;text-decoration:none;box-shadow:0 2.2cqw 5cqw rgba(0,0,0,.5),0 0 0 .22cqw rgba(255,201,138,.75);animation:bslFloat 4.6s ease-in-out infinite}
 .hxbsl .bp+.bp{animation-delay:-2.3s}
 .hxbsl .bp:hover{box-shadow:0 2.2cqw 5cqw rgba(0,0,0,.5),0 0 0 .34cqw #FF5A00}
-.hxbsl .pi{flex:none;width:9.6cqw;aspect-ratio:1;border-radius:1cqw;background:#F8F8F8;overflow:hidden}
-.hxbsl .pi img{width:100%;height:100%;object-fit:contain;display:block}
+/* the product stands out of its card: bigger than the card is tall, with its own glow and shadow (owner: make the product photos stand out) */
+.hxbsl .pi{position:relative;flex:none;width:12.6cqw;height:19.5cqw;margin:-3.4cqw 0 -3.4cqw -1.6cqw}
+.hxbsl .pi::before{content:'';position:absolute;left:50%;top:52%;width:15cqw;height:15cqw;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(closest-side,rgba(255,138,48,.38),rgba(255,138,48,0) 72%)}
+.hxbsl .pi img{position:relative;width:100%;height:100%;object-fit:contain;display:block;filter:drop-shadow(0 1.1cqw 1.3cqw rgba(11,18,32,.45));transition:transform .3s ease}
+.hxbsl .bp:hover .pi img{transform:scale(1.06) rotate(-2deg)}
 .hxbsl .px{min-width:0;flex:1;display:flex;flex-direction:column;gap:.45cqw;font-family:Inter,sans-serif}
 .hxbsl .pn{font-size:max(9px,1.08cqw);font-weight:600;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;padding-right:3.4cqw}
 .hxbsl .pq{font-size:max(8px,.92cqw);font-weight:700;color:#C2410C;letter-spacing:.04em}
@@ -40,7 +43,7 @@
 .hxbsl .pe{font-size:max(8px,.95cqw);color:#475467;white-space:nowrap}.hxbsl .pe s{color:#9CA3AF}
 .hxbsl .ps{align-self:flex-start;font-size:max(8px,.92cqw);font-weight:700;color:#067647;background:#DCFCE7;border-radius:999px;padding:.18cqw .8cqw;white-space:nowrap}
 .hxbsl .pg{margin-top:.25cqw;display:flex;align-items:center;justify-content:center;height:max(22px,2.5cqw);border-radius:.8cqw;background:#FF5A00;color:#fff;font-family:'Bornomala',Inter,sans-serif;font-size:max(10px,1.2cqw);font-weight:700;animation:bslPulse 2.4s ease-in-out infinite}
-.hxbsl .pr{position:absolute;top:0;right:0;width:6.2cqw;height:6.2cqw;overflow:hidden;pointer-events:none}
+.hxbsl .pr{position:absolute;top:0;right:0;width:6.2cqw;height:6.2cqw;overflow:hidden;pointer-events:none;border-top-right-radius:1.5cqw}
 .hxbsl .pr i{position:absolute;top:1.15cqw;right:-2.2cqw;width:8.6cqw;transform:rotate(45deg);background:linear-gradient(180deg,#F03A3A,#C91414);color:#fff;font-family:Inter,sans-serif;font-style:normal;font-weight:800;font-size:max(7px,.86cqw);line-height:1.9;letter-spacing:.1em;text-align:center;box-shadow:0 .2cqw .5cqw rgba(0,0,0,.28)}
 @keyframes bslFloat{50%{transform:translateY(-.9cqw)}}
 @keyframes bslSweep{0%{left:-30%}60%,100%{left:130%}}
@@ -53,12 +56,12 @@
 .hxbsl .bl{left:4cqw;right:4cqw;width:auto;top:3.6cqw;bottom:auto;gap:1cqw;align-items:center;text-align:center}
 .hxbsl .bk,.hxbsl .bd{display:none}.hxbsl .bh{font-size:5cqw;line-height:1.2}.hxbsl .bh em{display:inline;margin-left:1.4cqw}
 .hxbsl .bt{justify-content:center;gap:1.4cqw}.hxbsl .bt span{font-size:max(9px,2.5cqw);padding:.3cqw 2cqw}
-.hxbsl .bc{left:3cqw;right:3cqw;top:17cqw;bottom:5.4cqw;gap:2.4cqw;align-items:stretch}
-.hxbsl .bp{width:auto;flex:1 1 0;min-width:0;gap:1.6cqw;padding:1.6cqw 1.8cqw 1.6cqw 1.4cqw;border-radius:2.6cqw;animation:none}
-.hxbsl .pi{width:15cqw;border-radius:1.8cqw}
+.hxbsl .bc{left:3.6cqw;right:3cqw;top:18cqw;bottom:6cqw;gap:3cqw;align-items:stretch}
+.hxbsl .bp{width:auto;flex:1 1 0;min-width:0;gap:.8cqw;padding:1.6cqw 1.8cqw 1.6cqw 0;border-radius:2.6cqw;animation:none}
+.hxbsl .pi{width:17.5cqw;height:auto;align-self:stretch;margin:-2.6cqw 0 -2.6cqw -1.2cqw}.hxbsl .pi::before{width:22cqw;height:22cqw}.hxbsl .pr{border-top-right-radius:2.6cqw}
 .hxbsl .px{gap:.7cqw;justify-content:center}
 .hxbsl .pn{font-size:max(9px,2.5cqw);-webkit-line-clamp:1;padding-right:6cqw}.hxbsl .pq{font-size:max(8px,2.1cqw)}
-.hxbsl .pp{font-size:5.2cqw}.hxbsl .pe{font-size:max(8px,2.15cqw)}.hxbsl .ps{display:none}
+.hxbsl .pp{font-size:5cqw}.hxbsl .pe{font-size:max(8px,2.1cqw)}.hxbsl .pe .pw{display:none}.hxbsl .ps{display:none}
 .hxbsl .pg{height:6.4cqw;border-radius:1.6cqw;font-size:max(10px,3cqw);margin-top:.5cqw}
 .hxbsl .pr{width:11cqw;height:11cqw}.hxbsl .pr i{top:2.1cqw;right:-3.9cqw;width:15cqw;font-size:max(7px,1.9cqw)}
 }
@@ -66,6 +69,6 @@
 </style>
 <span class="bg1"></span><span class="bg2"></span>
 <span class="bl"><span class="bk"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2l-6.1 3.4 1.4-6.8L2.2 9.1l6.9-.8z"/></svg>DUTYFREEBD · BEST SELLERS</span><span class="bh">আমাদের বেস্ট সেলার<em>২ কার্টনে স্পেশাল দাম</em></span><span class="bd">সবচেয়ে বেশি বিক্রি হওয়া দুই ব্র্যান্ড, একসাথে ২ কার্টন নিলে কম দামে।</span><span class="bt"><span>২ কার্টন অফার</span>@if($__bfd)<span>ফ্রি ডেলিভারি</span>@endif<span>ক্যাশ অন ডেলিভারি</span></span></span>
-<span class="bc">@foreach($__bx as $__b)<a class="bp" href="/checkout?add={{ $__b['id'] }}&p={{ $__b['u'] }}&q=2" rel="nofollow" aria-label="Order 2 cartons of {{ $__b['n'] }} for {{ number_format($__b['t']) }} taka"><span class="pr" aria-hidden="true"><i>SALE</i></span><span class="pi"><img src="{{ $__b['i'] }}" alt="{{ $__b['n'] }}" width="300" height="300" decoding="async" draggable="false" onerror="this.onerror=null;this.src='/product-placeholder'"></span><span class="px"><span class="pq">2 CARTONS</span><span class="pn">{{ $__b['n'] }}</span><span class="pp">৳{{ number_format($__b['t']) }}</span><span class="pe">৳{{ number_format($__b['t'] / 2) }} each · <s>৳{{ number_format($__b['pl']) }}</s></span><span class="ps">Save ৳{{ number_format($__b['pl'] - $__b['t']) }}</span><span class="pg">অর্ডার করুন &rsaquo;</span></span></a>@endforeach</span>
+<span class="bc">@foreach($__bx as $__b)<a class="bp" href="/checkout?add={{ $__b['id'] }}&p={{ $__b['u'] }}&q=2" rel="nofollow" aria-label="Order 2 cartons of {{ $__b['n'] }} for {{ number_format($__b['t']) }} taka"><span class="pr" aria-hidden="true"><i>SALE</i></span><span class="pi"><img src="{{ $__b['i'] }}" alt="{{ $__b['n'] }}" width="300" height="300" decoding="async" draggable="false" onerror="this.onerror=null;this.src='/product-placeholder'"></span><span class="px"><span class="pq">2 CARTONS</span><span class="pn">{{ $__b['n'] }}</span><span class="pp">৳{{ number_format($__b['t']) }}</span><span class="pe">৳{{ number_format($__b['t'] / 2) }} each<span class="pw"> · <s>৳{{ number_format($__b['pl']) }}</s></span></span><span class="ps">Save ৳{{ number_format($__b['pl'] - $__b['t']) }}</span><span class="pg">অর্ডার করুন &rsaquo;</span></span></a>@endforeach</span>
 </div>
 @endif

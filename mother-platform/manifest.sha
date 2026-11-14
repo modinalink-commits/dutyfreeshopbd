@@ -1140,4 +1140,4 @@ eb0cd1fc2cdf74e576504811950e25d99cbc5dc7 app/Support/BestSellerStock.php
 ab73ea093e14532f53124c59a91d2459ffb28d88 app/Support/PublishNotice.php
 bf40918175cc2a0dd71573617cb9ffd5fa4379ad app/Http/Controllers/PublishNoticeController.php
 b1f1ce1227042e4fa0a8a8dd458056716d6b932d resources/views/publish_notice.blade.php
-97bb0993fbbb745b667d20266c1ec363b9fed0b9 resources/views/store/best_slide.blade.php
+3b2bb0be9402237b799dfd87c36f51bcb7f17fce resources/views/store/best_slide.blade.php
