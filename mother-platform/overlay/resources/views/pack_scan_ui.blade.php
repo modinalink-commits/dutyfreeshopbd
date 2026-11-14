@@ -33,8 +33,8 @@
 #psOv th{background:#EEF1F5;font-weight:700;position:sticky;top:0}
 #psOv .pp{display:inline-block;border-radius:999px;padding:1px 9px;font-weight:700;font-size:11.5px}
 #psOv .pp.ok{background:#DCFCE7;color:#15803D}#psOv .pp.bad{background:#FEE2E2;color:#B91C1C}#psOv .pp.warn{background:#FEF3C7;color:#B45309}
-html body button.ps-open,html body .toolbar-control.ps-open,#ocb .r1 .owt .obk button.ps-open{background:#0B1B33!important;background-image:none!important;color:#fff!important;border:1.5px solid #FF5A00!important;font-weight:700!important}
-html body button.ps-open:hover,html body .toolbar-control.ps-open:hover,#ocb .r1 .owt .obk button.ps-open:hover{background:#FF5A00!important;border-color:#0B1B33!important}
+html body button.ps-open,html body .toolbar-control.ps-open,#ocb#ocb#ocb .r1 .owt .obk button.ps-open{background:#0B1B33!important;background-image:none!important;color:#fff!important;border:1.5px solid #FF5A00!important;font-weight:700!important}
+html body button.ps-open:hover,html body .toolbar-control.ps-open:hover,#ocb#ocb#ocb .r1 .owt .obk button.ps-open:hover{background:#FF5A00!important;border-color:#0B1B33!important}
 </style>
 <div id="psOv" role="dialog" aria-modal="true" aria-label="Packaging Scan" data-keep><div class="ps">
 <div class="ps-h"><b>Packaging Scan</b><span style="font-size:12.5px;color:#5B6676">Scan each parcel label, then put the parcel in the courier bag.</span>
