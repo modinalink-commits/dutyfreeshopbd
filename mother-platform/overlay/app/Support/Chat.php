@@ -747,7 +747,9 @@ class Chat {
   public static function replied(int $tid, $t0, bool $echo = false): void {
     $left = (int)DB::table('chat_messages')->where('thread_id', $tid)->where('dir', 'in')->where('created_at', '>', $t0)->count();
     DB::table('chat_messages')->where('thread_id', $tid)->where('dir', 'in')->whereNull('read_at')->where('created_at', '<=', $t0)->update(['read_at'=>now()]);
-    DB::table('chat_threads')->where('id', $tid)->update(['unread'=>$left, 'awaiting_reply'=>$left > 0, 'last_successful_agent_reply_at'=>now(), 'updated_at'=>now()]);
+    $upd = ['unread'=>$left, 'awaiting_reply'=>$left > 0, 'last_successful_agent_reply_at'=>now(), 'updated_at'=>now()];
+    if ($left === 0) $upd['needs_human'] = false; // a person has answered: the "needs a person" mark is done (a hand-off stays until it is released or the chat is closed)
+    DB::table('chat_threads')->where('id', $tid)->update($upd);
   }
   public static function productUrl(object $p): string { return url(\App\Http\Controllers\StoreController::url($p)); }
   public static function invoiceUrl(string $invoice): string { return URL::signedRoute('order.invoice', ['invoice'=>$invoice]); }

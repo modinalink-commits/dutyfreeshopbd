@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class ChatController extends Controller {
-  const STATUSES = ['new'=>'New', 'open'=>'Open', 'waiting'=>'Waiting', 'resolved'=>'Resolved'];
+  const STATUSES = ['new'=>'New', 'open'=>'Open', 'waiting'=>'Waiting for customer', 'resolved'=>'Closed'];
 
   // ---------------- admin: inbox ----------------
   public function inbox() { return view('chat_inbox', ['statuses'=>self::STATUSES]); }
