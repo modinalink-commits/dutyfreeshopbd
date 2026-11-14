@@ -51,7 +51,7 @@ df85a1f19b3129d847e30c8dab6ea00fbc2e8101 app/Http/Controllers/PermissionControll
 2f840d53881d8aeaf0c5959161774787e5f540bc database/migrations/2026_10_31_000005_storefront.php
 cd545bf3819bc2d92c3df5e65631aa7236fca9cb app/Console/Commands/MotherSyncFeed.php
 2a56eafa359436fdb0b8ffc94324862961a1d307 app/Console/Commands/MotherGuard.php
-9850148ba5b7f2ea191280c6ecad2df2b8636a08 app/Http/Controllers/StoreController.php
+b3f53c90054b1516abfba33b8ca29dbe44e43580 app/Http/Controllers/StoreController.php
 2d88bb06744184e4cb7167f5f20fefb371107e00 resources/views/store/layout.blade.php
 5356b422775064c3de9b13c703f12fbf913a2bd3 resources/views/store/card.blade.php
 4a5eb7ee8d7960886fcb97c690bbb604ec69eb1f resources/views/store/home_sec.blade.php
@@ -1134,3 +1134,4 @@ ca3e9508983f8d5cfcaf54d215a0a5bf836f4b3c app/Support/AutoPrice.php
 a35013d228f826ed238a1029f86fb66c772088e3 app/Http/Controllers/BestSellerController.php
 6432ef40eaadd099a56364647709677b095e53e1 resources/views/best_sellers_admin.blade.php
 abb9618d8b995590e1aa0d4ade7e8cd389baa3e8 public/images/bestseller/patron-white-3.webp
+77ba5da36c7c6d9dfcdb00aebf463c2a8b02a5a1 public/images/bestseller/oris-silver.webp
