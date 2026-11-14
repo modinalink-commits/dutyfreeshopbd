@@ -108,7 +108,12 @@ class ShipmentOutcome {
     $canStock = $o->stock_deducted_at !== null && $o->stock_returned_at === null;
     // Loose packets of an opened carton: only the accepted ones, only for a carton that has a Single Packet twin
     foreach ($exp as [$i, $q]) { $pk = (int)($packets[$i->id] ?? 0); $maxPk = max(0, (int)$q - (int)$back[$i->id]) * 10; if ($pk < 0 || $pk > $maxPk) return [false, 'Loose packets for "'.$i->name.'" must be between 0 and '.$maxPk.' (10 per carton that did not come back whole).', $o->status]; if ($pk > 0 && !DB::table('products')->where('parent_product_id', $i->product_id)->exists()) return [false, '"'.$i->name.'" has no Single Packet product.', $o->status]; }
-    DB::transaction(function () use ($o, $orderId, $exp, $back, $to, $now, $full, $ex, $canStock, $packets, &$lines, &$stockDone, &$lossNote) {
+    $raced = false;
+    DB::transaction(function () use ($o, $orderId, $exp, $back, $to, $now, $full, $ex, $canStock, $packets, &$lines, &$stockDone, &$lossNote, &$raced) {
+      // Two people pressing Received at the same moment: lock the order row and look again, so stock goes up only once.
+      $lk = DB::table('orders')->where('id', $orderId)->lockForUpdate()->first();
+      if (!$lk || $lk->status !== 'Return Pending') { $raced = true; return; }
+      $canStock = $lk->stock_deducted_at !== null && $lk->stock_returned_at === null;
       foreach ($exp as [$i, $q]) {
         $b = (int)$back[$i->id];
         DB::table('order_items')->where('id', $i->id)->update(['outcome'=>'Returned', 'ret_qty'=>$q, 'back_qty'=>$b, 'outcome_at'=>$now]);
@@ -137,6 +142,7 @@ class ShipmentOutcome {
       DB::table('orders')->where('id', $orderId)->update(['status'=>$to, 'return_received_at'=>$now, 'return_type'=>$o->return_type ?: 'Full', 'updated_at'=>$now] + ($stockDone ? ['stock_returned_at'=>$now] : []));
       DB::table('order_status_logs')->insert(['order_id'=>$orderId, 'user_id'=>Auth::id(), 'user_name'=>Auth::user()->name ?? 'System', 'from_status'=>$o->status, 'to_status'=>$to, 'note'=>'Returned goods received at the warehouse'.($stockDone ? ' · stock added' : '').$lossNote, 'created_at'=>$now, 'updated_at'=>$now]);
     });
+    if ($raced) return [false, 'This return was just received by someone else. Nothing was added twice.', 'Returned'];
     $why = $stockDone ? ' Stock added.' : ($o->stock_deducted_at === null ? ' Stock unchanged (this order shipped before automatic stock deduction started).' : ($o->stock_returned_at !== null ? ' Stock was already returned.' : ' Stock unchanged (nothing received back).'));
     OrderActivity::log($orderId, 'return_received', $o->status, $to, ($ex ? 'Exchange Received' : ($full ? 'Return Received' : 'Partial Return Received (order is Returned)')).'.'.$why, ['items'=>$lines]);
     return [true, ($ex ? 'Exchange received at the warehouse.' : ($full ? 'Return received, order is Returned.' : 'Partial return received, order is Returned.')).$why, $to];
