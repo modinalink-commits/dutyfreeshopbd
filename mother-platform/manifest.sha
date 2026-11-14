@@ -1,5 +1,5 @@
 fe43f8b6cb422cca81ee18b74d3972f77e7852de database/migrations/2026_10_31_000001_mother_core.php
-5d8f3a64c5f1ca5cb68268805384be6a0abff917 routes/web.php
+86bb386c8abd026269a388765879941c8c0cb855 routes/web.php
 46ac6330ace84450b442d0d57c5c06f20c41f945 app/Models/Mother.php
 9590ee1a830b2a60e42d910a21850a1ea553a4e1 app/Http/Controllers/AdminController.php
 242316b2ef0a0967e6815e39fcbc7377349fdc17 app/Console/Commands/MotherInstall.php
@@ -1180,3 +1180,4 @@ e639bdb34bbefd125da72b583e1f9fab5aa23a24 public/s/layout-a.css
 22425ccbe4ab255850c17cbf4a4d81f17103570f public/s/layout-b.js
 ca8c8520b3a7a5225add7e109c15acda51ce034b public/s/orders-a.css
 ec3fdd04d7aa5508d4ec0dd022975542ed19a053 public/s/orders-b.css
+426836a0dfbc048a274b2039d35073ef0128206b app/Http/Controllers/DataAuditController.php
