@@ -60,7 +60,7 @@ html body button.ps-open:hover,html body .toolbar-control.ps-open:hover,#ocb#ocb
 <div id="psP" hidden><div class="ps-pt">Take these parcels back out</div><div id="psPl"></div></div>
 </div><div>
 <div class="ps-t">Today's scans</div>
-<div class="ps-w" data-nogrid data-nofit data-nopg data-nodrag><table data-nogrid data-nofit data-nopg><thead><tr><th>Time</th><th>Invoice</th><th>Result</th><th>Staff</th></tr></thead><tbody id="psLog"><tr><td colspan="4" style="color:#5B6676;padding:12px">Nothing scanned yet.</td></tr></tbody></table></div>
+<div class="ps-w no-export" data-no-export data-nogrid data-nofit data-nopg data-nodrag><table class="no-export" data-nogrid data-nofit data-nopg><thead><tr><th>Time</th><th>Invoice</th><th>Result</th><th>Staff</th></tr></thead><tbody id="psLog"><tr><td colspan="4" style="color:#5B6676;padding:12px">Nothing scanned yet.</td></tr></tbody></table></div>
 </div></div></div></div>
 <script>
 (function(){
