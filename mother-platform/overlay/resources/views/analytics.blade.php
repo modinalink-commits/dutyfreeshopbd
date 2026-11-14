@@ -125,7 +125,7 @@
 </div>
 <script>
 (function(){
-var COLS=@json($srcCols),ROWS=@json(array_values($srcRows)),CH=@json($charts),SLUG=@json($slug),SUM={{ $showTotals ? 'true' : 'false' }},NOSUM=@json($noSum);
+var COLS=@json($srcCols),ROWS=@json(array_map(function($r) use ($srcCols){ return array_intersect_key((array)$r, $srcCols); }, array_values($srcRows))),CH=@json($charts),SLUG=@json($slug),SUM={{ $showTotals ? 'true' : 'false' }},NOSUM=@json($noSum);
 var $=function(i){return document.getElementById(i)};
 function money(v){v=+v||0;return (v<0?'-':'')+'৳'+Math.abs(Math.round(v)).toLocaleString('en-IN')}
 function fmt(v,t){if(v===null||v===undefined||v==='')return '';if(t==='money')return money(v);if(t==='num')return (+v).toLocaleString('en-IN');if(t==='pct')return (+v)+'%';return v}
