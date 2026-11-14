@@ -21,6 +21,19 @@ class PrintLogController extends Controller {
       });
       $saved++;
     }
-    return response()->json(['ok' => true, 'saved' => $saved]);
+    // Owner rule (14 Nov 2026): printing the invoice / label of an Approved order moves it to Packaging by itself, so it leaves the Approved list and is not printed a second time by mistake.
+    $moved = 0;
+    foreach (DB::table('orders')->whereIn('id', $ids)->where('status', 'Approved')->get() as $o) {
+      try {
+        if (\App\Support\DupGuard::block($o, 'Packaging')) continue; // a same-day duplicate still needs its manual Allow
+        $c = DB::transaction(function () use ($o, $u, $label) {
+          $n = DB::table('orders')->where('id', $o->id)->where('status', 'Approved')->update(['status' => 'Packaging', 'updated_at' => now()]);
+          if ($n) DB::table('order_status_logs')->insert(['order_id' => $o->id, 'user_id' => $u->id, 'user_name' => $u->name, 'from_status' => 'Approved', 'to_status' => 'Packaging', 'note' => $label . ' printed: moved to Packaging automatically', 'created_at' => now(), 'updated_at' => now()]);
+          return $n;
+        });
+        if ($c) { $moved++; DB::table('audit_logs')->insert(['user_id' => $u->id, 'user_name' => $u->name, 'action' => 'order.status', 'subject' => \App\Support\Inv::show($o->invoice) . ' · Approved → Packaging (' . $label . ' printed)', 'created_at' => now(), 'updated_at' => now()]); }
+      } catch (\Throwable $e) { report($e); }
+    }
+    return response()->json(['ok' => true, 'saved' => $saved, 'moved' => $moved]);
   }
 }

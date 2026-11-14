@@ -402,6 +402,7 @@ resources/views/perf_audit.blade.php
 database/migrations/2026_11_02_000001_orders_newest_first_indexes.php
 database/migrations/2026_11_02_000002_order_print_logs.php
 app/Http/Controllers/PrintLogController.php
+app/Http/Controllers/PackScanController.php
 database/migrations/2026_11_02_000003_default_courier_backfill.php
 database/migrations/2026_11_02_000020_manual_payment_module.php
 app/Http/Controllers/ManualPaymentController.php
@@ -777,6 +778,8 @@ app/Support/ProductTrack.php
 database/migrations/2026_11_06_000470_product_analytics_events.php
 app/Support/ShipCheck.php
 resources/views/ship_check_ui.blade.php
+resources/views/pack_scan_ui.blade.php
+resources/views/pack_scan.blade.php
 app/Support/CourierBook.php
 database/migrations/2026_11_06_000480_courier_cod_income_backfill.php
 database/migrations/2026_11_06_000475_account_entries_invoice.php
@@ -833,6 +836,7 @@ database/migrations/2026_11_14_192000_mail_lists.php
 database/migrations/2026_11_14_200000_chat_reports.php
 database/migrations/2026_11_14_201000_chat_report_solved.php
 database/migrations/2026_11_14_202000_chat_close_old.php
+database/migrations/2026_11_14_210000_order_scan_logs.php
 database/migrations/2026_11_14_190000_email_logs.php
 database/migrations/2026_11_14_191000_mail_outbox.php
 app/Http/Middleware/StaffIdleMw.php

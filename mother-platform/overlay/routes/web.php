@@ -117,6 +117,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/orders/{id}/schedule', [A::class,'orderSchedule'])->whereNumber('id');
   Route::post('/orders/{id}/schedule/cancel', [A::class,'orderScheduleCancel'])->whereNumber('id');
   Route::post('/orders/{id}/quick-status', [A::class,'orderQuickStatus'])->whereNumber('id');
+  Route::get('/packing-scan', [\App\Http\Controllers\PackScanController::class,'page']); Route::get('/packing-scan/today', [\App\Http\Controllers\PackScanController::class,'list']); Route::post('/packing-scan/scan', [\App\Http\Controllers\PackScanController::class,'scan'])->middleware('throttle:240,1');
   Route::post('/orders/{id}/comment', [A::class,'orderComment']);
   Route::post('/orders/{id}/courier-note', [A::class,'orderCourierNote'])->whereNumber('id');
   Route::get('/orders/{id}/comments', [A::class,'orderComments']);
