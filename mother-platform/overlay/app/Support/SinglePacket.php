@@ -101,6 +101,8 @@ class SinglePacket {
     $cat = self::targetCat(); if (!$cat || !self::ready()) return $out + ['error' => 'not ready'];
     $lock = Schema::hasColumn('products', 'manual_unpublish_lock');
     $lg = Schema::hasColumn('products', 'legacy_source');
+    // Owner decision 14 Nov 2026: an old Single Packet product that is on sale keeps selling: its stock and published state move to the matching new twin.
+    $carry = self::oldQuery()->where('published', true)->get(['id', 'name', 'stock', 'stock_status'])->all();
     foreach (self::oldQuery()->get(['id', 'path_slug']) as $o) {
       $u = ['published' => false, 'path_slug' => ($o->path_slug ?: 'old').'-old-'.$o->id, 'updated_at' => now()];
       if ($lock) $u['manual_unpublish_lock'] = true; if ($lg) $u['legacy_source'] = 'old_single_packet';
@@ -108,6 +110,17 @@ class SinglePacket {
     }
     foreach (self::eligibleQuery()->orderBy('id')->pluck('id') as $id) {
       try { $r = DB::transaction(fn() => self::sync((int)$id, $cat)); if ($r === 'created') $out['created']++; elseif ($r === 'updated') $out['updated']++; } catch (\Throwable $e) { $out['errors'][] = $id.': '.mb_substr($e->getMessage(), 0, 80); }
+    }
+    $out['carried'] = 0; $out['carry_unmatched'] = [];
+    foreach ($carry as $o) {
+      try {
+        $nm = mb_strtolower(trim(preg_replace('/\bsingle\s*packets?\b/iu', '', (string)$o->name)));
+        $nm = preg_replace('/\s+/', ' ', trim($nm, " -–|"));
+        $par = $nm === '' ? null : DB::table('products')->whereNull('parent_product_id')->whereRaw("lower(name) = ?", [$nm])->orderBy('id')->value('id');
+        $tw = $par ? DB::table('products')->where('parent_product_id', $par)->value('id') : null;
+        if ($tw && (float)$o->stock > 0) { DB::table('products')->where('id', $tw)->update(['stock' => $o->stock, 'stock_status' => $o->stock_status ?: 'in_stock', 'published' => true, 'updated_at' => now()]); $out['carried']++; }
+        elseif (!$tw) $out['carry_unmatched'][] = $o->id.':'.mb_substr((string)$o->name, 0, 50);
+      } catch (\Throwable $e) { $out['carry_unmatched'][] = $o->id.' err'; }
     }
     DB::table('settings')->updateOrInsert(['key' => 'single_packet_auto'], ['value' => '1', 'updated_at' => now(), 'created_at' => now()]);
     try { Procure::audit('single_packet.bulk', 'Single Packet twins', null, $out); } catch (\Throwable $e) {}
