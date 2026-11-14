@@ -106,6 +106,35 @@ main{height:calc(100vh / var(--z,1));overflow:hidden;display:flex;flex-direction
 .mbx .slb{display:flex;align-items:center;gap:8px;margin-top:5px}.mbx .slb i{flex:1;height:4px;border-radius:99px;background:#D92D20;display:block}.mbx .slb span{font-size:11px;font-weight:700;color:#B42318;white-space:nowrap}
 #ibu{display:inline-flex;gap:8px;flex-wrap:wrap;vertical-align:middle;margin-left:8px;font-size:12.5px;font-weight:600}
 #ibu .k{display:inline-flex;align-items:center;gap:6px;border-radius:9px;padding:4px 10px;border:1px solid}#ibu .k b{font-size:15px}
+/* ===== Inbox v2 skin, version C (14 Nov 2026): calm neutral frame, flat filters, customer panel on the right. Text sizes from the 11 Nov request are kept. ===== */
+.fbar{border:1px solid #E5E7EB;border-radius:12px;box-shadow:none;padding:8px 10px;gap:6px;margin-bottom:8px}.fbar .fr{gap:6px}
+.fbar a,.fbar button.fa{height:32px!important;padding:0 11px;border-radius:8px;box-shadow:none;font-size:12.5px;border-color:#E5E7EB;color:#344054}
+.fbar a svg,.fbar button.fa svg{width:16px;height:16px}.fbar a:hover,.fbar button.fa:hover{background:#F9FAFB;box-shadow:none}
+.fbar a.on{background:#0B1B33;border-color:#0B1B33;color:#fff;box-shadow:none}.fbar .cn{min-width:18px;height:18px;line-height:18px;font-size:10.5px;background:#B42318}
+.mbx{gap:10px}.mbx .ls,.mbx .cv{border-color:#E5E7EB}
+#iball{background:#fff;color:#0B1B33;border:1px solid #D0D5DD;box-shadow:none;border-radius:8px;font-weight:600}
+.mbx .sq input{border-color:#D0D5DD;border-radius:8px}
+.mbx .th{border-color:#EEF0F3}.mbx .th:hover{background:#F9FAFB;border-color:#E5E7EB}
+.mbx .th.un{border-color:#EEF0F3;box-shadow:inset 3px 0 0 #D92D20}.mbx .th.un:hover{background:#F9FAFB}.mbx .th.cp.un{box-shadow:inset 3px 0 0 #1D4ED8}
+.mbx .th.on,.mbx .th.on:hover{background:#FFF7ED;border-color:#FDBA8C;box-shadow:inset 3px 0 0 #F26B1D}
+.mbx .av .mcav{background:#F2F4F7;color:#0B1B33}
+.mbx .mc .hd{border-bottom-color:#E5E7EB;padding:10px 14px}.mbx .mc .hd .r2 .lk,.mbx .mc .hd .r2 select{border-color:#E5E7EB;border-radius:8px}
+.mbx .mc .ms{background:#F9FAFB}.mbx .mc .b.in{border-color:#E5E7EB}.mbx .mc .b.out{background:#FFF1E8}.mbx .mc .cm{border-top-color:#E5E7EB}
+@media(min-width:1280px){
+.mbx{grid-template-columns:320px minmax(0,1fr)}
+.mbx .cv .mc{display:grid;grid-template-columns:minmax(0,1fr) 300px;grid-template-rows:auto minmax(0,1fr) auto}
+.mbx .cv .mc>.mcbd{display:none}
+.mbx .cv .mc>.hd{grid-column:1;grid-row:1;min-width:0}.mbx .cv .mc>.ms{grid-column:1;grid-row:2;min-height:0}.mbx .cv .mc>.cm{grid-column:1;grid-row:3;min-width:0}
+.mbx .cv .mc .hd .r2{flex-wrap:wrap;overflow:visible}.mbx .cv .mc #hdt{display:none}
+.mbx .cv .mc>details.cb{grid-column:2;grid-row:1/4;max-height:none;border-bottom:0;border-left:1px solid #E5E7EB;background:#F9FAFB;padding:12px;overflow:auto;min-width:0}
+.mbx .cv .mc>details.cb>summary{list-style:none;pointer-events:none;font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;color:#475467;margin-bottom:6px}
+.mbx .cv .mc>details.cb>summary::-webkit-details-marker{display:none}
+.mbx .cv .mc>details.cb .chips{gap:5px}.mbx .cv .mc>details.cb .ch{height:26px;padding:0 9px;border-color:#E5E7EB;border-radius:8px;white-space:normal}
+.mbx .cv .mc>details.cb .cur{flex-wrap:wrap;background:#fff;border-color:#E5E7EB}
+.mbx .cv .mc>details.cb table.ot{border:0;display:block}.mbx .cv .mc>details.cb table.ot thead{display:none}.mbx .cv .mc>details.cb table.ot tbody{display:block}
+.mbx .cv .mc>details.cb table.ot tr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 8px;background:#fff;border:1px solid #E5E7EB;border-radius:9px;padding:7px 9px;margin-bottom:6px}
+.mbx .cv .mc>details.cb table.ot td{padding:0;border:0}.mbx .cv .mc>details.cb table.ot td.ac{grid-column:1/-1;margin-top:3px;flex-wrap:wrap}
+}
 #ibu .k.p{background:#FEF3F2;border-color:#F6C4C0;color:#7A271A}#ibu .k.p b{color:#B42318}#ibu .k.a{background:#EEF4FF;border-color:#C7D7FE;color:#1E3A8A}#ibu .k.a b{color:#1D4ED8}#ibu .k.o{background:#fff;border-color:#E5E7EB;color:#4B5563}#ibu .k.o b{color:#B42318;font-size:12.5px}
 </style>
 <div id="ibtop" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px"><div style="flex:1"><h1 style="margin:0">Messages <span id="ibu"></span></h1><span style="font-size:12px;color:#6B7280">Facebook, Instagram, WhatsApp and Website Chat in one inbox.</span></div>
