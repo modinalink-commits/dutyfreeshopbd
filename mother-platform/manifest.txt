@@ -1136,3 +1136,4 @@ app/Http/Controllers/BestSellerController.php
 resources/views/best_sellers_admin.blade.php
 public/images/bestseller/patron-white-3.webp
 public/images/bestseller/oris-silver-2.webp
+app/Support/BestSellerStock.php
