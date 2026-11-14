@@ -72,6 +72,7 @@ class BundlePricing {
     return $q;
   }
   private static function one($x, ?array $cfg = null): array {
+    if (AutoPrice::exempt((int)($x->id ?? 0))) return AutoPrice::tiers($x); // Best Sellers pack offer: the owner's approved exception to the protected floor
     return self::compute((float)$x->price, (float)$x->base, (string)($x->rule ?: 'global'), [2 => $x->buy2_price, 3 => $x->buy3_price, 4 => $x->buy4_price, 5 => $x->buy5_price], $cfg);
   }
   /** Tiers of one product, live (cached for the request). */

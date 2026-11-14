@@ -99,7 +99,7 @@ class CatalogController extends Controller {
     if ($bpOn && \App\Support\ProfitFloor::admin() && in_array($d['bundle_rule'] ?? '', ['global', 'custom', 'off'], true)) $bpRule = $d['bundle_rule'];
     if ($bpOn) { $row['bundle_rule'] = $bpRule; if ($bpRule !== 'custom') foreach ([2,3,4,5] as $n) $row["buy{$n}_price"] = $old->{"buy{$n}_price"} ?? null; }
     // Protected 15% company profit: purchase price x 1.15 is the floor for the selling price and the Buy 2-5 pack prices. An old product whose prices are untouched can still be saved; it stays on the price-review list.
-    $pfCost = $old ? \App\Support\ProfitFloor::base($old) : 0.0; $pfPacks = []; if (!$bpOn || $bpRule === 'custom') foreach ([2,3,4,5] as $n) $pfPacks[$n] = $row["buy{$n}_price"];
+    $pfCost = $old ? \App\Support\ProfitFloor::base($old) : 0.0; $pfPacks = []; if ((!$bpOn || $bpRule === 'custom') && !($id && \App\Support\AutoPrice::exempt((int)$id))) foreach ([2,3,4,5] as $n) $pfPacks[$n] = $row["buy{$n}_price"];
     $pfSame = $old && abs((float)$old->price - (float)$row['price']) < 0.005 && (!$pfPacks || collect([2,3,4,5])->every(fn($n) => abs((float)($old->{"buy{$n}_price"} ?? 0) - (float)($row["buy{$n}_price"] ?? 0)) < 0.005));
     if (!$pfSame && ($pfE = \App\Support\ProfitFloor::productError($pfCost, (float)$row['price'], $pfPacks))) {
       \App\Support\ProfitFloor::audit('Profit floor blocked price', 'Product '.($old->name ?? $row['name']), $old ? ['price'=>$old->price] : null, ['price'=>$row['price'], 'cost'=>$pfCost]);

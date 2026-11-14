@@ -124,10 +124,11 @@ class ProfitFloor {
 
   /** Lines whose price was reduced below the protected price. Only lines cut below the product's own list price count, so an old product priced under the floor can still be sold at its list price. key => detail */
   public static function lineIssues(array $items): array {
-    $pc = self::costs(array_column($items, 'product_id'), self::qtyMap($items)); $bad = [];
+    $qm = self::qtyMap($items); $pc = self::costs(array_column($items, 'product_id'), $qm); $bad = [];
     foreach ($items as $k => $i) {
       $p = $pc[(int)($i['product_id'] ?? 0)] ?? null; if (!$p || (float)$p->cost <= 0) continue;
       $pr = (float)($i['price'] ?? 0); $fl = self::floor((float)$p->cost);
+      $bq = (int)($qm[(int)($i['product_id'] ?? 0)] ?? 0); $bm = AutoPrice::minTotal((int)($i['product_id'] ?? 0), $bq); if ($bm !== null && $pr * $bq + 0.5 >= $bm) continue; // Best Sellers pack offer (approved exception)
       if ($pr + 0.004 < $fl && $pr + 0.004 < (float)$p->price) $bad[$k] = $p->name . ' – Batch cost (FIFO) ' . self::tk((float)$p->cost) . ', Minimum allowed ' . self::tk($fl) . ', Entered ' . self::tk($pr);
     }
     return $bad;
