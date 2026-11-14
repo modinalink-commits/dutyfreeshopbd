@@ -40,14 +40,14 @@ class BestSellerController extends Controller {
       [$ok, $ch, $m] = $S::call($wa, 'Test', (string)$p->name, (int)$p->stock); return back()->with($ok ? 'ok' : 'err', 'Test to …'.substr($wa, -4).' by '.$ch.': '.($ok ? 'sent' : 'failed · '.$m));
     }
     $id = (int)($d['id'] ?? 0); abort_unless(AutoPrice::has($id), 404); $p = DB::table('products')->find($id); abort_unless($p, 404);
-    if ($d['act'] === 'auto') { AutoPrice::setCustom($id, false, 'switched back on the Best Sellers page'); AutoPrice::sync('resume', true); return back()->with('ok', $p->name.' is on the automatic price again.'); }
-    if ($d['act'] === 'apply') { AutoPrice::setCustom($id, false, 'applied by hand'); $ch = AutoPrice::sync('apply', true); return back()->with('ok', isset($ch[$id]) ? $p->name.': '.number_format($ch[$id][0]).' → '.number_format($ch[$id][1]).' TK.' : 'Already at the automatic price.'); }
-    $price = (float)($d['price'] ?? 0); if ($price <= 0) return back()->with('err', 'Enter a price.');
+    if ($d['act'] === 'auto') { AutoPrice::setCustom($id, false, 'switched back on the Best Sellers page'); AutoPrice::sync('resume', true); return back()->with('ok', $p->name.' is on the automatic pack price again.'); }
+    if ($d['act'] === 'apply') { AutoPrice::setCustom($id, false, 'applied by hand'); $ch = AutoPrice::sync('apply', true); return back()->with('ok', isset($ch[$id]) ? $p->name.': '.number_format($ch[$id][0]).' → '.number_format($ch[$id][1]).' TK per carton.' : 'Already at the automatic pack price.'); }
+    $price = (float)($d['price'] ?? 0); if ($price <= 0) return back()->with('err', 'Enter a price per carton.');
     if ($e = ProfitFloor::productError(ProfitFloor::base($p), $price)) return back()->with('err', $e);
-    $upd = ['price' => $price, 'updated_at' => now()]; if ($p->compare_price !== null && (float)$p->compare_price <= $price) $upd['compare_price'] = null;
-    DB::table('products')->where('id', $id)->update($upd); AutoPrice::setCustom($id, true, 'custom price '.$price.' set on the Best Sellers page');
-    ProfitFloor::audit('Selling price changed', 'Product '.$p->name, ['price' => $p->price], ['price' => $price, 'source' => 'Best Sellers custom price']);
-    try { \App\Support\BundlePricing::sync([$id]); \Illuminate\Support\Facades\Cache::forget('store.home6'); StoreController::bust(); } catch (\Throwable $e) {}
-    return back()->with('ok', $p->name.' is on a custom price of '.number_format($price).' TK. The automatic price is paused for it.');
+    if ($price * 2 > (float)$p->price * 2 - 1) return back()->with('err', 'The pack price per carton must be lower than the single price ('.number_format($p->price).' TK).');
+    $old = AutoPrice::unitNow($p); AutoPrice::write($p, $price); AutoPrice::setCustom($id, true, 'custom pack price '.$price.' per carton set on the Best Sellers page');
+    ProfitFloor::audit('Selling price changed', 'Product '.$p->name, ['pack_unit' => $old], ['pack_unit' => $price, 'source' => 'Best Sellers custom pack price']);
+    try { \Illuminate\Support\Facades\Cache::forget('store.home6'); StoreController::bust(); } catch (\Throwable $e) {}
+    return back()->with('ok', $p->name.' is on a custom pack price of '.number_format($price).' TK per carton. The automatic price is paused for it.');
   }
 }

@@ -93,7 +93,7 @@ body{background:#fff}.cf,.cc{border:1px solid #EAEAEA;border-radius:20px;box-sha
 @endsection
 @section('js')
 <script>
-(function(){var u=new URLSearchParams(location.search),a=u.get('add');if(a){if(!DF.cart()[a])DF.add(a,1,u.get('p'),true);history.replaceState(null,'','/checkout'+(u.get('e')?'?e='+encodeURIComponent(u.get('e')):''))}
+(function(){var u=new URLSearchParams(location.search),a=u.get('add');if(a){var q=Math.max(1,Math.min(5,parseInt(u.get('q'))||1)),cu=DF.cart()[a];if(!cu||(q>1&&cu.q<q))DF.add(a,q,u.get('p'),true);history.replaceState(null,'','/checkout'+(u.get('e')?'?e='+encodeURIComponent(u.get('e')):''))}
 var pick='',code='',f=function(x){return (+x).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+' TK'},g=function(x){return Math.round(+x).toLocaleString('en-US')+' TK'},E=function(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML};
 function area(){var r=document.querySelector('input[name=area]:checked');return r?r.value:1}
 function addr(){var e=document.getElementById('f-ad');return e?e.value.trim():''}
