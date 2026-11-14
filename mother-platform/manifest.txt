@@ -1139,6 +1139,7 @@ public/images/bestseller/patron-white-3.webp
 public/images/bestseller/oris-silver-2.webp
 app/Support/BestSellerStock.php
 database/migrations/2026_11_14_170000_product_pub_watch.php
+database/migrations/2026_11_14_180000_products_listing_indexes.php
 app/Support/PublishNotice.php
 app/Http/Controllers/PublishNoticeController.php
 resources/views/publish_notice.blade.php
