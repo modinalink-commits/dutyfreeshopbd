@@ -1131,3 +1131,6 @@ database/migrations/2026_11_14_160000_chat_wait_notices.php
 resources/views/store/best_seller.blade.php
 resources/views/store/best_seller_preview.blade.php
 public/images/bestseller/patron-white.webp
+app/Support/AutoPrice.php
+app/Http/Controllers/BestSellerController.php
+resources/views/best_sellers_admin.blade.php

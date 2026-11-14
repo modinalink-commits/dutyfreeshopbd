@@ -105,6 +105,7 @@ class CatalogController extends Controller {
       \App\Support\ProfitFloor::audit('Profit floor blocked price', 'Product '.($old->name ?? $row['name']), $old ? ['price'=>$old->price] : null, ['price'=>$row['price'], 'cost'=>$pfCost]);
       return back()->withInput($r->except(['description', '_token']))->withErrors(['regular_price'=>$pfE]);
     }
+    if ($old && abs((float)$old->price - (float)$row['price']) > 0.004) \App\Support\AutoPrice::typed((int)$id, (float)$row['price']); // Best Seller on the automatic price: a typed price makes it custom
     if ($old && abs((float)$old->price - (float)$row['price']) > 0.004) \App\Support\ProfitFloor::audit('Selling price changed', 'Product '.$old->name, ['price'=>$old->price, 'buy'=>[$old->buy2_price, $old->buy3_price, $old->buy4_price, $old->buy5_price]], ['price'=>$row['price'], 'buy'=>[$row['buy2_price'], $row['buy3_price'], $row['buy4_price'], $row['buy5_price']]]);
     // AI-created product: second duplicate check right before saving (a repeated Save with dup_ok=1 confirms it is a different product)
     if (!$id && $r->filled('ai_scan') && \App\Support\ProductAutoFillService::on('dup') && $r->input('dup_ok') !== '1') {
