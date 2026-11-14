@@ -299,6 +299,30 @@ class CallCenterController extends Controller {
     return response()->json(['ok'=>true, 'msg'=>$msg]);
   }
   /** PBX integration / manual: attach the recording link for a call. */
+  /** Where one call's recording is kept (private storage, never a public URL). */
+  public static function recPath(int $id): ?string { foreach (['webm', 'ogg'] as $x) { $f = storage_path('app/call-recordings/'.$id.'.'.$x); if (is_file($f)) return $f; } return null; }
+  /** The dialer uploads the recording it made in the browser when the call ends. Only the agent of that call (or an admin) may attach it. */
+  public function recFile(Request $r, $id) {
+    $l = DB::table('call_logs')->find($id); abort_unless($l, 404);
+    abort_unless((int)$l->user_id === (int)Auth::id() || \App\Support\ProfitFloor::admin(), 403);
+    if (!$this->recOn()) return response()->json(['ok'=>false, 'error'=>'Recording is switched off.'], 422);
+    $r->validate(['file'=>'required|file|max:30720']); $f = $r->file('file');
+    $head = (string)file_get_contents($f->getRealPath(), false, null, 0, 4); $ext = $head === "\x1A\x45\xDF\xA3" ? 'webm' : ($head === 'OggS' ? 'ogg' : null);
+    if (!$ext) return response()->json(['ok'=>false, 'error'=>'Not an audio recording.'], 422);
+    $dir = storage_path('app/call-recordings'); if (!is_dir($dir)) @mkdir($dir, 0775, true);
+    foreach (['webm', 'ogg'] as $x) @unlink($dir.'/'.(int)$id.'.'.$x);
+    $f->move($dir, (int)$id.'.'.$ext);
+    DB::table('call_logs')->where('id', $id)->update(['recording_url'=>url('/admin/call-center/rec/'.(int)$id), 'recording_status'=>'available', 'updated_at'=>now()]);
+    return response()->json(['ok'=>true]);
+  }
+  /** Play a recording: the agent of that call or an admin. Every listen is written to the listening log. */
+  public function rec($id) {
+    $l = DB::table('call_logs')->find($id); abort_unless($l, 404);
+    abort_unless((int)$l->user_id === (int)Auth::id() || \App\Support\ProfitFloor::admin(), 403, 'Only the agent of this call or an admin can listen to it.');
+    $p = self::recPath((int)$id); abort_unless($p, 404, 'This call has no recording.');
+    try { if (!DB::table('call_listens')->where('call_id', (int)$id)->where('user_id', Auth::id())->where('created_at', '>', now()->subMinutes(10))->exists()) DB::table('call_listens')->insert(['call_id'=>(int)$id, 'user_id'=>Auth::id(), 'user_name'=>Auth::user()->name ?? '', 'created_at'=>now()]); } catch (\Throwable $e) {}
+    return response()->file($p, ['Content-Type'=>str_ends_with($p, '.ogg') ? 'audio/ogg' : 'audio/webm', 'Cache-Control'=>'private, no-store', 'X-Robots-Tag'=>'noindex']);
+  }
   public function logRecording(Request $r, $id) {
     $d = $r->validate(['url'=>['required', 'url', 'max:600']]); DB::table('call_logs')->where('id', $id)->update(['recording_url'=>$d['url'], 'recording_status'=>'available', 'updated_at'=>now()]); return response()->json(['ok'=>true]);
   }

@@ -62,6 +62,9 @@ class CallDaily {
     return $res;
   }
   public static function tick(): void {
+    try { // recordings older than the keep period are removed once a day so the disk does not fill up
+      if (Cache::add('cc_rec_clean_'.date('Ymd'), 1, 90000)) { $keep = max(14, (int)Procure::set('cc_rec_keep_days', '90')); $n = 0; foreach (glob(storage_path('app/call-recordings').'/*.{webm,ogg}', GLOB_BRACE) ?: [] as $f) if (filemtime($f) < time() - $keep * 86400) { $id = (int)basename($f); @unlink($f); $n++; DB::table('call_logs')->where('id', $id)->update(['recording_url'=>null, 'recording_status'=>'none']); } }
+    } catch (\Throwable $e) {}
     try {
       if (!self::on() || self::set('tpl_status', 'NOT SUBMITTED') !== 'APPROVED') { if (self::set('tpl_status', '') === 'PENDING' && Cache::add('cd_sync', 1, 600)) self::syncTemplate(); return; }
       $now = now('Asia/Dhaka'); $day = $now->format('Ymd'); [$h, $m] = array_map('intval', explode(':', self::sendAt()));

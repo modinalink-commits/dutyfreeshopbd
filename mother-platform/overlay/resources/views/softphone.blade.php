@@ -319,6 +319,18 @@ function call(n){n=clean(n||$('num').value);if(!retrying)tries=0;retrying=false;
   if(cancelReq){cancelReq=false;if(j.id)post('/admin/call-center/log/'+j.id+'/end',{status:'missed',duration:0});return}
   var s=ua.call(target(n),{mediaConstraints:{audio:AC,video:false},pcConfig:iceCfg(),rtcOfferConstraints:{offerToReceiveAudio:true}});wire(s);ui()}).catch(function(e){ses=null;if(e&&(e.name==='NotAllowedError'||e.name==='NotFoundError'||e.name==='NoMedia'||e.name==='SecurityError'))micErr();else{console.warn('dialer call',e);setPhase('failed','PBX Error');err('PBX Error. Please try again.')}})}
 function pbxId(){try{return ses._request&&ses._request.call_id||''}catch(e){return ''}}
+/* ---------- call recording, made in the browser from a separate copy of the two voices. The call's own audio path is not touched. ---------- */
+var rcd=null;
+function recStart(s){try{if(rcd||!cfg||!cfg.rec||!window.MediaRecorder||!s||!s.connection)return;var AC2=window.AudioContext||window.webkitAudioContext;if(!AC2)return;
+ var pc=s.connection,pick=function(a){return a.map(function(r){return r.track}).filter(function(t){return t&&t.kind==='audio'&&t.readyState==='live'})},rt=pick(pc.getReceivers()),lt=pick(pc.getSenders());if(!rt.length&&!lt.length)return;
+ var mt=['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus'].filter(function(m){return MediaRecorder.isTypeSupported(m)})[0];if(!mt)return;
+ var ctx=new AC2(),dst=ctx.createMediaStreamDestination();[rt,lt].forEach(function(ts){if(ts.length)ctx.createMediaStreamSource(new MediaStream(ts)).connect(dst)});
+ var mr=new MediaRecorder(dst.stream,{mimeType:mt,audioBitsPerSecond:16000}),ch=[];mr.ondataavailable=function(e){if(e.data&&e.data.size)ch.push(e.data)};
+ rcd={mr:mr,ctx:ctx,ch:ch,mt:mt};mr.start(5000)}catch(e){console.warn('dialer rec start',e);rcd=null}}
+function recStop(id){var r=rcd;rcd=null;if(!r)return;try{r.mr.onstop=function(){try{r.ctx.close()}catch(e){}if(!id||!r.ch.length)return;var b=new Blob(r.ch,{type:r.mt});if(b.size<3000)return;
+  var f=new FormData();f.append('_token',T);f.append('file',b,'call-'+id+(r.mt.indexOf('ogg')>-1?'.ogg':'.webm'));
+  var send=function(n){fetch('/admin/call-center/log/'+id+'/recording-file',{method:'POST',body:f,headers:{Accept:'application/json'},credentials:'same-origin'}).then(function(x){if(!x.ok&&n>0)setTimeout(function(){send(n-1)},5000)}).catch(function(){if(n>0)setTimeout(function(){send(n-1)},5000)})};send(2)};
+ r.mr.stop()}catch(e){console.warn('dialer rec stop',e)}}
 function wire(s){ses=s;
  s.on('sdp',function(e){if(e&&e.sdp)e.sdp=tuneSdp(e.sdp,e.originator==='local'&&e.type==='offer')});
  var sent=false;s.on('sending',function(){sent=true});
@@ -330,7 +342,7 @@ function wire(s){ses=s;
  /* watchdog: an outgoing call that is still "Connecting" after 12 s says WHERE it is stuck (never sent = browser/ICE side, sent = no answer from the PBX) */
  if(dir==='out'){var wd0=Date.now(),wdI=0;var wdF=function(){if(ses!==s||phase!=='connecting'){clearInterval(wdI);return;}var pc=s.connection,st='';try{st=(pc?'ice-gather '+pc.iceGatheringState+', ice '+pc.iceConnectionState+', sig '+pc.signalingState:'no peer connection')+', INVITE '+(sent?'sent':'NOT sent')+', registered '+(ua&&ua.isRegistered())+', socket '+(ua&&ua.isConnected())+' | '+SIPT.join(' | ')}catch(x){}console.warn('dialer stuck:',st);err('No reply yet '+Math.round((Date.now()-wd0)/1000)+'s ('+st+')')};setTimeout(function(){wdF();wdI=setInterval(wdF,3000)},12000)}
  s.on('progress',function(){if(phase==='connecting')setPhase('ringing')});
- var up=function(){if(phase==='connected')return;setPhase('connected');startTimer();qStart(s);if(logId)post('/admin/call-center/log/'+logId+'/connected',{pbx_call_id:pbxId()});recInd();err('')};
+ var up=function(){if(phase==='connected')return;setPhase('connected');startTimer();qStart(s);setTimeout(function(){if(ses===s)recStart(s)},500);if(logId)post('/admin/call-center/log/'+logId+'/connected',{pbx_call_id:pbxId()});recInd();err('')};
  s.on('accepted',up);s.on('confirmed',up);
  s.on('ended',function(e){if(s._dead)return;finish('ended',e&&e.cause)});
  s.on('failed',function(e){if(s._dead)return;finish('failed',(e&&e.cause)||'')});
@@ -348,7 +360,7 @@ function friendly(c){c=String(c||'');
  return 'PBX Error'}
 function finish(kind,cause){if(!ses&&phase!=='connecting'&&phase!=='ringing'&&phase!=='connected')return;
  var wasConn=!!connAt,d=secs(),id=logId,raw=String(cause||''),canceled=/cancel|bye|terminated/i.test(raw);
- clearInterval(tick);qStop();stopRing();$('ovInc').classList.remove('on');
+ clearInterval(tick);qStop();stopRing();recStop(wasConn?id:null);$('ovInc').classList.remove('on');
  var status,label,isFail=false;
  if(wasConn){status='answered';label='Call Ended'}
  else if(dir==='in'){status=/cancel/i.test(raw)?'missed':'rejected';label='Call Ended'}
@@ -404,7 +416,7 @@ $('trGo').onclick=function(){var x=clean($('trExt').value);if(!x){$('trErr').tex
 var sel={out:null,resp:null,can:null};
 function openSum(c){sum=c;sel={out:c.connected?null:'no_answer',resp:c.connected?null:'No Answer',can:null,cb:null};$('sMsg').checked=!c.connected&&c.dir!=='in';
  var i=c.info||{};$('sN').textContent=i.found&&i.name?i.name:'Unknown Customer';$('sP').textContent=c.phone;$('sD').textContent=c.connected?fmtD(c.dur):'Not connected';$('sO').textContent=i.last?i.last.invoice:'—';$('sA').textContent=(cfg&&cfg.staff)||'—';
- $('sR').textContent=!c.connected?'No Recording':(cfg&&cfg.rec?'Recording Processing':'No Recording');
+ $('sR').textContent=!c.connected?'No Recording':(cfg&&cfg.rec?'Saving recording':'No Recording');
  var ed=$('sEdit');if(i.last){ed.style.display='block';ed.href='/admin/orders/'+i.last.id+'/edit?call='+c.id}else ed.style.display='none';
  $('sNote').value='';$('sErr').textContent='';paintSum();$('ovSum').classList.add('on');if(emb)parent.postMessage({dfdial:'summary'},location.origin)}
 function paintSum(){document.querySelectorAll('#ocO button').forEach(function(b){b.classList.toggle('on',b.dataset.v===sel.out)});

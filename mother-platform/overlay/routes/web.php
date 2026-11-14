@@ -294,6 +294,8 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/call-center/log/{id}/connected', [\App\Http\Controllers\CallCenterController::class,'logConnected']);
   Route::post('/call-center/log/{id}/summary', [\App\Http\Controllers\CallCenterController::class,'logSummary']);
   Route::post('/call-center/log/{id}/recording', [\App\Http\Controllers\CallCenterController::class,'logRecording']);
+  Route::post('/call-center/log/{id}/recording-file', [\App\Http\Controllers\CallCenterController::class,'recFile'])->whereNumber('id')->middleware('throttle:30,1');
+  Route::get('/call-center/rec/{id}', [\App\Http\Controllers\CallCenterController::class,'rec'])->whereNumber('id');
   Route::get('/call-center/history', [\App\Http\Controllers\CallCenterController::class,'history']);
   Route::get('/ai-images', [\App\Http\Controllers\AiImageController::class,'index']);
   Route::post('/ai-images/settings', [\App\Http\Controllers\AiImageController::class,'settings']);

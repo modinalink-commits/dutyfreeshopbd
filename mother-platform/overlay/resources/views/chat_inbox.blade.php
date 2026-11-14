@@ -131,7 +131,7 @@ main{height:calc(100vh / var(--z,1));overflow:hidden;display:flex;flex-direction
 .mbx .cv .mc>.mcbd{display:none}
 .mbx .cv .mc>.hd{grid-column:1;grid-row:1;min-width:0}.mbx .cv .mc>.ms{grid-column:1;grid-row:2;min-height:0}.mbx .cv .mc>.cm{grid-column:1;grid-row:3;min-width:0}
 .mbx .cv .mc #hdt{display:none}
-.mbx .cv .mc>details.cb{grid-column:2;grid-row:1/4;align-self:stretch;height:100%;box-sizing:border-box;max-height:none;border-bottom:0;border-left:1px solid #E5E7EB;background:#F9FAFB;padding:12px;overflow:auto;min-width:0}
+.mbx .cv .mc>details.cb{grid-column:2;grid-row:1/4;align-self:stretch;height:100%;box-sizing:border-box;max-height:none!important;border-bottom:0;border-left:1px solid #E5E7EB;background:#F9FAFB;padding:12px;overflow:auto;min-width:0}
 .mbx .cv .mc>details.cb>summary{list-style:none;pointer-events:none;font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;color:#475467;margin-bottom:6px}
 .mbx .cv .mc>details.cb>summary::-webkit-details-marker{display:none}
 .mbx .cv .mc>details.cb .chips{gap:5px}.mbx .cv .mc>details.cb .ch{height:26px;padding:0 9px;border-color:#E5E7EB;border-radius:8px;white-space:normal}
