@@ -9,7 +9,7 @@
 <body style="margin:0;padding:0;background:#F3F4F6;font-family:'Hind Siliguri','Noto Sans Bengali',Arial,Helvetica,sans-serif;color:#0B1B33">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F3F4F6"><tr><td align="center" style="padding:24px 12px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#FFFFFF;border:1px solid #E5E7EB;border-radius:14px;overflow:hidden">
-<tr><td style="padding:22px 28px 18px;border-bottom:3px solid #F95505"><a href="{{ $base }}/" style="text-decoration:none"><img src="{{ $logo }}" alt="DutyFree BD" height="36" style="height:36px;border:0;display:block;font-size:22px;font-weight:700;color:#0B1B33"></a></td></tr>
+<tr><td style="padding:22px 28px 18px;border-bottom:3px solid #F95505"><a href="{{ $base }}/" style="text-decoration:none"><img src="{{ $logo }}" alt="DutyFree BD" width="158" height="36" style="width:158px;height:36px;border:0;display:block;font-size:22px;font-weight:700;color:#0B1B33"></a></td></tr>
 <tr><td style="padding:28px 28px 6px">
 <p style="margin:0 0 6px;font-size:13px;color:#6B7280;letter-spacing:.02em">ইনভয়েস {{ $o->invoice }}</p>
 <h1 style="margin:0 0 10px;font-size:24px;line-height:1.3;color:#0B1B33;font-weight:700">{{ $title }}</h1>

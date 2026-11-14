@@ -39,6 +39,8 @@ class Mailer {
     return trim(preg_replace(["/[ \t]+/u", "/\n[ \t]+/u", "/\n{3,}/u"], [' ', "\n", "\n\n"], $t));
   }
   /** Sends one email now (HTML + plain text). $unsub: stop link for offer emails, also sent as the List-Unsubscribe header. Returns [ok, error]. */
+  /** Logo for emails: always PNG/JPG (WebP is not shown by every mail app). */
+  public static function logo(): string { $l = Cache::get('store.settings2')['logo_url'] ?? null; if (!is_string($l) || !preg_match('/\.(png|jpe?g)(\?.*)?$/i', $l)) $l = '/email-logo.png'; return self::abs($l); }
   public static function deliver(string $to, string $subject, string $html, ?string $unsub = null): array {
     if (!self::hasPassword()) return [false, 'The mailbox password is not saved yet'];
     if (!self::valid($to)) return [false, 'Not a valid email address'];
@@ -78,7 +80,7 @@ class Mailer {
     $items = DB::table('order_items as i')->leftJoin('products as p', 'p.id', '=', 'i.product_id')->where('i.order_id', $o->id)->orderBy('i.id')->get(['i.name', 'i.qty', 'i.price', 'p.image']);
     $base = rtrim((string)config('app.url'), '/'); if ($base === '' || str_contains($base, 'localhost')) $base = 'https://dutyfreebd.com';
     $img = fn($u) => !$u ? null : (preg_match('#^https?://#', (string)$u) ? (string)$u : $base . '/' . ltrim((string)$u, '/'));
-    $logo = Cache::get('store.settings2')['logo_url'] ?? null; if (is_array($logo)) $logo = null; $logo = $img($logo ?: '/logo.webp');
+    $logo = self::logo();
     $inv = (string)$o->invoice; $invoiceUrl = null; try { $invoiceUrl = Chat::invoiceUrl($inv); } catch (\Throwable $e) {}
     $t = [
       'received' => ['আপনার অর্ডারটি আমরা পেয়েছি', 'ধন্যবাদ! আপনার অর্ডার আমরা পেয়েছি। আমাদের টিম যাচাই করে খুব শিগগিরই কনফার্ম করবে।', 'অর্ডার দেখুন', $invoiceUrl ?: $base . '/track?invoice=' . rawurlencode($inv)],
@@ -146,8 +148,7 @@ class Mailer {
   public static function offerHtml(string $email, ?string $name = null, ?string $msg = null, ?array $cta = null, ?string $title = null): array {
     $items = self::offerProducts(); $title = $title ?: 'আপনার জন্য আজকের অফার';
     $subject = $title . ' · DutyFree BD';
-    $logo = Cache::get('store.settings2')['logo_url'] ?? null; if (is_array($logo)) $logo = null;
-    return [$subject, view('emails.offer', ['items' => $items, 'title' => $title, 'name' => $name, 'msg' => $msg, 'cta' => $cta ?: ['সব অফার দেখুন', self::base() . '/'], 'logo' => self::abs($logo ?: '/logo.webp'), 'base' => self::base(), 'unsub' => self::unsubUrl($email), 'subject' => $subject, 'hotline' => Biz::hotline(), 'wa' => Biz::waUrl()])->render()];
+        return [$subject, view('emails.offer', ['items' => $items, 'title' => $title, 'name' => $name, 'msg' => $msg, 'cta' => $cta ?: ['সব অফার দেখুন', self::base() . '/'], 'logo' => self::logo(), 'base' => self::base(), 'unsub' => self::unsubUrl($email), 'subject' => $subject, 'hotline' => Biz::hotline(), 'wa' => Biz::waUrl()])->render()];
   }
   /** A campaign SMS that was just queued (Back in Store, Best Seller, refill reminder...) also goes by email to the same customer when we have the address. */
   public static function fromSms(string $num, string $body, string $event, ?string $ref = null): void {
