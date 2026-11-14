@@ -43,6 +43,18 @@ class PerfAuditController extends Controller {
       ['Longest running query', $this->safe(function () { $r = DB::selectOne("select round(extract(epoch from now() - query_start)::numeric, 1) s, left(regexp_replace(query, '\s+', ' ', 'g'), 160) q from pg_stat_activity where state = 'active' and pid <> pg_backend_pid() order by query_start limit 1"); return $r ? $r->s . ' s: ' . $r->q : 'none'; })],
       ['Waiting on a lock', $this->safe(fn() => (string)DB::selectOne("select count(*) n from pg_stat_activity where wait_event_type = 'Lock'")->n)],
     ];
+    // Database work over a 3 second window: how many rows PostgreSQL reads per second and which tables are being scanned in full right now.
+    $S['Database load (3 second sample)'] = $this->safe(function () {
+      $db = fn() => DB::selectOne('select xact_commit c, tup_returned r, tup_fetched f, blks_read b from pg_stat_database where datname = current_database()');
+      $tb = fn() => collect(DB::select('select relname, coalesce(seq_scan,0) s, coalesce(seq_tup_read,0) t, coalesce(idx_scan,0) i from pg_stat_user_tables'))->keyBy('relname');
+      DB::statement('select pg_stat_clear_snapshot()'); $a = $db(); $ta = $tb(); usleep(3000000); DB::statement('select pg_stat_clear_snapshot()'); $b = $db(); $tb2 = $tb(); $rows = [];
+      $rows[] = ['Transactions per second', number_format(($b->c - $a->c) / 3)]; $rows[] = ['Rows read per second (scans)', number_format(($b->r - $a->r) / 3)]; $rows[] = ['Rows fetched per second (by index)', number_format(($b->f - $a->f) / 3)];
+      $d = []; foreach ($tb2 as $n => $x) { $y = $ta[$n] ?? null; if (!$y) continue; $dt = $x->t - $y->t; if ($dt > 0) $d[$n] = [$dt, $x->s - $y->s, $x->i - $y->i]; }
+      uasort($d, fn($x, $y) => $y[0] <=> $x[0]);
+      foreach (array_slice($d, 0, 8, true) as $n => $v) $rows[] = ['Full scans: ' . $n, number_format($v[1]) . ' scans, ' . number_format($v[0]) . ' rows read in 3 s (index scans: ' . number_format($v[2]) . ')'];
+      return $rows;
+    });
+    if (!is_array($S['Database load (3 second sample)'])) $S['Database load (3 second sample)'] = [['—', (string)$S['Database load (3 second sample)']]];
     $S['Laravel'] = [
       ['APP_ENV / APP_DEBUG', config('app.env') . ' / ' . (config('app.debug') ? 'TRUE (bad for production)' : 'false')],
       ['config cached', file_exists(base_path('bootstrap/cache/config.php')) ? 'yes' : 'NO'], ['routes cached', glob(base_path('bootstrap/cache/routes-*.php')) ? 'yes' : 'NO'], ['events cached', file_exists(base_path('bootstrap/cache/events.php')) ? 'yes' : 'NO'],
