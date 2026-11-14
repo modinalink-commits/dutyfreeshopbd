@@ -3,7 +3,7 @@
 @include('cc_ui')
 <div class="cc-h"><h1>Call Board</h1><span>Live, today. Refreshes by itself every 15 seconds.</span><span id="cbT" style="margin-left:auto"></span></div>
 <div class="cc-k" id="cbK"></div>
-<div class="cc-box" data-nogrid><table class="cc-t"><thead><tr><th style="width:20%">Staff</th><th style="width:26%">Now</th><th>Calls today</th><th>Answered</th><th>Confirmed</th><th class="hm">Avg talk</th></tr></thead><tbody id="cbA"><tr><td colspan="6" style="color:#475467">Loading…</td></tr></tbody></table></div>
+<div class="cc-box" data-nogrid data-no-export><table class="cc-t no-export dfx-skip"><thead><tr><th style="width:20%">Staff</th><th style="width:26%">Now</th><th>Calls today</th><th>Answered</th><th>Confirmed</th><th class="hm">Avg talk</th></tr></thead><tbody id="cbA"><tr><td colspan="6" style="color:#475467">Loading…</td></tr></tbody></table></div>
 <div class="cc-note" style="border:1px solid #E5E7EB;border-radius:12px;background:#fff;margin-bottom:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><b style="color:#0B1B33">Daily Call Report</b><span id="cdS">Checking…</span><a href="/admin/call-center/daily" target="_blank" style="font-weight:600;margin-left:auto">See today's report</a></div>
 <div class="cc-two">
 <div class="cc-box"><b class="t">Needs attention</b><div id="cbN" style="padding:0 14px 10px"></div></div>
