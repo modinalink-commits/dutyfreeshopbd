@@ -27,7 +27,7 @@ class AgentTools {
   private static function norm(string $p): string { $d = preg_replace('/\D/', '', $p); return strlen($d) >= 11 ? substr($d, -11) : $d; }
   private static function validPhone(string $p): bool { return (bool)preg_match('/^01[3-9]\d{8}$/', $p); }
   private static function stockTxt($p): string { return StockGuard::sellable($p) ? 'in stock' : 'OUT OF STOCK'; }
-  private static function row($p): array { $now = (float)$p->price; return ['id'=>$p->id, 'name'=>$p->name, 'price'=>self::money($now), 'was'=>(float)$p->compare_price > $now ? self::money($p->compare_price) : null, 'stock'=>self::stockTxt($p), 'link'=>url(\App\Http\Controllers\StoreController::url($p))]; }
+  private static function row($p): array { $now = (float)$p->price; return ['id'=>$p->id, 'name'=>$p->name, 'price'=>self::money($now), 'was'=>(float)$p->compare_price > $now ? self::money($p->compare_price) : null, 'you_save'=>(float)$p->compare_price > $now ? self::money((float)$p->compare_price - $now).' ('.(int)round(100 * ((float)$p->compare_price - $now) / (float)$p->compare_price).'% off the regular price)' : null, 'stock'=>self::stockTxt($p), 'link'=>url(\App\Http\Controllers\StoreController::url($p))]; }
 
   /** Runs one tool. $st is the conversation state (cart, pending order), changed by reference. ctx: thread_id, sim, orders_on, last_msg_id, last_msg_text. Returns an array the model sees. */
   public static function run(string $name, array $in, array &$st, array $ctx): array {
