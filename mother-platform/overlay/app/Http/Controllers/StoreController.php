@@ -235,7 +235,7 @@ class StoreController extends Controller {
       $out = [];
       foreach ($cats as $c) {
         $pool = \App\Support\StockGuard::listable(DB::table('products')->where('published', true)->where('category_id', $c->id))->whereNotNull('image')->where('image', '!=', '')->orderByDesc('id')->limit(800)->get()
-          ->filter(fn($p) => \App\Support\StockGuard::sellable($p))->take(60);
+          ->filter(fn($p) => \App\Support\StockGuard::sellable($p))->shuffle()->take(60); // owner, 14 Nov 2026: a fresh draw from the whole sellable category every cache period, so older products reach the home page too (was: only the newest 60)
         $pick = $pool->sortByDesc(fn($p) => [(int)($sold[$p->id] ?? 0), (int)$p->id])->values(); // whole sellable pool (best sellers first); the 6 shown are picked per request below
         if ($pick->count()) $out[] = [$c, $pick, $pick->take(5)->values()]; // [2] = best sellers (hero slider), never shuffled
       }
