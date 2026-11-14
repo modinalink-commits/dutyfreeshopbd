@@ -8,6 +8,7 @@ use App\Support\StaffIdle;
 class StaffIdleMw {
   public function handle(Request $r, Closure $next) {
     $u = $r->user();
+    if ($u) \App\Support\StaffLive::touch($u, $r); // presence for the Live Staff Board (cache only)
     try { $act = $u && StaffIdle::on() && StaffIdle::applies($u); } catch (\Throwable $e) { $act = false; }
     if (!$act) return $next($r);
     $p = $r->path();

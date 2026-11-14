@@ -12,6 +12,7 @@ resources/views/admin/orders/partials/header-system.blade.php
 resources/views/order_new.blade.php
 resources/views/order_show.blade.php
 resources/views/stafflog.blade.php
+resources/views/stafflog_board.blade.php
 database/migrations/2026_10_31_000002_catalog_discounts.php
 app/Http/Controllers/CatalogController.php
 app/Http/Controllers/TaxonomyController.php
@@ -820,6 +821,7 @@ app/Http/Controllers/PurchaseListController.php
 resources/views/purchase_list.blade.php
 database/migrations/2026_11_14_120000_staff_idle_notices.php
 app/Support/StaffIdle.php
+app/Support/StaffLive.php
 app/Http/Middleware/StaffIdleMw.php
 app/Http/Controllers/StaffIdleController.php
 resources/views/staff_idle_notice.blade.php

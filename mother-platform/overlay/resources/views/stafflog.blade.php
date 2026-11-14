@@ -20,6 +20,9 @@
 .sl-g th:first-child,.sl-g td:first-child{padding-left:12px}
 @media (max-width:1100px){.sl-g{grid-template-columns:minmax(0,1fr)}}
 </style>
+<div class="card" data-nogrid data-no-export style="margin-bottom:16px;overflow-x:auto"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap"><b>Who is working right now</b><small style="color:#6B7280">Updates by itself every 30 seconds</small></div>
+<div id="slBoard">@include('stafflog_board')</div></div>
+<script>(function(){var b=document.getElementById('slBoard');if(!b)return;setInterval(function(){if(document.hidden)return;fetch('/admin/staff-log?part=board',{credentials:'same-origin',headers:{'X-Requested-With':'XMLHttpRequest'}}).then(function(r){return r.ok?r.text():null}).then(function(h){if(h)b.innerHTML=h}).catch(function(){})},30000)})();</script>
 <div class="sl-g">
 <div class="card sl-w"><b>Live staff activity</b><table><thead><tr><th>Staff</th><th>Role</th><th>Now working on</th><th>Since</th><th>Today</th><th>Status</th></tr></thead><tbody>@foreach($live as $x)<tr><td class="nw"><b>{{ $x['name'] }}</b></td><td class="nw">{{ ucfirst($x['role']) }}</td><td>{{ $x['now'] }}</td><td class="nw">{{ $x['since'] }}</td><td class="nw">{{ $x['today'] }} orders</td><td class="nw"><span class="pill {{ $x['status']==='Active'?'ok':($x['status']==='Idle'?'':'red') }}">{{ $x['status'] }}</span></td></tr>@endforeach</tbody></table></div>
 <div class="card"><b>Staff performance (today)</b><table><thead><tr><th>Staff</th><th>Orders</th><th>Avg confirm</th><th>Cancels</th><th>Returns</th></tr></thead><tbody>@forelse($perf as $p)<tr><td class="nw">{{ $p->user_name }}</td><td class="nw">{{ $p->n }}</td><td class="nw">{{ $fmt($p->conf) }}</td><td class="nw">{{ $p->cancels }}</td><td class="nw">{{ $p->rets }}</td></tr>@empty<tr><td colspan="5">No staff actions today.</td></tr>@endforelse</tbody></table></div>

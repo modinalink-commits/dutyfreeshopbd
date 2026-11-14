@@ -457,7 +457,9 @@ class AdminController extends Controller {
     $perf = DB::select("select l.user_name, count(distinct l.order_id) n, avg(case when l.to_status='Approved' then extract(epoch from (l.created_at - o.created_at))/60 end) conf, sum(case when l.to_status='Cancel' then 1 else 0 end) cancels, sum(case when l.to_status in ('Returned','Return Pending') then 1 else 0 end) rets from order_status_logs l join orders o on o.id=l.order_id where l.created_at >= ? and l.user_name is not null group by l.user_name order by n desc", [$d0]);
     $stages = DB::select("select from_status, to_status, avg(mins) av, count(*) n, max(mins) mx from (select l.from_status, l.to_status, extract(epoch from (l.created_at - coalesce(lag(l.created_at) over (partition by l.order_id order by l.id), o.created_at)))/60 mins from order_status_logs l join orders o on o.id=l.order_id where l.from_status is not null) t group by from_status, to_status order by n desc limit 20");
     $staffNames = DB::table('order_status_logs')->whereNotNull('user_name')->distinct()->pluck('user_name');
-    return view('stafflog', compact('logs','kpi','live','perf','stages','staffNames'));
+    $board = \App\Support\StaffLive::rows();
+    if ($r->query('part') === 'board') return response()->view('stafflog_board', compact('board'))->header('Cache-Control', 'no-store');
+    return view('stafflog', compact('logs','kpi','live','perf','stages','staffNames','board'));
   }
 }
 
