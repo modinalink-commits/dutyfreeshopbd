@@ -416,6 +416,7 @@ class StoreController extends Controller {
       $title = self::fitTitle($baseT, ' | DutyFree BD');
     }
     $ov = $this->autoSeo($subSlug === null ? $c : $seoNode, $subSlug === null ? 'title' : 'meta_title');
+    if ((int)$r->query('page') > 1) unset($ov['canon']); // paginated pages keep their own self canonical
     return response()->view('store.category', $this->base(array_replace(['c'=>$c, 'subName'=>$subName, 'subSlug'=>$subSlug, 'items'=>$items, 'hasPos'=>$hasPos, 'groups'=>collect($items->items())->groupBy(fn($p) => $p->sub ?: $c->name), 'title'=>$title, 'desc'=>$subName ? $subName.' – original imported products in '.$c->name.' at DutyFree BD. Cash on delivery, nationwide delivery.' : $c->meta_description, 'canon'=>((int)$r->query('page') > 1) ? $canon.'?page='.(int)$r->query('page') : ((!$subName && !empty($c->canonical)) ? $c->canonical : $canon), 'noindex'=>(!empty($c->noindex) && !$subName) || self::isSmokeCat($c), 'keywords'=>$c->focus_keyword ?? null, 'ogimg'=>(!empty($c->og_image) ? $c->og_image : null)], $ov)))->header('Cache-Control','public, max-age=120');
   }
   /** Public brand page /brand/{slug}: published products of one brand + the brand's own SEO (auto or manual). */
