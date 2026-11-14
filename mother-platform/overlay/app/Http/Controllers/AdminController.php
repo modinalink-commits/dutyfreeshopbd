@@ -15,8 +15,8 @@ class AdminController extends Controller {
   }
   public function logout(Request $r) { \App\Support\StaffTrack::login('logout', Auth::user(), Auth::user()->email ?? null, $r); Auth::logout(); $r->session()->invalidate(); $r->session()->regenerateToken(); return redirect('/admin/login'); }
   public function dashboard(Request $r) {
-    $tz = 'Asia/Dhaka'; $now = now($tz); $A = \App\Support\Analytics::class; $cd = fn(array $ff) => \Illuminate\Support\Facades\Cache::remember('dash.v1.'.md5(json_encode($ff)), 45, fn() => $A::dashboard($ff));
-    $c60 = fn(string $k, $a, callable $fn) => \Illuminate\Support\Facades\Cache::remember('dash.v2.'.$k.'.'.md5(json_encode($a)), 60, $fn);
+    $tz = 'Asia/Dhaka'; $now = now($tz); $A = \App\Support\Analytics::class; $cd = fn(array $ff) => \Illuminate\Support\Facades\Cache::remember('dash.v1.'.md5(json_encode($ff)), 300, fn() => $A::dashboard($ff)); // period totals refresh every 5 minutes; the live counters below (New, Ready, Incomplete) are never cached
+    $c60 = fn(string $k, $a, callable $fn) => \Illuminate\Support\Facades\Cache::remember('dash.v2.'.$k.'.'.md5(json_encode($a)), 300, $fn);
     $safe = function (callable $fn, $def = []) { try { return $fn(); } catch (\Throwable $e) { \Log::warning('dashboard: '.$e->getMessage()); return $def; } };
     $range = in_array($r->query('range'), ['today', '7', '30', 'custom'], true) ? $r->query('range') : '30';
     $dOk = fn($k) => preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)$r->query($k));
