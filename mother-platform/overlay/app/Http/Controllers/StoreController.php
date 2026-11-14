@@ -175,7 +175,7 @@ class StoreController extends Controller {
         ->map(function ($p) use ($sold) { $p->sold = (int)($sold[$p->id] ?? 0); return $p; });
       $sec = []; $i = 0;
       $ordC = $this->cats()->values(); // same order as the top menu (categories.position)
-      foreach ($ordC as $c) { $sec[] = [$c, $pub()->where('category_id',$c->id)->orderByDesc('id')->limit(80)->get()]; $i++; }
+      foreach ($ordC as $c) { $sec[] = [$c, self::catPool((int)$c->id)]; $i++; }
       $offers = [];
       foreach ($this->cats() as $c) { $mx = (int)$pub()->where('category_id',$c->id)->whereColumn('compare_price','>','price')->where('compare_price','>',0)->max(DB::raw('round((compare_price - price) / compare_price * 100)')); if ($mx > 0) $offers[] = [$c, $mx]; }
       usort($offers, fn($a, $b) => $b[1] <=> $a[1]);
@@ -331,11 +331,17 @@ class StoreController extends Controller {
     $deals = self::dealList(self::set())->take(6);
     return response()->view('store.airport_preview', $this->base(['deals'=>$deals, 'title'=>'Airport preview | DutyFree BD', 'desc'=>'', 'canon'=>url('/airport-preview'), 'noindex'=>true]))->header('X-Robots-Tag', 'noindex')->header('Cache-Control', 'no-store');
   }
+  /** Homepage pool of one category: 80 products drawn from ALL its customer-visible products (owner, 14 Nov 2026: the home page kept showing the same newest items, older products never appeared). The draw is made in PHP from the id list, once per cache period; eligibility, stock, price and publish rules are unchanged. */
+  private static function catPool(int $cid, int $n = 80) {
+    $ids = \App\Support\StockGuard::listable(DB::table('products')->where('published', true))->where('category_id', $cid)->pluck('id')->all();
+    if (count($ids) > $n) { shuffle($ids); $ids = array_slice($ids, 0, $n); }
+    return $ids ? DB::table('products')->whereIn('id', $ids)->orderByDesc('id')->get() : collect();
+  }
   public function homeSec(string $slug) {
     $c = $this->cats()[$slug] ?? null; $s = self::set();
     if (!$c || $s['home_cat_sections'] !== '1') abort(404);
     // pool of up to 80 listable products is cached; the 6 shown are re-drawn on EVERY load, so each homepage reload shows different products from inside the category
-    $pool = self::rem('store.hsec3.'.$slug, 300, fn() => \App\Support\StockGuard::listable(DB::table('products')->where('published', true))->where('category_id', $c->id)->orderByDesc('id')->limit(80)->get());
+    $pool = self::rem('store.hsec3.'.$slug, 300, fn() => self::catPool((int)$c->id));
     if (!$pool->count()) abort(404);
     $items = (\App\Support\Procure::set('shuffle_home', '1') !== '0' && \App\Support\Procure::set('shuffle_general', '1') !== '0') ? $pool->shuffle(random_int(1, 2147483646))->take(6)->values() : $pool->take(6)->values();
     return response()->view('store.home_sec', $this->base(['c'=>$c, 'items'=>$items, 'lazy'=>false]))->header('X-Robots-Tag', 'noindex')->header('Cache-Control', 'private, no-store, max-age=0');
