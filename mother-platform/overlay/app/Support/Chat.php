@@ -348,7 +348,10 @@ class Chat {
     } catch (\Throwable $e) {}
     // 2) an ordinary question: the AI answers it now, even inside staff hours
     // a customer who wants to order is not left waiting: the AI takes the details and files an Order Request (a person creates the order)
-    $human = !empty($t->needs_human) || !empty($t->handoff_at) || in_array((string)($t->intent ?? ''), ['complaint', 'refund', 'cancel', 'change_order', 'human_request', 'payment'], true) || \Illuminate\Support\Facades\Cache::has('ai.manual_off.'.$tid);
+    // Owner (14 Nov 2026): "needs a person" left behind by an earlier holding message must not keep the AI out for ever (live case: a customer waited 130 minutes because a holding message from the morning had marked the chat). Only a real hand-over, a sensitive subject or the manual OFF switch keeps the chat with staff.
+    $handed = !empty($t->handoff_at); try { $handed = $handed || DB::table('chat_handoffs')->where('thread_id', $tid)->whereIn('status', ['open', 'accepted'])->exists(); } catch (\Throwable $e) {}
+    $human = $handed || in_array((string)($t->intent ?? ''), ['complaint', 'refund', 'cancel', 'change_order', 'human_request', 'payment'], true) || \Illuminate\Support\Facades\Cache::has('ai.manual_off.'.$tid);
+    if (!$human && (!empty($t->needs_human) || !empty($t->ai_paused))) { try { DB::table('chat_threads')->where('id', $tid)->update(['needs_human'=>false, 'ai_paused'=>false, 'updated_at'=>now()]); } catch (\Throwable $e) {} }
     $answered = false;
     if (!$human && AiChat::chatOn() && in_array($t->channel, ['web', 'whatsapp', 'facebook'], true)) {
       self::$force = true; try { self::aiReply($tid); } catch (\Throwable $e) { report($e); } finally { self::$force = false; }
