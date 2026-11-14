@@ -140,6 +140,13 @@ main{height:calc(100vh / var(--z,1));overflow:hidden;display:flex;flex-direction
 .mbx .cv .mc>details.cb table.ot tr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 8px;background:#fff;border:1px solid #E5E7EB;border-radius:9px;padding:7px 9px;margin-bottom:6px}
 .mbx .cv .mc>details.cb table.ot td{padding:0;border:0}.mbx .cv .mc>details.cb table.ot td.ac{grid-column:1/-1;margin-top:3px;flex-wrap:wrap}
 }
+/* short laptop screens (e.g. 1366x768): narrower side columns so buttons fit on one row, one-line hand-off note and summary (click to expand), shorter typing box. The inbox never gets shorter than 650px: on a very short screen the page scrolls up and down a little instead of squeezing the conversation. */
+@media(min-width:1280px) and (max-height:860px){
+.mbx{grid-template-columns:270px minmax(0,1fr);min-height:650px}.mbx .cv .mc{grid-template-columns:minmax(0,1fr) 250px}
+#ibtop{margin-bottom:6px!important}#ibtop>div>span{display:none}
+.mbx .mc .hd{gap:4px;padding:6px 10px}.mbx .mc .hb{max-height:34px}.mbx .mc .sumb:not(.x){max-height:22px}.mbx .mc .sumb{margin-top:0!important}
+.mbx .mc .cm{padding:6px 10px;gap:4px}.mbx .mc .cm .sd textarea{height:46px;min-height:46px}.mbx .mc .cm .sd button{height:40px!important}
+}
 #ibu .k.p{background:#FEF3F2;border-color:#F6C4C0;color:#7A271A}#ibu .k.p b{color:#B42318}#ibu .k.a{background:#EEF4FF;border-color:#C7D7FE;color:#1E3A8A}#ibu .k.a b{color:#1D4ED8}#ibu .k.o{background:#fff;border-color:#E5E7EB;color:#4B5563}#ibu .k.o b{color:#B42318;font-size:12.5px}
 </style>
 <div id="ibtop" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px"><div style="flex:1"><h1 style="margin:0">Messages <span id="ibu"></span></h1><span style="font-size:12px;color:#6B7280">Facebook, Instagram, WhatsApp and Website Chat in one inbox.</span></div>
