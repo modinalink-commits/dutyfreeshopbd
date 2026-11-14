@@ -422,6 +422,7 @@ class Chat {
   /** Worker tick (owner rule 11 Nov 2026): our message is the last one in the chat and the customer has not answered it for the set time (Chat Settings, default 30 min) - there is nothing to wait for, so the chat is closed as "no reply needed": a short last courtesy line (only while the 24-hour channel window is open) and Resolved, no Waiting / Awaiting Reply left. Open hand-offs, complaints, refunds, order requests etc. are never touched. */
   public static function closeSilentTick(): void {
     if (Sms::secret('ai_auto_close') === '0') return;
+    try { self::closeCompletedTick(); } catch (\Throwable $e) { report($e); }
     $min = max(1, min(720, (int)(Sms::secret('ai_close_after_min') ?: 30)));
     $rows = DB::table('chat_threads')->where('last_dir', 'out')->whereIn('status', ['new', 'open', 'waiting'])->where(fn($w) => $w->where('awaiting_reply', true)->orWhere('unread', '>', 0)->orWhereNull('last_customer_message_at')) // owner rule 14 Nov 2026: a chat where the customer never wrote and we only sent messages closes by itself too
       ->where('last_at', '<=', now()->subMinutes($min))->orderBy('last_at')->limit(15)->get();
@@ -429,6 +430,25 @@ class Chat {
       $k = 'ai.silentclose.'.$t->id.'.'.substr((string)$t->last_at, 0, 16);
       if (!\Illuminate\Support\Facades\Cache::add($k, 1, 86400)) continue;
       self::closeSilent($t);
+    }
+  }
+  /** Owner rule 14 Nov 2026: a customer whose latest order is Delivered and whose last message is only a courtesy (thanks / ok / emoji) has nothing left to ask: the chat is closed silently (nothing is sent), leaves the unread list and goes to All History. Complaints, refund / return / cancel / payment chats, open Order Requests and open reports are never closed here. A new message from the customer reopens it. */
+  public static function closeCompletedTick(): void {
+    $rows = DB::table('chat_threads')->where('last_dir', 'in')->whereIn('status', ['new', 'open', 'waiting'])->where(fn($w) => $w->where('awaiting_reply', true)->orWhere('unread', '>', 0))
+      ->whereNotNull('phone')->where('phone', '<>', '')->where('last_at', '<=', now()->subMinutes(5))->orderBy('last_at')->limit(30)->get();
+    foreach ($rows as $t) {
+      try {
+        if (in_array((string)($t->intent ?? ''), ['complaint', 'refund', 'cancel', 'change_order', 'payment', 'order_request', 'human_request'], true)) continue;
+        if (!empty($t->reported_at) && empty($t->report_solved_at)) continue;
+        $m = DB::table('chat_messages')->where('thread_id', $t->id)->orderByDesc('id')->first(['dir', 'body', 'kind', 'attachment_type']); if (!$m || $m->dir !== 'in') continue;
+        $q = trim((string)$m->body); if ($m->attachment_type || $q === '' || mb_strlen($q) > 60) continue;
+        if (!preg_match('/^(ok|okay|thanks?( you)?( so much)?|thx|ty|thank u|ধন্যবাদ|অনেক ধন্যবাদ|থ্যাংকস|থ্যাঙ্ক ইউ|ঠিক আছে|আচ্ছা|জি|জ্বি|হ্যাঁ ঠিক আছে|আলহামদুলিল্লাহ|ভালো|good|great|nice|received|পেয়েছি|পেয়ে গেছি|👍|🙏|❤️?|😊|🥰)([\s.!,।🙏👍❤️😊]|ধন্যবাদ|স্যার|ভাই|sir|bhai)*$/iu', $q)) continue;
+        $o = DB::table('orders')->where('phone', $t->phone)->orderByDesc('id')->first(['id', 'status']); if (!$o || $o->status !== 'Delivered') continue;
+        try { if (DB::table('chat_order_requests')->where('thread_id', $t->id)->where('status', 'review')->exists()) continue; } catch (\Throwable $e) {}
+        DB::table('chat_threads')->where('id', $t->id)->update(['status'=>'resolved', 'unread'=>0, 'awaiting_reply'=>false, 'needs_human'=>false, 'updated_at'=>now()]);
+        try { DB::table('chat_handoffs')->where('thread_id', $t->id)->whereIn('status', ['open', 'accepted'])->update(['status'=>'done', 'updated_at'=>now()]); } catch (\Throwable $e) {}
+        try { AiMemory::event((int)$t->id, null, 'ai', 'auto_resolved_completed', null, ['why'=>'order delivered, customer only said thanks']); } catch (\Throwable $e) {}
+      } catch (\Throwable $e) { report($e); }
     }
   }
   public static function closeSilent(object $t): bool {
