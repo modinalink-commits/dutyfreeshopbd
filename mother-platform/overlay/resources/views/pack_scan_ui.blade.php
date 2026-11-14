@@ -48,6 +48,8 @@
 #psOv #psV .ps-ln{position:absolute;left:8%;right:8%;top:50%;height:2px;background:#FF5A00;box-shadow:0 0 0 1px rgba(255,255,255,.5)}
 #psOv #psV .ps-vn{position:absolute;left:0;right:0;bottom:0;padding:6px 10px;background:rgba(11,27,51,.72);color:#fff;font-size:12.5px;font-weight:600}
 @media(max-width:820px){#psOv{padding:0}#psOv .ps{border-radius:0;min-height:100vh}#psOv .ps-f{flex-wrap:wrap}#psOv #psIn{flex-basis:100%}#psOv #psGo,#psOv #psCam{flex:1}#psOv #psRes{min-height:150px}#psOv .ps-big{font-size:24px}}
+#psOv .ps-snd{white-space:nowrap}#psOv .ps-snd button{border:1px solid #CBD5E1;background:#fff;color:#0B1B33;border-radius:7px;padding:2px 9px;font-size:12px;font-weight:700;cursor:pointer;width:auto;margin:0}
+#psOv #psS1{color:#15803D;border-color:#15803D}#psOv #psS0{color:#B91C1C;border-color:#B91C1C}
 #psQ{margin:8px 0 0;padding:6px 10px;border:1px solid #D7DCE3;border-radius:8px;background:#F3F4F6;color:#0B1B33;font-size:12.5px;font-weight:700}
 #psP{margin-top:10px;border:1.5px solid #B91C1C;border-radius:10px;background:#FEF2F2;padding:8px 10px}
 #psP .ps-pt{font-weight:800;color:#B91C1C;font-size:13px;margin-bottom:4px}
@@ -61,7 +63,7 @@ html body button.ps-open:hover,html body .toolbar-control.ps-open:hover,#ocb#ocb
 <button type="button" id="psMn" aria-label="Minimize" title="ছোট করুন: এই পেজে স্ক্যান চলতে থাকবে">–</button><button type="button" id="psX" aria-label="Close" title="Close">×</button><div id="psMl">ছোট করা আছে। স্ক্যান করতে থাকুন, প্রতিটা লেবেল চেক হচ্ছে।</div></div>
 <div class="ps-b"><div>
 <form class="ps-f" id="psF" autocomplete="off"><input id="psIn" inputmode="numeric" autocomplete="off" placeholder="পার্সেলের লেবেল স্ক্যান করুন" aria-label="Parcel label barcode"><button type="submit" id="psGo">Check</button><button type="button" id="psCam" title="মোবাইলের ক্যামেরা দিয়ে লেবেল স্ক্যান করুন">📷 ক্যামেরা</button></form>
-<div class="ps-hint">স্ক্যানার নম্বর লিখে নিজে Enter দেয়। হাতে ইনভয়েস নম্বর লিখেও Check চাপা যায়।</div>
+<div class="ps-hint">স্ক্যানার নম্বর লিখে নিজে Enter দেয়। হাতে ইনভয়েস নম্বর লিখেও Check চাপা যায়। <span class="ps-snd">আওয়াজ শুনুন: <button type="button" id="psS1">✓ সফল</button> <button type="button" id="psS0">✖ ভুল</button></span></div>
 <div id="psV" hidden><video id="psVd" playsinline muted autoplay></video><div class="ps-ln"></div><div class="ps-vn" id="psVn">লেবেলের বারকোড কমলা দাগের উপর ধরুন।</div></div>
 <div id="psQ" hidden></div>
 <div id="psRes"><div class="ps-big">স্ক্যানের জন্য প্রস্তুত</div><div class="ps-sub" style="color:#5B6676">সবুজ এলে পার্সেল কুরিয়ারকে দিন। লাল বা হলুদ এলে পার্সেল রেখে দিন।</div></div>
@@ -77,9 +79,10 @@ html body button.ps-open:hover,html body .toolbar-control.ps-open:hover,#ocb#ocb
  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
  function tone(f,dur,vol,type,at){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();var o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime+(at||0);o.connect(g);g.connect(ac.destination);o.type=type||'sine';o.frequency.value=f;g.gain.setValueAtTime(vol,t);g.gain.setValueAtTime(vol,t+dur-.02);g.gain.linearRampToValueAtTime(0,t+dur);o.start(t);o.stop(t+dur)}catch(e){}}
  // three sounds: a short tick the moment a label is read, two rising notes when the parcel may go, a long low buzz when it must stay
+ function vib(p){try{if(navigator.vibrate)navigator.vibrate(p)}catch(e){}}
  function beep(good){if(good==='scan'){tone(2400,.03,.12,'sine');return} // a faint click only: the real sounds are the two below
-  if(good){tone(1319,.11,.45,'sine');tone(1760,.11,.45,'sine',.12);tone(2093,.22,.45,'sine',.24)} // success: three bright rising notes (ding-ding-ding)
-  else{tone(160,.28,.6,'sawtooth');tone(160,.28,.6,'sawtooth',.36);tone(160,.5,.6,'sawtooth',.72)}} // error: three low harsh buzzes, about 1.2 seconds
+  if(good){tone(1319,.11,.5,'sine');tone(1760,.11,.5,'sine',.12);tone(2093,.24,.5,'sine',.24);vib(120)} // success: three bright rising notes, one short buzz of the phone
+  else{for(var n=0;n<3;n++){tone(880,.16,.6,'square',n*.36);tone(440,.16,.6,'square',n*.36+.17)}vib([350,120,350,120,350])}} // error: a high-low alarm three times (phone speakers cannot play very low notes), three long buzzes
  var rowsH='',pend={};
  function draw(){var b=document.getElementById('psLog')||ov.querySelector('.ps-w tbody');if(!b)return;var p=Object.keys(pend).reverse().map(function(c){return '<tr class="ps-pd"><td>now</td><td><b>'+esc(c)+'</b></td><td><span class="pp warn">চেক হচ্ছে…</span></td><td></td></tr>'}).join('');b.innerHTML=(p+rowsH)||'<tr><td colspan="4" style="color:#5B6676;padding:12px">এখনো কিছু স্ক্যান হয়নি।</td></tr>'}
  function paint(j){
@@ -108,6 +111,7 @@ html body button.ps-open:hover,html body .toolbar-control.ps-open:hover,#ocb#ocb
   fetch('/admin/packing-scan/today',{credentials:'same-origin',headers:{'Accept':'application/json'}}).then(function(r){if(r.status===401||r.status===419){res.className='bad';res.innerHTML='<div class="ps-big">✖ লগইন নেই</div><div class="ps-sub">এই পেজে লগইন নেই বা পেজটা পুরনো। স্ক্যানের আগে Ctrl+F5 চেপে আবার লগইন করুন।</div>';throw 0}return r.json()}).then(paint).catch(function(){});setTimeout(function(){inp.focus()},60)}
  function close(){if(q.length+run>0){var e=document.getElementById('psQ');e.hidden=false;e.textContent='একটু অপেক্ষা করুন: '+(q.length+run)+'টা পার্সেল এখনো চেক হচ্ছে।';return}camStop();ov.classList.remove('on');ov.classList.remove('min');if(window.__psPage){location.href='/admin/orders?status=Shipment';return}if(changed){changed=false;location.reload()}}
  document.getElementById('psX').addEventListener('click',close);
+ document.getElementById('psS1').addEventListener('click',function(){beep(true)});document.getElementById('psS0').addEventListener('click',function(){beep(false)});
  var mn=document.getElementById('psMn');
  function setMin(m){if(m)camStop();ov.classList.toggle('min',m);mn.textContent=m?'▢':'–';mn.title=m?'স্ক্যান জানালা খুলুন':'ছোট করুন: এই পেজে স্ক্যান চলতে থাকবে';if(!m)setTimeout(function(){inp.focus()},60)}
  mn.addEventListener('click',function(){setMin(!ov.classList.contains('min'))});
