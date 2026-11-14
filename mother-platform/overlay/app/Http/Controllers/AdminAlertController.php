@@ -9,7 +9,10 @@ class AdminAlertController extends Controller
 {
   public function feed() {
     abort_unless(in_array(optional(auth()->user())->role, ['super', 'admin'], true), 403);
-    $rows = DeployHealth::active(); $open = array_values(array_filter($rows, fn($r) => $r['status'] === 'open'));
+    $rows = DeployHealth::active();
+    // Owner (14 Nov 2026): the "customers waiting for a staff reply" warning goes to the staff and managers (their own popup), not to the owner's bell and popup. It stays on the All issues page.
+    if (\App\Support\Procure::set('alert_chat_stale_owner', '0') !== '1') $rows = array_values(array_filter($rows, fn($r) => ($r['fp'] ?? '') !== 'chat.stale'));
+    $open = array_values(array_filter($rows, fn($r) => $r['status'] === 'open'));
     $items = array_map(fn($r) => $r + self::bn($r), array_slice($rows, 0, 15));
     return response()->json(['count' => count($open), 'items' => $items, 'at' => time()])->header('Cache-Control', 'no-store');
   }

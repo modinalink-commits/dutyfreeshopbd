@@ -32,9 +32,9 @@
 <div class="card"><h2>2. Send a test email</h2>
 <form method="post" action="/admin/email" class="row">@csrf<input type="hidden" name="act" value="test">
 <label>Send to<br><input type="email" name="to" placeholder="your own email address" style="width:260px" required></label>
-<label>Which email<br><select name="kind">@foreach($kinds as $k => $v)<option value="{{ $k }}">{{ $v['label'] }}</option>@endforeach</select></label>
+<label>Which email<br><select name="kind">@foreach($kinds as $k => $v)<option value="{{ $k }}">{{ $v['label'] }}</option>@endforeach<option value="offer">Offer email</option></select></label>
 <button class="btn g" @disabled(!$hasPw || !$hasSample)>Send test</button></form>
-<small style="display:block;margin-top:6px;color:#6B7280">Uses the newest order as sample content, with [TEST] in the subject. It goes only to the address you type.</small></div>
+<small style="display:block;margin-top:6px;color:#6B7280">Uses the newest order as sample content and is sent exactly as a customer would get it. It goes only to the address you type.</small></div>
 
 <div class="card"><h2>3. Settings</h2>
 <form method="post" action="/admin/email">@csrf<input type="hidden" name="act" value="settings">
@@ -47,8 +47,28 @@
 <button class="btn" style="margin-top:12px">Save settings</button></form>
 <small style="display:block;margin-top:6px;color:#6B7280">The mailbox plan allows 1,000 emails a day; the limit here keeps a margin. When switched on, emails start with orders changed from that moment: old orders never get one.</small></div>
 
+<div class="card"><h2>4. Offer emails (marketing)</h2>
+<form method="post" action="/admin/email">@csrf<input type="hidden" name="act" value="marketing">
+<label class="sw"><input type="hidden" name="mk_on" value="0"><input type="checkbox" name="mk_on" value="1" @checked($mk['on'])> Send offer emails</label>
+<div class="row" style="margin-top:12px">
+<label>Offer emails a day<br><input type="number" name="mk_cap" min="0" max="900" value="{{ $mk['cap'] }}" style="width:120px"></label>
+<label>Same person again after (days)<br><input type="number" name="mk_gap" min="1" max="60" value="{{ $mk['gap'] }}" style="width:120px"></label>
+<span>Queued or sent today <b>{{ number_format($mk['today']) }}</b></span><span>Asked to stop <b>{{ number_format($mk['out']) }}</b></span></div>
+<button class="btn" style="margin-top:12px">Save offer settings</button></form>
+<small style="display:block;margin-top:8px;color:#6B7280">What goes out: (1) every campaign SMS (Back in Store, Best Seller offer, refill reminder) also by email when we have that customer's address; (2) one daily offer email with the live Best Seller packs and the biggest real savings, to your extra list first and then to customers, longest-inactive first. Sent a few at a time between 10 AM and 9 PM, order emails always first. Every offer email has a stop link.</small>
+<div style="margin-top:8px;padding:8px 10px;border:1px solid #FDE68A;background:#FFFBEB;border-radius:8px;font-size:12.5px;color:#92400E">Mailbox rule (Hostinger): offer emails may go only to people who agreed to receive them, and sudden large volumes are not allowed; a mailbox that breaks this can be blocked, which would also stop order emails. Start small.</div></div>
+
+<div class="card"><h2>5. Extra email list</h2>
+<form method="post" action="/admin/email">@csrf<input type="hidden" name="act" value="list_add">
+<label>Paste email addresses (one per line, or separated by commas)<br><textarea name="emails" rows="4" style="width:100%;max-width:640px;border:1px solid #D0D5DD;border-radius:8px;padding:8px;font-size:13px" placeholder="name@example.com"></textarea></label>
+<div class="row" style="margin-top:8px"><button class="btn g">Add to list</button><span>In the list now <b>{{ number_format($mk['list']) }}</b></span></div></form>
+@if($mk['recent']->isNotEmpty())<div style="margin-top:8px;font-size:12.5px;color:#4B5563">Latest:
+@foreach($mk['recent'] as $e)<form method="post" action="/admin/email" style="display:inline">@csrf<input type="hidden" name="act" value="list_remove"><input type="hidden" name="email" value="{{ $e }}"><span style="display:inline-block;border:1px solid #E5E7EB;border-radius:99px;padding:1px 4px 1px 9px;margin:2px">{{ $e }} <button title="Remove" style="border:0;background:none;color:#B42318;font-weight:700;cursor:pointer">×</button></span></form>
+@endforeach</div>@endif
+<small style="display:block;margin-top:6px;color:#6B7280">Only add addresses of people who agreed to hear from DutyFree BD. These get the daily offer email first.</small></div>
+
 <div class="card" data-nogrid data-no-export><h2>Preview</h2>@if(!$hasSample)<div style="color:#6B7280">No order to preview with.</div>@else
-<div class="tabs" id="emTabs">@foreach($kinds as $k => $v)<a href="/admin/email/preview/{{ $k }}" target="emPrev" class="{{ $loop->first ? 'on' : '' }}">{{ $v['label'] }}</a>@endforeach</div>
+<div class="tabs" id="emTabs">@foreach($kinds as $k => $v)<a href="/admin/email/preview/{{ $k }}" target="emPrev" class="{{ $loop->first ? 'on' : '' }}">{{ $v['label'] }}</a>@endforeach<a href="/admin/email/preview/offer" target="emPrev">Offer email</a></div>
 <iframe name="emPrev" src="/admin/email/preview/{{ $kinds->keys()->first() }}" title="Email preview"></iframe>
 <script>document.getElementById('emTabs').addEventListener('click',function(e){var a=e.target.closest('a');if(!a)return;[].forEach.call(this.querySelectorAll('a'),function(x){x.classList.remove('on')});a.classList.add('on')});</script>@endif</div>
 

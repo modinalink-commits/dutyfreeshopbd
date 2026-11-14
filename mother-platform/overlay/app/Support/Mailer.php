@@ -30,13 +30,24 @@ class Mailer {
     try { app('mail.manager')->purge('dfb'); } catch (\Throwable $e) {}
     return Mail::mailer('dfb');
   }
-  /** Sends one email now. Returns [ok, error]. */
-  public static function deliver(string $to, string $subject, string $html): array {
+  /** Plain-text version of an email (mail filters trust a message more when it carries both forms). */
+  public static function plain(string $html): string {
+    $t = preg_replace(['#<(style|script|title)[^>]*>.*?</\1>#si', '#<div style="display:none[^>]*>.*?</div>#si'], '', $html);
+    $t = preg_replace_callback('#<a[^>]+href="([^"]+)"[^>]*>(.*?)</a>#si', fn($m) => trim(strip_tags($m[2])) . ' (' . $m[1] . ')', $t);
+    $t = preg_replace(['#<br\s*/?>#i', '#</(p|div|tr|h1|h2|table)>#i', '#</td>#i'], ["\n", "\n", ' '], $t);
+    $t = html_entity_decode(strip_tags($t), ENT_QUOTES, 'UTF-8');
+    return trim(preg_replace(["/[ \t]+/u", "/\n[ \t]+/u", "/\n{3,}/u"], [' ', "\n", "\n\n"], $t));
+  }
+  /** Sends one email now (HTML + plain text). $unsub: stop link for offer emails, also sent as the List-Unsubscribe header. Returns [ok, error]. */
+  public static function deliver(string $to, string $subject, string $html, ?string $unsub = null): array {
     if (!self::hasPassword()) return [false, 'The mailbox password is not saved yet'];
     if (!self::valid($to)) return [false, 'Not a valid email address'];
     try {
-      $from = self::user(); $name = self::fromName(); $rt = self::replyTo();
-      self::mailer()->html($html, function ($m) use ($to, $subject, $from, $name, $rt) { $m->to($to)->subject($subject)->from($from, $name); if (self::valid($rt)) $m->replyTo($rt); });
+      $from = self::user(); $name = self::fromName(); $rt = self::replyTo(); $text = self::plain($html);
+      self::mailer()->send([], [], function ($m) use ($to, $subject, $from, $name, $rt, $html, $text, $unsub) {
+        $m->to($to)->subject($subject)->from($from, $name)->html($html)->text($text); if (self::valid($rt)) $m->replyTo($rt);
+        if ($unsub) { try { $h = $m->getHeaders(); $h->addTextHeader('List-Unsubscribe', '<' . $unsub . '>'); $h->addTextHeader('List-Unsubscribe-Post', 'List-Unsubscribe=One-Click'); } catch (\Throwable $e) {} }
+      });
       return [true, null];
     } catch (\Throwable $e) { return [false, mb_substr($e->getMessage(), 0, 400)]; }
   }
@@ -56,7 +67,7 @@ class Mailer {
       $rows = DB::table('mail_outbox')->where('status', 'queued')->where('created_at', '>=', now()->subDays(2))->orderByRaw("case when type like 'order_%' then 0 else 1 end")->orderBy('id')->limit(min($n, $left))->get();
       foreach ($rows as $r) {
         if (!DB::table('mail_outbox')->where('id', $r->id)->where('status', 'queued')->update(['status' => 'sending', 'updated_at' => now()])) continue;
-        [$ok, $err] = self::deliver($r->to, $r->subject, $r->html);
+        [$ok, $err] = self::deliver($r->to, $r->subject, $r->html, str_starts_with((string)$r->type, 'mk_') ? self::unsubUrl($r->to) : null);
         DB::table('mail_outbox')->where('id', $r->id)->update(['status' => $ok ? 'sent' : 'failed', 'error' => $err, 'sent_at' => $ok ? now() : null, 'updated_at' => now()]);
       }
     } catch (\Throwable $e) { report($e); } finally { Cache::forget('email.pump'); }
@@ -101,5 +112,68 @@ class Mailer {
       Procure::put('email_order_cursor', (string)$cur);
     } catch (\Throwable $e) { report($e); }
   }
-  public static function tick(): void { self::orderTick(); self::pump(); }
+  // ---------------------------------------------------------------- marketing (offer) email
+  public static function mkReady(): bool { try { return Schema::hasTable('mail_list') && Schema::hasTable('mail_optouts'); } catch (\Throwable $e) { return false; } }
+  public static function mkOn(): bool { return self::set('mk_on', '0') === '1' && self::on() && self::mkReady(); }
+  public static function mkCap(): int { return max(0, min(900, (int)self::set('mk_cap', '500'))); }
+  public static function mkGap(): int { return max(1, min(60, (int)self::set('mk_gap', '7'))); }
+  public static function mkToday(): int { try { return (int)DB::table('mail_outbox')->where('type', 'like', 'mk_%')->whereIn('status', ['queued', 'sending', 'sent'])->where('created_at', '>=', now('Asia/Dhaka')->startOfDay()->utc())->count(); } catch (\Throwable $e) { return 0; } }
+  public static function base(): string { $b = rtrim((string)config('app.url'), '/'); return ($b === '' || str_contains($b, 'localhost')) ? 'https://dutyfreebd.com' : $b; }
+  public static function token(string $email): string { $email = mb_strtolower(trim($email)); return rtrim(strtr(base64_encode($email), '+/', '-_'), '=') . '.' . substr(hash_hmac('sha256', $email, (string)config('app.key')), 0, 24); }
+  public static function emailFromToken(string $t): ?string {
+    $p = explode('.', $t, 2); if (count($p) !== 2) return null; $e = base64_decode(strtr($p[0], '-_', '+/'), true); if (!$e || !self::valid($e)) return null;
+    return hash_equals(self::token($e), $t) ? mb_strtolower($e) : null;
+  }
+  public static function unsubUrl(string $email): string { return self::base() . '/email/unsubscribe/' . self::token($email); }
+  public static function optedOut(string $email): bool { try { return DB::table('mail_optouts')->where('email', mb_strtolower(trim($email)))->exists(); } catch (\Throwable $e) { return false; } }
+  private static function abs(?string $u): ?string { if (!$u) return null; return preg_match('#^https?://#', $u) ? $u : self::base() . '/' . ltrim($u, '/'); }
+
+  /** Products for the offer email, all from the live catalogue: the Best Seller pack offers first, then the in-stock products with the biggest real saving. */
+  public static function offerProducts(int $n = 6): array {
+    return Cache::remember('email.offer.products.' . $n, 300, fn() => self::offerProductsNow($n)); // one catalogue read per 5 minutes, however many emails are built
+  }
+  private static function offerProductsNow(int $n): array {
+    $out = []; $seen = [];
+    try { foreach (\App\Http\Controllers\StoreController::bestSellers() as $p) { $t = BundlePricing::total((int)$p->id, 2); if (!$t || (int)$p->stock < 2 || $t >= (float)$p->price * 2) continue;
+      $out[] = ['name' => $p->name, 'img' => self::abs($p->bs_image ?: $p->image), 'price' => (float)$t, 'was' => (float)$p->price * 2, 'tag' => '২ কার্টন', 'url' => self::base() . '/p/m' . $p->id]; $seen[(int)$p->id] = 1; } } catch (\Throwable $e) {}
+    try { $rows = StockGuard::listable(DB::table('products')->where('published', true))->whereNotNull('image')->where('image', '!=', '')->where('compare_price', '>', 0)->whereColumn('compare_price', '>', 'price')->where(fn($w) => $w->whereNull('stock')->orWhere('stock', '>', 0))
+        ->orderByRaw('(compare_price - price) / compare_price desc')->limit(40)->get(['id', 'name', 'image', 'price', 'compare_price', 'stock', 'category_id']);
+      foreach ($rows->shuffle()->take(40) as $p) { if (count($out) >= $n) break; if (isset($seen[(int)$p->id])) continue; try { if (!StockGuard::sellable($p)) continue; } catch (\Throwable $e) {}
+        $out[] = ['name' => $p->name, 'img' => self::abs($p->image), 'price' => (float)$p->price, 'was' => (float)$p->compare_price, 'tag' => null, 'url' => self::base() . '/p/m' . $p->id]; } } catch (\Throwable $e) {}
+    return $out;
+  }
+  /** [subject, html] of an offer email. $msg: optional campaign line (the approved SMS text of that campaign, link removed); $cta: [label, url]. */
+  public static function offerHtml(string $email, ?string $name = null, ?string $msg = null, ?array $cta = null, ?string $title = null): array {
+    $items = self::offerProducts(); $title = $title ?: 'আপনার জন্য আজকের অফার';
+    $subject = $title . ' · DutyFree BD';
+    $logo = Cache::get('store.settings2')['logo_url'] ?? null; if (is_array($logo)) $logo = null;
+    return [$subject, view('emails.offer', ['items' => $items, 'title' => $title, 'name' => $name, 'msg' => $msg, 'cta' => $cta ?: ['সব অফার দেখুন', self::base() . '/'], 'logo' => self::abs($logo ?: '/logo.webp'), 'base' => self::base(), 'unsub' => self::unsubUrl($email), 'subject' => $subject, 'hotline' => Biz::hotline(), 'wa' => Biz::waUrl()])->render()];
+  }
+  /** A campaign SMS that was just queued (Back in Store, Best Seller, refill reminder...) also goes by email to the same customer when we have the address. */
+  public static function fromSms(string $num, string $body, string $event, ?string $ref = null): void {
+    try {
+      if (!self::mkOn()) return; $p = substr(preg_replace('/\D/', '', $num), -11); if (strlen($p) < 10) return;
+      $c = DB::table('customers')->whereRaw('right(phone, 11) = ?', [$p])->whereNotNull('email')->where('email', '!=', '')->first(['name', 'email']); if (!$c || !self::valid($c->email) || self::optedOut($c->email)) return;
+      $url = null; if (preg_match('#(https?://\S+|dutyfreebd\.com/\S+)#u', $body, $m)) $url = preg_match('#^https?://#', $m[1]) ? $m[1] : 'https://' . $m[1];
+      $msg = trim(preg_replace(['#(https?://\S+|dutyfreebd\.com/\S+)#u', '/অর্ডার\s*:\s*$/um', '/DutyFreeBD\s*$/u'], ['', '', ''], $body)); $msg = trim(preg_replace('/\s+/u', ' ', $msg), " :।\n") . '।';
+      $titles = ['pub_back' => 'আপনার পছন্দের পণ্য আবার স্টকে', 'bs_once' => 'Best Seller অফার: ২ কার্টনে বিশেষ দাম', 'bs_remind' => 'আবার অর্ডারের সময় হলো?'];
+      [$sub, $html] = self::offerHtml($c->email, $c->name, $msg, $url ? ['এখনই অর্ডার করুন', $url] : null, $titles[$event] ?? null);
+      self::enqueue($c->email, $sub, $html, 'mk_' . mb_substr($event, 0, 30), 'mk:sms:' . ($ref ?: md5($event . $p . $body)));
+    } catch (\Throwable $e) { report($e); }
+  }
+  /** Daily offer email, paced through the day (never one big burst): the owner's extra list first, then customers with an address, longest-inactive first. Nobody gets one more often than the gap. */
+  public static function offerTick(): void {
+    if (!self::mkOn() || !Cache::add('email.offer.tick', 1, 600)) return;
+    try {
+      $h = (int)now('Asia/Dhaka')->format('G'); if ($h < 10 || $h >= 21) return;
+      $left = self::mkCap() - self::mkToday(); if ($left <= 0) return; $n = min($left, 50); $gap = self::mkGap(); $day = now('Asia/Dhaka')->format('Ymd');
+      $free = 'not exists (select 1 from mail_optouts x where x.email = lower(%1$s)) and not exists (select 1 from mail_outbox o where o."to" = %1$s and o.type like \'mk_%%\' and o.created_at > now() - (%2$d * interval \'1 day\'))';
+      $rows = DB::select('select l.email, l.name from mail_list l where ' . sprintf($free, 'l.email', $gap) . ' order by l.id limit ' . (int)$n);
+      if (count($rows) < $n) { $more = DB::select("select c.email, c.name from customers c where c.email is not null and c.email <> '' and coalesce(c.blocked, false) = false and " . sprintf($free, 'c.email', $gap) . ' order by (select max(o2.created_at) from orders o2 where o2.phone = c.phone) asc nulls first limit ' . (int)($n - count($rows))); $rows = array_merge($rows, $more); }
+      $done = [];
+      foreach ($rows as $r) { $e = mb_strtolower(trim((string)$r->email)); if (isset($done[$e]) || !self::valid($e)) continue; $done[$e] = 1;
+        [$sub, $html] = self::offerHtml($e, $r->name ?? null); self::enqueue($e, $sub, $html, 'mk_offer', 'mk:offer:' . $day . ':' . $e); }
+    } catch (\Throwable $e) { report($e); }
+  }
+  public static function tick(): void { self::orderTick(); self::offerTick(); self::pump(); }
 }

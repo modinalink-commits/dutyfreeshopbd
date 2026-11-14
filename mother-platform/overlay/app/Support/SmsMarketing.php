@@ -86,7 +86,9 @@ class SmsMarketing {
   /** Queue one marketing/transactional message into the SMS log. Returns the log id or null if skipped. */
   public static function enqueue(string $num, string $body, string $event, string $type, array $x = []): ?int {
     [$parts] = self::parts($body);
-    return DB::table('sms_logs')->insertGetId(['to'=>$num, 'body'=>$body, 'event'=>$event, 'status'=>'queued', 'type'=>$type, 'parts'=>$parts, 'cost'=>round($parts * self::unit(), 2), 'sender_id'=>Sms::secret('sms_sender_id'), 'created_at'=>now(), 'updated_at'=>now()] + $x);
+    $__id = DB::table('sms_logs')->insertGetId(['to'=>$num, 'body'=>$body, 'event'=>$event, 'status'=>'queued', 'type'=>$type, 'parts'=>$parts, 'cost'=>round($parts * self::unit(), 2), 'sender_id'=>Sms::secret('sms_sender_id'), 'created_at'=>now(), 'updated_at'=>now()] + $x);
+    if ($type === 'marketing') { try { Mailer::fromSms($num, $body, $event, $x['ref'] ?? null); } catch (\Throwable $e) {} } // the same campaign also goes by email when we have the customer's address and marketing email is on
+    return $__id;
   }
 
   /** Materialise one run of a campaign into queued log rows (duplicate-protected). */

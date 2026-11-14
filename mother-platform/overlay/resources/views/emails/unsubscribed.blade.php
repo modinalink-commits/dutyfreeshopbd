@@ -1,0 +1,5 @@
+<!doctype html><html lang="bn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>DutyFree BD</title></head>
+<body style="margin:0;background:#F3F4F6;font-family:'Hind Siliguri',Arial,sans-serif;color:#0B1B33"><div style="max-width:460px;margin:60px auto;padding:28px 22px;background:#fff;border:1px solid #E5E7EB;border-radius:14px;text-align:center">
+@if($ok)<h1 style="font-size:20px;margin:0 0 10px">অফারের ইমেল বন্ধ করা হয়েছে</h1><p style="font-size:15px;line-height:1.7;color:#4B5563;margin:0 0 18px">{{ $email }} ঠিকানায় আর অফারের ইমেল যাবে না। আপনার অর্ডারের তথ্যের ইমেল আগের মতোই পাবেন।</p>
+@else<h1 style="font-size:20px;margin:0 0 10px">লিংকটি সঠিক নয়</h1><p style="font-size:15px;line-height:1.7;color:#4B5563;margin:0 0 18px">অনুগ্রহ করে ইমেলের লিংকটি আবার খুলুন, অথবা আমাদের সাথে যোগাযোগ করুন।</p>@endif
+<a href="/" style="display:inline-block;background:#F95505;color:#fff;text-decoration:none;font-weight:700;padding:11px 26px;border-radius:10px;border:1px solid #0B1B33">DutyFree BD-তে ফিরে যান</a></div></body></html>
