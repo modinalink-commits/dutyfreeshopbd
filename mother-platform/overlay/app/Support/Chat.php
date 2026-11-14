@@ -424,12 +424,28 @@ class Chat {
     if (Sms::secret('ai_auto_close') === '0') return;
     try { self::closeCompletedTick(); } catch (\Throwable $e) { report($e); }
     $min = max(1, min(720, (int)(Sms::secret('ai_close_after_min') ?: 30)));
+    try { self::closeGreetingTick($min); } catch (\Throwable $e) { report($e); }
     $rows = DB::table('chat_threads')->where('last_dir', 'out')->whereIn('status', ['new', 'open', 'waiting'])->where(fn($w) => $w->where('awaiting_reply', true)->orWhere('unread', '>', 0)->orWhereNull('last_customer_message_at')) // owner rule 14 Nov 2026: a chat where the customer never wrote and we only sent messages closes by itself too
       ->where('last_at', '<=', now()->subMinutes($min))->orderBy('last_at')->limit(15)->get();
     foreach ($rows as $t) {
       $k = 'ai.silentclose.'.$t->id.'.'.substr((string)$t->last_at, 0, 16);
       if (!\Illuminate\Support\Facades\Cache::add($k, 1, 86400)) continue;
       self::closeSilent($t);
+    }
+  }
+  /** Owner rule 14 Nov 2026: a customer who only said hello (every incoming message is a greeting), was answered, and then stayed silent for the close-after time goes to Closed. */
+  public static function closeGreetingTick(int $min): void {
+    $rows = DB::table('chat_threads')->where('last_dir', 'out')->whereIn('status', ['new', 'open', 'waiting'])->whereNotNull('last_customer_message_at')
+      ->where('last_at', '<=', now()->subMinutes($min))->orderBy('last_at')->limit(30)->get();
+    foreach ($rows as $t) {
+      try {
+        $in = DB::table('chat_messages')->where('thread_id', $t->id)->where('dir', 'in')->limit(6)->get(['body', 'attachment_type']);
+        if ($in->isEmpty() || $in->count() > 4) continue;
+        $ok = true; foreach ($in as $m) { $b = trim((string)$m->body); if ($m->attachment_type || $b === '' || mb_strlen($b) > 30 || !preg_match('/^(hi+|hello+|hey+|helo|hlw|hallo|hell?o there|assalamu? ?alaikum|assalamualaikum|salam|সালাম|আসসালামু? ?আলাইকুম|আসসালামুয়ালাইকুম|হ্যালো|হ্যাল্লো|হাই|হেলো|হ্যালো স্যার|hello sir|hi sir)[\s!.?🙏👋]*$/iu', $b)) { $ok = false; break; } }
+        if (!$ok) continue;
+        $k = 'ai.greetclose.'.$t->id.'.'.substr((string)$t->last_at, 0, 16); if (!\Illuminate\Support\Facades\Cache::add($k, 1, 86400)) continue;
+        self::closeSilent($t);
+      } catch (\Throwable $e) { report($e); }
     }
   }
   /** Owner rule 14 Nov 2026: a customer whose latest order is Delivered and whose last message is only a courtesy (thanks / ok / emoji) has nothing left to ask: the chat is closed silently (nothing is sent), leaves the unread list and goes to All History. Complaints, refund / return / cancel / payment chats, open Order Requests and open reports are never closed here. A new message from the customer reopens it. */
@@ -777,7 +793,11 @@ class Chat {
     })->all();
   }
   /** Number of customers currently waiting for a staff reply (not a message count, and never reduced by opening a chat). */
-  public static function unreadTotal(): int { try { return (int)DB::table('chat_threads')->where('awaiting_reply', true)->where('status', '!=', 'resolved')->count(); } catch (\Throwable $e) { return 0; } }
+  /** Owner rule 14 Nov 2026: a chat that is an order (open Order Request) lives in the Order Requests tab, not in Unread. */
+  public static function notOrder($q) {
+    return $q->where(fn($w) => $w->whereNull('intent')->orWhere('intent', '<>', 'order_request'))->whereRaw("not exists (select 1 from chat_order_requests r where r.thread_id = chat_threads.id and r.status = 'review')");
+  }
+  public static function unreadTotal(): int { try { return (int)self::notOrder(DB::table('chat_threads')->where('awaiting_reply', true)->where('status', '!=', 'resolved'))->count(); } catch (\Throwable $e) { return 0; } }
   /** A staff member's reply was accepted by the platform: customer messages that arrived up to $t0 are answered; anything newer stays waiting. */
   public static function replied(int $tid, $t0, bool $echo = false): void {
     $left = (int)DB::table('chat_messages')->where('thread_id', $tid)->where('dir', 'in')->where('created_at', '>', $t0)->count();

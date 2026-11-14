@@ -20,7 +20,7 @@ class ChatController extends Controller {
     if (trim((string)$r->query('q')) !== '' || $f === 'history') $f = 'all';
     $hist = (string)$r->query('f') === 'history' || trim((string)$r->query('q')) !== '';
     if (in_array($f, ['facebook', 'instagram', 'whatsapp', 'web'])) $q->where('channel', $f);
-    elseif ($f === 'unread' || $f === 'late') $q->where('awaiting_reply', true);
+    elseif ($f === 'unread' || $f === 'late') Chat::notOrder($q->where('awaiting_reply', true));
     elseif ($f === 'upset') $q->where('awaiting_reply', true)->whereIn(DB::raw('lower(coalesce(mood, \'\'))'), ['upset', 'angry', 'urgent']);
     elseif ($f === 'assigned') $q->where('assigned_to', auth()->id());
     elseif ($f === 'human') Chat::humanScope($q);
