@@ -22,6 +22,13 @@ class SinglePacket {
     $c = DB::table('categories')->where('slug', 'cigarette-vape')->value('id');
     return $c ? (int)$c : null;
   }
+  /** Categories whose products come in cartons of loose packets. Owner decision 14 Nov 2026: start with Cigarette and Vape only; more categories are added through the setting single_packet_cats (comma separated category ids). */
+  public static function allowedCats(): array {
+    try { $v = trim((string)DB::table('settings')->where('key', 'single_packet_cats')->value('value')); } catch (\Throwable $e) { $v = ''; }
+    $ids = $v !== '' ? array_values(array_filter(array_map('intval', explode(',', $v)))) : [];
+    if (!$ids && ($t = self::targetCat())) $ids = [$t];
+    return $ids;
+  }
   /** Affiliate-style categories have no loose packets. */
   public static function excludedCats(): array { return DB::table('categories')->where(fn($q) => $q->where('name', 'ilike', 'watch%')->orWhere('name', 'ilike', 'mobile%'))->pluck('id')->map(fn($i) => (int)$i)->all(); }
 
@@ -30,7 +37,7 @@ class SinglePacket {
     $q = DB::table('products')->whereNull('parent_product_id')->where('name', 'not ilike', self::PREFIX.'%')
       ->where(fn($w) => $w->whereNull('sub')->orWhereRaw('lower(sub) <> ?', ['single packet']))
       ->where('price', '>', 0);
-    if ($ex = self::excludedCats()) $q->whereNotIn('category_id', $ex);
+    $q->whereIn('category_id', self::allowedCats() ?: [0]);
     return $q;
   }
   /** Old hand-made Single Packet products (before the twin system). */
@@ -57,7 +64,7 @@ class SinglePacket {
     if (!self::ready()) return null;
     $p = DB::table('products')->find($pid); if (!$p) return null;
     if ($p->parent_product_id || stripos((string)$p->name, self::PREFIX) === 0 || strtolower((string)$p->sub) === 'single packet') return null;
-    if (in_array((int)$p->category_id, self::excludedCats(), true) || (float)$p->price <= 0) return null;
+    if (!in_array((int)$p->category_id, self::allowedCats(), true) || (float)$p->price <= 0) return null;
     $cat = $cat ?: self::targetCat(); if (!$cat) return null;
     $tw = DB::table('products')->where('parent_product_id', $pid)->first();
     if ($tw) { DB::table('products')->where('id', $tw->id)->update(self::fields($p, false)); return 'updated'; }
@@ -81,8 +88,8 @@ class SinglePacket {
     $have = self::eligibleQuery()->whereExists(fn($q) => $q->select(DB::raw(1))->from('products as t')->whereColumn('t.parent_product_id', 'products.id'))->count();
     $old = self::oldQuery()->count(); $oldPub = self::oldQuery()->where('published', true)->count();
     $sample = self::eligibleQuery()->orderBy('id')->limit(12)->get(['id', 'name', 'sku', 'price', 'cost', 'published'])->map(fn($p) => ['main' => $p->name, 'twin' => self::twinName($p), 'sku' => $p->sku ? $p->sku.'-SP' : '—', 'price' => self::packPrice($p->price), 'cost' => self::packCost($p->cost)])->all();
-    $ex = self::excludedCats();
-    return ['target' => $cat, 'target_name' => $cat ? (string)DB::table('categories')->where('id', $cat)->value('name') : null, 'eligible' => $elig, 'have' => $have, 'to_create' => max(0, $elig - $have), 'old' => $old, 'old_published' => $oldPub,
+    $ex = array_values(array_diff(DB::table('categories')->whereIn('id', self::allowedCats())->pluck('id')->map(fn($i) => (int)$i)->all(), [])); $allowedNames = $ex ? DB::table('categories')->whereIn('id', $ex)->pluck('name')->all() : []; $ex = [];
+    return ['allowed_names' => $allowedNames, 'target' => $cat, 'target_name' => $cat ? (string)DB::table('categories')->where('id', $cat)->value('name') : null, 'eligible' => $elig, 'have' => $have, 'to_create' => max(0, $elig - $have), 'old' => $old, 'old_published' => $oldPub,
       'excluded_names' => $ex ? DB::table('categories')->whereIn('id', $ex)->pluck('name')->all() : [], 'excluded_products' => $ex ? DB::table('products')->whereIn('category_id', $ex)->whereNull('parent_product_id')->count() : 0,
       'sample' => $sample, 'auto' => self::auto(), 'ready' => self::ready()];
   }
