@@ -56,7 +56,7 @@ class PathaoStatusSync {
     }
     if ($action === 'partial_received') {
       if ($o->status !== 'Return Pending' || $o->return_type !== 'Partial') return;
-      if ($items->contains(fn($x) => (int)($x->ret_qty ?? 0) > 0)) { [$ok] = ShipmentOutcome::receive($id); if ($ok) self::clear($id); }
+      if ($items->contains(fn($x) => (int)($x->ret_qty ?? 0) > 0)) { if (self::held($id)) return; [$ok] = ShipmentOutcome::receive($id); if ($ok) self::clear($id); }
       else self::flag($id, 'Item Review', 'Pathao says the returned goods are back, but the returned items are not recorded. Record the delivery outcome, then confirm the received quantities.');
       return;
     }
@@ -65,7 +65,7 @@ class PathaoStatusSync {
       if ($o->status === 'Return Pending' && $o->return_type === 'Partial') return;
       if (in_array($o->status, ['Shipment', 'Late Delivery'], true) && !$known) { $all = []; foreach ($items as $x) $all[$x->id] = (int)$x->qty; ShipmentOutcome::save($id, $all, 'Pathao: whole parcel returned (auto)'); }
       $o2 = DB::table('orders')->find($id);
-      if ($o2 && $o2->status === 'Return Pending') { [$ok] = ShipmentOutcome::receive($id); if ($ok) self::clear($id); }
+      if ($o2 && $o2->status === 'Return Pending') { if (self::held($id)) return; [$ok] = ShipmentOutcome::receive($id); if ($ok) self::clear($id); }
     }
   }
 
@@ -106,4 +106,6 @@ class PathaoStatusSync {
     if ($cur !== $flag) OrderActivity::log($id, 'billing_flag', $cur, $flag, $note);
   }
   public static function clear(int $id): void { DB::table('orders')->where('id', $id)->whereNotNull('billing_flag')->update(['billing_flag' => null, 'billing_flag_note' => null]); }
+  /** Orders the owner holds for a manual Return Received test (setting return_auto_hold = comma separated order ids). */
+  private static function held($id): bool { return in_array((string)$id, array_map('trim', explode(',', (string)(DB::table('settings')->where('key', 'return_auto_hold')->value('value') ?? ''))), true); }
 }
