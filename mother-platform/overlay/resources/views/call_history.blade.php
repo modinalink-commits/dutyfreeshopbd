@@ -30,8 +30,8 @@
 <td>{{ \Carbon\Carbon::parse($r->started_at)->timezone('Asia/Dhaka')->format('d M, h:i A') }}</td>
 <td class="hm">{{ gmdate('H:i:s',(int)$r->duration) }}</td>
 <td><span class="cc-p {{ ['answered'=>'ok','missed'=>'bad','busy'=>'warn'][$r->status] ?? '' }}">{{ ucfirst($r->status) }}</span></td>
-<td>@if($miss)@if($bk)<span class="cc-p ok">Called back</span><small>{{ $bk }}</small>@else<span class="cc-p bad">Not called back</span><small>waiting {{ \Carbon\Carbon::parse($r->started_at)->diffForHumans(null, true) }}</small>@endif @else{{ $OC[$r->outcome] ?? '—' }}@endif</td>
-<td>@if(!empty($r->recording_url))<a href="{{ $r->recording_url }}" target="_blank" rel="noopener" style="font-weight:600">Play</a> @endif<span style="font-size:12px;color:#475467">{{ $r->note }}</span></td></tr>
+<td>@if($miss)@if($bk)<span class="cc-p ok">Handled</span><small>{{ $bk }}</small>@else<span class="cc-p bad">Not called back</span><small>waiting {{ \Carbon\Carbon::parse($r->started_at)->diffForHumans(null, true) }}</small>@endif @else{{ $OC[$r->outcome] ?? '—' }}@endif</td>
+<td>@if(!empty($r->recording_url))<a href="/admin/call-center/play/{{ $r->id }}" target="_blank" rel="noopener" style="font-weight:600" title="Opens the recording. The play is written to the listening log.">Play</a> @endif<span style="font-size:12px;color:#475467">{{ $r->note }}</span></td></tr>
 @empty<tr><td colspan="9" style="padding:20px;text-align:center;color:#475467">No calls here yet.</td></tr>@endforelse</table></div>
 <div style="margin-top:12px">{{ $rows->links('pagination.global') }}</div>
 @endif

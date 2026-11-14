@@ -89,7 +89,8 @@ class CallCenterController extends Controller {
         count(*) filter (where outcome='confirmed') as conf,
         count(*) filter (where outcome='cancelled') as canc");
     $rows = $q->get()->map(function ($x) { $x->score = $x->in_ans * 3 + $x->fast * 2 + $x->out_ans + $x->conf * 5; return $x; })->sortByDesc('score')->values();
-    return view('call_agents', ['rows'=>$rows, 'p'=>$p]);
+    $rev = []; try { $rev = DB::table('call_reviews')->when($from, fn($x) => $x->where('created_at', '>=', $from))->whereNotNull('agent_id')->groupBy('agent_id')->selectRaw('agent_id, round(avg(score), 1) as avg, count(*) as n')->get()->keyBy('agent_id')->all(); } catch (\Throwable $e) {}
+    return view('call_agents', ['rows'=>$rows, 'p'=>$p, 'rev'=>$rev]);
   }
   /** Admin: one extension per user. */
   /** HTML chips (built server-side, no Blade logic) showing each extension's PBX registration state; empty when the relay is not reporting. */
@@ -187,8 +188,8 @@ class CallCenterController extends Controller {
     $rows = \Illuminate\Support\Facades\Cache::remember('cc.upnext', 20, function () {
       $out = [];
       try {
-        $since = now()->subDays(2); $last = [];
-        foreach (DB::table('call_logs')->where('started_at', '>=', $since)->orderBy('id')->get(['id', 'direction', 'phone', 'customer_name', 'status', 'outcome', 'note', 'started_at', 'user_name']) as $c) $last[$this->norm((string)$c->phone)] = $c;
+        $since = now()->subDays(2); $last = []; $ans = [];
+        foreach (DB::table('call_logs')->where('started_at', '>=', $since)->orderBy('id')->get(['id', 'direction', 'phone', 'customer_name', 'status', 'outcome', 'note', 'started_at', 'user_name']) as $c) { $k = $this->norm((string)$c->phone); if ($c->status === 'answered') { $ans[$k] = strtotime((string)$c->started_at); $last[$k] = $c; } elseif (!(isset($last[$k]) && $last[$k]->status === 'answered' && strtotime((string)$c->started_at) - strtotime((string)$last[$k]->started_at) <= 120)) $last[$k] = $c; }
         $mins = fn($ts) => max(0, (int)\Carbon\Carbon::parse($ts)->diffInMinutes(now())); $seen = [];
         $orders = DB::table('orders')->where('status', 'New')->where('created_at', '<', now()->subMinutes(10))->where('created_at', '>', $since)->orderBy('id')->limit(60)->get(['id', 'invoice', 'phone', 'customer_name', 'created_at', 'pay_status']);
         foreach ($orders as $o) {
@@ -204,7 +205,7 @@ class CallCenterController extends Controller {
         foreach ($last as $p => $lc) {
           $p = (string)$p; if (isset($seen[$p]) || strlen($p) < 10) continue;
           if ((string)$lc->outcome === 'call_later') $out[] = ['type'=>'callback', 'name'=>(string)($lc->customer_name ?: ''), 'phone'=>$p, 'invoice'=>'', 'order_id'=>null, 'note'=>mb_substr((string)($lc->note ?? ''), 0, 80), 'mins'=>$mins($lc->started_at), 'pr'=>3];
-          elseif ($lc->direction === 'in' && $lc->status === 'missed' && \Carbon\Carbon::parse($lc->started_at)->gt(now()->subDay())) $out[] = ['type'=>'missed', 'name'=>(string)($lc->customer_name ?: ''), 'phone'=>$p, 'invoice'=>'', 'order_id'=>null, 'note'=>'', 'mins'=>$mins($lc->started_at), 'pr'=>1];
+          elseif ($lc->direction === 'in' && $lc->status === 'missed' && \Carbon\Carbon::parse($lc->started_at)->gt(now()->subDay()) && !(isset($ans[$p]) && $ans[$p] >= strtotime((string)$lc->started_at) - 120)) $out[] = ['type'=>'missed', 'name'=>(string)($lc->customer_name ?: ''), 'phone'=>$p, 'invoice'=>'', 'order_id'=>null, 'note'=>'', 'mins'=>$mins($lc->started_at), 'pr'=>1];
         }
         usort($out, fn($a, $b) => [$a['pr'], -$a['mins']] <=> [$b['pr'], -$b['mins']]);
       } catch (\Throwable $e) { report($e); }
@@ -276,7 +277,8 @@ class CallCenterController extends Controller {
     $f = (string)$r->query('f', 'all'); $q = trim((string)$r->query('q', '')); $view = $r->query('view', 'list'); $d = in_array($r->query('d'), ['in', 'out'], true) ? (string)$r->query('d') : '';
     if (!in_array($f, ['all', 'answered', 'missed', 'busy', 'failed', 'rejected', 'noback'], true)) $f = 'all';
     // "Not called back": a missed incoming call with no later outgoing call to the same number
-    $noBack = fn($w) => $w->where('call_logs.direction', 'in')->where('call_logs.status', 'missed')->whereNotExists(fn($x) => $x->selectRaw('1')->from('call_logs as c2')->whereRaw('right(c2.phone,11) = right(call_logs.phone,11)')->where('c2.direction', 'out')->whereColumn('c2.id', '>', 'call_logs.id'));
+    $noBack = fn($w) => $w->where('call_logs.direction', 'in')->where('call_logs.status', 'missed')->whereNotExists(fn($x) => $x->selectRaw('1')->from('call_logs as c2')->whereRaw('right(c2.phone,11) = right(call_logs.phone,11)')->whereColumn('c2.id', '<>', 'call_logs.id')
+      ->whereRaw("((c2.direction = 'out' and c2.id > call_logs.id) or (c2.status = 'answered' and c2.started_at >= call_logs.started_at - interval '2 minutes'))")); // when every agent rings together, the ones who did not pick up also log a missed row: an answered row for the same number at that moment means the call WAS taken
     $base = DB::table('call_logs')->when($f === 'noback', $noBack)->when(!in_array($f, ['all', 'noback'], true), fn($w) => $w->where('status', $f))->when($d !== '', fn($w) => $w->where('direction', $d))
       ->when($q !== '', fn($w) => $w->where(fn($x) => $x->where('phone', 'like', '%'.$q.'%')->orWhere('customer_name', 'ilike', '%'.$q.'%')->orWhere('user_name', 'ilike', '%'.$q.'%')->orWhere('note', 'ilike', '%'.$q.'%')));
     $rows = (clone $base)->orderByDesc('id')->paginate(\App\Support\Pg::per(24))->withQueryString();
@@ -285,12 +287,12 @@ class CallCenterController extends Controller {
       try {
         $ms = now('Asia/Dhaka')->startOfMonth()->utc();
         $kpi = DB::table('call_logs')->where('created_at', '>=', $ms)->selectRaw("count(*) n, sum(case when status='answered' then 1 else 0 end) ans, sum(case when status='missed' then 1 else 0 end) mis, coalesce(sum(duration),0) dur, coalesce(avg(case when status='answered' then duration end),0) avgd, sum(case when direction='in' then 1 else 0 end) inc")->first();
-        $noback = (int)DB::table('call_logs')->where('created_at', '>=', now()->subDays(7))->where($noBack)->count();
+        $noback = (int)DB::table('call_logs')->where('created_at', '>=', now()->subDays(7))->where($noBack)->distinct()->count(DB::raw('right(phone,11)')); // customers, not rows
         $miss = collect($rows->items())->filter(fn($x) => $x->direction === 'in' && $x->status === 'missed');
         if ($miss->isNotEmpty()) {
           $ph = $miss->map(fn($x) => substr(preg_replace('/\D/', '', (string)$x->phone), -11))->unique()->values()->all();
-          $outs = DB::table('call_logs')->where('direction', 'out')->where('id', '>', $miss->min('id'))->whereIn(DB::raw('right(phone,11)'), $ph)->orderBy('id')->get(['id', 'phone', 'user_name', 'started_at']);
-          foreach ($miss as $m) { $p = substr(preg_replace('/\D/', '', (string)$m->phone), -11); $o = $outs->first(fn($x) => $x->id > $m->id && substr(preg_replace('/\D/', '', (string)$x->phone), -11) === $p); if ($o) $back[$m->id] = trim(($o->user_name ?: '').' · '.\Carbon\Carbon::parse($o->started_at)->timezone('Asia/Dhaka')->format('d M, h:i A'), ' ·'); }
+          $outs = DB::table('call_logs')->where('id', '>=', $miss->min('id') - 50)->where(fn($w) => $w->where('direction', 'out')->orWhere('status', 'answered'))->whereIn(DB::raw('right(phone,11)'), $ph)->orderBy('id')->get(['id', 'phone', 'user_name', 'started_at', 'direction', 'status']);
+          foreach ($miss as $m) { $p = substr(preg_replace('/\D/', '', (string)$m->phone), -11); $o = $outs->first(fn($x) => $x->id !== $m->id && substr(preg_replace('/\D/', '', (string)$x->phone), -11) === $p && (($x->direction === 'out' && $x->id > $m->id) || ($x->status === 'answered' && strtotime((string)$x->started_at) >= strtotime((string)$m->started_at) - 120))); if ($o) $back[$m->id] = trim(($o->direction === 'in' ? 'Answered by ' : '').($o->user_name ?: '').' · '.\Carbon\Carbon::parse($o->started_at)->timezone('Asia/Dhaka')->format('d M, h:i A'), ' ·'); }
         }
       } catch (\Throwable $e) { report($e); }
     }

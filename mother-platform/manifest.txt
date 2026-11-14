@@ -1117,3 +1117,7 @@ app/Support/ChatComments.php
 app/Support/AiPlaybook.php
 database/migrations/2026_11_14_130000_chat_notes.php
 resources/views/cc_ui.blade.php
+database/migrations/2026_11_14_140000_call_reviews.php
+app/Http/Controllers/CallQualityController.php
+resources/views/call_board.blade.php
+resources/views/call_review.blade.php

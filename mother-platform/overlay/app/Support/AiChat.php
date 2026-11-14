@@ -155,14 +155,21 @@ class AiChat {
   /** Staff drafting aid: two alternative wordings of a reply the AI already wrote (a more detailed one and a warmer one). Same facts only; returns [] on any failure. */
   public static function variants(string $base): array {
     $key = Sms::secret('ai_key'); if (!$key || trim($base) === '') return [];
-    $sys = "You are given a reply an online shop is about to send to a customer. Write TWO alternative versions of it. Keep exactly the same facts: do not add or change any price, discount, stock, date, promise, phone number, order number or link, and keep the same language and script as the original. Version A: a little more detail and clearer steps, using only facts already in the original, at most 4 short lines. Version B: a warmer, more reassuring tone, about the same length as the original. No emoji, no markdown, never the words ভাইয়া, ভাই, আপু, বোন, bhai, bon, apu. Output Version A, then a line containing only ###, then Version B. No labels, nothing else.";
-    try {
-      $res = Http::withHeaders(['x-api-key' => $key, 'anthropic-version' => '2023-06-01'])->timeout(25)->post('https://api.anthropic.com/v1/messages', ['model' => self::model(), 'max_tokens' => 700, 'system' => $sys, 'messages' => [['role' => 'user', 'content' => mb_substr($base, 0, 2000)]]]);
-      if (!$res->ok()) return [];
-      $t = trim(collect($res->json('content') ?? [])->where('type', 'text')->pluck('text')->implode("\n"));
-      $parts = array_values(array_filter(array_map(fn($x) => trim(preg_replace('/^\s*(version\s*)?[AB][\).:\-]\s*/i', '', trim($x))), preg_split('/^\s*#{3,}\s*$/m', $t)), fn($x) => $x !== ''));
-      return array_slice($parts, 0, 2);
-    } catch (\Throwable $e) { return []; }
+    $sys = "You are given a reply an online shop is about to send to a customer. Write TWO alternative versions of it. Keep exactly the same facts: do not add or change any price, discount, stock, date, promise, phone number, order number or link, and keep the same language and script as the original. Version a: a little more detail and clearer steps, using only facts already in the original, at most 4 short lines. Version b: a warmer, more reassuring tone, about the same length as the original. No emoji, no markdown, never the words ভাইয়া, ভাই, আপু, বোন, bhai, bon, apu. Reply with ONE JSON object only and nothing else: {\"a\":\"...\",\"b\":\"...\"}";
+    for ($try = 0; $try < 2; $try++) {
+      try {
+        if ($try) usleep(900000);
+        $res = Http::withHeaders(['x-api-key' => $key, 'anthropic-version' => '2023-06-01'])->timeout(25)->post('https://api.anthropic.com/v1/messages', ['model' => self::model(), 'max_tokens' => 800, 'system' => $sys, 'messages' => [['role' => 'user', 'content' => mb_substr($base, 0, 2000)]]]);
+        if (!$res->ok()) continue;
+        $t = trim(collect($res->json('content') ?? [])->where('type', 'text')->pluck('text')->implode("\n"));
+        $out = [];
+        if (preg_match('/\{.*\}/s', $t, $m) && is_array($j = json_decode($m[0], true))) { foreach (['a', 'b'] as $k) if (!empty($j[$k]) && is_string($j[$k])) $out[] = trim($j[$k]); }
+        if (!$out) $out = array_map('trim', preg_split('/^\s*#{3,}\s*$/m', $t));
+        $out = array_values(array_filter($out, fn($x) => mb_strlen($x) >= 15 && $x !== trim($base)));
+        if ($out) return array_slice($out, 0, 2);
+      } catch (\Throwable $e) {}
+    }
+    return [];
   }
   /** Staff drafting aid: fixes spelling, grammar, punctuation and wording of a (voice-typed) reply while keeping the meaning, language and every number / price / link exactly. */
   public static function polish(string $text, string $mode = ''): array {
