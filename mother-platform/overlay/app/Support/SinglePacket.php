@@ -87,10 +87,10 @@ class SinglePacket {
     $cat = self::targetCat();
     $elig = self::eligibleQuery()->count();
     $have = self::eligibleQuery()->whereExists(fn($q) => $q->select(DB::raw(1))->from('products as t')->whereColumn('t.parent_product_id', 'products.id'))->count();
-    $old = self::oldQuery()->count(); $oldPub = self::oldQuery()->where('published', true)->count();
+    $old = self::oldQuery()->count(); $oldOrd = (int)self::oldQuery()->whereIn('id', DB::table('order_items')->select('product_id'))->count(); $oldPub = self::oldQuery()->where('published', true)->count();
     $sample = self::eligibleQuery()->orderBy('id')->limit(12)->get(['id', 'name', 'sku', 'price', 'cost', 'published'])->map(fn($p) => ['main' => $p->name, 'twin' => self::twinName($p), 'sku' => $p->sku ? $p->sku.'-SP' : '—', 'price' => self::packPrice($p->price), 'cost' => self::packCost($p->cost)])->all();
     $ex = array_values(array_diff(DB::table('categories')->whereIn('id', self::allowedCats())->pluck('id')->map(fn($i) => (int)$i)->all(), [])); $allowedNames = $ex ? DB::table('categories')->whereIn('id', $ex)->pluck('name')->all() : []; $ex = [];
-    return ['allowed_names' => $allowedNames, 'target' => $cat, 'target_name' => $cat ? (string)DB::table('categories')->where('id', $cat)->value('name') : null, 'eligible' => $elig, 'have' => $have, 'to_create' => max(0, $elig - $have), 'old' => $old, 'old_published' => $oldPub,
+    return ['old_orders' => $oldOrd, 'allowed_names' => $allowedNames, 'target' => $cat, 'target_name' => $cat ? (string)DB::table('categories')->where('id', $cat)->value('name') : null, 'eligible' => $elig, 'have' => $have, 'to_create' => max(0, $elig - $have), 'old' => $old, 'old_published' => $oldPub,
       'excluded_names' => $ex ? DB::table('categories')->whereIn('id', $ex)->pluck('name')->all() : [], 'excluded_products' => $ex ? DB::table('products')->whereIn('category_id', $ex)->whereNull('parent_product_id')->count() : 0,
       'sample' => $sample, 'auto' => self::auto(), 'ready' => self::ready()];
   }
