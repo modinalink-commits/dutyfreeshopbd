@@ -2,6 +2,8 @@
 <title>{{ $title }}</title>
 @if(!empty($desc))
 <meta name="description" content="{{ $desc }}">
+@else
+<meta name="description" content="DutyFreeBD: original imported products with cash on delivery and nationwide delivery in Bangladesh.">
 @endif
 @if(!empty($keywords))<meta name="keywords" content="{{ $keywords }}">@endif
 <link rel="canonical" href="{{ $canon }}"><meta name="robots" content="{{ $robots ?? (!empty($noindex) ? 'noindex,follow' : 'index,follow,max-image-preview:large') }}">

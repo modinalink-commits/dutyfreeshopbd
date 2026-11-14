@@ -48,7 +48,7 @@ body{background:#fff}.cf,.cc{border:1px solid #EAEAEA;border-radius:20px;box-sha
 }
 </style>
 <form class="w co" id="cof" method="post" action="/order" enctype="multipart/form-data" novalidate><input type="hidden" name="inc" id="incTok">
-<div class="cf"><div class="h">Please Order Now</div>
+<div class="cf"><h1 class="h" style="margin-top:0">Please Order Now</h1>
 @if(request('e'))<div class="er">{{ request('e') }}</div>@endif
 <input name="website" value="" style="display:none" tabindex="-1" autocomplete="off"><input type="hidden" name="coupon" id="cpv"><input type="hidden" name="pick" id="pickv"><div id="itf"></div>
 <div class="fl"><label class="l" for="f-ph">Mobile Number</label><div class="ip"><input id="f-ph" name="phone" data-bdphone required inputmode="numeric" autocomplete="tel-national" placeholder="01XXXXXXXXX" maxlength="11"><span>☎</span></div></div>
