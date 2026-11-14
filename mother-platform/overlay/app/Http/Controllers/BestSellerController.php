@@ -11,15 +11,15 @@ class BestSellerController extends Controller {
   private function gate(): void { abort_unless(ProfitFloor::admin(), 403); }
   public function index() {
     $this->gate();
-    return view('best_sellers_admin', ['rows' => AutoPrice::rows(), 'auto' => AutoPrice::on(), 'card' => Procure::set('home_bestseller', '0') === '1', 'pct' => ProfitFloor::pct(), 'ls' => ['on' => \App\Support\BestSellerStock::on(), 'limit' => \App\Support\BestSellerStock::limit(), 'to' => \App\Support\BestSellerStock::set('to', "Mamun|01824522800"), 'status' => \App\Support\BestSellerStock::status(), 'body' => \App\Support\BestSellerStock::BODY],
+    return view('best_sellers_admin', ['rows' => AutoPrice::rows(), 'auto' => AutoPrice::on(), 'card' => Procure::set('home_bestseller', '0') === '1', 'pct' => ProfitFloor::pct(), 'parcel' => AutoPrice::parcel(), 'ls' => ['on' => \App\Support\BestSellerStock::on(), 'limit' => \App\Support\BestSellerStock::limit(), 'to' => \App\Support\BestSellerStock::set('to', "Mamun|01824522800"), 'status' => \App\Support\BestSellerStock::status(), 'body' => \App\Support\BestSellerStock::BODY],
       'log' => DB::table('audit_logs')->whereIn('action', ['Auto price updated', 'Auto price paused (custom price)', 'Auto price resumed', 'Best Sellers setting changed', 'bestseller.low_stock'])->orderByDesc('id')->limit(15)->get()]);
   }
   public function save(Request $r) {
     $this->gate();
-    $d = $r->validate(['act' => 'required|in:switches,auto,custom,apply,stock,tpl_submit,tpl_sync,stock_test', 'ls_on' => 'nullable|in:0,1', 'limit' => 'nullable|integer|min:1|max:100000', 'to' => 'nullable|string|max:500', 'phone' => 'nullable|string|max:20', 'id' => 'nullable|integer', 'price' => 'nullable|numeric|min:1', 'auto' => 'nullable|in:0,1', 'card' => 'nullable|in:0,1']);
+    $d = $r->validate(['act' => 'required|in:switches,auto,custom,apply,stock,tpl_submit,tpl_sync,stock_test', 'ls_on' => 'nullable|in:0,1', 'limit' => 'nullable|integer|min:1|max:100000', 'to' => 'nullable|string|max:500', 'phone' => 'nullable|string|max:20', 'id' => 'nullable|integer', 'price' => 'nullable|numeric|min:1', 'auto' => 'nullable|in:0,1', 'card' => 'nullable|in:0,1', 'parcel' => 'nullable|numeric|min:0|max:2000']);
     if ($d['act'] === 'switches') {
-      $was = ['auto' => AutoPrice::on(), 'card' => Procure::set('home_bestseller', '0') === '1']; $new = ['auto' => ($d['auto'] ?? '0') === '1', 'card' => ($d['card'] ?? '0') === '1'];
-      Procure::put(AutoPrice::ON, $new['auto'] ? '1' : '0'); Procure::put('home_bestseller', $new['card'] ? '1' : '0');
+      $was = ['auto' => AutoPrice::on(), 'card' => Procure::set('home_bestseller', '0') === '1', 'parcel' => AutoPrice::parcel()]; $new = ['auto' => ($d['auto'] ?? '0') === '1', 'card' => ($d['card'] ?? '0') === '1', 'parcel' => isset($d['parcel']) ? (float)$d['parcel'] : AutoPrice::parcel()];
+      Procure::put(AutoPrice::ON, $new['auto'] ? '1' : '0'); Procure::put('home_bestseller', $new['card'] ? '1' : '0'); Procure::put(AutoPrice::PARCEL, (string)$new['parcel']);
       if ($was != $new) Procure::audit('Best Sellers setting changed', 'Best Sellers', $was, $new + ['by' => auth()->user()->name ?? null]);
       $ch = AutoPrice::sync('switch');
       try { \Illuminate\Support\Facades\Cache::forget('store.home6'); StoreController::bust(); } catch (\Throwable $e) {}

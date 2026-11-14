@@ -9,7 +9,9 @@ use Illuminate\Support\Facades\DB;
  *  It is stored as the product's own Buy 2-5 pack prices (bundle rule "custom"), so cart, checkout and invoices use the existing bundle logic.
  *  A product can be put on a custom pack price on the Best Sellers page; it then stays there until someone switches it back to automatic. */
 class AutoPrice {
-  const ON = 'autoprice_on', CUSTOM = 'autoprice_custom', JUMP = 15.0; // a single move above JUMP % is not applied without the owner
+  const ON = 'autoprice_on', CUSTOM = 'autoprice_custom', PARCEL = 'autoprice_parcel_cost', JUMP = 15.0; // a single move above JUMP % is not applied without the owner
+  /** Our own cost of sending one parcel (packaging + courier), added once to every automatic pack so the protected profit is what is left after it. Owner, 14 Nov 2026: 30 packaging + 90 delivery. Changed on the Best Sellers page. */
+  public static function parcel(): float { return max(0.0, (float)Procure::set(self::PARCEL, '120')); }
   public static function on(): bool { return Procure::set(self::ON, '0') === '1'; }
   public static function ids(): array { try { return \App\Http\Controllers\StoreController::bestSellers()->pluck('id')->map(fn($i) => (int)$i)->all(); } catch (\Throwable $e) { return []; } }
   public static function has(int $pid): bool { return in_array($pid, self::ids(), true); }
@@ -24,10 +26,10 @@ class AutoPrice {
   /** Protected floor in whole taka; 0 when the product has no cost on file. */
   public static function target($p): float { $c = ProfitFloor::base($p); return $c > 0 ? (float)ceil(ProfitFloor::floor($c) - 0.004) : 0.0; }
   /** Pack totals for a per-carton price: [2..5 => total | null]. A pack that would not be cheaper than buying singles is not offered. */
-  public static function packs(float $unit, float $single): array { $o = []; foreach ([2, 3, 4, 5] as $n) $o[$n] = ($unit > 0 && $unit * $n <= $single * $n - 1) ? round($unit * $n, 2) : null; return $o; }
+  public static function packs(float $unit, float $single, float $parcel = 0.0): array { $o = []; foreach ([2, 3, 4, 5] as $n) { $t = (float)ceil($unit * $n + $parcel - 0.004); $o[$n] = ($unit > 0 && $t <= $single * $n - 1) ? $t : null; } return $o; }
   /** Write the pack prices of one product. Returns true when something changed. */
-  public static function write(object $p, float $unit): bool {
-    $upd = []; foreach (self::packs($unit, (float)$p->price) as $n => $v) { $cur = $p->{"buy{$n}_price"} ?? null; $cur = $cur === null ? null : (float)$cur; if ($v === null ? $cur !== null : ($cur === null || abs($cur - $v) > 0.004)) $upd["buy{$n}_price"] = $v; }
+  public static function write(object $p, float $unit, float $parcel = 0.0): bool {
+    $upd = []; foreach (self::packs($unit, (float)$p->price, $parcel) as $n => $v) { $cur = $p->{"buy{$n}_price"} ?? null; $cur = $cur === null ? null : (float)$cur; if ($v === null ? $cur !== null : ($cur === null || abs($cur - $v) > 0.004)) $upd["buy{$n}_price"] = $v; }
     if (BundlePricing::ready() && ($p->bundle_rule ?? 'global') !== 'custom') $upd['bundle_rule'] = 'custom';
     if (!$upd) return false;
     DB::table('products')->where('id', $p->id)->update($upd + ['updated_at' => now()]); BundlePricing::flush(); return true;
@@ -41,15 +43,15 @@ class AutoPrice {
       try {
         if (self::isCustom($pid)) continue;
         $p = DB::table('products')->find($pid); if (!$p) continue;
-        $t = self::target($p); if ($t <= 0) continue; $old = self::unitNow($p);
-        $move = $old > 0 ? abs($t - $old) / $old * 100 : 0;
+        $t = self::target($p); if ($t <= 0) continue; $old = self::unitNow($p); $par = self::parcel(); $new = round(($t * 2 + $par) / 2, 2);
+        $move = $old > 0 ? abs($new - $old) / $old * 100 : 0;
         if (!$force && $move > self::JUMP) {
-          DeployHealth::raise('autoprice.jump.'.$pid, 'high', 'Pricing', 'Best Seller pack price not changed: '.$p->name, 'The automatic 2-carton price would move from '.number_format($old).' to '.number_format($t).' TK per carton ('.round($move, 1).'%).', 'The batch cost changed by more than '.(int)self::JUMP.'% at once, which is often a typing mistake in a purchase.', 'Check the last purchase cost, then open Best Sellers and press Apply.');
+          DeployHealth::raise('autoprice.jump.'.$pid, 'high', 'Pricing', 'Best Seller pack price not changed: '.$p->name, 'The automatic 2-carton price would move from '.number_format($old).' to '.number_format($new).' TK per carton ('.round($move, 1).'%).', 'The batch cost changed by more than '.(int)self::JUMP.'% at once, which is often a typing mistake in a purchase.', 'Check the last purchase cost, then open Best Sellers and press Apply.');
           continue;
         }
-        if (!self::write($p, $t)) { self::clear($pid); continue; }
-        Procure::audit('Auto price updated', 'Product '.$p->name, ['price' => $old], ['price' => $t, 'pack_of_2' => $t * 2, 'batch_cost' => ProfitFloor::base($p), 'percent' => ProfitFloor::percent(), 'source' => $src, 'by' => self::who()]);
-        self::clear($pid); $out[$pid] = [$old, $t];
+        if (!self::write($p, $t, $par)) { self::clear($pid); continue; }
+        Procure::audit('Auto price updated', 'Product '.$p->name, ['price' => $old], ['price' => $new, 'pack_of_2' => $new * 2, 'parcel_cost' => $par, 'batch_cost' => ProfitFloor::base($p), 'percent' => ProfitFloor::percent(), 'source' => $src, 'by' => self::who()]);
+        self::clear($pid); $out[$pid] = [$old, $new];
       } catch (\Throwable $e) { report($e); }
     }
     if ($out) { try { Cache::forget('store.home6'); \App\Http\Controllers\StoreController::bust(); } catch (\Throwable $e) {} }
@@ -63,7 +65,7 @@ class AutoPrice {
   /** Rows for the admin page. */
   public static function rows(): array {
     $r = []; foreach (self::ids() as $pid) { $p = DB::table('products')->find($pid); if (!$p) continue; $c = ProfitFloor::base($p);
-      $r[] = (object)['id' => $pid, 'name' => $p->name, 'cost' => $c, 'target' => self::target($p), 'unit' => self::unitNow($p), 'price' => (float)$p->price, 'compare' => $p->compare_price, 'stock' => (int)$p->stock, 'custom' => self::isCustom($pid)]; }
+      $r[] = (object)['id' => $pid, 'name' => $p->name, 'cost' => $c, 'target' => self::target($p), 'offer' => self::target($p) > 0 ? (float)ceil(self::target($p) * 2 + self::parcel() - 0.004) : 0.0, 'unit' => self::unitNow($p), 'price' => (float)$p->price, 'compare' => $p->compare_price, 'stock' => (int)$p->stock, 'custom' => self::isCustom($pid)]; }
     return $r;
   }
 }
