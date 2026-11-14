@@ -502,6 +502,7 @@ resources/views/components/membership-card.blade.php
 resources/views/discount_modal.blade.php
 resources/views/keep_position.blade.php
 resources/views/popup_close.blade.php
+resources/views/btn_system.blade.php
 resources/views/courier_modal.blade.php
 app/Support/CourierInfo.php
 app/Http/Controllers/CouponController.php

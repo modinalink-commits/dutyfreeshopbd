@@ -3,7 +3,7 @@ fe43f8b6cb422cca81ee18b74d3972f77e7852de database/migrations/2026_10_31_000001_m
 46ac6330ace84450b442d0d57c5c06f20c41f945 app/Models/Mother.php
 1dac7102048511853e687a481a8f198956cd54da app/Http/Controllers/AdminController.php
 242316b2ef0a0967e6815e39fcbc7377349fdc17 app/Console/Commands/MotherInstall.php
-400fca75ca2771a8680760efbcab6bc59e4f1b75 resources/views/layout.blade.php
+9b5d102b8eb333b03ec53e59a5e894d5f00b38e5 resources/views/layout.blade.php
 78c7dbbe082c3756f0bb680071dfb96c381f4fc8 resources/views/login.blade.php
 b275000d2d7f04336914827b1b57bb96b232d131 resources/views/dashboard.blade.php
 c2e818dbd799c6077e077617903618a2b4a85521 resources/views/orders.blade.php
@@ -52,7 +52,7 @@ df85a1f19b3129d847e30c8dab6ea00fbc2e8101 app/Http/Controllers/PermissionControll
 43cb2dfd032b3ddd0b7bc50af28e4900dfc03094 app/Console/Commands/MotherSyncFeed.php
 2a56eafa359436fdb0b8ffc94324862961a1d307 app/Console/Commands/MotherGuard.php
 38ef8ae783977827f43b428d160461761c9cf08e app/Http/Controllers/StoreController.php
-2d88bb06744184e4cb7167f5f20fefb371107e00 resources/views/store/layout.blade.php
+edf7a1468302b1845b7a722e16b4ddfff1a5f496 resources/views/store/layout.blade.php
 5356b422775064c3de9b13c703f12fbf913a2bd3 resources/views/store/card.blade.php
 4a5eb7ee8d7960886fcb97c690bbb604ec69eb1f resources/views/store/home_sec.blade.php
 cc6bf091fae1d629194cf5e3ce04d6bd1b1befd1 resources/views/store/home.blade.php
@@ -502,6 +502,7 @@ df745554b06b8c36d0e19006e1ff72986b21c28f database/migrations/2026_11_03_000055_w
 67c87083d2d46561b6c3e654ac547da74d1e7e9f resources/views/discount_modal.blade.php
 cfd8b2d7b00137b86e88b88922450e539ed0eeb0 resources/views/keep_position.blade.php
 bdf651c18e0a087ee0ff98870b04583e6d69eaea resources/views/popup_close.blade.php
+4ddc5a087f4c2107fbaf385abec7df2cb29f33ba resources/views/btn_system.blade.php
 4244f9294c85f6bccbaca19d1f6bdb54249b6dc1 resources/views/courier_modal.blade.php
 b63f51176aec09c413d6bdb2843774c033b48863 app/Support/CourierInfo.php
 cea77316ca039f02b7bec0efa5d20a8822cb1199 app/Http/Controllers/CouponController.php
