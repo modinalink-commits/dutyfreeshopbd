@@ -16,6 +16,9 @@ class PublishNotice {
   public static function days(): int { return max(1, (int)self::set('days', '14')); }
   public static function minOff(): int { return max(0, (int)self::set('min_off', '30')); }       // minutes a product must have been unpublished
   public static function maxAtOnce(): int { return max(1, (int)self::set('max_products', '10')); } // more products than this published in one minute: nothing is sent
+  /** Stock-controlled products (Cigarette and Vape) with fewer cartons than this are not announced: a hundred people told about four cartons mostly meet "Out of stock". Sourcing categories are not limited. */
+  public static function minStock(): int { return max(0, (int)self::set('min_stock', '10')); }
+  public static function stockOk($p): bool { $m = self::minStock(); return $m <= 0 || StockGuard::mode($p->category_id ?? null) !== 'STOCK_CONTROLLED' || (int)($p->stock ?? 0) >= $m; }
   public static function dailyCap(): int { return max(0, (int)self::set('daily_cap', '5000')); }
   public static function ready(): bool { static $r = null; if ($r === null) { try { $r = Schema::hasTable('product_pub_watch'); } catch (\Throwable $e) { $r = false; } } return $r; }
   public static function link($p): string { return preg_replace('#^https?://#', '', Domain::main()) . '/p/m' . (int)$p->id; }
@@ -62,7 +65,7 @@ class PublishNotice {
         DeployHealth::raise('pubsms.bulk', 'high', 'Marketing', 'Back in Store SMS not sent: ' . count($cand) . ' products were published at once', 'More than ' . self::maxAtOnce() . ' products went from Unpublished to Published in the same minute, which looks like a bulk action. No customer SMS was sent for them.', 'Bulk publish, an import, or a mistake.', 'If these should be announced, send them from Marketing > Back in Store SMS, product by product.');
         return;
       }
-      foreach ($cand as $pid) self::notify($pid);
+      foreach ($cand as $pid) { $p = DB::table('products')->find($pid); if ($p && self::stockOk($p)) self::notify($pid); }
     } catch (\Throwable $e) { report($e); }
   }
 }

@@ -15,18 +15,18 @@ class PublishNoticeController extends Controller {
     if ($r->filled('pid')) { $p = DB::table('products')->find((int)$r->query('pid')); if ($p) $cnt = count(N::recipients((int)$p->id)); }
     $sample = $p ?: DB::table('products')->where('published', true)->orderByDesc('id')->first();
     $body = $sample ? N::body($sample) : N::text(); [$parts, $len] = SmsMarketing::parts($body);
-    return view('publish_notice', ['on' => N::on(), 'text' => N::text(), 'days' => N::days(), 'minOff' => N::minOff(), 'maxAt' => N::maxAtOnce(), 'cap' => N::dailyCap(), 'ready' => N::ready(), 'today' => N::sentToday(),
+    return view('publish_notice', ['on' => N::on(), 'text' => N::text(), 'days' => N::days(), 'minOff' => N::minOff(), 'maxAt' => N::maxAtOnce(), 'cap' => N::dailyCap(), 'minStock' => N::minStock(), 'ready' => N::ready(), 'today' => N::sentToday(),
       'p' => $p, 'cnt' => $cnt, 'body' => $body, 'parts' => $parts, 'len' => $len, 'unit' => SmsMarketing::unit(),
       'log' => DB::table('audit_logs')->where('action', 'product.back_in_store_sms')->orderByDesc('id')->limit(20)->get()]);
   }
   public function save(Request $r) {
     $this->gate();
-    $d = $r->validate(['act' => 'required|in:settings,test,send', 'on' => 'nullable|in:0,1', 'text' => 'nullable|string|max:400', 'days' => 'nullable|integer|min:1|max:365', 'min_off' => 'nullable|integer|min:0|max:10080', 'max_products' => 'nullable|integer|min:1|max:500', 'daily_cap' => 'nullable|integer|min:0|max:200000', 'phone' => 'nullable|string|max:20', 'pid' => 'nullable|integer']);
+    $d = $r->validate(['act' => 'required|in:settings,test,send', 'on' => 'nullable|in:0,1', 'text' => 'nullable|string|max:400', 'days' => 'nullable|integer|min:1|max:365', 'min_off' => 'nullable|integer|min:0|max:10080', 'max_products' => 'nullable|integer|min:1|max:500', 'daily_cap' => 'nullable|integer|min:0|max:200000', 'min_stock' => 'nullable|integer|min:0|max:100000', 'phone' => 'nullable|string|max:20', 'pid' => 'nullable|integer']);
     if ($d['act'] === 'settings') {
       $was = ['on' => N::on(), 'text' => N::text(), 'days' => N::days(), 'min_off' => N::minOff(), 'max_products' => N::maxAtOnce(), 'daily_cap' => N::dailyCap()];
       $txt = trim((string)($d['text'] ?? '')); if ($txt !== '' && !str_contains($txt, '{product}')) return back()->withInput()->with('err', 'The text must contain {product}.');
       Procure::put('pubsms_on', ($d['on'] ?? '0') === '1' ? '1' : '0'); Procure::put('pubsms_text', $txt);
-      foreach (['days', 'min_off', 'max_products', 'daily_cap'] as $k) if (isset($d[$k])) Procure::put('pubsms_' . $k, (string)(int)$d[$k]);
+      foreach (['days', 'min_off', 'max_products', 'daily_cap', 'min_stock'] as $k) if (isset($d[$k])) Procure::put('pubsms_' . $k, (string)(int)$d[$k]);
       Procure::audit('Back in Store SMS setting changed', 'Back in Store SMS', $was, ['on' => N::on(), 'text' => N::text(), 'days' => N::days(), 'min_off' => N::minOff(), 'max_products' => N::maxAtOnce(), 'daily_cap' => N::dailyCap(), 'by' => auth()->user()->name ?? null]);
       return back()->with('ok', 'Saved.');
     }

@@ -10,20 +10,38 @@ use Illuminate\Support\Facades\DB;
 class BestSellerController extends Controller {
   private function gate(): void { abort_unless(ProfitFloor::admin(), 403); }
   public function index() {
-    $this->gate();
-    return view('best_sellers_admin', ['rows' => AutoPrice::rows(), 'auto' => AutoPrice::on(), 'card' => Procure::set('home_bestseller', '0') === '1', 'pct' => ProfitFloor::pct(), 'parcel' => AutoPrice::parcel(), 'profit' => AutoPrice::profit(), 'ls' => ['on' => \App\Support\BestSellerStock::on(), 'limit' => \App\Support\BestSellerStock::limit(), 'to' => \App\Support\BestSellerStock::set('to', "Mamun|01824522800"), 'status' => \App\Support\BestSellerStock::status(), 'body' => \App\Support\BestSellerStock::BODY],
+    $this->gate(); $C = \App\Support\BestSellerCampaign::class;
+    if (AutoPrice::on()) $C::markStart();
+    $camp = ['on' => $C::remindOn(), 'days' => $C::days(), 'remind' => $C::text('remind'), 'once' => $C::text('once'), 'results' => $C::results(), 'ex' => [], 'onceN' => []];
+    foreach (AutoPrice::ids() as $pid) { $p = DB::table('products')->find($pid); if (!$p) continue;
+      $camp['ex'][$pid] = ['name' => $p->name, 'remind' => $C::body('remind', $p), 'once' => $C::body('once', $p)];
+      $camp['onceN'][$pid] = \Illuminate\Support\Facades\Cache::get('bscamp.once.' . $pid); }
+    return view('best_sellers_admin', ['camp' => $camp, 'unit' => \App\Support\SmsMarketing::unit(), 'rows' => AutoPrice::rows(), 'auto' => AutoPrice::on(), 'card' => Procure::set('home_bestseller', '0') === '1', 'pct' => ProfitFloor::pct(), 'parcel' => AutoPrice::parcel(), 'profit' => AutoPrice::profit(), 'ls' => ['on' => \App\Support\BestSellerStock::on(), 'limit' => \App\Support\BestSellerStock::limit(), 'to' => \App\Support\BestSellerStock::set('to', "Mamun|01824522800"), 'status' => \App\Support\BestSellerStock::status(), 'body' => \App\Support\BestSellerStock::BODY],
       'log' => DB::table('audit_logs')->whereIn('action', ['Auto price updated', 'Auto price paused (custom price)', 'Auto price resumed', 'Best Sellers setting changed', 'bestseller.low_stock'])->orderByDesc('id')->limit(15)->get()]);
   }
   public function save(Request $r) {
     $this->gate();
-    $d = $r->validate(['act' => 'required|in:switches,auto,custom,apply,stock,tpl_submit,tpl_sync,stock_test', 'ls_on' => 'nullable|in:0,1', 'limit' => 'nullable|integer|min:1|max:100000', 'to' => 'nullable|string|max:500', 'phone' => 'nullable|string|max:20', 'id' => 'nullable|integer', 'price' => 'nullable|numeric|min:1', 'auto' => 'nullable|in:0,1', 'card' => 'nullable|in:0,1', 'parcel' => 'nullable|numeric|min:0|max:2000', 'profit' => 'nullable|numeric|min:0|max:5000']);
+    $d = $r->validate(['act' => 'required|in:switches,auto,custom,apply,stock,tpl_submit,tpl_sync,stock_test,camp,once_count,once_send', 'remind_on' => 'nullable|in:0,1', 'remind_days' => 'nullable|integer|min:3|max:60', 'remind_text' => 'nullable|string|max:400', 'once_text' => 'nullable|string|max:400', 'ls_on' => 'nullable|in:0,1', 'limit' => 'nullable|integer|min:1|max:100000', 'to' => 'nullable|string|max:500', 'phone' => 'nullable|string|max:20', 'id' => 'nullable|integer', 'price' => 'nullable|numeric|min:1', 'auto' => 'nullable|in:0,1', 'card' => 'nullable|in:0,1', 'parcel' => 'nullable|numeric|min:0|max:2000', 'profit' => 'nullable|numeric|min:0|max:5000']);
     if ($d['act'] === 'switches') {
       $was = ['auto' => AutoPrice::on(), 'card' => Procure::set('home_bestseller', '0') === '1', 'parcel' => AutoPrice::parcel(), 'profit' => AutoPrice::profit()]; $new = ['auto' => ($d['auto'] ?? '0') === '1', 'card' => ($d['card'] ?? '0') === '1', 'parcel' => isset($d['parcel']) ? (float)$d['parcel'] : AutoPrice::parcel(), 'profit' => isset($d['profit']) ? (float)$d['profit'] : AutoPrice::profit()];
-      Procure::put(AutoPrice::ON, $new['auto'] ? '1' : '0'); Procure::put('home_bestseller', $new['card'] ? '1' : '0'); Procure::put(AutoPrice::PARCEL, (string)$new['parcel']); Procure::put(AutoPrice::PROFIT, (string)$new['profit']);
+      Procure::put(AutoPrice::ON, $new['auto'] ? '1' : '0'); if ($new['auto']) \App\Support\BestSellerCampaign::markStart(); Procure::put('home_bestseller', $new['card'] ? '1' : '0'); Procure::put(AutoPrice::PARCEL, (string)$new['parcel']); Procure::put(AutoPrice::PROFIT, (string)$new['profit']);
       if ($was != $new) Procure::audit('Best Sellers setting changed', 'Best Sellers', $was, $new + ['by' => auth()->user()->name ?? null]);
       $ch = AutoPrice::sync('switch', $was['parcel'] != $new['parcel'] || $was['profit'] != $new['profit'] || !$was['auto']);
       try { \Illuminate\Support\Facades\Cache::forget('store.home6'); StoreController::bust(); } catch (\Throwable $e) {}
       return back()->with('ok', 'Saved.'.($ch ? ' '.count($ch).' price'.(count($ch) === 1 ? '' : 's').' updated.' : ''));
+    }
+    $C = \App\Support\BestSellerCampaign::class;
+    if ($d['act'] === 'camp') {
+      foreach (['remind_text', 'once_text'] as $k) { $t = trim((string)($d[$k] ?? '')); if ($t !== '' && (!str_contains($t, '{product}') || !str_contains($t, '{link}'))) return back()->withInput()->with('err', 'Each text must contain {product} and {link}.'); Procure::put('bscamp_' . $k, $t); }
+      $was = ['on' => $C::remindOn(), 'days' => $C::days()];
+      Procure::put('bscamp_remind_on', ($d['remind_on'] ?? '0') === '1' ? '1' : '0'); if (isset($d['remind_days'])) Procure::put('bscamp_remind_days', (string)(int)$d['remind_days']);
+      Procure::audit('Best Sellers setting changed', 'Campaign messages', $was, ['on' => $C::remindOn(), 'days' => $C::days(), 'by' => auth()->user()->name ?? null]);
+      return back()->with('ok', 'Campaign messages saved.');
+    }
+    if ($d['act'] === 'once_count' || $d['act'] === 'once_send') {
+      $pid = (int)($d['id'] ?? 0); abort_unless(AutoPrice::has($pid), 404);
+      if ($d['act'] === 'once_count') { $n = count($C::onceList($pid)); \Illuminate\Support\Facades\Cache::put('bscamp.once.' . $pid, $n, 1800); return back()->with('ok', number_format($n) . ' one-time buyers would get the message.'); }
+      $n = $C::sendOnce($pid); \Illuminate\Support\Facades\Cache::forget('bscamp.once.' . $pid); return back()->with($n ? 'ok' : 'err', $n ? number_format($n) . ' SMS queued for one-time buyers.' : 'Nothing to send: no offer price, product unpublished, or nobody left to message.');
     }
     $S = \App\Support\BestSellerStock::class;
     if ($d['act'] === 'stock') {

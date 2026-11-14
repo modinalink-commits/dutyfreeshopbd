@@ -12,6 +12,7 @@
 <label>Do not repeat to the same customer for (days)<br><input type="number" name="days" min="1" value="{{ $days }}"></label>
 <label>Product must have been unpublished for (minutes)<br><input type="number" name="min_off" min="0" value="{{ $minOff }}"></label>
 <label>Hold if more products than this are published at once<br><input type="number" name="max_products" min="1" value="{{ $maxAt }}"></label>
+<label>Cigarette / Vape: minimum stock to announce (0 = none)<br><input type="number" name="min_stock" min="0" value="{{ $minStock }}"></label>
 <label>Daily SMS cap (0 = none)<br><input type="number" name="daily_cap" min="0" value="{{ $cap }}"></label></div>
 <label style="margin-top:10px">Message text. {product} = product name, {link} = short link, {price} = price<br><textarea name="text" rows="3" style="width:100%;max-width:640px">{{ old('text', $text) }}</textarea></label>
 <button class="btn" type="submit" style="margin-top:8px">Save</button></form>

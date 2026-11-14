@@ -22,6 +22,30 @@
 @elseif($diff)<form method="post" action="/admin/best-sellers">@csrf<input type="hidden" name="act" value="apply"><input type="hidden" name="id" value="{{ $x->id }}"><button class="btn" type="submit">Apply {{ number_format($x->offer[2]) }}</button></form>@endif
 <form method="post" action="/admin/best-sellers" style="display:flex;gap:6px">@csrf<input type="hidden" name="act" value="custom"><input type="hidden" name="id" value="{{ $x->id }}"><input type="number" name="price" step="1" min="1" placeholder="Per carton" aria-label="Custom pack price per carton for {{ $x->name }}"><button class="btn g" type="submit">Set custom</button></form></div></td></tr>@endforeach</table></div>
 <small style="display:block;margin-top:8px">Automatic: pack prices change by themselves when a new purchase or the next stock batch changes the batch cost. A custom price per carton stays until you press Back to automatic; it cannot go below cost + the fixed profit. No other discount applies on a pack. A single move above 15% is held and shown in the alerts instead of being applied.</small>@endif</div>
+<div class="card" data-nogrid data-no-export><h2>Offer results{{ $camp['results']['since'] ? ' since '.\Carbon\Carbon::parse($camp['results']['since'], 'UTC')->timezone('Asia/Dhaka')->format('d M, h:i A') : '' }}</h2>
+@if(!$camp['results']['rows'])<div style="color:#6B7280">Starts counting when the automatic offer is switched on.</div>@else
+<div style="overflow-x:auto"><table class="no-export"><tr><th>Product</th><th>Order type</th><th class="n">Orders</th><th class="n">Cartons</th><th class="n">Delivered</th><th class="n">Returned</th><th class="n">Cancelled</th><th class="n">Net at fixed profit</th></tr>
+@foreach($camp['results']['rows'] as $r)@foreach(['pack' => '2 or more cartons (offer)', 'single' => '1 carton'] as $k => $lb)<tr><td>{{ $k === 'pack' ? $r['name'] : '' }}</td><td>{{ $lb }}</td><td class="n">{{ number_format($r[$k]['orders']) }}</td><td class="n">{{ number_format($r[$k]['cartons']) }}</td><td class="n">{{ number_format($r[$k]['delivered']) }}</td><td class="n">{{ number_format($r[$k]['returned']) }}</td><td class="n">{{ number_format($r[$k]['cancelled']) }}</td><td class="n">{{ $k === 'pack' ? number_format($r['pack']['delivered_cartons'] * $profit) : '—' }}</td></tr>@endforeach @endforeach</table></div>
+<small style="display:block;margin-top:6px">Net at fixed profit = delivered offer cartons × the net profit per carton set above. It does not yet take the cost of returned parcels off; compare it with the Returned column.</small>@endif</div>
+<div class="card"><h2>Campaign messages (SMS)</h2>
+<form method="post" action="/admin/best-sellers">@csrf<input type="hidden" name="act" value="camp">
+<div class="sw"><label><input type="hidden" name="remind_on" value="0"><input type="checkbox" name="remind_on" value="1" @checked($camp['on'])> Refill reminder: send automatically</label>
+<label>Days after delivery <input type="number" name="remind_days" min="3" max="60" value="{{ $camp['days'] }}" style="width:70px"></label></div>
+<label style="display:block;font-size:12.5px;margin-top:8px">Refill reminder text ({product}, {pack}, {each}, {link})<br><textarea name="remind_text" rows="2" style="width:100%;max-width:680px">{{ old('remind_text', $camp['remind']) }}</textarea></label>
+<label style="display:block;font-size:12.5px;margin-top:8px">One-time buyers text<br><textarea name="once_text" rows="2" style="width:100%;max-width:680px">{{ old('once_text', $camp['once']) }}</textarea></label>
+<button class="btn" type="submit" style="margin-top:8px">Save</button></form>
+<div style="border-top:1px solid #E5E7EB;margin-top:10px;padding-top:8px;font-size:13px">
+@foreach($camp['ex'] as $pid => $e)<div style="margin-bottom:10px"><b>{{ $e['name'] }}</b>
+@if(!$e['remind'])<div style="color:#B93815">No 2-carton offer price right now, so no message can be made.</div>@else
+@php([$pp, $pl] = \App\Support\SmsMarketing::parts($e['once']))
+<pre style="white-space:pre-wrap;font-family:inherit;font-size:12.5px;background:#F8FAFC;border:1px solid #E5E7EB;border-radius:8px;padding:8px;margin:6px 0">Reminder: {{ $e['remind'] }}
+
+One-time buyers: {{ $e['once'] }}</pre>
+<div class="act" style="justify-content:flex-start"><small>{{ $pl }} characters · {{ $pp }} SMS part{{ $pp === 1 ? '' : 's' }} · about {{ number_format($pp * $unit, 2) }} TK each.</small>
+<form method="post" action="/admin/best-sellers">@csrf<input type="hidden" name="act" value="once_count"><input type="hidden" name="id" value="{{ $pid }}"><button class="btn g" type="submit">Count one-time buyers</button></form>
+@if($camp['onceN'][$pid] !== null)<span><b>{{ number_format($camp['onceN'][$pid]) }}</b> would get it (about {{ number_format($camp['onceN'][$pid] * $pp * $unit) }} TK)</span>
+<form method="post" action="/admin/best-sellers">@csrf<input type="hidden" name="act" value="once_send"><input type="hidden" name="id" value="{{ $pid }}"><button class="btn" type="submit" @disabled(!$camp['onceN'][$pid])>Send to these {{ number_format($camp['onceN'][$pid]) }}</button></form>@endif</div>@endif</div>@endforeach
+<small>Reminder: goes to a customer whose Best Seller was delivered that many days ago and who has not ordered again; between 10 AM and 8 PM. One-time buyers: received the product once, at least 20 days ago, and ordered nothing since; each is messaged only once. Opted-out numbers are never messaged.</small></div></div>
 <div class="card"><h2>Low-stock notice on WhatsApp</h2>
 <form method="post" action="/admin/best-sellers" class="sw" style="align-items:flex-end">@csrf<input type="hidden" name="act" value="stock">
 <label><input type="hidden" name="ls_on" value="0"><input type="checkbox" name="ls_on" value="1" @checked($ls['on'])> Send the notice</label>

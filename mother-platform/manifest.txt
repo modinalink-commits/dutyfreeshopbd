@@ -1142,3 +1142,4 @@ app/Support/PublishNotice.php
 app/Http/Controllers/PublishNoticeController.php
 resources/views/publish_notice.blade.php
 resources/views/store/best_slide.blade.php
+app/Support/BestSellerCampaign.php
