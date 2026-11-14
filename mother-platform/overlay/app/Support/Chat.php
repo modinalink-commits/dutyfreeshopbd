@@ -287,6 +287,87 @@ class Chat {
         ->orWhereRaw("exists (select 1 from chat_messages m where m.thread_id = chat_threads.id and m.dir = 'in' and m.attachment_type = 'audio' and m.id > coalesce((select max(o.id) from chat_messages o where o.thread_id = chat_threads.id and o.dir = 'out' and o.status <> 'failed'), 0))");
     });
   }
+  /** Set only by staleTick around one aiReply call: lets the AI answer inside staff hours after the wait limit. */
+  public static bool $force = false;
+  /** Worker tick (owner rule 14 Nov 2026): no customer is left without an answer. When a customer has waited longer than the limit (Chat Settings, default 30 min) with no reply:
+   *  - an ordinary question is answered by the AI, even inside staff hours;
+   *  - a chat that needs a person (hand-off, complaint, refund, cancel, payment, order request, AI switched off for it) gets ONE short holding message - the AI decides nothing there;
+   *  - the chat moves from an agent who has gone quiet to one who is replying right now, and a staff-only note records what happened;
+   *  - the owner's Issues Center gets one alert listing who is waiting.
+   * A holding message never clears Awaiting Reply and never stops the waiting timer: only a person's reply does. Each customer message triggers this once. Chats that were already waiting when the rule was switched on are left to staff (no mass send). */
+  public static function staleTick(): void {
+    if (Sms::secret('chat_stale_on') === '0') { try { DeployHealth::resolve('chat.stale', 'System (rule switched off)'); } catch (\Throwable $e) {} return; }
+    if (!\Illuminate\Support\Facades\Cache::add('chat.stale.lock', 1, 50)) return;
+    $min = max(5, min(240, (int)(Sms::secret('chat_stale_min') ?: 30)));
+    $from = Sms::secret('chat_stale_from'); if (!$from) { Sms::setSecret('chat_stale_from', now()->toDateTimeString()); return; }
+    $cut = now()->subMinutes($min); $start = \Carbon\Carbon::parse($from)->max(now()->subHours(22));
+    $cand = DB::table('chat_threads')->whereIn('channel', ['web', 'whatsapp', 'facebook', 'instagram'])->where('awaiting_reply', true)->where('status', '!=', 'resolved')->where('last_at', '>=', $start)->orderBy('last_at')->limit(60)->get();
+    if ($cand->isEmpty()) { try { DeployHealth::resolve('chat.stale', 'System (nobody waiting)'); } catch (\Throwable $e) {} return; }
+    $ids = implode(',', $cand->pluck('id')->map(fn($i) => (int)$i)->all());
+    // waiting since the first customer message after our last delivered message of any kind (decides when to act) ...
+    $any = collect(DB::select("select m.thread_id, min(m.created_at) since, max(m.id) mid from chat_messages m where m.thread_id in ($ids) and m.dir = 'in' and m.id > coalesce((select max(o.id) from chat_messages o where o.thread_id = m.thread_id and o.dir = 'out' and o.status <> 'failed'), 0) group by m.thread_id"))->keyBy('thread_id');
+    // ... and since the last reply by a person (what the alert reports)
+    $hum = collect(DB::select("select m.thread_id, min(m.created_at) since from chat_messages m where m.thread_id in ($ids) and m.dir = 'in' and m.id > coalesce((select max(o.id) from chat_messages o where o.thread_id = m.thread_id and o.dir = 'out' and coalesce(o.is_ai, false) = false and o.status <> 'failed'), 0) group by m.thread_id"))->pluck('since', 'thread_id');
+    $done = 0;
+    foreach ($cand as $t) {
+      if ($done >= 4) break; $a = $any[$t->id] ?? null; if (!$a || ($t->last_dir ?? '') !== 'in') continue;
+      $since = \Carbon\Carbon::parse($a->since); if ($since->gt($cut) || $since->lt($start)) continue;
+      if (!\Illuminate\Support\Facades\Cache::add('chat.stale.'.$t->id.'.'.(int)$a->mid, 1, 172800)) continue;
+      $done++;
+      try { self::staleOne($t, $min); } catch (\Throwable $e) { report($e); }
+    }
+    // one alert for the owner: everybody who has had no reply from a person for longer than the limit
+    try {
+      $late = $cand->filter(fn($t) => isset($hum[$t->id]) && \Carbon\Carbon::parse($hum[$t->id])->lte($cut) && \Carbon\Carbon::parse($hum[$t->id])->gte($start))->values();
+      if ($late->isEmpty()) DeployHealth::resolve('chat.stale', 'System (everyone answered)');
+      else { $ag = DB::table('users')->whereIn('id', $late->pluck('assigned_to')->filter()->unique())->pluck('name', 'id');
+        $list = $late->take(6)->map(fn($t) => trim((string)($t->name ?: $t->phone ?: 'Customer')).' ('.(int)\Carbon\Carbon::parse($hum[$t->id])->diffInMinutes(now()).' min'.(!empty($t->assigned_to) && isset($ag[$t->assigned_to]) ? ', '.$ag[$t->assigned_to] : ', nobody assigned').')')->implode('; ');
+        DeployHealth::raise('chat.stale', 'high', 'Messages', $late->count().' customer'.($late->count() === 1 ? '' : 's').' waiting over '.$min.' minutes for a staff reply', $list.($late->count() > 6 ? ' and '.($late->count() - 6).' more' : '').'.', 'No staff member replied within '.$min.' minutes. The AI answered what it safely could or sent a short holding message; these chats still need a person.', 'Open Messages > Late replies and answer them.'); }
+    } catch (\Throwable $e) {}
+  }
+  /** One customer past the wait limit: reassign, let the AI answer or send the holding message, leave a staff-only note. */
+  public static function staleOne(object $t, int $min): void {
+    $tid = (int)$t->id; $what = [];
+    // 1) move the chat away from an agent who has not replied to anyone for the whole wait
+    try {
+      if (!empty($t->assigned_to)) {
+        $cur = DB::table('users')->find($t->assigned_to);
+        $busy = $cur ? DB::table('chat_messages')->where('dir', 'out')->where('status', '<>', 'failed')->whereRaw('not coalesce(is_ai, false)')->where('user_name', $cur->name)->where('created_at', '>=', now()->subMinutes($min))->exists() : false;
+        if (!$busy) {
+          $act = DB::table('chat_messages')->where('dir', 'out')->where('status', '<>', 'failed')->whereRaw('not coalesce(is_ai, false)')->where('created_at', '>=', now()->subMinutes($min))->whereNotNull('user_name')->groupBy('user_name')->selectRaw('user_name, max(created_at) la')->orderByDesc('la')->pluck('user_name')->all();
+          $to = $act ? DB::table('users')->whereIn('name', $act)->where('id', '!=', $t->assigned_to)->where('active', true)->get(['id', 'name'])->sortBy(fn($u) => array_search($u->name, $act))->first() : null;
+          if ($to) { DB::table('chat_threads')->where('id', $tid)->update(['assigned_to'=>$to->id, 'updated_at'=>now()]); $what[] = 'Moved from '.($cur->name ?? 'an agent').' to '.$to->name.', who is replying now.'; }
+          else $what[] = ($cur->name ?? 'The assigned agent').' has not replied to anyone for '.$min.' minutes and no other agent is replying right now.';
+        }
+      }
+    } catch (\Throwable $e) {}
+    // 2) an ordinary question: the AI answers it now, even inside staff hours
+    $human = !empty($t->needs_human) || !empty($t->handoff_at) || in_array((string)($t->intent ?? ''), ['complaint', 'refund', 'cancel', 'change_order', 'human_request', 'payment', 'order_request'], true) || \Illuminate\Support\Facades\Cache::has('ai.manual_off.'.$tid);
+    $answered = false;
+    if (!$human && AiChat::chatOn() && in_array($t->channel, ['web', 'whatsapp', 'facebook'], true)) {
+      self::$force = true; try { self::aiReply($tid); } catch (\Throwable $e) { report($e); } finally { self::$force = false; }
+      $n = DB::table('chat_threads')->find($tid); $answered = $n && ($n->last_dir ?? '') === 'out';
+      if ($answered) $what[] = 'No staff reply for '.$min.' minutes, so the AI answered the customer.';
+    }
+    // 3) otherwise one short holding message; the chat stays with a person
+    if (!$answered) {
+      $n = DB::table('chat_threads')->find($tid); if (!$n || $n->status === 'resolved' || ($n->last_dir ?? '') !== 'in') return;
+      $lc = $n->last_customer_message_at ?? null; $open = $n->channel === 'web' || ($lc && \Carbon\Carbon::parse($lc)->gte(now()->subHours(23)));
+      if ($open) {
+        $cb = (string)DB::table('chat_messages')->where('thread_id', $tid)->where('dir', 'in')->orderByDesc('id')->value('body');
+        $bn = AiChat::banglaOnly() ? true : (bool)preg_match('/[\x{0980}-\x{09FF}]/u', $cb);
+        $txt = trim((string)Sms::secret($bn ? 'chat_stale_text_bn' : 'chat_stale_text_en')) ?: ($bn ? 'স্যার, আপনার বার্তাটি আমরা পেয়েছি। আমাদের একজন প্রতিনিধি বিষয়টি দেখছেন এবং খুব শিগগিরই আপনাকে জানাবেন। একটু অপেক্ষা করার জন্য ধন্যবাদ। 🙏' : 'Sir, we have received your message. One of our team is looking into it and will reply to you very soon. Thank you for waiting. 🙏');
+        [$sent, $err] = self::deliver($n, $txt);
+        DB::table('chat_messages')->insert(['thread_id'=>$tid, 'dir'=>'out', 'kind'=>'text', 'body'=>$txt, 'user_name'=>'Claude AI', 'is_ai'=>true, 'status'=>$sent ? 'sent' : 'failed', 'error'=>$err, 'created_at'=>now(), 'updated_at'=>now()]);
+        // still Awaiting Reply and still waiting for a person: only last_* changes so the list shows what was sent
+        $upd = ['needs_human'=>true, 'updated_at'=>now()]; if ($sent) $upd += ['last_message'=>mb_substr($txt, 0, 300), 'last_dir'=>'out'];
+        DB::table('chat_threads')->where('id', $tid)->update($upd);
+        $what[] = $sent ? 'No staff reply for '.$min.' minutes: a holding message was sent. This chat still needs a person.' : 'No staff reply for '.$min.' minutes. The holding message could not be sent ('.mb_substr((string)$err, 0, 80).').';
+      } else { DB::table('chat_threads')->where('id', $tid)->update(['needs_human'=>true, 'updated_at'=>now()]); $what[] = 'No staff reply for '.$min.' minutes. Nothing could be sent: the 24-hour channel window is closed.'; }
+    }
+    try { if ($what) DB::table('chat_notes')->insert(['thread_id'=>$tid, 'user_id'=>null, 'user_name'=>'Automation', 'body'=>implode(' ', $what), 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {}
+    try { AiMemory::event($tid, null, 'ai', 'stale_wait_handled', null, ['min'=>$min, 'ai_answered'=>$answered]); } catch (\Throwable $e) {}
+  }
   /** Worker tick (owner request 11 Nov 2026): the backlog of unanswered chats. The AI reads each one (voice is transcribed first); if it understands and answers, the chat is handled and closes by the normal rules; if it cannot (hand-off, complaint, unreadable voice, any reason) the chat is set aside for a person (Messages > Human Answer). */
   public static function backlogTick(): void {
     if (!AiChat::chatOn() || !AiSchedule::activeNow()) return;
@@ -387,7 +468,7 @@ class Chat {
     $lock = null;
     try {
       if (!AiChat::chatOn()) return;
-      if (!AiSchedule::activeNow()) return; // outside the owner's AI hours: staff answer
+      if (!self::$force && !AiSchedule::activeNow()) return; // outside the owner's AI hours: staff answer (staleTick may force one answer after the staff wait limit)
       $t = DB::table('chat_threads')->find($tid);
       if (!$t || AiChat::paused($t) || !in_array($t->channel, ['web', 'whatsapp', 'facebook'], true)) return;
       $ext = $t->channel !== 'web'; // WhatsApp / Facebook Messenger: the reply is sent to the customer through the platform

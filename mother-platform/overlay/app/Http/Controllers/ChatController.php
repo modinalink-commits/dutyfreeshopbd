@@ -514,6 +514,9 @@ class ChatController extends Controller {
     Sms::setSecret('ai_chat_auto', $r->boolean('ai_auto') ? '1' : '0');
     Sms::setSecret('ai_chat_chan', $r->boolean('ai_chan') ? '1' : '0');
     Sms::setSecret('ai_comment_reply', $r->boolean('ai_comment_reply') ? '1' : '0');
+    if ($r->has('stale_form')) { $was = Sms::secret('chat_stale_on') !== '0'; $on = $r->boolean('chat_stale_on'); Sms::setSecret('chat_stale_on', $on ? '1' : '0'); if ($on && !$was) Sms::setSecret('chat_stale_from', now()->toDateTimeString()); // switched back on: start from now, never a mass send to old chats
+      if ($r->filled('chat_stale_min')) Sms::setSecret('chat_stale_min', (string)max(5, min(240, (int)$r->input('chat_stale_min'))));
+      Sms::setSecret('chat_stale_text_bn', mb_substr(trim((string)$r->input('chat_stale_text_bn', '')), 0, 500)); Sms::setSecret('chat_stale_text_en', mb_substr(trim((string)$r->input('chat_stale_text_en', '')), 0, 500)); }
     Sms::setSecret('ai_auto_close', $r->boolean('ai_auto_close') ? '1' : '0'); if ($r->filled('ai_close_after')) Sms::setSecret('ai_close_after_min', (string)max(1, min(720, (int)$r->input('ai_close_after'))));
     if ($r->filled('sla_warn')) Sms::setSecret('sla_warn_min', (string)max(1, min(600, (int)$r->input('sla_warn')))); if ($r->filled('sla_red')) Sms::setSecret('sla_red_min', (string)max(2, min(1440, (int)$r->input('sla_red'))));
     DB::table('settings')->updateOrInsert(['key'=>'chat_web_on'], ['value'=>$r->boolean('web_on') ? '1' : '0', 'updated_at'=>now(), 'created_at'=>now()]);
