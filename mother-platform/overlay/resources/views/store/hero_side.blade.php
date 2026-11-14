@@ -42,10 +42,33 @@ $__ios = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="cu
 <a class="hxfa" href="#flash">সব ডিল দেখুন →</a>
 @endif
 </div>
+@php $__bsOn = !empty($bsOn) || \App\Support\Procure::set('home_bestseller', '0') === '1'; $__bs = $__bsOn ? \App\Http\Controllers\StoreController::bestSellers()->take(2)->values() : collect(); @endphp
+@if($__bs->count())
+{{-- Owner 14 Nov 2026: the two Best Seller cartons take the place of the App install card (Flash Sale stays above). Fixed, no rotation; the price is read from the product on every page load; a tap goes straight to checkout. --}}
+<style>.hxbs{border-radius:14px;min-width:0;background:#0B1220;color:#fff;padding:10px 12px 12px;display:flex;flex-direction:column;gap:8px;flex:1.5}
+.hxbs .tg{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;letter-spacing:.08em;color:#FDBA8C}
+.hxbs .gr{display:grid;grid-template-columns:repeat({{ $__bs->count() }},minmax(0,1fr));gap:8px;flex:1}
+.hxbs a{display:flex;flex-direction:column;gap:4px;min-width:0;color:#fff;text-decoration:none;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:7px}
+.hxbs a:hover{border-color:#FF5A00;background:rgba(255,255,255,.1)}
+.hxbs .im{display:grid;place-items:center;background:#fff;border-radius:8px;aspect-ratio:1/1;overflow:hidden}.hxbs .im img{width:100%;height:100%;object-fit:contain;display:block}
+.hxbs .nm{font-size:11.5px;font-weight:600;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:29px}
+.hxbs .pr{font-size:16px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1;white-space:nowrap}.hxbs .pr small{font-size:10px;font-weight:600;opacity:.8}
+.hxbs .go{display:flex;align-items:center;justify-content:center;height:30px;border-radius:8px;background:#FF5A00;color:#fff;font-weight:800;font-size:12.5px;margin-top:auto}.hxbs .go.no{background:rgba(255,255,255,.2)}
+@media (min-width:1024px){.hxside:has(.hxbs) .hxf{flex:1}}
+@media (max-width:1023px){.hx:has(.hxside) .hxside:has(.hxbs){flex-direction:column}.hxbs{padding:9px 10px 10px}.hxbs a{flex-direction:row;align-items:center;gap:8px;flex-wrap:wrap}.hxbs .im{width:56px;flex:none}.hxbs .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.hxbs .nm{min-height:0}.hxbs .go{flex:0 0 100%;height:32px}}
+@media (min-width:1024px){.hxbs .tx{display:contents}}</style>
+<div class="hxbs" aria-label="DutyFreeBD Best Sellers">
+<span class="tg"><svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="m12 2 2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2l-6.1 3.4 1.4-6.8L2.2 9.1l6.9-.8z"/></svg>BEST SELLERS</span>
+<div class="gr">@foreach($__bs as $__p)@php $__in = \App\Support\StockGuard::sellable($__p); $__im = $__p->bs_image ?: ($__p->image ?: '/product-placeholder'); @endphp
+<a href="{{ $__in ? '/checkout?add='.$__p->id.'&p='.(float)$__p->price : \App\Http\Controllers\StoreController::url($__p) }}" aria-label="Order {{ $__p->name }}"><span class="im"><img src="{{ $__im }}" alt="{{ $__p->name }}" width="100" height="100" decoding="async" onerror="this.onerror=null;this.src='/product-placeholder'"></span><span class="tx"><span class="nm">{{ $__p->name }}</span><span class="pr">{{ number_format($__p->price) }} <small>TK</small></span></span><span class="go {{ $__in ? '' : 'no' }}">{{ $__in ? 'Order Now' : 'Out of stock' }}</span></a>
+@endforeach</div>
+</div>
+@else
 <div class="hxa2">
 <div class="hxat"><b>অ্যাপ ইনস্টল করুন</b><span>এক ট্যাপে মোবাইলে</span></div>
 <div class="hxab"><button type="button" class="hxbt" data-hxapp="android" aria-label="Android অ্যাপ ইনস্টল">{!! $__and !!}<span><small>ইনস্টল করুন</small><strong>Android</strong></span></button><button type="button" class="hxbt" data-hxapp="ios" aria-label="iPhone অ্যাপ ইনস্টল">{!! $__ios !!}<span><small>ইনস্টল করুন</small><strong>iPhone</strong></span></button></div>
 </div>
+@endif
 </aside>
 <script>(function(){var s=document.querySelector('.hxside');if(!s)return;var A=s.querySelector('.hxa2');try{if(matchMedia('(display-mode: standalone)').matches&&A)A.remove()}catch(e){}
 s.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-hxapp]');if(!b)return;e.preventDefault();var k=b.getAttribute('data-hxapp');try{if(window.DFPWA&&DFPWA.install)DFPWA.install(k);else location.hash='#dfapp'}catch(x){location.hash='#dfapp'}});
