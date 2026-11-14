@@ -32,8 +32,21 @@ class DupGuard {
   /** For the order list: [orderId => ['n'=>count, 'inv'=>[...], 'ok'=>bool, 'by'=>name]] for a page of orders that are not yet past the gate. */
   public static function forPage(array $orders): array {
     if (!self::ready()) return [];
-    $out = [];
-    foreach ($orders as $o) { if (in_array($o->status, ['Cancel', 'Incomplete', 'Delivered', 'Returned'], true)) continue; $x = self::others($o); if ($x) $out[(int)$o->id] = ['n' => count($x) + 1, 'inv' => array_map(fn($y) => $y['invoice'], $x), 'ok' => !empty($o->dup_allowed_at), 'by' => (string)($o->dup_allowed_by ?? '')]; }
+    $out = []; $need = [];
+    foreach ($orders as $o) { if (in_array($o->status, ['Cancel', 'Incomplete', 'Delivered', 'Returned'], true)) continue; $ph = trim((string)($o->phone ?? '')); if ($ph === '' || empty($o->created_at)) continue; $need[] = [$o, $ph]; }
+    if (!$need) return [];
+    // One query for the whole page (was two per row): every live order of the phones shown, then the same rule as others() applied in memory.
+    $by = DB::table('orders')->whereIn('phone', array_values(array_unique(array_column($need, 1))))->whereNotIn('status', ['Cancel', 'Incomplete'])->orderBy('id')->get(['id', 'phone', 'invoice', 'status', 'created_at'])->groupBy('phone');
+    foreach ($need as [$o, $ph]) {
+      $list = $by[$ph] ?? collect(); if ($list->isEmpty()) continue;
+      $day = Carbon::parse($o->created_at)->timezone('Asia/Dhaka')->toDateString(); $oid = (int)$o->id;
+      $last = null; foreach ($list as $r) { if ((int)$r->id < $oid) $last = $r; }
+      $ret = ($last && in_array($last->status, self::RETURNISH, true)) ? (int)$last->id : 0;
+      $x = [];
+      foreach ($list as $r) { $rid = (int)$r->id; if ($rid === $oid) continue;
+        if (Carbon::parse($r->created_at)->timezone('Asia/Dhaka')->toDateString() === $day || ($rid < $oid && in_array($r->status, self::INFLIGHT, true)) || $rid === $ret) $x[] = (string)Inv::show($r->invoice); }
+      if ($x) $out[$oid] = ['n' => count($x) + 1, 'inv' => $x, 'ok' => !empty($o->dup_allowed_at), 'by' => (string)($o->dup_allowed_by ?? '')];
+    }
     return $out;
   }
 }
