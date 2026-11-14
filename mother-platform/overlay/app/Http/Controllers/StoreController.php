@@ -305,7 +305,7 @@ class StoreController extends Controller {
       $q = DB::table('products')->where('published', true);
       if ($ids) $rows = $q->whereIn('id', $ids)->get()->sortBy(fn($p) => array_search((int)$p->id, $ids))->values();
       else { $rows = collect(); foreach (['Oris Silver Nano Super Slim%', 'Patron Nano White Special%'] as $n) { $p = (clone $q)->where('name', 'ilike', $n)->orderByDesc('stock')->first(); if ($p) $rows->push($p); } }
-      $custom = ['patron nano white' => '/images/bestseller/patron-white.webp'];
+      $custom = ['patron nano white' => '/images/bestseller/patron-white-2.webp'];
       return $rows->map(function ($p) use ($custom) { $p->bs_image = null; foreach ($custom as $k => $f) if (str_contains(mb_strtolower((string)$p->name), $k) && is_file(public_path(ltrim($f, '/')))) $p->bs_image = $f; return $p; });
     } catch (\Throwable $e) { return collect(); }
   }
