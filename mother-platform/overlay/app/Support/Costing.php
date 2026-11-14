@@ -89,6 +89,7 @@ class Costing {
     $bad = [];
     foreach ($by as $pid => $x) {
       if ($x['qty'] <= 0) continue;
+      if (ProfitFloor::hasTwin() && DB::table('products')->where('id', $pid)->whereNotNull('parent_product_id')->exists()) continue; // Single Packet: never blocked by the protected profit (owner, 15 Nov 2026)
       $unit = self::expectedUnit($pid, $x['qty']); if ($unit <= 0) continue; // no cost on file: cannot be checked
       $cost = round($unit * $x['qty'], 2); $min = ceil(round($cost * ProfitFloor::rate($at) * 100, 6)) / 100;
       // Approved Clearance: the line may ship at the clearance price that was in force when the order was placed (never below it).

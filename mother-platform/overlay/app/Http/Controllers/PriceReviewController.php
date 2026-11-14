@@ -105,7 +105,7 @@ class PriceReviewController extends Controller {
     $d = $r->validate(['product_id' => 'required|integer', 'price' => 'required|numeric|min:1', 'reason' => 'nullable|string|max:300']);
     $pr = DB::table('products')->where('id', $d['product_id'])->first(); abort_unless($pr, 404);
     $cost = (float)(DB::table('products as p')->where('p.id', $pr->id)->selectRaw(\App\Support\Costing::fifoSql('p') . ' as c')->value('c') ?? 0);
-    if ($cost > 0 && !\App\Support\ProfitFloor::ok($cost, (float)$d['price'])) return response()->json(['error' => 'below minimum safe price ' . \App\Support\ProfitFloor::floor($cost)], 422);
+    if ($cost > 0 && !\App\Support\ProfitFloor::isTwin($pr) && !\App\Support\ProfitFloor::ok($cost, (float)$d['price'])) return response()->json(['error' => 'below minimum safe price ' . \App\Support\ProfitFloor::floor($cost)], 422);
     $old = (float)$pr->price; $new = (float)$d['price']; $up = ['price' => $new, 'updated_at' => now()]; if ($pr->compare_price !== null && (float)$pr->compare_price <= $new) $up['compare_price'] = null;
     DB::table('products')->where('id', $pr->id)->update($up);
     DB::table('product_price_history')->insert(['product_id' => $pr->id, 'old_rate' => $old, 'new_rate' => $new, 'purchase_rate' => $cost, 'changed_by' => auth()->user()->name ?? 'admin', 'source' => 'Admin price set', 'note' => $d['reason'] ?? null, 'created_at' => now(), 'updated_at' => now()]);
@@ -162,7 +162,7 @@ class PriceReviewController extends Controller {
   public function checkProduct(Request $r) {
     $p = DB::table('products')->where('id', (int)$r->query('id'))->first();
     $packs = []; foreach ([2, 3, 4, 5] as $n) $packs[$n] = $r->query("b$n") !== null && $r->query("b$n") !== '' ? (float)$r->query("b$n") : null;
-    return response()->json(['warn' => $p ? \App\Support\ProfitFloor::productError(\App\Support\ProfitFloor::base($p), (float)$r->query('price'), $packs) : null]);
+    return response()->json(['warn' => $p && !\App\Support\ProfitFloor::isTwin($p) ? \App\Support\ProfitFloor::productError(\App\Support\ProfitFloor::base($p), (float)$r->query('price'), $packs) : null]);
   }
   /** Live check on Create Order: per-line price cuts and the total discount. items = idx:productId:price:qty,... */
   public function checkOrder(Request $r) {

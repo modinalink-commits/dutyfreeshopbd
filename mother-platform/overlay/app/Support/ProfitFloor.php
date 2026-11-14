@@ -43,14 +43,18 @@ class ProfitFloor {
   public static function avg($p): float { $a = (float)($p->avg_cost ?? 0); return $a > 0 ? $a : (float)($p->cost ?? 0); }
   /** Column set for product queries; 'cost' is already the average, 'last_cost' the last purchase price. */
   public static function hasAvg(): bool { static $h = null; if ($h === null) { try { $h = \Illuminate\Support\Facades\Schema::hasColumn('products', 'avg_cost'); } catch (\Throwable $e) { $h = false; } } return $h; }
+  /** Owner rule 15 Nov 2026: a Single Packet (one tenth of a carton, a product with parent_product_id) is always open for sale: no price floor, discount limit or shipment block applies to it. Its profit / loss is still reported on its own tenth-of-carton cost. */
+  public static function hasTwin(): bool { static $h = null; if ($h === null) { try { $h = \Illuminate\Support\Facades\Schema::hasColumn('products', 'parent_product_id'); } catch (\Throwable $e) { $h = false; } } return $h; }
+  public static function isTwin($p): bool { return $p && !empty($p->parent_product_id); }
   public static function hasFifo(): bool { return Costing::ready(); }
   /** Cost per product for the rule. $qty = [productId => total quantity on the order]: more than the next batch holds is costed batch by batch (weighted). */
   public static function costs(array $ids, array $qty = []): array {
     $ids = array_values(array_unique(array_filter(array_map('intval', $ids)))); if (!$ids) return [];
-    $rows = DB::table('products')->whereIn('id', $ids)->get(array_merge(['id', 'cost', 'price', 'name'], self::hasAvg() ? ['avg_cost'] : [], self::hasFifo() ? ['fifo_cost'] : []))->keyBy('id')->all();
+    $rows = DB::table('products')->whereIn('id', $ids)->get(array_merge(['id', 'cost', 'price', 'name'], self::hasTwin() ? ['parent_product_id'] : [], self::hasAvg() ? ['avg_cost'] : [], self::hasFifo() ? ['fifo_cost'] : []))->keyBy('id')->all();
     foreach ($rows as $r) {
       $r->last_cost = (float)$r->cost; $r->cost = self::base($r);
       $q = (int)($qty[(int)$r->id] ?? 1); if ($q > 1 && self::hasFifo()) { $e = Costing::expectedUnit((int)$r->id, $q); if ($e > 0) $r->cost = $e; }
+      if (!empty($r->parent_product_id)) $r->cost = 0.0; // Single Packet twin: never held by the protected-profit rule (owner, 15 Nov 2026)
     }
     return $rows;
   }

@@ -115,7 +115,7 @@ class Procure {
       $pr = DB::table('products')->where('id', $i->product_id)->lockForUpdate()->first(); if (!$pr) continue;
       $old = (float)$pr->price; $new = (float)$i->new_selling_rate; $cost = (float)$i->cost;
       if (abs($old - $new) < 0.005) { DB::table('purchase_items')->where('id', $i->id)->update(['price_update_status' => 'unchanged']); continue; }
-      if ($cost > 0 && !ProfitFloor::ok($cost, $new) && trim((string)$i->margin_override_reason) === '') { DB::table('purchase_items')->where('id', $i->id)->update(['price_update_status' => 'blocked']); self::audit('proc.price_blocked', 'Selling rate NOT updated (below minimum margin): ' . $p->invoice . ' · product#' . $i->product_id, ['price' => $old], ['new_rate' => $new, 'min_safe' => ProfitFloor::floor($cost)]); continue; }
+      if ($cost > 0 && !ProfitFloor::isTwin($pr) && !ProfitFloor::ok($cost, $new) && trim((string)$i->margin_override_reason) === '') { DB::table('purchase_items')->where('id', $i->id)->update(['price_update_status' => 'blocked']); self::audit('proc.price_blocked', 'Selling rate NOT updated (below minimum margin): ' . $p->invoice . ' · product#' . $i->product_id, ['price' => $old], ['new_rate' => $new, 'min_safe' => ProfitFloor::floor($cost)]); continue; }
       $up = ['price' => $new, 'updated_at' => now()]; if ($pr->compare_price !== null && (float)$pr->compare_price <= $new) $up['compare_price'] = null; // a struck-through regular price must stay above the sale price
       DB::table('products')->where('id', $i->product_id)->update($up); $pids[] = (int)$i->product_id;
       DB::table('purchase_items')->where('id', $i->id)->update(['price_update_status' => 'applied', 'old_selling_rate' => $old]);
