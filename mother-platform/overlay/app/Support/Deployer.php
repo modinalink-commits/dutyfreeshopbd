@@ -100,6 +100,8 @@ class Deployer
     try { $t = \App\Support\Sms::secret('deploy_github_token'); if ($t) $h['Authorization'] = 'Bearer ' . $t; } catch (\Throwable $e) {}
     return $h;
   }
+  /** How often the server looks at GitHub: every 20 s when a GitHub token is set (5000 calls/h allowed), else every 90 s (60 calls/h without a token). */
+  public static function syncEvery(): int { try { return \App\Support\Sms::secret('deploy_github_token') ? 20 : 90; } catch (\Throwable $e) { return 90; } }
   /** Latest commit on the production branch (cached one minute). */
   public static function head(bool $fresh = false): ?array {
     $key = 'deploy_head_' . self::branch();
@@ -109,7 +111,7 @@ class Deployer
       if (!$r->ok()) return \Cache::get($key . '_last');
       $j = $r->json(); [$subj, $notes] = self::parse((string)($j['commit']['message'] ?? ''));
       $h = ['sha' => (string)$j['sha'], 'subject' => $subj, 'notes' => $notes, 'at' => (string)($j['commit']['committer']['date'] ?? '')];
-      \Cache::put($key, $h, 60); \Cache::forever($key . '_last', $h); return $h;
+      \Cache::put($key, $h, self::syncEvery() > 30 ? 60 : 12); \Cache::forever($key . '_last', $h); return $h;
     } catch (\Throwable $e) { return \Cache::get($key . '_last'); }
   }
 
@@ -247,7 +249,7 @@ class Deployer
   public static function tick(bool $force = false): void {
     if (!self::enabled()) return;
     try { self::reconcile(); } catch (\Throwable $e) {}
-    $f = self::D . '/sync_at'; if (!$force && is_file($f) && time() - (int)@filemtime($f) < 90) return;
+    $f = self::D . '/sync_at'; if (!$force && is_file($f) && time() - (int)@filemtime($f) < self::syncEvery()) return;
     @touch($f); @chmod($f, 0666);
     self::backfill();
     if (self::mode() === 'hold') return; // held: the admin presses Deploy Now

@@ -130,7 +130,7 @@ chown -R www-data:www-data "$REL/bootstrap/cache" /srv/shared/storage 2>/dev/nul
 
 log "7/9 health check on the NEW release (not live yet)"; stg Testing 72
 su -s /bin/sh www-data -c "cd $REL && exec php -S 127.0.0.1:8099 -t public public/index.php" >"$D/hc-server.log" 2>&1 9>&- &
-HPID=$!; sleep 3
+HPID=$!; i=0; until wget -q -T 2 -O /dev/null http://127.0.0.1:8099/_health 2>/dev/null || [ $i -ge 10 ]; do i=$((i+1)); sleep 1; done
 php "$D/hc.php" http://127.0.0.1:8099 dutyfreeshopbd.com / @product @category /search?q=marlboro /search?q=perfume /offline /manifest.webmanifest /track /admin/login /account/login /_health >"$D/hc.out" 2>&1
 HC=$?; sed 's/^/   /' "$D/hc.out"; kill "$HPID" 2>/dev/null; HPID=""; pkill -f 'php -S 127.0.0.1:8099' 2>/dev/null
 [ "$HC" = 0 ] || fail "health check failed on new release (live site untouched)"
@@ -143,7 +143,6 @@ KEEP=1
 su -s /bin/sh www-data -c "cd /srv/app && php artisan queue:restart" >/dev/null 2>&1 || true
 
 log "9/9 health check LIVE"; stg Verifying 93
-sleep 2
 php "$D/hc.php" http://web dutyfreeshopbd.com / /offline /manifest.webmanifest /_health >"$D/hc.out" 2>&1; LC=$?; sed 's/^/   /' "$D/hc.out"
 if [ "$LC" != 0 ]; then
   log "live check failed -> automatic rollback"; swap "$CUR"; echo "$CUR" > "$D/current"; echo "$REL" > "$D/previous"
