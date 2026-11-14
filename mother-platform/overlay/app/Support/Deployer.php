@@ -137,8 +137,9 @@ class Deployer
 
   /** Commit message -> subject (first line, or a "Subject:" line) and bullet notes. */
   public static function parse(string $msg): array {
-    $lines = preg_split('/\R/', trim($msg)); $subj = trim((string)array_shift($lines)); $notes = [];
-    foreach ($lines as $l) { $l = trim($l); if ($l === '' || preg_match('/^(Co-Authored-By|Claude-Session|Signed-off-by)/i', $l)) continue; if (preg_match('/^subject:\s*(.+)$/i', $l, $m)) { $subj = trim($m[1]); continue; } $notes[] = ltrim($l, "-*• "); }
+    // Split on real line breaks only and match in UTF-8 mode: without /u the byte 0x85 inside Bengali letters is taken for a line break and cuts the text mid-letter.
+    $msg = mb_scrub($msg, 'UTF-8'); $lines = preg_split('/\r\n|\r|\n/', trim($msg)); $subj = trim((string)array_shift($lines)); $notes = [];
+    foreach ($lines as $l) { $l = trim($l); if ($l === '' || preg_match('/^(Co-Authored-By|Claude-Session|Signed-off-by)/i', $l)) continue; if (preg_match('/^subject:\s*(.+)$/iu', $l, $m)) { $subj = trim($m[1]); continue; } $notes[] = (string)preg_replace('/^[\-\*•\s]+/u', '', $l); }
     return [mb_substr($subj, 0, 240), implode("\n", $notes)];
   }
 
