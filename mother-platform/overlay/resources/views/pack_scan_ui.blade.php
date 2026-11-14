@@ -63,7 +63,7 @@ html body button.ps-open:hover,html body .toolbar-control.ps-open:hover,#ocb#ocb
 <button type="button" id="psMn" aria-label="Minimize" title="ছোট করুন: এই পেজে স্ক্যান চলতে থাকবে">–</button><button type="button" id="psX" aria-label="Close" title="Close">×</button><div id="psMl">ছোট করা আছে। স্ক্যান করতে থাকুন, প্রতিটা লেবেল চেক হচ্ছে।</div></div>
 <div class="ps-b"><div>
 <form class="ps-f" id="psF" autocomplete="off"><input id="psIn" inputmode="numeric" autocomplete="off" placeholder="পার্সেলের লেবেল স্ক্যান করুন" aria-label="Parcel label barcode"><button type="submit" id="psGo">Check</button><button type="button" id="psCam" title="মোবাইলের ক্যামেরা দিয়ে লেবেল স্ক্যান করুন">📷 ক্যামেরা</button></form>
-<div class="ps-hint">স্ক্যানার নম্বর লিখে নিজে Enter দেয়। হাতে ইনভয়েস নম্বর লিখেও Check চাপা যায়। <span class="ps-snd">আওয়াজ শুনুন: <button type="button" id="psS1">✓ সফল</button> <button type="button" id="psS0">✖ ভুল</button></span></div>
+<div class="ps-hint">স্ক্যানার নম্বর লিখে নিজে Enter দেয়। হাতে ইনভয়েস নম্বর লিখেও Check চাপা যায়। <span class="ps-snd">আওয়াজ শুনুন: <button type="button" id="psS1">✓ সফল (১টা ছোট বিপ)</button> <button type="button" id="psS0">✖ ভুল (২ সেকেন্ড সাইরেন)</button></span></div>
 <div id="psV" hidden><video id="psVd" playsinline muted autoplay></video><div class="ps-ln"></div><div class="ps-vn" id="psVn">লেবেলের বারকোড কমলা দাগের উপর ধরুন।</div></div>
 <div id="psQ" hidden></div>
 <div id="psRes"><div class="ps-big">স্ক্যানের জন্য প্রস্তুত</div><div class="ps-sub" style="color:#5B6676">সবুজ এলে পার্সেল কুরিয়ারকে দিন। লাল বা হলুদ এলে পার্সেল রেখে দিন।</div></div>
@@ -81,8 +81,8 @@ html body button.ps-open:hover,html body .toolbar-control.ps-open:hover,#ocb#ocb
  // three sounds: a short tick the moment a label is read, two rising notes when the parcel may go, a long low buzz when it must stay
  function vib(p){try{if(navigator.vibrate)navigator.vibrate(p)}catch(e){}}
  function beep(good){if(good==='scan'){tone(2400,.03,.12,'sine');return} // a faint click only: the real sounds are the two below
-  if(good){tone(1319,.11,.5,'sine');tone(1760,.11,.5,'sine',.12);tone(2093,.24,.5,'sine',.24);vib(120)} // success: three bright rising notes, one short buzz of the phone
-  else{for(var n=0;n<3;n++){tone(880,.16,.6,'square',n*.36);tone(440,.16,.6,'square',n*.36+.17)}vib([350,120,350,120,350])}} // error: a high-low alarm three times (phone speakers cannot play very low notes), three long buzzes
+  if(good){tone(1568,.18,.5,'sine');vib(120);return} // success: ONE short clean beep
+  for(var n=0;n<8;n++)tone(n%2?620:930,.22,.7,'square',n*.25);vib([400,100,400,100,400,100,400])} // error: a two-second siren, eight alternating notes: length alone tells it apart
  var rowsH='',pend={};
  function draw(){var b=document.getElementById('psLog')||ov.querySelector('.ps-w tbody');if(!b)return;var p=Object.keys(pend).reverse().map(function(c){return '<tr class="ps-pd"><td>now</td><td><b>'+esc(c)+'</b></td><td><span class="pp warn">চেক হচ্ছে…</span></td><td></td></tr>'}).join('');b.innerHTML=(p+rowsH)||'<tr><td colspan="4" style="color:#5B6676;padding:12px">এখনো কিছু স্ক্যান হয়নি।</td></tr>'}
  function paint(j){
