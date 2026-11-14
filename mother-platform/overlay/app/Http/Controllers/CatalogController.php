@@ -171,6 +171,7 @@ class CatalogController extends Controller {
   public function productToggle($id) {
     $p = DB::table('products')->find($id); abort_unless($p, 404);
     $new = !$p->published;
+    if ($new && $p->parent_product_id && (int)$p->stock <= 0) return back()->with('bad', 'Single Packet has no stock, so it cannot be published. It goes live by itself when loose packets come back from a return.');
     DB::transaction(function () use ($id, $new) {
       DB::table('products')->where('id',$id)->update(['published'=>$new,'updated_at'=>now()] + \App\Support\StockGuard::lockCol($new));
       DB::table('product_status_logs')->insert(['product_id'=>$id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'action'=>$new?'Published':'Unpublished','created_at'=>now(),'updated_at'=>now()]);
@@ -209,6 +210,7 @@ class CatalogController extends Controller {
     $new = $d['action'] === 'publish'; $names = [];
     DB::transaction(function () use ($d, $new, &$names) {
       foreach (DB::table('products')->whereIn('id',$d['ids'])->where('published','!=',$new)->get() as $p) {
+        if ($new && $p->parent_product_id && (int)$p->stock <= 0) continue;   // Single Packet goes live only from returned stock
         DB::table('products')->where('id',$p->id)->update(['published'=>$new,'updated_at'=>now()] + \App\Support\StockGuard::lockCol($new));
         DB::table('product_status_logs')->insert(['product_id'=>$p->id,'user_id'=>Auth::id(),'user_name'=>Auth::user()->name,'action'=>$new?'Published':'Unpublished','created_at'=>now(),'updated_at'=>now()]);
         $names[] = $p->name;
