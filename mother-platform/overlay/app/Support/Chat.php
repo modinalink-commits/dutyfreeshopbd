@@ -423,7 +423,7 @@ class Chat {
   public static function closeSilentTick(): void {
     if (Sms::secret('ai_auto_close') === '0') return;
     $min = max(1, min(720, (int)(Sms::secret('ai_close_after_min') ?: 30)));
-    $rows = DB::table('chat_threads')->where('last_dir', 'out')->whereIn('status', ['new', 'open', 'waiting'])->where(fn($w) => $w->where('awaiting_reply', true)->orWhere('unread', '>', 0))
+    $rows = DB::table('chat_threads')->where('last_dir', 'out')->whereIn('status', ['new', 'open', 'waiting'])->where(fn($w) => $w->where('awaiting_reply', true)->orWhere('unread', '>', 0)->orWhereNull('last_customer_message_at')) // owner rule 14 Nov 2026: a chat where the customer never wrote and we only sent messages closes by itself too
       ->where('last_at', '<=', now()->subMinutes($min))->orderBy('last_at')->limit(15)->get();
     foreach ($rows as $t) {
       $k = 'ai.silentclose.'.$t->id.'.'.substr((string)$t->last_at, 0, 16);
