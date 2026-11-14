@@ -174,7 +174,22 @@ class CallCenterController extends Controller {
     $dl = 0; $th = null;
     try { $dl = $n ? (int)DB::table('orders')->whereRaw('right(phone,11) = ?', [$ph])->where('status', 'Delivered')->count() : 0; } catch (\Throwable $e) {}
     try { $th = DB::table('chat_threads')->whereRaw('right(phone,11) = ?', [$ph])->orderByDesc('id')->value('id'); } catch (\Throwable $e) {}
-    return response()->json(['found'=>(bool)($c || $n), 'delivered'=>$dl, 'thread_id'=>$th ? (int)$th : null, 'phone'=>$ph, 'name'=>$c->name ?? ($last->customer_name ?? null), 'customer_id'=>$c->id ?? null, 'orders'=>$n, 'last'=>$last, 'category'=>$p['category'] ?? ($n > 0 ? 'Regular' : 'New'), 'membership'=>$p['membership'] ?? null, 'fraud'=>$fr, 'calls'=>$calls]);
+    $alerts = [];
+    try {
+      if ($last && in_array((string)$last->status, ['Return', 'Returned', 'Cancel', 'Cancelled'], true)) $alerts[] = 'Last order '.\App\Support\Inv::show($last->invoice).' is '.$last->status.'.';
+      if ($fr && preg_match('/high|risk|danger|fraud/i', (string)$fr['label'].' '.(string)$fr['level'])) $alerts[] = 'Courier reliability: '.$fr['label'].'. Confirm the address and an alternate number.';
+      if ($n === 1 && $last && (string)$last->status === 'New') $alerts[] = 'First order from this number. Confirm the full address.';
+      if (DB::table('chat_threads')->whereRaw('right(phone,11) = ?', [$ph])->where('awaiting_reply', true)->where('needs_human', true)->exists()) $alerts[] = 'A chat from this customer is waiting for a person. Read it before promising anything.';
+    } catch (\Throwable $e) {}
+    return response()->json(['found'=>(bool)($c || $n), 'alerts'=>$alerts, 'delivered'=>$dl, 'thread_id'=>$th ? (int)$th : null, 'phone'=>$ph, 'name'=>$c->name ?? ($last->customer_name ?? null), 'customer_id'=>$c->id ?? null, 'orders'=>$n, 'last'=>$last, 'category'=>$p['category'] ?? ($n > 0 ? 'Regular' : 'New'), 'membership'=>$p['membership'] ?? null, 'fraud'=>$fr, 'calls'=>$calls]);
+  }
+  /** What the agent must read back to the customer while confirming an order (read-only). */
+  public function orderBrief($id) {
+    $o = DB::table('orders')->find($id); abort_unless($o, 404);
+    $items = DB::table('order_items')->where('order_id', $id)->orderBy('id')->get(['name', 'qty', 'price'])->map(fn($i) => ['name'=>(string)$i->name, 'qty'=>(int)$i->qty, 'price'=>(float)$i->price]);
+    $sub = (float)$items->sum(fn($i) => $i['qty'] * $i['price']); $ship = (float)($o->shipping ?? 0); $total = (float)$o->total;
+    return response()->json(['id'=>(int)$o->id, 'invoice'=>\App\Support\Inv::show($o->invoice), 'status'=>(string)$o->status, 'name'=>(string)$o->customer_name, 'address'=>trim((string)($o->address ?? '')), 'district'=>(string)($o->district ?? ''),
+      'items'=>$items, 'subtotal'=>$sub, 'shipping'=>$ship, 'discount'=>max(0, round($sub + $ship - $total, 2)), 'total'=>$total, 'pay'=>(string)($o->pay_method ?? ($o->payment_method ?? '')), 'pay_status'=>(string)($o->pay_status ?? '')]);
   }
   public function contacts(Request $r) {
     $q = trim((string)$r->query('q', '')); $b = DB::table('customers'); $dg = preg_replace('/\D/', '', $q);
@@ -189,8 +204,10 @@ class CallCenterController extends Controller {
       $out = [];
       try {
         $since = now()->subDays(2); $last = []; $ans = [];
-        foreach (DB::table('call_logs')->where('started_at', '>=', $since)->orderBy('id')->get(['id', 'direction', 'phone', 'customer_name', 'status', 'outcome', 'note', 'started_at', 'user_name']) as $c) { $k = $this->norm((string)$c->phone); if ($c->status === 'answered') { $ans[$k] = strtotime((string)$c->started_at); $last[$k] = $c; } elseif (!(isset($last[$k]) && $last[$k]->status === 'answered' && strtotime((string)$c->started_at) - strtotime((string)$last[$k]->started_at) <= 120)) $last[$k] = $c; }
+        foreach (DB::table('call_logs')->where('started_at', '>=', $since)->orderBy('id')->get() as $c) { $k = $this->norm((string)$c->phone); if ($c->status === 'answered') { $ans[$k] = strtotime((string)$c->started_at); $last[$k] = $c; } elseif (!(isset($last[$k]) && $last[$k]->status === 'answered' && strtotime((string)$c->started_at) - strtotime((string)$last[$k]->started_at) <= 120)) $last[$k] = $c; }
         $mins = fn($ts) => max(0, (int)\Carbon\Carbon::parse($ts)->diffInMinutes(now())); $seen = [];
+        // a set callback time: overdue ones jump to the top, future ones wait at the bottom
+        $cb = function ($lc) { $at = $lc->callback_at ?? null; if (!$at) return ['pr'=>3, 'due'=>null, 'late'=>null]; $c = \Carbon\Carbon::parse($at, 'UTC'); $late = (int)floor((now()->timestamp - $c->timestamp) / 60); return ['pr'=>$late >= 0 ? 1 : 5, 'due'=>$c->copy()->timezone('Asia/Dhaka')->format('h:i A'), 'late'=>$late]; };
         $orders = DB::table('orders')->where('status', 'New')->where('created_at', '<', now()->subMinutes(10))->where('created_at', '>', $since)->orderBy('id')->limit(60)->get(['id', 'invoice', 'phone', 'customer_name', 'created_at', 'pay_status']);
         foreach ($orders as $o) {
           $p = $this->norm((string)$o->phone); if (strlen($p) < 10 || isset($seen[$p]) || (string)($o->pay_status ?? '') === 'Awaiting Payment') continue;
@@ -199,12 +216,13 @@ class CallCenterController extends Controller {
           $seen[$p] = 1;
           if (!$after) { $out[] = $base + ['type'=>'new', 'mins'=>$mins($o->created_at), 'pr'=>2]; continue; }
           if (in_array((string)$lc->outcome, ['confirmed', 'cancelled', 'pending'], true)) continue;
-          if ((string)$lc->outcome === 'call_later') { $out[] = ['note'=>mb_substr((string)($lc->note ?? ''), 0, 80)] + $base + ['type'=>'callback', 'mins'=>$mins($lc->started_at), 'pr'=>3]; continue; }
-          if ($mins($lc->started_at) >= 20) $out[] = $base + ['type'=>'noanswer', 'mins'=>$mins($lc->started_at), 'pr'=>4];
+          if ((string)$lc->outcome === 'call_later') { $out[] = ['note'=>mb_substr((string)($lc->note ?? ''), 0, 80)] + $base + ['type'=>'callback', 'mins'=>$mins($lc->started_at)] + $cb($lc); continue; }
+          if (!empty($lc->callback_at)) $out[] = $base + ['type'=>'callback', 'mins'=>$mins($lc->started_at)] + $cb($lc);
+          elseif ($mins($lc->started_at) >= 20) $out[] = $base + ['type'=>'noanswer', 'mins'=>$mins($lc->started_at), 'pr'=>4];
         }
         foreach ($last as $p => $lc) {
           $p = (string)$p; if (isset($seen[$p]) || strlen($p) < 10) continue;
-          if ((string)$lc->outcome === 'call_later') $out[] = ['type'=>'callback', 'name'=>(string)($lc->customer_name ?: ''), 'phone'=>$p, 'invoice'=>'', 'order_id'=>null, 'note'=>mb_substr((string)($lc->note ?? ''), 0, 80), 'mins'=>$mins($lc->started_at), 'pr'=>3];
+          if ((string)$lc->outcome === 'call_later') $out[] = ['type'=>'callback', 'name'=>(string)($lc->customer_name ?: ''), 'phone'=>$p, 'invoice'=>'', 'order_id'=>null, 'note'=>mb_substr((string)($lc->note ?? ''), 0, 80), 'mins'=>$mins($lc->started_at)] + $cb($lc);
           elseif ($lc->direction === 'in' && $lc->status === 'missed' && \Carbon\Carbon::parse($lc->started_at)->gt(now()->subDay()) && !(isset($ans[$p]) && $ans[$p] >= strtotime((string)$lc->started_at) - 120)) $out[] = ['type'=>'missed', 'name'=>(string)($lc->customer_name ?: ''), 'phone'=>$p, 'invoice'=>'', 'order_id'=>null, 'note'=>'', 'mins'=>$mins($lc->started_at), 'pr'=>1];
         }
         usort($out, fn($a, $b) => [$a['pr'], -$a['mins']] <=> [$b['pr'], -$b['mins']]);
@@ -248,20 +266,37 @@ class CallCenterController extends Controller {
   }
   /** Call Summary popup: outcome, customer response, cancel reason and note. */
   public function logSummary(Request $r, $id) {
-    $d = $r->validate(['outcome'=>'nullable|in:confirmed,pending,call_later,no_answer,cancelled', 'response'=>'nullable|string|max:40', 'cancel_reason'=>'nullable|string|max:40', 'note'=>'nullable|string|max:1000', 'order_id'=>'nullable|integer']);
+    $d = $r->validate(['outcome'=>'nullable|in:confirmed,pending,call_later,no_answer,cancelled', 'response'=>'nullable|string|max:40', 'cancel_reason'=>'nullable|string|max:40', 'note'=>'nullable|string|max:1000', 'order_id'=>'nullable|integer', 'callback_min'=>'nullable|integer|min:5|max:4320', 'send_msg'=>'nullable|boolean']);
     $l = DB::table('call_logs')->find($id); abort_unless($l, 404);
     if (($d['outcome'] ?? '') === 'cancelled' && ($d['cancel_reason'] ?? '') === 'Other' && trim((string)($d['note'] ?? '')) === '') return response()->json(['ok'=>false, 'error'=>'Write a note when the reason is Other.'], 422);
     $upd = ['outcome'=>$d['outcome'] ?? null, 'response'=>$d['response'] ?? null, 'cancel_reason'=>($d['outcome'] ?? '') === 'cancelled' ? ($d['cancel_reason'] ?? null) : null, 'summary_at'=>now(), 'updated_at'=>now()];
     if (array_key_exists('note', $d)) $upd['note'] = trim((string)$d['note']) ?: null;
     if (!empty($d['order_id']) && DB::table('orders')->where('id', $d['order_id'])->exists()) $upd['order_id'] = (int)$d['order_id'];
     DB::table('call_logs')->where('id', $id)->update($upd);
+    $extra = ''; $msg = null;
+    // Call back at a set time: the call returns to "Up next" and the dialer reminds the staff when it is due.
+    if (!empty($d['callback_min']) && in_array($d['outcome'] ?? '', ['call_later', 'no_answer'], true)) {
+      try { $at = now()->addMinutes((int)$d['callback_min']); DB::table('call_logs')->where('id', $id)->update(['callback_at'=>$at]); $extra .= ' · call back '.$at->copy()->timezone('Asia/Dhaka')->format('d M, h:i A'); } catch (\Throwable $e) {}
+    }
+    // The customer did not pick up: one short SMS so they know who called. At most one per number in 6 hours.
+    if ($r->boolean('send_msg') && ($d['outcome'] ?? '') === 'no_answer' && $l->direction === 'out') {
+      try {
+        $ph = $this->norm((string)$l->phone);
+        if (strlen($ph) === 11 && \Illuminate\Support\Facades\Cache::add('cc.noans.'.$ph, 1, 21600)) {
+          $hot = trim((string)\App\Support\Biz::hotline());
+          $body = trim((string)\App\Support\Procure::set('cc_noanswer_sms', 'আসসালামু আলাইকুম। DutyFreeBD থেকে আপনাকে কল দিয়েছিলাম, কিন্তু পাইনি। আপনার সাথে কথা বলা দরকার। সুবিধামতো {hotline} নম্বরে কল দিন।'));
+          [$ok, $m] = \App\Support\Sms::send($ph, str_replace('{hotline}', $hot, $body));
+          $msg = $ok ? 'SMS sent' : 'SMS failed: '.$m; if ($ok) { DB::table('call_logs')->where('id', $id)->update(['msg_sent_at'=>now()]); $extra .= ' · "we tried to call" SMS sent'; } else \Illuminate\Support\Facades\Cache::forget('cc.noans.'.$ph);
+        } else $msg = 'SMS not sent again: one was already sent to this number in the last 6 hours';
+      } catch (\Throwable $e) { $msg = 'SMS could not be sent'; }
+    }
     $oid = $upd['order_id'] ?? $l->order_id;
     if ($oid && \Illuminate\Support\Facades\Schema::hasTable('order_staff_comments')) {
       $lab = ['confirmed'=>'Order Confirmed', 'pending'=>'Pending', 'call_later'=>'Call Later', 'no_answer'=>'No Answer', 'cancelled'=>'Order Cancelled'][$d['outcome'] ?? ''] ?? '—';
-      $body = 'Call ('.($l->direction === 'in' ? 'incoming' : 'outgoing').', '.gmdate('i:s', (int)$l->duration).') — '.$lab.(!empty($d['response']) ? ' · '.$d['response'] : '').(!empty($upd['cancel_reason']) ? ' · '.$upd['cancel_reason'] : '').(!empty($upd['note']) ? ': '.$upd['note'] : '');
+      $body = 'Call ('.($l->direction === 'in' ? 'incoming' : 'outgoing').', '.gmdate('i:s', (int)$l->duration).') — '.$lab.(!empty($d['response']) ? ' · '.$d['response'] : '').(!empty($upd['cancel_reason']) ? ' · '.$upd['cancel_reason'] : '').$extra.(!empty($upd['note']) ? ': '.$upd['note'] : '');
       DB::table('order_staff_comments')->insert(['order_id'=>$oid, 'user_id'=>Auth::id(), 'user_name'=>Auth::user()->name, 'category'=>'Call note', 'body'=>mb_substr($body, 0, 1000), 'created_at'=>now(), 'updated_at'=>now()]);
     }
-    return response()->json(['ok'=>true]);
+    return response()->json(['ok'=>true, 'msg'=>$msg]);
   }
   /** PBX integration / manual: attach the recording link for a call. */
   public function logRecording(Request $r, $id) {
@@ -271,7 +306,7 @@ class CallCenterController extends Controller {
     $d = $r->validate(['note'=>'required|string|max:1000']); $l = DB::table('call_logs')->find($id); abort_unless($l, 404);
     DB::table('call_logs')->where('id', $id)->update(['note'=>$d['note'], 'updated_at'=>now()]);
     if ($l->order_id && \Illuminate\Support\Facades\Schema::hasTable('order_staff_comments')) DB::table('order_staff_comments')->insert(['order_id'=>$l->order_id, 'user_id'=>Auth::id(), 'user_name'=>Auth::user()->name, 'category'=>'Call note', 'body'=>'Call note ('.($l->direction === 'in' ? 'incoming' : 'outgoing').', '.gmdate('i:s', (int)$l->duration).'): '.$d['note'], 'created_at'=>now(), 'updated_at'=>now()]);
-    return response()->json(['ok'=>true]);
+    return response()->json(['ok'=>true, 'msg'=>$msg]);
   }
   public function history(Request $r) {
     $f = (string)$r->query('f', 'all'); $q = trim((string)$r->query('q', '')); $view = $r->query('view', 'list'); $d = in_array($r->query('d'), ['in', 'out'], true) ? (string)$r->query('d') : '';

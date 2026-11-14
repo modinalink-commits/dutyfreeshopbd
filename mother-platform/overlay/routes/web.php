@@ -254,6 +254,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/call-center/contacts', [\App\Http\Controllers\CallCenterController::class,'contacts']);
   Route::get('/call-center/recent', [\App\Http\Controllers\CallCenterController::class,'recent']);
   Route::get('/call-center/up-next', [\App\Http\Controllers\CallCenterController::class,'upNext']);
+  Route::get('/call-center/order/{id}', [\App\Http\Controllers\CallCenterController::class,'orderBrief'])->whereNumber('id');
   Route::get('/call-center/board', [\App\Http\Controllers\CallQualityController::class,'board']); Route::get('/call-center/board/data', [\App\Http\Controllers\CallQualityController::class,'boardData']);
   Route::get('/call-center/review', [\App\Http\Controllers\CallQualityController::class,'review']); Route::post('/call-center/review/{id}', [\App\Http\Controllers\CallQualityController::class,'saveReview'])->whereNumber('id');
   Route::get('/call-center/play/{id}', [\App\Http\Controllers\CallQualityController::class,'play'])->whereNumber('id');

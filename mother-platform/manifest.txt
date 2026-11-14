@@ -1123,3 +1123,4 @@ resources/views/call_board.blade.php
 resources/views/call_review.blade.php
 app/Support/CallDaily.php
 resources/views/call_daily.blade.php
+database/migrations/2026_11_14_150000_call_callbacks.php
