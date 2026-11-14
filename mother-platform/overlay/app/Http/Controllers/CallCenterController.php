@@ -181,7 +181,16 @@ class CallCenterController extends Controller {
       if ($n === 1 && $last && (string)$last->status === 'New') $alerts[] = 'First order from this number. Confirm the full address.';
       if (DB::table('chat_threads')->whereRaw('right(phone,11) = ?', [$ph])->where('awaiting_reply', true)->where('needs_human', true)->exists()) $alerts[] = 'A chat from this customer is waiting for a person. Read it before promising anything.';
     } catch (\Throwable $e) {}
-    return response()->json(['found'=>(bool)($c || $n), 'alerts'=>$alerts, 'delivered'=>$dl, 'thread_id'=>$th ? (int)$th : null, 'phone'=>$ph, 'name'=>$c->name ?? ($last->customer_name ?? null), 'customer_id'=>$c->id ?? null, 'orders'=>$n, 'last'=>$last, 'category'=>$p['category'] ?? ($n > 0 ? 'Regular' : 'New'), 'membership'=>$p['membership'] ?? null, 'fraud'=>$fr, 'calls'=>$calls]);
+    // Best time to call (hint only): the two-hour window, Dhaka time, in which this number's earlier calls were answered most often. Needs at least 3 answered calls.
+    $best = null;
+    try {
+      $ts = DB::table('call_logs')->whereRaw('right(phone,11) = ?', [$ph])->whereNotNull('connected_at')->orderByDesc('id')->limit(60)->pluck('connected_at');
+      if ($ts->count() >= 3) { $h = array_fill(0, 24, 0); foreach ($ts as $t) $h[(int)\Illuminate\Support\Carbon::parse($t, 'UTC')->setTimezone('Asia/Dhaka')->format('G')]++;
+        $bi = 0; $bv = -1; for ($i = 8; $i <= 22; $i++) { $v = $h[$i] + $h[$i + 1]; if ($v > $bv) { $bv = $v; $bi = $i; } }
+        $fmt = fn ($x) => (($x % 12) ?: 12).' '.($x % 24 < 12 ? 'AM' : 'PM');
+        if ($bv >= 2) $best = ['when'=>$fmt($bi).' to '.$fmt($bi + 2), 'n'=>$bv, 'of'=>$ts->count()]; }
+    } catch (\Throwable $e) {}
+    return response()->json(['found'=>(bool)($c || $n), 'best'=>$best, 'alerts'=>$alerts, 'delivered'=>$dl, 'thread_id'=>$th ? (int)$th : null, 'phone'=>$ph, 'name'=>$c->name ?? ($last->customer_name ?? null), 'customer_id'=>$c->id ?? null, 'orders'=>$n, 'last'=>$last, 'category'=>$p['category'] ?? ($n > 0 ? 'Regular' : 'New'), 'membership'=>$p['membership'] ?? null, 'fraud'=>$fr, 'calls'=>$calls]);
   }
   /** What the agent must read back to the customer while confirming an order (read-only). */
   public function orderBrief($id) {
