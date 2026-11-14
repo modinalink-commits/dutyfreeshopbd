@@ -52,6 +52,9 @@ class PerfAuditController extends Controller {
       $d = []; foreach ($tb2 as $n => $x) { $y = $ta[$n] ?? null; if (!$y) continue; $dt = $x->t - $y->t; if ($dt > 0) $d[$n] = [$dt, $x->s - $y->s, $x->i - $y->i]; }
       uasort($d, fn($x, $y) => $y[0] <=> $x[0]);
       foreach (array_slice($d, 0, 8, true) as $n => $v) $rows[] = ['Full scans: ' . $n, number_format($v[1]) . ' scans, ' . number_format($v[0]) . ' rows read in 3 s (index scans: ' . number_format($v[2]) . ')'];
+      // which statements are running: 25 looks at the live activity list, grouped by their text
+      $seen = []; for ($i = 0; $i < 25; $i++) { foreach (DB::select("select left(regexp_replace(query, '\\s+', ' ', 'g'), 150) q from pg_stat_activity where state = 'active' and pid <> pg_backend_pid() and query not ilike '%pg_stat_%'") as $x) { $k = preg_replace(['/\\$\\d+/', "/'[^']*'/", '/\\b\\d+\\b/'], ['?', '?', '?'], (string)$x->q); $seen[$k] = ($seen[$k] ?? 0) + 1; } usleep(40000); }
+      arsort($seen); foreach (array_slice($seen, 0, 6, true) as $k => $n) $rows[] = ['Seen running ' . $n . ' of 25 looks', $k];
       return $rows;
     });
     if (!is_array($S['Database load (3 second sample)'])) $S['Database load (3 second sample)'] = [['—', (string)$S['Database load (3 second sample)']]];
