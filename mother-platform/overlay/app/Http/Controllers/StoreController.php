@@ -298,6 +298,20 @@ class StoreController extends Controller {
   }
   /** Below-the-fold home category section, lazy-loaded by the home page so the first HTML stays small. */
   /** Private preview of the globe section before it goes on the front page. */
+  /** The flagship "Best Seller" products for the home block. Ids come from the setting bestseller_ids ("12,34"); until it is set, the two named cartons are found by name. Never cached, so the price on the block is always the product's current price. */
+  public static function bestSellers() {
+    try {
+      $ids = array_values(array_filter(array_map('intval', explode(',', (string)\App\Support\Procure::set('bestseller_ids', '')))));
+      $q = DB::table('products')->where('published', true);
+      if ($ids) $rows = $q->whereIn('id', $ids)->get()->sortBy(fn($p) => array_search((int)$p->id, $ids))->values();
+      else { $rows = collect(); foreach (['Oris Silver Nano Super Slim%', 'Patron Nano White Special%'] as $n) { $p = (clone $q)->where('name', 'ilike', $n)->orderByDesc('stock')->first(); if ($p) $rows->push($p); } }
+      $custom = ['patron nano white' => '/images/bestseller/patron-white.webp'];
+      return $rows->map(function ($p) use ($custom) { $p->bs_image = null; foreach ($custom as $k => $f) if (str_contains(mb_strtolower((string)$p->name), $k) && is_file(public_path(ltrim($f, '/')))) $p->bs_image = $f; return $p; });
+    } catch (\Throwable $e) { return collect(); }
+  }
+  public function bestSellerPreview() {
+    return response()->view('store.best_seller_preview', $this->base(['title'=>'Best Sellers preview | DutyFree BD', 'desc'=>'', 'canon'=>url('/best-seller-preview'), 'noindex'=>true]))->header('X-Robots-Tag', 'noindex')->header('Cache-Control', 'no-store');
+  }
   public function dealPreview() {
     $deals = self::todayBest(self::set())->take(12);
     return response()->view('store.deal_preview', $this->base(['deals'=>$deals, 'title'=>'Deal boarding pass preview | DutyFree BD', 'desc'=>'', 'canon'=>url('/deal-preview'), 'noindex'=>true]))->header('X-Robots-Tag', 'noindex')->header('Cache-Control', 'no-store');

@@ -205,6 +205,7 @@ box.addEventListener('click',function(e){var pb=e.target.closest&&e.target.close
 document.addEventListener('visibilitychange',function(){if(!cur||!cur.pl||!cur.pl.pauseVideo)return;try{document.hidden?cur.pl.pauseVideo():cur.pl.playVideo()}catch(e){}});
 function first(){var f=tr.children[0];if(f&&f.classList.contains('hxv'))active()}
 if(document.readyState==='complete')setTimeout(first,300);else addEventListener('load',function(){setTimeout(first,300)})});</script>
+@if(\App\Support\Procure::set('home_bestseller', '0') === '1')@include('store.best_seller')@endif
 @if(($s['home_hero'] ?? '1') !== '0')
 @php $__gp = ($s['home_globe'] ?? '1') === '1' ? \App\Http\Controllers\StoreController::globeProducts() : collect(); @endphp
 @php $__ms = ($s['hero_member_slide'] ?? '1') !== '0'; $__dm = ($s['hero_district_slide'] ?? '1') !== '0'; $__om = ($s['hero_offers_slide'] ?? '1') !== '0'; $__wt = ($s['hero_watch_slide'] ?? '1') !== '0'; $__lxs = ($s['hero_lux_slides'] ?? '1') !== '0'; @endphp

@@ -671,6 +671,7 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestF
   Route::get('/account/{tab}', [\App\Http\Controllers\AccountController::class,'index'])->where('tab','[a-z]+');
   Route::get('/account/{tab}/{arg}', [\App\Http\Controllers\AccountController::class,'index'])->where(['tab'=>'[a-z]+','arg'=>'[A-Za-z0-9\-]+']);
   Route::get('/deal-preview', [\App\Http\Controllers\StoreController::class,'dealPreview']);
+  Route::get('/best-seller-preview', [\App\Http\Controllers\StoreController::class,'bestSellerPreview']);
   Route::get('/globe-preview', [\App\Http\Controllers\StoreController::class,'globePreview']);
   Route::get('/airport-preview', [\App\Http\Controllers\StoreController::class,'airportPreview']);
   Route::get('/watch-banner-preview', [\App\Http\Controllers\StoreController::class,'watchLuxPreview']);
