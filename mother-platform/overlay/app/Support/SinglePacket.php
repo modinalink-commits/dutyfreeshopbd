@@ -106,7 +106,12 @@ class SinglePacket {
     foreach (self::oldQuery()->get(['id', 'path_slug']) as $o) {
       $u = ['published' => false, 'path_slug' => ($o->path_slug ?: 'old').'-old-'.$o->id, 'updated_at' => now()];
       if ($lock) $u['manual_unpublish_lock'] = true; if ($lg) $u['legacy_source'] = 'old_single_packet';
-      DB::table('products')->where('id', $o->id)->update($u); $out['retired']++;
+      // Owner decision 14 Nov 2026: the old Single Packet products are deleted. One with order history (or other linked records) cannot be removed without breaking those records: it is hidden instead and counted.
+      $gone = false;
+      if (!DB::table('order_items')->where('product_id', $o->id)->exists()) {
+        try { DB::transaction(function () use ($o) { foreach (['product_images', 'ai_images', 'product_status_logs'] as $t) { if (Schema::hasTable($t)) DB::table($t)->where('product_id', $o->id)->delete(); } DB::table('products')->where('id', $o->id)->delete(); }); $gone = true; $out['deleted'] = ($out['deleted'] ?? 0) + 1; } catch (\Throwable $e) {}
+      }
+      if (!$gone) { DB::table('products')->where('id', $o->id)->update($u); $out['retired']++; }
     }
     foreach (self::eligibleQuery()->orderBy('id')->pluck('id') as $id) {
       try { $r = DB::transaction(fn() => self::sync((int)$id, $cat)); if ($r === 'created') $out['created']++; elseif ($r === 'updated') $out['updated']++; } catch (\Throwable $e) { $out['errors'][] = $id.': '.mb_substr($e->getMessage(), 0, 80); }
