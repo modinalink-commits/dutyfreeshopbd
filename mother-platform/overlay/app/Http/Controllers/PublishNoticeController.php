@@ -17,6 +17,7 @@ class PublishNoticeController extends Controller {
     $body = $sample ? N::body($sample) : N::text(); [$parts, $len] = SmsMarketing::parts($body);
     return view('publish_notice', ['on' => N::on(), 'text' => N::text(), 'days' => N::days(), 'minOff' => N::minOff(), 'maxAt' => N::maxAtOnce(), 'cap' => N::dailyCap(), 'minStock' => N::minStock(), 'ready' => N::ready(), 'today' => N::sentToday(),
       'p' => $p, 'cnt' => $cnt, 'body' => $body, 'parts' => $parts, 'len' => $len, 'unit' => SmsMarketing::unit(),
+      'status' => DB::table('sms_logs')->where('event', N::EVENT)->where('created_at', '>=', now()->subDays(7))->selectRaw('status, count(*) as n, coalesce(sum(parts),0) as parts, coalesce(sum(cost),0) as cost, max(updated_at) as last')->groupBy('status')->orderByDesc('n')->get(),
       'log' => DB::table('audit_logs')->where('action', 'product.back_in_store_sms')->orderByDesc('id')->limit(20)->get()]);
   }
   public function save(Request $r) {
