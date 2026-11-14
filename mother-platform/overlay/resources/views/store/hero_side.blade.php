@@ -54,9 +54,15 @@ $__ios = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="cu
 .hxbs .nm{font-size:11.5px;font-weight:600;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:29px}
 .hxbs .pr{font-size:16px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1;white-space:nowrap}.hxbs .pr small{font-size:10px;font-weight:600;opacity:.8}
 .hxbs .go{display:flex;align-items:center;justify-content:center;height:30px;border-radius:8px;background:#FF5A00;color:#fff;font-weight:800;font-size:12.5px;margin-top:auto}.hxbs .go.no{background:rgba(255,255,255,.2)}
-@media (min-width:1024px){.hxside:has(.hxbs) .hxf{flex:1}}
-@media (max-width:1023px){.hx:has(.hxside) .hxside:has(.hxbs){flex-direction:column}.hxbs{padding:9px 10px 10px}.hxbs a{flex-direction:row;align-items:center;gap:8px;flex-wrap:wrap}.hxbs .im{width:56px;flex:none}.hxbs .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.hxbs .nm{min-height:0}.hxbs .go{flex:0 0 100%;height:32px}}
-@media (min-width:1024px){.hxbs .tx{display:contents}}</style>
+/* owner 14 Nov: Best Sellers is the main card here; Flash Sale sits above it, smaller */
+@media (min-width:1024px){.hx:has(.hxbs){grid-template-columns:minmax(0,1fr) 300px}.hxside:has(.hxbs) .hxf{flex:0 0 auto;padding:10px 12px;gap:6px}.hxside:has(.hxbs) .hxfs{min-height:62px;flex:none}.hxside:has(.hxbs) .hxfp{width:58px;height:58px}.hxside:has(.hxbs) .hxfr{font-size:14px}
+.hxbs{flex:1 1 auto;padding:12px 14px 14px;gap:10px}.hxbs .tg{font-size:12.5px}.hxbs .gr{gap:10px}.hxbs a{padding:9px;gap:6px}.hxbs .nm{font-size:13px;min-height:33px}.hxbs .pr{font-size:21px}.hxbs .pr small{font-size:11px}.hxbs .go{height:36px;font-size:14px}}
+@media (max-width:1023px){.hx:has(.hxside) .hxside:has(.hxbs){flex-direction:column}.hxside:has(.hxbs) .hxf{flex:none;padding:9px 10px;gap:5px}.hxside:has(.hxbs) .hxfs{min-height:54px}.hxside:has(.hxbs) .hxfp{width:50px;height:50px}.hxbs{padding:11px 10px 12px;gap:9px}.hxbs .tg{font-size:12.5px}.hxbs a{flex-direction:column;gap:6px;padding:8px}.hxbs .im{width:100%;flex:none}.hxbs .nm{font-size:13px}.hxbs .pr{font-size:20px}.hxbs .tx{display:flex;flex-direction:column;gap:3px;min-width:0}.hxbs .go{height:36px;font-size:13.5px}}
+@media (min-width:1024px){.hxbs .tx{display:contents}}
+/* owner 14 Nov: each Best Seller uses the same frame as a store product card (white card, image flush on top) */
+.hxbs a{background:#fff;color:#0B1220;border:1px solid #F0E6E0;border-radius:14px;padding:0 0 10px;gap:7px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.18)}.hxbs a:hover{background:#fff;border-color:#FF5A00}
+.hxbs .im{border-radius:0;background:#F8F8F8;width:100%}.hxbs .nm,.hxbs .pr,.hxbs .go{margin-left:10px;margin-right:10px}.hxbs .nm{font-weight:500}.hxbs .pr{color:#0B1220}.hxbs .pr small{opacity:.6}.hxbs .go.no{background:#9CA3AF}
+@media (max-width:1023px){.hxbs a{border-radius:12px;padding-bottom:8px}.hxbs .tx{gap:3px}.hxbs .nm,.hxbs .pr,.hxbs .go{margin-left:8px;margin-right:8px}}</style>
 <div class="hxbs" aria-label="DutyFreeBD Best Sellers">
 <span class="tg"><svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="m12 2 2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2l-6.1 3.4 1.4-6.8L2.2 9.1l6.9-.8z"/></svg>BEST SELLERS</span>
 <div class="gr">@foreach($__bs as $__p)@php $__in = \App\Support\StockGuard::sellable($__p); $__im = $__p->bs_image ?: ($__p->image ?: '/product-placeholder'); @endphp
