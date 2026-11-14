@@ -218,7 +218,7 @@ function drawShare(){var el=document.getElementById('ibsh');if(!el)return;if(!sh
 var upBusy=false;function doUpdate(){if(upBusy)return;upBusy=true;var b=document.getElementById('ibup');b.disabled=true;b.textContent='↻ Updating…';
   Promise.all([load(),(window.MChat&&MChat.refresh)?MChat.refresh():null]).catch(function(){}).then(function(){b=document.getElementById('ibup');if(b){b.textContent='✓ Updated';b.classList.add('ok')}setTimeout(function(){upBusy=false;var c=document.getElementById('ibup');if(c){c.disabled=false;c.classList.remove('ok');c.textContent='↻ Update'}},1400)})}
 var seen={},first=true;
-function row(t,cp){var st=t.needs_human?'waiting':(t.status||'open');var stL={new:'New',open:'Open',waiting:'Waiting',resolved:'Resolved'}[st]||st;
+function row(t,cp){var st=(t.needs_human&&t.awaiting&&t.status!=='resolved')?'waiting':(t.status||'open');var stL={new:'New',open:'Open',waiting:'Waiting',resolved:'Resolved'}[st]||st;
   var h=t.needs_human?'<span class="bg need" title="'+esc(t.handoff_reason||'')+'">Needs human</span>':'<span class="bg '+(t.ai?'ai':'human')+'">'+(t.ai?'AI':'Human')+'</span>';
   var un=!!t.awaiting&&t.status!=='resolved',ico=(window.MChat&&MChat.ico&&MChat.ico[t.channel])||CHL[t.channel];
   var late=un&&!cp&&t.waiting_since&&(Date.now()-new Date(t.waiting_since).getTime())>(t.sla_r||15)*60000;

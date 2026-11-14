@@ -208,11 +208,21 @@ class ChatController extends Controller {
     return response()->json(['ok'=>true]);
   }
   public function status(Request $r, $id) {
-    $d = $r->validate(['status'=>'required|in:new,open,waiting,resolved']);
-    // Resolve is a deliberate staff decision ("no reply needed"), so it is the only other action that clears the waiting state.
+    $d = $r->validate(['status'=>'required|in:new,open,waiting,resolved', 'reason'=>'nullable|string|max:300']);
+    $t = DB::table('chat_threads')->find($id); abort_unless($t, 404); $reason = trim((string)($d['reason'] ?? ''));
+    // Close chat is a deliberate staff decision: it ends the whole conversation (unread, Awaiting Reply, needs-a-person and hand-off are all cleared). A new customer message reopens it.
     $upd = ['status'=>$d['status'], 'updated_at'=>now()];
-    if ($d['status'] === 'resolved') $upd += ['unread'=>0, 'awaiting_reply'=>false];
+    if ($d['status'] === 'resolved') {
+      $why = [];
+      try { if (DB::table('chat_order_requests')->where('thread_id', $id)->where('status', 'review')->exists()) $why[] = 'an Order Request is still open'; } catch (\Throwable $e) {}
+      try { if (\Illuminate\Support\Facades\Schema::hasTable('chat_handoffs') && DB::table('chat_handoffs')->where('thread_id', $id)->whereIn('status', ['open', 'accepted'])->exists()) $why[] = 'a hand-off is still open'; } catch (\Throwable $e) {}
+      if (in_array((string)($t->intent ?? ''), ['complaint', 'refund'], true) && (!empty($t->awaiting_reply) || !empty($t->needs_human))) $why[] = 'the customer has an unanswered '.$t->intent.' request';
+      if ($why && $reason === '') return response()->json(['ok'=>false, 'need_reason'=>true, 'why'=>implode('; ', $why)]);
+      $upd += ['unread'=>0, 'awaiting_reply'=>false, 'needs_human'=>false, 'handoff_at'=>null, 'handoff_reason'=>null, 'ai_paused'=>false];
+    }
     DB::table('chat_threads')->where('id', $id)->update($upd);
+    if ($d['status'] === 'resolved') { try { if (\Illuminate\Support\Facades\Schema::hasTable('chat_handoffs')) DB::table('chat_handoffs')->where('thread_id', $id)->whereIn('status', ['open', 'accepted'])->update(['status'=>'done', 'updated_at'=>now()]); } catch (\Throwable $e) {} }
+    if ($d['status'] === 'resolved' || $t->status === 'resolved') { try { DB::table('audit_logs')->insert(['user_id'=>auth()->id(), 'user_name'=>auth()->user()->name ?? '', 'action'=>$d['status'] === 'resolved' ? 'chat.close' : 'chat.reopen', 'subject'=>'Conversation #'.$id.' '.($d['status'] === 'resolved' ? 'closed' : 'reopened').($reason !== '' ? ' - '.$reason : ''), 'ip'=>$r->ip(), 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {} }
     return response()->json(['ok'=>true, 'unread'=>Chat::unreadTotal()]);
   }
   /** Link a social conversation to a customer by phone number. */
