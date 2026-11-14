@@ -19,6 +19,13 @@ class ShipmentOutcomeController extends Controller {
     [$ok, $m, $st] = SO::receive((int)$id, array_map('intval', $d['back'] ?? []), array_map('intval', $d['packets'] ?? []));
     return response()->json(['success'=>$ok, 'message'=>$m, 'status'=>$st]);
   }
+  public function items(Request $r, $id) {
+    if (!$this->allowed()) return $this->deny();
+    $o = \Illuminate\Support\Facades\DB::table('orders')->find((int)$id); if (!$o) return response()->json(['success'=>false,'message'=>'Order not found.'], 404);
+    $items = \Illuminate\Support\Facades\DB::table('order_items')->where('order_id', $o->id)->orderBy('id')->get(); $out = [];
+    foreach (SO::expected($o, $items) as [$i, $q]) $out[] = ['id'=>$i->id, 'name'=>$i->name, 'qty'=>(int)$i->qty, 'expected'=>$q, 'twin'=>(bool)($i->product_id && \Illuminate\Support\Facades\DB::table('products')->where('parent_product_id', $i->product_id)->exists())];
+    return response()->json(['success'=>true, 'status'=>$o->status, 'invoice'=>$o->invoice, 'items'=>$out]);
+  }
   public function complete(Request $r, $id) {
     if (!$this->allowed()) return $this->deny();
     [$ok, $m, $st] = SO::complete((int)$id);

@@ -110,6 +110,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/wa-confirm-settings/upd-sync', [\App\Http\Controllers\OrderWaConfirmController::class,'updSync']);
   Route::post('/wa-confirm-settings/upd-test', [\App\Http\Controllers\OrderWaConfirmController::class,'updTest'])->middleware('throttle:6,1');
   Route::post('/wa-confirm-settings/test', [\App\Http\Controllers\OrderWaConfirmController::class,'test'])->middleware('throttle:10,1');
+  Route::get('/orders/{id}/return-items', [\App\Http\Controllers\ShipmentOutcomeController::class,'items'])->whereNumber('id');
   Route::post('/orders/{id}/return-receive', [\App\Http\Controllers\ShipmentOutcomeController::class,'receive'])->whereNumber('id');
   Route::post('/orders/{id}/return-complete', [\App\Http\Controllers\ShipmentOutcomeController::class,'complete'])->whereNumber('id');
   Route::post('/orders/{id}/status', [A::class,'orderStatus']);
