@@ -27,12 +27,22 @@ class PurchaseList {
   }
 
   /** The figures behind the list. */
+  /** Ids of the Cigarette / Vape categories and everything under them. Empty = no such category found (then nothing is filtered, so the list never goes silently blank). */
+  public static function smokeCats(): array {
+    try {
+      $all = DB::table('categories')->get(); $ids = $all->filter(fn($c) => \App\Http\Controllers\StoreController::isSmokeCat($c))->pluck('id')->map(fn($i) => (int)$i)->all();
+      for ($i = 0; $i < 4 && $ids; $i++) { $more = $all->filter(fn($c) => !empty($c->parent_id) && in_array((int)$c->parent_id, $ids, true) && !in_array((int)$c->id, $ids, true))->pluck('id')->map(fn($x) => (int)$x)->all(); if (!$more) break; $ids = array_merge($ids, $more); }
+      return $ids;
+    } catch (\Throwable $e) { return []; }
+  }
   public static function data(): array {
     $cover = self::days(); $since30 = now()->subDays(30); $since7 = now()->subDays(7);
     $sold = DB::table('order_items as i')->join('orders as o', 'o.id', '=', 'i.order_id')->whereNotNull('i.product_id')->where('o.created_at', '>=', $since30)->whereNotIn('o.status', self::BAD)
       ->groupBy('i.product_id')->selectRaw('i.product_id, sum(i.qty) q30, sum(case when o.created_at >= ? then i.qty else 0 end) q7', [$since7])->get()->keyBy('product_id');
-    $ids = $sold->keys()->all();
-    $prods = $ids ? DB::table('products')->whereIn('id', $ids)->get(['id', 'name', 'sku', 'stock', 'published'])->keyBy('id') : collect();
+    // Owner rule 14 Nov 2026: the daily list covers the Cigarette and Vape categories only (and their sub-categories). Other products are left out of the PDF and the message.
+    $cats = self::smokeCats();
+    $prods = $sold->isEmpty() ? collect() : DB::table('products')->whereIn('id', $sold->keys()->all())->when($cats, fn($q) => $q->whereIn('category_id', $cats))->get(['id', 'name', 'sku', 'stock', 'published'])->keyBy('id');
+    $sold = $sold->only($prods->keys()->all()); $ids = $sold->keys()->all();
     $cost = []; $sup = [];
     if ($ids) {
       $last = DB::table('purchase_items as pi')->join('purchases as pu', 'pu.id', '=', 'pi.purchase_id')->leftJoin('suppliers as s', 's.id', '=', 'pu.supplier_id')->whereIn('pi.product_id', $ids)->where('pi.cost', '>', 0)
@@ -50,7 +60,7 @@ class PurchaseList {
     }
     usort($urgent, fn($a, $b) => [$a['left'], -$a['q7']] <=> [$b['left'], -$b['q7']]);
     $top = $sold->sortByDesc('q7')->filter(fn($s) => (int)$s->q7 > 0)->take(15)->map(function ($s) use ($prods) { $p = $prods[$s->product_id] ?? null; return $p ? ['name' => (string)$p->name, 'q7' => (int)$s->q7, 'q30' => (int)$s->q30, 'stock' => (int)$p->stock] : null; })->filter()->values()->all();
-    $dead = DB::table('products')->where('stock', '>', 0)->when($ids, fn($q) => $q->whereNotIn('id', $ids))->orderByDesc('stock')->limit(15)->get(['name', 'stock'])->map(fn($p) => ['name' => (string)$p->name, 'stock' => (int)$p->stock])->all();
+    $dead = DB::table('products')->where('stock', '>', 0)->when($cats, fn($q) => $q->whereIn('category_id', $cats))->when($ids, fn($q) => $q->whereNotIn('id', $ids))->orderByDesc('stock')->limit(15)->get(['name', 'stock'])->map(fn($p) => ['name' => (string)$p->name, 'stock' => (int)$p->stock])->all();
     return ['urgent' => array_slice($urgent, 0, 800), 'urgent_total' => count($urgent), 'out' => $out, 'top' => $top, 'dead' => $dead, 'cover' => $cover, 'at' => now('Asia/Dhaka')];
   }
 
