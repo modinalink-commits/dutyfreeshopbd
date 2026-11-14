@@ -29,7 +29,7 @@ class ReorderAlertController extends Controller
     $rf = $rows->pluck('rfq_id')->filter()->unique()->values()->all();
     $qc = $rf ? DB::table('supplier_quotes')->whereIn('rfq_id',$rf)->selectRaw('rfq_id, count(*) n')->groupBy('rfq_id')->pluck('n','rfq_id') : collect(); $ic = $rf ? DB::table('supplier_rfq_invites')->whereIn('rfq_id',$rf)->selectRaw('rfq_id, count(*) n')->groupBy('rfq_id')->pluck('n','rfq_id') : collect();
     $rows = $rows->map(function ($x) use ($qc, $ic) { $x->quotes = $x->rfq_id ? (int)($qc[$x->rfq_id] ?? 0) : 0; $x->invited = $x->rfq_id ? (int)($ic[$x->rfq_id] ?? 0) : 0; return $x; });
-    $uq = DB::table('products as p')->where('p.published', false)->whereNotExists(fn($e) => $e->select(DB::raw(1))->from('reorder_requests as o')->whereColumn('o.product_id','p.id')->whereNotIn('o.status', R::END));
+    $uq = DB::table('products as p')->whereNull('p.parent_product_id')->where('p.published', false)->whereNotExists(fn($e) => $e->select(DB::raw(1))->from('reorder_requests as o')->whereColumn('o.product_id','p.id')->whereNotIn('o.status', R::END));
     if ($r->filled('pq')) { $t = '%'.mb_strtolower(trim((string)$r->query('pq'))).'%'; $uq->where(fn($w) => $w->whereRaw('lower(p.name) like ?', [$t])->orWhereRaw('lower(coalesce(p.sku,\'\')) like ?', [$t])); }
     $unpubTotal = (clone $uq)->count();
     $unpub = $uq->orderByDesc('p.id')->limit(40)->get(['p.id','p.name','p.sku','p.image','p.stock']); $un = SI::supplierCounts($unpub->pluck('id')->all()); $unpub = $unpub->map(function ($x) use ($un) { $x->nsup = $un[(int)$x->id] ?? 0; return $x; });
@@ -61,10 +61,10 @@ class ReorderAlertController extends Controller
   /** Every unpublished product that has a mapped supplier and no open request -> Pre-Order request (runs after the response; they go out at the daily send time). */
   public function preorderAll(Request $r) {
     $qty = max(1, (int)$r->input('qty', 100)); $by = auth()->id();
-    $total = DB::table('products as p')->where('p.published', false)->whereNotExists(fn($e) => $e->select(DB::raw(1))->from('reorder_requests as o')->whereColumn('o.product_id','p.id')->whereNotIn('o.status', R::END))->count();
+    $total = DB::table('products as p')->whereNull('p.parent_product_id')->where('p.published', false)->whereNotExists(fn($e) => $e->select(DB::raw(1))->from('reorder_requests as o')->whereColumn('o.product_id','p.id')->whereNotIn('o.status', R::END))->count();
     dispatch(function () use ($qty, $by) {
       @set_time_limit(0); $ok = 0; $nos = 0;
-      DB::table('products as p')->where('p.published', false)->whereNotExists(fn($e) => $e->select(DB::raw(1))->from('reorder_requests as o')->whereColumn('o.product_id','p.id')->whereNotIn('o.status', R::END))
+      DB::table('products as p')->whereNull('p.parent_product_id')->where('p.published', false)->whereNotExists(fn($e) => $e->select(DB::raw(1))->from('reorder_requests as o')->whereColumn('o.product_id','p.id')->whereNotIn('o.status', R::END))
         ->orderBy('p.id')->select(['p.id','p.name','p.sku','p.stock'])->chunkById(100, function ($rows) use (&$ok, &$nos, $qty, $by) {
           foreach ($rows as $p) { if (!SI::suppliersFor((int)$p->id)) { $nos++; continue; } if (R::createPreorder($p, $qty, $by) === 'ok') $ok++; }
         }, 'p.id', 'id');

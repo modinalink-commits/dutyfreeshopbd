@@ -39,7 +39,7 @@ class Reorder
   public static function below(?array $ids = null, int $limit = 5000) {
     $c = self::cfg(); $ctrl = self::ctrl();
     // every product below the threshold, published or not (publish status is information only)
-    $q = DB::table('products as p')->whereRaw('coalesce(p.stock,0) < coalesce(nullif(p.low_stock_alert,0), ?)', [$c['threshold']]);
+    $q = DB::table('products as p')->whereNull('p.parent_product_id')->whereRaw('coalesce(p.stock,0) < coalesce(nullif(p.low_stock_alert,0), ?)', [$c['threshold']]);
     if ($ids !== null) $q->whereIn('p.id', $ids ?: [0]);
     return $q->orderByRaw('coalesce(p.stock,0)')->limit($limit)->get(['p.id', 'p.name', 'p.sku', 'p.image', 'p.stock', 'p.published', 'p.category_id', 'p.low_stock_alert', 'p.reorder_target', 'p.reorder_mode']);
   }
