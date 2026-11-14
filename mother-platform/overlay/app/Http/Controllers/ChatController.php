@@ -217,7 +217,7 @@ class ChatController extends Controller {
     if ($d['status'] === 'resolved') {
       $why = [];
       try { if (DB::table('chat_order_requests')->where('thread_id', $id)->where('status', 'review')->exists()) $why[] = 'an Order Request is still open'; } catch (\Throwable $e) {}
-      try { if (\Illuminate\Support\Facades\Schema::hasTable('chat_handoffs') && DB::table('chat_handoffs')->where('thread_id', $id)->whereIn('status', ['open', 'accepted'])->exists()) $why[] = 'a hand-off is still open'; } catch (\Throwable $e) {}
+      // an open hand-off does not stop Close chat: closing is the staff member's decision and it ends the hand-off too (logged below)
       if (in_array((string)($t->intent ?? ''), ['complaint', 'refund'], true) && (!empty($t->awaiting_reply) || !empty($t->needs_human))) $why[] = 'the customer has an unanswered '.$t->intent.' request';
       if (!empty($t->reported_at) && empty($t->report_solved_at)) $why[] = 'the customer\'s complaint is still open';
       if ($why && $reason === '') return response()->json(['ok'=>false, 'need_reason'=>true, 'why'=>implode('; ', $why)]);
