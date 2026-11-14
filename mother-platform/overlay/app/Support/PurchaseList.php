@@ -51,7 +51,7 @@ class PurchaseList {
     usort($urgent, fn($a, $b) => [$a['left'], -$a['q7']] <=> [$b['left'], -$b['q7']]);
     $top = $sold->sortByDesc('q7')->filter(fn($s) => (int)$s->q7 > 0)->take(15)->map(function ($s) use ($prods) { $p = $prods[$s->product_id] ?? null; return $p ? ['name' => (string)$p->name, 'q7' => (int)$s->q7, 'q30' => (int)$s->q30, 'stock' => (int)$p->stock] : null; })->filter()->values()->all();
     $dead = DB::table('products')->where('stock', '>', 0)->when($ids, fn($q) => $q->whereNotIn('id', $ids))->orderByDesc('stock')->limit(15)->get(['name', 'stock'])->map(fn($p) => ['name' => (string)$p->name, 'stock' => (int)$p->stock])->all();
-    return ['urgent' => array_slice($urgent, 0, 120), 'urgent_total' => count($urgent), 'out' => $out, 'top' => $top, 'dead' => $dead, 'cover' => $cover, 'at' => now('Asia/Dhaka')];
+    return ['urgent' => array_slice($urgent, 0, 800), 'urgent_total' => count($urgent), 'out' => $out, 'top' => $top, 'dead' => $dead, 'cover' => $cover, 'at' => now('Asia/Dhaka')];
   }
 
   public static function pdf(array $d): string {
