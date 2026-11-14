@@ -2,7 +2,7 @@
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Inter,'Bornomala',sans-serif;color:#000;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .bar{position:sticky;top:0;background:#0B1F3A;color:#fff;padding:8px 14px;display:flex;gap:12px;align-items:center;font-size:14px}.bar button{background:#FF5A00;color:#fff;border:0;border-radius:6px;padding:7px 16px;font-weight:700;cursor:pointer}
-.sheet{page-break-after:always;break-after:page}.sheet:last-child{page-break-after:auto;break-after:auto}
+.sheet{page-break-after:always;break-after:page}.sheet:last-child,.sheet:last-of-type,.sheet.last{page-break-after:auto;break-after:auto}
 img{max-width:100%}.bc svg{display:block;width:100%;height:100%}
 /* INVOICE: same 80 mm column as the old invoice, centred */
 .inv{width:64mm;margin:0 auto;font-size:10.5px;line-height:1.4;border-top:3px solid #000;padding-top:6px}.inv .hd{text-align:center}.inv .hd img{height:36px}.inv .site{font-weight:700;color:#000;font-size:12px}
@@ -30,7 +30,7 @@ img{max-width:100%}.bc svg{display:block;width:100%;height:100%}
 <div class="bar"><span>{{ count($sheets) }} {{ $type === 'label' ? 'label' : 'invoice' }}{{ count($sheets) === 1 ? '' : 's' }} ready: each order prints on its own page.</span><button onclick="window.print()">Print</button></div>
 @foreach($sheets as $s)@php $o = $s['o']; $disc = (float)($o->discount ?? 0); $dname = trim((string)($o->discount_type ?? '')) ?: 'Discount'; $dpct = $o->discount_pct ?? null; $addr = trim($o->address.($o->district ? ', '.$o->district : '')); @endphp
 @if($type === 'invoice')
-<div class="sheet"><div class="inv">
+<div class="sheet{{ $loop->last ? ' last' : '' }}"><div class="inv">
 <div class="hd"><div class="brand">DutyFreeBD</div><div class="site">www.dutyfreebd.com</div></div>
 <div class="id">{{ $o->invoice }}</div>
 <div class="meta"><span>Date: {{ \Carbon\Carbon::parse($o->created_at)->timezone('Asia/Dhaka')->format('Y-m-d') }}</span><span>Qty: {{ $s['qty'] }}</span></div>
@@ -45,7 +45,7 @@ img{max-width:100%}.bc svg{display:block;width:100%;height:100%}
 <div class="codes"><div class="qr" data-qr="{{ $s['url'] }}"></div><div class="bc">{!! $s['bc'] !!}</div></div>
 </div></div>
 @else
-<div class="sheet"><div class="lbl">
+<div class="sheet{{ $loop->last ? ' last' : '' }}"><div class="lbl">
 <div class="hd"><div class="brand">DutyFreeBD</div><div class="site">www.dutyfreebd.com</div></div>
 <div class="id">Invoice #{{ $o->invoice }}</div><div class="bc">{!! $s['bc'] !!}</div>
 <div class="row"><b>Name:</b> {{ $o->customer_name }}</div>
