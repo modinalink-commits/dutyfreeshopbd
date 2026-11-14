@@ -352,7 +352,7 @@ class Chat {
     if (!$human && AiChat::chatOn() && in_array($t->channel, ['web', 'whatsapp', 'facebook'], true)) {
       self::$force = true; try { self::aiReply($tid); } catch (\Throwable $e) { report($e); } finally { self::$force = false; }
       $n = DB::table('chat_threads')->find($tid); $answered = $n && ($n->last_dir ?? '') === 'out';
-      if ($answered) $what[] = 'No staff reply for '.$min.' minutes, so the AI answered the customer.';
+      if ($answered) { \Illuminate\Support\Facades\Cache::put('ai.takeover.'.$tid, now()->timestamp, 43200); $what[] = 'No staff reply for '.$min.' minutes, so the AI answered the customer and keeps answering this chat until it is resolved or a staff member replies.'; }
     }
     // 3) otherwise one short holding message; the chat stays with a person
     if (!$answered) {
@@ -475,11 +475,22 @@ class Chat {
       return true;
     } catch (\Throwable $e) { report($e); return false; }
   }
+  /** True while the AI has taken a chat over (no staff reply within the wait limit). Ends when a staff member replies, the chat is resolved or handed to a person, or after 12 hours. */
+  public static function aiTakeover(int $tid): bool {
+    try {
+      $ts = (int)\Illuminate\Support\Facades\Cache::get('ai.takeover.'.$tid, 0); if (!$ts) return false;
+      $t = DB::table('chat_threads')->find($tid);
+      $end = !$t || $t->status === 'resolved' || !empty($t->handoff_at)
+        || DB::table('chat_messages')->where('thread_id', $tid)->where('dir', 'out')->whereRaw('not coalesce(is_ai, false)')->where('status', '<>', 'failed')->where('created_at', '>=', \Carbon\Carbon::createFromTimestamp($ts))->exists();
+      if ($end) { \Illuminate\Support\Facades\Cache::forget('ai.takeover.'.$tid); return false; }
+      return true;
+    } catch (\Throwable $e) { return false; }
+  }
   public static function aiReply(int $tid, int $depth = 0): void {
     $lock = null;
     try {
       if (!AiChat::chatOn()) return;
-      if (!self::$force && !AiSchedule::activeNow()) return; // outside the owner's AI hours: staff answer (staleTick may force one answer after the staff wait limit)
+      if (!self::$force && !AiSchedule::activeNow() && !self::aiTakeover($tid)) return; // outside the owner's AI hours staff answer, unless the AI took this chat over after the staff wait limit (staleTick)
       $t = DB::table('chat_threads')->find($tid);
       if (!$t || AiChat::paused($t) || !in_array($t->channel, ['web', 'whatsapp', 'facebook'], true)) return;
       $ext = $t->channel !== 'web'; // WhatsApp / Facebook Messenger: the reply is sent to the customer through the platform
