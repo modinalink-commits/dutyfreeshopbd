@@ -138,6 +138,7 @@ html body button.ps-open:hover,html body .toolbar-control.ps-open:hover,#ocb#ocb
    vnote('স্ক্যানার লোড হচ্ছে…');loadZx(function(){try{var h=new Map();h.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.QR_CODE]);zr=new ZXing.BrowserMultiFormatReader(h,200);zr.decodeFromStream(s,vd,function(r){if(r)got(r.getText())});vnote('লেবেলের বারকোড কমলা দাগের উপর ধরুন।')}catch(e){camFail('স্ক্যানার চালু করা যায়নি। পেজটা রিফ্রেশ করে আবার চেষ্টা করুন।')}},function(){camFail('স্ক্যানার লোড হয়নি। ইন্টারনেট দেখে আবার চেষ্টা করুন।')})
   }).catch(function(e){var n=e&&e.name;camFail(n==='NotAllowedError'||n==='SecurityError'?'ক্যামেরার অনুমতি দেওয়া হয়নি। ব্রাউজারের ঠিকানার পাশের তালা চিহ্নে চেপে Camera-কে Allow করুন, তারপর আবার চাপুন।':n==='NotFoundError'?'এই যন্ত্রে কোনো ক্যামেরা পাওয়া যায়নি।':'ক্যামেরা খোলা যায়নি। অন্য কোনো অ্যাপ ক্যামেরা ব্যবহার করছে কি না দেখুন।')})}
  cb.addEventListener('click',function(){if(strm||cb.classList.contains('on'))camStop();else camStart()});
- window.dfPackScan=open;
+ // on a phone the scan page opens straight into the camera: one tap fewer for packing staff
+ window.dfPackScan=function(){open();try{if(window.__psPage&&window.matchMedia&&window.matchMedia('(pointer:coarse)').matches&&!strm)setTimeout(camStart,250)}catch(e){}};
 })();
 </script>
