@@ -8,7 +8,7 @@
 <div class="card" style="margin-top:12px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><b>Connection status</b><span id="bdg" class="chip" style="background:#6B7280;color:#fff;border:0;font-weight:800">Disconnected</span></div>
 <form method="post" action="/admin/call-center/account" style="display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">@csrf
 @php($f=fn($k)=>old($k, $a->$k ?? ''))
-<details style="grid-column:1/-1"><summary style="cursor:pointer;font-size:13px;color:#6B7280">Advanced — অটো সেট করা আছে (PBX: childcity.pbx.com.bd · WSS port 443), সাধারণত বদলাতে হবে না</summary><div style="display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));margin-top:8px"><label>Account Name<input name="account_name" value="{{ $f('account_name') }}" placeholder="Child City PBX"></label>
+<details style="grid-column:1/-1"><summary style="cursor:pointer;font-size:13px;color:#6B7280">Advanced: set automatically (PBX: childcity.pbx.com.bd · WSS port 443), normally no change needed</summary><div style="display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));margin-top:8px"><label>Account Name<input name="account_name" value="{{ $f('account_name') }}" placeholder="Child City PBX"></label>
 <label>SIP Server<input name="sip_server" value="{{ $f('sip_server') }}" placeholder="childcity.pbx.com.bd"></label>
 <label>SIP WebSocket / WSS URL<input name="wss_url" id="wss" value="{{ $f('wss_url') }}" placeholder="wss://pbx.example.com:8089/ws"></label>
 </div></details>

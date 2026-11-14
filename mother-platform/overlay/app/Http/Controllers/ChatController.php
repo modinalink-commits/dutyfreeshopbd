@@ -85,12 +85,13 @@ class ChatController extends Controller {
     $t = DB::table('chat_threads')->find($id); abort_unless($t, 404);
     $n = 'ai.draft.'.now()->format('Ymd'); \Illuminate\Support\Facades\Cache::add($n, 0, 90000); if (\Illuminate\Support\Facades\Cache::increment($n) > 500) return response()->json(['ok'=>false, 'error'=>'Daily AI draft limit reached.']);
     $hist = DB::table('chat_messages')->where('thread_id', $id)->orderByDesc('id')->limit(14)->get()->reverse()->values()->map(function ($m) { $c = trim((string)($m->transcript ?: $m->body)); if ($c === '' && $m->attachment_url) $c = '['.($m->attachment_type ?: 'file').' sent]'; return ['role'=>$m->dir === 'in' ? 'user' : 'assistant', 'content'=>$c]; })->all();
-    $extra = "\nSTAFF DRAFT MODE: a human staff member will read, edit and send this; nothing is sent automatically. Write THREE alternative replies to the customer's last message, all using exactly the same facts. Reply 1: the shortest clear answer. Reply 2: a little more detail, at most 4 short lines. Reply 3: a warm and reassuring tone. Put a line containing only ### between the replies. No labels, no numbering, nothing else. This replaces the one-reply rule above; every other rule (truth, style, language) still applies.\n";
+    $extra = "\n";
     try { if ($t->phone && ($o = DB::table('orders')->where('phone', $t->phone)->orderByDesc('id')->first(['invoice', 'status', 'total', 'courier', 'courier_status', 'tracking_code', 'consignment_id']))) $extra .= 'VERIFIED ORDER (this customer\'s latest order, from the store database): Invoice '.$o->invoice.' | status '.$o->status.' | total '.(int)round((float)$o->total).' BDT'.($o->courier ? ' | courier '.$o->courier : '').($o->courier_status ? ' | courier status '.$o->courier_status : '').(($o->tracking_code ?: $o->consignment_id) ? ' | tracking '.($o->tracking_code ?: $o->consignment_id) : '')."\n"; } catch (\Throwable $e) {}
-    [$ok, $txt] = \App\Support\AiChat::reply($hist, $extra, $t->ai_lang ?? null, 900);
-    if (!$ok) return response()->json(['ok'=>false, 'error'=>$txt === 'empty' ? 'The customer has not written anything after the last reply.' : 'AI draft failed: '.$txt]);
-    $parts = array_values(array_filter(array_map(fn($x) => trim(preg_replace('/^\s*(reply\s*)?[1-3][\).:\-]\s*/i', '', trim($x))), preg_split('/^\s*#{3,}\s*$/m', $txt)), fn($x) => $x !== ''));
-    return response()->json(['ok'=>true, 'drafts'=>array_slice($parts, 0, 3)]);
+    [$ok, $txt] = \App\Support\AiChat::reply($hist, $extra, $t->ai_lang ?? null);
+    if (!$ok) return response()->json(['ok'=>false, 'error'=>$txt === 'empty' ? 'The customer has not written anything after the last reply.' : ($txt === 'empty reply' ? 'The AI could not draft a reply for this message. Please write it yourself.' : 'AI draft failed: '.$txt)]);
+    $drafts = [trim($txt)];
+    foreach (\App\Support\AiChat::variants($drafts[0]) as $v) $drafts[] = $v; // same facts, different length and tone
+    return response()->json(['ok'=>true, 'drafts'=>array_slice($drafts, 0, 3)]);
   }
 
   public function messagesAfter(Request $r, $id) {
