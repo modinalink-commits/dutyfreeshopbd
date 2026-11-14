@@ -42,6 +42,7 @@ class MotherPushWorker extends Command
     try { \App\Http\Controllers\CarrierClientController::relayWatch(); } catch (\Throwable $e) { $this->error('relaywatch: ' . $e->getMessage()); }
     try { \App\Support\DeployHealth::scan(); } catch (\Throwable $e) { $this->error('health: ' . $e->getMessage()); }
     try { $this->campaigns(); } catch (\Throwable $e) { $this->error('campaigns: ' . $e->getMessage()); }
+    try { \App\Support\Mailer::tick(); } catch (\Throwable $e) { $this->error('email: ' . $e->getMessage()); }
     try { \App\Support\SmsMarketing::tick(); } catch (\Throwable $e) { $this->error('sms: ' . $e->getMessage()); }
     try { \App\Support\Winback::tick(); } catch (\Throwable $e) { $this->error('winback: ' . $e->getMessage()); }
     try { \App\Support\WhatsApp::tick(); } catch (\Throwable $e) { $this->error('wa: ' . $e->getMessage()); }

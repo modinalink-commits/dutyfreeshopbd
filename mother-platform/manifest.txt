@@ -822,6 +822,11 @@ resources/views/purchase_list.blade.php
 database/migrations/2026_11_14_120000_staff_idle_notices.php
 app/Support/StaffIdle.php
 app/Support/StaffLive.php
+app/Support/Mailer.php
+app/Http/Controllers/EmailAdminController.php
+resources/views/email_admin.blade.php
+resources/views/emails/order.blade.php
+database/migrations/2026_11_14_190000_email_logs.php
 app/Http/Middleware/StaffIdleMw.php
 app/Http/Controllers/StaffIdleController.php
 resources/views/staff_idle_notice.blade.php
