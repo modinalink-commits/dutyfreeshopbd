@@ -125,7 +125,7 @@ php artisan mother:install || log "   (install step reported a problem, continui
 
 log "6/9 optimise caches"; stg Building 65
 php artisan config:cache && php artisan route:cache && php artisan view:cache || fail "cache build"
-for f in storage/framework/views/*.php; do php -l "$f" >/dev/null 2>&1 || log "   VIEWLINT FAIL $(head -c 220 "$f" | grep -o 'PATH [^ ]*')"; done
+php -r 'foreach(glob("storage/framework/views/*.php") as $f){ try{ token_get_all(file_get_contents($f), TOKEN_PARSE); }catch(\Throwable $e){ echo "   VIEWLINT FAIL ".$f." ".$e->getMessage()."\n"; } }' # one php process instead of one per compiled view
 chown -R www-data:www-data "$REL/bootstrap/cache" /srv/shared/storage 2>/dev/null
 
 log "7/9 health check on the NEW release (not live yet)"; stg Testing 72
