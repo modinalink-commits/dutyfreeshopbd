@@ -66,10 +66,10 @@ $__ios = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="cu
 /* owner 14 Nov: Flash Sale has its own section lower on the page, so the top shows only the Best Sellers */
 .hxside:has(.hxbs) .hxf{display:none!important}.hxbs .gr{align-content:center}
 /* owner 14 Nov: the slider keeps its own height; the Best Sellers card takes exactly that height (it no longer stretches the row and leaves a dark band under the slide). The image area gives way, text and button stay. */
-@media (min-width:1280px){.hxside:has(.hxbs){contain:size;min-height:0}.hxside:has(.hxbs) .hxbs{height:100%;min-height:0;overflow:hidden;padding:10px 12px 12px;gap:8px}.hxbs .gr{flex:1 1 0;min-height:0;align-content:stretch;grid-template-rows:minmax(0,1fr)}.hxbs a{min-height:0;gap:5px;padding-bottom:8px}.hxbs .im{flex:1 1 0;min-height:0;aspect-ratio:auto}.hxbs .nm{min-height:0;flex:none}.hxbs .pr{font-size:19px;flex:none}.hxbs .ea{flex:none}.hxbs .go{height:32px;flex:none;margin-top:0}}
+@media (min-width:1400px){.hxside:has(.hxbs){contain:size;min-height:0}.hxside:has(.hxbs) .hxbs{height:100%;min-height:0;overflow:hidden;padding:10px 12px 12px;gap:8px}.hxbs .gr{flex:1 1 0;min-height:0;align-content:stretch;grid-template-rows:minmax(0,1fr)}.hxbs a{min-height:0;gap:5px;padding-bottom:8px}.hxbs .im{flex:1 1 0;min-height:0;aspect-ratio:auto}.hxbs .nm{min-height:0;flex:none}.hxbs .pr{font-size:19px;flex:none}.hxbs .ea{flex:none}.hxbs .go{height:32px;flex:none;margin-top:0}}
 @media (max-width:1023px){.hxbs .im{aspect-ratio:auto;height:min(44vw,220px)}}
 /* small laptops: the slide is too low for the card beside it, so the card sits under the slider */
-@media (min-width:1024px) and (max-width:1279px){.hx:has(.hxbs){grid-template-columns:minmax(0,1fr)}.hxbs .im{aspect-ratio:auto;height:200px}.hxbs .gr{max-width:640px;width:100%;margin:0 auto}}
+@media (min-width:1024px) and (max-width:1399px){.hx:has(.hxbs){grid-template-columns:minmax(0,1fr)}.hxbs .im{aspect-ratio:auto;height:200px}.hxbs .gr{max-width:640px;width:100%;margin:0 auto}}
 @media (max-width:1023px){.hxbs a{border-radius:12px;padding-bottom:8px}.hxbs .tx{gap:3px}.hxbs .nm,.hxbs .pr,.hxbs .go,.hxbs .ea{margin-left:8px;margin-right:8px}.hxbs .go{font-size:12.5px}}</style>
 <div class="hxbs" aria-label="DutyFreeBD Best Sellers">
 <span class="tg"><svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="m12 2 2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2l-6.1 3.4 1.4-6.8L2.2 9.1l6.9-.8z"/></svg>BEST SELLERS</span>
