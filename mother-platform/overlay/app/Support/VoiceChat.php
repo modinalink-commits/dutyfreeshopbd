@@ -94,8 +94,8 @@ class VoiceChat
         $r = Http::timeout(60)->withHeaders(['xi-api-key' => $key])->attach('file', $bytes, 'voice.' . $ext)->post('https://api.elevenlabs.io/v1/speech-to-text', ['model_id' => $model, 'tag_audio_events' => 'false', 'timestamps_granularity' => 'none'] + $lc);
         if ($r->ok()) {
           $text = trim((string)$r->json('text')); $err = '';
-          // Our customers speak Bengali / Banglish / English. Text in another script (the engine once heard Bengali as Urdu) is a wrong hearing, never an answerable message.
-          if ($text !== '' && preg_match('/[\x{0600}-\x{06FF}\x{0750}-\x{077F}\x{0900}-\x{097F}]/u', $text)) { $err = 'SCRIBE wrong language (' . (string)$r->json('language_code') . ')'; $text = ''; }
+          // (The Bengali danda U+0964/0965 sits in the Devanagari block but is normal Bengali punctuation, so it is NOT counted as a wrong script.) Our customers speak Bengali / Banglish / English. Text in another script (the engine once heard Bengali as Urdu) is a wrong hearing, never an answerable message.
+          if ($text !== '' && preg_match('/[\x{0600}-\x{06FF}\x{0750}-\x{077F}\x{0900}-\x{0963}\x{0966}-\x{097F}]/u', $text)) { $err = 'SCRIBE wrong language (' . (string)$r->json('language_code') . ')'; $text = ''; }
           break;
         }
         $msg = $r->json('detail.message') ?? $r->json('detail.0.msg') ?? (is_string($r->json('detail')) ? $r->json('detail') : '');
