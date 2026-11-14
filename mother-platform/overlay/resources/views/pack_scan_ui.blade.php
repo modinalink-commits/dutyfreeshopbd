@@ -82,7 +82,9 @@ html body button.ps-open:hover,html body .toolbar-control.ps-open:hover,#ocb#ocb
  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
  function tone(f,dur,vol,type,at){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();var o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime+(at||0);o.connect(g);g.connect(ac.destination);o.type=type||'sine';o.frequency.value=f;g.gain.setValueAtTime(vol,t);g.gain.setValueAtTime(vol,t+dur-.02);g.gain.linearRampToValueAtTime(0,t+dur);o.start(t);o.stop(t+dur)}catch(e){}}
  // three sounds: a short tick the moment a label is read, two rising notes when the parcel may go, a long low buzz when it must stay
- function vib(p){try{if(navigator.vibrate)navigator.vibrate(p)}catch(e){}}
+ // Android vibrates through navigator.vibrate. iPhone has no such call: on iOS 18+ flipping a hidden 'switch' checkbox gives a small tap, so that is tried instead (best effort).
+ var hsw=null;function tap(){try{if(!hsw){var l=document.createElement('label');l.setAttribute('aria-hidden','true');l.style.cssText='position:fixed;left:-99px;top:0;width:1px;height:1px;overflow:hidden;opacity:0';var c=document.createElement('input');c.type='checkbox';c.setAttribute('switch','');l.appendChild(c);document.body.appendChild(l);hsw=l}hsw.click()}catch(e){}}
+ function vib(p){try{if(navigator.vibrate){navigator.vibrate(p);return}}catch(e){}var n=(p&&p.length)?6:1;for(var i=0;i<n;i++)setTimeout(tap,i*140)}
  function beep(good){if(good==='scan'){tone(2400,.03,.12,'sine');return} // a faint click only: the real sounds are the two below
   if(good){tone(1568,.18,.5,'sine');vib(120);return} // success: ONE short clean beep
   for(var n=0;n<8;n++)tone(n%2?620:930,.22,.7,'square',n*.25);vib([400,100,400,100,400,100,400])} // error: a two-second siren, eight alternating notes: length alone tells it apart
