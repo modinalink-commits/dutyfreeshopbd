@@ -16,6 +16,9 @@ class OrderIntent {
   const QUESTION = ['?', '？', 'কিভাবে', 'কীভাবে', 'কি ভাবে', 'কবে', 'কেন', 'করা যাবে', 'করা যায়', 'jabe', 'jay ', 'how ', 'can i', 'can you', 'do you', 'কত', 'koto', 'দাম', 'price', 'আছে কি', 'ache ki', 'আছে?', 'জানতে', 'jante', 'sales rep', 'representative', 'help', 'সাহায্য'];
   /** Messages about an order that already exists are not new-order requests. */
   const NOT = ['status', 'স্ট্যাটাস', 'cancel', 'বাতিল', 'ক্যান্সেল', 'track', 'ট্র্যাক', 'কোথায়', 'kothay', 'kobe pabo', 'কবে পাব', 'কবে পাবো', 'refund', 'ফেরত', 'return', 'complain', 'অভিযোগ', 'পৌঁছায়নি', 'pouchay', 'পাইনি', 'pai ni', 'invoice', 'order number', 'অর্ডার নম্বর', 'অর্ডার ডেলিভারি', 'order delivery', 'chilo', 'ছিল'];
+  /** English number words before a unit ("One cartoon", "two carton") and Banglish "pathay/pathaya/pathaiya den". */
+  const QTY_EN = '/\b(one|two|three|four|five|six|ten)\s+(carton|cartoon|ctn|caron|carten|cartan|pack|packet|pcs|piece)s?\b/iu';
+  const SEND_EN = '/\bpath(?:ay|aya|aiya|ai|aye|iye|aiye)\s*(?:den|din|dao|diben|deben|dibo)\b/iu';
   public static function detect(string $body): ?string {
     $b = mb_strtolower(trim($body)); if ($b === '' || mb_strlen($b) > 220) return null;
     foreach (self::NOT as $n) if (mb_strpos($b, $n) !== false) return null;
@@ -23,6 +26,8 @@ class OrderIntent {
     foreach (self::QUESTION as $q) if (mb_strpos($b, $q) !== false) return null;
     foreach (self::COMMIT as $w) if (mb_strpos($b, $w) !== false) return $w;
     if (preg_match(self::QTY, $b, $m)) return trim($m[0]);
+    if (preg_match(self::QTY_EN, $b, $m)) return trim($m[0]);
+    if (preg_match(self::SEND_EN, $b, $m)) return trim($m[0]);
     return null;
   }
   /** Called for every customer message. Makes one open lead per conversation; the AI order flow or staff upgrades/closes it later. */
@@ -33,6 +38,22 @@ class OrderIntent {
       if (!empty($t->phone) && DB::table('orders')->where('phone', $t->phone)->where('created_at', '>=', now()->subMinutes(30))->exists()) return;
       DB::table('chat_order_requests')->insert(['thread_id'=>$t->id, 'channel'=>$t->channel ?? null, 'name'=>mb_substr((string)($t->name ?: 'Customer'), 0, 160), 'phone'=>mb_substr((string)($t->phone ?? ''), 0, 20), 'address'=>'', 'area'=>1,
         'note'=>mb_substr($body, 0, 300), 'cart'=>'[]', 'items'=>'[]', 'total'=>0, 'status'=>'review', 'reason'=>'Wants to order (word: '.$w.'). Details pending, open the chat.', 'created_at'=>now(), 'updated_at'=>now()]);
+    } catch (\Throwable $e) { report($e); }
+  }
+  /** Safety net 2: the AI put products in the cart of this conversation but no order or request exists yet (the customer went quiet or started bargaining before giving name and address). One open lead per conversation, carrying the cart, for staff to follow up. */
+  public static function fromAiCart(int $threadId, array $cart): void {
+    try {
+      $cart = array_filter($cart, fn($q) => (int)$q > 0); if (!$cart || !$threadId) return;
+      $t = DB::table('chat_threads')->find($threadId); if (!$t) return;
+      if (!empty($t->phone) && DB::table('orders')->where('phone', $t->phone)->where('created_at', '>=', now()->subMinutes(30))->exists()) return;
+      $rows = DB::table('products')->whereIn('id', array_keys($cart))->get(['id', 'name', 'price'])->keyBy('id'); $items = []; $total = 0;
+      foreach ($cart as $id => $q) { $p = $rows[$id] ?? null; if (!$p) continue; $items[] = ['id'=>$p->id, 'name'=>$p->name, 'qty'=>(int)$q, 'unit'=>(float)$p->price]; $total += (float)$p->price * (int)$q; }
+      if (!$items) return;
+      $open = DB::table('chat_order_requests')->where('thread_id', $threadId)->where('status', 'review')->orderByDesc('id')->first();
+      $upd = ['cart'=>json_encode($cart), 'items'=>json_encode($items), 'total'=>$total, 'updated_at'=>now()];
+      if ($open) { if (($open->cart ?? '[]') === '[]' || $open->cart === null) DB::table('chat_order_requests')->where('id', $open->id)->update($upd); return; }
+      DB::table('chat_order_requests')->insert($upd + ['thread_id'=>$threadId, 'channel'=>$t->channel ?? null, 'name'=>mb_substr((string)($t->name ?: 'Customer'), 0, 160), 'phone'=>mb_substr((string)($t->phone ?? ''), 0, 20), 'address'=>'', 'area'=>1,
+        'note'=>mb_substr(collect($items)->map(fn($i) => $i['qty'].' x '.$i['name'])->implode(', '), 0, 300), 'status'=>'review', 'reason'=>'Wants to order (word: AI cart). The AI added the items; name and address pending, open the chat.', 'created_at'=>now()]);
     } catch (\Throwable $e) { report($e); }
   }
   /** An order now exists for this conversation (AI or staff): close its open leads. */
