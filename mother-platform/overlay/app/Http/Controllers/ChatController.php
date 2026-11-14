@@ -219,7 +219,7 @@ class ChatController extends Controller {
       try { if (DB::table('chat_order_requests')->where('thread_id', $id)->where('status', 'review')->exists()) $why[] = 'an Order Request is still open'; } catch (\Throwable $e) {}
       try { if (\Illuminate\Support\Facades\Schema::hasTable('chat_handoffs') && DB::table('chat_handoffs')->where('thread_id', $id)->whereIn('status', ['open', 'accepted'])->exists()) $why[] = 'a hand-off is still open'; } catch (\Throwable $e) {}
       if (in_array((string)($t->intent ?? ''), ['complaint', 'refund'], true) && (!empty($t->awaiting_reply) || !empty($t->needs_human))) $why[] = 'the customer has an unanswered '.$t->intent.' request';
-      if (!empty($t->reported_at)) $why[] = 'the customer\'s report is still open';
+      if (!empty($t->reported_at)) $why[] = 'the customer\'s complaint is still open';
       if ($why && $reason === '') return response()->json(['ok'=>false, 'need_reason'=>true, 'why'=>implode('; ', $why)]);
       $upd += ['unread'=>0, 'awaiting_reply'=>false, 'needs_human'=>false, 'handoff_at'=>null, 'handoff_reason'=>null, 'ai_paused'=>false];
     }
@@ -232,7 +232,7 @@ class ChatController extends Controller {
   public function report(Request $r, $id) {
     $t = DB::table('chat_threads')->find($id); abort_unless($t, 404); $on = (bool)$r->input('on');
     DB::table('chat_threads')->where('id', $id)->update($on ? ['reported_at'=>now(), 'report_reason'=>'Marked by '.(auth()->user()->name ?? 'staff'), 'updated_at'=>now()] : ['reported_at'=>null, 'report_reason'=>null, 'updated_at'=>now()]);
-    try { DB::table('audit_logs')->insert(['user_id'=>auth()->id(), 'user_name'=>auth()->user()->name ?? '', 'action'=>$on ? 'chat.report' : 'chat.report_solved', 'subject'=>'Conversation #'.$id.($on ? ' filed under Report' : ' report solved'.(!empty($t->report_reason) ? ' ('.$t->report_reason.')' : '')), 'ip'=>$r->ip(), 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {}
+    try { DB::table('audit_logs')->insert(['user_id'=>auth()->id(), 'user_name'=>auth()->user()->name ?? '', 'action'=>$on ? 'chat.report' : 'chat.report_solved', 'subject'=>'Conversation #'.$id.($on ? ' filed under Complaint' : ' complaint solved'.(!empty($t->report_reason) ? ' ('.$t->report_reason.')' : '')), 'ip'=>$r->ip(), 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {}
     return response()->json(['ok'=>true, 'reported'=>$on]);
   }
   /** Link a social conversation to a customer by phone number. */
