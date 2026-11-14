@@ -55,7 +55,9 @@ class AgentTools {
       }
       case 'product_details': {
         $p = DB::table('products')->where('published', true)->find((int)($in['product_id'] ?? 0)); if (!$p) return ['error'=>'product not found'];
-        return self::row($p) + ['description'=>mb_substr(trim(preg_replace('/\s+/u', ' ', strip_tags((string)$p->description))), 0, 600)];
+        // live bundle prices (the same ones the checkout charges): what the customer pays and saves for 2 to 5 of this product
+        $bundle = []; try { $one = (float)$p->price; for ($n = 2; $n <= 5; $n++) { if ((int)$p->stock < $n) break; $tt = \App\Support\BundlePricing::total((int)$p->id, $n); if ($tt && (float)$tt < $one * $n) $bundle[] = ['quantity'=>$n, 'total'=>self::money($tt), 'each'=>self::money((float)$tt / $n), 'saves'=>self::money($one * $n - (float)$tt).' compared with buying '.$n.' singly']; } } catch (\Throwable $e) {}
+        return self::row($p) + ['bundle_offers'=>$bundle ?: null, 'description'=>mb_substr(trim(preg_replace('/\s+/u', ' ', strip_tags((string)$p->description))), 0, 600)];
       }
       case 'delivery_info': {
         $o = \App\Support\Delivery::options(); $pay = [];
