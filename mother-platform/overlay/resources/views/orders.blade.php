@@ -365,13 +365,8 @@ function dfPrintGuard(k,word){var c=[].slice.call(document.querySelectorAll('#bu
  if(confirm(old.length+' of the '+c.length+' selected orders already have a printed '+word+':\n'+names+'\n\nOK = print only the '+(c.length-old.length)+' new ones\nCancel = more choices')){old.forEach(function(x){x.checked=false;x.dispatchEvent(new Event('change',{bubbles:true}))});return true}
  return confirm('Print ALL '+c.length+' selected, including the '+old.length+' already printed?\n\nOK = print all again\nCancel = do not print')}
 </script>
-<script>/* Return Received from the list: first tap asks, second tap within 5 s confirms. Server rules are the same as on the order page. */
-document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('.rr-btn');if(!b||b.classList.contains('done')||b.disabled)return;e.preventDefault();
- if(!b.classList.contains('ask')){b.classList.remove('bad');b.classList.add('ask');b.dataset.t=b.textContent;b.textContent='Tap again: parcel '+(b.dataset.inv||'')+' received';b._to=setTimeout(function(){b.classList.remove('ask');b.textContent=b.dataset.t},5000);return}
- clearTimeout(b._to);b.disabled=true;b.textContent='Saving…';var tk=(document.querySelector('meta[name=csrf-token]')||{}).content||'';
- fetch('/admin/orders/'+b.dataset.id+'/return-receive',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':tk},body:'{}'}).then(function(r){return r.json()}).then(function(j){b.disabled=false;b.classList.remove('ask');
-  if(j&&j.success){b.classList.add('done');b.textContent='✓ Returned';b.title=j.message||'';var tr=b.closest('tr'),p=tr&&tr.querySelector('td.ost-cell .pill');if(p)p.textContent='Returned';var q=tr&&tr.querySelector('.qa-btn');if(q)q.dataset.st='Returned'}
-  else{b.classList.add('bad');b.textContent=(j&&j.message)||'Could not save. Open the order.'}}).catch(function(){b.disabled=false;b.classList.remove('ask');b.classList.add('bad');b.textContent='Network error. Try again.'})});</script>
+<script>/* Return Received from the list: opens the popup (cartons back / loose packets back). */
+document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('.rr-btn');if(!b||b.classList.contains('done')||b.disabled)return;e.preventDefault();rcvOpen(b.dataset.id)});</script>
 @include('discount_modal')
 @include('courier_modal')
 @include('ship_check_ui')
