@@ -77,7 +77,9 @@ html body button.ps-open:hover,html body .toolbar-control.ps-open:hover,#ocb#ocb
  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
  function tone(f,dur,vol,type,at){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();var o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime+(at||0);o.connect(g);g.connect(ac.destination);o.type=type||'sine';o.frequency.value=f;g.gain.setValueAtTime(vol,t);g.gain.setValueAtTime(vol,t+dur-.02);g.gain.linearRampToValueAtTime(0,t+dur);o.start(t);o.stop(t+dur)}catch(e){}}
  // three sounds: a short tick the moment a label is read, two rising notes when the parcel may go, a long low buzz when it must stay
- function beep(good){if(good==='scan'){tone(1900,.07,.35,'square');return}if(good){tone(1050,.12,.4,'sine');tone(1500,.18,.4,'sine',.13)}else{tone(220,.3,.5,'square');tone(180,.55,.5,'square',.34)}}
+ function beep(good){if(good==='scan'){tone(2400,.03,.12,'sine');return} // a faint click only: the real sounds are the two below
+  if(good){tone(1319,.11,.45,'sine');tone(1760,.11,.45,'sine',.12);tone(2093,.22,.45,'sine',.24)} // success: three bright rising notes (ding-ding-ding)
+  else{tone(160,.28,.6,'sawtooth');tone(160,.28,.6,'sawtooth',.36);tone(160,.5,.6,'sawtooth',.72)}} // error: three low harsh buzzes, about 1.2 seconds
  var rowsH='',pend={};
  function draw(){var b=document.getElementById('psLog')||ov.querySelector('.ps-w tbody');if(!b)return;var p=Object.keys(pend).reverse().map(function(c){return '<tr class="ps-pd"><td>now</td><td><b>'+esc(c)+'</b></td><td><span class="pp warn">চেক হচ্ছে…</span></td><td></td></tr>'}).join('');b.innerHTML=(p+rowsH)||'<tr><td colspan="4" style="color:#5B6676;padding:12px">এখনো কিছু স্ক্যান হয়নি।</td></tr>'}
  function paint(j){
