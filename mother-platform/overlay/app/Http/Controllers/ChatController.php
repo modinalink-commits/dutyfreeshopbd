@@ -58,7 +58,7 @@ class ChatController extends Controller {
       'at'=>\Carbon\Carbon::parse($m->created_at)->toIso8601String()]);
     $hasMore = DB::table('chat_messages')->where('thread_id', $id)->count() > 60;
     $cust = $t->customer_id ? DB::table('customers')->find($t->customer_id) : ($t->phone ? DB::table('customers')->where('phone', $t->phone)->first() : null);
-    $orders = $t->phone ? DB::table('orders')->where('phone', $t->phone)->orderByDesc('id')->limit(8)->get(['id', 'invoice', 'status', 'total', 'created_at', 'courier', 'consignment_id', 'tracking_code', 'courier_status'])->map(fn($o) => (array)$o + ['date'=>\Carbon\Carbon::parse($o->created_at)->timezone('Asia/Dhaka')->format('d M Y')]) : collect();
+    $orders = $t->phone ? DB::table('orders')->where('phone', $t->phone)->orderByDesc('id')->limit(8)->get(['id', 'invoice', 'status', 'total', 'created_at', 'courier', 'consignment_id', 'tracking_code', 'courier_status'])->map(fn($o) => (array)$o + ['at'=>\Carbon\Carbon::parse($o->created_at)->toIso8601String(), 'date'=>\Carbon\Carbon::parse($o->created_at)->timezone('Asia/Dhaka')->format('d M Y')]) : collect();
     $intel = null;
     if ($t->phone && ($first = DB::table('orders')->where('phone', $t->phone)->orderByDesc('id')->first(['id', 'phone', 'total']))) $intel = CustomerIntel::forOrders([$first])[$first->id] ?? null;
     return response()->json(['thread'=>$card, 'messages'=>$msgs, 'has_more'=>$hasMore, 'customer'=>$cust ? ['id'=>$cust->id, 'name'=>$cust->name, 'phone'=>$cust->phone, 'email'=>$cust->email, 'address'=>$cust->address ?? null] : null,
@@ -66,7 +66,31 @@ class ChatController extends Controller {
       'agents'=>DB::table('users')->where('active', true)->orderBy('name')->get(['id', 'name']), 'statuses'=>self::STATUSES,
       'me'=>(string)(auth()->user()->name ?? ''),
       'hint'=>\Illuminate\Support\Facades\Cache::get('ai.hint.'.$id), 'payhint'=>\Illuminate\Support\Facades\Cache::get('ai.pay.'.$id),
+      'notes'=>self::notes((int)$id),
       'quick'=>DB::table('chat_quick_replies')->where('active', true)->orderBy('id')->get(['id', 'title', 'body'])]);
+  }
+  /** Staff-only internal notes of one conversation (never sent to the customer, never given to the AI). */
+  private static function notes(int $tid): array {
+    try { return DB::table('chat_notes')->where('thread_id', $tid)->orderByDesc('id')->limit(40)->get()->reverse()->values()->map(fn($n) => ['id'=>$n->id, 'body'=>$n->body, 'by'=>$n->user_name, 'at'=>\Carbon\Carbon::parse($n->created_at)->toIso8601String()])->all(); } catch (\Throwable $e) { return []; }
+  }
+  /** Save an internal note. It changes nothing else: the conversation stays Awaiting Reply until a real reply is sent. */
+  public function note(Request $r, $id) {
+    $t = DB::table('chat_threads')->find($id); abort_unless($t, 404);
+    $d = $r->validate(['body'=>'required|string|max:1000']); $body = trim($d['body']); if ($body === '') return response()->json(['ok'=>false, 'error'=>'Write the note first.'], 422);
+    $nid = DB::table('chat_notes')->insertGetId(['thread_id'=>(int)$id, 'user_id'=>auth()->id(), 'user_name'=>auth()->user()->name ?? '', 'body'=>$body, 'created_at'=>now(), 'updated_at'=>now()]);
+    return response()->json(['ok'=>true, 'note'=>['id'=>$nid, 'body'=>$body, 'by'=>auth()->user()->name ?? '', 'at'=>now()->toIso8601String()]]);
+  }
+  /** Three AI reply drafts for the staff member to pick, edit and send. Nothing is sent from here and the waiting state does not change. Facts come only from the store data the AI already uses plus this customer's latest order. */
+  public function draft(Request $r, $id) {
+    $t = DB::table('chat_threads')->find($id); abort_unless($t, 404);
+    $n = 'ai.draft.'.now()->format('Ymd'); \Illuminate\Support\Facades\Cache::add($n, 0, 90000); if (\Illuminate\Support\Facades\Cache::increment($n) > 500) return response()->json(['ok'=>false, 'error'=>'Daily AI draft limit reached.']);
+    $hist = DB::table('chat_messages')->where('thread_id', $id)->orderByDesc('id')->limit(14)->get()->reverse()->values()->map(function ($m) { $c = trim((string)($m->transcript ?: $m->body)); if ($c === '' && $m->attachment_url) $c = '['.($m->attachment_type ?: 'file').' sent]'; return ['role'=>$m->dir === 'in' ? 'user' : 'assistant', 'content'=>$c]; })->all();
+    $extra = "\nSTAFF DRAFT MODE: a human staff member will read, edit and send this; nothing is sent automatically. Write THREE alternative replies to the customer's last message, all using exactly the same facts. Reply 1: the shortest clear answer. Reply 2: a little more detail, at most 4 short lines. Reply 3: a warm and reassuring tone. Put a line containing only ### between the replies. No labels, no numbering, nothing else. This replaces the one-reply rule above; every other rule (truth, style, language) still applies.\n";
+    try { if ($t->phone && ($o = DB::table('orders')->where('phone', $t->phone)->orderByDesc('id')->first(['invoice', 'status', 'total', 'courier', 'courier_status', 'tracking_code', 'consignment_id']))) $extra .= 'VERIFIED ORDER (this customer\'s latest order, from the store database): Invoice '.$o->invoice.' | status '.$o->status.' | total '.(int)round((float)$o->total).' BDT'.($o->courier ? ' | courier '.$o->courier : '').($o->courier_status ? ' | courier status '.$o->courier_status : '').(($o->tracking_code ?: $o->consignment_id) ? ' | tracking '.($o->tracking_code ?: $o->consignment_id) : '')."\n"; } catch (\Throwable $e) {}
+    [$ok, $txt] = \App\Support\AiChat::reply($hist, $extra, $t->ai_lang ?? null, 900);
+    if (!$ok) return response()->json(['ok'=>false, 'error'=>$txt === 'empty' ? 'The customer has not written anything after the last reply.' : 'AI draft failed: '.$txt]);
+    $parts = array_values(array_filter(array_map(fn($x) => trim(preg_replace('/^\s*(reply\s*)?[1-3][\).:\-]\s*/i', '', trim($x))), preg_split('/^\s*#{3,}\s*$/m', $txt)), fn($x) => $x !== ''));
+    return response()->json(['ok'=>true, 'drafts'=>array_slice($parts, 0, 3)]);
   }
 
   public function messagesAfter(Request $r, $id) {
@@ -138,8 +162,8 @@ class ChatController extends Controller {
     return response()->json(['ok'=>$res[0], 'err'=>$res[1], 'log'=>Chat::$dlog]);
   }
   public function polish(Request $r) {
-    $d = $r->validate(['text'=>'required|string|max:3500']);
-    [$ok, $t] = \App\Support\AiChat::polish($d['text']);
+    $d = $r->validate(['text'=>'required|string|max:3500', 'mode'=>'nullable|in:short']);
+    [$ok, $t] = \App\Support\AiChat::polish($d['text'], (string)($d['mode'] ?? ''));
     return response()->json($ok ? ['ok'=>true, 'text'=>$t] : ['ok'=>false, 'error'=>$t]);
   }
   public function ai(Request $r, $id) {

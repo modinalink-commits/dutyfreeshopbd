@@ -172,14 +172,15 @@ function load(){if(f==='orders')return loadOrq();return fetch('/admin/chat/threa
   var ur=j.threads.filter(function(t){return t.awaiting&&t.status!=='resolved'}),rd=j.threads.filter(function(t){return !(t.awaiting&&t.status!=='resolved')});
   var top=l.scrollTop,html='';
   var pp=ur.filter(function(t){return t.person}),ai=ur.filter(function(t){return !t.person});
-  pp.sort(function(a,b){var x=a.waiting_since?new Date(a.waiting_since).getTime():Infinity,y=b.waiting_since?new Date(b.waiting_since).getTime():Infinity;return x-y});
-  if(pp.length)html+='<div class="sep p">Need a person<small>oldest first</small><b>'+pp.length+'</b></div>'+pp.map(function(t){return row(t)}).join('');
+  ppIds=null;pp.sort(function(a,b){var x=a.waiting_since?new Date(a.waiting_since).getTime():Infinity,y=b.waiting_since?new Date(b.waiting_since).getTime():Infinity;return x-y});
+  ppIds=pp.map(function(t){return t.id});if(pp.length)html+='<div class="sep p">Need a person<small>oldest first</small><b>'+pp.length+'</b></div>'+pp.map(function(t){return row(t)}).join('');
   if(ai.length)html+='<div class="sep a">Answered by AI, waiting on customer<b>'+ai.length+'</b></div>'+ai.map(function(t){return row(t,true)}).join('');
   if(ur.length&&rd.length)html+='<div class="sep">Others</div>';
   html+=rd.map(function(t){return row(t)}).join('');l.innerHTML=html;l.scrollTop=top;
   if(!first)l.querySelectorAll('.th.un').forEach(function(n){var id=n.dataset.id,t=j.threads.filter(function(x){return String(x.id)===id})[0];if(t&&(seen[id]===undefined||t.unread>seen[id]))n.classList.add('fl8')});
   first=false;j.threads.forEach(function(t){seen[t.id]=t.unread});
-  l.querySelectorAll('.th').forEach(function(n){n.onclick=function(){sel=+n.dataset.id;l.querySelectorAll('.th').forEach(function(x){x.classList.toggle('on',x===n)});document.getElementById('ibx').classList.add('sel');document.body.classList.add('ibsel');MChat.mount(document.getElementById('ibc'),sel,{onchange:load,focus:true})}})})}
+  l.querySelectorAll('.th').forEach(function(n){n.onclick=function(){sel=+n.dataset.id;l.querySelectorAll('.th').forEach(function(x){x.classList.toggle('on',x===n)});document.getElementById('ibx').classList.add('sel');document.body.classList.add('ibsel');MChat.mount(document.getElementById('ibc'),sel,{onchange:load,focus:true,next:goNext})}})})}
+var ppIds=null;function goNext(cur){var a=(ppIds||[]).filter(function(i){return i!==cur});if(!a.length)return;sel=a[0];document.getElementById('ibl').querySelectorAll('.th').forEach(function(x){x.classList.toggle('on',+x.dataset.id===sel)});MChat.mount(document.getElementById('ibc'),sel,{onchange:load,focus:true,next:goNext});load()}
 document.getElementById('ibq').oninput=function(){clearTimeout(tmr);q=this.value;tmr=setTimeout(load,300)};
 function mm(){var bm=document.getElementById('ibm');if(bm&&window.MChat)bm.textContent=MChat.soundLabel?MChat.soundLabel():(MChat.mute?'🔕 Sound off':'🔔 Sound on')}
 document.getElementById('ibback').onclick=function(){document.getElementById('ibx').classList.remove('sel');document.body.classList.remove('ibsel');sel=null;load()};

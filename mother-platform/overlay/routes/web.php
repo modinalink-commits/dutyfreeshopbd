@@ -176,6 +176,8 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/chat/thread/{id}/typing', [\App\Http\Controllers\ChatController::class,'typing'])->middleware('throttle:120,1');
   Route::post('/chat/thread/{id}/photo-test', [\App\Http\Controllers\ChatController::class,'photoTest']);
   Route::post('/chat/polish', [\App\Http\Controllers\ChatController::class,'polish'])->middleware('throttle:60,1');
+  Route::post('/chat/thread/{id}/note', [\App\Http\Controllers\ChatController::class,'note'])->whereNumber('id')->middleware('throttle:60,1');
+  Route::post('/chat/thread/{id}/draft', [\App\Http\Controllers\ChatController::class,'draft'])->whereNumber('id')->middleware('throttle:20,1');
   Route::post('/chat/thread/{id}/ai', [\App\Http\Controllers\ChatController::class,'ai']);
   Route::post('/chat/thread/{id}/handoff-release', [\App\Http\Controllers\ChatController::class,'handoffRelease'])->whereNumber('id');
   Route::post('/chat/thread/{id}/lang', [\App\Http\Controllers\ChatController::class,'lang']);
