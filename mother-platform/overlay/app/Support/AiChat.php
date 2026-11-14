@@ -53,7 +53,7 @@ class AiChat {
       try { foreach (DB::table('pages')->where('active', true)->limit(14)->get(['title', 'body']) as $pg) { $t = trim(preg_replace('/\s+/u', ' ', strip_tags((string)$pg->body))); if ($t !== '') $o[] = 'PAGE "'.$pg->title.'": '.mb_substr($t, 0, 700); } } catch (\Throwable $e) {}
       try {
         $cm = []; $pre = \App\Support\PrepaidOnly::catSet();
-        foreach (DB::table('categories')->orderBy('position')->limit(40)->get(['id', 'name']) as $c) { $subs = DB::table('products')->where('published', true)->where('category_id', $c->id)->whereNotNull('sub')->where('sub', '<>', '')->select('sub', DB::raw('count(*) n'))->groupBy('sub')->orderByDesc('n')->limit(10)->pluck('sub')->implode(', '); $cm[] = $c->name.($subs !== '' ? ' ('.$subs.')' : '').(isset($pre[$c->id]) ? ' [PREPAID ONLY]' : ''); }
+        foreach (DB::table('categories')->orderBy('position')->limit(40)->get(['id', 'name']) as $c) { $subs = DB::table('products')->whereNull('parent_product_id')->where('published', true)->where('category_id', $c->id)->whereNotNull('sub')->where('sub', '<>', '')->select('sub', DB::raw('count(*) n'))->groupBy('sub')->orderByDesc('n')->limit(10)->pluck('sub')->implode(', '); $cm[] = $c->name.($subs !== '' ? ' ('.$subs.')' : '').(isset($pre[$c->id]) ? ' [PREPAID ONLY]' : ''); }
         if ($cm) $o[] = 'CATEGORY MAP (main category with its sub categories; all of these are sold on the website): '.implode('; ', $cm).'.';
         $pn = DB::table('categories')->where('prepaid_only', true)->pluck('name')->implode(', ');
         if ($pn !== '') $o[] = 'PREPAID-ONLY CATEGORIES ('.$pn.'): products here are imported on request, so they are sold with FULL ONLINE PAYMENT ONLY (bKash, Nagad, card or bank transfer), NO cash on delivery and no discount. They are available to order on the website. NEVER say they are out of stock or unavailable just because the stock number is zero: when the CATALOGUE or a tool lists one, it is available. You cannot take these orders in chat: send the product link and ask the customer to order and pay on the website.';
@@ -82,7 +82,7 @@ class AiChat {
       $cat = DB::table('categories')->pluck('name', 'id');
       // balanced: up to 60 products from EVERY category (in-stock first) so new categories (Watch, Sunglass, Gadget, Lighter, Skin & Hair Care ...) are never crowded out by the big ones
       $rows = collect(); $cols = ['id', 'ext_id', 'name', 'price', 'offer_price', 'compare_price', 'stock', 'sub', 'sub_sub', 'category_id', 'path_slug', 'size'];
-      foreach ($cat as $cid => $cn) { $rows = $rows->concat(StockGuard::listable(DB::table('products')->where('published', true))->where('category_id', $cid)->orderByDesc('stock')->orderByDesc('id')->limit(60)->get($cols)); }
+      foreach ($cat as $cid => $cn) { $rows = $rows->concat(StockGuard::listable(DB::table('products')->whereNull('parent_product_id')->where('published', true))->where('category_id', $cid)->orderByDesc('stock')->orderByDesc('id')->limit(60)->get($cols)); }
       return $rows->map(function ($p) use ($cat) {
         $now = (float)($p->offer_price ?: $p->price); $was = (float)$p->compare_price > $now ? ' (was '.number_format($p->compare_price).')' : '';
         return ['id'=>$p->id, 'line'=>$p->name.' | '.($cat[$p->category_id] ?? '').($p->sub ? '/'.$p->sub : '').($p->size ? ' | '.$p->size : '').' | '.number_format($now).' TK'.$was.' | '.(\App\Support\StockGuard::sellable($p) ? 'in stock' : 'OUT OF STOCK').' | '.parse_url(\App\Http\Controllers\StoreController::url($p), PHP_URL_PATH)];
@@ -94,7 +94,7 @@ class AiChat {
     $out = '';
     $words = array_values(array_filter(preg_split('/[\s,.?!]+/u', mb_strtolower($q)), fn($w) => mb_strlen($w) >= 3));
     if ($words) {
-      $rows = DB::table('products')->where('published', true)->where(function ($w) use ($words) {
+      $rows = DB::table('products')->whereNull('parent_product_id')->where('published', true)->where(function ($w) use ($words) {
         foreach (array_slice($words, 0, 6) as $t) { $like = '%'.str_replace(['%','_'], ['\\%','\\_'], $t).'%'; $w->orWhere('name','ilike',$like)->orWhere('sub','ilike',$like)->orWhere('description','ilike',$like); }
       })->limit(4)->get(['name', 'description', 'price']);
       foreach ($rows as $p) { $d = trim(preg_replace('/\s+/u', ' ', strip_tags((string)$p->description))); if ($d !== '') $out .= '- '.$p->name.': '.mb_substr($d, 0, 450)."\n"; }

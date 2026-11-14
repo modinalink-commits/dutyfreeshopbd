@@ -47,7 +47,7 @@ class AgentTools {
       case 'search_products': {
         $q = trim(mb_substr((string)($in['query'] ?? ''), 0, 80)); if ($q === '') return ['error'=>'empty query'];
         $words = array_slice(array_values(array_filter(preg_split('/[\s,.?!]+/u', mb_strtolower($q)), fn($w) => mb_strlen($w) >= 2)), 0, 5);
-        $rows = StockGuard::listable(DB::table('products')->where('published', true))->where(function ($w) use ($words) { foreach ($words as $t) { $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $t).'%'; $w->orWhere('name', 'ilike', $like)->orWhere('sub', 'ilike', $like)->orWhere('size', 'ilike', $like); } })
+        $rows = StockGuard::listable(DB::table('products')->whereNull('parent_product_id')->where('published', true))->where(function ($w) use ($words) { foreach ($words as $t) { $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $t).'%'; $w->orWhere('name', 'ilike', $like)->orWhere('sub', 'ilike', $like)->orWhere('size', 'ilike', $like); } })
           ->when($words, function ($q) use ($words) { $b = []; foreach ($words as $t) $b[] = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $t).'%'; $q->orderByRaw('('.implode(' + ', array_fill(0, count($b), '(name ilike ?)::int')).') desc', $b)->orderByDesc('id'); }) // the 80 kept are the ones matching the most words (was: any 80 matches in no order, so the right product could be left out)
           ->limit(80)->get(['id', 'name', 'price', 'compare_price', 'stock', 'sub', 'category_id', 'path_slug', 'sub_sub', 'size']);
         // best match first: the product whose name holds the most of the customer's words (e.g. 'dunhill switch blue' finds Dunhill Switch 8 Mg (Blue) before any other Dunhill)
@@ -55,7 +55,7 @@ class AgentTools {
         return ['count'=>$rows->count(), 'products'=>$rows->map(fn($p) => self::row($p))->all(), 'note'=>$rows->count() ? 'only in-stock published products are listed' : 'no available product matches: say it is currently not available, never mention or link anything else out of stock']; 
       }
       case 'product_details': {
-        $p = DB::table('products')->where('published', true)->find((int)($in['product_id'] ?? 0)); if (!$p) return ['error'=>'product not found'];
+        $p = DB::table('products')->whereNull('parent_product_id')->where('published', true)->find((int)($in['product_id'] ?? 0)); if (!$p) return ['error'=>'product not found'];
         // live bundle prices (the same ones the checkout charges): what the customer pays and saves for 2 to 5 of this product
         $bundle = []; try { $one = (float)$p->price; for ($n = 2; $n <= 5; $n++) { if ((int)$p->stock < $n) break; $tt = \App\Support\BundlePricing::total((int)$p->id, $n); if ($tt && (float)$tt < $one * $n) $bundle[] = ['quantity'=>$n, 'total'=>self::money($tt), 'each'=>self::money((float)$tt / $n), 'saves'=>self::money($one * $n - (float)$tt).' compared with buying '.$n.' singly']; } } catch (\Throwable $e) {}
         return self::row($p) + ['bundle_offers'=>$bundle ?: null, 'description'=>mb_substr(trim(preg_replace('/\s+/u', ' ', strip_tags((string)$p->description))), 0, 600)];
@@ -84,7 +84,7 @@ class AgentTools {
         return ['found'=>true, 'invoice'=>$o->invoice, 'status'=>$o->status, 'total'=>self::money($o->total), 'courier_status'=>$o->courier_status, 'tracking_code'=>$o->tracking_code, 'placed'=>\Carbon\Carbon::parse($o->created_at)->timezone('Asia/Dhaka')->format('d M Y')];
       }
       case 'cart_add': {
-        $p = DB::table('products')->where('published', true)->find((int)($in['product_id'] ?? 0)); if (!$p) return ['error'=>'product not found'];
+        $p = DB::table('products')->whereNull('parent_product_id')->where('published', true)->find((int)($in['product_id'] ?? 0)); if (!$p) return ['error'=>'product not found'];
         if (!StockGuard::sellable($p)) return ['error'=>'this product is OUT OF STOCK'];
         if (\App\Support\PrepaidOnly::any([(int)$p->id])) return ['error'=>'This product is in a prepaid-only category (Watch, Sunglass, Gadget & Electronics, Lighter & Accessories ...): it is AVAILABLE, but it cannot be ordered through chat. Do not say it is out of stock. Send the product link and ask the customer to order on the website and pay fully online (bKash, Nagad, card or bank transfer); there is no cash on delivery.'];
         // age-restricted goods (cigarette / vape / tobacco): the owner's rule is that the assistant answers questions but never takes the order itself
@@ -154,7 +154,7 @@ class AgentTools {
   }
   private static function cart(array $st): array {
     $want = array_filter((array)($st['cart'] ?? []), fn($q) => $q > 0); if (!$want) return ['items'=>[], 'subtotal'=>self::money(0), 'subtotal_raw'=>0];
-    $rows = DB::table('products')->where('published', true)->whereIn('id', array_keys($want))->get()->keyBy('id'); $items = []; $sub = 0; $prob = [];
+    $rows = DB::table('products')->whereNull('parent_product_id')->where('published', true)->whereIn('id', array_keys($want))->get()->keyBy('id'); $items = []; $sub = 0; $prob = [];
     foreach ($want as $id => $q) {
       $p = $rows[$id] ?? null; if (!$p) { $prob[] = 'product #'.$id.' is no longer available'; continue; }
       if (StockGuard::mode($p->category_id ?? null) === 'STOCK_CONTROLLED' && $p->stock < $q) $prob[] = $p->name.': only '.(int)$p->stock.' in stock';

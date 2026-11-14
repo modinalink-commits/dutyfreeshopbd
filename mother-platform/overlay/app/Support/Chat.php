@@ -221,7 +221,7 @@ class Chat {
       $words = array_values(array_unique(array_filter(preg_split('/[\s,]+/u', mb_strtolower($nm.' '.$kw)), fn($w) => mb_strlen($w) >= 3)));
       $items = [];
       if ($words) {
-        $rows = StockGuard::listable(DB::table('products')->where('published', true))->where(function ($w) use ($words) { foreach (array_slice($words, 0, 8) as $t) { $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $t).'%'; $w->orWhere('name', 'ilike', $like); } })->limit(60)->get(['id', 'name', 'price', 'offer_price', 'stock', 'category_id', 'path_slug', 'sub', 'sub_sub']);
+        $rows = StockGuard::listable(DB::table('products')->whereNull('parent_product_id')->where('published', true))->where(function ($w) use ($words) { foreach (array_slice($words, 0, 8) as $t) { $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $t).'%'; $w->orWhere('name', 'ilike', $like); } })->limit(60)->get(['id', 'name', 'price', 'offer_price', 'stock', 'category_id', 'path_slug', 'sub', 'sub_sub']);
         $nmw = array_values(array_filter(preg_split('/[\s,]+/u', mb_strtolower($nm)), fn($w) => mb_strlen($w) >= 3));
         $scored = $rows->map(function ($p) use ($nmw, $words) { $l = mb_strtolower($p->name); $sc = 0; foreach ($nmw as $w) if (str_contains($l, $w)) $sc += 3; foreach ($words as $w) if (str_contains($l, $w)) $sc += 1; return [$sc, $p]; })->sortByDesc(fn($x) => $x[0])->take(3);
         foreach ($scored as [$sc, $p]) { if ($sc <= 0) continue; $pr = (float)($p->offer_price ?: $p->price); $items[] = ['name'=>$p->name, 'price'=>number_format($pr), 'link'=>url(\App\Http\Controllers\StoreController::url($p))]; }
@@ -641,7 +641,7 @@ class Chat {
   public static function productImage(string $c): ?string {
     try {
       if (!preg_match('#https?://(?:www\.)?dutyfreebd\.com/[^\s]+/([a-z0-9\-]+)/?(?=\s|$)#iu', $c, $mm)) return null;
-      $pr = DB::table('products')->where('published', true)->where(fn($q) => $q->where('slug', $mm[1])->orWhere('path_slug', $mm[1]))->first(['image']);
+      $pr = DB::table('products')->whereNull('parent_product_id')->where('published', true)->where(fn($q) => $q->where('slug', $mm[1])->orWhere('path_slug', $mm[1]))->first(['image']);
       $ip = $pr ? strtok((string)$pr->image, '?') : '';
       return ($ip !== '' && str_starts_with($ip, '/uploads/') && is_file(public_path(ltrim($ip, '/')))) ? 'https://dutyfreebd.com'.$ip : null;
     } catch (\Throwable $e) { return null; }
@@ -703,7 +703,7 @@ class Chat {
             $img = null;
             if (preg_match('#https?://(?:www\.)?dutyfreebd\.com/[^\s]+/([a-z0-9\-]+)/?(?=\s|$)#iu', $c, $mm)) {
               try {
-                $pr = DB::table('products')->where('published', true)->where(fn($q) => $q->where('slug', $mm[1])->orWhere('path_slug', $mm[1]))->first(['image']);
+                $pr = DB::table('products')->whereNull('parent_product_id')->where('published', true)->where(fn($q) => $q->where('slug', $mm[1])->orWhere('path_slug', $mm[1]))->first(['image']);
                 $ip = $pr ? strtok((string)$pr->image, '?') : '';
                 if ($ip !== '' && str_starts_with($ip, '/uploads/') && is_file(public_path(ltrim($ip, '/')))) $img = 'https://dutyfreebd.com'.$ip;
               } catch (\Throwable $e) { $img = null; }
