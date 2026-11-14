@@ -97,6 +97,8 @@ class CatalogController extends Controller {
     foreach ([1,2,3,4,5] as $n) $row["buy{$n}_price"] = ($d["buy{$n}_price"] ?? null) !== null && $d["buy{$n}_price"] !== '' ? (float)$d["buy{$n}_price"] : null;
     $old = $id ? DB::table('products')->find($id) : null;
     if ($id) abort_unless($old, 404);
+    // Owner rule 15 Nov 2026: a Single Packet's price (one tenth of its carton) and stock (from partial returns) are automatic; nobody edits them here.
+    if ($old && !empty($old->parent_product_id)) { foreach (['price', 'compare_price', 'stock', 'stock_status', 'buy2_price', 'buy3_price', 'buy4_price', 'buy5_price'] as $__k) $row[$__k] = $old->{$__k} ?? null; }
     // Bundle pricing rule: global (automatic, default) | custom (typed Buy 2-5 totals) | off. Only the Admin may change it; with the global/off rule the Buy 2-5 prices are calculated, never typed.
     $bpOn = \App\Support\BundlePricing::ready(); $bpOld = $old->bundle_rule ?? 'global'; $bpRule = $bpOld;
     if ($bpOn && \App\Support\ProfitFloor::admin() && in_array($d['bundle_rule'] ?? '', ['global', 'custom', 'off'], true)) $bpRule = $d['bundle_rule'];

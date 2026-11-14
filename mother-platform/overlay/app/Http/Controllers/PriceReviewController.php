@@ -104,6 +104,7 @@ class PriceReviewController extends Controller {
     abort_unless(\App\Support\ProfitFloor::admin(), 403);
     $d = $r->validate(['product_id' => 'required|integer', 'price' => 'required|numeric|min:1', 'reason' => 'nullable|string|max:300']);
     $pr = DB::table('products')->where('id', $d['product_id'])->first(); abort_unless($pr, 404);
+    if (!empty($pr->parent_product_id)) return response()->json(['error' => 'Single Packet price follows its carton automatically (one tenth).'], 422);
     $cost = (float)(DB::table('products as p')->where('p.id', $pr->id)->selectRaw(\App\Support\Costing::fifoSql('p') . ' as c')->value('c') ?? 0);
     if ($cost > 0 && !\App\Support\ProfitFloor::isTwin($pr) && !\App\Support\ProfitFloor::ok($cost, (float)$d['price'])) return response()->json(['error' => 'below minimum safe price ' . \App\Support\ProfitFloor::floor($cost)], 422);
     $old = (float)$pr->price; $new = (float)$d['price']; $up = ['price' => $new, 'updated_at' => now()]; if ($pr->compare_price !== null && (float)$pr->compare_price <= $new) $up['compare_price'] = null;

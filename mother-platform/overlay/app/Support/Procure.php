@@ -74,6 +74,9 @@ class Procure {
    *  $batches = true: the movement is also applied to the stock batches (oldest first out, a new adjustment batch in). Purchase and return flows pass false and handle their own batches. */
   public static function stock(int $pid, int $delta, string $source, string $ref, bool $batches = true): int {
     $p = DB::table('products')->where('id',$pid)->lockForUpdate()->first(); if (!$p || $delta === 0) return 0;
+    // Owner rule 15 Nov 2026: a Single Packet's stock comes only from a received partial return (and leaves only by sale): nobody adds or corrects it by hand, by purchase or by stock-in.
+    if (!empty($p->parent_product_id) && in_array($source, ['purchase', 'manual-correction', 'damage-reversal', 'purchase-return', 'purchase-return-reversal', 'purchase-reversal', 'damaged', 'manual', 'import'], true))
+      throw new \RuntimeException('Single Packet stock is automatic: it comes only from a received partial return.');
     DB::table('products')->where('id',$pid)->update(['stock'=>$p->stock + $delta]);
     $lid = (int)DB::table('stock_logs')->insertGetId(['product_id'=>$pid,'source'=>$source,'reference'=>$ref,'before_qty'=>$p->stock,'change_qty'=>$delta,'after_qty'=>$p->stock+$delta,'user_id'=>auth()->id(),'user_name'=>auth()->user()->name ?? 'system','created_at'=>now(),'updated_at'=>now()]);
     if ($batches) Costing::moved($pid, $delta, $source, $ref);
