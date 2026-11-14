@@ -1141,3 +1141,4 @@ database/migrations/2026_11_14_170000_product_pub_watch.php
 app/Support/PublishNotice.php
 app/Http/Controllers/PublishNoticeController.php
 resources/views/publish_notice.blade.php
+resources/views/store/best_slide.blade.php

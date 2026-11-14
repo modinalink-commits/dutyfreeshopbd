@@ -55,7 +55,7 @@ df85a1f19b3129d847e30c8dab6ea00fbc2e8101 app/Http/Controllers/PermissionControll
 2d88bb06744184e4cb7167f5f20fefb371107e00 resources/views/store/layout.blade.php
 5356b422775064c3de9b13c703f12fbf913a2bd3 resources/views/store/card.blade.php
 4a5eb7ee8d7960886fcb97c690bbb604ec69eb1f resources/views/store/home_sec.blade.php
-a20826bf1226f0561589892ed11fe658dff08a37 resources/views/store/home.blade.php
+cc6bf091fae1d629194cf5e3ce04d6bd1b1befd1 resources/views/store/home.blade.php
 59a5aa2d9cd54bb1013420dc14b83561b807a005 resources/views/store/category.blade.php
 4141ae23b6a9ddcf5fd3ac8eff14dee6e28b5d55 resources/views/store/product.blade.php
 762d7221668ae77fc63407c380bc2794e002f740 resources/views/store/search.blade.php
@@ -1140,3 +1140,4 @@ eb0cd1fc2cdf74e576504811950e25d99cbc5dc7 app/Support/BestSellerStock.php
 ab73ea093e14532f53124c59a91d2459ffb28d88 app/Support/PublishNotice.php
 bf40918175cc2a0dd71573617cb9ffd5fa4379ad app/Http/Controllers/PublishNoticeController.php
 b1f1ce1227042e4fa0a8a8dd458056716d6b932d resources/views/publish_notice.blade.php
+97bb0993fbbb745b667d20266c1ec363b9fed0b9 resources/views/store/best_slide.blade.php

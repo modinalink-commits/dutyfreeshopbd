@@ -209,7 +209,7 @@ if(document.readyState==='complete')setTimeout(first,300);else addEventListener(
 @php $__gp = ($s['home_globe'] ?? '1') === '1' ? \App\Http\Controllers\StoreController::globeProducts() : collect(); @endphp
 @php $__ms = ($s['hero_member_slide'] ?? '1') !== '0'; $__dm = ($s['hero_district_slide'] ?? '1') !== '0'; $__om = ($s['hero_offers_slide'] ?? '1') !== '0'; $__wt = ($s['hero_watch_slide'] ?? '1') !== '0'; $__lxs = ($s['hero_lux_slides'] ?? '1') !== '0'; @endphp
 @if($__gp->count() && ($__ms || $__dm || $__om))
-<div class="w hx"><div class="hx-m"><div class="sld hxs" data-auto="10000"><div class="sl-t">@foreach($slides as $sl)
+<div class="w hx"><div class="hx-m"><div class="sld hxs" data-auto="10000"><div class="sl-t">@include('store.best_slide')@foreach($slides as $sl)
 @include('store.slide_item', ['sl' => $sl, 'first' => $loop->first])
 @endforeach<div class="hxg">
 @include('store.globe', ['deals' => $__gp])
@@ -237,7 +237,7 @@ if(document.readyState==='complete')setTimeout(first,300);else addEventListener(
 <div class="w hx"><div class="hx-m">
 @if($slides->count())
 <p style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap">DutyFree BD – অরিজিনাল ইমপোর্টেড পারফিউম, স্কিন কেয়ার ও লাইফস্টাইল পণ্য</p>
-<div class="sld hxs" data-auto="10000"><div class="sl-t">@foreach($slides as $sl)@php $mi = $sl->mobile_image ?? null; $mdim = ''; if ($mi && str_starts_with($mi, '/uploads/') && is_file(public_path(ltrim($mi, '/')))) { $__d = @getimagesize(public_path(ltrim($mi, '/'))); if ($__d && $__d[0] > 0 && $__d[1] > 0) $mdim = 'width="'.$__d[0].'" height="'.$__d[1].'"'; } $hasTx = !empty($sl->title) || !empty($sl->subtitle) || !empty($sl->button_text); $isV = (($sl->media_type ?? 'image')==='video' && !empty($sl->video_id)); @endphp
+<div class="sld hxs" data-auto="10000"><div class="sl-t">@include('store.best_slide')@foreach($slides as $sl)@php $mi = $sl->mobile_image ?? null; $mdim = ''; if ($mi && str_starts_with($mi, '/uploads/') && is_file(public_path(ltrim($mi, '/')))) { $__d = @getimagesize(public_path(ltrim($mi, '/'))); if ($__d && $__d[0] > 0 && $__d[1] > 0) $mdim = 'width="'.$__d[0].'" height="'.$__d[1].'"'; } $hasTx = !empty($sl->title) || !empty($sl->subtitle) || !empty($sl->button_text); $isV = (($sl->media_type ?? 'image')==='video' && !empty($sl->video_id)); @endphp
 @if($isV)
 <div class="hxa hxv" data-vid="{{ $sl->video_id }}" data-ap="{{ (int)($sl->v_autoplay ?? 1) }}" data-mu="{{ (int)($sl->v_mute ?? 1) }}" data-lp="{{ (int)($sl->v_loop ?? 0) }}" data-ct="{{ (int)($sl->v_controls ?? 0) }}" data-mb="{{ (int)($sl->v_mobile ?? 0) }}"><picture>@if($mi)@if($__w=\App\Support\Img::webp($mi))<source media="(max-width:760px)" type="image/webp" srcset="{{ $__w }}">@endif<source media="(max-width:760px)" srcset="{{ $mi }}" {!! $mdim !!}>@endif @if($__w=\App\Support\Img::webp($sl->image))<source type="image/webp" srcset="{{ $__w }}">@endif<img src="{{ $sl->image ?: 'https://i.ytimg.com/vi/'.$sl->video_id.'/hqdefault.jpg' }}" alt="{{ $sl->title ?: 'DutyFree BD video' }}" width="1328" height="472" @if($loop->first) fetchpriority="high" @else loading="lazy" @endif></picture>
 @if($hasTx)<span class="hxt"><b>{{ $sl->title }}</b>@if(!empty($sl->subtitle))<span>{{ $sl->subtitle }}</span>@endif</span>@endif
