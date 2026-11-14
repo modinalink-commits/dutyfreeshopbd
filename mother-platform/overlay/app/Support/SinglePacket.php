@@ -60,6 +60,16 @@ class SinglePacket {
     return array_intersect_key($f, array_flip($c));
   }
 
+  /** Owner rule 15 Nov 2026: a twin's price and cost always follow its carton (one tenth). Called by the worker every minute: any carton whose price / cost / offer changed (by any screen, stock-in or import) refreshes its twin. Stock is never touched. */
+  public static function followParents(): int {
+    if (!self::ready()) return 0; $n = 0;
+    try {
+      $rows = DB::select("select p.id from products t join products p on p.id = t.parent_product_id where t.parent_product_id is not null and (t.price is distinct from ceil(p.price / ".self::SIZE.".0) or round(coalesce(t.cost,0)::numeric, 2) <> round((coalesce(p.cost,0) / ".self::SIZE.".0)::numeric, 2) or t.offer_price is distinct from ceil(p.offer_price / ".self::SIZE.".0) or t.compare_price is distinct from ceil(p.compare_price / ".self::SIZE.".0) or t.name <> left('".self::PREFIX."' || p.name, 200)) limit 200");
+      foreach ($rows as $r) { try { DB::transaction(fn() => self::sync((int)$r->id, null)); $n++; } catch (\Throwable $e) { report($e); } }
+    } catch (\Throwable $e) { report($e); }
+    return $n;
+  }
+
   /** Create or refresh the twin of one product. Returns 'created' | 'updated' | null. */
   public static function sync(int $pid, ?int $cat = null): ?string {
     if (!self::ready()) return null;
