@@ -190,6 +190,7 @@ resources/views/softphone_fab.blade.php
 public/js/jssip.min.js
 public/js/df-export.js
 public/js/lame.min.js
+public/js/zxing.min.js
 app/Support/CardImg.php
 app/Support/Seo.php
 resources/views/store/zoom.blade.php

@@ -34,7 +34,7 @@ class StorefrontGuard {
         try { $bd = (string)$resp->getContent(); $ty = (string)$resp->headers->get('Content-Type', 'text/html; charset=UTF-8'); if ($bd !== '' && strlen($bd) < 2000000 && stripos($ty, 'html') !== false) { \Illuminate\Support\Facades\Cache::put($pgKey, ['b' => $bd, 't' => $ty], $pgTtl); $resp->headers->set('X-Page-Cache', 'MISS'); } } catch (\Throwable $e) {}
       }
     }
-    if (method_exists($resp, 'header') || isset($resp->headers)) $resp->headers->set('Permissions-Policy', 'camera=(), microphone=(self), geolocation=(self), payment=(self), usb=()');
+    if (method_exists($resp, 'header') || isset($resp->headers)) $resp->headers->set('Permissions-Policy', 'camera='.($r->is('admin/orders', 'admin/orders/*', 'admin/packing-scan', 'admin/packing-scan/*') ? '(self)' : '()').', microphone=(self), geolocation=(self), payment=(self), usb=()'); /* camera only where staff scan parcel labels with a phone (Packaging Scan) */
     if ($r->isMethodSafe() && !$r->is('webhooks/*', 'api/*', 'p/*') && mt_rand(1, 20) === 1) $resp->headers->set('Content-Security-Policy-Report-Only', self::CSP); /* sampled 1 in 20 so visitors' browsers do not post a report on every page */
     return $resp;
   }

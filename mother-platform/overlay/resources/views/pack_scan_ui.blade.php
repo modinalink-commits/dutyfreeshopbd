@@ -41,6 +41,13 @@
 #psOv.min .ps{width:min(520px,calc(100vw - 28px));border:1.5px solid #0B1B33;box-shadow:0 6px 24px rgba(11,27,51,.28)}
 #psOv.min .ps-b,#psOv.min .ps-h>span{display:none}#psOv.min #psMl{display:block}
 #psOv tr.ps-pd td{background:#FFFBEB}
+#psOv #psCam{height:50px;padding:0 14px;border-radius:10px;border:1.5px solid #FF5A00;background:#0B1B33;color:#fff;font-weight:800;cursor:pointer;width:auto;margin:0;white-space:nowrap}
+#psOv #psCam:hover,#psOv #psCam.on{background:#FF5A00;border-color:#0B1B33}
+#psOv #psV{position:relative;margin:0 0 10px;border-radius:12px;overflow:hidden;background:#0B1B33;border:2px solid #0B1B33}
+#psOv #psV video{display:block;width:100%;max-height:46vh;object-fit:cover}
+#psOv #psV .ps-ln{position:absolute;left:8%;right:8%;top:50%;height:2px;background:#FF5A00;box-shadow:0 0 0 1px rgba(255,255,255,.5)}
+#psOv #psV .ps-vn{position:absolute;left:0;right:0;bottom:0;padding:6px 10px;background:rgba(11,27,51,.72);color:#fff;font-size:12.5px;font-weight:600}
+@media(max-width:820px){#psOv{padding:0}#psOv .ps{border-radius:0;min-height:100vh}#psOv .ps-f{flex-wrap:wrap}#psOv #psIn{flex-basis:100%}#psOv #psGo,#psOv #psCam{flex:1}#psOv #psRes{min-height:150px}#psOv .ps-big{font-size:24px}}
 #psQ{margin:8px 0 0;padding:6px 10px;border:1px solid #D7DCE3;border-radius:8px;background:#F3F4F6;color:#0B1B33;font-size:12.5px;font-weight:700}
 #psP{margin-top:10px;border:1.5px solid #B91C1C;border-radius:10px;background:#FEF2F2;padding:8px 10px}
 #psP .ps-pt{font-weight:800;color:#B91C1C;font-size:13px;margin-bottom:4px}
@@ -53,8 +60,9 @@ html body button.ps-open:hover,html body .toolbar-control.ps-open:hover,#ocb#ocb
 <div class="ps-k"><span>আজ দেওয়া হয়েছে<b id="psOk">0</b></span><span>থামানো<b id="psBad" style="color:#B91C1C">0</b></span><span>Packaging-এ বাকি<b id="psW">0</b></span></div>
 <button type="button" id="psMn" aria-label="Minimize" title="ছোট করুন: এই পেজে স্ক্যান চলতে থাকবে">–</button><button type="button" id="psX" aria-label="Close" title="Close">×</button><div id="psMl">ছোট করা আছে। স্ক্যান করতে থাকুন, প্রতিটা লেবেল চেক হচ্ছে।</div></div>
 <div class="ps-b"><div>
-<form class="ps-f" id="psF" autocomplete="off"><input id="psIn" inputmode="numeric" autocomplete="off" placeholder="পার্সেলের লেবেল স্ক্যান করুন" aria-label="Parcel label barcode"><button type="submit" id="psGo">Check</button></form>
+<form class="ps-f" id="psF" autocomplete="off"><input id="psIn" inputmode="numeric" autocomplete="off" placeholder="পার্সেলের লেবেল স্ক্যান করুন" aria-label="Parcel label barcode"><button type="submit" id="psGo">Check</button><button type="button" id="psCam" title="মোবাইলের ক্যামেরা দিয়ে লেবেল স্ক্যান করুন">📷 ক্যামেরা</button></form>
 <div class="ps-hint">স্ক্যানার নম্বর লিখে নিজে Enter দেয়। হাতে ইনভয়েস নম্বর লিখেও Check চাপা যায়।</div>
+<div id="psV" hidden><video id="psVd" playsinline muted autoplay></video><div class="ps-ln"></div><div class="ps-vn" id="psVn">লেবেলের বারকোড কমলা দাগের উপর ধরুন।</div></div>
 <div id="psQ" hidden></div>
 <div id="psRes"><div class="ps-big">স্ক্যানের জন্য প্রস্তুত</div><div class="ps-sub" style="color:#5B6676">সবুজ এলে পার্সেল কুরিয়ারকে দিন। লাল বা হলুদ এলে পার্সেল রেখে দিন।</div></div>
 <div id="psP" hidden><div class="ps-pt">এই পার্সেলগুলো ব্যাগ থেকে বের করে রাখুন</div><div id="psPl"></div></div>
@@ -96,10 +104,10 @@ html body button.ps-open:hover,html body .toolbar-control.ps-open:hover,#ocb#ocb
  document.getElementById('psF').addEventListener('submit',function(e){e.preventDefault();var v=inp.value.trim();inp.value='';send(v)});
  function open(){ov.classList.add('on');try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume()}catch(e){}setMin(false);document.getElementById('psPl').innerHTML='';document.getElementById('psP').hidden=true;res.className='';res.innerHTML='<div class="ps-big">স্ক্যানের জন্য প্রস্তুত</div><div class="ps-sub" style="color:#5B6676">সবুজ এলে পার্সেল কুরিয়ারকে দিন। লাল বা হলুদ এলে পার্সেল রেখে দিন।</div>';
   fetch('/admin/packing-scan/today',{credentials:'same-origin',headers:{'Accept':'application/json'}}).then(function(r){if(r.status===401||r.status===419){res.className='bad';res.innerHTML='<div class="ps-big">✖ লগইন নেই</div><div class="ps-sub">এই পেজে লগইন নেই বা পেজটা পুরনো। স্ক্যানের আগে Ctrl+F5 চেপে আবার লগইন করুন।</div>';throw 0}return r.json()}).then(paint).catch(function(){});setTimeout(function(){inp.focus()},60)}
- function close(){if(q.length+run>0){var e=document.getElementById('psQ');e.hidden=false;e.textContent='একটু অপেক্ষা করুন: '+(q.length+run)+'টা পার্সেল এখনো চেক হচ্ছে।';return}ov.classList.remove('on');ov.classList.remove('min');if(window.__psPage){location.href='/admin/orders?status=Shipment';return}if(changed){changed=false;location.reload()}}
+ function close(){if(q.length+run>0){var e=document.getElementById('psQ');e.hidden=false;e.textContent='একটু অপেক্ষা করুন: '+(q.length+run)+'টা পার্সেল এখনো চেক হচ্ছে।';return}camStop();ov.classList.remove('on');ov.classList.remove('min');if(window.__psPage){location.href='/admin/orders?status=Shipment';return}if(changed){changed=false;location.reload()}}
  document.getElementById('psX').addEventListener('click',close);
  var mn=document.getElementById('psMn');
- function setMin(m){ov.classList.toggle('min',m);mn.textContent=m?'▢':'–';mn.title=m?'স্ক্যান জানালা খুলুন':'ছোট করুন: এই পেজে স্ক্যান চলতে থাকবে';if(!m)setTimeout(function(){inp.focus()},60)}
+ function setMin(m){if(m)camStop();ov.classList.toggle('min',m);mn.textContent=m?'▢':'–';mn.title=m?'স্ক্যান জানালা খুলুন':'ছোট করুন: এই পেজে স্ক্যান চলতে থাকবে';if(!m)setTimeout(function(){inp.focus()},60)}
  mn.addEventListener('click',function(){setMin(!ov.classList.contains('min'))});
  // minimized: the scanner still works anywhere on this page, as long as the cursor is not inside another field
  var kb='',kt=0;
@@ -110,7 +118,26 @@ html body button.ps-open:hover,html body .toolbar-control.ps-open:hover,#ocb#ocb
   if(e.key&&e.key.length===1){kb+=e.key;if(kb.length>1){e.preventDefault();e.stopPropagation()}}},true);
  document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('.ps-open');if(b){e.preventDefault();open()}});
  // keep the scan box ready: any click inside the window puts the cursor back
- ov.addEventListener('click',function(e){if(ov.classList.contains('min'))return;if(e.target!==inp&&!(e.target.closest&&e.target.closest('button')))inp.focus()});
+ ov.addEventListener('click',function(e){if(ov.classList.contains('min')||strm)return;if(e.target!==inp&&!(e.target.closest&&e.target.closest('button')))inp.focus()});
+
+ // phone camera: reads the label barcode (or its QR) and sends it like a scanner would
+ var cb=document.getElementById('psCam'),vw=document.getElementById('psV'),vd=document.getElementById('psVd'),vn=document.getElementById('psVn'),strm=null,det=null,zr=null,ctm=null,cLast='',cAt=0;
+ function vnote(t){vn.textContent=t}
+ function got(txt){txt=String(txt||'').trim();if(!txt)return;var m=txt.match(/[?&]invoice=([^&#]+)/i);if(m){try{txt=decodeURIComponent(m[1])}catch(e){txt=m[1]}}
+  var t=Date.now();if(txt===cLast&&t-cAt<30000)return;cLast=txt;cAt=t; // the same label stays in view: read it once
+  vnote('পড়া হয়েছে: '+txt);send(txt)}
+ function camStop(){if(ctm){clearInterval(ctm);ctm=null}try{if(zr){zr.reset();zr=null}}catch(e){}try{if(strm)strm.getTracks().forEach(function(t){t.stop()})}catch(e){}strm=null;try{vd.srcObject=null}catch(e){}vw.hidden=true;cb.classList.remove('on');cb.textContent='📷 ক্যামেরা'}
+ function camFail(msg){camStop();res.className='warn';res.innerHTML='<div class="ps-big">⚠ ক্যামেরা চালু হয়নি</div><div class="ps-sub">'+esc(msg)+'</div>'}
+ function loadZx(ok,bad){if(window.ZXing)return ok();var sc=document.createElement('script');sc.src='/js/zxing.min.js';sc.onload=ok;sc.onerror=bad;document.head.appendChild(sc)}
+ function camStart(){if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){camFail('এই ব্রাউজারে ক্যামেরা ব্যবহার করা যায় না। Chrome বা Safari দিয়ে খুলুন।');return}
+  cb.classList.add('on');cb.textContent='ক্যামেরা বন্ধ করুন';vw.hidden=false;vnote('ক্যামেরা চালু হচ্ছে…');cLast='';
+  navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}}).then(function(s){strm=s;
+   var nat=false;try{nat=('BarcodeDetector' in window)}catch(e){}
+   if(nat){vd.srcObject=s;vd.play().catch(function(){});try{det=new BarcodeDetector({formats:['code_128','qr_code']})}catch(e){det=null}}
+   if(nat&&det){vnote('লেবেলের বারকোড কমলা দাগের উপর ধরুন।');var busy=false;ctm=setInterval(function(){if(busy||!strm||vd.readyState<2)return;busy=true;det.detect(vd).then(function(r){busy=false;if(r&&r.length)got(r[0].rawValue)}).catch(function(){busy=false})},180);return}
+   vnote('স্ক্যানার লোড হচ্ছে…');loadZx(function(){try{var h=new Map();h.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.QR_CODE]);zr=new ZXing.BrowserMultiFormatReader(h,200);zr.decodeFromStream(s,vd,function(r){if(r)got(r.getText())});vnote('লেবেলের বারকোড কমলা দাগের উপর ধরুন।')}catch(e){camFail('স্ক্যানার চালু করা যায়নি। পেজটা রিফ্রেশ করে আবার চেষ্টা করুন।')}},function(){camFail('স্ক্যানার লোড হয়নি। ইন্টারনেট দেখে আবার চেষ্টা করুন।')})
+  }).catch(function(e){var n=e&&e.name;camFail(n==='NotAllowedError'||n==='SecurityError'?'ক্যামেরার অনুমতি দেওয়া হয়নি। ব্রাউজারের ঠিকানার পাশের তালা চিহ্নে চেপে Camera-কে Allow করুন, তারপর আবার চাপুন।':n==='NotFoundError'?'এই যন্ত্রে কোনো ক্যামেরা পাওয়া যায়নি।':'ক্যামেরা খোলা যায়নি। অন্য কোনো অ্যাপ ক্যামেরা ব্যবহার করছে কি না দেখুন।')})}
+ cb.addEventListener('click',function(){if(strm||cb.classList.contains('on'))camStop();else camStart()});
  window.dfPackScan=open;
 })();
 </script>
