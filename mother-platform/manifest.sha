@@ -1181,3 +1181,4 @@ e639bdb34bbefd125da72b583e1f9fab5aa23a24 public/s/layout-a.css
 ca8c8520b3a7a5225add7e109c15acda51ce034b public/s/orders-a.css
 ec3fdd04d7aa5508d4ec0dd022975542ed19a053 public/s/orders-b.css
 7af3e4557e78d40cb1f605032a577964d87be5e3 app/Http/Controllers/DataAuditController.php
+5e77caed83ff7948f506b28b501607b552c2ca5a database/migrations/2026_11_15_040000_fix_double_space_product_names.php

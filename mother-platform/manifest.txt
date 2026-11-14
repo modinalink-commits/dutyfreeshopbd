@@ -1182,3 +1182,4 @@ public/s/layout-b.js
 public/s/orders-a.css
 public/s/orders-b.css
 app/Http/Controllers/DataAuditController.php
+database/migrations/2026_11_15_040000_fix_double_space_product_names.php
