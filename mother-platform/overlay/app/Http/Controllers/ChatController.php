@@ -36,7 +36,13 @@ class ChatController extends Controller {
     $unread = Chat::unreadTotal();
     // today's service numbers (Dhaka day), cached for a minute
     $svc = \Illuminate\Support\Facades\Cache::remember('chat.svc', 60, function () { try { $d = now('Asia/Dhaka')->startOfDay()->utc(); $r = DB::table('chat_messages')->where('created_at', '>=', $d)->selectRaw("count(*) filter (where dir = 'in') inc, count(*) filter (where dir = 'out' and status <> 'failed' and coalesce(is_ai, false)) ai, count(*) filter (where dir = 'out' and status <> 'failed' and not coalesce(is_ai, false)) staff")->first(); return ['in'=>(int)$r->inc, 'ai'=>(int)$r->ai, 'staff'=>(int)$r->staff]; } catch (\Throwable $e) { return null; } });
-    return response()->json(['threads'=>$cards, 'unread'=>$unread, 'order_requests'=>$orq, 'human'=>$hum, 'ai_handled'=>max(0, $unread - $hum), 'svc'=>$svc]);
+    // Staff reply share (14 Nov 2026): who is answering customers. Only real staff accounts that sent at least one reply appear; AI and failed sends are not counted. Share is by customers answered, so many short replies to one customer do not inflate it.
+    $share = \Illuminate\Support\Facades\Cache::remember('chat.share', 60, function () { try {
+      $names = DB::table('users')->pluck('name')->filter()->map(fn ($n) => trim((string)$n))->unique()->values()->all(); if (!$names) return null;
+      $get = function ($from) use ($names) { return DB::table('chat_messages')->where('created_at', '>=', $from)->where('dir', 'out')->where('status', '<>', 'failed')->whereRaw('not coalesce(is_ai, false)')->whereIn('user_name', $names)->groupBy('user_name')->selectRaw('user_name n, count(*) m, count(distinct thread_id) c')->orderByDesc('c')->orderByDesc('m')->limit(12)->get()->map(fn ($r) => ['n'=>(string)$r->n, 'm'=>(int)$r->m, 'c'=>(int)$r->c])->all(); };
+      $d = now('Asia/Dhaka')->startOfDay(); return ['d1'=>$get($d->copy()->utc()), 'd7'=>$get($d->copy()->subDays(6)->utc())];
+    } catch (\Throwable $e) { return null; } });
+    return response()->json(['threads'=>$cards, 'unread'=>$unread, 'order_requests'=>$orq, 'human'=>$hum, 'ai_handled'=>max(0, $unread - $hum), 'svc'=>$svc, 'share'=>$share]);
   }
 
   /** Light poll used on every admin page: unread total plus threads with new incoming messages since the last id. */

@@ -147,10 +147,18 @@ main{height:calc(100vh / var(--z,1));overflow:hidden;display:flex;flex-direction
 .mbx .mc .hd{gap:4px;padding:6px 10px}.mbx .mc .hb{max-height:34px}.mbx .mc .sumb:not(.x){max-height:22px}.mbx .mc .sumb{margin-top:0!important}
 .mbx .mc .cm{padding:6px 10px;gap:4px}.mbx .mc .cm .sd textarea{height:46px;min-height:46px}.mbx .mc .cm .sd button{height:40px!important}
 }
+/* staff reply share bar: one line, only staff who replied in the period */
+#ibsh{flex:1 1 440px;display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:5px 8px;min-width:0;box-sizing:border-box}
+#ibsh .t{font-size:12px;font-weight:700;color:#475467;white-space:nowrap}#ibsh .br{flex:1;min-width:0;height:24px;display:flex;border-radius:7px;overflow:hidden;border:1px solid #E5E7EB}
+#ibsh .sg{min-width:max-content;display:flex;align-items:center;padding:0 9px;color:#fff;font-size:12px;font-weight:700;white-space:nowrap;background:#667085;border-right:1px solid #fff;box-sizing:border-box}#ibsh .sg:last-child{border-right:0}
+#ibsh .sg.s0{background:#F26B1D}#ibsh .sg.s1{background:#0B1B33}#ibsh .sg.s2{background:#475467}
+#ibsh .pd{display:flex;border:1px solid #E5E7EB;border-radius:7px;overflow:hidden;flex:none}#ibsh .pd button{border:0;background:#fff;color:#344054;font-size:12px;font-weight:600;padding:4px 9px;cursor:pointer;font-family:inherit}#ibsh .pd button.on{background:#0B1B33;color:#fff}
+#ibsh .no{flex:1;font-size:12px;color:#6B7280}
+@media(max-width:900px){#ibsh{flex-wrap:wrap}#ibsh .br{flex-basis:100%;order:3;overflow-x:auto}}
 #ibu .k.p{background:#FEF3F2;border-color:#F6C4C0;color:#7A271A}#ibu .k.p b{color:#B42318}#ibu .k.a{background:#EEF4FF;border-color:#C7D7FE;color:#1E3A8A}#ibu .k.a b{color:#1D4ED8}#ibu .k.o{background:#fff;border-color:#E5E7EB;color:#4B5563}#ibu .k.o b{color:#B42318;font-size:12.5px}
 </style>
-<div id="ibtop" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px"><div style="flex:1"><h1 style="margin:0">Messages <span id="ibu"></span></h1><span style="font-size:12px;color:#6B7280">Facebook, Instagram, WhatsApp and Website Chat in one inbox.</span></div>
-</div>
+<div id="ibtop" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px"><div style="flex:0 1 auto"><h1 style="margin:0">Messages <span id="ibu"></span></h1><span style="font-size:12px;color:#6B7280">Facebook, Instagram, WhatsApp and Website Chat in one inbox.</span></div>
+<div id="ibsh" hidden></div></div>
 <div class="fbar" id="ibfb"><div class="fr" id="ibf1"></div><div class="fr" id="ibf2"></div></div>
 <button type="button" id="ibback">← All conversations</button>
 <div class="mbx" id="ibx"><div class="ls"><div class="stk"><div class="tp"><button type="button" id="iball">← All conversations</button></div><div class="sq" style="padding-top:9px"><input id="ibq" type="search" placeholder="Search name, mobile, invoice (Ctrl K)"></div></div><div class="lt" id="ibl"></div></div>
@@ -184,6 +192,12 @@ function drawF(){document.getElementById('ibf1').innerHTML=F1.map(pill).join('')
   var bm=document.getElementById('ibm');bm.onclick=function(){MChat.cycleSound();mm()};mm();
   document.getElementById('ibup').onclick=doUpdate}
 /* Manual synchronisation only: refreshes the list and the open conversation. It never marks anything as seen or replied. */
+var shD=null,shP='d1';try{if(localStorage.getItem('ib_share_p')==='d7')shP='d7'}catch(e){}
+function shEsc(x){return String(x).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function drawShare(){var el=document.getElementById('ibsh');if(!el)return;if(!shD){el.hidden=true;return}el.hidden=false;var rows=shD[shP]||[],tot=0,msgs=0;rows.forEach(function(r){tot+=r.c;msgs+=r.m});
+  var bar=rows.length?'<div class="br">'+rows.map(function(r,i){var p=Math.round(r.c*100/tot);return '<div class="sg s'+Math.min(i,3)+'" style="flex:'+r.c+' 1 0" title="'+shEsc(r.n)+': answered '+r.c+' customer'+(r.c===1?'':'s')+' with '+r.m+' repl'+(r.m===1?'y':'ies')+' ('+p+'% of customers answered by staff)">'+shEsc(r.n)+' · '+r.c+' · '+p+'%</div>'}).join('')+'</div>':'<div class="no">No staff replies '+(shP==='d1'?'today yet':'in the last 7 days')+'.</div>';
+  el.innerHTML='<span class="t" title="Customers answered by each staff member. AI replies are not counted. Staff who sent no reply are not listed.">Customers answered by staff '+(shP==='d1'?'today':'· 7 days')+'</span>'+bar+'<span class="pd"><button type="button" data-p="d1"'+(shP==='d1'?' class="on"':'')+'>Today</button><button type="button" data-p="d7"'+(shP==='d7'?' class="on"':'')+'>7 days</button></span>';
+  el.querySelectorAll('.pd button').forEach(function(b){b.onclick=function(){shP=b.getAttribute('data-p');try{localStorage.setItem('ib_share_p',shP)}catch(e){}drawShare()}})}
 var upBusy=false;function doUpdate(){if(upBusy)return;upBusy=true;var b=document.getElementById('ibup');b.disabled=true;b.textContent='↻ Updating…';
   Promise.all([load(),(window.MChat&&MChat.refresh)?MChat.refresh():null]).catch(function(){}).then(function(){b=document.getElementById('ibup');if(b){b.textContent='✓ Updated';b.classList.add('ok')}setTimeout(function(){upBusy=false;var c=document.getElementById('ibup');if(c){c.disabled=false;c.classList.remove('ok');c.textContent='↻ Update'}},1400)})}
 var seen={},first=true;
@@ -211,6 +225,7 @@ function load(){if(f==='orders')return loadOrq();return fetch('/admin/chat/threa
   var oh='';if(old!==null){var mn=Math.floor((Date.now()-old)/60000);oh='<span class="k o">Oldest waiting <b>'+(mn>=60?Math.floor(mn/60)+'h '+(mn%60)+'m':mn+'m')+'</b></span>'}
   var sv=j.svc,sh='';if(sv&&(sv.staff+sv.ai)>0){sh='<span class="k" title="Replies sent today. Customer messages received today: '+sv.in+'">Today <b>'+sv.staff+'</b>by staff · <b>'+sv.ai+'</b>by AI ('+Math.round(sv.ai*100/(sv.staff+sv.ai))+'%)</span>'}
   if(f==='late'){var lim=Date.now()-30*60000;j.threads=(j.threads||[]).filter(function(t){return t.awaiting&&t.waiting_since&&new Date(t.waiting_since).getTime()<lim})}
+  shD=j.share||null;drawShare();
   u.innerHTML=(j.unread?'<span class="k p"><b>'+(j.human||0)+'</b>need a person</span><span class="k a"><b>'+ah+'</b>answered by AI</span>'+oh:'')+sh;if(window.MChat)MChat.badge(j.unread);
   if(waiting!==j.unread){waiting=j.unread;var uf=document.querySelector('#ibfb a[data-f=unread]');if(uf){var cn=uf.querySelector('.cn');if(waiting>0){if(!cn){cn=document.createElement('span');cn.className='cn';uf.appendChild(cn)}cn.textContent=waiting}else if(cn)cn.remove()}}
   var l=document.getElementById('ibl');if(!j.threads.length){l.innerHTML='<div class="emp">No conversations here yet.</div>';return}
