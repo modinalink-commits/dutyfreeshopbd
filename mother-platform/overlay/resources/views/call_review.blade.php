@@ -9,9 +9,9 @@
 <div class="cc-k"><div><span>Recorded calls, 7 days</span><b>{{ $kpi['recorded'] }}</b></div><div><span>Reviewed, 7 days</span><b>{{ $kpi['reviewed'] }}</b></div><div class="ok"><span>Average score</span><b>{{ $kpi['reviewed'] ? $kpi['avg'].' of 5' : '—' }}</b></div><a class="{{ $kpi['follow'] ? 'bad' : '' }}" href="?f=follow"><span>Needs follow-up with staff</span><b>{{ $kpi['follow'] }}</b></a></div>
 <div class="cc-f">@foreach(['suggested'=>'Suggested','cancelled'=>'Cancelled orders','long'=>'Long calls','reviewed'=>'Reviewed','follow'=>'Needs follow-up'] as $k=>$l)<a class="c {{ $f===$k?'on':'' }}" href="{{ $qs(['f'=>$k,'page'=>null,'c'=>null]) }}">{{ $l }}</a>@endforeach
 <form method="get" style="display:inline-flex;gap:6px;align-items:center;margin:0"><input type="hidden" name="f" value="{{ $f }}"><select name="staff" onchange="this.form.submit()" style="height:32px;width:auto" aria-label="Staff"><option value="">All staff</option>@foreach($agents as $a)<option value="{{ $a->user_id }}" @selected($staff===(int)$a->user_id)>{{ $a->name }}</option>@endforeach</select></form></div>
-<div class="cc-two" style="grid-template-columns:repeat(auto-fit,minmax(360px,1fr))">
+<style>.cc-rv{grid-template-columns:minmax(0,3fr) minmax(320px,2fr)!important}@media(max-width:1100px){.cc-rv{grid-template-columns:1fr!important}}.cc-rv .cc-t td small{white-space:nowrap}</style><div class="cc-two cc-rv">
 <div class="cc-box"><table class="cc-t">
-<tr><th style="width:27%">Customer</th><th style="width:18%">Staff</th><th style="width:21%">Time</th><th class="hm" style="width:12%">Length</th><th>Outcome</th><th style="width:15%">Review</th></tr>
+<tr><th style="width:24%">Customer</th><th style="width:12%">Staff</th><th style="width:19%">Time</th><th class="hm" style="width:9%">Length</th><th>Outcome</th><th style="width:15%">Review</th></tr>
 @forelse($rows as $x)<tr class="{{ $cur && $cur->id===$x->id ? 'hot' : '' }}" style="cursor:pointer" onclick="location.href='{{ $qs(['c'=>$x->id]) }}'">
 <td><a href="{{ $qs(['c'=>$x->id]) }}" style="font-weight:600;text-decoration:none;color:#0B1B33">{{ $x->customer_name ?: 'Unknown' }}</a><small>{{ $x->phone }}</small></td><td>{{ $x->user_name ?: '—' }}</td>
 <td>{{ \Carbon\Carbon::parse($x->started_at)->timezone('Asia/Dhaka')->format('d M, h:i A') }}</td><td class="hm">{{ gmdate('i:s',(int)$x->duration) }}</td>
