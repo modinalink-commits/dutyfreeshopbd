@@ -1134,4 +1134,4 @@ public/images/bestseller/patron-white.webp
 app/Support/AutoPrice.php
 app/Http/Controllers/BestSellerController.php
 resources/views/best_sellers_admin.blade.php
-public/images/bestseller/patron-white-2.webp
+public/images/bestseller/patron-white-3.webp
