@@ -16,6 +16,18 @@ class AdminAlerts
     try { Clearance::tick(); } catch (\Throwable $e) {}
   }
 
+  /** Call Center: the PBX's line (gateway) to the telephone operator is not registered for 2+ minutes, so staff and client calls cannot connect. Checked about once a minute; read only. */
+  public static function pbxLine(): void {
+    if (!Cache::add('pbxline.lock', 1, 55)) return;
+    try { [$ok, $t] = Voice::esl('sofia status', 6); } catch (\Throwable $e) { return; }
+    if (!$ok || !preg_match_all('/\bgateway\s+(\S+)\s+([A-Z_]+)/', (string)$t, $m, PREG_SET_ORDER)) return; // PBX not answering or no line listed: unknown, say nothing
+    $bad = []; foreach ($m as $g) if ($g[2] !== 'REGED') $bad[] = preg_replace('/^sip:/', '', $g[1]) . ' (' . $g[2] . ')';
+    if (!$bad) { Cache::forget('pbxline.down'); DeployHealth::resolve('pbx_line_down', 'System (line registered again)'); return; }
+    $since = (int)Cache::get('pbxline.down'); if (!$since) { Cache::put('pbxline.down', time(), 86400); return; }
+    $min = (int)floor((time() - $since) / 60);
+    if ($min >= 2) DeployHealth::raise('pbx_line_down', 'high', 'Call Center', 'Phone line is down: calls are not connecting', 'Line ' . implode(', ', $bad) . ' has not been registered with the telephone operator for ' . $min . ' minutes. Staff calls and client calls fail until it is back.', 'The PBX lost its registration with the telephone operator (operator side or PBX side).', 'It often comes back by itself in a few minutes. If it stays down, call the PBX company and ask why the gateway registration is failing.');
+  }
+
   /** No new order for 3 hours in the daytime while the same 3 hours normally bring orders (average of the last 7 days). */
   private static function orders(): void {
     $h = (int)now('Asia/Dhaka')->format('G'); if ($h < 11 || $h > 23) { DeployHealth::resolve('orders_drop', 'System (night hours)'); return; }
