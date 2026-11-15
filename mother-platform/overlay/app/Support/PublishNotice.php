@@ -47,13 +47,20 @@ class PublishNotice {
     return [count($send), count($to) - count($send)];
   }
   /** Worker, once a minute: notice publish-state changes and act on Unpublished -> Published. */
+  /** What the customer can actually see: published AND (not a stock-controlled product at zero stock). Owner 15 Nov 2026: stock arriving on a hidden Cigarette/Vape product counts as "back in store". */
+  public static function visSql(string $a = 'p.'): string {
+    $ci = array_map('intval', StockGuard::controlledIds());
+    $hide = $ci ? " and (" . $a . "stock is null or " . $a . "stock > 0 or " . $a . "category_id not in (" . implode(',', $ci) . "))" : '';
+    return "(coalesce(" . $a . "published, false)" . $hide . ")";
+  }
   public static function tick(): void {
     try {
       if (!self::ready() || !Cache::add('pubsms.tick', 1, 55)) return;
+      $vis = self::visSql();
       // products not seen before are remembered as they are (never a reason to send)
-      DB::statement('insert into product_pub_watch (product_id, published, changed_at) select p.id, coalesce(p.published, false), now() from products p where not exists (select 1 from product_pub_watch w where w.product_id = p.id)');
+      DB::statement('insert into product_pub_watch (product_id, published, changed_at) select p.id, ' . $vis . ', now() from products p where not exists (select 1 from product_pub_watch w where w.product_id = p.id)');
       $min = self::minOff();
-      $rows = DB::select("select p.id, coalesce(p.published, false) as pub, (w.changed_at is null or w.changed_at <= now() - (? * interval '1 minute')) as long_off from products p join product_pub_watch w on w.product_id = p.id where coalesce(p.published, false) <> w.published limit 2000", [$min]);
+      $rows = DB::select("select p.id, " . $vis . " as pub, (w.changed_at is null or w.changed_at <= now() - (? * interval '1 minute')) as long_off from products p join product_pub_watch w on w.product_id = p.id where " . $vis . " <> w.published limit 2000", [$min]);
       if (!$rows) return;
       $cand = [];
       foreach ($rows as $r) {
