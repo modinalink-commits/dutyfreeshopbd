@@ -1189,6 +1189,7 @@ database/migrations/2026_11_15_070000_delivery_refund_72h_free_delivery_cigvape.
 database/migrations/2026_11_15_080000_source_price_jump_guard_off.php
 database/migrations/2026_11_15_090000_link_cooler_7990_to_source.php
 database/migrations/2026_11_15_100000_link_cooler_7990_ryans.php
+database/migrations/2026_11_15_110000_link_cooler_7990_ryans2.php
 public/s/adm-theme-b.css
 public/s/adm-theme-a.css
 public/s/adm-layout-a.css
