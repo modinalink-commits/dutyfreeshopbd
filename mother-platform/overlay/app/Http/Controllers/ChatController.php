@@ -823,7 +823,7 @@ class ChatController extends Controller {
     foreach (DB::table('chat_pages')->get(['page_id', 'name']) as $pg) {
       \Illuminate\Support\Facades\Cache::forget('cc.bf.' . $pg->page_id); \Illuminate\Support\Facades\Cache::forget('cc.bf.err.' . $pg->page_id);
       \App\Support\ChatComments::backfillPage((string)$pg->page_id);
-      $h .= '<tr><td>'.$e($pg->name).'</td><td>'.$e(\Illuminate\Support\Facades\Cache::get('cc.bf.' . $pg->page_id)).' '.$e(\Illuminate\Support\Facades\Cache::get('cc.bf.err.' . $pg->page_id)).'</td></tr>';
+      $h .= '<tr><td>'.$e($pg->name).'</td><td>'.$e(\Illuminate\Support\Facades\Cache::get('cc.bf.' . $pg->page_id)).' '.$e(\Illuminate\Support\Facades\Cache::get('cc.bf.err.' . $pg->page_id)).'<br><small>'.$e(\Illuminate\Support\Facades\Cache::get('cc.bf.dbg.' . $pg->page_id)).'</small></td></tr>';
     }
     return view('chat_memory', ['h' => $h.'</table></div>']);
   }

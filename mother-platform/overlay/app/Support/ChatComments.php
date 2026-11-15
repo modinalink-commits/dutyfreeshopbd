@@ -84,6 +84,8 @@ class ChatComments {
     try {
       $r = Http::timeout(40)->get(Chat::API . '/' . $pageId . '/published_posts', ['fields' => 'id,created_time,comments.limit(60){id,message,from,created_time,comments.limit(8){from}}', 'since' => now()->subDays(14)->timestamp, 'limit' => 20, 'access_token' => $tok]);
       if (!$r->ok()) { Cache::put('cc.bf.err.' . $pageId, mb_substr((string)($r->json('error.message') ?? $r->status()), 0, 160), 86400); Cache::forever('cc.bf.' . $pageId, 'error'); return; }
+      $first = (array)(($r->json('data') ?? [])[0] ?? []);
+      if (!empty($first['id'])) { $dbg = Http::timeout(30)->get(Chat::API . '/' . $first['id'], ['fields' => 'comments.summary(true).limit(3){id,message,from},reactions.summary(true).limit(0)', 'access_token' => $tok]); Cache::put('cc.bf.dbg.' . $pageId, mb_substr(preg_replace('/\s+/', ' ', (string)$dbg->body()), 0, 380), 86400); }
       $n = 0; $posts = count((array)$r->json('data')); $seen = 0; $nofrom = 0; $ans = 0;
       foreach ((array)$r->json('data') as $post) foreach ((array)($post['comments']['data'] ?? []) as $c) {
         $seen++; if (empty($c['from']['id'])) $nofrom++;
