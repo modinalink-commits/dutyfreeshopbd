@@ -106,7 +106,7 @@ body,button,input,textarea,select{font-family:'Bornomala',Inter,'Bornomala',sans
 /* ---- v3 (14 Nov 2026): light header, segmented tabs, smart number field, customer card, Up next. Layout and colours only: the call engine below is untouched. ---- */
 body{background:#fff}
 .top{background:#fff!important;border-bottom:1px solid #E5E7EB;padding:10px 12px;display:flex;align-items:center;gap:6px;flex-wrap:nowrap}
-.tr1,.tr2{display:contents}.tr1 .tt{flex:0 0 auto;order:1}.dfl{padding:0;background:none;border-radius:0}.dfl img{height:24px}.vs{display:none}
+.tr1,.tr2{display:contents}.tr1 .tt{flex:0 0 auto;order:1}.dfl{padding:0;background:none;border-radius:0}.dfl img{height:24px;content:url(/brand/logo-white.png)}.vs{display:none}
 button.stsel.stsel{order:2;background:#ECFDF3!important;color:#067647!important;-webkit-text-fill-color:#067647!important;border:1px solid #ABEFC6!important;text-shadow:none;box-shadow:none;font-size:12px;font-weight:700;padding:6px 10px;min-width:0;border-radius:999px}
 button.stsel.stsel.st-busy{background:#FEF3F2!important;color:#B42318!important;-webkit-text-fill-color:#B42318!important;border-color:#FECDCA!important}
 .top .badge{order:3;margin-right:auto;font-size:12px;font-weight:600;padding:5px 10px;border-radius:999px;min-width:0;flex:0 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}button.stsel.stsel{flex:none;white-space:nowrap}.tb{flex:none}.badge.b-ok{background:#F2F4F7;color:#0B1B33}.badge.b-wait{background:#EEF4FF;color:#1E3A8A}.badge.b-bad{background:#FEF3F2;color:#B42318}
