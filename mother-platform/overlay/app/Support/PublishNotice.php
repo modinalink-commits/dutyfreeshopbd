@@ -39,6 +39,7 @@ class PublishNotice {
   /** Queue the SMS for one product. Returns [queued, skipped by the daily cap]. */
   public static function notify(int $pid): array {
     $p = DB::table('products')->find($pid); if (!$p || !$p->published) return [0, 0];
+    if (!empty($p->parent_product_id)) return [0, 0]; // owner 15 Nov 2026: Single Packet products never get a customer message
     $to = self::recipients($pid); if (!$to) return [0, 0];
     $cap = self::dailyCap(); $room = $cap > 0 ? max(0, $cap - self::sentToday()) : PHP_INT_MAX; $send = array_slice($to, 0, $room); $body = self::body($p);
     foreach ($send as $n) SmsMarketing::enqueue($n, $body, self::EVENT, 'marketing', ['ref' => 'pb' . $pid . ':' . $n]);
@@ -72,7 +73,7 @@ class PublishNotice {
         DeployHealth::raise('pubsms.bulk', 'high', 'Marketing', 'Back in Store SMS not sent: ' . count($cand) . ' products were published at once', 'More than ' . self::maxAtOnce() . ' products went from Unpublished to Published in the same minute, which looks like a bulk action. No customer SMS was sent for them.', 'Bulk publish, an import, or a mistake.', 'If these should be announced, send them from Marketing > Back in Store SMS, product by product.');
         return;
       }
-      foreach ($cand as $pid) { $p = DB::table('products')->find($pid); if ($p && self::stockOk($p)) self::notify($pid); }
+      foreach ($cand as $pid) { $p = DB::table('products')->find($pid); if ($p && empty($p->parent_product_id) && self::stockOk($p)) self::notify($pid); }
     } catch (\Throwable $e) { report($e); }
   }
 }
