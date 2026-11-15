@@ -67,7 +67,12 @@ class ChatComments {
     try {
       $m = 'আসসালামু আলাইকুম' . ($nm !== '' ? ' ' . $nm : '') . "। আপনার কমেন্টের জন্য ধন্যবাদ।\nকোন পণ্যের বিস্তারিত জানতে চান? এখানে লিখে জানান, আমরা সাহায্য করব। ধন্যবাদ।";
       $r = Http::timeout(15)->withToken($tok)->post(Chat::API . '/' . $c->comment_id . '/private_replies', ['message' => $m]);
-      return $r->ok() ? 'inbox message sent' : 'inbox message failed: ' . mb_substr((string)($r->json('error.message') ?? $r->status()), 0, 120);
+      if ($r->ok()) return 'inbox message sent';
+      $e1 = mb_substr((string)($r->json('error.message') ?? $r->status()), 0, 70);
+      // Fallback: Meta's current Send API way of a private reply to a comment (POST /{page-id}/messages with recipient.comment_id).
+      $r2 = Http::timeout(15)->withToken($tok)->post(Chat::API . '/' . $c->page_ref . '/messages', ['recipient' => ['comment_id' => $c->comment_id], 'message' => ['text' => $m], 'messaging_type' => 'RESPONSE']);
+      if ($r2->ok()) return 'inbox message sent (send api)';
+      return 'inbox message failed: ' . $e1 . ' | send api: ' . mb_substr((string)($r2->json('error.message') ?? $r2->status()), 0, 70);
     } catch (\Throwable $e) { return 'inbox message error'; }
   }
   public static function isSmoke(string $t): bool { return (bool)preg_match('/(সিগারেট|সিগারেট|বিড়ি|তামাক|ভেপ|ভ্যাপ|কার্টন|cigar|sigar|sigaret|tobacco|vape|vap\b|nicotine|carton|benson|marlboro|dunhill|gold ?leaf|esse\b|camel\b|davidoff)/iu', $t); }
