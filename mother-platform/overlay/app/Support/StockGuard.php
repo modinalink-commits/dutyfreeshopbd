@@ -45,7 +45,7 @@ class StockGuard {
   /** Admin label for the stock state: In Stock / Out of Stock / Sourcing Required (kept apart from the publish status). */
   public static function stockLabel($p): string {
     if (!isset($p->stock) || $p->stock === null || (int)$p->stock > 0) return 'In Stock';
-    return self::mode($p->category_id ?? null) === 'STOCK_CONTROLLED' ? 'Out of Stock' : 'Sourcing Required';
+    return self::mode($p->category_id ?? null) === 'STOCK_CONTROLLED' ? 'Out of Stock' : 'Sourcing Stock';
   }
   /** Storefront: can the customer still order this product? (sourcing categories always can; stock-controlled ones only with stock) */
   public static function sellable($p): bool {
