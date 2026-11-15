@@ -52,7 +52,7 @@ class AdminAlertsExtra
     if (Clearance::ready()) $q->whereNotExists(fn($w) => $w->select(DB::raw(1))->from('product_clearances as pc')->whereColumn('pc.product_id', 'p.id')->where('pc.status', 'active'));
     $n = $q->count(); $names = '';
     if ($n >= 1) { // name the products (first 6, worst first) so the alert can be acted on without searching
-      try { $list = (clone $q)->selectRaw("p.id, p.name, p.price, $c as cost")->orderByRaw("p.price / nullif($c, 0)")->limit(6)->get(); $names = ' ' . $list->map(fn($x) => '#' . $x->id . ' ' . mb_substr((string)$x->name, 0, 60) . ' (price ৳' . rtrim(rtrim(number_format((float)$x->price, 2, '.', ''), '0'), '.') . ', minimum ৳' . rtrim(rtrim(number_format((float)$x->cost * $rate, 2, '.', ''), '0'), '.') . ')')->implode('; ') . ($n > 6 ? '; +' . ($n - 6) . ' more' : '') . '.'; } catch (\Throwable $e) { $names = ''; }
+      try { $list = (clone $q)->selectRaw("p.id, p.sku, p.name, p.price, $c as cost")->orderByRaw("p.price / nullif($c, 0)")->limit(6)->get(); $names = ' ' . $list->map(fn($x) => '[' . ($x->sku ?: 'no code') . '] ' . mb_substr((string)$x->name, 0, 50) . ' (price ৳' . rtrim(rtrim(number_format((float)$x->price, 2, '.', ''), '0'), '.') . ', minimum ৳' . rtrim(rtrim(number_format((float)$x->cost * $rate, 2, '.', ''), '0'), '.') . ') /admin/products/' . $x->id . '/edit')->implode(' | ') . ($n > 6 ? '; +' . ($n - 6) . ' more' : '') . '.'; } catch (\Throwable $e) { $names = ''; }
     }
     self::set($n >= 1, 'below_margin', 'high', 'Pricing', 'Products priced below the protected margin', $n . ' published products are priced below the protected margin.' . $names, 'A purchase rate went up or a price was set too low.', 'Open Pricing / Profit Floor and raise these prices or use the approved override.', 'all prices are safe');
   }
@@ -64,8 +64,8 @@ class AdminAlertsExtra
     foreach ($rows as $x) { $prev = DB::table('purchase_items')->where('product_id', $x->product_id)->where('id', '<', $x->id)->where('cost', '>', 0)->orderByDesc('id')->value('cost'); if ($prev && (float)$x->cost >= (float)$prev * 1.2) { $bad++; if (count($jumps) < 6) $jumps[] = [(int)$x->product_id, (float)$prev, (float)$x->cost]; } }
     $names = '';
     if ($jumps) { // name the products with old and new rate
-      try { $nm = DB::table('products')->whereIn('id', array_column($jumps, 0))->pluck('name', 'id'); $f = fn($v) => '৳' . rtrim(rtrim(number_format($v, 2, '.', ''), '0'), '.');
-        $names = ' ' . implode('; ', array_map(fn($j) => '#' . $j[0] . ' ' . mb_substr((string)($nm[$j[0]] ?? 'product'), 0, 60) . ' (' . $f($j[1]) . ' → ' . $f($j[2]) . ')', $jumps)) . ($bad > count($jumps) ? '; +' . ($bad - count($jumps)) . ' more' : '') . '.'; } catch (\Throwable $e) { $names = ''; }
+      try { $nm = DB::table('products')->whereIn('id', array_column($jumps, 0))->pluck('name', 'id'); $sk = DB::table('products')->whereIn('id', array_column($jumps, 0))->pluck('sku', 'id'); $f = fn($v) => '৳' . rtrim(rtrim(number_format($v, 2, '.', ''), '0'), '.');
+        $names = ' ' . implode(' | ', array_map(fn($j) => '[' . (($sk[$j[0]] ?? '') ?: 'no code') . '] ' . mb_substr((string)($nm[$j[0]] ?? 'product'), 0, 50) . ' (' . $f($j[1]) . ' → ' . $f($j[2]) . ') /admin/products/' . $j[0] . '/edit', $jumps)) . ($bad > count($jumps) ? '; +' . ($bad - count($jumps)) . ' more' : '') . '.'; } catch (\Throwable $e) { $names = ''; }
     }
     self::set($bad >= 1, 'purchase_jump', 'high', 'Purchasing', 'Purchase rate jumped', $bad . ' purchased items cost 20% or more above the previous purchase in the last 24 hours.' . $names, 'A supplier raised the rate or the purchase was entered wrongly.', 'Open Purchases, check these rates and the selling prices.', 'no purchase rate jumps');
   }
