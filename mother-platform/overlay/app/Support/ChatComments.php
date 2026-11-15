@@ -37,33 +37,34 @@ class ChatComments {
       try { $r = Http::timeout(8)->get(Chat::API . '/' . $postId, ['fields' => 'message', 'access_token' => $tok]); return $r->ok() ? mb_substr(trim((string)$r->json('message')), 0, 500) : ''; } catch (\Throwable $e) { return ''; }
     });
   }
+  const VARIANTS = ['{n}বিস্তারিত জানতে আমাদের ইনবক্সে আসুন, ধন্যবাদ। 🙏', '{n}দাম ও বিস্তারিত জানতে ইনবক্সে মেসেজ করুন, ধন্যবাদ। 🙏', '{n}আমাদের ইনবক্সে মেসেজ দিন, সব তথ্য সেখানে জানিয়ে দেব। ধন্যবাদ। 🙏', '{n}ইনবক্সে আসুন, বিস্তারিত সেখানেই জানাব। ধন্যবাদ। 🙏', '{n}পণ্যের বিস্তারিত জানতে ইনবক্সে আসুন, ধন্যবাদ। 🙏'];
+  private static function spam(string $t): bool { return (bool)preg_match('#(https?://|www\.|\.com\b|\.xyz\b|t\.me/|wa\.me/|bit\.ly)#iu', $t); }
+  /** One private message from the Page inbox to the commenter (Facebook allows one per comment, within 7 days). Returns a short note for the log. */
+  private static function privateMessage(object $c, string $tok, string $nm): string {
+    try {
+      $m = 'আসসালামু আলাইকুম' . ($nm !== '' ? ' ' . $nm : '') . "। আপনার কমেন্টের জন্য ধন্যবাদ।\nকোন পণ্যের বিস্তারিত জানতে চান? এখানে লিখে জানান, আমরা সাহায্য করব। ধন্যবাদ।";
+      $r = Http::timeout(15)->withToken($tok)->post(Chat::API . '/' . $c->comment_id . '/private_replies', ['message' => $m]);
+      return $r->ok() ? 'inbox message sent' : 'inbox message failed: ' . mb_substr((string)($r->json('error.message') ?? $r->status()), 0, 120);
+    } catch (\Throwable $e) { return 'inbox message error'; }
+  }
   public static function isSmoke(string $t): bool { return (bool)preg_match('/(সিগারেট|সিগারেট|বিড়ি|তামাক|ভেপ|ভ্যাপ|কার্টন|cigar|sigar|sigaret|tobacco|vape|vap\b|nicotine|carton|benson|marlboro|dunhill|gold ?leaf|esse\b|camel\b|davidoff)/iu', $t); }
 
   /** Answer one stored comment (once). */
   public static function reply(int $id): void {
     try {
-      if (!self::ready() || !self::on() || !AiChat::chatOn() || !AiSchedule::activeNow()) return;
+      if (!self::ready() || !self::on()) return; // owner 15 Nov 2026: comment replies run 24 hours, whatever the AI chat hours are
       $c = DB::table('chat_comments')->find($id); if (!$c || $c->status !== 'new') return;
       if (!Cache::add('cc.lock.' . $id, 1, 600)) return;
       $msg = trim((string)$c->message);
       if (mb_strlen($msg) < 2) { self::done($id, 'skipped', null, 'no text (sticker / photo / tag)'); return; }
-      $d = 'cc.n.' . now()->format('Ymd'); Cache::add($d, 0, 90000); if (Cache::increment($d) > 400) { self::done($id, 'skipped', null, 'daily limit'); return; }
+      $d = 'cc.n.' . now()->format('Ymd'); Cache::add($d, 0, 90000); if (Cache::increment($d) > 1500) { self::done($id, 'skipped', null, 'daily limit'); return; }
       $tok = Chat::pageTok($c->channel, $c->page_ref); if (!$tok) { self::done($id, 'failed', null, 'Page token missing (Chat Settings)'); return; }
-      $post = self::postText((string)$c->post_id, $tok);
-      if (self::isSmoke($msg . ' ' . $post)) $text = self::INBOX; // never discuss tobacco / vape in public
-      else {
-        $extra = "\nPUBLIC COMMENT MODE: you are answering a PUBLIC comment under our Facebook post, everyone can read it. Write ONE short friendly reply (max 2 short sentences). The comment usually refers to the product in the POST text. "
-          . "Give the price or availability only if it is in your data; otherwise invite the person to message our inbox. Never ask for or repeat a phone number, address or order number in public. For ordering say: inbox us. "
-          . "Never mention cigarettes, tobacco or vape here. If the comment is spam, abuse, a complaint, only a tag of another person, or needs no answer, reply with exactly: SKIP\n";
-        [$ok, $text] = AiChat::reply([['role' => 'user', 'content' => ($post !== '' ? "[POST: " . $post . "]\n" : '') . 'COMMENT: ' . mb_substr($msg, 0, 500)]], $extra);
-        if (!$ok) { DB::table('chat_comments')->where('id', $id)->update(['note' => 'AI: ' . mb_substr((string)$text, 0, 150), 'updated_at' => now()]); Cache::forget('cc.lock.' . $id); return; }
-        $text = trim((string)$text);
-        if ($text === '' || preg_match('/^\W*SKIP\W*$/i', $text)) { self::done($id, 'skipped', null, 'left for staff (not a question / complaint / spam)'); return; }
-        if (self::isSmoke($text)) $text = self::INBOX;
-        $text = mb_substr(preg_replace('/\s*\n+\s*/u', ' ', $text), 0, 500);
-      }
+      // Owner rule 15 Nov 2026: the public reply only invites the person to our inbox (no price, no product detail, nothing about tobacco); the details go in a private message from the Page inbox.
+      if (self::spam($msg)) { self::done($id, 'skipped', null, 'spam / link (left alone)'); return; }
+      $first = trim((string)preg_split('/\s+/u', trim((string)$c->from_name))[0]); $nm = $first !== '' && mb_strlen($first) <= 20 ? $first : '';
+      $v = self::VARIANTS; $text = strtr($v[crc32($c->comment_id) % count($v)], ['{n}' => $nm !== '' ? $nm . ', ' : '']);
       $r = Http::timeout(15)->asForm()->post(Chat::API . '/' . $c->comment_id . '/comments?access_token=' . urlencode($tok), ['message' => $text]);
-      if ($r->ok()) self::done($id, 'replied', $text, null);
+      if ($r->ok()) { self::done($id, 'replied', $text, self::privateMessage($c, $tok, $nm)); }
       else self::done($id, 'failed', $text, 'HTTP ' . $r->status() . ' ' . mb_substr((string)($r->json('error.message') ?? ''), 0, 150));
     } catch (\Throwable $e) { report($e); }
   }
