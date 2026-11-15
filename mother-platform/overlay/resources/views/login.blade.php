@@ -35,7 +35,7 @@ input:focus{outline:0;border-color:var(--o);box-shadow:0 0 0 4px rgba(249,85,5,.
 </style></head><body>
 <div class="bg" aria-hidden="true"><i></i><i></i><i></i></div>
 <main class="card" role="main">
-<div class="lg"><img src="/dutyfree-bd-logo.png" alt="DutyFree BD" width="178" height="48"><small>Control Center</small></div>
+<div class="lg"><img src="/dutyfree-bd-logo-v2.png" alt="DutyFree BD" width="178" height="48"><small>Control Center</small></div>
 <h1>Welcome back</h1><p class="sub">Sign in to manage your store</p>
 <form method="post" action="/admin/login" id="lf">@csrf
 <label for="em">Email</label><input id="em" name="email" type="email" value="{{ old('email') }}" required autofocus autocomplete="username" autocapitalize="none" spellcheck="false">

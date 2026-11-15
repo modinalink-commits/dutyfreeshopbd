@@ -5,7 +5,7 @@ namespace App\Support;
  *  and every export page (PDF, Excel, Word, print) carries the horizontal logo at the top.
  *  Files live in public/brand/. */
 class PrintBrand {
-  const LOGO = '/brand/export-logo.png';        // horizontal logo (export page header)
+  const LOGO = '/brand/export-logo-v2.png';        // horizontal logo (export page header)
   const WM   = '/brand/watermark-faded.png';    // stacked logo, already faded (watermark)
   const WMV  = '3';                              // cache-buster for the logo files
 

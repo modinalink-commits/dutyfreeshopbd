@@ -1198,3 +1198,9 @@ public/brand/logo-white.png
 public/brand/logo-stacked-white.png
 public/brand/logo-navy.png
 public/brand/logo-orange.png
+public/logo-v2.webp
+public/dutyfree-bd-logo-v2.png
+public/email-logo-v2.png
+public/brand/export-logo-v2.png
+public/brand/watermark-logo-v2.png
+public/pwa/logo-240-v2.png

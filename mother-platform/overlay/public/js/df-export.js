@@ -37,7 +37,7 @@
 
   /* ---------- DutyFreeBD identity: horizontal logo on every export, stacked logo as a centred watermark on PDF / print / Word ---------- */
   var ORIGIN = typeof location !== 'undefined' && location.origin && location.origin !== 'null' ? location.origin : 'https://www.dutyfreebd.com';
-  var BR = { logo: '/brand/export-logo.png?v=3', wm: '/brand/watermark-faded.png?v=3', logoW: 1000, logoH: 229, wmW: 1400, wmH: 1138 };
+  var BR = { logo: '/brand/export-logo-v2.png?v=3', wm: '/brand/watermark-faded.png?v=3', logoW: 1000, logoH: 229, wmW: 1400, wmH: 1138 };
   function xlsxParts(title, head, rows, imgs) {
     var off = imgs && imgs.logo ? 3 : 0, hr = off + 1; // with the logo: row 1 logo, row 2 title / date, row 3 blank, table header on row 4
     var x = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetViews><sheetView workbookViewId="0"><pane ySplit="' + hr + '" topLeftCell="A' + (hr + 1) + '" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>';

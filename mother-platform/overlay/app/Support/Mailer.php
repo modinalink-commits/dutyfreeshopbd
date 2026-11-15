@@ -40,7 +40,7 @@ class Mailer {
   }
   /** Sends one email now (HTML + plain text). $unsub: stop link for offer emails, also sent as the List-Unsubscribe header. Returns [ok, error]. */
   /** Logo for emails: always PNG/JPG (WebP is not shown by every mail app). */
-  public static function logo(): string { $l = Cache::get('store.settings2')['logo_url'] ?? null; if (!is_string($l) || !preg_match('/\.(png|jpe?g)(\?.*)?$/i', $l)) $l = '/email-logo.png'; return self::abs($l); }
+  public static function logo(): string { $l = Cache::get('store.settings2')['logo_url'] ?? null; if (!is_string($l) || !preg_match('/\.(png|jpe?g)(\?.*)?$/i', $l)) $l = '/email-logo-v2.png'; return self::abs($l); }
   public static function deliver(string $to, string $subject, string $html, ?string $unsub = null): array {
     if (!self::hasPassword()) return [false, 'The mailbox password is not saved yet'];
     if (!self::valid($to)) return [false, 'Not a valid email address'];
