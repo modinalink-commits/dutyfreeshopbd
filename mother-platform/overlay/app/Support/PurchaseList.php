@@ -41,7 +41,7 @@ class PurchaseList {
       ->groupBy('i.product_id')->selectRaw('i.product_id, sum(i.qty) q30, sum(case when o.created_at >= ? then i.qty else 0 end) q7', [$since7])->get()->keyBy('product_id');
     // Owner rule 14 Nov 2026: the daily list covers the Cigarette and Vape categories only (and their sub-categories). Other products are left out of the PDF and the message.
     $cats = self::smokeCats();
-    $prods = $sold->isEmpty() ? collect() : DB::table('products')->whereIn('id', $sold->keys()->all())->when($cats, fn($q) => $q->whereIn('category_id', $cats))->get(['id', 'name', 'sku', 'stock', 'published'])->keyBy('id');
+    $prods = $sold->isEmpty() ? collect() : DB::table('products')->whereIn('id', $sold->keys()->all())->when($cats, fn($q) => $q->whereIn('category_id', $cats))->where(fn($q) => $q->whereNull('sub')->orWhereRaw('lower(sub) <> ?', ['single packet']))->whereRaw("lower(name) not like 'single %'")->where(fn($q) => $q->whereNull('sku')->orWhereRaw("sku not ilike '%-SP'"))->get(['id', 'name', 'sku', 'stock', 'published'])->keyBy('id'); // Single Packet twins are never bought: their stock comes only from a received partial return
     $sold = $sold->only($prods->keys()->all()); $ids = $sold->keys()->all();
     $cost = []; $sup = [];
     if ($ids) {
@@ -60,7 +60,7 @@ class PurchaseList {
     }
     usort($urgent, fn($a, $b) => [$a['left'], -$a['q7']] <=> [$b['left'], -$b['q7']]);
     $top = $sold->sortByDesc('q7')->filter(fn($s) => (int)$s->q7 > 0)->take(15)->map(function ($s) use ($prods) { $p = $prods[$s->product_id] ?? null; return $p ? ['name' => (string)$p->name, 'q7' => (int)$s->q7, 'q30' => (int)$s->q30, 'stock' => (int)$p->stock] : null; })->filter()->values()->all();
-    $dead = DB::table('products')->where('stock', '>', 0)->when($cats, fn($q) => $q->whereIn('category_id', $cats))->when($ids, fn($q) => $q->whereNotIn('id', $ids))->orderByDesc('stock')->limit(15)->get(['name', 'stock'])->map(fn($p) => ['name' => (string)$p->name, 'stock' => (int)$p->stock])->all();
+    $dead = DB::table('products')->where('stock', '>', 0)->when($cats, fn($q) => $q->whereIn('category_id', $cats))->where(fn($q) => $q->whereNull('sub')->orWhereRaw('lower(sub) <> ?', ['single packet']))->whereRaw("lower(name) not like 'single %'")->where(fn($q) => $q->whereNull('sku')->orWhereRaw("sku not ilike '%-SP'"))->when($ids, fn($q) => $q->whereNotIn('id', $ids))->orderByDesc('stock')->limit(15)->get(['name', 'stock'])->map(fn($p) => ['name' => (string)$p->name, 'stock' => (int)$p->stock])->all();
     return ['urgent' => array_slice($urgent, 0, 800), 'urgent_total' => count($urgent), 'out' => $out, 'top' => $top, 'dead' => $dead, 'cover' => $cover, 'at' => now('Asia/Dhaka')];
   }
 

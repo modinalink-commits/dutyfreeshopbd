@@ -44,8 +44,10 @@ class BestSellerStock {
       if (!self::on() || !Cache::add('bs_stock.tick', 1, 60)) return;
       if (self::status() === 'PENDING' && Cache::add('bs_stock.sync', 1, 600)) self::syncTemplate();
       $ids = AutoPrice::ids(); if (!$ids) return; $lim = self::limit(); $sent = self::sent(); $dirty = false;
-      foreach (DB::table('products')->whereIn('id', $ids)->get(['id', 'name', 'stock']) as $p) {
+      $smoke = PurchaseList::smokeCats(); // owner rule 15 Nov 2026: the manager is told only about Cigarette and Vape products (empty = category not found, then nothing is filtered so the notice never goes silent)
+      foreach (DB::table('products')->whereIn('id', $ids)->get(['id', 'name', 'stock', 'category_id']) as $p) {
         $k = (string)$p->id; $st = (int)$p->stock;
+        if ($smoke && !in_array((int)$p->category_id, $smoke, true)) continue;
         if ($st > $lim) { if (isset($sent[$k])) { unset($sent[$k]); $dirty = true; } continue; }
         if (isset($sent[$k]) || !Cache::add('bs_stock.try.' . $k, 1, 600)) continue; // already told for this dip, or a failed attempt is waiting ten minutes
         $res = []; $any = false;
