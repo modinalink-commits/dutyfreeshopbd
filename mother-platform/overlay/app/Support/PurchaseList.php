@@ -73,7 +73,7 @@ class PurchaseList {
       $u = trim($u); if ($u === '' || !function_exists('imagecreatefromstring')) return null;
       $path = parse_url($u, PHP_URL_PATH) ?: ''; $host = parse_url($u, PHP_URL_HOST);
       if ($host && !preg_match('/(^|\.)dutyfreebd\.(com|shop|store)$/i', $host)) return null; // never fetches other websites
-      $abs = realpath(public_path(ltrim($path, '/'))); $root = realpath(public_path()); if (!$abs || !$root || !str_starts_with($abs, $root . DIRECTORY_SEPARATOR) || !is_file($abs) || filesize($abs) > 8 * 1048576) return null;
+      if ($path === '' || str_contains($path, '..') || str_contains($path, "\0") || !preg_match('#\.(webp|jpe?g|png|gif)$#i', $path)) return null; $abs = public_path(ltrim($path, '/')); if (!is_file($abs) || filesize($abs) > 8 * 1048576) return null; // image files under public only; uploads may be a linked folder, so no realpath check
       $src = @imagecreatefromstring((string)file_get_contents($abs)); if (!$src) return null;
       $w = imagesx($src); $h = imagesy($src); if ($w < 1 || $h < 1) return null; $sc = min(1, 90 / max($w, $h)); $tw = max(1, (int)round($w * $sc)); $th = max(1, (int)round($h * $sc));
       $dst = imagecreatetruecolor($tw, $th); imagefill($dst, 0, 0, imagecolorallocate($dst, 255, 255, 255)); imagecopyresampled($dst, $src, 0, 0, 0, 0, $tw, $th, $w, $h);
