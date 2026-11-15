@@ -145,8 +145,18 @@ class Mailer {
     return $out;
   }
   /** [subject, html] of an offer email. $msg: optional campaign line (the approved SMS text of that campaign, link removed); $cta: [label, url]. */
-  public static function offerHtml(string $email, ?string $name = null, ?string $msg = null, ?array $cta = null, ?string $title = null): array {
-    $items = self::offerProducts(); $title = $title ?: 'আপনার জন্য আজকের অফার';
+  /** A product-centred email shows that product, with its photo, first (owner request 15 Nov 2026); the rest of the grid stays as it was. */
+  private static function withFeatured(array $items, ?int $id): array {
+    if (!$id) return $items;
+    try {
+      $p = DB::table('products')->where('id', $id)->first(['id', 'name', 'image', 'price', 'compare_price']); if (!$p || !$p->image) return $items;
+      $url = self::base() . '/p/m' . $p->id; $items = array_values(array_filter($items, fn($i) => ($i['url'] ?? '') !== $url));
+      array_unshift($items, ['name' => $p->name, 'img' => self::abs($p->image), 'price' => (float)$p->price, 'was' => ((float)$p->compare_price > (float)$p->price) ? (float)$p->compare_price : null, 'tag' => null, 'url' => $url]);
+      return array_slice($items, 0, 6);
+    } catch (\Throwable $e) { return $items; }
+  }
+  public static function offerHtml(string $email, ?string $name = null, ?string $msg = null, ?array $cta = null, ?string $title = null, ?int $feature = null): array {
+    $items = self::offerProducts(); $items = self::withFeatured($items, $feature); $title = $title ?: 'আপনার জন্য আজকের অফার';
     $subject = $title . ' · DutyFree BD';
         return [$subject, view('emails.offer', ['items' => $items, 'title' => $title, 'name' => $name, 'msg' => $msg, 'cta' => $cta ?: ['সব অফার দেখুন', self::base() . '/'], 'logo' => self::logo(), 'base' => self::base(), 'unsub' => self::unsubUrl($email), 'subject' => $subject, 'hotline' => Biz::hotline(), 'wa' => Biz::waUrl()])->render()];
   }
@@ -158,7 +168,8 @@ class Mailer {
       $url = null; if (preg_match('#(https?://\S+|dutyfreebd\.com/\S+)#u', $body, $m)) $url = preg_match('#^https?://#', $m[1]) ? $m[1] : 'https://' . $m[1];
       $msg = trim(preg_replace(['#(https?://\S+|dutyfreebd\.com/\S+)#u', '/অর্ডার\s*:\s*$/um', '/DutyFreeBD\s*$/u'], ['', '', ''], $body)); $msg = trim(preg_replace('/\s+/u', ' ', $msg), " :।\n") . '।';
       $titles = ['pub_back' => 'আপনার পছন্দের পণ্য আবার স্টকে', 'bs_once' => 'Best Seller অফার: ২ কার্টনে বিশেষ দাম', 'bs_remind' => 'আবার অর্ডারের সময় হলো?'];
-      [$sub, $html] = self::offerHtml($c->email, $c->name, $msg, $url ? ['এখনই অর্ডার করুন', $url] : null, $titles[$event] ?? null);
+      $feat = $url && preg_match('#/p/m(\d+)#', $url, $fm) ? (int)$fm[1] : null;
+      [$sub, $html] = self::offerHtml($c->email, $c->name, $msg, $url ? ['এখনই অর্ডার করুন', $url] : null, $titles[$event] ?? null, $feat);
       self::enqueue($c->email, $sub, $html, 'mk_' . mb_substr($event, 0, 30), 'mk:sms:' . ($ref ?: md5($event . $p . $body)));
     } catch (\Throwable $e) { report($e); }
   }

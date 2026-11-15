@@ -6,7 +6,7 @@ namespace App\Support;
 class TinyPdf {
   const W = 595.28, H = 841.89;
   private array $pages = []; private string $cur = ''; public float $y = 0; public float $m = 36;
-  private string $footer = '';
+  private string $footer = ''; private array $imgs = [];
 
   public function __construct(string $footer = '') { $this->footer = $footer; $this->addPage(); }
   /** Latin-1 text only: other scripts are dropped (not shown as "?"). */
@@ -28,13 +28,18 @@ class TinyPdf {
   }
   public function rect(float $x, float $y, float $w, float $h, array $rgb): void { $this->cur .= sprintf("%.3f %.3f %.3f rg %.2f %.2f %.2f %.2f re f\n", $rgb[0], $rgb[1], $rgb[2], $x, $y, $w, $h); }
   public function line(float $x1, float $y1, float $x2, float $y2, array $rgb = [0.9, 0.91, 0.92]): void { $this->cur .= sprintf("%.3f %.3f %.3f RG 0.5 w %.2f %.2f m %.2f %.2f l S\n", $rgb[0], $rgb[1], $rgb[2], $x1, $y1, $x2, $y2); }
+  /** Draws a JPEG (bytes, pixel size w x h) in a box; the same image is stored once however often it is used. */
+  public function image(string $jpg, int $pw, int $ph, float $x, float $y, float $w, float $h): void {
+    $k = md5($jpg); if (!isset($this->imgs[$k])) $this->imgs[$k] = ['n' => 'Im' . (count($this->imgs) + 1), 'd' => $jpg, 'w' => $pw, 'h' => $ph];
+    $this->cur .= sprintf("q %.2f 0 0 %.2f %.2f %.2f cm /%s Do Q\n", $w, $h, $x, $y, $this->imgs[$k]['n']);
+  }
   public function heading(string $s, float $size = 12): void { $this->need($size + 22); $this->y -= $size + 8; $this->text($this->m, $this->y, $s, $size, true); $this->y -= 6; }
   public function note(string $s, float $size = 8): void { $this->need($size + 6); $this->y -= $size + 3; $this->text($this->m, $this->y, $s, $size, false, [0.42, 0.45, 0.5]); }
   /** $cols: [[title, width, align], ...]; $rows: list of cell arrays; optional row tint by index => rgb. */
-  public function table(array $cols, array $rows, array $tint = []): void {
-    $size = 8; $rh = 14; $x0 = $this->m;
-    $head = function () use ($cols, $x0, $size, $rh) {
-      $this->y -= $rh; $this->rect($x0, $this->y - 3, array_sum(array_column($cols, 1)), $rh, [0.95, 0.96, 0.97]); $x = $x0;
+  public function table(array $cols, array $rows, array $tint = [], array $photos = []): void {
+    $size = 8; $rh = $photos ? 30 : 14; $hh = 14; $x0 = $this->m;
+    $head = function () use ($cols, $x0, $size, $hh) {
+      $this->y -= $hh; $this->rect($x0, $this->y - 3, array_sum(array_column($cols, 1)), $hh, [0.95, 0.96, 0.97]); $x = $x0;
       foreach ($cols as [$t, $w, $a]) { $this->text($x + 3, $this->y + 1, self::fit($t, $w - 6, $size), $size, true, [0.29, 0.33, 0.39], $a, $w - 6); $x += $w; }
     };
     $this->need($rh * 3); $head();
@@ -42,7 +47,8 @@ class TinyPdf {
       if ($this->y - $rh < $this->m + 16) { $this->addPage(); $head(); }
       $this->y -= $rh; $x = $x0;
       if (isset($tint[$i])) $this->rect($x0, $this->y - 3, array_sum(array_column($cols, 1)), $rh, $tint[$i]);
-      foreach ($cols as $k => [$t, $w, $a]) { $this->text($x + 3, $this->y + 1, self::fit(self::plain((string)($r[$k] ?? '')), $w - 6, $size), $size, false, [0.06, 0.1, 0.2], $a, $w - 6); $x += $w; }
+      if (isset($photos[$i])) { [$jb, $jw, $jh] = $photos[$i]; $box = $rh - 4; $sc = min($box / $jw, $box / $jh); $dw = $jw * $sc; $dh = $jh * $sc; $this->image($jb, $jw, $jh, $x0 + $cols[0][1] + 2 + ($box - $dw) / 2, $this->y - 3 + 2 + ($box - $dh) / 2, $dw, $dh); }
+      foreach ($cols as $k => [$t, $w, $a]) { $this->text($x + 3, $this->y + ($photos ? 9 : 1), self::fit(self::plain((string)($r[$k] ?? '')), $w - 6, $size), $size, false, [0.06, 0.1, 0.2], $a, $w - 6); $x += $w; }
       $this->line($x0, $this->y - 3, $x0 + array_sum(array_column($cols, 1)), $this->y - 3);
     }
     $this->y -= 4;
@@ -52,11 +58,12 @@ class TinyPdf {
     $objs[1] = '<< /Type /Catalog /Pages 2 0 R >>';
     $objs[3] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>';
     $objs[4] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>';
-    $id = 5;
+    $id = 5; $xo = ''; $imgBase = 5 + 2 * $n; $j = 0;
+    foreach ($this->imgs as $im) { $oid = $imgBase + $j++; $objs[$oid] = '<< /Type /XObject /Subtype /Image /Width ' . $im['w'] . ' /Height ' . $im['h'] . ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' . strlen($im['d']) . " >>\nstream\n" . $im['d'] . "\nendstream"; $xo .= '/' . $im['n'] . ' ' . $oid . ' 0 R '; }
     foreach ($pages as $i => $c) {
       if ($this->footer !== '') $c .= sprintf("BT /F1 7 Tf 0.5 0.53 0.58 rg %.2f 22 Td (%s) Tj ET\nBT /F1 7 Tf 0.5 0.53 0.58 rg %.2f 22 Td (Page %d of %d) Tj ET\n", $this->m, self::clean($this->footer), self::W - $this->m - 50, $i + 1, $n);
       $objs[$id] = '<< /Length ' . strlen($c) . " >>\nstream\n" . $c . "endstream";
-      $objs[$id + 1] = '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' . self::W . ' ' . self::H . '] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ' . $id . ' 0 R >>';
+      $objs[$id + 1] = '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' . self::W . ' ' . self::H . '] /Resources << /Font << /F1 3 0 R /F2 4 0 R >>' . ($xo !== '' ? ' /XObject << ' . $xo . '>>' : '') . ' >> /Contents ' . $id . ' 0 R >>';
       $kids[] = ($id + 1) . ' 0 R'; $id += 2;
     }
     $objs[2] = '<< /Type /Pages /Kids [' . implode(' ', $kids) . '] /Count ' . $n . ' >>';

@@ -44,7 +44,7 @@ class PurchaseList {
       ->groupBy('i.product_id')->selectRaw('i.product_id, sum(i.qty) q30, sum(case when o.created_at >= ? then i.qty else 0 end) q7', [$since7])->get()->keyBy('product_id');
     // Owner rule 14 Nov 2026: the daily list covers the Cigarette and Vape categories only (and their sub-categories). Other products are left out of the PDF and the message.
     $cats = self::smokeCats();
-    $prods = $sold->isEmpty() ? collect() : DB::table('products')->whereIn('id', $sold->keys()->all())->when($cats, fn($q) => $q->whereIn('category_id', $cats))->where(fn($q) => $q->whereNull('sub')->orWhereRaw('lower(sub) <> ?', ['single packet']))->whereRaw("lower(name) not like 'single %'")->where(fn($q) => $q->whereNull('sku')->orWhereRaw("sku not ilike '%-SP'"))->get(['id', 'name', 'sku', 'stock', 'published'])->keyBy('id'); // Single Packet twins are never bought: their stock comes only from a received partial return
+    $prods = $sold->isEmpty() ? collect() : DB::table('products')->whereIn('id', $sold->keys()->all())->when($cats, fn($q) => $q->whereIn('category_id', $cats))->where(fn($q) => $q->whereNull('sub')->orWhereRaw('lower(sub) <> ?', ['single packet']))->whereRaw("lower(name) not like 'single %'")->where(fn($q) => $q->whereNull('sku')->orWhereRaw("sku not ilike '%-SP'"))->get(['id', 'name', 'sku', 'stock', 'published', 'image'])->keyBy('id'); // Single Packet twins are never bought: their stock comes only from a received partial return
     $sold = $sold->only($prods->keys()->all()); $ids = $sold->keys()->all();
     $cost = []; $sup = []; $when = [];
     if ($ids) {
@@ -59,7 +59,7 @@ class PurchaseList {
       $left = $stock <= 0 ? 0 : $stock / $perDay;
       if ($left > $cover && $stock > $lim) continue; // on the list when it will not last the cover days OR its stock is at/below the owner's limit
       if ($stock <= 0) $out++;
-      $urgent[] = ['name' => (string)$p->name, 'sku' => (string)($p->sku ?? ''), 'stock' => $stock, 'q7' => $q7, 'q30' => $q30, 'left' => $left, 'buy' => max(1, (int)ceil($perDay * 15) - max(0, $stock)), 'cost' => $cost[$pid] ?? null, 'sup' => $sup[$pid] ?? '', 'when' => $when[$pid] ?? '', 'lvl' => $stock <= 0 ? 'out' : ($stock <= $urg ? 'urgent' : ($stock <= $lim ? 'low' : 'cover'))];
+      $urgent[] = ['img' => (string)($p->image ?? ''), 'name' => (string)$p->name, 'sku' => (string)($p->sku ?? ''), 'stock' => $stock, 'q7' => $q7, 'q30' => $q30, 'left' => $left, 'buy' => max(1, (int)ceil($perDay * 15) - max(0, $stock)), 'cost' => $cost[$pid] ?? null, 'sup' => $sup[$pid] ?? '', 'when' => $when[$pid] ?? '', 'lvl' => $stock <= 0 ? 'out' : ($stock <= $urg ? 'urgent' : ($stock <= $lim ? 'low' : 'cover'))];
     }
     usort($urgent, fn($a, $b) => [$a['left'], -$a['q7']] <=> [$b['left'], -$b['q7']]);
     $top = $sold->sortByDesc('q7')->filter(fn($s) => (int)$s->q7 > 0)->take(15)->map(function ($s) use ($prods) { $p = $prods[$s->product_id] ?? null; return $p ? ['name' => (string)$p->name, 'q7' => (int)$s->q7, 'q30' => (int)$s->q30, 'stock' => (int)$p->stock] : null; })->filter()->values()->all();
@@ -67,6 +67,19 @@ class PurchaseList {
     return ['urgent' => array_slice($urgent, 0, 800), 'urgent_total' => count($urgent), 'out' => $out, 'top' => $top, 'dead' => $dead, 'cover' => $cover, 'lim' => $lim, 'urg' => $urg, 'buy_total' => array_sum(array_column($urgent, 'buy')), 'at' => now('Asia/Dhaka')];
   }
 
+  /** Small JPEG of the product photo for the PDF (owner request 15 Nov 2026), from our own image files only; null when it cannot be read. */
+  private static function thumb(string $u): ?array {
+    try {
+      $u = trim($u); if ($u === '' || !function_exists('imagecreatefromstring')) return null;
+      $path = parse_url($u, PHP_URL_PATH) ?: ''; $host = parse_url($u, PHP_URL_HOST);
+      if ($host && !preg_match('/(^|\.)dutyfreebd\.(com|shop|store)$/i', $host)) return null; // never fetches other websites
+      $abs = realpath(public_path(ltrim($path, '/'))); $root = realpath(public_path()); if (!$abs || !$root || !str_starts_with($abs, $root . DIRECTORY_SEPARATOR) || !is_file($abs) || filesize($abs) > 8 * 1048576) return null;
+      $src = @imagecreatefromstring((string)file_get_contents($abs)); if (!$src) return null;
+      $w = imagesx($src); $h = imagesy($src); if ($w < 1 || $h < 1) return null; $sc = min(1, 90 / max($w, $h)); $tw = max(1, (int)round($w * $sc)); $th = max(1, (int)round($h * $sc));
+      $dst = imagecreatetruecolor($tw, $th); imagefill($dst, 0, 0, imagecolorallocate($dst, 255, 255, 255)); imagecopyresampled($dst, $src, 0, 0, 0, 0, $tw, $th, $w, $h);
+      ob_start(); imagejpeg($dst, null, 80); $b = (string)ob_get_clean(); return $b !== '' ? [$b, $tw, $th] : null;
+    } catch (\Throwable $e) { return null; }
+  }
   public static function pdf(array $d): string {
     $when = $d['at']->format('d M Y, h:i A'); $p = new TinyPdf('DutyFreeBD · Daily Purchase List · ' . $when . ' · Internal use only');
     $p->y = TinyPdf::H - 46; $p->text($p->m, $p->y, 'DutyFreeBD', 17, true, [0.976, 0.451, 0.086]); $p->text($p->m + 104, $p->y, 'Daily Purchase List', 17, true);
@@ -75,9 +88,9 @@ class PurchaseList {
     $p->heading('1. Buy list: stock at or below ' . $d['lim'] . ' cartons, or will not last ' . $d['cover'] . ' days');
     if (!$d['urgent']) $p->note('Nothing to buy today: every selling Cigarette and Vape product has more than ' . $d['lim'] . ' cartons and ' . $d['cover'] . ' days of stock.');
     else {
-      $rows = []; $tint = [];
-      foreach ($d['urgent'] as $i => $u) { $rows[] = [$i + 1, $u['name'], $u['stock'], $u['q7'], $u['q30'], $u['stock'] <= 0 ? 'OUT' : number_format($u['left'], 1), $u['buy'], $u['cost'] !== null ? number_format($u['cost']) : '-', $u['when'] ?: '-', $u['sup'] ?: '-']; if ($u['lvl'] === 'out') $tint[$i] = [1, 0.93, 0.93]; elseif ($u['lvl'] === 'urgent') $tint[$i] = [1, 0.96, 0.88]; elseif ($u['lvl'] === 'low') $tint[$i] = [1, 0.99, 0.9]; }
-      $p->table([['#', 20, 'L'], ['Product', 150, 'L'], ['Stock', 34, 'R'], ['Sold 7d', 34, 'R'], ['Sold 30d', 38, 'R'], ['Days left', 38, 'R'], ['Buy qty', 36, 'R'], ['Last cost', 44, 'R'], ['Last bought', 52, 'L'], ['From (supplier)', 77, 'L']], $rows, $tint);
+      $rows = []; $tint = []; $photos = []; $cache = [];
+      foreach ($d['urgent'] as $i => $u) { if ($i < 300 && $u['img'] !== '') { $cache[$u['img']] = $cache[$u['img']] ?? self::thumb($u['img']); if ($cache[$u['img']]) $photos[$i] = $cache[$u['img']]; } $rows[] = [$i + 1, '', $u['name'], $u['stock'], $u['q7'], $u['q30'], $u['stock'] <= 0 ? 'OUT' : number_format($u['left'], 1), $u['buy'], $u['cost'] !== null ? number_format($u['cost']) : '-', $u['when'] ?: '-', $u['sup'] ?: '-']; if ($u['lvl'] === 'out') $tint[$i] = [1, 0.93, 0.93]; elseif ($u['lvl'] === 'urgent') $tint[$i] = [1, 0.96, 0.88]; elseif ($u['lvl'] === 'low') $tint[$i] = [1, 0.99, 0.9]; }
+      $p->table([['#', 20, 'L'], ['Photo', 34, 'L'], ['Product', 116, 'L'], ['Stock', 34, 'R'], ['Sold 7d', 34, 'R'], ['Sold 30d', 38, 'R'], ['Days left', 38, 'R'], ['Buy qty', 36, 'R'], ['Last cost', 44, 'R'], ['Last bought', 52, 'L'], ['From (supplier)', 77, 'L']], $rows, $tint, $photos);
       $p->note('Stock and Buy qty are in cartons. Red = out of stock, orange = ' . $d['urg'] . ' cartons or less, yellow = ' . $d['lim'] . ' cartons or less. Buy qty covers 15 days of sale. Last bought = date and supplier of the latest purchase.');
       if ($d['urgent_total'] > count($d['urgent'])) $p->note('Showing the ' . count($d['urgent']) . ' most urgent of ' . $d['urgent_total'] . '.');
     }
