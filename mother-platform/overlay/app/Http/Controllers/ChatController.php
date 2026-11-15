@@ -818,7 +818,7 @@ class ChatController extends Controller {
         $err = $C::get('cc.bf.err.' . $p->page_id);
         $h .= '<br><b>'.$e($p->name).'</b>: টোকেন '.(\App\Support\Chat::pageTok('facebook', (string)$p->page_id) ? $good('আছে') : $bad('নেই')).' · প্রথম পাঠ: '.$e($C::get('cc.bf.' . $p->page_id, 'এখনো হয়নি')).' · সর্বশেষ পোল (প্রতি ~২ মিনিট): '.$e($C::get('cc.poll.last.' . $p->page_id, 'এখনো হয়নি')).($err ? ' · '.$bad('এরর: '.$e($err)) : '');
       }
-      $h .= '</div>';
+      $h .= '<form method="post" action="/admin/chat/comments/tokens" style="margin-top:8px">'.csrf_field().'<button>টোকেনের অনুমতি যাচাই করুন (ads_read আছে কিনা)</button></form></div>';
     } catch (\Throwable $ex) {}
     $h .= '<div>'.collect($lab)->map(fn($t, $k) => '<span class="k"><b>'.(int)($by[$k] ?? 0).'</b>'.$t.' (৭ দিন)</span>')->implode('').'</div>';
     $h .= '<table><tr><th>সময়</th><th>কে</th><th>কমেন্ট</th><th>AI উত্তর</th><th>অবস্থা</th></tr>'.$rows->map(fn($x) => '<tr><td>'.\Carbon\Carbon::parse($x->created_at)->timezone('Asia/Dhaka')->format('d M H:i').'</td><td>'.$e($x->from_name).'</td><td>'.$e(mb_substr((string)$x->message, 0, 300)).'</td><td>'.$e($x->reply_text).'</td><td>'.$e($lab[$x->status] ?? $x->status).($x->note ? '<br><small>'.$e($x->note).'</small>' : '').($x->status !== 'deleted' ? '<form method="post" action="/admin/chat/comments/'.(int)$x->id.'/delete" onsubmit="return confirm(\'এই কমেন্টটি Facebook থেকে মুছে ফেলবেন?\')" style="margin-top:4px">'.csrf_field().'<button style="border:1px solid #E5E7EB;background:#fff;border-radius:6px;padding:2px 8px;font-size:12px;color:#b42318">মুছুন</button></form>' : '').'</td></tr>')->implode('').($rows->count() ? '' : '<tr><td colspan="5" style="color:#6b7390">এখনো কোনো কমেন্ট আসেনি। কমেন্ট পেতে Meta অ্যাপে পেজের "feed" সাবস্ক্রিপশন চালু থাকতে হবে।</td></tr>').'</table></div>';
@@ -840,6 +840,31 @@ class ChatController extends Controller {
       $h .= '<tr><td>'.$e($pg->name).'</td><td>'.$e(\Illuminate\Support\Facades\Cache::get('cc.bf.' . $pg->page_id)).' '.$e(\Illuminate\Support\Facades\Cache::get('cc.bf.err.' . $pg->page_id)).'<br><small>'.$e(\Illuminate\Support\Facades\Cache::get('cc.bf.dbg.' . $pg->page_id)).'</small></td></tr>';
     }
     return view('chat_memory', ['h' => $h.'</table></div>']);
+  }
+  /** Token check (owner 16 Nov 2026): what Facebook really granted to each Page token, plus the three comment calls tried live. The token value is never shown. */
+  public function commentTokens(Request $r) {
+    abort_unless(\App\Support\ProfitFloor::admin(), 403); @set_time_limit(200);
+    $e = fn($v) => e((string)$v); $G = 'https://graph.facebook.com/v21.0/'; $H = fn() => \Illuminate\Support\Facades\Http::timeout(20);
+    $id = trim((string)Chat::sec('chat_app_id')); $sec = trim((string)Chat::sec('chat_app_secret'));
+    $err = fn($x) => 'error ' . (int)$x->status() . ' ' . mb_substr((string)($x->json('error.message') ?? ''), 0, 140);
+    $h = '<div class="mm"><a href="/admin/chat/comments">&larr; কমেন্ট</a><h1>টোকেনের অনুমতি যাচাই</h1><p style="color:#6b7390">প্রতিটা Page-এর সংরক্ষিত টোকেনে Facebook আসলে কোন অনুমতি দিয়েছে, আর কমেন্টের তিনটা কল সরাসরি পরীক্ষা। টোকেনের মান দেখানো হয় না।</p><table><tr><th>Page</th><th>ফল</th></tr>';
+    foreach (DB::table('chat_pages')->get(['page_id', 'name']) as $pg) {
+      $tok = Chat::pageTok('facebook', (string)$pg->page_id); $o = [];
+      if (!$tok) { $h .= '<tr><td>'.$e($pg->name).'</td><td style="color:#B91C1C">টোকেন নেই</td></tr>'; continue; }
+      try {
+        $dbg = (array)($H()->get($G.'debug_token', ['input_token' => $tok, 'access_token' => ($id && $sec) ? $id.'|'.$sec : $tok])->json('data') ?? []);
+        $sc = (array)($dbg['scopes'] ?? []);
+        $o[] = 'অ্যাপ ' . $e($dbg['app_id'] ?? '?') . ' · ধরন ' . $e($dbg['type'] ?? '?') . ' · বৈধ ' . (isset($dbg['is_valid']) ? ($dbg['is_valid'] ? 'হ্যাঁ' : 'না') : '?');
+        $o[] = 'অনুমতি: ' . $e(implode(', ', $sc) ?: '(পাওয়া যায়নি)');
+        $need = ['pages_read_engagement', 'pages_read_user_content', 'pages_manage_engagement', 'pages_messaging', 'ads_read', 'ads_management'];
+        $o[] = 'দরকারি অনুমতির মধ্যে নেই: <b style="color:#B91C1C">' . $e(implode(', ', array_diff($need, $sc)) ?: 'কিছুই না') . '</b>';
+      } catch (\Throwable $ex) { $o[] = 'debug_token: ' . $e(mb_substr($ex->getMessage(), 0, 120)); }
+      try { $t1 = $H()->withToken($tok)->get($G . $pg->page_id . '/ads_posts', ['limit' => 1, 'fields' => 'id']); $o[] = 'ads_posts: ' . ($t1->ok() ? '<span style="color:#15803D">ঠিক</span>' : '<span style="color:#B91C1C">' . $e($err($t1)) . '</span>'); } catch (\Throwable $ex) { $o[] = 'ads_posts: ' . $e($ex->getMessage()); }
+      try { $t2 = $H()->withToken($tok)->get($G . $pg->page_id . '/subscribed_apps'); $o[] = 'সাবস্ক্রিপশন: ' . ($t2->ok() ? $e(collect((array)$t2->json('data'))->map(fn($a) => ($a['name'] ?? $a['id'] ?? '?') . ' [' . implode(',', (array)($a['subscribed_fields'] ?? [])) . ']')->implode(' | ') ?: '(কোনো অ্যাপ নেই)') : '<span style="color:#B91C1C">' . $e($err($t2)) . '</span>'); } catch (\Throwable $ex) { $o[] = 'সাবস্ক্রিপশন: ' . $e($ex->getMessage()); }
+      try { $t3 = $H()->withToken($tok)->get($G . $pg->page_id . '/published_posts', ['limit' => 1, 'fields' => 'id,comments.limit(1){id,from}']); $o[] = 'পোস্ট ও কমেন্ট পড়া: ' . ($t3->ok() ? '<span style="color:#15803D">ঠিক</span>' : '<span style="color:#B91C1C">' . $e($err($t3)) . '</span>'); } catch (\Throwable $ex) { $o[] = 'পোস্ট পড়া: ' . $e($ex->getMessage()); }
+      $h .= '<tr><td>'.$e($pg->name).'<br><small>'.$e($pg->page_id).'</small></td><td>'.implode('<br>', $o).'</td></tr>';
+    }
+    return view('chat_memory', ['h' => $h . '</table></div>']);
   }
   public function commentSubscribe(Request $r) {
     abort_unless(\App\Support\ProfitFloor::admin(), 403); $e = fn($v) => e((string)$v); $rows = [];
