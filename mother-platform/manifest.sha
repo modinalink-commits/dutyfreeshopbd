@@ -188,7 +188,7 @@ cad5d7d00994ffe93453adf9c363fb19b3e4bd3e resources/views/sip_account.blade.php
 00498a9a76ecd32140e49a2cce80fc2b8f304f4b resources/views/call_history.blade.php
 58c516aa5fc448fbfee358b69dad9a84384cf2b0 resources/views/softphone_fab.blade.php
 d60cc2488e9d1428806a53b4a367beb5d0ec79c6 public/js/jssip.min.js
-692f6b50cd15ad3caa4f6470b3c37afee9a16d08 public/js/df-export.js
+a3c5d6ae40b31215a50dd80253358e0c37263037 public/js/df-export.js
 00d43c063dcf9feed9d0f70ea885452364dbac05 public/js/lame.min.js
 9e41ea8b1293ff426f786b99dfb476791410ed05 public/js/zxing.min.js
 1946a8e81eccc56677f643e84b38901d91516d3d app/Support/CardImg.php
@@ -592,7 +592,7 @@ d6396905b7e6277e41ff043a776a7bef5065c0ef database/migrations/2026_11_04_000140_r
 f71a758c75473c740e44955de8c82e446c65580a app/Support/Domain.php
 673590193c0a614364d901b118cdf18ff2fd2888 app/Http/Middleware/CanonicalHost.php
 6b58e3bd6ab96d11a7c660214cfbd0650448bbf6 app/Http/Middleware/BrandPrint.php
-0362510ac61734ae890243b34b0fe4caa16b93f7 app/Support/PrintBrand.php
+d04f856deae8b339026605b05b9a5a7bf6f9ff73 app/Support/PrintBrand.php
 9804df11e31b46a2752cb1aa27627f6283eeaf96 public/brand/export-logo.png
 98d6ada375bad277d6d08f7ccb959ecc7adf79c4 public/brand/watermark-faded.png
 b3eb201275631d31cb2d8f1fec8ec1a2faf0a920 public/brand/watermark-logo.png
@@ -1197,10 +1197,11 @@ e003eeaf9ac2ac468d2c0494e3134a0c42044da3 public/brand/logo-white.png
 8f79e3ff2c749685886d32ace2ef794f448c18ab public/brand/logo-stacked-white.png
 2d6526aa3a59348eb776d22f0cf29059d0676ec3 public/brand/logo-navy.png
 7bbf38bee31cf02d40d6f9719eec0564870ab819 public/brand/logo-orange.png
-d32e136b27266275f9616aa9bafed466b779604e public/logo-v2.webp
-5799150693f852998c8924fc7dd2fb4ab4ac186a public/dutyfree-bd-logo-v2.png
-9ba151c17eaf221dbfb9f8bc2fe5e6d68e6748ed public/email-logo-v2.png
-9804df11e31b46a2752cb1aa27627f6283eeaf96 public/brand/export-logo-v2.png
-b3eb201275631d31cb2d8f1fec8ec1a2faf0a920 public/brand/watermark-logo-v2.png
-0116d0c6b488d1c4acff8c4f93b49222ff28a554 public/pwa/logo-240-v2.png
+91f982947013ea9fb972418b0ad1d594844edefe public/logo-v2.webp
+e259d448f81e578b98b560ac71708e20b956c6bd public/dutyfree-bd-logo-v2.png
+3ac7ce3e86cac92a02154b668938e4b753263434 public/email-logo-v2.png
+e259d448f81e578b98b560ac71708e20b956c6bd public/brand/export-logo-v2.png
+9e4fd7f0a76595c78f01622d8bd27a4604b1da06 public/brand/watermark-logo-v2.png
+d82425355fce907cf86a53675902d2f0647fbf6b public/pwa/logo-240-v2.png
 0116d0c6b488d1c4acff8c4f93b49222ff28a554 public/brand/logo-240.png
+0725f0117d1359b7b1726625729033b89aa52d5c public/brand/watermark-faded-v2.png

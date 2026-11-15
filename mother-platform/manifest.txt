@@ -1205,3 +1205,4 @@ public/brand/export-logo-v2.png
 public/brand/watermark-logo-v2.png
 public/pwa/logo-240-v2.png
 public/brand/logo-240.png
+public/brand/watermark-faded-v2.png

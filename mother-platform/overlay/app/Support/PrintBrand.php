@@ -6,7 +6,7 @@ namespace App\Support;
  *  Files live in public/brand/. */
 class PrintBrand {
   const LOGO = '/brand/export-logo-v2.png';        // horizontal logo (export page header)
-  const WM   = '/brand/watermark-faded.png';    // stacked logo, already faded (watermark)
+  const WM   = '/brand/watermark-faded-v2.png';    // stacked logo, already faded (watermark)
   const WMV  = '3';                              // cache-buster for the logo files
 
   static function url(string $p, bool $abs = false): string { return ($abs ? 'https://' . Domain::HOST : '') . $p . '?v=' . self::WMV; }
