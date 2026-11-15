@@ -49,6 +49,29 @@ class ChatComments {
   }
   public static function isSmoke(string $t): bool { return (bool)preg_match('/(সিগারেট|সিগারেট|বিড়ি|তামাক|ভেপ|ভ্যাপ|কার্টন|cigar|sigar|sigaret|tobacco|vape|vap\b|nicotine|carton|benson|marlboro|dunhill|gold ?leaf|esse\b|camel\b|davidoff)/iu', $t); }
 
+  /** Owner request 15 Nov 2026: answer the old comments nobody answered yet. One Page per cycle is read once (posts of the last 14 days, comments with no reply from the Page yet), stored, then answered a few per cycle so no burst goes out. */
+  public static function tick(): void {
+    try {
+      if (!self::ready() || !self::on() || !Cache::add('cc.tick', 1, 50)) return;
+      $pages = DB::table('chat_pages')->get(['page_id', 'name']);
+      foreach ($pages as $pg) { if (Cache::has('cc.bf.' . $pg->page_id)) continue; self::backfillPage((string)$pg->page_id); break; } // one Page per cycle
+      foreach (DB::table('chat_comments')->where('channel', 'facebook')->where('status', 'new')->orderBy('id')->limit(3)->pluck('id') as $id) self::reply((int)$id);
+    } catch (\Throwable $e) { report($e); }
+  }
+  private static function backfillPage(string $pageId): void {
+    $tok = Chat::pageTok('facebook', $pageId); if (!$tok) { Cache::forever('cc.bf.' . $pageId, 'no token'); return; }
+    try {
+      $r = Http::timeout(40)->get(Chat::API . '/' . $pageId . '/published_posts', ['fields' => 'id,created_time,comments.limit(60){id,message,from,created_time,comments.limit(8){from}}', 'since' => now()->subDays(14)->timestamp, 'limit' => 20, 'access_token' => $tok]);
+      if (!$r->ok()) { Cache::put('cc.bf.err.' . $pageId, mb_substr((string)($r->json('error.message') ?? $r->status()), 0, 160), 86400); Cache::forever('cc.bf.' . $pageId, 'error'); return; }
+      $n = 0;
+      foreach ((array)$r->json('data') as $post) foreach ((array)($post['comments']['data'] ?? []) as $c) {
+        $answered = false; foreach ((array)($c['comments']['data'] ?? []) as $x) if ((string)($x['from']['id'] ?? '') === $pageId) $answered = true;
+        if ($answered || empty($c['id']) || empty($c['from']['id'])) continue;
+        if (self::ingest($pageId, ['item' => 'comment', 'verb' => 'add', 'comment_id' => $c['id'], 'message' => $c['message'] ?? '', 'from' => $c['from'], 'post_id' => $post['id'] ?? '']) ) $n++;
+      }
+      Cache::forever('cc.bf.' . $pageId, 'done ' . $n);
+    } catch (\Throwable $e) { Cache::forever('cc.bf.' . $pageId, 'error'); report($e); }
+  }
   /** Answer one stored comment (once). */
   public static function reply(int $id): void {
     try {
