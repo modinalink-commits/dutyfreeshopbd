@@ -57,10 +57,11 @@ class AdminAlertsExtra
     self::set($n >= 1, 'below_margin', 'high', 'Pricing', 'Products priced below the protected margin', $n . ' published products are priced below the protected margin.' . $names, 'A purchase rate went up or a price was set too low.', 'Open Pricing / Profit Floor and raise these prices or use the approved override.', 'all prices are safe');
   }
 
+  /** Owner 15 Nov 2026: sourced (vendor) products reprice themselves from the source price + markup, so a cost rise there is never an alert. */
   /** Purchasing: a purchase rate 20%+ higher than the previous purchase of the same product (last 24 h). */
   private static function purchaseJump(): void {
     if (!Schema::hasTable('purchase_items')) return;
-    $rows = DB::table('purchase_items')->where('created_at', '>=', now()->subDay())->whereNotNull('product_id')->where('cost', '>', 0)->orderByDesc('id')->limit(300)->get(['id', 'product_id', 'cost']); $bad = 0; $jumps = [];
+    $rows = DB::table('purchase_items')->where('created_at', '>=', now()->subDay())->whereNotNull('product_id')->where('cost', '>', 0)->when(Schema::hasTable('watch_source'), fn($w) => $w->whereNotExists(fn($e) => $e->select(DB::raw(1))->from('watch_source as ws')->whereColumn('ws.product_id', 'purchase_items.product_id')))->orderByDesc('id')->limit(300)->get(['id', 'product_id', 'cost']); $bad = 0; $jumps = [];
     foreach ($rows as $x) { $prev = DB::table('purchase_items')->where('product_id', $x->product_id)->where('id', '<', $x->id)->where('cost', '>', 0)->orderByDesc('id')->value('cost'); if ($prev && (float)$x->cost >= (float)$prev * 1.2) { $bad++; if (count($jumps) < 6) $jumps[] = [(int)$x->product_id, (float)$prev, (float)$x->cost]; } }
     $names = '';
     if ($jumps) { // name the products with old and new rate
