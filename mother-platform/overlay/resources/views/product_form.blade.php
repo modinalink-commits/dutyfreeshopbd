@@ -47,7 +47,7 @@
 @media(max-width:600px){.pf .g2,.pf .g3{grid-template-columns:1fr}.pf .imgs{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 <h1>{{ $p ? 'Edit product' : 'Add product' }}</h1>
-@if(request('saved'))<div class="okb">Saved. {{ $p && $p->published ? 'This product is live on the store.' : 'It is a draft, not visible to customers.' }}</div>@endif
+@if(request('saved'))<div class="okb">Saved. {{ $p && $p->published ? (((int)($p->stock ?? 1) <= 0 && \App\Support\StockGuard::stockLabel($p) === 'Out of Stock') ? 'Stock is 0, so this product is hidden from the store listings. It shows again as soon as stock is added.' : 'This product is live on the store.') : 'It is a draft, not visible to customers.' }}</div>@endif
 @if($errors->any())<div class="card err" style="max-width:1180px;white-space:pre-line">{{ $errors->first() }}</div>@endif
 @if($ai)<div class="card" style="max-width:1180px;border:2px solid #FF5A00;background:#FFF1E8"><b>AI filled this product from the image.</b> Please review every field. <b>Price was not filled</b> – enter the Regular price (and Sale price if any), then Save. Nothing is saved until you press Save.</div>@endif
 <form id="pf" class="pf" method="post" action="{{ $p ? '/admin/products/'.$p->id : '/admin/products' }}">@csrf
