@@ -75,21 +75,27 @@ class ChatComments {
     try {
       if (!self::ready() || !self::on() || !Cache::add('cc.tick', 1, 50)) return;
       $pages = DB::table('chat_pages')->get(['page_id', 'name']);
-      foreach ($pages as $pg) { if (Cache::has('cc.bf.' . $pg->page_id)) continue; self::backfillPage((string)$pg->page_id); break; } // one Page per cycle
+      $did = false;
+      foreach ($pages as $pg) { if (Cache::has('cc.bf.' . $pg->page_id)) continue; self::backfillPage((string)$pg->page_id); $did = true; break; } // one Page per cycle
+      // Recurring poll (owner 15 Nov 2026: ad comments must be answered): every Page is re-read about every 2 minutes for the last 2 days, one Page per cycle, so ad (dark) post comments - which the webhook does not deliver - are picked up too.
+      if (!$did) foreach ($pages as $pg) { if (Cache::add('cc.poll.' . $pg->page_id, 1, 120)) { self::backfillPage((string)$pg->page_id, 2, false); break; } }
       foreach (DB::table('chat_comments')->where('channel', 'facebook')->where('status', 'new')->orderBy('id')->limit(3)->pluck('id') as $id) self::reply((int)$id);
     } catch (\Throwable $e) { report($e); }
   }
-  public static function backfillPage(string $pageId): void {
-    $tok = Chat::pageTok('facebook', $pageId); if (!$tok) { Cache::forever('cc.bf.' . $pageId, 'no token'); return; }
+  /** $record=true: the one-time 14-day read (result kept in 'cc.bf.<page>'). $record=false: the light recurring poll (see tick()), result kept in 'cc.poll.last.<page>' and it never blocks a later poll. */
+  public static function backfillPage(string $pageId, int $days = 14, bool $record = true): void {
+    $fin = function (string $msg) use ($pageId, $record) { if ($record) Cache::forever('cc.bf.' . $pageId, $msg); else Cache::put('cc.poll.last.' . $pageId, now()->timezone('Asia/Dhaka')->format('d M H:i') . ' - ' . $msg, 86400); };
+    $tok = Chat::pageTok('facebook', $pageId); if (!$tok) { $fin('no token'); return; }
+    $cl = $record ? 60 : 30; // comments per post: the recurring poll asks for less
     try {
-      $r = Http::timeout(40)->get(Chat::API . '/' . $pageId . '/published_posts', ['fields' => 'id,created_time,comments.limit(60){id,message,from,created_time,comments.limit(8){from}}', 'since' => now()->subDays(14)->timestamp, 'limit' => 20, 'access_token' => $tok]);
-      if (!$r->ok()) { Cache::put('cc.bf.err.' . $pageId, mb_substr((string)($r->json('error.message') ?? $r->status()), 0, 160), 86400); Cache::forever('cc.bf.' . $pageId, 'error'); return; }
+      $r = Http::timeout(40)->get(Chat::API . '/' . $pageId . '/published_posts', ['fields' => 'id,created_time,comments.limit(' . $cl . '){id,message,from,created_time,comments.limit(8){from}}', 'since' => now()->subDays($days)->timestamp, 'limit' => $record ? 20 : 10, 'access_token' => $tok]);
+      if (!$r->ok()) { Cache::put('cc.bf.err.' . $pageId, mb_substr((string)($r->json('error.message') ?? $r->status()), 0, 160), 86400); $fin('error'); return; }
       $all = (array)$r->json('data');
-      // Ad (dark) posts are not in published_posts; most customer comments live there.
-      try { $ad = Http::timeout(40)->get(Chat::API . '/' . $pageId . '/ads_posts', ['fields' => 'id,created_time,comments.limit(60){id,message,from,created_time,comments.limit(8){from}}', 'limit' => 40, 'access_token' => $tok]);
+      // Ad (dark) posts are not in published_posts; most customer comments live there, and the "feed" webhook does not reliably deliver them - so the recurring poll is what answers them.
+      try { $ad = Http::timeout(40)->get(Chat::API . '/' . $pageId . '/ads_posts', ['fields' => 'id,created_time,comments.limit(' . $cl . '){id,message,from,created_time,comments.limit(8){from}}', 'limit' => $record ? 40 : 25, 'access_token' => $tok]);
         if ($ad->ok()) $all = array_merge($all, (array)$ad->json('data')); else Cache::put('cc.bf.err.' . $pageId, 'ads_posts: ' . mb_substr((string)($ad->json('error.message') ?? $ad->status()), 0, 140), 86400); } catch (\Throwable $e) {}
       $first = (array)($all[0] ?? []);
-      if (!empty($first['id'])) { $dbg = Http::timeout(30)->get(Chat::API . '/' . $first['id'], ['fields' => 'comments.summary(true).limit(3){id,message,from},reactions.summary(true).limit(0)', 'access_token' => $tok]); Cache::put('cc.bf.dbg.' . $pageId, mb_substr(preg_replace('/\s+/', ' ', (string)$dbg->body()), 0, 380), 86400); }
+      if ($record && !empty($first['id'])) { $dbg = Http::timeout(30)->get(Chat::API . '/' . $first['id'], ['fields' => 'comments.summary(true).limit(3){id,message,from},reactions.summary(true).limit(0)', 'access_token' => $tok]); Cache::put('cc.bf.dbg.' . $pageId, mb_substr(preg_replace('/\s+/', ' ', (string)$dbg->body()), 0, 380), 86400); }
       $n = 0; $posts = count($all); $seen = 0; $nofrom = 0; $ans = 0;
       foreach ($all as $post) foreach ((array)($post['comments']['data'] ?? []) as $c) {
         $seen++; if (empty($c['from']['id'])) $nofrom++;
@@ -98,8 +104,8 @@ class ChatComments {
         if ($answered || empty($c['id']) || empty($c['from']['id'])) continue;
         if (self::ingest($pageId, ['item' => 'comment', 'verb' => 'add', 'comment_id' => $c['id'], 'message' => $c['message'] ?? '', 'from' => $c['from'], 'post_id' => $post['id'] ?? '']) ) $n++;
       }
-      Cache::forever('cc.bf.' . $pageId, "done {$n} (posts {$posts}, comments {$seen}, already answered {$ans}, no sender info {$nofrom})");
-    } catch (\Throwable $e) { Cache::forever('cc.bf.' . $pageId, 'error'); report($e); }
+      $fin("done {$n} (posts {$posts}, comments {$seen}, already answered {$ans}, no sender info {$nofrom})");
+    } catch (\Throwable $e) { $fin('error'); report($e); }
   }
   /** Answer one stored comment (once). */
   public static function reply(int $id): void {
