@@ -805,9 +805,21 @@ class ChatController extends Controller {
     $rows = $ok ? DB::table('chat_comments')->orderByDesc('id')->limit(150)->get() : collect();
     $by = $ok ? DB::table('chat_comments')->where('created_at', '>=', now()->subDays(7))->selectRaw('status, count(*) n')->groupBy('status')->pluck('n', 'status')->all() : [];
     $lab = ['new' => 'অপেক্ষায়', 'replied' => 'উত্তর দেওয়া হয়েছে', 'skipped' => 'স্টাফের জন্য রাখা', 'failed' => 'পাঠানো যায়নি'];
-    $h = '<style>.k{display:inline-block;background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:8px 14px;margin:0 8px 8px 0}.k b{font-size:20px;display:block}.mm td{vertical-align:top}</style><div class="mm"><a href="/admin/chat">&larr; Messages</a><h1>Comment Replies</h1><p style="color:#6b7390">আমাদের পেজের পোস্টে আসা কমেন্ট ও AI-এর উত্তর। AI Comment Reply এখন: <b>'.(\App\Support\ChatComments::on() ? 'চালু' : 'বন্ধ').'</b> (Chat Settings থেকে বদলানো যায়)। সিগারেট/ভেপ নিয়ে পাবলিক কমেন্টে কখনো দাম বলা হয় না, ইনবক্সে ডাকা হয়।</p>';
+    $h = '<style>.k{display:inline-block;background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:8px 14px;margin:0 8px 8px 0}.k b{font-size:20px;display:block}.mm td{vertical-align:top}</style><div class="mm"><a href="/admin/chat">&larr; Messages</a><h1>Comment Replies</h1><p style="color:#6b7390">আমাদের পেজের পোস্টে আসা কমেন্ট ও AI-এর উত্তর। AI Comment Reply এখন: <b>'.(\App\Support\ChatComments::on() ? 'চালু' : 'বন্ধ').'</b> (Chat Settings থেকে বদলানো যায়)। সিগারেট/ভেপ নিয়ে পাবলিক কমেন্টে কখনো দাম বলা হয় না, ইনবক্সে ডাকা হয়।</p><form method="post" action="/admin/chat/comments/subscribe" style="margin:0 0 10px">'.csrf_field().'<button>সব Facebook Page-এ কমেন্ট আসা চালু করুন</button></form>';
     $h .= '<div>'.collect($lab)->map(fn($t, $k) => '<span class="k"><b>'.(int)($by[$k] ?? 0).'</b>'.$t.' (৭ দিন)</span>')->implode('').'</div>';
     $h .= '<table><tr><th>সময়</th><th>কে</th><th>কমেন্ট</th><th>AI উত্তর</th><th>অবস্থা</th></tr>'.$rows->map(fn($x) => '<tr><td>'.\Carbon\Carbon::parse($x->created_at)->timezone('Asia/Dhaka')->format('d M H:i').'</td><td>'.$e($x->from_name).'</td><td>'.$e(mb_substr((string)$x->message, 0, 300)).'</td><td>'.$e($x->reply_text).'</td><td>'.$e($lab[$x->status] ?? $x->status).($x->note ? '<br><small>'.$e($x->note).'</small>' : '').'</td></tr>')->implode('').($rows->count() ? '' : '<tr><td colspan="5" style="color:#6b7390">এখনো কোনো কমেন্ট আসেনি। কমেন্ট পেতে Meta অ্যাপে পেজের "feed" সাবস্ক্রিপশন চালু থাকতে হবে।</td></tr>').'</table></div>';
+    return view('chat_memory', ['h' => $h]);
+  }
+  /** Owner request 15 Nov 2026: turn on public-comment delivery for every connected Facebook Page (the "feed" subscription). Messages stay subscribed too, because this call replaces the Page's field list. Facebook only; Instagram is left as it was. */
+  public function commentSubscribe(Request $r) {
+    abort_unless(\App\Support\ProfitFloor::admin(), 403); $e = fn($v) => e((string)$v); $rows = [];
+    foreach (DB::table('chat_pages')->get(['page_id', 'name']) as $pg) {
+      $tok = Chat::pageTok('facebook', (string)$pg->page_id); if (!$tok) { $rows[] = [$pg, 'no token', false]; continue; }
+      try { $j = \Illuminate\Support\Facades\Http::timeout(25)->withToken($tok)->post('https://graph.facebook.com/v21.0/' . $pg->page_id . '/subscribed_apps', ['subscribed_fields' => 'feed,messages,messaging_postbacks,message_reads'])->json(); $ok = !empty($j['success']); $rows[] = [$pg, $ok ? 'comments on' : mb_substr(json_encode($j['error'] ?? $j, JSON_UNESCAPED_UNICODE), 0, 220), $ok]; }
+      catch (\Throwable $x) { $rows[] = [$pg, 'error: ' . mb_substr($x->getMessage(), 0, 120), false]; }
+    }
+    DB::table('audit_logs')->insert(['user_id' => auth()->id(), 'user_name' => auth()->user()->name, 'action' => 'chat.comment_subscribe', 'subject' => collect($rows)->filter(fn($x) => $x[2])->count() . ' of ' . count($rows) . ' pages', 'ip' => $r->ip(), 'created_at' => now(), 'updated_at' => now()]);
+    $h = '<div class="mm"><a href="/admin/chat/comments">&larr; Comment Replies</a><h1>Comment delivery, Facebook Pages</h1><table><tr><th>Page</th><th>Result</th></tr>' . collect($rows)->map(fn($x) => '<tr><td>' . $e($x[0]->name) . '<br><small>' . $e($x[0]->page_id) . '</small></td><td style="color:' . ($x[2] ? '#15803D' : '#B91C1C') . '">' . $e($x[1]) . '</td></tr>')->implode('') . '</table></div>';
     return view('chat_memory', ['h' => $h]);
   }
   /** How much the AI handles alone and where it stops (read-only). */
