@@ -1204,3 +1204,4 @@ public/email-logo-v2.png
 public/brand/export-logo-v2.png
 public/brand/watermark-logo-v2.png
 public/pwa/logo-240-v2.png
+public/brand/logo-240.png
