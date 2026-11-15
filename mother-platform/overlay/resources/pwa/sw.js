@@ -3,7 +3,7 @@ const VER = '__VER__';
 const SHELL = 'dfbd-shell-' + VER;
 const IMG = 'dfbd-img-v1';
 const OFFLINE = '/offline';
-const PRECACHE = [OFFLINE, '/pwa/icon-192.png', '/pwa/logo-240-v2.png'];
+const PRECACHE = [OFFLINE, '/pwa/icon-192.png', '/pwa/logo-240-v3.png'];
 
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(SHELL).then(function (c) { return c.addAll(PRECACHE); }));

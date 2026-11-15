@@ -37,7 +37,7 @@
 <div class="dfmcw"><div class="dfmc {{ $mk }}" role="img" aria-label="DutyFree BD membership card, {{ ucfirst($mk) }}, {{ $ms }} of 4 stars, {{ $mn }}">
 <i class="bg"></i><i class="ring"></i><i class="shine"></i><i class="edge"></i>
 <div class="in">
-<div class="top"><div class="plate"><img src="/dutyfree-bd-logo-v2.png" alt="DutyFree BD"></div><div><div class="lab s2">{{ $mk === 'diamond' ? 'Premium Membership' : 'Membership' }}</div><div class="tier">@if($mk === 'diamond')<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12l4 6-10 12L2 9z" fill="#8FD8FF"/><path d="M2 9h20M9 3L7 9l5 12M15 3l2 6-5 12" fill="none" stroke="#0F1F3D" stroke-width="1" stroke-opacity=".6"/></svg>@endif{{ ucfirst($mk) }}</div></div></div>
+<div class="top"><div class="plate"><img src="/dutyfree-bd-logo-v3.png" alt="DutyFree BD"></div><div><div class="lab s2">{{ $mk === 'diamond' ? 'Premium Membership' : 'Membership' }}</div><div class="tier">@if($mk === 'diamond')<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12l4 6-10 12L2 9z" fill="#8FD8FF"/><path d="M2 9h20M9 3L7 9l5 12M15 3l2 6-5 12" fill="none" stroke="#0F1F3D" stroke-width="1" stroke-opacity=".6"/></svg>@endif{{ ucfirst($mk) }}</div></div></div>
 <div class="stars" aria-hidden="true">@for($i = 1; $i <= 4; $i++)@php $on = $i <= $ms; @endphp<svg viewBox="0 0 24 24"><polygon points="{{ $starPts }}" fill="{{ $on ? 'currentColor' : 'none' }}" @if(!$on) stroke="currentColor" stroke-opacity=".4" stroke-width="1.4" @endif/></svg>@endfor</div>
 <div class="bot"><div style="min-width:0"><div class="sm s2">Member</div><div class="nm">{{ $mn }}</div></div><div><div class="id">{{ $mi }}</div><div class="web s2">dutyfreebd.com</div></div></div>
 </div>

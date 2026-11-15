@@ -70,7 +70,7 @@
 </style>
 <div class="dmw"><div class="dm" id="dm">
 <span class="rays"></span><span class="cl a"></span><span class="cl b"></span><span class="cl c"></span>
-<img class="logo" decoding="async" src="/logo-v2.webp" alt="DutyFree BD" width="360" height="82">
+<img class="logo" decoding="async" src="/logo-v3.webp" alt="DutyFree BD" width="360" height="82">
 <span class="tag">স্মার্ট শপিং, স্মার্ট ডেলিভারি</span>
 <span class="bd a"><span>CASH ON<b>DELIVERY</b></span></span><span class="bd b"><span><b>100%</b>ORIGINAL</span></span>
 <svg class="route" viewBox="0 0 210 90" aria-hidden="true"><path d="M4 78C48 86 70 30 118 40S178 14 206 8"/><circle cx="206" cy="8" r="4.5"/></svg>

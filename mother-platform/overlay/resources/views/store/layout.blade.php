@@ -12,7 +12,7 @@
 @include('favicon_head')@include('store.pwa_head')
 @yield('ld')
 @php
-  $logo = $s['logo_url'] ?: '/logo-v2.webp';
+  $logo = $s['logo_url'] ?: '/logo-v3.webp';
   $ann = \App\Http\Controllers\AnnouncementController::live();
   if (!$ann) { foreach (array_values(array_filter(array_map('trim', explode("\n", (string)($s['ticker'] ?? ''))))) as $t) $ann[] = ['text'=>$t,'link'=>null,'icon'=>'','kind'=>'offer']; }
   $tk = array_values(array_filter(array_map('trim', explode("\n", (string)$s['ticker']))));

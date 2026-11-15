@@ -4,7 +4,7 @@ fe43f8b6cb422cca81ee18b74d3972f77e7852de database/migrations/2026_10_31_000001_m
 dff13c03686f8a7541dbc6a07ec64555254a6b96 app/Http/Controllers/AdminController.php
 242316b2ef0a0967e6815e39fcbc7377349fdc17 app/Console/Commands/MotherInstall.php
 ae9f96eccb15ed3cba8a712d359ec6a52471c441 resources/views/layout.blade.php
-cc6dc5dec64f95ef15d96005e3ecb5d26119b4ff resources/views/login.blade.php
+ab32f708860f9fa43ffb3bfc90409f6d85325748 resources/views/login.blade.php
 2cdfa751bb4935baf142c1d5571e62155ecb6c64 resources/views/dashboard.blade.php
 de2e8183712f2fe094c7f0b87c3b1cec7b411b6e resources/views/orders.blade.php
 7403010f22b4965eca0a4ac78603cf2769e65a46 resources/views/admin/orders/partials/status-tabs.blade.php
@@ -31,7 +31,7 @@ fc3568db08725a38056a08be87cb325d92aebb5f database/migrations/2026_10_31_000003_a
 0c3c248356924c8cd69cf4a5056212d399f4bbb3 resources/views/res_list.blade.php
 02454a9915ed520f7506ca073a7683ca7e9dc150 resources/views/res_form.blade.php
 67a76a09307002f6201cc2e684f3161b22c67d9c resources/views/reports.blade.php
-f5e67c551a0ab85b27eab4abc8f70fc17ddb6bdb resources/views/sidebar.blade.php
+dd5695be9487c6a558a6d40ab47ed819aff92ef0 resources/views/sidebar.blade.php
 42ec15c419546449e1c381f9c7c712a4395e2226 resources/views/coming.blade.php
 c391e719e9e194b7bf6ecf86ccb4c9a4504c2d17 database/migrations/2026_10_31_000004_catalog_extra.php
 d5d35fdf9413e4b3ab5feed955243317b651d684 resources/views/panels/customers.blade.php
@@ -53,7 +53,7 @@ e92c5075c5266882f35b3a3e18bfe14f44d16178 resources/views/report_details.blade.ph
 43cb2dfd032b3ddd0b7bc50af28e4900dfc03094 app/Console/Commands/MotherSyncFeed.php
 2a56eafa359436fdb0b8ffc94324862961a1d307 app/Console/Commands/MotherGuard.php
 f6fce7be6176b1bbba54383b04b93e55f2bd283c app/Http/Controllers/StoreController.php
-f40ec4036654a1f28a2743c3522c85657c27ebba resources/views/store/layout.blade.php
+84afc47a04836581e28ff1d699eeca37efa221e5 resources/views/store/layout.blade.php
 5356b422775064c3de9b13c703f12fbf913a2bd3 resources/views/store/card.blade.php
 4a5eb7ee8d7960886fcb97c690bbb604ec69eb1f resources/views/store/home_sec.blade.php
 71f3544d05421b1974f6601e1309c0f566b44284 resources/views/store/home.blade.php
@@ -115,7 +115,7 @@ d12347a9cf32eb078cee4c7af3033c741868e269 public/pay/ebl.png
 7da9749c724f15b03dcd131fae2e9544804eba31 public/pay/bkash.png
 a757009ad517bc95d5b0e08c9f87c8ff919a3fd5 public/pay/nagad.png
 17a8753e9d19156baf3b2b663f60f4f088f85e90 app/Console/Commands/MotherCourierSync.php
-d1aa7a3f4be7b003e8057377e73c8a9d1d342b4b resources/views/store/success.blade.php
+cb85813584b321c8bdb5b96e0cd22baa77239f81 resources/views/store/success.blade.php
 a006dcab65cbc6725064eb3520c9700b98e1f634 resources/views/store/invoice.blade.php
 98d5ed91f65ff39d5eb3a8fc92c53b8e64c50b66 app/Http/Controllers/CheckoutLookupController.php
 c3031e77b500dff351e6414514861a1476fca325 app/Support/CustomerIntel.php
@@ -183,7 +183,7 @@ d3cc43f20538d088724674b61ceb5d7e44541c38 database/migrations/2026_10_31_000033_o
 f5a5dab4dfd73a5cc466cdc17409fd5c2e8bf42e app/Support/Pg.php
 4d9ef1c138b087962142088f80d27781ac67e969 app/Http/Controllers/CallCenterController.php
 74d0d6e6e0f6f4a9e77ca510fc874a31973b2459 database/migrations/2026_10_31_000037_call_center.php
-886fa5581ba6908fc1daf9602c0d25d346f94690 resources/views/softphone.blade.php
+9001d3eaaa7b321b5f6b8dee2958c37b2b7a2b7b resources/views/softphone.blade.php
 cad5d7d00994ffe93453adf9c363fb19b3e4bd3e resources/views/sip_account.blade.php
 00498a9a76ecd32140e49a2cce80fc2b8f304f4b resources/views/call_history.blade.php
 58c516aa5fc448fbfee358b69dad9a84384cf2b0 resources/views/softphone_fab.blade.php
@@ -196,11 +196,11 @@ eeabc74ba74e075cdec7a02389cdd3e230b86ea3 app/Support/Seo.php
 378ac5fb2098cd4b2f4d6a04a53e57d33846a86f resources/views/store/zoom.blade.php
 6151f41455dfd0d4ca95474718eece991d8804a3 config/trustedproxy.php
 af44173bbd44837b1b621a1a95c7d2a5c675dd6a app/Http/Controllers/PwaController.php
-3ea6deba512ebab83f54e8ca4833bba1c88e0415 resources/pwa/sw.js
-3e289334e44b9b4f90d6b2066814ec4012f90bb6 resources/views/store/offline.blade.php
-b2c791bf0db0b1edd69f19233ec04264182cc276 resources/views/store/pwa.blade.php
+1a1800811734061362508298ae044b83962b3426 resources/pwa/sw.js
+54dc21a4048ac3807ffc32f686487acc66eaba2e resources/views/store/offline.blade.php
+557ff18888855d47bcd276777c063ba6e9756083 resources/views/store/pwa.blade.php
 d3c25989e4d0d23fd973e2d9f67eae301e6f9a8a resources/views/store/pwa_head.blade.php
-64e9c9d1ee129c0f852c439d4799b51c67c39bd8 resources/views/store/pwa_splash.blade.php
+79af9b6065bcb4c89a40364d082d37c972d9feb8 resources/views/store/pwa_splash.blade.php
 b6320b6dd46b39cea94a56b11c679519338007fa resources/views/store/minicart.blade.php
 3bb16aa0de8c627c4de10455a81e29aafa1879fa public/pwa/icon-192.png
 c94a778fefb027fc04d7101883ca0bf17fd7a5ec public/pwa/icon-512.png
@@ -502,7 +502,7 @@ df745554b06b8c36d0e19006e1ff72986b21c28f database/migrations/2026_11_03_000055_w
 03a3d8d8578826aabc3edb7e479c6f586a31ce3e database/migrations/2026_11_03_000056_membership_stars.php
 8ab390861591d37386138595e73961b1b5941a40 database/migrations/2026_11_03_000057_customer_level.php
 50b22ddd25ad337734d7d38830e5deb07b94d08d resources/views/components/customer-level-stars.blade.php
-1cf0f3522ca64318e3b63837952212c6ecbb6654 resources/views/components/membership-card.blade.php
+69eb682c01bf66ca64ccaca6228dc6ca220cf812 resources/views/components/membership-card.blade.php
 41980c11482b6cb579f734d1c97ab66228154a78 resources/views/discount_modal.blade.php
 cfd8b2d7b00137b86e88b88922450e539ed0eeb0 resources/views/keep_position.blade.php
 bdf651c18e0a087ee0ff98870b04583e6d69eaea resources/views/popup_close.blade.php
@@ -536,7 +536,7 @@ fecebf592d22879c0ba556660aa82406bd2082a1 resources/views/store/globe2.blade.php
 f55afc16f82d6a04be52ecbb56108e7edfad381a resources/views/store/globe_preview2.blade.php
 8e271db67537efbe96e339b566f81f29cedf690d resources/views/store/airport.blade.php
 1fbc0f5c7089cee40ffa1a887a7036e4ae851d55 resources/views/store/airport_preview.blade.php
-f047f94cc2d7a73898016e3a4ba3116daa3cfc12 resources/views/store/deal_bp2.blade.php
+58f28336646d357178ba363dc032d3836ad99ca5 resources/views/store/deal_bp2.blade.php
 c8f049dea002a346f31f75e81881257f3a3ed77a resources/views/store/deal_preview.blade.php
 d06e9f2080824b2834c98779c1a37b1c07804d05 database/migrations/2026_11_04_000060_winback_next_sms_at.php
 35ade3c30d18b0e1efb68ca0e7095f72542c7882 resources/views/settings_ui.blade.php
@@ -545,7 +545,7 @@ f9e773e0adf9f8c1eee3937a4ecf20c55d0bda22 resources/views/store/member_slide.blad
 960fecfaabbfdc0a638481eab745aeb6eee7320e resources/views/store/offers_slide.blade.php
 c762bbf7c54ec9c17eec9baf0ab0d7fa19ad4ec6 public/fonts/anek-bangla-500.woff2
 8711f8da2273235fdceeff694825bd5e8b852993 public/fonts/anek-bangla-700.woff2
-f720d4a7d35d70d1ab0572cc41cfbdf49a1e4698 resources/views/store/district_slide.blade.php
+e8ff8664cbfd8e0089c72edb8ad10cc41b787537 resources/views/store/district_slide.blade.php
 7c72f649c1b6f05b09a28f6c4ac6b037c1a549d5 public/bd64.json
 b0469f31ccbcb5b2a853d2fd42ed0239c0a0c6a7 app/Support/AreaOrders.php
 aeaf4abc14e93fee17a03b91756a3b2eaad72f37 app/Http/Controllers/AreaOrdersController.php
@@ -655,7 +655,7 @@ e4840881b565973df27b293ba79c6dbfba3ea805 app/Support/AppUsers.php
 9231568f927f8aab61842fff1141a77d064c133e resources/views/app_user_card.blade.php
 97babfa2907c8a1199834099ef46f78f86f97c18 resources/views/app_users.blade.php
 2d17249c383db24c6facbce6253338c4d9ec5684 resources/views/components/app-notify-form.blade.php
-c077465816792c12627921131f5ff66fed15ceaf resources/views/admin_mobile.blade.php
+bad5ce37d73bc1100b3a73ecc3e17877b3f05030 resources/views/admin_mobile.blade.php
 4662dc008b470675b0c61e026271d94aca0e9f9a database/migrations/2026_11_05_000050_protected_profit_10.php
 34f574dbc75553e00bf81447075a147fb10dc704 database/migrations/2026_11_05_000140_ai_task_briefs.php
 f00e97e5a10fe82413c40c9f99bcd5924424c64f app/Support/AiTaskBrief.php
@@ -1205,3 +1205,6 @@ e259d448f81e578b98b560ac71708e20b956c6bd public/brand/export-logo-v2.png
 d82425355fce907cf86a53675902d2f0647fbf6b public/pwa/logo-240-v2.png
 0116d0c6b488d1c4acff8c4f93b49222ff28a554 public/brand/logo-240.png
 0725f0117d1359b7b1726625729033b89aa52d5c public/brand/watermark-faded-v2.png
+91f982947013ea9fb972418b0ad1d594844edefe public/logo-v3.webp
+e259d448f81e578b98b560ac71708e20b956c6bd public/dutyfree-bd-logo-v3.png
+d82425355fce907cf86a53675902d2f0647fbf6b public/pwa/logo-240-v3.png

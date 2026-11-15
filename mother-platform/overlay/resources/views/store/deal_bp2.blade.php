@@ -1,6 +1,6 @@
 @php
   $__d = collect($deals ?? [])->sortBy(fn($x) => $x->cat_rank ?? 0)->values()->take(12); // best product of each category first
-  $__logo = ($s['logo_url'] ?? '') ?: '/logo-v2.webp';
+  $__logo = ($s['logo_url'] ?? '') ?: '/logo-v3.webp';
   [$__end, $__fix] = \App\Http\Controllers\StoreController::endAt($s['deal_end_at'] ?? '');
   $__dt = \Carbon\Carbon::now('Asia/Dhaka');
   $__fl = 'DFB '.$__dt->format('md');
@@ -14,7 +14,7 @@
 .bpx-m,.bpx-s{position:relative;background:#FFFDFA}
 .bpx-m{border-radius:20px 0 0 20px;overflow:hidden;display:flex;flex-direction:column;min-width:0}
 .bpx-m:before{content:"";position:absolute;left:-14px;top:50%;width:28px;height:28px;margin-top:-14px;border-radius:50%;background:var(--pg);z-index:4}
-.bpx-wm{position:absolute;right:4%;top:46%;width:300px;height:326px;margin-top:-163px;background:url(/pwa/logo-240-v2.png) center/contain no-repeat;opacity:.045;pointer-events:none}
+.bpx-wm{position:absolute;right:4%;top:46%;width:300px;height:326px;margin-top:-163px;background:url(/pwa/logo-240-v3.png) center/contain no-repeat;opacity:.045;pointer-events:none}
 .bpx-gl{position:absolute;inset:0;background:repeating-radial-gradient(circle at 100% 0,transparent 0 9px,rgba(249,85,5,.035) 9px 10px);pointer-events:none}
 .bpx-hd{position:relative;display:flex;align-items:center;gap:18px;padding:12px 24px;background:linear-gradient(100deg,#F95505 0%,#FF6F1F 70%,#FF8240 100%);color:#fff;min-height:68px;overflow:hidden}
 .bpx-hd:after{content:"";position:absolute;right:-20px;top:-10px;bottom:-10px;width:190px;background:repeating-linear-gradient(115deg,transparent 0 14px,rgba(255,255,255,.18) 14px 24px)}
@@ -144,7 +144,7 @@
 <div class="bpx-ft"><span class="c">DUTYFREEBD.COM</span><i></i><span class="hid">100% ORIGINAL</span><span class="hid">&bull;</span><span>CASH ON DELIVERY</span></div>
 </div>
 <div class="bpx-s"><span class="bpx-nt"></span><span class="bpx-nb"></span>
-<div class="bpx-sh"><span class="ic"><img src="/pwa/logo-240-v2.png" alt="" width="25" height="27"></span><div><b>DutyFreeBD</b><small>BOARDING PASS</small></div></div>
+<div class="bpx-sh"><span class="ic"><img src="/pwa/logo-240-v3.png" alt="" width="25" height="27"></span><div><b>DutyFreeBD</b><small>BOARDING PASS</small></div></div>
 <div class="bpx-sb">
 <div class="bpx-pr"><div><small>FROM</small><b>DFB</b></div><div><small>TO</small><b>YOUR DOOR</b></div><div><small>GATE</small><b>D10</b></div><div><small>CLASS</small><b>DUTY FREE</b></div></div>
 <div class="bpx-cdb"><small>BOARDING CLOSES IN</small><div class="bpx-t"><div><b data-h>00</b><small>HRS</small></div><u>:</u><div><b data-m>00</b><small>MIN</small></div><u>:</u><div><b data-s>00</b><small>SEC</small></div></div></div>
