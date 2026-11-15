@@ -1208,3 +1208,4 @@ d82425355fce907cf86a53675902d2f0647fbf6b public/pwa/logo-240-v2.png
 91f982947013ea9fb972418b0ad1d594844edefe public/logo-v3.webp
 e259d448f81e578b98b560ac71708e20b956c6bd public/dutyfree-bd-logo-v3.png
 d82425355fce907cf86a53675902d2f0647fbf6b public/pwa/logo-240-v3.png
+0c2a055d9132db5e1134742b3c741879ec5d6c8b database/migrations/2026_11_15_140000_speed_indexes_purchase_list.php
