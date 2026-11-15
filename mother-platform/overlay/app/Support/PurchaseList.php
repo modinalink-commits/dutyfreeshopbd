@@ -15,6 +15,9 @@ class PurchaseList {
   public static function tpl(): string { return self::set('tpl', 'daily_purchase_list'); }
   public static function on(): bool { return self::set('enabled', '1') === '1'; }
   public static function sendAt(): string { $t = trim(self::set('send_at', '12:00')); return preg_match('/^\d{1,2}:\d{2}$/', $t) ? $t : '12:00'; }
+  /** Owner 15 Nov 2026: a Cigarette/Vape product comes onto the list as soon as its stock is at or below this many cartons (while still above the urgent mark), not only when it is about to run out. */
+  public static function limit(): int { return max(1, (int)self::set('stock_limit', '100')); }
+  public static function urgentAt(): int { return max(0, (int)self::set('stock_urgent', '50')); }
   public static function days(): int { return max(3, min(30, (int)self::set('cover_days', '7'))); }
   /** [[name, 8801XXXXXXXXX], ...] from the "Name|phone" lines in settings. */
   public static function recipients(): array {
@@ -43,39 +46,39 @@ class PurchaseList {
     $cats = self::smokeCats();
     $prods = $sold->isEmpty() ? collect() : DB::table('products')->whereIn('id', $sold->keys()->all())->when($cats, fn($q) => $q->whereIn('category_id', $cats))->where(fn($q) => $q->whereNull('sub')->orWhereRaw('lower(sub) <> ?', ['single packet']))->whereRaw("lower(name) not like 'single %'")->where(fn($q) => $q->whereNull('sku')->orWhereRaw("sku not ilike '%-SP'"))->get(['id', 'name', 'sku', 'stock', 'published'])->keyBy('id'); // Single Packet twins are never bought: their stock comes only from a received partial return
     $sold = $sold->only($prods->keys()->all()); $ids = $sold->keys()->all();
-    $cost = []; $sup = [];
+    $cost = []; $sup = []; $when = [];
     if ($ids) {
       $last = DB::table('purchase_items as pi')->join('purchases as pu', 'pu.id', '=', 'pi.purchase_id')->leftJoin('suppliers as s', 's.id', '=', 'pu.supplier_id')->whereIn('pi.product_id', $ids)->where('pi.cost', '>', 0)
-        ->whereRaw('pi.id in (select max(x.id) from purchase_items x where x.product_id = pi.product_id and x.cost > 0 group by x.product_id)')->get(['pi.product_id', 'pi.cost', 's.name']);
-      foreach ($last as $l) { $cost[$l->product_id] = (float)$l->cost; $sup[$l->product_id] = (string)$l->name; }
+        ->whereRaw('pi.id in (select max(x.id) from purchase_items x where x.product_id = pi.product_id and x.cost > 0 group by x.product_id)')->get(['pi.product_id', 'pi.cost', 's.name', 'pu.created_at as bought_at']);
+      foreach ($last as $l) { $cost[$l->product_id] = (float)$l->cost; $sup[$l->product_id] = (string)$l->name; $when[$l->product_id] = $l->bought_at ? \Carbon\Carbon::parse($l->bought_at)->format('d M Y') : ''; }
     }
-    $urgent = []; $out = 0;
+    $urgent = []; $out = 0; $lim = self::limit(); $urg = self::urgentAt();
     foreach ($sold as $pid => $s) {
       $p = $prods[$pid] ?? null; if (!$p) continue; $stock = (int)$p->stock; $q30 = (int)$s->q30; $q7 = (int)$s->q7; if ($q30 <= 0) continue;
       $perDay = max($q30 / 30, $q7 / 7); if ($perDay <= 0) continue; // the faster of the two speeds, so a product that just took off is not missed
       $left = $stock <= 0 ? 0 : $stock / $perDay;
-      if ($left > $cover) continue;
+      if ($left > $cover && $stock > $lim) continue; // on the list when it will not last the cover days OR its stock is at/below the owner's limit
       if ($stock <= 0) $out++;
-      $urgent[] = ['name' => (string)$p->name, 'sku' => (string)($p->sku ?? ''), 'stock' => $stock, 'q7' => $q7, 'q30' => $q30, 'left' => $left, 'buy' => max(1, (int)ceil($perDay * 15) - max(0, $stock)), 'cost' => $cost[$pid] ?? null, 'sup' => $sup[$pid] ?? ''];
+      $urgent[] = ['name' => (string)$p->name, 'sku' => (string)($p->sku ?? ''), 'stock' => $stock, 'q7' => $q7, 'q30' => $q30, 'left' => $left, 'buy' => max(1, (int)ceil($perDay * 15) - max(0, $stock)), 'cost' => $cost[$pid] ?? null, 'sup' => $sup[$pid] ?? '', 'when' => $when[$pid] ?? '', 'lvl' => $stock <= 0 ? 'out' : ($stock <= $urg ? 'urgent' : ($stock <= $lim ? 'low' : 'cover'))];
     }
     usort($urgent, fn($a, $b) => [$a['left'], -$a['q7']] <=> [$b['left'], -$b['q7']]);
     $top = $sold->sortByDesc('q7')->filter(fn($s) => (int)$s->q7 > 0)->take(15)->map(function ($s) use ($prods) { $p = $prods[$s->product_id] ?? null; return $p ? ['name' => (string)$p->name, 'q7' => (int)$s->q7, 'q30' => (int)$s->q30, 'stock' => (int)$p->stock] : null; })->filter()->values()->all();
     $dead = DB::table('products')->where('stock', '>', 0)->when($cats, fn($q) => $q->whereIn('category_id', $cats))->where(fn($q) => $q->whereNull('sub')->orWhereRaw('lower(sub) <> ?', ['single packet']))->whereRaw("lower(name) not like 'single %'")->where(fn($q) => $q->whereNull('sku')->orWhereRaw("sku not ilike '%-SP'"))->when($ids, fn($q) => $q->whereNotIn('id', $ids))->orderByDesc('stock')->limit(15)->get(['name', 'stock'])->map(fn($p) => ['name' => (string)$p->name, 'stock' => (int)$p->stock])->all();
-    return ['urgent' => array_slice($urgent, 0, 800), 'urgent_total' => count($urgent), 'out' => $out, 'top' => $top, 'dead' => $dead, 'cover' => $cover, 'at' => now('Asia/Dhaka')];
+    return ['urgent' => array_slice($urgent, 0, 800), 'urgent_total' => count($urgent), 'out' => $out, 'top' => $top, 'dead' => $dead, 'cover' => $cover, 'lim' => $lim, 'urg' => $urg, 'buy_total' => array_sum(array_column($urgent, 'buy')), 'at' => now('Asia/Dhaka')];
   }
 
   public static function pdf(array $d): string {
     $when = $d['at']->format('d M Y, h:i A'); $p = new TinyPdf('DutyFreeBD · Daily Purchase List · ' . $when . ' · Internal use only');
     $p->y = TinyPdf::H - 46; $p->text($p->m, $p->y, 'DutyFreeBD', 17, true, [0.976, 0.451, 0.086]); $p->text($p->m + 104, $p->y, 'Daily Purchase List', 17, true);
-    $p->y -= 15; $p->text($p->m, $p->y, $when . '   |   Buy now: ' . $d['urgent_total'] . ' products   |   Out of stock: ' . $d['out'], 9, false, [0.29, 0.33, 0.39]);
+    $p->y -= 15; $p->text($p->m, $p->y, $when . '   |   Buy now: ' . $d['urgent_total'] . ' products   |   Out of stock: ' . $d['out'] . '   |   Total to buy: ' . number_format($d['buy_total']) . ' cartons', 9, false, [0.29, 0.33, 0.39]);
     $p->y -= 6; $p->line($p->m, $p->y, TinyPdf::W - $p->m, $p->y, [0.976, 0.451, 0.086]);
-    $p->heading('1. Buy now (stock will not last ' . $d['cover'] . ' days)');
-    if (!$d['urgent']) $p->note('Nothing urgent today: every selling product has more than ' . $d['cover'] . ' days of stock.');
+    $p->heading('1. Buy list: stock at or below ' . $d['lim'] . ' cartons, or will not last ' . $d['cover'] . ' days');
+    if (!$d['urgent']) $p->note('Nothing to buy today: every selling Cigarette and Vape product has more than ' . $d['lim'] . ' cartons and ' . $d['cover'] . ' days of stock.');
     else {
       $rows = []; $tint = [];
-      foreach ($d['urgent'] as $i => $u) { $rows[] = [$i + 1, $u['name'], $u['stock'], $u['q7'], $u['q30'], $u['stock'] <= 0 ? 'OUT' : number_format($u['left'], 1), $u['buy'], $u['cost'] !== null ? number_format($u['cost']) : '-', $u['sup']]; if ($u['stock'] <= 0) $tint[$i] = [1, 0.95, 0.95]; }
-      $p->table([['#', 22, 'L'], ['Product', 196, 'L'], ['Stock', 36, 'R'], ['Sold 7d', 40, 'R'], ['Sold 30d', 44, 'R'], ['Days left', 44, 'R'], ['Buy qty', 40, 'R'], ['Last cost', 48, 'R'], ['Supplier', 53, 'L']], $rows, $tint);
-      $p->note('Days left = stock / daily sale (faster of the 7-day and 30-day speed). Buy qty covers 15 days of sale. Red rows are out of stock.');
+      foreach ($d['urgent'] as $i => $u) { $rows[] = [$i + 1, $u['name'], $u['stock'], $u['q7'], $u['q30'], $u['stock'] <= 0 ? 'OUT' : number_format($u['left'], 1), $u['buy'], $u['cost'] !== null ? number_format($u['cost']) : '-', $u['when'] ?: '-', $u['sup'] ?: '-']; if ($u['lvl'] === 'out') $tint[$i] = [1, 0.93, 0.93]; elseif ($u['lvl'] === 'urgent') $tint[$i] = [1, 0.96, 0.88]; elseif ($u['lvl'] === 'low') $tint[$i] = [1, 0.99, 0.9]; }
+      $p->table([['#', 20, 'L'], ['Product', 150, 'L'], ['Stock', 34, 'R'], ['Sold 7d', 34, 'R'], ['Sold 30d', 38, 'R'], ['Days left', 38, 'R'], ['Buy qty', 36, 'R'], ['Last cost', 44, 'R'], ['Last bought', 52, 'L'], ['From (supplier)', 77, 'L']], $rows, $tint);
+      $p->note('Stock and Buy qty are in cartons. Red = out of stock, orange = ' . $d['urg'] . ' cartons or less, yellow = ' . $d['lim'] . ' cartons or less. Buy qty covers 15 days of sale. Last bought = date and supplier of the latest purchase.');
       if ($d['urgent_total'] > count($d['urgent'])) $p->note('Showing the ' . count($d['urgent']) . ' most urgent of ' . $d['urgent_total'] . '.');
     }
     $p->heading('2. Best sellers, last 7 days');
