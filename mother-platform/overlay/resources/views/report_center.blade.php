@@ -7,7 +7,7 @@
 .rc .top h1{margin:2px 0 0;font-size:22px;line-height:1.2}.rc .mut{color:#6B7280;font-size:11.5px}
 .rc .crumb{font-size:12px;color:#6B7280}
 .rc .btn2{display:inline-flex;align-items:center;min-height:40px;padding:0 14px;border:1px solid #D5D8DC;border-radius:8px;background:#fff;color:#0B1220;font-weight:600;text-decoration:none;cursor:pointer;font-size:13px}
-.rc .btn2.p{background:#C2410C;border-color:#C2410C;color:#fff;font-weight:700}
+.rc .btn2.p{background:#FF5A00;border-color:#FF5A00;color:#fff;font-weight:700}
 .rc .kp{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));border:1px solid #E5E7EB;border-radius:10px;overflow:hidden;background:#fff;margin-bottom:12px}
 .rc .kp>div{padding:8px 12px;border-right:1px solid #E5E7EB}.rc .kp>div:last-child{border-right:0}
 .rc .kp span{display:block;font-size:11.5px;color:#4B5563}.rc .kp b{display:block;font-size:19px;line-height:1.25}

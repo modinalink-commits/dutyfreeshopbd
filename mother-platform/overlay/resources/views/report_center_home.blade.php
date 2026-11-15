@@ -5,7 +5,7 @@
 .rh .top{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;justify-content:space-between;margin-bottom:12px}
 .rh .top h1{margin:2px 0 0;font-size:22px;line-height:1.2}.rh .mut{color:#6B7280;font-size:11.5px}.rh .crumb{font-size:12px;color:#6B7280}
 .rh .btn2{display:inline-flex;align-items:center;min-height:40px;padding:0 14px;border:1px solid #D5D8DC;border-radius:8px;background:#fff;color:#0B1220;font-weight:600;text-decoration:none;cursor:pointer;font-size:13px}
-.rh .btn2.p{background:#C2410C;border-color:#C2410C;color:#fff;font-weight:700}
+.rh .btn2.p{background:#FF5A00;border-color:#FF5A00;color:#fff;font-weight:700}
 .rh .srch{display:flex;gap:8px;margin-bottom:12px}.rh .srch input{flex:1;min-height:44px;padding:0 14px;border:1px solid #D5D8DC;border-radius:10px;font:inherit;font-size:14px;box-sizing:border-box}
 .rh .kp{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));border:1px solid #E5E7EB;border-radius:10px;overflow:hidden;background:#fff;margin-bottom:14px}
 .rh .kp>div{padding:8px 12px;border-right:1px solid #E5E7EB}.rh .kp>div:last-child{border-right:0}

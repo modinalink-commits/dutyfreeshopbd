@@ -1193,3 +1193,4 @@ database/migrations/2026_11_15_110000_link_cooler_7990_ryans2.php
 public/s/adm-theme-b.css
 public/s/adm-theme-a.css
 public/s/adm-layout-a.css
+database/migrations/2026_11_15_120000_speed_indexes_chat_activity.php
