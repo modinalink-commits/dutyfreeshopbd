@@ -805,7 +805,7 @@ class ChatController extends Controller {
     $rows = $ok ? DB::table('chat_comments')->orderByDesc('id')->limit(150)->get() : collect();
     $by = $ok ? DB::table('chat_comments')->where('created_at', '>=', now()->subDays(7))->selectRaw('status, count(*) n')->groupBy('status')->pluck('n', 'status')->all() : [];
     $lab = ['new' => 'অপেক্ষায়', 'replied' => 'উত্তর দেওয়া হয়েছে', 'skipped' => 'স্টাফের জন্য রাখা', 'failed' => 'পাঠানো যায়নি', 'deleted' => 'মুছে ফেলা হয়েছে'];
-    $h = '<style>.k{display:inline-block;background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:8px 14px;margin:0 8px 8px 0}.k b{font-size:20px;display:block}.mm td{vertical-align:top}</style><div class="mm"><a href="/admin/chat">&larr; Messages</a><h1>Comment Replies</h1><p style="color:#6b7390">আমাদের পেজের পোস্টে আসা কমেন্ট ও AI-এর উত্তর। AI Comment Reply এখন: <b>'.(\App\Support\ChatComments::on() ? 'চালু' : 'বন্ধ').'</b> (Chat Settings থেকে বদলানো যায়)। সিগারেট/ভেপ নিয়ে পাবলিক কমেন্টে কখনো দাম বলা হয় না, ইনবক্সে ডাকা হয়।</p><form method="post" action="/admin/chat/comments/subscribe" style="margin:0 0 10px">'.csrf_field().'<button>সব Facebook Page-এ কমেন্ট আসা চালু করুন</button></form>';
+    $h = '<style>.k{display:inline-block;background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:8px 14px;margin:0 8px 8px 0}.k b{font-size:20px;display:block}.mm td{vertical-align:top}</style><div class="mm"><a href="/admin/chat">&larr; Messages</a><h1>Comment Replies</h1><p style="color:#6b7390">আমাদের পেজের পোস্টে আসা কমেন্ট ও AI-এর উত্তর। AI Comment Reply এখন: <b>'.(\App\Support\ChatComments::on() ? 'চালু' : 'বন্ধ').'</b> (Chat Settings থেকে বদলানো যায়)। সিগারেট/ভেপ নিয়ে পাবলিক কমেন্টে কখনো দাম বলা হয় না, ইনবক্সে ডাকা হয়।</p><form method="post" action="/admin/chat/comments/subscribe" style="margin:0 0 10px">'.csrf_field().'<button>সব Facebook Page-এ কমেন্ট আসা চালু করুন</button></form><form method="post" action="/admin/chat/comments/backfill" style="margin:0 0 10px">'.csrf_field().'<button>পুরোনো কমেন্ট এখনই আনুন (১৪ দিন)</button></form>';
     $h .= '<div>'.collect($lab)->map(fn($t, $k) => '<span class="k"><b>'.(int)($by[$k] ?? 0).'</b>'.$t.' (৭ দিন)</span>')->implode('').'</div>';
     $h .= '<table><tr><th>সময়</th><th>কে</th><th>কমেন্ট</th><th>AI উত্তর</th><th>অবস্থা</th></tr>'.$rows->map(fn($x) => '<tr><td>'.\Carbon\Carbon::parse($x->created_at)->timezone('Asia/Dhaka')->format('d M H:i').'</td><td>'.$e($x->from_name).'</td><td>'.$e(mb_substr((string)$x->message, 0, 300)).'</td><td>'.$e($x->reply_text).'</td><td>'.$e($lab[$x->status] ?? $x->status).($x->note ? '<br><small>'.$e($x->note).'</small>' : '').($x->status !== 'deleted' ? '<form method="post" action="/admin/chat/comments/'.(int)$x->id.'/delete" onsubmit="return confirm(\'এই কমেন্টটি Facebook থেকে মুছে ফেলবেন?\')" style="margin-top:4px">'.csrf_field().'<button style="border:1px solid #E5E7EB;background:#fff;border-radius:6px;padding:2px 8px;font-size:12px;color:#b42318">মুছুন</button></form>' : '').'</td></tr>')->implode('').($rows->count() ? '' : '<tr><td colspan="5" style="color:#6b7390">এখনো কোনো কমেন্ট আসেনি। কমেন্ট পেতে Meta অ্যাপে পেজের "feed" সাবস্ক্রিপশন চালু থাকতে হবে।</td></tr>').'</table></div>';
     return view('chat_memory', ['h' => $h]);
@@ -816,6 +816,16 @@ class ChatController extends Controller {
     abort_unless(auth()->check(), 403);
     $ok = \App\Support\ChatComments::remove($id, 'manual delete', (int)auth()->id());
     return redirect('/admin/chat/comments')->with('status', $ok ? 'কমেন্ট মুছে ফেলা হয়েছে' : 'মুছতে পারা যায়নি (নোট দেখুন)');
+  }
+  /** Re-read old comments of every Page right now and show what each Page returned. */
+  public function commentBackfill(Request $r) {
+    abort_unless(\App\Support\ProfitFloor::admin(), 403); @set_time_limit(280); $e = fn($v) => e((string)$v); $h = '<div class="mm"><a href="/admin/chat/comments">&larr; কমেন্ট</a><h1>পুরোনো কমেন্ট আনা</h1><table><tr><th>Page</th><th>ফল</th></tr>';
+    foreach (DB::table('chat_pages')->get(['page_id', 'name']) as $pg) {
+      \Illuminate\Support\Facades\Cache::forget('cc.bf.' . $pg->page_id); \Illuminate\Support\Facades\Cache::forget('cc.bf.err.' . $pg->page_id);
+      \App\Support\ChatComments::backfillPage((string)$pg->page_id);
+      $h .= '<tr><td>'.$e($pg->name).'</td><td>'.$e(\Illuminate\Support\Facades\Cache::get('cc.bf.' . $pg->page_id)).' '.$e(\Illuminate\Support\Facades\Cache::get('cc.bf.err.' . $pg->page_id)).'</td></tr>';
+    }
+    return view('chat_memory', ['h' => $h.'</table></div>']);
   }
   public function commentSubscribe(Request $r) {
     abort_unless(\App\Support\ProfitFloor::admin(), 403); $e = fn($v) => e((string)$v); $rows = [];

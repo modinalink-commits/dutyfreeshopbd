@@ -79,18 +79,20 @@ class ChatComments {
       foreach (DB::table('chat_comments')->where('channel', 'facebook')->where('status', 'new')->orderBy('id')->limit(3)->pluck('id') as $id) self::reply((int)$id);
     } catch (\Throwable $e) { report($e); }
   }
-  private static function backfillPage(string $pageId): void {
+  public static function backfillPage(string $pageId): void {
     $tok = Chat::pageTok('facebook', $pageId); if (!$tok) { Cache::forever('cc.bf.' . $pageId, 'no token'); return; }
     try {
       $r = Http::timeout(40)->get(Chat::API . '/' . $pageId . '/published_posts', ['fields' => 'id,created_time,comments.limit(60){id,message,from,created_time,comments.limit(8){from}}', 'since' => now()->subDays(14)->timestamp, 'limit' => 20, 'access_token' => $tok]);
       if (!$r->ok()) { Cache::put('cc.bf.err.' . $pageId, mb_substr((string)($r->json('error.message') ?? $r->status()), 0, 160), 86400); Cache::forever('cc.bf.' . $pageId, 'error'); return; }
-      $n = 0;
+      $n = 0; $posts = count((array)$r->json('data')); $seen = 0; $nofrom = 0; $ans = 0;
       foreach ((array)$r->json('data') as $post) foreach ((array)($post['comments']['data'] ?? []) as $c) {
+        $seen++; if (empty($c['from']['id'])) $nofrom++;
         $answered = false; foreach ((array)($c['comments']['data'] ?? []) as $x) if ((string)($x['from']['id'] ?? '') === $pageId) $answered = true;
+        if ($answered) $ans++;
         if ($answered || empty($c['id']) || empty($c['from']['id'])) continue;
         if (self::ingest($pageId, ['item' => 'comment', 'verb' => 'add', 'comment_id' => $c['id'], 'message' => $c['message'] ?? '', 'from' => $c['from'], 'post_id' => $post['id'] ?? '']) ) $n++;
       }
-      Cache::forever('cc.bf.' . $pageId, 'done ' . $n);
+      Cache::forever('cc.bf.' . $pageId, "done {$n} (posts {$posts}, comments {$seen}, already answered {$ans}, no sender info {$nofrom})");
     } catch (\Throwable $e) { Cache::forever('cc.bf.' . $pageId, 'error'); report($e); }
   }
   /** Answer one stored comment (once). */
