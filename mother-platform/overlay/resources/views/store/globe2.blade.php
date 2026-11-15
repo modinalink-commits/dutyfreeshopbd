@@ -1,7 +1,7 @@
 @php $__g = collect($deals ?? [])->take(6); @endphp
 @if($__g->count())
 <style>
-.dfg{position:relative;overflow:hidden;color:#fff;background:radial-gradient(1.2px 1.2px at 8% 18%,#fff,transparent),radial-gradient(1px 1px at 22% 72%,#cfe0ff,transparent),radial-gradient(1.4px 1.4px at 37% 30%,#fff,transparent),radial-gradient(1px 1px at 55% 12%,#fff,transparent),radial-gradient(1.2px 1.2px at 63% 86%,#cfe0ff,transparent),radial-gradient(1px 1px at 78% 40%,#fff,transparent),radial-gradient(1.3px 1.3px at 91% 14%,#fff,transparent),radial-gradient(1px 1px at 94% 78%,#cfe0ff,transparent),radial-gradient(1px 1px at 4% 90%,#fff,transparent),linear-gradient(120deg,#050B17 0%,#0B1220 45%,#14233F 100%);border-radius:14px;margin:18px 0}
+.dfg{position:relative;overflow:hidden;color:#fff;background:radial-gradient(1.2px 1.2px at 8% 18%,#fff,transparent),radial-gradient(1px 1px at 22% 72%,#cfe0ff,transparent),radial-gradient(1.4px 1.4px at 37% 30%,#fff,transparent),radial-gradient(1px 1px at 55% 12%,#fff,transparent),radial-gradient(1.2px 1.2px at 63% 86%,#cfe0ff,transparent),radial-gradient(1px 1px at 78% 40%,#fff,transparent),radial-gradient(1.3px 1.3px at 91% 14%,#fff,transparent),radial-gradient(1px 1px at 94% 78%,#cfe0ff,transparent),radial-gradient(1px 1px at 4% 90%,#fff,transparent),linear-gradient(120deg,#050B17 0%,#0C161F 45%,#14233F 100%);border-radius:14px;margin:18px 0}
 .dfg-in{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:10px;align-items:center;padding:30px 34px}
 .dfg-k{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.14em;color:#FF8A4C;border:1px solid rgba(255,138,76,.45);border-radius:20px;padding:5px 12px}
 .dfg h2{margin:14px 0 8px;font-size:34px;line-height:1.12;font-weight:800;letter-spacing:-.01em}.dfg h2 b{color:#FF6A1A}
@@ -11,8 +11,8 @@
 .dfg-c:hover,.dfg-c.on{border-color:#FF6A1A;background:rgba(255,106,26,.14);transform:translateY(-1px)}
 .dfg-c img{width:54px;height:54px;object-fit:contain;background:#fff;border-radius:8px;flex:none}
 .dfg-c i{display:block;font-style:normal;font-size:12px;font-weight:600;line-height:1.3;max-height:2.6em;overflow:hidden}
-.dfg-c b{display:block;margin-top:3px;font-size:13px;color:#FFB48A}.dfg-c s{color:#8394B2;font-size:11px;margin-left:4px;font-weight:500}.dfg-c em{font-style:normal;background:#FF5A00;color:#fff;font-size:10.5px;font-weight:800;border-radius:4px;padding:1px 5px;margin-left:5px}
-.dfg-all{display:inline-block;margin-top:16px;background:#FF5A00;color:#fff;font-weight:800;font-size:13.5px;border-radius:8px;padding:11px 22px;text-decoration:none}.dfg-all:hover{background:#ff7021}
+.dfg-c b{display:block;margin-top:3px;font-size:13px;color:#FFB48A}.dfg-c s{color:#8394B2;font-size:11px;margin-left:4px;font-weight:500}.dfg-c em{font-style:normal;background:#F95505;color:#fff;font-size:10.5px;font-weight:800;border-radius:4px;padding:1px 5px;margin-left:5px}
+.dfg-all{display:inline-block;margin-top:16px;background:#F95505;color:#fff;font-weight:800;font-size:13.5px;border-radius:8px;padding:11px 22px;text-decoration:none}.dfg-all:hover{background:#ff7021}
 .dfg-gl{position:relative;min-width:0}.dfg-gl canvas{display:block;width:100%;aspect-ratio:1/1;max-height:560px;margin:0 auto}.dfg2 .dfg-gl canvas.ov{position:absolute;left:0;top:0;height:100%;cursor:grab;touch-action:pan-y}.dfg2 .dfg-gl canvas.ov:active{cursor:grabbing}
 @media (max-width:860px){.dfg-in{grid-template-columns:1fr;padding:22px 16px 26px;gap:0}.dfg-gl{order:-1;margin:-6px -10px 0}.dfg h2{font-size:25px}.dfg-cards{grid-template-columns:repeat(2,minmax(0,1fr));max-width:none}.dfg-c img{width:46px;height:46px}.dfg-all{display:block;text-align:center}}
 @media (max-width:420px){.dfg-cards{grid-template-columns:1fr}}

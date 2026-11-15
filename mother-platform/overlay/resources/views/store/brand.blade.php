@@ -8,7 +8,7 @@
 @endphp
 <style>
 .cb{display:flex;gap:8px;align-items:center;font-size:13px;color:#6B7280;padding-top:16px}.cb a:hover{color:var(--o)}.cb b{color:var(--n);font-weight:600}
-.bh{margin-top:10px;border-radius:16px;background:linear-gradient(120deg,#0B1220,#1B2540 65%,#3A2418);color:#fff;padding:18px 26px;display:flex;gap:18px;align-items:center}.bh img{width:72px;height:72px;object-fit:contain;background:#fff;border-radius:12px;padding:6px}.bh h1{margin:0 0 4px;font-size:26px}.bh p{margin:0;font-size:14px;opacity:.9}
+.bh{margin-top:10px;border-radius:16px;background:linear-gradient(120deg,#0C161F,#1B2540 65%,#3A2418);color:#fff;padding:18px 26px;display:flex;gap:18px;align-items:center}.bh img{width:72px;height:72px;object-fit:contain;background:#fff;border-radius:12px;padding:6px}.bh h1{margin:0 0 4px;font-size:26px}.bh p{margin:0;font-size:14px;opacity:.9}
 .tb2{display:flex;align-items:center;gap:12px;border:1px solid #EAEAEA;border-radius:14px;padding:12px 16px;background:#fff;margin:18px 0 14px;font-size:14px;color:#4B5563}.tb2 .sp{flex:1}.tb2 select{border:1px solid #D1D5DB;border-radius:8px;padding:8px 10px;font-size:14px;background:#fff}
 .bg .gr{grid-template-columns:repeat(5,minmax(0,1fr))}@media(max-width:1200px){.bg .gr{grid-template-columns:repeat(4,minmax(0,1fr))}}@media(max-width:900px){.bg .gr{grid-template-columns:repeat(2,minmax(0,1fr))}.bh{padding:14px;gap:12px}.bh h1{font-size:20px}.bh img{width:54px;height:54px}}
 .bd{padding:6px 0 34px;font-size:14px;line-height:1.8;color:#374151;max-width:900px}.bd h2{font-size:17px;color:var(--n)}

@@ -9,14 +9,14 @@
 @endphp
 @if($__d->count())
 <style>
-.bpx{--o:#FF5A00;--n:#0B1220;--pg:var(--bg,#FFFBF8);position:relative;display:grid;grid-template-columns:minmax(0,1fr) 272px;filter:drop-shadow(0 14px 30px rgba(11,18,32,.14)) drop-shadow(0 2px 4px rgba(11,18,32,.06));margin:18px 0;font-family:inherit}
+.bpx{--o:#F95505;--n:#0C161F;--pg:var(--bg,#FFFBF8);position:relative;display:grid;grid-template-columns:minmax(0,1fr) 272px;filter:drop-shadow(0 14px 30px rgba(11,18,32,.14)) drop-shadow(0 2px 4px rgba(11,18,32,.06));margin:18px 0;font-family:inherit}
 .bpx *{box-sizing:border-box}
 .bpx-m,.bpx-s{position:relative;background:#FFFDFA}
 .bpx-m{border-radius:20px 0 0 20px;overflow:hidden;display:flex;flex-direction:column;min-width:0}
 .bpx-m:before{content:"";position:absolute;left:-14px;top:50%;width:28px;height:28px;margin-top:-14px;border-radius:50%;background:var(--pg);z-index:4}
 .bpx-wm{position:absolute;right:4%;top:46%;width:300px;height:326px;margin-top:-163px;background:url(/pwa/logo-240.png) center/contain no-repeat;opacity:.045;pointer-events:none}
-.bpx-gl{position:absolute;inset:0;background:repeating-radial-gradient(circle at 100% 0,transparent 0 9px,rgba(255,90,0,.035) 9px 10px);pointer-events:none}
-.bpx-hd{position:relative;display:flex;align-items:center;gap:18px;padding:12px 24px;background:linear-gradient(100deg,#FF5A00 0%,#FF6F1F 70%,#FF8240 100%);color:#fff;min-height:68px;overflow:hidden}
+.bpx-gl{position:absolute;inset:0;background:repeating-radial-gradient(circle at 100% 0,transparent 0 9px,rgba(249,85,5,.035) 9px 10px);pointer-events:none}
+.bpx-hd{position:relative;display:flex;align-items:center;gap:18px;padding:12px 24px;background:linear-gradient(100deg,#F95505 0%,#FF6F1F 70%,#FF8240 100%);color:#fff;min-height:68px;overflow:hidden}
 .bpx-hd:after{content:"";position:absolute;right:-20px;top:-10px;bottom:-10px;width:190px;background:repeating-linear-gradient(115deg,transparent 0 14px,rgba(255,255,255,.18) 14px 24px)}
 .bpx-lg{background:#fff;border-radius:12px;padding:7px 14px;display:flex;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,.15);position:relative;z-index:1}.bpx-lg img{height:34px;width:auto;display:block}
 .bpx-bp{position:relative;z-index:1;display:flex;flex-direction:column;line-height:1.1}.bpx-bp b{font-size:20px;letter-spacing:.34em;font-weight:800}.bpx-bp small{font-size:10.5px;letter-spacing:.3em;opacity:.9;margin-top:4px;font-weight:600}
@@ -38,7 +38,7 @@
 .bpx-c{flex:0 0 calc((100% - 28px)/3);scroll-snap-align:start;min-width:0;background:#fff;border:1px solid #EFE5DD;border-radius:16px;padding:12px 12px 14px;position:relative;display:flex;flex-direction:column;transition:transform .25s,box-shadow .25s,border-color .25s}
 .bpx-c:hover{transform:translateY(-3px);box-shadow:0 12px 24px rgba(11,18,32,.12);border-color:#FFC7A5}
 .bpx-c .im{display:flex;align-items:center;justify-content:center;height:150px;background:linear-gradient(#FFF8F3,#fff);border-radius:12px}.bpx-c .im img{max-width:88%;max-height:136px;object-fit:contain}
-.bpx-c .st{position:absolute;right:-8px;top:-10px;width:54px;height:54px;border-radius:50%;background:var(--o);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;transform:rotate(10deg);box-shadow:0 4px 10px rgba(255,90,0,.4)}.bpx-c .st:before{content:"";position:absolute;inset:3px;border-radius:50%;border:1.5px dashed rgba(255,255,255,.7)}
+.bpx-c .st{position:absolute;right:-8px;top:-10px;width:54px;height:54px;border-radius:50%;background:var(--o);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;transform:rotate(10deg);box-shadow:0 4px 10px rgba(249,85,5,.4)}.bpx-c .st:before{content:"";position:absolute;inset:3px;border-radius:50%;border:1.5px dashed rgba(255,255,255,.7)}
 .bpx-c .k{margin-top:10px;font-size:9.5px;letter-spacing:.2em;color:#C2410C;font-weight:800}
 .bpx-c h3{margin:4px 0 6px;font-size:14.5px;line-height:1.3;font-weight:700;min-height:2.6em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.bpx-c h3 a{color:var(--n);text-decoration:none}
 .bpx-c .pp{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;font-size:22px;font-weight:800;color:var(--o)}.bpx-c .pp s{font-size:12.5px;font-weight:500;color:#6B7280}
@@ -50,7 +50,7 @@
 .bpx-s:before{content:"";position:absolute;left:0;top:0;bottom:0;width:14px;background:radial-gradient(circle at 0 50%,var(--pg) 0 4.5px,transparent 5px) 0 0/14px 18px repeat-y;z-index:3}
 .bpx-s:after{content:"";position:absolute;left:14px;top:14px;bottom:14px;border-left:2px dashed #E7D9CE}
 .bpx-nt,.bpx-nb{position:absolute;left:-14px;width:28px;height:28px;border-radius:50%;background:var(--pg);z-index:5}.bpx-nt{top:-14px}.bpx-nb{bottom:-14px}
-.bpx-sh{background:linear-gradient(100deg,#FF5A00,#FF7A2A);color:#fff;padding:12px 18px 12px 30px;min-height:68px;display:flex;align-items:center;gap:12px}.bpx-sh .ic{width:44px;height:44px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;flex:none;box-shadow:0 2px 8px rgba(0,0,0,.18)}.bpx-sh .ic img{width:25px;height:27px;display:block}.bpx-sh b{display:block;font-size:19px;font-weight:800;letter-spacing:-.01em;line-height:1.1}.bpx-sh small{display:block;font-size:9.5px;letter-spacing:.24em;font-weight:700;opacity:.92;margin-top:3px}
+.bpx-sh{background:linear-gradient(100deg,#F95505,#FF7A2A);color:#fff;padding:12px 18px 12px 30px;min-height:68px;display:flex;align-items:center;gap:12px}.bpx-sh .ic{width:44px;height:44px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;flex:none;box-shadow:0 2px 8px rgba(0,0,0,.18)}.bpx-sh .ic img{width:25px;height:27px;display:block}.bpx-sh b{display:block;font-size:19px;font-weight:800;letter-spacing:-.01em;line-height:1.1}.bpx-sh small{display:block;font-size:9.5px;letter-spacing:.24em;font-weight:700;opacity:.92;margin-top:3px}
 .bpx-sb{padding:16px 20px 16px 32px;display:flex;flex-direction:column;gap:12px;flex:1;position:relative;z-index:1}
 .bpx-pr{display:grid;grid-template-columns:1fr 1fr;gap:8px}.bpx-pr small{display:block;font-size:9px;letter-spacing:.18em;color:#6B7280;font-weight:700}.bpx-pr b{display:block;font-size:14px;font-weight:800;color:var(--n);margin-top:2px}
 .bpx-cdb{text-align:center;border:1px dashed #F2B995;background:#FFF5EC;border-radius:12px;padding:9px 6px 10px}.bpx-cdb>small{display:block;font-size:9.5px;letter-spacing:.2em;color:#B45309;font-weight:800;margin-bottom:6px}
@@ -114,7 +114,7 @@
 @media(prefers-reduced-motion:reduce){.bpx-ln i{animation:none;left:calc(50% - 12px);opacity:1}}
 /* Premium First Class skin (owner pick #5): navy pass, orange header, white-on-navy text */
 .bpx-m,.bpx-s{background:#0c1120}
-.bpx-gl{background:repeating-radial-gradient(circle at 100% 0,transparent 0 9px,rgba(255,90,0,.07) 9px 10px)}.bpx-wm{opacity:.07;filter:brightness(2)}
+.bpx-gl{background:repeating-radial-gradient(circle at 100% 0,transparent 0 9px,rgba(249,85,5,.07) 9px 10px)}.bpx-wm{opacity:.07;filter:brightness(2)}
 .bpx-hd:before{content:"";position:absolute;top:0;bottom:0;width:30%;left:-40%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.35),transparent);animation:bpxsh 4.5s ease-in-out infinite;z-index:0}
 @keyframes bpxsh{0%{left:-40%}60%,100%{left:130%}}
 .bpx-cl{background:#121A2B;border:1px solid rgba(255,255,255,.18)}
@@ -123,15 +123,15 @@
 .bpx-fd b.o{color:#FF8A4C}.bpx-ti h2 b{color:#FF6A1A}
 .bpx-ln:before{border-top-color:#3a4562}
 .bpx-lb:after{border-top-color:rgba(255,255,255,.16)}.bpx-ft{border-top-color:rgba(255,255,255,.14)}
-.bpx-c{background:#141c30;border-color:rgba(255,255,255,.1)}.bpx-c:hover{border-color:#FF5A00;box-shadow:0 12px 24px rgba(0,0,0,.4)}
+.bpx-c{background:#141c30;border-color:rgba(255,255,255,.1)}.bpx-c:hover{border-color:#F95505;box-shadow:0 12px 24px rgba(0,0,0,.4)}
 .bpx-c .im{background:#fff}.bpx-c .k{color:#FF8A4C}.bpx-c h3 a{color:#fff}.bpx-c .pp s{color:#9AA6BD}.bpx-c .sv{color:#4ADE80}
-.bpx-c .bt{background:#FF5A00}.bpx-c .bt:hover{background:#fff;color:#121A2B}
-.bpx-ar{background:#141c30;border-color:rgba(255,255,255,.2);color:#fff}.bpx-ar.r{background:#FF5A00;border-color:#FF5A00}
-.bpx-s{background:#121A2B}.bpx-s:after{border-color:#FF5A00}
-.bpx-sh{background:linear-gradient(100deg,#FF5A00,#ff8a3d)}
-.bpx-cdb{background:rgba(255,90,0,.1);border-color:#FF5A00}.bpx-cdb>small{color:#FF8A4C}
+.bpx-c .bt{background:#F95505}.bpx-c .bt:hover{background:#fff;color:#121A2B}
+.bpx-ar{background:#141c30;border-color:rgba(255,255,255,.2);color:#fff}.bpx-ar.r{background:#F95505;border-color:#F95505}
+.bpx-s{background:#121A2B}.bpx-s:after{border-color:#F95505}
+.bpx-sh{background:linear-gradient(100deg,#F95505,#ff8a3d)}
+.bpx-cdb{background:rgba(249,85,5,.1);border-color:#F95505}.bpx-cdb>small{color:#FF8A4C}
 .bpx-t div{background:#fff;color:#121A2B}.bpx-t small{opacity:.6}.bpx-t u{color:#FF8A4C}
-.bpx-bc rect{fill:#fff}.bpx-all{border-color:#FF5A00;color:#fff}.bpx-all:hover{background:#FF5A00}
+.bpx-bc rect{fill:#fff}.bpx-all{border-color:#F95505;color:#fff}.bpx-all:hover{background:#F95505}
 </style>
 <div class="bpx" data-end="{{ $__fix ? $__end * 1000 : '' }}">
 <div class="bpx-m"><div class="bpx-gl"></div><div class="bpx-wm"></div>
@@ -148,7 +148,7 @@
 <div class="bpx-sb">
 <div class="bpx-pr"><div><small>FROM</small><b>DFB</b></div><div><small>TO</small><b>YOUR DOOR</b></div><div><small>GATE</small><b>D10</b></div><div><small>CLASS</small><b>DUTY FREE</b></div></div>
 <div class="bpx-cdb"><small>BOARDING CLOSES IN</small><div class="bpx-t"><div><b data-h>00</b><small>HRS</small></div><u>:</u><div><b data-m>00</b><small>MIN</small></div><u>:</u><div><b data-s>00</b><small>SEC</small></div></div></div>
-<div class="bpx-bc"><svg viewBox="0 0 {{ $__x }} 40" preserveAspectRatio="none" aria-hidden="true">@foreach($__bars as $b)<rect x="{{ $b[0] }}" y="0" width="{{ $b[1] }}" height="40" fill="#0B1220"/>@endforeach</svg><span><b>{{ $__fl }}</b><span>TKT {{ $__dt->format('dmY') }}0010</span></span></div>
+<div class="bpx-bc"><svg viewBox="0 0 {{ $__x }} 40" preserveAspectRatio="none" aria-hidden="true">@foreach($__bars as $b)<rect x="{{ $b[0] }}" y="0" width="{{ $b[1] }}" height="40" fill="#0C161F"/>@endforeach</svg><span><b>{{ $__fl }}</b><span>TKT {{ $__dt->format('dmY') }}0010</span></span></div>
 <a class="bpx-all" href="/deals">VIEW ALL DEALS &rarr;</a>
 </div></div>
 </div>

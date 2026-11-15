@@ -12,7 +12,7 @@
 @if(session('ok'))<div class="card" style="color:#166534">{{ session('ok') }}</div>@endif @if(session('bad'))<div class="card err">{{ session('bad') }}</div>@endif @if($errors->any())<div class="card err">{{ $errors->first() }}</div>@endif
 
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px">
-@foreach([['Total fixed this month',$k['total'],'#111827'],['Paid',$k['paid'],'#166534'],['Upcoming',$k['upcoming'],'#1D4ED8'],['Overdue / unpaid past due',$k['overdue'],'#B91C1C'],['Loan installments',$k['loan'],'#111827'],['Salary',$k['salary'],'#111827'],['Subscriptions',$k['subs'],'#111827']] as $c)
+@foreach([['Total fixed this month',$k['total'],'#0C161F'],['Paid',$k['paid'],'#166534'],['Upcoming',$k['upcoming'],'#1D4ED8'],['Overdue / unpaid past due',$k['overdue'],'#B91C1C'],['Loan installments',$k['loan'],'#0C161F'],['Salary',$k['salary'],'#0C161F'],['Subscriptions',$k['subs'],'#0C161F']] as $c)
 <div class="card" style="margin:0"><small>{{ $c[0] }}</small><div style="font-size:20px;font-weight:800;color:{{ $c[2] }}">{{ $tk($c[1]) }}</div></div>
 @endforeach
 </div>

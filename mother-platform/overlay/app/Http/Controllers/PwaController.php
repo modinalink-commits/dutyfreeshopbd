@@ -24,7 +24,7 @@ class PwaController extends Controller
       'display' => 'standalone',
       'orientation' => 'portrait-primary',
       'background_color' => '#FFFFFF',
-      'theme_color' => '#0B1220',
+      'theme_color' => '#0C161F',
       'categories' => ['shopping'],
       'icons' => [
         ['src' => '/pwa/icon-192.png', 'sizes' => '192x192', 'type' => 'image/png', 'purpose' => 'any'],

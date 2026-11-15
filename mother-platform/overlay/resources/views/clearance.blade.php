@@ -19,7 +19,7 @@
 <div style="grid-column:span 2"><label>নোট (ঐচ্ছিক)</label><input type="text" name="note" maxlength="300" placeholder="যেমন: মেয়াদ ডিসেম্বর ২০২৬"></div>
 </div>
 <div id="clI" class="wr" style="display:none"></div>
-<label style="display:flex;gap:8px;align-items:flex-start;margin-top:8px;font-size:12.5px;color:#0B1220"><input type="checkbox" name="ack" value="1" style="width:auto;margin-top:2px"> <span>আমি বুঝেছি: কেনা দামে বা তার কাছাকাছি বিক্রি করলে প্রতি অর্ডারে <b>ডেলিভারি চার্জ ও প্যাকেজিং খরচ (প্রায় ৳{{ number_format($pack) }}) কোম্পানির লস</b> হবে।</span></label>
+<label style="display:flex;gap:8px;align-items:flex-start;margin-top:8px;font-size:12.5px;color:#0C161F"><input type="checkbox" name="ack" value="1" style="width:auto;margin-top:2px"> <span>আমি বুঝেছি: কেনা দামে বা তার কাছাকাছি বিক্রি করলে প্রতি অর্ডারে <b>ডেলিভারি চার্জ ও প্যাকেজিং খরচ (প্রায় ৳{{ number_format($pack) }}) কোম্পানির লস</b> হবে।</span></label>
 <div style="margin-top:10px"><button class="btn" id="clB">{{ $super ? 'Clearance চালু করুন' : 'অনুরোধ পাঠান' }}</button></div>
 </form></div>
 

@@ -17,18 +17,18 @@
 .ocb .chip{flex:0 0 auto;height:24px;line-height:21px;padding:0 8px;border-radius:12px;font-size:11px;white-space:nowrap;box-sizing:border-box;border:1.5px solid color-mix(in srgb,var(--c,#64748B) 55%,#fff);transition:border-color .15s ease,background-color .15s ease}
 .ocb .chip b{font-weight:700}
 .ocb .chip:hover{border-color:var(--c,#4B5563)}
-.ocb .chip.on{font-weight:700;border-color:var(--c,#0B1220);box-shadow:0 0 0 1px color-mix(in srgb,var(--c,#0B1220) 25%,transparent)}
+.ocb .chip.on{font-weight:700;border-color:var(--c,#0C161F);box-shadow:0 0 0 1px color-mix(in srgb,var(--c,#0C161F) 25%,transparent)}
 /* v1.375 very light per-status fill, always black text; active chip = bolder ring */
-.ocb .chip,.ocb .chip b{color:#0B1220!important}
+.ocb .chip,.ocb .chip b{color:#0C161F!important}
 .ocb .chip[class*=' s-']{background:color-mix(in srgb,var(--b,#F3F4F6) 70%,#fff)!important}
 .ocb .chip:not([class*=' s-']){background:#F3F4F6!important}
-.ocb .chip.on,.ocb .chip.on[class*=' s-']{background:var(--b,#E5E7EB)!important;color:#0B1220!important;border-color:var(--c,#0B1220)!important;border-width:2px;box-shadow:0 0 0 2px color-mix(in srgb,var(--c,#0B1220) 28%,transparent)}
-.ocb .chip.on:not([class*=' s-']){background:#E5E7EB!important;border-color:#0B1220!important}
+.ocb .chip.on,.ocb .chip.on[class*=' s-']{background:var(--b,#E5E7EB)!important;color:#0C161F!important;border-color:var(--c,#0C161F)!important;border-width:2px;box-shadow:0 0 0 2px color-mix(in srgb,var(--c,#0C161F) 28%,transparent)}
+.ocb .chip.on:not([class*=' s-']){background:#E5E7EB!important;border-color:#0C161F!important}
 /* v1.388 count big, parcel value small underneath */
 .ocb .strip{height:46px!important;align-items:flex-start!important}
 .ocb .chip{height:42px!important;line-height:1.15!important;padding:3px 10px!important;border-radius:12px!important;display:inline-flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:1px}
-.ocb .chip .cl{font-size:11px;font-weight:600;color:#0B1220!important}.ocb .chip .cl b{font-size:16px;font-weight:800;margin-left:3px}
-.ocb .chip .cv{font-size:9.5px;font-weight:600;color:#0B1220!important;opacity:.85;white-space:nowrap}
+.ocb .chip .cl{font-size:11px;font-weight:600;color:#0C161F!important}.ocb .chip .cl b{font-size:16px;font-weight:800;margin-left:3px}
+.ocb .chip .cv{font-size:9.5px;font-weight:600;color:#0C161F!important;opacity:.85;white-space:nowrap}
 </style>
 @endonce
 <div class="r2"><div class="strip" id="ostrip"><a class="chip status-card status-card-sm {{ $activeStatus ? '' : 'on' }}" href="/admin/orders?{{ http_build_query($oq) }}"><span class="cl"><span class="sl">All</span> <b>{{ collect($counts)->sum() }}</b></span><small class="cv" title="Total parcel value">{{ $mv(collect($vals)->sum()) }}</small></a>

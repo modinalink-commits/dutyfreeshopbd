@@ -3,7 +3,7 @@
 <div class="w" style="padding-top:34px;padding-bottom:48px">
 <div id="wle" style="text-align:center;font-size:12px;display:none"><span style="width:34px;height:34px;border-radius:50%;background:#B91C1C;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700">×</span><div style="margin-top:6px">YOUR Wish List IS EMPTY</div>
 <div style="width:196px;height:100px;background:#F3EEF8;margin:12px auto;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#5B3FA6"><svg viewBox="0 0 64 48" width="72" height="54" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><path d="M6 16h52l-6 26H12z"/><path d="M20 16 28 4M44 16 36 4"/><path d="M24 24v10M32 24v10M40 24v10"/></svg></div>
-<a href="/" style="background:#0B1220;color:#fff;font-size:11px;padding:9px 14px;border-radius:3px;display:inline-block">Continue Shopping</a></div>
+<a href="/" style="background:#0C161F;color:#fff;font-size:11px;padding:9px 14px;border-radius:3px;display:inline-block">Continue Shopping</a></div>
 <div id="wlf" style="display:none"><div style="font-size:13px;font-weight:600;margin-bottom:12px">Your Wish List</div><div class="gr" id="wlg"></div></div>
 </div>
 @endsection

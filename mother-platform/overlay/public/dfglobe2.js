@@ -128,7 +128,7 @@
         var t3 = Math.min(1, t + .01), p1 = pt(slerp(P.a, P.b, t3, P.om), 1 + P.h * Math.sin(Math.PI * t3)), ang = Math.atan2(p1[1] - p0[1], p1[0] - p0[0]);
         var vis0 = Math.max(0, Math.min(1, p0[2] * 4 + .5)), sc = sc0 * (.8 + .3 * Math.max(0, Math.min(1, p0[2] + .3)));
         var ps = pt(v0, 1); if (ps[2] > 0) { c.save(); c.translate(ps[0] + 3 * dpr, ps[1] + 6 * dpr); c.rotate(ang); c.scale(sc * .8, sc * .8); c.globalAlpha = .28 * vis0; c.fillStyle = '#000'; c.fill(PLANE); c.restore(); }
-        c.save(); c.translate(p0[0], p0[1]); c.rotate(ang); c.scale(sc, sc); c.globalAlpha = vis0; c.shadowColor = 'rgba(0,0,0,.55)'; c.shadowBlur = 5 * dpr; c.fillStyle = '#F7F9FC'; c.fill(PLANE); c.shadowBlur = 0; c.fillStyle = 'rgba(255,90,0,.9)'; c.fillRect(-13, -.5, 1.2, 1); c.restore();
+        c.save(); c.translate(p0[0], p0[1]); c.rotate(ang); c.scale(sc, sc); c.globalAlpha = vis0; c.shadowColor = 'rgba(0,0,0,.55)'; c.shadowBlur = 5 * dpr; c.fillStyle = '#F7F9FC'; c.fill(PLANE); c.shadowBlur = 0; c.fillStyle = 'rgba(249,85,5,.9)'; c.fillRect(-13, -.5, 1.2, 1); c.restore();
         if (p0[2] > .3) vpl.push([i, p0]);
       }
       // offer tag on one plane
@@ -139,7 +139,7 @@
           var txt = tags[active], fs2 = 12 * dpr; c.font = '800 ' + fs2 + 'px Inter,Bornomala,sans-serif'; var tw2 = c.measureText(txt).width + 16 * dpr, th = fs2 + 10 * dpr;
           var tx = Math.min(W - tw2 - 4 * dpr, Math.max(4 * dpr, tp[0] + 14 * dpr)), ty = Math.max(4 * dpr, tp[1] - th - 12 * dpr);
           c.strokeStyle = 'rgba(255,255,255,.6)'; c.lineWidth = dpr; c.beginPath(); c.moveTo(tp[0], tp[1]); c.lineTo(tx + 6 * dpr, ty + th); c.stroke();
-          c.shadowColor = 'rgba(0,0,0,.4)'; c.shadowBlur = 8 * dpr; c.fillStyle = '#FF5A00'; c.beginPath(); (c.roundRect ? c.roundRect(tx, ty, tw2, th, 7 * dpr) : c.rect(tx, ty, tw2, th)); c.fill(); c.shadowBlur = 0;
+          c.shadowColor = 'rgba(0,0,0,.4)'; c.shadowBlur = 8 * dpr; c.fillStyle = '#F95505'; c.beginPath(); (c.roundRect ? c.roundRect(tx, ty, tw2, th, 7 * dpr) : c.rect(tx, ty, tw2, th)); c.fill(); c.shadowBlur = 0;
           c.fillStyle = '#fff'; c.textBaseline = 'middle'; c.fillText(txt, tx + 8 * dpr, ty + th / 2 + dpr * .5); c.textBaseline = 'alphabetic';
         }
       }

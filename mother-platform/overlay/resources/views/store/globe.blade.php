@@ -1,7 +1,7 @@
 @php $__g = collect($deals ?? [])->take(60); $__n = $__g->count(); $__tk = $__n > 4; $__dur = max(14, ceil($__n / 2) * 3.4); @endphp
 @if($__g->count())
 <style>
-.dfg{position:relative;overflow:hidden;color:#fff;background:radial-gradient(1.2px 1.2px at 8% 18%,#fff,transparent),radial-gradient(1px 1px at 22% 72%,#cfe0ff,transparent),radial-gradient(1.4px 1.4px at 37% 30%,#fff,transparent),radial-gradient(1px 1px at 55% 12%,#fff,transparent),radial-gradient(1.2px 1.2px at 63% 86%,#cfe0ff,transparent),radial-gradient(1px 1px at 78% 40%,#fff,transparent),radial-gradient(1.3px 1.3px at 91% 14%,#fff,transparent),radial-gradient(1px 1px at 94% 78%,#cfe0ff,transparent),radial-gradient(1px 1px at 4% 90%,#fff,transparent),linear-gradient(120deg,#050B17 0%,#0B1220 45%,#14233F 100%);border-radius:14px;margin:18px 0;aspect-ratio:1440/480}
+.dfg{position:relative;overflow:hidden;color:#fff;background:radial-gradient(1.2px 1.2px at 8% 18%,#fff,transparent),radial-gradient(1px 1px at 22% 72%,#cfe0ff,transparent),radial-gradient(1.4px 1.4px at 37% 30%,#fff,transparent),radial-gradient(1px 1px at 55% 12%,#fff,transparent),radial-gradient(1.2px 1.2px at 63% 86%,#cfe0ff,transparent),radial-gradient(1px 1px at 78% 40%,#fff,transparent),radial-gradient(1.3px 1.3px at 91% 14%,#fff,transparent),radial-gradient(1px 1px at 94% 78%,#cfe0ff,transparent),radial-gradient(1px 1px at 4% 90%,#fff,transparent),linear-gradient(120deg,#050B17 0%,#0C161F 45%,#14233F 100%);border-radius:14px;margin:18px 0;aspect-ratio:1440/480}
 .hx .dfg{margin:0}
 .dfg-in{display:grid;grid-template-columns:minmax(0,46%) minmax(0,54%);height:100%}
 .dfg-l{display:flex;flex-direction:column;min-height:0;padding:18px 0 18px 28px}
@@ -18,7 +18,7 @@
 .dfg-c:hover,.dfg-c.on{border-color:#FF6A1A;background:rgba(255,106,26,.14)}
 .dfg-c img{width:44px;height:44px;object-fit:contain;background:#fff;border-radius:7px;flex:none}
 .dfg-c i{display:block;font-style:normal;font-size:11.5px;font-weight:600;line-height:1.3;max-height:2.6em;overflow:hidden}
-.dfg-c b{display:block;margin-top:2px;font-size:12.5px;color:#FFB48A;white-space:nowrap}.dfg-c s{color:#8394B2;font-size:10.5px;margin-left:4px;font-weight:500}.dfg-c em{font-style:normal;background:#FF5A00;color:#fff;font-size:10px;font-weight:800;border-radius:4px;padding:1px 4px;margin-left:4px}
+.dfg-c b{display:block;margin-top:2px;font-size:12.5px;color:#FFB48A;white-space:nowrap}.dfg-c s{color:#8394B2;font-size:10.5px;margin-left:4px;font-weight:500}.dfg-c em{font-style:normal;background:#F95505;color:#fff;font-size:10px;font-weight:800;border-radius:4px;padding:1px 4px;margin-left:4px}
 .dfg-app{margin-top:10px}
 .dfg-ab{display:flex;gap:8px}
 .dfg-ab a,.dfg-ab em,.dfg-ab button{display:flex;align-items:center;gap:7px;background:#000;color:#fff;text-decoration:none;border:1px solid rgba(255,255,255,.35);border-radius:9px;padding:5px 12px 5px 9px;font-style:normal;min-width:0;transition:border-color .2s}

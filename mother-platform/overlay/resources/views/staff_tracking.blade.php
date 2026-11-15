@@ -11,12 +11,12 @@ $rk = $rg[3]; $roles ??= [];
 $f = fn($k) => request()->query($k);
 ?>
 <style>
-.stk{font-size:13px;color:#0B1220}
+.stk{font-size:13px;color:#0C161F}
 .stk .top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:10px}
 .stk .top h1{margin:0;font-size:20px}.stk .sub{color:#6B7280;font-size:12px}
 .stk .tabs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
-.stk .tabs a{border:1px solid #FDC2A5;background:#fff;color:#0B1220;border-radius:999px;padding:5px 12px;font-size:12px;font-weight:600;text-decoration:none;white-space:nowrap}
-.stk .tabs a.on{background:#FF5A00;border-color:#FF5A00;color:#fff}
+.stk .tabs a{border:1px solid #FDC2A5;background:#fff;color:#0C161F;border-radius:999px;padding:5px 12px;font-size:12px;font-weight:600;text-decoration:none;white-space:nowrap}
+.stk .tabs a.on{background:#F95505;border-color:#F95505;color:#fff}
 .stk form.flt{display:flex;flex-wrap:wrap;gap:8px;align-items:end;background:#fff;border:1px solid #FDC2A5;border-radius:12px;padding:10px 12px;margin-bottom:12px}
 .stk form.flt label{margin:0 0 3px;font-size:11px}.stk form.flt select,.stk form.flt input{width:auto;min-width:120px;padding:7px 9px}
 .stk .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:10px;margin-bottom:14px}
@@ -32,7 +32,7 @@ $f = fn($k) => request()->query($k);
 .stk .pill.gr{background:#F3F4F6;color:#4B5563}
 .stk .chg{display:inline-flex;gap:5px;align-items:center;flex-wrap:wrap}.stk .chg s{color:#9CA3AF}
 .stk .tl{position:relative;margin:10px 0 0;padding-left:20px;border-left:2px solid #FDC2A5}
-.stk .ev{position:relative;padding:0 0 14px 12px}.stk .ev:before{content:'';position:absolute;left:-27px;top:3px;width:12px;height:12px;border-radius:50%;background:#FF5A00;border:2px solid #fff;box-shadow:0 0 0 1px #FDC2A5}
+.stk .ev{position:relative;padding:0 0 14px 12px}.stk .ev:before{content:'';position:absolute;left:-27px;top:3px;width:12px;height:12px;border-radius:50%;background:#F95505;border:2px solid #fff;box-shadow:0 0 0 1px #FDC2A5}
 .stk .ev.call:before{background:#16A34A}.stk .ev.sms:before{background:#1D5FA8}.stk .ev.flag:before{background:#B91C1C}
 .stk .ev.hl{background:#FFF1E8;border-radius:8px;padding:6px 8px 14px 12px}
 .stk .ev .h{font-weight:700}.stk .rule{font-size:12px;color:#4B5563;margin:6px 0 0;padding-left:18px}
@@ -56,7 +56,7 @@ $f = fn($k) => request()->query($k);
   @if($isAct && !empty($types))<div><label>Action type</label><select name="type"><option value="">All</option>@foreach($types as $t)<option value="{{ $t }}" {{ $f('type') === $t ? 'selected' : '' }}>{{ T::label($t) }}</option>@endforeach</select></div>@endif
   @if($page === 'logins')<div><label>Event</label><select name="event"><option value="">All</option>@foreach(['login' => 'Sign-in', 'failed' => 'Failed sign-in', 'logout' => 'Sign-out'] as $k => $l)<option value="{{ $k }}" {{ $f('event') === $k ? 'selected' : '' }}>{{ $l }}</option>@endforeach</select></div>@endif
   @if($isAct || in_array($page, ['orders', 'audit']))<div><label>{{ $page === 'audit' ? 'Search action / detail' : 'Order / customer / phone' }}</label><input type="text" name="q" value="{{ $f('q') }}" placeholder="{{ $page === 'audit' ? 'e.g. price' : 'Invoice, name or phone' }}"></div>@endif
-  @if($page === 'activity')<div><label>&nbsp;</label><label style="display:flex;gap:5px;align-items:center;color:#0B1220;font-size:12px;margin:0;padding:8px 0"><input type="checkbox" name="flag" value="1" style="width:auto;min-width:0" {{ $f('flag') ? 'checked' : '' }}> Suspicious only</label></div>@endif
+  @if($page === 'activity')<div><label>&nbsp;</label><label style="display:flex;gap:5px;align-items:center;color:#0C161F;font-size:12px;margin:0;padding:8px 0"><input type="checkbox" name="flag" value="1" style="width:auto;min-width:0" {{ $f('flag') ? 'checked' : '' }}> Suspicious only</label></div>@endif
   <div><button>Apply</button></div>
 </form>
 <script>(function(){var s=document.getElementById('stk-range');if(!s)return;s.addEventListener('change',function(){document.querySelectorAll('.stk-c').forEach(function(e){e.style.display=s.value==='custom'?'':'none'})})})();</script>

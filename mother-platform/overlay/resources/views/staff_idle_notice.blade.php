@@ -1,14 +1,14 @@
 <!doctype html><html lang="bn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>কারণ দর্শানোর নোটিশ</title>
 <style>
 body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#F3F4F6;font:15px/1.6 'Bornomala','Inter',system-ui,sans-serif;color:#0B1B33;padding:16px;box-sizing:border-box}
-.bx{background:#fff;border:1px solid #E5E7EB;border-top:4px solid #F97316;border-radius:14px;max-width:560px;width:100%;padding:22px 24px;box-shadow:0 8px 30px rgba(15,23,42,.08)}
+.bx{background:#fff;border:1px solid #E5E7EB;border-top:4px solid #F95505;border-radius:14px;max-width:560px;width:100%;padding:22px 24px;box-shadow:0 8px 30px rgba(15,23,42,.08)}
 h1{font-size:19px;margin:0 0 4px}.sub{color:#6B7280;font-size:13px;margin-bottom:14px}
 .fact{background:#FFF7ED;border:1px solid #FED7AA;border-radius:10px;padding:10px 12px;margin-bottom:14px}
 .fact b{color:#9A3412}
 textarea{width:100%;min-height:110px;border:1px solid #D1D5DB;border-radius:10px;padding:10px;font:inherit;box-sizing:border-box;resize:vertical}
-textarea:focus{outline:2px solid #FDBA74;border-color:#F97316}
+textarea:focus{outline:2px solid #FDBA74;border-color:#F95505}
 .qk{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 12px}.qk button{border:1px solid #E5E7EB;background:#F9FAFB;border-radius:999px;padding:5px 11px;font:inherit;font-size:13px;cursor:pointer}
-.go{background:#F97316;color:#fff;border:0;border-radius:10px;padding:11px 18px;font:inherit;font-weight:700;cursor:pointer;width:100%}
+.go{background:#F95505;color:#fff;border:0;border-radius:10px;padding:11px 18px;font:inherit;font-weight:700;cursor:pointer;width:100%}
 .err{color:#B42318;font-size:13px;margin:6px 0}.ft{display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:12.5px;color:#6B7280}
 .ft button{background:none;border:0;color:#6B7280;text-decoration:underline;cursor:pointer;font:inherit}
 </style></head><body><div class="bx">

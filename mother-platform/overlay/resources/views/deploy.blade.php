@@ -1,7 +1,7 @@
 @extends('layout')@section('title','Deployment Center')
 @section('body')
 <style>
-.dc{--bd:#CED4DA;--bg2:#BFC6CE;--n:#0B1220;--mu:#6B7280;display:flex;flex-direction:column;gap:10px;font-size:12.5px;color:var(--n)}
+.dc{--bd:#CED4DA;--bg2:#BFC6CE;--n:#0C161F;--mu:#6B7280;display:flex;flex-direction:column;gap:10px;font-size:12.5px;color:var(--n)}
 .dc .cd{background:#fff;border:1px solid var(--bd);border-radius:10px;padding:10px 12px;min-width:0}
 .dc .cd:hover{border-color:var(--bg2)}
 .dc h1{margin:0;font-size:clamp(18px,1.5vw,22px)}.dc h2{margin:0 0 6px;font-size:12.5px;font-weight:700}
@@ -17,12 +17,12 @@
 .dc .dt{width:8px;height:8px;border-radius:50%;flex:0 0 auto;background:#9CA3AF}.dc .dt.ok{background:#16A34A}.dc .dt.warn{background:#D97706}.dc .dt.fail{background:#B91C1C}.dc .dt.run{background:#1D5FA8}
 .dc button.b{height:30px;padding:0 11px;border-radius:8px;border:1px solid var(--bd);background:#fff;font-weight:700;font-size:12px;cursor:pointer;width:auto;margin:0;color:var(--n);transition:border-color .15s,background-color .15s}
 .dc button.b:hover{border-color:#9CA3AF;background:#F8FAFC}
-.dc button.b.pri{background:#FF5A00;border-color:#FF5A00;color:#fff}.dc button.b.pri:hover{background:#E65100}
+.dc button.b.pri{background:#F95505;border-color:#F95505;color:#fff}.dc button.b.pri:hover{background:#E65100}
 .dc button.b.fu{background:#FFF3EA;border-color:#FDBA8C;color:#B45309}.dc button.b.ro{background:#F1EAF8;border-color:#D4CCF5;color:#5B3FA6}
 .dc button.b.hc{background:#F0FBF4;border-color:#BFE6CE;color:#166534}.dc button.b.sm{height:26px;padding:0 9px;font-size:11.5px;font-weight:600}
 .dc button.b[disabled]{opacity:.45;pointer-events:none}
 .dc .pl{display:inline-block;font-size:10px;font-weight:800;border-radius:6px;padding:2px 7px;letter-spacing:.03em;white-space:nowrap;border:1px solid transparent}
-.dc .pb{height:8px;background:#EEF1F5;border-radius:5px;overflow:hidden;margin:6px 0 3px;border:1px solid #E2E6EB}.dc .pb i{display:block;height:100%;background:#FF5A00;transition:width .6s}
+.dc .pb{height:8px;background:#EEF1F5;border-radius:5px;overflow:hidden;margin:6px 0 3px;border:1px solid #E2E6EB}.dc .pb i{display:block;height:100%;background:#F95505;transition:width .6s}
 .dc table{width:100%;border-collapse:collapse;font-size:12px}.dc th{text-align:left;color:var(--mu);font-size:10.5px;padding:5px 8px;border-bottom:1px solid var(--bd);white-space:nowrap}.dc td{padding:6px 8px;border-bottom:1px solid #EEF1F4;vertical-align:middle}
 .dc input,.dc select,.dc textarea{height:30px;border:1px solid var(--bd);border-radius:8px;padding:0 9px;font-size:12px;width:auto;margin:0;background:#fff}.dc textarea{height:auto;padding:7px 9px;width:100%;font-family:inherit}
 .dc pre{white-space:pre-wrap;word-break:break-word;font-size:11px;max-height:150px;overflow:auto;margin:6px 0 0;background:#F8FAFC;color:#374151;border:1px solid var(--bd);border-radius:8px;padding:8px;font-family:Inter,'Bornomala',sans-serif}
@@ -142,7 +142,7 @@ function render(){
   // work log + settings
   var T=D.tasks||[],WC={done:['#166534','#F0FBF4','DONE'],partial:['#9A5B0B','#FFF8E8','PARTIAL'],pending:['#4B5563','#F3F4F6','PENDING'],blocked:['#B42318','#FEF3F2','BLOCKED']};
   var dn=T.filter(function(x){return x.status==='done'}).length;$('wsum').textContent=T.length?'· '+dn+' of '+T.length+' complete':'';
-  $('wl').innerHTML=T.map(function(x,i){var k=WC[x.status]||WC.pending;return '<tr><td><b>'+(i+1)+'</b></td><td>'+esc(x.title)+(x.note?'<div class="mu">'+esc(x.note)+'</div>':'')+'</td><td><span class="pl" style="color:'+k[0]+';background:'+k[1]+'">'+k[2]+'</span></td><td><div class="pb" style="margin:0 0 3px"><i style="width:'+x.percent+'%;background:'+(x.status==='done'?'#16A34A':'#FF5A00')+'"></i></div><b>'+x.percent+'%</b></td><td class="mu">'+esc(x.at)+'</td></tr>'}).join('')||'<tr><td colspan="5" class="mu">No tasks yet.</td></tr>';
+  $('wl').innerHTML=T.map(function(x,i){var k=WC[x.status]||WC.pending;return '<tr><td><b>'+(i+1)+'</b></td><td>'+esc(x.title)+(x.note?'<div class="mu">'+esc(x.note)+'</div>':'')+'</td><td><span class="pl" style="color:'+k[0]+';background:'+k[1]+'">'+k[2]+'</span></td><td><div class="pb" style="margin:0 0 3px"><i style="width:'+x.percent+'%;background:'+(x.status==='done'?'#16A34A':'#F95505')+'"></i></div><b>'+x.percent+'%</b></td><td class="mu">'+esc(x.at)+'</td></tr>'}).join('')||'<tr><td colspan="5" class="mu">No tasks yet.</td></tr>';
   var h=D.head,hs={live:'up to date',pending:'new update, deploying automatically',waiting:'ready for your deploy button',completed:'deployed earlier',failed:'last attempt failed',queued:'queued',unknown:'could not read the branch'}[D.headState]||D.headState;
   $('head').textContent='Latest on “'+D.branch+'”: '+(h?h.subject+' ('+h.sha.slice(0,7)+')':'unknown')+' — '+hs;
   var sm=$('sMode');if(document.activeElement!==sm)sm.value=D.mode;if(document.activeElement!==$('sBranch'))$('sBranch').value=D.branch;

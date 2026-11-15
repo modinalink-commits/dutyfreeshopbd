@@ -6,8 +6,8 @@
 </div>
 <style>
 .lm{display:flex;flex-direction:column;align-items:center;gap:12px;margin:22px 0 8px}
-.lmi{font-size:13px;color:#6B7280}.lmi b{color:var(--n,#0B1220)}
-.lmb{min-width:220px;min-height:46px;padding:0 26px;border:0;border-radius:12px;background:var(--o,#FF5A00);color:#fff;font-weight:800;font-size:14px;font-family:inherit;cursor:pointer;box-shadow:0 4px 14px rgba(255,90,0,.3);transition:filter .15s,transform .15s}
+.lmi{font-size:13px;color:#6B7280}.lmi b{color:var(--n,#0C161F)}
+.lmb{min-width:220px;min-height:46px;padding:0 26px;border:0;border-radius:12px;background:var(--o,#F95505);color:#fff;font-weight:800;font-size:14px;font-family:inherit;cursor:pointer;box-shadow:0 4px 14px rgba(249,85,5,.3);transition:filter .15s,transform .15s}
 .lmb:hover{filter:brightness(1.07)}.lmb:disabled{opacity:.65;cursor:progress}.lmb span{font-weight:600;opacity:.9}
 .lmx{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 </style>

@@ -1,16 +1,16 @@
 @extends('layout')@section('title','Alerts')
 @section('body')
 <style>
-.al2{--bd:#CED4DA;--mu:#6B7280;--n:#0B1220;display:flex;flex-direction:column;gap:10px;font-size:12.5px;color:var(--n)}
+.al2{--bd:#CED4DA;--mu:#6B7280;--n:#0C161F;display:flex;flex-direction:column;gap:10px;font-size:12.5px;color:var(--n)}
 .al2 h1{margin:0;font-size:clamp(18px,1.5vw,22px)}.al2 h2{margin:0 0 6px;font-size:12.5px;font-weight:700}
 .al2 .cd{background:#fff;border:1px solid var(--bd);border-radius:10px;padding:10px 12px;min-width:0}
 .al2 .it{padding:9px 0;border-top:1px solid #EEF0F3;display:grid;gap:3px}.al2 .it:first-of-type{border-top:0}
 .al2 .tt{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-weight:700;font-size:13px}
-.al2 .md{font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#fff;background:#0B1220;border-radius:5px;padding:1px 7px}
+.al2 .md{font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#fff;background:#0C161F;border-radius:5px;padding:1px 7px}
 .al2 .sv{width:8px;height:8px;border-radius:50%;background:#E11D48;flex:none}.al2 .sv.warning{background:#F59E0B}.al2 .sv.info{background:#3B82F6}
 .al2 .mu{color:var(--mu);font-size:11.5px}.al2 .ac{color:#334155}
 .al2 .st{font-size:10.5px;border:1px solid var(--bd);border-radius:999px;padding:1px 8px;color:var(--mu)}
-.al2 button{background:#F97316;color:#fff;border:0;border-radius:7px;padding:4px 12px;font-size:12px;font-weight:600;cursor:pointer;justify-self:start}
+.al2 button{background:#F95505;color:#fff;border:0;border-radius:7px;padding:4px 12px;font-size:12px;font-weight:600;cursor:pointer;justify-self:start}
 .al2 .em{color:var(--mu);padding:8px 0}
 </style>
 <div class="al2">

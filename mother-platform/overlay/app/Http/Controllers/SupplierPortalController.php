@@ -222,7 +222,7 @@ class SupplierPortalController extends Controller
       foreach ($L['rows'] as $e) $rows[] = [$e['d'],$e['ref'],$e['t'],$e['debit'] ?: '',$e['credit'] ?: '',number_format($e['bal'],2,'.','')];
       $rows[] = ['','','Closing balance',number_format($L['tot']['debit'],2,'.',''),number_format($L['tot']['credit'],2,'.',''),number_format($L['closing'],2,'.','')];
       if ($fmt === 'csv') return response()->streamDownload(function () use ($head, $rows) { $o = fopen('php://output','w'); fwrite($o, "\xEF\xBB\xBF"); fputcsv($o, $head); foreach ($rows as $x) fputcsv($o, $x); fclose($o); }, "$name.csv", ['Content-Type'=>'text/csv; charset=utf-8']);
-      if ($fmt === 'xls') return response()->streamDownload(function () use ($head, $rows) { echo '<html><head><meta charset="utf-8"></head><body><table border="1"><tr>'; foreach ($head as $h) echo '<th style="background:#FF5A00;color:#fff">'.e($h).'</th>'; echo '</tr>'; foreach ($rows as $x) { echo '<tr>'; foreach ($x as $v) echo '<td>'.e((string)$v).'</td>'; echo '</tr>'; } echo '</table></body></html>'; }, "$name.xls", ['Content-Type'=>'application/vnd.ms-excel; charset=utf-8']);
+      if ($fmt === 'xls') return response()->streamDownload(function () use ($head, $rows) { echo '<html><head><meta charset="utf-8"></head><body><table border="1"><tr>'; foreach ($head as $h) echo '<th style="background:#F95505;color:#fff">'.e($h).'</th>'; echo '</tr>'; foreach ($rows as $x) { echo '<tr>'; foreach ($x as $v) echo '<td>'.e((string)$v).'</td>'; echo '</tr>'; } echo '</table></body></html>'; }, "$name.xls", ['Content-Type'=>'application/vnd.ms-excel; charset=utf-8']);
       return response(view('sp.ledger_print', ['u'=>SP::user(),'L'=>$L,'from'=>$from,'to'=>$to,'s'=>$L['supplier'],'brand'=>SP::brand()]));
     }
     SP::act('Ledger viewed', "$from..$to");
@@ -289,12 +289,12 @@ class SupplierPortalController extends Controller
 
   // ---------- PWA ----------
   public function manifest() {
-    return response()->json(['name'=>SP::brand(),'short_name'=>'Supplier','start_url'=>'/supplier-portal','scope'=>'/supplier-portal','display'=>'standalone','background_color'=>'#FFFBF8','theme_color'=>'#FF5A00',
+    return response()->json(['name'=>SP::brand(),'short_name'=>'Supplier','start_url'=>'/supplier-portal','scope'=>'/supplier-portal','display'=>'standalone','background_color'=>'#FFFBF8','theme_color'=>'#F95505',
       'icons'=>[['src'=>'/android-chrome-192x192.png','sizes'=>'192x192','type'=>'image/png'],['src'=>'/android-chrome-512x512.png','sizes'=>'512x512','type'=>'image/png']]], 200, ['Content-Type'=>'application/manifest+json']);
   }
   public function sw() {
     $js = "const C='sp-shell-v1';self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.add('/supplier-portal/offline')).catch(()=>{}));self.skipWaiting()});self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));self.addEventListener('fetch',e=>{if(e.request.mode==='navigate'){e.respondWith(fetch(e.request).catch(()=>caches.match('/supplier-portal/offline')))}});";
     return response($js, 200, ['Content-Type'=>'application/javascript','Service-Worker-Allowed'=>'/supplier-portal']);
   }
-  public function offline() { return response('<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><body style="font-family:Inter,Bornomala,sans-serif;text-align:center;padding:60px 20px;color:#0B1220"><h2>You are offline</h2><p>Please reconnect to see your latest orders, ledger and payments.</p><button onclick="location.reload()" style="padding:10px 18px;border:0;border-radius:9px;background:#FF5A00;color:#fff;font-weight:600">Retry</button>'); }
+  public function offline() { return response('<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><body style="font-family:Inter,Bornomala,sans-serif;text-align:center;padding:60px 20px;color:#0C161F"><h2>You are offline</h2><p>Please reconnect to see your latest orders, ledger and payments.</p><button onclick="location.reload()" style="padding:10px 18px;border:0;border-radius:9px;background:#F95505;color:#fff;font-weight:600">Retry</button>'); }
 }

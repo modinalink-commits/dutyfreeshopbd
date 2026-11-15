@@ -1,5 +1,5 @@
 @once
-<style>#dfsoftbar{position:fixed;left:0;top:0;height:2px;width:0;background:#FF5A00;z-index:2147483000;opacity:0;transition:width .35s ease,opacity .25s ease;pointer-events:none}#dfsoftbar.on{opacity:1}</style>
+<style>#dfsoftbar{position:fixed;left:0;top:0;height:2px;width:0;background:#F95505;z-index:2147483000;opacity:0;transition:width .35s ease,opacity .25s ease;pointer-events:none}#dfsoftbar.on{opacity:1}</style>
 <script>
 /* Soft reload: refresh / F5 / Ctrl+R fetch the page from the server and patch only what changed. No white flash, scroll, filters, typed text and open popups stay exactly where they are. */
 (function(){

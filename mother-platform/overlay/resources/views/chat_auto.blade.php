@@ -8,7 +8,7 @@
 <select name="st" style="width:auto"><option value="">Sent and failed</option><option value="sent" @selected($st==='sent')>Sent</option><option value="failed" @selected($st==='failed')>Failed</option></select>
 <input type="date" name="from" value="{{ $from }}" style="width:auto"> <span style="color:#6B7280">to</span> <input type="date" name="to" value="{{ $to }}" style="width:auto">
 <button class="btn" type="submit">Apply</button> <a class="btn g" href="/admin/chat/auto">Reset</a>
-<span style="margin-left:auto;font-size:13px;color:#0B1220"><b>{{ number_format($total) }}</b> messages · Order confirmation <b>{{ number_format($cnt['order']) }}</b> · Order update <b>{{ number_format($cnt['update']) }}</b> · Campaign <b>{{ number_format($cnt['campaign']) }}</b> · Failed <b style="color:#B91C1C">{{ number_format($cnt['failed']) }}</b></span>
+<span style="margin-left:auto;font-size:13px;color:#0C161F"><b>{{ number_format($total) }}</b> messages · Order confirmation <b>{{ number_format($cnt['order']) }}</b> · Order update <b>{{ number_format($cnt['update']) }}</b> · Campaign <b>{{ number_format($cnt['campaign']) }}</b> · Failed <b style="color:#B91C1C">{{ number_format($cnt['failed']) }}</b></span>
 </form></div>
 <div class="card" style="padding:0;overflow:hidden"><table style="width:100%"><thead><tr><th style="text-align:left;width:130px">Time</th><th style="text-align:left;width:200px">Customer</th><th style="text-align:left;width:170px">Type</th><th style="text-align:left">Message</th><th style="text-align:left;width:90px">Status</th></tr></thead><tbody>
 @forelse($rows as $m)

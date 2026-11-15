@@ -39,7 +39,7 @@ class DataAuditController extends Controller
       } catch (\Throwable $e) { $row['e'] = substr($e->getMessage(), 0, 160); }
       $out[] = $row;
     }
-    $h = '<!doctype html><meta charset="utf-8"><title>Data Audit</title><style>body{font:14px system-ui;margin:24px;color:#0B1220}h1{font-size:18px}table{border-collapse:collapse;margin:6px 0 16px}td,th{border:1px solid #E5E7EB;padding:3px 8px;font-size:12.5px;text-align:left}.ok{color:#166534}.bad{color:#B91C1C;font-weight:700}.e{color:#B45309}</style><h1>Data Audit (read-only)</h1>';
+    $h = '<!doctype html><meta charset="utf-8"><title>Data Audit</title><style>body{font:14px system-ui;margin:24px;color:#0C161F}h1{font-size:18px}table{border-collapse:collapse;margin:6px 0 16px}td,th{border:1px solid #E5E7EB;padding:3px 8px;font-size:12.5px;text-align:left}.ok{color:#166534}.bad{color:#B91C1C;font-weight:700}.e{color:#B45309}</style><h1>Data Audit (read-only)</h1>';
     foreach ($out as $r) {
       $cls = $r['e'] ? 'e' : ($r['n'] > 0 && !in_array($r['t'], ['Products: total','Orders from 1 Nov: total'], true) ? 'bad' : 'ok');
       $h .= '<div class="'.$cls.'">'.e($r['t']).': '.($r['e'] ? 'ERROR '.e($r['e']) : number_format((int)$r['n'])).'</div>';

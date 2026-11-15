@@ -2,9 +2,9 @@
 @section('body')
 @php $fmt = fn($m) => $m === null ? '—' : ($m >= 1440 ? round($m/1440,1).' days' : ($m >= 60 ? round($m/60,1).' h' : round($m).' min')); @endphp
 <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px"><div style="flex:1;min-width:260px"><h1 style="margin:0">Staff Activity and Order Tracking</h1><span style="font-size:13px;color:#6B7280">Who touched which order, at what time, and how long each stage took. Every action is recorded and cannot be edited.</span></div>
-<span style="display:inline-flex;gap:6px;font-size:12px;font-weight:600;color:#FF5A00;background:#FFF1E8;border-radius:8px;padding:6px 10px">⬇ Download: <a target="_blank" href="/admin/m/r-staff-log/export/pdf">PDF</a> · <a href="/admin/m/r-staff-log/export/xls">Excel</a> · <a href="/admin/m/r-staff-log/export/doc">Word</a> · <a href="/admin/m/r-staff-log/export/csv">CSV</a></span>
+<span style="display:inline-flex;gap:6px;font-size:12px;font-weight:600;color:#F95505;background:#FFF1E8;border-radius:8px;padding:6px 10px">⬇ Download: <a target="_blank" href="/admin/m/r-staff-log/export/pdf">PDF</a> · <a href="/admin/m/r-staff-log/export/xls">Excel</a> · <a href="/admin/m/r-staff-log/export/doc">Word</a> · <a href="/admin/m/r-staff-log/export/csv">CSV</a></span>
 <form style="display:flex;gap:6px;margin:0"><select name="staff" style="width:auto"><option value="">All staff</option>@foreach($staffNames as $sn)<option {{ request('staff')===$sn?'selected':'' }}>{{ $sn }}</option>@endforeach</select><button class="g">Filter</button></form></div>
-<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:16px">@foreach($kpi as [$l,$v,$n])<div class="card k" style="margin:0"><span style="font-size:13px">{{ $l }}</span><b>{{ $v }}</b><span style="color:#FF5A00;font-weight:600">{{ $n }}</span></div>@endforeach</div>
+<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:16px">@foreach($kpi as [$l,$v,$n])<div class="card k" style="margin:0"><span style="font-size:13px">{{ $l }}</span><b>{{ $v }}</b><span style="color:#F95505;font-weight:600">{{ $n }}</span></div>@endforeach</div>
 <style>
 .sl-g{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
 .sl-g>.card{margin:0;overflow-x:auto;padding:14px 16px}

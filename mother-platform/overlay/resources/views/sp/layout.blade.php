@@ -22,7 +22,7 @@
   $bottom = array_values(array_filter($nav, fn($n) => in_array($n[2], ['home','pos','rfq','ledger'])));
 @endphp
 <!doctype html><html lang="en"><head>@include('bn_font')<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="csrf-token" content="{{ csrf_token() }}"><meta name="robots" content="noindex,nofollow">
-<title>@yield('title','Dashboard') · {{ $brand }}</title><meta name="theme-color" content="#FF5A00">
+<title>@yield('title','Dashboard') · {{ $brand }}</title><meta name="theme-color" content="#F95505">
 <link rel="manifest" href="/supplier-portal/manifest.webmanifest"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 @include('sp.css')

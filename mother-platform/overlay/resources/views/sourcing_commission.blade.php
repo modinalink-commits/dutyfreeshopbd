@@ -15,7 +15,7 @@
 
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:12px">
 @foreach([['Lines counted', $t['line_count'], false], ['Profit of sourced lines', $t['gross_profit'], true], ['Marketing cost', -$t['marketing_cost'], true], ['Brought forward', -$t['carry_in'], true], ['To be shared', $t['shareable'], true], [$ag->name.' ('.rtrim(rtrim(number_format((float)$ag->share_pct, 2), '0'), '.').'%)', $t['staff_share'], true], ['DutyFreeBD', $t['company_share'], true]] as [$lb, $v, $money])
-@if($lb !== 'Brought forward' || $t['carry_in'] > 0)<div class="card" style="margin:0;padding:10px 12px"><div style="font-size:11px;font-weight:700;letter-spacing:.4px;color:#6B7280;text-transform:uppercase">{{ $lb }}</div><div style="font-size:19px;font-weight:700;color:{{ $money && $v < 0 ? '#B91C1C' : '#0B1220' }}">{{ $money ? ($v < 0 ? '−' : '').$tk(abs($v)) : number_format($v) }}</div></div>@endif
+@if($lb !== 'Brought forward' || $t['carry_in'] > 0)<div class="card" style="margin:0;padding:10px 12px"><div style="font-size:11px;font-weight:700;letter-spacing:.4px;color:#6B7280;text-transform:uppercase">{{ $lb }}</div><div style="font-size:19px;font-weight:700;color:{{ $money && $v < 0 ? '#B91C1C' : '#0C161F' }}">{{ $money ? ($v < 0 ? '−' : '').$tk(abs($v)) : number_format($v) }}</div></div>@endif
 @endforeach
 </div>
 

@@ -18,7 +18,7 @@
 @foreach($sl as $x)
 <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;{{ $loop->last ? '' : 'border-bottom:1px solid #EEF0F3' }}">
 <label class="hbs"><input type="checkbox" name="ss[{{ $x['id'] }}]" value="1" {{ $x['on'] ? 'checked' : '' }}><i></i></label>
-@if($x['img'])<img src="{{ $x['img'] }}" alt="" style="width:96px;height:40px;object-fit:cover;border-radius:6px;background:#0B1220">@endif
+@if($x['img'])<img src="{{ $x['img'] }}" alt="" style="width:96px;height:40px;object-fit:cover;border-radius:6px;background:#0C161F">@endif
 <div style="flex:1;min-width:0"><b>Slide {{ $x['pos'] }}: {{ $x['kind'] }}{{ $x['title'] !== '' ? ' - '.$x['title'] : '' }}</b><div style="font-size:12px;color:#6B7280">{{ $x['on'] ? 'Showing on the home page now.' : 'Off: not shown on the home page.' }}</div></div>
 <a href="/admin/hero-slider" style="font-size:12px;white-space:nowrap">Edit slides →</a>
 </div>

@@ -8,7 +8,7 @@
 @foreach($rows as $x)@php $p = $prods[$x->product_id] ?? null; @endphp
 <div class="card" style="{{ $x->active ? '' : 'opacity:.6' }}">
 <div style="display:flex;gap:10px;align-items:flex-start">
-<div style="width:92px;height:150px;border-radius:10px;background:linear-gradient(160deg,{{ $x->theme }}66,#0f172a);display:flex;align-items:center;justify-content:center;flex:none">@if($x->image)<img src="{{ $x->image }}" alt="" style="max-width:84px;max-height:140px;object-fit:contain">@endif</div>
+<div style="width:92px;height:150px;border-radius:10px;background:linear-gradient(160deg,{{ $x->theme }}66,#0C161F);display:flex;align-items:center;justify-content:center;flex:none">@if($x->image)<img src="{{ $x->image }}" alt="" style="max-width:84px;max-height:140px;object-fit:contain">@endif</div>
 <div style="flex:1;min-width:0">
 <b>Slot {{ $x->position }}</b> <label style="float:right;font-size:12px"><input type="checkbox" name="slots[{{ $x->id }}][active]" value="1" {{ $x->active ? 'checked' : '' }}> Active</label>
 <div style="font-size:11px;color:#6B7280;margin-top:6px">Product</div>

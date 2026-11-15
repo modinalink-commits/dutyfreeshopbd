@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head>@include('bn_font')<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><title>Sign in · DutyFreeBD Control Center</title><link rel="icon" href="/pwa/icon-192.png">
 <style>
-:root{--o:#FF5A00;--n:#0B1220}
+:root{--o:#F95505;--n:#0C161F}
 *{box-sizing:border-box}html,body{height:100%}
 body{margin:0;font-family:'Bornomala',Inter,sans-serif;color:var(--n);background:#FFFAF6;display:flex;align-items:center;justify-content:center;min-height:100vh;min-height:100dvh;padding:20px;overflow:hidden;position:relative}
 .bg{position:fixed;inset:0;z-index:0;overflow:hidden;background:radial-gradient(1100px 600px at 50% -10%,#FFE9DA 0%,rgba(255,250,246,0) 60%),#FFFAF6}
@@ -22,10 +22,10 @@ h1{margin:0 0 3px;font-size:20px;text-align:center;letter-spacing:-.01em;animati
 .sub{margin:0 0 18px;text-align:center;font-size:12.5px;color:#6B7280;animation:fade .9s .35s ease both}
 label{display:block;font-size:12px;font-weight:700;margin:12px 0 6px;color:#334155;animation:fade .9s .4s ease both}
 input{width:100%;height:46px;border:1.25px solid #E7E1DB;border-radius:12px;padding:0 14px;font-size:16px;background:#fff;color:var(--n);transition:border-color .2s,box-shadow .2s;font-family:inherit}
-input:focus{outline:0;border-color:var(--o);box-shadow:0 0 0 4px rgba(255,90,0,.12)}
+input:focus{outline:0;border-color:var(--o);box-shadow:0 0 0 4px rgba(249,85,5,.12)}
 .pw{position:relative}.pw input{padding-right:48px}.pw button{position:absolute;right:6px;top:5px;width:36px;height:36px;border:0;background:none;cursor:pointer;font-size:17px;opacity:.65}
-.go{width:100%;height:48px;margin-top:20px;border:0;border-radius:12px;background:linear-gradient(135deg,#FF7A1A,#FF5A00);color:#fff;font-weight:800;font-size:15px;letter-spacing:.02em;cursor:pointer;box-shadow:0 12px 24px -10px rgba(255,90,0,.7);transition:transform .15s,box-shadow .2s;position:relative;overflow:hidden;font-family:inherit;animation:fade .9s .5s ease both}
-.go:hover{transform:translateY(-1px);box-shadow:0 16px 28px -10px rgba(255,90,0,.75)}.go:active{transform:translateY(0)}.go:disabled{opacity:.7;cursor:wait}
+.go{width:100%;height:48px;margin-top:20px;border:0;border-radius:12px;background:linear-gradient(135deg,#FF7A1A,#F95505);color:#fff;font-weight:800;font-size:15px;letter-spacing:.02em;cursor:pointer;box-shadow:0 12px 24px -10px rgba(249,85,5,.7);transition:transform .15s,box-shadow .2s;position:relative;overflow:hidden;font-family:inherit;animation:fade .9s .5s ease both}
+.go:hover{transform:translateY(-1px);box-shadow:0 16px 28px -10px rgba(249,85,5,.75)}.go:active{transform:translateY(0)}.go:disabled{opacity:.7;cursor:wait}
 .go:after{content:"";position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.45),transparent);transform:skewX(-18deg);animation:shine 3.4s ease-in-out infinite}
 @keyframes shine{0%,55%{left:-60%}100%{left:130%}}
 .err{margin-top:12px;padding:9px 12px;border-radius:10px;background:#FEF2F2;border:1px solid #FECACA;color:#B91C1C;font-size:12.5px;animation:shake .4s}

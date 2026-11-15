@@ -15,7 +15,7 @@
 @if($__ln >= 4)
 <a class="hxa hxlx" href="/watch/?sort=price_desc" aria-label="DutyFreeBD Luxury Watch Collection">
 <style>
-.hxlx{container-type:inline-size;position:relative;display:block;aspect-ratio:1440/480;overflow:hidden;color:#fff;text-decoration:none;background:radial-gradient(90% 150% at 72% 50%,#2B2014 0%,#131A2B 46%,#0B1220 100%);font-family:'Bornomala',Inter,sans-serif}
+.hxlx{container-type:inline-size;position:relative;display:block;aspect-ratio:1440/480;overflow:hidden;color:#fff;text-decoration:none;background:radial-gradient(90% 150% at 72% 50%,#2B2014 0%,#131A2B 46%,#0C161F 100%);font-family:'Bornomala',Inter,sans-serif}
 .hxlx *{box-sizing:border-box}
 .hxlx .xg{position:absolute;left:58cqw;top:50%;width:46cqw;height:46cqw;transform:translate(-50%,-50%);background:radial-gradient(closest-side,rgba(255,176,72,.34),rgba(255,176,72,0) 70%);animation:lxGlow 5s ease-in-out infinite alternate;pointer-events:none}
 .hxlx .xs{position:absolute;top:0;bottom:0;left:-30%;width:18%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.1),transparent);transform:skewX(-18deg);animation:lxSweep 7s cubic-bezier(.4,0,.2,1) infinite;pointer-events:none}
@@ -23,9 +23,9 @@
 .hxlx .xk{font-size:max(9px,.95cqw);letter-spacing:.22em;font-weight:600;color:#F5C98A}
 .hxlx .xh{margin:0;font-size:max(16px,4cqw);line-height:1.1;font-weight:700}.hxlx .xh em{display:block;font-style:normal;color:#FFB347}
 .hxlx .xd{font-size:max(10px,1.25cqw);color:#D6DCE8;line-height:1.5}
-.hxlx .xb{align-self:flex-start;display:inline-flex;align-items:center;height:max(26px,3cqw);padding:0 max(14px,1.8cqw);border-radius:999px;background:#FF5A00;border:1.5px solid #0B1220;outline:1px solid rgba(255,179,71,.6);font-size:max(11px,1.3cqw);font-weight:700;color:#fff;animation:lxPulse 2.4s ease-in-out infinite}
+.hxlx .xb{align-self:flex-start;display:inline-flex;align-items:center;height:max(26px,3cqw);padding:0 max(14px,1.8cqw);border-radius:999px;background:#F95505;border:1.5px solid #0C161F;outline:1px solid rgba(255,179,71,.6);font-size:max(11px,1.3cqw);font-weight:700;color:#fff;animation:lxPulse 2.4s ease-in-out infinite}
 .hxlx .xst{position:absolute;left:58cqw;top:50%;width:25cqw;height:25cqw;transform:translate(-50%,-50%);z-index:2}
-.hxlx .xr{position:absolute;inset:-1.1cqw;border-radius:50%;background:conic-gradient(from 0deg,#FFB347,rgba(255,179,71,.05) 28%,#FF5A00 52%,rgba(255,90,0,.05) 78%,#FFB347);animation:lxSpin 9s linear infinite;-webkit-mask:radial-gradient(closest-side,transparent calc(100% - .45cqw),#000 calc(100% - .4cqw));mask:radial-gradient(closest-side,transparent calc(100% - .45cqw),#000 calc(100% - .4cqw))}
+.hxlx .xr{position:absolute;inset:-1.1cqw;border-radius:50%;background:conic-gradient(from 0deg,#FFB347,rgba(255,179,71,.05) 28%,#F95505 52%,rgba(249,85,5,.05) 78%,#FFB347);animation:lxSpin 9s linear infinite;-webkit-mask:radial-gradient(closest-side,transparent calc(100% - .45cqw),#000 calc(100% - .4cqw));mask:radial-gradient(closest-side,transparent calc(100% - .45cqw),#000 calc(100% - .4cqw))}
 .hxlx .xr2{position:absolute;inset:-3cqw;border-radius:50%;border:1px dashed rgba(245,201,138,.35);animation:lxSpin 26s linear infinite reverse}
 .hxlx .xw{position:absolute;inset:0;border-radius:50%;background:#fff;overflow:hidden;box-shadow:0 2cqw 5cqw rgba(0,0,0,.55);opacity:0;animation:lxShow {{ round($__ln * $__ls, 2) }}s infinite}
 .hxlx .xw img{width:100%;height:100%;object-fit:contain;display:block}
@@ -33,7 +33,7 @@
 .hxlx .xc{position:absolute;left:0;right:0;top:50%;display:flex;flex-direction:column;gap:.9cqw;transform:translateY(-50%);opacity:0;animation:lxText {{ round($__ln * $__ls, 2) }}s infinite}
 .hxlx .xbr{font-size:max(13px,2.6cqw);font-weight:700;letter-spacing:.04em;color:#F5C98A;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hxlx .xn{font-size:max(10px,1.15cqw);color:#D6DCE8;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.hxlx .xp{align-self:flex-start;font-size:max(12px,1.9cqw);font-weight:700;color:#0B1220;background:#FFB347;border-radius:.6cqw;padding:.35cqw 1.1cqw}
+.hxlx .xp{align-self:flex-start;font-size:max(12px,1.9cqw);font-weight:700;color:#0C161F;background:#FFB347;border-radius:.6cqw;padding:.35cqw 1.1cqw}
 .hxlx .xbg{position:absolute;left:36cqw;right:0;bottom:-2.4cqw;font-size:11cqw;font-weight:700;letter-spacing:.06em;color:rgba(255,255,255,.045);white-space:nowrap;text-align:center;pointer-events:none;line-height:1}
 @keyframes lxShow{0%{opacity:0;transform:scale(.78) rotate(-12deg)}{{ round($__lp * .14, 3) }}%{opacity:1;transform:none}{{ round($__lp * .86, 3) }}%{opacity:1;transform:none}{{ round($__lp, 3) }}%{opacity:0;transform:scale(1.1)}100%{opacity:0}}
 @keyframes lxText{0%{opacity:0;transform:translate(2.4cqw,-50%)}{{ round($__lp * .2, 3) }}%{opacity:1;transform:translateY(-50%)}{{ round($__lp * .84, 3) }}%{opacity:1;transform:translateY(-50%)}{{ round($__lp, 3) }}%{opacity:0;transform:translate(-1.6cqw,-50%)}100%{opacity:0}}

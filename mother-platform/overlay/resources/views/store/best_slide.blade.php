@@ -17,7 +17,7 @@
 <div class="hxa hxbsl" aria-label="DutyFreeBD Best Sellers 2 carton offer">
 <style>
 .hxs .sl-t>.hxbsl{flex:0 0 100%}
-.hxbsl{container-type:inline-size;position:relative;display:block;aspect-ratio:1440/480;overflow:hidden;color:#fff;background:radial-gradient(70% 140% at 78% 45%,#5A2408 0%,#2A1626 46%,#0B1220 100%);font-family:'Bornomala',Inter,sans-serif}
+.hxbsl{container-type:inline-size;position:relative;display:block;aspect-ratio:1440/480;overflow:hidden;color:#fff;background:radial-gradient(70% 140% at 78% 45%,#5A2408 0%,#2A1626 46%,#0C161F 100%);font-family:'Bornomala',Inter,sans-serif}
 .hxbsl *{box-sizing:border-box}
 .hxbsl .bg1{position:absolute;left:70cqw;top:50%;width:62cqw;height:62cqw;transform:translate(-50%,-50%);background:radial-gradient(closest-side,rgba(255,138,48,.42),rgba(255,138,48,0) 70%);animation:bslGlow 5s ease-in-out infinite alternate;pointer-events:none}
 .hxbsl .bg2{position:absolute;top:0;bottom:0;left:-30%;width:16%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.1),transparent);transform:skewX(-18deg);animation:bslSweep 6.5s cubic-bezier(.4,0,.2,1) infinite;pointer-events:none}
@@ -28,9 +28,9 @@
 .hxbsl .bd{font-size:max(10px,1.25cqw);color:#E3E8F1;line-height:1.5}
 .hxbsl .bt{display:flex;flex-wrap:wrap;gap:.7cqw}.hxbsl .bt span{font-size:max(9px,1.02cqw);font-weight:600;border:1px solid rgba(255,201,138,.5);color:#FFE2BD;border-radius:999px;padding:.28cqw 1cqw;background:rgba(255,255,255,.06)}
 .hxbsl .bc{position:absolute;left:40cqw;right:2.6cqw;top:0;bottom:0;display:flex;align-items:center;justify-content:center;gap:1.7cqw;z-index:3}
-.hxbsl .bp{position:relative;width:27.2cqw;display:flex;align-items:center;gap:.6cqw;padding:1.2cqw 1.3cqw 1.2cqw 0;border-radius:1.5cqw;background:#fff;color:#0B1220;text-decoration:none;box-shadow:0 2.2cqw 5cqw rgba(0,0,0,.5),0 0 0 .22cqw rgba(255,201,138,.75);animation:bslFloat 4.6s ease-in-out infinite}
+.hxbsl .bp{position:relative;width:27.2cqw;display:flex;align-items:center;gap:.6cqw;padding:1.2cqw 1.3cqw 1.2cqw 0;border-radius:1.5cqw;background:#fff;color:#0C161F;text-decoration:none;box-shadow:0 2.2cqw 5cqw rgba(0,0,0,.5),0 0 0 .22cqw rgba(255,201,138,.75);animation:bslFloat 4.6s ease-in-out infinite}
 .hxbsl .bp+.bp{animation-delay:-2.3s}
-.hxbsl .bp:hover{box-shadow:0 2.2cqw 5cqw rgba(0,0,0,.5),0 0 0 .34cqw #FF5A00}
+.hxbsl .bp:hover{box-shadow:0 2.2cqw 5cqw rgba(0,0,0,.5),0 0 0 .34cqw #F95505}
 /* the product stands out of its card: bigger than the card is tall, with its own glow and shadow (owner: make the product photos stand out) */
 .hxbsl .pi{position:relative;flex:none;width:12.6cqw;height:19.5cqw;margin:-3.4cqw 0 -3.4cqw -1.6cqw}
 .hxbsl .pi::before{content:'';position:absolute;left:50%;top:52%;width:15cqw;height:15cqw;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(closest-side,rgba(255,138,48,.38),rgba(255,138,48,0) 72%)}
@@ -42,7 +42,7 @@
 .hxbsl .pp{font-size:max(15px,2.5cqw);font-weight:800;line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap}
 .hxbsl .pe{font-size:max(8px,.95cqw);color:#475467;white-space:nowrap}.hxbsl .pe s{color:#9CA3AF}
 .hxbsl .ps{align-self:flex-start;font-size:max(8px,.92cqw);font-weight:700;color:#067647;background:#DCFCE7;border-radius:999px;padding:.18cqw .8cqw;white-space:nowrap}
-.hxbsl .pg{margin-top:.25cqw;display:flex;align-items:center;justify-content:center;height:max(22px,2.5cqw);border-radius:.8cqw;background:#FF5A00;color:#fff;font-family:'Bornomala',Inter,sans-serif;font-size:max(10px,1.2cqw);font-weight:700;animation:bslPulse 2.4s ease-in-out infinite}
+.hxbsl .pg{margin-top:.25cqw;display:flex;align-items:center;justify-content:center;height:max(22px,2.5cqw);border-radius:.8cqw;background:#F95505;color:#fff;font-family:'Bornomala',Inter,sans-serif;font-size:max(10px,1.2cqw);font-weight:700;animation:bslPulse 2.4s ease-in-out infinite}
 .hxbsl .pr{position:absolute;top:0;right:0;width:6.2cqw;height:6.2cqw;overflow:hidden;pointer-events:none;border-top-right-radius:1.5cqw}
 .hxbsl .pr i{position:absolute;top:1.15cqw;right:-2.2cqw;width:8.6cqw;transform:rotate(45deg);background:linear-gradient(180deg,#F03A3A,#C91414);color:#fff;font-family:Inter,sans-serif;font-style:normal;font-weight:800;font-size:max(7px,.86cqw);line-height:1.9;letter-spacing:.1em;text-align:center;box-shadow:0 .2cqw .5cqw rgba(0,0,0,.28)}
 @keyframes bslFloat{50%{transform:translateY(-.9cqw)}}

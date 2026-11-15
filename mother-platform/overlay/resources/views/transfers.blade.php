@@ -5,7 +5,7 @@
 @if(session('ok'))<div class="card" style="color:#166534">{{ session('ok') }}</div>@endif @if(session('bad'))<div class="card err">{{ session('bad') }}</div>@endif @if($errors->any())<div class="card err">{{ $errors->first() }}</div>@endif
 
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:12px">
-@foreach($acc as $a)@if(abs($bal[$a->id]) > 0.004)<div class="card" style="margin:0"><small>{{ $a->name }}</small><div style="font-size:18px;font-weight:800;color:{{ $bal[$a->id] < 0 ? '#B91C1C' : '#111827' }}">{{ $tk($bal[$a->id]) }}</div></div>@endif @endforeach
+@foreach($acc as $a)@if(abs($bal[$a->id]) > 0.004)<div class="card" style="margin:0"><small>{{ $a->name }}</small><div style="font-size:18px;font-weight:800;color:{{ $bal[$a->id] < 0 ? '#B91C1C' : '#0C161F' }}">{{ $tk($bal[$a->id]) }}</div></div>@endif @endforeach
 </div>
 
 @if($can)

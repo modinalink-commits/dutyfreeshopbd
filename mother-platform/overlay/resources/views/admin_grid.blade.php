@@ -3,9 +3,9 @@
 <style id="admin-grid">
 /* ===== 1. design tokens (placeholders = current palette; the owner will set final colours here) ===== */
 :root{
-  --primary:var(--o,#FF5A00);--primary-soft:#FFF1E8;--secondary:#374151;
+  --primary:var(--o,#F95505);--primary-soft:#FFF1E8;--secondary:#374151;
   --bg:#FFFBF8;--surface:#FFFFFF;--surface-2:#F8FAFC;
-  --text-primary:#111827;--text-secondary:#374151;--text-muted:#6B7280;
+  --text-primary:#0C161F;--text-secondary:#374151;--text-muted:#6B7280;
   --border-color:#B8BFC9;--border-soft:#D1D5DB;
   --row-hover:#FFF8F3;--row-selected:#FFF1E8;
   --success:#16A34A;--warning:#D97706;--danger:#DC2626;--info:#2563EB;
@@ -53,7 +53,7 @@ main table.ordt>tbody>tr>td.action-column,main table.ordt>thead>tr>th.action-col
 .g-toolbar+table,.g-toolbar+.otw{border-top-left-radius:0;border-top-right-radius:0}
 main input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]),main select{height:var(--g-ctl-h);border:1px solid var(--border-color);border-radius:6px;background:var(--surface);color:var(--text-primary);font-size:12.5px}
 main textarea{border:1px solid var(--border-color);border-radius:6px;font-size:12.5px}
-main input:focus-visible,main select:focus-visible,main textarea:focus-visible{outline:0;border-color:var(--primary);box-shadow:0 0 0 3px rgba(255,90,0,.14)}
+main input:focus-visible,main select:focus-visible,main textarea:focus-visible{outline:0;border-color:var(--primary);box-shadow:0 0 0 3px rgba(249,85,5,.14)}
 main .btn:focus-visible,main button:focus-visible,main a:focus-visible,aside a:focus-visible,aside summary:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
 main .btn,main button{min-height:var(--g-btn-h);border-radius:6px}
 main .btn.g,main button.g{background:var(--surface);color:var(--text-primary);border:1px solid var(--border-color)}

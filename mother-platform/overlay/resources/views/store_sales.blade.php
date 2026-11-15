@@ -8,9 +8,9 @@
 @endphp
 <style>
 .ss .kp{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px}.ss .k{background:#fff;border:1px solid #E3E6EC;border-radius:10px;padding:10px 12px}.ss .k small{color:#6B7280;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.05em}.ss .k b{display:block;font-size:20px;margin-top:2px}.ss .k span{font-size:11.5px;color:#6B7280}
-.ss .bar{height:6px;background:#F1F3F7;border-radius:4px;overflow:hidden;min-width:70px}.ss .bar i{display:block;height:100%;background:#FF5A00}
+.ss .bar{height:6px;background:#F1F3F7;border-radius:4px;overflow:hidden;min-width:70px}.ss .bar i{display:block;height:100%;background:#F95505}
 .ss .rng a{margin-right:4px}.ss .neg{color:#B91C1C;font-weight:700}.ss .pos{color:#0E7A3F;font-weight:700}
-.ss .tr{display:flex;align-items:flex-end;gap:3px;height:54px}.ss .tr div{flex:1;background:#FFD2B8;border-radius:3px 3px 0 0;min-height:2px}.ss .tr div:last-child{background:#FF5A00}
+.ss .tr{display:flex;align-items:flex-end;gap:3px;height:54px}.ss .tr div{flex:1;background:#FFD2B8;border-radius:3px 3px 0 0;min-height:2px}.ss .tr div:last-child{background:#F95505}
 </style>
 <div class="ss">
 <h1>Store Sales</h1>

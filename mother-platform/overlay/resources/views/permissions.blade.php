@@ -1,7 +1,7 @@
 @extends('layout')@section('title','Admin Users and Permissions')
 @section('body')
 <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px"><div style="flex:1;min-width:260px"><h1 style="margin:0">Admin Users and Permissions</h1><span style="font-size:13px;color:#6B7280">Staff accounts, what each person can do, and who can download.</span></div>
-<span style="display:inline-flex;gap:6px;font-size:12px;font-weight:600;color:#FF5A00;background:#FFF1E8;border-radius:8px;padding:6px 10px">⬇ Download: <a target="_blank" href="/admin/m/users/export/pdf">PDF</a> · <a href="/admin/m/users/export/xls">Excel</a> · <a href="/admin/m/users/export/doc">Word</a> · <a href="/admin/m/users/export/csv">CSV</a></span>
+<span style="display:inline-flex;gap:6px;font-size:12px;font-weight:600;color:#F95505;background:#FFF1E8;border-radius:8px;padding:6px 10px">⬇ Download: <a target="_blank" href="/admin/m/users/export/pdf">PDF</a> · <a href="/admin/m/users/export/xls">Excel</a> · <a href="/admin/m/users/export/doc">Word</a> · <a href="/admin/m/users/export/csv">CSV</a></span>
 <a class="btn" href="/admin/m/users/new">Add admin</a></div>
 @if(session('ok'))<div class="card" style="color:#166534">{{ session('ok') }}</div>@endif
 <form method="post" action="/admin/permissions">@csrf

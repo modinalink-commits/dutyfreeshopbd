@@ -67,7 +67,7 @@
       var g, i, p, q, b;
       cx2.clearRect(0, 0, W, H);
       // atmosphere
-      g = cx2.createRadialGradient(CX, CY, R * .96, CX, CY, R * 1.16); g.addColorStop(0, 'rgba(255,120,40,.12)'); g.addColorStop(.35, 'rgba(255,90,0,.05)'); g.addColorStop(1, 'rgba(255,90,0,0)');
+      g = cx2.createRadialGradient(CX, CY, R * .96, CX, CY, R * 1.16); g.addColorStop(0, 'rgba(255,120,40,.12)'); g.addColorStop(.35, 'rgba(249,85,5,.05)'); g.addColorStop(1, 'rgba(249,85,5,0)');
       cx2.fillStyle = g; cx2.beginPath(); cx2.arc(CX, CY, R * 1.16, 0, 7); cx2.fill();
       // ocean
       g = cx2.createRadialGradient(CX - R * .35, CY - R * .4, R * .1, CX, CY, R); g.addColorStop(0, '#1d2a45'); g.addColorStop(.6, '#101a2e'); g.addColorStop(1, '#070c18');
@@ -80,7 +80,7 @@
         n = q[0] * L[0] + q[1] * L[1] + q[2] * L[2]; b = Math.max(0, n) * .75 + q[2] * .25; b = Math.min(.999, b);
         paths[(b * B) | 0].rect(CX + R * q[0] - d / 2, CY - R * q[1] - d / 2, d, d);
       }
-      var cols = ['#7a2e06', '#b13f06', '#e04e00', '#ff5a00', '#ff8a45', '#ffc79e'];
+      var cols = ['#7a2e06', '#b13f06', '#e04e00', '#F95505', '#ff8a45', '#ffc79e'];
       for (i = 0; i < B; i++) { cx2.fillStyle = cols[i]; cx2.fill(paths[i]); }
       // rim light
       g = cx2.createRadialGradient(CX, CY, R * .86, CX, CY, R); g.addColorStop(0, 'rgba(255,120,40,0)'); g.addColorStop(1, 'rgba(255,120,40,.15)');
@@ -112,7 +112,7 @@
         cx2.save(); cx2.globalAlpha = Math.min(1, P.t / .03, (1 - P.t) / .03); cx2.translate(p0[0], p0[1]); cx2.rotate(ang); cx2.scale(sc, sc);
         cx2.shadowColor = 'rgba(255,120,30,.45)'; cx2.shadowBlur = 3 * dpr; cx2.fillStyle = '#fff'; cx2.fill(PLANE);
         cx2.shadowBlur = 0; cx2.strokeStyle = 'rgba(255,200,160,.9)'; cx2.lineWidth = .8; cx2.beginPath(); cx2.moveTo(-8.4, 0); cx2.lineTo(-13, 0); cx2.stroke();
-        cx2.translate(-13, 0); cx2.fillStyle = '#FF5A00'; cx2.fillRect(-6.5, -2.6, 6.5, 5.2); cx2.fillStyle = '#fff'; cx2.fillRect(-6.5, -.8, 6.5, 1.6); cx2.restore();
+        cx2.translate(-13, 0); cx2.fillStyle = '#F95505'; cx2.fillRect(-6.5, -2.6, 6.5, 5.2); cx2.fillStyle = '#fff'; cx2.fillRect(-6.5, -.8, 6.5, 1.6); cx2.restore();
         if (p0[2] > .3) vplanes.push([i, p0]);
       }
       // cities + Bengali country names (greedy, no overlaps; Bangladesh first)
@@ -121,7 +121,7 @@
         var c = CITIES[k]; p = pt(cityV[k]); if (p[2] <= .12) return;
         var big = c[3], rr = (big ? 3.6 : 2.2) * dpr;
         if (big) { var ph = (T * .8 + (k === 'CGP' ? .5 : 0)) % 1; cx2.strokeStyle = 'rgba(255,110,30,' + (.4 * (1 - ph)) + ')'; cx2.lineWidth = 1.6 * dpr; cx2.beginPath(); cx2.arc(p[0], p[1], rr + ph * 14 * dpr, 0, 7); cx2.stroke(); }
-        cx2.fillStyle = big ? '#FF5A00' : '#fff'; cx2.beginPath(); cx2.arc(p[0], p[1], rr, 0, 7); cx2.fill();
+        cx2.fillStyle = big ? '#F95505' : '#fff'; cx2.beginPath(); cx2.arc(p[0], p[1], rr, 0, 7); cx2.fill();
         if (big) { cx2.strokeStyle = '#fff'; cx2.lineWidth = dpr; cx2.stroke(); }
         if (k === 'CGP' || p[2] < .3) return;
         var fs = k === 'DAC' ? fs0 * (small ? 1.5 : 1.75) : fs0; cx2.font = '700 ' + fs + 'px "Inter","Bornomala",sans-serif';
@@ -147,7 +147,7 @@
           var tx = Math.min(W - tw - 4 * dpr, Math.max(4 * dpr, tagP[0] + 12 * dpr)), ty = Math.max((small ? 42 : 4) * dpr, tagP[1] - th - 10 * dpr);
           if (dacBox && tx < dacBox[0] + dacBox[2] + 4 * dpr && tx + tw > dacBox[0] - 4 * dpr && ty < dacBox[1] + dacBox[3] + 4 * dpr && ty + th > dacBox[1] - 4 * dpr) ty = Math.max(4 * dpr, dacBox[1] - th - 6 * dpr);
           cx2.strokeStyle = 'rgba(255,255,255,.55)'; cx2.lineWidth = dpr; cx2.beginPath(); cx2.moveTo(tagP[0], tagP[1]); cx2.lineTo(tx + 6 * dpr, ty + th); cx2.stroke();
-          cx2.fillStyle = '#FF5A00'; cx2.beginPath(); (cx2.roundRect ? cx2.roundRect(tx, ty, tw, th, 7 * dpr) : cx2.rect(tx, ty, tw, th)); cx2.fill();
+          cx2.fillStyle = '#F95505'; cx2.beginPath(); (cx2.roundRect ? cx2.roundRect(tx, ty, tw, th, 7 * dpr) : cx2.rect(tx, ty, tw, th)); cx2.fill();
           cx2.fillStyle = '#fff'; cx2.textBaseline = 'middle'; cx2.fillText(txt, tx + 8 * dpr, ty + th / 2 + dpr * .5); cx2.textBaseline = 'alphabetic';
         }
       }

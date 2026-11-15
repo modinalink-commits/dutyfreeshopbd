@@ -15,17 +15,17 @@
 .dmz .dm img.logo{width:16cqw;height:auto;object-fit:contain}
 .dm .tag{position:absolute;left:3.2cqw;top:8.3cqw;width:16cqw;display:flex;align-items:center;gap:.6cqw;font-size:max(8px,1.05cqw);font-weight:500;color:#0B2A5B;white-space:nowrap}
 .dm .tag:before,.dm .tag:after{content:"";height:1px;flex:1;background:rgba(11,42,91,.35)}
-.dm .bd{position:absolute;width:6.8cqw;height:6.8cqw;border-radius:50%;background:#fff;border:.35cqw solid #FF6A00;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font:700 max(7px,.95cqw)/1.15 Inter,Bornomala,sans-serif;letter-spacing:.02em;color:#0B2A5B;box-shadow:0 .8cqw 1.8cqw rgba(11,42,91,.18)}
-.dm .bd b{font-size:max(8px,1.3cqw);color:#FF6A00;display:block}
+.dm .bd{position:absolute;width:6.8cqw;height:6.8cqw;border-radius:50%;background:#fff;border:.35cqw solid #F95505;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font:700 max(7px,.95cqw)/1.15 Inter,Bornomala,sans-serif;letter-spacing:.02em;color:#0B2A5B;box-shadow:0 .8cqw 1.8cqw rgba(11,42,91,.18)}
+.dm .bd b{font-size:max(8px,1.3cqw);color:#F95505;display:block}
 .dm .bd.a{left:4.6cqw;top:15cqw}.dm .bd.b{left:12.2cqw;top:18.6cqw;border-color:#16A34A}.dm .bd.b b{color:#16A34A}
 .dm .route{position:absolute;left:2cqw;top:24cqw;width:20cqw;height:7.4cqw;overflow:visible}
 .dm .route path{fill:none;stroke:#fff;stroke-width:1.3;stroke-linecap:round;stroke-dasharray:3 4;opacity:.9}
-.dm .route circle{fill:#FF6A00;stroke:#fff;stroke-width:1.6}
+.dm .route circle{fill:#F95505;stroke:#fff;stroke-width:1.6}
 .dm .h{position:absolute;left:24.5cqw;top:2.4cqw;width:41cqw;display:flex;flex-direction:column}
 .dm .h1{font-size:5.4cqw;line-height:1.12;font-weight:700;background:linear-gradient(95deg,#E6197A 0%,#FF4D2E 60%,#FF7A00 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-stroke:0;filter:drop-shadow(0 .25cqw 0 #fff) drop-shadow(0 .5cqw .8cqw rgba(11,42,91,.18))}
 .dm .h2{font-size:5cqw;line-height:1.12;font-weight:700;color:#0B3D91;text-shadow:0 .25cqw 0 #fff,0 0 .3cqw #fff,0 .5cqw .8cqw rgba(11,42,91,.18)}
 .dm .chips{position:absolute;left:24.5cqw;top:17.2cqw;height:3.3cqw;padding:0 2cqw;display:flex;align-items:center;gap:1.1cqw;background:#fff;border-radius:99cqw;font-size:max(10px,1.5cqw);font-weight:700;color:#0B3D91;box-shadow:0 .6cqw 1.6cqw rgba(11,42,91,.14);white-space:nowrap}
-.dm .chips i{width:.5cqw;height:.5cqw;min-width:3px;min-height:3px;border-radius:50%;background:#FF6A00;display:block}
+.dm .chips i{width:.5cqw;height:.5cqw;min-width:3px;min-height:3px;border-radius:50%;background:#F95505;display:block}
 .dm .tk{position:absolute;left:24.5cqw;top:21.6cqw;width:40cqw;height:5.8cqw;padding:0 1.6cqw;display:flex;align-items:center;gap:1.4cqw;background:rgba(255,255,255,.94);border-radius:1.4cqw;box-shadow:0 .8cqw 2cqw rgba(11,42,91,.16)}
 .dm .tk .sw{flex:none;width:3.2cqw;height:3.2cqw;border-radius:50%;background:var(--c,#D1D5DB);box-shadow:0 0 0 .5cqw color-mix(in srgb,var(--c,#D1D5DB) 28%,transparent);transition:background .25s,box-shadow .25s}
 .dm .tk .tx{min-width:0;flex:1}
@@ -38,7 +38,7 @@
 .dm .tk .sw.pop,.dm .tk .nm.pop,.dm .tk .sb.pop{animation:dmPop .3s ease-out}
 @keyframes dmPop{from{opacity:.2;transform:translateY(.5cqw)}to{opacity:1;transform:none}}
 .dm .ct2{position:absolute;left:24.5cqw;bottom:1.6cqw;height:3.2cqw;padding:0 1.8cqw;display:flex;align-items:center;gap:1.6cqw;background:#fff;border-radius:99cqw;font-size:max(10px,1.45cqw);font-weight:700;color:#0B2A5B;box-shadow:0 .6cqw 1.6cqw rgba(11,42,91,.14);white-space:nowrap}
-.dm .ct2 svg{width:1.7cqw;height:1.7cqw;min-width:11px;min-height:11px;flex:none;color:#FF6A00}
+.dm .ct2 svg{width:1.7cqw;height:1.7cqw;min-width:11px;min-height:11px;flex:none;color:#F95505}
 .dm .ct2 s{width:1px;height:1.8cqw;background:#D1D5DB;text-decoration:none}
 .dm .map{position:absolute;left:71cqw;top:1.1cqw;width:22cqw;height:auto;display:block;overflow:visible;filter:drop-shadow(0 1cqw 1.4cqw rgba(11,42,91,.22))}
 .dm .map path{fill:rgba(255,255,255,.62);stroke:#fff;stroke-width:1.1;stroke-linejoin:round;transition:fill .4s ease,filter .4s ease}

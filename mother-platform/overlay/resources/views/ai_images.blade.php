@@ -5,7 +5,7 @@
 @if(session('ok'))<div class="card" style="margin-top:12px;background:#DCFCE7;border-color:#A7F3D0">{{ session('ok') }}</div>@endif
 @if(!$gd)<div class="card err" style="margin-top:12px">PHP GD is not enabled on the server, so AI processing is paused.</div>@endif
 @if(!$hasKey)<div class="card err" style="margin-top:12px">OpenAI API key is not set yet. Paste it in the AI settings box below to start.</div>@endif
-<style>.aiT{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:10px}.aiT>div{border:1px solid #CED4DA;border-radius:10px;padding:9px 12px;background:#fff}.aiT small{display:block;color:#6B7280;font-size:11px;font-weight:600}.aiT b{font-size:20px;color:#0B1220}</style>
+<style>.aiT{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:10px}.aiT>div{border:1px solid #CED4DA;border-radius:10px;padding:9px 12px;background:#fff}.aiT small{display:block;color:#6B7280;font-size:11px;font-weight:600}.aiT b{font-size:20px;color:#0C161F}</style>
 <div class="card" style="margin-top:12px"><div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><b style="font-size:14px">Automatic mode</b><span class="pill" style="background:{{ $auto['on'] ? '#DCFCE7' : '#FEE2E2' }}">{{ $auto['on'] ? 'ON' : 'OFF' }}</span><span style="font-size:12px;color:#6B7280">runs on the server every ~30 seconds, one image at a time, even when this page is closed</span></div>
 @php $pct = min(100, (int)round($auto['today'] / max(1, $auto['cap']) * 100)); @endphp
 <div class="aiT"><div><small>Current job</small><b style="font-size:14px">Cigarette &amp; Vape</b><small style="font-weight:400">{{ $auto['all_on'] ? 'ON: one main image per product' : 'OFF' }}</small></div>

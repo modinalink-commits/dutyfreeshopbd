@@ -4,29 +4,29 @@
 #dfmcO.on{opacity:1;pointer-events:auto}
 #dfmc{position:fixed;top:0;right:0;bottom:0;width:400px;max-width:100vw;background:#fff;z-index:9991;display:flex;flex-direction:column;transform:translateX(104%);transition:transform .25s ease;box-shadow:-10px 0 30px rgba(11,18,32,.18);font-family:inherit}
 #dfmc.on{transform:none}
-#dfmc .h{display:flex;align-items:center;gap:8px;padding:14px 16px;border-bottom:1px solid #E5E7EB}#dfmc .h b{font-size:17px;color:#0B1220;flex:1}#dfmc .h b span{color:#FF5A00}
-#dfmc .x{border:0;background:#F3F4F6;width:32px;height:32px;border-radius:50%;font-size:18px;line-height:1;color:#0B1220}
+#dfmc .h{display:flex;align-items:center;gap:8px;padding:14px 16px;border-bottom:1px solid #E5E7EB}#dfmc .h b{font-size:17px;color:#0C161F;flex:1}#dfmc .h b span{color:#F95505}
+#dfmc .x{border:0;background:#F3F4F6;width:32px;height:32px;border-radius:50%;font-size:18px;line-height:1;color:#0C161F}
 #dfmc .bd{flex:1;overflow:auto;padding:10px 14px;background:#FAFAFA}
 #dfmc .it{display:flex;gap:10px;background:#fff;border:1px solid #EEF0F3;border-radius:12px;padding:8px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
 #dfmc .it img{width:58px;height:58px;object-fit:contain;border-radius:8px;background:#fff;flex:none}
-#dfmc .it .m{flex:1;min-width:0}#dfmc .it a{display:block;font-size:12.5px;font-weight:600;color:#0B1220;line-height:1.3;max-height:2.6em;overflow:hidden}
-#dfmc .it .r{display:flex;align-items:center;justify-content:space-between;margin-top:6px}#dfmc .it .pr{font-weight:800;color:#0B1220;font-size:14px}
-#dfmc .q{display:flex;align-items:center;border:1px solid #E5E7EB;border-radius:8px;overflow:hidden}#dfmc .q button{border:0;background:#fff;width:26px;height:26px;font-size:15px;color:#0B1220}#dfmc .q span{min-width:26px;text-align:center;font-size:12.5px;font-weight:700}
+#dfmc .it .m{flex:1;min-width:0}#dfmc .it a{display:block;font-size:12.5px;font-weight:600;color:#0C161F;line-height:1.3;max-height:2.6em;overflow:hidden}
+#dfmc .it .r{display:flex;align-items:center;justify-content:space-between;margin-top:6px}#dfmc .it .pr{font-weight:800;color:#0C161F;font-size:14px}
+#dfmc .q{display:flex;align-items:center;border:1px solid #E5E7EB;border-radius:8px;overflow:hidden}#dfmc .q button{border:0;background:#fff;width:26px;height:26px;font-size:15px;color:#0C161F}#dfmc .q span{min-width:26px;text-align:center;font-size:12.5px;font-weight:700}
 #dfmc .rm{border:0;background:none;color:#B91C1C;font-size:12px;margin-left:8px;padding:4px}
-#dfmc .sm{padding:12px 16px;border-top:1px solid #E5E7EB;font-size:13px;background:#fff}#dfmc .sm div{display:flex;justify-content:space-between;margin:3px 0;color:#374151}#dfmc .sm .t{font-size:16px;font-weight:800;color:#0B1220;background:#FFF1E8;border-radius:10px;padding:9px 10px;margin-top:8px}#dfmc .sm .g{color:#166534;font-weight:700}
+#dfmc .sm{padding:12px 16px;border-top:1px solid #E5E7EB;font-size:13px;background:#fff}#dfmc .sm div{display:flex;justify-content:space-between;margin:3px 0;color:#374151}#dfmc .sm .t{font-size:16px;font-weight:800;color:#0C161F;background:#FFF1E8;border-radius:10px;padding:9px 10px;margin-top:8px}#dfmc .sm .g{color:#166534;font-weight:700}
 #dfmc .ac{display:grid;grid-template-columns:1fr 1.2fr;gap:8px;padding:0 16px 14px;background:#fff}#dfmc .ac a{text-align:center;border-radius:10px;padding:12px 6px;font-weight:800;font-size:14px}
-#dfmc .vc{border:1.5px solid #0B1F3A;color:#0B1220;background:#fff}#dfmc .co{background:linear-gradient(135deg,#FF8A00,#FF5A00);color:#fff}
-#dfmc .em{text-align:center;padding:50px 20px;color:#374151}#dfmc .em b{display:block;font-size:17px;color:#0B1220;margin-bottom:14px}#dfmc .em a{display:inline-block;background:#FF5A00;color:#fff;font-weight:800;border-radius:10px;padding:11px 22px}
+#dfmc .vc{border:1.5px solid #0B1F3A;color:#0C161F;background:#fff}#dfmc .co{background:linear-gradient(135deg,#FF8A00,#F95505);color:#fff}
+#dfmc .em{text-align:center;padding:50px 20px;color:#374151}#dfmc .em b{display:block;font-size:17px;color:#0C161F;margin-bottom:14px}#dfmc .em a{display:inline-block;background:#F95505;color:#fff;font-weight:800;border-radius:10px;padding:11px 22px}
 #dfsb{display:none}
-#dfat{position:fixed;left:50%;top:18px;transform:translate(-50%,-80px);background:#0B1220;color:#fff;border-radius:999px;padding:10px 18px;font-size:13.5px;font-weight:700;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.28);transition:transform .3s;pointer-events:none;border:1px solid rgba(255,138,0,.6)}#dfat.on{transform:translate(-50%,0)}
+#dfat{position:fixed;left:50%;top:18px;transform:translate(-50%,-80px);background:#0C161F;color:#fff;border-radius:999px;padding:10px 18px;font-size:13.5px;font-weight:700;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.28);transition:transform .3s;pointer-events:none;border:1px solid rgba(255,138,0,.6)}#dfat.on{transform:translate(-50%,0)}
 @media(max-width:760px){
 #dfmc{top:auto;left:0;width:100%;height:82vh;border-radius:18px 18px 0 0;transform:translateY(104%)}#dfmc.on{transform:none}
 /* mobile: a small round cart button in the middle (Cart centre, Chat right), with the item count */
 #dfsb.on{display:block;position:fixed;left:50%;bottom:88px;transform:translateX(-50%);z-index:48;width:54px;height:54px}
 #dfsb span{display:none}
-#dfsb button{position:relative;display:flex;align-items:center;justify-content:center;width:54px;height:54px;padding:0;border:2.5px solid #0B1220;border-radius:50%;background:linear-gradient(135deg,#FF8A00,#FF5A00);color:#fff;font-size:0;box-shadow:0 6px 16px rgba(255,90,0,.42);cursor:pointer}
+#dfsb button{position:relative;display:flex;align-items:center;justify-content:center;width:54px;height:54px;padding:0;border:2.5px solid #0C161F;border-radius:50%;background:linear-gradient(135deg,#FF8A00,#F95505);color:#fff;font-size:0;box-shadow:0 6px 16px rgba(249,85,5,.42);cursor:pointer}
 #dfsb button svg{width:25px;height:25px}
-#dfsb .bn{position:absolute;top:-7px;right:-7px;min-width:21px;height:21px;padding:0 5px;border-radius:11px;background:#0B1220;color:#fff;border:2px solid #fff;font:800 11px/17px Inter,Bornomala,sans-serif;text-align:center}
+#dfsb .bn{position:absolute;top:-7px;right:-7px;min-width:21px;height:21px;padding:0 5px;border-radius:11px;background:#0C161F;color:#fff;border:2px solid #fff;font:800 11px/17px Inter,Bornomala,sans-serif;text-align:center}
 #dfat{top:auto;bottom:128px;transform:translate(-50%,40px);opacity:0}#dfat.on{transform:translate(-50%,0);opacity:1}}
 </style>
 <div id="dfmcO"></div>

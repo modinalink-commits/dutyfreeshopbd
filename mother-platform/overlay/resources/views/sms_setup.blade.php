@@ -1,12 +1,12 @@
 @extends('layout')@section('title','SMS Setup')
 @section('body')
 <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px"><div style="flex:1;min-width:240px"><h1 style="margin:0">SMS Setup (BulkSMSBD)</h1><span style="font-size:13px;color:#6B7280">Order confirmation SMS to customers and publish / unpublish alerts to the owner and managers.</span></div>
-<span style="display:inline-flex;gap:6px;font-size:12px;font-weight:600;color:#FF5A00;background:#FFF1E8;border-radius:8px;padding:6px 10px">⬇ Download log: <a target="_blank" href="/admin/m/sms-log/export/pdf">PDF</a> · <a href="/admin/m/sms-log/export/xls">Excel</a> · <a href="/admin/m/sms-log/export/doc">Word</a> · <a href="/admin/m/sms-log/export/csv">CSV</a></span><a class="btn g" href="/admin/m/sms-log">SMS log</a></div>
+<span style="display:inline-flex;gap:6px;font-size:12px;font-weight:600;color:#F95505;background:#FFF1E8;border-radius:8px;padding:6px 10px">⬇ Download log: <a target="_blank" href="/admin/m/sms-log/export/pdf">PDF</a> · <a href="/admin/m/sms-log/export/xls">Excel</a> · <a href="/admin/m/sms-log/export/doc">Word</a> · <a href="/admin/m/sms-log/export/csv">CSV</a></span><a class="btn g" href="/admin/m/sms-log">SMS log</a></div>
 @if(session('ok'))<div class="card" style="color:#166534">{{ session('ok') }}</div>@endif
 @if(session('bad'))<div class="card err">{{ session('bad') }}</div>@endif
 @if($errors->any())<div class="card err">{{ $errors->first() }}</div>@endif
 <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:16px">
-<div class="card k" style="margin:0"><span style="font-size:13px">Gateway</span><b style="font-size:22px">{{ $ready ? 'Connected' : 'Not set' }}</b><span style="color:#FF5A00;font-weight:600">{{ $ready ? 'ready to send' : 'add key + sender' }}</span></div>
+<div class="card k" style="margin:0"><span style="font-size:13px">Gateway</span><b style="font-size:22px">{{ $ready ? 'Connected' : 'Not set' }}</b><span style="color:#F95505;font-weight:600">{{ $ready ? 'ready to send' : 'add key + sender' }}</span></div>
 <div class="card k" style="margin:0"><span style="font-size:13px">Sent</span><b style="font-size:26px">{{ number_format($counts['sent'] ?? 0) }}</b></div>
 <div class="card k" style="margin:0"><span style="font-size:13px">Queued</span><b style="font-size:26px">{{ number_format($counts['queued'] ?? 0) }}</b></div>
 <div class="card k" style="margin:0"><span style="font-size:13px">Failed</span><b style="font-size:26px">{{ number_format($counts['failed'] ?? 0) }}</b></div>

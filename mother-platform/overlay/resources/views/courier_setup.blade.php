@@ -6,7 +6,7 @@
 @if(session('bad'))<div class="card err">{{ session('bad') }}</div>@endif
 @if($errors->any())<div class="card err">{{ $errors->first() }}</div>@endif
 <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:16px">
-<div class="card k" style="margin:0"><span style="font-size:13px">Pathao</span><b style="font-size:22px">{{ $ready ? 'Credentials saved' : 'Not set' }}</b><span style="color:#FF5A00;font-weight:600">{{ strtoupper($env) }} mode</span></div>
+<div class="card k" style="margin:0"><span style="font-size:13px">Pathao</span><b style="font-size:22px">{{ $ready ? 'Credentials saved' : 'Not set' }}</b><span style="color:#F95505;font-weight:600">{{ strtoupper($env) }} mode</span></div>
 <div class="card k" style="margin:0"><span style="font-size:13px">Pickup store ID</span><b style="font-size:22px">{{ $storeId ?: '—' }}</b></div>
 <div class="card k" style="margin:0"><span style="font-size:13px">Orders sent</span><b style="font-size:26px">{{ number_format($sent) }}</b></div></div>
 <form class="card" method="post" action="/admin/courier" style="max-width:640px">@csrf

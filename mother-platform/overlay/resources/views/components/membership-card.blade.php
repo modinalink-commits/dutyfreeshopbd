@@ -20,15 +20,15 @@
 .dfmc .sm{font-size:max(8px,2cqw);font-weight:600;letter-spacing:.2em;text-transform:uppercase;margin-bottom:1cqw}
 .dfmc .nm{font-size:max(13px,4.2cqw);font-weight:700;letter-spacing:.07em;text-transform:uppercase;line-height:1.15;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word}
 .dfmc .id{font-size:max(10px,2.8cqw);font-weight:600;letter-spacing:.1em;text-align:right;white-space:nowrap}.dfmc .web{font-size:max(8px,2cqw);letter-spacing:.14em;margin-top:1cqw;text-align:right}
-.dfmc .bar{position:absolute;left:0;right:0;bottom:0;height:1.1cqw;background:#FF5A00}
-.dfmc.silver{color:#0B1220}.dfmc.silver .s2{color:#3B4658}
+.dfmc .bar{position:absolute;left:0;right:0;bottom:0;height:1.1cqw;background:#F95505}
+.dfmc.silver{color:#0C161F}.dfmc.silver .s2{color:#3B4658}
 .dfmc.gold{color:#2B1D00}.dfmc.gold .s2{color:#5A3E00}
 .dfmc.platinum{color:#F1F5F9}.dfmc.platinum .s2{color:#D1D5DB}
 .dfmc.diamond{color:#fff}.dfmc.diamond .s2{color:#9FDCFF}
 .dfmc.silver .bg{background:linear-gradient(135deg,#F4F6F9 0%,#C9D0DA 38%,#9AA4B2 70%,#DDE2E9 100%)}
 .dfmc.gold .bg{background:linear-gradient(135deg,#FBEBB5 0%,#E3B84E 34%,#B98512 68%,#F0D07A 100%)}
 .dfmc.platinum .bg{background:linear-gradient(135deg,#59667A 0%,#2E3848 40%,#1A2230 72%,#3C4859 100%)}
-.dfmc.diamond .bg{background:linear-gradient(135deg,#1F3A66 0%,#0B1220 36%,#070D1A 70%,#17325C 100%)}
+.dfmc.diamond .bg{background:linear-gradient(135deg,#1F3A66 0%,#0C161F 36%,#070D1A 70%,#17325C 100%)}
 .dfmc .ring{background:repeating-radial-gradient(circle at 86% 13%,rgba(255,255,255,.09) 0 1px,transparent 1px 30px)}.dfmc.silver .ring,.dfmc.gold .ring{background:repeating-radial-gradient(circle at 86% 13%,rgba(11,18,32,.07) 0 1px,transparent 1px 30px)}
 .dfmc .shine{background:linear-gradient(115deg,transparent 38%,rgba(255,255,255,.4) 50%,transparent 62%)}.dfmc.platinum .shine{background:linear-gradient(115deg,transparent 38%,rgba(255,255,255,.2) 50%,transparent 62%)}.dfmc.diamond .shine{background:linear-gradient(115deg,transparent 36%,rgba(160,225,255,.22) 50%,transparent 64%)}
 .dfmc .edge{border-radius:4.4cqw;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.55)}.dfmc.platinum .edge{box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.28)}.dfmc.diamond .edge{box-shadow:inset 0 0 0 1.5px rgba(143,216,255,.45)}

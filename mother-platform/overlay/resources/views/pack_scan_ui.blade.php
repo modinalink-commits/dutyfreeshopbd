@@ -14,8 +14,8 @@
 @media(max-width:820px){#psOv .ps-b{grid-template-columns:minmax(0,1fr)}}
 #psOv .ps-f{display:flex;gap:8px}
 #psOv #psIn{flex:1;min-width:0;height:50px;border:2px solid #0B1B33;border-radius:10px;padding:0 14px;font:700 20px Inter,sans-serif;letter-spacing:.5px;color:#0B1B33;background:#fff;width:auto;margin:0}
-#psOv #psIn:focus{outline:3px solid rgba(255,90,0,.35);border-color:#FF5A00}
-#psOv #psGo{height:50px;padding:0 18px;border-radius:10px;border:1.5px solid #0B1B33;background:#FF5A00;color:#fff;font-weight:800;cursor:pointer;width:auto;margin:0}
+#psOv #psIn:focus{outline:3px solid rgba(249,85,5,.35);border-color:#F95505}
+#psOv #psGo{height:50px;padding:0 18px;border-radius:10px;border:1.5px solid #0B1B33;background:#F95505;color:#fff;font-weight:800;cursor:pointer;width:auto;margin:0}
 #psOv .ps-hint{font-size:12px;color:#5B6676;margin:6px 2px 10px}
 #psOv #psRes{border-radius:12px;padding:16px;min-height:220px;display:flex;flex-direction:column;gap:8px;border:2px dashed #D9DEE6;background:#FAFBFC}
 #psOv #psRes.ok{border:2px solid #15803D;background:#DCFCE7}
@@ -33,19 +33,19 @@
 #psOv th{background:#EEF1F5;font-weight:700;position:sticky;top:0}
 #psOv .pp{display:inline-block;border-radius:999px;padding:1px 9px;font-weight:700;font-size:11.5px}
 #psOv .pp.ok{background:#DCFCE7;color:#15803D}#psOv .pp.bad{background:#FEE2E2;color:#B91C1C}#psOv .pp.warn{background:#FEF3C7;color:#B45309}
-#psOv #psMn{width:36px;height:36px;border-radius:9px;border:1.5px solid #FF5A00;background:#0B1B33;color:#fff;font-size:18px;font-weight:800;line-height:1;cursor:pointer;padding:0}
-#psOv #psMn:hover{background:#FF5A00;border-color:#0B1B33}
+#psOv #psMn{width:36px;height:36px;border-radius:9px;border:1.5px solid #F95505;background:#0B1B33;color:#fff;font-size:18px;font-weight:800;line-height:1;cursor:pointer;padding:0}
+#psOv #psMn:hover{background:#F95505;border-color:#0B1B33}
 #psOv #psMl{display:none;flex-basis:100%;font-size:13px;font-weight:700;border-radius:8px;padding:6px 10px;background:#F3F4F6;color:#0B1B33;overflow-wrap:anywhere}
 #psOv #psMl.ok{background:#DCFCE7;color:#15803D}#psOv #psMl.bad{background:#FEE2E2;color:#B91C1C}#psOv #psMl.warn{background:#FEF3C7;color:#B45309}
 #psOv.min{inset:auto 14px 14px auto;background:none;padding:0;overflow:visible;display:block}
 #psOv.min .ps{width:min(520px,calc(100vw - 28px));border:1.5px solid #0B1B33;box-shadow:0 6px 24px rgba(11,27,51,.28)}
 #psOv.min .ps-b,#psOv.min .ps-h>span{display:none}#psOv.min #psMl{display:block}
 #psOv tr.ps-pd td{background:#FFFBEB}
-#psOv #psCam{height:50px;padding:0 14px;border-radius:10px;border:1.5px solid #FF5A00;background:#0B1B33;color:#fff;font-weight:800;cursor:pointer;width:auto;margin:0;white-space:nowrap}
-#psOv #psCam:hover,#psOv #psCam.on{background:#FF5A00;border-color:#0B1B33}
+#psOv #psCam{height:50px;padding:0 14px;border-radius:10px;border:1.5px solid #F95505;background:#0B1B33;color:#fff;font-weight:800;cursor:pointer;width:auto;margin:0;white-space:nowrap}
+#psOv #psCam:hover,#psOv #psCam.on{background:#F95505;border-color:#0B1B33}
 #psOv #psV{position:relative;margin:0 0 10px;border-radius:12px;overflow:hidden;background:#0B1B33;border:2px solid #0B1B33}
 #psOv #psV video{display:block;width:100%;max-height:46vh;object-fit:cover}
-#psOv #psV .ps-ln{position:absolute;left:8%;right:8%;top:50%;height:2px;background:#FF5A00;box-shadow:0 0 0 1px rgba(255,255,255,.5)}
+#psOv #psV .ps-ln{position:absolute;left:8%;right:8%;top:50%;height:2px;background:#F95505;box-shadow:0 0 0 1px rgba(255,255,255,.5)}
 #psOv #psV .ps-vn{position:absolute;left:0;right:0;bottom:0;padding:6px 10px;background:rgba(11,27,51,.72);color:#fff;font-size:12.5px;font-weight:600}
 @media(max-width:820px){#psOv{padding:0}#psOv .ps{border-radius:0;min-height:100vh}#psOv .ps-f{flex-wrap:wrap}#psOv #psIn{flex-basis:100%}#psOv #psGo,#psOv #psCam{flex:1}#psOv #psRes{min-height:150px}#psOv .ps-big{font-size:24px}}
 #psOv .ps-snd{white-space:nowrap}#psOv .ps-snd button{border:1px solid #CBD5E1;background:#fff;color:#0B1B33;border-radius:7px;padding:2px 9px;font-size:12px;font-weight:700;cursor:pointer;width:auto;margin:0}
@@ -55,15 +55,15 @@
 #psOv #psFl .f1{font-size:64px;line-height:1}#psOv #psFl .f2{font-size:26px;line-height:1.15}#psOv #psFl .f3{font-size:15px;font-weight:700}
 #psOv .ps-ov{margin-top:8px;background:#fff;border:1.5px solid #B45309;border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
 #psOv .ps-ov b{font-size:13.5px}#psOv .ps-ov textarea{width:100%;min-height:58px;border:1.5px solid #0B1B33;border-radius:8px;padding:8px 10px;font:600 14px Inter,Bornomala,sans-serif;color:#0B1B33;margin:0;resize:vertical}
-#psOv .ps-ov button{align-self:flex-start;height:40px;padding:0 16px;border-radius:9px;border:1.5px solid #0B1B33;background:#FF5A00;color:#fff;font-weight:800;cursor:pointer;width:auto;margin:0}
-#psOv .ps-ov button:hover{background:#0B1B33;border-color:#FF5A00}#psOv .ps-ov button:disabled{opacity:.6;cursor:default}
+#psOv .ps-ov button{align-self:flex-start;height:40px;padding:0 16px;border-radius:9px;border:1.5px solid #0B1B33;background:#F95505;color:#fff;font-weight:800;cursor:pointer;width:auto;margin:0}
+#psOv .ps-ov button:hover{background:#0B1B33;border-color:#F95505}#psOv .ps-ov button:disabled{opacity:.6;cursor:default}
 #psOv .ps-nt{display:block;font-weight:500;color:#5B6676;white-space:normal;font-size:11.5px;max-width:260px}
 #psQ{margin:8px 0 0;padding:6px 10px;border:1px solid #D7DCE3;border-radius:8px;background:#F3F4F6;color:#0B1B33;font-size:12.5px;font-weight:700}
 #psP{margin-top:10px;border:1.5px solid #B91C1C;border-radius:10px;background:#FEF2F2;padding:8px 10px}
 #psP .ps-pt{font-weight:800;color:#B91C1C;font-size:13px;margin-bottom:4px}
 #psP .ps-pi{font-size:12.5px;color:#0B1B33;padding:3px 0;border-top:1px solid #FECACA}#psP .ps-pi:first-child{border-top:0}
-html body button.ps-open,html body .toolbar-control.ps-open,#ocb#ocb#ocb .r1 .owt .obk button.ps-open{background:#0B1B33!important;background-image:none!important;color:#fff!important;border:1.5px solid #FF5A00!important;font-weight:700!important}
-html body button.ps-open:hover,html body .toolbar-control.ps-open:hover,#ocb#ocb#ocb .r1 .owt .obk button.ps-open:hover{background:#FF5A00!important;border-color:#0B1B33!important}
+html body button.ps-open,html body .toolbar-control.ps-open,#ocb#ocb#ocb .r1 .owt .obk button.ps-open{background:#0B1B33!important;background-image:none!important;color:#fff!important;border:1.5px solid #F95505!important;font-weight:700!important}
+html body button.ps-open:hover,html body .toolbar-control.ps-open:hover,#ocb#ocb#ocb .r1 .owt .obk button.ps-open:hover{background:#F95505!important;border-color:#0B1B33!important}
 </style>
 <div id="psOv" role="dialog" aria-modal="true" aria-label="Packaging Scan" data-keep><div class="ps">
 <div class="ps-h"><b>Packaging Scan</b><span style="font-size:12.5px;color:#5B6676">প্রতিটা পার্সেলের লেবেল স্ক্যান করুন, তারপর পার্সেল কুরিয়ারের ব্যাগে দিন।</span>

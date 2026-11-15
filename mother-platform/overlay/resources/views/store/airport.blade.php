@@ -30,7 +30,7 @@
 @keyframes dfaLd{0%{transform:translate(1850px,130px) scale(.5) scaleX(-1) rotate(-6deg)}38%{transform:translate(1300px,350px) scale(.8) scaleX(-1) rotate(-3deg)}52%{transform:translate(1010px,438px) scale(1) scaleX(-1) rotate(0)}100%{transform:translate(-300px,438px) scale(1) scaleX(-1) rotate(0)}}
 @keyframes dfaTx{from{transform:translate(1700px,408px) scale(.42) scaleX(-1)}to{transform:translate(-200px,408px) scale(.42) scaleX(-1)}}
 .dfa .bl{animation:dfaBlink 1.1s steps(2,jump-none) infinite}
-@media (max-width:860px){.dfa-stage{aspect-ratio:4/3}.dfa-board,.dfa-shop{display:none}.dfa-head{max-width:70%;top:6%}.dfa-m{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:12px;background:linear-gradient(180deg,#0B1220,#050B17)}.dfa-m a{display:flex;gap:8px;align-items:center;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:6px;color:#fff;text-decoration:none}.dfa-m img{width:44px;height:44px;object-fit:contain;background:#fff;border-radius:6px;flex:none}.dfa-m i{display:block;font-style:normal;font-size:11.5px;font-weight:600;line-height:1.25;max-height:2.5em;overflow:hidden}.dfa-m b{display:block;font-size:12px;color:#FFB48A;margin-top:2px}.dfa-ppl{display:none}.dfa-head h2{font-size:21px}}
+@media (max-width:860px){.dfa-stage{aspect-ratio:4/3}.dfa-board,.dfa-shop{display:none}.dfa-head{max-width:70%;top:6%}.dfa-m{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:12px;background:linear-gradient(180deg,#0C161F,#050B17)}.dfa-m a{display:flex;gap:8px;align-items:center;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:6px;color:#fff;text-decoration:none}.dfa-m img{width:44px;height:44px;object-fit:contain;background:#fff;border-radius:6px;flex:none}.dfa-m i{display:block;font-style:normal;font-size:11.5px;font-weight:600;line-height:1.25;max-height:2.5em;overflow:hidden}.dfa-m b{display:block;font-size:12px;color:#FFB48A;margin-top:2px}.dfa-ppl{display:none}.dfa-head h2{font-size:21px}}
 @media (max-width:420px){.dfa-m{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){.dfa *{animation:none!important}}
 </style>
@@ -39,15 +39,15 @@
 <svg viewBox="0 0 1600 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
 <defs>
 <linearGradient id="dfaSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#050B17"/><stop offset=".45" stop-color="#14233F"/><stop offset=".78" stop-color="#7A3A26"/><stop offset="1" stop-color="#FF7A2E"/></linearGradient>
-<radialGradient id="dfaSun" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#FFD9A0" stop-opacity=".9"/><stop offset=".4" stop-color="#FF8A3D" stop-opacity=".35"/><stop offset="1" stop-color="#FF5A00" stop-opacity="0"/></radialGradient>
+<radialGradient id="dfaSun" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#FFD9A0" stop-opacity=".9"/><stop offset=".4" stop-color="#FF8A3D" stop-opacity=".35"/><stop offset="1" stop-color="#F95505" stop-opacity="0"/></radialGradient>
 <linearGradient id="dfaFloor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#23314F"/><stop offset=".5" stop-color="#121C33"/><stop offset="1" stop-color="#070C17"/></linearGradient>
 <linearGradient id="dfaApron" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1A2035"/><stop offset="1" stop-color="#0A0F1B"/></linearGradient>
-<g id="dfaPlane"><path d="M8 30C8 22 40 18 90 18L150 18C175 18 195 24 198 30C195 34 175 38 150 38L40 38C20 38 8 36 8 30Z" fill="#F4F7FB"/><path d="M20 21L6 -8L26 -8L50 20Z" fill="#FF5A00"/><path d="M88 36L58 58L78 58L120 37Z" fill="#DDE5F0"/><ellipse cx="102" cy="45" rx="12" ry="6" fill="#C5D0E0"/><path d="M168 24L184 24L192 29L168 29Z" fill="#2A3B5C"/><g fill="#7FA6D8"><circle cx="60" cy="27" r="1.7"/><circle cx="72" cy="27" r="1.7"/><circle cx="84" cy="27" r="1.7"/><circle cx="96" cy="27" r="1.7"/><circle cx="108" cy="27" r="1.7"/><circle cx="120" cy="27" r="1.7"/><circle cx="132" cy="27" r="1.7"/><circle cx="144" cy="27" r="1.7"/></g><circle cx="199" cy="30" r="3" fill="#fff" class="bl"/><circle cx="12" cy="-8" r="2.2" fill="#FF3B3B" class="bl"/></g>
+<g id="dfaPlane"><path d="M8 30C8 22 40 18 90 18L150 18C175 18 195 24 198 30C195 34 175 38 150 38L40 38C20 38 8 36 8 30Z" fill="#F4F7FB"/><path d="M20 21L6 -8L26 -8L50 20Z" fill="#F95505"/><path d="M88 36L58 58L78 58L120 37Z" fill="#DDE5F0"/><ellipse cx="102" cy="45" rx="12" ry="6" fill="#C5D0E0"/><path d="M168 24L184 24L192 29L168 29Z" fill="#2A3B5C"/><g fill="#7FA6D8"><circle cx="60" cy="27" r="1.7"/><circle cx="72" cy="27" r="1.7"/><circle cx="84" cy="27" r="1.7"/><circle cx="96" cy="27" r="1.7"/><circle cx="108" cy="27" r="1.7"/><circle cx="120" cy="27" r="1.7"/><circle cx="132" cy="27" r="1.7"/><circle cx="144" cy="27" r="1.7"/></g><circle cx="199" cy="30" r="3" fill="#fff" class="bl"/><circle cx="12" cy="-8" r="2.2" fill="#FF3B3B" class="bl"/></g>
 </defs>
 <rect width="1600" height="800" fill="url(#dfaSky)"/>
 <circle cx="930" cy="395" r="330" fill="url(#dfaSun)"/>
 <g id="dfaStars" fill="#fff"></g>
-<g id="dfaCity" fill="#0B1220"></g>
+<g id="dfaCity" fill="#0C161F"></g>
 <rect y="400" width="1600" height="400" fill="url(#dfaApron)"/>
 <rect y="436" width="1600" height="44" fill="#0F1524"/>
 <line x1="0" y1="458" x2="1600" y2="458" stroke="#E8EEF8" stroke-width="2" stroke-dasharray="34 26" opacity=".7"/>
@@ -94,14 +94,14 @@ var L=$('dfaLights');for(var k=0;k<40;k++){var lx=k*42+10;el('circle',{cx:lx,cy:
 var cl=$('dfaCeil');for(k=0;k<16;k++)el('rect',{x:30+k*98,y:12,width:48,height:5,rx:2,opacity:.85},cl);
 var rf=$('dfaRefl');for(k=0;k<9;k++)el('rect',{x:80+k*180,y:540,width:60,height:120,fill:'#FFC47A',opacity:R(.08,.22)},rf);
 /* travellers */
-var P=$('dfaPpl'),col=['#05080F','#0B1220','#16223D','#2A1F1A','#102018','#05080F'],n=window.innerWidth<860?0:20;
+var P=$('dfaPpl'),col=['#05080F','#0C161F','#16223D','#2A1F1A','#102018','#05080F'],n=window.innerWidth<860?0:20;
 for(i=0;i<n;i++){
- var lane=Math.random(),y=570+lane*190,s=.62+lane*.9,dir=Math.random()<.5?1:-1,dur=44-lane*22,delay=-Math.random()*dur,tint=Math.random()<.12?'#FF5A00':col[(Math.random()*col.length)|0];
+ var lane=Math.random(),y=570+lane*190,s=.62+lane*.9,dir=Math.random()<.5?1:-1,dur=44-lane*22,delay=-Math.random()*dur,tint=Math.random()<.12?'#F95505':col[(Math.random()*col.length)|0];
  var g=el('g',{transform:'translate(0,'+y+')'},P),m=el('g',{class:'w',style:'animation-duration:'+dur+'s;animation-delay:'+delay+'s;'+(dir<0?'animation-direction:reverse':'')},g),f=el('g',{transform:'scale('+(dir<0?-s:s)+','+s+')'},m);
  el('ellipse',{cx:0,cy:1,rx:16,ry:3.2,fill:'#000',opacity:.45},f);
  el('rect',{x:-6.5,y:-44,width:5.5,height:44,rx:2.5,fill:'#05080F',class:'lg1'},f);el('rect',{x:1,y:-44,width:5.5,height:44,rx:2.5,fill:'#05080F',class:'lg2'},f);
  var b=el('g',{class:'bd'},f);el('path',{d:'M-10 -74Q0 -81 10 -74L12 -40L-12 -40Z',fill:tint,stroke:'rgba(255,190,130,.45)','stroke-width':1},b);el('circle',{cx:0,cy:-85,r:8.5,fill:'#05080F',stroke:'rgba(255,190,130,.45)','stroke-width':1},b);
- var r=Math.random();if(r<.45){el('rect',{x:-26,y:-34,width:15,height:34,rx:3,fill:'#1B2A4A',stroke:'rgba(255,190,130,.5)','stroke-width':1},f);el('line',{x1:-18,y1:-34,x2:-4,y2:-62,stroke:'#0B1220','stroke-width':1.6},f)}
+ var r=Math.random();if(r<.45){el('rect',{x:-26,y:-34,width:15,height:34,rx:3,fill:'#1B2A4A',stroke:'rgba(255,190,130,.5)','stroke-width':1},f);el('line',{x1:-18,y1:-34,x2:-4,y2:-62,stroke:'#0C161F','stroke-width':1.6},f)}
  else if(r<.7)el('rect',{x:-16,y:-72,width:9,height:26,rx:3,fill:'#2A1F1A',stroke:'rgba(255,190,130,.4)','stroke-width':1},b);
 }
 /* offers board and shop highlight */

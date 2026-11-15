@@ -6,8 +6,8 @@ $__ios = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="cu
 @endphp
 <style>.hxside{display:none}
 .hxf,.hxa2{border-radius:14px;min-width:0;position:relative;overflow:hidden}
-.hxf{background:#FF5A00;color:#fff;padding:12px;display:flex;flex-direction:column;gap:8px}
-.hxa2{background:#0B1220;color:#fff;padding:12px;display:flex;flex-direction:column;justify-content:space-between;gap:8px}
+.hxf{background:#F95505;color:#fff;padding:12px;display:flex;flex-direction:column;gap:8px}
+.hxa2{background:#0C161F;color:#fff;padding:12px;display:flex;flex-direction:column;justify-content:space-between;gap:8px}
 .hxfh{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:13px}.hxfh>b{display:inline-flex;align-items:center;gap:5px;font-weight:700}
 .hxf .tm{font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;background:rgba(255,255,255,.2);font-variant-numeric:tabular-nums;color:#fff}.hxf .tm b{font-weight:700;color:#fff!important}
 .hxfs{position:relative;flex:1;min-height:92px}
@@ -45,24 +45,24 @@ $__ios = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="cu
 @php $__bsOn = !empty($bsOn) || \App\Support\Procure::set('home_bestseller', '0') === '1'; $__bs = $__bsOn ? \App\Http\Controllers\StoreController::bestSellers()->take(2)->values() : collect(); @endphp
 @if($__bs->count())
 {{-- Owner 14 Nov 2026: the two Best Seller cartons take the place of the App install card (Flash Sale stays above). Fixed, no rotation; the price is read from the product on every page load; a tap goes straight to checkout. --}}
-<style>.hxbs{border-radius:14px;min-width:0;background:#0B1220;color:#fff;padding:10px 12px 12px;display:flex;flex-direction:column;gap:8px;flex:1.5}
+<style>.hxbs{border-radius:14px;min-width:0;background:#0C161F;color:#fff;padding:10px 12px 12px;display:flex;flex-direction:column;gap:8px;flex:1.5}
 .hxbs .tg{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;letter-spacing:.08em;color:#FDBA8C}
 .hxbs .gr{display:grid;grid-template-columns:repeat({{ $__bs->count() }},minmax(0,1fr));gap:8px;flex:1}
 .hxbs a{display:flex;flex-direction:column;gap:4px;min-width:0;color:#fff;text-decoration:none;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:7px}
-.hxbs a:hover{border-color:#FF5A00;background:rgba(255,255,255,.1)}
+.hxbs a:hover{border-color:#F95505;background:rgba(255,255,255,.1)}
 .hxbs .im{display:grid;place-items:center;background:#fff;border-radius:8px;aspect-ratio:1/1;overflow:hidden}.hxbs .im img{width:100%;height:100%;object-fit:contain;display:block}
 .hxbs .nm{font-size:11.5px;font-weight:600;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:29px}
 .hxbs .pr{font-size:16px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1;white-space:nowrap}.hxbs .pr small{font-size:10px;font-weight:600;opacity:.8}
-.hxbs .go{display:flex;align-items:center;justify-content:center;height:30px;border-radius:8px;background:#FF5A00;color:#fff;font-weight:800;font-size:12.5px;margin-top:auto}.hxbs .go.no{background:rgba(255,255,255,.2)}
+.hxbs .go{display:flex;align-items:center;justify-content:center;height:30px;border-radius:8px;background:#F95505;color:#fff;font-weight:800;font-size:12.5px;margin-top:auto}.hxbs .go.no{background:rgba(255,255,255,.2)}
 /* owner 14 Nov: Best Sellers is the main card here; Flash Sale sits above it, smaller */
 @media (min-width:1024px){.hx:has(.hxbs){grid-template-columns:minmax(0,1fr) 340px}.hxside:has(.hxbs) .hxf{flex:0 0 auto;padding:10px 12px;gap:6px}.hxside:has(.hxbs) .hxfs{min-height:62px;flex:none}.hxside:has(.hxbs) .hxfp{width:58px;height:58px}.hxside:has(.hxbs) .hxfr{font-size:14px}
 .hxbs{flex:1 1 auto;padding:12px 14px 14px;gap:10px}.hxbs .tg{font-size:12.5px}.hxbs .gr{gap:10px}.hxbs a{padding:9px;gap:6px}.hxbs .nm{font-size:13px;min-height:33px}.hxbs .pr{font-size:21px}.hxbs .pr small{font-size:11px}.hxbs .go{height:36px;font-size:14px}}
 @media (max-width:1023px){.hx:has(.hxside) .hxside:has(.hxbs){flex-direction:column}.hxside:has(.hxbs) .hxf{flex:none;padding:9px 10px;gap:5px}.hxside:has(.hxbs) .hxfs{min-height:54px}.hxside:has(.hxbs) .hxfp{width:50px;height:50px}.hxbs{padding:11px 10px 12px;gap:9px}.hxbs .tg{font-size:12.5px}.hxbs a{flex-direction:column;gap:6px;padding:8px}.hxbs .im{width:100%;flex:none}.hxbs .nm{font-size:13px}.hxbs .pr{font-size:20px}.hxbs .tx{display:flex;flex-direction:column;gap:3px;min-width:0}.hxbs .go{height:36px;font-size:13.5px}}
 @media (min-width:1024px){.hxbs .tx{display:contents}}
 /* owner 14 Nov: each Best Seller uses the same frame as a store product card (white card, image flush on top) */
-.hxbs a{background:#fff;color:#0B1220;border:1px solid #F0E6E0;border-radius:14px;padding:0 0 10px;gap:7px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.18)}.hxbs a:hover{background:#fff;border-color:#FF5A00}
-.hxbs .im{border-radius:0;background:#F8F8F8;width:100%}.hxbs .nm,.hxbs .pr,.hxbs .go{margin-left:10px;margin-right:10px}.hxbs .nm{font-weight:500}.hxbs .pr{color:#0B1220}.hxbs .pr small{opacity:.6}.hxbs .go.no{background:#9CA3AF}
-.hxbs .im{position:relative}.hxbs .bsof{position:absolute;left:6px;top:6px;right:auto;bottom:auto;width:auto;height:auto;z-index:1;display:inline-block;background:#FF5A00;color:#fff;font-size:10.5px;font-weight:800;border-radius:999px;padding:2px 8px;line-height:1.4;white-space:nowrap}/* red corner ribbon (owner 14 Nov), drawn in CSS so it stays sharp at any size */
+.hxbs a{background:#fff;color:#0C161F;border:1px solid #F0E6E0;border-radius:14px;padding:0 0 10px;gap:7px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.18)}.hxbs a:hover{background:#fff;border-color:#F95505}
+.hxbs .im{border-radius:0;background:#F8F8F8;width:100%}.hxbs .nm,.hxbs .pr,.hxbs .go{margin-left:10px;margin-right:10px}.hxbs .nm{font-weight:500}.hxbs .pr{color:#0C161F}.hxbs .pr small{opacity:.6}.hxbs .go.no{background:#9CA3AF}
+.hxbs .im{position:relative}.hxbs .bsof{position:absolute;left:6px;top:6px;right:auto;bottom:auto;width:auto;height:auto;z-index:1;display:inline-block;background:#F95505;color:#fff;font-size:10.5px;font-weight:800;border-radius:999px;padding:2px 8px;line-height:1.4;white-space:nowrap}/* red corner ribbon (owner 14 Nov), drawn in CSS so it stays sharp at any size */
 .hxbs .bsrb{position:absolute;top:0;right:0;width:72px;height:72px;overflow:hidden;pointer-events:none;z-index:1}.hxbs .bsrb i{position:absolute;top:14px;right:-24px;width:100px;transform:rotate(45deg);background:linear-gradient(180deg,#F03A3A,#C91414);color:#fff;font-style:normal;font-weight:800;font-size:11px;line-height:21px;letter-spacing:.1em;text-align:center;box-shadow:0 2px 5px rgba(0,0,0,.28)}
 .hxbs .ea{font-size:11px;color:#475467;margin:0 10px;line-height:1.3}.hxbs .ea s{color:#9CA3AF}.hxbs .go{white-space:nowrap;font-size:12.5px}
 /* owner 14 Nov: Flash Sale has its own section lower on the page, so the top shows only the Best Sellers */
