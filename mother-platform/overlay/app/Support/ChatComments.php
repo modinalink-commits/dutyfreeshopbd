@@ -38,6 +38,27 @@ class ChatComments {
     });
   }
   const VARIANTS = ['{n}বিস্তারিত জানতে আমাদের ইনবক্সে আসুন, ধন্যবাদ। 🙏', '{n}দাম ও বিস্তারিত জানতে ইনবক্সে মেসেজ করুন, ধন্যবাদ। 🙏', '{n}আমাদের ইনবক্সে মেসেজ দিন, সব তথ্য সেখানে জানিয়ে দেব। ধন্যবাদ। 🙏', '{n}ইনবক্সে আসুন, বিস্তারিত সেখানেই জানাব। ধন্যবাদ। 🙏', '{n}পণ্যের বিস্তারিত জানতে ইনবক্সে আসুন, ধন্যবাদ। 🙏'];
+  /** Reason string when the text is spam / abuse, else null. Conservative: complaints and plain questions are never matched. */
+  public static function bad(string $t): ?string {
+    if (self::spam($t)) return 'spam link';
+    if (preg_match('/(\bfuck|\bfck\b|\bbitch|\bbastard|\bscam(mer)?\b|\bfraud\b|\bcheat(er|ing)?\b|মাগি|মাগী|খানকি|খানকির|চুদ|চোদ|বাল\b|হারামি|হারামজাদা|কুত্তা|কুকুরের বাচ্চা|শুয়োর|বেশ্যা|ফালতু|বেটা চোর|জালিয়াত|প্রতারক|ভাঁওতাবাজ)/iu', $t)) return 'abusive words';
+    return null;
+  }
+  /** Delete the comment on Facebook (Page token) and mark it 'deleted'. Returns true on success. */
+  public static function remove(int $id, string $why, ?int $by = null): bool {
+    try {
+      $c = DB::table('chat_comments')->find($id); if (!$c || $c->status === 'deleted') return false;
+      $tok = Chat::pageTok($c->channel, $c->page_ref); if (!$tok) { self::done($id, 'failed', null, 'Page token missing'); return false; }
+      $r = Http::timeout(15)->asForm()->post(Chat::API . '/' . $c->comment_id . '?access_token=' . urlencode($tok), ['_method' => 'DELETE']);
+      if ($r->ok() && $r->json('success') !== false) {
+        self::done($id, 'deleted', null, 'deleted: ' . $why . ($by ? ' (staff)' : ' (auto)'));
+        try { DB::table('audit_logs')->insert(['user_id' => $by, 'user_name' => $by ? (auth()->user()->name ?? '') : 'AI', 'action' => 'chat.comment_delete', 'subject' => 'Comment ' . $c->comment_id . ' removed: ' . $why, 'ip' => request()->ip(), 'created_at' => now(), 'updated_at' => now()]); } catch (\Throwable $e) {}
+        return true;
+      }
+      self::done($id, 'skipped', null, 'delete failed: HTTP ' . $r->status() . ' ' . mb_substr((string)($r->json('error.message') ?? ''), 0, 120));
+    } catch (\Throwable $e) { report($e); }
+    return false;
+  }
   private static function spam(string $t): bool { return (bool)preg_match('#(https?://|www\.|\.com\b|\.xyz\b|t\.me/|wa\.me/|bit\.ly)#iu', $t); }
   /** One private message from the Page inbox to the commenter (Facebook allows one per comment, within 7 days). Returns a short note for the log. */
   private static function privateMessage(object $c, string $tok, string $nm): string {
@@ -83,7 +104,9 @@ class ChatComments {
       $d = 'cc.n.' . now()->format('Ymd'); Cache::add($d, 0, 90000); if (Cache::increment($d) > 1500) { self::done($id, 'skipped', null, 'daily limit'); return; }
       $tok = Chat::pageTok($c->channel, $c->page_ref); if (!$tok) { self::done($id, 'failed', null, 'Page token missing (Chat Settings)'); return; }
       // Owner rule 15 Nov 2026: the public reply only invites the person to our inbox (no price, no product detail, nothing about tobacco); the details go in a private message from the Page inbox.
-      if (self::spam($msg)) { self::done($id, 'skipped', null, 'spam / link (left alone)'); return; }
+      // Owner 15 Nov 2026: bad comments (links / scam promo / abuse) are removed from the Page, never answered.
+      $why = self::bad($msg);
+      if ($why !== null) { self::remove($id, $why); return; }
       $first = trim((string)preg_split('/\s+/u', trim((string)$c->from_name))[0]); $nm = $first !== '' && mb_strlen($first) <= 20 ? $first : '';
       $v = self::VARIANTS; $text = strtr($v[crc32($c->comment_id) % count($v)], ['{n}' => $nm !== '' ? $nm . ', ' : '']);
       $r = Http::timeout(15)->asForm()->post(Chat::API . '/' . $c->comment_id . '/comments?access_token=' . urlencode($tok), ['message' => $text]);

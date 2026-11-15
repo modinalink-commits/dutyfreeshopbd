@@ -804,13 +804,19 @@ class ChatController extends Controller {
     $e = fn($v) => e((string)$v); $ok = \App\Support\ChatComments::ready();
     $rows = $ok ? DB::table('chat_comments')->orderByDesc('id')->limit(150)->get() : collect();
     $by = $ok ? DB::table('chat_comments')->where('created_at', '>=', now()->subDays(7))->selectRaw('status, count(*) n')->groupBy('status')->pluck('n', 'status')->all() : [];
-    $lab = ['new' => 'অপেক্ষায়', 'replied' => 'উত্তর দেওয়া হয়েছে', 'skipped' => 'স্টাফের জন্য রাখা', 'failed' => 'পাঠানো যায়নি'];
+    $lab = ['new' => 'অপেক্ষায়', 'replied' => 'উত্তর দেওয়া হয়েছে', 'skipped' => 'স্টাফের জন্য রাখা', 'failed' => 'পাঠানো যায়নি', 'deleted' => 'মুছে ফেলা হয়েছে'];
     $h = '<style>.k{display:inline-block;background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:8px 14px;margin:0 8px 8px 0}.k b{font-size:20px;display:block}.mm td{vertical-align:top}</style><div class="mm"><a href="/admin/chat">&larr; Messages</a><h1>Comment Replies</h1><p style="color:#6b7390">আমাদের পেজের পোস্টে আসা কমেন্ট ও AI-এর উত্তর। AI Comment Reply এখন: <b>'.(\App\Support\ChatComments::on() ? 'চালু' : 'বন্ধ').'</b> (Chat Settings থেকে বদলানো যায়)। সিগারেট/ভেপ নিয়ে পাবলিক কমেন্টে কখনো দাম বলা হয় না, ইনবক্সে ডাকা হয়।</p><form method="post" action="/admin/chat/comments/subscribe" style="margin:0 0 10px">'.csrf_field().'<button>সব Facebook Page-এ কমেন্ট আসা চালু করুন</button></form>';
     $h .= '<div>'.collect($lab)->map(fn($t, $k) => '<span class="k"><b>'.(int)($by[$k] ?? 0).'</b>'.$t.' (৭ দিন)</span>')->implode('').'</div>';
-    $h .= '<table><tr><th>সময়</th><th>কে</th><th>কমেন্ট</th><th>AI উত্তর</th><th>অবস্থা</th></tr>'.$rows->map(fn($x) => '<tr><td>'.\Carbon\Carbon::parse($x->created_at)->timezone('Asia/Dhaka')->format('d M H:i').'</td><td>'.$e($x->from_name).'</td><td>'.$e(mb_substr((string)$x->message, 0, 300)).'</td><td>'.$e($x->reply_text).'</td><td>'.$e($lab[$x->status] ?? $x->status).($x->note ? '<br><small>'.$e($x->note).'</small>' : '').'</td></tr>')->implode('').($rows->count() ? '' : '<tr><td colspan="5" style="color:#6b7390">এখনো কোনো কমেন্ট আসেনি। কমেন্ট পেতে Meta অ্যাপে পেজের "feed" সাবস্ক্রিপশন চালু থাকতে হবে।</td></tr>').'</table></div>';
+    $h .= '<table><tr><th>সময়</th><th>কে</th><th>কমেন্ট</th><th>AI উত্তর</th><th>অবস্থা</th></tr>'.$rows->map(fn($x) => '<tr><td>'.\Carbon\Carbon::parse($x->created_at)->timezone('Asia/Dhaka')->format('d M H:i').'</td><td>'.$e($x->from_name).'</td><td>'.$e(mb_substr((string)$x->message, 0, 300)).'</td><td>'.$e($x->reply_text).'</td><td>'.$e($lab[$x->status] ?? $x->status).($x->note ? '<br><small>'.$e($x->note).'</small>' : '').($x->status !== 'deleted' ? '<form method="post" action="/admin/chat/comments/'.(int)$x->id.'/delete" onsubmit="return confirm(\'এই কমেন্টটি Facebook থেকে মুছে ফেলবেন?\')" style="margin-top:4px">'.csrf_field().'<button style="border:1px solid #E5E7EB;background:#fff;border-radius:6px;padding:2px 8px;font-size:12px;color:#b42318">মুছুন</button></form>' : '').'</td></tr>')->implode('').($rows->count() ? '' : '<tr><td colspan="5" style="color:#6b7390">এখনো কোনো কমেন্ট আসেনি। কমেন্ট পেতে Meta অ্যাপে পেজের "feed" সাবস্ক্রিপশন চালু থাকতে হবে।</td></tr>').'</table></div>';
     return view('chat_memory', ['h' => $h]);
   }
   /** Owner request 15 Nov 2026: turn on public-comment delivery for every connected Facebook Page (the "feed" subscription). Messages stay subscribed too, because this call replaces the Page's field list. Facebook only; Instagram is left as it was. */
+  /** Staff deletes a bad comment from the Facebook Page. */
+  public function commentDelete(Request $r, int $id) {
+    abort_unless(auth()->check(), 403);
+    $ok = \App\Support\ChatComments::remove($id, 'manual delete', (int)auth()->id());
+    return redirect('/admin/chat/comments')->with('status', $ok ? 'কমেন্ট মুছে ফেলা হয়েছে' : 'মুছতে পারা যায়নি (নোট দেখুন)');
+  }
   public function commentSubscribe(Request $r) {
     abort_unless(\App\Support\ProfitFloor::admin(), 403); $e = fn($v) => e((string)$v); $rows = [];
     foreach (DB::table('chat_pages')->get(['page_id', 'name']) as $pg) {
