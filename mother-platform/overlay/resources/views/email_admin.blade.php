@@ -72,6 +72,10 @@
 <iframe name="emPrev" src="/admin/email/preview/{{ $kinds->keys()->first() }}" title="Email preview"></iframe>
 <script>document.getElementById('emTabs').addEventListener('click',function(e){var a=e.target.closest('a');if(!a)return;[].forEach.call(this.querySelectorAll('a'),function(x){x.classList.remove('on')});a.classList.add('on')});</script>@endif</div>
 
+<div class="card" data-nogrid data-no-export><h2>Sent today, by type</h2>
+<div class="row" style="margin-bottom:8px">@forelse($byType as $t => $n)<span>{{ ucwords(str_replace('_', ' ', $t)) }} <b>{{ number_format($n) }}</b></span>@empty<span style="color:#6B7280">Nothing sent yet today.</span>@endforelse</div>
+@if($byDay->isNotEmpty())<div class="row" style="color:#6B7280"><span>Last 7 days:</span>@foreach($byDay as $d => $n)<span>{{ $d }} <b style="color:#0C161F">{{ number_format($n) }}</b></span>@endforeach</div>@endif</div>
+
 <div class="card" data-nogrid data-no-export><h2>Last 7 days</h2>
 <div class="row" style="margin-bottom:8px">@forelse($counts as $s => $n)<span>{{ ucfirst($s) }} <b>{{ number_format($n) }}</b></span>@empty<span style="color:#6B7280">No emails yet.</span>@endforelse</div>
 @if($log->isNotEmpty())<div style="overflow-x:auto"><table class="no-export"><tr><th>Time</th><th>To</th><th>Email</th><th>Subject</th><th>Status</th><th>Detail</th></tr>

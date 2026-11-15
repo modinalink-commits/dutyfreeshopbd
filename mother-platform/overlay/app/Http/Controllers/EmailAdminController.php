@@ -15,10 +15,12 @@ class EmailAdminController extends Controller {
   public function index() {
     $this->gate(); $counts = collect(); $log = collect(); $withEmail = null;
     if (M::tableReady()) { $counts = DB::table('mail_outbox')->where('created_at', '>=', now()->subDays(7))->selectRaw('status, count(*) n')->groupBy('status')->pluck('n', 'status'); $log = DB::table('mail_outbox')->orderByDesc('id')->limit(30)->get(['id', 'to', 'subject', 'type', 'status', 'error', 'created_at', 'sent_at']); }
+    $byType = collect(); $byDay = collect();
+    if (M::tableReady()) { try { $byType = DB::table('mail_outbox')->where('status', 'sent')->where('sent_at', '>=', now('Asia/Dhaka')->startOfDay()->utc())->selectRaw('type, count(*) n')->groupBy('type')->orderByDesc('n')->pluck('n', 'type'); $byDay = DB::table('mail_outbox')->where('status', 'sent')->where('sent_at', '>=', now('Asia/Dhaka')->subDays(6)->startOfDay()->utc())->selectRaw("to_char(sent_at at time zone 'UTC' at time zone 'Asia/Dhaka', 'DD Mon') d, count(*) n")->groupBy('d')->orderByRaw('min(sent_at) desc')->pluck('n', 'd'); } catch (\Throwable $e) {} }
     try { $withEmail = (int)DB::table('customers')->whereNotNull('email')->where('email', '!=', '')->count(); } catch (\Throwable $e) {}
     return view('email_admin', ['on' => M::set('on', '0') === '1', 'ready' => M::ready(), 'hasPw' => M::hasPassword(), 'table' => M::tableReady(), 'user' => M::user(), 'fromName' => M::fromName(), 'replyTo' => M::replyTo(), 'cap' => M::cap(), 'today' => M::sentToday(),
       'mk' => ['ready' => M::mkReady(), 'on' => M::set('mk_on', '0') === '1', 'cap' => M::mkCap(), 'gap' => M::mkGap(), 'today' => M::mkToday(), 'list' => M::mkReady() ? (int)DB::table('mail_list')->count() : 0, 'out' => M::mkReady() ? (int)DB::table('mail_optouts')->count() : 0, 'recent' => M::mkReady() ? DB::table('mail_list')->orderByDesc('id')->limit(12)->pluck('email') : collect()],
-      'kinds' => collect(M::KINDS)->map(fn($v, $k) => ['label' => $v[1], 'on' => M::kindOn($k)]), 'counts' => $counts, 'log' => $log, 'withEmail' => $withEmail, 'hasSample' => (bool)$this->sample()]);
+      'kinds' => collect(M::KINDS)->map(fn($v, $k) => ['label' => $v[1], 'on' => M::kindOn($k)]), 'counts' => $counts, 'byType' => $byType, 'byDay' => $byDay, 'log' => $log, 'withEmail' => $withEmail, 'hasSample' => (bool)$this->sample()]);
   }
   public function preview(string $kind) {
     $this->gate();
