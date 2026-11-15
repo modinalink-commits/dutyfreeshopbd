@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Schema;
  * Needs the Page's "feed" webhook subscription and the Page token permission to manage comments; without them nothing arrives / the reply fails and is logged.
  */
 class ChatComments {
+  const MAX_DAYS = 7; // owner 15 Nov 2026: every comment of the last 7 days is answered (also the window Facebook allows for the private message); older ones are left alone
   const INBOX = 'বিস্তারিত জানতে আমাদের ইনবক্সে মেসেজ করুন, ধন্যবাদ। 🙏';
   public static function ready(): bool { try { return Schema::hasTable('chat_comments'); } catch (\Throwable $e) { return false; } }
   public static function on(): bool { return Sms::secret('ai_comment_reply') === '1'; }
@@ -24,8 +25,9 @@ class ChatComments {
       $cid = (string)($v['comment_id'] ?? ''); $msg = trim((string)($v['message'] ?? '')); $from = (string)($v['from']['id'] ?? '');
       if ($cid === '' || $from === '' || $from === $pageId) return null; // our own comment / reply
       if (DB::table('chat_comments')->where('comment_id', $cid)->exists()) return null;
+      $at = now(); try { $ct = $v['created_time'] ?? null; if ($ct) $at = is_numeric($ct) ? \Carbon\Carbon::createFromTimestamp((int)$ct) : \Carbon\Carbon::parse((string)$ct); if ($at->gt(now())) $at = now(); } catch (\Throwable $e) { $at = now(); }
       return (int)DB::table('chat_comments')->insertGetId(['channel' => $channel, 'page_ref' => $pageId, 'post_id' => (string)($v['post_id'] ?? '') ?: null, 'comment_id' => $cid, 'parent_id' => (string)($v['parent_id'] ?? '') ?: null,
-        'from_id' => $from, 'from_name' => mb_substr((string)($v['from']['name'] ?? ''), 0, 120), 'message' => mb_substr($msg, 0, 2000), 'status' => 'new', 'created_at' => now(), 'updated_at' => now()]);
+        'from_id' => $from, 'from_name' => mb_substr((string)($v['from']['name'] ?? ''), 0, 120), 'message' => mb_substr($msg, 0, 2000), 'status' => 'new', 'created_at' => $at, 'updated_at' => now()]);
     } catch (\Throwable $e) { report($e); return null; }
   }
   private static function done(int $id, string $status, ?string $reply = null, ?string $note = null): void {
@@ -102,7 +104,8 @@ class ChatComments {
         $answered = false; foreach ((array)($c['comments']['data'] ?? []) as $x) if ((string)($x['from']['id'] ?? '') === $pageId) $answered = true;
         if ($answered) $ans++;
         if ($answered || empty($c['id']) || empty($c['from']['id'])) continue;
-        if (self::ingest($pageId, ['item' => 'comment', 'verb' => 'add', 'comment_id' => $c['id'], 'message' => $c['message'] ?? '', 'from' => $c['from'], 'post_id' => $post['id'] ?? '']) ) $n++;
+        if (!empty($c['created_time']) && strtotime((string)$c['created_time']) < now()->subDays(self::MAX_DAYS)->timestamp) continue; // older than the window
+        if (self::ingest($pageId, ['item' => 'comment', 'verb' => 'add', 'comment_id' => $c['id'], 'message' => $c['message'] ?? '', 'from' => $c['from'], 'post_id' => $post['id'] ?? '', 'created_time' => $c['created_time'] ?? null]) ) $n++;
       }
       $fin("done {$n} (posts {$posts}, comments {$seen}, already answered {$ans}, no sender info {$nofrom})");
     } catch (\Throwable $e) { $fin('error'); report($e); }
@@ -112,6 +115,7 @@ class ChatComments {
     try {
       if (!self::ready() || !self::on()) return; // owner 15 Nov 2026: comment replies run 24 hours, whatever the AI chat hours are
       $c = DB::table('chat_comments')->find($id); if (!$c || $c->status !== 'new') return;
+      if (strtotime((string)$c->created_at) < now()->subDays(self::MAX_DAYS)->timestamp) { self::done($id, 'skipped', null, 'older than ' . self::MAX_DAYS . ' days'); return; }
       if (!Cache::add('cc.lock.' . $id, 1, 600)) return;
       $msg = trim((string)$c->message);
       if (mb_strlen($msg) < 2) { self::done($id, 'skipped', null, 'no text (sticker / photo / tag)'); return; }
