@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Schema;
  * Needs the Page's "feed" webhook subscription and the Page token permission to manage comments; without them nothing arrives / the reply fails and is logged.
  */
 class ChatComments {
+  const MAX_DAYS = 7; // owner 15 Nov 2026: every comment of the last 7 days is answered (also the window Facebook allows for the private message); older ones are left alone
   const INBOX = 'বিস্তারিত জানতে আমাদের ইনবক্সে মেসেজ করুন, ধন্যবাদ। 🙏';
   public static function ready(): bool { try { return Schema::hasTable('chat_comments'); } catch (\Throwable $e) { return false; } }
   public static function on(): bool { return Sms::secret('ai_comment_reply') === '1'; }
@@ -24,8 +25,9 @@ class ChatComments {
       $cid = (string)($v['comment_id'] ?? ''); $msg = trim((string)($v['message'] ?? '')); $from = (string)($v['from']['id'] ?? '');
       if ($cid === '' || $from === '' || $from === $pageId) return null; // our own comment / reply
       if (DB::table('chat_comments')->where('comment_id', $cid)->exists()) return null;
+      $at = now(); try { $ct = $v['created_time'] ?? null; if ($ct) $at = is_numeric($ct) ? \Carbon\Carbon::createFromTimestamp((int)$ct) : \Carbon\Carbon::parse((string)$ct); if ($at->gt(now())) $at = now(); } catch (\Throwable $e) { $at = now(); }
       return (int)DB::table('chat_comments')->insertGetId(['channel' => $channel, 'page_ref' => $pageId, 'post_id' => (string)($v['post_id'] ?? '') ?: null, 'comment_id' => $cid, 'parent_id' => (string)($v['parent_id'] ?? '') ?: null,
-        'from_id' => $from, 'from_name' => mb_substr((string)($v['from']['name'] ?? ''), 0, 120), 'message' => mb_substr($msg, 0, 2000), 'status' => 'new', 'created_at' => now(), 'updated_at' => now()]);
+        'from_id' => $from, 'from_name' => mb_substr((string)($v['from']['name'] ?? ''), 0, 120), 'message' => mb_substr($msg, 0, 2000), 'status' => 'new', 'created_at' => $at, 'updated_at' => now()]);
     } catch (\Throwable $e) { report($e); return null; }
   }
   private static function done(int $id, string $status, ?string $reply = null, ?string $note = null): void {
@@ -75,37 +77,45 @@ class ChatComments {
     try {
       if (!self::ready() || !self::on() || !Cache::add('cc.tick', 1, 50)) return;
       $pages = DB::table('chat_pages')->get(['page_id', 'name']);
-      foreach ($pages as $pg) { if (Cache::has('cc.bf.' . $pg->page_id)) continue; self::backfillPage((string)$pg->page_id); break; } // one Page per cycle
+      $did = false;
+      foreach ($pages as $pg) { if (Cache::has('cc.bf.' . $pg->page_id)) continue; self::backfillPage((string)$pg->page_id); $did = true; break; } // one Page per cycle
+      // Recurring poll (owner 15 Nov 2026: ad comments must be answered): every Page is re-read about every 2 minutes for the last 2 days, one Page per cycle, so ad (dark) post comments - which the webhook does not deliver - are picked up too.
+      if (!$did) foreach ($pages as $pg) { if (Cache::add('cc.poll.' . $pg->page_id, 1, 120)) { self::backfillPage((string)$pg->page_id, 2, false); break; } }
       foreach (DB::table('chat_comments')->where('channel', 'facebook')->where('status', 'new')->orderBy('id')->limit(3)->pluck('id') as $id) self::reply((int)$id);
     } catch (\Throwable $e) { report($e); }
   }
-  public static function backfillPage(string $pageId): void {
-    $tok = Chat::pageTok('facebook', $pageId); if (!$tok) { Cache::forever('cc.bf.' . $pageId, 'no token'); return; }
+  /** $record=true: the one-time 14-day read (result kept in 'cc.bf.<page>'). $record=false: the light recurring poll (see tick()), result kept in 'cc.poll.last.<page>' and it never blocks a later poll. */
+  public static function backfillPage(string $pageId, int $days = 14, bool $record = true): void {
+    $fin = function (string $msg) use ($pageId, $record) { if ($record) Cache::forever('cc.bf.' . $pageId, $msg); else Cache::put('cc.poll.last.' . $pageId, now()->timezone('Asia/Dhaka')->format('d M H:i') . ' - ' . $msg, 86400); };
+    $tok = Chat::pageTok('facebook', $pageId); if (!$tok) { $fin('no token'); return; }
+    $cl = $record ? 60 : 30; // comments per post: the recurring poll asks for less
     try {
-      $r = Http::timeout(40)->get(Chat::API . '/' . $pageId . '/published_posts', ['fields' => 'id,created_time,comments.limit(60){id,message,from,created_time,comments.limit(8){from}}', 'since' => now()->subDays(14)->timestamp, 'limit' => 20, 'access_token' => $tok]);
-      if (!$r->ok()) { Cache::put('cc.bf.err.' . $pageId, mb_substr((string)($r->json('error.message') ?? $r->status()), 0, 160), 86400); Cache::forever('cc.bf.' . $pageId, 'error'); return; }
+      $r = Http::timeout(40)->get(Chat::API . '/' . $pageId . '/published_posts', ['fields' => 'id,created_time,comments.limit(' . $cl . '){id,message,from,created_time,comments.limit(8){from}}', 'since' => now()->subDays($days)->timestamp, 'limit' => $record ? 20 : 10, 'access_token' => $tok]);
+      if (!$r->ok()) { Cache::put('cc.bf.err.' . $pageId, mb_substr((string)($r->json('error.message') ?? $r->status()), 0, 160), 86400); $fin('error'); return; }
       $all = (array)$r->json('data');
-      // Ad (dark) posts are not in published_posts; most customer comments live there.
-      try { $ad = Http::timeout(40)->get(Chat::API . '/' . $pageId . '/ads_posts', ['fields' => 'id,created_time,comments.limit(60){id,message,from,created_time,comments.limit(8){from}}', 'limit' => 40, 'access_token' => $tok]);
+      // Ad (dark) posts are not in published_posts; most customer comments live there, and the "feed" webhook does not reliably deliver them - so the recurring poll is what answers them.
+      try { $ad = Http::timeout(40)->get(Chat::API . '/' . $pageId . '/ads_posts', ['fields' => 'id,created_time,comments.limit(' . $cl . '){id,message,from,created_time,comments.limit(8){from}}', 'limit' => $record ? 40 : 25, 'access_token' => $tok]);
         if ($ad->ok()) $all = array_merge($all, (array)$ad->json('data')); else Cache::put('cc.bf.err.' . $pageId, 'ads_posts: ' . mb_substr((string)($ad->json('error.message') ?? $ad->status()), 0, 140), 86400); } catch (\Throwable $e) {}
       $first = (array)($all[0] ?? []);
-      if (!empty($first['id'])) { $dbg = Http::timeout(30)->get(Chat::API . '/' . $first['id'], ['fields' => 'comments.summary(true).limit(3){id,message,from},reactions.summary(true).limit(0)', 'access_token' => $tok]); Cache::put('cc.bf.dbg.' . $pageId, mb_substr(preg_replace('/\s+/', ' ', (string)$dbg->body()), 0, 380), 86400); }
+      if ($record && !empty($first['id'])) { $dbg = Http::timeout(30)->get(Chat::API . '/' . $first['id'], ['fields' => 'comments.summary(true).limit(3){id,message,from},reactions.summary(true).limit(0)', 'access_token' => $tok]); Cache::put('cc.bf.dbg.' . $pageId, mb_substr(preg_replace('/\s+/', ' ', (string)$dbg->body()), 0, 380), 86400); }
       $n = 0; $posts = count($all); $seen = 0; $nofrom = 0; $ans = 0;
       foreach ($all as $post) foreach ((array)($post['comments']['data'] ?? []) as $c) {
         $seen++; if (empty($c['from']['id'])) $nofrom++;
         $answered = false; foreach ((array)($c['comments']['data'] ?? []) as $x) if ((string)($x['from']['id'] ?? '') === $pageId) $answered = true;
         if ($answered) $ans++;
         if ($answered || empty($c['id']) || empty($c['from']['id'])) continue;
-        if (self::ingest($pageId, ['item' => 'comment', 'verb' => 'add', 'comment_id' => $c['id'], 'message' => $c['message'] ?? '', 'from' => $c['from'], 'post_id' => $post['id'] ?? '']) ) $n++;
+        if (!empty($c['created_time']) && strtotime((string)$c['created_time']) < now()->subDays(self::MAX_DAYS)->timestamp) continue; // older than the window
+        if (self::ingest($pageId, ['item' => 'comment', 'verb' => 'add', 'comment_id' => $c['id'], 'message' => $c['message'] ?? '', 'from' => $c['from'], 'post_id' => $post['id'] ?? '', 'created_time' => $c['created_time'] ?? null]) ) $n++;
       }
-      Cache::forever('cc.bf.' . $pageId, "done {$n} (posts {$posts}, comments {$seen}, already answered {$ans}, no sender info {$nofrom})");
-    } catch (\Throwable $e) { Cache::forever('cc.bf.' . $pageId, 'error'); report($e); }
+      $fin("done {$n} (posts {$posts}, comments {$seen}, already answered {$ans}, no sender info {$nofrom})");
+    } catch (\Throwable $e) { $fin('error'); report($e); }
   }
   /** Answer one stored comment (once). */
   public static function reply(int $id): void {
     try {
       if (!self::ready() || !self::on()) return; // owner 15 Nov 2026: comment replies run 24 hours, whatever the AI chat hours are
       $c = DB::table('chat_comments')->find($id); if (!$c || $c->status !== 'new') return;
+      if (strtotime((string)$c->created_at) < now()->subDays(self::MAX_DAYS)->timestamp) { self::done($id, 'skipped', null, 'older than ' . self::MAX_DAYS . ' days'); return; }
       if (!Cache::add('cc.lock.' . $id, 1, 600)) return;
       $msg = trim((string)$c->message);
       if (mb_strlen($msg) < 2) { self::done($id, 'skipped', null, 'no text (sticker / photo / tag)'); return; }
