@@ -24,6 +24,8 @@ class ContactNotice {
   public static function tail(): string { $x = self::active() ? trim(self::cfg('contact_notice_sms')) : ''; return $x !== '' ? ' '.$x : ''; }
   /** WhatsApp order templates end with "ধন্যবাদ, {brand} টিম": during the notice period the brand value also carries the two numbers (no template change, so no new Meta review). */
   public static function brand(string $b): string { $x = self::active() ? trim(self::cfg('contact_notice_wa')) : ''; return $x !== '' ? $b.' ('.$x.')' : $b; }
+  /** One short extra line for Facebook comment replies and the inbox message that follows them, during the notice period; empty afterwards. */
+  public static function line(): string { $x = self::active() ? trim(self::cfg('contact_notice_comment')) : ''; return $x !== '' ? "\n".$x : ''; }
   /** Send the notice to this Messenger conversation if it has not had it yet. Safe to call on every incoming message. */
   public static function maybe(int $tid): void {
     try {

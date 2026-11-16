@@ -119,7 +119,7 @@ class ChatComments {
   /** One private message from the Page inbox to the commenter (Facebook allows one per comment, within 7 days). Returns a short note for the log. */
   private static function privateMessage(object $c, string $tok, string $nm, string $intent = 'other', string $link = ''): string {
     try {
-      $m = self::inboxText($nm, $intent, $link);
+      $m = self::inboxText($nm, $intent, $link) . ContactNotice::line();
       $r = Http::timeout(15)->withToken($tok)->post(Chat::API . '/' . $c->comment_id . '/private_replies', ['message' => $m]);
       if ($r->ok()) return 'inbox message sent';
       $e1 = mb_substr((string)($r->json('error.message') ?? $r->status()), 0, 70);
@@ -188,6 +188,7 @@ class ChatComments {
       $first = trim((string)preg_split('/\s+/u', trim((string)$c->from_name))[0]); $nm = $first !== '' && mb_strlen($first) <= 20 ? $first : '';
       $pt = self::postText((string)$c->post_id, $tok); $link = self::isSmoke($msg . ' ' . $pt) ? '' : self::linkIn($pt);
       [$intent, $text] = self::replyText($msg, $nm, (string)$c->comment_id, $pt, $link);
+      $text .= ContactNotice::line(); // owner 17 Nov 2026: new hotline / WhatsApp line for one month
       $r = Http::timeout(15)->asForm()->post(Chat::API . '/' . $c->comment_id . '/comments?access_token=' . urlencode($tok), ['message' => $text]);
       if ($r->ok()) {
         // Praise gets a thank-you only; every question / order / complaint also gets the one inbox message. A complaint is flagged for the representative.

@@ -1240,3 +1240,4 @@ database/migrations/2026_11_17_100000_hotline_09644999000.php
 app/Support/ContactNotice.php
 database/migrations/2026_11_17_110000_contact_notice_messenger.php
 database/migrations/2026_11_17_120000_contact_notice_whatsapp_line.php
+database/migrations/2026_11_17_130000_contact_notice_comment_line.php
