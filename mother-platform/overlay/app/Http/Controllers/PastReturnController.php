@@ -18,6 +18,8 @@ class PastReturnController extends Controller {
     [$ok, $m, $rows] = PastReturn::receive($id, $d['lines'], $d['token']);
     return response()->json(['success' => $ok, 'message' => $m, 'count' => count($rows)]);
   }
+  /** Admin check on live data; everything it does is rolled back. */
+  public function selfTest(int $id) { if (!ProfitFloor::admin()) return $this->no(); [$ok, $m, $c] = PastReturn::selfTest($id); return response()->json(['success' => $ok, 'message' => $m, 'checks' => $c]); }
   public function settle(Request $r, int $row) {
     if (!ProfitFloor::admin()) return $this->no();
     $d = $r->validate(['type' => 'required|in:refunded,adjusted,none', 'amount' => 'nullable|numeric|min:0|max:10000000', 'method' => 'nullable|string|max:40', 'note' => 'nullable|string|max:300', 'order_id' => 'nullable|integer']);

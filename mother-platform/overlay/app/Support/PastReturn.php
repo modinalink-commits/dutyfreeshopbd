@@ -165,4 +165,79 @@ class PastReturn {
     foreach ($car as $r) $r->other_invoice = isset($i2[$r->source_order_id]) ? Inv::show($i2[$r->source_order_id]) : null;
     return ['own' => $own, 'carried' => $car];
   }
+
+  /**
+   * Admin self-check on live data with NOTHING kept: every scenario runs inside one database transaction that is always rolled back
+   * (stock, rows, logs and any auto-publish all disappear). Returns [ok, message, checks[]].
+   */
+  public static function selfTest(int $carrierId): array {
+    [$ok, $m, $orders] = self::options($carrierId); if (!$ok) return [false, $m, []];
+    $pick = [];
+    foreach ($orders as $o) { foreach ($o['items'] as $i) { if ($i['has_packets'] && $i['left'] >= $i['pack'] && $i['pack'] >= 5) { $pick[] = ['order' => $o, 'item' => $i]; break; } } if (count($pick) === 2) break; }
+    if (count($pick) < 2) return [false, 'This customer needs two earlier delivered orders with a carton product (Single Packet twin) to run the check.', []];
+    [$A, $B] = [$pick[0]['item'], $pick[1]['item']]; $oa = $pick[0]['order']; $ob = $pick[1]['order'];
+    $out = []; $add = function (string $name, bool $pass, string $detail) use (&$out) { $out[] = ['name' => $name, 'pass' => $pass, 'detail' => $detail]; };
+    $stock = fn($pid) => (int)DB::table('products')->where('id', $pid)->value('stock');
+    $rows = fn() => (int)DB::table('order_past_returns')->count();
+    $left = function (int $itemId) { $i = DB::table('order_items')->find($itemId); return self::line($i)['left']; };
+    $snap = fn() => md5(json_encode([DB::table('orders')->where('id', $carrierId)->first(), DB::table('order_items')->where('order_id', $carrierId)->orderBy('id')->get()->all()]));
+    DB::beginTransaction();
+    try {
+      $ia = DB::table('order_items')->find($A['id']); $ib = DB::table('order_items')->find($B['id']);
+      $ta = self::pack((int)$ia->product_id)[1]; $tb = self::pack((int)$ib->product_id)[1];
+      $carrier0 = $snap(); $src0 = md5(json_encode([DB::table('orders')->where('id', $oa['id'])->first(), DB::table('order_items')->where('order_id', $oa['id'])->orderBy('id')->get()->all()]));
+      // 1. loose packets of an old order
+      $s0 = $stock($ta->id); $p0 = $stock((int)$ia->product_id); $l0 = $left($A['id']); $pub0 = (bool)DB::table('products')->where('id', $ta->id)->value('published');
+      [$k, $msg, $r1] = self::receive($carrierId, [['item' => $A['id'], 'cartons' => 0, 'packets' => 3, 'damaged' => 0]], 'selftest-loose-1');
+      $row = $r1[0] ?? null;
+      $add('1. পুরোনো অর্ডারের ৩টি খুচরা প্যাকেট', $k && $stock($ta->id) === $s0 + 3 && $stock((int)$ia->product_id) === $p0 && $left($A['id']) === $l0 - 3 && $row && (int)$row->source_order_id === $oa['id'] && (int)$row->carrier_order_id === $carrierId,
+        'অর্ডার '.$oa['invoice'].' · '.$A['name'].': প্যাকেট স্টক '.$s0.' → '.$stock($ta->id).', কার্টন স্টক '.$p0.' → '.$stock((int)$ia->product_id).', ফেরতযোগ্য '.$l0.' → '.$left($A['id']).', মূল্য ৳'.($row ? number_format((float)$row->refund_value, 2) : '?').' · গ্রহণকারী '.($row->received_name ?? '?'));
+      $add('1ক. বহনকারী অর্ডার ও মূল অর্ডারের বিক্রি অপরিবর্তিত', $snap() === $carrier0 && md5(json_encode([DB::table('orders')->where('id', $oa['id'])->first(), DB::table('order_items')->where('order_id', $oa['id'])->orderBy('id')->get()->all()])) === $src0, 'অর্ডার ও আইটেম সারি আগের মতোই আছে (স্ট্যাটাস, পরিমাণ, মোট)');
+      $add('1খ. প্যাকেট পণ্য স্বয়ংক্রিয় প্রকাশ', true, 'গ্রহণের আগে published='.($pub0 ? 'হ্যাঁ' : 'না').', পরে='.(DB::table('products')->where('id', $ta->id)->value('published') ? 'হ্যাঁ' : 'না').' (বিদ্যমান স্টক-ইন নিয়ম)');
+      // 2. duplicate confirm (same request again)
+      $n = $rows(); $s1 = $stock($ta->id);
+      [$k2, $msg2] = self::receive($carrierId, [['item' => $A['id'], 'cartons' => 0, 'packets' => 3, 'damaged' => 0]], 'selftest-loose-1');
+      $add('2. একই গ্রহণ দুবার নিশ্চিত', $k2 && $rows() === $n && $stock($ta->id) === $s1, 'সারি '.$n.' → '.$rows().', প্যাকেট স্টক '.$s1.' → '.$stock($ta->id).' · "'.$msg2.'"');
+      // 3. two source orders in one parcel
+      $n = $rows(); $sa = $stock($ta->id); $sb = $stock($tb->id);
+      [$k3, $msg3, $r3] = self::receive($carrierId, [['item' => $A['id'], 'cartons' => 0, 'packets' => 2, 'damaged' => 0], ['item' => $B['id'], 'cartons' => 0, 'packets' => 1, 'damaged' => 0]], 'selftest-multi-1');
+      $srcs = collect($r3)->pluck('source_order_id')->unique()->count();
+      $add('3. একই পার্সেলে দুটি অর্ডারের রিটার্ন', $k3 && $rows() === $n + 2 && $srcs === 2 && $stock($ta->id) === $sa + 2 && $stock($tb->id) === $sb + 1, 'অর্ডার '.$oa['invoice'].' ও '.$ob['invoice'].': '.($rows() - $n).'টি সারি, মূল অর্ডার '.$srcs.'টি, বহনকারী একটিই');
+      // 4. more than can come back
+      $n = $rows(); $lb = $left($B['id']); $sb = $stock($tb->id);
+      [$k4, $msg4] = self::receive($carrierId, [['item' => $B['id'], 'cartons' => 0, 'packets' => $lb + 1, 'damaged' => 0]], 'selftest-excess-1');
+      $add('4. অতিরিক্ত পরিমাণ', !$k4 && $rows() === $n && $stock($tb->id) === $sb, 'ফেরতযোগ্য '.$lb.', চাওয়া '.($lb + 1).' → "'.$msg4.'"');
+      // 5. damaged goods
+      $n = $rows(); $sb = $stock($tb->id); $pb = $stock((int)$ib->product_id); $lb = $left($B['id']);
+      [$k5, $msg5, $r5] = self::receive($carrierId, [['item' => $B['id'], 'cartons' => 0, 'packets' => 0, 'damaged' => 2]], 'selftest-damaged-1');
+      $add('5. ক্ষতিগ্রস্ত পণ্য', $k5 && $rows() === $n + 1 && $stock($tb->id) === $sb && $stock((int)$ib->product_id) === $pb && $left($B['id']) === $lb - 2 && (int)($r5[0]->damaged_packets ?? 0) === 2, 'প্যাকেট স্টক '.$sb.' → '.$stock($tb->id).' (যোগ হয়নি), ফেরতযোগ্য '.$lb.' → '.$left($B['id']).', রেকর্ডে ২টি ক্ষতিগ্রস্ত');
+      // 6. a whole carton
+      $lb = $left($B['id']);
+      if ($lb >= $B['pack']) { $pb = $stock((int)$ib->product_id); $sb = $stock($tb->id);
+        [$k6, $msg6] = self::receive($carrierId, [['item' => $B['id'], 'cartons' => 1, 'packets' => 0, 'damaged' => 0]], 'selftest-carton-1');
+        $add('6. পুরো কার্টন', $k6 && $stock((int)$ib->product_id) === $pb + 1 && $stock($tb->id) === $sb && $left($B['id']) === $lb - $B['pack'], 'কার্টন স্টক '.$pb.' → '.$stock((int)$ib->product_id).', ফেরতযোগ্য '.$lb.' → '.$left($B['id']).' (প্রতি কার্টনে '.$B['pack'].' প্যাকেট, পণ্যের সেটিংস থেকে)');
+      } else $add('6. পুরো কার্টন', true, 'বাদ: এই লাইনে পুরো কার্টন ফেরতযোগ্য নেই');
+      // 7. money step is separate
+      $rid = (int)$row->id; $val = (float)$row->refund_value;
+      [$k7a, $m7a] = self::settle($rid, 'refunded', $val + 50, 'bKash', null, null);
+      [$k7b, $m7b] = self::settle($rid, 'adjusted', $val, null, 'self test', $carrierId);
+      [$k7c, $m7c] = self::settle($rid, 'refunded', $val, 'Cash', null, null);
+      $adj = DB::table('order_activity_logs')->where('order_id', $carrierId)->where('action_type', 'past_return_adjustment')->exists();
+      $add('7. টাকা আলাদা ধাপ', !$k7a && $k7b && !$k7c && $adj && $snap() === $carrier0, 'মূল্যের বেশি ফেরত আটকায়; সমন্বয় ৳'.number_format($val, 2).' নতুন অর্ডারে আলাদা এন্ট্রি হিসেবে লেখা হয়, অর্ডারের মোট বদলায় না; দ্বিতীয়বার নিষ্পত্তি আটকায়');
+      [$k7d, $m7d] = self::void($rid, 'self test');
+      $add('7ক. টাকা নিষ্পত্তির পর সংশোধন আটকায়', !$k7d, '"'.$m7d.'"');
+      // 8. correction keeps history
+      $r8 = DB::table('order_past_returns')->where('batch_token', 'selftest-multi-1')->where('source_item_id', $A['id'])->first(); $sa = $stock($ta->id); $la = $left($A['id']);
+      [$k8, $m8] = self::void((int)$r8->id, 'ভুল এন্ট্রি (self test)');
+      $v = DB::table('order_past_returns')->find($r8->id);
+      $add('8. সংশোধন ও ইতিহাস', $k8 && $stock($ta->id) === $sa - 2 && $left($A['id']) === $la + 2 && $v->status === 'voided' && $v->void_reason !== null, 'প্যাকেট স্টক '.$sa.' → '.$stock($ta->id).', ফেরতযোগ্য '.$la.' → '.$left($A['id']).', সারি মোছেনি (voided, কারণ ও নামসহ)');
+      $logs = DB::table('order_activity_logs')->whereIn('order_id', [$oa['id'], $ob['id'], $carrierId])->where('action_type', 'like', 'past_return%')->count(); $aud = DB::table('audit_logs')->where('action', 'like', 'past_return.%')->count();
+      $add('9. কে-কখন-কত রেকর্ড', $logs >= 8 && $aud >= 5, 'অর্ডার লগে '.$logs.'টি ও অডিট লগে '.$aud.'টি এন্ট্রি');
+    } catch (\Throwable $e) { $add('ত্রুটি', false, mb_substr($e->getMessage(), 0, 300)); }
+    finally { while (DB::transactionLevel() > 0) DB::rollBack(); }
+    $kept = (int)DB::table('order_past_returns')->where('batch_token', 'like', 'selftest-%')->count();
+    $add('10. পরীক্ষার পর কিছু রাখা হয়নি', $kept === 0, 'পরীক্ষার সারি '.$kept.'টি; স্টক ও লগ আগের অবস্থায়');
+    $pass = collect($out)->every(fn($c) => $c['pass']);
+    return [$pass, $pass ? 'All checks passed. Nothing was kept.' : 'Some checks failed. Nothing was kept.', $out];
+  }
 }
