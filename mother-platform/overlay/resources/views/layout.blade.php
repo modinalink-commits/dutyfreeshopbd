@@ -25,6 +25,7 @@
 @else
 @include('chat_widget')
 @include('softphone_fab')
+@include('wa_call_ring')
 @endif
 @endauth
 @yield('js')

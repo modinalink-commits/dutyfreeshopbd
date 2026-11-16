@@ -271,6 +271,14 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/call-center/play/{id}', [\App\Http\Controllers\CallQualityController::class,'play'])->whereNumber('id');
   Route::get('/call-center/daily', [\App\Http\Controllers\CallQualityController::class,'daily']); Route::get('/call-center/daily/status', [\App\Http\Controllers\CallQualityController::class,'dailyStatus']); Route::post('/call-center/daily/{act}', [\App\Http\Controllers\CallQualityController::class,'dailyAct'])->where('act', 'submit|sync|send|save')->middleware('throttle:10,1');
   Route::get('/call-center/agents', [\App\Http\Controllers\CallCenterController::class,'agents']);
+  // WhatsApp calls answered in the browser (owner 16 Nov 2026)
+  Route::get('/call-center/whatsapp', [\App\Http\Controllers\WaCallController::class,'page']);
+  Route::get('/call-center/whatsapp/poll', [\App\Http\Controllers\WaCallController::class,'poll']);
+  Route::get('/call-center/whatsapp/status', [\App\Http\Controllers\WaCallController::class,'status'])->middleware('throttle:60,1');
+  Route::post('/call-center/whatsapp/calling', [\App\Http\Controllers\WaCallController::class,'setCalling'])->middleware('throttle:10,1');
+  Route::post('/call-center/whatsapp/{id}/claim', [\App\Http\Controllers\WaCallController::class,'claim'])->whereNumber('id');
+  Route::post('/call-center/whatsapp/{id}/accept', [\App\Http\Controllers\WaCallController::class,'accept'])->whereNumber('id');
+  Route::post('/call-center/whatsapp/{id}/end', [\App\Http\Controllers\WaCallController::class,'end'])->whereNumber('id');
   Route::get('/call-center/clients', [\App\Http\Controllers\CarrierClientController::class,'index']);
   Route::get('/call-center/clients/diag', [\App\Http\Controllers\CarrierClientController::class,'diag']);
   Route::get('/call-center/clients/live', [\App\Http\Controllers\CarrierClientController::class,'live']);
