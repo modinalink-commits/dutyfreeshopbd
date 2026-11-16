@@ -488,7 +488,7 @@ var detPhone='';
 function detail(id){getj('/admin/call-center/call/'+id).then(function(d){detPhone=d.phone;$('dSub').textContent=(d.name||'Unknown Customer')+' · '+d.phone;
  var rows=[['Direction',d.dir==='in'?'Incoming':'Outgoing'],['Agent',d.agent||'—'],['Extension',d.ext||'—'],['Status',d.status],['Dial started',d.dial||'—'],['Connected',d.conn||'—'],['Ended',d.end||'—'],['Duration',fmtD(d.dur)],['Order',d.order?d.order.invoice+' · '+d.order.status:'—'],['Outcome',OC[d.outcome]||'—'],['Response',d.response||'—'],['Cancel reason',d.cancel||'—'],['Note',d.note||'—']];
  $('dBody').innerHTML=rows.map(function(r){return '<div class="r"><span>'+r[0]+'</span><b>'+esc(r[1])+'</b></div>'}).join('');
- $('dRec').innerHTML=d.rec_url?'<audio controls preload="none" src="'+esc(d.rec_url)+'" style="width:100%"></audio>':'<div class="mut">'+(d.rec==='processing'||d.rec==='recording'?'Recording Processing':'No Recording')+'</div>';
+ $('dRec').innerHTML=d.rec_url?'<audio controls preload="none" src="'+esc(d.rec_url)+'" style="width:100%"></audio>'+(d.rec_dl&&window.RecDL?'<div style="margin-top:6px"><button type="button" onclick="RecDL.get(\'/admin/call-center/rec/'+(+d.id)+'/download\','+(+d.id)+',this)" style="height:28px;padding:0 10px;border:1px solid #D0D5DD;border-radius:7px;background:#fff;color:#0B1B33;font-weight:700;font-size:12px;cursor:pointer">Download</button></div>':''):'<div class="mut">'+(d.rec==='processing'||d.rec==='recording'?'Recording Processing':'No Recording')+'</div>';
  $('ovDet').classList.add('on')})}
 $('dX').onclick=function(){$('ovDet').classList.remove('on')};$('dCall').onclick=function(){$('ovDet').classList.remove('on');dialNum(detPhone)};
 function dialNum(n){if(inCall()){tab('act');err('Call already in progress');return}$('num').value=n;lastN='';found();call(n)}
@@ -536,4 +536,5 @@ if($('msg').textContent==='')connect();else badge('Disconnected','b-bad');
 })();
 </script>
 @endverbatim
-@include('popup_close')</body></html>
+@include('popup_close')@include('rec_dl')
+</body></html>

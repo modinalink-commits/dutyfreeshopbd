@@ -29,7 +29,7 @@ class WaCallController extends Controller {
     $recs = [];
     if (\App\Support\WaRec::ready() && $rows->count()) foreach (DB::table('wa_call_recordings')->whereIn('call_id', $rows->pluck('id'))->get() as $x) {
       $has = in_array($x->status, ['complete', 'incomplete'], true); $file = $has && \App\Support\WaRec::file($x) !== null;
-      $recs[(int)$x->call_id] = ['id' => (int)$x->id, 'status' => (string)$x->status, 'duration' => $x->duration !== null ? (int)$x->duration : null, 'play' => $file && \App\Support\WaRec::canListen($r->user(), $x), 'nofile' => $has && !$file, 'why' => (string)$x->fail_reason];
+      $recs[(int)$x->call_id] = ['id' => (int)$x->id, 'status' => (string)$x->status, 'duration' => $x->duration !== null ? (int)$x->duration : null, 'play' => $file && \App\Support\WaRec::canListen($r->user(), $x), 'dl' => $file && \App\Support\WaRec::mayDownload($r->user(), $x->user_id ? (int)$x->user_id : null), 'nofile' => $has && !$file, 'why' => (string)$x->fail_reason];
     }
     return view('wa_calls', ['recs' => $recs, 'f' => $f, 'pg' => $pg, 'rows' => $rows, 'nums' => $nums, 'admin' => ProfitFloor::admin(), 'ready' => WaCalls::ready(), 'k' => $k, 'rep' => $rep, 'hasHandled' => \Illuminate\Support\Facades\Schema::hasColumn('wa_calls', 'handled_at')]);
   }

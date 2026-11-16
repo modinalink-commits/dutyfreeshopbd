@@ -41,7 +41,7 @@ window.WaRecUI=(function(){
     if(!rows||!rows.length){host.innerHTML='<div class="wr-i" style="color:#475467">'+esc(opts.empty||'No call recording yet.')+'</div>';return}
     host.innerHTML='';rows.forEach(function(r){var s=ST[r.status]||[r.status,''],d=document.createElement('div');d.className='wr-i';
       var h='<div class="wr-h"><b>'+esc(r.at)+'</b><span class="wr-p '+s[1]+'">'+s[0]+'</span>'+(opts.current===r.call_id?'<span class="wr-p">This call</span>':'')+'<small>'+(r.duration!=null?mmss(r.duration)+' · ':'')+esc(r.by||'—')+(r.bytes?' · '+size(r.bytes):'')+'</small>';
-      if(r.can_listen)h+='<button type="button" class="wr-b pri" style="margin-left:auto" data-k="play">Play</button>'+(admin?'<a class="wr-b" href="/admin/call-center/whatsapp/rec/'+r.id+'/audio?dl=1">Download</a><button type="button" class="wr-b" data-k="del">Delete</button>':'');
+      if(r.can_listen)h+='<button type="button" class="wr-b pri" style="margin-left:auto" data-k="play">Play</button>'+(r.can_download?'<button type="button" class="wr-b" data-k="dl">Download</button>':'')+(admin?'<button type="button" class="wr-b" data-k="del">Delete</button>':'');
       h+='</div>';
       if(opts.full)h+='<div style="margin-top:4px;color:#475467">'+esc(r.customer||'WhatsApp caller')+' · '+esc(r.wa||'number hidden')+' → '+esc(r.business||'')+' · Call #'+r.call_id+(r.thread_id?' · <a href="/admin/chat?open='+r.thread_id+'">Conversation</a>':'')+(r.order_id?' · <a href="/admin/orders/'+r.order_id+'">Order '+esc(r.order)+'</a>':'')+(r.expires&&r.can_listen?' · kept until '+esc(r.expires):'')+'</div>';
       else if(r.order_id)h+='<div style="margin-top:4px;color:#475467">Order <a target="_blank" href="/admin/orders/'+r.order_id+'">'+esc(r.order)+'</a></div>';
@@ -54,6 +54,7 @@ window.WaRecUI=(function(){
       h+='<div class="wr-e"></div>';d.innerHTML=h;host.appendChild(d);
       var er=d.querySelector('.wr-e'),pb=d.querySelector('[data-k=play]'),sv=d.querySelector('[data-k=save]'),dl=d.querySelector('[data-k=del]');
       if(pb)pb.onclick=function(){player(r,d.querySelector('.wr-pl'),pb)};
+      var db=d.querySelector('[data-k=dl]');if(db)db.onclick=function(){if(window.RecDL)RecDL.get('/admin/call-center/whatsapp/rec/'+r.id+'/audio?dl=1',r.call_id,db)};
       if(sv)sv.onclick=function(){sv.disabled=true;er.className='wr-e';er.textContent='';post('/admin/call-center/whatsapp/rec/'+r.id+'/meta',{verify:d.querySelector('.v').value.trim(),order:d.querySelector('.o').value.trim()}).then(function(k){sv.disabled=false;er.className='wr-e'+(k.ok?' ok':'');er.textContent=k.message||(k.ok?'Saved.':'Not saved.')})};
       if(dl)dl.onclick=function(){if(dl.dataset.sure!=='1'){dl.dataset.sure='1';dl.textContent='Delete for good?';setTimeout(function(){dl.dataset.sure='';dl.textContent='Delete'},4000);return}dl.disabled=true;post('/admin/call-center/whatsapp/rec/'+r.id+'/delete').then(function(k){if(k.ok){if(opts.reload)location.reload();else{d.style.opacity=.5;er.textContent='Deleted.'}}else{dl.disabled=false;er.textContent='Could not delete.'}})};
     })}

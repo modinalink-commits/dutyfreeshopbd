@@ -26,6 +26,7 @@
 @include('chat_widget')
 @include('softphone_fab')
 @include('wa_call_ring')
+@include('rec_dl')
 @endif
 @endauth
 @yield('js')

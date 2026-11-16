@@ -24,7 +24,7 @@
 <div class="cc-box" style="padding:12px 14px">
 @if($cur)
 <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:8px"><b style="font-size:14px">{{ $cur->customer_name ?: 'Unknown' }} · {{ $cur->user_name ?: 'staff' }} · {{ gmdate('i:s',(int)$cur->duration) }}</b>@if($cur->order_id)<a href="/admin/orders/{{ $cur->order_id }}" target="_blank" style="font-weight:600">Open order</a>@endif</div>
-@if(!empty($cur->recording_url))<audio controls preload="none" src="/admin/call-center/play/{{ $cur->id }}" style="width:100%"></audio>@else<div style="color:#475467;margin-bottom:6px">This call has no recording. You can still score it from the note and the result.</div>@endif
+@if(!empty($cur->recording_url))<audio controls preload="none" src="/admin/call-center/play/{{ $cur->id }}" style="width:100%"></audio>@if(\App\Http\Controllers\CallCenterController::recDl($cur))<div style="margin-top:6px"><button type="button" onclick="RecDL.get('/admin/call-center/rec/{{ $cur->id }}/download',{{ $cur->id }},this)" style="height:28px;padding:0 10px;border:1px solid #D0D5DD;border-radius:7px;background:#fff;color:#0B1B33;font-weight:700;font-size:12px;cursor:pointer">Download</button></div>@endif @else<div style="color:#475467;margin-bottom:6px">This call has no recording. You can still score it from the note and the result.</div>@endif
 @if($cur->note)<div style="margin-top:6px;font-size:12.5px;color:#475467"><b style="color:#0B1B33">Call note:</b> {{ $cur->note }}</div>@endif
 <form method="post" action="/admin/call-center/review/{{ $cur->id }}{{ $qs(['c'=>$cur->id]) }}" style="margin-top:10px;display:grid;gap:8px">@csrf
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:6px">

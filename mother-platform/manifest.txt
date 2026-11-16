@@ -1233,3 +1233,5 @@ resources/views/wa_rec_ui.blade.php
 resources/views/wa_recordings.blade.php
 resources/views/wa_rec_order.blade.php
 database/migrations/2026_11_16_140000_wa_call_recordings.php
+resources/views/rec_dl.blade.php
+public/vendor/lame.min.js

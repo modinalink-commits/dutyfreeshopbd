@@ -250,7 +250,7 @@ class CallCenterController extends Controller {
     $l = DB::table('call_logs')->find($id); abort_unless($l, 404); $tz = fn($v) => $v ? \Carbon\Carbon::parse($v, 'UTC')->timezone('Asia/Dhaka')->format('d M Y, h:i:s A') : null;
     $o = $l->order_id ? DB::table('orders')->where('id', $l->order_id)->first(['id', 'invoice', 'status']) : null;
     return response()->json(['id'=>$l->id, 'phone'=>$l->phone, 'name'=>$l->customer_name, 'customer_id'=>$l->customer_id, 'agent'=>$l->user_name, 'ext'=>$l->extension, 'dir'=>$l->direction, 'status'=>$l->status, 'dur'=>(int)$l->duration, 'dial'=>$tz($l->dial_started_at ?? $l->started_at), 'conn'=>$tz($l->connected_at ?? null), 'end'=>$tz($l->ended_at ?? null),
-      'outcome'=>$l->outcome, 'response'=>$l->response, 'cancel'=>$l->cancel_reason, 'note'=>$l->note, 'rec'=>$l->recording_status ?? 'none', 'rec_url'=>$l->recording_url ?? null, 'order'=>$o]);
+      'outcome'=>$l->outcome, 'response'=>$l->response, 'cancel'=>$l->cancel_reason, 'note'=>$l->note, 'rec'=>$l->recording_status ?? 'none', 'rec_url'=>$l->recording_url ?? null, 'rec_dl'=>self::recDl($l), 'order'=>$o]);
   }
   public function logStart(Request $r) {
     $d = $r->validate(['direction'=>'required|in:in,out', 'phone'=>'required|string|max:40', 'extension'=>'nullable|string|max:40']);
@@ -331,6 +331,17 @@ class CallCenterController extends Controller {
     $p = self::recPath((int)$id); abort_unless($p, 404, 'This call has no recording.');
     try { if (!DB::table('call_listens')->where('call_id', (int)$id)->where('user_id', Auth::id())->where('created_at', '>', now()->subMinutes(10))->exists()) DB::table('call_listens')->insert(['call_id'=>(int)$id, 'user_id'=>Auth::id(), 'user_name'=>Auth::user()->name ?? '', 'created_at'=>now()]); } catch (\Throwable $e) {}
     return response()->file($p, ['Content-Type'=>str_ends_with($p, '.ogg') ? 'audio/ogg' : 'audio/webm', 'Cache-Control'=>'private, no-store', 'X-Robots-Tag'=>'noindex']);
+  }
+  /** May this user download this PBX call's recording, and is there a file to give? Used by the pages (to hide a dead button) and by the download itself. */
+  public static function recDl(object $l): bool { return self::recPath((int)$l->id) !== null && \App\Support\WaRec::mayDownload(Auth::user(), $l->user_id ? (int)$l->user_id : null); }
+  /** Download one PBX call's recording (the original file; the page makes an MP3 copy from it). Permission is checked here every time and the download is logged. */
+  public function recDownload($id) {
+    $l = DB::table('call_logs')->find($id); abort_unless($l, 404);
+    abort_unless(\App\Support\WaRec::mayDownload(Auth::user(), $l->user_id ? (int)$l->user_id : null), 403, 'You are not allowed to download this recording.');
+    $p = self::recPath((int)$id); abort_unless($p, 404, 'This call has no recording file.');
+    \App\Support\WaRec::logDownload('PBX', (int)$id, trim((string)$l->customer_name . ' ' . (string)$l->phone));
+    $name = \App\Support\WaRec::fileName('pbx-call-' . ($l->direction === 'in' ? 'incoming' : 'outgoing'), $l->started_at ?? $l->created_at, (int)$id); $ext = str_ends_with($p, '.ogg') ? 'ogg' : 'webm';
+    return response()->download($p, $name . '.' . $ext, ['Content-Type' => 'audio/' . $ext, 'Cache-Control' => 'private, no-store', 'X-Robots-Tag' => 'noindex', 'X-Call-Id' => (string)(int)$id, 'X-File-Name' => $name]);
   }
   public function logRecording(Request $r, $id) {
     $d = $r->validate(['url'=>['required', 'url', 'max:600']]); DB::table('call_logs')->where('id', $id)->update(['recording_url'=>$d['url'], 'recording_status'=>'available', 'updated_at'=>now()]); return response()->json(['ok'=>true]);

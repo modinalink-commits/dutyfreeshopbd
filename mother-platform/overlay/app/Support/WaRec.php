@@ -26,6 +26,12 @@ class WaRec {
     if (!$user) return false; if (ProfitFloor::admin()) return true; $rule = self::listenRule();
     return $rule === 'all' || ($rule === 'handler' && (int)$rec->user_id === (int)$user->id);
   }
+  /** Who may download (PBX dialer and WhatsApp recordings alike): admin (default), handler (also the representative of that call), all (everyone in the Call Center). Checked on the server at every download. */
+  public static function downloadRule(): string { $v = self::get('wa_rec_download', 'admin'); return in_array($v, ['admin', 'handler', 'all'], true) ? $v : 'admin'; }
+  public static function mayDownload($user, ?int $ownerId): bool { if (!$user) return false; if (ProfitFloor::admin()) return true; $rule = self::downloadRule(); return $rule === 'all' || ($rule === 'handler' && $ownerId !== null && (int)$ownerId === (int)$user->id); }
+  /** File name that tells the call apart after download: type, date-time (Dhaka) and the call's own id. */
+  public static function fileName(string $kind, $at, int $callId): string { $t = $at ? \Carbon\Carbon::parse($at, 'UTC')->timezone('Asia/Dhaka')->format('Y-m-d_H-i') : 'undated'; return $kind . '_' . $t . '_call' . $callId; }
+  public static function logDownload(string $kind, int $callId, string $who): void { try { DB::table('audit_logs')->insert(['user_id' => auth()->id(), 'user_name' => auth()->user()->name ?? 'System', 'action' => 'call_rec.download', 'subject' => 'Call recording downloaded: ' . $kind . ' call #' . $callId . ($who !== '' ? ' (' . $who . ')' : ''), 'meta' => json_encode(['kind' => $kind, 'call_id' => $callId]), 'ip' => request()?->ip(), 'created_at' => now(), 'updated_at' => now()]); } catch (\Throwable $e) {} }
   public static function dir(): string { $d = storage_path('app/wa_recordings'); if (!is_dir($d)) @mkdir($d, 0770, true); return $d; }
   public static function file(object $rec): ?string { if (!$rec->path) return null; $f = self::dir() . '/' . $rec->path; return is_file($f) ? $f : null; }
   public static function log(int $rid, string $action, ?string $detail = null): void {
@@ -140,7 +146,7 @@ class WaRec {
       $out[] = ['id' => (int)$r->id, 'call_id' => (int)$r->call_id, 'status' => $r->status, 'at' => $r->started_at ? \Carbon\Carbon::parse($r->started_at)->timezone('Asia/Dhaka')->format('d M Y h:i A') : '', 'duration' => $r->duration !== null ? (int)$r->duration : null,
         'customer' => (string)$r->customer_name, 'wa' => $r->customer_wa ? '+' . $r->customer_wa : '', 'business' => (string)$r->business_number, 'by' => (string)$r->user_name, 'bytes' => (int)$r->bytes, 'notice' => $r->notice_at !== null,
         'order_id' => $r->order_id ? (int)$r->order_id : null, 'order' => $r->order_invoice ? Inv::show($r->order_invoice) : null, 'thread_id' => $r->thread_id ? (int)$r->thread_id : null, 'verify' => (string)$r->verify_result, 'verify_by' => (string)$r->verify_by, 'why' => (string)$r->fail_reason,
-        'can_listen' => in_array($r->status, ['complete', 'incomplete'], true) && self::canListen($user, $r), 'expires' => $r->expires_at ? \Carbon\Carbon::parse($r->expires_at)->timezone('Asia/Dhaka')->format('d M Y') : '', 'removed_by' => (string)$r->removed_by];
+        'can_listen' => in_array($r->status, ['complete', 'incomplete'], true) && self::canListen($user, $r), 'can_download' => in_array($r->status, ['complete', 'incomplete'], true) && self::file($r) !== null && self::mayDownload($user, $r->user_id ? (int)$r->user_id : null), 'expires' => $r->expires_at ? \Carbon\Carbon::parse($r->expires_at)->timezone('Asia/Dhaka')->format('d M Y') : '', 'removed_by' => (string)$r->removed_by];
     }
     return $out;
   }

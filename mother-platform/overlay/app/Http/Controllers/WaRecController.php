@@ -19,11 +19,12 @@ class WaRecController extends Controller {
   /** The audio itself. Never a public link: every request is checked and written to the log. */
   public function audio(Request $r, int $rid) {
     $rec = $this->rec($rid); $dl = $r->boolean('dl');
-    if ($dl ? !ProfitFloor::admin() : !WaRec::canListen($r->user(), $rec)) { WaRec::log($rid, 'denied', $dl ? 'download' : 'listen'); abort(403, 'You are not allowed to open this recording.'); }
+    if ($dl ? !WaRec::mayDownload($r->user(), $rec->user_id ? (int)$rec->user_id : null) : !WaRec::canListen($r->user(), $rec)) { WaRec::log($rid, 'denied', $dl ? 'download' : 'listen'); abort(403, 'You are not allowed to open this recording.'); }
     $f = in_array($rec->status, ['complete', 'incomplete'], true) ? WaRec::file($rec) : null; abort_unless($f, 404);
-    WaRec::log($rid, $dl ? 'download' : 'listen');
-    $h = ['Content-Type' => 'audio/webm', 'Cache-Control' => 'private, no-store', 'X-Robots-Tag' => 'noindex', 'X-Call-Id' => (string)$rec->call_id];
-    return $dl ? response()->download($f, 'whatsapp-call-' . $rec->call_id . '.webm', $h) : response()->file($f, $h);
+    WaRec::log($rid, $dl ? 'download' : 'listen'); $name = WaRec::fileName('whatsapp-call', $rec->started_at, (int)$rec->call_id);
+    if ($dl) WaRec::logDownload('WhatsApp', (int)$rec->call_id, trim((string)$rec->customer_name . ' +' . (string)$rec->customer_wa));
+    $h = ['Content-Type' => 'audio/webm', 'Cache-Control' => 'private, no-store', 'X-Robots-Tag' => 'noindex', 'X-Call-Id' => (string)$rec->call_id, 'X-File-Name' => $name];
+    return $dl ? response()->download($f, $name . '.webm', $h) : response()->file($f, $h);
   }
   public function list(Request $r) {
     $f = [];
@@ -35,7 +36,7 @@ class WaRecController extends Controller {
   public function page(Request $r) {
     $adm = ProfitFloor::admin(); if ($adm) WaRec::seen();
     return view('wa_recordings', ['rows' => WaRec::rows(['q' => $r->query('q'), 'status' => in_array($r->query('status'), ['complete', 'incomplete', 'failed', 'deleted', 'expired'], true) ? $r->query('status') : null], $r->user(), 100), 'admin' => $adm, 'ready' => WaRec::ready(),
-      'use' => WaRec::usage(), 'cfg' => ['on' => WaRec::on(), 'days' => WaRec::days(), 'listen' => WaRec::listenRule(), 'notice' => WaRec::notice()], 'q' => (string)$r->query('q'), 'status' => (string)$r->query('status')]);
+      'use' => WaRec::usage(), 'cfg' => ['on' => WaRec::on(), 'days' => WaRec::days(), 'listen' => WaRec::listenRule(), 'download' => WaRec::downloadRule(), 'notice' => WaRec::notice()], 'q' => (string)$r->query('q'), 'status' => (string)$r->query('status')]);
   }
   public function meta(Request $r, int $rid) {
     $rec = $this->rec($rid); abort_unless(WaRec::canListen($r->user(), $rec), 403);
@@ -48,10 +49,10 @@ class WaRecController extends Controller {
   public function logs(Request $r, int $rid) { abort_unless(ProfitFloor::admin(), 403); return response()->json(['rows' => DB::table('wa_call_recording_logs')->where('recording_id', $rid)->orderByDesc('id')->limit(60)->get(['user_name', 'action', 'detail', 'created_at'])->map(fn($l) => ['by' => $l->user_name, 'action' => $l->action, 'detail' => $l->detail, 'at' => \Carbon\Carbon::parse($l->created_at)->timezone('Asia/Dhaka')->format('d M h:i A')])]); }
   public function settings(Request $r) {
     abort_unless(ProfitFloor::admin(), 403);
-    $d = $r->validate(['on' => 'required|boolean', 'days' => 'required|integer|min:1|max:3650', 'listen' => 'required|in:admin,handler,all', 'notice' => 'nullable|string|max:300']);
-    $old = ['on' => WaRec::on(), 'days' => WaRec::days(), 'listen' => WaRec::listenRule()];
+    $d = $r->validate(['on' => 'required|boolean', 'days' => 'required|integer|min:1|max:3650', 'listen' => 'required|in:admin,handler,all', 'download' => 'nullable|in:admin,handler,all', 'notice' => 'nullable|string|max:300']);
+    $old = ['on' => WaRec::on(), 'days' => WaRec::days(), 'listen' => WaRec::listenRule(), 'download' => WaRec::downloadRule()]; if (!empty($d['download'])) WaRec::put('wa_rec_download', $d['download']);
     WaRec::put('wa_rec_on', $d['on'] ? '1' : '0'); WaRec::put('wa_rec_listen', $d['listen']); WaRec::put('wa_rec_notice', trim((string)($d['notice'] ?? '')) ?: WaRec::NOTICE); if ((int)$d['days'] !== $old['days']) WaRec::setDays((int)$d['days']);
-    try { DB::table('audit_logs')->insert(['user_id' => $r->user()->id, 'user_name' => $r->user()->name, 'action' => 'wa_rec.settings', 'subject' => 'WhatsApp call recording settings changed', 'meta' => json_encode(['previous' => $old, 'new' => ['on' => (bool)$d['on'], 'days' => (int)$d['days'], 'listen' => $d['listen']]]), 'ip' => $r->ip(), 'created_at' => now(), 'updated_at' => now()]); } catch (\Throwable $e) {}
+    try { DB::table('audit_logs')->insert(['user_id' => $r->user()->id, 'user_name' => $r->user()->name, 'action' => 'wa_rec.settings', 'subject' => 'WhatsApp call recording settings changed', 'meta' => json_encode(['previous' => $old, 'new' => ['on' => (bool)$d['on'], 'days' => (int)$d['days'], 'listen' => $d['listen'], 'download' => $d['download'] ?? $old['download']]]), 'ip' => $r->ip(), 'created_at' => now(), 'updated_at' => now()]); } catch (\Throwable $e) {}
     return response()->json(['ok' => true]);
   }
 }
