@@ -186,7 +186,7 @@ f5a5dab4dfd73a5cc466cdc17409fd5c2e8bf42e app/Support/Pg.php
 9deff264b736b258315af91a467ac5bf24a50f38 resources/views/softphone.blade.php
 cad5d7d00994ffe93453adf9c363fb19b3e4bd3e resources/views/sip_account.blade.php
 51c87c1696bc7f15bdf0f46b01e03a3a7cd10fe2 resources/views/call_history.blade.php
-58c516aa5fc448fbfee358b69dad9a84384cf2b0 resources/views/softphone_fab.blade.php
+d4c666bbe06ed21d7fb7196bfa671918f67d31e6 resources/views/softphone_fab.blade.php
 d60cc2488e9d1428806a53b4a367beb5d0ec79c6 public/js/jssip.min.js
 a3c5d6ae40b31215a50dd80253358e0c37263037 public/js/df-export.js
 00d43c063dcf9feed9d0f70ea885452364dbac05 public/js/lame.min.js
