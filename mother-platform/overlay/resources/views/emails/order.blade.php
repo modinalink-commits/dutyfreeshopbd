@@ -32,7 +32,7 @@
 <tr><td colspan="2" style="padding:9px 14px 12px;font-size:16px;font-weight:700;color:#0B1B33;border-top:1px solid #E5E7EB">সর্বমোট</td><td align="right" style="padding:9px 14px 12px;font-size:16px;font-weight:700;color:#C2410C;border-top:1px solid #E5E7EB;white-space:nowrap">৳{{ $n($total) }}</td></tr>
 </table></td></tr>
 <tr><td style="padding:14px 28px 24px;font-size:13.5px;line-height:1.7;color:#4B5563">যেকোনো প্রয়োজনে আমরা আছি।
-@if($hotline) হটলাইন: <a href="tel:{{ preg_replace('/[^0-9+]/', '', $hotline) }}" style="color:#C2410C;text-decoration:none;font-weight:700">{{ $hotline }}</a> @endif
+@if($hotline) হটলাইন: <a href="{{ \App\Support\Biz::telUrl($hotline) }}" style="color:#C2410C;text-decoration:none;font-weight:700">{{ $hotline }}</a> @endif
 @if($wa) · <a href="{{ $wa }}" style="color:#C2410C;text-decoration:none;font-weight:700">WhatsApp</a> @endif
 @if($hours) <span style="color:#6B7280">({{ $hours }})</span> @endif
 </td></tr>

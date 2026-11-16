@@ -22,7 +22,7 @@
 </td></tr></table></td>@endforeach @if(count($pair) === 1)<td width="50%"></td>@endif</tr>@endforeach
 </table></td></tr>@endif
 <tr><td style="padding:6px 28px 22px;font-size:13.5px;line-height:1.7;color:#4B5563" align="center">দাম ও স্টক ইমেল পাঠানোর সময়ের; চূড়ান্ত দাম চেকআউটে দেখাবে।
-@if($hotline)<br>হটলাইন: <a href="tel:{{ preg_replace('/[^0-9+]/', '', $hotline) }}" style="color:#C2410C;text-decoration:none;font-weight:700">{{ $hotline }}</a> @endif
+@if($hotline)<br>হটলাইন: <a href="{{ \App\Support\Biz::telUrl($hotline) }}" style="color:#C2410C;text-decoration:none;font-weight:700">{{ $hotline }}</a> @endif
 @if($wa) · <a href="{{ $wa }}" style="color:#C2410C;text-decoration:none;font-weight:700">WhatsApp</a> @endif
 </td></tr>
 <tr><td style="padding:16px 28px;background:#0B1B33;color:#C7CEDA;font-size:12px;line-height:1.8" align="center"><a href="{{ $base }}/" style="color:#FFFFFF;text-decoration:none;font-weight:700">dutyfreebd.com</a><br>অফারের ইমেল আর পেতে না চাইলে <a href="{{ $unsub }}" style="color:#F9B08A">এখানে ক্লিক করুন</a>।</td></tr>

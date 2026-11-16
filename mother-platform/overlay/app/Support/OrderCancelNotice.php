@@ -98,7 +98,7 @@ class OrderCancelNotice {
   public static function submitTemplate(): array {
     $tok = Chat::sec('chat_wa_token'); if (!$tok) return [false, 'WhatsApp token missing'];
     try {
-      $r = Http::timeout(25)->withToken($tok)->post(self::API . '/' . OrderWaConfirm::waba() . '/message_templates', ['name' => self::tpl(), 'language' => 'bn', 'category' => 'UTILITY', 'components' => [['type' => 'BODY', 'text' => self::WA_BODY, 'example' => ['body_text' => [['Rahim', 'DFB-102619', 'phone could not be reached', '09613828081']]]]]]);
+      $r = Http::timeout(25)->withToken($tok)->post(self::API . '/' . OrderWaConfirm::waba() . '/message_templates', ['name' => self::tpl(), 'language' => 'bn', 'category' => 'UTILITY', 'components' => [['type' => 'BODY', 'text' => self::WA_BODY, 'example' => ['body_text' => [['Rahim', 'DFB-102619', 'phone could not be reached', Biz::hotline()]]]]]]);
       if ($r->successful()) { Procure::put('cancel_notice_wa_tpl_status', strtoupper((string)$r->json('status', 'PENDING'))); return [true, 'Submitted: ' . $r->json('status', 'PENDING')]; }
       return [false, mb_substr((string)($r->json('error.error_user_msg') ?: $r->json('error.message') ?: $r->body()), 0, 300)];
     } catch (\Throwable $e) { return [false, 'Network error: ' . $e->getMessage()]; }

@@ -4,7 +4,7 @@ use App\Http\Controllers\StoreController;
 /** Single source of truth for DutyFreeBD contact details. Edit them once in Admin > Site settings > "Business contact". */
 class Biz {
   const DEFAULTS = [
-    'hotline' => '09613828081', 'mobile' => '01871600600', 'whatsapp' => '01871600600',
+    'hotline' => '09644999000', 'mobile' => '01871600600', 'whatsapp' => '01871600600',
     'email' => 'info@dutyfreebd.com', 'address' => 'Al Sabka, Deira, Dubai, United Arab Emirates', 'business_hours' => '10:00 AM – 10:00 PM',
   ];
   /** setting key behind each field */
