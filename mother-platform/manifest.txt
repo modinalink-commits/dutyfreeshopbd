@@ -1227,3 +1227,9 @@ app/Http/Controllers/PastReturnController.php
 resources/views/past_return_js.blade.php
 resources/views/past_return_block.blade.php
 database/migrations/2026_11_16_130000_order_past_returns.php
+app/Support/WaRec.php
+app/Http/Controllers/WaRecController.php
+resources/views/wa_rec_ui.blade.php
+resources/views/wa_recordings.blade.php
+resources/views/wa_rec_order.blade.php
+database/migrations/2026_11_16_140000_wa_call_recordings.php

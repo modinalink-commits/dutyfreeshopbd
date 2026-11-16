@@ -290,6 +290,18 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/call-center/whatsapp/{id}/handled', [\App\Http\Controllers\WaCallController::class,'handled'])->whereNumber('id');
   Route::post('/call-center/whatsapp/{id}/release', [\App\Http\Controllers\WaCallController::class,'release'])->whereNumber('id');
   Route::post('/call-center/whatsapp/{id}/note', [\App\Http\Controllers\WaCallController::class,'note'])->whereNumber('id');
+  // WhatsApp call recordings (owner 16 Nov 2026): uploaded in pieces by the answering browser; listening is permission-checked and logged
+  Route::post('/call-center/whatsapp/{id}/rec/start', [\App\Http\Controllers\WaRecController::class,'start'])->whereNumber('id');
+  Route::post('/call-center/whatsapp/{id}/rec/chunk', [\App\Http\Controllers\WaRecController::class,'chunk'])->whereNumber('id');
+  Route::post('/call-center/whatsapp/{id}/rec/finish', [\App\Http\Controllers\WaRecController::class,'finish'])->whereNumber('id');
+  Route::post('/call-center/whatsapp/{id}/rec/notice', [\App\Http\Controllers\WaRecController::class,'notice'])->whereNumber('id');
+  Route::get('/call-center/whatsapp/recordings', [\App\Http\Controllers\WaRecController::class,'page']);
+  Route::get('/call-center/whatsapp/rec/list', [\App\Http\Controllers\WaRecController::class,'list']);
+  Route::get('/call-center/whatsapp/rec/{rid}/audio', [\App\Http\Controllers\WaRecController::class,'audio'])->whereNumber('rid')->middleware('throttle:120,1');
+  Route::get('/call-center/whatsapp/rec/{rid}/logs', [\App\Http\Controllers\WaRecController::class,'logs'])->whereNumber('rid');
+  Route::post('/call-center/whatsapp/rec/{rid}/meta', [\App\Http\Controllers\WaRecController::class,'meta'])->whereNumber('rid');
+  Route::post('/call-center/whatsapp/rec/{rid}/delete', [\App\Http\Controllers\WaRecController::class,'delete'])->whereNumber('rid');
+  Route::post('/call-center/whatsapp/rec/settings', [\App\Http\Controllers\WaRecController::class,'settings']);
   Route::get('/call-center/clients', [\App\Http\Controllers\CarrierClientController::class,'index']);
   Route::get('/call-center/clients/diag', [\App\Http\Controllers\CarrierClientController::class,'diag']);
   Route::get('/call-center/clients/live', [\App\Http\Controllers\CarrierClientController::class,'live']);

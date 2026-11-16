@@ -54,6 +54,7 @@ try {
 @include('order_amount_block',['o'=>$o])
 @include('order_outcome')
 @include('past_return_block')
+@include('wa_rec_order')
 @include('order_wa_confirm')
 <div class="card" style="max-width:720px" id="courierCard" data-live-swap><b>Courier</b>
 <div id="liveSt" data-id="{{ $o->id }}" data-status="{{ $o->status }}" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:6px 0 10px"><small style="color:#6B7280;font-weight:700">Order Status</small><span class="pill s-{{ \Illuminate\Support\Str::slug($o->status) }}" id="liveStPill" style="font-weight:800;font-size:13px">{{ $o->status }}</span><small id="liveStMeta" style="color:#6B7280"><span id="liveDot" style="color:#16A34A">&#9679;</span> Live</small></div>

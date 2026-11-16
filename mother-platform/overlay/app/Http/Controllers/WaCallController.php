@@ -16,7 +16,8 @@ class WaCallController extends Controller {
     if (WaCalls::ready()) { $d0 = now('Asia/Dhaka')->startOfDay()->utc();
       $k['today'] = (int)DB::table('wa_calls')->where('created_at', '>=', $d0)->count(); $k['answered'] = (int)DB::table('wa_calls')->where('created_at', '>=', $d0)->where('status', 'ended')->count(); $k['missed'] = (int)DB::table('wa_calls')->where('created_at', '>=', $d0)->where('status', 'missed')->count();
       $rep = DB::table('wa_calls')->where('created_at', '>=', now()->subDays(7))->where('status', 'ended')->whereNotNull('user_name')->groupBy('user_name')->orderByDesc(DB::raw('count(*)'))->get(['user_name', DB::raw('count(*) as n'), DB::raw('coalesce(sum(duration),0) as secs')]); }
-    return view('wa_calls', ['rows' => $rows, 'nums' => $nums, 'admin' => ProfitFloor::admin(), 'ready' => WaCalls::ready(), 'k' => $k, 'rep' => $rep, 'hasHandled' => \Illuminate\Support\Facades\Schema::hasColumn('wa_calls', 'handled_at')]);
+    $recs = \App\Support\WaRec::ready() && $rows->count() ? DB::table('wa_call_recordings')->whereIn('call_id', $rows->pluck('id'))->pluck('status', 'call_id') : collect();
+    return view('wa_calls', ['recs' => $recs, 'rows' => $rows, 'nums' => $nums, 'admin' => ProfitFloor::admin(), 'ready' => WaCalls::ready(), 'k' => $k, 'rep' => $rep, 'hasHandled' => \Illuminate\Support\Facades\Schema::hasColumn('wa_calls', 'handled_at')]);
   }
   /** Light poll used on every admin page: answers from cache when nothing rang in the last minute. */
   public function poll(Request $r) {
