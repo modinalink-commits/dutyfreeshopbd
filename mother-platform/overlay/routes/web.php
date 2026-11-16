@@ -111,6 +111,11 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/wa-confirm-settings/upd-test', [\App\Http\Controllers\OrderWaConfirmController::class,'updTest'])->middleware('throttle:6,1');
   Route::post('/wa-confirm-settings/test', [\App\Http\Controllers\OrderWaConfirmController::class,'test'])->middleware('throttle:10,1');
   Route::get('/orders/{id}/return-items', [\App\Http\Controllers\ShipmentOutcomeController::class,'items'])->whereNumber('id');
+  // goods of an earlier order received back with a later parcel (owner 16 Nov 2026)
+  Route::get('/orders/{id}/past-return/options', [\App\Http\Controllers\PastReturnController::class,'options'])->whereNumber('id');
+  Route::post('/orders/{id}/past-return', [\App\Http\Controllers\PastReturnController::class,'receive'])->whereNumber('id')->middleware('throttle:30,1');
+  Route::post('/orders/past-return/{row}/settle', [\App\Http\Controllers\PastReturnController::class,'settle'])->whereNumber('row');
+  Route::post('/orders/past-return/{row}/void', [\App\Http\Controllers\PastReturnController::class,'void'])->whereNumber('row');
   Route::post('/orders/{id}/return-receive', [\App\Http\Controllers\ShipmentOutcomeController::class,'receive'])->whereNumber('id');
   Route::post('/orders/{id}/return-complete', [\App\Http\Controllers\ShipmentOutcomeController::class,'complete'])->whereNumber('id');
   Route::post('/orders/{id}/status', [A::class,'orderStatus']);

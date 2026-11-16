@@ -1222,3 +1222,8 @@ resources/views/wa_call_popup.blade.php
 database/migrations/2026_11_16_110000_wa_calls_handled.php
 database/migrations/2026_11_16_120000_chat_open_pool.php
 database/migrations/2026_11_16_121000_chat_open_pool_fix.php
+app/Support/PastReturn.php
+app/Http/Controllers/PastReturnController.php
+resources/views/past_return_js.blade.php
+resources/views/past_return_block.blade.php
+database/migrations/2026_11_16_130000_order_past_returns.php
