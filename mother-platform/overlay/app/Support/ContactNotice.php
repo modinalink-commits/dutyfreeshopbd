@@ -20,6 +20,10 @@ class ContactNotice {
     $x = self::active() ? trim(self::cfg('contact_notice_sms')) : '';
     return $x !== '' ? $x : 'Help: '.Biz::hotline();
   }
+  /** Appended to other customer SMS while the notice period runs (" New Hotline … WhatsApp …"); empty afterwards. */
+  public static function tail(): string { $x = self::active() ? trim(self::cfg('contact_notice_sms')) : ''; return $x !== '' ? ' '.$x : ''; }
+  /** WhatsApp order templates end with "ধন্যবাদ, {brand} টিম": during the notice period the brand value also carries the two numbers (no template change, so no new Meta review). */
+  public static function brand(string $b): string { $x = self::active() ? trim(self::cfg('contact_notice_wa')) : ''; return $x !== '' ? $b.' ('.$x.')' : $b; }
   /** Send the notice to this Messenger conversation if it has not had it yet. Safe to call on every incoming message. */
   public static function maybe(int $tid): void {
     try {

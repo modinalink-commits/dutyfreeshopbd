@@ -85,7 +85,7 @@ class Winback
       if ($lock) $lock->release();
       $v = ['{name}' => $c->name, '{pct}' => rtrim(rtrim(number_format($s[1], 2), '0'), '.'), '{days}' => $d, '{expiry}' => $exp, '{code}' => $code ? ' কুপন কোড: ' . $code : ''];
       $final = $s[0] === $lastStage;
-      if (!empty($ch['sms'])) Sms::queue($p, self::render(self::set($final ? 'sms_final' : 'sms_text', $final ? self::SMS_FINAL : self::SMS), $v), 'winback');
+      if (!empty($ch['sms'])) Sms::queue($p, self::render(self::set($final ? 'sms_final' : 'sms_text', $final ? self::SMS_FINAL : self::SMS), $v).ContactNotice::tail(), 'winback');
       if (!empty($ch['push']) || !empty($ch['notif'])) { try { Push::notify((int)$c->id, 'coupon', 'Welcome Back Offer — ' . $v['{pct}'] . '% ছাড়', self::render(self::set($final ? 'sms_final' : 'sms_text', $final ? self::SMS_FINAL : self::SMS), $v), '/account/coupons'); } catch (\Throwable $e) {} }
       $sent++;
     }
@@ -164,7 +164,7 @@ class Winback
       DB::table('coupons')->insert(['code' => $code, 'type' => 'percent', 'value' => $pct, 'min_order' => (float)self::set('min_order', '0'), 'max_discount' => (float)self::set('max_discount', '0') ?: null, 'usage_limit' => 1, 'per_customer' => 1, 'valid_from' => now('Asia/Dhaka')->toDateString(), 'valid_to' => now('Asia/Dhaka')->addDays($exp)->toDateString(), 'active' => true, 'created_at' => now(), 'updated_at' => now()]); }
     DB::table('winback_events')->insert(['phone' => $p, 'customer_id' => $c->id, 'cycle_order_id' => 0, 'stage_days' => 0, 'pct' => $pct, 'mode' => $mode, 'coupon_code' => $code, 'channels' => 'sms', 'expires_at' => now()->addDays($exp), 'created_at' => now(), 'updated_at' => now()]);
     $v = ['{name}' => $c->name, '{pct}' => rtrim(rtrim(number_format($pct, 2), '0'), '.'), '{days}' => 0, '{expiry}' => $exp, '{code}' => $code ? ' কুপন কোড: ' . $code : ''];
-    Sms::queue($p, self::render(self::set('sms_text', self::SMS), $v), 'winback');
+    Sms::queue($p, self::render(self::set('sms_text', self::SMS), $v).ContactNotice::tail(), 'winback');
     return 'Test offer (' . $v['{pct}'] . '%) sent by SMS to ' . $p . ' only' . ($code ? ' — code ' . $code : ' — applies automatically to that account') . '.';
   }
 

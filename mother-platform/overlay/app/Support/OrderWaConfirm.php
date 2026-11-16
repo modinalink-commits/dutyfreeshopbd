@@ -54,7 +54,7 @@ class OrderWaConfirm {
     $name = trim((string)($o->customer_name ?? '')) ?: 'গ্রাহক';
     $total = number_format((float)$o->total, 0, '.', ',');
     $pay = trim((string)($o->payment_method ?? '')) ?: 'Cash on Delivery';
-    return [mb_substr($name, 0, 60), (string)$o->invoice, $total, mb_substr($pay, 0, 40), self::brand()];
+    return [mb_substr($name, 0, 60), (string)$o->invoice, $total, mb_substr($pay, 0, 40), ContactNotice::brand(self::brand())];
   }
   public static function render(array $p): string { $b = self::BODY; foreach ($p as $i => $v) $b = str_replace('{{' . ($i + 1) . '}}', $v, $b); return $b; }
 

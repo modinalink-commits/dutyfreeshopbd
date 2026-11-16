@@ -39,7 +39,7 @@ class OrderCancelNotice {
     return 'the order was cancelled'; // automatic cancel (courier / system) without a staff reason
   }
   public static function sms(object $o, string $why): string {
-    return 'DutyFreeBD: Your order ' . Inv::show($o->invoice) . ' has been cancelled because ' . rtrim($why, '. ') . '. If you have any concern, please call our hotline ' . Biz::hotline() . '.';
+    return 'DutyFreeBD: Your order ' . Inv::show($o->invoice) . ' has been cancelled because ' . rtrim($why, '. ') . '. If you have any concern, please call our hotline ' . Biz::hotline() . '.' . ContactNotice::tail();
   }
 
   /** Processes waiting notices (called by the worker every ~30 s and right after a request). */
