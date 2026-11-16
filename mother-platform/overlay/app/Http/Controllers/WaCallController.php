@@ -9,15 +9,29 @@ use Illuminate\Support\Facades\DB;
 
 /** WhatsApp Calls page (Call Center menu): answer WhatsApp calls in the browser, see today's calls, switch calling on per number (admin). */
 class WaCallController extends Controller {
-  public function page() {
-    $rows = WaCalls::ready() ? DB::table('wa_calls')->orderByDesc('id')->limit(50)->get() : collect();
+  public function page(Request $r) {
+    $f = ['q' => trim((string)$r->query('q')), 'res' => in_array($r->query('res'), ['ended', 'missed', 'rejected', 'recorded'], true) ? (string)$r->query('res') : '', 'sort' => in_array($r->query('sort'), ['old', 'long'], true) ? (string)$r->query('sort') : 'new'];
+    $pg = null; $rows = collect();
+    if (WaCalls::ready()) {
+      $q = DB::table('wa_calls');
+      if ($f['q'] !== '') { $s = $f['q']; $d = preg_replace('/\D/', '', $s); $q->where(function ($w) use ($s, $d) { $w->where('from_name', 'ilike', '%' . $s . '%')->orWhere('user_name', 'ilike', '%' . $s . '%'); if (strlen($d) >= 3) $w->orWhere('from_wa', 'like', '%' . ltrim($d, '0') . '%'); }); }
+      if ($f['res'] === 'recorded') { if (\App\Support\WaRec::ready()) $q->whereIn('id', DB::table('wa_call_recordings')->whereIn('status', ['complete', 'incomplete'])->select('call_id')); else $q->whereRaw('1 = 0'); }
+      elseif ($f['res'] !== '') $q->where('status', $f['res']);
+      if ($f['sort'] === 'old') $q->orderBy('id'); elseif ($f['sort'] === 'long') $q->orderByRaw('duration desc nulls last')->orderByDesc('id'); else $q->orderByDesc('id');
+      $pg = $q->paginate(50)->withQueryString(); $rows = collect($pg->items());
+    }
     $nums = []; foreach (WaCalls::numbers() as $n) $nums[] = ['phone_id' => $n['phone_id'], 'display' => $n['display'], 'name' => $n['name']];
     $k = ['today' => 0, 'answered' => 0, 'missed' => 0, 'open' => WaCalls::missedOpen()]; $rep = collect();
     if (WaCalls::ready()) { $d0 = now('Asia/Dhaka')->startOfDay()->utc();
       $k['today'] = (int)DB::table('wa_calls')->where('created_at', '>=', $d0)->count(); $k['answered'] = (int)DB::table('wa_calls')->where('created_at', '>=', $d0)->where('status', 'ended')->count(); $k['missed'] = (int)DB::table('wa_calls')->where('created_at', '>=', $d0)->where('status', 'missed')->count();
       $rep = DB::table('wa_calls')->where('created_at', '>=', now()->subDays(7))->where('status', 'ended')->whereNotNull('user_name')->groupBy('user_name')->orderByDesc(DB::raw('count(*)'))->get(['user_name', DB::raw('count(*) as n'), DB::raw('coalesce(sum(duration),0) as secs')]); }
-    $recs = \App\Support\WaRec::ready() && $rows->count() ? DB::table('wa_call_recordings')->whereIn('call_id', $rows->pluck('id'))->pluck('status', 'call_id') : collect();
-    return view('wa_calls', ['recs' => $recs, 'rows' => $rows, 'nums' => $nums, 'admin' => ProfitFloor::admin(), 'ready' => WaCalls::ready(), 'k' => $k, 'rep' => $rep, 'hasHandled' => \Illuminate\Support\Facades\Schema::hasColumn('wa_calls', 'handled_at')]);
+    // one recording per call, found by the call's own id (never by customer or time), so a caller with many calls can never get the wrong audio
+    $recs = [];
+    if (\App\Support\WaRec::ready() && $rows->count()) foreach (DB::table('wa_call_recordings')->whereIn('call_id', $rows->pluck('id'))->get() as $x) {
+      $has = in_array($x->status, ['complete', 'incomplete'], true); $file = $has && \App\Support\WaRec::file($x) !== null;
+      $recs[(int)$x->call_id] = ['id' => (int)$x->id, 'status' => (string)$x->status, 'duration' => $x->duration !== null ? (int)$x->duration : null, 'play' => $file && \App\Support\WaRec::canListen($r->user(), $x), 'nofile' => $has && !$file, 'why' => (string)$x->fail_reason];
+    }
+    return view('wa_calls', ['recs' => $recs, 'f' => $f, 'pg' => $pg, 'rows' => $rows, 'nums' => $nums, 'admin' => ProfitFloor::admin(), 'ready' => WaCalls::ready(), 'k' => $k, 'rep' => $rep, 'hasHandled' => \Illuminate\Support\Facades\Schema::hasColumn('wa_calls', 'handled_at')]);
   }
   /** Light poll used on every admin page: answers from cache when nothing rang in the last minute. */
   public function poll(Request $r) {

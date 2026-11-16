@@ -22,7 +22,7 @@ window.WaRecUI=(function(){
   function player(row,box,btn){
     if(box.dataset.on){var a0=box._a;if(a0.paused)a0.play();else a0.pause();return}
     btn.disabled=true;btn.textContent='Loading…';var er=box.parentNode.querySelector('.wr-e');er.textContent='';
-    fetch('/admin/call-center/whatsapp/rec/'+row.id+'/audio',{credentials:'same-origin'}).then(function(r){if(!r.ok)throw new Error(r.status===403?'You are not allowed to listen to this recording.':'The recording could not be opened ('+r.status+').');return r.blob()}).then(function(b){
+    fetch('/admin/call-center/whatsapp/rec/'+row.id+'/audio',{credentials:'same-origin'}).then(function(r){if(!r.ok)throw new Error(r.status===403?'You are not allowed to listen to this recording.':'The recording could not be opened ('+r.status+').');var cid=r.headers.get('X-Call-Id');if(row.call_id&&cid&&String(cid)!==String(row.call_id))throw new Error('This recording belongs to another call. Not played.');return r.blob()}).then(function(b){
       var a=new Audio();box._a=a;box.dataset.on='1';a.preload='auto';a.src=URL.createObjectURL(b);var D=row.duration||0;
       box.innerHTML='<button type="button" class="wr-b" data-k="b">−10s</button><input type="range" min="0" max="1000" value="0"><button type="button" class="wr-b" data-k="f">+10s</button><select><option value="1">1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="0.75">0.75×</option></select><span>00:00 / '+mmss(D)+'</span>';
       var rg=box.querySelector('input'),sp=box.querySelector('span'),drag=false;
@@ -31,7 +31,8 @@ window.WaRecUI=(function(){
       a.addEventListener('loadedmetadata',function(){if(!isFinite(a.duration)){var f=function(){a.removeEventListener('timeupdate',f);a.currentTime=0;go()};a.addEventListener('timeupdate',f);a.currentTime=1e7}else go()});
       var started=false;function go(){if(started)return;started=true;if(cur&&cur!==a)cur.pause();cur=a;a.play().catch(function(){});btn.disabled=false}
       a.addEventListener('timeupdate',function(){if(!started)return;var d=dur();if(!drag&&d)rg.value=Math.round(a.currentTime/d*1000);sp.textContent=mmss(a.currentTime)+' / '+mmss(d)});
-      a.addEventListener('play',function(){if(cur&&cur!==a)cur.pause();cur=a;btn.textContent='Pause'});a.addEventListener('pause',function(){btn.textContent='Play'});a.addEventListener('ended',function(){btn.textContent='Play'});
+      function ev(on){try{box.dispatchEvent(new CustomEvent('wrstate',{detail:on,bubbles:true}))}catch(e){}}
+      a.addEventListener('play',function(){if(cur&&cur!==a)cur.pause();cur=a;btn.textContent='Pause';ev(true)});a.addEventListener('pause',function(){btn.textContent='Play';ev(false)});a.addEventListener('ended',function(){btn.textContent='Play';ev(false)});
       rg.addEventListener('input',function(){drag=true});rg.addEventListener('change',function(){var d=dur();if(d)a.currentTime=rg.value/1000*d;drag=false});
       box.querySelector('[data-k=b]').onclick=function(){a.currentTime=Math.max(0,a.currentTime-10)};box.querySelector('[data-k=f]').onclick=function(){a.currentTime=Math.min(dur()||1e9,a.currentTime+10)};
       box.querySelector('select').onchange=function(){a.playbackRate=+this.value};
@@ -57,7 +58,8 @@ window.WaRecUI=(function(){
       if(dl)dl.onclick=function(){if(dl.dataset.sure!=='1'){dl.dataset.sure='1';dl.textContent='Delete for good?';setTimeout(function(){dl.dataset.sure='';dl.textContent='Delete'},4000);return}dl.disabled=true;post('/admin/call-center/whatsapp/rec/'+r.id+'/delete').then(function(k){if(k.ok){if(opts.reload)location.reload();else{d.style.opacity=.5;er.textContent='Deleted.'}}else{dl.disabled=false;er.textContent='Could not delete.'}})};
     })}
   function load(host,query,opts){fetch('/admin/call-center/whatsapp/rec/list?'+query,{credentials:'same-origin',headers:{'Accept':'application/json'}}).then(function(r){return r.json()}).then(function(j){render(host,j.rows||[],!!j.admin,opts)}).catch(function(){host.innerHTML='<div class="wr-i" style="color:#475467">Recordings could not be loaded.</div>'})}
-  return{render:render,load:load,mmss:mmss};
+  function pauseAll(){if(cur)cur.pause()}
+  return{render:render,load:load,mmss:mmss,player:player,pauseAll:pauseAll};
 })();
 </script>
 @endonce

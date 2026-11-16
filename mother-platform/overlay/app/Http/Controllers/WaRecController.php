@@ -22,7 +22,7 @@ class WaRecController extends Controller {
     if ($dl ? !ProfitFloor::admin() : !WaRec::canListen($r->user(), $rec)) { WaRec::log($rid, 'denied', $dl ? 'download' : 'listen'); abort(403, 'You are not allowed to open this recording.'); }
     $f = in_array($rec->status, ['complete', 'incomplete'], true) ? WaRec::file($rec) : null; abort_unless($f, 404);
     WaRec::log($rid, $dl ? 'download' : 'listen');
-    $h = ['Content-Type' => 'audio/webm', 'Cache-Control' => 'private, no-store', 'X-Robots-Tag' => 'noindex'];
+    $h = ['Content-Type' => 'audio/webm', 'Cache-Control' => 'private, no-store', 'X-Robots-Tag' => 'noindex', 'X-Call-Id' => (string)$rec->call_id];
     return $dl ? response()->download($f, 'whatsapp-call-' . $rec->call_id . '.webm', $h) : response()->file($f, $h);
   }
   public function list(Request $r) {
