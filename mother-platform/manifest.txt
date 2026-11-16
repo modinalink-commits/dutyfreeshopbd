@@ -1219,3 +1219,4 @@ database/migrations/2026_11_16_100000_wa_calls.php
 resources/views/wa_call_ring.blade.php
 resources/views/wa_calls.blade.php
 resources/views/wa_call_popup.blade.php
+database/migrations/2026_11_16_110000_wa_calls_handled.php

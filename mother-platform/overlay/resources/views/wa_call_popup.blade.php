@@ -89,12 +89,18 @@ var WP=(function(){
       if(!c.found){h='<div class="wp-row"><span>No customer or order found for '+esc(LOCAL)+'. Treat as a new caller.</span></div>'}
       else{if(c.name){$('wpName').textContent=c.name}
         (c.alerts||[]).forEach(function(a){h+='<div class="wp-al">'+esc(a)+'</div>'});
-        h+='<div class="wp-row"><span>Customer type</span><b>'+esc(c.category||'—')+(c.membership?' · '+esc(typeof c.membership==='string'?c.membership:(c.membership.name||c.membership.tier||'')):'')+'</b></div>';
+        h+='<div class="wp-row"><span>Customer type</span><b>'+esc(c.category||'—')+(c.membership?' · membership '+esc(typeof c.membership==='string'?c.membership:(c.membership.name||c.membership.tier||'')):'')+'</b></div>';
         h+='<div class="wp-row"><span>Orders</span><b>'+(c.orders||0)+' total · '+(c.delivered||0)+' delivered</b></div>';
         if(c.last)h+='<div class="wp-row"><span>Last order</span><b>'+esc(c.last.invoice||('#'+c.last.id))+' · '+esc(c.last.status||'')+' · ৳'+Math.round(c.last.total||0)+'</b></div>';
         if(c.fraud)h+='<div class="wp-row"><span>Courier record</span><b>'+esc(c.fraud.label||'')+'</b></div>';
         h+='<div class="wp-row"><span>Earlier phone calls</span><b>'+(c.calls||0)+'</b></div>'}
-      $('wpCust').innerHTML=h;links(c)}).catch(function(){$('wpCust').innerHTML='<div class="wp-row"><span>Customer details could not be loaded.</span></div>';links(null)})}
+      $('wpCust').innerHTML=h;links(c);extras()}).catch(function(){$('wpCust').innerHTML='<div class="wp-row"><span>Customer details could not be loaded.</span></div>';links(null)})}
+  function extras(){fetch('/admin/call-center/whatsapp/'+ID+'/extras',{credentials:'same-origin',headers:{'Accept':'application/json'}}).then(function(r){return r.json()}).then(function(x){var h='';
+      if(x.returns||x.cancelled)h+='<div class="wp-row"><span>Returned / cancelled</span><b>'+(x.returns||0)+' / '+(x.cancelled||0)+'</b></div>';
+      if(x.address)h+='<div class="wp-row"><span>Last address</span><b>'+esc(x.address)+'</b></div>';
+      if(x.owner)h+='<div class="wp-row"><span>Chat is handled by</span><b>'+esc(x.owner)+'</b></div>';
+      (x.notes||[]).forEach(function(n,i){h+='<div class="wp-row" style="display:block"><span>'+(i?'':'Earlier notes<br>')+esc(n.at)+' · '+esc(n.by)+'</span><div style="margin-top:2px">'+esc(n.body)+'</div></div>'});
+      if(h)$('wpCust').insertAdjacentHTML('beforeend',h)}).catch(function(){})}
   function links(c){var h='<a class="wp-b pri" target="_blank" href="/admin/orders/new'+(LOCAL&&/^01\d{9}$/.test(LOCAL)?'?phone='+LOCAL:'')+'">New order</a>';
     if(c&&c.last)h+='<a class="wp-b" target="_blank" href="/admin/orders/'+c.last.id+'">Last order</a>';
     if(c&&c.thread_id)h+='<a class="wp-b" target="_blank" href="/admin/chat?open='+c.thread_id+'">Chat</a>';

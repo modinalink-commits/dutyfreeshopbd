@@ -71,6 +71,7 @@ class WaCalls {
           $st = in_array($row->status, ['active', 'ended'], true) || $dur ? 'ended' : ($row->status === 'rejected' ? 'rejected' : ($failed ? 'failed' : 'missed'));
           DB::table('wa_calls')->where('id', $row->id)->update(['status' => $st, 'duration' => $dur ?? $row->duration, 'ended_at' => now(), 'sdp_offer' => null,
             'note' => $failed ? mb_substr('failed: ' . (string)($c['errors'][0]['message'] ?? ''), 0, 300) : $row->note, 'updated_at' => now()]);
+          self::logFinal((int)$row->id);
         }
       }
     } catch (\Throwable $e) { report($e); }
@@ -82,7 +83,8 @@ class WaCalls {
   public static function tick(): void {
     try {
       if (!self::ready()) return;
-      DB::table('wa_calls')->whereIn('status', ['ringing', 'answering'])->where('created_at', '<', now()->subSeconds(self::RING_SECONDS + 30))->update(['status' => 'missed', 'ended_at' => now(), 'sdp_offer' => null, 'updated_at' => now()]);
+      foreach (DB::table('wa_calls')->whereIn('status', ['ringing', 'answering'])->where('created_at', '<', now()->subSeconds(self::RING_SECONDS + 30))->pluck('id') as $sid) { DB::table('wa_calls')->where('id', $sid)->whereIn('status', ['ringing', 'answering'])->update(['status' => 'missed', 'ended_at' => now(), 'sdp_offer' => null, 'updated_at' => now()]); self::logFinal((int)$sid); }
+      if (Cache::add('wa.alert.lock', 1, 55)) self::alert();
       foreach (DB::table('wa_calls')->where('status', 'active')->where('answered_at', '<', now()->subSeconds(60))->limit(10)->get() as $c) {
         if (Cache::has('wa.hb.' . $c->id)) continue;
         try { self::act($c, ['action' => 'terminate']); } catch (\Throwable $e) {}
@@ -109,7 +111,9 @@ class WaCalls {
   }
   /** Staff note about the call (kept on the call row). */
   public static function saveNote(int $id, string $text, string $by): bool {
-    return (bool)DB::table('wa_calls')->where('id', $id)->update(['note' => mb_substr(trim($text) . ' — ' . $by, 0, 300), 'updated_at' => now()]);
+    $ok = (bool)DB::table('wa_calls')->where('id', $id)->update(['note' => mb_substr(trim($text) . ' — ' . $by, 0, 300), 'updated_at' => now()]);
+    if ($ok) { $c = DB::table('wa_calls')->find($id); self::threadNote($c->from_wa ?? null, 'Call note: ' . trim($text), (int)(auth()->id() ?? 0) ?: null, $by); }
+    return $ok;
   }
   private static function act(object $c, array $body) {
     $tok = self::tok((string)$c->phone_id); if (!$tok) return null;
@@ -132,7 +136,7 @@ class WaCalls {
       $a = self::act($c, ['action' => 'accept'] + $s);
       if (!$a->ok()) { $m = self::err($a); DB::table('wa_calls')->where('id', $id)->update(['status' => 'failed', 'note' => mb_substr('accept: ' . $m, 0, 300), 'ended_at' => now(), 'updated_at' => now()]); return [false, $m]; }
       DB::table('wa_calls')->where('id', $id)->update(['status' => 'active', 'answered_at' => now(), 'updated_at' => now()]); self::beat($id);
-      self::audit($uid, $c, 'answered');
+      self::audit($uid, $c, 'answered'); self::linkChat($c, $uid);
       return [true, 'ok'];
     } catch (\Throwable $e) { report($e); return [false, 'Could not reach WhatsApp.']; }
   }
@@ -149,6 +153,63 @@ class WaCalls {
       }
     } catch (\Throwable $e) { report($e); }
     return [true, 'already ended'];
+  }
+  /** The WhatsApp conversation of the caller, if there is one. */
+  public static function thread(?string $wa): ?object {
+    $wa = preg_replace('/\D/', '', (string)$wa); if ($wa === '') return null;
+    try { return DB::table('chat_threads')->where(['channel' => 'whatsapp', 'external_id' => $wa])->first(); } catch (\Throwable $e) { return null; }
+  }
+  /** Staff-only line in the caller's conversation (never sent to the customer, never given to the AI), so chat and calls are read together. */
+  private static function threadNote(?string $wa, string $body, ?int $uid = null, string $by = 'System'): void {
+    try { $t = self::thread($wa); if (!$t || !Schema::hasTable('chat_notes')) return;
+      DB::table('chat_notes')->insert(['thread_id' => (int)$t->id, 'user_id' => $uid, 'user_name' => mb_substr($by, 0, 120), 'body' => mb_substr($body, 0, 1000), 'created_at' => now(), 'updated_at' => now()]); } catch (\Throwable $e) {}
+  }
+  /** One staff-only line per finished call. */
+  private static function logFinal(int $id): void {
+    try { if (!Cache::add('wa.final.' . $id, 1, 172800)) return; $c = DB::table('wa_calls')->find($id); if (!$c) return;
+      $txt = ['ended' => 'answered by ' . ($c->user_name ?: 'staff') . ($c->duration !== null ? ', talk time ' . gmdate('i:s', (int)$c->duration) : ''), 'missed' => 'MISSED - call the customer back', 'rejected' => 'rejected by ' . ($c->user_name ?: 'staff'), 'failed' => 'failed to connect'][$c->status] ?? null;
+      if ($txt) self::threadNote($c->from_wa, 'WhatsApp call: ' . $txt, null, 'Call log'); } catch (\Throwable $e) {}
+  }
+  /** Calls and chat stay with one representative: the person who answers the call takes the caller's conversation if nobody owns it (so the AI stops answering it). Never takes it away from another owner. */
+  private static function linkChat(object $c, int $uid): void {
+    try { $t = self::thread($c->from_wa); if (!$t || !class_exists(ChatOwner::class) || !ChatOwner::ready()) return; $u = DB::table('users')->find($uid); if ($u) ChatOwner::claim((int)$t->id, $u); } catch (\Throwable $e) {}
+  }
+  /** Missed calls nobody has dealt with yet (last 3 days). */
+  public static function missedOpen(): int {
+    try { return self::ready() && Schema::hasColumn('wa_calls', 'handled_at') ? (int)DB::table('wa_calls')->where('status', 'missed')->whereNull('handled_at')->where('created_at', '>', now()->subDays(3))->count() : 0; } catch (\Throwable $e) { return 0; }
+  }
+  /** A representative called the customer back / dealt with the missed call. */
+  public static function handle(int $id, int $uid, string $by): bool {
+    try { $n = DB::table('wa_calls')->where('id', $id)->where('status', 'missed')->whereNull('handled_at')->update(['handled_at' => now(), 'handled_by' => mb_substr($by, 0, 120), 'updated_at' => now()]);
+      if ($n) { $c = DB::table('wa_calls')->find($id); self::threadNote($c->from_wa, 'Missed WhatsApp call handled (customer contacted).', $uid, $by); self::alert(); }
+      return (bool)$n; } catch (\Throwable $e) { return false; }
+  }
+  /** Bell alert while a missed WhatsApp call waits more than 5 minutes for a callback; cleared when none is left. */
+  public static function alert(): void {
+    try {
+      if (!self::ready() || !Schema::hasColumn('wa_calls', 'handled_at')) return;
+      $q = DB::table('wa_calls')->where('status', 'missed')->whereNull('handled_at')->where('created_at', '>', now()->subDays(3))->where('created_at', '<', now()->subMinutes(5));
+      $n = (int)$q->count();
+      if ($n > 0) DeployHealth::raise('wa_missed_calls', 'medium', 'Call Center', $n . ' missed WhatsApp call' . ($n > 1 ? 's' : '') . ' waiting for a callback', 'Customers called on WhatsApp and nobody answered. They are listed under Call Center > WhatsApp Calls.', 'No representative answered within the ring time (about one minute).', 'Open WhatsApp Calls, call each customer back and press Done.');
+      else DeployHealth::resolve('wa_missed_calls', 'System (all missed WhatsApp calls handled)');
+    } catch (\Throwable $e) {}
+  }
+  /** Extra customer facts for the call dock that the dialer lookup does not give. Read only; empty when the number matches nothing. */
+  public static function extras(?string $wa): array {
+    $ph = Chat::phone($wa); $out = ['returns' => 0, 'cancelled' => 0, 'address' => null, 'notes' => [], 'owner' => null];
+    try {
+      if ($ph && preg_match('/^01\d{9}$/', $ph)) {
+        $out['returns'] = (int)DB::table('orders')->whereRaw('right(phone,11) = ?', [$ph])->whereIn('status', ['Return', 'Returned'])->count();
+        $out['cancelled'] = (int)DB::table('orders')->whereRaw('right(phone,11) = ?', [$ph])->whereIn('status', ['Cancel', 'Cancelled'])->count();
+        $o = DB::table('orders')->whereRaw('right(phone,11) = ?', [$ph])->whereNotNull('address')->orderByDesc('id')->first(['address', 'district']);
+        if ($o && trim((string)$o->address) !== '') $out['address'] = trim((string)$o->address . (trim((string)($o->district ?? '')) !== '' ? ', ' . $o->district : ''));
+      }
+      if ($t = self::thread($wa)) {
+        if (class_exists(ChatOwner::class) && ChatOwner::ready() && ($oid = ChatOwner::ownerId((int)$t->id))) $out['owner'] = ChatOwner::name($oid);
+        if (Schema::hasTable('chat_notes')) foreach (DB::table('chat_notes')->where('thread_id', $t->id)->orderByDesc('id')->limit(6)->get() as $n) $out['notes'][] = ['body' => (string)$n->body, 'by' => (string)$n->user_name, 'at' => \Carbon\Carbon::parse($n->created_at)->timezone('Asia/Dhaka')->format('d M h:i A')];
+      }
+    } catch (\Throwable $e) {}
+    return $out;
   }
   private static function audit(?int $uid, object $c, string $what): void {
     try { DB::table('audit_logs')->insert(['user_id' => $uid, 'user_name' => auth()->user()->name ?? '', 'action' => 'wa_call.' . $what, 'subject' => 'WhatsApp call ' . $what . ': ' . ($c->from_wa ?: 'unknown') . ' (call ' . mb_substr((string)$c->call_id, 0, 40) . ')', 'ip' => request()->ip(), 'created_at' => now(), 'updated_at' => now()]); } catch (\Throwable $e) {}

@@ -12,7 +12,11 @@ class WaCallController extends Controller {
   public function page() {
     $rows = WaCalls::ready() ? DB::table('wa_calls')->orderByDesc('id')->limit(50)->get() : collect();
     $nums = []; foreach (WaCalls::numbers() as $n) $nums[] = ['phone_id' => $n['phone_id'], 'display' => $n['display'], 'name' => $n['name']];
-    return view('wa_calls', ['rows' => $rows, 'nums' => $nums, 'admin' => ProfitFloor::admin(), 'ready' => WaCalls::ready()]);
+    $k = ['today' => 0, 'answered' => 0, 'missed' => 0, 'open' => WaCalls::missedOpen()]; $rep = collect();
+    if (WaCalls::ready()) { $d0 = now('Asia/Dhaka')->startOfDay()->utc();
+      $k['today'] = (int)DB::table('wa_calls')->where('created_at', '>=', $d0)->count(); $k['answered'] = (int)DB::table('wa_calls')->where('created_at', '>=', $d0)->where('status', 'ended')->count(); $k['missed'] = (int)DB::table('wa_calls')->where('created_at', '>=', $d0)->where('status', 'missed')->count();
+      $rep = DB::table('wa_calls')->where('created_at', '>=', now()->subDays(7))->where('status', 'ended')->whereNotNull('user_name')->groupBy('user_name')->orderByDesc(DB::raw('count(*)'))->get(['user_name', DB::raw('count(*) as n'), DB::raw('coalesce(sum(duration),0) as secs')]); }
+    return view('wa_calls', ['rows' => $rows, 'nums' => $nums, 'admin' => ProfitFloor::admin(), 'ready' => WaCalls::ready(), 'k' => $k, 'rep' => $rep, 'hasHandled' => \Illuminate\Support\Facades\Schema::hasColumn('wa_calls', 'handled_at')]);
   }
   /** Light poll used on every admin page: answers from cache when nothing rang in the last minute. */
   public function poll(Request $r) {
@@ -29,6 +33,8 @@ class WaCallController extends Controller {
     $c = WaCalls::ready() ? DB::table('wa_calls')->find($id) : null; abort_unless($c, 404);
     return view('wa_call_popup', ['c' => $c, 'to' => WaCalls::numberLabel((string)$c->phone_id), 'local' => \App\Support\Chat::phone((string)$c->from_wa)]);
   }
+  public function extras(int $id) { $c = WaCalls::ready() ? DB::table('wa_calls')->find($id) : null; abort_unless($c, 404); return response()->json(WaCalls::extras((string)$c->from_wa)); }
+  public function handled(Request $r, int $id) { return response()->json(['ok' => WaCalls::handle($id, (int)$r->user()->id, (string)$r->user()->name)]); }
   public function release(Request $r, int $id) { return response()->json(['ok' => WaCalls::release($id, (int)$r->user()->id)]); }
   public function note(Request $r, int $id) { $d = $r->validate(['note' => 'required|string|max:240']); return response()->json(['ok' => WaCalls::saveNote($id, $d['note'], (string)$r->user()->name)]); }
   public function status(Request $r) { abort_unless(ProfitFloor::admin(), 403); return response()->json(WaCalls::settings((string)$r->query('phone_id'))); }

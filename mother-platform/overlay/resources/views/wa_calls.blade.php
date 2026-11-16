@@ -13,6 +13,7 @@ main button.wc-b.go{background:#15803D;border-color:#15803D;color:#fff}main butt
 </style>
 <div class="cc-h"><h1>WhatsApp Calls</h1><span>Customers call from WhatsApp; answer here with your headset. This page checks for calls by itself.</span></div>
 @if(!$ready)<div class="cc-box"><div class="cc-note">The call table is not installed yet. It is created by the next deploy.</div></div>@endif
+<div class="cc-k"><div><span>Calls today</span><b>{{ $k['today'] }}</b></div><div class="ok"><span>Answered today</span><b>{{ $k['answered'] }}</b></div><div class="{{ $k['missed'] ? 'bad' : '' }}"><span>Missed today</span><b>{{ $k['missed'] }}</b></div><div class="{{ $k['open'] ? 'bad' : '' }}"><span>Waiting for callback</span><b>{{ $k['open'] }}</b></div></div>
 <p id="wcMsg"></p>
 <div class="wc-live" id="wcLive"><b id="wcWho">On call</b><span id="wcTime">00:00</span><span id="wcState"></span><button class="wc-b no" style="margin-left:auto" onclick="WC.hang()">Hang up</button><button class="wc-b" id="wcMute" onclick="WC.mute()">Mute</button></div>
 <div id="wcRing"></div>
@@ -28,8 +29,12 @@ main button.wc-b.go{background:#15803D;border-color:#15803D;color:#fff}main butt
 
 <div class="cc-box"><b class="t">Recent calls</b><table class="cc-t"><thead><tr><th style="width:16%">Time</th><th style="width:24%">Caller</th><th style="width:14%">Result</th><th style="width:12%">Talk time</th><th style="width:16%">Answered by</th><th class="hm">Note</th></tr></thead><tbody>
 @forelse($rows as $c)@php $lab=['ringing'=>['Ringing','warn'],'answering'=>['Answering','warn'],'active'=>['On call','ok'],'ended'=>['Answered','ok'],'missed'=>['Missed','bad'],'rejected'=>['Rejected','bad'],'failed'=>['Failed','bad']][$c->status] ?? [$c->status,'']; @endphp
-<tr><td>{{ \Carbon\Carbon::parse($c->created_at)->timezone('Asia/Dhaka')->format('d M h:i A') }}</td><td><a href="/admin/call-center/whatsapp/call/{{ $c->id }}?embed=1" onclick="if(window.waDock)return window.waDock({{ $c->id }},false)" style="font-weight:700;color:#0B1B33">{{ $c->from_wa ? '+'.$c->from_wa : 'WhatsApp user' }}</a>@if($c->from_name)<br><small>{{ $c->from_name }}</small>@endif</td><td><span class="cc-p {{ $lab[1] }}">{{ $lab[0] }}</span></td><td>{{ $c->duration !== null ? gmdate('i:s', (int)$c->duration) : '—' }}</td><td>{{ $c->user_name ?: '—' }}</td><td class="hm"><small>{{ $c->note }}</small></td></tr>
+<tr><td>{{ \Carbon\Carbon::parse($c->created_at)->timezone('Asia/Dhaka')->format('d M h:i A') }}</td><td><a href="/admin/call-center/whatsapp/call/{{ $c->id }}?embed=1" onclick="if(window.waDock)return window.waDock({{ $c->id }},false)" style="font-weight:700;color:#0B1B33">{{ $c->from_wa ? '+'.$c->from_wa : 'WhatsApp user' }}</a>@if($c->from_name)<br><small>{{ $c->from_name }}</small>@endif</td><td><span class="cc-p {{ $lab[1] }}">{{ $lab[0] }}</span></td><td>{{ $c->duration !== null ? gmdate('i:s', (int)$c->duration) : '—' }}</td><td>{{ $c->user_name ?: '—' }}</td><td class="hm"><small>{{ $c->note }}</small>@if($c->status==='missed' && $hasHandled)@php $lp=\App\Support\Chat::phone((string)$c->from_wa); @endphp<div style="margin-top:4px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">@if($c->handled_at)<span class="cc-p ok">Handled · {{ $c->handled_by }}</span>@else @if($lp && preg_match('/^01\d{9}$/', $lp))<a href="tel:{{ $lp }}" data-dfcall="{{ $lp }}" data-name="{{ $c->from_name }}" class="cc-p warn" style="text-decoration:none">Call back</a>@endif<button class="wc-b" style="height:26px;padding:0 10px;font-size:12px" onclick="WC.done({{ $c->id }},this)">Done</button>@endif</div>@endif</td></tr>
 @empty<tr><td colspan="6" style="color:#475467">No WhatsApp call yet.</td></tr>@endforelse
+</tbody></table></div>
+<div class="cc-box"><b class="t">Representatives, last 7 days</b><table class="cc-t"><thead><tr><th>Representative</th><th>Calls answered</th><th>Total talk time</th><th>Average</th></tr></thead><tbody>
+@forelse($rep as $r)<tr><td><b>{{ $r->user_name }}</b></td><td>{{ $r->n }}</td><td>{{ gmdate('H:i:s', (int)$r->secs) }}</td><td>{{ gmdate('i:s', (int)round($r->secs / max(1, $r->n))) }}</td></tr>
+@empty<tr><td colspan="4" style="color:#475467">No answered WhatsApp call in the last 7 days.</td></tr>@endforelse
 </tbody></table></div>
 @endsection
 @section('js')
@@ -77,8 +82,9 @@ var WC=(function(){
   function set(p,on,btn){btn.disabled=true;post('/admin/call-center/whatsapp/calling',{phone_id:p,on:!!on}).then(function(d){btn.disabled=false;var er=btn.parentNode.querySelector('.er');er.textContent=d.ok?'':(d.message||'Failed');st()})}
   setInterval(poll,2500);poll();st();
   window.addEventListener('pagehide',function(){if(cur)fetch('/admin/call-center/whatsapp/'+cur+'/end',{method:'POST',credentials:'same-origin',keepalive:true,headers:{'X-CSRF-TOKEN':tk(),'Accept':'application/json'}})});
+  function done(id,btn){btn.disabled=true;post('/admin/call-center/whatsapp/'+id+'/handled').then(function(d){if(d.ok)location.reload();else{btn.disabled=false;msg('Could not mark it. Reload the page.')}})}
   function open(id){if(window.waDock)window.waDock(id,true);else answer(id,null)}
-  return{answer:answer,open:open,reject:reject,hang:hang,mute:mute,set:set};
+  return{answer:answer,open:open,done:done,reject:reject,hang:hang,mute:mute,set:set};
 })();
 </script>
 @endsection
