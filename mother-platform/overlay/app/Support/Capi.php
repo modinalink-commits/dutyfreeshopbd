@@ -50,9 +50,9 @@ class Capi
     return $u;
   }
 
-  public static function send(string $event, string $eventId, array $user, array $custom, string $url, ?int $ts = null, bool $test = false): array {
+  public static function send(string $event, string $eventId, array $user, array $custom, string $url, ?int $ts = null, bool $test = false, string $source = 'website'): array {
     $tok = Sms::secret('meta_capi_token'); $pid = self::pixelId(); if (!$tok || $pid === '') return ['ok' => false, 'msg' => 'CAPI not configured'];
-    $body = ['data' => [['event_name' => $event, 'event_time' => $ts ?: time(), 'event_id' => $eventId, 'action_source' => 'website', 'event_source_url' => $url, 'user_data' => $user, 'custom_data' => $custom]], 'access_token' => $tok];
+    $body = ['data' => [['event_name' => $event, 'event_time' => $ts ?: time(), 'event_id' => $eventId, 'action_source' => $source, 'user_data' => $user, 'custom_data' => $custom] + ($source === 'website' ? ['event_source_url' => $url] : [])], 'access_token' => $tok];
     $tc = Sms::secret('meta_capi_test'); if ($test && $tc) $body['test_event_code'] = $tc;
     try { $r = Http::timeout(6)->asJson()->post('https://graph.facebook.com/' . self::VER . '/' . $pid . '/events', $body); $ok = $r->successful(); $msg = $ok ? 'received ' . ($r->json('events_received') ?? '?') : mb_substr((string)($r->json('error.message') ?? $r->body()), 0, 180); }
     catch (\Throwable $e) { $ok = false; $msg = mb_substr($e->getMessage(), 0, 180); }
@@ -76,8 +76,9 @@ class Capi
     $user = self::user(['phone' => $o->phone, 'name' => $o->customer_name, 'email' => $o->email, 'city' => $o->district, 'external_id' => $o->customer_id], ($r ? ($_COOKIE['_fbp'] ?? null) : null) ?: ($m['fbp'] ?? null), ($r ? self::fbc($r) : null) ?: ($m['fbc'] ?? null), ($r ? self::clientIp($r) : null) ?: ($m['ip'] ?? null), ($r ? (string)$r->userAgent() : '') ?: ($m['ua'] ?? null));
     $custom = ['currency' => 'BDT', 'value' => (float)$o->total, 'content_type' => 'product', 'content_ids' => array_column($contents, 'id'), 'contents' => $contents, 'num_items' => array_sum(array_column($contents, 'quantity')), 'order_id' => $o->invoice];
     $url = url('/order-placed'); $inv = (string)$o->invoice;
-    if (app()->runningInConsole()) { self::send('Purchase', $inv, $user, $custom, $url); return; }
-    app()->terminating(fn() => self::send('Purchase', $inv, $user, $custom, $url));
+    $src = ($r || $m) ? 'website' : (preg_match('/whats|chat|messenger|facebook|insta/i', (string)($o->source ?? '')) ? 'chat' : 'other'); // staff-created order: no browser, so it is not reported as a website event
+    if (app()->runningInConsole()) { self::send('Purchase', $inv, $user, $custom, $url, null, false, $src); return; }
+    app()->terminating(fn() => self::send('Purchase', $inv, $user, $custom, $url, null, false, $src));
   }
 
   /** Browser events mirrored server-side (ViewContent, AddToCart, InitiateCheckout, AddPaymentInfo, Search) with the SAME event_id as the browser pixel, so Meta de-duplicates and still counts the event when the browser pixel is blocked (ad blockers, iOS). Runs after the response. */
