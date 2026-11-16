@@ -14,7 +14,7 @@ class HotlineAudit {
   /** old official hotlines: the real one and the mistyped variant that was once in circulation */
   const OLD = ['9613828081', '9631828081'];
   /** tables that hold what already happened: reported, never changed */
-  const HISTORY = ['sms_logs', 'chat_messages', 'chat_threads', 'chat_comments', 'call_logs', 'call_listens', 'wa_calls', 'wa_call_recordings', 'wa_call_recording_logs', 'orders', 'order_items', 'order_status_logs', 'order_activity_logs', 'audit_logs', 'activity_logs', 'staff_activity', 'mail_logs', 'email_logs', 'push_logs', 'notifications', 'customer_notifications', 'jobs', 'failed_jobs', 'sessions', 'cache', 'cache_locks', 'migrations', 'voice_calls', 'voice_logs', 'winback_events', 'payments', 'manual_payments', 'deploy_runs', 'deploy_logs', 'ai_logs', 'ai_chat_messages', 'ai_chat_sessions', 'webhook_logs', 'courier_logs', 'customers', 'users', 'suppliers', 'riders', 'employees'];
+  const HISTORY = ['sms_logs', 'chat_messages', 'chat_threads', 'chat_comments', 'call_logs', 'call_listens', 'wa_calls', 'wa_call_recordings', 'wa_call_recording_logs', 'orders', 'order_items', 'order_status_logs', 'order_activity_logs', 'audit_logs', 'activity_logs', 'staff_activity', 'mail_logs', 'email_logs', 'push_logs', 'notifications', 'customer_notifications', 'jobs', 'failed_jobs', 'sessions', 'cache', 'cache_locks', 'migrations', 'voice_calls', 'voice_logs', 'winback_events', 'payments', 'manual_payments', 'deploy_runs', 'deploy_logs', 'ai_logs', 'ai_chat_messages', 'ai_chat_sessions', 'webhook_logs', 'courier_logs', 'customers', 'users', 'suppliers', 'riders', 'employees', 'mail_outbox', 'ai_activity_logs', 'chat_handoffs', 'hotline_replace_backup'];
   private static function bn(string $d): string { return strtr($d, ['0' => '০', '1' => '১', '2' => '২', '3' => '৩', '4' => '৪', '5' => '৫', '6' => '৬', '7' => '৭', '8' => '৮', '9' => '৯']); }
   /** POSIX regex for one old number in any writing: optional +880 / 880 / 0, digits split by spaces, hyphens or dots, English or Bengali numerals. */
   public static function rx(string $core): string {
@@ -44,22 +44,29 @@ class HotlineAudit {
     }
     return ['hits' => $out, 'skipped' => $skipped];
   }
-  /** Replace the old hotline in current content only. Bengali-digit text gets Bengali digits; +880 writing becomes +8809644999000. Returns what changed. */
-  public static function apply(): array {
-    $done = []; $newBn = self::bn(self::NEW);
-    foreach (self::scan()['hits'] as $h) {
+  /** Replace the old hotline in current content only (optionally one table). Bengali-digit text gets Bengali digits; +880 writing becomes +8809644999000. The old text of every changed row is first copied to hotline_replace_backup (rollback path). One UPDATE per column, so a big table is read once. Returns what changed. */
+  public static function apply(?string $only = null): array {
+    $done = []; $newBn = self::bn(self::NEW); $sep = '[ .\\-]{0,2}'; $bak = \Illuminate\Support\Facades\Schema::hasTable('hotline_replace_backup');
+    foreach (self::scan(false, false, $only)['hits'] as $h) {
       if ($h['history']) continue; $q = '"' . $h['table'] . '"'; $col = '"' . $h['column'] . '"'; $n = 0;
+      $keep = $h['table'] === 'settings' ? " and \"key\" <> 'hotline_previous'" : ''; // the saved previous value is the rollback for the central setting
+      $expr = "$col::text"; $bind = [];
       foreach (self::OLD as $core) {
-        $sep = '[ .\\-]{0,2}'; $en = implode($sep, str_split($core)); $bnc = implode($sep, preg_split('//u', self::bn($core), -1, PREG_SPLIT_NO_EMPTY));
-        $steps = [['\\+880' . $sep . $en, '+880' . ltrim(self::NEW, '0')], ['880' . $sep . $en, '880' . ltrim(self::NEW, '0')], ['0?' . $en, self::NEW], ['(\\+?৮৮০' . $sep . '|০)?' . $bnc, $newBn]];
-        foreach ($steps as [$from, $to]) {
-          try { $n += DB::update("update $q set $col = regexp_replace($col::text, ?, ?, 'g')" . (in_array(self::type($h['table'], $h['column']), ['json', 'jsonb'], true) ? '::' . self::type($h['table'], $h['column']) : '') . " where $col::text ~ ?", [$from, $to, $from]); } catch (\Throwable $e) { $done[] = ['table' => $h['table'], 'column' => $h['column'], 'error' => mb_substr($e->getMessage(), 0, 160)]; }
-        }
+        $en = implode($sep, str_split($core)); $bnc = implode($sep, preg_split('//u', self::bn($core), -1, PREG_SPLIT_NO_EMPTY));
+        foreach ([['\\+880' . $sep . $en, '+880' . ltrim(self::NEW, '0')], ['880' . $sep . $en, '880' . ltrim(self::NEW, '0')], ['0?' . $en, self::NEW], ['(\\+?৮৮০' . $sep . '|০)?' . $bnc, $newBn]] as [$from, $to]) { $expr = "regexp_replace($expr, ?, ?, 'g')"; $bind[] = $from; $bind[] = $to; }
       }
+      $ty = self::type($h['table'], $h['column']); $cast = in_array($ty, ['json', 'jsonb'], true) ? '::' . $ty : '';
+      try {
+        DB::transaction(function () use ($q, $col, $expr, $bind, $cast, $keep, $h, $bak, &$n) {
+          DB::statement("set local statement_timeout = '150s'");
+          if ($bak && \Illuminate\Support\Facades\Schema::hasColumn($h['table'], 'id')) DB::insert("insert into hotline_replace_backup (tbl, col, row_id, old_value, created_at) select ?, ?, id, $col::text, now() from $q where $col::text ~ ?$keep", [$h['table'], $h['column'], self::pattern()]);
+          $n = DB::update("update $q set $col = ($expr)$cast where $col::text ~ ?$keep", array_merge($bind, [self::pattern()]));
+        });
+      } catch (\Throwable $e) { $done[] = ['table' => $h['table'], 'column' => $h['column'], 'error' => mb_substr($e->getMessage(), 0, 160)]; }
       if ($n > 0) $done[] = ['table' => $h['table'], 'column' => $h['column'], 'rows' => $n, 'keys' => $h['keys']];
     }
     foreach (['store.settings2', 'ai.facts', 'store.home6', 'store.home4', 'store.home5'] as $c) { try { Cache::forget($c); } catch (\Throwable $e) {} }
-    try { DB::table('audit_logs')->insert(['user_id' => auth()->id(), 'user_name' => auth()->user()->name ?? 'System', 'action' => 'hotline.replace', 'subject' => 'Old hotline replaced with ' . self::NEW . ' in current content', 'meta' => json_encode($done), 'ip' => request()?->ip(), 'created_at' => now(), 'updated_at' => now()]); } catch (\Throwable $e) {}
+    try { DB::table('audit_logs')->insert(['user_id' => auth()->id(), 'user_name' => auth()->user()->name ?? 'System', 'action' => 'hotline.replace', 'subject' => 'Old hotline replaced with ' . self::NEW . ' in current content' . ($only ? ' (' . $only . ')' : ''), 'meta' => json_encode($done), 'ip' => request()?->ip(), 'created_at' => now(), 'updated_at' => now()]); } catch (\Throwable $e) {}
     return $done;
   }
   private static function type(string $t, string $c): string { static $m = []; return $m["$t.$c"] ??= (string)(DB::selectOne('select data_type d from information_schema.columns where table_schema = current_schema() and table_name = ? and column_name = ?', [$t, $c])->d ?? 'text'); }
