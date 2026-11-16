@@ -1213,3 +1213,8 @@ database/migrations/2026_11_15_140000_speed_indexes_purchase_list.php
 database/migrations/2026_11_15_150000_link_cooler_7990_ryans_url.php
 app/Support/ChatOwner.php
 database/migrations/2026_11_16_100000_chat_ownership.php
+app/Http/Controllers/WaCallController.php
+app/Support/WaCalls.php
+database/migrations/2026_11_16_100000_wa_calls.php
+resources/views/wa_call_ring.blade.php
+resources/views/wa_calls.blade.php
