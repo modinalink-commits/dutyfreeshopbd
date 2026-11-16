@@ -364,6 +364,7 @@ class ChatController extends Controller {
     $d = $r->validate(['reg_pin'=>['nullable', 'regex:/^\d{6}$/']]);
     if (empty($d['reg_pin'])) $d['reg_pin'] = str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
     $tok = Chat::sec('chat_wa_token'); $ph = Chat::sec('chat_wa_phone_id');
+    if (preg_match('/^\d{8,25}$/', (string)$r->input('phone_id'))) $ph = (string)$r->input('phone_id'); // a second number of the same WhatsApp account (owner 17 Nov 2026: hotline 09644999000); the saved token only reaches its own account
     if (!$tok || !$ph) return back()->with('err', 'Save the WhatsApp Cloud API token and phone number ID first.');
     $h = fn($m, $u, $q = []) => \Illuminate\Support\Facades\Http::timeout(25)->withToken($tok)->{$m}('https://graph.facebook.com/v21.0/'.$u, $q)->json();
     $res = $h('post', $ph.'/register', ['messaging_product'=>'whatsapp', 'pin'=>$d['reg_pin']]);
@@ -379,15 +380,19 @@ class ChatController extends Controller {
   }
   public function waCode(Request $r) {
     $tok = Chat::sec('chat_wa_token'); $ph = Chat::sec('chat_wa_phone_id');
+    if (preg_match('/^\d{8,25}$/', (string)$r->input('phone_id'))) $ph = (string)$r->input('phone_id'); // a second number of the same WhatsApp account (owner 17 Nov 2026: hotline 09644999000); the saved token only reaches its own account
     if (!$tok || !$ph) return back()->with('err', 'Save the WhatsApp Cloud API token and phone number ID first.');
     $h = fn($m, $u, $q = []) => \Illuminate\Support\Facades\Http::timeout(25)->withToken($tok)->{$m}('https://graph.facebook.com/v21.0/'.$u, $q)->json();
     $code = preg_replace('/\D/', '', (string)$r->input('wa_code'));
     if ($code !== '') {
       $res = $h('post', $ph.'/verify_code', ['code'=>$code]);
+      if ($r->expectsJson()) return response()->json(['step'=>'verify', 'ok'=>!empty($res['success']), 'error'=>mb_substr(json_encode($res['error'] ?? null), 0, 300)]);
       return !empty($res['success']) ? back()->with('ok', 'Code verified. Now enter a 6-digit PIN and press Register WhatsApp number.') : back()->with('err', 'Verify failed: '.json_encode($res['error'] ?? $res));
     }
     $method = $r->input('code_method') === 'VOICE' ? 'VOICE' : 'SMS';
     $res = $h('post', $ph.'/request_code', ['code_method'=>$method, 'language'=>'en_US']);
+    try { DB::table('audit_logs')->insert(['user_id'=>auth()->id(), 'user_name'=>auth()->user()->name, 'action'=>'chat.wa_code', 'subject'=>'WhatsApp verification code requested ('.$method.') for phone id '.$ph, 'ip'=>$r->ip(), 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {}
+    if ($r->expectsJson()) return response()->json(['step'=>'request', 'method'=>$method, 'ok'=>!empty($res['success']), 'error'=>mb_substr(json_encode($res['error'] ?? null), 0, 300)]);
     return !empty($res['success']) ? back()->with('ok', 'Verification code requested by '.$method.' to the number. Enter the 6-digit code below and press Verify.') : back()->with('err', 'Request failed: '.json_encode($res['error'] ?? $res));
   }
   public function fbSubscribe(Request $r) {
