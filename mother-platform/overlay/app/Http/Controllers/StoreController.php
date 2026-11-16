@@ -711,6 +711,7 @@ class StoreController extends Controller {
     try { \App\Support\Referral::onOrder((int)$id, $phone, $qt); \App\Support\Winback::onOrder($phone, (int)$id, $qt); \App\Support\Voice::onOrder($phone, (int)$id, $qt['applied'] ?? []); } catch (\Throwable $e) {}
     try { \App\Support\AppReward::onOrder($phone, (int)$id, $qt['applied'] ?? [], \App\Support\AppReward::installId()); } catch (\Throwable $e) {}
     $inv = DB::table('orders')->where('id',$id)->value('invoice');
+    \App\Support\Capi::remember((int)$id, $r); // Meta browser identifiers kept with the order for later server events
     if ($pk !== 'shurjopay') { \App\Support\OrderSms::placed((int)$id); try { \App\Support\Capi::purchase((int)$id, $r); } catch (\Throwable $e) {} }
     try { DB::table('incomplete_orders')->where('status', 'open')->where(fn($q) => $q->where('token', (string)$r->input('inc'))->orWhere('phone', $phone))->update(['status'=>'converted', 'order_id'=>$id, 'updated_at'=>now()]); } catch (\Throwable $e) {}
     if ($pk === 'shurjopay') return redirect(\Illuminate\Support\Facades\URL::temporarySignedRoute('pay.shurjopay.start', now()->addHours(2), ['invoice'=>$inv]));

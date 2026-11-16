@@ -60,6 +60,7 @@ class ShurjoPayController extends Controller {
     self::note($o, 'Online payment received via ShurjoPay'.(!empty($v['method']) ? ' ('.$v['method'].')' : '').', ref '.($v['bank_trx_id'] ?? $sp));
     \App\Support\PaymentSettle::apply((int)$o->id, 'ShurjoPay (backend-verified)');
     try { \App\Support\OrderSms::placed((int)$o->id); } catch (\Throwable $e) {}
+    try { \App\Support\Capi::purchase((int)$o->id); } catch (\Throwable $e) {} // server-side Purchase for online-paid orders (same event_id as the browser Purchase, so Meta counts it once)
     return true;
   }
   /** Background safety net: customers who paid but never came back to the site are verified with ShurjoPay and approved automatically. */

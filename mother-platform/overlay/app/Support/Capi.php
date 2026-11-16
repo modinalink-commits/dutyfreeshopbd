@@ -20,6 +20,24 @@ class Capi
     foreach ($c as $ip) { if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) return $ip; }
     return null;
   }
+  /** Meta click id: the _fbc cookie, else built from fbclid in the request or page URL (Meta format fb.1.<ms>.<fbclid>), so an ad click is still credited when the browser pixel could not set the cookie. */
+  public static function fbc(Request $r, ?string $url = null): ?string {
+    $c = (string)($_COOKIE['_fbc'] ?? ''); if (preg_match('/^fb\.\d\.\d+\..+$/', $c)) return mb_substr($c, 0, 500);
+    $id = (string)$r->query('fbclid', '');
+    if ($id === '' && $url) { parse_str((string)parse_url($url, PHP_URL_QUERY), $q); $id = is_string($q['fbclid'] ?? null) ? $q['fbclid'] : ''; }
+    return preg_match('/^[A-Za-z0-9_\-]{10,400}$/', $id) ? 'fb.1.' . (int)round(microtime(true) * 1000) . '.' . $id : null;
+  }
+  /** Keeps the visitor's Meta browser identifiers with the order (orders.px_meta), for events sent later without a browser: delivered / returned, and a purchase confirmed by the payment gateway in the background. Never blocks the order. */
+  public static function remember(int $orderId, Request $r): void {
+    try {
+      $fbp = (string)($_COOKIE['_fbp'] ?? '');
+      $m = array_filter(['fbp' => preg_match('/^fb\.\d\.\d+\.\d+$/', $fbp) ? $fbp : null, 'fbc' => self::fbc($r), 'ip' => self::clientIp($r), 'ua' => mb_substr((string)$r->userAgent(), 0, 300)]);
+      if ($m) DB::table('orders')->where('id', $orderId)->update(['px_meta' => json_encode($m, JSON_UNESCAPED_SLASHES)]);
+    } catch (\Throwable $e) {}
+  }
+  private static function meta(object $o): array {
+    try { $v = property_exists($o, 'px_meta') ? $o->px_meta : DB::table('orders')->where('id', $o->id ?? 0)->value('px_meta'); $m = json_decode((string)$v, true); return is_array($m) ? $m : []; } catch (\Throwable $e) { return []; }
+  }
   private static function h(?string $v): ?string { $v = trim((string)$v); return $v === '' ? null : hash('sha256', mb_strtolower($v)); }
 
   /** Hashed customer data per Meta rules (phone as 880XXXXXXXXXX digits, lower-case name/email/city). */
@@ -49,14 +67,16 @@ class Capi
   }
 
   /** Called right after an order is placed. Runs after the response is sent, so checkout never waits on Meta. event_id = invoice, matching the browser Purchase for de-duplication. */
-  public static function purchase(int $orderId, Request $r): void {
+  public static function purchase(int $orderId, ?Request $r = null): void {
     if (!self::enabled()) return;
     $o = DB::table('orders')->where('id', $orderId)->first(); if (!$o) return;
     $its = DB::table('order_items as i')->leftJoin('products as p', 'p.id', '=', 'i.product_id')->where('i.order_id', $orderId)->get(['i.product_id', 'p.ext_id', 'i.qty', 'i.price']);
     $contents = $its->filter(fn($i) => $i->product_id)->map(fn($i) => ['id' => (string)(($i->ext_id ?? null) ?: $i->product_id), 'quantity' => (int)$i->qty, 'item_price' => (float)$i->price])->values()->all();
-    $user = self::user(['phone' => $o->phone, 'name' => $o->customer_name, 'email' => $o->email, 'city' => $o->district, 'external_id' => $o->customer_id], $_COOKIE['_fbp'] ?? null, $_COOKIE['_fbc'] ?? null, self::clientIp($r), (string)$r->userAgent());
+    $m = self::meta($o); // browser identifiers kept with the order: used when the customer's browser is not here (online payment confirmed in the background)
+    $user = self::user(['phone' => $o->phone, 'name' => $o->customer_name, 'email' => $o->email, 'city' => $o->district, 'external_id' => $o->customer_id], ($r ? ($_COOKIE['_fbp'] ?? null) : null) ?: ($m['fbp'] ?? null), ($r ? self::fbc($r) : null) ?: ($m['fbc'] ?? null), ($r ? self::clientIp($r) : null) ?: ($m['ip'] ?? null), ($r ? (string)$r->userAgent() : '') ?: ($m['ua'] ?? null));
     $custom = ['currency' => 'BDT', 'value' => (float)$o->total, 'content_type' => 'product', 'content_ids' => array_column($contents, 'id'), 'contents' => $contents, 'num_items' => array_sum(array_column($contents, 'quantity')), 'order_id' => $o->invoice];
     $url = url('/order-placed'); $inv = (string)$o->invoice;
+    if (app()->runningInConsole()) { self::send('Purchase', $inv, $user, $custom, $url); return; }
     app()->terminating(fn() => self::send('Purchase', $inv, $user, $custom, $url));
   }
 
@@ -76,8 +96,8 @@ class Capi
       foreach (['em'=>'email','ph'=>'phone','fn'=>'fn','ln'=>'ln','ct'=>'city'] as $k=>$f) if (isset($am[$k]) && is_string($am[$k])) $c[$f] = mb_substr($am[$k], 0, 120);
       if (isset($am['external_id']) && is_string($am['external_id'])) $c['external_id'] = mb_substr($am['external_id'], 0, 60);
       $c['name'] = trim(($c['fn'] ?? '').' '.($c['ln'] ?? ''));
-      $user = self::user($c, $_COOKIE['_fbp'] ?? null, $_COOKIE['_fbc'] ?? null, self::clientIp($r), (string)$r->userAgent());
       $url = (string)($in['u'] ?? ''); $url = str_starts_with($url, url('/')) ? $url : url('/');
+      $user = self::user($c, $_COOKIE['_fbp'] ?? null, self::fbc($r, $url), self::clientIp($r), (string)$r->userAgent());
       app()->terminating(fn() => self::send($n, $id, $user, $custom, $url));
     } catch (\Throwable $e) {}
   }
@@ -87,7 +107,8 @@ class Capi
     try {
       $ev = $stage === 'Delivered' ? 'OrderDelivered' : ($stage === 'Returned' ? 'OrderReturned' : null); if (!$ev || !self::enabled()) return;
       $id = $ev.'_'.($o->invoice ?? $o->id); $k = 'capi:out:'.$id; if (\Illuminate\Support\Facades\Cache::has($k)) return;
-      $user = self::user(['phone' => $o->phone ?? '', 'name' => $o->customer_name ?? '', 'email' => $o->email ?? '', 'city' => $o->district ?? '', 'external_id' => $o->customer_id ?? ''], null, null, null, null);
+      $m = self::meta($o);
+      $user = self::user(['phone' => $o->phone ?? '', 'name' => $o->customer_name ?? '', 'email' => $o->email ?? '', 'city' => $o->district ?? '', 'external_id' => $o->customer_id ?? ''], $m['fbp'] ?? null, $m['fbc'] ?? null, $m['ip'] ?? null, $m['ua'] ?? null);
       $r = self::send($ev, $id, $user, ['currency' => 'BDT', 'value' => (float)($o->total ?? 0), 'order_id' => (string)($o->invoice ?? $o->id)], url('/'));
       if (!empty($r['ok'])) \Illuminate\Support\Facades\Cache::put($k, 1, 86400 * 60);
     } catch (\Throwable $e) {}
