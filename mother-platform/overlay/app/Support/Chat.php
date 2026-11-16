@@ -55,9 +55,12 @@ class Chat {
     if (!$t) {
       $prof = in_array($ch, ['facebook', 'instagram']) ? self::profile($ch, $ext, $meta['page_ref'] ?? null) : [];
       $cust = $phone ? DB::table('customers')->where('phone', $phone)->orderBy('id')->first() : null;
-      $id = DB::table('chat_threads')->insertGetId(['channel'=>$ch, 'external_id'=>$ext, 'customer_id'=>$cust->id ?? null,
-        'name'=>$name ?: ($prof['name'] ?? null) ?: ($cust->name ?? null) ?: self::CH[$ch].' user', 'phone'=>$phone, 'username'=>$meta['username'] ?? ($prof['username'] ?? null),
-        'avatar'=>$prof['avatar'] ?? null, 'page_ref'=>($meta['page_ref'] ?? null) ?: null, 'status'=>'new', 'unread'=>0, 'created_at'=>now(), 'updated_at'=>now()]);
+      // two events for a brand-new customer at the same moment: the second insert hits the unique (channel, external_id) key and simply uses the conversation the first one created
+      try {
+        $id = DB::table('chat_threads')->insertGetId(['channel'=>$ch, 'external_id'=>$ext, 'customer_id'=>$cust->id ?? null,
+          'name'=>$name ?: ($prof['name'] ?? null) ?: ($cust->name ?? null) ?: self::CH[$ch].' user', 'phone'=>$phone, 'username'=>$meta['username'] ?? ($prof['username'] ?? null),
+          'avatar'=>$prof['avatar'] ?? null, 'page_ref'=>($meta['page_ref'] ?? null) ?: null, 'status'=>'new', 'unread'=>0, 'created_at'=>now(), 'updated_at'=>now()]);
+      } catch (\Illuminate\Database\UniqueConstraintViolationException $e) { $id = (int)DB::table('chat_threads')->where(['channel'=>$ch, 'external_id'=>$ext])->value('id'); }
       $t = DB::table('chat_threads')->find($id);
     } elseif ($name && (str_ends_with((string)$t->name, ' user') || !$t->name)) {
       DB::table('chat_threads')->where('id', $t->id)->update(['name'=>$name]);
@@ -68,15 +71,20 @@ class Chat {
       DB::table('chat_threads')->where('id', $t->id)->update(['phone'=>$pm[1], 'customer_id'=>$c2->id ?? $t->customer_id, 'updated_at'=>now()]);
       $t->phone = $pm[1];
     }
-    DB::table('chat_messages')->insert(['thread_id'=>$t->id, 'dir'=>'in', 'kind'=>$att ? 'file' : 'text', 'body'=>mb_substr($body, 0, 4000), 'attachment_url'=>$att,
+    // ext_id is unique: when the platform delivers the same event twice at the same moment, only the first insert succeeds and the second is dropped here (no second answer).
+    $ins = DB::table('chat_messages')->insertOrIgnore(['thread_id'=>$t->id, 'dir'=>'in', 'kind'=>$att ? 'file' : 'text', 'body'=>mb_substr($body, 0, 4000), 'attachment_url'=>$att,
       'attachment_type'=>$att ? ($meta['att_type'] ?? 'image') : null, 'ext_id'=>$mid, 'created_at'=>now(), 'updated_at'=>now()]);
+    if ($mid && !$ins) return null;
     $st = $t->status === 'resolved' ? 'new' : ($t->status === 'waiting' ? 'open' : $t->status);
     // Every new customer message puts the conversation back into "waiting for a reply".
     $prev = $body !== '' ? $body : ($att ? (($meta['att_type'] ?? 'image') === 'audio' ? '🎤 Voice message' : '[attachment]') : '');
     DB::table('chat_threads')->where('id', $t->id)->update(['unread'=>DB::raw('unread + 1'), 'awaiting_reply'=>true, 'last_customer_message_at'=>now(), 'last_message'=>mb_substr($prev, 0, 300),
-      'last_dir'=>'in', 'last_at'=>now(), 'status'=>$st, 'updated_at'=>now()]);
+      'last_dir'=>'in', 'last_at'=>now(), 'status'=>$st, 'updated_at'=>now()]
+      + (ChatOwner::ready() ? ['awaiting_since'=>!empty($t->awaiting_reply) && !empty($t->awaiting_since) ? $t->awaiting_since : now()] : []));
     self::reportCheck((int)$t->id, (string)$body);
-    $fresh = DB::table('chat_threads')->find($t->id); AiMemory::onCustomer($fresh, $body, $att);
+    $fresh = DB::table('chat_threads')->find($t->id);
+    if (ChatOwner::ready()) { ChatOwner::onCustomerMessage($t, $fresh); $fresh = DB::table('chat_threads')->find($t->id); } // reopened chat starts without an owner; a chat the AI will not answer goes to a representative
+    AiMemory::onCustomer($fresh, $body, $att);
     return $fresh;
   }
   /** Record a WhatsApp message sent by the system (order confirmation, template, campaign) in the customer's chat, so staff see exactly what the customer was told. */
@@ -338,15 +346,18 @@ class Chat {
   /** One customer past the wait limit: reassign, let the AI answer or send the holding message, leave a staff-only note. */
   public static function staleOne(object $t, int $min): void {
     $tid = (int)$t->id; $what = []; $blame = !empty($t->assigned_to) ? (int)$t->assigned_to : 0;
+    $handed = !empty($t->handoff_at); try { $handed = $handed || DB::table('chat_handoffs')->where('thread_id', $tid)->whereIn('status', ['open', 'accepted'])->exists(); } catch (\Throwable $e) {}
+    $human = $handed || in_array((string)($t->intent ?? ''), ['complaint', 'refund', 'cancel', 'change_order', 'human_request', 'payment'], true) || \Illuminate\Support\Facades\Cache::has('ai.manual_off.'.$tid);
+    $aiWill = !$human && AiChat::chatOn() && in_array($t->channel, ['web', 'whatsapp', 'facebook'], true); // the AI will answer below: then the chat is released to the AI, not moved to another agent
     // 1) move the chat away from an agent who has not replied to anyone for the whole wait
     try {
-      if (!empty($t->assigned_to)) {
+      if (!empty($t->assigned_to) && !$aiWill) {
         $cur = DB::table('users')->find($t->assigned_to);
         $busy = $cur ? DB::table('chat_messages')->where('dir', 'out')->where('status', '<>', 'failed')->whereRaw('not coalesce(is_ai, false)')->where('user_name', $cur->name)->where('created_at', '>=', now()->subMinutes($min))->exists() : false;
         if (!$busy) {
           $act = DB::table('chat_messages')->where('dir', 'out')->where('status', '<>', 'failed')->whereRaw('not coalesce(is_ai, false)')->where('created_at', '>=', now()->subMinutes($min))->whereNotNull('user_name')->groupBy('user_name')->selectRaw('user_name, max(created_at) la')->orderByDesc('la')->pluck('user_name')->all();
           $to = $act ? DB::table('users')->whereIn('name', $act)->where('id', '!=', $t->assigned_to)->where('active', true)->get(['id', 'name'])->sortBy(fn($u) => array_search($u->name, $act))->first() : null;
-          if ($to) { DB::table('chat_threads')->where('id', $tid)->update(['assigned_to'=>$to->id, 'updated_at'=>now()]); $what[] = 'Moved from '.($cur->name ?? 'an agent').' to '.$to->name.', who is replying now.'; }
+          if ($to && (ChatOwner::ready() ? ChatOwner::system($tid, (int)$to->id, 'transfer', ($cur->name ?? 'The owner').' did not reply for '.$min.' minutes.') : (bool)DB::table('chat_threads')->where('id', $tid)->update(['assigned_to'=>$to->id, 'updated_at'=>now()]))) { $what[] = 'Moved from '.($cur->name ?? 'an agent').' to '.$to->name.', who is replying now.'; }
           else $what[] = ($cur->name ?? 'The assigned agent').' has not replied to anyone for '.$min.' minutes and no other agent is replying right now.';
         }
       }
@@ -354,11 +365,10 @@ class Chat {
     // 2) an ordinary question: the AI answers it now, even inside staff hours
     // a customer who wants to order is not left waiting: the AI takes the details and files an Order Request (a person creates the order)
     // Owner (14 Nov 2026): "needs a person" left behind by an earlier holding message must not keep the AI out for ever (live case: a customer waited 130 minutes because a holding message from the morning had marked the chat). Only a real hand-over, a sensitive subject or the manual OFF switch keeps the chat with staff.
-    $handed = !empty($t->handoff_at); try { $handed = $handed || DB::table('chat_handoffs')->where('thread_id', $tid)->whereIn('status', ['open', 'accepted'])->exists(); } catch (\Throwable $e) {}
-    $human = $handed || in_array((string)($t->intent ?? ''), ['complaint', 'refund', 'cancel', 'change_order', 'human_request', 'payment'], true) || \Illuminate\Support\Facades\Cache::has('ai.manual_off.'.$tid);
     if (!$human && (!empty($t->needs_human) || !empty($t->ai_paused))) { try { DB::table('chat_threads')->where('id', $tid)->update(['needs_human'=>false, 'ai_paused'=>false, 'updated_at'=>now()]); } catch (\Throwable $e) {} }
     $answered = false;
     if (!$human && AiChat::chatOn() && in_array($t->channel, ['web', 'whatsapp', 'facebook'], true)) {
+      if (!empty($t->assigned_to) && ChatOwner::ready() && ChatOwner::system($tid, null, 'release', 'No reply from the owner for '.$min.' minutes: the AI answers this customer.')) $what[] = 'Taken from '.ChatOwner::name((int)$t->assigned_to).' (no reply for '.$min.' minutes) and given to the AI.';
       self::$force = true; try { self::aiReply($tid); } catch (\Throwable $e) { report($e); } finally { self::$force = false; }
       $n = DB::table('chat_threads')->find($tid); $answered = $n && ($n->last_dir ?? '') === 'out';
       if ($answered) { \Illuminate\Support\Facades\Cache::put('ai.takeover.'.$tid, now()->timestamp, 43200); $what[] = 'No staff reply for '.$min.' minutes, so the AI answered the customer and keeps answering this chat until it is resolved or a staff member replies.'; }
@@ -549,6 +559,7 @@ class Chat {
       if (!self::$force && !AiSchedule::activeNow() && !self::aiTakeover($tid)) return; // outside the owner's AI hours staff answer, unless the AI took this chat over after the staff wait limit (staleTick)
       $t = DB::table('chat_threads')->find($tid);
       if (!$t || AiChat::paused($t) || !in_array($t->channel, ['web', 'whatsapp', 'facebook'], true)) return;
+      if (ChatOwner::ready() && $t->assigned_to !== null) return; // a person owns this conversation: the AI does not answer it
       $ext = $t->channel !== 'web'; // WhatsApp / Facebook Messenger: the reply is sent to the customer through the platform
       if ($ext) {
         if (!AiChat::chanOn()) return;
@@ -580,6 +591,9 @@ class Chat {
       if (\Illuminate\Support\Facades\Cache::increment($d) > 1500) return;
       $rows = DB::table('chat_messages')->where('thread_id', $tid)->orderByDesc('id')->limit(10)->get()->reverse()->values();
       if ($rows->isEmpty() || $rows->last()->dir !== 'in') return;
+      // one AI answer per customer message, kept in the database: a second run for the same message (duplicate event, two workers) stops here
+      $claim = ChatOwner::ready() ? (int)$rows->last()->id : 0;
+      if ($claim && !DB::table('chat_messages')->where('id', $claim)->where(fn($w) => $w->whereNull('ai_claim_at')->orWhere('ai_claim_at', '<', now()->subMinutes(3)))->update(['ai_claim_at'=>now()])) return;
       $hist = $rows->map(fn($m) => ['role'=>$m->dir === 'in' ? 'user' : 'assistant', 'content'=>$m->body !== '' ? $m->body : (!empty($m->transcript) ? $m->transcript : ($m->attachment_type === 'audio' ? '[ভয়েস মেসেজ বোঝা যায়নি]' : '[ছবি]'))])->all();
       // the customer's most recent photo (this message or one of the last few) goes to the model as an image, so a follow-up like "price?" still refers to what the photo shows
       try {
@@ -597,8 +611,13 @@ class Chat {
         if ($txt === null) goto legacy;
         // a hand-off pauses the AI on purpose; its own closing message must still reach the customer
         if (AiChat::paused(DB::table('chat_threads')->find($tid)) && !DB::table('chat_handoffs')->where('thread_id', $tid)->where('created_at', '>', now()->subMinutes(2))->exists()) return;
-        $sent = true; $err = null;
-        if ($ext) { $txt = mb_substr($txt, 0, 1900); [$sent, $err] = self::deliver($t, $txt); }
+        // checked again just before sending: a person may have taken the conversation while the AI was writing (the guard inside aiDeliver repeats this at the moment of sending)
+        $ho = !empty(ChatOwner::$handoffRun[$tid]);
+        if (!$ho && ChatOwner::ownerId($tid) !== null) return;
+        if ($ext) $txt = mb_substr($txt, 0, 1900);
+        [$sent, $err] = self::aiDeliver($t, $txt, $ho);
+        if (!$sent && ChatOwner::$refused) return; // refused by the ownership guard: nothing was sent and nothing is shown to the customer
+        if (!$sent && $claim) DB::table('chat_messages')->where('id', $claim)->update(['ai_claim_at'=>null]); // a failed send may be tried again
         DB::table('chat_messages')->insert(['thread_id'=>$tid, 'dir'=>'out', 'kind'=>'text', 'body'=>mb_substr($txt, 0, 3500), 'user_name'=>'Claude AI', 'is_ai'=>true, 'status'=>$sent ? 'sent' : 'failed', 'error'=>$err, 'created_at'=>now(), 'updated_at'=>now()]);
         if ($sent) { DB::table('chat_threads')->where('id', $tid)->update(['last_message'=>mb_substr($txt, 0, 300), 'last_dir'=>'out', 'last_at'=>now(), 'updated_at'=>now()]); if ($ext) self::replied((int)$tid, $li->created_at); } // a successfully SENT AI reply answers the customer message (a failed send stays unread)
         if ($lock) \Illuminate\Support\Facades\Cache::forget($lock);
@@ -606,7 +625,8 @@ class Chat {
         // an order the AI just placed: send the secure invoice link as its own message (only after the backend confirmed the order exists)
         if ($sent && ($invNo = \Illuminate\Support\Facades\Cache::pull('ai.invoice.'.$tid)) && DB::table('orders')->where('invoice', $invNo)->exists()) {
           $itx = "আপনার ইনভয়েস (".\App\Support\Inv::show($invNo)."): ".self::invoiceUrl($invNo); $ie = null; $is = true;
-          if ($ext) [$is, $ie] = self::deliver($t, $itx);
+          [$is, $ie] = self::aiDeliver($t, $itx, $ho);
+          if (!$is && ChatOwner::$refused) return;
           DB::table('chat_messages')->insert(['thread_id'=>$tid, 'dir'=>'out', 'kind'=>'invoice', 'body'=>$itx, 'user_name'=>'Claude AI', 'is_ai'=>true, 'status'=>$is ? 'sent' : 'failed', 'error'=>$ie, 'created_at'=>now(), 'updated_at'=>now()]);
           if ($is) DB::table('chat_threads')->where('id', $tid)->update(['last_message'=>mb_substr($itx, 0, 300), 'last_dir'=>'out', 'last_at'=>now(), 'updated_at'=>now()]);
         }
@@ -620,8 +640,12 @@ class Chat {
       if (!$ok) return;
       // a staff member may have replied while Claude was thinking
       if (AiChat::paused(DB::table('chat_threads')->find($tid))) return;
-      DB::table('chat_messages')->insert(['thread_id'=>$tid, 'dir'=>'out', 'kind'=>'text', 'body'=>mb_substr($txt, 0, 3500), 'user_name'=>'Claude AI', 'is_ai'=>true, 'status'=>'sent', 'created_at'=>now(), 'updated_at'=>now()]);
-      DB::table('chat_threads')->where('id', $tid)->update(['last_message'=>mb_substr($txt, 0, 300), 'last_dir'=>'out', 'last_at'=>now(), 'updated_at'=>now()]);
+      // website chat: the answer is written under the same guard, so it never lands in a conversation a person has just taken
+      ChatOwner::guard($t, ['type'=>'ai'], function () use ($tid, $txt) {
+        DB::table('chat_messages')->insert(['thread_id'=>$tid, 'dir'=>'out', 'kind'=>'text', 'body'=>mb_substr($txt, 0, 3500), 'user_name'=>'Claude AI', 'is_ai'=>true, 'status'=>'sent', 'created_at'=>now(), 'updated_at'=>now()]);
+        DB::table('chat_threads')->where('id', $tid)->update(['last_message'=>mb_substr($txt, 0, 300), 'last_dir'=>'out', 'last_at'=>now(), 'updated_at'=>now()]);
+        return [true, null];
+      });
     } catch (\Throwable $e) { report($e); }
     finally { if ($lock) \Illuminate\Support\Facades\Cache::forget($lock); }
   }
@@ -669,7 +693,18 @@ class Chat {
       return 'আসসালামু আলাইকুম'.($n !== '' ? ' '.$n : '').', DutyFreeBD থেকে '.($a !== '' ? $a.' ' : '').'বলছি।'."\n\n";
     } catch (\Throwable $e) { return ''; }
   }
+  /** Who is sending right now: ['type'=>'human','id'=>..,'name'=>..], ['type'=>'ai'] or null (= automation). Set by the caller around deliver(). */
+  public static ?array $sender = null;
+  /** Every outgoing message passes the ownership guard (ChatOwner): a person must own the conversation, the AI may send only while nobody owns it, and two sends never overlap. */
   public static function deliver(object $t, string $body, ?string $att = null, string $attType = 'image'): array {
+    return ChatOwner::guard($t, self::$sender ?? ['type'=>'system'], fn() => self::deliverRaw($t, $body, $att, $attType));
+  }
+  /** The AI's own send. $handoff: the closing line of the run that handed the chat to a person (the only AI line allowed after a person was assigned). */
+  private static function aiDeliver(object $t, string $body, bool $handoff = false): array {
+    $p = self::$sender; self::$sender = ['type'=>$handoff ? 'system' : 'ai'];
+    try { return self::deliver($t, $body); } finally { self::$sender = $p; }
+  }
+  private static function deliverRaw(object $t, string $body, ?string $att = null, string $attType = 'image'): array {
     try {
       if ($t->channel === 'web') return [true, null];
       if ($t->channel === 'whatsapp') {

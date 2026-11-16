@@ -1211,3 +1211,5 @@ public/dutyfree-bd-logo-v3.png
 public/pwa/logo-240-v3.png
 database/migrations/2026_11_15_140000_speed_indexes_purchase_list.php
 database/migrations/2026_11_15_150000_link_cooler_7990_ryans_url.php
+app/Support/ChatOwner.php
+database/migrations/2026_11_16_100000_chat_ownership.php
