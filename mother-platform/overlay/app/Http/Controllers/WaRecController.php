@@ -37,7 +37,8 @@ class WaRecController extends Controller {
   }
   public function page(Request $r) {
     $adm = ProfitFloor::admin(); if ($adm) WaRec::seen();
-    return view('wa_recordings', ['rows' => WaRec::rows(['q' => $r->query('q'), 'status' => in_array($r->query('status'), ['complete', 'incomplete', 'failed', 'deleted', 'expired'], true) ? $r->query('status') : null], $r->user(), 100), 'admin' => $adm, 'ready' => WaRec::ready(),
+    $dls = collect(); if ($adm) { try { $dls = DB::table('audit_logs')->where('action', 'call_rec.download')->orderByDesc('id')->limit(40)->get(['user_name', 'subject', 'created_at']); } catch (\Throwable $e) {} }
+    return view('wa_recordings', ['dls' => $dls, 'rows' => WaRec::rows(['q' => $r->query('q'), 'status' => in_array($r->query('status'), ['complete', 'incomplete', 'failed', 'deleted', 'expired'], true) ? $r->query('status') : null], $r->user(), 100), 'admin' => $adm, 'ready' => WaRec::ready(),
       'use' => WaRec::usage(), 'cfg' => ['on' => WaRec::on(), 'days' => WaRec::days(), 'listen' => WaRec::listenRule(), 'download' => WaRec::downloadRule(), 'notice' => WaRec::notice()], 'q' => (string)$r->query('q'), 'status' => (string)$r->query('status')]);
   }
   public function meta(Request $r, int $rid) {
