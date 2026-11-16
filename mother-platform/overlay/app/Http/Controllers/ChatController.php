@@ -23,7 +23,7 @@ class ChatController extends Controller {
     elseif ($f === 'unread' || $f === 'late') Chat::notOrder($q->where('awaiting_reply', true));
     elseif ($f === 'upset') $q->where('awaiting_reply', true)->whereIn(DB::raw('lower(coalesce(mood, \'\'))'), ['upset', 'angry', 'urgent']);
     elseif ($f === 'assigned') $q->where('assigned_to', auth()->id());
-    elseif ($f === 'queue') $q->whereNull('assigned_to')->where('awaiting_reply', true); // waiting customers nobody has taken yet
+    elseif ($f === 'queue') Chat::humanScope($q->whereNull('assigned_to')); // customers waiting for a person whom nobody has taken yet (same rule as the number on the button; chats the AI is answering are not in the queue)
     elseif ($f === 'human') Chat::humanScope($q);
     elseif ($f === 'resolved') $q->where('status', 'resolved');
     elseif ($f === 'report') $q->whereNotNull('reported_at')->whereNull('report_solved_at'); // open complaints only: a solved one leaves the box (it keeps its Complaint Solved tag in All History and in search)
