@@ -75,11 +75,41 @@ class WaCalls {
       }
     } catch (\Throwable $e) { report($e); }
   }
-  /** Calls ringing right now (a ringing row older than the window is a call nobody took: marked missed). */
+  /**
+   * Housekeeping (worker, and every full poll): a ringing / answering row older than the ring window is a call nobody took -> missed;
+   * an active call whose answering browser stopped reporting for a minute (closed laptop, lost internet) is hung up on WhatsApp so the customer is not left on a dead line.
+   */
+  public static function tick(): void {
+    try {
+      if (!self::ready()) return;
+      DB::table('wa_calls')->whereIn('status', ['ringing', 'answering'])->where('created_at', '<', now()->subSeconds(self::RING_SECONDS + 30))->update(['status' => 'missed', 'ended_at' => now(), 'sdp_offer' => null, 'updated_at' => now()]);
+      foreach (DB::table('wa_calls')->where('status', 'active')->where('answered_at', '<', now()->subSeconds(60))->limit(10)->get() as $c) {
+        if (Cache::has('wa.hb.' . $c->id)) continue;
+        try { self::act($c, ['action' => 'terminate']); } catch (\Throwable $e) {}
+        DB::table('wa_calls')->where('id', $c->id)->where('status', 'active')->update(['status' => 'ended', 'duration' => max(0, time() - strtotime((string)$c->answered_at)), 'ended_at' => now(), 'note' => mb_substr(trim((string)$c->note . ' [ended: staff connection lost]'), 0, 300), 'updated_at' => now()]);
+      }
+    } catch (\Throwable $e) { report($e); }
+  }
+  /** The answering browser reports "still on this call" every few seconds. */
+  public static function beat(int $id): void { Cache::put('wa.hb.' . $id, time(), 60); }
+  /** Display text of the business number a call came in on. */
+  public static function numberLabel(string $phoneId): string {
+    try { $n = DB::table('chat_wa_numbers')->where('phone_id', $phoneId)->first(); if ($n) return trim((string)$n->display_phone . ((string)$n->verified_name !== '' ? ' (' . $n->verified_name . ')' : '')); } catch (\Throwable $e) {}
+    return 'WhatsApp number';
+  }
+  /** Calls ringing right now. */
   public static function ringing() {
     if (!self::ready()) return collect();
-    DB::table('wa_calls')->whereIn('status', ['ringing', 'answering'])->where('created_at', '<', now()->subSeconds(self::RING_SECONDS + 30))->update(['status' => 'missed', 'ended_at' => now(), 'sdp_offer' => null, 'updated_at' => now()]);
+    self::tick();
     return DB::table('wa_calls')->where('status', 'ringing')->orderBy('id')->get(['id', 'phone_id', 'from_wa', 'from_name', 'created_at']);
+  }
+  /** The staff browser could not open the microphone / connection before answering: give the call back so another person can still take it. */
+  public static function release(int $id, int $uid): bool {
+    return (bool)DB::table('wa_calls')->where('id', $id)->where('status', 'answering')->where('user_id', $uid)->whereNull('answered_at')->where('created_at', '>', now()->subSeconds(self::RING_SECONDS))->update(['status' => 'ringing', 'user_id' => null, 'user_name' => null, 'updated_at' => now()]);
+  }
+  /** Staff note about the call (kept on the call row). */
+  public static function saveNote(int $id, string $text, string $by): bool {
+    return (bool)DB::table('wa_calls')->where('id', $id)->update(['note' => mb_substr(trim($text) . ' — ' . $by, 0, 300), 'updated_at' => now()]);
   }
   private static function act(object $c, array $body) {
     $tok = self::tok((string)$c->phone_id); if (!$tok) return null;
@@ -101,7 +131,7 @@ class WaCalls {
       if (!$p->ok()) { $m = self::err($p); DB::table('wa_calls')->where('id', $id)->update(['status' => 'failed', 'note' => mb_substr('pre_accept: ' . $m, 0, 300), 'ended_at' => now(), 'updated_at' => now()]); return [false, $m]; }
       $a = self::act($c, ['action' => 'accept'] + $s);
       if (!$a->ok()) { $m = self::err($a); DB::table('wa_calls')->where('id', $id)->update(['status' => 'failed', 'note' => mb_substr('accept: ' . $m, 0, 300), 'ended_at' => now(), 'updated_at' => now()]); return [false, $m]; }
-      DB::table('wa_calls')->where('id', $id)->update(['status' => 'active', 'answered_at' => now(), 'updated_at' => now()]);
+      DB::table('wa_calls')->where('id', $id)->update(['status' => 'active', 'answered_at' => now(), 'updated_at' => now()]); self::beat($id);
       self::audit($uid, $c, 'answered');
       return [true, 'ok'];
     } catch (\Throwable $e) { report($e); return [false, 'Could not reach WhatsApp.']; }

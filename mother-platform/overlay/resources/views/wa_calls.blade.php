@@ -28,7 +28,7 @@ main button.wc-b.go{background:#15803D;border-color:#15803D;color:#fff}main butt
 
 <div class="cc-box"><b class="t">Recent calls</b><table class="cc-t"><thead><tr><th style="width:16%">Time</th><th style="width:24%">Caller</th><th style="width:14%">Result</th><th style="width:12%">Talk time</th><th style="width:16%">Answered by</th><th class="hm">Note</th></tr></thead><tbody>
 @forelse($rows as $c)@php $lab=['ringing'=>['Ringing','warn'],'answering'=>['Answering','warn'],'active'=>['On call','ok'],'ended'=>['Answered','ok'],'missed'=>['Missed','bad'],'rejected'=>['Rejected','bad'],'failed'=>['Failed','bad']][$c->status] ?? [$c->status,'']; @endphp
-<tr><td>{{ \Carbon\Carbon::parse($c->created_at)->timezone('Asia/Dhaka')->format('d M h:i A') }}</td><td><b>{{ $c->from_wa ? '+'.$c->from_wa : 'WhatsApp user' }}</b>@if($c->from_name)<br><small>{{ $c->from_name }}</small>@endif</td><td><span class="cc-p {{ $lab[1] }}">{{ $lab[0] }}</span></td><td>{{ $c->duration !== null ? gmdate('i:s', (int)$c->duration) : '—' }}</td><td>{{ $c->user_name ?: '—' }}</td><td class="hm"><small>{{ $c->note }}</small></td></tr>
+<tr><td>{{ \Carbon\Carbon::parse($c->created_at)->timezone('Asia/Dhaka')->format('d M h:i A') }}</td><td><a href="/admin/call-center/whatsapp/call/{{ $c->id }}?embed=1" onclick="window.open(this.href,'wacall{{ $c->id }}','width=500,height=760');return false" style="font-weight:700;color:#0B1B33">{{ $c->from_wa ? '+'.$c->from_wa : 'WhatsApp user' }}</a>@if($c->from_name)<br><small>{{ $c->from_name }}</small>@endif</td><td><span class="cc-p {{ $lab[1] }}">{{ $lab[0] }}</span></td><td>{{ $c->duration !== null ? gmdate('i:s', (int)$c->duration) : '—' }}</td><td>{{ $c->user_name ?: '—' }}</td><td class="hm"><small>{{ $c->note }}</small></td></tr>
 @empty<tr><td colspan="6" style="color:#475467">No WhatsApp call yet.</td></tr>@endforelse
 </tbody></table></div>
 @endsection
@@ -42,7 +42,7 @@ var WC=(function(){
   function msg(m){document.getElementById('wcMsg').textContent=m||''}
   function esc(s){var d=document.createElement('div');d.textContent=s==null?'':s;return d.innerHTML}
   function draw(list){
-    var h='';list.forEach(function(c){h+='<div class="wc-ring"><div><b>'+esc(c.name||c.from)+'</b><br><small>'+esc(c.from)+' · ringing '+c.age+'s</small></div><button class="wc-b go" style="margin-left:auto" onclick="WC.answer('+c.id+',this)">Answer</button><button class="wc-b no" onclick="WC.reject('+c.id+')">Reject</button></div>'});
+    var h='';list.forEach(function(c){h+='<div class="wc-ring"><div><b>'+esc(c.name||c.from)+'</b><br><small>'+esc(c.from)+' · to '+esc(c.to||'')+' · ringing '+c.age+'s</small></div><button class="wc-b go" style="margin-left:auto" onclick="WC.open('+c.id+')">Answer</button><button class="wc-b no" onclick="WC.reject('+c.id+')">Reject</button></div>'});
     document.getElementById('wcRing').innerHTML=h;document.getElementById('wcEmpty').style.display=(list.length||cur)?'none':'';
   }
   function poll(){if(busy)return;fetch('/admin/call-center/whatsapp/poll?full=1',{credentials:'same-origin',headers:{'Accept':'application/json'}}).then(function(r){return r.json()}).then(function(d){draw(d.ringing||[])}).catch(function(){})}
@@ -77,7 +77,8 @@ var WC=(function(){
   function set(p,on,btn){btn.disabled=true;post('/admin/call-center/whatsapp/calling',{phone_id:p,on:!!on}).then(function(d){btn.disabled=false;var er=btn.parentNode.querySelector('.er');er.textContent=d.ok?'':(d.message||'Failed');st()})}
   setInterval(poll,2500);poll();st();
   window.addEventListener('pagehide',function(){if(cur)fetch('/admin/call-center/whatsapp/'+cur+'/end',{method:'POST',credentials:'same-origin',keepalive:true,headers:{'X-CSRF-TOKEN':tk(),'Accept':'application/json'}})});
-  return{answer:answer,reject:reject,hang:hang,mute:mute,set:set};
+  function open(id){var w=window.open('/admin/call-center/whatsapp/call/'+id+'?embed=1&go=1','wacall'+id,'width=500,height=760');if(!w)answer(id,null)}
+  return{answer:answer,open:open,reject:reject,hang:hang,mute:mute,set:set};
 })();
 </script>
 @endsection
