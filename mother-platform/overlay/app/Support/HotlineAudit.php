@@ -27,9 +27,12 @@ class HotlineAudit {
     return DB::select("select c.table_name t, c.column_name c from information_schema.columns c join information_schema.tables tb on tb.table_schema = c.table_schema and tb.table_name = c.table_name and tb.table_type = 'BASE TABLE' where c.table_schema = current_schema() and c.data_type in ('text', 'character varying', 'json', 'jsonb') order by 1, 2");
   }
   /** Where the old (or, with $new, the new) hotline is written right now: [[table, column, rows, history, sample keys]]. Read-only. */
-  public static function scan(bool $new = false, bool $history = false): array {
+  /** Tables that hold current content (text columns, not history): the audit page scans them one at a time so no single request runs long. */
+  public static function tables(): array { return array_values(array_unique(array_map(fn($x) => $x->t, array_filter(self::cols(), fn($x) => !in_array($x->t, self::HISTORY, true))))); }
+  public static function scan(bool $new = false, bool $history = false, ?string $only = null): array {
     $rx = $new ? self::rx(ltrim(self::NEW, '0')) : self::pattern(); $out = []; $skipped = [];
     foreach (self::cols() as $x) {
+      if ($only !== null && $x->t !== $only) continue;
       if (!$history && in_array($x->t, self::HISTORY, true)) continue; // history is never changed and holds the big tables: scanning it made the page time out (502). Ask for it with ?history=1
       $q = '"' . str_replace('"', '', $x->t) . '"'; $col = '"' . str_replace('"', '', $x->c) . '"';
       try {
