@@ -1237,3 +1237,5 @@ resources/views/rec_dl.blade.php
 public/vendor/lame.min.js
 app/Support/HotlineAudit.php
 database/migrations/2026_11_17_100000_hotline_09644999000.php
+app/Support/ContactNotice.php
+database/migrations/2026_11_17_110000_contact_notice_messenger.php

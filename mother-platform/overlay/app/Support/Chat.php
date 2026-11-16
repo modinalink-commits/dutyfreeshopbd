@@ -270,7 +270,7 @@ class Chat {
       if (in_array((string)($t->intent ?? ''), ['complaint', 'refund', 'cancel', 'change_order', 'human_request', 'payment', 'order_request'], true)) return false;
       if (DB::table('chat_handoffs')->where('thread_id', $tid)->whereIn('status', ['open', 'accepted'])->exists()) return false;
       // only after we actually helped: at least one reply of ours exists and the last message is the customer's goodbye
-      if (!DB::table('chat_messages')->where('thread_id', $tid)->where('dir', 'out')->where('status', '!=', 'failed')->exists()) return false;
+      if (!DB::table('chat_messages')->where('thread_id', $tid)->where('dir', 'out')->where('status', '!=', 'failed')->whereRaw("coalesce(user_name, '') not like '%(auto)%'")->exists()) return false; // an automatic notice is not a reply of ours
       $li = DB::table('chat_messages')->where('thread_id', $tid)->orderByDesc('id')->first(['id', 'dir', 'body', 'created_at']);
       if (!$li) return false;
       if ($idle) { // the customer went quiet after our "any other question?" line
@@ -297,7 +297,7 @@ class Chat {
       $w->where('needs_human', true)->orWhereNotNull('handoff_at')
         ->orWhereIn('intent', ['complaint', 'refund', 'cancel', 'change_order', 'human_request', 'payment', 'order_request'])
         ->orWhere('last_message', 'like', '🎤%')
-        ->orWhereRaw("exists (select 1 from chat_messages m where m.thread_id = chat_threads.id and m.dir = 'in' and m.attachment_type = 'audio' and m.id > coalesce((select max(o.id) from chat_messages o where o.thread_id = chat_threads.id and o.dir = 'out' and o.status <> 'failed'), 0))");
+        ->orWhereRaw("exists (select 1 from chat_messages m where m.thread_id = chat_threads.id and m.dir = 'in' and m.attachment_type = 'audio' and m.id > coalesce((select max(o.id) from chat_messages o where o.thread_id = chat_threads.id and o.dir = 'out' and o.status <> 'failed' and coalesce(o.user_name, '') not like '%(auto)%'), 0))");
     });
   }
   /** Set only by staleTick around one aiReply call: lets the AI answer inside staff hours after the wait limit. */

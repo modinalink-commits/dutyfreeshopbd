@@ -10,7 +10,7 @@ class OrderSms {
     $L[] = 'Payable: '.self::tk($o->total).($disc > 0 ? ' (You saved '.self::tk($disc).')' : '').($ship > 0 ? ', incl. delivery '.self::tk($ship) : '');
     if (!empty($o->pay_status) && $o->pay_status === 'Verification Pending') $L[] = 'Payment verification pending.';
     $L[] = 'We will call you to confirm. Track: '.preg_replace('#^https?://#','',Inv::trackUrl($o->invoice));
-    $L[] = 'Help: '.Biz::hotline();
+    $L[] = ContactNotice::smsLine();
     return implode("\n", $L);
   }
   /** Queue the confirmation once per order. Respects the SMS "order confirmation" switch. */

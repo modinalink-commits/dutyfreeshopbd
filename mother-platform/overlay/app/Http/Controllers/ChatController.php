@@ -717,6 +717,7 @@ class ChatController extends Controller {
             if ($th && $att && $atype === 'audio' && ($vid = DB::table('chat_messages')->where('ext_id', $msg['mid'] ?? '-')->value('id'))) { $vid = (int)$vid; app()->terminating(fn() => Chat::transcribe($vid)); }
             if ($th && $att && $atype === 'image' && ($pid2 = DB::table('chat_messages')->where('ext_id', $msg['mid'] ?? '-')->value('id'))) { $pid2 = (int)$pid2; $ptid = (int)$th->id; app()->terminating(fn() => \App\Support\PayProof::scan($ptid, $pid2)); }
             if ($th && $att && $atype === 'image' && \App\Support\AiChat::paused($th) && ($hid = DB::table('chat_messages')->where('ext_id', $msg['mid'] ?? '-')->value('id'))) { $hid = (int)$hid; $htid = (int)$th->id; app()->terminating(fn() => Chat::imageHint($htid, $hid)); }
+            if ($th && $ch === 'facebook') { $cnt = (int)$th->id; app()->terminating(fn() => \App\Support\ContactNotice::maybe($cnt)); } // new hotline / WhatsApp notice, once per customer, until the date in settings (owner 17 Nov 2026)
             if ($th && $ch === 'facebook' && !\App\Support\AiChat::paused($th) && !($att && !in_array($atype, ['image', 'audio'], true))) { $tid = (int)$th->id; app()->terminating(fn() => Chat::aiReply($tid)); }
           }
         } elseif ($obj === 'whatsapp_business_account') {
