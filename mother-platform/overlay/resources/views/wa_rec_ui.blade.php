@@ -22,7 +22,7 @@ window.WaRecUI=(function(){
   function player(row,box,btn){
     if(box.dataset.on){var a0=box._a;if(a0.paused)a0.play();else a0.pause();return}
     btn.disabled=true;btn.textContent='Loading…';var er=box.parentNode.querySelector('.wr-e');er.textContent='';
-    fetch('/admin/call-center/whatsapp/rec/'+row.id+'/audio',{credentials:'same-origin'}).then(function(r){if(!r.ok)throw new Error(r.status===403?'You are not allowed to listen to this recording.':'The recording could not be opened ('+r.status+').');var cid=r.headers.get('X-Call-Id');if(row.call_id&&cid&&String(cid)!==String(row.call_id))throw new Error('This recording belongs to another call. Not played.');return r.blob()}).then(function(b){
+    fetch('/admin/call-center/whatsapp/rec/'+row.id+'/audio'+(row.call_id?'?call='+row.call_id:''),{credentials:'same-origin'}).then(function(r){if(!r.ok)throw new Error(r.status===403?'You are not allowed to listen to this recording.':r.status===409?'This recording belongs to another call. Not played.':'The recording could not be opened ('+r.status+').');var cid=r.headers.get('X-Call-Id');if(row.call_id&&cid&&String(cid)!==String(row.call_id))throw new Error('This recording belongs to another call. Not played.');return r.blob()}).then(function(b){
       var a=new Audio();box._a=a;box.dataset.on='1';a.preload='auto';a.src=URL.createObjectURL(b);var D=row.duration||0;
       box.innerHTML='<button type="button" class="wr-b" data-k="b">−10s</button><input type="range" min="0" max="1000" value="0"><button type="button" class="wr-b" data-k="f">+10s</button><select><option value="1">1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="0.75">0.75×</option></select><span>00:00 / '+mmss(D)+'</span>';
       var rg=box.querySelector('input'),sp=box.querySelector('span'),drag=false;
@@ -54,7 +54,7 @@ window.WaRecUI=(function(){
       h+='<div class="wr-e"></div>';d.innerHTML=h;host.appendChild(d);
       var er=d.querySelector('.wr-e'),pb=d.querySelector('[data-k=play]'),sv=d.querySelector('[data-k=save]'),dl=d.querySelector('[data-k=del]');
       if(pb)pb.onclick=function(){player(r,d.querySelector('.wr-pl'),pb)};
-      var db=d.querySelector('[data-k=dl]');if(db)db.onclick=function(){if(window.RecDL)RecDL.get('/admin/call-center/whatsapp/rec/'+r.id+'/audio?dl=1',r.call_id,db)};
+      var db=d.querySelector('[data-k=dl]');if(db)db.onclick=function(){if(window.RecDL)RecDL.get('/admin/call-center/whatsapp/rec/'+r.id+'/audio?dl=1&call='+r.call_id,r.call_id,db)};
       if(sv)sv.onclick=function(){sv.disabled=true;er.className='wr-e';er.textContent='';post('/admin/call-center/whatsapp/rec/'+r.id+'/meta',{verify:d.querySelector('.v').value.trim(),order:d.querySelector('.o').value.trim()}).then(function(k){sv.disabled=false;er.className='wr-e'+(k.ok?' ok':'');er.textContent=k.message||(k.ok?'Saved.':'Not saved.')})};
       if(dl)dl.onclick=function(){if(dl.dataset.sure!=='1'){dl.dataset.sure='1';dl.textContent='Delete for good?';setTimeout(function(){dl.dataset.sure='';dl.textContent='Delete'},4000);return}dl.disabled=true;post('/admin/call-center/whatsapp/rec/'+r.id+'/delete').then(function(k){if(k.ok){if(opts.reload)location.reload();else{d.style.opacity=.5;er.textContent='Deleted.'}}else{dl.disabled=false;er.textContent='Could not delete.'}})};
     })}

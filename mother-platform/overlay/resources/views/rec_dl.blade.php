@@ -12,7 +12,7 @@ window.RecDL=(function(){
   function save(blob,name){var a=document.createElement('a'),u=URL.createObjectURL(blob);a.href=u;a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){a.remove();URL.revokeObjectURL(u)},4000)}
   function note(btn,t,ok){var s=btn.nextElementSibling;if(!s||!s.classList||!s.classList.contains('rdl-n')){s=document.createElement('small');s.className='rdl-n';s.style.cssText='display:block;font-size:11.5px;margin-top:3px';btn.parentNode.insertBefore(s,btn.nextSibling)}s.style.color=ok?'#067647':'#B42318';s.textContent=t||''}
   /** Fetch one call's recording. Returns {blob, name, callId}; refuses when the server says the audio belongs to another call. */
-  function fetchRec(url,callId){return fetch(url,{credentials:'same-origin'}).then(function(r){if(!r.ok)throw new Error(r.status===403?'You are not allowed to download this recording.':r.status===404?'The recording file was not found.':'Download failed ('+r.status+').');
+  function fetchRec(url,callId){return fetch(url,{credentials:'same-origin'}).then(function(r){if(!r.ok)throw new Error(r.status===403?'You are not allowed to download this recording.':r.status===404?'The recording file was not found.':r.status===409?'This recording belongs to another call. Not downloaded.':'Download failed ('+r.status+').');
       var cid=r.headers.get('X-Call-Id'),name=r.headers.get('X-File-Name')||('call-'+callId),type=(r.headers.get('Content-Type')||'').indexOf('ogg')>-1?'ogg':'webm';
       if(callId&&cid&&String(cid)!==String(callId))throw new Error('This recording belongs to another call. Not downloaded.');
       return r.blob().then(function(b){return{blob:b,name:name,ext:type,callId:cid}})})}

@@ -19,6 +19,8 @@ class WaRecController extends Controller {
   /** The audio itself. Never a public link: every request is checked and written to the log. */
   public function audio(Request $r, int $rid) {
     $rec = $this->rec($rid); $dl = $r->boolean('dl');
+    // the page says which call it is asking for: a recording of any other call is refused before anything is sent or logged as a listen/download
+    if ($r->filled('call') && (int)$r->query('call') !== (int)$rec->call_id) { WaRec::log($rid, 'denied', 'asked for call #' . (int)$r->query('call')); abort(409, 'This recording belongs to another call.'); }
     if ($dl ? !WaRec::mayDownload($r->user(), $rec->user_id ? (int)$rec->user_id : null) : !WaRec::canListen($r->user(), $rec)) { WaRec::log($rid, 'denied', $dl ? 'download' : 'listen'); abort(403, 'You are not allowed to open this recording.'); }
     $f = in_array($rec->status, ['complete', 'incomplete'], true) ? WaRec::file($rec) : null; abort_unless($f, 404);
     WaRec::log($rid, $dl ? 'download' : 'listen'); $name = WaRec::fileName('whatsapp-call', $rec->started_at, (int)$rec->call_id);
