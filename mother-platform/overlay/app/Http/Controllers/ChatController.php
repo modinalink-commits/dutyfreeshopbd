@@ -23,6 +23,7 @@ class ChatController extends Controller {
     elseif ($f === 'unread' || $f === 'late') Chat::notOrder($q->where('awaiting_reply', true));
     elseif ($f === 'upset') $q->where('awaiting_reply', true)->whereIn(DB::raw('lower(coalesce(mood, \'\'))'), ['upset', 'angry', 'urgent']);
     elseif ($f === 'assigned') $q->where('assigned_to', auth()->id());
+    elseif ($f === 'queue') $q->whereNull('assigned_to')->where('awaiting_reply', true); // waiting customers nobody has taken yet
     elseif ($f === 'human') Chat::humanScope($q);
     elseif ($f === 'resolved') $q->where('status', 'resolved');
     elseif ($f === 'report') $q->whereNotNull('reported_at')->whereNull('report_solved_at'); // open complaints only: a solved one leaves the box (it keeps its Complaint Solved tag in All History and in search)
@@ -53,7 +54,8 @@ class ChatController extends Controller {
         $o = ['all'=>null, 'by'=>[]]; foreach ($rows as $r) { if ($r->n === null) $o['all'] = ['s'=>(int)round($r->med), 'k'=>(int)$r->k]; else $o['by'][(string)$r->n] = ['s'=>(int)round($r->med), 'k'=>(int)$r->k]; } return $o; } catch (\Throwable $e) { return null; } };
       $d = now('Asia/Dhaka')->startOfDay(); return ['d1'=>$get($d->copy()->utc()), 'd7'=>$get($d->copy()->subDays(6)->utc()), 'w1'=>$wait($d->copy()->utc()), 'w7'=>$wait($d->copy()->subDays(6)->utc())];
     } catch (\Throwable $e) { return null; } });
-    return response()->json(['threads'=>$cards, 'unread'=>$unread, 'order_requests'=>$orq, 'human'=>$hum, 'reports'=>$rep, 'ai_handled'=>max(0, $unread - $hum), 'svc'=>$svc, 'share'=>$share]);
+    $mine = 0; $queue = 0; try { $mine = (int)DB::table('chat_threads')->where('assigned_to', auth()->id())->where('status', '!=', 'resolved')->count(); $queue = (int)Chat::humanScope(DB::table('chat_threads')->whereNull('assigned_to'))->count(); } catch (\Throwable $e) {}
+    return response()->json(['mine'=>$mine, 'queue'=>$queue, 'me_id'=>(int)auth()->id(), 'threads'=>$cards, 'unread'=>$unread, 'order_requests'=>$orq, 'human'=>$hum, 'reports'=>$rep, 'ai_handled'=>max(0, $unread - $hum), 'svc'=>$svc, 'share'=>$share]);
   }
 
   /** Light poll used on every admin page: unread total plus threads with new incoming messages since the last id. */
@@ -85,6 +87,7 @@ class ChatController extends Controller {
       'orders'=>$orders, 'intel'=>$intel ? ['delivered'=>$intel['delivered'], 'returned'=>$intel['returned'], 'cancelled'=>$intel['cancelled'], 'rate'=>$intel['rate'], 'spent'=>$intel['spent'], 'fraud'=>$intel['fraud']] : null,
       'agents'=>DB::table('users')->where('active', true)->orderBy('name')->get(['id', 'name']), 'statuses'=>self::STATUSES,
       'me'=>(string)(auth()->user()->name ?? ''),
+      'owner'=>self::ownerInfo((int)$id), 'owner_events'=>\App\Support\ChatOwner::events((int)$id, 12),
       'hint'=>\Illuminate\Support\Facades\Cache::get('ai.hint.'.$id), 'payhint'=>\Illuminate\Support\Facades\Cache::get('ai.pay.'.$id),
       'notes'=>self::notes((int)$id),
       'quick'=>DB::table('chat_quick_replies')->where('active', true)->orderBy('id')->get(['id', 'title', 'body'])]);
@@ -143,8 +146,18 @@ class ChatController extends Controller {
     $ck = $tok !== '' ? 'chat.reply.'.auth()->id().'.'.$id.'.'.substr($tok, 0, 40) : null;
     if ($ck && ($prev = \Illuminate\Support\Facades\Cache::get($ck))) return response()->json($prev);
     if ($ck && !\Illuminate\Support\Facades\Cache::add($ck.'.lock', 1, 20)) return response()->json(['ok'=>true, 'dup'=>true, 'id'=>0, 'error'=>null, 'ai'=>false]);
+    $own = \App\Support\ChatOwner::ready(); $me = auth()->user(); $uid = (int)$me->id;
+    @ignore_user_abort(true); // a connection lost after this point does not stop the send half-way: it finishes and is recorded, and a retry with the same token gets this result back
+    // The same token is also kept on the message row itself (unique per conversation), so a retry after a lost connection or a cleared cache still never sends twice.
+    $ctok = $own && $tok !== '' ? substr($uid.':'.$tok, 0, 80) : null;
+    $dupRes = function ($m) { return $m->status === 'sending' ? ['ok'=>true, 'dup'=>true, 'pending'=>true, 'id'=>(int)$m->id, 'error'=>null, 'ai'=>false] : ['ok'=>$m->status !== 'failed', 'dup'=>true, 'id'=>(int)$m->id, 'error'=>$m->error, 'ai'=>false]; };
+    if ($ctok && ($pm = DB::table('chat_messages')->where('thread_id', $id)->where('client_token', $ctok)->first())) return response()->json($dupRes($pm));
     $d = $r->validate(['body'=>'nullable|string|max:3500', 'kind'=>'nullable|in:text,product,invoice,tracking,quick', 'file'=>'nullable|file|mimes:jpg,jpeg,png,webp,gif,pdf,mp3,mpga,mpeg,m4a,ogg,oga,wav|max:8192', 'image_url'=>'nullable|string|max:400']);
     $body = trim((string)($d['body'] ?? '')); $att = null; $type = null;
+    if ($body === '' && !$r->file('file') && empty($d['image_url'])) return response()->json(['ok'=>false, 'error'=>'Write a message first.'], 422);
+    // Ownership, checked on the server: only the representative who owns this conversation may answer. An unassigned conversation is taken here in one atomic step (two people at once: one wins, the other is refused).
+    if ($own) { [$mine, $why] = \App\Support\ChatOwner::ensureOwner((int)$id, $me);
+      if (!$mine) { \App\Support\ChatOwner::log((int)$id, 'reply_blocked', \App\Support\ChatOwner::ownerId((int)$id), null, $uid, $me->name ?? null, 'Reply refused: not the owner.'); return response()->json(['ok'=>false, 'blocked'=>true, 'error'=>$why, 'owner'=>self::ownerInfo((int)$id)], 409); } }
     if ($f = $r->file('file')) {
       $dir = public_path('uploads/chat'); if (!is_dir($dir)) @mkdir($dir, 0775, true);
       $ext = strtolower($f->getClientOriginalExtension() ?: 'jpg'); $mime = (string)$f->getMimeType();
@@ -160,11 +173,21 @@ class ChatController extends Controller {
     if ($body === '' && !$att) return response()->json(['ok'=>false, 'error'=>'Write a message first.'], 422);
     if ($body !== '' && in_array($d['kind'] ?? 'text', ['text', 'quick'], true)) $body = mb_substr(Chat::staffGreet($t, (string)(auth()->user()->name ?? ''), (int)auth()->id()).$body, 0, 3500);
     $t0 = now(); // customer messages that arrive after this moment were not answered by this reply
-    [$ok, $err] = Chat::deliver($t, $body, $att, $type ?? 'image');
-    $mid = DB::table('chat_messages')->insertGetId(['thread_id'=>$id, 'dir'=>'out', 'kind'=>$d['kind'] ?? ($att ? 'file' : 'text'), 'body'=>$body, 'attachment_url'=>$att, 'attachment_type'=>$type,
-      'user_id'=>auth()->id(), 'user_name'=>auth()->user()->name, 'status'=>$ok ? 'sent' : 'failed', 'error'=>$err, 'created_at'=>now(), 'updated_at'=>now()]);
+    $row = ['thread_id'=>$id, 'dir'=>'out', 'kind'=>$d['kind'] ?? ($att ? 'file' : 'text'), 'body'=>$body, 'attachment_url'=>$att, 'attachment_type'=>$type, 'user_id'=>$uid, 'user_name'=>$me->name, 'created_at'=>now(), 'updated_at'=>now()];
+    if ($own) {
+      // The message is written first as "sending" (its token is unique), then sent while this representative holds the conversation, then marked sent or failed.
+      try { $mid = DB::table('chat_messages')->insertGetId($row + ['status'=>'sending', 'client_token'=>$ctok]); }
+      catch (\Illuminate\Database\UniqueConstraintViolationException $e) { $pm = DB::table('chat_messages')->where('thread_id', $id)->where('client_token', $ctok)->first(); return response()->json($pm ? $dupRes($pm) : ['ok'=>true, 'dup'=>true, 'id'=>0, 'error'=>null, 'ai'=>false]); }
+      Chat::$sender = ['type'=>'human', 'id'=>$uid, 'name'=>$me->name ?? ''];
+      try { [$ok, $err] = Chat::deliver($t, $body, $att, $type ?? 'image'); } catch (\Throwable $e) { report($e); $ok = false; $err = 'Sending failed. Check the chat before sending again.'; } finally { Chat::$sender = null; }
+      DB::table('chat_messages')->where('id', $mid)->update(['status'=>$ok ? 'sent' : 'failed', 'error'=>$err, 'updated_at'=>now()]);
+      if (!$ok && \App\Support\ChatOwner::$refused) { $res = ['ok'=>false, 'blocked'=>true, 'error'=>$err, 'id'=>$mid, 'ai'=>false, 'owner'=>self::ownerInfo((int)$id)]; if ($ck) \Illuminate\Support\Facades\Cache::put($ck, $res, 600); return response()->json($res, 409); }
+    } else {
+      [$ok, $err] = Chat::deliver($t, $body, $att, $type ?? 'image');
+      $mid = DB::table('chat_messages')->insertGetId($row + ['status'=>$ok ? 'sent' : 'failed', 'error'=>$err]);
+    }
     // A failed send leaves the conversation waiting for a reply; only an accepted message answers the customer.
-    $upd = ['assigned_to'=>$t->assigned_to ?: auth()->id(), 'ai_paused'=>true, 'updated_at'=>now()];
+    $upd = ($own ? [] : ['assigned_to'=>$t->assigned_to ?: auth()->id()]) + ['ai_paused'=>true, 'updated_at'=>now()];
     if ($ok) \Illuminate\Support\Facades\Cache::forget('chat.typing.'.$t->id);
     if ($ok) $upd += ['last_message'=>mb_substr($body !== '' ? $body : '[attachment]', 0, 300), 'last_dir'=>'out', 'last_at'=>now(), 'status'=>in_array($t->status, ['new', 'open']) ? 'waiting' : $t->status];
     DB::table('chat_threads')->where('id', $id)->update($upd);
@@ -188,7 +211,12 @@ class ChatController extends Controller {
     return response()->json($ok ? ['ok'=>true, 'text'=>$t] : ['ok'=>false, 'error'=>$t]);
   }
   public function ai(Request $r, $id) {
-    $on = $r->boolean('on'); if ($on) \Illuminate\Support\Facades\Cache::forget('ai.manual_off.'.(int)$id); else \Illuminate\Support\Facades\Cache::forever('ai.manual_off.'.(int)$id, 1);
+    $on = $r->boolean('on');
+    // Giving a conversation to the AI ends the person's ownership, so only its owner or a supervisor may do it.
+    if ($on && \App\Support\ChatOwner::ready() && ($o = \App\Support\ChatOwner::ownerId((int)$id)) !== null) {
+      if ($o !== (int)auth()->id() && !\App\Support\ChatOwner::supervisor(auth()->user())) return response()->json(['ok'=>false, 'blocked'=>true, 'error'=>\App\Support\ChatOwner::heldMsg($o)], 409);
+      [$rk, $rm] = \App\Support\ChatOwner::transfer((int)$id, null, auth()->user(), 'AI চালু করা হয়েছে: কথোপকথন AI-কে দেওয়া হলো।'); if (!$rk) return response()->json(['ok'=>false, 'error'=>$rm], 409);
+    } if ($on) \Illuminate\Support\Facades\Cache::forget('ai.manual_off.'.(int)$id); else \Illuminate\Support\Facades\Cache::forever('ai.manual_off.'.(int)$id, 1);
     DB::table('chat_threads')->where('id', $id)->update(['ai_paused'=>!$on, 'updated_at'=>now()]);
     if ($on) { $tid = (int)$id; app()->terminating(fn() => Chat::aiReply($tid)); }
     return response()->json(['ok'=>true, 'ai'=>$on]);
@@ -196,6 +224,10 @@ class ChatController extends Controller {
   /** Staff decision: the hand-off is finished, give this conversation back to the AI (clears the Handoff banner; the AI answers the waiting message if there is one). */
   public function handoffRelease(Request $r, $id) {
     $tid = (int)$id; $t = DB::table('chat_threads')->find($tid); abort_unless($t, 404);
+    if (\App\Support\ChatOwner::ready() && $t->assigned_to !== null) {
+      if ((int)$t->assigned_to !== (int)auth()->id() && !\App\Support\ChatOwner::supervisor(auth()->user())) return response()->json(['ok'=>false, 'blocked'=>true, 'error'=>\App\Support\ChatOwner::heldMsg((int)$t->assigned_to)], 409);
+      [$rk, $rm] = \App\Support\ChatOwner::transfer($tid, null, auth()->user(), 'হ্যান্ড-অফ শেষ: কথোপকথন AI-কে ফেরত দেওয়া হলো।'); if (!$rk) return response()->json(['ok'=>false, 'error'=>$rm], 409);
+    }
     \Illuminate\Support\Facades\Cache::forget('ai.manual_off.'.$tid);
     DB::table('chat_threads')->where('id', $tid)->update(['needs_human'=>false, 'handoff_at'=>null, 'handoff_reason'=>null, 'ai_paused'=>false, 'updated_at'=>now()]);
     try { if (\Illuminate\Support\Facades\Schema::hasTable('chat_handoffs')) DB::table('chat_handoffs')->where('thread_id', $tid)->where('status', 'open')->update(['status'=>'done', 'updated_at'=>now()]); } catch (\Throwable $e) {}
@@ -209,14 +241,37 @@ class ChatController extends Controller {
     DB::table('chat_threads')->where('id', $id)->update(['ai_lang'=>$v === 'auto' ? null : $v, 'updated_at'=>now()]);
     return response()->json(['ok'=>true, 'lang'=>$v]);
   }
+  /** Move a conversation to another representative, or release it to the queue. A supervisor may move any conversation; the owner may only release their own. Checked in ChatOwner, on the server. */
   public function assign(Request $r, $id) {
-    $d = $r->validate(['user_id'=>'nullable|integer|exists:users,id']);
-    DB::table('chat_threads')->where('id', $id)->update(['assigned_to'=>$d['user_id'] ?? null, 'updated_at'=>now()]);
-    return response()->json(['ok'=>true]);
+    $d = $r->validate(['user_id'=>'nullable|integer|exists:users,id', 'note'=>'nullable|string|max:1000']);
+    if (!\App\Support\ChatOwner::ready()) { DB::table('chat_threads')->where('id', $id)->update(['assigned_to'=>$d['user_id'] ?? null, 'updated_at'=>now()]); return response()->json(['ok'=>true]); }
+    abort_unless(DB::table('chat_threads')->where('id', $id)->exists(), 404);
+    [$ok, $msg] = \App\Support\ChatOwner::transfer((int)$id, isset($d['user_id']) ? (int)$d['user_id'] : null, auth()->user(), (string)($d['note'] ?? ''));
+    return response()->json(['ok'=>$ok, 'error'=>$ok ? null : $msg, 'owner'=>self::ownerInfo((int)$id)], $ok ? 200 : 409);
+  }
+  /** "Take this conversation": succeeds for exactly one person when several press it at the same moment. */
+  public function claim(Request $r, $id) {
+    abort_unless(\App\Support\ChatOwner::ready() && DB::table('chat_threads')->where('id', $id)->exists(), 404);
+    [$ok, $msg] = \App\Support\ChatOwner::claim((int)$id, auth()->user());
+    return response()->json(['ok'=>$ok, 'error'=>$ok ? null : $msg, 'owner'=>self::ownerInfo((int)$id)], $ok ? 200 : 409);
+  }
+  /** Who took, moved or released this conversation, and who replied (latest first). */
+  public function ownerHistory($id) {
+    abort_unless(DB::table('chat_threads')->where('id', $id)->exists(), 404);
+    $replies = DB::table('chat_messages')->where('thread_id', $id)->where('dir', 'out')->orderByDesc('id')->limit(40)->get(['id', 'user_name', 'is_ai', 'status', 'created_at'])
+      ->map(fn($m) => ['id'=>$m->id, 'by'=>$m->user_name ?: 'System', 'ai'=>(bool)($m->is_ai ?? false), 'status'=>$m->status, 'at'=>\Carbon\Carbon::parse($m->created_at)->toIso8601String()]);
+    return response()->json(['owner'=>self::ownerInfo((int)$id), 'events'=>\App\Support\ChatOwner::events((int)$id, 80), 'replies'=>$replies]);
+  }
+  /** Owner of a conversation as the screen needs it (the screen only shows this; the rule itself is enforced when sending). */
+  private static function ownerInfo(int $tid): array {
+    $u = auth()->user(); $on = \App\Support\ChatOwner::ready(); $o = $on ? \App\Support\ChatOwner::ownerId($tid) : null;
+    return ['on'=>$on, 'id'=>$o, 'name'=>$o ? \App\Support\ChatOwner::name($o) : null, 'mine'=>$o !== null && $u && $o === (int)$u->id, 'can_send'=>!$on || $o === null || ($u && $o === (int)$u->id), 'supervisor'=>\App\Support\ChatOwner::supervisor($u), 'me_id'=>$u ? (int)$u->id : null];
   }
   public function status(Request $r, $id) {
     $d = $r->validate(['status'=>'required|in:new,open,waiting,resolved', 'reason'=>'nullable|string|max:300']);
     $t = DB::table('chat_threads')->find($id); abort_unless($t, 404); $reason = trim((string)($d['reason'] ?? ''));
+    // Closing or reopening another representative's conversation is a supervisor's decision.
+    if (\App\Support\ChatOwner::ready() && $t->assigned_to !== null && (int)$t->assigned_to !== (int)auth()->id() && !\App\Support\ChatOwner::supervisor(auth()->user())) return response()->json(['ok'=>false, 'blocked'=>true, 'error'=>\App\Support\ChatOwner::heldMsg((int)$t->assigned_to)], 409);
     // Close chat is a deliberate staff decision: it ends the whole conversation (unread, Awaiting Reply, needs-a-person and hand-off are all cleared). A new customer message reopens it.
     $upd = ['status'=>$d['status'], 'updated_at'=>now()];
     if ($d['status'] === 'resolved') {
@@ -229,6 +284,7 @@ class ChatController extends Controller {
       $upd += ['unread'=>0, 'awaiting_reply'=>false, 'needs_human'=>false, 'handoff_at'=>null, 'handoff_reason'=>null, 'ai_paused'=>false];
     }
     DB::table('chat_threads')->where('id', $id)->update($upd);
+    if ($d['status'] === 'resolved') \App\Support\ChatOwner::system((int)$id, null, 'release', 'Closed by '.(auth()->user()->name ?? 'staff').'.'); // a closed conversation has no owner; if the customer writes again it is allocated afresh
     if ($d['status'] === 'resolved') { try { if (\Illuminate\Support\Facades\Schema::hasTable('chat_handoffs')) DB::table('chat_handoffs')->where('thread_id', $id)->whereIn('status', ['open', 'accepted'])->update(['status'=>'done', 'updated_at'=>now()]); } catch (\Throwable $e) {} }
     if ($d['status'] === 'resolved' || $t->status === 'resolved') { try { DB::table('audit_logs')->insert(['user_id'=>auth()->id(), 'user_name'=>auth()->user()->name ?? '', 'action'=>$d['status'] === 'resolved' ? 'chat.close' : 'chat.reopen', 'subject'=>'Conversation #'.$id.' '.($d['status'] === 'resolved' ? 'closed' : 'reopened').($reason !== '' ? ' - '.$reason : ''), 'ip'=>$r->ip(), 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {} }
     return response()->json(['ok'=>true, 'unread'=>Chat::unreadTotal()]);
@@ -539,6 +595,7 @@ class ChatController extends Controller {
     Sms::setSecret('ai_chat_auto', $r->boolean('ai_auto') ? '1' : '0');
     Sms::setSecret('ai_chat_chan', $r->boolean('ai_chan') ? '1' : '0');
     Sms::setSecret('ai_comment_reply', $r->boolean('ai_comment_reply') ? '1' : '0');
+    if ($r->has('owner_form')) { Sms::setSecret('chat_auto_assign', $r->boolean('chat_auto_assign') ? '1' : '0'); if ($r->filled('chat_absent_min')) Sms::setSecret('chat_absent_min', (string)max(2, min(240, (int)$r->input('chat_absent_min')))); }
     if ($r->has('stale_form')) { $was = Sms::secret('chat_stale_on') !== '0'; $on = $r->boolean('chat_stale_on'); Sms::setSecret('chat_stale_on', $on ? '1' : '0'); if ($on && !$was) Sms::setSecret('chat_stale_from', now()->toDateTimeString()); // switched back on: start from now, never a mass send to old chats
       if ($r->filled('chat_stale_min')) Sms::setSecret('chat_stale_min', (string)max(5, min(240, (int)$r->input('chat_stale_min'))));
       Sms::setSecret('chat_stale_text_bn', mb_substr(trim((string)$r->input('chat_stale_text_bn', '')), 0, 500)); Sms::setSecret('chat_stale_text_en', mb_substr(trim((string)$r->input('chat_stale_text_en', '')), 0, 500)); }

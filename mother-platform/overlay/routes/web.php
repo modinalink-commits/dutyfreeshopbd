@@ -190,7 +190,9 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/chat/thread/{id}/ai', [\App\Http\Controllers\ChatController::class,'ai']);
   Route::post('/chat/thread/{id}/handoff-release', [\App\Http\Controllers\ChatController::class,'handoffRelease'])->whereNumber('id');
   Route::post('/chat/thread/{id}/lang', [\App\Http\Controllers\ChatController::class,'lang']);
-  Route::post('/chat/thread/{id}/assign', [\App\Http\Controllers\ChatController::class,'assign']);
+  Route::post('/chat/thread/{id}/assign', [\App\Http\Controllers\ChatController::class,'assign'])->whereNumber('id');
+  Route::post('/chat/thread/{id}/claim', [\App\Http\Controllers\ChatController::class,'claim'])->whereNumber('id')->middleware('throttle:60,1');
+  Route::get('/chat/thread/{id}/owner-history', [\App\Http\Controllers\ChatController::class,'ownerHistory'])->whereNumber('id');
   Route::post('/chat/thread/{id}/status', [\App\Http\Controllers\ChatController::class,'status']);
   Route::post('/chat/thread/{id}/report', [\App\Http\Controllers\ChatController::class,'report'])->whereNumber('id');
   Route::post('/chat/thread/{id}/phone', [\App\Http\Controllers\ChatController::class,'phone']);
@@ -569,6 +571,7 @@ Route::prefix('api/staff')->withoutMiddleware([\Illuminate\Foundation\Http\Middl
     Route::get('/chat/threads', [$C,'threads']); Route::get('/chat/poll', [$C,'poll']); Route::get('/chat/thread/{id}', [$C,'thread'])->whereNumber('id');
     Route::get('/chat/thread/{id}/messages', [$C,'messagesAfter'])->whereNumber('id');
     Route::post('/chat/thread/{id}/reply', [$C,'reply'])->whereNumber('id')->middleware('throttle:60,1');
+    Route::post('/chat/thread/{id}/claim', [$C,'claim'])->whereNumber('id')->middleware('throttle:60,1'); Route::post('/chat/thread/{id}/assign', [$C,'assign'])->whereNumber('id')->middleware('throttle:60,1'); Route::get('/chat/thread/{id}/owner-history', [$C,'ownerHistory'])->whereNumber('id');
     Route::post('/chat/thread/{id}/ai', [$C,'ai'])->whereNumber('id')->middleware('throttle:30,1');
     Route::post('/chat/thread/{id}/assign', [$C,'assign'])->whereNumber('id'); Route::post('/chat/thread/{id}/status', [$C,'status'])->whereNumber('id'); Route::post('/chat/thread/{id}/report', [$C,'report'])->whereNumber('id');
   });

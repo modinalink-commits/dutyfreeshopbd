@@ -26,8 +26,12 @@ class AgentHandoff {
     $agents = self::eligible(); $pick = $agents[0] ?? null;
     DB::table('chat_handoffs')->insert(['thread_id'=>$tid, 'assigned_to'=>$pick['id'] ?? null, 'reason'=>$reason, 'summary'=>$summary, 'priority'=>$priority, 'status'=>'open', 'created_at'=>now(), 'updated_at'=>now()]);
     $upd = ['needs_human'=>true, 'handoff_at'=>now(), 'handoff_reason'=>$reason, 'ai_summary'=>$summary, 'priority'=>$priority, 'ai_paused'=>true, 'status'=>'open', 'updated_at'=>now()];
-    if ($pick) $upd['assigned_to'] = $pick['id'];
+    if ($pick && !ChatOwner::ready()) $upd['assigned_to'] = $pick['id'];
     DB::table('chat_threads')->where('id', $tid)->update($upd);
+    if (ChatOwner::ready()) { // ownership changes only through ChatOwner (logged; never over a person who already owns the chat)
+      if ($pick && ChatOwner::ownerId($tid) === null) ChatOwner::system($tid, (int)$pick['id'], 'auto_assign', 'AI hand-off: '.mb_substr($reason, 0, 200));
+      ChatOwner::$handoffRun[$tid] = true; // the AI's closing line of this run may still be sent
+    }
     AiMemory::event($tid, null, 'ai', 'handoff', null, ['reason'=>$reason, 'priority'=>$priority]);
     return ['handed_over'=>true, 'assigned_to_agent'=>(bool)$pick, 'tell_customer'=>$tell];
   }
