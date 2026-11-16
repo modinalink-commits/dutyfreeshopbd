@@ -35,16 +35,61 @@ class ChatComments {
   }
   private static function postText(string $postId, string $tok): string {
     if ($postId === '') return '';
-    return (string)Cache::remember('cc.post.' . md5($postId), 86400, function () use ($postId, $tok) {
-      try { $r = Http::timeout(8)->get(Chat::API . '/' . $postId, ['fields' => 'message', 'access_token' => $tok]); return $r->ok() ? mb_substr(trim((string)$r->json('message')), 0, 500) : ''; } catch (\Throwable $e) { return ''; }
+    return (string)Cache::remember('cc.post2.' . md5($postId), 86400, function () use ($postId, $tok) {
+      try { $r = Http::timeout(8)->get(Chat::API . '/' . $postId, ['fields' => 'message', 'access_token' => $tok]); return $r->ok() ? mb_substr(trim((string)$r->json('message')), 0, 3000) : ''; } catch (\Throwable $e) { return ''; }
     });
   }
   const VARIANTS = ['{n}বিস্তারিত জানতে আমাদের ইনবক্সে আসুন, ধন্যবাদ। 🙏', '{n}দাম ও বিস্তারিত জানতে ইনবক্সে মেসেজ করুন, ধন্যবাদ। 🙏', '{n}আমাদের ইনবক্সে মেসেজ দিন, সব তথ্য সেখানে জানিয়ে দেব। ধন্যবাদ। 🙏', '{n}ইনবক্সে আসুন, বিস্তারিত সেখানেই জানাব। ধন্যবাদ। 🙏', '{n}পণ্যের বিস্তারিত জানতে ইনবক্সে আসুন, ধন্যবাদ। 🙏'];
-  /** Reason string when the text is spam / abuse, else null. Conservative: complaints and plain questions are never matched. */
-  public static function bad(string $t): ?string {
-    if (self::spam($t)) return 'spam link';
-    if (preg_match('/(\bfuck|\bfck\b|\bbitch|\bbastard|\bscam(mer)?\b|\bfraud\b|\bcheat(er|ing)?\b|মাগি|মাগী|খানকি|খানকির|চুদ|চোদ|বাল\b|হারামি|হারামজাদা|কুত্তা|কুকুরের বাচ্চা|শুয়োর|বেশ্যা|ফালতু|বেটা চোর|জালিয়াত|প্রতারক|ভাঁওতাবাজ)/iu', $t)) return 'abusive words';
+  /**
+   * Owner rules 16 Nov 2026. Moderation verdict for a comment: ['delete', why] for obscenity / abuse / threats / clear spam, ['review', why] when it is only doubtful
+   * (kept for staff, never deleted, never answered), or null. A real complaint, a bad experience or polite criticism is NEVER deleted: words like "scam", "প্রতারক",
+   * "ফালতু" alone are a complaint (see intent()), not abuse.
+   */
+  public static function moderate(string $t): ?array {
+    $own = preg_replace('#(https?://)?(www\.)?dutyfreebd\.(com|shop|store)\S*#iu', ' ', $t); // our own address in a comment is not spam
+    $complaint = self::intent($t) === 'complaint';
+    if (preg_match('/(\bfuck|\bfck\b|\bf\*+k|\bbitch|\bbastard|\basshole|\bmotherf|\bslut\b|\bwhore\b|\bporn|\bxxx\b|\bnude|মাগি|মাগী|খানকি|চুদ|চোদ(?!্দ)|হারামি|হারামজাদা|কুত্তার বাচ্চা|কুকুরের বাচ্চা|শুয়োরের বাচ্চা|বেশ্যা|ভোদা|পর্ন|\bmagi\b|\bkhanki|\bchudi|\bchod|\bharami)/iu', $t)) return ['delete', 'abusive / obscene words'];
+    if (preg_match('/(মেরে ফেল|খুন কর|জানে মার|জবাই|হাত পা ভেঙ|পুড়িয়ে দ|বোমা মার|\bkill (you|u)\b|\bi will kill|\bmere fel|\bkhun kor)/iu', $t)) return ['delete', 'threat'];
+    $link = (bool)preg_match('#(https?://|www\.|\b[a-z0-9-]+\.(com|net|org|xyz|top|site|online|shop|store|info|live|club|vip)\b|t\.me/|wa\.me/|bit\.ly|tinyurl)#iu', (string)$own);
+    $promo = (bool)preg_match('/(1xbet|casino|ক্যাসিনো|betting|বেটিং|জুয়া|লোন দেওয়া|loan offer|earn (money|\$|dollar)|ঘরে বসে আয়|আয় করুন|income per day|crypto|bitcoin|forex|লাইক ফলোয়ার|free recharge|ফ্রি রিচার্জ|টেলিগ্রামে)/iu', $t);
+    if ($promo && !$complaint) return ['delete', 'spam promotion'];
+    if ($link) return $complaint ? ['review', 'link in a complaint'] : ['delete', 'spam link'];
+    if ($promo) return ['review', 'possible spam'];
+    if (preg_match('/((?<![\x{0980}-\x{09FF}])(বাল|বালের|শালা|শালার)(?![\x{0980}-\x{09FF}])|কুত্তা|শুয়োর|গাধা|বেয়াদব|সেক্স|\bsex|\bstupid|\bidiot|\bdamn\b|\bshit\b|\bbal\b|\bsala\b)/iu', $t)) return ['review', 'rude words'];
     return null;
+  }
+  /** Kept for older callers: reason when the comment must be deleted, else null. */
+  public static function bad(string $t): ?string { $m = self::moderate($t); return $m && $m[0] === 'delete' ? $m[1] : null; }
+  /** What the comment is about: complaint | order | delivery | price | praise | other. Bangla, English and Banglish. Complaint wins over everything else. */
+  public static function intent(string $t): string {
+    if (preg_match('/(পাইনি|পাই নাই|পাইনাই|পাই নি|আসেনি|আসে নাই|আসে নি|দেয়নি|দেয় নাই|নষ্ট|ভাঙা|ভাঙ্গা|নকল|ভুল পণ্য|ভুল প্রোডাক্ট|রিফান্ড|টাকা ফেরত|ফেরত চাই|অভিযোগ|প্রতারণা|প্রতারক|ঠকবাজ|ঠকা|ঠকিয়ে|বাজে|খারাপ|ফালতু|জালিয়াত|ভাঁওতা|চোর\b|ভালো না|ভাল না|ভালো নয়|ফোন ধরে না|রিপ্লাই দেয় না|উত্তর দেয় না|\bscam|\bfraud|\bcheat|\bfake\b|\brefund|\bcomplain|not received|did ?n.?t (get|receive)|never (got|received)|\bdamaged?\b|\bbroken\b|\bworst\b|bad (service|product|experience|quality)|no (reply|response)|\bkharap|\bpaini\b|pai nai|\bnokol\b|\bferot\b|\bfalto?u\b|\bbaje\b|\bprotarok)/iu', $t)) return 'complaint';
+    if (preg_match('/(অর্ডার|কিনতে চাই|কিনবো|কিনব\b|নিতে চাই|নিবো|নিব\b|নেব\b|লাগবে|দরকার|পাঠান|পাঠিয়ে দিন|বুকিং|\border|\bbuy\b|\bpurchase|\bkinbo|\bkinte\b|\bnibo\b|\bnebo\b|nite chai|\blagbe\b|\bdorkar|\bbook(ing)?\b|i want|\bpathan\b)/iu', $t)) return 'order';
+    if (preg_match('/(ডেলিভারি|ডেলিভারী|ডেলিভারির|কুরিয়ার|কত দিন|কতদিন|কবে পাব|কবে পাবো|হোম ডেলিভারি|ক্যাশ অন|\bdelivery|\bcourier|\bshipping|koto ?din|kobe pabo|cash on|\bcod\b)/iu', $t)) return 'delivery';
+    if (preg_match('/(দাম|প্রাইস|প্রাইজ|মূল্য|কত টাকা|কত\b|কতো|রেট|বিস্তারিত|ডিটেইল|স্টক|আছে কি|আছে\?|পাওয়া যাবে|পাওয়া যায়|সাইজ|অরিজিনাল|\bprice|\bprize\b|\bpp\b|\bdam\b|\bdaam\b|\bkoto\b|\bkto\b|\brate\b|\bdetails?\b|\bstock\b|\bavailable|\bache\b|\basse\b|\bsize\b|\boriginal\b|\binfo\b|how much)/iu', $t)) return 'price';
+    if (preg_match('/(ধন্যবাদ|সুন্দর|ভালো|ভাল\b|দারুণ|দারুন|অসাধারণ|চমৎকার|মাশাআল্লাহ|মাশাল্লাহ|আলহামদুলিল্লাহ|সেরা|বেস্ট|\bnice\b|\bgood\b|\bgreat\b|\bawesome|\bbest\b|\bexcellent|\blove(ly)?\b|\bthanks?\b|thank you|\bwow\b|\bvalo\b|\bbhalo\b|\bsundor|\bdarun\b|\bmashallah|\bsuperb?\b|\bperfect\b|👍|❤|😍|🥰|👏)/iu', $t)) return 'praise';
+    return 'other';
+  }
+  const SITE = 'https://dutyfreebd.com';
+  /** Public reply wording per intent ({n} = "Name, " or '', {l} = the product link written in the post, else the site address). Never a price, stock, delivery or refund promise; never asks for a phone number or address in public. */
+  const REPLIES = [
+    'price' => ['{n}ধন্যবাদ। কোন পণ্যটি সম্পর্কে জানতে চাচ্ছেন? নাম বা ছবি ইনবক্সে দিলে বিস্তারিত জানাতে পারব। 🙏', '{n}ধন্যবাদ। দাম ও বিস্তারিত জানতে আমাদের ইনবক্সে মেসেজ দিন অথবা ভিজিট করুন: {l}', '{n}আপনার আগ্রহের জন্য ধন্যবাদ। পণ্যের বিস্তারিত ইনবক্সে জানিয়ে দেব, ওয়েবসাইটেও দেখতে পারেন: {l}'],
+    'order' => ['{n}আপনার আগ্রহের জন্য ধন্যবাদ। অর্ডার করতে ভিজিট করুন: {l} অথবা সহায়তার জন্য ইনবক্সে মেসেজ দিন। 🙏', '{n}ধন্যবাদ। সহজে অর্ডার করতে পারবেন এখানে: {l} প্রয়োজনে ইনবক্সে মেসেজ দিন, আমরা সাহায্য করব।'],
+    'delivery' => ['{n}ধন্যবাদ। ডেলিভারি সম্পর্কে বিস্তারিত জানতে ইনবক্সে মেসেজ দিন, আমরা জানিয়ে দেব। অর্ডার করতে ভিজিট করুন: {l}', '{n}আপনার প্রশ্নের জন্য ধন্যবাদ। ডেলিভারির তথ্য ইনবক্সে জানিয়ে দিচ্ছি, অনুগ্রহ করে একটি মেসেজ দিন। 🙏'],
+    'complaint' => ['{n}আপনার অসুবিধার বিষয়টি জানানোয় ধন্যবাদ। অনুগ্রহ করে অর্ডার নম্বরটি ইনবক্সে দিন। বিষয়টি যাচাই করে সহায়তা করা হবে।', '{n}অসুবিধার জন্য আন্তরিকভাবে দুঃখিত। অর্ডার নম্বরটি ইনবক্সে দিলে আমরা বিষয়টি যাচাই করে সহায়তা করব।'],
+    'praise' => ['{n}আপনার সুন্দর মন্তব্যের জন্য আন্তরিক ধন্যবাদ। আপনার আস্থা আমাদের অনুপ্রেরণা। 🙏', '{n}আন্তরিক ধন্যবাদ। আপনার ভালো লাগা আমাদের অনুপ্রেরণা। পাশে থাকবেন। 🙏'],
+  ];
+  /** The public reply for a comment: [intent, text]. Tobacco / vape (in the comment or the post) only ever gets the plain inbox invitation, with no link and no product talk. */
+  public static function replyText(string $msg, string $nm, string $commentId, string $postText = '', string $link = ''): array {
+    $in = self::intent($msg); $n = $nm !== '' ? $nm . ', ' : ''; $k = crc32($commentId);
+    $smoke = self::isSmoke($msg . ' ' . $postText);
+    if ($in === 'complaint' || $in === 'praise') { $v = self::REPLIES[$in]; return [$in, strtr($v[$k % count($v)], ['{n}' => $n])]; }
+    if ($smoke || $in === 'other') { $v = self::VARIANTS; return [$in, strtr($v[$k % count($v)], ['{n}' => $n])]; }
+    $v = self::REPLIES[$in]; return [$in, strtr($v[$k % count($v)], ['{n}' => $n, '{l}' => $link !== '' ? $link : self::SITE])];
+  }
+  /** A product link the Page itself wrote in the post (our own domain only), else ''. Never invented. */
+  public static function linkIn(string $postText): string {
+    if (!preg_match('#https?://(?:www\.)?dutyfreebd\.com/[^\s<>"\']+#iu', $postText, $m)) return '';
+    $u = rtrim($m[0], '.,;:!?)।'); return mb_strlen($u) <= 200 ? $u : '';
   }
   /** Delete the comment on Facebook (Page token) and mark it 'deleted'. Returns true on success. */
   public static function remove(int $id, string $why, ?int $by = null): bool {
@@ -62,10 +107,19 @@ class ChatComments {
     return false;
   }
   private static function spam(string $t): bool { return (bool)preg_match('#(https?://|www\.|\.com\b|\.xyz\b|t\.me/|wa\.me/|bit\.ly)#iu', $t); }
+  /** The one inbox message that follows the public reply, worded for what the person asked. */
+  public static function inboxText(string $nm, string $intent, string $link = ''): string {
+    $hi = 'আসসালামু আলাইকুম' . ($nm !== '' ? ' ' . $nm : '') . '। ';
+    $l = $link !== '' ? $link : self::SITE;
+    if ($intent === 'complaint') return $hi . "আপনার অসুবিধার জন্য আন্তরিকভাবে দুঃখিত।\nঅনুগ্রহ করে অর্ডার নম্বরটি এখানে লিখুন। আমাদের প্রতিনিধি বিষয়টি যাচাই করে আপনাকে সহায়তা করবেন। ধন্যবাদ।";
+    if ($intent === 'order') return $hi . "আপনার আগ্রহের জন্য ধন্যবাদ।\nকোন পণ্যটি অর্ডার করতে চান, এখানে লিখে জানান। সরাসরি অর্ডার করতে পারেন: " . $l . "\nধন্যবাদ।";
+    if ($intent === 'delivery') return $hi . "আপনার কমেন্টের জন্য ধন্যবাদ।\nডেলিভারি সম্পর্কে কী জানতে চান, এখানে লিখুন। আমরা বিস্তারিত জানিয়ে দেব।\nওয়েবসাইট: " . $l;
+    return $hi . "আপনার কমেন্টের জন্য ধন্যবাদ।\nকোন পণ্যের দাম বা বিস্তারিত জানতে চান? এখানে লিখে জানান, আমরা সাহায্য করব।\nওয়েবসাইট: " . $l;
+  }
   /** One private message from the Page inbox to the commenter (Facebook allows one per comment, within 7 days). Returns a short note for the log. */
-  private static function privateMessage(object $c, string $tok, string $nm): string {
+  private static function privateMessage(object $c, string $tok, string $nm, string $intent = 'other', string $link = ''): string {
     try {
-      $m = 'আসসালামু আলাইকুম' . ($nm !== '' ? ' ' . $nm : '') . "। আপনার কমেন্টের জন্য ধন্যবাদ।\nকোন পণ্যের বিস্তারিত জানতে চান? এখানে লিখে জানান, আমরা সাহায্য করব। ধন্যবাদ।";
+      $m = self::inboxText($nm, $intent, $link);
       $r = Http::timeout(15)->withToken($tok)->post(Chat::API . '/' . $c->comment_id . '/private_replies', ['message' => $m]);
       if ($r->ok()) return 'inbox message sent';
       $e1 = mb_substr((string)($r->json('error.message') ?? $r->status()), 0, 70);
@@ -128,12 +182,18 @@ class ChatComments {
       $tok = Chat::pageTok($c->channel, $c->page_ref); if (!$tok) { self::done($id, 'failed', null, 'Page token missing (Chat Settings)'); return; }
       // Owner rule 15 Nov 2026: the public reply only invites the person to our inbox (no price, no product detail, nothing about tobacco); the details go in a private message from the Page inbox.
       // Owner 15 Nov 2026: bad comments (links / scam promo / abuse) are removed from the Page, never answered.
-      $why = self::bad($msg);
-      if ($why !== null) { self::remove($id, $why); return; }
+      $mod = self::moderate($msg);
+      if ($mod !== null && $mod[0] === 'delete') { self::remove($id, $mod[1]); return; }
+      if ($mod !== null) { self::done($id, 'skipped', null, 'review: ' . $mod[1]); return; } // doubtful: kept for staff, not deleted, not answered
       $first = trim((string)preg_split('/\s+/u', trim((string)$c->from_name))[0]); $nm = $first !== '' && mb_strlen($first) <= 20 ? $first : '';
-      $v = self::VARIANTS; $text = strtr($v[crc32($c->comment_id) % count($v)], ['{n}' => $nm !== '' ? $nm . ', ' : '']);
+      $pt = self::postText((string)$c->post_id, $tok); $link = self::isSmoke($msg . ' ' . $pt) ? '' : self::linkIn($pt);
+      [$intent, $text] = self::replyText($msg, $nm, (string)$c->comment_id, $pt, $link);
       $r = Http::timeout(15)->asForm()->post(Chat::API . '/' . $c->comment_id . '/comments?access_token=' . urlencode($tok), ['message' => $text]);
-      if ($r->ok()) { self::done($id, 'replied', $text, self::privateMessage($c, $tok, $nm)); }
+      if ($r->ok()) {
+        // Praise gets a thank-you only; every question / order / complaint also gets the one inbox message. A complaint is flagged for the representative.
+        $note = $intent === 'praise' ? 'thanks (no inbox message)' : self::privateMessage($c, $tok, $nm, $intent, $link);
+        self::done($id, 'replied', $text, ($intent === 'complaint' ? 'COMPLAINT - staff follow-up | ' : $intent . ' | ') . $note);
+      }
       else self::done($id, 'failed', $text, 'HTTP ' . $r->status() . ' ' . mb_substr((string)($r->json('error.message') ?? ''), 0, 150));
     } catch (\Throwable $e) { report($e); }
   }
