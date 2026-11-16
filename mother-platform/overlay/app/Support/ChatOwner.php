@@ -142,15 +142,13 @@ class ChatOwner {
       return AiSchedule::activeNow() || Chat::aiTakeover((int)$t->id);
     } catch (\Throwable $e) { return true; }
   }
-  /** A new customer message arrived (called from Chat::ingest). Reopened chats start without an owner; a chat the AI will not answer goes to the least busy available representative. */
+  /** A new customer message arrived (called from Chat::ingest). A closed conversation that is reopened starts without an owner, open to everyone. Nothing is assigned here. */
   public static function onCustomerMessage(object $before, object $fresh): void {
     if (!self::ready()) return;
     try {
       $tid = (int)$fresh->id;
       if ($before->status === 'resolved' && $fresh->assigned_to !== null) { self::system($tid, null, 'release', 'Closed conversation reopened by a new customer message.'); $fresh->assigned_to = null; }
-      if ($fresh->assigned_to !== null || Sms::secret('chat_auto_assign') === '0' || self::botHandles($fresh)) return;
-      $pick = AgentHandoff::eligible()[0] ?? null;
-      if ($pick) self::system($tid, (int)$pick['id'], 'auto_assign', 'New customer message; the AI is not answering this conversation.');
+      // Owner rule 16 Nov 2026: a new message is never given to a representative in advance. It waits in the open list; whoever first sends a reply becomes the owner (ChatController::reply).
     } catch (\Throwable $e) { report($e); }
   }
 
@@ -158,6 +156,8 @@ class ChatOwner {
   public static function tick(): void {
     if (!self::ready() || !Cache::add('chat.owner.tick', 1, 50)) return;
     try { DB::table('chat_messages')->where('status', 'sending')->where('created_at', '<', now()->subMinutes(5))->update(['status'=>'failed', 'error'=>'Sending was interrupted before the platform confirmed it. Check the chat before sending again.', 'updated_at'=>now()]); } catch (\Throwable $e) {}
+    try { self::unstick(); } catch (\Throwable $e) {}
+    try { self::releaseAbsent(); } catch (\Throwable $e) {}
     try {
       $min = max(2, min(240, (int)(Sms::secret('chat_absent_min') ?: 10)));
       $rows = DB::table('chat_threads')->whereNotNull('assigned_to')->where('awaiting_reply', true)->where('status', '!=', 'resolved')
@@ -174,6 +174,44 @@ class ChatOwner {
       }
       self::health($min);
     } catch (\Throwable $e) { report($e); }
+  }
+  /** Minutes an owner may leave a customer unanswered before the conversation goes back to the open list (Chat Settings; 0 = never). */
+  public static function releaseMin(): int { $v = Sms::secret('chat_release_min'); return $v === null || $v === '' ? 20 : max(0, min(480, (int)$v)); }
+  /** The owner is away: the conversation returns to the open list for everyone, and the old owner can no longer send in it (sending always checks the owner). */
+  public static function releaseAbsent(): void {
+    $min = self::releaseMin(); if ($min <= 0) return;
+    $rows = DB::table('chat_threads')->whereNotNull('assigned_to')->where('awaiting_reply', true)->where('status', '!=', 'resolved')->whereNotNull('awaiting_since')
+      ->where('awaiting_since', '<=', now()->subMinutes($min))->orderBy('awaiting_since')->limit(40)->get(['id', 'assigned_to', 'awaiting_since', 'name', 'phone']);
+    foreach ($rows as $t) {
+      $own = (int)$t->assigned_to; $nm = self::name($own);
+      if (!self::system((int)$t->id, null, 'release', $nm.' did not reply for '.$min.' minutes: back to the open list for everyone.')) continue;
+      try { DB::table('chat_notes')->insert(['thread_id'=>$t->id, 'user_id'=>null, 'user_name'=>'System', 'body'=>$nm.' '.$min.' মিনিট উত্তর দেননি। কথোপকথনটি সবার জন্য উন্মুক্ত তালিকায় ফেরানো হয়েছে; যিনি প্রথম উত্তর দেবেন তিনিই দায়িত্ব পাবেন।', 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {}
+    }
+  }
+  /** A first reply that was cut off before the platform confirmed it must not leave the conversation with that person: when the owner has no delivered reply since taking it, it is open again. */
+  private static function unstick(): void {
+    $rows = DB::table('chat_messages')->where('status', 'failed')->where('dir', 'out')->whereNotNull('user_id')->where('updated_at', '>=', now()->subMinutes(3))->where('error', 'like', 'Sending was interrupted%')->limit(40)->get(['thread_id', 'user_id']);
+    foreach ($rows as $m) self::releaseIfNeverAnswered((int)$m->thread_id, (int)$m->user_id, 'A reply was interrupted before it was delivered.');
+  }
+  /** Give the conversation back to everyone when $uid owns it but has not delivered one reply since taking it. Returns true when it was released. */
+  public static function releaseIfNeverAnswered(int $tid, int $uid, string $why): bool {
+    if (!self::ready()) return false;
+    $t = DB::table('chat_threads')->where('id', $tid)->first(['assigned_to', 'assigned_at']); if (!$t || $t->assigned_to === null || (int)$t->assigned_to !== $uid) return false;
+    $q = DB::table('chat_messages')->where('thread_id', $tid)->where('dir', 'out')->where('status', 'sent')->where('user_id', $uid);
+    if ($t->assigned_at) $q->where('created_at', '>=', \Carbon\Carbon::parse($t->assigned_at)->subSeconds(5));
+    if ($q->exists()) return false;
+    return self::system($tid, null, 'release', $why.' No reply was delivered, so the conversation is open to everyone again.');
+  }
+  /** Who has this conversation open right now (other than $me) and who is typing. Kept for 15 seconds per person; display only, it never gives or blocks anything. */
+  public static function presence(int $tid, object $me, bool $typing): array {
+    try {
+      $k = 'chat.pres.'.$tid; $now = time(); $all = (array)Cache::get($k, []);
+      $all[(int)$me->id] = ['n'=>(string)($me->name ?? ''), 't'=>$now, 'ty'=>$typing ? $now : (int)($all[(int)$me->id]['ty'] ?? 0)];
+      foreach ($all as $uid => $p) if ($now - (int)($p['t'] ?? 0) > 15) unset($all[$uid]);
+      Cache::put($k, $all, 60);
+      $out = []; foreach ($all as $uid => $p) if ((int)$uid !== (int)$me->id) $out[] = ['name'=>$p['n'], 'typing'=>$now - (int)$p['ty'] <= 6];
+      return $out;
+    } catch (\Throwable $e) { return []; }
   }
   /** One line in the owner's Issues Center while any owned conversation is waiting past the limit. */
   private static function health(int $min): void {

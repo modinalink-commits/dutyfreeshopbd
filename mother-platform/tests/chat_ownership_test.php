@@ -216,12 +216,11 @@ DB::table('chat_threads')->whereNotNull('assigned_to')->update(['assigned_to'=>n
 for ($i = 0; $i < 3; $i++) thread(['assigned_to'=>$A, 'assigned_at'=>now()]); thread(['assigned_to'=>$B, 'assigned_at'=>now()]); thread(['assigned_to'=>$S, 'assigned_at'=>now()]); thread(['assigned_to'=>$S, 'assigned_at'=>now()]);
 $r = run([[0, [], 'ingest', 'newB'.getmypid(), 'm.'.bin2hex(random_bytes(5)), 'হ্যালো']]);
 $tid = (int)DB::table('chat_threads')->where('external_id', 'newB'.getmypid())->value('id');
-ok(owner($tid) === $C && events($tid, 'auto_assign') === 1, 'AI is off: the new conversation went to the least busy representative (C) and it is recorded');
+ok(owner($tid) === null && events($tid, 'auto_assign') === 0, 'AI is off: the new conversation is not given to anyone in advance; it waits in the open list (rule of 16 Nov 2026)');
 // closed conversation, customer writes again: the old owner is not kept
-DB::table('chat_threads')->where('id', $tid)->update(['status'=>'resolved']);
-DB::table('chat_threads')->where('assigned_to', $A)->where('id', '!=', $tid)->update(['assigned_to'=>null]); // A is now the least busy
+DB::table('chat_threads')->where('id', $tid)->update(['status'=>'resolved', 'assigned_to'=>$A, 'assigned_at'=>now()]); // a closed conversation that still carries its old owner
 $r = run([[0, [], 'ingest', 'newB'.getmypid(), 'm.'.bin2hex(random_bytes(5)), 'আবার এলাম']]);
-ok(owner($tid) === $A && events($tid, 'release') === 1, 'closed conversation reopened by the customer: old owner released, allocated afresh (to A, now the least busy)');
+ok(owner($tid) === null && events($tid, 'release') === 1 && events($tid, 'auto_assign') === 0, 'closed conversation reopened by the customer: the old owner is released and nobody is assigned in advance');
 Sms::setSecret('ai_enabled', '1'); Cache::forget('ai.on');
 // closing releases the owner
 $t = thread(['assigned_to'=>$A, 'assigned_at'=>now()]);
@@ -233,9 +232,9 @@ DB::table('chat_threads')->whereNotNull('assigned_to')->update(['assigned_to'=>n
 $t = thread();
 run([[0, ['AI_MODE'=>'handoff', 'AI_MS'=>'200'], 'ai', $t->id]]);
 $s = sends($t->external_id); $o = owner($t->id);
-ok($o !== null && count($s) === 1 && events($t->id, 'auto_assign') === 1, 'the AI handed the chat to a person (owner #'.$o.') and its one closing line reached the customer');
+ok($o === null && count($s) === 1 && events($t->id, 'auto_assign') === 0, 'the AI handed the chat to staff: its one closing line reached the customer and the chat waits in the open list, assigned to nobody');
 DB::table('chat_messages')->insert(['thread_id'=>$t->id, 'dir'=>'in', 'kind'=>'text', 'body'=>'আছেন?', 'created_at'=>now(), 'updated_at'=>now()]);
-DB::table('chat_threads')->where('id', $t->id)->update(['needs_human'=>false, 'ai_paused'=>false, 'handoff_at'=>null]); Cache::forget('ai.lock.'.$t->id); // even with every other AI brake removed
+Cache::forget('ai.lock.'.$t->id); // the hand-off marks (needs a person, AI paused) keep the AI out while the chat waits for staff
 run([[0, [], 'ai', $t->id]]);
 ok(count(sends($t->external_id)) === 1, 'after the hand-off the AI does not answer the customer\'s next message');
 

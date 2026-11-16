@@ -24,12 +24,12 @@ class AgentHandoff {
     $tid = (int)($ctx['thread_id'] ?? 0); if (!$tid) return ['error'=>'no conversation'];
     $st['handed_off'] = true;
     $agents = self::eligible(); $pick = $agents[0] ?? null;
-    DB::table('chat_handoffs')->insert(['thread_id'=>$tid, 'assigned_to'=>$pick['id'] ?? null, 'reason'=>$reason, 'summary'=>$summary, 'priority'=>$priority, 'status'=>'open', 'created_at'=>now(), 'updated_at'=>now()]);
+    DB::table('chat_handoffs')->insert(['thread_id'=>$tid, 'assigned_to'=>ChatOwner::ready() ? null : ($pick['id'] ?? null), 'reason'=>$reason, 'summary'=>$summary, 'priority'=>$priority, 'status'=>'open', 'created_at'=>now(), 'updated_at'=>now()]);
     $upd = ['needs_human'=>true, 'handoff_at'=>now(), 'handoff_reason'=>$reason, 'ai_summary'=>$summary, 'priority'=>$priority, 'ai_paused'=>true, 'status'=>'open', 'updated_at'=>now()];
     if ($pick && !ChatOwner::ready()) $upd['assigned_to'] = $pick['id'];
     DB::table('chat_threads')->where('id', $tid)->update($upd);
     if (ChatOwner::ready()) { // ownership changes only through ChatOwner (logged; never over a person who already owns the chat)
-      if ($pick && ChatOwner::ownerId($tid) === null) ChatOwner::system($tid, (int)$pick['id'], 'auto_assign', 'AI hand-off: '.mb_substr($reason, 0, 200));
+      // Owner rule 16 Nov 2026: a hand-off is not given to one representative in advance; it waits in the open list and the first person who replies owns it.
       ChatOwner::$handoffRun[$tid] = true; // the AI's closing line of this run may still be sent
     }
     AiMemory::event($tid, null, 'ai', 'handoff', null, ['reason'=>$reason, 'priority'=>$priority]);

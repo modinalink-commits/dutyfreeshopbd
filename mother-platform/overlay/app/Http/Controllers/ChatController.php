@@ -33,7 +33,7 @@ class ChatController extends Controller {
     if ($s = trim((string)$r->query('q'))) { $like = '%'.str_replace(['%', '_'], ['\%', '\_'], $s).'%'; $q->where(fn($w) => $w->where('name', 'ilike', $like)->orWhere('phone', 'ilike', $like)->orWhere('username', 'ilike', $like)->orWhere('last_message', 'ilike', $like)->orWhereIn('phone', fn($o) => $o->from('orders')->where('invoice', 'ilike', $like)->select('phone')->limit(50))); }
     // Unread first, then waiting for staff, then read/open, then resolved; newest message first inside each group.
     if ($hist) $q->orderByDesc('last_at');
-    $rows = $q->orderByRaw("case when status <> 'resolved' and awaiting_reply then 1 when status <> 'resolved' and (status = 'waiting' or coalesce(needs_human, false)) then 2 when status <> 'resolved' then 3 else 4 end")->orderByDesc('last_at')->limit(120)->get();
+    $rows = $q->orderByRaw("case when status <> 'resolved' and awaiting_reply then 1 when status <> 'resolved' and (status = 'waiting' or coalesce(needs_human, false)) then 2 when status <> 'resolved' then 3 else 4 end")->orderByRaw("case when status <> 'resolved' and awaiting_reply then coalesce(" . (\App\Support\ChatOwner::ready() ? 'awaiting_since, ' : '') . "last_customer_message_at, last_at) end asc nulls last")->orderByDesc('last_at')->limit(120)->get();
     $orq = 0; try { $orq = (int)DB::table('chat_order_requests')->where('status', 'review')->count(); } catch (\Throwable $e) {}
     $hum = 0; try { $hum = (int)Chat::humanScope(DB::table('chat_threads'))->count(); } catch (\Throwable $e) {}
     $rep = 0; try { $rep = (int)DB::table('chat_threads')->whereNotNull('reported_at')->whereNull('report_solved_at')->count(); } catch (\Throwable $e) {}
@@ -128,7 +128,8 @@ class ChatController extends Controller {
     $after = (int)$r->query('after');
     $m = DB::table('chat_messages')->where('thread_id', $id)->where('id', '>', $after)->orderBy('id')->get()->map($map);
     $t = DB::table('chat_threads')->find($id);
-    return response()->json(['messages'=>$m, 'status'=>$t->status ?? null, 'unread'=>$t && $t->awaiting_reply ? (int)$t->unread : 0, 'awaiting'=>$t ? (bool)$t->awaiting_reply : false, 'replied'=>$t ? (!$t->awaiting_reply && !empty($t->last_successful_agent_reply_at)) : false,
+    $pres = $r->has('pv') && $t ? \App\Support\ChatOwner::presence((int)$id, auth()->user(), $r->boolean('ty')) : null;
+    return response()->json(['messages'=>$m, 'staff'=>$pres, 'owner'=>$r->has('pv') ? self::ownerInfo((int)$id) : null, 'status'=>$t->status ?? null, 'unread'=>$t && $t->awaiting_reply ? (int)$t->unread : 0, 'awaiting'=>$t ? (bool)$t->awaiting_reply : false, 'replied'=>$t ? (!$t->awaiting_reply && !empty($t->last_successful_agent_reply_at)) : false,
       'transcripts'=>DB::table('chat_messages')->where('thread_id', $id)->where('dir', 'in')->where('attachment_type', 'audio')->whereNotNull('transcript')->orderByDesc('id')->limit(5)->get(['id', 'transcript'])]);
   }
 
@@ -156,7 +157,8 @@ class ChatController extends Controller {
     $body = trim((string)($d['body'] ?? '')); $att = null; $type = null;
     if ($body === '' && !$r->file('file') && empty($d['image_url'])) return response()->json(['ok'=>false, 'error'=>'Write a message first.'], 422);
     // Ownership, checked on the server: only the representative who owns this conversation may answer. An unassigned conversation is taken here in one atomic step (two people at once: one wins, the other is refused).
-    if ($own) { [$mine, $why] = \App\Support\ChatOwner::ensureOwner((int)$id, $me);
+    $tookNow = false;
+    if ($own) { [$mine, $why] = \App\Support\ChatOwner::ensureOwner((int)$id, $me); $tookNow = $mine && $why === 'claimed';
       if (!$mine) { \App\Support\ChatOwner::log((int)$id, 'reply_blocked', \App\Support\ChatOwner::ownerId((int)$id), null, $uid, $me->name ?? null, 'Reply refused: not the owner.'); return response()->json(['ok'=>false, 'blocked'=>true, 'error'=>$why, 'owner'=>self::ownerInfo((int)$id)], 409); } }
     if ($f = $r->file('file')) {
       $dir = public_path('uploads/chat'); if (!is_dir($dir)) @mkdir($dir, 0775, true);
@@ -181,6 +183,8 @@ class ChatController extends Controller {
       Chat::$sender = ['type'=>'human', 'id'=>$uid, 'name'=>$me->name ?? ''];
       try { [$ok, $err] = Chat::deliver($t, $body, $att, $type ?? 'image'); } catch (\Throwable $e) { report($e); $ok = false; $err = 'Sending failed. Check the chat before sending again.'; } finally { Chat::$sender = null; }
       DB::table('chat_messages')->where('id', $mid)->update(['status'=>$ok ? 'sent' : 'failed', 'error'=>$err, 'updated_at'=>now()]);
+      // Ownership comes from the first reply that is really delivered. When this person took the conversation for this message and it failed, it is open to everyone again.
+      if (!$ok && $tookNow) \App\Support\ChatOwner::releaseIfNeverAnswered((int)$id, $uid, 'The reply could not be delivered.');
       if (!$ok && \App\Support\ChatOwner::$refused) { $res = ['ok'=>false, 'blocked'=>true, 'error'=>$err, 'id'=>$mid, 'ai'=>false, 'owner'=>self::ownerInfo((int)$id)]; if ($ck) \Illuminate\Support\Facades\Cache::put($ck, $res, 600); return response()->json($res, 409); }
     } else {
       [$ok, $err] = Chat::deliver($t, $body, $att, $type ?? 'image');
@@ -595,7 +599,7 @@ class ChatController extends Controller {
     Sms::setSecret('ai_chat_auto', $r->boolean('ai_auto') ? '1' : '0');
     Sms::setSecret('ai_chat_chan', $r->boolean('ai_chan') ? '1' : '0');
     Sms::setSecret('ai_comment_reply', $r->boolean('ai_comment_reply') ? '1' : '0');
-    if ($r->has('owner_form')) { Sms::setSecret('chat_auto_assign', $r->boolean('chat_auto_assign') ? '1' : '0'); if ($r->filled('chat_absent_min')) Sms::setSecret('chat_absent_min', (string)max(2, min(240, (int)$r->input('chat_absent_min')))); }
+    if ($r->has('owner_form')) { if ($r->filled('chat_release_min') || $r->input('chat_release_min') === '0') Sms::setSecret('chat_release_min', (string)max(0, min(480, (int)$r->input('chat_release_min')))); if ($r->filled('chat_absent_min')) Sms::setSecret('chat_absent_min', (string)max(2, min(240, (int)$r->input('chat_absent_min')))); }
     if ($r->has('stale_form')) { $was = Sms::secret('chat_stale_on') !== '0'; $on = $r->boolean('chat_stale_on'); Sms::setSecret('chat_stale_on', $on ? '1' : '0'); if ($on && !$was) Sms::setSecret('chat_stale_from', now()->toDateTimeString()); // switched back on: start from now, never a mass send to old chats
       if ($r->filled('chat_stale_min')) Sms::setSecret('chat_stale_min', (string)max(5, min(240, (int)$r->input('chat_stale_min'))));
       Sms::setSecret('chat_stale_text_bn', mb_substr(trim((string)$r->input('chat_stale_text_bn', '')), 0, 500)); Sms::setSecret('chat_stale_text_en', mb_substr(trim((string)$r->input('chat_stale_text_en', '')), 0, 500)); }

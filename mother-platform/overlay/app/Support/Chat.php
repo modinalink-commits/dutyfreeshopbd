@@ -357,7 +357,8 @@ class Chat {
         if (!$busy) {
           $act = DB::table('chat_messages')->where('dir', 'out')->where('status', '<>', 'failed')->whereRaw('not coalesce(is_ai, false)')->where('created_at', '>=', now()->subMinutes($min))->whereNotNull('user_name')->groupBy('user_name')->selectRaw('user_name, max(created_at) la')->orderByDesc('la')->pluck('user_name')->all();
           $to = $act ? DB::table('users')->whereIn('name', $act)->where('id', '!=', $t->assigned_to)->where('active', true)->get(['id', 'name'])->sortBy(fn($u) => array_search($u->name, $act))->first() : null;
-          if ($to && (ChatOwner::ready() ? ChatOwner::system($tid, (int)$to->id, 'transfer', ($cur->name ?? 'The owner').' did not reply for '.$min.' minutes.') : (bool)DB::table('chat_threads')->where('id', $tid)->update(['assigned_to'=>$to->id, 'updated_at'=>now()]))) { $what[] = 'Moved from '.($cur->name ?? 'an agent').' to '.$to->name.', who is replying now.'; }
+          if (ChatOwner::ready()) { if (ChatOwner::system($tid, null, 'release', ($cur->name ?? 'The owner').' did not reply for '.$min.' minutes: back to the open list.')) $what[] = 'Taken from '.($cur->name ?? 'an agent').' (no reply for '.$min.' minutes) and opened to everyone: the first person who replies owns it.'; }
+          elseif ($to && (bool)DB::table('chat_threads')->where('id', $tid)->update(['assigned_to'=>$to->id, 'updated_at'=>now()])) { $what[] = 'Moved from '.($cur->name ?? 'an agent').' to '.$to->name.', who is replying now.'; }
           else $what[] = ($cur->name ?? 'The assigned agent').' has not replied to anyone for '.$min.' minutes and no other agent is replying right now.';
         }
       }
