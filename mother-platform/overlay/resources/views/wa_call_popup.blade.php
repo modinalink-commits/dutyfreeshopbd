@@ -46,11 +46,12 @@ var WP=(function(){
   function esc(s){var d=document.createElement('div');d.textContent=s==null?'':s;return d.innerHTML}
   function msg(m){$('wpMsg').textContent=m||''}
   var LAB={ringing:['Ringing','warn'],answering:['Connecting','warn'],active:['On call','ok'],ended:['Ended','ok'],missed:['Missed','bad'],rejected:['Rejected','bad'],failed:['Failed','bad']};
-  function draw(){var l=LAB[state]||[state,''];$('wpSt').textContent=l[0];$('wpSt').className='wp-pill '+l[1];var h='';
+  function tell(a){try{if(window.parent&&window.parent!==window)window.parent.postMessage({wadock:a},location.origin)}catch(e){}}
+  function draw(){tell(mine&&(state==='active'||state==='answering')?'busy':'idle');var l=LAB[state]||[state,''];$('wpSt').textContent=l[0];$('wpSt').className='wp-pill '+l[1];var h='';
     if(state==='ringing')h='<button class="wp-b go" onclick="WP.answer(this)">Answer</button><button class="wp-b no" onclick="WP.reject()">Reject</button>';
     else if(mine&&(state==='active'||state==='answering'))h='<button class="wp-b" id="wpMute" onclick="WP.mute()">Mute</button><button class="wp-b no" onclick="WP.hang()">Hang up</button>';
     else if(state==='active'||state==='answering')h='<button class="wp-b" disabled>Another representative is on this call</button>';
-    else h='<button class="wp-b" onclick="window.close()">Close</button>';
+    else h='<button class="wp-b" onclick="WP.close()">Close</button>';
     $('wpAct').innerHTML=h}
   function stop(){if(tick)clearInterval(tick);tick=null;try{if(pc)pc.close()}catch(e){}pc=null;if(stream)stream.getTracks().forEach(function(t){t.stop()});stream=null;busy=false;mine=false}
   function waitIce(p){return new Promise(function(res){if(p.iceGatheringState==='complete')return res();var d=false,f=function(){if(d)return;d=true;res()};p.addEventListener('icegatheringstatechange',function(){if(p.iceGatheringState==='complete')f()});setTimeout(f,2500)})}
@@ -102,7 +103,8 @@ var WP=(function(){
   draw();cust();setInterval(sync,3000);
   window.addEventListener('pagehide',function(){if(mine&&(state==='active'||state==='answering'))fetch('/admin/call-center/whatsapp/'+ID+'/end',{method:'POST',credentials:'same-origin',keepalive:true,headers:{'X-CSRF-TOKEN':tk(),'Accept':'application/json'}})});
   if(state==='ringing'&&/[?&]go=1/.test(location.search))setTimeout(function(){answer(document.querySelector('.wp-b.go'))},200);
-  return{answer:answer,reject:reject,hang:hang,mute:mute,note:note};
+  function close(){if(window.parent&&window.parent!==window)tell('close');else window.close()}
+  return{answer:answer,reject:reject,hang:hang,mute:mute,note:note,close:close};
 })();
 </script>
 @endsection
