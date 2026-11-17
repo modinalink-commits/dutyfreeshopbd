@@ -43,6 +43,7 @@ class RestockController extends Controller {
     if ($a === 'verify') { if (!R::validWa($c['wa'])) return back()->with('err', 'আগে নম্বর সেভ করুন।'); if (R::tplStatus() !== 'APPROVED') return back()->with('err', 'টেমপ্লেট এখনো অনুমোদিত নয় (' . R::tplStatus() . ')।'); [$ok, $m] = R::sendTemplate($c['wa'], $c['name'], R::pending()->count()); return back()->with($ok ? 'ok' : 'err', 'Verification message: ' . $m . '. The number is verified when a reply comes from it.'); }
     if ($a === 'send') { if (!R::validWa($c['wa'])) return back()->with('err', 'আগে নম্বর সেভ করুন।'); R::put('last_round', (string)time()); $n = R::flush($c['wa']); $m = ($n > 0 ? $n . ' update(s), ' : '') . R::digest($c['wa']); R::log(null, 'round', 'Reminder sent by hand: ' . $m); return back()->with('ok', 'Reminder: ' . $m); }
     if ($a === 'watch') { R::put('margin_day', ''); R::rateWatch(); R::marginWatch(); $n = R::notices()->count(); R::log(null, 'round', 'Rate / margin check run by hand: ' . $n . ' update(s) waiting'); return back()->with('ok', 'Rate / margin check done: ' . $n . ' update(s) waiting to be sent.'); }
+    if ($a === 'drop-old') { [$ok, $m] = R::dropOldTemplate(); R::log(null, 'setting', 'Old template: ' . $m); return back()->with($ok ? 'ok' : 'err', 'Old template: ' . $m); }
     if ($a === 'resume') { R::put('pause_until', '0'); R::log(null, 'pause', 'Pause removed'); return back()->with('ok', 'বিরতি তুলে দেওয়া হয়েছে।'); }
     abort(404);
   }

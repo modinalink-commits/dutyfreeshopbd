@@ -488,7 +488,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
     Route::post('/daily-list/submit', [$PL,'submit']); Route::post('/daily-list/sync', [$PL,'sync']); Route::post('/daily-list/send', [$PL,'send'])->middleware('throttle:6,1');
     $SCM = \App\Http\Controllers\SupplierCommController::class; Route::get('/supplier-chats', [$SCM,'index']); Route::get('/supplier-chats/{id}', [$SCM,'show'])->whereNumber('id'); Route::post('/supplier-chats/{id}/contact', [$SCM,'contact'])->whereNumber('id');
     Route::post('/supplier-chats/{id}/note', [$SCM,'note'])->whereNumber('id')->middleware('throttle:60,1'); Route::get('/supplier-chats/{id}/att/{mid}', [$SCM,'att'])->whereNumber('id')->whereNumber('mid');
-    $RS = \App\Http\Controllers\RestockController::class; Route::get('/restock', [$RS,'index']); Route::post('/restock/settings', [$RS,'save']); Route::post('/restock/act/{a}', [$RS,'act'])->whereIn('a', ['submit','sync','scan','verify','send','resume','watch'])->middleware('throttle:12,1');
+    $RS = \App\Http\Controllers\RestockController::class; Route::get('/restock', [$RS,'index']); Route::post('/restock/settings', [$RS,'save']); Route::post('/restock/act/{a}', [$RS,'act'])->whereIn('a', ['submit','sync','scan','verify','send','resume','watch','drop-old'])->middleware('throttle:12,1');
     Route::post('/restock/task/{id}', [$RS,'task'])->whereNumber('id'); Route::post('/restock/product', [$RS,'product']); Route::post('/restock/simulate', [$RS,'simulate'])->middleware('throttle:20,1');
     $C = \App\Http\Controllers\ProcurementController::class;
     Route::get('/', [$C,'dashboard']);

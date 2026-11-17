@@ -449,6 +449,15 @@ class Restock
       return [false, mb_substr((string)($r->json('error.error_user_msg') ?: $r->json('error.message') ?: $r->body()), 0, 300)];
     } catch (\Throwable $e) { return [false, 'Network error: ' . $e->getMessage()]; }
   }
+  /** Removes the first, unused template (restock_followup) from the WhatsApp account. Owner approved 17 Nov 2026. Only this one name can be removed here. */
+  public static function dropOldTemplate(): array {
+    $t = Chat::sec('chat_wa_token'); if (!$t) return [false, 'WhatsApp token missing'];
+    try {
+      $r = Http::timeout(25)->withToken($t)->delete(self::API . '/' . OrderWaConfirm::waba() . '/message_templates', ['name' => 'restock_followup']);
+      if ($r->successful()) return [true, 'restock_followup removed'];
+      return [false, mb_substr((string)($r->json('error.error_user_msg') ?: $r->json('error.message') ?: $r->body()), 0, 300)];
+    } catch (\Throwable $e) { return [false, 'Network error: ' . $e->getMessage()]; }
+  }
   public static function syncTemplate(): array {
     $t = Chat::sec('chat_wa_token'); if (!$t) return [false, 'WhatsApp token missing'];
     try {
