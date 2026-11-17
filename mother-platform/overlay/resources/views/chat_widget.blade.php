@@ -119,7 +119,7 @@
 <script>
 (function(){
 var CSRF=window.MCSRF,CAN=window.MCAN;
-var CH={facebook:['f','Facebook'],instagram:['IG','Instagram'],whatsapp:['W','WhatsApp'],web:['💬','Website Chat']};
+var CH={facebook:['f','Facebook'],instagram:['IG','Instagram'],whatsapp:['W','WhatsApp'],web:['💬','Website Chat'],sms:['SMS','SMS']};
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function cardsTxt(m){var t=String(m.body||'').replace(/https?:\/\/(?:www\.)?dutyfreebd\.com\/\S+/g,'').split('\n').map(function(l){return l.replace(/[ \t:\-–]+$/,'')}).filter(function(l){return l.trim()}).join('\n');return t?'<div>'+esc(t).replace(/\n/g,'<br>')+'</div>':''}
 function cardsHtml(c){return '<div class="pcs">'+c.map(function(x){return '<a class="pc" href="'+esc(x.url)+'" target="_blank" rel="noopener">'+(x.image?'<img src="'+esc(x.image)+'" alt="" loading="lazy" onerror="this.style.display=\'none\'">':'')+'<span class="pn">'+esc(x.name)+'</span><span class="pp">৳'+esc(x.price)+'</span></a>'}).join('')+'</div>'}

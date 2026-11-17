@@ -19,7 +19,7 @@ class ChatController extends Controller {
     // A search (name, mobile number, invoice) always looks through every conversation, open or closed, whatever tab is selected: this is the customer's full message history.
     if (trim((string)$r->query('q')) !== '' || $f === 'history') $f = 'all';
     $hist = (string)$r->query('f') === 'history' || trim((string)$r->query('q')) !== '';
-    if (in_array($f, ['facebook', 'instagram', 'whatsapp', 'web'])) $q->where('channel', $f);
+    if (in_array($f, ['facebook', 'instagram', 'whatsapp', 'web', 'sms'])) $q->where('channel', $f);
     elseif ($f === 'unread' || $f === 'late') Chat::notOrder($q->where('awaiting_reply', true));
     elseif ($f === 'upset') $q->where('awaiting_reply', true)->whereIn(DB::raw('lower(coalesce(mood, \'\'))'), ['upset', 'angry', 'urgent']);
     elseif ($f === 'assigned') $q->where('assigned_to', auth()->id());

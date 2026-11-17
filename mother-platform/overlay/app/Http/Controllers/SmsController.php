@@ -14,7 +14,8 @@ class SmsController extends Controller {
     $att = \Illuminate\Support\Facades\Schema::hasTable('sms_attempts') ? DB::table('sms_attempts')->orderByDesc('id')->limit(25)->get() : collect();
     return view('sms_setup', ['hasKey'=>(bool)Sms::secret('sms_api_key'), 'sender'=>Sms::secret('sms_sender_id'), 'counts'=>$counts, 'set'=>$set, 'ready'=>Sms::configured(), 'balance'=>session('balance'),
       'recent'=>DB::table('sms_logs')->orderByDesc('id')->limit(15)->get(), 'g'=>$c, 'prov'=>$prov, 'order'=>$order, 'skip'=>$skip, 'att'=>$att, 'sim'=>request()->query('sim') ? \Illuminate\Support\Facades\Cache::get('smsg_sim_'.auth()->id()) : null,
-      'tests'=>$G::set('test_numbers', '01884808080'), 'content'=>$c['content']]);
+      'tests'=>$G::set('test_numbers', '01884808080'), 'content'=>$c['content'], 'cap'=>\App\Support\SmsInbox::capability(), 'conns'=>\App\Support\SmsInbox::conns(),
+      'smsThreads'=>DB::table('chat_threads')->where('channel', 'sms')->count()]);
   }
   public function save(Request $r) {
     $G = \App\Support\SmsGate::class;
@@ -53,7 +54,7 @@ class SmsController extends Controller {
     $id = DB::table('sms_logs')->insertGetId(['to'=>$num,'body'=>'Test SMS','event'=>'test','status'=>'sending','created_at'=>now(),'updated_at'=>now()]);
     [$ok, $msg] = Sms::send($num, \App\Support\SmsText::test(now('Asia/Dhaka')->format('H:i:s')), ['log_id'=>$id, 'event'=>'test'] + ($via === 'auto' ? [] : ['force'=>$via]));
     $l = Sms::$last ?? []; $up = ['status'=>$ok ? 'sent' : (($l['state'] ?? '') === 'uncertain' ? 'uncertain' : 'failed'),'provider_response'=>mb_substr($msg,0,500),'sent_at'=>$ok?now():null,'updated_at'=>now()];
-    if (\Illuminate\Support\Facades\Schema::hasColumn('sms_logs','provider')) $up += ['uid'=>$l['uid'] ?? null,'provider'=>$l['provider'] ?? null,'request_id'=>$l['rid'] ?? null,'delivery'=>$ok ? 'pending' : null,'fallback_reason'=>isset($l['fallback']) ? mb_substr((string)$l['fallback'],0,250) : null,'attempts'=>count($l['trace'] ?? [])];
+    if (\Illuminate\Support\Facades\Schema::hasColumn('sms_logs','provider')) $up += ['uid'=>$l['uid'] ?? null,'provider'=>$l['provider'] ?? null,'request_id'=>$l['rid'] ?? null,'delivery'=>$ok ? ((($l['provider'] ?? '') === 'alpha') ? 'pending' : 'no report') : null,'fallback_reason'=>isset($l['fallback']) ? mb_substr((string)$l['fallback'],0,250) : null,'attempts'=>count($l['trace'] ?? [])];
     DB::table('sms_logs')->where('id',$id)->update($up);
     return back()->with($ok ? 'ok' : 'bad', ($ok ? 'Test SMS accepted by the provider (delivery is confirmed by the report, see "Provider attempts"): ' : 'Test SMS not sent: ').$msg);
   }
@@ -65,6 +66,24 @@ class SmsController extends Controller {
   public function flush() { $n = Sms::flush(100); return back()->with('ok', "$n queued messages processed."); }
   /** Dry run of the fall-back rules against made-up provider answers. Sends nothing, stores nothing. */
   public function simulate() { \Illuminate\Support\Facades\Cache::put('smsg_sim_'.auth()->id(), \App\Support\SmsGate::simulate(), 600); return redirect('/admin/sms?sim=1#sim'); } // kept in the cache, not in the session cookie (cookie sessions are small)
+  /** Incoming SMS connections (central SMS inbox): add / switch / remove a receive address, or run a marked test message through one. */
+  public function inbound(Request $r) {
+    $I = \App\Support\SmsInbox::class; $d = $r->validate(['act'=>'required|in:add,toggle,remove,test', 'id'=>'nullable|string|max:20', 'provider'=>'nullable|string|max:20', 'name'=>'nullable|string|max:40', 'number'=>'nullable|string|max:20', 'from'=>'nullable|string|max:20']);
+    $log = fn($s) => DB::table('audit_logs')->insert(['user_id'=>auth()->id(),'user_name'=>auth()->user()->name,'action'=>'sms.inbound','subject'=>mb_substr($s, 0, 250),'ip'=>$r->ip(),'created_at'=>now(),'updated_at'=>now()]);
+    if ($d['act'] === 'add') {
+      $p = preg_replace('/[^a-z0-9_]/', '', strtolower((string)($d['provider'] ?? ''))) ?: 'other';
+      $c = $I::add($p, (string)($d['name'] ?? ''), (string)($d['number'] ?? '')); $log('Incoming SMS connection added: '.$p.' '.$c['number']);
+      return redirect('/admin/sms#inbound')->with('ok', 'Connection added. Give its receive address to the provider. Nothing arrives until the provider really forwards incoming SMS to it.');
+    }
+    $c = $I::find((string)($d['id'] ?? '')); if (!$c) return redirect('/admin/sms#inbound')->withErrors(['id'=>'Connection not found.']);
+    if ($d['act'] === 'toggle') { $I::toggle($c['id'], null); $log('Incoming SMS connection '.($c['on'] ? 'switched off' : 'switched on').': '.$c['provider'].' '.$c['number']); return redirect('/admin/sms#inbound')->with('ok', 'Connection '.($c['on'] ? 'switched off' : 'switched on').'.'); }
+    if ($d['act'] === 'remove') { $I::toggle($c['id'], null, true); $log('Incoming SMS connection removed: '.$c['provider'].' '.$c['number']); return redirect('/admin/sms#inbound')->with('ok', 'Connection removed. Its conversations stay in the inbox.'); }
+    // test: a made-up incoming SMS, only "from" an approved test number, clearly marked
+    $num = Sms::number((string)($d['from'] ?? '')); if (!$num || !in_array($num, \App\Support\SmsGate::cfg()['tests'], true)) return redirect('/admin/sms#inbound')->withErrors(['from'=>'The test sender must be an approved test number.']);
+    [$res, $tid] = $I::receive($c, ['from'=>$num, 'to'=>$c['number'], 'text'=>'[পরীক্ষা] ইনকামিং এসএমএস পরীক্ষা '.now('Asia/Dhaka')->format('H:i:s'), 'message_id'=>'test-'.now()->format('YmdHis')]);
+    $log('Incoming SMS test on '.$c['provider'].' '.$c['number'].': '.$res);
+    return redirect('/admin/sms#inbound')->with($res === 'stored' ? 'ok' : 'bad', $res === 'stored' ? 'Test message stored (made by this button, not sent by a phone). Open Messages › SMS, conversation #'.$tid.'.' : 'Test not stored: '.$res);
+  }
   /** Owner 17 Nov 2026: one Bangla screen listing every automatic SMS with a filled-in preview, character count, SMS parts and estimated cost. */
   public function templates() {
     $T = \App\Support\SmsText::class; $W = \App\Support\Winback::class; $P = \App\Support\Procure::class;

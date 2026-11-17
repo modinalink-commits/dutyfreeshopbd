@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\URL;
 /** Unified customer chat: Facebook Messenger, Instagram DM, WhatsApp Business and website live chat. */
 class Chat {
-  const CH = ['facebook'=>'Facebook Messenger', 'instagram'=>'Instagram', 'whatsapp'=>'WhatsApp', 'web'=>'Website Chat'];
+  const CH = ['facebook'=>'Facebook Messenger', 'instagram'=>'Instagram', 'whatsapp'=>'WhatsApp', 'web'=>'Website Chat', 'sms'=>'SMS'];
   const API = 'https://graph.facebook.com/v19.0';
   public static function phone(?string $p): ?string {
     $d = preg_replace('/\D/', '', (string)$p); if ($d === '') return null;
@@ -557,6 +557,7 @@ class Chat {
     $lock = null;
     try {
       if (!AiChat::chatOn()) return;
+      if (DB::table('chat_threads')->where('id', $tid)->value('channel') === 'sms') return; // SMS inbox: people answer; no automatic replies (each SMS costs money)
       if (!self::$force && !AiSchedule::activeNow() && !self::aiTakeover($tid)) return; // outside the owner's AI hours staff answer, unless the AI took this chat over after the staff wait limit (staleTick)
       $t = DB::table('chat_threads')->find($tid);
       if (!$t || AiChat::paused($t) || !in_array($t->channel, ['web', 'whatsapp', 'facebook'], true)) return;
@@ -708,6 +709,11 @@ class Chat {
   private static function deliverRaw(object $t, string $body, ?string $att = null, string $attType = 'image'): array {
     try {
       if ($t->channel === 'web') return [true, null];
+      if ($t->channel === 'sms') { // SMS inbox: only a person's own reply is sent; automation notices and closing lines are not sent as SMS
+        if ((self::$sender['type'] ?? 'system') !== 'human') return [false, 'Automatic messages are not sent by SMS.'];
+        if ($att) return [false, 'SMS cannot carry an attachment. Send text only.'];
+        return SmsInbox::reply($t, $body);
+      }
       if ($t->channel === 'whatsapp') {
         [$tok, $pid] = self::waCred($t->page_ref ?? null);
         if (!$tok || !$pid) return [false, 'WhatsApp is not connected (Chat Settings).'];
@@ -817,6 +823,7 @@ class Chat {
       $i = $intel[$t->id] ?? null; $ref = $t->page_ref ?? null; $src = null;
       if ($t->channel === 'whatsapp') { $w = $ref ? ($srcWa[$ref] ?? null) : null; if (!$w && !$ref) $w = $srcWa[(string)self::sec('chat_wa_phone_id')] ?? null; $src = $w ? trim(($w->display_phone ?: $w->phone_id).($w->verified_name ? ' · '.$w->verified_name : '')) : ($ref ? $ref : 'Main number'); }
       elseif ($t->channel === 'facebook') { $g = $ref ? ($srcPg[$ref] ?? null) : $srcOne; $src = $g ? $g->name : null; }
+      elseif ($t->channel === 'sms') { $src = SmsInbox::label($ref); $rn = SmsInbox::replyNote($ref); if (!str_starts_with($rn, 'Reply goes through')) $src .= ' — ' . $rn; } // staff see before answering when the reply would leave from a different sender
       elseif ($t->channel === 'instagram') { $g = $ref ? ($srcIg[$ref] ?? $srcPg[$ref] ?? null) : $srcOne; $src = $g ? ($g->ig_username ? '@'.$g->ig_username : $g->name) : null; if (!$src) { foreach ($srcAcc as $ac) if (!$ref || ($ac['id'] ?? '') === (string)$ref) { $src = !empty($ac['username']) ? '@'.$ac['username'] : null; break; } } } $n = (int)($oc[$t->phone] ?? 0) + (int)($i['legacy'] ?? 0);
       return ['id'=>$t->id, 'channel'=>$t->channel, 'channel_name'=>self::CH[$t->channel] ?? $t->channel, 'source'=>$src, 'name'=>$t->name, 'phone'=>$t->phone, 'username'=>$t->username, 'avatar'=>$t->avatar,
         'status'=>$t->status, 'awaiting'=>(bool)($t->awaiting_reply ?? false) && $t->status !== 'resolved', 'unread'=>!empty($t->awaiting_reply) ? (int)$t->unread : 0,

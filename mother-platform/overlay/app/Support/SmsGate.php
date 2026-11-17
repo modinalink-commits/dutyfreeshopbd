@@ -177,7 +177,7 @@ class SmsGate {
       if (!Schema::hasTable('sms_attempts')) return;
       DB::table('sms_attempts')->insert(['uid' => $uid, 'log_id' => $ctx['log_id'] ?? null, 'provider' => $p, 'to' => $num, 'event' => isset($ctx['event']) ? mb_substr((string)$ctx['event'], 0, 60) : null,
         'state' => $r['state'], 'class' => $r['class'], 'code' => mb_substr((string)$r['code'], 0, 20), 'message' => mb_substr((string)$r['msg'], 0, 250), 'request_id' => $r['rid'],
-        'delivery' => $r['state'] === 'accepted' ? 'pending' : null, 'fallback_reason' => $why ? mb_substr($why, 0, 250) : null, 'created_at' => now(), 'updated_at' => now()]);
+        'delivery' => $r['state'] === 'accepted' ? ($p === 'alpha' && $r['rid'] ? 'pending' : 'no report') : null, 'fallback_reason' => $why ? mb_substr($why, 0, 250) : null, 'created_at' => now(), 'updated_at' => now()]);
     } catch (\Throwable $e) {}
   }
   private static function alert(string $kind, string $p, string $num, string $msg): void {

@@ -61,7 +61,7 @@ class Sms {
     if (($r['class'] ?? '') === 'duplicate') { DB::table('sms_logs')->where('id',$row->id)->update(['status'=>'queued','updated_at'=>now()]); return 'queued'; } // the twin is in flight: try again on the next round
     $up = ['status'=>$st, 'provider_response'=>mb_substr($msg,0,500), 'sent_at'=>$ok ? now() : null, 'updated_at'=>now()];
     if ($otp) $up['body'] = self::mask((string)$row->body);
-    if ($has) $up += ['uid'=>$uid, 'provider'=>$r['provider'] ?? null, 'request_id'=>$r['rid'] ?? null, 'delivery'=>$ok ? 'pending' : null, 'fallback_reason'=>isset($r['fallback']) ? mb_substr((string)$r['fallback'],0,250) : null, 'attempts'=>count($r['trace'] ?? [])];
+    if ($has) $up += ['uid'=>$uid, 'provider'=>$r['provider'] ?? null, 'request_id'=>$r['rid'] ?? null, 'delivery'=>$ok ? ((($r['provider'] ?? '') === 'alpha') ? 'pending' : 'no report') : null, 'fallback_reason'=>isset($r['fallback']) ? mb_substr((string)$r['fallback'],0,250) : null, 'attempts'=>count($r['trace'] ?? [])];
     DB::table('sms_logs')->where('id',$row->id)->update($up);
     return $st;
   }
