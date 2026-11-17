@@ -1254,3 +1254,8 @@ database/migrations/2026_11_17_190000_restock_followup.php
 app/Support/Restock.php
 app/Http/Controllers/RestockController.php
 resources/views/restock.blade.php
+database/migrations/2026_11_17_200000_supplier_comm.php
+app/Support/SupplierComm.php
+app/Http/Controllers/SupplierCommController.php
+resources/views/supplier_comm.blade.php
+resources/views/supplier_comm_show.blade.php

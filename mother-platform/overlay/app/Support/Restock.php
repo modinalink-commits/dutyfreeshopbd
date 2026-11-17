@@ -349,7 +349,7 @@ class Restock
       if (self::tplStatus() === 'PENDING' && Cache::add('rs_tpl_sync', 1, 600)) self::syncTemplate();
       $c = self::cfg(); if (!$c['on']) return;
       if (Cache::add('rs_scan', 1, 900)) self::scan();
-      if (!self::validWa($c['wa'])) return;
+      if (!self::isVerified($c)) return; // nothing is sent by itself until the number has answered once (Send verification message)
       $now = now('Asia/Dhaka'); $min = $now->hour * 60 + $now->minute; if ($min < $c['from'] || $min >= $c['to']) return;
       if ((int)self::set('pause_until', '0') > time()) return; // the purchase manager asked us to wait
       $last = (int)self::set('last_round', '0'); if (time() - $last < $c['every'] * 60) return;
