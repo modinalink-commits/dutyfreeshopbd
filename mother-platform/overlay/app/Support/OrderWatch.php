@@ -58,9 +58,12 @@ class OrderWatch
   public static function ownerOf(object $o): ?int {
     if (!empty($o->owner_id)) return (int)$o->owner_id > 0 ? (int)$o->owner_id : null; // -1 = a supervisor put it back on the unassigned list
     if (($o->approval_source ?? null) === 'MANUAL' && !empty($o->approved_by)) return (int)$o->approved_by;
-    if (($o->approval_source ?? null) === 'AI') { static $ai = false; if ($ai === false) $ai = (int)self::set('ai_owner', '0') ?: null; return $ai; } // owner 17 Nov: orders approved by the AI automation are watched by one named person
+    if (($o->approval_source ?? null) === 'AI') return self::aiOwner(); // owner 17 Nov: orders approved by the AI automation are watched by one named person
     return null;
   }
+  /** Read once per request / worker pass, never kept for the life of the worker. */
+  public static ?array $aiMemo = null;
+  public static function aiOwner(): ?int { if (self::$aiMemo === null || self::$aiMemo[0] < time() - 60) self::$aiMemo = [time(), (int)self::set('ai_owner', '0') ?: null]; return self::$aiMemo[1]; }
   /** Hand an order to a person (or to nobody). Supervisor only; the caller checks that. Every change is logged with who and why. */
   public static function assign(int $orderId, ?int $to, string $reason, ?object $by): array {
     $o = DB::table('orders')->where('id', $orderId)->first(['id', 'invoice', 'owner_id', 'approval_source', 'approved_by']); if (!$o) return [false, 'Order not found.'];
