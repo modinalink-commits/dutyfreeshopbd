@@ -174,7 +174,8 @@ class CallCenterController extends Controller {
     $dl = 0; $th = null;
     try { $dl = $n ? (int)DB::table('orders')->whereRaw('right(phone,11) = ?', [$ph])->where('status', 'Delivered')->count() : 0; } catch (\Throwable $e) {}
     try { $th = DB::table('chat_threads')->whereRaw('right(phone,11) = ?', [$ph])->orderByDesc('id')->value('id'); } catch (\Throwable $e) {}
-    $alerts = [];
+    $alerts = []; $rider = \App\Support\Rider::match($ph);
+    if ($rider) $alerts[] = $rider['courier'].' rider '.$rider['name'].': delivering order '.$rider['invoice'].' ('.$rider['customer'].')'.($rider['parcels'] > 1 ? ', '.$rider['parcels'].' parcels in the last 2 days' : '').'.';
     try {
       if ($last && in_array((string)$last->status, ['Return', 'Returned', 'Cancel', 'Cancelled'], true)) $alerts[] = 'Last order '.\App\Support\Inv::show($last->invoice).' is '.$last->status.'.';
       if ($fr && preg_match('/high|danger|fraud|block/i', (string)$fr['label'].' '.(string)$fr['level']) && !preg_match('/low/i', (string)$fr['label'])) $alerts[] = 'Courier reliability: '.$fr['label'].'. Confirm the address and an alternate number.';

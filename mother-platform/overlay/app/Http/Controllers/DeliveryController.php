@@ -70,6 +70,8 @@ class DeliveryController extends Controller
     $out = ['info' => \App\Support\Pathao::info($cid)];
     try { $x = \Illuminate\Support\Facades\Http::timeout(15)->acceptJson()->post('https://merchant.pathao.com/api/v1/user/tracking', ['consignment_id' => $cid, 'phone_no' => substr(preg_replace('/\D/', '', (string)$o->phone), -11)]); $out['tracking_status'] = $x->status(); $out['tracking'] = $x->json() ?? mb_substr((string)$x->body(), 0, 600); }
     catch (\Throwable $e) { $out['tracking_error'] = $e->getMessage(); }
+    $out['rider_parsed'] = \App\Support\Rider::parse(is_array($out['tracking'] ?? null) ? (array)($out['tracking']['data'] ?? []) : null);
+    if ($r->boolean('save') && \App\Support\Rider::ready()) $out['saved'] = \App\Support\Rider::fetch(\Illuminate\Support\Facades\DB::table('orders')->where('consignment_id', $cid)->first());
     return response()->json($out);
   }
 }

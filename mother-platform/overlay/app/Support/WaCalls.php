@@ -129,6 +129,7 @@ class WaCalls {
   /** Who a WhatsApp number belongs to, by the last 11 digits: customer, staff, supplier or unknown. */
   public static function who(?string $wa): array {
     $d = substr(preg_replace('/\D/', '', (string)$wa), -11); if (strlen($d) < 10) return ['kind' => 'unknown', 'label' => 'Unknown', 'name' => null];
+    if ($rd = Rider::match($d)) return ['kind' => 'rider', 'label' => $rd['courier'] . ' rider', 'name' => $rd['name'], 'order' => $rd['invoice']];
     try {
       foreach ([['employees', 'Staff', 'staff'], ['suppliers', 'Supplier', 'supplier']] as [$tb, $lab, $k]) if (Schema::hasTable($tb) && Schema::hasColumn($tb, 'phone')) { $x = DB::table($tb)->whereRaw("right(regexp_replace(coalesce(phone,''), '\\D', '', 'g'), 11) = ?", [$d])->first(['name']); if ($x) return ['kind' => $k, 'label' => $lab, 'name' => (string)$x->name]; }
       $c = DB::table('customers')->whereRaw('right(phone,11) = ?', [$d])->first(['name']); if ($c) return ['kind' => 'customer', 'label' => 'Customer', 'name' => (string)$c->name];

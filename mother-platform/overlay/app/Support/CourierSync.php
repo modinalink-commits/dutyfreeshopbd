@@ -31,6 +31,7 @@ class CourierSync {
   public static function apply(object $o, array $i): bool {
     $raw = $i['order_status'] ?? $i['order_status_slug'] ?? null; if (!$raw) return false;
     $isPathao = ($o->courier ?: 'Pathao') === 'Pathao';
+    if ($isPathao) Rider::maybe($o, (string)$raw);   // rider's name and number, once the parcel is assigned for delivery
     $m = $isPathao ? PathaoStatusMapper::map((string)$raw) : null;     // Pathao: the admin-editable status map decides; unknown words are flagged, never guessed
     $action = $m && $m['action'] !== 'none' ? $m['action'] : null; $unknown = $m && $m['needs'];
     if ($m && $m['stage']) $stage = $m['stage'];

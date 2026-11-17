@@ -1247,3 +1247,5 @@ app/Support/SmsText.php
 resources/views/sms_templates.blade.php
 database/migrations/2026_11_17_160000_sms_templates_bangla_short.php
 database/migrations/2026_11_17_170000_wa_calls_outcome_followup.php
+app/Support/Rider.php
+database/migrations/2026_11_17_180000_orders_rider.php
