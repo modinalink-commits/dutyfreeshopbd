@@ -792,8 +792,6 @@ class ChatController extends Controller {
                 $rsDone = \App\Support\Restock::inbound($from, (string)$type, $rsBody, str_starts_with($rsPay, 'rs:') ? $rsPay : null, (string)($m['context']['id'] ?? '') ?: null);
               }
               if ($rsDone) continue;
-              // A supplier's number is never answered by the customer sales AI: the message waits for the responsible person (Supplier Conversations)
-              try { if (\App\Support\SupplierComm::ready() && \App\Support\SupplierComm::supplierOf($from)) continue; } catch (\Throwable $e) {}
               if ($th && !\App\Support\AiChat::paused($th) && !($att && !in_array($meta['att_type'] ?? 'image', ['image', 'audio'], true)) && in_array($type, ['text', 'button', 'image', 'audio'], true)) { $tid = (int)$th->id; app()->terminating(fn() => Chat::aiReply($tid)); }
             }
           }
