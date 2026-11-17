@@ -65,6 +65,7 @@ class MotherPushWorker extends Command
     try { \App\Support\Reorder::tick(); } catch (\Throwable $e) { $this->error('reorder: ' . $e->getMessage()); }
     try { \App\Support\PurchaseList::tick(); } catch (\Throwable $e) { $this->error('purchase-list: ' . $e->getMessage()); }
     try { \App\Support\Restock::tick(); } catch (\Throwable $e) { $this->error('restock: ' . $e->getMessage()); }
+    try { \App\Support\OrderWatch::tick(); } catch (\Throwable $e) { $this->error('order-watch: ' . $e->getMessage()); }
     try { \App\Support\CallDaily::tick(); } catch (\Throwable $e) { $this->error('call-daily: ' . $e->getMessage()); }
     \App\Support\PayrollDue::tick();
     try { \App\Support\RecurringExpense::tick(); } catch (\Throwable $e) { $this->error('recurring: ' . $e->getMessage()); }

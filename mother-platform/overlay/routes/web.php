@@ -52,6 +52,8 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/push/{id}/cancel', [\App\Http\Controllers\PushAdminController::class,'cancel'])->whereNumber('id');
   Route::post('/push/{id}/send', [\App\Http\Controllers\PushAdminController::class,'sendDraft'])->whereNumber('id');
   Route::get('/orders', [A::class,'orders']);
+  $OW = \App\Http\Controllers\OrderWatchController::class; Route::get('/order-watch', [$OW,'index']); Route::post('/order-watch/settings', [$OW,'save']); Route::post('/order-watch/staff', [$OW,'staff']); Route::post('/order-watch/assign', [$OW,'assign']);
+  Route::post('/order-watch/act/{a}', [$OW,'act'])->whereIn('a', ['submit','sync','test'])->middleware('throttle:12,1'); Route::get('/my-orders', [$OW,'mine']); Route::post('/my-orders/{id}/note', [$OW,'note'])->whereNumber('id')->middleware('throttle:60,1');
   Route::get('/orders/new', [A::class,'orderNew']);
   Route::get('/orders/lookup', [A::class,'orderLookup']);
   Route::get('/incomplete', fn() => redirect('/admin/orders?status=Incomplete'));

@@ -1259,3 +1259,8 @@ app/Support/SupplierComm.php
 app/Http/Controllers/SupplierCommController.php
 resources/views/supplier_comm.blade.php
 resources/views/supplier_comm_show.blade.php
+database/migrations/2026_11_17_210000_order_watch.php
+app/Support/OrderWatch.php
+app/Http/Controllers/OrderWatchController.php
+resources/views/order_watch.blade.php
+resources/views/my_orders.blade.php
