@@ -770,6 +770,7 @@ class ChatController extends Controller {
               $type = $m['type'] ?? 'text';
               if (in_array($type, ['reaction', 'edit', 'revoke', 'unsupported'], true)) continue; // no bubble, no unread, no awaiting-reply
               $body = $type === 'text' ? (string)($m['text']['body'] ?? '') : ($type === 'button' ? (string)($m['button']['text'] ?? '') : '['.$type.' received — open WhatsApp to view]');
+              if ($type === 'interactive' && !empty($m['interactive']['button_reply']['title'])) $body = (string)$m['interactive']['button_reply']['title']; // a pressed reply button shows as its label
               $att = null; $meta = [];
               if ($type === 'button' && !empty($m['button']['payload'])) \App\Support\OrderWaUpdate::onButton((string)$m['button']['payload'], $from);
               if (in_array($type, ['image', 'sticker', 'document', 'audio', 'video'], true) && !empty($m[$type]['id']) && !DB::table('chat_messages')->where('ext_id', $m['id'] ?? '-')->exists()) {
@@ -783,6 +784,14 @@ class ChatController extends Controller {
               if ($th && $att && ($meta['att_type'] ?? '') === 'audio' && ($vid = DB::table('chat_messages')->where('ext_id', $m['id'] ?? '-')->value('id'))) { $vid = (int)$vid; app()->terminating(fn() => Chat::transcribe($vid)); }
               if ($th && $att && ($meta['att_type'] ?? '') === 'image' && ($pid2 = DB::table('chat_messages')->where('ext_id', $m['id'] ?? '-')->value('id'))) { $pid2 = (int)$pid2; $ptid = (int)$th->id; app()->terminating(fn() => \App\Support\PayProof::scan($ptid, $pid2)); }
               if ($th && $att && ($meta['att_type'] ?? '') === 'image' && \App\Support\AiChat::paused($th) && ($hid = DB::table('chat_messages')->where('ext_id', $m['id'] ?? '-')->value('id'))) { $hid = (int)$hid; $htid = (int)$th->id; app()->terminating(fn() => Chat::imageHint($htid, $hid)); }
+              // Restock follow-up: an answer from the purchase manager's number is handled by the stock assistant, never by the customer AI
+              $rsDone = false;
+              if (in_array($type, ['text', 'button', 'interactive'], true) && \Illuminate\Support\Facades\Cache::add('rs_in_' . md5((string)($m['id'] ?? uniqid())), 1, 86400)) { // a webhook that Meta delivers twice is handled once
+                $rsBody = $type === 'interactive' ? (string)($m['interactive']['button_reply']['title'] ?? '') : $body;
+                $rsPay = $type === 'interactive' ? (string)($m['interactive']['button_reply']['id'] ?? '') : ($type === 'button' ? (string)($m['button']['payload'] ?? '') : '');
+                $rsDone = \App\Support\Restock::inbound($from, (string)$type, $rsBody, str_starts_with($rsPay, 'rs:') ? $rsPay : null, (string)($m['context']['id'] ?? '') ?: null);
+              }
+              if ($rsDone) continue;
               if ($th && !\App\Support\AiChat::paused($th) && !($att && !in_array($meta['att_type'] ?? 'image', ['image', 'audio'], true)) && in_array($type, ['text', 'button', 'image', 'audio'], true)) { $tid = (int)$th->id; app()->terminating(fn() => Chat::aiReply($tid)); }
             }
           }

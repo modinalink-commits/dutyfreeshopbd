@@ -11,6 +11,7 @@ Route::get('/admin/login', [A::class,'loginForm'])->name('login');
 Route::post('/admin/login', [A::class,'login'])->middleware('throttle:10,1');
 Route::post('/admin/logout', [A::class,'logout']);
 Route::get('/cr/{token}', [\App\Http\Controllers\CallQualityController::class,'dailyOpen'])->where('token', '[0-9a-f]{40}')->middleware('throttle:30,1');
+Route::get('/rs-img/{id}/{sig}.jpg', [\App\Http\Controllers\RestockController::class,'img'])->whereNumber('id')->where('sig', '[0-9a-f]{24}')->middleware('throttle:60,1');
 Route::get('/pl/{token}', [\App\Http\Controllers\PurchaseListController::class,'open'])->where('token', '[0-9a-f]{40}')->middleware('throttle:30,1');
 Route::get('/login', fn() => redirect('/admin/login'));
 Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Http\Middleware\PerfProbe::class, \App\Http\Middleware\OrderActivityMw::class, \App\Http\Middleware\StaffIdleMw::class])->prefix('admin')->group(function () {
@@ -485,6 +486,8 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
     $PL = \App\Http\Controllers\PurchaseListController::class;
     Route::get('/daily-list', [$PL,'index']); Route::get('/daily-list/pdf', [$PL,'download']); Route::post('/daily-list/settings', [$PL,'save']);
     Route::post('/daily-list/submit', [$PL,'submit']); Route::post('/daily-list/sync', [$PL,'sync']); Route::post('/daily-list/send', [$PL,'send'])->middleware('throttle:6,1');
+    $RS = \App\Http\Controllers\RestockController::class; Route::get('/restock', [$RS,'index']); Route::post('/restock/settings', [$RS,'save']); Route::post('/restock/act/{a}', [$RS,'act'])->whereIn('a', ['submit','sync','scan','verify','send','resume'])->middleware('throttle:12,1');
+    Route::post('/restock/task/{id}', [$RS,'task'])->whereNumber('id'); Route::post('/restock/product', [$RS,'product']); Route::post('/restock/simulate', [$RS,'simulate'])->middleware('throttle:20,1');
     $C = \App\Http\Controllers\ProcurementController::class;
     Route::get('/', [$C,'dashboard']);
     Route::get('/new', [$C,'form']); Route::get('/edit/{id}', [$C,'form'])->whereNumber('id'); Route::post('/save', [$C,'save']);

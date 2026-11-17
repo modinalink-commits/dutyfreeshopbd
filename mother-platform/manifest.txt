@@ -1250,3 +1250,7 @@ database/migrations/2026_11_17_170000_wa_calls_outcome_followup.php
 app/Support/Rider.php
 database/migrations/2026_11_17_180000_orders_rider.php
 app/Http/Middleware/FlashDiet.php
+database/migrations/2026_11_17_190000_restock_followup.php
+app/Support/Restock.php
+app/Http/Controllers/RestockController.php
+resources/views/restock.blade.php
