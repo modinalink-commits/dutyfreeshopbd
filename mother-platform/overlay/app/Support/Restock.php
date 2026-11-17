@@ -423,6 +423,29 @@ class Restock
     foreach ($rows as $r) { $l = mb_strlen((string)$r->body) + 2; if ($len + $l > 3300 && !$go()) return $sent; $chunk[] = (string)$r->body; $ids[] = $r->id; $len += $l; }
     $go(); return $sent;
   }
+  /** The update text for one purchase line, or null when its rate is the same as the purchase before it. */
+  private static function rateText(object $r, array $costs): ?string {
+    $prev = (float)DB::table('purchase_items')->where('product_id', $r->product_id)->where('id', '<', $r->id)->where('cost', '>', 0)->orderByDesc('id')->value('cost'); $new = (float)$r->cost;
+    if ($prev <= 0 || abs($new - $prev) < max(1.0, $prev * 0.005)) return null;
+    $up = $new > $prev; $price = (float)$r->price; $base = (float)($costs[$r->product_id]->cost ?? 0); if ($base <= 0) $base = $new; $floor = ProfitFloor::floor(max($base, $up ? $new : 0));
+    // owner 17 Nov: up = red, down = green, never the same colour
+    $head = $up ? '🔴⬆️ ক্রয়মূল্য বেড়েছে: ' : '🟢⬇️ ক্রয়মূল্য কমেছে: ';
+    $t = $head . $r->name . "\n   আগে " . SmsText::tk($prev) . ' → এখন ' . SmsText::tk($new) . ' (' . ($up ? '+' : '−') . SmsText::tk(abs($new - $prev)) . ')';
+    $t .= "\n   বিক্রয়মূল্য " . SmsText::tk($price) . ' · নতুন রেটে লাভ ' . self::num(($price - $new) / $new * 100) . '%';
+    if ($price + 0.004 < ProfitFloor::floor($new)) $t .= "\n   ন্যূনতম নিরাপদ দাম " . SmsText::tk(ProfitFloor::floor($new)) . '। বিক্রয়মূল্য বাড়ানো দরকার।';
+    elseif (!$up) $t .= "\n   দাম কমানোর সুযোগ আছে; ন্যূনতম নিরাপদ দাম " . SmsText::tk($floor) . '।';
+    return $t;
+  }
+  /** One-off repair (17 Nov 2026): rate updates that went out without the product name are queued again in full, once each. Returns how many. */
+  public static function resendBroken(): int {
+    $n = 0;
+    foreach (DB::table('restock_events')->where('kind', 'notice')->where('wamid', 'like', 'rate:%')->where('body', 'not like', '%আগে %')->orderBy('id')->limit(100)->get(['wamid']) as $e) {
+      $pid = (int)substr((string)$e->wamid, 5);
+      $r = DB::table('purchase_items as pi')->join('products as p', 'p.id', '=', 'pi.product_id')->where('pi.id', $pid)->first(['pi.id', 'pi.product_id', 'pi.cost', 'p.name', 'p.price']); if (!$r) continue;
+      $t = self::rateText($r, ProfitFloor::costs([(int)$r->product_id])); if ($t !== null && self::queue('rate-fix:' . $pid, "সংশোধনী (আগের মেসেজে পণ্যের নাম আসেনি)\n" . $t)) $n++;
+    }
+    return $n;
+  }
   /** A purchase recorded at a different rate than the one before it: tell the purchase manager, with what it does to the margin. */
   public static function rateWatch(): void {
     try {
@@ -431,17 +454,7 @@ class Restock
       if ($max <= $last) return; if (self::scopeCats() === null) return;
       $rows = self::scoped(DB::table('purchase_items as pi')->join('products as p', 'p.id', '=', 'pi.product_id')->where('pi.id', '>', $last)->where('pi.cost', '>', 0))->orderBy('pi.id')->limit(300)->get(['pi.id', 'pi.product_id', 'pi.cost', 'p.name', 'p.price']);
       $costs = ProfitFloor::costs($rows->pluck('product_id')->all());
-      foreach ($rows as $r) {
-        $prev = (float)DB::table('purchase_items')->where('product_id', $r->product_id)->where('id', '<', $r->id)->where('cost', '>', 0)->orderByDesc('id')->value('cost'); $new = (float)$r->cost;
-        if ($prev <= 0 || abs($new - $prev) < max(1.0, $prev * 0.005)) continue;
-        $up = $new > $prev; $price = (float)$r->price; $base = (float)($costs[$r->product_id]->cost ?? 0); if ($base <= 0) $base = $new; $floor = ProfitFloor::floor(max($base, $up ? $new : 0));
-        // owner 17 Nov: up = red, down = green, never the same colour
-        $t = ($up ? '🔴⬆️ ক্রয়মূল্য বেড়েছে: ' : '🟢⬇️ ক্রয়মূল্য কমেছে: ') . $r->name . "\n   আগে " . SmsText::tk($prev) . ' → এখন ' . SmsText::tk($new) . ' (' . ($up ? '+' : '−') . SmsText::tk(abs($new - $prev)) . ')'
-          . "\n   বিক্রয়মূল্য " . SmsText::tk($price) . ' · নতুন রেটে লাভ ' . self::num(($price - $new) / $new * 100) . '%';
-        if ($price + 0.004 < ProfitFloor::floor($new)) $t .= "\n   ন্যূনতম নিরাপদ দাম " . SmsText::tk(ProfitFloor::floor($new)) . '। বিক্রয়মূল্য বাড়ানো দরকার।';
-        elseif (!$up) $t .= "\n   দাম কমানোর সুযোগ আছে; ন্যূনতম নিরাপদ দাম " . SmsText::tk($floor) . '।';
-        self::queue('rate:' . $r->id, $t);
-      }
+      foreach ($rows as $r) { $t = self::rateText($r, $costs); if ($t !== null) self::queue('rate:' . $r->id, $t); }
       self::put('pi_last', (string)($rows->isEmpty() ? $max : max($last, (int)$rows->max('id'))));
       if ($rows->count() < 300 && (int)self::set('pi_last', '0') < $max) self::put('pi_last', (string)$max);
     } catch (\Throwable $e) { report($e); }

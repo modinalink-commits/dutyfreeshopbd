@@ -46,6 +46,7 @@ class RestockController extends Controller {
     if ($a === 'watch') { R::put('margin_day', ''); R::rateWatch(); R::marginWatch(); $n = R::notices()->count(); R::log(null, 'round', 'Rate / margin check run by hand: ' . $n . ' update(s) waiting'); return back()->with('ok', 'Rate / margin check done: ' . $n . ' update(s) waiting to be sent.'); }
     if ($a === 'drop-old') { [$ok, $m] = R::dropOldTemplate(); R::log(null, 'setting', 'Old template: ' . $m); return back()->with($ok ? 'ok' : 'err', 'Old template: ' . $m); }
     if ($a === 'copy') { if (!$c['cc']) return back()->with('err', 'কপির তালিকা খালি।'); R::copy(R::summary()); R::log(null, 'round', 'Summary sent to the copy list by hand'); return back()->with('ok', 'Summary sent to the copy list (' . count($c['cc']) . ').'); }
+    if ($a === 'resend-broken') { $n = R::resendBroken(); R::log(null, 'round', 'Rate updates sent without a product name queued again: ' . $n); return back()->with('ok', $n . ' update(s) queued again in full.'); }
     if ($a === 'resume') { R::put('pause_until', '0'); R::log(null, 'pause', 'Pause removed'); return back()->with('ok', 'বিরতি তুলে দেওয়া হয়েছে।'); }
     abort(404);
   }
