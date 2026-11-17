@@ -13,7 +13,7 @@ textarea:focus{outline:2px solid #FDBA74;border-color:#F95505}
 .ft button{background:none;border:0;color:#6B7280;text-decoration:underline;cursor:pointer;font:inherit}
 </style></head><body><div class="bx">
 <h1>{{ auth()->user()->name }}, আপনার নামে একটি নোটিশ</h1>
-<div class="sub">কারণ লিখে জমা দিলে ড্যাশবোর্ড আবার খুলবে। আপনার লেখা কারণ অ্যাডমিনের কাছে যাবে।</div>
+<div class="sub">কারণ লিখে জমা দিলে ড্যাশবোর্ড আবার খুলবে। আপনার লেখা কারণ আপনার মাসিক রেকর্ডে থাকবে।</div>
 <div class="fact">আপনি <b>{{ \Carbon\Carbon::parse($n->idle_from)->timezone('Asia/Dhaka')->format('h:i A') }}</b> থেকে <b>{{ $n->idle_minutes }} মিনিট</b> কোনো কাজ করেননি।
 @if($n->waiting_chats + $n->waiting_orders > 0)<br>ওই সময়ে অপেক্ষায় ছিল: @if($n->waiting_chats)<b>{{ $n->waiting_chats }}টা</b> কাস্টমারের মেসেজ @endif @if($n->waiting_orders)<b>{{ $n->waiting_orders }}টা</b> নতুন অর্ডার @endif @endif</div>
 <form method="post" action="/admin/staff-idle/submit">@csrf

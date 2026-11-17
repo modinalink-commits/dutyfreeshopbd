@@ -82,13 +82,13 @@ class StaffIdle {
     } catch (\Throwable $e) { return $off; }
   }
 
-  /** The staff member's written reason: unlocks their screen and files the ticket with the owner. */
+  /** The staff member's written reason: unlocks their screen and is kept in their monthly record. */
   public static function submit(int $uid, string $reason): bool {
     $n = self::open($uid); if (!$n) return false;
     DB::table('staff_idle_notices')->where('id', $n->id)->update(['status' => 'submitted', 'reason' => mb_substr($reason, 0, 1000), 'submitted_at' => now(), 'updated_at' => now()]);
     self::work($uid);
     try { DB::table('audit_logs')->insert(['user_id' => $uid, 'user_name' => (string)$n->user_name, 'action' => 'staff.idle_reason', 'subject' => 'Idle ' . $n->idle_minutes . ' min · reason: ' . mb_substr($reason, 0, 200), 'ip' => request()->ip(), 'created_at' => now(), 'updated_at' => now()]); } catch (\Throwable $e) {}
-    try { DeployHealth::raise('staff_idle:' . $n->id, 'medium', 'Staff', 'কারণ দর্শানো: ' . $n->user_name . ' ' . $n->idle_minutes . ' মিনিট কাজ করেননি', 'কারণ: ' . mb_substr($reason, 0, 300), 'কাজ অপেক্ষায় ছিল (মেসেজ ' . $n->waiting_chats . ', অর্ডার ' . $n->waiting_orders . ') অথচ কোনো কাজ হয়নি।', 'Staff Idle পাতায় (/admin/staff-idle) দেখে গ্রহণ বা অগ্রহণ করুন।'); } catch (\Throwable $e) {}
+    // Owner 18 Nov 2026: no alert and no notification to the owner for these. The reason is kept in the staff member's monthly record (Staff Idle page), details folded.
     return true;
   }
   public static function review(int $id, string $verdict, string $note, string $by): void {

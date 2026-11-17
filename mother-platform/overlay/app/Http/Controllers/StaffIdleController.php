@@ -16,7 +16,7 @@ class StaffIdleController extends Controller {
   public function submit(Request $r) {
     $d = $r->validate(['reason' => 'required|string|min:10|max:1000'], ['reason.min' => 'কারণটা অন্তত ১০ অক্ষরে পরিষ্কার করে লিখুন।', 'reason.required' => 'কারণ লিখতে হবে।']);
     S::submit((int)auth()->id(), trim($d['reason']));
-    return redirect('/admin')->with('ok', 'কারণ জমা হয়েছে এবং অ্যাডমিনের কাছে পাঠানো হয়েছে।');
+    return redirect('/admin')->with('ok', 'কারণ জমা হয়েছে। এটি আপনার মাসিক রেকর্ডে থাকবে।');
   }
   public function brk(Request $r) {
     if ($r->input('end')) { S::endBreak((int)auth()->id()); return response()->json(['ok' => true]); }
@@ -28,9 +28,13 @@ class StaffIdleController extends Controller {
   public function index(Request $r) {
     abort_unless(ProfitFloor::admin(), 403);
     $ready = S::ready();
-    $rows = $ready ? DB::table('staff_idle_notices')->orderByRaw("case status when 'submitted' then 0 when 'open' then 1 else 2 end")->orderByDesc('id')->limit(150)->get() : collect();
-    $sum = $ready ? DB::table('staff_idle_notices')->where('created_at', '>=', now()->subDays(30))->selectRaw("user_name, count(*) n, coalesce(sum(idle_minutes),0) m, sum(case when created_at >= ? then 1 else 0 end) today", [now('Asia/Dhaka')->startOfDay()->utc()])->groupBy('user_name')->orderByDesc('n')->get() : collect();
-    return view('staff_idle_admin', ['rows' => $rows, 'sum' => $sum, 'ready' => $ready, 's' => fn($k, $d = '') => S::set($k, $d), 'roles' => DB::table('users')->whereNotIn('role', ['super', 'admin'])->distinct()->pluck('role')->filter()->values()]);
+    // Monthly record per staff member: how many times a reason had to be given. Details stay folded until opened.
+    $m = preg_match('/^\d{4}-\d{2}$/', (string)$r->query('m')) ? (string)$r->query('m') : now('Asia/Dhaka')->format('Y-m');
+    $from = \Carbon\Carbon::createFromFormat('Y-m-d H:i:s', $m . '-01 00:00:00', 'Asia/Dhaka'); $to = $from->copy()->addMonth();
+    $rows = $ready ? DB::table('staff_idle_notices')->where('created_at', '>=', $from->copy()->utc())->where('created_at', '<', $to->copy()->utc())->orderByDesc('id')->limit(2000)->get() : collect();
+    $by = $rows->groupBy(fn($x) => (string)$x->user_name)->map(fn($g, $name) => (object)['name' => $name, 'n' => $g->count(), 'given' => $g->where('status', '!=', 'open')->count(), 'open' => $g->where('status', 'open')->count(), 'min' => (int)$g->sum('idle_minutes'), 'rows' => $g])->sortByDesc('n')->values();
+    $months = []; for ($i = 0; $i < 12; $i++) { $d = now('Asia/Dhaka')->startOfMonth()->subMonths($i); $months[$d->format('Y-m')] = $d->format('F Y'); }
+    return view('staff_idle_admin', ['by' => $by, 'm' => $m, 'months' => $months, 'total' => $rows->count(), 'ready' => $ready, 's' => fn($k, $d = '') => S::set($k, $d), 'roles' => DB::table('users')->whereNotIn('role', ['super', 'admin'])->distinct()->pluck('role')->filter()->values()]);
   }
   public function save(Request $r) {
     abort_unless(ProfitFloor::admin(), 403);
