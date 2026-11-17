@@ -83,7 +83,7 @@ var WC=(function(){
   function answer(id,btn){
     if(busy)return;busy=true;msg('');if(btn){btn.disabled=true;btn.textContent='Connecting…'}
     if(!navigator.mediaDevices||!window.RTCPeerConnection){busy=false;msg('This browser cannot take calls. Use Chrome.');return}
-    navigator.mediaDevices.getUserMedia({audio:true}).then(function(s){stream=s;return post('/admin/call-center/whatsapp/'+id+'/claim')}).then(function(d){
+    navigator.mediaDevices.getUserMedia({audio:{echoCancellation:{ideal:true},noiseSuppression:{ideal:true},autoGainControl:{ideal:true},voiceIsolation:{ideal:true},channelCount:{ideal:1}}}).then(function(s){stream=s;return post('/admin/call-center/whatsapp/'+id+'/claim')}).then(function(d){
       if(!d.ok)throw new Error(d.message||'Could not take the call');
       pc=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]});
       stream.getTracks().forEach(function(t){pc.addTrack(t,stream)});
