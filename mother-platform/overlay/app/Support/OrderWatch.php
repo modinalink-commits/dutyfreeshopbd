@@ -57,7 +57,9 @@ class OrderWatch
   /** Who is responsible for an order row (needs owner_id, approval_source, approved_by). Null = nobody: the supervisor's list. */
   public static function ownerOf(object $o): ?int {
     if (!empty($o->owner_id)) return (int)$o->owner_id > 0 ? (int)$o->owner_id : null; // -1 = a supervisor put it back on the unassigned list
-    return ($o->approval_source ?? null) === 'MANUAL' && !empty($o->approved_by) ? (int)$o->approved_by : null;
+    if (($o->approval_source ?? null) === 'MANUAL' && !empty($o->approved_by)) return (int)$o->approved_by;
+    if (($o->approval_source ?? null) === 'AI') { static $ai = false; if ($ai === false) $ai = (int)self::set('ai_owner', '0') ?: null; return $ai; } // owner 17 Nov: orders approved by the AI automation are watched by one named person
+    return null;
   }
   /** Hand an order to a person (or to nobody). Supervisor only; the caller checks that. Every change is logged with who and why. */
   public static function assign(int $orderId, ?int $to, string $reason, ?object $by): array {

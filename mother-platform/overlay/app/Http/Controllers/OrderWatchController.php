@@ -27,9 +27,11 @@ class OrderWatchController extends Controller {
   }
   public function save(Request $r) {
     abort_unless(W::supervisor(auth()->user()), 403);
-    $rules = ['from' => ['required', 'regex:/^\d{1,2}:\d{2}$/'], 'to' => ['required', 'regex:/^\d{1,2}:\d{2}$/'], 'channel' => 'required|in:whatsapp,sms', 'retries' => 'required|integer|min:0|max:3', 'lim_incomplete' => 'required|numeric|min:0|max:720'];
+    $rules = ['from' => ['required', 'regex:/^\d{1,2}:\d{2}$/'], 'to' => ['required', 'regex:/^\d{1,2}:\d{2}$/'], 'channel' => 'required|in:whatsapp,sms', 'retries' => 'required|integer|min:0|max:3', 'lim_incomplete' => 'required|numeric|min:0|max:720', 'ai_owner' => 'nullable|integer'];
     foreach (array_keys(W::CATS) as $k) $rules['lim_' . $k] = 'required|numeric|min:0|max:720';
     $d = $r->validate($rules);
+    if (!empty($d['ai_owner']) && !DB::table('users')->where('id', (int)$d['ai_owner'])->where('active', true)->exists()) return back()->with('err', 'AI-অনুমোদিত অর্ডারের জন্য বাছাই করা স্টাফ সক্রিয় নন। সেভ হয়নি।');
+    $d['ai_owner'] = (string)(int)($d['ai_owner'] ?? 0);
     foreach ($d as $k => $v) W::put($k, trim((string)$v));
     W::put('on', $r->boolean('on') ? '1' : '0'); W::put('sms_fallback', $r->boolean('sms_fallback') ? '1' : '0');
     try { \App\Support\Procure::audit('order_watch.settings', 'Order Watch', null, ['on' => $r->boolean('on'), 'from' => $d['from'], 'to' => $d['to'], 'channel' => $d['channel']]); } catch (\Throwable $e) {}
