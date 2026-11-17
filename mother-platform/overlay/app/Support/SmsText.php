@@ -57,7 +57,7 @@ class SmsText {
   public static function supplierTempPw(string $name, string $brand, string $user, string $pw, string $url): string { return "$name,\nআপনার $brand লগইন:\nইউজারনেম: $user\nঅস্থায়ী পাসওয়ার্ড: $pw\nলগইন: $url\nপ্রথম লগইনে নতুন পাসওয়ার্ড দিন।"; }
   public static function supplierLogin(string $url, string $code, string $mobile, string $pw): string { return "DutyFreeBD Supplier Portal: $url লগইন: $code / $mobile পাসওয়ার্ড: $pw (প্রথম লগইনে বদলান)"; }
   public static function reorder(bool $pre, string $product, $qty, string $url): string { return ($pre ? 'প্রি-অর্ডার অনুরোধ' : 'কম স্টক: ক্রয় অনুরোধ') . "\nপণ্য: $product\nপরিমাণ: $qty\nদাম ও পরিমাণ জানান: $url"; }
-  public static function productStatus(string $what, bool $published, string $by, string $time, string $store): string { return "পণ্য $what " . ($published ? 'প্রকাশ' : 'অপ্রকাশ') . " করেছেন $by, $time। স্টোর: $store"; }
+  public static function productStatus(string $what, bool $published, string $by, string $time, string $store): string { return "পণ্য $what " . ($published ? 'প্রকাশ' : 'অপ্রকাশ') . " করেছেন {$by}, {$time}। স্টোর: {$store}"; }
   public static function salary(string $name, string $month, $amount): string { return self::BRAND . ': ' . $name . ', ' . $month . ' মাসের বেতন/কমিশন ৳' . number_format((float)$amount) . ' পরিশোধ হয়েছে।'; }
   public static function test(string $time): string { return self::BRAND . ' পরীক্ষামূলক এসএমএস। সময়: ' . $time; }
 
