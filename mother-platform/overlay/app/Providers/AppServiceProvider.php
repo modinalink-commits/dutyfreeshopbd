@@ -14,5 +14,7 @@ class AppServiceProvider extends ServiceProvider {
     if (!$this->app->runningInConsole()) $this->app->make(\Illuminate\Contracts\Http\Kernel::class)->pushMiddleware(\App\Http\Middleware\CanonicalHost::class);
     if (!$this->app->runningInConsole()) $this->app->make(\Illuminate\Contracts\Http\Kernel::class)->pushMiddleware(\App\Http\Middleware\BrandPrint::class);
     if (!$this->app->runningInConsole()) $this->app->make(\Illuminate\Contracts\Http\Kernel::class)->pushMiddleware(\App\Http\Middleware\SessionGuard::class);
+    // Inside the web group (after StartSession): keeps the flashed form input small enough for the cookie session, so a failed save shows its error instead of a 502.
+    if (!$this->app->runningInConsole()) $this->app->make('router')->pushMiddlewareToGroup('web', \App\Http\Middleware\FlashDiet::class);
   }
 }

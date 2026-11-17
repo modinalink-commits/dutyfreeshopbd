@@ -153,6 +153,8 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/products', [C::class,'productSave']);
   Route::get('/products/{id}/edit', [C::class,'productForm']);
   Route::get('/products/{id}/preview', [C::class,'productPreview']);
+  // The save address only accepts POST; a reload or a typed address lands on the edit page instead of a 404.
+  Route::get('/products/{id}', fn($id) => redirect('/admin/products/'.$id.'/edit'))->whereNumber('id');
   Route::post('/products/{id}', [C::class,'productSave']);
   Route::post('/products/{id}/toggle', [C::class,'productToggle']); Route::post('/products/{id}/delete', [C::class,'productDelete'])->whereNumber('id');
   Route::get('/products-export.csv', [C::class,'productsCsv']);

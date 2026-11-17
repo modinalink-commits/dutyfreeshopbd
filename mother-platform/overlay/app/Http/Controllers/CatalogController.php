@@ -36,7 +36,7 @@ class CatalogController extends Controller {
   }
   public function productForm($id = null) {
     $p = $id ? DB::table('products')->find($id) : null;
-    if ($id) abort_unless($p, 404);
+    if ($id && !$p) return redirect('/admin/products')->with('err', 'Product #'.$id.' was not found. It may have been deleted, or the link is wrong.');
     $cats = DB::table('categories')->orderBy('position')->orderBy('name')->get();
     $mains = $cats->whereNull('parent_id')->values();
     if ($p && $p->category_id && !$mains->contains('id', $p->category_id)) $mains->push($cats->firstWhere('id', $p->category_id));
@@ -80,7 +80,7 @@ class CatalogController extends Controller {
       'status'=>'nullable|in:draft,published', 'act'=>'nullable|in:draft,publish,preview',
       'images'=>'nullable|array|max:6', 'images.*'=>'string|max:500',
       'has_variants'=>'nullable', 'v'=>'nullable|array|max:100',
-    ]);
+    ], ['sale_price.lte'=>'Sale price cannot be higher than the regular price. Not saved. Raise the regular price, or leave Sale price empty to sell at the regular price.']);
     $regular = (float)$d['regular_price']; $sale = ($d['sale_price'] ?? null) !== null && (float)$d['sale_price'] < $regular ? (float)$d['sale_price'] : null;
     $row = [
       'name'=>trim($d['name']), 'sku'=>($d['sku'] ?? null) ?: null, 'category_id'=>(int)$d['category_id'],
@@ -96,7 +96,7 @@ class CatalogController extends Controller {
     foreach ($__g as $__k => $__v) if (empty($row[$__k])) $row[$__k] = $__v;
     foreach ([1,2,3,4,5] as $n) $row["buy{$n}_price"] = ($d["buy{$n}_price"] ?? null) !== null && $d["buy{$n}_price"] !== '' ? (float)$d["buy{$n}_price"] : null;
     $old = $id ? DB::table('products')->find($id) : null;
-    if ($id) abort_unless($old, 404);
+    if ($id && !$old) return redirect('/admin/products')->with('err', 'Product #'.$id.' was not found, so nothing was saved. It may have been deleted.');
     // Owner rule 15 Nov 2026: a Single Packet's price (one tenth of its carton) and stock (from partial returns) are automatic; nobody edits them here.
     if ($old && !empty($old->parent_product_id)) { foreach (['price', 'compare_price', 'stock', 'stock_status', 'buy2_price', 'buy3_price', 'buy4_price', 'buy5_price'] as $__k) $row[$__k] = $old->{$__k} ?? null; }
     // Bundle pricing rule: global (automatic, default) | custom (typed Buy 2-5 totals) | off. Only the Admin may change it; with the global/off rule the Buy 2-5 prices are calculated, never typed.
