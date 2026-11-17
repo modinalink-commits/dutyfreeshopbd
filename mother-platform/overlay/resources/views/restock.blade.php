@@ -51,6 +51,7 @@
 <form method="post" action="/admin/purchase/restock/act/verify">@csrf<button class="btn g" type="submit">Send verification message</button></form>
 <form method="post" action="/admin/purchase/restock/act/scan">@csrf<button class="btn g" type="submit">Scan now (no message)</button></form>
 <form method="post" action="/admin/purchase/restock/act/watch">@csrf<button class="btn g" type="submit">Check rates and margin now (no message)</button></form>
+<form method="post" action="/admin/purchase/restock/act/copy">@csrf<button class="btn g" type="submit">Send summary to the copy list</button></form>
 <form method="post" action="/admin/purchase/restock/act/send">@csrf<button class="btn g" type="submit">Send reminder now</button></form></div>
 <form method="post" action="/admin/purchase/restock/simulate" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center">@csrf<span class="mu" style="font-size:12px">Test an answer as if {{ $c['name'] }} wrote it:</span><input type="text" name="text" placeholder="1 অর্ডার করেছি, কাল আসবে" style="flex:1;min-width:220px"><button class="btn g" type="submit">Test answer</button></form>
 <small class="mu" style="display:block;margin-top:6px">The answer to a test goes to the saved WhatsApp number. Use the test number while trying this out.</small></div></div>

@@ -231,6 +231,7 @@ class Restock
     $text = "DutyFreeBD স্টক সহকারী (স্বয়ংক্রিয়)\n" . $hello . "\n\n" . implode("\n\n", $parts) . ($all->count() > 40 ? "\n\n… আরও " . ($all->count() - 40) . 'টি' : '')
       . ($round <= 2 || $force ? "\n\nউত্তর দিতে নম্বরসহ লিখুন, যেমন:\n1 অর্ডার করেছি, পরশু আসবে\n2 সমস্যা: সাপ্লায়ারের কাছে নেই\nব্যস্ত থাকলে লিখুন: 2 ঘণ্টা পরে" : "\n\nনম্বরসহ উত্তর দিন (যেমন: 1 কাল আসবে)।");
     if (!self::sendText($wa, $text)) return 'send failed';
+    self::copy($text); // the admin gets the same list (read-only: no buttons)
     $sent = 0; $now = now();
     foreach ($all as $i => $t) {
       if ($t->status !== 'new' || $sent >= $c['cards'] || $i >= 40) continue;
@@ -261,7 +262,7 @@ class Restock
       foreach ($c['cc'] as [$name, $wa]) {
         if (self::windowOpen($wa)) { $body = mb_substr($text ?? self::summary(), 0, 3900); [$ok, $id, $err] = self::post(['to' => $wa, 'type' => 'text', 'text' => ['preview_url' => false, 'body' => $body]]);
           self::log(null, $ok ? 'msg_cc' : 'msg_fail', 'Copy to ' . $name . ($ok ? '' : ' not sent: ' . $err) . "\n" . mb_substr($body, 0, 600), $id, self::BY); if ($ok) Chat::logOut($wa, $body, self::BY, $id); }
-        elseif ($text === null && self::tplStatus() === 'APPROVED' && Cache::add('rs_tpl_cc_' . $wa, 1, max(1800, $c['every'] * 60 - 120))) self::sendTemplate($wa, $name, max(1, $n));
+        elseif (self::tplStatus() === 'APPROVED' && Cache::add('rs_tpl_cc_' . $wa, 1, max(1800, $c['every'] * 60 - 120))) self::sendTemplate($wa, $name, max(1, $n));
       }
     } catch (\Throwable $e) { report($e); }
   }
@@ -416,7 +417,7 @@ class Restock
     $go = function () use (&$chunk, &$len, &$ids, &$sent, $wa) {
       if (!$chunk) return true;
       $ok = self::sendText($wa, "DutyFreeBD স্টক সহকারী (স্বয়ংক্রিয়)\nক্রয়মূল্য ও মার্জিনের আপডেট:\n\n" . implode("\n\n", $chunk));
-      if ($ok) { DB::table('restock_events')->whereIn('id', $ids)->update(['kind' => 'notice', 'updated_at' => now()]); $sent += count($ids); }
+      if ($ok) { DB::table('restock_events')->whereIn('id', $ids)->update(['kind' => 'notice', 'updated_at' => now()]); $sent += count($ids); self::copy("DutyFreeBD স্টক সহকারী (স্বয়ংক্রিয়)\nক্রয়মূল্য ও মার্জিনের আপডেট:\n\n" . implode("\n\n", $chunk)); }
       $chunk = []; $len = 0; $ids = []; return $ok;
     };
     foreach ($rows as $r) { $l = mb_strlen((string)$r->body) + 2; if ($len + $l > 3300 && !$go()) return $sent; $chunk[] = (string)$r->body; $ids[] = $r->id; $len += $l; }
@@ -472,12 +473,12 @@ class Restock
       if (!self::isVerified($c)) return; // nothing is sent by itself until the number has answered once (Send verification message)
       $now = now('Asia/Dhaka'); $min = $now->hour * 60 + $now->minute; if ($min < $c['from'] || $min >= $c['to']) return;
       if ((int)self::set('pause_until', '0') > time()) return; // the purchase manager asked us to wait
-      if (self::notices()->isNotEmpty() && Cache::add('rs_notice', 1, 1800)) { $n = self::flush($c['wa']); if ($n !== 0) { self::log(null, 'round', 'Rate / margin updates: ' . ($n > 0 ? $n . ' sent' : 'opener sent, waiting for an answer'), null, 'System'); if ($n > 0) self::copy(); } }
+      if (self::notices()->isNotEmpty() && Cache::add('rs_notice', 1, 1800)) { $n = self::flush($c['wa']); if ($n !== 0) { self::log(null, 'round', 'Rate / margin updates: ' . ($n > 0 ? $n . ' sent' : 'opener sent, waiting for an answer'), null, 'System'); } }
       $last = (int)self::set('last_round', '0'); if (time() - $last < $c['every'] * 60) return;
       if (!Cache::add('rs_round', 1, 300)) return;
       if (self::pending()->isEmpty()) return;
       self::put('last_round', (string)time()); // set first: a failed send is not retried every minute
-      $res = self::digest($c['wa']); self::log(null, 'round', 'Reminder round: ' . $res, null, 'System'); self::copy();
+      $res = self::digest($c['wa']); self::log(null, 'round', 'Reminder round: ' . $res, null, 'System'); if (str_starts_with($res, 'template')) self::copy();
     } catch (\Throwable $e) { report($e); }
   }
 
