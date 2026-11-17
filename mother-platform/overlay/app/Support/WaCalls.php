@@ -110,6 +110,47 @@ class WaCalls {
     return (bool)DB::table('wa_calls')->where('id', $id)->where('status', 'answering')->where('user_id', $uid)->whereNull('answered_at')->where('created_at', '>', now()->subSeconds(self::RING_SECONDS))->update(['status' => 'ringing', 'user_id' => null, 'user_name' => null, 'updated_at' => now()]);
   }
   /** Staff note about the call (kept on the call row). */
+  /** Results a representative can give a WhatsApp call (same idea as the PBX dialer outcomes). */
+  const OUTCOMES = ['confirmed' => 'Order Confirmed', 'info' => 'Information given', 'pending' => 'Pending', 'call_later' => 'Call Later', 'complaint' => 'Complaint', 'cancelled' => 'Order Cancelled', 'other' => 'Other'];
+  public static function hasResult(): bool { static $r = null; if ($r === null) { try { $r = self::ready() && Schema::hasColumn('wa_calls', 'outcome'); } catch (\Throwable $e) { $r = false; } } return $r; }
+  /** Result and follow-up time of a call. $followup: local (Dhaka) date-time string, '' clears it. One staff-only line goes to the caller's conversation. */
+  public static function saveResult(int $id, ?string $outcome, ?string $followup, string $by): bool {
+    if (!self::hasResult()) return false; $c = DB::table('wa_calls')->find($id); if (!$c) return false; $upd = ['updated_at' => now()]; $say = [];
+    if ($outcome !== null && ($outcome === '' || isset(self::OUTCOMES[$outcome]))) { $upd['outcome'] = $outcome ?: null; if ($outcome) $say[] = 'result: ' . self::OUTCOMES[$outcome]; }
+    if ($followup !== null) {
+      if (trim($followup) === '') { $upd['followup_at'] = null; }
+      else { try { $at = \Carbon\Carbon::parse($followup, 'Asia/Dhaka'); $upd['followup_at'] = $at->copy()->utc(); $upd['followup_done_at'] = null; $say[] = 'follow-up ' . $at->format('d M, h:i A'); } catch (\Throwable $e) { return false; } }
+    }
+    DB::table('wa_calls')->where('id', $id)->update($upd);
+    if ($say) self::threadNote($c->from_wa ?? null, 'WhatsApp call ' . implode(' · ', $say), (int)(auth()->id() ?? 0) ?: null, $by);
+    return true;
+  }
+  public static function followupDone(int $id): bool { return self::hasResult() && (bool)DB::table('wa_calls')->where('id', $id)->whereNotNull('followup_at')->update(['followup_done_at' => now(), 'updated_at' => now()]); }
+  /** Who a WhatsApp number belongs to, by the last 11 digits: customer, staff, supplier or unknown. */
+  public static function who(?string $wa): array {
+    $d = substr(preg_replace('/\D/', '', (string)$wa), -11); if (strlen($d) < 10) return ['kind' => 'unknown', 'label' => 'Unknown', 'name' => null];
+    try {
+      foreach ([['employees', 'Staff', 'staff'], ['suppliers', 'Supplier', 'supplier']] as [$tb, $lab, $k]) if (Schema::hasTable($tb) && Schema::hasColumn($tb, 'phone')) { $x = DB::table($tb)->whereRaw("right(regexp_replace(coalesce(phone,''), '\\D', '', 'g'), 11) = ?", [$d])->first(['name']); if ($x) return ['kind' => $k, 'label' => $lab, 'name' => (string)$x->name]; }
+      $c = DB::table('customers')->whereRaw('right(phone,11) = ?', [$d])->first(['name']); if ($c) return ['kind' => 'customer', 'label' => 'Customer', 'name' => (string)$c->name];
+      $o = DB::table('orders')->whereRaw('right(phone,11) = ?', [$d])->orderByDesc('id')->first(['customer_name']); if ($o) return ['kind' => 'customer', 'label' => 'Customer', 'name' => (string)$o->customer_name];
+    } catch (\Throwable $e) {}
+    return ['kind' => 'unknown', 'label' => 'New caller', 'name' => null];
+  }
+  /** WhatsApp calls of one phone number (or linked to one order) with the state of each recording, for the shared call history. */
+  public static function historyRows(?string $phone, ?int $orderId, $user): array {
+    if (!self::ready()) return []; $rec = WaRec::ready();
+    $q = DB::table('wa_calls')->orderByDesc('id')->limit(60);
+    if ($orderId) { if (!$rec) return []; $q->whereIn('id', DB::table('wa_call_recordings')->where('order_id', $orderId)->select('call_id')); }
+    elseif ($phone) { $d = substr(preg_replace('/\D/', '', $phone), -11); if (strlen($d) < 10) return []; $q->whereRaw('right(from_wa, 10) = ?', [substr($d, -10)]); }
+    else return [];
+    $rows = $q->get(); if ($rows->isEmpty()) return []; $recs = [];
+    if ($rec) foreach (DB::table('wa_call_recordings')->whereIn('call_id', $rows->pluck('id'))->get() as $x) $recs[(int)$x->call_id] = $x;
+    $out = [];
+    foreach ($rows as $c) { $x = $recs[(int)$c->id] ?? null; $has = $x && in_array($x->status, ['complete', 'incomplete'], true); $file = $has && WaRec::file($x) !== null;
+      $state = !$x ? ($c->status === 'ended' ? 'none' : 'na') : ($file ? (WaRec::canListen($user, $x) ? 'play' : 'denied') : ($has ? 'nofile' : (string)$x->status));
+      $out[] = ['call' => $c, 'rec_id' => $x ? (int)$x->id : null, 'state' => $state, 'incomplete' => $x && $x->status === 'incomplete', 'dl' => $file && WaRec::mayDownload($user, $x->user_id ? (int)$x->user_id : null)]; }
+    return $out;
+  }
   public static function saveNote(int $id, string $text, string $by): bool {
     $ok = (bool)DB::table('wa_calls')->where('id', $id)->update(['note' => mb_substr(trim($text) . ' — ' . $by, 0, 300), 'updated_at' => now()]);
     if ($ok) { $c = DB::table('wa_calls')->find($id); self::threadNote($c->from_wa ?? null, 'Call note: ' . trim($text), (int)(auth()->id() ?? 0) ?: null, $by); }

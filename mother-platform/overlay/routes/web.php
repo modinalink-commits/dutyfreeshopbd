@@ -290,6 +290,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/call-center/whatsapp/{id}/handled', [\App\Http\Controllers\WaCallController::class,'handled'])->whereNumber('id');
   Route::post('/call-center/whatsapp/{id}/release', [\App\Http\Controllers\WaCallController::class,'release'])->whereNumber('id');
   Route::post('/call-center/whatsapp/{id}/note', [\App\Http\Controllers\WaCallController::class,'note'])->whereNumber('id');
+  Route::post('/call-center/whatsapp/{id}/followup-done', [\App\Http\Controllers\WaCallController::class,'followupDone'])->whereNumber('id');
   // WhatsApp call recordings (owner 16 Nov 2026): uploaded in pieces by the answering browser; listening is permission-checked and logged
   Route::post('/call-center/whatsapp/{id}/rec/start', [\App\Http\Controllers\WaRecController::class,'start'])->whereNumber('id');
   Route::post('/call-center/whatsapp/{id}/rec/chunk', [\App\Http\Controllers\WaRecController::class,'chunk'])->whereNumber('id');

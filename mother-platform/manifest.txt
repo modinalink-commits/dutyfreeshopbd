@@ -1246,3 +1246,4 @@ database/migrations/2026_11_17_150000_hotline_replace_backup.php
 app/Support/SmsText.php
 resources/views/sms_templates.blade.php
 database/migrations/2026_11_17_160000_sms_templates_bangla_short.php
+database/migrations/2026_11_17_170000_wa_calls_outcome_followup.php

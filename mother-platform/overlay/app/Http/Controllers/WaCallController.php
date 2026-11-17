@@ -51,7 +51,13 @@ class WaCallController extends Controller {
   public function extras(int $id) { $c = WaCalls::ready() ? DB::table('wa_calls')->find($id) : null; abort_unless($c, 404); return response()->json(WaCalls::extras((string)$c->from_wa)); }
   public function handled(Request $r, int $id) { return response()->json(['ok' => WaCalls::handle($id, (int)$r->user()->id, (string)$r->user()->name)]); }
   public function release(Request $r, int $id) { return response()->json(['ok' => WaCalls::release($id, (int)$r->user()->id)]); }
-  public function note(Request $r, int $id) { $d = $r->validate(['note' => 'required|string|max:240']); return response()->json(['ok' => WaCalls::saveNote($id, $d['note'], (string)$r->user()->name)]); }
+  public function note(Request $r, int $id) {
+    $d = $r->validate(['note' => 'nullable|string|max:240', 'outcome' => 'nullable|string|max:30', 'followup' => 'nullable|string|max:40']); $ok = true; $by = (string)$r->user()->name;
+    if (trim((string)($d['note'] ?? '')) !== '') $ok = WaCalls::saveNote($id, (string)$d['note'], $by);
+    if ($r->has('outcome') || $r->has('followup')) $ok = WaCalls::saveResult($id, $r->has('outcome') ? (string)($d['outcome'] ?? '') : null, $r->has('followup') ? (string)($d['followup'] ?? '') : null, $by) && $ok;
+    return response()->json(['ok' => $ok]);
+  }
+  public function followupDone(Request $r, int $id) { return response()->json(['ok' => WaCalls::followupDone($id)]); }
   public function status(Request $r) { abort_unless(ProfitFloor::admin(), 403); return response()->json(WaCalls::settings((string)$r->query('phone_id'))); }
   public function setCalling(Request $r) {
     abort_unless(ProfitFloor::admin(), 403);

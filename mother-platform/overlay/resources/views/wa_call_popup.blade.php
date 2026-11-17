@@ -34,8 +34,11 @@ main button.wp-b.go{background:#15803D;border-color:#15803D;color:#fff}main butt
 
 <div class="wp-box"><b class="t">Calls &amp; recordings of this caller</b><div id="wpRecs"><div class="wr-i" style="color:#475467;padding:8px 14px;font-size:12.5px">Loading…</div></div></div>
 
-<div class="wp-box"><b class="t">Call note</b><div class="wp-note"><textarea id="wpNote" maxlength="240" placeholder="What the customer wanted, what was promised…">{{ preg_replace('/ — [^—]*$/u', '', (string)$c->note) }}</textarea>
-<div style="display:flex;gap:8px;align-items:center;margin-top:6px"><button class="wp-b" style="flex:none;height:34px;padding:0 14px;font-size:13px" onclick="WP.note(this)">Save note</button><small id="wpNoteS" style="color:#475467"></small></div></div></div>
+<div class="wp-box"><b class="t">Call note, result &amp; follow-up</b><div class="wp-note"><textarea id="wpNote" maxlength="240" placeholder="What the customer wanted, what was promised…">{{ preg_replace('/ — [^—]*$/u', '', (string)$c->note) }}</textarea>
+@if(\App\Support\WaCalls::hasResult())<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+<label style="flex:1;min-width:150px;font-size:12px;color:#475467">Result<select id="wpOut" style="width:100%;height:34px;border:1px solid #D0D5DD;border-radius:8px;padding:0 8px;font:inherit;margin-top:2px"><option value="">— choose —</option>@foreach(\App\Support\WaCalls::OUTCOMES as $ok => $ol)<option value="{{ $ok }}" @selected(($c->outcome ?? '') === $ok)>{{ $ol }}</option>@endforeach</select></label>
+<label style="flex:1;min-width:170px;font-size:12px;color:#475467">Next follow-up<input type="datetime-local" id="wpFu" value="{{ !empty($c->followup_at) ? \Carbon\Carbon::parse($c->followup_at, 'UTC')->timezone('Asia/Dhaka')->format('Y-m-d\\TH:i') : '' }}" style="width:100%;height:34px;border:1px solid #D0D5DD;border-radius:8px;padding:0 8px;font:inherit;margin-top:2px"></label></div>@endif
+<div style="display:flex;gap:8px;align-items:center;margin-top:6px"><button class="wp-b" style="flex:none;height:34px;padding:0 14px;font-size:13px" onclick="WP.note(this)">Save</button><small id="wpNoteS" style="color:#475467"></small></div></div></div>
 </div>
 @endsection
 @section('js')
@@ -134,7 +137,7 @@ var WP=(function(){
     if(c&&c.last)h+='<a class="wp-b" target="_blank" href="/admin/orders/'+c.last.id+'">Last order</a>';
     if(c&&c.thread_id)h+='<a class="wp-b" target="_blank" href="/admin/chat?open='+c.thread_id+'">Chat</a>';
     $('wpLinks').innerHTML=h}
-  function note(btn){var v=$('wpNote').value.trim();if(!v)return;btn.disabled=true;post('/admin/call-center/whatsapp/'+ID+'/note',{note:v}).then(function(d){btn.disabled=false;$('wpNoteS').textContent=d.ok?'Saved':'Not saved'})}
+  function note(btn){var v=$('wpNote').value.trim(),b={};if(v)b.note=v;if($('wpOut')){b.outcome=$('wpOut').value;b.followup=$('wpFu').value}if(!v&&!$('wpOut'))return;if(!v&&!b.outcome&&!b.followup){$('wpNoteS').textContent='Write a note, choose a result or set a follow-up.';return}btn.disabled=true;$('wpNoteS').textContent='';post('/admin/call-center/whatsapp/'+ID+'/note',b).then(function(d){btn.disabled=false;$('wpNoteS').textContent=d.ok?'Saved':'Not saved'})}
   draw();cust();recs();setInterval(sync,3000);
   window.addEventListener('pagehide',function(){if(mine&&(state==='active'||state==='answering'))fetch('/admin/call-center/whatsapp/'+ID+'/end',{method:'POST',credentials:'same-origin',keepalive:true,headers:{'X-CSRF-TOKEN':tk(),'Accept':'application/json'}})});
   if(state==='ringing'&&/[?&]go=1/.test(location.search))setTimeout(function(){answer(document.querySelector('.wp-b.go'))},200);
