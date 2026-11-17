@@ -435,7 +435,8 @@ class Restock
         $prev = (float)DB::table('purchase_items')->where('product_id', $r->product_id)->where('id', '<', $r->id)->where('cost', '>', 0)->orderByDesc('id')->value('cost'); $new = (float)$r->cost;
         if ($prev <= 0 || abs($new - $prev) < max(1.0, $prev * 0.005)) continue;
         $up = $new > $prev; $price = (float)$r->price; $base = (float)($costs[$r->product_id]->cost ?? 0); if ($base <= 0) $base = $new; $floor = ProfitFloor::floor(max($base, $up ? $new : 0));
-        $t = ($up ? '🔴⬆️ ক্রয়মূল্য বেড়েছে: ' : '🟢⬇️ ক্রয়মূল্য কমেছে: ') // owner 17 Nov: up = red, down = green, never the same colour . $r->name . "\n   আগে " . SmsText::tk($prev) . ' → এখন ' . SmsText::tk($new) . ' (' . ($up ? '+' : '−') . SmsText::tk(abs($new - $prev)) . ')'
+        // owner 17 Nov: up = red, down = green, never the same colour
+        $t = ($up ? '🔴⬆️ ক্রয়মূল্য বেড়েছে: ' : '🟢⬇️ ক্রয়মূল্য কমেছে: ') . $r->name . "\n   আগে " . SmsText::tk($prev) . ' → এখন ' . SmsText::tk($new) . ' (' . ($up ? '+' : '−') . SmsText::tk(abs($new - $prev)) . ')'
           . "\n   বিক্রয়মূল্য " . SmsText::tk($price) . ' · নতুন রেটে লাভ ' . self::num(($price - $new) / $new * 100) . '%';
         if ($price + 0.004 < ProfitFloor::floor($new)) $t .= "\n   ন্যূনতম নিরাপদ দাম " . SmsText::tk(ProfitFloor::floor($new)) . '। বিক্রয়মূল্য বাড়ানো দরকার।';
         elseif (!$up) $t .= "\n   দাম কমানোর সুযোগ আছে; ন্যূনতম নিরাপদ দাম " . SmsText::tk($floor) . '।';
