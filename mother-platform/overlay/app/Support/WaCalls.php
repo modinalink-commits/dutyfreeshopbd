@@ -136,6 +136,27 @@ class WaCalls {
     } catch (\Throwable $e) {}
     return ['kind' => 'unknown', 'label' => 'New caller', 'name' => null];
   }
+  /** IP (PBX) and WhatsApp calls of one phone number as plain rows, newest first: used by the Messages inbox customer panel. */
+  public static function unified(?string $phone, $user, int $limit = 12): array {
+    $d = substr(preg_replace('/\D/', '', (string)$phone), -11); if (strlen($d) < 10) return []; $out = [];
+    $at = fn($v) => \Carbon\Carbon::parse($v, 'UTC')->timezone('Asia/Dhaka');
+    try {
+      $po = ['confirmed' => 'Order Confirmed', 'pending' => 'Pending', 'call_later' => 'Call Later', 'no_answer' => 'No Answer', 'cancelled' => 'Order Cancelled'];
+      foreach (\App\Http\Controllers\CallCenterController::callRows($d, null)->take($limit) as $l) { $t = $at($l->started_at ?? $l->created_at);
+        $out[] = ['ch' => 'ip', 'ts' => $t->getTimestamp(), 'at' => $t->format('d M h:i A'), 'agent' => (string)($l->user_name ?? ''), 'dir' => ($l->direction ?? '') === 'in' ? 'In' : 'Out', 'dur' => gmdate('i:s', (int)($l->duration ?? 0)),
+          'result' => $po[$l->outcome ?? ''] ?? ucfirst((string)($l->status ?? '')), 'note' => (string)($l->note ?? ''), 'followup' => !empty($l->callback_at) ? $at($l->callback_at)->format('d M h:i A') : null,
+          'play' => !empty($l->recording_url) ? (string)$l->recording_url : null, 'dl' => !empty($l->recording_url) && \App\Http\Controllers\CallCenterController::recDl($l) ? '/admin/call-center/rec/' . (int)$l->id . '/download' : null, 'id' => (int)$l->id, 'rec' => !empty($l->recording_url) ? 'play' : 'none']; }
+    } catch (\Throwable $e) { report($e); }
+    try {
+      $lab = ['ringing' => 'Ringing', 'answering' => 'Answering', 'active' => 'On call', 'ended' => 'Answered', 'missed' => 'Missed', 'rejected' => 'Rejected', 'failed' => 'Failed'];
+      foreach (array_slice(self::historyRows($d, null, $user), 0, $limit) as $w) { $c = $w['call']; $t = $at($c->created_at); $u = $w['rec_id'] ? '/admin/call-center/whatsapp/rec/' . $w['rec_id'] . '/audio?call=' . (int)$c->id : null;
+        $out[] = ['ch' => 'wa', 'ts' => $t->getTimestamp(), 'at' => $t->format('d M h:i A'), 'agent' => (string)($c->user_name ?? ''), 'dir' => $c->status === 'missed' ? 'Missed' : ((($c->direction ?? '') === 'BUSINESS_INITIATED') ? 'Out' : 'In'), 'dur' => $c->duration !== null ? gmdate('i:s', (int)$c->duration) : '—',
+          'result' => !empty($c->outcome) ? (self::OUTCOMES[$c->outcome] ?? (string)$c->outcome) : ($lab[$c->status] ?? (string)$c->status), 'note' => (string)($c->note ?? ''), 'followup' => !empty($c->followup_at) ? $at($c->followup_at)->format('d M h:i A') . (!empty($c->followup_done_at) ? ' · done' : '') : null,
+          'play' => $w['state'] === 'play' ? $u : null, 'dl' => $w['state'] === 'play' && $w['dl'] ? $u . '&dl=1' : null, 'id' => (int)$c->id, 'rec' => $w['state']]; }
+    } catch (\Throwable $e) { report($e); }
+    usort($out, fn($a, $b) => $b['ts'] <=> $a['ts']);
+    return array_slice($out, 0, $limit);
+  }
   /** WhatsApp calls of one phone number (or linked to one order) with the state of each recording, for the shared call history. */
   public static function historyRows(?string $phone, ?int $orderId, $user): array {
     if (!self::ready()) return []; $rec = WaRec::ready();
@@ -233,6 +254,11 @@ class WaCalls {
       $n = (int)$q->count();
       if ($n > 0) DeployHealth::raise('wa_missed_calls', 'medium', 'Call Center', $n . ' missed WhatsApp call' . ($n > 1 ? 's' : '') . ' waiting for a callback', 'Customers called on WhatsApp and nobody answered. They are listed under Call Center > WhatsApp Calls.', 'No representative answered within the ring time (about one minute).', 'Open WhatsApp Calls, call each customer back and press Done.');
       else DeployHealth::resolve('wa_missed_calls', 'System (all missed WhatsApp calls handled)');
+      if (self::hasResult()) {
+        $f = (int)DB::table('wa_calls')->whereNotNull('followup_at')->whereNull('followup_done_at')->where('followup_at', '<=', now())->where('followup_at', '>', now()->subDays(7))->count();
+        if ($f > 0) DeployHealth::raise('wa_followups_due', 'medium', 'Call Center', $f . ' WhatsApp call follow-up' . ($f > 1 ? 's are' : ' is') . ' due', 'A representative promised to contact these customers again and the time has come. They are listed under Call Center > WhatsApp Calls.', 'The follow-up time set on the call has passed and nobody pressed Done.', 'Open WhatsApp Calls, contact each customer and press Done beside the follow-up.');
+        else DeployHealth::resolve('wa_followups_due', 'System (no WhatsApp follow-up is due)');
+      }
     } catch (\Throwable $e) {}
   }
   /** Extra customer facts for the call dock that the dialer lookup does not give. Read only; empty when the number matches nothing. */

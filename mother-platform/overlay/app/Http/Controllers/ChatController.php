@@ -90,6 +90,7 @@ class ChatController extends Controller {
       'owner'=>self::ownerInfo((int)$id), 'owner_events'=>\App\Support\ChatOwner::events((int)$id, 12),
       'hint'=>\Illuminate\Support\Facades\Cache::get('ai.hint.'.$id), 'payhint'=>\Illuminate\Support\Facades\Cache::get('ai.pay.'.$id),
       'notes'=>self::notes((int)$id),
+      'calls'=>\App\Support\WaCalls::unified($t->phone ?: ($t->channel === 'whatsapp' ? (string)$t->external_id : null), auth()->user()),
       'quick'=>DB::table('chat_quick_replies')->where('active', true)->orderBy('id')->get(['id', 'title', 'body'])]);
   }
   /** Staff-only internal notes of one conversation (never sent to the customer, never given to the AI). */
