@@ -29,9 +29,18 @@ class Restock
   public static function cfg(): array {
     $hm = fn($v, $d) => preg_match('/^(\d{1,2}):(\d{2})$/', trim($v), $m) && ((int)$m[1] < 24 || ((int)$m[1] === 24 && (int)$m[2] === 0)) && (int)$m[2] < 60 ? (int)$m[1] * 60 + (int)$m[2] : $d;
     return ['on' => self::set('on', '0') === '1', 'name' => trim(self::set('name', 'Mamun')) ?: 'Mamun', 'wa' => WhatsApp::norm(self::set('phone', '01824522800')),
-      'verified' => self::set('verified', ''), 'from' => $hm(self::set('from', '10:00'), 600), 'to' => ($hm(self::set('to', '24:00'), 1440) ?: 1440), 'every' => max(30, min(720, (int)self::set('every', '120'))),
+      'verified' => self::set('verified', ''), 'cc' => self::ccList(), 'from' => $hm(self::set('from', '10:00'), 600), 'to' => ($hm(self::set('to', '24:00'), 1440) ?: 1440), 'every' => max(30, min(720, (int)self::set('every', '120'))),
       'lead' => max(0, min(60, (int)self::set('lead', '3'))), 'safety' => max(0, min(30, (int)self::set('safety', '2'))), 'cover' => max(3, min(90, (int)self::set('cover', '15'))),
       'scope' => in_array(self::set('scope', 'smoke'), ['smoke', 'general', 'all'], true) ? self::set('scope', 'smoke') : 'smoke', 'min_sold' => max(1, (int)self::set('min_sold', '3')), 'cards' => max(0, min(10, (int)self::set('cards', '5'))), 'exclude' => array_values(array_filter(array_map('intval', explode(',', self::set('exclude', '')))))];
+  }
+  /** People who get a copy of every round (owner, 17 Nov 2026: the admin and the manager are both kept informed). [[name, 8801XXXXXXXXX], ...] from "Name|number" lines. Only the purchase manager's answers change anything. */
+  public static function ccList(): array {
+    $out = []; $main = WhatsApp::norm(self::set('phone', '01824522800'));
+    foreach (preg_split('/\r\n|\r|\n/', self::set('cc', 'Mohammad Faruk|01884808080')) as $l) {
+      [$n, $p] = array_pad(array_map('trim', explode('|', $l, 2)), 2, ''); $wa = WhatsApp::norm($p);
+      if (preg_match('/^8801[3-9]\d{8}$/', $wa) && $wa !== $main) $out[$wa] = [$n !== '' ? $n : 'Admin', $wa];
+    }
+    return array_values($out);
   }
   public static function validWa(string $wa): bool { return (bool)preg_match('/^8801[3-9]\d{8}$/', $wa); }
   public static function isVerified(?array $c = null): bool { $c ??= self::cfg(); return self::validWa($c['wa']) && $c['verified'] === $c['wa']; }
@@ -231,6 +240,32 @@ class Restock
     return 'list of ' . $all->count() . ', ' . $sent . ' cards';
   }
 
+  // ---------- copies for the admin ----------
+  /** Where everything stands, as one read-only message. */
+  public static function summary(): string {
+    $c = self::cfg(); $open = self::openTasks(); $lab = ['new' => 'নতুন', 'notified' => 'জানানো হয়েছে, উত্তর নেই', 'seen' => 'দেখেছেন, অর্ডার হয়নি', 'ordered' => 'অর্ডার করা', 'problem' => 'সমস্যা', 'partial' => 'আংশিক এসেছে'];
+    $by = []; foreach ($open as $t) $by[$t->status][] = $t;
+    $parts = [];
+    foreach ($lab as $st => $name) { if (empty($by[$st])) continue; $ls = [];
+      foreach (array_slice($by[$st], 0, 12) as $t) $ls[] = '• ' . $t->name . ' (স্টক ' . (int)$t->usable . ', কিনতে হবে ' . (int)$t->need_qty . ($t->eta_at ? ', আসবে ' . \Carbon\Carbon::parse($t->eta_at, 'UTC')->timezone('Asia/Dhaka')->format('d M') : '') . ')';
+      $parts[] = $name . ' (' . count($by[$st]) . "টি):\n" . implode("\n", $ls) . (count($by[$st]) > 12 ? "\n… আরও " . (count($by[$st]) - 12) . 'টি' : ''); }
+    $since = now('Asia/Dhaka')->startOfDay()->utc();
+    $nt = DB::table('restock_events')->whereIn('kind', ['notice_q', 'notice'])->where('created_at', '>=', $since)->orderBy('id')->limit(8)->pluck('body')->all();
+    return "DutyFreeBD স্টক সহকারী (স্বয়ংক্রিয়) · অ্যাডমিন কপি\nদায়িত্বে: " . $c['name'] . "\nখোলা কাজ: " . $open->count() . 'টি'
+      . ($parts ? "\n\n" . implode("\n\n", $parts) : '') . ($nt ? "\n\nআজকের ক্রয়মূল্য / মার্জিন আপডেট:\n" . implode("\n\n", $nt) : '') . (!$parts && !$nt ? "\nএই মুহূর্তে নতুন কিছু নেই।" : '');
+  }
+  /** One line or a whole summary to everyone on the copy list. Free text inside their 24-hour window; otherwise the opener, at most once per round. */
+  public static function copy(?string $text = null): void {
+    try {
+      $c = self::cfg(); if (!$c['cc']) return; $n = self::pending()->count() + self::notices()->count();
+      foreach ($c['cc'] as [$name, $wa]) {
+        if (self::windowOpen($wa)) { $body = mb_substr($text ?? self::summary(), 0, 3900); [$ok, $id, $err] = self::post(['to' => $wa, 'type' => 'text', 'text' => ['preview_url' => false, 'body' => $body]]);
+          self::log(null, $ok ? 'msg_cc' : 'msg_fail', 'Copy to ' . $name . ($ok ? '' : ' not sent: ' . $err) . "\n" . mb_substr($body, 0, 600), $id, self::BY); if ($ok) Chat::logOut($wa, $body, self::BY, $id); }
+        elseif ($text === null && self::tplStatus() === 'APPROVED' && Cache::add('rs_tpl_cc_' . $wa, 1, max(1800, $c['every'] * 60 - 120))) self::sendTemplate($wa, $name, max(1, $n));
+      }
+    } catch (\Throwable $e) { report($e); }
+  }
+
   // ---------- answers ----------
   /** "Not now": 2 ঘণ্টা পরে, বিকাল 5টায়, পরে জানাব, ব্যস্ত, বিরতি. Returns the UTC time to come back, or null when the text does not ask to wait. */
   public static function later(string $s): ?\Carbon\Carbon {
@@ -267,6 +302,7 @@ class Restock
     else return null;
     DB::table('restock_tasks')->where('id', $t->id)->update($u);
     self::log((int)$t->id, 'status', ['seen' => 'Seen', 'ord' => 'Purchase order placed', 'eta' => 'Arrival time given', 'prob' => 'Problem reported', 'note' => 'Note'][$act] . (isset($u['eta_at']) ? ' · arrives ' . \Carbon\Carbon::parse($u['eta_at'], 'UTC')->timezone('Asia/Dhaka')->format('d M Y') : '') . ($text !== '' ? ' · "' . mb_substr($text, 0, 300) . '"' : ''), null, $by);
+    if (in_array($act, ['seen', 'ord', 'eta', 'prob'], true) && str_ends_with($by, '(WhatsApp)')) self::copy(self::cfg()['name'] . ' জানিয়েছেন · ' . self::nameOf($t) . ': ' . ['seen' => 'দেখেছেন', 'ord' => 'অর্ডার করেছেন', 'eta' => 'আসার তারিখ দিয়েছেন', 'prob' => 'সমস্যা জানিয়েছেন'][$act] . (isset($u['eta_at']) ? ' (আসবে ' . \Carbon\Carbon::parse($u['eta_at'], 'UTC')->timezone('Asia/Dhaka')->format('d M') . ')' : '') . ($text !== '' ? ' · "' . mb_substr($text, 0, 200) . '"' : ''));
     if ($act === 'prob') { try { $n = DB::table('products')->where('id', $t->product_id)->value('name'); DeployHealth::raise('restock_problem_' . $t->id, 'medium', 'Restock', 'Restock problem: ' . $n, 'The purchase manager reported a problem for "' . $n . '": ' . ($text !== '' ? $text : 'no detail given'), 'Reported on WhatsApp', 'Open Restock Follow-up and decide what to do.'); } catch (\Throwable $e) {} }
     return DB::table('restock_tasks')->where('id', $t->id)->first();
   }
@@ -278,7 +314,12 @@ class Restock
    */
   public static function inbound(string $from, string $type, string $body, ?string $payload, ?string $ctx): bool {
     try {
-      if (!self::ready()) return false; $c = self::cfg(); $wa = WhatsApp::norm($from); if (!self::validWa($c['wa']) || $wa !== $c['wa']) return false;
+      if (!self::ready()) return false; $c = self::cfg(); $wa = WhatsApp::norm($from);
+      foreach ($c['cc'] as [$ccName, $ccWa]) if ($ccWa === $wa) { // the admin's copy: read-only, their words never change a task
+        if ($payload !== 'rs:list' && !preg_match('/^(আপডেট|স্টক আপডেট|stock update)\s*$/iu', trim($body))) return false;
+        self::log(null, 'msg_in', 'Summary asked by ' . $ccName, null, $ccName); self::copy(self::summary()); return true;
+      }
+      if (!self::validWa($c['wa']) || $wa !== $c['wa']) return false;
       $body = trim($body); self::log(null, 'msg_in', ($payload ? '[button ' . $payload . '] ' : '') . $body, null, $c['name']);
       if ($c['verified'] !== $wa) { self::put('verified', $wa); self::log(null, 'setting', 'WhatsApp number …' . substr($wa, -4) . ' verified by its own reply', null, 'System'); }
       $by = $c['name'] . ' (WhatsApp)';
@@ -431,12 +472,12 @@ class Restock
       if (!self::isVerified($c)) return; // nothing is sent by itself until the number has answered once (Send verification message)
       $now = now('Asia/Dhaka'); $min = $now->hour * 60 + $now->minute; if ($min < $c['from'] || $min >= $c['to']) return;
       if ((int)self::set('pause_until', '0') > time()) return; // the purchase manager asked us to wait
-      if (self::notices()->isNotEmpty() && Cache::add('rs_notice', 1, 1800)) { $n = self::flush($c['wa']); if ($n !== 0) self::log(null, 'round', 'Rate / margin updates: ' . ($n > 0 ? $n . ' sent' : 'opener sent, waiting for an answer'), null, 'System'); }
+      if (self::notices()->isNotEmpty() && Cache::add('rs_notice', 1, 1800)) { $n = self::flush($c['wa']); if ($n !== 0) { self::log(null, 'round', 'Rate / margin updates: ' . ($n > 0 ? $n . ' sent' : 'opener sent, waiting for an answer'), null, 'System'); if ($n > 0) self::copy(); } }
       $last = (int)self::set('last_round', '0'); if (time() - $last < $c['every'] * 60) return;
       if (!Cache::add('rs_round', 1, 300)) return;
       if (self::pending()->isEmpty()) return;
       self::put('last_round', (string)time()); // set first: a failed send is not retried every minute
-      $res = self::digest($c['wa']); self::log(null, 'round', 'Reminder round: ' . $res, null, 'System');
+      $res = self::digest($c['wa']); self::log(null, 'round', 'Reminder round: ' . $res, null, 'System'); self::copy();
     } catch (\Throwable $e) { report($e); }
   }
 
