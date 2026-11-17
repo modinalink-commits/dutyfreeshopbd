@@ -11,7 +11,8 @@ class Voice
 {
   const SCRIPT = 'আসসালামু আলাইকুম। DutyFreeBD থেকে বলছি। আপনার সর্বশেষ অর্ডার করা {product}-এর উপর আপনার জন্য বিশেষ {pct} শতাংশ ডিসকাউন্ট রয়েছে। অফারটি সীমিত সময়ের জন্য। আপনার অফারটি আগামী {days} দিন পর্যন্ত কার্যকর থাকবে। অর্ডার করতে DutyFreeBD ওয়েবসাইটে ভিজিট করুন অথবা আমাদের প্রতিনিধির সাথে যোগাযোগ করুন। ধন্যবাদ।';
   const MENU = ' অফারটি নিতে ১ চাপুন। আমাদের প্রতিনিধির সাথে কথা বলতে ২ চাপুন। এই ধরনের অফার কল আর পেতে না চাইলে ৯ চাপুন।';
-  const SMS = 'DutyFreeBD: আপনার সর্বশেষ অর্ডার করা {product} এর উপর {pct}% বিশেষ ডিসকাউন্ট রয়েছে। অফারটি {date} পর্যন্ত কার্যকর।';
+  const SMS = 'DutyFreeBD আপনার আগের অর্ডারের {product}-এ {pct}% ছাড়, {date} পর্যন্ত।';
+  const SMS_OLD = 'DutyFreeBD: আপনার সর্বশেষ অর্ডার করা {product} এর উপর {pct}% বিশেষ ডিসকাউন্ট রয়েছে। অফারটি {date} পর্যন্ত কার্যকর।';
   const SEGMENTS = ['all' => 'All eligible customers', 'inactive_15' => 'Inactive 15–29 days', 'inactive_30' => 'Inactive 30–44 days', 'inactive_45' => 'Inactive 45–54 days', 'inactive_55' => 'Inactive 55+ days', 'vip' => 'VIP customers', 'diamond' => 'Diamond members', 'regular' => 'Regular customers', 'selected' => 'Selected customers (phone list)', 'custom' => 'Custom filter'];
   const STATUS = ['pending' => 'Pending', 'calling' => 'Calling', 'answered' => 'Answered', 'not_answered' => 'Not Answered', 'busy' => 'Busy', 'failed' => 'Failed', 'interested' => 'Interested', 'transferred' => 'Transferred to Agent', 'accepted' => 'Offer Accepted', 'opted_out' => 'Opted Out'];
 

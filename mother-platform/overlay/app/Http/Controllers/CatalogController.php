@@ -201,8 +201,8 @@ class CatalogController extends Controller {
     $set = DB::table('settings')->whereIn('key',['owner_phone','manager_phones','store_name'])->pluck('value','key');
     $to = array_filter(array_map('trim', array_merge([$set['owner_phone'] ?? ''], explode(',', $set['manager_phones'] ?? ''))));
     if (!$to) return;
-    $what = count($names) === 1 ? '"'.$names[0].'"' : count($names).' products';
-    $body = "Product $what was ".($published ? 'PUBLISHED' : 'UNPUBLISHED').' by '.Auth::user()->name.' at '.now('Asia/Dhaka')->format('H:i').'. Store: '.($set['store_name'] ?? 'DutyFreeBD').'.';
+    $what = count($names) === 1 ? '"'.$names[0].'"' : count($names).'টি';
+    $body = \App\Support\SmsText::productStatus($what, $published, (string)Auth::user()->name, now('Asia/Dhaka')->format('H:i'), (string)($set['store_name'] ?? 'DutyFreeBD'));
     foreach ($to as $ph) \App\Support\Sms::queue($ph, $body, $published ? 'product_published' : 'product_unpublished');
   }
   public function productBulk(Request $r) {

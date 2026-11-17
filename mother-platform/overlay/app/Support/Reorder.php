@@ -107,7 +107,7 @@ class Reorder
     foreach (DB::table('supplier_rfq_invites')->where('rfq_id', $rfq->id)->pluck('supplier_id') as $sid) {
       SupplierPortal::notify((int)$sid, 'reorder', ($r->kind === 'preorder' ? 'Pre-order request: ' : 'Product needed: ') . $rfq->product, 'Requested qty ' . $r->req_qty . ($r->kind === 'preorder' ? '' : ' · Current stock ' . $r->stock_at) . ' · Required by ' . ($r->required_date ?: '—') . ' · Submit your best price before ' . date('d M, g:i A', strtotime((string)$rfq->expires_at)), '/supplier-portal/rfq/' . $rfq->id, $pri);
       if ($c['sms'] && Sms::configured()) foreach (DB::table('supplier_users')->where('supplier_id', $sid)->where('status', 'active')->whereIn('role', ['owner', 'sales'])->whereNotNull('mobile')->pluck('mobile') as $m) {
-        try { Sms::queue($m, ($r->kind === 'preorder' ? "Pre-Order Request" : "Low Stock Purchase Request") . "\nProduct: {$rfq->product}\nRequired Qty: {$r->req_qty}\nPlease submit your best price and available quantity from the Supplier Portal: " . rtrim((string)config('app.url'), '/') . '/supplier-portal', 'reorder'); } catch (\Throwable $e) {}
+        try { Sms::queue($m, SmsText::reorder($r->kind === 'preorder', (string)$rfq->product, $r->req_qty, rtrim((string)config('app.url'), '/') . '/supplier-portal'), 'reorder'); } catch (\Throwable $e) {}
       }
     }
     Procure::audit('reorder.send', 'reorder#' . $id, null, ['rfq' => $rfq->rfq_no]);

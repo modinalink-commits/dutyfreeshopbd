@@ -262,7 +262,7 @@ class ResController extends Controller {
       try {
         $pe = DB::table('payroll_entries')->where('id',$id)->first(); $em = $pe ? DB::table('employees')->where('id',$pe->employee_id)->first() : null;
         if ($em && !empty($em->phone)) {
-          [$ok, $msg] = \App\Support\Sms::send((string)$em->phone, 'DutyFreeBD: '.$em->name.', আপনার '.$pe->month.' মাসের বেতন/কমিশন ৳'.number_format((float)$pe->amount).' পরিশোধ করা হয়েছে। ধন্যবাদ।');
+          [$ok, $msg] = \App\Support\Sms::send((string)$em->phone, \App\Support\SmsText::salary((string)$em->name, (string)$pe->month, $pe->amount));
           $this->audit('sms', 'payroll#'.$id.' '.($ok ? 'sent' : 'failed: '.$msg));
         } else $this->audit('sms', 'payroll#'.$id.' not sent: employee has no phone');
       } catch (\Throwable $e) {}

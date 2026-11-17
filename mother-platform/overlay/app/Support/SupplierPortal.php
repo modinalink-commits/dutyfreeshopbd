@@ -60,7 +60,7 @@ class SupplierPortal
     if (!$u->mobile) return false;
     $code = (string)random_int(100000, 999999);
     Cache::put("spotp.$purpose.{$u->id}", ['h'=>hash('sha256', $code.config('app.key')),'n'=>0], now()->addMinutes(10));
-    [$ok] = Sms::send($u->mobile, "DutyFreeBD Supplier Portal: আপনার OTP $code (১০ মিনিট বৈধ)। কাউকে জানাবেন না।");
+    [$ok] = Sms::send($u->mobile, SmsText::supplierOtp($code));
     return $ok;
   }
   public static function otpCheck(string $purpose, int $uid, string $code): bool {

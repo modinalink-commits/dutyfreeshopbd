@@ -39,7 +39,7 @@ class OrderCancelNotice {
     return 'the order was cancelled'; // automatic cancel (courier / system) without a staff reason
   }
   public static function sms(object $o, string $why): string {
-    return 'DutyFreeBD: Your order ' . Inv::show($o->invoice) . ' has been cancelled because ' . rtrim($why, '. ') . '. If you have any concern, please call our hotline ' . Biz::hotline() . '.' . ContactNotice::tail();
+    return SmsText::orderCancelled($o, $why);
   }
 
   /** Processes waiting notices (called by the worker every ~30 s and right after a request). */
@@ -74,7 +74,7 @@ class OrderCancelNotice {
   public static function testSend(string $phone): array {
     $o = (object)['invoice' => 'INV-TEST', 'customer_name' => 'Test Customer', 'phone' => $phone];
     $why = self::REASONS['unreachable'][1]; $out = [];
-    Sms::queue($phone, '[TEST] ' . self::sms($o, $why), 'order_cancelled_test', ['type' => 'transactional', 'customer_name' => 'Test', 'ref' => 'cancel-test']);
+    Sms::queue($phone, '[পরীক্ষা] ' . self::sms($o, $why), 'order_cancelled_test', ['type' => 'transactional', 'customer_name' => 'Test', 'ref' => 'cancel-test']);
     try { Sms::flush(5); } catch (\Throwable $e) {} $out[] = 'SMS queued/sent to ' . $phone;
     if (self::set('wa_tpl_status', '') === 'APPROVED') { [$ok, , $err] = self::waCall($o, $why); $out[] = $ok ? 'WhatsApp sent' : 'WhatsApp failed: ' . $err; } else $out[] = 'WhatsApp skipped (template not approved yet)';
     return [true, implode(' · ', $out)];

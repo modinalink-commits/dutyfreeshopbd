@@ -74,7 +74,7 @@ class SupplierPortalSetupController extends Controller
       $lid = DB::table('supplier_sms_log')->insertGetId(['supplier_id'=>$u->supplier_id,'supplier_user_id'=>$u->id,'mobile'=>$u->mobile,'type'=>'temp-password','status'=>'pending','triggered_by'=>$who,'created_at'=>now(),'updated_at'=>now()]);
       $mob = (string)$u->mobile; $un = (string)$u->username; $url = rtrim(P::base(), '/').'/supplier-portal/login'; $brand = SP::brand();
       dispatch(function () use ($lid, $mob, $un, $pw, $url, $brand, $name) { try {
-        [$ok, $msg] = Sms::send($mob, "$name,\nYour $brand login:\nUsername: $un\nTemporary password: $pw\nLogin: $url\nYou must set a new password at first login.");
+        [$ok, $msg] = Sms::send($mob, \App\Support\SmsText::supplierTempPw($name, $brand, $un, $pw, $url));
         DB::table('supplier_sms_log')->where('id',$lid)->update(['status'=>$ok ? 'sent' : 'failed','response'=>mb_substr(str_replace($pw,'***',(string)$msg),0,190),'sent_at'=>$ok ? now() : null,'updated_at'=>now()]);
       } catch (\Throwable $e) { DB::table('supplier_sms_log')->where('id',$lid)->update(['status'=>'failed','response'=>'Error','updated_at'=>now()]); } })->afterResponse();
       $state = 'SMS sending';

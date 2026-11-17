@@ -7,8 +7,10 @@ use Illuminate\Support\Facades\DB;
 class Winback
 {
   const DEF_STAGES = [[15, 1], [25, 1.5], [35, 2], [45, 2.5], [55, 3]];
-  const SMS = 'আমরা আপনাকে মিস করছি! আপনার পরবর্তী অর্ডারে বিশেষ {pct}% ডিসকাউন্ট উপভোগ করুন।{code} অর্ডার করুন: {link}';
-  const SMS_FINAL = 'আপনার জন্য আমাদের বিশেষ Welcome Back Offer — পরবর্তী অর্ডারে {pct}% ডিসকাউন্ট। আবার আমাদের সাথে অর্ডার করুন।{code} {link}';
+  const SMS = 'DutyFreeBD পরের অর্ডারে {pct}% ছাড়!{code} অর্ডার: {link}';
+  const SMS_OLD = 'আমরা আপনাকে মিস করছি! আপনার পরবর্তী অর্ডারে বিশেষ {pct}% ডিসকাউন্ট উপভোগ করুন।{code} অর্ডার করুন: {link}';
+  const SMS_FINAL = 'DutyFreeBD শেষ সুযোগ: পরের অর্ডারে {pct}% ছাড়!{code} {link}';
+  const SMS_FINAL_OLD = 'আপনার জন্য আমাদের বিশেষ Welcome Back Offer — পরবর্তী অর্ডারে {pct}% ডিসকাউন্ট। আবার আমাদের সাথে অর্ডার করুন।{code} {link}';
 
   private static ?array $mem = null;
   public static function set(string $k, string $def = ''): string { if (self::$mem === null) self::$mem = DB::table('settings')->where('key', 'like', 'wb\\_%')->pluck('value', 'key')->all(); $v = self::$mem['wb_' . $k] ?? null; return $v === null ? $def : (string)$v; }
@@ -50,7 +52,7 @@ class Winback
     return $e;
   }
 
-  const LINK = 'https://dutyfreebd.com';
+  const LINK = 'dutyfreebd.com';
   private static function render(string $t, array $v): string { $v['{link}'] = self::LINK; $o = trim(strtr($t, $v)); if (stripos($o, 'dutyfreebd.com') === false) $o .= ' ' . self::LINK; return $o; }
 
   public static function tick(bool $force = false): void {
@@ -83,9 +85,9 @@ class Winback
       try { DB::table('winback_events')->insert(['phone' => $p, 'customer_id' => $c->id, 'cycle_order_id' => $x['oid'], 'stage_days' => $s[0], 'pct' => $s[1], 'mode' => $mode, 'coupon_code' => $code, 'channels' => implode(',', array_keys($ch)), 'expires_at' => now()->addDays($exp), 'created_at' => now(), 'updated_at' => now()] + (self::hasNext() ? ['next_sms_at' => now()->addDays(self::minGapDays())] : [])); }
       catch (\Throwable $e) { if ($lock) $lock->release(); continue; }
       if ($lock) $lock->release();
-      $v = ['{name}' => $c->name, '{pct}' => rtrim(rtrim(number_format($s[1], 2), '0'), '.'), '{days}' => $d, '{expiry}' => $exp, '{code}' => $code ? ' কুপন কোড: ' . $code : ''];
+      $v = ['{name}' => $c->name, '{pct}' => rtrim(rtrim(number_format($s[1], 2), '0'), '.'), '{days}' => $d, '{expiry}' => $exp, '{code}' => $code ? ' কোড: ' . $code : ''];
       $final = $s[0] === $lastStage;
-      if (!empty($ch['sms'])) Sms::queue($p, self::render(self::set($final ? 'sms_final' : 'sms_text', $final ? self::SMS_FINAL : self::SMS), $v).ContactNotice::tail(), 'winback');
+      if (!empty($ch['sms'])) Sms::queue($p, self::render(self::set($final ? 'sms_final' : 'sms_text', $final ? self::SMS_FINAL : self::SMS), $v), 'winback');
       if (!empty($ch['push']) || !empty($ch['notif'])) { try { Push::notify((int)$c->id, 'coupon', 'Welcome Back Offer — ' . $v['{pct}'] . '% ছাড়', self::render(self::set($final ? 'sms_final' : 'sms_text', $final ? self::SMS_FINAL : self::SMS), $v), '/account/coupons'); } catch (\Throwable $e) {} }
       $sent++;
     }
@@ -163,8 +165,8 @@ class Winback
     if ($mode === 'coupon') { $code = 'WB-' . strtoupper(substr(md5($p . microtime()), 0, 6));
       DB::table('coupons')->insert(['code' => $code, 'type' => 'percent', 'value' => $pct, 'min_order' => (float)self::set('min_order', '0'), 'max_discount' => (float)self::set('max_discount', '0') ?: null, 'usage_limit' => 1, 'per_customer' => 1, 'valid_from' => now('Asia/Dhaka')->toDateString(), 'valid_to' => now('Asia/Dhaka')->addDays($exp)->toDateString(), 'active' => true, 'created_at' => now(), 'updated_at' => now()]); }
     DB::table('winback_events')->insert(['phone' => $p, 'customer_id' => $c->id, 'cycle_order_id' => 0, 'stage_days' => 0, 'pct' => $pct, 'mode' => $mode, 'coupon_code' => $code, 'channels' => 'sms', 'expires_at' => now()->addDays($exp), 'created_at' => now(), 'updated_at' => now()]);
-    $v = ['{name}' => $c->name, '{pct}' => rtrim(rtrim(number_format($pct, 2), '0'), '.'), '{days}' => 0, '{expiry}' => $exp, '{code}' => $code ? ' কুপন কোড: ' . $code : ''];
-    Sms::queue($p, self::render(self::set('sms_text', self::SMS), $v).ContactNotice::tail(), 'winback');
+    $v = ['{name}' => $c->name, '{pct}' => rtrim(rtrim(number_format($pct, 2), '0'), '.'), '{days}' => 0, '{expiry}' => $exp, '{code}' => $code ? ' কোড: ' . $code : ''];
+    Sms::queue($p, self::render(self::set('sms_text', self::SMS), $v), 'winback');
     return 'Test offer (' . $v['{pct}'] . '%) sent by SMS to ' . $p . ' only' . ($code ? ' — code ' . $code : ' — applies automatically to that account') . '.';
   }
 

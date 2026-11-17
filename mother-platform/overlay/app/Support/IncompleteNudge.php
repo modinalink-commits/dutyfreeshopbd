@@ -7,8 +7,8 @@ use Illuminate\Support\Facades\Schema;
 class IncompleteNudge {
   public static function set(string $k, string $d = ''): string { return Procure::set('inc_nudge_' . $k, $d); }
   public static function body(?string $name): string {
-    $n = trim((string)$name); $n = ($n !== '' && mb_strlen($n) <= 24 && !preg_match('/\d/', $n)) ? 'প্রিয় ' . $n : 'প্রিয় গ্রাহক';
-    return $n . ', আপনার অর্ডারটি অসম্পূর্ণ রয়ে গেছে। অর্ডার কমপ্লিট করতে আমাদের WhatsApp ' . self::set('wa', Biz::whatsapp()) . ' নম্বরে মেসেজ করুন অথবা কল সেন্টারে ' . (preg_replace('/\D/', '', self::set('call', '')) === '' || str_contains(preg_replace('/\D/', '', self::set('call', '')), '9613828081') ? Biz::hotline() : self::set('call', '')) . ' নম্বরে কল দিন। ধন্যবাদ, DutyFreeBD';
+    $call = (preg_replace('/\D/', '', self::set('call', '')) === '' || str_contains(preg_replace('/\D/', '', self::set('call', '')), '9613828081')) ? Biz::hotline() : self::set('call', '');
+    return SmsText::incomplete(self::set('wa', Biz::whatsapp()), $call);
   }
   public static function tick(): int {
     if (self::set('on', '1') !== '1' || !Schema::hasTable('incomplete_orders') || !Schema::hasColumn('incomplete_orders', 'nudged_at') || !Sms::configured()) return 0;

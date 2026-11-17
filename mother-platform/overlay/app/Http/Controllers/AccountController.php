@@ -78,7 +78,7 @@ class AccountController extends StoreController {
     Cache::increment('sms.otp.day');
     $c = (string)random_int(100000, 999999);
     Cache::put($this->otpKey($d['purpose'], $p), ['h'=>hash('sha256', $c.$p.config('app.key')), 't'=>0], 300); Cache::put("ac.otp.cool.$p", 1, 60);
-    Sms::queue(Sms::number($p), "DutyFree BD: আপনার কোড {$c} । কোডটি কাউকে দেবেন না।", 'account_otp');
+    Sms::queue(Sms::number($p), \App\Support\SmsText::otp((string)$c), 'account_otp');
     return response()->json(['sent'=>true]);
   }
   public function login(Request $r) {

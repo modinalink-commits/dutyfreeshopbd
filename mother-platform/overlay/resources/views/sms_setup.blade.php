@@ -1,6 +1,7 @@
 @extends('layout')@section('title','SMS Setup')
 @section('body')
 <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px"><div style="flex:1;min-width:240px"><h1 style="margin:0">SMS Setup (BulkSMSBD)</h1><span style="font-size:13px;color:#6B7280">Order confirmation SMS to customers and publish / unpublish alerts to the owner and managers.</span></div>
+<a href="/admin/sms/templates" style="font-size:12px;font-weight:600;color:#F95505;background:#FFF1E8;border-radius:8px;padding:6px 10px">এসএমএস টেমপ্লেট (অক্ষর · খণ্ড · খরচ)</a>
 <span style="display:inline-flex;gap:6px;font-size:12px;font-weight:600;color:#F95505;background:#FFF1E8;border-radius:8px;padding:6px 10px">⬇ Download log: <a target="_blank" href="/admin/m/sms-log/export/pdf">PDF</a> · <a href="/admin/m/sms-log/export/xls">Excel</a> · <a href="/admin/m/sms-log/export/doc">Word</a> · <a href="/admin/m/sms-log/export/csv">CSV</a></span><a class="btn g" href="/admin/m/sms-log">SMS log</a></div>
 @if(session('ok'))<div class="card" style="color:#166534">{{ session('ok') }}</div>@endif
 @if(session('bad'))<div class="card err">{{ session('bad') }}</div>@endif

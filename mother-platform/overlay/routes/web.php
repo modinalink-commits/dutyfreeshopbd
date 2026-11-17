@@ -407,6 +407,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/orders/{id}/courier-send', [\App\Http\Controllers\CourierController::class,'sendOne']);
   Route::post('/orders/{id}/courier-refresh', [\App\Http\Controllers\CourierController::class,'refresh']);
   Route::get('/sms', [\App\Http\Controllers\SmsController::class,'show']);
+  Route::get('/sms/templates', [\App\Http\Controllers\SmsController::class,'templates']);
   Route::post('/sms', [\App\Http\Controllers\SmsController::class,'save']);
   Route::post('/sms/test', [\App\Http\Controllers\SmsController::class,'test']);
   Route::post('/sms/balance', [\App\Http\Controllers\SmsController::class,'balance']);
@@ -751,6 +752,7 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestF
   Route::post('/csp-report', function (\Illuminate\Http\Request $r) { \Illuminate\Support\Facades\Log::info('csp-violation', ['r'=>mb_substr((string)$r->getContent(), 0, 600)]); return response('', 204); })->middleware('throttle:20,1')->withoutMiddleware([\Illuminate\Session\Middleware\StartSession::class, \Illuminate\View\Middleware\ShareErrorsFromSession::class, \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class]);
   Route::get('/search', [\App\Http\Controllers\StoreController::class,'search']);
   Route::get('/track', [\App\Http\Controllers\StoreController::class,'track'])->middleware('throttle:40,1');
+  Route::get('/t/{inv}/{k}', fn($inv, $k) => redirect('/track?invoice='.rawurlencode($inv).'&k='.rawurlencode($k), 302))->where(['inv'=>'[A-Za-z0-9\-]{1,30}', 'k'=>'[a-f0-9]{12}'])->middleware('throttle:40,1'); // short tracking link used in SMS
   Route::get('/blog', [\App\Http\Controllers\StoreController::class,'blog']);
   Route::get('/blog/{slug}', [\App\Http\Controllers\StoreController::class,'post'])->where('slug','[a-z0-9\-]+');
   Route::get('/api/cms', [\App\Http\Controllers\StoreController::class,'cmsExport'])->middleware('throttle:300,1');

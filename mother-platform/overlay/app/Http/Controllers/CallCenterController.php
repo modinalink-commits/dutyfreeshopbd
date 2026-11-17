@@ -293,7 +293,7 @@ class CallCenterController extends Controller {
         $ph = $this->norm((string)$l->phone);
         if (strlen($ph) === 11 && \Illuminate\Support\Facades\Cache::add('cc.noans.'.$ph, 1, 21600)) {
           $hot = trim((string)\App\Support\Biz::hotline());
-          $body = trim((string)\App\Support\Procure::set('cc_noanswer_sms', 'আসসালামু আলাইকুম। DutyFreeBD থেকে আপনাকে কল দিয়েছিলাম, কিন্তু পাইনি। আপনার সাথে কথা বলা দরকার। সুবিধামতো {hotline} নম্বরে কল দিন।'));
+          $body = trim((string)\App\Support\Procure::set('cc_noanswer_sms', \App\Support\SmsText::NO_ANSWER));
           [$ok, $m] = \App\Support\Sms::send($ph, str_replace('{hotline}', $hot, $body));
           $msg = $ok ? 'SMS sent' : 'SMS failed: '.$m; if ($ok) { DB::table('call_logs')->where('id', $id)->update(['msg_sent_at'=>now()]); $extra .= ' · "we tried to call" SMS sent'; } else \Illuminate\Support\Facades\Cache::forget('cc.noans.'.$ph);
         } else $msg = 'SMS not sent again: one was already sent to this number in the last 6 hours';

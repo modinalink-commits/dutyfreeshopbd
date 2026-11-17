@@ -1243,3 +1243,6 @@ database/migrations/2026_11_17_120000_contact_notice_whatsapp_line.php
 database/migrations/2026_11_17_130000_contact_notice_comment_line.php
 database/migrations/2026_11_17_140000_orders_px_meta.php
 database/migrations/2026_11_17_150000_hotline_replace_backup.php
+app/Support/SmsText.php
+resources/views/sms_templates.blade.php
+database/migrations/2026_11_17_160000_sms_templates_bangla_short.php

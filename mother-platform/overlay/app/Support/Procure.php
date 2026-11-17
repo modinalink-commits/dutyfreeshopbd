@@ -7,6 +7,14 @@ class Procure {
   const METHODS = ['Cash','Bank Transfer','bKash','Nagad','Cheque','Other'];
   const REASONS = ['Broken','Expired','Leakage','Packaging Damage','Transit Damage','Supplier Damage','Warehouse Damage','Customer Return Damage','Other'];
   const TPL = [
+    'purchase' => 'প্রিয় {supplier_name}, ক্রয় ইনভয়েস {invoice_no} তৈরি হয়েছে। মোট ৳{total}, পরিশোধ ৳{paid}, বকেয়া ৳{due}। {invoice_link}',
+    'payment'  => 'প্রিয় {supplier_name}, আজ ৳{amount} পরিশোধ করা হয়েছে। বকেয়া ৳{due}। {invoice_link}',
+    'due'      => 'প্রিয় {supplier_name}, আপনার বর্তমান পাওনা ৳{due}। বিস্তারিত: {statement_link}',
+    'return'   => 'DutyFreeBD {invoice_no}-এর ফেরত ৳{amount} সমন্বয় হয়েছে। বকেয়া ৳{due}। {statement_link}',
+    'damage'   => 'DutyFreeBD ড্যামেজ ক্লেইম ৳{amount} সমন্বয় হয়েছে। বকেয়া ৳{due}। {statement_link}',
+    'statement'=> 'DutyFreeBD আপনার হিসাব বিবরণী তৈরি। পাওনা ৳{due}। দেখুন: {statement_link}',
+  ];
+  const TPL_OLD = [
     'purchase' => 'প্রিয় {supplier_name}, Purchase Invoice {invoice_no} তৈরি হয়েছে। Total: ৳{total}. Paid: ৳{paid}. Due: ৳{due}. Invoice: {invoice_link}',
     'payment'  => 'প্রিয় {supplier_name}, আজ ৳{amount} পেমেন্ট করা হয়েছে। আপনার বর্তমান বকেয়া ৳{due}। Invoice/Statement: {invoice_link}',
     'due'      => 'প্রিয় {supplier_name}, আপনার বর্তমান পাওনা ৳{due}। বিস্তারিত: {statement_link}',

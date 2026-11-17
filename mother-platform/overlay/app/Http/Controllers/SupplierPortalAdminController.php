@@ -42,7 +42,7 @@ class SupplierPortalAdminController extends Controller
     $id = DB::table('supplier_users')->insertGetId(['username'=>\App\Jobs\GenerateSupplierPortalAccountJob::username($s),'supplier_id'=>$s->id,'name'=>$r->name,'mobile'=>$mobile,'email'=>$r->email ? mb_strtolower($r->email) : null,'password'=>Hash::make($pw),'role'=>$r->role,'status'=>'active','must_change'=>true,'created_at'=>now(),'updated_at'=>now()]);
     P::audit('sp.user.add','supplier_user#'.$id,null,['supplier'=>$s->name,'role'=>$r->role]);
     $sms = false;
-    if ($r->boolean('sms') && $mobile) { [$sms] = Sms::send($mobile, "DutyFreeBD Supplier Portal: ".url('/supplier-portal')." Login: {$s->code} / $mobile Password: $pw (প্রথম লগইনে পরিবর্তন করুন)"); }
+    if ($r->boolean('sms') && $mobile) { [$sms] = Sms::send($mobile, \App\Support\SmsText::supplierLogin(url('/supplier-portal'), (string)$s->code, (string)$mobile, (string)$pw)); }
     return back()->with('ok', "Login created for {$s->name}. Sign in with {$s->code} or {$mobile}. Temporary password (shown once): $pw".($sms ? ' — SMS sent.' : ''));
   }
   public function userAction(Request $r, $id, $a) {

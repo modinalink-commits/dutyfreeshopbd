@@ -110,7 +110,7 @@ class OrderWaConfirm {
       if (DB::table('sms_logs')->where('order_id', $orderId)->where('event', 'order_approved_sms')->exists()) return;
       $o = DB::table('orders')->find($orderId); if (!$o || !$o->phone) return;
       $pay = !empty($o->pay_status) ? (string)$o->pay_status : 'Cash on Delivery';
-      $txt = 'DutyFreeBD: Order '.Inv::show($o->invoice).' approved. Total: Tk '.number_format((float)$o->total).' ('.$pay.'). We will update you on shipment. Track: '.preg_replace('#^https?://#', '', Inv::trackUrl($o->invoice)).' '.ContactNotice::smsLine();
+      $txt = SmsText::orderApproved($o);
       Sms::queue(Chat::phone($o->phone) ?: $o->phone, $txt, 'order_approved_sms', ['order_id' => $orderId]);
       self::ev($cid, $orderId, 'sms_fallback', 'WhatsApp not reachable — approval sent by SMS');
     } catch (\Throwable $e) {}

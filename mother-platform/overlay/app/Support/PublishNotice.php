@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Schema;
  *  Safety: a product must have been unpublished for a minimum time (a quick off/on toggle sends nothing); many products published in one go (a bulk action or an accident) send nothing and raise an alert instead;
  *  a daily cap stops a runaway. The text, the switch and every limit are settings on the Back in Store SMS page; the message is queued through the normal SMS log (cost and status visible there). */
 class PublishNotice {
-  const EVENT = 'pub_back', TEXT = "{product} আবার স্টকে এসেছে। এখনই অর্ডার করুন: {link}\nDutyFreeBD";
+  const EVENT = 'pub_back', TEXT = "DutyFreeBD {product} আবার স্টকে এসেছে। অর্ডার: {link}", TEXT_OLD = "{product} আবার স্টকে এসেছে। এখনই অর্ডার করুন: {link}\nDutyFreeBD";
   public static function set(string $k, string $d = ''): string { return Procure::set('pubsms_' . $k, $d); }
   public static function on(): bool { return self::set('on', '0') === '1'; }
   public static function text(): string { $t = trim(self::set('text', '')); return $t !== '' ? $t : self::TEXT; }
