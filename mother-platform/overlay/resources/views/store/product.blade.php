@@ -10,7 +10,7 @@
   $bundles = []; $__noB = isset(\App\Support\PrepaidOnly::catSet()[(int)($p->category_id ?? 0)]);
   $bt = \App\Support\BundlePricing::forProduct((int)$p->id);
   foreach ([2,3,4,5] as $n) { $lst = $price * $n; $fin = 0;
-    if (!empty($bt[$n])) $fin = (float)$bt[$n]['total']; elseif (!\App\Support\BundlePricing::ready() && ($tp = (float)($p->{'buy'.$n.'_price'} ?? 0)) > 0 && $tp < $lst) $fin = $tp; elseif ($bpct > 0 && $n >= $bmin) $fin = round($lst * (1 - $bpct / 100), 2);
+    if (!empty($bt[$n])) $fin = (float)$bt[$n]['total']; elseif (!\App\Support\BundlePricing::ready() && ($tp = (float)($p->{'buy'.$n.'_price'} ?? 0)) > 0 && $tp < $lst) $fin = $tp; elseif (!\App\Support\BundlePricing::ready() && $bpct > 0 && $n >= $bmin) $fin = round($lst * (1 - $bpct / 100), 2); // 17 Nov 2026: with Bundle Pricing active it is the only source of pack offers; a pack it refuses (protected margin) must not be shown from the Discount Center rule
     if ($fin <= 0 || $fin >= $lst) continue;
     $sv = $lst - $fin; $pc = round($sv / $lst * 100, 1);
     $bundles[] = ['n'=>$n, 'fin'=>$fin, 'save'=>$sv, 'pct'=>rtrim(rtrim(number_format($pc, 1), '0'), '.')]; }
