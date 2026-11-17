@@ -191,7 +191,7 @@ class CallCenterController extends Controller {
         $fmt = fn ($x) => (($x % 12) ?: 12).' '.($x % 24 < 12 ? 'AM' : 'PM');
         if ($bv >= 2) $best = ['when'=>$fmt($bi).' to '.$fmt($bi + 2), 'n'=>$bv, 'of'=>$ts->count()]; }
     } catch (\Throwable $e) {}
-    return response()->json(['found'=>(bool)($c || $n), 'best'=>$best, 'alerts'=>$alerts, 'delivered'=>$dl, 'thread_id'=>$th ? (int)$th : null, 'phone'=>$ph, 'name'=>$c->name ?? ($last->customer_name ?? null), 'customer_id'=>$c->id ?? null, 'orders'=>$n, 'last'=>$last, 'category'=>$p['category'] ?? ($n > 0 ? 'Regular' : 'New'), 'membership'=>$p['membership'] ?? null, 'fraud'=>$fr, 'calls'=>$calls]);
+    return response()->json(['found'=>(bool)($c || $n || $rider), 'rider'=>$rider, 'best'=>$best, 'alerts'=>$alerts, 'delivered'=>$dl, 'thread_id'=>$th ? (int)$th : null, 'phone'=>$ph, 'name'=>$c->name ?? ($last->customer_name ?? ($rider ? $rider['name'].' ('.$rider['courier'].' rider)' : null)), 'customer_id'=>$c->id ?? null, 'orders'=>$n, 'last'=>$last, 'category'=>$p['category'] ?? ($n > 0 ? 'Regular' : ($rider ? 'Courier rider' : 'New')), 'membership'=>$p['membership'] ?? null, 'fraud'=>$fr, 'calls'=>$calls]);
   }
   /** What the agent must read back to the customer while confirming an order (read-only). */
   public function orderBrief($id) {
