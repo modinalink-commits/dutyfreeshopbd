@@ -56,7 +56,7 @@ ac09a04b38e336894c72d5530a035bcfd5464484 app/Http/Controllers/StoreController.ph
 24cf020878b4eabda83dcea5e15726e61d433e96 resources/views/store/layout.blade.php
 5356b422775064c3de9b13c703f12fbf913a2bd3 resources/views/store/card.blade.php
 4a5eb7ee8d7960886fcb97c690bbb604ec69eb1f resources/views/store/home_sec.blade.php
-71f3544d05421b1974f6601e1309c0f566b44284 resources/views/store/home.blade.php
+7fd49219a75de8fbce27529ba700c082d1801a51 resources/views/store/home.blade.php
 94f2cbd77b6dd59f371ed09133bfb9d25c1b53cb resources/views/store/category.blade.php
 01db94e20020c85c8e1e4dad39eb494c6c349999 resources/views/store/product.blade.php
 bb3768d278e3bf05865aa4877098a62d0d5039dc resources/views/store/search.blade.php
@@ -1021,8 +1021,8 @@ e7414f7dc94cef8c9a519cef6a06b920c6537285 database/migrations/2026_11_11_200000_p
 193eb7fd579d4a749ac856d3a5a5a8ae535773d6 public/preview/cat-slider.html
 ae95eaa1060269eda73728eab705c533b12883a1 resources/views/store/cat_slider.blade.php
 227f6c073d67f27ac1432c1435d4b2c201a7a27d resources/views/store/hero_slider.blade.php
-49c50996f72a70059f666ec3a8bb161887d50dcc resources/views/store/cat_slider_css.blade.php
-f3db9be6cb37d963ab625ca645e0aca4e933114f resources/views/store/cat_slider_js.blade.php
+19868c75eed7a35e157d72f2656a6555cd44324e resources/views/store/cat_slider_css.blade.php
+61f2a85b2e7ca7856c47de0e1f313b5be31790d6 resources/views/store/cat_slider_js.blade.php
 5927737c2e67b1fd7f696bb625ec9c4bdae07ad0 resources/views/store/cat_slider_one.blade.php
 7acf8b2732c5215ded7b6000b57ea0daa845dec8 resources/views/admin_bell.blade.php
 7a6b0c91cb3e194fec990cb7b9fbbb97cfa32d49 resources/views/alerts_all.blade.php
