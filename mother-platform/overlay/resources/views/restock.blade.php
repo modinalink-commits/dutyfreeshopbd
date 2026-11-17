@@ -2,7 +2,7 @@
 @section('body')
 <style>.rsk .card{padding:12px 14px;margin-bottom:10px}.rsk h2{font-size:14px;margin:0 0 8px}.rsk table{width:100%;border-collapse:collapse;font-size:12.5px}.rsk th{font-size:11px;color:#6B7280;text-align:left;padding:6px 8px;border-bottom:1px solid #E5E7EB;white-space:nowrap}.rsk td{padding:6px 8px;border-bottom:1px solid #EEF1F4;vertical-align:top}.rsk .n{text-align:right;font-variant-numeric:tabular-nums}.rsk .kp{display:flex;gap:10px;flex-wrap:wrap}.rsk .kp div{border:1px solid #E5E7EB;border-radius:10px;padding:8px 12px;min-width:120px;background:#fff}.rsk .kp b{display:block;font-size:18px}.rsk .kp small{color:#6B7280}.rsk .f{display:flex;gap:10px;flex-wrap:wrap;align-items:end}.rsk label{font-size:12px;color:#374151}.rsk input[type=number],.rsk input[type=text]{height:30px}.rsk .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11.5px;font-weight:700;background:#EEF2F7;color:#0B1B33;white-space:nowrap}.rsk .mu{color:#6B7280}.rsk img.th{width:34px;height:34px;object-fit:contain;border:1px solid #E5E7EB;border-radius:6px;background:#fff}</style>
 <div class="rsk">
-<div style="margin-bottom:8px"><h1 style="font-size:18px;margin:0">Restock Follow-up</h1><small class="mu">Watches stock and follows up with the purchase manager on WhatsApp. Products covered: {{ ['smoke'=>'Cigarette and Vape categories only','general'=>'general products only (no Cigarette / Vape)','all'=>'all categories'][$c['scope']] }}. Single Packet items are never listed.</small></div>
+<div style="margin-bottom:8px"><h1 style="font-size:18px;margin:0">Restock Follow-up</h1><small class="mu">Watches stock, purchase rates and margin, and talks to the purchase manager on WhatsApp. Nobody else is messaged, and no price is changed from here. Products covered: {{ ['smoke'=>'Cigarette and Vape categories only','general'=>'general products only (no Cigarette / Vape)','all'=>'all categories'][$c['scope']] }}. Single Packet items are never listed.</small></div>
 @if($off)<div class="card">The tables for this module are not installed yet. They are created on the next deploy.</div>@else
 @if(session('ok'))<div class="card" style="background:#F0FAF3;border-color:#BFE3CC;color:#14683A;font-weight:600">{{ session('ok') }}</div>@endif
 @if(session('err'))<div class="card" style="background:#FEF3F2;border-color:#F6C4C0;color:#B42318;font-weight:600">{{ session('err') }}</div>@endif
@@ -14,6 +14,7 @@
 <div><b>{{ count($fig) }}</b><small>Products watched</small></div>
 <div><b style="color:#B54708">{{ $needRows->count() }}</b><small>Need buying now</small></div>
 <div><b>{{ $open->count() }}</b><small>Open tasks</small></div>
+<div><b>{{ $waiting }}</b><small>Rate / margin updates waiting</small></div>
 <div><b style="font-size:14px;line-height:26px;color:{{ $verified ? '#067647' : '#B54708' }}">{{ $verified ? 'Verified' : 'Not verified' }}</b><small>{{ $c['name'] }} …{{ substr($c['wa'], -4) }}</small></div>
 <div><b style="font-size:14px;line-height:26px">{{ $tpl }}</b><small>WhatsApp template</small></div>
 <div><b style="font-size:14px;line-height:26px">{{ $window ? 'Open' : 'Closed' }}</b><small>24-hour window</small></div>
@@ -39,7 +40,7 @@
 <div style="margin-top:8px"><label>Leave out these categories:</label><div style="display:flex;gap:4px 14px;flex-wrap:wrap;margin-top:4px">@foreach($cats as $ct)@php $smoke = false; @endphp<label style="white-space:nowrap"><input type="checkbox" name="exclude[]" value="{{ $ct->id }}" @checked(in_array((int)$ct->id, $c['exclude'], true) || $smoke) @disabled($smoke)> {{ $ct->name }}</label>@endforeach</div></div>
 <button class="btn" type="submit" style="margin-top:8px">Save</button></form>
 <small class="mu" style="display:block;margin-top:6px">A product is listed when its usable stock (stock minus units in confirmed orders that have not shipped) plus what is already on order will not last the supply time plus the safety days, or when it is at or below its own stock limit. Cancelled and returned orders are not counted as sales.</small>
-<div style="border-top:1px solid #E5E7EB;margin-top:10px;padding-top:8px">Template <code>{{ \App\Support\Restock::TPL }}</code> · status: <b>{{ $tpl }}</b> <span class="mu">(used only to open the conversation when the 24-hour window is closed)</span>
+<div style="border-top:1px solid #E5E7EB;margin-top:10px;padding-top:8px">Template <code>{{ \App\Support\Restock::TPL }}</code> · status: <b>{{ $tpl }}</b> <span class="mu">(used only to open the conversation when the 24-hour window is closed; one opener for stock, purchase rate and margin updates)</span>
 <pre style="white-space:pre-wrap;font-family:inherit;font-size:12.5px;background:#F8FAFC;border:1px solid #E5E7EB;border-radius:8px;padding:8px;margin:8px 0">{{ \App\Support\Restock::BODY }}
 
 [ {{ \App\Support\Restock::BTN }} ]</pre>
@@ -48,6 +49,7 @@
 <form method="post" action="/admin/purchase/restock/act/sync">@csrf<button class="btn g" type="submit">Refresh status</button></form>
 <form method="post" action="/admin/purchase/restock/act/verify">@csrf<button class="btn g" type="submit">Send verification message</button></form>
 <form method="post" action="/admin/purchase/restock/act/scan">@csrf<button class="btn g" type="submit">Scan now (no message)</button></form>
+<form method="post" action="/admin/purchase/restock/act/watch">@csrf<button class="btn g" type="submit">Check rates and margin now (no message)</button></form>
 <form method="post" action="/admin/purchase/restock/act/send">@csrf<button class="btn g" type="submit">Send reminder now</button></form></div>
 <form method="post" action="/admin/purchase/restock/simulate" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center">@csrf<span class="mu" style="font-size:12px">Test an answer as if {{ $c['name'] }} wrote it:</span><input type="text" name="text" placeholder="1 অর্ডার করেছি, কাল আসবে" style="flex:1;min-width:220px"><button class="btn g" type="submit">Test answer</button></form>
 <small class="mu" style="display:block;margin-top:6px">The answer to a test goes to the saved WhatsApp number. Use the test number while trying this out.</small></div></div>
@@ -73,7 +75,7 @@
 
 <div class="card" id="history"><h2>{{ $conv ? 'Conversation with '.$c['name'] : 'History' }} <span class="mu">({{ $conv ? 'messages sent and answers received' : 'messages, answers and status changes' }}, newest first)</span> <a href="/admin/purchase/restock{{ $conv ? '' : '?conv=1' }}#history" style="font-size:12px;font-weight:600;margin-left:8px">{{ $conv ? 'Show everything' : 'Show the conversation only' }}</a></h2>@if($ev->isEmpty())<div class="mu">Nothing yet.</div>@else
 <div style="overflow-x:auto;max-height:520px"><table><tr><th>Time</th><th>Type</th><th>Product</th><th>Detail</th><th>By</th></tr>
-@php $kl = ['detect'=>'Detected','msg_out'=>'Message sent','msg_fail'=>'Message not sent','msg_in'=>'Answer received','status'=>'Status','receive'=>'Stock received','setting'=>'Setting','round'=>'Round','pause'=>'Pause','escalate'=>'To supervisor']; @endphp
+@php $kl = ['detect'=>'Detected','msg_out'=>'Message sent','msg_fail'=>'Message not sent','msg_in'=>'Answer received','status'=>'Status','receive'=>'Stock received','setting'=>'Setting','round'=>'Round','pause'=>'Pause','escalate'=>'To supervisor','notice_q'=>'Update waiting','notice'=>'Update sent','price_talk'=>'Price remark']; @endphp
 @foreach($ev as $e)<tr><td style="white-space:nowrap">{{ $dt($e->created_at) }}</td><td><span class="pill" style="{{ $e->kind==='msg_fail' || $e->kind==='escalate' ? 'background:#FEE4E2;color:#B42318' : ($e->kind==='msg_in' ? 'background:#E7F8EE;color:#0A6B3B' : '') }}">{{ $kl[$e->kind] ?? $e->kind }}</span></td><td>{{ $e->name ?: '—' }}</td><td style="white-space:pre-line;max-width:560px">{{ $e->body }}</td><td>{{ $e->by_name }}</td></tr>@endforeach</table></div>@endif</div>
 
 @if($closed->count())<div class="card"><h2>Closed tasks <span class="mu">(last 30)</span></h2><div style="overflow-x:auto"><table><tr><th>Product</th><th>Result</th><th>Why</th><th class="n">Asked</th><th class="n">Received</th><th>Opened</th><th>Closed</th></tr>

@@ -15,9 +15,10 @@ use Illuminate\Support\Facades\Schema;
  */
 class Restock
 {
-  const API = 'https://graph.facebook.com/v21.0', TPL = 'restock_followup', BY = 'Stock Assistant (auto)';
-  const BODY = "আসসালামু আলাইকুম {{1}},\nআমি DutyFreeBD-এর স্বয়ংক্রিয় স্টক সহকারী। {{2}}টি পণ্যের স্টক শেষের দিকে, কেনা দরকার।\n\nতালিকা দেখতে নিচের বোতামে চাপ দিন।";
-  const BTN = 'তালিকা দেখান';
+  const API = 'https://graph.facebook.com/v21.0', TPL = 'purchase_manager_update', BY = 'Stock Assistant (auto)';
+  // One opener for everything the purchase manager is told (stock, purchase rate, margin). Used only when the 24-hour window is closed.
+  const BODY = "আসসালামু আলাইকুম {{1}},\nআমি DutyFreeBD-এর স্বয়ংক্রিয় সহকারী। আপনার জন্য {{2}}টি নতুন আপডেট আছে (স্টক, ক্রয়মূল্য বা মার্জিন)।\n\nবিস্তারিত দেখতে নিচের বোতামে চাপ দিন।";
+  const BTN = 'আপডেট দেখান';
   const BAD = ['Cancel', 'Cancelled', 'Returned', 'Return'];
   const OPEN = ['new', 'notified', 'seen', 'ordered', 'problem', 'partial'];
   const LAB = ['new' => 'New', 'notified' => 'Sent', 'seen' => 'Seen', 'ordered' => 'Ordered', 'problem' => 'Problem', 'partial' => 'Part received', 'done' => 'Done', 'cancelled' => 'Cancelled'];
@@ -203,7 +204,8 @@ class Restock
     $c = self::cfg(); $all = self::pending(); if ($all->isEmpty()) { if ($force) self::sendText($wa, 'এই মুহূর্তে কেনার মতো কোনো পণ্য বাকি নেই। ধন্যবাদ।'); return 'nothing pending'; }
     if (!self::windowOpen($wa)) {
       if (self::tplStatus() !== 'APPROVED') { self::log(null, 'msg_fail', 'Reminder not sent: the 24-hour window is closed and the template is ' . self::tplStatus(), null, 'System'); return 'template not approved'; }
-      [$ok, $m] = self::sendTemplate($wa, $c['name'], $all->count()); return 'template ' . $m;
+      if (!Cache::add('rs_tpl_sent', 1, max(1800, $c['every'] * 60 - 120))) return 'waiting for an answer to the opener';
+      [$ok, $m] = self::sendTemplate($wa, $c['name'], $all->count() + self::notices()->count()); return 'template ' . $m;
     }
     // numbered once for the whole message, then grouped by where each product stands, so the question fits what was already answered
     $nums = []; $grp = ['new' => [], 'seen' => [], 'late' => [], 'problem' => [], 'partial' => []];
@@ -280,7 +282,7 @@ class Restock
       $body = trim($body); self::log(null, 'msg_in', ($payload ? '[button ' . $payload . '] ' : '') . $body, null, $c['name']);
       if ($c['verified'] !== $wa) { self::put('verified', $wa); self::log(null, 'setting', 'WhatsApp number …' . substr($wa, -4) . ' verified by its own reply', null, 'System'); }
       $by = $c['name'] . ' (WhatsApp)';
-      if ($payload === 'rs:list' || preg_match('/^(list|তালিকা|লিস্ট|status)\b/iu', $body)) { self::digest($wa, true); return true; }
+      if ($payload === 'rs:list' || preg_match('/^(list|তালিকা|লিস্ট|আপডেট|update|status)(?![\p{L}\p{M}])/iu', $body)) { $n = self::flush($wa); if (!($n > 0 && self::pending()->isEmpty())) self::digest($wa, true); return true; }
       if ($payload && preg_match('/^rs:(\d+):(seen|ord|prob)$/', $payload, $m)) {
         $t = self::apply((int)$m[1], $m[2], '', $by);
         if (!$t) { self::sendText($wa, 'এই পণ্যের কাজটি আগেই বন্ধ হয়ে গেছে।'); return true; }
@@ -295,6 +297,10 @@ class Restock
         self::log(null, 'escalate', $body, null, $by);
         DeployHealth::raise('restock_escalate_' . date('Ymd'), 'high', 'Restock', 'Purchase manager asks for the supervisor', $c['name'] . ' wrote on WhatsApp: "' . mb_substr($body, 0, 600) . '"', 'Asked for in the restock follow-up chat', 'Open Restock Follow-up, read the conversation and contact ' . $c['name'] . '.');
         self::sendText($wa, 'ঠিক আছে, বিষয়টা সুপারভাইজারকে জানিয়ে দিলাম। তিনি আপনার সঙ্গে যোগাযোগ করবেন।'); return true;
+      }
+      if (!preg_match('/^#?[0-9০-৯]{1,2}\s/u', $body) && preg_match('/দাম|মূল্য|রেট|price|rate|মার্জিন|margin/iu', $body) && !preg_match('/অর্ডার|order|আসবে|এসেছে/u', $body)) {
+        self::log(null, 'price_talk', $body, null, $by);
+        self::sendText($wa, 'আপনার কথাটা নোট করে রাখলাম। আমি নিজে কোনো দাম বদলাই না; দাম বদলাতে অ্যাডমিন প্যানেলে পণ্যের Edit পাতা থেকে করুন। ন্যূনতম নিরাপদ দামের নিচে সিস্টেম সেভ নেবে না।'); return true;
       }
       // which product: a leading number from the last list, the card that was answered, or the question we asked last
       $task = null; $rest = $body; $nums = json_decode(self::set('nums_' . $wa, '{}'), true) ?: [];
@@ -342,16 +348,90 @@ class Restock
     } catch (\Throwable $e) { report($e); return false; }
   }
 
+  // ---------- purchase rate and margin (told to the purchase manager, never changed by the assistant) ----------
+  private static function scopeCats(?array $c = null): ?array { $c ??= self::cfg(); $sm = self::smoke(); if (!$sm) return null; return $c['scope'] === 'smoke' ? $sm : []; }
+  /** Products of the scope that are really bought (no Single Packet twins). */
+  private static function scoped($q, string $a = 'p.') {
+    $c = self::cfg(); $sm = self::smoke(); $bl = self::blocked($c) ?: [];
+    return $q->when($c['scope'] === 'smoke', fn($w) => $w->whereIn($a . 'category_id', $sm))->when($bl, fn($w) => $w->whereNotIn($a . 'category_id', $bl))->whereNull($a . 'parent_product_id')
+      ->where(fn($w) => $w->whereNull($a . 'sub')->orWhereRaw('lower(' . $a . 'sub) <> ?', ['single packet']))->whereRaw('lower(' . $a . "name) not like 'single %'")->where(fn($w) => $w->whereNull($a . 'restock_off')->orWhere($a . 'restock_off', false));
+  }
+  /** A notice waits here until it can be sent. The same key is never queued twice. */
+  public static function queue(string $key, string $text): bool {
+    try {
+      if (DB::table('restock_events')->where('wamid', $key)->whereIn('kind', ['notice_q', 'notice'])->exists()) return false;
+      DB::table('restock_events')->insert(['task_id' => null, 'kind' => 'notice_q', 'body' => mb_substr($text, 0, 3000), 'wamid' => $key, 'by_name' => 'System', 'created_at' => now(), 'updated_at' => now()]); return true;
+    } catch (\Throwable $e) { return false; }
+  }
+  public static function notices() { try { return DB::table('restock_events')->where('kind', 'notice_q')->orderBy('id')->limit(40)->get(); } catch (\Throwable $e) { return collect(); } }
+  /** Send the waiting notices in as few messages as possible. Returns how many notices went out, 0 when there was nothing, -1 when only the opener could be sent. */
+  public static function flush(string $wa): int {
+    $rows = self::notices(); if ($rows->isEmpty()) return 0; $c = self::cfg();
+    if (!self::windowOpen($wa)) {
+      if (self::tplStatus() !== 'APPROVED' || !Cache::add('rs_tpl_sent', 1, max(1800, $c['every'] * 60 - 120))) return -1;
+      self::sendTemplate($wa, $c['name'], $rows->count() + self::pending()->count()); return -1;
+    }
+    $sent = 0; $chunk = []; $len = 0; $ids = [];
+    $go = function () use (&$chunk, &$len, &$ids, &$sent, $wa) {
+      if (!$chunk) return true;
+      $ok = self::sendText($wa, "DutyFreeBD স্টক সহকারী (স্বয়ংক্রিয়)\nক্রয়মূল্য ও মার্জিনের আপডেট:\n\n" . implode("\n\n", $chunk));
+      if ($ok) { DB::table('restock_events')->whereIn('id', $ids)->update(['kind' => 'notice', 'updated_at' => now()]); $sent += count($ids); }
+      $chunk = []; $len = 0; $ids = []; return $ok;
+    };
+    foreach ($rows as $r) { $l = mb_strlen((string)$r->body) + 2; if ($len + $l > 3300 && !$go()) return $sent; $chunk[] = (string)$r->body; $ids[] = $r->id; $len += $l; }
+    $go(); return $sent;
+  }
+  /** A purchase recorded at a different rate than the one before it: tell the purchase manager, with what it does to the margin. */
+  public static function rateWatch(): void {
+    try {
+      $last = (int)self::set('pi_last', '-1'); $max = (int)DB::table('purchase_items')->max('id');
+      if ($last < 0) { self::put('pi_last', (string)$max); return; } // first run: start from now, old purchases are not announced
+      if ($max <= $last) return; if (self::scopeCats() === null) return;
+      $rows = self::scoped(DB::table('purchase_items as pi')->join('products as p', 'p.id', '=', 'pi.product_id')->where('pi.id', '>', $last)->where('pi.cost', '>', 0))->orderBy('pi.id')->limit(300)->get(['pi.id', 'pi.product_id', 'pi.cost', 'p.name', 'p.price']);
+      $costs = ProfitFloor::costs($rows->pluck('product_id')->all());
+      foreach ($rows as $r) {
+        $prev = (float)DB::table('purchase_items')->where('product_id', $r->product_id)->where('id', '<', $r->id)->where('cost', '>', 0)->orderByDesc('id')->value('cost'); $new = (float)$r->cost;
+        if ($prev <= 0 || abs($new - $prev) < max(1.0, $prev * 0.005)) continue;
+        $up = $new > $prev; $price = (float)$r->price; $base = (float)($costs[$r->product_id]->cost ?? 0); if ($base <= 0) $base = $new; $floor = ProfitFloor::floor(max($base, $up ? $new : 0));
+        $t = ($up ? '🔺 ক্রয়মূল্য বেড়েছে: ' : '🔻 ক্রয়মূল্য কমেছে: ') . $r->name . "\n   আগে " . SmsText::tk($prev) . ' → এখন ' . SmsText::tk($new) . ' (' . ($up ? '+' : '−') . SmsText::tk(abs($new - $prev)) . ')'
+          . "\n   বিক্রয়মূল্য " . SmsText::tk($price) . ' · নতুন রেটে লাভ ' . self::num(($price - $new) / $new * 100) . '%';
+        if ($price + 0.004 < ProfitFloor::floor($new)) $t .= "\n   ন্যূনতম নিরাপদ দাম " . SmsText::tk(ProfitFloor::floor($new)) . '। বিক্রয়মূল্য বাড়ানো দরকার।';
+        elseif (!$up) $t .= "\n   দাম কমানোর সুযোগ আছে; ন্যূনতম নিরাপদ দাম " . SmsText::tk($floor) . '।';
+        self::queue('rate:' . $r->id, $t);
+      }
+      self::put('pi_last', (string)($rows->isEmpty() ? $max : max($last, (int)$rows->max('id'))));
+      if ($rows->count() < 300 && (int)self::set('pi_last', '0') < $max) self::put('pi_last', (string)$max);
+    } catch (\Throwable $e) { report($e); }
+  }
+  /** Once a day: published products selling under the protected margin. Told when a product is new on the list; the whole list again only once a week. */
+  public static function marginWatch(): void {
+    try {
+      $day = now('Asia/Dhaka')->format('Ymd'); if (self::set('margin_day', '') === $day || self::scopeCats() === null) return; self::put('margin_day', $day);
+      $ps = self::scoped(DB::table('products as p')->where('p.published', true)->where('p.price', '>', 0))->limit(3000)->get(['p.id', 'p.name', 'p.price']); if ($ps->isEmpty()) return;
+      $costs = ProfitFloor::costs($ps->pluck('id')->all()); $low = [];
+      foreach ($ps as $p) { $cost = (float)($costs[$p->id]->cost ?? 0); if ($cost <= 0) continue; $price = (float)$p->price; if ($price + 0.004 >= ProfitFloor::floor($cost)) continue; $low[(int)$p->id] = [(string)$p->name, $price, $cost, ProfitFloor::floor($cost)]; }
+      $was = array_map('intval', json_decode(self::set('margin_ids', '[]'), true) ?: []); $new = array_values(array_diff(array_keys($low), $was)); self::put('margin_ids', json_encode(array_keys($low)));
+      if (!$low) return;
+      $weekly = (int)self::set('margin_full', '0') < time() - 7 * 86400; if (!$new && !$weekly) return;
+      $show = $new ?: array_keys($low); if (!$new) self::put('margin_full', (string)time());
+      $lines = []; foreach (array_slice($show, 0, 25) as $i => $id) { [$n, $price, $cost, $floor] = $low[$id]; $lines[] = ($i + 1) . ') ' . $n . "\n   বিক্রয়মূল্য " . SmsText::tk($price) . ' · খরচ ' . SmsText::tk($cost) . ' · লাভ ' . self::num(($price - $cost) / $cost * 100) . '% · ন্যূনতম ' . SmsText::tk($floor); }
+      $more = count($show) - count($lines); $old = count($low) - count($new);
+      self::queue('margin:' . $day, ($new ? '⚠️ মার্জিন ' . ProfitFloor::pct() . '%-এর নিচে নেমেছে (' . count($new) . 'টি নতুন):' : '⚠️ মার্জিন ' . ProfitFloor::pct() . '%-এর নিচে আছে (' . count($low) . 'টি, সাপ্তাহিক স্মরণ):') . "\n" . implode("\n", $lines)
+        . ($more > 0 ? "\n… আরও " . $more . 'টি' : '') . ($new && $old > 0 ? "\nআগে থেকে নিচে আছে আরও " . $old . 'টি।' : '') . "\nএগুলোর বিক্রয়মূল্য ন্যূনতম দামে তোলা দরকার।");
+    } catch (\Throwable $e) { report($e); }
+  }
+
   // ---------- worker ----------
   public static function tick(): void {
     try {
       if (!self::ready()) return;
       if (self::tplStatus() === 'PENDING' && Cache::add('rs_tpl_sync', 1, 600)) self::syncTemplate();
       $c = self::cfg(); if (!$c['on']) return;
-      if (Cache::add('rs_scan', 1, 900)) self::scan();
+      if (Cache::add('rs_scan', 1, 900)) { self::scan(); self::rateWatch(); self::marginWatch(); }
       if (!self::isVerified($c)) return; // nothing is sent by itself until the number has answered once (Send verification message)
       $now = now('Asia/Dhaka'); $min = $now->hour * 60 + $now->minute; if ($min < $c['from'] || $min >= $c['to']) return;
       if ((int)self::set('pause_until', '0') > time()) return; // the purchase manager asked us to wait
+      if (self::notices()->isNotEmpty() && Cache::add('rs_notice', 1, 1800)) { $n = self::flush($c['wa']); if ($n !== 0) self::log(null, 'round', 'Rate / margin updates: ' . ($n > 0 ? $n . ' sent' : 'opener sent, waiting for an answer'), null, 'System'); }
       $last = (int)self::set('last_round', '0'); if (time() - $last < $c['every'] * 60) return;
       if (!Cache::add('rs_round', 1, 300)) return;
       if (self::pending()->isEmpty()) return;

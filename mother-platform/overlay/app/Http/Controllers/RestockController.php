@@ -13,11 +13,11 @@ class RestockController extends Controller {
     $c = R::cfg(); $blocked = R::blocked($c); $fig = R::figures();
     $open = R::openTasks(); $openBy = $open->keyBy('product_id');
     $closed = DB::table('restock_tasks as t')->join('products as p', 'p.id', '=', 't.product_id')->whereNotNull('t.closed_at')->orderByDesc('t.closed_at')->limit(30)->get(['t.*', 'p.name']);
-    $ev = DB::table('restock_events as e')->leftJoin('restock_tasks as t', 't.id', '=', 'e.task_id')->leftJoin('products as p', 'p.id', '=', 't.product_id')->when($r->boolean('conv'), fn($q) => $q->whereIn('e.kind', ['msg_in', 'msg_out', 'msg_fail', 'escalate', 'pause']))->orderByDesc('e.id')->limit($r->boolean('conv') ? 400 : 120)->get(['e.*', 'p.name']);
+    $ev = DB::table('restock_events as e')->leftJoin('restock_tasks as t', 't.id', '=', 'e.task_id')->leftJoin('products as p', 'p.id', '=', 't.product_id')->when($r->boolean('conv'), fn($q) => $q->whereIn('e.kind', ['msg_in', 'msg_out', 'msg_fail', 'escalate', 'pause', 'notice', 'price_talk']))->orderByDesc('e.id')->limit($r->boolean('conv') ? 400 : 120)->get(['e.*', 'p.name']);
     $cats = DB::table('categories')->whereNull('parent_id')->orderBy('name')->get(['id', 'name']);
     $ov = DB::table('products')->where(fn($q) => $q->whereNotNull('restock_lead_days')->orWhere('restock_off', true))->orderBy('name')->limit(200)->get(['id', 'name', 'low_stock_alert', 'reorder_target', 'restock_lead_days', 'restock_off']);
     return view('restock', ['off' => false, 'c' => $c, 's' => fn($k, $d = '') => R::set($k, $d), 'blocked' => $blocked, 'fig' => $fig, 'open' => $open, 'openBy' => $openBy, 'closed' => $closed, 'ev' => $ev, 'cats' => $cats, 'ov' => $ov,
-      'tpl' => R::tplStatus(), 'admin' => ProfitFloor::admin(), 'verified' => R::isVerified($c), 'window' => R::validWa($c['wa']) && R::windowOpen($c['wa']), 'pause' => (int)R::set('pause_until', '0'), 'conv' => $r->boolean('conv')]);
+      'tpl' => R::tplStatus(), 'admin' => ProfitFloor::admin(), 'verified' => R::isVerified($c), 'window' => R::validWa($c['wa']) && R::windowOpen($c['wa']), 'pause' => (int)R::set('pause_until', '0'), 'conv' => $r->boolean('conv'), 'waiting' => R::notices()->count()]);
   }
   public function save(Request $r) {
     abort_unless(ProfitFloor::admin(), 403);
@@ -41,7 +41,8 @@ class RestockController extends Controller {
     if ($a === 'sync') { [$ok, $m] = R::syncTemplate(); return back()->with($ok ? 'ok' : 'err', 'Template status: ' . $m); }
     if ($a === 'scan') { [$o, $cl] = R::scan(); R::log(null, 'round', 'Scan run by hand: ' . $o . ' opened, ' . $cl . ' closed'); return back()->with('ok', 'Scan: ' . $o . ' opened, ' . $cl . ' closed.'); }
     if ($a === 'verify') { if (!R::validWa($c['wa'])) return back()->with('err', 'আগে নম্বর সেভ করুন।'); if (R::tplStatus() !== 'APPROVED') return back()->with('err', 'টেমপ্লেট এখনো অনুমোদিত নয় (' . R::tplStatus() . ')।'); [$ok, $m] = R::sendTemplate($c['wa'], $c['name'], R::pending()->count()); return back()->with($ok ? 'ok' : 'err', 'Verification message: ' . $m . '. The number is verified when a reply comes from it.'); }
-    if ($a === 'send') { if (!R::validWa($c['wa'])) return back()->with('err', 'আগে নম্বর সেভ করুন।'); R::put('last_round', (string)time()); $m = R::digest($c['wa']); R::log(null, 'round', 'Reminder sent by hand: ' . $m); return back()->with('ok', 'Reminder: ' . $m); }
+    if ($a === 'send') { if (!R::validWa($c['wa'])) return back()->with('err', 'আগে নম্বর সেভ করুন।'); R::put('last_round', (string)time()); $n = R::flush($c['wa']); $m = ($n > 0 ? $n . ' update(s), ' : '') . R::digest($c['wa']); R::log(null, 'round', 'Reminder sent by hand: ' . $m); return back()->with('ok', 'Reminder: ' . $m); }
+    if ($a === 'watch') { R::put('margin_day', ''); R::rateWatch(); R::marginWatch(); $n = R::notices()->count(); R::log(null, 'round', 'Rate / margin check run by hand: ' . $n . ' update(s) waiting'); return back()->with('ok', 'Rate / margin check done: ' . $n . ' update(s) waiting to be sent.'); }
     if ($a === 'resume') { R::put('pause_until', '0'); R::log(null, 'pause', 'Pause removed'); return back()->with('ok', 'বিরতি তুলে দেওয়া হয়েছে।'); }
     abort(404);
   }
