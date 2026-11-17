@@ -63,4 +63,13 @@ class DeliveryController extends Controller
     if ($r->query('find')) $out['find'] = array_values(array_filter($cities, fn($x) => stripos($x['city_name'] ?? '', (string)$r->query('find')) !== false));
     return response()->json($out);
   }
+  /** Admin-only, read-only: what Pathao tells us about one parcel (to find where the rider's name and number are given). ?cid=<consignment id> */
+  public function pathaoRaw(Request $r) {
+    abort_unless(\App\Support\ProfitFloor::admin(), 403); $cid = (string)$r->query('cid'); abort_unless(preg_match('/^[A-Za-z0-9]{6,40}$/', $cid), 422);
+    $o = \Illuminate\Support\Facades\DB::table('orders')->where('consignment_id', $cid)->first(['id', 'phone']); abort_unless($o, 404);
+    $out = ['info' => \App\Support\Pathao::info($cid)];
+    try { $x = \Illuminate\Support\Facades\Http::timeout(15)->acceptJson()->post('https://merchant.pathao.com/api/v1/user/tracking', ['consignment_id' => $cid, 'phone_no' => substr(preg_replace('/\D/', '', (string)$o->phone), -11)]); $out['tracking_status'] = $x->status(); $out['tracking'] = $x->json() ?? mb_substr((string)$x->body(), 0, 600); }
+    catch (\Throwable $e) { $out['tracking_error'] = $e->getMessage(); }
+    return response()->json($out);
+  }
 }
