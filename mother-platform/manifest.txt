@@ -1264,3 +1264,5 @@ app/Support/OrderWatch.php
 app/Http/Controllers/OrderWatchController.php
 resources/views/order_watch.blade.php
 resources/views/my_orders.blade.php
+app/Support/SmsGate.php
+database/migrations/2026_11_17_220000_sms_providers.php

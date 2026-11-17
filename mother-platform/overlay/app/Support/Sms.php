@@ -2,7 +2,7 @@
 namespace App\Support;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
-/** BulkSMSBD gateway. The API key is stored encrypted in integration_secrets and never shown again. */
+/** Central SMS service. Providers (Alpha SMS / BulkSMSBD), fall-back and the attempt record are in SmsGate. API keys are stored encrypted in integration_secrets and never shown again. */
 class Sms {
   const API = 'https://bulksmsbd.net/api/smsapi';
   const BAL = 'https://bulksmsbd.net/api/getBalanceApi';
@@ -19,7 +19,8 @@ class Sms {
     self::$secMemo = null;
     DB::table('integration_secrets')->updateOrInsert(['key'=>$k], ['value'=>$v === null || $v === '' ? null : Crypt::encryptString($v), 'updated_at'=>now(), 'created_at'=>now()]);
   }
-  public static function configured(): bool { return (bool) (self::secret('sms_api_key') && self::secret('sms_sender_id')); }
+  /** True when at least one provider can send (see SmsGate: primary / fall-back selection). */
+  public static function configured(): bool { return SmsGate::anyReady(); }
   public static function number(string $p): ?string {
     $d = preg_replace('/\D/', '', $p);
     if (str_starts_with($d, '8801') && strlen($d) === 13) return $d;
@@ -35,34 +36,44 @@ class Sms {
   public static function flush(int $limit = 25): int {
     if (!self::configured()) return 0;
     $n = 0;
-    foreach (DB::table('sms_logs')->where('status','queued')->orderBy('id')->limit($limit)->get() as $row) {
-      $claim = DB::table('sms_logs')->where('id',$row->id)->where('status','queued')->update(['status'=>'sending']);
-      if (!$claim) continue;
-      [$ok, $msg] = self::send($row->to, $row->body);
-      DB::table('sms_logs')->where('id',$row->id)->update(['status'=>$ok ? 'sent' : 'failed', 'provider_response'=>mb_substr($msg,0,500), 'sent_at'=>$ok ? now() : null, 'updated_at'=>now()]);
-      $n++;
-    }
+    foreach (DB::table('sms_logs')->where('status','queued')->orderBy('id')->limit($limit)->get() as $row) { if (self::deliver($row) !== null) $n++; }
     return $n;
   }
-  /** @return array{bool,string} */
-  public static function send(string $to, string $body): array {
-    $num = self::number($to); if (!$num) return [false, 'Invalid phone number'];
-    $res = self::post(['api_key'=>self::secret('sms_api_key'), 'type'=>'text', 'senderid'=>self::secret('sms_sender_id'), 'number'=>$num, 'message'=>$body]);
-    $code = (int)($res['response_code'] ?? 0);
-    return [$code === 202, $code.' '.(self::CODES[$code] ?? ($res['error_message'] ?? $res['success_message'] ?? 'No response'))];
+  /** Result of the last send() in this request: provider, state (accepted / failed / uncertain), request id, fall-back reason. */
+  public static ?array $last = null;
+  const OTP_TTL = 300; // login / checkout codes live 5 minutes: an older queued code is never sent
+  public static function isOtp(?string $event): bool { return $event !== null && stripos($event, 'otp') !== false; }
+  /** Hide codes in stored text (OTP rows) once the message has left. */
+  public static function mask(string $body): string { return preg_replace('/\d{4,8}/u', '••••••', $body); }
+  /**
+   * Claim one queued sms_logs row and send it. Shared by flush() and the SMS Marketing pump, so every queued message
+   * gets the same provider routing and the same record. Returns the new status, or null when another worker had it.
+   */
+  public static function deliver(object $row): ?string {
+    if (!DB::table('sms_logs')->where('id',$row->id)->where('status','queued')->update(['status'=>'sending','updated_at'=>now()])) return null;
+    $has = \Illuminate\Support\Facades\Schema::hasColumn('sms_logs','provider'); $event = $row->event ?? null; $otp = self::isOtp($event);
+    if ($otp && !empty($row->created_at) && \Carbon\Carbon::parse($row->created_at)->lt(now()->subSeconds(self::OTP_TTL))) {
+      DB::table('sms_logs')->where('id',$row->id)->update(['status'=>'expired','body'=>self::mask((string)$row->body),'provider_response'=>'Code expired before it could be sent; not sent','updated_at'=>now()]); return 'expired';
+    }
+    $uid = ($row->uid ?? null) ?: (string)\Illuminate\Support\Str::uuid();
+    [$ok, $msg] = self::send($row->to, $row->body, ['log_id'=>$row->id, 'event'=>$event, 'type'=>$row->type ?? null, 'uid'=>$uid]);
+    $r = self::$last ?? []; $st = $ok ? 'sent' : ((($r['state'] ?? '') === 'uncertain') ? 'uncertain' : 'failed');
+    if (($r['class'] ?? '') === 'duplicate') { DB::table('sms_logs')->where('id',$row->id)->update(['status'=>'queued','updated_at'=>now()]); return 'queued'; } // the twin is in flight: try again on the next round
+    $up = ['status'=>$st, 'provider_response'=>mb_substr($msg,0,500), 'sent_at'=>$ok ? now() : null, 'updated_at'=>now()];
+    if ($otp) $up['body'] = self::mask((string)$row->body);
+    if ($has) $up += ['uid'=>$uid, 'provider'=>$r['provider'] ?? null, 'request_id'=>$r['rid'] ?? null, 'delivery'=>$ok ? 'pending' : null, 'fallback_reason'=>isset($r['fallback']) ? mb_substr((string)$r['fallback'],0,250) : null, 'attempts'=>count($r['trace'] ?? [])];
+    DB::table('sms_logs')->where('id',$row->id)->update($up);
+    return $st;
   }
+  /** Send now through the selected provider(s). "true" means the provider ACCEPTED the request, not that the phone received it. @return array{bool,string} */
+  public static function send(string $to, string $body, array $ctx = []): array {
+    $r = SmsGate::route($to, $body, $ctx); self::$last = $r;
+    $msg = $r['msg'] . ($r['state'] === 'uncertain' ? ' — status uncertain, not sent again' : '') . ($r['ok'] && $r['fallback'] ? ' [fall-back: ' . $r['fallback'] . ']' : '');
+    return [$r['ok'], $msg];
+  }
+  /** Balance of the provider in use (primary when it is ready, otherwise the other one). */
   public static function balance(): string {
-    $k = self::secret('sms_api_key'); if (!$k) return 'API key not set';
-    $r = self::http(self::BAL.'?api_key='.rawurlencode($k), null);
-    $j = json_decode((string)$r, true);
-    if (is_array($j) && isset($j['balance'])) return (string)$j['balance'];
-    if (is_array($j) && isset($j['response_code'])) return ($j['response_code']).' '.(self::CODES[(int)$j['response_code']] ?? ($j['error_message'] ?? ''));
-    return $r ? mb_substr(strip_tags($r), 0, 120) : 'No response from gateway';
-  }
-  private static function post(array $f): array { $r = self::http(self::API, http_build_query($f)); $j = json_decode((string)$r, true); return is_array($j) ? $j : ['response_code'=>0, 'error_message'=>$r ? mb_substr(strip_tags($r),0,120) : 'No response from gateway']; }
-  private static function http(string $url, ?string $body): ?string {
-    $o = ['http'=>['method'=>$body === null ? 'GET' : 'POST','timeout'=>15,'ignore_errors'=>true,'header'=>"User-Agent: MotherCommerce/1.0\r\nContent-Type: application/x-www-form-urlencoded\r\n"],'ssl'=>['verify_peer'=>true]];
-    if ($body !== null) $o['http']['content'] = $body;
-    $r = @file_get_contents($url, false, stream_context_create($o)); return $r === false ? null : $r;
+    $o = SmsGate::order()[0]; if (!$o) return 'API key not set';
+    return SmsGate::balance($o[0])['text'];
   }
 }

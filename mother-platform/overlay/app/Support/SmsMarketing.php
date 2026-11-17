@@ -132,12 +132,8 @@ class SmsMarketing {
   public static function pump(int $limit): int {
     $n = 0;
     $rows = DB::table('sms_logs as l')->leftJoin('sms_campaigns as c', 'c.id', '=', 'l.campaign_id')->where('l.status', 'queued')
-      ->where(fn($q) => $q->whereNull('l.campaign_id')->orWhere('c.status', 'sending'))->orderBy('l.id')->limit($limit)->select('l.id', 'l.to', 'l.body')->get();
-    foreach ($rows as $r) {
-      if (!DB::table('sms_logs')->where('id', $r->id)->where('status', 'queued')->update(['status'=>'sending'])) continue;
-      [$ok, $msg] = Sms::send($r->to, $r->body);
-      DB::table('sms_logs')->where('id', $r->id)->update(['status'=>$ok ? 'sent' : 'failed', 'provider_response'=>mb_substr($msg, 0, 500), 'sent_at'=>$ok ? now() : null, 'updated_at'=>now()]); $n++;
-    }
+      ->where(fn($q) => $q->whereNull('l.campaign_id')->orWhere('c.status', 'sending'))->orderBy('l.id')->limit($limit)->select('l.*')->get();
+    foreach ($rows as $r) { if (Sms::deliver($r) !== null) $n++; } // one shared path: provider routing, fall-back rules and the attempt record (SmsGate)
     return $n;
   }
 

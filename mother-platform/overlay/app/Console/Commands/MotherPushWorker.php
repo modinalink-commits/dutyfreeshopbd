@@ -49,6 +49,7 @@ class MotherPushWorker extends Command
     try { \App\Support\WaRec::tick(); } catch (\Throwable $e) { $this->error('warec: ' . $e->getMessage()); }
     try { \App\Support\ChatComments::tick(); } catch (\Throwable $e) { $this->error('fbcomments: ' . $e->getMessage()); }
     try { \App\Support\Mailer::tick(); } catch (\Throwable $e) { $this->error('email: ' . $e->getMessage()); }
+    try { \App\Support\SmsGate::tick(); } catch (\Throwable $e) { $this->error('sms-report: ' . $e->getMessage()); }
     try { \App\Support\SmsMarketing::tick(); } catch (\Throwable $e) { $this->error('sms: ' . $e->getMessage()); }
     try { \App\Support\Winback::tick(); } catch (\Throwable $e) { $this->error('winback: ' . $e->getMessage()); }
     try { \App\Support\WhatsApp::tick(); } catch (\Throwable $e) { $this->error('wa: ' . $e->getMessage()); }
