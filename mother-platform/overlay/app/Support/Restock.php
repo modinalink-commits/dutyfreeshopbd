@@ -7,8 +7,8 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Stock watch and restock follow-up for general products (owner, 17 Nov 2026).
- * Cigarette / Vape categories and any category the admin excludes are never looked at.
+ * Stock watch and restock follow-up with the purchase manager (owner, 17 Nov 2026).
+ * Scope (owner, same day): the Cigarette and Vape categories only. The scope is a setting (smoke | general | all); Single Packet twins are never bought, so they are never listed.
  * A product that will run out before new stock can arrive gets ONE open task. The purchase manager is told on WhatsApp (photo, usable stock,
  * daily sale, days left, quantity to buy), answers with buttons or plain text, and is reminded every two hours in working time until the
  * goods are recorded as received in Purchase. A WhatsApp message never changes stock: only a recorded purchase does.
@@ -30,15 +30,24 @@ class Restock
     return ['on' => self::set('on', '0') === '1', 'name' => trim(self::set('name', 'Mamun')) ?: 'Mamun', 'wa' => WhatsApp::norm(self::set('phone', '01824522800')),
       'verified' => self::set('verified', ''), 'from' => $hm(self::set('from', '10:00'), 600), 'to' => ($hm(self::set('to', '24:00'), 1440) ?: 1440), 'every' => max(30, min(720, (int)self::set('every', '120'))),
       'lead' => max(0, min(60, (int)self::set('lead', '3'))), 'safety' => max(0, min(30, (int)self::set('safety', '2'))), 'cover' => max(3, min(90, (int)self::set('cover', '15'))),
-      'min_sold' => max(1, (int)self::set('min_sold', '3')), 'cards' => max(0, min(10, (int)self::set('cards', '5'))), 'exclude' => array_values(array_filter(array_map('intval', explode(',', self::set('exclude', '')))))];
+      'scope' => in_array(self::set('scope', 'smoke'), ['smoke', 'general', 'all'], true) ? self::set('scope', 'smoke') : 'smoke', 'min_sold' => max(1, (int)self::set('min_sold', '3')), 'cards' => max(0, min(10, (int)self::set('cards', '5'))), 'exclude' => array_values(array_filter(array_map('intval', explode(',', self::set('exclude', '')))))];
   }
   public static function validWa(string $wa): bool { return (bool)preg_match('/^8801[3-9]\d{8}$/', $wa); }
   public static function isVerified(?array $c = null): bool { $c ??= self::cfg(); return self::validWa($c['wa']) && $c['verified'] === $c['wa']; }
   public static function tplStatus(): string { return self::set('tpl_status', 'NOT SUBMITTED'); }
 
-  /** Categories this system never touches: Cigarette / Vape (and everything under them) plus the admin's own list. Null = the smoke categories could not be found, so nothing is scanned at all. */
+  /** Category ids with everything under them. */
+  private static function tree(array $ids): array {
+    $ids = array_values(array_unique(array_map('intval', $ids))); if (!$ids) return [];
+    try { $all = DB::table('categories')->get(['id', 'parent_id']); for ($i = 0; $i < 4; $i++) { $more = $all->filter(fn($x) => !empty($x->parent_id) && in_array((int)$x->parent_id, $ids, true) && !in_array((int)$x->id, $ids, true))->pluck('id')->map(fn($x) => (int)$x)->all(); if (!$more) break; $ids = array_merge($ids, $more); } } catch (\Throwable $e) {}
+    return $ids;
+  }
+  /** The Cigarette / Vape categories (and everything under them). Empty = they could not be found, and then nothing is scanned at all. */
+  public static function smoke(): array { return PurchaseList::smokeCats(); }
+  /** Categories left out of the scan. Null = the smoke categories could not be found (safety stop). */
   public static function blocked(?array $c = null): ?array {
-    $c ??= self::cfg(); $smoke = PurchaseList::smokeCats(); if (!$smoke) return null;
+    $c ??= self::cfg(); $smoke = self::smoke(); if (!$smoke) return null;
+    if ($c['scope'] !== 'general') return self::tree($c['exclude']);
     $ids = array_values(array_unique(array_merge($smoke, $c['exclude'])));
     try { $all = DB::table('categories')->get(['id', 'parent_id']); for ($i = 0; $i < 4; $i++) { $more = $all->filter(fn($x) => !empty($x->parent_id) && in_array((int)$x->parent_id, $ids, true) && !in_array((int)$x->id, $ids, true))->pluck('id')->map(fn($x) => (int)$x)->all(); if (!$more) break; $ids = array_merge($ids, $more); } } catch (\Throwable $e) {}
     return $ids;
@@ -53,7 +62,9 @@ class Restock
       ->when(Schema::hasColumn('orders', 'duplicate_of_order_id'), fn($q) => $q->whereNull('o.duplicate_of_order_id'))->when($only !== null, fn($q) => $q->whereIn('i.product_id', $only ?: [0]))
       ->groupBy('i.product_id')->selectRaw('i.product_id, sum(i.qty) q30, sum(case when o.created_at >= ? then i.qty else 0 end) q7', [$since7])->get()->keyBy('product_id');
     if ($sold->isEmpty()) return [];
-    $prods = DB::table('products')->whereIn('id', $sold->keys()->all())->whereNotIn('category_id', $blocked)->whereNotNull('category_id')->whereNull('parent_product_id')->whereNotNull('stock')
+    $smoke = self::smoke();
+    $prods = DB::table('products')->whereIn('id', $sold->keys()->all())->when($blocked, fn($q) => $q->whereNotIn('category_id', $blocked))->when($c['scope'] === 'smoke', fn($q) => $q->whereIn('category_id', $smoke))->whereNotNull('category_id')->whereNull('parent_product_id')->whereNotNull('stock')
+      ->where(fn($q) => $q->whereNull('sub')->orWhereRaw('lower(sub) <> ?', ['single packet']))->whereRaw("lower(name) not like 'single %'")->where(fn($q) => $q->whereNull('sku')->orWhereRaw("sku not ilike '%-SP'")) // Single Packet twins are never bought: their stock comes only from a received partial return
       ->where(fn($q) => $q->whereNull('restock_off')->orWhere('restock_off', false))->get(['id', 'name', 'sku', 'image', 'stock', 'low_stock_alert', 'reorder_target', 'restock_lead_days', 'category_id'])->keyBy('id');
     if ($prods->isEmpty()) return [];
     $ids = $prods->keys()->all();

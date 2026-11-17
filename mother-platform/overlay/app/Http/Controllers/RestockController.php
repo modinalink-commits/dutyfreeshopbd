@@ -13,19 +13,23 @@ class RestockController extends Controller {
     $c = R::cfg(); $blocked = R::blocked($c); $fig = R::figures();
     $open = R::openTasks(); $openBy = $open->keyBy('product_id');
     $closed = DB::table('restock_tasks as t')->join('products as p', 'p.id', '=', 't.product_id')->whereNotNull('t.closed_at')->orderByDesc('t.closed_at')->limit(30)->get(['t.*', 'p.name']);
-    $ev = DB::table('restock_events as e')->leftJoin('restock_tasks as t', 't.id', '=', 'e.task_id')->leftJoin('products as p', 'p.id', '=', 't.product_id')->orderByDesc('e.id')->limit(120)->get(['e.*', 'p.name']);
+    $ev = DB::table('restock_events as e')->leftJoin('restock_tasks as t', 't.id', '=', 'e.task_id')->leftJoin('products as p', 'p.id', '=', 't.product_id')->when($r->boolean('conv'), fn($q) => $q->whereIn('e.kind', ['msg_in', 'msg_out', 'msg_fail', 'escalate', 'pause']))->orderByDesc('e.id')->limit($r->boolean('conv') ? 400 : 120)->get(['e.*', 'p.name']);
     $cats = DB::table('categories')->whereNull('parent_id')->orderBy('name')->get(['id', 'name']);
     $ov = DB::table('products')->where(fn($q) => $q->whereNotNull('restock_lead_days')->orWhere('restock_off', true))->orderBy('name')->limit(200)->get(['id', 'name', 'low_stock_alert', 'reorder_target', 'restock_lead_days', 'restock_off']);
     return view('restock', ['off' => false, 'c' => $c, 's' => fn($k, $d = '') => R::set($k, $d), 'blocked' => $blocked, 'fig' => $fig, 'open' => $open, 'openBy' => $openBy, 'closed' => $closed, 'ev' => $ev, 'cats' => $cats, 'ov' => $ov,
-      'tpl' => R::tplStatus(), 'admin' => ProfitFloor::admin(), 'verified' => R::isVerified($c), 'window' => R::validWa($c['wa']) && R::windowOpen($c['wa']), 'pause' => (int)R::set('pause_until', '0')]);
+      'tpl' => R::tplStatus(), 'admin' => ProfitFloor::admin(), 'verified' => R::isVerified($c), 'window' => R::validWa($c['wa']) && R::windowOpen($c['wa']), 'pause' => (int)R::set('pause_until', '0'), 'conv' => $r->boolean('conv')]);
   }
   public function save(Request $r) {
     abort_unless(ProfitFloor::admin(), 403);
     $d = $r->validate(['name' => 'required|string|max:60', 'phone' => 'required|string|max:20', 'from' => ['required', 'regex:/^\d{1,2}:\d{2}$/'], 'to' => ['required', 'regex:/^\d{1,2}:\d{2}$/'], 'every' => 'required|integer|min:30|max:720',
-      'lead' => 'required|integer|min:0|max:60', 'safety' => 'required|integer|min:0|max:30', 'cover' => 'required|integer|min:3|max:90', 'min_sold' => 'required|integer|min:1|max:1000', 'cards' => 'required|integer|min:0|max:10', 'exclude' => 'nullable|array', 'exclude.*' => 'integer']);
+      'lead' => 'required|integer|min:0|max:60', 'safety' => 'required|integer|min:0|max:30', 'cover' => 'required|integer|min:3|max:90', 'min_sold' => 'required|integer|min:1|max:1000', 'cards' => 'required|integer|min:0|max:10', 'scope' => 'required|in:smoke,general,all', 'exclude' => 'nullable|array', 'exclude.*' => 'integer']);
     $wa = WhatsApp::norm($d['phone']); if (!R::validWa($wa)) return back()->with('err', 'সঠিক মোবাইল নম্বর দিন (01XXXXXXXXX)।');
     $old = R::cfg();
-    foreach (['name', 'from', 'to', 'every', 'lead', 'safety', 'cover', 'min_sold', 'cards'] as $k) R::put($k, trim((string)$d[$k]));
+    foreach (['name', 'from', 'to', 'every', 'lead', 'safety', 'cover', 'min_sold', 'cards', 'scope'] as $k) R::put($k, trim((string)$d[$k]));
+    if ($d['scope'] !== $old['scope']) { // other products now: the open tasks of the old scope are closed, never carried over
+      foreach (DB::table('restock_tasks')->whereNull('closed_at')->pluck('id') as $tid) { DB::table('restock_tasks')->where('id', $tid)->update(['status' => 'cancelled', 'closed_at' => now(), 'closed_why' => 'scope changed', 'updated_at' => now()]); R::log((int)$tid, 'status', 'Cancelled: scope changed to ' . $d['scope']); }
+      R::put('pause_until', '0'); R::put('rounds', '0');
+    }
     R::put('phone', $wa); R::put('exclude', implode(',', array_map('intval', $d['exclude'] ?? []))); R::put('on', $r->boolean('on') ? '1' : '0');
     if ($wa !== $old['wa']) DB::table('restock_tasks')->whereNull('closed_at')->update(['assignee_name' => trim($d['name']), 'assignee_wa' => $wa, 'updated_at' => now()]);
     R::log(null, 'setting', 'Settings saved: ' . ($r->boolean('on') ? 'ON' : 'OFF') . ', ' . trim($d['name']) . ' …' . substr($wa, -4) . ', ' . $d['from'] . '-' . $d['to'] . ', every ' . $d['every'] . ' min, lead ' . $d['lead'] . ' d, safety ' . $d['safety'] . ' d, cover ' . $d['cover'] . ' d');
