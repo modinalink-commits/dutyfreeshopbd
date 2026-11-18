@@ -1298,3 +1298,13 @@ public/adimg/nov26-pop-brut-prestige.jpg
 public/adimg/nov26-pop-hair-wax.jpg
 public/adimg/nov26-pop-davidoff.jpg
 public/adimg/nov26-pop-rexona.jpg
+public/adimg/nov26-perf-1872-masculine.jpg
+public/adimg/nov26-perf-allure-homme-sport.jpg
+public/adimg/nov26-perf-guilty-pour-homme.jpg
+public/adimg/nov26-perf-himalaya.jpg
+public/adimg/nov26-perf-la-nuit-collector.jpg
+public/adimg/nov26-perf-l-homme-a-la-rose.jpg
+public/adimg/nov26-perf-pegasus-exclusif.jpg
+public/adimg/nov26-perf-pour-lui.jpg
+public/adimg/nov26-perf-pour-lui-black.jpg
+public/adimg/nov26-perf-pure-xs-repack.jpg
