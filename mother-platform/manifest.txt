@@ -1328,3 +1328,13 @@ public/adimg/nov26-mix-elvive-total-repair-5.jpg
 public/adimg/nov26-mix-megamare.jpg
 public/adimg/nov26-mix-vanilla-28.jpg
 public/adimg/nov26-mix-vanilla-powder.jpg
+public/adimg/nov26-watch-casio-edifice-ecb30dc.jpg
+public/adimg/nov26-watch-sonata-multifunction-green.jpg
+public/adimg/nov26-watch-tissot-ballade-blue.jpg
+public/adimg/nov26-watch-tissot-ballade-silver.jpg
+public/adimg/nov26-watch-tissot-pr516.jpg
+public/adimg/nov26-watch-titan-day-date.jpg
+public/adimg/nov26-watch-titan-neo.jpg
+public/adimg/nov26-watch-titan-quartz-leather.jpg
+public/adimg/nov26-watch-titan-regalia-opulent.jpg
+public/adimg/nov26-watch-titan-workwear.jpg
