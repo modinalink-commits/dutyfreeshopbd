@@ -1338,3 +1338,13 @@ public/adimg/nov26-watch-titan-neo.jpg
 public/adimg/nov26-watch-titan-quartz-leather.jpg
 public/adimg/nov26-watch-titan-regalia-opulent.jpg
 public/adimg/nov26-watch-titan-workwear.jpg
+public/adimg/nov26-gad-bwoo-bs88-rgb.jpg
+public/adimg/nov26-gad-bwoo-bs97.jpg
+public/adimg/nov26-gad-bwoo-bw52-black.jpg
+public/adimg/nov26-gad-bwoo-bw52-white.jpg
+public/adimg/nov26-gad-bwoo-bw53.jpg
+public/adimg/nov26-gad-bwoo-bw585.jpg
+public/adimg/nov26-gad-bwoo-bw589-wh.jpg
+public/adimg/nov26-gad-bwoo-mf02.jpg
+public/adimg/nov26-gad-hifuture-flybuds4-ai.jpg
+public/adimg/nov26-gad-hifuture-olymbuds3.jpg
