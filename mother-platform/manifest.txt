@@ -1272,3 +1272,9 @@ database/migrations/2026_11_18_050000_staff_idle_no_alerts.php
 app/Support/NoSell.php
 app/Http/Controllers/CancelReportController.php
 resources/views/cancel_report.blade.php
+public/adimg/nov26-beauty-1196.jpg
+public/adimg/nov26-beauty-1465.jpg
+public/adimg/nov26-beauty-1488.jpg
+public/adimg/nov26-beauty-1582.jpg
+public/adimg/nov26-beauty-1808.jpg
+public/adimg/nov26-beauty-2036.jpg

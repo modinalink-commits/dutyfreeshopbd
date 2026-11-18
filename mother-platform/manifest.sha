@@ -1271,3 +1271,9 @@ ffb53e3512b021c3d3078bfdd2933b7091af0c46 app/Support/SmsGate.php
 26ae0c6d4b3c27041cb1e240427ab01cbac48286 app/Support/NoSell.php
 879f57d3aede45fb4506f3e7b19712d67c10b9ec app/Http/Controllers/CancelReportController.php
 c712bc10b165f55632326b3a2b6d763fedce2b1b resources/views/cancel_report.blade.php
+e06fe7a706e265333037c4b45197505ee0c5b99b public/adimg/nov26-beauty-1196.jpg
+0749a0be9cc29aea8faaf752b735cbe9a4aee346 public/adimg/nov26-beauty-1465.jpg
+de39d93efc01a1efd277de116f1139cdbede925d public/adimg/nov26-beauty-1488.jpg
+6b5b7a52744d5ecab657ac5e8b4c31a1e1b09f6b public/adimg/nov26-beauty-1582.jpg
+848e09db8663d1a83f74ece7b7b5c1139948ed3c public/adimg/nov26-beauty-1808.jpg
+826633ea9b3e46ddabb5230baed53bb83dda3760 public/adimg/nov26-beauty-2036.jpg
