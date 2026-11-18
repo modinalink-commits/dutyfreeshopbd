@@ -1278,3 +1278,13 @@ public/adimg/nov26-beauty-1488.jpg
 public/adimg/nov26-beauty-1582.jpg
 public/adimg/nov26-beauty-1808.jpg
 public/adimg/nov26-beauty-2036.jpg
+public/adimg/nov26-lighter-street-chrome.jpg
+public/adimg/nov26-lighter-high-polish-blue.jpg
+public/adimg/nov26-lighter-zorro-nature.jpg
+public/adimg/nov26-lighter-honest.jpg
+public/adimg/nov26-lighter-white-matte.jpg
+public/adimg/nov26-lighter-red-deer.jpg
+public/adimg/nov26-lighter-swirls.jpg
+public/adimg/nov26-lighter-sarike.jpg
+public/adimg/nov26-lighter-collectible-2025.jpg
+public/adimg/nov26-lighter-grass-green.jpg
