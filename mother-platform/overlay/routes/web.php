@@ -366,6 +366,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/courier-report', [\App\Http\Controllers\CourierReportController::class,'index']);
   Route::get('/cashbook-report', [\App\Http\Controllers\CashbookReportController::class,'index']);
   Route::get('/order-history-report', [\App\Http\Controllers\OrderHistoryReportController::class,'index']);
+  Route::get('/cancel-report', [\App\Http\Controllers\CancelReportController::class,'index']);
   Route::get('/stock-movement-report', [\App\Http\Controllers\StockMovementReportController::class,'index']);
   Route::get('/stock-report', [\App\Http\Controllers\StockReportController::class,'index']);
   Route::get('/price-review', [\App\Http\Controllers\PriceReviewController::class,'index']);

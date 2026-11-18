@@ -678,7 +678,7 @@ class StoreController extends Controller {
     try {
     $id = DB::transaction(function () use ($d, $qt, $phone, $ip, $where, $note, $pm, $meta, $incTok, $fp, &$dupId) {
       \App\Support\OrderDedupe::lock($phone);
-      [$exOrder, $idemKey] = \App\Support\OrderDedupe::resolve($incTok, $fp);
+      [$exOrder, $idemKey] = \App\Support\OrderDedupe::resolve($incTok, $fp, \App\Support\OrderDedupe::WEB_WINDOW);
       if ($exOrder) { $dupId = (int)$exOrder->id; return $dupId; }
       if (!empty($pm['txn'])) { // same Transaction ID submitted twice at once: serialise on it, then re-check
         DB::select('select pg_advisory_xact_lock(hashtext(?))', ['paytxn:'.$pm['txn']]);

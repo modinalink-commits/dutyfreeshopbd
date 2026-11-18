@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
  */
 class OrderDedupe {
   const WINDOW = 90;      // seconds: identical content = same click
+  const WEB_WINDOW = 1800; // seconds: storefront only — the same customer sending the very same order again within 30 minutes gets the order that already exists (most cancelled web orders were such repeats). A cancelled order never blocks a new one.
   const TOKEN_TTL = 900;  // seconds: a token reused for a new order after this long gets a fresh key
   public static function token(?string $t): ?string { $t = trim((string)$t); return preg_match('/^[A-Za-z0-9_\-]{16,60}$/', $t) ? $t : null; }
   /** items: list of ['id'|'product_id' => .., 'qty' => ..] */
@@ -25,7 +26,7 @@ class OrderDedupe {
     DB::select('select pg_advisory_xact_lock(?)', [$k]);
   }
   /** Returns [existingOrderRow|null, idempotencyKeyToStore|null]. Must run after lock(). */
-  public static function resolve(?string $token, string $fp): array {
+  public static function resolve(?string $token, string $fp, int $window = self::WINDOW): array {
     $tok = self::token($token); $key = $tok;
     if ($tok) {
       $ex = DB::table('orders')->where('idempotency_key', $tok)->first();
@@ -34,7 +35,7 @@ class OrderDedupe {
         $key = $tok.'_'.bin2hex(random_bytes(4));
       }
     }
-    $ex = DB::table('orders')->where('order_fingerprint', $fp)->where('created_at', '>', now()->subSeconds(self::WINDOW))->whereNull('duplicate_of_order_id')->orderBy('id')->first();
+    $ex = DB::table('orders')->where('order_fingerprint', $fp)->where('created_at', '>', now()->subSeconds(max(self::WINDOW, $window)))->where('status', '<>', 'Cancel')->whereNull('duplicate_of_order_id')->orderBy('id')->first();
     return [$ex ?: null, $key];
   }
   /** "Possible Duplicate" hints for a page of orders: same phone + same total within 15 minutes of an EARLIER non-cancelled order (and same fingerprint when both have one). One query, no per-row lookups. Returns [orderId => ['id'=>originalId, 'invoice'=>originalInvoice]]. Review only: nothing is changed automatically. */

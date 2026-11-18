@@ -60,6 +60,7 @@ class ReportCatalog
       ['SAL-002', 'Daily Sales Report', 'Summary', 'grid', $A('daily-sales'), 'pxcn', 'Analytics', null],
       ['SAL-003', 'Monthly Sales Report', 'Summary', 'grid', $A('monthly-sales'), 'pxcn', 'Analytics', null],
       ['SAL-004', 'Order History', 'Orders', 'grid', 'admin/order-history-report', 'pcn', 'Reports', null],
+      ['SAL-011', 'Cancel Reasons', 'Orders', 'grid', 'admin/cancel-report', 'pcn', 'Reports', null],
       ['SAL-005', 'Product Wise Sales Report', 'Breakdowns', 'grid', $A('product-sales'), 'pxcn', 'Analytics', null],
       ['SAL-006', 'Category Wise Sales Report', 'Breakdowns', 'grid', $A('category-sales'), 'pxcn', 'Analytics', null],
       ['SAL-007', 'Discount Report (by type)', 'Breakdowns', 'grid', $A('discount-report'), 'pxcn', 'Analytics', null],
@@ -195,7 +196,7 @@ class ReportCatalog
   {
     $path = self::key($r->path()); $qs = http_build_query($r->query()); $out = ['csv' => null, 'xls' => null];
     $q = fn(array $x = []) => ($m = array_merge($r->query(), $x)) ? '?' . http_build_query($m) : '';
-    if (preg_match('#^admin/(profit-report|category-profit|stock-report|stock-movement-report|purchase-report|supplier-ledger-report|courier-report|cashbook-report|order-history-report)$#', $path)) $out['csv'] = url('/' . $path) . $q(['export' => 'csv']);
+    if (preg_match('#^admin/(profit-report|category-profit|stock-report|stock-movement-report|purchase-report|supplier-ledger-report|courier-report|cashbook-report|order-history-report|cancel-report)$#', $path)) $out['csv'] = url('/' . $path) . $q(['export' => 'csv']);
     elseif (preg_match('#^admin/analytics/([a-z0-9-]+)$#', $path, $m) && $m[1] !== 'area-orders') { $out['csv'] = url('/admin/analytics/' . $m[1] . '/export/csv') . ($qs ? '?' . $qs : ''); $out['xls'] = url('/admin/analytics/' . $m[1] . '/export/xls') . ($qs ? '?' . $qs : ''); }
     elseif (preg_match('#^admin/staff-tracking/(activity|status|payment|courier|price|comm|logins|audit|reports)$#', $path, $m)) $out['csv'] = url('/admin/staff-tracking-export/' . $m[1]) . ($qs ? '?' . $qs : '');
     return $out;

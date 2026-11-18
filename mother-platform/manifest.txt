@@ -1270,3 +1270,5 @@ app/Support/SmsInbox.php
 app/Http/Controllers/SmsInboundController.php
 database/migrations/2026_11_18_050000_staff_idle_no_alerts.php
 app/Support/NoSell.php
+app/Http/Controllers/CancelReportController.php
+resources/views/cancel_report.blade.php
