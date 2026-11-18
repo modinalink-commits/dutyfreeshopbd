@@ -262,6 +262,7 @@ class CatalogController extends Controller {
       if (count($row) < count($head)) { $bad++; continue; }
       $x = array_combine($head, array_slice($row, 0, count($head)));
       if (empty($x['name']) || !is_numeric($x['price'] ?? null)) { $bad++; continue; }
+      if (\App\Support\NoSell::blocked($x['name'])) { $bad++; continue; } // gift cards / vouchers are never imported (owner 18 Nov 2026)
       $data = ['name'=>mb_substr($x['name'],0,200), 'price'=>$x['price'], 'cost'=>is_numeric($x['cost'] ?? null) ? $x['cost'] : 0, 'offer_price'=>is_numeric($x['offer_price'] ?? null) ? $x['offer_price'] : null, 'stock'=>(int)($x['stock'] ?? 0), 'barcode'=>$x['barcode'] ?? null, 'size'=>$x['size'] ?? null, 'category_id'=>$cat(trim($x['category'] ?? '')), 'brand_id'=>$brand(trim($x['brand'] ?? '')), 'updated_at'=>now()];
       if (\App\Support\ProfitFloor::hasAvg() && is_numeric($x['cost'] ?? null) && (float)$x['cost'] > 0) $data['avg_cost'] = (float)$x['cost']; // a cost typed in an import is the owner's stated average
       $sku = trim($x['sku'] ?? '');

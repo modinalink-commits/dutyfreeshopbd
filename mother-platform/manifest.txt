@@ -1269,3 +1269,4 @@ database/migrations/2026_11_17_220000_sms_providers.php
 app/Support/SmsInbox.php
 app/Http/Controllers/SmsInboundController.php
 database/migrations/2026_11_18_050000_staff_idle_no_alerts.php
+app/Support/NoSell.php

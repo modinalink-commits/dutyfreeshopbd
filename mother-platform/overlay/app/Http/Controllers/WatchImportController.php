@@ -75,6 +75,7 @@ class WatchImportController extends Controller {
           $our = (int)ceil((float)$x->price * (1 + $pct / 100));
           $name = trim(preg_replace('/\s+/u', ' ', (string)$x->name)); $name = trim(str_ireplace(['timeaccess-store.com', 'timeaccess store', 'timeaccess'], '', $name)); $name = trim(preg_replace('/\s*(?:\|\s*Star\s*Tech.*|Price in (?:Bangladesh|BD)\b.*)$/iu', '', $name)); $name = trim(preg_replace('/\bStar\s*Tech\b/iu', '', $name)); if ($name === '') $name = 'Watch';
           $name = trim(preg_replace('/\s{2,}/u', ' ', preg_replace(['/\s*[|\-–]\s*Time\s*Access\b.*$/iu', '/\bTime\s*-?\s*Access\b/iu', '/\bLuxotix\b\s*/iu', '/\bSundora\b\s*/iu'], '', $name)), " \t-|–"); // no trace of the source shop in our product names
+          if (\App\Support\NoSell::blocked($name)) continue; // gift cards / vouchers are never imported (owner 18 Nov 2026)
           $tc = ($xr ? $this->routeCat((string)$x->name, (string)$x->category, $cats) : null) ?: $cat; // a store feeding 2-3 main categories: each product goes to the right one (owner 13 Nov 2026)
           $sub = self::subFor((string)$name, $x->category, $tc->slug, (string)$x->url);
           [$tc, $sub] = \App\Support\CatRemap::apply($tc, $sub, (string)$name); // 8 main categories: legacy categories map into their main one (owner 13 Nov 2026)

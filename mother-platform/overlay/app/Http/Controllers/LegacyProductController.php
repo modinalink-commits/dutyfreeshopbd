@@ -156,6 +156,7 @@ class LegacyProductController extends Controller
           if (empty($p->ext_id)) $row['ext_id'] = $l->old_id + 999;
           DB::table('products')->where('id', $p->id)->update($row); $st['updated']++; $st[$how]++;
         } else {
+          if (\App\Support\NoSell::blocked((string)$l->name)) continue; // gift cards / vouchers are never imported (owner 18 Nov 2026)
           $catId = $catFor($l->category_id) ?? DB::table('categories')->orderBy('id')->value('id');
           $sub = $os[$l->sub_category_id]['name'] ?? null; $subsub = $oss[$l->sub_sub_category_id]['name'] ?? null;
           $sub = $sub ? $this->clean($sub) : null; $subsub = $subsub ? $this->clean($subsub) : null;
