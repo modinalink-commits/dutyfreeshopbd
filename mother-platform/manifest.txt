@@ -1348,3 +1348,13 @@ public/adimg/nov26-gad-bwoo-bw589-wh.jpg
 public/adimg/nov26-gad-bwoo-mf02.jpg
 public/adimg/nov26-gad-hifuture-flybuds4-ai.jpg
 public/adimg/nov26-gad-hifuture-olymbuds3.jpg
+public/adimg/nov26-food-amul-dark-chocolate.jpg
+public/adimg/nov26-food-benzo-cocoa.jpg
+public/adimg/nov26-food-nestle-quality-street.jpg
+public/adimg/nov26-food-oat-choco-original.jpg
+public/adimg/nov26-food-prabhuji-soan-papdi.jpg
+public/adimg/nov26-food-roshen-konafetto.jpg
+public/adimg/nov26-food-tayas-orient.jpg
+public/adimg/nov26-food-twinfish-nuts-crisp.jpg
+public/adimg/nov26-food-twinfish-oat-chocolate.jpg
+public/adimg/nov26-food-tyton-chox-crunch.jpg
