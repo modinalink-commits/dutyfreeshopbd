@@ -1288,3 +1288,13 @@ public/adimg/nov26-lighter-swirls.jpg
 public/adimg/nov26-lighter-sarike.jpg
 public/adimg/nov26-lighter-collectible-2025.jpg
 public/adimg/nov26-lighter-grass-green.jpg
+public/adimg/nov26-pop-yardley.jpg
+public/adimg/nov26-pop-radian.jpg
+public/adimg/nov26-pop-park-avenue.jpg
+public/adimg/nov26-pop-cuba-vip.jpg
+public/adimg/nov26-pop-jaguar-black.jpg
+public/adimg/nov26-pop-one-man-show.jpg
+public/adimg/nov26-pop-brut-prestige.jpg
+public/adimg/nov26-pop-hair-wax.jpg
+public/adimg/nov26-pop-davidoff.jpg
+public/adimg/nov26-pop-rexona.jpg
