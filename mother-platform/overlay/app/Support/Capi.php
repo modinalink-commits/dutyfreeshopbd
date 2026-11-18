@@ -31,9 +31,16 @@ class Capi
   public static function remember(int $orderId, Request $r): void {
     try {
       $fbp = (string)($_COOKIE['_fbp'] ?? '');
-      $m = array_filter(['fbp' => preg_match('/^fb\.\d\.\d+\.\d+$/', $fbp) ? $fbp : null, 'fbc' => self::fbc($r), 'ip' => self::clientIp($r), 'ua' => mb_substr((string)$r->userAgent(), 0, 300)]);
+      $m = array_filter(['fbp' => preg_match('/^fb\.\d\.\d+\.\d+$/', $fbp) ? $fbp : null, 'fbc' => self::fbc($r), 'ip' => self::clientIp($r), 'ua' => mb_substr((string)$r->userAgent(), 0, 300), 'utm' => self::utm()]);
       if ($m) DB::table('orders')->where('id', $orderId)->update(['px_meta' => json_encode($m, JSON_UNESCAPED_SLASHES)]);
     } catch (\Throwable $e) {}
+  }
+  /** Last ad / campaign tags the visitor arrived with (first-party df_utm cookie set by the storefront, 30 days): source, medium, campaign, content, term. Kept with the order so profit can be measured per campaign. */
+  private static function utm(): ?array {
+    $v = (string)($_COOKIE['df_utm'] ?? ''); if ($v === '' || strlen($v) > 600) return null;
+    $p = array_pad(explode('|', $v), 5, ''); $o = [];
+    foreach (['s', 'm', 'c', 'n', 't'] as $i => $k) { $x = trim(mb_substr(preg_replace('/[^\p{L}\p{M}\p{N}\s_\-\.\+:{}]/u', '', (string)$p[$i]), 0, 80)); if ($x !== '') $o[$k] = $x; }
+    return $o ?: null;
   }
   private static function meta(object $o): array {
     try { $v = property_exists($o, 'px_meta') ? $o->px_meta : DB::table('orders')->where('id', $o->id ?? 0)->value('px_meta'); $m = json_decode((string)$v, true); return is_array($m) ? $m : []; } catch (\Throwable $e) { return []; }
