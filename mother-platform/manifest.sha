@@ -52,7 +52,7 @@ e92c5075c5266882f35b3a3e18bfe14f44d16178 resources/views/report_details.blade.ph
 2f840d53881d8aeaf0c5959161774787e5f540bc database/migrations/2026_10_31_000005_storefront.php
 43cb2dfd032b3ddd0b7bc50af28e4900dfc03094 app/Console/Commands/MotherSyncFeed.php
 2a56eafa359436fdb0b8ffc94324862961a1d307 app/Console/Commands/MotherGuard.php
-dc18ba456e0112813d8b38ce7520f52b36d653d2 app/Http/Controllers/StoreController.php
+f816a5178cd9c074e0b956d30048e1c634b8f072 app/Http/Controllers/StoreController.php
 03758aa102c0b3bce4fa23f790585471d96e3385 resources/views/store/layout.blade.php
 5356b422775064c3de9b13c703f12fbf913a2bd3 resources/views/store/card.blade.php
 4a5eb7ee8d7960886fcb97c690bbb604ec69eb1f resources/views/store/home_sec.blade.php
@@ -63,7 +63,7 @@ bb3768d278e3bf05865aa4877098a62d0d5039dc resources/views/store/search.blade.php
 5c5119931bc126cf9415b33585f8e94e03a9c8cf resources/views/store/track.blade.php
 347bb6ef69d6bd1da1bf7d431a5d70cf1a6ec564 resources/views/store/page.blade.php
 a5227b1226533c10bc7f42353475f76a1cb689dd resources/views/store/missing.blade.php
-47fcddfd244305cf6fd963c570cafe3b8473cbab resources/views/store/checkout.blade.php
+da50ec92369526766045f9fe9ccfe9eb71934566 resources/views/store/checkout.blade.php
 43f10044d43e98de3948f34af382270d0921b011 resources/views/store/wishlist.blade.php
 235faa7782db79978ab56db0a0ec2e7bcaf1f769 resources/views/store/live_cards.blade.php
 7c0c1cd071ce4bac7efc2b301a2a2aa39ad72bd0 resources/views/store/pager.blade.php
@@ -826,9 +826,9 @@ ce2eb77d6539da65ff45ef1b6fe7028ff21a5ad3 app/Http/Controllers/PurchaseListContro
 158bee8720b34f5d5990b86787b8a7ab27e6bfd1 database/migrations/2026_11_14_120000_staff_idle_notices.php
 ba5347b4a667dc0f70f893ea61090bde82513ade app/Support/StaffIdle.php
 02d3a3f01557ffd9055a71834b98cf447cd5973f app/Support/StaffLive.php
-f1d29a3c73639931c315db8e087c306e990e7e65 app/Support/Mailer.php
+cd37eef2f8af6baaa2153729b4f4c4aae1291ea6 app/Support/Mailer.php
 2b24d2c82b3ae147c718844f522c35a88f300abe app/Http/Controllers/EmailAdminController.php
-0bb6ede55595b1fb7c82460d4f0c53f7beef1c3d resources/views/email_admin.blade.php
+ccca662445c9c902af757002a5bb0e3ba6f8c920 resources/views/email_admin.blade.php
 13f2bae9c3f7084451a3f56f0f6f23a78e13f01a resources/views/emails/order.blade.php
 70cfd1fa91b5f4ceb3e160e6ba52d4be0365e86d resources/views/emails/offer.blade.php
 bd578e67b9fab7c2350df67d4a5b461b11a20fad resources/views/emails/unsubscribed.blade.php

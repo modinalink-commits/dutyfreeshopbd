@@ -41,17 +41,31 @@ class Mailer {
   /** Sends one email now (HTML + plain text). $unsub: stop link for offer emails, also sent as the List-Unsubscribe header. Returns [ok, error]. */
   /** Logo for emails: always PNG/JPG (WebP is not shown by every mail app). */
   public static function logo(): string { $l = Cache::get('store.settings2')['logo_url'] ?? null; if (!is_string($l) || !preg_match('/\.(png|jpe?g)(\?.*)?$/i', $l)) $l = '/email-logo-v2.png'; return self::abs($l); }
+  /** Offer emails carry their own sender address (an alias of the mailbox), so order emails and offers are told apart by customers and by mail providers. */
+  public static function offerFrom(): string { $f = self::set('mk_from', 'offers@dutyfreebd.com'); return self::valid($f) ? $f : self::user(); }
+  /** A customer ticked "send me offers" (checkout): the only way an ordinary customer gets on the offer list. Ticking again after a stop request re-subscribes. */
+  public static function optIn(?string $email, ?string $name = null, string $via = 'checkout'): void {
+    try { $e = mb_strtolower(trim((string)$email)); if (!self::valid($e) || !self::mkReady()) return;
+      DB::table('mail_optouts')->where('email', $e)->delete();
+      DB::table('mail_list')->insertOrIgnore(['email' => $e, 'name' => $name ? mb_substr($name, 0, 120) : null, 'added_by' => 'opt-in: ' . $via, 'created_at' => now(), 'updated_at' => now()]);
+    } catch (\Throwable $x) { report($x); }
+  }
   public static function deliver(string $to, string $subject, string $html, ?string $unsub = null): array {
     if (!self::hasPassword()) return [false, 'The mailbox password is not saved yet'];
     if (!self::valid($to)) return [false, 'Not a valid email address'];
     try {
-      $from = self::user(); $name = self::fromName(); $rt = self::replyTo(); $text = self::plain($html);
+      $from = $unsub ? self::offerFrom() : self::user(); $name = self::fromName(); $rt = self::replyTo(); $text = self::plain($html);
       self::mailer()->send([], [], function ($m) use ($to, $subject, $from, $name, $rt, $html, $text, $unsub) {
         $m->to($to)->subject($subject)->from($from, $name)->html($html)->text($text); if (self::valid($rt)) $m->replyTo($rt);
         if ($unsub) { try { $h = $m->getHeaders(); $h->addTextHeader('List-Unsubscribe', '<' . $unsub . '>'); $h->addTextHeader('List-Unsubscribe-Post', 'List-Unsubscribe=One-Click'); } catch (\Throwable $e) {} }
       });
       return [true, null];
-    } catch (\Throwable $e) { return [false, mb_substr($e->getMessage(), 0, 400)]; }
+    } catch (\Throwable $e) {
+      // the provider refused the offer sender address: send this one from the mailbox address instead of failing
+      if ($unsub && $from !== self::user() && preg_match('/sender|not owned|550 5\.7|553/i', $e->getMessage()) && !self::isBlockError($e->getMessage())) {
+        try { $from = self::user(); self::mailer()->send([], [], function ($m) use ($to, $subject, $from, $name, $rt, $html, $text, $unsub) { $m->to($to)->subject($subject)->from($from, $name)->html($html)->text($text); if (self::valid($rt)) $m->replyTo($rt); try { $h = $m->getHeaders(); $h->addTextHeader('List-Unsubscribe', '<' . $unsub . '>'); $h->addTextHeader('List-Unsubscribe-Post', 'List-Unsubscribe=One-Click'); } catch (\Throwable $x) {} }); return [true, null]; } catch (\Throwable $e2) { return [false, mb_substr($e2->getMessage(), 0, 400)]; }
+      }
+      return [false, mb_substr($e->getMessage(), 0, 400)]; }
   }
   /** Queues an email (duplicate-protected by ref). Null when nothing was queued. */
   public static function enqueue(string $to, string $subject, string $html, string $type, ?string $ref = null, ?int $orderId = null): ?int {

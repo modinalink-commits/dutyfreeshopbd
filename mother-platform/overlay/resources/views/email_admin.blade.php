@@ -49,7 +49,7 @@
 
 <div class="card"><h2>4. Offer emails (marketing)</h2>
 <form method="post" action="/admin/email">@csrf<input type="hidden" name="act" value="marketing">
-<label class="sw"><input type="hidden" name="mk_on" value="0"><input type="checkbox" name="mk_on" value="1" @checked($mk['on'])> Send offer emails</label><div style="margin:6px 0;font-size:12.5px;color:#B45309">অফার ইমেইল এখন শুধু নিচের "Extra email list"-এ (যারা সম্মতি দিয়েছেন) যায়। সাধারণ গ্রাহকদের কাছে অফার ইমেইল বন্ধ: এর কারণেই ১৮ নভেম্বর মেইলবক্স স্প্যাম হিসেবে ব্লক হয়েছিল।</div>
+<label class="sw"><input type="hidden" name="mk_on" value="0"><input type="checkbox" name="mk_on" value="1" @checked($mk['on'])> Send offer emails</label><div style="margin:6px 0;font-size:12.5px;color:#B45309">অফার ইমেইল যায় <b>{{ \App\Support\Mailer::offerFrom() }}</b> ঠিকানা থেকে, শুধু সম্মতি দেওয়া মানুষের কাছে: চেকআউটে যারা "অফার ইমেইলে পেতে চাই" টিক দিয়েছেন এবং নিচের "Extra email list"। সাধারণ গ্রাহকদের কাছে অফার ইমেইল বন্ধ: এর কারণেই ১৮ নভেম্বর মেইলবক্স স্প্যাম হিসেবে ব্লক হয়েছিল।</div>
 <div class="row" style="margin-top:12px">
 <label>Offer emails a day<br><input type="number" name="mk_cap" min="0" max="900" value="{{ $mk['cap'] }}" style="width:120px"></label>
 <label>Same person again after (days)<br><input type="number" name="mk_gap" min="1" max="60" value="{{ $mk['gap'] }}" style="width:120px"></label>
