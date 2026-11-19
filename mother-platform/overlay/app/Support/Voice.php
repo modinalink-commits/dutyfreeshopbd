@@ -52,7 +52,7 @@ class Voice
   public static function audio(object $c, object $row): array {
     if ($c->audio_path && is_file(storage_path('app/' . $c->audio_path))) return [storage_path('app/' . $c->audio_path), ''];
     $text = self::scriptFor($c, $row); $dir = storage_path('app/voice'); if (!is_dir($dir)) @mkdir($dir, 0775, true);
-    $f = $dir . '/' . md5(self::set('tts_provider') . self::set('tts_voice') . $text) . '.wav'; if (is_file($f) && filesize($f) > 1000) return [$f, ''];
+    $f = $dir . '/' . md5(self::set('tts_provider') . self::set('tts_voice') . $text . (self::set('tts_provider') === 'elevenlabs' ? '|v3' : '')) . '.wav'; if (is_file($f) && filesize($f) > 1000) return [$f, ''];
     $prov = self::set('tts_provider', 'none'); $key = self::ttsKey(); if ($prov === 'none' || !$key) return [null, 'No voice engine set up: add a text-to-speech key in Voice settings or upload an audio file to the campaign.'];
     try {
       if ($prov === 'azure') {
@@ -63,7 +63,7 @@ class Voice
       }
       if ($prov === 'elevenlabs') { // owner 20 Nov 2026: young Bangladeshi woman voice; voice id in "Voice name"; numbers spelled in Bangla words so the pronunciation stays Bangladeshi
         $vid = trim((string)self::set('tts_voice', '')); if ($vid === '') return [null, 'ElevenLabs voice id missing in Voice settings'];
-        $r = Http::timeout(40)->withHeaders(['xi-api-key' => $key, 'Accept' => 'application/octet-stream'])->post('https://api.elevenlabs.io/v1/text-to-speech/' . rawurlencode($vid) . '?output_format=pcm_8000', ['text' => self::bnSpeak($text), 'model_id' => 'eleven_multilingual_v2', 'voice_settings' => ['stability' => 0.55, 'similarity_boost' => 0.8, 'style' => 0.15, 'speed' => 0.92]]);
+        $r = Http::timeout(40)->withHeaders(['xi-api-key' => $key, 'Accept' => 'application/octet-stream'])->post('https://api.elevenlabs.io/v1/text-to-speech/' . rawurlencode($vid) . '?output_format=pcm_8000', ['text' => self::bnSpeak($text), 'model_id' => 'eleven_v3', 'voice_settings' => ['stability' => 0.5]]);
         $pcm = $r->body(); if (!$r->ok() || strlen($pcm) < 1000) return [null, 'Voice engine error ' . $r->status()];
         $n = strlen($pcm); $hdr = 'RIFF' . pack('V', 36 + $n) . 'WAVEfmt ' . pack('VvvVVvv', 16, 1, 1, 8000, 16000, 2, 16) . 'data' . pack('V', $n); file_put_contents($f, $hdr . $pcm); return [$f, ''];
       }
