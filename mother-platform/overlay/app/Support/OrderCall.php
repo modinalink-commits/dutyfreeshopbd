@@ -127,6 +127,8 @@ class OrderCall
     $U = []; foreach (['main' => $text, 'retry' => 'অর্ডারটি নিশ্চিত করতে ১ চাপুন। পেন্ডিং রাখতে ২ চাপুন।', 'ok' => 'ধন্যবাদ। আপনার অর্ডারের তথ্য নিশ্চিত করা হয়েছে। আমাদের টিম বাকি যাচাই শেষ করবে।', 'hold' => 'ঠিক আছে। আপনার অনুরোধ অনুযায়ী অর্ডারটি পেন্ডিং রাখা হয়েছে। আমাদের টিম আপনার সঙ্গে যোগাযোগ করবে। ধন্যবাদ।', 'none' => 'আপনার উত্তর পাওয়া যায়নি। অর্ডারটি যাচাইয়ের অপেক্ষায় আছে। ধন্যবাদ।'] as $k => $t) {
       [$u, $err] = self::promptUrl($t); if (!$u) { $upd(['status' => 'failed', 'cause' => mb_substr((string)$err, 0, 200), 'ended_at' => now()]); return; } $U[$k] = $u;
     }
+    // the PBX's own http_get downloads each prompt into its cache and gives back a local file path; playing that path is what works (a direct https play returns FILE NOT FOUND)
+    foreach ($U as $k => $u) { [$gok, $gout] = Voice::esl('http_get ' . $u, 30); $lp = trim((string)$gout); if ($gok && preg_match('~^/[\w./-]+\.wav$~', $lp)) $U[$k] = $lp; }
     $h = Voice::set('esl_host') ?: (string)env('PBX_ESL_HOST', ''); $port = (int)(Voice::set('esl_port') ?: env('PBX_ESL_PORT', 8021)); $pw = Sms::secret('vc_esl_pass') ?: (string)env('PBX_ESL_PASSWORD', '');
     $fp = @fsockopen($h, $port, $en, $es, 6); if (!$fp) { $upd(['status' => 'failed', 'cause' => 'PBX is not reachable', 'ended_at' => now()]); return; } stream_set_timeout($fp, 1);
     $send = function (string $c) use ($fp) { fwrite($fp, $c . "\n\n"); };
