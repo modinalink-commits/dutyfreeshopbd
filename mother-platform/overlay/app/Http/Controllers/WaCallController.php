@@ -37,11 +37,22 @@ class WaCallController extends Controller {
   public function poll(Request $r) {
     if ($r->filled('id')) { $c = WaCalls::ready() ? DB::table('wa_calls')->find((int)$r->query('id')) : null; if ($c && $c->status === 'active' && (int)$c->user_id === (int)$r->user()->id) WaCalls::beat((int)$c->id); return response()->json(['state' => $c->status ?? 'ended', 'by' => $c->user_name ?? null]); } // the answering browser asks: is my call still on?
     if (!$r->boolean('full') && !Cache::has('wa.ring')) return response()->json(['ringing' => []]);
-    $out = []; foreach (WaCalls::ringing() as $c) if (!Cache::has('wa.dis.' . $c->id . '.' . (int)$r->user()->id)) $out[] = ['id' => $c->id, 'from' => $c->from_wa ? '+' . $c->from_wa : 'WhatsApp user', 'name' => (string)$c->from_name, 'to' => WaCalls::numberLabel((string)$c->phone_id), 'age' => max(0, time() - strtotime((string)$c->created_at))];
+    $out = []; foreach (WaCalls::ringing() as $c) if (!Cache::has('wa.dis.' . $c->id . '.' . (int)$r->user()->id)) $out[] = ['id' => $c->id, 'from' => $c->from_wa ? '+' . $c->from_wa : 'WhatsApp user', 'name' => (string)$c->from_name, 'to' => WaCalls::numberLabel((string)$c->phone_id), 'age' => max(0, time() - strtotime((string)$c->created_at)), 'win' => WaCalls::RING_SECONDS];
     return response()->json(['ringing' => $out]);
   }
   public function claim(Request $r, int $id) { [$ok, $m, $sdp] = WaCalls::claim($id, (int)$r->user()->id, (string)$r->user()->name); return response()->json(['ok' => $ok, 'message' => $m, 'sdp' => $sdp]); }
   public function accept(Request $r, int $id) { $d = $r->validate(['sdp' => 'required|string|max:20000']); [$ok, $m] = WaCalls::accept($id, (int)$r->user()->id, $d['sdp']); return response()->json(['ok' => $ok, 'message' => $m]); }
+  /** Missed calls still waiting for someone, for the on-screen callback cards (hidden per person with the x, gone for everyone once one person calls back / marks Done). */
+  public function missed(Request $r) {
+    if (!WaCalls::ready() || !\Illuminate\Support\Facades\Schema::hasColumn('wa_calls', 'handled_at')) return response()->json(['missed' => []]);
+    $uid = (int)$r->user()->id; $out = [];
+    foreach (DB::table('wa_calls')->where('status', 'missed')->whereNull('handled_at')->where('created_at', '>', now()->subMinutes(120))->orderByDesc('id')->limit(4)->get(['id', 'from_wa', 'from_name', 'created_at']) as $c) {
+      if (Cache::has('wa.mhide.' . $c->id . '.' . $uid)) continue; $m = max(0, (int)floor((time() - strtotime((string)$c->created_at)) / 60));
+      $out[] = ['id' => $c->id, 'from' => $c->from_wa ? '+' . $c->from_wa : 'WhatsApp user', 'name' => (string)$c->from_name, 'ago' => $m < 1 ? 'just now' : $m . ' min ago'];
+    }
+    return response()->json(['missed' => $out]);
+  }
+  public function hide(Request $r, int $id) { Cache::put('wa.mhide.' . $id . '.' . (int)$r->user()->id, 1, 7200); return response()->json(['ok' => true]); }
   public function end(Request $r, int $id) { [$ok, $m] = WaCalls::end($id, (int)$r->user()->id, (string)$r->user()->name); return response()->json(['ok' => $ok, 'message' => $m]); }
   /** The separate call window: one call, customer details beside it. */
   public function popup(int $id) {

@@ -285,6 +285,8 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   // WhatsApp calls answered in the browser (owner 16 Nov 2026)
   Route::get('/call-center/whatsapp', [\App\Http\Controllers\WaCallController::class,'page']);
   Route::get('/call-center/whatsapp/poll', [\App\Http\Controllers\WaCallController::class,'poll']);
+  Route::get('/call-center/whatsapp/missed', [\App\Http\Controllers\WaCallController::class,'missed']);
+  Route::post('/call-center/whatsapp/{id}/hide', [\App\Http\Controllers\WaCallController::class,'hide'])->whereNumber('id');
   Route::get('/call-center/whatsapp/status', [\App\Http\Controllers\WaCallController::class,'status'])->middleware('throttle:60,1');
   Route::post('/call-center/whatsapp/calling', [\App\Http\Controllers\WaCallController::class,'setCalling'])->middleware('throttle:10,1');
   Route::post('/call-center/whatsapp/{id}/claim', [\App\Http\Controllers\WaCallController::class,'claim'])->whereNumber('id');

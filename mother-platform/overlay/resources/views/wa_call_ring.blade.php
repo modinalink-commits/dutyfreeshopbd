@@ -11,26 +11,68 @@
 @media(max-width:800px){#waDock{right:0;left:0;top:auto;bottom:0;width:100%;max-width:100%;height:92vh;border-radius:14px 14px 0 0;transform:translateY(105%)}#waDock.on{transform:translateY(0)}}
 </style>
 <div id="waDock" aria-label="WhatsApp call"><div class="h"><i></i>WhatsApp call<button type="button" id="waDockX">Close</button></div></div>
-<div id="waRing" style="display:none;position:fixed;right:18px;top:18px;z-index:90;width:320px;max-width:calc(100vw - 24px);background:#fff;border:1px solid #E5E7EB;border-radius:14px;box-shadow:0 14px 40px rgba(15,31,61,.28);font:500 13px/1.35 Inter,Bornomala,sans-serif;color:#0B1B33;overflow:hidden">
-<div style="height:4px;background:#25D366"></div>
-<div style="padding:12px 14px"><div style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#067647">WhatsApp call</div>
-<b id="waRingN" style="display:block;font-size:15px;margin-top:2px"></b><span id="waRingF" style="color:#475467"></span><br><span id="waRingTo" style="color:#475467;font-size:12px"></span></div>
-<div style="display:flex;gap:8px;padding:0 14px 12px"><button type="button" id="waRingA" style="flex:1;height:38px;border:0;border-radius:9px;background:#15803D;color:#fff;font-weight:700;cursor:pointer">Answer</button><button type="button" id="waRingR" style="flex:1;height:38px;border:1px solid #FECDCA;border-radius:9px;background:#fff;color:#B42318;font-weight:700;cursor:pointer">Reject</button></div></div>
+<style>
+#waBk{position:fixed;inset:0;z-index:89;background:rgba(11,27,51,.55);display:none}
+#waRing{display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:90;width:min(380px,calc(100vw - 24px));background:#fff;border-radius:20px;box-shadow:0 24px 60px rgba(0,0,0,.4);font:500 14px/1.4 Inter,Bornomala,sans-serif;color:#0B1B33;overflow:hidden;text-align:center}
+#waRing .bar{height:6px;background:#25D366}
+#waRing .av{width:84px;height:84px;border-radius:50%;margin:20px auto 8px;background:#E8F8EF;color:#15803D;display:grid;place-items:center;font-size:34px;font-weight:700;position:relative}
+#waRing .av:before,#waRing .av:after{content:"";position:absolute;inset:-8px;border-radius:50%;border:2px solid #25D366;opacity:.5;animation:waP 1.6s infinite}
+#waRing .av:after{animation-delay:.8s}
+@keyframes waP{0%{transform:scale(.85);opacity:.6}100%{transform:scale(1.35);opacity:0}}
+@media(prefers-reduced-motion:reduce){#waRing .av:before,#waRing .av:after{animation:none}}
+#waRing .lb{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#15803D}
+#waRing .nm{font-size:22px;font-weight:700;margin-top:2px}#waRing .nu{color:#667085}
+#waRing .ch{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:10px 12px 0}
+#waRing .ch span{background:#F7F8FB;border:1px solid #E4E7EE;border-radius:999px;padding:2px 10px;font-size:12px}
+#waRing .to{font-size:12px;color:#667085;margin-top:10px}
+#waRing .cn{height:4px;background:#E4E7EE;margin:14px 20px 0;border-radius:4px;overflow:hidden}#waRing .cn i{display:block;height:100%;width:100%;background:#25D366;transition:width 1s linear}
+#waRing .ac{display:grid;grid-template-columns:1fr 1.4fr;gap:10px;padding:14px 20px 20px}
+#waRing .b{height:48px;border-radius:12px;border:0;font:700 15px Inter,Bornomala,sans-serif;cursor:pointer}
+#waRing .b.r{background:#fff;color:#D92D20;border:1px solid #F2C6C2}#waRing .b.a{background:#15803D;color:#fff}
+#waMiss{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:88;width:min(440px,calc(100vw - 24px));display:grid;gap:8px}
+#waMiss .m{background:#fff;border-radius:14px;box-shadow:0 14px 36px rgba(0,0,0,.3);border-left:6px solid #D92D20;padding:12px 14px;display:grid;gap:8px;font:500 13px/1.35 Inter,Bornomala,sans-serif;color:#0B1B33}
+#waMiss .tg{font-size:11px;font-weight:700;color:#D92D20;letter-spacing:.06em;text-transform:uppercase}
+#waMiss .rw{display:flex;gap:8px;flex-wrap:wrap}
+#waMiss button{height:36px;border-radius:9px;padding:0 14px;border:1px solid #E4E7EE;background:#fff;color:#0B1B33;font:600 13px Inter,Bornomala,sans-serif;cursor:pointer}
+#waMiss button.p{background:#F26B1D;border-color:#F26B1D;color:#fff}
+#waMiss .x{margin-left:auto;border:0;background:none;color:#667085;height:auto;padding:0 4px;font-size:18px}
+</style>
+<div id="waBk"></div>
+<div id="waRing" role="alertdialog" aria-label="Incoming WhatsApp call"><div class="bar"></div><div class="av" id="waAv">?</div><div class="lb" id="waLb">Incoming WhatsApp call</div>
+<div class="nm" id="waRingN"></div><div class="nu" id="waRingF"></div><div class="ch" id="waCh"></div><div class="to" id="waRingTo"></div><div class="cn"><i id="waCnI"></i></div>
+<div class="ac"><button type="button" class="b r" id="waRingR">Reject</button><button type="button" class="b a" id="waRingA">Answer</button></div></div>
+<div id="waMiss"></div>
 <script>
-(function(){if(window.DF_EMBED)return;var el=document.getElementById('waRing'),dock=document.getElementById('waDock'),fr=null,busy=false,ctx=null,cur=null;
+(function(){if(window.DF_EMBED)return;var el=document.getElementById('waRing'),bk=document.getElementById('waBk'),ms=document.getElementById('waMiss'),dock=document.getElementById('waDock'),fr=null,busy=false,ctx=null,cur=null,seen=null,tickN=0;
 function tk(){var e=document.querySelector('meta[name=csrf-token]');return e?e.content:''}
+function post(u){return fetch(u,{method:'POST',credentials:'same-origin',headers:{'X-CSRF-TOKEN':tk(),'Accept':'application/json'}})}
 function beep(){try{ctx=ctx||new (window.AudioContext||window.webkitAudioContext)();var o=ctx.createOscillator(),g=ctx.createGain();o.frequency.value=880;g.gain.value=.06;o.connect(g);g.connect(ctx.destination);o.start();o.stop(ctx.currentTime+.35)}catch(e){}}
 function kill(){dock.classList.remove('on');if(fr){fr.remove();fr=null}busy=false}
+function hideRing(){el.style.display='none';bk.style.display='none';cur=null;seen=null}
 /* open the call inside the admin; go=true answers at once (the click that opened it is the staff's Answer) */
 window.waDock=function(id,go){if(busy){dock.classList.add('on');return false}if(fr){fr.remove();fr=null}
   fr=document.createElement('iframe');fr.allow='microphone; autoplay';fr.title='WhatsApp call';fr.src='/admin/call-center/whatsapp/call/'+id+'?embed=1'+(go?'&go=1':'');dock.appendChild(fr);dock.classList.add('on');return false};
 document.getElementById('waDockX').onclick=function(){if(busy&&!confirm('A WhatsApp call is active. Close and hang up?'))return;kill()};
 window.addEventListener('message',function(e){if(e.origin!==location.origin||!e.data||!e.data.wadock)return;var a=e.data.wadock;if(a==='busy')busy=true;else if(a==='idle')busy=false;else if(a==='close'){busy=false;kill()}});
 window.addEventListener('beforeunload',function(e){if(busy){e.preventDefault();e.returnValue=''}});
-function go(){if(busy){el.style.display='none';return}
+function chips(d){var c=document.getElementById('waCh');c.innerHTML='';var a=[];if(d&&d.found){if(d.category)a.push(d.category);if(d.membership)a.push(d.membership);if(d.orders)a.push(d.orders+' orders');if(d.last&&d.last.invoice)a.push('Last order '+d.last.invoice)}else a.push('New caller');a.forEach(function(t){var s=document.createElement('span');s.textContent=t;c.appendChild(s)})}
+function show(c){var first=!cur||cur.id!==c.id;cur=c;var nm=c.name||c.from;document.getElementById('waRingN').textContent=nm;document.getElementById('waRingF').textContent=c.name?c.from:'';document.getElementById('waAv').textContent=(nm.replace(/[^A-Za-z\u0980-\u09FF]/g,'').charAt(0)||'?').toUpperCase();document.getElementById('waRingTo').textContent='To business number '+(c.to||'');
+ document.getElementById('waLb').textContent=c.n>1?'Incoming WhatsApp call · 1 of '+c.n:'Incoming WhatsApp call';var w=Math.max(0,Math.min(100,100-(c.age||0)/(c.win||45)*100));document.getElementById('waCnI').style.width=w+'%';
+ el.style.display='block';bk.style.display='block';beep();
+ if(first){chips(null);fetch('/admin/call-center/lookup?phone='+encodeURIComponent(c.from),{credentials:'same-origin',headers:{'Accept':'application/json'}}).then(function(r){return r.ok?r.json():null}).then(function(d){if(cur&&cur.id===c.id)chips(d)}).catch(function(){})}}
+function missed(l){var h='';l.forEach(function(m){h+='<div class="m" data-id="'+m.id+'"><div style="display:flex;gap:8px;align-items:flex-start"><div><span class="tg">Missed WhatsApp call</span><br><b></b> <span style="color:#667085" class="mt"></span></div><button class="x" data-a="hide" title="Hide for me">×</button></div><div class="rw"><button class="p" data-a="cb">📞 Call back</button><button data-a="chat">Open chat</button><button data-a="done">Done</button></div></div>'});ms.innerHTML=h;
+ [].forEach.call(ms.querySelectorAll('.m'),function(n,i){var m=l[i];n.querySelector('b').textContent=m.name||m.from;n.querySelector('.mt').textContent=(m.name?m.from+' · ':'')+m.ago;n._m=m})}
+ms.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;var n=b.closest('.m'),m=n&&n._m;if(!m)return;var a=b.getAttribute('data-a');
+ if(a==='cb'){post('/admin/call-center/whatsapp/'+m.id+'/handled');if(window.dfCall)window.dfCall(m.from.replace(/\D/g,''),{name:m.name});n.remove()}
+ else if(a==='done'){post('/admin/call-center/whatsapp/'+m.id+'/handled');n.remove()}
+ else if(a==='hide'){post('/admin/call-center/whatsapp/'+m.id+'/hide');n.remove()}
+ else if(a==='chat'){window.open('/admin/chat','_blank')}});
+function go(){if(busy){hideRing();return}tickN++;
 fetch('/admin/call-center/whatsapp/poll',{credentials:'same-origin',headers:{'Accept':'application/json'}}).then(function(r){return r.ok?r.json():{ringing:[]}}).then(function(d){var l=d.ringing||[];
-if(l.length&&!window.WC_PAGE){cur=l[0];document.getElementById('waRingN').textContent=cur.name||cur.from;document.getElementById('waRingF').textContent=cur.name?cur.from:'';document.getElementById('waRingTo').textContent='To '+(cur.to||'');el.style.display='block';beep()}else{cur=null;el.style.display='none'}}).catch(function(){})}
-document.getElementById('waRingA').onclick=function(){if(!cur)return;window.waDock(cur.id,true);el.style.display='none'};
-document.getElementById('waRingR').onclick=function(){if(!cur)return;fetch('/admin/call-center/whatsapp/'+cur.id+'/end',{method:'POST',credentials:'same-origin',headers:{'X-CSRF-TOKEN':tk(),'Accept':'application/json'}});el.style.display='none';cur=null};
+if(l.length&&!window.WC_PAGE){l[0].n=l.length;show(l[0])}else hideRing()}).catch(function(){});
+if(!window.WC_PAGE&&tickN%2===0)fetch('/admin/call-center/whatsapp/missed',{credentials:'same-origin',headers:{'Accept':'application/json'}}).then(function(r){return r.ok?r.json():{missed:[]}}).then(function(d){missed(d.missed||[])}).catch(function(){})}
+document.getElementById('waRingA').onclick=function(){if(!cur)return;window.waDock(cur.id,true);hideRing()};
+/* Reject hides the ring for THIS person only; everyone else keeps ringing until someone answers or the ring window ends */
+document.getElementById('waRingR').onclick=function(){if(!cur)return;post('/admin/call-center/whatsapp/'+cur.id+'/end');hideRing()};
 setInterval(go,4000);setTimeout(go,1500)})();
 </script>
