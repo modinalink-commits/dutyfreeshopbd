@@ -87,12 +87,14 @@ document.getElementById('aivRe').onclick=function(){if(cur)load(cur,true)};
 var ids=[].map.call(document.querySelectorAll('.ai-btn[data-id]'),function(b){return b.getAttribute('data-id')});
 var CC={wait:['#EEF2FF','#3730A3'],live:['#DCFCE7','#166534'],hold:['#FEF3C7','#92400E'],staff:['#FEE2E2','#B91C1C']};
 function chip(b,t,tone){var n=b.nextElementSibling;if(n&&!n.classList.contains('ai-call'))n=null;if(!t){if(n)n.remove();return}if(!n){n=document.createElement('div');n.className='ai-call';n.style.cssText='margin-top:4px;font:600 11px/1.3 Inter,Bornomala,sans-serif;border-radius:8px;padding:3px 8px;text-align:center';b.parentNode.insertBefore(n,b.nextSibling)}var c=CC[tone]||CC.wait;n.style.background=c[0];n.style.color=c[1];n.textContent='\u260E '+t}
-var M={};
+var M={},busy=false,lastAsk=0;
 function cur_ids(){return [].map.call(document.querySelectorAll('.ai-btn[data-id]'),function(b){return b.getAttribute('data-id')})}
-/* the orders table is replaced by soft reloads / filters / paging: repaint every button from the last answer at once, ask the server only for buttons it has not answered yet */
-function repaint(){document.querySelectorAll('.ai-btn[data-id]').forEach(function(b){var v=M[b.getAttribute('data-id')];if(v){paint(b,v.s,v.n);chip(b,v.c,v.ct);b.setAttribute('data-aiv','1')}})}
-function stat(n){var q=cur_ids();if(!q.length)return;fetch('/admin/orders/ai-status?ids='+q.join(','),{headers:{Accept:'application/json'}}).then(function(x){return x.json()}).then(function(j){var m=j.m||{};Object.keys(m).forEach(function(k){M[k]=m[k]});q.forEach(function(k){if(!m[k])delete M[k]});repaint();if(j.left>0&&n<8)setTimeout(function(){stat(n+1)},800)}).catch(function(){})}
+/* the orders table is replaced by soft reloads / filters / paging: repaint every button from the last answer at once.
+   Every button is marked once handled (answered or not), so a button the server has no answer for can never cause repeated requests. */
+function repaint(mark){document.querySelectorAll('.ai-btn[data-id]').forEach(function(b){var id=b.getAttribute('data-id'),v=M[id];if(v){paint(b,v.s,v.n);chip(b,v.c,v.ct);b.setAttribute('data-aiv','1')}else if(mark&&mark[id])b.setAttribute('data-aiv','0')})}
+function stat(n){var q=cur_ids();if(!q.length||busy)return;busy=true;lastAsk=Date.now();var asked={};q.forEach(function(k){asked[k]=1});
+fetch('/admin/orders/ai-status?ids='+q.join(','),{headers:{Accept:'application/json'}}).then(function(x){return x.json()}).then(function(j){busy=false;var m=j.m||{};Object.keys(m).forEach(function(k){M[k]=m[k]});q.forEach(function(k){if(!m[k])delete M[k]});repaint(asked);if(j.left>0&&n<8)setTimeout(function(){stat(n+1)},1500)}).catch(function(){busy=false;repaint(asked)})}
 stat(0);setInterval(function(){if(!document.hidden)stat(0)},60000);
-var mt=null;new MutationObserver(function(){if(mt)return;mt=setTimeout(function(){mt=null;var fresh=[].filter.call(document.querySelectorAll('.ai-btn[data-id]'),function(b){return !b.getAttribute('data-aiv')});if(!fresh.length)return;repaint();if(fresh.some(function(b){return !M[b.getAttribute('data-id')]}))stat(0)},120)}).observe(document.body,{childList:true,subtree:true});
+var mt=null;new MutationObserver(function(){if(mt)return;mt=setTimeout(function(){mt=null;var fresh=[].filter.call(document.querySelectorAll('.ai-btn[data-id]'),function(b){return b.getAttribute('data-aiv')===null});if(!fresh.length)return;repaint(null);var need=fresh.some(function(b){return !M[b.getAttribute('data-id')]});fresh.forEach(function(b){if(b.getAttribute('data-aiv')===null)b.setAttribute('data-aiv','0')});if(need&&!busy&&Date.now()-lastAsk>5000)stat(0)},300)}).observe(document.body,{childList:true,subtree:true});
 var pgE=document.querySelector('[data-aipage]');if(pgE){document.body.classList.add('aipg');dr.classList.add('pg');load(parseInt(pgE.getAttribute('data-aipage'),10),false)}
 })();</script>
