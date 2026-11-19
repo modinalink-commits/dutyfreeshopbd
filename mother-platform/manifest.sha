@@ -1,5 +1,5 @@
 fe43f8b6cb422cca81ee18b74d3972f77e7852de database/migrations/2026_10_31_000001_mother_core.php
-6621d080bd5d258711dae33702efe2e35145d664 routes/web.php
+b9cb61db09b0239d65e96a4c4bff5cc24152adca routes/web.php
 46ac6330ace84450b442d0d57c5c06f20c41f945 app/Models/Mother.php
 d4077a387a6d2999013113fd0b40a48828ee1aaa app/Http/Controllers/AdminController.php
 242316b2ef0a0967e6815e39fcbc7377349fdc17 app/Console/Commands/MotherInstall.php
@@ -1460,3 +1460,5 @@ f32969324f9bb6d4878455047d8c10db3913b4e0 public/adimg/pq-08.jpg
 1134ce1b840e6c0483b5bc7e7b5d5d35733e5cb8 public/adimg/pq-09.jpg
 61f10fbc6faf53767e35ca5fbeb6d3e7ce80c8de public/adimg/pq-10.jpg
 cad3d31ba9cef425d5692879d6a4d64b0ed4bfc7 public/adimg/pq-11.jpg
+06abf18896ec7a12b55da0a8d80068479d4368c4 app/Http/Controllers/VoiceCloneController.php
+3819490e0a7720a685aaaaf7d56fc6b5fbdee054 resources/voice-src/dd_clone.mp3
