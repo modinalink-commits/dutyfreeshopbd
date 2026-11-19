@@ -50,6 +50,10 @@ class OrderCall
     $src = trim(self::set('source', 'Web Site')); if ($src !== '' && strcasecmp((string)($o->source ?? ''), $src) !== 0) return 'order source is not ' . $src;
     if (self::testOnly() && !in_array($p, self::testPhones(), true)) return 'test-only mode: phone is not in the test list';
     if (!empty($o->customer_id)) { $cu = DB::table('customers')->find($o->customer_id); if ($cu && !empty($cu->blocked)) return 'customer is blocked'; }
+    // only orders that AI Verification itself has passed (every other check green) get the call; risky or unchecked orders stay with staff
+    $v = DB::table('order_ai_verifications')->where('order_id', $o->id)->first();
+    if (!$v) return 'AI verification has not run yet';
+    if (($v->override_status ?: $v->verification_status) !== 'verified') return 'order is not AI Verified (staff handles it)';
     return null;
   }
   /** A staff call answered by this customer around this order (call_logs), AI calls excluded. */
