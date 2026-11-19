@@ -804,7 +804,6 @@ database/migrations/2026_11_07_000200_recurring_expenses.php
 app/Support/RecurringExpense.php
 app/Http/Controllers/RecurringExpenseController.php
 resources/views/recurring_expenses.blade.php
-
 database/migrations/2026_11_07_000500_drop_mcp.php
 app/Support/Transfers.php
 app/Http/Controllers/TransferController.php
@@ -1111,9 +1110,7 @@ public/banners/hero-fashion.mp4
 public/banners/hero-fashion-m.webp
 public/banners/hero-fashion-m.mp4
 database/migrations/2026_11_13_223000_hero_fashion_slide.php
-public/banners/hero-watch.webp
 public/banners/hero-watch.mp4
-public/banners/hero-watch-m.webp
 public/banners/hero-watch-m.mp4
 database/migrations/2026_11_13_224500_hero_watch_slide.php
 database/migrations/2026_11_13_230000_lighter_main_category.php
@@ -1452,5 +1449,14 @@ public/adimg/pp-53.jpg
 public/adimg/pp-54.jpg
 public/adimg/pp-55.jpg
 public/adimg/pp-56.jpg
-public/adimg/pp-*.jpg
-public/adimg/pq-*.jpg
+public/adimg/pq-01.jpg
+public/adimg/pq-02.jpg
+public/adimg/pq-03.jpg
+public/adimg/pq-04.jpg
+public/adimg/pq-05.jpg
+public/adimg/pq-06.jpg
+public/adimg/pq-07.jpg
+public/adimg/pq-08.jpg
+public/adimg/pq-09.jpg
+public/adimg/pq-10.jpg
+public/adimg/pq-11.jpg

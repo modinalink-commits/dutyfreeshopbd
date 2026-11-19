@@ -1110,9 +1110,7 @@ dc11331b1abe4966dd0074d34b0f0ac07fe36d41 public/banners/hero-fashion.webp
 a2b2cb277ab6d1eae480d58d1178938f09a16269 public/banners/hero-fashion-m.webp
 feee8cc0d2697d510dade213d6ace110903bdfd7 public/banners/hero-fashion-m.mp4
 fc4f7963aeac38d9925b720503ed31a799d2558a database/migrations/2026_11_13_223000_hero_fashion_slide.php
-5b2a2cad865ffe56c868097a6fc3f850ee535aad public/banners/hero-watch.webp
 a52a30ac980062bc916b6b729647e5a9cdc832ac public/banners/hero-watch.mp4
-7fea6c7066061b16abd824089a0ebb39ce155494 public/banners/hero-watch-m.webp
 d383d8c0e2228858f5ba97d2b62f8fbf8811b415 public/banners/hero-watch-m.mp4
 ecccf261bf43f27a76028e9def5a76c39f8834d9 database/migrations/2026_11_13_224500_hero_watch_slide.php
 4fe43dc61097723f26ddc0d79a7ae418d7b9b307 database/migrations/2026_11_13_230000_lighter_main_category.php
@@ -1451,3 +1449,14 @@ b6256c46ef1a819d298349e07e0a6486c308d9a9 public/adimg/pp-53.jpg
 804fe7ae4869910f1a302b624c9a63569dd1f05d public/adimg/pp-54.jpg
 7227740d6c59180fe3cc1570e224a15b8a7256ca public/adimg/pp-55.jpg
 b4e9b6ed181cf85cc4864cfe61be90b840007f82 public/adimg/pp-56.jpg
+9fb712b3a2b6a49ab329188bd7fa8158b7662932 public/adimg/pq-01.jpg
+bdc7fe2037e233e8855ea0661e08368ee42a996e public/adimg/pq-02.jpg
+4151d0f68b7a96d5cd008aaa10a3c668617b32c7 public/adimg/pq-03.jpg
+5385f2771bb82231eff9caead0e555b2d02de5d9 public/adimg/pq-04.jpg
+14c358ba901b64dc21d7ead56adbc48615404325 public/adimg/pq-05.jpg
+e669a0ce502107f48841697af9342c20affa33ec public/adimg/pq-06.jpg
+86c8b10bae37ea81a7b3b8a377317cb9225d2a00 public/adimg/pq-07.jpg
+f32969324f9bb6d4878455047d8c10db3913b4e0 public/adimg/pq-08.jpg
+1134ce1b840e6c0483b5bc7e7b5d5d35733e5cb8 public/adimg/pq-09.jpg
+61f10fbc6faf53767e35ca5fbeb6d3e7ce80c8de public/adimg/pq-10.jpg
+cad3d31ba9cef425d5692879d6a4d64b0ed4bfc7 public/adimg/pq-11.jpg

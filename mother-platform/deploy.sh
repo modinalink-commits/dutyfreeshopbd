@@ -61,7 +61,7 @@ echo "$ID" > "$REL/RELEASE"
 log "2/9 download new code"; stg Downloading 12
 cd "$REL" || fail "cd"
 export R; wget -q -T 30 -t 3 -O manifest.txt.new "$R/manifest.txt" || fail "manifest download"
-sed -i '/^$/d' manifest.txt.new; N=$(wc -l < manifest.txt.new)
+sed -i '/^$/d' manifest.txt.new; if grep -q '[*?[]' manifest.txt.new; then log "   skipped glob lines in manifest: $(grep '[*?[]' manifest.txt.new | tr '\n' ' ')"; grep -v '[*?[]' manifest.txt.new > manifest.txt.f && mv manifest.txt.f manifest.txt.new; fi; N=$(wc -l < manifest.txt.new)
 # Incremental download: manifest.sha lists the sha1 of every file; files identical to the live release (already copied above) are NOT downloaded again.
 INC=0; wget -q -T 30 -t 3 -O manifest.sha.new "$R/manifest.sha" && [ -s manifest.sha.new ] && INC=1
 rm -f "$D/dl.fail" "$D/dl.list"; : > "$D/dl.list"; i=0; DLN=0; REUSED=0
