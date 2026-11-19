@@ -51,7 +51,7 @@ class AiVerifyController extends Controller {
     $rows = DB::table('order_ai_verifications')->whereIn('order_id', $ids)->get(['order_id', 'verification_status', 'override_status', 'verification_score']);
     $o = []; foreach ($rows as $x) { $s = $x->override_status ?: $x->verification_status; $o[$x->order_id] = ['s' => $s, 'l' => AiVerify::LABEL[$s] ?? $s, 'n' => (int)$x->verification_score]; }
     // where the confirmation call stands, for orders still New (shown as a small label under the AI button)
-    try { foreach (DB::table('orders')->whereIn('id', $ids)->where('status', 'New')->get() as $ord) { $c = \App\Support\OrderCall::listChip($ord); if ($c && isset($o[$ord->id])) { $o[$ord->id]['c'] = $c[0]; $o[$ord->id]['ct'] = $c[1]; } } } catch (\Throwable $e) {}
+    try { foreach (DB::table('orders')->whereIn('id', $ids)->where('status', 'New')->get() as $ord) { try { $c = \App\Support\OrderCall::listChip($ord); } catch (\Throwable $e) { $c = null; } if ($c && isset($o[$ord->id])) { $o[$ord->id]['c'] = $c[0]; $o[$ord->id]['ct'] = $c[1]; } } } catch (\Throwable $e) {}
     return response()->json(['m' => $o, 'left' => $left])->header('Cache-Control', 'no-store');
   }
 }
