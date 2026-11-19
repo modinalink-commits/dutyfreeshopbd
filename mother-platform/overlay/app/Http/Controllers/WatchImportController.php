@@ -270,6 +270,12 @@ class WatchImportController extends Controller {
     foreach (['DDR5', 'DDR4', 'DDR3', 'Wi-Fi 7', 'Wi-Fi 6E', 'Wi-Fi 6', 'Bluetooth', 'USB Type-C', 'USB 3.0', 'HDMI', 'NVMe', 'SSD', 'RGB', 'Gaming', 'Wireless', 'Noise Cancelling', 'ANC', 'Polarized', 'Photochromic', 'Blue Light', 'Stainless Steel', 'Leather', 'Automatic', 'Analog', 'Digital'] as $k) if (stripos($n, $k) !== false) $f[] = $k;
     return array_values(array_unique($f));
   }
+  /** Read-only (owner 19 Nov 2026): for every sourcing store, how many of our linked products really carry the source's description, how many only have the generic template, and how many have none. */
+  public function descstat() {
+    $o = []; $gen = '%বিভাগের পণ্য। DutyFree BD থেকে সহজে অর্ডার করুন%';
+    foreach (DB::table('watch_source as w')->leftJoin('stores as st', 'st.id', '=', 'w.store_id')->join('products as p', 'p.id', '=', 'w.product_id')->selectRaw("coalesce(st.domain,'?') d, count(*) linked, sum(case when w.details_at is not null and coalesce(w.note,'') <> 'no details' then 1 else 0 end) details_fetched, sum(case when w.note = 'no details' then 1 else 0 end) source_has_none, sum(case when w.details_at is null and w.source_url is not null then 1 else 0 end) not_tried_yet, sum(case when w.source_url is null then 1 else 0 end) no_source_link, sum(case when coalesce(p.description,'') = '' then 1 else 0 end) empty_desc, sum(case when p.description like ? then 1 else 0 end) generic_template", [$gen])->groupBy('d')->orderByDesc('linked')->get() as $r) $o[] = $r;
+    return response()->json(['stores' => $o]);
+  }
   /** Write a product description (HTML) for every product of an affiliate category that has none: only what the name, category and code say, plus the shop's own delivery / payment terms. */
   public function describe(Request $r) {
     @set_time_limit(120); $cf = $this->cfg(); $cat = DB::table('categories')->where('slug', $cf['cat'])->first(); abort_unless($cat, 404);
