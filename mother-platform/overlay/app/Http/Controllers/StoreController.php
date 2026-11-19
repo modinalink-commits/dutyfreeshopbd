@@ -403,8 +403,8 @@ class StoreController extends Controller {
         ->orderByRaw('sn.position asc nulls last')->orderByRaw('cn.position asc nulls last')->orderByRaw('pp.pp_pos asc nulls last')->orderByDesc('products.id');
       $items = $q->paginate($per)->withQueryString();
     } else {
-      $q = $q->orderByRaw('coalesce(sub, \'~\')');
-      $items = $this->sorted($q, $sort === 'new' ? 'new' : $sort)->paginate($per)->withQueryString();
+      if (!in_array($sort, ['price_asc', 'price_desc'], true)) $q = $q->orderByRaw('coalesce(sub, \'~\')'); // a price sort runs over the whole result, never section by section
+      $items = $this->sorted($q, $sort === 'new' ? 'new' : $sort)->orderByDesc('products.id')->paginate($per)->withQueryString();
     }
     $canon = url('/'.$slug).($subSlug !== null ? '/'.$subSlug.($subSubName !== null ? '/'.\App\Support\Slugs::slug($subSubName, 60) : '') : '/'); if ($subSubName !== null) { $subName = $subSubName.' · '.$subName; }
     $baseT = trim((string)($c->title ?: $c->name));

@@ -77,7 +77,9 @@ class StoreScanner {
   }
   private static function save(array $rows): void {
     $u = []; foreach ($rows as $r) $u[($r['store_id'] ?? '').'|'.($r['ext_key'] ?? count($u))] = $r; $rows = array_values($u); // one row per product key: the same product reached by two page URLs in one batch made the upsert fail ("ON CONFLICT ... a second time") and the scan loop on that batch
-    foreach (array_chunk($rows, 200) as $ch) DB::table('store_products')->upsert($ch, ['store_id','ext_key'], ['name','sku','image','price','stock','in_stock','category','url','published','seen_at','updated_at']);
+    static $hv = null; if ($hv === null) { try { $hv = \Illuminate\Support\Facades\Schema::hasColumn('store_products', 'variant'); } catch (\Throwable $e) { $hv = false; } }
+    $rows = array_map(function ($r) use ($hv) { if ($hv) $r['variant'] = $r['variant'] ?? null; else unset($r['variant']); return $r; }, $rows);
+    foreach (array_chunk($rows, 200) as $ch) DB::table('store_products')->upsert($ch, ['store_id','ext_key'], array_merge(['name','sku','image','price','stock','in_stock','category','url','published','seen_at','updated_at'], $hv ? ['variant'] : []));
   }
   public static function begin(object $s): void {
     $st = ['mode'=>null, 'started'=>now()->toDateTimeString(), 'page'=>1, 'pos'=>0, 'sm'=>[], 'base'=>null, 'seen'=>0];
@@ -123,7 +125,8 @@ class StoreScanner {
           foreach ($list as $p) {
             $v = $p['variants'][0] ?? []; $avail = false; foreach ($p['variants'] ?? [] as $vv) if (!empty($vv['available'])) $avail = true;
             $qty = null; foreach ($p['variants'] ?? [] as $vv) if (isset($vv['inventory_quantity'])) $qty = ($qty ?? 0) + (int)$vv['inventory_quantity'];
-            $rows[] = self::row($id, 'sh:'.$p['id'], $p['title'] ?? '', $v['sku'] ?? null, $p['images'][0]['src'] ?? ($p['image']['src'] ?? null), $v['price'] ?? null, $qty, $avail, $p['product_type'] ?? null, $st['base'].'/products/'.($p['handle'] ?? ''), true);
+            $__r = self::row($id, 'sh:'.$p['id'], $p['title'] ?? '', $v['sku'] ?? null, $p['images'][0]['src'] ?? ($p['image']['src'] ?? null), $v['price'] ?? null, $qty, $avail, $p['product_type'] ?? null, $st['base'].'/products/'.($p['handle'] ?? ''), true);
+            $vt = trim((string)($v['title'] ?? '')); $__r['variant'] = (count($p['variants'] ?? []) > 1 && $vt !== '' && strcasecmp($vt, 'Default Title') !== 0) ? mb_substr($vt, 0, 120) : null; $rows[] = $__r; // the saved price is this (first) option's price
           }
           self::save($rows); $c['imp'] += count($rows); $c['pub'] += count($rows); $c['total'] += count($rows); $rows = [];
           $page++; if ($page > 400) { $done = true; break; } // owner 13 Nov 2026: read EVERY page until Shopify returns an empty one (some shops return fewer than 250 per page)

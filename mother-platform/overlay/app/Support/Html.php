@@ -16,6 +16,12 @@ class Html {
     $root = $d->getElementById('r');
     if (!$root) return trim(strip_tags($h)) ?: null;
     self::walk($root);
+    // Unrendered script templates copied from a source shop (e.g. a table cell reading "'+ resultData.location_groups[i].group_name + '") are never shown to customers: drop the table, or the single line, that holds one.
+    try { $tp = "/'\\s*\\+\\s*[A-Za-z_\$][\\w\$.\\[\\]]*\\s*\\+\\s*'/"; $xp = new \DOMXPath($d); $kill = [];
+      foreach ($xp->query('.//table', $root) as $t) if (preg_match($tp, $t->textContent)) $kill[] = $t;
+      foreach ($xp->query('.//p|.//li|.//span', $root) as $e) if (preg_match($tp, $e->textContent)) $kill[] = $e;
+      foreach ($kill as $e) if ($e->parentNode) $e->parentNode->removeChild($e);
+    } catch (\Throwable $e) {}
     $out = '';
     foreach ($root->childNodes as $c) $out .= $d->saveHTML($c);
     $out = trim($out);
