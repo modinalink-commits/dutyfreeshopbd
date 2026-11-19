@@ -59,6 +59,7 @@ class Mailer {
         $m->to($to)->subject($subject)->from($from, $name)->html($html)->text($text); if (self::valid($rt)) $m->replyTo($rt);
         if ($unsub) { try { $h = $m->getHeaders(); $h->addTextHeader('List-Unsubscribe', '<' . $unsub . '>'); $h->addTextHeader('List-Unsubscribe-Post', 'List-Unsubscribe=One-Click'); } catch (\Throwable $e) {} }
       });
+      if (self::blockedAt() !== null) { Cache::forget('email.blocked'); Cache::forget('email.blocked.probe'); } // any accepted email (a test included) proves the provider block is over: the queue resumes at once
       return [true, null];
     } catch (\Throwable $e) {
       // the provider refused the offer sender address: send this one from the mailbox address instead of failing
