@@ -38,6 +38,7 @@ class CustAuth
   public static function resolveSocial(string $prov, string $uid, string $email, string $name, ?string $avatar): array {
     if ($uid === '') return [null, 'error'];
     $email = mb_strtolower(trim($email)); $name = trim($name) ?: 'Customer';
+    if ($avatar !== null && strlen((string)$avatar) > 500) $avatar = null; // a very long provider picture URL must not block the login (column is 500 chars)
     $p = DB::table('customer_auth_providers')->where('provider', $prov)->where('provider_user_id', $uid)->first();
     if ($p) { DB::table('customer_auth_providers')->where('id', $p->id)->update(['provider_name' => $name, 'avatar' => $avatar, 'updated_at' => now()]); return [(int)$p->customer_id, 'login']; }
     if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) return [null, 'need_email'];
