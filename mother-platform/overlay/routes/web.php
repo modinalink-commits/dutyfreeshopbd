@@ -545,6 +545,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/watch-import', [\App\Http\Controllers\WatchImportController::class,'page']);
   Route::post('/watch-import/images', [\App\Http\Controllers\WatchImportController::class,'images']);
   Route::get('/watch-import/descstat', [\App\Http\Controllers\WatchImportController::class,'descstat']);
+  Route::match(['get','post'],'/watch-import/sdesc', [\App\Http\Controllers\WatchImportController::class,'sdesc']);
   Route::get('/watch-import/diag', [\App\Http\Controllers\WatchImportController::class,'diag']);
   Route::get('/watch-import/tidy', [\App\Http\Controllers\WatchImportController::class,'tidy']);
   Route::post('/watch-import/details', [\App\Http\Controllers\WatchImportController::class,'details']);

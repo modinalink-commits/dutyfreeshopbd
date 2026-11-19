@@ -37,6 +37,7 @@ class MotherPushWorker extends Command
     try { if (\Illuminate\Support\Facades\Cache::add('sp.follow', 1, 55)) \App\Support\SinglePacket::followParents(); } catch (\Throwable $e) { $this->error('spfollow: ' . $e->getMessage()); }
     try { \App\Support\Chat::closeSilentTick(); } catch (\Throwable $e) { $this->error('chatsilent: ' . $e->getMessage()); }
     try { \App\Support\OrderSchedule::tick(); } catch (\Throwable $e) { $this->error('sched: ' . $e->getMessage()); }
+    try { \App\Support\SourceDesc::tick(); } catch (\Throwable $e) { $this->error('sdesc: ' . $e->getMessage()); }
     try { \App\Support\OrderCancelNotice::tick(); } catch (\Throwable $e) { $this->error('cancel-notice: ' . $e->getMessage()); }
     try { $this->waUpdates(); \App\Support\OrderWaUpdate::tick(); } catch (\Throwable $e) { $this->error('wa-update: ' . $e->getMessage()); }
     \App\Support\DeployHealth::beat(); // heartbeat: shown as "Scheduler" in the Deployment Center

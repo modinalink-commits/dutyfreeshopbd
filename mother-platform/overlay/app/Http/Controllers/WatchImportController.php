@@ -271,6 +271,16 @@ class WatchImportController extends Controller {
     return array_values(array_unique($f));
   }
   /** Read-only (owner 19 Nov 2026): for every sourcing store, how many of our linked products really carry the source's description, how many only have the generic template, and how many have none. */
+  /** Owner 19 Nov 2026: exact source descriptions (with pictures). GET = progress per category; POST mode=on|off|retry-failed; POST pid = run one product now. */
+  public function sdesc(Request $r) {
+    if ($r->isMethod('post')) {
+      if ($r->filled('pid')) return response()->json(\App\Support\SourceDesc::batch(1, (int)$r->input('pid'), 50));
+      $m = (string)$r->input('mode');
+      if ($m === 'on') \App\Support\SourceDesc::setMode(true); elseif ($m === 'off') \App\Support\SourceDesc::setMode(false);
+      elseif ($m === 'retry-failed') DB::table('source_desc_sync')->where('status', 'failed')->delete();
+    }
+    return response()->json(\App\Support\SourceDesc::progress());
+  }
   public function descstat() {
     $o = []; $gen = '%বিভাগের পণ্য। DutyFree BD থেকে সহজে অর্ডার করুন%';
     foreach (DB::table('watch_source as w')->leftJoin('stores as st', 'st.id', '=', 'w.store_id')->join('products as p', 'p.id', '=', 'w.product_id')->selectRaw("coalesce(st.domain,'?') d, count(*) linked, sum(case when w.details_at is not null and coalesce(w.note,'') <> 'no details' then 1 else 0 end) details_fetched, sum(case when w.note = 'no details' then 1 else 0 end) source_has_none, sum(case when w.details_at is null and w.source_url is not null then 1 else 0 end) not_tried_yet, sum(case when w.source_url is null then 1 else 0 end) no_source_link, sum(case when coalesce(p.description,'') = '' then 1 else 0 end) empty_desc, sum(case when p.description like ? then 1 else 0 end) generic_template", [$gen])->groupBy('d')->orderByDesc('linked')->get() as $r) $o[] = $r;
