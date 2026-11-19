@@ -138,11 +138,11 @@ class OrderCall
     $uuid = (string)\Illuminate\Support\Str::uuid(); $job = (string)\Illuminate\Support\Str::uuid();
     try {
       self::frame($fp); $send('auth ' . $pw); $r = self::frame($fp); if (!$r || !str_contains(json_encode($r[0]), '+OK')) { $finish('failed', 'PBX rejected the password'); fclose($fp); return; }
-      $send('event plain CHANNEL_ANSWER CHANNEL_HANGUP_COMPLETE DTMF PLAYBACK_STOP BACKGROUND_JOB'); self::frame($fp);
+      $send('event plain CHANNEL_ANSWER CHANNEL_HANGUP_COMPLETE DTMF PLAYBACK_START PLAYBACK_STOP CHANNEL_EXECUTE_COMPLETE BACKGROUND_JOB'); self::frame($fp);
       $send('filter Unique-ID ' . $uuid); self::frame($fp); $send('filter Job-UUID ' . $job); self::frame($fp);
       $ring = (int)Voice::set('ring_timeout', '30'); $caller = Voice::set('caller_id') ?: '0000';
       $send("bgapi originate {origination_uuid=$uuid,origination_caller_id_number=$caller,origination_caller_id_name=DutyFreeBD,originate_timeout=$ring,ignore_early_media=true}sofia/gateway/" . Voice::set('gateway') . '/' . Voice::dialNumber((string)$a->phone) . " &park()\nJob-UUID: $job");
-      $deadline = time() + $ring + 100; $state = 'dialing'; $stage = 0; $waitUntil = null; $closeBy = null; $answered = false; $done = false; $digit = ''; $cause = ''; $dur = 0; $hung = false;
+      $trace = []; $deadline = time() + $ring + 100; $state = 'dialing'; $stage = 0; $waitUntil = null; $closeBy = null; $answered = false; $done = false; $digit = ''; $cause = ''; $dur = 0; $hung = false;
       $playing = false; $skip = 0; $play = function (string $k) use ($send, $uuid, $U, &$playing) { $playing = true; $send("api uuid_broadcast $uuid {$U[$k]} aleg"); };
       while (time() < $deadline) {
         $f = self::frame($fp);
@@ -151,7 +151,10 @@ class OrderCall
           if ($state === 'closing' && $closeBy && time() >= $closeBy) { $send("api uuid_kill $uuid"); $closeBy = time() + 5; }
           continue;
         }
-        if (($f[0]['Content-Type'] ?? '') !== 'text/event-plain') continue; $e = self::evParse($f[1]); $n = $e['Event-Name'] ?? '';
+        if (($f[0]['Content-Type'] ?? '') !== 'text/event-plain') { $b = trim((string)$f[1]); if ($b !== '' || !empty($f[0]['Reply-Text'])) { $trace[] = ['t' => date('H:i:s'), 'reply' => mb_substr($b !== '' ? $b : (string)$f[0]['Reply-Text'], 0, 160)]; $upd(['webhook_payload' => json_encode(array_slice($trace, -40), JSON_UNESCAPED_UNICODE)]); } continue; }
+        $e = self::evParse($f[1]); $n = $e['Event-Name'] ?? '';
+        $trace[] = ['t' => date('H:i:s'), 'ev' => $n, 'digit' => $e['DTMF-Digit'] ?? null, 'app' => $e['Application'] ?? null, 'resp' => isset($e['Application-Response']) ? mb_substr($e['Application-Response'], 0, 100) : null, 'file' => isset($e['Playback-File-Path']) ? mb_substr($e['Playback-File-Path'], 0, 120) : (isset($e['Application-Data']) ? mb_substr($e['Application-Data'], 0, 120) : null), 'cause' => $e['Hangup-Cause'] ?? null];
+        $upd(['webhook_payload' => json_encode(array_slice($trace, -40), JSON_UNESCAPED_UNICODE)]);
         if ($n === 'BACKGROUND_JOB') { $res = trim($e['_body']); if (str_starts_with($res, '-ERR')) { $cause = trim(preg_replace('/^-ERR\s*/', '', $res)); break; } }
         elseif ($n === 'CHANNEL_ANSWER' && !$answered) { $answered = true; $upd(['status' => 'answered', 'answered_at' => now()]); $state = 'play'; usleep(400000); $play('main'); }
         elseif ($n === 'PLAYBACK_STOP') { $playing = false; if ($skip > 0) { $skip--; continue; } if ($state === 'play') { $state = 'wait'; $waitUntil = time() + 7; } elseif ($state === 'closing') { $send("api uuid_kill $uuid"); } }
@@ -177,6 +180,7 @@ class OrderCall
   }
   /** Read-only PBX diagnostics (fixed commands only). */
   public static function diag(string $what): array {
+    if ($what === 'last') { $r = DB::table('order_call_verifications')->orderByDesc('id')->limit(2)->get(['id', 'status', 'digit', 'cause', 'webhook_payload']); return [true, json_encode($r, JSON_UNESCAPED_UNICODE)]; }
     $cmds = ['gw' => 'sofia status gateway', 'calls' => 'show calls count', 'channels' => 'show channels count'];
     if (!isset($cmds[$what])) return [false, 'unknown'];
     return Voice::esl($cmds[$what], 25);
