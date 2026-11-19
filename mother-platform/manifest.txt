@@ -1394,3 +1394,4 @@ public/adimg/pg2-bwoo-bw589-wh.jpg
 public/adimg/pg2-bwoo-mf02.jpg
 public/adimg/pg2-hifuture-flybuds4.jpg
 public/adimg/pg2-hifuture-olymbuds3.jpg
+public/adimg/pp-*.jpg
