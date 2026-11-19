@@ -181,6 +181,11 @@ class OrderCall
   /** Read-only PBX diagnostics (fixed commands only). */
   public static function diag(string $what): array {
     if ($what === 'last') { $r = DB::table('order_call_verifications')->orderByDesc('id')->limit(2)->get(['id', 'status', 'digit', 'cause', 'webhook_payload']); return [true, json_encode($r, JSON_UNESCAPED_UNICODE)]; }
+    if (in_array($what, ['fetch', 'fetchhttp'], true)) {
+      [$u, $err] = self::promptUrl('পরীক্ষা'); if (!$u) return [false, (string)$err]; if ($what === 'fetchhttp') $u = preg_replace('~^https:~', 'http:', $u);
+      [$ok, $out] = Voice::esl('curl ' . $u . ' headers connect-timeout 6 timeout 10', 25);
+      return [$ok, 'url_scheme ' . strtok($u, ':') . ' | ' . preg_replace('/[^\x20-\x7e\n]/', '.', mb_substr((string)$out, 0, 700))];
+    }
     $cmds = ['gw' => 'sofia status gateway', 'calls' => 'show calls count', 'channels' => 'show channels count'];
     if (!isset($cmds[$what])) return [false, 'unknown'];
     return Voice::esl($cmds[$what], 25);
