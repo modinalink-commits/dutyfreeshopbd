@@ -52,5 +52,21 @@ class VoiceCloneController extends Controller
     return response()->json(['ok' => true, 'bytes' => $n, 'seconds' => round($n / 16000, 1)]);
   }
 
+  /** Owner 20 Nov 2026: use the consented clone as the live call voice (previous voice id kept for one-step revert). */
+  public function use(Request $r)
+  {
+    $vid = Voice::set('clone_voice_id', ''); if ($vid === '') return response()->json(['ok' => false, 'error' => 'clone first'], 422);
+    $cur = Voice::set('tts_voice', ''); if ($cur !== $vid) Voice::put('prev_tts_voice', $cur);
+    Voice::put('tts_voice', $vid); Voice::put('tts_provider', 'elevenlabs');
+    return response()->json(['ok' => true, 'live_voice_prefix' => substr($vid, 0, 4), 'prev_prefix' => substr(Voice::set('prev_tts_voice', ''), 0, 4)]);
+  }
+
+  public function revert(Request $r)
+  {
+    $prev = Voice::set('prev_tts_voice', ''); if ($prev === '') return response()->json(['ok' => false, 'error' => 'no previous voice'], 422);
+    Voice::put('tts_voice', $prev);
+    return response()->json(['ok' => true, 'live_voice_prefix' => substr($prev, 0, 4)]);
+  }
+
   public function audio() { return is_file($this->wav()) ? response()->file($this->wav(), ['Content-Type' => 'audio/wav', 'Cache-Control' => 'no-store']) : abort(404); }
 }
