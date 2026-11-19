@@ -26,12 +26,12 @@ class OrderCall
   public static function testOnly(): bool { return self::set('test_only', '1') !== '0'; }
   public static function testPhones(): array { return array_values(array_filter(array_map(fn($p) => Voice::norm($p), preg_split('/[\s,;]+/', self::set('test_phones', self::TEST_DEFAULT)) ?: []))); }
   public static function pbxReady(): bool {
-    return (Voice::set('esl_host') !== '' || env('PBX_ESL_HOST')) && (Sms::secret('vc_esl_pass') || env('PBX_ESL_PASSWORD')) && Voice::set('gateway') !== '' && Voice::set('tts_provider', 'none') !== 'none' && (bool)Sms::secret('vc_tts_key');
+    return (Voice::set('esl_host') !== '' || env('PBX_ESL_HOST')) && (Sms::secret('vc_esl_pass') || env('PBX_ESL_PASSWORD')) && Voice::set('gateway') !== '' && Voice::set('tts_provider', 'none') !== 'none' && (bool)Voice::ttsKey();
   }
   public static function readiness(): array {
     return [
       ['PBX connection and gateway', (Voice::set('esl_host') !== '' || (bool)env('PBX_ESL_HOST')) && (bool)(Sms::secret('vc_esl_pass') || env('PBX_ESL_PASSWORD')) && Voice::set('gateway') !== '', 'Set in Marketing → Voice Campaigns → Settings (gateway must match the PBX gateway list)'],
-      ['Bangla voice (text-to-speech)', Voice::set('tts_provider', 'none') !== 'none' && (bool)Sms::secret('vc_tts_key'), 'Voice settings → text-to-speech provider and key'],
+      ['Bangla voice (text-to-speech)', Voice::set('tts_provider', 'none') !== 'none' && (bool)Voice::ttsKey(), 'Voice settings → text-to-speech provider and key'],
       ['Call script: placed on the PBX automatically (a small file in /tmp), no FusionPBX script setup needed', true, ''],
     ];
   }
