@@ -6,7 +6,7 @@ d4077a387a6d2999013113fd0b40a48828ee1aaa app/Http/Controllers/AdminController.ph
 b837cfcd82435893c8c6d2cfba79b4d40dc24f5c resources/views/layout.blade.php
 ab32f708860f9fa43ffb3bfc90409f6d85325748 resources/views/login.blade.php
 1d0b36ba3c881e578a079110fe6041350b0eaf77 resources/views/dashboard.blade.php
-8afd75c56489570c42cd9b189b8103506395dc92 resources/views/orders.blade.php
+8ad6272d9c92d690905b459857a9003076ff81d6 resources/views/orders.blade.php
 7403010f22b4965eca0a4ac78603cf2769e65a46 resources/views/admin/orders/partials/status-tabs.blade.php
 96f03e9b17814d116ede381ead3e1c984afb19ad resources/views/admin/orders/partials/header-system.blade.php
 1bb220317ce250e223706ff925700e4b5d2bbbb2 resources/views/order_new.blade.php
