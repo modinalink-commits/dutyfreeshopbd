@@ -8,6 +8,19 @@
 <span style="font-size:11px;font-weight:700;border-radius:999px;padding:4px 12px;background:{{ $modeTxt[1] }};color:{{ $modeTxt[2] }}">{{ $modeTxt[0] }}</span>
 <a href="/admin/voice" style="font-size:12px">← Voice campaigns</a></div>
 @if(!$ok)<div class="card" style="border-left:3px solid #B91C1C"><b>Database update pending.</b> The call table is created by the next deploy migration. Reload in a minute.</div>@endif
+@php
+  $liveReal = $mode !== 'off' && ($s['test_only'] ?? '1') === '0';
+  $td = $ok ? DB::table('order_call_verifications')->where('test', false)->where('created_at', '>=', now('Asia/Dhaka')->startOfDay()->utc())->selectRaw('status, count(*) n, count(distinct order_id) o')->groupBy('status')->get()->keyBy('status') : collect();
+  $g = fn($a) => (int)collect($a)->sum(fn($k) => $td[$k]->n ?? 0);
+  $tCalls = $g(['confirmed','pending_requested','no_input','answered','no_answer','busy','failed','calling']);
+  $tGot = $g(['confirmed','pending_requested','no_input','answered']); $tMiss = $g(['no_answer','busy','failed']);
+@endphp
+<div class="card" style="border-left:4px solid {{ $liveReal ? '#166534' : '#B45309' }}"><h2 style="margin-top:0">Today's call verification (real customers, since midnight)</h2>
+<div style="font-size:13px;margin-bottom:8px"><b style="color:{{ $liveReal ? '#166534' : '#B45309' }}">{{ $liveReal ? 'LIVE: real customers are being called' : ($mode === 'off' ? 'OFF: no calls' : 'TEST ONLY: real customers are not called') }}</b> · calls go out {{ $s['start'] }}-{{ $s['end'] }} to pending orders that passed AI Verification.</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px">
+@foreach([['Calls placed',$tCalls,'#0B1B33'],['Customer picked up',$tGot,'#1D5FA8'],['Not picked up',$tMiss,'#6B7280'],['Pressed 1 · confirmed',$g(['confirmed']),'#166534'],['Pressed 2 · hold',$g(['pending_requested']),'#92400E'],['Picked up, no key',$g(['no_input']),'#92400E']] as $c)
+<div style="border:1px solid #E4E7EE;border-radius:10px;padding:8px 10px"><div style="font-size:11px;color:#6B7280">{{ $c[0] }}</div><div style="font-size:22px;font-weight:700;color:{{ $c[2] }}">{{ $c[1] }}</div></div>@endforeach</div>
+<div style="font-size:12px;color:#6B7280;margin-top:6px">Orders needing a staff call are listed under "Staff follow-up" below. The full per-order list is under "Recent calls".</div></div>
 <div class="card"><h2 style="margin-top:0">Readiness</h2>
 @foreach($ready as $r)<div style="display:flex;gap:8px;font-size:12.5px;padding:3px 0"><span style="color:{{ $r[1] ? '#166534' : '#B91C1C' }};font-weight:700">{{ $r[1] ? '✓' : '✗' }}</span><span>{{ $r[0] }} @if(!$r[1])<span style="color:#6B7280">— {{ $r[2] }}</span>@endif</span></div>@endforeach</div>
 <div class="card"><h2 style="margin-top:0">Settings</h2>
@@ -30,7 +43,7 @@
 <div style="overflow-x:auto"><table class="tbl" style="width:100%;font-size:12.5px"><tr><th>Order</th><th>Customer</th><th>Total</th><th>Result</th><th>When</th></tr>
 @foreach($exc as $e)<tr><td><a href="/admin/orders/{{ $e->order_id }}">{{ $e->invoice }}</a></td><td>{{ $e->customer_name }} · {{ $e->phone }}</td><td>৳{{ number_format($e->total) }}</td><td>{{ ($pill[$e->status][2] ?? $e->status) }}</td><td>{{ \Carbon\Carbon::parse($e->updated_at)->timezone('Asia/Dhaka')->format('d M, h:i A') }}</td></tr>@endforeach</table></div></div>@endif
 <div class="card"><h2 style="margin-top:0">Last 7 days (real orders)</h2><div style="display:flex;flex-wrap:wrap;gap:8px">@forelse($cnt as $k => $n)<span style="font-size:12px;border-radius:999px;padding:3px 10px;background:{{ ($pill[$k][0] ?? '#F3F4F6') }};color:{{ ($pill[$k][1] ?? '#4B5563') }}">{{ ($pill[$k][2] ?? $k) }}: <b>{{ $n }}</b></span>@empty<span style="font-size:12px;color:#6B7280">No calls yet.</span>@endforelse</div></div>
-<div class="card"><h2 style="margin-top:0">Recent calls</h2><div style="overflow-x:auto"><table class="tbl" style="width:100%;font-size:12.5px"><tr><th>When</th><th>Order</th><th>Phone</th><th>Attempt</th><th>Result</th><th>Key</th><th>Test</th><th>Note</th></tr>
+<div class="card"><h2 style="margin-top:0">Recent calls</h2><div style="overflow-x:auto"><table class="tbl" style="width:100%;font-size:12.5px"><tr><th>When</th><th>Order</th><th>Phone</th><th>Attempt</th><th>Result</th><th>Key</th><th>Type</th><th>Note</th></tr>
 @forelse($recent as $r)<tr><td>{{ $r->started_at ? \Carbon\Carbon::parse($r->started_at)->timezone('Asia/Dhaka')->format('d M, h:i A') : '' }}</td><td>@if($r->order_id)<a href="/admin/orders/{{ $r->order_id }}">{{ $r->invoice }}</a>@else sample @endif</td><td>{{ $r->phone }}</td><td>{{ $r->attempt }}</td>
-<td><span style="font-size:11px;border-radius:999px;padding:2px 8px;background:{{ ($pill[$r->status][0] ?? '#F3F4F6') }};color:{{ ($pill[$r->status][1] ?? '#4B5563') }}">{{ ($pill[$r->status][2] ?? $r->status) }}</span></td><td>{{ $r->digit }}</td><td>{{ $r->test ? 'test' : '' }}</td><td style="color:#6B7280">{{ $r->cause }}</td></tr>@empty<tr><td colspan="8" style="color:#6B7280">No calls yet.</td></tr>@endforelse</table></div></div>
+<td><span style="font-size:11px;border-radius:999px;padding:2px 8px;background:{{ ($pill[$r->status][0] ?? '#F3F4F6') }};color:{{ ($pill[$r->status][1] ?? '#4B5563') }}">{{ ($pill[$r->status][2] ?? $r->status) }}</span></td><td>{{ $r->digit }}</td><td>{{ $r->test ? 'test' : 'real' }}</td><td style="color:#6B7280">{{ $r->cause }}</td></tr>@empty<tr><td colspan="8" style="color:#6B7280">No calls yet.</td></tr>@endforelse</table></div></div>
 @endsection
