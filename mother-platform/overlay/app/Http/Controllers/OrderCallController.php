@@ -28,6 +28,11 @@ class OrderCallController extends Controller
     Procure::audit('order_call.settings', 'Order confirmation call settings (mode ' . $before . ' -> ' . $mode . ')', null, $r->except(['_token']));
     return redirect('/admin/voice/order-calls')->with('ok', 'Order confirmation call settings saved');
   }
+  /** Read-only: which outbound gateways the PBX knows right now (sofia status gateway). */
+  public function gateways() {
+    [$ok, $out] = V::esl('sofia status gateway', 20);
+    return response()->json(['configured' => V::set('gateway'), 'ok' => $ok, 'output' => mb_substr((string)$out, 0, 3000)]);
+  }
   public function test(Request $r) {
     [$st, $cause] = OC::testCall((string)$r->input('phone', OC::TEST_DEFAULT));
     return redirect('/admin/voice/order-calls')->with('ok', 'Test call result: ' . $st . ($cause ? ' (' . mb_substr($cause, 0, 160) . ')' : ''));
