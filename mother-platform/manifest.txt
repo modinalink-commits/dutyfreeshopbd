@@ -1452,3 +1452,5 @@ public/adimg/pp-53.jpg
 public/adimg/pp-54.jpg
 public/adimg/pp-55.jpg
 public/adimg/pp-56.jpg
+public/adimg/pp-*.jpg
+public/adimg/pq-*.jpg
