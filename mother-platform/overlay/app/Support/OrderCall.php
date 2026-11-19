@@ -70,6 +70,25 @@ class OrderCall
     try { $t = \Carbon\Carbon::parse($at); return DB::table('order_call_verifications')->where('phone', Voice::norm($phone))->whereBetween('started_at', [$t->copy()->subMinutes(6), $t->copy()->addMinutes(6)])->exists(); } catch (\Throwable $e) { return false; }
   }
 
+  /** Owner 20 Nov 2026: small label beside a New order in the list: where its confirmation call stands. [text, tone] or null (nothing to show). tone: wait | live | hold | staff */
+  public static function listChip(object $o): ?array {
+    try {
+      if (self::mode() === 'off' || !self::ready() || $o->status !== 'New' || self::eligible($o) !== null) return null;
+      if (self::staffCall($o)) return null;
+      $s = self::state($o); $st = $s['state'] ?? null; $max = max(1, (int)self::set('max_attempts', '2'));
+      if ($st === 'confirmed') return null;
+      if ($st === 'pending_requested') return ['Customer asked to hold · staff call', 'hold'];
+      if (in_array($st, ['calling', 'answered'], true)) return ['Calling now', 'live'];
+      if ($st === 'stale') return ['Order changed · waiting for new call', 'wait'];
+      if (in_array($st, ['no_answer', 'busy', 'failed', 'no_input'], true)) {
+        $txt = $st === 'no_input' ? 'Picked up, no key' : ($st === 'busy' ? 'Busy' : 'No answer');
+        return ((int)($s['attempts'] ?? 0) >= $max) ? [$txt . ' · staff call needed', 'staff'] : [$txt . ' · will call again', 'wait'];
+      }
+      $t = now('Asia/Dhaka')->format('H:i'); $from = self::set('start', '09:00');
+      return ($t < $from || $t >= self::set('end', '21:00')) ? ['Waiting for call · from ' . $from, 'wait'] : ['Waiting for call', 'wait'];
+    } catch (\Throwable $e) { return null; }
+  }
+
   // ---------------- state shown in AI Verification
   /** Latest AI-call state for this order's current version: ['state','row','at'] or null. */
   public static function state(object $o): ?array {

@@ -85,7 +85,9 @@ fetch('/admin/orders/'+id+'/ai-verify'+(run?'?run=1':''),{headers:{Accept:'appli
 document.addEventListener('click',function(e){var b=e.target.closest('.ai-btn');if(b){e.preventDefault();load(parseInt(b.getAttribute('data-id'),10),false)}});
 document.getElementById('aivRe').onclick=function(){if(cur)load(cur,true)};
 var ids=[].map.call(document.querySelectorAll('.ai-btn[data-id]'),function(b){return b.getAttribute('data-id')});
-function stat(n){if(!ids.length)return;fetch('/admin/orders/ai-status?ids='+ids.join(','),{headers:{Accept:'application/json'}}).then(function(x){return x.json()}).then(function(j){var m=j.m||{};document.querySelectorAll('.ai-btn[data-id]').forEach(function(b){var v=m[b.getAttribute('data-id')];if(v)paint(b,v.s,v.n)});if(j.left>0&&n<8)setTimeout(function(){stat(n+1)},800)}).catch(function(){})}
+var CC={wait:['#EEF2FF','#3730A3'],live:['#DCFCE7','#166534'],hold:['#FEF3C7','#92400E'],staff:['#FEE2E2','#B91C1C']};
+function chip(b,t,tone){var n=b.nextElementSibling;if(n&&!n.classList.contains('ai-call'))n=null;if(!t){if(n)n.remove();return}if(!n){n=document.createElement('div');n.className='ai-call';n.style.cssText='margin-top:4px;font:600 11px/1.3 Inter,Bornomala,sans-serif;border-radius:8px;padding:3px 8px;text-align:center';b.parentNode.insertBefore(n,b.nextSibling)}var c=CC[tone]||CC.wait;n.style.background=c[0];n.style.color=c[1];n.textContent='\u260E '+t}
+function stat(n){if(!ids.length)return;fetch('/admin/orders/ai-status?ids='+ids.join(','),{headers:{Accept:'application/json'}}).then(function(x){return x.json()}).then(function(j){var m=j.m||{};document.querySelectorAll('.ai-btn[data-id]').forEach(function(b){var v=m[b.getAttribute('data-id')];if(v){paint(b,v.s,v.n);chip(b,v.c,v.ct)}});if(j.left>0&&n<8)setTimeout(function(){stat(n+1)},800)}).catch(function(){})}
 stat(0);setInterval(function(){if(!document.hidden)stat(0)},60000);
 var pgE=document.querySelector('[data-aipage]');if(pgE){document.body.classList.add('aipg');dr.classList.add('pg');load(parseInt(pgE.getAttribute('data-aipage'),10),false)}
 })();</script>
