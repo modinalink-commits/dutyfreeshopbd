@@ -1384,3 +1384,13 @@ public/adimg/pf-soan-papdi.jpg
 public/adimg/pf-tayas-orient.jpg
 public/adimg/pf-twinfish-oat-choc.jpg
 public/adimg/pf-tyton-chox.jpg
+public/adimg/pg2-bwoo-bs88-rgb.jpg
+public/adimg/pg2-bwoo-bs97.jpg
+public/adimg/pg2-bwoo-bw52-black.jpg
+public/adimg/pg2-bwoo-bw52-white.jpg
+public/adimg/pg2-bwoo-bw53.jpg
+public/adimg/pg2-bwoo-bw585.jpg
+public/adimg/pg2-bwoo-bw589-wh.jpg
+public/adimg/pg2-bwoo-mf02.jpg
+public/adimg/pg2-hifuture-flybuds4.jpg
+public/adimg/pg2-hifuture-olymbuds3.jpg
