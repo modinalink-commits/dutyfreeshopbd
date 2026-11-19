@@ -29,7 +29,7 @@
 <div><label>Ring timeout (sec)</label><input name="ring_timeout" value="{{ $s['ring_timeout'] }}"></div>
 <div><label>PBX recordings folder (voices saved in the PBX panel)</label><input name="pbx_rec_dir" value="{{ $s['pbx_rec_dir'] }}" placeholder="/var/lib/freeswitch/recordings/childcity.pbx.com.bd"></div>
 <div><label>Public site URL (PBX fetches audio)</label><input name="base_url" value="{{ $s['base_url'] }}" placeholder="{{ config('app.url') }}"></div>
-<div><label>Bangla voice engine</label><select name="tts_provider"><option value="none" @selected($s['tts_provider']==='none')>None (upload audio)</option><option value="azure" @selected($s['tts_provider']==='azure')>Microsoft Azure Speech</option><option value="google" @selected($s['tts_provider']==='google')>Google Cloud Text-to-Speech</option></select></div>
+<div><label>Bangla voice engine</label><select name="tts_provider"><option value="none" @selected($s['tts_provider']==='none')>None (upload audio)</option><option value="azure" @selected($s['tts_provider']==='azure')>Microsoft Azure Speech</option><option value="google" @selected($s['tts_provider']==='google')>Google Cloud Text-to-Speech</option><option value="elevenlabs" @selected($s['tts_provider']==='elevenlabs')>ElevenLabs (voice id in Voice name)</option></select></div>
 <div><label>Voice engine key {{ $s['has_key'] ? '(saved)' : '' }}</label><input type="password" name="tts_key" autocomplete="new-password" placeholder="{{ $s['has_key'] ? '•••••• leave blank to keep' : '' }}"></div>
 <div><label>Azure region</label><input name="tts_region" value="{{ $s['tts_region'] }}"></div>
 <div><label>Voice name</label><input name="tts_voice" value="{{ $s['tts_voice'] }}" placeholder="bn-BD-NabanitaNeural"></div>

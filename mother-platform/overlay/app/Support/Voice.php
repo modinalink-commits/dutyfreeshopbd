@@ -61,12 +61,31 @@ class Voice
         $r = Http::timeout(30)->withHeaders(['Ocp-Apim-Subscription-Key' => $key, 'Content-Type' => 'application/ssml+xml', 'X-Microsoft-OutputFormat' => 'riff-8khz-16bit-mono-pcm', 'User-Agent' => 'MotherCommerce'])->withBody($ssml, 'application/ssml+xml')->post("https://$reg.tts.speech.microsoft.com/cognitiveservices/v1");
         if (!$r->ok() || strlen($r->body()) < 1000) return [null, 'Voice engine error ' . $r->status()]; file_put_contents($f, $r->body()); return [$f, ''];
       }
+      if ($prov === 'elevenlabs') { // owner 20 Nov 2026: young Bangladeshi woman voice; voice id in "Voice name"; numbers spelled in Bangla words so the pronunciation stays Bangladeshi
+        $vid = trim((string)self::set('tts_voice', '')); if ($vid === '') return [null, 'ElevenLabs voice id missing in Voice settings'];
+        $r = Http::timeout(40)->withHeaders(['xi-api-key' => $key, 'Accept' => 'application/octet-stream'])->post('https://api.elevenlabs.io/v1/text-to-speech/' . rawurlencode($vid) . '?output_format=pcm_8000', ['text' => self::bnSpeak($text), 'model_id' => 'eleven_multilingual_v2', 'voice_settings' => ['stability' => 0.55, 'similarity_boost' => 0.8, 'style' => 0.15, 'speed' => 0.92]]);
+        $pcm = $r->body(); if (!$r->ok() || strlen($pcm) < 1000) return [null, 'Voice engine error ' . $r->status()];
+        $n = strlen($pcm); $hdr = 'RIFF' . pack('V', 36 + $n) . 'WAVEfmt ' . pack('VvvVVvv', 16, 1, 1, 8000, 16000, 2, 16) . 'data' . pack('V', $n); file_put_contents($f, $hdr . $pcm); return [$f, ''];
+      }
       $voice = self::set('tts_voice', 'bn-IN-Wavenet-A');
       $r = Http::timeout(30)->post('https://texttospeech.googleapis.com/v1/text:synthesize?key=' . urlencode($key), ['input' => ['text' => $text], 'voice' => ['languageCode' => 'bn-IN', 'name' => $voice], 'audioConfig' => ['audioEncoding' => 'LINEAR16', 'sampleRateHertz' => 8000]]);
       $b = base64_decode((string)$r->json('audioContent')); if (!$r->ok() || strlen($b) < 1000) return [null, 'Voice engine error ' . $r->status()]; file_put_contents($f, $b); return [$f, ''];
     } catch (\Throwable $e) { return [null, 'Voice engine unreachable']; }
   }
 
+  /** Bangla number words 0-99 (each has its own name). */
+  private const BN99 = ['শূন্য','এক','দুই','তিন','চার','পাঁচ','ছয়','সাত','আট','নয়','দশ','এগারো','বারো','তেরো','চৌদ্দ','পনেরো','ষোল','সতেরো','আঠারো','উনিশ','বিশ','একুশ','বাইশ','তেইশ','চব্বিশ','পঁচিশ','ছাব্বিশ','সাতাশ','আঠাশ','ঊনত্রিশ','ত্রিশ','একত্রিশ','বত্রিশ','তেত্রিশ','চৌত্রিশ','পঁয়ত্রিশ','ছত্রিশ','সাঁইত্রিশ','আটত্রিশ','ঊনচল্লিশ','চল্লিশ','একচল্লিশ','বিয়াল্লিশ','তেতাল্লিশ','চুয়াল্লিশ','পঁয়তাল্লিশ','ছেচল্লিশ','সাতচল্লিশ','আটচল্লিশ','ঊনপঞ্চাশ','পঞ্চাশ','একান্ন','বায়ান্ন','তিপ্পান্ন','চুয়ান্ন','পঞ্চান্ন','ছাপ্পান্ন','সাতান্ন','আটান্ন','ঊনষাট','ষাট','একষট্টি','বাষট্টি','তেষট্টি','চৌষট্টি','পঁয়ষট্টি','ছেষট্টি','সাতষট্টি','আটষট্টি','ঊনসত্তর','সত্তর','একাত্তর','বাহাত্তর','তিয়াত্তর','চুয়াত্তর','পঁচাত্তর','ছিয়াত্তর','সাতাত্তর','আটাত্তর','ঊনআশি','আশি','একাশি','বিরাশি','তিরাশি','চুরাশি','পঁচাশি','ছিয়াশি','সাতাশি','অষ্টাশি','ঊননব্বই','নব্বই','একানব্বই','বিরানব্বই','তিরানব্বই','চুরানব্বই','পঁচানব্বই','ছিয়ানব্বই','সাতানব্বই','আটানব্বই','নিরানব্বই'];
+  public static function bnWords(int $n): string {
+    if ($n < 100) return self::BN99[$n];
+    foreach ([[10000000, 'কোটি'], [100000, 'লক্ষ'], [1000, 'হাজার']] as [$u, $w]) if ($n >= $u) { $q = intdiv($n, $u); $r = $n % $u; return self::bnWords($q) . ' ' . $w . ($r ? ' ' . self::bnWords($r) : ''); }
+    $h = intdiv($n, 100); $r = $n % 100; return self::BN99[$h] . 'শো' . ($r ? ' ' . self::BN99[$r] : '');
+  }
+  /** Spoken form for the ElevenLabs voice: digits become Bangladeshi Bangla words (order-number tail digit by digit, key presses and amounts as numbers). */
+  public static function bnSpeak(string $t): string {
+    $t = strtr($t, ['০' => '0', '১' => '1', '২' => '2', '৩' => '3', '৪' => '4', '৫' => '5', '৬' => '6', '৭' => '7', '৮' => '8', '৯' => '9']);
+    $t = preg_replace_callback('/(সংখ্যা\s*)(\d{2,6})/u', fn($m) => $m[1] . implode(', ', array_map(fn($d) => self::BN99[(int)$d], str_split($m[2]))), $t);
+    return preg_replace_callback('/\d+/u', fn($m) => strlen($m[0]) > 9 ? implode(', ', array_map(fn($d) => self::BN99[(int)$d], str_split($m[0]))) : self::bnWords((int)$m[0]), $t);
+  }
   // ---------- audience
   /** Last-order product of a delivered order: the highest-value line. */
   public static function lastProduct(int $orderId): ?object {
