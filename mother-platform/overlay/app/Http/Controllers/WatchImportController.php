@@ -274,6 +274,7 @@ class WatchImportController extends Controller {
   /** Owner 19 Nov 2026: exact source descriptions (with pictures). GET = progress per category; POST mode=on|off|retry-failed; POST pid = run one product now. */
   public function sdesc(Request $r) {
     if ($r->isMethod('post')) {
+      if ($r->filled('cat')) { $pid = DB::table('watch_source as w')->join('products as p', 'p.id', '=', 'w.product_id')->join('categories as c', 'c.id', '=', 'p.category_id')->leftJoin('source_desc_sync as s', 's.watch_source_id', '=', 'w.id')->whereNull('s.id')->whereNotNull('w.source_url')->where('c.name', 'ilike', '%' . $r->input('cat') . '%')->orderBy('w.id')->value('p.id'); if (!$pid) return response()->json(['none' => true]); $o = \App\Support\SourceDesc::batch(1, (int)$pid, 50); $o['pid'] = (int)$pid; $o['desc'] = mb_substr((string)DB::table('products')->where('id', $pid)->value('description'), 0, 1500); return response()->json($o); }
       if ($r->filled('pid')) return response()->json(\App\Support\SourceDesc::batch(1, (int)$r->input('pid'), 50));
       $m = (string)$r->input('mode');
       if ($m === 'on') \App\Support\SourceDesc::setMode(true); elseif ($m === 'off') \App\Support\SourceDesc::setMode(false);
