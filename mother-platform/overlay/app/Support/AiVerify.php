@@ -224,8 +224,8 @@ class AiVerify {
     elseif ($ai && in_array($ai['state'], ['no_answer', 'busy', 'no_input', 'failed'], true)) $add('Communication', 'AI_CALL_' . strtoupper($ai['state']), 'info', 'Call verification', 'CALL NOT VERIFIED YET. AI call (attempt ' . (int)($ai['attempts'] ?? 1) . '): ' . ['no_answer' => 'the customer did not answer', 'busy' => 'the line was busy', 'no_input' => 'answered but pressed no valid key', 'failed' => 'the call could not be completed'][$ai['state']] . $aiAt($ai['at']) . '. A staff call is needed if no retry is left. Not a confirmation.');
     else {
       // say plainly why no AI call exists for this order (mode off, or the reason this order is not called), so staff know whether to call themselves
-      $why = null; try { if (OrderCall::mode() !== 'off') { $why = OrderCall::eligible($o); $why = $why === null ? 'queued' : $why; } } catch (\Throwable $e) { $why = null; }
-      if ($why === 'queued') $add('Communication', 'NO_CALL', 'info', 'Call verification', 'CALL NOT VERIFIED YET. AI confirmation call is queued for this order (calls go out 09:00-21:00). Source: AI call.');
+      $why = null; try { if (OrderCall::mode() !== 'off') { $why = OrderCall::eligible($o); $why = ($why === null || $why === 'AI verification has not run yet') ? 'queued' : $why; } } catch (\Throwable $e) { $why = null; }
+      if ($why === 'queued') $add('Communication', 'NO_CALL', 'info', 'Call verification', 'CALL NOT VERIFIED YET. AI confirmation call is queued for this order (calls go out 09:00-21:00)' . (OrderCall::mode() === 'gate' ? '. Automatic approval is held until the customer presses 1 or staff call the customer' : '') . '. Source: AI call.');
       elseif ($why !== null) $add('Communication', 'NO_CALL', 'info', 'Call verification', 'CALL NOT VERIFIED YET. No AI call for this order: ' . $why . '. A staff call can confirm it; an answered staff call here turns this green (-8 risk).');
       else $add('Communication', 'NO_CALL', 'info', 'Call verification', 'CALL NOT VERIFIED YET. Confirmation call pending: call the customer to confirm this order. An answered call here turns this green (-8 risk).');
     }
