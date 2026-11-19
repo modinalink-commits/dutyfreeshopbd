@@ -132,7 +132,7 @@ class SmsMarketing {
   public static function pump(int $limit): int {
     $n = 0;
     $rows = DB::table('sms_logs as l')->leftJoin('sms_campaigns as c', 'c.id', '=', 'l.campaign_id')->where('l.status', 'queued')
-      ->where(fn($q) => $q->whereNull('l.campaign_id')->orWhere('c.status', 'sending'))->orderBy('l.id')->limit($limit)->select('l.*')->get();
+      ->where(fn($q) => $q->whereNull('l.campaign_id')->orWhere('c.status', 'sending'))->orderByRaw('(l.campaign_id is not null), l.id')->limit($limit)->select('l.*')->get(); // site SMS (OTP, order updates) first, campaign rows after: a big campaign must never delay them
     foreach ($rows as $r) { if (Sms::deliver($r) !== null) $n++; } // one shared path: provider routing, fall-back rules and the attempt record (SmsGate)
     return $n;
   }

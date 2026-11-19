@@ -36,7 +36,7 @@ class Sms {
   public static function flush(int $limit = 25): int {
     if (!self::configured()) return 0;
     $n = 0;
-    foreach (DB::table('sms_logs')->where('status','queued')->orderBy('id')->limit($limit)->get() as $row) { if (self::deliver($row) !== null) $n++; }
+    foreach (DB::table('sms_logs')->where('status','queued')->orderByRaw('(campaign_id is not null), id')->limit($limit)->get() as $row) { if (self::deliver($row) !== null) $n++; }
     return $n;
   }
   /** Result of the last send() in this request: provider, state (accepted / failed / uncertain), request id, fall-back reason. */
