@@ -68,5 +68,13 @@ class VoiceCloneController extends Controller
     return response()->json(['ok' => true, 'live_voice_prefix' => substr($prev, 0, 4)]);
   }
 
+  /** Remove the source recording and the sample from the server disk (the clone itself lives in ElevenLabs). */
+  public function purge(Request $r)
+  {
+    $out = [];
+    foreach ([base_path(self::SRC), $this->wav()] as $f) { $out[basename($f)] = is_file($f) ? (@unlink($f) ? 'deleted' : 'failed') : 'absent'; }
+    return response()->json(['ok' => !in_array('failed', $out, true), 'files' => $out]);
+  }
+
   public function audio() { return is_file($this->wav()) ? response()->file($this->wav(), ['Content-Type' => 'audio/wav', 'Cache-Control' => 'no-store']) : abort(404); }
 }
