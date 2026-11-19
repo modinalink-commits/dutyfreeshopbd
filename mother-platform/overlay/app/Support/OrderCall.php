@@ -26,15 +26,13 @@ class OrderCall
   public static function testOnly(): bool { return self::set('test_only', '1') !== '0'; }
   public static function testPhones(): array { return array_values(array_filter(array_map(fn($p) => Voice::norm($p), preg_split('/[\s,;]+/', self::set('test_phones', self::TEST_DEFAULT)) ?: []))); }
   public static function pbxReady(): bool {
-    return (Voice::set('esl_host') !== '' || env('PBX_ESL_HOST')) && (Sms::secret('vc_esl_pass') || env('PBX_ESL_PASSWORD')) && Voice::set('gateway') !== ''
-      && Voice::set('script_ok') === '1' && Voice::set('direct', '0') !== '1' && Voice::set('tts_provider', 'none') !== 'none' && (bool)Sms::secret('vc_tts_key');
+    return (Voice::set('esl_host') !== '' || env('PBX_ESL_HOST')) && (Sms::secret('vc_esl_pass') || env('PBX_ESL_PASSWORD')) && Voice::set('gateway') !== '' && Voice::set('tts_provider', 'none') !== 'none' && (bool)Sms::secret('vc_tts_key');
   }
   public static function readiness(): array {
     return [
-      ['PBX connection and gateway', (Voice::set('esl_host') !== '' || (bool)env('PBX_ESL_HOST')) && (bool)(Sms::secret('vc_esl_pass') || env('PBX_ESL_PASSWORD')) && Voice::set('gateway') !== '', 'Set in Marketing → Voice Campaigns → Settings'],
-      ['PBX key-press script installed (needed to hear key 1 / 2)', Voice::set('script_ok') === '1', 'Same voice_offer script, tick "installed" in Voice settings'],
-      ['Key-press mode (not "direct play")', Voice::set('direct', '0') !== '1', 'Turn off "direct" in Voice settings, direct mode cannot read key presses'],
+      ['PBX connection and gateway', (Voice::set('esl_host') !== '' || (bool)env('PBX_ESL_HOST')) && (bool)(Sms::secret('vc_esl_pass') || env('PBX_ESL_PASSWORD')) && Voice::set('gateway') !== '', 'Set in Marketing → Voice Campaigns → Settings (gateway must match the PBX gateway list)'],
       ['Bangla voice (text-to-speech)', Voice::set('tts_provider', 'none') !== 'none' && (bool)Sms::secret('vc_tts_key'), 'Voice settings → text-to-speech provider and key'],
+      ['Call script: placed on the PBX automatically (a small file in /tmp), no FusionPBX script setup needed', true, ''],
     ];
   }
 
@@ -105,17 +103,85 @@ class OrderCall
   }
 
   // ---------------- calling
+  // ---------------- PBX side: our own small Lua script in /tmp (no FusionPBX dialplan or script-manager setup needed)
+  const LUA = <<<'LUA'
+-- ocv.lua : Mother Commerce AI order-confirmation call (key 1 = confirm, key 2 = keep pending)
+local hook  = session:getVariable("vc_hook")
+local main  = session:getVariable("vc_main")
+local retry = session:getVariable("vc_retry")
+local okf   = session:getVariable("vc_ok")
+local holdf = session:getVariable("vc_hold")
+local nof   = session:getVariable("vc_none")
+local uuid  = session:get_uuid()
+local api   = freeswitch.API()
+local function notify(ev, extra)
+  api:executeString("curl " .. hook .. "&ev=" .. ev .. "&uuid=" .. uuid .. "&" .. (extra or "") .. " post x=1")
+end
+session:answer()
+session:sleep(400)
+notify("answered")
+local digit = session:playAndGetDigits(1, 1, 2, 7000, "#", main, retry, "[12]") or ""
+if digit ~= "" then
+  notify("digit", "digit=" .. digit)
+  session:sleep(300)
+  if digit == "1" then session:streamFile(okf) else session:streamFile(holdf) end
+else
+  session:streamFile(nof)
+end
+notify("hangup", "duration=" .. (session:getVariable("billsec") or "0"))
+session:hangup()
+LUA;
+  private static function pbxFile(string $text): array {
+    $c = (object)['id' => 0, 'pbx_audio' => null, 'audio_path' => null, 'dtmf_on' => 0, 'script' => $text . ' ', 'expiry_date' => null, 'validity_days' => 3];
+    $row = (object)['id' => 0, 'phone' => '', 'product_name' => '', 'discount_value' => 0, 'name' => ''];
+    [$f, $err] = Voice::audio($c, $row); if (!$f) return [null, $err];
+    $url = Voice::publicUrl($f); $local = '/tmp/ocv_' . substr(md5($f), 0, 16) . '.wav';
+    [$o0, $b0] = Voice::esl('system test -s ' . $local . ' && echo HAVE', 15); if ($o0 && str_contains($b0, 'HAVE')) return [$local, ''];
+    Voice::esl('system curl -sSLk -m 25 -o ' . $local . ' ' . escapeshellarg($url), 35);
+    Voice::esl('system test -s ' . $local . ' || wget -q --no-check-certificate -T 25 -O ' . $local . ' ' . escapeshellarg($url), 35);
+    [$o1, $b1] = Voice::esl('system test -s ' . $local . ' && echo HAVE', 15); if ($o1 && str_contains($b1, 'HAVE')) return [$local, ''];
+    return [null, 'The PBX could not download the voice audio'];
+  }
+  private static function luaFile(): array {
+    $f = '/tmp/ocv_' . substr(md5(self::LUA), 0, 12) . '.lua';
+    [$o, $b] = Voice::esl('system test -s ' . $f . ' && echo HAVE', 15); if ($o && str_contains($b, 'HAVE')) return [$f, ''];
+    Voice::esl("system sh -c 'echo " . base64_encode(self::LUA) . ' | base64 -d > ' . $f . "'", 20);
+    [$o, $b] = Voice::esl('system test -s ' . $f . ' && echo HAVE', 15); if ($o && str_contains($b, 'HAVE')) return [$f, ''];
+    return [null, 'Could not place the call script on the PBX'];
+  }
+  /** Start one call from the PBX. @return array{string,string,string} [status, cause, uuid] */
+  private static function originate(string $phone, string $text): array {
+    [$lua, $e1] = self::luaFile(); if (!$lua) return ['failed', $e1, ''];
+    $A = [];
+    foreach (['main' => $text, 'retry' => 'অর্ডারটি নিশ্চিত করতে ১ চাপুন। পেন্ডিং রাখতে ২ চাপুন।', 'ok' => 'ধন্যবাদ। আপনার অর্ডারের তথ্য নিশ্চিত করা হয়েছে। আমাদের টিম বাকি যাচাই শেষ করবে।', 'hold' => 'ঠিক আছে। আপনার অনুরোধ অনুযায়ী অর্ডারটি পেন্ডিং রাখা হয়েছে। আমাদের টিম আপনার সঙ্গে যোগাযোগ করবে। ধন্যবাদ।', 'none' => 'আপনার উত্তর পাওয়া যায়নি। অর্ডারটি যাচাইয়ের অপেক্ষায় আছে। ধন্যবাদ।'] as $k => $t) {
+      [$f, $err] = self::pbxFile($t); if (!$f) return ['failed', $err, '']; $A[$k] = $f;
+    }
+    $uuid = sprintf('%s-%s-4%s-%s-%s', bin2hex(random_bytes(4)), bin2hex(random_bytes(2)), substr(bin2hex(random_bytes(2)), 1), dechex(8 + random_int(0, 3)) . substr(bin2hex(random_bytes(2)), 1), bin2hex(random_bytes(6)));
+    $hook = Voice::baseUrl() . '/webhooks/voice?k=' . Voice::hookToken();
+    $var = ["origination_uuid=$uuid", 'origination_caller_id_number=' . (Voice::set('caller_id') ?: '0000'), 'origination_caller_id_name=DutyFreeBD', 'originate_timeout=' . (int)Voice::set('ring_timeout', '30'), 'ignore_early_media=true',
+      "vc_hook='" . $hook . "'", 'vc_main=' . $A['main'], 'vc_retry=' . $A['retry'], 'vc_ok=' . $A['ok'], 'vc_hold=' . $A['hold'], 'vc_none=' . $A['none']];
+    $cmd = 'originate {' . implode(',', $var) . '}sofia/gateway/' . Voice::set('gateway') . '/' . Voice::dialNumber($phone) . ' &lua(' . $lua . ')';
+    [$ok, $out] = Voice::esl($cmd, (int)Voice::set('ring_timeout', '30') + 15); if (!$ok) return ['failed', $out, $uuid];
+    if (str_starts_with($out, '+OK')) return ['answered', '', $uuid];
+    $cause = trim(preg_replace('/^-ERR\s*/', '', $out)); $u = strtoupper($cause);
+    return [str_contains($u, 'BUSY') ? 'busy' : (preg_match('/NO_ANSWER|NO_USER_RESPONSE|ORIGINATOR_CANCEL|RECOVERY_ON_TIMER/', $u) ? 'not_answered' : 'failed'), $cause, $uuid];
+  }
   private static function place(string $phone, string $text, ?int $orderId, ?string $ver, int $attempt, bool $test): array {
     if (!self::pbxReady()) return ['failed', 'PBX call setup is not complete (see readiness list)', null];
     $id = DB::table('order_call_verifications')->insertGetId(['order_id' => $orderId, 'version_hash' => $ver, 'attempt' => $attempt, 'phone' => $phone, 'status' => 'calling', 'started_at' => now(), 'test' => $test, 'created_at' => now(), 'updated_at' => now()]);
-    $c = (object)['id' => 0, 'pbx_audio' => null, 'audio_path' => null, 'dtmf_on' => 1, 'script' => $text, 'expiry_date' => null, 'validity_days' => 3];
-    $row = (object)['id' => $id, 'phone' => $phone, 'product_name' => '', 'discount_value' => 0, 'name' => ''];
-    try { [$st, $cause, $uuid] = Voice::originate($c, $row); } catch (\Throwable $e) { [$st, $cause, $uuid] = ['failed', 'Call could not start', '']; Log::warning('order call originate failed: ' . $e->getMessage()); }
+    try { [$st, $cause, $uuid] = self::originate($phone, $text); } catch (\Throwable $e) { [$st, $cause, $uuid] = ['failed', 'Call could not start', '']; Log::warning('order call originate failed: ' . $e->getMessage()); }
     $max = max(1, (int)self::set('max_attempts', '2')); $retry = !$test && $attempt < $max && in_array($st, ['not_answered', 'busy', 'failed'], true);
     $new = $st === 'answered' ? 'calling' : ($st === 'not_answered' ? 'no_answer' : $st);
     DB::table('order_call_verifications')->where('id', $id)->update(['pbx_call_id' => $uuid ?: null, 'status' => $new, 'cause' => $new === 'calling' ? null : mb_substr((string)$cause, 0, 240), 'next_attempt_at' => $retry ? now()->addMinutes(max(10, (int)self::set('retry_gap', '60'))) : null, 'ended_at' => $new === 'calling' ? null : now(), 'updated_at' => now()]);
     return [$new, (string)$cause, $id];
   }
+  /** Read-only PBX diagnostics (fixed commands only). */
+  public static function diag(string $what): array {
+    $cmds = ['log' => 'system grep -a -i -E "lua|ocv_|curl|voice" /var/log/freeswitch/freeswitch.log | tail -n 40', 'files' => 'system ls -la /tmp | grep -E "ocv_|vc_" | tail -n 25', 'gw' => 'sofia status gateway'];
+    if (!isset($cmds[$what])) return [false, 'unknown'];
+    return Voice::esl($cmds[$what], 25);
+  }
+
   /** Owner test button: a sample call to a number in the test list. No order is touched. */
   public static function testCall(string $phone): array {
     $p = Voice::norm($phone); if (!in_array($p, self::testPhones(), true)) return ['failed', 'This number is not in the test list.', null];

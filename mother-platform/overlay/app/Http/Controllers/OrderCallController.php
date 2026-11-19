@@ -33,6 +33,7 @@ class OrderCallController extends Controller
     [$ok, $out] = V::esl('sofia status gateway', 20);
     return response()->json(['configured' => V::set('gateway'), 'ok' => $ok, 'output' => mb_substr((string)$out, 0, 3000)]);
   }
+  public function diag(Request $r) { [$ok, $out] = OC::diag((string)$r->query('what', 'gw')); return response()->json(['ok' => $ok, 'output' => mb_substr((string)$out, 0, 6000)]); }
   public function test(Request $r) {
     [$st, $cause] = OC::testCall((string)$r->input('phone', OC::TEST_DEFAULT));
     return redirect('/admin/voice/order-calls')->with('ok', 'Test call result: ' . $st . ($cause ? ' (' . mb_substr($cause, 0, 160) . ')' : ''));
