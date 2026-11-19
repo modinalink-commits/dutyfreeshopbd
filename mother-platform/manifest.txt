@@ -1374,3 +1374,13 @@ public/adimg/pg-jump-up-kiss-me.jpg
 public/adimg/pg-megamare.jpg
 public/adimg/pg-vanilla-28.jpg
 public/adimg/pg-vanilla-powder.jpg
+public/adimg/pf-amul-dark-chocolate.jpg
+public/adimg/pf-benzo-cocoa.jpg
+public/adimg/pf-konafetto.jpg
+public/adimg/pf-nuts-crisp.jpg
+public/adimg/pf-oat-choco-original.jpg
+public/adimg/pf-quality-street.jpg
+public/adimg/pf-soan-papdi.jpg
+public/adimg/pf-tayas-orient.jpg
+public/adimg/pf-twinfish-oat-choc.jpg
+public/adimg/pf-tyton-chox.jpg
