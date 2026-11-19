@@ -12,7 +12,7 @@ class OrderPaymentController extends Controller {
   public static function recalc(int $oid): void {
     $o = DB::table('orders')->find($oid); if (!$o) return;
     $paid = (float)DB::table('order_payments')->where('order_id', $oid)->where('status', 'verified')->sum('amount');
-    $st = ($o->total > 0 && $paid >= (float)$o->total) ? 'Paid' : ($paid > 0 ? 'Partially Paid' : 'Unpaid');
+    $st = ($o->total > 0 && $paid > (float)$o->total - 1) ? 'Paid' : ($paid > 0 ? 'Partially Paid' : 'Unpaid');
     $upd = ['paid_total' => $paid, 'payment_status' => $st, 'updated_at' => now()];
     if ($st === 'Paid') $upd += ['pay_status' => 'Verified', 'pay_by' => Auth::user()->name ?? null, 'pay_at' => now()];
     elseif (DB::table('order_payments')->where('order_id', $oid)->where('status', 'pending')->exists()) $upd += ['pay_status' => 'Verification Pending'];

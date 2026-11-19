@@ -21,6 +21,8 @@ class PaymentSettle {
       ->where(fn($q) => $q->where('pay_status', 'Verified')->orWhere('payment_status', 'Paid')->orWhereExists(fn($x) => $x->select(DB::raw(1))->from('order_payments as p')->whereColumn('p.order_id', 'orders.id')->where('p.status', 'verified')))
       ->orderBy('id')->limit($limit)->pluck('id'); $n = 0;
     foreach ($ids as $id) if (self::apply((int)$id, 'Payment check (automatic)')) $n++;
+    // Self-heal: an order whose total changed after the payment was verified can keep an old 'Partially Paid' label although paid >= total. Re-derive it from the ledger (logged once, only when it changes).
+    try { foreach (DB::table('orders')->where('payment_status', 'Partially Paid')->where('total', '>', 0)->whereRaw('paid_total > total - 1')->orderBy('id')->limit(100)->pluck('id') as $id) self::apply((int)$id, 'Payment status re-check (order total changed)'); } catch (\Throwable $e) { report($e); }
     return $n;
   }
 
