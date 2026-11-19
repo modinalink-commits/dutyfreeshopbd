@@ -1363,3 +1363,4 @@ app/Support/OrderCall.php
 app/Http/Controllers/OrderCallController.php
 resources/views/order_calls.blade.php
 database/migrations/2026_11_19_160000_order_call_verifications.php
+app/Console/Commands/OrderCallRun.php
