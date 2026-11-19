@@ -275,7 +275,7 @@ class WatchImportController extends Controller {
   public function sdesc(Request $r) {
     if ($r->isMethod('post')) {
       if ($r->filled('peek')) { // read-only: what the source page of a not-yet-readable product looks like (to write a reader for that site type)
-        $q = DB::table('source_desc_sync as s')->join('watch_source as w', 'w.id', '=', 's.watch_source_id')->where('s.status', 'nosource'); if ((int)$r->input('peek') > 1) $q->where('s.product_id', (int)$r->input('peek'));
+        $q = DB::table('source_desc_sync as s')->join('watch_source as w', 'w.id', '=', 's.watch_source_id')->where('s.status', 'nosource'); if ($r->filled('dom')) $q->where('w.source_url', 'like', '%' . $r->input('dom') . '%'); if ((int)$r->input('peek') > 1) $q->where('s.product_id', (int)$r->input('peek'));
         $x = $q->orderBy('s.id')->skip((int)$r->input('skip', 0))->first(['s.product_id', 's.note', 'w.source_url']); if (!$x) return response()->json(['none' => true]);
         $res = \Illuminate\Support\Facades\Http::timeout(25)->withHeaders(['User-Agent' => \App\Support\SourceDesc::UA, 'Accept' => 'text/html'])->get((string)$x->source_url); $h = (string)$res->body(); $hits = [];
         if (preg_match_all('#<(div|section|article|table|ul)\b[^>]*\b(?:id|class)\s*=\s*"([^"]*(?:descri|specif|overview|detail|feature|product-info|tab-pane)[^"]*)"[^>]*>#i', $h, $m, PREG_OFFSET_CAPTURE)) foreach (array_slice($m[0], 0, 40) as $i => $mm) $hits[] = ['tag' => $m[1][$i][0], 'attr' => mb_substr($m[2][$i][0], 0, 90), 'at' => $mm[1], 'next' => mb_substr(trim(preg_replace('/\s+/', ' ', strip_tags(substr($h, $mm[1], 1500)))), 0, 160), 'imgs' => substr_count(substr($h, $mm[1], 6000), '<img')];
