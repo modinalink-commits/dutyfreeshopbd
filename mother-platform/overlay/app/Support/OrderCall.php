@@ -186,6 +186,11 @@ class OrderCall
       [$ok, $out] = Voice::esl('curl ' . $u . ' headers connect-timeout 6 timeout 10', 25);
       return [$ok, 'url_scheme ' . strtok($u, ':') . ' | ' . preg_replace('/[^\x20-\x7e\n]/', '.', mb_substr((string)$out, 0, 700))];
     }
+    if (in_array($what, ['httpget', 'httpgethttp'], true)) {
+      [$u, $err] = self::promptUrl('পরীক্ষা'); if (!$u) return [false, (string)$err]; if ($what === 'httpgethttp') $u = preg_replace('~^https:~', 'http:', $u);
+      [$ok, $out] = Voice::esl('http_get ' . $u, 30);
+      return [$ok, 'scheme ' . strtok($u, ':') . ' | ' . preg_replace('/[^\x20-\x7e\n]/', '.', mb_substr((string)$out, 0, 500))];
+    }
     $cmds = ['gw' => 'sofia status gateway', 'calls' => 'show calls count', 'channels' => 'show channels count'];
     if (!isset($cmds[$what])) return [false, 'unknown'];
     return Voice::esl($cmds[$what], 25);
