@@ -207,7 +207,9 @@ class WaCalls {
   public static function end(int $id, int $uid, string $uname): array {
     $c = DB::table('wa_calls')->find($id); if (!$c) return [false, 'Call not found.'];
     try {
-      if ($c->status === 'ringing') { $r = self::act($c, ['action' => 'reject']); DB::table('wa_calls')->where('id', $id)->update(['status' => 'rejected', 'user_id' => $uid, 'user_name' => mb_substr($uname, 0, 120), 'ended_at' => now(), 'sdp_offer' => null, 'updated_at' => now()]); self::audit($uid, $c, 'rejected'); return [true, 'rejected']; }
+      // Owner 19 Nov 2026: one representative's Reject only hides the call for THAT person; it keeps ringing for everyone else until someone answers or the ring window ends (then it becomes a missed call)
+      if ($c->status === 'ringing') { Cache::put('wa.dis.' . $id . '.' . $uid, 1, 600); self::audit($uid, $c, 'dismissed'); return [true, 'dismissed']; }
+      if (false) { $r = self::act($c, ['action' => 'reject']); DB::table('wa_calls')->where('id', $id)->update(['status' => 'rejected', 'user_id' => $uid, 'user_name' => mb_substr($uname, 0, 120), 'ended_at' => now(), 'sdp_offer' => null, 'updated_at' => now()]); self::audit($uid, $c, 'rejected'); return [true, 'rejected']; }
       if (in_array($c->status, ['answering', 'active'], true)) {
         self::act($c, ['action' => 'terminate']);
         $dur = $c->answered_at ? max(0, time() - strtotime((string)$c->answered_at)) : null;

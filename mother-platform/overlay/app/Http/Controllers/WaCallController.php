@@ -37,7 +37,7 @@ class WaCallController extends Controller {
   public function poll(Request $r) {
     if ($r->filled('id')) { $c = WaCalls::ready() ? DB::table('wa_calls')->find((int)$r->query('id')) : null; if ($c && $c->status === 'active' && (int)$c->user_id === (int)$r->user()->id) WaCalls::beat((int)$c->id); return response()->json(['state' => $c->status ?? 'ended', 'by' => $c->user_name ?? null]); } // the answering browser asks: is my call still on?
     if (!$r->boolean('full') && !Cache::has('wa.ring')) return response()->json(['ringing' => []]);
-    $out = []; foreach (WaCalls::ringing() as $c) $out[] = ['id' => $c->id, 'from' => $c->from_wa ? '+' . $c->from_wa : 'WhatsApp user', 'name' => (string)$c->from_name, 'to' => WaCalls::numberLabel((string)$c->phone_id), 'age' => max(0, time() - strtotime((string)$c->created_at))];
+    $out = []; foreach (WaCalls::ringing() as $c) if (!Cache::has('wa.dis.' . $c->id . '.' . (int)$r->user()->id)) $out[] = ['id' => $c->id, 'from' => $c->from_wa ? '+' . $c->from_wa : 'WhatsApp user', 'name' => (string)$c->from_name, 'to' => WaCalls::numberLabel((string)$c->phone_id), 'age' => max(0, time() - strtotime((string)$c->created_at))];
     return response()->json(['ringing' => $out]);
   }
   public function claim(Request $r, int $id) { [$ok, $m, $sdp] = WaCalls::claim($id, (int)$r->user()->id, (string)$r->user()->name); return response()->json(['ok' => $ok, 'message' => $m, 'sdp' => $sdp]); }
