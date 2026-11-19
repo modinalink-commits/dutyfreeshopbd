@@ -61,15 +61,28 @@ class Mailer {
       return (int)DB::table('mail_outbox')->insertGetId(['to' => trim($to), 'subject' => mb_substr($subject, 0, 250), 'type' => $type, 'ref' => $ref, 'order_id' => $orderId, 'status' => 'queued', 'html' => $html, 'created_at' => now(), 'updated_at' => now()]);
     } catch (\Throwable $e) { return null; }
   }
+  public static function blockedAt(): ?string { $v = Cache::get('email.blocked'); return is_string($v) && $v !== '' ? $v : null; }
+  public static function isBlockError(?string $e): bool { $e = (string)$e; return stripos($e, 'Outbound sending is disabled') !== false || (str_contains($e, '554') && str_contains($e, '5.7.1')); }
+  /** Offer emails to ordinary customers (people who never asked for them) got the mailbox blocked for spam on 18 Nov 2026. Off unless the owner switches it on; the pasted "extra list" (people who agreed) is not affected. */
+  public static function mkCustomers(): bool { return self::set('mk_customers', '0') === '1'; }
   /** Sends a few queued emails per worker tick, inside the daily cap. Order emails go before any other type. */
   public static function pump(int $n = 8): void {
-    if (!self::on() || !Cache::add('email.pump', 1, 20)) return;
+    if (!self::on()) return;
+    // The mailbox provider switched outbound sending off (554 5.7.1): stop trying. One probe email an hour finds out when it is open again; nothing is lost, the queue waits (emails up to 2 days old still go).
+    if (self::blockedAt() !== null) { if (!Cache::add('email.blocked.probe', 1, 3600)) return; $n = 1; }
+    if (!Cache::add('email.pump', 1, 20)) return;
     try {
       $left = self::cap() - self::sentToday(); if ($left <= 0) return;
       $rows = DB::table('mail_outbox')->where('status', 'queued')->where('created_at', '>=', now()->subDays(2))->orderByRaw("case when type like 'order_%' then 0 else 1 end")->orderBy('id')->limit(min($n, $left))->get();
       foreach ($rows as $r) {
         if (!DB::table('mail_outbox')->where('id', $r->id)->where('status', 'queued')->update(['status' => 'sending', 'updated_at' => now()])) continue;
         [$ok, $err] = self::deliver($r->to, $r->subject, $r->html, str_starts_with((string)$r->type, 'mk_') ? self::unsubUrl($r->to) : null);
+        if (!$ok && self::isBlockError($err)) { // provider block: keep the email queued, remember the block, stop this run
+          DB::table('mail_outbox')->where('id', $r->id)->update(['status' => 'queued', 'error' => $err, 'updated_at' => now()]);
+          if (self::blockedAt() === null) { Cache::forever('email.blocked', now('Asia/Dhaka')->format('d M Y, h:i A')); try { \Illuminate\Support\Facades\Log::warning('Customer email paused: mailbox outbound sending is disabled by the provider', ['error' => $err]); } catch (\Throwable $e) {} }
+          break;
+        }
+        if ($ok && self::blockedAt() !== null) Cache::forget('email.blocked');
         DB::table('mail_outbox')->where('id', $r->id)->update(['status' => $ok ? 'sent' : 'failed', 'error' => $err, 'sent_at' => $ok ? now() : null, 'updated_at' => now()]);
       }
     } catch (\Throwable $e) { report($e); } finally { Cache::forget('email.pump'); }
@@ -163,7 +176,7 @@ class Mailer {
   /** A campaign SMS that was just queued (Back in Store, Best Seller, refill reminder...) also goes by email to the same customer when we have the address. */
   public static function fromSms(string $num, string $body, string $event, ?string $ref = null): void {
     try {
-      if (!self::mkOn()) return; $p = substr(preg_replace('/\D/', '', $num), -11); if (strlen($p) < 10) return;
+      if (!self::mkOn() || !self::mkCustomers()) return; $p = substr(preg_replace('/\D/', '', $num), -11); if (strlen($p) < 10) return;
       $c = DB::table('customers')->whereRaw('right(phone, 11) = ?', [$p])->whereNotNull('email')->where('email', '!=', '')->first(['name', 'email']); if (!$c || !self::valid($c->email) || self::optedOut($c->email)) return;
       $url = null; if (preg_match('#(https?://\S+|dutyfreebd\.com/\S+)#u', $body, $m)) $url = preg_match('#^https?://#', $m[1]) ? $m[1] : 'https://' . $m[1];
       $msg = trim(preg_replace(['#(https?://\S+|dutyfreebd\.com/\S+)#u', '/অর্ডার\s*:\s*$/um', '/DutyFreeBD\s*$/u'], ['', '', ''], $body)); $msg = trim(preg_replace('/\s+/u', ' ', $msg), " :।\n") . '।';
@@ -181,7 +194,7 @@ class Mailer {
       $left = self::mkCap() - self::mkToday(); if ($left <= 0) return; $n = min($left, 50); $gap = self::mkGap(); $day = now('Asia/Dhaka')->format('Ymd');
       $free = 'not exists (select 1 from mail_optouts x where x.email = lower(%1$s)) and not exists (select 1 from mail_outbox o where o."to" = %1$s and o.type like \'mk_%%\' and o.created_at > now() - (%2$d * interval \'1 day\'))';
       $rows = DB::select('select l.email, l.name from mail_list l where ' . sprintf($free, 'l.email', $gap) . ' order by l.id limit ' . (int)$n);
-      if (count($rows) < $n) { $more = DB::select("select c.email, c.name from customers c where c.email is not null and c.email <> '' and coalesce(c.blocked, false) = false and " . sprintf($free, 'c.email', $gap) . ' order by (select max(o2.created_at) from orders o2 where o2.phone = c.phone) asc nulls first limit ' . (int)($n - count($rows))); $rows = array_merge($rows, $more); }
+      if (count($rows) < $n && self::mkCustomers()) { $more = DB::select("select c.email, c.name from customers c where c.email is not null and c.email <> '' and coalesce(c.blocked, false) = false and " . sprintf($free, 'c.email', $gap) . ' order by (select max(o2.created_at) from orders o2 where o2.phone = c.phone) asc nulls first limit ' . (int)($n - count($rows))); $rows = array_merge($rows, $more); }
       $done = [];
       foreach ($rows as $r) { $e = mb_strtolower(trim((string)$r->email)); if (isset($done[$e]) || !self::valid($e)) continue; $done[$e] = 1;
         [$sub, $html] = self::offerHtml($e, $r->name ?? null); self::enqueue($e, $sub, $html, 'mk_offer', 'mk:offer:' . $day . ':' . $e); }

@@ -19,7 +19,7 @@
 <span>Mailbox password <span class="st {{ $hasPw ? 'ok' : 'no' }}">{{ $hasPw ? 'Saved' : 'Not saved' }}</span></span>
 <span>Email log table <span class="st {{ $table ? 'ok' : 'w' }}">{{ $table ? 'Ready' : 'Being created' }}</span></span>
 <span>Customer emails <span class="st {{ $on && $ready ? 'ok' : 'no' }}">{{ $on && $ready ? 'ON' : 'OFF' }}</span></span>
-<span>Sent today <b>{{ number_format($today) }}</b> of {{ number_format($cap) }}</span>
+<span>Sent today <b>{{ number_format($today) }}</b> of {{ number_format($cap) }}</span>@if(\App\Support\Mailer::blockedAt())<div style="flex-basis:100%;margin-top:8px;padding:10px 12px;border:1px solid #FCA5A5;background:#FEF2F2;color:#991B1B;border-radius:8px;font-size:13px;font-weight:600">⚠ Hostinger এই মেইলবক্সের বাইরে পাঠানো বন্ধ করেছে ({{ \App\Support\Mailer::blockedAt() }} থেকে ধরা পড়েছে)। ইমেইল কিউতে অপেক্ষা করছে; ঘণ্টায় একবার পরীক্ষা হয় এবং খুলে গেলে নিজে থেকেই পাঠানো শুরু হবে। খোলাতে Hostinger সাপোর্টে যোগাযোগ করুন।</div>@endif
 @if($withEmail !== null)<span>Customers with an email address <b>{{ number_format($withEmail) }}</b></span>@endif
 </div></div>
 
@@ -49,7 +49,7 @@
 
 <div class="card"><h2>4. Offer emails (marketing)</h2>
 <form method="post" action="/admin/email">@csrf<input type="hidden" name="act" value="marketing">
-<label class="sw"><input type="hidden" name="mk_on" value="0"><input type="checkbox" name="mk_on" value="1" @checked($mk['on'])> Send offer emails</label>
+<label class="sw"><input type="hidden" name="mk_on" value="0"><input type="checkbox" name="mk_on" value="1" @checked($mk['on'])> Send offer emails</label><div style="margin:6px 0;font-size:12.5px;color:#B45309">অফার ইমেইল এখন শুধু নিচের "Extra email list"-এ (যারা সম্মতি দিয়েছেন) যায়। সাধারণ গ্রাহকদের কাছে অফার ইমেইল বন্ধ: এর কারণেই ১৮ নভেম্বর মেইলবক্স স্প্যাম হিসেবে ব্লক হয়েছিল।</div>
 <div class="row" style="margin-top:12px">
 <label>Offer emails a day<br><input type="number" name="mk_cap" min="0" max="900" value="{{ $mk['cap'] }}" style="width:120px"></label>
 <label>Same person again after (days)<br><input type="number" name="mk_gap" min="1" max="60" value="{{ $mk['gap'] }}" style="width:120px"></label>
