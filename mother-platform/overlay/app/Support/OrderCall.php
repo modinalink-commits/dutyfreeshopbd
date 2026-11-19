@@ -107,7 +107,7 @@ class OrderCall
   private static function promptUrl(string $text): array {
     $c = (object)['id' => 0, 'pbx_audio' => null, 'audio_path' => null, 'dtmf_on' => 0, 'script' => $text . ' ', 'expiry_date' => null, 'validity_days' => 3];
     $row = (object)['id' => 0, 'phone' => '', 'product_name' => '', 'discount_value' => 0, 'name' => ''];
-    [$f, $err] = Voice::audio($c, $row); if (!$f) return [null, $err]; return [Voice::publicUrl($f), ''];
+    [$f, $err] = Voice::audio($c, $row); if (!$f) return [null, $err]; $u = preg_replace('~/voice-audio/(\d+)\.(\w+)\?t=(\w+)~', '/voice-audio/$1-$3.$2', Voice::publicUrl($f)); return [$u, ''];
   }
   private static function frame($fp): ?array {
     $h = []; while (($l = fgets($fp)) !== false) { $l = rtrim($l, "\r\n"); if ($l === '') { if ($h) break; continue; } if (str_contains($l, ':')) { [$k, $v] = explode(':', $l, 2); $h[trim($k)] = trim($v); } }
