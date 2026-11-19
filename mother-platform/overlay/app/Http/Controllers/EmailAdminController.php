@@ -38,7 +38,7 @@ class EmailAdminController extends Controller {
   }
   public function save(Request $r) {
     $this->gate();
-    $d = $r->validate(['act' => 'required|in:settings,password,test,marketing,list_add,list_remove', 'mk_on' => 'nullable|in:0,1', 'mk_cap' => 'nullable|integer|min:0|max:900', 'mk_gap' => 'nullable|integer|min:1|max:60', 'emails' => 'nullable|string|max:200000', 'email' => 'nullable|string|max:190', 'on' => 'nullable|in:0,1', 'from_name' => 'nullable|string|max:60', 'reply_to' => 'nullable|email|max:190', 'daily_cap' => 'nullable|integer|min:50|max:1000', 'password' => 'nullable|string|min:8|max:200', 'to' => 'nullable|email|max:190', 'kind' => 'nullable|string|max:20']);
+    $d = $r->validate(['act' => 'required|in:settings,password,test,marketing,list_add,list_remove,resend_failed', 'mk_on' => 'nullable|in:0,1', 'mk_cap' => 'nullable|integer|min:0|max:900', 'mk_gap' => 'nullable|integer|min:1|max:60', 'emails' => 'nullable|string|max:200000', 'email' => 'nullable|string|max:190', 'on' => 'nullable|in:0,1', 'from_name' => 'nullable|string|max:60', 'reply_to' => 'nullable|email|max:190', 'daily_cap' => 'nullable|integer|min:50|max:1000', 'password' => 'nullable|string|min:8|max:200', 'to' => 'nullable|email|max:190', 'kind' => 'nullable|string|max:20']);
     $audit = fn($what) => DB::table('audit_logs')->insert(['user_id' => auth()->id(), 'user_name' => auth()->user()->name, 'action' => 'email.settings', 'subject' => $what, 'ip' => $r->ip(), 'created_at' => now(), 'updated_at' => now()]);
     if ($d['act'] === 'password') {
       if (empty($d['password'])) return back()->with('err', 'Type the mailbox password.');
@@ -53,6 +53,19 @@ class EmailAdminController extends Controller {
       if (M::tableReady()) DB::table('mail_outbox')->insert(['to' => $d['to'], 'subject' => mb_substr($sub, 0, 250), 'type' => 'test', 'status' => $ok ? 'sent' : 'failed', 'html' => '', 'error' => $err, 'sent_at' => $ok ? now() : null, 'created_at' => now(), 'updated_at' => now()]);
       $audit('Test email to ' . $d['to'] . ': ' . ($ok ? 'sent' : 'failed'));
       return back()->with($ok ? 'ok' : 'err', $ok ? 'Test email sent to ' . $d['to'] . '. Check the inbox (and the spam folder).' : 'The test email could not be sent: ' . $err);
+    }
+    if ($d['act'] === 'resend_failed') { // order emails that failed while the provider had outbound sending switched off: queue them again (offer emails are never re-sent)
+      if (!M::on()) return back()->with('err', 'Customer emails are switched off.');
+      if (M::blockedAt() !== null) return back()->with('err', 'The mailbox is still blocked. Nothing was queued.');
+      $rows = DB::table('mail_outbox as m')->leftJoin('orders as o', 'o.id', '=', 'm.order_id')->where('m.status', 'failed')->where('m.type', 'like', 'order\_%')->where('m.created_at', '>=', now()->subDays(3))
+        ->where(fn($q) => $q->where('m.error', 'like', '%Outbound sending is disabled%')->orWhere('m.error', 'like', '%554%5.7.1%'))->orderByDesc('m.id')->get(['m.id', 'm.order_id', 'm.type', 'o.status']);
+      $done = ['Delivered', 'Partial Delivered', 'Late Delivery', 'Returned', 'Return Pending', 'Cancel']; $seen = []; $ids = []; $skip = 0;
+      foreach ($rows as $x) { $k = $x->order_id ?: 'm' . $x->id; if (isset($seen[$k])) { $skip++; continue; } $seen[$k] = 1; // newest failed email of each order only
+        if (in_array($x->type, ['order_received', 'order_confirmed', 'order_shipped'], true) && in_array((string)$x->status, $done, true)) { $skip++; continue; } // the order has moved on: an old "received / confirmed / shipped" email would only confuse
+        $ids[] = $x->id; }
+      foreach (array_chunk($ids, 500) as $ch) DB::table('mail_outbox')->whereIn('id', $ch)->update(['status' => 'queued', 'error' => null, 'created_at' => now(), 'updated_at' => now()]);
+      $audit('Failed order emails queued again: ' . count($ids) . ' (skipped ' . $skip . ' older or outdated)');
+      return back()->with('ok', number_format(count($ids)) . ' failed order email(s) queued again. ' . number_format($skip) . ' older or outdated ones were skipped. They go out a few at a time inside the daily limit.');
     }
     if ($d['act'] === 'marketing') {
       if ($r->input('mk_on') === '1' && !M::on()) return back()->with('err', 'Switch order emails on first; offer emails use the same mailbox.');
