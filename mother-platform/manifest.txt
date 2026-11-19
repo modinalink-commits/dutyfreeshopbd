@@ -1461,4 +1461,3 @@ public/adimg/pq-09.jpg
 public/adimg/pq-10.jpg
 public/adimg/pq-11.jpg
 app/Http/Controllers/VoiceCloneController.php
-resources/voice-src/dd_clone.mp3
