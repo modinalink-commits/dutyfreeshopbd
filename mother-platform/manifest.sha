@@ -1363,3 +1363,13 @@ ac085d3a734b7116e405376138c8b0a39cebe32e app/Http/Controllers/OrderCallControlle
 98a3922b221f6a69df0d204fcef4f90ba6e52639 resources/views/order_calls.blade.php
 3ae141f9f0ce574195ed492d4fa3d18d5226b406 database/migrations/2026_11_19_160000_order_call_verifications.php
 1478b8db116f68a969bac46fbf4f1eb44529f2f8 app/Console/Commands/OrderCallRun.php
+3feed85707c02e9773f4bf0dfe635270b8929100 public/adimg/pg-aromatica-rosemary.jpg
+848b58fb9f8e141ef8a13e577acca147c4768669 public/adimg/pg-banana-rush.jpg
+77e69ce616639b87bce883561470ef5dcb65dbd5 public/adimg/pg-bleu-de-chanel.jpg
+ce63dd2253d54efb6eaa04b54b55e2b8aa2d9b4e public/adimg/pg-c-for-men.jpg
+d6bf9e9729e1b7333a3294c540cd19c8e33f9097 public/adimg/pg-cerave-face-lotion.jpg
+4e4e5eac4157fa0c4528288c8646252165cc0a99 public/adimg/pg-elvive-total-repair.jpg
+f78f40b87d64998c5726207237f2fc7c2705e820 public/adimg/pg-jump-up-kiss-me.jpg
+faa058affee1473fb411564d372da249297ae0d1 public/adimg/pg-megamare.jpg
+0fb6b443fbd45804d9295e996a9b246df698c541 public/adimg/pg-vanilla-28.jpg
+a6d0b9126bf7ca42331c49a9c6529a5299dcccc3 public/adimg/pg-vanilla-powder.jpg

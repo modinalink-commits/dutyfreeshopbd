@@ -1364,3 +1364,13 @@ app/Http/Controllers/OrderCallController.php
 resources/views/order_calls.blade.php
 database/migrations/2026_11_19_160000_order_call_verifications.php
 app/Console/Commands/OrderCallRun.php
+public/adimg/pg-aromatica-rosemary.jpg
+public/adimg/pg-banana-rush.jpg
+public/adimg/pg-bleu-de-chanel.jpg
+public/adimg/pg-c-for-men.jpg
+public/adimg/pg-cerave-face-lotion.jpg
+public/adimg/pg-elvive-total-repair.jpg
+public/adimg/pg-jump-up-kiss-me.jpg
+public/adimg/pg-megamare.jpg
+public/adimg/pg-vanilla-28.jpg
+public/adimg/pg-vanilla-powder.jpg
