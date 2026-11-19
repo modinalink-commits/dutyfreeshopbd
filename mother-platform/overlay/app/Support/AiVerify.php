@@ -222,7 +222,13 @@ class AiVerify {
     elseif ($ai && in_array($ai['state'], ['calling', 'answered'], true)) $add('Communication', 'AI_CALL_LIVE', 'info', 'Call verification', 'AI confirmation call is in progress' . $aiAt($ai['at']) . '. Waiting for the customer to press 1 or 2.');
     elseif ($ai && $ai['state'] === 'stale') $add('Communication', 'AI_CALL_STALE', 'info', 'Call verification', 'The order changed after the last AI call. A new confirmation call or a staff call is needed.');
     elseif ($ai && in_array($ai['state'], ['no_answer', 'busy', 'no_input', 'failed'], true)) $add('Communication', 'AI_CALL_' . strtoupper($ai['state']), 'info', 'Call verification', 'AI call (attempt ' . (int)($ai['attempts'] ?? 1) . '): ' . ['no_answer' => 'the customer did not answer', 'busy' => 'the line was busy', 'no_input' => 'answered but pressed no valid key', 'failed' => 'the call could not be completed'][$ai['state']] . $aiAt($ai['at']) . '. A staff call is needed if no retry is left. Not a confirmation.');
-    else $add('Communication', 'NO_CALL', 'info', 'Call verification', 'Confirmation call pending: call the customer to confirm this order. An answered call here turns this green (-8 risk).');
+    else {
+      // say plainly why no AI call exists for this order (mode off, or the reason this order is not called), so staff know whether to call themselves
+      $why = null; try { if (OrderCall::mode() !== 'off') { $why = OrderCall::eligible($o); $why = $why === null ? 'queued' : $why; } } catch (\Throwable $e) { $why = null; }
+      if ($why === 'queued') $add('Communication', 'NO_CALL', 'info', 'Call verification', 'AI confirmation call is queued for this order (calls go out 09:00-21:00). Source: AI call.');
+      elseif ($why !== null) $add('Communication', 'NO_CALL', 'info', 'Call verification', 'No AI call for this order: ' . $why . '. A staff call can confirm it; an answered staff call here turns this green (-8 risk).');
+      else $add('Communication', 'NO_CALL', 'info', 'Call verification', 'Confirmation call pending: call the customer to confirm this order. An answered call here turns this green (-8 risk).');
+    }
 
     // ---- Status consistency ----
     if (in_array($o->status, ['Shipment', 'Delivered'], true) && !$deducted && $short) $add('Order', 'STATUS_STOCK', 'review', 'Order status consistency', 'Order is ' . $o->status . ' but stock is short', 10);
