@@ -33,6 +33,7 @@ class AdminController extends Controller {
       else { $fp = $A::filters(['from'=>$now->copy()->subDays(2*$days-1)->format('Y-m-d'), 'to'=>$now->copy()->subDays($days)->format('Y-m-d')] + $sf); $prev = 'previous '.$days.' days'; }
       $label = $range === 'today' ? 'today' : 'last '.$days.' days';
     }
+    $dq = '?from='.$f['from'].'&to='.$f['to'];
     $x = $safe(fn() => $cd($f)); $xp = $safe(fn() => $cd($fp));
     $n = fn($a, $k) => (float)($a[$k] ?? 0);
     $tren = function ($a, $b, $goodUp = true) use ($prev) { // [direction -1/0/1, text, good?]
@@ -60,14 +61,14 @@ class AdminController extends Controller {
     $spS = $sp(fn($t) => $t['sales']); $spO = $sp(fn($t) => $t['orders']); $spA = $sp(fn($t) => $t['orders'] ? $t['sales']/$t['orders'] : 0); $spP = $canFin ? $sp(fn($t) => $t['profit']) : null;
     $spD = $sp(fn($t) => $t['delivered']); $spR = $sp(fn($t) => $t['returned']);
     $kpis = [
-      ['Sales '.$label, '৳'.number_format($sales), $ord.' orders', 'sales', $tren($sales, $psales), '/admin/analytics/sales-summary', 'orange', $spS],
-      ['Orders '.$label, number_format($ord), '৳'.number_format($aov).' avg', 'cart', $tren($ord, $pord), '/admin/orders', 'blue', $spO],
-      ['Avg order value', '৳'.number_format($aov), 'per valid order', 'tag', $tren($aov, $paov), '/admin/analytics', 'violet', $spA],
-      ['Gross profit', $canFin ? '৳'.number_format($profit) : '—', $canFin ? ($n($x, 'cost') > 0 ? round($sales > 0 ? $profit/$sales*100 : 0, 1).'% margin' : 'Set product costs') : 'Permission needed', 'coin', $tren($profit, $pprofit), '/admin/analytics/profit-loss', 'green', $spP],
+      ['Sales '.$label, '৳'.number_format($sales), $ord.' orders', 'sales', $tren($sales, $psales), '/admin/analytics/sales-summary'.$dq, 'orange', $spS],
+      ['Orders '.$label, number_format($ord), '৳'.number_format($aov).' avg', 'cart', $tren($ord, $pord), '/admin/orders'.$dq, 'blue', $spO],
+      ['Avg order value', '৳'.number_format($aov), 'per valid order', 'tag', $tren($aov, $paov), '/admin/analytics'.$dq, 'violet', $spA],
+      ['Net profit', $canFin ? '৳'.number_format($profit) : '—', $canFin ? ($n($x, 'cost') > 0 ? round($sales > 0 ? $profit/$sales*100 : 0, 1).'% margin · after cost & courier' : 'Set product costs') : 'Permission needed', 'coin', $tren($profit, $pprofit), '/admin/analytics/profit-loss'.$dq, 'green', $spP],
       ['Delivery success', $fin ? round($dr, 1).'%' : '—', $del.' of '.$fin.' finished', 'truck', $fin ? $tren($dr, $pdr) : [0, '', null], '/admin/orders?status=Delivered', 'teal', $spD],
       ['Return rate', $fin ? round($rr, 1).'%' : '0%', $retn.' returned', 'undo', $fin ? $tren($rr, $prr, false) : [0, '', null], '/admin/orders?status=Returned', 'red', $spR],
       ['Awaiting confirmation', (string)$newN, $oldest ? 'Oldest '.\Carbon\Carbon::parse($oldest)->diffForHumans(null, true) : 'Nothing waiting', 'clock', [0, '', null], '/admin/orders?status=New', 'amber', null],
-      ['Ready to ship', (string)$ready, 'Packaging + WFP', 'box', [0, '', null], '/admin/orders?status=Packaging', 'slate', null],
+      ['Ready to ship', (string)$ready, 'Packaging + WFP', 'box', [0, '', null], '/admin/orders?status=Packaging,WFP', 'slate', null],
       ['Incomplete orders', (string)$incOpen, 'Open checkouts', 'alert', [0, '', null], '/admin/orders?status=Incomplete', 'amber', null],
       ['New customers', (string)$newC, 'first order '.$label, 'users', $tren($newC, $newCp), '/admin/m/customers', 'blue', null],
     ];

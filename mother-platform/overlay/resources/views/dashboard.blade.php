@@ -240,7 +240,7 @@ $__am = max(1, $__at ? $__at[0]['customers'] : 1);
 @endif
 
 <section class="dx-p">
-  <div class="card dx-cr" style="grid-column:1/-1"><div class="head"><h2>Courier Performance <small style="font-weight:500;color:#6B7280">· {{ $label }}</small></h2><a class="more" href="/admin/courier-dashboard">Open courier dashboard →</a></div>
+  <div class="card dx-cr" style="grid-column:1/-1"><div class="head"><h2>Courier Performance <small style="font-weight:500;color:#6B7280">· {{ $label }}</small></h2><a class="more" href="/admin/courier-dashboard?from={{ $f['from'] }}&to={{ $f['to'] }}">Open courier dashboard →</a></div>
     @php $__cn = fn($v) => '৳'.number_format($v); @endphp
     @forelse($cov['couriers'] ?? [] as $__c)
     <div class="dx-crh"><b style="font-size:14px">{{ $__c['name'] }}</b><span class="muted">{{ number_format($__c['total']) }} parcels</span><b style="margin-left:auto;color:{{ ($__c['success'] ?? 0) >= 90 ? '#166534' : (($__c['success'] ?? 0) >= 75 ? '#C2410C' : '#A3281E') }}">{{ $__c['success'] !== null ? $__c['success'].'% success' : 'no finished parcels' }}</b></div>
@@ -308,7 +308,7 @@ function draw(){
  var W=960,H=165,L=40,R=12,Tp=10,B=24,n=T.length,cw=(W-L-R)/Math.max(1,n),iw=W-L-R,ih=H-Tp-B;
  var A,Bs,la,lb,fa,fb;
  if(m==='sales'){A=T.map(function(t){return t.sales});Bs=T.map(function(t){return t.orders});la='Sales (৳)';lb='Orders';fa=fmt;fb=function(v){return v+' orders'}}
- else if(m==='profit'){A=T.map(function(t){return t.profit});Bs=null;la='Gross profit (৳)';fa=fmt}
+ else if(m==='profit'){A=T.map(function(t){return t.profit});Bs=null;la='Net profit (৳)';fa=fmt}
  else{A=T.map(function(t){return t.orders});Bs=T.map(function(t){return t.delivered});la='Orders';lb='Delivered';fa=function(v){return v+' orders'};fb=function(v){return v+' delivered'}}
  var mxA=Math.max(1,Math.max.apply(null,A)),mxB=Bs?Math.max(1,Math.max.apply(null,Bs)):1;
  var s='<svg viewBox="0 0 '+W+' '+H+'">';
