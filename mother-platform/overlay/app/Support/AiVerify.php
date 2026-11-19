@@ -213,8 +213,15 @@ class AiVerify {
 
     // ---- Communication ----
     $call = null;
-    if ($validPhone && self::tbl('call_logs')) { try { $call = DB::table('call_logs')->whereRaw('right(phone,11) = ?', [$phone])->where('status', 'answered')->where(function ($q) use ($o, $created) { $q->where('order_id', $o->id)->orWhere('started_at', '>=', \Carbon\Carbon::parse($created)->subHours(2)); })->orderByDesc('id')->first(); } catch (\Throwable $e) { $call = null; } }
-    if ($call) $add('Communication', 'CALL_CONFIRMED', 'pass', 'Call verification', 'Call answered by the customer' . ($call->user_name ? ' (staff: ' . $call->user_name . ')' : '') . ($call->started_at ? ', ' . \Carbon\Carbon::parse($call->started_at)->timezone('Asia/Dhaka')->format('d M, h:i A') : '') . '. Strong supporting evidence.', -8);
+    if ($validPhone && self::tbl('call_logs')) { try { $call = DB::table('call_logs')->whereRaw('right(phone,11) = ?', [$phone])->where('status', 'answered')->where(function ($q) use ($o, $created) { $q->where('order_id', $o->id)->orWhere('started_at', '>=', \Carbon\Carbon::parse($created)->subHours(2)); })->orderByDesc('id')->limit(5)->get()->first(fn($x) => !OrderCall::isAiCall($phone, $x->started_at)); } catch (\Throwable $e) { $call = null; } }
+    $ai = null; try { $ai = OrderCall::state($o); } catch (\Throwable $e) { $ai = null; }
+    $aiAt = fn($x) => $x ? ', ' . \Carbon\Carbon::parse($x)->timezone('Asia/Dhaka')->format('d M, h:i A') : '';
+    if ($ai && $ai['state'] === 'confirmed') $add('Communication', 'AI_CALL_CONFIRMED', 'pass', 'Call verification', 'Order confirmed by the customer: pressed 1 on the AI call' . $aiAt($ai['at']) . '. Source: AI call. This confirmation is for the current order details.', OrderCall::mode() === 'gate' ? -8 : 0);
+    elseif ($ai && $ai['state'] === 'pending_requested' && !($call && $call->started_at && \Carbon\Carbon::parse($call->started_at)->gt(\Carbon\Carbon::parse($ai['at'])))) $add('Communication', 'AI_CALL_HOLD', 'review', 'Call verification', 'The customer pressed 2 on the AI call' . $aiAt($ai['at']) . ': details not right or wants to talk first. Do NOT approve automatically. Staff call back and confirm first.', 10, true);
+    elseif ($call) $add('Communication', 'CALL_CONFIRMED', 'pass', 'Call verification', 'Staff call answered by the customer' . ($call->user_name ? ' (staff: ' . $call->user_name . ')' : '') . ($call->started_at ? ', ' . \Carbon\Carbon::parse($call->started_at)->timezone('Asia/Dhaka')->format('d M, h:i A') : '') . '. Source: staff call. Strong supporting evidence.', -8);
+    elseif ($ai && in_array($ai['state'], ['calling', 'answered'], true)) $add('Communication', 'AI_CALL_LIVE', 'info', 'Call verification', 'AI confirmation call is in progress' . $aiAt($ai['at']) . '. Waiting for the customer to press 1 or 2.');
+    elseif ($ai && $ai['state'] === 'stale') $add('Communication', 'AI_CALL_STALE', 'info', 'Call verification', 'The order changed after the last AI call. A new confirmation call or a staff call is needed.');
+    elseif ($ai && in_array($ai['state'], ['no_answer', 'busy', 'no_input', 'failed'], true)) $add('Communication', 'AI_CALL_' . strtoupper($ai['state']), 'info', 'Call verification', 'AI call (attempt ' . (int)($ai['attempts'] ?? 1) . '): ' . ['no_answer' => 'the customer did not answer', 'busy' => 'the line was busy', 'no_input' => 'answered but pressed no valid key', 'failed' => 'the call could not be completed'][$ai['state']] . $aiAt($ai['at']) . '. A staff call is needed if no retry is left. Not a confirmation.');
     else $add('Communication', 'NO_CALL', 'info', 'Call verification', 'Confirmation call pending: call the customer to confirm this order. An answered call here turns this green (-8 risk).');
 
     // ---- Status consistency ----
@@ -259,6 +266,7 @@ class AiVerify {
       $o = DB::table('orders')->find($orderId); if (!$o || $o->status !== 'New' || !empty($o->duplicate_of_order_id)) return false;
       if (!empty($o->approved_at)) return false; // already approved once and moved back by staff: it stays where they put it (owner rule 14 Nov 2026)
       if (DupGuard::block($o, 'Approved')) return false;
+      if (OrderCall::blocksApproval($o)) return false; // gate mode: AI-call confirmation (key 1) or a staff call first
       if ($o->phone && in_array(CustomerBenefit::check((string)$o->phone)['status'], ['Suspended', 'Review Required'], true)) return false;
       $moved = DB::transaction(function () use ($o, $v) {
         if (!DB::table('orders')->where('id', $o->id)->where('status', 'New')->update(['status' => 'Approved', 'approved_at' => now(), 'auto_approved' => true, 'updated_at' => now()])) return false;

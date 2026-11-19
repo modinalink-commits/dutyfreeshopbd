@@ -254,7 +254,8 @@ class Voice
   }
   /** PBX webhook: answered / digit / hangup. The raw payload is always kept. */
   public static function hook(array $d): array {
-    unset($d['k']); $uuid = (string)($d['uuid'] ?? $d['call_id'] ?? ''); $a = $uuid !== '' ? DB::table('voice_call_attempts')->where('pbx_call_id', $uuid)->orderByDesc('id')->first() : null;
+    unset($d['k']); try { $oc = \App\Support\OrderCall::hook($d); if ($oc !== null) return $oc; } catch (\Throwable $e) { Log::warning('order call hook: ' . $e->getMessage()); }
+    $uuid = (string)($d['uuid'] ?? $d['call_id'] ?? ''); $a = $uuid !== '' ? DB::table('voice_call_attempts')->where('pbx_call_id', $uuid)->orderByDesc('id')->first() : null;
     if (!$a) { Log::warning('voice hook: unknown call', ['uuid' => $uuid]); return ['ok' => false, 'error' => 'unknown call']; }
     $log = json_decode((string)($a->webhook_payload ?? ''), true) ?: []; $log[] = ['at' => now()->toIso8601String(), 'data' => $d]; $log = array_slice($log, -30);
     DB::table('voice_call_attempts')->where('id', $a->id)->update(['webhook_payload' => json_encode($log, JSON_UNESCAPED_UNICODE), 'updated_at' => now()]);

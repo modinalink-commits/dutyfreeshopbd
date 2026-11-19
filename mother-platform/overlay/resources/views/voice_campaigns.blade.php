@@ -4,6 +4,7 @@
 @php $T = fn($v) => number_format($v); $pill = ['draft'=>['#F3F4F6','#4B5563'],'active'=>['#DCFCE7','#166534'],'paused'=>['#FEF3C7','#92400E'],'completed'=>['#E0E7FF','#1D5FA8']]; @endphp
 <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px"><div style="flex:1"><h1 style="margin:0">Voice Campaigns</h1><div style="font-size:12px;color:#6B7280">Personalised promotional calls — last ordered product, scheduled voice offer, conversion tracking</div></div>
 <span style="font-size:11px;font-weight:700;border-radius:999px;padding:4px 12px;background:{{ $s['on']==='1' ? '#DCFCE7' : '#FEE2E2' }};color:{{ $s['on']==='1' ? '#166534' : '#B91C1C' }}">{{ $s['on']==='1' ? 'CALLING ON' : 'CALLING OFF' }}</span>
+<a class="sbtn" href="/admin/voice/order-calls" style="text-decoration:none">☎ Order confirmation calls</a>
 <button type="button" class="sbtn" data-sdr="vcset">⚙ Settings</button><a class="btn" href="/admin/voice/new" style="text-decoration:none">+ New Campaign</a></div>
 @if(session('ok'))<div class="card" style="color:#166534">{{ session('ok') }}</div>@endif @if(session('err'))<div class="card" style="color:#B91C1C">{{ session('err') }}</div>@endif
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:10px;margin-bottom:12px">
