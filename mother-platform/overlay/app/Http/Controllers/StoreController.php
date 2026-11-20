@@ -496,7 +496,9 @@ class StoreController extends Controller {
   }
   private function renderProduct($p, bool $preview = false) {
     $c = DB::table('categories')->find($p->category_id);
-    $rel = $this->q()->where('category_id',$p->category_id)->where('id','!=',$p->id)->orderByRaw('(sub = ?) desc', [$p->sub ?? ''])->orderByDesc('id')->limit(11)->get();
+    // Which products are "related" is remembered for 10 minutes per product (this sort over the whole category was the heaviest query on the server); the rows themselves are read fresh, so price and stock are always current.
+    $relIds = self::rem('rel.' . $p->id, 600, fn() => $this->q()->where('category_id',$p->category_id)->where('id','!=',$p->id)->orderByRaw('(sub = ?) desc', [$p->sub ?? ''])->orderByDesc('id')->limit(11)->pluck('id')->map(fn($v) => (int)$v)->all());
+    $rel = $this->q()->whereIn('id', $relIds ?: [0])->get()->sortBy(fn($r) => array_search((int)$r->id, $relIds))->values();
     $reviews = DB::table('reviews')->where('product_id',$p->id)->where('status','approved')->orderByDesc('id')->limit(20)->get();
     $rst = DB::table('reviews')->whereIn('product_id', $rel->pluck('id')->all())->where('status','approved')->groupBy('product_id')->selectRaw('product_id, avg(rating) as av, count(*) as n')->get()->keyBy('product_id');
     foreach ($rel as $r0) { $x = $rst->get($r0->id); $r0->rv_avg = $x ? round((float)$x->av, 1) : 0; $r0->rv_n = $x ? (int)$x->n : 0; }
