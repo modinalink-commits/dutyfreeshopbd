@@ -818,7 +818,7 @@ class StoreController extends Controller {
    * All parts are built together once an hour (same rules as before: only pages that really open, tobacco/vape never listed).
    */
   public function sitemap(?string $part = null) {
-    $B = \App\Support\Domain::main(); $pre = 'smap16.' . (Cache::get('store.ver') ?: 0) . (\App\Support\CleanSite::on() ? '.c' : '') . '.';
+    $B = \App\Support\Domain::main(); $pre = 'smap17.' . (Cache::get('store.ver') ?: 0) . (\App\Support\CleanSite::on() ? '.c' : '') . '.';
     $idx = Cache::get($pre . 'idx');
     if (!is_array($idx) || ($part !== null && isset($idx[$part]) && !Cache::has($pre . 'p.' . $part))) {
       $parts = $this->sitemapParts(); $idx = [];
@@ -853,10 +853,13 @@ class StoreController extends Controller {
       $smkIds = $this->cats()->filter(fn($c) => self::isSmokeCat($c))->pluck('id')->all();
       $pq = \App\Support\StockGuard::listable(DB::table('products')->where('published',true))->where(fn($q)=>$q->whereNull('group_key')->orWhere('group_key','!=','smoke'));
       if ($smkIds) $pq->where(fn($q) => $q->whereNull('category_id')->orWhereNotIn('category_id', $smkIds));
-      foreach ($pq->orderBy('id')->cursor() as $p) { $pu = self::url($p); $k = explode('/', ltrim($pu, '/'))[0]; if ($k === 'p' || !preg_match('/^[a-z0-9-]{1,60}$/', $k) || $k === 'pages') $k = 'other-products'; $parts[$k] = ($parts[$k] ?? '') . $u($ul($pu), $p->image, $p->updated_at ?? null); }
+      // best sellers (units sold in the last 90 days, not cancelled/incomplete): own sitemap part listed first, so Google meets the pages that matter most before the ~28k others
+      $topIds = [];
+      try { $topIds = DB::table('order_items as i')->join('orders as o', 'o.id', '=', 'i.order_id')->whereNotIn('o.status', ['Cancel', 'Incomplete'])->where('o.created_at', '>=', now()->subDays(90))->whereNotNull('i.product_id')->groupBy('i.product_id')->orderByRaw('sum(i.qty) desc')->limit(1000)->pluck('i.product_id')->map(fn($v) => (int)$v)->flip()->all(); } catch (\Throwable $e) {}
+      foreach ($pq->orderBy('id')->cursor() as $p) { $pu = self::url($p); $k = explode('/', ltrim($pu, '/'))[0]; if ($k === 'p' || !preg_match('/^[a-z0-9-]{1,60}$/', $k) || $k === 'pages') $k = 'other-products'; if (isset($topIds[(int)$p->id])) $k = 'best-sellers'; $parts[$k] = ($parts[$k] ?? '') . $u($ul($pu), $p->image, $p->updated_at ?? null); }
       return $o;
     })();
-    ksort($parts);
-    return ['pages' => $xml] + $parts;
+    ksort($parts); $bs = $parts['best-sellers'] ?? null; unset($parts['best-sellers']);
+    return ['pages' => $xml] + ($bs !== null ? ['best-sellers' => $bs] : []) + $parts;
   }
 }
