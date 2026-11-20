@@ -1464,3 +1464,4 @@ app/Http/Controllers/VoiceCloneController.php
 database/migrations/2026_11_20_090000_relay_retired.php
 database/migrations/2026_11_20_190000_low_price_exempt_iqbalstore.php
 public/adimg/nov26-coupon-save100.jpg
+public/adimg/nov26-cart-waiting.jpg
