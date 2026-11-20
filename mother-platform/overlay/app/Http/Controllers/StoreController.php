@@ -530,12 +530,15 @@ class StoreController extends Controller {
   /** Live search suggestions: products (with image), brands, categories and stores. */
   public function suggest(Request $r) {
     $t = trim(mb_substr((string)$r->q, 0, 60)); if (mb_strlen($t) < 2) return response()->json([]);
+    // 20 Nov 2026 (backend check-up): the same few letters are typed by many visitors and each lookup scans the whole product table, so an answer is kept for 10 minutes (the storefront cache version clears it when products are published or hidden).
+    $out = self::rem('sg.' . md5(mb_strtolower($t)), 600, function () use ($t) {
     $like = '%'.str_replace(['%','_'], ['\\%','\\_'], $t).'%';
     $out = [];
     foreach ($this->searchRank($this->searchWhere($this->q(), $t), $t)->orderByDesc('id')->limit(8)->get(['id','ext_id','sku','name','price','image','sub','stock','category_id']) as $p) $out[] = ['t'=>'p','n'=>$p->name,'u'=>self::url($p),'i'=>$p->image,'x'=>number_format($p->price).' TK','s'=>(string)($p->sku ?: '')];
     foreach ($this->cats() as $c) if (stripos($c->name, $t) !== false) $out[] = ['t'=>'c','n'=>$c->name,'u'=>'/'.$c->slug.'/'];
     foreach (\App\Support\StockGuard::listable(DB::table('products')->where('published',true))->where('sub','ilike',$like)->select('category_id','sub')->distinct()->limit(3)->get() as $b) { $c = $this->cats()->firstWhere('id',$b->category_id); if ($c) $out[] = ['t'=>'b','n'=>$b->sub,'u'=>'/'.$c->slug.'/?sub='.rawurlencode($b->sub)]; }
-    return response()->json($out)->header('Cache-Control','public, max-age=60');
+    return $out; });
+    return response()->json(is_array($out) ? $out : [])->header('Cache-Control','public, max-age=60');
   }
   public function checkout() {
     return response()->view('store.checkout', $this->base(['pays'=>\App\Http\Controllers\PaymentController::active(),'title'=>'Checkout | DutyFree BD', 'desc'=>'', 'canon'=>url('/checkout'), 'noindex'=>true, 'grey'=>true]));
