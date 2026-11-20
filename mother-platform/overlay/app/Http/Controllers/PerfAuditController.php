@@ -14,6 +14,19 @@ class PerfAuditController extends Controller {
     return redirect('/admin/perf-audit')->with('ok', $ok ? 'OPcache cleared. The first pages after this may be a little slower while it refills.' : 'OPcache is not available.');
   }
   public function show() {
+    // ?host=1: where the server's CPU time goes (user / system / iowait / steal ...), sampled for 3 seconds from /proc. Read only.
+    if (request()->boolean('host')) {
+      abort_unless(auth()->check() && in_array(auth()->user()->role, ['super', 'admin'], true), 403);
+      $rd = function () { $o = []; foreach (explode("\n", (string)@file_get_contents('/proc/stat')) as $l) { $x = preg_split('/\s+/', trim($l)); if (str_starts_with($x[0] ?? '', 'cpu')) $o[$x[0]] = array_map('intval', array_slice($x, 1, 8)); elseif (in_array($x[0] ?? '', ['procs_running', 'procs_blocked', 'ctxt', 'intr'], true)) $o[$x[0]] = (int)($x[1] ?? 0); } return $o; };
+      $a = $rd(); usleep(3000000); $b = $rd(); $names = ['user', 'nice', 'system', 'idle', 'iowait', 'irq', 'softirq', 'steal']; $out = [];
+      foreach ($b as $k => $v) { if (!is_array($v)) continue; $d = []; foreach ($v as $i => $n) $d[$i] = $n - ($a[$k][$i] ?? 0); $t = max(1, array_sum($d)); $row = []; foreach ($names as $i => $nm) $row[$nm] = round(($d[$i] ?? 0) / $t * 100, 1); $out[$k] = $row; }
+      $file = fn($f) => trim((string)@file_get_contents($f));
+      return response()->json(['cpu_pct_3s' => $out, 'procs_running' => $b['procs_running'] ?? null, 'procs_blocked' => $b['procs_blocked'] ?? null,
+        'ctx_switches_per_s' => isset($b['ctxt'], $a['ctxt']) ? (int)(($b['ctxt'] - $a['ctxt']) / 3) : null, 'interrupts_per_s' => isset($b['intr'], $a['intr']) ? (int)(($b['intr'] - $a['intr']) / 3) : null,
+        'loadavg' => $file('/proc/loadavg'), 'pressure_cpu' => $file('/proc/pressure/cpu'), 'pressure_io' => $file('/proc/pressure/io'), 'pressure_memory' => $file('/proc/pressure/memory'),
+        'diskstats' => array_values(array_filter(array_map(function ($l) { $x = preg_split('/\s+/', trim($l)); return isset($x[2]) && preg_match('/^(sd[a-z]|vd[a-z]|nvme\d+n\d+)$/', $x[2]) ? ['dev' => $x[2], 'reads' => (int)$x[3], 'writes' => (int)$x[7], 'io_ms' => (int)$x[12], 'in_progress' => (int)$x[11]] : null; }, explode("\n", (string)@file_get_contents('/proc/diskstats'))))),
+      ])->header('Cache-Control', 'no-store');
+    }
     abort_unless(auth()->user() && in_array(auth()->user()->role, ['super','admin'], true), 403);
     $S = []; $mem = []; foreach (explode("\n", (string)@file_get_contents('/proc/meminfo')) as $l) if (preg_match('/^(\w+):\s+(\d+)/', $l, $m)) $mem[$m[1]] = (int)$m[2] / 1024;
     $cores = max(1, substr_count((string)@file_get_contents('/proc/cpuinfo'), 'processor'));
