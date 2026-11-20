@@ -855,7 +855,7 @@ class StoreController extends Controller {
       if ($smkIds) $pq->where(fn($q) => $q->whereNull('category_id')->orWhereNotIn('category_id', $smkIds));
       // best sellers (units sold in the last 90 days, not cancelled/incomplete): own sitemap part listed first, so Google meets the pages that matter most before the ~28k others
       $topIds = [];
-      try { $topIds = DB::table('order_items as i')->join('orders as o', 'o.id', '=', 'i.order_id')->whereNotIn('o.status', ['Cancel', 'Incomplete'])->where('o.created_at', '>=', now()->subDays(90))->whereNotNull('i.product_id')->groupBy('i.product_id')->orderByRaw('sum(i.qty) desc')->limit(1000)->pluck('i.product_id')->map(fn($v) => (int)$v)->flip()->all(); } catch (\Throwable $e) {}
+      try { $topIds = DB::table('order_items as i')->join('orders as o', 'o.id', '=', 'i.order_id')->whereNotIn('o.status', ['Cancel', 'Incomplete'])->where('o.created_at', '>=', now()->subDays(90))->whereNotNull('i.product_id')->groupBy('i.product_id')->orderByRaw('sum(i.qty) desc')->limit(1000)->pluck('i.product_id')->map(fn($v) => (int)$v)->flip()->all(); } catch (\Throwable $e) { \Illuminate\Support\Facades\Log::warning('sitemap best-sellers query failed: ' . $e->getMessage()); }
       foreach ($pq->orderBy('id')->cursor() as $p) { $pu = self::url($p); $k = explode('/', ltrim($pu, '/'))[0]; if ($k === 'p' || !preg_match('/^[a-z0-9-]{1,60}$/', $k) || $k === 'pages') $k = 'other-products'; if (isset($topIds[(int)$p->id])) $k = 'best-sellers'; $parts[$k] = ($parts[$k] ?? '') . $u($ul($pu), $p->image, $p->updated_at ?? null); }
       return $o;
     })();
