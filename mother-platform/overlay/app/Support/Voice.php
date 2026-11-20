@@ -63,7 +63,9 @@ class Voice
       }
       if ($prov === 'elevenlabs') { // owner 20 Nov 2026: young Bangladeshi woman voice; voice id in "Voice name"; numbers spelled in Bangla words so the pronunciation stays Bangladeshi
         $vid = trim((string)self::set('tts_voice', '')); if ($vid === '') return [null, 'ElevenLabs voice id missing in Voice settings'];
-        $r = Http::timeout(40)->withHeaders(['xi-api-key' => $key, 'Accept' => 'application/octet-stream'])->post('https://api.elevenlabs.io/v1/text-to-speech/' . rawurlencode($vid) . '?output_format=pcm_8000', ['text' => self::bnSpeak($text), 'model_id' => 'eleven_v3', 'voice_settings' => ['stability' => 0.5]]);
+        // 20 Nov 2026: up to 10 calls start together; ElevenLabs answers 429 when several voices are generated at once, so generation goes one at a time and a 429 is retried
+        $lk = \Illuminate\Support\Facades\Cache::lock('tts.eleven', 30); try { $lk->block(75); } catch (\Throwable $e) {}
+        try { for ($try = 0; $try < 4; $try++) { $r = Http::timeout(40)->withHeaders(['xi-api-key' => $key, 'Accept' => 'application/octet-stream'])->post('https://api.elevenlabs.io/v1/text-to-speech/' . rawurlencode($vid) . '?output_format=pcm_8000', ['text' => self::bnSpeak($text), 'model_id' => 'eleven_v3', 'voice_settings' => ['stability' => 0.5]]); if ($r->status() !== 429) break; sleep(3 + $try * 3); } } finally { try { $lk->release(); } catch (\Throwable $e) {} }
         $pcm = $r->body(); if (!$r->ok() || strlen($pcm) < 1000) return [null, 'Voice engine error ' . $r->status()];
         $n = strlen($pcm); $hdr = 'RIFF' . pack('V', 36 + $n) . 'WAVEfmt ' . pack('VvvVVvv', 16, 1, 1, 8000, 16000, 2, 16) . 'data' . pack('V', $n); file_put_contents($f, $hdr . $pcm); return [$f, ''];
       }

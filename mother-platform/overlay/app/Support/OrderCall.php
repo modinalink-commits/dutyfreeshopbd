@@ -252,6 +252,8 @@ class OrderCall
         $rows = DB::table('order_call_verifications')->where('order_id', $o->id)->where('version_hash', $ver)->orderByDesc('id')->get();
         if ($rows->contains(fn($r) => in_array($r->status, ['confirmed', 'pending_requested'], true))) continue;
         if ($rows->contains(fn($r) => in_array($r->status, ['calling', 'answered'], true))) continue;
+        // a call that never rang because the voice could not be generated does not use up the customer's attempt (at most 3 such retries per order)
+        $eng = $rows->filter(fn($r) => $r->status === 'failed' && str_starts_with((string)$r->cause, 'Voice engine')); if ($eng->count() <= 3) $rows = $rows->reject(fn($r) => $r->status === 'failed' && str_starts_with((string)$r->cause, 'Voice engine'))->values();
         $n = $rows->count(); if ($n >= $max) continue; $last = $rows->first();
         if ($last && (!$last->next_attempt_at || \Carbon\Carbon::parse($last->next_attempt_at)->isFuture())) continue;
         if ($n === 0 && $o->created_at && \Carbon\Carbon::parse($o->created_at)->gt(now()->subSeconds(90))) continue; // let the order settle first
