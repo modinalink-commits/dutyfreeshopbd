@@ -11,12 +11,11 @@ class StoreController extends Controller {
   /** Crawlable text links to the best-selling products (last 90 days) for the storefront footer: gives Google an internal path to the pages that matter most. Tobacco/vape excluded; cached 6 hours. */
   public static function popularLinks(): array {
     try {
-      return self::rem('pop.links4', 21600, function () {
+      return self::rem('pop.links5', 21600, function () {
         $me = app(self::class); $smk = $me->cats()->filter(fn($c) => self::isSmokeCat($c))->pluck('id')->all();
         $ids = []; foreach (DB::table('order_items as i')->join('orders as o', 'o.id', '=', 'i.order_id')->whereNotIn('o.status', ['Cancel', 'Incomplete'])->where('o.created_at', '>=', now()->subDays(90))->whereNotNull('i.product_id')->groupBy('i.product_id')->selectRaw('i.product_id as pid, sum(i.qty) as q')->orderByDesc('q')->limit(1500)->get() as $r) $ids[] = (int)$r->pid;
         if (!$ids) return [];
-        $q = \App\Support\StockGuard::listable(DB::table('products')->where('published', true))->whereIn('id', $ids)->where(fn($w) => $w->whereNull('group_key')->orWhere('group_key', '!=', 'smoke'));
-        if ($smk) $q->where(fn($w) => $w->whereNull('category_id')->orWhereNotIn('category_id', $smk));
+        $q = \App\Support\StockGuard::listable(DB::table('products')->where('published', true))->whereIn('id', $ids);
         $rows = $q->get()->keyBy('id'); $out = [];
         foreach ($ids as $id) { if (isset($rows[$id]) && count($out) < 40) { $p = $rows[$id]; $out[] = ['name' => (string)$p->name, 'url' => self::url($p)]; } }
         return $out;
@@ -438,7 +437,7 @@ class StoreController extends Controller {
     }
     $ov = $this->autoSeo($subSlug === null ? $c : $seoNode, $subSlug === null ? 'title' : 'meta_title');
     if ((int)$r->query('page') > 1) unset($ov['canon']); // paginated pages keep their own self canonical
-    return response()->view('store.category', $this->base(array_replace(['c'=>$c, 'subName'=>$subName, 'subSlug'=>$subSlug, 'items'=>$items, 'hasPos'=>$hasPos, 'groups'=>collect($items->items())->groupBy(fn($p) => $p->sub ?: $c->name), 'title'=>$title, 'desc'=>$subName ? $subName.' – original imported products in '.$c->name.' at DutyFree BD. Cash on delivery, nationwide delivery.' : $c->meta_description, 'canon'=>((int)$r->query('page') > 1) ? $canon.'?page='.(int)$r->query('page') : ((!$subName && !empty($c->canonical)) ? $c->canonical : $canon), 'noindex'=>(!empty($c->noindex) && !$subName) || self::isSmokeCat($c), 'keywords'=>$c->focus_keyword ?? null, 'ogimg'=>(!empty($c->og_image) ? $c->og_image : null)], $ov)))->header('Cache-Control','public, max-age=120');
+    return response()->view('store.category', $this->base(array_replace(['c'=>$c, 'subName'=>$subName, 'subSlug'=>$subSlug, 'items'=>$items, 'hasPos'=>$hasPos, 'groups'=>collect($items->items())->groupBy(fn($p) => $p->sub ?: $c->name), 'title'=>$title, 'desc'=>$subName ? $subName.' – original imported products in '.$c->name.' at DutyFree BD. Cash on delivery, nationwide delivery.' : $c->meta_description, 'canon'=>((int)$r->query('page') > 1) ? $canon.'?page='.(int)$r->query('page') : ((!$subName && !empty($c->canonical)) ? $c->canonical : $canon), 'noindex'=>(!empty($c->noindex) && !$subName), 'keywords'=>$c->focus_keyword ?? null, 'ogimg'=>(!empty($c->og_image) ? $c->og_image : null)], $ov)))->header('Cache-Control','public, max-age=120');
   }
   /** Public brand page /brand/{slug}: published products of one brand + the brand's own SEO (auto or manual). */
   public function brand(Request $r, string $slug) {
@@ -451,7 +450,7 @@ class StoreController extends Controller {
     $catIds = $this->q()->where('brand_id', $b->id)->distinct()->pluck('category_id')->all();
     $smoke = DB::table('categories')->get(['id','slug','name'])->filter(fn($c) => self::isSmokeCat($c))->pluck('id')->all();
     $onlySmoke = $catIds && !array_diff($catIds, $smoke);
-    $noindex = !empty($b->noindex) || $onlySmoke || $items->total() === 0;
+    $noindex = !empty($b->noindex) || $items->total() === 0;
     $name = trim($b->name); $site = 'DutyFreeBD';
     $title = trim((string)($b->meta_title ?? '')) ?: "$name Products in Bangladesh | $site";
     $desc = trim((string)($b->meta_description ?? '')) ?: "Explore $name products at $site with product details, current pricing and convenient ordering in Bangladesh.";
@@ -502,7 +501,7 @@ class StoreController extends Controller {
     $price = (float)$p->price;
     $gallery = DB::table('product_images')->where('product_id',$p->id)->orderBy('position')->orderBy('id')->pluck('path')->all(); if (str_contains((string)$p->image, '/uploads/ai/')) $gallery = []; // owner rule: a product with a clean AI image shows that ONE image only (no old photos with the old background)
     $brandName = null; try { if (!empty($p->brand_id)) $brandName = DB::table('brands')->where('id', $p->brand_id)->value('name'); } catch (\Throwable $e) { $brandName = null; }
-    return response()->view('store.product', $this->base(['brandName'=>$brandName, 'preview'=>$preview, 'gallery'=>$gallery, 'p'=>$p, 'c'=>$c, 'rel'=>$rel, 'reviews'=>$reviews, 'title'=>(mb_strlen((string)$p->meta_title) >= 10 && mb_strlen((string)$p->meta_title) <= 66 ? $p->meta_title : self::fitTitle($p->name, ' দাম ৳'.number_format($price).' | DutyFree BD')), 'keywords'=>$p->meta_keywords ?? null, 'desc'=>($p->meta_description ?: $p->name.' – দাম ৳ '.number_format($price).'। অরিজিনাল ইমপোর্টেড পণ্য, অর্ডার করুন, সারা বাংলাদেশে ডেলিভারি। DutyFree BD.'), 'canon'=>($p->canonical ?? null) ?: url(self::url($p)), 'noindex'=>!empty($p->noindex) || ($p->group_key ?? null) === 'smoke', 'ogimg'=>($p->og_image ?? null) ?: ($p->image ? (preg_match('#^https?://#i', $p->image) ? $p->image : url($p->image)) : url('/og.png'))]))->header('Cache-Control','public, max-age=120');
+    return response()->view('store.product', $this->base(['brandName'=>$brandName, 'preview'=>$preview, 'gallery'=>$gallery, 'p'=>$p, 'c'=>$c, 'rel'=>$rel, 'reviews'=>$reviews, 'title'=>(mb_strlen((string)$p->meta_title) >= 10 && mb_strlen((string)$p->meta_title) <= 66 ? $p->meta_title : self::fitTitle($p->name, ' দাম ৳'.number_format($price).' | DutyFree BD')), 'keywords'=>$p->meta_keywords ?? null, 'desc'=>($p->meta_description ?: $p->name.' – দাম ৳ '.number_format($price).'। অরিজিনাল ইমপোর্টেড পণ্য, অর্ডার করুন, সারা বাংলাদেশে ডেলিভারি। DutyFree BD.'), 'canon'=>($p->canonical ?? null) ?: url(self::url($p)), 'noindex'=>!empty($p->noindex), 'ogimg'=>($p->og_image ?? null) ?: ($p->image ? (preg_match('#^https?://#i', $p->image) ? $p->image : url($p->image)) : url('/og.png'))]))->header('Cache-Control','public, max-age=120');
   }
   public function search(Request $r) {
     $t = trim(mb_substr((string)$r->q, 0, 80)); $items = collect();
@@ -839,7 +838,7 @@ class StoreController extends Controller {
    * All parts are built together once an hour (same rules as before: only pages that really open, tobacco/vape never listed).
    */
   public function sitemap(?string $part = null) {
-    $B = \App\Support\Domain::main(); $pre = 'smap23.' . (Cache::get('store.ver') ?: 0) . (\App\Support\CleanSite::on() ? '.c' : '') . '.';
+    $B = \App\Support\Domain::main(); $pre = 'smap24.' . (Cache::get('store.ver') ?: 0) . (\App\Support\CleanSite::on() ? '.c' : '') . '.';
     $idx = Cache::get($pre . 'idx');
     if (!is_array($idx) || ($part !== null && isset($idx[$part]) && !Cache::has($pre . 'p.' . $part))) {
       $parts = $this->sitemapParts(); $idx = [];
@@ -863,17 +862,16 @@ class StoreController extends Controller {
       $B = \App\Support\Domain::main(); $ul = fn($p) => $B.'/'.ltrim($p, '/'); /* sitemap always lists the main domain, whichever domain asked */
       $u = fn($loc, $img = null, $lm = null) => '<url><loc>'.e($loc).'</loc>'.($lm ? '<lastmod>'.date('c', strtotime((string)$lm)).'</lastmod>' : '').'<changefreq>daily</changefreq>'.($img ? '<image:image><image:loc>'.e(preg_match('#^https?://#i', (string)$img) ? $img : $B.'/'.ltrim((string)$img, '/')).'</image:loc></image:image>' : '').'</url>';
       $o = $u($ul('/'));
-      foreach ($this->cats() as $c) { if (self::isSmokeCat($c)) continue; $o .= $u($ul($c->slug.'/')); }
-      foreach ($this->subs() as $cid => $rows) { $cs = $this->cats()->firstWhere('id', $cid); if ($cs && !self::isSmokeCat($cs)) foreach ($rows as $rw) $o .= $u($ul($cs->slug.'/'.\App\Support\Slugs::subSlug($rw->sub))); }
-      if (\Illuminate\Support\Facades\Schema::hasTable('category_nodes')) foreach (DB::table('category_nodes as t')->join('category_nodes as s', 's.id', '=', 't.parent_id')->join('categories as c', 'c.id', '=', 't.category_id')->where('t.level', 3)->where('c.slug', '!=', 'cigarette-vape')->when(\App\Support\CleanSite::on() && \App\Support\CleanSite::catIds(), fn($qq) => $qq->whereNotIn('c.id', \App\Support\CleanSite::catIds()))->where('t.active', true)->where('s.active', true)->whereExists(fn($q) => $q->select(DB::raw(1))->from('products as p')->whereColumn('p.category_id', 't.category_id')->whereColumn('p.sub', 's.name')->whereColumn('p.sub_sub', 't.name')->where('p.published', true))->select('c.slug as cs', 's.name as sn', 't.name as tn')->get() as $ch) $o .= $u($ul($ch->cs.'/'.\App\Support\Slugs::subSlug($ch->sn).'/'.\App\Support\Slugs::slug($ch->tn, 60)));
-      try { $smk = $this->cats()->filter(fn($c) => self::isSmokeCat($c))->pluck('id')->all(); $bq = DB::table('products')->where('published', true)->whereNotNull('brand_id')->where(fn($w) => $w->whereNull('group_key')->orWhere('group_key', '!=', 'smoke')); if ($smk) $bq->whereNotIn('category_id', $smk); \App\Support\CleanSite::apply($bq, 'products.'); $bids = $bq->distinct()->pluck('brand_id')->all(); if ($bids) foreach (DB::table('brands')->whereIn('id', $bids)->where('active', true)->get() as $br) { if (!empty($br->noindex) || trim((string)$br->slug) === '') continue; $o .= $u($ul('/brand/' . $br->slug), $br->logo ?: null, $br->updated_at ?? null); } } catch (\Throwable $e) { report($e); }
+      foreach ($this->cats() as $c) { $o .= $u($ul($c->slug.'/')); }
+      foreach ($this->subs() as $cid => $rows) { $cs = $this->cats()->firstWhere('id', $cid); if ($cs) foreach ($rows as $rw) $o .= $u($ul($cs->slug.'/'.\App\Support\Slugs::subSlug($rw->sub))); }
+      if (\Illuminate\Support\Facades\Schema::hasTable('category_nodes')) foreach (DB::table('category_nodes as t')->join('category_nodes as s', 's.id', '=', 't.parent_id')->join('categories as c', 'c.id', '=', 't.category_id')->where('t.level', 3)->when(\App\Support\CleanSite::on() && \App\Support\CleanSite::catIds(), fn($qq) => $qq->whereNotIn('c.id', \App\Support\CleanSite::catIds()))->where('t.active', true)->where('s.active', true)->whereExists(fn($q) => $q->select(DB::raw(1))->from('products as p')->whereColumn('p.category_id', 't.category_id')->whereColumn('p.sub', 's.name')->whereColumn('p.sub_sub', 't.name')->where('p.published', true))->select('c.slug as cs', 's.name as sn', 't.name as tn')->get() as $ch) $o .= $u($ul($ch->cs.'/'.\App\Support\Slugs::subSlug($ch->sn).'/'.\App\Support\Slugs::slug($ch->tn, 60)));
+      try { $smk = $this->cats()->filter(fn($c) => self::isSmokeCat($c))->pluck('id')->all(); $bq = DB::table('products')->where('published', true)->whereNotNull('brand_id');  \App\Support\CleanSite::apply($bq, 'products.'); $bids = $bq->distinct()->pluck('brand_id')->all(); if ($bids) foreach (DB::table('brands')->whereIn('id', $bids)->where('active', true)->get() as $br) { if (!empty($br->noindex) || trim((string)$br->slug) === '') continue; $o .= $u($ul('/brand/' . $br->slug), $br->logo ?: null, $br->updated_at ?? null); } } catch (\Throwable $e) { report($e); }
       $o .= $u($ul('/blog'));
       foreach (DB::table('posts')->where('active',true)->get(['slug']) as $bp) $o .= $u($ul('/blog/'.$bp->slug));
       foreach (DB::table('pages')->where('active',true)->where(fn($q)=>$q->whereNull('robots_index')->orWhere('robots_index',true))->get(['slug']) as $pg) $o .= $u($ul($pg->slug.'/'));
       // only pages that really open: tobacco/vape stays off Google (also when its group_key is empty), and a stock-controlled product at zero stock has no public page (404), so it must not be in the sitemap
       $smkIds = $this->cats()->filter(fn($c) => self::isSmokeCat($c))->pluck('id')->all();
-      $pq = \App\Support\StockGuard::listable(DB::table('products')->where('published',true))->where(fn($q)=>$q->whereNull('group_key')->orWhere('group_key','!=','smoke'));
-      if ($smkIds) $pq->where(fn($q) => $q->whereNull('category_id')->orWhereNotIn('category_id', $smkIds));
+      $pq = \App\Support\StockGuard::listable(DB::table('products')->where('published',true));
       // best sellers (units sold in the last 90 days, not cancelled/incomplete): own sitemap part listed first, so Google meets the pages that matter most before the ~28k others
       $topIds = [];
       try { $topIds = []; foreach (DB::table('order_items as i')->join('orders as o', 'o.id', '=', 'i.order_id')->whereNotIn('o.status', ['Cancel', 'Incomplete'])->where('o.created_at', '>=', now()->subDays(90))->whereNotNull('i.product_id')->groupBy('i.product_id')->selectRaw('i.product_id as pid, sum(i.qty) as q')->orderByDesc('q')->limit(1000)->get() as $r) $topIds[(int)$r->pid] = (int)$r->q; } catch (\Throwable $e) { \Illuminate\Support\Facades\Log::warning('sitemap best-sellers query failed: ' . $e->getMessage()); }
