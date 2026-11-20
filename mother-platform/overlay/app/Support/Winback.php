@@ -117,7 +117,7 @@ class Winback
   public static function slotSize(): int { return max(5, min(10, (int)self::set('slot_size', '10'))); }
   public static function slotGapMin(): int { return max(1, min(240, (int)self::set('slot_gap', '10'))); }
   /** Quiet hours (Dhaka time) when no offer SMS goes out. */
-  public static function quiet(): bool { $f = (int)self::set('quiet_from', '22'); $t = (int)self::set('quiet_to', '8'); if ($f === $t) return false; $h = (int)now('Asia/Dhaka')->format('H'); return $f > $t ? ($h >= $f || $h < $t) : ($h >= $f && $h < $t); }
+  public static function quiet(): bool { $f = (int)self::set('quiet_from', '22'); $t = (int)self::set('quiet_to', '10'); if ($f === $t) return false; $h = (int)now('Asia/Dhaka')->format('H'); return $f > $t ? ($h >= $f || $h < $t) : ($h >= $f && $h < $t); }
   public static function validMobile(string $p): bool { return (bool)preg_match('/^01[3-9]\d{8}$/', $p); }
   /** Final check right before a send. */
   public static function finalOk(string $p, array $x, object $c): bool {

@@ -38,7 +38,7 @@ class WinbackController extends Controller
     $conv = (int)(DB::selectOne("select count(distinct e.id) as n from winback_events e join orders o on right(o.phone,11) = e.phone and o.created_at > e.created_at and o.status not in ('Cancel','Returned') where e.cycle_order_id > 0")->n ?? 0);
     $failed = (int)DB::table('sms_logs')->where('event', 'winback')->where('status', 'failed')->where('created_at', '>=', now()->subDays(30))->count();
     $d['dash'] = ['eligible' => $q['total'], 'cooldown' => count($q['cool']), 'today' => W::sentToday(), 'conv' => $conv, 'failed' => $failed];
-    $d['slot'] = ['size' => W::slotSize(), 'gap' => W::slotGapMin(), 'qf' => W::set('quiet_from', '22'), 'qt' => W::set('quiet_to', '8'), 'minGap' => W::minGapDays(), 'quiet' => W::quiet()];
+    $d['slot'] = ['size' => W::slotSize(), 'gap' => W::slotGapMin(), 'qf' => W::set('quiet_from', '22'), 'qt' => W::set('quiet_to', '10'), 'minGap' => W::minGapDays(), 'quiet' => W::quiet()];
     // history rows with SMS status, cooldown and conversion per message
     $hist = DB::table('winback_events as e')->leftJoin('customers as c', 'c.id', '=', 'e.customer_id')->where('e.cycle_order_id', '>', 0)->orderByDesc('e.id')->limit(400)->get(['e.*', 'c.name']);
     $ph = $hist->pluck('phone')->unique()->all(); $ords = []; $smsF = [];
@@ -91,7 +91,7 @@ class WinbackController extends Controller
     usort($st, fn($a, $b) => $a[0] <=> $b[0]); W::put('stages', json_encode($st));
     W::put('daily_cap', (string)max(1, (int)$r->input('daily_cap', 250)));
     W::put('slot_size', (string)max(5, min(10, (int)$r->input('slot_size', 10)))); W::put('slot_gap', (string)max(1, min(240, (int)$r->input('slot_gap', 10)))); W::put('min_gap', (string)max(1, min(90, (int)$r->input('min_gap', 15))));
-    W::put('quiet_from', (string)max(0, min(23, (int)$r->input('quiet_from', 22)))); W::put('quiet_to', (string)max(0, min(23, (int)$r->input('quiet_to', 8))));
+    W::put('quiet_from', (string)max(0, min(23, (int)$r->input('quiet_from', 22)))); W::put('quiet_to', (string)max(0, min(23, (int)$r->input('quiet_to', 10))));
     foreach (['max_pct', 'max_discount', 'min_order', 'expiry'] as $k) W::put($k, (string)max(0, (float)$r->input($k, 0)));
     W::put('mode', in_array($r->input('mode'), ['coupon', 'fixed'], true) ? $r->input('mode') : 'auto'); W::put('on', $r->boolean('on') ? '1' : '0');
     foreach (['sms', 'push', 'notif'] as $k) W::put($k, $r->boolean($k) ? '1' : '0');

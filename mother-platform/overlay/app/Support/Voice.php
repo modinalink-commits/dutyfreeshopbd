@@ -219,6 +219,22 @@ class Voice
     $now = now('Asia/Dhaka'); $t = $now->format('H:i'); if ($t < $c->call_start_time || $t >= $c->call_end_time) return false;
     if ($c->start_date && $now->toDateString() < substr((string)$c->start_date, 0, 10)) return false; if ($c->end_date && $now->toDateString() > substr((string)$c->end_date, 0, 10)) return false; return true;
   }
+  /** 21 Nov 2026 (owner): a customer is called from the time of day they placed their last order, never outside the campaign's calling hours (an order time outside the window means the window start). */
+  public static function orderTimeReached(object $c, object $r): bool {
+    $now = now('Asia/Dhaka')->format('H:i'); $from = $c->call_start_time;
+    if ($r->last_order_at) { $ot = \Carbon\Carbon::parse($r->last_order_at, 'UTC')->timezone('Asia/Dhaka')->format('H:i'); if ($ot >= $c->call_start_time && $ot < $c->call_end_time) $from = $ot; }
+    return $now >= $from;
+  }
+  /** Customers who answered an offer call and then placed an order (any order made after the answered call, cancelled ones left out): the feedback list. */
+  public static function orderedAfterCall(int $limit = 200): array {
+    return DB::select("select v.id as vid, c.name as campaign, v.name, v.phone, v.answered_at, v.converted, v.used_discount, o.id as order_id, o.invoice, o.created_at as order_at, o.total, o.status from voice_campaign_customers v join voice_campaigns c on c.id = v.campaign_id join orders o on right(o.phone, 11) = v.phone and o.created_at >= v.answered_at where v.answered_at is not null and o.status not in ('Cancel','Incomplete') order by o.created_at desc limit " . (int)$limit);
+  }
+  /** Daily call sheet across all campaigns (real calls only, Dhaka days). */
+  public static function dailySheet(int $days = 30): array {
+    $rows = DB::select("select (started_at at time zone 'UTC' at time zone 'Asia/Dhaka')::date as d, count(*) as calls, count(distinct phone) as people, sum(case when result = 'answered' then 1 else 0 end) as ans, sum(case when result in ('not_answered','busy') then 1 else 0 end) as noans, sum(case when result = 'failed' then 1 else 0 end) as failed from voice_call_attempts where test = false and started_at >= ? group by 1 order by 1 desc", [now('Asia/Dhaka')->subDays($days - 1)->startOfDay()->utc()]);
+    $by = DB::select("select (a.started_at at time zone 'UTC' at time zone 'Asia/Dhaka')::date as d, coalesce(c.name,'-') as name, count(*) as calls from voice_call_attempts a left join voice_campaigns c on c.id = a.campaign_id where a.test = false and a.started_at >= ? group by 1,2 order by 1 desc, 3 desc", [now('Asia/Dhaka')->subDays($days - 1)->startOfDay()->utc()]);
+    $m = []; foreach ($by as $b) $m[$b->d][] = $b->name . ': ' . $b->calls; return [$rows, $m];
+  }
   public static function calledToday(int $cid): int { return (int)DB::table('voice_call_attempts')->where('campaign_id', $cid)->where('test', false)->where('started_at', '>=', now('Asia/Dhaka')->startOfDay()->utc())->count(); }
 
   /** Place the call for one campaign customer and record the result. */
@@ -257,7 +273,7 @@ class Voice
         if ($c->end_date && now('Asia/Dhaka')->toDateString() > substr((string)$c->end_date, 0, 10)) { DB::table('voice_campaigns')->where('id', $c->id)->update(['status' => 'completed', 'updated_at' => now()]); continue; }
         if (self::set('enrolled_' . $c->id) !== now('Asia/Dhaka')->toDateString()) self::enroll($c);
         if (!self::canCallNow($c)) continue; $left = (int)$c->daily_limit - self::calledToday($c->id); if ($left <= 0) continue;
-        $due = DB::table('voice_campaign_customers')->where('campaign_id', $c->id)->where(fn($q) => $q->where('call_status', 'pending')->orWhere(fn($w) => $w->whereIn('call_status', ['not_answered', 'busy', 'failed'])->whereNotNull('next_attempt_at')->where('next_attempt_at', '<=', now())))->orderBy('id')->limit(min($left, 4))->get();
+        $due = DB::table('voice_campaign_customers')->where('campaign_id', $c->id)->where(fn($q) => $q->where('call_status', 'pending')->orWhere(fn($w) => $w->whereIn('call_status', ['not_answered', 'busy', 'failed'])->whereNotNull('next_attempt_at')->where('next_attempt_at', '<=', now())))->orderBy('id')->limit(60)->get()->filter(fn($r) => self::orderTimeReached($c, $r))->take(min($left, 4));
         foreach ($due as $r) {
           if (time() - $t0 > 50) return;
           $cu = DB::table('customers')->find($r->customer_id); if (!$cu || $cu->blocked || !($cu->promo_call ?? true) || self::optedOut($r->phone)) { DB::table('voice_campaign_customers')->where('id', $r->id)->update(['call_status' => 'opted_out', 'offer_status' => 'void', 'skip_reason' => 'Calls not allowed', 'updated_at' => now()]); continue; }

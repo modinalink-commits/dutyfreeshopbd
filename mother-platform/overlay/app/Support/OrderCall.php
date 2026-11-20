@@ -84,8 +84,8 @@ class OrderCall
         $txt = $st === 'no_input' ? 'Picked up, no key' : ($st === 'busy' ? 'Busy' : 'No answer');
         return ((int)($s['attempts'] ?? 0) >= $max) ? [$txt . ' · staff call needed', 'staff'] : [$txt . ' · will call again', 'wait'];
       }
-      $t = now('Asia/Dhaka')->format('H:i'); $from = self::set('start', '09:00');
-      return ($t < $from || $t >= self::set('end', '21:00')) ? ['Waiting for call · from ' . $from, 'wait'] : ['Waiting for call', 'wait'];
+      $t = now('Asia/Dhaka')->format('H:i'); $from = self::set('start', '10:00');
+      return ($t < $from || $t >= self::set('end', '22:00')) ? ['Waiting for call · from ' . $from, 'wait'] : ['Waiting for call', 'wait'];
     } catch (\Throwable $e) { return null; }
   }
 
@@ -242,7 +242,7 @@ class OrderCall
         $st = $r->status === 'answered' ? 'no_input' : 'no_answer';
         DB::table('order_call_verifications')->where('id', $r->id)->update(['status' => $st, 'ended_at' => now(), 'next_attempt_at' => (!$r->test && $r->attempt < $max) ? now()->addMinutes($gap) : null, 'updated_at' => now()]);
       }
-      $t = now('Asia/Dhaka')->format('H:i'); if ($t < self::set('start', '09:00') || $t >= self::set('end', '21:00')) return;
+      $t = now('Asia/Dhaka')->format('H:i'); if ($t < self::set('start', '10:00') || $t >= self::set('end', '22:00')) return;
       $active = DB::table('order_call_verifications')->whereIn('status', ['calling', 'answered'])->where('updated_at', '>', now()->subMinutes(4))->count();
       $cap = max(1, (int)self::set('concurrency', '2')); if ($active >= $cap) return; $t0 = time();
       $orders = DB::table('orders')->where('status', 'New')->where('created_at', '>=', now()->subHours(max(1, (int)self::set('hours_back', '24'))))->whereExists(fn($x) => $x->select(DB::raw(1))->from('order_ai_verifications as av')->whereColumn('av.order_id', 'orders.id')->whereRaw("coalesce(av.override_status, av.verification_status) = 'verified'"))->orderBy('id')->limit(400)->get(); // 20 Nov 2026: was the oldest 40 New orders of any kind; once those were finished or not callable, newer orders were never reached
