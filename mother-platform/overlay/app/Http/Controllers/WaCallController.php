@@ -35,7 +35,7 @@ class WaCallController extends Controller {
   }
   /** Light poll used on every admin page: answers from cache when nothing rang in the last minute. */
   public function poll(Request $r) {
-    if ($r->filled('id')) { $c = WaCalls::ready() ? DB::table('wa_calls')->find((int)$r->query('id')) : null; if ($c && $c->status === 'active' && (int)$c->user_id === (int)$r->user()->id) WaCalls::beat((int)$c->id); return response()->json(['state' => $c->status ?? 'ended', 'by' => $c->user_name ?? null]); } // the answering browser asks: is my call still on?
+    if ($r->filled('id')) { $c = WaCalls::ready() ? DB::table('wa_calls')->find((int)$r->query('id')) : null; if ($c && $c->status === 'active' && (int)$c->user_id === (int)$r->user()->id) WaCalls::beat((int)$c->id); return response()->json(['state' => $c->status ?? 'ended', 'by' => $c->user_name ?? null, 'sdp' => $c ? WaCalls::outAnswer($c, (int)$r->user()->id) : null, 'note' => $c && in_array($c->status, ['failed', 'rejected'], true) ? (string)$c->note : null]); } // the answering browser asks: is my call still on?
     if (!$r->boolean('full') && !Cache::has('wa.ring')) return response()->json(['ringing' => []]);
     $out = []; foreach (WaCalls::ringing() as $c) if (!Cache::has('wa.dis.' . $c->id . '.' . (int)$r->user()->id)) $out[] = ['id' => $c->id, 'from' => $c->from_wa ? '+' . $c->from_wa : 'WhatsApp user', 'name' => (string)$c->from_name, 'to' => WaCalls::numberLabel((string)$c->phone_id), 'age' => max(0, time() - strtotime((string)$c->created_at)), 'win' => WaCalls::RING_SECONDS];
     return response()->json(['ringing' => $out]);
@@ -57,8 +57,13 @@ class WaCallController extends Controller {
   /** The separate call window: one call, customer details beside it. */
   public function popup(int $id) {
     $c = WaCalls::ready() ? DB::table('wa_calls')->find($id) : null; abort_unless($c, 404);
-    return view('wa_call_popup', ['c' => $c, 'to' => WaCalls::numberLabel((string)$c->phone_id), 'local' => \App\Support\Chat::phone((string)$c->from_wa)]);
+    return view('wa_call_popup', ['c' => $c, 'outb' => (string)$c->direction === 'BUSINESS_INITIATED', 'mineOut' => $c->status === 'dialing' && (int)$c->user_id === (int)auth()->id(), 'canCb' => (string)$c->from_wa !== '', 'to' => WaCalls::numberLabel((string)$c->phone_id), 'local' => \App\Support\Chat::phone((string)$c->from_wa)]);
   }
+  /** WhatsApp call back: step 1 makes the outgoing call for this customer, step 2 sends the browser's audio offer to WhatsApp. */
+  public function callback(Request $r, int $id) { [$ok, $m, $nid] = WaCalls::outNew($id, (int)$r->user()->id, (string)$r->user()->name); return response()->json(['ok' => $ok, 'message' => $m, 'id' => $nid]); }
+  public function dial(Request $r, int $id) { $d = $r->validate(['sdp' => 'required|string|max:20000']); [$ok, $m] = WaCalls::dial($id, (int)$r->user()->id, $d['sdp']); return response()->json(['ok' => $ok, 'message' => $m]); }
+  /** The caller's WhatsApp conversation inside the call dock (read only, never marks anything as seen). */
+  public function chat(int $id) { $c = WaCalls::ready() ? DB::table('wa_calls')->find($id) : null; abort_unless($c, 404); return response()->json(WaCalls::chat((string)$c->from_wa))->header('Cache-Control', 'no-store'); }
   public function extras(int $id) { $c = WaCalls::ready() ? DB::table('wa_calls')->find($id) : null; abort_unless($c, 404); return response()->json(WaCalls::extras((string)$c->from_wa)); }
   public function handled(Request $r, int $id) { return response()->json(['ok' => WaCalls::handle($id, (int)$r->user()->id, (string)$r->user()->name)]); }
   public function release(Request $r, int $id) { return response()->json(['ok' => WaCalls::release($id, (int)$r->user()->id)]); }

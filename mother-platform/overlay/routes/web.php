@@ -293,6 +293,9 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/call-center/whatsapp/{id}/accept', [\App\Http\Controllers\WaCallController::class,'accept'])->whereNumber('id');
   Route::post('/call-center/whatsapp/{id}/end', [\App\Http\Controllers\WaCallController::class,'end'])->whereNumber('id');
   Route::get('/call-center/whatsapp/call/{id}', [\App\Http\Controllers\WaCallController::class,'popup'])->whereNumber('id');
+  Route::post('/call-center/whatsapp/{id}/callback', [\App\Http\Controllers\WaCallController::class,'callback'])->whereNumber('id')->middleware('throttle:20,1');
+  Route::post('/call-center/whatsapp/{id}/dial', [\App\Http\Controllers\WaCallController::class,'dial'])->whereNumber('id')->middleware('throttle:20,1');
+  Route::get('/call-center/whatsapp/{id}/chat', [\App\Http\Controllers\WaCallController::class,'chat'])->whereNumber('id');
   Route::get('/call-center/whatsapp/{id}/extras', [\App\Http\Controllers\WaCallController::class,'extras'])->whereNumber('id');
   Route::post('/call-center/whatsapp/{id}/handled', [\App\Http\Controllers\WaCallController::class,'handled'])->whereNumber('id');
   Route::post('/call-center/whatsapp/{id}/release', [\App\Http\Controllers\WaCallController::class,'release'])->whereNumber('id');

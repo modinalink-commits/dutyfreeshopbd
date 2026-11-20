@@ -38,14 +38,14 @@ class WaCalls {
       $d = Http::timeout(15)->withToken($tok)->get(self::API . '/' . $phoneId, ['fields' => 'display_phone_number,verified_name']);
       $base = ['display' => (string)$d->json('display_phone_number'), 'name' => (string)$d->json('verified_name')];
       if (!$r->ok()) return $base + ['ok' => false, 'error' => self::err($r)];
-      return $base + ['ok' => true, 'status' => (string)($r->json('calling.status') ?? 'DISABLED'), 'icon' => (string)($r->json('calling.call_icon_visibility') ?? ''), 'sip' => (string)($r->json('calling.sip.status') ?? '')];
+      return $base + ['ok' => true, 'status' => (string)($r->json('calling.status') ?? 'DISABLED'), 'icon' => (string)($r->json('calling.call_icon_visibility') ?? ''), 'sip' => (string)($r->json('calling.sip.status') ?? ''), 'callback' => (string)($r->json('calling.callback_permission_status') ?? '')];
     } catch (\Throwable $e) { return ['ok' => false, 'error' => 'request failed']; }
   }
   /** Turn calling on / off for a number (call button visible to customers). Returns [ok, message]. */
   public static function setCalling(string $phoneId, bool $on): array {
     $tok = self::tok($phoneId); if (!$tok) return [false, 'no token'];
     try {
-      $r = Http::timeout(20)->withToken($tok)->post(self::API . '/' . $phoneId . '/settings', ['calling' => $on ? ['status' => 'ENABLED', 'call_icon_visibility' => 'DEFAULT', 'callback_permission_status' => 'DISABLED'] : ['status' => 'DISABLED']]);
+      $r = Http::timeout(20)->withToken($tok)->post(self::API . '/' . $phoneId . '/settings', ['calling' => $on ? ['status' => 'ENABLED', 'call_icon_visibility' => 'DEFAULT', 'callback_permission_status' => 'ENABLED'] : ['status' => 'DISABLED']]);
       return $r->ok() ? [true, $on ? 'enabled' : 'disabled'] : [false, self::err($r)];
     } catch (\Throwable $e) { return [false, 'request failed']; }
   }
@@ -60,6 +60,11 @@ class WaCalls {
         $cid = (string)($c['id'] ?? ''); if ($cid === '') continue; $ev = (string)($c['event'] ?? '');
         $row = DB::table('wa_calls')->where('call_id', $cid)->first();
         if ($ev === 'connect') {
+          if (strtoupper((string)($c['direction'] ?? '')) === 'BUSINESS_INITIATED') { // our own call back: Meta returns the customer's side of the audio (SDP answer) for the staff browser
+            $ans = (string)($c['session']['sdp'] ?? '');
+            if ($ans !== '') { if ($row) DB::table('wa_calls')->where('id', $row->id)->where('status', 'dialing')->update(['sdp_offer' => $ans, 'updated_at' => now()]); else Cache::put('wa.out.sdp.' . $cid, $ans, 180); }
+            continue;
+          }
           if ($row) continue;
           $from = preg_replace('/\D/', '', (string)($c['from'] ?? ''));
           DB::table('wa_calls')->insert(['call_id' => $cid, 'phone_id' => $pid, 'from_wa' => $from ?: null, 'from_name' => mb_substr($names[$from] ?? (string)(array_values($names)[0] ?? ''), 0, 160) ?: null,
@@ -68,11 +73,20 @@ class WaCalls {
         } elseif ($ev === 'terminate') {
           if (!$row) continue;
           $dur = isset($c['duration']) ? (int)$c['duration'] : null; $failed = (string)($c['status'] ?? '') === 'FAILED';
-          $st = in_array($row->status, ['active', 'ended'], true) || $dur ? 'ended' : ($row->status === 'rejected' ? 'rejected' : ($failed ? 'failed' : 'missed'));
+          $outb = (string)$row->direction === 'BUSINESS_INITIATED'; // a call back the customer did not pick up is never a "missed call"
+          $st = in_array($row->status, ['active', 'ended'], true) || $dur ? 'ended' : ($row->status === 'rejected' ? 'rejected' : ($failed || $outb ? 'failed' : 'missed'));
           DB::table('wa_calls')->where('id', $row->id)->update(['status' => $st, 'duration' => $dur ?? $row->duration, 'ended_at' => now(), 'sdp_offer' => null,
-            'note' => $failed ? mb_substr('failed: ' . (string)($c['errors'][0]['message'] ?? ''), 0, 300) : $row->note, 'updated_at' => now()]);
+            'note' => $failed ? mb_substr('failed: ' . (string)($c['errors'][0]['message'] ?? ''), 0, 300) : ($outb && $st === 'failed' && !$row->note ? 'Customer did not answer' : $row->note), 'updated_at' => now()]);
           self::logFinal((int)$row->id);
         }
+      }
+      // call back progress: the customer picked up / declined (sent as call statuses, only for calls we started)
+      foreach ($v['statuses'] ?? [] as $s) {
+        if ((string)($s['type'] ?? '') !== 'call') continue; $cid = (string)($s['id'] ?? ''); if ($cid === '') continue;
+        $row = DB::table('wa_calls')->where('call_id', $cid)->first(); if (!$row || (string)$row->direction !== 'BUSINESS_INITIATED' || $row->status !== 'dialing') continue;
+        $st = strtoupper((string)($s['status'] ?? ''));
+        if ($st === 'ACCEPTED') { DB::table('wa_calls')->where('id', $row->id)->where('status', 'dialing')->update(['status' => 'active', 'answered_at' => now(), 'updated_at' => now()]); self::beat((int)$row->id); }
+        elseif ($st === 'REJECTED') { DB::table('wa_calls')->where('id', $row->id)->where('status', 'dialing')->update(['status' => 'rejected', 'ended_at' => now(), 'sdp_offer' => null, 'note' => 'Customer declined the call back', 'updated_at' => now()]); self::logFinal((int)$row->id); }
       }
     } catch (\Throwable $e) { report($e); }
   }
@@ -84,6 +98,10 @@ class WaCalls {
     try {
       if (!self::ready()) return;
       foreach (DB::table('wa_calls')->whereIn('status', ['ringing', 'answering'])->where('created_at', '<', now()->subSeconds(self::RING_SECONDS + 30))->pluck('id') as $sid) { DB::table('wa_calls')->where('id', $sid)->whereIn('status', ['ringing', 'answering'])->update(['status' => 'missed', 'ended_at' => now(), 'sdp_offer' => null, 'updated_at' => now()]); self::logFinal((int)$sid); }
+      foreach (DB::table('wa_calls')->where('status', 'dialing')->where('created_at', '<', now()->subSeconds(self::RING_SECONDS + 45))->limit(10)->get() as $c) {
+        try { if (!str_starts_with((string)$c->call_id, 'out-')) self::act($c, ['action' => 'terminate']); } catch (\Throwable $e) {}
+        if (DB::table('wa_calls')->where('id', $c->id)->where('status', 'dialing')->update(['status' => 'failed', 'ended_at' => now(), 'sdp_offer' => null, 'note' => 'Customer did not answer', 'updated_at' => now()])) self::logFinal((int)$c->id);
+      }
       if (Cache::add('wa.alert.lock', 1, 55)) self::alert();
       foreach (DB::table('wa_calls')->where('status', 'active')->where('answered_at', '<', now()->subSeconds(60))->limit(10)->get() as $c) {
         if (Cache::has('wa.hb.' . $c->id)) continue;
@@ -210,6 +228,12 @@ class WaCalls {
       // Owner 19 Nov 2026: one representative's Reject only hides the call for THAT person; it keeps ringing for everyone else until someone answers or the ring window ends (then it becomes a missed call)
       if ($c->status === 'ringing') { Cache::put('wa.dis.' . $id . '.' . $uid, 1, 600); self::audit($uid, $c, 'dismissed'); return [true, 'dismissed']; }
       if (false) { $r = self::act($c, ['action' => 'reject']); DB::table('wa_calls')->where('id', $id)->update(['status' => 'rejected', 'user_id' => $uid, 'user_name' => mb_substr($uname, 0, 120), 'ended_at' => now(), 'sdp_offer' => null, 'updated_at' => now()]); self::audit($uid, $c, 'rejected'); return [true, 'rejected']; }
+      if ($c->status === 'dialing') {
+        if ((int)$c->user_id !== $uid) return [false, 'This call back belongs to another representative.'];
+        if (!str_starts_with((string)$c->call_id, 'out-')) self::act($c, ['action' => 'terminate']);
+        if (DB::table('wa_calls')->where('id', $id)->where('status', 'dialing')->update(['status' => 'failed', 'ended_at' => now(), 'sdp_offer' => null, 'note' => mb_substr('Call back cancelled by ' . $uname, 0, 300), 'updated_at' => now()])) self::logFinal($id);
+        return [true, 'ended'];
+      }
       if (in_array($c->status, ['answering', 'active'], true)) {
         self::act($c, ['action' => 'terminate']);
         $dur = $c->answered_at ? max(0, time() - strtotime((string)$c->answered_at)) : null;
@@ -218,6 +242,57 @@ class WaCalls {
       }
     } catch (\Throwable $e) { report($e); }
     return [true, 'already ended'];
+  }
+  /**
+   * WhatsApp call back (owner 20 Nov 2026): a representative calls a customer who called us on WhatsApp. Meta allows it only while the customer's call permission
+   * is valid (given when they call us and tap Allow; "callback permission" is switched on with calling). Step 1 makes the call row, step 2 (dial) sends the browser's audio offer.
+   * Returns [ok, message, new call id].
+   */
+  public static function outNew(int $fromCallId, int $uid, string $uname): array {
+    try {
+      $p = DB::table('wa_calls')->find($fromCallId); if (!$p) return [false, 'Call not found.', null];
+      $wa = preg_replace('/\D/', '', (string)$p->from_wa); if ($wa === '') return [false, 'WhatsApp did not share this caller\'s number, so a WhatsApp call back is not possible.', null];
+      if (!self::tok((string)$p->phone_id)) return [false, 'This business number is not connected for calling.', null];
+      if (DB::table('wa_calls')->where('user_id', $uid)->whereIn('status', ['dialing', 'answering', 'active'])->where('updated_at', '>', now()->subMinutes(3))->exists()) return [false, 'You are already on a WhatsApp call. End it first.', null];
+      if (DB::table('wa_calls')->where('from_wa', $wa)->whereIn('status', ['dialing', 'ringing', 'answering', 'active'])->where('updated_at', '>', now()->subMinutes(3))->exists()) return [false, 'A WhatsApp call with this customer is already in progress.', null];
+      $id = (int)DB::table('wa_calls')->insertGetId(['call_id' => 'out-' . bin2hex(random_bytes(16)), 'phone_id' => $p->phone_id, 'from_wa' => $wa, 'from_name' => $p->from_name, 'direction' => 'BUSINESS_INITIATED', 'status' => 'dialing',
+        'user_id' => $uid, 'user_name' => mb_substr($uname, 0, 120), 'created_at' => now(), 'updated_at' => now()]);
+      $c = DB::table('wa_calls')->find($id); self::audit($uid, $c, 'callback started'); self::linkChat($c, $uid);
+      return [true, 'ok', $id];
+    } catch (\Throwable $e) { report($e); return [false, 'Could not start the call back.', null]; }
+  }
+  /** Step 2: the browser's SDP offer goes to Meta, which rings the customer. Returns [ok, message]. */
+  public static function dial(int $id, int $uid, string $sdp): array {
+    $c = DB::table('wa_calls')->find($id);
+    if (!$c || $c->status !== 'dialing' || (int)$c->user_id !== $uid || !str_starts_with((string)$c->call_id, 'out-')) return [false, 'This call back cannot be started (it was already sent or has ended).'];
+    $tok = self::tok((string)$c->phone_id); if (!$tok) return [false, 'No token for this number.'];
+    $fail = function (string $m) use ($id) { DB::table('wa_calls')->where('id', $id)->where('status', 'dialing')->update(['status' => 'failed', 'ended_at' => now(), 'note' => mb_substr($m, 0, 300), 'updated_at' => now()]); self::logFinal($id); return [false, $m]; };
+    try {
+      $r = Http::timeout(20)->withToken($tok)->post(self::API . '/' . $c->phone_id . '/calls', ['messaging_product' => 'whatsapp', 'to' => (string)$c->from_wa, 'action' => 'connect', 'session' => ['sdp_type' => 'offer', 'sdp' => $sdp], 'biz_opaque_callback_data' => 'wc' . $id]);
+      if (!$r->ok()) { $code = (int)$r->json('error.code');
+        return $fail($code === 138006 ? 'The customer has not allowed WhatsApp call back yet. Permission is given when they call us on WhatsApp and tap Allow. Call them on the phone instead.' : self::err($r)); }
+      $cid = (string)($r->json('calls.0.id') ?? ''); if ($cid === '') return $fail('WhatsApp did not return a call id.');
+      $ans = Cache::pull('wa.out.sdp.' . $cid); // the answer can arrive on the webhook before this response does
+      DB::table('wa_calls')->where('id', $id)->update(['call_id' => $cid, 'sdp_offer' => $ans ?: null, 'updated_at' => now()]);
+      return [true, 'ok'];
+    } catch (\Throwable $e) { report($e); return $fail('Could not reach WhatsApp.'); }
+  }
+  /** The customer's SDP answer for the representative who is calling back (null until Meta has sent it). */
+  public static function outAnswer(object $c, int $uid): ?string {
+    if ((string)$c->direction !== 'BUSINESS_INITIATED' || (int)$c->user_id !== $uid || !in_array($c->status, ['dialing', 'active'], true)) return null;
+    if ($c->sdp_offer) return (string)$c->sdp_offer;
+    $s = Cache::get('wa.out.sdp.' . $c->call_id); return $s ? (string)$s : null;
+  }
+  /** Last messages of the caller's WhatsApp conversation for the call dock. Read only: opening it here never marks the chat as seen or answered. */
+  public static function chat(?string $wa, int $limit = 30): array {
+    $out = ['thread_id' => null, 'messages' => []];
+    try {
+      $t = self::thread($wa); if (!$t) return $out; $out['thread_id'] = (int)$t->id;
+      foreach (DB::table('chat_messages')->where('thread_id', $t->id)->orderByDesc('id')->limit($limit)->get(['id', 'dir', 'kind', 'body', 'attachment_type', 'user_name', 'status', 'created_at'])->reverse() as $m)
+        $out['messages'][] = ['id' => (int)$m->id, 'out' => $m->dir === 'out', 'body' => mb_substr((string)$m->body, 0, 1500), 'att' => (string)($m->attachment_type ?: ($m->kind !== 'text' ? $m->kind : '')), 'by' => (string)$m->user_name, 'failed' => $m->status === 'failed',
+          'at' => \Carbon\Carbon::parse($m->created_at, 'UTC')->timezone('Asia/Dhaka')->format('d M h:i A')];
+    } catch (\Throwable $e) {}
+    return $out;
   }
   /** The WhatsApp conversation of the caller, if there is one. */
   public static function thread(?string $wa): ?object {
@@ -232,6 +307,9 @@ class WaCalls {
   /** One staff-only line per finished call. */
   private static function logFinal(int $id): void {
     try { if (!Cache::add('wa.final.' . $id, 1, 172800)) return; $c = DB::table('wa_calls')->find($id); if (!$c) return;
+      if ((string)$c->direction === 'BUSINESS_INITIATED') { $who = $c->user_name ?: 'staff';
+        $t2 = ['ended' => 'connected' . ($c->duration !== null ? ', talk time ' . gmdate('i:s', (int)$c->duration) : ''), 'rejected' => 'customer declined', 'failed' => (string)($c->note ?: 'not connected')][$c->status] ?? null;
+        if ($t2) self::threadNote($c->from_wa, 'WhatsApp call back by ' . $who . ': ' . $t2, null, 'Call log'); return; }
       $txt = ['ended' => 'answered by ' . ($c->user_name ?: 'staff') . ($c->duration !== null ? ', talk time ' . gmdate('i:s', (int)$c->duration) : ''), 'missed' => 'MISSED - call the customer back', 'rejected' => 'rejected by ' . ($c->user_name ?: 'staff'), 'failed' => 'failed to connect'][$c->status] ?? null;
       if ($txt) self::threadNote($c->from_wa, 'WhatsApp call: ' . $txt, null, 'Call log'); } catch (\Throwable $e) {}
   }

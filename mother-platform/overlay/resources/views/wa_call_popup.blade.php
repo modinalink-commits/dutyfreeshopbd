@@ -21,13 +21,21 @@ main button.wp-b.go{background:#15803D;border-color:#15803D;color:#fff}main butt
 .wp-links a.wp-b.pri{background:#F95505;border-color:#F95505;color:#fff}
 .wp-note{padding:8px 14px 12px}.wp-note textarea{width:100%;min-height:54px;border:1px solid #D0D5DD;border-radius:8px;padding:8px;font:inherit;resize:vertical}
 #wpMsg{color:#B42318;font-size:12.5px;padding:0 14px 10px;min-height:0}
+/* 20 Nov 2026: the caller's WhatsApp chat beside the call (read only) */
+#wpChat{max-height:230px;overflow-y:auto;padding:8px 12px 10px;display:flex;flex-direction:column;gap:6px;background:#F9FAFB;border-top:1px solid #F2F4F7}
+#wpChat .m{max-width:86%;padding:6px 9px;border-radius:10px;background:#fff;border:1px solid #E5E7EB;font-size:12.5px;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere;align-self:flex-start}
+#wpChat .m.o{align-self:flex-end;background:#E7F8EE;border-color:#C7EBD5}#wpChat .m.f{border-color:#FDA29B}
+#wpChat .m small{display:block;margin-top:2px;font-size:10.5px;color:#667085}#wpChat .e{color:#475467;font-size:12.5px}
+.wp-box>b.t a{float:right;font-weight:600;font-size:12px;color:#F95505;text-decoration:none}
 </style>
 <div class="wp">
 <div class="wp-top"><div class="wp-bar"></div>
-<div class="wp-id"><div class="wp-av">{{ mb_strtoupper(mb_substr($c->from_name ?: 'W', 0, 1)) }}</div><div style="min-width:0"><b id="wpName">{{ $c->from_name ?: 'WhatsApp caller' }}</b><small>{{ $c->from_wa ? '+'.$c->from_wa : 'Number hidden' }} · WhatsApp call</small></div><span class="wp-pill" id="wpSt" style="margin-left:auto">—</span></div>
-<div class="wp-meta"><div><span>Called number</span><b>{{ $to }}</b></div><div><span>Answered by</span><b id="wpBy">{{ $c->user_name ?: '—' }}</b></div><div><span>Started</span><b>{{ \Carbon\Carbon::parse($c->created_at)->timezone('Asia/Dhaka')->format('d M h:i A') }}</b></div><div><span>Talk time</span><b id="wpT">{{ $c->duration !== null ? gmdate('i:s', (int)$c->duration) : '00:00' }}</b></div></div>
+<div class="wp-id"><div class="wp-av">{{ mb_strtoupper(mb_substr($c->from_name ?: 'W', 0, 1)) }}</div><div style="min-width:0"><b id="wpName">{{ $c->from_name ?: 'WhatsApp caller' }}</b><small>{{ $c->from_wa ? '+'.$c->from_wa : 'Number hidden' }} · {{ $outb ? 'WhatsApp call back' : 'WhatsApp call' }}</small></div><span class="wp-pill" id="wpSt" style="margin-left:auto">—</span></div>
+<div class="wp-meta"><div><span>{{ $outb ? 'Business number' : 'Called number' }}</span><b>{{ $to }}</b></div><div><span>{{ $outb ? 'Called by' : 'Answered by' }}</span><b id="wpBy">{{ $c->user_name ?: '—' }}</b></div><div><span>Started</span><b>{{ \Carbon\Carbon::parse($c->created_at)->timezone('Asia/Dhaka')->format('d M h:i A') }}</b></div><div><span>Talk time</span><b id="wpT">{{ $c->duration !== null ? gmdate('i:s', (int)$c->duration) : '00:00' }}</b></div></div>
 <div class="wp-act" id="wpAct"></div><div id="wpRec" hidden style="margin:0 14px 10px;padding:8px 10px;border-radius:8px;background:#FEF3F2;color:#912018;font-size:12.5px"></div><div id="wpMsg"></div></div>
 <audio id="wpAudio" autoplay></audio>
+
+<div class="wp-box"><b class="t">WhatsApp chat <a id="wpChatL" target="_blank" href="/admin/chat" hidden>Open full chat</a></b><div id="wpChat"><div class="e">Loading…</div></div></div>
 
 <div class="wp-box"><b class="t">Customer</b><div id="wpCust"><div class="wp-row"><span>Checking this number…</span></div></div>
 <div class="wp-links" id="wpLinks"></div></div>
@@ -45,20 +53,22 @@ main button.wp-b.go{background:#15803D;border-color:#15803D;color:#fff}main butt
 <script>
 window.WC_PAGE=1;
 var WP=(function(){
-  var ID={{ (int)$c->id }},state=@json($c->status),LOCAL=@json($local),pc=null,stream=null,remote=null,t0=0,tick=null,busy=false,mine=false;
+  var ID={{ (int)$c->id }},state=@json($c->status),LOCAL=@json($local),pc=null,stream=null,remote=null,t0=0,tick=null,busy=false,mine=@json($mineOut),gotAns=false,chatLast=-1,
+      CANCB=@json($canCb),EMBED=/[?&]embed=1/.test(location.search);
   var REC={on:@json(\App\Support\WaRec::on()),mr:null,ac:null,seq:0,q:Promise.resolve(),err:null,started:false,done:false};
   function $(i){return document.getElementById(i)}
   function tk(){var e=document.querySelector('meta[name=csrf-token]');return e?e.content:''}
   function post(u,b){return fetch(u,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':tk()},body:JSON.stringify(b||{})}).then(function(r){return r.json().catch(function(){return{ok:false,message:'Server error '+r.status}})})}
   function esc(s){var d=document.createElement('div');d.textContent=s==null?'':s;return d.innerHTML}
   function msg(m){$('wpMsg').textContent=m||''}
-  var LAB={ringing:['Ringing','warn'],answering:['Connecting','warn'],active:['On call','ok'],ended:['Ended','ok'],missed:['Missed','bad'],rejected:['Rejected','bad'],failed:['Failed','bad']};
+  var LAB={dialing:['Calling','warn'],ringing:['Ringing','warn'],answering:['Connecting','warn'],active:['On call','ok'],ended:['Ended','ok'],missed:['Missed','bad'],rejected:['Rejected','bad'],failed:['Failed','bad']};
   function tell(a){try{if(window.parent&&window.parent!==window)window.parent.postMessage({wadock:a},location.origin)}catch(e){}}
-  function draw(){tell(mine&&(state==='active'||state==='answering')?'busy':'idle');var l=LAB[state]||[state,''];$('wpSt').textContent=l[0];$('wpSt').className='wp-pill '+l[1];var h='';
+  function draw(){tell(mine&&(state==='active'||state==='answering'||state==='dialing')?'busy':'idle');var l=LAB[state]||[state,''];$('wpSt').textContent=l[0];$('wpSt').className='wp-pill '+l[1];var h='';
     if(state==='ringing')h='<button class="wp-b go" onclick="WP.answer(this)">Answer</button><button class="wp-b no" onclick="WP.reject()">Reject</button>';
     else if(mine&&(state==='active'||state==='answering'))h='<button class="wp-b" id="wpMute" onclick="WP.mute()">Mute</button><button class="wp-b no" onclick="WP.hang()">Hang up</button>';
-    else if(state==='active'||state==='answering')h='<button class="wp-b" disabled>Another representative is on this call</button>';
-    else h='<button class="wp-b" onclick="WP.close()">Close</button>';
+    else if(state==='dialing'&&mine)h=pc?'<button class="wp-b" id="wpMute" onclick="WP.mute()">Mute</button><button class="wp-b no" onclick="WP.hang()">Hang up</button>':'<button class="wp-b go" onclick="WP.dial(this)">Call on WhatsApp</button><button class="wp-b" onclick="WP.hang()">Cancel</button>';
+    else if(state==='active'||state==='answering'||state==='dialing')h='<button class="wp-b" disabled>Another representative is on this call</button>';
+    else h=(CANCB?'<button class="wp-b go" onclick="WP.callback(this)">Call back on WhatsApp</button>':'')+'<button class="wp-b" onclick="WP.close()">Close</button>';
     $('wpAct').innerHTML=h}
   // ---- recording (never allowed to disturb the call: every step is wrapped, a failure only marks the recording) ----
   function recBadge(t,ok){var e=$('wpRec');if(!t){e.hidden=true;return}e.hidden=false;e.style.background=ok?'#FEF3F2':'#FFFAEB';e.style.color=ok?'#912018':'#93370D';e.innerHTML=t}
@@ -87,6 +97,30 @@ var WP=(function(){
   function recs(){var h=$('wpRecs');if(h&&window.WaRecUI)WaRecUI.load(h,'call='+ID,{current:ID,empty:'No recording of this caller yet.'})}
   function stop(){recStop();if(tick)clearInterval(tick);tick=null;try{if(pc)pc.close()}catch(e){}pc=null;if(stream)stream.getTracks().forEach(function(t){t.stop()});stream=null;busy=false;mine=false}
   function waitIce(p){return new Promise(function(res){if(p.iceGatheringState==='complete')return res();var d=false,f=function(){if(d)return;d=true;res()};p.addEventListener('icegatheringstatechange',function(){if(p.iceGatheringState==='complete')f()});setTimeout(f,2500)})}
+  function clock(){t0=Date.now();if(tick)clearInterval(tick);tick=setInterval(function(){var s=Math.floor((Date.now()-t0)/1000);$('wpT').textContent=('0'+Math.floor(s/60)).slice(-2)+':'+('0'+s%60).slice(-2)},1000)}
+  // ---- WhatsApp call back: this browser makes the offer, WhatsApp rings the customer and returns the answer through the poll ----
+  function dial(btn){
+    if(busy||state!=='dialing'||!mine)return;busy=true;msg('');if(btn){btn.disabled=true;btn.textContent='Calling…'}var sent=false;
+    if(!navigator.mediaDevices||!window.RTCPeerConnection){busy=false;msg('This browser cannot make calls. Use Chrome.');draw();return}
+    navigator.mediaDevices.getUserMedia({audio:{echoCancellation:{ideal:true},noiseSuppression:{ideal:true},autoGainControl:{ideal:true},voiceIsolation:{ideal:true},channelCount:{ideal:1}}}).then(function(s){stream=s;
+      pc=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]});
+      stream.getTracks().forEach(function(t){pc.addTrack(t,stream)});
+      pc.ontrack=function(e){$('wpAudio').srcObject=e.streams[0];remote=e.streams[0];recStart()};
+      pc.onconnectionstatechange=function(){if(!pc)return;if(pc.connectionState==='disconnected')msg('Connection is weak. Trying to reconnect…');if(pc.connectionState==='connected'&&state==='active')msg('');if(pc.connectionState==='failed'){msg('The connection was lost.');hang()}};
+      draw();return pc.createOffer()}).then(function(o){return pc.setLocalDescription(o)}).then(function(){return waitIce(pc)}).then(function(){sent=true;return post('/admin/call-center/whatsapp/'+ID+'/dial',{sdp:pc.localDescription.sdp})}).then(function(d){
+      if(!d.ok)throw new Error(d.message||'WhatsApp refused the call');msg('Ringing the customer on WhatsApp…');
+    }).catch(function(e){var m=(e&&e.name==='NotAllowedError')?'Microphone is blocked. Allow the microphone for this site and try again.':(e&&e.message)||'Could not call';
+      post('/admin/call-center/whatsapp/'+ID+'/end');stop();state='failed';draw();msg(m)});
+  }
+  function callback(btn){if(btn){btn.disabled=true;btn.textContent='Starting…'}msg('');post('/admin/call-center/whatsapp/'+ID+'/callback').then(function(d){
+    if(!d.ok||!d.id){if(btn){btn.disabled=false;btn.textContent='Call back on WhatsApp'}msg(d.message||'Could not start the call back');return}
+    location.href='/admin/call-center/whatsapp/call/'+d.id+'?'+(EMBED?'embed=1&':'')+'go=1'})}
+  function chat(){fetch('/admin/call-center/whatsapp/'+ID+'/chat',{credentials:'same-origin',headers:{'Accept':'application/json'}}).then(function(r){return r.json()}).then(function(d){var b=$('wpChat'),l=d.messages||[];
+    if(d.thread_id){$('wpChatL').hidden=false;$('wpChatL').href='/admin/chat?open='+d.thread_id}
+    var last=l.length?l[l.length-1].id:0;if(last===chatLast)return;chatLast=last;
+    if(!l.length){b.innerHTML='<div class="e">'+(d.thread_id?'No messages in this chat yet.':'This caller has no WhatsApp chat with us yet.')+'</div>';return}
+    var h='';l.forEach(function(m){var t=esc(m.body);if(m.att)t=(t?t+'<br>':'')+'<i>📎 '+esc(m.att)+'</i>';h+='<div class="m'+(m.out?' o':'')+(m.failed?' f':'')+'">'+(t||'<i>(no text)</i>')+'<small>'+esc(m.at)+(m.out&&m.by?' · '+esc(m.by):'')+(m.failed?' · not sent':'')+'</small></div>'});
+    b.innerHTML=h;b.scrollTop=b.scrollHeight}).catch(function(){if(chatLast<0)$('wpChat').innerHTML='<div class="e">Chat could not be loaded.</div>'})}
   function answer(btn){
     if(busy)return;busy=true;msg('');if(btn){btn.disabled=true;btn.textContent='Connecting…'}var sent=false;
     if(!navigator.mediaDevices||!window.RTCPeerConnection){busy=false;msg('This browser cannot take calls. Use Chrome.');draw();return}
@@ -99,8 +133,7 @@ var WP=(function(){
       return pc.setRemoteDescription({type:'offer',sdp:d.sdp}).then(function(){return pc.createAnswer()}).then(function(a){return pc.setLocalDescription(a)}).then(function(){return waitIce(pc)}).then(function(){sent=true;return post('/admin/call-center/whatsapp/'+ID+'/accept',{sdp:pc.localDescription.sdp})});
     }).then(function(d){
       if(!d.ok)throw new Error(d.message||'WhatsApp refused the call');
-      state='active';t0=Date.now();draw();recStart();
-      tick=setInterval(function(){var s=Math.floor((Date.now()-t0)/1000);$('wpT').textContent=('0'+Math.floor(s/60)).slice(-2)+':'+('0'+s%60).slice(-2)},1000);
+      state='active';draw();clock();recStart();
     }).catch(function(e){var m=(e&&e.name==='NotAllowedError')?'Microphone is blocked. Allow the microphone for this site and press Answer again.':(e&&e.message)||'Could not answer';
       var wasMine=mine;stop();
       // nothing was sent to WhatsApp yet: give the call back so it keeps ringing for everyone
@@ -108,10 +141,15 @@ var WP=(function(){
       else{if(wasMine)post('/admin/call-center/whatsapp/'+ID+'/end');msg(m);sync()}});
   }
   function reject(){post('/admin/call-center/whatsapp/'+ID+'/end').then(sync)}
-  function hang(){post('/admin/call-center/whatsapp/'+ID+'/end').then(sync);stop();state='ended';draw()}
+  function hang(){var was=state;post('/admin/call-center/whatsapp/'+ID+'/end').then(sync);stop();state=was==='dialing'?'failed':'ended';draw()}
   function mute(){if(!stream)return;var t=stream.getAudioTracks()[0];if(!t)return;t.enabled=!t.enabled;$('wpMute').textContent=t.enabled?'Mute':'Unmute'}
   function sync(){fetch('/admin/call-center/whatsapp/poll?id='+ID,{credentials:'same-origin',headers:{'Accept':'application/json'}}).then(function(r){return r.json()}).then(function(d){
-    if(d.by)$('wpBy').textContent=d.by;if(!d.state||d.state===state)return;
+    if(d.by)$('wpBy').textContent=d.by;
+    if(mine&&state==='dialing'&&d.sdp&&pc&&!gotAns){gotAns=true;pc.setRemoteDescription({type:'answer',sdp:d.sdp}).catch(function(){gotAns=false;msg('Could not connect the audio.')})}
+    if(!d.state||d.state===state)return;
+    if(mine&&state==='dialing'){
+      if(d.state==='active'){state='active';msg('');draw();clock();recStart();return}
+      stop();state=d.state;draw();msg(d.state==='rejected'?'The customer declined the call.':(d.note||'The customer did not answer.'));return}
     if(mine&&(state==='active'||state==='answering')&&d.state!=='active'&&d.state!=='answering'){stop();msg('The caller ended the call.')}
     if(!busy||d.state!=='ringing'){state=d.state;draw()}}).catch(function(){})}
   function cust(){
@@ -138,11 +176,12 @@ var WP=(function(){
     if(c&&c.thread_id)h+='<a class="wp-b" target="_blank" href="/admin/chat?open='+c.thread_id+'">Chat</a>';
     $('wpLinks').innerHTML=h}
   function note(btn){var v=$('wpNote').value.trim(),b={};if(v)b.note=v;if($('wpOut')){b.outcome=$('wpOut').value;b.followup=$('wpFu').value}if(!v&&!$('wpOut'))return;if(!v&&!b.outcome&&!b.followup){$('wpNoteS').textContent='Write a note, choose a result or set a follow-up.';return}btn.disabled=true;$('wpNoteS').textContent='';post('/admin/call-center/whatsapp/'+ID+'/note',b).then(function(d){btn.disabled=false;$('wpNoteS').textContent=d.ok?'Saved':'Not saved'})}
-  draw();cust();recs();setInterval(sync,3000);
-  window.addEventListener('pagehide',function(){if(mine&&(state==='active'||state==='answering'))fetch('/admin/call-center/whatsapp/'+ID+'/end',{method:'POST',credentials:'same-origin',keepalive:true,headers:{'X-CSRF-TOKEN':tk(),'Accept':'application/json'}})});
+  draw();cust();recs();chat();setInterval(sync,3000);setInterval(chat,6000);setInterval(function(){if(mine&&state==='dialing')sync()},1000);
+  window.addEventListener('pagehide',function(){if(mine&&(state==='active'||state==='answering'||state==='dialing'))fetch('/admin/call-center/whatsapp/'+ID+'/end',{method:'POST',credentials:'same-origin',keepalive:true,headers:{'X-CSRF-TOKEN':tk(),'Accept':'application/json'}})});
   if(state==='ringing'&&/[?&]go=1/.test(location.search))setTimeout(function(){answer(document.querySelector('.wp-b.go'))},200);
+  if(state==='dialing'&&mine&&/[?&]go=1/.test(location.search))setTimeout(function(){dial(document.querySelector('.wp-b.go'))},200);
   function close(){if(window.parent&&window.parent!==window)tell('close');else window.close()}
-  return{answer:answer,reject:reject,hang:hang,mute:mute,note:note,close:close};
+  return{answer:answer,reject:reject,hang:hang,mute:mute,note:note,close:close,dial:dial,callback:callback};
 })();
 </script>
 @endsection
