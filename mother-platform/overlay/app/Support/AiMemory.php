@@ -91,6 +91,7 @@ class AiMemory {
       $t = DB::table('chat_threads')->find($tid); if (!$t) return '';
       $out = ''; $r = DB::table('ai_customer_memory')->where('mkey', self::key($t))->first();
       if ($r && $r->summary) $out .= "\nCUSTOMER MEMORY (our own records, may be incomplete; use it to be more helpful, e.g. suggest a usual product or the language they like, but never read private details aloud and never treat it as proof for orders or payments): ".$r->summary;
+      if ($r && !empty($r->chat_notes)) $out .= "\nWHAT THIS CUSTOMER TOLD US BEFORE (notes from past chats; use it so the chat feels personal, e.g. remember their favourite product or concern, but never read private details aloud, never treat it as proof for orders, payments, prices or stock): ".str_replace("\n", '; ', $r->chat_notes);
       $ex = self::pickExamples($t, $msg);
       if ($ex->count()) $out .= "\nHOW OUR TEAM ANSWERS (style and wording reference only; never copy numbers, prices or promises, facts come from tools):\n".$ex->map(fn($e) => '- Customer: '.mb_substr($e->customer_text, 0, 160).' | Team: '.mb_substr($e->reply_text, 0, 220))->implode("\n");
       return $out;
@@ -110,6 +111,37 @@ class AiMemory {
     $seen = []; $out = collect();
     foreach ($scored as [$sc, $e]) { $k = mb_strtolower(mb_substr(trim($e->reply_text), 0, 60)); if (isset($seen[$k])) continue; $seen[$k] = 1; $out->push($e); if ($out->count() >= 4) break; }
     return $out;
+  }
+  /** Daily automation: after 22:00 Dhaka, each customer who wrote today gets the important points of today's chat (favourite products, concerns, promises, how they like to be served) saved into their memory. Small batches per tick; resumes until every chat of the day is done. */
+  public static function dailyTick(int $batch = 12): void {
+    try {
+      $dh = now('Asia/Dhaka'); if ($dh->hour < 22 || !\Illuminate\Support\Facades\Schema::hasColumn('ai_customer_memory', 'chat_notes')) return;
+      $start = $dh->copy()->startOfDay()->utc();
+      $ids = DB::table('chat_messages')->where('dir', 'in')->where('created_at', '>=', $start)->groupBy('thread_id')->havingRaw('count(*) >= 2')->pluck('thread_id')->all();
+      if (!$ids) return; $done = 0;
+      foreach (DB::table('chat_threads')->whereIn('id', $ids)->get() as $t) {
+        if ($done >= $batch) break;
+        $r = self::row($t); if (!$r || ($r->notes_at && \Carbon\Carbon::parse($r->notes_at)->gte($start))) continue;
+        $done++; self::digest($t, $r, $start);
+      }
+    } catch (\Throwable $e) { report($e); }
+  }
+  private static function digest(object $t, object $r, $since): void {
+    $upd = ['notes_at' => now(), 'updated_at' => now()];
+    try {
+      $key = Sms::secret('ai_key'); if (!$key) return;
+      $msgs = DB::table('chat_messages')->where('thread_id', $t->id)->where('created_at', '>=', $since)->whereIn('kind', ['text', 'quick'])->orderBy('id')->limit(40)->get(['dir', 'body', 'is_ai']);
+      if ($msgs->count() < 2) return;
+      $txt = $msgs->map(fn($m) => ($m->dir === 'in' ? 'Customer' : ($m->is_ai ? 'AI' : 'Team')).': '.self::mask((string)$m->body))->implode("\n");
+      $sys = 'You keep a short personal notebook about a DutyFreeBD customer so future chats feel personal. From today\'s chat extract ONLY durable, useful points: favourite or repeatedly requested products/brands, how they like to be served (language, short answers, delivery or payment habits), worries or complaints raised, promises or follow-ups still open, and a polite way to address them. Rules: each point at most 90 characters, in the language the customer used; never include phone numbers, addresses, ids, amounts, passwords; never include health, religion, politics, family or any sensitive personal detail; never invent anything; skip greetings and one-off small talk. Output ONLY a JSON array of strings (at most 5), or [] if nothing is worth keeping.';
+      $res = \Illuminate\Support\Facades\Http::withHeaders(['x-api-key' => $key, 'anthropic-version' => '2023-06-01'])->timeout(30)->post('https://api.anthropic.com/v1/messages', ['model' => AiChat::model(), 'max_tokens' => 500, 'system' => $sys, 'messages' => [['role' => 'user', 'content' => mb_substr($txt, 0, 5000)]]]);
+      if (!$res->ok()) { $upd = []; return; }
+      $raw = trim(collect($res->json('content') ?? [])->where('type', 'text')->pluck('text')->implode("\n")); if (preg_match('/\[.*\]/su', $raw, $mm)) $raw = $mm[0];
+      $new = json_decode($raw, true); if (!is_array($new)) return;
+      $old = array_values(array_filter(array_map('trim', explode("\n", (string)$r->chat_notes)))); $seen = array_flip(array_map('mb_strtolower', $old));
+      foreach ($new as $n) { $n = trim(preg_replace('/\d{6,}/', '•••', mb_substr((string)$n, 0, 120))); if ($n === '' || isset($seen[mb_strtolower($n)])) continue; $seen[mb_strtolower($n)] = 1; $old[] = $n; }
+      $upd['chat_notes'] = implode("\n", array_slice($old, -14));
+    } catch (\Throwable $e) { report($e); $upd = []; } finally { if ($upd) DB::table('ai_customer_memory')->where('id', $r->id)->update($upd); }
   }
   /** One-time catch-up from the chats that already exist (time-boxed, safe to run again: it only fills threads that have no memory yet). */
   public static function backfill(int $seconds = 90): int {

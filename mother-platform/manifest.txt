@@ -1471,3 +1471,4 @@ database/migrations/2026_11_20_213000_pg_stat_statements.php
 app/Support/ArrivalCount.php
 app/Http/Controllers/AdArrivalController.php
 database/migrations/2026_11_21_030000_automation_hours_10_to_22.php
+database/migrations/2026_11_21_040000_ai_memory_chat_notes.php

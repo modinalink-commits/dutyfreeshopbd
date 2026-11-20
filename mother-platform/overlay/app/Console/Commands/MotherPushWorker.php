@@ -35,6 +35,7 @@ class MotherPushWorker extends Command
     try { \App\Support\BestSellerStock::tick(); } catch (\Throwable $e) { $this->error('bs-stock: ' . $e->getMessage()); }
     try { \App\Support\AutoPrice::tick(); } catch (\Throwable $e) { $this->error('autoprice: ' . $e->getMessage()); }
     try { if (\Illuminate\Support\Facades\Cache::add('sp.follow', 1, 55)) \App\Support\SinglePacket::followParents(); } catch (\Throwable $e) { $this->error('spfollow: ' . $e->getMessage()); }
+    try { \App\Support\AiMemory::dailyTick(); } catch (\Throwable $e) { $this->error('aimem: ' . $e->getMessage()); }
     try { \App\Support\Chat::closeSilentTick(); } catch (\Throwable $e) { $this->error('chatsilent: ' . $e->getMessage()); }
     try { \App\Support\OrderSchedule::tick(); } catch (\Throwable $e) { $this->error('sched: ' . $e->getMessage()); }
     try { \App\Support\SourceDesc::tick(); } catch (\Throwable $e) { $this->error('sdesc: ' . $e->getMessage()); }
