@@ -273,7 +273,7 @@ class Voice
         if ($c->end_date && now('Asia/Dhaka')->toDateString() > substr((string)$c->end_date, 0, 10)) { DB::table('voice_campaigns')->where('id', $c->id)->update(['status' => 'completed', 'updated_at' => now()]); continue; }
         if (self::set('enrolled_' . $c->id) !== now('Asia/Dhaka')->toDateString()) self::enroll($c);
         if (!self::canCallNow($c)) continue; $left = (int)$c->daily_limit - self::calledToday($c->id); if ($left <= 0) continue;
-        $due = DB::table('voice_campaign_customers')->where('campaign_id', $c->id)->where(fn($q) => $q->where('call_status', 'pending')->orWhere(fn($w) => $w->whereIn('call_status', ['not_answered', 'busy', 'failed'])->whereNotNull('next_attempt_at')->where('next_attempt_at', '<=', now())))->orderBy('id')->limit(60)->get()->filter(fn($r) => self::orderTimeReached($c, $r))->take(min($left, 4));
+        $due = DB::table('voice_campaign_customers')->where('campaign_id', $c->id)->where(fn($q) => $q->where('call_status', 'pending')->orWhere(fn($w) => $w->whereIn('call_status', ['not_answered', 'busy', 'failed'])->whereNotNull('next_attempt_at')->where('next_attempt_at', '<=', now())))->orderByRaw('last_order_at asc nulls last, id asc')->limit(60)->get()->filter(fn($r) => self::orderTimeReached($c, $r))->take(min($left, 4));
         foreach ($due as $r) {
           if (time() - $t0 > 50) return;
           $cu = DB::table('customers')->find($r->customer_id); if (!$cu || $cu->blocked || !($cu->promo_call ?? true) || self::optedOut($r->phone)) { DB::table('voice_campaign_customers')->where('id', $r->id)->update(['call_status' => 'opted_out', 'offer_status' => 'void', 'skip_reason' => 'Calls not allowed', 'updated_at' => now()]); continue; }
