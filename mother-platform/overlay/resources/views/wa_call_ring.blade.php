@@ -6,11 +6,18 @@
 #waDock.on{transform:translate(0,-50%);opacity:1;pointer-events:auto}
 #waDock .h{display:flex;align-items:center;gap:8px;padding:9px 12px;background:#fff;border-bottom:1px solid #E5E7EB;font:700 13px/1 Inter,Bornomala,sans-serif;color:#0B1B33}
 #waDock .h i{width:9px;height:9px;border-radius:50%;background:#25D366;flex:none}
-#waDock .h button{margin-left:auto;border:1px solid #D0D5DD;background:#fff;border-radius:7px;height:28px;padding:0 10px;font:600 12px Inter,Bornomala,sans-serif;color:#344054;cursor:pointer}
+#waDock .h button{margin-left:6px;border:1px solid #D0D5DD;background:#fff;border-radius:7px;height:28px;padding:0 10px;font:600 12px Inter,Bornomala,sans-serif;color:#344054;cursor:pointer}
+#waDock .h button:first-of-type{margin-left:auto}
 #waDock iframe{border:0;width:100%;flex:1;background:#F9FAFB}
-@media(max-width:800px){#waDock{right:0;left:0;top:auto;bottom:0;width:100%;max-width:100%;height:92vh;border-radius:14px 14px 0 0;transform:translateY(105%)}#waDock.on{transform:translateY(0)}}
+/* 20 Nov 2026: minimise during a call so staff can work on other pages parts; the call keeps running (the frame stays loaded) */
+#waDock.on.min{top:auto;bottom:16px;right:16px;left:auto;width:290px;height:46px;transform:none;border-color:#25D366}
+#waDock.min iframe{flex:0 0 0;height:0;visibility:hidden}
+#waDock.min .h{border-bottom:0;cursor:pointer}
+#waDock.min .h i{animation:waMn 1.2s infinite}
+@keyframes waMn{50%{opacity:.25}}
+@media(max-width:800px){#waDock{right:0;left:0;top:auto;bottom:0;width:100%;max-width:100%;height:92vh;border-radius:14px 14px 0 0;transform:translateY(105%)}#waDock.on{transform:translateY(0)}#waDock.on.min{left:auto;right:8px;bottom:8px;width:270px;max-width:calc(100vw - 16px);height:46px;border-radius:14px;transform:none}}
 </style>
-<div id="waDock" aria-label="WhatsApp call"><div class="h"><i></i>WhatsApp call<button type="button" id="waDockX">Close</button></div></div>
+<div id="waDock" aria-label="WhatsApp call"><div class="h" id="waDockH"><i></i><span id="waDockT">WhatsApp call</span><button type="button" id="waDockM" title="Minimise: the call keeps running">Minimise</button><button type="button" id="waDockX">Close</button></div></div>
 <style>
 #waBk{position:fixed;inset:0;z-index:89;background:rgba(11,27,51,.55);display:none}
 #waRing{display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:90;width:min(380px,calc(100vw - 24px));background:#fff;border-radius:20px;box-shadow:0 24px 60px rgba(0,0,0,.4);font:500 14px/1.4 Inter,Bornomala,sans-serif;color:#0B1B33;overflow:hidden;text-align:center}
@@ -47,12 +54,15 @@
 function tk(){var e=document.querySelector('meta[name=csrf-token]');return e?e.content:''}
 function post(u){return fetch(u,{method:'POST',credentials:'same-origin',headers:{'X-CSRF-TOKEN':tk(),'Accept':'application/json'}})}
 function beep(){try{ctx=ctx||new (window.AudioContext||window.webkitAudioContext)();var o=ctx.createOscillator(),g=ctx.createGain();o.frequency.value=880;g.gain.value=.06;o.connect(g);g.connect(ctx.destination);o.start();o.stop(ctx.currentTime+.35)}catch(e){}}
-function kill(){dock.classList.remove('on');if(fr){fr.remove();fr=null}busy=false}
+function setMin(m){dock.classList.toggle('min',!!m);document.getElementById('waDockM').textContent=m?'Open':'Minimise';document.getElementById('waDockT').textContent=m?'WhatsApp call running':'WhatsApp call'}
+function kill(){setMin(false);dock.classList.remove('on');if(fr){fr.remove();fr=null}busy=false}
 function hideRing(){el.style.display='none';bk.style.display='none';cur=null;seen=null}
 /* open the call inside the admin; go=true answers at once (the click that opened it is the staff's Answer) */
-window.waDock=function(id,go){if(busy){dock.classList.add('on');return false}if(fr){fr.remove();fr=null}
+window.waDock=function(id,go){setMin(false);if(busy){dock.classList.add('on');return false}if(fr){fr.remove();fr=null}
   fr=document.createElement('iframe');fr.allow='microphone; autoplay';fr.title='WhatsApp call';fr.src='/admin/call-center/whatsapp/call/'+id+'?embed=1'+(go?'&go=1':'');dock.appendChild(fr);dock.classList.add('on');return false};
-document.getElementById('waDockX').onclick=function(){if(busy&&!confirm('A WhatsApp call is active. Close and hang up?'))return;kill()};
+document.getElementById('waDockM').onclick=function(e){e.stopPropagation();setMin(!dock.classList.contains('min'))};
+document.getElementById('waDockH').onclick=function(e){if(dock.classList.contains('min')&&!e.target.closest('button'))setMin(false)};
+document.getElementById('waDockX').onclick=function(e){e.stopPropagation();if(busy&&!confirm('A WhatsApp call is active. Close and hang up?'))return;kill()};
 window.addEventListener('message',function(e){if(e.origin!==location.origin||!e.data||!e.data.wadock)return;var a=e.data.wadock;if(a==='busy')busy=true;else if(a==='idle')busy=false;else if(a==='close'){busy=false;kill()}});
 window.addEventListener('beforeunload',function(e){if(busy){e.preventDefault();e.returnValue=''}});
 function chips(d){var c=document.getElementById('waCh');c.innerHTML='';var a=[];if(d&&d.found){if(d.category)a.push(d.category);if(d.membership)a.push(d.membership);if(d.orders)a.push(d.orders+' orders');if(d.last&&d.last.invoice)a.push('Last order '+d.last.invoice)}else a.push('New caller');a.forEach(function(t){var s=document.createElement('span');s.textContent=t;c.appendChild(s)})}
