@@ -13,7 +13,7 @@ class Voice
   const MENU = ' অফারটি নিতে ১ চাপুন। আমাদের প্রতিনিধির সাথে কথা বলতে ২ চাপুন। এই ধরনের অফার কল আর পেতে না চাইলে ৯ চাপুন।';
   const SMS = 'DutyFreeBD আপনার আগের অর্ডারের {product}-এ {pct}% ছাড়, {date} পর্যন্ত।';
   const SMS_OLD = 'DutyFreeBD: আপনার সর্বশেষ অর্ডার করা {product} এর উপর {pct}% বিশেষ ডিসকাউন্ট রয়েছে। অফারটি {date} পর্যন্ত কার্যকর।';
-  const SEGMENTS = ['all' => 'All eligible customers', 'inactive_15' => 'Inactive 15–29 days', 'inactive_30' => 'Inactive 30–44 days', 'inactive_45' => 'Inactive 45–54 days', 'inactive_55' => 'Inactive 55+ days', 'vip' => 'VIP customers', 'diamond' => 'Diamond members', 'regular' => 'Regular customers', 'selected' => 'Selected customers (phone list)', 'custom' => 'Custom filter'];
+  const SEGMENTS = ['all' => 'All eligible customers', 'winback' => 'Win-Back slots 30+ days (SMS stage discounts, oldest first)', 'inactive_15' => 'Inactive 15–29 days', 'inactive_30' => 'Inactive 30–44 days', 'inactive_45' => 'Inactive 45–54 days', 'inactive_55' => 'Inactive 55+ days', 'vip' => 'VIP customers', 'diamond' => 'Diamond members', 'regular' => 'Regular customers', 'selected' => 'Selected customers (phone list)', 'custom' => 'Custom filter'];
   const STATUS = ['pending' => 'Pending', 'calling' => 'Calling', 'answered' => 'Answered', 'not_answered' => 'Not Answered', 'busy' => 'Busy', 'failed' => 'Failed', 'interested' => 'Interested', 'transferred' => 'Transferred to Agent', 'accepted' => 'Offer Accepted', 'opted_out' => 'Opted Out'];
 
   public static function set(string $k, string $def = ''): string { $v = DB::table('settings')->where('key', 'vc_' . $k)->value('value'); return $v === null ? $def : (string)$v; }
@@ -115,7 +115,7 @@ class Voice
     $custs = DB::table('customers')->whereIn(DB::raw('right(phone,11)'), array_keys($last) ?: ['0'])->get()->keyBy(fn($x) => self::norm($x->phone));
     foreach ($last as $p => $x) {
       if (isset($already[$p])) continue; $d = Winback::days($x['at']); $cu = $custs[$p] ?? null;
-      $ok = match ($seg) { 'inactive_15' => $d >= 15 && $d < 30, 'inactive_30' => $d >= 30 && $d < 45, 'inactive_45' => $d >= 45 && $d < 55, 'inactive_55' => $d >= 55, 'vip' => $cu && strtolower((string)($cu->type ?? '')) === 'vip', 'diamond' => $cu && isset($dia[$p]) && self::isDiamond($p, $cu), 'regular' => $cu && strtolower((string)($cu->type ?? '')) !== 'vip',
+      $ok = match ($seg) { 'inactive_15' => $d >= 15 && $d < 30, 'inactive_30' => $d >= 30 && $d < 45, 'inactive_45' => $d >= 45 && $d < 55, 'inactive_55' => $d >= 55, 'winback' => $d >= 30, 'vip' => $cu && strtolower((string)($cu->type ?? '')) === 'vip', 'diamond' => $cu && isset($dia[$p]) && self::isDiamond($p, $cu), 'regular' => $cu && strtolower((string)($cu->type ?? '')) !== 'vip',
         'custom' => $d >= (int)($cfg['min_days'] ?? 0) && $d <= ((int)($cfg['max_days'] ?? 0) ?: 100000) && (!($cfg['category'] ?? '') || (($cfg['category'] === 'vip') === ($cu && strtolower((string)($cu->type ?? '')) === 'vip'))), default => true };
       if (!$ok) continue;
       if (!$cu) { $skip[$p] = 'No customer account'; continue; } if ($cu->blocked) { $skip[$p] = 'Customer blocked'; continue; }
@@ -127,7 +127,7 @@ class Voice
         if (!$pr) { $skip[$p] = 'Last order has no catalogue product'; continue; }
         if (!$pr->published) { $skip[$p] = 'Product is not active'; continue; } if ((int)$pr->stock <= 0) { $skip[$p] = 'Product out of stock'; continue; }
       }
-      $rows[] = ['customer_id' => $cu->id, 'name' => $cu->name, 'phone' => $p, 'product_id' => $pr->pid ?? null, 'product_name' => $pr->pname ?? '', 'last_price' => (float)($pr->price ?? 0), 'order_id' => $x['oid'], 'last_order_at' => $x['at'], 'days' => $d];
+      $rows[] = ['customer_id' => $cu->id, 'name' => $cu->name, 'phone' => $p, 'product_id' => $pr->pid ?? null, 'product_name' => $pr->pname ?? '', 'last_price' => (float)($pr->price ?? 0), 'order_id' => $x['oid'], 'last_order_at' => $x['at'], 'days' => $d, 'pct' => $seg === 'winback' ? (Winback::stageFor($d)[1] ?? null) : null];
       if (count($rows) >= $limit) break;
     }
     return ['rows' => $rows, 'skipped' => $skip];
@@ -136,7 +136,7 @@ class Voice
   public static function enroll(object $c): int {
     $cand = self::candidates($c); $n = 0;
     foreach ($cand['rows'] as $r) {
-      $ins = ['campaign_id' => $c->id, 'customer_id' => $r['customer_id'], 'product_id' => $r['product_id'], 'order_id' => $r['order_id'], 'phone' => $r['phone'], 'name' => $r['name'], 'product_name' => $r['product_name'], 'last_price' => $r['last_price'], 'last_order_at' => $r['last_order_at'], 'discount_value' => $c->discount_value, 'created_at' => now(), 'updated_at' => now()];
+      $ins = ['campaign_id' => $c->id, 'customer_id' => $r['customer_id'], 'product_id' => $r['product_id'], 'order_id' => $r['order_id'], 'phone' => $r['phone'], 'name' => $r['name'], 'product_name' => $r['product_name'], 'last_price' => $r['last_price'], 'last_order_at' => $r['last_order_at'], 'discount_value' => $r['pct'] ?? $c->discount_value, 'created_at' => now(), 'updated_at' => now()];
       try { DB::table('voice_campaign_customers')->insert($ins); $n++; } catch (\Throwable $e) {}
     }
     self::put('enrolled_' . $c->id, now('Asia/Dhaka')->toDateString()); return $n;
