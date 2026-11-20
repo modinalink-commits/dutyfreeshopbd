@@ -22,8 +22,17 @@
 @foreach($c['fields'] as $f)@if(($f['t']??'')!=='password' && empty($f['noList']))<td>@php $v = $ctl->cell($c,$row,$f,$lk); @endphp
 @if($f['t']==='bool')<span class="pill {{ $v==='Yes'?'ok':'' }}">{{ $v }}</span>@else{{ \Illuminate\Support\Str::limit($v, $c['lim'] ?? 70) }}@endif</td>@endif @endforeach
 @foreach($c['extra'] ?? [] as [$xk,$xl])<td>{{ $ex[$row->id][$xk] ?? '' }}</td>@endforeach
-<td style="white-space:nowrap">@if(empty($c['ro']) && empty($c['noEdit']))<a class="btn g" href="/admin/m/{{ $c['slug'] }}/{{ $row->id }}/edit">Edit</a>@endif
+<td style="white-space:nowrap">@if($c['slug']==='reviews')
+@if(($row->status ?? '')!=='published')<form method="post" action="/admin/m/reviews/{{ $row->id }}" class="rvq" style="display:inline">@csrf<input type="hidden" name="status" value="published"><input type="hidden" name="reply" value="{{ $row->reply ?? '' }}"><button type="submit" title="Publish this review on the product page" style="background:#067647;border-color:#067647;color:#fff;font-weight:700">Approve</button></form>@endif
+@if(($row->status ?? '')!=='hidden')<form method="post" action="/admin/m/reviews/{{ $row->id }}" class="rvq" style="display:inline">@csrf<input type="hidden" name="status" value="hidden"><input type="hidden" name="reply" value="{{ $row->reply ?? '' }}"><button type="submit" title="Hide this review from the website" style="background:#fff;border:1px solid #FDA29B;color:#B42318;font-weight:700">Reject</button></form>@endif
+@endif
+@if(empty($c['ro']) && empty($c['noEdit']))<a class="btn g" href="/admin/m/{{ $c['slug'] }}/{{ $row->id }}/edit">Edit</a>@endif
 @if(empty($c['ro']) && empty($c['noCreate']))<form method="post" action="/admin/m/{{ $c['slug'] }}/{{ $row->id }}/delete" style="display:inline" onsubmit="return confirm('Delete this record?')">@csrf<button class="g">Delete</button></form>@endif</td></tr>
 @empty<tr><td colspan="30">No records yet.</td></tr>@endforelse</tbody></table>{{ $rows->links('pagination.global', ['perSel'=>true]) }}</div>
+@if($c['slug']==='reviews')<script>
+/* owner 20 Nov 2026: Approve / Reject straight from the list; the page stays on the same filter and page */
+document.addEventListener('submit',function(e){var f=e.target.closest&&e.target.closest('form.rvq');if(!f)return;e.preventDefault();var b=f.querySelector('button');if(b.disabled)return;var t=b.textContent;b.disabled=true;b.textContent='Saving…';
+fetch(f.action,{method:'POST',body:new FormData(f),credentials:'same-origin',headers:{'X-Requested-With':'XMLHttpRequest'}}).then(function(r){if(r.ok)location.reload();else{b.disabled=false;b.textContent=t+' failed'}}).catch(function(){b.disabled=false;b.textContent=t+' failed'})});
+</script>@endif
 @includeIf('panels.'.$c['slug'])
 @endsection
