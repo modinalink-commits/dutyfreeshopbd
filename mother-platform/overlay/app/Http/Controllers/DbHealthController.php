@@ -9,6 +9,13 @@ class DbHealthController extends Controller {
   public function index() {
     abort_unless(auth()->check() && in_array(auth()->user()->role, ['super', 'admin'], true), 403);
     // ?live=1: a light sample for finding the heavy queries (pg_stat_statements is not installed): what is running right now + the scan counters of the hot tables. Read only.
+    // ?top=1: the heaviest statements since the last reset (needs pg_stat_statements, loaded after a database restart). Read only.
+    if (request()->boolean('top')) return response()->json([
+      'preload' => $this->q("select setting from pg_settings where name = 'shared_preload_libraries'"),
+      'available' => $this->q("select default_version, installed_version from pg_available_extensions where name = 'pg_stat_statements'"),
+      'by_time' => $this->q("select calls, round(total_exec_time::numeric / 1000, 1) total_s, round(mean_exec_time::numeric, 1) mean_ms, rows, shared_blks_read blks_read, left(regexp_replace(query, '\s+', ' ', 'g'), 300) q from pg_stat_statements where dbid = (select oid from pg_database where datname = current_database()) order by total_exec_time desc limit 20"),
+      'by_mean' => $this->q("select calls, round(mean_exec_time::numeric, 1) mean_ms, round(total_exec_time::numeric / 1000, 1) total_s, left(regexp_replace(query, '\s+', ' ', 'g'), 300) q from pg_stat_statements where dbid = (select oid from pg_database where datname = current_database()) and calls >= 5 order by mean_exec_time desc limit 12"),
+    ])->header('Cache-Control', 'no-store');
     if (request()->boolean('live')) return response()->json([
       'at' => microtime(true),
       'active' => $this->q("select pid, round(extract(epoch from clock_timestamp() - query_start) * 1000) ms, application_name app, left(regexp_replace(query, '\s+', ' ', 'g'), 420) q from pg_stat_activity where datname = current_database() and state = 'active' and pid <> pg_backend_pid() order by query_start limit 12"),

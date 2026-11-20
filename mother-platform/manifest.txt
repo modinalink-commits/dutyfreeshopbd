@@ -1467,3 +1467,4 @@ public/adimg/nov26-coupon-save100.jpg
 public/adimg/nov26-cart-waiting.jpg
 database/migrations/2026_11_20_200000_legacy_category_products_to_main.php
 database/migrations/2026_11_20_210000_db_planner_settings.php
+database/migrations/2026_11_20_213000_pg_stat_statements.php
