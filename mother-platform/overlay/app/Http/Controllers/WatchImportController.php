@@ -39,10 +39,15 @@ class WatchImportController extends Controller {
   public static function regPct(): float { return (float)(DB::table('settings')->where('key', 'source_regular_pct')->value('value') ?: 25); }
   /** Owner 13 Nov 2026: vendor products with source price up to low_price_max (default 1000 Tk) are not sold (delivery eats the margin): never imported, and kept unpublished here. */
   public static function lowMax(): float { return (float)(DB::table('settings')->where('key', 'low_price_max')->value('value') ?: 1000); }
+  /** Owner 20 Nov 2026: a store named in setting low_price_exempt_stores (ids, comma separated) sells every price, from 0 Tk up: the low-price rule does not apply to it (his neighbouring daily-needs shop). */
+  public static function lowMaxFor(int $sid): float {
+    try { $ids = array_filter(array_map('intval', explode(',', (string)DB::table('settings')->where('key', 'low_price_exempt_stores')->value('value')))); if (in_array($sid, $ids, true)) return 0.0; } catch (\Throwable $e) {}
+    return self::lowMax();
+  }
   /** The source store row; if the same domain was added twice (migration + admin), use the one that actually holds scanned products. */
   private function src() { $d = $this->cfg()['domain']; return DB::table('stores')->whereRaw('lower(domain) = ? or lower(domain) = ?', [$d, 'www.' . $d])->orderByRaw('(select count(*) from store_products sp where sp.store_id = stores.id) desc')->orderBy('id')->first(); }
   private function cond($q, $sid) {
-    $cf = $this->cfg(); $q = $q->where('store_id', $sid)->where('in_stock', true)->where('price', '>', self::lowMax());
+    $cf = $this->cfg(); $q = $q->where('store_id', $sid)->where('in_stock', true)->where('price', '>', self::lowMaxFor((int)$sid));
     if (($cf['min'] ?? 0) > 0) $q = $q->where('price', '>=', $cf['min']);
     return $cf['max'] > 0 ? $q->where('price', '<=', $cf['max']) : $q;
   }
@@ -109,8 +114,42 @@ class WatchImportController extends Controller {
     if ($cat === 'skin-care') return preg_match('/\b(baby|babies|infant|newborn|toddler)\b/', $n.' '.$c) ? 'Baby Care' : (preg_match('/shaving|razor|beard|deodorant|roll\s*on|body\s*spray|talc|hair\s*removal|\bwax\b/', $n.' '.$c) ? 'Personal Care' : (preg_match('/shampoo|conditioner|hair/', $n.' '.$c) ? 'Hair Care' : 'Skin Care'));
     if ($cat === 'others') return self::babySub($name, (string)$srcCat);
     if ($cat === 'wellness') return self::wellnessSub($name, (string)$srcCat);
+    if ($cat === 'daily-needs') return self::dailySub($name, (string)$srcCat);
     if ($cat === 'fashion') return self::fashionSub($name, (string)$srcCat); // one common sub category list, whichever shop the product comes from (owner 13 Nov 2026)
     $t = trim((string)$srcCat); return $t !== '' ? mb_convert_case($t, MB_CASE_TITLE) : ($cat === 'lighter-accessories' ? 'Accessories' : 'Gadgets');
+  }
+  /** Daily Needs sub category (owner 20 Nov 2026): the shop's own category when it is a clean one, an existing Daily Needs sub category when the shop's name is only another spelling of it,
+   *  and for seasonal / empty shop categories ("Eid Essentials", "-") the sub category the product name points to. */
+  public static function dailySub(string $name, string $type): string {
+    $t = trim(preg_replace('/\s+/u', ' ', html_entity_decode($type, ENT_QUOTES | ENT_HTML5, 'UTF-8'))); $k = mb_strtolower($t); $n = mb_strtolower($name);
+    $map = ['baby milk and nutritions food' => 'Baby Food', 'motherhood essentials' => 'Baby Food', 'baby biscuit' => 'Baby Food', 'mix masala' => 'Masala', 'sauces' => 'Sauces & Condiments', 'extra virgin olive oil' => 'Olive Oil',
+      'mayonnaise' => 'Mayonnaise & Butter', 'noodle' => 'Noodles & Macaroni', 'noodles' => 'Noodles & Macaroni', 'dates' => 'Premium Dates', 'chips (চিপস)' => 'Chips & Snacks', 'chips' => 'Chips & Snacks', 'deserts' => 'Desserts', 'ghee' => 'Oil'];
+    if (isset($map[$k])) return $map[$k];
+    $milk = fn() => preg_match('/powder|পাউডার/u', $n) ? 'Milk Powder' : 'Milk';
+    if ($k === 'milk') return $milk();
+    $byName = function () use ($n, $milk) {
+      if (preg_match('/chocolate|cocoa bar|kitkat|kit kat|snickers|toblerone|ferrero|cadbury|\bbounty\b|\bmars\b|m&m|nutella b-?ready/u', $n)) return 'Chocolate';
+      if (preg_match('/biscuit|cookie|wafer|cracker|oreo/u', $n)) return 'Cookies & Biscuits';
+      if (preg_match('/\bdates?\b|khejur|ajwa|medjool|mabroom|খেজুর/u', $n)) return 'Premium Dates';
+      if (preg_match('/honey|মধু/u', $n)) return 'Honey';
+      if (preg_match('/coffee|nescafe|cappuccino/u', $n)) return 'Coffee';
+      if (preg_match('/\btea\b|green tea|চা\b/u', $n)) return 'Tea';
+      if (preg_match('/\btang\b/u', $n)) return 'Tang';
+      if (preg_match('/juice|drink|syrup|soda|cola|rooh afza|ruh afza|sharbat|shorbot/u', $n)) return 'Beverages';
+      if (preg_match('/almond|cashew|pistachio|walnut|raisin|\bnuts?\b|apricot|\bfig\b|kismis|badam/u', $n)) return 'Dry Fruits';
+      if (preg_match('/chips|pringles|popcorn|snack/u', $n)) return 'Chips & Snacks';
+      if (preg_match('/sauce|ketchup|vinegar|mustard|\bmayo/u', $n)) return 'Sauces & Condiments';
+      if (preg_match('/noodle|pasta|macaroni|spaghetti|vermicelli|semai|shemai/u', $n)) return 'Noodles & Macaroni';
+      if (preg_match('/masala|spice|powder mix/u', $n)) return 'Masala';
+      if (preg_match('/olive oil/u', $n)) return 'Olive Oil';
+      if (preg_match('/\boil\b|ghee/u', $n)) return 'Oil';
+      if (preg_match('/\bmilk\b/u', $n)) return $milk();
+      if (preg_match('/\b(baby|infant|cerelac|lactogen)\b/u', $n)) return 'Baby Food';
+      return null;
+    };
+    if ($k === 'tea/coffee/milk') return $byName() ?? 'Tea/Coffee/Milk';
+    if ($k === '' || $k === '-' || preg_match('/essentials$|world cup|^gadgets$|^uncategori[sz]ed$|^others?$|^all$/u', $k)) return $byName() ?? 'Daily';
+    return mb_convert_case($t, MB_CASE_TITLE);
   }
   /** Main categories a store feeds (its Source categories, in order). Only generic stores (c=sNN) can feed more than one. */
   private function storeCats($s): array {
@@ -443,7 +482,7 @@ class WatchImportController extends Controller {
       $stt = DB::table('stores')->where('id', $sid)->first(); $col = \Illuminate\Support\Facades\Schema::hasColumn('stores', 'sale_pct'); $paused = $col && !empty($stt->paused); $jump = $col && $stt->price_jump_pct ? (float)$stt->price_jump_pct : 0.0;
       $lock = \Illuminate\Support\Facades\Schema::hasColumn('products', 'manual_unpublish_lock');
       $rows = DB::table('watch_source as w')->join('store_products as sp', 'sp.id', '=', 'w.store_product_id')->join('products as p', 'p.id', '=', 'w.product_id')->where('w.store_id', $sid)->get(['w.id as wid', 'w.markup_pct', 'w.our_price', 'sp.price as sprice', 'sp.in_stock', 'sp.published as sppub', 'p.id as pid', 'p.published as ppub', 'p.image as pimg', 'p.compare_price as pcomp', 'w.source_price as prev_sp']); $regPct = ($col && $stt->regular_pct !== null) ? (float)$stt->regular_pct : self::regPct(); $salePct = ($apply && $col && $stt->sale_pct !== null) ? (float)$stt->sale_pct : null;
-      $lowMax = self::lowMax(); $needClean = strtolower((string)(DB::table('stores')->where('id', $sid)->value('domain'))) === 'amour.com.bd';
+      $lowMax = self::lowMaxFor($sid); $needClean = strtolower((string)(DB::table('stores')->where('id', $sid)->value('domain'))) === 'amour.com.bd';
       foreach ($rows as $x) {
         $spike = $jump > 0 && !$apply && (float)$x->prev_sp > 0 && (float)$x->sprice > (float)$x->prev_sp * (1 + $jump / 100); $live = !$paused && !$spike && !((float)$x->sprice <= $lowMax) && (bool)$x->in_stock && (bool)$x->sppub && (!$needClean || str_starts_with((string)$x->pimg, '/uploads/ai/')); $u = ['updated_at' => now()];
         if ($live !== (bool)$x->ppub) { $u['published'] = $live; if ($lock) $u['manual_unpublish_lock'] = !$live; }
