@@ -27,7 +27,7 @@
 #dfsb button{order:1;position:relative;flex:none;display:flex;align-items:center;justify-content:center;width:40px;height:40px;padding:0;border:0;border-radius:10px;background:rgba(255,255,255,.12);color:#fff;font-size:0;cursor:pointer}
 #dfsb button svg{width:22px;height:22px}
 #dfsb .bn{display:block;position:absolute;left:auto;bottom:auto;top:-6px;right:-6px;box-shadow:none;z-index:auto;min-width:19px;height:19px;padding:0 4px;border-radius:10px;background:#F95505;color:#fff;border:2px solid #0C161F;font:800 10.5px/15px Inter,Bornomala,sans-serif;text-align:center;box-sizing:border-box}
-#dfsb .go{order:3;flex:none;display:flex;align-items:center;height:40px;padding:0 14px;border-radius:10px;background:#F95505;color:#fff;font:800 13px/1 Inter,Bornomala,sans-serif}
+#dfsb .go{order:3;flex:none;text-decoration:none;display:flex;align-items:center;height:40px;padding:0 14px;border-radius:10px;background:#F95505;color:#fff;font:800 13px/1 Inter,Bornomala,sans-serif}
 body.dfsb-on{padding-bottom:142px!important}
 #dfat{top:auto;bottom:144px;transform:translate(-50%,40px);opacity:0}#dfat.on{transform:translate(-50%,0);opacity:1}}
 </style>
