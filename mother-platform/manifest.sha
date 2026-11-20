@@ -201,7 +201,7 @@ af44173bbd44837b1b621a1a95c7d2a5c675dd6a app/Http/Controllers/PwaController.php
 557ff18888855d47bcd276777c063ba6e9756083 resources/views/store/pwa.blade.php
 d3c25989e4d0d23fd973e2d9f67eae301e6f9a8a resources/views/store/pwa_head.blade.php
 79af9b6065bcb4c89a40364d082d37c972d9feb8 resources/views/store/pwa_splash.blade.php
-20f1f45d79ae9972a48fda908edf5a208a1f7220 resources/views/store/minicart.blade.php
+403f819dfbcbe35339ce664bf59128b5c5fcbaab resources/views/store/minicart.blade.php
 3bb16aa0de8c627c4de10455a81e29aafa1879fa public/pwa/icon-192.png
 c94a778fefb027fc04d7101883ca0bf17fd7a5ec public/pwa/icon-512.png
 7f277ec7208f5d6f8ead3ec46bf5d6197ca2be6f public/pwa/maskable-512.png

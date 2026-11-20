@@ -17,21 +17,23 @@
 #dfmc .ac{display:grid;grid-template-columns:1fr 1.2fr;gap:8px;padding:0 16px 14px;background:#fff}#dfmc .ac a{text-align:center;border-radius:10px;padding:12px 6px;font-weight:800;font-size:14px}
 #dfmc .vc{border:1.5px solid #0B1F3A;color:#0C161F;background:#fff}#dfmc .co{background:linear-gradient(135deg,#FF8A00,#F95505);color:#fff}
 #dfmc .em{text-align:center;padding:50px 20px;color:#374151}#dfmc .em b{display:block;font-size:17px;color:#0C161F;margin-bottom:14px}#dfmc .em a{display:inline-block;background:#F95505;color:#fff;font-weight:800;border-radius:10px;padding:11px 22px}
-#dfsb{display:none}
+#dfsb{display:none}#dfsb .go{display:none}
 #dfat{position:fixed;left:50%;top:18px;transform:translate(-50%,-80px);background:#0C161F;color:#fff;border-radius:999px;padding:10px 18px;font-size:13.5px;font-weight:700;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.28);transition:transform .3s;pointer-events:none;border:1px solid rgba(255,138,0,.6)}#dfat.on{transform:translate(-50%,0)}
 @media(max-width:760px){
 #dfmc{top:auto;left:0;width:100%;height:82vh;border-radius:18px 18px 0 0;transform:translateY(104%)}#dfmc.on{transform:none}
-/* mobile: a small round cart button in the middle (Cart centre, Chat right), with the item count */
-#dfsb.on{display:block;position:fixed;left:50%;bottom:88px;transform:translateX(-50%);z-index:48;width:54px;height:54px}
-#dfsb span{display:none}
-#dfsb button{position:relative;display:flex;align-items:center;justify-content:center;width:54px;height:54px;padding:0;border:2.5px solid #0C161F;border-radius:50%;background:linear-gradient(135deg,#FF8A00,#F95505);color:#fff;font-size:0;box-shadow:0 6px 16px rgba(249,85,5,.42);cursor:pointer}
-#dfsb button svg{width:25px;height:25px}
-#dfsb .bn{position:absolute;top:-7px;right:-7px;min-width:21px;height:21px;padding:0 5px;border-radius:11px;background:#0C161F;color:#fff;border:2px solid #fff;font:800 11px/17px Inter,Bornomala,sans-serif;text-align:center}
-#dfat{top:auto;bottom:128px;transform:translate(-50%,40px);opacity:0}#dfat.on{transform:translate(-50%,0);opacity:1}}
+/* mobile (owner 20 Nov 2026): a cart bar above the bottom menu, left of the chat buttons - item count, total and Checkout. It replaced the round button, which sat on top of the product cards' buttons */
+#dfsb.on{display:flex;align-items:center;gap:9px;position:fixed;left:10px;right:78px;bottom:82px;z-index:48;height:52px;box-sizing:border-box;padding:0 6px;border-radius:14px;background:#0C161F;color:#fff;box-shadow:0 8px 22px rgba(11,18,32,.32);cursor:pointer;-webkit-tap-highlight-color:transparent}
+#dfsb span{display:block;order:2;flex:1;min-width:0;font:700 13.5px/1.2 Inter,Bornomala,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#dfsb button{order:1;position:relative;flex:none;display:flex;align-items:center;justify-content:center;width:40px;height:40px;padding:0;border:0;border-radius:10px;background:rgba(255,255,255,.12);color:#fff;font-size:0;cursor:pointer}
+#dfsb button svg{width:22px;height:22px}
+#dfsb .bn{display:block;position:absolute;left:auto;bottom:auto;top:-6px;right:-6px;box-shadow:none;z-index:auto;min-width:19px;height:19px;padding:0 4px;border-radius:10px;background:#F95505;color:#fff;border:2px solid #0C161F;font:800 10.5px/15px Inter,Bornomala,sans-serif;text-align:center;box-sizing:border-box}
+#dfsb .go{order:3;flex:none;display:flex;align-items:center;height:40px;padding:0 14px;border-radius:10px;background:#F95505;color:#fff;font:800 13px/1 Inter,Bornomala,sans-serif}
+body.dfsb-on{padding-bottom:142px!important}
+#dfat{top:auto;bottom:144px;transform:translate(-50%,40px);opacity:0}#dfat.on{transform:translate(-50%,0);opacity:1}}
 </style>
 <div id="dfmcO"></div>
 <aside id="dfmc" role="dialog" aria-label="Your cart" aria-hidden="true"><div class="h"><b>Your Cart <span id="dfmcN">(0)</span></b><button type="button" class="x" id="dfmcX" aria-label="Close">×</button></div><div class="bd" id="dfmcB"></div><div id="dfmcF"></div></aside>
-<div id="dfsb"><span id="dfsbT"></span><button type="button" id="dfsbB" aria-label="View cart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2.5 3.5h2.7l2.4 11.2a1.6 1.6 0 0 0 1.6 1.3h8.1a1.6 1.6 0 0 0 1.6-1.2l1.4-7.1H6.1"/></svg><i class="bn" id="dfsbN">0</i></button></div>
+<div id="dfsb"><span id="dfsbT"></span><button type="button" id="dfsbB" aria-label="View cart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2.5 3.5h2.7l2.4 11.2a1.6 1.6 0 0 0 1.6 1.3h8.1a1.6 1.6 0 0 0 1.6-1.2l1.4-7.1H6.1"/></svg><i class="bn" id="dfsbN">0</i></button><a class="go" href="/checkout">Checkout</a></div>
 <div id="dfat" role="status" aria-live="polite">Added to Cart ✓</div>
 <script>
 (function(){
@@ -58,7 +60,7 @@ function set(p,qty){var c=DF.cart(),k=String(p.id);if(qty<=0){delete c[k];DF.p('
 var T=DF.tab;DF.tab=function(){T();bar();var h=document.querySelector('.hi .cl');var x=totals();if(h)h.textContent=x.n?tk(x.t):'Cart';if(mc.classList.contains('on'))render()};
 function bar(){var x=totals(),b=$('dfsb');if(!b)return;var on=x.n>0&&!onCo;b.classList.toggle('on',on);document.body.classList.toggle('dfsb-on',on);var tx=x.n+' Item'+(x.n>1?'s':'')+' · '+tk(x.t);$('dfsbT').textContent=tx;$('dfsbN').textContent=x.n>99?'99+':x.n;$('dfsbB').setAttribute('aria-label','View cart: '+tx)}
 DF.nt=function(){var t=$('dfat');t.classList.add('on');clearTimeout(DF._nt);DF._nt=setTimeout(function(){t.classList.remove('on')},1800);document.querySelectorAll('.cn,#bnC').forEach(function(e){e.classList.remove('dfnb');void e.offsetWidth;e.classList.add('dfnb')});if(!onCo&&innerWidth>760&&!DF._noOpen)setTimeout(open,350)};
-$('dfmcX').onclick=close;ov.onclick=close;document.addEventListener('keydown',function(e){if(e.key==='Escape')close()});$('dfsbB').onclick=open;
+$('dfmcX').onclick=close;ov.onclick=close;document.addEventListener('keydown',function(e){if(e.key==='Escape')close()});$('dfsb').onclick=function(e){if(e.target.closest&&e.target.closest('a'))return;open()};
 document.querySelectorAll('.dfcb').forEach(function(b){b.addEventListener('click',function(e){e.preventDefault();open()})});
 window.addEventListener('storage',function(e){if(e.key==='dfc')DF.tab()});
 DF.tab();
