@@ -31,7 +31,7 @@ b6e9fba4561e4ab091c650e782157a3e9d7d261e app/Http/Controllers/ResController.php
 0c3c248356924c8cd69cf4a5056212d399f4bbb3 resources/views/res_list.blade.php
 02454a9915ed520f7506ca073a7683ca7e9dc150 resources/views/res_form.blade.php
 67a76a09307002f6201cc2e684f3161b22c67d9c resources/views/reports.blade.php
-d0dc54dcae974f9a9288fbf26068ffdc3e75e9ef resources/views/sidebar.blade.php
+bce14dcd34115eee7bd9cdce26905499d246978b resources/views/sidebar.blade.php
 42ec15c419546449e1c381f9c7c712a4395e2226 resources/views/coming.blade.php
 c391e719e9e194b7bf6ecf86ccb4c9a4504c2d17 database/migrations/2026_10_31_000004_catalog_extra.php
 d5d35fdf9413e4b3ab5feed955243317b651d684 resources/views/panels/customers.blade.php
