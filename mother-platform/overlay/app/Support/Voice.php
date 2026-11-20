@@ -227,7 +227,7 @@ class Voice
   }
   /** Customers who answered an offer call and then placed an order (any order made after the answered call, cancelled ones left out): the feedback list. */
   public static function orderedAfterCall(int $limit = 200): array {
-    return DB::select("select v.id as vid, c.name as campaign, v.name, v.phone, v.answered_at, v.converted, v.used_discount, o.id as order_id, o.invoice, o.created_at as order_at, o.total, o.status from voice_campaign_customers v join voice_campaigns c on c.id = v.campaign_id join orders o on right(o.phone, 11) = v.phone and o.created_at >= v.answered_at where v.answered_at is not null and o.status not in ('Cancel','Incomplete') order by o.created_at desc limit " . (int)$limit);
+    return DB::select("select v.id as vid, c.name as campaign, v.name, v.phone, v.answered_at, v.converted, v.used_discount, o.id as order_id, o.invoice, o.created_at as order_at, o.total, o.status from voice_campaign_customers v join voice_campaigns c on c.id = v.campaign_id join orders o on right(o.phone, 11) = v.phone and o.created_at >= v.answered_at and o.created_at <= v.answered_at + interval '7 days' where v.answered_at is not null and o.status not in ('Cancel','Incomplete') order by o.created_at desc limit " . (int)$limit);
   }
   /** Daily call sheet across all campaigns (real calls only, Dhaka days). */
   public static function dailySheet(int $days = 30): array {
