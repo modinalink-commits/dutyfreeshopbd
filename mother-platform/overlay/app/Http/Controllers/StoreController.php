@@ -23,6 +23,12 @@ class StoreController extends Controller {
       });
     } catch (\Throwable $e) { return []; }
   }
+  public static function popularHtml(): string {
+    $l = self::popularLinks(); if (!$l) return '';
+    $o = '<nav class="w pl" aria-label="Popular products" style="margin-top:26px;padding-top:14px;border-top:1px solid #e8ebf0;font-size:12px;line-height:1.9;color:#5b6577"><b style="color:#0b1220;margin-right:6px">Popular:</b>';
+    foreach ($l as $x) $o .= '<a href="' . e($x['url']) . '" style="color:#5b6577;margin-right:10px;display:inline-block">' . e(\Illuminate\Support\Str::limit($x['name'], 46)) . '</a>';
+    return $o . '</nav>';
+  }
   public static function rem(string $k, int $ttl, \Closure $fn) {
     try { $k = 'v' . (Cache::get('store.ver') ?: 0) . '.' . (\App\Support\CleanSite::on() ? 'clean.' : '') . $k; } catch (\Throwable $e) {}
     $raw = Cache::get($k);
