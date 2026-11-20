@@ -818,7 +818,7 @@ class StoreController extends Controller {
    * All parts are built together once an hour (same rules as before: only pages that really open, tobacco/vape never listed).
    */
   public function sitemap(?string $part = null) {
-    $B = \App\Support\Domain::main(); $pre = 'smap21.' . (Cache::get('store.ver') ?: 0) . (\App\Support\CleanSite::on() ? '.c' : '') . '.';
+    $B = \App\Support\Domain::main(); $pre = 'smap22.' . (Cache::get('store.ver') ?: 0) . (\App\Support\CleanSite::on() ? '.c' : '') . '.';
     $idx = Cache::get($pre . 'idx');
     if (!is_array($idx) || ($part !== null && isset($idx[$part]) && !Cache::has($pre . 'p.' . $part))) {
       $parts = $this->sitemapParts(); $idx = [];
@@ -830,7 +830,7 @@ class StoreController extends Controller {
     if ($part === null) {
       $o = ''; $lm = date('c');
       foreach ($idx as $k => $n) if ($n > 0) $o .= '<sitemap><loc>' . e($B . '/sitemap-' . $k . '.xml') . '</loc><lastmod>' . $lm . '</lastmod></sitemap>';
-      return response('<?xml version="1.0" encoding="UTF-8"?>' . "\n" . '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . $o . '</sitemapindex><!-- bs:' . (int)Cache::get('store.sitemap.bs', -1) . ' -->', 200, $h);
+      return response('<?xml version="1.0" encoding="UTF-8"?>' . "\n" . '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . $o . '</sitemapindex>', 200, $h + ['X-Sitemap-Bs' => (string)(int)Cache::get('store.sitemap.bs', -1)]);
     }
     abort_unless(isset($idx[$part]), 404);
     return response('<?xml version="1.0" encoding="UTF-8"?>' . "\n" . '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">' . (string)Cache::get($pre . 'p.' . $part, '') . '</urlset>', 200, $h);
