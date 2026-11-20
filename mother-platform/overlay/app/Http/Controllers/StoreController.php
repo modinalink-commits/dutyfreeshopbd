@@ -8,6 +8,21 @@ class StoreController extends Controller {
   /** Cache helper: stores a serialized string so cached collections/objects come back intact. */
   /** Storefront cache version: bust() makes every cached storefront block (home sections, brands, globe...) stale at once, so a publish/unpublish shows immediately. */
   public static function bust(): void { try { Cache::forever('store.ver', (int)(microtime(true) * 1000)); } catch (\Throwable $e) {} }
+  /** Crawlable text links to the best-selling products (last 90 days) for the storefront footer: gives Google an internal path to the pages that matter most. Tobacco/vape excluded; cached 6 hours. */
+  public static function popularLinks(): array {
+    try {
+      return self::rem('pop.links2', 21600, function () {
+        $me = new self; $smk = $me->cats()->filter(fn($c) => self::isSmokeCat($c))->pluck('id')->all();
+        $ids = []; foreach (DB::table('order_items as i')->join('orders as o', 'o.id', '=', 'i.order_id')->whereNotIn('o.status', ['Cancel', 'Incomplete'])->where('o.created_at', '>=', now()->subDays(90))->whereNotNull('i.product_id')->groupBy('i.product_id')->selectRaw('i.product_id as pid, sum(i.qty) as q')->orderByDesc('q')->limit(120)->get() as $r) $ids[] = (int)$r->pid;
+        if (!$ids) return [];
+        $q = \App\Support\StockGuard::listable(DB::table('products')->where('published', true))->whereIn('id', $ids)->where(fn($w) => $w->whereNull('group_key')->orWhere('group_key', '!=', 'smoke'));
+        if ($smk) $q->where(fn($w) => $w->whereNull('category_id')->orWhereNotIn('category_id', $smk));
+        $rows = $q->get()->keyBy('id'); $out = [];
+        foreach ($ids as $id) { if (isset($rows[$id]) && count($out) < 40) { $p = $rows[$id]; $out[] = ['name' => (string)$p->name, 'url' => self::url($p)]; } }
+        return $out;
+      });
+    } catch (\Throwable $e) { return []; }
+  }
   public static function rem(string $k, int $ttl, \Closure $fn) {
     try { $k = 'v' . (Cache::get('store.ver') ?: 0) . '.' . (\App\Support\CleanSite::on() ? 'clean.' : '') . $k; } catch (\Throwable $e) {}
     $raw = Cache::get($k);
