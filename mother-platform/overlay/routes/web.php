@@ -20,7 +20,6 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/staff-idle/ping', [$SI,'ping']); Route::get('/staff-idle/notice', [$SI,'notice']); Route::post('/staff-idle/submit', [$SI,'submit']); Route::post('/staff-idle/break', [$SI,'brk']);
   Route::get('/', [A::class,'dashboard']);
   Route::get('/error-log', [\App\Http\Controllers\UploadController::class,'errorLog']);
-  Route::get('/sitemap-debug', function () { try { $rows = \Illuminate\Support\Facades\DB::table('order_items as i')->join('orders as o', 'o.id', '=', 'i.order_id')->whereNotIn('o.status', ['Cancel', 'Incomplete'])->where('o.created_at', '>=', now()->subDays(90))->whereNotNull('i.product_id')->groupBy('i.product_id')->selectRaw('i.product_id as pid, sum(i.qty) as q')->orderByDesc('q')->limit(1000)->get(); return response()->json(['ok' => true, 'top' => $rows->count(), 'sample' => $rows->take(3), 'idx' => \Illuminate\Support\Facades\Cache::get('smap22.' . (\Illuminate\Support\Facades\Cache::get('store.ver') ?: 0) . '.idx'), 'bs' => \Illuminate\Support\Facades\Cache::get('store.sitemap.bs')]); } catch (\Throwable $e) { return response()->json(['ok' => false, 'err' => $e->getMessage()]); } });
   Route::get('/db-health', [\App\Http\Controllers\DbHealthController::class,'index']);
   Route::post('/upload-image', [\App\Http\Controllers\UploadController::class,'image']);
   Route::get('/deploy', [\App\Http\Controllers\DeployController::class,'index']);

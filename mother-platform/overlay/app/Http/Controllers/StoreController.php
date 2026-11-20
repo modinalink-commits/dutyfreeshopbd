@@ -818,7 +818,7 @@ class StoreController extends Controller {
    * All parts are built together once an hour (same rules as before: only pages that really open, tobacco/vape never listed).
    */
   public function sitemap(?string $part = null) {
-    $B = \App\Support\Domain::main(); $pre = 'smap22.' . (Cache::get('store.ver') ?: 0) . (\App\Support\CleanSite::on() ? '.c' : '') . '.';
+    $B = \App\Support\Domain::main(); $pre = 'smap23.' . (Cache::get('store.ver') ?: 0) . (\App\Support\CleanSite::on() ? '.c' : '') . '.';
     $idx = Cache::get($pre . 'idx');
     if (!is_array($idx) || ($part !== null && isset($idx[$part]) && !Cache::has($pre . 'p.' . $part))) {
       $parts = $this->sitemapParts(); $idx = [];
@@ -830,7 +830,7 @@ class StoreController extends Controller {
     if ($part === null) {
       $o = ''; $lm = date('c');
       foreach ($idx as $k => $n) if ($n > 0) $o .= '<sitemap><loc>' . e($B . '/sitemap-' . $k . '.xml') . '</loc><lastmod>' . $lm . '</lastmod></sitemap>';
-      return response('<?xml version="1.0" encoding="UTF-8"?>' . "\n" . '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . $o . '</sitemapindex>', 200, $h + ['X-Sitemap-Bs' => (string)(int)Cache::get('store.sitemap.bs', -1)]);
+      return response('<?xml version="1.0" encoding="UTF-8"?>' . "\n" . '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . $o . '</sitemapindex>', 200, $h);
     }
     abort_unless(isset($idx[$part]), 404);
     return response('<?xml version="1.0" encoding="UTF-8"?>' . "\n" . '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">' . (string)Cache::get($pre . 'p.' . $part, '') . '</urlset>', 200, $h);
@@ -856,7 +856,6 @@ class StoreController extends Controller {
       // best sellers (units sold in the last 90 days, not cancelled/incomplete): own sitemap part listed first, so Google meets the pages that matter most before the ~28k others
       $topIds = [];
       try { $topIds = []; foreach (DB::table('order_items as i')->join('orders as o', 'o.id', '=', 'i.order_id')->whereNotIn('o.status', ['Cancel', 'Incomplete'])->where('o.created_at', '>=', now()->subDays(90))->whereNotNull('i.product_id')->groupBy('i.product_id')->selectRaw('i.product_id as pid, sum(i.qty) as q')->orderByDesc('q')->limit(1000)->get() as $r) $topIds[(int)$r->pid] = (int)$r->q; } catch (\Throwable $e) { \Illuminate\Support\Facades\Log::warning('sitemap best-sellers query failed: ' . $e->getMessage()); }
-      try { Cache::put('store.sitemap.bs', count($topIds), 7200); } catch (\Throwable $e) {}
       foreach ($pq->orderBy('id')->cursor() as $p) { $pu = self::url($p); $k = explode('/', ltrim($pu, '/'))[0]; if ($k === 'p' || !preg_match('/^[a-z0-9-]{1,60}$/', $k) || $k === 'pages') $k = 'other-products'; if (isset($topIds[(int)$p->id])) $k = 'best-sellers'; $parts[$k] = ($parts[$k] ?? '') . $u($ul($pu), $p->image, $p->updated_at ?? null); }
       return $o;
     })();
