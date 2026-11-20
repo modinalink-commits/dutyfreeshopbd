@@ -11,8 +11,8 @@ class StoreController extends Controller {
   /** Crawlable text links to the best-selling products (last 90 days) for the storefront footer: gives Google an internal path to the pages that matter most. Tobacco/vape excluded; cached 6 hours. */
   public static function popularLinks(): array {
     try {
-      return self::rem('pop.links2', 21600, function () {
-        $me = new self; $smk = $me->cats()->filter(fn($c) => self::isSmokeCat($c))->pluck('id')->all();
+      return self::rem('pop.links3', 21600, function () {
+        $me = app(self::class); $smk = $me->cats()->filter(fn($c) => self::isSmokeCat($c))->pluck('id')->all();
         $ids = []; foreach (DB::table('order_items as i')->join('orders as o', 'o.id', '=', 'i.order_id')->whereNotIn('o.status', ['Cancel', 'Incomplete'])->where('o.created_at', '>=', now()->subDays(90))->whereNotNull('i.product_id')->groupBy('i.product_id')->selectRaw('i.product_id as pid, sum(i.qty) as q')->orderByDesc('q')->limit(120)->get() as $r) $ids[] = (int)$r->pid;
         if (!$ids) return [];
         $q = \App\Support\StockGuard::listable(DB::table('products')->where('published', true))->whereIn('id', $ids)->where(fn($w) => $w->whereNull('group_key')->orWhere('group_key', '!=', 'smoke'));
@@ -21,7 +21,7 @@ class StoreController extends Controller {
         foreach ($ids as $id) { if (isset($rows[$id]) && count($out) < 40) { $p = $rows[$id]; $out[] = ['name' => (string)$p->name, 'url' => self::url($p)]; } }
         return $out;
       });
-    } catch (\Throwable $e) { return []; }
+    } catch (\Throwable $e) { try { \Illuminate\Support\Facades\Log::warning('popularLinks failed: ' . $e->getMessage()); } catch (\Throwable $e2) {} return []; }
   }
   public static function popularHtml(): string {
     $l = self::popularLinks(); if (!$l) return '';
