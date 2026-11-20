@@ -387,8 +387,8 @@ M.badge=function(n,fromStore){n=+n||0;M.unread=n;if(!fromStore){try{localStorage
 window.addEventListener('storage',function(e){if(e.key==='mchat_unread'&&e.newValue){var v=+e.newValue.split('|')[0];if(v!==M.unread)M.badge(v,true)}else if(e.key==='mchat_smode'&&SL[e.newValue]){M.smode=e.newValue;M.mute=e.newValue==='off'}});
 /* ---------- real-time poll ---------- */
 var since=null,busy=false;
-var pdelay=4000;
-function tick(){if(busy)return;busy=true;var t0=Date.now();api('/admin/chat/poll'+(since===null?'':'?since='+since)).then(function(j){busy=false;pdelay=Date.now()-t0>1500?12000:4000;if(j.last_id===undefined)return;if(j.build){if(!window.__bld)window.__bld=j.build;else if(window.__bld!==j.build){var ta=document.querySelector('.mc textarea');if(!ta||!ta.value.trim()){try{location.reload()}catch(_){}return}}}
+var pdelay=8000;
+function tick(){if(busy)return;busy=true;var t0=Date.now();api('/admin/chat/poll'+(since===null?'':'?since='+since)).then(function(j){busy=false;pdelay=Date.now()-t0>1500?15000:8000;if(j.last_id===undefined)return;if(j.build){if(!window.__bld)window.__bld=j.build;else if(window.__bld!==j.build){var ta=document.querySelector('.mc textarea');if(!ta||!ta.value.trim()){try{location.reload()}catch(_){}return}}}
   var first=since===null;since=j.last_id;M.badge(j.unread);
   if(!document.hidden){try{localStorage.setItem('mchat_vis',String(Date.now()))}catch(e){}}
   if(!first&&j.items&&j.items.length){var any=false,snd=false,claim=true;

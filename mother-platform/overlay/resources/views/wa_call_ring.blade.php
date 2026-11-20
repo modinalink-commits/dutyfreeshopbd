@@ -85,5 +85,5 @@ if(!window.WC_PAGE&&tickN%2===0)fetch('/admin/call-center/whatsapp/missed',{cred
 document.getElementById('waRingA').onclick=function(){if(!cur)return;window.waDock(cur.id,true);hideRing()};
 /* Reject hides the ring for THIS person only; everyone else keeps ringing until someone answers or the ring window ends */
 document.getElementById('waRingR').onclick=function(){if(!cur)return;post('/admin/call-center/whatsapp/'+cur.id+'/end');hideRing()};
-setInterval(go,4000);setTimeout(go,1500)})();
+setInterval(go,8000);setTimeout(go,1500)})();
 </script>
