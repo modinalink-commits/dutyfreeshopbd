@@ -67,7 +67,7 @@ class VoiceCampaignController extends Controller
     $c = DB::table('voice_campaigns')->find($id); if (!$c) abort(404); $a = (string)$r->input('a');
     if ($a === 'activate' || $a === 'resume') {
       if (!V::on()) return back()->with('err', 'Voice campaigns are switched OFF in Voice settings. Turn them on first.');
-      if ($a === 'activate' && !$c->activated_at) { $n = V::enroll($c); if ($n === 0 && !DB::table('voice_campaign_customers')->where('campaign_id', $id)->exists()) return back()->with('err', 'No eligible customers found for this campaign.'); }
+      if ($a === 'activate' && !$c->activated_at) { @set_time_limit(0); ignore_user_abort(true); $n = DB::table('voice_campaign_customers')->where('campaign_id', $id)->exists() ? 1 : V::enroll($c); if ($n === 0 && !DB::table('voice_campaign_customers')->where('campaign_id', $id)->exists()) return back()->with('err', 'No eligible customers found for this campaign.'); }
       DB::table('voice_campaigns')->where('id', $id)->update(['status' => 'active', 'activated_at' => $c->activated_at ?: now(), 'updated_at' => now()]); $m = 'Campaign is active';
     } elseif ($a === 'pause') { DB::table('voice_campaigns')->where('id', $id)->update(['status' => 'paused', 'updated_at' => now()]); $m = 'Campaign paused'; }
     elseif ($a === 'stop') { DB::table('voice_campaigns')->where('id', $id)->update(['status' => 'completed', 'updated_at' => now()]); DB::table('voice_campaign_customers')->where('campaign_id', $id)->where('call_status', 'pending')->update(['offer_status' => 'void', 'updated_at' => now()]); $m = 'Campaign stopped'; }
