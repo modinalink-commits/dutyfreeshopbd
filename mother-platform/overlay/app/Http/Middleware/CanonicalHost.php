@@ -8,6 +8,8 @@ use App\Support\Domain;
  *  The visitor stays on the domain they opened; only those head tags change. Admin, API, non-HTML and any error are left alone. */
 class CanonicalHost {
   public function handle(Request $r, Closure $next) {
+    // Google was crawling store pages on mail.dutyfreebd.com (not a real storefront address; many returned 5xx) -> send them to the same path on the main domain.
+    try { if ($r->isMethod('GET') && strtolower($r->getHost()) === 'mail.' . Domain::HOST && !$r->is('admin', 'admin/*', 'api/*')) return redirect()->to(Domain::main() . $r->getRequestUri(), 301); } catch (\Throwable $e) {}
     $resp = $next($r);
     try {
       $h = strtolower($r->getHost());
