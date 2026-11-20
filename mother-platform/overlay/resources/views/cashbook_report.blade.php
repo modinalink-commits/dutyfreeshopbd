@@ -15,8 +15,8 @@
 @foreach($gr['rows'] as $x)<tr class="det d{{ $i }}"><td>{{ $x['d'] }}</td><td>{{ $x['ref'] }}</td><td>{{ $x['c'] }}</td><td class="n p">{{ $x['in'] ? number_format($x['in'],2) : '' }}</td><td class="n l">{{ $x['out'] ? number_format($x['out'],2) : '' }}</td></tr>@endforeach
 <tr class="st det d{{ $i }}"><td colspan="3" class="n">Total ({{ $gr['name'] }})</td><td class="n">{{ number_format($gr['in'],2) }}</td><td class="n">{{ number_format($gr['out'],2) }}</td></tr>
 @empty<tr><td colspan="5" style="padding:14px">No entries for this filter.</td></tr>@endforelse
-<tr class="gt"><td colspan="3">Grand Total ({{ number_format($g['n']) }} entries)</td><td class="n">{{ number_format($g['in'],2) }}</td><td class="n">{{ number_format($g['out'],2) }}</td></tr>
-<tr class="gt"><td colspan="5">Total income: <span class="p">{{ number_format($g['in'],2) }}</span> &nbsp;|&nbsp; Total expense: <span class="l">{{ number_format($g['out'],2) }}</span> &nbsp;|&nbsp; Net: <span class="{{ $g['in']-$g['out']>=0?'p':'l' }}">{{ number_format($g['in']-$g['out'],2) }}</span></td></tr>
+<tr class="gt"><td colspan="3">{{ $g['n'] < $total ? 'Total of the rows shown' : 'Grand Total' }} ({{ number_format($g['n']) }} entries)</td><td class="n">{{ number_format($g['in'],2) }}</td><td class="n">{{ number_format($g['out'],2) }}</td></tr>
+<tr class="gt"><td colspan="5">All {{ number_format($total) }} entries &mdash; Total income: <span class="p">{{ number_format($all['in'],2) }}</span> &nbsp;|&nbsp; Total expense: <span class="l">{{ number_format($all['out'],2) }}</span> &nbsp;|&nbsp; Net: <span class="{{ $all['in']-$all['out']>=0?'p':'l' }}">{{ number_format($all['in']-$all['out'],2) }}</span></td></tr>
 </tbody></table></div></div>
 @include('report_grid_js')
 @endsection

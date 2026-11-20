@@ -12,6 +12,10 @@ class CashbookReportController extends Controller {
     if ($acc) $eq->where('e.account_id', $acc); if (in_array($dir, ['income', 'expense'], true)) $eq->where('e.direction', $dir);
     if ($q !== '') { $like = '%' . $q . '%'; $eq->where(fn($w) => $w->where('e.reference', 'ilike', $like)->orWhere('e.comment', 'ilike', $like)->orWhere('a.name', 'ilike', $like)); }
     $total = (clone $eq)->count();
+    // Totals of ALL entries that match the filter, not only the rows shown on this page (the page lists at most $per rows).
+    $sum = (clone $eq)->selectRaw("coalesce(sum(case when e.direction = 'income' then e.amount else 0 end), 0) as i, coalesce(sum(case when e.direction = 'expense' then e.amount else 0 end), 0) as o")->first();
+    $all = ['in' => (float)($sum->i ?? 0), 'out' => (float)($sum->o ?? 0)];
+    if ($r->query('export') === 'csv') $per = 20000; // the file carries every matching entry
     $rows = $eq->orderBy('a.name')->orderBy('e.entry_date')->orderBy('e.id')->limit($per)->get(['e.entry_date as d', 'e.reference', 'e.direction', 'e.amount', 'e.comment', 'a.name as acc']);
     $groups = []; $g = ['in' => 0, 'out' => 0, 'n' => 0];
     foreach ($rows->groupBy('acc') as $name => $list) {
@@ -21,7 +25,7 @@ class CashbookReportController extends Controller {
       $groups[] = $gr; $g['in'] += $gr['in']; $g['out'] += $gr['out']; $g['n'] += count($gr['rows']);
     }
     $accounts = DB::table('money_accounts')->orderBy('name')->get(['id', 'name']);
-    $data = ['groups' => $groups, 'g' => $g, 'from' => $from, 'to' => $to, 'acc' => $acc, 'dir' => $dir, 'q' => $q, 'per' => $per, 'total' => $total, 'accounts' => $accounts];
+    $data = ['groups' => $groups, 'g' => $g, 'from' => $from, 'to' => $to, 'acc' => $acc, 'dir' => $dir, 'q' => $q, 'per' => $per, 'total' => $total, 'all' => $all, 'accounts' => $accounts];
     if ($r->query('export') === 'csv') {
       $out = fopen('php://temp', 'w+'); fputcsv($out, ['Account', 'Date', 'Reference', 'Note', 'Income', 'Expense']);
       foreach ($groups as $gr) foreach ($gr['rows'] as $x) fputcsv($out, [$gr['name'], $x['d'], $x['ref'], $x['c'], $x['in'], $x['out']]);
