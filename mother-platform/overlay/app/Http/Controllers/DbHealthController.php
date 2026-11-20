@@ -8,6 +8,13 @@ class DbHealthController extends Controller {
   private function tbl(array $rows): string { if (!$rows) return "(none)\n"; $o = ''; foreach ($rows as $r) $o .= implode(' | ', array_map(fn($v) => is_null($v) ? '-' : (string)$v, (array)$r))."\n"; return $o; }
   public function index() {
     abort_unless(auth()->check() && in_array(auth()->user()->role, ['super', 'admin'], true), 403);
+    // ?live=1: a light sample for finding the heavy queries (pg_stat_statements is not installed): what is running right now + the scan counters of the hot tables. Read only.
+    if (request()->boolean('live')) return response()->json([
+      'at' => microtime(true),
+      'active' => $this->q("select pid, round(extract(epoch from clock_timestamp() - query_start) * 1000) ms, application_name app, left(regexp_replace(query, '\s+', ' ', 'g'), 420) q from pg_stat_activity where datname = current_database() and state = 'active' and pid <> pg_backend_pid() order by query_start limit 12"),
+      'tables' => $this->q("select relname, seq_scan, seq_tup_read, idx_scan from pg_stat_user_tables where relname in ('order_items','products','orders','settings','category_nodes','purchase_items','sms_logs','customers','chat_messages','store_products')"),
+      'reset' => $this->q("select to_char(stats_reset, 'YYYY-MM-DD HH24:MI') r from pg_stat_database where datname = current_database()"),
+    ])->header('Cache-Control', 'no-store');
     $o = "DB HEALTH (read-only) ".now()->toDateTimeString()."\n\n";
     $o .= "== version\n".$this->tbl($this->q('select version()'));
     $o .= "\n== key settings\n".$this->tbl($this->q("select name, setting, unit from pg_settings where name in ('shared_buffers','work_mem','effective_cache_size','maintenance_work_mem','max_connections','random_page_cost','effective_io_concurrency','autovacuum','checkpoint_completion_target','wal_buffers','default_statistics_target','jit')"));
