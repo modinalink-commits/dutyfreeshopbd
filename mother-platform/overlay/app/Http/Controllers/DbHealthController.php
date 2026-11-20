@@ -9,6 +9,22 @@ class DbHealthController extends Controller {
   public function index() {
     abort_unless(auth()->check() && in_array(auth()->user()->role, ['super', 'admin'], true), 403);
     // ?live=1: a light sample for finding the heavy queries (pg_stat_statements is not installed): what is running right now + the scan counters of the hot tables. Read only.
+    // ?recon=1: read-only stock / ledger consistency numbers (backend check-up). Changes nothing.
+    if (request()->boolean('recon')) {
+      $b = "(select product_id, sum(qty_remaining) q, sum(qty_remaining * unit_cost) v from stock_batches where status = 'open' and qty_remaining > 0 group by 1)";
+      return response()->json([
+        'in_stock_products' => $this->q("select count(*) n, sum(stock) units, round(sum(stock * coalesce(nullif(avg_cost,0), cost, 0))::numeric, 2) avg_value from products where stock > 0"),
+        'open_batches' => $this->q("select count(distinct product_id) products, sum(qty_remaining) units, round(sum(qty_remaining * unit_cost)::numeric, 2) fifo_value from stock_batches where status = 'open' and qty_remaining > 0"),
+        'stock_vs_batches_diff' => $this->q("select count(*) products, coalesce(sum(abs(d)), 0) units from (select coalesce(p.stock, 0) - coalesce(b.q, 0) d from products p full join $b b on b.product_id = p.id where coalesce(p.stock, 0) > 0 or coalesce(b.q, 0) > 0) x where d <> 0"),
+        'stock_vs_batches_sample' => $this->q("select p.id, left(p.name, 40) name, p.stock, coalesce(b.q, 0) batch_qty from products p full join $b b on b.product_id = p.id where (coalesce(p.stock, 0) > 0 or coalesce(b.q, 0) > 0) and coalesce(p.stock, 0) <> coalesce(b.q, 0) order by abs(coalesce(p.stock, 0) - coalesce(b.q, 0)) desc limit 12"),
+        'negative_stock' => $this->q("select count(*) n from products where stock < 0"),
+        'stock_vs_last_log' => $this->q("select count(*) products from products p join lateral (select after_qty from stock_logs l where l.product_id = p.id order by l.id desc limit 1) l on true where p.stock > 0 and l.after_qty <> p.stock"),
+        'stock_vs_last_log_sample' => $this->q("select p.id, left(p.name, 40) name, p.stock, l.after_qty last_log_qty from products p join lateral (select after_qty from stock_logs l where l.product_id = p.id order by l.id desc limit 1) l on true where p.stock > 0 and l.after_qty <> p.stock limit 10"),
+        'suppliers' => $this->q("select count(*) n from suppliers"),
+        'entries_without_account' => $this->q("select count(*) n from account_entries e left join money_accounts a on a.id = e.account_id where a.id is null"),
+        'entries_bad_amount' => $this->q("select count(*) n from account_entries where amount is null or amount < 0 or direction not in ('income', 'expense')"),
+      ])->header('Cache-Control', 'no-store');
+    }
     // ?top=1: the heaviest statements since the last reset (needs pg_stat_statements, loaded after a database restart). Read only.
     if (request()->boolean('top')) return response()->json([
       'preload' => $this->q("select setting from pg_settings where name = 'shared_preload_libraries'"),
