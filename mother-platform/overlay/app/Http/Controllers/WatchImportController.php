@@ -148,7 +148,7 @@ class WatchImportController extends Controller {
       return null;
     };
     if ($k === 'tea/coffee/milk') return $byName() ?? 'Tea/Coffee/Milk';
-    if ($k === '' || $k === '-' || preg_match('/essentials$|world cup|^gadgets$|^uncategori[sz]ed$|^others?$|^all$/u', $k)) return $byName() ?? 'Daily';
+    if ($k === '' || $k === '-' || preg_match('/^(eid|ramadan|ramzan|ramadhan) essentials$|world cup|^gadgets$|^uncategori[sz]ed$|^others?$|^all$/u', $k)) return $byName() ?? 'Daily';
     return mb_convert_case($t, MB_CASE_TITLE);
   }
   /** Main categories a store feeds (its Source categories, in order). Only generic stores (c=sNN) can feed more than one. */
