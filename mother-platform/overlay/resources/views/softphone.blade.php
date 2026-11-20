@@ -347,7 +347,10 @@ function wire(s){ses=s;
  s.on('sdp',function(e){if(e&&e.sdp)e.sdp=tuneSdp(e.sdp,e.originator==='local'&&e.type==='offer')});
  var sent=false;s.on('sending',function(){sent=true});
  /* AUTO-RETRY: the PBX sometimes never answers the authenticated INVITE (stale WSS / lost packet). No 100/18x within 6 s -> silently drop this attempt and redial (1st: re-register, 2nd: fresh WSS connection). The agent just sees "Connecting". */
- if(dir==='out')setTimeout(function(){if(ses!==s||phase!=='connecting'||s._dead||tries>=2||!sent)return;tries++;var n2=cur,id0=logId;console.warn('dialer auto-retry '+tries+' | '+SIPT.join(' | '));s._dead=1;try{s.terminate()}catch(e){}if(id0)post('/admin/call-center/log/'+id0+'/end',{status:'missed',duration:0,fail_reason:'auto-retry'});ses=null;logId=null;clearInterval(tick);
+ if(dir==='out')setTimeout(function(){if(ses!==s||phase!=='connecting'||s._dead||tries>=2||!sent)return;
+  /* 20 Nov 2026: the PBX has already accepted this call ("100 Trying") and is only waiting for the mobile network to ring. Hanging up and redialling here cancelled calls that were about to ring, three times in a row. Retry only when the PBX gave no reply at all. */
+  var nowS=(Date.now()-TS0)/1000,acc=false;for(var qi=0;qi<SIPT.length;qi++){if(parseFloat(SIPT[qi])>=nowS-7&&/ rx SIP\/2\.0 1\d\d/.test(SIPT[qi])){acc=true;break}}if(acc){console.warn('dialer: PBX accepted the call, waiting for the network (no auto-retry)');return}
+  tries++;var n2=cur,id0=logId;console.warn('dialer auto-retry '+tries+' | '+SIPT.join(' | '));s._dead=1;try{s.terminate()}catch(e){}if(id0)post('/admin/call-center/log/'+id0+'/end',{status:'missed',duration:0,fail_reason:'auto-retry'});ses=null;logId=null;clearInterval(tick);
   var again=function(){retrying=true;phase='idle';call(n2)};
   if(tries===1){try{ua.register()}catch(e){}setTimeout(again,900)}
   else{try{ua.stop()}catch(e){}setTimeout(function(){try{ua.start()}catch(e){}var k=0,iv=setInterval(function(){k++;if(reg()||k>16){clearInterval(iv);again()}},500)},400)}},6000);
