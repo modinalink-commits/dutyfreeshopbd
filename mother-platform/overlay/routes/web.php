@@ -21,6 +21,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/', [A::class,'dashboard']);
   Route::get('/error-log', [\App\Http\Controllers\UploadController::class,'errorLog']);
   Route::get('/db-health', [\App\Http\Controllers\DbHealthController::class,'index']);
+  Route::get('/ad-arrivals', [\App\Http\Controllers\AdArrivalController::class,'index']);
   Route::post('/upload-image', [\App\Http\Controllers\UploadController::class,'image']);
   Route::get('/deploy', [\App\Http\Controllers\DeployController::class,'index']);
   Route::get('/deploy/status', [\App\Http\Controllers\DeployController::class,'status']);
