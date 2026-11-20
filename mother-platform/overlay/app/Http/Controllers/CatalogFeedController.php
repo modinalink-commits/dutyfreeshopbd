@@ -4,11 +4,13 @@ use Illuminate\Support\Facades\DB;
 /** Tobacco/vape (group 'smoke') is deliberately left out: Meta ad policy prohibits it; the products stay on the website. Meta / Google product feed served live from the database: /products.xml (id = products.ext_id, same ID the Pixel and CAPI send). */
 class CatalogFeedController extends Controller {
   const BASE = 'https://dutyfreebd.com';
+  /** Where ad clicks land (the g:link of every feed item). Owner 21 Nov 2026: some mobile operators intercept the main domain name, so Meta ads open the secondary domain; images, canonical and everything else stay on BASE. Same server, same orders. */
+  const LINK_BASE = 'https://dutyfreeshopbd.com';
   /** Items Meta ad policy rejects (adult/sexual-wellness, health-claim creams/oils): kept on the website, left out of the Meta catalog. */
   const BLOCKED = [1796, 2284, 2394, 2944, 2945, 2946, 2947, 2948, 2989, 2990, 2991, 2992, 2994, 2995, 2996, 2049, 2047, 2143, 2285, 2410, 2759, 2755];
   private static function x(?string $s): string { $s = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/u', '', (string)$s); return htmlspecialchars($s, ENT_XML1 | ENT_QUOTES, 'UTF-8'); }
   public function feed() {
-    $xml = StoreController::rem('store.catalogfeed10', 1800, function () {
+    $xml = StoreController::rem('store.catalogfeed11', 1800, function () {
       $brands = DB::table('brands')->pluck('name', 'id')->all();
       $cats = DB::table('categories')->pluck('name', 'id')->all();
       $o = '<?xml version="1.0" encoding="UTF-8"?>' . "\n" . '<rss xmlns:g="http://base.google.com/ns/1.0" version="2.0"><channel><title>DutyFreeBD</title><link>' . self::BASE . '</link><description>DutyFreeBD product feed</description>' . "\n";
@@ -22,7 +24,7 @@ class CatalogFeedController extends Controller {
         $id = (string)(($p->ext_id ?? null) ?: $p->id);
         $img = trim((string)$p->image); if ($img === '') continue;
         if (!preg_match('#^https?://#i', $img)) $img = self::BASE . '/' . ltrim($img, '/');
-        $link = self::BASE . StoreController::url($p);
+        $link = self::LINK_BASE . StoreController::url($p);
         $price = (float)$p->price; $cmp = (float)($p->compare_price ?? 0);
         $pr = $cmp > $price ? $cmp : $price; $sale = $cmp > $price ? $price : null;
         $desc = trim(preg_replace('/\s+/u', ' ', strip_tags((string)($p->description ?? '')))); if ($desc === '') $desc = (string)$p->name;
