@@ -245,7 +245,7 @@ class OrderCall
       $t = now('Asia/Dhaka')->format('H:i'); if ($t < self::set('start', '09:00') || $t >= self::set('end', '21:00')) return;
       $active = DB::table('order_call_verifications')->whereIn('status', ['calling', 'answered'])->where('updated_at', '>', now()->subMinutes(4))->count();
       $cap = max(1, (int)self::set('concurrency', '2')); if ($active >= $cap) return; $t0 = time();
-      $orders = DB::table('orders')->where('status', 'New')->where('created_at', '>=', now()->subHours(max(1, (int)self::set('hours_back', '24'))))->orderBy('id')->limit(40)->get();
+      $orders = DB::table('orders')->where('status', 'New')->where('created_at', '>=', now()->subHours(max(1, (int)self::set('hours_back', '24'))))->whereExists(fn($x) => $x->select(DB::raw(1))->from('order_ai_verifications as av')->whereColumn('av.order_id', 'orders.id')->whereRaw("coalesce(av.override_status, av.verification_status) = 'verified'"))->orderBy('id')->limit(400)->get(); // 20 Nov 2026: was the oldest 40 New orders of any kind; once those were finished or not callable, newer orders were never reached
       foreach ($orders as $o) {
         if (time() - $t0 > 45 || $active >= $cap) return;
         if (self::eligible($o) !== null) continue; $ver = self::version($o);
