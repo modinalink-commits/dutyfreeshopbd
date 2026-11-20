@@ -179,6 +179,10 @@ class StoreController extends Controller {
   public static function isSmokeCat($c): bool { return $c && (($c->slug ?? '') === 'cigarette-vape' || preg_match('/cigarette|vape|সিগারেট|ভেপ/iu', (string)($c->name ?? '')) === 1); }
   public static function cleanSeo(?string $v, string $fallback): string { $v = trim((string)$v); return $v === '' ? $fallback : $v; } // owner (12 Nov 2026): cigarette wording is allowed in the title and description
   /** Keep <title> within ~60 chars so Google does not truncate it: cut the name part at a word boundary. */
+  /** Saved SEO title/description may carry an old price; the first ৳ amount is always replaced with the live selling price so title, meta and page price never disagree. */
+  public static function liveSeoPrice(string $t, float $price): string {
+    return preg_replace('/৳\s?[\d,]+(\.\d+)?/u', '৳'.number_format($price), $t, 1) ?? $t;
+  }
   public static function fitTitle(string $name, string $suffix, int $max = 62): string {
     $name = trim(preg_replace('/\s+/u', ' ', $name)); $room = $max - mb_strlen($suffix);
     if (mb_strlen($name) > $room) { $cut = mb_substr($name, 0, max(10, $room)); $sp = mb_strrpos($cut, ' '); $name = (string)preg_replace('/[\s,\-–|]+$/u', '', $sp !== false && $sp > 12 ? mb_substr($cut, 0, $sp) : $cut); $name = (string)preg_replace('/\s+(for|and|of|in|with|by|the|a|made|from)$/iu', '', $name); }
@@ -501,7 +505,7 @@ class StoreController extends Controller {
     $price = (float)$p->price;
     $gallery = DB::table('product_images')->where('product_id',$p->id)->orderBy('position')->orderBy('id')->pluck('path')->all(); if (str_contains((string)$p->image, '/uploads/ai/')) $gallery = []; // owner rule: a product with a clean AI image shows that ONE image only (no old photos with the old background)
     $brandName = null; try { if (!empty($p->brand_id)) $brandName = DB::table('brands')->where('id', $p->brand_id)->value('name'); } catch (\Throwable $e) { $brandName = null; }
-    return response()->view('store.product', $this->base(['brandName'=>$brandName, 'preview'=>$preview, 'gallery'=>$gallery, 'p'=>$p, 'c'=>$c, 'rel'=>$rel, 'reviews'=>$reviews, 'title'=>(mb_strlen((string)$p->meta_title) >= 10 && mb_strlen((string)$p->meta_title) <= 66 ? $p->meta_title : self::fitTitle($p->name, ' দাম ৳'.number_format($price).' | DutyFree BD')), 'keywords'=>$p->meta_keywords ?? null, 'desc'=>($p->meta_description ?: $p->name.' – দাম ৳ '.number_format($price).'। অরিজিনাল ইমপোর্টেড পণ্য, অর্ডার করুন, সারা বাংলাদেশে ডেলিভারি। DutyFree BD.'), 'canon'=>($p->canonical ?? null) ?: url(self::url($p)), 'noindex'=>!empty($p->noindex), 'ogimg'=>($p->og_image ?? null) ?: ($p->image ? (preg_match('#^https?://#i', $p->image) ? $p->image : url($p->image)) : url('/og.png'))]))->header('Cache-Control','public, max-age=120');
+    return response()->view('store.product', $this->base(['brandName'=>$brandName, 'preview'=>$preview, 'gallery'=>$gallery, 'p'=>$p, 'c'=>$c, 'rel'=>$rel, 'reviews'=>$reviews, 'title'=>(mb_strlen((string)$p->meta_title) >= 10 && mb_strlen((string)$p->meta_title) <= 66 ? self::liveSeoPrice((string)$p->meta_title, $price) : self::fitTitle($p->name, ' দাম ৳'.number_format($price).' | DutyFree BD')), 'keywords'=>$p->meta_keywords ?? null, 'desc'=>($p->meta_description ? self::liveSeoPrice((string)$p->meta_description, $price) : $p->name.' – দাম ৳ '.number_format($price).'। অরিজিনাল ইমপোর্টেড পণ্য, অর্ডার করুন, সারা বাংলাদেশে ডেলিভারি। DutyFree BD.'), 'canon'=>($p->canonical ?? null) ?: url(self::url($p)), 'noindex'=>!empty($p->noindex), 'ogimg'=>($p->og_image ?? null) ?: ($p->image ? (preg_match('#^https?://#i', $p->image) ? $p->image : url($p->image)) : url('/og.png'))]))->header('Cache-Control','public, max-age=120');
   }
   public function search(Request $r) {
     $t = trim(mb_substr((string)$r->q, 0, 80)); $items = collect();
