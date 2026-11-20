@@ -13,7 +13,7 @@ class Voice
   const MENU = ' অফারটি নিতে ১ চাপুন। আমাদের প্রতিনিধির সাথে কথা বলতে ২ চাপুন। এই ধরনের অফার কল আর পেতে না চাইলে ৯ চাপুন।';
   const SMS = 'DutyFreeBD আপনার আগের অর্ডারের {product}-এ {pct}% ছাড়, {date} পর্যন্ত।';
   const SMS_OLD = 'DutyFreeBD: আপনার সর্বশেষ অর্ডার করা {product} এর উপর {pct}% বিশেষ ডিসকাউন্ট রয়েছে। অফারটি {date} পর্যন্ত কার্যকর।';
-  const SEGMENTS = ['all' => 'All eligible customers', 'winback' => 'Win-Back slots 30+ days (SMS stage discounts, oldest first)', 'inactive_15' => 'Inactive 15–29 days', 'inactive_30' => 'Inactive 30–44 days', 'inactive_45' => 'Inactive 45–54 days', 'inactive_55' => 'Inactive 55+ days', 'vip' => 'VIP customers', 'diamond' => 'Diamond members', 'regular' => 'Regular customers', 'selected' => 'Selected customers (phone list)', 'custom' => 'Custom filter'];
+  const SEGMENTS = ['all' => 'All eligible customers', 'winback' => 'Win-Back 30+ days (oldest first)', 'inactive_15' => 'Inactive 15–29 days', 'inactive_30' => 'Inactive 30–44 days', 'inactive_45' => 'Inactive 45–54 days', 'inactive_55' => 'Inactive 55+ days', 'vip' => 'VIP customers', 'diamond' => 'Diamond members', 'regular' => 'Regular customers', 'selected' => 'Selected customers (phone list)', 'custom' => 'Custom filter'];
   const STATUS = ['pending' => 'Pending', 'calling' => 'Calling', 'answered' => 'Answered', 'not_answered' => 'Not Answered', 'busy' => 'Busy', 'failed' => 'Failed', 'interested' => 'Interested', 'transferred' => 'Transferred to Agent', 'accepted' => 'Offer Accepted', 'opted_out' => 'Opted Out'];
 
   public static function set(string $k, string $def = ''): string { $v = DB::table('settings')->where('key', 'vc_' . $k)->value('value'); return $v === null ? $def : (string)$v; }
@@ -127,7 +127,7 @@ class Voice
         if (!$pr) { $skip[$p] = 'Last order has no catalogue product'; continue; }
         if (!$pr->published) { $skip[$p] = 'Product is not active'; continue; } if ((int)$pr->stock <= 0) { $skip[$p] = 'Product out of stock'; continue; }
       }
-      $rows[] = ['customer_id' => $cu->id, 'name' => $cu->name, 'phone' => $p, 'product_id' => $pr->pid ?? null, 'product_name' => $pr->pname ?? '', 'last_price' => (float)($pr->price ?? 0), 'order_id' => $x['oid'], 'last_order_at' => $x['at'], 'days' => $d, 'pct' => $seg === 'winback' ? (Winback::stageFor($d)[1] ?? null) : null];
+      $rows[] = ['customer_id' => $cu->id, 'name' => $cu->name, 'phone' => $p, 'product_id' => $pr->pid ?? null, 'product_name' => $pr->pname ?? '', 'last_price' => (float)($pr->price ?? 0), 'order_id' => $x['oid'], 'last_order_at' => $x['at'], 'days' => $d, 'pct' => null];
       if (count($rows) >= $limit) break;
     }
     return ['rows' => $rows, 'skipped' => $skip];
