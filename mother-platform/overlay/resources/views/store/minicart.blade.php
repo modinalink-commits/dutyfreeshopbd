@@ -57,11 +57,47 @@ function render(){var my=++seq,s=ids(),B=$('dfmcB'),F=$('dfmcF');
 function set(p,qty){var c=DF.cart(),k=String(p.id);if(qty<=0){delete c[k];DF.p('dfc',c)}else{c[k]={q:Math.min(50,qty),p:p.price};DF.p('dfc',c)}DF.tab()}
 var T=DF.tab;DF.tab=function(){T();bar();var h=document.querySelector('.hi .cl');var x=totals();if(h)h.textContent=x.n?tk(x.t):'Cart';if(mc.classList.contains('on'))render()};
 function bar(){var x=totals(),b=$('dfsb');if(!b)return;var on=x.n>0&&!onCo;b.classList.toggle('on',on);document.body.classList.toggle('dfsb-on',on);var tx=x.n+' Item'+(x.n>1?'s':'')+' · '+tk(x.t);$('dfsbT').textContent=tx;$('dfsbN').textContent=x.n>99?'99+':x.n;$('dfsbB').setAttribute('aria-label','View cart: '+tx)}
-DF.nt=function(){var t=$('dfat');t.classList.add('on');clearTimeout(DF._nt);DF._nt=setTimeout(function(){t.classList.remove('on')},1800);document.querySelectorAll('.cn,#bnC').forEach(function(e){e.classList.remove('dfnb');void e.offsetWidth;e.classList.add('dfnb')});if(!onCo&&innerWidth>760)setTimeout(open,350)};
+DF.nt=function(){var t=$('dfat');t.classList.add('on');clearTimeout(DF._nt);DF._nt=setTimeout(function(){t.classList.remove('on')},1800);document.querySelectorAll('.cn,#bnC').forEach(function(e){e.classList.remove('dfnb');void e.offsetWidth;e.classList.add('dfnb')});if(!onCo&&innerWidth>760&&!DF._noOpen)setTimeout(open,350)};
 $('dfmcX').onclick=close;ov.onclick=close;document.addEventListener('keydown',function(e){if(e.key==='Escape')close()});$('dfsbB').onclick=open;
 document.querySelectorAll('.dfcb').forEach(function(b){b.addEventListener('click',function(e){e.preventDefault();open()})});
 window.addEventListener('storage',function(e){if(e.key==='dfc')DF.tab()});
 DF.tab();
+})();
+</script>
+<style>
+/* 20 Nov 2026 (owner): product cards get a cart button beside ORDER NOW; once in the cart it becomes a quantity stepper, so several products can be taken without leaving the page */
+.pc .cab{display:flex;align-items:stretch;gap:5px;margin:2px 2px 0}
+.pc .cab .on{flex:1;min-width:0;margin:0}
+.pc .cab button{font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.pc .cab .cb1{flex:none;width:44px;min-height:40px;border:1.5px solid #0C161F;border-radius:8px;background:#fff;color:#0C161F;display:flex;align-items:center;justify-content:center;padding:0}
+.pc .cab .cb1:hover{background:#0C161F;color:#fff}
+.pc .cab:not(:has(.on)) .cb1{flex:1;width:auto}
+.pc .cab .cq{display:none;flex:1;min-width:0;min-height:40px;box-sizing:border-box;border:1.5px solid #0C161F;border-radius:8px;align-items:center;justify-content:space-between;padding:0 3px;background:#fff}
+.pc .cab .cq b{font-size:14px;font-weight:800;color:#0C161F;min-width:18px;text-align:center}
+.pc .cab .cq button{width:32px;height:32px;border:0;border-radius:6px;background:#F3F4F6;color:#0C161F;font-size:18px;font-weight:700;line-height:1;padding:0}
+.pc .cab .cq .cp{background:#0C161F;color:#fff}
+.pc .cab.in .cb1{display:none}.pc .cab.in .cq{display:flex}
+.pc .cab.in .on{flex:0 0 38%}.pc .cab.in .on svg{display:none}
+.pc{position:relative}
+.pc .cbd{position:absolute;right:6px;top:6px;z-index:4;background:#067647;color:#fff;font-size:10px;font-weight:800;border-radius:6px;padding:3px 7px;pointer-events:none}
+@media(max-width:760px){.pc .cab{gap:4px}.pc .cab .cb1{width:44px;min-height:44px}.pc .cab .cq{min-height:44px}.pc .cab .on{min-height:44px}.pc .cab .cq button{width:30px;height:34px}.pc .cab.in .on{flex:0 0 36%}.pc .cbd{right:4px;top:4px;font-size:9px;padding:2px 5px}}
+</style>
+<script>
+(function(){
+if(!window.DF||!DF.cart)return;
+function qty(id){var c=DF.cart();return c[id]?(parseInt(c[id].q)||0):0}
+function paint(){var ws=document.querySelectorAll('.pc .cab');for(var i=0;i<ws.length;i++){var w=ws[i],id=w.getAttribute('data-id'),n=qty(id);w.classList.toggle('in',n>0);var b=w.querySelector('.cq b');if(b)b.textContent=n||1;
+ var a=w.querySelector('a.on');if(a){if(!a._h)a._h=a.getAttribute('href');a.setAttribute('href',n>0?'/checkout':a._h);var t=a.querySelector('i');if(t)t.textContent=n>0?'ORDER':'ORDER NOW'}
+ var pc=w.closest('.pc'),bd=pc&&pc.querySelector('.cbd');if(bd){bd.hidden=!(n>0);bd.textContent='In cart: '+n}}}
+document.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('.pc .cab button');if(!t)return;e.preventDefault();e.stopPropagation();
+ var w=t.closest('.cab'),id=w.getAttribute('data-id'),p=+w.getAttribute('data-p')||0,x=w.getAttribute('data-x')||id,n=qty(id);
+ if(t.classList.contains('cb1')){DF._noOpen=1;try{DF.add(id,1,p,false,x);if(DF.ev)DF.ev('add_to_cart',{value:p,items:[{item_id:String(x),price:p,quantity:1}]})}finally{DF._noOpen=0}}
+ else if(t.classList.contains('cp')){if(n<50)DF.add(id,n+1,p,true,x)}
+ else if(t.classList.contains('cm')){if(n<=1){var c=DF.cart();delete c[id];DF.p('dfc',c);DF.tab()}else DF.add(id,n-1,p,true,x)}
+ paint()});
+var T=DF.tab;DF.tab=function(){T.apply(this,arguments);try{paint()}catch(e){}};
+window.addEventListener('pageshow',paint);paint();
+try{var mt=0;new MutationObserver(function(){clearTimeout(mt);mt=setTimeout(paint,300)}).observe(document.body,{childList:true,subtree:true})}catch(e){} /* home sections that load later */
 })();
 </script>
 @endverbatim

@@ -54,7 +54,7 @@ e92c5075c5266882f35b3a3e18bfe14f44d16178 resources/views/report_details.blade.ph
 2a56eafa359436fdb0b8ffc94324862961a1d307 app/Console/Commands/MotherGuard.php
 1a0f8a9f3c2fbeb64d72caa7722ce0b6bda69bb6 app/Http/Controllers/StoreController.php
 aae4970a65ee02fe49bca386440842df8f80f595 resources/views/store/layout.blade.php
-5356b422775064c3de9b13c703f12fbf913a2bd3 resources/views/store/card.blade.php
+eecccb2e973849a4fa071710333cceacc5076f86 resources/views/store/card.blade.php
 4a5eb7ee8d7960886fcb97c690bbb604ec69eb1f resources/views/store/home_sec.blade.php
 7fd49219a75de8fbce27529ba700c082d1801a51 resources/views/store/home.blade.php
 94f2cbd77b6dd59f371ed09133bfb9d25c1b53cb resources/views/store/category.blade.php
@@ -201,7 +201,7 @@ af44173bbd44837b1b621a1a95c7d2a5c675dd6a app/Http/Controllers/PwaController.php
 557ff18888855d47bcd276777c063ba6e9756083 resources/views/store/pwa.blade.php
 d3c25989e4d0d23fd973e2d9f67eae301e6f9a8a resources/views/store/pwa_head.blade.php
 79af9b6065bcb4c89a40364d082d37c972d9feb8 resources/views/store/pwa_splash.blade.php
-b6320b6dd46b39cea94a56b11c679519338007fa resources/views/store/minicart.blade.php
+20f1f45d79ae9972a48fda908edf5a208a1f7220 resources/views/store/minicart.blade.php
 3bb16aa0de8c627c4de10455a81e29aafa1879fa public/pwa/icon-192.png
 c94a778fefb027fc04d7101883ca0bf17fd7a5ec public/pwa/icon-512.png
 7f277ec7208f5d6f8ead3ec46bf5d6197ca2be6f public/pwa/maskable-512.png
