@@ -58,3 +58,14 @@ table.ordt td.ost-cell .pill,table.ordt td:has(>.stn)>.pill{display:inline-block
 .stn-p{text-align:left;left:50%;transform:translateX(-50%)}
 </style>
 <link rel="stylesheet" href="/s/adm-theme-b.css?v=a747ab84">
+{{-- 20 Nov 2026: AI Verify button colours live in the page head too, so the button never shows the default orange while the page is still loading --}}
+<style>
+.ai-btn{grid-column:1/-1}
+td.action-column .order-action-grid .ai-btn{background:#F1EBFF!important;border:1px solid #CDB9FF!important;color:#3B1D8A!important;font-weight:700}
+td.action-column .order-action-grid .ai-btn:hover{background:#E6DAFF!important}
+td.action-column .order-action-grid .ai-btn.s-verified{background:#E8F8EF!important;border-color:#86D9A9!important;color:#166534!important}
+td.action-column .order-action-grid .ai-btn.s-review{background:#FFF6E0!important;border-color:#F2C46B!important;color:#B45309!important}
+td.action-column .order-action-grid .ai-btn.s-high{background:#FEECEC!important;border-color:#F3A0A0!important;color:#B91C1C!important}
+td.action-column .order-action-grid .ai-btn.s-failed{background:#FBE0E0!important;border-color:#D96A6A!important;color:#B91C1C!important}
+td.action-column .order-action-grid .ai-btn.s-pending{background:#EEF2F7!important;border-color:#C5CFDC!important;color:#4B5563!important}
+</style>
