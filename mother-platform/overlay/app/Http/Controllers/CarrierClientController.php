@@ -22,6 +22,7 @@ class CarrierClientController extends Controller {
   }
   /** ext:password pairs the relay registers: the relay-line list plus the owner-chosen client-call extensions (pool and user extensions). */
   public static function relayExtPairs(): array {
+    if (Voice::set('relay_off', '0') === '1') return []; // 20 Nov 2026 owner: the call-client relay is retired; it gets no extensions, so every extension is for agents only
     $list = array_values(array_filter(array_map('trim', explode("\n", (string)Sms::secret('vc_relay_exts')))));
     // Only the extensions the owner chose for client calls are used (setting relay_pool_exts, default 106-110, plus the ones saved on this relay line). Every other staff/agent extension is never registered here, so it stays free.
     try {
@@ -193,6 +194,7 @@ class CarrierClientController extends Controller {
       \App\Support\DeployHealth::resolve('relay_live_stale', 'System (relay is reporting again)');
       return;
     }
+    if (Voice::set('relay_off', '0') === '1') { \App\Support\DeployHealth::resolve('relay_live_stale', 'System (relay retired by the owner)'); return; }
     $seen = (int)\Illuminate\Support\Facades\Cache::get('vc_relay_seen', 0);
     if ($seen > 0 && time() - $seen > 120) {
       \App\Support\DeployHealth::raise('relay_live_stale', 'high', 'Call relay', 'Call Clients live board: the relay stopped reporting', 'No live-call data from the relay for ' . intdiv(time() - $seen, 60) . ' min. Calls and billing may still be working; only the live board is affected.', 'The relay container lost its push to the website (it can happen after the website container is restarted).', 'Restart the sip-relay project in Hostinger Docker Manager when few calls are running (a restart cuts live calls).');
