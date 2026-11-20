@@ -62,6 +62,9 @@ class WaCallController extends Controller {
   /** WhatsApp call back: step 1 makes the outgoing call for this customer, step 2 sends the browser's audio offer to WhatsApp. */
   public function callback(Request $r, int $id) { [$ok, $m, $nid] = WaCalls::outNew($id, (int)$r->user()->id, (string)$r->user()->name); return response()->json(['ok' => $ok, 'message' => $m, 'id' => $nid]); }
   public function dial(Request $r, int $id) { $d = $r->validate(['sdp' => 'required|string|max:20000']); [$ok, $m] = WaCalls::dial($id, (int)$r->user()->id, $d['sdp']); return response()->json(['ok' => $ok, 'message' => $m]); }
+  /** Chat inbox: call the customer of a WhatsApp conversation / ask for their call permission. */
+  public function threadCall(Request $r, int $tid) { return response()->json(WaCalls::callThread($tid, (int)$r->user()->id, (string)$r->user()->name)); }
+  public function threadAsk(Request $r, int $tid) { [$ok, $m] = WaCalls::askPermission($tid, (int)$r->user()->id, (string)$r->user()->name); return response()->json(['ok' => $ok, 'message' => $m]); }
   /** The caller's WhatsApp conversation inside the call dock (read only, never marks anything as seen). */
   public function chat(int $id) { $c = WaCalls::ready() ? DB::table('wa_calls')->find($id) : null; abort_unless($c, 404); return response()->json(WaCalls::chat((string)$c->from_wa))->header('Cache-Control', 'no-store'); }
   public function extras(int $id) { $c = WaCalls::ready() ? DB::table('wa_calls')->find($id) : null; abort_unless($c, 404); return response()->json(WaCalls::extras((string)$c->from_wa)); }

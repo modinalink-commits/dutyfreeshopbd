@@ -771,6 +771,7 @@ class ChatController extends Controller {
               if (in_array($type, ['reaction', 'edit', 'revoke', 'unsupported'], true)) continue; // no bubble, no unread, no awaiting-reply
               $body = $type === 'text' ? (string)($m['text']['body'] ?? '') : ($type === 'button' ? (string)($m['button']['text'] ?? '') : '['.$type.' received — open WhatsApp to view]');
               if ($type === 'interactive' && !empty($m['interactive']['button_reply']['title'])) $body = (string)$m['interactive']['button_reply']['title']; // a pressed reply button shows as its label
+              if ($type === 'interactive' && ($m['interactive']['type'] ?? '') === 'call_permission_reply') $body = (($m['interactive']['call_permission_reply']['response'] ?? '') === 'accept') ? '✓ WhatsApp কল করার অনুমতি দিয়েছেন (call allowed)' : '✗ WhatsApp কল করার অনুমতি দেননি (call not allowed)'; // answer to our call-permission request
               $att = null; $meta = [];
               if ($type === 'button' && !empty($m['button']['payload'])) \App\Support\OrderWaUpdate::onButton((string)$m['button']['payload'], $from);
               if (in_array($type, ['image', 'sticker', 'document', 'audio', 'video'], true) && !empty($m[$type]['id']) && !DB::table('chat_messages')->where('ext_id', $m['id'] ?? '-')->exists()) {

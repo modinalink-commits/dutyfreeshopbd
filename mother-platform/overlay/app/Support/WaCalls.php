@@ -249,9 +249,15 @@ class WaCalls {
    * Returns [ok, message, new call id].
    */
   public static function outNew(int $fromCallId, int $uid, string $uname): array {
+    $p = self::ready() ? DB::table('wa_calls')->find($fromCallId) : null; if (!$p) return [false, 'Call not found.', null];
+    return self::outNewFor((string)$p->phone_id, (string)$p->from_wa, $p->from_name, $uid, $uname);
+  }
+  /** Same, for any customer of a business number (used by the chat inbox). */
+  public static function outNewFor(string $phoneId, ?string $wa, ?string $name, int $uid, string $uname): array {
     try {
-      $p = DB::table('wa_calls')->find($fromCallId); if (!$p) return [false, 'Call not found.', null];
-      $wa = preg_replace('/\D/', '', (string)$p->from_wa); if ($wa === '') return [false, 'WhatsApp did not share this caller\'s number, so a WhatsApp call back is not possible.', null];
+      if (!self::ready()) return [false, 'WhatsApp calls are not set up.', null];
+      $p = (object)['phone_id' => $phoneId, 'from_name' => $name ? mb_substr($name, 0, 160) : null];
+      $wa = preg_replace('/\D/', '', (string)$wa); if ($wa === '') return [false, 'WhatsApp did not share this caller\'s number, so a WhatsApp call back is not possible.', null];
       if (!self::tok((string)$p->phone_id)) return [false, 'This business number is not connected for calling.', null];
       if (DB::table('wa_calls')->where('user_id', $uid)->whereIn('status', ['dialing', 'answering', 'active'])->where('updated_at', '>', now()->subMinutes(3))->exists()) return [false, 'You are already on a WhatsApp call. End it first.', null];
       if (DB::table('wa_calls')->where('from_wa', $wa)->whereIn('status', ['dialing', 'ringing', 'answering', 'active'])->where('updated_at', '>', now()->subMinutes(3))->exists()) return [false, 'A WhatsApp call with this customer is already in progress.', null];
@@ -276,6 +282,48 @@ class WaCalls {
       DB::table('wa_calls')->where('id', $id)->update(['call_id' => $cid, 'sdp_offer' => $ans ?: null, 'updated_at' => now()]);
       return [true, 'ok'];
     } catch (\Throwable $e) { report($e); return $fail('Could not reach WhatsApp.'); }
+  }
+  // ---------------- calling a customer from the chat inbox (owner 20 Nov 2026)
+  /** The WhatsApp thread as [thread, phoneId, wa] or null when it is not a WhatsApp conversation with a number. */
+  public static function threadTarget(int $threadId): ?array {
+    try { $t = DB::table('chat_threads')->find($threadId); if (!$t || $t->channel !== 'whatsapp') return null;
+      $wa = preg_replace('/\D/', '', (string)$t->external_id); if ($wa === '') return null;
+      [, $pid] = Chat::waCred($t->page_ref ?? null); return $pid ? [$t, (string)$pid, $wa] : null; } catch (\Throwable $e) { return null; }
+  }
+  /** Meta's own answer: may we call this customer now, and may we ask? Returns ['ok','status','can_call','can_ask','error']. */
+  public static function permission(string $phoneId, string $wa): array {
+    $tok = self::tok($phoneId); if (!$tok) return ['ok' => false, 'error' => 'This business number is not connected for calling.'];
+    try {
+      $r = Http::timeout(15)->withToken($tok)->get(self::API . '/' . $phoneId . '/call_permissions', ['user_wa_id' => $wa]);
+      if (!$r->ok()) return ['ok' => false, 'error' => self::err($r)];
+      $can = ['start_call' => null, 'send_call_permission_request' => null]; // null = Meta did not say; then the call itself decides
+      foreach ((array)$r->json('actions') as $a) { $n = (string)($a['action_name'] ?? $a['name'] ?? ''); if (array_key_exists($n, $can)) $can[$n] = (bool)($a['can_perform_action'] ?? false); }
+      $st = (string)($r->json('permission.status') ?? 'no_permission');
+      return ['ok' => true, 'status' => $st, 'can_call' => $st !== 'no_permission' && ($can['start_call'] ?? true), 'can_ask' => $can['send_call_permission_request'] ?? true];
+    } catch (\Throwable $e) { return ['ok' => false, 'error' => 'Could not reach WhatsApp.']; }
+  }
+  /** Sends WhatsApp's own "allow calls from this business" request into the chat (free-form: Meta accepts it only inside the customer's open 24-hour window; at most 1 a day and 2 a week per customer). Returns [ok, message]. */
+  public static function askPermission(int $threadId, int $uid, string $by): array {
+    $x = self::threadTarget($threadId); if (!$x) return [false, 'This is not a WhatsApp conversation.']; [$t, $pid, $wa] = $x;
+    $tok = self::tok($pid); if (!$tok) return [false, 'This business number is not connected for calling.'];
+    try {
+      $text = 'আসসালামু আলাইকুম। আপনার বিষয়টি নিয়ে কথা বলতে DutyFreeBD থেকে আপনাকে WhatsApp-এ কল করতে চাই। কল করার অনুমতি দিতে নিচের বাটনে চাপ দিন।';
+      $r = Http::timeout(20)->withToken($tok)->post(self::API . '/' . $pid . '/messages', ['messaging_product' => 'whatsapp', 'recipient_type' => 'individual', 'to' => $wa, 'type' => 'interactive',
+        'interactive' => ['type' => 'call_permission_request', 'action' => ['name' => 'call_permission_request'], 'body' => ['text' => $text]]]);
+      if (!$r->ok()) { $c = (int)$r->json('error.code'); return [false, in_array($c, [131047, 131026], true) ? 'WhatsApp did not accept the request: the customer has not written to us in the last 24 hours. Ask again after they send a message, or call on the phone.' : self::err($r)]; }
+      self::threadNote($wa, 'WhatsApp call permission requested from the customer.', $uid, $by);
+      try { DB::table('audit_logs')->insert(['user_id' => $uid, 'user_name' => $by, 'action' => 'wa_call.permission_request', 'subject' => 'WhatsApp call permission requested: ' . $wa, 'ip' => request()->ip(), 'created_at' => now(), 'updated_at' => now()]); } catch (\Throwable $e) {}
+      return [true, 'Permission request sent. When the customer taps Allow, press WhatsApp Call again.'];
+    } catch (\Throwable $e) { report($e); return [false, 'Could not reach WhatsApp.']; }
+  }
+  /** Chat inbox "WhatsApp Call": starts the call when Meta says we may, otherwise says what is missing. */
+  public static function callThread(int $threadId, int $uid, string $uname): array {
+    $x = self::threadTarget($threadId); if (!$x) return ['ok' => false, 'message' => 'This is not a WhatsApp conversation.']; [$t, $pid, $wa] = $x;
+    $p = self::permission($pid, $wa); if (!$p['ok']) return ['ok' => false, 'message' => 'WhatsApp calling is not available for this number: ' . $p['error']];
+    if (!$p['can_call']) return ['ok' => false, 'need' => 'permission', 'can_ask' => $p['can_ask'],
+      'message' => $p['status'] === 'no_permission' ? 'The customer has not allowed WhatsApp calls from us yet.' : 'WhatsApp does not allow another call to this customer right now (call limit reached).'];
+    [$ok, $m, $id] = self::outNewFor($pid, $wa, (string)($t->name ?? ''), $uid, $uname);
+    return ['ok' => $ok, 'message' => $m, 'id' => $id];
   }
   /** The customer's SDP answer for the representative who is calling back (null until Meta has sent it). */
   public static function outAnswer(object $c, int $uid): ?string {
