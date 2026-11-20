@@ -169,6 +169,8 @@ class Voice
       "vc_id=$id", "vc_audio='$url'", "vc_hook='" . self::baseUrl() . '/webhooks/voice?k=' . self::hookToken() . "'", 'vc_dtmf=' . ($c->dtmf_on ? '1' : '0'), 'vc_agent=' . (self::set('agent_ext') ?: '101'), 'vc_rec=' . self::recName($id, $row->phone, $uuid)];
     if (self::set('direct', '0') === '1' && $pp) { // an audio file already on the PBX (Recordings page): play it straight into the call, no dialplan, no download
       $cmd = 'originate {' . implode(',', array_merge(array_filter($var, fn($x) => !str_starts_with($x, 'vc_')), ['hangup_after_bridge=true'])) . '}sofia/gateway/' . self::set('gateway') . '/' . self::dialNumber($row->phone) . ' &playback(' . $pp . ')';
+    } elseif (!$pp && !$c->dtmf_on && ($lp = self::pbxFetch($url))) { // 21 Nov 2026: this PBX has no http_cache, so the dialplan could not fetch the audio and hung up the moment the customer answered; the PBX's own http_get downloads it and the local file is played (same way the order-confirm call works)
+      $cmd = 'originate {' . implode(',', array_merge(array_filter($var, fn($x) => !str_starts_with($x, 'vc_')), ['hangup_after_bridge=true'])) . '}sofia/gateway/' . self::set('gateway') . '/' . self::dialNumber($row->phone) . ' &playback(' . $lp . ')';
     } elseif (self::set('direct', '0') === '1' && !$pp) { // no dialplan: the call is answered and the audio is played straight into it, then it hangs up
       // this PBX has no http_cache module, so the audio is fetched into /tmp on the PBX first (over the same ESL link), then played from there
       $local = '/tmp/vc_' . substr(md5($url), 0, 16) . '.wav';
@@ -190,6 +192,8 @@ class Voice
     $st = str_contains($u, 'BUSY') ? 'busy' : (preg_match('/NO_ANSWER|NO_USER_RESPONSE|ORIGINATOR_CANCEL|RECOVERY_ON_TIMER/', $u) ? 'not_answered' : 'failed');
     return [$st, $cause, $uuid];
   }
+  /** Downloads an audio URL into the PBX with its own http_get and returns the local file path (null when it fails). */
+  private static function pbxFetch(string $url): ?string { [$ok, $out] = self::esl('http_get ' . $url, 30); $lp = trim((string)$out); return $ok && preg_match('~^/[\w./-]+\.wav$~', $lp) ? $lp : null; }
   /** Public signed URL of an audio file (what the PBX or the uploader fetches). */
   public static function publicUrl(string $f): string { $aid = self::audioId($f); self::linkAudio($aid, $f); return self::baseUrl() . '/voice-audio/' . $aid . '.' . strtolower(pathinfo($f, PATHINFO_EXTENSION)) . '?t=' . self::audioToken((int)$aid); }
   public static ?string $lastJob = null;
