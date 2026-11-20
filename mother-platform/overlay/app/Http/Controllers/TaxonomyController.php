@@ -33,8 +33,12 @@ class TaxonomyController extends Controller {
     $cnt = []; foreach (DB::table('products')->select('category_id', 'sub', 'sub_sub', DB::raw('count(*) n'))->groupBy('category_id', 'sub', 'sub_sub')->get() as $r) { $cnt['m' . $r->category_id] = ($cnt['m' . $r->category_id] ?? 0) + $r->n; if ($r->sub !== null && $r->sub !== '') { $cnt['s' . $r->category_id . '|' . $r->sub] = ($cnt['s' . $r->category_id . '|' . $r->sub] ?? 0) + $r->n; if ($r->sub_sub) $cnt['t' . $r->category_id . '|' . $r->sub . '|' . $r->sub_sub] = ($cnt['t' . $r->category_id . '|' . $r->sub . '|' . $r->sub_sub] ?? 0) + $r->n; } }
     $nodes = DB::table('category_nodes')->orderBy('position')->orderBy('name')->get();
     $o = [];
-    $mm = DB::table('categories')->whereNull('parent_id')->orderBy('position')->orderBy('name')->get();
+    // Owner 20 Nov 2026: old categories that were merged into a main one (Hair Care, Sunglass, Skin & Hair Care, Personal Wellness -> Beauty / Fashion, see CatRemap) are only import targets now.
+    // They sort after the real main categories and are not listed here once they hold no product, so the list shows the real main categories only. The rows stay in the database for the importers.
+    $legacy = array_keys(\App\Support\CatRemap::LEGACY);
+    $mm = DB::table('categories')->whereNull('parent_id')->orderByRaw('case when slug in (' . implode(',', array_fill(0, count($legacy), '?')) . ') then 1 else 0 end', $legacy)->orderBy('position')->orderBy('name')->get();
     foreach ($mm as $i => $m) if ((int)$m->position !== $i + 1) { DB::table('categories')->where('id', $m->id)->update(['position' => $i + 1]); $m->position = $i + 1; } // keep main positions 1..n
+    $mm = $mm->reject(fn($m) => in_array($m->slug, $legacy, true) && empty($cnt['m' . $m->id]))->values();
     foreach ($mm as $m) {
       $subs = [];
       foreach ($nodes->where('category_id', $m->id)->where('level', 2) as $s) {
