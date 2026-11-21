@@ -278,10 +278,15 @@ class Voice
           if (time() - $t0 > 50) return;
           $cu = DB::table('customers')->find($r->customer_id); if (!$cu || $cu->blocked || !($cu->promo_call ?? true) || self::optedOut($r->phone)) { DB::table('voice_campaign_customers')->where('id', $r->id)->update(['call_status' => 'opted_out', 'offer_status' => 'void', 'skip_reason' => 'Calls not allowed', 'updated_at' => now()]); continue; }
           $pr = DB::table('products')->find($r->product_id); if (!$pr || !$pr->published || (int)$pr->stock <= 0) { DB::table('voice_campaign_customers')->where('id', $r->id)->update(['call_status' => 'failed', 'offer_status' => 'void', 'skip_reason' => 'Product unavailable', 'next_attempt_at' => null, 'updated_at' => now()]); continue; }
-          self::dial($c, $r);
+          // 21 Nov 2026: one call used to block the worker until the customer answered or the ring timed out (up to ~30s), so only 1-2 calls started per minute; every call now runs in its own background process and all of them ring together
+          if (!self::dialBackground((int)$r->id)) self::dial($c, $r);
         }
       }
     } finally { $lock->release(); }
+  }
+
+  private static function dialBackground(int $vcid): bool {
+    try { $cmd = 'nohup php ' . escapeshellarg(base_path('artisan')) . ' voice:dial ' . $vcid . ' > /dev/null 2>&1 &'; @exec($cmd, $o, $rc); return $rc === 0; } catch (\Throwable $e) { return false; }
   }
 
   /** Configurable DTMF map: digit => [action, label, enabled]. Digit 9 is always the opt-out. */
