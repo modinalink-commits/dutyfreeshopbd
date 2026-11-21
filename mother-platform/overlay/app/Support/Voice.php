@@ -260,7 +260,7 @@ class Voice
   }
 
   /** Called by the scheduler worker: top-up enrolment once a day, then dial what is due. */
-  public static function tick(): void {
+  public static function tick(int $max = 6): void {
     if (!self::on() || !(self::set('esl_host') ?: env('PBX_ESL_HOST'))) return;
     $lock = Cache::lock('vc_tick', 90); if (!$lock->get()) return;
     try {
@@ -273,7 +273,7 @@ class Voice
         if ($c->end_date && now('Asia/Dhaka')->toDateString() > substr((string)$c->end_date, 0, 10)) { DB::table('voice_campaigns')->where('id', $c->id)->update(['status' => 'completed', 'updated_at' => now()]); continue; }
         if (self::set('enrolled_' . $c->id) !== now('Asia/Dhaka')->toDateString()) self::enroll($c);
         if (!self::canCallNow($c)) continue; $left = (int)$c->daily_limit - self::calledToday($c->id); if ($left <= 0) continue;
-        $due = DB::table('voice_campaign_customers')->where('campaign_id', $c->id)->where(fn($q) => $q->where('call_status', 'pending')->orWhere(fn($w) => $w->whereIn('call_status', ['not_answered', 'busy', 'failed'])->whereNotNull('next_attempt_at')->where('next_attempt_at', '<=', now())))->orderByRaw('last_order_at asc nulls last, id asc')->limit(60)->get()->filter(fn($r) => self::orderTimeReached($c, $r))->take(min($left, 6));
+        $due = DB::table('voice_campaign_customers')->where('campaign_id', $c->id)->where(fn($q) => $q->where('call_status', 'pending')->orWhere(fn($w) => $w->whereIn('call_status', ['not_answered', 'busy', 'failed'])->whereNotNull('next_attempt_at')->where('next_attempt_at', '<=', now())))->orderByRaw('last_order_at asc nulls last, id asc')->limit(60)->get()->filter(fn($r) => self::orderTimeReached($c, $r))->take(min($left, max(1, $max)));
         foreach ($due as $r) {
           if (time() - $t0 > 50) return;
           $cu = DB::table('customers')->find($r->customer_id); if (!$cu || $cu->blocked || !($cu->promo_call ?? true) || self::optedOut($r->phone)) { DB::table('voice_campaign_customers')->where('id', $r->id)->update(['call_status' => 'opted_out', 'offer_status' => 'void', 'skip_reason' => 'Calls not allowed', 'updated_at' => now()]); continue; }
@@ -283,6 +283,14 @@ class Voice
         }
       }
     } finally { $lock->release(); }
+  }
+
+  /** 21 Nov 2026: the shared worker only comes round every ~3 minutes (all its jobs plus a 30 s pause), which capped the campaign at ~2 calls a minute. A small dedicated loop (voice:loop) now starts one call every 10 s = 6 a minute; the worker only makes sure the loop is alive and falls back to the old per-cycle dialling when it cannot start it. */
+  public static function ensureLoop(): void {
+    if (!self::on()) return;
+    $hb = (int)Cache::get('vc_loop_hb', 0); if (time() - $hb < 45) return;
+    try { Cache::put('vc_loop_hb', time(), 300); @exec('nohup php ' . escapeshellarg(base_path('artisan')) . ' voice:loop > /dev/null 2>&1 &', $o, $rc); if ($rc === 0) return; } catch (\Throwable $e) {}
+    self::tick();
   }
 
   private static function dialBackground(int $vcid): bool {

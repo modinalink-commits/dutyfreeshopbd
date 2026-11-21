@@ -57,7 +57,7 @@ class MotherPushWorker extends Command
     try { \App\Support\WhatsApp::tick(); } catch (\Throwable $e) { $this->error('wa: ' . $e->getMessage()); }
     // 21 Nov 2026: customers' order-confirmation calls (AI approval) go before the promotional campaign calls so a busy campaign never delays them
     try { \App\Support\OrderCall::tick(); } catch (\Throwable $e) { $this->error('ordercall: ' . $e->getMessage()); }
-    try { \App\Support\Voice::tick(); } catch (\Throwable $e) { $this->error('voice: ' . $e->getMessage()); }
+    try { \App\Support\Voice::ensureLoop(); } catch (\Throwable $e) { $this->error('voice: ' . $e->getMessage()); }
     try { \App\Support\SeoMgr::tick(); } catch (\Throwable $e) { $this->error('seo: ' . $e->getMessage()); }
     try { \App\Support\SeoAutoGenerator::backfillOnce(); } catch (\Throwable $e) { $this->error('seoauto: ' . $e->getMessage()); }
     try { \App\Support\AppReward::resolve(); } catch (\Throwable $e) { $this->error('appreward: ' . $e->getMessage()); }
