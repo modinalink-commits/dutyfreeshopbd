@@ -1512,3 +1512,5 @@ public/fbposts/twinfish-nuts-crisp-candy.jpg
 public/fbposts/twinfish-oat-chocolate.jpg
 public/fbposts/tyton-nutribite-chox-crunch.jpg
 public/fbposts/vanilla-powder-matiere-premiere.jpg
+app/Console/Commands/VoiceDialRun.php
+app/Console/Commands/VoiceLoop.php
