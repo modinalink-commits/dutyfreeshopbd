@@ -198,7 +198,7 @@ class SmsGate {
       $j = json_decode((string)$b, true);
       if ($no === 0 && is_array($j) && (int)($j['error'] ?? 1) === 0 && isset($j['data']['balance'])) return ['ok' => true, 'text' => (string)$j['data']['balance']];
       if (is_array($j) && isset($j['error'])) return ['ok' => false, 'text' => $j['error'] . ' ' . (self::ALPHA_CODES[(int)$j['error']][1] ?? ($j['msg'] ?? ''))];
-      return ['ok' => false, 'text' => $no ? 'No connection to the provider' : 'No readable answer'];
+      return ['ok' => false, 'text' => $no ? 'No connection to the provider (network code ' . $no . ($no === 6 ? ': name lookup failed' : ($no === 28 ? ': timed out' : ($no === 7 ? ': could not connect' : ($no === 60 || $no === 35 ? ': secure connection failed' : '')))) . ')' : 'No readable answer (HTTP ' . $st . ')'];
     }
     [$st, $b, $no] = self::http('bulk', self::BULK_BAL . '?api_key=' . rawurlencode((string)Sms::secret('sms_api_key')), null, $timeout);
     $j = json_decode((string)$b, true);
