@@ -23,6 +23,16 @@ class ServiceBalances {
         $n = preg_replace('/[^0-9.\-]/', '', (string)$b['text']);
         return $n === '' ? ['ok' => false, 'balance' => null, 'expires' => null, 'text' => 'Unreadable answer: ' . mb_substr((string)$b['text'], 0, 120)] : ['ok' => true, 'balance' => (float)$n, 'expires' => null, 'text' => 'Read from provider'];
       }
+      if ($code === 'tok_fc_pathao' || $code === 'tok_fc_redx') { // API tokens: the expiry date is inside the token (JWT "exp"), nothing is guessed
+        $tok = $code === 'tok_fc_pathao' ? trim((string)Sms::secret('fc_pathao_token')) : FraudCheck::redxToken();
+        $tok = preg_replace('/^bearer\s+/i', '', $tok);
+        if ($tok === '') return ['ok' => false, 'balance' => null, 'expires' => null, 'text' => 'Token not set'];
+        $p = explode('.', $tok);
+        $j = count($p) === 3 ? json_decode((string)base64_decode(strtr($p[1], '-_', '+/') . str_repeat('=', (4 - strlen($p[1]) % 4) % 4)), true) : null;
+        if (!is_array($j)) return ['ok' => true, 'balance' => null, 'expires' => null, 'text' => 'Token is set; it carries no readable expiry date'];
+        if (empty($j['exp'])) return ['ok' => true, 'balance' => null, 'expires' => null, 'text' => 'Token is set; it has no expiry date'];
+        return ['ok' => true, 'balance' => null, 'expires' => gmdate('Y-m-d', (int)$j['exp']), 'text' => 'Expiry read from the token'];
+      }
       if ($code === 'elevenlabs') {
         $k = Sms::secret('vchat_eleven_key') ?: Sms::secret('vc_tts_key');
         if (!$k) return ['ok' => false, 'balance' => null, 'expires' => null, 'text' => 'API key not set'];
@@ -85,6 +95,7 @@ class ServiceBalances {
     if ($r->balance !== null && (float)$r->balance <= 0) return ['low', 'Empty', $days];
     if ($r->balance !== null && $r->low_at !== null && (float)$r->balance <= (float)$r->low_at) return ['low', 'Low', $days];
     if ($days !== null && $days <= (int)$r->remind_days) return ['soon', 'Renew soon', $days];
+    if ($r->kind === 'auto' && $r->last_ok === true && $r->balance === null && $days === null) return ['ok', 'OK', $days]; // key present and accepted, nothing that runs out
     if ($r->balance === null && $days === null) return ['unset', 'Not set', $days];
     return ['ok', 'OK', $days];
   }
