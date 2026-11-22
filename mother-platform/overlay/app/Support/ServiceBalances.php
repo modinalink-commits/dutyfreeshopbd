@@ -44,7 +44,37 @@ class ServiceBalances {
     $f = self::fetch($row->code); $u = ['last_ok' => $f['ok'], 'last_text' => mb_substr($f['text'], 0, 200), 'checked_at' => now(), 'updated_at' => now()];
     if ($f['ok']) { $u['balance'] = $f['balance']; if ($f['expires']) $u['expires_on'] = $f['expires']; }
     DB::table('service_accounts')->where('id', $row->id)->update($u);
+    if ($f['ok']) self::logPoint((int)$row->id, (float)$f['balance']);
     return $f;
+  }
+
+  public static function hasLog(): bool { return Schema::hasTable('service_balance_log'); }
+
+  /** Remember a balance reading. Kept when the balance changed or the last reading is older than 6 hours, so the table stays small. */
+  public static function logPoint(int $id, float $balance): void {
+    try {
+      if (!self::hasLog()) return;
+      $last = DB::table('service_balance_log')->where('service_id', $id)->orderByDesc('at')->orderByDesc('id')->first();
+      if ($last && abs((float)$last->balance - $balance) < 0.005 && \Carbon\Carbon::parse($last->at, 'UTC')->gt(now()->subHours(6))) return;
+      DB::table('service_balance_log')->insert(['service_id' => $id, 'balance' => $balance, 'at' => now()]);
+    } catch (\Throwable $e) {}
+  }
+
+  /** Real daily use from the readings of the last 14 days: only drops count (a rise is a recharge or a new plan period). Needs at least 12 hours of history.
+   *  Returns ['perDay'=>?float, 'days'=>?int (how long the balance lasts at that pace), 'since'=>?string]. Nothing is guessed. */
+  public static function usage(object $r): array {
+    $none = ['perDay' => null, 'days' => null, 'since' => null];
+    try {
+      if (!self::hasLog() || $r->balance === null) return $none;
+      $pts = DB::table('service_balance_log')->where('service_id', $r->id)->where('at', '>=', now()->subDays(14))->orderBy('at')->orderBy('id')->get();
+      if ($pts->count() < 2) return $none;
+      $first = \Carbon\Carbon::parse($pts->first()->at, 'UTC'); $last = \Carbon\Carbon::parse($pts->last()->at, 'UTC');
+      $hours = $first->diffInMinutes($last) / 60; if ($hours < 12) return $none;
+      $drop = 0.0; for ($i = 1; $i < $pts->count(); $i++) { $d = (float)$pts[$i - 1]->balance - (float)$pts[$i]->balance; if ($d > 0) $drop += $d; }
+      $perDay = $drop / ($hours / 24);
+      if ($perDay <= 0.0001) return ['perDay' => 0.0, 'days' => null, 'since' => $first->copy()->timezone('Asia/Dhaka')->format('d M')];
+      return ['perDay' => $perDay, 'days' => (int)floor(max(0, (float)$r->balance) / $perDay), 'since' => $first->copy()->timezone('Asia/Dhaka')->format('d M')];
+    } catch (\Throwable $e) { return $none; }
   }
 
   /** low / soon / expired / failed / ok / unset */
@@ -73,6 +103,7 @@ class ServiceBalances {
   /** Worker hook: every 30 minutes refresh the auto services and raise alerts for all. */
   public static function tick(): void {
     if (!self::ready() || !Cache::add('svcbal.tick', 1, self::EVERY)) return;
+    try { if (self::hasLog()) DB::table('service_balance_log')->where('at', '<', now()->subDays(60))->delete(); } catch (\Throwable $e) {}
     foreach (DB::table('service_accounts')->where('active', true)->get() as $r) {
       if ($r->kind === 'auto') { try { self::refresh($r); } catch (\Throwable $e) {} $r = DB::table('service_accounts')->where('id', $r->id)->first(); }
       self::alertFor($r);

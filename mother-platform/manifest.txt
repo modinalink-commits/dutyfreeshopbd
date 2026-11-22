@@ -1515,6 +1515,7 @@ public/fbposts/vanilla-powder-matiere-premiere.jpg
 app/Console/Commands/VoiceDialRun.php
 app/Console/Commands/VoiceLoop.php
 database/migrations/2026_11_22_130000_service_accounts.php
+database/migrations/2026_11_22_150000_service_burn_and_recharge.php
 app/Support/ServiceBalances.php
 app/Http/Controllers/ServiceBalanceController.php
 resources/views/service_balances.blade.php

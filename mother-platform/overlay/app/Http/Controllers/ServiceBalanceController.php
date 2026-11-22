@@ -14,8 +14,8 @@ class ServiceBalanceController extends Controller {
     $this->guard();
     if (!SB::ready()) return view('service_balances', ['off' => true]);
     $rows = DB::table('service_accounts')->orderBy('sort')->orderBy('id')->get();
-    $st = []; foreach ($rows as $r) $st[$r->id] = SB::state($r);
-    return view('service_balances', ['off' => false, 'rows' => $rows, 'st' => $st]);
+    $st = []; $use = []; foreach ($rows as $r) { $st[$r->id] = SB::state($r); $use[$r->id] = SB::usage($r); }
+    return view('service_balances', ['off' => false, 'rows' => $rows, 'st' => $st, 'use' => $use]);
   }
 
   /** Check every auto service now (or one). */
@@ -33,17 +33,20 @@ class ServiceBalanceController extends Controller {
     $d = $r->validate([
       'id' => 'nullable|integer', 'name' => 'required|string|max:120', 'category' => 'nullable|string|max:30', 'unit' => 'nullable|string|max:16',
       'balance' => 'nullable|numeric|min:-1000000000|max:1000000000', 'low_at' => 'nullable|numeric|min:0|max:1000000000', 'expires_on' => 'nullable|date',
-      'remind_days' => 'nullable|integer|min:0|max:365', 'note' => 'nullable|string|max:1000', 'active' => 'nullable|boolean',
+      'remind_days' => 'nullable|integer|min:0|max:365', 'note' => 'nullable|string|max:1000', 'active' => 'nullable|boolean', 'recharge_url' => 'nullable|url:https|max:300',
     ]);
     $by = (string)(optional(auth()->user())->name ?? ''); $now = now();
     $f = ['low_at' => $d['low_at'] ?? null, 'expires_on' => $d['expires_on'] ?? null, 'remind_days' => (int)($d['remind_days'] ?? 14), 'note' => $d['note'] ?? null, 'active' => (bool)($d['active'] ?? true), 'updated_by' => $by, 'updated_at' => $now];
+    if (\Illuminate\Support\Facades\Schema::hasColumn('service_accounts', 'recharge_url')) $f['recharge_url'] = $d['recharge_url'] ?? null;
     if (!empty($d['id'])) {
       $row = DB::table('service_accounts')->where('id', (int)$d['id'])->first(); abort_unless($row, 404);
       if ($row->kind === 'manual') { $f += ['name' => $d['name'], 'category' => $d['category'] ?: 'Other', 'unit' => $d['unit'] ?: 'BDT', 'balance' => $d['balance'] ?? null, 'checked_at' => $now, 'last_ok' => null, 'last_text' => 'Typed in by ' . ($by ?: 'staff')]; }
       DB::table('service_accounts')->where('id', $row->id)->update($f);
+      if ($row->kind === 'manual' && isset($f['balance'])) SB::logPoint((int)$row->id, (float)$f['balance']);
       Procure::audit('services.update', $row->name, ['balance' => $row->balance, 'low_at' => $row->low_at, 'expires_on' => $row->expires_on], ['balance' => $f['balance'] ?? $row->balance, 'low_at' => $f['low_at'], 'expires_on' => $f['expires_on']]);
     } else {
-      DB::table('service_accounts')->insert($f + ['name' => $d['name'], 'category' => $d['category'] ?: 'Other', 'unit' => $d['unit'] ?: 'BDT', 'kind' => 'manual', 'balance' => $d['balance'] ?? null, 'sort' => 200, 'checked_at' => $now, 'last_text' => 'Typed in by ' . ($by ?: 'staff'), 'created_at' => $now]);
+      $nid = DB::table('service_accounts')->insertGetId($f + ['name' => $d['name'], 'category' => $d['category'] ?: 'Other', 'unit' => $d['unit'] ?: 'BDT', 'kind' => 'manual', 'balance' => $d['balance'] ?? null, 'sort' => 200, 'checked_at' => $now, 'last_text' => 'Typed in by ' . ($by ?: 'staff'), 'created_at' => $now]);
+      if (isset($d['balance'])) SB::logPoint((int)$nid, (float)$d['balance']);
       Procure::audit('services.create', $d['name']);
     }
     return back()->with('ok', 'Saved');
