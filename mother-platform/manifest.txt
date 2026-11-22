@@ -1533,3 +1533,4 @@ app/Http/Controllers/LiveBoardController.php
 resources/views/live_board.blade.php
 app/Support/AutoHeal.php
 public/live-board-avatar.jpg
+public/live-board-owner.jpg

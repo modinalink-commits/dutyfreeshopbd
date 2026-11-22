@@ -134,7 +134,7 @@ body.fit .rail .att{flex:1 1 0;min-height:0}
 <div class="sec">সব কার্যক্রম</div>
 <div class="main">
   <div class="map" id="map"><canvas id="cv"></canvas>
-    <section class="hub" id="hub"><div class="core"><span class="halo"></span><img src="/live-board-avatar.jpg" alt="Mohammad Faruk" onerror="this.hidden=true"><span class="score" id="score">…</span></div><b>মাদার কমার্স</b><span class="who">Mohammad Faruk · কেন্দ্রীয় নিয়ন্ত্রণ</span><small id="hubsub">তথ্য আসছে</small><small id="hubbeat"></small></section>
+    <section class="hub" id="hub"><div class="core"><span class="halo"></span><img src="/live-board-avatar.jpg?v=1" alt="Mohammad Faruk" onerror="this.hidden=true"><span class="score" id="score">…</span></div><b>মাদার কমার্স</b><span class="who">Mohammad Faruk · কেন্দ্রীয় নিয়ন্ত্রণ</span><small id="hubsub">তথ্য আসছে</small><small id="hubbeat"></small></section>
   </div>
   <aside class="rail">
     <section class="box att" id="attbox"><h2><span>এখন নজর দিন</span><span id="attn"></span></h2><div id="att"></div></section>
