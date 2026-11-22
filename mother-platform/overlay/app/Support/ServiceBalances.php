@@ -1,0 +1,81 @@
+<?php
+namespace App\Support;
+
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Schema;
+
+/** Services and Balances: reads the balance of every service that has a balance API, keeps typed-in balances and renewal dates for the rest, and raises an Issues Center alert when something is low or about to expire. Nothing here is estimated. */
+class ServiceBalances {
+  public const EVERY = 1800; // seconds between automatic checks
+
+  public static function ready(): bool { return Schema::hasTable('service_accounts'); }
+
+  /** Read one auto service. Returns ['ok'=>bool,'balance'=>?float,'expires'=>?string,'text'=>string]. */
+  public static function fetch(string $code): array {
+    try {
+      if ($code === 'alpha_sms' || $code === 'bulk_sms') {
+        $p = $code === 'alpha_sms' ? 'alpha' : 'bulk';
+        if (!SmsGate::hasKey($p)) return ['ok' => false, 'balance' => null, 'expires' => null, 'text' => 'API key not set'];
+        $b = SmsGate::refreshBalance($p);
+        if (!$b['ok']) return ['ok' => false, 'balance' => null, 'expires' => null, 'text' => mb_substr((string)$b['text'], 0, 180)];
+        $n = preg_replace('/[^0-9.\-]/', '', (string)$b['text']);
+        return $n === '' ? ['ok' => false, 'balance' => null, 'expires' => null, 'text' => 'Unreadable answer: ' . mb_substr((string)$b['text'], 0, 120)] : ['ok' => true, 'balance' => (float)$n, 'expires' => null, 'text' => 'Read from provider'];
+      }
+      if ($code === 'elevenlabs') {
+        $k = Sms::secret('vchat_eleven_key') ?: Sms::secret('vc_tts_key');
+        if (!$k) return ['ok' => false, 'balance' => null, 'expires' => null, 'text' => 'API key not set'];
+        $r = Http::timeout(15)->withHeaders(['xi-api-key' => $k])->get('https://api.elevenlabs.io/v1/user/subscription');
+        if ($r->status() === 401 || $r->status() === 403) return ['ok' => false, 'balance' => null, 'expires' => null, 'text' => 'The key may not read the account (needs the "User: read" permission)'];
+        $j = $r->json();
+        if (!$r->ok() || !is_array($j) || !isset($j['character_limit'])) return ['ok' => false, 'balance' => null, 'expires' => null, 'text' => 'No readable answer (HTTP ' . $r->status() . ')'];
+        $left = max(0, (int)$j['character_limit'] - (int)($j['character_count'] ?? 0));
+        $exp = !empty($j['next_character_count_reset_unix']) ? gmdate('Y-m-d', (int)$j['next_character_count_reset_unix']) : null;
+        return ['ok' => true, 'balance' => (float)$left, 'expires' => $exp, 'text' => 'Plan ' . ($j['tier'] ?? '') . ' · ' . number_format((int)($j['character_count'] ?? 0)) . ' of ' . number_format((int)$j['character_limit']) . ' used; resets on the date shown'];
+      }
+    } catch (\Throwable $e) { return ['ok' => false, 'balance' => null, 'expires' => null, 'text' => 'Check failed: ' . mb_substr($e->getMessage(), 0, 120)]; }
+    return ['ok' => false, 'balance' => null, 'expires' => null, 'text' => 'No automatic check for this service'];
+  }
+
+  /** Check one row now and store the result. */
+  public static function refresh(object $row): array {
+    if ($row->kind !== 'auto' || !$row->code) return ['ok' => false, 'text' => 'Manual service'];
+    $f = self::fetch($row->code); $u = ['last_ok' => $f['ok'], 'last_text' => mb_substr($f['text'], 0, 200), 'checked_at' => now(), 'updated_at' => now()];
+    if ($f['ok']) { $u['balance'] = $f['balance']; if ($f['expires']) $u['expires_on'] = $f['expires']; }
+    DB::table('service_accounts')->where('id', $row->id)->update($u);
+    return $f;
+  }
+
+  /** low / soon / expired / failed / ok / unset */
+  public static function state(object $r): array {
+    $today = now('Asia/Dhaka')->startOfDay(); $days = $r->expires_on ? (int)$today->diffInDays(\Carbon\Carbon::parse($r->expires_on, 'Asia/Dhaka')->startOfDay(), false) : null;
+    if ($r->kind === 'auto' && $r->last_ok === false && $r->checked_at) return ['failed', 'Check failed', $days];
+    if ($days !== null && $days < 0) return ['expired', 'Expired', $days];
+    if ($r->balance !== null && (float)$r->balance <= 0) return ['low', 'Empty', $days];
+    if ($r->balance !== null && $r->low_at !== null && (float)$r->balance <= (float)$r->low_at) return ['low', 'Low', $days];
+    if ($days !== null && $days <= (int)$r->remind_days) return ['soon', 'Renew soon', $days];
+    if ($r->balance === null && $days === null) return ['unset', 'Not set', $days];
+    return ['ok', 'OK', $days];
+  }
+
+  /** Alert in the Issues Center, once per service per day per kind of problem. */
+  public static function alertFor(object $r): void {
+    [$s, $label, $days] = self::state($r); $d = date('Ymd');
+    $bal = $r->balance !== null ? number_format((float)$r->balance, 2) . ' ' . $r->unit : 'unknown';
+    try {
+      if ($s === 'low') DeployHealth::raise('svc_low_' . $r->id . '_' . $d, 'high', 'Services', $r->name . ': balance ' . strtolower($label), $r->name . ' has ' . $bal . ($r->low_at !== null ? ' (alert limit ' . number_format((float)$r->low_at, 2) . ')' : '') . '.', 'Balance at or below the limit', 'Recharge ' . $r->name . ', then update the balance on Services and Balances if it is typed in by hand.');
+      elseif ($s === 'expired') DeployHealth::raise('svc_exp_' . $r->id . '_' . $d, 'high', 'Services', $r->name . ' has expired', $r->name . ' expired on ' . $r->expires_on . '.', 'Renewal date passed', 'Renew ' . $r->name . ' and update the date on Services and Balances.');
+      elseif ($s === 'soon') DeployHealth::raise('svc_soon_' . $r->id . '_' . $d, 'medium', 'Services', $r->name . ' renews in ' . $days . ' day(s)', $r->name . ' is due on ' . $r->expires_on . '.', 'Renewal date is near', 'Renew ' . $r->name . ' before ' . $r->expires_on . '.');
+    } catch (\Throwable $e) {}
+  }
+
+  /** Worker hook: every 30 minutes refresh the auto services and raise alerts for all. */
+  public static function tick(): void {
+    if (!self::ready() || !Cache::add('svcbal.tick', 1, self::EVERY)) return;
+    foreach (DB::table('service_accounts')->where('active', true)->get() as $r) {
+      if ($r->kind === 'auto') { try { self::refresh($r); } catch (\Throwable $e) {} $r = DB::table('service_accounts')->where('id', $r->id)->first(); }
+      self::alertFor($r);
+    }
+  }
+}

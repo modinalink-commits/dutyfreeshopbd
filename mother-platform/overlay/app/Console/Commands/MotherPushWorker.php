@@ -39,6 +39,7 @@ class MotherPushWorker extends Command
     try { \App\Support\Chat::closeSilentTick(); } catch (\Throwable $e) { $this->error('chatsilent: ' . $e->getMessage()); }
     try { \App\Support\OrderSchedule::tick(); } catch (\Throwable $e) { $this->error('sched: ' . $e->getMessage()); }
     try { \App\Support\SourceDesc::tick(); } catch (\Throwable $e) { $this->error('sdesc: ' . $e->getMessage()); }
+    try { \App\Support\ServiceBalances::tick(); } catch (\Throwable $e) { $this->error('svcbal: ' . $e->getMessage()); }
     try { \App\Support\OrderCancelNotice::tick(); } catch (\Throwable $e) { $this->error('cancel-notice: ' . $e->getMessage()); }
     try { $this->waUpdates(); \App\Support\OrderWaUpdate::tick(); } catch (\Throwable $e) { $this->error('wa-update: ' . $e->getMessage()); }
     \App\Support\DeployHealth::beat(); // heartbeat: shown as "Scheduler" in the Deployment Center
