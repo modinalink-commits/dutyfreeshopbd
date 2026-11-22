@@ -1,5 +1,5 @@
 fe43f8b6cb422cca81ee18b74d3972f77e7852de database/migrations/2026_10_31_000001_mother_core.php
-5210651ed9d3d67c193452e13b6ba1d5d7ae243c routes/web.php
+64e03b7f0c5026d36844b52ed15483c9b8815f73 routes/web.php
 46ac6330ace84450b442d0d57c5c06f20c41f945 app/Models/Mother.php
 0bc60d7d9c855d84bfb4210c207b3492bf52f588 app/Http/Controllers/AdminController.php
 242316b2ef0a0967e6815e39fcbc7377349fdc17 app/Console/Commands/MotherInstall.php
@@ -1528,9 +1528,11 @@ e916236dd87599a4a3edd2b4938ba0ed735ab6e1 public/adimg/nov26-vip-15.jpg
 c7b0bce1b03012e15cfc2ec80dd1cdb4fb881511 public/adimg/reel-beauty.mp4
 92f5e0590bbceb2717163c9a8deba30ef22991b9 public/adimg/reel-food.mp4
 5b1438b8752a95a00c6339627ca7f8b26a3f4be2 public/adimg/reel-gadget.mp4
-b6b8be9fd7ca46fe03f75dac70f4acb19f977cf7 app/Support/LiveBoard.php
-b4282ec039170706e1ff0b1765dda6f61b7ec2c5 app/Http/Controllers/LiveBoardController.php
-a99d0eea1e1fec4fdcf87422a61e0d83ab5305b0 resources/views/live_board.blade.php
+6dd6b7217fe0c48b92b08343c400525ccf346dde app/Support/LiveBoard.php
+d9cb3998e32027bf62fac218d5e1ef8ab7ad7fc8 app/Http/Controllers/LiveBoardController.php
+61db0551bbd669fcd25e4c2bb5d51d7d41655300 resources/views/live_board.blade.php
 99cf8b1fac79c0513b6858c00272bc361003b66c app/Support/AutoHeal.php
 fa6e30f0e5278d58d12e99a1bf73ff9b61596e2f public/live-board-avatar.jpg
 fa6e30f0e5278d58d12e99a1bf73ff9b61596e2f public/live-board-owner.jpg
+8facf92d34400bde044481ed7e3ae85d2f6780b2 app/Support/GoogleSeo.php
+0a75166e1d739da020901008d5ba331e0fc7171f resources/views/live_board_google.blade.php

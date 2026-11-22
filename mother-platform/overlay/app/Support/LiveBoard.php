@@ -234,13 +234,18 @@ class LiveBoard {
       $c = $out['capi']; $k[] = ['l' => 'Meta (Pixel / CAPI)', 'v' => $out['arrivals']['today'], 'u' => 'জন অ্যাড থেকে এসেছে', 's' => $c['t'] ?: 'ইভেন্টের তথ্য নেই', 'st' => $c['s']];
       try { $dp = DB::table('deployments')->where('created_at', '>=', $ds)->count(); $ld = DB::table('deployments')->orderByDesc('id')->first(['status', 'created_at']); $k[] = ['l' => 'ডিপ্লয়মেন্ট', 'v' => (int)$dp, 'u' => 'টি আজ', 's' => $ld ? 'শেষটা: ' . $ld->status : '', 'st' => $ld && in_array($ld->status, ['Failed', 'Rolled Back'], true) ? 'slow' : 'ok']; } catch (\Throwable $e) {}
       try { $pw = DB::table('posts')->where('published_at', '>=', now()->subDays(7))->count(); $pl = self::ago(DB::table('posts')->max('published_at')); $k[] = ['l' => 'ব্লগ', 'v' => (int)$pw, 'u' => 'পোস্ট এ সপ্তাহে', 's' => $pl === null ? 'কোনো পোস্ট নেই' : 'শেষ পোস্ট ' . (int)floor($pl / 86400) . ' দিন আগে', 'st' => $pl !== null && $pl > 14 * 86400 ? 'slow' : 'ok']; } catch (\Throwable $e) {}
-      $k[] = ['l' => 'Google অ্যাড ও SEO', 'v' => null, 'u' => '', 's' => 'Google Ads / Search Console সার্ভারে যুক্ত নয়', 'st' => 'na'];
+      $gseo = null; // filled after the per-minute history below (its graph is Google's own daily clicks)
 
       // one sample a minute per card (last 60 kept in the cache) so every card can draw its real trend line
       try {
         $hist = Cache::get('lb.hist', []); if (!is_array($hist)) $hist = []; $m = intdiv($now, 60);
         if (($hist['m'] ?? 0) !== $m) { $hist['m'] = $m; foreach ($k as $c) if ($c['v'] !== null) { $hist['d'][$c['l']][] = $c['v']; $hist['d'][$c['l']] = array_slice($hist['d'][$c['l']], -60); } Cache::put('lb.hist', $hist, 86400); }
         foreach ($k as $i => $c) $k[$i]['h'] = array_values($hist['d'][$c['l']] ?? []);
+      } catch (\Throwable $e) {}
+      try { $g = GoogleSeo::data();
+        if ($g['state'] === 'ok') $k[] = ['l' => 'Google SEO (৭ দিন)', 'v' => (int)$g['clicks'], 'u' => 'ক্লিক', 's' => 'ইমপ্রেশন ' . number_format($g['impressions']) . ' · CTR ' . $g['ctr'] . '% · গড় অবস্থান ' . $g['position'], 'st' => 'ok', 'h' => $g['days'], 'fixed' => true, 'href' => '/admin/live-dashboard/google'];
+        elseif ($g['state'] === 'none') $k[] = ['l' => 'Google SEO', 'v' => null, 'u' => '', 's' => 'চাবি বসানো হয়নি। এখানে ক্লিক করে সংযোগ দিন।', 'st' => 'na', 'h' => [], 'fixed' => true, 'href' => '/admin/live-dashboard/google'];
+        else $k[] = ['l' => 'Google SEO', 'v' => null, 'u' => '', 's' => 'তথ্য আসছে না: ' . $g['msg'], 'st' => 'slow', 'h' => [], 'fixed' => true, 'href' => '/admin/live-dashboard/google'];
       } catch (\Throwable $e) {}
       $issues = []; try { foreach (array_slice(DeployHealth::active(), 0, 3) as $i) $issues[] = ['title' => $i['title'], 'severity' => $i['severity'], 'service' => $i['service'], 'action' => $i['action'], 'at' => $i['detected'] ?? '']; } catch (\Throwable $e) {}
       $disk = null; try { $f = @disk_free_space(storage_path()); $t = @disk_total_space(storage_path()); if ($f && $t) $disk = round($f / $t * 100, 1); } catch (\Throwable $e) {}

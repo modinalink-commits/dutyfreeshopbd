@@ -236,7 +236,7 @@ function build(nodes){
 // What happened before the page was opened comes from the server (one sample a minute).
 const HB={},LIVE={},SPN=48;let rtMs=null,lastSample=0;
 function sample(d){
-  d.kpi.forEach((k,i)=>{const key=k.l;if(!HB[key])HB[key]=(k.h||[]).slice(-SPN);
+  d.kpi.forEach((k,i)=>{const key=k.l;if(k.fixed){HB[key]=k.h||[];return}if(!HB[key])HB[key]=(k.h||[]).slice(-SPN);
     let v=k.v;if(i===0&&rtMs!=null){v=rtMs;if(!LIVE[key]){LIVE[key]=1;HB[key]=[]}}
     if(v==null)return;HB[key].push(v);if(HB[key].length>SPN)HB[key].shift()});
   lastSample=performance.now();
@@ -247,6 +247,7 @@ function drawSparks(now){
       const col=k.st==='dead'?'#ff4d4d':k.st==='slow'?'#f2b030':'#ff7a1a';
       if(n<2){el.innerHTML='<path d="M0 16H100" stroke="#232c42" stroke-width="1.5" fill="none" vector-effect="non-scaling-stroke"/>';if(dot)dot.hidden=true;return}
       const mn=Math.min(...h),mx=Math.max(...h),r=(mx-mn)||1,Y=v=>19-(v-mn)/r*15;
+      if(k.fixed){const L=h.map((v,j)=>(j?'L':'M')+(j*100/(n-1)).toFixed(2)+' '+Y(v).toFixed(2)).join('');el.innerHTML='<path d="'+L+'L100 22L0 22Z" fill="'+col+'" opacity=".15"/><path d="'+L+'" stroke="'+col+'" stroke-width="1.6" fill="none" vector-effect="non-scaling-stroke"/>';if(dot){dot.style.top=(Y(h[n-1])/22*100)+'%';dot.style.background=col;dot.hidden=false}return}
       const pts=[];for(let j=0;j<=n-2;j++)pts.push([100-(n-1-j)*step+(1-f)*step,Y(h[j])]);
       const cur=[100,Y(h[n-2])+(Y(h[n-1])-Y(h[n-2]))*f];pts.push(cur);
       const line=pts.map((q,j)=>(j?'L':'M')+q[0].toFixed(2)+' '+q[1].toFixed(2)).join('');
@@ -281,7 +282,7 @@ function apply(d){
   let h='',flow=true,wi=0;d.pipe.forEach((p,i)=>{if(!p){h+='<div class="gap"></div>';flow=false;return}if(i&&d.pipe[i-1])h+=flow?'<div class="wire w'+(++wi%3+1)+'"></div>':'<div class="gap" style="flex-basis:6px"></div>';
     h+='<div class="stg '+p.c+'"><b>'+(p.n==null?'–':num(p.n))+'</b><span>'+p.l+'</span></div>'});$('pipe').innerHTML=h;
   sample(d);if(rtMs!=null&&d.kpi[0]){d.kpi[0].v=rtMs;d.kpi[0].u='ms সাড়া (লাইভ)';d.kpi[0].st=d.kpi[0].st==='dead'?'dead':rtMs>1500?'slow':'ok'}
-  $('kp').innerHTML=d.kpi.map((k,i)=>'<div class="k '+(k.st==='ok'?'':k.st)+'"><div class="kl"><i></i>'+esc(k.l)+'</div><div class="kv">'+(k.v==null?'–':num(k.v))+'<small>'+esc(k.u)+'</small></div><div class="ks">'+esc(k.s)+'</div><div class="spw"><svg class="sp" id="sp'+i+'" viewBox="0 0 100 22" preserveAspectRatio="none"></svg><i class="sd" id="sd'+i+'" hidden></i></div></div>').join('');
+  $('kp').innerHTML=d.kpi.map((k,i)=>'<div class="k '+(k.st==='ok'?'':k.st)+'"'+(k.href?' style="cursor:pointer" onclick="window.open(\''+k.href+'\',\'_blank\')"':'')+'><div class="kl"><i></i>'+esc(k.l)+'</div><div class="kv">'+(k.v==null?'–':num(k.v))+'<small>'+esc(k.u)+'</small></div><div class="ks">'+esc(k.s)+'</div><div class="spw"><svg class="sp" id="sp'+i+'" viewBox="0 0 100 22" preserveAspectRatio="none"></svg><i class="sd" id="sd'+i+'" hidden></i></div></div>').join('');
   // staff
   const st=d.staff||{rows:[]};let idle=0;
   const offN=st.rows.filter(s=>s.state==='Offline').map(s=>esc(s.name));
