@@ -212,6 +212,12 @@ class LiveBoard {
       try { $pw = DB::table('posts')->where('published_at', '>=', now()->subDays(7))->count(); $pl = self::ago(DB::table('posts')->max('published_at')); $k[] = ['l' => 'ব্লগ', 'v' => (int)$pw, 'u' => 'পোস্ট এ সপ্তাহে', 's' => $pl === null ? 'কোনো পোস্ট নেই' : 'শেষ পোস্ট ' . (int)floor($pl / 86400) . ' দিন আগে', 'st' => $pl !== null && $pl > 14 * 86400 ? 'slow' : 'ok']; } catch (\Throwable $e) {}
       $k[] = ['l' => 'Google অ্যাড ও SEO', 'v' => null, 'u' => '', 's' => 'Google Ads / Search Console সার্ভারে যুক্ত নয়', 'st' => 'na'];
 
+      // one sample a minute per card (last 60 kept in the cache) so every card can draw its real trend line
+      try {
+        $hist = Cache::get('lb.hist', []); if (!is_array($hist)) $hist = []; $m = intdiv($now, 60);
+        if (($hist['m'] ?? 0) !== $m) { $hist['m'] = $m; foreach ($k as $c) if ($c['v'] !== null) { $hist['d'][$c['l']][] = $c['v']; $hist['d'][$c['l']] = array_slice($hist['d'][$c['l']], -60); } Cache::put('lb.hist', $hist, 86400); }
+        foreach ($k as $i => $c) $k[$i]['h'] = array_values($hist['d'][$c['l']] ?? []);
+      } catch (\Throwable $e) {}
       $issues = []; try { foreach (array_slice(DeployHealth::active(), 0, 3) as $i) $issues[] = ['title' => $i['title'], 'severity' => $i['severity'], 'service' => $i['service'], 'action' => $i['action'], 'at' => $i['detected'] ?? '']; } catch (\Throwable $e) {}
       $disk = null; try { $f = @disk_free_space(storage_path()); $t = @disk_total_space(storage_path()); if ($f && $t) $disk = round($f / $t * 100, 1); } catch (\Throwable $e) {}
       return ['at' => $now, 'time' => now('Asia/Dhaka')->format('H:i:s'), 'beat' => $beat, 'nodes' => array_values($out), 'kpi' => $k, 'pipe' => self::pipeline(), 'staff' => self::staff(), 'issues' => $issues, 'heal' => AutoHeal::summary(), 'disk' => $disk];
