@@ -1528,3 +1528,6 @@ public/adimg/reel-perfume.mp4
 public/adimg/reel-beauty.mp4
 public/adimg/reel-food.mp4
 public/adimg/reel-gadget.mp4
+app/Support/LiveBoard.php
+app/Http/Controllers/LiveBoardController.php
+resources/views/live_board.blade.php

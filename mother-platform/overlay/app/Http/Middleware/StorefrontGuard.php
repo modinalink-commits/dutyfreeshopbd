@@ -17,6 +17,7 @@ class StorefrontGuard {
       }
     }
     if ($r->isMethod('GET') && !$r->ajax() && $r->query->has('fbclid')) \App\Support\ArrivalCount::note($r); /* count Facebook ad arrivals on our side (unique by fbclid) */
+    \App\Support\LiveBoard::visit($r); /* Live Dashboard: unique visitors now / today (cache only) */
     /* Stored copies of public pages. Facebook / Meta crawlers get a 5-minute copy, anonymous visitors (no account / referral cookie) a 90-second copy, so a campaign rush does not run the whole page for every visitor. Only page routes, only GET, only 200 HTML. */
     $pgKey = null; $pgTtl = 0; $resp = null;
     try {

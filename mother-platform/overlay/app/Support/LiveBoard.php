@@ -1,0 +1,200 @@
+<?php
+namespace App\Support;
+
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+
+/**
+ * Live Dashboard (owner, 23 Nov 2026): one wall screen that shows every background activity of the platform, what is running,
+ * what is slow and what has stopped. Read-only. Every number comes from the database, the worker heartbeat or the cache;
+ * nothing is invented: a signal that does not exist is reported as "na" (no signal) instead of a guess.
+ */
+class LiveBoard {
+  /** Called from the worker loop when one of its tasks throws: the board shows that task in red with the first line of the error. */
+  public static function fail(string $name, \Throwable $e): void {
+    try { Cache::put('lb.fail.' . $name, ['t' => time(), 'm' => mb_substr($e->getMessage(), 0, 160)], 86400); } catch (\Throwable $x) {}
+  }
+
+  /** Storefront page view: counts unique visitors per 5-minute window and per day (cache only, no table). Bots are skipped. */
+  public static function visit(Request $r): void {
+    try {
+      if (!$r->isMethod('GET') || $r->ajax() || str_starts_with($r->path(), 'admin')) return;
+      $ua = (string)$r->userAgent(); if ($ua === '' || preg_match('/bot|crawl|spider|facebookexternalhit|meta-external|preview|monitor|curl|python|wget|headless|lighthouse/i', $ua)) return;
+      $ip = null; try { $ip = Capi::clientIp($r); } catch (\Throwable $e) {} $ip = $ip ?: (string)$r->ip();
+      $b = intdiv(time(), 300); $id = md5($ip . '|' . $ua); $d = now('Asia/Dhaka')->format('Ymd');
+      if (Cache::add('lb.v.' . $b . '.' . $id, 1, 600)) { if (!Cache::add('lb.vc.' . $b, 1, 1200)) Cache::increment('lb.vc.' . $b); }
+      if (Cache::add('lb.vd.' . $d . '.' . $id, 1, 90000)) { if (!Cache::add('lb.vdc.' . $d, 1, 180000)) Cache::increment('lb.vdc.' . $d); }
+    } catch (\Throwable $e) {}
+  }
+
+  private static function ago($v): ?int { try { return $v ? max(0, (int)now()->diffInSeconds(Carbon::parse($v), true)) : null; } catch (\Throwable $e) { return null; } }
+  private static function dayStart(): Carbon { return now('Asia/Dhaka')->startOfDay()->setTimezone(config('app.timezone', 'UTC')); }
+
+  /** Last activity (seconds ago) and today's count of one table. Null values when the table or column is not there. */
+  private static function flow(string $table, string $col = 'created_at', ?array $where = null): array {
+    try {
+      $q = DB::table($table)->where($col, '>=', now()->subDays(3)); if ($where) $q->where($where); // 3-day window keeps this one light query per signal
+      $r = $q->selectRaw("max($col) m, count(*) filter (where $col >= ?) n", [self::dayStart()])->first();
+      return ['last' => $r && $r->m ? self::ago($r->m) : 259200, 'today' => (int)($r->n ?? 0)];
+    } catch (\Throwable $e) { return ['last' => null, 'today' => null]; }
+  }
+
+  /** [key, group, icon, name, worker task names, flow (table, column, where), admin link] */
+  private static function nodes(): array {
+    return [
+      ['calls', 'a', '📞', 'কল লগ', [], ['call_logs', 'started_at'], '/admin/call-center'],
+      ['ordercall', 'a', '☎️', 'অর্ডার কনফার্ম কল', ['ordercall'], ['order_call_verifications'], '/admin/orders'],
+      ['voice', 'a', '🎙️', 'ভয়েস ক্যাম্পেইন', ['voice'], ['voice_call_attempts', 'started_at'], '/admin/voice'],
+      ['wacalls', 'a', '📲', 'WhatsApp কল', ['wacalls'], ['wa_calls'], '/admin/call-center'],
+      ['warec', 'a', '⏺️', 'কল রেকর্ডিং', ['warec'], ['wa_call_recordings'], '/admin/call-center'],
+      ['pbx', 'a', '🏢', 'PBX লাইন', ['pbxline', 'relaywatch'], null, '/admin/call-center'],
+      ['calldaily', 'a', '🗒️', 'দৈনিক কল রিপোর্ট', ['call-daily'], null, '/admin/call-center'],
+
+      ['capi', 'b', '🎯', 'Pixel / CAPI', [], null, '/admin/pixel'],
+      ['arrivals', 'b', '🧭', 'অ্যাড থেকে ভিজিটর', [], null, '/admin/ad-arrivals'],
+      ['winback', 'b', '🔁', 'Win-Back', ['winback'], ['winback_events'], '/admin/winback'],
+      ['referral', 'b', '🤝', 'রেফারেল', ['referral'], null, '/admin/referral'],
+      ['push', 'b', '🔔', 'পুশ নোটিফিকেশন', ['campaigns'], ['push_campaigns'], '/admin/push'],
+      ['bscamp', 'b', '🏆', 'বেস্ট সেলার ক্যাম্পেইন', ['bscamp'], null, '/admin/m/campaigns'],
+      ['appreward', 'b', '🎁', 'অ্যাপ রিওয়ার্ড', ['appreward'], null, '/admin/app-rewards'],
+      ['seo', 'b', '🔎', 'SEO অটো', ['seo', 'seoauto'], null, '/admin/seo'],
+
+      ['wa', 'c', '💬', 'WhatsApp', ['wa'], ['chat_threads', 'last_at', ['channel' => 'whatsapp']], '/admin/chat'],
+      ['fb', 'c', '📘', 'Facebook', [], ['chat_threads', 'last_at', ['channel' => 'facebook']], '/admin/chat'],
+      ['ig', 'c', '📸', 'Instagram', [], ['chat_threads', 'last_at', ['channel' => 'instagram']], '/admin/chat'],
+      ['web', 'c', '🖥️', 'ওয়েবসাইট চ্যাট', [], ['chat_threads', 'last_at', ['channel' => 'web']], '/admin/chat'],
+      ['reply', 'c', '✍️', 'পাঠানো উত্তর', [], ['chat_messages', 'created_at', ['dir' => 'out']], '/admin/chat'],
+      ['fbcomments', 'c', '↩️', 'কমেন্ট রিপ্লাই', ['fbcomments'], ['chat_comments'], '/admin/chat'],
+      ['aichat', 'c', '🤖', 'AI চ্যাট এজেন্ট', ['ainudge'], ['ai_activity_logs'], '/admin/chat'],
+      ['chatcare', 'c', '🧹', 'চ্যাট দেখভাল', ['chat', 'chatclose', 'chatbacklog', 'chatowner', 'chatstale', 'chatsilent'], null, '/admin/chat'],
+
+      ['orders', 'd', '🛒', 'নতুন অর্ডার', [], ['orders'], '/admin/orders'],
+      ['aiapprove', 'd', '✅', 'AI অ্যাপ্রুভ', ['aiverify'], ['order_approval_history', 'created_at', ['source' => 'AI']], '/admin/orders'],
+      ['manapprove', 'd', '🧑‍💼', 'ম্যানুয়াল অ্যাপ্রুভ', [], ['order_approval_history', 'created_at', ['source' => 'MANUAL']], '/admin/orders'],
+      ['sched', 'd', '⏰', 'শিডিউল অর্ডার', ['sched'], null, '/admin/orders'],
+      ['ordernotify', 'd', '📣', 'অর্ডার নোটিফাই', ['orders', 'cancel-notice'], null, '/admin/orders'],
+      ['orderwatch', 'd', '👁️', 'অর্ডার ওয়াচ', ['order-watch'], ['order_watch_reports'], '/admin/order-watch'],
+      ['incomplete', 'd', '🧺', 'অসম্পূর্ণ অর্ডার', ['incnudge'], ['incomplete_orders'], '/admin/orders'],
+      ['fraud', 'd', '🛡️', 'ফ্রড চেক', [], ['fraud_checks'], '/admin/fraud'],
+      ['scan', 'd', '🏷️', 'প্যাকেজিং স্ক্যান', [], ['order_scan_logs'], '/admin/orders'],
+
+      ['csync', 'e', '🔄', 'কুরিয়ার সিঙ্ক', [], null, '/admin/courier-dashboard'],
+      ['pathao', 'e', '🚚', 'Pathao', [], ['courier_events', 'happened_at', ['courier' => 'Pathao']], '/admin/courier'],
+      ['steadfast', 'e', '📦', 'Steadfast', [], ['courier_events', 'happened_at', ['courier' => 'Steadfast']], '/admin/steadfast'],
+      ['redx', 'e', '🟥', 'RedX', [], ['courier_events', 'happened_at', ['courier' => 'RedX']], '/admin/redx'],
+      ['carrybee', 'e', '🐝', 'Carrybee', [], ['courier_events', 'happened_at', ['courier' => 'Carrybee']], '/admin/carrybee'],
+
+      ['sms', 'f', '📱', 'SMS পাঠানো', ['sms-report'], ['sms_logs'], '/admin/sms'],
+      ['smscamp', 'f', '📨', 'SMS ক্যাম্পেইন', ['sms', 'smsauto'], ['sms_campaigns'], '/admin/sms-marketing'],
+      ['email', 'f', '✉️', 'ইমেইল', ['email'], ['mail_outbox', 'sent_at'], '/admin/email'],
+      ['waupdate', 'f', '🟢', 'WhatsApp অর্ডার আপডেট', ['wa-update'], ['order_whatsapp_events'], '/admin/orders'],
+      ['pubsms', 'f', '🛎️', 'পাবলিশ নোটিস SMS', ['pubsms'], null, '/admin/back-in-store-sms'],
+      ['supsms', 'f', '🏭', 'সাপ্লায়ার SMS', [], ['supplier_sms_log'], '/admin/purchase'],
+
+      ['reorder', 'g', '🧾', 'রিঅর্ডার অ্যালার্ট', ['reorder'], ['reorder_requests'], '/admin/purchase'],
+      ['restock', 'g', '📈', 'রিস্টক ফলো-আপ', ['restock'], ['restock_events'], '/admin/purchase'],
+      ['purchaselist', 'g', '📝', 'পারচেজ লিস্ট', ['purchase-list', 'procure'], null, '/admin/purchase'],
+      ['autoprice', 'g', '💲', 'অটো প্রাইস', ['autoprice'], null, '/admin/products'],
+      ['bsstock', 'g', '⭐', 'বেস্ট সেলার স্টক', ['bs-stock'], null, '/admin/products'],
+      ['aiimg', 'g', '🖼️', 'AI পণ্যের ছবি', ['aiimg'], ['ai_images'], '/admin/ai-images'],
+      ['single', 'g', '🚬', 'সিঙ্গেল প্যাকেট', ['spfollow'], null, '/admin/products'],
+      ['stock', 'g', '📉', 'স্টক মুভমেন্ট', [], ['stock_logs'], '/admin/inventory'],
+
+      ['website', 'i', '🌐', 'ওয়েবসাইট', [], null, '/admin/deploy'],
+      ['database', 'i', '🗄️', 'ডেটাবেস', [], null, '/admin/db-health'],
+      ['queue', 'i', '⚙️', 'কিউ', [], null, '/admin/deploy'],
+      ['scheduler', 'i', '💓', 'ওয়ার্কার', [], null, '/admin/deploy'],
+      ['ssl', 'i', '🔒', 'SSL', [], null, '/admin/deploy'],
+      ['deploy', 'i', '🚀', 'ডিপ্লয়', ['deploy'], ['deployments'], '/admin/deploy'],
+      ['svc', 'i', '💳', 'সার্ভিস ব্যালেন্স', ['svcbal'], null, '/admin/services'],
+      ['recurring', 'i', '🧮', 'রিকারিং খরচ', ['recurring'], null, '/admin/m/recurring-expenses'],
+      ['aibrief', 'i', '🧠', 'AI ব্রিফ ও মেমরি', ['aibrief', 'aimem'], ['ai_briefs'], '/admin/ai-brief'],
+      ['alerts', 'i', '🚨', 'অ্যালার্ট স্ক্যান', ['alerts', 'health'], null, '/admin/alerts/all'],
+    ];
+  }
+
+  private static function staff(): array {
+    return Cache::remember('lb.staff', 20, function () {
+      try {
+        $r = StaffLive::rows(); $out = [];
+        foreach ($r['rows'] as $s) $out[] = ['name' => $s['name'], 'state' => $s['state'], 'page' => $s['page'], 'work_min' => $s['work_min'], 'orders' => $s['orders'], 'calls' => $s['calls'], 'chats' => $s['chats'], 'waiting' => $s['waiting']];
+        return ['rows' => $out, 'unassigned' => (int)$r['unassigned']];
+      } catch (\Throwable $e) { return ['rows' => [], 'unassigned' => 0]; }
+    });
+  }
+
+  private static function pipeline(): array {
+    $c = []; try { $c = DB::table('orders')->whereIn('status', ['Pending', 'AI Order', 'Approved', 'Packaging', 'Shipment', 'Late Delivery', 'Return Pending'])->groupBy('status')->selectRaw('status, count(*) n')->pluck('n', 'status')->all(); } catch (\Throwable $e) {}
+    $ai = null; $man = null;
+    try { $a = DB::table('orders')->where('status', 'Approved')->groupBy('approval_source')->selectRaw('approval_source s, count(*) n')->pluck('n', 's')->all(); $ai = (int)($a['AI'] ?? 0); $man = array_sum($a) - $ai; } catch (\Throwable $e) {}
+    $log = fn(string $to) => (function () use ($to) { try { return (int)DB::table('order_status_logs')->where('to_status', $to)->where('created_at', '>=', self::dayStart())->distinct()->count('order_id'); } catch (\Throwable $e) { return null; } })();
+    return [
+      ['k' => 'pending', 'l' => 'পেন্ডিং', 'n' => (int)($c['Pending'] ?? 0) + (int)($c['AI Order'] ?? 0), 'c' => ''],
+      ['k' => 'ai', 'l' => 'AI অ্যাপ্রুভড', 'n' => $ai, 'c' => 'ai'],
+      ['k' => 'manual', 'l' => 'ম্যানুয়াল অ্যাপ্রুভড', 'n' => $man, 'c' => ''],
+      ['k' => 'pack', 'l' => 'প্যাকেজিং', 'n' => (int)($c['Packaging'] ?? 0), 'c' => ''],
+      ['k' => 'ship', 'l' => 'শিপমেন্ট', 'n' => (int)($c['Shipment'] ?? 0), 'c' => ''],
+      ['k' => 'done', 'l' => 'আজ ডেলিভার্ড', 'n' => $log('Delivered'), 'c' => 'done'],
+      null,
+      ['k' => 'late', 'l' => 'লেট ডেলিভারি', 'n' => (int)($c['Late Delivery'] ?? 0), 'c' => 'warn'],
+      ['k' => 'ret', 'l' => 'রিটার্ন পেন্ডিং', 'n' => (int)($c['Return Pending'] ?? 0), 'c' => 'bad'],
+      ['k' => 'cancel', 'l' => 'আজ ক্যান্সেল', 'n' => $log('Cancel'), 'c' => 'bad'],
+    ];
+  }
+
+  /** Whole board, cached 10 seconds so an always-open screen costs almost nothing. */
+  public static function data(): array {
+    return Cache::remember('lb.data', 10, function () {
+      $now = time(); $beat = null; try { $beat = DeployHealth::beatAge(); } catch (\Throwable $e) {}
+      $cells = []; try { foreach (DeployHealth::light()['cells'] as $c) $cells[$c['key']] = $c; } catch (\Throwable $e) {}
+      $out = [];
+      foreach (self::nodes() as [$key, $g, $ic, $name, $ticks, $fl, $href]) {
+        $n = ['k' => $key, 'g' => $g, 'i' => $ic, 'n' => $name, 'h' => $href, 's' => 'na', 't' => '', 'last' => null, 'today' => null, 'beat' => false];
+        if ($fl) { $f = self::flow($fl[0], $fl[1] ?? 'created_at', $fl[2] ?? null); $n['last'] = $f['last']; $n['today'] = $f['today']; if ($f['last'] !== null || $f['today'] !== null) $n['s'] = 'ok'; }
+        if ($ticks) {
+          $n['beat'] = true;
+          if ($beat === null) { $n['s'] = 'na'; $n['t'] = 'ওয়ার্কারের সংকেত নেই'; }
+          elseif ($beat > 600) { $n['s'] = 'dead'; $n['t'] = 'ওয়ার্কার বন্ধ'; }
+          elseif ($beat > 180) { $n['s'] = 'slow'; $n['t'] = 'ওয়ার্কার দেরি করছে'; }
+          else {
+            $n['s'] = 'ok';
+            foreach ($ticks as $tk) { $f = Cache::get('lb.fail.' . $tk); if (is_array($f)) { $age = $now - (int)$f['t']; if ($age <= 600) { $n['s'] = 'dead'; $n['t'] = 'ত্রুটি: ' . $f['m']; break; } if ($age <= 3600 && $n['s'] === 'ok') { $n['s'] = 'slow'; $n['t'] = 'কিছুক্ষণ আগে ত্রুটি: ' . $f['m']; } } }
+          }
+          if ($n['last'] === null) $n['last'] = $beat;
+        }
+        if (isset($cells[$key])) { $c = $cells[$key]; $n['s'] = ['ok' => 'ok', 'warn' => 'slow', 'fail' => 'dead', 'na' => 'na'][$c['state']] ?? 'na'; $n['t'] = $c['text'] . ($c['detail'] !== '' ? ' · ' . $c['detail'] : ''); if ($key === 'scheduler') $n['last'] = $beat; }
+        $out[$key] = $n;
+      }
+      // Pixel / CAPI: last 30 server events kept by Capi::log
+      try {
+        $a = json_decode((string)DB::table('settings')->where('key', 'capi_log')->value('value'), true) ?: [];
+        if ($a) { $bad = count(array_filter($a, fn($x) => empty($x['ok']))); $lt = null; try { $lt = Carbon::createFromFormat('d M H:i:s', (string)$a[0]['t'], 'Asia/Dhaka'); } catch (\Throwable $e) {}
+          $out['capi']['last'] = $lt ? max(0, $now - $lt->getTimestamp()) : null; $out['capi']['s'] = empty($a[0]['ok']) ? 'dead' : ($bad > 3 ? 'slow' : 'ok'); $out['capi']['t'] = 'শেষ ' . count($a) . 'টি ইভেন্টে ব্যর্থ ' . $bad . 'টি'; }
+      } catch (\Throwable $e) {}
+      try { $d = now('Asia/Dhaka'); $out['arrivals']['today'] = (int)Cache::get('arr.d.' . $d->format('Y-m-d'), 0); $out['arrivals']['s'] = 'ok'; $out['arrivals']['t'] = 'এই ঘণ্টায় ' . (int)Cache::get('arr.h.' . $d->format('Y-m-d') . '-' . $d->format('H'), 0) . ' জন'; } catch (\Throwable $e) {}
+      try { $v = Cache::get('courier.last_sync'); $ag = self::ago($v); $out['csync']['last'] = $ag; if ($ag !== null) { $out['csync']['s'] = $ag > 7200 ? 'dead' : ($ag > 2400 ? 'slow' : 'ok'); $out['csync']['t'] = $ag > 2400 ? 'কুরিয়ার সিঙ্ক অনেকক্ষণ চলেনি' : ''; } } catch (\Throwable $e) {}
+      try {
+        $bad = []; foreach (DB::table('service_accounts')->get() as $r) { $st = ServiceBalances::state($r); if (in_array($st[0], ['low', 'expired', 'failed'], true)) $bad[] = ($r->name ?? 'Service') . ' (' . $st[1] . ')'; }
+        if ($bad && $out['svc']['s'] === 'ok') { $out['svc']['s'] = 'slow'; $out['svc']['t'] = implode(', ', array_slice($bad, 0, 4)); }
+      } catch (\Throwable $e) {}
+
+      // headline cards
+      $ds = self::dayStart(); $k = [];
+      $web = $cells['website'] ?? null; $k[] = ['l' => 'ওয়েবসাইট স্পিড', 'v' => $web && $web['state'] === 'ok' ? (int)$web['detail'] : null, 'u' => 'ms সার্ভার সাড়া', 's' => $web ? ($web['state'] === 'ok' ? 'সাইট চালু' : 'সাইট সাড়া দিচ্ছে না') : '', 'st' => $web ? ($web['state'] === 'ok' ? ((int)$web['detail'] > 1500 ? 'slow' : 'ok') : 'dead') : 'na'];
+      $b = intdiv($now, 300); $fr = ($now % 300) / 300; $vis = (int)round((int)Cache::get('lb.vc.' . $b, 0) + (int)Cache::get('lb.vc.' . ($b - 1), 0) * (1 - $fr));
+      $k[] = ['l' => 'এখন সাইটে ভিজিটর', 'v' => $vis, 'u' => 'জন (শেষ ৫ মিনিট)', 's' => 'আজ মোট ' . (int)Cache::get('lb.vdc.' . now('Asia/Dhaka')->format('Ymd'), 0) . ' জন', 'st' => 'ok'];
+      try { $o = DB::table('orders')->where('created_at', '>=', $ds)->whereNotIn('status', ['Cancel', 'Incomplete'])->selectRaw('count(*) n, coalesce(sum(total),0) t')->first(); $k[] = ['l' => 'আজকের বিক্রি', 'v' => (int)round($o->t), 'u' => 'টাকা', 's' => 'অর্ডার ' . (int)$o->n . 'টি (ক্যান্সেল বাদে)', 'st' => 'ok']; } catch (\Throwable $e) { $k[] = ['l' => 'আজকের বিক্রি', 'v' => null, 'u' => '', 's' => '', 'st' => 'na']; }
+      try { $w = (int)DB::table('chat_threads')->where('awaiting_reply', true)->where('status', '!=', 'resolved')->where('last_at', '>=', now()->subHours(22))->count(); $k[] = ['l' => 'উত্তরের অপেক্ষায় চ্যাট', 'v' => $w, 'u' => 'টি', 's' => 'গত ২২ ঘণ্টার', 'st' => $w > 15 ? 'slow' : 'ok']; } catch (\Throwable $e) {}
+      $c = $out['capi']; $k[] = ['l' => 'Meta (Pixel / CAPI)', 'v' => $out['arrivals']['today'], 'u' => 'জন অ্যাড থেকে এসেছে', 's' => $c['t'] ?: 'ইভেন্টের তথ্য নেই', 'st' => $c['s']];
+      try { $dp = DB::table('deployments')->where('created_at', '>=', $ds)->count(); $ld = DB::table('deployments')->orderByDesc('id')->first(['status', 'created_at']); $k[] = ['l' => 'ডিপ্লয়মেন্ট', 'v' => (int)$dp, 'u' => 'টি আজ', 's' => $ld ? 'শেষটা: ' . $ld->status : '', 'st' => $ld && in_array($ld->status, ['Failed', 'Rolled Back'], true) ? 'slow' : 'ok']; } catch (\Throwable $e) {}
+      try { $pw = DB::table('posts')->where('published_at', '>=', now()->subDays(7))->count(); $pl = self::ago(DB::table('posts')->max('published_at')); $k[] = ['l' => 'ব্লগ', 'v' => (int)$pw, 'u' => 'পোস্ট এ সপ্তাহে', 's' => $pl === null ? 'কোনো পোস্ট নেই' : 'শেষ পোস্ট ' . (int)floor($pl / 86400) . ' দিন আগে', 'st' => $pl !== null && $pl > 14 * 86400 ? 'slow' : 'ok']; } catch (\Throwable $e) {}
+      $k[] = ['l' => 'Google অ্যাড ও SEO', 'v' => null, 'u' => '', 's' => 'Google Ads / Search Console সার্ভারে যুক্ত নয়', 'st' => 'na'];
+
+      $issues = []; try { foreach (array_slice(DeployHealth::active(), 0, 6) as $i) $issues[] = ['title' => $i['title'], 'severity' => $i['severity'], 'service' => $i['service'], 'action' => $i['action'], 'at' => $i['detected'] ?? '']; } catch (\Throwable $e) {}
+      $disk = null; try { $f = @disk_free_space(storage_path()); $t = @disk_total_space(storage_path()); if ($f && $t) $disk = round($f / $t * 100, 1); } catch (\Throwable $e) {}
+      return ['at' => $now, 'time' => now('Asia/Dhaka')->format('H:i:s'), 'beat' => $beat, 'nodes' => array_values($out), 'kpi' => $k, 'pipe' => self::pipeline(), 'staff' => self::staff(), 'issues' => $issues, 'disk' => $disk];
+    });
+  }
+}
