@@ -1520,3 +1520,6 @@ database/migrations/2026_11_22_170000_service_portals.php
 app/Support/ServiceBalances.php
 app/Http/Controllers/ServiceBalanceController.php
 resources/views/service_balances.blade.php
+public/adimg/nov26-vip-15.jpg
+public/adimg/nov26-welcome-back-5.jpg
+public/adimg/nov26-cart-picks.jpg
