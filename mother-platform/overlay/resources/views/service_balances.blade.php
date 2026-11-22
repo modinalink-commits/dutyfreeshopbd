@@ -15,7 +15,7 @@
 <tr style="{{ $r->active ? '' : 'opacity:.5' }}"><td><b>{{ $r->name }}</b><br><small class="mu">{{ $r->category }}</small></td><td>{{ $r->kind === 'auto' ? 'Automatic' : 'Typed in' }}</td>
 <td>{{ $r->balance !== null ? number_format((float)$r->balance, 2).' '.$r->unit : '—' }}</td>
 <td>@if($u['perDay'] === null){{ $r->balance !== null ? 'Collecting…' : '—' }}@if($r->balance !== null)<br><small class="mu">needs 12 h of readings</small>@endif @elseif($u['perDay'] <= 0)No use<br><small class="mu">since {{ $u['since'] }}</small>@else{{ number_format($u['perDay'], 2).' '.$r->unit }}/day<br><small class="mu">average since {{ $u['since'] }}</small>@endif</td>
-<td>@if($u['days'] !== null)~{{ $u['days'] }} day(s)<br><small class="mu">till {{ now('Asia/Dhaka')->addDays($u['days'])->format('d M Y') }}</small>@else—@endif</td>
+<td>@if($r->code === 'bdcourier')<small class="mu">resets daily</small>@elseif($u['days'] !== null)~{{ $u['days'] }} day(s)<br><small class="mu">till {{ now('Asia/Dhaka')->addDays($u['days'])->format('d M Y') }}</small>@else—@endif</td>
 <td>{{ $r->low_at !== null ? number_format((float)$r->low_at, 2).' '.$r->unit : '—' }}</td>
 <td>{{ $r->expires_on ? \Carbon\Carbon::parse($r->expires_on)->format('d M Y') : '—' }}@if($days !== null)<br><small class="mu">{{ $days < 0 ? abs($days).' day(s) ago' : 'in '.$days.' day(s)' }}</small>@endif</td>
 <td><span class="pill {{ $s }}">{{ $lab[$s] ?? $l }}</span></td><td><small class="mu">{{ $dt($r->checked_at) }}@if($r->last_text)<br>{{ $r->last_text }}@endif</small></td>

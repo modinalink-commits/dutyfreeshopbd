@@ -23,6 +23,18 @@ class ServiceBalances {
         $n = preg_replace('/[^0-9.\-]/', '', (string)$b['text']);
         return $n === '' ? ['ok' => false, 'balance' => null, 'expires' => null, 'text' => 'Unreadable answer: ' . mb_substr((string)$b['text'], 0, 120)] : ['ok' => true, 'balance' => (float)$n, 'expires' => null, 'text' => 'Read from provider'];
       }
+      if ($code === 'bdcourier') { // BDCourier "My Plan": plan expiry and the checks left today (the allowance resets every day)
+        $k = trim((string)Sms::secret('fc_bdcourier_key'));
+        if ($k === '') return ['ok' => false, 'balance' => null, 'expires' => null, 'text' => 'API key not set'];
+        $r = Http::timeout(15)->withToken($k)->acceptJson()->get('https://api.bdcourier.com/my-plan');
+        $j = $r->json(); $dt = is_array($j) ? ($j['data'] ?? null) : null;
+        if ($r->status() === 401 || $r->status() === 403) return ['ok' => false, 'balance' => null, 'expires' => null, 'text' => 'BDCourier did not accept the key (HTTP ' . $r->status() . ')'];
+        if (!$r->ok() || !is_array($dt)) return ['ok' => false, 'balance' => null, 'expires' => null, 'text' => 'No readable answer (HTTP ' . $r->status() . ')'];
+        if (empty($dt['has_subscription'])) return ['ok' => true, 'balance' => (float)((int)($dt['remaining_free_calls'] ?? 0)), 'expires' => null, 'text' => 'No paid plan: free checks only'];
+        $left = (int)($dt['remaining_free_calls'] ?? 0) + (int)($dt['remaining_paid_calls'] ?? 0);
+        $exp = !empty($dt['expires_at']) ? substr((string)$dt['expires_at'], 0, 10) : (!empty($dt['next_due_date']) ? (string)$dt['next_due_date'] : null);
+        return ['ok' => true, 'balance' => (float)$left, 'expires' => $exp, 'text' => ($dt['plan_name'] ?? 'Plan') . ' (' . ($dt['status'] ?? '?') . '): checks left today ' . $left . ', resets daily'];
+      }
       if ($code === 'tok_fc_pathao' || $code === 'tok_fc_redx') { // API tokens: the expiry date is inside the token (JWT "exp"), nothing is guessed
         $tok = $code === 'tok_fc_pathao' ? trim((string)Sms::secret('fc_pathao_token')) : FraudCheck::redxToken();
         $tok = preg_replace('/^bearer\s+/i', '', $tok);
