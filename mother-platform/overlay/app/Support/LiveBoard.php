@@ -160,6 +160,30 @@ class LiveBoard {
     ]);
   }
 
+  /**
+   * Server vitals read from inside the app container: CPU load against the number of cores, memory in use, disk in use, database connections
+   * and application errors written to the log in the last 15 minutes. Each one carries its own state so anything wrong shows on the board at once.
+   */
+  private static function sys(): array {
+    $v = []; $lv = fn($x, $warn, $bad) => $x === null ? 'na' : ($x >= $bad ? 'dead' : ($x >= $warn ? 'slow' : 'ok'));
+    try { $la = function_exists('sys_getloadavg') ? sys_getloadavg() : null; $cores = max(1, (int)preg_match_all('/^processor\s*:/m', (string)@file_get_contents('/proc/cpuinfo')));
+      $r = $la ? round($la[0] / $cores * 100) : null; $v[] = ['k' => 'cpu', 'l' => 'CPU', 'v' => $r === null ? null : $r . '%', 's' => $lv($r, 150, 300), 't' => $la ? 'লোড ' . round($la[0], 2) . ' / ' . $cores . ' কোর' : '', 'fix' => 'সার্ভারে চাপ বেশি। Server Speed পেজ ও চলমান ক্যাম্পেইন দেখুন।']; } catch (\Throwable $e) {}
+    try { $m = (string)@file_get_contents('/proc/meminfo'); $tot = preg_match('/MemTotal:\s+(\d+)/', $m, $a) ? (int)$a[1] : 0; $av = preg_match('/MemAvailable:\s+(\d+)/', $m, $b) ? (int)$b[1] : 0;
+      $r = $tot ? round(($tot - $av) / $tot * 100) : null; $v[] = ['k' => 'ram', 'l' => 'RAM', 'v' => $r === null ? null : $r . '%', 's' => $lv($r, 90, 97), 't' => $tot ? round(($tot - $av) / 1048576, 1) . ' / ' . round($tot / 1048576, 1) . ' GB' : '', 'fix' => 'মেমরি প্রায় শেষ। সার্ভারের RAM বাড়ানো বা ভারী কাজ কমানো দরকার।']; } catch (\Throwable $e) {}
+    try { $f = @disk_free_space(storage_path()); $t = @disk_total_space(storage_path()); $r = ($f && $t) ? round(($t - $f) / $t * 100) : null;
+      $v[] = ['k' => 'disk', 'l' => 'ডিস্ক', 'v' => $r === null ? null : $r . '%', 's' => $lv($r, 88, 95), 't' => $t ? round(($t - $f) / 1073741824, 1) . ' / ' . round($t / 1073741824, 1) . ' GB' : '', 'fix' => 'ডিস্ক ভরে আসছে। পুরোনো লগ, আপলোড বা পুরোনো রিলিজ মুছতে হবে।']; } catch (\Throwable $e) {}
+    try { $c = DB::selectOne("select count(*) n, (select setting::int from pg_settings where name = 'max_connections') mx from pg_stat_activity"); $r = $c && $c->mx ? round($c->n / $c->mx * 100) : null;
+      $v[] = ['k' => 'db', 'l' => 'DB সংযোগ', 'v' => $c ? (int)$c->n : null, 's' => $lv($r, 70, 90), 't' => $c ? 'সর্বোচ্চ ' . (int)$c->mx : '', 'fix' => 'ডেটাবেসে সংযোগ বেশি। DB Health পেজ দেখুন।']; } catch (\Throwable $e) {}
+    try {
+      $n = 0; $last = ''; $file = storage_path('logs/laravel.log');
+      if (is_file($file)) { $sz = filesize($file); $fh = fopen($file, 'r'); if ($fh) { fseek($fh, max(0, $sz - 262144)); $buf = (string)fread($fh, 262144); fclose($fh);
+        $cut = now()->subMinutes(15)->format('Y-m-d H:i:s');
+        if (preg_match_all('/^\[(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d)\] \w+\.(ERROR|CRITICAL|ALERT|EMERGENCY): (.{0,140})/m', $buf, $mm, PREG_SET_ORDER)) foreach ($mm as $x) if ($x[1] >= $cut) { $n++; $last = $x[3]; } } }
+      $v[] = ['k' => 'err', 'l' => 'ত্রুটি (১৫ মি.)', 'v' => $n, 's' => $lv($n, 5, 30), 't' => $last, 'fix' => 'অ্যাপে ত্রুটি হচ্ছে। Error Log পেজ খুলে প্রথম লাইন দেখুন।'];
+    } catch (\Throwable $e) {}
+    return $v;
+  }
+
   /** Whole board, cached 10 seconds so an always-open screen costs almost nothing. */
   public static function data(): array {
     return Cache::remember('lb.data', 10, function () {
@@ -220,7 +244,7 @@ class LiveBoard {
       } catch (\Throwable $e) {}
       $issues = []; try { foreach (array_slice(DeployHealth::active(), 0, 3) as $i) $issues[] = ['title' => $i['title'], 'severity' => $i['severity'], 'service' => $i['service'], 'action' => $i['action'], 'at' => $i['detected'] ?? '']; } catch (\Throwable $e) {}
       $disk = null; try { $f = @disk_free_space(storage_path()); $t = @disk_total_space(storage_path()); if ($f && $t) $disk = round($f / $t * 100, 1); } catch (\Throwable $e) {}
-      return ['at' => $now, 'time' => now('Asia/Dhaka')->format('H:i:s'), 'beat' => $beat, 'nodes' => array_values($out), 'kpi' => $k, 'pipe' => self::pipeline(), 'staff' => self::staff(), 'issues' => $issues, 'heal' => AutoHeal::summary(), 'disk' => $disk];
+      return ['at' => $now, 'time' => now('Asia/Dhaka')->format('H:i:s'), 'beat' => $beat, 'nodes' => array_values($out), 'kpi' => $k, 'pipe' => self::pipeline(), 'staff' => self::staff(), 'issues' => $issues, 'heal' => AutoHeal::summary(), 'sys' => self::sys(), 'disk' => $disk];
     });
   }
 }
