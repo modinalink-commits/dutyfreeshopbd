@@ -73,7 +73,7 @@ body.fit .em{width:30px;height:30px}.tn{font-size:11.5px;font-weight:600;line-he
 @keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(255,77,77,0)}50%{box-shadow:0 0 14px 1px rgba(255,77,77,.55)}}
 .hub{grid-area:h;position:relative;z-index:1;display:grid;align-content:center;justify-items:center;gap:6px;text-align:center;padding:14px 10px;border:1px solid #3a4c8a;border-radius:12px;background:radial-gradient(circle at 50% 38%,#1d2a52,#111a33 70%)}
 .core{width:112px;height:112px;border-radius:50%;border:3px solid #6f86ff;position:relative;box-shadow:0 0 26px rgba(111,134,255,.55)}
-.core img{width:100%;height:100%;border-radius:50%;object-fit:cover;object-position:50% 22%;display:block}
+.core img{width:100%;height:100%;border-radius:50%;object-fit:cover;object-position:50% 30%;display:block}
 .core .halo{position:absolute;inset:-14px;border-radius:50%;border:1px dashed rgba(111,134,255,.55);animation:spin 18s linear infinite}
 .core .halo::before,.core .halo::after{content:"";position:absolute;width:7px;height:7px;border-radius:50%;background:#9fb0ff;box-shadow:0 0 10px #9fb0ff;top:-4px;left:50%}
 .core .halo::after{top:auto;bottom:-4px;background:var(--accent);box-shadow:0 0 10px var(--accent)}
@@ -134,7 +134,7 @@ body.fit .rail .att{flex:1 1 0;min-height:0}
 <div class="sec">সব কার্যক্রম</div>
 <div class="main">
   <div class="map" id="map"><canvas id="cv"></canvas>
-    <section class="hub" id="hub"><div class="core"><span class="halo"></span><img src="/live-board-owner.jpg" alt="Mohammad Faruk" onerror="this.hidden=true"><span class="score" id="score">…</span></div><b>মাদার কমার্স</b><span class="who">Mohammad Faruk · কেন্দ্রীয় নিয়ন্ত্রণ</span><small id="hubsub">তথ্য আসছে</small><small id="hubbeat"></small></section>
+    <section class="hub" id="hub"><div class="core"><span class="halo"></span><img src="/live-board-avatar.jpg" alt="Mohammad Faruk" onerror="this.hidden=true"><span class="score" id="score">…</span></div><b>মাদার কমার্স</b><span class="who">Mohammad Faruk · কেন্দ্রীয় নিয়ন্ত্রণ</span><small id="hubsub">তথ্য আসছে</small><small id="hubbeat"></small></section>
   </div>
   <aside class="rail">
     <section class="box att" id="attbox"><h2><span>এখন নজর দিন</span><span id="attn"></span></h2><div id="att"></div></section>
