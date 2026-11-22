@@ -1524,3 +1524,7 @@ resources/views/service_balances.blade.php
 public/adimg/nov26-vip-15.jpg
 public/adimg/nov26-welcome-back-5.jpg
 public/adimg/nov26-cart-picks.jpg
+public/adimg/reel-perfume.mp4
+public/adimg/reel-beauty.mp4
+public/adimg/reel-food.mp4
+public/adimg/reel-gadget.mp4
