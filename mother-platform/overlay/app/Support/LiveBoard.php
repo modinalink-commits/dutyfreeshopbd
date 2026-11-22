@@ -61,6 +61,7 @@ class LiveBoard {
       ['bscamp', 'b', '🏆', 'বেস্ট সেলার ক্যাম্পেইন', ['bscamp'], null, '/admin/m/campaigns'],
       ['appreward', 'b', '🎁', 'অ্যাপ রিওয়ার্ড', ['appreward'], null, '/admin/app-rewards'],
       ['seo', 'b', '🔎', 'SEO অটো', ['seo', 'seoauto'], null, '/admin/seo'],
+      ['autoblog', 'b', '✒️', 'দৈনিক ব্লগ পোস্ট', ['autoblog'], ['posts', 'published_at'], '/admin/m/posts'],
 
       ['wa', 'c', '💬', 'WhatsApp', ['wa'], ['chat_threads', 'last_at', ['channel' => 'whatsapp']], '/admin/chat'],
       ['fb', 'c', '📘', 'Facebook', [], ['chat_threads', 'last_at', ['channel' => 'facebook']], '/admin/chat'],

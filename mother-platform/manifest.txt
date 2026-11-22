@@ -1536,3 +1536,4 @@ public/live-board-avatar.jpg
 public/live-board-owner.jpg
 app/Support/GoogleSeo.php
 resources/views/live_board_google.blade.php
+app/Support/AutoBlog.php

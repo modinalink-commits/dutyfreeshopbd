@@ -67,6 +67,7 @@ class MotherPushWorker extends Command
     try { if (\App\Support\AutoHeal::begin('aibrief')) { \App\Support\AiBrief::tick(); } } catch (\Throwable $e) { $this->error('aibrief: ' . $e->getMessage()); \App\Support\LiveBoard::fail('aibrief', $e); }
     try { if (\App\Support\AutoHeal::begin('aiimg')) { \App\Support\AiImageAuto::tick(); } } catch (\Throwable $e) { $this->error('aiimg: ' . $e->getMessage()); \App\Support\LiveBoard::fail('aiimg', $e); }
     try { if (\App\Support\AutoHeal::begin('aiverify')) { \App\Support\AiVerify::rerunStale(); } } catch (\Throwable $e) { $this->error('aiverify: ' . $e->getMessage()); \App\Support\LiveBoard::fail('aiverify', $e); }
+    try { if (\App\Support\AutoHeal::begin('autoblog')) { \App\Support\AutoBlog::tick(); } } catch (\Throwable $e) { $this->error('autoblog: ' . $e->getMessage()); \App\Support\LiveBoard::fail('autoblog', $e); }
     try { if (\App\Support\AutoHeal::begin('ainudge')) { \App\Support\AiNudge::tick(); } } catch (\Throwable $e) { $this->error('ainudge: ' . $e->getMessage()); \App\Support\LiveBoard::fail('ainudge', $e); }
     try { if (\App\Support\AutoHeal::begin('incnudge')) { \App\Support\IncompleteNudge::tick(); } } catch (\Throwable $e) { $this->error('incnudge: ' . $e->getMessage()); \App\Support\LiveBoard::fail('incnudge', $e); }
     try { if (\App\Support\AutoHeal::begin('reorder')) { \App\Support\Reorder::tick(); } } catch (\Throwable $e) { $this->error('reorder: ' . $e->getMessage()); \App\Support\LiveBoard::fail('reorder', $e); }

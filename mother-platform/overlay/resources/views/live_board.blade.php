@@ -214,7 +214,7 @@ calc:'M6 3h12v18H6zM9 7h6M9 12h.01M12 12h.01M15 12h.01M9 16h.01M12 16h.01M15 16h
 chip:'M8 8h8v8H8zM5 5h14v14H5zM10 2v3M14 2v3M10 19v3M14 19v3M2 10h3M2 14h3M19 10h3M19 14h3',
 alert:'M12 3l10 18H2zM12 10v5M12 18h.01'};
 const IK={calls:'phone',ordercall:'check',voice:'mic',wacalls:'mobile',warec:'rec',pbx:'building',calldaily:'doc',
-capi:'target',arrivals:'compass',winback:'refresh',referral:'users',push:'bell',bscamp:'trophy',appreward:'gift',seo:'search',
+capi:'target',arrivals:'compass',winback:'refresh',referral:'users',push:'bell',bscamp:'trophy',appreward:'gift',seo:'search',autoblog:'pen',
 wa:'chat',fb:'chat2',ig:'image',web:'monitor',reply:'pen',fbcomments:'reply',aichat:'bot',chatcare:'spark',
 orders:'cart',aiapprove:'chip',manapprove:'user',sched:'clock',ordernotify:'mega',orderwatch:'eye',incomplete:'basket',fraud:'shield',scan:'scan',
 csync:'refresh',pathao:'truck',steadfast:'box',redx:'send',carrybee:'truck',
