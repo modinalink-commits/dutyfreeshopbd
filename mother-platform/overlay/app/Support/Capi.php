@@ -57,8 +57,17 @@ class Capi
     return $u;
   }
 
+  /** Only the real storefront domains may send Pixel/CAPI events; localhost, staging and unknown hosts are ignored. Override with the optional pixel_hosts setting (comma separated). */
+  public static function hostAllowed(string $host): bool {
+    $host = strtolower(trim($host)); if ($host === '') return false;
+    $set = trim((string)(\App\Http\Controllers\StoreController::set()['pixel_hosts'] ?? '')) ?: 'dutyfreebd.com,dutyfreeshopbd.com';
+    foreach (array_filter(array_map('trim', explode(',', strtolower($set)))) as $d) if ($host === $d || str_ends_with($host, '.' . $d)) return true;
+    return false;
+  }
+
   public static function send(string $event, string $eventId, array $user, array $custom, string $url, ?int $ts = null, bool $test = false, string $source = 'website'): array {
     $tok = Sms::secret('meta_capi_token'); $pid = self::pixelId(); if (!$tok || $pid === '') return ['ok' => false, 'msg' => 'CAPI not configured'];
+    if ($source === 'website' && !self::hostAllowed((string)parse_url($url, PHP_URL_HOST))) return ['ok' => false, 'msg' => 'skipped: host not allowed'];
     $body = ['data' => [['event_name' => $event, 'event_time' => $ts ?: time(), 'event_id' => $eventId, 'action_source' => $source, 'user_data' => $user, 'custom_data' => $custom] + ($source === 'website' ? ['event_source_url' => $url] : [])], 'access_token' => $tok];
     $tc = Sms::secret('meta_capi_test'); if ($test && $tc) $body['test_event_code'] = $tc;
     try { $r = Http::timeout(6)->asJson()->post('https://graph.facebook.com/' . self::VER . '/' . $pid . '/events', $body); $ok = $r->successful(); $msg = $ok ? 'received ' . ($r->json('events_received') ?? '?') : mb_substr((string)($r->json('error.message') ?? $r->body()), 0, 180); }
