@@ -20,7 +20,7 @@ class MotherSyncFeed extends Command {
       'other'=>['others','Baby Care and Others','বেবি কেয়ার, পেইন রিলিফ ও রুম স্প্রে | DutyFree BD','ইমপোর্টেড বেবি কেয়ার, পেইন রিলিফ ও রুম স্প্রে। দাম দেখুন, অর্ডার করুন।'],
     ];
   }
-  public function handle() {
+  public function handle() { \App\Support\AutoHeal::beat('sync-feed');
     // Owner incident 14 Nov 2026: this import belongs to the move from the old site. Once the catalogue lives here it must never touch it again.
     // The fallback to the saved old feed file used to run whenever our own feed could not be fetched (a restart, a slow minute): it overwrote names, prices and categories with the old file's values
     // and unpublished every product the old file does not list - in-stock cigarettes disappeared from the store with no lock and no log. The import now runs only on an empty catalogue (first install).

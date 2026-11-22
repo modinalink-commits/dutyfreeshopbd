@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 class MotherGuard extends Command {
   protected $signature = 'mother:guard';
   protected $description = 'Re-assert standing settings (WhatsApp order confirmation on approval, AI chat always on) and repair product images';
-  public function handle(): int {
+  public function handle(): int { \App\Support\AutoHeal::beat('guard'); \App\Support\AutoHeal::watchdog('cli');
     $fixed = [];
     try {
       // 1. WhatsApp order confirmation: sent the moment an order is approved, by AI or by staff

@@ -15,6 +15,7 @@ class LiveBoard {
   /** Called from the worker loop when one of its tasks throws: the board shows that task in red with the first line of the error. */
   public static function fail(string $name, \Throwable $e): void {
     try { Cache::put('lb.fail.' . $name, ['t' => time(), 'm' => mb_substr($e->getMessage(), 0, 160)], 86400); } catch (\Throwable $x) {}
+    try { AutoHeal::failed($name, mb_substr($e->getMessage(), 0, 160)); } catch (\Throwable $x) {}
   }
 
   /** Storefront page view: counts unique visitors per 5-minute window and per day (cache only, no table). Bots are skipped. */
@@ -125,28 +126,44 @@ class LiveBoard {
     });
   }
 
+  /**
+   * Order pipeline. The counts are the SAME query the Orders page uses for its status tabs (all orders grouped by status, Incomplete = open
+   * incomplete orders), so the two screens always agree. Approved is shown split by approval source and never merged (AI / MANUAL / other).
+   */
   private static function pipeline(): array {
-    $c = []; try { $c = DB::table('orders')->whereIn('status', ['Pending', 'AI Order', 'Approved', 'Packaging', 'Shipment', 'Late Delivery', 'Return Pending'])->groupBy('status')->selectRaw('status, count(*) n')->pluck('n', 'status')->all(); } catch (\Throwable $e) {}
-    $ai = null; $man = null;
-    try { $a = DB::table('orders')->where('status', 'Approved')->groupBy('approval_source')->selectRaw('approval_source s, count(*) n')->pluck('n', 's')->all(); $ai = (int)($a['AI'] ?? 0); $man = array_sum($a) - $ai; } catch (\Throwable $e) {}
+    $c = []; try { $c = DB::table('orders')->groupBy('status')->selectRaw('status, count(*) n')->pluck('n', 'status')->all(); } catch (\Throwable $e) {}
+    $inc = null; try { $inc = (int)DB::table('incomplete_orders')->where('status', 'open')->count(); } catch (\Throwable $e) {}
+    $ai = null; $man = null; $oth = 0;
+    try { $a = DB::table('orders')->where('status', 'Approved')->groupBy('approval_source')->selectRaw("coalesce(approval_source, '') s, count(*) n")->pluck('n', 's')->all(); $ai = (int)($a['AI'] ?? 0); $man = (int)($a['MANUAL'] ?? 0); $oth = array_sum($a) - $ai - $man; } catch (\Throwable $e) {}
     $log = fn(string $to) => (function () use ($to) { try { return (int)DB::table('order_status_logs')->where('to_status', $to)->where('created_at', '>=', self::dayStart())->distinct()->count('order_id'); } catch (\Throwable $e) { return null; } })();
-    return [
-      ['k' => 'pending', 'l' => 'পেন্ডিং', 'n' => (int)($c['Pending'] ?? 0) + (int)($c['AI Order'] ?? 0), 'c' => ''],
+    $n = fn(string $st) => (int)($c[$st] ?? 0);
+    $p = [
+      ['k' => 'new', 'l' => 'নিউ অর্ডার', 'n' => $n('New'), 'c' => 'new'],
+      ['k' => 'inc', 'l' => 'অসম্পূর্ণ', 'n' => $inc, 'c' => ''],
+      ['k' => 'assign', 'l' => 'অ্যাসাইন', 'n' => $n('Assign'), 'c' => ''],
+      ['k' => 'pending', 'l' => 'পেন্ডিং', 'n' => $n('Pending'), 'c' => ''],
+      ['k' => 'sched', 'l' => 'শিডিউল', 'n' => $n('Scheduled'), 'c' => ''],
+      ['k' => 'wfp', 'l' => 'WFP', 'n' => $n('WFP'), 'c' => ''],
       ['k' => 'ai', 'l' => 'AI অ্যাপ্রুভড', 'n' => $ai, 'c' => 'ai'],
       ['k' => 'manual', 'l' => 'ম্যানুয়াল অ্যাপ্রুভড', 'n' => $man, 'c' => ''],
-      ['k' => 'pack', 'l' => 'প্যাকেজিং', 'n' => (int)($c['Packaging'] ?? 0), 'c' => ''],
-      ['k' => 'ship', 'l' => 'শিপমেন্ট', 'n' => (int)($c['Shipment'] ?? 0), 'c' => ''],
+    ];
+    if ($oth > 0) $p[] = ['k' => 'oth', 'l' => 'অন্য অ্যাপ্রুভড', 'n' => $oth, 'c' => ''];
+    if ($n('AI Order') > 0) $p[] = ['k' => 'aiorder', 'l' => 'AI অর্ডার', 'n' => $n('AI Order'), 'c' => 'ai'];
+    return array_merge($p, [
+      ['k' => 'pack', 'l' => 'প্যাকেজিং', 'n' => $n('Packaging'), 'c' => ''],
+      ['k' => 'ship', 'l' => 'শিপমেন্ট', 'n' => $n('Shipment'), 'c' => ''],
       ['k' => 'done', 'l' => 'আজ ডেলিভার্ড', 'n' => $log('Delivered'), 'c' => 'done'],
       null,
-      ['k' => 'late', 'l' => 'লেট ডেলিভারি', 'n' => (int)($c['Late Delivery'] ?? 0), 'c' => 'warn'],
-      ['k' => 'ret', 'l' => 'রিটার্ন পেন্ডিং', 'n' => (int)($c['Return Pending'] ?? 0), 'c' => 'bad'],
+      ['k' => 'late', 'l' => 'লেট ডেলিভারি', 'n' => $n('Late Delivery'), 'c' => 'warn'],
+      ['k' => 'ret', 'l' => 'রিটার্ন পেন্ডিং', 'n' => $n('Return Pending'), 'c' => 'bad'],
       ['k' => 'cancel', 'l' => 'আজ ক্যান্সেল', 'n' => $log('Cancel'), 'c' => 'bad'],
-    ];
+    ]);
   }
 
   /** Whole board, cached 10 seconds so an always-open screen costs almost nothing. */
   public static function data(): array {
     return Cache::remember('lb.data', 10, function () {
+      try { AutoHeal::watchdog('web'); } catch (\Throwable $e) {} // an open board is one more watcher: stuck loops are un-stuck from here too
       $now = time(); $beat = null; try { $beat = DeployHealth::beatAge(); } catch (\Throwable $e) {}
       $cells = []; try { foreach (DeployHealth::light()['cells'] as $c) $cells[$c['key']] = $c; } catch (\Throwable $e) {}
       $out = [];
@@ -160,6 +177,7 @@ class LiveBoard {
           elseif ($beat > 180) { $n['s'] = 'slow'; $n['t'] = 'ওয়ার্কার দেরি করছে'; }
           else {
             $n['s'] = 'ok';
+            foreach ($ticks as $tk) if (AutoHeal::resting($tk)) { $n['s'] = 'slow'; $n['t'] = 'বারবার আটকে যাওয়ায় ৩০ মিনিটের বিরতিতে, এরপর নিজে থেকে আবার চেষ্টা হবে'; }
             foreach ($ticks as $tk) { $f = Cache::get('lb.fail.' . $tk); if (is_array($f)) { $age = $now - (int)$f['t']; if ($age <= 600) { $n['s'] = 'dead'; $n['t'] = 'ত্রুটি: ' . $f['m']; break; } if ($age <= 3600 && $n['s'] === 'ok') { $n['s'] = 'slow'; $n['t'] = 'কিছুক্ষণ আগে ত্রুটি: ' . $f['m']; } } }
           }
           if ($n['last'] === null) $n['last'] = $beat;
@@ -196,7 +214,7 @@ class LiveBoard {
 
       $issues = []; try { foreach (array_slice(DeployHealth::active(), 0, 3) as $i) $issues[] = ['title' => $i['title'], 'severity' => $i['severity'], 'service' => $i['service'], 'action' => $i['action'], 'at' => $i['detected'] ?? '']; } catch (\Throwable $e) {}
       $disk = null; try { $f = @disk_free_space(storage_path()); $t = @disk_total_space(storage_path()); if ($f && $t) $disk = round($f / $t * 100, 1); } catch (\Throwable $e) {}
-      return ['at' => $now, 'time' => now('Asia/Dhaka')->format('H:i:s'), 'beat' => $beat, 'nodes' => array_values($out), 'kpi' => $k, 'pipe' => self::pipeline(), 'staff' => self::staff(), 'issues' => $issues, 'disk' => $disk];
+      return ['at' => $now, 'time' => now('Asia/Dhaka')->format('H:i:s'), 'beat' => $beat, 'nodes' => array_values($out), 'kpi' => $k, 'pipe' => self::pipeline(), 'staff' => self::staff(), 'issues' => $issues, 'heal' => AutoHeal::summary(), 'disk' => $disk];
     });
   }
 }

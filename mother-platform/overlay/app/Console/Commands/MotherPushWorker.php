@@ -23,60 +23,62 @@ class MotherPushWorker extends Command
   }
 
   public function handle(): int {
-    try { $this->orders(); } catch (\Throwable $e) { $this->error('orders: ' . $e->getMessage()); \App\Support\LiveBoard::fail('orders', $e); }
-    try { $this->chat(); } catch (\Throwable $e) { $this->error('chat: ' . $e->getMessage()); \App\Support\LiveBoard::fail('chat', $e); }
-    try { \App\Support\Chat::closeIdleTick(); } catch (\Throwable $e) { $this->error('chatclose: ' . $e->getMessage()); \App\Support\LiveBoard::fail('chatclose', $e); }
-    try { \App\Support\Chat::backlogTick(); } catch (\Throwable $e) { $this->error('chatbacklog: ' . $e->getMessage()); \App\Support\LiveBoard::fail('chatbacklog', $e); }
-    try { \App\Support\AdminAlerts::pbxLine(); } catch (\Throwable $e) { $this->error('pbxline: ' . $e->getMessage()); \App\Support\LiveBoard::fail('pbxline', $e); }
-    try { \App\Support\ChatOwner::tick(); } catch (\Throwable $e) { $this->error('chatowner: ' . $e->getMessage()); \App\Support\LiveBoard::fail('chatowner', $e); }
-    try { \App\Support\Chat::staleTick(); } catch (\Throwable $e) { $this->error('chatstale: ' . $e->getMessage()); \App\Support\LiveBoard::fail('chatstale', $e); }
-    try { \App\Support\BestSellerCampaign::tick(); } catch (\Throwable $e) { $this->error('bscamp: ' . $e->getMessage()); \App\Support\LiveBoard::fail('bscamp', $e); }
-    try { \App\Support\PublishNotice::tick(); } catch (\Throwable $e) { $this->error('pubsms: ' . $e->getMessage()); \App\Support\LiveBoard::fail('pubsms', $e); }
-    try { \App\Support\BestSellerStock::tick(); } catch (\Throwable $e) { $this->error('bs-stock: ' . $e->getMessage()); \App\Support\LiveBoard::fail('bs-stock', $e); }
-    try { \App\Support\AutoPrice::tick(); } catch (\Throwable $e) { $this->error('autoprice: ' . $e->getMessage()); \App\Support\LiveBoard::fail('autoprice', $e); }
-    try { if (\Illuminate\Support\Facades\Cache::add('sp.follow', 1, 55)) \App\Support\SinglePacket::followParents(); } catch (\Throwable $e) { $this->error('spfollow: ' . $e->getMessage()); \App\Support\LiveBoard::fail('spfollow', $e); }
-    try { \App\Support\AiMemory::dailyTick(); } catch (\Throwable $e) { $this->error('aimem: ' . $e->getMessage()); \App\Support\LiveBoard::fail('aimem', $e); }
-    try { \App\Support\Chat::closeSilentTick(); } catch (\Throwable $e) { $this->error('chatsilent: ' . $e->getMessage()); \App\Support\LiveBoard::fail('chatsilent', $e); }
-    try { \App\Support\OrderSchedule::tick(); } catch (\Throwable $e) { $this->error('sched: ' . $e->getMessage()); \App\Support\LiveBoard::fail('sched', $e); }
-    try { \App\Support\SourceDesc::tick(); } catch (\Throwable $e) { $this->error('sdesc: ' . $e->getMessage()); \App\Support\LiveBoard::fail('sdesc', $e); }
-    try { \App\Support\ServiceBalances::tick(); } catch (\Throwable $e) { $this->error('svcbal: ' . $e->getMessage()); \App\Support\LiveBoard::fail('svcbal', $e); }
-    try { \App\Support\OrderCancelNotice::tick(); } catch (\Throwable $e) { $this->error('cancel-notice: ' . $e->getMessage()); \App\Support\LiveBoard::fail('cancel-notice', $e); }
-    try { $this->waUpdates(); \App\Support\OrderWaUpdate::tick(); } catch (\Throwable $e) { $this->error('wa-update: ' . $e->getMessage()); \App\Support\LiveBoard::fail('wa-update', $e); }
+    try { \App\Support\AutoHeal::watchdog('worker'); } catch (\Throwable $e) {} // auto recovery: un-stick the other background loops
+    try { if (\App\Support\AutoHeal::begin('orders')) { $this->orders(); } } catch (\Throwable $e) { $this->error('orders: ' . $e->getMessage()); \App\Support\LiveBoard::fail('orders', $e); }
+    try { if (\App\Support\AutoHeal::begin('chat')) { $this->chat(); } } catch (\Throwable $e) { $this->error('chat: ' . $e->getMessage()); \App\Support\LiveBoard::fail('chat', $e); }
+    try { if (\App\Support\AutoHeal::begin('chatclose')) { \App\Support\Chat::closeIdleTick(); } } catch (\Throwable $e) { $this->error('chatclose: ' . $e->getMessage()); \App\Support\LiveBoard::fail('chatclose', $e); }
+    try { if (\App\Support\AutoHeal::begin('chatbacklog')) { \App\Support\Chat::backlogTick(); } } catch (\Throwable $e) { $this->error('chatbacklog: ' . $e->getMessage()); \App\Support\LiveBoard::fail('chatbacklog', $e); }
+    try { if (\App\Support\AutoHeal::begin('pbxline')) { \App\Support\AdminAlerts::pbxLine(); } } catch (\Throwable $e) { $this->error('pbxline: ' . $e->getMessage()); \App\Support\LiveBoard::fail('pbxline', $e); }
+    try { if (\App\Support\AutoHeal::begin('chatowner')) { \App\Support\ChatOwner::tick(); } } catch (\Throwable $e) { $this->error('chatowner: ' . $e->getMessage()); \App\Support\LiveBoard::fail('chatowner', $e); }
+    try { if (\App\Support\AutoHeal::begin('chatstale')) { \App\Support\Chat::staleTick(); } } catch (\Throwable $e) { $this->error('chatstale: ' . $e->getMessage()); \App\Support\LiveBoard::fail('chatstale', $e); }
+    try { if (\App\Support\AutoHeal::begin('bscamp')) { \App\Support\BestSellerCampaign::tick(); } } catch (\Throwable $e) { $this->error('bscamp: ' . $e->getMessage()); \App\Support\LiveBoard::fail('bscamp', $e); }
+    try { if (\App\Support\AutoHeal::begin('pubsms')) { \App\Support\PublishNotice::tick(); } } catch (\Throwable $e) { $this->error('pubsms: ' . $e->getMessage()); \App\Support\LiveBoard::fail('pubsms', $e); }
+    try { if (\App\Support\AutoHeal::begin('bs-stock')) { \App\Support\BestSellerStock::tick(); } } catch (\Throwable $e) { $this->error('bs-stock: ' . $e->getMessage()); \App\Support\LiveBoard::fail('bs-stock', $e); }
+    try { if (\App\Support\AutoHeal::begin('autoprice')) { \App\Support\AutoPrice::tick(); } } catch (\Throwable $e) { $this->error('autoprice: ' . $e->getMessage()); \App\Support\LiveBoard::fail('autoprice', $e); }
+    try { if (\App\Support\AutoHeal::begin('spfollow')) { if (\Illuminate\Support\Facades\Cache::add('sp.follow', 1, 55)) \App\Support\SinglePacket::followParents(); } } catch (\Throwable $e) { $this->error('spfollow: ' . $e->getMessage()); \App\Support\LiveBoard::fail('spfollow', $e); }
+    try { if (\App\Support\AutoHeal::begin('aimem')) { \App\Support\AiMemory::dailyTick(); } } catch (\Throwable $e) { $this->error('aimem: ' . $e->getMessage()); \App\Support\LiveBoard::fail('aimem', $e); }
+    try { if (\App\Support\AutoHeal::begin('chatsilent')) { \App\Support\Chat::closeSilentTick(); } } catch (\Throwable $e) { $this->error('chatsilent: ' . $e->getMessage()); \App\Support\LiveBoard::fail('chatsilent', $e); }
+    try { if (\App\Support\AutoHeal::begin('sched')) { \App\Support\OrderSchedule::tick(); } } catch (\Throwable $e) { $this->error('sched: ' . $e->getMessage()); \App\Support\LiveBoard::fail('sched', $e); }
+    try { if (\App\Support\AutoHeal::begin('sdesc')) { \App\Support\SourceDesc::tick(); } } catch (\Throwable $e) { $this->error('sdesc: ' . $e->getMessage()); \App\Support\LiveBoard::fail('sdesc', $e); }
+    try { if (\App\Support\AutoHeal::begin('svcbal')) { \App\Support\ServiceBalances::tick(); } } catch (\Throwable $e) { $this->error('svcbal: ' . $e->getMessage()); \App\Support\LiveBoard::fail('svcbal', $e); }
+    try { if (\App\Support\AutoHeal::begin('cancel-notice')) { \App\Support\OrderCancelNotice::tick(); } } catch (\Throwable $e) { $this->error('cancel-notice: ' . $e->getMessage()); \App\Support\LiveBoard::fail('cancel-notice', $e); }
+    try { if (\App\Support\AutoHeal::begin('wa-update')) { $this->waUpdates(); \App\Support\OrderWaUpdate::tick(); } } catch (\Throwable $e) { $this->error('wa-update: ' . $e->getMessage()); \App\Support\LiveBoard::fail('wa-update', $e); }
     \App\Support\DeployHealth::beat(); // heartbeat: shown as "Scheduler" in the Deployment Center
-    try { \App\Support\Deployer::tick(); } catch (\Throwable $e) { $this->error('deploy: ' . $e->getMessage()); \App\Support\LiveBoard::fail('deploy', $e); }
-    try { \App\Support\AdminAlerts::tick(); } catch (\Throwable $e) { $this->error('alerts: ' . $e->getMessage()); \App\Support\LiveBoard::fail('alerts', $e); }
-    try { \App\Http\Controllers\CarrierClientController::relayWatch(); } catch (\Throwable $e) { $this->error('relaywatch: ' . $e->getMessage()); \App\Support\LiveBoard::fail('relaywatch', $e); }
-    try { \App\Support\DeployHealth::scan(); } catch (\Throwable $e) { $this->error('health: ' . $e->getMessage()); \App\Support\LiveBoard::fail('health', $e); }
-    try { $this->campaigns(); } catch (\Throwable $e) { $this->error('campaigns: ' . $e->getMessage()); \App\Support\LiveBoard::fail('campaigns', $e); }
-    try { \App\Support\WaCalls::tick(); } catch (\Throwable $e) { $this->error('wacalls: ' . $e->getMessage()); \App\Support\LiveBoard::fail('wacalls', $e); }
-    try { \App\Support\WaRec::tick(); } catch (\Throwable $e) { $this->error('warec: ' . $e->getMessage()); \App\Support\LiveBoard::fail('warec', $e); }
-    try { \App\Support\ChatComments::tick(); } catch (\Throwable $e) { $this->error('fbcomments: ' . $e->getMessage()); \App\Support\LiveBoard::fail('fbcomments', $e); }
-    try { \App\Support\Mailer::tick(); } catch (\Throwable $e) { $this->error('email: ' . $e->getMessage()); \App\Support\LiveBoard::fail('email', $e); }
-    try { \App\Support\SmsGate::tick(); } catch (\Throwable $e) { $this->error('sms-report: ' . $e->getMessage()); \App\Support\LiveBoard::fail('sms-report', $e); }
-    try { \App\Support\SmsMarketing::tick(); } catch (\Throwable $e) { $this->error('sms: ' . $e->getMessage()); \App\Support\LiveBoard::fail('sms', $e); }
-    try { \App\Support\Winback::tick(); } catch (\Throwable $e) { $this->error('winback: ' . $e->getMessage()); \App\Support\LiveBoard::fail('winback', $e); }
-    try { \App\Support\WhatsApp::tick(); } catch (\Throwable $e) { $this->error('wa: ' . $e->getMessage()); \App\Support\LiveBoard::fail('wa', $e); }
+    try { if (\App\Support\AutoHeal::begin('deploy')) { \App\Support\Deployer::tick(); } } catch (\Throwable $e) { $this->error('deploy: ' . $e->getMessage()); \App\Support\LiveBoard::fail('deploy', $e); }
+    try { if (\App\Support\AutoHeal::begin('alerts')) { \App\Support\AdminAlerts::tick(); } } catch (\Throwable $e) { $this->error('alerts: ' . $e->getMessage()); \App\Support\LiveBoard::fail('alerts', $e); }
+    try { if (\App\Support\AutoHeal::begin('relaywatch')) { \App\Http\Controllers\CarrierClientController::relayWatch(); } } catch (\Throwable $e) { $this->error('relaywatch: ' . $e->getMessage()); \App\Support\LiveBoard::fail('relaywatch', $e); }
+    try { if (\App\Support\AutoHeal::begin('health')) { \App\Support\DeployHealth::scan(); } } catch (\Throwable $e) { $this->error('health: ' . $e->getMessage()); \App\Support\LiveBoard::fail('health', $e); }
+    try { if (\App\Support\AutoHeal::begin('campaigns')) { $this->campaigns(); } } catch (\Throwable $e) { $this->error('campaigns: ' . $e->getMessage()); \App\Support\LiveBoard::fail('campaigns', $e); }
+    try { if (\App\Support\AutoHeal::begin('wacalls')) { \App\Support\WaCalls::tick(); } } catch (\Throwable $e) { $this->error('wacalls: ' . $e->getMessage()); \App\Support\LiveBoard::fail('wacalls', $e); }
+    try { if (\App\Support\AutoHeal::begin('warec')) { \App\Support\WaRec::tick(); } } catch (\Throwable $e) { $this->error('warec: ' . $e->getMessage()); \App\Support\LiveBoard::fail('warec', $e); }
+    try { if (\App\Support\AutoHeal::begin('fbcomments')) { \App\Support\ChatComments::tick(); } } catch (\Throwable $e) { $this->error('fbcomments: ' . $e->getMessage()); \App\Support\LiveBoard::fail('fbcomments', $e); }
+    try { if (\App\Support\AutoHeal::begin('email')) { \App\Support\Mailer::tick(); } } catch (\Throwable $e) { $this->error('email: ' . $e->getMessage()); \App\Support\LiveBoard::fail('email', $e); }
+    try { if (\App\Support\AutoHeal::begin('sms-report')) { \App\Support\SmsGate::tick(); } } catch (\Throwable $e) { $this->error('sms-report: ' . $e->getMessage()); \App\Support\LiveBoard::fail('sms-report', $e); }
+    try { if (\App\Support\AutoHeal::begin('sms')) { \App\Support\SmsMarketing::tick(); } } catch (\Throwable $e) { $this->error('sms: ' . $e->getMessage()); \App\Support\LiveBoard::fail('sms', $e); }
+    try { if (\App\Support\AutoHeal::begin('winback')) { \App\Support\Winback::tick(); } } catch (\Throwable $e) { $this->error('winback: ' . $e->getMessage()); \App\Support\LiveBoard::fail('winback', $e); }
+    try { if (\App\Support\AutoHeal::begin('wa')) { \App\Support\WhatsApp::tick(); } } catch (\Throwable $e) { $this->error('wa: ' . $e->getMessage()); \App\Support\LiveBoard::fail('wa', $e); }
     // 21 Nov 2026: customers' order-confirmation calls (AI approval) go before the promotional campaign calls so a busy campaign never delays them
-    try { \App\Support\OrderCall::tick(); } catch (\Throwable $e) { $this->error('ordercall: ' . $e->getMessage()); \App\Support\LiveBoard::fail('ordercall', $e); }
-    try { \App\Support\Voice::ensureLoop(); } catch (\Throwable $e) { $this->error('voice: ' . $e->getMessage()); \App\Support\LiveBoard::fail('voice', $e); }
-    try { \App\Support\SeoMgr::tick(); } catch (\Throwable $e) { $this->error('seo: ' . $e->getMessage()); \App\Support\LiveBoard::fail('seo', $e); }
-    try { \App\Support\SeoAutoGenerator::backfillOnce(); } catch (\Throwable $e) { $this->error('seoauto: ' . $e->getMessage()); \App\Support\LiveBoard::fail('seoauto', $e); }
-    try { \App\Support\AppReward::resolve(); } catch (\Throwable $e) { $this->error('appreward: ' . $e->getMessage()); \App\Support\LiveBoard::fail('appreward', $e); }
-    try { \App\Support\Referral::tick(); } catch (\Throwable $e) { $this->error('referral: ' . $e->getMessage()); \App\Support\LiveBoard::fail('referral', $e); }
-    try { \App\Support\AiBrief::tick(); } catch (\Throwable $e) { $this->error('aibrief: ' . $e->getMessage()); \App\Support\LiveBoard::fail('aibrief', $e); }
-    try { \App\Support\AiImageAuto::tick(); } catch (\Throwable $e) { $this->error('aiimg: ' . $e->getMessage()); \App\Support\LiveBoard::fail('aiimg', $e); }
-    try { \App\Support\AiVerify::rerunStale(); } catch (\Throwable $e) { $this->error('aiverify: ' . $e->getMessage()); \App\Support\LiveBoard::fail('aiverify', $e); }
-    try { \App\Support\AiNudge::tick(); } catch (\Throwable $e) { $this->error('ainudge: ' . $e->getMessage()); \App\Support\LiveBoard::fail('ainudge', $e); }
-    try { \App\Support\IncompleteNudge::tick(); } catch (\Throwable $e) { $this->error('incnudge: ' . $e->getMessage()); \App\Support\LiveBoard::fail('incnudge', $e); }
-    try { \App\Support\Reorder::tick(); } catch (\Throwable $e) { $this->error('reorder: ' . $e->getMessage()); \App\Support\LiveBoard::fail('reorder', $e); }
-    try { \App\Support\PurchaseList::tick(); } catch (\Throwable $e) { $this->error('purchase-list: ' . $e->getMessage()); \App\Support\LiveBoard::fail('purchase-list', $e); }
-    try { \App\Support\Restock::tick(); } catch (\Throwable $e) { $this->error('restock: ' . $e->getMessage()); \App\Support\LiveBoard::fail('restock', $e); }
-    try { \App\Support\OrderWatch::tick(); } catch (\Throwable $e) { $this->error('order-watch: ' . $e->getMessage()); \App\Support\LiveBoard::fail('order-watch', $e); }
-    try { \App\Support\CallDaily::tick(); } catch (\Throwable $e) { $this->error('call-daily: ' . $e->getMessage()); \App\Support\LiveBoard::fail('call-daily', $e); }
+    try { if (\App\Support\AutoHeal::begin('ordercall')) { \App\Support\OrderCall::tick(); } } catch (\Throwable $e) { $this->error('ordercall: ' . $e->getMessage()); \App\Support\LiveBoard::fail('ordercall', $e); }
+    try { if (\App\Support\AutoHeal::begin('voice')) { \App\Support\Voice::ensureLoop(); } } catch (\Throwable $e) { $this->error('voice: ' . $e->getMessage()); \App\Support\LiveBoard::fail('voice', $e); }
+    try { if (\App\Support\AutoHeal::begin('seo')) { \App\Support\SeoMgr::tick(); } } catch (\Throwable $e) { $this->error('seo: ' . $e->getMessage()); \App\Support\LiveBoard::fail('seo', $e); }
+    try { if (\App\Support\AutoHeal::begin('seoauto')) { \App\Support\SeoAutoGenerator::backfillOnce(); } } catch (\Throwable $e) { $this->error('seoauto: ' . $e->getMessage()); \App\Support\LiveBoard::fail('seoauto', $e); }
+    try { if (\App\Support\AutoHeal::begin('appreward')) { \App\Support\AppReward::resolve(); } } catch (\Throwable $e) { $this->error('appreward: ' . $e->getMessage()); \App\Support\LiveBoard::fail('appreward', $e); }
+    try { if (\App\Support\AutoHeal::begin('referral')) { \App\Support\Referral::tick(); } } catch (\Throwable $e) { $this->error('referral: ' . $e->getMessage()); \App\Support\LiveBoard::fail('referral', $e); }
+    try { if (\App\Support\AutoHeal::begin('aibrief')) { \App\Support\AiBrief::tick(); } } catch (\Throwable $e) { $this->error('aibrief: ' . $e->getMessage()); \App\Support\LiveBoard::fail('aibrief', $e); }
+    try { if (\App\Support\AutoHeal::begin('aiimg')) { \App\Support\AiImageAuto::tick(); } } catch (\Throwable $e) { $this->error('aiimg: ' . $e->getMessage()); \App\Support\LiveBoard::fail('aiimg', $e); }
+    try { if (\App\Support\AutoHeal::begin('aiverify')) { \App\Support\AiVerify::rerunStale(); } } catch (\Throwable $e) { $this->error('aiverify: ' . $e->getMessage()); \App\Support\LiveBoard::fail('aiverify', $e); }
+    try { if (\App\Support\AutoHeal::begin('ainudge')) { \App\Support\AiNudge::tick(); } } catch (\Throwable $e) { $this->error('ainudge: ' . $e->getMessage()); \App\Support\LiveBoard::fail('ainudge', $e); }
+    try { if (\App\Support\AutoHeal::begin('incnudge')) { \App\Support\IncompleteNudge::tick(); } } catch (\Throwable $e) { $this->error('incnudge: ' . $e->getMessage()); \App\Support\LiveBoard::fail('incnudge', $e); }
+    try { if (\App\Support\AutoHeal::begin('reorder')) { \App\Support\Reorder::tick(); } } catch (\Throwable $e) { $this->error('reorder: ' . $e->getMessage()); \App\Support\LiveBoard::fail('reorder', $e); }
+    try { if (\App\Support\AutoHeal::begin('purchase-list')) { \App\Support\PurchaseList::tick(); } } catch (\Throwable $e) { $this->error('purchase-list: ' . $e->getMessage()); \App\Support\LiveBoard::fail('purchase-list', $e); }
+    try { if (\App\Support\AutoHeal::begin('restock')) { \App\Support\Restock::tick(); } } catch (\Throwable $e) { $this->error('restock: ' . $e->getMessage()); \App\Support\LiveBoard::fail('restock', $e); }
+    try { if (\App\Support\AutoHeal::begin('order-watch')) { \App\Support\OrderWatch::tick(); } } catch (\Throwable $e) { $this->error('order-watch: ' . $e->getMessage()); \App\Support\LiveBoard::fail('order-watch', $e); }
+    try { if (\App\Support\AutoHeal::begin('call-daily')) { \App\Support\CallDaily::tick(); } } catch (\Throwable $e) { $this->error('call-daily: ' . $e->getMessage()); \App\Support\LiveBoard::fail('call-daily', $e); }
     \App\Support\PayrollDue::tick();
-    try { \App\Support\RecurringExpense::tick(); } catch (\Throwable $e) { $this->error('recurring: ' . $e->getMessage()); \App\Support\LiveBoard::fail('recurring', $e); }
-    try { \App\Support\Procure::tick(); } catch (\Throwable $e) { $this->error('procure: ' . $e->getMessage()); \App\Support\LiveBoard::fail('procure', $e); }
-    try { $this->smsAuto(); } catch (\Throwable $e) { $this->error('smsauto: ' . $e->getMessage()); \App\Support\LiveBoard::fail('smsauto', $e); }
+    try { if (\App\Support\AutoHeal::begin('recurring')) { \App\Support\RecurringExpense::tick(); } } catch (\Throwable $e) { $this->error('recurring: ' . $e->getMessage()); \App\Support\LiveBoard::fail('recurring', $e); }
+    try { if (\App\Support\AutoHeal::begin('procure')) { \App\Support\Procure::tick(); } } catch (\Throwable $e) { $this->error('procure: ' . $e->getMessage()); \App\Support\LiveBoard::fail('procure', $e); }
+    try { if (\App\Support\AutoHeal::begin('smsauto')) { $this->smsAuto(); } } catch (\Throwable $e) { $this->error('smsauto: ' . $e->getMessage()); \App\Support\LiveBoard::fail('smsauto', $e); }
+    \App\Support\AutoHeal::endOfRun();
     return 0;
   }
 

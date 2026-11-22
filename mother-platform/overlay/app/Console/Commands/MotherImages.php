@@ -10,7 +10,7 @@ class MotherImages extends Command {
   protected $description = 'Optimise all site images in the background';
   /** table => [column, kind] */
   const TARGETS = [['products', 'image', 'product'], ['product_images', 'path', 'product'], ['categories', 'image', 'category'], ['sliders', 'image', 'banner'], ['sliders', 'mobile_image', 'mobile'], ['banners', 'image', 'banner'], ['posts', 'featured_image', 'auto']];
-  public function handle() {
+  public function handle() { \App\Support\AutoHeal::beat('images');
     if (!Img::ok()) { $this->line('GD not available, skipping'); return 0; }
     $lock = fopen(storage_path('framework/img-optimizer.lock'), 'c'); if (!$lock || !flock($lock, LOCK_EX | LOCK_NB)) return 0; // one run at a time
     @set_time_limit(0); $t0 = microtime(true);

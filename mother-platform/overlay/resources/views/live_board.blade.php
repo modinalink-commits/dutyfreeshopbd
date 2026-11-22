@@ -26,13 +26,13 @@ button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
 button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .pipe{display:flex;align-items:stretch;flex-wrap:wrap;row-gap:8px}
 .stg{flex:1 1 0;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 10px;min-width:0}
-.stg b{display:block;font-family:var(--m);font-size:20px;font-variant-numeric:tabular-nums}
+.stg{padding:7px 8px}.wire{flex-basis:14px}.stg b{display:block;font-family:var(--m);font-size:20px;font-variant-numeric:tabular-nums}
 .stg span{font-size:12.5px;color:var(--mute);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.stg.ai{border-color:#3a4c8a}.stg.ai span{color:#b9c4ff}.stg.done{border-color:#1f6e45}.stg.done b{color:var(--ok)}.stg.warn b{color:var(--slow)}.stg.bad b{color:#ff8b8b}
+.stg.new{border-color:var(--accent)}.stg.new b{color:var(--accent)}.stg.ai{border-color:#3a4c8a}.stg.ai span{color:#b9c4ff}.stg.done{border-color:#1f6e45}.stg.done b{color:var(--ok)}.stg.warn b{color:var(--slow)}.stg.bad b{color:#ff8b8b}
 .wire{flex:0 0 22px;position:relative;align-self:center;height:2px;background:var(--line)}
 .wire::after{content:"";position:absolute;top:-2px;left:0;width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);animation:run 1.6s linear infinite}
 .wire.w2::after{animation-delay:.5s}.wire.w3::after{animation-delay:1s}
-@keyframes run{0%{left:-3px;opacity:0}15%{opacity:1}85%{opacity:1}100%{left:19px;opacity:0}}
+@keyframes run{0%{left:-3px;opacity:0}15%{opacity:1}85%{opacity:1}100%{left:11px;opacity:0}}
 .gap{flex:0 0 14px}
 .kp{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
 @media(min-width:1500px){.kp{grid-template-columns:repeat(8,minmax(0,1fr))}}
@@ -134,7 +134,7 @@ const num=n=>bn(Number(n).toLocaleString('en-IN'));
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const ago=s=>s==null?'':s<60?bn(s)+' সে.':s<3600?bn(Math.floor(s/60))+' মি.':s<86400?bn(Math.floor(s/3600))+' ঘ.':bn(Math.floor(s/86400))+' দিন';
 const G={a:['AI কল ও কল সেন্টার',265,'PBX লাইন ও কল ব্যালেন্স দেখুন'],b:['মার্কেটিং ও অ্যাড',28,'Meta টোকেন ও Events Manager দেখুন'],c:['মেসেজ ও চ্যাট',150,'চ্যানেল সংযোগ ও ওয়েবহুক দেখুন'],d:['অর্ডার',205,'অর্ডার পেজ ও ওয়ার্কার দেখুন'],e:['কুরিয়ার ও ডেলিভারি',185,'কুরিয়ার API টোকেন ও ব্যালেন্স দেখুন'],f:['SMS, ইমেইল ও নোটিফিকেশন',340,'SMS ব্যালেন্স ও মেইল সার্ভার দেখুন'],g:['স্টক ও পারচেজ',95,'স্টক ও সাপ্লায়ার পেজ দেখুন'],i:['সার্ভার, হিসাব ও AI',50,'ডিপ্লয় পেজ ও এরর লগ দেখুন']};
-const map=$('map'),E={},GE={},prev={};let D=null,got=0,built=false,first=true,fails=0,prevBeat=null;
+const map=$('map'),E={},GE={},prev={};let healSeen=null,D=null,got=0,built=false,first=true,fails=0,prevBeat=null;
 
 function build(nodes){
   Object.keys(G).forEach(a=>{const s=document.createElement('section');s.className='g';s.style.gridArea=a;s.style.setProperty('--h',G[a][1]);
@@ -153,6 +153,7 @@ $('fs').onclick=()=>{try{const p=document.fullscreenElement?document.exitFullscr
 
 function apply(d){
   if(!built)build(d.nodes);
+  (d.heal&&d.heal.log||[]).slice().reverse().forEach(h=>{if(healSeen!==null&&h.t>healSeen)log('🔧 '+h.m,h.l==='warn'?'warn':'')});healSeen=d.heal&&d.heal.log&&d.heal.log.length?Math.max(healSeen||0,d.heal.log[0].t):(healSeen||0);
   const beatFresh=prevBeat!==null&&d.beat!==null&&d.beat<prevBeat;prevBeat=d.beat;
   d.nodes.forEach(n=>{const x=E[n.k];if(!x)return;const p=prev[n.k];
     let pulse=0;
@@ -189,7 +190,7 @@ function render(){
   const known=c.ok+c.slow+c.dead;$('score').textContent=known?bn(Math.round(c.ok/known*100))+'%':'–';
   $('hub').classList.toggle('bad',c.dead>0||fails>2);
   $('hubsub').textContent=c.dead?bn(c.dead)+' টি কাজ থেমে আছে':c.slow?bn(c.slow)+' টি কাজে সতর্কতা':'সব কাজ চালু';
-  $('hubbeat').textContent=D.beat==null?'ওয়ার্কারের সংকেত নেই':'ওয়ার্কার সংকেত '+ago(D.beat+el)+' আগে'+(D.disk!=null?' · ডিস্ক খালি '+bn(D.disk)+'%':'');
+  $('hubbeat').textContent=D.beat==null?'ওয়ার্কারের সংকেত নেই':'ওয়ার্কার সংকেত '+ago(D.beat+el)+' আগে'+(D.disk!=null?' · ডিস্ক খালি '+bn(D.disk)+'%':'')+' · অটো-রিকভারি আজ '+bn(D.heal?D.heal.today:0)+' বার';
   bad.sort((p,q)=>(q.s==='dead')-(p.s==='dead'));
   const iss=(D.issues||[]).map(i=>'<div class="al '+(i.severity==='critical'||i.severity==='high'?'dead':'slow')+'"><b><span>🚨 '+esc(i.title)+'</span><em>'+esc(i.service)+'</em></b><p>'+esc(i.action)+'</p></div>');
   const nb=bad.slice(0,5).map(n=>'<div class="al '+n.s+'"><b><span>'+n.i+' '+esc(n.n)+'</span><em>'+(n.s==='dead'?'থেমে আছে':'সতর্কতা')+'</em></b><p>'+esc(n.t||'')+(n.t?' · ':'')+G[n.g][2]+'</p></div>');
