@@ -22,6 +22,15 @@ class Mailer {
   public static function on(): bool { return self::set('on', '0') === '1' && self::ready(); }
   public static function kindOn(string $k): bool { return self::set('kind_' . $k, '1') === '1'; }
   public static function cap(): int { return max(50, min(1000, (int)self::set('daily_cap', '900'))); }
+  /**
+   * Gentle sending (23 Nov 2026). Hostinger suspended this mailbox twice for "sending_spam": 18 Nov (offer emails to customers who never asked)
+   * and again 20 Nov, 18 hours after it was reopened, when 599 queued emails went out in a few hours. So: at most hourCap() emails in any
+   * 60 minutes (default 40), and a queued email older than maxAgeHours() (default 6) is not sent any more: a stale "order received" email
+   * only adds volume. Both are settings (email_hour_cap, email_max_age_hours).
+   */
+  public static function hourCap(): int { return max(5, min(300, (int)self::set('hour_cap', '40'))); }
+  public static function maxAgeHours(): int { return max(1, min(48, (int)self::set('max_age_hours', '6'))); }
+  public static function sentLastHour(): int { try { return (int)DB::table('mail_outbox')->where('status', 'sent')->where('sent_at', '>=', now()->subHour())->count(); } catch (\Throwable $e) { return 0; } }
   public static function sentToday(): int { try { return (int)DB::table('mail_outbox')->where('status', 'sent')->where('sent_at', '>=', now('Asia/Dhaka')->startOfDay()->utc())->count(); } catch (\Throwable $e) { return 0; } }
   public static function valid(?string $e): bool { $e = trim((string)$e); return $e !== '' && strlen($e) <= 190 && filter_var($e, FILTER_VALIDATE_EMAIL) !== false; }
 
@@ -87,8 +96,8 @@ class Mailer {
     if (self::blockedAt() !== null) { if (!Cache::add('email.blocked.probe', 1, 3600)) return; $n = 1; }
     if (!Cache::add('email.pump', 1, 20)) return;
     try {
-      $left = self::cap() - self::sentToday(); if ($left <= 0) return;
-      $rows = DB::table('mail_outbox')->where('status', 'queued')->where('created_at', '>=', now()->subDays(2))->orderByRaw("case when type like 'order_%' then 0 else 1 end")->orderBy('id')->limit(min($n, $left))->get();
+      $left = min(self::cap() - self::sentToday(), self::hourCap() - self::sentLastHour()); if ($left <= 0) return;
+      $rows = DB::table('mail_outbox')->where('status', 'queued')->where('created_at', '>=', now()->subHours(self::maxAgeHours()))->orderByRaw("case when type like 'order_%' then 0 else 1 end")->orderBy('id')->limit(min($n, $left))->get();
       foreach ($rows as $r) {
         if (!DB::table('mail_outbox')->where('id', $r->id)->where('status', 'queued')->update(['status' => 'sending', 'updated_at' => now()])) continue;
         [$ok, $err] = self::deliver($r->to, $r->subject, $r->html, str_starts_with((string)$r->type, 'mk_') ? self::unsubUrl($r->to) : null);
