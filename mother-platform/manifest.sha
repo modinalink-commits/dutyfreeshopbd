@@ -1530,4 +1530,4 @@ c7b0bce1b03012e15cfc2ec80dd1cdb4fb881511 public/adimg/reel-beauty.mp4
 5b1438b8752a95a00c6339627ca7f8b26a3f4be2 public/adimg/reel-gadget.mp4
 e1603579807256aba143171a9781f7c3db9e881a app/Support/LiveBoard.php
 b4282ec039170706e1ff0b1765dda6f61b7ec2c5 app/Http/Controllers/LiveBoardController.php
-09e3c20e4a4cc901db944e07a2088957f63f2e76 resources/views/live_board.blade.php
+1b33bbdaaac4d98c1c64e723b66e1de95b6aee8d resources/views/live_board.blade.php

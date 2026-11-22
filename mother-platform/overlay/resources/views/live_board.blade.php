@@ -142,7 +142,7 @@ function apply(d){
     if(p){if(n.today!=null&&p.today!=null&&n.today>p.today)pulse=Math.min(5,n.today-p.today);else if(n.last!=null&&p.last!=null&&n.last+4<p.last&&!n.beat)pulse=1;
       if(n.beat&&beatFresh&&n.s==='ok')pulse=Math.max(pulse,1);
       if(p.s!==n.s){if(n.s==='dead'){log(n.n+' থেমে গেছে'+(n.t?' · '+n.t:''),'bad');beep()}else if(n.s==='slow')log(n.n+' ধীর বা সতর্কতা'+(n.t?' · '+n.t:''),'warn');else if(n.s==='ok'&&(p.s==='dead'||p.s==='slow'))log(n.n+' আবার ঠিক হয়েছে')}}
-    if(pulse){x.e.classList.remove('beat');void x.e.offsetWidth;x.e.classList.add('beat');for(let i=0;i<pulse;i++)setTimeout(()=>spawn(n.g),i*220)}
+    if(pulse){x.e.classList.remove('beat');void x.e.offsetWidth;x.e.classList.add('beat');for(let i=0;i<pulse;i++)setTimeout(()=>spawn(n.g,true),i*220)}
     prev[n.k]={today:n.today,last:n.last,s:n.s};
     x.e.title=n.n+(n.t?' · '+n.t:'')+(n.today!=null?' · আজ '+n.today:'');
   });
@@ -204,7 +204,10 @@ function layout(){
 function at(p,t){const d=t*p.len;let k=1;while(k<p.length-1&&p.cum[k]<d)k++;const f=(d-p.cum[k-1])/((p.cum[k]-p.cum[k-1])||1);return[p[k-1][0]+(p[k][0]-p[k-1][0])*f,p[k-1][1]+(p[k][1]-p[k-1][1])*f]}
 addEventListener('resize',layout);setInterval(layout,1500);
 const still=matchMedia('(prefers-reduced-motion:reduce)').matches,parts=[];
-function spawn(a){if(parts.length<120)parts.push({a,t:0,s:.28+Math.random()*.22,dir:Math.random()<.3?-1:1})}
+function spawn(a,big){if(parts.length<160)parts.push({a,t:0,s:.3+Math.random()*.25,dir:big?(Math.random()<.3?-1:1):(tog[a]=!tog[a])?1:-1,r:big?4.2:2.6})}
+// steady traffic (owner, 23 Nov): one small dot per second on every group that is alive, going out and coming back in turn.
+// It stops on a group that is red and on the whole board when the server stops answering, so "no dots" still means "stopped". Real events use a bigger dot.
+const tog={};setInterval(()=>{if(!D||fails>2||document.hidden)return;Object.keys(P).forEach(a=>{if((GE[a]||{}).st!=='dead'&&D.nodes.some(n=>n.g===a&&n.s==='ok'))spawn(a,false)})},1000);
 let last=performance.now();
 function draw(now){
   const dt=Math.min(.05,(now-last)/1000);last=now;cx.clearRect(0,0,W,H);
@@ -213,7 +216,7 @@ function draw(now){
     cx.beginPath();p.forEach((q,k)=>k?cx.lineTo(q[0],q[1]):cx.moveTo(q[0],q[1]));cx.stroke();cx.setLineDash([]);cx.fillStyle=cx.strokeStyle;
     const e=p[p.length-1];cx.beginPath();cx.arc(e[0],e[1],4,0,7);cx.fill();cx.beginPath();cx.arc(p[0][0],p[0][1],3,0,7);cx.fill();cx.restore()});
   if(!still)for(let k=parts.length-1;k>=0;k--){const q=parts[k];q.t+=q.s*dt;if(q.t>=1){parts.splice(k,1);continue}const p=P[q.a];if(!p)continue;
-    const xy=at(p,q.dir>0?q.t:1-q.t),h=G[q.a][1];cx.save();cx.shadowBlur=12;cx.shadowColor='hsl('+h+' 90% 65%)';cx.fillStyle='hsl('+h+' 95% 80%)';cx.beginPath();cx.arc(xy[0],xy[1],3.2,0,7);cx.fill();cx.restore()}
+    const xy=at(p,q.dir>0?q.t:1-q.t),h=G[q.a][1];cx.save();cx.shadowBlur=12;cx.shadowColor='hsl('+h+' 90% 65%)';cx.fillStyle='hsl('+h+' 95% 80%)';cx.beginPath();cx.arc(xy[0],xy[1],q.r||3.2,0,7);cx.fill();cx.restore()}
   requestAnimationFrame(draw);
 }
 requestAnimationFrame(draw);document.fonts&&document.fonts.ready.then(layout);
