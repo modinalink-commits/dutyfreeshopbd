@@ -53,13 +53,20 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-off
 .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:6px}
 .tile{position:relative;display:grid;justify-items:center;align-content:start;gap:1px;padding:10px 3px 6px;height:88px;overflow:hidden;border:1px solid var(--line);border-radius:8px;background:var(--tile);text-align:center;transition:opacity .2s}
 .tile:hover{border-color:#3a4766}
-.em{font-size:21px;line-height:1.1}.tn{font-size:11.5px;font-weight:600;line-height:1.2;max-height:2.4em;overflow:hidden}.ta{font-size:10.5px;color:var(--mute);font-family:var(--m);white-space:nowrap}
+.em{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;font-size:17px;line-height:1;position:relative;
+  background:linear-gradient(145deg,hsl(var(--h) 65% 24%),hsl(var(--h) 70% 11%));border:1px solid hsl(var(--h) 75% 46%);box-shadow:0 0 12px hsla(var(--h),90%,60%,.28),inset 0 0 8px hsla(var(--h),90%,70%,.12)}
+.em svg{width:19px;height:19px;fill:none;stroke:hsl(var(--h) 100% 82%);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.em::after{content:"";position:absolute;inset:-4px;border-radius:13px;border:1px solid hsla(var(--h),90%,65%,.22)}
+.tile.beat .em{animation:chip .9s ease-out}
+@keyframes chip{0%{box-shadow:0 0 0 0 hsla(var(--h),95%,65%,.9)}100%{box-shadow:0 0 18px 6px hsla(var(--h),95%,65%,0)}}
+.tile.slow .em{--h:40}.tile.dead .em{--h:0}.tile.na .em{background:#161c2a;border-color:#39435a;box-shadow:none}.tile.na .em svg{stroke:#7a869c}
+body.fit .em{width:30px;height:30px}.tn{font-size:11.5px;font-weight:600;line-height:1.2;max-height:2.4em;overflow:hidden}.ta{font-size:10.5px;color:var(--mute);font-family:var(--m);white-space:nowrap}
 .cnt{position:absolute;top:4px;left:5px;font-family:var(--m);font-size:10.5px;color:var(--fg);background:#1c2740;border-radius:4px;padding:0 4px;line-height:15px}.cnt:empty{display:none}
 .dot{position:absolute;top:5px;right:5px;width:7px;height:7px;border-radius:50%;background:var(--ok)}
 .tile.beat .dot{animation:ping .9s ease-out}
 .tile.slow{border-color:#6b4f12}.tile.slow .dot{background:var(--slow)}.tile.slow .ta{color:var(--slow)}
-.tile.dead{border-color:var(--dead);background:#2a1017;animation:glow 1.2s infinite}.tile.dead .dot{background:var(--dead)}.tile.dead .ta{color:#ff9a9a;font-weight:600}.tile.dead .em{filter:grayscale(1);opacity:.7}
-.tile.na .dot{background:var(--na)}.tile.na .em{opacity:.55}
+.tile.dead{border-color:var(--dead);background:#2a1017;animation:glow 1.2s infinite}.tile.dead .dot{background:var(--dead)}.tile.dead .ta{color:#ff9a9a;font-weight:600}
+.tile.na .dot{background:var(--na)}
 .map.only .tile:not(.slow):not(.dead){opacity:.16}
 @keyframes ping{0%{box-shadow:0 0 0 0 rgba(47,210,124,.8)}100%{box-shadow:0 0 0 10px rgba(47,210,124,0)}}
 @keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(255,77,77,0)}50%{box-shadow:0 0 14px 1px rgba(255,77,77,.55)}}
@@ -134,13 +141,75 @@ const num=n=>bn(Number(n).toLocaleString('en-IN'));
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const ago=s=>s==null?'':s<60?bn(s)+' সে.':s<3600?bn(Math.floor(s/60))+' মি.':s<86400?bn(Math.floor(s/3600))+' ঘ.':bn(Math.floor(s/86400))+' দিন';
 const G={a:['AI কল ও কল সেন্টার',265,'PBX লাইন ও কল ব্যালেন্স দেখুন'],b:['মার্কেটিং ও অ্যাড',28,'Meta টোকেন ও Events Manager দেখুন'],c:['মেসেজ ও চ্যাট',150,'চ্যানেল সংযোগ ও ওয়েবহুক দেখুন'],d:['অর্ডার',205,'অর্ডার পেজ ও ওয়ার্কার দেখুন'],e:['কুরিয়ার ও ডেলিভারি',185,'কুরিয়ার API টোকেন ও ব্যালেন্স দেখুন'],f:['SMS, ইমেইল ও নোটিফিকেশন',340,'SMS ব্যালেন্স ও মেইল সার্ভার দেখুন'],g:['স্টক ও পারচেজ',95,'স্টক ও সাপ্লায়ার পেজ দেখুন'],i:['সার্ভার, হিসাব ও AI',50,'ডিপ্লয় পেজ ও এরর লগ দেখুন']};
+
+// Line icons drawn for this board (one per activity), shown in a glowing chip in the group's colour. Falls back to the plain symbol if a key has none.
+const IC={phone:'M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2',
+mic:'M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3zM5 11a7 7 0 0 0 14 0M12 18v3',
+rec:'M12 12m-8 0a8 8 0 1 0 16 0a8 8 0 1 0-16 0M12 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0-6 0',
+building:'M4 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16M16 9h2a2 2 0 0 1 2 2v10M3 21h18M8 7h4M8 11h4M8 15h4',
+doc:'M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM14 3v5h5M9 13h6M9 17h6',
+target:'M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0-18 0M12 12m-5 0a5 5 0 1 0 10 0a5 5 0 1 0-10 0M12 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0-2 0',
+compass:'M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0-18 0M15.5 8.5l-2 5-5 2 2-5z',
+refresh:'M20 11a8 8 0 0 0-14.9-3M4 4v4h4M4 13a8 8 0 0 0 14.9 3M20 20v-4h-4',
+users:'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21v-1a6 6 0 0 1 12 0v1M16 3.5a4 4 0 0 1 0 7.5M22 21v-1a6 6 0 0 0-4-5.6',
+bell:'M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0',
+trophy:'M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 20h8',
+gift:'M4 11h16v9H4zM3 7h18v4H3zM12 7v13M12 7C9 7 7.5 6 7.5 4.8S10 3 12 7c2-4 4.5-3.4 4.5-2.2S15 7 12 7',
+search:'M11 11m-7 0a7 7 0 1 0 14 0a7 7 0 1 0-14 0M20 20l-4-4',
+chat:'M4 5h16v11H9l-5 4z',
+chat2:'M3 5h12v8H8l-4 3zM10 16h7l4 3V9h-3',
+monitor:'M3 4h18v12H3zM8 20h8M12 16v4',
+pen:'M4 20l1-4L16 5l3 3L8 19zM14 7l3 3',
+reply:'M9 8l-5 5 5 5M4 13h10a6 6 0 0 1 6 6',
+bot:'M5 9h14v10H5zM12 5v4M12 4m-1 0a1 1 0 1 0 2 0a1 1 0 1 0-2 0M9 13v2M15 13v2M2 13v3M22 13v3',
+spark:'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z',
+cart:'M3 4h2l2.5 11h10.5l2-8H6.5M9 20m-1.5 0a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0-3 0M17 20m-1.5 0a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0-3 0',
+check:'M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0-18 0M8 12l3 3 5-6',
+user:'M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21v-1a8 8 0 0 1 16 0v1',
+clock:'M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0-18 0M12 7v5l3 2',
+mega:'M4 10v4h3l8 4V6l-8 4zM18 9a4 4 0 0 1 0 6',
+eye:'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM12 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0-6 0',
+basket:'M4 9h16l-2 11H6zM8 9l4-6 4 6',
+shield:'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6zM9 12l2 2 4-4',
+scan:'M4 8V5h3M17 5h3v3M20 16v3h-3M7 19H4v-3M8 9v6M11 9v6M14 9v6M16.5 9v6',
+truck:'M2 6h11v10H2zM13 9h5l3 4v3h-8zM6.5 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0M17 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0',
+box:'M12 3l8 4v10l-8 4-8-4V7zM4 7l8 4 8-4M12 11v10',
+mobile:'M8 3h8a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM11 18h2',
+send:'M21 3L3 10l7 3 3 7zM10 13l5-5',
+mail:'M3 6h18v12H3zM3 7l9 6 9-6',
+factory:'M3 21V10l6 4v-4l6 4V5h4v16zM7 17h2M12 17h2',
+list:'M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01',
+up:'M4 19h16M5 15l4-4 4 3 6-7M15 7h4v4',
+down:'M4 19h16M5 8l4 4 4-3 6 7M15 16h4v-4',
+dollar:'M12 3v18M16 7.5C16 6 14.5 5 12 5S8 6 8 8s1.5 2.5 4 3 4 1.5 4 3.5-1.5 3-4 3-4-1-4-2.5',
+star:'M12 3l2.7 5.6 6.3.9-4.5 4.3 1.1 6.2L12 17l-5.6 3 1.1-6.2L3 9.5l6.3-.9z',
+image:'M3 5h18v14H3zM3 16l5-5 4 4 3-3 6 6M9 9m-1.5 0a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0-3 0',
+globe:'M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0-18 0M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18',
+db:'M5 6c0-1.7 3-3 7-3s7 1.3 7 3-3 3-7 3-7-1.3-7-3zM5 6v12c0 1.7 3 3 7 3s7-1.3 7-3V6M5 12c0 1.7 3 3 7 3s7-1.3 7-3',
+gear:'M12 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0-6 0M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2',
+pulse:'M2 12h4l3-7 4 14 3-7h6',
+lock:'M6 11h12v9H6zM9 11V8a3 3 0 0 1 6 0v3',
+rocket:'M12 15l-3-3c1-5 4-8 9-9-1 5-4 8-9 9zM9 12H5l2-4h3M12 15v4l4-2v-3M6 18l-2 2',
+card:'M3 6h18v12H3zM3 10h18M7 15h3',
+calc:'M6 3h12v18H6zM9 7h6M9 12h.01M12 12h.01M15 12h.01M9 16h.01M12 16h.01M15 16h.01',
+chip:'M8 8h8v8H8zM5 5h14v14H5zM10 2v3M14 2v3M10 19v3M14 19v3M2 10h3M2 14h3M19 10h3M19 14h3',
+alert:'M12 3l10 18H2zM12 10v5M12 18h.01'};
+const IK={calls:'phone',ordercall:'check',voice:'mic',wacalls:'mobile',warec:'rec',pbx:'building',calldaily:'doc',
+capi:'target',arrivals:'compass',winback:'refresh',referral:'users',push:'bell',bscamp:'trophy',appreward:'gift',seo:'search',
+wa:'chat',fb:'chat2',ig:'image',web:'monitor',reply:'pen',fbcomments:'reply',aichat:'bot',chatcare:'spark',
+orders:'cart',aiapprove:'chip',manapprove:'user',sched:'clock',ordernotify:'mega',orderwatch:'eye',incomplete:'basket',fraud:'shield',scan:'scan',
+csync:'refresh',pathao:'truck',steadfast:'box',redx:'send',carrybee:'truck',
+sms:'mobile',smscamp:'mega',email:'mail',waupdate:'chat',pubsms:'bell',supsms:'factory',
+reorder:'list',restock:'up',purchaselist:'doc',autoprice:'dollar',bsstock:'star',aiimg:'image',single:'box',stock:'down',
+website:'globe',database:'db',queue:'gear',scheduler:'pulse',ssl:'lock',deploy:'rocket',svc:'card',recurring:'calc',aibrief:'chip',alerts:'alert'};
+const icon=n=>{const d=IC[IK[n.k]];return d?'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="'+d+'"/></svg>':n.i};
 const map=$('map'),E={},GE={},prev={};let healSeen=null,D=null,got=0,built=false,first=true,fails=0,prevBeat=null;
 
 function build(nodes){
   Object.keys(G).forEach(a=>{const s=document.createElement('section');s.className='g';s.style.gridArea=a;s.style.setProperty('--h',G[a][1]);
     s.innerHTML='<h2><span>'+G[a][0]+'</span><span class="gs"></span></h2><div class="tiles"></div>';map.appendChild(s);GE[a]={el:s,gs:s.querySelector('.gs'),tiles:s.querySelector('.tiles')}});
   nodes.forEach(n=>{if(!GE[n.g])return;const e=document.createElement('a');e.className='tile';e.href=n.h||'#';e.target='_blank';e.rel='noopener';
-    e.innerHTML='<span class="dot"></span><span class="cnt"></span><span class="em">'+n.i+'</span><span class="tn">'+esc(n.n)+'</span><span class="ta"></span>';GE[n.g].tiles.appendChild(e);E[n.k]={e,ta:e.querySelector('.ta'),cnt:e.querySelector('.cnt')}});
+    e.innerHTML='<span class="dot"></span><span class="cnt"></span><span class="em">'+icon(n)+'</span><span class="tn">'+esc(n.n)+'</span><span class="ta"></span>';GE[n.g].tiles.appendChild(e);E[n.k]={e,ta:e.querySelector('.ta'),cnt:e.querySelector('.cnt')}});
   built=true;layout();
 }
 function log(t,cls){const f=$('feed');const em=f.querySelector('.empty');if(em)em.remove();const d=new Date(),hh=bn(String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'));
@@ -193,7 +262,7 @@ function render(){
   $('hubbeat').textContent=D.beat==null?'ওয়ার্কারের সংকেত নেই':'ওয়ার্কার সংকেত '+ago(D.beat+el)+' আগে'+(D.disk!=null?' · ডিস্ক খালি '+bn(D.disk)+'%':'')+' · অটো-রিকভারি আজ '+bn(D.heal?D.heal.today:0)+' বার';
   bad.sort((p,q)=>(q.s==='dead')-(p.s==='dead'));
   const iss=(D.issues||[]).map(i=>'<div class="al '+(i.severity==='critical'||i.severity==='high'?'dead':'slow')+'"><b><span>🚨 '+esc(i.title)+'</span><em>'+esc(i.service)+'</em></b><p>'+esc(i.action)+'</p></div>');
-  const nb=bad.slice(0,5).map(n=>'<div class="al '+n.s+'"><b><span>'+n.i+' '+esc(n.n)+'</span><em>'+(n.s==='dead'?'থেমে আছে':'সতর্কতা')+'</em></b><p>'+esc(n.t||'')+(n.t?' · ':'')+G[n.g][2]+'</p></div>');
+  const nb=bad.slice(0,5).map(n=>'<div class="al '+n.s+'"><b><span>'+esc(n.n)+'</span><em>'+(n.s==='dead'?'থেমে আছে':'সতর্কতা')+'</em></b><p>'+esc(n.t||'')+(n.t?' · ':'')+G[n.g][2]+'</p></div>');
   const all=iss.concat(nb);$('attbox').classList.toggle('clear',!all.length);$('attn').textContent=all.length?bn(all.length)+' টি':'';
   $('att').innerHTML=all.length?all.join(''):'<div class="allok">সব ঠিক আছে। কোনো কাজ থেমে নেই।</div>';
 }
