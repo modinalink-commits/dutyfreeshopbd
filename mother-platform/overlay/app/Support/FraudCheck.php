@@ -38,7 +38,7 @@ class FraudCheck
     $phone = self::phone($phone); if (!preg_match('/^01\d{9}$/', $phone)) return ['ok' => false, 'error' => 'Invalid mobile number'];
     if (!$force) { $c = DB::table('fraud_checks')->where('phone', $phone)->where('created_at', '>', now()->subHours(6))->orderByDesc('id')->first(); if ($c && $c->data) return json_decode($c->data, true) + ['cached' => true]; }
     $http = []; $cfg = self::configured(); $ptok = (string)(Sms::secret('fc_pathao_token') ?: (Pathao::configured() ? Pathao::token() : '')); $cfg['pathao'] = $ptok !== ''; $psrc = 'off'; $safe = fn($v) => $v ? (int)$v : 0; $res = ['steadfast' => [0, 0, 0, 'off'], 'redx' => [0, 0, 0, 'off'], 'pathao' => [0, 0, 0, 'off']];
-    $bdOnly = $cfg['bdcourier']; // BD Courier active = the only fraud source (direct Steadfast / RedX / Pathao calls are off)
+    $bdFail = null; $bdOnly = $cfg['bdcourier']; // BD Courier active = the only fraud source (direct Steadfast / RedX / Pathao calls are off)
     if (!$bdOnly && array_filter(array_diff_key($cfg, ['bdcourier' => 1]))) {
       try {
         $rs = Http::pool(fn($pool) => [
@@ -59,12 +59,18 @@ class FraudCheck
       try {
         $br = Http::timeout(12)->acceptJson()->withToken(trim((string)Sms::secret('fc_bdcourier_key')))->post('https://api.bdcourier.com/courier-check', ['phone' => $phone]); $http['bdcourier'] = $br->status();
         $bj = $br->successful() ? $br->json() : null;
+        if (!(is_array($bj) && ($bj['status'] ?? '') === 'success' && is_array($bj['data'] ?? null))) $bdFail = 'HTTP ' . $br->status() . ' ' . mb_substr(trim(strip_tags((string)(is_array($br->json()) ? ($br->json()['message'] ?? '') : ''))), 0, 80);
         if (is_array($bj) && ($bj['status'] ?? '') === 'success' && is_array($bj['data'] ?? null)) foreach ($bj['data'] as $bk => $bv) {
           if (!is_array($bv) || !isset($bv['total_parcel'])) continue; $bk = strtolower((string)$bk); if ($bk === 'summary') continue; $bt = $safe($bv['total_parcel']); $bd = $safe($bv['success_parcel'] ?? 0); $bc = $safe($bv['cancelled_parcel'] ?? 0);
           if (!isset($res[$bk])) $res[$bk] = [0, 0, 0, 'off'];
           if ($bt > ($res[$bk][0] ?? 0) || $res[$bk][3] !== 'ok') { $res[$bk] = [$bt, $bd, $bc, 'ok']; if ($bk === 'pathao' && $bt > 0) $psrc = 'network'; }
         }
-      } catch (\Throwable $e) { $http['bdcourier'] = 0; }
+      } catch (\Throwable $e) { $http['bdcourier'] = 0; $bdFail = 'no connection to BD Courier'; }
+    }
+    // A failed BD Courier call must never look like "no courier history" (that reads as a clean customer): report the failure, do not store it, and raise an alert.
+    if ($bdFail !== null) {
+      try { DeployHealth::raise('fraud_bd_' . date('YmdH'), 'high', 'Fraud check', 'BD Courier fraud check is failing', 'The fraud check could not read BD Courier (' . trim($bdFail) . '). Customers are NOT being treated as clean while this lasts.', 'BD Courier limit reached, key problem or outage', 'Open Services and Balances, look at the BD Courier row, and recharge or renew if the plan ended.'); } catch (\Throwable $e) {}
+      return ['ok' => false, 'error' => 'BD Courier check failed (' . trim($bdFail) . '). Not treated as a clean customer; try again.', 'bd_failed' => true, 'http' => $http, 'phone' => $phone];
     }
     // Pathao fallback: when Pathao's network score is unavailable, use this store's own Pathao parcels for the number (official API, our synced parcel results).
     if (!$bdOnly && ($res['pathao'][3] !== 'ok' || $res['pathao'][0] === 0)) {
