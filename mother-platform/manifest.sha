@@ -31,7 +31,7 @@ e9e690c2e55906b8f1e47f5aa6eeb5e35b88f6e4 app/Models/Res.php
 2f386cd7d37a49cf06dbd3f9c6bfec3d33c2e6ea resources/views/res_list.blade.php
 02454a9915ed520f7506ca073a7683ca7e9dc150 resources/views/res_form.blade.php
 67a76a09307002f6201cc2e684f3161b22c67d9c resources/views/reports.blade.php
-11304bb472fba315f9c689d357eff559baaea413 resources/views/sidebar.blade.php
+c278ef9786ed0e8c07bbb545395579e049b64ae9 resources/views/sidebar.blade.php
 42ec15c419546449e1c381f9c7c712a4395e2226 resources/views/coming.blade.php
 c391e719e9e194b7bf6ecf86ccb4c9a4504c2d17 database/migrations/2026_10_31_000004_catalog_extra.php
 d5d35fdf9413e4b3ab5feed955243317b651d684 resources/views/panels/customers.blade.php
