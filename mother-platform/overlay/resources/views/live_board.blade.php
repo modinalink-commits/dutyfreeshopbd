@@ -43,7 +43,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-off
 .k.slow{border-color:#6b4f12}.k.slow .kl i{background:var(--slow)}.k.dead{border-color:var(--dead)}.k.dead .kl i{background:var(--dead)}.k.na .kl i{background:var(--na)}
 .k .kv{font-family:var(--m);font-size:20px;font-variant-numeric:tabular-nums;margin-top:2px}
 .k .kv small{font-family:var(--f);font-size:12px;color:var(--mute);margin-left:5px}
-.k .sp{display:block;width:100%;height:20px;margin-top:3px}
+.k .spw{position:relative;height:22px;margin-top:3px;overflow:hidden}.k .sp{display:block;width:100%;height:100%}.k .sd{position:absolute;right:0;width:6px;height:6px;border-radius:50%;margin-top:-3px}
 .k .ks{font-size:12px;color:var(--mute);margin-top:1px;overflow-wrap:anywhere}
 .main{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:16px;align-items:start}
 .map{position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:40px 50px;grid-template-areas:"a b c" "d h e" "f g i"}
@@ -222,12 +222,31 @@ function build(nodes){
     e.innerHTML='<span class="dot"></span><span class="cnt"></span><span class="em">'+icon(n)+'</span><span class="tn">'+esc(n.n)+'</span><span class="ta"></span>';GE[n.g].tiles.appendChild(e);E[n.k]={e,ta:e.querySelector('.ta'),cnt:e.querySelector('.cnt')}});
   built=true;layout();
 }
-// trend line of a card: real samples, one a minute (up to the last hour); a flat line until two samples exist
-function spark(h,st){h=h||[];const col=st==='dead'?'var(--dead)':st==='slow'?'var(--slow)':'var(--accent)';
-  if(h.length<2)return '<svg class="sp" viewBox="0 0 100 22" preserveAspectRatio="none"><path d="M0 16H100" stroke="var(--line)" stroke-width="1.5" fill="none" vector-effect="non-scaling-stroke"/></svg>';
-  const mn=Math.min(...h),mx=Math.max(...h),r=(mx-mn)||1,pts=h.map((y,i)=>[(i*100/(h.length-1)).toFixed(1),(19-(y-mn)/r*16).toFixed(1)]);
-  const line=pts.map((q,i)=>(i?'L':'M')+q[0]+' '+q[1]).join('');
-  return '<svg class="sp" viewBox="0 0 100 22" preserveAspectRatio="none"><path d="'+line+'L100 22L0 22Z" fill="'+col+'" opacity=".14"/><path d="'+line+'" stroke="'+col+'" stroke-width="1.6" fill="none" vector-effect="non-scaling-stroke"/></svg>'}
+// Live trend lines. Every refresh (5 s) adds one real sample per card, and the line slides left on every animation frame, so it is always moving.
+// The speed card plots the time this very screen waited for the server on each refresh; the other cards plot their own value.
+// What happened before the page was opened comes from the server (one sample a minute).
+const HB={},LIVE={},SPN=48;let rtMs=null,lastSample=0;
+function sample(d){
+  d.kpi.forEach((k,i)=>{const key=k.l;if(!HB[key])HB[key]=(k.h||[]).slice(-SPN);
+    let v=k.v;if(i===0&&rtMs!=null){v=rtMs;if(!LIVE[key]){LIVE[key]=1;HB[key]=[]}}
+    if(v==null)return;HB[key].push(v);if(HB[key].length>SPN)HB[key].shift()});
+  lastSample=performance.now();
+}
+function drawSparks(now){
+  if(D){const f=Math.min(1,(now-lastSample)/5000),step=100/(SPN-2);
+    D.kpi.forEach((k,i)=>{const el=document.getElementById('sp'+i),dot=document.getElementById('sd'+i);if(!el)return;const h=HB[k.l]||[],n=h.length;
+      const col=k.st==='dead'?'#ff4d4d':k.st==='slow'?'#f2b030':'#ff7a1a';
+      if(n<2){el.innerHTML='<path d="M0 16H100" stroke="#232c42" stroke-width="1.5" fill="none" vector-effect="non-scaling-stroke"/>';if(dot)dot.hidden=true;return}
+      const mn=Math.min(...h),mx=Math.max(...h),r=(mx-mn)||1,Y=v=>19-(v-mn)/r*15;
+      const pts=[];for(let j=0;j<=n-2;j++)pts.push([100-(n-1-j)*step+(1-f)*step,Y(h[j])]);
+      const cur=[100,Y(h[n-2])+(Y(h[n-1])-Y(h[n-2]))*f];pts.push(cur);
+      const line=pts.map((q,j)=>(j?'L':'M')+q[0].toFixed(2)+' '+q[1].toFixed(2)).join('');
+      el.innerHTML='<path d="'+line+'L100 22L'+pts[0][0].toFixed(2)+' 22Z" fill="'+col+'" opacity=".15"/><path d="'+line+'" stroke="'+col+'" stroke-width="1.6" fill="none" vector-effect="non-scaling-stroke"/>';
+      if(dot){dot.style.top=(cur[1]/22*100)+'%';dot.style.background=col;dot.style.boxShadow='0 0 8px '+col;dot.hidden=false}});
+  }
+  requestAnimationFrame(drawSparks);
+}
+requestAnimationFrame(drawSparks);
 function log(t,cls){const f=$('feed');const em=f.querySelector('.empty');if(em)em.remove();const d=new Date(),hh=bn(String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'));
   f.insertAdjacentHTML('afterbegin','<div class="ev '+(cls||'')+'"><time>'+hh+'</time><span>'+esc(t)+'</span></div>');while(f.children.length>5)f.lastChild.remove()}
 let ac=null;
@@ -252,7 +271,8 @@ function apply(d){
   // pipeline
   let h='',flow=true,wi=0;d.pipe.forEach((p,i)=>{if(!p){h+='<div class="gap"></div>';flow=false;return}if(i&&d.pipe[i-1])h+=flow?'<div class="wire w'+(++wi%3+1)+'"></div>':'<div class="gap" style="flex-basis:6px"></div>';
     h+='<div class="stg '+p.c+'"><b>'+(p.n==null?'–':num(p.n))+'</b><span>'+p.l+'</span></div>'});$('pipe').innerHTML=h;
-  $('kp').innerHTML=d.kpi.map(k=>'<div class="k '+(k.st==='ok'?'':k.st)+'"><div class="kl"><i></i>'+esc(k.l)+'</div><div class="kv">'+(k.v==null?'–':num(k.v))+'<small>'+esc(k.u)+'</small></div><div class="ks">'+esc(k.s)+'</div>'+spark(k.h,k.st)+'</div>').join('');
+  sample(d);if(rtMs!=null&&d.kpi[0]){d.kpi[0].v=rtMs;d.kpi[0].u='ms সাড়া (লাইভ)';d.kpi[0].st=d.kpi[0].st==='dead'?'dead':rtMs>1500?'slow':'ok'}
+  $('kp').innerHTML=d.kpi.map((k,i)=>'<div class="k '+(k.st==='ok'?'':k.st)+'"><div class="kl"><i></i>'+esc(k.l)+'</div><div class="kv">'+(k.v==null?'–':num(k.v))+'<small>'+esc(k.u)+'</small></div><div class="ks">'+esc(k.s)+'</div><div class="spw"><svg class="sp" id="sp'+i+'" viewBox="0 0 100 22" preserveAspectRatio="none"></svg><i class="sd" id="sd'+i+'" hidden></i></div></div>').join('');
   // staff
   const st=d.staff||{rows:[]};let idle=0;
   $('sg').innerHTML=st.rows.length?st.rows.map(s=>{const off=s.state==='Offline',aw=s.state==='Away'||s.state==='On break';if(aw)idle++;
@@ -283,9 +303,10 @@ function render(){
   $('att').innerHTML=all.length?all.join(''):'<div class="allok">সব ঠিক আছে। কোনো কাজ থেমে নেই।</div>';
 }
 function poll(){
+  const t0=performance.now();
   fetch('/admin/live-dashboard/status',{headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'},credentials:'same-origin',cache:'no-store'})
    .then(r=>{if(r.status===401||r.status===419||r.redirected)throw new Error('login');if(!r.ok)throw new Error('http '+r.status);return r.json()})
-   .then(d=>{D=d;got=Date.now();if(fails>2)log('সার্ভারের সঙ্গে সংযোগ ফিরে এসেছে');fails=0;$('conn').textContent='লাইভ · প্রতি ৫ সেকেন্ডে';$('conn').className='tag';apply(d);first=false})
+   .then(d=>{rtMs=Math.round(performance.now()-t0);D=d;got=Date.now();if(fails>2)log('সার্ভারের সঙ্গে সংযোগ ফিরে এসেছে');fails=0;$('conn').textContent='লাইভ · প্রতি ৫ সেকেন্ডে';$('conn').className='tag';apply(d);first=false})
    .catch(e=>{fails++;const m=e.message==='login'?'লগইন শেষ হয়েছে, আবার লগইন করুন':'সার্ভার থেকে তথ্য আসছে না';$('conn').textContent=m;$('conn').className='tag bad';if(fails===3){log(m,'bad');beep()}render()});
 }
 setInterval(poll,5000);poll();
