@@ -81,8 +81,9 @@ body.fit .em{width:30px;height:30px}.tn{font-size:11.5px;font-weight:600;line-he
 .score{position:absolute;right:-12px;bottom:-4px;font-family:var(--m);font-size:14px;background:#0e1730;border:2px solid var(--ok);color:var(--ok);border-radius:12px;padding:1px 7px;z-index:2}
 .hub.bad .score{border-color:var(--dead);color:#ff9d9d}
 .vit{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-top:2px}.vit span{font-size:11.5px;border:1px solid #2c7a52;color:#8fe6b8;border-radius:5px;padding:1px 7px;font-family:var(--m);white-space:nowrap}.vit span.slow{border-color:var(--slow);color:var(--slow)}.vit span.dead{border-color:var(--dead);color:#ff9d9d;background:#2a1017}.vit span.na{border-color:var(--line);color:var(--mute)}
+.ht{display:contents}
 .hub b{display:block}.hub .who{font-size:12.5px;color:#b9c4ff;letter-spacing:.3px}
-body.fit .core{width:104px;height:104px}
+
 .core::before,.core::after{content:"";position:absolute;inset:-2px;border-radius:50%;border:2px solid #6f86ff;animation:ring 2.8s ease-out infinite}.core::after{animation-delay:1.4s}
 @keyframes ring{0%{transform:scale(1);opacity:.7}100%{transform:scale(1.8);opacity:0}}
 .hub b{font-size:16px}.hub small{color:var(--mute);font-size:12.5px}
@@ -116,7 +117,14 @@ body.fit .map{grid-template-rows:repeat(3,minmax(0,1fr));gap:24px 44px;min-heigh
 body.fit .g{display:flex;flex-direction:column;min-height:0}
 body.fit .tiles{flex:1;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));min-height:0}
 body.fit .tile{height:auto;min-height:0;align-content:center;padding:6px 3px 4px}
-body.fit .hub{min-height:0;padding:8px 10px}
+body.fit .hub{min-height:0;padding:8px 18px;overflow:hidden;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);grid-template-areas:"tl av tr" "vit vit vit";align-content:center;align-items:center;column-gap:30px;row-gap:8px}
+body.fit .hub .core{grid-area:av;width:100px;height:100px;margin:14px}
+body.fit .hub .ht{display:grid;gap:4px;min-width:0}
+body.fit .hub .hl{grid-area:tl;text-align:right;justify-items:end}
+body.fit .hub .hr{grid-area:tr;text-align:left;justify-items:start}
+body.fit .hub .hl b{font-size:20px}
+body.fit .hub .hr small:first-child{font-size:14px;color:var(--fg)}
+body.fit .hub .vit{grid-area:vit;justify-self:center;margin:0}
 body.fit .rail{display:flex;flex-direction:column;min-height:0}
 body.fit .rail .box{overflow:hidden;flex:0 0 auto}
 body.fit .rail .att{flex:1 1 0;min-height:0}
@@ -135,7 +143,7 @@ body.fit .rail .att{flex:1 1 0;min-height:0}
 <div class="sec">সব কার্যক্রম</div>
 <div class="main">
   <div class="map" id="map"><canvas id="cv"></canvas>
-    <section class="hub" id="hub"><div class="core"><span class="halo"></span><img src="/live-board-avatar.jpg?v=1" alt="Mohammad Faruk" onerror="this.hidden=true"><span class="score" id="score">…</span></div><b>মাদার কমার্স</b><span class="who">Mohammad Faruk · কেন্দ্রীয় নিয়ন্ত্রণ</span><small id="hubsub">তথ্য আসছে</small><small id="hubbeat"></small><div class="vit" id="vit"></div></section>
+    <section class="hub" id="hub"><div class="core"><span class="halo"></span><img src="/live-board-avatar.jpg?v=1" alt="Mohammad Faruk" onerror="this.hidden=true"><span class="score" id="score">…</span></div><div class="ht hl"><b>মাদার কমার্স</b><span class="who">Mohammad Faruk · কেন্দ্রীয় নিয়ন্ত্রণ</span></div><div class="ht hr"><small id="hubsub">তথ্য আসছে</small><small id="hubbeat"></small></div><div class="vit" id="vit"></div></section>
   </div>
   <aside class="rail">
     <section class="box att" id="attbox"><h2><span>এখন নজর দিন</span><span id="attn"></span></h2><div id="att"></div></section>
@@ -276,9 +284,10 @@ function apply(d){
   $('kp').innerHTML=d.kpi.map((k,i)=>'<div class="k '+(k.st==='ok'?'':k.st)+'"><div class="kl"><i></i>'+esc(k.l)+'</div><div class="kv">'+(k.v==null?'–':num(k.v))+'<small>'+esc(k.u)+'</small></div><div class="ks">'+esc(k.s)+'</div><div class="spw"><svg class="sp" id="sp'+i+'" viewBox="0 0 100 22" preserveAspectRatio="none"></svg><i class="sd" id="sd'+i+'" hidden></i></div></div>').join('');
   // staff
   const st=d.staff||{rows:[]};let idle=0;
-  $('sg').innerHTML=st.rows.length?st.rows.map(s=>{const off=s.state==='Offline',aw=s.state==='Away'||s.state==='On break';if(aw)idle++;
+  const offN=st.rows.filter(s=>s.state==='Offline').map(s=>esc(s.name));
+  $('sg').innerHTML=st.rows.length?st.rows.filter(s=>s.state!=='Offline').map(s=>{const off=s.state==='Offline',aw=s.state==='Away'||s.state==='On break';if(aw)idle++;
     const w=off?'অফলাইন':(s.state==='On break'?'বিরতিতে':(aw?'দূরে':'')+(s.page?(aw?' · ':'')+esc(s.page):''))+(s.work_min!=null?' · শেষ কাজ '+bn(s.work_min)+' মি. আগে':'');
-    return '<div class="sc '+(off?'off':aw?'idle':'')+'"><i></i><div style="min-width:0"><b>'+esc(s.name)+'</b><div class="w">'+w+(s.waiting?' · অপেক্ষায় '+bn(s.waiting)+' চ্যাট':'')+'</div></div><div class="o">'+(off?'':bn(s.orders)+' অর্ডার<br>'+bn(s.calls)+' কল · '+bn(s.chats)+' চ্যাট')+'</div></div>'}).join(''):'<div class="empty">স্টাফের তথ্য পাওয়া যায়নি।</div>';
+    return '<div class="sc '+(off?'off':aw?'idle':'')+'"><i></i><div style="min-width:0"><b>'+esc(s.name)+'</b><div class="w">'+w+(s.waiting?' · অপেক্ষায় '+bn(s.waiting)+' চ্যাট':'')+'</div></div><div class="o">'+(off?'':bn(s.orders)+' অর্ডার<br>'+bn(s.calls)+' কল · '+bn(s.chats)+' চ্যাট')+'</div></div>'}).join('')+(offN.length?'<div class="sc off"><i></i><div class="w">অফলাইন: '+offN.join(', ')+'</div><div></div></div>':''):'<div class="empty">স্টাফের তথ্য পাওয়া যায়নি।</div>';
   $('sstat').textContent=(st.unassigned?'কারো নয় এমন চ্যাট '+bn(st.unassigned)+' · ':'')+(idle?bn(idle)+' জন দূরে':'');
   render();
 }
