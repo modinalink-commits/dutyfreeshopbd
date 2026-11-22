@@ -154,7 +154,7 @@ function render(){
   D.nodes.forEach(n=>{const x=E[n.k];if(!x)return;c[n.s]++;if(n.s==='dead'||n.s==='slow')bad.push(n);
     x.e.className='tile '+(n.s==='ok'?'':n.s)+(x.e.classList.contains('beat')?' beat':'');
     const a=n.last==null?null:n.last+el;
-    x.ta.textContent=n.s==='dead'?'থেমে আছে':n.s==='na'&&a==null?'সংকেত নেই':(a==null?'':ago(a)+' আগে')+(n.today!=null&&!n.beat?' · '+bn(n.today):n.today?' · '+bn(n.today):'');
+    x.ta.textContent=n.s==='dead'?'থেমে আছে':n.s==='na'&&a==null?'সংকেত নেই':(a==null?'':n.last>=259200&&!n.beat?'৩ দিন+ আগে':ago(a)+' আগে')+(n.today!=null&&!n.beat?' · '+bn(n.today):n.today?' · '+bn(n.today):'');
   });
   Object.keys(GE).forEach(a=>{const ns=D.nodes.filter(n=>n.g===a),dd=ns.filter(n=>n.s==='dead').length,ss=ns.filter(n=>n.s==='slow').length;
     GE[a].gs.textContent=dd?bn(dd)+' টি থেমে আছে':ss?bn(ss)+' টি ধীর':'সব ঠিক';GE[a].gs.style.color=dd?'var(--dead)':ss?'var(--slow)':'var(--ok)';GE[a].st=dd?'dead':ss?'slow':'ok'});

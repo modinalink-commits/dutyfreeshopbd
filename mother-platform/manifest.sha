@@ -1528,6 +1528,6 @@ e916236dd87599a4a3edd2b4938ba0ed735ab6e1 public/adimg/nov26-vip-15.jpg
 c7b0bce1b03012e15cfc2ec80dd1cdb4fb881511 public/adimg/reel-beauty.mp4
 92f5e0590bbceb2717163c9a8deba30ef22991b9 public/adimg/reel-food.mp4
 5b1438b8752a95a00c6339627ca7f8b26a3f4be2 public/adimg/reel-gadget.mp4
-34f3f4a62982d101127f26b79a42bee7b8a6a1d1 app/Support/LiveBoard.php
+e1603579807256aba143171a9781f7c3db9e881a app/Support/LiveBoard.php
 b4282ec039170706e1ff0b1765dda6f61b7ec2c5 app/Http/Controllers/LiveBoardController.php
-092838c2daceeca67cecaedae90b58509184eb8f resources/views/live_board.blade.php
+53553be82b00b8b694703b012b749dede6f15fd2 resources/views/live_board.blade.php

@@ -174,6 +174,8 @@ class LiveBoard {
           $out['capi']['last'] = $lt ? max(0, $now - $lt->getTimestamp()) : null; $out['capi']['s'] = empty($a[0]['ok']) ? 'dead' : ($bad > 3 ? 'slow' : 'ok'); $out['capi']['t'] = 'শেষ ' . count($a) . 'টি ইভেন্টে ব্যর্থ ' . $bad . 'টি'; }
       } catch (\Throwable $e) {}
       try { $d = now('Asia/Dhaka'); $out['arrivals']['today'] = (int)Cache::get('arr.d.' . $d->format('Y-m-d'), 0); $out['arrivals']['s'] = 'ok'; $out['arrivals']['t'] = 'এই ঘণ্টায় ' . (int)Cache::get('arr.h.' . $d->format('Y-m-d') . '-' . $d->format('H'), 0) . ' জন'; } catch (\Throwable $e) {}
+      // order emails: the worker can be healthy while nothing is actually sent, so a full day without one sent email is a warning
+      try { if ($out['email']['s'] === 'ok' && $out['email']['last'] !== null && $out['email']['last'] > 86400) { $out['email']['s'] = 'slow'; $out['email']['t'] = '২৪ ঘণ্টার বেশি কোনো ইমেইল পাঠানো হয়নি'; } } catch (\Throwable $e) {}
       try { $v = Cache::get('courier.last_sync'); $ag = self::ago($v); $out['csync']['last'] = $ag; if ($ag !== null) { $out['csync']['s'] = $ag > 7200 ? 'dead' : ($ag > 2400 ? 'slow' : 'ok'); $out['csync']['t'] = $ag > 2400 ? 'কুরিয়ার সিঙ্ক অনেকক্ষণ চলেনি' : ''; } } catch (\Throwable $e) {}
       try {
         $bad = []; foreach (DB::table('service_accounts')->get() as $r) { $st = ServiceBalances::state($r); if (in_array($st[0], ['low', 'expired', 'failed'], true)) $bad[] = ($r->name ?? 'Service') . ' (' . $st[1] . ')'; }
