@@ -86,7 +86,23 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-off
 @media(max-width:1180px){.main{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:860px){.map{grid-template-columns:minmax(0,1fr);gap:12px;grid-template-areas:"h" "a" "b" "c" "d" "e" "f" "g" "i"}#cv{display:none}}
 @media(prefers-reduced-motion:reduce){.tile.beat .dot,.tile.dead,.core::before,.core::after,.wire::after{animation:none}}
-</style></head><body>
+/* One-screen mode (owner, 23 Nov): the whole board is drawn on a 1920px-wide stage and scaled to the window, so at 100% zoom nothing scrolls. Phones keep the scrolling layout. */
+body.fit{padding:0;overflow:hidden;height:100vh}
+body.fit #stage{position:absolute;left:0;top:0;width:1920px;transform-origin:0 0;padding:12px 16px;display:grid;grid-template-rows:auto auto auto minmax(0,1fr);gap:10px}
+body.fit .sec{display:none}
+body.fit .top{flex-wrap:nowrap;padding-bottom:8px}
+body.fit .pipe{flex-wrap:nowrap}
+body.fit .kp{grid-template-columns:repeat(8,minmax(0,1fr))}
+body.fit .main{grid-template-columns:minmax(0,1fr) 320px;min-height:0;align-items:stretch}
+body.fit .map{grid-template-rows:repeat(3,minmax(0,1fr));gap:24px 44px;min-height:0}
+body.fit .g{display:flex;flex-direction:column;min-height:0}
+body.fit .tiles{flex:1;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));min-height:0}
+body.fit .tile{height:auto;min-height:0;align-content:center;padding:6px 3px 4px}
+body.fit .hub{min-height:0;padding:8px 10px}
+body.fit .rail{display:flex;flex-direction:column;min-height:0}
+body.fit .rail .box{overflow:hidden;flex:0 0 auto}
+body.fit .rail .att{flex:1 1 0;min-height:0}
+</style></head><body><div id="stage">
 <div class="top">
   <a class="brand" href="/admin" title="অ্যাডমিনে ফিরুন"><span class="logo"><img src="/dutyfree-bd-logo-v3.png" alt="DutyFree BD"></span><span class="bt"><strong>লাইভ ড্যাশবোর্ড</strong><small id="today"></small></span></a>
   <span class="tag" id="conn">সংযোগ হচ্ছে…</span>
@@ -109,6 +125,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-off
     <section class="box"><h2>সর্বশেষ ঘটনা</h2><div id="feed"><div class="empty">বোর্ড খোলার পর থেকে যা বদলাবে এখানে আসবে।</div></div></section>
   </aside>
 </div>
+</div>
 <script>
 (function(){
 const $=id=>document.getElementById(id);
@@ -127,7 +144,7 @@ function build(nodes){
   built=true;layout();
 }
 function log(t,cls){const f=$('feed');const em=f.querySelector('.empty');if(em)em.remove();const d=new Date(),hh=bn(String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'));
-  f.insertAdjacentHTML('afterbegin','<div class="ev '+(cls||'')+'"><time>'+hh+'</time><span>'+esc(t)+'</span></div>');while(f.children.length>8)f.lastChild.remove()}
+  f.insertAdjacentHTML('afterbegin','<div class="ev '+(cls||'')+'"><time>'+hh+'</time><span>'+esc(t)+'</span></div>');while(f.children.length>5)f.lastChild.remove()}
 let ac=null;
 function beep(){if(!ac)return;try{const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=660;g.gain.setValueAtTime(.12,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+.5);o.connect(g).connect(ac.destination);o.start();o.stop(ac.currentTime+.5)}catch(e){}}
 $('snd').onclick=e=>{if(ac){ac.close();ac=null}else{try{ac=new (window.AudioContext||window.webkitAudioContext)();beep()}catch(_){ac=null}}e.currentTarget.setAttribute('aria-pressed',ac?'true':'false')};
@@ -175,7 +192,7 @@ function render(){
   $('hubbeat').textContent=D.beat==null?'ওয়ার্কারের সংকেত নেই':'ওয়ার্কার সংকেত '+ago(D.beat+el)+' আগে'+(D.disk!=null?' · ডিস্ক খালি '+bn(D.disk)+'%':'');
   bad.sort((p,q)=>(q.s==='dead')-(p.s==='dead'));
   const iss=(D.issues||[]).map(i=>'<div class="al '+(i.severity==='critical'||i.severity==='high'?'dead':'slow')+'"><b><span>🚨 '+esc(i.title)+'</span><em>'+esc(i.service)+'</em></b><p>'+esc(i.action)+'</p></div>');
-  const nb=bad.slice(0,8).map(n=>'<div class="al '+n.s+'"><b><span>'+n.i+' '+esc(n.n)+'</span><em>'+(n.s==='dead'?'থেমে আছে':'সতর্কতা')+'</em></b><p>'+esc(n.t||'')+(n.t?' · ':'')+G[n.g][2]+'</p></div>');
+  const nb=bad.slice(0,5).map(n=>'<div class="al '+n.s+'"><b><span>'+n.i+' '+esc(n.n)+'</span><em>'+(n.s==='dead'?'থেমে আছে':'সতর্কতা')+'</em></b><p>'+esc(n.t||'')+(n.t?' · ':'')+G[n.g][2]+'</p></div>');
   const all=iss.concat(nb);$('attbox').classList.toggle('clear',!all.length);$('attn').textContent=all.length?bn(all.length)+' টি':'';
   $('att').innerHTML=all.length?all.join(''):'<div class="allok">সব ঠিক আছে। কোনো কাজ থেমে নেই।</div>';
 }
@@ -190,9 +207,14 @@ setInterval(()=>{render();const nd=new Date();$('clock').textContent=bn(nd.toLoc
 
 // wires + travelling dots (one dot = one real event seen since the last refresh)
 const cv=$('cv'),cx=cv.getContext('2d');let P={},W=0,H=0;
-function rel(el){const r=el.getBoundingClientRect(),m=map.getBoundingClientRect();return{left:r.left-m.left,right:r.right-m.left,top:r.top-m.top,bottom:r.bottom-m.top,w:r.width,h:r.height}}
+let S=1;
+function fit(){const on=innerWidth>=1000,st=$('stage');document.body.classList.toggle('fit',on);
+  if(!on){S=1;st.style.transform='';st.style.height='';st.style.left='';layout();return}
+  let sc=innerWidth/1920,h=innerHeight/sc;if(h<940){h=940;sc=innerHeight/940}
+  S=sc;st.style.height=h+'px';st.style.transform='scale('+sc+')';st.style.left=Math.max(0,(innerWidth-1920*sc)/2)+'px';layout()}
+function rel(el){const r=el.getBoundingClientRect(),m=map.getBoundingClientRect();return{left:(r.left-m.left)/S,right:(r.right-m.left)/S,top:(r.top-m.top)/S,bottom:(r.bottom-m.top)/S,w:r.width/S,h:r.height/S}}
 function layout(){
-  const m=map.getBoundingClientRect(),dpr=window.devicePixelRatio||1;W=m.width;H=m.height;cv.width=W*dpr;cv.height=H*dpr;cx.setTransform(dpr,0,0,dpr,0,0);
+  const dpr=(window.devicePixelRatio||1)*S;W=map.offsetWidth;H=map.offsetHeight;cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);cx.setTransform(dpr,0,0,dpr,0,0);
   if(!built||getComputedStyle(cv).display==='none'){P={};return}
   const hub=rel($('hub')),hy=hub.top+hub.h/2,hx=hub.left+hub.w/2,R={};Object.keys(GE).forEach(a=>R[a]=rel(GE[a].el));
   const g1=(R.d.right+hub.left)/2,g2=(hub.right+R.e.left)/2,mid=r=>r.top+r.h/2;
@@ -202,7 +224,7 @@ function layout(){
   Object.values(P).forEach(p=>{let L=0;p.cum=[0];for(let k=1;k<p.length;k++){L+=Math.hypot(p[k][0]-p[k-1][0],p[k][1]-p[k-1][1]);p.cum.push(L)}p.len=L});
 }
 function at(p,t){const d=t*p.len;let k=1;while(k<p.length-1&&p.cum[k]<d)k++;const f=(d-p.cum[k-1])/((p.cum[k]-p.cum[k-1])||1);return[p[k-1][0]+(p[k][0]-p[k-1][0])*f,p[k-1][1]+(p[k][1]-p[k-1][1])*f]}
-addEventListener('resize',layout);setInterval(layout,1500);
+addEventListener('resize',fit);setInterval(layout,1500);
 const still=matchMedia('(prefers-reduced-motion:reduce)').matches,parts=[];
 function spawn(a,big){if(parts.length<160)parts.push({a,t:0,s:.3+Math.random()*.25,dir:big?(Math.random()<.3?-1:1):(tog[a]=!tog[a])?1:-1,r:big?4.2:2.6})}
 // steady traffic (owner, 23 Nov): one small dot per second on every group that is alive, going out and coming back in turn.
@@ -219,7 +241,7 @@ function draw(now){
     const xy=at(p,q.dir>0?q.t:1-q.t),h=G[q.a][1];cx.save();cx.shadowBlur=12;cx.shadowColor='hsl('+h+' 90% 65%)';cx.fillStyle='hsl('+h+' 95% 80%)';cx.beginPath();cx.arc(xy[0],xy[1],q.r||3.2,0,7);cx.fill();cx.restore()}
   requestAnimationFrame(draw);
 }
-requestAnimationFrame(draw);document.fonts&&document.fonts.ready.then(layout);
+fit();requestAnimationFrame(draw);document.fonts&&document.fonts.ready.then(fit);
 })();
 </script>
 </body></html>
