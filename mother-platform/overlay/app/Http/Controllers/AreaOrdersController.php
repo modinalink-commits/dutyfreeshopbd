@@ -52,7 +52,8 @@ class AreaOrdersController extends Controller
   public function addrSample(Request $r) {
     $days = max(1, min(60, (int)$r->query('days', 30))); $P = \App\Support\AddressParse::class;
     $rows = \Illuminate\Support\Facades\DB::table('orders')->where('created_at', '>=', now()->subDays($days))->orderByDesc('id')->limit(20000)->get(['id', 'address', 'district', 'delivery_zone', 'status', 'shipping', 'delivery_original']);
-    $o = ['days' => $days, 'total' => 0, 'identified' => 0, 'with_area' => 0, 'need_check' => 0, 'reasons' => [], 'zone' => ['agree' => 0, 'differ' => 0, 'no_zone' => 0], 'district_field' => ['label' => 0, 'same' => 0, 'different' => 0, 'empty' => 0], 'charge_on_differ' => ['orders' => 0, 'shown' => 0.0, 'charged' => 0.0], 'priced_ctg_reader_other' => 0, 'priced_other_reader_ctg' => 0, 'pairs' => [], 'by_district' => [], 'check_words' => [], 'samples' => ['ok' => [], 'check' => [], 'differ' => []]];
+    $o = ['days' => $days, 'total' => 0, 'identified' => 0, 'with_area' => 0, 'need_check' => 0, 'reasons' => [], 'zone' => ['agree' => 0, 'differ' => 0, 'no_zone' => 0], 'district_field' => ['label' => 0, 'same' => 0, 'different' => 0, 'empty' => 0], 'charge_on_differ' => ['orders' => 0, 'shown' => 0.0, 'charged' => 0.0], 'priced_ctg_reader_other' => 0, 'priced_other_reader_ctg' => 0, 'pairs' => [], 'by_district' => [], 'check_words' => [], 'samples' => ['ok' => [], 'check' => [], 'differ' => [], 'typed' => []]];
+    try { $o['new_orders'] = ['since_utc' => $P::SINCE, 'by_check' => \Illuminate\Support\Facades\DB::table('orders')->where('created_at', '>=', $P::SINCE)->selectRaw("coalesce(addr_check::text,'not read yet') k, coalesce(source,'(none)') src, count(*) n, count(*) filter (where district ilike 'Inside %') label, count(*) filter (where coalesce(district,'') = '') empty_district")->groupBy('k', 'src')->get()]; } catch (\Throwable $e) { $o['new_orders'] = $e->getMessage(); }
     $cut = fn($s) => mb_substr(preg_replace('/\s+/u', ' ', (string)$s), 0, 80);
     foreach ($rows as $x) {
       $o['total']++; $p = $P::parse((string)$x->address);
@@ -66,7 +67,7 @@ class AreaOrdersController extends Controller
       $o['identified']++; if ($p['area']) $o['with_area']++; $o['by_district'][$p['district']] = ($o['by_district'][$p['district']] ?? 0) + 1;
       if (count($o['samples']['ok']) < 25 && $o['identified'] % 40 === 0) $o['samples']['ok'][] = [$cut($x->address), $p['area'], $p['thana'], $p['district']];
       $d = trim((string)$x->district); $dc = $d === '' ? null : \App\Support\AreaOrders::match($d, false);
-      if ($d === '') $o['district_field']['empty']++; elseif (stripos($d, 'Inside ') === 0 || stripos($d, 'Chattogram to ') === 0) $o['district_field']['label']++; elseif ($dc === $p['district']) $o['district_field']['same']++; else $o['district_field']['different']++;
+      if ($d === '') $o['district_field']['empty']++; elseif (stripos($d, 'Inside ') === 0 || stripos($d, 'Chattogram to ') === 0) $o['district_field']['label']++; elseif ($dc === $p['district']) $o['district_field']['same']++; else { $o['district_field']['different']++; if (count($o['samples']['typed']) < 45) $o['samples']['typed'][] = [$cut($x->address), $d, $p['district']]; }
       if ($zc === null) { $o['zone']['no_zone']++; continue; }
       if ($zc === $p['district']) { $o['zone']['agree']++; continue; }
       $o['zone']['differ']++; $k = $p['district'] . ' → priced as ' . $zc; $o['pairs'][$k] = ($o['pairs'][$k] ?? 0) + 1;

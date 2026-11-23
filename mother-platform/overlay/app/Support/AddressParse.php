@@ -90,7 +90,7 @@ class AddressParse
   }
 
   /** Orders placed before this moment (UTC) are old records: they are never touched without the owner's approval. */
-  const SINCE = '2026-11-23 23:20:00';
+  const SINCE = '2026-11-23 22:56:00';
   public static function isNew(object $o): bool { try { return isset($o->created_at) && \Carbon\Carbon::parse($o->created_at, 'UTC')->gte(\Carbon\Carbon::parse(self::SINCE, 'UTC')); } catch (\Throwable $e) { return false; } }
   /** New orders that were not read yet (admin, AI chat, call centre): a few per run. */
   public static function sweep(): void {
