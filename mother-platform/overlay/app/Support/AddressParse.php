@@ -89,10 +89,19 @@ class AddressParse
     $out['district'] = $district; $out['division'] = self::division($district); $out['city'] ??= $district; $out['check'] = 0; return $out;
   }
 
+  /** Orders placed before this moment (UTC) are old records: they are never touched without the owner's approval. */
+  const SINCE = '2026-11-23 23:20:00';
+  public static function isNew(object $o): bool { try { return isset($o->created_at) && \Carbon\Carbon::parse($o->created_at, 'UTC')->gte(\Carbon\Carbon::parse(self::SINCE, 'UTC')); } catch (\Throwable $e) { return false; } }
+  /** New orders that were not read yet (admin, AI chat, call centre): a few per run. */
+  public static function sweep(): void {
+    if (!\Illuminate\Support\Facades\Schema::hasColumn('orders', 'addr_check')) return;
+    foreach (DB::table('orders')->whereNull('addr_check')->where('created_at', '>=', self::SINCE)->orderBy('id')->limit(40)->pluck('id') as $id) self::stamp((int)$id);
+  }
+
   /** Save the parsed fields on one order. The "inside city" label that the checkout used to save as district is replaced only by a clearly read district, else emptied. */
   public static function stamp(int $orderId, bool $fixDistrict = true): void {
     try {
-      $o = DB::table('orders')->where('id', $orderId)->first(['id', 'address', 'district']); if (!$o) return;
+      $o = DB::table('orders')->where('id', $orderId)->first(['id', 'address', 'district', 'created_at']); if (!$o || !self::isNew($o)) return; // old records are never touched here
       $p = self::parse((string)$o->address);
       $u = ['addr_area' => $p['area'], 'addr_thana' => $p['thana'], 'addr_city' => $p['city'], 'addr_district' => $p['district'], 'addr_check' => $p['check'], 'addr_note' => $p['why'] !== '' ? mb_substr($p['why'], 0, 160) : null];
       if ($fixDistrict && (trim((string)$o->district) === '' || stripos((string)$o->district, 'Inside ') === 0 || stripos((string)$o->district, 'Chattogram to ') === 0)) $u['district'] = $p['district'];

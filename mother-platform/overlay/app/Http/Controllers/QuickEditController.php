@@ -68,7 +68,7 @@ class QuickEditController extends Controller {
     $addr = mb_substr(trim((string)$r->input('address')), 0, 500); if ($addr === '') return $this->err('Address is required.');
     $dist = mb_substr(trim((string)$r->input('district')), 0, 120);
     $upd = []; $log = [];
-    if ($addr !== (string)$o->address) { $upd['address'] = $addr; $log[] = ['address', (string)$o->address, $addr]; }
+    if ($addr !== (string)$o->address) { $upd['address'] = $addr; $log[] = ['address', (string)$o->address, $addr]; if (\App\Support\AddressParse::isNew($o)) $upd['addr_check'] = null; } // new address is read again by the worker
     if ($dist !== (string)$o->district) { $upd['district'] = $dist; $log[] = ['district', (string)$o->district, $dist]; }
     if (!$upd) return $this->err('Nothing was changed.');
     DB::table('orders')->where('id', $o->id)->update($upd + ['updated_at'=>now()]);

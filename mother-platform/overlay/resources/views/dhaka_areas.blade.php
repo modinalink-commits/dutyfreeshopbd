@@ -1,0 +1,9 @@
+@extends('layout')@section('title','Dhaka Areas')
+@section('body')
+<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:10px"><div style="flex:1;min-width:260px"><h1 style="margin:0">Dhaka orders by area <small style="font-weight:700;color:#6B7280">{{ number_format($total) }} orders · last {{ $days }} days</small></h1><span style="font-size:13px;color:#6B7280">Area is read from the delivery address the customer wrote. "Area not written" means the address says Dhaka but names no known area.</span></div>
+@foreach([7,30,60,90] as $d)<a class="btn {{ $days === $d ? '' : 'g' }}" href="?view=1&days={{ $d }}">{{ $d }} days</a>@endforeach <a class="btn g" href="/admin/analytics/area-orders">All districts</a></div>
+<div class="card" style="overflow-x:auto"><table><thead><tr><th>Area</th><th>Part</th><th style="text-align:right">Orders</th><th style="text-align:right">Delivered</th><th style="text-align:right">Cancelled</th><th style="text-align:right">Returned</th><th style="text-align:right">Delivered %</th></tr></thead><tbody>
+@forelse($areas as $a)@php $a = (array)$a; $n = (int)($a['n'] ?? 0); $dl = (int)($a['delivered'] ?? 0); @endphp
+<tr><td><b>{{ $a['area'] ?? '—' }}</b></td><td style="color:#6B7280">{{ ['city' => 'Dhaka city', 'out' => 'Outside the city', 'unknown' => '—'][$a['part'] ?? ''] ?? ($a['part'] ?? '') }}</td><td style="text-align:right">{{ number_format($n) }}</td><td style="text-align:right;color:#166534">{{ number_format($dl) }}</td><td style="text-align:right;color:#B91C1C">{{ number_format((int)($a['cancelled'] ?? 0)) }}</td><td style="text-align:right;color:#B45309">{{ number_format((int)($a['returned'] ?? 0)) }}</td><td style="text-align:right">{{ $n ? round($dl * 100 / $n) : 0 }}%</td></tr>
+@empty<tr><td colspan="7" style="text-align:center;color:#6B7280;padding:24px">No Dhaka orders in this period.</td></tr>@endforelse</tbody></table></div>
+@endsection

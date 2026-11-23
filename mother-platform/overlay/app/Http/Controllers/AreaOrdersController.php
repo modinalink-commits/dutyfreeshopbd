@@ -98,6 +98,7 @@ class AreaOrdersController extends Controller
       foreach ([['n', true], ['delivered', $d], ['returned', $rt], ['cancelled', $cn], ['label_ctg', $lc]] as [$k, $v]) if ($v) { $b[$k]++; $tot[$k]++; } unset($b);
     }
     usort($out, fn($x, $y) => $y['delivered'] <=> $x['delivered']);
+    if ($r->query('view')) return view('dhaka_areas', ['days' => $days, 'total' => (int)($tot['n'] ?? 0), 'areas' => $out]);
     return response()->json(['days' => $days, 'total' => $tot, 'areas' => $out])->header('Cache-Control', 'no-store');
   }
 

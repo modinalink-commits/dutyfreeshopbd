@@ -31,6 +31,7 @@ class ModulePermission {
     if (preg_match('#^chat(/|$)#', $p)) return 'orders';
     if (preg_match('#^call-center/(account|extensions)#', $p)) return 'settings'; // SIP server + per-user extension passwords: settings-level only
     if (str_starts_with($p, 'call-center')) return 'orders';
+    if (str_starts_with($p, 'address-check')) return 'orders'; // unclear delivery addresses: whoever works on orders
     if (preg_match('#^(my-orders|order-watch)#', $p)) return 'orders'; // own follow-up list: whoever works on orders (Order Watch itself is admin-only in its controller)
     if (preg_match('#^(orders|orders-export|incomplete|manual-payments)#', $p)) return 'orders';
     if (str_starts_with($p, 'packing-scan')) return 'orders'; // Packaging Scan at courier handover: whoever may work on orders (packing staff) must be able to scan

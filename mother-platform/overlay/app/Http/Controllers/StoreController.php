@@ -698,7 +698,8 @@ class StoreController extends Controller {
     $sp = \App\Support\OrderDiscount::sessionPhone($r); $qt = $this->quote($want, $area, trim((string)($d['coupon'] ?? '')), $phone, $sp !== null && $sp === \App\Support\Chat::phone($phone), (string)$d['address']);
     if (!$qt['items']) return $back('These products are no longer available');
     if ($oos = array_values(array_filter($qt['items'], fn($i) => !empty($i['oos'])))) return $back(implode(', ', array_map(fn($i) => $i['name'], array_slice($oos, 0, 3))).' — Out of Stock right now. Remove it from the cart or call us for the next arrival. / এই পণ্যটি এখন স্টক আউট।');
-    $where = $d['district'] ?? ($b['areas'][$area]['n'] ?? null);
+    // District comes from what the customer wrote in the address box; the "Inside Chattogram city" price label is never saved as a district (24 Nov 2026). Unclear = empty, staff check it.
+    $where = trim((string)($d['district'] ?? '')) ?: null; if ($where === null) { try { $where = \App\Support\AddressParse::parse((string)$d['address'])['district']; } catch (\Throwable $e) { $where = null; } }
     $note = trim((string)($d['note'] ?? ''));
     $meta = \App\Support\OrderDiscount::meta($qt['applied'], $qt['profile'], 'Automatic', (float)$qt['disc']);
     $incTok = (string)$r->input('inc');
@@ -730,6 +731,7 @@ class StoreController extends Controller {
       if ($e->getMessage() === 'txn_used') return $back('এই Transaction ID আগে ব্যবহার হয়েছে। সঠিক ID দিন।');
       throw $e;
     }
+    if (!$dupId) \App\Support\AddressParse::stamp((int)$id); // after the order is saved; never blocks it
     if ($dupId) { // the same submit again (double click / refresh / retry): show the order that already exists
       $ex = DB::table('orders')->where('id', $dupId)->first(['invoice','pay_status','payment_method']);
       if ($pk === 'shurjopay' && $ex->pay_status === 'Awaiting Payment') return redirect(\Illuminate\Support\Facades\URL::temporarySignedRoute('pay.shurjopay.start', now()->addHours(2), ['invoice'=>$ex->invoice]));

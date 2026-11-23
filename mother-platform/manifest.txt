@@ -1546,3 +1546,7 @@ app/Http/Controllers/FunnelController.php
 resources/views/funnel.blade.php
 app/Support/CourierKam.php
 database/migrations/2026_11_23_000080_courier_kam_messages.php
+app/Http/Controllers/AddressCheckController.php
+resources/views/address_check.blade.php
+resources/views/dhaka_areas.blade.php
+database/migrations/2026_11_24_000010_order_address_fields.php
