@@ -5,6 +5,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 /**
  * Live Dashboard (owner, 23 Nov 2026): one wall screen that shows every background activity of the platform, what is running,
@@ -228,6 +229,25 @@ class LiveBoard {
     return $o;
   }
 
+  /** Today's Meta ad spend and purchases, read-only from the Graph API (cached 60 s; never more than one request a minute). Uses the saved Facebook token; ad account from setting meta_ad_account. */
+  public static function metaAds(): ?array {
+    return Cache::remember('lb.meta', 60, function () {
+      $tok = Sms::secret('chat_fb_token'); $acc = preg_replace('/\D/', '', (string)(DB::table('settings')->where('key', 'meta_ad_account')->value('value') ?: '2303729536822063'));
+      if (!$tok || $acc === '') return ['state' => 'none', 'msg' => 'Meta টোকেন বা অ্যাড অ্যাকাউন্ট বসানো নেই'];
+      try {
+        $g = fn($u, $q) => Http::timeout(8)->withToken($tok)->get('https://graph.facebook.com/v21.0/' . $u, $q);
+        $r = $g('act_' . $acc . '/insights', ['fields' => 'spend,actions', 'date_preset' => 'today']);
+        if (!$r->ok()) return ['state' => 'err', 'msg' => 'Meta পড়া যায়নি: ' . mb_substr((string)($r->json('error.message') ?? $r->status()), 0, 90)];
+        $row = (array)($r->json('data.0') ?? []); $pu = 0;
+        foreach ((array)($row['actions'] ?? []) as $a) if (($a['action_type'] ?? '') === 'omni_purchase') $pu = (int)$a['value'];
+        if (!$pu) foreach ((array)($row['actions'] ?? []) as $a) if (($a['action_type'] ?? '') === 'purchase') $pu = (int)$a['value'];
+        $st = $g('act_' . $acc, ['fields' => 'account_status'])->json('account_status');
+        $acct = [1 => '', 2 => 'অ্যাকাউন্ট বন্ধ', 3 => 'বকেয়া আছে, পেমেন্ট দিন', 7 => 'রিভিউয়ে আছে', 9 => 'পেমেন্ট সমস্যা, গ্রেস পিরিয়ড চলছে', 100 => 'বন্ধ হওয়ার অপেক্ষায়', 101 => 'বন্ধ'][(int)$st] ?? '';
+        return ['state' => 'ok', 'spend' => (int)round((float)($row['spend'] ?? 0)), 'purchases' => $pu, 'acct' => $acct];
+      } catch (\Throwable $e) { return ['state' => 'err', 'msg' => 'Meta সংযোগে সমস্যা']; }
+    });
+  }
+
   /** Whole board, cached 10 seconds so an always-open screen costs almost nothing. */
   public static function data(): array {
     return Cache::remember('lb.data', 10, function () {
@@ -276,6 +296,10 @@ class LiveBoard {
       try { $o = DB::table('orders')->where('created_at', '>=', $ds)->whereNotIn('status', ['Cancel', 'Incomplete'])->selectRaw('count(*) n, coalesce(sum(total),0) t')->first(); $k[] = ['l' => 'আজকের বিক্রি', 'v' => (int)round($o->t), 'u' => 'টাকা', 's' => 'অর্ডার ' . (int)$o->n . 'টি (ক্যান্সেল বাদে)', 'st' => 'ok']; } catch (\Throwable $e) { $k[] = ['l' => 'আজকের বিক্রি', 'v' => null, 'u' => '', 's' => '', 'st' => 'na']; }
       try { $w = (int)DB::table('chat_threads')->where('awaiting_reply', true)->where('status', '!=', 'resolved')->where('last_at', '>=', now()->subHours(22))->count(); $k[] = ['l' => 'উত্তরের অপেক্ষায় চ্যাট', 'v' => $w, 'u' => 'টি', 's' => 'গত ২২ ঘণ্টার', 'st' => $w > 15 ? 'slow' : 'ok']; } catch (\Throwable $e) {}
       $c = $out['capi']; $k[] = ['l' => 'Meta (Pixel / CAPI)', 'v' => $out['arrivals']['today'], 'u' => 'জন অ্যাড থেকে এসেছে', 's' => $c['t'] ?: 'ইভেন্টের তথ্য নেই', 'st' => $c['s']];
+      try { $m = self::metaAds(); if ($m) { $sales = 0; foreach ($k as $c) if ($c['l'] === 'আজকের বিক্রি') $sales = (int)$c['v'];
+          if ($m['state'] === 'ok') $k[] = ['l' => 'Meta অ্যাড (আজ)', 'v' => $m['spend'], 'u' => 'টাকা খরচ', 's' => 'Meta পারচেজ ' . $m['purchases'] . ' · আমাদের বিক্রি ÷ খরচ ' . ($m['spend'] > 0 ? round($sales / $m['spend'], 1) : '0') . 'x' . ($m['acct'] !== '' ? ' · ' . $m['acct'] : ''), 'st' => $m['acct'] !== '' ? 'slow' : 'ok'];
+          else $k[] = ['l' => 'Meta অ্যাড (আজ)', 'v' => null, 'u' => '', 's' => $m['msg'], 'st' => $m['state'] === 'none' ? 'na' : 'slow'];
+      } } catch (\Throwable $e) {}
       try { $dp = DB::table('deployments')->where('created_at', '>=', $ds)->count(); $ld = DB::table('deployments')->orderByDesc('id')->first(['status', 'created_at']); $k[] = ['l' => 'ডিপ্লয়মেন্ট', 'v' => (int)$dp, 'u' => 'টি আজ', 's' => $ld ? 'শেষটা: ' . $ld->status : '', 'st' => $ld && in_array($ld->status, ['Failed', 'Rolled Back'], true) ? 'slow' : 'ok']; } catch (\Throwable $e) {}
       try { $pw = DB::table('posts')->where('published_at', '>=', now()->subDays(7))->count(); $pl = self::ago(DB::table('posts')->max('published_at')); $k[] = ['l' => 'ব্লগ', 'v' => (int)$pw, 'u' => 'পোস্ট এ সপ্তাহে', 's' => $pl === null ? 'কোনো পোস্ট নেই' : 'শেষ পোস্ট ' . (int)floor($pl / 86400) . ' দিন আগে', 'st' => $pl !== null && $pl > 14 * 86400 ? 'slow' : 'ok']; } catch (\Throwable $e) {}
       $gseo = null; // filled after the per-minute history below (its graph is Google's own daily clicks)
