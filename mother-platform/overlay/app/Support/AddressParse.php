@@ -82,7 +82,7 @@ class AddressParse
     if (count($ds) > 1) { $out['why'] = 'More than one district is written: ' . implode(', ', array_slice($ds, 0, 3)); return $out; }
     $district = $ds[0] ?? null;
     if ($area) {
-      if ($district === null) { if ($area[4]) $district = $area[3]; else { $out['why'] = '"' . ($area[6] ?? $area[0]) . '" is written but not the district (the same word is used elsewhere too)'; return $out; } }
+      if ($district === null) { if ($area[4]) $district = $area[3]; else { $out['why'] = '"' . ($area[6] ?? $area[0]) . '" is written but not the district (the same word is used elsewhere too)'; $out['maybe'] = ['area' => $area[0], 'thana' => $area[1], 'city' => $area[2], 'district' => $area[3]]; return $out; } }
       if ($district === $area[3]) { $out['area'] = $area[0]; $out['thana'] = $area[1]; $out['city'] = $area[2]; }
     }
     if ($district === null) { $out['why'] = 'No district or known area is written'; return $out; }
@@ -94,17 +94,32 @@ class AddressParse
   public static function isNew(object $o): bool { try { return isset($o->created_at) && \Carbon\Carbon::parse($o->created_at, 'UTC')->gte(\Carbon\Carbon::parse(self::SINCE, 'UTC')); } catch (\Throwable $e) { return false; } }
   /** New orders that were not read yet (admin, AI chat, call centre): a few per run. */
   public static function sweep(): void {
-    if (!\Illuminate\Support\Facades\Schema::hasColumn('orders', 'addr_check')) return;
+    if (!\Illuminate\Support\Facades\Schema::hasColumn('orders', 'addr_prev_district')) return;
+    try { self::backfill(); } catch (\Throwable $e) {}
     foreach (DB::table('orders')->whereNull('addr_check')->where('created_at', '>=', self::SINCE)->orderBy('id')->limit(40)->pluck('id') as $id) self::stamp((int)$id);
   }
 
+  /** Old orders (owner approved 24 Nov 2026): newest first, a batch per worker run, each order visited once. Only the new address fields are filled, and a district that is empty or a price label; a district typed by staff, the address text and every charge stay as they are. */
+  public static function backfill(int $batch = 400): void {
+    $C = \Illuminate\Support\Facades\Cache::class; $cur = $C::get('addr.backfill.cursor'); if ($cur === 'done') return;
+    $q = DB::table('orders')->where('created_at', '<', self::SINCE)->orderByDesc('id')->limit($batch); if (is_numeric($cur)) $q->where('id', '<', (int)$cur);
+    $ids = $q->pluck('id')->all(); if (!$ids) { $C::forever('addr.backfill.cursor', 'done'); return; }
+    foreach ($ids as $id) self::stamp((int)$id, true, true);
+    $C::forever('addr.backfill.cursor', (int)min($ids));
+  }
+
   /** Save the parsed fields on one order. The "inside city" label that the checkout used to save as district is replaced only by a clearly read district, else emptied. */
-  public static function stamp(int $orderId, bool $fixDistrict = true): void {
+  public static function stamp(int $orderId, bool $fixDistrict = true, bool $old = false): void {
     try {
-      $o = DB::table('orders')->where('id', $orderId)->first(['id', 'address', 'district', 'created_at']); if (!$o || !self::isNew($o)) return; // old records are never touched here
+      $o = DB::table('orders')->where('id', $orderId)->first(['id', 'address', 'district', 'delivery_zone', 'created_at']); if (!$o || (!$old && !self::isNew($o))) return; // old records only through the approved backfill
       $p = self::parse((string)$o->address);
+      // Owner rule (24 Nov 2026): an area word that is used elsewhere too is accepted when the courier's own price zone names the same district.
+      if ($p['check'] && !empty($p['maybe']) && str_starts_with((string)$o->delivery_zone, 'Pathao · ')) {
+        $zc = AreaOrders::match(trim(explode(' / ', substr((string)$o->delivery_zone, strlen('Pathao · ')))[0]));
+        if ($zc !== null && $zc === $p['maybe']['district']) $p = ['area' => $p['maybe']['area'], 'thana' => $p['maybe']['thana'], 'city' => $p['maybe']['city'], 'district' => $zc, 'division' => self::division($zc), 'check' => 0, 'why' => 'Area word and courier zone agree'];
+      }
       $u = ['addr_area' => $p['area'], 'addr_thana' => $p['thana'], 'addr_city' => $p['city'], 'addr_district' => $p['district'], 'addr_division' => $p['division'], 'addr_check' => $p['check'], 'addr_note' => $p['why'] !== '' ? mb_substr($p['why'], 0, 160) : null];
-      if ($fixDistrict && (trim((string)$o->district) === '' || stripos((string)$o->district, 'Inside ') === 0 || stripos((string)$o->district, 'Chattogram to ') === 0)) $u['district'] = $p['district'];
+      if ($fixDistrict && (trim((string)$o->district) === '' || stripos((string)$o->district, 'Inside ') === 0 || stripos((string)$o->district, 'Chattogram to ') === 0)) { if ($p['district'] !== null || !$old) { $u['district'] = $p['district']; if (trim((string)$o->district) !== '') $u['addr_prev_district'] = mb_substr((string)$o->district, 0, 120); } } // on old orders an unread address keeps its old value
       DB::table('orders')->where('id', $orderId)->update($u);
     } catch (\Throwable $e) { /* never blocks an order */ }
   }
