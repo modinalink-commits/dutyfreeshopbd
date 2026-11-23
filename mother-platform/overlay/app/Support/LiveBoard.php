@@ -299,7 +299,7 @@ class LiveBoard {
       try { $m = self::metaAds(); if ($m) { $sales = 0; foreach ($k as $c) if ($c['l'] === 'আজকের বিক্রি') $sales = (int)$c['v'];
           if ($m['state'] === 'ok') $k[] = ['l' => 'Meta অ্যাড (আজ)', 'v' => $m['spend'], 'u' => 'টাকা খরচ', 's' => 'Meta পারচেজ ' . $m['purchases'] . ' · আমাদের বিক্রি ÷ খরচ ' . ($m['spend'] > 0 ? round($sales / $m['spend'], 1) : '0') . 'x' . ($m['acct'] !== '' ? ' · ' . $m['acct'] : ''), 'st' => $m['acct'] !== '' ? 'slow' : 'ok'];
           else $k[] = ['l' => 'Meta অ্যাড (আজ)', 'v' => null, 'u' => '', 's' => $m['msg'], 'st' => $m['state'] === 'none' ? 'na' : 'slow'];
-      } } catch (\Throwable $e) {}
+      } } catch (\Throwable $e) { $k[] = ['l' => 'Meta অ্যাড (আজ)', 'v' => null, 'u' => '', 's' => 'কার্ডে ত্রুটি: ' . mb_substr(class_basename($e) . ' ' . $e->getMessage(), 0, 120), 'st' => 'slow']; }
       try { $dp = DB::table('deployments')->where('created_at', '>=', $ds)->count(); $ld = DB::table('deployments')->orderByDesc('id')->first(['status', 'created_at']); $k[] = ['l' => 'ডিপ্লয়মেন্ট', 'v' => (int)$dp, 'u' => 'টি আজ', 's' => $ld ? 'শেষটা: ' . $ld->status : '', 'st' => $ld && in_array($ld->status, ['Failed', 'Rolled Back'], true) ? 'slow' : 'ok']; } catch (\Throwable $e) {}
       try { $pw = DB::table('posts')->where('published_at', '>=', now()->subDays(7))->count(); $pl = self::ago(DB::table('posts')->max('published_at')); $k[] = ['l' => 'ব্লগ', 'v' => (int)$pw, 'u' => 'পোস্ট এ সপ্তাহে', 's' => $pl === null ? 'কোনো পোস্ট নেই' : 'শেষ পোস্ট ' . (int)floor($pl / 86400) . ' দিন আগে', 'st' => $pl !== null && $pl > 14 * 86400 ? 'slow' : 'ok']; } catch (\Throwable $e) {}
       $gseo = null; // filled after the per-minute history below (its graph is Google's own daily clicks)
