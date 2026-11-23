@@ -1530,7 +1530,7 @@ c7b0bce1b03012e15cfc2ec80dd1cdb4fb881511 public/adimg/reel-beauty.mp4
 5b1438b8752a95a00c6339627ca7f8b26a3f4be2 public/adimg/reel-gadget.mp4
 b8dda5694edf1433a152c958fc983c732b120591 app/Support/LiveBoard.php
 9b23944958e420167140b5a555cd781a664dd055 app/Http/Controllers/LiveBoardController.php
-d6981ad1a25be2892a07b8188398b7f69a0aa873 resources/views/live_board.blade.php
+7305358c3bf95837b30031f6cc0745afa5f0e287 resources/views/live_board.blade.php
 99cf8b1fac79c0513b6858c00272bc361003b66c app/Support/AutoHeal.php
 fa6e30f0e5278d58d12e99a1bf73ff9b61596e2f public/live-board-avatar.jpg
 fa6e30f0e5278d58d12e99a1bf73ff9b61596e2f public/live-board-owner.jpg
