@@ -34,7 +34,7 @@
 <link rel="stylesheet" href="/s/layout-b.css?v=bcb82b53">
 
 @if(!empty($s['gsc_verify']))<meta name="google-site-verification" content="{{ $s['gsc_verify'] }}">@endif
-<meta name="msvalidate.01" content="{{ $s['bing_verify'] ?? '97C3A6B300FC55AB8971CE261792C75F' }}">{{-- Bing Webmaster Tools ownership (24 Nov 2026) --}}
+<meta name="msvalidate.01" content="{{ ($s['bing_verify'] ?? '') ?: '97C3A6B300FC55AB8971CE261792C75F' }}">{{-- Bing Webmaster Tools ownership (24 Nov 2026) --}}
 @if(!empty($s['bing_verify']))<meta name="msvalidate.01" content="{{ $s['bing_verify'] }}">@endif
 <meta name="facebook-domain-verification" content="{{ !empty($s['fb_verify']) ? $s['fb_verify'] : 'c8mtczmkayiwcwfwctb0nh45tm8lwj' }}">
 <script>window.dataLayer=window.dataLayer||[];</script>

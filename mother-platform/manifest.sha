@@ -53,7 +53,7 @@ e92c5075c5266882f35b3a3e18bfe14f44d16178 resources/views/report_details.blade.ph
 03d797d8a164509d198bf294374b87f67071c968 app/Console/Commands/MotherSyncFeed.php
 69fea07d5dc90ef812b3d8f9d79c2109de84bdfd app/Console/Commands/MotherGuard.php
 4881db96b1cb49fcaa4a818f00b0d21562984836 app/Http/Controllers/StoreController.php
-a232b2c82730bcffdcf31ae287568c60310da23b resources/views/store/layout.blade.php
+ae94e04305591ffad8ffbbefcc103791aaf83c0f resources/views/store/layout.blade.php
 eecccb2e973849a4fa071710333cceacc5076f86 resources/views/store/card.blade.php
 4a5eb7ee8d7960886fcb97c690bbb604ec69eb1f resources/views/store/home_sec.blade.php
 d02f81587ba2af0597216406b6d06eb4ea954427 resources/views/store/home.blade.php
