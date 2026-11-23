@@ -134,7 +134,7 @@ body.fit .rail .att{flex:1 1 0;min-height:0}
   <a class="brand" href="/admin" title="অ্যাডমিনে ফিরুন"><span class="logo"><img src="/dutyfree-bd-logo-v3.png" alt="DutyFree BD"></span><span class="bt"><strong>লাইভ ড্যাশবোর্ড</strong><small id="today"></small></span></a>
   <span class="tag" id="conn">সংযোগ হচ্ছে…</span>
   <div class="sum" id="sum"></div>
-  <div class="tools"><button id="only" aria-pressed="false">শুধু সমস্যা</button><button id="snd" aria-pressed="false">অ্যালার্ট শব্দ</button><button id="vo" aria-pressed="false" title="গুরুত্বপূর্ণ ঘটনা বাংলায় পড়ে শোনাবে">ভয়েস</button><button id="fs">ফুলস্ক্রিন</button></div>
+  <div class="tools"><button id="only" aria-pressed="false">শুধু সমস্যা</button><button id="snd" aria-pressed="false">অ্যালার্ট শব্দ</button><button id="vo" aria-pressed="false" title="গুরুত্বপূর্ণ ঘটনা AI কলের কণ্ঠে পড়ে শোনাবে">ভয়েস</button><button id="fs">ফুলস্ক্রিন</button></div>
   <div class="clock" id="clock"></div>
 </div>
 <div class="sec">অর্ডারের ধারা</div>
@@ -282,13 +282,15 @@ function log(t,cls){const f=$('feed');const em=f.querySelector('.empty');if(em)e
 let ac=null;
 /* Voice (owner, 23 Nov): the board reads important events aloud in Bangla with the browser's own voice, so the screen need not be watched. One on/off button, remembered on this computer. Nothing is spoken on the first load. */
 const VO={on:false,q:[],last:{},busy:false,ord:null,iss:null,hr:null};
-const hasTTS='speechSynthesis' in window;if(hasTTS){try{speechSynthesis.getVoices();speechSynthesis.onvoiceschanged=()=>{}}catch(e){}}
-function bnVoice(){try{const v=speechSynthesis.getVoices();return v.find(x=>/^bn[-_]BD/i.test(x.lang))||v.find(x=>/^bn/i.test(x.lang))||null}catch(e){return null}}
-function say(t,urgent){if(!VO.on||!hasTTS)return;t=String(t).replace(/[^ঀ-৿\w\s.,%:()\/-]/g,' ').replace(/\s+/g,' ').trim();if(!t)return;const now=Date.now();if(VO.last[t]&&now-VO.last[t]<90000)return;VO.last[t]=now;
+const hasTTS=!!window.Audio;let voErr='';
+function say(t,urgent){if(!VO.on)return;t=String(t).replace(/[^ঀ-৿।\w\s.,%:()\/-]/g,' ').replace(/\s+/g,' ').trim().slice(0,220);if(!t)return;const now=Date.now();if(VO.last[t]&&now-VO.last[t]<90000)return;VO.last[t]=now;
   if(VO.q.length>=8){if(!urgent)return;VO.q.shift()}VO.q.push(t);speakNext()}
-function speakNext(){if(VO.busy||!VO.q.length||!VO.on)return;const t=VO.q.shift();
-  try{const u=new SpeechSynthesisUtterance(t),isBn=/[ঀ-৿]/.test(t),v=isBn?bnVoice():null;u.lang=isBn?'bn-BD':'en-US';if(v){u.voice=v;u.lang=v.lang}u.rate=.95;VO.busy=true;
-    let fin=false;const done=()=>{if(fin)return;fin=true;VO.busy=false;setTimeout(speakNext,350)};u.onend=done;u.onerror=done;speechSynthesis.speak(u);setTimeout(done,20000)}catch(e){VO.busy=false}}
+/* the voice is the AI-call voice, generated on the server (each sentence once, then replayed from disk) */
+function speakNext(){if(VO.busy||!VO.q.length||!VO.on)return;const t=VO.q.shift();VO.busy=true;let fin=false;const done=()=>{if(fin)return;fin=true;VO.busy=false;setTimeout(speakNext,300)};
+  const fail=m=>{if(m&&m!==voErr){voErr=m;log('ভয়েস: '+m,'warn')}done()};
+  fetch('/admin/live-dashboard/say?t='+encodeURIComponent(t),{credentials:'same-origin'}).then(r=>{if(!r.ok)return r.json().then(j=>{throw new Error(j.error||('ত্রুটি '+r.status))},()=>{throw new Error('ত্রুটি '+r.status)});return r.blob()})
+   .then(b=>{if(!VO.on)return done();const u=URL.createObjectURL(b),a=new Audio(u);VO.au=a;const end=()=>{URL.revokeObjectURL(u);done()};a.onended=end;a.onerror=end;voErr='';return a.play().catch(()=>fail('শব্দ চালাতে পেজে একবার ক্লিক করুন'))})
+   .catch(e=>fail(e.message||'কণ্ঠ আনা যায়নি'));setTimeout(done,45000)}
 function summary(){if(!D)return;const k=l=>D.kpi.find(x=>x.l===l),s=k('আজকের বিক্রি'),c=k('উত্তরের অপেক্ষায় চ্যাট'),m=k('Meta অ্যাড (আজ)'),oc=s&&(String(s.s).match(/\d+/)||[])[0];let dead=0,slow=0;D.nodes.forEach(n=>{if(n.s==='dead')dead++;else if(n.s==='slow')slow++});
   const late=(D.pipe||[]).find(p=>p&&p.l==='লেট ডেলিভারি'),o=[];
   if(s&&s.v!=null)o.push('আজ এখন পর্যন্ত '+(oc||0)+'টি অর্ডার, বিক্রি '+s.v+' টাকা');
@@ -300,8 +302,8 @@ function summary(){if(!D)return;const k=l=>D.kpi.find(x=>x.l===l),s=k('আজক
 function voWatch(){if(!D)return;const s=D.kpi.find(x=>x.l==='আজকের বিক্রি');
   if(s&&s.v!=null){const n=+((String(s.s).match(/\d+/)||[])[0]||0);if(VO.ord&&n>VO.ord.n&&n-VO.ord.n<20){const d=n-VO.ord.n,a=s.v-VO.ord.v;say(d===1?'নতুন অর্ডার এসেছে'+(a>0?', '+a+' টাকার':'')+'। আজ মোট '+n+'টি।':d+'টি নতুন অর্ডার এসেছে। আজ মোট '+n+'টি।',true)}VO.ord={n:n,v:s.v}}}
 function voSet(on,silent){VO.on=!!on&&hasTTS;$('vo').setAttribute('aria-pressed',VO.on?'true':'false');try{localStorage.setItem('lb.voice',VO.on?'1':'0')}catch(e){}
-  if(!VO.on){VO.q=[];VO.busy=false;try{hasTTS&&speechSynthesis.cancel()}catch(e){}return}
-  if(silent)return;if(!bnVoice())log('এই ব্রাউজারে বাংলা কণ্ঠ পাওয়া যায়নি। Microsoft Edge ব্রাউজারে খুললে বাংলা কণ্ঠ পাওয়া যায়।','warn');
+  if(!VO.on){VO.q=[];VO.busy=false;try{VO.au&&VO.au.pause()}catch(e){}return}
+  if(silent)return;
   delete VO.last['ভয়েস চালু হয়েছে।'];say('ভয়েস চালু হয়েছে।',true);summary()}
 $('vo').onclick=()=>{if(!hasTTS){log('এই ব্রাউজার কথা বলতে পারে না','warn');return}voSet(!VO.on)};
 try{if(localStorage.getItem('lb.voice')==='1')voSet(true,true)}catch(e){}
