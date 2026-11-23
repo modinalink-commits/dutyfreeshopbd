@@ -167,8 +167,18 @@ class LiveBoard {
    */
   private static function sys(): array {
     $v = []; $lv = fn($x, $warn, $bad) => $x === null ? 'na' : ($x >= $bad ? 'dead' : ($x >= $warn ? 'slow' : 'ok'));
-    try { $la = function_exists('sys_getloadavg') ? sys_getloadavg() : null; $cores = max(1, (int)preg_match_all('/^processor\s*:/m', (string)@file_get_contents('/proc/cpuinfo')));
-      $r = $la ? round($la[0] / $cores * 100) : null; $v[] = ['k' => 'cpu', 'l' => 'CPU', 'v' => $r === null ? null : $r . '%', 's' => $lv($r, 150, 300), 't' => $la ? 'লোড ' . round($la[0], 2) . ' / ' . $cores . ' কোর' : '', 'fix' => 'সার্ভারে চাপ বেশি। Server Speed পেজ ও চলমান ক্যাম্পেইন দেখুন।']; } catch (\Throwable $e) {}
+    // CPU measured from /proc/stat over a quarter second: what our programs really use, what waits on the disk, and what the hosting company's
+    // other customers take away from us ("steal"). The load average alone mixes these three, so it is shown only as a detail.
+    try {
+      $rd = function () { $l = explode(' ', preg_replace('/\s+/', ' ', trim((string)strtok((string)@file_get_contents('/proc/stat'), "\n")))); array_shift($l); return array_map('floatval', $l); };
+      $a = $rd(); usleep(250000); $b = $rd(); $d = []; foreach ($b as $i => $x) $d[$i] = $x - ($a[$i] ?? 0); $tot = array_sum(array_slice($d, 0, 8)) ?: 1;
+      $busy = (int)round(($d[0] + $d[1] + $d[2] + ($d[5] ?? 0) + ($d[6] ?? 0)) / $tot * 100); $wait = (int)round(($d[4] ?? 0) / $tot * 100); $steal = (int)round(($d[7] ?? 0) / $tot * 100);
+      $la = function_exists('sys_getloadavg') ? sys_getloadavg() : null; $cores = max(1, (int)preg_match_all('/^processor\s*:/m', (string)@file_get_contents('/proc/cpuinfo')));
+      $ld = $la ? 'লোড ' . round($la[0], 1) . ' / ' . $cores . ' কোর' : '';
+      $v[] = ['k' => 'cpu', 'l' => 'CPU', 'v' => $busy . '%', 's' => $lv($busy, 85, 95), 't' => 'আমাদের প্রোগ্রামের ব্যবহার · ' . $ld, 'fix' => 'সার্ভারে চাপ বেশি। Server Speed পেজ ও চলমান ক্যাম্পেইন দেখুন।'];
+      $v[] = ['k' => 'iow', 'l' => 'ডিস্ক অপেক্ষা', 'v' => $wait . '%', 's' => $lv($wait, 35, 60), 't' => 'CPU ডিস্কের জন্য বসে আছে · ' . $ld, 'fix' => 'কোনো প্রোগ্রাম ডিস্ক থেকে অনেক বেশি পড়ছে (সম্ভবত অন্য সাইটের ডেটাবেস)।'];
+      $v[] = ['k' => 'steal', 'l' => 'Steal', 'v' => $steal . '%', 's' => $lv($steal, 25, 45), 't' => 'Hostinger-এর একই মেশিনের অন্য গ্রাহকরা এই পরিমাণ CPU নিয়ে নিচ্ছে', 'fix' => 'এটা আমাদের সার্ভারের ভেতর থেকে ঠিক করা যায় না। Hostinger সাপোর্টকে জানাতে হবে।'];
+    } catch (\Throwable $e) {}
     try { $m = (string)@file_get_contents('/proc/meminfo'); $tot = preg_match('/MemTotal:\s+(\d+)/', $m, $a) ? (int)$a[1] : 0; $av = preg_match('/MemAvailable:\s+(\d+)/', $m, $b) ? (int)$b[1] : 0;
       $r = $tot ? round(($tot - $av) / $tot * 100) : null; $v[] = ['k' => 'ram', 'l' => 'RAM', 'v' => $r === null ? null : $r . '%', 's' => $lv($r, 90, 97), 't' => $tot ? round(($tot - $av) / 1048576, 1) . ' / ' . round($tot / 1048576, 1) . ' GB' : '', 'fix' => 'মেমরি প্রায় শেষ। সার্ভারের RAM বাড়ানো বা ভারী কাজ কমানো দরকার।']; } catch (\Throwable $e) {}
     try { $f = @disk_free_space(storage_path()); $t = @disk_total_space(storage_path()); $r = ($f && $t) ? round(($t - $f) / $t * 100) : null;
