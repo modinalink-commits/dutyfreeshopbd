@@ -255,7 +255,7 @@ function pulse(){
    .then(r=>{if(!r.ok||r.redirected)throw new Error('pulse');return r.json()})
    .then(p=>{rtMs=Math.round(performance.now()-t0);pulseOk=Date.now();sampMs=1000;
      D.kpi.forEach(k=>{const x=p.k&&p.k[k.l];if(x){if(x.v!=null)k.v=x.v;if(x.s)k.s=x.s;if(x.st)k.st=x.st}});
-     (D.sys||[]).forEach(x=>{const y=p.sys&&p.sys[x.k];if(y){x.v=y[0];x.s=y[1]}});
+     (D.sys||[]).forEach(x=>{const y=p.sys&&p.sys[x.k];if(y)x.v=y[0]});// the colour (and the alert in the event list) still comes from the full refresh, so a number hovering on a limit does not flood the list
      sample(D);drawKp();drawVit();$('conn').textContent='লাইভ · প্রতি সেকেন্ডে'})
    .catch(()=>{}).finally(()=>{pulsing=false});
 }
