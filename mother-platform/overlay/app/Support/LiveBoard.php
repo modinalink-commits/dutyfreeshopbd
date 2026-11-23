@@ -232,12 +232,16 @@ class LiveBoard {
   /** Today's Meta ad spend and purchases, read-only from the Graph API (cached 60 s; never more than one request a minute). Uses the saved Facebook token; ad account from setting meta_ad_account. */
   public static function metaAds(): ?array {
     return Cache::remember('lb.meta', 60, function () {
-      $tok = Sms::secret('chat_fb_token'); $acc = preg_replace('/\D/', '', (string)(DB::table('settings')->where('key', 'meta_ad_account')->value('value') ?: '2303729536822063'));
-      if (!$tok || $acc === '') return ['state' => 'none', 'msg' => 'Meta টোকেন বা অ্যাড অ্যাকাউন্ট বসানো নেই'];
+      $acc = preg_replace('/\D/', '', (string)(DB::table('settings')->where('key', 'meta_ad_account')->value('value') ?: '2303729536822063'));
+      // any saved Facebook token that can read the ad account: the single saved token first, then each connected Page's token; the one that worked is remembered for a day
+      $toks = []; try { if ($t = Sms::secret('chat_fb_token')) $toks['s'] = $t; foreach (DB::table('chat_pages')->whereNotNull('token')->limit(15)->get(['page_id', 'token']) as $p) { try { $toks['p' . $p->page_id] = \Illuminate\Support\Facades\Crypt::decryptString($p->token); } catch (\Throwable $e) {} } } catch (\Throwable $e) {}
+      if (!$toks || $acc === '') return ['state' => 'none', 'msg' => 'Meta টোকেন বা অ্যাড অ্যাকাউন্ট বসানো নেই'];
+      $pref = (string)Cache::get('lb.meta.tok', ''); if ($pref !== '' && isset($toks[$pref])) $toks = [$pref => $toks[$pref]] + $toks;
       try {
-        $g = fn($u, $q) => Http::timeout(8)->withToken($tok)->get('https://graph.facebook.com/v21.0/' . $u, $q);
-        $r = $g('act_' . $acc . '/insights', ['fields' => 'spend,actions', 'date_preset' => 'today']);
-        if (!$r->ok()) return ['state' => 'err', 'msg' => 'Meta পড়া যায়নি: ' . mb_substr((string)($r->json('error.message') ?? $r->status()), 0, 90)];
+        $r = null; $tok = null; $n = 0;
+        foreach ($toks as $id => $t) { if (++$n > 4) break; $r = Http::timeout(6)->withToken($t)->get('https://graph.facebook.com/v21.0/act_' . $acc . '/insights', ['fields' => 'spend,actions', 'date_preset' => 'today']); if ($r->ok()) { $tok = $t; Cache::put('lb.meta.tok', $id, 86400); break; } }
+        $g = fn($u, $q) => Http::timeout(6)->withToken($tok)->get('https://graph.facebook.com/v21.0/' . $u, $q);
+        if (!$tok) return ['state' => 'err', 'msg' => 'Meta পড়া যায়নি: ' . mb_substr((string)($r->json('error.message') ?? $r->status()), 0, 90)];
         $row = (array)($r->json('data.0') ?? []); $pu = 0;
         foreach ((array)($row['actions'] ?? []) as $a) if (($a['action_type'] ?? '') === 'omni_purchase') $pu = (int)$a['value'];
         if (!$pu) foreach ((array)($row['actions'] ?? []) as $a) if (($a['action_type'] ?? '') === 'purchase') $pu = (int)$a['value'];
@@ -297,7 +301,7 @@ class LiveBoard {
       try { $w = (int)DB::table('chat_threads')->where('awaiting_reply', true)->where('status', '!=', 'resolved')->where('last_at', '>=', now()->subHours(22))->count(); $k[] = ['l' => 'উত্তরের অপেক্ষায় চ্যাট', 'v' => $w, 'u' => 'টি', 's' => 'গত ২২ ঘণ্টার', 'st' => $w > 15 ? 'slow' : 'ok']; } catch (\Throwable $e) {}
       $c = $out['capi']; $k[] = ['l' => 'Meta (Pixel / CAPI)', 'v' => $out['arrivals']['today'], 'u' => 'জন অ্যাড থেকে এসেছে', 's' => $c['t'] ?: 'ইভেন্টের তথ্য নেই', 'st' => $c['s']];
       try { $m = self::metaAds(); if ($m) { $sales = 0; foreach ($k as $c) if ($c['l'] === 'আজকের বিক্রি') $sales = (int)$c['v'];
-          if ($m['state'] === 'ok') $k[] = ['l' => 'Meta অ্যাড (আজ)', 'v' => $m['spend'], 'u' => 'টাকা খরচ', 's' => 'Meta পারচেজ ' . $m['purchases'] . ' · আমাদের বিক্রি ÷ খরচ ' . ($m['spend'] > 0 ? round($sales / $m['spend'], 1) : '0') . 'x' . ($m['acct'] !== '' ? ' · ' . $m['acct'] : ''), 'st' => $m['acct'] !== '' ? 'slow' : 'ok'];
+          if ($m['state'] === 'ok') $k[] = ['l' => 'Meta অ্যাড (আজ)', 'v' => $m['spend'], 'u' => 'টাকা খরচ', 's' => 'Meta পারচেজ ' . $m['purchases'] . ' · বিক্রি ÷ খরচ ' . ($m['spend'] > 0 ? round($sales / $m['spend'], 1) : '0') . 'x' . ($m['acct'] !== '' ? ' · ' . $m['acct'] : ''), 'st' => $m['acct'] !== '' ? 'slow' : 'ok'];
           else $k[] = ['l' => 'Meta অ্যাড (আজ)', 'v' => null, 'u' => '', 's' => $m['msg'], 'st' => $m['state'] === 'none' ? 'na' : 'slow'];
       } } catch (\Throwable $e) { $k[] = ['l' => 'Meta অ্যাড (আজ)', 'v' => null, 'u' => '', 's' => 'কার্ডে ত্রুটি: ' . mb_substr(class_basename($e) . ' ' . $e->getMessage(), 0, 120), 'st' => 'slow']; }
       try { $dp = DB::table('deployments')->where('created_at', '>=', $ds)->count(); $ld = DB::table('deployments')->orderByDesc('id')->first(['status', 'created_at']); $k[] = ['l' => 'ডিপ্লয়মেন্ট', 'v' => (int)$dp, 'u' => 'টি আজ', 's' => $ld ? 'শেষটা: ' . $ld->status : '', 'st' => $ld && in_array($ld->status, ['Failed', 'Rolled Back'], true) ? 'slow' : 'ok']; } catch (\Throwable $e) {}
