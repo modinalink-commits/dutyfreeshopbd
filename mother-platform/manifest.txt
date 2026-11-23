@@ -1537,3 +1537,7 @@ public/live-board-owner.jpg
 app/Support/GoogleSeo.php
 resources/views/live_board_google.blade.php
 app/Support/AutoBlog.php
+app/Support/CustomerReorder.php
+app/Http/Controllers/ReorderReminderController.php
+resources/views/reorder_reminder.blade.php
+database/migrations/2026_11_23_000070_reorder_events.php

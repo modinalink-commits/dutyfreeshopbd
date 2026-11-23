@@ -56,6 +56,7 @@ class MotherPushWorker extends Command
     try { if (\App\Support\AutoHeal::begin('sms-report')) { \App\Support\SmsGate::tick(); } } catch (\Throwable $e) { $this->error('sms-report: ' . $e->getMessage()); \App\Support\LiveBoard::fail('sms-report', $e); }
     try { if (\App\Support\AutoHeal::begin('sms')) { \App\Support\SmsMarketing::tick(); } } catch (\Throwable $e) { $this->error('sms: ' . $e->getMessage()); \App\Support\LiveBoard::fail('sms', $e); }
     try { if (\App\Support\AutoHeal::begin('winback')) { \App\Support\Winback::tick(); } } catch (\Throwable $e) { $this->error('winback: ' . $e->getMessage()); \App\Support\LiveBoard::fail('winback', $e); }
+    try { if (\App\Support\AutoHeal::begin('reorder_reminder')) { \App\Support\CustomerReorder::tick(); } } catch (\Throwable $e) { $this->error('reorder_reminder: ' . $e->getMessage()); \App\Support\LiveBoard::fail('reorder_reminder', $e); }
     try { if (\App\Support\AutoHeal::begin('wa')) { \App\Support\WhatsApp::tick(); } } catch (\Throwable $e) { $this->error('wa: ' . $e->getMessage()); \App\Support\LiveBoard::fail('wa', $e); }
     // 21 Nov 2026: customers' order-confirmation calls (AI approval) go before the promotional campaign calls so a busy campaign never delays them
     try { if (\App\Support\AutoHeal::begin('ordercall')) { \App\Support\OrderCall::tick(); } } catch (\Throwable $e) { $this->error('ordercall: ' . $e->getMessage()); \App\Support\LiveBoard::fail('ordercall', $e); }
