@@ -42,8 +42,11 @@ class Winback
   }
   public static function days(string $at): int { return (int)floor((time() - strtotime($at . ' UTC')) / 86400); }
   /** Each customer's own buying rhythm: median days between their last orders (2+ live orders, cached 6 h). */
+  private static ?array $cyc = null; private static float $cycAt = 0.0;
   public static function cycles(): array {
-    try { return \Illuminate\Support\Facades\Cache::remember('wb.cycles.v1', 21600, function () {
+    if (self::$cyc !== null && microtime(true) - self::$cycAt < 600) return self::$cyc; // read once per request / every 10 min in the worker, never once per customer
+    self::$cycAt = microtime(true); self::$cyc = [];
+    try { return self::$cyc = (array)\Illuminate\Support\Facades\Cache::remember('wb.cycles.v1', 21600, function () {
       $live = "status not in ('Cancel','Returned') and phone is not null and length(phone) >= 10";
       $sql = "with w as (select right(phone,11) as p, created_at, lag(created_at) over (partition by right(phone,11) order by created_at, id) as prev, row_number() over (partition by right(phone,11) order by created_at desc, id desc) as rn from orders where $live)
         select p, percentile_cont(0.5) within group (order by extract(epoch from (created_at - prev)) / 86400) as cyc from w where prev is not null and rn <= 4 group by p";
