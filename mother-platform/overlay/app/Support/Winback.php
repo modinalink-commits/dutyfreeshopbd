@@ -41,6 +41,21 @@ class Winback
     return $out;
   }
   public static function days(string $at): int { return (int)floor((time() - strtotime($at . ' UTC')) / 86400); }
+  /** Each customer's own buying rhythm: median days between their last orders (2+ live orders, cached 6 h). */
+  public static function cycles(): array {
+    try { return \Illuminate\Support\Facades\Cache::remember('wb.cycles.v1', 21600, function () {
+      $live = "status not in ('Cancel','Returned') and phone is not null and length(phone) >= 10";
+      $sql = "with w as (select right(phone,11) as p, created_at, lag(created_at) over (partition by right(phone,11) order by created_at, id) as prev, row_number() over (partition by right(phone,11) order by created_at desc, id desc) as rn from orders where $live)
+        select p, percentile_cont(0.5) within group (order by extract(epoch from (created_at - prev)) / 86400) as cyc from w where prev is not null and rn <= 4 group by p";
+      $o = []; foreach (DB::select($sql) as $r) if ($r->cyc !== null) $o[(string)$r->p] = round((float)$r->cyc, 1); return $o;
+    }); } catch (\Throwable $e) { return []; }
+  }
+  /** Owner decision 24 Nov 2026: Win-Back starts relative to the customer's own rhythm — first stage at max(first stage day, 1.3 × own gap, gap capped at 60 days) — so a customer who normally reorders every 23 days is not given a discount on day 15. Later stages shift by the same number of days. Setting wb_personal = 0 turns this off. */
+  public static function effDays(string $phone, int $days): int {
+    if (self::set('personal', '1') !== '1') return $days; $st = self::stages(); if (!$st) return $days;
+    $c = self::cycles()[$phone] ?? null; if ($c === null) return $days;
+    return $days - max(0, (int)round(1.3 * min(60.0, (float)$c)) - (int)$st[0][0]);
+  }
   public static function stageFor(int $days): ?array { $hit = null; foreach (self::stages() as $s) if ($days >= $s[0]) $hit = $s; return $hit; }
   public static function nextStage(int $days): ?array { foreach (self::stages() as $s) if ($days < $s[0]) return $s; return null; }
 
@@ -66,7 +81,7 @@ class Winback
     if ($room <= 0) return; $done = self::doneSet(); $lastSent = self::lastSent(); $gap = self::minGapDays() * 86400;
     $queue = self::lastDelivered(); self::rank($queue); // serial order: best customers (highest spend) first, then longest inactive
     foreach ($queue as $p => $x) {
-      $d = self::days($x['at']); $s = self::stageFor($d); if (!$s) continue;
+      $d = self::days($x['at']); $s = self::stageFor(self::effDays((string)$p, $d)); if (!$s) continue;
       if (isset($lastSent[$p]) && time() - $lastSent[$p] < $gap) continue; // never more than one offer message per number every 15 days
       $c = DB::table('customers')->whereRaw('right(phone,11) = ?', [$p])->where('blocked', false)->first(); if (!$c) continue;
       if ($sent >= $room) { if ($blast) { try { \App\Support\Sms::flush(200); } catch (\Throwable $e) {} self::guardBlast(); } return; } // small batch per tick + daily cap: the rest continue on the next tick / tomorrow
@@ -142,7 +157,7 @@ class Winback
     $start = self::set('start', ''); $at = $at ?: ($start !== '' && now('Asia/Dhaka')->toDateString() < $start ? \Carbon\Carbon::parse($start, 'Asia/Dhaka')->startOfDay() : now('Asia/Dhaka')); $ts = $at->getTimestamp(); $cand = []; $cool = [];
     $done = self::doneSet(); $all = self::lastDelivered(); $val = self::rank($all); $lastSent = self::lastSent(); $gap = self::minGapDays() * 86400;
     foreach ($all as $p => $x) {
-      $d = (int)floor(($ts - strtotime($x['at'] . ' UTC')) / 86400); $s = self::stageFor($d); if (!$s) continue;
+      $d = (int)floor(($ts - strtotime($x['at'] . ' UTC')) / 86400); $s = self::stageFor(self::effDays((string)$p, $d)); if (!$s) continue;
       if (isset($lastSent[$p]) && $ts - $lastSent[$p] < $gap) { $cool[$p] = ['p' => $p, 'd' => $d, 's' => $s, 'at' => $x['at'], 'last' => $lastSent[$p], 'next' => $lastSent[$p] + $gap, 'left' => (int)ceil(($lastSent[$p] + $gap - $ts) / 86400), 'n' => $val[$p][0] ?? 0, 'sp' => $val[$p][1] ?? 0]; continue; }
       $cand[$p] = ['p' => $p, 'd' => $d, 's' => $s, 'at' => $x['at'], 'n' => $val[$p][0] ?? 0, 'sp' => $val[$p][1] ?? 0];
     }
@@ -183,7 +198,7 @@ class Winback
   public static function activity(string $phone): array {
     $p = self::norm($phone); $ld = self::lastDelivered($p); $x = $ld[$p] ?? null;
     if (!$x) { $any = DB::table('order_status_logs as l')->join('orders as o', 'o.id', '=', 'l.order_id')->where('l.to_status', 'Delivered')->whereRaw('right(o.phone,11) = ?', [$p])->max('l.created_at'); $x = $any ? ['oid' => 0, 'at' => $any, 'reset' => true] : null; }
-    $d = $x ? self::days($x['at']) : null; $cur = $d !== null && empty($x['reset']) ? self::stageFor($d) : null; $nx = $d !== null && empty($x['reset']) ? self::nextStage($d) : null;
+    $d = $x ? self::days($x['at']) : null; $ed = $d !== null ? self::effDays($p, $d) : null; $cur = $d !== null && empty($x['reset']) ? self::stageFor($ed) : null; $nx = $d !== null && empty($x['reset']) ? self::nextStage($ed) : null;
     $ev = DB::table('winback_events')->where('phone', $p)->orderByDesc('id')->first();
     return ['last' => $x ? \Carbon\Carbon::parse($x['at'], 'UTC')->timezone('Asia/Dhaka')->format('d M Y') : null, 'days' => $d, 'reset' => !empty($x['reset']), 'stage' => $cur, 'next' => $nx, 'event' => $ev, 'active' => self::active($p)];
   }

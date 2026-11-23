@@ -21,7 +21,7 @@ class WinbackController extends Controller
   private function build(Request $r): array {
     $st = W::stages(); $buckets = []; foreach ($st as $s) $buckets[$s[0]] = 0; $over = 0; $rows = []; $flt = (int)$r->query('stage', 0);
     foreach (W::lastDelivered() as $p => $x) {
-      $d = W::days($x['at']); $s = W::stageFor($d); if (!$s) continue; $buckets[$s[0]]++;
+      $d = W::days($x['at']); $s = W::stageFor(W::effDays((string)$p, $d)); if (!$s) continue; $buckets[$s[0]]++;
       if ($flt && $s[0] !== $flt) continue;
       if (count($rows) < 150) $rows[] = ['p' => $p, 'd' => $d, 's' => $s, 'at' => $x['at']];
     }
