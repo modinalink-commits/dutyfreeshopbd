@@ -28,6 +28,13 @@
 <label>Password of {{ $user }}<br><input type="password" name="password" autocomplete="new-password" placeholder="{{ $hasPw ? 'Saved. Type only to replace it' : 'Type the mailbox password' }}" style="width:280px"></label>
 <button class="btn">Save password</button></form>
 <small style="display:block;margin-top:6px;color:#6B7280">Stored encrypted. It is never shown again and never appears in logs.</small></div>
+<div class="card"><h2>Offer email service (Brevo) <small style="font-weight:700;color:{{ $mkReady ? '#166534' : '#B45309' }}">{{ $mkReady ? 'connected' : 'not connected' }}</small></h2>
+<p style="margin:0 0 8px;font-size:13px;color:#6B7280">Offer emails go out through this separate service, from <b>{{ $mkFrom }}</b>, so the order mailbox above is used for order emails only. In Brevo open <b>Settings → SMTP &amp; API</b>, copy the SMTP <b>Login</b> and generate an <b>SMTP key</b>, then paste both here.</p>
+<form method="post" action="/admin/email" class="row" autocomplete="off">@csrf<input type="hidden" name="act" value="mk_smtp">
+<label>SMTP login<br><input type="text" name="mk_smtp_user" value="{{ $mkUser }}" placeholder="xxxxxx@smtp-brevo.com" style="width:260px" autocomplete="off"></label>
+<label>SMTP key<br><input type="password" name="mk_key" autocomplete="new-password" placeholder="{{ $mkReady ? 'Saved. Type only to replace it' : 'Paste the SMTP key' }}" style="width:280px"></label>
+<button class="btn">Save</button></form>
+<small style="display:block;margin-top:6px;color:#6B7280">The key is stored encrypted and never shown again. Free plan: 300 emails a day, so keep the daily offer limit at 280 or less.</small></div>
 
 <div class="card"><h2>2. Send a test email</h2>
 <form method="post" action="/admin/email" class="row">@csrf<input type="hidden" name="act" value="test">

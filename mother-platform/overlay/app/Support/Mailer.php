@@ -34,7 +34,15 @@ class Mailer {
   public static function sentToday(): int { try { return (int)DB::table('mail_outbox')->where('status', 'sent')->where('sent_at', '>=', now('Asia/Dhaka')->startOfDay()->utc())->count(); } catch (\Throwable $e) { return 0; } }
   public static function valid(?string $e): bool { $e = trim((string)$e); return $e !== '' && strlen($e) <= 190 && filter_var($e, FILTER_VALIDATE_EMAIL) !== false; }
 
-  private static function mailer() {
+  /** Offer emails go through a separate sending service (Brevo SMTP relay, 24 Nov 2026) so the order mailbox is never used for marketing again. Ready when a login and key are saved on the Email page. */
+  public static function offerUser(): string { return trim(self::set('mk_smtp_user', '')); }
+  public static function offerSmtp(): bool { return self::offerUser() !== '' && (bool)Sms::secret('email_mk_key'); }
+  private static function mailer(bool $offer = false) {
+    if ($offer) {
+      config(['mail.mailers.dfbmk' => ['transport' => 'smtp', 'scheme' => 'smtp', 'host' => self::set('mk_smtp_host', 'smtp-relay.brevo.com'), 'port' => (int)self::set('mk_smtp_port', '587'), 'encryption' => 'tls', 'username' => self::offerUser(), 'password' => (string)Sms::secret('email_mk_key'), 'timeout' => 20]]);
+      try { app('mail.manager')->purge('dfbmk'); } catch (\Throwable $e) {}
+      return Mail::mailer('dfbmk');
+    }
     config(['mail.mailers.dfb' => ['transport' => 'smtp', 'scheme' => 'smtps', 'host' => self::set('host', 'smtp.hostinger.com'), 'port' => (int)self::set('port', '465'), 'encryption' => 'ssl', 'username' => self::user(), 'password' => (string)Sms::secret('email_password'), 'timeout' => 20]]);
     try { app('mail.manager')->purge('dfb'); } catch (\Throwable $e) {}
     return Mail::mailer('dfb');
@@ -51,7 +59,7 @@ class Mailer {
   /** Logo for emails: always PNG/JPG (WebP is not shown by every mail app). */
   public static function logo(): string { $l = Cache::get('store.settings2')['logo_url'] ?? null; if (!is_string($l) || !preg_match('/\.(png|jpe?g)(\?.*)?$/i', $l)) $l = '/email-logo-v2.png'; return self::abs($l); }
   /** Offer emails carry their own sender address (an alias of the mailbox), so order emails and offers are told apart by customers and by mail providers. */
-  public static function offerFrom(): string { $f = self::set('mk_from', 'offers@dutyfreebd.com'); return self::valid($f) ? $f : self::user(); }
+  public static function offerFrom(): string { if (self::offerSmtp()) { $f = self::set('mk_smtp_from', 'deals@offers.dutyfreebd.com'); if (self::valid($f)) return $f; } $f = self::set('mk_from', 'offers@dutyfreebd.com'); return self::valid($f) ? $f : self::user(); }
   /** A customer ticked "send me offers" (checkout): the only way an ordinary customer gets on the offer list. Ticking again after a stop request re-subscribes. */
   public static function optIn(?string $email, ?string $name = null, string $via = 'checkout'): void {
     try { $e = mb_strtolower(trim((string)$email)); if (!self::valid($e) || !self::mkReady()) return;
@@ -60,18 +68,20 @@ class Mailer {
     } catch (\Throwable $x) { report($x); }
   }
   public static function deliver(string $to, string $subject, string $html, ?string $unsub = null): array {
-    if (!self::hasPassword()) return [false, 'The mailbox password is not saved yet'];
+    $via = $unsub !== null && self::offerSmtp(); // offer email + separate sending service saved
+    if (!$via && !self::hasPassword()) return [false, 'The mailbox password is not saved yet'];
     if (!self::valid($to)) return [false, 'Not a valid email address'];
     try {
       $from = $unsub ? self::offerFrom() : self::user(); $name = self::fromName(); $rt = self::replyTo(); $text = self::plain($html);
-      self::mailer()->send([], [], function ($m) use ($to, $subject, $from, $name, $rt, $html, $text, $unsub) {
+      self::mailer($via)->send([], [], function ($m) use ($to, $subject, $from, $name, $rt, $html, $text, $unsub) {
         $m->to($to)->subject($subject)->from($from, $name)->html($html)->text($text); if (self::valid($rt)) $m->replyTo($rt);
         if ($unsub) { try { $h = $m->getHeaders(); $h->addTextHeader('List-Unsubscribe', '<' . $unsub . '>'); $h->addTextHeader('List-Unsubscribe-Post', 'List-Unsubscribe=One-Click'); } catch (\Throwable $e) {} }
       });
-      if (self::blockedAt() !== null) { Cache::forget('email.blocked'); Cache::forget('email.blocked.probe'); } // any accepted email (a test included) proves the provider block is over: the queue resumes at once
+      if (!$via && self::blockedAt() !== null) { Cache::forget('email.blocked'); Cache::forget('email.blocked.probe'); } // any accepted email (a test included) proves the provider block is over: the queue resumes at once
       return [true, null];
     } catch (\Throwable $e) {
       // the provider refused the offer sender address: send this one from the mailbox address instead of failing
+      if ($via) return [false, mb_substr($e->getMessage(), 0, 400)]; // an offer email never falls back to the order mailbox
       if ($unsub && $from !== self::user() && preg_match('/sender|not owned|550 5\.7|553/i', $e->getMessage()) && !self::isBlockError($e->getMessage())) {
         try { $from = self::user(); self::mailer()->send([], [], function ($m) use ($to, $subject, $from, $name, $rt, $html, $text, $unsub) { $m->to($to)->subject($subject)->from($from, $name)->html($html)->text($text); if (self::valid($rt)) $m->replyTo($rt); try { $h = $m->getHeaders(); $h->addTextHeader('List-Unsubscribe', '<' . $unsub . '>'); $h->addTextHeader('List-Unsubscribe-Post', 'List-Unsubscribe=One-Click'); } catch (\Throwable $x) {} }); return [true, null]; } catch (\Throwable $e2) { return [false, mb_substr($e2->getMessage(), 0, 400)]; }
       }
