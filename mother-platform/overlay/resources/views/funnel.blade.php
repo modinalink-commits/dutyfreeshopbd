@@ -1,6 +1,6 @@
 @extends('layout')@section('title','Sales Funnel')
 @section('body')
-<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px"><div style="flex:1"><h1 style="margin:0">Sales Funnel</h1><div style="font-size:12px;color:#6B7280">Where visitors drop off: viewed a product → added to cart → started checkout → ordered. Counts are unique visitors (anonymous, bots skipped).</div></div>
+<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px"><div style="flex:1"><h1 style="margin:0">Sales Funnel</h1><div style="font-size:12px;color:#6B7280">Where visitors drop off: viewed a product → added to cart → started checkout → ordered. Counts are unique visitors (anonymous). Desktop visits with no referrer are left out of the funnel and device/source tables because they behave like automated crawlers (see Traffic quality below).</div></div>
 <form method="get" style="display:flex;gap:6px;align-items:center;margin:0"><input type="date" name="from" value="{{ $from }}"><input type="date" name="to" value="{{ $to }}"><button class="g">Apply</button></form></div>
 @php $pv=$v['product_view'] ?? 0; $cr=$v['add_to_cart'] ?? 0; $ck=$v['checkout_started'] ?? 0; $pct=fn($a,$b)=>$b>0?round($a/$b*100,1).'%':'—'; @endphp
 <div class="card"><h2>Funnel</h2>

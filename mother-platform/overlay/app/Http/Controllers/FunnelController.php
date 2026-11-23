@@ -13,10 +13,10 @@ class FunnelController extends Controller
     if ($from > $to) [$from, $to] = [$to, $from];
     $a = \Carbon\Carbon::parse($from, $tz)->startOfDay()->utc(); $b = \Carbon\Carbon::parse($to, $tz)->addDay()->startOfDay()->utc();
     $steps = ['product_view' => 'Viewed a product', 'add_to_cart' => 'Added to cart', 'checkout_started' => 'Started checkout'];
-    $v = []; foreach (DB::select("select event_type, count(distinct visitor_id) as v from product_analytics_events where created_at >= ? and created_at < ? and event_type in ('product_view','add_to_cart','checkout_started') group by event_type", [$a, $b]) as $x) $v[$x->event_type] = (int)$x->v;
+    $v = []; foreach (DB::select("select event_type, count(distinct visitor_id) as v from product_analytics_events where created_at >= ? and created_at < ? and event_type in ('product_view','add_to_cart','checkout_started') and not (event_type = 'product_view' and device_type = 'desktop' and source = 'Direct Link') group by event_type", [$a, $b]) as $x) $v[$x->event_type] = (int)$x->v;
     $o = DB::selectOne("select count(*) filter (where status not in ('Cancel','Returned')) as live, count(*) as everything from orders where created_at >= ? and created_at < ?", [$a, $b]);
     $by = function (string $col) use ($a, $b) {
-      $out = []; foreach (DB::select("select coalesce(nullif($col,''),'(unknown)') as k, event_type, count(distinct visitor_id) as v from product_analytics_events where created_at >= ? and created_at < ? and event_type in ('product_view','add_to_cart','checkout_started') group by 1, 2", [$a, $b]) as $x) $out[$x->k][$x->event_type] = (int)$x->v;
+      $out = []; foreach (DB::select("select coalesce(nullif($col,''),'(unknown)') as k, event_type, count(distinct visitor_id) as v from product_analytics_events where created_at >= ? and created_at < ? and event_type in ('product_view','add_to_cart','checkout_started') and not (event_type = 'product_view' and device_type = 'desktop' and source = 'Direct Link') group by 1, 2", [$a, $b]) as $x) $out[$x->k][$x->event_type] = (int)$x->v;
       uasort($out, fn($p, $q) => ($q['product_view'] ?? 0) <=> ($p['product_view'] ?? 0)); return array_slice($out, 0, 12, true);
     };
     // Traffic quality: per device, how many viewers looked at one product only, how many ever added to cart, how many arrived with no referrer.

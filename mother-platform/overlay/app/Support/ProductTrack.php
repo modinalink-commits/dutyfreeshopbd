@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\DB;
  */
 class ProductTrack {
   const DEDUPE = 600; // 10 minutes
-  const BOT = '/bot|crawl|spider|slurp|facebookexternalhit|facebot|whatsapp|telegram|preview|curl|wget|python|java\/|go-http|headless|lighthouse|pingdom|uptime|monitor|gtmetrix|semrush|ahrefs|mj12|petalbot|bytespider|scrapy|axios|node-fetch|yandex|baidu|duckduck|adsbot|mediapartners|google-read|apis-google/i';
+  const BOT = '/bot|crawl|spider|slurp|facebookexternalhit|facebot|whatsapp|telegram|preview|curl|wget|python|java\/|go-http|headless|lighthouse|pingdom|uptime|monitor|gtmetrix|semrush|ahrefs|mj12|petalbot|bytespider|scrapy|axios|node-fetch|yandex|baidu|duckduck|adsbot|mediapartners|google-read|apis-google|productfinder|shopfinder|geedo|pricefinder|comparison/i';
 
   public static function isBot(string $ua): bool { return $ua === '' || (bool)preg_match(self::BOT, $ua); }
   public static function device(string $ua): string {
@@ -40,7 +40,10 @@ class ProductTrack {
       if (!Cache::add('pv:'.$vid.':'.$p->id, 1, self::DEDUPE)) return;
       $dev = self::device($ua); $src = self::source($r); $meta = null;
       // Traffic-quality sample: desktop visits with no referrer carry the browser string and the network (/24) so automated visits can be recognised. No full IP is kept.
-      if ($dev === 'desktop' && $src === 'Direct Link') { $ip = (string)$r->ip(); $net = preg_match('/^(\d+\.\d+\.\d+)\.\d+$/', $ip, $m) ? $m[1] . '.x' : (strpos($ip, ':') !== false ? implode(':', array_slice(explode(':', $ip), 0, 3)) . '::' : ''); $meta = json_encode(['ua' => mb_substr($ua, 0, 160), 'net' => $net]); }
+      $cc = strtoupper((string)$r->headers->get('CF-IPCountry', ''));
+      // A desktop visit with no referrer from outside Bangladesh is a crawler, not a shopper: not counted (real customers abroad arrive on mobile or from a link).
+      if ($dev === 'desktop' && $src === 'Direct Link' && $cc !== '' && $cc !== 'BD' && $cc !== 'XX' && $cc !== 'T1') return;
+      if ($dev === 'desktop' && $src === 'Direct Link') { $ip = (string)$r->ip(); $net = preg_match('/^(\d+\.\d+\.\d+)\.\d+$/', $ip, $m) ? $m[1] . '.x' : (strpos($ip, ':') !== false ? implode(':', array_slice(explode(':', $ip), 0, 3)) . '::' : ''); $meta = json_encode(['ua' => mb_substr($ua, 0, 160), 'net' => $net, 'cc' => $cc]); }
       $row = ['event_type'=>'product_view', 'product_id'=>(int)$p->id, 'store_id'=>isset($p->store_id) ? (int)$p->store_id : null, 'visitor_id'=>$vid, 'device_type'=>$dev, 'source'=>$src, 'referrer'=>mb_substr((string)parse_url((string)$r->headers->get('referer', ''), PHP_URL_HOST), 0, 120) ?: null, 'metadata'=>$meta, 'created_at'=>now()];
       app()->terminating(function () use ($row) { try { DB::table('product_analytics_events')->insert($row); } catch (\Throwable $e) {} });
     } catch (\Throwable $e) {}
