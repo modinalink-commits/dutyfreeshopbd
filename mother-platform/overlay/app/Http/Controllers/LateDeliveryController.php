@@ -18,7 +18,15 @@ class LateDeliveryController extends Controller {
     $intel = []; try { $intel = \App\Support\CustomerIntel::forOrders($rows->items()); } catch (\Throwable $e) {}
     $couriers = DB::table('orders')->where('status', 'Late Delivery')->whereNotNull('courier')->distinct()->pluck('courier');
     $__cr = DB::table('orders')->select('status', DB::raw('count(*) c'), DB::raw('coalesce(sum(total),0) v'))->groupBy('status')->get(); $__v = $__cr->pluck('v', 'status'); try { $__v['Incomplete'] = (float)DB::table('incomplete_orders')->where('status', 'open')->sum('total'); } catch (\Throwable $e) {}
-    return view('late_delivery', ['counts' => $__cr->pluck('c', 'status'), 'vals' => $__v, 'incOpen' => (int)DB::table('incomplete_orders')->where('status', 'open')->count(), 'rows' => $rows, 'intel' => $intel, 'items' => $items, 'couriers' => $couriers, 'canAct' => P::can(Auth::user(), 'orders', 'edit')]);
+    $ids = collect($rows->items())->pluck('id')->all();
+    $hold = DB::table('orders')->where('status', 'Shipment')->whereIn('courier_stage', ['Hold', 'Failed Delivery'])->where('courier', 'ilike', '%pathao%')->whereNotNull('consignment_id')->orderByRaw('coalesce(shipment_at, courier_sent_at) asc nulls last')->limit(50)->get(['id', 'invoice', 'customer_name', 'consignment_id', 'courier_stage', 'status', 'courier', 'shipment_at']);
+    $kamSent = \App\Support\CourierKam::lastSent(array_merge($ids, $hold->pluck('id')->all()));
+    return view('late_delivery', ['hold' => $hold, 'kamSent' => $kamSent, 'kamReplies' => \App\Support\CourierKam::replies(), 'kamOpen' => \App\Support\CourierKam::windowOpen(), 'kamAuto' => \App\Support\CourierKam::autoOn(), 'kamState' => \App\Support\Procure::set('kam_state', ''), 'kamHours' => \App\Support\CourierKam::fromHour() . ':00–' . \App\Support\CourierKam::toHour() . ':59', 'counts' => $__cr->pluck('c', 'status'), 'vals' => $__v, 'incOpen' => (int)DB::table('incomplete_orders')->where('status', 'open')->count(), 'rows' => $rows, 'intel' => $intel, 'items' => $items, 'couriers' => $couriers, 'canAct' => P::can(Auth::user(), 'orders', 'edit')]);
+  }
+  public function kam(Request $r) {
+    abort_unless(P::can(Auth::user(), 'orders', 'edit'), 403);
+    [$ok, $msg, $copy] = \App\Support\CourierKam::send((array)$r->input('ids', []), (string)(Auth::user()->name ?? 'staff'));
+    return back()->with($ok ? 'ok' : 'bad', $msg)->with('kamcopy', $copy);
   }
   public function follow(Request $r, $id) {
     abort_unless(P::can(Auth::user(), 'orders', 'edit'), 403);
