@@ -48,6 +48,36 @@ class AreaOrdersController extends Controller
     ])->header('Cache-Control', 'no-store');
   }
 
+  /** Read-only trial of the address reader on past orders. Nothing is saved or changed. Addresses are shown without name or phone. */
+  public function addrSample(Request $r) {
+    $days = max(1, min(60, (int)$r->query('days', 30))); $P = \App\Support\AddressParse::class;
+    $rows = \Illuminate\Support\Facades\DB::table('orders')->where('created_at', '>=', now()->subDays($days))->orderByDesc('id')->limit(20000)->get(['id', 'address', 'district', 'delivery_zone', 'status', 'shipping', 'delivery_original']);
+    $o = ['days' => $days, 'total' => 0, 'identified' => 0, 'with_area' => 0, 'need_check' => 0, 'reasons' => [], 'zone' => ['agree' => 0, 'differ' => 0, 'no_zone' => 0], 'district_field' => ['label' => 0, 'same' => 0, 'different' => 0, 'empty' => 0], 'charge_on_differ' => ['orders' => 0, 'shown' => 0.0, 'charged' => 0.0], 'priced_ctg_reader_other' => 0, 'priced_other_reader_ctg' => 0, 'pairs' => [], 'by_district' => [], 'check_words' => [], 'samples' => ['ok' => [], 'check' => [], 'differ' => []]];
+    $cut = fn($s) => mb_substr(preg_replace('/\s+/u', ' ', (string)$s), 0, 80);
+    foreach ($rows as $x) {
+      $o['total']++; $p = $P::parse((string)$x->address);
+      $zc = null; if (str_starts_with((string)$x->delivery_zone, 'Pathao · ')) $zc = \App\Support\AreaOrders::match(trim(explode(' / ', substr((string)$x->delivery_zone, strlen('Pathao · ')))[0]));
+      if ($p['check']) {
+        $o['need_check']++; $why = preg_replace('/^"[^"]*"/', '"…"', preg_replace('/:.*$/', '', $p['why'])); $o['reasons'][$why] = ($o['reasons'][$why] ?? 0) + 1;
+        if (preg_match('/^"([^"]*)"/', $p['why'], $m)) $o['check_words'][$m[1]] = ($o['check_words'][$m[1]] ?? 0) + 1;
+        if (count($o['samples']['check']) < 40 && $o['need_check'] % 7 === 0) $o['samples']['check'][] = [$cut($x->address), $p['why'], $zc];
+        continue;
+      }
+      $o['identified']++; if ($p['area']) $o['with_area']++; $o['by_district'][$p['district']] = ($o['by_district'][$p['district']] ?? 0) + 1;
+      if (count($o['samples']['ok']) < 25 && $o['identified'] % 40 === 0) $o['samples']['ok'][] = [$cut($x->address), $p['area'], $p['thana'], $p['district']];
+      $d = trim((string)$x->district); $dc = $d === '' ? null : \App\Support\AreaOrders::match($d, false);
+      if ($d === '') $o['district_field']['empty']++; elseif (stripos($d, 'Inside ') === 0 || stripos($d, 'Chattogram to ') === 0) $o['district_field']['label']++; elseif ($dc === $p['district']) $o['district_field']['same']++; else $o['district_field']['different']++;
+      if ($zc === null) { $o['zone']['no_zone']++; continue; }
+      if ($zc === $p['district']) { $o['zone']['agree']++; continue; }
+      $o['zone']['differ']++; $k = $p['district'] . ' → priced as ' . $zc; $o['pairs'][$k] = ($o['pairs'][$k] ?? 0) + 1;
+      if ($x->status !== 'Cancel') { $o['charge_on_differ']['orders']++; $o['charge_on_differ']['shown'] += (float)$x->delivery_original; $o['charge_on_differ']['charged'] += (float)$x->shipping; }
+      if ($zc === 'Chattogram') $o['priced_ctg_reader_other']++; if ($p['district'] === 'Chattogram') $o['priced_other_reader_ctg']++;
+      if (count($o['samples']['differ']) < 40) $o['samples']['differ'][] = [$cut($x->address), $p['district'], (string)$x->delivery_zone];
+    }
+    arsort($o['pairs']); arsort($o['by_district']); arsort($o['reasons']); arsort($o['check_words']); $o['pairs'] = array_slice($o['pairs'], 0, 30, true); $o['check_words'] = array_slice($o['check_words'], 0, 30, true);
+    return response()->json($o, 200, [], JSON_UNESCAPED_UNICODE)->header('Cache-Control', 'no-store');
+  }
+
   /** Read-only: Dhaka orders split by the area written in the address (numbers only). Dhaka = priced as Pathao Dhaka, or the address names Dhaka. */
   public function dhaka(Request $r) {
     $days = max(1, min(120, (int)$r->query('days', 30)));
