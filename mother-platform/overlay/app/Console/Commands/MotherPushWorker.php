@@ -58,6 +58,7 @@ class MotherPushWorker extends Command
     try { if (\App\Support\AutoHeal::begin('winback')) { \App\Support\Winback::tick(); } } catch (\Throwable $e) { $this->error('winback: ' . $e->getMessage()); \App\Support\LiveBoard::fail('winback', $e); }
     try { if (\App\Support\AutoHeal::begin('reorder_reminder')) { \App\Support\CustomerReorder::tick(); } } catch (\Throwable $e) { $this->error('reorder_reminder: ' . $e->getMessage()); \App\Support\LiveBoard::fail('reorder_reminder', $e); }
     try { \App\Support\AddressParse::sweep(); } catch (\Throwable $e) {}
+    try { \App\Support\IndexNow::tick(); } catch (\Throwable $e) {}
     try { if (\App\Support\AutoHeal::begin('courier_kam')) { \App\Support\CourierKam::tick(); } } catch (\Throwable $e) { $this->error('courier_kam: ' . $e->getMessage()); \App\Support\LiveBoard::fail('courier_kam', $e); }
     try { if (\App\Support\AutoHeal::begin('wa')) { \App\Support\WhatsApp::tick(); } } catch (\Throwable $e) { $this->error('wa: ' . $e->getMessage()); \App\Support\LiveBoard::fail('wa', $e); }
     // 21 Nov 2026: customers' order-confirmation calls (AI approval) go before the promotional campaign calls so a busy campaign never delays them
