@@ -67,12 +67,14 @@ class CustomerReorder
     if (DB::table('sms_optouts')->where('phone', $p)->exists()) return false;
     if (DB::table('orders')->whereRaw('right(phone,11) = ?', [$p])->whereNotIn('status', ['Cancel', 'Returned'])->where('created_at', '>', $x['at'])->exists()) return false; // already ordered again
     if (Winback::cooling($p)) return false; // never stack on a Win-Back message
+    if (DB::table('sms_logs')->where('event', 'reorder')->where('status', 'failed')->whereRaw('right("to", 11) = ?', [$p])->where('created_at', '>', now()->subDay())->count() >= 3) return false;
     $l = $last[$p] ?? null; if ($l !== null && time() - $l < self::gapDays() * 86400) return false;
     return true;
   }
 
   public static function tick(): void {
     if (!self::on() || self::quiet()) return;
+    if (time() < (int)self::set('pause_until', '0')) return; // gateway was refusing: resting
     if (time() - (int)self::set('last_slot', '0') < self::slotGap() * 60) return; self::put('last_slot', (string)time());
     $room = min(self::slotSize(), self::dailyCap() - self::sentToday()); if ($room <= 0) return; $sent = 0; $last = self::lastSent();
     foreach (self::due() as $x) {
@@ -86,10 +88,17 @@ class CustomerReorder
       $t = trim(strtr(self::set('sms', self::SMS), ['{link}' => self::LINK, '{name}' => (string)$c->name])); if (stripos($t, 'dutyfreebd.com') === false) $t .= ' ' . self::LINK;
       Sms::queue($p, $t, 'reorder'); $sent++;
     }
-    if ($sent > 0) { try { Sms::flush(25); } catch (\Throwable $e) {} }
+    if ($sent > 0) { try { Sms::flush(25); } catch (\Throwable $e) {} self::reopenFailed(); }
     self::put('last_run', now()->toIso8601String());
   }
 
+  /** A reminder whose SMS failed is not counted as sent (the customer is tried again later). If 3 or more fail within minutes, rest for 30 minutes. */
+  private static function reopenFailed(): void {
+    $f = DB::table('sms_logs')->where('event', 'reorder')->where('status', 'failed')->where('updated_at', '>', now()->subMinutes(15))->get(['to']);
+    if ($f->isEmpty()) return;
+    foreach ($f as $l) DB::table('reorder_events')->where('phone', Winback::norm((string)$l->to))->where('created_at', '>', now()->subMinutes(40))->delete();
+    if ($f->count() >= 3) self::put('pause_until', (string)(time() + 1800));
+  }
   /** Page figures: buying-rhythm distribution (all customers with at least 2 orders), results of the reminders. */
   public static function stats(): array {
     $live = "status not in ('Cancel','Returned') and phone is not null and length(phone) >= 10";

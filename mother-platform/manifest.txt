@@ -1541,3 +1541,5 @@ app/Support/CustomerReorder.php
 app/Http/Controllers/ReorderReminderController.php
 resources/views/reorder_reminder.blade.php
 database/migrations/2026_11_23_000070_reorder_events.php
+app/Http/Controllers/FunnelController.php
+resources/views/funnel.blade.php
