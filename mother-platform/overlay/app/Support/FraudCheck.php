@@ -1,6 +1,7 @@
 <?php
 namespace App\Support;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
@@ -57,7 +58,10 @@ class FraudCheck
     // BD Courier (bdcourier.com): one call returns Pathao, Steadfast, RedX, ParcelDex, CourierFast, PaperFly and CarryBee. Where we already have a direct number, the larger total wins (no double counting); the other couriers are added.
     if ($cfg['bdcourier']) {
       try {
-        $br = Http::timeout(12)->acceptJson()->withToken(trim((string)Sms::secret('fc_bdcourier_key')))->post('https://api.bdcourier.com/courier-check', ['phone' => $phone]); $http['bdcourier'] = $br->status();
+        // One slow answer must not count as a failure: a connection error or timeout is tried a second time before giving up.
+        $bdCall = fn() => Http::timeout(12)->acceptJson()->withToken(trim((string)Sms::secret('fc_bdcourier_key')))->post('https://api.bdcourier.com/courier-check', ['phone' => $phone]);
+        try { $br = $bdCall(); } catch (\Illuminate\Http\Client\ConnectionException $e) { usleep(400000); $br = $bdCall(); }
+        $http['bdcourier'] = $br->status();
         $bj = $br->successful() ? $br->json() : null;
         if (!(is_array($bj) && ($bj['status'] ?? '') === 'success' && is_array($bj['data'] ?? null))) $bdFail = 'HTTP ' . $br->status() . ' ' . mb_substr(trim(strip_tags((string)(is_array($br->json()) ? ($br->json()['message'] ?? '') : ''))), 0, 80);
         if (is_array($bj) && ($bj['status'] ?? '') === 'success' && is_array($bj['data'] ?? null)) foreach ($bj['data'] as $bk => $bv) {
@@ -69,9 +73,14 @@ class FraudCheck
     }
     // A failed BD Courier call must never look like "no courier history" (that reads as a clean customer): report the failure, do not store it, and raise an alert.
     if ($bdFail !== null) {
-      try { DeployHealth::raise('fraud_bd_' . date('YmdH'), 'high', 'Fraud check', 'BD Courier fraud check is failing', 'The fraud check could not read BD Courier (' . trim($bdFail) . '). Customers are NOT being treated as clean while this lasts.', 'BD Courier limit reached, key problem or outage', 'Open Services and Balances, look at the BD Courier row, and recharge or renew if the plan ended.'); } catch (\Throwable $e) {}
+      // The alert is for a real outage, not one bad call: it is raised at the third failure in 15 minutes and closes itself at the next good answer.
+      try { $bdN = (int)Cache::get('fraud.bd.fails', 0) + 1; Cache::put('fraud.bd.fails', $bdN, 900);
+        if ($bdN >= 3) { Cache::put('fraud.bd.alert', 1, 86400 * 3); DeployHealth::raise('fraud_bd', 'high', 'Fraud check', 'BD Courier fraud check is failing', 'The fraud check could not read BD Courier (' . trim($bdFail) . '). Customers are NOT being treated as clean while this lasts.', 'BD Courier limit reached, key problem or outage', 'Open Services and Balances, look at the BD Courier row, and recharge or renew if the plan ended.'); } } catch (\Throwable $e) {}
       return ['ok' => false, 'error' => 'BD Courier check failed (' . trim($bdFail) . '). Not treated as a clean customer; try again.', 'bd_failed' => true, 'http' => $http, 'phone' => $phone];
     }
+    if ($cfg['bdcourier']) { try { Cache::forget('fraud.bd.fails');
+      if (Cache::pull('fraud.bd.alert') || Cache::add('fraud.bd.swept', 1, 3600)) DeployHealth::resolve('fraud_bd', 'System (auto)', true);
+    } catch (\Throwable $e) {} }
     // Pathao fallback: when Pathao's network score is unavailable, use this store's own Pathao parcels for the number (official API, our synced parcel results).
     if (!$bdOnly && ($res['pathao'][3] !== 'ok' || $res['pathao'][0] === 0)) {
       $pp = DB::table('orders')->whereNotNull('consignment_id')->whereRaw('right(phone,11) = ?', [$phone])->selectRaw("count(*) filter (where courier_stage = 'Delivered') as d, count(*) filter (where courier_stage in ('Returned','Cancelled','Failed Delivery')) as r")->first();
