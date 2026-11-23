@@ -19,7 +19,14 @@ class FunnelController extends Controller
       $out = []; foreach (DB::select("select coalesce(nullif($col,''),'(unknown)') as k, event_type, count(distinct visitor_id) as v from product_analytics_events where created_at >= ? and created_at < ? and event_type in ('product_view','add_to_cart','checkout_started') group by 1, 2", [$a, $b]) as $x) $out[$x->k][$x->event_type] = (int)$x->v;
       uasort($out, fn($p, $q) => ($q['product_view'] ?? 0) <=> ($p['product_view'] ?? 0)); return array_slice($out, 0, 12, true);
     };
-    return view('funnel', ['from' => $from, 'to' => $to, 'steps' => $steps, 'v' => $v, 'orders' => (int)($o->live ?? 0), 'all' => (int)($o->everything ?? 0), 'dev' => $by('device_type'), 'src' => $by('source')]);
+    // Traffic quality: per device, how many viewers looked at one product only, how many ever added to cart, how many arrived with no referrer.
+    $q = []; foreach (DB::select("with v as (select visitor_id, coalesce(nullif(device_type,''),'(unknown)') as dev, count(*) as n, bool_or(source = 'Direct Link') as direct from product_analytics_events where created_at >= ? and created_at < ? and event_type = 'product_view' group by 1, 2),
+      c as (select distinct visitor_id from product_analytics_events where created_at >= ? and created_at < ? and event_type in ('add_to_cart','checkout_started'))
+      select v.dev, count(*) as viewers, count(*) filter (where v.n = 1) as one, count(*) filter (where v.n >= 11) as heavy, count(*) filter (where v.direct) as direct, count(c.visitor_id) as acted
+      from v left join c on c.visitor_id = v.visitor_id group by v.dev order by 2 desc", [$a, $b, $a, $b]) as $x) $q[$x->dev] = ['viewers' => (int)$x->viewers, 'one' => (int)$x->one, 'heavy' => (int)$x->heavy, 'direct' => (int)$x->direct, 'acted' => (int)$x->acted];
+    $hr = array_fill(0, 24, ['desktop' => 0, 'mobile' => 0]);
+    foreach (DB::select("select extract(hour from created_at at time zone 'UTC' at time zone 'Asia/Dhaka')::int as h, device_type as d, count(distinct visitor_id) as v from product_analytics_events where created_at >= ? and created_at < ? and event_type = 'product_view' and device_type in ('desktop','mobile') group by 1, 2", [$a, $b]) as $x) $hr[(int)$x->h][$x->d] = (int)$x->v;
+    return view('funnel', ['from' => $from, 'to' => $to, 'steps' => $steps, 'v' => $v, 'orders' => (int)($o->live ?? 0), 'all' => (int)($o->everything ?? 0), 'dev' => $by('device_type'), 'src' => $by('source'), 'qual' => $q, 'hr' => $hr]);
   }
   private function day(string $s, string $def): string { return preg_match('/^\d{4}-\d{2}-\d{2}$/', $s) && strtotime($s) ? $s : $def; }
 }
