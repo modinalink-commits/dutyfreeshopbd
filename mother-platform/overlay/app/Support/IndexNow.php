@@ -32,7 +32,7 @@ class IndexNow
   }
 
   public static function tick(): void {
-    if (!Cache::add('indexnow.lock', 1, self::EVERY)) return;
+    if (!Cache::add('indexnow.lock2', 1, self::EVERY)) return;
     $st = self::state(); $st['last_run'] = now()->toIso8601String();
     try {
       $now = self::sitemap(); if ($now === null) { $st['last_error'] = 'sitemap could not be read'; Cache::forever('indexnow.state', $st); return; }
@@ -44,7 +44,7 @@ class IndexNow
         foreach (array_chunk($send, 5000) as $chunk) {
           $r = Http::timeout(30)->asJson()->post('https://api.indexnow.org/indexnow', ['host' => $host, 'key' => self::KEY, 'keyLocation' => Domain::main() . '/' . self::KEY . '.txt', 'urlList' => $chunk]);
           $st['last_http'] = $r->status();
-          if (!in_array($r->status(), [200, 202], true)) { $st['last_error'] = 'IndexNow answered ' . $r->status() . ': ' . mb_substr($r->body(), 0, 200); Cache::forever('indexnow.state', $st); return; } // nothing saved: the same URLs are tried again next time
+          if (!in_array($r->status(), [200, 202], true)) { $st['last_error'] = 'IndexNow answered ' . $r->status() . ': ' . mb_substr($r->body(), 0, 200); Cache::forever('indexnow.state', $st); Cache::put('indexnow.lock2', 1, 300); return; } // not accepted: try again in 5 minutes; nothing saved: the same URLs are tried again next time
         }
         $st['last_sent'] = count($send); $st['last_sent_at'] = now()->toIso8601String(); $st['total_sent'] = (int)($st['total_sent'] ?? 0) + count($send);
       }
