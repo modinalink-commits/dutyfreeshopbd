@@ -134,7 +134,7 @@ body.fit .rail .att{flex:1 1 0;min-height:0}
   <a class="brand" href="/admin" title="অ্যাডমিনে ফিরুন"><span class="logo"><img src="/dutyfree-bd-logo-v3.png" alt="DutyFree BD"></span><span class="bt"><strong>লাইভ ড্যাশবোর্ড</strong><small id="today"></small></span></a>
   <span class="tag" id="conn">সংযোগ হচ্ছে…</span>
   <div class="sum" id="sum"></div>
-  <div class="tools"><button id="only" aria-pressed="false">শুধু সমস্যা</button><button id="snd" aria-pressed="false">অ্যালার্ট শব্দ</button><button id="fs">ফুলস্ক্রিন</button></div>
+  <div class="tools"><button id="only" aria-pressed="false">শুধু সমস্যা</button><button id="snd" aria-pressed="false">অ্যালার্ট শব্দ</button><button id="vo" aria-pressed="false" title="গুরুত্বপূর্ণ ঘটনা বাংলায় পড়ে শোনাবে">ভয়েস</button><button id="fs">ফুলস্ক্রিন</button></div>
   <div class="clock" id="clock"></div>
 </div>
 <div class="sec">অর্ডারের ধারা</div>
@@ -246,7 +246,7 @@ function drawKp(){
   if(!D)return;if(rtMs!=null&&D.kpi[0]){D.kpi[0].v=rtMs;D.kpi[0].u='ms সাড়া (লাইভ)';D.kpi[0].st=D.kpi[0].st==='dead'?'dead':rtMs>1500?'slow':'ok'}
   const kp=$('kp');kp.style.setProperty('--kn',D.kpi.length);if(kp.children.length!==D.kpi.length){kp.innerHTML=D.kpi.map((k,i)=>'<div class="k"><div class="kl"><i></i><span></span></div><div class="kv"><b style="font-weight:inherit"></b><small></small></div><div class="ks"></div><div class="spw"><svg class="sp" id="sp'+i+'" viewBox="0 0 100 22" preserveAspectRatio="none"></svg><i class="sd" id="sd'+i+'" hidden></i></div></div>').join('')}
   D.kpi.forEach((k,i)=>{const e=kp.children[i];e.className='k '+(k.st==='ok'?'':k.st);e.style.cursor=k.href?'pointer':'';e.onclick=k.href?()=>window.open(k.href,'_blank'):null;
-    const set=(q,t)=>{const n=e.querySelector(q);if(n.textContent!==t)n.textContent=t};set('.kl span',k.l);set('.kv b',k.v==null?'–':num(k.v));set('.kv small',k.u||'');set('.ks',k.s||'');e.title=k.s||''});
+    const set=(q,t)=>{const n=e.querySelector(q);if(n.textContent!==t)n.textContent=t};set('.kl span',k.l);set('.kv b',k.v==null?'–':num(k.v));set('.kv small',k.u||'');set('.ks',k.s||'');e.title=k.s||''});voWatch();
 }
 function drawVit(){const sys=(D&&D.sys)||[];$('vit').innerHTML=sys.map(x=>'<span class="'+(x.s==='ok'?'':x.s)+'" title="'+esc(x.t)+'">'+esc(x.l)+' '+(x.v==null?'–':bn(x.v))+'</span>').join('')}
 let pulsing=false;
@@ -280,6 +280,31 @@ requestAnimationFrame(drawSparks);
 function log(t,cls){const f=$('feed');const em=f.querySelector('.empty');if(em)em.remove();const d=new Date(),hh=bn(String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'));
   f.insertAdjacentHTML('afterbegin','<div class="ev '+(cls||'')+'"><time>'+hh+'</time><span>'+esc(t)+'</span></div>');while(f.children.length>5)f.lastChild.remove()}
 let ac=null;
+/* Voice (owner, 23 Nov): the board reads important events aloud in Bangla with the browser's own voice, so the screen need not be watched. One on/off button, remembered on this computer. Nothing is spoken on the first load. */
+const VO={on:false,q:[],last:{},busy:false,ord:null,iss:null,hr:null};
+const hasTTS='speechSynthesis' in window;if(hasTTS){try{speechSynthesis.getVoices();speechSynthesis.onvoiceschanged=()=>{}}catch(e){}}
+function bnVoice(){try{const v=speechSynthesis.getVoices();return v.find(x=>/^bn[-_]BD/i.test(x.lang))||v.find(x=>/^bn/i.test(x.lang))||null}catch(e){return null}}
+function say(t,urgent){if(!VO.on||!hasTTS)return;t=String(t).replace(/[^ঀ-৿\w\s.,%:()\/-]/g,' ').replace(/\s+/g,' ').trim();if(!t)return;const now=Date.now();if(VO.last[t]&&now-VO.last[t]<90000)return;VO.last[t]=now;
+  if(VO.q.length>=8){if(!urgent)return;VO.q.shift()}VO.q.push(t);speakNext()}
+function speakNext(){if(VO.busy||!VO.q.length||!VO.on)return;const t=VO.q.shift();
+  try{const u=new SpeechSynthesisUtterance(t),isBn=/[ঀ-৿]/.test(t),v=isBn?bnVoice():null;u.lang=isBn?'bn-BD':'en-US';if(v){u.voice=v;u.lang=v.lang}u.rate=.95;VO.busy=true;
+    let fin=false;const done=()=>{if(fin)return;fin=true;VO.busy=false;setTimeout(speakNext,350)};u.onend=done;u.onerror=done;speechSynthesis.speak(u);setTimeout(done,20000)}catch(e){VO.busy=false}}
+function summary(){if(!D)return;const k=l=>D.kpi.find(x=>x.l===l),s=k('আজকের বিক্রি'),c=k('উত্তরের অপেক্ষায় চ্যাট'),m=k('Meta অ্যাড (আজ)'),oc=s&&(String(s.s).match(/\d+/)||[])[0];let dead=0,slow=0;D.nodes.forEach(n=>{if(n.s==='dead')dead++;else if(n.s==='slow')slow++});
+  const late=(D.pipe||[]).find(p=>p&&p.l==='লেট ডেলিভারি'),o=[];
+  if(s&&s.v!=null)o.push('আজ এখন পর্যন্ত '+(oc||0)+'টি অর্ডার, বিক্রি '+s.v+' টাকা');
+  if(c&&c.v!=null)o.push(c.v>0?'উত্তরের অপেক্ষায় '+c.v+'টি চ্যাট':'কোনো চ্যাট অপেক্ষায় নেই');
+  if(late&&late.n)o.push('লেট ডেলিভারি '+late.n+'টি');
+  if(m&&m.v!=null)o.push('মেটা অ্যাডে আজ খরচ '+m.v+' টাকা'+(m.st==='slow'?', অ্যাকাউন্টে পেমেন্ট সমস্যা আছে':''));
+  o.push(dead?dead+'টি কাজ থেমে আছে':slow?'সব কাজ চালু, '+slow+'টিতে সতর্কতা':'সব কাজ চালু');
+  o.forEach(x=>{delete VO.last[x+'।'];say(x+'।',true)})}
+function voWatch(){if(!D)return;const s=D.kpi.find(x=>x.l==='আজকের বিক্রি');
+  if(s&&s.v!=null){const n=+((String(s.s).match(/\d+/)||[])[0]||0);if(VO.ord&&n>VO.ord.n&&n-VO.ord.n<20){const d=n-VO.ord.n,a=s.v-VO.ord.v;say(d===1?'নতুন অর্ডার এসেছে'+(a>0?', '+a+' টাকার':'')+'। আজ মোট '+n+'টি।':d+'টি নতুন অর্ডার এসেছে। আজ মোট '+n+'টি।',true)}VO.ord={n:n,v:s.v}}}
+function voSet(on,silent){VO.on=!!on&&hasTTS;$('vo').setAttribute('aria-pressed',VO.on?'true':'false');try{localStorage.setItem('lb.voice',VO.on?'1':'0')}catch(e){}
+  if(!VO.on){VO.q=[];VO.busy=false;try{hasTTS&&speechSynthesis.cancel()}catch(e){}return}
+  if(silent)return;if(!bnVoice())log('এই ব্রাউজারে বাংলা কণ্ঠ পাওয়া যায়নি। Microsoft Edge ব্রাউজারে খুললে বাংলা কণ্ঠ পাওয়া যায়।','warn');
+  delete VO.last['ভয়েস চালু হয়েছে।'];say('ভয়েস চালু হয়েছে।',true);summary()}
+$('vo').onclick=()=>{if(!hasTTS){log('এই ব্রাউজার কথা বলতে পারে না','warn');return}voSet(!VO.on)};
+try{if(localStorage.getItem('lb.voice')==='1')voSet(true,true)}catch(e){}
 function beep(){if(!ac)return;try{const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=660;g.gain.setValueAtTime(.12,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+.5);o.connect(g).connect(ac.destination);o.start();o.stop(ac.currentTime+.5)}catch(e){}}
 $('snd').onclick=e=>{if(ac){ac.close();ac=null}else{try{ac=new (window.AudioContext||window.webkitAudioContext)();beep()}catch(_){ac=null}}e.currentTarget.setAttribute('aria-pressed',ac?'true':'false')};
 $('only').onclick=e=>{e.currentTarget.setAttribute('aria-pressed',map.classList.toggle('only'))};
@@ -293,7 +318,7 @@ function apply(d){
     let pulse=0;
     if(p){if(n.today!=null&&p.today!=null&&n.today>p.today)pulse=Math.min(5,n.today-p.today);else if(n.last!=null&&p.last!=null&&n.last+4<p.last&&!n.beat)pulse=1;
       if(n.beat&&beatFresh&&n.s==='ok')pulse=Math.max(pulse,1);
-      if(p.s!==n.s){if(n.s==='dead'){log(n.n+' থেমে গেছে'+(n.t?' · '+n.t:''),'bad');beep()}else if(n.s==='slow')log(n.n+' ধীর বা সতর্কতা'+(n.t?' · '+n.t:''),'warn');else if(n.s==='ok'&&(p.s==='dead'||p.s==='slow'))log(n.n+' আবার ঠিক হয়েছে')}}
+      if(p.s!==n.s){if(n.s==='dead'){log(n.n+' থেমে গেছে'+(n.t?' · '+n.t:''),'bad');beep();say(n.n+' থেমে গেছে।',true)}else if(n.s==='slow')(log(n.n+' ধীর বা সতর্কতা'+(n.t?' · '+n.t:''),'warn'),say(n.n+', সতর্কতা।'));else if(n.s==='ok'&&(p.s==='dead'||p.s==='slow'))(log(n.n+' আবার ঠিক হয়েছে'),p.s==='dead'&&say(n.n+' আবার ঠিক হয়েছে।'))}}
     if(pulse){x.e.classList.remove('beat');void x.e.offsetWidth;x.e.classList.add('beat');for(let i=0;i<pulse;i++)setTimeout(()=>spawn(n.g,true),i*220)}
     prev[n.k]={today:n.today,last:n.last,s:n.s};
     x.e.title=n.n+(n.t?' · '+n.t:'')+(n.today!=null?' · আজ '+n.today:'');
@@ -303,6 +328,7 @@ function apply(d){
     h+='<div class="stg '+p.c+'"><b>'+(p.n==null?'–':num(p.n))+'</b><span>'+p.l+'</span></div>'});$('pipe').innerHTML=h;
   seed(d);if(Date.now()-pulseOk>6000){sampMs=5000;sample(d)}
   drawKp();
+  {const it=(d.issues||[]).map(i=>String(i.title));if(VO.iss)it.forEach(t=>{if(!VO.iss.includes(t)){say('নতুন সতর্কতা এসেছে।',true);say(t,true)}});VO.iss=it}
   // staff
   const st=d.staff||{rows:[]};let idle=0;
   const offN=st.rows.filter(s=>s.state==='Offline').map(s=>esc(s.name));
@@ -329,7 +355,7 @@ function render(){
   $('hubbeat').textContent=D.beat==null?'ওয়ার্কারের সংকেত নেই':'ওয়ার্কার সংকেত '+ago(D.beat+el)+' আগে'+(D.disk!=null?' · ডিস্ক খালি '+bn(D.disk)+'%':'')+' · অটো-রিকভারি আজ '+bn(D.heal?D.heal.today:0)+' বার';
   const sys=D.sys||[],sysBad=sys.filter(x=>x.s==='dead'||x.s==='slow');
   drawVit();
-  sys.forEach(x=>{const o=prevSys[x.k];if(o&&o!==x.s){if(x.s==='dead'){log('সার্ভার: '+x.l+' বিপজ্জনক মাত্রায় ('+x.v+')','bad');beep()}else if(x.s==='slow')log('সার্ভার: '+x.l+' বেশি ('+x.v+')','warn');else if(x.s==='ok')log('সার্ভার: '+x.l+' স্বাভাবিক হয়েছে')}prevSys[x.k]=x.s});
+  sys.forEach(x=>{const o=prevSys[x.k];if(o&&o!==x.s){if(x.s==='dead'){log('সার্ভার: '+x.l+' বিপজ্জনক মাত্রায় ('+x.v+')','bad');beep();say('সার্ভার '+x.l+' বিপজ্জনক মাত্রায়।',true)}else if(x.s==='slow')log('সার্ভার: '+x.l+' বেশি ('+x.v+')','warn');else if(x.s==='ok')log('সার্ভার: '+x.l+' স্বাভাবিক হয়েছে')}prevSys[x.k]=x.s});
   if(sysBad.some(x=>x.s==='dead'))$('hub').classList.add('bad');
   bad.sort((p,q)=>(q.s==='dead')-(p.s==='dead'));
   const iss=(D.issues||[]).map(i=>'<div class="al '+(i.severity==='critical'||i.severity==='high'?'dead':'slow')+'"><b><span>🚨 '+esc(i.title)+'</span><em>'+esc(i.service)+'</em></b><p>'+esc(i.action)+'</p></div>');
@@ -342,11 +368,11 @@ function poll(){
   const t0=performance.now();
   fetch('/admin/live-dashboard/status',{headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'},credentials:'same-origin',cache:'no-store'})
    .then(r=>{if(r.status===401||r.status===419||r.redirected)throw new Error('login');if(!r.ok)throw new Error('http '+r.status);return r.json()})
-   .then(d=>{rtMs=Math.round(performance.now()-t0);D=d;got=Date.now();if(fails>2)log('সার্ভারের সঙ্গে সংযোগ ফিরে এসেছে');fails=0;if(Date.now()-pulseOk>6000)$('conn').textContent='লাইভ · প্রতি ৫ সেকেন্ডে';$('conn').className='tag';apply(d);first=false})
-   .catch(e=>{fails++;const m=e.message==='login'?'লগইন শেষ হয়েছে, আবার লগইন করুন':'সার্ভার থেকে তথ্য আসছে না';$('conn').textContent=m;$('conn').className='tag bad';if(fails===3){log(m,'bad');beep()}render()});
+   .then(d=>{rtMs=Math.round(performance.now()-t0);D=d;got=Date.now();if(fails>2){log('সার্ভারের সঙ্গে সংযোগ ফিরে এসেছে');say('সার্ভারের সঙ্গে সংযোগ ফিরে এসেছে।')};fails=0;if(Date.now()-pulseOk>6000)$('conn').textContent='লাইভ · প্রতি ৫ সেকেন্ডে';$('conn').className='tag';apply(d);first=false})
+   .catch(e=>{fails++;const m=e.message==='login'?'লগইন শেষ হয়েছে, আবার লগইন করুন':'সার্ভার থেকে তথ্য আসছে না';$('conn').textContent=m;$('conn').className='tag bad';if(fails===3){log(m,'bad');beep();say(m+'।',true)}render()});
 }
 setInterval(poll,5000);poll();
-setInterval(()=>{render();const nd=new Date();$('clock').textContent=bn(nd.toLocaleTimeString('en-GB'));$('today').textContent=nd.toLocaleDateString('bn-BD',{weekday:'long',day:'numeric',month:'long',year:'numeric'})},1000);
+setInterval(()=>{render();const nd=new Date();if(VO.on&&nd.getMinutes()===0&&VO.hr!==nd.getHours()){VO.hr=nd.getHours();const h=nd.getHours()%12||12;delete VO.last['এখন '+h+'টা বাজে।'];say('এখন '+h+'টা বাজে।',true);summary()}$('clock').textContent=bn(nd.toLocaleTimeString('en-GB'));$('today').textContent=nd.toLocaleDateString('bn-BD',{weekday:'long',day:'numeric',month:'long',year:'numeric'})},1000);
 
 // wires + travelling dots (one dot = one real event seen since the last refresh)
 const cv=$('cv'),cx=cv.getContext('2d');let P={},W=0,H=0;
