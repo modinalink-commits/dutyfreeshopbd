@@ -53,7 +53,7 @@ class AddressParse
     return str_replace(["\u{09A1}\u{09BC}", "\u{09A2}\u{09BC}", "\u{09AF}\u{09BC}", "\u{0981}", "\u{09C0}", "\u{09C2}", "\u{09A3}", "\u{200C}", "\u{200D}"], ["\u{09DC}", "\u{09DD}", "\u{09DF}", '', "\u{09BF}", "\u{09C1}", "\u{09A8}", '', ''], $s);
   }
 
-  private static function division(string $district): ?string { foreach (AreaOrders::geo() as $g) if ($g['en'] === $district) return $g['dv'] ?: null; return null; }
+  public static function division(string $district): ?string { foreach (AreaOrders::geo() as $g) if ($g['en'] === $district) return $g['dv'] ?: null; return null; }
 
   /** Every district named in the text, in the order written. */
   public static function districts(string $addr): array {
@@ -103,7 +103,7 @@ class AddressParse
     try {
       $o = DB::table('orders')->where('id', $orderId)->first(['id', 'address', 'district', 'created_at']); if (!$o || !self::isNew($o)) return; // old records are never touched here
       $p = self::parse((string)$o->address);
-      $u = ['addr_area' => $p['area'], 'addr_thana' => $p['thana'], 'addr_city' => $p['city'], 'addr_district' => $p['district'], 'addr_check' => $p['check'], 'addr_note' => $p['why'] !== '' ? mb_substr($p['why'], 0, 160) : null];
+      $u = ['addr_area' => $p['area'], 'addr_thana' => $p['thana'], 'addr_city' => $p['city'], 'addr_district' => $p['district'], 'addr_division' => $p['division'], 'addr_check' => $p['check'], 'addr_note' => $p['why'] !== '' ? mb_substr($p['why'], 0, 160) : null];
       if ($fixDistrict && (trim((string)$o->district) === '' || stripos((string)$o->district, 'Inside ') === 0 || stripos((string)$o->district, 'Chattogram to ') === 0)) $u['district'] = $p['district'];
       DB::table('orders')->where('id', $orderId)->update($u);
     } catch (\Throwable $e) { /* never blocks an order */ }

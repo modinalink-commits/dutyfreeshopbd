@@ -24,7 +24,7 @@ class AddressCheckController extends Controller {
     $dist = AreaOrders::match($d['district'], false); if (!$dist) return back()->with('bad', 'Choose a district from the list.');
     $o = DB::table('orders')->where('id', (int)$id)->first(['id', 'invoice', 'district', 'addr_check']); abort_unless($o && $o->addr_check !== null, 404); // only orders the reader has flagged; old records are not edited here
     $area = trim((string)($d['area'] ?? '')) ?: null;
-    DB::table('orders')->where('id', $o->id)->update(['district' => $dist, 'addr_district' => $dist, 'addr_city' => $dist, 'addr_area' => $area, 'addr_check' => 2, 'addr_note' => null, 'updated_at' => now()]);
+    DB::table('orders')->where('id', $o->id)->update(['district' => $dist, 'addr_district' => $dist, 'addr_division' => AddressParse::division($dist), 'addr_city' => $dist, 'addr_area' => $area, 'addr_check' => 2, 'addr_note' => null, 'updated_at' => now()]);
     OrderActivity::log((int)$o->id, 'order_edited', (string)$o->district, $dist, 'Address checked by staff: district set to '.$dist.($area ? ', area '.$area : '').'. The address text and the delivery charge are unchanged.', []);
     return back()->with('ok', \App\Support\Inv::show($o->invoice).': district saved as '.$dist.'.');
   }
