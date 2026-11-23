@@ -18,6 +18,11 @@ class LiveBoardController extends Controller
     catch (\Throwable $e) { report($e); return response()->json(['error' => 'Live data could not be read'], 500); }
   }
 
+  public function pulse() {
+    try { return response()->json(LiveBoard::pulse())->header('Cache-Control', 'no-store'); }
+    catch (\Throwable $e) { return response()->json(['error' => 'pulse'], 500); }
+  }
+
   /** Google Search Console connection: the owner pastes the service-account key here once. The key is stored encrypted and never shown again. */
   public function google() { return view('live_board_google', ['email' => GoogleSeo::email(), 'property' => GoogleSeo::property(), 'g' => GoogleSeo::key() ? GoogleSeo::data() : null]); }
   public function googleSave(Request $r) {

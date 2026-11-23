@@ -19,7 +19,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/staff-idle', [$SI,'index']); Route::post('/staff-idle/settings', [$SI,'save']); Route::post('/staff-idle/{id}/review', [$SI,'review'])->whereNumber('id');
   Route::get('/staff-idle/ping', [$SI,'ping']); Route::get('/staff-idle/notice', [$SI,'notice']); Route::post('/staff-idle/submit', [$SI,'submit']); Route::post('/staff-idle/break', [$SI,'brk']);
   Route::get('/', [A::class,'dashboard']);
-  Route::get('/live-dashboard', [\App\Http\Controllers\LiveBoardController::class,'index']); Route::get('/live-dashboard/status', [\App\Http\Controllers\LiveBoardController::class,'status']); Route::get('/live-dashboard/google', [\App\Http\Controllers\LiveBoardController::class,'google']); Route::post('/live-dashboard/google', [\App\Http\Controllers\LiveBoardController::class,'googleSave'])->middleware('throttle:12,1');
+  Route::get('/live-dashboard', [\App\Http\Controllers\LiveBoardController::class,'index']); Route::get('/live-dashboard/status', [\App\Http\Controllers\LiveBoardController::class,'status']); Route::get('/live-dashboard/pulse', [\App\Http\Controllers\LiveBoardController::class,'pulse']); Route::get('/live-dashboard/google', [\App\Http\Controllers\LiveBoardController::class,'google']); Route::post('/live-dashboard/google', [\App\Http\Controllers\LiveBoardController::class,'googleSave'])->middleware('throttle:12,1');
   Route::get('/error-log', [\App\Http\Controllers\UploadController::class,'errorLog']);
   Route::get('/db-health', [\App\Http\Controllers\DbHealthController::class,'index']);
   Route::get('/ad-arrivals', [\App\Http\Controllers\AdArrivalController::class,'index']);

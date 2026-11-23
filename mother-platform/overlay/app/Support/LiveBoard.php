@@ -195,6 +195,39 @@ class LiveBoard {
     return $v;
   }
 
+  /**
+   * One-second pulse for the wall screen: only numbers that are cheap to read and can really change within a second.
+   * CPU is the difference between this call and the previous one (no waiting); the three database counts are shared for 3 seconds.
+   */
+  public static function pulse(): array {
+    $now = time(); $o = ['t' => $now, 'sys' => [], 'k' => []];
+    $lv = fn($x, $warn, $bad) => $x >= $bad ? 'dead' : ($x >= $warn ? 'slow' : 'ok');
+    try {
+      $rd = function () { $l = explode(' ', preg_replace('/\s+/', ' ', trim((string)strtok((string)@file_get_contents('/proc/stat'), "\n")))); array_shift($l); return array_map('floatval', $l); };
+      $b = $rd(); $mt = microtime(true); $pv = Cache::get('lb.pulse.stat'); Cache::put('lb.pulse.stat', ['t' => $mt, 'v' => $b], 30);
+      if (is_array($pv) && $mt - (float)$pv['t'] >= 0.4 && $mt - (float)$pv['t'] <= 6) $a = $pv['v']; else { $a = $b; usleep(150000); $b = $rd(); }
+      $d = []; foreach ($b as $i => $x) $d[$i] = $x - ($a[$i] ?? 0); $tot = array_sum(array_slice($d, 0, 8));
+      if ($tot > 0) {
+        $busy = (int)round(($d[0] + $d[1] + $d[2] + ($d[5] ?? 0) + ($d[6] ?? 0)) / $tot * 100); $wait = (int)round(($d[4] ?? 0) / $tot * 100); $steal = (int)round(($d[7] ?? 0) / $tot * 100);
+        $o['sys'] = ['cpu' => [$busy . '%', $lv($busy, 85, 95)], 'iow' => [$wait . '%', $lv($wait, 35, 60)], 'steal' => [$steal . '%', $lv($steal, 25, 45)]];
+      }
+    } catch (\Throwable $e) {}
+    try { $b = intdiv($now, 300); $fr = ($now % 300) / 300;
+      $o['k']['এখন সাইটে ভিজিটর'] = ['v' => (int)round((int)Cache::get('lb.vc.' . $b, 0) + (int)Cache::get('lb.vc.' . ($b - 1), 0) * (1 - $fr)), 's' => 'আজ মোট ' . (int)Cache::get('lb.vdc.' . now('Asia/Dhaka')->format('Ymd'), 0) . ' জন'];
+      $o['k']['Meta (Pixel / CAPI)'] = ['v' => (int)Cache::get('arr.d.' . now('Asia/Dhaka')->format('Y-m-d'), 0)];
+    } catch (\Throwable $e) {}
+    try {
+      $db = Cache::remember('lb.pulse.db', 3, function () {
+        $r = []; $ds = self::dayStart();
+        try { $q = DB::table('orders')->where('created_at', '>=', $ds)->whereNotIn('status', ['Cancel', 'Incomplete'])->selectRaw('count(*) n, coalesce(sum(total),0) t')->first(); $r['আজকের বিক্রি'] = ['v' => (int)round($q->t), 's' => 'অর্ডার ' . (int)$q->n . 'টি (ক্যান্সেল বাদে)']; } catch (\Throwable $e) {}
+        try { $w = (int)DB::table('chat_threads')->where('awaiting_reply', true)->where('status', '!=', 'resolved')->where('last_at', '>=', now()->subHours(22))->count(); $r['উত্তরের অপেক্ষায় চ্যাট'] = ['v' => $w, 'st' => $w > 15 ? 'slow' : 'ok']; } catch (\Throwable $e) {}
+        return $r;
+      });
+      foreach ($db as $l => $x) $o['k'][$l] = $x;
+    } catch (\Throwable $e) {}
+    return $o;
+  }
+
   /** Whole board, cached 10 seconds so an always-open screen costs almost nothing. */
   public static function data(): array {
     return Cache::remember('lb.data', 10, function () {

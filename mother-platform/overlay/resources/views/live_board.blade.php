@@ -231,18 +231,37 @@ function build(nodes){
     e.innerHTML='<span class="dot"></span><span class="cnt"></span><span class="em">'+icon(n)+'</span><span class="tn">'+esc(n.n)+'</span><span class="ta"></span>';GE[n.g].tiles.appendChild(e);E[n.k]={e,ta:e.querySelector('.ta'),cnt:e.querySelector('.cnt')}});
   built=true;layout();
 }
-// Live trend lines. Every refresh (5 s) adds one real sample per card, and the line slides left on every animation frame, so it is always moving.
-// The speed card plots the time this very screen waited for the server on each refresh; the other cards plot their own value.
-// What happened before the page was opened comes from the server (one sample a minute).
-const HB={},LIVE={},SPN=48;let rtMs=null,lastSample=0;
+// Live trend lines. One real sample per card every second (owner, 23 Nov): the page asks the server for a small "pulse" each second and plots
+// what came back, so a line goes up or down only when the real number does. The speed card plots how long this screen waited for that answer.
+// If the pulse does not answer, the cards fall back to one sample per full refresh (5 s). Google SEO keeps its own daily line.
+const HB={},SPN=60;let rtMs=null,lastSample=0,sampMs=5000,pulseOk=0;
+function seed(d){d.kpi.forEach(k=>{if(k.fixed)HB[k.l]=k.h||[];else if(!HB[k.l])HB[k.l]=[]})}
 function sample(d){
-  d.kpi.forEach((k,i)=>{const key=k.l;if(k.fixed){HB[key]=k.h||[];return}if(!HB[key])HB[key]=(k.h||[]).slice(-SPN);
-    let v=k.v;if(i===0&&rtMs!=null){v=rtMs;if(!LIVE[key]){LIVE[key]=1;HB[key]=[]}}
-    if(v==null)return;HB[key].push(v);if(HB[key].length>SPN)HB[key].shift()});
+  d.kpi.forEach((k,i)=>{if(k.fixed)return;const h=HB[k.l]||(HB[k.l]=[]);let v=k.v;if(i===0&&rtMs!=null)v=rtMs;
+    if(v==null)return;h.push(v);if(h.length>SPN)h.shift()});
   lastSample=performance.now();
 }
+function drawKp(){
+  if(!D)return;if(rtMs!=null&&D.kpi[0]){D.kpi[0].v=rtMs;D.kpi[0].u='ms সাড়া (লাইভ)';D.kpi[0].st=D.kpi[0].st==='dead'?'dead':rtMs>1500?'slow':'ok'}
+  const kp=$('kp');if(kp.children.length!==D.kpi.length){kp.innerHTML=D.kpi.map((k,i)=>'<div class="k"><div class="kl"><i></i><span></span></div><div class="kv"><b style="font-weight:inherit"></b><small></small></div><div class="ks"></div><div class="spw"><svg class="sp" id="sp'+i+'" viewBox="0 0 100 22" preserveAspectRatio="none"></svg><i class="sd" id="sd'+i+'" hidden></i></div></div>').join('')}
+  D.kpi.forEach((k,i)=>{const e=kp.children[i];e.className='k '+(k.st==='ok'?'':k.st);e.style.cursor=k.href?'pointer':'';e.onclick=k.href?()=>window.open(k.href,'_blank'):null;
+    const set=(q,t)=>{const n=e.querySelector(q);if(n.textContent!==t)n.textContent=t};set('.kl span',k.l);set('.kv b',k.v==null?'–':num(k.v));set('.kv small',k.u||'');set('.ks',k.s||'')});
+}
+function drawVit(){const sys=(D&&D.sys)||[];$('vit').innerHTML=sys.map(x=>'<span class="'+(x.s==='ok'?'':x.s)+'" title="'+esc(x.t)+'">'+esc(x.l)+' '+(x.v==null?'–':bn(x.v))+'</span>').join('')}
+let pulsing=false;
+function pulse(){
+  if(!D||document.hidden||pulsing)return;pulsing=true;const t0=performance.now();
+  fetch('/admin/live-dashboard/pulse',{headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'},credentials:'same-origin',cache:'no-store'})
+   .then(r=>{if(!r.ok||r.redirected)throw new Error('pulse');return r.json()})
+   .then(p=>{rtMs=Math.round(performance.now()-t0);pulseOk=Date.now();sampMs=1000;
+     D.kpi.forEach(k=>{const x=p.k&&p.k[k.l];if(x){if(x.v!=null)k.v=x.v;if(x.s)k.s=x.s;if(x.st)k.st=x.st}});
+     (D.sys||[]).forEach(x=>{const y=p.sys&&p.sys[x.k];if(y){x.v=y[0];x.s=y[1]}});
+     sample(D);drawKp();drawVit();$('conn').textContent='লাইভ · প্রতি সেকেন্ডে'})
+   .catch(()=>{}).finally(()=>{pulsing=false});
+}
+setInterval(pulse,1000);
 function drawSparks(now){
-  if(D){const f=Math.min(1,(now-lastSample)/5000),step=100/(SPN-2);
+  if(D){const f=Math.min(1,(now-lastSample)/sampMs),step=100/(SPN-2);
     D.kpi.forEach((k,i)=>{const el=document.getElementById('sp'+i),dot=document.getElementById('sd'+i);if(!el)return;const h=HB[k.l]||[],n=h.length;
       const col=k.st==='dead'?'#ff4d4d':k.st==='slow'?'#f2b030':'#ff7a1a';
       if(n<2){el.innerHTML='<path d="M0 16H100" stroke="#232c42" stroke-width="1.5" fill="none" vector-effect="non-scaling-stroke"/>';if(dot)dot.hidden=true;return}
@@ -281,8 +300,8 @@ function apply(d){
   // pipeline
   let h='',flow=true,wi=0;d.pipe.forEach((p,i)=>{if(!p){h+='<div class="gap"></div>';flow=false;return}if(i&&d.pipe[i-1])h+=flow?'<div class="wire w'+(++wi%3+1)+'"></div>':'<div class="gap" style="flex-basis:6px"></div>';
     h+='<div class="stg '+p.c+'"><b>'+(p.n==null?'–':num(p.n))+'</b><span>'+p.l+'</span></div>'});$('pipe').innerHTML=h;
-  sample(d);if(rtMs!=null&&d.kpi[0]){d.kpi[0].v=rtMs;d.kpi[0].u='ms সাড়া (লাইভ)';d.kpi[0].st=d.kpi[0].st==='dead'?'dead':rtMs>1500?'slow':'ok'}
-  $('kp').innerHTML=d.kpi.map((k,i)=>'<div class="k '+(k.st==='ok'?'':k.st)+'"'+(k.href?' style="cursor:pointer" onclick="window.open(\''+k.href+'\',\'_blank\')"':'')+'><div class="kl"><i></i>'+esc(k.l)+'</div><div class="kv">'+(k.v==null?'–':num(k.v))+'<small>'+esc(k.u)+'</small></div><div class="ks">'+esc(k.s)+'</div><div class="spw"><svg class="sp" id="sp'+i+'" viewBox="0 0 100 22" preserveAspectRatio="none"></svg><i class="sd" id="sd'+i+'" hidden></i></div></div>').join('');
+  seed(d);if(Date.now()-pulseOk>6000){sampMs=5000;sample(d)}
+  drawKp();
   // staff
   const st=d.staff||{rows:[]};let idle=0;
   const offN=st.rows.filter(s=>s.state==='Offline').map(s=>esc(s.name));
@@ -308,7 +327,7 @@ function render(){
   $('hubsub').textContent=c.dead?bn(c.dead)+' টি কাজ থেমে আছে':c.slow?bn(c.slow)+' টি কাজে সতর্কতা':'সব কাজ চালু';
   $('hubbeat').textContent=D.beat==null?'ওয়ার্কারের সংকেত নেই':'ওয়ার্কার সংকেত '+ago(D.beat+el)+' আগে'+(D.disk!=null?' · ডিস্ক খালি '+bn(D.disk)+'%':'')+' · অটো-রিকভারি আজ '+bn(D.heal?D.heal.today:0)+' বার';
   const sys=D.sys||[],sysBad=sys.filter(x=>x.s==='dead'||x.s==='slow');
-  $('vit').innerHTML=sys.map(x=>'<span class="'+(x.s==='ok'?'':x.s)+'" title="'+esc(x.t)+'">'+esc(x.l)+' '+(x.v==null?'–':bn(x.v))+'</span>').join('');
+  drawVit();
   sys.forEach(x=>{const o=prevSys[x.k];if(o&&o!==x.s){if(x.s==='dead'){log('সার্ভার: '+x.l+' বিপজ্জনক মাত্রায় ('+x.v+')','bad');beep()}else if(x.s==='slow')log('সার্ভার: '+x.l+' বেশি ('+x.v+')','warn');else if(x.s==='ok')log('সার্ভার: '+x.l+' স্বাভাবিক হয়েছে')}prevSys[x.k]=x.s});
   if(sysBad.some(x=>x.s==='dead'))$('hub').classList.add('bad');
   bad.sort((p,q)=>(q.s==='dead')-(p.s==='dead'));
@@ -322,7 +341,7 @@ function poll(){
   const t0=performance.now();
   fetch('/admin/live-dashboard/status',{headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'},credentials:'same-origin',cache:'no-store'})
    .then(r=>{if(r.status===401||r.status===419||r.redirected)throw new Error('login');if(!r.ok)throw new Error('http '+r.status);return r.json()})
-   .then(d=>{rtMs=Math.round(performance.now()-t0);D=d;got=Date.now();if(fails>2)log('সার্ভারের সঙ্গে সংযোগ ফিরে এসেছে');fails=0;$('conn').textContent='লাইভ · প্রতি ৫ সেকেন্ডে';$('conn').className='tag';apply(d);first=false})
+   .then(d=>{rtMs=Math.round(performance.now()-t0);D=d;got=Date.now();if(fails>2)log('সার্ভারের সঙ্গে সংযোগ ফিরে এসেছে');fails=0;if(Date.now()-pulseOk>6000)$('conn').textContent='লাইভ · প্রতি ৫ সেকেন্ডে';$('conn').className='tag';apply(d);first=false})
    .catch(e=>{fails++;const m=e.message==='login'?'লগইন শেষ হয়েছে, আবার লগইন করুন':'সার্ভার থেকে তথ্য আসছে না';$('conn').textContent=m;$('conn').className='tag bad';if(fails===3){log(m,'bad');beep()}render()});
 }
 setInterval(poll,5000);poll();
