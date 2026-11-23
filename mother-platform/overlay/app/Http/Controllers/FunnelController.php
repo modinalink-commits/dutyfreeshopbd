@@ -26,7 +26,8 @@ class FunnelController extends Controller
       from v left join c on c.visitor_id = v.visitor_id group by v.dev order by 2 desc", [$a, $b, $a, $b]) as $x) $q[$x->dev] = ['viewers' => (int)$x->viewers, 'one' => (int)$x->one, 'heavy' => (int)$x->heavy, 'direct' => (int)$x->direct, 'acted' => (int)$x->acted];
     $hr = array_fill(0, 24, ['desktop' => 0, 'mobile' => 0]);
     foreach (DB::select("select extract(hour from created_at at time zone 'UTC' at time zone 'Asia/Dhaka')::int as h, device_type as d, count(distinct visitor_id) as v from product_analytics_events where created_at >= ? and created_at < ? and event_type = 'product_view' and device_type in ('desktop','mobile') group by 1, 2", [$a, $b]) as $x) $hr[(int)$x->h][$x->d] = (int)$x->v;
-    return view('funnel', ['from' => $from, 'to' => $to, 'steps' => $steps, 'v' => $v, 'orders' => (int)($o->live ?? 0), 'all' => (int)($o->everything ?? 0), 'dev' => $by('device_type'), 'src' => $by('source'), 'qual' => $q, 'hr' => $hr]);
+    $ua = []; foreach (DB::select("select metadata->>'ua' as ua, metadata->>'net' as net, count(distinct visitor_id) as v from product_analytics_events where created_at >= ? and created_at < ? and event_type = 'product_view' and metadata->>'ua' is not null group by 1, 2 order by 3 desc limit 12", [$a, $b]) as $x) $ua[] = ['ua' => (string)$x->ua, 'net' => (string)$x->net, 'v' => (int)$x->v];
+    return view('funnel', ['ua' => $ua, 'from' => $from, 'to' => $to, 'steps' => $steps, 'v' => $v, 'orders' => (int)($o->live ?? 0), 'all' => (int)($o->everything ?? 0), 'dev' => $by('device_type'), 'src' => $by('source'), 'qual' => $q, 'hr' => $hr]);
   }
   private function day(string $s, string $def): string { return preg_match('/^\d{4}-\d{2}-\d{2}$/', $s) && strtotime($s) ? $s : $def; }
 }

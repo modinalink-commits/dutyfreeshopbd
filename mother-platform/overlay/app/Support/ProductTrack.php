@@ -38,7 +38,10 @@ class ProductTrack {
       $ua = (string)$r->userAgent(); if (self::isBot($ua)) return;
       $vid = substr(sha1($r->ip().'|'.$ua.'|'.config('app.key')), 0, 20);
       if (!Cache::add('pv:'.$vid.':'.$p->id, 1, self::DEDUPE)) return;
-      $row = ['event_type'=>'product_view', 'product_id'=>(int)$p->id, 'store_id'=>isset($p->store_id) ? (int)$p->store_id : null, 'visitor_id'=>$vid, 'device_type'=>self::device($ua), 'source'=>self::source($r), 'referrer'=>mb_substr((string)parse_url((string)$r->headers->get('referer', ''), PHP_URL_HOST), 0, 120) ?: null, 'created_at'=>now()];
+      $dev = self::device($ua); $src = self::source($r); $meta = null;
+      // Traffic-quality sample: desktop visits with no referrer carry the browser string and the network (/24) so automated visits can be recognised. No full IP is kept.
+      if ($dev === 'desktop' && $src === 'Direct Link') { $ip = (string)$r->ip(); $net = preg_match('/^(\d+\.\d+\.\d+)\.\d+$/', $ip, $m) ? $m[1] . '.x' : (strpos($ip, ':') !== false ? implode(':', array_slice(explode(':', $ip), 0, 3)) . '::' : ''); $meta = json_encode(['ua' => mb_substr($ua, 0, 160), 'net' => $net]); }
+      $row = ['event_type'=>'product_view', 'product_id'=>(int)$p->id, 'store_id'=>isset($p->store_id) ? (int)$p->store_id : null, 'visitor_id'=>$vid, 'device_type'=>$dev, 'source'=>$src, 'referrer'=>mb_substr((string)parse_url((string)$r->headers->get('referer', ''), PHP_URL_HOST), 0, 120) ?: null, 'metadata'=>$meta, 'created_at'=>now()];
       app()->terminating(function () use ($row) { try { DB::table('product_analytics_events')->insert($row); } catch (\Throwable $e) {} });
     } catch (\Throwable $e) {}
   }
