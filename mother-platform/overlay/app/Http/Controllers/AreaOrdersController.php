@@ -48,6 +48,29 @@ class AreaOrdersController extends Controller
     ])->header('Cache-Control', 'no-store');
   }
 
+  /** Read-only: Dhaka orders split by the area written in the address (numbers only). Dhaka = priced as Pathao Dhaka, or the address names Dhaka. */
+  public function dhaka(Request $r) {
+    $days = max(1, min(120, (int)$r->query('days', 30)));
+    $areas = [ // [name, part, regex] — first match wins; outside-city places first so "Savar, Dhaka" is not counted as the city
+      ['Savar', 'out', 'savar|সাভার|hemayetpur|হেমায়েতপুর'], ['Ashulia', 'out', 'ashulia|আশুলিয়া|baipail|zirabo|জিরাবো'], ['Keraniganj', 'out', 'keranigonj|keraniganj|কেরানীগঞ্জ|কেরানিগঞ্জ'], ['Dhamrai', 'out', 'dhamrai|ধামরাই'], ['Dohar', 'out', 'dohar|দোহার'], ['Nawabganj', 'out', 'nawabganj|nababganj|নবাবগঞ্জ'],
+      ['Uttara', 'city', 'uttara|উত্তরা|uttarkhan|dakshinkhan|দক্ষিণখান|উত্তরখান|abdullahpur|azampur|আজমপুর'], ['Mirpur', 'city', 'mirpur|মিরপুর|pallabi|পল্লবী|kazipara|কাজীপাড়া|shewrapara|শেওড়াপাড়া|kafrul|কাফরুল|rupnagar|রূপনগর'], ['Mohammadpur', 'city', 'mohammadpur|mohammedpur|মোহাম্মদপুর|মোহাম্মাদপুর|adabor|আদাবর|shyamoli|shamoli|শ্যামলী|bosila|বসিলা'], ['Dhanmondi', 'city', 'dhanmondi|dhanmandi|ধানমন্ডি|ধানমণ্ডি|kalabagan|কলাবাগান|jigatola|zigatola|জিগাতলা|হাজারীবাগ|hazaribag|science lab|new market|নিউ মার্কেট|elephant road|এলিফ্যান্ট'],
+      ['Gulshan', 'city', 'gulshan|গুলশান|niketan|নিকেতন'], ['Banani', 'city', 'banani|বনানী|mohakhali|মহাখালী|dohs'], ['Baridhara / Bashundhara', 'city', 'bashundhara|basundhara|বসুন্ধরা|baridhara|বারিধারা|nadda|নদ্দা|kuril|কুড়িল|vatara|bhatara|ভাটারা|notun bazar|নতুন বাজার'], ['Badda', 'city', 'badda|বাড্ডা|aftabnagar|aftab nagar|আফতাবনগর'], ['Rampura / Banasree', 'city', 'rampura|রামপুরা|banasree|banasri|বনশ্রী|malibag|মালিবাগ|mouchak|মৌচাক|hatirjheel|হাতিরঝিল'], ['Khilgaon / Bashabo', 'city', 'khilgaon|খিলগাঁও|bashabo|basabo|বাসাবো|goran|গোড়ান|mugda|মুগদা|sabujbag|সবুজবাগ|shahjahanpur|শাহজাহানপুর'],
+      ['Tejgaon / Farmgate', 'city', 'tejgaon|তেজগাঁও|farmgate|ফার্মগেট|karwan|কারওয়ান|kawran|panthapath|পান্থপথ|monipuripara|nakhalpara|নাখালপাড়া'], ['Motijheel / Paltan', 'city', 'motijheel|motijhil|মতিঝিল|paltan|পল্টন|kakrail|কাকরাইল|shantinagar|শান্তিনগর|segunbagicha|সেগুনবাগিচা|ramna|রমনা|shahbag|শাহবাগ|moghbazar|mogbazar|মগবাজার|eskaton|ইস্কাটন|bailey|বেইলি|kamalapur|কমলাপুর|fakirapool|ফকিরাপুল'], ['Old Dhaka', 'city', 'lalbag|লালবাগ|chawk|চকবাজার|bangshal|বংশাল|sutrapur|সূত্রাপুর|wari|ওয়ারী|gendaria|গেন্ডারিয়া|kotwali|sadarghat|সদরঘাট|islampur|nawabpur|নবাবপুর|azimpur|আজিমপুর|puran dhaka|old dhaka|পুরান ঢাকা|armanitola|tikatuli|টিকাটুলি'], ['Jatrabari / Demra', 'city', 'jatrabari|যাত্রাবাড়ী|demra|ডেমরা|shonir akhra|sonir akhra|শনির আখড়া|kadamtali|কদমতলী|shyampur|শ্যামপুর|dania|দনিয়া|matuail|মাতুয়াইল|rayerbag|রায়েরবাগ|jurain|জুরাইন|postogola'], ['Cantonment / Airport', 'city', 'cantonment|ক্যান্টনমেন্ট|kurmitola|kochukhet|কচুক্ষেত|airport|বিমানবন্দর|khilkhet|খিলক্ষেত|nikunja|নিকুঞ্জ|ecb|manikdi'], ['Agargaon / Sher-e-Bangla', 'city', 'agargaon|আগারগাঁও|sher-e-bangla|sher e bangla|শেরেবাংলা|taltola|তালতলা|bijoy sarani'], ['Gabtoli / Aminbazar', 'city', 'gabtoli|গাবতলী|aminbazar|amin bazar|আমিনবাজার|kallyanpur|kalyanpur|কল্যাণপুর|darussalam|দারুস সালাম|technical'], ['Purbachal / 300 feet', 'city', 'purbachal|পূর্বাচল|300 feet|৩০০ ফিট'],
+    ];
+    $rows = \Illuminate\Support\Facades\DB::table('orders')->where('created_at', '>=', now()->subDays($days))->where(fn($q) => $q->where('delivery_zone', 'like', 'Pathao · Dhaka%')->orWhereRaw("address ~* '(dhaka|ঢাকা)'"))
+      ->where(fn($q) => $q->whereNull('delivery_zone')->orWhere('delivery_zone', 'not like', 'Pathao · %')->orWhere('delivery_zone', 'like', 'Pathao · Dhaka%'))->get(['address', 'status', 'district']);
+    $out = []; $tot = ['n' => 0, 'delivered' => 0, 'returned' => 0, 'cancelled' => 0, 'label_ctg' => 0];
+    foreach ($rows as $o) {
+      $a = mb_strtolower((string)$o->address); $key = 'Dhaka (area not written)'; $part = 'unknown';
+      foreach ($areas as [$nm, $pt, $re]) if (preg_match('/(' . $re . ')/u', $a)) { $key = $nm; $part = $pt; break; }
+      $b = &$out[$key]; $b ??= ['area' => $key, 'part' => $part, 'n' => 0, 'delivered' => 0, 'returned' => 0, 'cancelled' => 0, 'label_ctg' => 0];
+      $st = (string)$o->status; $d = in_array($st, ['Delivered', 'Partial Delivered'], true); $rt = in_array($st, ['Returned', 'Return Pending'], true); $cn = $st === 'Cancel'; $lc = stripos((string)$o->district, 'Inside Chattogram') === 0;
+      foreach ([['n', true], ['delivered', $d], ['returned', $rt], ['cancelled', $cn], ['label_ctg', $lc]] as [$k, $v]) if ($v) { $b[$k]++; $tot[$k]++; } unset($b);
+    }
+    usort($out, fn($x, $y) => $y['delivered'] <=> $x['delivered']);
+    return response()->json(['days' => $days, 'total' => $tot, 'areas' => $out])->header('Cache-Control', 'no-store');
+  }
+
   private function csv(string $name, array $head, array $rows) {
     $fh = fopen('php://temp', 'w+'); fwrite($fh, "\xEF\xBB\xBF"); fputcsv($fh, $head);
     foreach ($rows as $row) fputcsv($fh, array_map(fn($v) => is_string($v) && preg_match('/^[=+\-@]/', $v) ? "'" . $v : $v, $row));
