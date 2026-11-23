@@ -848,6 +848,19 @@ class StoreController extends Controller {
    * /sitemap.xml is a sitemap index; /sitemap-pages.xml lists home, categories, brands, blog and pages; /sitemap-<category>.xml lists that category's products.
    * All parts are built together once an hour (same rules as before: only pages that really open, tobacco/vape never listed).
    */
+  /** /llms.txt — a short plain-text map of the public site for AI assistants. Built from live categories and pages (same rules as the sitemap: tobacco/vape stays out), so it never needs editing by hand. */
+  public function llms() {
+    $body = Cache::remember('store.llms.v1.' . (Cache::get('store.ver') ?: 0), 3600, function () {
+      $B = \App\Support\Domain::main(); $l = ["# DutyFree BD", "", "> DutyFree BD (dutyfreebd.com) is an online shop in Bangladesh for original imported products: perfume, skin care, cosmetics, chocolate, food and lifestyle items. Cash on delivery across Bangladesh. Prices are in Bangladeshi Taka (BDT).", "", "## Shop categories"];
+      foreach ($this->cats() as $c) { if (self::isSmokeCat($c)) continue; $l[] = '- [' . trim((string)$c->name) . '](' . $B . '/' . $c->slug . '/)'; }
+      $l[] = ''; $l[] = '## Information pages';
+      foreach (DB::table('pages')->where('active', true)->where(fn($q) => $q->whereNull('robots_index')->orWhere('robots_index', true))->orderBy('title')->limit(60)->get(['slug', 'title']) as $pg) $l[] = '- [' . trim((string)$pg->title) . '](' . $B . '/' . $pg->slug . '/)';
+      $l[] = '- [Blog](' . $B . '/blog)'; $l[] = ''; $l[] = '## For crawlers'; $l[] = '- [Sitemap](' . $B . '/sitemap.xml)'; $l[] = '- Product pages show the current price and stock; always read the live page instead of quoting an old price.';
+      return implode("\n", $l) . "\n";
+    });
+    return response($body, 200, ['Content-Type' => 'text/plain; charset=utf-8', 'Cache-Control' => 'public, max-age=3600']);
+  }
+
   public function sitemap(?string $part = null) {
     $B = \App\Support\Domain::main(); $pre = 'smap24.' . (Cache::get('store.ver') ?: 0) . (\App\Support\CleanSite::on() ? '.c' : '') . '.';
     $idx = Cache::get($pre . 'idx');

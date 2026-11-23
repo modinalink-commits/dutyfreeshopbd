@@ -1,5 +1,5 @@
 fe43f8b6cb422cca81ee18b74d3972f77e7852de database/migrations/2026_10_31_000001_mother_core.php
-ae2bed22d8e16cfa1d0bee8b8c58bf40ea8e773d routes/web.php
+8d02ec50dd498ba8a60aa964ca59314841930958 routes/web.php
 46ac6330ace84450b442d0d57c5c06f20c41f945 app/Models/Mother.php
 0bc60d7d9c855d84bfb4210c207b3492bf52f588 app/Http/Controllers/AdminController.php
 242316b2ef0a0967e6815e39fcbc7377349fdc17 app/Console/Commands/MotherInstall.php
@@ -52,7 +52,7 @@ e92c5075c5266882f35b3a3e18bfe14f44d16178 resources/views/report_details.blade.ph
 2f840d53881d8aeaf0c5959161774787e5f540bc database/migrations/2026_10_31_000005_storefront.php
 03d797d8a164509d198bf294374b87f67071c968 app/Console/Commands/MotherSyncFeed.php
 69fea07d5dc90ef812b3d8f9d79c2109de84bdfd app/Console/Commands/MotherGuard.php
-4881db96b1cb49fcaa4a818f00b0d21562984836 app/Http/Controllers/StoreController.php
+e54867928b63f111c8ff35811266cdb8db4873a0 app/Http/Controllers/StoreController.php
 ae94e04305591ffad8ffbbefcc103791aaf83c0f resources/views/store/layout.blade.php
 eecccb2e973849a4fa071710333cceacc5076f86 resources/views/store/card.blade.php
 4a5eb7ee8d7960886fcb97c690bbb604ec69eb1f resources/views/store/home_sec.blade.php
