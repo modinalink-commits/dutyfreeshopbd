@@ -147,7 +147,7 @@ var last='',F={nm:'f-nm',em:'f-em',ad:'f-ad'};
 function post(u,d){return fetch(u,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(d)}).then(function(r){return r.json()})}
 function setv(id,v,force){var e=document.getElementById(id);if(e&&v&&(force||!e.value.trim())){e.value=v;e.dispatchEvent(new Event('input',{bubbles:true}))}}
 function area(t){if(!t)return;document.querySelectorAll('input[name=area]').forEach(function(r){var l=r.closest('label');if(l&&l.textContent.indexOf(t)>-1){r.checked=true;r.dispatchEvent(new Event('change',{bubbles:true}));document.querySelectorAll('.ar').forEach(function(x){x.classList.toggle('on',x===l)})}})}
-function fill(d){setv('f-nm',d.name);setv('f-em',d.email);setv('f-ad',d.address);area(d.district);box.style.display='block';box.innerHTML='✅ আপনার আগের তথ্য ফর্মে বসানো হয়েছে। প্রয়োজনে যেকোনো ঘর এডিট করুন।'}
+function fill(d){setv('f-nm',d.name);setv('f-em',d.email);setv('f-ad',d.address);area(d.district);box.style.display='block';box.innerHTML='✅ আপনার আগের তথ্য ফর্মে বসানো হয়েছে। প্রয়োজনে যেকোনো ঘর এডিট করুন।';try{if(window.coV4Fill)window.coV4Fill()}catch(e){}}
 function ph(){return P.value.replace(/\D/g,'').slice(-11)}
 function run(){var p=ph();if(!/^01\d{9}$/.test(p)){box.style.display='none';last='';return}if(p===last)return;last=p;
  var sv=null;try{sv=JSON.parse(localStorage.getItem('df_cust')||'null')}catch(e){}
@@ -164,6 +164,25 @@ document.getElementById('cof').addEventListener('submit',function(){try{var d=ph
 })();
 load();})();
 
+@if(\App\Support\Procure::set('co_v4', '1') === '1')
+{{-- Checkout layout v4 (owner approved 24 Nov 2026, on trial): three fields first, optional ones folded away, returning customer sees one summary card and one button. Switch back: setting co_v4 = 0. Order logic untouched. --}}
+(function(){try{
+var $=function(i){return document.getElementById(i)},fl=function(i){var e=$(i);return e&&e.closest('.fl')};
+var st=document.createElement('style');st.textContent='.v4m{margin:-2px 0 12px}.v4m summary{font-size:13px;font-weight:600;color:#B83A00;cursor:pointer;padding:9px 2px}.v4c{border:2px solid #0C161F;border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:14px;line-height:1.5;color:#0C161F}.v4c .t{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:15px;margin-bottom:4px}.v4c button{border:0;background:none;color:#B83A00;font-weight:700;font-size:13px;padding:8px 4px;cursor:pointer}.v4c .n{font-weight:700}.v4h{display:flex;gap:8px;margin-top:10px}.v4h a{flex:1;text-align:center;border:1.5px solid #0C161F;border-radius:12px;padding:12px 4px;font-size:13px;font-weight:700;color:#0C161F}.v4h a.w{border-color:#1B7A3D;color:#14602F}';document.head.appendChild(st);
+var h=document.querySelector('.cf .h');if(h)h.textContent='মাত্র ৩টি তথ্য দিন';
+var em=fl('f-em'),nt=fl('f-nt');
+if(em){var d=document.createElement('details');d.className='v4m';var sm=document.createElement('summary');sm.textContent='ইমেইল ও ডেলিভারি নোট যোগ করুন (ঐচ্ছিক)';d.appendChild(sm);em.parentNode.insertBefore(d,em);var of=em.nextElementSibling;d.appendChild(em);if(of&&of.querySelector&&of.querySelector('input[name=offers]'))d.appendChild(of);if(nt)d.appendChild(nt)}
+var sb=$('sbm'),sr=$('sbrB'),lab=function(t){if(sb&&sb.dataset.busy!=='1')sb.textContent=t;if(sr)sr.textContent=t};lab('অর্ডার কনফার্ম করুন');
+var hp=sb&&sb.nextElementSibling;if(hp&&hp.querySelectorAll('a').length>=2){var as=hp.querySelectorAll('a'),r=document.createElement('div');r.className='v4h';var w=document.createElement('a');w.className='w';w.href=as[1].href;w.rel='noopener';w.textContent='WhatsApp এ অর্ডার';var c=document.createElement('a');c.href=as[0].href;c.textContent='কল করে অর্ডার';r.appendChild(w);r.appendChild(c);hp.parentNode.insertBefore(r,hp.nextSibling)}
+var card=null,cph='',P=$('f-ph'),ph=function(){return P.value.replace(/\D/g,'').slice(-11)};
+function open(){if(card){card.remove();card=null}var a=fl('f-nm'),b=fl('f-ad');if(a)a.style.display='';if(b)b.style.display='';lab('অর্ডার কনফার্ম করুন')}
+window.coV4Fill=function(){var n=$('f-nm').value.trim(),a=$('f-ad').value.trim();if(card||!n||a.length<5)return;var fn=fl('f-nm'),fa=fl('f-ad');if(!fn||!fa)return;
+ card=document.createElement('div');card.className='v4c';var t=document.createElement('div');t.className='t';var s1=document.createElement('span');s1.textContent='আগের ঠিকানায় পাঠাব?';var bt=document.createElement('button');bt.type='button';bt.textContent='বদলান';bt.onclick=function(){open();$('f-ad').focus()};t.appendChild(s1);t.appendChild(bt);
+ var dn=document.createElement('div');dn.className='n';dn.textContent=n;var da=document.createElement('div');da.textContent=a;card.appendChild(t);card.appendChild(dn);card.appendChild(da);
+ fn.parentNode.insertBefore(card,fn);fn.style.display='none';fa.style.display='none';cph=ph();lab('এক চাপে অর্ডার দিন')};
+if(P)P.addEventListener('input',function(){if(card&&ph()!==cph)open()});
+}catch(e){}})();
+@endif
 window.addEventListener('pageshow',function(ev){if(ev.persisted){var b=document.getElementById('sbm');if(b){b.dataset.busy='';b.disabled=false;b.textContent=b.dataset.t||'ORDER SUBMIT'}}});
 /* checkout progress tracking (incomplete order) */
 (function(){var tok='';try{tok=localStorage.getItem('dfinc')||''}catch(e){}if(!/^[A-Za-z0-9]{16,40}$/.test(tok)){tok='';var a='abcdefghijklmnopqrstuvwxyz0123456789';for(var i=0;i<24;i++)tok+=a[Math.floor(Math.random()*a.length)];try{localStorage.setItem('dfinc',tok)}catch(e){}}

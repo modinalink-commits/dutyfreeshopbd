@@ -63,7 +63,7 @@ bb3768d278e3bf05865aa4877098a62d0d5039dc resources/views/store/search.blade.php
 5c5119931bc126cf9415b33585f8e94e03a9c8cf resources/views/store/track.blade.php
 347bb6ef69d6bd1da1bf7d431a5d70cf1a6ec564 resources/views/store/page.blade.php
 a5227b1226533c10bc7f42353475f76a1cb689dd resources/views/store/missing.blade.php
-0b2da55c963beb3d09ed42ab53bb0d47d855d2e9 resources/views/store/checkout.blade.php
+5a13aeea91f33190050b875b670d2a2d8c80af62 resources/views/store/checkout.blade.php
 43f10044d43e98de3948f34af382270d0921b011 resources/views/store/wishlist.blade.php
 235faa7782db79978ab56db0a0ec2e7bcaf1f769 resources/views/store/live_cards.blade.php
 7c0c1cd071ce4bac7efc2b301a2a2aa39ad72bd0 resources/views/store/pager.blade.php
