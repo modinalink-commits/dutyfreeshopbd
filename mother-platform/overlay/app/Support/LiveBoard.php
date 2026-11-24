@@ -46,13 +46,13 @@ class LiveBoard {
   /** [key, group, icon, name, worker task names, flow (table, column, where), admin link] */
   private static function nodes(): array {
     return [
-      ['calls', 'a', '📞', 'কল লগ', [], ['call_logs', 'started_at'], '/admin/call-center'],
+      ['calls', 'a', '📞', 'কল লগ', [], ['call_logs', 'started_at'], '/admin/call-center/history'],
       ['ordercall', 'a', '☎️', 'অর্ডার কনফার্ম কল', ['ordercall'], ['order_call_verifications'], '/admin/orders'],
       ['voice', 'a', '🎙️', 'ভয়েস ক্যাম্পেইন', ['voice'], ['voice_call_attempts', 'started_at'], '/admin/voice'],
-      ['wacalls', 'a', '📲', 'WhatsApp কল', ['wacalls'], ['wa_calls'], '/admin/call-center'],
-      ['warec', 'a', '⏺️', 'কল রেকর্ডিং', ['warec'], ['wa_call_recordings'], '/admin/call-center'],
-      ['pbx', 'a', '🏢', 'PBX লাইন', ['pbxline', 'relaywatch'], null, '/admin/call-center'],
-      ['calldaily', 'a', '🗒️', 'দৈনিক কল রিপোর্ট', ['call-daily'], null, '/admin/call-center'],
+      ['wacalls', 'a', '📲', 'WhatsApp কল', ['wacalls'], ['wa_calls'], '/admin/call-center/whatsapp'],
+      ['warec', 'a', '⏺️', 'কল রেকর্ডিং', ['warec'], ['wa_call_recordings'], '/admin/call-center/whatsapp/recordings'],
+      ['pbx', 'a', '🏢', 'PBX লাইন', ['pbxline', 'relaywatch'], null, '/admin/call-center/board'],
+      ['calldaily', 'a', '🗒️', 'দৈনিক কল রিপোর্ট', ['call-daily'], null, '/admin/call-center/history'],
 
       ['capi', 'b', '🎯', 'Pixel / CAPI', [], null, '/admin/pixel'],
       ['arrivals', 'b', '🧭', 'অ্যাড থেকে ভিজিটর', [], null, '/admin/ad-arrivals'],
@@ -112,7 +112,7 @@ class LiveBoard {
       ['ssl', 'i', '🔒', 'SSL', [], null, '/admin/deploy'],
       ['deploy', 'i', '🚀', 'ডিপ্লয়', ['deploy'], ['deployments'], '/admin/deploy'],
       ['svc', 'i', '💳', 'সার্ভিস ব্যালেন্স', ['svcbal'], null, '/admin/services'],
-      ['recurring', 'i', '🧮', 'রিকারিং খরচ', ['recurring'], null, '/admin/m/recurring-expenses'],
+      ['recurring', 'i', '🧮', 'রিকারিং খরচ', ['recurring'], null, '/admin/recurring-expenses'],
       ['aibrief', 'i', '🧠', 'AI ব্রিফ ও মেমরি', ['aibrief', 'aimem'], ['ai_briefs'], '/admin/ai-brief'],
       ['alerts', 'i', '🚨', 'অ্যালার্ট স্ক্যান', ['alerts', 'health'], null, '/admin/alerts/all'],
     ];
