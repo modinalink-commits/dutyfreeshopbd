@@ -57,6 +57,8 @@ class PublishNotice {
   public static function tick(): void {
     try {
       if (!self::ready() || !Cache::add('pubsms.tick', 1, 55)) return;
+      // the bulk-publish alert only says "nothing was sent": it clears itself after a day (owner 24 Nov 2026)
+      try { DB::table('deploy_issues')->where('fingerprint', 'pubsms.bulk')->whereIn('status', ['open', 'investigating'])->where('detected_at', '<', now()->subDay())->update(['status' => 'resolved', 'resolved_at' => now(), 'resolved_by' => 'System (auto, 24 h)', 'updated_at' => now()]); } catch (\Throwable $e) {}
       $vis = self::visSql();
       // products not seen before are remembered as they are (never a reason to send)
       DB::statement('insert into product_pub_watch (product_id, published, changed_at) select p.id, ' . $vis . ', now() from products p where not exists (select 1 from product_pub_watch w where w.product_id = p.id)');
