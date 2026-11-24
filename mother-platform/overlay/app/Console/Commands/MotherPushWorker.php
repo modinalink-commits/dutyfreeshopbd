@@ -82,6 +82,7 @@ class MotherPushWorker extends Command
     try { if (\App\Support\AutoHeal::begin('call-daily')) { \App\Support\CallDaily::tick(); } } catch (\Throwable $e) { $this->error('call-daily: ' . $e->getMessage()); \App\Support\LiveBoard::fail('call-daily', $e); }
     \App\Support\PayrollDue::tick();
     try { if (\App\Support\AutoHeal::begin('recurring')) { \App\Support\RecurringExpense::tick(); } } catch (\Throwable $e) { $this->error('recurring: ' . $e->getMessage()); \App\Support\LiveBoard::fail('recurring', $e); }
+    try { if (\App\Support\AutoHeal::begin('metaexp')) { \App\Support\MetaAdExpense::tick(); } } catch (\Throwable $e) { $this->error('metaexp: ' . $e->getMessage()); \App\Support\LiveBoard::fail('metaexp', $e); }
     try { if (\App\Support\AutoHeal::begin('procure')) { \App\Support\Procure::tick(); } } catch (\Throwable $e) { $this->error('procure: ' . $e->getMessage()); \App\Support\LiveBoard::fail('procure', $e); }
     try { if (\App\Support\AutoHeal::begin('smsauto')) { $this->smsAuto(); } } catch (\Throwable $e) { $this->error('smsauto: ' . $e->getMessage()); \App\Support\LiveBoard::fail('smsauto', $e); }
     \App\Support\AutoHeal::endOfRun();
