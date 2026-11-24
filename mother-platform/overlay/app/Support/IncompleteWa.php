@@ -16,7 +16,7 @@ class IncompleteWa
 {
   const API = 'https://graph.facebook.com/v21.0';
   const TPL = 'cart_reminder_v1';
-  const BODY = "{{1}}, আপনার অর্ডারটি এখনো সম্পূর্ণ হয়নি। মোট ৳{{2}}। পণ্যগুলো আপনার কার্টে রাখা আছে।\n\nঅর্ডার কনফার্ম করতে নিচের বোতাম চাপুন, অথবা এখানেই লিখুন, আমরা সাহায্য করব।";
+  const BODY = "প্রিয় {{1}}, আপনার অর্ডারটি এখনো সম্পূর্ণ হয়নি। মোট ৳{{2}}। পণ্যগুলো আপনার কার্টে রাখা আছে।\n\nঅর্ডার কনফার্ম করতে নিচের বোতাম চাপুন, অথবা এখানেই লিখুন, আমরা সাহায্য করব।";
 
   public static function set(string $k, string $d = ''): string { return Procure::set('inc_wa_' . $k, $d); }
   public static function put(string $k, string $v): void { DB::table('settings')->updateOrInsert(['key' => 'inc_wa_' . $k], ['value' => $v, 'updated_at' => now(), 'created_at' => now()]); }
@@ -60,8 +60,8 @@ class IncompleteWa
     if (!Schema::hasTable('incomplete_orders') || !Schema::hasColumn('incomplete_orders', 'wa_nudged_at')) return;
     // template life cycle: submit once, then ask Meta for the status every 30 minutes until it is approved
     $st = self::set('tpl_status', 'NOT SUBMITTED');
-    if ($st === 'NOT SUBMITTED') { if (Cache::add('inc_wa.submit', 1, 3600)) self::submitTemplate(); return; }
-    if ($st !== 'APPROVED') { if (Cache::add('inc_wa.sync', 1, 1800)) self::syncTemplate(); return; }
+    if ($st === 'NOT SUBMITTED' || $st === 'SUBMIT FAILED') { if (Cache::add('inc_wa.submit2', 1, 3600)) self::submitTemplate(); return; }
+    if ($st !== 'APPROVED') { if (Cache::add('inc_wa.sync2', 1, 1800)) self::syncTemplate(); return; }
     if (!self::on() || self::quiet()) return;
     $since = self::set('since', ''); if ($since === '') { self::put('since', now()->utc()->toDateTimeString()); return; } // only checkouts left unfinished after the reminder went live
     if (!Cache::add('inc_wa.slot', 1, 240)) return; // one small batch every 4 minutes
