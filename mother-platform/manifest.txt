@@ -1555,3 +1555,5 @@ database/migrations/2026_11_24_000020_order_address_division.php
 database/migrations/2026_11_24_000030_order_address_prev_district.php
 app/Support/IndexNow.php
 public/js/admin-chat-widget.js
+app/Support/IncompleteWa.php
+database/migrations/2026_11_24_000040_incomplete_wa_nudge.php

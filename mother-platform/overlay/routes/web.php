@@ -234,6 +234,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/analytics/area-orders/customers', [\App\Http\Controllers\AreaOrdersController::class,'customers']);
   Route::get('/analytics/area-orders/audit', [\App\Http\Controllers\AreaOrdersController::class,'audit']);
   Route::get('/analytics/area-orders/dhaka', [\App\Http\Controllers\AreaOrdersController::class,'dhaka']);
+  Route::get('/analytics/cart-wa', fn() => response()->json(\App\Support\IncompleteWa::state() + ['note' => \App\Support\IncompleteWa::set('tpl_note', '')], 200, [], JSON_UNESCAPED_UNICODE)->header('Cache-Control', 'no-store'));
   Route::get('/analytics/indexnow', fn() => response()->json(\App\Support\IndexNow::state())->header('Cache-Control', 'no-store'));
   Route::get('/analytics/area-orders/addr-sample', [\App\Http\Controllers\AreaOrdersController::class,'addrSample']);
   Route::get('/analytics/{slug}', [\App\Http\Controllers\AnalyticsController::class,'show']);
