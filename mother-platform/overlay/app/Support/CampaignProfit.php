@@ -29,7 +29,8 @@ class CampaignProfit {
           from ord where c is not null group by c)
         select s.c, s.msgs, s.people, coalesce(a.orders,0) orders, coalesce(a.delivered,0) delivered, coalesce(a.returned,0) returned, coalesce(a.cancelled,0) cancelled, coalesce(a.sales,0) sales, coalesce(a.profit,0) profit from sent s left join a on a.c = s.c";
       $rows = DB::select($sql, [$from, $from, $from, $since, $since]);
-      $cost = []; try { foreach (DB::table('sms_logs')->whereIn('event', ['reorder', 'winback', 'incomplete_nudge', 'pub_back'])->where('created_at', '>=', $since)->whereIn('status', ['sent', 'delivered', 'queued'])->selectRaw('event, coalesce(sum(cost),0) as c')->groupBy('event')->get() as $r) $cost[$r->event] = (float)$r->c; } catch (\Throwable $e) {}
+      $cost = []; // the log's own cost when saved, else parts × the SMS unit price
+ try { foreach (DB::table('sms_logs')->whereIn('event', ['reorder', 'winback', 'incomplete_nudge', 'pub_back'])->where('created_at', '>=', $since)->whereIn('status', ['sent', 'delivered', 'queued'])->selectRaw('event, coalesce(sum(cost),0) as c, coalesce(sum(parts),0) as pt')->groupBy('event')->get() as $r) $cost[$r->event] = max((float)$r->c, (float)$r->pt * (float)SmsMarketing::unit()); } catch (\Throwable $e) {}
       $out = [];
       foreach ($rows as $r) {
         $n = self::NAMES[$r->c] ?? [$r->c, '']; $mc = $cost[$r->c] ?? 0.0; $profit = (float)$r->profit;
