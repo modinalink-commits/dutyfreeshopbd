@@ -94,6 +94,7 @@ body{background:#fff}.cf,.cc{border:1px solid #EAEAEA;border-radius:20px;box-sha
 @endsection
 @section('js')
 <script>
+(function(){var rc=new URLSearchParams(location.search).get('rc');if(!rc||!/^[A-Za-z0-9]{16,40}$/.test(rc))return;fetch('/checkout/restore/'+rc,{headers:{Accept:'application/json'}}).then(function(r){return r.json()}).then(function(j){try{(j.items||[]).forEach(function(i){if(!DF.cart()[i.id])DF.add(String(i.id),i.q,i.p,true)});if((j.items||[]).length)localStorage.setItem('dfinc',rc)}catch(e){}location.replace('/checkout')}).catch(function(){location.replace('/checkout')})})();
 (function(){var u=new URLSearchParams(location.search),a=u.get('add');if(a){var q=Math.max(1,Math.min(5,parseInt(u.get('q'))||1)),cu=DF.cart()[a];if(!cu||(q>1&&cu.q<q)){DF.add(a,q,u.get('p'),true);try{var ap=+u.get('p')||0;DF.ev('add_to_cart',{value:ap*q,items:[{item_id:String(a),price:ap,quantity:q}]});(window.dfT||function(o){(window.dfQ=window.dfQ||[]).push(o)})({e:'add_to_cart',p:parseInt(a)||0})}catch(e){}}history.replaceState(null,'','/checkout'+(u.get('e')?'?e='+encodeURIComponent(u.get('e')):''))}
 var pick='',code='',f=function(x){return (+x).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+' TK'},g=function(x){return Math.round(+x).toLocaleString('en-US')+' TK'},E=function(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML};
 function area(){var r=document.querySelector('input[name=area]:checked');return r?r.value:1}
