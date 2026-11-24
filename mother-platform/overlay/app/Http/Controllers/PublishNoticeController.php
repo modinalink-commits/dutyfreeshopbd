@@ -20,6 +20,12 @@ class PublishNoticeController extends Controller {
       'status' => DB::table('sms_logs')->where('event', N::EVENT)->where('created_at', '>=', now()->subDays(7))->selectRaw('status, count(*) as n, coalesce(sum(parts),0) as parts, coalesce(sum(cost),0) as cost, max(updated_at) as last')->groupBy('status')->orderByDesc('n')->get(),
       'log' => DB::table('audit_logs')->where('action', 'product.back_in_store_sms')->orderByDesc('id')->limit(20)->get()]);
   }
+  /** Read only: products that turned visible lately (what the bulk-publish alert counted). */
+  public function recent(Request $r) {
+    $this->gate(); $h = max(1, min(72, (int)$r->query('h', 12)));
+    $rows = DB::select("select p.id, p.name, p.stock, p.price, c.name as cat, w.changed_at from products p join product_pub_watch w on w.product_id = p.id left join categories c on c.id = p.category_id where " . N::visSql() . " and w.published = true and w.changed_at >= now() - (? * interval '1 hour') order by w.changed_at desc, p.id limit 300", [$h]);
+    return response()->json(['hours' => $h, 'n' => count($rows), 'rows' => array_map(fn($x) => [$x->id, $x->name, $x->cat, (int)$x->stock, (float)$x->price, (string)$x->changed_at], $rows)]);
+  }
   public function save(Request $r) {
     $this->gate();
     $d = $r->validate(['act' => 'required|in:settings,test,send', 'on' => 'nullable|in:0,1', 'text' => 'nullable|string|max:400', 'days' => 'nullable|integer|min:1|max:365', 'min_off' => 'nullable|integer|min:0|max:10080', 'max_products' => 'nullable|integer|min:1|max:500', 'daily_cap' => 'nullable|integer|min:0|max:200000', 'min_stock' => 'nullable|integer|min:0|max:100000', 'phone' => 'nullable|string|max:20', 'pid' => 'nullable|integer']);
