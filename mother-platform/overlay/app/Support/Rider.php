@@ -30,6 +30,7 @@ class Rider {
       if (!empty($o->rider_phone) && !empty($o->rider_at) && strtotime((string)$o->rider_at) > time() - 7200) return;
       if (!Cache::add('rider.try.' . $o->id, 1, 900)) return;
       self::fetch($o);
+    } catch (\Illuminate\Http\Client\ConnectionException $e) { Cache::put('rider.try.' . $o->id, 1, 300); // Pathao's server was slow: not our fault, no error alert, try again in 5 minutes
     } catch (\Throwable $e) { report($e); }
   }
   public static function fetch(object $o): ?array {
