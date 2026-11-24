@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
 /** Owner 24 Nov 2026: each day's Meta ad spend becomes ONE expense entry (purpose "Meta Ads") in the ledger, so it comes off the profit.
- *  One row per Dhaka day, reference META-ADS-YYYYMMDD (never duplicated). Today's row grows while the day runs; the last 3 days are re-read so late Meta corrections are picked up.
+ *  One row per Dhaka day, reference META-ADS-YYYYMMDD (never duplicated). Posted once after midnight Dhaka for the finished day (never a partial day); the last 3 finished days are re-read so late Meta corrections are picked up.
  *  Settings: meta_exp_on (1), meta_exp_account (money account id; default Brac Bank Limited), meta_exp_start (first day to post; default the day this was switched on), meta_ad_account. */
 class MetaAdExpense {
   const PURPOSE = 'Meta Ads';
@@ -47,8 +47,11 @@ class MetaAdExpense {
     $spend = self::fetch(3);
     if ($spend === null) { self::alert('Meta ad spend could not be read', 'The ad-spend expense for today was not updated: no saved Facebook token could read the ad account.'); return; }
     $pid = RecurringExpense::purpose(self::PURPOSE);
+    $today = Carbon::now('Asia/Dhaka')->toDateString();
+    // owner 24 Nov 2026: the day's spend is taken off once, after midnight Dhaka, when the day's figure is final (a half-day row from the first version is removed)
+    DB::table('account_entries')->where('reference', 'META-ADS-' . str_replace('-', '', $today))->delete();
     foreach ($spend as $d => $amt) {
-      if ($d < $start || $amt <= 0) continue;
+      if ($d < $start || $d >= $today || $amt <= 0) continue;
       $ref = 'META-ADS-' . str_replace('-', '', $d);
       $row = DB::table('account_entries')->where('reference', $ref)->first();
       $note = 'Meta ads spend · ' . $d . ' (auto)';
