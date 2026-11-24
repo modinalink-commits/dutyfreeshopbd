@@ -3,6 +3,7 @@
 <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px"><div style="flex:1"><h1 style="margin:0">Sales Funnel</h1><div style="font-size:12px;color:#6B7280">Where visitors drop off: viewed a product → added to cart → started checkout → ordered. Counts are unique visitors (anonymous). Desktop visits with no referrer are left out of the funnel and device/source tables because they behave like automated crawlers (see Traffic quality below).</div></div>
 <form method="get" style="display:flex;gap:6px;align-items:center;margin:0"><input type="date" name="from" value="{{ $from }}"><input type="date" name="to" value="{{ $to }}"><button class="g">Apply</button></form></div>
 @php $pv=$v['product_view'] ?? 0; $cr=$v['add_to_cart'] ?? 0; $ck=$v['checkout_started'] ?? 0; $pct=fn($a,$b)=>$b>0?round($a/$b*100,1).'%':'—'; @endphp
+@include('funnel_traffic')
 <div class="card"><h2>Funnel</h2>
 @foreach([[ 'Viewed a product',$pv,null ],['Added to cart',$cr,$pct($cr,$pv).' of viewers'],['Started checkout',$ck,$pct($ck,$cr).' of cart adders'],['Orders (not cancelled/returned)',$orders,$pct($orders,$ck).' of checkout starters']] as [$l,$n,$s])
 <div style="display:flex;align-items:center;gap:8px;margin:7px 0;font-size:12.5px"><span style="width:190px;color:#6B7280">{{ $l }}</span><span style="height:12px;border-radius:6px;background:#F95505;opacity:.8;width:{{ $pv>0 ? max(1,round(min($n,$pv)/$pv*55)) : 1 }}%;min-width:2px"></span><b>{{ number_format($n) }}</b><span style="color:#6B7280">{{ $s }}</span></div>@endforeach
