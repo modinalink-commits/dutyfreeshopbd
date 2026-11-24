@@ -30,14 +30,14 @@ class WhatsApp {
   }
   public static function variants(string $wa): array { $v = [$wa, '+' . $wa]; if (str_starts_with($wa, '880')) { $v[] = '0' . substr($wa, 3); $v[] = substr($wa, 3); } return array_values(array_unique($v)); }
 
-  private static function call(string $method, string $path, ?array $json = null): array {
+  public static function call(string $method, string $path, ?array $json = null): array {
     $t = self::cfg('token'); if ($t === '') return [false, ['error' => ['message' => 'WhatsApp access token is not set']]];
     try {
       $r = Http::timeout(25)->acceptJson()->withToken($t)->send($method, self::API . $path, $json === null ? [] : ['json' => $json]);
       return [$r->successful(), (array)$r->json()];
     } catch (\Throwable $e) { return [false, ['error' => ['message' => 'Network error: ' . $e->getMessage()]]]; }
   }
-  private static function err(array $j): string { $m = (string)($j['error']['message'] ?? 'Unknown error'); $c = $j['error']['code'] ?? null; return mb_substr(($c ? '(' . $c . ') ' : '') . $m, 0, 290); }
+  public static function err(array $j): string { $m = (string)($j['error']['message'] ?? 'Unknown error'); $c = $j['error']['code'] ?? null; return mb_substr(($c ? '(' . $c . ') ' : '') . $m, 0, 290); }
 
   public static function windowOpen(object $c): bool { return $c->last_inbound_at && strtotime((string)$c->last_inbound_at . ' UTC') > time() - 86400; }
 

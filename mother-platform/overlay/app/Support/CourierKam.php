@@ -54,7 +54,45 @@ class CourierKam
     if (WhatsApp::windowOpen($c)) { [$ok, $m] = WhatsApp::sendText($c, $text, $by); return [$ok, $m, 'text', false]; }
     $tpl = trim(Procure::set('kam_template', ''));
     if ($tpl !== '') { [$ok, $m] = WhatsApp::sendTemplate($wa, $tpl, Procure::set('kam_template_lang', 'bn'), [implode(' | ', $lines)], $by); return [$ok, $m, 'template', false]; }
+    if (self::introStatus() === 'APPROVED') { // the opening template: his button press (or any answer) opens the 24-hour window
+      $last = Procure::set('kam_intro_at', '');
+      if ($last === '' || now()->diffInHours(\Illuminate\Support\Carbon::parse($last)) >= 20) {
+        [$ok, $m] = WhatsApp::sendTemplate($wa, self::INTRO, 'bn', [], $by);
+        if ($ok) Procure::put('kam_intro_at', now()->toIso8601String());
+        return [false, $ok ? 'Opening message sent to the KAM; the list goes out as soon as he answers it.' : $m, 'text', true];
+      }
+      return [false, 'Waiting for the KAM to answer the opening message (sent ' . $last . ').', 'text', true];
+    }
     return [false, 'The 24-hour WhatsApp window with the KAM is closed. Ask the KAM to send any message to our WhatsApp number first (then it works again), or set an approved template.', 'text', true];
+  }
+
+  const INTRO = 'courier_kam_intro_v1';
+  const INTRO_BODY = 'আসসালামু আলাইকুম ইসমাইল ভাই, আমরা DutyFreeBD। আমাদের লেট ও হোল্ড পার্সেলের আপডেট এখন থেকে এই WhatsApp চ্যাটে পাঠাব। আপডেট পেতে নিচের বোতামে চাপ দিন।';
+  public static function introStatus(): string { return strtoupper(Procure::set('kam_intro_status', 'NOT SUBMITTED')); }
+  /** One-time set-up: submit the opening template, follow its approval, and send it once to the KAM when approved. Called from the worker (runs at most every 10 minutes). */
+  public static function introEnsure(): void {
+    try {
+      if (!WhatsApp::enabled() || !\Illuminate\Support\Facades\Cache::add('kam_intro.sync', 1, 600)) return;
+      $w = WhatsApp::cfg('waba_id'); if ($w === '') return; $st = self::introStatus();
+      if ($st === 'NOT SUBMITTED') {
+        [$ok, $j] = WhatsApp::call('POST', '/' . rawurlencode($w) . '/message_templates', ['name' => self::INTRO, 'language' => 'bn', 'category' => 'UTILITY', 'components' => [
+          ['type' => 'BODY', 'text' => self::INTRO_BODY],
+          ['type' => 'BUTTONS', 'buttons' => [['type' => 'QUICK_REPLY', 'text' => 'আপডেট পাঠান']]]]]);
+        if ($ok) Procure::put('kam_intro_status', strtoupper((string)($j['status'] ?? 'PENDING'))); else Procure::put('kam_intro_note', mb_substr(WhatsApp::err($j), 0, 240));
+        return;
+      }
+      if ($st !== 'APPROVED') {
+        [$ok, $j] = WhatsApp::call('GET', '/' . rawurlencode($w) . '/message_templates?name=' . self::INTRO . '&fields=name,status,rejected_reason');
+        if ($ok) { $row = collect($j['data'] ?? [])->first(fn($x) => ($x['name'] ?? '') === self::INTRO); if ($row) { Procure::put('kam_intro_status', strtoupper((string)$row['status'])); Procure::put('kam_intro_note', (string)($row['rejected_reason'] ?? '')); } }
+        return;
+      }
+      $h = (int)now('Asia/Dhaka')->format('H');
+      if (Procure::set('kam_intro_at', '') === '' && $h >= 8 && $h < 21 && !self::windowOpen()) { // the very first introduction
+        $wa = self::wa(); if (!preg_match('/^8801\d{9}$/', $wa)) return;
+        [$ok] = WhatsApp::sendTemplate($wa, self::INTRO, 'bn', [], 'Auto set-up');
+        if ($ok) { Procure::put('kam_intro_at', now()->toIso8601String()); try { Procure::audit('courier.kam_intro', 'Opening WhatsApp message sent to the Pathao KAM', null, []); } catch (\Throwable $e) {} }
+      }
+    } catch (\Throwable $e) { report($e); }
   }
 
   private static function log($orders, string $wa, string $via, bool $ok, string $msg, string $by): void {
@@ -85,6 +123,7 @@ class CourierKam
   /** Worker tick: once per hour between the set hours (Dhaka), one message (at most two) with every late / on-hold Pathao parcel. */
   public static function tick(): void {
     if (!self::autoOn()) return;
+    self::introEnsure();
     $d = now('Asia/Dhaka'); $h = (int)$d->format('H'); if ($h < self::fromHour() || $h > self::toHour()) return;
     $key = $d->format('Y-m-d-H'); if (Procure::set('kam_last_hour', '') === $key) return; // already done this hour
     $rows = self::issues(); if ($rows->isEmpty()) { Procure::put('kam_last_hour', $key); Procure::put('kam_state', 'No late or hold parcel at ' . $d->format('H:i')); return; }
