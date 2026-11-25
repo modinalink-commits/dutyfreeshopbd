@@ -12,7 +12,7 @@ class FraudController extends Controller
     $phone = trim((string)$r->query('phone')); $res = $phone !== '' ? F::check($phone, $r->boolean('fresh')) : null;
     $k = DB::table('fraud_checks')->selectRaw("count(*) n, count(*) filter (where risk_level in ('high','very_high')) hi, count(*) filter (where risk_level = 'unknown') un, count(*) filter (where risk_level in ('very_low','low')) lo")->first();
     return view('fraud', ['phone' => $phone, 'res' => $res, 'k' => $k, 'cfg' => F::configured(), 'internal' => Sms::secret('fc_internal') === '1',
-      'recent' => DB::table('fraud_checks')->orderByDesc('id')->limit(40)->get(['phone', 'risk_level', 'risk_score', 'total', 'delivered', 'returned', 'success_rate', 'checked_by', 'created_at'])]);
+      'recent' => DB::table('fraud_checks')->orderByDesc('id')->limit(40)->selectRaw("phone, risk_level, risk_score, total, delivered, returned, success_rate, checked_by, created_at, substring(data::text from '\"source\": ?\"([a-z]+)\"') as src")->get()]);
   }
   public function check(Request $r) { return response()->json(F::check((string)$r->query('phone'), $r->boolean('fresh')))->header('Cache-Control', 'no-store'); }
   public function save(Request $r) {
