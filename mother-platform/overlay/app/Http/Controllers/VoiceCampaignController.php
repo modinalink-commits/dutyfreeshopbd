@@ -75,6 +75,8 @@ class VoiceCampaignController extends Controller
     else return back()->with('err', 'Action not available');
     \App\Support\Procure::audit('voice.campaign.' . $a, $c->name, null, ['id' => $id]); return back()->with('ok', $m);
   }
+  public function googleTest() { return response()->json(V::googleTest()); }
+  public function useGoogle() { return response()->json(V::useGoogle()); }
   public function test(Request $r, $id) {
     $c = DB::table('voice_campaigns')->find($id); if (!$c) abort(404); [$ok, $m] = V::testCall($c, (string)$r->input('phone'), $r->input('product') ?: null);
     return back()->with($ok ? 'ok' : 'err', $m);
