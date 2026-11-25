@@ -64,15 +64,38 @@ class Voice
       if ($prov === 'elevenlabs') { // owner 20 Nov 2026: young Bangladeshi woman voice; voice id in "Voice name"; numbers spelled in Bangla words so the pronunciation stays Bangladeshi
         $vid = trim((string)self::set('tts_voice', '')); if ($vid === '') return [null, 'ElevenLabs voice id missing in Voice settings'];
         // 20 Nov 2026: up to 10 calls start together; ElevenLabs answers 429 when several voices are generated at once, so generation goes one at a time and a 429 is retried
+        // 25 Nov 2026 (owner): when ElevenLabs cannot speak (credits finished = 401/402, or down), the call goes out in the Google Bangla voice instead of failing
+        if (\Illuminate\Support\Facades\Cache::get('tts.eleven.down')) { $g = self::googleFallback($text); if ($g[0]) return $g; }
         $lk = \Illuminate\Support\Facades\Cache::lock('tts.eleven', 30); try { $lk->block(75); } catch (\Throwable $e) {}
         try { for ($try = 0; $try < 4; $try++) { $r = Http::timeout(40)->withHeaders(['xi-api-key' => $key, 'Accept' => 'application/octet-stream'])->post('https://api.elevenlabs.io/v1/text-to-speech/' . rawurlencode($vid) . '?output_format=pcm_8000', ['text' => self::bnSpeak($text), 'model_id' => 'eleven_v3', 'voice_settings' => ['stability' => 0.5]]); if ($r->status() !== 429) break; sleep(3 + $try * 3); } } finally { try { $lk->release(); } catch (\Throwable $e) {} }
-        $pcm = $r->body(); if (!$r->ok() || strlen($pcm) < 1000) return [null, 'Voice engine error ' . $r->status()];
+        $pcm = $r->body();
+        if (!$r->ok() || strlen($pcm) < 1000) {
+          if (in_array($r->status(), [401, 402, 403])) \Illuminate\Support\Facades\Cache::put('tts.eleven.down', $r->status(), 600);
+          $g = self::googleFallback($text); if ($g[0]) return $g;
+          return [null, 'Voice engine error ' . $r->status() . ($g[1] !== '' ? ' (backup: ' . $g[1] . ')' : '')];
+        }
         $n = strlen($pcm); $hdr = 'RIFF' . pack('V', 36 + $n) . 'WAVEfmt ' . pack('VvvVVvv', 16, 1, 1, 8000, 16000, 2, 16) . 'data' . pack('V', $n); file_put_contents($f, $hdr . $pcm); return [$f, ''];
       }
       $voice = self::set('tts_voice', 'bn-IN-Wavenet-A');
       $r = Http::timeout(30)->post('https://texttospeech.googleapis.com/v1/text:synthesize?key=' . urlencode($key), ['input' => ['text' => $text], 'voice' => ['languageCode' => 'bn-IN', 'name' => $voice], 'audioConfig' => ['audioEncoding' => 'LINEAR16', 'sampleRateHertz' => 8000]]);
       $b = base64_decode((string)$r->json('audioContent')); if (!$r->ok() || strlen($b) < 1000) return [null, 'Voice engine error ' . $r->status()]; file_put_contents($f, $b); return [$f, ''];
     } catch (\Throwable $e) { return [null, 'Voice engine unreachable']; }
+  }
+
+  /** Backup voice: Google Bangla text-to-speech with the Google key already saved (Voice settings key, else the Voice Chat key). Own cache file, so the main voice returns by itself once it works again. @return array{?string,string} */
+  public static function googleFallback(string $text): array {
+    $keys = array_values(array_unique(array_filter([Sms::secret('vchat_key'), Sms::secret('vc_tts_key')]))); if (!$keys) return [null, 'no Google key'];
+    $dir = storage_path('app/voice'); if (!is_dir($dir)) @mkdir($dir, 0775, true);
+    $f = $dir . '/' . md5('google-fallback|bn-IN-Wavenet-A|' . $text) . '.wav'; if (is_file($f) && filesize($f) > 1000) return [$f, ''];
+    $err = '';
+    foreach ($keys as $key) {
+      try {
+        $r = Http::timeout(30)->post('https://texttospeech.googleapis.com/v1/text:synthesize?key=' . urlencode($key), ['input' => ['text' => $text], 'voice' => ['languageCode' => 'bn-IN', 'name' => 'bn-IN-Wavenet-A'], 'audioConfig' => ['audioEncoding' => 'LINEAR16', 'sampleRateHertz' => 8000]]);
+        $b = base64_decode((string)$r->json('audioContent')); if ($r->ok() && strlen($b) >= 1000) { file_put_contents($f, $b); return [$f, '']; }
+        $err = 'Google ' . $r->status();
+      } catch (\Throwable $e) { $err = 'Google unreachable'; }
+    }
+    return [null, $err];
   }
 
   /** Text-to-speech key: for ElevenLabs the key already saved in Voice Chat settings is reused (no second key needed). */
