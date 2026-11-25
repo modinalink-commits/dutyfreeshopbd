@@ -29,18 +29,20 @@ class LiveBoardController extends Controller
    */
   public function say(Request $r) {
     $t = trim(preg_replace('/\s+/u', ' ', (string)$r->query('t', ''))); if ($t === '' || mb_strlen($t) > 220) return response()->json(['error' => 'text'], 422);
-    if (\App\Support\Voice::set('tts_provider', 'none') !== 'elevenlabs') return response()->json(['error' => 'কলের কণ্ঠ (ElevenLabs) Voice সেটিংসে চালু নেই'], 409);
-    $vid = trim(\App\Support\Voice::set('tts_voice', '')); $key = \App\Support\Voice::ttsKey(); if ($vid === '' || !$key) return response()->json(['error' => 'কলের কণ্ঠের চাবি বা ভয়েস আইডি বসানো নেই'], 409);
-    $dir = storage_path('app/voice/lb'); if (!is_dir($dir)) @mkdir($dir, 0775, true); $f = $dir . '/' . md5($vid . '|v3|' . $t) . '.mp3';
+    // 25 Nov 2026 (owner): the board's voice is Google Bangla text-to-speech (free monthly allowance, no ElevenLabs credits). Each sentence is made once, then replayed from disk.
+    $keys = array_values(array_unique(array_filter([\App\Support\Sms::secret('vchat_key'), \App\Support\Sms::secret('vc_tts_key')]))); if (!$keys) return response()->json(['error' => 'গুগল কণ্ঠের চাবি (Google API key) বসানো নেই'], 409);
+    $dir = storage_path('app/voice/lb'); if (!is_dir($dir)) @mkdir($dir, 0775, true); $f = $dir . '/' . md5('google|bn-IN-Wavenet-A|' . $t) . '.mp3';
     if (!is_file($f) || filesize($f) < 500) {
       $dk = 'lb.say.' . now('Asia/Dhaka')->format('Ymd'); $cap = (int)(DB::table('settings')->where('key', 'lb_voice_cap')->value('value') ?: 10000);
       if ((int)Cache::get($dk, 0) + mb_strlen($t) > $cap) return response()->json(['error' => 'আজকের ভয়েস সীমা শেষ'], 429);
-      $lk = Cache::lock('tts.eleven', 30); try { $lk->block(20); } catch (\Throwable $e) {}
-      try { $res = \Illuminate\Support\Facades\Http::timeout(30)->withHeaders(['xi-api-key' => $key, 'Accept' => 'audio/mpeg'])->post('https://api.elevenlabs.io/v1/text-to-speech/' . rawurlencode($vid) . '?output_format=mp3_44100_64', ['text' => \App\Support\Voice::bnSpeak($t), 'model_id' => 'eleven_v3', 'voice_settings' => ['stability' => 0.5]]); }
-      catch (\Throwable $e) { return response()->json(['error' => 'কণ্ঠের সার্ভারে পৌঁছানো যায়নি'], 502); }
-      finally { try { $lk->release(); } catch (\Throwable $e) {} }
-      if (!$res->ok() || strlen($res->body()) < 500) return response()->json(['error' => 'কণ্ঠ তৈরি হয়নি (' . $res->status() . ')'], 502);
-      file_put_contents($f, $res->body()); Cache::put($dk, (int)Cache::get($dk, 0) + mb_strlen($t), 90000);
+      $ok = false; $st = 0;
+      foreach ($keys as $key) {
+        try { $res = \Illuminate\Support\Facades\Http::timeout(30)->post('https://texttospeech.googleapis.com/v1/text:synthesize?key=' . urlencode($key), ['input' => ['text' => \App\Support\Voice::bnSpeak($t)], 'voice' => ['languageCode' => 'bn-IN', 'name' => 'bn-IN-Wavenet-A'], 'audioConfig' => ['audioEncoding' => 'MP3']]); }
+        catch (\Throwable $e) { continue; }
+        $st = $res->status(); $b = base64_decode((string)$res->json('audioContent'));
+        if ($res->ok() && strlen($b) >= 500) { file_put_contents($f, $b); Cache::put($dk, (int)Cache::get($dk, 0) + mb_strlen($t), 90000); $ok = true; break; }
+      }
+      if (!$ok) return response()->json(['error' => 'গুগল কণ্ঠ তৈরি হয়নি' . ($st ? ' (' . $st . ')' : '')], 502);
     }
     return response()->file($f, ['Content-Type' => 'audio/mpeg', 'Cache-Control' => 'private, max-age=86400']);
   }
