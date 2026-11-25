@@ -11,7 +11,7 @@ class AdminAlerts
   /** Run every ~5 minutes from the scheduler worker. */
   public static function tick(): void {
     if (!Cache::add('adminalerts.lock', 1, 280)) return;
-    foreach (['orders', 'sms', 'whatsapp', 'courier', 'payments', 'deploystuck'] as $d) { try { self::$d(); } catch (\Throwable $e) {} }
+    foreach (['orders', 'sms', 'whatsapp', 'ordercalls', 'courier', 'payments', 'deploystuck'] as $d) { try { self::$d(); } catch (\Throwable $e) {} }
     try { AdminAlertsExtra::tick(); } catch (\Throwable $e) {}
     try { Clearance::tick(); } catch (\Throwable $e) {}
   }
@@ -52,6 +52,15 @@ class AdminAlerts
     $n = DB::table('wa_messages')->where('status', 'failed')->where('ts', '>=', now()->subMinutes(30))->count();
     if ($n >= 5) DeployHealth::raise('wa_failing', 'high', 'Messages', 'WhatsApp sending is failing', $n . ' WhatsApp messages failed in the last 30 minutes.', 'The WhatsApp connection, token or message template may have a problem.', 'Open the WhatsApp inbox/settings and check the connection and the last error.');
     else DeployHealth::resolve('wa_failing', 'System (WhatsApp is working again)');
+  }
+
+  /** Order confirmation calls (owner 25 Nov 2026): three or more real customer calls failed in the last 30 minutes before the phone even rang (voice engine / PBX), so orders are stuck in New. Clears itself when calls go through again. */
+  private static function ordercalls(): void {
+    if (!Schema::hasTable('order_call_verifications')) return;
+    $q = fn() => DB::table('order_call_verifications')->where('test', false)->where('started_at', '>=', now()->subMinutes(30));
+    $bad = $q()->where('status', 'failed')->where(fn($x) => $x->where('cause', 'like', 'Voice engine%')->orWhere('cause', 'like', 'No voice engine%')->orWhere('cause', 'like', 'PBX is not reachable%'))->orderByDesc('id')->get(['order_id', 'cause']);
+    if ($bad->count() >= 3) DeployHealth::raise('order_calls_failing', 'high', 'Call Center', 'Order confirmation calls are failing', $bad->count() . ' customer calls failed in the last 30 minutes (' . $bad->pluck('order_id')->unique()->count() . ' orders). Last error: ' . mb_substr((string)$bad->first()->cause, 0, 120), 'The voice engine (ElevenLabs credits / Google key) or the PBX connection has a problem.', 'Open Voice > Order confirmation calls, read the Note column, and have staff call these orders by hand until it is fixed.');
+    elseif (!$bad->count() && $q()->whereNotIn('status', ['failed', 'calling'])->exists()) DeployHealth::resolve('order_calls_failing', 'System (order calls are going through again)');
   }
 
   /** Courier: the parcel-status sync has not run for 60+ minutes while parcels are open, or Pathao sent a status nobody mapped yet. */
