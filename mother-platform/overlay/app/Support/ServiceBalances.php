@@ -35,6 +35,15 @@ class ServiceBalances {
         $exp = !empty($dt['expires_at']) ? substr((string)$dt['expires_at'], 0, 10) : (!empty($dt['next_due_date']) ? (string)$dt['next_due_date'] : null);
         return ['ok' => true, 'balance' => (float)$left, 'expires' => $exp, 'text' => ($dt['plan_name'] ?? 'Plan') . ' (' . ($dt['status'] ?? '?') . '): checks left today ' . $left . ', resets daily'];
       }
+      if ($code === 'smartpos') { // SmartPOS Free Fraud Checker: monthly quota
+        $k = trim((string)Sms::secret('fc_smartpos_key'));
+        if ($k === '') return ['ok' => false, 'balance' => null, 'expires' => null, 'text' => 'API key not set'];
+        $r = Http::timeout(15)->withHeaders(['X-API-KEY' => $k, 'X-Domain' => 'dutyfreebd.com'])->acceptJson()->get('https://fraudchecker.smartposbd.com/api/v1/quota');
+        if ($r->status() === 401 || $r->status() === 403) return ['ok' => false, 'balance' => null, 'expires' => null, 'text' => 'SmartPOS did not accept the key (HTTP ' . $r->status() . ')'];
+        $j = $r->json(); $dt = is_array($j) ? ($j['data'] ?? null) : null;
+        if (!$r->ok() || !is_array($dt) || !isset($dt['remaining'])) return ['ok' => false, 'balance' => null, 'expires' => null, 'text' => 'No readable answer (HTTP ' . $r->status() . ')'];
+        return ['ok' => true, 'balance' => (float)(int)$dt['remaining'], 'expires' => !empty($dt['resets_at']) ? substr((string)$dt['resets_at'], 0, 10) : null, 'text' => 'Backup fraud check: ' . (int)($dt['used'] ?? 0) . ' of ' . (int)($dt['total'] ?? 0) . ' checks used this month; quota resets on the date shown'];
+      }
       if ($code === 'tok_fc_pathao' || $code === 'tok_fc_redx') { // API tokens: the expiry date is inside the token (JWT "exp"), nothing is guessed
         $tok = $code === 'tok_fc_pathao' ? trim((string)Sms::secret('fc_pathao_token')) : FraudCheck::redxToken();
         $tok = preg_replace('/^bearer\s+/i', '', $tok);
