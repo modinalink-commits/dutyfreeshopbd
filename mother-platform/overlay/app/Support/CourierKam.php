@@ -19,7 +19,7 @@ class CourierKam
 
   public static function wa(): string { return WhatsApp::norm(Procure::set('kam_pathao_wa', '01958112733')); }
   public static function label(): string { return Procure::set('kam_pathao_name', 'Pathao KAM (Ismail Bari)'); }
-  public static function autoOn(): bool { return Procure::set('kam_auto', '1') === '1'; }
+  public static function autoOn(): bool { return false &&  Procure::set('kam_auto', '1') === '1'; }
   public static function fromHour(): int { return max(0, min(23, (int)Procure::set('kam_from', '10'))); }
   public static function toHour(): int { return max(self::fromHour(), min(23, (int)Procure::set('kam_to', '18'))); }
 
@@ -70,7 +70,7 @@ class CourierKam
   const INTRO_BODY = 'আসসালামু আলাইকুম ইসমাইল ভাই, আমরা DutyFreeBD। আমাদের লেট ও হোল্ড পার্সেলের আপডেট এখন থেকে এই WhatsApp চ্যাটে পাঠাব। আপডেট পেতে নিচের বোতামে চাপ দিন।';
   public static function introStatus(): string { return strtoupper(Procure::set('kam_intro_status', 'NOT SUBMITTED')); }
   /** One-time set-up: submit the opening template, follow its approval, and send it once to the KAM when approved. Called from the worker (runs at most every 10 minutes). */
-  public static function introEnsure(): void {
+  public static function introEnsure(): void { return;
     try {
       if (!WhatsApp::enabled() || !\Illuminate\Support\Facades\Cache::add('kam_intro.sync', 1, 600)) return;
       $w = WhatsApp::cfg('waba_id'); if ($w === '') return; $st = self::introStatus();
@@ -104,6 +104,7 @@ class CourierKam
 
   /** By hand (Late Delivery page). @return array [bool ok, string message for the screen, string text to copy when it could not be sent] */
   public static function send(array $ids, string $by): array {
+    return [false, 'Pathao KAM-কে মেসেজ পাঠানো বন্ধ করা হয়েছে।', ''];
     $ids = array_values(array_unique(array_filter(array_map('intval', $ids)))); if (!$ids) return [false, 'Select at least one parcel.', ''];
     $rows = DB::table('orders')->whereIn('id', $ids)->get(['id', 'invoice', 'customer_name', 'consignment_id', 'courier', 'status', 'courier_stage']);
     $good = $rows->filter(fn($o) => self::eligible($o)); $bad = $rows->count() - $good->count();
@@ -121,7 +122,7 @@ class CourierKam
   }
 
   /** Worker tick: once per hour between the set hours (Dhaka), one message (at most two) with every late / on-hold Pathao parcel. */
-  public static function tick(): void { if (WaEssential::blocked('courier_kam')) return;
+  public static function tick(): void { return; // owner order 26 Nov 2026: no message to the Pathao KAM at all
     if (!self::autoOn()) return;
     self::introEnsure();
     $d = now('Asia/Dhaka'); $h = (int)$d->format('H'); if ($h < self::fromHour() || $h > self::toHour()) return;
