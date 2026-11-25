@@ -108,7 +108,7 @@
 @endif
 @if($s['live_suggest']==='1')
 <style>.sg{position:absolute;left:0;right:0;top:100%;margin-top:6px;background:#fff;border:1.25px solid var(--bd);border-radius:12px;box-shadow:0 12px 28px rgba(11,18,32,.14);z-index:70;overflow:hidden;display:none}.sg a{display:flex;align-items:center;gap:10px;padding:8px 12px;font-size:12.5px;color:var(--n)}.sg a:hover,.sg a.hv{background:#FFF1E8}.sg img{width:38px;height:38px;object-fit:contain;border-radius:6px;background:#fff;flex:none}.sg em{font-style:normal;font-size:10px;font-weight:700;color:var(--o);margin-left:auto;white-space:nowrap}.sg .tg2{font-size:9px;font-weight:700;color:#fff;background:var(--n);border-radius:4px;padding:1px 6px}.sr{position:relative}</style>
-<script src="/s/layout-b.js?v=d7c0fe89"></script>
+<script src="/s/layout-b.js?v=4c039d53"></script>
 @endif
 <script>try{DF.cd()}catch(e){}setInterval(function(){try{DF.cd()}catch(e){}},1000);try{DF.tab()}catch(e){}</script>
 @yield('js')
