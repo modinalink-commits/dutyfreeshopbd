@@ -131,8 +131,12 @@ class CatalogController extends Controller {
     $imgs = array_values(array_filter(array_map('trim', $d['images'] ?? []), fn($u) => preg_match('#^(https?://|/)#', $u)));
     $row['image'] = $imgs[0] ?? ($old->image ?? null);
     if ($d && empty($imgs) && $id) $row['image'] = null;
-    if ($old && !in_array(Auth::user()->role ?? '', ['super', 'admin'], true) && (int)$old->stock !== (int)$row['stock']) { // owner rule 13 Nov 2026: only Admin can change stock (managers and staff cannot, zero included)
-      return back()->withInput()->withErrors(['stock'=>'Only Admin can change stock. Use Purchase / Stock In, or ask an Admin for a stock correction.']);
+    if ($old && !in_array(Auth::user()->role ?? '', ['super', 'admin'], true)) { // owner rule 13 Nov 2026: only Admin can change stock (managers and staff cannot, zero included)
+      // 25 Nov 2026 fix: the stock box on the edit page is read-only for them and shows the number as it was when the page opened. A sale or stock-in in the meantime made that number old, and the old check then refused a plain price change with a stock error. The posted number is now ignored: stock stays exactly what the database holds now. Only a hand "Out of stock" status on a product that still has stock (it would zero the stock) is refused.
+      if (($d['stock_status'] ?? '') === 'out_of_stock' && (int)$old->stock > 0) {
+        return back()->withInput()->withErrors(['stock'=>'Only Admin can change stock. Use Purchase / Stock In, or ask an Admin for a stock correction.']);
+      }
+      $row['stock'] = (int)$old->stock;
     }
     DB::transaction(function () use (&$id, $row, $imgs, $old, $r, $pub) {
       if ($id) DB::table('products')->where('id', $id)->update($row);
