@@ -52,6 +52,21 @@ class OrderDiscount {
     if (!$lv) return null;
     return ['name' => (string)$c->name, 'id' => $displayId ?: ('DFC' . str_pad((string)$c->id, 6, '0', STR_PAD_LEFT)), 'stars' => $lv['stars'], 'key' => $lv['key']];
   }
+  /** Product page: the price a member of each active level pays. Percent = the level's saved discount (or the Membership rule value); never below the protected-margin floor; nothing when the Membership rule is off. Display only: checkout (compute) stays the source of truth. */
+  public static function memberPrices(object $p): array {
+    try {
+      $R = self::rule('membership'); if (!$R) return [];
+      $price = (float)($p->price ?? 0); if ($price <= 0) return [];
+      $cost = ProfitFloor::base($p); $floor = $cost > 0 ? ProfitFloor::floor($cost) : 0.0; $out = [];
+      foreach (DB::table('membership_levels')->where('active', true)->orderBy('min_spent')->orderBy('id')->get() as $l) {
+        $pct = (float)$l->discount_percent; if ($pct <= 0) foreach ($R['cfg'] as $k => $v) if (is_numeric($v) && stripos((string)$l->name, strtok((string)$k, ' ')) !== false) { $pct = (float)$v; break; }
+        if ($pct <= 0) continue;
+        $mp = max(round($price * (1 - $pct / 100), 0), $floor > 0 ? ceil($floor) : 0); if ($mp >= $price) continue;
+        $out[] = ['name' => trim(explode('/', (string)$l->name)[0]), 'pct' => rtrim(rtrim(number_format((1 - $mp / $price) * 100, 1), '0'), '.'), 'price' => (float)$mp, 'stars' => self::starsOf((string)$l->name, (int)($l->stars ?? 0))];
+      }
+      return $out;
+    } catch (\Throwable $e) { return []; }
+  }
   public static function starText(int $n): string { return $n > 0 ? str_repeat('★', $n) : ''; }
   /** Customer Type (VIP / Regular / New) and Membership (Active / Inactive). */
   public static function profile(string $p): array {
