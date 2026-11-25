@@ -9,7 +9,7 @@
 @include('admin_theme')
 @include('admin_table')
 @include('admin_type')
-@if(!$__emb)@include('admin_mobile')@include('admin_bell')@include('staff_idle_js')@include('staff_wait_notice')@endif
+@if(!$__emb)@include('admin_mobile')@include('admin_bell')@include('staff_idle_js')@include('staff_wait_notice')@include('search_history_js')@endif
 <script>if(window.dfSbGo)dfSbGo()</script>
 @endauth
 @if($__emb)

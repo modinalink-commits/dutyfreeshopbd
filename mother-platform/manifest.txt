@@ -1570,3 +1570,6 @@ resources/views/funnel_traffic.blade.php
 database/migrations/2026_11_25_000010_smartpos_fraud_backup.php
 database/migrations/2026_11_25_000020_smartpos_first.php
 database/migrations/2026_11_25_000030_bdcourier_first.php
+app/Http/Controllers/SearchHistoryController.php
+resources/views/search_history_js.blade.php
+database/migrations/2026_11_25_000040_staff_search_history.php
