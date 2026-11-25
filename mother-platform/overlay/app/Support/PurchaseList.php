@@ -130,7 +130,7 @@ class PurchaseList {
     return $res;
   }
   /** Worker: once a day, at the set Dhaka time, when Meta has approved the template. */
-  public static function tick(): void {
+  public static function tick(): void { if (WaEssential::blocked('purchase_list')) return;
     try {
       if (!self::on() || self::set('tpl_status', 'NOT SUBMITTED') !== 'APPROVED') { if (self::set('tpl_status', '') === 'PENDING' && Cache::add('pl_sync', 1, 600)) self::syncTemplate(); return; }
       $now = now('Asia/Dhaka'); $day = $now->format('Ymd'); [$h, $m] = array_map('intval', explode(':', self::sendAt()));

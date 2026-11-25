@@ -1579,3 +1579,4 @@ app/Support/PathaoSettleCheck.php
 app/Support/WeeklyAudit.php
 database/migrations/2026_11_26_000020_not_found_log.php
 database/migrations/2026_11_26_000030_smartpos_plan_facts.php
+app/Support/WaEssential.php

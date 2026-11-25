@@ -69,15 +69,16 @@ class WhatsAppInboxController extends Controller {
     $d['events'] = DB::table('wa_events as e')->leftJoin('wa_conversations as c', 'c.id', '=', 'e.conversation_id')->orderByDesc('e.id')->limit(120)->get(['e.*', 'c.name as cname', 'c.wa_id']);
     $since = now()->subDays(30)->toDateTimeString();
     $d['perf'] = DB::table('wa_events')->where('created_at', '>=', $since)->whereIn('action', ['reply', 'template', 'assign', 'close'])->selectRaw('user_name, sum(case when action in (\'reply\',\'template\') then 1 else 0 end) replies, sum(case when action = \'close\' then 1 else 0 end) closed')->groupBy('user_name')->orderByDesc('replies')->get();
-    $d['optouts'] = DB::table('wa_optouts')->count();
+    $d['optouts'] = DB::table('wa_optouts')->count(); $d['ess'] = \App\Support\WaEssential::on(); $d['wr'] = \App\Support\WaEssential::report(30);
     return view('wa_admin', $d);
   }
   public function saveSettings(Request $r) {
     $this->chk('edit'); abort_unless(Auth::user()->role === 'super' || P::can(Auth::user(), 'settings', 'edit'), 403);
-    $v = $r->validate(['phone_id' => 'nullable|string|max:40', 'waba_id' => 'nullable|string|max:40', 'token' => 'nullable|string|max:600', 'app_secret' => 'nullable|string|max:120', 'daily_cap' => 'nullable|integer|min:1|max:100000']);
+    $v = $r->validate(['phone_id' => 'nullable|string|max:40', 'waba_id' => 'nullable|string|max:40', 'token' => 'nullable|string|max:600', 'app_secret' => 'nullable|string|max:120', 'daily_cap' => 'nullable|integer|min:1|max:100000', 'essential_only' => 'nullable|in:0,1']);
     foreach (['phone_id', 'waba_id'] as $k) if (array_key_exists($k, $v) && $v[$k] !== null) Procure::put('wa_' . $k, trim($v[$k]));
     foreach (['token', 'app_secret'] as $k) if (!empty($v[$k]) && !str_contains($v[$k], '•')) Procure::put('wa_' . $k, trim($v[$k]));
     if (!empty($v['daily_cap'])) Procure::put('wa_daily_cap', (string)$v['daily_cap']);
+    if (isset($v['essential_only'])) Procure::put('wa_essential_only', (string)$v['essential_only']);
     $this->ev(null, 'settings'); return back()->with('ok', 'Settings saved.');
   }
   public function syncTemplates() { $this->chk('edit'); [$ok, $m, $n] = W::syncTemplates(); return back()->with($ok ? 'ok' : 'bad', $ok ? $n . ' template(s) synced.' : $m); }

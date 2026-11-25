@@ -61,7 +61,7 @@ class CallDaily {
     try { DB::table('audit_logs')->insert(['user_id' => auth()->id(), 'user_name' => auth()->user()->name ?? 'System', 'action' => 'call.daily_report', 'subject' => 'Daily call report: ' . $d['calls'] . ' calls, ' . $d['confirmed'] . ' confirmed · ' . implode('; ', $res), 'ip' => null, 'created_at' => now(), 'updated_at' => now()]); } catch (\Throwable $e) {}
     return $res;
   }
-  public static function tick(): void {
+  public static function tick(): void { if (WaEssential::blocked('call_daily')) return;
     try { // recordings older than the keep period are removed once a day so the disk does not fill up
       if (Cache::add('cc_rec_clean_'.date('Ymd'), 1, 90000)) { $keep = max(14, (int)Procure::set('cc_rec_keep_days', '90')); $n = 0; foreach (glob(storage_path('app/call-recordings').'/*.{webm,ogg}', GLOB_BRACE) ?: [] as $f) if (filemtime($f) < time() - $keep * 86400) { $id = (int)basename($f); @unlink($f); $n++; DB::table('call_logs')->where('id', $id)->update(['recording_url'=>null, 'recording_status'=>'none']); } }
     } catch (\Throwable $e) {}

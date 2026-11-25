@@ -121,7 +121,7 @@ class CourierKam
   }
 
   /** Worker tick: once per hour between the set hours (Dhaka), one message (at most two) with every late / on-hold Pathao parcel. */
-  public static function tick(): void {
+  public static function tick(): void { if (WaEssential::blocked('courier_kam')) return;
     if (!self::autoOn()) return;
     self::introEnsure();
     $d = now('Asia/Dhaka'); $h = (int)$d->format('H'); if ($h < self::fromHour() || $h > self::toHour()) return;

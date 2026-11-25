@@ -89,7 +89,7 @@ class IncompleteWa
     return $b . "\n\n[ভেতরের তথ্য, গ্রাহককে পাঠানো হয়নি — অসম্পূর্ণ অর্ডার #" . $i->id . ': ' . (implode(', ', array_slice($items, 0, 12)) ?: 'পণ্যের তালিকা নেই') . ' · মোট ৳' . $total . (trim((string)$i->address) !== '' ? ' · ঠিকানা: ' . mb_substr(trim((string)$i->address), 0, 160) : ' · ঠিকানা এখনো দেননি') . ']';
   }
 
-  public static function tick(): void {
+  public static function tick(): void { if (WaEssential::blocked('cart_reminder')) return;
     if (!Schema::hasTable('incomplete_orders') || !Schema::hasColumn('incomplete_orders', 'wa_nudged_at')) return;
     // template life cycle: submit once, then ask Meta for the status every 30 minutes until it is approved
     $st = self::set('tpl_status', 'NOT SUBMITTED');

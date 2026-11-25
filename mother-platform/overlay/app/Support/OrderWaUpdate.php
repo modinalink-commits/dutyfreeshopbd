@@ -26,7 +26,7 @@ class OrderWaUpdate {
   public static function set(string $k, string $d = ''): string { return Procure::set('wa_upd_' . $k, $d); }
   public static function tpl(string $st): string { return self::set(self::STAGES[$st][1] . '_tpl', self::STAGES[$st][2]); }
   public static function tplStatus(string $st): string { return self::set(self::STAGES[$st][1] . '_tpl_status', 'NOT SUBMITTED'); }
-  public static function on(string $st): bool { return self::set('enabled', '1') === '1' && self::set(self::STAGES[$st][1] . '_on', '1') === '1'; }
+  public static function on(string $st): bool { return !($st === 'Delivered' && WaEssential::on()) && self::set('enabled', '1') === '1' && self::set(self::STAGES[$st][1] . '_on', '1') === '1'; }
 
   public static function params(string $st, object $o): array {
     $name = mb_substr(trim((string)($o->customer_name ?? '')) ?: 'গ্রাহক', 0, 60); $inv = Inv::show($o->invoice); $brand = ContactNotice::brand(OrderWaConfirm::brand());

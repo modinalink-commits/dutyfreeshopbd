@@ -154,7 +154,7 @@ class WhatsApp {
   }
 
   /** Worker tick: send a small batch of every running campaign, respecting the daily cap. */
-  public static function tick(): void {
+  public static function tick(): void { if (WaEssential::blocked('campaign')) return;
     if (!self::ready() || !self::enabled()) return;
     $cap = max(1, (int)Procure::set('wa_daily_cap', '250')); $today = now('Asia/Dhaka')->startOfDay()->utc()->toDateTimeString();
     $sentToday = (int)DB::table('wa_campaign_recipients')->where('sent_at', '>=', $today)->count(); if ($sentToday >= $cap) return;

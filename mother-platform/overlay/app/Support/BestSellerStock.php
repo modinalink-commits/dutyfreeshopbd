@@ -39,7 +39,7 @@ class BestSellerStock {
     catch (\Throwable $e) { return [false, 'SMS', mb_substr($e->getMessage(), 0, 160)]; }
   }
   /** Worker, once a minute. */
-  public static function tick(): void {
+  public static function tick(): void { if (WaEssential::blocked('bestseller')) return;
     try {
       if (!self::on() || !Cache::add('bs_stock.tick', 1, 60)) return;
       if (self::status() === 'PENDING' && Cache::add('bs_stock.sync', 1, 600)) self::syncTemplate();

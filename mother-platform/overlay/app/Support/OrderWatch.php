@@ -186,7 +186,7 @@ class OrderWatch
       DB::table('order_watch_reports')->where('id', $r->id)->update(['status' => $ok ? 'sent' : 'failed', 'channel' => $ch, 'wamid' => $id, 'error' => $err ? mb_substr($err, 0, 300) : null, 'updated_at' => now()]);
     }
   }
-  public static function tick(): void {
+  public static function tick(): void { if (WaEssential::blocked('staff_report')) return;
     try {
       if (!self::ready()) return;
       if (self::tplStatus() === 'PENDING' && Cache::add('ow_tpl_sync', 1, 600)) self::syncTemplate();

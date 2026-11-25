@@ -478,7 +478,7 @@ class Restock
   }
 
   // ---------- worker ----------
-  public static function tick(): void {
+  public static function tick(): void { if (WaEssential::blocked('restock')) return;
     try {
       if (!self::ready()) return;
       if (self::tplStatus() === 'PENDING' && Cache::add('rs_tpl_sync', 1, 600)) self::syncTemplate();

@@ -6,6 +6,12 @@
 @if(session('ok'))<div class="card" style="color:#166534">{{ session('ok') }}</div>@endif @if(session('bad'))<div class="card err">{{ session('bad') }}</div>@endif @if($errors->any())<div class="card err">{{ $errors->first() }}</div>@endif
 
 @if($tab==='settings')
+<div class="card"><b>Only essential messages</b> <span style="font-size:13px;color:{{ $ess?'#166534':'#B91C1C' }}">{{ $ess?'ON — only order confirmation, shipped update and cancel notice are sent':'OFF — all automatic messages may be sent' }}</span>
+@if($can)<form method="post" action="/admin/whatsapp/settings" style="display:inline;margin-left:8px">@csrf <input type="hidden" name="essential_only" value="{{ $ess?0:1 }}"><button class="btn">{{ $ess?'Turn off':'Turn on' }}</button></form>@endif
+<p style="font-size:12px;color:#64748B;margin:6px 0">When ON, these automatic WhatsApp messages are held back: cart reminders, staff hourly report, restock, purchase list, daily call report, best-seller stock, courier follow-up, bulk campaigns, delivered notice. Replies to customers are never blocked.</p>
+<table><thead><tr><th>Template (sent, last {{ $wr['days'] }} days)</th><th>Category</th><th>Sent</th><th>Failed</th></tr></thead><tbody>
+@forelse($wr['by_tpl'] as $t)<tr><td>{{ $t['name'] }}</td><td>{{ $t['cat'] ?: '—' }}</td><td>{{ $t['n'] }}</td><td>{{ $t['failed'] }}</td></tr>@empty<tr><td colspan="4">No template message in this period.</td></tr>@endforelse
+</tbody></table><p style="font-size:12px;color:#64748B;margin:6px 0 0">Total: {{ $wr['total'] }} template messages. Cost per message depends on your Meta rate card; marketing templates cost the most.</p></div>
 <div class="card"><b>Webhook (paste into Meta → WhatsApp → Configuration)</b>
 <p style="font-size:13px">Callback URL: <code>{{ $hook }}</code><br>Verify token: <code>{{ $verify }}</code><br>Subscribe to the <b>messages</b> field.</p></div>
 <form class="card" method="post" action="/admin/whatsapp/settings">@csrf <b>Meta Cloud API credentials</b> <span style="font-size:13px;color:{{ $on?'#166534':'#B91C1C' }}">{{ $on?'Connected':'Not connected' }}</span>
