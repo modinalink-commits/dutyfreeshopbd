@@ -70,6 +70,7 @@ class OrderPaymentController extends Controller {
     $this->can();
     $d = $r->validate(['order_id' => 'required|integer', 'method' => 'required|string|max:60', 'amount' => 'required|numeric|min:1', 'txn_id' => 'nullable|string|max:120', 'sender' => 'nullable|string|max:60',
       'paid_at' => 'nullable|date', 'note' => 'nullable|string|max:500', 'received_by' => 'nullable|string|max:120', 'mark_paid' => 'nullable|boolean', 'overpay' => 'nullable|in:apply_due', 'dup_ok' => 'nullable|boolean', 'proof' => 'nullable|image|max:6144']);
+    if ($r->boolean('partial_parcel') && trim((string)($d['note'] ?? '')) === '') return back()->withInput()->with('bad', 'Partial parcel request: write the reason in the Note box (what happened and why), so the owner can decide.');
     $o = DB::table('orders')->find($d['order_id']); abort_unless($o, 404);
     $due = round((float)$o->total - (float)$o->paid_total, 2); $amt = (float)$d['amount'];
     if ($amt > $due + 0.009) {
