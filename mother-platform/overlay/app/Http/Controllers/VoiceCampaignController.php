@@ -21,11 +21,11 @@ class VoiceCampaignController extends Controller
     return view('voice_campaigns', ['after' => $after, 'sheet' => $sheet, 'sheetBy' => $sheetBy, 'cs' => $cs, 'st' => $st, 'tot' => $tot, 'ready' => V::readiness(), 's' => $this->settings()]);
   }
   private function settings(): array {
-    $o = []; foreach (['on' => '0', 'esl_host' => '', 'esl_port' => '8021', 'gateway' => '', 'caller_id' => '', 'dialplan_ext' => 'voice_offer', 'context' => 'public', 'agent_ext' => '101', 'dial_format' => 'local', 'ring_timeout' => '30', 'base_url' => '', 'pbx_rec_dir' => '', 'tts_provider' => 'none', 'tts_region' => 'southeastasia', 'tts_voice' => '', 'script_ok' => '0', 'direct' => '0'] as $k => $d) $o[$k] = V::set($k, $d);
+    $o = []; foreach (['on' => '0', 'esl_host' => '', 'esl_port' => '8021', 'gateway' => '', 'caller_id' => '', 'dialplan_ext' => 'voice_offer', 'context' => 'public', 'agent_ext' => '101', 'dial_format' => 'local', 'ring_timeout' => '30', 'base_url' => '', 'pbx_rec_dir' => '', 'tts_provider' => 'none', 'tts_region' => 'southeastasia', 'tts_voice' => '', 'script_ok' => '0', 'direct' => '0', 'call_rate' => ''] as $k => $d) $o[$k] = V::set($k, $d);
     $o['has_pw'] = (bool)Sms::secret('vc_esl_pass'); $o['has_key'] = (bool)Sms::secret('vc_tts_key'); $o['hook'] = V::baseUrl() . '/webhooks/voice?k=' . V::hookToken(); return $o;
   }
   public function settingsSave(Request $r) {
-    foreach (['esl_host', 'esl_port', 'gateway', 'caller_id', 'dialplan_ext', 'context', 'agent_ext', 'ring_timeout', 'base_url', 'pbx_rec_dir', 'tts_region', 'tts_voice'] as $k) V::put($k, trim((string)$r->input($k)));
+    foreach (['esl_host', 'esl_port', 'gateway', 'caller_id', 'dialplan_ext', 'context', 'agent_ext', 'ring_timeout', 'base_url', 'pbx_rec_dir', 'tts_region', 'tts_voice', 'call_rate'] as $k) V::put($k, trim((string)$r->input($k)));
     V::put('dial_format', in_array($r->input('dial_format'), ['local', 'intl', 'plus']) ? $r->input('dial_format') : 'local'); V::put('tts_provider', in_array($r->input('tts_provider'), ['none', 'azure', 'google', 'elevenlabs']) ? $r->input('tts_provider') : 'none');
     V::put('on', $r->boolean('on') ? '1' : '0'); V::put('script_ok', $r->boolean('script_ok') ? '1' : '0'); V::put('direct', $r->boolean('direct') ? '1' : '0');
     if ($r->filled('esl_pass')) Sms::setSecret('vc_esl_pass', $r->input('esl_pass')); if ($r->filled('tts_key')) Sms::setSecret('vc_tts_key', $r->input('tts_key'));
@@ -61,7 +61,7 @@ class VoiceCampaignController extends Controller
     $rows = DB::table('voice_campaign_customers')->where('campaign_id', $id)->when($flt !== '', fn($q) => $q->where('call_status', $flt))->when($day !== '', fn($q) => $q->whereRaw("(created_at at time zone 'UTC' at time zone 'Asia/Dhaka')::date = ?", [$day]))->orderByDesc('id')->limit(300)->get();
     $days = DB::table('voice_campaign_customers')->where('campaign_id', $id)->selectRaw("(created_at at time zone 'UTC' at time zone 'Asia/Dhaka')::date as d, count(*) n, count(*) filter (where call_attempts>0) called, count(*) filter (where answered_at is not null) ans, count(*) filter (where interested) intr, count(*) filter (where converted) ord")->groupByRaw('1')->orderByRaw('1 desc')->limit(30)->get();
     $att = DB::table('voice_call_attempts')->where('campaign_id', $id)->orderByDesc('id')->limit(30)->get();
-    return view('voice_campaign_show', ['c' => $c, 'st' => V::stats((int)$id), 'prev' => $prev, 'rows' => $rows, 'att' => $att, 'flt' => $flt, 'day' => $day, 'days' => $days, 'ready' => V::readiness(), 'sample' => $prev['rows'][0] ?? null]);
+    return view('voice_campaign_show', ['c' => $c, 'st' => V::stats((int)$id), 'prev' => $prev, 'rows' => $rows, 'att' => $att, 'flt' => $flt, 'day' => $day, 'days' => $days, 'ready' => V::readiness(), 'sample' => $prev['rows'][0] ?? null, 'cc' => V::callCost((int)$id)]);
   }
   public function action(Request $r, $id) {
     $c = DB::table('voice_campaigns')->find($id); if (!$c) abort(404); $a = (string)$r->input('a');

@@ -31,6 +31,7 @@ class SeoController extends Controller
     }
     $d['list'] = $list->values();
     $d['redirects'] = $tab === 'redirects' ? DB::table('seo_redirects')->orderByDesc('id')->limit(300)->get() : collect();
+    $d['nf'] = $tab === 'redirects' ? \App\Support\NotFoundWatch::top(40) : collect();
     $d['sm'] = S::sitemapStats(); $d['robots'] = S::get('seo_robots', S::ROBOTS);
     $d['set'] = ['site' => S::site(), 'city' => S::get('seo_city', 'Chattogram'), 'index' => S::get('seo_global_index', '1'), 'tpl' => collect(S::TPL)->map(fn($v, $k) => S::get('seo_tpl_' . $k, $v))->all(), 'og' => S::get('seo_default_og'),
       'ver' => ['gsc_verify' => (string)DB::table('settings')->where('key', 'gsc_verify')->value('value'), 'bing_verify' => (string)DB::table('settings')->where('key', 'bing_verify')->value('value'), 'fb_verify' => (string)DB::table('settings')->where('key', 'fb_verify')->value('value')]];

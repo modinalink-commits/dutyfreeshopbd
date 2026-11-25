@@ -843,6 +843,7 @@ class StoreController extends Controller {
     if (preg_match('#^public/index\.php(/.*)?$#i', $pp, $pm)) { $qs = request()->getQueryString(); return redirect(($pm[1] ?? '') !== '' ? $pm[1] : '/', 301); } // old /public/index.php/... duplicates -> clean URL (query string dropped)
     if (preg_match('#^custom/page/([a-z0-9\-]+)$#i', $pp, $cm)) return redirect('/'.$cm[1].($cm[1] === 'blog' ? '' : '/'), 301);
     if (preg_match('#^(vape|exclusive-deals|premium-cigarette|nano-cigarette|cigarettes?|cigars?)(/.*)?$#i', $pp)) return redirect('/cigarette-vape/', 301); // old tobacco category URLs -> tobacco hub (noindex)
+    if ($ag = \App\Support\NotFoundWatch::handle($pp)) return redirect($ag, 301);
     return response()->view('store.missing', $this->base(['title'=>'পেজ পাওয়া যায়নি | DutyFree BD', 'desc'=>'', 'canon'=>url('/'), 'noindex'=>true]), 404);
   }
   /**

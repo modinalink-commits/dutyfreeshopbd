@@ -31,6 +31,7 @@ class CampaignProfit {
       $rows = DB::select($sql, [$from, $from, $from, $since, $since]);
       $cost = []; // the log's own cost when saved, else parts × the SMS unit price
  try { foreach (DB::table('sms_logs')->whereIn('event', ['reorder', 'winback', 'incomplete_nudge', 'pub_back'])->where('created_at', '>=', $since)->whereIn('status', ['sent', 'delivered', 'queued'])->selectRaw('event, coalesce(sum(cost),0) as c, coalesce(sum(parts),0) as pt')->groupBy('event')->get() as $r) $cost[$r->event] = max((float)$r->c, (float)$r->pt * (float)SmsMarketing::unit()); } catch (\Throwable $e) {}
+      try { $vc = Voice::callCost(null, $since); if ($vc['cost'] !== null) $cost['voice'] = (float)$vc['cost']; } catch (\Throwable $e) {}
       $out = [];
       foreach ($rows as $r) {
         $n = self::NAMES[$r->c] ?? [$r->c, '']; $mc = $cost[$r->c] ?? 0.0; $profit = (float)$r->profit;

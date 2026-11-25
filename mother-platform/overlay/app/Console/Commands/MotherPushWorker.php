@@ -40,6 +40,8 @@ class MotherPushWorker extends Command
     try { if (\App\Support\AutoHeal::begin('chatsilent')) { \App\Support\Chat::closeSilentTick(); } } catch (\Throwable $e) { $this->error('chatsilent: ' . $e->getMessage()); \App\Support\LiveBoard::fail('chatsilent', $e); }
     try { if (\App\Support\AutoHeal::begin('sched')) { \App\Support\OrderSchedule::tick(); } } catch (\Throwable $e) { $this->error('sched: ' . $e->getMessage()); \App\Support\LiveBoard::fail('sched', $e); }
     try { if (\App\Support\AutoHeal::begin('sdesc')) { \App\Support\SourceDesc::tick(); } } catch (\Throwable $e) { $this->error('sdesc: ' . $e->getMessage()); \App\Support\LiveBoard::fail('sdesc', $e); }
+    try { if (\App\Support\AutoHeal::begin('pathao-settle')) { \App\Support\PathaoSettleCheck::tick(); } } catch (\Throwable $e) { $this->error('pathao-settle: ' . $e->getMessage()); }
+    try { if (\App\Support\AutoHeal::begin('weekly-audit')) { \App\Support\WeeklyAudit::tick(); } } catch (\Throwable $e) { $this->error('weekly-audit: ' . $e->getMessage()); }
     try { if (\App\Support\AutoHeal::begin('svcbal')) { \App\Support\ServiceBalances::tick(); } } catch (\Throwable $e) { $this->error('svcbal: ' . $e->getMessage()); \App\Support\LiveBoard::fail('svcbal', $e); }
     try { if (\App\Support\AutoHeal::begin('cancel-notice')) { \App\Support\OrderCancelNotice::tick(); } } catch (\Throwable $e) { $this->error('cancel-notice: ' . $e->getMessage()); \App\Support\LiveBoard::fail('cancel-notice', $e); }
     try { if (\App\Support\AutoHeal::begin('wa-update')) { $this->waUpdates(); \App\Support\OrderWaUpdate::tick(); } } catch (\Throwable $e) { $this->error('wa-update: ' . $e->getMessage()); \App\Support\LiveBoard::fail('wa-update', $e); }

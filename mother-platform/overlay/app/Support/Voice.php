@@ -392,6 +392,17 @@ class Voice
   public static function history(string $phone): array {
     return DB::table('voice_campaign_customers as v')->join('voice_campaigns as c', 'c.id', '=', 'v.campaign_id')->where('v.phone', self::norm($phone))->orderByDesc('v.id')->get(['v.*', 'c.name as cname'])->all();
   }
+  /** Real call cost (26 Nov 2026): billed minutes of every non-test call (the PBX's billsec when it sent one, else the measured length) x the per-minute rate the owner saved in Voice settings. No rate saved = no money figure, minutes only; nothing is guessed. */
+  public static function callCost(?int $campaignId = null, $since = null): array {
+    $rate = (float)str_replace(',', '.', self::set('call_rate', '')); $out = ['calls' => 0, 'answered' => 0, 'minutes' => 0.0, 'rate' => $rate > 0 ? $rate : null, 'cost' => null];
+    try {
+      $q = DB::table('voice_call_attempts')->where(fn($w) => $w->whereNull('test')->orWhere('test', false))->whereNotNull('started_at')->when($campaignId, fn($w) => $w->where('campaign_id', $campaignId))->when($since, fn($w) => $w->where('started_at', '>=', $since));
+      $r = $q->selectRaw('count(*) n, count(*) filter (where answered_at is not null) ans, coalesce(sum(case when answered_at is not null then coalesce(nullif(final_duration,0), duration, 0) else 0 end),0) secs')->first();
+      $out['calls'] = (int)$r->n; $out['answered'] = (int)$r->ans; $out['minutes'] = round(((float)$r->secs) / 60, 2);
+      if ($out['rate']) $out['cost'] = round($out['minutes'] * $out['rate'], 2);
+    } catch (\Throwable $e) {}
+    return $out;
+  }
   public static function stats(int $cid): array {
     $b = DB::table('voice_campaign_customers')->where('campaign_id', $cid);
     $s = (clone $b)->selectRaw("count(*) sel, count(*) filter (where call_attempts>0) att, count(*) filter (where answered_at is not null) ans, count(*) filter (where call_status in ('not_answered','busy','failed') and answered_at is null and call_attempts>0) noans, count(*) filter (where interested) intr, count(*) filter (where transferred) tr, count(*) filter (where converted) used, coalesce(sum(used_total) filter (where converted),0) rev, coalesce(sum(used_discount) filter (where converted),0) disc, count(*) filter (where opted_out) oo, count(*) filter (where call_status='pending') pend")->first();

@@ -42,7 +42,7 @@ class ServiceBalances {
         if ($r->status() === 401 || $r->status() === 403) return ['ok' => false, 'balance' => null, 'expires' => null, 'text' => 'SmartPOS did not accept the key (HTTP ' . $r->status() . ')'];
         $j = $r->json(); $dt = is_array($j) ? ($j['data'] ?? null) : null;
         if (!$r->ok() || !is_array($dt) || !isset($dt['remaining'])) return ['ok' => false, 'balance' => null, 'expires' => null, 'text' => 'No readable answer (HTTP ' . $r->status() . ')'];
-        return ['ok' => true, 'balance' => (float)(int)$dt['remaining'], 'expires' => !empty($dt['resets_at']) ? substr((string)$dt['resets_at'], 0, 10) : null, 'text' => 'SmartPOS fraud check: ' . (int)($dt['used'] ?? 0) . ' of ' . (int)($dt['total'] ?? 0) . ' checks used (' . str_replace('_', ' ', (string)($dt['type'] ?? 'quota')) . '); resets on the date shown'];
+        return ['ok' => true, 'balance' => (float)(int)$dt['remaining'], 'expires' => null /* the quota resets daily; the plan's own end date is saved on the row (not the reset date, which would raise a false renewal alert every day) */, 'text' => 'SmartPOS fraud check: ' . (int)($dt['used'] ?? 0) . ' of ' . (int)($dt['total'] ?? 0) . ' checks used today (' . str_replace('_', ' ', (string)($dt['type'] ?? 'quota')) . '); resets daily'];
       }
       if ($code === 'tok_fc_pathao' || $code === 'tok_fc_redx') { // API tokens: the expiry date is inside the token (JWT "exp"), nothing is guessed
         $tok = $code === 'tok_fc_pathao' ? trim((string)Sms::secret('fc_pathao_token')) : FraudCheck::redxToken();
@@ -129,6 +129,11 @@ class ServiceBalances {
       if ($s === 'low') DeployHealth::raise('svc_low_' . $r->id . '_' . $d, 'high', 'Services', $r->name . ': balance ' . strtolower($label), $r->name . ' has ' . $bal . ($r->low_at !== null ? ' (alert limit ' . number_format((float)$r->low_at, 2) . ')' : '') . '.', 'Balance at or below the limit', 'Recharge ' . $r->name . ', then update the balance on Services and Balances if it is typed in by hand.');
       elseif ($s === 'expired') DeployHealth::raise('svc_exp_' . $r->id . '_' . $d, 'high', 'Services', $r->name . ' has expired', $r->name . ' expired on ' . $r->expires_on . '.', 'Renewal date passed', 'Renew ' . $r->name . ' and update the date on Services and Balances.');
       elseif ($s === 'soon') DeployHealth::raise('svc_soon_' . $r->id . '_' . $d, 'medium', 'Services', $r->name . ' renews in ' . $days . ' day(s)', $r->name . ' is due on ' . $r->expires_on . '.', 'Renewal date is near', 'Renew ' . $r->name . ' before ' . $r->expires_on . '.');
+      // Runway (26 Nov 2026): even above the alert limit, warn when the real daily use (from the saved readings, nothing guessed) will empty the balance within the reminder days.
+      elseif ($s === 'ok' && $r->balance !== null && $r->kind === 'auto' && !in_array($r->code, ['bdcourier', 'smartpos'], true)) { // fraud-check quotas reset daily, so a runway makes no sense for them
+        $u = self::usage($r); $lim = max(3, (int)$r->remind_days);
+        if ($u['days'] !== null && $u['days'] <= $lim) DeployHealth::raise('svc_run_' . $r->id . '_' . $d, $u['days'] <= 1 ? 'high' : 'medium', 'Services', $r->name . ' will run out in about ' . $u['days'] . ' day(s)', $r->name . ' has ' . $bal . ' and is using about ' . number_format((float)$u['perDay'], 1) . ' ' . $r->unit . ' a day (since ' . $u['since'] . ').', 'Balance is draining fast', 'Recharge ' . $r->name . ' before it reaches zero.');
+      }
     } catch (\Throwable $e) {}
   }
 
