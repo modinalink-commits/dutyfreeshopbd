@@ -76,6 +76,11 @@ class VoiceCampaignController extends Controller
     \App\Support\Procure::audit('voice.campaign.' . $a, $c->name, null, ['id' => $id]); return back()->with('ok', $m);
   }
   public function googleTest() { return response()->json(V::googleTest()); }
+  public function googleSample() {
+    [$f, $err] = V::googleFallback('আসসালামু আলাইকুম। আমি ডিউটি ফ্রি বিডি থেকে বলছি। আপনার অর্ডারটি কনফার্ম করার জন্য ফোন করেছি। অর্ডারটি কি ঠিক আছে? ধন্যবাদ।');
+    abort_unless($f, 503, (string)$err);
+    return response()->file($f, ['Content-Type' => 'audio/wav', 'Cache-Control' => 'no-store']);
+  }
   public function useGoogle() { return response()->json(V::useGoogle()); }
   public function test(Request $r, $id) {
     $c = DB::table('voice_campaigns')->find($id); if (!$c) abort(404); [$ok, $m] = V::testCall($c, (string)$r->input('phone'), $r->input('product') ?: null);
