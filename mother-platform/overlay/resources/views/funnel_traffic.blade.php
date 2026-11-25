@@ -31,3 +31,7 @@
 @if(count($tr['refs']))<div><b>Other websites sending visitors</b><table><tbody>@foreach($tr['refs'] as $x)<tr><td>{{ $x->ref_host }}</td><td style="text-align:right">{{ number_format($x->n) }}</td></tr>@endforeach</tbody></table></div>@endif
 </div></div>
 @endif
+@if(!empty($tr['acq']))<div class="card" style="margin-top:12px"><h2>New customers by source (orders placed)</h2>
+<div style="font-size:11.5px;color:#6B7280;margin:-4px 0 8px">Website orders from 26 Nov 2026 on. "New" = the first order ever from that phone number. Source = the visit the order was placed in. Delivered = Delivered / Partial / Late Delivery.</div>
+<table><thead><tr><th>Source</th><th>Orders</th><th>New customers</th><th>Returning</th><th>Delivered</th><th>New + delivered</th><th>Cancelled</th></tr></thead><tbody>@foreach($tr['acq'] as $x)<tr><td>{{ $x->acq_source }}</td><td style="text-align:right">{{ number_format($x->n) }}</td><td style="text-align:right">{{ number_format($x->new_c) }}</td><td style="text-align:right">{{ number_format($x->old_c) }}</td><td style="text-align:right">{{ number_format($x->delivered) }}</td><td style="text-align:right">{{ number_format($x->new_delivered) }}</td><td style="text-align:right">{{ number_format($x->cancelled) }}</td></tr>@endforeach</tbody></table></div>
+@endif

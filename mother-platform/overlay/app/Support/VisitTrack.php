@@ -59,6 +59,23 @@ class VisitTrack {
     } catch (\Throwable $e) {}
   }
   /** Everything the Sales Funnel page shows about visits between two Dhaka dates. */
+  /** Keeps where this order's buyer came from, and whether it is that phone's first order, with the order. Source = the visit (cookie df_sid) the order was placed in; without it, the ad / click tags the browser carried (df_utm, _fbc). Never blocks the order. */
+  public static function stampOrder(int $orderId, Request $r, string $phone): void {
+    try {
+      if (!\Illuminate\Support\Facades\Schema::hasColumn('orders', 'acq_source')) return;
+      $src = null; $camp = null; $sid = (string)($_COOKIE['df_sid'] ?? '');
+      if (self::ready() && preg_match('/^[a-z0-9]{10,24}$/', $sid)) { $v = DB::table('visit_sessions')->where('sid', $sid)->first(['source', 'campaign']); if ($v) { $src = (string)$v->source; $camp = $v->campaign; } }
+      if (!$src) {
+        $p = array_pad(explode('|', rawurldecode((string)($_COOKIE['df_utm'] ?? ''))), 5, ''); $q = ['us' => $p[0], 'um' => $p[1], 'uc' => $p[2]];
+        if (!empty($_COOKIE['_fbc'])) $q['f'] = 1;
+        [$src, $camp] = self::classify('', $q, (string)$r->getHost());
+        if ($src === 'Direct / unknown' || $src === 'Tagged link') $src = $src . ' (no visit record)';
+      }
+      $d = substr(preg_replace('/\D/', '', $phone), -10);
+      $new = $d === '' ? null : !DB::table('orders')->where('id', '<', $orderId)->where('phone', 'like', '%' . $d)->exists();
+      DB::table('orders')->where('id', $orderId)->update(['acq_source' => mb_substr($src, 0, 24), 'acq_campaign' => $camp ? mb_substr((string)$camp, 0, 80) : null, 'new_customer' => $new]);
+    } catch (\Throwable $e) {}
+  }
   public static function report(string $from, string $to): array {
     if (!self::ready()) return [];
     try {
@@ -72,10 +89,13 @@ class VisitTrack {
       $errs = DB::select("select err, count(*) n from visit_sessions where day between ? and ? and err is not null group by err order by n desc limit 8", $b);
       $refs = DB::select("select ref_host, count(*) n from visit_sessions where day between ? and ? and source = 'Other websites' group by ref_host order by n desc limit 8", $b);
       $miss = DB::select("select land_path, count(*) n from visit_sessions where day between ? and ? and land_type = 'missing' group by land_path order by n desc limit 8", $b);
+      $acq = []; try { if (\Illuminate\Support\Facades\Schema::hasColumn('orders', 'acq_source')) $acq = DB::select("select acq_source, count(*) n, count(*) filter (where new_customer) new_c, count(*) filter (where new_customer is false) old_c,
+        count(*) filter (where status in ('Delivered','Partial Delivered','Late Delivery')) delivered, count(*) filter (where new_customer and status in ('Delivered','Partial Delivered','Late Delivery')) new_delivered, count(*) filter (where status = 'Cancel') cancelled
+        from orders where acq_source is not null and (created_at at time zone 'Asia/Dhaka')::date between ? and ? group by acq_source order by n desc", $b); } catch (\Throwable $e) {}
       $today = now('Asia/Dhaka'); $srv = ($to >= $today->toDateString() && $from <= $today->toDateString()) ? (int)Cache::get('lb.vdc.' . $today->format('Ymd'), 0) : null;
       $js = $srv !== null ? (int)DB::table('visit_sessions')->where('day', $today->toDateString())->count() : null;
       $first = DB::table('visit_sessions')->min('created_at');
-      return ['src' => $src, 'tot' => $tot, 'stop' => $stop, 'land' => $land, 'errs' => $errs, 'refs' => $refs, 'miss' => $miss, 'srv' => $srv, 'js' => $js, 'first' => $first];
+      return ['src' => $src, 'tot' => $tot, 'stop' => $stop, 'land' => $land, 'errs' => $errs, 'refs' => $refs, 'miss' => $miss, 'srv' => $srv, 'js' => $js, 'first' => $first, 'acq' => $acq];
     } catch (\Throwable $e) { report($e); return []; }
   }
 }
