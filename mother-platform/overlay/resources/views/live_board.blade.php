@@ -300,7 +300,7 @@ function summary(){if(!D)return;const k=l=>D.kpi.find(x=>x.l===l),s=k('আজক
   o.push(dead?dead+'টি কাজ থেমে আছে':slow?'সব কাজ চালু, '+slow+'টিতে সতর্কতা':'সব কাজ চালু');
   o.forEach(x=>{delete VO.last[x+'।'];say(x+'।',true)})}
 function voWatch(){if(!D)return;const s=D.kpi.find(x=>x.l==='আজকের বিক্রি');
-  if(s&&s.v!=null){const n=+((String(s.s).match(/\d+/)||[])[0]||0);if(VO.ord&&n>VO.ord.n&&n-VO.ord.n<20){const d=n-VO.ord.n,a=s.v-VO.ord.v;say(d===1?'নতুন অর্ডার এসেছে'+(a>0?', '+a+' টাকার':'')+'। আজ মোট '+n+'টি।':d+'টি নতুন অর্ডার এসেছে। আজ মোট '+n+'টি।',true)}VO.ord={n:n,v:s.v}}}
+  if(s&&s.v!=null){const n=+((String(s.s).match(/\d+/)||[])[0]||0);if(VO.ord&&n>VO.ord.n&&n-VO.ord.n<20){const d=n-VO.ord.n,a=s.v-VO.ord.v;say(d===1?'নতুন অর্ডার এসেছে'+(a>0?', '+a+' টাকার':'')+'।':d+'টি নতুন অর্ডার এসেছে।',true);say('আজ এখন পর্যন্ত মোট '+n+'টি অর্ডার।',true) /* 25 Nov: the total is its own sentence so it is always spoken */}VO.ord={n:n,v:s.v}}}
 function voSet(on,silent){VO.on=!!on&&hasTTS;$('vo').setAttribute('aria-pressed',VO.on?'true':'false');try{localStorage.setItem('lb.voice',VO.on?'1':'0')}catch(e){}
   if(!VO.on){VO.q=[];VO.busy=false;try{VO.au&&VO.au.pause()}catch(e){}return}
   if(silent)return;
