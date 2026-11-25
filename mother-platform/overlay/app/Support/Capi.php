@@ -14,7 +14,7 @@ class Capi
   /** Real visitor IP even behind Docker/Traefik/Cloudflare: first public address from the proxy headers, else the connection IP (Meta ignores private IPs). */
   public static function clientIp(Request $r): ?string {
     $c = [];
-    foreach (['CF-Connecting-IP', 'True-Client-IP', 'X-Real-IP'] as $h) { $v = trim((string)$r->header($h)); if ($v !== '') $c[] = $v; }
+    foreach (['CF-Connecting-IPv6', 'CF-Connecting-IP', 'True-Client-IP', 'X-Real-IP'] as $h) { $v = trim((string)$r->header($h)); if ($v !== '') $c[] = $v; }
     foreach (explode(',', (string)$r->header('X-Forwarded-For')) as $v) { $v = trim($v); if ($v !== '') $c[] = $v; }
     $c[] = (string)$r->ip(); $c[] = (string)($_SERVER['REMOTE_ADDR'] ?? '');
     foreach ($c as $ip) { if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) return $ip; }
