@@ -53,7 +53,7 @@ class Voice
     if ($c->audio_path && is_file(storage_path('app/' . $c->audio_path))) return [storage_path('app/' . $c->audio_path), ''];
     $text = self::scriptFor($c, $row); $dir = storage_path('app/voice'); if (!is_dir($dir)) @mkdir($dir, 0775, true);
     $f = $dir . '/' . md5(self::set('tts_provider') . self::set('tts_voice') . $text . (self::set('tts_provider') === 'elevenlabs' ? '|v3' : '')) . '.wav'; if (is_file($f) && filesize($f) > 1000) return [$f, ''];
-    $prov = self::set('tts_provider', 'none'); $key = self::ttsKey(); if ($prov === 'none' || !$key) return [null, 'No voice engine set up: add a text-to-speech key in Voice settings or upload an audio file to the campaign.'];
+    $prov = self::set('tts_provider', 'none'); $key = self::ttsKey(); if ($prov === 'google' && !$key) return self::googleFallback($text); if ($prov === 'none' || !$key) return [null, 'No voice engine set up: add a text-to-speech key in Voice settings or upload an audio file to the campaign.'];
     try {
       if ($prov === 'azure') {
         $reg = self::set('tts_region', 'southeastasia'); $voice = self::set('tts_voice', 'bn-BD-NabanitaNeural');
@@ -83,6 +83,22 @@ class Voice
   }
 
   /** Backup voice: Google Bangla text-to-speech with the Google key already saved (Voice settings key, else the Voice Chat key). Own cache file, so the main voice returns by itself once it works again. @return array{?string,string} */
+  /** Read-only check: can the saved Google key speak Bangla right now? Never returns the key. */
+  public static function googleTest(): array {
+    $keys = array_values(array_unique(array_filter([Sms::secret('vchat_key'), Sms::secret('vc_tts_key')])));
+    if (!$keys) return ['ok' => false, 'error' => 'no Google key saved', 'provider' => self::set('tts_provider', 'none')];
+    [$f, $err] = self::googleFallback('আসসালামু আলাইকুম, আপনার অর্ডারটি কনফার্ম করার জন্য ফোন করেছি।');
+    return ['ok' => (bool)$f, 'bytes' => $f ? filesize($f) : 0, 'error' => $err, 'provider' => self::set('tts_provider', 'none'), 'voice' => 'bn-IN-Wavenet-A'];
+  }
+  /** Owner 26 Nov 2026: speak with the free Google Bangla voice only (no ElevenLabs charge). Only when the test passes; the old setting is kept so it can be put back. */
+  public static function useGoogle(): array {
+    $t = self::googleTest(); if (!$t['ok']) return $t + ['switched' => false];
+    if (self::set('tts_provider', 'none') !== 'google') { self::put('prev_tts_provider', self::set('tts_provider', 'none')); self::put('prev_tts_voice', self::set('tts_voice', '')); }
+    self::put('tts_provider', 'google'); self::put('tts_voice', 'bn-IN-Wavenet-A');
+    try { Procure::audit('voice.engine', 'Voice engine switched to Google Bangla (free tier)', null, []); } catch (\Throwable $e) {}
+    return $t + ['switched' => true];
+  }
+
   public static function googleFallback(string $text): array {
     $keys = array_values(array_unique(array_filter([Sms::secret('vchat_key'), Sms::secret('vc_tts_key')]))); if (!$keys) return [null, 'no Google key'];
     $dir = storage_path('app/voice'); if (!is_dir($dir)) @mkdir($dir, 0775, true);
