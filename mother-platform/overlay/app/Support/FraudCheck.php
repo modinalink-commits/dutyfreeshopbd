@@ -39,8 +39,11 @@ class FraudCheck
     $phone = self::phone($phone); if (!preg_match('/^01\d{9}$/', $phone)) return ['ok' => false, 'error' => 'Invalid mobile number'];
     if (!$force) { $c = DB::table('fraud_checks')->where('phone', $phone)->where('created_at', '>', now()->subHours(6))->orderByDesc('id')->first(); if ($c && $c->data) return json_decode($c->data, true) + ['cached' => true]; }
     $http = []; $cfg = self::configured(); $ptok = (string)(Sms::secret('fc_pathao_token') ?: (Pathao::configured() ? Pathao::token() : '')); $cfg['pathao'] = $ptok !== ''; $psrc = 'off'; $safe = fn($v) => $v ? (int)$v : 0; $res = ['steadfast' => [0, 0, 0, 'off'], 'redx' => [0, 0, 0, 'off'], 'pathao' => [0, 0, 0, 'off']];
-    $bdFail = null; $spOk = false; $src = 'direct'; $bdOnly = $cfg['bdcourier'] || $cfg['smartpos']; // an all-courier service (BD Courier or SmartPOS) active = the only fraud source (direct Steadfast / RedX / Pathao calls are off)
-    $spSkipped = $cfg['smartpos'] && $cfg['bdcourier'] && Cache::get('fraud.sp.skip'); // SmartPOS (main) just failed and BD Courier (backup) answered: go straight to BD Courier for 2 minutes, then try SmartPOS again
+    $bdFail = null; $src = 'direct'; $bdOnly = $cfg['bdcourier'] || $cfg['smartpos']; // an all-courier service (BD Courier or SmartPOS) active = the only fraud source (direct Steadfast / RedX / Pathao calls are off)
+    // Priority of the two all-courier services: setting fc_primary (bdcourier = BD Courier first, smartpos = SmartPOS first). The other one is the automatic backup.
+    $order = Sms::secret('fc_primary') === 'smartpos' ? ['smartpos', 'bdcourier'] : ['bdcourier', 'smartpos']; $both = $cfg['smartpos'] && $cfg['bdcourier'];
+    $skip = ['smartpos' => $both && Cache::get('fraud.skip.smartpos'), 'bdcourier' => $both && Cache::get('fraud.skip.bdcourier')]; // the main service just failed and the backup answered: go straight to the backup for 2 minutes, then try the main one again
+    $got = false; $bdOk = false; $spFail = null; $firstFailed = false;
     if (!$bdOnly && array_filter(array_diff_key($cfg, ['bdcourier' => 1, 'smartpos' => 1]))) {
       try {
         $rs = Http::pool(fn($pool) => [
@@ -56,45 +59,47 @@ class FraudCheck
         if ($cfg['pathao'] && $res['pathao'][3] === 'ok') $psrc = 'network';
       } catch (\Throwable $e) {}
     }
-    // SmartPOS Free Fraud Checker (fraudchecker.smartposbd.com) is the MAIN source (premium plan, 1000 checks a day); BD Courier is the automatic backup below.
-    $spFail = null;
-    if ($cfg['smartpos'] && !$spSkipped) {
-      $sp = self::smartpos($phone); $http['smartpos'] = $sp[3];
-      if ($sp[0]) { $spOk = true; $src = 'smartpos'; foreach ($sp[1] as $bk => $v) { if (!isset($res[$bk])) $res[$bk] = [0, 0, 0, 'off']; if ($v[0] > ($res[$bk][0] ?? 0) || $res[$bk][3] !== 'ok') $res[$bk] = $v; if ($bk === 'pathao' && $v[0] > 0) $psrc = 'network'; } }
-      else { $spFail = $sp[2]; if ($cfg['bdcourier']) Cache::put('fraud.sp.skip', 1, 120); }
-      try { if ($spFail !== null) { $n = (int)Cache::get('fraud.sp.fails', 0) + 1; Cache::put('fraud.sp.fails', $n, 900);
-          if ($n >= 3) { Cache::put('fraud.sp.alert', 1, 86400 * 3); DeployHealth::raise('fraud_sp', $cfg['bdcourier'] ? 'medium' : 'high', 'Fraud check', 'SmartPOS fraud check is failing', 'The main fraud check could not read SmartPOS (' . trim($spFail) . ').' . ($cfg['bdcourier'] ? ' BD Courier is answering instead.' : ' Customers are NOT being treated as clean while this lasts.'), 'Daily quota finished, key problem or outage', 'Open Services and Balances, look at the SmartPOS row, and renew the key or quota.'); } }
-        else { Cache::forget('fraud.sp.fails'); if (Cache::pull('fraud.sp.alert')) DeployHealth::resolve('fraud_sp', 'System (auto)', true); } } catch (\Throwable $e) {}
-    }
-    // BD Courier (bdcourier.com), the backup when SmartPOS is not saved, failed or is skipped: one call returns Pathao, Steadfast, RedX, ParcelDex, CourierFast, PaperFly and CarryBee. Where we already have a direct number, the larger total wins (no double counting); the other couriers are added.
-    if ($cfg['bdcourier'] && !$spOk) { $src = 'bdcourier';
-      try {
-        // One slow answer must not count as a failure: a connection error or timeout is tried a second time before giving up.
-        $bdCall = fn() => Http::timeout(12)->acceptJson()->withToken(trim((string)Sms::secret('fc_bdcourier_key')))->post('https://api.bdcourier.com/courier-check', ['phone' => $phone]);
-        try { $br = $bdCall(); } catch (\Illuminate\Http\Client\ConnectionException $e) { usleep(400000); $br = $bdCall(); }
-        $http['bdcourier'] = $br->status();
-        $bj = $br->successful() ? $br->json() : null;
-        if (!(is_array($bj) && ($bj['status'] ?? '') === 'success' && is_array($bj['data'] ?? null))) $bdFail = 'HTTP ' . $br->status() . ' ' . mb_substr(trim(strip_tags((string)(is_array($br->json()) ? ($br->json()['message'] ?? '') : ''))), 0, 80);
-        if (is_array($bj) && ($bj['status'] ?? '') === 'success' && is_array($bj['data'] ?? null)) foreach ($bj['data'] as $bk => $bv) {
-          if (!is_array($bv) || !isset($bv['total_parcel'])) continue; $bk = strtolower((string)$bk); if ($bk === 'summary') continue; $bt = $safe($bv['total_parcel']); $bd = $safe($bv['success_parcel'] ?? 0); $bc = $safe($bv['cancelled_parcel'] ?? 0);
-          if (!isset($res[$bk])) $res[$bk] = [0, 0, 0, 'off'];
-          if ($bt > ($res[$bk][0] ?? 0) || $res[$bk][3] !== 'ok') { $res[$bk] = [$bt, $bd, $bc, 'ok']; if ($bk === 'pathao' && $bt > 0) $psrc = 'network'; }
-        }
-      } catch (\Throwable $e) { $http['bdcourier'] = 0; $bdFail = 'no connection to BD Courier'; }
-    }
-    // A failed fraud check must never look like "no courier history" (that reads as a clean customer): report the failure, do not store it, and raise an alert.
-    if (!$spOk && ($bdFail !== null || ($cfg['smartpos'] && !$cfg['bdcourier']))) {
-      $fail = $bdFail ?? ('SmartPOS: ' . $spFail);
-      if ($bdFail !== null) {
-      // The alert is for a real outage, not one bad call: it is raised at the third failure in 15 minutes and closes itself at the next good answer.
-      try { $bdN = (int)Cache::get('fraud.bd.fails', 0) + 1; Cache::put('fraud.bd.fails', $bdN, 900);
-        if ($bdN >= 3) { Cache::put('fraud.bd.alert', 1, 86400 * 3); DeployHealth::raise('fraud_bd', 'high', 'Fraud check', 'BD Courier fraud check is failing', 'The fraud check could not read BD Courier (' . trim($bdFail) . ').' . ($cfg['smartpos'] ? ' SmartPOS is not answering either.' : '') . ' Customers are NOT being treated as clean while this lasts.', 'BD Courier limit reached, key problem or outage', 'Open Services and Balances, look at the BD Courier row, and recharge or renew if the plan ended.'); } } catch (\Throwable $e) {}
+    // BD Courier (bdcourier.com): one call returns Pathao, Steadfast, RedX, ParcelDex, CourierFast, PaperFly and CarryBee. SmartPOS (fraudchecker.smartposbd.com, premium 1000 checks a day): Steadfast, Pathao, RedX, CarryBee, Paperfly. They run in the priority order above; the first one that answers wins and the other is only the backup.
+    foreach ($order as $idx => $svc) {
+      if ($got) break;
+      if ($svc === 'smartpos' && $cfg['smartpos'] && !$skip['smartpos']) {
+        $sp = self::smartpos($phone); $http['smartpos'] = $sp[3];
+        if ($sp[0]) { $got = true; $src = 'smartpos'; foreach ($sp[1] as $bk => $v) { if (!isset($res[$bk])) $res[$bk] = [0, 0, 0, 'off']; if ($v[0] > ($res[$bk][0] ?? 0) || $res[$bk][3] !== 'ok') $res[$bk] = $v; if ($bk === 'pathao' && $v[0] > 0) $psrc = 'network'; } }
+        else { $spFail = $sp[2]; if ($idx === 0) $firstFailed = true; }
+        try { if ($spFail !== null) { $n = (int)Cache::get('fraud.sp.fails', 0) + 1; Cache::put('fraud.sp.fails', $n, 900);
+            if ($n >= 3) { Cache::put('fraud.sp.alert', 1, 86400 * 3); DeployHealth::raise('fraud_sp', $both ? 'medium' : 'high', 'Fraud check', 'SmartPOS fraud check is failing', 'The fraud check could not read SmartPOS (' . trim($spFail) . ').' . ($both ? ' BD Courier covers the check while this lasts.' : ' Customers are NOT being treated as clean while this lasts.'), 'Daily quota finished, key problem or outage', 'Open Services and Balances, look at the SmartPOS row, and renew the key or quota.'); } }
+          else { Cache::forget('fraud.sp.fails'); if (Cache::pull('fraud.sp.alert')) DeployHealth::resolve('fraud_sp', 'System (auto)', true); } } catch (\Throwable $e) {}
       }
-      return ['ok' => false, 'error' => 'Fraud check failed (' . trim($fail) . ($bdFail !== null && $spFail !== null ? '; SmartPOS: ' . trim($spFail) : '') . '). Not treated as a clean customer; try again.', 'bd_failed' => true, 'http' => $http, 'phone' => $phone];
+      if ($svc === 'bdcourier' && $cfg['bdcourier'] && !$skip['bdcourier']) {
+        try {
+          // One slow answer must not count as a failure: a connection error or timeout is tried a second time before giving up.
+          $bdCall = fn() => Http::timeout(12)->acceptJson()->withToken(trim((string)Sms::secret('fc_bdcourier_key')))->post('https://api.bdcourier.com/courier-check', ['phone' => $phone]);
+          try { $br = $bdCall(); } catch (\Illuminate\Http\Client\ConnectionException $e) { usleep(400000); $br = $bdCall(); }
+          $http['bdcourier'] = $br->status();
+          $bj = $br->successful() ? $br->json() : null;
+          if (!(is_array($bj) && ($bj['status'] ?? '') === 'success' && is_array($bj['data'] ?? null))) $bdFail = 'HTTP ' . $br->status() . ' ' . mb_substr(trim(strip_tags((string)(is_array($br->json()) ? ($br->json()['message'] ?? '') : ''))), 0, 80);
+          if (is_array($bj) && ($bj['status'] ?? '') === 'success' && is_array($bj['data'] ?? null)) { $got = true; $bdOk = true; $src = 'bdcourier'; foreach ($bj['data'] as $bk => $bv) {
+            if (!is_array($bv) || !isset($bv['total_parcel'])) continue; $bk = strtolower((string)$bk); if ($bk === 'summary') continue; $bt = $safe($bv['total_parcel']); $bd = $safe($bv['success_parcel'] ?? 0); $bc = $safe($bv['cancelled_parcel'] ?? 0);
+            if (!isset($res[$bk])) $res[$bk] = [0, 0, 0, 'off'];
+            if ($bt > ($res[$bk][0] ?? 0) || $res[$bk][3] !== 'ok') { $res[$bk] = [$bt, $bd, $bc, 'ok']; if ($bk === 'pathao' && $bt > 0) $psrc = 'network'; }
+          } }
+        } catch (\Throwable $e) { $http['bdcourier'] = 0; $bdFail = 'no connection to BD Courier'; }
+        if ($bdFail !== null && $idx === 0) $firstFailed = true;
+        if ($bdFail !== null) {
+          // The alert is for a real outage, not one bad call: it is raised at the third failure in 15 minutes and closes itself at the next good answer.
+          try { $bdN = (int)Cache::get('fraud.bd.fails', 0) + 1; Cache::put('fraud.bd.fails', $bdN, 900);
+            if ($bdN >= 3) { Cache::put('fraud.bd.alert', 1, 86400 * 3); DeployHealth::raise('fraud_bd', $both ? 'medium' : 'high', 'Fraud check', 'BD Courier fraud check is failing', 'The fraud check could not read BD Courier (' . trim($bdFail) . ').' . ($both ? ' SmartPOS covers the check while this lasts.' : ' Customers are NOT being treated as clean while this lasts.'), 'BD Courier limit reached, key problem or outage', 'Open Services and Balances, look at the BD Courier row, and recharge or renew if the plan ended.'); } } catch (\Throwable $e) {}
+        }
+      }
     }
-    if ($cfg['bdcourier'] && !$spOk && $bdFail === null) { try { Cache::forget('fraud.bd.fails');
-      if (Cache::pull('fraud.bd.alert') || Cache::add('fraud.bd.swept', 1, 3600)) DeployHealth::resolve('fraud_bd', 'System (auto)', true);
-    } catch (\Throwable $e) {} }
+    if ($bdOk) { try { Cache::forget('fraud.bd.fails'); if (Cache::pull('fraud.bd.alert') || Cache::add('fraud.bd.swept', 1, 3600)) DeployHealth::resolve('fraud_bd', 'System (auto)', true); } catch (\Throwable $e) {} }
+    // The main service failed but the backup answered: use the backup directly for 2 minutes so every check does not wait for the failing one.
+    if ($got && $firstFailed && $both) { try { Cache::put('fraud.skip.' . $order[0], 1, 120); } catch (\Throwable $e) {} }
+    // A failed fraud check must never look like "no courier history" (that reads as a clean customer): report the failure and do not store it.
+    if (!$got && ($cfg['bdcourier'] || $cfg['smartpos'])) {
+      $why = array_filter([$bdFail !== null ? 'BD Courier: ' . trim($bdFail) : null, $spFail !== null ? 'SmartPOS: ' . trim($spFail) : null]);
+      return ['ok' => false, 'error' => 'Fraud check failed (' . ($why ? implode('; ', $why) : 'both services are paused for a minute') . '). Not treated as a clean customer; try again.', 'bd_failed' => true, 'http' => $http, 'phone' => $phone];
+    }
     // Pathao fallback: when Pathao's network score is unavailable, use this store's own Pathao parcels for the number (official API, our synced parcel results).
     if (!$bdOnly && ($res['pathao'][3] !== 'ok' || $res['pathao'][0] === 0)) {
       $pp = DB::table('orders')->whereNotNull('consignment_id')->whereRaw('right(phone,11) = ?', [$phone])->selectRaw("count(*) filter (where courier_stage = 'Delivered') as d, count(*) filter (where courier_stage in ('Returned','Cancelled','Failed Delivery')) as r")->first();

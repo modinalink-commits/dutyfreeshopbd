@@ -42,7 +42,7 @@ class ServiceBalances {
         if ($r->status() === 401 || $r->status() === 403) return ['ok' => false, 'balance' => null, 'expires' => null, 'text' => 'SmartPOS did not accept the key (HTTP ' . $r->status() . ')'];
         $j = $r->json(); $dt = is_array($j) ? ($j['data'] ?? null) : null;
         if (!$r->ok() || !is_array($dt) || !isset($dt['remaining'])) return ['ok' => false, 'balance' => null, 'expires' => null, 'text' => 'No readable answer (HTTP ' . $r->status() . ')'];
-        return ['ok' => true, 'balance' => (float)(int)$dt['remaining'], 'expires' => !empty($dt['resets_at']) ? substr((string)$dt['resets_at'], 0, 10) : null, 'text' => 'Main fraud check: ' . (int)($dt['used'] ?? 0) . ' of ' . (int)($dt['total'] ?? 0) . ' checks used (' . str_replace('_', ' ', (string)($dt['type'] ?? 'quota')) . '); resets on the date shown'];
+        return ['ok' => true, 'balance' => (float)(int)$dt['remaining'], 'expires' => !empty($dt['resets_at']) ? substr((string)$dt['resets_at'], 0, 10) : null, 'text' => 'SmartPOS fraud check: ' . (int)($dt['used'] ?? 0) . ' of ' . (int)($dt['total'] ?? 0) . ' checks used (' . str_replace('_', ' ', (string)($dt['type'] ?? 'quota')) . '); resets on the date shown'];
       }
       if ($code === 'tok_fc_pathao' || $code === 'tok_fc_redx') { // API tokens: the expiry date is inside the token (JWT "exp"), nothing is guessed
         $tok = $code === 'tok_fc_pathao' ? trim((string)Sms::secret('fc_pathao_token')) : FraudCheck::redxToken();
