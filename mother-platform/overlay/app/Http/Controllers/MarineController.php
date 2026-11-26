@@ -43,17 +43,18 @@ class MarineController extends Controller
   }
 
   public function catalog(Request $r) {
-    $q = trim((string)$r->query('q')); $show = in_array($r->query('show'), ['on', 'all', 'featured'], true) ? $r->query('show') : 'all'; $cat = (int)$r->query('category');
+    $q = trim((string)$r->query('q')); $show = in_array($r->query('show'), ['on', 'all', 'featured', 'essential'], true) ? $r->query('show') : 'all'; $cat = (int)$r->query('category');
     $pq = DB::table('products as p')->leftJoin('marine_products as m', 'm.product_id', '=', 'p.id')->leftJoin('categories as c', 'c.id', '=', 'p.category_id')
-      ->select('p.id', 'p.sku', 'p.name', 'p.price', 'p.stock', 'p.image', 'c.name as cat', 'c.slug as cslug', 'c.id as cid', 'm.enabled', 'm.visibility', 'm.ports', 'm.usd_price', 'm.featured');
+      ->select('p.id', 'p.sku', 'p.name', 'p.price', 'p.stock', 'p.image', 'c.name as cat', 'c.slug as cslug', 'c.id as cid', 'm.enabled', 'm.visibility', 'm.ports', 'm.usd_price', 'm.featured', 'm.essential');
     if ($q !== '') $pq->where(fn($w) => $w->where('p.name', 'ilike', '%' . $q . '%')->orWhere('p.sku', 'ilike', '%' . $q . '%'));
     if ($cat) $pq->where('p.category_id', $cat);
     if ($show === 'on') $pq->where('m.enabled', true);
     if ($show === 'featured') $pq->whereNotNull('m.featured');
+    if ($show === 'essential') $pq->where('m.essential', true);
     $rows = $pq->orderByRaw('m.featured asc nulls last')->orderByRaw('coalesce(m.enabled, false) desc')->orderBy('p.name')->paginate(50)->withQueryString();
     $cats = DB::table('categories')->orderBy('name')->get(['id', 'name', 'slug']); $bond = [];
     foreach ($cats as $c) if (self::bonded($c)) $bond[$c->id] = true;
-    return view('marine.catalog', ['rate' => self::rate(), 'adm' => \App\Support\ProfitFloor::admin(), 'rows' => $rows, 'q' => $q, 'show' => $show, 'cat' => $cat, 'cats' => $cats, 'bond' => $bond, 'ports' => self::PORTS, 'featN' => (int)DB::table('marine_products')->whereNotNull('featured')->count(), 'featMax' => self::FEATURED]);
+    return view('marine.catalog', ['rate' => self::rate(), 'adm' => \App\Support\ProfitFloor::admin(), 'rows' => $rows, 'q' => $q, 'show' => $show, 'cat' => $cat, 'cats' => $cats, 'bond' => $bond, 'ports' => self::PORTS, 'featN' => (int)DB::table('marine_products')->whereNotNull('featured')->count(), 'featMax' => self::FEATURED, 'essN' => (int)DB::table('marine_products')->where('essential', true)->count()]);
   }
   private static function bondedIds(): array { $o = []; foreach (DB::table('categories')->get(['id', 'name', 'slug']) as $c) if (self::bonded($c)) $o[] = (int)$c->id; return $o; }
   /** New version number for the cached public product pages (never a full cache flush: the cache is shared with the workers). */
@@ -82,11 +83,23 @@ class MarineController extends Controller
     try { \App\Support\Procure::audit('marine.bulk_publish', "Marine channel: $n published store products switched on at $rate BDT per USD ($pub public, " . ($n - $pub) . " after login), all ports", null, ['count' => $n, 'rate' => $rate, 'public' => $pub]); } catch (\Throwable $e) {}
     return redirect('/admin/marine/catalog?show=on')->with('ok', "$n products are now on the marine channel at $rate BDT per USD: $pub public, " . ($n - $pub) . " after login only.");
   }
+  /** Ship essentials in bulk: mark (or unmark) every marine product of one category, optionally narrowed by a search word. Admin only. */
+  public function bulkEssential(Request $r) {
+    if (!\App\Support\ProfitFloor::admin()) return back()->with('ok', 'Only an admin can run this.');
+    $cat = (int)$r->input('category'); $q = mb_substr(trim((string)$r->input('q')), 0, 60); $set = $r->input('set') === '1';
+    if (!$cat && mb_strlen($q) < 3) return back()->with('ok', 'Choose a category or type a search word (3 letters or more) first.');
+    $ids = DB::table('products as p')->join('marine_products as m', 'm.product_id', '=', 'p.id')->where('m.enabled', true)
+      ->when($cat, fn($w) => $w->where('p.category_id', $cat))->when($q !== '', fn($w) => $w->where(fn($x) => $x->where('p.name', 'ilike', '%' . $q . '%')->orWhere('p.sku', 'ilike', '%' . $q . '%')))->pluck('m.id');
+    $n = 0; foreach ($ids->chunk(1000) as $c) $n += DB::table('marine_products')->whereIn('id', $c->all())->update(['essential' => $set, 'updated_at' => now()]);
+    self::bump();
+    try { \App\Support\Procure::audit('marine.essential', 'Marine ship essentials: ' . ($set ? 'marked ' : 'unmarked ') . $n . ' products (category ' . ($cat ?: 'any') . ', search "' . $q . '")', null, ['count' => $n, 'set' => $set, 'category' => $cat, 'q' => $q]); } catch (\Throwable $e) {}
+    return back()->with('ok', $n . ' products ' . ($set ? 'marked as' : 'removed from') . ' Ship essentials.');
+  }
   /** Public product list for the marine site: enabled + public + published only, and never a bonded category (checked again here, whatever the stored flag says). */
   public function publicProducts(Request $r) {
-    $q = mb_substr(trim((string)$r->query('q')), 0, 60); $cat = (int)$r->query('category'); $page = max(1, min(700, (int)$r->query('page', 1))); $home = (bool)$r->query('home'); $per = $home ? self::FEATURED : 48; $port = (string)$r->query('port'); if ($home || !isset(self::PORTS[$port])) $port = ''; if ($home) { $q = ''; $cat = 0; $page = 1; }
-    $key = 'marine.pp.' . (int)\Illuminate\Support\Facades\Cache::get('marine.ppv', 0) . '.' . md5($q . '|' . $cat . '|' . $page . '|' . (int)$home . '|' . $port);
-    $d = \Illuminate\Support\Facades\Cache::remember($key, 120, function () use ($q, $cat, $page, $per, $home, $port) {
+    $q = mb_substr(trim((string)$r->query('q')), 0, 60); $cat = (int)$r->query('category'); $page = max(1, min(700, (int)$r->query('page', 1))); $home = (bool)$r->query('home'); $per = $home ? self::FEATURED : 48; $port = (string)$r->query('port'); if ($home || !isset(self::PORTS[$port])) $port = ''; $ess = !$home && (bool)$r->query('essential'); if ($home) { $q = ''; $cat = 0; $page = 1; }
+    $key = 'marine.pp.' . (int)\Illuminate\Support\Facades\Cache::get('marine.ppv', 0) . '.' . md5($q . '|' . $cat . '|' . $page . '|' . (int)$home . '|' . $port . '|' . (int)$ess);
+    $d = \Illuminate\Support\Facades\Cache::remember($key, 120, function () use ($q, $cat, $page, $per, $home, $port, $ess) {
       $bond = self::bondedIds();
       $b = DB::table('marine_products as m')->join('products as p', 'p.id', '=', 'm.product_id')->leftJoin('categories as c', 'c.id', '=', 'p.category_id')
         ->where('m.enabled', true)->where('m.visibility', 'public')->where('p.published', true)->whereNotNull('m.usd_price');
@@ -94,9 +107,10 @@ class MarineController extends Controller
       $cats = (clone $b)->whereNotNull('c.id')->groupBy('c.id', 'c.name')->orderBy('c.name')->get(['c.id', 'c.name'])->map(fn($c) => ['id' => (int)$c->id, 'name' => (string)$c->name])->all();
       if ($q !== '') $b->where(fn($w) => $w->where('p.name', 'ilike', '%' . $q . '%')->orWhere('p.sku', 'ilike', '%' . $q . '%'));
       if ($cat) $b->where('p.category_id', $cat);
+      if ($ess) $b->where('m.essential', true);
       if ($port !== '') $b->whereRaw("(',' || coalesce(m.ports, '') || ',') like ?", ['%,' . $port . ',%']);
       $total = (clone $b)->count();
-      $cols = ['p.id', 'p.sku', 'p.name', 'p.image', 'p.size', 'p.category_id', 'c.name as cat', 'm.usd_price', 'm.ports', 'm.featured']; $premium = [];
+      $cols = ['p.id', 'p.sku', 'p.name', 'p.image', 'p.size', 'p.category_id', 'c.name as cat', 'm.usd_price', 'm.ports', 'm.featured']; $premium = []; $essentials = [];
       if ($home) { // home page: the team's picks first (position 1-8), then in-stock items with a photo to fill up to 8
         $rows = (clone $b)->whereNotNull('m.featured')->orderBy('m.featured')->orderBy('p.id')->limit($per)->get($cols);
         if ($rows->count() < $per) $rows = $rows->concat((clone $b)->whereNull('m.featured')->whereNotNull('p.image')->where('p.image', '!=', '')->orderByDesc('p.stock')->orderBy('p.id')->limit($per - $rows->count())->get($cols));
@@ -104,9 +118,11 @@ class MarineController extends Controller
         $ids = $rows->pluck('id')->all(); $cids = array_values(array_unique(array_filter($rows->pluck('category_id')->map(fn($v) => (int)$v)->all()))); $prem = collect();
         foreach (array_slice($cids, 0, 8) as $cid) $prem = $prem->concat((clone $b)->where('p.category_id', $cid)->whereNotIn('p.id', $ids)->whereNotNull('p.image')->where('p.image', '!=', '')->orderByDesc('m.usd_price')->orderBy('p.id')->limit(4)->get($cols));
         $premium = $prem->sortByDesc(fn($x) => (float)$x->usd_price)->take(16)->map(fn($x) => self::item($x))->values()->all();
+        // Ship essentials row: products the team marked as needed on board, in-stock first.
+        $essentials = (clone $b)->where('m.essential', true)->whereNotNull('p.image')->where('p.image', '!=', '')->orderByDesc('p.stock')->orderBy('p.name')->limit(16)->get($cols)->map(fn($x) => self::item($x))->all();
       } else $rows = $b->orderBy('c.name')->orderBy('p.name')->offset(($page - 1) * $per)->limit($per)->get($cols);
       $items = []; foreach ($rows as $x) $items[] = self::item($x);
-      return ['total' => $total, 'page' => $page, 'per' => $per, 'port' => $port, 'categories' => $cats, 'items' => $items] + ($home ? ['premium' => $premium] : []);
+      return ['total' => $total, 'page' => $page, 'per' => $per, 'port' => $port, 'categories' => $cats, 'items' => $items] + ($home ? ['premium' => $premium, 'essentials' => $essentials, 'essential_total' => (int)(clone $b)->where('m.essential', true)->count()] : []);
     });
     return response()->json($d)->header('Access-Control-Allow-Origin', self::SITE)->header('Vary', 'Origin')->header('Cache-Control', 'public, max-age=120');
   }
@@ -146,7 +162,7 @@ class MarineController extends Controller
     $feat = max(0, min(self::FEATURED, (int)$r->input('featured'))) ?: null; $warn = '';
     if ($feat && (!$on || $vis !== 'public' || $usd === null)) { $feat = null; $warn = ' Home page pick removed: the product must be On, Public and have a USD price.'; }
     if ($feat && DB::table('marine_products')->whereNotNull('featured')->where('product_id', '!=', $p->id)->count() >= self::FEATURED) { $feat = null; $warn = ' Not added to the home page: ' . self::FEATURED . ' products are already picked. Remove one first.'; }
-    $new = ['enabled' => $on, 'visibility' => $vis, 'ports' => $ports ?: null, 'usd_price' => $usd, 'featured' => $feat, 'updated_by' => (string)(optional(auth()->user())->name ?? 'admin'), 'updated_at' => now()];
+    $new = ['enabled' => $on, 'visibility' => $vis, 'ports' => $ports ?: null, 'usd_price' => $usd, 'featured' => $feat, 'essential' => $on && (bool)$r->input('essential'), 'updated_by' => (string)(optional(auth()->user())->name ?? 'admin'), 'updated_at' => now()];
     if ($old) DB::table('marine_products')->where('id', $old->id)->update($new); else DB::table('marine_products')->insert($new + ['product_id' => $p->id, 'created_at' => now()]);
     try { \App\Support\Procure::audit('marine.product', 'Marine channel: ' . ($p->sku ?: $p->id) . ' ' . mb_substr((string)$p->name, 0, 80), $old ? ['enabled' => (bool)$old->enabled, 'visibility' => $old->visibility, 'ports' => $old->ports, 'usd_price' => $old->usd_price] : null, ['enabled' => $on, 'visibility' => $vis, 'ports' => $ports, 'usd_price' => $usd]); } catch (\Throwable $e) {}
     self::bump();

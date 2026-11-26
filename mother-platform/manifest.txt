@@ -1588,6 +1588,7 @@ app/Http/Controllers/MarineController.php
 database/migrations/2026_11_26_000070_marine_supply_base.php
 database/migrations/2026_11_26_000080_marine_featured.php
 database/migrations/2026_11_26_000090_marine_all_ports.php
+database/migrations/2026_11_26_000100_marine_essential.php
 resources/views/marine/index.blade.php
 resources/views/marine/requests.blade.php
 resources/views/marine/catalog.blade.php
