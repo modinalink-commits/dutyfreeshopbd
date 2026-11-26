@@ -327,7 +327,26 @@ class MarineController extends Controller
     return redirect('/admin/marine/tracking')->with('ok', trim(implode(' ', $msg) . ' Saved.'));
   }
 
-  public function settings() { return view('marine.settings', ['conf' => self::conf(), 'site' => self::SITE]); }
+  /** Three permanent demo accounts (owner, agency, vessel) so the owner can look at the portal from each side at any time.
+   *  The only accounts whose password is set from the admin, and only by an administrator who types it here; it is stored as a hash and never shown or logged. Names carry DEMO so the desk can tell their requisitions apart. */
+  const DEMO = ['owner' => ['DEMO-OWNER', 'DEMO Shipping Co (test account)', null], 'agency' => ['DEMO-AGENCY', 'DEMO Port Agency (test account)', null], 'vessel' => ['DEMO-VESSEL', 'DEMO Shipping Co (test account)', 'captain']];
+  private static function demoRows(): array { try { if (!\App\Support\MarineAccess::ready()) return []; return DB::table('marine_accounts')->whereIn('username', array_column(self::DEMO, 0))->get(['username', 'type', 'status', 'last_login_at', 'password'])->map(fn($x) => ['username' => $x->username, 'type' => $x->type, 'ready' => $x->status === 'active' && (bool)$x->password, 'last' => $x->last_login_at])->keyBy('type')->all(); } catch (\Throwable $e) { return []; } }
+  public function settings() { return view('marine.settings', ['conf' => self::conf(), 'site' => self::SITE, 'demo' => self::demoRows(), 'demoDef' => self::DEMO, 'admin' => \App\Support\ProfitFloor::admin()]); }
+  public function demoAccounts(Request $r) {
+    if (!\App\Support\ProfitFloor::admin()) abort(403); $A = \App\Support\MarineAccess::class; if (!$A::ready()) return back()->with('bad', 'Marine accounts are not ready yet.');
+    $pw = (string)$r->input('password'); $which = array_values(array_intersect((array)$r->input('accounts', []), array_keys(self::DEMO))); if (!$which) return back()->with('bad', 'Tick at least one demo account.');
+    foreach ($which as $t) { $why = $A::passwordProblem($pw, (string)$r->input('password2'), self::DEMO[$t][0], strtolower(self::DEMO[$t][0]) . '@demo.invalid'); if ($why) return back()->with('bad', $why); }
+    $now = now(); $by = mb_substr((string)(optional(auth()->user())->name ?? 'admin'), 0, 120); $hash = \Illuminate\Support\Facades\Hash::make($pw);
+    DB::transaction(function () use ($which, $hash, $now, $by) {
+      foreach ($which as $t) { [$un, $co, $vr] = self::DEMO[$t]; $acc = DB::table('marine_accounts')->where('username', $un)->first();
+        $d = ['password' => $hash, 'status' => 'active', 'activated_at' => $now, 'failed_attempts' => 0, 'locked_until' => null, 'invite_hash' => null, 'otp_hash' => null, 'force_logout_at' => $now, 'updated_at' => $now];
+        if ($acc) DB::table('marine_accounts')->where('id', $acc->id)->update($d);
+        else { $id = DB::table('marine_accounts')->insertGetId($d + ['type' => $t, 'username' => $un, 'email' => strtolower($un) . '@demo.invalid', 'name' => 'Demo ' . ucfirst($t), 'company' => $co, 'role' => 'Test account', 'vessel_role' => $vr, 'port' => 'Chattogram', 'imo' => $t === 'vessel' ? '9000001' : null, 'vessel' => $t === 'vessel' ? 'MV DEMO' : null, 'approved_by' => $by, 'approved_at' => $now, 'created_at' => $now]);
+          if ($t !== 'vessel') DB::table('marine_account_vessels')->insertOrIgnore(['account_id' => $id, 'imo' => '9000001', 'name' => 'MV DEMO', 'note' => 'Demo vessel, not a real ship', 'verified' => true, 'added_by' => $by, 'created_at' => $now, 'updated_at' => $now]); }
+      } });
+    try { \App\Support\Procure::audit('marine.access.demo', 'Marine demo account password set by an administrator: ' . implode(', ', array_map(fn($t) => self::DEMO[$t][0], $which)), null, ['accounts' => $which, 'by' => $by]); } catch (\Throwable $e) {}
+    return back()->with('ok', 'Demo accounts ready: ' . implode(', ', array_map(fn($t) => self::DEMO[$t][0], $which)) . '. Sign in at dutyfreebd.com/marine-portal/login with the password you just typed.');
+  }
   public function saveSettings(Request $r) {
     $d = $r->validate(['marine_desk_email' => 'nullable|email|max:160', 'marine_desk_phone' => ['nullable', 'max:30', 'regex:/^[0-9+ ()-]*$/'], 'marine_desk_whatsapp' => ['nullable', 'max:30', 'regex:/^[0-9+ ()-]*$/']]);
     $old = self::conf();
