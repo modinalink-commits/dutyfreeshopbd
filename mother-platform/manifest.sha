@@ -1588,7 +1588,7 @@ f87f3faf81fcb6f99885ccbc7ec9ceaadfdeef00 app/Http/Controllers/MarineController.p
 621a5c5601779fe5f263d1fe502be0d2146106eb database/migrations/2026_11_26_000070_marine_supply_base.php
 901d40d5f1e42e25affd46092ede8e6c5e33cc65 resources/views/marine/index.blade.php
 bcb9eab44a41831d70fbefbb361e5de40163b949 resources/views/marine/requests.blade.php
-c9faa6ecdd7f00f902f9db8c47e201cb21c42050 resources/views/marine/catalog.blade.php
+1c71492d226a8773a274b636db3846a17253550b resources/views/marine/catalog.blade.php
 ef4559ea04ab8f5b7e73f0e627cb243347cfc518 resources/views/marine/settings.blade.php
 ed0f0c192a378ff0378434bd83c20eae65ad753e resources/views/marine/site.blade.php
 6130dc577d54b853be8284414f019c617c33a202 resources/views/marine/ports.blade.php

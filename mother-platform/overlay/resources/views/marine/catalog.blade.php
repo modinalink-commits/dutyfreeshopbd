@@ -1,19 +1,31 @@
 @extends('layout')@section('title','Marine Catalog')
 @section('body')
+<style>
+.mct label{display:inline-flex!important;align-items:center;gap:6px;margin:0;white-space:nowrap;font-size:13px;width:auto}
+.mct input[type=checkbox]{width:auto!important;min-width:0;height:auto;margin:0;flex:none}
+.mct select,.mct input[type=text],.mct input:not([type]){width:auto!important;min-width:0;height:32px}
+.mct .mcf{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.mct .mcf input[name=q]{width:240px!important}.mct .mcf select{max-width:240px}
+.mct table.mcat td{vertical-align:middle;padding:7px 6px}
+.mct table.mcat tr:has(input[type=checkbox]:checked)>td{background:transparent!important}
+.mct .mports{display:flex;gap:12px;flex-wrap:nowrap}
+</style>
+<div class="mct">
 <div style="margin-bottom:10px"><h1 style="margin:0">Marine Catalog</h1><div style="font-size:12px;color:#6B7280">Choose which products go on the marine channel, where they show, at which ports and the USD price. Name, image and code come from the main catalog. Tobacco and alcohol are always shown after login only.</div></div>
 @if(session('ok'))<div class="card" style="background:#DCFCE7;border-color:#A7F3D0;color:#166534">{{ session('ok') }}</div>@endif
-@if($adm)<form method="post" action="/admin/marine/catalog-bulk" class="card" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">@csrf<b style="font-size:13px">Publish all store products to marine</b><label style="font-size:13px;display:flex;gap:6px;align-items:center">BDT per 1 USD <input name="rate" value="{{ $rate ?: '' }}" inputmode="decimal" style="width:80px;text-align:right" placeholder="128"></label><label style="font-size:13px;display:flex;gap:6px;align-items:center"><input type="checkbox" name="sure" value="1"> Set USD price = store price / rate for every published product</label><button class="btn">Run</button><span style="font-size:12px;color:#6B7280">Bonded categories stay after-login. Store prices are not changed. Run again after a rate change.</span></form>@endif
-<form method="get" class="card" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><input name="q" value="{{ $q }}" placeholder="Name or code" style="width:220px"><select name="category"><option value="0">All categories</option>@foreach($cats as $c)<option value="{{ $c->id }}" @selected($cat==$c->id)>{{ $c->name }}</option>@endforeach</select><select name="show"><option value="all" @selected($show==='all')>All products</option><option value="on" @selected($show==='on')>On marine only</option></select><button class="btn">Filter</button></form>
-<div class="card" style="overflow:auto"><table style="width:100%;min-width:980px;font-size:13px;border-collapse:collapse"><thead><tr style="text-align:left;color:#6B7280"><th style="padding:6px 4px">Product</th><th>Store price</th><th>Stock</th><th>Marine</th><th>Shown</th><th>Ports</th><th>USD price</th><th></th></tr></thead><tbody>
+@if($adm)<form method="post" action="/admin/marine/catalog-bulk" class="card mcf">@csrf<b style="font-size:13px">Publish all store products to marine</b><label>BDT per 1 USD <input name="rate" value="{{ $rate ?: '' }}" inputmode="decimal" style="width:80px!important;text-align:right" placeholder="128"></label><label><input type="checkbox" name="sure" value="1"> Set USD price = store price / rate for every published product</label><button class="btn">Run</button><span style="font-size:12px;color:#6B7280">Bonded categories stay after-login. Store prices are not changed. Run again after a rate change.</span></form>@endif
+<form method="get" class="card mcf"><input name="q" value="{{ $q }}" placeholder="Name or code" style="width:220px"><select name="category"><option value="0">All categories</option>@foreach($cats as $c)<option value="{{ $c->id }}" @selected($cat==$c->id)>{{ $c->name }}</option>@endforeach</select><select name="show"><option value="all" @selected($show==='all')>All products</option><option value="on" @selected($show==='on')>On marine only</option></select><button class="btn">Filter</button></form>
+<div class="card" style="overflow:auto"><table class="mcat" style="width:100%;min-width:980px;font-size:13px;border-collapse:collapse"><thead><tr style="text-align:left;color:#6B7280"><th style="padding:6px 4px">Product</th><th>Store price</th><th>Stock</th><th>Marine</th><th>Shown</th><th>Ports</th><th>USD price</th><th></th></tr></thead><tbody>
 @forelse($rows as $x)@php $b = !empty($bond[$x->cid ?? 0]); $pp = array_filter(explode(',', (string)$x->ports)); $fid = 'mp'.$x->id; @endphp
 <tr style="border-top:1px solid #EEE;vertical-align:middle"><td style="padding:8px 4px"><b>{{ $x->name }}</b><div style="font-size:11.5px;color:#6B7280">{{ $x->sku }} · {{ $x->cat ?: '-' }}@if($b) · <span style="color:#B45309;font-weight:600">Bonded</span>@endif</div></td>
 <td style="white-space:nowrap">BDT {{ number_format((float)$x->price) }}</td><td>{{ (int)$x->stock }}</td>
-<td><form id="{{ $fid }}" method="post" action="/admin/marine/catalog/{{ $x->id }}">@csrf</form><label style="display:flex;gap:6px;align-items:center"><input form="{{ $fid }}" type="checkbox" name="enabled" value="1" @checked($x->enabled)> On</label></td>
+<td><form id="{{ $fid }}" method="post" action="/admin/marine/catalog/{{ $x->id }}">@csrf</form><label><input form="{{ $fid }}" type="checkbox" name="enabled" value="1" @checked($x->enabled)> On</label></td>
 <td>@if($b)<input form="{{ $fid }}" type="hidden" name="visibility" value="login"><span style="font-size:12px;color:#6B7280">After login only</span>@else<select form="{{ $fid }}" name="visibility"><option value="login" @selected(($x->visibility ?? 'login')==='login')>After login</option><option value="public" @selected($x->visibility==='public')>Public</option></select>@endif</td>
-<td style="white-space:nowrap">@foreach($ports as $pk=>$pl)<label style="margin-right:8px"><input form="{{ $fid }}" type="checkbox" name="ports[]" value="{{ $pk }}" @checked(in_array($pk, $pp, true))> {{ $pl }}</label>@endforeach</td>
-<td><input form="{{ $fid }}" name="usd_price" value="{{ $x->usd_price !== null ? number_format((float)$x->usd_price, 2, '.', '') : '' }}" placeholder="0.00" inputmode="decimal" style="width:90px;text-align:right"></td>
+<td><div class="mports">@foreach($ports as $pk=>$pl)<label><input form="{{ $fid }}" type="checkbox" name="ports[]" value="{{ $pk }}" @checked(in_array($pk, $pp, true))> {{ $pl }}</label>@endforeach</div></td>
+<td><input form="{{ $fid }}" name="usd_price" value="{{ $x->usd_price !== null ? number_format((float)$x->usd_price, 2, '.', '') : '' }}" placeholder="0.00" inputmode="decimal" style="width:90px!important;text-align:right"></td>
 <td><button form="{{ $fid }}" class="btn">Save</button></td></tr>
 @empty<tr><td colspan="8" style="padding:14px;color:#6B7280">No products found.</td></tr>@endforelse</tbody></table></div>
 <div style="margin-top:10px">{{ $rows->links('pagination.global') }}</div>
 <div style="font-size:12px;color:#6B7280;margin-top:8px">Switching a product on adds it to the marine channel list. Showing this list on the marine site's product page comes in the next step. Nothing here changes the main store's price, stock or visibility.</div>
+</div>
 @endsection
