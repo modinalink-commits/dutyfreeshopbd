@@ -15,20 +15,29 @@ class MarineAis
 {
   /** South-west and north-east corners [lat, lon]: Bay of Bengal north of 17N, including Chattogram, Mongla, Payra and their approaches. */
   const BOX = [[[17.0, 86.0], [23.6, 93.5]]];
+  /** Wide area for the vessel register only (names, IMO, type, size: no positions): Red Sea to Japan, where ships bound for Bangladesh come from.
+   *  AISStream has few receivers on the Bangladesh coast (test 26 Nov 2026: 1 message in 14 s there, 19 in 8 s at Singapore), so name search needs this wider net. */
+  const WIDE = [[[-12.0, 30.0], [46.0, 150.0]]];
+  const WIDE_PER_SEC = 60; // safety valve for the shared server: extra messages in a second are dropped
   const HOST = 'stream.aisstream.io';
 
   public static function ensureLoop(): void {
     if (!\App\Http\Controllers\MarineController::aisOn() || !Schema::hasTable('marine_vessels')) return;
-    if (time() - (int)Cache::get('marine_ais_hb', 0) < 90) return;
-    Cache::put('marine_ais_hb', time(), 300);
-    @exec('nohup php ' . escapeshellarg(base_path('artisan')) . ' marine:ais > /dev/null 2>&1 &');
+    foreach (['local' => 'marine_ais_hb', 'wide' => 'marine_ais_hbw'] as $mode => $k) {
+      if (time() - (int)Cache::get($k, 0) < 90) continue;
+      Cache::put($k, time(), 300);
+      @exec('nohup nice -n 15 php ' . escapeshellarg(base_path('artisan')) . ' marine:ais ' . $mode . ' > /dev/null 2>&1 &');
+    }
   }
 
   private static function note(?string $m): void { if ($m === null) Cache::forget('marine_ais_err'); else Cache::put('marine_ais_err', mb_substr($m, 0, 200) . ' (' . now()->format('d M H:i') . ')', 86400); }
 
-  public static function run(int $secs = 1200): void {
+  public static function run(int $secs = 1200, string $mode = 'local'): void {
+    $wide = $mode === 'wide'; $hbk = $wide ? 'marine_ais_hbw' : 'marine_ais_hb'; $stk = $wide ? 'marine_ais_statw' : 'marine_ais_stat';
     $key = (string)Sms::secret('marine_aisstream_key'); if ($key === '') return;
-    $fp = self::open($key, self::BOX, $why); if (!$fp) { self::note($why); return; }
+    $fp = self::open($key, $wide ? self::WIDE : self::BOX, $why, $wide ? ['ShipStaticData'] : null); if (!$fp) { self::note($why); return; }
+    // wide mode: a vessel's static data is stored once in 12 hours, however often it is broadcast
+    $known = []; if ($wide) { try { foreach (DB::table('marine_vessels')->where('static_at', '>=', now()->subHours(12))->pluck('mmsi') as $mm) $known[(int)$mm] = 1; } catch (\Throwable $e) {} } $sec = 0; $inSec = 0;
     try {
       $end = time() + $secs; $buf = []; $flush = time(); $msg = ''; $got = 0; $idle = time(); $chk = time(); $t0 = time();
       while (time() < $end) {
@@ -40,20 +49,21 @@ class MarineAis
           if ($op === 9) self::send($fp, 10, $pl);
           elseif ($op === 0 || $op === 1 || $op === 2) {
             $msg .= $pl; if (strlen($msg) > 262144) $msg = '';
+            if ($fin && $wide) { if (time() !== $sec) { $sec = time(); $inSec = 0; } if (++$inSec > self::WIDE_PER_SEC || (preg_match('/"MMSI":\s*(\d+)/', $msg, $mm) && isset($known[(int)$mm[1]]))) { $msg = ''; $got++; $idle = time(); continue; } }
             if ($fin) { if (self::take($msg, $buf)) { $got++; $idle = time(); } elseif (!$got && str_contains($msg, 'rror')) { self::note('AISStream: ' . preg_replace('/[^\x20-\x7e]/', '', mb_substr($msg, 0, 150))); } $msg = ''; }
           }
         }
-        if (time() - $flush >= 5) { self::flush($buf); $buf = []; $flush = time(); Cache::put('marine_ais_hb', time(), 300); Cache::put('marine_ais_stat', ['connected' => $t0, 'msgs' => $got, 'at' => time()], 3600); if ($got) self::note(null); }
+        if (time() - $flush >= 5) { if ($wide) { foreach ($buf as $mm => $x) $known[$mm] = 1; self::flushWide($buf); } else self::flush($buf); $buf = []; $flush = time(); Cache::put($hbk, time(), 300); Cache::put($stk, ['connected' => $t0, 'msgs' => $got, 'at' => time()], 3600); if ($got && !$wide) self::note(null); }
         if (time() - $idle > 240) { self::send($fp, 9, 'k'); $idle = time() - 120; }
         if (time() - $chk > 60) { $chk = time(); if (!\App\Http\Controllers\MarineController::aisOn()) break; }
       }
-      self::flush($buf);
+      if ($wide) self::flushWide($buf); else self::flush($buf);
     } catch (\Throwable $e) { self::note('Collector error: ' . $e->getMessage()); report($e); }
     finally { @fclose($fp); }
   }
 
   /** Opens the stream and subscribes to a bounding box. Returns the socket, or null with the reason in $why. */
-  private static function open(string $key, array $box, &$why = null) {
+  private static function open(string $key, array $box, &$why = null, ?array $types = null) {
     $ctx = stream_context_create(['ssl' => ['verify_peer' => true, 'verify_peer_name' => true, 'peer_name' => self::HOST, 'SNI_enabled' => true]]);
     $fp = @stream_socket_client('tls://' . self::HOST . ':443', $en, $es, 15, STREAM_CLIENT_CONNECT, $ctx);
     if (!$fp) { $why = 'Could not connect to AISStream: ' . $es; return null; }
@@ -61,7 +71,7 @@ class MarineAis
     fwrite($fp, "GET /v0/stream HTTP/1.1\r\nHost: " . self::HOST . "\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: " . base64_encode(random_bytes(16)) . "\r\nSec-WebSocket-Version: 13\r\nUser-Agent: DutyFreeBD-Marine/1.0\r\n\r\n");
     $h = ''; while (!str_contains($h, "\r\n\r\n")) { $c = fread($fp, 1); if ($c === '' || $c === false) { if (feof($fp) || stream_get_meta_data($fp)['timed_out']) break; continue; } $h .= $c; if (strlen($h) > 8192) break; }
     if (!preg_match('#^HTTP/1\.1 101#', $h)) { $why = 'AISStream refused the connection: ' . trim(strtok($h, "\r\n") ?: 'no reply'); @fclose($fp); return null; }
-    self::send($fp, 1, json_encode(['APIKey' => $key, 'BoundingBoxes' => $box, 'FilterMessageTypes' => ['PositionReport', 'StandardClassBPositionReport', 'ShipStaticData']]));
+    self::send($fp, 1, json_encode(['APIKey' => $key, 'BoundingBoxes' => $box, 'FilterMessageTypes' => $types ?: ['PositionReport', 'StandardClassBPositionReport', 'ShipStaticData']]));
     return $fp;
   }
 
@@ -145,6 +155,15 @@ class MarineAis
 
   private static function flush(array $buf): void {
     foreach ($buf as $r) { try { $mm = $r['mmsi']; unset($r['mmsi']); $r['updated_at'] = now(); DB::table('marine_vessels')->updateOrInsert(['mmsi' => $mm], $r); } catch (\Throwable $e) { self::note('Save error: ' . $e->getMessage()); } }
+  }
+
+  /** Register rows in batches (one statement per 200 vessels). A missing value never wipes one already stored. */
+  private static function flushWide(array $buf): void {
+    $rows = []; $now = now();
+    foreach ($buf as $r) { if (empty($r['static_at'])) continue; $rows[] = ['mmsi' => $r['mmsi'], 'imo' => $r['imo'] ?? null, 'name' => $r['name'] ?? null, 'callsign' => $r['callsign'] ?? null, 'ship_type' => $r['ship_type'] ?? null, 'length' => $r['length'] ?? null, 'beam' => $r['beam'] ?? null, 'draught' => $r['draught'] ?? null, 'destination' => $r['destination'] ?? null, 'eta' => $r['eta'] ?? null, 'static_at' => $now, 'seen_at' => $now, 'created_at' => $now, 'updated_at' => $now]; }
+    $keep = fn($c) => DB::raw("coalesce(excluded.$c, marine_vessels.$c)"); $up = ['static_at' => $now, 'seen_at' => $now, 'updated_at' => $now, 'destination' => DB::raw('excluded.destination'), 'eta' => DB::raw('excluded.eta')];
+    foreach (['imo', 'name', 'callsign', 'ship_type', 'length', 'beam', 'draught'] as $c) $up[$c] = $keep($c);
+    foreach (array_chunk($rows, 200) as $ch) { try { DB::table('marine_vessels')->upsert($ch, ['mmsi'], $up); } catch (\Throwable $e) { self::note('Save error: ' . $e->getMessage()); } }
   }
 
   /** AIS ship type code to a plain name. */

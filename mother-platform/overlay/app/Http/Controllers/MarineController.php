@@ -246,7 +246,7 @@ class MarineController extends Controller
   public function tracking() {
     $has = false; try { $has = (string)\App\Support\Sms::secret('marine_aisstream_key') !== ''; } catch (\Throwable $e) {}
     $st = ['vessels' => 0, 'named' => 0, 'last' => null]; try { if (\Illuminate\Support\Facades\Schema::hasTable('marine_vessels')) { $st['vessels'] = (int)DB::table('marine_vessels')->count(); $st['named'] = (int)DB::table('marine_vessels')->whereNotNull('imo')->count(); $st['last'] = DB::table('marine_vessels')->max('seen_at'); } } catch (\Throwable $e) {}
-    return view('marine.tracking', ['has' => $has, 'on' => (string)DB::table('settings')->where('key', 'marine_ais_on')->value('value') === '1', 'st' => $st, 'hb' => \Illuminate\Support\Facades\Cache::get('marine_ais_hb'), 'stat' => \Illuminate\Support\Facades\Cache::get('marine_ais_stat'), 'err' => \Illuminate\Support\Facades\Cache::get('marine_ais_err'), 'site' => self::SITE]);
+    return view('marine.tracking', ['has' => $has, 'on' => (string)DB::table('settings')->where('key', 'marine_ais_on')->value('value') === '1', 'st' => $st, 'hb' => \Illuminate\Support\Facades\Cache::get('marine_ais_hb'), 'stat' => \Illuminate\Support\Facades\Cache::get('marine_ais_stat'), 'statw' => \Illuminate\Support\Facades\Cache::get('marine_ais_statw'), 'err' => \Illuminate\Support\Facades\Cache::get('marine_ais_err'), 'site' => self::SITE]);
   }
   /** Admin connection test: a few seconds on a busy strait (proves the key works) and on our own area (shows whether AISStream has receivers near Bangladesh). */
   public function testTracking() {
