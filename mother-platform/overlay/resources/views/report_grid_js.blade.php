@@ -13,7 +13,7 @@ mk('Export .xlsx',function(){return load('https://cdnjs.cloudflare.com/ajax/libs
 mk('Export PDF',function(){return load('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js').then(function(){return load('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js')}).then(function(){var t=prep();var d=new window.jspdf.jsPDF({orientation:'landscape',unit:'pt',format:'a4'});d.setFontSize(13);d.text(title.trim(),30,28);var fr=document.querySelector('form.bar');d.setFontSize(8);d.text(new Date().toLocaleString(),30,40);d.autoTable({html:t,startY:48,styles:{fontSize:7,cellPadding:2},headStyles:{fillColor:[55,65,81]},margin:{left:30,right:30},didParseCell:function(h){var r=h.row.raw&&h.row.raw.classList;if(r&&(r.contains('gh')||r.contains('st')||r.contains('gt'))){h.cell.styles.fontStyle='bold';h.cell.styles.fillColor=r.contains('gt')?[229,231,235]:[243,244,246]}}});d.save(nm+'.pdf')})});
 })();
 </script>
-<style>.pgh{display:none!important}@media print{.pgh{display:table-row!important}.pgbar{display:none!important}}.pgbar{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap;margin:10px 0 0;font-size:13px;color:#6B7280}.pgbar button{border:1px solid #D1D5DB;background:#fff;color:#111827!important;font-weight:600;border-radius:8px;padding:5px 12px;cursor:pointer}.pgbar button:disabled{opacity:.45;cursor:default}</style>
+<style>.pgh{display:none!important}@media print{.pgh{display:table-row!important}.pgbar{display:none!important}}.pgbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:12px 0 0;font-size:13px;color:#6B7280}.pgbar button{border:1px solid #D1D5DB;background:#fff;color:#0F172A!important;border-radius:8px;padding:6px 11px;min-width:34px;cursor:pointer;font-weight:600}.pgbar button.on{background:#0F172A;color:#fff!important;border-color:#0F172A}.pgbar button:disabled{opacity:.4;cursor:default}.pgbar .tot{margin-left:auto;font-size:12px}</style>
 <script>
 (function(){
 var PER=50,page=1;
@@ -34,8 +34,8 @@ function render(){
  });
  flush();
  var bar=document.createElement('div');bar.className='pgbar';
- bar.innerHTML='<span>Rows '+(from+1)+'\u2013'+Math.min(to,dets.length)+' of '+dets.length+'</span><button type="button" data-d="-1"'+(page<=1?' disabled':'')+'>\u2039 Previous</button><span>Page '+page+' / '+pages+'</span><button type="button" data-d="1"'+(page>=pages?' disabled':'')+'>Next \u203a</button>';
- bar.addEventListener('click',function(e){var b=e.target.closest('button');if(!b||b.disabled)return;page+=parseInt(b.getAttribute('data-d'),10);render();var h=t.getBoundingClientRect().top+window.pageYOffset-80;window.scrollTo({top:Math.max(h,0)})});
+ var h='<button type="button" data-g="'+(page-1)+'"'+(page<=1?' disabled':'')+'>\u2039 Prev</button>',lo=Math.max(1,page-2),hi=Math.min(pages,page+2);if(lo>1)h+='<button type="button" data-g="1">1</button>'+(lo>2?'\u2026':'');for(var i=lo;i<=hi;i++)h+='<button type="button" class="'+(i===page?'on':'')+'" data-g="'+i+'">'+i+'</button>';if(hi<pages)h+=(hi<pages-1?'\u2026':'')+'<button type="button" data-g="'+pages+'">'+pages+'</button>';h+='<button type="button" data-g="'+(page+1)+'"'+(page>=pages?' disabled':'')+'>Next \u203a</button><span class="tot">'+dets.length.toLocaleString('en-IN')+' rows</span>';bar.innerHTML=h;
+ bar.addEventListener('click',function(e){var b=e.target.closest('button');if(!b||b.disabled)return;page=parseInt(b.getAttribute('data-g'),10);render();var h=t.getBoundingClientRect().top+window.pageYOffset-80;window.scrollTo({top:Math.max(h,0)})});
  var host=t.parentNode;host.parentNode.insertBefore(bar,host.nextSibling);
 }
 window.__pgInit=function(){page=1;render()};
