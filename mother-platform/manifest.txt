@@ -1630,3 +1630,7 @@ resources/views/marine/orders.blade.php
 resources/views/marine/order.blade.php
 resources/views/marine/calls.blade.php
 resources/views/marine/upload_js.blade.php
+app/Support/MarineMoves.php
+app/Http/Controllers/MarineMovesController.php
+resources/views/marine/moves.blade.php
+database/migrations/2026_11_26_000170_marine_movements.php

@@ -27,7 +27,7 @@ class MarineOrderController extends Controller
     $u = $this->me(); if (!$u) return redirect('/marine-portal/login');
     $kind = ($r->query('kind') === 'personal' || O::isCrew($u)) ? 'personal' : 'vessel'; if (!O::canRaise($u, $kind)) return redirect('/marine-portal/orders')->with('bad', 'Your account cannot raise this kind of request.');
     $pc = null; if ($r->query('pc')) { $pc = O::callsVisible($u)->where('id', (int)$r->query('pc'))->first(); }
-    return $this->pg('order_new', ['add' => max(0, (int)$r->query('add')), 'kind' => $kind, 'vessels' => O::vessels($u, false), 'ports' => O::PORTS, 'places' => O::PLACES, 'pc' => $pc, 'max' => O::MAX_LINES]);
+    return $this->pg('order_new', ['add' => max(0, (int)$r->query('add')), 'kind' => $kind, 'vessels' => O::vessels($u, false), 'ports' => O::PORTS, 'places' => O::PLACES, 'pc' => $pc, 'max' => O::MAX_LINES, 'pre' => ['imo' => preg_match('/^\d{7}$/', (string)$r->query('imo')) ? (string)$r->query('imo') : '', 'vessel' => mb_substr(trim(strip_tags((string)$r->query('vessel'))), 0, 120), 'port' => isset(O::PORTS[(string)$r->query('port')]) ? (string)$r->query('port') : '']]);
   }
   /** Catalog search for a signed-in account (bonded goods included, baby goods never). List prices only; the quotation sets the price. */
   public function products(Request $r) {
