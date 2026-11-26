@@ -28,12 +28,12 @@ class BlackFriday
       $st = 'in';
       if (!empty($p->parent_product_id)) $st = 'twin';
       elseif ($cost <= 0) $st = 'no_cost';
-      elseif ($stock !== null && $stock <= 0) $st = 'no_stock';
+      elseif (!StockGuard::sellable($p)) $st = 'no_stock';   // zero stock in a stock-controlled category; products sourced on order (stock 0, still orderable) stay in
       elseif ($price - $bf < self::MIN_OFF_TK) $st = 'at_floor';
       $off = $st === 'in' ? $price - $bf : 0.0;
       $rows[] = ['id' => (int)$p->id, 'sku' => (string)$p->sku, 'name' => (string)$p->name, 'cat' => (string)($p->cat ?? 'No category'), 'smoke' => $smoke, 'stock' => $stock, 'cost' => round($cost, 2), 'price' => $price,
         'bf' => $st === 'in' ? $bf : null, 'off' => $off, 'off_pct' => $st === 'in' && $price > 0 ? round($off / $price * 100, 1) : 0.0, 'profit' => $st === 'in' ? round($bf - $cost, 2) : null,
-        'status' => $st, 'check' => $st === 'in' && $price > 0 && $off / $price * 100 >= self::CHECK_OFF_PCT];
+        'sourced' => $stock !== null && $stock <= 0, 'status' => $st, 'check' => $st === 'in' && $price > 0 && $off / $price * 100 >= self::CHECK_OFF_PCT];
     }
     return ['rows' => $rows, 'pct' => $pct];
   }
@@ -41,9 +41,9 @@ class BlackFriday
   public static function summary(array $rows): array {
     $by = []; $tot = ['all' => count($rows), 'in' => 0, 'no_cost' => 0, 'at_floor' => 0, 'no_stock' => 0, 'twin' => 0, 'check' => 0, 'smoke_in' => 0, 'off_sum' => 0.0, 'price_sum' => 0.0];
     foreach ($rows as $r) {
-      $tot[$r['status']]++; $c = $r['cat']; $by[$c] = $by[$c] ?? ['cat' => $c, 'all' => 0, 'in' => 0, 'no_cost' => 0, 'at_floor' => 0, 'no_stock' => 0, 'off_sum' => 0.0, 'price_sum' => 0.0, 'max' => 0.0, 'smoke' => $r['smoke']];
+      $tot[$r['status']]++; $c = $r['cat']; $by[$c] = $by[$c] ?? ['cat' => $c, 'all' => 0, 'in' => 0, 'no_cost' => 0, 'at_floor' => 0, 'no_stock' => 0, 'off_sum' => 0.0, 'price_sum' => 0.0, 'max' => 0.0, 'smoke' => $r['smoke'], 'sourced' => 0, 'b' => [0, 0, 0, 0]];
       $by[$c]['all']++; if (isset($by[$c][$r['status']])) $by[$c][$r['status']]++;
-      if ($r['status'] === 'in') { $tot['off_sum'] += $r['off']; $tot['price_sum'] += $r['price']; $by[$c]['off_sum'] += $r['off']; $by[$c]['price_sum'] += $r['price']; $by[$c]['max'] = max($by[$c]['max'], $r['off_pct']); if ($r['check']) $tot['check']++; if ($r['smoke']) $tot['smoke_in']++; }
+      if ($r['status'] === 'in') { if ($r['sourced']) { $by[$c]['sourced']++; $tot['sourced'] = ($tot['sourced'] ?? 0) + 1; } $by[$c]['b'][$r['off_pct'] < 5 ? 0 : ($r['off_pct'] < 10 ? 1 : ($r['off_pct'] < 20 ? 2 : 3))]++; $tot['off_sum'] += $r['off']; $tot['price_sum'] += $r['price']; $by[$c]['off_sum'] += $r['off']; $by[$c]['price_sum'] += $r['price']; $by[$c]['max'] = max($by[$c]['max'], $r['off_pct']); if ($r['check']) $tot['check']++; if ($r['smoke']) $tot['smoke_in']++; }
     }
     usort($by, fn($a, $b) => $b['in'] <=> $a['in']);
     return ['tot' => $tot, 'by' => $by];

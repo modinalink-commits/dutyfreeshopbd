@@ -20,8 +20,8 @@ class BlackFridayController extends Controller
     $rows = BF::plan()['rows']; usort($rows, fn($a, $b) => [$a['status'] !== 'in', $a['cat'], $b['off_pct']] <=> [$b['status'] !== 'in', $b['cat'], $a['off_pct']]);
     $lab = ['in' => 'In the campaign', 'no_cost' => 'Left out: no purchase cost saved', 'at_floor' => 'Left out: price already at the minimum', 'no_stock' => 'Left out: out of stock', 'twin' => 'Left out: single packet'];
     return response()->streamDownload(function () use ($rows, $lab) {
-      $o = fopen('php://output', 'w'); fwrite($o, "\xEF\xBB\xBF"); fputcsv($o, ['Product ID', 'Code', 'Product', 'Category', 'Stock', 'Purchase cost', 'Price now', 'Black Friday price', 'Customer saves (Tk)', 'Customer saves (%)', 'Profit per piece (Tk)', 'Status', 'Check the cost', 'Cigarette or vape']);
-      foreach ($rows as $x) fputcsv($o, [$x['id'], $x['sku'], $x['name'], $x['cat'], $x['stock'], $x['cost'] ?: '', $x['price'], $x['bf'], $x['bf'] === null ? '' : $x['off'], $x['bf'] === null ? '' : $x['off_pct'], $x['profit'], $lab[$x['status']] ?? $x['status'], $x['check'] ? 'yes' : '', $x['smoke'] ? 'yes' : '']);
+      $o = fopen('php://output', 'w'); fwrite($o, "\xEF\xBB\xBF"); fputcsv($o, ['Product ID', 'Code', 'Product', 'Category', 'Stock', 'Purchase cost', 'Price now', 'Black Friday price', 'Customer saves (Tk)', 'Customer saves (%)', 'Profit per piece (Tk)', 'Status', 'Check the cost', 'Cigarette or vape', 'Sourced on order']);
+      foreach ($rows as $x) fputcsv($o, [$x['id'], $x['sku'], $x['name'], $x['cat'], $x['stock'], $x['cost'] ?: '', $x['price'], $x['bf'], $x['bf'] === null ? '' : $x['off'], $x['bf'] === null ? '' : $x['off_pct'], $x['profit'], $lab[$x['status']] ?? $x['status'], $x['check'] ? 'yes' : '', $x['smoke'] ? 'yes' : '', $x['sourced'] ? 'yes' : '']);
       fclose($o);
     }, 'black-friday-plan-' . now('Asia/Dhaka')->format('Y-m-d-Hi') . '.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
   }

@@ -12,9 +12,9 @@
 <div class="card"><div style="font-size:12px;color:#6B7280">Left out: out of stock</div><div style="font-size:26px;font-weight:800">{{ $n($tot['no_stock']) }}</div></div>
 </div>
 <div class="card" style="margin-bottom:12px;overflow-x:auto"><b>By category</b>
-<table style="width:100%;font-size:13px;margin-top:8px"><thead><tr><th style="text-align:left">Category</th><th>In the campaign</th><th>Average saving</th><th>Largest saving</th><th>No cost</th><th>At minimum</th><th>Out of stock</th></tr></thead><tbody>
+<table style="width:100%;font-size:13px;margin-top:8px"><thead><tr><th style="text-align:left">Category</th><th>In the campaign</th><th>Average saving</th><th>Largest saving</th><th>Under 5%</th><th>5 to 10%</th><th>10 to 20%</th><th>20% and more</th><th>Sourced on order</th><th>No cost</th><th>At minimum</th><th>Out of stock</th></tr></thead><tbody>
 @foreach($by as $c)
-<tr><td><a href="{{ $link('in', $c['cat']) }}">{{ $c['cat'] }}</a>{{ $c['smoke'] ? ' (cigarette/vape)' : '' }}</td><td style="text-align:center"><b>{{ $n($c['in']) }}</b> / {{ $n($c['all']) }}</td><td style="text-align:center">{{ $c['price_sum'] > 0 ? round($c['off_sum'] / $c['price_sum'] * 100, 1) : 0 }}%</td><td style="text-align:center">{{ $c['max'] }}%</td><td style="text-align:center">{{ $n($c['no_cost']) }}</td><td style="text-align:center">{{ $n($c['at_floor']) }}</td><td style="text-align:center">{{ $n($c['no_stock']) }}</td></tr>
+<tr><td><a href="{{ $link('in', $c['cat']) }}">{{ $c['cat'] }}</a>{{ $c['smoke'] ? ' (cigarette/vape)' : '' }}</td><td style="text-align:center"><b>{{ $n($c['in']) }}</b> / {{ $n($c['all']) }}</td><td style="text-align:center">{{ $c['price_sum'] > 0 ? round($c['off_sum'] / $c['price_sum'] * 100, 1) : 0 }}%</td><td style="text-align:center">{{ $c['max'] }}%</td><td style="text-align:center">{{ $n($c['b'][0]) }}</td><td style="text-align:center">{{ $n($c['b'][1]) }}</td><td style="text-align:center">{{ $n($c['b'][2]) }}</td><td style="text-align:center">{{ $n($c['b'][3]) }}</td><td style="text-align:center">{{ $n($c['sourced']) }}</td><td style="text-align:center">{{ $n($c['no_cost']) }}</td><td style="text-align:center">{{ $n($c['at_floor']) }}</td><td style="text-align:center">{{ $n($c['no_stock']) }}</td></tr>
 @endforeach
 </tbody></table></div>
 <div class="card" style="overflow-x:auto">
