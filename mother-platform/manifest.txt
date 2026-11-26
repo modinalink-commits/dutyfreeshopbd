@@ -1942,3 +1942,13 @@ public/bf/bf-perfume.jpg
 public/bf/bf-skincare.jpg
 public/bf/bf-sunglasses.jpg
 public/bf/bf-watches.jpg
+public/bf/kit/kit-baby-care.jpg
+public/bf/kit/kit-chocolates.jpg
+public/bf/kit/kit-daily-needs.jpg
+public/bf/kit/kit-fashion.jpg
+public/bf/kit/kit-gadgets.jpg
+public/bf/kit/kit-hair-body.jpg
+public/bf/kit/kit-perfume.jpg
+public/bf/kit/kit-skincare.jpg
+public/bf/kit/kit-sunglasses.jpg
+public/bf/kit/kit-watches.jpg
