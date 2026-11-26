@@ -70,7 +70,7 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 @media(max-width:900px){.gh-nav{background:rgba(255,255,255,.92)!important;-webkit-backdrop-filter:blur(22px);backdrop-filter:blur(22px)}}
 .gh-tg{background:rgba(255,255,255,.5)!important}
 /* panels */
-.mq-in,.shc-c,#how>div>div,#ports article,#how~section>div>div,#how~section>div[style*="border: 1px"],.card,#pd,#tcard,#tlist,.tact,.vd,.wx-c,main [style*="border:1px solid #D9E0E8"],main [style*="border: 1px solid #D9E0E8"]{background:rgba(255,255,255,.44)!important;-webkit-backdrop-filter:blur(18px) saturate(160%);backdrop-filter:blur(18px) saturate(160%);border:1px solid rgba(255,255,255,.8)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 14px 36px rgba(11,37,69,.10)!important;border-radius:18px!important}
+.mq-in,.shc-c,#how>div>div,#ports article,#how~section>div>div,#how~section>div[style*="border: 1px"],.card,#pd,#tcard,#tlist,.tact,.vd,.wx-c,main [style*="border:1px solid #D9E0E8"],main [style*="border: 1px solid #D9E0E8"]{background:linear-gradient(135deg,rgba(255,255,255,.62),rgba(255,255,255,.26) 46%,rgba(255,255,255,.44))!important;-webkit-backdrop-filter:blur(18px) saturate(160%);backdrop-filter:blur(18px) saturate(160%);border:1px solid rgba(255,255,255,.8)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 14px 36px rgba(11,37,69,.10)!important;border-radius:18px!important}
 #how~section>div[style*="border: 1px"]>div{background:none!important;border:0!important;box-shadow:none!important;-webkit-backdrop-filter:none;backdrop-filter:none}
 .shc-c:hover,#ports article:hover{background:rgba(255,255,255,.66)!important;box-shadow:inset 0 1px 0 #fff,0 22px 48px rgba(11,37,69,.16)!important}
 .shc-c>*:first-child,.pp-ph{margin:10px 10px 0;overflow:hidden;border-radius:14px}
@@ -101,6 +101,44 @@ main input:focus,main select:focus,main textarea:focus{background-color:#FFFFFF!
 .gf,footer{background:rgba(11,37,69,.86)!important;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
 .gf{margin-top:24px}
 @media(max-width:900px){.mh,.hero,.th{margin:10px 12px 0;border-radius:18px}.mh-tx{padding:20px}}
+/* ---- gloss and motion (26 Nov 2026) ---- */
+body::before{inset:-12%;animation:gdrift 46s ease-in-out infinite alternate;will-change:transform}
+@keyframes gdrift{0%{transform:translate3d(-2%,-1.5%,0) scale(1)}50%{transform:translate3d(2.5%,2%,0) scale(1.08)}100%{transform:translate3d(-1%,3%,0) scale(1.04)}}
+@keyframes gup{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+@keyframes gsweep{from{transform:translateX(-130%) skewX(-18deg)}to{transform:translateX(330%) skewX(-18deg)}}
+@keyframes gglow{0%,100%{box-shadow:0 8px 22px rgba(249,85,5,.28),inset 0 1px 0 rgba(255,255,255,.45)}50%{box-shadow:0 12px 34px rgba(249,85,5,.46),inset 0 1px 0 rgba(255,255,255,.45)}}
+/* glossy buttons */
+.mh-cta a.c1,.shc-b,.mq .go,.pq,#more,.b1,.gh-btn,main button[type=submit],.tf button,.pnav a.on{position:relative;overflow:hidden;background-image:linear-gradient(180deg,rgba(255,255,255,.34),rgba(255,255,255,0) 52%,rgba(0,0,0,.10))!important;box-shadow:0 8px 20px rgba(11,37,69,.22),inset 0 1px 0 rgba(255,255,255,.45);transition:transform .2s cubic-bezier(.2,.7,.2,1),box-shadow .2s ease,filter .2s ease}
+.mh-cta a.c1,.pq,.b1,main button[type=submit],.tf button{box-shadow:0 8px 22px rgba(249,85,5,.30),inset 0 1px 0 rgba(255,255,255,.45)}
+.mh-cta a.c1{animation:gglow 3.6s ease-in-out infinite}
+.mh-cta a.c1:hover,.shc-c:hover .shc-b,.mq .go:hover,.pq:hover,#more:hover,.b1:hover,.gh-btn:hover,main button[type=submit]:hover,.tf button:hover{transform:translateY(-2px);filter:brightness(1.06)}
+.mh-cta a.c1:active,.mq .go:active,.pq:active,.b1:active,main button[type=submit]:active{transform:translateY(0) scale(.98)}
+.mh-cta a.c1::after,.shc-b::after,.mq .go::after,.pq::after,.b1::after,.gh-btn::after,main button[type=submit]::after,.tf button::after{content:"";position:absolute;top:0;bottom:0;left:0;width:38%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);transform:translateX(-130%) skewX(-18deg);pointer-events:none}
+.mh-cta a.c1:hover::after,.shc-c:hover .shc-b::after,.mq .go:hover::after,.pq:hover::after,.b1:hover::after,.gh-btn:hover::after,main button[type=submit]:hover::after,.tf button:hover::after{animation:gsweep .8s ease}
+/* light sweep across cards */
+.shc-c,#ports article,.pc,.mq-in,.wx-c{position:relative;transition:transform .35s cubic-bezier(.2,.7,.2,1),box-shadow .35s ease,background .35s ease}
+.shc-c::after,#ports article::after,.pc::after{content:"";position:absolute;top:0;bottom:0;left:0;width:45%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.42),transparent);transform:translateX(-130%) skewX(-18deg);pointer-events:none;z-index:3}
+.shc-c:hover::after,#ports article:hover::after,.pc:hover::after{animation:gsweep 1s ease}
+.shc-c:hover,#ports article:hover,.pc:hover{transform:translateY(-6px)}
+.shc-c img,.pi img{transition:transform .7s cubic-bezier(.2,.7,.2,1)}
+.shc-c:hover img{transform:scale(1.06)}.pc:hover .pi img{transform:scale(1.04)}
+/* one soft sweep over the hero panel and header on load */
+.mh-tx{position:relative;overflow:hidden}
+.mh-tx::after{content:"";position:absolute;top:0;bottom:0;left:0;width:30%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.22),transparent);transform:translateX(-130%) skewX(-18deg);animation:gsweep 2.2s ease 1s 1 both;pointer-events:none}
+.gh{animation:ghin .7s cubic-bezier(.2,.7,.2,1) both}@keyframes ghin{from{transform:translateY(-100%)}to{transform:none}}
+.gh-nav a{transition:color .2s ease,background .2s ease}
+.gh-logo img{transition:transform .35s cubic-bezier(.2,.7,.2,1)}.gh-logo:hover img{transform:scale(1.04)}
+/* entrance on inner pages and product grid */
+body>main>*{animation:gup .7s cubic-bezier(.2,.7,.2,1) both}
+body>main>*:nth-child(2){animation-delay:.07s}body>main>*:nth-child(3){animation-delay:.14s}body>main>*:nth-child(4){animation-delay:.21s}body>main>*:nth-child(n+5){animation-delay:.28s}
+.hero,.th{animation:gup .7s cubic-bezier(.2,.7,.2,1) both}
+.pc{animation:gup .55s cubic-bezier(.2,.7,.2,1) both}
+.pc:nth-child(4n+2){animation-delay:.05s}.pc:nth-child(4n+3){animation-delay:.1s}.pc:nth-child(4n+4){animation-delay:.15s}
+.shc-g .shc-c:nth-child(2),#ports article:nth-child(2){transition-delay:.06s}.shc-g .shc-c:nth-child(3),#ports article:nth-child(3){transition-delay:.12s}
+.shc-g .shc-c:hover,#ports article:hover{transition-delay:0s}
+main input,main select,main textarea{transition:background-color .2s ease,box-shadow .2s ease}
+@media(hover:none){.shc-c:hover,#ports article:hover,.pc:hover{transform:none}}
+@media(prefers-reduced-motion:reduce){body::before,.mh-cta a.c1,.gh,.pc,.hero,.th,body>main>*,.mh-tx::after{animation:none!important}.shc-c::after,#ports article::after,.pc::after,.mh-cta a.c1::after,.shc-b::after,.pq::after,.b1::after{display:none}.shc-c,.pc,#ports article{transition:none}.shc-c:hover,#ports article:hover,.pc:hover{transform:none}}
 @media print{body::before{display:none}html{background:#fff}.card,#tcard,#tlist,.vd{background:#fff!important;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none!important}}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.gh{background:rgba(255,255,255,.94)!important}.mq-in,.shc-c,.card,#pd,#tcard,#tlist,.tact,.vd,#ports article{background:rgba(255,255,255,.86)!important}}
 </style>
