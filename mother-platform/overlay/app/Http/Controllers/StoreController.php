@@ -461,6 +461,23 @@ class StoreController extends Controller {
     return response()->view('store.black_friday', $this->base(['items' => $items, 'chips' => $chips, 'cat' => $cat, 'over' => $over, 'run' => $run, 'from' => $from, 'to' => $to, 'last' => $run && $now->isSameDay($to), 'total' => array_sum($cats),
       'title' => $title, 'desc' => $desc, 'canon' => url('/black-friday'), 'noindex' => !$idx, 'robots' => $idx ? 'index,follow,max-image-preview:large' : 'noindex,follow', 'ogimg' => url('/black-friday-og.jpg'), 'ogtitle' => $title, 'ogdesc' => $desc]))->header('Cache-Control', 'public, max-age=60');
   }
+  /** Owner preview before the start (admin only, nothing stored): the offer page as it will look, with the Black Friday prices worked out on the spot. */
+  public function blackFridayPreview(Request $r) {
+    if (!\App\Support\ProfitFloor::admin()) abort(404);
+    $BF = \App\Support\BlackFriday::class; [$from, $to] = $BF::window(); $per = 48; $smokeOn = $r->query('smoke') === '1';
+    $rows = array_values(array_filter($BF::eligible(), fn($x) => $smokeOn ? $x['smoke'] : !$x['smoke']));
+    $cats = []; foreach ($rows as $x) $cats[$x['cat']] = ($cats[$x['cat']] ?? 0) + 1; arsort($cats); $names = array_keys($cats);
+    $chips = []; foreach ($names as $i => $n) $chips[] = ['id' => $i + 1, 'name' => $n, 'n' => $cats[$n]];
+    $cat = (int)$r->query('cat'); if ($cat < 1 || $cat > count($names)) $cat = 0; if ($cat) $rows = array_values(array_filter($rows, fn($x) => $x['cat'] === $names[$cat - 1]));
+    usort($rows, fn($a, $b) => [$b['off_pct'], $a['id']] <=> [$a['off_pct'], $b['id']]);
+    $page = max(1, (int)$r->query('page', 1)); $slice = array_slice($rows, ($page - 1) * $per, $per); $bf = []; foreach ($slice as $x) $bf[$x['id']] = $x;
+    $prods = DB::table('products')->whereIn('id', array_keys($bf) ?: [0])->get()->keyBy('id'); $list = [];
+    foreach ($slice as $x) { $p = $prods[$x['id']] ?? null; if (!$p) continue; $p->compare_price = $p->price; $p->price = $x['bf']; $list[] = $p; }
+    $BF::$preview = array_flip(array_keys($bf)); $BF::$previewOn = true;
+    $items = new \Illuminate\Pagination\LengthAwarePaginator($list, count($rows), $per, $page, ['path' => url('/black-friday-preview'), 'query' => $r->query()]);
+    return response()->view('store.black_friday', $this->base(['items' => $items, 'chips' => $chips, 'cat' => $cat, 'over' => false, 'run' => true, 'from' => $from, 'to' => $to, 'last' => $r->query('last') === '1', 'total' => array_sum($cats), 'pv' => true, 'pvSmoke' => $smokeOn,
+      'title' => 'Preview: Black Friday on DutyFree Shop', 'desc' => '', 'canon' => url('/black-friday'), 'noindex' => true, 'robots' => 'noindex,nofollow']))->header('X-Robots-Tag', 'noindex, nofollow')->header('Cache-Control', 'no-store');
+  }
   public function brand(Request $r, string $slug) {
     $b = DB::table('brands')->where('slug', $slug)->where('active', true)->first(); if (!$b) return $this->notFound();
     $s = self::set(); $per = max(12, (int)$s['per_page']);

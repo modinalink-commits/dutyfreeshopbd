@@ -16,6 +16,10 @@
 @media(max-width:900px){.bfh{grid-template-columns:1fr;padding:18px;gap:14px}.bfh h1{font-size:22px}.bfg .gr{grid-template-columns:repeat(2,minmax(0,1fr))}.bfc div{min-width:50px}.bfc b{font-size:19px}}
 </style>
 <div class="w bfw">
+<?php $pv = !empty($pv); $bfu = $pv ? '/black-friday-preview' : '/black-friday'; $bfq = ($pv && !empty($pvSmoke)) ? 'smoke=1&' : ''; ?>
+@if($pv)
+<div style="margin:0 0 12px;padding:10px 14px;border:1px dashed #F95505;border-radius:10px;background:#FFF7F2;font-size:13.5px;color:#7C2D12"><b>Preview, only you can see this.</b> Prices here are worked out for the preview; nothing on the site has changed yet. The real page is /black-friday. <a href="/black-friday-preview" style="font-weight:700;color:#C2410C">Shared page view</a> · <a href="/black-friday-preview?smoke=1" style="font-weight:700;color:#C2410C">Cigarette products (site only, never on the shared page)</a> · <a href="/black-friday-preview?last=1" style="font-weight:700;color:#C2410C">Last day view</a></div>
+@endif
 <div class="bfh">
 <div><span class="bfd {{ $last ? 'l' : '' }}">{{ $over ? 'Ended' : ($last ? 'Cyber Monday · Last day' : $from->format('j') . ' to ' . $to->format('j F Y')) }}</span>
 <h1>Black Friday on DutyFree Shop</h1>
@@ -28,9 +32,9 @@
 </div>
 @if($run)
 @if(count($chips) > 1)
-<nav class="bfk" aria-label="Deal categories"><a href="/black-friday" class="{{ $cat === 0 ? 'on' : '' }}">All deals<small>{{ number_format($total) }}</small></a>
+<nav class="bfk" aria-label="Deal categories"><a href="{{ $bfu }}{{ $bfq ? '?' . rtrim($bfq, '&') : '' }}" class="{{ $cat === 0 ? 'on' : '' }}">All deals<small>{{ number_format($total) }}</small></a>
 @foreach($chips as $c)
-<a href="/black-friday?cat={{ $c['id'] }}" class="{{ $cat === $c['id'] ? 'on' : '' }}">{{ $c['name'] }}<small>{{ number_format($c['n']) }}</small></a>
+<a href="{{ $bfu }}?{{ $bfq }}cat={{ $c['id'] }}" class="{{ $cat === $c['id'] ? 'on' : '' }}">{{ $c['name'] }}<small>{{ number_format($c['n']) }}</small></a>
 @endforeach
 </nav>
 @endif

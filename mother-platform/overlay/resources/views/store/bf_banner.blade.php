@@ -1,4 +1,4 @@
-<?php $__bfRun = false; try { $__bfRun = \App\Support\BlackFriday::running() && count(\App\Support\BlackFriday::ids()) > 0; } catch (\Throwable $e) {} $__bfHome = request()->path() === '/'; $__bfSkip = request()->is('black-friday') || request()->is('checkout*') || request()->is('order/*') || request()->is('invoice*'); ?>
+<?php $__bfRun = false; try { $__bfPv = \App\Support\BlackFriday::$previewOn; $__bfRun = $__bfPv || (\App\Support\BlackFriday::running() && count(\App\Support\BlackFriday::ids()) > 0); } catch (\Throwable $e) { $__bfPv = false; } $__bfHome = request()->path() === '/' || $__bfPv; $__bfSkip = request()->is('black-friday') || request()->is('checkout*') || request()->is('order/*') || request()->is('invoice*'); ?>
 @if($__bfRun && !$__bfSkip)
 <?php [$__bfA, $__bfB] = \App\Support\BlackFriday::window(); $__bfLast = now('Asia/Dhaka')->isSameDay($__bfB); ?>
 <a class="bfbn {{ $__bfHome ? 'big' : '' }}" href="/black-friday" aria-label="Black Friday on DutyFree Shop: see the offers">

@@ -875,6 +875,7 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestF
   Route::post('/tryon/save', [\App\Http\Controllers\TryOnController::class,'save'])->middleware('throttle:8,1'); Route::post('/tryon/forget', [\App\Http\Controllers\TryOnController::class,'forget'])->middleware('throttle:20,1');
   Route::get('/p/{key}', [\App\Http\Controllers\StoreController::class,'product'])->where('key','[A-Za-z0-9\-]+');
   Route::get('/black-friday', [\App\Http\Controllers\StoreController::class,'blackFriday']);
+  Route::get('/black-friday-preview', [\App\Http\Controllers\StoreController::class,'blackFridayPreview']);
   Route::get('/brand/{slug}', [\App\Http\Controllers\StoreController::class,'brand'])->where('slug','[a-z0-9\-]+');
   Route::get('/{slug}', [\App\Http\Controllers\StoreController::class,'category'])->where('slug','[a-z0-9\-]+');
   Route::get('/{cat}/{sub}', [\App\Http\Controllers\StoreController::class,'categorySub'])->where(['cat'=>'[a-z0-9\-]+','sub'=>'[a-z0-9\-]+']);

@@ -26,7 +26,9 @@ class BlackFriday
     static $m = null; if ($m !== null) return $m;
     try { return $m = \Illuminate\Support\Facades\Cache::remember('bf.ids', 60, fn() => self::ready() ? array_flip(array_map('intval', DB::table('black_friday_items')->where('status', 'applied')->pluck('product_id')->all())) : []); } catch (\Throwable $e) { return $m = []; }
   }
-  public static function has($pid): bool { return isset(self::ids()[(int)$pid]); }
+  /** Preview for the owner before the start: these product ids are shown with the badge on that one page only. Nothing is stored. */
+  public static array $preview = []; public static bool $previewOn = false;
+  public static function has($pid): bool { return isset(self::ids()[(int)$pid]) || isset(self::$preview[(int)$pid]); }
   private static function flush(): void { try { \Illuminate\Support\Facades\Cache::forget('bf.ids'); BundlePricing::flush(); \App\Http\Controllers\StoreController::bust(); foreach (['store.home4', 'store.home5', 'store.home6', 'store.home8', 'store.todaybest6'] as $k) \Illuminate\Support\Facades\Cache::forget($k); } catch (\Throwable $e) {} }
 
   /** The products that take part (owner, 26 Nov 2026 21:23: every product, also the ones whose saving looks very large; cigarettes too, on the site only).
