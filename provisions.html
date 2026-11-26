@@ -38,6 +38,16 @@ h1{margin:0;font-size:34px;line-height:1.15;font-weight:600;text-wrap:balance}.l
 .pvc button[aria-pressed=true]{background:#0B2545;border-color:#0B2545;color:#fff}.pvc button[aria-pressed=true] span{color:#C7D2E3}
 .pvc button.sel{border-style:dashed;border-color:#C2410C;color:#9A3412}.pvc button.sel[aria-pressed=true]{background:#C2410C;border-color:#C2410C;border-style:solid;color:#fff}
 .pvc button:focus-visible,.pva a:focus-visible{outline:3px solid #F95505;outline-offset:2px}
+.pvx-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+.pvx{min-width:0;display:flex;flex-direction:column;overflow:hidden;text-decoration:none;color:#0C161F;background:rgba(255,255,255,.62);border:1px solid rgba(255,255,255,.85);border-radius:16px;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 8px 22px rgba(11,37,69,.08);transition:transform .3s cubic-bezier(.2,.7,.2,1),box-shadow .3s ease}
+.pvx:hover{transform:translateY(-3px);box-shadow:0 16px 32px rgba(11,37,69,.14)}.pvx:focus-visible{outline:3px solid #F95505;outline-offset:2px}
+.pvx i{display:block;aspect-ratio:4/3;margin:8px 8px 0;border-radius:12px;overflow:hidden;background:#fff}.pvx img{width:100%;height:100%;object-fit:cover;display:block}
+.pvx span{display:flex;flex-direction:column;gap:4px;padding:12px 14px 14px}.pvx b{font-size:16px;font-weight:600;line-height:1.3}.pvx small{font-size:12.5px;line-height:1.45;color:#475569}
+.pvx em{font-style:normal;font-size:12px;font-weight:600;color:#C2410C}
+.pvx.sel{border:1px dashed #C2410C}
+.pvk{display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap}.pvk h2{margin:0;font-size:22px;font-weight:600}
+.pvk button{min-height:44px;padding:0 16px;border-radius:999px;border:1px solid #C3CDD9;background:rgba(255,255,255,.7);color:#0B2545;font:600 13.5px Inter,system-ui,sans-serif;cursor:pointer}
+@media(prefers-reduced-motion:reduce){.pvx{transition:none}.pvx:hover{transform:none}}
 .pvs{font-size:13px;color:#475569}.pvs b{color:#0C161F}
 .pvg{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}
 .mvc{min-width:0;display:flex;flex-direction:column;overflow:hidden;background:#fff;border:1px solid #D9E0E8;border-radius:14px}
@@ -57,9 +67,9 @@ h1{margin:0;font-size:34px;line-height:1.15;font-weight:600;text-wrap:balance}.l
 .pve{padding:28px 16px;text-align:center;color:#475569;font-size:15px;line-height:1.6}
 .sk{height:380px;border-radius:14px;background:linear-gradient(100deg,rgba(255,255,255,.35) 40%,rgba(255,255,255,.7) 50%,rgba(255,255,255,.35) 60%);background-size:200% 100%;animation:pvk 1.4s linear infinite}@keyframes pvk{to{background-position:-200% 0}}
 footer{background:#0B2545;color:#D6DEEA;font-size:13px;text-align:center;padding:24px 16px}
-@media(max-width:640px){h1{font-size:27px}.pvq{grid-template-columns:1fr}.pvc{display:none}.pvg{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.pvb{padding:10px}.pvb h2{font-size:15px}.pvb dl{grid-template-columns:1fr;gap:0}.pvb dt{font-size:11.5px;margin-top:4px}}
-@media(min-width:641px){.pvq .sc{display:none}.pvq{grid-template-columns:1fr}}
-@media(max-width:340px){.pvg{grid-template-columns:1fr}}
+@media(max-width:640px){h1{font-size:27px}.pvq{grid-template-columns:1fr}.pvx-g{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.pvx span{padding:10px}.pvx b{font-size:14.5px}.pvk h2{font-size:19px}.pvg{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.pvb{padding:10px}.pvb h2{font-size:15px}.pvb dl{grid-template-columns:1fr;gap:0}.pvb dt{font-size:11.5px;margin-top:4px}}
+.pvq{grid-template-columns:1fr}
+@media(max-width:340px){.pvg,.pvx-g{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.sk{animation:none}}</style>
 <style>html{scroll-behavior:smooth;scrollbar-gutter:stable;scroll-padding-top:84px}@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}.gh{position:sticky;top:0;z-index:60;background:#FFFFFF;border-bottom:1px solid #D9E0E8;font-family:Inter,system-ui,sans-serif}.gh-in{max-width:1200px;margin:0 auto;padding:0 24px;height:68px;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:20px}.gh-logo{display:flex;align-items:center;flex:none}.gh-logo img{display:block;height:44px;width:163px}.gh-nav{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:500;min-width:0;overflow-x:auto;scrollbar-width:none;white-space:nowrap}.gh-nav::-webkit-scrollbar{display:none}.gh-nav a{text-decoration:none;color:#0B2545;padding:10px 10px;border-radius:8px;flex:none}.gh-nav a:hover{color:#F95505}.gh-nav a.on{color:#F95505;font-weight:600}.gh-nav a.gh-btn{background:#0B2545;color:#FFFFFF;font-weight:600;padding:10px 16px;margin-left:6px}.gh-nav a.gh-btn:hover,.gh-nav a.gh-btn.on{background:#12335E;color:#FFFFFF}.gf{background:#0B2545;color:#D6DEEA;font:400 13px/1.7 Inter,system-ui,sans-serif}.gf-in{max-width:1200px;margin:0 auto;padding:28px 24px;display:flex;flex-wrap:wrap;gap:12px 32px;justify-content:space-between;align-items:center}.gf a{color:#D6DEEA;text-decoration:none;margin-right:18px}.gf a:hover{color:#FFFFFF}.gf nav{display:flex;flex-wrap:wrap;gap:4px 0}.gh-tg{display:none}@media(max-width:820px){.gh-in{height:60px;padding:0 16px;position:relative}.gh-logo img{height:38px;width:140px}.gh-tg{display:inline-flex;align-items:center;gap:8px;height:42px;min-height:0;padding:0 14px;border:1px solid #C3CDD9;border-radius:8px;background:#FFFFFF;color:#0B2545;font:600 14px Inter,system-ui,sans-serif;cursor:pointer}.gh-tg i{display:block;width:16px;height:2px;background:#0B2545;box-shadow:0 5px 0 #0B2545,0 -5px 0 #0B2545}.gh-nav{display:none;position:absolute;left:0;right:0;top:60px;flex-direction:column;align-items:stretch;gap:0;background:#FFFFFF;border-bottom:1px solid #D9E0E8;box-shadow:0 14px 28px rgba(12,22,31,.14);padding:8px 16px 14px;white-space:normal;overflow:visible}.gh.open .gh-nav{display:flex}.gh-nav a{padding:13px 4px;border-radius:0;border-bottom:1px solid #EEF1F5;font-size:15px}.gh-nav a.gh-btn{margin:12px 0 0;border-radius:8px;text-align:center;border-bottom:0}html{scroll-padding-top:76px}.gf-in{padding:24px 16px}}@media print{.gh,.gf{display:none!important}}</style>
 <style id="glass">
@@ -185,14 +195,14 @@ main input,main select,main textarea{transition:background-color .2s ease,box-sh
 <div class="strip">Now serving vessels at Chattogram, Mongla and Payra · Send your requisition for a USD quotation</div>
 <header class="gh"><div class="gh-in"><a class="gh-logo" href="/" aria-label="DutyFree BD Marine Supply home"><img src="/logo-header.png" alt="DutyFree BD Marine Supply" width="163" height="44"></a><button type="button" class="gh-tg" aria-expanded="false" aria-controls="gh-nav"><i></i>Menu</button><nav class="gh-nav" id="gh-nav" aria-label="Main"><a href="/">Home</a><a href="/products">Products</a><a href="/track">Live Ship Map</a><a href="/#ports">Ports & Weather</a><a href="/request-access">Request Access</a><a href="/login" class="gh-btn">Vessel Login</a></nav></div></header>
 <main>
-<h1>Bangladesh Ship Provisions</h1>
+<h1 id="pv-top">Bangladesh Ship Provisions</h1>
 <p class="lead">Provisions for vessels at Chattogram, Mongla and Payra. Each product has a code, a pack size and an order unit. There is no price list: add the products to a requisition with your quantities, vessel, IMO, port, ETA and delivery date, and our marine desk answers with a quotation in USD.</p>
 <div id="pv-tools" class="pvt" hidden>
 <form class="card pvq" id="pv-f" autocomplete="off" role="search">
 <label>Search by product code or name<input type="search" id="pv-q" maxlength="60" placeholder="e.g. MDP-DP-001 or basmati"></label>
-<label class="sc">Category<select id="pv-sec"></select></label>
 </form>
-<div class="pvc" id="pv-c" role="group" aria-label="Filter by category"></div>
+<div class="pvk" id="pv-k" hidden><button type="button" id="pv-back">&larr; All sections</button><h2 id="pv-kn"></h2></div>
+<div class="pvc" id="pv-c" role="group" aria-label="Filter by subcategory" hidden></div>
 </div>
 <div class="pvs" id="pv-s" aria-live="polite"></div>
 <div class="pvg" id="pv-g"></div>

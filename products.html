@@ -172,13 +172,27 @@ main input,main select,main textarea{transition:background-color .2s ease,box-sh
 @media print{body::before{display:none}html{background:#fff}.card,#tcard,#tlist,.vd{background:#fff!important;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none!important}}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.gh{background:rgba(255,255,255,.94)!important}.mq-in,.shc-c,.card,#pd,#tcard,#tlist,.tact,.vd,#ports article{background:rgba(255,255,255,.86)!important}}
 </style>
+<style>.pvx-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+.pvx{min-width:0;display:flex;flex-direction:column;overflow:hidden;text-decoration:none;color:#0C161F;background:rgba(255,255,255,.62);border:1px solid rgba(255,255,255,.85);border-radius:16px;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 8px 22px rgba(11,37,69,.08);transition:transform .3s cubic-bezier(.2,.7,.2,1),box-shadow .3s ease}
+.pvx:hover{transform:translateY(-3px);box-shadow:0 16px 32px rgba(11,37,69,.14)}.pvx:focus-visible{outline:3px solid #F95505;outline-offset:2px}
+.pvx i{display:block;aspect-ratio:4/3;margin:8px 8px 0;border-radius:12px;overflow:hidden;background:#fff}.pvx img{width:100%;height:100%;object-fit:cover;display:block}
+.pvx span{display:flex;flex-direction:column;gap:4px;padding:12px 14px 14px}.pvx b{font-size:16px;font-weight:600;line-height:1.3}.pvx small{font-size:12.5px;line-height:1.45;color:#475569}
+.pvx em{font-style:normal;font-size:12px;font-weight:600;color:#C2410C}
+.pvx.sel{border:1px dashed #C2410C}
+.pvh{display:flex;flex-direction:column;gap:14px}.pvh h2,.pvh-s h2{margin:0;font-size:24px;font-weight:600}.pvh p,.pvh-s p{margin:4px 0 0;font-size:15px;line-height:1.55;color:#475569;max-width:70ch}
+.pvh-a{align-self:flex-start;display:inline-flex;align-items:center;min-height:44px;padding:0 18px;border-radius:999px;background:#0B2545;color:#fff;font-size:14px;font-weight:600;text-decoration:none}
+.pvh-s{margin-top:18px;padding-top:22px;border-top:1px solid rgba(11,37,69,.14)}
+@media(max-width:640px){.pvx-g{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.pvx span{padding:10px}.pvx b{font-size:14.5px}.pvh h2,.pvh-s h2{font-size:20px}}
+@media(max-width:340px){.pvx-g{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.pvx{transition:none}.pvx:hover{transform:none}}</style>
 </head>
 <body>
 <div class="strip">Now serving vessels at Chattogram, Mongla and Payra · Send your requisition for a USD quotation</div>
 <header class="gh"><div class="gh-in"><a class="gh-logo" href="/" aria-label="DutyFree BD Marine Supply home"><img src="/logo-header.png" alt="DutyFree BD Marine Supply" width="163" height="44"></a><button type="button" class="gh-tg" aria-expanded="false" aria-controls="gh-nav"><i></i>Menu</button><nav class="gh-nav" id="gh-nav" aria-label="Main"><a href="/">Home</a><a href="/products" class="on">Products</a><a href="/track">Live Ship Map</a><a href="/#ports">Ports & Weather</a><a href="/request-access">Request Access</a><a href="/login" class="gh-btn">Vessel Login</a></nav></div></header>
 <main>
-<a class="mv-link" href="/provisions.html"><b>Bangladesh Ship Provisions</b><span>160 provisions with product codes, pack sizes and order units. Request a quotation in USD</span><i aria-hidden="true">&rarr;</i></a>
 <div><h1>Products</h1><span class="muted">Ship stores and crew supplies. Choose your port of call to see what can be supplied there. Prices in USD. Bonded stores are shown to signed-in, verified accounts.</span></div>
+<section class="pvh" id="pvh" hidden aria-labelledby="pvh-h"><div><h2 id="pvh-h">Ship Provisions</h2><p>Provisions for your vessel by section: product code, pack size and order unit. No price list: our marine desk quotes your requisition in USD.</p></div><div class="pvx-g" id="pvh-g"></div><a class="pvh-a" href="/provisions.html">Open the provisions catalogue</a></section>
+<div class="pvh-s" id="store"><h2>DutyFreeBD Catalogue</h2><p>Store products with list prices in USD: crew shop, cabin and galley items, and packaged food and drinks.</p></div>
 <div class="tools"><label style="flex:1 1 260px;min-width:0"><span class="hp" style="position:absolute;left:-9999px">Search products</span><input id="q" type="search" placeholder="Search by product name, brand or code" style="width:100%;box-sizing:border-box"></label>
 <label><span style="position:absolute;left:-9999px">Port of call</span><select id="port"><option value="">All ports</option><option value="chattogram">Chattogram</option><option value="mongla">Mongla</option><option value="payra">Payra</option></select></label>
 <label><span style="position:absolute;left:-9999px">Category</span><select id="cat"><option value="0">All categories</option></select></label>
@@ -189,6 +203,7 @@ main input,main select,main textarea{transition:background-color .2s ease,box-sh
 <div class="card" style="flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:space-between;padding:20px"><span class="muted" style="flex:1 1 380px;font-size:14px">Prices are indicative and confirmed on your quotation. Send your full requisition list and our marine desk will quote what can be supplied at your port.</span><a href="/request-access" style="text-decoration:none;background:#0B2545;color:#fff;padding:12px 18px;border-radius:8px;font-weight:600;font-size:14px">Request access to order</a></div>
 </main>
 <footer class="gf"><div class="gf-in"><span>DutyFree BD Marine Supply · a DutyFreeBD service<br><span data-marine-contact>Ship supply at Chattogram, Mongla and Payra</span></span><nav aria-label="Footer"><a href="/products">Products</a><a href="/provisions.html">Ship Provisions</a><a href="/track">Live Ship Map</a><a href="/port-movements.html">Arrivals &amp; Departures</a><a href="/ship-supply-chattogram">Chattogram</a><a href="/ship-supply-mongla">Mongla</a><a href="/ship-supply-payra">Payra</a><a href="/request-access">Request Access</a><a href="/terms.html">Terms</a><a href="/delivery.html">Delivery</a><a href="/returns.html">Returns</a></nav></div></footer>
+<script src="/provtiles.js"></script>
 <script src="/products.js"></script>
 <script src="/site.js"></script>
 <script>document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('.gh-tg'),h=document.querySelector('.gh');if(!h)return;if(b){var o=h.classList.toggle('open');b.setAttribute('aria-expanded',o)}else if(!e.target.closest('.gh-nav')||e.target.closest('.gh-nav a')){h.classList.remove('open');var t=h.querySelector('.gh-tg');if(t)t.setAttribute('aria-expanded','false')}});</script>

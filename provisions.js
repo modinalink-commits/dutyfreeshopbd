@@ -1,7 +1,7 @@
 (function(){
 var API='https://dutyfreebd.com/marine-api/rfq',PORTAL='https://dutyfreebd.com/marine-portal/orders/new';
 var KEY=(/[?&]preview=([0-9a-f]{32})(?:&|$)/.exec(location.search)||[])[1]||'';
-var S={items:[],sections:[],sec:'',q:''};
+var S={items:[],sections:[],sec:'',sub:'',q:''};
 function $(i){return document.getElementById(i)}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function okImg(u){return /^https:\/\/dutyfreebd\.com\/marine-api\/rfq-image\/[A-Z0-9-]+\?[a-z0-9=&]+$/.test(u||'')}
@@ -14,27 +14,34 @@ function card(x){
  '<div class="av'+(av?' ok':'')+'">'+(av?'Available at '+av:'Price and availability confirmed in your USD quotation')+'</div>'+
  '<div class="pva">'+btn+'</div></div></article>';
 }
-function match(x){if(S.sec&&x.section!==S.sec)return false;if(!S.q)return true;var q=S.q.toLowerCase();return x.sku.toLowerCase().indexOf(q)>=0||x.name.toLowerCase().indexOf(q)>=0||(x.brand||'').toLowerCase().indexOf(q)>=0}
-function draw(){var o=S.items.filter(match),g=$('pv-g');
- g.innerHTML=o.map(card).join('')||'<div class="pve card" style="grid-column:1/-1">No product matches'+(S.q?' "'+esc(S.q)+'"':'')+(S.sec?' in this category':'')+'. Search by product code (for example MDP-DP-001) or by name.</div>';
- var sn=S.sec?(S.sections.filter(function(s){return s.slug===S.sec})[0]||{}).name:'All categories';
- $('pv-s').innerHTML='<b>'+o.length+'</b> product'+(o.length===1?'':'s')+' · '+esc(sn)+(S.q?' · search "'+esc(S.q)+'"':'')+' · all prices by USD quotation';
- [].forEach.call(document.querySelectorAll('#pv-c button'),function(b){b.setAttribute('aria-pressed',b.getAttribute('data-s')===S.sec?'true':'false')});$('pv-sec').value=S.sec}
-function setSec(s){S.sec=s;try{history.replaceState(null,'',location.pathname+location.search+(s?'#'+s:''))}catch(e){}draw()}
-function chips(){var h='<button type="button" data-s="" aria-pressed="true">All<span>'+S.items.length+'</span></button>',o='<option value="">All categories ('+S.items.length+')</option>';
- S.sections.forEach(function(s){var sel=s.kind==='selection';h+='<button type="button" data-s="'+esc(s.slug)+'" aria-pressed="false"'+(sel?' class="sel" title="A selection from Chattogram suppliers"':'')+'>'+esc(s.name)+'<span>'+s.count+'</span></button>';o+='<option value="'+esc(s.slug)+'">'+esc(s.name)+' ('+s.count+')</option>'});
- $('pv-c').innerHTML=h;$('pv-sec').innerHTML=o}
-function empty(d){$('pv-tools').hidden=true;$('pv-s').textContent='';
+/* step 1: the sections as tiles; step 2: a section with its subcategories; step 3: the products */
+function tile(s){var f=S.items.filter(function(x){return x.section===s.slug})[0],sel=s.kind==='selection';
+ return '<a class="pvx'+(sel?' sel':'')+'" href="#'+esc(s.slug)+'" data-s="'+esc(s.slug)+'"><i>'+(f&&okImg(f.img)?'<img src="'+esc(f.img)+'" alt="" loading="lazy" width="300" height="225">':'')+'</i><span>'+(sel?'<em>Selection from Chattogram suppliers</em>':'')+'<b>'+esc(s.name)+'</b><small>'+esc((s.subs||[]).join(' · '))+'</small><small>'+s.count+' product'+(s.count===1?'':'s')+'</small></span></a>'}
+function secOf(slug){return S.sections.filter(function(s){return s.slug===slug})[0]}
+function match(x){if(S.sec&&x.section!==S.sec)return false;if(S.sec&&S.sub&&x.sub!==S.sub)return false;if(!S.q)return true;var q=S.q.toLowerCase();return x.sku.toLowerCase().indexOf(q)>=0||x.name.toLowerCase().indexOf(q)>=0||(x.brand||'').toLowerCase().indexOf(q)>=0}
+function draw(){var g=$('pv-g'),k=$('pv-k'),c=$('pv-c'),sec=S.sec?secOf(S.sec):null;
+ k.hidden=!sec;c.hidden=!sec;
+ if(!sec&&!S.q){g.className='pvx-g';g.innerHTML=S.sections.map(tile).join('');$('pv-s').innerHTML='<b>'+S.sections.length+'</b> sections · <b>'+S.items.length+'</b> products · choose a section, or search by code or name';return}
+ if(sec){$('pv-kn').textContent=sec.name;var n={};S.items.forEach(function(x){if(x.section===sec.slug)n[x.sub]=(n[x.sub]||0)+1});
+  c.innerHTML='<button type="button" data-u="" aria-pressed="'+(S.sub===''?'true':'false')+'">All<span>'+sec.count+'</span></button>'+(sec.subs||[]).map(function(u){return '<button type="button" data-u="'+esc(u)+'" aria-pressed="'+(S.sub===u?'true':'false')+'">'+esc(u)+'<span>'+(n[u]||0)+'</span></button>'}).join('')}
+ var o=S.items.filter(match);g.className='pvg';
+ g.innerHTML=o.map(card).join('')||'<div class="pve card" style="grid-column:1/-1">No product matches'+(S.q?' "'+esc(S.q)+'"':'')+(sec?' in this section':'')+'. Search by product code (for example MDP-DP-001) or by name.</div>';
+ $('pv-s').innerHTML='<b>'+o.length+'</b> product'+(o.length===1?'':'s')+' · '+esc(sec?sec.name+(S.sub?' · '+S.sub:''):'All sections')+(S.q?' · search "'+esc(S.q)+'"':'')+' · all prices by USD quotation'}
+function setSec(s,keep){S.sec=secOf(s)?s:'';S.sub='';if(!keep){try{history.pushState(null,'',location.pathname+location.search+(S.sec?'#'+S.sec:''))}catch(e){}}draw();if(!keep){var t=$('pv-top');if(t&&t.scrollIntoView)t.scrollIntoView({block:'start'})}}
+function empty(){$('pv-tools').hidden=true;$('pv-s').textContent='';$('pv-g').className='pvg';
  $('pv-g').innerHTML='<div class="pve card" style="grid-column:1/-1"><b>The provisions catalogue is being prepared.</b><br>Send your store list from your account and our marine desk answers with a quotation in USD.<br><br><a href="/request-access">Request access</a> · <a href="/login">Vessel login</a></div>'}
-function fail(){$('pv-g').innerHTML='<div class="pve card" style="grid-column:1/-1">The catalogue could not be loaded just now. Please try again in a minute.</div>'}
-function load(){$('pv-g').innerHTML='<div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div>';
+function fail(){$('pv-g').className='pvg';$('pv-g').innerHTML='<div class="pve card" style="grid-column:1/-1">The catalogue could not be loaded just now. Please try again in a minute.</div>'}
+function fromHash(){var h='';try{h=decodeURIComponent((location.hash||'').slice(1))}catch(e){}setSec(h,true)}
+function load(){$('pv-g').className='pvg';$('pv-g').innerHTML='<div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div>';
  var x=new XMLHttpRequest();x.open('GET',API+(KEY?'?preview='+KEY:''));x.timeout=20000;
  x.onload=function(){try{if(x.status!==200)throw 0;var d=JSON.parse(x.responseText);S.items=d.items||[];S.sections=(d.sections||[]).slice().sort(function(a,b){return (a.kind==='selection')-(b.kind==='selection')});
   $('pv-stg').hidden=!d.preview;if(KEY&&!d.preview){$('pv-stg').hidden=false;$('pv-stg').textContent='This preview link is no longer valid. Ask the marine desk for the current link.'}
-  if(!S.items.length){empty(d);return}$('pv-tools').hidden=false;chips();var h=decodeURIComponent((location.hash||'').slice(1));S.sec=S.sections.some(function(s){return s.slug===h})?h:'';draw()}catch(e){fail()}};
+  if(!S.items.length){empty();return}$('pv-tools').hidden=false;fromHash()}catch(e){fail()}};
  x.onerror=x.ontimeout=fail;x.send()}
-$('pv-c').addEventListener('click',function(e){var b=e.target.closest('button');if(b)setSec(b.getAttribute('data-s'))});
-$('pv-sec').addEventListener('change',function(){setSec(this.value)});
+$('pv-g').addEventListener('click',function(e){var a=e.target.closest('a.pvx');if(a){e.preventDefault();setSec(a.getAttribute('data-s'))}});
+$('pv-c').addEventListener('click',function(e){var b=e.target.closest('button');if(b){S.sub=b.getAttribute('data-u');draw()}});
+$('pv-back').addEventListener('click',function(){$('pv-q').value='';S.q='';setSec('')});
+window.addEventListener('popstate',fromHash);window.addEventListener('hashchange',fromHash);
 var t=null;$('pv-q').addEventListener('input',function(){clearTimeout(t);var v=this.value;t=setTimeout(function(){S.q=v.trim().slice(0,60);draw()},120)});
 $('pv-f').addEventListener('submit',function(e){e.preventDefault()});
 load();window.__prov={state:S};
