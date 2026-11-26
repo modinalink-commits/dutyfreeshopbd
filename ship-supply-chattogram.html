@@ -151,13 +151,24 @@ main input,main select,main textarea{transition:background-color .2s ease,box-sh
 @keyframes pplv{to{box-shadow:0 0 0 9px rgba(34,197,94,0)}}
 .pp-wx{margin-left:auto}
 @media(prefers-reduced-motion:reduce){.pp-ph img,.pp-sh::before,.pp-bd{animation:none!important}}
+/* ---- port weather inside the port cards ---- */
+.pw{display:flex;flex-direction:column;gap:10px;margin-top:6px;padding-top:12px;border-top:1px solid rgba(11,37,69,.12)}
+.pw-h{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.pw-h>span:first-child{font:600 12px/1 Inter,system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#C2410C}
+.pw .wx-m strong{font-size:34px}
+.pw .wx-s{margin-top:0;border-top:0;padding-top:0}
+.pw .wx-w.ok{background:rgba(240,253,244,.75)!important}.pw .wx-w.na{background:rgba(255,251,235,.8)!important}.pw .wx-w.al{background:rgba(254,242,242,.85)!important}
+.pw .wx-b{background:rgba(255,255,255,.6);border-color:rgba(255,255,255,.9)}
+.pw .wx-btn{border-radius:999px!important}
+.pw-sk{height:150px;border-radius:12px;background:linear-gradient(100deg,rgba(255,255,255,.25) 40%,rgba(255,255,255,.6) 50%,rgba(255,255,255,.25) 60%);background-size:200% 100%;animation:wxs 1.4s linear infinite}
+#pw-f .bad{color:#B45309;font-weight:600}
 @media print{body::before{display:none}html{background:#fff}.card,#tcard,#tlist,.vd{background:#fff!important;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none!important}}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.gh{background:rgba(255,255,255,.94)!important}.mq-in,.shc-c,.card,#pd,#tcard,#tlist,.tact,.vd,#ports article{background:rgba(255,255,255,.86)!important}}
 </style>
 </head>
 <body>
 <div class="strip">Now serving vessels at Chattogram, Mongla and Payra · Send your requisition for a USD quotation</div>
-<header class="gh"><div class="gh-in"><a class="gh-logo" href="/" aria-label="DutyFree BD Marine Supply home"><img src="/logo-header.png" alt="DutyFree BD Marine Supply" width="163" height="44"></a><button type="button" class="gh-tg" aria-expanded="false" aria-controls="gh-nav"><i></i>Menu</button><nav class="gh-nav" id="gh-nav" aria-label="Main"><a href="/">Home</a><a href="/products">Products</a><a href="/track">Live Ship Map</a><a href="/#weather">Port Weather</a><a href="/#ports">Ports</a><a href="/request-access">Request Access</a><a href="/login" class="gh-btn">Vessel Login</a></nav></div></header>
+<header class="gh"><div class="gh-in"><a class="gh-logo" href="/" aria-label="DutyFree BD Marine Supply home"><img src="/logo-header.png" alt="DutyFree BD Marine Supply" width="163" height="44"></a><button type="button" class="gh-tg" aria-expanded="false" aria-controls="gh-nav"><i></i>Menu</button><nav class="gh-nav" id="gh-nav" aria-label="Main"><a href="/">Home</a><a href="/products">Products</a><a href="/track">Live Ship Map</a><a href="/#ports">Ports & Weather</a><a href="/request-access">Request Access</a><a href="/login" class="gh-btn">Vessel Login</a></nav></div></header>
 <section class="hero"><div>
 <span class="tag">Now serving</span>
 <h1>Ship Supply at Chattogram Port</h1>

@@ -32,7 +32,23 @@ function card(k,p,b){
  '<div class="wx-s">'+src('Weather',c&&c.time,ws)+(ws.data_time?' · model run '+esc(dt(ws.data_time)):'')+'<br>'+src('Waves',w&&w.time,vs)+'</div>'+
  '<button type="button" class="wx-btn" data-wx="'+esc(k)+'"'+(p.forecast&&p.forecast.length?'':' disabled')+'>View 24-hour forecast</button></article>';
 }
+/* Home page: the weather of each port sits inside its "Ports we serve" card */
+function drawPorts(){
+ var A=document.querySelectorAll('#ports article');if(!A.length)return false;
+ for(var i=0;i<A.length;i++){var a=A[i],nb=a.querySelector('b');if(!nb)continue;var k=nb.textContent.trim().toLowerCase(),ph=a.querySelector('.pp-ph'),body=ph&&ph.nextElementSibling;if(!body)continue;
+  var box=a.querySelector('.pw');if(!box){box=document.createElement('div');box.className='pw';body.insertBefore(box,body.lastElementChild)}
+  var p=D&&D.ports&&D.ports[k];
+  if(p){var t=document.createElement('div');t.innerHTML=card(k,p,D.bmd||{});var c=t.firstChild,h=c.querySelector('.wx-t');if(h)c.removeChild(h);box.innerHTML='<div class="pw-h"><span>Port weather</span><span class="wx-b">'+esc(p.kind||'Model estimate')+'</span></div>'+c.innerHTML}
+  else if(failed)box.innerHTML='<div class="pw-h"><span>Port weather</span></div><div class="wx-w na">Update unavailable. Port weather could not be loaded just now; this page tries again every 5 minutes.</div>';
+  else if(!box.innerHTML)box.innerHTML='<div class="pw-h"><span>Port weather</span></div><div class="pw-sk"></div>';
+ }
+ var sec=document.getElementById('ports'),f=document.getElementById('pw-f');
+ if(sec&&!f){f=document.createElement('p');f.id='pw-f';f.className='wx-cr';sec.appendChild(f)}
+ if(f)f.innerHTML='<span class="'+(failed?'bad':'')+'" aria-live="polite">'+(failed?('Weather update unavailable'+(loaded?' · showing data loaded at '+hm(loaded):'')):(loaded?'Weather updated '+hm(loaded)+' Bangladesh time (UTC+6) · checks again every 5 minutes':''))+'</span><br>Weather: MET Norway (CC BY 4.0). Waves: E.U. Copernicus Marine Service Information. Warnings: Bangladesh Meteorological Department. Model estimates for supply planning, not for navigation.';
+ return true;
+}
 function draw(){
+ drawPorts();
  var g=document.getElementById('wx-g'),u=document.getElementById('wx-up');if(!g)return;
  if(D&&D.ports&&D.ports.chattogram){g.innerHTML=ORDER.filter(function(k){return D.ports[k]}).map(function(k){return card(k,D.ports[k],D.bmd||{})}).join('');g.setAttribute('data-r','1')}
  else if(failed){g.innerHTML=ORDER.map(function(k){return '<article class="wx-c"><div class="wx-t"><b>'+k.charAt(0).toUpperCase()+k.slice(1)+'</b></div><div class="wx-w na">Update unavailable. Port weather could not be loaded just now; this page tries again every 5 minutes.</div></article>'}).join('');g.setAttribute('data-r','1')}
@@ -58,7 +74,7 @@ function open(k){
 }
 document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-wx]');if(b)open(b.getAttribute('data-wx'))});
 /* the home page runtime can redraw its content: put the cards back when that happens */
-var app=document.getElementById('app');if(app&&window.MutationObserver)new MutationObserver(function(){var g=document.getElementById('wx-g');if(g&&!g.getAttribute('data-r')&&(D||failed))draw()}).observe(app,{childList:true,subtree:true});
-load();setInterval(load,EVERY);document.addEventListener('visibilitychange',function(){if(!document.hidden&&Date.now()-loaded>EVERY)load()});
+var app=document.getElementById('app');if(app&&window.MutationObserver)new MutationObserver(function(){var g=document.getElementById('wx-g');if(g&&!g.getAttribute('data-r')&&(D||failed)){draw();return}var a=document.querySelector('#ports article');if(a&&!a.querySelector('.pw')&&(D||failed))draw()}).observe(app,{childList:true,subtree:true});
+drawPorts();load();setInterval(load,EVERY);document.addEventListener('visibilitychange',function(){if(!document.hidden&&Date.now()-loaded>EVERY)load()});
 window.__wx={load:load,draw:draw,get data(){return D}};
 })();
