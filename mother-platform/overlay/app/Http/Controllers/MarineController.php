@@ -96,13 +96,17 @@ class MarineController extends Controller
       if ($cat) $b->where('p.category_id', $cat);
       if ($port !== '') $b->whereRaw("(',' || coalesce(m.ports, '') || ',') like ?", ['%,' . $port . ',%']);
       $total = (clone $b)->count();
-      $cols = ['p.id', 'p.sku', 'p.name', 'p.image', 'p.size', 'c.name as cat', 'm.usd_price', 'm.ports', 'm.featured'];
+      $cols = ['p.id', 'p.sku', 'p.name', 'p.image', 'p.size', 'p.category_id', 'c.name as cat', 'm.usd_price', 'm.ports', 'm.featured']; $premium = [];
       if ($home) { // home page: the team's picks first (position 1-8), then in-stock items with a photo to fill up to 8
         $rows = (clone $b)->whereNotNull('m.featured')->orderBy('m.featured')->orderBy('p.id')->limit($per)->get($cols);
         if ($rows->count() < $per) $rows = $rows->concat((clone $b)->whereNull('m.featured')->whereNotNull('p.image')->where('p.image', '!=', '')->orderByDesc('p.stock')->orderBy('p.id')->limit($per - $rows->count())->get($cols));
+        // Premium slider (owner 26 Nov 2026): the highest-priced products with a photo from the same categories as the picks, a few per category.
+        $ids = $rows->pluck('id')->all(); $cids = array_values(array_unique(array_filter($rows->pluck('category_id')->map(fn($v) => (int)$v)->all()))); $prem = collect();
+        foreach (array_slice($cids, 0, 8) as $cid) $prem = $prem->concat((clone $b)->where('p.category_id', $cid)->whereNotIn('p.id', $ids)->whereNotNull('p.image')->where('p.image', '!=', '')->orderByDesc('m.usd_price')->orderBy('p.id')->limit(4)->get($cols));
+        $premium = $prem->sortByDesc(fn($x) => (float)$x->usd_price)->take(16)->map(fn($x) => self::item($x))->values()->all();
       } else $rows = $b->orderBy('c.name')->orderBy('p.name')->offset(($page - 1) * $per)->limit($per)->get($cols);
       $items = []; foreach ($rows as $x) $items[] = self::item($x);
-      return ['total' => $total, 'page' => $page, 'per' => $per, 'port' => $port, 'categories' => $cats, 'items' => $items];
+      return ['total' => $total, 'page' => $page, 'per' => $per, 'port' => $port, 'categories' => $cats, 'items' => $items] + ($home ? ['premium' => $premium] : []);
     });
     return response()->json($d)->header('Access-Control-Allow-Origin', self::SITE)->header('Vary', 'Origin')->header('Cache-Control', 'public, max-age=120');
   }
