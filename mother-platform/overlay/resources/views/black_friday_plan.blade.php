@@ -54,12 +54,12 @@
 </div>
 </div>
 <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr));margin-bottom:12px">
-<div class="card"><div style="font-size:12px;color:#6B7280">Products at Black Friday price</div><div style="font-size:26px;font-weight:800">{{ $n($tot['in']) }}</div><div style="font-size:11.5px;color:#6B7280">Cigarette and Vape only</div></div>
+<div class="card"><div style="font-size:12px;color:#6B7280">Products at Black Friday price</div><div style="font-size:26px;font-weight:800">{{ $n(max($tot['in'], (int)$cnt['applied'])) }}</div><div style="font-size:11.5px;color:#6B7280">Cigarette and Vape only (live count, including those already switched)</div></div>
 <div class="card"><div style="font-size:12px;color:#6B7280">Normal price, badge only</div><div style="font-size:26px;font-weight:800">{{ $n($tot['normal']) }}</div><div style="font-size:11.5px;color:#6B7280">price does not change</div></div>
 <div class="card"><div style="font-size:12px;color:#6B7280">Average saving</div><div style="font-size:26px;font-weight:800">{{ $avg }}%</div></div>
 <div class="card"><div style="font-size:12px;color:#6B7280">Cost to check first</div><div style="font-size:26px;font-weight:800;color:{{ $tot['check'] ? '#B45309' : '#0C161F' }}">{{ $n($tot['check']) }}</div><div style="font-size:11.5px;color:#6B7280">saving of 50% or more</div></div>
 <div class="card"><div style="font-size:12px;color:#6B7280">Left out: no purchase cost</div><div style="font-size:26px;font-weight:800">{{ $n($tot['no_cost']) }}</div></div>
-<div class="card"><div style="font-size:12px;color:#6B7280">Left out: already at minimum</div><div style="font-size:26px;font-weight:800">{{ $n($tot['at_floor']) }}</div></div>
+<div class="card"><div style="font-size:12px;color:#6B7280">Left out: already at minimum (includes products already switched to the Black Friday price)</div><div style="font-size:26px;font-weight:800">{{ $n($tot['at_floor']) }}</div></div>
 <div class="card"><div style="font-size:12px;color:#6B7280">Left out: out of stock</div><div style="font-size:26px;font-weight:800">{{ $n($tot['no_stock']) }}</div></div>
 </div>
 <div class="card" style="margin-bottom:12px;overflow-x:auto"><b>By category</b>

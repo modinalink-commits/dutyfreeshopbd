@@ -110,7 +110,10 @@ class Mailer {
       $rows = DB::table('mail_outbox')->where('status', 'queued')->where('created_at', '>=', now()->subHours(self::maxAgeHours()))->orderByRaw("case when type like 'order_%' then 0 else 1 end")->orderBy('id')->limit(min($n, $left))->get();
       foreach ($rows as $r) {
         if (!DB::table('mail_outbox')->where('id', $r->id)->where('status', 'queued')->update(['status' => 'sending', 'updated_at' => now()])) continue;
-        [$ok, $err] = self::deliver($r->to, $r->subject, $r->html, str_starts_with((string)$r->type, 'mk_') ? self::unsubUrl($r->to) : null);
+        $unsubUrl = str_starts_with((string)$r->type, 'mk_') ? self::unsubUrl($r->to) : null;
+        [$ok, $err] = self::deliver($r->to, $r->subject, $r->html, $unsubUrl);
+        /* The mail server sometimes drops the connection before accepting the message ("closed unexpectedly", 27 Nov: about 4% of order emails). Try once more right away; a provider block or a rejected address is never retried. */
+        if (!$ok && !self::isBlockError($err) && preg_match('/closed unexpectedly|Connection (timed out|refused|reset)|could not be established/i', (string)$err)) { usleep(1500000); [$ok, $err] = self::deliver($r->to, $r->subject, $r->html, $unsubUrl); }
         if (!$ok && self::isBlockError($err)) { // provider block: keep the email queued, remember the block, stop this run
           DB::table('mail_outbox')->where('id', $r->id)->update(['status' => 'queued', 'error' => $err, 'updated_at' => now()]);
           if (self::blockedAt() === null) { Cache::forever('email.blocked', now('Asia/Dhaka')->format('d M Y, h:i A')); try { \Illuminate\Support\Facades\Log::warning('Customer email paused: mailbox outbound sending is disabled by the provider', ['error' => $err]); } catch (\Throwable $e) {} }
