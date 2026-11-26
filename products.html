@@ -40,7 +40,7 @@ button{min-height:48px;border:0;border-radius:8px;background:#F95505;color:#fff;
 .muted{font-size:13px;line-height:1.5;color:#475569}
 
 main{max-width:1200px;padding:32px 20px 64px;gap:18px}
-.tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center}.tools input{height:46px}
+.tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center}.tools .chk{flex-direction:row;align-items:center;gap:8px;font-size:14px;font-weight:500;color:#0C161F;height:46px;padding:0 14px;border:1px solid #C3CDD9;border-radius:8px;background:#fff;cursor:pointer;white-space:nowrap}.tools .chk input{height:auto;width:16px;margin:0;accent-color:#F95505}.tools input{height:46px}
 select{height:46px;border:1px solid #C3CDD9;border-radius:8px;padding:0 10px;font-size:15px;font-family:inherit;background:#fff}
 #grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
 .pc{background:#fff;border:1px solid #D9E0E8;border-radius:10px;overflow:hidden;display:flex;flex-direction:column}
@@ -65,7 +65,8 @@ footer{background:#0B2545;color:#D6DEEA;font-size:13px;text-align:center;padding
 <div><h1>Products</h1><span class="muted">Ship stores and crew supplies. Choose your port of call to see what can be supplied there. Prices in USD. Bonded stores are shown to signed-in, verified accounts.</span></div>
 <div class="tools"><label style="flex:1 1 260px;min-width:0"><span class="hp" style="position:absolute;left:-9999px">Search products</span><input id="q" type="search" placeholder="Search by product name, brand or code" style="width:100%;box-sizing:border-box"></label>
 <label><span style="position:absolute;left:-9999px">Port of call</span><select id="port"><option value="">All ports</option><option value="chattogram">Chattogram</option><option value="mongla">Mongla</option><option value="payra">Payra</option></select></label>
-<label><span style="position:absolute;left:-9999px">Category</span><select id="cat"><option value="0">All categories</option></select></label></div>
+<label><span style="position:absolute;left:-9999px">Category</span><select id="cat"><option value="0">All categories</option></select></label>
+<label class="chk"><input id="ess" type="checkbox"> Ship essentials only</label></div>
 <span class="muted" id="info">Loading...</span>
 <div id="grid"></div>
 <button type="button" id="more" hidden>Load more</button>
