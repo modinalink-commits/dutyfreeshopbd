@@ -1583,3 +1583,4 @@ app/Support/WaEssential.php
 database/migrations/2026_11_26_000040_ai_kb_contact_fix.php
 app/Support/AiLearn.php
 database/migrations/2026_11_26_000050_raise_df1194_to_minimum.php
+database/migrations/2026_11_26_000060_sku_df_prefix_fix.php
