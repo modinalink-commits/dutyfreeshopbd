@@ -11,7 +11,7 @@ var P=d.ports||{},col={live:['#DCFCE7','#14532D'],soon:['#FDBA74','#431407'],nex
 var cards=document.querySelectorAll('#ports article');for(var c=0;c<cards.length;c++){var a=cards[c],b=a.querySelector('b');if(!b)continue;var k=b.textContent.trim().toLowerCase(),x=P[k];if(!x)continue;
 if(x.status==='hidden'){a.style.display='none';continue}var pill=b.nextElementSibling;if(pill){pill.textContent=x.label;var cc=col[x.status]||col.next;pill.style.background=cc[0];pill.style.color=cc[1]}
 var note=b.parentNode.nextElementSibling;if(x.note&&note)note.textContent=x.note;
-var bd=b.parentNode.parentNode;if(!bd.querySelector('.dch')){var dc=document.createElement('span');dc.className='dch';dc.style.cssText='font-size:13px;font-weight:500;color:#0B2545';dc.textContent=x.charge?('Delivery charge: USD '+x.charge+' per delivery'):'Delivery charge for this port is confirmed on your quotation';bd.insertBefore(dc,bd.lastElementChild)}
+var bd=b.parentNode.parentNode;if(!bd.querySelector('.dch')){var dc=document.createElement('span');dc.className='dch';dc.style.cssText='font-size:13px;font-weight:500;color:#0B2545';dc.textContent='Delivery charge by weight and distance, stated on your quotation';bd.insertBefore(dc,bd.lastElementChild)}
 if(ok(x.photo)){var ph=a.firstElementChild;ph.textContent='';var im=document.createElement('img');im.src=x.photo;im.alt='Port of '+x.name;im.style.cssText='width:100%;height:100%;object-fit:cover;display:block';ph.appendChild(im)}}
 var m=/^\/ship-supply-([a-z]+)\.html$/.exec(location.pathname);if(m&&P[m[1]]){var t=document.querySelector('.tag');if(t&&P[m[1]].status!=='hidden')t.textContent=P[m[1]].label}
 var B=(d.banners||[]).filter(function(x){return ok(x.image)||x.title});var how=document.getElementById('how');
