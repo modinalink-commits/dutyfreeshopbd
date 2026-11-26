@@ -653,9 +653,12 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/coupons/{id}/usage', [\App\Http\Controllers\CouponController::class,'usageReport'])->whereNumber('id');
 });
 // ---- Storefront: order form has no CSRF token (pages stay cacheable); orders are rate limited per IP and honeypot-protected
-// DutyFree BD Marine Supply (marinedutyfreebd.com, static site): public contact info and the Request Access form post. No login, no CSRF (cross-site form), throttled.
-Route::get('/marine-api/public', [\App\Http\Controllers\MarineController::class,'publicInfo'])->middleware('throttle:120,1');
-Route::post('/marine-api/access-request', [\App\Http\Controllers\MarineController::class,'accessRequest'])->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class, \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class, \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])->middleware('throttle:6,1');
+// DutyFree BD Marine Supply (marinedutyfreebd.com, static site): public contact info and the Request Access form post. Throttled; no CSRF (cross-site form).
+// No session and no cookies on these two routes: a cross-site POST arrives without the admin cookie, and a fresh session cookie in the answer would sign a logged-in staff member out.
+Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class, \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class, \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class, \Illuminate\Session\Middleware\StartSession::class, \Illuminate\View\Middleware\ShareErrorsFromSession::class, \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class])->group(function () {
+  Route::get('/marine-api/public', [\App\Http\Controllers\MarineController::class,'publicInfo'])->middleware('throttle:120,1');
+  Route::post('/marine-api/access-request', [\App\Http\Controllers\MarineController::class,'accessRequest'])->middleware('throttle:6,1');
+});
 Route::get('/staff', fn() => response()->view('staff_app')->header('Cache-Control', 'no-store'));
 // ---- Staff mobile app API (bearer token, no cookies/CSRF; same users + role permissions as the admin; chat/order actions reuse the admin controllers) ----
 Route::prefix('api/staff')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class, \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class, \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class, \Illuminate\Session\Middleware\StartSession::class, \Illuminate\View\Middleware\ShareErrorsFromSession::class, \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class])->group(function () {
