@@ -20,5 +20,7 @@ ship-supply-mongla.html
 ship-supply-payra.html
 site.js
 sitemap.xml
+staging.html
 track.html
 track.js
+weather.js
