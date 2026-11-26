@@ -283,6 +283,10 @@ class MarineOrderController extends Controller
       'desk_order' => ['v' => 'marine.order', 'd' => ['files' => collect([(object)['id' => 0, 'name' => 'store-list-sample.xlsx', 'size' => 18432, 'by_side' => 'account'], (object)['id' => 0, 'name' => 'photo-of-list.jpg', 'size' => 734003, 'by_side' => 'account']]), 'o' => $o, 'lines' => $lines, 'acc' => $u, 'floor' => [], 'rate' => MarineController::rate(), 'pct' => \App\Support\ProfitFloor::percent(), 'status' => O::STATUS, 'ports' => O::PORTS, 'places' => O::PLACES, 'next' => O::NEXT[$o->status] ?? [], 'types' => A::TYPES, 'vroles' => A::VROLES, 'verified' => true, 'admin' => true, 'pc' => null, 'mails' => collect()]],
       default => null };
     if (!$d) abort(404);
+    // sample catalogue with a real ship catalogue: the same rows and sections a signed-in account gets
+    if ($page === 'catalog' && ($RQ = \App\Support\MarineRfq::class) && $RQ::orderable() && in_array($r->query('view'), $RQ::releasedSets(), true)) { $vw = (string)$r->query('view'); $sc = preg_match('/^[a-z0-9-]{1,60}$/', (string)$r->query('section')) ? (string)$r->query('section') : '';
+      $d['d'] = ['view' => $vw, 'sets' => $RQ::releasedSets(), 'sec' => $sc, 'mc' => '', 'locked' => false, 'rows' => $RQ::forOrder()->where('catalog', $vw)->when($sc !== '', fn($w) => $w->where('section_slug', $sc))->orderBy('id')->paginate(48)->withQueryString(),
+        'sections' => $RQ::forOrder()->where('catalog', $vw)->selectRaw('section_slug, min(section_name) n, min(group_name) g, count(*) c, min(id) o')->groupBy('section_slug')->orderBy('o')->get()] + $d['d']; }
     return response(view($d['v'], $d['d'] + ['u' => $u]))->header('X-Robots-Tag', 'noindex, nofollow')->header('Cache-Control', 'no-store, private');
   }
   public function adminCalls(Request $r) {
