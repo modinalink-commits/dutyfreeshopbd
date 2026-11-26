@@ -56,6 +56,8 @@ class MarineController extends Controller
     foreach ($cats as $c) if (self::bonded($c)) $bond[$c->id] = true;
     return view('marine.catalog', ['rate' => self::rate(), 'adm' => \App\Support\ProfitFloor::admin(), 'rows' => $rows, 'q' => $q, 'show' => $show, 'cat' => $cat, 'cats' => $cats, 'bond' => $bond, 'ports' => self::PORTS, 'featN' => (int)DB::table('marine_products')->whereNotNull('featured')->count(), 'featMax' => self::FEATURED, 'essN' => (int)DB::table('marine_products')->where('essential', true)->count()]);
   }
+  /** Categories that do not belong on a ship-supply site at all (baby goods): never listed on the marine site, with or without login (owner rule 26 Nov 2026). */
+  private static function hiddenIds(): array { $o = []; foreach (DB::table('categories')->get(['id', 'name', 'slug']) as $c) if (preg_match('/\bbab(y|ies)\b|infant|diaper|nappy/i', (string)$c->name . ' ' . str_replace('-', ' ', (string)$c->slug)) === 1) $o[] = (int)$c->id; return $o; }
   private static function bondedIds(): array { $o = []; foreach (DB::table('categories')->get(['id', 'name', 'slug']) as $c) if (self::bonded($c)) $o[] = (int)$c->id; return $o; }
   /** New version number for the cached public product pages (never a full cache flush: the cache is shared with the workers). */
   private static function bump(): void { try { \Illuminate\Support\Facades\Cache::forever('marine.ppv', time()); } catch (\Throwable $e) {} }
@@ -100,7 +102,7 @@ class MarineController extends Controller
     $q = mb_substr(trim((string)$r->query('q')), 0, 60); $cat = (int)$r->query('category'); $page = max(1, min(700, (int)$r->query('page', 1))); $home = (bool)$r->query('home'); $per = $home ? self::FEATURED : 48; $port = (string)$r->query('port'); if ($home || !isset(self::PORTS[$port])) $port = ''; $ess = !$home && (bool)$r->query('essential'); if ($home) { $q = ''; $cat = 0; $page = 1; }
     $key = 'marine.pp.' . (int)\Illuminate\Support\Facades\Cache::get('marine.ppv', 0) . '.' . md5($q . '|' . $cat . '|' . $page . '|' . (int)$home . '|' . $port . '|' . (int)$ess);
     $d = \Illuminate\Support\Facades\Cache::remember($key, 120, function () use ($q, $cat, $page, $per, $home, $port, $ess) {
-      $bond = self::bondedIds();
+      $bond = array_values(array_unique(array_merge(self::bondedIds(), self::hiddenIds())));
       $b = DB::table('marine_products as m')->join('products as p', 'p.id', '=', 'm.product_id')->leftJoin('categories as c', 'c.id', '=', 'p.category_id')
         ->where('m.enabled', true)->where('m.visibility', 'public')->where('p.published', true)->whereNotNull('m.usd_price');
       if ($bond) $b->where(fn($w) => $w->whereNull('p.category_id')->orWhereNotIn('p.category_id', $bond));
@@ -142,7 +144,7 @@ class MarineController extends Controller
       $x = DB::table('marine_products as m')->join('products as p', 'p.id', '=', 'm.product_id')->leftJoin('categories as c', 'c.id', '=', 'p.category_id')->leftJoin('brands as br', 'br.id', '=', 'p.brand_id')
         ->where('p.id', $id)->where('m.enabled', true)->where('m.visibility', 'public')->where('p.published', true)->whereNotNull('m.usd_price')
         ->first(['p.id', 'p.sku', 'p.name', 'p.image', 'p.size', 'p.description', 'p.category_id', 'c.name as cat', 'br.name as brand', 'm.usd_price', 'm.ports', 'm.featured']);
-      if (!$x || ($x->category_id && in_array((int)$x->category_id, self::bondedIds(), true))) return ['found' => false];
+      if (!$x || ($x->category_id && in_array((int)$x->category_id, array_merge(self::bondedIds(), self::hiddenIds()), true))) return ['found' => false];
       $it = self::item($x); $it['brand'] = (string)($x->brand ?? '');
       // English-only site: pass the store description on only when it has no Bengali text.
       $t = trim(preg_replace('/\s+/u', ' ', html_entity_decode(strip_tags(str_replace(['<br>', '<br/>', '<br />', '</p>', '</li>'], ' ', (string)$x->description)), ENT_QUOTES, 'UTF-8')));
