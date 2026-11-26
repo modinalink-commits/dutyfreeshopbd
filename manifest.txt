@@ -13,6 +13,8 @@ index.html
 login.html
 logo-header.png
 logo-stacked.png
+ocean.js
+ocean.mp3
 port-chattogram.jpg
 port-mongla.jpg
 port-payra.jpg
