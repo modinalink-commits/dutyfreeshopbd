@@ -83,9 +83,9 @@ class MarineController extends Controller
   }
   /** Public product list for the marine site: enabled + public + published only, and never a bonded category (checked again here, whatever the stored flag says). */
   public function publicProducts(Request $r) {
-    $q = mb_substr(trim((string)$r->query('q')), 0, 60); $cat = (int)$r->query('category'); $page = max(1, min(500, (int)$r->query('page', 1))); $per = 48;
-    $key = 'marine.pp.' . (int)\Illuminate\Support\Facades\Cache::get('marine.ppv', 0) . '.' . md5($q . '|' . $cat . '|' . $page);
-    $d = \Illuminate\Support\Facades\Cache::remember($key, 120, function () use ($q, $cat, $page, $per) {
+    $q = mb_substr(trim((string)$r->query('q')), 0, 60); $cat = (int)$r->query('category'); $page = max(1, min(700, (int)$r->query('page', 1))); $home = (bool)$r->query('home'); $per = $home ? 8 : 48; if ($home) { $q = ''; $cat = 0; $page = 1; }
+    $key = 'marine.pp.' . (int)\Illuminate\Support\Facades\Cache::get('marine.ppv', 0) . '.' . md5($q . '|' . $cat . '|' . $page . '|' . (int)$home);
+    $d = \Illuminate\Support\Facades\Cache::remember($key, 120, function () use ($q, $cat, $page, $per, $home) {
       $bond = self::bondedIds();
       $b = DB::table('marine_products as m')->join('products as p', 'p.id', '=', 'm.product_id')->leftJoin('categories as c', 'c.id', '=', 'p.category_id')
         ->where('m.enabled', true)->where('m.visibility', 'public')->where('p.published', true)->whereNotNull('m.usd_price');
@@ -94,6 +94,7 @@ class MarineController extends Controller
       if ($q !== '') $b->where(fn($w) => $w->where('p.name', 'ilike', '%' . $q . '%')->orWhere('p.sku', 'ilike', '%' . $q . '%'));
       if ($cat) $b->where('p.category_id', $cat);
       $total = (clone $b)->count();
+      if ($home) $b->whereNotNull('p.image')->where('p.image', '!=', '')->orderByDesc('p.stock')->orderBy('p.id'); // home page strip: items actually in stock first
       $rows = $b->orderBy('c.name')->orderBy('p.name')->offset(($page - 1) * $per)->limit($per)->get(['p.sku', 'p.name', 'p.image', 'p.size', 'c.name as cat', 'm.usd_price', 'm.ports']);
       $items = []; foreach ($rows as $x) { $im = trim((string)$x->image); if ($im !== '' && !preg_match('#^https?://#i', $im)) $im = 'https://dutyfreebd.com/' . ltrim($im, '/');
         $items[] = ['sku' => (string)$x->sku, 'name' => (string)$x->name, 'size' => (string)($x->size ?? ''), 'category' => (string)($x->cat ?? ''), 'image' => $im, 'usd' => number_format((float)$x->usd_price, 2, '.', ''), 'ports' => array_values(array_filter(explode(',', (string)$x->ports)))]; }
