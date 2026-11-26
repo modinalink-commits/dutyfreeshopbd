@@ -1609,7 +1609,7 @@ db7d183f93734323682d1a3b68befe4bfaec7376 database/migrations/2026_11_26_000150_m
 8db93ec1b44c5e5b5a533fd7437d24e86de60815 resources/views/marine/index.blade.php
 bcb9eab44a41831d70fbefbb361e5de40163b949 resources/views/marine/requests.blade.php
 740e0ed2da4cfcb2bb69317b135fa2e49a38f863 resources/views/marine/catalog.blade.php
-06e64636c95d7109f2f49e5604efe2cb61e68990 resources/views/marine/settings.blade.php
+d7733245752a246f6060ed541076eacbca124157 resources/views/marine/settings.blade.php
 dbc6756c65f02bb8e730c0477002280d8d28a355 resources/views/marine/site.blade.php
 447ead9764f2ece97345acca84e84b22f4c8b46a resources/views/marine/ports.blade.php
 6a727102ee06859ec9275d81242aa2093cbecbc1 resources/views/marine/tracking.blade.php
