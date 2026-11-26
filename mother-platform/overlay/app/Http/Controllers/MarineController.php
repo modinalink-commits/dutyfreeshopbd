@@ -189,10 +189,10 @@ class MarineController extends Controller
     $by = (string)(optional(auth()->user())->name ?? 'admin'); $bond = array_flip(self::bondedIds()); $n = 0; @set_time_limit(180);
     if ($r->input('mode') === 'fit') {   // owner 26 Nov 2026: women's, beauty and baby goods and ordinary clothing are not offered to ships
       $paths = self::catPaths(); $off = 0; $kept = 0; $by2 = 'ship-fit rule'; $tally = [];
-      DB::table('marine_products as m')->join('products as p', 'p.id', '=', 'm.product_id')->where('m.enabled', true)->orderBy('m.id')->select('m.id', 'p.name', 'p.category_id')
-        ->chunk(1000, function ($rows) use (&$off, &$kept, &$tally, $bond, $paths, $MC, $by2) { $ids = [];
+      DB::table('marine_products as m')->join('products as p', 'p.id', '=', 'm.product_id')->where('m.enabled', true)->select('m.id', 'p.name', 'p.category_id')
+        ->chunkById(1000, function ($rows) use (&$off, &$kept, &$tally, $bond, $paths, $MC, $by2) { $ids = [];
           foreach ($rows as $x) { if (isset($bond[(int)$x->category_id])) { $kept++; continue; } $path = (string)($paths[(int)$x->category_id] ?? ''); if ($MC::unfit((string)$x->name, $path)) { $ids[] = $x->id; $w = preg_split('/\s+/', trim(explode('>', $path)[0])); $root = $path === '' ? 'No category' : implode(' ', array_slice($w, 0, max(1, intdiv(count($w) + 1, 2)))); $tally[$root] = ($tally[$root] ?? 0) + 1; } else $kept++; }
-          if ($ids) { DB::table('marine_products')->whereIn('id', $ids)->update(['enabled' => false, 'updated_by' => $by2, 'updated_at' => now()]); $off += count($ids); } });
+          if ($ids) { DB::table('marine_products')->whereIn('id', $ids)->update(['enabled' => false, 'updated_by' => $by2, 'updated_at' => now()]); $off += count($ids); } }, 'm.id', 'id');   // by id, not by offset: rows leave the filter as they are switched off
       self::bump(); try { \Illuminate\Support\Facades\Cache::forget('marine.public'); } catch (\Throwable $e) {}
       \App\Support\Procure::audit('marine.fit', 'Marine catalog: ' . $off . ' products that do not fit a ship taken off the marine site (' . $by . ')', null, ['off' => $off, 'kept' => $kept, 'by_store_category' => $tally]);
       arsort($tally); $t = []; foreach (array_slice($tally, 0, 8, true) as $k => $v) $t[] = $k . ' ' . number_format($v);
