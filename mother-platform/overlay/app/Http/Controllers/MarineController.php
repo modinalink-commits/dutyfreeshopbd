@@ -289,7 +289,7 @@ class MarineController extends Controller
   public function accessRequest(Request $r) {
     $back = self::SITE . '/request-access.html';
     if (!self::ready() || trim((string)$r->input('website')) !== '') return redirect()->away($back . '?sent=1'); // honeypot: bots get the same answer
-    $kind = $r->input('kind') === 'crew' ? 'crew' : 'company';
+    $kind = in_array($r->input('kind'), ['crew', 'agent'], true) ? $r->input('kind') : 'company'; // agent = local agent or supplier, no vessel needed
     $f = fn($k, $n) => mb_substr(trim(strip_tags((string)$r->input($k))), 0, $n) ?: null;
     $email = $f('email', 160); $imo = preg_replace('/\D/', '', (string)$r->input('imo'));
     if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL) || ($imo !== '' && strlen($imo) !== 7)) return redirect()->away($back . '?sent=0');
