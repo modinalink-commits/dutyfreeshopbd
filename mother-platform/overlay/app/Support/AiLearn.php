@@ -12,7 +12,7 @@ class AiLearn {
   public static function tick(): void {
     if (!self::on()) return;
     $nowDays = \Illuminate\Support\Facades\Cache::pull('ailearn.now');
-    if ($nowDays) { $k = Sms::secret('ai_key'); if ($k) { $r = self::run($k, (int)$nowDays); \Illuminate\Support\Facades\Cache::put('ailearn.last', $r, 86400*3); } return; }
+    if ($nowDays) { $k = Sms::secret('ai_key'); if ($k) { \Illuminate\Support\Facades\Cache::put('ailearn.last', ['ok'=>false, 'why'=>'চলছে…'], 3600); try { $r = self::run($k, (int)$nowDays); } catch (\Throwable $e) { $r = ['ok'=>false, 'why'=>'ত্রুটি: '.mb_substr($e->getMessage(), 0, 160)]; } \Illuminate\Support\Facades\Cache::put('ailearn.last', $r, 86400*3); } return; }
     $dh = now('Asia/Dhaka'); if ($dh->hour < 3 || $dh->hour > 6) return;
     $key = Sms::secret('ai_key'); if (!$key) return;
     if (!\Illuminate\Support\Facades\Cache::add('ailearn.'.$dh->format('Ymd'), 1, 86400)) return;
