@@ -24,7 +24,7 @@
 <thead><tr style="text-align:left;color:#6B7280;font-size:11px;text-transform:uppercase"><th style="padding:8px 10px">Item</th><th style="padding:8px 10px;text-align:right">Quantity</th><th style="padding:8px 10px;text-align:right">List USD</th><th style="padding:8px 10px;text-align:right">Lowest USD</th><th style="padding:8px 10px;width:120px">Unit USD</th><th style="padding:8px 10px;text-align:right">Amount</th><th style="padding:8px 10px">Available</th><th style="padding:8px 10px;width:190px">Line note</th></tr></thead><tbody>
 @foreach($lines as $l)
 @php $fl = $l->product_id ? ($floor[$l->product_id] ?? 0) : 0; $val = old('l.' . $l->id . '.unit_usd', $l->unit_usd !== null ? number_format((float)$l->unit_usd, 2, '.', '') : ($l->list_usd !== null ? number_format((float)$l->list_usd, 2, '.', '') : '')); @endphp
-<tr style="border-top:1px solid #E5E7EB"><td style="padding:8px 10px"><b>{{ $l->name }}</b><div style="font-size:11.5px;color:#6B7280">{{ implode(' · ', array_filter([$l->size, $l->sku, $l->product_id ? null : 'Free-text item'])) }}</div></td>
+<tr style="border-top:1px solid #E5E7EB"><td style="padding:8px 10px"><b>{{ $l->name }}</b><div style="font-size:11.5px;color:#6B7280">{{ implode(' · ', array_filter([$l->size, $l->sku, $l->product_id ? null : (($l->rfq_item_id ?? null) ? 'Ship provisions item' : 'Free-text item')])) }}</div></td>
 <td style="padding:8px 10px;text-align:right;white-space:nowrap">{{ rtrim(rtrim(number_format((float)$l->qty, 2), '0'), '.') }} {{ $l->unit }}</td>
 <td style="padding:8px 10px;text-align:right">{{ $l->list_usd !== null ? number_format((float)$l->list_usd, 2) : '-' }}</td>
 <td style="padding:8px 10px;text-align:right;color:#6B7280">{{ $fl > 0 ? number_format($fl, 2) : '-' }}</td>
