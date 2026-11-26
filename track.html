@@ -47,7 +47,7 @@ main{max-width:1200px;padding:20px 20px 64px;gap:16px}
 .live i{width:8px;height:8px;border-radius:50%;background:#22C55E;box-shadow:0 0 0 0 rgba(34,197,94,.6);animation:pl 1.8s ease-out infinite}@keyframes pl{to{box-shadow:0 0 0 10px rgba(34,197,94,0)}}
 .tf{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 10px;align-items:end;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:16px;backdrop-filter:blur(4px)}
 .tf label{color:#D6DEEA;min-width:0}.tf input{width:100%;box-sizing:border-box;border-color:transparent;font-variant-numeric:tabular-nums;letter-spacing:.04em}.tf button{padding:0 22px;min-height:46px}
-.tf a{grid-column:1/-1;text-decoration:none;font-weight:500;font-size:13px;color:#FDBA74}.tf a:hover{color:#fff}
+.tf .th-n{grid-column:1/-1;font-size:12.5px;color:#B8C4D6}
 .tbar{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center}
 .seg{display:inline-flex;flex-wrap:wrap;border:1px solid #C3CDD9;border-radius:8px;overflow:hidden;background:#fff}.seg a{padding:11px 16px;font-size:14px;font-weight:600;text-decoration:none;color:#0B2545;border-right:1px solid #E3E8EF}.seg a:last-child{border-right:0}.seg a.on{background:#0B2545;color:#fff}
 .fs{min-height:44px;padding:0 16px;background:#fff;color:#0B2545;border:1px solid #C3CDD9;font-size:14px}
@@ -79,7 +79,7 @@ footer{background:#0B2545;color:#D6DEEA;font-size:13px;text-align:center;padding
 </div></header>
 <section class="th"><div class="th-in">
 <div class="th-t"><span class="live"><i></i>Live AIS · free for everyone</span><h1>Live ship map</h1><p id="tsub">Find a vessel by name or IMO number, or watch the ships at Chattogram, Mongla and Payra right now.</p></div>
-<form class="tf" id="tf"><label class="tq">Vessel name or IMO number<input id="timo" type="text" maxlength="40" placeholder="e.g. MAERSK or 9321483" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="tsug"><div id="tsug" role="listbox" hidden></div></label><button type="submit">Find vessel</button><a id="tfind" href="https://www.marinetraffic.com/en/ais/home" target="_blank" rel="noopener">Find an IMO by ship name ↗</a></form>
+<form class="tf" id="tf"><label class="tq">Vessel name or IMO number<input id="timo" type="text" maxlength="40" placeholder="e.g. MAERSK or 9321483" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="tsug"><div id="tsug" role="listbox" hidden></div></label><button type="submit">Find vessel</button><small class="th-n">Type a few letters of the name and pick the vessel, or enter the 7-digit IMO number.</small></form>
 </div></section>
 <main>
 <div class="tbar"><div class="seg" id="tseg"><a href="/track#chattogram" data-k="chattogram">Chattogram</a><a href="/track#mongla" data-k="mongla">Mongla</a><a href="/track#payra" data-k="payra">Payra</a><a href="/track" data-k="">Bangladesh coast</a></div><button type="button" id="tfull" class="fs">Full screen</button></div>
