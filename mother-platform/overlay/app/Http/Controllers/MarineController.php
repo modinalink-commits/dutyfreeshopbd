@@ -114,9 +114,12 @@ class MarineController extends Controller
       if ($home) { // home page: the team's picks first (position 1-8), then in-stock items with a photo to fill up to 8
         $rows = (clone $b)->whereNotNull('m.featured')->orderBy('m.featured')->orderBy('p.id')->limit($per)->get($cols);
         if ($rows->count() < $per) $rows = $rows->concat((clone $b)->whereNull('m.featured')->whereNotNull('p.image')->where('p.image', '!=', '')->orderByDesc('p.stock')->orderBy('p.id')->limit($per - $rows->count())->get($cols));
-        // Premium slider (owner 26 Nov 2026): the highest-priced products with a photo from the same categories as the picks, a few per category.
-        $ids = $rows->pluck('id')->all(); $cids = array_values(array_unique(array_filter($rows->pluck('category_id')->map(fn($v) => (int)$v)->all()))); $prem = collect();
-        foreach (array_slice($cids, 0, 8) as $cid) $prem = $prem->concat((clone $b)->where('p.category_id', $cid)->whereNotIn('p.id', $ids)->whereNotNull('p.image')->where('p.image', '!=', '')->orderByDesc('m.usd_price')->orderBy('p.id')->limit(4)->get($cols));
+        // Premium slider (owner 26 Nov 2026): higher-priced consumer goods of the kinds seafarers buy (phones, watches, sunglasses, perfume), a few of each.
+        // Product kinds and the price ceiling come from settings marine_premium_words / marine_premium_max; the ceiling keeps servers and other non-crew items out.
+        $ids = $rows->pluck('id')->all(); $prem = collect(); $ps = self::js('marine_premium');
+        $words = array_slice(array_filter(array_map('trim', (array)($ps['words'] ?? ['smartphone', 'watch', 'sunglasses', 'eau de parfum']))), 0, 8); $max = (float)($ps['max'] ?? 2500) ?: 2500;
+        foreach ($words as $wd) $prem = $prem->concat((clone $b)->where('p.name', 'ilike', '%' . $wd . '%')->where('m.usd_price', '<=', $max)->whereNotIn('p.id', $ids)->whereNotNull('p.image')->where('p.image', '!=', '')->orderByDesc('m.usd_price')->orderBy('p.id')->limit(4)->get($cols));
+        $prem = $prem->unique('id');
         $premium = $prem->sortByDesc(fn($x) => (float)$x->usd_price)->take(16)->map(fn($x) => self::item($x))->values()->all();
         // Ship essentials row: products the team marked as needed on board, in-stock first.
         $essentials = (clone $b)->where('m.essential', true)->whereNotNull('p.image')->where('p.image', '!=', '')->orderByDesc('p.stock')->orderBy('p.name')->limit(16)->get($cols)->map(fn($x) => self::item($x))->all();
