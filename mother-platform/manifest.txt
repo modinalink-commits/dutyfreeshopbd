@@ -1584,3 +1584,9 @@ database/migrations/2026_11_26_000040_ai_kb_contact_fix.php
 app/Support/AiLearn.php
 database/migrations/2026_11_26_000050_raise_df1194_to_minimum.php
 database/migrations/2026_11_26_000060_sku_df_prefix_fix.php
+app/Http/Controllers/MarineController.php
+database/migrations/2026_11_26_000070_marine_supply_base.php
+resources/views/marine/index.blade.php
+resources/views/marine/requests.blade.php
+resources/views/marine/catalog.blade.php
+resources/views/marine/settings.blade.php
