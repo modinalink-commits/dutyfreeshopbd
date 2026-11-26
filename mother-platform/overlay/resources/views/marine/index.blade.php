@@ -14,7 +14,14 @@
 @forelse($last as $x)<tr style="border-top:1px solid #EEE"><td style="padding:7px 4px"><b>{{ $x->company ?: $x->name ?: '-' }}</b> <span style="font-size:11.5px;color:#6B7280">{{ ucfirst($x->kind) }}</span></td><td>{{ $x->vessel }} {{ $x->imo ? '· IMO '.$x->imo : '' }}</td><td>{{ $x->email }}</td><td>{{ ucfirst($x->status) }}</td><td style="text-align:right;color:#6B7280">{{ \Carbon\Carbon::parse($x->created_at)->timezone('Asia/Dhaka')->format('d M, h:i A') }}</td></tr>
 @empty<tr><td style="padding:10px 4px;color:#6B7280">এখনো কোনো আবেদন আসেনি।</td></tr>@endforelse
 </table></div>
-<div class="card"><b>Marine site</b><div style="font-size:13px;line-height:1.8;margin-top:6px"><a href="{{ $site }}" target="_blank" rel="noopener">{{ $site }}</a> (পাবলিক সাইট) · <a href="https://search.google.com/search-console?resource_id=sc-domain:marinedutyfreebd.com" target="_blank" rel="noopener">Google Search Console</a></div>
-<div style="font-size:12px;color:#6B7280;margin-top:6px">এখনো তৈরি হয়নি: জাহাজ ও পোর্ট কল, কোটেশন, অর্ডার, নাবিকের শপ, ক্রেডিট ও লাভের রিপোর্ট। তৈরি হলে এই গ্রুপেই যোগ হবে।</div></div>
+<div class="card"><b>Marine module map</b><div style="font-size:12px;color:#6B7280;margin:2px 0 10px">মেরিনের সব কাজ এই গ্রুপে, বিষয় অনুযায়ী ভাগ করা।</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;font-size:13px">
+<div style="border:1px solid #E5E7EB;border-radius:8px;padding:12px"><b>Requests &amp; Accounts</b><div style="line-height:1.9;margin-top:4px"><a href="/admin/marine/requests">Access Requests</a><br><span style="color:#9CA3AF">Companies &amp; Vessels (আসছে)</span><br><span style="color:#9CA3AF">Crew Accounts (আসছে)</span></div></div>
+<div style="border:1px solid #E5E7EB;border-radius:8px;padding:12px"><b>Catalog &amp; Pricing</b><div style="line-height:1.9;margin-top:4px"><a href="/admin/marine/catalog">Marine Catalog</a><br><span style="color:#9CA3AF">Port Stock (আসছে)</span><br><span style="color:#9CA3AF">Contract Prices (আসছে)</span></div></div>
+<div style="border:1px solid #E5E7EB;border-radius:8px;padding:12px"><b>Marine Website</b><div style="line-height:1.9;margin-top:4px"><a href="/admin/marine/site">Site Content &amp; Banners</a><br><a href="/admin/marine/ports">Ports</a><br><a href="/admin/marine/settings">Desk Contact</a></div></div>
+<div style="border:1px solid #E5E7EB;border-radius:8px;padding:12px"><b>Operations</b><div style="line-height:1.9;margin-top:4px;color:#9CA3AF">Port Calls (আসছে)<br>Requisitions &amp; Quotations (আসছে)<br>Orders &amp; Delivery (আসছে)<br>Crew Orders (আসছে)</div></div>
+<div style="border:1px solid #E5E7EB;border-radius:8px;padding:12px"><b>Finance &amp; Reports</b><div style="line-height:1.9;margin-top:4px;color:#9CA3AF">Credit &amp; Receivables (আসছে)<br>Shop Payable (আসছে)<br>Profit per Order (আসছে)</div></div>
+</div></div>
+<div class="card"><b>Links</b><div style="font-size:13px;line-height:1.8;margin-top:6px"><a href="{{ $site }}" target="_blank" rel="noopener">{{ $site }}</a> (পাবলিক সাইট) · <a href="https://search.google.com/search-console?resource_id=sc-domain:marinedutyfreebd.com" target="_blank" rel="noopener">Google Search Console</a></div></div>
 @endif
 @endsection

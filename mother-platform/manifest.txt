@@ -1590,3 +1590,6 @@ resources/views/marine/index.blade.php
 resources/views/marine/requests.blade.php
 resources/views/marine/catalog.blade.php
 resources/views/marine/settings.blade.php
+resources/views/marine/site.blade.php
+resources/views/marine/ports.blade.php
+resources/views/marine/upload_js.blade.php
