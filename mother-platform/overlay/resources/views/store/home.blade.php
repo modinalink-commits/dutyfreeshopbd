@@ -207,7 +207,7 @@ function first(){var f=tr.children[0];if(f&&f.classList.contains('hxv'))active()
 if(document.readyState==='complete')setTimeout(first,300);else addEventListener('load',function(){setTimeout(first,300)})});</script>
 @php $__bfH = false; try { $__bfH = \App\Support\BlackFriday::running() && count(\App\Support\BlackFriday::ids()) > 0 && !\App\Support\CleanSite::on() && \App\Support\BlackFriday::set('hero_only', '1') === '1'; } catch (\Throwable $e) {} @endphp
 @if($__bfH)
-@include('store.bf_hero')
+<div class="w hx"><div class="hx-m">@include('store.bf_hero')</div>@include('store.hero_side')</div>
 @elseif(($s['home_hero'] ?? '1') !== '0')
 @php $__gp =($s['home_globe'] ?? '1') === '1' ? \App\Http\Controllers\StoreController::globeProducts() : collect(); @endphp
 @php $__ms = ($s['hero_member_slide'] ?? '1') !== '0'; $__dm = ($s['hero_district_slide'] ?? '1') !== '0'; $__om = ($s['hero_offers_slide'] ?? '1') !== '0'; $__wt = ($s['hero_watch_slide'] ?? '1') !== '0'; $__lxs = ($s['hero_lux_slides'] ?? '1') !== '0'; @endphp
