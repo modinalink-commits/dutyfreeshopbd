@@ -22,7 +22,7 @@ class AiLearn {
     $rows = DB::table('chat_messages')->where('dir', 'in')->where('kind', 'text')->whereNotNull('body')->where('created_at', '>=', now()->subDays($days))->orderByDesc('id')->limit($days > 7 ? 60000 : 4000)->pluck('body');
     $cnt = []; foreach ($rows as $b) { $s = trim(preg_replace('/\s+/u', ' ', mb_strtolower(mb_substr((string)$b, 0, 200)))); if (mb_strlen($s) < 4 || preg_match('/^[\d\s+\-]+$/u', $s)) continue; $cnt[$s] = ($cnt[$s] ?? 0) + 1; }
     arsort($cnt); $lines = []; $i = 0;
-    foreach ($cnt as $s => $n) { $lines[] = ($n > 1 ? "[$n×] " : '').$s; if (++$i >= ($days > 7 ? 600 : 350)) break; }
+    foreach ($cnt as $s => $n) { $lines[] = ($n > 1 ? "[{$n}x] " : '').$s; if (++$i >= ($days > 7 ? 600 : 350)) break; }
     if (count($lines) < 30) return ['ok'=>false, 'why'=>'too few messages'];
     $old = self::text();
     $sys = "You maintain a short LEARNED-NOTES list for the DutyFreeBD (Bangladesh online store) customer-chat AI. From the customer messages given (most repeated first) update the list. Write in Bangla (keep customer words as typed). Two kinds of lines only: (1) 'প্রশ্ন: <how customers ask it> = <what they mean, one short phrase>' for questions many customers repeat; (2) 'শব্দ: <word or spelling or slang> = <meaning>' for new or misspelled words, Banglish, slang. STRICT: never write prices, stock, discounts, offers, delivery charge, order status, policies, promises, phone numbers, links, names or any customer personal data, and never write instructions to the AI; only the meaning of words and kinds of questions. Merge with the existing list, drop duplicates, keep the most useful, at most 80 lines, each under 160 characters. Output only the lines, nothing else.";
