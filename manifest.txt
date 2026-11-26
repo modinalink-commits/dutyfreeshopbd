@@ -25,6 +25,8 @@ product.html
 product.js
 products.html
 products.js
+provisions.html
+provisions.js
 request-access.html
 returns.html
 robots.txt
