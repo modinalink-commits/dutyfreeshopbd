@@ -202,6 +202,23 @@ class MarineController extends Controller
     return redirect('/admin/marine/ports')->with('ok', 'Saved. The marine site shows it within a few minutes.');
   }
 
+  /** Vessel Tracking: the AIS data source for the marine site. The key is stored encrypted and never shown again. */
+  public static function aisOn(): bool { try { return (string)DB::table('settings')->where('key', 'marine_ais_on')->value('value') === '1' && (string)\App\Support\Sms::secret('marine_aisstream_key') !== ''; } catch (\Throwable $e) { return false; } }
+  public function tracking() {
+    $has = false; try { $has = (string)\App\Support\Sms::secret('marine_aisstream_key') !== ''; } catch (\Throwable $e) {}
+    $st = ['vessels' => 0, 'named' => 0, 'last' => null]; try { if (\Illuminate\Support\Facades\Schema::hasTable('marine_vessels')) { $st['vessels'] = (int)DB::table('marine_vessels')->count(); $st['named'] = (int)DB::table('marine_vessels')->whereNotNull('imo')->count(); $st['last'] = DB::table('marine_vessels')->max('seen_at'); } } catch (\Throwable $e) {}
+    return view('marine.tracking', ['has' => $has, 'on' => (string)DB::table('settings')->where('key', 'marine_ais_on')->value('value') === '1', 'st' => $st, 'hb' => \Illuminate\Support\Facades\Cache::get('marine_ais_hb'), 'err' => \Illuminate\Support\Facades\Cache::get('marine_ais_err'), 'site' => self::SITE]);
+  }
+  public function saveTracking(Request $r) {
+    if (!\App\Support\ProfitFloor::admin()) return back()->with('ok', 'Only an admin can change this.');
+    $k = trim((string)$r->input('key')); $msg = [];
+    if ($r->input('remove')) { \App\Support\Sms::setSecret('marine_aisstream_key', null); $msg[] = 'Key removed.'; }
+    elseif ($k !== '') { if (!preg_match('/^[A-Za-z0-9_\-]{20,128}$/', $k)) return back()->with('ok', 'That does not look like an AISStream key. Copy it again from your AISStream account page.'); \App\Support\Sms::setSecret('marine_aisstream_key', $k); $msg[] = 'Key saved (encrypted).'; }
+    DB::table('settings')->updateOrInsert(['key' => 'marine_ais_on'], ['value' => $r->input('on') ? '1' : '0', 'updated_at' => now()]);
+    try { \App\Support\Procure::audit('marine.tracking', 'Marine vessel tracking source: ' . ($r->input('on') ? 'on' : 'off') . ($k !== '' ? ', key replaced' : '') . ($r->input('remove') ? ', key removed' : ''), null, null); } catch (\Throwable $e) {}
+    return redirect('/admin/marine/tracking')->with('ok', trim(implode(' ', $msg) . ' Saved.'));
+  }
+
   public function settings() { return view('marine.settings', ['conf' => self::conf(), 'site' => self::SITE]); }
   public function saveSettings(Request $r) {
     $d = $r->validate(['marine_desk_email' => 'nullable|email|max:160', 'marine_desk_phone' => ['nullable', 'max:30', 'regex:/^[0-9+ ()-]*$/'], 'marine_desk_whatsapp' => ['nullable', 'max:30', 'regex:/^[0-9+ ()-]*$/']]);
