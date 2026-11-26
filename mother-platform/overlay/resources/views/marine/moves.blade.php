@@ -29,7 +29,7 @@ $col = ['draft' => ['#F3F4F6', '#374151'], 'verified' => ['#DBEAFE', '#1E40AF'],
 @if($v->internal_note)<div style="color:#374151;max-width:220px">Note: {{ \Illuminate\Support\Str::limit($v->internal_note, 90) }}</div>@endif</td>
 <td style="padding:8px 10px"><div style="display:flex;gap:6px;flex-wrap:wrap"><a class="btn g" style="padding:5px 10px;font-size:12px" href="/admin/marine/movements?edit={{ $v->id }}#form">Edit</a>
 <form method="post" action="/admin/marine/movements/{{ $v->id }}/act" style="margin:0;display:flex;gap:6px;flex-wrap:wrap">@csrf
-@if($v->status === 'draft')<button name="action" value="verify" class="btn" style="padding:5px 10px;font-size:12px">Mark Verified</button>@endif
+@if($v->status === 'draft')<button name="action" value="verify" class="btn" style="padding:5px 10px;font-size:12px">Mark Verified</button><button name="action" value="delete" class="btn g" style="padding:5px 10px;font-size:12px;color:#991B1B">Delete draft</button>@endif
 @if($v->status === 'verified')<button name="action" value="publish" class="btn" style="padding:5px 10px;font-size:12px">Publish</button>@endif
 @if($v->status === 'published')<button name="action" value="unpublish" class="btn g" style="padding:5px 10px;font-size:12px;color:#991B1B">Take off the site</button>@endif
 </form></div></td></tr>

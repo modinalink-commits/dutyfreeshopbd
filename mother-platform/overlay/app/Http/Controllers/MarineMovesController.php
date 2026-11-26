@@ -77,6 +77,9 @@ class MarineMovesController extends Controller {
       DB::table('marine_port_visits')->where('id', $v->id)->update(['status' => 'published', 'published_by' => $by, 'published_at' => $now, 'updated_by' => $by, 'updated_at' => $now]); self::audit('marine.moves.publish', 'Port visit published: ' . $v->vessel . ' IMO ' . $v->imo, ['status' => $v->status], ['status' => 'published', 'by' => $by]); return back()->with('ok', 'Published. The marine site shows it within a minute.'); }
     if ($a === 'unpublish') { if ($v->status !== 'published') return back();
       DB::table('marine_port_visits')->where('id', $v->id)->update(['status' => 'verified', 'published_by' => null, 'published_at' => null, 'updated_by' => $by, 'updated_at' => $now]); self::audit('marine.moves.unpublish', 'Port visit taken off the site: ' . $v->vessel . ' IMO ' . $v->imo, ['status' => 'published'], ['status' => 'verified', 'by' => $by]); return back()->with('ok', 'Taken off the site. It stays Verified.'); }
+    if ($a === 'delete') { if ($v->status !== 'draft') return back()->with('bad', 'Only a Draft entry can be deleted. Take it off the site first.');
+      foreach (DB::table('marine_documents')->where('visit_id', $v->id)->get() as $d) { try { Storage::disk('local')->delete($d->path); } catch (\Throwable $x) {} } DB::table('marine_documents')->where('visit_id', $v->id)->delete();
+      DB::table('marine_port_visits')->where('id', $v->id)->delete(); self::audit('marine.moves.delete', 'Draft port visit deleted: ' . $v->vessel . ' IMO ' . $v->imo, (array)$v, null); return redirect('/admin/marine/movements')->with('ok', 'Draft deleted.'); }
     return back();
   }
   public function doc($id) {
