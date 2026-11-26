@@ -39,5 +39,5 @@ function row(k,x){if(x===null||x===undefined||x==='')return;var w=el('div');w.ap
 row('IMO number',v.imo);row('MMSI',v.mmsi);row('Call sign',v.callsign);row('Vessel type',v.type);row('Flag',v.flag);row('Length × beam',v.length&&v.beam?v.length+' m × '+v.beam+' m':(v.length?v.length+' m':''));row('Draught',v.draught?v.draught+' m':'');
 row('Status',v.status);row('Destination (as reported)',v.destination);row('ETA (month-day, UTC)',v.eta);row('Speed / course',v.sog!==null?v.sog+' kn'+(v.cog!==null?' / '+v.cog+'°':''):'');
 row('Last position',v.lat!==null&&v.lon!==null?Math.abs(v.lat).toFixed(4)+'°'+(v.lat<0?'S':'N')+', '+Math.abs(v.lon).toFixed(4)+'°'+(v.lon<0?'W':'E'):'');row('Position received',ago(v.position_at));row('Last seen',ago(v.seen));
-c.appendChild(dl);c.appendChild(el('span','sub','From AIS signals broadcast by the vessel and received near the Bangladesh coast. For information only, not for navigation.'));c.hidden=false});
+c.appendChild(dl);c.appendChild(el('span','sub','From AIS signals broadcast by the vessel. For information only, not for navigation.'));c.hidden=false});
 })();
