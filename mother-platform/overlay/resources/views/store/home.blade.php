@@ -205,8 +205,11 @@ box.addEventListener('click',function(e){var pb=e.target.closest&&e.target.close
 document.addEventListener('visibilitychange',function(){if(!cur||!cur.pl||!cur.pl.pauseVideo)return;try{document.hidden?cur.pl.pauseVideo():cur.pl.playVideo()}catch(e){}});
 function first(){var f=tr.children[0];if(f&&f.classList.contains('hxv'))active()}
 if(document.readyState==='complete')setTimeout(first,300);else addEventListener('load',function(){setTimeout(first,300)})});</script>
-@if(($s['home_hero'] ?? '1') !== '0')
-@php $__gp = ($s['home_globe'] ?? '1') === '1' ? \App\Http\Controllers\StoreController::globeProducts() : collect(); @endphp
+@php $__bfH = false; try { $__bfH = \App\Support\BlackFriday::running() && count(\App\Support\BlackFriday::ids()) > 0 && !\App\Support\CleanSite::on() && \App\Support\BlackFriday::set('hero_only', '1') === '1'; } catch (\Throwable $e) {} @endphp
+@if($__bfH)
+@include('store.bf_hero')
+@elseif(($s['home_hero'] ?? '1') !== '0')
+@php $__gp =($s['home_globe'] ?? '1') === '1' ? \App\Http\Controllers\StoreController::globeProducts() : collect(); @endphp
 @php $__ms = ($s['hero_member_slide'] ?? '1') !== '0'; $__dm = ($s['hero_district_slide'] ?? '1') !== '0'; $__om = ($s['hero_offers_slide'] ?? '1') !== '0'; $__wt = ($s['hero_watch_slide'] ?? '1') !== '0'; $__lxs = ($s['hero_lux_slides'] ?? '1') !== '0'; @endphp
 @if($__gp->count() && ($__ms || $__dm || $__om))
 <div class="w hx"><div class="hx-m"><div class="sld hxs" data-auto="10000"><div class="sl-t">@include('store.best_slide')@foreach($slides as $sl)
@@ -412,7 +415,7 @@ body .cs .pc .on{margin-top:auto}
 @if(!empty($showcase) && count($showcase) && ($s['home_showcase'] ?? '1') !== '0')
 @include('store.showcase')
 @endif
-@if(($s['home_offer_banners'] ?? '1') !== '0' && $offerSlides->count())
+@if(!$__bfH && ($s['home_offer_banners'] ?? '1') !== '0' && $offerSlides->count())
 <div class="w osl" style="padding-top:34px"><div class="sld" data-auto="5000"><div class="sl-t">@foreach($offerSlides as $os)
 @php $__om = (is_string($os->image) && str_starts_with($os->image, '/banners/') && is_file(public_path(preg_replace('/\.\w+$/', '.mp4', ltrim($os->image, '/'))))) ? preg_replace('/\.\w+$/', '.mp4', $os->image) : null; @endphp
 <a href="{{ $os->link ?: '#flash' }}"@if($__om) class="osv"@endif><img src="{{ $os->image }}" alt="DutyFree BD offer" loading="lazy" width="1266" height="650">@if($__om)<video class="osvv" data-src="{{ $__om }}" muted loop playsinline preload="none" aria-hidden="true" tabindex="-1"></video>@endif</a>

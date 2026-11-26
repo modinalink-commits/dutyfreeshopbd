@@ -1954,3 +1954,4 @@ public/bf/kit/kit-sunglasses.jpg
 public/bf/kit/kit-watches.jpg
 database/migrations/2026_11_26_235000_voice_bf_daily_limit.php
 database/migrations/2026_11_26_235500_voice_bf_daily_limit_max.php
+resources/views/store/bf_hero.blade.php

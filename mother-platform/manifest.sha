@@ -56,7 +56,7 @@ e92c5075c5266882f35b3a3e18bfe14f44d16178 resources/views/report_details.blade.ph
 dffd2f93344fd37f7a9c59bed1f92d797a8a5ebd resources/views/store/layout.blade.php
 80d4fbcccf85561a18b9ea7f3555139732832941 resources/views/store/card.blade.php
 4a5eb7ee8d7960886fcb97c690bbb604ec69eb1f resources/views/store/home_sec.blade.php
-d02f81587ba2af0597216406b6d06eb4ea954427 resources/views/store/home.blade.php
+d53338700b9ac24e7f5b19b604108669ab9f0f6b resources/views/store/home.blade.php
 94f2cbd77b6dd59f371ed09133bfb9d25c1b53cb resources/views/store/category.blade.php
 d6d91112a993c4a13a31c4083964b25948710a3b resources/views/store/product.blade.php
 bb3768d278e3bf05865aa4877098a62d0d5039dc resources/views/store/search.blade.php
@@ -1028,7 +1028,7 @@ ae95eaa1060269eda73728eab705c533b12883a1 resources/views/store/cat_slider.blade.
 227f6c073d67f27ac1432c1435d4b2c201a7a27d resources/views/store/hero_slider.blade.php
 19868c75eed7a35e157d72f2656a6555cd44324e resources/views/store/cat_slider_css.blade.php
 61f2a85b2e7ca7856c47de0e1f313b5be31790d6 resources/views/store/cat_slider_js.blade.php
-5927737c2e67b1fd7f696bb625ec9c4bdae07ad0 resources/views/store/cat_slider_one.blade.php
+e646f8c38c3f28384a7dfbc8bf5164a2e72f6ee9 resources/views/store/cat_slider_one.blade.php
 7acf8b2732c5215ded7b6000b57ea0daa845dec8 resources/views/admin_bell.blade.php
 7a6b0c91cb3e194fec990cb7b9fbbb97cfa32d49 resources/views/alerts_all.blade.php
 ba0d763d88870cf44f11cb35ff93a9a03367e020 app/Support/AdminAlerts.php
@@ -1928,7 +1928,7 @@ b41378a52ad795659b63ce273d838f48d82f371b resources/marine/cabin120/import.csv
 7ef9f78349aba7b14bebf870a41c9bf6c4330bd4 app/Http/Controllers/BlackFridayController.php
 64729114c6bee237fb3e004b115afe523b7b32a4 resources/views/black_friday_plan.blade.php
 1ad0f26eb6827c3a13eda174831de12d8c643f21 database/migrations/2026_11_26_000210_black_friday_items.php
-7c7e2ca7bfc7c6467945a69f5e6e2c1894f37613 resources/views/store/bf_banner.blade.php
+34f362865a1a82a36e3ae98d0469339268388045 resources/views/store/bf_banner.blade.php
 fa0be6620c0c4d3f4e8fe9a3366aed0fb4bd95bd resources/views/store/black_friday.blade.php
 e474678048d826b0d840ba880d3e8ae646162945 public/black-friday-badge.webp
 0590ef05b59425769abc929cf80127b7dd8c205c public/black-friday-og.jpg
@@ -1954,3 +1954,4 @@ aaeac1d84dda54ddde2500a28aba439036bd036a public/bf/kit/kit-sunglasses.jpg
 f493e41acd05866821f871a283d9428beef43978 public/bf/kit/kit-watches.jpg
 4014c75d1bd7b9ab0c10b85e915f1480b8c84689 database/migrations/2026_11_26_235000_voice_bf_daily_limit.php
 adc7fb59cf51d1856073db129c64c36b6fb521d7 database/migrations/2026_11_26_235500_voice_bf_daily_limit_max.php
+0c1cd348f78f2990f48923f867fa237d919fb856 resources/views/store/bf_hero.blade.php
