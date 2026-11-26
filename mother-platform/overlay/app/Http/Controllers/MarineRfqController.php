@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Storage;
 /** Ship Provisions (quotation-only items): import with preflight and dry run, desk review (port checks, packshot, publish), and the public list for the marine site.
  *  Nothing reaches the public list or the requisition form until an item is Published AND the catalogue is released. A preview key shows drafts to reviewers. */
 class MarineRfqController extends Controller {
-  const EXPECT = ['rows' => 160, 'sections' => 12];
+  private static function key(string $k, string $set): string { return $set === 'provisions' ? $k : $k . '_' . $set; }   // per-catalogue settings; the first catalogue keeps its original keys
   private static function who(): string { return mb_substr((string)(optional(auth()->user())->name ?? 'staff'), 0, 120); }
   private static function audit(string $act, string $what, $old = null, $new = null): void { try { \App\Support\Procure::audit($act, $what, $old, $new); } catch (\Throwable $e) {} }
   private static function js(string $k): array { try { $v = DB::table('settings')->where('key', $k)->value('value'); $a = $v ? json_decode($v, true) : null; return is_array($a) ? $a : []; } catch (\Throwable $e) { return []; } }
@@ -17,40 +17,43 @@ class MarineRfqController extends Controller {
   private static function today(): string { return now('Asia/Dhaka')->toDateString(); }
 
   /** Reads the bundled set and checks it. Sourcing notes are not part of it: they are desk-only and uploaded on the page, never kept in the code repository. */
-  private static function load(): array {
-    $get = fn(string $f) => is_file(Q::dir($f)) ? (string)file_get_contents(Q::dir($f)) : null;
+  private static function load(string $set): array {
+    $get = fn(string $f) => is_file(Q::dir($f, $set)) ? (string)file_get_contents(Q::dir($f, $set)) : null; $S = Q::SETS[$set];
     $csv = $get('import.csv'); if ($csv === null) return ['ok' => false, 'file' => ['The import file is not on the server yet.'], 'rows' => [], 'good' => [], 'stats' => ['rows' => 0, 'unique_skus' => 0, 'sections' => 0, 'valid' => 0, 'with_problems' => 0]];
-    [$rows, $fp] = Q::parseCsv($csv, Q::HEAD); $man = null; $m = $get('manifest.csv'); if ($m === null) $fp[] = 'The image manifest is not on the server.'; else { [$man, $mp] = Q::parseCsv($m); foreach ($mp as $x) $fp[] = 'Image manifest: ' . $x; }
-    $pf = Q::preflight($rows, $fp, $man, fn(string $f) => is_file(Q::dir('img/' . $f)) && filesize(Q::dir('img/' . $f)) > 0, self::EXPECT);
-    return $pf;
+    [$rows, $fp] = Q::parseCsv($csv, $set === 'cabin' ? Q::HEAD_CABIN : Q::HEAD); $man = null; $m = $get('manifest.csv'); if ($m === null) $fp[] = 'The image manifest is not on the server.'; else { [$man, $mp] = Q::parseCsv($m); foreach ($mp as $x) $fp[] = 'Image manifest: ' . $x; }
+    $px = $S['px'];
+    $img = function (string $f) use ($set, $px) { $p = Q::dir('img/' . $f, $set); if (!is_file($p) || filesize($p) <= 0) return false; if (!$px) return true;
+      $i = @getimagesize($p); return ($i && $i[0] === $px && $i[1] === $px && ($i['mime'] ?? '') === 'image/webp') ? true : 'Image ' . $f . ' is not a ' . $px . ' x ' . $px . ' WebP file.'; };
+    return Q::preflight($rows, $fp, $man, $img, ['rows' => $S['rows'], 'sections' => $S['sections']], $set);
   }
 
   // ---------------- admin ----------------
   public function index(Request $r) {
     if (!Q::ready()) return view('marine.rfq', ['ready' => false]);
-    $last = self::js('marine_rfq_last'); $wrote = self::js('marine_rfq_last_write'); if ($r->query('report') === 'csv' && $r->query('run') === 'write') $last = $wrote;
+    $set = Q::set($r->query('catalog')); $last = self::js(self::key('marine_rfq_last', $set)); $wrote = self::js(self::key('marine_rfq_last_write', $set)); if ($r->query('report') === 'csv' && $r->query('run') === 'write') $last = $wrote;
     if ($r->query('report') === 'csv') {
       $out = fopen('php://temp', 'r+'); fputcsv($out, ['sku', 'result', 'detail'], ',', '"', '');
       foreach (($last['file'] ?? []) as $x) fputcsv($out, ['(file)', 'problem', $x], ',', '"', '');
       foreach (($last['rows'] ?? []) as $x) fputcsv($out, [$x[0], $x[1], $x[2]], ',', '"', '');
-      rewind($out); return response(stream_get_contents($out), 200, ['Content-Type' => 'text/csv; charset=UTF-8', 'Content-Disposition' => 'attachment; filename="provisions-import-report.csv"', 'Cache-Control' => 'no-store, private']);
+      rewind($out); return response(stream_get_contents($out), 200, ['Content-Type' => 'text/csv; charset=UTF-8', 'Content-Disposition' => 'attachment; filename="' . $set . '-import-report.csv"', 'Cache-Control' => 'no-store, private']);
     }
     $st = isset(Q::STATES[$r->query('state')]) ? (string)$r->query('state') : 'all'; $sec = preg_match('/^[a-z0-9-]{1,60}$/', (string)$r->query('section')) ? (string)$r->query('section') : ''; $q = mb_substr(trim((string)$r->query('q')), 0, 60);
-    $rows = DB::table('marine_rfq_items')->when($st !== 'all', fn($w) => $w->where('state', $st))->when($sec !== '', fn($w) => $w->where('section_slug', $sec))
+    $base = fn() => DB::table('marine_rfq_items')->where('catalog', $set);
+    $rows = $base()->when($st !== 'all', fn($w) => $w->where('state', $st))->when($sec !== '', fn($w) => $w->where('section_slug', $sec))
       ->when($q !== '', function ($w) use ($q) { $l = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $q) . '%'; $w->where(fn($x) => $x->where('sku', 'ilike', $l)->orWhere('name_en', 'ilike', $l)->orWhere('name_bn', 'ilike', $l)->orWhere('brand', 'ilike', $l)); })
       ->orderBy('sku')->paginate(40)->withQueryString();
     $ids = collect($rows->items())->pluck('id')->all();
-    return view('marine.rfq', ['ready' => true, 'rows' => $rows, 'st' => $st, 'sec' => $sec, 'q' => $q, 'last' => $last, 'wrote' => $wrote, 'runs' => self::js('marine_rfq_runs'),
+    return view('marine.rfq', ['ready' => true, 'rows' => $rows, 'st' => $st, 'sec' => $sec, 'q' => $q, 'last' => $last, 'wrote' => $wrote, 'runs' => self::js(self::key('marine_rfq_runs', $set)), 'set' => $set, 'sets' => Q::SETS,
       'checks' => DB::table('marine_rfq_checks')->whereIn('item_id', $ids ?: [0])->orderBy('port')->get()->groupBy('item_id'), 'today' => self::today(),
-      'n' => DB::table('marine_rfq_items')->selectRaw('state, count(*) c')->groupBy('state')->pluck('c', 'state'), 'sections' => DB::table('marine_rfq_items')->selectRaw('section_slug, min(section_name) n, count(*) c')->groupBy('section_slug')->orderBy('n')->get(),
-      'packshots' => DB::table('marine_rfq_items')->whereNotNull('packshot_path')->count(), 'checked' => DB::table('marine_rfq_checks')->where('valid_until', '>=', self::today())->distinct()->count('item_id'),
-      'released' => Q::released(), 'token' => Q::token(), 'site' => MarineController::SITE, 'ports' => Q::PORTS, 'states' => Q::STATES, 'handling' => Q::HANDLING, 'open' => (int)$r->query('open')]);
+      'n' => $base()->selectRaw('state, count(*) c')->groupBy('state')->pluck('c', 'state'), 'sections' => $base()->selectRaw('section_slug, min(section_name) n, count(*) c')->groupBy('section_slug')->orderBy('n')->get(),
+      'packshots' => $base()->whereNotNull('packshot_path')->count(), 'checked' => DB::table('marine_rfq_checks')->whereIn('item_id', $base()->select('id'))->where('valid_until', '>=', self::today())->distinct()->count('item_id'),
+      'released' => Q::released($set), 'token' => Q::token(), 'site' => MarineController::SITE, 'ports' => Q::PORTS, 'states' => Q::STATES, 'handling' => Q::HANDLING, 'open' => (int)$r->query('open')]);
   }
 
   /** Preflight then a dry run (nothing written), or the import itself (drafts). The import stops before writing when the preflight finds any problem. */
   public function run(Request $r) {
-    if (!Q::ready()) return back(); $apply = $r->input('mode') === 'apply'; $by = self::who();
-    $pf = self::load(); $skus = array_keys($pf['good']);
+    if (!Q::ready()) return back(); $apply = $r->input('mode') === 'apply'; $by = self::who(); $set = Q::set($r->input('catalog')); $home = '/admin/marine/provisions?catalog=' . $set;
+    $pf = self::load($set); $skus = array_keys($pf['good']);
     $existing = []; foreach (DB::table('marine_rfq_items')->whereIn('sku', $skus ?: ['-'])->get() as $e) $existing[$e->sku] = (array)$e;
     $taken = []; foreach (array_chunk($skus, 200) as $ch) foreach (DB::table('products')->whereIn('sku', $ch)->get(['id', 'sku']) as $p) $taken[$p->sku] = 'This SKU is already used by store product #' . $p->id . '. Nothing was written; choose which one keeps the code.';
     $plan = Q::plan($pf['good'], $existing, $taken); $c = Q::counts($plan, $pf['rows']); $wrote = false;
@@ -60,23 +63,29 @@ class MarineRfqController extends Controller {
           if ($p['action'] === 'created') DB::table('marine_rfq_items')->insert($p['set'] + ['state' => 'draft', 'sale_mode' => 'RFQ', 'currency' => 'USD', 'price_usd' => null, 'created_by' => $by, 'updated_by' => $by, 'created_at' => $now, 'updated_at' => $now]);
           elseif ($p['action'] === 'updated') DB::table('marine_rfq_items')->where('sku', $p['sku'])->update($p['set'] + ['updated_by' => $by, 'updated_at' => $now]);
         } });
-      $wrote = true; self::audit('marine.rfq.import', 'Ship provisions import: ' . $c['created'] . ' created as drafts, ' . $c['updated'] . ' updated, ' . $c['conflict'] . ' conflicts, ' . $c['skipped'] . ' unchanged', null, $c);
+      $wrote = true; self::audit('marine.rfq.import', Q::SETS[$set]['name'] . ' import: ' . $c['created'] . ' created as drafts, ' . $c['updated'] . ' updated, ' . $c['conflict'] . ' conflicts, ' . $c['skipped'] . ' unchanged', null, $c);
     }
     $rows = []; foreach ($pf['rows'] as $k => $ps) $rows[] = [(string)$k, 'rejected', implode(' ', $ps)]; foreach ($plan as $p) $rows[] = [$p['sku'], $p['action'], $p['detail']];
     $mode = $apply ? ($wrote ? 'import' : 'import stopped') : 'dry run'; $at = now('Asia/Dhaka')->format('d M Y, H:i');
-    self::put('marine_rfq_last', ['at' => $at, 'by' => $by, 'mode' => $mode, 'ok' => $pf['ok'], 'stats' => $pf['stats'], 'counts' => $c, 'file' => $pf['file'], 'rows' => $rows]);
-    if ($wrote && ($c['created'] || $c['updated'] || $c['conflict'])) self::put('marine_rfq_last_write', ['at' => $at, 'by' => $by, 'mode' => $mode, 'ok' => true, 'stats' => $pf['stats'], 'counts' => $c, 'file' => [], 'rows' => $rows]);   // the row report of the last import that changed something is kept apart, so a later dry run does not replace it
-    $runs = self::js('marine_rfq_runs'); array_unshift($runs, ['at' => $at, 'by' => $by, 'mode' => $mode, 'ok' => $pf['ok'], 'counts' => $c]); self::put('marine_rfq_runs', array_slice($runs, 0, 12));
+    self::put(self::key('marine_rfq_last', $set), ['at' => $at, 'by' => $by, 'mode' => $mode, 'ok' => $pf['ok'], 'stats' => $pf['stats'], 'counts' => $c, 'file' => $pf['file'], 'rows' => $rows]);
+    if ($wrote && ($c['created'] || $c['updated'] || $c['conflict'])) self::put(self::key('marine_rfq_last_write', $set), ['at' => $at, 'by' => $by, 'mode' => $mode, 'ok' => true, 'stats' => $pf['stats'], 'counts' => $c, 'file' => [], 'rows' => $rows]);   // the row report of the last import that changed something is kept apart, so a later dry run does not replace it
+    $runs = self::js(self::key('marine_rfq_runs', $set)); array_unshift($runs, ['at' => $at, 'by' => $by, 'mode' => $mode, 'ok' => $pf['ok'], 'counts' => $c]); self::put(self::key('marine_rfq_runs', $set), array_slice($runs, 0, 12));
     $sum = $c['created'] . ' created, ' . $c['updated'] . ' updated, ' . $c['conflict'] . ' conflicted, ' . $c['skipped'] . ' skipped, ' . $c['rejected'] . ' rejected by the preflight';
-    if ($apply && !$pf['ok']) return redirect('/admin/marine/provisions')->with('bad', 'Nothing was imported: the preflight found problems. Fix the rows in the report and run it again. (' . $sum . ')');
-    return redirect('/admin/marine/provisions')->with($pf['ok'] && !$c['conflict'] ? 'ok' : 'bad', ($apply ? 'Import finished: ' : 'Dry run, nothing written: ') . $sum . '.');
+    if ($apply && !$pf['ok']) return redirect($home)->with('bad', 'Nothing was imported: the preflight found problems. Fix the rows in the report and run it again. (' . $sum . ')');
+    return redirect($home)->with($pf['ok'] && !$c['conflict'] ? 'ok' : 'bad', ($apply ? 'Import finished: ' : 'Dry run, nothing written: ') . $sum . '.');
   }
 
   /** Desk-only sourcing notes: the Sourcing sheet saved as CSV. Kept in the database only, shown only on this page. */
   public function sourcing(Request $r) {
     if (!Q::ready()) return back(); $f = $r->file('sheet'); if (!$f || !$f->isValid()) return back()->with('bad', 'Choose the Sourcing sheet saved as a CSV file.');
     if (strtolower((string)$f->getClientOriginalExtension()) !== 'csv' || $f->getSize() > 1048576) return back()->with('bad', 'The sourcing notes must be a CSV file of 1 MB or less.');
-    [$rows, $bad] = Q::parseCsv((string)file_get_contents($f->getRealPath())); if ($bad || !$rows || !array_key_exists('sku', $rows[0])) return back()->with('bad', 'The file could not be read as the Sourcing sheet: it needs a "sku" column. ' . implode(' ', array_slice($bad, 0, 3)));
+    [$rows, $bad] = Q::parseCsv((string)file_get_contents($f->getRealPath())); if ($bad || !$rows || (!array_key_exists('sku', $rows[0]) && !array_key_exists('source_id', $rows[0]))) return back()->with('bad', 'The file could not be read as a sourcing sheet: it needs a "sku" or a "source_id" column. ' . implode(' ', array_slice($bad, 0, 3)));
+    if (!array_key_exists('sku', $rows[0])) {   // market sources keyed by source id: the note goes to every item that cites that source
+      $byId = Q::sourcesById($rows); $n = 0; $same = 0; $by = self::who();
+      foreach (DB::table('marine_rfq_items')->whereIn('source_ref', array_keys($byId) ?: ['-'])->get(['id', 'source_ref', 'sourcing']) as $it) { $js = $byId[$it->source_ref]; if ((string)$it->sourcing === $js) { $same++; continue; } DB::table('marine_rfq_items')->where('id', $it->id)->update(['sourcing' => $js, 'updated_by' => $by, 'updated_at' => now()]); $n++; }
+      self::audit('marine.rfq.sourcing', 'Marine market sources uploaded: ' . $n . ' items updated', null, ['updated' => $n, 'unchanged' => $same, 'sources' => count($byId)]);
+      return back()->with('ok', 'Market sources: ' . count($byId) . ' sources read, ' . $n . ' items updated, ' . $same . ' unchanged.');
+    }
     $map = Q::sourcing($rows); $have = DB::table('marine_rfq_items')->whereIn('sku', array_keys($map) ?: ['-'])->pluck('sourcing', 'sku'); $n = 0; $same = 0; $by = self::who();
     foreach ($map as $sku => $js) { if (!$have->has($sku)) continue; if ((string)$have[$sku] === $js) { $same++; continue; } DB::table('marine_rfq_items')->where('sku', $sku)->update(['sourcing' => $js, 'updated_by' => $by, 'updated_at' => now()]); $n++; }
     self::audit('marine.rfq.sourcing', 'Ship provisions sourcing notes uploaded: ' . $n . ' items updated', null, ['updated' => $n, 'unchanged' => $same, 'unknown_sku' => count($map) - $n - $same]);
@@ -85,7 +94,7 @@ class MarineRfqController extends Controller {
 
   public function act(Request $r, $id) {
     if (!Q::ready()) return back(); $it = DB::table('marine_rfq_items')->where('id', (int)$id)->first(); if (!$it) abort(404);
-    $a = (string)$r->input('action'); $by = self::who(); $now = now(); $back = fn(string $k, string $m) => redirect('/admin/marine/provisions?' . http_build_query(array_filter(['q' => $it->sku, 'open' => $it->id])))->with($k, $m);
+    $a = (string)$r->input('action'); $by = self::who(); $now = now(); $back = fn(string $k, string $m) => redirect('/admin/marine/provisions?' . http_build_query(array_filter(['catalog' => $it->catalog, 'q' => $it->sku, 'open' => $it->id])))->with($k, $m);
     if ($a === 'check') {
       $port = isset(Q::PORTS[$r->input('port')]) ? (string)$r->input('port') : null; $sup = mb_substr(trim(strip_tags((string)$r->input('supplier'))), 0, 160); $qty = mb_substr(trim(strip_tags((string)$r->input('qty_available'))), 0, 60); $until = (string)$r->input('valid_until');
       if (!$port || $sup === '' || $qty === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $until) || !strtotime($until)) return $back('bad', 'A port check needs the port, the supplier or branch, the quantity available and the date it is valid until.');
@@ -100,7 +109,7 @@ class MarineRfqController extends Controller {
     if ($a === 'check_delete') { $c = DB::table('marine_rfq_checks')->where('id', (int)$r->input('check_id'))->where('item_id', $it->id)->first(); if ($c) { DB::table('marine_rfq_checks')->where('id', $c->id)->delete(); self::audit('marine.rfq.check_delete', 'Port check removed for ' . $it->sku . ' at ' . (Q::PORTS[$c->port] ?? $c->port), (array)$c, null); } return $back('ok', 'Port check removed.'); }
     if ($a === 'publish') { if ($it->state === 'published') return $back('ok', 'Already published.'); $p = Q::publishProblems($it); if ($p) return $back('bad', 'Cannot publish. ' . implode(' ', $p));
       DB::table('marine_rfq_items')->where('id', $it->id)->update(['state' => 'published', 'published_by' => $by, 'published_at' => $now, 'updated_by' => $by, 'updated_at' => $now]); self::audit('marine.rfq.publish', 'Ship provisions item published: ' . $it->sku . ' ' . $it->name_en, ['state' => $it->state], ['state' => 'published', 'by' => $by]);
-      return $back('ok', 'Published.' . (Q::released() ? ' The marine site shows it within a few minutes.' : ' It appears on the marine site when the catalogue is released.')); }
+      return $back('ok', 'Published.' . (Q::released($it->catalog) ? ' The marine site shows it within a few minutes.' : ' It appears on the marine site when the catalogue is released.')); }
     if ($a === 'unpublish') { if ($it->state !== 'published') return $back('ok', 'Already a draft.');
       DB::table('marine_rfq_items')->where('id', $it->id)->update(['state' => 'draft', 'published_by' => null, 'published_at' => null, 'updated_by' => $by, 'updated_at' => $now]); self::audit('marine.rfq.unpublish', 'Ship provisions item back to draft: ' . $it->sku, ['state' => 'published'], ['state' => 'draft', 'by' => $by]); return $back('ok', 'Back to Draft. It is off the marine site.'); }
     if ($a === 'packshot') {
@@ -120,13 +129,13 @@ class MarineRfqController extends Controller {
 
   /** Release switch for the whole catalogue, and a new preview key. Only an administrator. */
   public function release(Request $r) {
-    if (!Q::ready()) return back(); if (!\App\Support\ProfitFloor::admin()) abort(403); $a = (string)$r->input('action');
+    if (!Q::ready()) return back(); if (!\App\Support\ProfitFloor::admin()) abort(403); $a = (string)$r->input('action'); $set = Q::set($r->input('catalog')); $nm = Q::SETS[$set]['name'];
     if ($a === 'newkey') { Q::token(true); self::audit('marine.rfq.key', 'Ship provisions preview key replaced', null, ['by' => self::who()]); return back()->with('ok', 'New preview link made. The old link no longer works.'); }
     if ($a === 'publish_all') { $by = self::who(); $now = now(); $n = 0; $held = [];
-      foreach (DB::table('marine_rfq_items')->where('state', 'draft')->orderBy('id')->get() as $it) { if (Q::publishProblems($it)) { $held[] = $it->sku; continue; } DB::table('marine_rfq_items')->where('id', $it->id)->update(['state' => 'published', 'published_by' => $by, 'published_at' => $now, 'updated_by' => $by, 'updated_at' => $now]); $n++; }
-      self::audit('marine.rfq.publish_all', 'Ship provisions: ' . $n . ' draft items published together', null, ['published' => $n, 'held' => $held, 'by' => $by]);
+      foreach (DB::table('marine_rfq_items')->where('catalog', $set)->where('state', 'draft')->orderBy('id')->get() as $it) { if (Q::publishProblems($it)) { $held[] = $it->sku; continue; } DB::table('marine_rfq_items')->where('id', $it->id)->update(['state' => 'published', 'published_by' => $by, 'published_at' => $now, 'updated_by' => $by, 'updated_at' => $now]); $n++; }
+      self::audit('marine.rfq.publish_all', $nm . ': ' . $n . ' draft items published together', null, ['published' => $n, 'held' => $held, 'by' => $by]);
       return back()->with($held ? 'bad' : 'ok', $n . ' items published.' . ($held ? ' Not published (rule or missing image): ' . implode(', ', array_slice($held, 0, 20)) . '.' : '')); }
-    if ($a === 'on' || $a === 'off') { $was = Q::released(); self::put('marine_rfq_released', $a === 'on' ? '1' : '0'); self::audit('marine.rfq.release', 'Ship provisions catalogue ' . ($a === 'on' ? 'released to the marine site' : 'taken off the marine site'), ['released' => $was], ['released' => $a === 'on', 'by' => self::who()]);
+    if ($a === 'on' || $a === 'off') { $was = Q::released($set); self::put(Q::SETS[$set]['release'], $a === 'on' ? '1' : '0'); self::audit('marine.rfq.release', $nm . ' catalogue ' . ($a === 'on' ? 'released to the marine site' : 'taken off the marine site'), ['released' => $was], ['released' => $a === 'on', 'by' => self::who()]);
       return back()->with('ok', $a === 'on' ? 'Released. Published items are now on the marine site and in the requisition search.' : 'Taken off the marine site. Items and their states are kept.'); }
     return back();
   }
@@ -134,27 +143,27 @@ class MarineRfqController extends Controller {
   // ---------------- public ----------------
   /** Published items after release. With a valid preview key: every item, drafts marked, never cached. */
   public function publicList(Request $r) {
-    $prev = Q::ready() && Q::tokenOk($r->query('preview')); $rel = Q::ready() && Q::released(); $items = []; $secs = [];
+    $set = Q::set($r->query('catalog')); $prev = Q::ready() && Q::tokenOk($r->query('preview')); $rel = Q::ready() && Q::released($set); $items = []; $secs = [];
     if ($prev || $rel) {
-      $rows = DB::table('marine_rfq_items')->when(!$prev, fn($w) => $w->where('state', 'published'))->orderBy('id')->get(); $today = self::today();
+      $rows = DB::table('marine_rfq_items')->where('catalog', $set)->when(!$prev, fn($w) => $w->where('state', 'published'))->orderBy('id')->get(); $today = self::today();
       $chk = DB::table('marine_rfq_checks')->whereIn('item_id', $rows->pluck('id')->all() ?: [0])->where('valid_until', '>=', $today)->get()->groupBy('item_id');
       foreach ($rows as $it) {
         if (Q::publishProblems($it)) continue;
         $img = 'https://dutyfreebd.com/marine-api/rfq-image/' . $it->sku . '?v=' . strtotime((string)($it->packshot_at ?: $it->created_at)) . ($prev && !($rel && $it->state === 'published') ? '&preview=' . $r->query('preview') : '');
         $items[] = Q::publicRow($it, ($chk[$it->id] ?? collect())->all(), $img, $today);
-        $s = &$secs[$it->section_slug]; if (!$s) $s = ['slug' => $it->section_slug, 'name' => $it->section_name, 'kind' => Q::isSelection($it->section_slug) ? 'selection' : 'category', 'count' => 0, 'subs' => []]; $s['count']++; if (!in_array($it->sub_name, $s['subs'], true)) $s['subs'][] = $it->sub_name; unset($s);
+        $s = &$secs[$it->section_slug]; if (!$s) $s = ['slug' => $it->section_slug, 'name' => $it->section_name, 'kind' => Q::isSelection($it->section_slug) ? 'selection' : 'category', 'group' => (string)($it->group_name ?? ''), 'count' => 0, 'subs' => []]; $s['count']++; if ((string)$it->sub_name !== '' && !in_array($it->sub_name, $s['subs'], true)) $s['subs'][] = $it->sub_name; unset($s);
       }
     }
-    return response()->json(['released' => $rel, 'preview' => $prev, 'total' => count($items), 'sections' => array_values($secs), 'items' => $items])
+    return response()->json(['catalog' => $set, 'released' => $rel, 'preview' => $prev, 'total' => count($items), 'sections' => array_values($secs), 'items' => $items])
       ->header('Access-Control-Allow-Origin', MarineController::SITE)->header('Vary', 'Origin')->header('Cache-Control', $prev ? 'no-store, private' : 'public, max-age=180')->header('X-Robots-Tag', 'noindex');
   }
   /** One image per item: the approved packshot when there is one, otherwise the illustrative image. A draft image needs the preview key. */
   public function image(Request $r, $sku) {
-    if (!Q::ready()) abort(404); $it = DB::table('marine_rfq_items')->where('sku', (string)$sku)->first(['state', 'image_file', 'packshot_path']); if (!$it) abort(404);
-    $open = $it->state === 'published' && Q::released(); if (!$open && !Q::tokenOk($r->query('preview'))) abort(404);
+    if (!Q::ready()) abort(404); $it = DB::table('marine_rfq_items')->where('sku', (string)$sku)->first(['state', 'catalog', 'image_file', 'packshot_path']); if (!$it) abort(404);
+    $open = $it->state === 'published' && Q::released($it->catalog); if (!$open && !Q::tokenOk($r->query('preview'))) abort(404);
     $h = ['Cache-Control' => $open ? 'public, max-age=86400' : 'private, max-age=600', 'X-Content-Type-Options' => 'nosniff', 'Access-Control-Allow-Origin' => MarineController::SITE];
     if ($it->packshot_path && Storage::disk('local')->exists($it->packshot_path)) return response(Storage::disk('local')->get($it->packshot_path), 200, $h + ['Content-Type' => Q::IMG_EXT[strtolower(pathinfo($it->packshot_path, PATHINFO_EXTENSION))] ?? 'image/jpeg']);
-    $f = Q::dir('img/' . basename((string)$it->image_file)); if (!$it->image_file || !is_file($f)) abort(404);
+    $f = Q::dir('img/' . basename((string)$it->image_file), $it->catalog); if (!$it->image_file || !is_file($f)) abort(404);
     return response()->file($f, $h + ['Content-Type' => 'image/webp']);
   }
 }

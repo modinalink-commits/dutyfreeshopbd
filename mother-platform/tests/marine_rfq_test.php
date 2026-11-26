@@ -56,7 +56,7 @@ $chk = [['port' => 'chattogram', 'supplier' => 'Secret Fish Ltd', 'qty_available
 $pr = R::publicRow($it, $chk, 'https://x/i.webp', $today); $js = json_encode($pr, JSON_UNESCAPED_UNICODE);
 ok($pr['availability'] === [['port' => 'Chattogram', 'until' => '2026-11-28']], 'only a valid check gives availability');
 ok(!preg_match('/Secret|Fish Park|sourcing|supplier|retailer|procure|checked|Staff|রূপ|name_bn|published_by/u', $js), 'no desk-only data in the public row: ' . $js);
-ok(array_keys($pr) === ['id', 'sku', 'name', 'brand', 'section', 'sub', 'pack', 'pack_note', 'order_unit', 'handling', 'img', 'img_label', 'alt', 'sale', 'currency', 'availability', 'draft'], 'public field whitelist');
+ok(array_keys($pr) === ['id', 'sku', 'name', 'brand', 'section', 'sub', 'material', 'pack', 'pack_note', 'order_unit', 'handling', 'img', 'img_label', 'alt', 'group', 'sale', 'currency', 'availability', 'draft'], 'public field whitelist');
 ok($pr['draft'] === true && $pr['img_label'] === 'Illustrative image' && $pr['pack'] === '1 kg' && $pr['order_unit'] === 'KG' && $pr['pack_note'] === '4–5 fish per kg' && !array_key_exists('price', $pr), 'draft flag, image label, pack, no price');
 $pk = R::publicRow(['packshot_path' => 'p.webp', 'state' => 'published'] + $it, [], 'u', $today); ok($pk['img_label'] === '' && $pk['draft'] === false && str_contains($pk['alt'], 'product photo'), 'approved packshot drops the illustrative label');
 ok(R::publicRow($it, [], 'u', $today)['availability'] === [], 'no check, no availability');
@@ -73,4 +73,26 @@ if ($sourcing && is_file($sourcing)) {
 ok(count($sm) === 160 && $s1['primary_retailer'] === 'Shwapno' && str_starts_with($s1['source_url'], 'https://') && !isset($s1['alternate_retailer']), 'sourcing sheet read: 160 rows, empty fields dropped');
 }
 ok(R::sourcing([['sku' => 'MDP-DP-001', 'source_url' => 'javascript:alert(1)', 'primary_retailer' => '<b>X</b>', 'secret' => 'y'], ['sku' => 'bad', 'primary_retailer' => 'Z']]) === ['MDP-DP-001' => '{"primary_retailer":"X"}'], 'sourcing: only https links, known columns, valid SKUs');
+// ---- second catalogue: Cabin & Galley Stores ----
+$cs = $ov . '/resources/marine/cabin120'; [$cr, $cfp] = R::parseCsv(file_get_contents($cs . '/import.csv'), R::HEAD_CABIN); [$cm] = R::parseCsv(file_get_contents($cs . '/manifest.csv'));
+ok(!$cfp && count($cr) === 120 && $cr[0]['sku'] === 'MDCG-CK-001', 'cabin csv with a byte order mark parses to 120 rows');
+$cimg = function ($f) use ($cs) { $p = $cs . '/img/' . $f; if (!is_file($p)) return false; $i = @getimagesize($p); return ($i && $i[0] === 600 && $i[1] === 600 && $i['mime'] === 'image/webp') ? true : 'Image ' . $f . ' is not a 600 x 600 WebP file.'; };
+$cp = R::preflight($cr, $cfp, $cm, $cimg, ['rows' => 120, 'sections' => 10], 'cabin');
+ok($cp['ok'] && $cp['stats'] === ['rows' => 120, 'unique_skus' => 120, 'sections' => 10, 'valid' => 120, 'with_problems' => 0], 'cabin set passes preflight: ' . json_encode([$cp['file'], array_slice($cp['rows'], 0, 4)], JSON_UNESCAPED_UNICODE));
+$cg = $cp['good']; $c1 = $cg['MDCG-CK-001'] ?? [];
+ok(($c1['catalog'] ?? '') === 'cabin' && $c1['mcat'] === 'cabin' && $c1['group_name'] === 'Galley Stores' && $c1['material'] === 'Stainless steel' && $c1['size_spec'] === '30 x 18 cm' && $c1['order_uom'] === 'EA' && $c1['brand'] === null && $c1['pack_qty'] === null && $c1['handling'] === null && $c1['source_ref'] === 'C01', 'cabin row mapped: material, reference size, no brand, no pack quantity');
+ok(R::pack($c1) === '30 x 18 cm' && R::lineSize($c1) === '30 x 18 cm · Stainless steel', 'cabin size label');
+ok(count(array_filter($cg, fn($d) => $d['brand'] !== null)) === 0 && count(array_unique(array_column($cg, 'group_name'))) === 2, 'no brand anywhere; two sections');
+$x = R::preflight($cr, [], $cm, fn($f) => $f === 'MDCG-CK-002.webp' ? 'Image MDCG-CK-002.webp is not a 600 x 600 WebP file.' : true, null, 'cabin'); ok($x['rows'] === ['MDCG-CK-002' => ['Image MDCG-CK-002.webp is not a 600 x 600 WebP file.']], 'wrong image size is reported by name');
+$b = $cr; $b[0]['order_uom'] = 'PCS'; $b[1]['name_en'] = ''; $b[2]['material'] = ''; $b[3]['price_usd'] = '4'; $b[4]['section'] = 'Deck'; $b[5]['brand'] = 'Acme'; $x = R::preflight($b, [], null, fn($f) => true, null, 'cabin'); ok(count($x['rows']) === 6, 'cabin malformed rows reported: ' . count($x['rows']));
+$q1 = R::plan($cg, []); ok(R::counts($q1) === ['created' => 120, 'updated' => 0, 'conflict' => 0, 'skipped' => 0, 'rejected' => 0], 'cabin first run creates 120');
+$cdb = []; $i = 500; foreach ($q1 as $r) $cdb[$r['sku']] = $r['set'] + ['id' => ++$i, 'state' => 'draft', 'packshot_path' => null];
+ok(R::counts(R::plan($cg, $cdb)) === ['created' => 0, 'updated' => 0, 'conflict' => 0, 'skipped' => 120, 'rejected' => 0], 'cabin repeat run skips 120');
+$cdb['MDCG-CK-001']['size_spec'] = '40 x 20 cm'; $cdb['MDCG-CK-002']['material'] = 'Steel'; $cdb['MDCG-CK-003']['pack_note'] = 'x'; $q3 = R::plan($cg, $cdb); ok(R::counts($q3)['conflict'] === 2 && R::counts($q3)['updated'] === 1, 'changed size or material is a conflict, changed note is an update');
+ok(R::counts(R::plan($g + $cg, $db + $cdb))['created'] === 1, 'the two catalogues do not collide on SKU');
+$row = R::publicRow($cdb['MDCG-CL-010'], [], 'u', $today); ok($row['brand'] === '' && $row['material'] === 'Blackout fabric' && $row['pack'] === 'One eyelet panel' && $row['group'] === 'Cabin Stores' && $row['handling'] === '' && $row['sub'] === '' && $row['img_label'] === 'Illustrative image', 'cabin public row');
+ok(R::lineAsk($cdb['MDCG-CL-010']) === 'Berth or window size, e.g. 190 x 80 cm' && R::lineAsk($cdb['MDCG-CL-001']) === 'Berth or window size, e.g. 190 x 80 cm' && str_starts_with(R::lineAsk($cdb['MDCG-CK-004']), 'Size or details') && R::lineAsk($db['MDP-DP-003']) === null, 'textiles ask for the berth or window size; provisions ask nothing');
+$ln = R::orderLine($cdb['MDCG-CL-010'], 4.0, null, '120 x 90 cm, two windows'); ok($ln['unit'] === 'EA' && $ln['name'] === 'Blackout Curtain Panel' && $ln['size'] === 'One eyelet panel · Blackout fabric' && $ln['note'] === '120 x 90 cm, two windows' && $ln['qty'] === 4.0 && $ln['list_usd'] === null, 'cabin order line: quantity in the order unit, buyer dimensions in the note');
+ok(R::publishProblems($cdb['MDCG-CL-010']) === [], 'cabin item can be published');
+ok(R::sourcesById([['source_id' => 'C01', 'source_description' => 'Shop', 'market_evidence' => 'Listed', 'source_url' => 'https://x.example/a', 'reviewed_on' => '2026-11-26'], ['source_id' => 'zz', 'source_description' => 'no']]) === ['C01' => '{"primary_retailer":"Shop","listing_signal":"Listed","source_url":"https://x.example/a","reviewed_on":"2026-11-26"}'], 'market sources keyed by source id');
 echo ($f ? "FAILED $f of $n" : "ALL $n PASSED") . "\n"; exit($f ? 1 : 0);

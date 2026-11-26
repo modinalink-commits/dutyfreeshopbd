@@ -39,11 +39,11 @@ class MarineOrderController extends Controller
     $items = $rows->map(fn($x) => ['id' => (int)$x->id, 'sku' => (string)$x->sku, 'name' => (string)$x->name, 'size' => (string)($x->size ?? ''), 'usd' => number_format((float)$x->usd_price, 2, '.', '')])->all();
     // ship provisions (quotation only, no list price): listed after release, published items only
     if ($q !== '' && (int)$r->query('id') < 1 && \App\Support\MarineRfq::orderable()) { $l = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $q) . '%';
-      foreach (\App\Support\MarineRfq::forOrder()->where(fn($w) => $w->where('name_en', 'ilike', $l)->orWhere('sku', 'ilike', $l)->orWhere('brand', 'ilike', $l))->orderBy('name_en')->limit(10)->get() as $x) $items[] = self::rfqJs($x); }
+      foreach (\App\Support\MarineRfq::forOrder()->where(fn($w) => $w->where('name_en', 'ilike', $l)->orWhere('name_bn', 'ilike', $l)->orWhere('sku', 'ilike', $l)->orWhere('brand', 'ilike', $l))->orderBy('name_en')->limit(10)->get() as $x) $items[] = self::rfqJs($x); }
     return response()->json(['items' => $items])->header('Cache-Control', 'no-store, private');
   }
   /** A ship provisions item as the requisition form adds it: pack as the size text, order unit as the default unit, no price. */
-  private static function rfqJs($x): array { return ['rfq' => (int)$x->id, 'sku' => (string)$x->sku, 'name' => (string)$x->name_en . ($x->brand ? ' (' . $x->brand . ')' : ''), 'size' => \App\Support\MarineRfq::pack($x) . ($x->pack_note ? ', ' . $x->pack_note : ''), 'unit' => (string)$x->order_uom, 'usd' => null];
+  private static function rfqJs($x): array { return ['rfq' => (int)$x->id, 'sku' => (string)$x->sku, 'name' => (string)$x->name_en . ($x->brand ? ' (' . $x->brand . ')' : ''), 'size' => \App\Support\MarineRfq::lineSize($x), 'unit' => (string)$x->order_uom, 'usd' => null, 'ask' => \App\Support\MarineRfq::lineAsk($x)];
   }
   /** Catalog for a signed-in account, by marine category. Bonded Stores opens only with bonded approval; without it the tab explains how to get it. */
   public function catalog(Request $r) {
