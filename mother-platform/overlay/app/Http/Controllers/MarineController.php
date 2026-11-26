@@ -222,7 +222,7 @@ class MarineController extends Controller
   /** Only images uploaded through this admin (/uploads/...) may be shown on the marine site. */
   private static function img($v): string { $v = trim((string)$v); return preg_match('#^/uploads/[A-Za-z0-9._-]+$#', $v) ? $v : ''; }
   private static function link($v): string { $v = trim((string)$v); return ($v !== '' && preg_match('#^(https://[^\s"<>]+|/[A-Za-z0-9._/-]*)$#', $v)) ? mb_substr($v, 0, 300) : ''; }
-  public static function portConf(): array { $c = self::js('marine_ports'); $o = []; foreach (self::PORTS as $k => $n) { $x = is_array($c[$k] ?? null) ? $c[$k] : []; $o[$k] = ['name' => $n, 'status' => isset(self::STATUS[$x['status'] ?? '']) ? $x['status'] : ($k === 'chattogram' ? 'soon' : 'next'), 'note' => (string)($x['note'] ?? ''), 'shop' => (string)($x['shop'] ?? ''), 'photo' => self::img($x['photo'] ?? ''), 'charge' => self::usd($x['charge'] ?? null)]; } return $o; }
+  public static function portConf(): array { $c = self::js('marine_ports'); $o = []; foreach (self::PORTS as $k => $n) { $x = is_array($c[$k] ?? null) ? $c[$k] : []; $o[$k] = ['name' => $n, 'status' => isset(self::STATUS[$x['status'] ?? '']) ? $x['status'] : 'live', 'note' => (string)($x['note'] ?? ''), 'shop' => (string)($x['shop'] ?? ''), 'photo' => self::img($x['photo'] ?? ''), 'charge' => self::usd($x['charge'] ?? null)]; } return $o; }
   /** Delivery charge in USD for a port, as text with 2 decimals; '' when not set (the site then says it is confirmed on the quotation). */
   private static function usd($v): string { $v = trim((string)$v); return ($v !== '' && is_numeric($v) && (float)$v >= 0 && (float)$v < 100000) ? number_format((float)$v, 2, '.', '') : ''; }
 

@@ -4,7 +4,7 @@
 @if(session('ok'))<div class="card" style="background:#DCFCE7;border-color:#A7F3D0;color:#166534">{{ session('ok') }}</div>@endif
 <form method="post" action="/admin/marine/site">@csrf
 <div class="card" style="display:flex;flex-direction:column;gap:12px"><b>Top strip and home headline</b>
-<label style="display:flex;flex-direction:column;gap:4px;font-size:13px">Top strip (top of every page, max 160 characters)<input name="strip" maxlength="160" value="{{ $c['strip'] }}" placeholder="Launching soon at Chattogram · Request access to be among the first vessels served"></label>
+<label style="display:flex;flex-direction:column;gap:4px;font-size:13px">Top strip (top of every page, max 160 characters)<input name="strip" maxlength="160" value="{{ $c['strip'] }}" placeholder="Now serving vessels at Chattogram, Mongla and Payra · Send your requisition for a USD quotation"></label>
 <label style="display:flex;flex-direction:column;gap:4px;font-size:13px">Home headline (max 90 characters)<input name="hero_title" maxlength="90" value="{{ $c['hero_title'] }}" placeholder="Ship Supplies at Bangladesh Ports"></label>
 <label style="display:flex;flex-direction:column;gap:4px;font-size:13px">Home sub-headline (max 300 characters)<textarea name="hero_sub" maxlength="300" rows="2" placeholder="Duty-free stores for your vessel and your crew, quoted in USD and delivered alongside or at anchorage.">{{ $c['hero_sub'] }}</textarea></label>
 </div>
