@@ -21,3 +21,4 @@ ship-supply-payra.html
 site.js
 sitemap.xml
 track.html
+track.js
