@@ -1800,3 +1800,5 @@ resources/marine/prov160/img/MDP-WB-007.webp
 resources/marine/prov160/img/MDP-WB-008.webp
 resources/marine/prov160/import.csv
 resources/marine/prov160/manifest.csv
+
+database/migrations/2026_11_26_000190_marine_demo_approvals.php

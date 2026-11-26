@@ -340,7 +340,8 @@ class MarineController extends Controller
     DB::transaction(function () use ($which, $hash, $now, $by) {
       foreach ($which as $t) { [$un, $co, $vr] = self::DEMO[$t]; $acc = DB::table('marine_accounts')->where('username', $un)->first();
         $d = ['password' => $hash, 'status' => 'active', 'activated_at' => $now, 'failed_attempts' => 0, 'locked_until' => null, 'invite_hash' => null, 'otp_hash' => null, 'force_logout_at' => $now, 'updated_at' => $now];
-        if ($acc) DB::table('marine_accounts')->where('id', $acc->id)->update($d);
+        if (\App\Support\MarineCats::ready()) $d += ['bonded_ok' => true, 'bonded_by' => $by, 'bonded_at' => $now];   // owner 26 Nov 2026: demo accounts carry every approval, bonded stores included
+        if ($acc) { DB::table('marine_accounts')->where('id', $acc->id)->update($d); DB::table('marine_account_vessels')->where('account_id', $acc->id)->update(['verified' => true, 'updated_at' => $now]); }
         else { $id = DB::table('marine_accounts')->insertGetId($d + ['type' => $t, 'username' => $un, 'email' => strtolower($un) . '@demo.invalid', 'name' => 'Demo ' . ucfirst($t), 'company' => $co, 'role' => 'Test account', 'vessel_role' => $vr, 'port' => 'Chattogram', 'imo' => $t === 'vessel' ? '9000001' : null, 'vessel' => $t === 'vessel' ? 'MV DEMO' : null, 'approved_by' => $by, 'approved_at' => $now, 'created_at' => $now]);
           if ($t !== 'vessel') DB::table('marine_account_vessels')->insertOrIgnore(['account_id' => $id, 'imo' => '9000001', 'name' => 'MV DEMO', 'note' => 'Demo vessel, not a real ship', 'verified' => true, 'added_by' => $by, 'created_at' => $now, 'updated_at' => $now]); }
       } });
