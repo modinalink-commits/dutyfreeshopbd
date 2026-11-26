@@ -213,6 +213,7 @@ app/Support/Push.php
 app/Http/Controllers/PushController.php
 app/Http/Controllers/PushAdminController.php
 app/Console/Commands/MotherPushWorker.php
+app/Console/Commands/MarineAis.php
 database/migrations/2026_11_01_000001_push_notifications.php
 resources/views/push_admin.blade.php
 app/Http/Controllers/DeployController.php
@@ -1559,6 +1560,7 @@ app/Support/IncompleteWa.php
 database/migrations/2026_11_24_000040_incomplete_wa_nudge.php
 app/Http/Controllers/MarketingAutopilotController.php
 resources/views/marketing_autopilot.blade.php
+app/Support/MarineAis.php
 app/Support/MetaAdExpense.php
 app/Support/CampaignProfit.php
 app/Http/Controllers/CampaignProfitController.php
@@ -1589,6 +1591,7 @@ database/migrations/2026_11_26_000070_marine_supply_base.php
 database/migrations/2026_11_26_000080_marine_featured.php
 database/migrations/2026_11_26_000090_marine_all_ports.php
 database/migrations/2026_11_26_000100_marine_essential.php
+database/migrations/2026_11_26_000110_marine_vessels.php
 resources/views/marine/index.blade.php
 resources/views/marine/requests.blade.php
 resources/views/marine/catalog.blade.php

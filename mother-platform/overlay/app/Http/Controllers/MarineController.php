@@ -202,6 +202,45 @@ class MarineController extends Controller
     return redirect('/admin/marine/ports')->with('ok', 'Saved. The marine site shows it within a few minutes.');
   }
 
+  private static function vessel($v, bool $full = false): array {
+    $o = ['imo' => $v->imo ? (int)$v->imo : null, 'mmsi' => (int)$v->mmsi, 'name' => (string)($v->name ?? ''), 'type' => \App\Support\MarineAis::typeName($v->ship_type ? (int)$v->ship_type : null), 'flag' => \App\Support\MarineAis::flag((int)$v->mmsi), 'seen' => $v->seen_at ? \Carbon\Carbon::parse($v->seen_at)->toIso8601String() : null];
+    if (!$full) return $o;
+    return $o + ['callsign' => (string)($v->callsign ?? ''), 'length' => $v->length ? (int)$v->length : null, 'beam' => $v->beam ? (int)$v->beam : null, 'draught' => $v->draught !== null ? (float)$v->draught : null,
+      'destination' => (string)($v->destination ?? ''), 'eta' => (string)($v->eta ?? ''), 'status' => \App\Support\MarineAis::navName($v->nav_status !== null ? (int)$v->nav_status : null),
+      'lat' => $v->lat !== null ? (float)$v->lat : null, 'lon' => $v->lon !== null ? (float)$v->lon : null, 'sog' => $v->sog !== null ? (float)$v->sog : null, 'cog' => $v->cog !== null ? (float)$v->cog : null,
+      'position_at' => $v->pos_at ? \Carbon\Carbon::parse($v->pos_at)->toIso8601String() : null];
+  }
+  private static function vjson(array $d, int $code = 200) { return response()->json($d, $code)->header('Access-Control-Allow-Origin', self::SITE)->header('Vary', 'Origin')->header('Cache-Control', 'public, max-age=30'); }
+  /** Public vessel search for the marine site's free tracking: by name (2+ letters) or IMO / MMSI digits. Public AIS data only. */
+  public function publicVessels(Request $r) {
+    $q = mb_substr(trim((string)$r->query('q')), 0, 40); if (mb_strlen($q) < 2 || !\Illuminate\Support\Facades\Schema::hasTable('marine_vessels')) return self::vjson(['items' => []]);
+    $d = \Illuminate\Support\Facades\Cache::remember('marine.vs.' . md5(mb_strtolower($q)), 30, function () use ($q) {
+      $b = DB::table('marine_vessels')->whereNotNull('name');
+      if (ctype_digit($q)) $b->where(fn($w) => $w->whereRaw('cast(imo as text) like ?', [$q . '%'])->orWhereRaw('cast(mmsi as text) like ?', [$q . '%']));
+      else { $like = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $q); $b->where('name', 'ilike', '%' . $like . '%')->orderByRaw('case when name ilike ? then 0 else 1 end', [$like . '%']); }
+      return ['items' => $b->orderByRaw('imo is null')->orderByDesc('seen_at')->limit(10)->get()->map(fn($v) => self::vessel($v))->all()];
+    });
+    return self::vjson($d);
+  }
+  /** One vessel by IMO number (7 digits) or MMSI (9 digits): full details and last position. */
+  public function publicVessel($id) {
+    $id = (string)$id; if (!\Illuminate\Support\Facades\Schema::hasTable('marine_vessels')) return self::vjson(['found' => false], 404);
+    $d = \Illuminate\Support\Facades\Cache::remember('marine.v1.' . $id, 30, function () use ($id) {
+      $v = DB::table('marine_vessels')->where(strlen($id) === 9 ? 'mmsi' : 'imo', (int)$id)->orderByDesc('seen_at')->first();
+      return $v ? ['found' => true, 'vessel' => self::vessel($v, true)] : ['found' => false];
+    });
+    return self::vjson($d, empty($d['found']) ? 404 : 200);
+  }
+  /** Vessels seen lately near a port (for "ships at this port now" lists). */
+  public function publicVesselsNear(Request $r) {
+    $P = ['chattogram' => [22.25, 91.75], 'mongla' => [22.35, 89.6], 'payra' => [21.95, 90.3]]; $k = (string)$r->query('port'); if (!isset($P[$k]) || !\Illuminate\Support\Facades\Schema::hasTable('marine_vessels')) return self::vjson(['items' => []]);
+    $d = \Illuminate\Support\Facades\Cache::remember('marine.vn.' . $k, 60, function () use ($P, $k) {
+      [$la, $lo] = $P[$k];
+      return ['items' => DB::table('marine_vessels')->whereNotNull('name')->whereBetween('lat', [$la - 0.45, $la + 0.45])->whereBetween('lon', [$lo - 0.5, $lo + 0.5])->where('pos_at', '>=', now()->subHours(6))->orderByRaw('imo is null')->orderByDesc('length')->limit(40)->get()->map(fn($v) => self::vessel($v, true))->all()];
+    });
+    return self::vjson($d);
+  }
+
   /** Vessel Tracking: the AIS data source for the marine site. The key is stored encrypted and never shown again. */
   public static function aisOn(): bool { try { return (string)DB::table('settings')->where('key', 'marine_ais_on')->value('value') === '1' && (string)\App\Support\Sms::secret('marine_aisstream_key') !== ''; } catch (\Throwable $e) { return false; } }
   public function tracking() {
