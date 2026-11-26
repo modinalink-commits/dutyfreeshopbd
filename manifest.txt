@@ -11,4 +11,5 @@ share.png
 ship-supply-chattogram.html
 ship-supply-mongla.html
 ship-supply-payra.html
+site.js
 sitemap.xml

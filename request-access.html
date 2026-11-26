@@ -23,171 +23,81 @@
 <script type="application/ld+json">[{"@context": "https://schema.org", "@type": "Organization", "name": "DutyFree BD Marine Supply", "url": "https://marinedutyfreebd.com/", "logo": "https://marinedutyfreebd.com/logo-stacked.png", "description": "Ship supply and duty-free stores for vessels and crew at Chattogram, Mongla and Payra ports, Bangladesh.", "areaServed": {"@type": "Country", "name": "Bangladesh"}, "parentOrganization": {"@type": "Organization", "name": "DutyFreeBD", "url": "https://dutyfreebd.com/"}}]</script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
 <style>
-body{margin:0}
+body{margin:0;font-family:Inter,system-ui,sans-serif;color:#0F172A;background:#F4F6F9}
 a{color:#0B2545}a:hover{color:#C2410C}
+.strip{background:#0F172A;color:#fff;font:500 12px/1.4 Inter,system-ui,sans-serif;text-align:center;padding:7px 12px}
+header{background:#fff;border-bottom:1px solid #D9E0E8}
+.bar{max-width:1200px;margin:0 auto;padding:14px 24px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between}
+.bar nav{display:flex;flex-wrap:wrap;gap:22px;font-size:14px;font-weight:500}
+.bar nav a{text-decoration:none}
+main{max-width:440px;margin:0 auto;padding:48px 16px 64px;display:flex;flex-direction:column;gap:16px}
+.card{background:#fff;border:1px solid #D9E0E8;border-radius:12px;padding:28px;display:flex;flex-direction:column;gap:16px}
+h1{margin:0;font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:600}
+label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:500;color:#475569}
+input{height:46px;border:1px solid #C3CDD9;border-radius:8px;padding:0 12px;font-size:15px;font-family:inherit}
+button{min-height:48px;border:0;border-radius:8px;background:#C2410C;color:#fff;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer}
+.note{background:#FFF1E8;border:1px solid #FDBA74;border-radius:10px;padding:14px 16px;font-size:14px;line-height:1.5;color:#7C2D12}
+.muted{font-size:13px;line-height:1.5;color:#475569}
+
+main{max-width:1080px;padding:36px 20px 64px;flex-direction:row;flex-wrap:wrap;gap:28px;align-items:flex-start}
+.card{flex:999 1 560px;min-width:0;box-sizing:border-box}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px}
+select,textarea{border:1px solid #C3CDD9;border-radius:8px;padding:0 10px;font-size:15px;font-family:inherit;background:#fff}select{height:46px}textarea{padding:10px 12px}
+.tabs{display:flex;gap:6px;background:#F4F6F9;border-radius:10px;padding:4px}
+.tabs button{flex:1;min-height:46px;background:transparent;color:#0B2545;font-size:14px}.tabs button.on{background:#0B2545;color:#fff}
+aside{flex:1 1 300px;min-width:0;display:flex;flex-direction:column;gap:16px}
+.dark{background:#0B2545;color:#fff;border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:12px;font-size:14px;line-height:1.55}
+.dark b{font-family:'Space Grotesk',sans-serif;font-size:18px}.dark span{color:#D6DEEA}
+.okmsg{background:#DCFCE7;border:1px solid #86EFAC;color:#14532D;border-radius:10px;padding:14px 16px;font-size:14px;line-height:1.5}
+footer{background:#0B2545;color:#D6DEEA;font-size:13px;text-align:center;padding:24px 16px;line-height:1.7}
+.hp{position:absolute;left:-9999px}
 </style>
 </head>
 <body>
-<div style="background:#0F172A;color:#FFFFFF;font:500 12px/1.4 Inter,system-ui,sans-serif;text-align:center;padding:7px 12px">Launching soon at Chattogram · Request access to be among the first vessels served</div>
-<div id="app">
-<div style="font-family: Inter, system-ui, sans-serif; color: #0F172A; background: #F4F6F9; min-height: 100vh">
-
-<header style="border-bottom: 1px solid #D9E0E8; background: #FFFFFF">
-<div style="max-width: 1200px; margin: 0 auto; padding: 14px 24px; display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between">
-<a href="/" style="display: flex; align-items: center; text-decoration: none"><img src="/logo-header.png" alt="DutyFree BD Marine Supply" style="height: 44px; width: auto"></a>
-<nav style="display: flex; flex-wrap: wrap; gap: 22px; align-items: center; font-size: 14px; font-weight: 500">
-<a href="/" style="text-decoration: none">Home</a>
-<a href="/products.html" style="text-decoration: none">Products</a>
-<a href="/login.html" style="text-decoration: none; background: #0B2545; color: #FFFFFF; padding: 10px 16px; border-radius: 8px; font-weight: 600">Vessel Login</a>
-</nav>
+<div class="strip">Launching soon at Chattogram · Request access to be among the first vessels served</div>
+<header><div class="bar">
+<a href="/" style="display:flex;align-items:center"><img src="/logo-header.png" alt="DutyFree BD Marine Supply" style="height:44px;width:auto"></a>
+<nav><a href="/">Home</a><a href="/products.html">Products</a><a href="/login.html">Vessel Login</a></nav>
+</div></header>
+<main>
+<div class="card">
+<h1>Request access</h1>
+<span class="muted">Accounts are verified by our marine desk before ordering is enabled. Choose how you buy.</span>
+<div class="okmsg" id="ok" hidden>Thank you. Your request has been received. Our marine desk will review it and reply by email.</div>
+<div class="note" id="bad" hidden>Please check your email address and IMO number (7 digits) and send the form again.</div>
+<form id="f" method="post" action="https://dutyfreebd.com/marine-api/access-request" style="display:flex;flex-direction:column;gap:18px">
+<input type="hidden" name="kind" id="kind" value="company">
+<label class="hp" aria-hidden="true">Website<input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+<div class="tabs"><button type="button" id="tco" class="on">Company, owner or agent</button><button type="button" id="tcr">Crew member</button></div>
+<div class="grid" id="gco">
+<label>Company name<input type="text" name="company" placeholder="" ></label>
+<label>Your role<select name="role"><option>Purchasing officer</option><option>Ship owner or manager</option><option>Local shipping agent</option><option>Master or chief officer</option></select></label>
 </div>
-</header>
-
-<div style="max-width: 1100px; margin: 0 auto; padding: 36px 24px 56px; display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start">
-
-<div style="flex: 999 1 560px; min-width: 0; background: #FFFFFF; border: 1px solid #D9E0E8; border-radius: 12px; padding: 28px; display: flex; flex-direction: column; gap: 20px">
-<div style="display: flex; flex-direction: column; gap: 6px">
-<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 600">Request access</h1>
-<span style="font-size: 14px; color: #475569">Accounts are verified before ordering is enabled. Choose how you buy.</span>
+<div class="grid" id="gcr" hidden>
+<label>Rank<input type="text" name="crew_rank" placeholder="" ></label>
 </div>
-
-<div style="display: flex; gap: 6px; background: #F4F6F9; border-radius: 10px; padding: 4px">
-<button type="button" style="flex: 1; min-height: 46px; border: 0; border-radius: 7px; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; background: #0B2545; color: #FFFFFF">Company, owner or agent</button>
-<button type="button" style="flex: 1; min-height: 46px; border: 0; border-radius: 7px; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; background: transparent; color: #0B2545">Crew member</button>
+<div class="grid">
+<label>Your full name<input type="text" name="name" placeholder="" required></label>
+<label>Email<input type="email" name="email" placeholder="name@company.com" required></label>
+<label>Phone or WhatsApp<input type="tel" name="phone" placeholder="With country code" ></label>
+<label>Vessel IMO number<input type="text" name="imo" placeholder="7 digits" ></label>
+<label>Vessel name<input type="text" name="vessel" placeholder="" ></label>
+<label>Port of call<select name="port"><option>Chattogram</option><option>Mongla</option><option>Payra</option></select></label>
 </div>
-
-
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px">
-<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500; color: #475569">Company name<input type="text" style="height: 44px; border: 1px solid #C3CDD9; border-radius: 8px; padding: 0 12px; font-size: 15px; font-family: inherit"></label>
-<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500; color: #475569">Your role<select style="height: 44px; border: 1px solid #C3CDD9; border-radius: 8px; padding: 0 10px; font-size: 15px; font-family: inherit; background: #FFFFFF"><option>Purchasing officer</option><option>Ship owner or manager</option><option>Local shipping agent</option><option>Master or chief officer</option></select></label>
-<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500; color: #475569">Official email<input type="email" placeholder="name@company.com" style="height: 44px; border: 1px solid #C3CDD9; border-radius: 8px; padding: 0 12px; font-size: 15px; font-family: inherit"></label>
-<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500; color: #475569">Phone or WhatsApp<input type="tel" style="height: 44px; border: 1px solid #C3CDD9; border-radius: 8px; padding: 0 12px; font-size: 15px; font-family: inherit"></label>
-<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500; color: #475569">Vessel IMO number<input type="text" placeholder="7 digits" style="height: 44px; border: 1px solid #C3CDD9; border-radius: 8px; padding: 0 12px; font-size: 15px; font-family: inherit"></label>
-<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500; color: #475569">Vessel name<input type="text" placeholder="Filled from IMO lookup" style="height: 44px; border: 1px solid #C3CDD9; border-radius: 8px; padding: 0 12px; font-size: 15px; font-family: inherit; background: #F4F6F9"></label>
+<label>Message (optional)<textarea name="message" rows="3" maxlength="1000" placeholder="ETA, what you need, or any question"></textarea></label>
+<div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center"><button type="submit" style="padding:0 22px">Submit for verification</button><span class="muted">We use these details only to verify your account and reply to you.</span></div>
+</form>
 </div>
-<div style="border: 1px dashed #8FA3BF; border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 4px">
-<b style="font-size: 14px">Proof of authority</b>
-<span style="font-size: 13px; color: #475569">Upload an authorisation letter, agency appointment or company ID. PDF or image.</span>
-</div>
-<span style="font-size: 13px; color: #475569">You can add more vessels and colleagues after approval.</span>
-
-
-
-
-<div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center">
-<a href="/login.html" style="text-decoration: none; background: #C2410C; color: #FFFFFF; padding: 14px 22px; border-radius: 8px; font-weight: 600; font-size: 15px">Submit for verification</a>
-<span style="font-size: 13px; color: #475569">Reviewed by the marine desk. You are notified by email.</span>
-</div>
-</div>
-
-<aside style="flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
-<div style="background: #0B2545; color: #FFFFFF; border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 12px">
-<b style="font-family: 'Space Grotesk', sans-serif; font-size: 18px">What we verify</b>
-<span style="font-size: 14px; line-height: 1.55; color: #D6DEEA">Company and official contact · Representative's authority · Vessel by IMO number · Sanctions screening of company and vessel</span>
-</div>
-<div style="background: #FFFFFF; border: 1px solid #D9E0E8; border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 10px">
-<b style="font-size: 15px">Who can do what</b>
-<span style="font-size: 14px; line-height: 1.55; color: #475569"><b style="color: #0F172A">Ship officers</b> raise requisitions.</span>
-<span style="font-size: 14px; line-height: 1.55; color: #475569"><b style="color: #0F172A">Company representatives and agents</b> approve quotations and place purchase orders.</span>
-<span style="font-size: 14px; line-height: 1.55; color: #475569"><b style="color: #0F172A">Crew</b> order personal items within their allowance.</span>
-</div>
+<aside>
+<div class="dark"><b>What we verify</b><span>Company and official contact · Representative's authority · Vessel by IMO number · Sanctions screening of company and vessel</span></div>
+<div class="card" style="flex:none;gap:10px"><b style="font-size:15px">Who can do what</b>
+<span class="muted"><b style="color:#0F172A">Ship officers</b> raise requisitions.</span>
+<span class="muted"><b style="color:#0F172A">Company representatives and agents</b> approve quotations and place purchase orders.</span>
+<span class="muted"><b style="color:#0F172A">Crew</b> order personal items within their allowance.</span></div>
 </aside>
-
-</div>
-</div>
-</div>
-<template id="tpl">
-<div style="font-family: Inter, system-ui, sans-serif; color: #0F172A; background: #F4F6F9; min-height: 100vh">
-
-<header style="border-bottom: 1px solid #D9E0E8; background: #FFFFFF">
-<div style="max-width: 1200px; margin: 0 auto; padding: 14px 24px; display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between">
-<a href="/" style="display: flex; align-items: center; text-decoration: none"><img src="/logo-header.png" alt="DutyFree BD Marine Supply" style="height: 44px; width: auto"></a>
-<nav style="display: flex; flex-wrap: wrap; gap: 22px; align-items: center; font-size: 14px; font-weight: 500">
-<a href="/" style="text-decoration: none">Home</a>
-<a href="/products.html" style="text-decoration: none">Products</a>
-<a href="/login.html" style="text-decoration: none; background: #0B2545; color: #FFFFFF; padding: 10px 16px; border-radius: 8px; font-weight: 600">Vessel Login</a>
-</nav>
-</div>
-</header>
-
-<div style="max-width: 1100px; margin: 0 auto; padding: 36px 24px 56px; display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start">
-
-<div style="flex: 999 1 560px; min-width: 0; background: #FFFFFF; border: 1px solid #D9E0E8; border-radius: 12px; padding: 28px; display: flex; flex-direction: column; gap: 20px">
-<div style="display: flex; flex-direction: column; gap: 6px">
-<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 600">Request access</h1>
-<span style="font-size: 14px; color: #475569">Accounts are verified before ordering is enabled. Choose how you buy.</span>
-</div>
-
-<div style="display: flex; gap: 6px; background: #F4F6F9; border-radius: 10px; padding: 4px">
-<button type="button" onclick="{{ pickCompany }}" style="flex: 1; min-height: 46px; border: 0; border-radius: 7px; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; background: {{coBg}}; color: {{coFg}}">Company, owner or agent</button>
-<button type="button" onclick="{{ pickCrew }}" style="flex: 1; min-height: 46px; border: 0; border-radius: 7px; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; background: {{crBg}}; color: {{crFg}}">Crew member</button>
-</div>
-
-<template data-if="{{ isCompany }}">
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px">
-<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500; color: #475569">Company name<input type="text" style="height: 44px; border: 1px solid #C3CDD9; border-radius: 8px; padding: 0 12px; font-size: 15px; font-family: inherit"></label>
-<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500; color: #475569">Your role<select style="height: 44px; border: 1px solid #C3CDD9; border-radius: 8px; padding: 0 10px; font-size: 15px; font-family: inherit; background: #FFFFFF"><option>Purchasing officer</option><option>Ship owner or manager</option><option>Local shipping agent</option><option>Master or chief officer</option></select></label>
-<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500; color: #475569">Official email<input type="email" placeholder="name@company.com" style="height: 44px; border: 1px solid #C3CDD9; border-radius: 8px; padding: 0 12px; font-size: 15px; font-family: inherit"></label>
-<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500; color: #475569">Phone or WhatsApp<input type="tel" style="height: 44px; border: 1px solid #C3CDD9; border-radius: 8px; padding: 0 12px; font-size: 15px; font-family: inherit"></label>
-<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500; color: #475569">Vessel IMO number<input type="text" placeholder="7 digits" style="height: 44px; border: 1px solid #C3CDD9; border-radius: 8px; padding: 0 12px; font-size: 15px; font-family: inherit"></label>
-<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500; color: #475569">Vessel name<input type="text" placeholder="Filled from IMO lookup" style="height: 44px; border: 1px solid #C3CDD9; border-radius: 8px; padding: 0 12px; font-size: 15px; font-family: inherit; background: #F4F6F9"></label>
-</div>
-<div style="border: 1px dashed #8FA3BF; border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 4px">
-<b style="font-size: 14px">Proof of authority</b>
-<span style="font-size: 13px; color: #475569">Upload an authorisation letter, agency appointment or company ID. PDF or image.</span>
-</div>
-<span style="font-size: 13px; color: #475569">You can add more vessels and colleagues after approval.</span>
-</template>
-
-<template data-if="{{ isCrew }}">
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px">
-<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500; color: #475569">Vessel IMO number<input type="text" placeholder="7 digits" style="height: 44px; border: 1px solid #C3CDD9; border-radius: 8px; padding: 0 12px; font-size: 15px; font-family: inherit"></label>
-<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500; color: #475569">Vessel crew code<input type="text" placeholder="Given by the master or agent" style="height: 44px; border: 1px solid #C3CDD9; border-radius: 8px; padding: 0 12px; font-size: 15px; font-family: inherit"></label>
-<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500; color: #475569">Full name as on crew list<input type="text" style="height: 44px; border: 1px solid #C3CDD9; border-radius: 8px; padding: 0 12px; font-size: 15px; font-family: inherit"></label>
-<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500; color: #475569">Rank<input type="text" style="height: 44px; border: 1px solid #C3CDD9; border-radius: 8px; padding: 0 12px; font-size: 15px; font-family: inherit"></label>
-<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500; color: #475569">Email<input type="email" style="height: 44px; border: 1px solid #C3CDD9; border-radius: 8px; padding: 0 12px; font-size: 15px; font-family: inherit"></label>
-<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500; color: #475569">WhatsApp<input type="tel" style="height: 44px; border: 1px solid #C3CDD9; border-radius: 8px; padding: 0 12px; font-size: 15px; font-family: inherit"></label>
-</div>
-<span style="font-size: 13px; line-height: 1.5; color: #475569">Your name is matched to the crew list filed for this port call. Your spending limit comes from the vessel's verified Dollar Assessment.</span>
-</template>
-
-<div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center">
-<a href="{{next}}" style="text-decoration: none; background: #C2410C; color: #FFFFFF; padding: 14px 22px; border-radius: 8px; font-weight: 600; font-size: 15px">Submit for verification</a>
-<span style="font-size: 13px; color: #475569">Reviewed by the marine desk. You are notified by email.</span>
-</div>
-</div>
-
-<aside style="flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
-<div style="background: #0B2545; color: #FFFFFF; border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 12px">
-<b style="font-family: 'Space Grotesk', sans-serif; font-size: 18px">What we verify</b>
-<span style="font-size: 14px; line-height: 1.55; color: #D6DEEA">Company and official contact · Representative's authority · Vessel by IMO number · Sanctions screening of company and vessel</span>
-</div>
-<div style="background: #FFFFFF; border: 1px solid #D9E0E8; border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 10px">
-<b style="font-size: 15px">Who can do what</b>
-<span style="font-size: 14px; line-height: 1.55; color: #475569"><b style="color: #0F172A">Ship officers</b> raise requisitions.</span>
-<span style="font-size: 14px; line-height: 1.55; color: #475569"><b style="color: #0F172A">Company representatives and agents</b> approve quotations and place purchase orders.</span>
-<span style="font-size: 14px; line-height: 1.55; color: #475569"><b style="color: #0F172A">Crew</b> order personal items within their allowance.</span>
-</div>
-</aside>
-
-</div>
-</div>
-</template>
-<script type="text/plain" id="logic">
-class Component extends DCLogic {
-renderVals() {
-const crew = !!(this.state && this.state.crew);
-return {
-isCompany: !crew, isCrew: crew,
-coBg: crew ? 'transparent' : '#0B2545', coFg: crew ? '#0B2545' : '#FFFFFF',
-crBg: crew ? '#0B2545' : 'transparent', crFg: crew ? '#FFFFFF' : '#0B2545',
-next: crew ? '/login.html' : '/login.html',
-pickCompany: () => this.setState({ crew: false }),
-pickCrew: () => this.setState({ crew: true })
-};
-}
-}
-</script>
-<script src="/app.js"></script>
+</main>
+<footer>DutyFree BD Marine Supply · a DutyFreeBD service<br><span data-marine-contact></span></footer>
+<script>(function(){var k=document.getElementById('kind'),a=document.getElementById('tco'),b=document.getElementById('tcr'),ga=document.getElementById('gco'),gb=document.getElementById('gcr');function set(c){k.value=c?'crew':'company';a.className=c?'':'on';b.className=c?'on':'';ga.hidden=c;gb.hidden=!c}a.onclick=function(){set(false)};b.onclick=function(){set(true)};var m=/[?&]sent=([01])/.exec(location.search);if(m){document.getElementById(m[1]==='1'?'ok':'bad').hidden=false;if(m[1]==='1')document.getElementById('f').hidden=true}})();</script>
+<script src="/site.js"></script>
 </body>
 </html>
