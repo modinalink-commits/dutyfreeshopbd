@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Track Your Vessel: Live Ship Map, Bangladesh Ports | DutyFree BD Marine Supply</title>
 <meta name="description" content="Find your vessel on a live AIS map by IMO number and see ships near Chattogram, Mongla and Payra before you send your requisition.">
-<meta name="robots" content="index, follow">
+<meta name="robots" content="noindex, follow">
 <link rel="canonical" href="https://marinedutyfreebd.com/track.html">
 <link rel="icon" href="/icon.png">
 <meta property="og:type" content="website">
@@ -46,6 +46,7 @@ main{max-width:1200px;padding:32px 20px 64px;gap:18px}
 .pl{display:flex;flex-wrap:wrap;gap:8px}.pl a{font-size:13px;font-weight:500;text-decoration:none;color:#0B2545;background:#fff;border:1px solid #D9E0E8;border-radius:999px;padding:7px 14px}
 #map{background:#E6ECF3;border:1px solid #D9E0E8;border-radius:12px;overflow:hidden;min-height:540px}#map iframe{display:block;width:100%!important;border:0}
 .cta{display:flex;flex-wrap:wrap;gap:12px}.cta a{text-decoration:none;padding:13px 20px;border-radius:8px;font-weight:600;font-size:15px}.b1{background:#F95505;color:#fff}.b1:hover{color:#fff}.b2{border:1px solid #C3CDD9;color:#0B2545;background:#fff}
+.vd{background:#fff;border:1px solid #D9E0E8;border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:6px}
 footer{background:#0B2545;color:#D6DEEA;font-size:13px;text-align:center;padding:24px 16px;line-height:1.7}
 @media(max-width:600px){#map{min-height:420px}}
 </style>
@@ -54,10 +55,11 @@ footer{background:#0B2545;color:#D6DEEA;font-size:13px;text-align:center;padding
 <div class="strip">Launching soon at Chattogram · Request access to be among the first vessels served</div>
 <header><div class="bar">
 <a href="/" style="display:flex;align-items:center"><img src="/logo-header.png" alt="DutyFree BD Marine Supply" style="height:44px;width:auto"></a>
-<nav><a href="/">Home</a><a href="/products.html">Products</a><a href="/track.html">Track Vessel</a><a href="/request-access.html">Request Access</a><a href="/login.html">Vessel Login</a></nav>
+<nav><a href="/">Home</a><a href="/#ports">Ports</a><a href="/products.html">Products</a><a href="/track.html" style="color:#F95505;font-weight:700">Marine Traffic</a><a href="/request-access.html">Request Access</a><a href="/login.html">Vessel Login</a></nav>
 </div></header>
 <main>
-<div><h1>Track your vessel</h1><span class="muted" id="tsub">Enter the 7-digit IMO number to see your vessel's latest AIS position, or look at the ships near our ports.</span></div>
+<div class="note">Preview for approval. This page is not linked from the menu yet and is hidden from Google.</div>
+<div><h1>Marine Traffic: live ship map</h1><span class="muted" id="tsub">Enter the 7-digit IMO number to see your vessel's latest AIS position, or look at the ships near our ports.</span></div>
 <form class="tf" id="tf"><label>IMO number<input id="timo" type="text" inputmode="numeric" maxlength="7" placeholder="7-digit IMO number" autocomplete="off"></label><button type="submit">Show on map</button><a id="tfind" href="https://www.marinetraffic.com/en/ais/home" target="_blank" rel="noopener">Find an IMO number by ship name ↗</a></form>
 <div class="pl"><a href="/track.html#chattogram">Chattogram</a><a href="/track.html#mongla">Mongla</a><a href="/track.html#payra">Payra</a><a href="/track.html">Bangladesh coast</a></div>
 <div id="map">
@@ -71,6 +73,7 @@ window.addEventListener('hashchange',function(){location.reload()});})();
 </script>
 <script src="https://www.vesselfinder.com/aismap.js"></script>
 </div>
+<div class="vd"><b>Vessel details</b><span class="muted">Click a ship on the map to see its name, type, flag, destination, speed and last AIS report in the map panel. A details card on our own page (name, flag, type, size, ETA) needs a data licence from an AIS provider and is not part of this free version.</span></div>
 <span class="muted">Live map by VesselFinder (AIS data). Positions are for information only; your delivery time and place are confirmed with your local agent.</span>
 <div class="cta"><a class="b1" href="/request-access.html">Request a quotation for this vessel</a><a class="b2" href="/products.html">Browse products</a></div>
 </main>
