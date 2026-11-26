@@ -188,7 +188,7 @@ cad5d7d00994ffe93453adf9c363fb19b3e4bd3e resources/views/sip_account.blade.php
 51c87c1696bc7f15bdf0f46b01e03a3a7cd10fe2 resources/views/call_history.blade.php
 d4c666bbe06ed21d7fb7196bfa671918f67d31e6 resources/views/softphone_fab.blade.php
 d60cc2488e9d1428806a53b4a367beb5d0ec79c6 public/js/jssip.min.js
-a3c5d6ae40b31215a50dd80253358e0c37263037 public/js/df-export.js
+e2659ee15084ec20556f3a59a5fd2d1d996c3f58 public/js/df-export.js
 00d43c063dcf9feed9d0f70ea885452364dbac05 public/js/lame.min.js
 9e41ea8b1293ff426f786b99dfb476791410ed05 public/js/zxing.min.js
 1946a8e81eccc56677f643e84b38901d91516d3d app/Support/CardImg.php

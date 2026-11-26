@@ -211,7 +211,10 @@
     var btn = document.createElement('button'); btn.type = 'button'; btn.className = 'dfx-btn'; btn.textContent = 'Export ▾'; bar.appendChild(btn);
     if (host !== tbl.parentNode) host.insertBefore(bar, host.firstChild); else tbl.parentNode.insertBefore(bar, tbl);
     // the old per-module PDF/Excel/Word/CSV links are replaced by this one component
-    [].forEach.call(document.querySelectorAll('a[href*="/export/pdf"],a[href*="/export/xls"],a[href*="/export/doc"],a[href*="/export/csv"]'), function (a) { a.style.display = 'none'; });
+    [].forEach.call(document.querySelectorAll('a[href*="/export/pdf"],a[href*="/export/xls"],a[href*="/export/doc"],a[href*="/export/csv"],a[href*="/export/print"],a[href*="export=csv"],a[href*="export=xlsx"],a[href*="export=pdf"],a[href*="export=xls"]'), function (a) { a.style.display = 'none'; });
+    // separate Excel / PDF / CSV buttons that only repeat what the Export menu already offers (owner decision 2026-11-26)
+    var dupTxt = /^(Export (Excel|CSV|Word|PDF|\.xlsx)( \(CSV\))?|Download CSV|Excel|PDF|CSV|Word|XLSX|PDF \(save from print\)|PDF \/ Print)$/i;
+    [].forEach.call(document.querySelectorAll('a,button'), function (a) { if (a.closest('.dfx-bar,.dfx-menu,.dfx-pick')) return; if (dupTxt.test((a.textContent || '').trim()) && a.offsetParent !== null) a.style.display = 'none'; });
     btn.addEventListener('click', function (e) { e.stopPropagation(); if (openMenu) { closeMenu(); return; } showMenu(tbl, idx, btn); });
   }
 
