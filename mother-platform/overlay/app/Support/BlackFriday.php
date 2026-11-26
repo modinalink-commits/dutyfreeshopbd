@@ -14,6 +14,79 @@ class BlackFriday
   const MIN_OFF_TK = 1;        // a product joins only if the customer really saves something
   const CHECK_OFF_PCT = 50.0;  // a saving this large usually means the stored purchase cost is wrong: flagged for a look, not hidden
 
+  // ---- campaign state (settings, nothing fixed in code) ----
+  public static function set(string $k, string $d = ''): string { return Procure::set('bf_' . $k, $d); }
+  public static function on(): bool { return self::set('on', '0') === '1'; }
+  public static function minOff(): float { return max(0.0, min(90.0, (float)self::set('min_off', '0'))); }
+  public static function window(): array { $tz = 'Asia/Dhaka'; return [\Carbon\Carbon::parse(self::set('start', '2026-11-27 00:00:00'), $tz), \Carbon\Carbon::parse(self::set('end', '2026-11-30 23:59:59'), $tz)]; }
+  public static function running(): bool { [$a, $b] = self::window(); $n = now('Asia/Dhaka'); return self::on() && $n->gte($a) && $n->lte($b); }
+  public static function ready(): bool { static $r = null; if ($r === null) { try { $r = \Illuminate\Support\Facades\Schema::hasTable('black_friday_items'); } catch (\Throwable $e) { $r = false; } } return $r; }
+  /** Product ids selling at their Black Friday price right now (for the badge). Cached one minute. */
+  public static function ids(): array {
+    static $m = null; if ($m !== null) return $m;
+    try { return $m = \Illuminate\Support\Facades\Cache::remember('bf.ids', 60, fn() => self::ready() ? array_flip(array_map('intval', DB::table('black_friday_items')->where('status', 'applied')->pluck('product_id')->all())) : []); } catch (\Throwable $e) { return $m = []; }
+  }
+  public static function has($pid): bool { return isset(self::ids()[(int)$pid]); }
+  private static function flush(): void { try { \Illuminate\Support\Facades\Cache::forget('bf.ids'); BundlePricing::flush(); \App\Http\Controllers\StoreController::bust(); foreach (['store.home4', 'store.home5', 'store.home6', 'store.home8', 'store.todaybest6'] as $k) \Illuminate\Support\Facades\Cache::forget($k); } catch (\Throwable $e) {} }
+
+  /** The products that take part (owner, 26 Nov 2026 21:23: every product, also the ones whose saving looks very large; cigarettes too, on the site only).
+   *  Left out: a Best Seller, which has its own approved pack offer. bf_min_off (0 today) can set a smallest saving. */
+  public static function eligible(): array {
+    $min = self::minOff(); $bs = []; try { $bs = AutoPrice::ids(); } catch (\Throwable $e) {}
+    return array_values(array_filter(self::plan()['rows'], fn($r) => $r['status'] === 'in' && $r['off_pct'] >= $min && !in_array($r['id'], $bs, true)));
+  }
+  /** Put the Black Friday price on every taking-part product. The normal price is kept in black_friday_items and comes back by itself. Safe to run again: a product already applied is skipped. */
+  public static function apply(string $by = 'system'): int {
+    if (!self::ready() || !self::running()) return 0; $n = 0; $have = array_flip(array_map('intval', DB::table('black_friday_items')->pluck('product_id')->all()));
+    foreach (self::eligible() as $r) {
+      if (isset($have[$r['id']])) continue;
+      try {
+        DB::transaction(function () use ($r, &$n) {
+          $p = DB::table('products')->where('id', $r['id'])->lockForUpdate()->first(); if (!$p || abs((float)$p->price - $r['price']) > 0.004 || $r['bf'] >= (float)$p->price) return;
+          DB::table('black_friday_items')->insert(['product_id' => $r['id'], 'cost' => $r['cost'], 'price_before' => $p->price, 'compare_before' => $p->compare_price, 'bf_price' => $r['bf'], 'off_pct' => $r['off_pct'], 'status' => 'applied', 'applied_at' => now(), 'created_at' => now(), 'updated_at' => now()]);
+          DB::table('products')->where('id', $r['id'])->update(['price' => $r['bf'], 'compare_price' => $p->price, 'updated_at' => now()]); $n++;
+        });
+      } catch (\Throwable $e) { report($e); }
+    }
+    if ($n) { self::flush(); try { BundlePricing::sync(); } catch (\Throwable $e) {} Procure::audit('Black Friday prices applied', $n . ' products', null, ['by' => $by, 'min_saving_pct' => self::minOff(), 'profit_pct' => ProfitFloor::percent()]); }
+    return $n;
+  }
+  /** Put the normal prices back. A product whose price somebody changed during the campaign is left as it is (status kept). */
+  public static function restore(string $by = 'system'): int {
+    if (!self::ready()) return 0; $n = 0; $kept = 0;
+    foreach (DB::table('black_friday_items')->where('status', 'applied')->get() as $x) {
+      try {
+        DB::transaction(function () use ($x, &$n, &$kept) {
+          $p = DB::table('products')->where('id', $x->product_id)->lockForUpdate()->first();
+          if ($p && abs((float)$p->price - (float)$x->bf_price) < 0.005) { DB::table('products')->where('id', $x->product_id)->update(['price' => $x->price_before, 'compare_price' => $x->compare_before, 'updated_at' => now()]); DB::table('black_friday_items')->where('id', $x->id)->update(['status' => 'restored', 'restored_at' => now(), 'updated_at' => now()]); $n++; }
+          else { DB::table('black_friday_items')->where('id', $x->id)->update(['status' => 'kept', 'restored_at' => now(), 'note' => $p ? 'Price was changed during the campaign (' . (float)$p->price . '); left as it is' : 'Product no longer exists', 'updated_at' => now()]); $kept++; }
+        });
+      } catch (\Throwable $e) { report($e); }
+    }
+    if ($n || $kept) { self::flush(); try { BundlePricing::sync(); } catch (\Throwable $e) {} Procure::audit('Black Friday prices put back', $n . ' products', null, ['by' => $by, 'left_as_changed' => $kept]); }
+    return $n;
+  }
+  /** While the campaign runs: a product whose purchase cost went up is lifted to its new protected price, or taken out when no saving is left. */
+  public static function guard(): int {
+    if (!self::ready()) return 0; $n = 0;
+    foreach (DB::table('black_friday_items')->where('status', 'applied')->get() as $x) {
+      try { $c = ProfitFloor::costs([(int)$x->product_id])[(int)$x->product_id] ?? null; if (!$c || (float)$c->cost <= 0 || abs((float)$c->price - (float)$x->bf_price) > 0.004) continue; $need = self::price((float)$c->cost); if ($need <= (float)$x->bf_price) continue;
+        if ($need >= (float)$x->price_before) { DB::table('products')->where('id', $x->product_id)->update(['price' => $x->price_before, 'compare_price' => $x->compare_before, 'updated_at' => now()]); DB::table('black_friday_items')->where('id', $x->id)->update(['status' => 'restored', 'restored_at' => now(), 'note' => 'Purchase cost went up: no saving left', 'updated_at' => now()]); }
+        else { DB::table('products')->where('id', $x->product_id)->update(['price' => $need, 'updated_at' => now()]); DB::table('black_friday_items')->where('id', $x->id)->update(['bf_price' => $need, 'cost' => $c->cost, 'note' => 'Lifted: purchase cost went up', 'updated_at' => now()]); }
+        $n++; } catch (\Throwable $e) { report($e); }
+    }
+    if ($n) { self::flush(); Procure::audit('Black Friday price lifted (cost went up)', $n . ' products'); }
+    return $n;
+  }
+  /** Background check, at most once a minute: start on time, end on time, switch off when the owner switches it off. */
+  public static function tick(): void {
+    try { if (!self::ready() || !\Illuminate\Support\Facades\Cache::add('bf.tick', 1, 60)) return; } catch (\Throwable $e) { return; }
+    $applied = DB::table('black_friday_items')->where('status', 'applied')->exists();
+    if (self::running()) { if (self::set('applied_at', '') === '') { $n = self::apply('worker'); Procure::put('bf_applied_at', now('UTC')->format('Y-m-d H:i:s')); if ($n === 0) DeployHealth::raise('bf.none', 'high', 'Pricing', 'Black Friday started but no product took the price', 'The campaign is on and inside its dates, yet no Black Friday price was applied.', 'No product met the rule, or the price list changed.', 'Open Black Friday in the admin and check the list.'); } elseif (\Illuminate\Support\Facades\Cache::add('bf.guard', 1, 1800)) self::guard(); }
+    elseif ($applied) self::restore('worker');
+  }
+  public static function counts(): array { if (!self::ready()) return ['applied' => 0, 'restored' => 0, 'kept' => 0]; $c = DB::table('black_friday_items')->selectRaw('status, count(*) n')->groupBy('status')->pluck('n', 'status')->all(); return ['applied' => (int)($c['applied'] ?? 0), 'restored' => (int)($c['restored'] ?? 0), 'kept' => (int)($c['kept'] ?? 0)]; }
+
   /** Whole-taka Black Friday price for a purchase cost: never below the protected profit. */
   public static function price(float $cost): float { return $cost > 0 ? (float)ceil(ProfitFloor::floor($cost) - 0.0001) : 0.0; }
 

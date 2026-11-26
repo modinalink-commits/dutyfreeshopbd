@@ -2,7 +2,16 @@
 @section('body')
 <?php $n = fn($v) => number_format((float)$v); $avg = $tot['price_sum'] > 0 ? round($tot['off_sum'] / $tot['price_sum'] * 100, 1) : 0; $link = fn($s, $c = null) => '/admin/black-friday?show=' . $s . (($c ?? $cat) !== '' ? '&cat=' . urlencode($c ?? $cat) : ''); ?>
 <div style="display:flex;gap:10px;align-items:center;margin-bottom:6px;flex-wrap:wrap"><h1 style="margin:0;flex:1">Black Friday plan</h1><a class="btn g" href="/admin/black-friday.csv">Download full list (CSV)</a></div>
-<p style="margin:0 0 12px;font-size:13px;color:#6B7280">27 to 30 November 2026. Black Friday price = purchase cost + {{ rtrim(rtrim(number_format($pct, 2), '0'), '.') }}% profit, rounded up to a whole taka. <b style="color:#0C161F">This page is a calculation only: no price and nothing on the website has changed.</b></p>
+<p style="margin:0 0 12px;font-size:13px;color:#6B7280">27 to 30 November 2026. Black Friday price = purchase cost + {{ rtrim(rtrim(number_format($pct, 2), '0'), '.') }}% profit, rounded up to a whole taka. The normal price is kept and comes back by itself after the end time.</p>
+@if(session('ok'))
+<div class="card" style="color:#166534;margin-bottom:12px">{{ session('ok') }}</div>
+@endif
+<div class="card" style="margin-bottom:12px;display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+<div style="flex:1 1 320px"><b style="font-size:15px">Campaign: {{ $running ? 'RUNNING' : ($on ? 'ON, waiting for the start time' : 'OFF') }}</b>
+<div style="font-size:13px;color:#6B7280;margin-top:4px">{{ $from->format('j M Y, g:i A') }} to {{ $to->format('j M Y, g:i A') }} (Dhaka). Takes part: every product with a saving{{ $minOff > 0 ? ' of ' . rtrim(rtrim(number_format($minOff, 1), '0'), '.') . '% or more' : '' }}, except the Best Sellers (own pack offer): <b style="color:#0C161F">{{ number_format($eligible) }} products</b> ({{ number_format($elSmoke) }} cigarette/vape). At Black Friday price now: <b style="color:#0C161F">{{ number_format($cnt['applied']) }}</b>. Put back: {{ number_format($cnt['restored']) }}. Left as changed by staff: {{ number_format($cnt['kept']) }}.</div></div>
+<form method="post" action="/admin/black-friday/switch">@csrf<input type="hidden" name="on" value="{{ $on ? '0' : '1' }}"><button class="btn {{ $on ? 'g' : '' }}">{{ $on ? 'Switch off and put normal prices back' : 'Switch on' }}</button></form>
+<a class="btn g" href="/black-friday" target="_blank">Offer page</a>
+</div>
 <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr));margin-bottom:12px">
 <div class="card"><div style="font-size:12px;color:#6B7280">Products in the campaign</div><div style="font-size:26px;font-weight:800">{{ $n($tot['in']) }} <small style="font-size:12px;font-weight:500">of {{ $n($tot['all']) }}</small></div></div>
 <div class="card"><div style="font-size:12px;color:#6B7280">Average saving</div><div style="font-size:26px;font-weight:800">{{ $avg }}%</div></div>

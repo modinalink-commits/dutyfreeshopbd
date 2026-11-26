@@ -31,6 +31,7 @@ class MotherPushWorker extends Command
     try { if (\App\Support\AutoHeal::begin('pbxline')) { \App\Support\AdminAlerts::pbxLine(); } } catch (\Throwable $e) { $this->error('pbxline: ' . $e->getMessage()); \App\Support\LiveBoard::fail('pbxline', $e); }
     try { if (\App\Support\AutoHeal::begin('chatowner')) { \App\Support\ChatOwner::tick(); } } catch (\Throwable $e) { $this->error('chatowner: ' . $e->getMessage()); \App\Support\LiveBoard::fail('chatowner', $e); }
     try { if (\App\Support\AutoHeal::begin('chatstale')) { \App\Support\Chat::staleTick(); } } catch (\Throwable $e) { $this->error('chatstale: ' . $e->getMessage()); \App\Support\LiveBoard::fail('chatstale', $e); }
+    try { \App\Support\BlackFriday::tick(); } catch (\Throwable $e) { $this->error('blackfriday: ' . $e->getMessage()); }
     try { if (\App\Support\AutoHeal::begin('bscamp')) { \App\Support\BestSellerCampaign::tick(); } } catch (\Throwable $e) { $this->error('bscamp: ' . $e->getMessage()); \App\Support\LiveBoard::fail('bscamp', $e); }
     try { if (\App\Support\AutoHeal::begin('pubsms')) { \App\Support\PublishNotice::tick(); } } catch (\Throwable $e) { $this->error('pubsms: ' . $e->getMessage()); \App\Support\LiveBoard::fail('pubsms', $e); }
     try { if (\App\Support\AutoHeal::begin('bs-stock')) { \App\Support\BestSellerStock::tick(); } } catch (\Throwable $e) { $this->error('bs-stock: ' . $e->getMessage()); \App\Support\LiveBoard::fail('bs-stock', $e); }

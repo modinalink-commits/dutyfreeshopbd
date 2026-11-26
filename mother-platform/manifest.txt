@@ -1927,3 +1927,8 @@ resources/marine/cabin120/manifest.csv
 app/Support/BlackFriday.php
 app/Http/Controllers/BlackFridayController.php
 resources/views/black_friday_plan.blade.php
+database/migrations/2026_11_26_000210_black_friday_items.php
+resources/views/store/bf_banner.blade.php
+resources/views/store/black_friday.blade.php
+public/black-friday-badge.webp
+public/black-friday-og.jpg

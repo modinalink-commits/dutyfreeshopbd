@@ -444,6 +444,23 @@ class StoreController extends Controller {
     return response()->view('store.category', $this->base(array_replace(['c'=>$c, 'subName'=>$subName, 'subSlug'=>$subSlug, 'items'=>$items, 'hasPos'=>$hasPos, 'groups'=>collect($items->items())->groupBy(fn($p) => $p->sub ?: $c->name), 'title'=>$title, 'desc'=>$subName ? $subName.' – original imported products in '.$c->name.' at DutyFree BD. Cash on delivery, nationwide delivery.' : $c->meta_description, 'canon'=>((int)$r->query('page') > 1) ? $canon.'?page='.(int)$r->query('page') : ((!$subName && !empty($c->canonical)) ? $c->canonical : $canon), 'noindex'=>(!empty($c->noindex) && !$subName), 'keywords'=>$c->focus_keyword ?? null, 'ogimg'=>(!empty($c->og_image) ? $c->og_image : null)], $ov)))->header('Cache-Control','public, max-age=120');
   }
   /** Public brand page /brand/{slug}: published products of one brand + the brand's own SEO (auto or manual). */
+  /** Black Friday campaign page (owner plan 26 Nov 2026: 27 Nov launch, 28-29 deals by category, 30 Nov Cyber Monday = last day, closes 11:59 PM Dhaka).
+   *  Shows only products that already carry a real discount (old price above the selling price); no price is changed here. Cigarette and vape products are never listed: the page is shared on Facebook. */
+  public function blackFriday(Request $r) {
+    $BF = \App\Support\BlackFriday::class; [$from, $to] = $BF::window(); $now = now('Asia/Dhaka'); $over = $now->gt($to); $run = $BF::running(); $s = self::set(); $per = max(12, (int)$s['per_page']);
+    $ids = $run ? array_keys($BF::ids()) : [];
+    $base = \App\Support\StockGuard::listable(DB::table('products')->where('published', true))->whereIn('id', $ids ?: [0])->where(function ($w) { $w->whereNull('group_key')->orWhere('group_key', '!=', 'smoke'); });
+    $sc = DB::table('categories')->get(['id','slug','name'])->filter(fn($c) => self::isSmokeCat($c))->pluck('id')->all(); if ($sc) $base->where(function ($w) use ($sc) { $w->whereNull('category_id')->orWhereNotIn('category_id', $sc); });
+    $cats = (clone $base)->whereNotNull('category_id')->groupBy('category_id')->selectRaw('category_id as id, count(*) as n')->pluck('n', 'id')->all();
+    $names = $cats ? DB::table('categories')->whereIn('id', array_keys($cats))->pluck('name', 'id')->all() : []; arsort($cats);
+    $chips = []; foreach ($cats as $id => $n) if (isset($names[$id])) $chips[] = ['id' => (int)$id, 'name' => (string)$names[$id], 'n' => (int)$n];
+    $cat = (int)$r->query('cat'); if (!isset($cats[$cat])) $cat = 0; if ($cat) $base->where('category_id', $cat);
+    $items = $base->orderByRaw('(compare_price - price) / nullif(compare_price, 0) desc nulls last')->orderByDesc('id')->paginate($per)->withQueryString();
+    $title = 'Black Friday on DutyFree Shop | DutyFreeBD'; $desc = 'Black Friday on DutyFree Shop, 27 to 30 November 2026. Special Black Friday prices on perfume, beauty, daily needs and more with delivery across Bangladesh. Ends 30 November, 11:59 PM.';
+    $idx = $run && $cat === 0;
+    return response()->view('store.black_friday', $this->base(['items' => $items, 'chips' => $chips, 'cat' => $cat, 'over' => $over, 'run' => $run, 'from' => $from, 'to' => $to, 'last' => $run && $now->isSameDay($to), 'total' => array_sum($cats),
+      'title' => $title, 'desc' => $desc, 'canon' => url('/black-friday'), 'noindex' => !$idx, 'robots' => $idx ? 'index,follow,max-image-preview:large' : 'noindex,follow', 'ogimg' => url('/black-friday-og.jpg'), 'ogtitle' => $title, 'ogdesc' => $desc]))->header('Cache-Control', 'public, max-age=60');
+  }
   public function brand(Request $r, string $slug) {
     $b = DB::table('brands')->where('slug', $slug)->where('active', true)->first(); if (!$b) return $this->notFound();
     $s = self::set(); $per = max(12, (int)$s['per_page']);

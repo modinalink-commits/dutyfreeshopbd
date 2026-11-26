@@ -630,7 +630,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/orders/{id}/pay-proof', [\App\Http\Controllers\PaymentController::class,'proof']);
   Route::post('/orders/{id}/pay-{mode}', [\App\Http\Controllers\PaymentController::class,'decide']);
   Route::get('/deals', [\App\Http\Controllers\DealController::class,'index']);
-  Route::get('/black-friday', [\App\Http\Controllers\BlackFridayController::class,'index']); Route::get('/black-friday.csv', [\App\Http\Controllers\BlackFridayController::class,'csv']);
+  Route::get('/black-friday', [\App\Http\Controllers\BlackFridayController::class,'index']); Route::get('/black-friday.csv', [\App\Http\Controllers\BlackFridayController::class,'csv']); Route::post('/black-friday/switch', [\App\Http\Controllers\BlackFridayController::class,'toggle']);
   Route::get('/deals.csv', [\App\Http\Controllers\DealController::class,'csv']);
   Route::post('/deals/settings', [\App\Http\Controllers\DealController::class,'settings']);
   Route::post('/deals/{id}/{mode}', [\App\Http\Controllers\DealController::class,'flag']);
@@ -874,6 +874,7 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestF
   Route::get('/supplier/statement/{token}', [\App\Http\Controllers\ProcurementController::class,'statement'])->where('token','[a-f0-9]+')->middleware('throttle:60,1');
   Route::post('/tryon/save', [\App\Http\Controllers\TryOnController::class,'save'])->middleware('throttle:8,1'); Route::post('/tryon/forget', [\App\Http\Controllers\TryOnController::class,'forget'])->middleware('throttle:20,1');
   Route::get('/p/{key}', [\App\Http\Controllers\StoreController::class,'product'])->where('key','[A-Za-z0-9\-]+');
+  Route::get('/black-friday', [\App\Http\Controllers\StoreController::class,'blackFriday']);
   Route::get('/brand/{slug}', [\App\Http\Controllers\StoreController::class,'brand'])->where('slug','[a-z0-9\-]+');
   Route::get('/{slug}', [\App\Http\Controllers\StoreController::class,'category'])->where('slug','[a-z0-9\-]+');
   Route::get('/{cat}/{sub}', [\App\Http\Controllers\StoreController::class,'categorySub'])->where(['cat'=>'[a-z0-9\-]+','sub'=>'[a-z0-9\-]+']);

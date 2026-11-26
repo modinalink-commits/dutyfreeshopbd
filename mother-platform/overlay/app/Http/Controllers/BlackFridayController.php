@@ -13,7 +13,16 @@ class BlackFridayController extends Controller
     $st = in_array($r->query('show'), ['in', 'check', 'no_cost', 'at_floor', 'no_stock'], true) ? $r->query('show') : 'in'; $cat = mb_substr(trim((string)$r->query('cat')), 0, 120);
     $list = array_values(array_filter($rows, fn($x) => ($st === 'check' ? $x['check'] : $x['status'] === $st) && ($cat === '' || $x['cat'] === $cat)));
     usort($list, fn($a, $b) => [$b['off_pct'], $a['name']] <=> [$a['off_pct'], $b['name']]);
-    return view('black_friday_plan', ['tot' => $s['tot'], 'by' => $s['by'], 'pct' => $d['pct'], 'list' => array_slice($list, 0, 300), 'count' => count($list), 'show' => $st, 'cat' => $cat]);
+    [$from, $to] = BF::window(); $el = BF::eligible();
+    return view('black_friday_plan', ['on' => BF::on(), 'running' => BF::running(), 'from' => $from, 'to' => $to, 'minOff' => BF::minOff(), 'eligible' => count($el), 'elSmoke' => count(array_filter($el, fn($x) => $x['smoke'])), 'cnt' => BF::counts(), 'tot' => $s['tot'], 'by' => $s['by'], 'pct' => $d['pct'], 'list' => array_slice($list, 0, 300), 'count' => count($list), 'show' => $st, 'cat' => $cat]);
+  }
+  /** Owner switch. on = the campaign starts and ends by itself on its dates; off = normal prices come back within a minute. */
+  public function toggle(Request $r) {
+    if (!\App\Support\ProfitFloor::admin()) abort(403);
+    $on = $r->input('on') === '1'; \App\Support\Procure::put('bf_on', $on ? '1' : '0'); if ($on) \App\Support\Procure::put('bf_applied_at', '');
+    \App\Support\Procure::audit($on ? 'Black Friday switched on' : 'Black Friday switched off', 'Campaign', null, ['by' => auth()->user()->name ?? '']);
+    try { \Illuminate\Support\Facades\Cache::forget('bf.tick'); } catch (\Throwable $e) {}   // the background worker applies or puts back the prices (thousands of products: not inside a page request)
+    return back()->with('ok', $on ? 'Black Friday is on. Prices change by themselves at the start time and come back after the end time.' : 'Black Friday is off. Normal prices come back within a few minutes.');
   }
   public function csv() {
     if (!\App\Support\ProfitFloor::admin()) abort(403);
