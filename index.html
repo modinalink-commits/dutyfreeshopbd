@@ -135,6 +135,55 @@ a{color:#0B2545}a:hover{color:#D94A04}
 @media(prefers-reduced-motion:reduce){.shc-c,.shc-p img{transition:none}.shc-c:hover{transform:none}.shc-c:hover .shc-p img{transform:none}}
 </style>
 <style>html{scroll-behavior:smooth;scrollbar-gutter:stable;scroll-padding-top:84px}@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}.gh{position:sticky;top:0;z-index:60;background:#FFFFFF;border-bottom:1px solid #D9E0E8;font-family:Inter,system-ui,sans-serif}.gh-in{max-width:1200px;margin:0 auto;padding:0 24px;height:68px;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:20px}.gh-logo{display:flex;align-items:center;flex:none}.gh-logo img{display:block;height:44px;width:163px}.gh-nav{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:500;min-width:0;overflow-x:auto;scrollbar-width:none;white-space:nowrap}.gh-nav::-webkit-scrollbar{display:none}.gh-nav a{text-decoration:none;color:#0B2545;padding:10px 10px;border-radius:8px;flex:none}.gh-nav a:hover{color:#F95505}.gh-nav a.on{color:#F95505;font-weight:600}.gh-nav a.gh-btn{background:#0B2545;color:#FFFFFF;font-weight:600;padding:10px 16px;margin-left:6px}.gh-nav a.gh-btn:hover,.gh-nav a.gh-btn.on{background:#12335E;color:#FFFFFF}.gf{background:#0B2545;color:#D6DEEA;font:400 13px/1.7 Inter,system-ui,sans-serif}.gf-in{max-width:1200px;margin:0 auto;padding:28px 24px;display:flex;flex-wrap:wrap;gap:12px 32px;justify-content:space-between;align-items:center}.gf a{color:#D6DEEA;text-decoration:none;margin-right:18px}.gf a:hover{color:#FFFFFF}.gf nav{display:flex;flex-wrap:wrap;gap:4px 0}.gh-tg{display:none}@media(max-width:820px){.gh-in{height:60px;padding:0 16px;position:relative}.gh-logo img{height:38px;width:140px}.gh-tg{display:inline-flex;align-items:center;gap:8px;height:42px;min-height:0;padding:0 14px;border:1px solid #C3CDD9;border-radius:8px;background:#FFFFFF;color:#0B2545;font:600 14px Inter,system-ui,sans-serif;cursor:pointer}.gh-tg i{display:block;width:16px;height:2px;background:#0B2545;box-shadow:0 5px 0 #0B2545,0 -5px 0 #0B2545}.gh-nav{display:none;position:absolute;left:0;right:0;top:60px;flex-direction:column;align-items:stretch;gap:0;background:#FFFFFF;border-bottom:1px solid #D9E0E8;box-shadow:0 14px 28px rgba(12,22,31,.14);padding:8px 16px 14px;white-space:normal;overflow:visible}.gh.open .gh-nav{display:flex}.gh-nav a{padding:13px 4px;border-radius:0;border-bottom:1px solid #EEF1F5;font-size:15px}.gh-nav a.gh-btn{margin:12px 0 0;border-radius:8px;text-align:center;border-bottom:0}html{scroll-padding-top:76px}.gf-in{padding:24px 16px}}@media print{.gh,.gf{display:none!important}}</style>
+<style id="glass">
+html{background:#DCE7F3}
+body{background:transparent!important}
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:
+ radial-gradient(900px 620px at 8% 14%,rgba(249,85,5,.32),transparent 62%),
+ radial-gradient(1000px 700px at 96% 28%,rgba(34,118,214,.42),transparent 62%),
+ radial-gradient(900px 700px at 16% 66%,rgba(20,160,170,.36),transparent 62%),
+ radial-gradient(900px 640px at 90% 92%,rgba(249,85,5,.28),transparent 62%),
+ linear-gradient(180deg,#E6EEF8,#D6E3F2)}
+#app>div{background:transparent!important}
+.gh{background:rgba(255,255,255,.55)!important;-webkit-backdrop-filter:blur(18px) saturate(160%);backdrop-filter:blur(18px) saturate(160%);border-bottom:1px solid rgba(255,255,255,.75)!important;box-shadow:0 6px 24px rgba(11,37,69,.08)}
+.gh-logo img{background:none}
+@media(max-width:900px){.gh-nav{background:rgba(255,255,255,.92)!important;-webkit-backdrop-filter:blur(22px);backdrop-filter:blur(22px)}}
+.gh-tg{background:rgba(255,255,255,.5)!important}
+/* panels */
+.mq-in,.shc-c,#how>div>div,#ports article,#how~section>div>div,#how~section>div[style*="border: 1px"],.card,#pd,#tcard,#tlist,.tact,.vd,.wx-c,main [style*="border:1px solid #D9E0E8"],main [style*="border: 1px solid #D9E0E8"]{background:rgba(255,255,255,.44)!important;-webkit-backdrop-filter:blur(18px) saturate(160%);backdrop-filter:blur(18px) saturate(160%);border:1px solid rgba(255,255,255,.8)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 14px 36px rgba(11,37,69,.10)!important;border-radius:18px!important}
+#how~section>div[style*="border: 1px"]>div{background:none!important;border:0!important;box-shadow:none!important;-webkit-backdrop-filter:none;backdrop-filter:none}
+.shc-c:hover,#ports article:hover{background:rgba(255,255,255,.66)!important;box-shadow:inset 0 1px 0 #fff,0 22px 48px rgba(11,37,69,.16)!important}
+.shc-c>*:first-child,.pp-ph{margin:10px 10px 0;overflow:hidden;border-radius:14px}
+/* product grid: translucent without blur, so long lists stay fast on phones */
+.pc,.mcard{background:rgba(255,255,255,.62)!important;border:1px solid rgba(255,255,255,.85)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 8px 22px rgba(11,37,69,.08);border-radius:16px!important}
+.pc:hover{background:rgba(255,255,255,.8)!important;box-shadow:0 18px 36px rgba(11,37,69,.14)!important}
+.pi,.mcard .im{margin:8px 8px 0;border-radius:12px;border-bottom:0!important;background:#FFFFFF!important;overflow:hidden}
+.pdi{border-radius:14px!important;border:1px solid rgba(255,255,255,.9)!important}
+/* controls */
+main input,main select,main textarea,.mq input,.mq select,.tools .chk,.seg,.fs,.b2,.tact button,.tact a,.tsv .sv,.wx-btn{background-color:rgba(255,255,255,.72)!important;border-color:rgba(255,255,255,.95)!important;box-shadow:inset 0 0 0 1px rgba(11,37,69,.10)}
+main input:focus,main select:focus,main textarea:focus{background-color:#FFFFFF!important;outline:2px solid rgba(249,85,5,.45);outline-offset:1px}
+.tact #twa{background:#16A34A!important;color:#fff!important}.tact #tpdf{background:#0B2545!important;color:#fff!important}.tact #tsave.on{background:#DCFCE7!important}
+.seg a.on,.tabs button.on{background:#0B2545!important;color:#fff!important}
+.tabs{background:rgba(255,255,255,.4)!important;border:1px solid rgba(255,255,255,.8)}
+#tlist th{background:rgba(255,255,255,.45)!important}
+#tsug{background:rgba(255,255,255,.94)!important;-webkit-backdrop-filter:blur(22px);backdrop-filter:blur(22px)}
+.note{background:rgba(255,241,232,.72)!important;-webkit-backdrop-filter:blur(18px) saturate(160%);backdrop-filter:blur(18px) saturate(160%);border-radius:14px!important}
+.shc-b,.mq .go,.pq,#more,.b1,.b2,.mh-cta a,main button[type=submit]{border-radius:999px!important}
+.tools select{height:46px!important;flex:none!important;align-self:flex-start}
+/* dark glass */
+.mh{margin:16px auto 0;max-width:1240px;border-radius:24px;box-shadow:0 24px 60px rgba(11,37,69,.22)}
+.mh-tx{background:rgba(11,37,69,.34);-webkit-backdrop-filter:blur(16px) saturate(140%);backdrop-filter:blur(16px) saturate(140%);border:1px solid rgba(255,255,255,.28);border-radius:20px;padding:28px;box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 18px 40px rgba(0,0,0,.18)}
+.mh-cta a.c2,.mh-cta a.c3{background:rgba(255,255,255,.16)!important;border:1px solid rgba(255,255,255,.45)!important;color:#FFFFFF!important;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.ftr-in,.dark{background:rgba(11,37,69,.74)!important;-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.22);border-radius:22px!important;box-shadow:0 20px 50px rgba(11,37,69,.22)}
+.ftr-in{background-image:radial-gradient(700px 260px at 90% 0%,rgba(249,85,5,.35),transparent 60%)!important}
+.hero,.th{margin:16px auto 0;max-width:1240px;border-radius:24px;overflow:hidden;box-shadow:0 24px 60px rgba(11,37,69,.22)}
+#map,.pmap{border-radius:20px!important;border:1px solid rgba(255,255,255,.7)!important}
+.gf,footer{background:rgba(11,37,69,.86)!important;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.gf{margin-top:24px}
+@media(max-width:900px){.mh,.hero,.th{margin:10px 12px 0;border-radius:18px}.mh-tx{padding:20px}}
+@media print{body::before{display:none}html{background:#fff}.card,#tcard,#tlist,.vd{background:#fff!important;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none!important}}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.gh{background:rgba(255,255,255,.94)!important}.mq-in,.shc-c,.card,#pd,#tcard,#tlist,.tact,.vd,#ports article{background:rgba(255,255,255,.86)!important}}
+</style>
 </head>
 <body>
 <div style="background:#0C161F;color:#FFFFFF;font:500 12px/1.4 Inter,system-ui,sans-serif;text-align:center;padding:7px 12px">Launching soon at Chattogram · Request access to be among the first vessels served</div>

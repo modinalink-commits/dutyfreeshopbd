@@ -6,6 +6,7 @@ cat-crew.jpg
 cat-provisions.jpg
 cat-safety.jpg
 cat-technical.jpg
+delivery.html
 glass.html
 icon.png
 index.html
@@ -20,6 +21,7 @@ product.js
 products.html
 products.js
 request-access.html
+returns.html
 robots.txt
 share.png
 ship-supply-chattogram.html
@@ -28,6 +30,7 @@ ship-supply-payra.html
 site.js
 sitemap.xml
 staging.html
+terms.html
 track.html
 track.js
 weather.js

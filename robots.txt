@@ -1,5 +1,8 @@
 User-agent: *
 Allow: /
 Disallow: /staging
+Disallow: /terms
+Disallow: /delivery
+Disallow: /returns
 
 Sitemap: https://marinedutyfreebd.com/sitemap.xml
