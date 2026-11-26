@@ -1,0 +1,32 @@
+@extends('mp.layout')@section('title', $o->number)
+@section('body')
+@php $bt = fn($t) => $t ? \Carbon\Carbon::parse($t)->timezone('Asia/Dhaka')->format('d M Y, H:i') : '-'; $priced = $o->quoted_at !== null && in_array($o->status, ['quoted', 'ordered', 'preparing', 'delivered', 'declined', 'cancelled'], true); @endphp
+<p style="margin:0 0 8px;font-size:13px"><a href="/marine-portal/orders">← All {{ $o->kind === 'personal' ? 'orders' : 'requisitions and orders' }}</a></p>
+<div class="row" style="justify-content:space-between;margin-bottom:16px"><div><h1>{{ $o->status === 'requested' ? ($o->kind === 'personal' ? 'Order request' : 'Requisition') : (in_array($o->status, ['quoted', 'declined'], true) ? 'Quotation' : 'Purchase order') }} {{ $o->number }}</h1><p class="sub" style="margin:0">{{ $o->kind === 'personal' ? 'Personal order' : 'Vessel supply' }} · sent {{ $bt($o->created_at) }} by {{ $by->name ?: ($by->company ?? '') }} ({{ $by->username ?? '' }})</p></div><span class="st st-{{ $o->status }}">{{ $status[$o->status] ?? $o->status }}</span></div>
+<div class="grid">
+<section class="card" style="margin:0"><h2>Vessel and delivery</h2><dl class="dl"><dt>Vessel</dt><dd>{{ $o->vessel ?: '-' }}</dd><dt>IMO</dt><dd>{{ $o->imo ?: '-' }}</dd><dt>Port</dt><dd>{{ $ports[$o->port] ?? $o->port }}</dd><dt>Delivery</dt><dd>{{ $places[$o->place] ?? '-' }}</dd><dt>ETA / wanted</dt><dd>{{ $o->eta ? $bt($o->eta) . ' BST' : '-' }}</dd></dl></section>
+<section class="card" style="margin:0"><h2>Progress</h2><dl class="dl"><dt>Requested</dt><dd>{{ $bt($o->created_at) }}</dd><dt>Quotation</dt><dd>{{ $o->quoted_at ? $bt($o->quoted_at) : 'Waiting for our marine desk' }}</dd>@if($o->valid_until)<dt>Valid until</dt><dd>{{ \Carbon\Carbon::parse($o->valid_until)->format('d M Y') }}{{ $expired ? ' (expired)' : '' }}</dd>@endif
+@if($o->ordered_at)<dt>Purchase order</dt><dd>{{ $bt($o->ordered_at) }}{{ $o->po_ref ? ' · ref ' . $o->po_ref : '' }}<div class="hint" style="margin:0;font-weight:400">{{ $o->ordered_by }}</div></dd>@endif @if($o->delivery_at)<dt>Planned delivery</dt><dd>{{ $bt($o->delivery_at) }} BST</dd>@endif @if($o->delivered_at)<dt>Delivered</dt><dd>{{ $bt($o->delivered_at) }}</dd>@endif
+@if(in_array($o->status, ['declined', 'cancelled'], true))<dt>Closed</dt><dd>{{ $bt($o->closed_at) }}{{ $o->close_reason ? ' · ' . $o->close_reason : '' }}</dd>@endif</dl></section>
+</div>
+@if($o->note)<section class="card" style="margin-top:16px"><h2>Your note</h2><p style="margin:0;white-space:pre-line;font-size:14px">{{ $o->note }}</p></section>@endif
+<section class="card" style="margin-top:16px"><h2>Items</h2><div class="tw"><table style="min-width:600px"><tr><th>Item</th><th class="num">Quantity</th>@if($priced)<th class="num">Unit USD</th><th class="num">Amount USD</th>@else<th class="num">List USD</th>@endif</tr>
+@foreach($lines as $l)<tr style="{{ $priced && !$l->available ? 'color:#94A3B8' : '' }}"><td><b>{{ $l->name }}</b>@if($l->size || $l->sku)<div class="hint" style="margin:0">{{ implode(' · ', array_filter([$l->size, $l->sku])) }}</div>@endif @if($l->note)<div class="hint" style="margin:0">{{ $l->note }}</div>@endif @if($priced && !$l->available)<div class="hint" style="margin:0;color:#991B1B">Not available</div>@endif</td>
+<td class="num">{{ rtrim(rtrim(number_format((float)$l->qty, 2), '0'), '.') }} {{ $l->unit }}</td>
+@if($priced)<td class="num">{{ $l->available && $l->unit_usd !== null ? number_format((float)$l->unit_usd, 2) : '-' }}</td><td class="num">{{ $l->available && $l->unit_usd !== null ? number_format(round((float)$l->qty * (float)$l->unit_usd, 2), 2) : '-' }}</td>@else<td class="num">{{ $l->list_usd !== null ? number_format((float)$l->list_usd, 2) : 'To be quoted' }}</td>@endif</tr>@endforeach
+@if($priced)<tr><td colspan="3" class="num">Subtotal</td><td class="num">{{ number_format((float)$o->subtotal, 2) }}</td></tr><tr><td colspan="3" class="num">Delivery to the vessel</td><td class="num">{{ number_format((float)$o->delivery_charge, 2) }}</td></tr><tr><td colspan="3" class="num"><b>Total USD</b></td><td class="num"><b>{{ number_format((float)$o->total, 2) }}</b></td></tr>@endif</table></div>
+@if(!$priced)<p class="hint">List prices are a guide. The quotation gives the final USD price, availability and the delivery charge for your position.</p>@endif
+@if($o->desk_note)<div class="al info" style="margin:14px 0 0;white-space:pre-line"><b>From our marine desk:</b>
+{{ $o->desk_note }}</div>@endif</section>
+@if($o->status === 'quoted')
+@if($canAccept)<section class="card"><h2>{{ $o->kind === 'personal' ? 'Confirm this order' : 'Place the purchase order' }}</h2>
+<form method="post" action="/marine-portal/orders/{{ $o->id }}">@csrf<input type="hidden" name="action" value="accept">
+@if($o->kind !== 'personal')<label for="po">Your purchase order reference (optional)</label><input id="po" type="text" name="po_ref" maxlength="60" style="max-width:320px">@endif
+<label style="display:flex;gap:10px;align-items:flex-start;font-weight:400;margin-top:14px"><input type="checkbox" name="agree" value="1" required style="width:20px;height:20px;margin-top:2px;flex:none"> <span>I confirm this {{ $o->kind === 'personal' ? 'order' : 'purchase order' }} for USD {{ number_format((float)$o->total, 2) }} at the quoted prices.</span></label>
+<div class="row" style="margin-top:16px"><button>{{ $o->kind === 'personal' ? 'Confirm order' : 'Place purchase order' }}</button></div></form>
+<form method="post" action="/marine-portal/orders/{{ $o->id }}" style="margin-top:14px;border-top:1px solid #EEF2F6;padding-top:14px">@csrf<input type="hidden" name="action" value="decline"><label for="rs">Or decline, with a reason (optional)</label><div class="row"><input id="rs" type="text" name="reason" maxlength="300" style="flex:1 1 240px"><button class="g">Decline quotation</button></div></form></section>
+@elseif($expired)<div class="al info">This quotation has expired. Ask our marine desk for a new one.</div>
+@elseif($captainWait)<div class="al info">The purchase order for this quotation is placed by the shipping owner, the appointed agent or our marine desk.</div>@endif
+@endif
+@if($canWithdraw && !$canAccept)<form method="post" action="/marine-portal/orders/{{ $o->id }}" class="card">@csrf<input type="hidden" name="action" value="withdraw"><div class="row" style="justify-content:space-between"><span style="font-size:14px;color:#475569">No longer needed?</span><button class="g">Withdraw this request</button></div></form>@endif
+@endsection

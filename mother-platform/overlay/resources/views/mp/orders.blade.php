@@ -1,0 +1,11 @@
+@extends('mp.layout')@section('title', $crew ? 'My orders' : 'Requisitions and orders')
+@section('body')
+@php $bd = fn($t) => $t ? \Carbon\Carbon::parse($t)->timezone('Asia/Dhaka')->format('d M Y') : '-'; @endphp
+<div class="row" style="justify-content:space-between;margin-bottom:16px"><div><h1>{{ $crew ? 'My orders' : 'Requisitions and orders' }}</h1><p class="sub" style="margin:0">Request, USD quotation, purchase order and delivery in one place.</p></div>
+<div class="row">@if($canVessel)<a class="btn" href="/marine-portal/orders/new">New requisition</a>@endif @if($canPersonal)<a class="btn {{ $canVessel ? 'g' : '' }}" href="/marine-portal/orders/new?kind=personal">New personal order</a>@endif</div></div>
+<div class="row" style="margin-bottom:12px"><a class="st {{ $st === '' ? 'st-quoted' : '' }}" href="/marine-portal/orders" style="text-decoration:none">All</a>@foreach($status as $k => $l)<a class="st {{ $st === $k ? 'st-quoted' : '' }}" href="/marine-portal/orders?status={{ $k }}" style="text-decoration:none">{{ $l }}</a>@endforeach</div>
+<div class="card tw" style="padding:0"><table style="min-width:640px"><tr><th style="padding-left:16px">Number</th><th>Vessel</th><th>Port</th><th>Sent</th><th class="num">Total USD</th><th style="padding-right:16px">Status</th></tr>
+@forelse($rows as $o)<tr><td style="padding-left:16px"><a href="/marine-portal/orders/{{ $o->id }}"><b>{{ $o->number }}</b></a>@if($o->kind === 'personal')<div class="hint" style="margin:0">Personal</div>@endif</td><td>{{ $o->vessel ?: '-' }}@if($o->imo)<div class="hint" style="margin:0">IMO {{ $o->imo }}</div>@endif</td><td>{{ $ports[$o->port] ?? $o->port }}</td><td style="white-space:nowrap">{{ $bd($o->created_at) }}</td><td class="num">{{ $o->total !== null ? number_format((float)$o->total, 2) : '-' }}</td><td style="padding-right:16px"><span class="st st-{{ $o->status }}">{{ $status[$o->status] ?? $o->status }}</span></td></tr>
+@empty<tr><td colspan="6" style="padding:20px 16px;color:#64748B">Nothing here yet.@if($canVessel || $canPersonal) Start with a new {{ $canVessel ? 'requisition' : 'personal order' }}.@endif</td></tr>@endforelse</table></div>
+{{ $rows->links('pagination.global') }}
+@endsection

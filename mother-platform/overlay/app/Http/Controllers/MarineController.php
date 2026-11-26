@@ -58,7 +58,7 @@ class MarineController extends Controller
     return view('marine.catalog', ['rate' => self::rate(), 'adm' => \App\Support\ProfitFloor::admin(), 'rows' => $rows, 'q' => $q, 'show' => $show, 'cat' => $cat, 'cats' => $cats, 'bond' => $bond, 'ports' => self::PORTS, 'featN' => (int)DB::table('marine_products')->whereNotNull('featured')->count(), 'featMax' => self::FEATURED, 'essN' => (int)DB::table('marine_products')->where('essential', true)->count()]);
   }
   /** Categories that do not belong on a ship-supply site at all (baby goods): never listed on the marine site, with or without login (owner rule 26 Nov 2026). */
-  private static function hiddenIds(): array { $o = []; foreach (DB::table('categories')->get(['id', 'name', 'slug']) as $c) if (preg_match('/\bbab(y|ies)\b|infant|diaper|nappy/i', (string)$c->name . ' ' . str_replace('-', ' ', (string)$c->slug)) === 1) $o[] = (int)$c->id; return $o; }
+  public static function hiddenIds(): array { $o = []; foreach (DB::table('categories')->get(['id', 'name', 'slug']) as $c) if (preg_match('/\bbab(y|ies)\b|infant|diaper|nappy/i', (string)$c->name . ' ' . str_replace('-', ' ', (string)$c->slug)) === 1) $o[] = (int)$c->id; return $o; }
   private static function bondedIds(): array { $o = []; foreach (DB::table('categories')->get(['id', 'name', 'slug']) as $c) if (self::bonded($c)) $o[] = (int)$c->id; return $o; }
   /** New version number for the cached public product pages (never a full cache flush: the cache is shared with the workers). */
   private static function bump(): void { try { \Illuminate\Support\Facades\Cache::forever('marine.ppv', time()); } catch (\Throwable $e) {} }
