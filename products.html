@@ -45,7 +45,10 @@ select{height:46px;border:1px solid #C3CDD9;border-radius:8px;padding:0 10px;fon
 #grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
 .pc{background:#fff;border:1px solid #D9E0E8;border-radius:10px;overflow:hidden;display:flex;flex-direction:column}
 .pi{aspect-ratio:1/1;background:#fff;border-bottom:1px solid #EEF1F5;display:flex;align-items:center;justify-content:center}.pi img{width:100%;height:100%;object-fit:contain;display:block}
-.pb{padding:12px;display:flex;flex-direction:column;gap:6px;flex-grow:1}.ps{font-size:11px;font-weight:600;color:#475569;letter-spacing:.04em}.pn{font-size:14px;line-height:1.35}.pz{font-size:12px;color:#475569}
+.pb{padding:12px;display:flex;flex-direction:column;gap:6px;flex-grow:1;min-width:0}.ps{font-size:11px;font-weight:600;color:#64748B;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pn{font-size:14px;font-weight:600;line-height:1.4;height:2.8em;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;text-decoration:none;color:#0C161F}.pz{font-size:12px;color:#64748B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:1.4em}
+.pa{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:#166534}.pa::before{content:'';flex:none;width:7px;height:7px;border-radius:50%;background:#16A34A}.pa.no{color:#64748B}.pa.no::before{background:#94A3B8}
+.pc{transition:box-shadow .2s ease,transform .2s ease}.pc:hover{box-shadow:0 10px 24px rgba(12,22,31,.10);transform:translateY(-2px)}.pi{padding:12px;box-sizing:border-box}
+@media(max-width:560px){#grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.pf{flex-direction:column;align-items:stretch}.pq{text-align:center}.tools select{flex:1 1 140px;min-width:0}}
 .pf{margin-top:auto;display:flex;justify-content:space-between;align-items:center;gap:8px;padding-top:8px}.pp{font-size:15px;font-variant-numeric:tabular-nums}
 .pq{text-decoration:none;font-size:12.5px;font-weight:600;color:#fff;background:#F95505;padding:9px 10px;border-radius:7px;white-space:nowrap}.pp{white-space:nowrap}.pq:hover{color:#fff}
 #more{align-self:center;padding:0 26px;background:#0B2545}[hidden]{display:none!important}
@@ -59,8 +62,9 @@ footer{background:#0B2545;color:#D6DEEA;font-size:13px;text-align:center;padding
 <nav><a href="/">Home</a><a href="/request-access.html">Request Access</a><a href="/login.html">Vessel Login</a></nav>
 </div></header>
 <main>
-<div><h1>Products</h1><span class="muted">Ship stores and crew supplies for delivery at Chattogram. Prices in USD. Bonded stores are shown to signed-in, verified accounts.</span></div>
-<div class="tools"><label style="flex:1 1 260px;min-width:0"><span class="hp" style="position:absolute;left:-9999px">Search products</span><input id="q" type="search" placeholder="Search by name or code" style="width:100%;box-sizing:border-box"></label>
+<div><h1>Products</h1><span class="muted">Ship stores and crew supplies. Choose your port of call to see what can be supplied there. Prices in USD. Bonded stores are shown to signed-in, verified accounts.</span></div>
+<div class="tools"><label style="flex:1 1 260px;min-width:0"><span class="hp" style="position:absolute;left:-9999px">Search products</span><input id="q" type="search" placeholder="Search by product name, brand or code" style="width:100%;box-sizing:border-box"></label>
+<label><span style="position:absolute;left:-9999px">Port of call</span><select id="port"><option value="">All ports</option><option value="chattogram">Chattogram</option><option value="mongla">Mongla</option><option value="payra">Payra</option></select></label>
 <label><span style="position:absolute;left:-9999px">Category</span><select id="cat"><option value="0">All categories</option></select></label></div>
 <span class="muted" id="info">Loading...</span>
 <div id="grid"></div>

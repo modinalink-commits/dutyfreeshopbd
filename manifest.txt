@@ -8,6 +8,8 @@ logo-stacked.png
 port-chattogram.jpg
 port-mongla.jpg
 port-payra.jpg
+product.html
+product.js
 products.html
 products.js
 request-access.html
