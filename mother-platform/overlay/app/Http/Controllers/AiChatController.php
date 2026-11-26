@@ -29,7 +29,7 @@ class AiChatController extends Controller {
       foreach (\Illuminate\Support\Facades\DB::table('chat_threads')->where('channel', 'web')->where('updated_at', '>=', now()->subDays(7))->whereNotNull('ai_detected')
         ->selectRaw("ai_detected as l, count(*) as n, sum(case when ai_paused then 1 else 0 end) as taken, sum(case when ai_lang is not null then 1 else 0 end) as fixed")->groupBy('ai_detected')->get() as $x) $lr[$x->l] = ['n'=>(int)$x->n, 'taken'=>(int)$x->taken, 'fixed'=>(int)$x->fixed];
     } catch (\Throwable $e) {}
-    return view('ai_chat', ['langRows'=>$lr, 'hasKey'=>(bool)Sms::secret('ai_key'), 'on'=>Sms::secret('ai_enabled') === '1', 'model'=>AiChat::model(), 'today'=>(int)Cache::get('ai.n.'.now()->format('Ymd'), 0), 'agentTools'=>Sms::secret('ai_agent_tools') === '1', 'agentOrders'=>Sms::secret('ai_agent_orders') === '1', 'kb'=>AiChat::kb(), 'kbCustom'=>trim((string)Sms::secret('ai_kb')) !== '', 'sched'=>\App\Support\AiSchedule::get(), 'schedNow'=>\App\Support\AiSchedule::activeNow()]);
+    return view('ai_chat', ['langRows'=>$lr, 'hasKey'=>(bool)Sms::secret('ai_key'), 'on'=>Sms::secret('ai_enabled') === '1', 'model'=>AiChat::model(), 'today'=>(int)Cache::get('ai.n.'.now()->format('Ymd'), 0), 'agentTools'=>Sms::secret('ai_agent_tools') === '1', 'agentOrders'=>Sms::secret('ai_agent_orders') === '1', 'learnOn'=>\App\Support\AiLearn::on(), 'learned'=>\App\Support\AiLearn::text(), 'kb'=>AiChat::kb(), 'kbCustom'=>trim((string)Sms::secret('ai_kb')) !== '', 'sched'=>\App\Support\AiSchedule::get(), 'schedNow'=>\App\Support\AiSchedule::activeNow()]);
   }
   private function audit(Request $r, string $a, string $sub): void { try { \Illuminate\Support\Facades\DB::table('audit_logs')->insert(['user_id'=>auth()->id(),'user_name'=>auth()->user()->name,'action'=>$a,'subject'=>$sub,'ip'=>$r->ip(),'created_at'=>now(),'updated_at'=>now()]); } catch (\Throwable $e) {} }
   /** Rewrites the knowledge base text in a warmer, better-designed layout without changing any fact or rule. Returns a draft only; nothing is saved until the owner presses Save. */
@@ -52,6 +52,16 @@ class AiChatController extends Controller {
     Cache::forget('ai.facts3'); Cache::forget('ai.facts2');
     $this->audit($r, 'ai.kb', 'AI knowledge base saved');
     return back()->with('ok', 'Knowledge base saved. The AI uses it within a minute.');
+  }
+  /** Learned notes: owner can edit, clear, switch learning off, or run it now. */
+  public function learned(Request $r) {
+    $a = (string)$r->input('act');
+    if ($a === 'run') { $key = Sms::secret('ai_key'); $res = $key ? \App\Support\AiLearn::run($key) : ['ok'=>false, 'why'=>'no key']; $this->audit($r, 'ai.learn', 'AI learn run now'); return back()->with('ok', $res['ok'] ? 'AI learned notes updated ('.$res['n'].' lines).' : 'Not updated: '.($res['why'] ?? ''));}
+    if ($a === 'clear') { Sms::setSecret('ai_kb_learned', null); \Illuminate\Support\Facades\Cache::forget('ai.facts4'); $this->audit($r, 'ai.learn', 'AI learned notes cleared'); return back()->with('ok', 'Learned notes cleared.'); }
+    Sms::setSecret('ai_learn_on', $r->boolean('on') ? '1' : '0');
+    if ($r->has('learned')) Sms::setSecret('ai_kb_learned', trim((string)$r->input('learned')) ?: null);
+    \Illuminate\Support\Facades\Cache::forget('ai.facts4'); $this->audit($r, 'ai.learn', 'AI learned notes saved');
+    return back()->with('ok', 'Saved.');
   }
   /** One-click ON/OFF switch from the top panel; changes exactly one setting and logs it. */
   public function toggle(Request $r) {

@@ -1581,3 +1581,4 @@ database/migrations/2026_11_26_000020_not_found_log.php
 database/migrations/2026_11_26_000030_smartpos_plan_facts.php
 app/Support/WaEssential.php
 database/migrations/2026_11_26_000040_ai_kb_contact_fix.php
+app/Support/AiLearn.php

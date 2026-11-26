@@ -36,6 +36,7 @@ class MotherPushWorker extends Command
     try { if (\App\Support\AutoHeal::begin('bs-stock')) { \App\Support\BestSellerStock::tick(); } } catch (\Throwable $e) { $this->error('bs-stock: ' . $e->getMessage()); \App\Support\LiveBoard::fail('bs-stock', $e); }
     try { if (\App\Support\AutoHeal::begin('autoprice')) { \App\Support\AutoPrice::tick(); } } catch (\Throwable $e) { $this->error('autoprice: ' . $e->getMessage()); \App\Support\LiveBoard::fail('autoprice', $e); }
     try { if (\App\Support\AutoHeal::begin('spfollow')) { if (\Illuminate\Support\Facades\Cache::add('sp.follow', 1, 55)) \App\Support\SinglePacket::followParents(); } } catch (\Throwable $e) { $this->error('spfollow: ' . $e->getMessage()); \App\Support\LiveBoard::fail('spfollow', $e); }
+    try { if (\App\Support\AutoHeal::begin('ailearn')) { \App\Support\AiLearn::tick(); } } catch (\Throwable $e) { $this->error('ailearn: ' . $e->getMessage()); }
     try { if (\App\Support\AutoHeal::begin('aimem')) { \App\Support\AiMemory::dailyTick(); } } catch (\Throwable $e) { $this->error('aimem: ' . $e->getMessage()); \App\Support\LiveBoard::fail('aimem', $e); }
     try { if (\App\Support\AutoHeal::begin('chatsilent')) { \App\Support\Chat::closeSilentTick(); } } catch (\Throwable $e) { $this->error('chatsilent: ' . $e->getMessage()); \App\Support\LiveBoard::fail('chatsilent', $e); }
     try { if (\App\Support\AutoHeal::begin('sched')) { \App\Support\OrderSchedule::tick(); } } catch (\Throwable $e) { $this->error('sched: ' . $e->getMessage()); \App\Support\LiveBoard::fail('sched', $e); }

@@ -74,6 +74,7 @@ class AiChat {
       $q = resource_path('ai/'.$fn);
       if ($base !== '' && is_file($q) && mb_strpos($base, $mark) === false) $base .= "\n\n".trim((string)file_get_contents($q));
     }
+    $lb = AiLearn::block(); if ($lb !== '') $base .= "\n\n".$lb;
     return $base;
   }
   /** Whole published catalogue in compact form (cached 5 min). */
