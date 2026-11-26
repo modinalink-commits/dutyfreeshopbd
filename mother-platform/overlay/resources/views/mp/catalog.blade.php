@@ -1,25 +1,36 @@
 @extends('mp.layout')@section('title','Catalog')
 @section('body')
 @php $isRfq = in_array($view, $sets, true); $tabs = []; foreach ($sets as $k) { $tabs[$k] = $setDefs[$k]['name']; if ($k === 'provisions') $tabs['bonded'] = 'Bonded Stores'; } $tabs['bonded'] = $tabs['bonded'] ?? 'Bonded Stores'; $tabs['store'] = 'DutyFreeBD Catalogue'; @endphp
-<h1>{{ $tabs[$view] ?? 'Catalog' }}</h1><p class="sub">{{ $isRfq ? 'No price list: add the products to a requisition with your quantities and our marine desk answers with a quotation in USD.' : ($view === 'bonded' ? ($bok ? 'Liquor first, then tobacco, then beverages, chocolate and snacks. List prices in USD.' : 'Beverages, chocolate and snacks with list prices in USD.') . ($bok ? '' : ' The liquor and tobacco lists open after our marine desk approves your account for bonded stores: ask in a requisition note.') : 'Selected DutyFreeBD products for the crew shop. Prices in USD are list prices; your quotation confirms the final price and availability at your port.') }}</p>
+<h1>{{ $tabs[$view] ?? 'Catalog' }}</h1><p class="sub">{{ $isRfq ? 'No price list: add the products to a requisition with your quantities and our marine desk answers with a quotation in USD.' : ($view === 'bonded' ? ($bok ? 'Bonded goods first, then beverages, chocolate and snacks; the dearest items lead each group. List prices in USD.' : 'Beverages, chocolate and snacks with list prices in USD.') . ($bok ? '' : ' The liquor and tobacco lists open after our marine desk approves your account for bonded stores: ask in a requisition note.') : 'Selected DutyFreeBD products for the crew shop. Prices in USD are list prices; your quotation confirms the final price and availability at your port.') }}</p>
 <div class="row" style="margin-bottom:12px">@foreach($tabs as $k => $n)<a class="ctab {{ $view === $k ? 'on' : '' }}" href="/marine-portal/catalog?view={{ $k }}">{{ $n }}</a>@endforeach</div>
 @if($isRfq && $sections->count())<div class="row" style="margin-bottom:12px"><a class="st {{ $sec === '' ? 'st-quoted' : '' }}" href="/marine-portal/catalog?view={{ $view }}" style="text-decoration:none">All sections</a>@foreach($sections as $x)<a class="st {{ $sec === $x->section_slug ? 'st-quoted' : '' }}" href="/marine-portal/catalog?view={{ $view }}&amp;section={{ $x->section_slug }}" style="text-decoration:none">{{ $x->n }} ({{ $x->c }})</a>@endforeach</div>@endif
-<?php $subsL = $isRfq ? collect() : ($subs ?? collect()); $lg = -1; $base = '/marine-portal/catalog?view=' . $view . ($q !== '' ? '&q=' . urlencode($q) : ''); $gn = $grpNames ?? []; $cat = (int)($cat ?? 0); ?>
-@if($subsL->count() > 1)
+<?php $subsL = $isRfq ? collect() : ($subs ?? collect()); $kidsL = $isRfq ? collect() : ($kids ?? collect()); $lg = -1; $base = '/marine-portal/catalog?view=' . $view . ($q !== '' ? '&q=' . urlencode($q) : ''); $gn = $grpNames ?? []; $cat = (int)($cat ?? 0); $sub = (string)($sub ?? ''); $bondedV = ($view === 'bonded'); ?>
+@if($subsL->count() > 0 && ($subsL->count() > 1 || $kidsL->count() > 0))
 <div class="subs"><a class="st {{ $cat === 0 ? 'st-quoted' : '' }}" href="{{ $base }}">All</a>
 @foreach($subsL as $x)
-<?php $showG = ($view === 'bonded' && $bok && $x->g !== $lg); $lg = $x->g; ?>
+<?php $showG = ($bondedV && $x->g !== $lg); $lg = $x->g; $ks = $bondedV ? ($kidsL[$x->id] ?? collect()) : collect(); ?>
 @if($showG)
 <span class="sgl">{{ $gn[$x->g] ?? '' }}</span>
 @endif
-<a class="st {{ $cat === $x->id ? 'st-quoted' : '' }}" href="{{ $base }}&amp;cat={{ $x->id }}">{{ $x->name }} ({{ $x->n }})</a>
+<a class="st {{ ($cat === $x->id && $sub === '') ? 'st-quoted' : '' }}" href="{{ $base }}&amp;cat={{ $x->id }}">{{ $bondedV && $ks->count() ? 'All ' : '' }}{{ $x->name }} ({{ $x->n }})</a>
+@foreach($ks as $k)
+<a class="st {{ ($cat === $x->id && $sub === $k->name) ? 'st-quoted' : '' }}" href="{{ $base }}&amp;cat={{ $x->id }}&amp;sub={{ urlencode($k->name) }}">{{ $k->name }} ({{ $k->n }})</a>
+@endforeach
+@endforeach
+</div>
+@endif
+<?php $ks2 = (!$bondedV && $cat) ? ($kidsL[$cat] ?? collect()) : collect(); ?>
+@if($ks2->count() > 0)
+<div class="subs"><span class="sgl">Sub-categories</span><a class="st {{ $sub === '' ? 'st-quoted' : '' }}" href="{{ $base }}&amp;cat={{ $cat }}">All</a>
+@foreach($ks2 as $k)
+<a class="st {{ $sub === $k->name ? 'st-quoted' : '' }}" href="{{ $base }}&amp;cat={{ $cat }}&amp;sub={{ urlencode($k->name) }}">{{ $k->name }} ({{ $k->n }})</a>
 @endforeach
 </div>
 @endif
 @if($locked)
 <div class="card"><h2>Bonded Stores need a separate approval</h2><p style="margin:0 0 12px;font-size:14px;color:#475569">Bonded goods and their prices are shown only to verified accounts that our marine desk has approved for bonded stores. Your account does not have this approval yet.</p><p style="margin:0;font-size:14px">Reply to our marine desk email, or send a requisition with a note asking for bonded stores for your vessel; the desk checks the vessel and port call first.</p></div>
 @else
-<form method="get" action="/marine-portal/catalog" class="row" style="margin-bottom:14px"><input type="hidden" name="view" value="{{ $view }}"><input type="hidden" name="cat" value="{{ $cat ?: '' }}">@if($sec !== '')<input type="hidden" name="section" value="{{ $sec }}">@endif<input type="search" name="q" value="{{ $q }}" maxlength="60" placeholder="Product name or code" aria-label="Search the catalog" style="flex:1 1 240px"><button class="g">Search</button></form>
+<form method="get" action="/marine-portal/catalog" class="row" style="margin-bottom:14px"><input type="hidden" name="view" value="{{ $view }}"><input type="hidden" name="cat" value="{{ $cat ?: '' }}"><input type="hidden" name="sub" value="{{ $sub }}">@if($sec !== '')<input type="hidden" name="section" value="{{ $sec }}">@endif<input type="search" name="q" value="{{ $q }}" maxlength="60" placeholder="Product name or code" aria-label="Search the catalog" style="flex:1 1 240px"><button class="g">Search</button></form>
 <div class="pgrid">
 @if($isRfq)
 @forelse($rows as $p)
@@ -29,7 +40,7 @@
 @empty<div class="card" style="grid-column:1/-1;margin:0"><p style="margin:0;color:#64748B;font-size:14px">{{ $q !== '' ? 'No product found for this search.' : 'No product in this section yet.' }}</p></div>@endforelse
 @else
 @forelse($rows as $p)@php $im = trim((string)$p->image); if ($im !== '' && !preg_match('#^https?://#i', $im)) $im = '/' . ltrim($im, '/'); @endphp
-<article class="pcd"><div class="pim">@if($im !== '')<img src="{{ $im }}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">@endif</div><div class="pbd"><span class="hint" style="margin:0">{{ $p->cat ?: ($mc === 'bonded' ? 'Bonded Stores' : 'DutyFreeBD') }}</span><b>{{ $p->name }}</b><span class="hint" style="margin:0">{{ implode(' · ', array_filter([$p->size ? 'Pack: ' . $p->size : null, $p->sku ? 'Code: ' . $p->sku : null])) }}</span>
+<article class="pcd"><div class="pim">@if($im !== '')<img src="{{ $im }}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">@endif</div><div class="pbd"><span class="hint" style="margin:0">{{ implode(' · ', array_filter([$p->cat ?: ($mc === 'bonded' ? 'Bonded Stores' : 'DutyFreeBD'), $p->sub ?? null])) }}</span><b>{{ $p->name }}</b><span class="hint" style="margin:0">{{ implode(' · ', array_filter([$p->size ? 'Pack: ' . $p->size : null, $p->sku ? 'Code: ' . $p->sku : null])) }}</span>
 <div class="row" style="justify-content:space-between;margin-top:auto"><b style="font-size:16px;color:#0B2545">USD {{ number_format((float)$p->usd_price, 2) }}</b>@if($canOrder)<a class="btn" style="min-height:38px;padding:0 12px;font-size:13px" href="/marine-portal/orders/new?add={{ $p->id }}{{ $crew ? '&kind=personal' : '' }}">Add to {{ $crew ? 'order' : 'requisition' }}</a>@endif</div></div></article>
 @empty<div class="card" style="grid-column:1/-1;margin:0"><p style="margin:0;color:#64748B;font-size:14px">{{ $q !== '' ? 'No product found for this search.' : 'No catalog product in this category yet.' }} You can still ask for it: add it as a free-text item in a requisition and our marine desk will source and quote it.</p></div>@endforelse
 @endif

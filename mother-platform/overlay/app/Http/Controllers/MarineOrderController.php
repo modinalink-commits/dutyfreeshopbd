@@ -74,10 +74,14 @@ class MarineOrderController extends Controller
     $grp = fn($id) => in_array((int)$id, $alc, true) ? 0 : (in_array((int)$id, $tob, true) ? 1 : 2);
     $subs = (clone $b)->reorder()->whereNotNull('c.id')->groupBy('c.id', 'c.name')->limit(400)->get([DB::raw('c.id as id'), DB::raw('c.name as name'), DB::raw('count(*) as n')])
       ->map(fn($x) => (object)['id' => (int)$x->id, 'name' => (string)$x->name, 'n' => (int)$x->n, 'g' => $mc === 'bonded' ? $grp($x->id) : 2])->sort(fn($x, $y) => [$x->g, -$x->n, $x->name] <=> [$y->g, -$y->n, $y->name])->values();
-    $cat = (int)$r->query('cat'); if (!$subs->contains('id', $cat)) $cat = 0; if ($cat) $b->where('p.category_id', $cat);
+    $cat = (int)$r->query('cat'); if (!$subs->contains('id', $cat)) $cat = 0; $b0 = clone $b; if ($cat) $b->where('p.category_id', $cat);
+    // second level: the store's own sub-category of the product (products.sub). Bonded Stores shows it under every group; the DutyFreeBD Catalogue after a category is chosen.
+    $kids = collect(); if ($mc === 'bonded' || $cat) $kids = (clone ($mc === 'bonded' ? $b0 : $b))->reorder()->whereNotNull('p.category_id')->whereNotNull('p.sub')->where('p.sub', '!=', '')->groupBy('p.category_id', 'p.sub')->orderByRaw('count(*) desc')->limit(600)
+      ->get([DB::raw('p.category_id as cid'), DB::raw('p.sub as name'), DB::raw('count(*) as n')])->map(fn($x) => (object)['cid' => (int)$x->cid, 'name' => (string)$x->name, 'n' => (int)$x->n])->groupBy('cid')->map(fn($g) => $g->take(60)->values());
+    $sub = mb_substr(trim((string)$r->query('sub')), 0, 120); if ($sub !== '' && !($cat && $kids->has($cat) && $kids[$cat]->contains('name', $sub))) $sub = ''; if ($sub !== '') $b->where('p.sub', $sub);
     if ($mc === 'bonded') { $b->reorder(); if ($alc || $tob) $b->orderByRaw('case' . ($alc ? ' when p.category_id in (' . implode(',', $alc) . ') then 0' : '') . ($tob ? ' when p.category_id in (' . implode(',', $tob) . ') then 1' : '') . ' else 2 end'); $b->orderByDesc('m.usd_price')->orderBy('p.name'); }
-    $rows = $b->limit(100000)->select('p.id', 'p.sku', 'p.name', 'p.size', 'p.image', 'p.category_id', 'm.usd_price', 'm.mcat', 'm.msub', 'c.name as cat')->paginate(48)->withQueryString();
-    return ['rows' => $rows, 'mc' => $mc, 'locked' => $locked, 'sec' => '', 'sections' => collect(), 'subs' => $subs, 'cat' => $cat, 'grpNames' => ['Liquor', 'Tobacco', 'Beverages, chocolate and snacks']];
+    $rows = $b->limit(100000)->select('p.id', 'p.sku', 'p.name', 'p.size', 'p.image', 'p.category_id', 'p.sub', 'm.usd_price', 'm.mcat', 'm.msub', 'c.name as cat')->paginate(48)->withQueryString();
+    return ['rows' => $rows, 'mc' => $mc, 'locked' => $locked, 'sec' => '', 'sections' => collect(), 'subs' => $subs, 'kids' => $kids, 'sub' => $sub, 'cat' => $cat, 'grpNames' => ['Liquor', 'Tobacco', 'Beverages, chocolate and snacks']];
   }
   public function orderStore(Request $r) {
     $u = $this->me(); if (!$u) return redirect('/marine-portal/login');
