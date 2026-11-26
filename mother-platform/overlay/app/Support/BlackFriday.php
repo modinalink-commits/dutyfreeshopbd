@@ -142,10 +142,16 @@ class BlackFriday
     return ['rows' => $rows, 'pct' => $pct];
   }
 
+  /** The plan with the real scope applied: a product that would have a saving but is outside the campaign (other categories, Best Sellers) is marked 'normal' = keeps its price, badge only. */
+  public static function scoped(): array {
+    $d = self::plan(); $el = []; foreach (self::eligible() as $r) $el[$r['id']] = 1;
+    foreach ($d['rows'] as &$r) if ($r['status'] === 'in' && !isset($el[$r['id']])) { $r['status'] = 'normal'; $r['bf'] = null; $r['off'] = 0.0; $r['off_pct'] = 0.0; $r['profit'] = null; $r['check'] = false; } unset($r);
+    return $d;
+  }
   public static function summary(array $rows): array {
-    $by = []; $tot = ['all' => count($rows), 'in' => 0, 'no_cost' => 0, 'at_floor' => 0, 'no_stock' => 0, 'twin' => 0, 'check' => 0, 'smoke_in' => 0, 'off_sum' => 0.0, 'price_sum' => 0.0];
+    $by = []; $tot = ['all' => count($rows), 'normal' => 0, 'in' => 0, 'no_cost' => 0, 'at_floor' => 0, 'no_stock' => 0, 'twin' => 0, 'check' => 0, 'smoke_in' => 0, 'off_sum' => 0.0, 'price_sum' => 0.0];
     foreach ($rows as $r) {
-      $tot[$r['status']]++; $c = $r['cat']; $by[$c] = $by[$c] ?? ['cat' => $c, 'all' => 0, 'in' => 0, 'no_cost' => 0, 'at_floor' => 0, 'no_stock' => 0, 'off_sum' => 0.0, 'price_sum' => 0.0, 'max' => 0.0, 'smoke' => $r['smoke'], 'sourced' => 0, 'b' => [0, 0, 0, 0]];
+      $tot[$r['status']]++; $c = $r['cat']; $by[$c] = $by[$c] ?? ['cat' => $c, 'all' => 0, 'normal' => 0, 'in' => 0, 'no_cost' => 0, 'at_floor' => 0, 'no_stock' => 0, 'off_sum' => 0.0, 'price_sum' => 0.0, 'max' => 0.0, 'smoke' => $r['smoke'], 'sourced' => 0, 'b' => [0, 0, 0, 0]];
       $by[$c]['all']++; if (isset($by[$c][$r['status']])) $by[$c][$r['status']]++;
       if ($r['status'] === 'in') { if ($r['sourced']) { $by[$c]['sourced']++; $tot['sourced'] = ($tot['sourced'] ?? 0) + 1; } $by[$c]['b'][$r['off_pct'] < 5 ? 0 : ($r['off_pct'] < 10 ? 1 : ($r['off_pct'] < 20 ? 2 : 3))]++; $tot['off_sum'] += $r['off']; $tot['price_sum'] += $r['price']; $by[$c]['off_sum'] += $r['off']; $by[$c]['price_sum'] += $r['price']; $by[$c]['max'] = max($by[$c]['max'], $r['off_pct']); if ($r['check']) $tot['check']++; if ($r['smoke']) $tot['smoke_in']++; }
     }
