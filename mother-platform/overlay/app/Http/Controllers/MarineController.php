@@ -39,7 +39,7 @@ class MarineController extends Controller
     $done = DB::table('marine_access_requests')->where('id', $q->id)->where('status', 'pending')->update(['status' => $ok ? 'approved' : 'rejected', 'staff_note' => $note ?: null, 'decided_by' => $by, 'decided_at' => now(), 'updated_at' => now()]);
     if (!$done) return redirect('/admin/marine/requests')->with('ok', 'Already decided');
     try { \App\Support\Procure::audit('marine.access.' . ($ok ? 'approved' : 'rejected'), 'Marine access request #' . $q->id . ' (' . $q->kind . ': ' . ($q->company ?: $q->name) . ')', 'pending', $ok ? 'approved' : 'rejected'); } catch (\Throwable $e) {}
-    return redirect('/admin/marine/requests')->with('ok', $ok ? 'অনুমোদিত হয়েছে। অ্যাকাউন্ট তৈরির ধাপ এখনো তৈরি হয়নি, আবেদনকারীকে আলাদা করে জানাতে হবে।' : 'বাতিল করা হয়েছে');
+    return redirect('/admin/marine/requests')->with('ok', $ok ? 'Approved. Account creation is not built yet, so tell the applicant separately.' : 'Rejected');
   }
 
   public function catalog(Request $r) {
@@ -64,7 +64,7 @@ class MarineController extends Controller
     $new = ['enabled' => $on, 'visibility' => $vis, 'ports' => $ports ?: null, 'usd_price' => $usd, 'updated_by' => (string)(optional(auth()->user())->name ?? 'admin'), 'updated_at' => now()];
     if ($old) DB::table('marine_products')->where('id', $old->id)->update($new); else DB::table('marine_products')->insert($new + ['product_id' => $p->id, 'created_at' => now()]);
     try { \App\Support\Procure::audit('marine.product', 'Marine channel: ' . ($p->sku ?: $p->id) . ' ' . mb_substr((string)$p->name, 0, 80), $old ? ['enabled' => (bool)$old->enabled, 'visibility' => $old->visibility, 'ports' => $old->ports, 'usd_price' => $old->usd_price] : null, ['enabled' => $on, 'visibility' => $vis, 'ports' => $ports, 'usd_price' => $usd]); } catch (\Throwable $e) {}
-    return back()->with('ok', ($p->sku ?: 'Product') . ' সেভ হয়েছে');
+    return back()->with('ok', ($p->sku ?: 'Product') . ' saved');
   }
 
   const STATUS = ['live' => 'Now serving', 'soon' => 'Launching soon', 'next' => 'Opening next', 'hidden' => 'Hidden'];
@@ -83,7 +83,7 @@ class MarineController extends Controller
     for ($i = 0; $i < 4; $i++) { $x = ['image' => self::img($r->input("b.$i.image")), 'title' => mb_substr(trim(strip_tags((string)$r->input("b.$i.title"))), 0, 80), 'text' => mb_substr(trim(strip_tags((string)$r->input("b.$i.text"))), 0, 160), 'link' => self::link($r->input("b.$i.link")), 'on' => (bool)$r->input("b.$i.on")]; if ($x['image'] === '' && $x['title'] === '') $x['on'] = false; $b[] = $x; }
     self::put('marine_site', $c); self::put('marine_banners', $b);
     try { \App\Support\Procure::audit('marine.site', 'Marine site content and banners', $old, ['site' => $c, 'banners' => $b]); } catch (\Throwable $e) {}
-    return redirect('/admin/marine/site')->with('ok', 'সেভ হয়েছে। মেরিন সাইটে কয়েক মিনিটের মধ্যে দেখাবে।');
+    return redirect('/admin/marine/site')->with('ok', 'Saved. The marine site shows it within a few minutes.');
   }
   public function ports() { return view('marine.ports', ['ports' => self::portConf(), 'status' => self::STATUS, 'site' => self::SITE]); }
   public function savePorts(Request $r) {
@@ -91,7 +91,7 @@ class MarineController extends Controller
     foreach (self::PORTS as $k => $n) { $st = (string)$r->input("p.$k.status"); $o[$k] = ['status' => isset(self::STATUS[$st]) ? $st : 'next', 'note' => mb_substr(trim(strip_tags((string)$r->input("p.$k.note"))), 0, 200), 'shop' => mb_substr(trim(strip_tags((string)$r->input("p.$k.shop"))), 0, 120), 'photo' => self::img($r->input("p.$k.photo"))]; }
     self::put('marine_ports', $o);
     try { \App\Support\Procure::audit('marine.ports', 'Marine ports (status, note, partner shop, photo)', $old, $o); } catch (\Throwable $e) {}
-    return redirect('/admin/marine/ports')->with('ok', 'সেভ হয়েছে। মেরিন সাইটে কয়েক মিনিটের মধ্যে দেখাবে।');
+    return redirect('/admin/marine/ports')->with('ok', 'Saved. The marine site shows it within a few minutes.');
   }
 
   public function settings() { return view('marine.settings', ['conf' => self::conf(), 'site' => self::SITE]); }
@@ -100,7 +100,7 @@ class MarineController extends Controller
     $old = self::conf();
     foreach (self::KEYS as $k) DB::table('settings')->updateOrInsert(['key' => $k], ['value' => trim((string)($d[$k] ?? '')), 'updated_at' => now()]);
     try { \Illuminate\Support\Facades\Cache::forget('marine.public'); \App\Support\Procure::audit('marine.settings', 'Marine desk contact', $old, self::conf()); } catch (\Throwable $e) {}
-    return redirect('/admin/marine/settings')->with('ok', 'সেভ হয়েছে। মেরিন সাইটে কয়েক মিনিটের মধ্যে দেখাবে।');
+    return redirect('/admin/marine/settings')->with('ok', 'Saved. The marine site shows it within a few minutes.');
   }
 
   /** Public, read-only: marine desk contact for the static marine site (no private data). */
