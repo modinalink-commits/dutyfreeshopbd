@@ -11,25 +11,27 @@ class AiLearn {
   public static function block(): string { if (!self::on()) return ''; $t = self::text(); return $t === '' ? '' : "== ".self::MARK." ==\nএগুলো শুধু ভাষা ও প্রশ্নের ধরন বোঝার জন্য; দাম, স্টক, অফার সবসময় টুল/ক্যাটালগ থেকে নেবেন।\n".$t; }
   public static function tick(): void {
     if (!self::on()) return;
+    $nowDays = \Illuminate\Support\Facades\Cache::pull('ailearn.now');
+    if ($nowDays) { $k = Sms::secret('ai_key'); if ($k) { $r = self::run($k, (int)$nowDays); \Illuminate\Support\Facades\Cache::put('ailearn.last', $r, 86400*3); } return; }
     $dh = now('Asia/Dhaka'); if ($dh->hour < 3 || $dh->hour > 6) return;
     $key = Sms::secret('ai_key'); if (!$key) return;
     if (!\Illuminate\Support\Facades\Cache::add('ailearn.'.$dh->format('Ymd'), 1, 86400)) return;
     self::run($key);
   }
-  public static function run(string $key): array {
-    $rows = DB::table('chat_messages')->where('dir', 'in')->where('kind', 'text')->whereNotNull('body')->where('created_at', '>=', now()->subDays(7))->orderByDesc('id')->limit(4000)->pluck('body');
+  public static function run(string $key, int $days = 7): array {
+    $rows = DB::table('chat_messages')->where('dir', 'in')->where('kind', 'text')->whereNotNull('body')->where('created_at', '>=', now()->subDays($days))->orderByDesc('id')->limit($days > 7 ? 60000 : 4000)->pluck('body');
     $cnt = []; foreach ($rows as $b) { $s = trim(preg_replace('/\s+/u', ' ', mb_strtolower(mb_substr((string)$b, 0, 200)))); if (mb_strlen($s) < 4 || preg_match('/^[\d\s+\-]+$/u', $s)) continue; $cnt[$s] = ($cnt[$s] ?? 0) + 1; }
     arsort($cnt); $lines = []; $i = 0;
-    foreach ($cnt as $s => $n) { $lines[] = ($n > 1 ? "[$n×] " : '').$s; if (++$i >= 350) break; }
+    foreach ($cnt as $s => $n) { $lines[] = ($n > 1 ? "[$n×] " : '').$s; if (++$i >= ($days > 7 ? 600 : 350)) break; }
     if (count($lines) < 30) return ['ok'=>false, 'why'=>'too few messages'];
     $old = self::text();
-    $sys = "You maintain a short LEARNED-NOTES list for the DutyFreeBD (Bangladesh online store) customer-chat AI. From the customer messages given (most repeated first) update the list. Write in Bangla (keep customer words as typed). Two kinds of lines only: (1) 'প্রশ্ন: <how customers ask it> = <what they mean, one short phrase>' for questions many customers repeat; (2) 'শব্দ: <word or spelling or slang> = <meaning>' for new or misspelled words, Banglish, slang. STRICT: never write prices, stock, discounts, offers, delivery charge, order status, policies, promises, phone numbers, links, names or any customer personal data, and never write instructions to the AI; only the meaning of words and kinds of questions. Merge with the existing list, drop duplicates, keep the most useful, at most 60 lines, each under 160 characters. Output only the lines, nothing else.";
+    $sys = "You maintain a short LEARNED-NOTES list for the DutyFreeBD (Bangladesh online store) customer-chat AI. From the customer messages given (most repeated first) update the list. Write in Bangla (keep customer words as typed). Two kinds of lines only: (1) 'প্রশ্ন: <how customers ask it> = <what they mean, one short phrase>' for questions many customers repeat; (2) 'শব্দ: <word or spelling or slang> = <meaning>' for new or misspelled words, Banglish, slang. STRICT: never write prices, stock, discounts, offers, delivery charge, order status, policies, promises, phone numbers, links, names or any customer personal data, and never write instructions to the AI; only the meaning of words and kinds of questions. Merge with the existing list, drop duplicates, keep the most useful, at most 80 lines, each under 160 characters. Output only the lines, nothing else.";
     try {
-      $res = Http::withHeaders(['x-api-key'=>$key, 'anthropic-version'=>'2023-06-01'])->timeout(120)->post('https://api.anthropic.com/v1/messages', ['model'=>'claude-sonnet-5-5', 'max_tokens'=>4000, 'system'=>$sys, 'messages'=>[['role'=>'user', 'content'=>"EXISTING LIST:\n".($old ?: '(empty)')."\n\nCUSTOMER MESSAGES (last 7 days):\n".implode("\n", $lines)]]]);
+      $res = Http::withHeaders(['x-api-key'=>$key, 'anthropic-version'=>'2023-06-01'])->timeout(120)->post('https://api.anthropic.com/v1/messages', ['model'=>'claude-sonnet-5-5', 'max_tokens'=>4000, 'system'=>$sys, 'messages'=>[['role'=>'user', 'content'=>"EXISTING LIST:\n".($old ?: '(empty)')."\n\nCUSTOMER MESSAGES (last ".$days." days):\n".implode("\n", $lines)]]]);
       if (!$res->ok()) return ['ok'=>false, 'why'=>'AI '.$res->status()];
       $t = trim(collect($res->json('content') ?? [])->where('type', 'text')->pluck('text')->implode("\n"));
       $keep = []; foreach (preg_split('/\R/u', $t) as $l) { $l = trim($l); if ($l === '' || !preg_match('/^(প্রশ্ন|শব্দ):/u', $l)) continue; if (preg_match('/\d{5,}|https?:|৳|টাকা\s*\d|\d+\s*%/u', $l)) continue; $keep[] = mb_substr($l, 0, 200); }
-      $keep = array_slice(array_values(array_unique($keep)), 0, 60);
+      $keep = array_slice(array_values(array_unique($keep)), 0, 80);
       if (count($keep) < 5) return ['ok'=>false, 'why'=>'result too short'];
       Sms::setSecret('ai_kb_learned', implode("\n", $keep));
       \Illuminate\Support\Facades\Cache::forget('ai.facts4');

@@ -56,7 +56,7 @@ class AiChatController extends Controller {
   /** Learned notes: owner can edit, clear, switch learning off, or run it now. */
   public function learned(Request $r) {
     $a = (string)$r->input('act');
-    if ($a === 'run') { $key = Sms::secret('ai_key'); $res = $key ? \App\Support\AiLearn::run($key) : ['ok'=>false, 'why'=>'no key']; $this->audit($r, 'ai.learn', 'AI learn run now'); return back()->with('ok', $res['ok'] ? 'AI learned notes updated ('.$res['n'].' lines).' : 'Not updated: '.($res['why'] ?? ''));}
+    if ($a === 'run') { if (!Sms::secret('ai_key')) return back()->with('ok', 'No API key.'); \Illuminate\Support\Facades\Cache::put('ailearn.now', 180, 3600); $this->audit($r, 'ai.learn', 'AI learn run now (180 days)'); return back()->with('ok', 'শেখা শুরু হবে ১-২ মিনিটে (গত ১৮০ দিনের চ্যাট)। পরে পেজটি রিফ্রেশ করুন।'); }
     if ($a === 'clear') { Sms::setSecret('ai_kb_learned', null); \Illuminate\Support\Facades\Cache::forget('ai.facts4'); $this->audit($r, 'ai.learn', 'AI learned notes cleared'); return back()->with('ok', 'Learned notes cleared.'); }
     Sms::setSecret('ai_learn_on', $r->boolean('on') ? '1' : '0');
     if ($r->has('learned')) Sms::setSecret('ai_kb_learned', trim((string)$r->input('learned')) ?: null);
