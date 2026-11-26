@@ -6,13 +6,13 @@
 <title>Track Your Vessel: Live Ship Map, Bangladesh Ports | DutyFree BD Marine Supply</title>
 <meta name="description" content="Find your vessel on a live AIS map by IMO number and see ships near Chattogram, Mongla and Payra before you send your requisition.">
 <meta name="robots" content="index, follow">
-<link rel="canonical" href="https://marinedutyfreebd.com/track.html">
+<link rel="canonical" href="https://marinedutyfreebd.com/track">
 <link rel="icon" href="/icon.png">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="DutyFree BD Marine Supply">
 <meta property="og:title" content="Track Your Vessel: Live Ship Map, Bangladesh Ports | DutyFree BD Marine Supply">
 <meta property="og:description" content="Find your vessel on a live AIS map by IMO number and see ships near Chattogram, Mongla and Payra before you send your requisition.">
-<meta property="og:url" content="https://marinedutyfreebd.com/track.html">
+<meta property="og:url" content="https://marinedutyfreebd.com/track">
 <meta property="og:image" content="https://marinedutyfreebd.com/share.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -70,14 +70,14 @@ footer{background:#0B2545;color:#D6DEEA;font-size:13px;text-align:center;padding
 <div class="strip">Launching soon at Chattogram · Request access to be among the first vessels served</div>
 <header><div class="bar">
 <a href="/" style="display:flex;align-items:center"><img src="/logo-header.png" alt="DutyFree BD Marine Supply" style="height:44px;width:auto"></a>
-<nav><a href="/">Home</a><a href="/#ports">Ports</a><a href="/products.html">Products</a><a href="/track.html" style="color:#F95505;font-weight:600">Live Ship Map</a><a href="/request-access.html">Request Access</a><a href="/login.html">Vessel Login</a></nav>
+<nav><a href="/">Home</a><a href="/#ports">Ports</a><a href="/products">Products</a><a href="/track" style="color:#F95505;font-weight:600">Live Ship Map</a><a href="/request-access">Request Access</a><a href="/login">Vessel Login</a></nav>
 </div></header>
 <section class="th"><div class="th-in">
 <div class="th-t"><span class="live"><i></i>Live AIS</span><h1>Live ship map</h1><p id="tsub">Find your vessel by IMO number, or watch the ships at Chattogram, Mongla and Payra right now.</p></div>
 <form class="tf" id="tf"><label>IMO number<input id="timo" type="text" inputmode="numeric" maxlength="7" placeholder="7-digit IMO" autocomplete="off"></label><label>Vessel name (optional)<input id="tname" type="text" maxlength="40" placeholder="For your saved list" autocomplete="off"></label><button type="submit">Find vessel</button><a id="tfind" href="https://www.marinetraffic.com/en/ais/home" target="_blank" rel="noopener">Find an IMO by ship name ↗</a></form>
 </div></section>
 <main>
-<div class="tbar"><div class="seg" id="tseg"><a href="/track.html#chattogram" data-k="chattogram">Chattogram</a><a href="/track.html#mongla" data-k="mongla">Mongla</a><a href="/track.html#payra" data-k="payra">Payra</a><a href="/track.html" data-k="">Bangladesh coast</a></div><button type="button" id="tfull" class="fs">Full screen</button></div>
+<div class="tbar"><div class="seg" id="tseg"><a href="/track#chattogram" data-k="chattogram">Chattogram</a><a href="/track#mongla" data-k="mongla">Mongla</a><a href="/track#payra" data-k="payra">Payra</a><a href="/track" data-k="">Bangladesh coast</a></div><button type="button" id="tfull" class="fs">Full screen</button></div>
 <div class="tact" id="tact"><b id="tlab"></b><span class="sp"></span><button type="button" id="tsave">Save vessel</button><a id="twa" target="_blank" rel="noopener">Share on WhatsApp</a><button type="button" id="tcopy">Copy link</button><button type="button" id="tpdf">Save as PDF</button></div>
 <div class="tsv" id="tsaved" hidden></div>
 <div id="pinfo"></div>
@@ -97,7 +97,7 @@ window.addEventListener('hashchange',function(){location.reload()});})();
 <script src="/track.js"></script>
 <div class="tg">
 <div class="vd"><b>Vessel details</b><span class="muted">Click any ship on the map for its name, type, flag, next port, ETA, speed and course. "Details" in that panel opens the full vessel page.</span></div>
-<div class="vd"><b>Supplying this vessel</b><span class="muted">Send your requisition before arrival. We prepare the stores for your berth or anchorage and confirm delivery with your local agent.</span><div class="cta"><a class="b1" href="/request-access.html">Request a quotation</a><a class="b2" href="/products.html">Browse products</a></div></div>
+<div class="vd"><b>Supplying this vessel</b><span class="muted">Send your requisition before arrival. We prepare the stores for your berth or anchorage and confirm delivery with your local agent.</span><div class="cta"><a class="b1" href="/request-access">Request a quotation</a><a class="b2" href="/products">Browse products</a></div></div>
 </div>
 <span class="muted">Live map by VesselFinder (AIS data). Positions are for information only.</span>
 </main>

@@ -3,7 +3,7 @@ var API='https://dutyfreebd.com/marine-api/products',PN={chattogram:'Chattogram'
 location.hash.slice(1).split('&').forEach(function(kv){var i=kv.indexOf('=');if(i>0){try{H[kv.slice(0,i)]=decodeURIComponent(kv.slice(i+1))}catch(e){}}});
 if(H.q)qi.value=H.q.slice(0,60);if(H.e==='1')es.checked=true;if(PN[H.port])ps.value=H.port;var hc=/^\d+$/.test(H.c||'')?H.c:'';
 function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e}
-function card(p){var a=el('article','pc'),u='/product.html#'+p.id,im=el('a','pi');im.href=u;if(p.image&&p.image.indexOf('https://')===0){var g=document.createElement('img');g.src=p.image;g.alt=p.name;g.loading='lazy';g.onerror=function(){im.textContent=''};im.appendChild(g)}a.appendChild(im);
+function card(p){var a=el('article','pc'),u='/product#'+p.id,im=el('a','pi');im.href=u;if(p.image&&p.image.indexOf('https://')===0){var g=document.createElement('img');g.src=p.image;g.alt=p.name;g.loading='lazy';g.onerror=function(){im.textContent=''};im.appendChild(g)}a.appendChild(im);
 var b=el('div','pb');b.appendChild(el('span','ps',p.category||'Ship stores'));var n=el('a','pn',p.name);n.href=u;b.appendChild(n);b.appendChild(el('span','pz',(p.size?'Pack: '+p.size:'')+(p.size&&p.sku?' · ':'')+(p.sku?'Code: '+p.sku:'')));
 var pl=(p.ports||[]).map(function(k){return PN[k]}).filter(Boolean);b.appendChild(el('span',pl.length?'pa':'pa no',pl.length?'Available at '+pl.join(', '):'Availability on request'));
 var f=el('div','pf');f.appendChild(el('b','pp','USD '+p.usd));var l=el('a','pq','View details');l.href=u;f.appendChild(l);b.appendChild(f);a.appendChild(b);return a}
