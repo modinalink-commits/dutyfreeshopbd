@@ -225,14 +225,24 @@ class Mailer {
     if (!self::mkOn() || !Cache::add('email.offer.tick', 1, 600)) return;
     try {
       $h = (int)now('Asia/Dhaka')->format('G'); if ($h < 10 || $h >= 21) return;
-      $left = self::mkCap() - self::mkToday(); if ($left <= 0) return; $n = min($left, 50); $gap = self::mkGap(); $day = now('Asia/Dhaka')->format('Ymd');
+      $left = self::mkCap() - self::mkToday(); if ($left <= 0) return; $n = min($left, 50); $gap = self::mkGap(); $bf = self::bfCopy(); if ($bf) $gap = 1; /* Black Friday: one email a day on the three scheduled days */ $day = now('Asia/Dhaka')->format('Ymd');
       $free = 'not exists (select 1 from mail_optouts x where x.email = lower(%1$s)) and not exists (select 1 from mail_outbox o where o."to" = %1$s and o.type like \'mk_%%\' and o.created_at > now() - (%2$d * interval \'1 day\'))';
       $rows = DB::select('select l.email, l.name from mail_list l where ' . sprintf($free, 'l.email', $gap) . ' order by l.id limit ' . (int)$n);
       if (count($rows) < $n && self::mkCustomers()) { $more = DB::select("select c.email, c.name from customers c where c.email is not null and c.email <> '' and coalesce(c.blocked, false) = false and " . sprintf($free, 'c.email', $gap) . ' order by (select max(o2.created_at) from orders o2 where o2.phone = c.phone) asc nulls first limit ' . (int)($n - count($rows))); $rows = array_merge($rows, $more); }
       $done = [];
       foreach ($rows as $r) { $e = mb_strtolower(trim((string)$r->email)); if (isset($done[$e]) || !self::valid($e)) continue; $done[$e] = 1;
-        [$sub, $html] = self::offerHtml($e, $r->name ?? null); self::enqueue($e, $sub, $html, 'mk_offer', 'mk:offer:' . $day . ':' . $e); }
+        [$sub, $html] = $bf ? self::offerHtml($e, $r->name ?? null, $bf[1], ['ব্ল্যাক ফ্রাইডে অফার দেখুন', $bf[2]], $bf[0]) : self::offerHtml($e, $r->name ?? null); self::enqueue($e, $sub, $html, 'mk_offer', 'mk:offer:' . $day . ':' . $e); }
     } catch (\Throwable $e) { report($e); }
+  }
+  /** Black Friday: during the offer window the daily offer email carries the Black Friday message (27 Nov start, 28 Nov reminder, 30 Nov last day). Null outside the window. */
+  public static function bfCopy(): ?array {
+    try {
+      if (!\App\Support\BlackFriday::running()) return null; $d = now('Asia/Dhaka')->format('j');
+      $m = ['27' => ['ব্ল্যাক ফ্রাইডে শুরু হয়েছে', 'ব্ল্যাক ফ্রাইডে অফার চলছে ২৭–৩০ নভেম্বর। পারফিউম, স্কিনকেয়ার, ঘড়ি, গ্যাজেটসহ অনেক পণ্যে ৫%–৪০% ছাড়। সময় শেষ হওয়ার আগে দেখে নিন।'],
+        '28' => ['ব্ল্যাক ফ্রাইডে চলছে, সময় কমছে', 'ব্ল্যাক ফ্রাইডে অফার ৩০ নভেম্বর রাত ১১:৫৯ পর্যন্ত। পছন্দের পণ্য এখনই অর্ডার করুন।'],
+        '30' => ['ব্ল্যাক ফ্রাইডের শেষ দিন আজ', 'আজ রাত ১১:৫৯-এ ব্ল্যাক ফ্রাইডে অফার শেষ। শেষ সুযোগটি মিস করবেন না।']];
+      return isset($m[$d]) ? [$m[$d][0], $m[$d][1], self::base() . '/black-friday'] : null;
+    } catch (\Throwable $e) { return null; }
   }
   public static function tick(): void { self::orderTick(); self::offerTick(); self::pump(); }
 }
