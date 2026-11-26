@@ -6,6 +6,7 @@ cat-crew.jpg
 cat-provisions.jpg
 cat-safety.jpg
 cat-technical.jpg
+glass.html
 icon.png
 index.html
 login.html
