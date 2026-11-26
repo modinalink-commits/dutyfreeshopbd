@@ -31,11 +31,13 @@ class BlackFriday
   public static function has($pid): bool { return isset(self::ids()[(int)$pid]) || isset(self::$preview[(int)$pid]); }
   private static function flush(): void { try { \Illuminate\Support\Facades\Cache::forget('bf.ids'); BundlePricing::flush(); \App\Http\Controllers\StoreController::bust(); foreach (['store.home4', 'store.home5', 'store.home6', 'store.home8', 'store.todaybest6'] as $k) \Illuminate\Support\Facades\Cache::forget($k); } catch (\Throwable $e) {} }
 
-  /** The products that take part (owner, 26 Nov 2026 21:23: every product, also the ones whose saving looks very large; cigarettes too, on the site only).
+  /** Owner, 26 Nov 2026 21:33: ONLY Cigarette and Vape takes part. The other categories are products sourced on order whose real purchase cost we do not hold, so no honest Black Friday price can be worked out for them (bf_scope = smoke; 'all' would open every category).
+   *  Earlier note, still true inside that scope:
+   *  The products that take part (owner, 26 Nov 2026 21:23: every product, also the ones whose saving looks very large; cigarettes too, on the site only).
    *  Left out: a Best Seller, which has its own approved pack offer. bf_min_off (0 today) can set a smallest saving. */
   public static function eligible(): array {
-    $min = self::minOff(); $bs = []; try { $bs = AutoPrice::ids(); } catch (\Throwable $e) {}
-    return array_values(array_filter(self::plan()['rows'], fn($r) => $r['status'] === 'in' && $r['off_pct'] >= $min && !in_array($r['id'], $bs, true)));
+    $min = self::minOff(); $all = self::set('scope', 'smoke') === 'all'; $bs = []; try { $bs = AutoPrice::ids(); } catch (\Throwable $e) {}
+    return array_values(array_filter(self::plan()['rows'], fn($r) => $r['status'] === 'in' && $r['off_pct'] >= $min && !in_array($r['id'], $bs, true) && ($all || $r['smoke'])));
   }
   /** Put the Black Friday price on every taking-part product. The normal price is kept in black_friday_items and comes back by itself. Safe to run again: a product already applied is skipped. */
   public static function apply(string $by = 'system'): int {

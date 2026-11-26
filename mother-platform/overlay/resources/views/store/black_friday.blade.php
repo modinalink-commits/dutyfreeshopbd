@@ -18,7 +18,7 @@
 <div class="w bfw">
 <?php $pv = !empty($pv); $bfu = $pv ? '/black-friday-preview' : '/black-friday'; $bfq = ($pv && !empty($pvSmoke)) ? 'smoke=1&' : ''; ?>
 @if($pv)
-<div style="margin:0 0 12px;padding:10px 14px;border:1px dashed #F95505;border-radius:10px;background:#FFF7F2;font-size:13.5px;color:#7C2D12"><b>Preview, only you can see this.</b> Prices here are worked out for the preview; nothing on the site has changed yet. The real page is /black-friday. <a href="/black-friday-preview" style="font-weight:700;color:#C2410C">Shared page view</a> · <a href="/black-friday-preview?smoke=1" style="font-weight:700;color:#C2410C">Cigarette products (site only, never on the shared page)</a> · <a href="/black-friday-preview?last=1" style="font-weight:700;color:#C2410C">Last day view</a></div>
+<div style="margin:0 0 12px;padding:10px 14px;border:1px dashed #F95505;border-radius:10px;background:#FFF7F2;font-size:13.5px;color:#7C2D12"><b>Preview, only you can see this.</b> Prices here are worked out for the preview; nothing on the site has changed yet. The real page is /black-friday. <a href="/black-friday-preview?last=1" style="font-weight:700;color:#C2410C">Last day view</a></div>
 @endif
 <div class="bfh">
 <div><span class="bfd {{ $last ? 'l' : '' }}">{{ $over ? 'Ended' : ($last ? 'Cyber Monday · Last day' : $from->format('j') . ' to ' . $to->format('j F Y')) }}</span>

@@ -447,25 +447,25 @@ class StoreController extends Controller {
   /** Black Friday campaign page (owner plan 26 Nov 2026: 27 Nov launch, 28-29 deals by category, 30 Nov Cyber Monday = last day, closes 11:59 PM Dhaka).
    *  Shows only products that already carry a real discount (old price above the selling price); no price is changed here. Cigarette and vape products are never listed: the page is shared on Facebook. */
   public function blackFriday(Request $r) {
+    if (\App\Support\CleanSite::on()) return $this->notFound();   // tobacco-free domain: the campaign is cigarette and vape only
     $BF = \App\Support\BlackFriday::class; [$from, $to] = $BF::window(); $now = now('Asia/Dhaka'); $over = $now->gt($to); $run = $BF::running(); $s = self::set(); $per = max(12, (int)$s['per_page']);
     $ids = $run ? array_keys($BF::ids()) : [];
-    $base = \App\Support\StockGuard::listable(DB::table('products')->where('published', true))->whereIn('id', $ids ?: [0])->where(function ($w) { $w->whereNull('group_key')->orWhere('group_key', '!=', 'smoke'); });
-    $sc = DB::table('categories')->get(['id','slug','name'])->filter(fn($c) => self::isSmokeCat($c))->pluck('id')->all(); if ($sc) $base->where(function ($w) use ($sc) { $w->whereNull('category_id')->orWhereNotIn('category_id', $sc); });
+    $base = \App\Support\StockGuard::listable(DB::table('products')->where('published', true))->whereIn('id', $ids ?: [0]);   // the campaign is Cigarette and Vape only (owner, 26 Nov 2026): this page is for the site, it is not advertised on Facebook
     $cats = (clone $base)->whereNotNull('category_id')->groupBy('category_id')->selectRaw('category_id as id, count(*) as n')->pluck('n', 'id')->all();
     $names = $cats ? DB::table('categories')->whereIn('id', array_keys($cats))->pluck('name', 'id')->all() : []; arsort($cats);
     $chips = []; foreach ($cats as $id => $n) if (isset($names[$id])) $chips[] = ['id' => (int)$id, 'name' => (string)$names[$id], 'n' => (int)$n];
     $cat = (int)$r->query('cat'); if (!isset($cats[$cat])) $cat = 0; if ($cat) $base->where('category_id', $cat);
     $items = $base->orderByRaw('(compare_price - price) / nullif(compare_price, 0) desc nulls last')->orderByDesc('id')->paginate($per)->withQueryString();
-    $title = 'Black Friday on DutyFree Shop | DutyFreeBD'; $desc = 'Black Friday on DutyFree Shop, 27 to 30 November 2026. Special Black Friday prices on perfume, beauty, daily needs and more with delivery across Bangladesh. Ends 30 November, 11:59 PM.';
+    $title = 'Black Friday on DutyFree Shop | DutyFreeBD'; $desc = 'Black Friday on DutyFree Shop, 27 to 30 November 2026. Ends 30 November, 11:59 PM.';
     $idx = $run && $cat === 0;
     return response()->view('store.black_friday', $this->base(['items' => $items, 'chips' => $chips, 'cat' => $cat, 'over' => $over, 'run' => $run, 'from' => $from, 'to' => $to, 'last' => $run && $now->isSameDay($to), 'total' => array_sum($cats),
-      'title' => $title, 'desc' => $desc, 'canon' => url('/black-friday'), 'noindex' => !$idx, 'robots' => $idx ? 'index,follow,max-image-preview:large' : 'noindex,follow', 'ogimg' => url('/black-friday-og.jpg'), 'ogtitle' => $title, 'ogdesc' => $desc]))->header('Cache-Control', 'public, max-age=60');
+      'title' => $title, 'desc' => $desc, 'canon' => url('/black-friday'), 'noindex' => true, 'robots' => 'noindex,follow']))->header('Cache-Control', 'public, max-age=60');
   }
   /** Owner preview before the start (admin only, nothing stored): the offer page as it will look, with the Black Friday prices worked out on the spot. */
   public function blackFridayPreview(Request $r) {
     if (!\App\Support\ProfitFloor::admin()) abort(404);
     $BF = \App\Support\BlackFriday::class; [$from, $to] = $BF::window(); $per = 48; $smokeOn = $r->query('smoke') === '1';
-    $rows = array_values(array_filter($BF::eligible(), fn($x) => $smokeOn ? $x['smoke'] : !$x['smoke']));
+    $rows = $BF::eligible();
     $cats = []; foreach ($rows as $x) $cats[$x['cat']] = ($cats[$x['cat']] ?? 0) + 1; arsort($cats); $names = array_keys($cats);
     $chips = []; foreach ($names as $i => $n) $chips[] = ['id' => $i + 1, 'name' => $n, 'n' => $cats[$n]];
     $cat = (int)$r->query('cat'); if ($cat < 1 || $cat > count($names)) $cat = 0; if ($cat) $rows = array_values(array_filter($rows, fn($x) => $x['cat'] === $names[$cat - 1]));
