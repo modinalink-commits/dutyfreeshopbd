@@ -15,9 +15,9 @@ class MarineAis
 {
   /** South-west and north-east corners [lat, lon]: Bay of Bengal north of 17N, including Chattogram, Mongla, Payra and their approaches. */
   const BOX = [[[17.0, 86.0], [23.6, 93.5]]];
-  /** Wide area for the vessel register only (names, IMO, type, size: no positions): Red Sea to Japan, where ships bound for Bangladesh come from.
+  /** Wide area for the vessel register only (names, IMO, type, size: no positions).
    *  AISStream has few receivers on the Bangladesh coast (test 26 Nov 2026: 1 message in 14 s there, 19 in 8 s at Singapore), so name search needs this wider net. */
-  const WIDE = [[[-12.0, 30.0], [46.0, 150.0]]];
+  const WIDE = [[[-90.0, -180.0], [90.0, 180.0]]]; // whole world since 26 Nov 2026 (owner: people may search ships of any country); first run was Red Sea to Japan
   const WIDE_PER_SEC = 60; // safety valve for the shared server: extra messages in a second are dropped
   const HOST = 'stream.aisstream.io';
 

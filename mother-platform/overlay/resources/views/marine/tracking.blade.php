@@ -9,7 +9,7 @@
 <div class="card" style="margin:0"><div style="font-size:12px;color:#6B7280">Last position received</div><b>{{ $st['last'] ? \Carbon\Carbon::parse($st['last'])->diffForHumans() : '-' }}</b></div>
 </div>
 @if(is_array($stat ?? null))<div style="font-size:12px;color:#6B7280;margin:-4px 0 12px">Bay of Bengal positions: connection opened {{ \Carbon\Carbon::createFromTimestamp($stat['connected'])->diffForHumans() }}, {{ number_format($stat['msgs']) }} vessel messages received so far.</div>@endif
-@if(is_array($statw ?? null))<div style="font-size:12px;color:#6B7280;margin:-4px 0 12px">Vessel register (Red Sea to Japan, names and details only): connection opened {{ \Carbon\Carbon::createFromTimestamp($statw['connected'])->diffForHumans() }}, {{ number_format($statw['msgs']) }} messages read.</div>@endif
+@if(is_array($statw ?? null))<div style="font-size:12px;color:#6B7280;margin:-4px 0 12px">Vessel register (worldwide, names and details only): connection opened {{ \Carbon\Carbon::createFromTimestamp($statw['connected'])->diffForHumans() }}, {{ number_format($statw['msgs']) }} messages read.</div>@endif
 @if($err)<div class="card" style="background:#FEF3C7;border-color:#FDE68A;color:#92400E;font-size:13px">Last collector message: {{ $err }}</div>@endif
 <form method="post" action="/admin/marine/tracking" class="card" style="display:flex;flex-direction:column;gap:12px;max-width:560px" autocomplete="off">@csrf
 <label style="display:flex;flex-direction:column;gap:4px;font-size:13px">AISStream API key<input type="password" name="key" autocomplete="new-password" placeholder="{{ $has ? 'A key is saved. Paste a new one only to replace it.' : 'Paste the key from your AISStream account page' }}"></label>
