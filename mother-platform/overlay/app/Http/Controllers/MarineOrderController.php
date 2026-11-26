@@ -48,11 +48,23 @@ class MarineOrderController extends Controller
   /** Catalog for a signed-in account, by marine category. Bonded Stores opens only with bonded approval; without it the tab explains how to get it. */
   public function catalog(Request $r) {
     $u = $this->me(); if (!$u) return redirect('/marine-portal/login');
-    $MC = \App\Support\MarineCats::class; [$hid, $bok] = O::limits($u); $mc = ($MC::ready() && $MC::ok($r->query('mcat'))) ? (string)$r->query('mcat') : ''; $ms = (string)$MC::sub($mc, $r->query('sub')); $q = mb_substr(trim((string)$r->query('q')), 0, 60);
-    $locked = $mc === 'bonded' && !$bok; $rows = null;
-    if (!$locked) { $b = O::products($q, $hid, 48, $bok)->leftJoin('categories as c', 'c.id', '=', 'p.category_id'); if ($mc !== '') $b->where('m.mcat', $mc); if ($ms !== '') $b->where('m.msub', $ms);
+    $MC = \App\Support\MarineCats::class; $RQ = \App\Support\MarineRfq::class; [$hid, $bok] = O::limits($u); $q = mb_substr(trim((string)$r->query('q')), 0, 60);
+    // Owner 26 Nov 2026: the ship catalogues (quotation only) come first; DutyFreeBD store products open only as the DutyFreeBD Catalogue, never under a marine category name. Bonded Stores stays its own approved view.
+    $sets = $RQ::orderable() ? $RQ::releasedSets() : []; $view = (string)$r->query('view'); if ($r->query('mcat') === 'bonded') $view = 'bonded';
+    if (!in_array($view, array_merge($sets, ['bonded', 'store']), true)) $view = $sets[0] ?? 'store';
+    $crew = O::isCrew($u); $common = ['view' => $view, 'sets' => $sets, 'setDefs' => $RQ::SETS, 'q' => $q, 'cats' => $MC::CATS, 'bok' => $bok, 'canOrder' => O::canRaise($u, $crew ? 'personal' : 'vessel'), 'crew' => $crew, 'ms' => ''];
+    if (in_array($view, $sets, true)) {
+      $sec = preg_match('/^[a-z0-9-]{1,60}$/', (string)$r->query('section')) ? (string)$r->query('section') : '';
+      $rows = $RQ::forOrder()->where('catalog', $view)->when($sec !== '', fn($w) => $w->where('section_slug', $sec))
+        ->when($q !== '', function ($w) use ($q) { $l = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $q) . '%'; $w->where(fn($x) => $x->where('name_en', 'ilike', $l)->orWhere('name_bn', 'ilike', $l)->orWhere('sku', 'ilike', $l)); })
+        ->orderBy('id')->paginate(48)->withQueryString();
+      return $this->pg('catalog', $common + ['rows' => $rows, 'mc' => '', 'locked' => false, 'sec' => $sec, 'sections' => $RQ::forOrder()->where('catalog', $view)->selectRaw('section_slug, min(section_name) n, min(group_name) g, count(*) c, min(id) o')->groupBy('section_slug')->orderBy('o')->get()]);
+    }
+    $mc = $view === 'bonded' ? 'bonded' : ''; $locked = $mc === 'bonded' && !$bok; $rows = null;
+    if (!$locked) { $b = O::products($q, $hid, 48, $bok)->leftJoin('categories as c', 'c.id', '=', 'p.category_id');
+      if ($mc === 'bonded') $b->where('m.mcat', 'bonded'); elseif ($MC::ready()) $b->where(fn($w) => $w->whereNull('m.mcat')->orWhere('m.mcat', '!=', 'bonded'));
       $rows = $b->limit(100000)->select('p.id', 'p.sku', 'p.name', 'p.size', 'p.image', 'm.usd_price', 'm.mcat', 'm.msub', 'c.name as cat')->paginate(48)->withQueryString(); }
-    return $this->pg('catalog', ['rows' => $rows, 'mc' => $mc, 'ms' => $ms, 'q' => $q, 'cats' => $MC::CATS, 'locked' => $locked, 'bok' => $bok, 'canOrder' => O::canRaise($u, O::isCrew($u) ? 'personal' : 'vessel'), 'crew' => O::isCrew($u)]);
+    return $this->pg('catalog', $common + ['rows' => $rows, 'mc' => $mc, 'locked' => $locked, 'sec' => '', 'sections' => collect()]);
   }
   public function orderStore(Request $r) {
     $u = $this->me(); if (!$u) return redirect('/marine-portal/login');
@@ -264,7 +276,7 @@ class MarineOrderController extends Controller
     $d = match ($page) {
       'home' => ['v' => 'mp.home', 'd' => ['docs' => collect(), 'ves' => collect($type === 'vessel' ? [] : [(object)['imo' => '9000001', 'name' => 'MV SAMPLE', 'note' => 'Sample']]), 'types' => A::TYPES, 'vroles' => A::VROLES]],
       'orders' => ['v' => 'mp.orders', 'd' => ['rows' => $pager([$o]), 'st' => '', 'status' => O::STATUS, 'ports' => O::PORTS, 'canVessel' => O::canRaise($u, 'vessel'), 'canPersonal' => O::canRaise($u, 'personal'), 'crew' => O::isCrew($u)]],
-      'catalog' => ['v' => 'mp.catalog', 'd' => ['rows' => $r->query('locked') ? null : $pager([(object)['id' => 0, 'sku' => 'SAMPLE-1', 'name' => 'Sample product A', 'size' => '500 g', 'image' => '', 'usd_price' => 12.5, 'mcat' => 'crew', 'msub' => null, 'cat' => 'Sample'], (object)['id' => 0, 'sku' => 'SAMPLE-2', 'name' => 'Sample product B with a longer name to show wrapping', 'size' => '', 'image' => '', 'usd_price' => 149, 'mcat' => 'crew', 'msub' => null, 'cat' => 'Sample']]), 'mc' => $r->query('locked') ? 'bonded' : 'crew', 'ms' => '', 'q' => '', 'cats' => \App\Support\MarineCats::CATS, 'locked' => (bool)$r->query('locked'), 'bok' => false, 'canOrder' => true, 'crew' => O::isCrew($u)]],
+      'catalog' => ['v' => 'mp.catalog', 'd' => ['rows' => $r->query('locked') ? null : $pager([(object)['id' => 0, 'sku' => 'SAMPLE-1', 'name' => 'Sample product A', 'size' => '500 g', 'image' => '', 'usd_price' => 12.5, 'mcat' => 'crew', 'msub' => null, 'cat' => 'Sample'], (object)['id' => 0, 'sku' => 'SAMPLE-2', 'name' => 'Sample product B with a longer name to show wrapping', 'size' => '', 'image' => '', 'usd_price' => 149, 'mcat' => 'crew', 'msub' => null, 'cat' => 'Sample']]), 'view' => $r->query('locked') ? 'bonded' : 'store', 'sets' => [], 'setDefs' => \App\Support\MarineRfq::SETS, 'sec' => '', 'sections' => collect(), 'mc' => $r->query('locked') ? 'bonded' : '', 'ms' => '', 'q' => '', 'cats' => \App\Support\MarineCats::CATS, 'locked' => (bool)$r->query('locked'), 'bok' => false, 'canOrder' => true, 'crew' => O::isCrew($u)]],
       'order_new' => ['v' => 'mp.order_new', 'd' => ['rfqItem' => ((int)$r->query('rfq') > 0 && \App\Support\MarineRfq::ready() && ($x = DB::table('marine_rfq_items')->where('id', (int)$r->query('rfq'))->first())) ? self::rfqJs($x) : null, 'add' => 0, 'kind' => O::isCrew($u) ? 'personal' : 'vessel', 'vessels' => $type === 'vessel' ? [] : $ves, 'ports' => O::PORTS, 'places' => O::PLACES, 'pc' => null, 'max' => O::MAX_LINES, 'pre' => ['imo' => preg_match('/^\d{7}$/', (string)request()->query('imo')) ? (string)request()->query('imo') : '', 'vessel' => mb_substr(trim(strip_tags((string)request()->query('vessel'))), 0, 120), 'port' => isset(O::PORTS[(string)request()->query('port')]) ? (string)request()->query('port') : '']]],
       'order' => ['v' => 'mp.order', 'd' => ['files' => collect([(object)['id' => 0, 'name' => 'store-list-sample.xlsx', 'size' => 18432]]), 'o' => $o, 'lines' => $lines, 'by' => (object)['username' => $u->username, 'name' => $u->name, 'company' => $u->company, 'type' => $u->type], 'status' => O::STATUS, 'ports' => O::PORTS, 'places' => O::PLACES, 'canAccept' => O::canAccept($u, $o, $scope), 'canWithdraw' => O::canWithdraw($u, $o), 'expired' => false, 'captainWait' => $st === 'quoted' && $o->kind === 'vessel' && $type === 'vessel']],
       'calls' => ['v' => 'mp.calls', 'd' => ['rows' => $pager([$call]), 'vessels' => $type === 'vessel' ? [] : $ves, 'ports' => O::PORTS, 'places' => O::PLACES, 'call' => O::CALL, 'canAdd' => !O::isCrew($u), 'canOrder' => O::canRaise($u, 'vessel')]],
