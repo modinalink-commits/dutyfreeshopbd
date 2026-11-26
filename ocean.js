@@ -18,8 +18,8 @@ var FS='#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecis
 'if(m<=0.){c=texture2D(uTex,uv).rgb;}else{'+
 'float d=max(uv.y-e,0.);float g=log(1.+d*40.);float x=uv.x*uImg.x/uImg.y;'+
 'float r1=sin(g*22.-uT*.9+x*6.+sin(x*3.+uT*.25)*1.5);float r2=sin(g*37.-uT*1.35-x*11.+1.7);float r3=sin(x*38.*(1.-d*1.5)+uT*.7+g*9.);'+
-'float a=m*(.0011+.0095*d);vec2 dv=vec2((r1*.6+r3*.4)*a*.9,(r1*.7+r2*.3)*a*.55);'+
-'c=texture2D(uTex,clamp(uv+dv,0.,1.)).rgb;c+=m*r1*r2*.016;}'+
+'float a=m*(.0018+.0165*d);vec2 dv=vec2((r1*.6+r3*.4)*a*.9,(r1*.7+r2*.3)*a*.55);'+
+'c=texture2D(uTex,clamp(uv+dv,0.,1.)).rgb;c+=m*r1*r2*.028;}'+
 'gl_FragColor=vec4(c,1.);}';
 
 function hero(){return document.querySelector('.mh')}
@@ -56,7 +56,7 @@ function active(){return S.play&&S.tex&&S.inView&&!document.hidden}
 function go(){if(active()&&!S.raf){S.last=performance.now();S.raf=requestAnimationFrame(frame)}}
 function stop(){if(S.raf){cancelAnimationFrame(S.raf);S.raf=0}}
 /* ---------- welcome sound: one soft 5-second swell, once per browser, after the visitor's first tap, click or key ---------- */
-var INTRO='/ocean-intro.mp3',KEY='mdf_ocean_intro',VOL=0.16,played=false,ac=null,gain=null,src=null;
+var INTRO='/ocean-intro.mp3',KEY='mdf_ocean_intro2',VOL=0.32,played=false,ac=null,gain=null,src=null;
 try{played=window.localStorage.getItem(KEY)==='1'}catch(e){}
 function quiet(fast){if(!ac||!gain)return;try{var n=ac.currentTime,g=gain.gain;g.cancelScheduledValues(n);g.setValueAtTime(g.value,n);g.linearRampToValueAtTime(0,n+(fast?0.15:0.4))}catch(e){}
  var a=ac,s=src;ac=null;src=null;gain=null;setTimeout(function(){try{if(s)s.stop()}catch(e){}try{a.close()}catch(e){}},fast?220:480)}
