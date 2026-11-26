@@ -379,8 +379,11 @@ class MarineController extends Controller
     if (DB::table('marine_access_requests')->where('email', $email)->where('status', 'pending')->where('created_at', '>', now()->subDay())->exists()) return redirect()->away($back . '?sent=1'); // same request again: no second row
     $vrole = $kind === 'crew' ? ($r->input('vessel_role') === 'captain' ? 'captain' : 'crew') : null; $hasV = \Illuminate\Support\Facades\Schema::hasColumn('marine_access_requests', 'vessel_role');
     if ($vrole === 'captain' && $imo === '') return redirect()->away($back . '?sent=0'); // a captain or authorized officer applies for a named vessel
+    // language the applicant chose on the form (site is offered in 7 languages): kept at the head of the message so the desk sees it
+    $lg = ['bn' => 'Bangla', 'ar' => 'Arabic', 'id' => 'Bahasa Indonesia', 'zh-Hans' => 'Chinese (Simplified)', 'ru' => 'Russian', 'tr' => 'Turkish'][(string)$r->input('lang')] ?? null;
+    $msg = $f('message', 1000); if ($lg) $msg = mb_substr('[Preferred language: ' . $lg . '] ' . (string)$msg, 0, 1000);
     $rid = DB::table('marine_access_requests')->insertGetId(($hasV ? ['vessel_role' => $vrole] : []) + ['kind' => $kind, 'company' => $f('company', 160), 'role' => $f('role', 80), 'name' => $f('name', 120), 'crew_rank' => $f('crew_rank', 80), 'email' => $email, 'phone' => $f('phone', 40),
-      'imo' => $imo ?: null, 'vessel' => $f('vessel', 120), 'port' => $f('port', 40), 'message' => $f('message', 1000), 'status' => 'pending', 'ip' => $r->ip(), 'created_at' => now(), 'updated_at' => now()]);
+      'imo' => $imo ?: null, 'vessel' => $f('vessel', 120), 'port' => $f('port', 40), 'message' => $msg, 'status' => 'pending', 'ip' => $r->ip(), 'created_at' => now(), 'updated_at' => now()]);
     // documents sent with the application: checked one by one, kept on the private disk; a refused file never blocks the application itself
     try { if (\App\Support\MarineAccess::ready()) foreach (array_slice(array_filter((array)$r->file('docs', [])), 0, \App\Support\MarineAccess::DOC_COUNT) as $f) \App\Support\MarineAccess::storeDoc($f, (int)$rid, null, 'applicant'); } catch (\Throwable $e) { report($e); }
     try { \Illuminate\Support\Facades\Cache::forget('sb.counts.v3'); } catch (\Throwable $e) {}
