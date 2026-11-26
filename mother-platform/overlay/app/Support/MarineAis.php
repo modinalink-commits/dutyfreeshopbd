@@ -28,16 +28,9 @@ class MarineAis
 
   public static function run(int $secs = 1200): void {
     $key = (string)Sms::secret('marine_aisstream_key'); if ($key === '') return;
-    $ctx = stream_context_create(['ssl' => ['verify_peer' => true, 'verify_peer_name' => true, 'peer_name' => self::HOST, 'SNI_enabled' => true]]);
-    $fp = @stream_socket_client('tls://' . self::HOST . ':443', $en, $es, 15, STREAM_CLIENT_CONNECT, $ctx);
-    if (!$fp) { self::note('Could not connect to AISStream: ' . $es); return; }
+    $fp = self::open($key, self::BOX, $why); if (!$fp) { self::note($why); return; }
     try {
-      stream_set_timeout($fp, 20);
-      fwrite($fp, "GET /v0/stream HTTP/1.1\r\nHost: " . self::HOST . "\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: " . base64_encode(random_bytes(16)) . "\r\nSec-WebSocket-Version: 13\r\nUser-Agent: DutyFreeBD-Marine/1.0\r\n\r\n");
-      $h = ''; while (!str_contains($h, "\r\n\r\n")) { $c = fread($fp, 1); if ($c === '' || $c === false) { if (feof($fp) || stream_get_meta_data($fp)['timed_out']) break; continue; } $h .= $c; if (strlen($h) > 8192) break; }
-      if (!preg_match('#^HTTP/1\.1 101#', $h)) { self::note('AISStream refused the connection: ' . trim(strtok($h, "\r\n") ?: 'no reply')); return; }
-      self::send($fp, 1, json_encode(['APIKey' => $key, 'BoundingBoxes' => self::BOX, 'FilterMessageTypes' => ['PositionReport', 'StandardClassBPositionReport', 'ShipStaticData']]));
-      $end = time() + $secs; $buf = []; $flush = time(); $msg = ''; $got = 0; $idle = time(); $chk = time();
+      $end = time() + $secs; $buf = []; $flush = time(); $msg = ''; $got = 0; $idle = time(); $chk = time(); $t0 = time();
       while (time() < $end) {
         $f = self::frame($fp);
         if ($f === false) { self::note($got ? null : 'AISStream closed the connection before any data. Check the key on the Vessel Tracking page.'); break; }
@@ -50,13 +43,37 @@ class MarineAis
             if ($fin) { if (self::take($msg, $buf)) { $got++; $idle = time(); } elseif (!$got && str_contains($msg, 'rror')) { self::note('AISStream: ' . preg_replace('/[^\x20-\x7e]/', '', mb_substr($msg, 0, 150))); } $msg = ''; }
           }
         }
-        if (time() - $flush >= 5) { self::flush($buf); $buf = []; $flush = time(); Cache::put('marine_ais_hb', time(), 300); if ($got) self::note(null); }
+        if (time() - $flush >= 5) { self::flush($buf); $buf = []; $flush = time(); Cache::put('marine_ais_hb', time(), 300); Cache::put('marine_ais_stat', ['connected' => $t0, 'msgs' => $got, 'at' => time()], 3600); if ($got) self::note(null); }
         if (time() - $idle > 240) { self::send($fp, 9, 'k'); $idle = time() - 120; }
         if (time() - $chk > 60) { $chk = time(); if (!\App\Http\Controllers\MarineController::aisOn()) break; }
       }
       self::flush($buf);
     } catch (\Throwable $e) { self::note('Collector error: ' . $e->getMessage()); report($e); }
     finally { @fclose($fp); }
+  }
+
+  /** Opens the stream and subscribes to a bounding box. Returns the socket, or null with the reason in $why. */
+  private static function open(string $key, array $box, &$why = null) {
+    $ctx = stream_context_create(['ssl' => ['verify_peer' => true, 'verify_peer_name' => true, 'peer_name' => self::HOST, 'SNI_enabled' => true]]);
+    $fp = @stream_socket_client('tls://' . self::HOST . ':443', $en, $es, 15, STREAM_CLIENT_CONNECT, $ctx);
+    if (!$fp) { $why = 'Could not connect to AISStream: ' . $es; return null; }
+    stream_set_timeout($fp, 20);
+    fwrite($fp, "GET /v0/stream HTTP/1.1\r\nHost: " . self::HOST . "\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: " . base64_encode(random_bytes(16)) . "\r\nSec-WebSocket-Version: 13\r\nUser-Agent: DutyFreeBD-Marine/1.0\r\n\r\n");
+    $h = ''; while (!str_contains($h, "\r\n\r\n")) { $c = fread($fp, 1); if ($c === '' || $c === false) { if (feof($fp) || stream_get_meta_data($fp)['timed_out']) break; continue; } $h .= $c; if (strlen($h) > 8192) break; }
+    if (!preg_match('#^HTTP/1\.1 101#', $h)) { $why = 'AISStream refused the connection: ' . trim(strtok($h, "\r\n") ?: 'no reply'); @fclose($fp); return null; }
+    self::send($fp, 1, json_encode(['APIKey' => $key, 'BoundingBoxes' => $box, 'FilterMessageTypes' => ['PositionReport', 'StandardClassBPositionReport', 'ShipStaticData']]));
+    return $fp;
+  }
+
+  /** Connection test for the admin page: listens to one area for a few seconds and counts the vessel messages. Saves nothing. */
+  public static function probe(array $box, int $secs = 10): array {
+    $key = (string)Sms::secret('marine_aisstream_key'); if ($key === '') return ['ok' => false, 'msgs' => 0, 'note' => 'No key saved'];
+    $fp = self::open($key, $box, $why); if (!$fp) return ['ok' => false, 'msgs' => 0, 'note' => $why];
+    $n = 0; $names = []; $note = ''; $end = time() + $secs; $msg = ''; stream_set_timeout($fp, 3);
+    try { while (time() < $end) { $f = self::frame($fp); if ($f === false) { $note = $n ? '' : 'Connection closed by AISStream'; break; } if ($f === null) continue; [$fin, $op, $pl] = $f; if ($op === 8) { $note = 'Closed: ' . preg_replace('/[^\x20-\x7e]/', '', substr($pl, 2, 100)); break; } if ($op === 9) { self::send($fp, 10, $pl); continue; }
+      if ($op <= 2) { $msg .= $pl; if ($fin) { $m = json_decode($msg, true); if (is_array($m) && isset($m['MessageType'])) { $n++; $nm = trim((string)((array_change_key_case((array)($m['MetaData'] ?? []), CASE_LOWER))['shipname'] ?? '')); if ($nm !== '' && count($names) < 5) $names[$nm] = 1; } elseif (!$n) $note = preg_replace('/[^\x20-\x7e]/', '', mb_substr($msg, 0, 150)); $msg = ''; } } } }
+    catch (\Throwable $e) { $note = $e->getMessage(); } finally { @fclose($fp); }
+    return ['ok' => true, 'msgs' => $n, 'names' => array_keys($names), 'note' => $note];
   }
 
   private static function send($fp, int $op, string $pl): void {
