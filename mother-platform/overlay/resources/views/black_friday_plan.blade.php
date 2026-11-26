@@ -12,6 +12,47 @@
 <form method="post" action="/admin/black-friday/switch">@csrf<input type="hidden" name="on" value="{{ $on ? '0' : '1' }}"><button class="btn {{ $on ? 'g' : '' }}">{{ $on ? 'Switch off and put normal prices back' : 'Switch on' }}</button></form>
 <a class="btn g" href="/black-friday" target="_blank">Offer page</a>
 </div>
+<?php $sm = $out['sms']; $vc = $out['voice']; $dt = fn($v) => $v ? \Carbon\Carbon::parse($v, 'UTC')->timezone('Asia/Dhaka')->format('j M, g:i A') : '-'; $sb = $out['smsBy']; $vb = $out['voiceBy']; ?>
+<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(340px,1fr));margin-bottom:12px">
+<div class="card" style="overflow-x:auto"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b style="flex:1">Black Friday SMS</b>
+@if($sm)
+<span style="font-size:12px;font-weight:700;text-transform:uppercase;color:{{ in_array($sm->status, ['scheduled', 'sending', 'completed']) ? '#166534' : '#B45309' }}">{{ $sm->status }}</span><a class="btn g" href="/admin/sms-marketing/campaigns/{{ $sm->id }}">Open</a>
+@endif
+</div>
+@if($sm)
+<div style="font-size:13px;color:#6B7280;margin:6px 0">Send time: <b style="color:#0C161F">{{ $dt($sm->schedule_at) }}</b> · Sent so far: {{ number_format((int)$sm->total) }} · Cost so far: {{ number_format((float)$sm->cost, 2) }} Tk<br>Delivered to gateway: {{ number_format((int)($sb['sent'] ?? 0)) }} · Waiting: {{ number_format((int)($sb['queued'] ?? 0) + (int)($sb['sending'] ?? 0)) }} · Failed: {{ number_format((int)($sb['failed'] ?? 0)) }}</div>
+<div style="font-size:13px;border:1px solid #E5E7EB;border-radius:8px;padding:8px 10px;background:#F9FAFB">{{ $sm->body }}</div>
+<table style="width:100%;font-size:12.5px;margin-top:8px"><thead><tr><th style="text-align:left">Number</th><th style="text-align:left">Status</th><th style="text-align:left">Time</th></tr></thead><tbody>
+@forelse($out['smsRows'] as $x)
+<tr><td>{{ $x->to }}</td><td>{{ $x->status }}</td><td>{{ $dt($x->created_at) }}</td></tr>
+@empty
+<tr><td colspan="3" style="color:#6B7280">No SMS has gone out yet.</td></tr>
+@endforelse
+</tbody></table>
+@else
+<div style="font-size:13px;color:#6B7280;margin-top:6px">No SMS campaign is linked.</div>
+@endif
+</div>
+<div class="card" style="overflow-x:auto"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b style="flex:1">Black Friday voice calls</b>
+@if($vc)
+<span style="font-size:12px;font-weight:700;text-transform:uppercase;color:{{ $vc->status === 'active' ? '#166534' : '#B45309' }}">{{ $vc->status }}</span><a class="btn g" href="/admin/voice/{{ $vc->id }}">Open</a>
+@endif
+</div>
+@if($vc)
+<div style="font-size:13px;color:#6B7280;margin:6px 0">{{ substr((string)$vc->start_date, 0, 10) }} to {{ substr((string)$vc->end_date, 0, 10) }}, {{ $vc->call_start_time }} to {{ $vc->call_end_time }} · up to {{ number_format((int)$vc->daily_limit) }} calls a day<br>In the list: {{ number_format(array_sum($vb)) }} · Waiting: {{ number_format((int)($vb['pending'] ?? 0)) }} · Answered: {{ number_format((int)($vb['answered'] ?? 0) + (int)($vb['interested'] ?? 0) + (int)($vb['accepted'] ?? 0) + (int)($vb['transferred'] ?? 0)) }} · No answer / busy / failed: {{ number_format((int)($vb['not_answered'] ?? 0) + (int)($vb['busy'] ?? 0) + (int)($vb['failed'] ?? 0)) }} · Asked to stop: {{ number_format((int)($vb['opted_out'] ?? 0)) }}</div>
+<div style="font-size:13px;border:1px solid #E5E7EB;border-radius:8px;padding:8px 10px;background:#F9FAFB">{{ $vc->script }}</div>
+<table style="width:100%;font-size:12.5px;margin-top:8px"><thead><tr><th style="text-align:left">Customer</th><th style="text-align:left">Number</th><th style="text-align:left">Result</th><th>Tries</th><th style="text-align:left">Time</th></tr></thead><tbody>
+@forelse($out['voiceRows'] as $x)
+<tr><td>{{ $x->name }}</td><td>{{ $x->phone }}</td><td>{{ $x->call_status }}</td><td style="text-align:center">{{ $x->call_attempts }}</td><td>{{ $dt($x->updated_at) }}</td></tr>
+@empty
+<tr><td colspan="5" style="color:#6B7280">No call has been made yet.</td></tr>
+@endforelse
+</tbody></table>
+@else
+<div style="font-size:13px;color:#6B7280;margin-top:6px">No voice campaign is linked.</div>
+@endif
+</div>
+</div>
 <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr));margin-bottom:12px">
 <div class="card"><div style="font-size:12px;color:#6B7280">Products in the campaign</div><div style="font-size:26px;font-weight:800">{{ $n($tot['in']) }} <small style="font-size:12px;font-weight:500">of {{ $n($tot['all']) }}</small></div></div>
 <div class="card"><div style="font-size:12px;color:#6B7280">Average saving</div><div style="font-size:26px;font-weight:800">{{ $avg }}%</div></div>

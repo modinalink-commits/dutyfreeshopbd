@@ -14,7 +14,7 @@ class BlackFridayController extends Controller
     $list = array_values(array_filter($rows, fn($x) => ($st === 'check' ? $x['check'] : $x['status'] === $st) && ($cat === '' || $x['cat'] === $cat)));
     usort($list, fn($a, $b) => [$b['off_pct'], $a['name']] <=> [$a['off_pct'], $b['name']]);
     [$from, $to] = BF::window(); $el = BF::eligible();
-    return view('black_friday_plan', ['on' => BF::on(), 'running' => BF::running(), 'from' => $from, 'to' => $to, 'minOff' => BF::minOff(), 'eligible' => count($el), 'elSmoke' => count(array_filter($el, fn($x) => $x['smoke'])), 'cnt' => BF::counts(), 'tot' => $s['tot'], 'by' => $s['by'], 'pct' => $d['pct'], 'list' => array_slice($list, 0, 300), 'count' => count($list), 'show' => $st, 'cat' => $cat]);
+    return view('black_friday_plan', ['out' => BF::outreach(), 'on' => BF::on(), 'running' => BF::running(), 'from' => $from, 'to' => $to, 'minOff' => BF::minOff(), 'eligible' => count($el), 'elSmoke' => count(array_filter($el, fn($x) => $x['smoke'])), 'cnt' => BF::counts(), 'tot' => $s['tot'], 'by' => $s['by'], 'pct' => $d['pct'], 'list' => array_slice($list, 0, 300), 'count' => count($list), 'show' => $st, 'cat' => $cat]);
   }
   /** Owner switch. on = the campaign starts and ends by itself on its dates; off = normal prices come back within a minute. */
   public function toggle(Request $r) {

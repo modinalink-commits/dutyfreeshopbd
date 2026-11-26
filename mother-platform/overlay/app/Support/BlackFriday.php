@@ -92,8 +92,29 @@ class BlackFriday
   public static function tick(): void {
     try { if (!self::ready() || !\Illuminate\Support\Facades\Cache::add('bf.tick', 1, 60)) return; } catch (\Throwable $e) { return; }
     $applied = DB::table('black_friday_items')->where('status', 'applied')->exists();
-    if (self::running()) { if (self::set('applied_at', '') === '') { $n = self::apply('worker'); Procure::put('bf_applied_at', now('UTC')->format('Y-m-d H:i:s')); if ($n === 0) DeployHealth::raise('bf.none', 'high', 'Pricing', 'Black Friday started but no product took the price', 'The campaign is on and inside its dates, yet no Black Friday price was applied.', 'No product met the rule, or the price list changed.', 'Open Black Friday in the admin and check the list.'); } elseif (\Illuminate\Support\Facades\Cache::add('bf.guard', 1, 1800)) self::guard(); }
+    if (!$applied && (!self::running() || self::set('applied_at', '') !== '')) { try { $sid = self::linked('sms_campaigns'); if ($sid && DB::table('sms_campaigns')->where('id', $sid)->where('status', 'scheduled')->where('schedule_at', '<=', now()->addMinutes(20))->exists()) self::holdOutreach('No product is at its Black Friday price shortly before the SMS was due.'); } catch (\Throwable $e) {} }
+    if (self::running()) { if (self::set('applied_at', '') === '') { $n = self::apply('worker'); Procure::put('bf_applied_at', now('UTC')->format('Y-m-d H:i:s')); if ($n === 0) self::holdOutreach('The campaign started but no product took the Black Friday price.'); if ($n === 0) DeployHealth::raise('bf.none', 'high', 'Pricing', 'Black Friday started but no product took the price', 'The campaign is on and inside its dates, yet no Black Friday price was applied.', 'No product met the rule, or the price list changed.', 'Open Black Friday in the admin and check the list.'); } elseif (\Illuminate\Support\Facades\Cache::add('bf.guard', 1, 1800)) self::guard(); }
     elseif ($applied) self::restore('worker');
+  }
+  /** Id of this campaign's SMS run or voice run: the newest one named like the campaign (bf_outreach_name, 'Black Friday 2026'). */
+  public static function linked(string $table): int { try { return (int)DB::table($table)->where('name', self::set('outreach_name', 'Black Friday 2026'))->max('id'); } catch (\Throwable $e) { return 0; } }
+  /** The campaign's own SMS run and voice-call run (ids kept in settings), with their lists, for the Black Friday page. */
+  public static function outreach(): array {
+    $o = ['sms' => null, 'voice' => null, 'smsRows' => [], 'voiceRows' => [], 'smsBy' => [], 'voiceBy' => []];
+    try { $sid = self::linked('sms_campaigns'); if ($sid && ($c = DB::table('sms_campaigns')->find($sid))) { $o['sms'] = $c;
+        $o['smsBy'] = DB::table('sms_logs')->where('campaign_id', $sid)->selectRaw('status, count(*) n')->groupBy('status')->pluck('n', 'status')->all();
+        $o['smsRows'] = DB::table('sms_logs')->where('campaign_id', $sid)->orderByDesc('id')->limit(30)->get(['to', 'status', 'created_at'])->all(); } } catch (\Throwable $e) {}
+    try { $vid = self::linked('voice_campaigns'); if ($vid && ($c = DB::table('voice_campaigns')->find($vid))) { $o['voice'] = $c;
+        $o['voiceBy'] = DB::table('voice_campaign_customers')->where('campaign_id', $vid)->selectRaw('call_status, count(*) n')->groupBy('call_status')->pluck('n', 'call_status')->all();
+        $o['voiceRows'] = DB::table('voice_campaign_customers')->where('campaign_id', $vid)->where('call_status', '!=', 'pending')->orderByDesc('updated_at')->limit(30)->get(['name', 'phone', 'call_status', 'call_attempts', 'updated_at'])->all(); } } catch (\Throwable $e) {}
+    return $o;
+  }
+  /** Safety: the SMS and the call both say "Black Friday prices are on". If no price was applied, they must not go out: both are paused and an alert is raised. */
+  public static function holdOutreach(string $why): void {
+    try { $sid = self::linked('sms_campaigns'); if ($sid) DB::table('sms_campaigns')->where('id', $sid)->where('status', 'scheduled')->update(['status' => 'paused', 'updated_at' => now()]);
+      $vid = self::linked('voice_campaigns'); if ($vid) DB::table('voice_campaigns')->where('id', $vid)->where('status', 'active')->update(['status' => 'paused', 'updated_at' => now()]);
+      DeployHealth::raise('bf.outreach.hold', 'high', 'Marketing', 'Black Friday SMS and calls paused', $why, 'The Black Friday prices are not on the site, so the SMS and the offer call would promise a price the customer cannot get.', 'Open Black Friday in the admin, fix the prices, then resume the SMS campaign and the voice campaign.');
+    } catch (\Throwable $e) { report($e); }
   }
   public static function counts(): array { if (!self::ready()) return ['applied' => 0, 'restored' => 0, 'kept' => 0]; $c = DB::table('black_friday_items')->selectRaw('status, count(*) n')->groupBy('status')->pluck('n', 'status')->all(); return ['applied' => (int)($c['applied'] ?? 0), 'restored' => (int)($c['restored'] ?? 0), 'kept' => (int)($c['kept'] ?? 0)]; }
 
