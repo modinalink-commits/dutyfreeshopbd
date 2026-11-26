@@ -48,6 +48,7 @@ class Clearance {
     if (!self::ready()) return [false, 'Clearance is not installed yet.'];
     $p = DB::table('products')->where('id', $pid)->first(); if (!$p) return [false, 'Product not found.'];
     if ($price < 1) return [false, 'Enter the clearance price.'];
+    try { $__c = DB::table('categories')->where('id', $p->category_id)->first(); if (SmokeFloor::isSmoke((object)['group_key' => $p->group_key ?? null, 'cslug' => $__c->slug ?? null, 'cat' => $__c->name ?? null])) return [false, 'সিগারেট ও ভেপে ক্লিয়ারেন্স দেওয়া যাবে না — কেনা দামের ওপর ন্যূনতম লাভ সবসময় থাকতে হবে।']; } catch (\Throwable $e) {}
     if ($price + 0.004 >= (float)$p->price && !self::on($pid)) return [false, 'The clearance price must be lower than the current price (' . number_format((float)$p->price) . ').'];
     if (DB::table('product_clearances')->where('product_id', $pid)->whereIn('status', ['active', 'pending'])->exists()) return [false, 'This product already has an active or pending clearance.'];
     if (!isset(self::REASONS[$reason])) $reason = 'other';
