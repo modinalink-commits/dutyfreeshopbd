@@ -4,15 +4,22 @@
 <h1>{{ $tabs[$view] ?? 'Catalog' }}</h1><p class="sub">{{ $isRfq ? 'No price list: add the products to a requisition with your quantities and our marine desk answers with a quotation in USD.' : ($view === 'bonded' ? ($bok ? 'Liquor first, then tobacco, then beverages, chocolate and snacks. List prices in USD.' : 'Beverages, chocolate and snacks with list prices in USD.') . ($bok ? '' : ' The liquor and tobacco lists open after our marine desk approves your account for bonded stores: ask in a requisition note.') : 'Selected DutyFreeBD products for the crew shop. Prices in USD are list prices; your quotation confirms the final price and availability at your port.') }}</p>
 <div class="row" style="margin-bottom:12px">@foreach($tabs as $k => $n)<a class="ctab {{ $view === $k ? 'on' : '' }}" href="/marine-portal/catalog?view={{ $k }}">{{ $n }}</a>@endforeach</div>
 @if($isRfq && $sections->count())<div class="row" style="margin-bottom:12px"><a class="st {{ $sec === '' ? 'st-quoted' : '' }}" href="/marine-portal/catalog?view={{ $view }}" style="text-decoration:none">All sections</a>@foreach($sections as $x)<a class="st {{ $sec === $x->section_slug ? 'st-quoted' : '' }}" href="/marine-portal/catalog?view={{ $view }}&amp;section={{ $x->section_slug }}" style="text-decoration:none">{{ $x->n }} ({{ $x->c }})</a>@endforeach</div>@endif
-@if(!$isRfq && ($subs ?? collect())->count() > 1)@php $lg = -1; $base = '/marine-portal/catalog?view=' . $view . ($q !== '' ? '&q=' . urlencode($q) : ''); @endphp
-<div class="subs"><a class="st {{ $cat === 0 ? 'st-quoted' : '' }}" href="{{ $base }}">All</a>@foreach($subs as $x)@if($view === 'bonded' && $bok && $x->g !== $lg)@php $lg = $x->g; @endphp
-<span class="sgl">{{ $grpNames[$x->g] ?? '' }}</span>@endif
-<a class="st {{ $cat === $x->id ? 'st-quoted' : '' }}" href="{{ $base }}&amp;cat={{ $x->id }}">{{ $x->name }} ({{ $x->n }})</a>@endforeach</div>
+<?php $subsL = $isRfq ? collect() : ($subs ?? collect()); $lg = -1; $base = '/marine-portal/catalog?view=' . $view . ($q !== '' ? '&q=' . urlencode($q) : ''); $gn = $grpNames ?? []; $cat = (int)($cat ?? 0); ?>
+@if($subsL->count() > 1)
+<div class="subs"><a class="st {{ $cat === 0 ? 'st-quoted' : '' }}" href="{{ $base }}">All</a>
+@foreach($subsL as $x)
+<?php $showG = ($view === 'bonded' && $bok && $x->g !== $lg); $lg = $x->g; ?>
+@if($showG)
+<span class="sgl">{{ $gn[$x->g] ?? '' }}</span>
+@endif
+<a class="st {{ $cat === $x->id ? 'st-quoted' : '' }}" href="{{ $base }}&amp;cat={{ $x->id }}">{{ $x->name }} ({{ $x->n }})</a>
+@endforeach
+</div>
 @endif
 @if($locked)
 <div class="card"><h2>Bonded Stores need a separate approval</h2><p style="margin:0 0 12px;font-size:14px;color:#475569">Bonded goods and their prices are shown only to verified accounts that our marine desk has approved for bonded stores. Your account does not have this approval yet.</p><p style="margin:0;font-size:14px">Reply to our marine desk email, or send a requisition with a note asking for bonded stores for your vessel; the desk checks the vessel and port call first.</p></div>
 @else
-<form method="get" action="/marine-portal/catalog" class="row" style="margin-bottom:14px"><input type="hidden" name="view" value="{{ $view }}">@if(($cat ?? 0) > 0)<input type="hidden" name="cat" value="{{ $cat }}">@endif@if($sec !== '')<input type="hidden" name="section" value="{{ $sec }}">@endif<input type="search" name="q" value="{{ $q }}" maxlength="60" placeholder="Product name or code" aria-label="Search the catalog" style="flex:1 1 240px"><button class="g">Search</button></form>
+<form method="get" action="/marine-portal/catalog" class="row" style="margin-bottom:14px"><input type="hidden" name="view" value="{{ $view }}"><input type="hidden" name="cat" value="{{ $cat ?: '' }}">@if($sec !== '')<input type="hidden" name="section" value="{{ $sec }}">@endif<input type="search" name="q" value="{{ $q }}" maxlength="60" placeholder="Product name or code" aria-label="Search the catalog" style="flex:1 1 240px"><button class="g">Search</button></form>
 <div class="pgrid">
 @if($isRfq)
 @forelse($rows as $p)
