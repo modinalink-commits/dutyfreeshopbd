@@ -122,6 +122,10 @@ class MarineRfqController extends Controller {
   public function release(Request $r) {
     if (!Q::ready()) return back(); if (!\App\Support\ProfitFloor::admin()) abort(403); $a = (string)$r->input('action');
     if ($a === 'newkey') { Q::token(true); self::audit('marine.rfq.key', 'Ship provisions preview key replaced', null, ['by' => self::who()]); return back()->with('ok', 'New preview link made. The old link no longer works.'); }
+    if ($a === 'publish_all') { $by = self::who(); $now = now(); $n = 0; $held = [];
+      foreach (DB::table('marine_rfq_items')->where('state', 'draft')->orderBy('id')->get() as $it) { if (Q::publishProblems($it)) { $held[] = $it->sku; continue; } DB::table('marine_rfq_items')->where('id', $it->id)->update(['state' => 'published', 'published_by' => $by, 'published_at' => $now, 'updated_by' => $by, 'updated_at' => $now]); $n++; }
+      self::audit('marine.rfq.publish_all', 'Ship provisions: ' . $n . ' draft items published together', null, ['published' => $n, 'held' => $held, 'by' => $by]);
+      return back()->with($held ? 'bad' : 'ok', $n . ' items published.' . ($held ? ' Not published (rule or missing image): ' . implode(', ', array_slice($held, 0, 20)) . '.' : '')); }
     if ($a === 'on' || $a === 'off') { $was = Q::released(); self::put('marine_rfq_released', $a === 'on' ? '1' : '0'); self::audit('marine.rfq.release', 'Ship provisions catalogue ' . ($a === 'on' ? 'released to the marine site' : 'taken off the marine site'), ['released' => $was], ['released' => $a === 'on', 'by' => self::who()]);
       return back()->with('ok', $a === 'on' ? 'Released. Published items are now on the marine site and in the requisition search.' : 'Taken off the marine site. Items and their states are kept.'); }
     return back();
