@@ -5,6 +5,7 @@ login.html
 logo-header.png
 logo-stacked.png
 products.html
+products.js
 request-access.html
 robots.txt
 share.png
