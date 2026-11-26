@@ -1933,3 +1933,12 @@ resources/views/store/black_friday.blade.php
 public/black-friday-badge.webp
 public/black-friday-og.jpg
 app/Console/Commands/SmsBlast.php
+public/bf/bf-baby-care.jpg
+public/bf/bf-chocolates.jpg
+public/bf/bf-daily-needs.jpg
+public/bf/bf-fashion.jpg
+public/bf/bf-gadgets.jpg
+public/bf/bf-perfume.jpg
+public/bf/bf-skincare.jpg
+public/bf/bf-sunglasses.jpg
+public/bf/bf-watches.jpg

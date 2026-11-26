@@ -1933,3 +1933,12 @@ fa0be6620c0c4d3f4e8fe9a3366aed0fb4bd95bd resources/views/store/black_friday.blad
 e474678048d826b0d840ba880d3e8ae646162945 public/black-friday-badge.webp
 0590ef05b59425769abc929cf80127b7dd8c205c public/black-friday-og.jpg
 3514f5a7d79bb1aff7c19ce9e5ab23db49b6b868 app/Console/Commands/SmsBlast.php
+f9e6d6e7eb5c47bbde45dd2e8d5c085dc5d4d748 public/bf/bf-baby-care.jpg
+8f3fca645330ee55f1d3b95461ea83e0a018045e public/bf/bf-chocolates.jpg
+c66a3ff54e2b8f1aaf0a110eab1e2983353d1440 public/bf/bf-daily-needs.jpg
+26fd93006b2859a02d4159ffeb81a9a340e41665 public/bf/bf-fashion.jpg
+424016253e7d01fedf3adffe550d12d58bceeeed public/bf/bf-gadgets.jpg
+b8dd30abb2bef8c2cc103a9f194e1ceb18041b50 public/bf/bf-perfume.jpg
+ff3c3c50fa02af78231e6746690eaf8c3511e1ab public/bf/bf-skincare.jpg
+c888bb5e3a7a667638bc8023b96a32554edbc7f6 public/bf/bf-sunglasses.jpg
+ef13cb3d60faed678e4247e733ae623b4da7297a public/bf/bf-watches.jpg
