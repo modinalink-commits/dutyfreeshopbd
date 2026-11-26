@@ -43,8 +43,8 @@ main{max-width:1080px;padding:36px 20px 64px;flex-direction:row;flex-wrap:wrap;g
 .card{flex:999 1 560px;min-width:0;box-sizing:border-box}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px}
 select,textarea{border:1px solid #C3CDD9;border-radius:8px;padding:0 10px;font-size:15px;font-family:inherit;background:#fff}select{height:46px}textarea{padding:10px 12px}
-.tabs{display:flex;gap:6px;background:#F4F6F9;border-radius:10px;padding:4px}
-.tabs button{flex:1;min-height:46px;background:transparent;color:#0B2545;font-size:14px}.tabs button.on{background:#0B2545;color:#fff}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;background:#F4F6F9;border-radius:10px;padding:4px}
+.tabs button{flex:1 1 150px;min-height:46px;padding:0 10px;background:transparent;color:#0B2545;font-size:14px}.tabs button.on{background:#0B2545;color:#fff}
 aside{flex:1 1 300px;min-width:0;display:flex;flex-direction:column;gap:16px}
 .dark{background:#0B2545;color:#fff;border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:12px;font-size:14px;line-height:1.55}
 .dark b{font-family:Inter,system-ui,sans-serif;font-size:18px}.dark span{color:#D6DEEA}
@@ -69,11 +69,16 @@ footer{background:#0B2545;color:#D6DEEA;font-size:13px;text-align:center;padding
 <form id="f" method="post" action="https://dutyfreebd.com/marine-api/access-request" style="display:flex;flex-direction:column;gap:18px">
 <input type="hidden" name="kind" id="kind" value="company">
 <label class="hp" aria-hidden="true">Website<input type="text" name="website" tabindex="-1" autocomplete="off"></label>
-<div class="tabs"><button type="button" id="tco" class="on">Company, owner or agent</button><button type="button" id="tcr">Crew member</button></div>
+<div class="tabs"><button type="button" id="tco" class="on">Shipping company or owner</button><button type="button" id="tag">Local agent or supplier</button><button type="button" id="tcr">Crew member</button></div>
 <div class="grid" id="gco">
 <label>Company name<input type="text" name="company" placeholder="" ></label>
-<label>Your role<select name="role"><option>Purchasing officer</option><option>Ship owner or manager</option><option>Local shipping agent</option><option>Master or chief officer</option></select></label>
+<label>Your role<select name="role"><option>Purchasing officer</option><option>Ship owner or manager</option><option>Master or chief officer</option></select></label>
 </div>
+<div class="grid" id="gag" hidden>
+<label>Agency or business name<input type="text" name="company" placeholder="" ></label>
+<label>Your role<select name="role"><option>Local shipping agent</option><option>Port or clearing agent</option><option>Ship chandler or supplier</option><option>Local owner or operator</option><option>Other</option></select></label>
+</div>
+<div class="note" id="nag" hidden>No vessel is needed to open an agent account. You add each vessel when you ask for a quotation for its port call.</div>
 <div class="grid" id="gcr" hidden>
 <label>Rank<input type="text" name="crew_rank" placeholder="" ></label>
 </div>
@@ -81,24 +86,31 @@ footer{background:#0B2545;color:#D6DEEA;font-size:13px;text-align:center;padding
 <label>Your full name<input type="text" name="name" placeholder="" required></label>
 <label>Email<input type="email" name="email" placeholder="name@company.com" required></label>
 <label>Phone or WhatsApp<input type="tel" name="phone" placeholder="With country code" ></label>
-<label>Vessel IMO number<input type="text" name="imo" placeholder="7 digits" ></label>
-<label>Vessel name<input type="text" name="vessel" placeholder="" ></label>
-<label>Port of call<select name="port"><option>Chattogram</option><option>Mongla</option><option>Payra</option></select></label>
+<label id="lpo"><span id="lpot">Port of call</span><select name="port"><option>Chattogram</option><option>Mongla</option><option>Payra</option></select></label>
+</div>
+<div class="grid" id="gve">
+<label>Vessel IMO number (optional)<input type="text" name="imo" placeholder="7 digits" ></label>
+<label>Vessel name (optional)<input type="text" name="vessel" placeholder="" ></label>
 </div>
 <label>Message (optional)<textarea name="message" rows="3" maxlength="1000" placeholder="ETA, what you need, or any question"></textarea></label>
 <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center"><button type="submit" style="padding:0 22px">Submit for verification</button><span class="muted">We use these details only to verify your account and reply to you.</span></div>
 </form>
 </div>
 <aside>
-<div class="dark"><b>What we verify</b><span>Company and official contact · Representative's authority · Vessel by IMO number · Sanctions screening of company and vessel</span></div>
+<div class="dark"><b>What we verify</b><span>Company or agency and official contact · Representative's authority · Vessel by IMO number when one is given · Sanctions screening of company and vessel</span></div>
 <div class="card" style="flex:none;gap:10px"><b style="font-size:15px">Who can do what</b>
 <span class="muted"><b style="color:#0C161F">Ship officers</b> raise requisitions.</span>
 <span class="muted"><b style="color:#0C161F">Company representatives and agents</b> approve quotations and place purchase orders.</span>
+<span class="muted"><b style="color:#0C161F">Local agents and suppliers</b> open an account without a vessel and add vessels per port call.</span>
 <span class="muted"><b style="color:#0C161F">Crew</b> order personal items within their allowance.</span></div>
 </aside>
 </main>
 <footer>DutyFree BD Marine Supply · a DutyFreeBD service<br><span data-marine-contact></span></footer>
-<script>(function(){var k=document.getElementById('kind'),a=document.getElementById('tco'),b=document.getElementById('tcr'),ga=document.getElementById('gco'),gb=document.getElementById('gcr');function set(c){k.value=c?'crew':'company';a.className=c?'':'on';b.className=c?'on':'';ga.hidden=c;gb.hidden=!c}a.onclick=function(){set(false)};b.onclick=function(){set(true)};var m=/[?&]sent=([01])/.exec(location.search);if(m){document.getElementById(m[1]==='1'?'ok':'bad').hidden=false;if(m[1]==='1')document.getElementById('f').hidden=true}})();</script>
+<script>(function(){var k=document.getElementById('kind'),T={company:'tco',agent:'tag',crew:'tcr'},G={company:'gco',agent:'gag',crew:'gcr'};
+function set(c){k.value=c;for(var x in T){document.getElementById(T[x]).className=x===c?'on':'';var g=document.getElementById(G[x]);g.hidden=x!==c;var f=g.querySelectorAll('input,select');for(var i=0;i<f.length;i++)f[i].disabled=x!==c}
+var ve=document.getElementById('gve'),vf=ve.querySelectorAll('input');ve.hidden=c==='agent';for(var j=0;j<vf.length;j++){vf[j].disabled=c==='agent'}document.getElementById('nag').hidden=c!=='agent';document.getElementById('lpot').textContent=c==='agent'?'Port you work at':'Port of call'}
+for(var x in T)(function(x){document.getElementById(T[x]).onclick=function(){set(x)}})(x);set(location.hash==='#agent'?'agent':(location.hash==='#crew'?'crew':'company'));
+var m=/[?&]sent=([01])/.exec(location.search);if(m){document.getElementById(m[1]==='1'?'ok':'bad').hidden=false;if(m[1]==='1')document.getElementById('f').hidden=true}})();</script>
 <script src="/site.js"></script>
 </body>
 </html>
