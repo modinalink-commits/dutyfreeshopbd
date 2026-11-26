@@ -38,7 +38,7 @@ class VoiceCampaignController extends Controller
   }
   public function save(Request $r, $id = null) {
     $d = $r->validate(['name' => 'required|string|max:160', 'segment' => 'required|in:' . implode(',', array_keys(V::SEGMENTS)), 'segment_phones' => 'nullable|string', 'discount_value' => 'required|numeric|min:0|max:90', 'validity' => 'required|string', 'expiry_date' => 'nullable|date',
-      'start_date' => 'nullable|date', 'end_date' => 'nullable|date', 'call_start_time' => ['required', 'regex:/^\d{2}:\d{2}$/'], 'call_end_time' => ['required', 'regex:/^\d{2}:\d{2}$/'], 'daily_limit' => 'required|integer|min:1|max:5000', 'retry_limit' => 'required|integer|min:1|max:5', 'retry_gap_hours' => 'required|integer|min:1|max:72',
+      'start_date' => 'nullable|date', 'end_date' => 'nullable|date', 'call_start_time' => ['required', 'regex:/^\d{2}:\d{2}$/'], 'call_end_time' => ['required', 'regex:/^\d{2}:\d{2}$/'], 'daily_limit' => 'required|integer|min:1|max:10000', 'retry_limit' => 'required|integer|min:1|max:5', 'retry_gap_hours' => 'required|integer|min:1|max:72',
       'cooldown_days' => 'required|integer|min:0|max:365', 'script' => 'nullable|string|max:1500', 'sms_text' => 'nullable|string|max:500', 'min_days' => 'nullable|integer|min:0', 'max_days' => 'nullable|integer|min:0', 'min_orders' => 'nullable|integer|min:0', 'category' => 'nullable|in:,vip,regular', 'audio' => 'nullable|file|max:6000']);
     if ($d['call_end_time'] <= $d['call_start_time']) return back()->withInput()->withErrors(['call_end_time' => 'Call end time must be after the start time']);
     if (($d['segment'] === 'selected') && trim((string)($d['segment_phones'] ?? '')) === '') return back()->withInput()->withErrors(['segment_phones' => 'Enter at least one phone number']);

@@ -1932,3 +1932,4 @@ resources/views/store/bf_banner.blade.php
 resources/views/store/black_friday.blade.php
 public/black-friday-badge.webp
 public/black-friday-og.jpg
+app/Console/Commands/SmsBlast.php

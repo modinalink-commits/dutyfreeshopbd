@@ -116,6 +116,7 @@ class SmsMarketing {
       self::launch((int)$id);
     }
     if (Sms::configured()) self::pump(30);
+    self::ensureBlast();
     foreach (DB::table('sms_campaigns')->where('status', 'sending')->pluck('id') as $id) {
       if (DB::table('sms_logs')->where('campaign_id', $id)->whereIn('status', ['queued', 'sending'])->exists()) continue;
       $c = DB::table('sms_campaigns')->find($id); $next = null;
@@ -127,6 +128,18 @@ class SmsMarketing {
       if ($next) DB::table('sms_campaigns')->where('id', $id)->update(['status'=>'scheduled', 'schedule_at'=>$next, 'run'=>$c->run + 1, 'updated_at'=>now()]);
       else DB::table('sms_campaigns')->where('id', $id)->update(['status'=>'completed', 'completed_at'=>now(), 'updated_at'=>now()]);
     }
+  }
+  /** 26 Nov 2026: keep a few fast sender loops (sms:blast) alive while a campaign has queued messages. Setting sms_blast_slots (default 4, 0 = off) is how many run side by side. */
+  public static function ensureBlast(): void {
+    try {
+      $n = (int)(DB::table('settings')->where('key', 'sms_blast_slots')->value('value') ?? 4); if ($n <= 0) return;
+      if (!DB::table('sms_logs as l')->join('sms_campaigns as c', 'c.id', '=', 'l.campaign_id')->where('l.status', 'queued')->where('c.status', 'sending')->exists()) return;
+      for ($i = 1; $i <= min($n, 8); $i++) {
+        if (time() - (int)\Illuminate\Support\Facades\Cache::get('sms_blast_hb_' . $i, 0) < 45) continue;
+        \Illuminate\Support\Facades\Cache::put('sms_blast_hb_' . $i, time(), 300);
+        @exec('nohup php ' . escapeshellarg(base_path('artisan')) . ' sms:blast ' . $i . ' > /dev/null 2>&1 &');
+      }
+    } catch (\Throwable $e) {}
   }
   /** Send queued rows, campaign rows first, skipping paused campaigns. */
   public static function pump(int $limit): int {
