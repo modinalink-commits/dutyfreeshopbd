@@ -661,7 +661,7 @@ Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestF
   Route::get('/marine-api/movements', [\App\Http\Controllers\MarineMovesController::class,'publicList'])->middleware('throttle:90,1');
   Route::get('/marine-api/vessel-photo/{imo}', [\App\Http\Controllers\MarineMovesController::class,'photo'])->where('imo','[0-9]{7}')->middleware('throttle:240,1');
   Route::get('/marine-api/rfq', [\App\Http\Controllers\MarineRfqController::class,'publicList'])->middleware('throttle:90,1');
-  Route::get('/marine-api/rfq-image/{sku}', [\App\Http\Controllers\MarineRfqController::class,'image'])->where('sku','[A-Z]{2,5}-[A-Z]{2,4}-[0-9]{3}')->middleware('throttle:600,1');
+  Route::get('/marine-api/rfq-image/{sku}', [\App\Http\Controllers\MarineRfqController::class,'image'])->where('sku','[A-Z]{2,5}-[A-Z]{2,4}-[0-9]{3}')->middleware('throttle:1500,1,rfqimg');   // own counter: a catalogue page loads up to 160 images, which must not use up the limit the other marine-api routes share
   Route::get('/marine-api/categories', [\App\Http\Controllers\MarineController::class,'publicCategories'])->middleware('throttle:120,1');
   Route::get('/marine-api/products', [\App\Http\Controllers\MarineController::class,'publicProducts'])->middleware('throttle:120,1');
   Route::get('/marine-api/vessels', [\App\Http\Controllers\MarineController::class,'publicVessels'])->middleware('throttle:90,1');

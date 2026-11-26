@@ -29,7 +29,7 @@ class MarineRfqController extends Controller {
   // ---------------- admin ----------------
   public function index(Request $r) {
     if (!Q::ready()) return view('marine.rfq', ['ready' => false]);
-    $last = self::js('marine_rfq_last');
+    $last = self::js('marine_rfq_last'); $wrote = self::js('marine_rfq_last_write'); if ($r->query('report') === 'csv' && $r->query('run') === 'write') $last = $wrote;
     if ($r->query('report') === 'csv') {
       $out = fopen('php://temp', 'r+'); fputcsv($out, ['sku', 'result', 'detail'], ',', '"', '');
       foreach (($last['file'] ?? []) as $x) fputcsv($out, ['(file)', 'problem', $x], ',', '"', '');
@@ -41,7 +41,7 @@ class MarineRfqController extends Controller {
       ->when($q !== '', function ($w) use ($q) { $l = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $q) . '%'; $w->where(fn($x) => $x->where('sku', 'ilike', $l)->orWhere('name_en', 'ilike', $l)->orWhere('name_bn', 'ilike', $l)->orWhere('brand', 'ilike', $l)); })
       ->orderBy('sku')->paginate(40)->withQueryString();
     $ids = collect($rows->items())->pluck('id')->all();
-    return view('marine.rfq', ['ready' => true, 'rows' => $rows, 'st' => $st, 'sec' => $sec, 'q' => $q, 'last' => $last, 'runs' => self::js('marine_rfq_runs'),
+    return view('marine.rfq', ['ready' => true, 'rows' => $rows, 'st' => $st, 'sec' => $sec, 'q' => $q, 'last' => $last, 'wrote' => $wrote, 'runs' => self::js('marine_rfq_runs'),
       'checks' => DB::table('marine_rfq_checks')->whereIn('item_id', $ids ?: [0])->orderBy('port')->get()->groupBy('item_id'), 'today' => self::today(),
       'n' => DB::table('marine_rfq_items')->selectRaw('state, count(*) c')->groupBy('state')->pluck('c', 'state'), 'sections' => DB::table('marine_rfq_items')->selectRaw('section_slug, min(section_name) n, count(*) c')->groupBy('section_slug')->orderBy('n')->get(),
       'packshots' => DB::table('marine_rfq_items')->whereNotNull('packshot_path')->count(), 'checked' => DB::table('marine_rfq_checks')->where('valid_until', '>=', self::today())->distinct()->count('item_id'),
@@ -66,6 +66,7 @@ class MarineRfqController extends Controller {
     $rows = []; foreach ($pf['rows'] as $k => $ps) $rows[] = [(string)$k, 'rejected', implode(' ', $ps)]; foreach ($plan as $p) $rows[] = [$p['sku'], $p['action'], $p['detail']];
     $mode = $apply ? ($wrote ? 'import' : 'import stopped') : 'dry run'; $at = now('Asia/Dhaka')->format('d M Y, H:i');
     self::put('marine_rfq_last', ['at' => $at, 'by' => $by, 'mode' => $mode, 'ok' => $pf['ok'], 'stats' => $pf['stats'], 'counts' => $c, 'file' => $pf['file'], 'rows' => $rows]);
+    if ($wrote && ($c['created'] || $c['updated'] || $c['conflict'])) self::put('marine_rfq_last_write', ['at' => $at, 'by' => $by, 'mode' => $mode, 'ok' => true, 'stats' => $pf['stats'], 'counts' => $c, 'file' => [], 'rows' => $rows]);   // the row report of the last import that changed something is kept apart, so a later dry run does not replace it
     $runs = self::js('marine_rfq_runs'); array_unshift($runs, ['at' => $at, 'by' => $by, 'mode' => $mode, 'ok' => $pf['ok'], 'counts' => $c]); self::put('marine_rfq_runs', array_slice($runs, 0, 12));
     $sum = $c['created'] . ' created, ' . $c['updated'] . ' updated, ' . $c['conflict'] . ' conflicted, ' . $c['skipped'] . ' skipped, ' . $c['rejected'] . ' rejected by the preflight';
     if ($apply && !$pf['ok']) return redirect('/admin/marine/provisions')->with('bad', 'Nothing was imported: the preflight found problems. Fix the rows in the report and run it again. (' . $sum . ')');
