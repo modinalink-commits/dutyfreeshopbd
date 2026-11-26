@@ -1,5 +1,6 @@
 app.js
 banner.jpg
+cabin-galley.html
 cat-bonded.jpg
 cat-cabin.jpg
 cat-crew.jpg

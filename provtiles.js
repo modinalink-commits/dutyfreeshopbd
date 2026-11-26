@@ -1,6 +1,6 @@
 (function(){
 var box=document.getElementById('pvh'),g=document.getElementById('pvh-g');if(!box||!g)return;
-if(/(^|[#&])mc=/.test(location.hash)){var st=document.getElementById('store');if(st)st.hidden=true;return}
+if(/(^|[#&])mc=bonded/.test(location.hash)){var st=document.getElementById('store');if(st)st.hidden=true;return}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function okImg(u){return /^https:\/\/dutyfreebd\.com\/marine-api\/rfq-image\/[A-Z0-9-]+\?[a-z0-9=&]+$/.test(u||'')}
 var x=new XMLHttpRequest();x.open('GET','https://dutyfreebd.com/marine-api/rfq');x.timeout=15000;
