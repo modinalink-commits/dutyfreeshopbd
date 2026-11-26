@@ -24,6 +24,18 @@ class MarineCats
   public static function label(?string $cat, ?string $sub = null): string { if (!self::ok($cat)) return 'Not mapped'; $s = self::sub($cat, $sub); return self::CATS[$cat]['name'] . ($s ? ' / ' . self::CATS[$cat]['subs'][$s] : ''); }
 
   /** First placement of a mother-catalog product: [category, subcategory]. Bonded mother categories always go to Bonded Stores. Staff can change any result by hand. */
+  /** Owner rule 26 Nov 2026: the marine site serves ships and seafarers. Women's and beauty goods, and ordinary clothing, are not offered there.
+   *  $catPath = the product's store category with its parents, e.g. "Fashion > Men > Shirts". True = keep this product off the marine site.
+   *  Kept from Fashion: sunglasses, watches, wallets, belts, caps and travel bags. Kept from skin and hair care: plain toiletries a crew uses on board. */
+  public static function unfit(string $name, string $catPath): bool {
+    $n = ' ' . mb_strtolower($name) . ' '; $c = ' ' . mb_strtolower($catPath) . ' '; $has = fn(string $re, string $in) => preg_match('/(?<![a-z])(?:' . $re . ')(?![a-z])/u', $in) === 1;
+    if ($has('wom[ae]n(\'?s)?|lad(y|ies)(\'?s)?|girls?(\'?s)?|female|feminine|femme|for her|pour elle|bridal|bride|maternity|bras?|bralettes?|pant(y|ies)|lingerie|nightys?|nighties|sarees?|saris?|kurt(i|is|a set)|salwar|kameez|three ?piece|3 ?piece|lehenga|hijabs?|abayas?|bor[kq]a|burka|orna|dupatta|blouses?|skirts?|leggings?|handbags?|purses?|clutch(es)?|vanity|jewell?ery|earrings?|necklaces?|bangles?|anklets?|nose ?pins?|lipsticks?|lip ?(gloss|liner|tint|stain|balm set)|mascara|eye ?liners?|eye ?shadows?|eyebrow|eyelash(es)?|kajal|kohl|foundation|concealers?|blush(er)?|highlighters?|contour|primer|bb cream|cc cream|compact powder|face powder|setting (spray|powder)|make ?up|nail (polish|paint|art|lacquer|remover)|hair ?(clips?|bands?|extensions?|curlers?|straighteners?)|sanitary|menstrual|breast|bikini', $n)) return true;
+    if ($has('bab(y|ies)|infants?|diapers?|napp(y|ies)|toddlers?|newborn|kids?|child(ren)?', $n . $c)) return true;
+    if ($has('beauty|cosmetics?|make ?up|women|ladies|girls?', $c)) return true;
+    if ($has('skin|hair|personal care', $c)) return !$has('soaps?|shampoos?|conditioners?|tooth ?(paste|brush(es)?)|mouth ?wash|deodorants?|deo|antiperspirants?|body ?(wash|spray)|shower gels?|hand ?wash|face ?wash|sanitizers?|razors?|blades?|shav(e|ing)|after ?shave|trimmers?|beard|men(\'?s)?|for men|hair (oil|gel|wax|cream)|petroleum jelly|vaseline|lip balm|sun ?(screen|block)|talc(um)?|prickly heat|antiseptic|dettol|savlon|tissues?|wet wipes|cotton buds?|combs?', $n);
+    if ($has('fashion|cloth(ing|es)?|apparels?|garments?|wear', $c)) return !$has('sunglass(es)?|goggles?|watch(es)?|smart ?watch|wallets?|belts?|caps?|hats?|back ?packs?|travel bags?|duffel|luggage|trolley|key ?rings?|key ?chains?|card holders?|umbrellas?|rain ?coats?', $n);
+    return false;
+  }
   public static function guess(string $name, string $motherCat, bool $bonded): array {
     if ($bonded) return ['bonded', null];
     $n = ' ' . mb_strtolower($name) . ' '; $c = mb_strtolower($motherCat); $has = fn(string $re, string $in) => preg_match('/(?<![a-z])(?:' . $re . ')(?![a-z])/u', $in) === 1;

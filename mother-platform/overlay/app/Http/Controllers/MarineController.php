@@ -59,7 +59,14 @@ class MarineController extends Controller
     return view('marine.catalog', ['mcr' => $mcr, 'mf' => $mf, 'mcats' => $MC::CATS, 'mcn' => $mcr ? DB::table('marine_products')->where('enabled', true)->selectRaw("coalesce(mcat, 'none') k, count(*) n")->groupBy('k')->pluck('n', 'k')->all() : [], 'rate' => self::rate(), 'adm' => \App\Support\ProfitFloor::admin(), 'rows' => $rows, 'q' => $q, 'show' => $show, 'cat' => $cat, 'cats' => $cats, 'bond' => $bond, 'ports' => self::PORTS, 'featN' => (int)DB::table('marine_products')->whereNotNull('featured')->count(), 'featMax' => self::FEATURED, 'essN' => (int)DB::table('marine_products')->where('essential', true)->count()]);
   }
   /** Categories that do not belong on a ship-supply site at all (baby goods): never listed on the marine site, with or without login (owner rule 26 Nov 2026). */
-  public static function hiddenIds(): array { $o = []; foreach (DB::table('categories')->get(['id', 'name', 'slug']) as $c) if (preg_match('/\bbab(y|ies)\b|infant|diaper|nappy/i', (string)$c->name . ' ' . str_replace('-', ' ', (string)$c->slug)) === 1) $o[] = (int)$c->id; return $o; }
+  public static function hiddenIds(): array { $o = []; foreach (self::catPaths() as $id => $path) if (preg_match('/\bbab(y|ies)\b|infant|diaper|nappy|\bbeauty\b|cosmetic|make ?up|\bwomen|\bladies\b|\bgirls?\b/i', $path) === 1) $o[] = (int)$id; return $o; }
+  /** Every store category with its parents, "Fashion > Men > Shirts", keyed by id. A sub-category of a hidden category is hidden too. */
+  public static function catPaths(): array {
+    static $memo = null; if ($memo !== null) return $memo;
+    $all = []; foreach (DB::table('categories')->get(['id', 'name', 'slug', 'parent_id']) as $c) $all[(int)$c->id] = $c; $o = [];
+    foreach ($all as $id => $c) { $p = []; $x = $c; $g = 0; while ($x && $g++ < 6) { array_unshift($p, (string)$x->name . ' ' . str_replace('-', ' ', (string)($x->slug ?? ''))); $x = $x->parent_id ? ($all[(int)$x->parent_id] ?? null) : null; } $o[$id] = implode(' > ', $p); }
+    return $memo = $o;
+  }
   public static function bondedIds(): array { $o = []; foreach (DB::table('categories')->get(['id', 'name', 'slug']) as $c) if (self::bonded($c)) $o[] = (int)$c->id; return $o; }
   /** New version number for the cached public product pages (never a full cache flush: the cache is shared with the workers). */
   private static function bump(): void { try { \Illuminate\Support\Facades\Cache::forever('marine.ppv', time()); } catch (\Throwable $e) {} }
@@ -71,13 +78,14 @@ class MarineController extends Controller
     $rate = (float)$r->input('rate'); if ($rate < 20 || $rate > 1000 || !$r->input('sure')) return back()->with('ok', 'Enter the BDT per USD rate and tick the box first.');
     $bond = array_flip(self::bondedIds()); $by = (string)(optional(auth()->user())->name ?? 'admin'); $n = 0; $pub = 0; $now = now();
     $have = DB::table('marine_products')->get(['id', 'product_id', 'visibility'])->keyBy('product_id'); $all = implode(',', array_keys(self::PORTS)); // owner 26 Nov 2026: every product can be delivered at every port
-    DB::table('products')->where('published', true)->where('price', '>', 0)->orderBy('id')->select('id', 'price', 'category_id')->chunk(500, function ($rows) use (&$n, &$pub, $bond, $have, $rate, $by, $now, $all) {
+    $paths = self::catPaths(); $fitOn = \App\Support\MarineCats::class;
+    DB::table('products')->where('published', true)->where('price', '>', 0)->orderBy('id')->select('id', 'name', 'price', 'category_id')->chunk(500, function ($rows) use (&$n, &$pub, $bond, $have, $rate, $by, $now, $all, $paths, $fitOn) {
       $ins = [];
       foreach ($rows as $p) {
         $usd = max(0.01, round((float)$p->price / $rate, 2)); $b = isset($bond[(int)$p->category_id]); $old = $have[$p->id] ?? null;
-        $vis = $b ? 'login' : ($old ? $old->visibility : 'public'); if ($vis === 'public') $pub++;
-        if ($old) DB::table('marine_products')->where('id', $old->id)->update(['enabled' => true, 'visibility' => $vis, 'ports' => $all, 'usd_price' => $usd, 'updated_by' => $by, 'updated_at' => $now]);
-        else $ins[] = ['product_id' => $p->id, 'enabled' => true, 'visibility' => $vis, 'ports' => $all, 'usd_price' => $usd, 'updated_by' => $by, 'created_at' => $now, 'updated_at' => $now];
+        $vis = $b ? 'login' : ($old ? $old->visibility : 'public'); $on = $b || !$fitOn::unfit((string)$p->name, (string)($paths[(int)$p->category_id] ?? '')); if ($vis === 'public' && $on) $pub++;
+        if ($old) DB::table('marine_products')->where('id', $old->id)->update(['enabled' => $on, 'visibility' => $vis, 'ports' => $all, 'usd_price' => $usd, 'updated_by' => $by, 'updated_at' => $now]);
+        else $ins[] = ['product_id' => $p->id, 'enabled' => $on, 'visibility' => $vis, 'ports' => $all, 'usd_price' => $usd, 'updated_by' => $by, 'created_at' => $now, 'updated_at' => $now];
         $n++;
       }
       if ($ins) DB::table('marine_products')->insert($ins);
@@ -179,6 +187,17 @@ class MarineController extends Controller
   public function mapCategories(Request $r) {
     $MC = \App\Support\MarineCats::class; if (!\App\Support\ProfitFloor::admin() || !$MC::ready()) return back()->with('ok', 'Only an admin can do this.');
     $by = (string)(optional(auth()->user())->name ?? 'admin'); $bond = array_flip(self::bondedIds()); $n = 0; @set_time_limit(180);
+    if ($r->input('mode') === 'fit') {   // owner 26 Nov 2026: women's, beauty and baby goods and ordinary clothing are not offered to ships
+      $paths = self::catPaths(); $off = 0; $kept = 0; $by2 = 'ship-fit rule'; $tally = [];
+      DB::table('marine_products as m')->join('products as p', 'p.id', '=', 'm.product_id')->where('m.enabled', true)->orderBy('m.id')->select('m.id', 'p.name', 'p.category_id')
+        ->chunk(1000, function ($rows) use (&$off, &$kept, &$tally, $bond, $paths, $MC, $by2) { $ids = [];
+          foreach ($rows as $x) { if (isset($bond[(int)$x->category_id])) { $kept++; continue; } $path = (string)($paths[(int)$x->category_id] ?? ''); if ($MC::unfit((string)$x->name, $path)) { $ids[] = $x->id; $w = preg_split('/\s+/', trim(explode('>', $path)[0])); $root = $path === '' ? 'No category' : implode(' ', array_slice($w, 0, max(1, intdiv(count($w) + 1, 2)))); $tally[$root] = ($tally[$root] ?? 0) + 1; } else $kept++; }
+          if ($ids) { DB::table('marine_products')->whereIn('id', $ids)->update(['enabled' => false, 'updated_by' => $by2, 'updated_at' => now()]); $off += count($ids); } });
+      self::bump(); try { \Illuminate\Support\Facades\Cache::forget('marine.public'); } catch (\Throwable $e) {}
+      \App\Support\Procure::audit('marine.fit', 'Marine catalog: ' . $off . ' products that do not fit a ship taken off the marine site (' . $by . ')', null, ['off' => $off, 'kept' => $kept, 'by_store_category' => $tally]);
+      arsort($tally); $t = []; foreach (array_slice($tally, 0, 8, true) as $k => $v) $t[] = $k . ' ' . number_format($v);
+      return back()->with('ok', number_format($off) . ' products taken off the marine site (' . implode(', ', $t) . '). ' . number_format($kept) . ' stay. A product can be switched on again in its row.');
+    }
     if ($r->input('mode') === 'auto') {
       $tally = [];
       DB::table('marine_products as m')->join('products as p', 'p.id', '=', 'm.product_id')->leftJoin('categories as c', 'c.id', '=', 'p.category_id')->where(fn($w) => $w->whereNull('m.mcat_by')->orWhere('m.mcat_by', 'auto'))->orderBy('m.id')->select('m.id', 'p.name', 'p.category_id', 'c.name as cat')
