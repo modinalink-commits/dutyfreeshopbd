@@ -30,7 +30,7 @@ footer{max-width:980px;margin:0 auto;padding:0 20px 32px;font-size:12px;color:#6
 </div></header>
 @if($u ?? null)<nav class="pn" aria-label="Account"><div class="pn-in">@php $pp = request()->path(); @endphp<a href="/marine-portal" class="{{ $pp === 'marine-portal' ? 'on' : '' }}">Profile</a><a href="/marine-portal/orders" class="{{ str_starts_with($pp, 'marine-portal/orders') ? 'on' : '' }}">{{ ($u->type === 'vessel' && ($u->vessel_role ?? 'crew') !== 'captain') ? 'My orders' : 'Requisitions and orders' }}</a><a href="/marine-portal/port-calls" class="{{ str_starts_with($pp, 'marine-portal/port-calls') ? 'on' : '' }}">Port calls</a></div></nav>@endif
 <main class="@yield('main')">
-@if(session('ok'))<div class="al ok" role="status">{{ session('ok') }}</div>@endif @if(session('bad'))<div class="al bad" role="alert">{{ session('bad') }}</div>@endif@if(session('info'))<div class="al info" role="status" style="white-space:pre-line"><b>Files</b>
+@if(session('ok'))<div class="al ok" role="status">{{ session('ok') }}</div>@endif @if(session('bad'))<div class="al bad" role="alert">{{ session('bad') }}</div>@endif @if(session('info'))<div class="al info" role="status" style="white-space:pre-line"><b>Files</b>
 {{ session('info') }}</div>@endif
 @yield('body')
 </main>

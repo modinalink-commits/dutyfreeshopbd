@@ -1613,7 +1613,7 @@ ed0f0c192a378ff0378434bd83c20eae65ad753e resources/views/marine/site.blade.php
 6a727102ee06859ec9275d81242aa2093cbecbc1 resources/views/marine/tracking.blade.php
 1757144a0e1e5b00e2206f52eb7f7be6ddc3cd30 resources/views/marine/weather.blade.php
 64d05d6155348d806831d5ee34f7b6e72b99056d resources/views/marine/access.blade.php
-ee50a9272eb4217585222b620d958701152030f4 resources/views/mp/layout.blade.php
+108e722f221dfdbdc4663feaf905f627700e917e resources/views/mp/layout.blade.php
 f9310591753d77b95950a901b1498a60c61cca81 resources/views/mp/login.blade.php
 4da7b89dabb3ced32443a8b2eba4341039cacc2c resources/views/mp/forgot.blade.php
 24666b8d9731c249ebf07450812494384be588db resources/views/mp/activate.blade.php
