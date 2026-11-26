@@ -26,6 +26,61 @@
 body{margin:0}
 a{color:#0B2545}a:hover{color:#D94A04}
 </style>
+
+<style>
+.mh{position:relative;overflow:hidden;background:#0B2545;color:#FFFFFF}
+.mh-bg{position:absolute;inset:0;background:url(/banner.jpg) 72% center/cover no-repeat;transform-origin:78% 62%;animation:mhz 30s ease-in-out infinite alternate}
+@keyframes mhz{from{transform:scale(1)}to{transform:scale(1.09)}}
+.mh::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#0B2545 0%,rgba(11,37,69,.92) 30%,rgba(11,37,69,.5) 60%,rgba(11,37,69,.1) 100%)}
+.mh-in{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:92px 24px 128px}
+.mh-tx{max-width:590px;display:flex;flex-direction:column;gap:20px}
+.mh-tx>*{animation:mup .7s cubic-bezier(.2,.7,.2,1) both}
+.mh-tx>*:nth-child(2){animation-delay:.08s}.mh-tx>*:nth-child(3){animation-delay:.16s}.mh-tx>*:nth-child(4){animation-delay:.24s}
+@keyframes mup{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.mh-k{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#FDBA74;font-weight:600}
+.mh h1{margin:0;font-size:52px;line-height:1.08;font-weight:700;letter-spacing:-.02em;text-wrap:balance}
+.mh p{margin:0;font-size:18px;line-height:1.55;color:#E3E9F1}
+.mh-cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px}
+.mh-cta a{text-decoration:none;padding:14px 22px;border-radius:8px;font-weight:600;font-size:15px;border:1px solid transparent;transition:transform .15s ease,background .15s ease}
+.mh-cta a:hover{transform:translateY(-1px)}
+.mh-cta .c1{background:#F95505;color:#FFFFFF}.mh-cta .c2{background:#FFFFFF;color:#0B2545}.mh-cta .c3{border-color:rgba(255,255,255,.55);color:#FFFFFF;background:rgba(11,37,69,.35)}
+.mq{position:relative;z-index:2;max-width:1200px;margin:-56px auto 0;padding:0 24px}
+.mq-in{background:#FFFFFF;border:1px solid #D9E0E8;border-radius:12px;box-shadow:0 12px 32px rgba(12,22,31,.10);padding:20px 22px;display:grid;grid-template-columns:1.25fr 1fr 1fr auto;gap:16px;align-items:end}
+.mq-t{display:flex;flex-direction:column;gap:4px;align-self:center;min-width:0}.mq-t b{font-size:17px;font-weight:600}.mq-t span{font-size:13px;line-height:1.45;color:#475569}
+.mq label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:500;color:#475569;min-width:0}
+.mq input,.mq select{height:44px;width:100%;box-sizing:border-box;border:1px solid #C3CDD9;border-radius:8px;padding:0 12px;font-size:15px;font-family:inherit;background:#FFFFFF;color:#0C161F}
+.mq input:focus,.mq select:focus{outline:2px solid #F95505;outline-offset:1px}
+.mq a.go{height:44px;display:flex;align-items:center;justify-content:center;padding:0 22px;box-sizing:border-box;text-decoration:none;background:#0B2545;color:#FFFFFF;border-radius:8px;font-weight:600;font-size:15px;white-space:nowrap}
+.mq a.go:hover{background:#12335E;color:#FFFFFF}
+.msec{max-width:1200px;margin:0 auto;padding:64px 24px 0}
+.msec-h{display:flex;flex-wrap:wrap;gap:8px 16px;justify-content:space-between;align-items:baseline;margin-bottom:24px}
+.msec-h h2{margin:0;font-size:28px;font-weight:600;letter-spacing:-.01em}
+.msec-h a{font-size:14px;font-weight:600;text-decoration:none;color:#F95505}
+.mchips{display:flex;flex-wrap:wrap;gap:8px;margin:-8px 0 20px}
+.mchips a{font-size:13px;font-weight:500;text-decoration:none;color:#0B2545;background:#F4F6F9;border:1px solid #E3E8EF;border-radius:999px;padding:7px 14px;transition:background .15s ease,border-color .15s ease}
+.mchips a:hover{background:#FFF1E8;border-color:#FDBA74;color:#0B2545}
+.mgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.mcard{display:flex;flex-direction:column;min-width:0;border:1px solid #D9E0E8;border-radius:10px;overflow:hidden;text-decoration:none;color:#0C161F;background:#FFFFFF;transition:box-shadow .2s ease,transform .2s ease,border-color .2s ease}
+.mcard:hover{box-shadow:0 10px 24px rgba(12,22,31,.10);transform:translateY(-3px);border-color:#C3CDD9;color:#0C161F}
+.mcard .im{aspect-ratio:1/1;padding:16px;box-sizing:border-box;border-bottom:1px solid #EEF1F5;background:#FFFFFF}
+.mcard .im img{width:100%;height:100%;object-fit:contain;display:block;transition:transform .35s ease}
+.mcard:hover .im img{transform:scale(1.05)}
+.mcard .bd{padding:14px;display:flex;flex-direction:column;gap:6px;flex:1}
+.mcard .ct{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#64748B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mcard .nm{font-size:14px;font-weight:600;line-height:1.4;height:2.8em;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.mcard .pr{margin-top:auto;padding-top:6px;font-size:16px;font-weight:700;font-variant-numeric:tabular-nums}
+.mcard .pr small{font-size:12px;font-weight:600;color:#64748B;margin-right:4px}
+.pp-ph{height:200px;overflow:hidden;background:#E6ECF3}
+.pp-ph img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .6s ease}
+#ports article{background:#FFFFFF;transition:box-shadow .2s ease,transform .2s ease}
+#ports article:hover{box-shadow:0 12px 28px rgba(12,22,31,.12);transform:translateY(-3px)}
+#ports article:hover .pp-ph img{transform:scale(1.06)}
+.rv{opacity:0;transform:translateY(20px);transition:opacity .65s ease,transform .65s cubic-bezier(.2,.7,.2,1)}
+.rv.in{opacity:1;transform:none}
+@media(max-width:900px){.mq-in{grid-template-columns:1fr 1fr}.mq-t{grid-column:1/-1}.mq a.go{grid-column:1/-1}.mgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}}
+@media(max-width:600px){.mh-bg{background-position:78% center}.mh::after{background:linear-gradient(180deg,rgba(11,37,69,.9) 0%,rgba(11,37,69,.8) 60%,rgba(11,37,69,.65) 100%)}.mh-in{padding:52px 20px 96px}.mh h1{font-size:36px}.mh p{font-size:16px}.mq{padding:0 16px}.mq-in{grid-template-columns:1fr;padding:18px 16px}.msec{padding:48px 16px 0}.msec-h h2{font-size:24px}.mcard .bd{padding:12px}.mcard .im{padding:10px}.pp-ph{height:180px}}
+@media(prefers-reduced-motion:reduce){.mh-bg,.mh-tx>*{animation:none}.rv{opacity:1;transform:none;transition:none}.mcard,.mcard .im img,.pp-ph img,#ports article{transition:none}}
+</style>
 </head>
 <body>
 <div style="background:#0C161F;color:#FFFFFF;font:500 12px/1.4 Inter,system-ui,sans-serif;text-align:center;padding:7px 12px">Launching soon at Chattogram · Request access to be among the first vessels served</div>
@@ -45,33 +100,22 @@ a{color:#0B2545}a:hover{color:#D94A04}
 </div>
 </header>
 
-<section style="background: #0B2545; color: #FFFFFF">
-<div style="max-width: 1200px; margin: 0 auto; padding: 72px 24px 64px; display: flex; flex-wrap: wrap; gap: 48px; align-items: center">
-<div style="flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
-<span style="font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: #FDBA74; font-weight: 600">Chattogram · Mongla · Payra</span>
-<h1 style="margin: 0; font-family: Inter, system-ui, sans-serif; font-size: 52px; line-height: 1.08; font-weight: 700; text-wrap: balance">Ship Supplies at Bangladesh Ports</h1>
-<p style="margin: 0; font-size: 18px; line-height: 1.55; color: #D6DEEA; max-width: 560px">Duty-free stores for your vessel and your crew, quoted in USD and delivered alongside or at anchorage. Send your requisition before arrival and we have it ready for your port call.</p>
-<div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px">
-<a href="/products.html" style="text-decoration: none; background: #F95505; color: #FFFFFF; padding: 14px 22px; border-radius: 8px; font-weight: 600; font-size: 15px">Browse Products</a>
-<a href="/request-access.html" style="text-decoration: none; background: #FFFFFF; color: #0B2545; padding: 14px 22px; border-radius: 8px; font-weight: 600; font-size: 15px">Request Access</a>
-<a href="/login.html" style="text-decoration: none; border: 1px solid #8FA3BF; color: #FFFFFF; padding: 13px 22px; border-radius: 8px; font-weight: 600; font-size: 15px">Vessel Login</a>
-</div>
-</div>
-<div style="flex: 1 1 360px; min-width: 0; background: #FFFFFF; color: #0C161F; border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 14px">
-<span style="font-family: Inter, system-ui, sans-serif; font-weight: 600; font-size: 18px">Arriving soon? Get a quotation</span>
-<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500; color: #475569">IMO number
-<input type="text" placeholder="7-digit IMO number" style="height: 44px; border: 1px solid #C3CDD9; border-radius: 8px; padding: 0 12px; font-size: 15px; font-family: inherit">
-</label>
-<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500; color: #475569">Port of call
-<select style="height: 44px; border: 1px solid #C3CDD9; border-radius: 8px; padding: 0 10px; font-size: 15px; font-family: inherit; background: #FFFFFF"><option>Chattogram</option><option>Mongla</option><option>Payra</option></select>
-</label>
-<a href="/login.html" style="text-decoration: none; text-align: center; background: #0B2545; color: #FFFFFF; padding: 13px 16px; border-radius: 8px; font-weight: 600; font-size: 15px">Start a requisition</a>
-<span style="font-size: 12px; color: #475569">Upload your store list in Excel or PDF. Quotation by email in USD.</span>
-</div>
-</div>
+<section class="mh"><div class="mh-bg"></div>
+<div class="mh-in"><div class="mh-tx">
+<span class="mh-k">Chattogram · Mongla · Payra</span>
+<h1>Ship Supplies at Bangladesh Ports</h1>
+<p>Duty-free stores for your vessel and your crew, quoted in USD and delivered alongside or at anchorage. Send your requisition before arrival and we have it ready for your port call.</p>
+<div class="mh-cta"><a class="c1" href="/products.html">Browse Products</a><a class="c2" href="/request-access.html">Request Access</a><a class="c3" href="/login.html">Vessel Login</a></div>
+</div></div>
 </section>
+<section class="mq"><div class="mq-in">
+<div class="mq-t"><b>Arriving soon? Get a quotation</b><span>Send your store list in Excel or PDF. Quotation by email in USD.</span></div>
+<label>IMO number<input id="mq-imo" type="text" inputmode="numeric" maxlength="7" placeholder="7-digit IMO number" autocomplete="off"></label>
+<label>Port of call<select id="mq-port"><option>Chattogram</option><option>Mongla</option><option>Payra</option></select></label>
+<a class="go" id="mq-go" href="/request-access.html">Start a requisition</a>
+</div></section>
 
-<section id="how" style="max-width: 1200px; margin: 0 auto; padding: 56px 24px 24px">
+<section id="how" style="max-width: 1200px; margin: 0 auto; padding: 64px 24px 24px">
 <h2 style="margin: 0 0 24px; font-family: Inter, system-ui, sans-serif; font-size: 28px; font-weight: 600">How it works</h2>
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px">
 <div style="border: 1px solid #D9E0E8; border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 8px"><span style="font-family: Inter, system-ui, sans-serif; font-size: 13px; font-weight: 600; color: #F95505">STEP 1</span><b style="font-size: 16px">Register vessel and port call</b><span style="font-size: 14px; line-height: 1.5; color: #475569">Verified by IMO number, with ETA, berth or anchorage and your local agent.</span></div>
@@ -86,7 +130,7 @@ a{color:#0B2545}a:hover{color:#D94A04}
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px">
 
 <article style="border: 1px solid #D9E0E8; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column">
-<div style="height: 150px; background: #E6ECF3; display: flex; align-items: center; justify-content: center; font-size: 13px; color: #475569; font-weight: 500">Port of Chattogram</div>
+<div class="pp-ph"><img src="/port-chattogram.jpg" alt="Port of Chattogram, Bangladesh" loading="lazy" width="960" height="640"></div>
 <div style="padding: 20px; display: flex; flex-direction: column; gap: 10px">
 <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px"><b style="font-family: Inter, system-ui, sans-serif; font-size: 20px">Chattogram</b><span style="font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: #DCFCE7; color: #14532D">Pilot port</span></div>
 <span style="font-size: 14px; line-height: 1.5; color: #475569">Main seaport. Delivery alongside at jetties and by boat to outer anchorage.</span>
@@ -96,7 +140,7 @@ a{color:#0B2545}a:hover{color:#D94A04}
 </article>
 
 <article style="border: 1px solid #D9E0E8; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column">
-<div style="height: 150px; background: #E6ECF3; display: flex; align-items: center; justify-content: center; font-size: 13px; color: #475569; font-weight: 500">Port of Mongla</div>
+<div class="pp-ph"><img src="/port-mongla.jpg" alt="Port of Mongla, Bangladesh" loading="lazy" width="960" height="640"></div>
 <div style="padding: 20px; display: flex; flex-direction: column; gap: 10px">
 <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px"><b style="font-family: Inter, system-ui, sans-serif; font-size: 20px">Mongla</b><span style="font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: #E6ECF3; color: #0B2545">Opening next</span></div>
 <span style="font-size: 14px; line-height: 1.5; color: #475569">Delivery at jetty and at Harbaria anchorage once the partner shop is confirmed.</span>
@@ -106,7 +150,7 @@ a{color:#0B2545}a:hover{color:#D94A04}
 </article>
 
 <article style="border: 1px solid #D9E0E8; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column">
-<div style="height: 150px; background: #E6ECF3; display: flex; align-items: center; justify-content: center; font-size: 13px; color: #475569; font-weight: 500">Port of Payra</div>
+<div class="pp-ph"><img src="/port-payra.jpg" alt="Port of Payra, Bangladesh" loading="lazy" width="960" height="640"></div>
 <div style="padding: 20px; display: flex; flex-direction: column; gap: 10px">
 <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px"><b style="font-family: Inter, system-ui, sans-serif; font-size: 20px">Payra</b><span style="font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: #E6ECF3; color: #0B2545">Opening next</span></div>
 <span style="font-size: 14px; line-height: 1.5; color: #475569">Delivery at terminal and anchorage once the partner shop is confirmed.</span>
@@ -168,33 +212,22 @@ a{color:#0B2545}a:hover{color:#D94A04}
 </div>
 </header>
 
-<section style="background: #0B2545; color: #FFFFFF">
-<div style="max-width: 1200px; margin: 0 auto; padding: 72px 24px 64px; display: flex; flex-wrap: wrap; gap: 48px; align-items: center">
-<div style="flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
-<span style="font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: #FDBA74; font-weight: 600">Chattogram · Mongla · Payra</span>
-<h1 style="margin: 0; font-family: Inter, system-ui, sans-serif; font-size: 52px; line-height: 1.08; font-weight: 700; text-wrap: balance">Ship Supplies at Bangladesh Ports</h1>
-<p style="margin: 0; font-size: 18px; line-height: 1.55; color: #D6DEEA; max-width: 560px">Duty-free stores for your vessel and your crew, quoted in USD and delivered alongside or at anchorage. Send your requisition before arrival and we have it ready for your port call.</p>
-<div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px">
-<a href="/products.html" style="text-decoration: none; background: #F95505; color: #FFFFFF; padding: 14px 22px; border-radius: 8px; font-weight: 600; font-size: 15px">Browse Products</a>
-<a href="/request-access.html" style="text-decoration: none; background: #FFFFFF; color: #0B2545; padding: 14px 22px; border-radius: 8px; font-weight: 600; font-size: 15px">Request Access</a>
-<a href="/login.html" style="text-decoration: none; border: 1px solid #8FA3BF; color: #FFFFFF; padding: 13px 22px; border-radius: 8px; font-weight: 600; font-size: 15px">Vessel Login</a>
-</div>
-</div>
-<div style="flex: 1 1 360px; min-width: 0; background: #FFFFFF; color: #0C161F; border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 14px">
-<span style="font-family: Inter, system-ui, sans-serif; font-weight: 600; font-size: 18px">Arriving soon? Get a quotation</span>
-<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500; color: #475569">IMO number
-<input type="text" placeholder="7-digit IMO number" style="height: 44px; border: 1px solid #C3CDD9; border-radius: 8px; padding: 0 12px; font-size: 15px; font-family: inherit">
-</label>
-<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500; color: #475569">Port of call
-<select style="height: 44px; border: 1px solid #C3CDD9; border-radius: 8px; padding: 0 10px; font-size: 15px; font-family: inherit; background: #FFFFFF"><option>Chattogram</option><option>Mongla</option><option>Payra</option></select>
-</label>
-<a href="/login.html" style="text-decoration: none; text-align: center; background: #0B2545; color: #FFFFFF; padding: 13px 16px; border-radius: 8px; font-weight: 600; font-size: 15px">Start a requisition</a>
-<span style="font-size: 12px; color: #475569">Upload your store list in Excel or PDF. Quotation by email in USD.</span>
-</div>
-</div>
+<section class="mh"><div class="mh-bg"></div>
+<div class="mh-in"><div class="mh-tx">
+<span class="mh-k">Chattogram · Mongla · Payra</span>
+<h1>Ship Supplies at Bangladesh Ports</h1>
+<p>Duty-free stores for your vessel and your crew, quoted in USD and delivered alongside or at anchorage. Send your requisition before arrival and we have it ready for your port call.</p>
+<div class="mh-cta"><a class="c1" href="/products.html">Browse Products</a><a class="c2" href="/request-access.html">Request Access</a><a class="c3" href="/login.html">Vessel Login</a></div>
+</div></div>
 </section>
+<section class="mq"><div class="mq-in">
+<div class="mq-t"><b>Arriving soon? Get a quotation</b><span>Send your store list in Excel or PDF. Quotation by email in USD.</span></div>
+<label>IMO number<input id="mq-imo" type="text" inputmode="numeric" maxlength="7" placeholder="7-digit IMO number" autocomplete="off"></label>
+<label>Port of call<select id="mq-port"><option>Chattogram</option><option>Mongla</option><option>Payra</option></select></label>
+<a class="go" id="mq-go" href="/request-access.html">Start a requisition</a>
+</div></section>
 
-<section id="how" style="max-width: 1200px; margin: 0 auto; padding: 56px 24px 24px">
+<section id="how" style="max-width: 1200px; margin: 0 auto; padding: 64px 24px 24px">
 <h2 style="margin: 0 0 24px; font-family: Inter, system-ui, sans-serif; font-size: 28px; font-weight: 600">How it works</h2>
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px">
 <div style="border: 1px solid #D9E0E8; border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 8px"><span style="font-family: Inter, system-ui, sans-serif; font-size: 13px; font-weight: 600; color: #F95505">STEP 1</span><b style="font-size: 16px">Register vessel and port call</b><span style="font-size: 14px; line-height: 1.5; color: #475569">Verified by IMO number, with ETA, berth or anchorage and your local agent.</span></div>
@@ -209,7 +242,7 @@ a{color:#0B2545}a:hover{color:#D94A04}
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px">
 <template data-for="{{ports}}" data-as="p">
 <article style="border: 1px solid #D9E0E8; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column">
-<div style="height: 150px; background: #E6ECF3; display: flex; align-items: center; justify-content: center; font-size: 13px; color: #475569; font-weight: 500">Port of {{p.name}}</div>
+<div class="pp-ph"><img src="/port-{{p.slug}}.jpg" alt="Port of {{p.name}}, Bangladesh" loading="lazy" width="960" height="640"></div>
 <div style="padding: 20px; display: flex; flex-direction: column; gap: 10px">
 <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px"><b style="font-family: Inter, system-ui, sans-serif; font-size: 20px">{{p.name}}</b><span style="font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: {{p.bg}}; color: {{p.fg}}">{{p.status}}</span></div>
 <span style="font-size: 14px; line-height: 1.5; color: #475569">{{p.note}}</span>
@@ -259,9 +292,9 @@ a{color:#0B2545}a:hover{color:#D94A04}
 class Component extends DCLogic {
 renderVals() {
 return { ports: [
-{ name: 'Chattogram', url: '/ship-supply-chattogram.html', status: 'Pilot port', bg: '#DCFCE7', fg: '#14532D', note: 'Main seaport. Delivery alongside at jetties and by boat to outer anchorage.' },
-{ name: 'Mongla', url: '/ship-supply-mongla.html', status: 'Opening next', bg: '#E6ECF3', fg: '#0B2545', note: 'Delivery at jetty and at Harbaria anchorage once the partner shop is confirmed.' },
-{ name: 'Payra', url: '/ship-supply-payra.html', status: 'Opening next', bg: '#E6ECF3', fg: '#0B2545', note: 'Delivery at terminal and anchorage once the partner shop is confirmed.' }
+{ name: 'Chattogram', slug: 'chattogram', url: '/ship-supply-chattogram.html', status: 'Pilot port', bg: '#DCFCE7', fg: '#14532D', note: 'Main seaport. Delivery alongside at jetties and by boat to outer anchorage.' },
+{ name: 'Mongla', slug: 'mongla', url: '/ship-supply-mongla.html', status: 'Opening next', bg: '#E6ECF3', fg: '#0B2545', note: 'Delivery at jetty and at Harbaria anchorage once the partner shop is confirmed.' },
+{ name: 'Payra', slug: 'payra', url: '/ship-supply-payra.html', status: 'Opening next', bg: '#E6ECF3', fg: '#0B2545', note: 'Delivery at terminal and anchorage once the partner shop is confirmed.' }
 ] };
 }
 }

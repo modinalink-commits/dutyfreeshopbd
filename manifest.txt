@@ -1,9 +1,13 @@
 app.js
+banner.jpg
 icon.png
 index.html
 login.html
 logo-header.png
 logo-stacked.png
+port-chattogram.jpg
+port-mongla.jpg
+port-payra.jpg
 products.html
 products.js
 request-access.html
