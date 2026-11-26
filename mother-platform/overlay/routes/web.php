@@ -658,6 +658,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
 Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class, \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class, \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class, \Illuminate\Session\Middleware\StartSession::class, \Illuminate\View\Middleware\ShareErrorsFromSession::class, \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class])->group(function () {
   Route::get('/marine-api/public', [\App\Http\Controllers\MarineController::class,'publicInfo'])->middleware('throttle:120,1');
   Route::get('/marine-api/products', [\App\Http\Controllers\MarineController::class,'publicProducts'])->middleware('throttle:120,1');
+  Route::get('/marine-api/product/{id}', [\App\Http\Controllers\MarineController::class,'publicProduct'])->whereNumber('id')->middleware('throttle:120,1');
   Route::post('/marine-api/access-request', [\App\Http\Controllers\MarineController::class,'accessRequest'])->middleware('throttle:6,1');
 });
 Route::get('/staff', fn() => response()->view('staff_app')->header('Cache-Control', 'no-store'));
