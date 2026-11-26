@@ -27,6 +27,10 @@ class MarineCats
   public static function guess(string $name, string $motherCat, bool $bonded): array {
     if ($bonded) return ['bonded', null];
     $n = ' ' . mb_strtolower($name) . ' '; $c = mb_strtolower($motherCat); $has = fn(string $re, string $in) => preg_match('/(?<![a-z])(?:' . $re . ')(?![a-z])/u', $in) === 1;
+    // The store category decides first: consumer categories never land in Technical Stores or Safety & PPE because of a word in the product name
+    // (first run, 26 Nov 2026: "AM4 Socket processor", "Lifebuoy soap" and deodorants were placed there by keywords alone).
+    if ($has('watch(es)?|mobiles?|phones?|gadgets?|electronics?|fashion|sunglass(es)?|perfumes?|atar|attar|lighters?|accessor(y|ies)|bags?|travel|computers?|laptops?', $c)) return ['crew', null];
+    if ($has('beauty|skin|hair|cosmetics?|personal care|toiletr(y|ies)', $c)) return ['cabin', null];
     if ($has('helmets?|safety (shoes?|boots?|goggles?|glasses|harness|vest|gloves?)|ppe|coveralls?|boiler ?suits?|life ?jackets?|life ?buoys?|ear ?(plugs?|muffs?)|respirators?|dust masks?|fire extinguishers?|first aid|work gloves?|hi-?vis', $n)) return ['safety', null];
     if ($has('mobile|phone|smartphone|iphone|galaxy|redmi|watch(es)?|smart ?watch|sunglass(es)?|chargers?|power ?banks?|earbuds?|ear ?phones?|headphones?|speakers?|travel|luggage|backpacks?|wallets?|perfumes?|eau de (parfum|toilette)|attar|atar|cologne', $n . ' ' . $c)) return ['crew', null];
     if ($has('engine oil|lub(e|ricant)s?|grease|gaskets?|bearings?|filters?|v-?belts?|o-?rings?|valves?|impellers?', $n)) return ['technical', 'engine'];
