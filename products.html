@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Public product catalog | DutyFree BD Marine Supply</title>
+<link rel="icon" href="/logo-stacked.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+body{margin:0}
+a{color:#0B2545}a:hover{color:#C2410C}
+</style>
+</head>
+<body>
+<div style="background:#0F172A;color:#FFFFFF;font:500 12px/1.4 Inter,system-ui,sans-serif;text-align:center;padding:7px 12px">Prototype preview · sample data · ordering is not open yet</div>
+<div id="app"></div>
+<template id="tpl">
+<div style="font-family: Inter, system-ui, sans-serif; color: #0F172A; background: #F4F6F9; min-height: 100vh">
+
+<header style="border-bottom: 1px solid #D9E0E8; background: #FFFFFF">
+<div style="max-width: 1200px; margin: 0 auto; padding: 14px 24px; display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between">
+<a href="/" style="display: flex; align-items: center; text-decoration: none"><img src="/logo-header.png" alt="DutyFree BD Marine Supply" style="height: 44px; width: auto"></a>
+<nav style="display: flex; flex-wrap: wrap; gap: 22px; align-items: center; font-size: 14px; font-weight: 500">
+<a href="/" style="text-decoration: none">Home</a>
+<a href="/products.html" style="text-decoration: none; color: #C2410C">Products</a>
+<a href="/request-access.html" style="text-decoration: none">Request Access</a>
+<a href="/login.html" style="text-decoration: none; background: #0B2545; color: #FFFFFF; padding: 10px 16px; border-radius: 8px; font-weight: 600">Vessel Login</a>
+</nav>
+</div>
+</header>
+
+<div style="max-width: 1200px; margin: 0 auto; padding: 32px 24px 56px; display: flex; flex-direction: column; gap: 20px">
+<div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 32px; font-weight: 600">Products</h1>
+<span style="font-size: 14px; color: #475569">General stores available for supply. Prices in USD are shown to verified accounts.</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 12px; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.08em">Port of delivery</span>
+<div style="display: flex; gap: 6px; background: #FFFFFF; border: 1px solid #D9E0E8; border-radius: 10px; padding: 4px">
+<template data-for="{{ports}}" data-as="p">
+<button type="button" onclick="{{ p.pick }}" style="min-height: 44px; padding: 0 16px; border: 0; border-radius: 7px; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; background: {{p.bg}}; color: {{p.fg}}">{{p.name}}</button>
+</template>
+</div>
+</div>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+<label style="flex: 1 1 280px; min-width: 0; display: flex"><span style="position: absolute; left: -9999px">Search products</span><input type="search" placeholder="Search by name, SKU or IMPA code" style="width: 100%; height: 44px; border: 1px solid #C3CDD9; border-radius: 8px; padding: 0 14px; font-size: 15px; font-family: inherit; box-sizing: border-box"></label>
+<span style="font-size: 13px; font-weight: 600; padding: 10px 14px; border-radius: 999px; background: #0B2545; color: #FFFFFF">All</span>
+<span style="font-size: 13px; font-weight: 500; padding: 10px 14px; border-radius: 999px; background: #FFFFFF; border: 1px solid #D9E0E8">Confectionery</span>
+<span style="font-size: 13px; font-weight: 500; padding: 10px 14px; border-radius: 999px; background: #FFFFFF; border: 1px solid #D9E0E8">Beverages (non-alcoholic)</span>
+<span style="font-size: 13px; font-weight: 500; padding: 10px 14px; border-radius: 999px; background: #FFFFFF; border: 1px solid #D9E0E8">Toiletries</span>
+<span style="font-size: 13px; font-weight: 500; padding: 10px 14px; border-radius: 999px; background: #FFFFFF; border: 1px solid #D9E0E8">Fragrance</span>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px">
+<template data-for="{{items}}" data-as="it">
+<article style="background: #FFFFFF; border: 1px solid #D9E0E8; border-radius: 10px; overflow: hidden; display: flex; flex-direction: column">
+<div style="aspect-ratio: 4 / 3; background: #FFFFFF; border-bottom: 1px solid #EEF1F5; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #475569">[PRODUCT IMAGE]</div>
+<div style="padding: 14px; display: flex; flex-direction: column; gap: 8px; flex-grow: 1">
+<span style="font-size: 11px; font-weight: 600; color: #475569; letter-spacing: 0.06em">{{it.sku}} · IMPA {{it.impa}}</span>
+<b style="font-size: 15px; line-height: 1.35">{{it.name}}</b>
+<span style="font-size: 13px; color: #475569">Pack: {{it.pack}}</span>
+<span style="font-size: 12px; font-weight: 600; align-self: flex-start; padding: 3px 9px; border-radius: 999px; background: {{it.bg}}; color: {{it.fg}}">{{it.avail}}</span>
+<div style="margin-top: auto; display: flex; justify-content: space-between; align-items: center; gap: 8px; padding-top: 8px">
+<span style="font-size: 13px; color: #475569">Price after login</span>
+<a href="/login.html" style="text-decoration: none; font-size: 13px; font-weight: 600; color: #FFFFFF; background: #C2410C; padding: 9px 12px; border-radius: 7px">Request quote</a>
+</div>
+</div>
+</article>
+</template>
+</div>
+
+<div style="background: #FFFFFF; border: 1px solid #D9E0E8; border-radius: 10px; padding: 20px; display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between">
+<span style="font-size: 14px; line-height: 1.5; color: #475569; flex: 1 1 420px">Looking for an item not listed? Upload your full requisition list and our marine desk will quote what can be supplied at your port.</span>
+<a href="/request-access.html" style="text-decoration: none; background: #0B2545; color: #FFFFFF; padding: 12px 18px; border-radius: 8px; font-weight: 600; font-size: 14px">Request access to order</a>
+</div>
+</div>
+
+</div>
+</template>
+<script type="text/plain" id="logic">
+class Component extends DCLogic {
+renderVals() {
+const port = (this.state && this.state.port) || 'Chattogram';
+const live = port === 'Chattogram';
+const ports = ['Chattogram', 'Mongla', 'Payra'].map((n) => ({ name: n, bg: n === port ? '#0B2545' : '#FFFFFF', fg: n === port ? '#FFFFFF' : '#0B2545', pick: () => this.setState({ port: n }) }));
+const base = [
+['MS-0101', '00 01 01', 'Assorted chocolate box', '1 kg box'],
+['MS-0102', '00 01 02', 'Instant coffee, pure gold', '190 g jar'],
+['MS-0103', '00 01 03', 'Black tea bags', '100 bags'],
+['MS-0201', '00 02 01', 'Mineral water', 'Case of 12 x 1.5 L'],
+['MS-0202', '00 02 02', 'Soft drink, cola', 'Case of 24 cans'],
+['MS-0301', '00 03 01', 'Whitening toothpaste', '120 g tube'],
+['MS-0302', '00 03 02', 'Antiperspirant spray, men', '150 ml'],
+['MS-0401', '00 04 01', 'Eau de toilette, men', '100 ml']
+];
+const items = base.map((b, i) => ({ sku: b[0], impa: b[1], name: b[2], pack: b[3],
+avail: live ? (i % 4 === 3 ? 'On request, 48 h' : 'Available at ' + port) : 'Opening soon at ' + port,
+bg: live ? (i % 4 === 3 ? '#FEF3C7' : '#DCFCE7') : '#E6ECF3', fg: live ? (i % 4 === 3 ? '#713F12' : '#14532D') : '#0B2545' }));
+return { ports, items };
+}
+}
+</script>
+<script src="/app.js"></script>
+</body>
+</html>

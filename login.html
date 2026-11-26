@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Vessel Login | DutyFree BD Marine Supply</title>
+<link rel="icon" href="/logo-stacked.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+body{margin:0;font-family:Inter,system-ui,sans-serif;color:#0F172A;background:#F4F6F9}
+a{color:#0B2545}a:hover{color:#C2410C}
+.strip{background:#0F172A;color:#fff;font:500 12px/1.4 Inter,system-ui,sans-serif;text-align:center;padding:7px 12px}
+header{background:#fff;border-bottom:1px solid #D9E0E8}
+.bar{max-width:1200px;margin:0 auto;padding:14px 24px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between}
+.bar nav{display:flex;flex-wrap:wrap;gap:22px;font-size:14px;font-weight:500}
+.bar nav a{text-decoration:none}
+main{max-width:440px;margin:0 auto;padding:48px 16px 64px;display:flex;flex-direction:column;gap:16px}
+.card{background:#fff;border:1px solid #D9E0E8;border-radius:12px;padding:28px;display:flex;flex-direction:column;gap:16px}
+h1{margin:0;font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:600}
+label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:500;color:#475569}
+input{height:46px;border:1px solid #C3CDD9;border-radius:8px;padding:0 12px;font-size:15px;font-family:inherit}
+button{min-height:48px;border:0;border-radius:8px;background:#C2410C;color:#fff;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer}
+.note{background:#FFF1E8;border:1px solid #FDBA74;border-radius:10px;padding:14px 16px;font-size:14px;line-height:1.5;color:#7C2D12}
+.muted{font-size:13px;line-height:1.5;color:#475569}
+</style>
+</head>
+<body>
+<div class="strip">Prototype preview · sample data · ordering is not open yet</div>
+<header><div class="bar">
+<a href="/" style="display:flex;align-items:center"><img src="/logo-header.png" alt="DutyFree BD Marine Supply" style="height:44px;width:auto"></a>
+<nav><a href="/">Home</a><a href="/products.html">Products</a><a href="/request-access.html">Request Access</a></nav>
+</div></header>
+<main>
+<div class="card">
+<h1>Vessel Login</h1>
+<span class="muted">For verified shipping companies, agents, ship officers and crew.</span>
+<form id="f" style="display:flex;flex-direction:column;gap:14px">
+<label>Email<input type="email" autocomplete="username" required></label>
+<label>Password<input type="password" autocomplete="current-password" required></label>
+<button type="submit">Sign in</button>
+</form>
+<div class="note" id="msg" hidden>Sign-in is not active in this prototype. The vessel portal, quotations and bonded stores open to verified accounts after launch.</div>
+<span class="muted">No account yet? <a href="/request-access.html">Request access</a>. Accounts are verified by our marine desk before ordering is enabled.</span>
+</div>
+<span class="muted" style="text-align:center">Some product ranges are shown only to signed-in, verified accounts.</span>
+</main>
+<script>document.getElementById('f').addEventListener('submit',function(e){e.preventDefault();document.getElementById('msg').hidden=false});</script>
+</body>
+</html>
