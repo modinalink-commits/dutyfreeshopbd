@@ -67,7 +67,7 @@ class MarineController extends Controller
     foreach ($all as $id => $c) { $p = []; $x = $c; $g = 0; while ($x && $g++ < 6) { array_unshift($p, (string)$x->name . ' ' . str_replace('-', ' ', (string)($x->slug ?? ''))); $x = $x->parent_id ? ($all[(int)$x->parent_id] ?? null) : null; } $o[$id] = implode(' > ', $p); }
     return $memo = $o;
   }
-  /** Tobacco categories. Owner 26 Nov 2026: tobacco SKUs and stock stay in the admin only; no marine account sees them, bonded approval or not. */
+  /** Tobacco categories. Never on the public site. In the portal they are listed in Bonded Stores, after liquor, only for an account with bonded approval. */
   public static function tobaccoIds(): array { $o = []; foreach (DB::table('categories')->get(['id', 'name', 'slug']) as $c) if (StoreController::isSmokeCat($c) || preg_match('/tobacco|cigar|smok|vape|nicotine/i', (string)($c->name ?? '') . ' ' . (string)($c->slug ?? '')) === 1) $o[] = (int)$c->id; return $o; }
   public static function bondedIds(): array { $o = []; foreach (DB::table('categories')->get(['id', 'name', 'slug']) as $c) if (self::bonded($c)) $o[] = (int)$c->id; return $o; }
   /** New version number for the cached public product pages (never a full cache flush: the cache is shared with the workers). */

@@ -58,14 +58,26 @@ class MarineOrderController extends Controller
       $rows = $RQ::forOrder()->where('catalog', $view)->when($sec !== '', fn($w) => $w->where('section_slug', $sec))
         ->when($q !== '', function ($w) use ($q) { $l = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $q) . '%'; $w->where(fn($x) => $x->where('name_en', 'ilike', $l)->orWhere('name_bn', 'ilike', $l)->orWhere('sku', 'ilike', $l)); })
         ->orderBy('id')->paginate(48)->withQueryString();
-      return $this->pg('catalog', $common + ['rows' => $rows, 'mc' => '', 'locked' => false, 'sec' => $sec, 'sections' => $RQ::forOrder()->where('catalog', $view)->selectRaw('section_slug, min(section_name) n, min(group_name) g, count(*) c, min(id) o')->groupBy('section_slug')->orderBy('o')->get()]);
+      return $this->pg('catalog', $common + ['subs' => collect(), 'cat' => 0, 'grpNames' => [], 'rows' => $rows, 'mc' => '', 'locked' => false, 'sec' => $sec, 'sections' => $RQ::forOrder()->where('catalog', $view)->selectRaw('section_slug, min(section_name) n, min(group_name) g, count(*) c, min(id) o')->groupBy('section_slug')->orderBy('o')->get()]);
     }
-    // Bonded Stores: the store's beverages, chocolate and snacks for every account; the liquor list is added for an account with bonded approval. Tobacco is never listed (O::limits).
+    // Bonded Stores: liquor first, then tobacco (both only with bonded approval), then the store's beverages, chocolate and snacks. Dearest first inside each group.
     // DutyFreeBD Catalogue: the crew shop selection, without those food and drink items and without bonded goods.
+    // Sub-categories in both views are the product's own store category.
+    return $this->pg('catalog', $common + self::storeView($r, $view, $q, $hid, $bok));
+  }
+  /** Bonded Stores and DutyFreeBD Catalogue rows with their sub-categories; also used by the admin preview. */
+  private static function storeView(Request $r, string $view, string $q, array $hid, bool $bok): array {
+    $MC = \App\Support\MarineCats::class;
     $mc = $view === 'bonded' ? 'bonded' : ''; $locked = false; $b = O::products($q, $hid, 48, $bok)->leftJoin('categories as c', 'c.id', '=', 'p.category_id');
     if ($MC::ready()) { if ($mc === 'bonded') $b->whereIn('m.mcat', $bok ? ['provisions', 'bonded'] : ['provisions']); else $b->where(fn($w) => $w->whereNull('m.mcat')->orWhereNotIn('m.mcat', ['provisions', 'bonded'])); }
-    $rows = $b->limit(100000)->select('p.id', 'p.sku', 'p.name', 'p.size', 'p.image', 'm.usd_price', 'm.mcat', 'm.msub', 'c.name as cat')->paginate(48)->withQueryString();
-    return $this->pg('catalog', $common + ['rows' => $rows, 'mc' => $mc, 'locked' => $locked, 'sec' => '', 'sections' => collect()]);
+    $tob = array_map('intval', MarineController::tobaccoIds()); $alc = array_values(array_diff(array_map('intval', MarineController::bondedIds()), $tob));
+    $grp = fn($id) => in_array((int)$id, $alc, true) ? 0 : (in_array((int)$id, $tob, true) ? 1 : 2);
+    $subs = (clone $b)->reorder()->whereNotNull('c.id')->groupBy('c.id', 'c.name')->limit(400)->get([DB::raw('c.id as id'), DB::raw('c.name as name'), DB::raw('count(*) as n')])
+      ->map(fn($x) => (object)['id' => (int)$x->id, 'name' => (string)$x->name, 'n' => (int)$x->n, 'g' => $mc === 'bonded' ? $grp($x->id) : 2])->sort(fn($x, $y) => [$x->g, -$x->n, $x->name] <=> [$y->g, -$y->n, $y->name])->values();
+    $cat = (int)$r->query('cat'); if (!$subs->contains('id', $cat)) $cat = 0; if ($cat) $b->where('p.category_id', $cat);
+    if ($mc === 'bonded') { $b->reorder(); if ($alc || $tob) $b->orderByRaw('case' . ($alc ? ' when p.category_id in (' . implode(',', $alc) . ') then 0' : '') . ($tob ? ' when p.category_id in (' . implode(',', $tob) . ') then 1' : '') . ' else 2 end'); $b->orderByDesc('m.usd_price')->orderBy('p.name'); }
+    $rows = $b->limit(100000)->select('p.id', 'p.sku', 'p.name', 'p.size', 'p.image', 'p.category_id', 'm.usd_price', 'm.mcat', 'm.msub', 'c.name as cat')->paginate(48)->withQueryString();
+    return ['rows' => $rows, 'mc' => $mc, 'locked' => $locked, 'sec' => '', 'sections' => collect(), 'subs' => $subs, 'cat' => $cat, 'grpNames' => ['Liquor', 'Tobacco', 'Beverages, chocolate and snacks']];
   }
   public function orderStore(Request $r) {
     $u = $this->me(); if (!$u) return redirect('/marine-portal/login');
@@ -288,6 +300,8 @@ class MarineOrderController extends Controller
     if ($page === 'catalog' && ($RQ = \App\Support\MarineRfq::class) && $RQ::orderable() && in_array($r->query('view'), $RQ::releasedSets(), true)) { $vw = (string)$r->query('view'); $sc = preg_match('/^[a-z0-9-]{1,60}$/', (string)$r->query('section')) ? (string)$r->query('section') : '';
       $d['d'] = ['view' => $vw, 'sets' => $RQ::releasedSets(), 'sec' => $sc, 'mc' => '', 'locked' => false, 'rows' => $RQ::forOrder()->where('catalog', $vw)->when($sc !== '', fn($w) => $w->where('section_slug', $sc))->orderBy('id')->paginate(48)->withQueryString(),
         'sections' => $RQ::forOrder()->where('catalog', $vw)->selectRaw('section_slug, min(section_name) n, min(group_name) g, count(*) c, min(id) o')->groupBy('section_slug')->orderBy('o')->get()] + $d['d']; }
+    if ($page === 'catalog' && in_array($r->query('view'), ['bonded', 'store'], true)) { $bk = $r->query('bonded') !== '0'; $hd = MarineController::hiddenIds(); if (!$bk) $hd = array_values(array_unique(array_merge($hd, MarineController::bondedIds())));
+      $d['d'] = self::storeView($r, (string)$r->query('view'), mb_substr(trim((string)$r->query('q')), 0, 60), $hd, $bk) + ['view' => (string)$r->query('view'), 'bok' => $bk, 'sets' => \App\Support\MarineRfq::orderable() ? \App\Support\MarineRfq::releasedSets() : []] + $d['d']; }
     return response(view($d['v'], $d['d'] + ['u' => $u]))->header('X-Robots-Tag', 'noindex, nofollow')->header('Cache-Control', 'no-store, private');
   }
   public function adminCalls(Request $r) {
