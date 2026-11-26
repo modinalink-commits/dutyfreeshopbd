@@ -82,7 +82,8 @@ class MarineOrders
   /** Items read from a file -> order lines. A line is tied to a catalog product only on an exact code or exact name match; otherwise it stays the customer's own wording. Prices never come from the file. */
   /** Category ids a given account must never get: baby goods for everyone; tobacco and alcohol unless the account has bonded approval. [hidden ids, bonded allowed]. Null account = the desk. */
   public static function limits(?object $acc): array {
-    $hid = \App\Http\Controllers\MarineController::hiddenIds(); $ok = $acc === null || (!empty($acc->bonded_ok) && ($acc->status ?? '') === 'active');
+    $hid = \App\Http\Controllers\MarineController::hiddenIds(); if ($acc !== null) $hid = array_values(array_unique(array_merge($hid, \App\Http\Controllers\MarineController::tobaccoIds())));   // tobacco: admin only
+    $ok = $acc === null || (!empty($acc->bonded_ok) && ($acc->status ?? '') === 'active');
     return [$ok ? $hid : array_values(array_unique(array_merge($hid, \App\Http\Controllers\MarineController::bondedIds()))), $ok];
   }
   public static function match(array $items, array $hidden, bool $bonded = false): array {

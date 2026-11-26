@@ -60,10 +60,11 @@ class MarineOrderController extends Controller
         ->orderBy('id')->paginate(48)->withQueryString();
       return $this->pg('catalog', $common + ['rows' => $rows, 'mc' => '', 'locked' => false, 'sec' => $sec, 'sections' => $RQ::forOrder()->where('catalog', $view)->selectRaw('section_slug, min(section_name) n, min(group_name) g, count(*) c, min(id) o')->groupBy('section_slug')->orderBy('o')->get()]);
     }
-    $mc = $view === 'bonded' ? 'bonded' : ''; $locked = $mc === 'bonded' && !$bok; $rows = null;
-    if (!$locked) { $b = O::products($q, $hid, 48, $bok)->leftJoin('categories as c', 'c.id', '=', 'p.category_id');
-      if ($mc === 'bonded') $b->where('m.mcat', 'bonded'); elseif ($MC::ready()) $b->where(fn($w) => $w->whereNull('m.mcat')->orWhere('m.mcat', '!=', 'bonded'));
-      $rows = $b->limit(100000)->select('p.id', 'p.sku', 'p.name', 'p.size', 'p.image', 'm.usd_price', 'm.mcat', 'm.msub', 'c.name as cat')->paginate(48)->withQueryString(); }
+    // Bonded Stores: the store's beverages, chocolate and snacks for every account; the liquor list is added for an account with bonded approval. Tobacco is never listed (O::limits).
+    // DutyFreeBD Catalogue: the crew shop selection, without those food and drink items and without bonded goods.
+    $mc = $view === 'bonded' ? 'bonded' : ''; $locked = false; $b = O::products($q, $hid, 48, $bok)->leftJoin('categories as c', 'c.id', '=', 'p.category_id');
+    if ($MC::ready()) { if ($mc === 'bonded') $b->whereIn('m.mcat', $bok ? ['provisions', 'bonded'] : ['provisions']); else $b->where(fn($w) => $w->whereNull('m.mcat')->orWhereNotIn('m.mcat', ['provisions', 'bonded'])); }
+    $rows = $b->limit(100000)->select('p.id', 'p.sku', 'p.name', 'p.size', 'p.image', 'm.usd_price', 'm.mcat', 'm.msub', 'c.name as cat')->paginate(48)->withQueryString();
     return $this->pg('catalog', $common + ['rows' => $rows, 'mc' => $mc, 'locked' => $locked, 'sec' => '', 'sections' => collect()]);
   }
   public function orderStore(Request $r) {

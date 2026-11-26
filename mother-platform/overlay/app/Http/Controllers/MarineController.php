@@ -67,6 +67,8 @@ class MarineController extends Controller
     foreach ($all as $id => $c) { $p = []; $x = $c; $g = 0; while ($x && $g++ < 6) { array_unshift($p, (string)$x->name . ' ' . str_replace('-', ' ', (string)($x->slug ?? ''))); $x = $x->parent_id ? ($all[(int)$x->parent_id] ?? null) : null; } $o[$id] = implode(' > ', $p); }
     return $memo = $o;
   }
+  /** Tobacco categories. Owner 26 Nov 2026: tobacco SKUs and stock stay in the admin only; no marine account sees them, bonded approval or not. */
+  public static function tobaccoIds(): array { $o = []; foreach (DB::table('categories')->get(['id', 'name', 'slug']) as $c) if (StoreController::isSmokeCat($c) || preg_match('/tobacco|cigar|smok|vape|nicotine/i', (string)($c->name ?? '') . ' ' . (string)($c->slug ?? '')) === 1) $o[] = (int)$c->id; return $o; }
   public static function bondedIds(): array { $o = []; foreach (DB::table('categories')->get(['id', 'name', 'slug']) as $c) if (self::bonded($c)) $o[] = (int)$c->id; return $o; }
   /** New version number for the cached public product pages (never a full cache flush: the cache is shared with the workers). */
   private static function bump(): void { try { \Illuminate\Support\Facades\Cache::forever('marine.ppv', time()); } catch (\Throwable $e) {} }
@@ -111,15 +113,15 @@ class MarineController extends Controller
   public function publicProducts(Request $r) {
     $q = mb_substr(trim((string)$r->query('q')), 0, 60); $cat = (int)$r->query('category'); $page = max(1, min(700, (int)$r->query('page', 1))); $home = (bool)$r->query('home'); $per = $home ? self::FEATURED : 48; $port = (string)$r->query('port'); if ($home || !isset(self::PORTS[$port])) $port = ''; $ess = !$home && (bool)$r->query('essential'); if ($home) { $q = ''; $cat = 0; $page = 1; }
     $MC = \App\Support\MarineCats::class; $mc = (!$home && $MC::ready() && $MC::ok($r->query('mcat'))) ? (string)$r->query('mcat') : ''; $ms = $mc !== '' ? (string)$MC::sub($mc, $r->query('sub')) : '';
-    // Bonded Stores: never listed here, whoever asks. The category card exists; its products open only in a signed-in account with bonded approval.
-    if ($mc === 'bonded') return response()->json(['locked' => true, 'total' => 0, 'page' => 1, 'per' => $per, 'port' => $port, 'categories' => [], 'items' => []])->header('Access-Control-Allow-Origin', self::SITE)->header('Vary', 'Origin')->header('Cache-Control', 'public, max-age=120');
+    // Owner 26 Nov 2026: Bonded Stores lists the store's beverages, chocolate and snacks (already public products). Liquor opens only in a signed-in account with bonded approval; tobacco stays in the admin. Neither is ever listed here.
+    // The DutyFreeBD Catalogue (no category asked) leaves those food and drink items out: they belong to Bonded Stores.
     $key = 'marine.pp.' . (int)\Illuminate\Support\Facades\Cache::get('marine.ppv', 0) . '.' . md5($q . '|' . $cat . '|' . $page . '|' . (int)$home . '|' . $port . '|' . (int)$ess . '|' . $mc . '|' . $ms);
     $d = \Illuminate\Support\Facades\Cache::remember($key, 120, function () use ($q, $cat, $page, $per, $home, $port, $ess, $mc, $ms) {
       $bond = array_values(array_unique(array_merge(self::bondedIds(), self::hiddenIds())));
       $b = DB::table('marine_products as m')->join('products as p', 'p.id', '=', 'm.product_id')->leftJoin('categories as c', 'c.id', '=', 'p.category_id')
         ->where('m.enabled', true)->where('m.visibility', 'public')->where('p.published', true)->whereNotNull('m.usd_price');
       if ($bond) $b->where(fn($w) => $w->whereNull('p.category_id')->orWhereNotIn('p.category_id', $bond));
-      if (\App\Support\MarineCats::ready()) { $b->where(fn($w) => $w->whereNull('m.mcat')->orWhere('m.mcat', '!=', 'bonded')); if ($mc !== '') $b->where('m.mcat', $mc); if ($ms !== '') $b->where('m.msub', $ms); }
+      if (\App\Support\MarineCats::ready()) { $b->where(fn($w) => $w->whereNull('m.mcat')->orWhere('m.mcat', '!=', 'bonded')); if ($mc === 'bonded') $b->where('m.mcat', 'provisions'); elseif ($mc !== '') $b->where('m.mcat', $mc); elseif (!$home) $b->where(fn($w) => $w->whereNull('m.mcat')->orWhere('m.mcat', '!=', 'provisions')); if ($ms !== '') $b->where('m.msub', $ms); }
       $cats = (clone $b)->whereNotNull('c.id')->groupBy('c.id', 'c.name')->orderBy('c.name')->get(['c.id', 'c.name'])->map(fn($c) => ['id' => (int)$c->id, 'name' => (string)$c->name])->all();
       if ($q !== '') $b->where(fn($w) => $w->where('p.name', 'ilike', '%' . $q . '%')->orWhere('p.sku', 'ilike', '%' . $q . '%'));
       if ($cat) $b->where('p.category_id', $cat);
