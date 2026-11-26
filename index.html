@@ -53,6 +53,7 @@ a{color:#0B2545}a:hover{color:#D94A04}
 .mq a.go{height:44px;display:flex;align-items:center;justify-content:center;padding:0 22px;box-sizing:border-box;text-decoration:none;background:#0B2545;color:#FFFFFF;border-radius:8px;font-weight:600;font-size:15px;white-space:nowrap}
 .mq a.go:hover{background:#12335E;color:#FFFFFF}
 .msec{max-width:1200px;margin:0 auto;padding:64px 24px 0}
+.mhp-wait{min-height:1368px}@media(max-width:900px){.mhp-wait{min-height:1226px}}
 .msec-h{display:flex;flex-wrap:wrap;gap:8px 16px;justify-content:space-between;align-items:baseline;margin-bottom:24px}
 .msec-h h2{margin:0;font-size:28px;font-weight:600;letter-spacing:-.01em}
 .msec-h a{font-size:14px;font-weight:600;text-decoration:none;color:#F95505}
@@ -113,25 +114,14 @@ a{color:#0B2545}a:hover{color:#D94A04}
 @media(max-width:820px){.ftr{margin-top:48px;padding:0 16px}.ftr-in{grid-template-columns:1fr;padding:24px 20px;gap:20px}.ftr h2{font-size:24px}}
 @media(prefers-reduced-motion:reduce){.ftr-k i{animation:none}}
 </style>
+<style>html{scroll-behavior:smooth;scrollbar-gutter:stable;scroll-padding-top:84px}@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}.gh{position:sticky;top:0;z-index:60;background:#FFFFFF;border-bottom:1px solid #D9E0E8;font-family:Inter,system-ui,sans-serif}.gh-in{max-width:1200px;margin:0 auto;padding:0 24px;height:68px;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:20px}.gh-logo{display:flex;align-items:center;flex:none}.gh-logo img{display:block;height:44px;width:163px}.gh-nav{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:500;min-width:0;overflow-x:auto;scrollbar-width:none;white-space:nowrap}.gh-nav::-webkit-scrollbar{display:none}.gh-nav a{text-decoration:none;color:#0B2545;padding:10px 10px;border-radius:8px;flex:none}.gh-nav a:hover{color:#F95505}.gh-nav a.on{color:#F95505;font-weight:600}.gh-nav a.gh-btn{background:#0B2545;color:#FFFFFF;font-weight:600;padding:10px 16px;margin-left:6px}.gh-nav a.gh-btn:hover,.gh-nav a.gh-btn.on{background:#12335E;color:#FFFFFF}.gf{background:#0B2545;color:#D6DEEA;font:400 13px/1.7 Inter,system-ui,sans-serif}.gf-in{max-width:1200px;margin:0 auto;padding:28px 24px;display:flex;flex-wrap:wrap;gap:12px 32px;justify-content:space-between;align-items:center}.gf a{color:#D6DEEA;text-decoration:none;margin-right:18px}.gf a:hover{color:#FFFFFF}.gf nav{display:flex;flex-wrap:wrap;gap:4px 0}@media(max-width:700px){.gh-in{height:auto;padding:10px 16px 0;flex-direction:column;align-items:flex-start;gap:6px}.gh-logo img{height:38px;width:140px}.gh-nav{width:100%;padding-bottom:8px}.gh-nav a{padding:8px 9px}.gh-nav a:first-child{padding-left:0}html{scroll-padding-top:108px}.gf-in{padding:24px 16px}}@media print{.gh,.gf{display:none!important}}</style>
 </head>
 <body>
 <div style="background:#0C161F;color:#FFFFFF;font:500 12px/1.4 Inter,system-ui,sans-serif;text-align:center;padding:7px 12px">Launching soon at Chattogram · Request access to be among the first vessels served</div>
 <div id="app">
 <div style="font-family: Inter, system-ui, sans-serif; color: #0C161F; background: #FFFFFF; min-height: 100vh">
 
-<header style="border-bottom: 1px solid #D9E0E8; background: #FFFFFF">
-<div style="max-width: 1200px; margin: 0 auto; padding: 14px 24px; display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between">
-<a href="/" style="display: flex; align-items: center; text-decoration: none"><img src="/logo-header.png" alt="DutyFree BD Marine Supply" style="height: 44px; width: auto"></a>
-<nav style="display: flex; flex-wrap: wrap; gap: 22px; align-items: center; font-size: 14px; font-weight: 500">
-<a href="#ports" style="text-decoration: none">Ports</a>
-<a href="/products" style="text-decoration: none">Products</a>
-<a href="/track" style="text-decoration: none">Live Ship Map</a>
-<a href="#how" style="text-decoration: none">How it works</a>
-<a href="/request-access" style="text-decoration: none">Request Access</a>
-<a href="/login" style="text-decoration: none; background: #0B2545; color: #FFFFFF; padding: 10px 16px; border-radius: 8px; font-weight: 600">Vessel Login</a>
-</nav>
-</div>
-</header>
+<header class="gh"><div class="gh-in"><a class="gh-logo" href="/" aria-label="DutyFree BD Marine Supply home"><img src="/logo-header.png" alt="DutyFree BD Marine Supply" width="163" height="44"></a><nav class="gh-nav" aria-label="Main"><a href="/" class="on">Home</a><a href="/products">Products</a><a href="/track">Live Ship Map</a><a href="/#ports">Ports</a><a href="/request-access">Request Access</a><a href="/login" class="gh-btn">Vessel Login</a></nav></div></header>
 
 <section class="mh"><div class="mh-bg"></div>
 <div class="mh-in"><div class="mh-tx">
@@ -153,6 +143,7 @@ a{color:#0B2545}a:hover{color:#D94A04}
 <div class="ftr-l"><a href="/track#chattogram">Ships at Chattogram</a><a href="/track#mongla">Ships at Mongla</a><a href="/track#payra">Ships at Payra</a></div></div>
 <form id="ftr-f"><label for="ftr-i">IMO number of the vessel</label><input id="ftr-i" type="text" inputmode="numeric" maxlength="7" placeholder="7-digit IMO number" autocomplete="off"><button type="submit">Track free</button><small>Save your vessels, share the live position on WhatsApp or keep it as a PDF.</small></form>
 </div></section>
+<section id="mhp" class="msec mhp-wait"></section>
 <section id="how" style="max-width: 1200px; margin: 0 auto; padding: 64px 24px 24px">
 <h2 style="margin: 0 0 24px; font-family: Inter, system-ui, sans-serif; font-size: 28px; font-weight: 600">How it works</h2>
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px">
@@ -225,31 +216,14 @@ a{color:#0B2545}a:hover{color:#D94A04}
 </div>
 </section>
 
-<footer style="background: #0B2545; color: #D6DEEA">
-<div style="max-width: 1200px; margin: 0 auto; padding: 28px 24px; display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; font-size: 13px">
-<span>DutyFreeBD Marine Supply · a DutyFreeBD service</span>
-<span>Terms of supply · Privacy · Sanctions and compliance policy</span>
-</div>
-</footer>
+<footer class="gf"><div class="gf-in"><span>DutyFree BD Marine Supply · a DutyFreeBD service<br><span data-marine-contact="">Ship supply at Chattogram, Mongla and Payra</span></span><nav aria-label="Footer"><a href="/products">Products</a><a href="/track">Live Ship Map</a><a href="/ship-supply-chattogram">Chattogram</a><a href="/ship-supply-mongla">Mongla</a><a href="/ship-supply-payra">Payra</a><a href="/request-access">Request Access</a></nav></div></footer>
 
 </div>
 </div>
 <template id="tpl">
 <div style="font-family: Inter, system-ui, sans-serif; color: #0C161F; background: #FFFFFF; min-height: 100vh">
 
-<header style="border-bottom: 1px solid #D9E0E8; background: #FFFFFF">
-<div style="max-width: 1200px; margin: 0 auto; padding: 14px 24px; display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between">
-<a href="/" style="display: flex; align-items: center; text-decoration: none"><img src="/logo-header.png" alt="DutyFree BD Marine Supply" style="height: 44px; width: auto"></a>
-<nav style="display: flex; flex-wrap: wrap; gap: 22px; align-items: center; font-size: 14px; font-weight: 500">
-<a href="#ports" style="text-decoration: none">Ports</a>
-<a href="/products" style="text-decoration: none">Products</a>
-<a href="/track" style="text-decoration: none">Live Ship Map</a>
-<a href="#how" style="text-decoration: none">How it works</a>
-<a href="/request-access" style="text-decoration: none">Request Access</a>
-<a href="/login" style="text-decoration: none; background: #0B2545; color: #FFFFFF; padding: 10px 16px; border-radius: 8px; font-weight: 600">Vessel Login</a>
-</nav>
-</div>
-</header>
+<header class="gh"><div class="gh-in"><a class="gh-logo" href="/" aria-label="DutyFree BD Marine Supply home"><img src="/logo-header.png" alt="DutyFree BD Marine Supply" width="163" height="44"></a><nav class="gh-nav" aria-label="Main"><a href="/" class="on">Home</a><a href="/products">Products</a><a href="/track">Live Ship Map</a><a href="/#ports">Ports</a><a href="/request-access">Request Access</a><a href="/login" class="gh-btn">Vessel Login</a></nav></div></header>
 
 <section class="mh"><div class="mh-bg"></div>
 <div class="mh-in"><div class="mh-tx">
@@ -271,6 +245,7 @@ a{color:#0B2545}a:hover{color:#D94A04}
 <div class="ftr-l"><a href="/track#chattogram">Ships at Chattogram</a><a href="/track#mongla">Ships at Mongla</a><a href="/track#payra">Ships at Payra</a></div></div>
 <form id="ftr-f"><label for="ftr-i">IMO number of the vessel</label><input id="ftr-i" type="text" inputmode="numeric" maxlength="7" placeholder="7-digit IMO number" autocomplete="off"><button type="submit">Track free</button><small>Save your vessels, share the live position on WhatsApp or keep it as a PDF.</small></form>
 </div></section>
+<section id="mhp" class="msec mhp-wait"></section>
 <section id="how" style="max-width: 1200px; margin: 0 auto; padding: 64px 24px 24px">
 <h2 style="margin: 0 0 24px; font-family: Inter, system-ui, sans-serif; font-size: 28px; font-weight: 600">How it works</h2>
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px">
@@ -323,12 +298,7 @@ a{color:#0B2545}a:hover{color:#D94A04}
 </div>
 </section>
 
-<footer style="background: #0B2545; color: #D6DEEA">
-<div style="max-width: 1200px; margin: 0 auto; padding: 28px 24px; display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; font-size: 13px">
-<span>DutyFreeBD Marine Supply · a DutyFreeBD service</span>
-<span>Terms of supply · Privacy · Sanctions and compliance policy</span>
-</div>
-</footer>
+<footer class="gf"><div class="gf-in"><span>DutyFree BD Marine Supply · a DutyFreeBD service<br><span data-marine-contact>Ship supply at Chattogram, Mongla and Payra</span></span><nav aria-label="Footer"><a href="/products">Products</a><a href="/track">Live Ship Map</a><a href="/ship-supply-chattogram">Chattogram</a><a href="/ship-supply-mongla">Mongla</a><a href="/ship-supply-payra">Payra</a><a href="/request-access">Request Access</a></nav></div></footer>
 
 </div>
 </template>

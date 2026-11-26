@@ -70,13 +70,11 @@ main{max-width:1200px;padding:20px 20px 64px;gap:16px}
 footer{background:#0B2545;color:#D6DEEA;font-size:13px;text-align:center;padding:24px 16px;line-height:1.7}
 @media(max-width:600px){#map{min-height:420px}}
 </style>
+<style>html{scroll-behavior:smooth;scrollbar-gutter:stable;scroll-padding-top:84px}@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}.gh{position:sticky;top:0;z-index:60;background:#FFFFFF;border-bottom:1px solid #D9E0E8;font-family:Inter,system-ui,sans-serif}.gh-in{max-width:1200px;margin:0 auto;padding:0 24px;height:68px;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:20px}.gh-logo{display:flex;align-items:center;flex:none}.gh-logo img{display:block;height:44px;width:163px}.gh-nav{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:500;min-width:0;overflow-x:auto;scrollbar-width:none;white-space:nowrap}.gh-nav::-webkit-scrollbar{display:none}.gh-nav a{text-decoration:none;color:#0B2545;padding:10px 10px;border-radius:8px;flex:none}.gh-nav a:hover{color:#F95505}.gh-nav a.on{color:#F95505;font-weight:600}.gh-nav a.gh-btn{background:#0B2545;color:#FFFFFF;font-weight:600;padding:10px 16px;margin-left:6px}.gh-nav a.gh-btn:hover,.gh-nav a.gh-btn.on{background:#12335E;color:#FFFFFF}.gf{background:#0B2545;color:#D6DEEA;font:400 13px/1.7 Inter,system-ui,sans-serif}.gf-in{max-width:1200px;margin:0 auto;padding:28px 24px;display:flex;flex-wrap:wrap;gap:12px 32px;justify-content:space-between;align-items:center}.gf a{color:#D6DEEA;text-decoration:none;margin-right:18px}.gf a:hover{color:#FFFFFF}.gf nav{display:flex;flex-wrap:wrap;gap:4px 0}@media(max-width:700px){.gh-in{height:auto;padding:10px 16px 0;flex-direction:column;align-items:flex-start;gap:6px}.gh-logo img{height:38px;width:140px}.gh-nav{width:100%;padding-bottom:8px}.gh-nav a{padding:8px 9px}.gh-nav a:first-child{padding-left:0}html{scroll-padding-top:108px}.gf-in{padding:24px 16px}}@media print{.gh,.gf{display:none!important}}</style>
 </head>
 <body>
 <div class="strip">Launching soon at Chattogram · Request access to be among the first vessels served</div>
-<header><div class="bar">
-<a href="/" style="display:flex;align-items:center"><img src="/logo-header.png" alt="DutyFree BD Marine Supply" style="height:44px;width:auto"></a>
-<nav><a href="/">Home</a><a href="/#ports">Ports</a><a href="/products">Products</a><a href="/track" style="color:#F95505;font-weight:600">Live Ship Map</a><a href="/request-access">Request Access</a><a href="/login">Vessel Login</a></nav>
-</div></header>
+<header class="gh"><div class="gh-in"><a class="gh-logo" href="/" aria-label="DutyFree BD Marine Supply home"><img src="/logo-header.png" alt="DutyFree BD Marine Supply" width="163" height="44"></a><nav class="gh-nav" aria-label="Main"><a href="/">Home</a><a href="/products">Products</a><a href="/track" class="on">Live Ship Map</a><a href="/#ports">Ports</a><a href="/request-access">Request Access</a><a href="/login" class="gh-btn">Vessel Login</a></nav></div></header>
 <section class="th"><div class="th-in">
 <div class="th-t"><span class="live"><i></i>Live AIS · free for everyone</span><h1>Live ship map</h1><p id="tsub">Find a vessel by name or IMO number, or watch the ships at Chattogram, Mongla and Payra right now.</p></div>
 <form class="tf" id="tf"><label class="tq">Vessel name or IMO number<input id="timo" type="text" maxlength="40" placeholder="e.g. MAERSK or 9321483" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="tsug"><div id="tsug" role="listbox" hidden></div></label><button type="submit">Find vessel</button><small class="th-n">Type a few letters of the name and pick the vessel, or enter the 7-digit IMO number.</small></form>
@@ -108,7 +106,7 @@ window.addEventListener('hashchange',function(){location.reload()});})();
 </div>
 <span class="muted">Live map by VesselFinder (AIS data). Positions are for information only.</span>
 </main>
-<footer>DutyFree BD Marine Supply · a DutyFreeBD service<br><span data-marine-contact></span></footer>
+<footer class="gf"><div class="gf-in"><span>DutyFree BD Marine Supply · a DutyFreeBD service<br><span data-marine-contact>Ship supply at Chattogram, Mongla and Payra</span></span><nav aria-label="Footer"><a href="/products">Products</a><a href="/track">Live Ship Map</a><a href="/ship-supply-chattogram">Chattogram</a><a href="/ship-supply-mongla">Mongla</a><a href="/ship-supply-payra">Payra</a><a href="/request-access">Request Access</a></nav></div></footer>
 <script src="/site.js"></script>
 </body>
 </html>
