@@ -16,13 +16,12 @@ class MarineRfqController extends Controller {
   private static function put(string $k, $v): void { DB::table('settings')->updateOrInsert(['key' => $k], ['value' => is_string($v) ? $v : json_encode($v, JSON_UNESCAPED_UNICODE), 'updated_at' => now()]); }
   private static function today(): string { return now('Asia/Dhaka')->toDateString(); }
 
-  /** Reads the bundled set and checks it. Returns the preflight result with the sourcing notes merged into each valid row. */
+  /** Reads the bundled set and checks it. Sourcing notes are not part of it: they are desk-only and uploaded on the page, never kept in the code repository. */
   private static function load(): array {
     $get = fn(string $f) => is_file(Q::dir($f)) ? (string)file_get_contents(Q::dir($f)) : null;
     $csv = $get('import.csv'); if ($csv === null) return ['ok' => false, 'file' => ['The import file is not on the server yet.'], 'rows' => [], 'good' => [], 'stats' => ['rows' => 0, 'unique_skus' => 0, 'sections' => 0, 'valid' => 0, 'with_problems' => 0]];
     [$rows, $fp] = Q::parseCsv($csv, Q::HEAD); $man = null; $m = $get('manifest.csv'); if ($m === null) $fp[] = 'The image manifest is not on the server.'; else { [$man, $mp] = Q::parseCsv($m); foreach ($mp as $x) $fp[] = 'Image manifest: ' . $x; }
     $pf = Q::preflight($rows, $fp, $man, fn(string $f) => is_file(Q::dir('img/' . $f)) && filesize(Q::dir('img/' . $f)) > 0, self::EXPECT);
-    $s = $get('sourcing.csv'); if ($s !== null) { [$srows] = Q::parseCsv($s); foreach ($srows as $x) { $sku = $x['sku'] ?? ''; if (!isset($pf['good'][$sku])) continue; unset($x['_line'], $x['sku']); $pf['good'][$sku]['sourcing'] = json_encode(array_filter($x, fn($v) => $v !== ''), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); } }
     return $pf;
   }
 
@@ -71,6 +70,17 @@ class MarineRfqController extends Controller {
     $sum = $c['created'] . ' created, ' . $c['updated'] . ' updated, ' . $c['conflict'] . ' conflicted, ' . $c['skipped'] . ' skipped, ' . $c['rejected'] . ' rejected by the preflight';
     if ($apply && !$pf['ok']) return redirect('/admin/marine/provisions')->with('bad', 'Nothing was imported: the preflight found problems. Fix the rows in the report and run it again. (' . $sum . ')');
     return redirect('/admin/marine/provisions')->with($pf['ok'] && !$c['conflict'] ? 'ok' : 'bad', ($apply ? 'Import finished: ' : 'Dry run, nothing written: ') . $sum . '.');
+  }
+
+  /** Desk-only sourcing notes: the Sourcing sheet saved as CSV. Kept in the database only, shown only on this page. */
+  public function sourcing(Request $r) {
+    if (!Q::ready()) return back(); $f = $r->file('sheet'); if (!$f || !$f->isValid()) return back()->with('bad', 'Choose the Sourcing sheet saved as a CSV file.');
+    if (strtolower((string)$f->getClientOriginalExtension()) !== 'csv' || $f->getSize() > 1048576) return back()->with('bad', 'The sourcing notes must be a CSV file of 1 MB or less.');
+    [$rows, $bad] = Q::parseCsv((string)file_get_contents($f->getRealPath())); if ($bad || !$rows || !array_key_exists('sku', $rows[0])) return back()->with('bad', 'The file could not be read as the Sourcing sheet: it needs a "sku" column. ' . implode(' ', array_slice($bad, 0, 3)));
+    $map = Q::sourcing($rows); $have = DB::table('marine_rfq_items')->whereIn('sku', array_keys($map) ?: ['-'])->pluck('sourcing', 'sku'); $n = 0; $same = 0; $by = self::who();
+    foreach ($map as $sku => $js) { if (!$have->has($sku)) continue; if ((string)$have[$sku] === $js) { $same++; continue; } DB::table('marine_rfq_items')->where('sku', $sku)->update(['sourcing' => $js, 'updated_by' => $by, 'updated_at' => now()]); $n++; }
+    self::audit('marine.rfq.sourcing', 'Ship provisions sourcing notes uploaded: ' . $n . ' items updated', null, ['updated' => $n, 'unchanged' => $same, 'unknown_sku' => count($map) - $n - $same]);
+    return back()->with('ok', 'Sourcing notes: ' . $n . ' items updated, ' . $same . ' unchanged, ' . (count($map) - $n - $same) . ' rows with a SKU that is not in the catalogue.');
   }
 
   public function act(Request $r, $id) {

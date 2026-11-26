@@ -1,5 +1,5 @@
 fe43f8b6cb422cca81ee18b74d3972f77e7852de database/migrations/2026_10_31_000001_mother_core.php
-b6617366cec6f9071b62dd4eb64511542246cc7d routes/web.php
+da4f007be802e9b647bc2f8d97dc3ed2d03d7249 routes/web.php
 46ac6330ace84450b442d0d57c5c06f20c41f945 app/Models/Mother.php
 0bc60d7d9c855d84bfb4210c207b3492bf52f588 app/Http/Controllers/AdminController.php
 242316b2ef0a0967e6815e39fcbc7377349fdc17 app/Console/Commands/MotherInstall.php
@@ -1634,9 +1634,9 @@ f2a49e2196aba0e052199d3cdaead80c266b1198 app/Support/MarineMoves.php
 ab6c28c55a634cd2436ee39b35bbd8237de8e65b app/Http/Controllers/MarineMovesController.php
 c94a0aa087db2150d8b05c905554d255b6f55026 resources/views/marine/moves.blade.php
 5fcc2d7d9790899bf5fbd78a7ec92b2c4dc5c8cd database/migrations/2026_11_26_000170_marine_movements.php
-27ee2de7db61ee47e84d38b295b8b836a60009f4 app/Support/MarineRfq.php
-539e60400e2a6ca0c8e24a88a15da6071d9df75d app/Http/Controllers/MarineRfqController.php
-e6dbab3f8fbd315c85f1434ca115253d5c1aba4f resources/views/marine/rfq.blade.php
+a96f7be99f76e938fd6b48047f52c21199752012 app/Support/MarineRfq.php
+2cacf696845a834c18e9f6cd7dc27b164d1eb630 app/Http/Controllers/MarineRfqController.php
+4f3c631a49a0cc9e51cff5ba1452f521e1eaba79 resources/views/marine/rfq.blade.php
 bfcb6f7455d4fbe8a955ad18f9b7794a83eac44d database/migrations/2026_11_26_000180_marine_rfq_items.php
 d236a015a5d7395bdb8acde4e26ebee68c2e5c2f resources/marine/prov160/img/MDP-BS-001.webp
 fb643893d7878005fcc692e9811ee5d9d1a66561 resources/marine/prov160/img/MDP-BS-002.webp
@@ -1800,4 +1800,3 @@ ca02f32929baf26229066fb918a9101426f8e1a9 resources/marine/prov160/img/MDP-WB-004
 11a0f05b2a9d3cd5947d4c64bed647816e609ca2 resources/marine/prov160/img/MDP-WB-008.webp
 999154a6e71d4f9306ea3786a601ab42b1e7974a resources/marine/prov160/import.csv
 e0120af50996fe1dc5ae589bd4ee4c817266a477 resources/marine/prov160/manifest.csv
-7e614283ea49879d0ed1e41054d7029d3eab75db resources/marine/prov160/sourcing.csv

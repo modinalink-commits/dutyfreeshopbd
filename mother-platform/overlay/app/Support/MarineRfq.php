@@ -31,8 +31,8 @@ class MarineRfq
   const SELECTIONS = ['chattogram-market-selection'];
   /** Fields that identify the variant: a change here on an existing SKU is a conflict. */
   const IDENTITY = ['brand', 'pack_qty', 'pack_unit', 'units_per_multipack'];
-  /** Fields an import may refresh on an existing SKU. Never: state, price, packshot, port checks. */
-  const REFRESH = ['mcat', 'section_slug', 'section_name', 'sub_name', 'name_en', 'name_bn', 'pack_note', 'order_uom', 'handling', 'inventory_status', 'sourcing_region', 'image_file', 'image_kind', 'image_alt', 'sourcing'];
+  /** Fields an import may refresh on an existing SKU. Never: state, price, packshot, port checks, sourcing notes (those are uploaded by the desk and are not kept in the code repository). */
+  const REFRESH = ['mcat', 'section_slug', 'section_name', 'sub_name', 'name_en', 'name_bn', 'pack_note', 'order_uom', 'handling', 'inventory_status', 'sourcing_region', 'image_file', 'image_kind', 'image_alt'];
   const IMG_EXT = ['webp' => 'image/webp', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png'];
   const IMG_MAX = 3145728;
 
@@ -180,6 +180,15 @@ class MarineRfq
     $it = (array)$it;
     return ['product_id' => null, 'rfq_item_id' => (int)$it['id'], 'sku' => mb_substr((string)$it['sku'], 0, 60), 'name' => mb_substr((string)$it['name_en'] . (!empty($it['brand']) ? ' (' . $it['brand'] . ')' : ''), 0, 200),
       'size' => mb_substr(self::pack($it) . (!empty($it['pack_note']) ? ', ' . $it['pack_note'] : ''), 0, 80), 'qty' => $qty, 'unit' => $unit ?: (string)$it['order_uom'], 'list_usd' => null, 'note' => $note];
+  }
+  /** Sourcing sheet rows -> sku => JSON of the desk-only notes. Only known columns are kept; links must be https. */
+  const SOURCING = ['international_name', 'brand', 'pack', 'sourcing_region', 'primary_retailer', 'listing_signal', 'reviewed_on', 'source_url', 'alternate_retailer', 'alternate_source_url', 'procurement_route', 'port_stock'];
+  public static function sourcing(array $rows): array {
+    $out = [];
+    foreach ($rows as $r) { $sku = (string)($r['sku'] ?? ''); if (!preg_match('/^[A-Z]{2,5}-[A-Z]{2,4}-\d{3}$/', $sku)) continue; $d = [];
+      foreach (self::SOURCING as $k) { $v = mb_substr(trim(strip_tags((string)($r[$k] ?? ''))), 0, 300); if ($v === '') continue; if (str_ends_with($k, '_url') && !preg_match('#^https://[^\s<>"\']+$#', $v)) continue; $d[$k] = $v; }
+      if ($d) $out[$sku] = json_encode($d, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); }
+    return $out;
   }
   public static function imageProblem(string $ext, ?string $mime, int $size): ?string {
     $ext = strtolower($ext); if (!isset(self::IMG_EXT[$ext])) return 'The packshot must be a WebP, JPG or PNG image.';
