@@ -52,8 +52,56 @@ class MarineController extends Controller
     $rows = $pq->orderByRaw('coalesce(m.enabled, false) desc')->orderBy('p.name')->paginate(50)->withQueryString();
     $cats = DB::table('categories')->orderBy('name')->get(['id', 'name', 'slug']); $bond = [];
     foreach ($cats as $c) if (self::bonded($c)) $bond[$c->id] = true;
-    return view('marine.catalog', ['rows' => $rows, 'q' => $q, 'show' => $show, 'cat' => $cat, 'cats' => $cats, 'bond' => $bond, 'ports' => self::PORTS]);
+    return view('marine.catalog', ['rate' => self::rate(), 'adm' => \App\Support\ProfitFloor::admin(), 'rows' => $rows, 'q' => $q, 'show' => $show, 'cat' => $cat, 'cats' => $cats, 'bond' => $bond, 'ports' => self::PORTS]);
   }
+  private static function bondedIds(): array { $o = []; foreach (DB::table('categories')->get(['id', 'name', 'slug']) as $c) if (self::bonded($c)) $o[] = (int)$c->id; return $o; }
+  /** New version number for the cached public product pages (never a full cache flush: the cache is shared with the workers). */
+  private static function bump(): void { try { \Illuminate\Support\Facades\Cache::forever('marine.ppv', time()); } catch (\Throwable $e) {} }
+  public static function rate(): float { try { $v = (float)DB::table('settings')->where('key', 'marine_usd_rate')->value('value'); return $v > 0 ? $v : 0.0; } catch (\Throwable $e) { return 0.0; } }
+  /** Owner instruction 26 Nov 2026: put every published store product on the marine channel with a USD price = store price / rate (BDT per 1 USD).
+   *  Bonded categories stay "after login"; other products keep a visibility already chosen by hand, new ones become public. The store's own prices are not touched. */
+  public function bulkPublish(Request $r) {
+    if (!\App\Support\ProfitFloor::admin()) return back()->with('ok', 'Only an admin can run this.');
+    $rate = (float)$r->input('rate'); if ($rate < 20 || $rate > 1000 || !$r->input('sure')) return back()->with('ok', 'Enter the BDT per USD rate and tick the box first.');
+    $bond = array_flip(self::bondedIds()); $by = (string)(optional(auth()->user())->name ?? 'admin'); $n = 0; $pub = 0; $now = now();
+    $have = DB::table('marine_products')->get(['id', 'product_id', 'visibility'])->keyBy('product_id');
+    DB::table('products')->where('published', true)->where('price', '>', 0)->orderBy('id')->select('id', 'price', 'category_id')->chunk(500, function ($rows) use (&$n, &$pub, $bond, $have, $rate, $by, $now) {
+      $ins = [];
+      foreach ($rows as $p) {
+        $usd = max(0.01, round((float)$p->price / $rate, 2)); $b = isset($bond[(int)$p->category_id]); $old = $have[$p->id] ?? null;
+        $vis = $b ? 'login' : ($old ? $old->visibility : 'public'); if ($vis === 'public') $pub++;
+        if ($old) DB::table('marine_products')->where('id', $old->id)->update(['enabled' => true, 'visibility' => $vis, 'ports' => 'chattogram', 'usd_price' => $usd, 'updated_by' => $by, 'updated_at' => $now]);
+        else $ins[] = ['product_id' => $p->id, 'enabled' => true, 'visibility' => $vis, 'ports' => 'chattogram', 'usd_price' => $usd, 'updated_by' => $by, 'created_at' => $now, 'updated_at' => $now];
+        $n++;
+      }
+      if ($ins) DB::table('marine_products')->insert($ins);
+    });
+    DB::table('settings')->updateOrInsert(['key' => 'marine_usd_rate'], ['value' => (string)$rate, 'updated_at' => $now]);
+    self::bump();
+    try { \App\Support\Procure::audit('marine.bulk_publish', "Marine channel: $n published store products switched on at $rate BDT per USD ($pub public, " . ($n - $pub) . " after login), port Chattogram", null, ['count' => $n, 'rate' => $rate, 'public' => $pub]); } catch (\Throwable $e) {}
+    return redirect('/admin/marine/catalog?show=on')->with('ok', "$n products are now on the marine channel at $rate BDT per USD: $pub public, " . ($n - $pub) . " after login only.");
+  }
+  /** Public product list for the marine site: enabled + public + published only, and never a bonded category (checked again here, whatever the stored flag says). */
+  public function publicProducts(Request $r) {
+    $q = mb_substr(trim((string)$r->query('q')), 0, 60); $cat = (int)$r->query('category'); $page = max(1, min(500, (int)$r->query('page', 1))); $per = 48;
+    $key = 'marine.pp.' . (int)\Illuminate\Support\Facades\Cache::get('marine.ppv', 0) . '.' . md5($q . '|' . $cat . '|' . $page);
+    $d = \Illuminate\Support\Facades\Cache::remember($key, 120, function () use ($q, $cat, $page, $per) {
+      $bond = self::bondedIds();
+      $b = DB::table('marine_products as m')->join('products as p', 'p.id', '=', 'm.product_id')->leftJoin('categories as c', 'c.id', '=', 'p.category_id')
+        ->where('m.enabled', true)->where('m.visibility', 'public')->where('p.published', true)->whereNotNull('m.usd_price');
+      if ($bond) $b->where(fn($w) => $w->whereNull('p.category_id')->orWhereNotIn('p.category_id', $bond));
+      $cats = (clone $b)->whereNotNull('c.id')->groupBy('c.id', 'c.name')->orderBy('c.name')->get(['c.id', 'c.name'])->map(fn($c) => ['id' => (int)$c->id, 'name' => (string)$c->name])->all();
+      if ($q !== '') $b->where(fn($w) => $w->where('p.name', 'ilike', '%' . $q . '%')->orWhere('p.sku', 'ilike', '%' . $q . '%'));
+      if ($cat) $b->where('p.category_id', $cat);
+      $total = (clone $b)->count();
+      $rows = $b->orderBy('c.name')->orderBy('p.name')->offset(($page - 1) * $per)->limit($per)->get(['p.sku', 'p.name', 'p.image', 'p.size', 'c.name as cat', 'm.usd_price', 'm.ports']);
+      $items = []; foreach ($rows as $x) { $im = trim((string)$x->image); if ($im !== '' && !preg_match('#^https?://#i', $im)) $im = 'https://dutyfreebd.com/' . ltrim($im, '/');
+        $items[] = ['sku' => (string)$x->sku, 'name' => (string)$x->name, 'size' => (string)($x->size ?? ''), 'category' => (string)($x->cat ?? ''), 'image' => $im, 'usd' => number_format((float)$x->usd_price, 2, '.', ''), 'ports' => array_values(array_filter(explode(',', (string)$x->ports)))]; }
+      return ['total' => $total, 'page' => $page, 'per' => $per, 'categories' => $cats, 'items' => $items];
+    });
+    return response()->json($d)->header('Access-Control-Allow-Origin', self::SITE)->header('Vary', 'Origin')->header('Cache-Control', 'public, max-age=120');
+  }
+
   public function saveProduct(Request $r, $id) {
     $p = DB::table('products')->where('id', $id)->first(['id', 'sku', 'name', 'category_id']); if (!$p) return back();
     $c = $p->category_id ? DB::table('categories')->where('id', $p->category_id)->first(['id', 'slug', 'name']) : null;
@@ -64,6 +112,7 @@ class MarineController extends Controller
     $new = ['enabled' => $on, 'visibility' => $vis, 'ports' => $ports ?: null, 'usd_price' => $usd, 'updated_by' => (string)(optional(auth()->user())->name ?? 'admin'), 'updated_at' => now()];
     if ($old) DB::table('marine_products')->where('id', $old->id)->update($new); else DB::table('marine_products')->insert($new + ['product_id' => $p->id, 'created_at' => now()]);
     try { \App\Support\Procure::audit('marine.product', 'Marine channel: ' . ($p->sku ?: $p->id) . ' ' . mb_substr((string)$p->name, 0, 80), $old ? ['enabled' => (bool)$old->enabled, 'visibility' => $old->visibility, 'ports' => $old->ports, 'usd_price' => $old->usd_price] : null, ['enabled' => $on, 'visibility' => $vis, 'ports' => $ports, 'usd_price' => $usd]); } catch (\Throwable $e) {}
+    self::bump();
     return back()->with('ok', ($p->sku ?: 'Product') . ' saved');
   }
 
