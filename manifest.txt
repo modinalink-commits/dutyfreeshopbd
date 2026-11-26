@@ -1,3 +1,4 @@
+access-hero.jpg
 app.js
 banner.jpg
 cabin-galley.html
