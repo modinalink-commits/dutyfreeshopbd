@@ -1,0 +1,19 @@
+@extends('mp.layout')@section('title','Catalog')
+@section('body')
+<h1>Catalog</h1><p class="sub">Prices in USD are list prices; your quotation confirms the final price and availability at your port.</p>
+<div class="row" style="margin-bottom:12px"><a class="st {{ $mc === '' ? 'st-quoted' : '' }}" href="/marine-portal/catalog" style="text-decoration:none">All</a>@foreach($cats as $k => $c)<a class="st {{ $mc === $k ? 'st-quoted' : '' }}" href="/marine-portal/catalog?mcat={{ $k }}" style="text-decoration:none">{{ $c['name'] }}</a>@endforeach</div>
+@if($mc !== '' && count($cats[$mc]['subs']))<div class="row" style="margin-bottom:12px"><a class="st {{ $ms === '' ? 'st-ordered' : '' }}" href="/marine-portal/catalog?mcat={{ $mc }}" style="text-decoration:none">All {{ $cats[$mc]['name'] }}</a>@foreach($cats[$mc]['subs'] as $sk => $sn)<a class="st {{ $ms === $sk ? 'st-ordered' : '' }}" href="/marine-portal/catalog?mcat={{ $mc }}&sub={{ $sk }}" style="text-decoration:none">{{ $sn }}</a>@endforeach</div>@endif
+@if($locked)
+<div class="card"><h2>Bonded Stores need a separate approval</h2><p style="margin:0 0 12px;font-size:14px;color:#475569">Bonded goods and their prices are shown only to verified accounts that our marine desk has approved for bonded stores. Your account does not have this approval yet.</p><p style="margin:0;font-size:14px">Reply to our marine desk email, or send a requisition with a note asking for bonded stores for your vessel; the desk checks the vessel and port call first.</p></div>
+@else
+<form method="get" action="/marine-portal/catalog" class="row" style="margin-bottom:14px">@if($mc !== '')<input type="hidden" name="mcat" value="{{ $mc }}">@endif @if($ms !== '')<input type="hidden" name="sub" value="{{ $ms }}">@endif<input type="search" name="q" value="{{ $q }}" maxlength="60" placeholder="Product name or code" aria-label="Search the catalog" style="flex:1 1 240px"><button class="g">Search</button></form>
+<div class="pgrid">
+@forelse($rows as $p)@php $im = trim((string)$p->image); if ($im !== '' && !preg_match('#^https?://#i', $im)) $im = '/' . ltrim($im, '/'); @endphp
+<article class="pcd"><div class="pim">@if($im !== '')<img src="{{ $im }}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">@endif</div><div class="pbd"><span class="hint" style="margin:0">{{ $cats[$p->mcat]['name'] ?? ($p->cat ?: 'Ship stores') }}</span><b>{{ $p->name }}</b><span class="hint" style="margin:0">{{ implode(' · ', array_filter([$p->size ? 'Pack: ' . $p->size : null, $p->sku ? 'Code: ' . $p->sku : null])) }}</span>
+<div class="row" style="justify-content:space-between;margin-top:auto"><b style="font-size:16px;color:#0B2545">USD {{ number_format((float)$p->usd_price, 2) }}</b>@if($canOrder)<a class="btn" style="min-height:38px;padding:0 12px;font-size:13px" href="/marine-portal/orders/new?add={{ $p->id }}{{ $crew ? '&kind=personal' : '' }}">Add to {{ $crew ? 'order' : 'requisition' }}</a>@endif</div></div></article>
+@empty<div class="card" style="grid-column:1/-1;margin:0"><p style="margin:0;color:#64748B;font-size:14px">{{ $q !== '' ? 'No product found for this search.' : 'No catalog product in this category yet.' }} You can still ask for it: add it as a free-text item in a requisition and our marine desk will source and quote it.</p></div>@endforelse
+</div>
+{{ $rows->links('pagination.global') }}
+@endif
+<style>.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}.pcd{background:#FFFFFF;border:1px solid #D9E0E8;border-radius:12px;overflow:hidden;display:flex;flex-direction:column;min-width:0}.pim{position:relative;aspect-ratio:1/1;background:#FFFFFF;border-bottom:1px solid #EEF2F6}.pim img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:10px;box-sizing:border-box}.pbd{padding:12px;display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}.pbd b{overflow-wrap:anywhere;font-size:14px}</style>
+@endsection

@@ -27,14 +27,24 @@ class MarineOrderController extends Controller
     $u = $this->me(); if (!$u) return redirect('/marine-portal/login');
     $kind = ($r->query('kind') === 'personal' || O::isCrew($u)) ? 'personal' : 'vessel'; if (!O::canRaise($u, $kind)) return redirect('/marine-portal/orders')->with('bad', 'Your account cannot raise this kind of request.');
     $pc = null; if ($r->query('pc')) { $pc = O::callsVisible($u)->where('id', (int)$r->query('pc'))->first(); }
-    return $this->pg('order_new', ['kind' => $kind, 'vessels' => O::vessels($u, false), 'ports' => O::PORTS, 'places' => O::PLACES, 'pc' => $pc, 'max' => O::MAX_LINES]);
+    return $this->pg('order_new', ['add' => max(0, (int)$r->query('add')), 'kind' => $kind, 'vessels' => O::vessels($u, false), 'ports' => O::PORTS, 'places' => O::PLACES, 'pc' => $pc, 'max' => O::MAX_LINES]);
   }
   /** Catalog search for a signed-in account (bonded goods included, baby goods never). List prices only; the quotation sets the price. */
   public function products(Request $r) {
     $u = $this->me(); if (!$u) return response()->json(['items' => []], 401);
-    $q = mb_substr(trim((string)$r->query('q')), 0, 60); if (mb_strlen($q) < 2) return response()->json(['items' => []]);
-    $rows = O::products($q, MarineController::hiddenIds())->get(['p.id', 'p.sku', 'p.name', 'p.size', 'm.usd_price']);
+    $q = mb_substr(trim((string)$r->query('q')), 0, 60); if (mb_strlen($q) < 2 && (int)$r->query('id') < 1) return response()->json(['items' => []]);
+    [$hid, $bok] = O::limits($u); $b = O::products($q, $hid, 12, $bok); if ((int)$r->query('id') > 0) $b = O::products('', $hid, 1, $bok)->where('p.id', (int)$r->query('id'));
+    $rows = $b->get(['p.id', 'p.sku', 'p.name', 'p.size', 'm.usd_price']);
     return response()->json(['items' => $rows->map(fn($x) => ['id' => (int)$x->id, 'sku' => (string)$x->sku, 'name' => (string)$x->name, 'size' => (string)($x->size ?? ''), 'usd' => number_format((float)$x->usd_price, 2, '.', '')])->all()])->header('Cache-Control', 'no-store, private');
+  }
+  /** Catalog for a signed-in account, by marine category. Bonded Stores opens only with bonded approval; without it the tab explains how to get it. */
+  public function catalog(Request $r) {
+    $u = $this->me(); if (!$u) return redirect('/marine-portal/login');
+    $MC = \App\Support\MarineCats::class; [$hid, $bok] = O::limits($u); $mc = ($MC::ready() && $MC::ok($r->query('mcat'))) ? (string)$r->query('mcat') : ''; $ms = (string)$MC::sub($mc, $r->query('sub')); $q = mb_substr(trim((string)$r->query('q')), 0, 60);
+    $locked = $mc === 'bonded' && !$bok; $rows = null;
+    if (!$locked) { $b = O::products($q, $hid, 48, $bok)->leftJoin('categories as c', 'c.id', '=', 'p.category_id'); if ($mc !== '') $b->where('m.mcat', $mc); if ($ms !== '') $b->where('m.msub', $ms);
+      $rows = $b->limit(100000)->select('p.id', 'p.sku', 'p.name', 'p.size', 'p.image', 'm.usd_price', 'm.mcat', 'm.msub', 'c.name as cat')->paginate(48)->withQueryString(); }
+    return $this->pg('catalog', ['rows' => $rows, 'mc' => $mc, 'ms' => $ms, 'q' => $q, 'cats' => $MC::CATS, 'locked' => $locked, 'bok' => $bok, 'canOrder' => O::canRaise($u, O::isCrew($u) ? 'personal' : 'vessel'), 'crew' => O::isCrew($u)]);
   }
   public function orderStore(Request $r) {
     $u = $this->me(); if (!$u) return redirect('/marine-portal/login');
@@ -53,7 +63,8 @@ class MarineOrderController extends Controller
     // lines: catalog products are re-read from the database (name and list price never come from the browser); free-text items keep the buyer's wording
     $in = array_slice(array_values(array_filter((array)$r->input('lines', []), 'is_array')), 0, O::MAX_LINES); $lines = []; $pids = [];
     foreach ($in as $l) if (!empty($l['product_id'])) $pids[] = (int)$l['product_id'];
-    $prod = $pids ? O::products('', MarineController::hiddenIds(), 500)->whereIn('p.id', array_unique($pids))->get(['p.id', 'p.sku', 'p.name', 'p.size', 'm.usd_price'])->keyBy('id') : collect();
+    [$hid, $bok] = O::limits($u); // bonded goods reach a requisition only from an account with bonded approval
+    $prod = $pids ? O::products('', $hid, 500, $bok)->whereIn('p.id', array_unique($pids))->get(['p.id', 'p.sku', 'p.name', 'p.size', 'm.usd_price'])->keyBy('id') : collect();
     foreach ($in as $l) {
       $q = O::qty($l['qty'] ?? null); if ($q === null) continue; $note = mb_substr(trim(strip_tags((string)($l['note'] ?? ''))), 0, 200) ?: null; $unit = mb_substr(trim(strip_tags((string)($l['unit'] ?? ''))), 0, 20) ?: null;
       if (!empty($l['product_id'])) { $p = $prod[(int)$l['product_id']] ?? null; if (!$p) continue; $lines[] = ['product_id' => (int)$p->id, 'sku' => mb_substr((string)$p->sku, 0, 60), 'name' => mb_substr((string)$p->name, 0, 200), 'size' => mb_substr((string)($p->size ?? ''), 0, 80) ?: null, 'qty' => $q, 'unit' => $unit, 'list_usd' => $p->usd_price, 'note' => $note]; }
@@ -78,7 +89,7 @@ class MarineOrderController extends Controller
         $ext = strtolower((string)$f->getClientOriginalExtension()); if (!\App\Support\MarineSheet::kind($ext)) { $read[] = $f->getClientOriginalName() . ': attached for our desk'; continue; }
         [$rows, $err] = \App\Support\MarineSheet::rows(\Illuminate\Support\Facades\Storage::disk('local')->path($path), $ext); $x = \App\Support\MarineSheet::items($rows);
         $take = array_slice($x['items'], 0, max(0, $room)); $over = count($x['items']) - count($take) + $x['more']; $room -= count($take); $n = 0; $m = 0;
-        foreach (O::match($take, MarineController::hiddenIds()) as $l) { DB::table('marine_order_lines')->insert($l + ['order_id' => $id, 'available' => true, 'created_at' => now(), 'updated_at' => now()]); $n++; if ($l['product_id']) $m++; }
+        foreach (O::match($take, $hid, $bok) as $l) { DB::table('marine_order_lines')->insert($l + ['order_id' => $id, 'available' => true, 'created_at' => now(), 'updated_at' => now()]); $n++; if ($l['product_id']) $m++; }
         $read[] = $f->getClientOriginalName() . ': ' . ($n ? $n . ' item(s) read, ' . $m . ' matched to our catalog' : ($err ?: 'no item with a quantity was found; attached for our desk')) . ($x['skipped'] ? ', ' . $x['skipped'] . ' row(s) without a quantity left out' : '') . ($over > 0 ? ', ' . $over . ' more row(s) not read (limit ' . O::TOTAL_LINES . ' per requisition)' : '');
       } catch (\Throwable $e) { report($e); $read[] = $f->getClientOriginalName() . ': attached, but it could not be read automatically'; }
     }
@@ -208,7 +219,7 @@ class MarineOrderController extends Controller
     $q = O::qty($r->input('qty')); $name = mb_substr(trim((string)$r->input('name')), 0, 200); $code = mb_substr(trim((string)$r->input('sku')), 0, 60);
     if ($q === null || (mb_strlen($name) < 2 && $code === '')) return redirect($back)->with('ok', 'Enter a product code or a description, and a quantity.');
     if (DB::table('marine_order_lines')->where('order_id', $o->id)->count() >= O::TOTAL_LINES) return redirect($back)->with('ok', 'This order already has ' . O::TOTAL_LINES . ' lines.');
-    $l = O::match([['code' => $code ?: null, 'name' => $name !== '' ? $name : $code, 'qty' => $q, 'unit' => mb_substr(trim((string)$r->input('unit')), 0, 20) ?: null]], MarineController::hiddenIds())[0];
+    $l = O::match([['code' => $code ?: null, 'name' => $name !== '' ? $name : $code, 'qty' => $q, 'unit' => mb_substr(trim((string)$r->input('unit')), 0, 20) ?: null]], MarineController::hiddenIds(), true)[0];
     if ($code !== '' && !$l['product_id'] && $name === '') return redirect($back)->with('ok', 'No marine catalog product has the code ' . $code . '. Add a description to keep it as a free-text line.');
     DB::table('marine_order_lines')->insert($l + ['order_id' => $o->id, 'available' => true, 'created_at' => now(), 'updated_at' => now()]);
     \App\Support\Procure::audit('marine.order.line', 'Line added to ' . $o->number . ' by the desk: ' . $l['name'] . ' x ' . $q, null, ['product_id' => $l['product_id']]);
@@ -242,7 +253,8 @@ class MarineOrderController extends Controller
     $d = match ($page) {
       'home' => ['v' => 'mp.home', 'd' => ['docs' => collect(), 'ves' => collect($type === 'vessel' ? [] : [(object)['imo' => '9000001', 'name' => 'MV SAMPLE', 'note' => 'Sample']]), 'types' => A::TYPES, 'vroles' => A::VROLES]],
       'orders' => ['v' => 'mp.orders', 'd' => ['rows' => $pager([$o]), 'st' => '', 'status' => O::STATUS, 'ports' => O::PORTS, 'canVessel' => O::canRaise($u, 'vessel'), 'canPersonal' => O::canRaise($u, 'personal'), 'crew' => O::isCrew($u)]],
-      'order_new' => ['v' => 'mp.order_new', 'd' => ['kind' => O::isCrew($u) ? 'personal' : 'vessel', 'vessels' => $type === 'vessel' ? [] : $ves, 'ports' => O::PORTS, 'places' => O::PLACES, 'pc' => null, 'max' => O::MAX_LINES]],
+      'catalog' => ['v' => 'mp.catalog', 'd' => ['rows' => $r->query('locked') ? null : $pager([(object)['id' => 0, 'sku' => 'SAMPLE-1', 'name' => 'Sample product A', 'size' => '500 g', 'image' => '', 'usd_price' => 12.5, 'mcat' => 'crew', 'msub' => null, 'cat' => 'Sample'], (object)['id' => 0, 'sku' => 'SAMPLE-2', 'name' => 'Sample product B with a longer name to show wrapping', 'size' => '', 'image' => '', 'usd_price' => 149, 'mcat' => 'crew', 'msub' => null, 'cat' => 'Sample']]), 'mc' => $r->query('locked') ? 'bonded' : 'crew', 'ms' => '', 'q' => '', 'cats' => \App\Support\MarineCats::CATS, 'locked' => (bool)$r->query('locked'), 'bok' => false, 'canOrder' => true, 'crew' => O::isCrew($u)]],
+      'order_new' => ['v' => 'mp.order_new', 'd' => ['add' => 0, 'kind' => O::isCrew($u) ? 'personal' : 'vessel', 'vessels' => $type === 'vessel' ? [] : $ves, 'ports' => O::PORTS, 'places' => O::PLACES, 'pc' => null, 'max' => O::MAX_LINES]],
       'order' => ['v' => 'mp.order', 'd' => ['files' => collect([(object)['id' => 0, 'name' => 'store-list-sample.xlsx', 'size' => 18432]]), 'o' => $o, 'lines' => $lines, 'by' => (object)['username' => $u->username, 'name' => $u->name, 'company' => $u->company, 'type' => $u->type], 'status' => O::STATUS, 'ports' => O::PORTS, 'places' => O::PLACES, 'canAccept' => O::canAccept($u, $o, $scope), 'canWithdraw' => O::canWithdraw($u, $o), 'expired' => false, 'captainWait' => $st === 'quoted' && $o->kind === 'vessel' && $type === 'vessel']],
       'calls' => ['v' => 'mp.calls', 'd' => ['rows' => $pager([$call]), 'vessels' => $type === 'vessel' ? [] : $ves, 'ports' => O::PORTS, 'places' => O::PLACES, 'call' => O::CALL, 'canAdd' => !O::isCrew($u), 'canOrder' => O::canRaise($u, 'vessel')]],
       'desk_order' => ['v' => 'marine.order', 'd' => ['files' => collect([(object)['id' => 0, 'name' => 'store-list-sample.xlsx', 'size' => 18432, 'by_side' => 'account'], (object)['id' => 0, 'name' => 'photo-of-list.jpg', 'size' => 734003, 'by_side' => 'account']]), 'o' => $o, 'lines' => $lines, 'acc' => $u, 'floor' => [], 'rate' => MarineController::rate(), 'pct' => \App\Support\ProfitFloor::percent(), 'status' => O::STATUS, 'ports' => O::PORTS, 'places' => O::PLACES, 'next' => O::NEXT[$o->status] ?? [], 'types' => A::TYPES, 'vroles' => A::VROLES, 'verified' => true, 'admin' => true, 'pc' => null, 'mails' => collect()]],

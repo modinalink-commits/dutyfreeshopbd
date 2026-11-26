@@ -47,6 +47,7 @@ class MarineController extends Controller
     $q = trim((string)$r->query('q')); $show = in_array($r->query('show'), ['on', 'all', 'featured', 'essential'], true) ? $r->query('show') : 'all'; $cat = (int)$r->query('category');
     $pq = DB::table('products as p')->leftJoin('marine_products as m', 'm.product_id', '=', 'p.id')->leftJoin('categories as c', 'c.id', '=', 'p.category_id')
       ->select('p.id', 'p.sku', 'p.name', 'p.price', 'p.stock', 'p.image', 'c.name as cat', 'c.slug as cslug', 'c.id as cid', 'm.enabled', 'm.visibility', 'm.ports', 'm.usd_price', 'm.featured', 'm.essential');
+    $MC = \App\Support\MarineCats::class; $mcr = $MC::ready(); $mf = (string)$r->query('mcat'); if ($mcr) { $pq->addSelect('m.mcat', 'm.msub', 'm.mcat_by'); if ($MC::ok($mf)) $pq->where('m.mcat', $mf); elseif ($mf === 'none') $pq->where('m.enabled', true)->whereNull('m.mcat'); else $mf = ''; } else $mf = '';
     if ($q !== '') $pq->where(fn($w) => $w->where('p.name', 'ilike', '%' . $q . '%')->orWhere('p.sku', 'ilike', '%' . $q . '%'));
     if ($cat) $pq->where('p.category_id', $cat);
     if ($show === 'on') $pq->where('m.enabled', true);
@@ -55,11 +56,11 @@ class MarineController extends Controller
     $rows = $pq->orderByRaw('m.featured asc nulls last')->orderByRaw('coalesce(m.enabled, false) desc')->orderBy('p.name')->paginate(50)->withQueryString();
     $cats = DB::table('categories')->orderBy('name')->get(['id', 'name', 'slug']); $bond = [];
     foreach ($cats as $c) if (self::bonded($c)) $bond[$c->id] = true;
-    return view('marine.catalog', ['rate' => self::rate(), 'adm' => \App\Support\ProfitFloor::admin(), 'rows' => $rows, 'q' => $q, 'show' => $show, 'cat' => $cat, 'cats' => $cats, 'bond' => $bond, 'ports' => self::PORTS, 'featN' => (int)DB::table('marine_products')->whereNotNull('featured')->count(), 'featMax' => self::FEATURED, 'essN' => (int)DB::table('marine_products')->where('essential', true)->count()]);
+    return view('marine.catalog', ['mcr' => $mcr, 'mf' => $mf, 'mcats' => $MC::CATS, 'mcn' => $mcr ? DB::table('marine_products')->where('enabled', true)->selectRaw("coalesce(mcat, 'none') k, count(*) n")->groupBy('k')->pluck('n', 'k')->all() : [], 'rate' => self::rate(), 'adm' => \App\Support\ProfitFloor::admin(), 'rows' => $rows, 'q' => $q, 'show' => $show, 'cat' => $cat, 'cats' => $cats, 'bond' => $bond, 'ports' => self::PORTS, 'featN' => (int)DB::table('marine_products')->whereNotNull('featured')->count(), 'featMax' => self::FEATURED, 'essN' => (int)DB::table('marine_products')->where('essential', true)->count()]);
   }
   /** Categories that do not belong on a ship-supply site at all (baby goods): never listed on the marine site, with or without login (owner rule 26 Nov 2026). */
   public static function hiddenIds(): array { $o = []; foreach (DB::table('categories')->get(['id', 'name', 'slug']) as $c) if (preg_match('/\bbab(y|ies)\b|infant|diaper|nappy/i', (string)$c->name . ' ' . str_replace('-', ' ', (string)$c->slug)) === 1) $o[] = (int)$c->id; return $o; }
-  private static function bondedIds(): array { $o = []; foreach (DB::table('categories')->get(['id', 'name', 'slug']) as $c) if (self::bonded($c)) $o[] = (int)$c->id; return $o; }
+  public static function bondedIds(): array { $o = []; foreach (DB::table('categories')->get(['id', 'name', 'slug']) as $c) if (self::bonded($c)) $o[] = (int)$c->id; return $o; }
   /** New version number for the cached public product pages (never a full cache flush: the cache is shared with the workers). */
   private static function bump(): void { try { \Illuminate\Support\Facades\Cache::forever('marine.ppv', time()); } catch (\Throwable $e) {} }
   public static function rate(): float { try { $v = (float)DB::table('settings')->where('key', 'marine_usd_rate')->value('value'); return $v > 0 ? $v : 0.0; } catch (\Throwable $e) { return 0.0; } }
@@ -101,12 +102,16 @@ class MarineController extends Controller
   /** Public product list for the marine site: enabled + public + published only, and never a bonded category (checked again here, whatever the stored flag says). */
   public function publicProducts(Request $r) {
     $q = mb_substr(trim((string)$r->query('q')), 0, 60); $cat = (int)$r->query('category'); $page = max(1, min(700, (int)$r->query('page', 1))); $home = (bool)$r->query('home'); $per = $home ? self::FEATURED : 48; $port = (string)$r->query('port'); if ($home || !isset(self::PORTS[$port])) $port = ''; $ess = !$home && (bool)$r->query('essential'); if ($home) { $q = ''; $cat = 0; $page = 1; }
-    $key = 'marine.pp.' . (int)\Illuminate\Support\Facades\Cache::get('marine.ppv', 0) . '.' . md5($q . '|' . $cat . '|' . $page . '|' . (int)$home . '|' . $port . '|' . (int)$ess);
-    $d = \Illuminate\Support\Facades\Cache::remember($key, 120, function () use ($q, $cat, $page, $per, $home, $port, $ess) {
+    $MC = \App\Support\MarineCats::class; $mc = (!$home && $MC::ready() && $MC::ok($r->query('mcat'))) ? (string)$r->query('mcat') : ''; $ms = $mc !== '' ? (string)$MC::sub($mc, $r->query('sub')) : '';
+    // Bonded Stores: never listed here, whoever asks. The category card exists; its products open only in a signed-in account with bonded approval.
+    if ($mc === 'bonded') return response()->json(['locked' => true, 'total' => 0, 'page' => 1, 'per' => $per, 'port' => $port, 'categories' => [], 'items' => []])->header('Access-Control-Allow-Origin', self::SITE)->header('Vary', 'Origin')->header('Cache-Control', 'public, max-age=120');
+    $key = 'marine.pp.' . (int)\Illuminate\Support\Facades\Cache::get('marine.ppv', 0) . '.' . md5($q . '|' . $cat . '|' . $page . '|' . (int)$home . '|' . $port . '|' . (int)$ess . '|' . $mc . '|' . $ms);
+    $d = \Illuminate\Support\Facades\Cache::remember($key, 120, function () use ($q, $cat, $page, $per, $home, $port, $ess, $mc, $ms) {
       $bond = array_values(array_unique(array_merge(self::bondedIds(), self::hiddenIds())));
       $b = DB::table('marine_products as m')->join('products as p', 'p.id', '=', 'm.product_id')->leftJoin('categories as c', 'c.id', '=', 'p.category_id')
         ->where('m.enabled', true)->where('m.visibility', 'public')->where('p.published', true)->whereNotNull('m.usd_price');
       if ($bond) $b->where(fn($w) => $w->whereNull('p.category_id')->orWhereNotIn('p.category_id', $bond));
+      if (\App\Support\MarineCats::ready()) { $b->where(fn($w) => $w->whereNull('m.mcat')->orWhere('m.mcat', '!=', 'bonded')); if ($mc !== '') $b->where('m.mcat', $mc); if ($ms !== '') $b->where('m.msub', $ms); }
       $cats = (clone $b)->whereNotNull('c.id')->groupBy('c.id', 'c.name')->orderBy('c.name')->get(['c.id', 'c.name'])->map(fn($c) => ['id' => (int)$c->id, 'name' => (string)$c->name])->all();
       if ($q !== '') $b->where(fn($w) => $w->where('p.name', 'ilike', '%' . $q . '%')->orWhere('p.sku', 'ilike', '%' . $q . '%'));
       if ($cat) $b->where('p.category_id', $cat);
@@ -144,6 +149,7 @@ class MarineController extends Controller
     $d = \Illuminate\Support\Facades\Cache::remember($key, 120, function () use ($id) {
       $x = DB::table('marine_products as m')->join('products as p', 'p.id', '=', 'm.product_id')->leftJoin('categories as c', 'c.id', '=', 'p.category_id')->leftJoin('brands as br', 'br.id', '=', 'p.brand_id')
         ->where('p.id', $id)->where('m.enabled', true)->where('m.visibility', 'public')->where('p.published', true)->whereNotNull('m.usd_price')
+        ->when(\App\Support\MarineCats::ready(), fn($w) => $w->where(fn($x) => $x->whereNull('m.mcat')->orWhere('m.mcat', '!=', 'bonded')))
         ->first(['p.id', 'p.sku', 'p.name', 'p.image', 'p.size', 'p.description', 'p.category_id', 'c.name as cat', 'br.name as brand', 'm.usd_price', 'm.ports', 'm.featured']);
       if (!$x || ($x->category_id && in_array((int)$x->category_id, array_merge(self::bondedIds(), self::hiddenIds()), true))) return ['found' => false];
       $it = self::item($x); $it['brand'] = (string)($x->brand ?? '');
@@ -157,6 +163,38 @@ class MarineController extends Controller
     return response()->json($d, empty($d['found']) ? 404 : 200)->header('Access-Control-Allow-Origin', self::SITE)->header('Vary', 'Origin')->header('Cache-Control', 'public, max-age=120');
   }
 
+  /** The six marine categories for "Shop by Category", with how many public products each has. Bonded Stores is shown as a card but never counted or listed here. */
+  public function publicCategories() {
+    $d = \Illuminate\Support\Facades\Cache::remember('marine.mc.' . (int)\Illuminate\Support\Facades\Cache::get('marine.ppv', 0), 300, function () {
+      $MC = \App\Support\MarineCats::class; $n = [];
+      if ($MC::ready()) { $hid = array_values(array_unique(array_merge(self::bondedIds(), self::hiddenIds())));
+        $n = DB::table('marine_products as m')->join('products as p', 'p.id', '=', 'm.product_id')->where('m.enabled', true)->where('m.visibility', 'public')->where('p.published', true)->whereNotNull('m.usd_price')->whereNotNull('m.mcat')->where('m.mcat', '!=', 'bonded')
+          ->when($hid, fn($w) => $w->where(fn($x) => $x->whereNull('p.category_id')->orWhereNotIn('p.category_id', $hid)))->selectRaw('m.mcat, count(*) n')->groupBy('m.mcat')->pluck('n', 'mcat')->all(); }
+      $o = []; foreach ($MC::CATS as $k => $c) $o[] = ['key' => $k, 'name' => $c['name'], 'text' => $c['text'], 'locked' => $k === 'bonded', 'count' => $k === 'bonded' ? null : (int)($n[$k] ?? 0), 'subs' => array_map(fn($sk, $sn) => ['key' => $sk, 'name' => $sn], array_keys($c['subs']), $c['subs'])];
+      return ['categories' => $o];
+    });
+    return response()->json($d)->header('Access-Control-Allow-Origin', self::SITE)->header('Vary', 'Origin')->header('Cache-Control', 'public, max-age=300');
+  }
+  /** Marine categories in bulk (admin). "auto" = first placement of every product not yet placed by hand; otherwise every product of one mother category goes to the chosen marine category. */
+  public function mapCategories(Request $r) {
+    $MC = \App\Support\MarineCats::class; if (!\App\Support\ProfitFloor::admin() || !$MC::ready()) return back()->with('ok', 'Only an admin can do this.');
+    $by = (string)(optional(auth()->user())->name ?? 'admin'); $bond = array_flip(self::bondedIds()); $n = 0; @set_time_limit(180);
+    if ($r->input('mode') === 'auto') {
+      $tally = [];
+      DB::table('marine_products as m')->join('products as p', 'p.id', '=', 'm.product_id')->leftJoin('categories as c', 'c.id', '=', 'p.category_id')->where(fn($w) => $w->whereNull('m.mcat_by')->orWhere('m.mcat_by', 'auto'))->orderBy('m.id')->select('m.id', 'p.name', 'p.category_id', 'c.name as cat')
+        ->chunk(500, function ($rows) use (&$n, &$tally, $bond, $MC) { $set = []; foreach ($rows as $x) { [$k, $sub] = $MC::guess((string)$x->name, (string)($x->cat ?? ''), isset($bond[(int)$x->category_id])); $set[$k . '|' . $sub][] = $x->id; $tally[$k] = ($tally[$k] ?? 0) + 1; $n++; }
+          foreach ($set as $key => $ids) { [$k, $sub] = explode('|', $key); DB::table('marine_products')->whereIn('id', $ids)->update(['mcat' => $k, 'msub' => $sub ?: null, 'mcat_by' => 'auto']); } });
+      // bonded mother categories are always Bonded Stores, even when a line was placed by hand before
+      if ($bond) DB::table('marine_products')->whereIn('product_id', DB::table('products')->whereIn('category_id', array_keys($bond))->select('id'))->where(fn($w) => $w->whereNull('mcat')->orWhere('mcat', '!=', 'bonded'))->update(['mcat' => 'bonded', 'msub' => null]);
+      self::bump(); \App\Support\Procure::audit('marine.categories', 'Marine categories: automatic first placement of ' . $n . ' products', null, $tally);
+      $t = []; foreach ($tally as $k => $v) $t[] = $MC::CATS[$k]['name'] . ' ' . number_format($v); return back()->with('ok', number_format($n) . ' products placed: ' . implode(', ', $t) . '. Products placed by hand were not changed.');
+    }
+    $cat = (int)$r->input('category'); $k = (string)$r->input('mcat'); if (!$cat || !$MC::ok($k)) return back()->with('ok', 'Choose a store category and a marine category.');
+    if ($k !== 'bonded' && isset($bond[$cat])) return back()->with('ok', 'Tobacco and alcohol categories always stay in Bonded Stores.');
+    $n = DB::table('marine_products')->whereIn('product_id', DB::table('products')->where('category_id', $cat)->select('id'))->update(['mcat' => $k, 'msub' => $MC::sub($k, $r->input('msub')), 'mcat_by' => $by, 'updated_at' => now()]);
+    self::bump(); \App\Support\Procure::audit('marine.categories', 'Marine categories: store category #' . $cat . ' -> ' . $MC::label($k, $r->input('msub')) . ' (' . $n . ' products)', null, ['category' => $cat, 'mcat' => $k, 'count' => $n]);
+    return back()->with('ok', number_format($n) . ' products moved to ' . $MC::label($k, $r->input('msub')) . '.');
+  }
   public function saveProduct(Request $r, $id) {
     $p = DB::table('products')->where('id', $id)->first(['id', 'sku', 'name', 'category_id']); if (!$p) return back();
     $c = $p->category_id ? DB::table('categories')->where('id', $p->category_id)->first(['id', 'slug', 'name']) : null;
@@ -169,6 +207,7 @@ class MarineController extends Controller
     if ($feat && (!$on || $vis !== 'public' || $usd === null)) { $feat = null; $warn = ' Home page pick removed: the product must be On, Public and have a USD price.'; }
     if ($feat && DB::table('marine_products')->whereNotNull('featured')->where('product_id', '!=', $p->id)->count() >= self::FEATURED) { $feat = null; $warn = ' Not added to the home page: ' . self::FEATURED . ' products are already picked. Remove one first.'; }
     $new = ['enabled' => $on, 'visibility' => $vis, 'ports' => $ports ?: null, 'usd_price' => $usd, 'featured' => $feat, 'essential' => $on && (bool)$r->input('essential'), 'updated_by' => (string)(optional(auth()->user())->name ?? 'admin'), 'updated_at' => now()];
+    if (\App\Support\MarineCats::ready() && $r->has('mcat')) { $MC = \App\Support\MarineCats::class; $k = self::bonded($c) ? 'bonded' : ($MC::ok($r->input('mcat')) ? (string)$r->input('mcat') : null); $sub = $MC::sub($k, $r->input('msub')); if (!$old || $old->mcat !== $k || $old->msub !== $sub) $new += ['mcat' => $k, 'msub' => $sub, 'mcat_by' => $k ? (string)(optional(auth()->user())->name ?? 'admin') : null]; }
     if ($old) DB::table('marine_products')->where('id', $old->id)->update($new); else DB::table('marine_products')->insert($new + ['product_id' => $p->id, 'created_at' => now()]);
     try { \App\Support\Procure::audit('marine.product', 'Marine channel: ' . ($p->sku ?: $p->id) . ' ' . mb_substr((string)$p->name, 0, 80), $old ? ['enabled' => (bool)$old->enabled, 'visibility' => $old->visibility, 'ports' => $old->ports, 'usd_price' => $old->usd_price] : null, ['enabled' => $on, 'visibility' => $vis, 'ports' => $ports, 'usd_price' => $usd]); } catch (\Throwable $e) {}
     self::bump();

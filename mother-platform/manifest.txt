@@ -1566,6 +1566,7 @@ app/Support/MarineWeather.php
 app/Support/MarineAccess.php
 app/Support/MarineOrders.php
 app/Support/MarineSheet.php
+app/Support/MarineCats.php
 app/Support/MetaAdExpense.php
 app/Support/CampaignProfit.php
 app/Http/Controllers/CampaignProfitController.php
@@ -1604,6 +1605,7 @@ database/migrations/2026_11_26_000120_marine_weather.php
 database/migrations/2026_11_26_000130_marine_accounts.php
 database/migrations/2026_11_26_000140_marine_orders.php
 database/migrations/2026_11_26_000150_marine_order_files.php
+database/migrations/2026_11_26_000160_marine_categories.php
 resources/views/marine/index.blade.php
 resources/views/marine/requests.blade.php
 resources/views/marine/catalog.blade.php
@@ -1623,6 +1625,7 @@ resources/views/mp/orders.blade.php
 resources/views/mp/order_new.blade.php
 resources/views/mp/order.blade.php
 resources/views/mp/calls.blade.php
+resources/views/mp/catalog.blade.php
 resources/views/marine/orders.blade.php
 resources/views/marine/order.blade.php
 resources/views/marine/calls.blade.php

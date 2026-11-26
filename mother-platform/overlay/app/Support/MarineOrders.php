@@ -80,9 +80,14 @@ class MarineOrders
     return [$id, $path, null];
   }
   /** Items read from a file -> order lines. A line is tied to a catalog product only on an exact code or exact name match; otherwise it stays the customer's own wording. Prices never come from the file. */
-  public static function match(array $items, array $hidden): array {
+  /** Category ids a given account must never get: baby goods for everyone; tobacco and alcohol unless the account has bonded approval. [hidden ids, bonded allowed]. Null account = the desk. */
+  public static function limits(?object $acc): array {
+    $hid = \App\Http\Controllers\MarineController::hiddenIds(); $ok = $acc === null || (!empty($acc->bonded_ok) && ($acc->status ?? '') === 'active');
+    return [$ok ? $hid : array_values(array_unique(array_merge($hid, \App\Http\Controllers\MarineController::bondedIds()))), $ok];
+  }
+  public static function match(array $items, array $hidden, bool $bonded = false): array {
     $codes = []; $names = []; foreach ($items as $it) { if (!empty($it['code'])) $codes[mb_strtolower($it['code'])] = 1; $names[mb_strtolower($it['name'])] = 1; }
-    $base = fn() => DB::table('marine_products as m')->join('products as p', 'p.id', '=', 'm.product_id')->where('m.enabled', true)->where('p.published', true)->whereNotNull('m.usd_price')->when($hidden, fn($w) => $w->where(fn($x) => $x->whereNull('p.category_id')->orWhereNotIn('p.category_id', $hidden)));
+    $base = fn() => DB::table('marine_products as m')->join('products as p', 'p.id', '=', 'm.product_id')->where('m.enabled', true)->where('p.published', true)->whereNotNull('m.usd_price')->when($hidden, fn($w) => $w->where(fn($x) => $x->whereNull('p.category_id')->orWhereNotIn('p.category_id', $hidden)))->when(!$bonded && MarineCats::ready(), fn($w) => $w->where(fn($x) => $x->whereNull('m.mcat')->orWhere('m.mcat', '!=', 'bonded')));
     $bySku = []; $byName = []; $cols = ['p.id', 'p.sku', 'p.name', 'p.size', 'm.usd_price'];
     foreach (array_chunk(array_keys($codes), 200) as $ch) foreach ($base()->whereIn(DB::raw('lower(p.sku)'), array_map('strval', $ch))->get($cols) as $p) $bySku[mb_strtolower((string)$p->sku)] = $p;
     foreach (array_chunk(array_keys($names), 200) as $ch) foreach ($base()->whereIn(DB::raw('lower(p.name)'), array_map('strval', $ch))->get($cols) as $p) $byName[mb_strtolower((string)$p->name)] = $p;
@@ -113,8 +118,9 @@ class MarineOrders
   }
   public static function openCount(): int { try { return self::ready() ? (int)DB::table('marine_orders')->where('status', 'requested')->count() : 0; } catch (\Throwable $e) { return 0; } }
   /** Products a signed-in account may put on a requisition: on the marine channel, published, priced; bonded goods included (they are shown only after login), baby goods never. */
-  public static function products(string $q, array $hidden, int $limit = 12) {
+  public static function products(string $q, array $hidden, int $limit = 12, bool $bonded = false) {
     $b = DB::table('marine_products as m')->join('products as p', 'p.id', '=', 'm.product_id')->where('m.enabled', true)->where('p.published', true)->whereNotNull('m.usd_price');
+    if (!$bonded && MarineCats::ready()) $b->where(fn($w) => $w->whereNull('m.mcat')->orWhere('m.mcat', '!=', 'bonded'));
     if ($hidden) $b->where(fn($w) => $w->whereNull('p.category_id')->orWhereNotIn('p.category_id', $hidden));
     if ($q !== '') $b->where(fn($w) => $w->where('p.name', 'ilike', '%' . $q . '%')->orWhere('p.sku', 'ilike', '%' . $q . '%'));
     return $b->orderBy('p.name')->limit($limit);

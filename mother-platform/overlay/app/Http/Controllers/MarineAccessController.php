@@ -22,7 +22,7 @@ class MarineAccessController extends Controller
     $mail = DB::table('marine_invites')->whereIn('request_id', $ids)->where('kind', '!=', 'otp')->orderByDesc('id')->get()->groupBy('request_id');
     $ves = DB::table('marine_account_vessels')->whereIn('account_id', $acc->pluck('id')->all())->orderBy('id')->get()->groupBy('account_id');
     $tabs = []; foreach (A::KIND as $t => $k) $tabs[$t] = DB::table('marine_access_requests')->where('kind', $k)->whereIn('status', ['pending', 'docs'])->count();
-    return view('marine.access', ['ready' => true, 'type' => $type, 'types' => A::TYPES, 'tabs' => $tabs, 'st' => $st, 'n' => $n, 'rows' => $rows, 'acc' => $acc, 'docs' => $docs, 'mail' => $mail, 'ves' => $ves, 'vroles' => A::VROLES, 'mailReady' => \App\Support\Mailer::hasPassword(), 'blocked' => \App\Support\Mailer::blockedAt()]);
+    return view('marine.access', ['ready' => true, 'type' => $type, 'types' => A::TYPES, 'tabs' => $tabs, 'st' => $st, 'n' => $n, 'rows' => $rows, 'acc' => $acc, 'docs' => $docs, 'mail' => $mail, 'ves' => $ves, 'vroles' => A::VROLES, 'mcr' => \App\Support\MarineCats::ready(), 'adm' => \App\Support\ProfitFloor::admin(), 'mailReady' => \App\Support\Mailer::hasPassword(), 'blocked' => \App\Support\Mailer::blockedAt()]);
   }
 
   public function act(Request $r, $id) {
@@ -63,6 +63,13 @@ class MarineAccessController extends Controller
       DB::table('marine_accounts')->where('id', $acc->id)->update(['status' => $to, 'force_logout_at' => now(), 'invite_hash' => null, 'otp_hash' => null, 'updated_at' => now()]);
       $audit($do, 'Marine account ' . $acc->username . ' ' . ($do === 'suspend' ? 'suspended' : 'reactivated') . ' ' . $who, $acc->status, $to);
       return redirect($back)->with('ok', $do === 'suspend' ? 'Account suspended and signed out everywhere.' : 'Account reactivated.');
+    }
+    if ($do === 'bonded_on' || $do === 'bonded_off') {
+      if (!\App\Support\ProfitFloor::admin() || !\App\Support\MarineCats::ready()) return redirect($back)->with('ok', 'Only an admin can give or remove bonded approval.');
+      $on = $do === 'bonded_on'; if ($on && $acc->status !== 'active') return redirect($back)->with('ok', 'The account must be active first.');
+      DB::table('marine_accounts')->where('id', $acc->id)->update(['bonded_ok' => $on, 'bonded_by' => $by, 'bonded_at' => now(), 'updated_at' => now()]);
+      $audit('bonded', 'Marine account ' . $acc->username . ': bonded stores approval ' . ($on ? 'given' : 'removed') . ' ' . $who, !$on, $on);
+      return redirect($back)->with('ok', $on ? 'Bonded approval given: this account now sees Bonded Stores and their prices.' : 'Bonded approval removed.');
     }
     if ($do === 'imo') {
       $imo = preg_replace('/\D/', '', (string)$r->input('imo')); if (strlen($imo) !== 7) return redirect($back)->with('ok', 'An IMO number has 7 digits.');
