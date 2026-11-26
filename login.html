@@ -47,19 +47,14 @@ button{min-height:48px;border:0;border-radius:8px;background:#F95505;color:#fff;
 <main>
 <div class="card">
 <h1>Vessel Login</h1>
-<span class="muted">For verified shipping companies, agents, ship officers and crew.</span>
-<form id="f" style="display:flex;flex-direction:column;gap:14px">
-<label>Email<input type="email" autocomplete="username" required></label>
-<label>Password<input type="password" autocomplete="current-password" required></label>
-<button type="submit">Sign in</button>
-</form>
-<div class="note" id="msg" hidden>Sign-in opens at launch. Request access now and our marine desk will set up your verified account.</div>
+<span class="muted">For verified shipping owners, local agencies, vessels and crew.</span>
+<a href="https://dutyfreebd.com/marine-portal/login" style="display:flex;align-items:center;justify-content:center;min-height:48px;border-radius:8px;background:#F95505;color:#fff;font-weight:600;text-decoration:none">Sign in to your account</a>
+<div class="note">Sign-in opens on our secure account page. Use the username from your invitation email and the password you set. <a href="https://dutyfreebd.com/marine-portal/forgot">Forgot password?</a></div>
 <span class="muted">No account yet? <a href="/request-access">Request access</a>. Accounts are verified by our marine desk before ordering is enabled.</span>
 </div>
 <span class="muted" style="text-align:center">Some product ranges are shown only to signed-in, verified accounts.</span>
 </main>
 <footer class="gf"><div class="gf-in"><span>DutyFree BD Marine Supply · a DutyFreeBD service<br><span data-marine-contact>Ship supply at Chattogram, Mongla and Payra</span></span><nav aria-label="Footer"><a href="/products">Products</a><a href="/track">Live Ship Map</a><a href="/ship-supply-chattogram">Chattogram</a><a href="/ship-supply-mongla">Mongla</a><a href="/ship-supply-payra">Payra</a><a href="/request-access">Request Access</a></nav></div></footer>
-<script>document.getElementById('f').addEventListener('submit',function(e){e.preventDefault();document.getElementById('msg').hidden=false});</script>
 <script>document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('.gh-tg'),h=document.querySelector('.gh');if(!h)return;if(b){var o=h.classList.toggle('open');b.setAttribute('aria-expanded',o)}else if(!e.target.closest('.gh-nav')||e.target.closest('.gh-nav a')){h.classList.remove('open');var t=h.querySelector('.gh-tg');if(t)t.setAttribute('aria-expanded','false')}});</script>
 </body>
 </html>

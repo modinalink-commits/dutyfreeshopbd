@@ -3,21 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Request Access: Companies and Crew | DutyFree BD Marine Supply</title>
+<title>Request Access: Owners, Agencies, Vessels and Crew | DutyFree BD Marine Supply</title>
 <meta name="description" content="Open a verified account for your shipping company, vessel or as a crew member to order ship supplies at Chattogram, Mongla and Payra.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://marinedutyfreebd.com/request-access">
 <link rel="icon" href="/icon.png">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="DutyFree BD Marine Supply">
-<meta property="og:title" content="Request Access: Companies and Crew | DutyFree BD Marine Supply">
+<meta property="og:title" content="Request Access: Owners, Agencies, Vessels and Crew | DutyFree BD Marine Supply">
 <meta property="og:description" content="Open a verified account for your shipping company, vessel or as a crew member to order ship supplies at Chattogram, Mongla and Payra.">
 <meta property="og:url" content="https://marinedutyfreebd.com/request-access">
 <meta property="og:image" content="https://marinedutyfreebd.com/share.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Request Access: Companies and Crew | DutyFree BD Marine Supply">
+<meta name="twitter:title" content="Request Access: Owners, Agencies, Vessels and Crew | DutyFree BD Marine Supply">
 <meta name="twitter:description" content="Open a verified account for your shipping company, vessel or as a crew member to order ship supplies at Chattogram, Mongla and Payra.">
 <meta name="twitter:image" content="https://marinedutyfreebd.com/share.png">
 <script type="application/ld+json">[{"@context": "https://schema.org", "@type": "Organization", "name": "DutyFree BD Marine Supply", "url": "https://marinedutyfreebd.com/", "logo": "https://marinedutyfreebd.com/logo-stacked.png", "description": "Ship supply and duty-free stores for vessels and crew at Chattogram, Mongla and Payra ports, Bangladesh.", "areaServed": {"@type": "Country", "name": "Bangladesh"}, "parentOrganization": {"@type": "Organization", "name": "DutyFreeBD", "url": "https://dutyfreebd.com/"}}]</script>
@@ -64,10 +64,10 @@ footer{background:#0B2545;color:#D6DEEA;font-size:13px;text-align:center;padding
 <span class="muted">Accounts are verified by our marine desk before ordering is enabled. Choose how you buy.</span>
 <div class="okmsg" id="ok" hidden>Thank you. Your request has been received. Our marine desk will review it and reply by email.</div>
 <div class="note" id="bad" hidden>Please check your email address and IMO number (7 digits) and send the form again.</div>
-<form id="f" method="post" action="https://dutyfreebd.com/marine-api/access-request" style="display:flex;flex-direction:column;gap:18px">
+<form id="f" method="post" enctype="multipart/form-data" action="https://dutyfreebd.com/marine-api/access-request" style="display:flex;flex-direction:column;gap:18px">
 <input type="hidden" name="kind" id="kind" value="company">
 <label class="hp" aria-hidden="true">Website<input type="text" name="website" tabindex="-1" autocomplete="off"></label>
-<div class="tabs"><button type="button" id="tco" class="on">Shipping company or owner</button><button type="button" id="tag">Local agent or supplier</button><button type="button" id="tcr">Crew member</button></div>
+<div class="tabs"><button type="button" id="tco" class="on">Shipping company or owner</button><button type="button" id="tag">Local agent or supplier</button><button type="button" id="tcr">Vessel / Crew</button></div>
 <div class="grid" id="gco">
 <label>Company name<input type="text" name="company" placeholder="" ></label>
 <label>Your role<select name="role"><option>Purchasing officer</option><option>Ship owner or manager</option><option>Master or chief officer</option></select></label>
@@ -78,8 +78,11 @@ footer{background:#0B2545;color:#D6DEEA;font-size:13px;text-align:center;padding
 </div>
 <div class="note" id="nag" hidden>No vessel is needed to open an agent account. You add each vessel when you ask for a quotation for its port call.</div>
 <div class="grid" id="gcr" hidden>
+<label>You are applying as<select name="vessel_role" id="vrole"><option value="captain">Captain / Authorized Officer</option><option value="crew">Crew Member</option></select></label>
 <label>Rank<input type="text" name="crew_rank" placeholder="" ></label>
+<label>Owner company of the vessel<input type="text" name="company" placeholder="" ></label>
 </div>
+<div class="note" id="ncr" hidden></div>
 <div class="grid">
 <label>Your full name<input type="text" name="name" placeholder="" required></label>
 <label>Email<input type="email" name="email" placeholder="name@company.com" required></label>
@@ -87,9 +90,11 @@ footer{background:#0B2545;color:#D6DEEA;font-size:13px;text-align:center;padding
 <label id="lpo"><span id="lpot">Port of call</span><select name="port"><option>Chattogram</option><option>Mongla</option><option>Payra</option></select></label>
 </div>
 <div class="grid" id="gve">
-<label>Vessel IMO number (optional)<input type="text" name="imo" placeholder="7 digits" ></label>
-<label>Vessel name (optional)<input type="text" name="vessel" placeholder="" ></label>
+<label><span id="limo">Vessel IMO number (optional)</span><input type="text" name="imo" id="fimo" inputmode="numeric" maxlength="7" placeholder="7 digits"></label>
+<label><span id="lves">Vessel name (optional)</span><input type="text" name="vessel" id="fves" maxlength="120"></label>
 </div>
+<label><span id="ldoc">Documents for verification</span><input type="file" name="docs[]" id="fdoc" multiple accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp" style="height:auto;padding:10px 12px;border:1px solid #C3CDD9;border-radius:8px;background:#fff;font-size:14px"><span class="muted" id="hdoc" style="font-size:12.5px"></span></label>
+<div class="note" id="bdoc" hidden></div>
 <label>Message (optional)<textarea name="message" rows="3" maxlength="1000" placeholder="ETA, what you need, or any question"></textarea></label>
 <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center"><button type="submit" style="padding:0 22px">Submit for verification</button><span class="muted">We use these details only to verify your account and reply to you.</span></div>
 </form>
@@ -100,14 +105,21 @@ footer{background:#0B2545;color:#D6DEEA;font-size:13px;text-align:center;padding
 <span class="muted"><b style="color:#0C161F">Ship officers</b> raise requisitions.</span>
 <span class="muted"><b style="color:#0C161F">Company representatives and agents</b> approve quotations and place purchase orders.</span>
 <span class="muted"><b style="color:#0C161F">Local agents and suppliers</b> open an account without a vessel and add vessels per port call.</span>
+<span class="muted"><b style="color:#0C161F">Captains and authorized officers</b> open the vessel account.</span>
 <span class="muted"><b style="color:#0C161F">Crew</b> order personal items within their allowance.</span></div>
 </aside>
 </main>
 <footer class="gf"><div class="gf-in"><span>DutyFree BD Marine Supply · a DutyFreeBD service<br><span data-marine-contact>Ship supply at Chattogram, Mongla and Payra</span></span><nav aria-label="Footer"><a href="/products">Products</a><a href="/track">Live Ship Map</a><a href="/ship-supply-chattogram">Chattogram</a><a href="/ship-supply-mongla">Mongla</a><a href="/ship-supply-payra">Payra</a><a href="/request-access">Request Access</a></nav></div></footer>
 <script>(function(){var k=document.getElementById('kind'),T={company:'tco',agent:'tag',crew:'tcr'},G={company:'gco',agent:'gag',crew:'gcr'};
 function set(c){k.value=c;for(var x in T){document.getElementById(T[x]).className=x===c?'on':'';var g=document.getElementById(G[x]);g.hidden=x!==c;var f=g.querySelectorAll('input,select');for(var i=0;i<f.length;i++)f[i].disabled=x!==c}
-var ve=document.getElementById('gve'),vf=ve.querySelectorAll('input');ve.hidden=c==='agent';for(var j=0;j<vf.length;j++){vf[j].disabled=c==='agent'}document.getElementById('nag').hidden=c!=='agent';document.getElementById('lpot').textContent=c==='agent'?'Port you work at':'Port of call'}
-for(var x in T)(function(x){document.getElementById(T[x]).onclick=function(){set(x)}})(x);set(location.hash==='#agent'?'agent':(location.hash==='#crew'?'crew':'company'));
+var ve=document.getElementById('gve'),vf=ve.querySelectorAll('input');ve.hidden=c==='agent';for(var j=0;j<vf.length;j++){vf[j].disabled=c==='agent'}document.getElementById('nag').hidden=c!=='agent';vr();dh(c);document.getElementById('lpot').textContent=c==='agent'?'Port you work at':'Port of call'}
+var DH={company:'Company registration or trade licence, and a letter naming you as its representative.',agent:'Agency licence, and the appointment letter for each vessel you act for.',crew:'Captain or officer: ship certificate of registry or a signed letter from the master. Crew: seaman book or crew ID.'};
+function dh(c){document.getElementById('hdoc').textContent=DH[c]+' PDF, JPG, PNG or WEBP. Up to 4 files, 5 MB each. You can also send them later when our desk asks.'}
+function vr(){var cap=k.value==='crew'&&document.getElementById('vrole').value==='captain',n=document.getElementById('ncr');document.getElementById('limo').textContent=cap?'Vessel IMO number':'Vessel IMO number (optional)';document.getElementById('lves').textContent=cap?'Vessel name':'Vessel name (optional)';document.getElementById('fimo').required=cap;document.getElementById('fves').required=cap;
+n.hidden=k.value!=='crew';n.textContent=cap?'A captain or authorized officer opens the vessel account: supply requisitions and order status for that vessel.':'A crew member account is for personal orders within the allowance, linked to your vessel.'}
+document.getElementById('vrole').onchange=vr;
+document.getElementById('f').addEventListener('submit',function(e){var fs=document.getElementById('fdoc').files,b=document.getElementById('bdoc'),m='';if(fs.length>4)m='Please choose at most 4 files.';for(var i=0;i<fs.length&&!m;i++){if(fs[i].size>5242880)m=fs[i].name+' is larger than 5 MB.';else if(!/\.(pdf|jpe?g|png|webp)$/i.test(fs[i].name))m=fs[i].name+' is not a PDF, JPG, PNG or WEBP file.'}b.hidden=!m;b.textContent=m;if(m){e.preventDefault();b.scrollIntoView({block:'center'})}});
+for(var x in T)(function(x){document.getElementById(T[x]).onclick=function(){set(x)}})(x);set(location.hash==='#agent'?'agent':((location.hash==='#crew'||location.hash==='#vessel')?'crew':'company'));
 var m=/[?&]sent=([01])/.exec(location.search);if(m){document.getElementById(m[1]==='1'?'ok':'bad').hidden=false;if(m[1]==='1')document.getElementById('f').hidden=true}})();</script>
 <script src="/site.js"></script>
 <script>document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('.gh-tg'),h=document.querySelector('.gh');if(!h)return;if(b){var o=h.classList.toggle('open');b.setAttribute('aria-expanded',o)}else if(!e.target.closest('.gh-nav')||e.target.closest('.gh-nav a')){h.classList.remove('open');var t=h.querySelector('.gh-tg');if(t)t.setAttribute('aria-expanded','false')}});</script>
