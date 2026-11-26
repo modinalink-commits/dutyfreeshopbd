@@ -139,6 +139,19 @@ body>main>*:nth-child(2){animation-delay:.07s}body>main>*:nth-child(3){animation
 main input,main select,main textarea{transition:background-color .2s ease,box-shadow .2s ease}
 @media(hover:none){.shc-c:hover,#ports article:hover,.pc:hover{transform:none}}
 @media(prefers-reduced-motion:reduce){body::before,.mh-cta a.c1,.gh,.pc,.hero,.th,body>main>*,.mh-tx::after{animation:none!important}.shc-c::after,#ports article::after,.pc::after,.mh-cta a.c1::after,.shc-b::after,.pq::after,.b1::after{display:none}.shc-c,.pc,#ports article{transition:none}.shc-c:hover,#ports article:hover,.pc:hover{transform:none}}
+/* ---- smart port photos (26 Nov 2026): one colour tone, slow zoom, live badges ---- */
+.pp-ph{position:relative}
+.pp-ph img{animation:ppz 28s ease-in-out infinite alternate;transform-origin:60% 55%;filter:saturate(1.06) contrast(1.04)}
+#ports article:nth-child(2) .pp-ph img{filter:saturate(1.3) contrast(1.1) brightness(.97);animation-delay:-9s}
+#ports article:nth-child(3) .pp-ph img{filter:saturate(1.08) contrast(1.06) hue-rotate(-6deg);animation-delay:-17s}
+@keyframes ppz{from{transform:scale(1)}to{transform:scale(1.1)}}
+.pp-ph::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(11,37,69,.16) 0%,rgba(11,37,69,0) 38%,rgba(11,37,69,.62) 100%),linear-gradient(0deg,rgba(24,86,150,.10),rgba(24,86,150,.10));pointer-events:none}
+.pp-lv{position:absolute;top:10px;left:10px;right:10px;height:200px;pointer-events:none;z-index:2;display:flex;align-items:flex-end;justify-content:space-between;gap:8px;padding:10px;box-sizing:border-box;flex-wrap:wrap}
+.pp-bd{display:inline-flex;align-items:center;gap:7px;font:600 12px/1 Inter,system-ui,sans-serif;color:#FFFFFF;background:rgba(11,37,69,.46);-webkit-backdrop-filter:blur(10px) saturate(150%);backdrop-filter:blur(10px) saturate(150%);border:1px solid rgba(255,255,255,.38);border-radius:999px;padding:7px 11px;box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 6px 16px rgba(0,0,0,.18);font-variant-numeric:tabular-nums;animation:gup .6s cubic-bezier(.2,.7,.2,1) both;white-space:nowrap}
+.pp-sh::before{content:"";width:8px;height:8px;border-radius:50%;background:#22C55E;box-shadow:0 0 0 0 rgba(34,197,94,.6);animation:pplv 1.8s ease-out infinite}
+@keyframes pplv{to{box-shadow:0 0 0 9px rgba(34,197,94,0)}}
+.pp-wx{margin-left:auto}
+@media(prefers-reduced-motion:reduce){.pp-ph img,.pp-sh::before,.pp-bd{animation:none!important}}
 @media print{body::before{display:none}html{background:#fff}.card,#tcard,#tlist,.vd{background:#fff!important;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none!important}}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.gh{background:rgba(255,255,255,.94)!important}.mq-in,.shc-c,.card,#pd,#tcard,#tlist,.tact,.vd,#ports article{background:rgba(255,255,255,.86)!important}}
 </style>
