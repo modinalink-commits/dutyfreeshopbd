@@ -65,21 +65,21 @@ class MarineController extends Controller
     if (!\App\Support\ProfitFloor::admin()) return back()->with('ok', 'Only an admin can run this.');
     $rate = (float)$r->input('rate'); if ($rate < 20 || $rate > 1000 || !$r->input('sure')) return back()->with('ok', 'Enter the BDT per USD rate and tick the box first.');
     $bond = array_flip(self::bondedIds()); $by = (string)(optional(auth()->user())->name ?? 'admin'); $n = 0; $pub = 0; $now = now();
-    $have = DB::table('marine_products')->get(['id', 'product_id', 'visibility'])->keyBy('product_id');
-    DB::table('products')->where('published', true)->where('price', '>', 0)->orderBy('id')->select('id', 'price', 'category_id')->chunk(500, function ($rows) use (&$n, &$pub, $bond, $have, $rate, $by, $now) {
+    $have = DB::table('marine_products')->get(['id', 'product_id', 'visibility'])->keyBy('product_id'); $all = implode(',', array_keys(self::PORTS)); // owner 26 Nov 2026: every product can be delivered at every port
+    DB::table('products')->where('published', true)->where('price', '>', 0)->orderBy('id')->select('id', 'price', 'category_id')->chunk(500, function ($rows) use (&$n, &$pub, $bond, $have, $rate, $by, $now, $all) {
       $ins = [];
       foreach ($rows as $p) {
         $usd = max(0.01, round((float)$p->price / $rate, 2)); $b = isset($bond[(int)$p->category_id]); $old = $have[$p->id] ?? null;
         $vis = $b ? 'login' : ($old ? $old->visibility : 'public'); if ($vis === 'public') $pub++;
-        if ($old) DB::table('marine_products')->where('id', $old->id)->update(['enabled' => true, 'visibility' => $vis, 'ports' => 'chattogram', 'usd_price' => $usd, 'updated_by' => $by, 'updated_at' => $now]);
-        else $ins[] = ['product_id' => $p->id, 'enabled' => true, 'visibility' => $vis, 'ports' => 'chattogram', 'usd_price' => $usd, 'updated_by' => $by, 'created_at' => $now, 'updated_at' => $now];
+        if ($old) DB::table('marine_products')->where('id', $old->id)->update(['enabled' => true, 'visibility' => $vis, 'ports' => $all, 'usd_price' => $usd, 'updated_by' => $by, 'updated_at' => $now]);
+        else $ins[] = ['product_id' => $p->id, 'enabled' => true, 'visibility' => $vis, 'ports' => $all, 'usd_price' => $usd, 'updated_by' => $by, 'created_at' => $now, 'updated_at' => $now];
         $n++;
       }
       if ($ins) DB::table('marine_products')->insert($ins);
     });
     DB::table('settings')->updateOrInsert(['key' => 'marine_usd_rate'], ['value' => (string)$rate, 'updated_at' => $now]);
     self::bump();
-    try { \App\Support\Procure::audit('marine.bulk_publish', "Marine channel: $n published store products switched on at $rate BDT per USD ($pub public, " . ($n - $pub) . " after login), port Chattogram", null, ['count' => $n, 'rate' => $rate, 'public' => $pub]); } catch (\Throwable $e) {}
+    try { \App\Support\Procure::audit('marine.bulk_publish', "Marine channel: $n published store products switched on at $rate BDT per USD ($pub public, " . ($n - $pub) . " after login), all ports", null, ['count' => $n, 'rate' => $rate, 'public' => $pub]); } catch (\Throwable $e) {}
     return redirect('/admin/marine/catalog?show=on')->with('ok', "$n products are now on the marine channel at $rate BDT per USD: $pub public, " . ($n - $pub) . " after login only.");
   }
   /** Public product list for the marine site: enabled + public + published only, and never a bonded category (checked again here, whatever the stored flag says). */
@@ -124,7 +124,7 @@ class MarineController extends Controller
       // English-only site: pass the store description on only when it has no Bengali text.
       $t = trim(preg_replace('/\s+/u', ' ', html_entity_decode(strip_tags(str_replace(['<br>', '<br/>', '<br />', '</p>', '</li>'], ' ', (string)$x->description)), ENT_QUOTES, 'UTF-8')));
       $it['description'] = ($t !== '' && !preg_match('/[\x{0980}-\x{09FF}]/u', $t)) ? mb_substr($t, 0, 700) : '';
-      $ports = []; foreach (self::portConf() as $k => $p) if (($p['status'] ?? '') !== 'hidden') $ports[] = ['key' => $k, 'name' => $p['name'] ?? ucfirst($k), 'available' => in_array($k, $it['ports'], true)];
+      $ports = []; foreach (self::portConf() as $k => $p) if (($p['status'] ?? '') !== 'hidden') $ports[] = ['key' => $k, 'name' => $p['name'] ?? ucfirst($k), 'available' => in_array($k, $it['ports'], true), 'charge' => $p['charge']];
       $it['port_list'] = $ports;
       return ['found' => true, 'item' => $it];
     });
@@ -157,7 +157,9 @@ class MarineController extends Controller
   /** Only images uploaded through this admin (/uploads/...) may be shown on the marine site. */
   private static function img($v): string { $v = trim((string)$v); return preg_match('#^/uploads/[A-Za-z0-9._-]+$#', $v) ? $v : ''; }
   private static function link($v): string { $v = trim((string)$v); return ($v !== '' && preg_match('#^(https://[^\s"<>]+|/[A-Za-z0-9._/-]*)$#', $v)) ? mb_substr($v, 0, 300) : ''; }
-  public static function portConf(): array { $c = self::js('marine_ports'); $o = []; foreach (self::PORTS as $k => $n) { $x = is_array($c[$k] ?? null) ? $c[$k] : []; $o[$k] = ['name' => $n, 'status' => isset(self::STATUS[$x['status'] ?? '']) ? $x['status'] : ($k === 'chattogram' ? 'soon' : 'next'), 'note' => (string)($x['note'] ?? ''), 'shop' => (string)($x['shop'] ?? ''), 'photo' => self::img($x['photo'] ?? '')]; } return $o; }
+  public static function portConf(): array { $c = self::js('marine_ports'); $o = []; foreach (self::PORTS as $k => $n) { $x = is_array($c[$k] ?? null) ? $c[$k] : []; $o[$k] = ['name' => $n, 'status' => isset(self::STATUS[$x['status'] ?? '']) ? $x['status'] : ($k === 'chattogram' ? 'soon' : 'next'), 'note' => (string)($x['note'] ?? ''), 'shop' => (string)($x['shop'] ?? ''), 'photo' => self::img($x['photo'] ?? ''), 'charge' => self::usd($x['charge'] ?? null)]; } return $o; }
+  /** Delivery charge in USD for a port, as text with 2 decimals; '' when not set (the site then says it is confirmed on the quotation). */
+  private static function usd($v): string { $v = trim((string)$v); return ($v !== '' && is_numeric($v) && (float)$v >= 0 && (float)$v < 100000) ? number_format((float)$v, 2, '.', '') : ''; }
 
   public function site() { $b = self::js('marine_banners'); $rows = []; for ($i = 0; $i < 4; $i++) $rows[] = ($b[$i] ?? []) + ['image' => '', 'title' => '', 'text' => '', 'link' => '', 'on' => false]; return view('marine.site', ['c' => self::js('marine_site') + ['strip' => '', 'hero_title' => '', 'hero_sub' => ''], 'banners' => $rows, 'site' => self::SITE]); }
   public function saveSite(Request $r) {
@@ -171,9 +173,9 @@ class MarineController extends Controller
   public function ports() { return view('marine.ports', ['ports' => self::portConf(), 'status' => self::STATUS, 'site' => self::SITE]); }
   public function savePorts(Request $r) {
     $old = self::js('marine_ports'); $o = [];
-    foreach (self::PORTS as $k => $n) { $st = (string)$r->input("p.$k.status"); $o[$k] = ['status' => isset(self::STATUS[$st]) ? $st : 'next', 'note' => mb_substr(trim(strip_tags((string)$r->input("p.$k.note"))), 0, 200), 'shop' => mb_substr(trim(strip_tags((string)$r->input("p.$k.shop"))), 0, 120), 'photo' => self::img($r->input("p.$k.photo"))]; }
-    self::put('marine_ports', $o);
-    try { \App\Support\Procure::audit('marine.ports', 'Marine ports (status, note, partner shop, photo)', $old, $o); } catch (\Throwable $e) {}
+    foreach (self::PORTS as $k => $n) { $st = (string)$r->input("p.$k.status"); $o[$k] = ['status' => isset(self::STATUS[$st]) ? $st : 'next', 'note' => mb_substr(trim(strip_tags((string)$r->input("p.$k.note"))), 0, 200), 'shop' => mb_substr(trim(strip_tags((string)$r->input("p.$k.shop"))), 0, 120), 'photo' => self::img($r->input("p.$k.photo")), 'charge' => self::usd($r->input("p.$k.charge"))]; }
+    self::put('marine_ports', $o); self::bump();
+    try { \App\Support\Procure::audit('marine.ports', 'Marine ports (status, note, partner shop, photo, delivery charge)', $old, $o); } catch (\Throwable $e) {}
     return redirect('/admin/marine/ports')->with('ok', 'Saved. The marine site shows it within a few minutes.');
   }
 
@@ -190,7 +192,7 @@ class MarineController extends Controller
   public function publicInfo() {
     $d = \Illuminate\Support\Facades\Cache::remember('marine.public', 300, function () {
       $c = self::conf(); $abs = fn($u) => $u !== '' ? 'https://dutyfreebd.com' . $u : ''; $ports = [];
-      foreach (self::portConf() as $k => $p) $ports[$k] = ['name' => $p['name'], 'status' => $p['status'], 'label' => self::STATUS[$p['status']], 'note' => $p['note'], 'photo' => $abs($p['photo'])]; // partner shop name stays internal
+      foreach (self::portConf() as $k => $p) $ports[$k] = ['name' => $p['name'], 'status' => $p['status'], 'label' => self::STATUS[$p['status']], 'note' => $p['note'], 'photo' => $abs($p['photo']), 'charge' => $p['charge']]; // partner shop name stays internal
       $bn = []; foreach (self::js('marine_banners') as $b) if (!empty($b['on'])) $bn[] = ['image' => $abs(self::img($b['image'] ?? '')), 'title' => (string)($b['title'] ?? ''), 'text' => (string)($b['text'] ?? ''), 'link' => self::link($b['link'] ?? '')];
       return ['email' => $c['marine_desk_email'], 'phone' => $c['marine_desk_phone'], 'whatsapp' => $c['marine_desk_whatsapp'], 'site' => self::js('marine_site') + ['strip' => '', 'hero_title' => '', 'hero_sub' => ''], 'ports' => $ports, 'banners' => $bn];
     });
