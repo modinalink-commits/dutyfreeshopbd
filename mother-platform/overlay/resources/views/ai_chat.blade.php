@@ -25,6 +25,7 @@
 <form class="card" method="post" action="/admin/ai-chat/learned" style="max-width:900px;margin-bottom:14px">@csrf
 <b>AI নিজে যা শিখেছে</b> <span style="font-size:12.5px;color:#64748b">(প্রতি রাতে গত ৭ দিনের কাস্টমার মেসেজ থেকে বারবার বলা প্রশ্ন ও নতুন শব্দ নোট হয়; দাম/স্টক/অফার কখনো নয়)</span>
 <label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" name="on" value="1" style="width:auto" {{ $learnOn ? 'checked' : '' }}> নিজে নিজে শেখা চালু</label>
+<div style="font-size:12.5px;margin:4px 0;color:#475569">@if($learnQueued)অপেক্ষায় আছে, ১-২ মিনিটে শুরু হবে।@elseif($learnLast)শেষ রান: {{ !empty($learnLast['ok']) ? 'সফল, '.($learnLast['n'] ?? 0).' লাইন' : 'হয়নি — '.($learnLast['why'] ?? '') }}@endif</div>
 <textarea name="learned" rows="8" style="width:100%;font-size:13px;line-height:1.5" placeholder="এখনও কিছু শেখেনি; আজ রাতে প্রথমবার চলবে">{{ $learned }}</textarea>
 <div style="margin-top:8px;display:flex;gap:10px;flex-wrap:wrap"><button>Save</button><button name="act" value="run">এখনই শেখাও</button><button name="act" value="clear" onclick="return confirm('সব মুছে ফেলবেন?')">সব মুছুন</button></div></form>
 <form class="card" method="post" action="/admin/ai-chat/kb" style="max-width:900px;margin-bottom:14px">@csrf
