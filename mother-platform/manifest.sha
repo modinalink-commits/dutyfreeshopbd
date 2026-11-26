@@ -1,5 +1,5 @@
 fe43f8b6cb422cca81ee18b74d3972f77e7852de database/migrations/2026_10_31_000001_mother_core.php
-fadc20ab7af0173edf189d60c86bd34fab6a02cb routes/web.php
+a0f14073f99663385737bcab2302d53ab7810a99 routes/web.php
 46ac6330ace84450b442d0d57c5c06f20c41f945 app/Models/Mother.php
 0bc60d7d9c855d84bfb4210c207b3492bf52f588 app/Http/Controllers/AdminController.php
 242316b2ef0a0967e6815e39fcbc7377349fdc17 app/Console/Commands/MotherInstall.php
@@ -1924,3 +1924,6 @@ ba78a0ed58b48fc0511d7ae87c360810a136dad6 resources/marine/cabin120/img/MDCG-TD-0
 5b93fe262fd35512f3557a3eddf31dabef67daa6 resources/marine/cabin120/img/MDCG-TD-012.webp
 b41378a52ad795659b63ce273d838f48d82f371b resources/marine/cabin120/import.csv
 87b2c84fc762342af724e245083623e3c554877c resources/marine/cabin120/manifest.csv
+9c3e8e97f620089abe6e6b425b97f27aa9cb1929 app/Support/BlackFriday.php
+6770271d82184528a316928457bde584a0680d41 app/Http/Controllers/BlackFridayController.php
+e38b41e4c070368906c4efa1d4a2005978a694cc resources/views/black_friday_plan.blade.php

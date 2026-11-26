@@ -1924,3 +1924,6 @@ resources/marine/cabin120/img/MDCG-TD-011.webp
 resources/marine/cabin120/img/MDCG-TD-012.webp
 resources/marine/cabin120/import.csv
 resources/marine/cabin120/manifest.csv
+app/Support/BlackFriday.php
+app/Http/Controllers/BlackFridayController.php
+resources/views/black_friday_plan.blade.php

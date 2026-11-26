@@ -630,6 +630,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/orders/{id}/pay-proof', [\App\Http\Controllers\PaymentController::class,'proof']);
   Route::post('/orders/{id}/pay-{mode}', [\App\Http\Controllers\PaymentController::class,'decide']);
   Route::get('/deals', [\App\Http\Controllers\DealController::class,'index']);
+  Route::get('/black-friday', [\App\Http\Controllers\BlackFridayController::class,'index']); Route::get('/black-friday.csv', [\App\Http\Controllers\BlackFridayController::class,'csv']);
   Route::get('/deals.csv', [\App\Http\Controllers\DealController::class,'csv']);
   Route::post('/deals/settings', [\App\Http\Controllers\DealController::class,'settings']);
   Route::post('/deals/{id}/{mode}', [\App\Http\Controllers\DealController::class,'flag']);
