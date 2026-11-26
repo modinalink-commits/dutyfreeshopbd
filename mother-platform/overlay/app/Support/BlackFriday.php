@@ -29,6 +29,12 @@ class BlackFriday
   /** Preview for the owner before the start: these product ids are shown with the badge on that one page only. Nothing is stored. */
   public static array $preview = []; public static bool $previewOn = false;
   public static function has($pid): bool { return isset(self::ids()[(int)$pid]) || isset(self::$preview[(int)$pid]); }
+  /** The badge. Owner, 26 Nov 2026 21:34: during the campaign every other product also carries the badge, at its normal price (bf_badge_all = 1); only Cigarette and Vape gets a Black Friday price. */
+  public static function badge($pid): bool {
+    if (self::has($pid)) return true; static $all = null;
+    if ($all === null) { try { $all = self::set('badge_all', '1') === '1' && self::running() && count(self::ids()) > 0 && !CleanSite::on(); } catch (\Throwable $e) { $all = false; } }
+    return $all || (self::$previewOn && self::set('badge_all', '1') === '1');
+  }
   private static function flush(): void { try { \Illuminate\Support\Facades\Cache::forget('bf.ids'); BundlePricing::flush(); \App\Http\Controllers\StoreController::bust(); foreach (['store.home4', 'store.home5', 'store.home6', 'store.home8', 'store.todaybest6'] as $k) \Illuminate\Support\Facades\Cache::forget($k); } catch (\Throwable $e) {} }
 
   /** Owner, 26 Nov 2026 21:33: ONLY Cigarette and Vape takes part. The other categories are products sourced on order whose real purchase cost we do not hold, so no honest Black Friday price can be worked out for them (bf_scope = smoke; 'all' would open every category).

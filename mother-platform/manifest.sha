@@ -54,11 +54,11 @@ e92c5075c5266882f35b3a3e18bfe14f44d16178 resources/views/report_details.blade.ph
 69fea07d5dc90ef812b3d8f9d79c2109de84bdfd app/Console/Commands/MotherGuard.php
 1d0fccc91e48f23fa9bc0b52a815868e094ca19f app/Http/Controllers/StoreController.php
 dffd2f93344fd37f7a9c59bed1f92d797a8a5ebd resources/views/store/layout.blade.php
-903480403ebb8435a0ab9ea79390b6cf668cfc8a resources/views/store/card.blade.php
+80d4fbcccf85561a18b9ea7f3555139732832941 resources/views/store/card.blade.php
 4a5eb7ee8d7960886fcb97c690bbb604ec69eb1f resources/views/store/home_sec.blade.php
 d02f81587ba2af0597216406b6d06eb4ea954427 resources/views/store/home.blade.php
 94f2cbd77b6dd59f371ed09133bfb9d25c1b53cb resources/views/store/category.blade.php
-b1a4a171826553c7ada28ba7e5b484de63b796d1 resources/views/store/product.blade.php
+d6d91112a993c4a13a31c4083964b25948710a3b resources/views/store/product.blade.php
 bb3768d278e3bf05865aa4877098a62d0d5039dc resources/views/store/search.blade.php
 5c5119931bc126cf9415b33585f8e94e03a9c8cf resources/views/store/track.blade.php
 347bb6ef69d6bd1da1bf7d431a5d70cf1a6ec564 resources/views/store/page.blade.php
@@ -1924,7 +1924,7 @@ ba78a0ed58b48fc0511d7ae87c360810a136dad6 resources/marine/cabin120/img/MDCG-TD-0
 5b93fe262fd35512f3557a3eddf31dabef67daa6 resources/marine/cabin120/img/MDCG-TD-012.webp
 b41378a52ad795659b63ce273d838f48d82f371b resources/marine/cabin120/import.csv
 87b2c84fc762342af724e245083623e3c554877c resources/marine/cabin120/manifest.csv
-8c2f47e1c304feba67c4a050ea6242fabf2f33d7 app/Support/BlackFriday.php
+11c334234e1afea54777588a875b8c38902f747a app/Support/BlackFriday.php
 eff6a26385919b5e0bf726e8a8b996a9acef0e4c app/Http/Controllers/BlackFridayController.php
 9cf248eb7c54d6cb50382ee1c8dba1dd92b2dc40 resources/views/black_friday_plan.blade.php
 1ad0f26eb6827c3a13eda174831de12d8c643f21 database/migrations/2026_11_26_000210_black_friday_items.php
