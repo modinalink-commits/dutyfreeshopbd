@@ -1594,5 +1594,5 @@ bcb9eab44a41831d70fbefbb361e5de40163b949 resources/views/marine/requests.blade.p
 f4cbbdc56c02ed48ec22f52e55cd9e5ec95c781e resources/views/marine/catalog.blade.php
 ef4559ea04ab8f5b7e73f0e627cb243347cfc518 resources/views/marine/settings.blade.php
 ed0f0c192a378ff0378434bd83c20eae65ad753e resources/views/marine/site.blade.php
-3300a69b1801d8b217e3abe9295d61ec0626a987 resources/views/marine/ports.blade.php
+447ead9764f2ece97345acca84e84b22f4c8b46a resources/views/marine/ports.blade.php
 d49edc6550048805ded668d9e013b65d496d0b14 resources/views/marine/upload_js.blade.php
