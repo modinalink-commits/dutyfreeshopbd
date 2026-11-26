@@ -47,6 +47,7 @@ class MotherPushWorker extends Command
     try { if (\App\Support\AutoHeal::begin('cancel-notice')) { \App\Support\OrderCancelNotice::tick(); } } catch (\Throwable $e) { $this->error('cancel-notice: ' . $e->getMessage()); \App\Support\LiveBoard::fail('cancel-notice', $e); }
     try { if (\App\Support\AutoHeal::begin('wa-update')) { $this->waUpdates(); \App\Support\OrderWaUpdate::tick(); } } catch (\Throwable $e) { $this->error('wa-update: ' . $e->getMessage()); \App\Support\LiveBoard::fail('wa-update', $e); }
     try { \App\Support\MarineAis::ensureLoop(); } catch (\Throwable $e) { $this->error('marine-ais: ' . $e->getMessage()); } // marine site: keep the AIS vessel data loop alive
+    try { \App\Support\MarineWeather::ensure(); } catch (\Throwable $e) { $this->error('marine-weather: ' . $e->getMessage()); } // marine site: Port Weather refresh when due
     \App\Support\DeployHealth::beat(); // heartbeat: shown as "Scheduler" in the Deployment Center
     try { if (\App\Support\AutoHeal::begin('deploy')) { \App\Support\Deployer::tick(); } } catch (\Throwable $e) { $this->error('deploy: ' . $e->getMessage()); \App\Support\LiveBoard::fail('deploy', $e); }
     try { if (\App\Support\AutoHeal::begin('alerts')) { \App\Support\AdminAlerts::tick(); } } catch (\Throwable $e) { $this->error('alerts: ' . $e->getMessage()); \App\Support\LiveBoard::fail('alerts', $e); }
