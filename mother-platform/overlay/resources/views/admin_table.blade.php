@@ -47,7 +47,7 @@ main table .mc-dr{display:flex;gap:10px;padding:3px 0;border-bottom:1px solid va
 main table .mc-dl{flex:0 0 38%;color:var(--text-muted);font-weight:600}main table .mc-dv{flex:1;min-width:0;word-break:break-word}
 @media print{main table .mc-h{display:table-cell!important}main table .mc-x,main table .mc-det{display:none!important}}
 </style>
-<style id="admin-cpg">.cpgh{display:none!important}.cpgbar{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap;margin:10px 0 0;font-size:13px;color:#6B7280}.cpgbar button{border:1px solid #D1D5DB;background:#fff;border-radius:8px;padding:5px 12px;cursor:pointer}.cpgbar button:disabled{opacity:.45;cursor:default}@media print{.cpgh{display:table-row!important}.cpgbar{display:none!important}}</style>
+<style id="admin-cpg">.cpgh{display:none!important}.cpgbar{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap;margin:10px 0 0;font-size:13px;color:#6B7280}.cpgbar button{border:1px solid #D1D5DB;background:#fff;color:#0F172A!important;font-weight:500;border-radius:8px;padding:5px 12px;cursor:pointer}.cpgbar button:disabled{opacity:.45;cursor:default}@media print{.cpgh{display:table-row!important}.cpgbar{display:none!important}}</style>
 <script>
 (function(){
   /* A. right-align money columns already handled by admin_grid; here: centre Status / Date / SKU columns and wrap wide tables */
