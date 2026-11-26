@@ -24,7 +24,7 @@
 @endif
 <div class="cc-box"><form method="get" style="padding:10px 14px;display:flex;gap:8px;flex-wrap:wrap"><input name="q" value="{{ $q }}" placeholder="Customer, number, representative or order no." style="height:34px;flex:1;min-width:200px;border:1px solid #D0D5DD;border-radius:8px;padding:0 10px">
 <select name="status" style="height:34px;border:1px solid #D0D5DD;border-radius:8px"><option value="">All</option>@foreach(['complete'=>'Recorded','incomplete'=>'Incomplete','failed'=>'Failed','deleted'=>'Deleted','expired'=>'Expired'] as $k=>$v)<option value="{{ $k }}" @selected($status===$k)>{{ $v }}</option>@endforeach</select>
-<button style="height:34px;padding:0 14px;border-radius:8px;border:1px solid #D0D5DD;background:#fff;font-weight:700;cursor:pointer">Search</button></form>
+<button style="height:34px;padding:0 14px;border-radius:8px;border:1px solid #D0D5DD;background:#fff;color:#0F172A;font-weight:700;cursor:pointer">Search</button></form>
 <div id="rsList"></div></div>
 @if($admin)<div class="cc-box" id="rsDlLog"><b class="t">Download log (PBX dialer + WhatsApp, last 40)</b><table class="cc-t"><thead><tr><th style="width:22%">When</th><th style="width:22%">Who</th><th>Which call</th></tr></thead><tbody>
 @forelse($dls as $x)<tr><td>{{ \Carbon\Carbon::parse($x->created_at)->timezone('Asia/Dhaka')->format('d M Y h:i A') }}</td><td>{{ $x->user_name }}</td><td>{{ \Illuminate\Support\Str::after($x->subject, 'Call recording downloaded: ') }}</td></tr>
