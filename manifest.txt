@@ -1,5 +1,11 @@
 app.js
 banner.jpg
+cat-bonded.jpg
+cat-cabin.jpg
+cat-crew.jpg
+cat-provisions.jpg
+cat-safety.jpg
+cat-technical.jpg
 icon.png
 index.html
 login.html
