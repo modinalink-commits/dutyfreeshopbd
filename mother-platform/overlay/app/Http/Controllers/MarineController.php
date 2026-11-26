@@ -14,7 +14,7 @@ class MarineController extends Controller
   const KEYS = ['marine_desk_email', 'marine_desk_phone', 'marine_desk_whatsapp'];
 
   private static function ready(): bool { return Schema::hasTable('marine_access_requests') && Schema::hasTable('marine_products'); }
-  public static function pending(): int { try { return Schema::hasTable('marine_access_requests') ? DB::table('marine_access_requests')->where('status', 'pending')->count() : 0; } catch (\Throwable $e) { return 0; } }
+  public static function pending(): int { try { return Schema::hasTable('marine_access_requests') ? DB::table('marine_access_requests')->whereIn('status', ['pending', 'docs'])->count() : 0; } catch (\Throwable $e) { return 0; } }
   private static function conf(): array { $c = DB::table('settings')->whereIn('key', self::KEYS)->pluck('value', 'key')->all(); $o = []; foreach (self::KEYS as $k) $o[$k] = trim((string)($c[$k] ?? '')); return $o; }
   /** Bonded goods: never public on the marine site, whatever is posted. */
   private static function bonded($cat): bool { return $cat && (StoreController::isSmokeCat($cat) || preg_match('/alcohol|liquor|whisk|wine|beer|spirit|tobacco|cigar/i', (string)($cat->name ?? '') . ' ' . (string)($cat->slug ?? '')) === 1); }
@@ -28,6 +28,7 @@ class MarineController extends Controller
   }
 
   public function requests(Request $r) {
+    if (\App\Support\MarineAccess::ready()) return redirect('/admin/marine/access/owner'); // replaced by Access Management (three subtabs)
     $st = in_array($r->query('status'), ['pending', 'approved', 'rejected'], true) ? $r->query('status') : 'pending';
     $rows = DB::table('marine_access_requests')->where('status', $st)->orderByDesc('id')->paginate(50)->withQueryString();
     $n = DB::table('marine_access_requests')->selectRaw('status, count(*) n')->groupBy('status')->pluck('n', 'status')->all();
@@ -296,8 +297,12 @@ class MarineController extends Controller
     $email = $f('email', 160); $imo = preg_replace('/\D/', '', (string)$r->input('imo'));
     if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL) || ($imo !== '' && strlen($imo) !== 7)) return redirect()->away($back . '?sent=0');
     if (DB::table('marine_access_requests')->where('email', $email)->where('status', 'pending')->where('created_at', '>', now()->subDay())->exists()) return redirect()->away($back . '?sent=1'); // same request again: no second row
-    DB::table('marine_access_requests')->insert(['kind' => $kind, 'company' => $f('company', 160), 'role' => $f('role', 80), 'name' => $f('name', 120), 'crew_rank' => $f('crew_rank', 80), 'email' => $email, 'phone' => $f('phone', 40),
+    $vrole = $kind === 'crew' ? ($r->input('vessel_role') === 'captain' ? 'captain' : 'crew') : null; $hasV = \Illuminate\Support\Facades\Schema::hasColumn('marine_access_requests', 'vessel_role');
+    if ($vrole === 'captain' && $imo === '') return redirect()->away($back . '?sent=0'); // a captain or authorized officer applies for a named vessel
+    $rid = DB::table('marine_access_requests')->insertGetId(($hasV ? ['vessel_role' => $vrole] : []) + ['kind' => $kind, 'company' => $f('company', 160), 'role' => $f('role', 80), 'name' => $f('name', 120), 'crew_rank' => $f('crew_rank', 80), 'email' => $email, 'phone' => $f('phone', 40),
       'imo' => $imo ?: null, 'vessel' => $f('vessel', 120), 'port' => $f('port', 40), 'message' => $f('message', 1000), 'status' => 'pending', 'ip' => $r->ip(), 'created_at' => now(), 'updated_at' => now()]);
+    // documents sent with the application: checked one by one, kept on the private disk; a refused file never blocks the application itself
+    try { if (\App\Support\MarineAccess::ready()) foreach (array_slice(array_filter((array)$r->file('docs', [])), 0, \App\Support\MarineAccess::DOC_COUNT) as $f) \App\Support\MarineAccess::storeDoc($f, (int)$rid, null, 'applicant'); } catch (\Throwable $e) { report($e); }
     try { \Illuminate\Support\Facades\Cache::forget('sb.counts.v3'); } catch (\Throwable $e) {}
     return redirect()->away($back . '?sent=1');
   }
