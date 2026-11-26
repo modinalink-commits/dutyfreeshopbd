@@ -7,7 +7,7 @@
 <div class="card"><h2>Campaign</h2><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px">
 <div><label>Campaign name</label><input name="name" value="{{ $o('name', 'Last Product 5% Win-Back Offer') }}" required></div>
 <div><label>Campaign type</label><select disabled><option>Last Ordered Product</option></select></div>
-<div><label>Discount % (on the last ordered product)</label><input type="number" step="0.5" min="0.5" max="90" name="discount_value" value="{{ $o('discount_value', 5) }}"></div>
+<div><label>Discount % (on the last ordered product; 0 = announcement call, no personal discount)</label><input type="number" step="0.5" min="0" max="90" name="discount_value" value="{{ $o('discount_value', 5) }}"></div>
 <div><label>Offer valid for</label><select name="validity" id="vv" onchange="document.getElementById('xd').style.display=this.value==='custom'?'block':'none'">@foreach([1=>'1 Day',3=>'3 Days',7=>'7 Days'] as $k=>$l)<option value="{{ $k }}" @selected((string)$val===(string)$k)>{{ $l }}</option>@endforeach<option value="custom" @selected($val==='custom')>Custom expiry date</option></select></div>
 <div id="xd" style="display:{{ $val==='custom' ? 'block' : 'none' }}"><label>Expiry date</label><input type="date" name="expiry_date" value="{{ $o('expiry_date') ? substr($o('expiry_date'),0,10) : '' }}"></div></div>
 <label style="display:block"><input type="checkbox" name="whole_cart" value="1" @checked($o('whole_cart', false))> Apply the % to the whole cart (default: only the last ordered product)</label>
