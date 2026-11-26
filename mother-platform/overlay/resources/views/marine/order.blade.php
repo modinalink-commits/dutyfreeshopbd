@@ -15,8 +15,11 @@
 @foreach($mails as $m)<div style="color:{{ $m->ok ? '#6B7280' : '#991B1B' }}">Quotation email {{ $m->ok ? 'sent' : 'NOT sent' }} {{ $bt($m->created_at) }}{{ $m->ok ? '' : ' · ' . \Illuminate\Support\Str::limit($m->error, 80) }}</div>@endforeach</div>
 </div>
 @if($o->note)<div class="card" style="font-size:13px"><b>Note from the account:</b> <span style="white-space:pre-line">{{ $o->note }}</span></div>@endif
+@php $mt = $lines->whereNotNull('product_id')->count(); $ls = 0; foreach ($lines as $x) if ($x->list_usd !== null) $ls += round((float)$x->qty * (float)$x->list_usd, 2); @endphp
+@if(count($files))<div class="card" style="font-size:13px"><b>Files from the customer:</b> @foreach($files as $d)<a href="/admin/marine/access/doc/{{ $d->id }}" style="margin-left:10px">{{ $d->name }}</a> <span style="color:#6B7280;font-size:11.5px">{{ number_format($d->size / 1024) }} KB</span>@endforeach<div style="font-size:11.5px;color:#6B7280;margin-top:4px">Excel, CSV and Word tables were read into the lines below. For a PDF or photo, open the file and add the lines by hand.</div></div>@endif
+<div class="card" style="font-size:13px;display:flex;gap:18px;flex-wrap:wrap;background:#F8FAFC"><span><b>{{ count($lines) }}</b> lines</span><span><b>{{ $mt }}</b> matched to the catalog</span><span><b>{{ count($lines) - $mt }}</b> free text (price by hand)</span><span>At list prices: <b>USD {{ number_format($ls, 2) }}</b></span></div>
 @if($crew)<div class="card" style="background:#F8FAFC;font-size:12px;color:#475569">Crew personal order: check the items and quantities against the crew allowance and customs rules for this vessel before quoting. Mark anything that cannot be supplied as not available.</div>@endif
-<form method="post" action="/admin/marine/orders/{{ $o->id }}/quote">@csrf
+<form method="post" action="/admin/marine/orders/{{ $o->id }}/quote">@csrf<input type="hidden" name="_n" value="{{ count($lines) }}">
 <div class="card" style="padding:0;overflow:auto"><table style="width:100%;min-width:860px;font-size:13px;border-collapse:collapse">
 <thead><tr style="text-align:left;color:#6B7280;font-size:11px;text-transform:uppercase"><th style="padding:8px 10px">Item</th><th style="padding:8px 10px;text-align:right">Quantity</th><th style="padding:8px 10px;text-align:right">List USD</th><th style="padding:8px 10px;text-align:right">Lowest USD</th><th style="padding:8px 10px;width:120px">Unit USD</th><th style="padding:8px 10px;text-align:right">Amount</th><th style="padding:8px 10px">Available</th><th style="padding:8px 10px;width:190px">Line note</th></tr></thead><tbody>
 @foreach($lines as $l)
@@ -28,7 +31,7 @@
 <td style="padding:8px 10px">@if($edit)<input type="number" name="l[{{ $l->id }}][unit_usd]" value="{{ $val }}" min="0" step="0.01" style="width:100px;text-align:right" class="up" data-q="{{ (float)$l->qty }}">@else{{ $l->unit_usd !== null ? number_format((float)$l->unit_usd, 2) : '-' }}@endif</td>
 <td style="padding:8px 10px;text-align:right;font-variant-numeric:tabular-nums" class="am">{{ $l->available && $l->unit_usd !== null ? number_format(round((float)$l->qty * (float)$l->unit_usd, 2), 2) : '-' }}</td>
 <td style="padding:8px 10px">@if($edit)<input type="checkbox" name="l[{{ $l->id }}][available]" value="1" class="av" style="width:auto" @checked($o->status === 'requested' ? true : (bool)$l->available)>@else{{ $l->available ? 'Yes' : 'No' }}@endif</td>
-<td style="padding:8px 10px">@if($edit)<input name="l[{{ $l->id }}][note]" value="{{ $l->note }}" maxlength="200" style="font-size:12px">@else{{ $l->note }}@endif</td></tr>
+<td style="padding:8px 10px">@if($edit)<div style="display:flex;gap:4px"><input name="l[{{ $l->id }}][note]" value="{{ $l->note }}" maxlength="200" style="font-size:12px"><button type="submit" form="rm" name="remove" value="{{ $l->id }}" class="btn g" style="padding:2px 8px;font-size:12px;color:#991B1B" title="Remove this line" aria-label="Remove {{ $l->name }}">×</button></div>@else{{ $l->note }}@endif</td></tr>
 @endforeach
 <tr style="border-top:1px solid #E5E7EB;background:#F8FAFC"><td colspan="5" style="padding:8px 10px;text-align:right">Subtotal USD</td><td style="padding:8px 10px;text-align:right;font-variant-numeric:tabular-nums" id="sub">{{ $o->subtotal !== null ? number_format((float)$o->subtotal, 2) : '-' }}</td><td colspan="2"></td></tr>
 <tr style="background:#F8FAFC"><td colspan="5" style="padding:8px 10px;text-align:right">Delivery charge USD (by weight and distance)</td><td style="padding:8px 10px;text-align:right">@if($edit)<input type="number" name="delivery_charge" id="del" value="{{ old('delivery_charge', $o->delivery_charge !== null ? number_format((float)$o->delivery_charge, 2, '.', '') : '') }}" min="0" step="0.01" style="width:100px;text-align:right" required>@else{{ number_format((float)$o->delivery_charge, 2) }}@endif</td><td colspan="2"></td></tr>
@@ -44,6 +47,16 @@
 <span style="font-size:12px;color:#6B7280">Lowest USD = cost plus the protected margin, at {{ $rate > 0 ? rtrim(rtrim(number_format($rate, 2), '0'), '.') . ' BDT per USD' : 'no saved rate (not checked)' }}. The account is told by email; prices are seen only after sign-in.</span></div></div>
 @elseif($o->desk_note || $o->internal_note)<div class="card" style="font-size:13px">@if($o->desk_note)<div><b>Shown to the account:</b> <span style="white-space:pre-line">{{ $o->desk_note }}</span></div>@endif @if($o->internal_note)<div><b>Internal:</b> <span style="white-space:pre-line">{{ $o->internal_note }}</span></div>@endif</div>@endif
 </form>
+@if($edit)
+<form id="rm" method="post" action="/admin/marine/orders/{{ $o->id }}/line">@csrf</form>
+<form method="post" action="/admin/marine/orders/{{ $o->id }}/line" class="card" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">@csrf
+<b style="font-size:13px;width:100%">Add a line</b>
+<label style="display:flex;flex-direction:column;gap:4px;font-size:12px;width:auto">Product code (optional)<input name="sku" maxlength="60" style="width:150px"></label>
+<label style="display:flex;flex-direction:column;gap:4px;font-size:12px;width:auto;flex:1 1 240px">Description (leave empty to use the catalog name)<input name="name" maxlength="200"></label>
+<label style="display:flex;flex-direction:column;gap:4px;font-size:12px;width:auto">Quantity<input name="qty" type="number" min="0.01" step="0.01" style="width:100px" required></label>
+<label style="display:flex;flex-direction:column;gap:4px;font-size:12px;width:auto">Unit<input name="unit" maxlength="20" style="width:80px"></label>
+<button class="btn g">Add line</button><span style="font-size:11.5px;color:#6B7280;width:100%">Send prices you have typed above first: adding or removing a line reloads the page.</span></form>
+@endif
 @if($next)
 <form method="post" action="/admin/marine/orders/{{ $o->id }}/move" class="card" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">@csrf
 <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;width:auto">Next step<select name="to" id="mv" style="min-width:210px">@foreach($next as $k)<option value="{{ $k }}">{{ ['ordered' => 'Record purchase order received', 'preparing' => 'Preparing the stores', 'delivered' => 'Delivered to the vessel', 'cancelled' => 'Cancel'][$k] ?? $k }}</option>@endforeach</select></label>

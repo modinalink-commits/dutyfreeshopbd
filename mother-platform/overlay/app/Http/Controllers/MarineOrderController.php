@@ -59,7 +59,9 @@ class MarineOrderController extends Controller
       if (!empty($l['product_id'])) { $p = $prod[(int)$l['product_id']] ?? null; if (!$p) continue; $lines[] = ['product_id' => (int)$p->id, 'sku' => mb_substr((string)$p->sku, 0, 60), 'name' => mb_substr((string)$p->name, 0, 200), 'size' => mb_substr((string)($p->size ?? ''), 0, 80) ?: null, 'qty' => $q, 'unit' => $unit, 'list_usd' => $p->usd_price, 'note' => $note]; }
       else { $name = mb_substr(trim(strip_tags((string)($l['name'] ?? ''))), 0, 200); if (mb_strlen($name) < 2) continue; $lines[] = ['product_id' => null, 'sku' => null, 'name' => $name, 'size' => null, 'qty' => $q, 'unit' => $unit, 'list_usd' => null, 'note' => $note]; }
     }
-    if (!$lines) return $bad('Add at least one item with a quantity.');
+    $files = array_slice(array_values(array_filter((array)$r->file('files', []))), 0, O::FILE_COUNT);
+    foreach ($files as $f) { $why = O::fileProblem((string)$f->getClientOriginalExtension(), $f->isValid() ? $f->getMimeType() : null, $f->isValid() ? (int)$f->getSize() : 0); if ($why) return $bad($f->getClientOriginalName() . ': ' . $why); }
+    if (!$lines && !$files) return $bad('Add at least one item, or attach your store list.');
     $pcId = null; if ($r->input('port_call_id')) { $pc = O::callsVisible($u)->where('id', (int)$r->input('port_call_id'))->first(); if ($pc && (!$imo || $pc->imo === $imo)) $pcId = (int)$pc->id; }
     $id = DB::transaction(function () use ($u, $kind, $imo, $vessel, $port, $place, $eta, $r, $lines, $declared, $pcId) {
       if ($declared) DB::table('marine_account_vessels')->insertOrIgnore(['account_id' => $u->id, 'imo' => $imo, 'name' => $vessel, 'note' => 'Declared by the account, not verified', 'verified' => false, 'added_by' => $u->username, 'created_at' => now(), 'updated_at' => now()]);
@@ -68,6 +70,19 @@ class MarineOrderController extends Controller
       foreach ($lines as $l) DB::table('marine_order_lines')->insert($l + ['order_id' => $id, 'available' => true, 'created_at' => now(), 'updated_at' => now()]);
       return $id;
     });
+    // attached files: every one is kept with the order; Excel, CSV and Word tables are also read into order lines (exact catalog matches get the list price, the rest keep the customer's wording)
+    $read = []; $room = O::TOTAL_LINES - count($lines);
+    foreach ($files as $f) {
+      try {
+        [$did, $path, $why] = O::storeFile($f, (int)$id, (int)$u->id); if (!$did) { $read[] = $f->getClientOriginalName() . ': not kept (' . $why . ')'; continue; }
+        $ext = strtolower((string)$f->getClientOriginalExtension()); if (!\App\Support\MarineSheet::kind($ext)) { $read[] = $f->getClientOriginalName() . ': attached for our desk'; continue; }
+        [$rows, $err] = \App\Support\MarineSheet::rows(\Illuminate\Support\Facades\Storage::disk('local')->path($path), $ext); $x = \App\Support\MarineSheet::items($rows);
+        $take = array_slice($x['items'], 0, max(0, $room)); $over = count($x['items']) - count($take) + $x['more']; $room -= count($take); $n = 0; $m = 0;
+        foreach (O::match($take, MarineController::hiddenIds()) as $l) { DB::table('marine_order_lines')->insert($l + ['order_id' => $id, 'available' => true, 'created_at' => now(), 'updated_at' => now()]); $n++; if ($l['product_id']) $m++; }
+        $read[] = $f->getClientOriginalName() . ': ' . ($n ? $n . ' item(s) read, ' . $m . ' matched to our catalog' : ($err ?: 'no item with a quantity was found; attached for our desk')) . ($x['skipped'] ? ', ' . $x['skipped'] . ' row(s) without a quantity left out' : '') . ($over > 0 ? ', ' . $over . ' more row(s) not read (limit ' . O::TOTAL_LINES . ' per requisition)' : '');
+      } catch (\Throwable $e) { report($e); $read[] = $f->getClientOriginalName() . ': attached, but it could not be read automatically'; }
+    }
+    if ($read) session()->flash('info', implode("\n", $read));
     try { \Illuminate\Support\Facades\Cache::forget('sb.counts.v3'); } catch (\Throwable $e) {}
     return redirect('/marine-portal/orders/' . $id)->with('ok', 'Your request was sent. Our marine desk will send a quotation in USD.');
   }
@@ -75,8 +90,14 @@ class MarineOrderController extends Controller
     $u = $this->me(); if (!$u) return redirect('/marine-portal/login');
     $o = $this->find($u, $id); if (!$o) abort(404);
     $by = DB::table('marine_accounts')->where('id', $o->account_id)->first(['username', 'name', 'company', 'type']);
-    return $this->pg('order', ['o' => $o, 'lines' => DB::table('marine_order_lines')->where('order_id', $o->id)->orderBy('id')->get(), 'by' => $by, 'status' => O::STATUS, 'ports' => O::PORTS, 'places' => O::PLACES,
+    return $this->pg('order', ['files' => DB::table('marine_documents')->where('order_id', $o->id)->orderBy('id')->get(['id', 'name', 'size']), 'o' => $o, 'lines' => DB::table('marine_order_lines')->where('order_id', $o->id)->orderBy('id')->get(), 'by' => $by, 'status' => O::STATUS, 'ports' => O::PORTS, 'places' => O::PLACES,
       'canAccept' => O::canAccept($u, $o, O::scopeOf($u)), 'canWithdraw' => O::canWithdraw($u, $o), 'expired' => $o->status === 'quoted' && O::expired($o), 'captainWait' => $o->status === 'quoted' && $o->kind === 'vessel' && $u->type === 'vessel']);
+  }
+  /** A file attached to an order: only for an account that may see that order. */
+  public function orderFile($id) {
+    $u = $this->me(); if (!$u) return redirect('/marine-portal/login');
+    $d = DB::table('marine_documents')->where('id', (int)$id)->whereNotNull('order_id')->first(); if (!$d || !$this->find($u, $d->order_id) || !\Illuminate\Support\Facades\Storage::disk('local')->exists($d->path)) abort(404);
+    return \Illuminate\Support\Facades\Storage::disk('local')->download($d->path, $d->name, ['X-Content-Type-Options' => 'nosniff', 'Cache-Control' => 'no-store, private']);
   }
   /** accept = place the purchase order; decline; withdraw (own request, before a purchase order). The rule is re-checked here, whatever the page showed. */
   public function orderAct(Request $r, $id) {
@@ -149,13 +170,14 @@ class MarineOrderController extends Controller
     foreach ($pids ? DB::table('products')->whereIn('id', $pids)->get() : [] as $p) $floor[$p->id] = O::floorUsd(\App\Support\ProfitFloor::base($p), $pct, $rate);
     $vv = ($acc && $o->imo && $acc->type !== 'vessel') ? DB::table('marine_account_vessels')->where('account_id', $acc->id)->where('imo', $o->imo)->value('verified') : true;
     return view('marine.order', ['o' => $o, 'lines' => $lines, 'acc' => $acc, 'floor' => $floor, 'rate' => $rate, 'pct' => $pct, 'status' => O::STATUS, 'ports' => O::PORTS, 'places' => O::PLACES, 'next' => O::NEXT[$o->status] ?? [], 'types' => A::TYPES, 'vroles' => A::VROLES,
-      'verified' => $vv === null ? false : (bool)$vv, 'admin' => \App\Support\ProfitFloor::admin(), 'pc' => $o->port_call_id ? DB::table('marine_port_calls')->where('id', $o->port_call_id)->first() : null, 'mails' => DB::table('marine_invites')->where('account_id', $o->account_id)->where('kind', 'quotation')->orderByDesc('id')->limit(3)->get()]);
+      'files' => DB::table('marine_documents')->where('order_id', $o->id)->orderBy('id')->get(), 'verified' => $vv === null ? false : (bool)$vv, 'admin' => \App\Support\ProfitFloor::admin(), 'pc' => $o->port_call_id ? DB::table('marine_port_calls')->where('id', $o->port_call_id)->first() : null, 'mails' => DB::table('marine_invites')->where('account_id', $o->account_id)->where('kind', 'quotation')->orderByDesc('id')->limit(3)->get()]);
   }
   /** The desk prices the lines and sends the quotation. A unit price under the protected margin needs an admin and an explicit override. */
   public function adminQuote(Request $r, $id) {
     $o = DB::table('marine_orders')->where('id', (int)$id)->first(); if (!$o || !O::ready()) return redirect('/admin/marine/orders'); $back = '/admin/marine/orders/' . $o->id;
     if (!in_array($o->status, ['requested', 'quoted'], true)) return redirect($back)->with('ok', 'A quotation can no longer be changed for this order.');
     $lines = DB::table('marine_order_lines')->where('order_id', $o->id)->orderBy('id')->get(); $in = (array)$r->input('l', []); $rate = MarineController::rate(); $pct = \App\Support\ProfitFloor::percent();
+    if ((int)$r->input('_n') !== $lines->count()) return redirect($back)->with('ok', 'The form did not arrive completely (or the lines changed). Nothing was saved; open the order again and resend.'); // a long list must never be half-saved
     $prod = DB::table('products')->whereIn('id', $lines->pluck('product_id')->filter()->unique()->all() ?: [0])->get()->keyBy('id'); $upd = []; $calc = []; $low = []; $any = false;
     foreach ($lines as $l) {
       $x = (array)($in[$l->id] ?? []); $av = !empty($x['available']); $price = (isset($x['unit_usd']) && is_numeric($x['unit_usd']) && (float)$x['unit_usd'] >= 0 && (float)$x['unit_usd'] < 1000000) ? round((float)$x['unit_usd'], 2) : null;
@@ -177,6 +199,20 @@ class MarineOrderController extends Controller
     $acc = DB::table('marine_accounts')->where('id', $o->account_id)->first(); $ok = false; $err = 'no account email';
     if ($acc && $acc->status === 'active') [$ok, $err] = A::mail('quotation', $acc->email, 'Quotation ' . $o->number . ' from DutyFree BD Marine Supply', 'Your quotation is ready', '<p>Dear ' . e($acc->name ?: 'Sir or Madam') . ',</p><p>Our marine desk has prepared quotation <b>' . e($o->number) . '</b>' . ($o->vessel ? ' for <b>' . e($o->vessel) . '</b>' : '') . '. It is valid until ' . e($valid->format('d M Y')) . '.</p><p style="margin:18px 0"><a href="' . A::PORTAL . '/orders/' . (int)$o->id . '" style="display:inline-block;background:#F95505;color:#FFFFFF;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:8px">Open the quotation</a></p><p>Sign in with your username to see the prices in USD and to answer.</p>', $acc->request_id, $acc->id, $by);
     return redirect($back)->with('ok', 'Quotation saved: USD ' . number_format($tot, 2) . '. ' . ($ok ? 'The account was told by email.' : 'The email was NOT sent (' . $err . '); the quotation is visible in the account.'));
+  }
+  /** The desk adds a line (for a PDF, photo or other file that could not be read) or removes one, while the quotation can still change. */
+  public function adminLine(Request $r, $id) {
+    $o = DB::table('marine_orders')->where('id', (int)$id)->first(); if (!$o || !O::ready()) return redirect('/admin/marine/orders'); $back = '/admin/marine/orders/' . $o->id;
+    if (!in_array($o->status, ['requested', 'quoted'], true)) return redirect($back)->with('ok', 'Lines can no longer be changed for this order.');
+    if ($r->input('remove')) { $l = DB::table('marine_order_lines')->where('id', (int)$r->input('remove'))->where('order_id', $o->id)->first(); if ($l) { DB::table('marine_order_lines')->where('id', $l->id)->delete(); \App\Support\Procure::audit('marine.order.line', 'Line removed from ' . $o->number . ': ' . $l->name . ' x ' . $l->qty, null, null); } return redirect($back)->with('ok', 'Line removed.'); }
+    $q = O::qty($r->input('qty')); $name = mb_substr(trim((string)$r->input('name')), 0, 200); $code = mb_substr(trim((string)$r->input('sku')), 0, 60);
+    if ($q === null || (mb_strlen($name) < 2 && $code === '')) return redirect($back)->with('ok', 'Enter a product code or a description, and a quantity.');
+    if (DB::table('marine_order_lines')->where('order_id', $o->id)->count() >= O::TOTAL_LINES) return redirect($back)->with('ok', 'This order already has ' . O::TOTAL_LINES . ' lines.');
+    $l = O::match([['code' => $code ?: null, 'name' => $name !== '' ? $name : $code, 'qty' => $q, 'unit' => mb_substr(trim((string)$r->input('unit')), 0, 20) ?: null]], MarineController::hiddenIds())[0];
+    if ($code !== '' && !$l['product_id'] && $name === '') return redirect($back)->with('ok', 'No marine catalog product has the code ' . $code . '. Add a description to keep it as a free-text line.');
+    DB::table('marine_order_lines')->insert($l + ['order_id' => $o->id, 'available' => true, 'created_at' => now(), 'updated_at' => now()]);
+    \App\Support\Procure::audit('marine.order.line', 'Line added to ' . $o->number . ' by the desk: ' . $l['name'] . ' x ' . $q, null, ['product_id' => $l['product_id']]);
+    return redirect($back)->with('ok', 'Line added' . ($l['product_id'] ? ' (catalog product, list price filled in).' : ' as a free-text item.'));
   }
   public function adminMove(Request $r, $id) {
     $o = DB::table('marine_orders')->where('id', (int)$id)->first(); if (!$o || !O::ready()) return redirect('/admin/marine/orders'); $back = '/admin/marine/orders/' . $o->id; $to = (string)$r->input('to'); $by = A::staff();
@@ -207,9 +243,9 @@ class MarineOrderController extends Controller
       'home' => ['v' => 'mp.home', 'd' => ['docs' => collect(), 'ves' => collect($type === 'vessel' ? [] : [(object)['imo' => '9000001', 'name' => 'MV SAMPLE', 'note' => 'Sample']]), 'types' => A::TYPES, 'vroles' => A::VROLES]],
       'orders' => ['v' => 'mp.orders', 'd' => ['rows' => $pager([$o]), 'st' => '', 'status' => O::STATUS, 'ports' => O::PORTS, 'canVessel' => O::canRaise($u, 'vessel'), 'canPersonal' => O::canRaise($u, 'personal'), 'crew' => O::isCrew($u)]],
       'order_new' => ['v' => 'mp.order_new', 'd' => ['kind' => O::isCrew($u) ? 'personal' : 'vessel', 'vessels' => $type === 'vessel' ? [] : $ves, 'ports' => O::PORTS, 'places' => O::PLACES, 'pc' => null, 'max' => O::MAX_LINES]],
-      'order' => ['v' => 'mp.order', 'd' => ['o' => $o, 'lines' => $lines, 'by' => (object)['username' => $u->username, 'name' => $u->name, 'company' => $u->company, 'type' => $u->type], 'status' => O::STATUS, 'ports' => O::PORTS, 'places' => O::PLACES, 'canAccept' => O::canAccept($u, $o, $scope), 'canWithdraw' => O::canWithdraw($u, $o), 'expired' => false, 'captainWait' => $st === 'quoted' && $o->kind === 'vessel' && $type === 'vessel']],
+      'order' => ['v' => 'mp.order', 'd' => ['files' => collect([(object)['id' => 0, 'name' => 'store-list-sample.xlsx', 'size' => 18432]]), 'o' => $o, 'lines' => $lines, 'by' => (object)['username' => $u->username, 'name' => $u->name, 'company' => $u->company, 'type' => $u->type], 'status' => O::STATUS, 'ports' => O::PORTS, 'places' => O::PLACES, 'canAccept' => O::canAccept($u, $o, $scope), 'canWithdraw' => O::canWithdraw($u, $o), 'expired' => false, 'captainWait' => $st === 'quoted' && $o->kind === 'vessel' && $type === 'vessel']],
       'calls' => ['v' => 'mp.calls', 'd' => ['rows' => $pager([$call]), 'vessels' => $type === 'vessel' ? [] : $ves, 'ports' => O::PORTS, 'places' => O::PLACES, 'call' => O::CALL, 'canAdd' => !O::isCrew($u), 'canOrder' => O::canRaise($u, 'vessel')]],
-      'desk_order' => ['v' => 'marine.order', 'd' => ['o' => $o, 'lines' => $lines, 'acc' => $u, 'floor' => [], 'rate' => MarineController::rate(), 'pct' => \App\Support\ProfitFloor::percent(), 'status' => O::STATUS, 'ports' => O::PORTS, 'places' => O::PLACES, 'next' => O::NEXT[$o->status] ?? [], 'types' => A::TYPES, 'vroles' => A::VROLES, 'verified' => true, 'admin' => true, 'pc' => null, 'mails' => collect()]],
+      'desk_order' => ['v' => 'marine.order', 'd' => ['files' => collect([(object)['id' => 0, 'name' => 'store-list-sample.xlsx', 'size' => 18432, 'by_side' => 'account'], (object)['id' => 0, 'name' => 'photo-of-list.jpg', 'size' => 734003, 'by_side' => 'account']]), 'o' => $o, 'lines' => $lines, 'acc' => $u, 'floor' => [], 'rate' => MarineController::rate(), 'pct' => \App\Support\ProfitFloor::percent(), 'status' => O::STATUS, 'ports' => O::PORTS, 'places' => O::PLACES, 'next' => O::NEXT[$o->status] ?? [], 'types' => A::TYPES, 'vroles' => A::VROLES, 'verified' => true, 'admin' => true, 'pc' => null, 'mails' => collect()]],
       default => null };
     if (!$d) abort(404);
     return response(view($d['v'], $d['d'] + ['u' => $u]))->header('X-Robots-Tag', 'noindex, nofollow')->header('Cache-Control', 'no-store, private');

@@ -2,7 +2,7 @@
 @section('body')
 <h1>{{ $kind === 'personal' ? 'New personal order' : 'New requisition' }}</h1>
 <p class="sub">{{ $kind === 'personal' ? 'Items for yourself. Our marine desk confirms what can be supplied, the price in USD and the delivery to your vessel.' : 'Stores and supplies for a vessel. Our marine desk answers with a quotation in USD; prices shown here are list prices only.' }}</p>
-<form method="post" action="/marine-portal/orders" id="of">@csrf<input type="hidden" name="kind" value="{{ $kind }}">@if($pc)<input type="hidden" name="port_call_id" value="{{ $pc->id }}">@endif
+<form method="post" action="/marine-portal/orders" id="of" enctype="multipart/form-data">@csrf<input type="hidden" name="kind" value="{{ $kind }}">@if($pc)<input type="hidden" name="port_call_id" value="{{ $pc->id }}">@endif
 <section class="card"><h2>Vessel and delivery</h2><div class="f2">
 @if($u->type === 'vessel')<div><label>Vessel</label><input type="text" value="{{ $u->vessel ?: '-' }}{{ $u->imo ? ' · IMO ' . $u->imo : '' }}" disabled></div>
 @else<div><label for="imo">Vessel</label><select id="vsel">@foreach($vessels as $v)<option value="{{ $v->imo }}" @selected(old('imo', $pc->imo ?? '') === $v->imo)>{{ $v->name ?: 'Vessel' }} · IMO {{ $v->imo }}{{ $v->verified ? '' : ' (not verified yet)' }}</option>@endforeach<option value="">Another vessel…</option></select>
@@ -11,7 +11,10 @@
 <div><label for="place">Delivery</label><select id="place" name="place">@foreach($places as $k => $l)<option value="{{ $k }}" @selected(old('place', $pc->place ?? 'unknown') === $k)>{{ $l }}</option>@endforeach</select></div>
 <div><label for="eta">ETA or wanted delivery time (Bangladesh time)</label><input id="eta" type="datetime-local" name="eta" value="{{ old('eta', ($pc && $pc->eta) ? \Carbon\Carbon::parse($pc->eta)->timezone('Asia/Dhaka')->format('Y-m-d\TH:i') : '') }}"></div>
 </div></section>
-<section class="card"><h2>Items</h2>
+<section class="card"><h2>Send your own list</h2>
+<label for="fl">Excel, Word, PDF or a photo of your store list</label><input id="fl" type="file" name="files[]" multiple accept=".xlsx,.xls,.csv,.txt,.docx,.doc,.pdf,.jpg,.jpeg,.png,.webp">
+<p class="hint">Up to 6 files, 5 MB each. Every file is kept with your requisition. Items are read automatically from Excel (.xlsx), CSV and tables in Word (.docx): a row needs a description and a quantity. PDF, photos and older .xls / .doc files are attached for our marine desk to enter.</p><div class="al bad" id="fb" hidden style="margin:10px 0 0"></div></section>
+<section class="card"><h2>Or add items here</h2>
 <label for="ps">Search the catalog</label><input id="ps" type="search" placeholder="Product name or code" autocomplete="off"><div id="pr" role="listbox" aria-label="Search results" style="border:1px solid #D9E0E8;border-radius:8px;margin-top:6px;max-height:280px;overflow:auto" hidden></div>
 <div class="row" style="margin-top:14px;align-items:flex-end"><div style="flex:3 1 220px"><label for="fn">Or type an item that is not in the catalog</label><input id="fn" type="text" maxlength="200" placeholder="e.g. Fresh vegetables, mixed"></div><div style="flex:1 1 90px"><label for="fu">Unit</label><input id="fu" type="text" maxlength="20" placeholder="kg, pcs"></div><button type="button" class="g" id="fa">Add item</button></div>
 <div class="tw" style="margin-top:16px"><table style="min-width:560px"><thead><tr><th>Item</th><th style="width:110px">Quantity</th><th style="width:90px">Unit</th><th class="num" style="width:110px">List USD</th><th style="width:44px"></th></tr></thead><tbody id="lb"><tr id="le"><td colspan="5" style="color:#64748B">No item added yet.</td></tr></tbody></table></div>
@@ -37,6 +40,7 @@ ps.addEventListener('keydown',function(e){if(e.key==='Enter')e.preventDefault()}
 document.getElementById('fa').onclick=function(){var f=document.getElementById('fn'),u=document.getElementById('fu'),v=f.value.trim();if(v.length<2){f.focus();return}add({name:v,unit:u.value.trim()});f.value='';u.value=''};
 document.getElementById('fn').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();document.getElementById('fa').click()}});
 var vs=document.getElementById('vsel');if(vs){var vn=document.getElementById('vnew'),im=document.getElementById('imo');function sv(){var o=vs.value==='';vn.hidden=!o;if(!o)im.value=vs.value;else if(vs.options.length>1&&[].some.call(vs.options,function(x){return x.value===im.value}))im.value=''}vs.onchange=sv;if(vs.options.length===1){vs.hidden=true}else if(im.value&&![].some.call(vs.options,function(x){return x.value===im.value}))vs.value='';sv()}
-document.getElementById('of').addEventListener('submit',function(e){if(!lb.querySelector('tr[data-l]')){e.preventDefault();ps.focus();le.style.color='#991B1B'}});
+var fl=document.getElementById('fl'),fb=document.getElementById('fb');function fchk(){var m='',fs=fl.files;if(fs.length>6)m='Please choose at most 6 files.';for(var i=0;i<fs.length&&!m;i++){if(fs[i].size>5242880)m=fs[i].name+' is larger than 5 MB.';else if(!/\.(xlsx|xls|csv|txt|docx|doc|pdf|jpe?g|png|webp)$/i.test(fs[i].name))m=fs[i].name+' is not an Excel, Word, PDF, CSV or image file.'}fb.hidden=!m;fb.textContent=m;return !m}fl.addEventListener('change',fchk);
+document.getElementById('of').addEventListener('submit',function(e){if(!fchk()){e.preventDefault();fl.focus();return}if(!lb.querySelector('tr[data-l]')&&!fl.files.length){e.preventDefault();ps.focus();le.style.color='#991B1B';le.firstChild.textContent='Add an item or attach your list.'}});
 })();</script>
 @endsection

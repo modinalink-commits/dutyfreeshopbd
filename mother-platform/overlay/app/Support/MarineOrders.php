@@ -23,6 +23,18 @@ class MarineOrders
   const CALL = ['expected' => 'Expected', 'arrived' => 'In port', 'sailed' => 'Sailed', 'cancelled' => 'Cancelled'];
   const PORTS = ['chattogram' => 'Chattogram', 'mongla' => 'Mongla', 'payra' => 'Payra'];
   const MAX_LINES = 80;
+  /** Files a customer may attach to a requisition: extension => accepted real content types. Office files are zip or OLE containers, so those types are accepted for them. Never run, only downloaded by staff or the account itself. */
+  const FILE_EXT = ['pdf' => ['application/pdf'], 'jpg' => ['image/jpeg'], 'jpeg' => ['image/jpeg'], 'png' => ['image/png'], 'webp' => ['image/webp'],
+    'xlsx' => ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/zip', 'application/octet-stream'], 'docx' => ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/zip', 'application/octet-stream'],
+    'xls' => ['application/vnd.ms-excel', 'application/x-ole-storage', 'application/CDFV2', 'application/vnd.ms-office', 'application/octet-stream'], 'doc' => ['application/msword', 'application/x-ole-storage', 'application/CDFV2', 'application/vnd.ms-office', 'application/octet-stream'],
+    'csv' => ['text/plain', 'text/csv', 'application/csv'], 'txt' => ['text/plain']];
+  const FILE_MAX = 5242880; const FILE_COUNT = 6; const TOTAL_LINES = 250;
+  public static function fileProblem(string $ext, ?string $mime, int $size): ?string {
+    $ext = strtolower($ext); if (!isset(self::FILE_EXT[$ext])) return 'Only Excel, Word, PDF, CSV or image files are accepted.';
+    if (!in_array((string)$mime, self::FILE_EXT[$ext], true)) return 'The file content does not match its type.';
+    if ($size <= 0 || $size > self::FILE_MAX) return 'Each file must be 5 MB or smaller.';
+    return null;
+  }
 
   // ---------- pure rules (covered by the test script) ----------
   public static function number(int $id, ?int $year = null): string { return 'RQ-' . substr((string)($year ?: (int)date('Y')), -2) . '-' . str_pad((string)$id, 5, '0', STR_PAD_LEFT); }
@@ -57,8 +69,34 @@ class MarineOrders
   public static function cleanImo(?string $v): ?string { $d = preg_replace('/\D/', '', (string)$v); return strlen($d) === 7 ? $d : null; }
   public static function qty($v): ?float { if (!is_numeric($v)) return null; $q = round((float)$v, 2); return ($q > 0 && $q <= 100000) ? $q : null; }
 
+  /** Keeps one attached file on the private disk under a random name, linked to the order. Returns [document id or null, stored path or null, problem or null]. */
+  public static function storeFile(?\Illuminate\Http\UploadedFile $f, int $orderId, ?int $accountId, string $side = 'account'): array {
+    if (!$f || !$f->isValid()) return [null, null, 'The file did not arrive completely.'];
+    $ext = strtolower((string)$f->getClientOriginalExtension()); $bad = self::fileProblem($ext, $f->getMimeType(), (int)$f->getSize()); if ($bad) return [null, null, $bad];
+    if (DB::table('marine_documents')->where('order_id', $orderId)->count() >= 12) return [null, null, 'This order already has the maximum number of files.'];
+    $path = $f->storeAs('marine-orders/' . $orderId, bin2hex(random_bytes(12)) . '.' . $ext, 'local'); if (!$path) return [null, null, 'The file could not be saved.'];
+    $name = mb_substr(preg_replace('/[^\w .()\-]+/u', '_', (string)$f->getClientOriginalName()), 0, 190) ?: 'file.' . $ext;
+    $id = DB::table('marine_documents')->insertGetId(['order_id' => $orderId, 'account_id' => $accountId, 'name' => $name, 'path' => $path, 'mime' => $f->getMimeType(), 'size' => (int)$f->getSize(), 'by_side' => $side, 'created_at' => now(), 'updated_at' => now()]);
+    return [$id, $path, null];
+  }
+  /** Items read from a file -> order lines. A line is tied to a catalog product only on an exact code or exact name match; otherwise it stays the customer's own wording. Prices never come from the file. */
+  public static function match(array $items, array $hidden): array {
+    $codes = []; $names = []; foreach ($items as $it) { if (!empty($it['code'])) $codes[mb_strtolower($it['code'])] = 1; $names[mb_strtolower($it['name'])] = 1; }
+    $base = fn() => DB::table('marine_products as m')->join('products as p', 'p.id', '=', 'm.product_id')->where('m.enabled', true)->where('p.published', true)->whereNotNull('m.usd_price')->when($hidden, fn($w) => $w->where(fn($x) => $x->whereNull('p.category_id')->orWhereNotIn('p.category_id', $hidden)));
+    $bySku = []; $byName = []; $cols = ['p.id', 'p.sku', 'p.name', 'p.size', 'm.usd_price'];
+    foreach (array_chunk(array_keys($codes), 200) as $ch) foreach ($base()->whereIn(DB::raw('lower(p.sku)'), array_map('strval', $ch))->get($cols) as $p) $bySku[mb_strtolower((string)$p->sku)] = $p;
+    foreach (array_chunk(array_keys($names), 200) as $ch) foreach ($base()->whereIn(DB::raw('lower(p.name)'), array_map('strval', $ch))->get($cols) as $p) $byName[mb_strtolower((string)$p->name)] = $p;
+    $out = [];
+    foreach ($items as $it) {
+      $p = (!empty($it['code']) ? ($bySku[mb_strtolower($it['code'])] ?? null) : null) ?: ($byName[mb_strtolower($it['name'])] ?? null);
+      $out[] = $p ? ['product_id' => (int)$p->id, 'sku' => mb_substr((string)$p->sku, 0, 60), 'name' => mb_substr((string)$p->name, 0, 200), 'size' => mb_substr((string)($p->size ?? ''), 0, 80) ?: null, 'qty' => $it['qty'], 'unit' => $it['unit'] ?? null, 'list_usd' => $p->usd_price, 'note' => mb_strtolower((string)$p->name) !== mb_strtolower($it['name']) ? mb_substr('Your wording: ' . $it['name'], 0, 200) : null]
+        : ['product_id' => null, 'sku' => !empty($it['code']) ? mb_substr((string)$it['code'], 0, 60) : null, 'name' => $it['name'], 'size' => null, 'qty' => $it['qty'], 'unit' => $it['unit'] ?? null, 'list_usd' => null, 'note' => null];
+    }
+    return $out;
+  }
+
   // ---------- data ----------
-  public static function ready(): bool { try { return Schema::hasTable('marine_orders') && Schema::hasTable('marine_order_lines') && Schema::hasTable('marine_port_calls') && MarineAccess::ready(); } catch (\Throwable $e) { return false; } }
+  public static function ready(): bool { try { return Schema::hasTable('marine_orders') && Schema::hasTable('marine_order_lines') && Schema::hasTable('marine_port_calls') && Schema::hasColumn('marine_documents', 'order_id') && MarineAccess::ready(); } catch (\Throwable $e) { return false; } }
   public static function vessels(object $a, bool $verifiedOnly = true): array {
     if ($a->type === 'vessel') return $a->imo ? [(object)['imo' => (string)$a->imo, 'name' => $a->vessel, 'verified' => true]] : [];
     return DB::table('marine_account_vessels')->where('account_id', $a->id)->when($verifiedOnly, fn($w) => $w->where('verified', true))->orderBy('id')->get(['imo', 'name', 'verified'])->all();
