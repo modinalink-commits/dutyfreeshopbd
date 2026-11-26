@@ -13,7 +13,7 @@ mk('Export .xlsx',function(){return load('https://cdnjs.cloudflare.com/ajax/libs
 mk('Export PDF',function(){return load('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js').then(function(){return load('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js')}).then(function(){var t=prep();var d=new window.jspdf.jsPDF({orientation:'landscape',unit:'pt',format:'a4'});d.setFontSize(13);d.text(title.trim(),30,28);var fr=document.querySelector('form.bar');d.setFontSize(8);d.text(new Date().toLocaleString(),30,40);d.autoTable({html:t,startY:48,styles:{fontSize:7,cellPadding:2},headStyles:{fillColor:[55,65,81]},margin:{left:30,right:30},didParseCell:function(h){var r=h.row.raw&&h.row.raw.classList;if(r&&(r.contains('gh')||r.contains('st')||r.contains('gt'))){h.cell.styles.fontStyle='bold';h.cell.styles.fillColor=r.contains('gt')?[229,231,235]:[243,244,246]}}});d.save(nm+'.pdf')})});
 })();
 </script>
-<style>.pgh{display:none!important}@media print{.pgh{display:table-row!important}.pgbar{display:none!important}}.pgbar{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap;margin:10px 0 0;font-size:13px;color:#6B7280}.pgbar button{border:1px solid #D1D5DB;background:#fff;border-radius:8px;padding:5px 12px;cursor:pointer}.pgbar button:disabled{opacity:.45;cursor:default}</style>
+<style>.pgh{display:none!important}@media print{.pgh{display:table-row!important}.pgbar{display:none!important}}.pgbar{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap;margin:10px 0 0;font-size:13px;color:#6B7280}.pgbar button{border:1px solid #D1D5DB;background:#fff;color:#111827!important;font-weight:600;border-radius:8px;padding:5px 12px;cursor:pointer}.pgbar button:disabled{opacity:.45;cursor:default}</style>
 <script>
 (function(){
 var PER=50,page=1;
@@ -21,7 +21,7 @@ function rowsOf(t){return Array.prototype.slice.call(t.querySelectorAll('tbody >
 function render(){
  var t=document.querySelector('table.pl');if(!t)return;
  var old=document.querySelector('.pgbar');if(old)old.remove();
- var rs=rowsOf(t),dets=rs.filter(function(r){return r.classList.contains('det')});
+ var rs=rowsOf(t),dets=rs.filter(function(r){return r.classList.contains('det')&&!r.classList.contains('st')});
  rs.forEach(function(r){r.classList.remove('pgh')});
  if(dets.length<=PER)return;
  var pages=Math.ceil(dets.length/PER);if(page>pages)page=pages;if(page<1)page=1;
@@ -29,8 +29,8 @@ function render(){
  function flush(){if(grp.length&&vis===0)grp.forEach(function(r){r.classList.add('pgh')});grp=[];vis=0}
  rs.forEach(function(r){
   if(r.classList.contains('gh')){flush();grp.push(r);return}
-  if(r.classList.contains('det')){var show=idx>=from&&idx<to;idx++;if(!show)r.classList.add('pgh');else vis++;return}
   if(r.classList.contains('st')){grp.push(r);flush();return}
+  if(r.classList.contains('det')){var show=idx>=from&&idx<to;idx++;if(!show)r.classList.add('pgh');else vis++;return}
  });
  flush();
  var bar=document.createElement('div');bar.className='pgbar';
