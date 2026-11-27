@@ -91,7 +91,8 @@ class ProfitFloor {
     foreach ($items as $i) {
       $q = (int)($i['qty'] ?? 0); $pr = (float)($i['price'] ?? 0); if ($q <= 0 || $pr <= 0) continue;
       $c = (float)($pc[(int)($i['product_id'] ?? 0)]->cost ?? 0);
-      $room += $c > 0 ? max(0, $pr - self::floor($c)) * $q : $pr * $q;
+      $fl = self::floor($c); try { if ($c > 0 && BlackFriday::has((int)($i['product_id'] ?? 0))) $fl = max($fl, BlackFriday::price($c)); } catch (\Throwable $e) {}   // a product at its Black Friday price keeps the Black Friday profit: no room for another discount
+      $room += $c > 0 ? max(0, $pr - $fl) * $q : $pr * $q;
     }
     return round($room, 2);
   }

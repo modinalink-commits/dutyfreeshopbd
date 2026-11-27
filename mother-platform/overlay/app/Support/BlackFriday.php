@@ -58,7 +58,7 @@ class BlackFriday
         });
       } catch (\Throwable $e) { report($e); }
     }
-    if ($n) { self::flush(); try { BundlePricing::sync(); } catch (\Throwable $e) {} Procure::audit('Black Friday prices applied', $n . ' products', null, ['by' => $by, 'min_saving_pct' => self::minOff(), 'profit_pct' => ProfitFloor::percent()]); }
+    if ($n) { self::flush(); try { BundlePricing::sync(); } catch (\Throwable $e) {} Procure::audit('Black Friday prices applied', $n . ' products', null, ['by' => $by, 'min_saving_pct' => self::minOff(), 'profit_pct' => self::pct()]); }
     return $n;
   }
   /** Put the normal prices back. A product whose price somebody changed during the campaign is left as it is (status kept). */
@@ -82,7 +82,7 @@ class BlackFriday
     foreach (DB::table('black_friday_items')->where('status', 'applied')->get() as $x) {
       try { $c = ProfitFloor::costs([(int)$x->product_id])[(int)$x->product_id] ?? null; if (!$c || (float)$c->cost <= 0 || abs((float)$c->price - (float)$x->bf_price) > 0.004) continue; $need = self::price((float)$c->cost); if ($need <= (float)$x->bf_price) continue;
         if ($need >= (float)$x->price_before) { DB::table('products')->where('id', $x->product_id)->update(['price' => $x->price_before, 'compare_price' => $x->compare_before, 'updated_at' => now()]); DB::table('black_friday_items')->where('id', $x->id)->update(['status' => 'restored', 'restored_at' => now(), 'note' => 'Purchase cost went up: no saving left', 'updated_at' => now()]); }
-        else { DB::table('products')->where('id', $x->product_id)->update(['price' => $need, 'updated_at' => now()]); DB::table('black_friday_items')->where('id', $x->id)->update(['bf_price' => $need, 'cost' => $c->cost, 'note' => 'Lifted: purchase cost went up', 'updated_at' => now()]); }
+        else { DB::table('products')->where('id', $x->product_id)->update(['price' => $need, 'updated_at' => now()]); DB::table('black_friday_items')->where('id', $x->id)->update(['bf_price' => $need, 'cost' => $c->cost, 'off_pct' => (float)$x->price_before > 0 ? round(((float)$x->price_before - $need) / (float)$x->price_before * 100, 1) : 0, 'note' => 'Lifted: purchase cost or Black Friday profit went up', 'updated_at' => now()]); }
         $n++; } catch (\Throwable $e) { report($e); }
     }
     if ($n) { self::flush(); Procure::audit('Black Friday price lifted (cost went up)', $n . ' products'); }
@@ -119,13 +119,19 @@ class BlackFriday
   public static function counts(): array { if (!self::ready()) return ['applied' => 0, 'restored' => 0, 'kept' => 0]; $c = DB::table('black_friday_items')->selectRaw('status, count(*) n')->groupBy('status')->pluck('n', 'status')->all(); return ['applied' => (int)($c['applied'] ?? 0), 'restored' => (int)($c['restored'] ?? 0), 'kept' => (int)($c['kept'] ?? 0)]; }
 
   /** Whole-taka Black Friday price for a purchase cost: never below the protected profit. */
-  public static function price(float $cost): float { return $cost > 0 ? (float)ceil(ProfitFloor::floor($cost) - 0.0001) : 0.0; }
+  public static function price(float $cost): float { return $cost > 0 ? (float)ceil(ceil(round($cost * (1 + self::pct() / 100) * 100, 6)) / 100 - 0.0001) : 0.0; }
+
+  /** Owner, 27 Nov 2026 18:58: the Black Friday profit is 15% over purchase cost (setting bf_profit_pct; 15 until changed). Never lower than the central protected profit. */
+  public static function pct(): float { $v = self::set('profit_pct', ''); return max(ProfitFloor::percent(), $v === '' ? 15.0 : (float)$v); }
+
+  /** Lift every product already on a Black Friday price to the current Black Friday profit; one with no saving left goes back to its normal price. Uses guard(). */
+  public static function reprice(): int { return self::guard(); }
 
   /** Every published product with its place in the plan. status: in | no_cost | at_floor | no_stock | twin */
   public static function plan(): array {
     $cols = array_merge(['p.id', 'p.sku', 'p.name', 'p.price', 'p.compare_price', 'p.stock', 'p.cost', 'p.category_id', 'p.group_key', 'c.name as cat', 'c.slug as cslug'],
       ProfitFloor::hasAvg() ? ['p.avg_cost'] : [], ProfitFloor::hasFifo() ? ['p.fifo_cost'] : [], ProfitFloor::hasTwin() ? ['p.parent_product_id'] : []);
-    $rows = []; $pct = ProfitFloor::percent();
+    $rows = []; $pct = self::pct();
     foreach (DB::table('products as p')->leftJoin('categories as c', 'c.id', '=', 'p.category_id')->where('p.published', true)->where('p.price', '>', 0)->orderBy('p.id')->get($cols) as $p) {
       $price = (float)$p->price; $cost = ProfitFloor::base($p); $bf = self::price($cost); $stock = $p->stock === null ? null : (int)$p->stock;
       $smoke = ($p->group_key ?? '') === 'smoke' || \App\Http\Controllers\StoreController::isSmokeCat((object)['slug' => $p->cslug, 'name' => $p->cat]);
