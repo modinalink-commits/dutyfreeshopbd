@@ -36,6 +36,8 @@ class PathaoStatusSync {
     $known = $items->contains(fn($x) => $x->outcome !== null);
     $got = self::collected($i);
     if ($action === 'partial_pending') {
+      // 27 Nov 2026: the courier verdict moves an order into Return Pending ONCE. When staff later moved it out (Status button / bulk action), the sync must not drag it back on every refresh; it only flags it.
+      if ($o->status !== 'Return Pending' && self::appliedBefore($id)) { self::flag($id, 'Item Review', 'Pathao still reports a Partial Return, but staff moved this order out of Return Pending after the courier result was applied. The order was NOT moved back. If goods came back, use Return Received; otherwise record the delivery outcome.'); return; }
       if ($known) { self::checkMoney($o, $items, $got); if ($o->status !== 'Return Pending' && $o->return_type === 'Partial') self::setStatus($o, 'Return Pending', 'Pathao: Partial Return'); return; }
       if ($o->status === 'Return Pending') return;
       $ret = self::match($items, $got, $o);
@@ -107,5 +109,7 @@ class PathaoStatusSync {
   }
   public static function clear(int $id): void { DB::table('orders')->where('id', $id)->whereNotNull('billing_flag')->update(['billing_flag' => null, 'billing_flag_note' => null]); }
   /** Orders the owner holds for a manual Return Received test (setting return_auto_hold = comma separated order ids). */
+  /** The courier result already put this order into Return Pending once (automatic log line). */
+  private static function appliedBefore(int $id): bool { return DB::table('order_status_logs')->where('order_id', $id)->where('to_status', 'Return Pending')->where('user_name', 'Pathao (auto)')->exists(); }
   private static function held($id): bool { return in_array((string)$id, array_map('trim', explode(',', (string)(DB::table('settings')->where('key', 'return_auto_hold')->value('value') ?? ''))), true); }
 }
