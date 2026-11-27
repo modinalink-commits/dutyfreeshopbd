@@ -801,7 +801,7 @@ class Chat {
 
   /** Card data for lists and popups: customer category, order count and risk. */
   /** Follow-up columns exist (migration 2026_11_27_090000). Checked once per request; before the migration every follow-up feature stays off. */
-  public static function fuReady(): bool { static $r = null; if ($r === null) { try { $r = \Illuminate\Support\Facades\Schema::hasColumn('chat_threads', 'follow_up_at'); } catch (\Throwable $e) { $r = false; } } return $r; }
+  public static function fuReady(): bool { static $r = false, $at = 0; if (!$r && time() - $at >= 60) { $at = time(); try { $r = \Illuminate\Support\Facades\Schema::hasColumn('chat_threads', 'follow_up_at'); } catch (\Throwable $e) { $r = false; } } return $r; } // a long-running worker started before the migration notices the new columns within a minute
   /** Columns that end a follow-up, for a conversation update (a new customer message, a sent staff reply, Close chat). Empty before the migration. */
   public static function fuClear(): array { return self::fuReady() ? ['follow_up_at'=>null, 'follow_up_note'=>null, 'follow_up_by'=>null, 'follow_up_set_at'=>null] : []; }
   /** Automatic closing never touches a conversation that has a follow-up waiting (the representative promised to come back to it). No effect before the migration. */
