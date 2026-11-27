@@ -78,6 +78,14 @@ class OrderDiscount {
   /** Offer the customer picked at checkout (only among offers that are already valid for them). */
   public static ?string $pick = null;
   public static function compute(?string $phone, float $sub, ?string $coupon = null, array $ctx = []): array {
+    // Owner rule (26 Nov 2026, repeated 27 Nov 19:03): a product sold at its Black Friday price gets NO other discount. Its lines are taken out of the discount base here, so another item's profit room can never be spent on it.
+    try {
+      if (!empty($ctx['items']) && BlackFriday::running()) {
+        $keep = []; $bfv = 0.0; $bfq = 0;
+        foreach ((array)$ctx['items'] as $i) { $pid = (int)($i['product_id'] ?? 0); if ($pid > 0 && BlackFriday::has($pid)) { $bfv += (float)($i['price'] ?? 0) * (int)($i['qty'] ?? 0); $bfq += (int)($i['qty'] ?? 0); } else $keep[] = $i; }
+        if ($bfv > 0) { $sub = round(max(0.0, $sub - $bfv), 2); $ctx['items'] = $keep; if (isset($ctx['qty'])) $ctx['qty'] = max(0, (int)$ctx['qty'] - $bfq); }
+      }
+    } catch (\Throwable $e) { report($e); }
     $r = ProfitFloor::enforce(self::computeRaw($phone, $sub, $coupon, $ctx), array_values((array)($ctx['items'] ?? [])), (float)($ctx['bsave'] ?? 0));
     // App Install Welcome Discount: after bundle / membership / campaign discounts and the 15% protected-profit rule, capped to what is still safe (Auto Safe-Cap).
     return !empty($ctx['app']) ? AppReward::apply($r, $phone, $sub, $ctx) : $r;

@@ -73,6 +73,7 @@ class BundlePricing {
   }
   private static function one($x, ?array $cfg = null): array {
     if (AutoPrice::exempt((int)($x->id ?? 0))) return AutoPrice::tiers($x); // Best Sellers pack offer: the owner's approved exception to the protected floor
+    try { if (BlackFriday::has((int)($x->id ?? 0))) return [2 => null, 3 => null, 4 => null, 5 => null]; } catch (\Throwable $e) {} // Black Friday price: no quantity price on top (owner rule)
     return self::compute((float)$x->price, (float)$x->base, (string)($x->rule ?: 'global'), [2 => $x->buy2_price, 3 => $x->buy3_price, 4 => $x->buy4_price, 5 => $x->buy5_price], $cfg);
   }
   /** Tiers of one product, live (cached for the request). */
