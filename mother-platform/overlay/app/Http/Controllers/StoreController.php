@@ -596,6 +596,7 @@ class StoreController extends Controller {
   /** Total for $n units of a product using the admin "Quantity prices" (Buy 2..5 = total price of the pack). Packs of 5 first, then the remainder; never more than unit price x qty. */
   public static function bundleLine(object $p, int $n): float {
     $u = (float)$p->price; $plain = $u * $n; if ($n < 2) return round($plain, 2);
+    try { if (\App\Support\BlackFriday::running()) return round($plain, 2); } catch (\Throwable $e) {} // Black Friday: no quantity price on any product (owner rule 27 Nov 2026)
     if (isset(\App\Support\PrepaidOnly::catSet()[(int)($p->category_id ?? 0)])) return round($plain, 2); // Watch: no bundle price
     $id = (int)($p->id ?? 0); // Global bundle pricing: always calculated live from the sale price and the FIFO cost (never a stale stored price)
     $tier = function (int $k) use ($p, $u, $id) { $t = $id > 0 ? \App\Support\BundlePricing::total($id, $k) : null; if ($t === null && $id <= 0) { $t = (float)($p->{'buy'.$k.'_price'} ?? 0); } return ($t !== null && $t > 0 && $t < $u * $k) ? $t : $u * $k; };

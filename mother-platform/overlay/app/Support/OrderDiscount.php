@@ -78,6 +78,13 @@ class OrderDiscount {
   /** Offer the customer picked at checkout (only among offers that are already valid for them). */
   public static ?string $pick = null;
   public static function compute(?string $phone, float $sub, ?string $coupon = null, array $ctx = []): array {
+    // Owner rule (27 Nov 2026 20:20): while Black Friday runs, NO other offer or automatic discount applies to any order (membership, returning, app welcome, coupon, win-back, voice, referral, bundle, amount ...). One central stop, so cart, checkout, admin and app all follow it. An order being edited (exclude_order) keeps its own saved calculation. After bf_end the normal rules return by themselves.
+    try {
+      if (empty($ctx['exclude_order']) && BlackFriday::running()) {
+        $cp = trim((string)$coupon);
+        return ['mode' => self::mode(), 'lines' => [], 'total' => 0.0, 'coupon_error' => $cp !== '' ? 'Coupons and extra discounts are paused during Black Friday' : null, 'free_ship' => false, 'profile' => $phone ? self::profile($phone) : ['category' => 'New', 'membership' => 'Inactive', 'membership_name' => null, 'orders' => 0, 'found' => false], 'bf_lock' => true];
+      }
+    } catch (\Throwable $e) { report($e); }
     // Owner rule (26 Nov 2026, repeated 27 Nov 19:03): a product sold at its Black Friday price gets NO other discount. Its lines are taken out of the discount base here, so another item's profit room can never be spent on it.
     try {
       if (!empty($ctx['items']) && BlackFriday::running()) {
