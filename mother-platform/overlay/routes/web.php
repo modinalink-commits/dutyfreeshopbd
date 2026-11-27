@@ -210,6 +210,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/chat/thread/{id}/claim', [\App\Http\Controllers\ChatController::class,'claim'])->whereNumber('id')->middleware('throttle:60,1');
   Route::get('/chat/thread/{id}/owner-history', [\App\Http\Controllers\ChatController::class,'ownerHistory'])->whereNumber('id');
   Route::post('/chat/thread/{id}/status', [\App\Http\Controllers\ChatController::class,'status']);
+  Route::post('/chat/close-answered', [\App\Http\Controllers\ChatController::class,'closeAnswered'])->middleware('throttle:6,1');
   Route::post('/chat/thread/{id}/follow-up', [\App\Http\Controllers\ChatController::class,'followUp'])->whereNumber('id')->middleware('throttle:60,1');
   Route::post('/chat/thread/{id}/report', [\App\Http\Controllers\ChatController::class,'report'])->whereNumber('id');
   Route::post('/chat/thread/{id}/phone', [\App\Http\Controllers\ChatController::class,'phone']);
@@ -692,7 +693,7 @@ Route::prefix('api/staff')->withoutMiddleware([\Illuminate\Foundation\Http\Middl
     Route::post('/chat/thread/{id}/reply', [$C,'reply'])->whereNumber('id')->middleware('throttle:60,1');
     Route::post('/chat/thread/{id}/claim', [$C,'claim'])->whereNumber('id')->middleware('throttle:60,1'); Route::post('/chat/thread/{id}/assign', [$C,'assign'])->whereNumber('id')->middleware('throttle:60,1'); Route::get('/chat/thread/{id}/owner-history', [$C,'ownerHistory'])->whereNumber('id');
     Route::post('/chat/thread/{id}/ai', [$C,'ai'])->whereNumber('id')->middleware('throttle:30,1');
-    Route::post('/chat/thread/{id}/assign', [$C,'assign'])->whereNumber('id'); Route::post('/chat/thread/{id}/status', [$C,'status'])->whereNumber('id'); Route::post('/chat/thread/{id}/report', [$C,'report'])->whereNumber('id'); Route::post('/chat/close-answered', [$C,'closeAnswered'])->middleware('throttle:6,1');
+    Route::post('/chat/thread/{id}/assign', [$C,'assign'])->whereNumber('id'); Route::post('/chat/thread/{id}/status', [$C,'status'])->whereNumber('id'); Route::post('/chat/thread/{id}/report', [$C,'report'])->whereNumber('id');
   });
 });
 // ---- Supplier Partner Portal (public login; everything else behind SupplierPortalAuth) ----
