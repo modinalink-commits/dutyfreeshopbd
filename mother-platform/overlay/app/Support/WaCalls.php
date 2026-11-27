@@ -238,6 +238,7 @@ class WaCalls {
         self::act($c, ['action' => 'terminate']);
         $dur = $c->answered_at ? max(0, time() - strtotime((string)$c->answered_at)) : null;
         DB::table('wa_calls')->where('id', $id)->update(['status' => $c->status === 'active' ? 'ended' : 'missed', 'duration' => $dur, 'ended_at' => now(), 'sdp_offer' => null, 'updated_at' => now()]);
+        if ($c->status !== 'active') self::logFinal($id); // ended before it connected = a missed call: staff note + the one automatic line to the caller
         return [true, 'ended'];
       }
     } catch (\Throwable $e) { report($e); }
@@ -389,6 +390,40 @@ class WaCalls {
         if ($t2) self::threadNote($c->from_wa, 'WhatsApp call back by ' . $who . ': ' . $t2, null, 'Call log'); return; }
       $txt = ['ended' => 'answered by ' . ($c->user_name ?: 'staff') . ($c->duration !== null ? ', talk time ' . gmdate('i:s', (int)$c->duration) : ''), 'missed' => 'MISSED - call the customer back', 'rejected' => 'rejected by ' . ($c->user_name ?: 'staff'), 'failed' => 'failed to connect'][$c->status] ?? null;
       if ($txt) self::threadNote($c->from_wa, 'WhatsApp call: ' . $txt, null, 'Call log'); } catch (\Throwable $e) {}
+    try { if (isset($c) && $c && $c->status === 'missed') self::missedNotice((int)$c->id); } catch (\Throwable $e) { report($e); }
+  }
+  const MISSED_TEXT = 'আসসালামু আলাইকুম। দুঃখিত, আমাদের প্রতিনিধিরা এই মুহূর্তে ব্যস্ত থাকায় আপনার WhatsApp কলটি ধরতে পারিনি। আপনি চাইলে এখানেই মেসেজ দিয়ে জানাতে পারেন কীভাবে সাহায্য করতে পারি। একজন প্রতিনিধি সুযোগ পেলেই আপনাকে ফোন করবেন। — DutyFreeBD';
+  const MISSED_BY = 'Missed call notice (auto)';
+  /**
+   * Owner 27 Nov 2026 (22:07): after an incoming WhatsApp call is confirmed MISSED, the caller gets one fixed line in the same WhatsApp chat.
+   * Once per call: the row is claimed in the database first (missed_msg_at), so the same call event arriving again never sends twice. An answered, rejected or
+   * outgoing call never gets it. The callback task is the missed call itself (it stays on the missed list / "Missed call" tag until a representative marks it handled).
+   * A failed send is shown to staff: failed line in the chat, a staff-only note, and the reason on the missed-call card. Setting wa_missed_notice = '0' switches the message off.
+   */
+  public static function missedNotice(int $id): void {
+    if (!self::ready() || !Schema::hasColumn('wa_calls', 'missed_msg_at') || Sms::secret('wa_missed_notice') === '0') return;
+    if (!DB::table('wa_calls')->where('id', $id)->where('status', 'missed')->whereNull('missed_msg_at')->where('direction', '!=', 'BUSINESS_INITIATED')->whereNull('answered_at')->update(['missed_msg_at' => now(), 'missed_msg_status' => 'sending'])) return;
+    $c = DB::table('wa_calls')->find($id); $sent = false; $err = null;
+    try {
+      $wa = preg_replace('/\D/', '', (string)$c->from_wa);
+      if ($wa === '') $err = 'The caller\'s WhatsApp number is not known.';
+      else {
+        $t = self::thread($wa);
+        if (!$t) { // first contact was a call: the notice needs a conversation to sit in (closed, like every automatic notice, until the customer writes)
+          $phone = Chat::phone($wa); $cust = $phone ? DB::table('customers')->where('phone', $phone)->orderBy('id')->first() : null;
+          $tid = DB::table('chat_threads')->insertGetId(['channel' => 'whatsapp', 'external_id' => $wa, 'page_ref' => (string)$c->phone_id ?: null, 'customer_id' => $cust->id ?? null, 'name' => ($cust->name ?? null) ?: ((string)$c->from_name ?: ($phone ?: 'WhatsApp user')), 'phone' => $phone, 'status' => 'resolved', 'unread' => 0, 'created_at' => now(), 'updated_at' => now()]);
+          $t = DB::table('chat_threads')->find($tid);
+        }
+        [$sent, $err] = Chat::deliver($t, self::MISSED_TEXT);
+        DB::table('chat_messages')->insert(['thread_id' => (int)$t->id, 'dir' => 'out', 'kind' => 'text', 'body' => self::MISSED_TEXT, 'user_name' => self::MISSED_BY, 'is_ai' => false, 'status' => $sent ? 'sent' : 'failed', 'error' => $sent ? null : mb_substr((string)$err, 0, 250), 'created_at' => now(), 'updated_at' => now()]);
+      }
+    } catch (\Throwable $e) { report($e); $sent = false; $err = $err ?: 'Sending stopped with an error.'; }
+    DB::table('wa_calls')->where('id', $id)->update(['missed_msg_status' => $sent ? 'sent' : 'failed', 'missed_msg_error' => $sent ? null : mb_substr((string)$err, 0, 300), 'updated_at' => now()]);
+    if (!$sent) self::threadNote($c->from_wa, 'The automatic missed-call message could NOT be sent (' . mb_substr((string)$err, 0, 200) . '). Call or message this customer yourself.', null, 'Call log');
+    try { self::auditMissed($c, $sent, $err); } catch (\Throwable $e) {}
+  }
+  private static function auditMissed(object $c, bool $sent, ?string $err): void {
+    DB::table('audit_logs')->insert(['user_id' => null, 'user_name' => 'System (rules)', 'action' => 'wa.missed_notice', 'subject' => 'Missed WhatsApp call #' . $c->id . ': automatic message ' . ($sent ? 'sent' : 'FAILED - ' . mb_substr((string)$err, 0, 160)), 'ip' => null, 'created_at' => now(), 'updated_at' => now()]);
   }
   /** Calls and chat stay with one representative: the person who answers the call takes the caller's conversation if nobody owns it (so the AI stops answering it). Never takes it away from another owner. */
   private static function linkChat(object $c, int $uid): void {

@@ -1963,3 +1963,4 @@ database/migrations/2026_11_27_110000_ai_works_24_hours.php
 database/migrations/2026_11_27_190000_black_friday_profit_15.php
 database/migrations/2026_11_27_200000_chat_rules.php
 database/migrations/2026_11_27_210000_chat_late_incidents.php
+database/migrations/2026_11_27_220000_wa_calls_missed_notice.php

@@ -46,9 +46,9 @@ class WaCallController extends Controller {
   public function missed(Request $r) {
     if (!WaCalls::ready() || !\Illuminate\Support\Facades\Schema::hasColumn('wa_calls', 'handled_at')) return response()->json(['missed' => []]);
     $uid = (int)$r->user()->id; $out = [];
-    foreach (DB::table('wa_calls')->where('status', 'missed')->whereNull('handled_at')->where('created_at', '>', now()->subMinutes(120))->orderByDesc('id')->limit(4)->get(['id', 'from_wa', 'from_name', 'created_at']) as $c) {
+    foreach (DB::table('wa_calls')->where('status', 'missed')->whereNull('handled_at')->where('created_at', '>', now()->subMinutes(120))->orderByDesc('id')->limit(4)->get() as $c) {
       if (Cache::has('wa.mhide.' . $c->id . '.' . $uid)) continue; $m = max(0, (int)floor((time() - strtotime((string)$c->created_at)) / 60));
-      $out[] = ['id' => $c->id, 'from' => $c->from_wa ? '+' . $c->from_wa : 'WhatsApp user', 'name' => (string)$c->from_name, 'ago' => $m < 1 ? 'just now' : $m . ' min ago'];
+      $out[] = ['id' => $c->id, 'from' => $c->from_wa ? '+' . $c->from_wa : 'WhatsApp user', 'name' => (string)$c->from_name, 'ago' => $m < 1 ? 'just now' : $m . ' min ago', 'msg' => (string)($c->missed_msg_status ?? ''), 'msg_err' => (string)($c->missed_msg_error ?? '')];
     }
     return response()->json(['missed' => $out]);
   }
