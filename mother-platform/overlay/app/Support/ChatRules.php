@@ -24,7 +24,7 @@ class ChatRules {
     if (preg_match('/টাকা\s*কেটে|টাকা\s*(দিয়েছি|পাঠিয়েছি|পাঠিয়ে\s*দিয়েছি)|taka\s*kete|taka\s*(di(ye|ee)|path(ai|iye))\s*(chi|ci|se|che)|paid\s+but|payment\s+(failed|problem|hoyni|hoy\s*ni)|পেমেন্ট\s*(হয়নি|হয় নি|ফেইল|সমস্যা)/iu', $t)) return ['Payment problem', 'high'];
     if (preg_match('/\bcancel\b|বাতিল|ক্যান্সেল|ক্যানসেল/iu', $t)) return ['Cancellation request', 'high'];
     if (preg_match('/wrong\s+(product|item)|ভুল\s*(পণ্য|প্রোডাক্ট|জিনিস)|vul\s*product/iu', $t)) return ['Wrong product', 'high'];
-    if (preg_match('/\b(agent|human|real\s+person|representative|support\s+team|manager)\b|এজেন্ট|মানুষের?\s*সাথে|কারো\s*সাথে\s*কথা|কাস্টমার\s*কেয়ার|প্রতিনিধি|agent\s*er\s*shathe|manush|kotha\s*bolte\s*chai/iu', $t)) return ['Customer asked for an agent', 'normal'];
+    if (preg_match('/\b(agent|human|real\s+person|representative|support\s+team|manager)\b|এজেন্ট|মানুষের?\s*সাথে|কারো\s*সাথে\s*কথা|কাস্টমার\s*কেয়ার|প্রতিনিধি|agent\s*er\s*shathe|manush|kotha\s*bolte\s*chai|\bag[ae]n[td]\b|\bagen\b|\bag[ae]nt\w*\s+\w*\s*kotha|kotha\s*bol(tasi|tesi|tasai|te\s*cai|bo)/iu', $t)) return ['Customer asked for an agent', 'normal'];
     if (preg_match('/\burgent\b|জরুরি|আজই\s*লাগবে|delivery.{0,25}(late|দেরি)|দেরি.{0,20}(ডেলিভারি|delivery)/iu', $t)) return ['Urgent delivery issue', 'normal'];
     return null;
   }
