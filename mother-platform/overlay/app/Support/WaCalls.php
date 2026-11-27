@@ -392,7 +392,13 @@ class WaCalls {
       if ($txt) self::threadNote($c->from_wa, 'WhatsApp call: ' . $txt, null, 'Call log'); } catch (\Throwable $e) {}
     try { if (isset($c) && $c && $c->status === 'missed') self::missedNotice((int)$c->id); } catch (\Throwable $e) { report($e); }
   }
-  const MISSED_TEXT = 'আসসালামু আলাইকুম। দুঃখিত, আমাদের প্রতিনিধিরা এই মুহূর্তে ব্যস্ত থাকায় আপনার WhatsApp কলটি ধরতে পারিনি। আপনি চাইলে এখানেই মেসেজ দিয়ে জানাতে পারেন কীভাবে সাহায্য করতে পারি। একজন প্রতিনিধি সুযোগ পেলেই আপনাকে ফোন করবেন। — DutyFreeBD';
+  /** Owner 27 Nov 2026 (22:13): short line, 24 hours a day; the wording depends on the business hours (Site settings > Business contact > business hours, default 10:00 AM – 10:00 PM, Asia/Dhaka). */
+  const MISSED_TEXT = 'দুঃখিত, আপনার কলটি ধরতে পারিনি। এখানেই মেসেজ দিন। সুযোগ পেলেই ফোন করব।';
+  const MISSED_TEXT_OFF = 'দুঃখিত, আপনার কলটি ধরতে পারিনি। এখানেই মেসেজ দিন। পরের অফিস সময়ে আপনাকে ফোন করব।';
+  public static function officeOpen(?\Carbon\Carbon $at = null): bool {
+    try { [$a, $b] = array_pad(explode('-', Biz::hoursSchema()), 2, ''); $t = ($at ?: now())->copy()->timezone('Asia/Dhaka')->format('H:i'); if ($a === '' || $b === '' || $a === $b) return true; return $a < $b ? ($t >= $a && $t < $b) : ($t >= $a || $t < $b); } catch (\Throwable $e) { return true; }
+  }
+  public static function missedText(?\Carbon\Carbon $at = null): string { return self::officeOpen($at) ? self::MISSED_TEXT : self::MISSED_TEXT_OFF; }
   const MISSED_BY = 'Missed call notice (auto)';
   /**
    * Owner 27 Nov 2026 (22:07): after an incoming WhatsApp call is confirmed MISSED, the caller gets one fixed line in the same WhatsApp chat.
@@ -414,8 +420,8 @@ class WaCalls {
           $tid = DB::table('chat_threads')->insertGetId(['channel' => 'whatsapp', 'external_id' => $wa, 'page_ref' => (string)$c->phone_id ?: null, 'customer_id' => $cust->id ?? null, 'name' => ($cust->name ?? null) ?: ((string)$c->from_name ?: ($phone ?: 'WhatsApp user')), 'phone' => $phone, 'status' => 'resolved', 'unread' => 0, 'created_at' => now(), 'updated_at' => now()]);
           $t = DB::table('chat_threads')->find($tid);
         }
-        [$sent, $err] = Chat::deliver($t, self::MISSED_TEXT);
-        DB::table('chat_messages')->insert(['thread_id' => (int)$t->id, 'dir' => 'out', 'kind' => 'text', 'body' => self::MISSED_TEXT, 'user_name' => self::MISSED_BY, 'is_ai' => false, 'status' => $sent ? 'sent' : 'failed', 'error' => $sent ? null : mb_substr((string)$err, 0, 250), 'created_at' => now(), 'updated_at' => now()]);
+        $txt = self::missedText(); [$sent, $err] = Chat::deliver($t, $txt);
+        DB::table('chat_messages')->insert(['thread_id' => (int)$t->id, 'dir' => 'out', 'kind' => 'text', 'body' => $txt, 'user_name' => self::MISSED_BY, 'is_ai' => false, 'status' => $sent ? 'sent' : 'failed', 'error' => $sent ? null : mb_substr((string)$err, 0, 250), 'created_at' => now(), 'updated_at' => now()]);
       }
     } catch (\Throwable $e) { report($e); $sent = false; $err = $err ?: 'Sending stopped with an error.'; }
     DB::table('wa_calls')->where('id', $id)->update(['missed_msg_status' => $sent ? 'sent' : 'failed', 'missed_msg_error' => $sent ? null : mb_substr((string)$err, 0, 300), 'updated_at' => now()]);
