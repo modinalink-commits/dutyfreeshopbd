@@ -534,15 +534,25 @@ class Chat {
     foreach ($q->limit(2000)->get() as $t) {
       try {
         $tid = (int)$t->id;
-        if (!empty($t->awaiting_reply) || !empty($t->needs_human) || !empty($t->handoff_at) || (!empty($t->reported_at) && empty($t->report_solved_at))) { $kept++; continue; }
-        if (in_array((string)($t->intent ?? ''), ['complaint', 'refund', 'cancel', 'change_order', 'human_request', 'payment', 'order_request'], true)) { $kept++; continue; }
-        if (DB::table('chat_handoffs')->where('thread_id', $tid)->whereIn('status', ['open', 'accepted'])->exists()) { $kept++; continue; }
+        if (!empty($t->awaiting_reply) || !empty($t->needs_human) || (!empty($t->reported_at) && empty($t->report_solved_at))) { $kept++; continue; }
+        if (in_array((string)($t->intent ?? ''), ['complaint', 'refund', 'cancel', 'change_order', 'payment'], true)) { $kept++; continue; }
+        // Owner rule 27 Nov 2026 (20:44): a hand-off or a "wants a person" chat closes only after a PERSON answered it (after the hand-off and after the customer's last message) and the customer then stayed silent for the set hours, counted from that reply. The AI's own "the team will reply" line never counts.
+        // Chats that only the new rule can close (hand-off answered by a person, or an old "order request" label with no open request) and whose last reply is older than the day the rule started stay open: the owner asked that old chats are not closed in one go. Setting chat_close_relaxed_from (UTC date-time; '0' = no limit).
+        $from = (string)(Sms::secret('chat_close_relaxed_from') ?: '2026-11-27 15:00:00');
+        $relaxed = !empty($t->handoff_at) || in_array((string)($t->intent ?? ''), ['human_request', 'order_request'], true);
+        if ($relaxed && $from !== '0' && (string)$t->last_at < $from) { $kept++; continue; }
+        $ho = !empty($t->handoff_at) || (string)($t->intent ?? '') === 'human_request' || DB::table('chat_handoffs')->where('thread_id', $tid)->whereIn('status', ['open', 'accepted'])->exists();
+        if ($ho) {
+          $hu = self::lastHumanOut([$tid])[$tid] ?? null; $hu = $hu !== null ? (string)$hu : null;
+          if ($hu === null || (!empty($t->handoff_at) && $hu < (string)$t->handoff_at) || (!empty($t->last_customer_message_at) && $hu < (string)$t->last_customer_message_at) || $hu > (string)now()->subHours(max(1, $hours))) { $kept++; continue; }
+        }
         try { if (DB::table('chat_order_requests')->where('thread_id', $tid)->where('status', 'review')->exists()) { $kept++; continue; } } catch (\Throwable $e) {}
         $li = DB::table('chat_messages')->where('thread_id', $tid)->orderByDesc('id')->first(['dir', 'status']);
         if (!$li || $li->dir !== 'out' || $li->status === 'failed') { $kept++; continue; }
         $n++;
         if ($dry) continue;
-        DB::table('chat_threads')->where('id', $tid)->update(['status'=>'resolved', 'unread'=>0, 'awaiting_reply'=>false, 'updated_at'=>now()]);
+        DB::table('chat_threads')->where('id', $tid)->update(['status'=>'resolved', 'unread'=>0, 'awaiting_reply'=>false, 'updated_at'=>now()] + ($ho ? ['handoff_at'=>null, 'handoff_reason'=>null, 'ai_paused'=>false] : []));
+        if ($ho) { try { DB::table('chat_handoffs')->where('thread_id', $tid)->whereIn('status', ['open', 'accepted'])->update(['status'=>'done', 'updated_at'=>now()]); } catch (\Throwable $e) {} }
         try { ChatOwner::system($tid, null, 'release', 'Closed: answered, customer silent ('.($by ?: 'staff').').'); } catch (\Throwable $e) {}
         try { DB::table('audit_logs')->insert(['user_id'=>auth()->id(), 'user_name'=>$by ?: '', 'action'=>'chat.close', 'subject'=>'Conversation #'.$tid.' closed: answered, customer silent for '.$hours.'h+ (bulk)', 'ip'=>request()->ip(), 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {}
       } catch (\Throwable $e) { report($e); }
@@ -872,8 +882,25 @@ class Chat {
   public static function fuClear(): array { return self::fuReady() ? ['follow_up_at'=>null, 'follow_up_note'=>null, 'follow_up_by'=>null, 'follow_up_set_at'=>null] : []; }
   /** Automatic closing never touches a conversation that has a follow-up waiting (the representative promised to come back to it). No effect before the migration. */
   public static function fuKeep($q) { return self::fuReady() ? $q->whereNull('follow_up_at') : $q; }
+  /** Time of the last reply a PERSON sent (not the AI, not an automatic notice, not a failed send), per conversation id. */
+  public static function lastHumanOut(array $ids): array {
+    $ids = array_values(array_unique(array_filter(array_map('intval', $ids)))); if (!$ids) return [];
+    try {
+      return DB::table('chat_messages')->whereIn('thread_id', $ids)->where('dir', 'out')->where('status', '!=', 'failed')->whereRaw('coalesce(is_ai, false) = false')
+        ->whereRaw("coalesce(user_name, '') not like '%(auto)%'")->whereRaw("coalesce(user_name, '') not in ('Claude AI', 'Automation', 'System')")
+        ->groupBy('thread_id')->selectRaw('thread_id, max(created_at) as at')->pluck('at', 'thread_id')->all();
+    } catch (\Throwable $e) { report($e); return []; }
+  }
+  /** A hand-off the team has not answered yet: no person replied after the hand-off (and after the customer's last message). The customer is waiting for US, not the other way round. */
+  public static function teamDue(object $t, ?string $humanAt): bool {
+    if (empty($t->handoff_at) || ($t->status ?? '') === 'resolved') return false;
+    if ($humanAt === null) return true;
+    if ($humanAt < (string)$t->handoff_at) return true;
+    $lc = (string)($t->last_customer_message_at ?? ''); return $lc !== '' && $humanAt < $lc;
+  }
   public static function cards($rows): array {
     $rows = collect($rows); if ($rows->isEmpty()) return [];
+    $hum = self::lastHumanOut($rows->filter(fn($t) => !empty($t->handoff_at) && $t->status !== 'resolved')->pluck('id')->all());
     $objs = $rows->map(fn($t) => (object)['id'=>$t->id, 'phone'=>$t->phone ?: '-none-'.$t->id, 'total'=>0]);
     $intel = CustomerIntel::forOrders($objs);
     $phones = $rows->pluck('phone')->filter()->unique()->values();
@@ -893,7 +920,7 @@ class Chat {
     $srcOne = $srcPg->count() === 1 ? $srcPg->first() : null;
     $mcl = \App\Support\WaCalls::missedByPhone();
     $lcl = []; try { $lcl = \App\Support\WaCalls::lastByKeys($rows->map(fn($t) => substr(preg_replace('/\D+/', '', (string)($t->phone ?: ($t->channel === 'whatsapp' ? $t->external_id : ''))), -10))->all()); } catch (\Throwable $e) {}
-    return $rows->map(function ($t) use ($lcl, $intel, $oc, $agents, $ws, $slaW, $slaR, $srcWa, $srcPg, $srcIg, $srcOne, $srcAcc, $mcl) {
+    return $rows->map(function ($t) use ($lcl, $intel, $oc, $agents, $ws, $slaW, $slaR, $srcWa, $srcPg, $srcIg, $srcOne, $srcAcc, $mcl, $hum) {
       $mk = $mcl ? substr(preg_replace('/\D+/', '', (string)($t->phone ?: ($t->channel === 'whatsapp' ? $t->external_id : ''))), -10) : ''; $mc = $mk !== '' ? ($mcl[$mk] ?? null) : null;
       $lk = substr(preg_replace('/\D+/', '', (string)($t->phone ?: ($t->channel === 'whatsapp' ? $t->external_id : ''))), -10); $lc = $lk !== '' ? ($lcl[$lk] ?? null) : null;
       $i = $intel[$t->id] ?? null; $ref = $t->page_ref ?? null; $src = null;
@@ -901,7 +928,7 @@ class Chat {
       elseif ($t->channel === 'facebook') { $g = $ref ? ($srcPg[$ref] ?? null) : $srcOne; $src = $g ? $g->name : null; }
       elseif ($t->channel === 'sms') { $src = SmsInbox::label($ref); $rn = SmsInbox::replyNote($ref); if (!str_starts_with($rn, 'Reply goes through')) $src .= ' — ' . $rn; } // staff see before answering when the reply would leave from a different sender
       elseif ($t->channel === 'instagram') { $g = $ref ? ($srcIg[$ref] ?? $srcPg[$ref] ?? null) : $srcOne; $src = $g ? ($g->ig_username ? '@'.$g->ig_username : $g->name) : null; if (!$src) { foreach ($srcAcc as $ac) if (!$ref || ($ac['id'] ?? '') === (string)$ref) { $src = !empty($ac['username']) ? '@'.$ac['username'] : null; break; } } } $n = (int)($oc[$t->phone] ?? 0) + (int)($i['legacy'] ?? 0);
-      return ['id'=>$t->id, 'channel'=>$t->channel, 'channel_name'=>self::CH[$t->channel] ?? $t->channel, 'source'=>$src, 'name'=>$t->name, 'phone'=>$t->phone, 'username'=>$t->username, 'avatar'=>$t->avatar,
+      return ['team_due'=>self::teamDue($t, isset($hum[$t->id]) ? (string)$hum[$t->id] : null), 'id'=>$t->id, 'channel'=>$t->channel, 'channel_name'=>self::CH[$t->channel] ?? $t->channel, 'source'=>$src, 'name'=>$t->name, 'phone'=>$t->phone, 'username'=>$t->username, 'avatar'=>$t->avatar,
         'status'=>$t->status, 'awaiting'=>(bool)($t->awaiting_reply ?? false) && $t->status !== 'resolved', 'unread'=>!empty($t->awaiting_reply) ? (int)$t->unread : 0,
         'replied'=>empty($t->awaiting_reply) && !empty($t->last_successful_agent_reply_at) && !empty($t->last_customer_message_at) && $t->last_successful_agent_reply_at >= $t->last_customer_message_at,
         'stale'=>empty($t->awaiting_reply) && ($t->last_dir ?? null) === 'in' && $t->status !== 'resolved' && !empty($t->last_at) && \Carbon\Carbon::parse($t->last_at)->lt(now()->subDays(7)), 'last'=>$t->last_message, 'last_dir'=>$t->last_dir, 'last_at'=>$t->last_at ? \Carbon\Carbon::parse($t->last_at)->toIso8601String() : null,

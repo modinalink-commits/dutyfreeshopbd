@@ -440,6 +440,7 @@ function drawSum(j){var c=[['unread','Unread',j.unread||0,'w'],['assigned','My c
   el.querySelectorAll('button').forEach(function(b){b.onclick=function(){f=(f===b.dataset.f)?'all':b.dataset.f;setView('inbox');drawF();load()}})}
 var KC=[['new','New','Unassigned · needs a person'],['ai','AI Answering','Unassigned · handled by AI'],['work','Agent Working','Has an owner'],['wait','Waiting for Customer','Reply sent'],['follow','Follow-up','Follow-up time set'],['done','Closed','Latest 40']];
 function kcol(t){if(t.status==='resolved')return 'done';if(t.follow_at)return 'follow';
+  if(t.team_due)return t.assigned_to?'work':'new'; /* hand-off nobody of the team answered yet: the customer waits for us */
   if(t.assigned_to)return (!t.awaiting&&(t.status==='waiting'||t.replied))?'wait':'work';
   if(t.awaiting&&t.person)return 'new';
   if(t.ai&&!t.needs_human&&!t.handoff_at&&/^(web|whatsapp|facebook)$/.test(t.channel))return 'ai';
