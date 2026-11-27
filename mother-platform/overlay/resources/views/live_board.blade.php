@@ -131,7 +131,7 @@ body.fit .rail .box{overflow:hidden;flex:0 0 auto}
 body.fit .rail .att{flex:1 1 0;min-height:0}
 </style></head><body><div id="stage">
 <div class="top">
-  <a class="brand" href="/admin" title="অ্যাডমিনে ফিরুন"><span class="logo"><img src="/dutyfree-bd-logo-v3.png" alt="DutyFree BD"></span><span class="bt"><strong>লাইভ ড্যাশবোর্ড</strong><small id="today"></small></span></a>
+  <a class="brand" href="/admin" title="অ্যাডমিনে ফিরুন"><span class="logo"><img src="/dutyfree-bd-logo-v3.png" alt="DutyFree BD"></span><span class="bt"><h1 style="margin:0;font:inherit;display:contents"><strong>লাইভ ড্যাশবোর্ড</strong></h1><small id="today"></small></span></a>
   <span class="tag" id="conn">সংযোগ হচ্ছে…</span>
   <div class="sum" id="sum"></div>
   <div class="tools"><button id="only" aria-pressed="false">শুধু সমস্যা</button><button id="snd" aria-pressed="false">অ্যালার্ট শব্দ</button><button id="vo" aria-pressed="false" title="গুরুত্বপূর্ণ ঘটনা AI কলের কণ্ঠে পড়ে শোনাবে">ভয়েস</button><button id="fs">ফুলস্ক্রিন</button></div>
