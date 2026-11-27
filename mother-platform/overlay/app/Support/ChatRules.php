@@ -24,9 +24,20 @@ class ChatRules {
     if (preg_match('/টাকা\s*কেটে|টাকা\s*(দিয়েছি|পাঠিয়েছি|পাঠিয়ে\s*দিয়েছি)|taka\s*kete|taka\s*(di(ye|ee)|path(ai|iye))\s*(chi|ci|se|che)|paid\s+but|payment\s+(failed|problem|hoyni|hoy\s*ni)|পেমেন্ট\s*(হয়নি|হয় নি|ফেইল|সমস্যা)/iu', $t)) return ['Payment problem', 'high'];
     if (preg_match('/\bcancel\b|বাতিল|ক্যান্সেল|ক্যানসেল/iu', $t)) return ['Cancellation request', 'high'];
     if (preg_match('/wrong\s+(product|item)|ভুল\s*(পণ্য|প্রোডাক্ট|জিনিস)|vul\s*product/iu', $t)) return ['Wrong product', 'high'];
-    if (preg_match('/\b(agent|human|real\s+person|representative|support\s+team|manager)\b|এজেন্ট|মানুষের?\s*সাথে|কারো\s*সাথে\s*কথা|কাস্টমার\s*কেয়ার|প্রতিনিধি|agent\s*er\s*shathe|manush|kotha\s*bolte\s*chai|\bag[ae]n[td]\b|\bag[ae]nt\w*\s+\w*\s*kotha/iu', $t)) return ['Customer asked for an agent', 'normal'];
-    if (preg_match('/\burgent\b|জরুরি|আজই\s*লাগবে|delivery.{0,25}(late|দেরি)|দেরি.{0,20}(ডেলিভারি|delivery)/iu', $t)) return ['Urgent delivery issue', 'normal'];
+    if (preg_match('/\b(agent|human|real\s+person|representative|support\s+team|manager)\b|এজেন্ট|মানুষের?\s*সাথে|কারো\s*সাথে\s*কথা|কাস্টমার\s*কেয়ার|প্রতিনিধি|agent\s*er\s*shathe|manush|kotha\s*bolte\s*chai|\bag[ae]n[td]\b|\bag[ae]nt\w*\s+\w*\s*kotha/iu', $t) && self::asksForPerson($t)) return ['Customer asked for an agent', 'normal'];
+    if (preg_match('/\burgent\b|জরুরি|আজই\s*লাগবে|delivery.{0,25}(late|দেরি)|দেরি.{0,20}(ডেলিভারি|delivery)/iu', $t) && !preg_match('/(urgent|জরুরি)\s*(না|নয়|নাই|নেই|nai|nei|noy)(?![\p{L}])/iu', $t)) return ['Urgent delivery issue', 'normal'];
     return null;
+  }
+
+
+  /** 28 Nov 2026: an ordinary sentence that merely contains "manager" / "agent" / "মানুষ" is not a request for a person. It counts when the customer asks for one (a request word is near) or the message is only 1-3 words ("agent", "human please"). A self-description ("I am a manager", "travel agent") without a request word does not. */
+  public static function asksForPerson(string $t): bool {
+    $t = trim($t); if ($t === '') return false;
+    if (count(preg_split('/\s+/u', $t)) <= 3) return true;
+    $req = '/(talk|speak|chat|connect|contact|transfer|want|need|please|plz|pls|call me|কথা|বলতে|বলব|বলবো|চাই|লাগবে|দরকার|দিন|দেন|দাও|দিবেন|যোগাযোগ|পাঠান|kotha|bolte|bolbo|bolben|chai|lagbe|dorkar|den\b|dao\b|dian|diben|jogajog|pathan)/iu';
+    $strong = '/(talk|speak|chat|connect|transfer|call me|কথা|বলতে|বলব|বলবো|যোগাযোগ|kotha|bolte|bolbo|bolben|jogajog)/iu';
+    if (preg_match('/\b(i\s*am|i\'m|im|my|amar|ami)\b.{0,25}\b(manager|agent)\b|(travel|insurance|sales|booking|property)\s+agent|আমি.{0,25}(ম্যানেজার|এজেন্ট)|আমার\s*(ম্যানেজার|এজেন্ট)/iu', $t)) return (bool)preg_match($strong, $t); // describing himself, not asking for a person
+    return (bool)preg_match($req, $t);
   }
 
   public static function on(): bool { return Sms::secret('chat_handoff_rules') !== '0'; }
