@@ -246,12 +246,11 @@ main{padding-top:6px!important;padding-bottom:6px!important}
 .mbx .mc #mh .r1>div{flex:1 1 220px!important;min-width:0;line-height:1.3}
 .mbx .mc #mh .r1>div b{font-size:15px!important;font-weight:600}
 .mbx .mc #mh .r1>div small{display:block;font-size:12.5px!important;color:#6B7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mbx .mc #mh .r1>div small b{font-size:12.5px!important;font-weight:600}
+.mbx .mc #mh .r1>div small b{display:inline!important;font-size:12.5px!important;font-weight:600}
 .mbx .mc #mh .r2>.msla,.mbx .mc #mh .r2>.aw,.mbx .mc #mh .r2>.rp,.mbx .mc #mh .r2>.clsd,.mbx .mc #mh .r2>.fuc{order:1;flex:none;height:26px!important;line-height:24px!important;padding:0 10px!important;border-radius:13px!important;font-size:12px!important;font-weight:600;white-space:nowrap;display:inline-flex;align-items:center}
 /* line 2: the toolbar. Every control is the same height; Close chat sits at the right end */
 .mbx .mc #mh .r2>*{order:3;flex:none}
-.mbx .mc #mh::after{content:"";order:4;flex:0 0 100%;height:0}
-.mbx .mc #mh .r2>a.lk{order:5}
+.mbx .mc #mh::after{content:"";order:7;flex:0 0 100%;height:0}
 .mbx .mc #mh .r2>#hdt{display:none!important}
 .mbx .mc #mh .r2>select,.mbx .mc #mh .r2>.lk,.mbx .mc #mh .r2>a.lk{height:30px!important;min-height:0!important;line-height:28px!important;padding:0 10px!important;border-radius:8px!important;font-size:12.5px!important;font-weight:600!important;box-shadow:none!important;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;box-sizing:border-box}
 .mbx .mc #mh .r2>select{padding:0 6px!important;max-width:170px;border:1px solid #E5E7EB;background-color:#fff;color:#0B1B33;font-family:inherit}
@@ -259,7 +258,7 @@ main{padding-top:6px!important;padding-bottom:6px!important}
 .mbx .mc #mh .r2>a.lk:hover{background:#F9FAFB!important}
 .mbx .mc #mh .r2>.lk.rpt{background:#fff!important;border:1px solid #FECDCA!important;color:#B42318!important}
 .mbx .mc #mh .r2>.lk.rpt.on{background:#FEE4E2!important}
-.mbx .mc #mh .r2>#hcls{order:6;margin-left:auto!important;background:#fff!important;border:1px solid #FECDCA!important;color:#B42318!important}
+.mbx .mc #mh .r2>#hcls{order:4;margin-left:auto!important;background:#fff!important;border:1px solid #FECDCA!important;color:#B42318!important}
 .mbx .mc #mh .r2>#hcls.rop{border-color:#E5E7EB!important;color:#344054!important}
 .mbx .mc #mh .r2>.lk svg{width:14px;height:14px}
 /* notices: same shape, one after another, short */
@@ -299,10 +298,43 @@ main{padding-top:6px!important;padding-bottom:6px!important}
 /* customer panel: even two-column facts, compact order rows */
 .mbx .mc #mcu{padding:10px 12px!important;border-left:1px solid #E5E7EB;background:#fff}
 .mbx .mc #mcu>summary{font-size:11px!important;letter-spacing:.05em;color:#6B7280;padding:0 0 6px!important}
-.mbx .mc #mcu .chips{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:6px!important;margin:0 0 8px!important}
-.mbx .mc #mcu .chips .ch{width:100%;min-width:0;height:30px!important;border-radius:8px!important;font-size:12px!important;padding:0 8px!important;box-sizing:border-box;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:none!important}
+.mbx .mc #mcu .chips{display:grid!important;grid-template-columns:1fr 1fr;gap:6px!important;margin:0 0 8px!important}
+.mbx .mc #mcu .chips .ch{width:100%;min-width:0;height:auto!important;min-height:30px;line-height:1.2;white-space:normal!important;border-radius:8px!important;font-size:12px!important;padding:3px 8px!important;box-sizing:border-box;overflow:hidden;box-shadow:none!important}
 .mbx .mc #mcu .cur{border-radius:10px!important;box-shadow:none!important;border:1px solid #E5E7EB!important;margin:8px 0!important}
 .mbx .mc #mcu table.ot tr{border-radius:10px}
+/* things the widget hides must stay hidden; the rules above set display on these */
+.mbx .mc #mf.note #mad,.mbx .mc #mf.note #mfx,.mbx .mc #mf.note #msh,.mbx .mc #mf.note #msn{display:none!important}
+.mbx .mc #mh [hidden],.mbx .mc #mf [hidden]{display:none!important}
+.mbx .mc #mf>#mer:empty{display:none}
+/* the hand-back button stays in view even when the notice is cut to one line */
+.mbx .mc #mh>.hb{position:relative;padding-right:132px!important}
+.mbx .mc #mh>.hb button{position:absolute;right:8px;top:4px;margin:0!important}
+/* keep the conversation itself roomy: notices are one line each (hover, or History, opens them), ownership and summary share a line */
+.mbx .mc #mh>.hb{max-height:28px!important;overflow:hidden!important;white-space:nowrap;text-overflow:ellipsis;padding-top:3px!important;padding-bottom:3px!important}
+.mbx .mc #mh>.hb:not(:hover) br{display:none}
+.mbx .mc #mh>.hb:hover{max-height:none!important;white-space:normal}
+.mbx .mc #mh>.hb button{top:1px}
+.mbx .mc #mh>.ob{flex:1 1 300px;min-width:0;max-height:28px!important;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding-top:3px!important;padding-bottom:3px!important}
+.mbx .mc #mh>.ob:hover,.mbx .mc #mh>.ob:has(#hhistb[style*="block"]){flex-basis:100%;max-height:none!important;white-space:normal}
+.mbx .mc #mh>.sumb{flex:2 1 360px;min-width:0;padding-top:3px!important;padding-bottom:3px!important}
+.mbx .mc #mh>.sumb:not(.x){max-height:28px!important}
+.mbx .mc #mh>.sumb.x{flex-basis:100%}
+.mbx .mc #mh .r1>div small{line-height:1.25}
+.mbx .mc #mf>.sd textarea{min-height:52px!important;height:52px}
+}
+/* a wide screen has room for the whole toolbar and all reply tools on one line each */
+@media(min-width:1740px){.mbx .mc #mf::before{display:none}
+.mbx .mc #mf .ax>.tg{order:4}
+}
+/* a short laptop screen: tighter still, so several messages stay in view */
+@media(min-width:901px) and (max-height:760px){.mbx .mc #mh{gap:5px;padding:6px 10px!important}
+.mbx .mc #mh .r1>.mcav{width:30px;height:30px;font-size:13px}
+.mbx .mc #mh .r2>select,.mbx .mc #mh .r2>.lk,.mbx .mc #mh .r2>a.lk{height:28px!important;line-height:26px!important}
+.mbx .mc #mf{gap:5px;padding:6px 10px!important}
+.mbx .mc #mf .tg,.mbx .mc #mf .qrw select,.mbx .mc #mf .axt{height:28px!important}
+.mbx .mc #mf .axt button{height:24px!important}
+.mbx .mc #mf>.sd textarea{min-height:44px!important;height:44px}
+.mbx .mc #mf>.sd #ms,.mbx .mc #mf>.sd #msn{min-height:36px}
 }
 </style>
 <div id="ibtop" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px"><div style="flex:1"><h1 style="margin:0">Messages <span id="ibu"></span></h1><span style="font-size:12px;color:#6B7280">Facebook, Instagram, WhatsApp and Website Chat in one inbox.</span></div><div class="ibtl" id="ibtl"><button type="button" id="ibup" title="Fetch the latest messages. This never marks anything as seen.">↻ Update</button><button type="button" id="ibm">🔔 Sound on</button></div><div class="ibvw" id="ibvw" role="tablist"><button type="button" data-v="board">Message Dashboard</button><button type="button" data-v="inbox">Inbox</button></div>
