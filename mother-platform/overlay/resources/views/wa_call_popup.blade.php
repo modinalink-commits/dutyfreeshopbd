@@ -27,6 +27,10 @@ main button.wp-b.go{background:#15803D;border-color:#15803D;color:#fff}main butt
 #wpChat .m.o{align-self:flex-end;background:#E7F8EE;border-color:#C7EBD5}#wpChat .m.f{border-color:#FDA29B}
 #wpChat .m small{display:block;margin-top:2px;font-size:10.5px;color:#667085}#wpChat .e{color:#475467;font-size:12.5px}
 .wp-box>b.t a{float:right;font-weight:600;font-size:12px;color:#F95505;text-decoration:none}
+#wpCmp{border-top:1px solid #F2F4F7;padding:8px 12px 10px;background:#fff}#wpCmp textarea{width:100%;min-height:48px;max-height:120px;border:1px solid #D0D5DD;border-radius:8px;padding:7px 9px;font:inherit;font-size:13px;resize:vertical}
+#wpCmp .r{display:flex;gap:8px;align-items:center;margin-top:6px}#wpCmp .r span{font-size:12px;color:#475467;flex:1;min-width:0}#wpCmp .r span.bad{color:#B42318}#wpCmp .r span.ok{color:#067647}
+#wpCmp button{height:34px;padding:0 16px;border-radius:8px;border:1px solid #F95505;background:#F95505;color:#fff;font-weight:700;cursor:pointer}#wpCmp button:disabled{opacity:.5;cursor:default}
+.wp-links button.wp-b.msg{height:36px;font-size:13px;flex:1 1 30%;cursor:pointer}
 </style>
 <div class="wp">
 <div class="wp-top"><div class="wp-bar"></div>
@@ -35,7 +39,8 @@ main button.wp-b.go{background:#15803D;border-color:#15803D;color:#fff}main butt
 <div class="wp-act" id="wpAct"></div><div id="wpRec" hidden style="margin:0 14px 10px;padding:8px 10px;border-radius:8px;background:#FEF3F2;color:#912018;font-size:12.5px"></div><div id="wpMsg"></div></div>
 <audio id="wpAudio" autoplay></audio>
 
-<div class="wp-box"><b class="t">WhatsApp chat <a id="wpChatL" target="_blank" href="/admin/chat" hidden>Open full chat</a></b><div id="wpChat"><div class="e">Loading…</div></div></div>
+<div class="wp-box"><b class="t">WhatsApp chat <a id="wpChatL" target="_blank" href="/admin/chat" hidden>Open full chat</a></b><div id="wpChat"><div class="e">Loading…</div></div>
+<div id="wpCmp"><textarea id="wpCmpT" maxlength="3500" placeholder="Write a message to this customer (nothing is sent until you press Send)" disabled></textarea><div class="r"><span id="wpCmpS">Looking for this customer's chat…</span><button type="button" id="wpCmpB" disabled>Send</button></div></div></div>
 
 <div class="wp-box"><b class="t">Customer</b><div id="wpCust"><div class="wp-row"><span>Checking this number…</span></div></div>
 <div class="wp-links" id="wpLinks"></div></div>
@@ -115,7 +120,17 @@ var WP=(function(){
   function callback(btn){if(btn){btn.disabled=true;btn.textContent='Starting…'}msg('');post('/admin/call-center/whatsapp/'+ID+'/callback').then(function(d){
     if(!d.ok||!d.id){if(btn){btn.disabled=false;btn.textContent='Call back on WhatsApp'}msg(d.message||'Could not start the call back');return}
     location.href='/admin/call-center/whatsapp/call/'+d.id+'?'+(EMBED?'embed=1&':'')+'go=1'})}
+  var TID=0,sending=false;
+  function cmpState(){var t=$('wpCmpT'),b=$('wpCmpB');if(!t)return;t.disabled=!TID||sending;b.disabled=!TID||sending||!t.value.trim();if(!TID&&$('wpCmpS')&&!$('wpCmpS').dataset.k)$('wpCmpS').textContent='This caller has no WhatsApp chat with us yet, so there is nothing to reply to.'}
+  function cmpMsg(t,c){var e=$('wpCmpS');e.dataset.k=t?'1':'';e.className=c||'';e.textContent=t||''}
+  function openMsg(){var t=$('wpCmpT');if(!t)return;t.scrollIntoView({block:'nearest'});if(!t.disabled)t.focus()}
+  function sendMsg(){var t=$('wpCmpT'),v=t.value.trim();if(!TID||sending||!v)return;sending=true;cmpState();cmpMsg('Sending…','');
+    var tokn='c'+ID+'-'+Date.now()+'-'+Math.random().toString(36).slice(2,8);
+    fetch('/admin/chat/thread/'+TID+'/reply',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':tk()},body:JSON.stringify({body:v,kind:'text',client_token:tokn})}).then(function(r){return r.json().catch(function(){return{ok:false,error:'Unexpected answer from the server'}})}).then(function(d){sending=false;
+      if(d&&d.ok){t.value='';cmpMsg('Sent','ok');chatLast=-1;chat()}else{cmpMsg((d&&d.error)||'Not sent. Your text is kept; try again.','bad')}cmpState()}).catch(function(){sending=false;cmpMsg('Not sent (connection). Your text is kept; try again.','bad');cmpState()})}
+  (function(){var t=$('wpCmpT');if(t){t.addEventListener('input',cmpState);t.addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();sendMsg()}})}var b=$('wpCmpB');if(b)b.addEventListener('click',sendMsg)})();
   function chat(){fetch('/admin/call-center/whatsapp/'+ID+'/chat',{credentials:'same-origin',headers:{'Accept':'application/json'}}).then(function(r){return r.json()}).then(function(d){var b=$('wpChat'),l=d.messages||[];
+    TID=d.thread_id?+d.thread_id:0;cmpState();
     if(d.thread_id){$('wpChatL').hidden=false;$('wpChatL').href='/admin/chat?open='+d.thread_id}
     var last=l.length?l[l.length-1].id:0;if(last===chatLast)return;chatLast=last;
     if(!l.length){b.innerHTML='<div class="e">'+(d.thread_id?'No messages in this chat yet.':'This caller has no WhatsApp chat with us yet.')+'</div>';return}
@@ -174,7 +189,7 @@ var WP=(function(){
   function links(c){var h='<a class="wp-b pri" target="_blank" href="/admin/orders/new'+(LOCAL&&/^01\d{9}$/.test(LOCAL)?'?phone='+LOCAL:'')+'">New order</a>';
     if(c&&c.last)h+='<a class="wp-b" target="_blank" href="/admin/orders/'+c.last.id+'">Last order</a>';
     if(c&&c.thread_id)h+='<a class="wp-b" target="_blank" href="/admin/chat?open='+c.thread_id+'">Chat</a>';
-    $('wpLinks').innerHTML=h}
+    $('wpLinks').innerHTML=h;var mb=document.createElement('button');mb.type='button';mb.className='wp-b msg pri';mb.textContent='Message';mb.onclick=openMsg;$('wpLinks').insertBefore(mb,$('wpLinks').firstChild)}
   function note(btn){var v=$('wpNote').value.trim(),b={};if(v)b.note=v;if($('wpOut')){b.outcome=$('wpOut').value;b.followup=$('wpFu').value}if(!v&&!$('wpOut'))return;if(!v&&!b.outcome&&!b.followup){$('wpNoteS').textContent='Write a note, choose a result or set a follow-up.';return}btn.disabled=true;$('wpNoteS').textContent='';post('/admin/call-center/whatsapp/'+ID+'/note',b).then(function(d){btn.disabled=false;$('wpNoteS').textContent=d.ok?'Saved':'Not saved'})}
   draw();cust();recs();chat();setInterval(sync,3000);setInterval(chat,6000);setInterval(function(){if(mine&&state==='dialing')sync()},1000);
   window.addEventListener('pagehide',function(){if(mine&&(state==='active'||state==='answering'||state==='dialing'))fetch('/admin/call-center/whatsapp/'+ID+'/end',{method:'POST',credentials:'same-origin',keepalive:true,headers:{'X-CSRF-TOKEN':tk(),'Accept':'application/json'}})});
