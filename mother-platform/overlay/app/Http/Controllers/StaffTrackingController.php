@@ -28,7 +28,11 @@ class StaffTrackingController extends Controller
     $q = DB::table('order_activity_logs as a')->leftJoin('orders as o', 'o.id', '=', 'a.order_id')
       ->select('a.*', 'o.invoice', 'o.customer_name', 'o.phone as customer_phone', 'o.status as order_status')
       ->where('a.created_at', '>=', $rg[0])->where('a.created_at', '<', $rg[1]);
-    if ($group && isset(T::GROUPS[$group])) $q->whereRaw('a.action_type ~ ?', [T::re($group)]);
+    if ($group && isset(T::GROUPS[$group])) {
+      // A group is a fixed list of action types. A list lets the (action_type, created_at) index work; the old regex on every row of the range took about 3 s for 30 days (the same page without a group: 0.25 s).
+      $types = collect(\Illuminate\Support\Facades\Cache::remember('st_types_v1', 600, fn() => DB::table('order_activity_logs')->distinct()->orderBy('action_type')->pluck('action_type')->all()))->filter(fn($t) => T::group((string)$t) === $group)->values()->all();
+      $types ? $q->whereIn('a.action_type', $types) : $q->whereRaw('1 = 0');
+    }
     if ($r->filled('staff')) { $s = (string)$r->query('staff'); $s === 'System' ? $q->where('a.source', 'system') : $q->where('a.staff_name', $s); }
     if ($r->filled('type')) $q->where('a.action_type', (string)$r->query('type'));
     if ($r->filled('q')) {

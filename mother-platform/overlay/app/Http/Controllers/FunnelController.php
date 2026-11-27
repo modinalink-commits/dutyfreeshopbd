@@ -8,6 +8,13 @@ use Illuminate\Support\Facades\DB;
 class FunnelController extends Controller
 {
   public function index(Request $r) {
+    // Slow page (3+ s of distinct-visitor counts over the events table): the numbers are kept for 2 minutes per date range; ?fresh=1 recalculates.
+    $C = \Illuminate\Support\Facades\Cache::class; $key = 'funnel.v1.' . md5((string)$r->query('from') . '|' . (string)$r->query('to') . '|' . now('Asia/Dhaka')->toDateString()); $d = null;
+    if (!$r->query('fresh')) { try { $raw = $C::get($key); if (is_string($raw)) { $x = @unserialize($raw); if (is_array($x)) $d = $x; } } catch (\Throwable $e) { $d = null; } }
+    if (!$d) { $d = $this->build($r); try { $C::put($key, serialize($d), 120); } catch (\Throwable $e) {} }
+    return view('funnel', $d);
+  }
+  private function build(Request $r): array {
     $tz = 'Asia/Dhaka';
     $to = $this->day((string)$r->query('to'), now($tz)->toDateString()); $from = $this->day((string)$r->query('from'), now($tz)->startOfMonth()->toDateString());
     if ($from > $to) [$from, $to] = [$to, $from];
@@ -27,7 +34,7 @@ class FunnelController extends Controller
     $hr = array_fill(0, 24, ['desktop' => 0, 'mobile' => 0]);
     foreach (DB::select("select extract(hour from created_at at time zone 'UTC' at time zone 'Asia/Dhaka')::int as h, device_type as d, count(distinct visitor_id) as v from product_analytics_events where created_at >= ? and created_at < ? and event_type = 'product_view' and device_type in ('desktop','mobile') group by 1, 2", [$a, $b]) as $x) $hr[(int)$x->h][$x->d] = (int)$x->v;
     $ua = []; foreach (DB::select("select metadata->>'ua' as ua, metadata->>'net' as net, count(distinct visitor_id) as v from product_analytics_events where created_at >= ? and created_at < ? and event_type = 'product_view' and metadata->>'ua' is not null group by 1, 2 order by 3 desc limit 12", [$a, $b]) as $x) $ua[] = ['ua' => (string)$x->ua, 'net' => (string)$x->net, 'v' => (int)$x->v];
-    return view('funnel', ['tr' => \App\Support\VisitTrack::report($from, $to), 'ua' => $ua, 'from' => $from, 'to' => $to, 'steps' => $steps, 'v' => $v, 'orders' => (int)($o->live ?? 0), 'all' => (int)($o->everything ?? 0), 'dev' => $by('device_type'), 'src' => $by('source'), 'qual' => $q, 'hr' => $hr]);
+    return ['tr' => \App\Support\VisitTrack::report($from, $to), 'ua' => $ua, 'from' => $from, 'to' => $to, 'steps' => $steps, 'v' => $v, 'orders' => (int)($o->live ?? 0), 'all' => (int)($o->everything ?? 0), 'dev' => $by('device_type'), 'src' => $by('source'), 'qual' => $q, 'hr' => $hr];
   }
   private function day(string $s, string $def): string { return preg_match('/^\d{4}-\d{2}-\d{2}$/', $s) && strtotime($s) ? $s : $def; }
 }
