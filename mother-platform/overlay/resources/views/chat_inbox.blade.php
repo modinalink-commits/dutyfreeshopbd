@@ -211,8 +211,27 @@ main{padding-top:6px!important;padding-bottom:6px!important}
 .kbd .km{font-size:11px;color:#6B7280;white-space:nowrap}
 .kbd .kno{color:#6B7280;font-size:12px;text-align:center;padding:14px 6px}
 @media(max-width:900px){.ibsum{display:flex;overflow-x:auto;padding:8px}.ibsum button{flex:0 0 132px}.kbd{grid-template-columns:repeat(6,82vw);height:calc(100dvh - 230px)}body.ibsel .ibsum,body.ibsel #ibfb{display:none}}
+
+/* ===== Header and filter bar tidy-up (owner 27 Nov 2026): one straight header line, every button the same height, nothing scattered left and right ===== */
+#ibtop{display:flex!important;flex-wrap:wrap!important;align-items:center!important;gap:8px 10px!important;margin-bottom:8px!important}
+#ibtop>div:first-child{display:flex;align-items:center;min-width:0}
+#ibtop h1{margin:0!important;display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;line-height:32px!important}
+#ibu{margin-left:0!important;align-items:center}
+#ibu .k{height:28px;padding:0 10px!important;border-radius:8px;white-space:nowrap}
+.ibtl{display:flex;align-items:center;gap:6px}
+.ibtl button{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border:1px solid #E5E7EB;border-radius:8px;background:#fff;color:#344054;font-size:12.5px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap;transition:background .15s}
+.ibtl button:hover{background:#F9FAFB}.ibtl button:disabled{opacity:.7;cursor:default}.ibtl button.ok{color:#166534;border-color:#BBF7D0;background:#DCFCE7}
+.ibvw{height:32px;align-items:center;box-sizing:border-box}.ibvw button{height:26px;padding:0 14px;white-space:nowrap}
+.fbar{padding:8px 10px!important;row-gap:8px!important}
+.fbar .fr{gap:6px!important;align-items:center}
+.fbar a,.fbar button.fa{height:30px!important;padding:0 11px!important;border-radius:8px!important;font-size:12.5px!important;font-weight:500;transition:background .15s,border-color .15s}
+.fbar #ibf2{padding-top:8px;border-top:1px solid #F1F2F4}
+.fbar #ibf2 .vsep{width:1px;height:18px;background:#E5E7EB;margin:0 4px;flex:none}
+#ibsh{justify-content:flex-end}#ibsh .br{flex:0 1 260px!important}
+@media(max-width:900px){.ibtl{order:3}#ibsh{justify-content:flex-start}}
+@media(prefers-reduced-motion:reduce){.fbar a,.fbar button.fa,.ibtl button{transition:none}}
 </style>
-<div id="ibtop" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px"><div style="flex:1"><h1 style="margin:0">Messages <span id="ibu"></span></h1><span style="font-size:12px;color:#6B7280">Facebook, Instagram, WhatsApp and Website Chat in one inbox.</span></div><div class="ibvw" id="ibvw" role="tablist"><button type="button" data-v="board">Message Dashboard</button><button type="button" data-v="inbox">Inbox</button></div>
+<div id="ibtop" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px"><div style="flex:1"><h1 style="margin:0">Messages <span id="ibu"></span></h1><span style="font-size:12px;color:#6B7280">Facebook, Instagram, WhatsApp and Website Chat in one inbox.</span></div><div class="ibtl" id="ibtl"><button type="button" id="ibup" title="Fetch the latest messages. This never marks anything as seen.">↻ Update</button><button type="button" id="ibm">🔔 Sound on</button></div><div class="ibvw" id="ibvw" role="tablist"><button type="button" data-v="board">Message Dashboard</button><button type="button" data-v="inbox">Inbox</button></div>
 </div>
 <div class="ibsum" id="ibsum"></div>
 <div class="fbar" id="ibfb"><div class="fr" id="ibf1"></div><div id="ibsh" hidden></div><div class="fr" id="ibf2"></div></div>
@@ -249,13 +268,12 @@ function pill(x){return '<a data-f="'+x[0]+'" class="'+(f===x[0]?'on':'')+'" rol
 /* v2: the filters staff use all day sit in one row; the rest open under "More" (nothing removed). "More" stays open while one of its filters is selected. */
 var FP=['all','assigned','unread','late','human','report','upset','followup'],moreOpen=false;try{moreOpen=localStorage.getItem('ib_more')==='1'}catch(e){}
 function drawF(){var all=F1.concat(F2),by={};all.forEach(function(x){by[x[0]]=x});var inMore=FP.indexOf(f)<0,n=orq+queue;
-  document.getElementById('ibf1').innerHTML=FP.map(function(k){return pill(by[k])}).join('')+'<button class="fa'+(moreOpen||inMore?' mo':'')+'" type="button" id="ibmore" aria-expanded="'+(moreOpen||inMore)+'">More ▾'+(n>0?'<span class="cn">'+n+'</span>':'')+'</button><span class="sp"></span><button class="fa" type="button" id="ibup" title="Fetch the latest messages. This never marks anything as seen.">↻ Update</button><button class="fa" type="button" id="ibm">🔔 Sound on</button>';
+  document.getElementById('ibf1').innerHTML=FP.map(function(k){return pill(by[k])}).join('')+'<button class="fa'+(moreOpen||inMore?' mo':'')+'" type="button" id="ibmore" aria-expanded="'+(moreOpen||inMore)+'">More ▾'+(n>0?'<span class="cn">'+n+'</span>':'')+'</button>';
   var f2=document.getElementById('ibf2');f2.hidden=!(moreOpen||inMore);
-  f2.innerHTML=all.filter(function(x){return FP.indexOf(x[0])<0}).map(pill).join('')+'<span class="sp"></span><a href="/admin/chat/auto" title="Order confirmations, order updates and campaign messages the system sent by itself">📤 Auto Messages</a><a href="/admin/chat/memory">🧠 AI Memory</a><a href="/admin/chat-settings">Chat settings</a>';
+  f2.innerHTML=all.filter(function(x){return FP.indexOf(x[0])<0}).map(pill).join('')+'<i class="vsep"></i><a href="/admin/chat/auto" title="Order confirmations, order updates and campaign messages the system sent by itself">📤 Auto Messages</a><a href="/admin/chat/memory">🧠 AI Memory</a><a href="/admin/chat-settings">Chat settings</a>';
   document.getElementById('ibmore').onclick=function(){moreOpen=!(moreOpen||inMore);if(inMore&&!moreOpen){f='all';load()}try{localStorage.setItem('ib_more',moreOpen?'1':'0')}catch(e){}drawF()};
   document.querySelectorAll('#ibfb a[data-f]').forEach(function(a){a.onclick=function(){if(a.dataset.f==='comments'){location.href='/admin/chat/comments';return}f=a.dataset.f;setView('inbox');drawF();load()};a.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();a.click()}}});
-  var bm=document.getElementById('ibm');bm.onclick=function(){MChat.cycleSound();mm()};mm();
-  document.getElementById('ibup').onclick=doUpdate}
+  mm()}
 /* Manual synchronisation only: refreshes the list and the open conversation. It never marks anything as seen or replied. */
 var shD=null,shP='d1';try{if(localStorage.getItem('ib_share_p')==='d7')shP='d7'}catch(e){}
 function shEsc(x){return String(x).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
@@ -340,6 +358,7 @@ function mm(){var bm=document.getElementById('ibm');if(bm&&window.MChat)bm.textC
 document.getElementById('ibback').onclick=function(){document.getElementById('ibx').classList.remove('sel');document.body.classList.remove('ibsel');sel=null;load()};
 document.getElementById('iball').onclick=function(){f='all';q='';document.getElementById('ibq').value='';drawF();load()};
 document.querySelectorAll('#ibvw button').forEach(function(b){b.onclick=function(){setView(b.dataset.v);load()}});setView(view);
+document.getElementById('ibm').onclick=function(){if(window.MChat){MChat.cycleSound();mm()}};document.getElementById('ibup').onclick=doUpdate;
 drawF();load();setInterval(function(){if(!document.hidden)load()},8000);
 /* Ctrl K (or Cmd K): jump to the search box */
 document.addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();var s=document.getElementById('ibq');if(s){s.focus();s.select()}}});
