@@ -560,7 +560,41 @@ class Chat {
     return [$n, $kept];
   }
   /** Owner 27 Nov 2026 (option A): a chat we answered where the customer stays silent closes by itself after the set hours (setting ai_close_answered_hours; empty or 0 = off). Uses closeAnswered(), so complaints, refunds, order requests, hand-offs, follow-ups, "needs a person" and chats still Awaiting Reply are never closed. Nothing is sent to the customer; a new customer message reopens the chat. */
+  /** Customer's last message is only a confirmation / thanks (no question, nothing else asked). */
+  public static function isConfirmOnly(string $b): bool {
+    $b = trim($b); if ($b === '' || mb_strlen($b) > 60 || preg_match('/[?？]|কি\b|কী|কবে|কখন|কত|কেন|koto|kobe|kokhon|keno|\bki\b|when|how|why|what|where/iu', $b)) return false;
+    return (bool)preg_match('/^(ji|jee|জি|জ্বি|হ্যাঁ|ha|haa|yes|ok(ay|k)?|ওকে|ঠিক আছে|thik ?(ache|ase)|আচ্ছা|accha|acha)?[\s,.!।]*((order|অর্ডার)\s*)?(confirm(ed)?|conform|confrom|কনফার্ম|কনফার্মড|কনফার্ম করছি|কনফার্ম করলাম|confirm kor(chi|lam|ci|en)|done|ok(ay|k)?|ওকে|ঠিক আছে|thik ?(ache|ase)|আচ্ছা|accha|acha|thanks?( you)?|thank u|ধন্যবাদ|জি|জ্বি|ji|👍|🙏)([\s,.!।👍🙏]|করছি|করলাম|korchi|korlam|koren|করেন|ভাই|vai|bhai|sir|স্যার|ধন্যবাদ|thanks?|ok|ওকে)*$/iu', $b);
+  }
+  /**
+   * Owner 27 Nov 2026 (21:33): a chat is NOT closed just because its order became Approved. It closes when all three are true: the order details went out
+   * (the automatic "Order confirmation" notice was sent), the customer's last message was only a confirmation / thanks, and nothing else is open
+   * (no complaint, refund, cancel, order change, payment check, open Order Request, follow-up, "needs a person", or a hand-off other than the AI's own "the team will follow up").
+   * Anything else waits for the normal 3-hour rule. Only notices of the last 30 minutes are looked at, so old chats are never swept. A new customer message reopens the chat.
+   */
+  public static function closeConfirmedTick(): void {
+    if (Sms::secret('ai_auto_close') === '0' || Sms::secret('chat_close_confirmed') === '0') return;
+    if (!\Illuminate\Support\Facades\Cache::add('chat.closeconfirmed.tick', 1, 55)) return;
+    $ids = DB::table('chat_messages')->where('dir', 'out')->where('status', '!=', 'failed')->where('user_name', 'like', 'Order confirmation (auto)%')->where('created_at', '>=', now()->subMinutes(30))->distinct()->limit(60)->pluck('thread_id')->all();
+    if (!$ids) return;
+    foreach (self::fuKeep(DB::table('chat_threads')->whereIn('id', $ids)->where('status', '!=', 'resolved')->where('last_dir', 'out')->where('awaiting_reply', false))->get() as $t) {
+      try {
+        $tid = (int)$t->id;
+        if (!empty($t->needs_human) || (!empty($t->reported_at) && empty($t->report_solved_at)) || !empty($t->assigned_to)) continue; // a chat a person owns is closed by that person or by the 3-hour rule
+        if (in_array((string)($t->intent ?? ''), ['complaint', 'refund', 'cancel', 'change_order', 'payment', 'human_request'], true)) continue;
+        if (!empty($t->handoff_at) && !str_starts_with((string)($t->handoff_reason ?? ''), 'Auto: the AI told')) continue;
+        try { if (DB::table('chat_order_requests')->where('thread_id', $tid)->where('status', 'review')->exists()) continue; } catch (\Throwable $e) {}
+        $cin = DB::table('chat_messages')->where('thread_id', $tid)->where('dir', 'in')->orderByDesc('id')->first(['id', 'body', 'attachment_type']); if (!$cin || $cin->attachment_type || !self::isConfirmOnly((string)$cin->body)) continue;
+        if (!DB::table('chat_messages')->where('thread_id', $tid)->where('id', '>', $cin->id)->where('dir', 'out')->where('status', '!=', 'failed')->where('user_name', 'like', 'Order confirmation (auto)%')->exists()) continue; // the order details must have gone out AFTER the confirmation
+        $li = DB::table('chat_messages')->where('thread_id', $tid)->orderByDesc('id')->first(['dir', 'status']); if (!$li || $li->dir !== 'out' || $li->status === 'failed') continue;
+        if (!DB::table('chat_threads')->where('id', $tid)->where('status', '!=', 'resolved')->where('awaiting_reply', false)->update(['status'=>'resolved', 'unread'=>0, 'needs_human'=>false, 'handoff_at'=>null, 'handoff_reason'=>null, 'ai_paused'=>false, 'updated_at'=>now()])) continue;
+        try { DB::table('chat_handoffs')->where('thread_id', $tid)->whereIn('status', ['open', 'accepted'])->update(['status'=>'done', 'updated_at'=>now()]); } catch (\Throwable $e) {}
+        try { ChatOwner::system($tid, null, 'release', 'Closed: order details sent, customer confirmed, nothing else open.'); } catch (\Throwable $e) {}
+        try { DB::table('audit_logs')->insert(['user_id'=>null, 'user_name'=>'System (rules)', 'action'=>'chat.close', 'subject'=>'Conversation #'.$tid.' closed: order details sent, customer confirmed, nothing else open', 'ip'=>null, 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {}
+      } catch (\Throwable $e) { report($e); }
+    }
+  }
   public static function closeAnsweredTick(): void {
+    try { self::closeConfirmedTick(); } catch (\Throwable $e) { report($e); }
     $h = (int)(Sms::secret('ai_close_answered_hours') ?: 0);
     if ($h < 1 || Sms::secret('ai_auto_close') === '0') return;
     if (!\Illuminate\Support\Facades\Cache::add('chat.closeanswered.tick', 1, 600)) return; // at most every 10 minutes
