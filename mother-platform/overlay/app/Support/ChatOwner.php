@@ -63,7 +63,7 @@ class ChatOwner {
     if (!$t) return [false, 'Conversation not found.'];
     if ($t->assigned_to !== null) return (int)$t->assigned_to === $uid ? [true, 'already yours'] : [false, self::heldMsg((int)$t->assigned_to)];
     $r = self::swap($tid, null, $uid);
-    if ($r === 'ok') { self::log($tid, 'claim', null, $uid, $uid, $user->name ?? null); return [true, 'claimed']; }
+    if ($r === 'ok') { self::log($tid, 'claim', null, $uid, $uid, $user->name ?? null); try { ChatRules::onClaim($tid); } catch (\Throwable $e) {} /* owner rule 27 Nov 2026: taking the chat cancels the automatic follow-up mark at once */ return [true, 'claimed']; }
     if ($r === 'busy') return [false, self::BUSY];
     $now = DB::table('chat_threads')->where('id', $tid)->value('assigned_to');
     return $now !== null && (int)$now === $uid ? [true, 'already yours'] : [false, $now !== null ? self::heldMsg((int)$now) : 'Please try again.'];

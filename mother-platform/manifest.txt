@@ -1215,6 +1215,7 @@ public/pwa/logo-240-v3.png
 database/migrations/2026_11_15_140000_speed_indexes_purchase_list.php
 database/migrations/2026_11_15_150000_link_cooler_7990_ryans_url.php
 app/Support/ChatOwner.php
+app/Support/ChatRules.php
 database/migrations/2026_11_16_100000_chat_ownership.php
 app/Http/Controllers/WaCallController.php
 app/Support/WaCalls.php
@@ -1960,3 +1961,4 @@ database/migrations/2026_11_27_090000_chat_follow_up.php
 database/migrations/2026_11_27_100000_chat_quick_reply_title_english.php
 database/migrations/2026_11_27_110000_ai_works_24_hours.php
 database/migrations/2026_11_27_190000_black_friday_profit_15.php
+database/migrations/2026_11_27_200000_chat_rules.php

@@ -24,7 +24,7 @@ class AgentHandoff {
     $tid = (int)($ctx['thread_id'] ?? 0); if (!$tid) return ['error'=>'no conversation'];
     $st['handed_off'] = true;
     $agents = self::eligible(); $pick = $agents[0] ?? null;
-    DB::table('chat_handoffs')->insert(['thread_id'=>$tid, 'assigned_to'=>ChatOwner::ready() ? null : ($pick['id'] ?? null), 'reason'=>$reason, 'summary'=>$summary, 'priority'=>$priority, 'status'=>'open', 'created_at'=>now(), 'updated_at'=>now()]);
+    if (!DB::table('chat_handoffs')->where('thread_id', $tid)->whereIn('status', ['open', 'accepted'])->exists()) DB::table('chat_handoffs')->insert(['thread_id'=>$tid, 'assigned_to'=>ChatOwner::ready() ? null : ($pick['id'] ?? null), 'reason'=>$reason, 'summary'=>$summary, 'priority'=>$priority, 'status'=>'open', 'created_at'=>now(), 'updated_at'=>now()]);
     $upd = ['needs_human'=>true, 'handoff_at'=>now(), 'handoff_reason'=>$reason, 'ai_summary'=>$summary, 'priority'=>$priority, 'ai_paused'=>true, 'status'=>'open', 'updated_at'=>now()];
     if ($pick && !ChatOwner::ready()) $upd['assigned_to'] = $pick['id'];
     DB::table('chat_threads')->where('id', $tid)->update($upd);

@@ -84,6 +84,7 @@ class Chat {
     self::reportCheck((int)$t->id, (string)$body);
     $fresh = DB::table('chat_threads')->find($t->id);
     if (ChatOwner::ready()) { ChatOwner::onCustomerMessage($t, $fresh); $fresh = DB::table('chat_threads')->find($t->id); } // reopened chat starts without an owner; a chat the AI will not answer goes to a representative
+    try { ChatRules::onCustomer($fresh, (string)$body); $fresh = DB::table('chat_threads')->find($t->id); } catch (\Throwable $e) { report($e); } // hand-off words (agent / refund / cancel / payment / wrong product)
     AiMemory::onCustomer($fresh, $body, $att);
     return $fresh;
   }
@@ -613,6 +614,7 @@ class Chat {
       if (DB::table('chat_threads')->where('id', $tid)->value('channel') === 'sms') return; // SMS inbox: people answer; no automatic replies (each SMS costs money)
       if (!self::$force && !AiSchedule::activeNow() && !self::aiTakeover($tid)) return; // outside the owner's AI hours staff answer, unless the AI took this chat over after the staff wait limit (staleTick)
       $t = DB::table('chat_threads')->find($tid);
+      if ($t && in_array($t->channel, ['web', 'whatsapp', 'facebook'], true) && ChatRules::ackDue($t)) { self::handoffAck($t); return; } // the rules just sent this chat to the agent queue: one short line to the customer, then nothing more from the AI
       if (!$t || AiChat::paused($t) || !in_array($t->channel, ['web', 'whatsapp', 'facebook'], true)) return;
       if (ChatOwner::ready() && $t->assigned_to !== null) return; // a person owns this conversation: the AI does not answer it
       $ext = $t->channel !== 'web'; // WhatsApp / Facebook Messenger: the reply is sent to the customer through the platform
@@ -753,6 +755,17 @@ class Chat {
   /** Every outgoing message passes the ownership guard (ChatOwner): a person must own the conversation, the AI may send only while nobody owns it, and two sends never overlap. */
   public static function deliver(object $t, string $body, ?string $att = null, string $attType = 'image'): array {
     return ChatOwner::guard($t, self::$sender ?? ['type'=>'system'], fn() => self::deliverRaw($t, $body, $att, $attType));
+  }
+  /** The single fixed line after ChatRules sent the chat to the agent queue. It does not clear Awaiting Reply: only a person's reply does. */
+  public static function handoffAck(object $t): void {
+    try {
+      $tid = (int)$t->id; if (ChatOwner::ready() && $t->assigned_to !== null) return;
+      if ($t->channel !== 'web' && !AiChat::chanOn()) return;
+      $txt = ChatRules::ACK; [$sent, $err] = self::aiDeliver($t, $txt, true);
+      if (!$sent && ChatOwner::$refused) return;
+      DB::table('chat_messages')->insert(['thread_id'=>$tid, 'dir'=>'out', 'kind'=>'text', 'body'=>$txt, 'user_name'=>'Claude AI', 'is_ai'=>true, 'status'=>$sent ? 'sent' : 'failed', 'error'=>$err, 'created_at'=>now(), 'updated_at'=>now()]);
+      if ($sent) DB::table('chat_threads')->where('id', $tid)->update(['last_message'=>mb_substr($txt, 0, 300), 'last_dir'=>'out', 'last_at'=>now(), 'updated_at'=>now()]);
+    } catch (\Throwable $e) { report($e); }
   }
   /** The AI's own send. $handoff: the closing line of the run that handed the chat to a person (the only AI line allowed after a person was assigned). */
   private static function aiDeliver(object $t, string $body, bool $handoff = false): array {
