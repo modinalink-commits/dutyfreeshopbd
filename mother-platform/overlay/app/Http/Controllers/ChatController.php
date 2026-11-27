@@ -329,7 +329,7 @@ class ChatController extends Controller {
   public function closeAnswered(Request $r) {
     abort_unless(\App\Support\ChatOwner::supervisor(auth()->user()), 403);
     $h = max(1, min(168, (int)$r->input('hours', 3)));
-    [$n, $kept] = Chat::closeAnswered($h, $r->boolean('dry'), auth()->user()->name ?? 'staff');
+    [$n, $kept] = $r->input('mode') === 'notify' ? Chat::closeNotifyOnly($r->boolean('dry'), auth()->user()->name ?? 'staff') : Chat::closeAnswered($h, $r->boolean('dry'), auth()->user()->name ?? 'staff');
     return response()->json(['ok'=>true, 'dry'=>$r->boolean('dry'), 'closed'=>$n, 'kept_open'=>$kept, 'hours'=>$h, 'unread'=>Chat::unreadTotal()]);
   }
   /** Report mark: staff can file a conversation under Report by hand, or mark the customer's report as solved. */
@@ -902,18 +902,18 @@ class ChatController extends Controller {
     if ($r->isMethod('post')) {
       $a = (string)$r->input('action');
       if ($a === 'generate') { @set_time_limit(170); [$ok, $msg] = $P::generate(); return redirect('/admin/chat/playbook')->with($ok ? 'ok' : 'err', $msg); }
-      if ($a === 'activate') { $P::activate((string)$r->input('text', ''), (string)(auth()->user()->name ?? '')); return redirect('/admin/chat/playbook')->with('ok', 'Playbook চালু হয়েছে। এখন থেকে AI প্রতিটা উত্তরে এটা মানবে।'); }
-      if ($a === 'off') { $P::activate('', (string)(auth()->user()->name ?? '')); return redirect('/admin/chat/playbook')->with('ok', 'Playbook বন্ধ করা হয়েছে।'); }
+      if ($a === 'activate') { $P::activate((string)$r->input('text', ''), (string)(auth()->user()->name ?? '')); return redirect('/admin/chat/playbook')->with('ok', 'Playbook is on. From now on the AI follows it in every reply.'); }
+      if ($a === 'off') { $P::activate('', (string)(auth()->user()->name ?? '')); return redirect('/admin/chat/playbook')->with('ok', 'Playbook turned off.'); }
       return redirect('/admin/chat/playbook');
     }
     $e = fn($v) => e((string)$v); $m = $P::meta(); $act = $P::active(); $dr = $P::draft(); $ev = $P::evidence();
-    $h = '<div class="mm" style="max-width:980px"><a href="/admin/chat">&larr; Messages</a><h1>AI Chat Playbook</h1><p style="color:#6b7390">AI কোথায় থেমে মানুষের কাছে পাঠিয়েছে এবং আমাদের টিম আসলে কীভাবে উত্তর দিয়েছে, সেখান থেকে নিয়মের একটা খসড়া তৈরি হয়। আপনি পড়ে, দরকার হলে বদলে, তারপর চালু করবেন। দাম, স্টক, ডিসকাউন্ট বা প্রতিশ্রুতি এখানে থাকে না; সেগুলো সবসময় লাইভ ডেটা থেকে আসে। <a href="/admin/chat/ai-report">AI রিপোর্ট</a></p>';
+    $h = '<div class="mm" style="max-width:980px"><a href="/admin/chat">&larr; Messages</a><h1>AI Chat Playbook</h1><p style="color:#6b7390">A draft of rules is written from where the AI stopped and handed over to a person, and how our team actually answered. Read it, edit if needed, then turn it on. Prices, stock, discounts and promises are not part of it; they always come from live data. <a href="/admin/chat/ai-report">AI Report</a></p>';
     if (session('ok')) $h .= '<div style="background:#F0FAF3;border:1px solid #BFE3CC;color:#14683A;border-radius:10px;padding:8px 12px;margin-bottom:8px;font-weight:600">'.$e(session('ok')).'</div>';
     if (session('err')) $h .= '<div style="background:#FEF3F2;border:1px solid #F6C4C0;color:#B42318;border-radius:10px;padding:8px 12px;margin-bottom:8px;font-weight:600">'.$e(session('err')).'</div>';
-    $h .= '<p><b>অবস্থা:</b> '.($act !== '' ? 'চালু ('.$e($m['active_at'] ?? '').($m['active_by'] ?? '' ? ', '.$e($m['active_by']) : '').')' : 'চালু নেই').' · খসড়ার উৎস: গত '.$ev['days'].' দিনের '.count($ev['handoffs']).'টা Handoff-কারণ, '.count($ev['examples']).'টা টিমের উত্তর'.(!empty($m['draft_at']) ? ' · শেষ খসড়া '.$e($m['draft_at']) : '').'</p>';
-    $h .= '<form method="post" style="margin-bottom:10px">'.csrf_field().'<button name="action" value="generate">নতুন খসড়া তৈরি করুন (১–২ মিনিট)</button></form>';
-    $h .= '<form method="post">'.csrf_field().'<textarea name="text" rows="22" style="width:100%;font-family:inherit;font-size:13px;line-height:1.5" placeholder="খসড়া এখনো নেই। উপরের বাটন চাপুন।">'.$e($dr !== '' ? $dr : $act).'</textarea><div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap"><button name="action" value="activate">এই লেখাটা চালু করুন</button>'.($act !== '' ? '<button name="action" value="off" style="background:#fff;color:#0C161F;border:1px solid #0C161F">Playbook বন্ধ করুন</button>' : '').'</div></form>';
-    $h .= '<h2 style="font-size:15px;margin-top:18px">সবসময় চালু নিয়ম</h2><p style="color:#6b7390">চ্যাটের উত্তর খুব ছোট: এক বাক্য যথেষ্ট হলে এক বাক্য, সর্বোচ্চ দুই ছোট বাক্য (দাম/প্রোডাক্টের তালিকা বা অর্ডার নেওয়ার সময় ছাড়া)।</p></div>';
+    $h .= '<p><b>Status:</b> '.($act !== '' ? 'On ('.$e($m['active_at'] ?? '').($m['active_by'] ?? '' ? ', '.$e($m['active_by']) : '').')' : 'Off').' · Draft source: last '.$ev['days'].' days: '.count($ev['handoffs']).'handoff reasons, '.count($ev['examples']).'team replies'.(!empty($m['draft_at']) ? ' · last draft '.$e($m['draft_at']) : '').'</p>';
+    $h .= '<form method="post" style="margin-bottom:10px">'.csrf_field().'<button name="action" value="generate">Generate a new draft (1-2 minutes)</button></form>';
+    $h .= '<form method="post">'.csrf_field().'<textarea name="text" rows="22" style="width:100%;font-family:inherit;font-size:13px;line-height:1.5" placeholder="No draft yet. Press the button above.">'.$e($dr !== '' ? $dr : $act).'</textarea><div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap"><button name="action" value="activate">Turn this text on</button>'.($act !== '' ? '<button name="action" value="off" style="background:#fff;color:#0C161F;border:1px solid #0C161F">Turn Playbook off</button>' : '').'</div></form>';
+    $h .= '<h2 style="font-size:15px;margin-top:18px">Always-on rule</h2><p style="color:#6b7390">Chat replies are very short: one sentence when one is enough, at most two short sentences (except when listing prices/products or taking an order).</p></div>';
     return view('chat_memory', ['h' => $h]);
   }
   /** Public comments on our posts and what the AI answered (latest 150). */
@@ -921,24 +921,24 @@ class ChatController extends Controller {
     $e = fn($v) => e((string)$v); $ok = \App\Support\ChatComments::ready();
     $rows = $ok ? DB::table('chat_comments')->orderByDesc('id')->limit(150)->get() : collect();
     $by = $ok ? DB::table('chat_comments')->where('created_at', '>=', now()->subDays(7))->selectRaw('status, count(*) n')->groupBy('status')->pluck('n', 'status')->all() : [];
-    $lab = ['new' => 'অপেক্ষায়', 'replied' => 'উত্তর দেওয়া হয়েছে', 'skipped' => 'স্টাফের জন্য রাখা', 'failed' => 'পাঠানো যায়নি', 'deleted' => 'মুছে ফেলা হয়েছে'];
-    $h = '<style>.k{display:inline-block;background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:8px 14px;margin:0 8px 8px 0}.k b{font-size:20px;display:block}.mm td{vertical-align:top}</style><div class="mm"><a href="/admin/chat">&larr; Messages</a><h1>Comment Replies</h1><p style="color:#6b7390">আমাদের পেজের পোস্টে আসা কমেন্ট ও AI-এর উত্তর। AI Comment Reply এখন: <b>'.(\App\Support\ChatComments::on() ? 'চালু' : 'বন্ধ').'</b> (Chat Settings থেকে বদলানো যায়)। সিগারেট/ভেপ নিয়ে পাবলিক কমেন্টে কখনো দাম বলা হয় না, ইনবক্সে ডাকা হয়।</p><form method="post" action="/admin/chat/comments/subscribe" style="margin:0 0 10px">'.csrf_field().'<button>সব Facebook Page-এ কমেন্ট আসা চালু করুন</button></form><form method="post" action="/admin/chat/comments/backfill" style="margin:0 0 10px">'.csrf_field().'<button>পুরোনো কমেন্ট এখনই আনুন (১৪ দিন)</button></form>';
+    $lab = ['new' => 'Waiting', 'replied' => 'Replied', 'skipped' => 'Left for staff', 'failed' => 'Could not send', 'deleted' => 'Deleted'];
+    $h = '<style>.k{display:inline-block;background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:8px 14px;margin:0 8px 8px 0}.k b{font-size:20px;display:block}.mm td{vertical-align:top}</style><div class="mm"><a href="/admin/chat">&larr; Messages</a><h1>Comment Replies</h1><p style="color:#6b7390">Comments on our Page posts and the AI replies. AI Comment Reply is now: <b>'.(\App\Support\ChatComments::on() ? 'ON' : 'OFF').'</b> (change it in Chat Settings). For tobacco/vape, public comments never state a price; the person is invited to the inbox.</p><form method="post" action="/admin/chat/comments/subscribe" style="margin:0 0 10px">'.csrf_field().'<button>Turn on comment delivery for all Facebook Pages</button></form><form method="post" action="/admin/chat/comments/backfill" style="margin:0 0 10px">'.csrf_field().'<button>Fetch old comments now (14 days)</button></form>';
     // Status check (owner 15 Nov 2026): why comments are not answered, at a glance.
     try {
       $C = '\Illuminate\Support\Facades\Cache'; $age = \App\Support\DeployHealth::beatAge(); $hook = DB::table('settings')->where('key', 'chat_hook_last')->value('value');
       $bad = fn($t) => '<span style="color:#B91C1C">'.$t.'</span>'; $good = fn($t) => '<span style="color:#15803D">'.$t.'</span>';
-      $h .= '<div style="background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:10px 14px;margin:0 0 10px;font-size:13px;line-height:1.7"><b>অবস্থা যাচাই</b><br>AI Comment Reply সুইচ: '.(\App\Support\ChatComments::on() ? $good('চালু') : $bad('বন্ধ (Chat Settings থেকে চালু করুন)'))
-        .'<br>ওয়ার্কার (Scheduler): '.($age === null ? $bad('কখনো চলেনি') : ($age > 120 ? $bad($age.' সেকেন্ড আগে, বন্ধ থাকতে পারে') : $good('চলছে, '.$age.' সেকেন্ড আগে')))
-        .'<br>শেষ ওয়েবহুক: '.$e($hook ?: 'এখনো কোনো ওয়েবহুক আসেনি')
-        .'<br>অপেক্ষায় থাকা কমেন্ট: '.(int)($by['new'] ?? 0).' (সুইচ চালু থাকলে ৩০ সেকেন্ডে ৩টা করে উত্তর যায়)';
+      $h .= '<div style="background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:10px 14px;margin:0 0 10px;font-size:13px;line-height:1.7"><b>Status check</b><br>AI Comment Reply switch: '.(\App\Support\ChatComments::on() ? $good('ON') : $bad('OFF (turn it on in Chat Settings)'))
+        .'<br>Worker (scheduler): '.($age === null ? $bad('never ran') : ($age > 120 ? $bad($age.' seconds ago, may be stopped') : $good('running, '.$age.' seconds ago')))
+        .'<br>Last webhook: '.$e($hook ?: 'no webhook received yet')
+        .'<br>Comments waiting: '.(int)($by['new'] ?? 0).' (with the switch on, 3 replies go out every 30 seconds)';
       foreach (DB::table('chat_pages')->get(['page_id', 'name']) as $p) {
         $err = $C::get('cc.bf.err.' . $p->page_id);
-        $h .= '<br><b>'.$e($p->name).'</b>: টোকেন '.(\App\Support\Chat::pageTok('facebook', (string)$p->page_id) ? $good('আছে') : $bad('নেই')).' · প্রথম পাঠ: '.$e($C::get('cc.bf.' . $p->page_id, 'এখনো হয়নি')).' · সর্বশেষ পোল (প্রতি ~২ মিনিট): '.$e($C::get('cc.poll.last.' . $p->page_id, 'এখনো হয়নি')).($err ? ' · '.$bad('এরর: '.$e($err)) : '');
+        $h .= '<br><b>'.$e($p->name).'</b>: Token '.(\App\Support\Chat::pageTok('facebook', (string)$p->page_id) ? $good('present') : $bad('missing')).' · First read: '.$e($C::get('cc.bf.' . $p->page_id, 'not yet')).' · Last poll (about every 2 min): '.$e($C::get('cc.poll.last.' . $p->page_id, 'not yet')).($err ? ' · '.$bad('error: '.$e($err)) : '');
       }
-      $h .= '<form method="post" action="/admin/chat/comments/tokens" style="margin-top:8px">'.csrf_field().'<button>টোকেনের অনুমতি যাচাই করুন (ads_read আছে কিনা)</button></form></div>';
+      $h .= '<form method="post" action="/admin/chat/comments/tokens" style="margin-top:8px">'.csrf_field().'<button>Check token permissions (is ads_read present?)</button></form></div>';
     } catch (\Throwable $ex) {}
-    $h .= '<div>'.collect($lab)->map(fn($t, $k) => '<span class="k"><b>'.(int)($by[$k] ?? 0).'</b>'.$t.' (৭ দিন)</span>')->implode('').'</div>';
-    $h .= '<table><tr><th>সময়</th><th>কে</th><th>কমেন্ট</th><th>AI উত্তর</th><th>অবস্থা</th></tr>'.$rows->map(fn($x) => '<tr><td>'.\Carbon\Carbon::parse($x->created_at)->timezone('Asia/Dhaka')->format('d M H:i').'</td><td>'.$e($x->from_name).'</td><td>'.$e(mb_substr((string)$x->message, 0, 300)).'</td><td>'.$e($x->reply_text).'</td><td>'.$e($lab[$x->status] ?? $x->status).($x->note ? '<br><small>'.$e($x->note).'</small>' : '').($x->status !== 'deleted' ? '<form method="post" action="/admin/chat/comments/'.(int)$x->id.'/delete" onsubmit="return confirm(\'এই কমেন্টটি Facebook থেকে মুছে ফেলবেন?\')" style="margin-top:4px">'.csrf_field().'<button style="border:1px solid #E5E7EB;background:#fff;border-radius:6px;padding:2px 8px;font-size:12px;color:#b42318">মুছুন</button></form>' : '').'</td></tr>')->implode('').($rows->count() ? '' : '<tr><td colspan="5" style="color:#6b7390">এখনো কোনো কমেন্ট আসেনি। কমেন্ট পেতে Meta অ্যাপে পেজের "feed" সাবস্ক্রিপশন চালু থাকতে হবে।</td></tr>').'</table></div>';
+    $h .= '<div>'.collect($lab)->map(fn($t, $k) => '<span class="k"><b>'.(int)($by[$k] ?? 0).'</b>'.$t.' (7 days)</span>')->implode('').'</div>';
+    $h .= '<table><tr><th>Time</th><th>Who</th><th>Comment</th><th>AI reply</th><th>Status</th></tr>'.$rows->map(fn($x) => '<tr><td>'.\Carbon\Carbon::parse($x->created_at)->timezone('Asia/Dhaka')->format('d M H:i').'</td><td>'.$e($x->from_name).'</td><td>'.$e(mb_substr((string)$x->message, 0, 300)).'</td><td>'.$e($x->reply_text).'</td><td>'.$e($lab[$x->status] ?? $x->status).($x->note ? '<br><small>'.$e($x->note).'</small>' : '').($x->status !== 'deleted' ? '<form method="post" action="/admin/chat/comments/'.(int)$x->id.'/delete" onsubmit="return confirm(\'Delete this comment from Facebook?\')" style="margin-top:4px">'.csrf_field().'<button style="border:1px solid #E5E7EB;background:#fff;border-radius:6px;padding:2px 8px;font-size:12px;color:#b42318">Delete</button></form>' : '').'</td></tr>')->implode('').($rows->count() ? '' : '<tr><td colspan="5" style="color:#6b7390">No comments yet. To receive comments, the Page "feed" subscription must be on in the Meta app.</td></tr>').'</table></div>';
     return view('chat_memory', ['h' => $h]);
   }
   /** Owner request 15 Nov 2026: turn on public-comment delivery for every connected Facebook Page (the "feed" subscription). Messages stay subscribed too, because this call replaces the Page's field list. Facebook only; Instagram is left as it was. */
@@ -946,11 +946,11 @@ class ChatController extends Controller {
   public function commentDelete(Request $r, int $id) {
     abort_unless(auth()->check(), 403);
     $ok = \App\Support\ChatComments::remove($id, 'manual delete', (int)auth()->id());
-    return redirect('/admin/chat/comments')->with('status', $ok ? 'কমেন্ট মুছে ফেলা হয়েছে' : 'মুছতে পারা যায়নি (নোট দেখুন)');
+    return redirect('/admin/chat/comments')->with('status', $ok ? 'Comment deleted' : 'Could not delete (see the note)');
   }
   /** Re-read old comments of every Page right now and show what each Page returned. */
   public function commentBackfill(Request $r) {
-    abort_unless(\App\Support\ProfitFloor::admin(), 403); @set_time_limit(280); $e = fn($v) => e((string)$v); $h = '<div class="mm"><a href="/admin/chat/comments">&larr; কমেন্ট</a><h1>পুরোনো কমেন্ট আনা</h1><table><tr><th>Page</th><th>ফল</th></tr>';
+    abort_unless(\App\Support\ProfitFloor::admin(), 403); @set_time_limit(280); $e = fn($v) => e((string)$v); $h = '<div class="mm"><a href="/admin/chat/comments">&larr; Comments</a><h1>Fetch old comments</h1><table><tr><th>Page</th><th>Result</th></tr>';
     foreach (DB::table('chat_pages')->get(['page_id', 'name']) as $pg) {
       \Illuminate\Support\Facades\Cache::forget('cc.bf.' . $pg->page_id); \Illuminate\Support\Facades\Cache::forget('cc.bf.err.' . $pg->page_id);
       \App\Support\ChatComments::backfillPage((string)$pg->page_id);
@@ -964,21 +964,21 @@ class ChatController extends Controller {
     $e = fn($v) => e((string)$v); $G = 'https://graph.facebook.com/v21.0/'; $H = fn() => \Illuminate\Support\Facades\Http::timeout(20);
     $id = trim((string)Chat::sec('chat_app_id')); $sec = trim((string)Chat::sec('chat_app_secret'));
     $err = fn($x) => 'error ' . (int)$x->status() . ' ' . mb_substr((string)($x->json('error.message') ?? ''), 0, 140);
-    $h = '<div class="mm"><a href="/admin/chat/comments">&larr; কমেন্ট</a><h1>টোকেনের অনুমতি যাচাই</h1><p style="color:#6b7390">প্রতিটা Page-এর সংরক্ষিত টোকেনে Facebook আসলে কোন অনুমতি দিয়েছে, আর কমেন্টের তিনটা কল সরাসরি পরীক্ষা। টোকেনের মান দেখানো হয় না।</p><table><tr><th>Page</th><th>ফল</th></tr>';
+    $h = '<div class="mm"><a href="/admin/chat/comments">&larr; Comments</a><h1>Token permission check</h1><p style="color:#6b7390">What Facebook really granted to the saved token of each Page, plus the three comment calls tested live. The token value is never shown.</p><table><tr><th>Page</th><th>Result</th></tr>';
     foreach (DB::table('chat_pages')->get(['page_id', 'name']) as $pg) {
       $tok = Chat::pageTok('facebook', (string)$pg->page_id); $o = [];
-      if (!$tok) { $h .= '<tr><td>'.$e($pg->name).'</td><td style="color:#B91C1C">টোকেন নেই</td></tr>'; continue; }
+      if (!$tok) { $h .= '<tr><td>'.$e($pg->name).'</td><td style="color:#B91C1C">no token</td></tr>'; continue; }
       try {
         $dbg = (array)($H()->get($G.'debug_token', ['input_token' => $tok, 'access_token' => ($id && $sec) ? $id.'|'.$sec : $tok])->json('data') ?? []);
         $sc = (array)($dbg['scopes'] ?? []);
-        $o[] = 'অ্যাপ ' . $e($dbg['app_id'] ?? '?') . ' · ধরন ' . $e($dbg['type'] ?? '?') . ' · বৈধ ' . (isset($dbg['is_valid']) ? ($dbg['is_valid'] ? 'হ্যাঁ' : 'না') : '?');
-        $o[] = 'অনুমতি: ' . $e(implode(', ', $sc) ?: '(পাওয়া যায়নি)');
+        $o[] = 'App ' . $e($dbg['app_id'] ?? '?') . ' · type ' . $e($dbg['type'] ?? '?') . ' · valid ' . (isset($dbg['is_valid']) ? ($dbg['is_valid'] ? 'yes' : 'no') : '?');
+        $o[] = 'Permissions: ' . $e(implode(', ', $sc) ?: '(none found)');
         $need = ['pages_read_engagement', 'pages_read_user_content', 'pages_manage_engagement', 'pages_messaging', 'ads_read', 'ads_management'];
-        $o[] = 'দরকারি অনুমতির মধ্যে নেই: <b style="color:#B91C1C">' . $e(implode(', ', array_diff($need, $sc)) ?: 'কিছুই না') . '</b>';
+        $o[] = 'Missing from the needed permissions: <b style="color:#B91C1C">' . $e(implode(', ', array_diff($need, $sc)) ?: 'nothing') . '</b>';
       } catch (\Throwable $ex) { $o[] = 'debug_token: ' . $e(mb_substr($ex->getMessage(), 0, 120)); }
-      try { $t1 = $H()->withToken($tok)->get($G . $pg->page_id . '/ads_posts', ['limit' => 1, 'fields' => 'id']); $o[] = 'ads_posts: ' . ($t1->ok() ? '<span style="color:#15803D">ঠিক</span>' : '<span style="color:#B91C1C">' . $e($err($t1)) . '</span>'); } catch (\Throwable $ex) { $o[] = 'ads_posts: ' . $e($ex->getMessage()); }
-      try { $t2 = $H()->withToken($tok)->get($G . $pg->page_id . '/subscribed_apps'); $o[] = 'সাবস্ক্রিপশন: ' . ($t2->ok() ? $e(collect((array)$t2->json('data'))->map(fn($a) => ($a['name'] ?? $a['id'] ?? '?') . ' [' . implode(',', (array)($a['subscribed_fields'] ?? [])) . ']')->implode(' | ') ?: '(কোনো অ্যাপ নেই)') : '<span style="color:#B91C1C">' . $e($err($t2)) . '</span>'); } catch (\Throwable $ex) { $o[] = 'সাবস্ক্রিপশন: ' . $e($ex->getMessage()); }
-      try { $t3 = $H()->withToken($tok)->get($G . $pg->page_id . '/published_posts', ['limit' => 1, 'fields' => 'id,comments.limit(1){id,from}']); $o[] = 'পোস্ট ও কমেন্ট পড়া: ' . ($t3->ok() ? '<span style="color:#15803D">ঠিক</span>' : '<span style="color:#B91C1C">' . $e($err($t3)) . '</span>'); } catch (\Throwable $ex) { $o[] = 'পোস্ট পড়া: ' . $e($ex->getMessage()); }
+      try { $t1 = $H()->withToken($tok)->get($G . $pg->page_id . '/ads_posts', ['limit' => 1, 'fields' => 'id']); $o[] = 'ads_posts: ' . ($t1->ok() ? '<span style="color:#15803D">OK</span>' : '<span style="color:#B91C1C">' . $e($err($t1)) . '</span>'); } catch (\Throwable $ex) { $o[] = 'ads_posts: ' . $e($ex->getMessage()); }
+      try { $t2 = $H()->withToken($tok)->get($G . $pg->page_id . '/subscribed_apps'); $o[] = 'Subscription: ' . ($t2->ok() ? $e(collect((array)$t2->json('data'))->map(fn($a) => ($a['name'] ?? $a['id'] ?? '?') . ' [' . implode(',', (array)($a['subscribed_fields'] ?? [])) . ']')->implode(' | ') ?: '(no app)') : '<span style="color:#B91C1C">' . $e($err($t2)) . '</span>'); } catch (\Throwable $ex) { $o[] = 'Subscription: ' . $e($ex->getMessage()); }
+      try { $t3 = $H()->withToken($tok)->get($G . $pg->page_id . '/published_posts', ['limit' => 1, 'fields' => 'id,comments.limit(1){id,from}']); $o[] = 'Reading posts and comments: ' . ($t3->ok() ? '<span style="color:#15803D">OK</span>' : '<span style="color:#B91C1C">' . $e($err($t3)) . '</span>'); } catch (\Throwable $ex) { $o[] = 'Reading posts: ' . $e($ex->getMessage()); }
       $h .= '<tr><td>'.$e($pg->name).'<br><small>'.$e($pg->page_id).'</small></td><td>'.implode('<br>', $o).'</td></tr>';
     }
     return view('chat_memory', ['h' => $h . '</table></div>']);
@@ -1006,12 +1006,12 @@ class ChatController extends Controller {
     $ho = \Illuminate\Support\Facades\Schema::hasTable('chat_handoffs') ? DB::table('chat_handoffs')->where('created_at', '>=', $from)->selectRaw('reason, count(*) n')->groupBy('reason')->orderByDesc('n')->limit(12)->get() : collect();
     $nh = DB::table('chat_threads')->where('needs_human', true)->selectRaw("coalesce(nullif(intent,''),'(unknown)') as intent, count(*) n")->groupBy('intent')->orderByDesc('n')->limit(10)->get();
     $vo = \Illuminate\Support\Facades\Schema::hasTable('voice_chat_logs') ? DB::selectOne("select count(*) filter (where ok) ok, count(*) filter (where not ok) bad from voice_chat_logs where kind = 'stt' and created_at >= ?", [$from]) : null;
-    $h = '<style>.k{display:inline-block;background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:8px 14px;margin:0 8px 8px 0;min-width:150px}.k b{font-size:20px;display:block}.mm h2{margin:20px 0 8px;font-size:15px}</style><div class="mm"><a href="/admin/chat">&larr; Messages</a><h1>AI Automation Report</h1><p style="color:#6b7390">গত '.$days.' দিনে যেসব কথোপকথনে কাস্টমার লিখেছে, সেগুলো কে সামলেছে। <a href="?days=1">১ দিন</a> · <a href="?days=7">৭ দিন</a> · <a href="?days=30">৩০ দিন</a></p>';
-    $h .= '<div><span class="k"><b>'.(int)$q->threads.'</b>মোট কথোপকথন</span><span class="k"><b>'.(int)$q->ai_only.' ('.$pc($q->ai_only).')</b>শুধু AI উত্তর দিয়েছে</span><span class="k"><b>'.(int)$q->both_.' ('.$pc($q->both_).')</b>AI + স্টাফ দুজনই</span><span class="k"><b>'.(int)$q->staff_only.' ('.$pc($q->staff_only).')</b>শুধু স্টাফ</span><span class="k"><b style="color:#B91C1C">'.(int)$q->none_.' ('.$pc($q->none_).')</b>কেউ উত্তর দেয়নি</span></div>';
-    $h .= '<h2>চ্যানেল অনুযায়ী</h2><table><tr><th>চ্যানেল</th><th>কথোপকথন</th></tr>'.collect($ch)->map(fn($x) => '<tr><td>'.$e($x->channel).'</td><td>'.(int)$x->n.'</td></tr>')->implode('').'</table>';
-    $h .= '<h2>AI কেন মানুষের কাছে পাঠিয়েছে (Handoff-এর কারণ)</h2><table><tr><th>কারণ</th><th>বার</th></tr>'.($ho->count() ? $ho->map(fn($x) => '<tr><td>'.$e($x->reason ?: '(কারণ লেখা নেই)').'</td><td>'.(int)$x->n.'</td></tr>')->implode('') : '<tr><td colspan="2" style="color:#6b7390">এই সময়ে কোনো Handoff নেই।</td></tr>').'</table>';
-    $h .= '<h2>এখন মানুষের অপেক্ষায় থাকা কথোপকথন (বিষয় অনুযায়ী)</h2><table><tr><th>বিষয়</th><th>কথোপকথন</th></tr>'.($nh->count() ? $nh->map(fn($x) => '<tr><td>'.$e(str_replace('_', ' ', $x->intent)).'</td><td>'.(int)$x->n.'</td></tr>')->implode('') : '<tr><td colspan="2" style="color:#6b7390">কিছু নেই।</td></tr>').'</table>';
-    if ($vo) $h .= '<h2>ভয়েস মেসেজ</h2><div><span class="k"><b>'.(int)$vo->ok.'</b>বোঝা গেছে</span><span class="k"><b style="color:#B91C1C">'.(int)$vo->bad.'</b>বোঝা যায়নি (চেষ্টা প্রতি)</span></div>';
+    $h = '<style>.k{display:inline-block;background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:8px 14px;margin:0 8px 8px 0;min-width:150px}.k b{font-size:20px;display:block}.mm h2{margin:20px 0 8px;font-size:15px}</style><div class="mm"><a href="/admin/chat">&larr; Messages</a><h1>AI Automation Report</h1><p style="color:#6b7390">Who handled the conversations in which a customer wrote in the last '.$days.' days. <a href="?days=1">1 day</a> · <a href="?days=7">7 days</a> · <a href="?days=30">30 days</a></p>';
+    $h .= '<div><span class="k"><b>'.(int)$q->threads.'</b>Total conversations</span><span class="k"><b>'.(int)$q->ai_only.' ('.$pc($q->ai_only).')</b>AI only</span><span class="k"><b>'.(int)$q->both_.' ('.$pc($q->both_).')</b>AI and staff</span><span class="k"><b>'.(int)$q->staff_only.' ('.$pc($q->staff_only).')</b>Staff only</span><span class="k"><b style="color:#B91C1C">'.(int)$q->none_.' ('.$pc($q->none_).')</b>Nobody replied</span></div>';
+    $h .= '<h2>By channel</h2><table><tr><th>Channel</th><th>Conversations</th></tr>'.collect($ch)->map(fn($x) => '<tr><td>'.$e($x->channel).'</td><td>'.(int)$x->n.'</td></tr>')->implode('').'</table>';
+    $h .= '<h2>Why the AI handed over to a person (handoff reasons)</h2><table><tr><th>Reason</th><th>Times</th></tr>'.($ho->count() ? $ho->map(fn($x) => '<tr><td>'.$e($x->reason ?: '(no reason recorded)').'</td><td>'.(int)$x->n.'</td></tr>')->implode('') : '<tr><td colspan="2" style="color:#6b7390">No handoffs in this period.</td></tr>').'</table>';
+    $h .= '<h2>Conversations waiting for a person now (by topic)</h2><table><tr><th>Topic</th><th>Conversations</th></tr>'.($nh->count() ? $nh->map(fn($x) => '<tr><td>'.$e(str_replace('_', ' ', $x->intent)).'</td><td>'.(int)$x->n.'</td></tr>')->implode('') : '<tr><td colspan="2" style="color:#6b7390">None.</td></tr>').'</table>';
+    if ($vo) $h .= '<h2>Voice messages</h2><div><span class="k"><b>'.(int)$vo->ok.'</b>Understood</span><span class="k"><b style="color:#B91C1C">'.(int)$vo->bad.'</b>Not understood (per attempt)</span></div>';
     $h .= '</div>';
     return view('chat_memory', ['h' => $h]);
   }

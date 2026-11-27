@@ -504,6 +504,28 @@ class Chat {
     } catch (\Throwable $e) { report($e); return false; }
   }
   /** Owner 27 Nov 2026: move every chat we have answered, where the customer stayed silent for $hours or more, to Closed. Nothing is sent to the customer. Same safety blocks as closeSilent(); follow-ups, hand-offs, open complaints / refunds / orders and failed last messages stay open. $dry only counts. Returns [closed, kept]. */
+  /** Conversations that hold only our automatic notices (order confirmation / update, campaigns): no customer message, no staff message, no owner, nothing pending. They belong in Closed. Anything with a customer message or staff work is left alone. */
+  public static function closeNotifyOnly(bool $dry = false, ?string $by = null): array {
+    $n = 0; $kept = 0;
+    $q = DB::table('chat_threads as t')->where('t.status', '!=', 'resolved')->where(fn($w) => $w->whereNull('t.awaiting_reply')->orWhere('t.awaiting_reply', false))->where(fn($w) => $w->whereNull('t.needs_human')->orWhere('t.needs_human', false))
+      ->whereNull('t.handoff_at')->whereNull('t.assigned_to')
+      ->whereExists(fn($x) => $x->selectRaw('1')->from('chat_messages as m')->whereColumn('m.thread_id', 't.id')->where('m.dir', 'out'))
+      ->whereNotExists(fn($x) => $x->selectRaw('1')->from('chat_messages as m')->whereColumn('m.thread_id', 't.id')->where('m.dir', 'in'))
+      ->whereNotExists(fn($x) => $x->selectRaw('1')->from('chat_messages as m')->whereColumn('m.thread_id', 't.id')->where('m.dir', 'out')->where(fn($y) => $y->whereNull('m.user_name')->orWhere(fn($z) => $z->where('m.user_name', 'not like', '%(auto)%')->where('m.user_name', 'not like', 'Campaign:%'))))
+      ->orderBy('t.id')->select('t.*');
+    foreach ($q->limit(2000)->get() as $t) {
+      try {
+        $tid = (int)$t->id;
+        if (DB::table('chat_handoffs')->where('thread_id', $tid)->whereIn('status', ['open', 'accepted'])->exists()) { $kept++; continue; }
+        try { if (DB::table('chat_order_requests')->where('thread_id', $tid)->where('status', 'review')->exists()) { $kept++; continue; } } catch (\Throwable $e) {}
+        $n++;
+        if ($dry) continue;
+        DB::table('chat_threads')->where('id', $tid)->update(['status'=>'resolved', 'unread'=>0, 'awaiting_reply'=>false, 'updated_at'=>now()]);
+        try { DB::table('audit_logs')->insert(['user_id'=>auth()->id(), 'user_name'=>$by ?: '', 'action'=>'chat.close', 'subject'=>'Conversation #'.$tid.' closed: automatic notices only (bulk)', 'ip'=>request()->ip(), 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {}
+      } catch (\Throwable $e) { report($e); }
+    }
+    return [$n, $kept];
+  }
   public static function closeAnswered(int $hours = 3, bool $dry = false, ?string $by = null): array {
     $n = 0; $kept = 0;
     $q = DB::table('chat_threads')->whereIn('channel', ['web', 'whatsapp', 'facebook', 'instagram'])->where('status', '!=', 'resolved')->where('last_dir', 'out')->where('last_at', '<=', now()->subHours(max(1, $hours)))->orderBy('id');
