@@ -54,8 +54,8 @@ class ChatOwner {
     }
     return 'busy';
   }
-  const BUSY = 'এই মুহূর্তে এই কথোপকথনে একটি মেসেজ পাঠানো হচ্ছে। কয়েক সেকেন্ড পরে আবার চেষ্টা করুন।';
-  public static function heldMsg(?int $owner): string { return 'এই কথোপকথন এখন '.self::name($owner).'-এর দায়িত্বে। আপনি দেখতে ও নোট লিখতে পারবেন, কিন্তু উত্তর পাঠাতে পারবেন না।'; }
+  const BUSY = 'A message is being sent in this conversation right now. Try again in a few seconds.';
+  public static function heldMsg(?int $owner): string { return 'This conversation is now held by '.self::name($owner).'. You can read and write notes, but you cannot send replies.'; }
 
   /** A representative takes an unassigned conversation. [ok, message] */
   public static function claim(int $tid, object $user): array {
@@ -66,7 +66,7 @@ class ChatOwner {
     if ($r === 'ok') { self::log($tid, 'claim', null, $uid, $uid, $user->name ?? null); return [true, 'claimed']; }
     if ($r === 'busy') return [false, self::BUSY];
     $now = DB::table('chat_threads')->where('id', $tid)->value('assigned_to');
-    return $now !== null && (int)$now === $uid ? [true, 'already yours'] : [false, $now !== null ? self::heldMsg((int)$now) : 'আবার চেষ্টা করুন।'];
+    return $now !== null && (int)$now === $uid ? [true, 'already yours'] : [false, $now !== null ? self::heldMsg((int)$now) : 'Please try again.'];
   }
   /** Used before a staff send: the sender must own the conversation; an unassigned one is taken on the spot (only one person can win that). [ok, message] */
   public static function ensureOwner(int $tid, object $user): array { return self::claim($tid, $user); }
@@ -80,16 +80,16 @@ class ChatOwner {
     $from = $t->assigned_to === null ? null : (int)$t->assigned_to; $aid = (int)$actor->id; $sup = self::supervisor($actor);
     if (!$sup) {
       if ($from === null && $to === $aid) return self::claim($tid, $actor);
-      if (!($from === $aid && $to === null)) return [false, 'দায়িত্ব পরিবর্তন শুধু সুপারভাইজার করতে পারেন। আপনি শুধু নিজের কথোপকথন ছেড়ে দিতে পারেন।'];
+      if (!($from === $aid && $to === null)) return [false, 'Only a supervisor can change the owner. You can only release your own conversation.'];
     }
-    if ($to !== null && !DB::table('users')->where('id', $to)->where('active', true)->exists()) return [false, 'এই ব্যবহারকারী সক্রিয় নন।'];
+    if ($to !== null && !DB::table('users')->where('id', $to)->where('active', true)->exists()) return [false, 'This user is not active.'];
     if ($from === $to) return [true, 'no change'];
     $r = self::swap($tid, $from, $to);
     if ($r === 'busy') return [false, self::BUSY];
-    if ($r !== 'ok') return [false, 'এর মধ্যে দায়িত্ব বদলে গেছে। পাতাটি রিফ্রেশ করে আবার দেখুন।'];
+    if ($r !== 'ok') return [false, 'The owner changed in the meantime. Refresh the page and check again.'];
     $note = trim($note);
     self::log($tid, $to === null ? 'release' : ($from === null ? 'assign' : 'transfer'), $from, $to, $aid, $actor->name ?? null, $note);
-    if ($note !== '') { try { DB::table('chat_notes')->insert(['thread_id'=>$tid, 'user_id'=>$aid, 'user_name'=>$actor->name ?? '', 'body'=>'হস্তান্তর নোট ('.($from ? self::name($from) : 'কেউ না').' → '.($to ? self::name($to) : 'কিউ').'): '.$note, 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {} }
+    if ($note !== '') { try { DB::table('chat_notes')->insert(['thread_id'=>$tid, 'user_id'=>$aid, 'user_name'=>$actor->name ?? '', 'body'=>'Handover note ('.($from ? self::name($from) : 'nobody').' → '.($to ? self::name($to) : 'queue').'): '.$note, 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {} }
     return [true, 'done'];
   }
   /** Owner change made by the system (auto-assignment, hand-off by the AI, reopen, close, staff absent). Returns true when it changed. */
@@ -124,7 +124,7 @@ class ChatOwner {
       if ($type === 'human' && $own !== (int)($who['id'] ?? 0)) {
         self::log($tid, 'reply_blocked', $own, null, (int)($who['id'] ?? 0), $who['name'] ?? null, 'Send refused: not the owner at the moment of sending.');
         self::$refused = true;
-        return [false, $own ? self::heldMsg($own) : 'এই কথোপকথন এখন আপনার দায়িত্বে নেই। উত্তর পাঠানো হয়নি।'];
+        return [false, $own ? self::heldMsg($own) : 'This conversation is no longer yours. The reply was not sent.'];
       }
       if ($type === 'ai' && $own !== null) { self::$refused = true; return [false, 'Not sent: '.self::name($own).' is handling this conversation.']; }
       usleep(250000); // allowed, but another message is on its way: wait for it
@@ -170,7 +170,7 @@ class ChatOwner {
         $own = (int)$t->assigned_to; $wait = (int)\Carbon\Carbon::parse($t->awaiting_since)->diffInMinutes(now()); $cust = trim((string)($t->name ?: $t->phone ?: 'A customer'));
         self::log((int)$t->id, 'absent_alert', $own, null, null, 'System', $cust.' has waited '.$wait.' minutes for '.self::name($own).'. Supervisors were told.');
         foreach ($sups as $s) { if ((int)$s->id === $own) continue;
-          try { DB::table('chat_wait_notices')->insert(['thread_id'=>$t->id, 'user_id'=>$s->id, 'user_name'=>$s->name, 'customer'=>mb_substr($cust.' (দায়িত্বে: '.self::name($own).')', 0, 160), 'wait_min'=>$wait, 'assigned'=>false, 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {} }
+          try { DB::table('chat_wait_notices')->insert(['thread_id'=>$t->id, 'user_id'=>$s->id, 'user_name'=>$s->name, 'customer'=>mb_substr($cust.' (owner: '.self::name($own).')', 0, 160), 'wait_min'=>$wait, 'assigned'=>false, 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {} }
       }
       self::health($min);
     } catch (\Throwable $e) { report($e); }
@@ -185,7 +185,7 @@ class ChatOwner {
     foreach ($rows as $t) {
       $own = (int)$t->assigned_to; $nm = self::name($own);
       if (!self::system((int)$t->id, null, 'release', $nm.' did not reply for '.$min.' minutes: back to the open list for everyone.')) continue;
-      try { DB::table('chat_notes')->insert(['thread_id'=>$t->id, 'user_id'=>null, 'user_name'=>'System', 'body'=>$nm.' '.$min.' মিনিট উত্তর দেননি। কথোপকথনটি সবার জন্য উন্মুক্ত তালিকায় ফেরানো হয়েছে; যিনি প্রথম উত্তর দেবেন তিনিই দায়িত্ব পাবেন।', 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {}
+      try { DB::table('chat_notes')->insert(['thread_id'=>$t->id, 'user_id'=>null, 'user_name'=>'System', 'body'=>$nm.' '.$min.' minutes without a reply. The conversation went back to the open list; whoever replies first becomes the owner.', 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {}
     }
   }
   /** A first reply that was cut off before the platform confirmed it must not leave the conversation with that person: when the owner has no delivered reply since taking it, it is open again. */

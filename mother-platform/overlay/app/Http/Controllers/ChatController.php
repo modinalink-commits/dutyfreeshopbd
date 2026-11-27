@@ -225,7 +225,7 @@ class ChatController extends Controller {
     // Giving a conversation to the AI ends the person's ownership, so only its owner or a supervisor may do it.
     if ($on && \App\Support\ChatOwner::ready() && ($o = \App\Support\ChatOwner::ownerId((int)$id)) !== null) {
       if ($o !== (int)auth()->id() && !\App\Support\ChatOwner::supervisor(auth()->user())) return response()->json(['ok'=>false, 'blocked'=>true, 'error'=>\App\Support\ChatOwner::heldMsg($o)], 409);
-      [$rk, $rm] = \App\Support\ChatOwner::transfer((int)$id, null, auth()->user(), 'AI চালু করা হয়েছে: কথোপকথন AI-কে দেওয়া হলো।'); if (!$rk) return response()->json(['ok'=>false, 'error'=>$rm], 409);
+      [$rk, $rm] = \App\Support\ChatOwner::transfer((int)$id, null, auth()->user(), 'AI switched on: the conversation was given to the AI.'); if (!$rk) return response()->json(['ok'=>false, 'error'=>$rm], 409);
     } if ($on) \Illuminate\Support\Facades\Cache::forget('ai.manual_off.'.(int)$id); else \Illuminate\Support\Facades\Cache::forever('ai.manual_off.'.(int)$id, 1);
     DB::table('chat_threads')->where('id', $id)->update(['ai_paused'=>!$on, 'updated_at'=>now()]);
     if ($on) { $tid = (int)$id; app()->terminating(fn() => Chat::aiReply($tid)); }
@@ -236,7 +236,7 @@ class ChatController extends Controller {
     $tid = (int)$id; $t = DB::table('chat_threads')->find($tid); abort_unless($t, 404);
     if (\App\Support\ChatOwner::ready() && $t->assigned_to !== null) {
       if ((int)$t->assigned_to !== (int)auth()->id() && !\App\Support\ChatOwner::supervisor(auth()->user())) return response()->json(['ok'=>false, 'blocked'=>true, 'error'=>\App\Support\ChatOwner::heldMsg((int)$t->assigned_to)], 409);
-      [$rk, $rm] = \App\Support\ChatOwner::transfer($tid, null, auth()->user(), 'হ্যান্ড-অফ শেষ: কথোপকথন AI-কে ফেরত দেওয়া হলো।'); if (!$rk) return response()->json(['ok'=>false, 'error'=>$rm], 409);
+      [$rk, $rm] = \App\Support\ChatOwner::transfer($tid, null, auth()->user(), 'Hand-off ended: the conversation was given back to the AI.'); if (!$rk) return response()->json(['ok'=>false, 'error'=>$rm], 409);
     }
     \Illuminate\Support\Facades\Cache::forget('ai.manual_off.'.$tid);
     DB::table('chat_threads')->where('id', $tid)->update(['needs_human'=>false, 'handoff_at'=>null, 'handoff_reason'=>null, 'ai_paused'=>false, 'updated_at'=>now()]);
@@ -277,7 +277,7 @@ class ChatController extends Controller {
     $u = auth()->user(); $on = \App\Support\ChatOwner::ready(); $o = $on ? \App\Support\ChatOwner::ownerId($tid) : null;
     return ['on'=>$on, 'id'=>$o, 'name'=>$o ? \App\Support\ChatOwner::name($o) : null, 'mine'=>$o !== null && $u && $o === (int)$u->id, 'can_send'=>!$on || $o === null || ($u && $o === (int)$u->id), 'supervisor'=>\App\Support\ChatOwner::supervisor($u), 'me_id'=>$u ? (int)$u->id : null];
   }
-  /** Open conversations nobody holds that the AI is answering (board column "AI উত্তর দিচ্ছে"). Display only: it changes nothing about who answers. */
+  /** Open conversations nobody holds that the AI is answering (board column "AI Answering"). Display only: it changes nothing about who answers. */
   private static function aiScope($q) {
     return $q->where('status', '!=', 'resolved')->whereNull('assigned_to')->where(fn($w) => $w->whereNull('ai_paused')->orWhere('ai_paused', false))
       ->where(fn($w) => $w->whereNull('needs_human')->orWhere('needs_human', false))->whereNull('handoff_at')->whereIn('channel', ['web', 'whatsapp', 'facebook'])
@@ -294,7 +294,7 @@ class ChatController extends Controller {
     $t = DB::table('chat_threads')->find($id); abort_unless($t, 404); $me = auth()->user(); $min = (int)$d['minutes'];
     if ($t->status === 'resolved') return response()->json(['ok'=>false, 'error'=>'This conversation is closed.'], 409);
     if (\App\Support\ChatOwner::ready() && !\App\Support\ChatOwner::supervisor($me)) {
-      if ($t->assigned_to === null) return response()->json(['ok'=>false, 'blocked'=>true, 'error'=>'আগে কথোপকথনটি নিন, তারপর ফলোআপ দিন।'], 409);
+      if ($t->assigned_to === null) return response()->json(['ok'=>false, 'blocked'=>true, 'error'=>'Take the conversation first, then set a follow-up.'], 409);
       if ((int)$t->assigned_to !== (int)$me->id) return response()->json(['ok'=>false, 'blocked'=>true, 'error'=>\App\Support\ChatOwner::heldMsg((int)$t->assigned_to)], 409);
     }
     $at = $min > 0 ? now()->addMinutes($min) : null; $note = trim((string)($d['note'] ?? ''));

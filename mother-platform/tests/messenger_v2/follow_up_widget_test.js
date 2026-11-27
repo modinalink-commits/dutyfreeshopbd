@@ -16,7 +16,7 @@ A(await p.locator('#hfu').count()===1,'real chat header has the Follow-up contro
 A(await p.locator('#hcls').count()===1&&await p.locator('#hs').count()===1&&await p.locator('#ha').count()===1,'Close chat, Status and Assigned-to still present');
 await p.selectOption('#hfu','120');await p.waitForTimeout(700);
 A(posts.length===1&&posts[0].minutes===120,'follow-up posts minutes to the server');
-A(await p.evaluate(()=>{const c=document.querySelector('#mh .fuc');return !!c&&c.textContent.includes('পরে')&&!c.classList.contains('due')}),'header shows the upcoming follow-up chip');
+A(await p.evaluate(()=>{const c=document.querySelector('#mh .fuc');return !!c&&c.textContent.includes('Follow-up in')&&!c.classList.contains('due')}),'header shows the upcoming follow-up chip');
 A(await p.locator('#hfu option[value="0"]').count()===1,'remove option appears once set');
 await p.screenshot({path:'d-chat-follow.png'});
 await p.selectOption('#hfu','0');await p.waitForTimeout(700);

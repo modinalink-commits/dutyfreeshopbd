@@ -27,14 +27,14 @@ for(const vp of [{width:1366,height:768},{width:400,height:820}]){const tg=vp.wi
  A((await p.locator('#ibsum button[data-f=followup] b').textContent())==='1',tg+'follow-up due count shown');
  A(await p.locator('#ibf1 a[data-f]').count()===8&&await p.locator('#ibf2').isHidden(),tg+'eight main filters, rest under More');await p.click('#ibmore');A(await p.locator('#ibf2 a[data-f=aih]').isVisible(),tg+'More opens the rest');
  A(await p.locator('#ibfb a[data-f]').count()===19,tg+'all 17 old filters kept (19 with the 2 new)');
- A(await p.evaluate(()=>document.querySelector('#ibl .th[data-id="5"]').textContent.includes('ফলোআপ বাকি')),tg+'list row shows follow-up overdue text');
- A(await p.evaluate(()=>document.querySelector('#ibl .th[data-id="6"]').textContent.includes('পরে')),tg+'list row shows upcoming follow-up');
+ A(await p.evaluate(()=>document.querySelector('#ibl .th[data-id="5"]').textContent.includes('Follow-up overdue')),tg+'list row shows follow-up overdue text');
+ A(await p.evaluate(()=>document.querySelector('#ibl .th[data-id="6"]').textContent.includes('Follow-up in')),tg+'list row shows upcoming follow-up');
  await p.screenshot({path:(vp.width<760?'m':'d')+'-inbox.png'});
  await p.click('#ibvw [data-v=board]');await p.waitForTimeout(500);
  const colOf=id=>p.evaluate(id=>{const k=document.querySelector('#ibk .kc[data-id="'+id+'"]');return k?k.closest('.kcol').dataset.c:null},id);
  const exp={1:'new',2:'ai',3:'work',4:'wait',5:'follow',6:'follow',7:'done',8:'work',9:'ai',10:'new'};
  for(const k in exp)A(await colOf(k)===exp[k],tg+'board: thread '+k+' in '+exp[k]+' (got '+await colOf(k)+')');
- A(await p.evaluate(()=>document.querySelector('#ibk .kc[data-id="5"]').classList.contains('l')&&document.querySelector('#ibk .kc[data-id="5"]').textContent.includes('ফলোআপ বাকি')),tg+'overdue card red with text');
+ A(await p.evaluate(()=>document.querySelector('#ibk .kc[data-id="5"]').classList.contains('l')&&document.querySelector('#ibk .kc[data-id="5"]').textContent.includes('Follow-up overdue')),tg+'overdue card red with text');
  A(await p.evaluate(()=>getComputedStyle(document.getElementById('ibx')).display==='none'),tg+'inbox hidden in board view');
  await p.screenshot({path:(vp.width<760?'m':'d')+'-board.png'});
  await p.click('#ibk .kc[data-id="3"]');await p.waitForTimeout(300);
