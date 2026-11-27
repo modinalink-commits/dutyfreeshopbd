@@ -28,7 +28,7 @@
 @keyframes waP{0%{transform:scale(.85);opacity:.6}100%{transform:scale(1.35);opacity:0}}
 @media(prefers-reduced-motion:reduce){#waRing .av:before,#waRing .av:after{animation:none}}
 #waRing .lb{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#15803D}
-#waRing .nm{font-size:22px;font-weight:700;margin-top:2px}#waRing .nu{color:#667085}
+#waRing .nm{font-size:22px;font-weight:700;margin-top:2px}#waRing .nu{color:#667085}#waRing .cp{margin-left:6px;height:28px;padding:0 10px;border:1px solid #D0D5DD;border-radius:8px;background:#fff;color:#0B1B33;font:600 12px 'Hind Siliguri',Inter,system-ui,sans-serif;cursor:pointer;vertical-align:middle}#waRing .cp.ok{border-color:#067647;color:#067647;background:#ECFDF3}
 #waRing .ch{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:10px 12px 0}
 #waRing .ch span{background:#F7F8FB;border:1px solid #E4E7EE;border-radius:999px;padding:2px 10px;font-size:12px}
 #waRing .to{font-size:12px;color:#667085;margin-top:10px}
@@ -46,7 +46,7 @@
 </style>
 <div id="waBk"></div>
 <div id="waRing" role="alertdialog" aria-label="Incoming WhatsApp call"><div class="bar"></div><div class="av" id="waAv">?</div><div class="lb" id="waLb">Incoming WhatsApp call</div>
-<div class="nm" id="waRingN"></div><div class="nu" id="waRingF"></div><div class="ch" id="waCh"></div><div class="to" id="waRingTo"></div><div class="cn"><i id="waCnI"></i></div>
+<div class="nm" id="waRingN"></div><div class="nu"><span id="waRingF"></span> <button type="button" id="waRingC" class="cp" hidden>নম্বর কপি</button></div><div class="ch" id="waCh"></div><div class="to" id="waRingTo"></div><div class="cn"><i id="waCnI"></i></div>
 <div class="ac"><button type="button" class="b r" id="waRingR">Reject</button><button type="button" class="b a" id="waRingA">Answer</button></div></div>
 <div id="waMiss"></div>
 <script>
@@ -69,7 +69,7 @@ window.addEventListener('beforeunload',function(e){if(busy){e.preventDefault();e
 document.addEventListener('click',function(e){if(!busy)return;var a=e.target&&e.target.closest?e.target.closest('a[href]'):null;if(!a||a.closest('#waDock')||e.defaultPrevented||e.ctrlKey||e.metaKey||e.shiftKey||a.target==='_blank'||a.hasAttribute('download'))return;var h=a.getAttribute('href')||'';if(!h||h.charAt(0)==='#'||/^(javascript|mailto|tel|sms):/i.test(h))return;var u;try{u=new URL(a.href,location.href)}catch(x){return}if(u.origin!==location.origin)return;e.preventDefault();window.open(u.href,'_blank','noopener')},true);
 
 function chips(d){var c=document.getElementById('waCh');c.innerHTML='';var a=[];if(d&&d.found){if(d.category)a.push(d.category);if(d.membership)a.push(d.membership);if(d.orders)a.push(d.orders+' orders');if(d.last&&d.last.invoice)a.push('Last order '+d.last.invoice)}else a.push('New caller');a.forEach(function(t){var s=document.createElement('span');s.textContent=t;c.appendChild(s)})}
-function show(c){var first=!cur||cur.id!==c.id;cur=c;var nm=c.name||c.from;document.getElementById('waRingN').textContent=nm;document.getElementById('waRingF').textContent=c.name?c.from:'';document.getElementById('waAv').textContent=(nm.replace(/[^A-Za-z\u0980-\u09FF]/g,'').charAt(0)||'?').toUpperCase();document.getElementById('waRingTo').textContent='To business number '+(c.to||'');
+function show(c){var first=!cur||cur.id!==c.id;cur=c;var nm=c.name||c.from;document.getElementById('waRingN').textContent=nm;document.getElementById('waRingF').textContent=c.name?c.from:'';var cb=document.getElementById('waRingC');cb.hidden=!/\d{7,}/.test(String(c.from||''));cb._n=c.from;document.getElementById('waAv').textContent=(nm.replace(/[^A-Za-z\u0980-\u09FF]/g,'').charAt(0)||'?').toUpperCase();document.getElementById('waRingTo').textContent='To business number '+(c.to||'');
  document.getElementById('waLb').textContent=c.n>1?'Incoming WhatsApp call · 1 of '+c.n:'Incoming WhatsApp call';var w=Math.max(0,Math.min(100,100-(c.age||0)/(c.win||45)*100));document.getElementById('waCnI').style.width=w+'%';
  el.style.display='block';bk.style.display='block';beep();
  if(first){chips(null);fetch('/admin/call-center/lookup?phone='+encodeURIComponent(c.from),{credentials:'same-origin',headers:{'Accept':'application/json'}}).then(function(r){return r.ok?r.json():null}).then(function(d){if(cur&&cur.id===c.id)chips(d)}).catch(function(){})}}
@@ -85,6 +85,11 @@ function go(){if(busy){hideRing();return}tickN++;
 fetch('/admin/call-center/whatsapp/poll',{credentials:'same-origin',headers:{'Accept':'application/json'}}).then(function(r){return r.ok?r.json():{ringing:[]}}).then(function(d){var l=d.ringing||[];
 if(l.length&&!window.WC_PAGE){l[0].n=l.length;show(l[0])}else hideRing()}).catch(function(){});
 if(!window.WC_PAGE&&tickN%2===0)fetch('/admin/call-center/whatsapp/missed',{credentials:'same-origin',headers:{'Accept':'application/json'}}).then(function(r){return r.ok?r.json():{missed:[]}}).then(function(d){missed(d.missed||[])}).catch(function(){})}
+function dfLocalNum(v){var d=String(v||'').replace(/\D/g,'');if(d.length===13&&d.indexOf('8801')===0)return '0'+d.slice(3);if(d.length===12&&d.indexOf('881')===0)return '0'+d.slice(2);if(d.length===10&&d.charAt(0)==='1')return '0'+d;if(d.length===11&&d.indexOf('01')===0)return d;return d?(String(v).trim().charAt(0)==='+'||d.length>11?'+'+d:d):''}
+function dfCopyNum(btn,v){var n=dfLocalNum(v);if(!n)return;var ok=function(){var o=btn.getAttribute('data-l')||btn.textContent;btn.setAttribute('data-l',o);btn.textContent='নম্বর কপি হয়েছে';btn.classList.add('ok');clearTimeout(btn._t);btn._t=setTimeout(function(){btn.textContent=o;btn.classList.remove('ok')},2200)},fb=function(){try{var t=document.createElement('textarea');t.value=n;t.setAttribute('readonly','');t.style.cssText='position:fixed;left:-9999px;top:0;opacity:0';document.body.appendChild(t);t.select();var r=document.execCommand('copy');document.body.removeChild(t);if(r)ok();else btn.textContent='কপি হয়নি: '+n}catch(e){btn.textContent='কপি হয়নি: '+n}};
+ if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(n).then(ok,fb);else fb()}
+/* Copy number: never answers, rejects or closes the ring */
+document.getElementById('waRingC').addEventListener('click',function(e){e.preventDefault();e.stopPropagation();dfCopyNum(this,this._n)});
 document.getElementById('waRingA').onclick=function(){if(!cur)return;window.waDock(cur.id,true);hideRing()};
 /* Reject hides the ring for THIS person only; everyone else keeps ringing until someone answers or the ring window ends */
 document.getElementById('waRingR').onclick=function(){if(!cur)return;post('/admin/call-center/whatsapp/'+cur.id+'/end');hideRing()};

@@ -34,7 +34,7 @@ main button.wp-b.go{background:#15803D;border-color:#15803D;color:#fff}main butt
 </style>
 <div class="wp">
 <div class="wp-top"><div class="wp-bar"></div>
-<div class="wp-id"><div class="wp-av">{{ mb_strtoupper(mb_substr($c->from_name ?: 'W', 0, 1)) }}</div><div style="min-width:0"><b id="wpName">{{ $c->from_name ?: 'WhatsApp caller' }}</b><small>{{ $c->from_wa ? '+'.$c->from_wa : 'Number hidden' }} · {{ $outb ? 'WhatsApp call back' : 'WhatsApp call' }}</small></div><span class="wp-pill" id="wpSt" style="margin-left:auto">—</span></div>
+<div class="wp-id"><div class="wp-av">{{ mb_strtoupper(mb_substr($c->from_name ?: 'W', 0, 1)) }}</div><div style="min-width:0"><b id="wpName">{{ $c->from_name ?: 'WhatsApp caller' }}</b><small>{{ $c->from_wa ? '+'.$c->from_wa : 'Number hidden' }} · {{ $outb ? 'WhatsApp call back' : 'WhatsApp call' }}@if($c->from_wa) <button type="button" id="wpCopy" data-n="+{{ $c->from_wa }}" style="margin-left:6px;height:24px;padding:0 8px;border:1px solid #D0D5DD;border-radius:7px;background:#fff;color:#0B1B33;font:600 12px 'Hind Siliguri',Inter,system-ui,sans-serif;cursor:pointer">নম্বর কপি</button>@endif</small></div><span class="wp-pill" id="wpSt" style="margin-left:auto">—</span></div>
 <div class="wp-meta"><div><span>{{ $outb ? 'Business number' : 'Called number' }}</span><b>{{ $to }}</b></div><div><span>{{ $outb ? 'Called by' : 'Answered by' }}</span><b id="wpBy">{{ $c->user_name ?: '—' }}</b></div><div><span>Started</span><b>{{ \Carbon\Carbon::parse($c->created_at)->timezone('Asia/Dhaka')->format('d M h:i A') }}</b></div><div><span>Talk time</span><b id="wpT">{{ $c->duration !== null ? gmdate('i:s', (int)$c->duration) : '00:00' }}</b></div></div>
 <div class="wp-act" id="wpAct"></div><div id="wpRec" hidden style="margin:0 14px 10px;padding:8px 10px;border-radius:8px;background:#FEF3F2;color:#912018;font-size:12.5px"></div><div id="wpMsg"></div></div>
 <audio id="wpAudio" autoplay></audio>
@@ -55,6 +55,10 @@ main button.wp-b.go{background:#15803D;border-color:#15803D;color:#fff}main butt
 </div>
 @endsection
 @section('js')
+<script>function dfLocalNum(v){var d=String(v||'').replace(/\D/g,'');if(d.length===13&&d.indexOf('8801')===0)return '0'+d.slice(3);if(d.length===12&&d.indexOf('881')===0)return '0'+d.slice(2);if(d.length===10&&d.charAt(0)==='1')return '0'+d;if(d.length===11&&d.indexOf('01')===0)return d;return d?(String(v).trim().charAt(0)==='+'||d.length>11?'+'+d:d):''}
+function dfCopyNum(btn,v){var n=dfLocalNum(v);if(!n)return;var ok=function(){var o=btn.getAttribute('data-l')||btn.textContent;btn.setAttribute('data-l',o);btn.textContent='নম্বর কপি হয়েছে';btn.classList.add('ok');clearTimeout(btn._t);btn._t=setTimeout(function(){btn.textContent=o;btn.classList.remove('ok')},2200)},fb=function(){try{var t=document.createElement('textarea');t.value=n;t.setAttribute('readonly','');t.style.cssText='position:fixed;left:-9999px;top:0;opacity:0';document.body.appendChild(t);t.select();var r=document.execCommand('copy');document.body.removeChild(t);if(r)ok();else btn.textContent='কপি হয়নি: '+n}catch(e){btn.textContent='কপি হয়নি: '+n}};
+ if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(n).then(ok,fb);else fb()}
+(function(){var b=document.getElementById('wpCopy');if(b)b.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();dfCopyNum(b,b.getAttribute('data-n'))})})();</script>
 <script>
 window.WC_PAGE=1;
 var WP=(function(){
