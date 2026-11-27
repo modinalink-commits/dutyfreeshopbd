@@ -11,8 +11,25 @@
 <script>(function(){var box=document.getElementById('swn'),list=document.getElementById('swnL'),ids=[],T=(document.querySelector('meta[name=csrf-token]')||{}).content||'';
 function esc(t){return String(t==null?'':t).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function seen(){if(!ids.length)return;var s=ids;ids=[];fetch('/admin/my-day/notices/seen',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json',Accept:'application/json','X-CSRF-TOKEN':T},body:JSON.stringify({ids:s})}).catch(function(){})}
-function load(){if(box.classList.contains('on')||document.hidden)return;fetch('/admin/my-day/notices',{credentials:'same-origin',headers:{Accept:'application/json'}}).then(function(r){return r.ok?r.json():null}).then(function(j){var a=j&&j.notices||[];if(!a.length)return;ids=a.map(function(n){return n.id});
+function load(){if(box.classList.contains('on')||document.hidden)return;fetch('/admin/my-day/notices',{credentials:'same-origin',headers:{Accept:'application/json'}}).then(function(r){return r.ok?r.json():null}).then(function(j){try{if(window.__slaShow)window.__slaShow(j&&j.late||[])}catch(e){}var a=j&&j.notices||[];if(!a.length)return;ids=a.map(function(n){return n.id});
  list.innerHTML=a.map(function(n){return '<div class="it"><b>'+esc(n.customer)+' has waited '+n.min+' minutes with no reply.</b><p>'+(n.mine?'This chat was with you. Why is this customer still waiting? A customer left without an answer goes to another shop.':'Nobody had taken this chat. Why is this customer still waiting? Whoever is free must answer now.')+'</p><a href="/admin/chat?open='+n.thread+'">Reply now</a></div>'}).join('');box.classList.add('on')}).catch(function(){})}
 document.getElementById('swnX').onclick=function(){box.classList.remove('on');seen()};list.addEventListener('click',function(e){if(e.target.closest('a'))seen()});
 setTimeout(load,4000);setInterval(load,60000)})();</script>
+<style>#sla{position:fixed;inset:0;background:rgba(11,27,51,.6);z-index:99995;display:none;align-items:center;justify-content:center;padding:14px}#sla.on{display:flex}
+#sla .bx{background:#fff;border:2px solid #D92D20;border-radius:14px;width:min(460px,100%);padding:18px;box-shadow:0 20px 50px rgba(0,0,0,.3);font:14px/1.55 'Hind Siliguri','Noto Sans Bengali',Inter,system-ui,sans-serif;color:#0B1B33}
+#sla .hd{display:flex;gap:10px;align-items:center;color:#B42318;font-weight:800;font-size:16px}#sla .hd i{width:12px;height:12px;border-radius:50%;background:#D92D20;flex:none}
+#sla .who{margin:12px 0 8px;padding:10px 12px;background:#FEF3F2;border-radius:10px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}#sla .who b{font-size:15px}#sla .who span{color:#B42318;font-weight:800}
+#sla p{margin:8px 0}#sla .bs{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+#sla .bs a,#sla .bs button{min-height:44px;border-radius:9px;padding:0 14px;font:inherit;font-weight:700;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;text-decoration:none}
+#sla .bs a{background:#F26B1D;color:#fff;border:1px solid #F26B1D;flex:1}#sla .bs button{background:#fff;color:#0B1B33;border:1px solid #D0D5DD}#sla .fn{font-size:12px;color:#475467;margin-top:10px}</style>
+<div id="sla" role="alertdialog" aria-modal="true" aria-label="Late reply warning"><div class="bx"><div class="hd"><i></i>গ্রাহক আপনার উত্তরের অপেক্ষায়</div><div class="who"><b id="slaC"></b><span id="slaM"></span></div>
+<p>এই গ্রাহক <b id="slaT"></b> ধরে আপনার উত্তরের অপেক্ষায় আছেন। নির্ধারিত উত্তর দেওয়ার সময় পেরিয়ে গেছে। অ্যাডমিনকে জানানো হয়েছে।</p><p>দয়া করে চ্যাট খুলে এখনই উত্তর দিন বা সাহায্য লাগলে সুপারভাইজারকে জানান।</p>
+<div class="bs"><a id="slaO" href="/admin/chat">চ্যাট খুলুন</a><button type="button" id="slaS">সতর্কতা দেখেছি</button></div><div class="fn" id="slaN"></div></div></div>
+<script>(function(){var b=document.getElementById('sla'),cur=null,T=(document.querySelector('meta[name=csrf-token]')||{}).content||'';
+function bn(n){return String(n).replace(/[0-9]/g,function(d){return '০১২৩৪৫৬৭৮৯'[d]})}
+function seen(){if(!cur)return;var id=cur.id;cur=null;b.classList.remove('on');fetch('/admin/my-day/notices/seen',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json',Accept:'application/json','X-CSRF-TOKEN':T},body:JSON.stringify({late:[id]})}).catch(function(){})}
+window.__slaShow=function(a){if(b.classList.contains('on')||!a.length)return;cur=a[0];
+ document.getElementById('slaC').textContent=cur.customer;document.getElementById('slaM').textContent=bn(cur.min)+' মিনিট';document.getElementById('slaT').textContent=bn(cur.min)+' মিনিট';document.getElementById('slaO').href='/admin/chat?open='+cur.thread;
+ document.getElementById('slaN').textContent=a.length>1?('আরও '+bn(a.length-1)+'টি চ্যাটে একই সতর্কতা আছে।'):'';b.classList.add('on')};
+document.getElementById('slaS').onclick=seen;document.getElementById('slaO').addEventListener('click',seen)})();</script>
 @endauth

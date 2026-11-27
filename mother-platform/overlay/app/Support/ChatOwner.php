@@ -163,12 +163,14 @@ class ChatOwner {
       $rows = DB::table('chat_threads')->whereNotNull('assigned_to')->where('awaiting_reply', true)->where('status', '!=', 'resolved')
         ->whereNotNull('awaiting_since')->where('awaiting_since', '<=', now()->subMinutes($min))->where('awaiting_since', '>=', now()->subHours(22))
         ->where(fn($w) => $w->whereNull('absent_alert_at')->orWhereColumn('absent_alert_at', '<', 'awaiting_since'))->orderBy('awaiting_since')->limit(30)->get();
+      try { self::lateSync(); } catch (\Throwable $e) { report($e); }
       if ($rows->isEmpty()) { self::health($min); return; }
       $sups = self::supervisors();
       foreach ($rows as $t) {
         if (!DB::table('chat_threads')->where('id', $t->id)->where(fn($w) => $w->whereNull('absent_alert_at')->orWhereColumn('absent_alert_at', '<', 'awaiting_since'))->update(['absent_alert_at'=>now()])) continue; // once per waiting period
         $own = (int)$t->assigned_to; $wait = (int)\Carbon\Carbon::parse($t->awaiting_since)->diffInMinutes(now()); $cust = trim((string)($t->name ?: $t->phone ?: 'A customer'));
         self::log((int)$t->id, 'absent_alert', $own, null, null, 'System', $cust.' has waited '.$wait.' minutes for '.self::name($own).'. Supervisors were told.');
+        self::lateOpen($t, $own, $cust, $wait, $min);
         foreach ($sups as $s) { if ((int)$s->id === $own) continue;
           try { DB::table('chat_wait_notices')->insert(['thread_id'=>$t->id, 'user_id'=>$s->id, 'user_name'=>$s->name, 'customer'=>mb_substr($cust.' (owner: '.self::name($own).')', 0, 160), 'wait_min'=>$wait, 'assigned'=>false, 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {} }
       }
@@ -214,8 +216,45 @@ class ChatOwner {
     } catch (\Throwable $e) { return []; }
   }
   /** One line in the owner's Issues Center while any owned conversation is waiting past the limit. */
+  /** Owner 27 Nov 2026 (21:02): the owner of a conversation passed the reply limit. One record per waiting period; the owner gets the warning in the middle of the screen, the admin one bell line (no popup). */
+  private static function lateOpen(object $t, int $own, string $cust, int $wait, int $min): void {
+    try {
+      if (!\Illuminate\Support\Facades\Schema::hasTable('chat_late_incidents')) return;
+      if (!DB::table('chat_late_incidents')->insertOrIgnore(['thread_id'=>$t->id, 'user_id'=>$own, 'user_name'=>self::name($own), 'customer'=>mb_substr($cust, 0, 160), 'awaiting_since'=>$t->awaiting_since, 'alerted_at'=>now(), 'limit_min'=>$min, 'wait_min'=>$wait, 'created_at'=>now(), 'updated_at'=>now()])) return;
+      $i = DB::table('chat_late_incidents')->where('thread_id', $t->id)->where('awaiting_since', $t->awaiting_since)->first(); if ($i) self::lateBell($i, 'এখনো উত্তর যায়নি', false);
+    } catch (\Throwable $e) { report($e); }
+  }
+  private static function bnNum($n): string { return strtr((string)$n, ['0'=>'০','1'=>'১','2'=>'২','3'=>'৩','4'=>'৪','5'=>'৫','6'=>'৬','7'=>'৭','8'=>'৮','9'=>'৯']); }
+  /** The admin's bell line of one late reply. Same line for the whole delay (it is updated, never repeated); severity "medium" = bell only, no popup and no outside alert. */
+  private static function lateBell(object $i, string $state, bool $done): void {
+    $fp = 'chat.late.'.$i->id;
+    $desc = 'দায়িত্বে: '.($i->user_name ?: 'স্টাফ').' · চ্যাট: '.($i->customer ?: 'গ্রাহক').' · দেরি: '.self::bnNum((int)$i->wait_min).' মিনিট (সীমা '.self::bnNum((int)$i->limit_min).' মিনিট) · অবস্থা: '.$state.' · স্টাফ সতর্কতা '.(!empty($i->seen_at) ? 'দেখেছেন' : 'এখনো দেখেননি').'।';
+    DeployHealth::raise($fp, 'medium', 'Messages', 'Late reply: '.($i->user_name ?: 'staff').' → '.($i->customer ?: 'customer'), $desc, 'The representative who owns this conversation did not reply within '.(int)$i->limit_min.' minutes.', 'চ্যাট খুলুন: /admin/chat?open='.(int)$i->thread_id);
+    if ($done) DeployHealth::resolve($fp, 'System ('.mb_substr($state, 0, 80).')');
+  }
+  /** Follow every open late reply: update the waiting time, and close the record with what was actually done (reply sent / another person took the chat / chat returned to the open list / chat closed). Reading the warning never closes it. */
+  public static function lateSync(): void {
+    if (!\Illuminate\Support\Facades\Schema::hasTable('chat_late_incidents')) return;
+    foreach (DB::table('chat_late_incidents')->whereNull('resolved_at')->orderBy('id')->limit(40)->get() as $i) {
+      $t = DB::table('chat_threads')->find($i->thread_id); $act = null; $by = null;
+      $same = $t && !empty($t->awaiting_reply) && (string)$t->awaiting_since === (string)$i->awaiting_since;
+      if (!$t || $t->status === 'resolved') $act = 'চ্যাট Close করা হয়েছে';
+      elseif (!$same) {
+        $m = DB::table('chat_messages')->where('thread_id', $i->thread_id)->where('dir', 'out')->where('status', '!=', 'failed')->where('created_at', '>=', $i->awaiting_since)->whereRaw("coalesce(user_name, '') not like '%(auto)%'")->orderBy('id')->first(['user_name', 'is_ai']);
+        $act = $m ? (!empty($m->is_ai) ? 'AI উত্তর দিয়েছে' : 'উত্তর পাঠানো হয়েছে: '.($m->user_name ?: 'স্টাফ')) : 'গ্রাহকের অপেক্ষা শেষ হয়েছে';
+      }
+      elseif ((int)($t->assigned_to ?? 0) !== (int)$i->user_id) $act = empty($t->assigned_to) ? 'উত্তর যায়নি; চ্যাট খোলা তালিকায় ফিরে গেছে' : 'চ্যাট নিয়েছেন: '.self::name((int)$t->assigned_to);
+      $wait = (int)\Carbon\Carbon::parse($i->awaiting_since)->diffInMinutes(now());
+      if ($act === null) { if ($wait !== (int)$i->wait_min) { DB::table('chat_late_incidents')->where('id', $i->id)->update(['wait_min'=>$wait, 'updated_at'=>now()]); $i->wait_min = $wait; self::lateBell($i, 'এখনো উত্তর যায়নি', false); } continue; }
+      if (!DB::table('chat_late_incidents')->where('id', $i->id)->whereNull('resolved_at')->update(['resolved_at'=>now(), 'action'=>mb_substr($act, 0, 300), 'wait_min'=>$wait, 'updated_at'=>now()])) continue;
+      $i->wait_min = $wait; self::lateBell($i, $act, true);
+      self::log((int)$i->thread_id, 'late_resolved', (int)$i->user_id, null, null, 'System', 'Late reply of '.($i->user_name ?: 'staff').' ('.$wait.' min) ended: '.$act);
+    }
+  }
   private static function health(int $min): void {
     try {
+      // 27 Nov 2026: every late owner has their own bell line now (chat.late.<id>), so the old combined warning is no longer raised; an open one is closed.
+      if (\Illuminate\Support\Facades\Schema::hasTable('chat_late_incidents')) { DeployHealth::resolve('chat.absent', 'System (replaced by one line per late reply)'); return; }
       $late = DB::table('chat_threads')->whereNotNull('assigned_to')->where('awaiting_reply', true)->where('status', '!=', 'resolved')->whereNotNull('awaiting_since')->where('awaiting_since', '<=', now()->subMinutes($min))->where('awaiting_since', '>=', now()->subHours(22))->orderBy('awaiting_since')->limit(40)->get(['id', 'name', 'phone', 'assigned_to', 'awaiting_since']);
       if ($late->isEmpty()) { DeployHealth::resolve('chat.absent', 'System (every owner answered)'); return; }
       $ag = DB::table('users')->whereIn('id', $late->pluck('assigned_to')->unique())->pluck('name', 'id');

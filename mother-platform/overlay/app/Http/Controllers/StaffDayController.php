@@ -45,9 +45,13 @@ class StaffDayController extends Controller
   /** Unseen "customer kept waiting" notices for the signed-in person (polled by the popup on every admin page). */
   public function notices() {
     try { $rows = DB::table('chat_wait_notices')->where('user_id', Auth::id())->whereNull('seen_at')->where('created_at', '>=', now()->subHours(12))->orderBy('id')->limit(5)->get(['id', 'thread_id', 'customer', 'wait_min', 'assigned', 'created_at']); } catch (\Throwable $e) { $rows = collect(); }
-    return response()->json(['notices'=>$rows->map(fn($n) => ['id'=>(int)$n->id, 'thread'=>(int)$n->thread_id, 'customer'=>(string)($n->customer ?: 'A customer'), 'min'=>(int)$n->wait_min, 'mine'=>(bool)$n->assigned])->all()]);
+    $late = []; try { $late = DB::table('chat_late_incidents')->where('user_id', Auth::id())->whereNull('resolved_at')->whereNull('seen_at')->orderBy('id')->limit(3)->get(['id', 'thread_id', 'customer', 'awaiting_since'])->map(fn($i) => ['id'=>(int)$i->id, 'thread'=>(int)$i->thread_id, 'customer'=>(string)($i->customer ?: 'গ্রাহক'), 'min'=>(int)\Carbon\Carbon::parse($i->awaiting_since)->diffInMinutes(now())])->all(); } catch (\Throwable $e) {}
+    return response()->json(['late'=>$late, 'notices'=>$rows->map(fn($n) => ['id'=>(int)$n->id, 'thread'=>(int)$n->thread_id, 'customer'=>(string)($n->customer ?: 'A customer'), 'min'=>(int)$n->wait_min, 'mine'=>(bool)$n->assigned])->all()]);
   }
   public function seen(Request $r) {
+    // "সতর্কতা দেখেছি": only records that the owner read the warning. The late reply stays open until a reply is sent or someone else takes the chat.
+    $li = array_slice(array_filter(array_map('intval', (array)$r->input('late', []))), 0, 10);
+    if ($li) try { DB::table('chat_late_incidents')->where('user_id', Auth::id())->whereIn('id', $li)->whereNull('seen_at')->update(['seen_at'=>now(), 'updated_at'=>now()]); foreach ($li as $x) \App\Support\ChatOwner::log((int)DB::table('chat_late_incidents')->where('id', $x)->where('user_id', Auth::id())->value('thread_id'), 'late_seen', (int)Auth::id(), null, (int)Auth::id(), Auth::user()->name ?? 'Staff', 'The owner read the late-reply warning. The delay is still open.'); } catch (\Throwable $e) {}
     $ids = array_slice(array_filter(array_map('intval', (array)$r->input('ids', []))), 0, 20);
     if ($ids) try { DB::table('chat_wait_notices')->where('user_id', Auth::id())->whereIn('id', $ids)->whereNull('seen_at')->update(['seen_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {}
     return response()->json(['ok'=>true]);
