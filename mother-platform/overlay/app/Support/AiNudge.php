@@ -22,6 +22,12 @@ class AiNudge {
     if (preg_match('/[a-z]{3,}/i', $last)) return 'english';
     return in_array($pref, ['bangla', 'banglish', 'english'], true) ? $pref : 'bangla';
   }
+  /** Owner 28 Nov 2026: a plain refusal ("না", "Na", "লাগবে না", "no thanks", "dorkar nai") is a clear no: no sales nudge. A refusal that carries a question ("না, অন্য রং আছে?") is NOT a plain refusal: it is a new question and gets its answer. */
+  public static function isRefusal(string $b): bool {
+    $b = trim($b); if ($b === '' || mb_strlen($b) > 40 || preg_match('/[?？]/u', $b)) return false;
+    if (preg_match('/(আছে|আছে কি|কি|কী|কত|কোন|কোথায়|কবে|koto|ache|achhe|ase|\bki\b|kon|kothay|kobe|when|what|which|where|how|any|have|color|colour|রং|রঙ|rong)/iu', $b)) return false;
+    return (bool)preg_match('/^(না|নাহ|নাই|নেই|না ?(থাক|ধন্যবাদ|থ্যাংকস|ভাই|স্যার|আপু)|থাক|এখন না|এখন লাগবে না|আপাতত না|লাগবে না|লাগবেনা|লাগবে নাই|দরকার নেই|দরকার নাই|দরকার নাই ভাই|চাই না|চাইনা|দিতে হবে না|na|nah|nope|no|noo+|nai|nei|no thanks?|no thank you|na thanks?|na dhonnobad|not now|not needed|lagbe na|lagbena|lagbe nai|dorkar nai|dorkar nei|dorkar nei bhai|thak|thakuk|ekhon na|apatoto na|chai na|chaina)([\s,.!।]*(ধন্যবাদ|থ্যাংকস|ভাই|স্যার|আপু|thanks?|thank you|thx|dhonnobad|vai|bhai|sir|apu|ধন্যবাদ স্যার|🙏|👍))*[\s.!।]*$/iu', $b);
+  }
   public static function tick(): void {
     try {
       if (!self::on() || !AiChat::chatOn() || !AiSchedule::activeNow()) return;
@@ -42,11 +48,15 @@ class AiNudge {
     // never nudge the nudge, and at most one per customer message
     if (Cache::get('ai.nudge.in.'.$in->id)) return; Cache::put('ai.nudge.in.'.$in->id, 1, 86400 * 3);
     $q = trim((string)($in->body !== '' ? $in->body : ($in->transcript ?? '')));
+    if ($q !== '' && self::isRefusal($q)) return; // the customer said no: nothing to push
     if ($q !== '' && preg_match('/^(ok|okay|thanks?|thank you|thx|bye|ধন্যবাদ|থ্যাংকস|ঠিক আছে|আচ্ছা|👍|🙏|❤️?)[\s.!]*$/iu', $q)) return;
     if (DB::table('chat_messages')->where('thread_id', $t->id)->where('kind', 'invoice')->where('created_at', '>', now()->subMinutes(60)->toDateTimeString())->exists()) return; // an order was just placed
     if (DB::table('chat_handoffs')->where('thread_id', $t->id)->where('created_at', '>', now()->subMinutes(60))->exists()) return; // staff are taking over
     $body = (string)$last->body;
     if (preg_match('/(ধন্যবাদ|thank)[^?？]*$/iu', mb_substr($body, -60)) && !str_contains($body, '?')) { /* a closing line: still ask, but only once and short */ }
+    // last look just before sending: the customer may have written (or a person / hand-off may have started) while this run was working
+    $fresh = DB::table('chat_threads')->find($t->id); $lastNow = DB::table('chat_messages')->where('thread_id', $t->id)->orderByDesc('id')->first(['id', 'dir', 'body', 'transcript']);
+    if (!$fresh || !$lastNow || (int)$lastNow->id !== (int)$last->id || $fresh->status === 'resolved' || !empty($fresh->needs_human) || !empty($fresh->handoff_at) || !empty($fresh->awaiting_reply) || $fresh->assigned_to !== null || AiChat::paused($fresh)) return;
     $set = self::TEXT[self::style($q, (string)($t->ai_lang ?? ''))]; $txt = $set[$last->id % count($set)];
     $sent = true; $err = null;
     if ($t->channel !== 'web') [$sent, $err] = Chat::deliver($t, $txt);
