@@ -192,6 +192,8 @@ main{padding-top:6px!important;padding-bottom:6px!important}
 .ibsum .w b{color:#C2410C}.ibsum .r b{color:#B42318}.ibsum .b b{color:#1D4ED8}
 .mbx .bg.fu{background:#FEF0C7;color:#B54708}.mbx .bg.fud{background:#FEE4E2;color:#B42318}
 .kbd{display:grid;grid-template-columns:repeat(6,minmax(205px,1fr));gap:10px;overflow-x:auto;height:calc(100vh / var(--z,1) - 250px);min-height:420px;padding-bottom:4px;scroll-snap-type:x proximity}
+/* the board has display:grid, which would otherwise beat the hidden attribute and leave an invisible board taking half the screen in Inbox view */
+.kbd[hidden],.fbar .fr[hidden]{display:none!important}
 .kbd .kcol{background:#EEF0F3;border-radius:12px;display:flex;flex-direction:column;min-height:0;scroll-snap-align:start}
 .kbd .kch{padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:6px;font-weight:600;font-size:13.5px;color:#0B1B33}
 .kbd .kch small{display:block;font-weight:400;font-size:11px;color:#6B7280}
