@@ -71,6 +71,18 @@ class VoiceCampaignController extends Controller
       DB::table('voice_campaigns')->where('id', $id)->update(['status' => 'active', 'activated_at' => $c->activated_at ?: now(), 'updated_at' => now()]); $m = 'Campaign is active';
     } elseif ($a === 'pause') { DB::table('voice_campaigns')->where('id', $id)->update(['status' => 'paused', 'updated_at' => now()]); $m = 'Campaign paused'; }
     elseif ($a === 'stop') { DB::table('voice_campaigns')->where('id', $id)->update(['status' => 'completed', 'updated_at' => now()]); DB::table('voice_campaign_customers')->where('campaign_id', $id)->where('call_status', 'pending')->update(['offer_status' => 'void', 'updated_at' => now()]); $m = 'Campaign stopped'; }
+    elseif ($a === 'requeue_noanswer') { // 28 Nov 2026: owner request - people who did NOT pick up (no answer / busy) get one more call tomorrow morning; anyone who answered/heard the message is excluded; one row per phone; idempotent
+      $start = now('Asia/Dhaka')->addDay()->startOfDay()->setTimeFromTimeString((string)$c->call_start_time ?: '10:00')->utc();
+      $elig = "campaign_id = ? and call_status in ('not_answered','busy') and answered_at is null and call_attempts >= 1 and coalesce(offer_status,'') <> 'void'
+        and not exists (select 1 from voice_call_attempts a where a.campaign_id = voice_campaign_customers.campaign_id and a.phone = voice_campaign_customers.phone and (a.result = 'answered' or a.answered_at is not null))
+        and customer_id in (select id from customers where coalesce(blocked,false) = false and coalesce(promo_call,true) = true)
+        and right(phone,11) not in (select right(phone,11) from voice_optouts)
+        and id in (select min(id) from voice_campaign_customers where campaign_id = ? group by right(phone,11))";
+      $total = (int)(DB::selectOne("select count(*) n from voice_campaign_customers where " . $elig, [$id, $id])->n ?? 0);
+      $n = DB::update("update voice_campaign_customers set next_attempt_at = ?, updated_at = now() where " . $elig . " and (next_attempt_at is null or next_attempt_at <> ?)", [$start, $id, $id, $start]);
+      \App\Support\Procure::audit('voice.campaign.requeue_noanswer', $c->name, null, ['id' => $id, 'eligible' => $total, 'updated' => $n, 'at' => (string)$start]);
+      return back()->with('ok', "Retry queue: $total no-answer/busy customers scheduled for " . $start->copy()->setTimezone('Asia/Dhaka')->format('d M H:i') . " (newly set $n)");
+    }
     elseif ($a === 'delete' && !$c->activated_at) { DB::table('voice_campaigns')->where('id', $id)->delete(); return redirect('/admin/voice')->with('ok', 'Draft deleted'); }
     else return back()->with('err', 'Action not available');
     \App\Support\Procure::audit('voice.campaign.' . $a, $c->name, null, ['id' => $id]); return back()->with('ok', $m);
