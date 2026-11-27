@@ -212,7 +212,7 @@ main{padding-top:6px!important;padding-bottom:6px!important}
 .kbd .kno{color:#6B7280;font-size:12px;text-align:center;padding:14px 6px}
 @media(max-width:900px){.ibsum{display:flex;overflow-x:auto;padding:8px}.ibsum button{flex:0 0 132px}.kbd{grid-template-columns:repeat(6,82vw);height:calc(100dvh - 230px)}body.ibsel .ibsum,body.ibsel #ibfb{display:none}}
 </style>
-<div id="ibtop" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px"><div style="flex:1"><h1 style="margin:0">Messages <span id="ibu"></span></h1><span style="font-size:12px;color:#6B7280">Facebook, Instagram, WhatsApp and Website Chat in one inbox.</span></div><div class="ibvw" id="ibvw" role="tablist"><button type="button" data-v="inbox" class="on">Inbox</button><button type="button" data-v="board">Kanban Board</button></div>
+<div id="ibtop" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px"><div style="flex:1"><h1 style="margin:0">Messages <span id="ibu"></span></h1><span style="font-size:12px;color:#6B7280">Facebook, Instagram, WhatsApp and Website Chat in one inbox.</span></div><div class="ibvw" id="ibvw" role="tablist"><button type="button" data-v="board">Message Dashboard</button><button type="button" data-v="inbox">Inbox</button></div>
 </div>
 <div class="ibsum" id="ibsum"></div>
 <div class="fbar" id="ibfb"><div class="fr" id="ibf1"></div><div id="ibsh" hidden></div><div class="fr" id="ibf2"></div></div>
