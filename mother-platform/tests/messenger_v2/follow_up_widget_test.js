@@ -1,0 +1,27 @@
+const {chromium}=require('playwright');const fs=require('fs');
+const W='<div class="mcp" id="mcp"><div class="mcs" id="mcs"><span class="sp"></span><button type="button" data-s="open">Open</button><button type="button" class="gh" data-s="all">View All</button></div></div><div class="mcd" id="mcd"><button class="cls" type="button" id="mcx">×</button><div id="mcdb" style="height:100%"></div></div>';
+const html=fs.readFileSync('page.html','utf8').replace('<script>window.MCSRF',()=>W+'<script>window.MCSRF').replace('__WJS__',()=>'window.MSla={chip:function(){return ""}};'+fs.readFileSync('wjs.js','utf8'));
+const now=Date.now(),iso=m=>new Date(now+m*60000).toISOString();
+const th={id:5,channel:'facebook',channel_name:'Facebook',source:'DutyFreeBD',name:'E Follow',phone:'01700000000',avatar:null,status:'waiting',awaiting:false,unread:0,replied:true,last:'x',last_dir:'out',last_at:iso(-20),ai:true,ai_lang:null,assigned_to:1,assigned_name:'Rafi',orders:1,intent:null,mood:null,priority:'normal',needs_human:false,reported:false,report_solved:false,sla_w:5,sla_r:15,handoff_at:null,follow_at:null,follow_note:null,follow_due:false,cat:'New',risk:'Low'};
+const A=(c,m)=>console.log((c?'PASS ':'FAIL ')+m);
+(async()=>{const b=await chromium.launch();const p=await b.newPage({viewport:{width:1366,height:768}});const errs=[];p.on('pageerror',e=>errs.push(e.message));const posts=[];let deny=false;
+await p.route('**/admin/**',r=>{const u=r.request().url(),m=r.request().method();const J=o=>r.fulfill({contentType:'application/json',body:JSON.stringify(o)});
+ if(u.includes('/chat/threads'))return J({follow:1,follow_due:0,ai_now:0,mine:1,queue:0,me_id:1,threads:[th],unread:0,order_requests:0,human:0,reports:0,ai_handled:0,svc:null,share:null});
+ if(u.includes('/follow-up')){const d=JSON.parse(r.request().postData());posts.push(d);if(deny)return r.fulfill({status:409,contentType:'application/json',body:JSON.stringify({ok:false,blocked:true,error:'held by Tania'})});th.follow_at=d.minutes>0?iso(d.minutes):null;return J({ok:true,follow_at:th.follow_at,follow_note:null})}
+ if(/\/chat\/thread\/5$/.test(u))return J({thread:th,messages:[{id:1,dir:'in',kind:'text',body:'hello',at:iso(-30)},{id:2,dir:'out',kind:'text',body:'hi',by:'Rafi',status:'sent',at:iso(-20)}],has_more:false,customer:null,orders:[],intel:null,agents:[{id:1,name:'Rafi'},{id:2,name:'Tania'}],statuses:{new:'New',open:'Open',waiting:'Waiting for customer',resolved:'Closed'},me:'Rafi',owner:{on:true,id:1,name:'Rafi',mine:true,supervisor:false},owner_events:[],hint:null,payhint:null,notes:[],calls:[],quick:[]});
+ return J({ok:true,messages:[],staff:[],unread:0})});
+await p.goto('http://stg.test/admin/chat').catch(()=>{});await p.setContent(html,{waitUntil:'domcontentloaded'});await p.waitForTimeout(900);
+console.log('early errors',errs,await p.evaluate(()=>[typeof MChat,document.getElementById('ibl').innerHTML.length]));await p.click('#ibl .th[data-id="5"]',{timeout:4000});await p.waitForTimeout(900);
+A(await p.locator('#hfu').count()===1,'real chat header has the Follow-up control');
+A(await p.locator('#hcls').count()===1&&await p.locator('#hs').count()===1&&await p.locator('#ha').count()===1,'Close chat, Status and Assigned-to still present');
+await p.selectOption('#hfu','120');await p.waitForTimeout(700);
+A(posts.length===1&&posts[0].minutes===120,'follow-up posts minutes to the server');
+A(await p.evaluate(()=>{const c=document.querySelector('#mh .fuc');return !!c&&c.textContent.includes('পরে')&&!c.classList.contains('due')}),'header shows the upcoming follow-up chip');
+A(await p.locator('#hfu option[value="0"]').count()===1,'remove option appears once set');
+await p.screenshot({path:'d-chat-follow.png'});
+await p.selectOption('#hfu','0');await p.waitForTimeout(700);
+A(posts[1]&&posts[1].minutes===0&&await p.locator('#mh .fuc').count()===0,'follow-up can be removed');
+deny=true;p.once('dialog',d=>{A(d.message().includes('held by Tania'),'server refusal is shown to the agent');d.dismiss()});
+await p.selectOption('#hfu','30');await p.waitForTimeout(700);
+A(await p.locator('#mh .fuc').count()===0,'refused follow-up is not shown as set');
+console.log('errors',errs);await b.close()})();

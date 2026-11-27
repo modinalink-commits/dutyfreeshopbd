@@ -170,13 +170,53 @@ main{padding-top:6px!important;padding-bottom:6px!important}
 .mbx .mc .cm .sd textarea{height:40px!important;min-height:40px!important}.mbx .mc .cm .sd button{height:38px!important}
 }
 #ibu .k.p{background:#FEF3F2;border-color:#F6C4C0;color:#7A271A}#ibu .k.p b{color:#B42318}#ibu .k.a{background:#EEF4FF;border-color:#C7D7FE;color:#1E3A8A}#ibu .k.a b{color:#1D4ED8}#ibu .k.o{background:#fff;border-color:#E5E7EB;color:#4B5563}#ibu .k.o b{color:#B42318;font-size:12.5px}
+
+/* ===== Messenger dashboard v2 (owner 27 Nov 2026): light minimal look, summary cards, Kanban board, follow-up. Layout and colour only; the list, the chat and every rule behind them are unchanged. =====
+   Colour meaning, one per job: orange = needs a staff reply, red = late / complaint / follow-up overdue, amber = caution, blue = AI, green = done. */
+.fbar{border:1px solid #E5E7EB;border-radius:12px;box-shadow:none;padding:8px 10px}
+.fbar a,.fbar button.fa{height:34px;padding:0 12px;border-radius:17px;box-shadow:none;font-weight:500}
+.fbar a.on{background:#F95505;border-color:#F95505;box-shadow:none}
+.fbar button.fa.mo{border-color:#F95505;color:#C2410C}.fbar button.fa .cn{margin-left:2px}.fbar #ibf2{padding-top:8px;border-top:1px dashed #E5E7EB}
+@media(max-width:900px){.fbar #ibf1{flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px}.fbar #ibf1>*{flex:none}}
+#iball{background:#F95505;box-shadow:none}
+.mbx .ls,.mbx .cv{border-color:#E5E7EB}
+.ibvw{display:inline-flex;background:#EEF0F3;border-radius:9px;padding:3px;gap:2px}
+.ibvw button{border:0;background:transparent;padding:6px 14px;border-radius:7px;font-weight:600;font-size:13px;color:#6B7280;cursor:pointer;font-family:inherit}
+.ibvw button.on{background:#fff;color:#0B1B33;box-shadow:0 1px 2px rgba(11,27,51,.12)}
+.ibsum{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;background:linear-gradient(100deg,#FFE9DC,#EEF2FF 55%,#E6F6EE);padding:10px;border-radius:14px;margin:0 0 12px}
+.ibsum button{all:unset;box-sizing:border-box;cursor:pointer;background:rgba(255,255,255,.62);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.9);border-radius:10px;padding:8px 12px;min-width:0;box-shadow:0 1px 3px rgba(11,27,51,.06);font-family:inherit}
+.ibsum button:hover{background:rgba(255,255,255,.85)}.ibsum button:focus-visible{outline:2px solid #F95505;outline-offset:1px}
+.ibsum small{display:block;color:#4B5563;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ibsum b{font-size:21px;font-weight:700;line-height:1.2;color:#0B1B33}
+.ibsum .w b{color:#C2410C}.ibsum .r b{color:#B42318}.ibsum .b b{color:#1D4ED8}
+.mbx .bg.fu{background:#FEF0C7;color:#B54708}.mbx .bg.fud{background:#FEE4E2;color:#B42318}
+.kbd{display:grid;grid-template-columns:repeat(6,minmax(205px,1fr));gap:10px;overflow-x:auto;height:calc(100vh / var(--z,1) - 250px);min-height:420px;padding-bottom:4px;scroll-snap-type:x proximity}
+.kbd .kcol{background:#EEF0F3;border-radius:12px;display:flex;flex-direction:column;min-height:0;scroll-snap-align:start}
+.kbd .kch{padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:6px;font-weight:600;font-size:13.5px;color:#0B1B33}
+.kbd .kch small{display:block;font-weight:400;font-size:11px;color:#6B7280}
+.kbd .kch em{font-style:normal;font-size:12px;background:#fff;border-radius:999px;padding:0 8px;color:#6B7280}
+.kbd .kcb{flex:1;overflow-y:auto;padding:0 8px 8px;display:flex;flex-direction:column;gap:8px;min-height:60px}
+.kbd .kc{background:#fff;border:1px solid #E5E7EB;border-left:3px solid #CBD5E1;border-radius:10px;padding:9px 10px;cursor:pointer;display:flex;flex-direction:column;gap:5px;font-size:13px}
+.kbd .kc:hover{box-shadow:0 3px 10px rgba(11,27,51,.08)}.kbd .kc:focus-visible{outline:2px solid #F95505}
+.kbd .kc.w{border-left-color:#F95505}.kbd .kc.l{border-left-color:#B42318}.kbd .kc.b{border-left-color:#3B82F6}.kbd .kc.g{border-left-color:#22C55E}
+.kbd .kr{display:flex;justify-content:space-between;gap:8px;align-items:center;min-width:0}
+.kbd .kn{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#0C161F}
+.kbd .ks{color:#6B7280;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.45}
+.kbd .kt{display:flex;gap:4px;flex-wrap:wrap}
+.kbd .tg{font-size:11px;font-weight:600;border-radius:5px;padding:1px 6px;background:#EEF0F3;color:#374151;white-space:nowrap}
+.kbd .tg.a{background:#FFF1E8;color:#C2410C}.kbd .tg.r{background:#FEE4E2;color:#B42318}.kbd .tg.y{background:#FEF0C7;color:#B54708}.kbd .tg.b{background:#E0EAFF;color:#1D4ED8}.kbd .tg.g{background:#DCFCE7;color:#15803D}
+.kbd .km{font-size:11px;color:#6B7280;white-space:nowrap}
+.kbd .kno{color:#6B7280;font-size:12px;text-align:center;padding:14px 6px}
+@media(max-width:900px){.ibsum{display:flex;overflow-x:auto;padding:8px}.ibsum button{flex:0 0 132px}.kbd{grid-template-columns:repeat(6,82vw);height:calc(100dvh - 230px)}body.ibsel .ibsum,body.ibsel #ibfb{display:none}}
 </style>
-<div id="ibtop" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px"><div style="flex:1"><h1 style="margin:0">Messages <span id="ibu"></span></h1><span style="font-size:12px;color:#6B7280">Facebook, Instagram, WhatsApp and Website Chat in one inbox.</span></div>
+<div id="ibtop" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px"><div style="flex:1"><h1 style="margin:0">Messages <span id="ibu"></span></h1><span style="font-size:12px;color:#6B7280">Facebook, Instagram, WhatsApp and Website Chat in one inbox.</span></div><div class="ibvw" id="ibvw" role="tablist"><button type="button" data-v="inbox" class="on">Inbox</button><button type="button" data-v="board">Kanban Board</button></div>
 </div>
+<div class="ibsum" id="ibsum"></div>
 <div class="fbar" id="ibfb"><div class="fr" id="ibf1"></div><div id="ibsh" hidden></div><div class="fr" id="ibf2"></div></div>
 <button type="button" id="ibback">← All conversations</button>
 <div class="mbx" id="ibx"><div class="ls"><div class="stk"><div class="tp"><button type="button" id="iball">← All conversations</button></div><div class="sq" style="padding-top:9px"><input id="ibq" type="search" placeholder="Search name, mobile, invoice (Ctrl K)"></div></div><div class="lt" id="ibl" data-keep></div></div>
 <div class="cv" id="ibc" data-keep><div class="emp" style="margin:auto">Select a conversation to read and reply.<br>New messages appear here and as a popup anywhere in the dashboard.</div></div></div>
+<div class="kbd" id="ibk" hidden></div>
 @endsection
 @section('js')
 @verbatim
@@ -196,15 +236,21 @@ report:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#B91
 history:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0B1B33" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>',
 upset:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#B54708" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 16c1-1.3 2.2-2 3.5-2s2.5.7 3.5 2M9 10h.01M15 10h.01"/></svg>',
 resolved:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="m8 12.3 2.6 2.6L16.2 9"/></svg>'};
-var F1=[['all','All'],['facebook','Facebook'],['instagram','Instagram'],['whatsapp','WhatsApp'],['web','Website Chat'],['sms','SMS'],['comments','Facebook Comment']],F2=[['unread','Unread'],['late','Late replies'],['upset','Upset customers'],['report','Complaint'],['assigned','আমার কথোপকথন'],['queue','কিউ (কেউ নেয়নি)'],['human','Human Answer'],['resolved','Closed'],['history','All History'],['orders','Order Requests']],waiting=0,orq=0,hum=0,rep=0,mine=0,queue=0;
+var F1=[['all','All'],['facebook','Facebook'],['instagram','Instagram'],['whatsapp','WhatsApp'],['web','Website Chat'],['sms','SMS'],['comments','Facebook Comment']],F2=[['unread','Unread'],['late','Late replies'],['upset','Upset customers'],['report','Complaint'],['assigned','আমার কথোপকথন'],['queue','কিউ (কেউ নেয়নি)'],['human','Human Answer'],['followup','ফলোআপ'],['aih','AI handling'],['resolved','Closed'],['history','All History'],['orders','Order Requests']],waiting=0,orq=0,hum=0,rep=0,mine=0,queue=0,fuDue=0,aiNow=0,view='inbox';try{if(localStorage.getItem('ib_view')==='board')view='board'}catch(e){}
+I.followup='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#B54708" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></svg>';I.aih='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1D4ED8" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><rect x="4" y="8" width="16" height="11" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01M9.5 16h5"/></svg>';
 var f=new URLSearchParams(location.search).get('f')||'all',q='',sel=null,tmr;
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function ago(iso){if(!iso)return '';var s=(Date.now()-new Date(iso).getTime())/1000;if(s<60)return 'now';if(s<3600)return Math.floor(s/60)+'m';if(s<86400)return Math.floor(s/3600)+'h';return new Date(iso).toLocaleDateString([], {day:'numeric',month:'short'})}
 var CHL={facebook:'f',instagram:'IG',whatsapp:'W',web:'💬',sms:'SMS'};
-function pill(x){return '<a data-f="'+x[0]+'" class="'+(f===x[0]?'on':'')+'" role="button" tabindex="0">'+(I[x[0]]||I.assigned||'')+'<span>'+x[1]+'</span>'+(x[0]==='unread'&&waiting>0?'<span class="cn">'+waiting+'</span>':'')+(x[0]==='orders'&&orq>0?'<span class="cn">'+orq+'</span>':'')+(x[0]==='human'&&hum>0?'<span class="cn">'+hum+'</span>':'')+(x[0]==='report'&&rep>0?'<span class="cn">'+rep+'</span>':'')+(x[0]==='assigned'&&mine>0?'<span class="cn">'+mine+'</span>':'')+(x[0]==='queue'&&queue>0?'<span class="cn">'+queue+'</span>':'')+'</a>'}
-function drawF(){document.getElementById('ibf1').innerHTML=F1.map(pill).join('');
-  document.getElementById('ibf2').innerHTML=F2.map(pill).join('')+'<span class="sp"></span><button class="fa" type="button" id="ibup" title="Fetch the latest messages. This never marks anything as seen.">↻ Update</button><button class="fa" type="button" id="ibm">🔔 Sound on</button><a href="/admin/chat/auto" style="height:38px" title="Order confirmations, order updates and campaign messages the system sent by itself">📤 Auto Messages</a><a href="/admin/chat/memory" style="height:38px;border-color:#F95505;color:#C2410C">🧠 AI Memory</a><a href="/admin/chat-settings" style="height:38px">Chat settings</a>';
-  document.querySelectorAll('#ibfb a[data-f]').forEach(function(a){a.onclick=function(){if(a.dataset.f==='comments'){location.href='/admin/chat/comments';return}f=a.dataset.f;drawF();load()};a.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();a.click()}}});
+function pill(x){return '<a data-f="'+x[0]+'" class="'+(f===x[0]?'on':'')+'" role="button" tabindex="0">'+(I[x[0]]||I.assigned||'')+'<span>'+x[1]+'</span>'+(x[0]==='unread'&&waiting>0?'<span class="cn">'+waiting+'</span>':'')+(x[0]==='orders'&&orq>0?'<span class="cn">'+orq+'</span>':'')+(x[0]==='human'&&hum>0?'<span class="cn">'+hum+'</span>':'')+(x[0]==='report'&&rep>0?'<span class="cn">'+rep+'</span>':'')+(x[0]==='assigned'&&mine>0?'<span class="cn">'+mine+'</span>':'')+(x[0]==='queue'&&queue>0?'<span class="cn">'+queue+'</span>':'')+(x[0]==='followup'&&fuDue>0?'<span class="cn">'+fuDue+'</span>':'')+'</a>'}
+/* v2: the filters staff use all day sit in one row; the rest open under "More" (nothing removed). "More" stays open while one of its filters is selected. */
+var FP=['all','assigned','unread','late','human','report','upset','followup'],moreOpen=false;try{moreOpen=localStorage.getItem('ib_more')==='1'}catch(e){}
+function drawF(){var all=F1.concat(F2),by={};all.forEach(function(x){by[x[0]]=x});var inMore=FP.indexOf(f)<0,n=orq+queue;
+  document.getElementById('ibf1').innerHTML=FP.map(function(k){return pill(by[k])}).join('')+'<button class="fa'+(moreOpen||inMore?' mo':'')+'" type="button" id="ibmore" aria-expanded="'+(moreOpen||inMore)+'">More ▾'+(n>0?'<span class="cn">'+n+'</span>':'')+'</button><span class="sp"></span><button class="fa" type="button" id="ibup" title="Fetch the latest messages. This never marks anything as seen.">↻ Update</button><button class="fa" type="button" id="ibm">🔔 Sound on</button>';
+  var f2=document.getElementById('ibf2');f2.hidden=!(moreOpen||inMore);
+  f2.innerHTML=all.filter(function(x){return FP.indexOf(x[0])<0}).map(pill).join('')+'<span class="sp"></span><a href="/admin/chat/auto" title="Order confirmations, order updates and campaign messages the system sent by itself">📤 Auto Messages</a><a href="/admin/chat/memory">🧠 AI Memory</a><a href="/admin/chat-settings">Chat settings</a>';
+  document.getElementById('ibmore').onclick=function(){moreOpen=!(moreOpen||inMore);if(inMore&&!moreOpen){f='all';load()}try{localStorage.setItem('ib_more',moreOpen?'1':'0')}catch(e){}drawF()};
+  document.querySelectorAll('#ibfb a[data-f]').forEach(function(a){a.onclick=function(){if(a.dataset.f==='comments'){location.href='/admin/chat/comments';return}f=a.dataset.f;setView('inbox');drawF();load()};a.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();a.click()}}});
   var bm=document.getElementById('ibm');bm.onclick=function(){MChat.cycleSound();mm()};mm();
   document.getElementById('ibup').onclick=doUpdate}
 /* Manual synchronisation only: refreshes the list and the open conversation. It never marks anything as seen or replied. */
@@ -220,6 +266,32 @@ function drawShare(){var el=document.getElementById('ibsh');if(!el)return;if(!sh
 var upBusy=false;function doUpdate(){if(upBusy)return;upBusy=true;var b=document.getElementById('ibup');b.disabled=true;b.textContent='↻ Updating…';
   Promise.all([load(),(window.MChat&&MChat.refresh)?MChat.refresh():null]).catch(function(){}).then(function(){b=document.getElementById('ibup');if(b){b.textContent='✓ Updated';b.classList.add('ok')}setTimeout(function(){upBusy=false;var c=document.getElementById('ibup');if(c){c.disabled=false;c.classList.remove('ok');c.textContent='↻ Update'}},1400)})}
 var seen={},first=true;
+/* ---- v2: follow-up text, summary cards, Kanban board. Display only: nothing here marks a conversation as seen or replied. ---- */
+function durBn(m){m=Math.max(0,Math.round(m));return m<60?m+' মি':(m<1440?Math.floor(m/60)+' ঘ'+(m%60?' '+(m%60)+' মি':''):Math.floor(m/1440)+' দিন')}
+function fuTag(t,cd,cu){if(!t.follow_at||t.status==='resolved')return '';var m=(new Date(t.follow_at).getTime()-Date.now())/60000;return '<span class="'+(m<=0?cd:cu)+'" title="'+esc(t.follow_note||'')+'">'+(m<=0?'ফলোআপ বাকি · '+durBn(-m):'ফলোআপ '+durBn(m)+' পরে')+'</span>'}
+function setView(v){view=v;try{localStorage.setItem('ib_view',v)}catch(e){}document.querySelectorAll('#ibvw button').forEach(function(b){b.classList.toggle('on',b.dataset.v===v)});var bd=v==='board';document.getElementById('ibk').hidden=!bd;document.getElementById('ibx').style.display=bd?'none':'';if(bd){document.getElementById('ibx').classList.remove('sel');document.body.classList.remove('ibsel')}}
+function openThread(id){sel=+id;setView('inbox');document.getElementById('ibx').classList.add('sel');document.body.classList.add('ibsel');MChat.mount(document.getElementById('ibc'),sel,{onchange:load,focus:true,next:goNext});document.getElementById('ibl').querySelectorAll('.th').forEach(function(x){x.classList.toggle('on',+x.dataset.id===sel)})}
+function drawSum(j){var c=[['unread','Awaiting reply',j.unread||0,'w'],['assigned','My conversations',j.mine||0,''],['queue','Queue (কেউ নেয়নি)',j.queue||0,''],['human','Need a person',j.human||0,'w'],['aih','AI handling',j.ai_now||0,'b'],['followup','ফলোআপ বাকি',j.follow_due||0,'r']];
+  var el=document.getElementById('ibsum');el.innerHTML=c.map(function(x){return '<button type="button" class="'+x[3]+'" data-f="'+x[0]+'"><small>'+x[1]+'</small><b>'+x[2]+'</b></button>'}).join('');
+  el.querySelectorAll('button').forEach(function(b){b.onclick=function(){f=b.dataset.f;setView('inbox');drawF();load()}})}
+var KC=[['new','নতুন','কেউ নেয়নি · মানুষ দরকার'],['ai','AI উত্তর দিচ্ছে','owner নেই · AI চালু'],['work','এজেন্ট কাজ করছে','owner আছে'],['wait','কাস্টমারের উত্তরের অপেক্ষায়','রিপ্লাই গেছে'],['follow','ফলোআপ দরকার','সময় দেওয়া আছে'],['done','সমাধান হয়েছে','Closed']];
+function kcol(t){if(t.status==='resolved')return 'done';if(t.follow_at)return 'follow';
+  if(t.assigned_to)return (!t.awaiting&&(t.status==='waiting'||t.replied))?'wait':'work';
+  if(t.awaiting)return t.person?'new':'ai';
+  if(t.status==='waiting'||t.replied)return 'wait';
+  return (t.ai&&!t.needs_human&&!t.handoff_at&&/^(web|whatsapp|facebook)$/.test(t.channel))?'ai':'new'}
+function kcard(t,c){var un=!!t.awaiting&&t.status!=='resolved',wm=un&&t.waiting_since?(Date.now()-new Date(t.waiting_since).getTime())/60000:0,late=un&&t.person&&wm>(t.sla_r||15),due=t.follow_at&&new Date(t.follow_at).getTime()<=Date.now();
+  var tg=(un?'<span class="tg '+(late?'r':'a')+'">'+(late?'Late':'Awaiting')+(wm?' · '+durBn(wm):'')+'</span>':'')+fuTag(t,'tg r','tg y')+(t.reported?'<span class="tg r">Complaint</span>':'')+(t.needs_human&&un?'<span class="tg a">Needs human</span>':'')+(c==='ai'?'<span class="tg b">AI</span>':'')+(t.mood&&/upset|angry|urgent/i.test(t.mood)&&un?'<span class="tg y">Upset</span>':'')+(c==='wait'&&t.replied?'<span class="tg g">✓ Replied</span>':'')+(c==='done'?'<span class="tg g">Closed</span>':'');
+  return '<div class="kc '+(c==='done'?'g':(due||late||t.reported?'l':(un?'w':(c==='ai'?'b':''))))+'" data-id="'+t.id+'" role="button" tabindex="0"><div class="kr"><span class="kn">'+esc(t.name)+'</span><span class="tg">'+esc(({facebook:'FB',whatsapp:'WA',instagram:'IG',web:'Web',sms:'SMS'})[t.channel]||t.channel)+'</span></div><div class="ks">'+esc(t.last||'')+'</div><div class="kt">'+tg+'</div><div class="kr"><span class="km">'+(t.assigned_name?'👤 '+esc(t.assigned_name):'কেউ নেয়নি')+'</span><span class="km">'+(un&&wm?'অপেক্ষা '+durBn(wm):ago(t.last_at))+'</span></div></div>'}
+function drawBoard(open,done){var el=document.getElementById('ibk'),tops={};el.querySelectorAll('.kcol').forEach(function(n){tops[n.dataset.c]=n.querySelector('.kcb').scrollTop});
+  var by={};KC.forEach(function(c){by[c[0]]=[]});open.forEach(function(t){by[kcol(t)].push(t)});by.done=done.slice(0,40);
+  function wt(t){return t.awaiting&&t.waiting_since?new Date(t.waiting_since).getTime():Infinity}
+  ['new','work','ai'].forEach(function(k){by[k].sort(function(a,b){return wt(a)-wt(b)})});by.follow.sort(function(a,b){return new Date(a.follow_at)-new Date(b.follow_at)});
+  el.innerHTML=KC.map(function(c){var it=by[c[0]];return '<div class="kcol" data-c="'+c[0]+'"><div class="kch"><div>'+c[1]+'<small>'+c[2]+'</small></div><em>'+it.length+'</em></div><div class="kcb">'+(it.length?it.map(function(t){return kcard(t,c[0])}).join(''):'<div class="kno">খালি</div>')+'</div></div>'}).join('');
+  el.querySelectorAll('.kcol').forEach(function(n){if(tops[n.dataset.c])n.querySelector('.kcb').scrollTop=tops[n.dataset.c]});
+  el.querySelectorAll('.kc').forEach(function(n){n.onclick=function(){openThread(n.dataset.id);load()};n.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();n.click()}}})}
+function loadBoard(){function g(ff){return fetch('/admin/chat/threads?f='+ff+'&q='+encodeURIComponent(ff==='all'?q:''),{headers:{Accept:'application/json'},credentials:'same-origin'}).then(function(r){return r.json()})}
+  return Promise.all([g('all'),g('resolved')]).then(function(a){var o=(a[0].threads||[]).filter(function(t){return t.status!=='resolved'});drawBoard(o,a[1].threads||[])}).catch(function(){})}
 function row(t,cp){var st=(t.needs_human&&t.awaiting&&t.status!=='resolved')?'waiting':(t.status||'open');var stL={new:'New',open:'Open',waiting:'Waiting for customer',resolved:'Closed'}[st]||st;
   var h=(t.reported?'<span class="bg need" title="'+esc(t.report_reason||'')+'">⚑ Complaint</span>':(t.report_solved?'<span class="bg" style="background:#DCFCE7;color:#166534" title="'+esc(t.report_reason||'')+'">✓ Complaint Solved'+(t.report_solved_by?' · '+esc(t.report_solved_by):'')+'</span>':''))+(t.needs_human?'<span class="bg need" title="'+esc(t.handoff_reason||'')+'">Needs human</span>':'<span class="bg '+(t.ai?'ai':'human')+'">'+(t.ai?'AI':'Human')+'</span>');
   var un=!!t.awaiting&&t.status!=='resolved',ico=(window.MChat&&MChat.ico&&MChat.ico[t.channel])||CHL[t.channel];
@@ -229,7 +301,7 @@ function row(t,cp){var st=(t.needs_human&&t.awaiting&&t.status!=='resolved')?'wa
   +'<div class="bd"><div class="l1"><span class="nm">'+esc(t.name)+'</span><span class="tm">'+ago(t.last_at)+'</span></div>'
   +'<div class="l2"><span class="lm">'+(t.last_dir==='out'?(cp?'AI: ':'You: '):'')+esc(t.last||'')+'</span>'+(un?'<span class="ub">'+t.unread+'</span>':'')+'</div>'
   +'<div class="l3">'+esc(t.channel_name)+(t.source?' <span class="srcb s-'+t.channel+'" title="Received on: '+esc(t.source)+'">'+esc(t.source)+'</span>':'')+' · Holding: '+(t.orders>0?t.orders+' order'+(t.orders===1?'':'s'):'--')+'</div>'
-  +'<div class="l4">'+(un&&window.MSla?MSla.chip(t):'')+(un?'<span class="st2 aw">Awaiting</span>':(t.replied?'<span class="st2 rp">✓ Replied</span>':(t.stale?'<span class="st2 old" title="Customer message older than 7 days">Old</span>':'')))+'<span class="bg '+st+'">'+stL+'</span>'+h+tpc+mdc+(t.assigned_name?'<span class="bg human" title="Assigned to">👤 '+esc(t.assigned_name)+'</span>':'<span class="bg" style="color:#9CA3AF">Unassigned</span>')+'</div>'+(late?'<div class="slb"><i></i><span>Reply target missed</span></div>':'')+'</div></div>'}
+  +'<div class="l4">'+(un&&window.MSla?MSla.chip(t):'')+(un?'<span class="st2 aw">Awaiting</span>':(t.replied?'<span class="st2 rp">✓ Replied</span>':(t.stale?'<span class="st2 old" title="Customer message older than 7 days">Old</span>':'')))+'<span class="bg '+st+'">'+stL+'</span>'+h+tpc+mdc+fuTag(t,'bg fud','bg fu')+(t.assigned_name?'<span class="bg human" title="Assigned to">👤 '+esc(t.assigned_name)+'</span>':'<span class="bg" style="color:#9CA3AF">Unassigned</span>')+'</div>'+(late?'<div class="slb"><i></i><span>Reply target missed</span></div>':'')+'</div></div>'}
 function money(n){return '৳'+Math.round(n).toLocaleString('en-US')}
 function loadOrq(){return fetch('/admin/chat/order-requests?s=review',{headers:{Accept:'application/json'},credentials:'same-origin'}).then(function(r){return r.json()}).then(function(j){var l=document.getElementById('ibl');orq=j.requests.length;
   if(!j.requests.length){l.innerHTML='<div class="emp">No order requests waiting.</div>';return}
@@ -239,8 +311,8 @@ function loadOrq(){return fetch('/admin/chat/order-requests?s=review',{headers:{
     if(a==='create'&&!confirm('Create the real order for '+x.name+' ('+money(x.total)+')?'))return;if(a==='dismiss'&&!confirm('Dismiss this order request?'))return;
     b.disabled=true;var tok=(document.querySelector('meta[name=csrf-token]')||{}).content||'';
     fetch('/admin/chat/order-requests/'+id+'/'+a,{method:'POST',headers:{'X-CSRF-TOKEN':tok,'Accept':'application/json'},credentials:'same-origin'}).then(function(r){return r.json()}).then(function(j){if(j.ok){if(a==='create')alert('Order created: '+j.invoice);loadOrq();drawF()}else{alert(j.error||'Failed');b.disabled=false}}).catch(function(){alert('Failed');b.disabled=false})}})})})}
-function load(){if(f==='orders')return loadOrq();return fetch('/admin/chat/threads?f='+f+'&q='+encodeURIComponent(q),{headers:{Accept:'application/json'},credentials:'same-origin'}).then(function(r){return r.json()}).then(function(j){
-  if((j.order_requests||0)!==orq||(j.human||0)!==hum||(j.reports||0)!==rep||(j.mine||0)!==mine||(j.queue||0)!==queue){orq=j.order_requests||0;hum=j.human||0;rep=j.reports||0;mine=j.mine||0;queue=j.queue||0;drawF()}var u=document.getElementById('ibu'),ah=j.ai_handled||0,old=null;(j.threads||[]).forEach(function(t){if(t.person&&t.awaiting&&t.waiting_since){var d=new Date(t.waiting_since).getTime();if(old===null||d<old)old=d}});
+function load(){if(view==='board')loadBoard();if(f==='orders')return loadOrq();return fetch('/admin/chat/threads?f='+f+'&q='+encodeURIComponent(q),{headers:{Accept:'application/json'},credentials:'same-origin'}).then(function(r){return r.json()}).then(function(j){
+  if((j.order_requests||0)!==orq||(j.human||0)!==hum||(j.reports||0)!==rep||(j.mine||0)!==mine||(j.queue||0)!==queue||(j.follow_due||0)!==fuDue){orq=j.order_requests||0;hum=j.human||0;rep=j.reports||0;mine=j.mine||0;queue=j.queue||0;fuDue=j.follow_due||0;drawF()}drawSum(j);var u=document.getElementById('ibu'),ah=j.ai_handled||0,old=null;(j.threads||[]).forEach(function(t){if(t.person&&t.awaiting&&t.waiting_since){var d=new Date(t.waiting_since).getTime();if(old===null||d<old)old=d}});
   var oh='';if(old!==null){var mn=Math.floor((Date.now()-old)/60000);oh='<span class="k o">Oldest waiting <b>'+(mn>=60?Math.floor(mn/60)+'h '+(mn%60)+'m':mn+'m')+'</b></span>'}
   var sv=j.svc,sh='';if(sv&&(sv.staff+sv.ai)>0){sh='<span class="k" title="Replies sent today. By staff = sent from this inbox under a staff name. Automatic order messages and replies typed in the WhatsApp phone app ('+(sv.other||0)+' today) are not counted as staff. Customer messages received today: '+sv.in+'">Today <b>'+sv.staff+'</b>by staff · <b>'+sv.ai+'</b>by AI ('+Math.round(sv.ai*100/(sv.staff+sv.ai))+'%)</span>'}
   if(f==='late'){var lim=Date.now()-30*60000;j.threads=(j.threads||[]).filter(function(t){return t.awaiting&&t.waiting_since&&new Date(t.waiting_since).getTime()<lim})}
@@ -264,6 +336,7 @@ document.getElementById('ibq').oninput=function(){clearTimeout(tmr);q=this.value
 function mm(){var bm=document.getElementById('ibm');if(bm&&window.MChat)bm.textContent=MChat.soundLabel?MChat.soundLabel():(MChat.mute?'🔕 Sound off':'🔔 Sound on')}
 document.getElementById('ibback').onclick=function(){document.getElementById('ibx').classList.remove('sel');document.body.classList.remove('ibsel');sel=null;load()};
 document.getElementById('iball').onclick=function(){f='all';q='';document.getElementById('ibq').value='';drawF();load()};
+document.querySelectorAll('#ibvw button').forEach(function(b){b.onclick=function(){setView(b.dataset.v);load()}});setView(view);
 drawF();load();setInterval(function(){if(!document.hidden)load()},8000);
 /* Ctrl K (or Cmd K): jump to the search box */
 document.addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();var s=document.getElementById('ibq');if(s){s.focus();s.select()}}});

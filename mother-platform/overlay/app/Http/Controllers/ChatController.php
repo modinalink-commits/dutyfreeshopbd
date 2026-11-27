@@ -25,6 +25,8 @@ class ChatController extends Controller {
     elseif ($f === 'assigned') $q->where('assigned_to', auth()->id());
     elseif ($f === 'queue') Chat::humanScope($q->whereNull('assigned_to')); // customers waiting for a person whom nobody has taken yet (same rule as the number on the button; chats the AI is answering are not in the queue)
     elseif ($f === 'human') Chat::humanScope($q);
+    elseif ($f === 'followup') { if (Chat::fuReady()) $q->whereNotNull('follow_up_at'); else $q->whereRaw('1 = 0'); }
+    elseif ($f === 'aih') self::aiScope($q);
     elseif ($f === 'resolved') $q->where('status', 'resolved');
     elseif ($f === 'report') $q->whereNotNull('reported_at')->whereNull('report_solved_at'); // open complaints only: a solved one leaves the box (it keeps its Complaint Solved tag in All History and in search)
     // Closed chats leave the working lists (All included); they stay in Closed, Complaint, All History and in every search.
@@ -55,7 +57,10 @@ class ChatController extends Controller {
       $d = now('Asia/Dhaka')->startOfDay(); return ['d1'=>$get($d->copy()->utc()), 'd7'=>$get($d->copy()->subDays(6)->utc()), 'w1'=>$wait($d->copy()->utc()), 'w7'=>$wait($d->copy()->subDays(6)->utc())];
     } catch (\Throwable $e) { return null; } });
     $mine = 0; $queue = 0; try { $mine = (int)DB::table('chat_threads')->where('assigned_to', auth()->id())->where('status', '!=', 'resolved')->count(); $queue = (int)Chat::humanScope(DB::table('chat_threads')->whereNull('assigned_to'))->count(); } catch (\Throwable $e) {}
-    return response()->json(['mine'=>$mine, 'queue'=>$queue, 'me_id'=>(int)auth()->id(), 'threads'=>$cards, 'unread'=>$unread, 'order_requests'=>$orq, 'human'=>$hum, 'reports'=>$rep, 'ai_handled'=>max(0, $unread - $hum), 'svc'=>$svc, 'share'=>$share]);
+    $fu = 0; $fuDue = 0; $aiNow = 0;
+    try { if (Chat::fuReady()) { $fu = (int)DB::table('chat_threads')->whereNotNull('follow_up_at')->where('status', '!=', 'resolved')->count(); $fuDue = (int)DB::table('chat_threads')->whereNotNull('follow_up_at')->where('follow_up_at', '<=', now())->where('status', '!=', 'resolved')->count(); } } catch (\Throwable $e) {}
+    try { $aiNow = (int)self::aiScope(DB::table('chat_threads'))->count(); } catch (\Throwable $e) {}
+    return response()->json(['follow'=>$fu, 'follow_due'=>$fuDue, 'ai_now'=>$aiNow, 'mine'=>$mine, 'queue'=>$queue, 'me_id'=>(int)auth()->id(), 'threads'=>$cards, 'unread'=>$unread, 'order_requests'=>$orq, 'human'=>$hum, 'reports'=>$rep, 'ai_handled'=>max(0, $unread - $hum), 'svc'=>$svc, 'share'=>$share]);
   }
 
   /** Light poll used on every admin page: unread total plus threads with new incoming messages since the last id. */
@@ -194,7 +199,7 @@ class ChatController extends Controller {
     // A failed send leaves the conversation waiting for a reply; only an accepted message answers the customer.
     $upd = ($own ? [] : ['assigned_to'=>$t->assigned_to ?: auth()->id()]) + ['ai_paused'=>true, 'updated_at'=>now()];
     if ($ok) \Illuminate\Support\Facades\Cache::forget('chat.typing.'.$t->id);
-    if ($ok) $upd += ['last_message'=>mb_substr($body !== '' ? $body : '[attachment]', 0, 300), 'last_dir'=>'out', 'last_at'=>now(), 'status'=>in_array($t->status, ['new', 'open']) ? 'waiting' : $t->status];
+    if ($ok) $upd += ['last_message'=>mb_substr($body !== '' ? $body : '[attachment]', 0, 300), 'last_dir'=>'out', 'last_at'=>now(), 'status'=>in_array($t->status, ['new', 'open']) ? 'waiting' : $t->status] + Chat::fuClear();
     DB::table('chat_threads')->where('id', $id)->update($upd);
     if ($ok) { Chat::replied((int)$id, $t0); \App\Support\AiMemory::onStaff($t, $body, auth()->user()->name); }
     $res = ['ok'=>$ok, 'error'=>$err, 'id'=>$mid, 'ai'=>false];
@@ -272,6 +277,29 @@ class ChatController extends Controller {
     $u = auth()->user(); $on = \App\Support\ChatOwner::ready(); $o = $on ? \App\Support\ChatOwner::ownerId($tid) : null;
     return ['on'=>$on, 'id'=>$o, 'name'=>$o ? \App\Support\ChatOwner::name($o) : null, 'mine'=>$o !== null && $u && $o === (int)$u->id, 'can_send'=>!$on || $o === null || ($u && $o === (int)$u->id), 'supervisor'=>\App\Support\ChatOwner::supervisor($u), 'me_id'=>$u ? (int)$u->id : null];
   }
+  /** Open conversations nobody holds that the AI is answering (board column "AI উত্তর দিচ্ছে"). Display only: it changes nothing about who answers. */
+  private static function aiScope($q) {
+    return $q->where('status', '!=', 'resolved')->whereNull('assigned_to')->where(fn($w) => $w->whereNull('ai_paused')->orWhere('ai_paused', false))
+      ->where(fn($w) => $w->whereNull('needs_human')->orWhere('needs_human', false))->whereNull('handoff_at')->whereIn('channel', ['web', 'whatsapp', 'facebook']);
+  }
+  /**
+   * Set or remove the follow-up time of a conversation. minutes = 0 removes it. Only the representative who holds the conversation (or a supervisor) may set it,
+   * the same rule as replying and closing; a closed conversation has no follow-up. Recorded in the audit log. Awaiting Reply is never touched here.
+   */
+  public function followUp(Request $r, $id) {
+    $d = $r->validate(['minutes'=>'required|integer|min:0|max:43200', 'note'=>'nullable|string|max:300']);
+    if (!Chat::fuReady()) return response()->json(['ok'=>false, 'error'=>'Follow-up is not available yet (database update pending).'], 409);
+    $t = DB::table('chat_threads')->find($id); abort_unless($t, 404); $me = auth()->user(); $min = (int)$d['minutes'];
+    if ($t->status === 'resolved') return response()->json(['ok'=>false, 'error'=>'This conversation is closed.'], 409);
+    if (\App\Support\ChatOwner::ready() && !\App\Support\ChatOwner::supervisor($me)) {
+      if ($t->assigned_to === null) return response()->json(['ok'=>false, 'blocked'=>true, 'error'=>'আগে কথোপকথনটি নিন, তারপর ফলোআপ দিন।'], 409);
+      if ((int)$t->assigned_to !== (int)$me->id) return response()->json(['ok'=>false, 'blocked'=>true, 'error'=>\App\Support\ChatOwner::heldMsg((int)$t->assigned_to)], 409);
+    }
+    $at = $min > 0 ? now()->addMinutes($min) : null; $note = trim((string)($d['note'] ?? ''));
+    DB::table('chat_threads')->where('id', $id)->update($min > 0 ? ['follow_up_at'=>$at, 'follow_up_note'=>$note !== '' ? $note : null, 'follow_up_by'=>$me->id, 'follow_up_set_at'=>now(), 'updated_at'=>now()] : Chat::fuClear() + ['updated_at'=>now()]);
+    try { DB::table('audit_logs')->insert(['user_id'=>$me->id, 'user_name'=>$me->name ?? '', 'action'=>$min > 0 ? 'chat.follow_up' : 'chat.follow_up_clear', 'subject'=>'Conversation #'.(int)$id.($min > 0 ? ' follow-up at '.$at->timezone('Asia/Dhaka')->format('d M H:i').($note !== '' ? ' — '.$note : '') : ' follow-up removed'), 'ip'=>$r->ip(), 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {}
+    return response()->json(['ok'=>true, 'follow_at'=>$at ? $at->toIso8601String() : null, 'follow_note'=>$min > 0 && $note !== '' ? $note : null]);
+  }
   public function status(Request $r, $id) {
     $d = $r->validate(['status'=>'required|in:new,open,waiting,resolved', 'reason'=>'nullable|string|max:300']);
     $t = DB::table('chat_threads')->find($id); abort_unless($t, 404); $reason = trim((string)($d['reason'] ?? ''));
@@ -286,7 +314,7 @@ class ChatController extends Controller {
       if (in_array((string)($t->intent ?? ''), ['complaint', 'refund'], true) && (!empty($t->awaiting_reply) || !empty($t->needs_human))) $why[] = 'the customer has an unanswered '.$t->intent.' request';
       if (!empty($t->reported_at) && empty($t->report_solved_at)) $why[] = 'the customer\'s complaint is still open';
       if ($why && $reason === '') return response()->json(['ok'=>false, 'need_reason'=>true, 'why'=>implode('; ', $why)]);
-      $upd += ['unread'=>0, 'awaiting_reply'=>false, 'needs_human'=>false, 'handoff_at'=>null, 'handoff_reason'=>null, 'ai_paused'=>false];
+      $upd += ['unread'=>0, 'awaiting_reply'=>false, 'needs_human'=>false, 'handoff_at'=>null, 'handoff_reason'=>null, 'ai_paused'=>false] + Chat::fuClear();
     }
     DB::table('chat_threads')->where('id', $id)->update($upd);
     if ($d['status'] === 'resolved') \App\Support\ChatOwner::system((int)$id, null, 'release', 'Closed by '.(auth()->user()->name ?? 'staff').'.'); // a closed conversation has no owner; if the customer writes again it is allocated afresh

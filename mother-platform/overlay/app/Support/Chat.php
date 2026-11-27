@@ -79,7 +79,7 @@ class Chat {
     // Every new customer message puts the conversation back into "waiting for a reply".
     $prev = $body !== '' ? $body : ($att ? (($meta['att_type'] ?? 'image') === 'audio' ? '🎤 Voice message' : '[attachment]') : '');
     DB::table('chat_threads')->where('id', $t->id)->update(['unread'=>DB::raw('unread + 1'), 'awaiting_reply'=>true, 'last_customer_message_at'=>now(), 'last_message'=>mb_substr($prev, 0, 300),
-      'last_dir'=>'in', 'last_at'=>now(), 'status'=>$st, 'updated_at'=>now()]
+      'last_dir'=>'in', 'last_at'=>now(), 'status'=>$st, 'updated_at'=>now()] + self::fuClear() // the customer came back: the follow-up is over, the normal Awaiting rule takes it from here
       + (ChatOwner::ready() ? ['awaiting_since'=>!empty($t->awaiting_reply) && !empty($t->awaiting_since) ? $t->awaiting_since : now()] : []));
     self::reportCheck((int)$t->id, (string)$body);
     $fresh = DB::table('chat_threads')->find($t->id);
@@ -800,6 +800,10 @@ class Chat {
   private static function err($r): string { return mb_substr((string)($r->json('error.message') ?? $r->body()), 0, 220); }
 
   /** Card data for lists and popups: customer category, order count and risk. */
+  /** Follow-up columns exist (migration 2026_11_27_090000). Checked once per request; before the migration every follow-up feature stays off. */
+  public static function fuReady(): bool { static $r = null; if ($r === null) { try { $r = \Illuminate\Support\Facades\Schema::hasColumn('chat_threads', 'follow_up_at'); } catch (\Throwable $e) { $r = false; } } return $r; }
+  /** Columns that end a follow-up, for a conversation update (a new customer message, a sent staff reply, Close chat). Empty before the migration. */
+  public static function fuClear(): array { return self::fuReady() ? ['follow_up_at'=>null, 'follow_up_note'=>null, 'follow_up_by'=>null, 'follow_up_set_at'=>null] : []; }
   public static function cards($rows): array {
     $rows = collect($rows); if ($rows->isEmpty()) return [];
     $objs = $rows->map(fn($t) => (object)['id'=>$t->id, 'phone'=>$t->phone ?: '-none-'.$t->id, 'total'=>0]);
@@ -832,7 +836,8 @@ class Chat {
         'ai'=>!($t->ai_paused ?? false), 'ai_lang'=>$t->ai_lang ?? null, 'ai_detected'=>$t->ai_detected ?? null, 'assigned_to'=>$t->assigned_to, 'assigned_name'=>$agents[$t->assigned_to] ?? null, 'customer_id'=>$t->customer_id,
         'cat'=>$n > 0 && $i ? $i['cat'] : 'New', 'orders'=>$n, 'risk'=>$n > 0 && $i ? $i['risk'] : 'Low',
         'intent'=>$t->intent ?? null, 'mood'=>$t->mood ?? null, 'priority'=>$t->priority ?? 'normal', 'needs_human'=>(bool)($t->needs_human ?? false), 'reported'=>!empty($t->reported_at) && empty($t->report_solved_at), 'report_solved'=>!empty($t->reported_at) && !empty($t->report_solved_at), 'report_solved_by'=>$t->report_solved_by ?? null, 'report_reason'=>$t->report_reason ?? null,
-        'waiting_since'=>isset($ws[$t->id]) ? \Carbon\Carbon::parse($ws[$t->id])->toIso8601String() : null, 'sla_w'=>$slaW, 'sla_r'=>$slaR, 'handoff_at'=>!empty($t->handoff_at) ? \Carbon\Carbon::parse($t->handoff_at)->toIso8601String() : null, 'handoff_reason'=>$t->handoff_reason ?? null, 'ai_summary'=>$t->ai_summary ?? null];
+        'waiting_since'=>isset($ws[$t->id]) ? \Carbon\Carbon::parse($ws[$t->id])->toIso8601String() : null, 'sla_w'=>$slaW, 'sla_r'=>$slaR, 'handoff_at'=>!empty($t->handoff_at) ? \Carbon\Carbon::parse($t->handoff_at)->toIso8601String() : null, 'handoff_reason'=>$t->handoff_reason ?? null, 'ai_summary'=>$t->ai_summary ?? null,
+        'follow_at'=>!empty($t->follow_up_at) && $t->status !== 'resolved' ? \Carbon\Carbon::parse($t->follow_up_at)->toIso8601String() : null, 'follow_note'=>$t->follow_up_note ?? null, 'follow_due'=>!empty($t->follow_up_at) && $t->status !== 'resolved' && \Carbon\Carbon::parse($t->follow_up_at)->lte(now())];
     })->all();
   }
   /** Number of customers currently waiting for a staff reply (not a message count, and never reduced by opening a chat). */

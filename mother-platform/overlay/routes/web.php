@@ -210,6 +210,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::post('/chat/thread/{id}/claim', [\App\Http\Controllers\ChatController::class,'claim'])->whereNumber('id')->middleware('throttle:60,1');
   Route::get('/chat/thread/{id}/owner-history', [\App\Http\Controllers\ChatController::class,'ownerHistory'])->whereNumber('id');
   Route::post('/chat/thread/{id}/status', [\App\Http\Controllers\ChatController::class,'status']);
+  Route::post('/chat/thread/{id}/follow-up', [\App\Http\Controllers\ChatController::class,'followUp'])->whereNumber('id')->middleware('throttle:60,1');
   Route::post('/chat/thread/{id}/report', [\App\Http\Controllers\ChatController::class,'report'])->whereNumber('id');
   Route::post('/chat/thread/{id}/phone', [\App\Http\Controllers\ChatController::class,'phone']);
   Route::get('/chat-settings', [\App\Http\Controllers\ChatController::class,'settings']);
