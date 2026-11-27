@@ -229,6 +229,8 @@ main{padding-top:6px!important;padding-bottom:6px!important}
 .fbar a,.fbar button.fa{height:30px!important;padding:0 11px!important;border-radius:8px!important;font-size:12.5px!important;font-weight:500;transition:background .15s,border-color .15s}
 .fbar #ibf2{padding-top:8px;border-top:1px solid #F1F2F4}
 .fbar #ibf2 .vsep{width:1px;height:18px;background:#E5E7EB;margin:0 4px;flex:none}
+.fbar .fr{flex-wrap:nowrap!important;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}.fbar .fr::-webkit-scrollbar{display:none}.fbar .fr>*{flex:none}
+@media(min-width:901px) and (max-width:1819px){.fbar #ibsh{grid-column:1/-1;order:3;overflow-x:auto}}.fbar #ibf1,.fbar #ibf2{min-width:0}.fbar #ibf2[hidden]{display:flex!important}
 #ibsh{justify-content:flex-end}#ibsh .br{flex:0 1 260px!important}
 @media(max-width:900px){.ibtl{order:3}#ibsh{justify-content:flex-start}}
 @media(prefers-reduced-motion:reduce){.fbar a,.fbar button.fa,.ibtl button{transition:none}}
@@ -382,11 +384,12 @@ function pill(x){return '<a data-f="'+x[0]+'" class="'+(f===x[0]?'on':'')+'" rol
 /* v2: the filters staff use all day sit in one row; the rest open under "More" (nothing removed). "More" stays open while one of its filters is selected. */
 /* one button per job: the six summary cards are the buttons for Unread, My Conversations, Queue, Human Answer, AI handling and Follow-up, so those are not repeated as pills */
 var FP=['all','late','report','upset'],CF=['unread','assigned','queue','human','aih','followup'],moreOpen=false;try{moreOpen=localStorage.getItem('ib_more')==='1'}catch(e){}
-function drawF(){var all=F1.concat(F2),by={};all.forEach(function(x){by[x[0]]=x});var inMore=FP.indexOf(f)<0&&CF.indexOf(f)<0,n=orq+missedN;
-  document.getElementById('ibf1').innerHTML=FP.map(function(k){return pill(by[k])}).join('')+'<button class="fa'+(moreOpen||inMore?' mo':'')+'" type="button" id="ibmore" aria-expanded="'+(moreOpen||inMore)+'">More ▾'+(n>0?'<span class="cn">'+n+'</span>':'')+'</button>';
-  var f2=document.getElementById('ibf2');f2.hidden=!(moreOpen||inMore);
-  f2.innerHTML=all.filter(function(x){return FP.indexOf(x[0])<0&&CF.indexOf(x[0])<0}).map(pill).join('')+'<i class="vsep"></i><a href="/admin/chat/auto" title="Order confirmations, order updates and campaign messages the system sent by itself">📤 Auto Messages</a><a href="/admin/chat/memory">🧠 AI Memory</a><a href="/admin/chat-settings">Chat settings</a>';
-  document.getElementById('ibmore').onclick=function(){moreOpen=!(moreOpen||inMore);if(inMore&&!moreOpen){f='all';load()}try{localStorage.setItem('ib_more',moreOpen?'1':'0')}catch(e){}drawF()};
+function drawF(){var all=F1.concat(F2),by={};all.forEach(function(x){by[x[0]]=x});
+  /* owner 27 Nov 2026: nothing hides under "More" any more. Upper line: All and the problem / history filters. Lower line: the channels, then the page links. Each line stays one line (it scrolls sideways on a narrow screen instead of wrapping or hiding). */
+  var UP=['all','late','report','upset','missed','resolved','history','orders'],LO=['facebook','instagram','whatsapp','web','sms','comments'];
+  document.getElementById('ibf1').innerHTML=UP.map(function(k){return pill(by[k])}).join('');
+  var f2=document.getElementById('ibf2');f2.hidden=false;
+  f2.innerHTML=LO.map(function(k){return pill(by[k])}).join('')+'<i class="vsep"></i><a href="/admin/chat/auto" title="Order confirmations, order updates and campaign messages the system sent by itself">📤 Auto Messages</a><a href="/admin/chat/memory">🧠 AI Memory</a><a href="/admin/chat-settings">Chat settings</a>';
   document.querySelectorAll('#ibfb a[data-f]').forEach(function(a){a.onclick=function(){if(a.dataset.f==='comments'){location.href='/admin/chat/comments';return}f=a.dataset.f;setView('inbox');drawF();load()};a.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();a.click()}}});
   mm()}
 /* Manual synchronisation only: refreshes the list and the open conversation. It never marks anything as seen or replied. */
