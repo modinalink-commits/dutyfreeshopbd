@@ -232,6 +232,78 @@ main{padding-top:6px!important;padding-bottom:6px!important}
 #ibsh{justify-content:flex-end}#ibsh .br{flex:0 1 260px!important}
 @media(max-width:900px){.ibtl{order:3}#ibsh{justify-content:flex-start}}
 @media(prefers-reduced-motion:reduce){.fbar a,.fbar button.fa,.ibtl button{transition:none}}
+
+/* ===== Chat panel tidy-up on the Messages page (owner 27 Nov 2026): one identity line, one toolbar line, slim notices, one tools line above the reply box, an even customer panel.
+   Layout only (CSS): every control, id and handler of the chat widget is unchanged, and the pop-up chat drawer on other pages keeps its own look. ===== */
+@media(min-width:901px){
+.mbx .mc #mh{display:flex!important;flex-direction:row!important;flex-wrap:wrap;align-items:center;gap:6px;padding:10px 12px!important;border-bottom:1px solid #E5E7EB;background:#fff}
+.mbx .mc #mh>*{order:8;flex:0 0 100%;margin:0!important;box-sizing:border-box}
+.mbx .mc #mh>.r1,.mbx .mc #mh>.r2{display:contents!important}
+.mbx .mc #mh::before{content:"";order:2;flex:0 0 100%;height:0}
+/* line 1: who the customer is, and the two waiting chips on the right */
+.mbx .mc #mh .r1>*{order:1}
+.mbx .mc #mh .r1>.mcav{flex:none;width:36px;height:36px;font-size:14px}
+.mbx .mc #mh .r1>div{flex:1 1 220px!important;min-width:0;line-height:1.3}
+.mbx .mc #mh .r1>div b{font-size:15px!important;font-weight:600}
+.mbx .mc #mh .r1>div small{display:block;font-size:12.5px!important;color:#6B7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mbx .mc #mh .r1>div small b{font-size:12.5px!important;font-weight:600}
+.mbx .mc #mh .r2>.msla,.mbx .mc #mh .r2>.aw,.mbx .mc #mh .r2>.rp,.mbx .mc #mh .r2>.clsd,.mbx .mc #mh .r2>.fuc{order:1;flex:none;height:26px!important;line-height:24px!important;padding:0 10px!important;border-radius:13px!important;font-size:12px!important;font-weight:600;white-space:nowrap;display:inline-flex;align-items:center}
+/* line 2: the toolbar. Every control is the same height; Close chat sits at the right end */
+.mbx .mc #mh .r2>*{order:3;flex:none}
+.mbx .mc #mh::after{content:"";order:4;flex:0 0 100%;height:0}
+.mbx .mc #mh .r2>a.lk{order:5}
+.mbx .mc #mh .r2>#hdt{display:none!important}
+.mbx .mc #mh .r2>select,.mbx .mc #mh .r2>.lk,.mbx .mc #mh .r2>a.lk{height:30px!important;min-height:0!important;line-height:28px!important;padding:0 10px!important;border-radius:8px!important;font-size:12.5px!important;font-weight:600!important;box-shadow:none!important;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;box-sizing:border-box}
+.mbx .mc #mh .r2>select{padding:0 6px!important;max-width:170px;border:1px solid #E5E7EB;background-color:#fff;color:#0B1B33;font-family:inherit}
+.mbx .mc #mh .r2>a.lk,.mbx .mc #mh .r2>.lk.dt{background:#fff!important;border:1px solid #E5E7EB!important;color:#344054!important;text-decoration:none}
+.mbx .mc #mh .r2>a.lk:hover{background:#F9FAFB!important}
+.mbx .mc #mh .r2>.lk.rpt{background:#fff!important;border:1px solid #FECDCA!important;color:#B42318!important}
+.mbx .mc #mh .r2>.lk.rpt.on{background:#FEE4E2!important}
+.mbx .mc #mh .r2>#hcls{order:6;margin-left:auto!important;background:#fff!important;border:1px solid #FECDCA!important;color:#B42318!important}
+.mbx .mc #mh .r2>#hcls.rop{border-color:#E5E7EB!important;color:#344054!important}
+.mbx .mc #mh .r2>.lk svg{width:14px;height:14px}
+/* notices: same shape, one after another, short */
+.mbx .mc #mh>.hb,.mbx .mc #mh>.ob,.mbx .mc #mh>.sumb,.mbx .mc #mh>.clsw{border-radius:8px!important;padding:6px 10px!important;font-size:12.5px!important;line-height:1.5!important}
+.mbx .mc #mh>.hb{background:#FEF0C7!important;border:1px solid #FEDF89!important;color:#93370D!important;max-height:64px;overflow:auto}
+.mbx .mc #mh>.hb b{color:#93370D}
+.mbx .mc #mh>.hb button,.mbx .mc #mh>.ob button{height:24px;padding:0 9px!important;border-radius:6px!important;font-size:12px!important;font-weight:600;margin:0 0 0 6px!important;vertical-align:middle;border:1px solid currentColor;background:#fff;color:inherit;cursor:pointer}
+.mbx .mc #mh>.ob{background:#F9FAFB!important;border:1px solid #E5E7EB!important;color:#344054!important}
+.mbx .mc #mh>.sumb{background:#fff!important;border:1px solid #E5E7EB!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mbx .mc #mh>.sumb:not(.x){max-height:30px!important}
+.mbx .mc #mh>.sumb:not(.x) br{display:none}
+.mbx .mc #mh>.sumb:not(.x) b{margin-left:10px}.mbx .mc #mh>.sumb:not(.x) b:first-child{margin-left:0}
+.mbx .mc #mh>.sumb.x{white-space:normal}
+/* reply area: one line of tools, then the box and the two send buttons */
+.mbx .mc #mf{display:flex!important;flex-direction:row!important;flex-wrap:wrap;align-items:center;gap:6px;padding:10px 12px!important;border-top:1px solid #E5E7EB;background:#fff}
+.mbx .mc #mf>*{order:6;flex:0 0 100%;margin:0!important;box-sizing:border-box}
+.mbx .mc #mf>.tb,.mbx .mc #mf>.ax{display:contents!important}
+.mbx .mc #mf .ax>.axt{order:1;flex:none}
+.mbx .mc #mf::before{content:"";order:2;flex:0 0 100%;height:0}
+.mbx .mc #mf .tb>*{order:3;flex:none}
+.mbx .mc #mf .ax>.tg{order:1;flex:none}
+.mbx .mc #mf .ax>#mad{margin-left:auto!important}
+.mbx .mc #mf .tg,.mbx .mc #mf .qrw select,.mbx .mc #mf .axt{height:30px!important;min-height:0!important;border-radius:8px!important;font-size:12.5px!important;box-sizing:border-box}
+.mbx .mc #mf .tg{padding:0 10px!important;border:1px solid #E5E7EB!important;background:#fff!important;color:#344054!important;font-weight:600;box-shadow:none!important;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.mbx .mc #mf .tg:hover{background:#F9FAFB!important}
+.mbx .mc #mf .tg[hidden]{display:none!important}
+.mbx .mc #mf .tg svg{width:14px;height:14px}
+.mbx .mc #mf .qrw{display:inline-flex;align-items:center}
+.mbx .mc #mf .qrw select{max-width:150px}
+.mbx .mc #mf .axt{display:inline-flex;align-items:center;padding:2px;background:#EEF0F3;border:0}
+.mbx .mc #mf .axt button{height:26px!important;padding:0 10px!important;border-radius:6px!important;font-size:12.5px!important}
+.mbx .mc #mf>.sd{display:flex;gap:8px;align-items:stretch}
+.mbx .mc #mf>.sd textarea{flex:1;min-height:60px!important;height:60px;border-radius:9px!important;border:1px solid #E5E7EB!important;box-shadow:none!important;font-size:15px!important;padding:9px 11px!important}
+.mbx .mc #mf>.sd textarea:focus{border-color:#F95505!important;outline:0}
+.mbx .mc #mf>.sd #ms,.mbx .mc #mf>.sd #msn{height:auto!important;min-height:40px;align-self:flex-end;border-radius:9px!important;padding:0 16px!important;font-size:13px!important;white-space:nowrap;box-shadow:none!important}
+.mbx .mc #mf>.sd #msn{background:#fff!important;border:1px solid #E5E7EB!important;color:#0B1B33!important}
+/* customer panel: even two-column facts, compact order rows */
+.mbx .mc #mcu{padding:10px 12px!important;border-left:1px solid #E5E7EB;background:#fff}
+.mbx .mc #mcu>summary{font-size:11px!important;letter-spacing:.05em;color:#6B7280;padding:0 0 6px!important}
+.mbx .mc #mcu .chips{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:6px!important;margin:0 0 8px!important}
+.mbx .mc #mcu .chips .ch{width:100%;min-width:0;height:30px!important;border-radius:8px!important;font-size:12px!important;padding:0 8px!important;box-sizing:border-box;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:none!important}
+.mbx .mc #mcu .cur{border-radius:10px!important;box-shadow:none!important;border:1px solid #E5E7EB!important;margin:8px 0!important}
+.mbx .mc #mcu table.ot tr{border-radius:10px}
+}
 </style>
 <div id="ibtop" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px"><div style="flex:1"><h1 style="margin:0">Messages <span id="ibu"></span></h1><span style="font-size:12px;color:#6B7280">Facebook, Instagram, WhatsApp and Website Chat in one inbox.</span></div><div class="ibtl" id="ibtl"><button type="button" id="ibup" title="Fetch the latest messages. This never marks anything as seen.">↻ Update</button><button type="button" id="ibm">🔔 Sound on</button></div><div class="ibvw" id="ibvw" role="tablist"><button type="button" data-v="board">Message Dashboard</button><button type="button" data-v="inbox">Inbox</button></div>
 </div>
