@@ -70,12 +70,33 @@ class ChatRules {
 
   /** Our last message asks the customer to confirm the order. */
   public static function asksConfirm(string $b): bool {
-    return (bool)preg_match('/অর্ডার(টা|টি)?\s*(কি\s*)?(করে\s*)?(দেব|দিব|করব|করবো|নিশ্চিত|কনফার্ম)|কনফার্ম\s*করতে|নিশ্চিত\s*করতে|অর্ডার\s*করতে\s*(নাম|ঠিকানা|চান)|ঠিকানাটা\s*পাঠা|"?হ্যাঁ"?\s*লিখুন|shall\s+i\s+(place|confirm)|confirm\s+(the\s+)?order|place\s+(the\s+)?order|order\s*(ta\s*)?(kore|korbo)\s*(di|den|dibo)/iu', $b);
+    if (preg_match('/কার্ট\s*(এখন\s*)?খালি|cart\s+is\s+empty|কী\s*কনফার্ম|কোন\s*পণ্য|নামটি\s*বা\s*ছবি/iu', $b)) return false; // a clarifying question, not the order question
+    return (bool)preg_match('/অর্ডার(টা|টি)?\s*(কি\s*)?(করে\s*)?(দেব|দিব|করব|করবো)\s*\?|অর্ডার\s*নিশ্চিত\s*করতে\s*["\x{201C}]?হ্যাঁ|["\x{201C}]?হ্যাঁ["\x{201D}]?\s*লিখুন|ঠিকানাটা\s*পাঠালেই|shall\s+i\s+(place|confirm)|order\s*(ta\s*)?(kore|korbo)\s*(di|den|dibo)/iu', $b);
+  }
+  /** The customer already has an order: a confirmed order is not a silent order question. */
+  public static function hasRecentOrder(?string $phone): bool {
+    $p = preg_replace('/\D/', '', (string)$phone); if (strlen($p) < 10) return false; $p = substr($p, -10);
+    try { return DB::table('orders')->where('phone', 'like', '%'.$p)->where('created_at', '>=', now()->subHours(48))->exists(); } catch (\Throwable $e) { return false; }
+  }
+  /** Remove an automatic mark that no longer holds (the question was a clarification, or the customer now has an order). Staff-written marks are never touched. */
+  public static function revalidate(): int {
+    $n = 0;
+    $rows = DB::table('chat_threads')->where('status', '!=', 'resolved')->whereNotNull('follow_up_at')->where('follow_up_note', 'like', self::MARK.'%')->whereNull('follow_up_by')->limit(200)->get();
+    foreach ($rows as $t) {
+      try {
+        $last = DB::table('chat_messages')->where('thread_id', $t->id)->where('dir', 'out')->orderByDesc('id')->first(['body']);
+        $bad = !$last || !self::asksConfirm((string)$last->body) || self::hasRecentOrder($t->phone ?? null);
+        if (!$bad) continue;
+        if (DB::table('chat_threads')->where('id', $t->id)->where('follow_up_note', 'like', self::MARK.'%')->update(Chat::fuClear() + ['updated_at'=>now()])) $n++;
+      } catch (\Throwable $e) { report($e); }
+    }
+    return $n;
   }
 
   /** Worker tick (every 5 minutes): put the mark on silent order chats, and close the ones nobody picked up for 24 hours. */
   public static function tick(): void {
     if (!Chat::fuReady() || !Cache::add('chat.rules.tick', 1, 280)) return;
+    try { self::revalidate(); } catch (\Throwable $e) { report($e); }
     try { self::mark(); } catch (\Throwable $e) { report($e); }
     try { self::closeNoResponse(); } catch (\Throwable $e) { report($e); }
   }
@@ -96,7 +117,7 @@ class ChatRules {
         if (!$interest) continue;
         $last = DB::table('chat_messages')->where('thread_id', $tid)->orderByDesc('id')->first(['dir', 'body', 'status', 'kind']);
         if (!$last || $last->dir !== 'out' || $last->status === 'failed' || !self::asksConfirm((string)$last->body)) continue;
-        if (DB::table('chat_handoffs')->where('thread_id', $tid)->whereIn('status', ['open', 'accepted'])->exists()) continue;
+        if (DB::table('chat_handoffs')->where('thread_id', $tid)->whereIn('status', ['open', 'accepted'])->exists() || self::hasRecentOrder($t->phone ?? null)) continue;
         $n++; if ($dry) continue;
         $u = DB::table('chat_threads')->where('id', $tid)->whereNull('follow_up_at')->whereNull('assigned_to')->where('last_dir', 'out')
           ->update(['follow_up_at'=>now(), 'follow_up_note'=>self::MARK.': অর্ডার নিশ্চিত করার প্রশ্নে গ্রাহক সাড়া দেননি', 'follow_up_by'=>null, 'follow_up_set_at'=>now(), 'updated_at'=>now()]);
