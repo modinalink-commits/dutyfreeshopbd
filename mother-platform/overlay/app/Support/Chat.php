@@ -503,6 +503,29 @@ class Chat {
       return true;
     } catch (\Throwable $e) { report($e); return false; }
   }
+  /** Owner 27 Nov 2026: move every chat we have answered, where the customer stayed silent for $hours or more, to Closed. Nothing is sent to the customer. Same safety blocks as closeSilent(); follow-ups, hand-offs, open complaints / refunds / orders and failed last messages stay open. $dry only counts. Returns [closed, kept]. */
+  public static function closeAnswered(int $hours = 3, bool $dry = false, ?string $by = null): array {
+    $n = 0; $kept = 0;
+    $q = DB::table('chat_threads')->whereIn('channel', ['web', 'whatsapp', 'facebook', 'instagram'])->where('status', '!=', 'resolved')->where('last_dir', 'out')->where('last_at', '<=', now()->subHours(max(1, $hours)))->orderBy('id');
+    $q = self::fuKeep($q);
+    foreach ($q->limit(2000)->get() as $t) {
+      try {
+        $tid = (int)$t->id;
+        if (!empty($t->awaiting_reply) || !empty($t->needs_human) || !empty($t->handoff_at) || (!empty($t->reported_at) && empty($t->report_solved_at))) { $kept++; continue; }
+        if (in_array((string)($t->intent ?? ''), ['complaint', 'refund', 'cancel', 'change_order', 'human_request', 'payment', 'order_request'], true)) { $kept++; continue; }
+        if (DB::table('chat_handoffs')->where('thread_id', $tid)->whereIn('status', ['open', 'accepted'])->exists()) { $kept++; continue; }
+        try { if (DB::table('chat_order_requests')->where('thread_id', $tid)->where('status', 'review')->exists()) { $kept++; continue; } } catch (\Throwable $e) {}
+        $li = DB::table('chat_messages')->where('thread_id', $tid)->orderByDesc('id')->first(['dir', 'status']);
+        if (!$li || $li->dir !== 'out' || $li->status === 'failed') { $kept++; continue; }
+        $n++;
+        if ($dry) continue;
+        DB::table('chat_threads')->where('id', $tid)->update(['status'=>'resolved', 'unread'=>0, 'awaiting_reply'=>false, 'updated_at'=>now()]);
+        try { ChatOwner::system($tid, null, 'release', 'Closed: answered, customer silent ('.($by ?: 'staff').').'); } catch (\Throwable $e) {}
+        try { DB::table('audit_logs')->insert(['user_id'=>auth()->id(), 'user_name'=>$by ?: '', 'action'=>'chat.close', 'subject'=>'Conversation #'.$tid.' closed: answered, customer silent for '.$hours.'h+ (bulk)', 'ip'=>request()->ip(), 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {}
+      } catch (\Throwable $e) { report($e); }
+    }
+    return [$n, $kept];
+  }
   /** Why a never-answered WhatsApp chat can NOT be closed with a last courtesy message (null = it can). */
   /** Words that mean the customer is reporting a problem (complaint, bad / fake / damaged product, wrong item, refund or return wish). Display only: it files the chat under Report, nothing is promised or sent. */
   const REPORT_RX = '/অভিযোগ|কমপ্লেইন|কমপ্লেন|রিপোর্ট|নকল|ভেজাল|নষ্ট|ড্যাম|ড্যামেজ|ভাঙা|ভাঙ্গা|ছেঁড়া|মেয়াদ|বাজে|খারাপ|গন্ধ|গলা জ্ব|ভুল প্রোডাক্ট|ভুল পণ্য|ভুল জিনিস|ফেরত|রিফান্ড|রিটার্ন|ঠক|প্রতারণা|complain|complaint|report|fake|nokol|vejal|damage|damp|broken|expired|kharap|baje|gondho|wrong product|wrong item|vul product|refund|return korbo|ferot|ferat|cheat|protarona|scam/iu';

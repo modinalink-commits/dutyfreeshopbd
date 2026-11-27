@@ -325,6 +325,13 @@ class ChatController extends Controller {
     if ($d['status'] === 'resolved' || $t->status === 'resolved') { try { DB::table('audit_logs')->insert(['user_id'=>auth()->id(), 'user_name'=>auth()->user()->name ?? '', 'action'=>$d['status'] === 'resolved' ? 'chat.close' : 'chat.reopen', 'subject'=>'Conversation #'.$id.' '.($d['status'] === 'resolved' ? 'closed' : 'reopened').($reason !== '' ? ' - '.$reason : ''), 'ip'=>$r->ip(), 'created_at'=>now(), 'updated_at'=>now()]); } catch (\Throwable $e) {} }
     return response()->json(['ok'=>true, 'unread'=>Chat::unreadTotal()]);
   }
+  /** Supervisor only: close every answered chat whose customer stayed silent (no message is sent). ?dry=1 only counts. */
+  public function closeAnswered(Request $r) {
+    abort_unless(\App\Support\ChatOwner::supervisor(auth()->user()), 403);
+    $h = max(1, min(168, (int)$r->input('hours', 3)));
+    [$n, $kept] = Chat::closeAnswered($h, $r->boolean('dry'), auth()->user()->name ?? 'staff');
+    return response()->json(['ok'=>true, 'dry'=>$r->boolean('dry'), 'closed'=>$n, 'kept_open'=>$kept, 'hours'=>$h, 'unread'=>Chat::unreadTotal()]);
+  }
   /** Report mark: staff can file a conversation under Report by hand, or mark the customer's report as solved. */
   public function report(Request $r, $id) {
     $t = DB::table('chat_threads')->find($id); abort_unless($t, 404); $on = (bool)$r->input('on');

@@ -692,7 +692,7 @@ Route::prefix('api/staff')->withoutMiddleware([\Illuminate\Foundation\Http\Middl
     Route::post('/chat/thread/{id}/reply', [$C,'reply'])->whereNumber('id')->middleware('throttle:60,1');
     Route::post('/chat/thread/{id}/claim', [$C,'claim'])->whereNumber('id')->middleware('throttle:60,1'); Route::post('/chat/thread/{id}/assign', [$C,'assign'])->whereNumber('id')->middleware('throttle:60,1'); Route::get('/chat/thread/{id}/owner-history', [$C,'ownerHistory'])->whereNumber('id');
     Route::post('/chat/thread/{id}/ai', [$C,'ai'])->whereNumber('id')->middleware('throttle:30,1');
-    Route::post('/chat/thread/{id}/assign', [$C,'assign'])->whereNumber('id'); Route::post('/chat/thread/{id}/status', [$C,'status'])->whereNumber('id'); Route::post('/chat/thread/{id}/report', [$C,'report'])->whereNumber('id');
+    Route::post('/chat/thread/{id}/assign', [$C,'assign'])->whereNumber('id'); Route::post('/chat/thread/{id}/status', [$C,'status'])->whereNumber('id'); Route::post('/chat/thread/{id}/report', [$C,'report'])->whereNumber('id'); Route::post('/chat/close-answered', [$C,'closeAnswered'])->middleware('throttle:6,1');
   });
 });
 // ---- Supplier Partner Portal (public login; everything else behind SupplierPortalAuth) ----
