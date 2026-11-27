@@ -111,7 +111,8 @@
 @media(prefers-reduced-motion:reduce){.mc .cb{transition:none}.mc .vr .rd{animation:none}}
 
 /* Owner request 11 Nov 2026: chat header action bar on ONE tidy line, plus a Call button that dials from our dialer */
-.mc .hd .r2{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:6px}.mc .hd .r2::-webkit-scrollbar{display:none}
+/* 27 Nov 2026: buttons wrap to the next line in a narrow panel instead of being cut off at the right edge */
+.mc .hd .r2{flex-wrap:wrap;overflow:visible;gap:6px}
 .mc .hd .r2>*{flex:0 0 auto;white-space:nowrap;margin:0}.mc .hd .r2 .lk,.mc .hd .r2 .aw,.mc .hd .r2 .rp,.mc .hd .r2 select{height:32px;display:inline-flex;align-items:center;gap:6px;padding:0 11px;border-radius:8px;line-height:1}
 .mc .hd .r2 .call{background:#16A34A;border-color:#16A34A;color:#fff;font-weight:700}.mc .hd .r2 .call .ic{stroke:#fff}.mc .hd .r2 .call:hover{background:#15803D}
 </style>
