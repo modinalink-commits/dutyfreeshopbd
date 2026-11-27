@@ -43,5 +43,12 @@ for(const vp of [{width:1366,height:768},{width:400,height:820}]){const tg=vp.wi
  if(vp.width<760){await p.click('#ibback')}
  await p.click('#ibsum button[data-f=followup]');await p.waitForTimeout(400);
  A(calls.includes('followup')&&await p.locator('#ibl .th').count()===2,tg+'summary card filters the list');
+ if(vp.width>900){A(await p.evaluate(()=>document.documentElement.scrollHeight<=innerHeight+1),tg+'fixed screen: no page scroll in Inbox');await p.click('#ibmore');await p.waitForTimeout(150);A(await p.evaluate(()=>document.documentElement.scrollHeight<=innerHeight+1),tg+'fixed screen holds with More open');await p.click('#ibvw [data-v=board]');await p.waitForTimeout(400);A(await p.evaluate(()=>document.documentElement.scrollHeight<=innerHeight+1),tg+'fixed screen: no page scroll on the board')}
+ // a saved board view must not hide a deep-linked chat, and the embedded inbox never shows the board
+ await p.evaluate(()=>localStorage.setItem('ib_view','board'));
+ await p.goto('http://stg.test/admin/chat?open=3').catch(()=>{});await p.setContent(html,{waitUntil:'domcontentloaded'});await p.waitForTimeout(900);
+ A(await p.evaluate(()=>document.getElementById('ibk').hidden&&MChat.mounts.includes(3)&&getComputedStyle(document.getElementById('ibx')).display!=='none'),tg+'?open= link shows the chat even when Board was the saved view');
+ await p.goto('http://stg.test/admin/chat?embed=1').catch(()=>{});await p.setContent(html,{waitUntil:'domcontentloaded'});await p.waitForTimeout(700);
+ A(await p.evaluate(()=>document.getElementById('ibk').hidden&&document.querySelectorAll('#ibl .th').length>0),tg+'embedded inbox stays on the list');
  console.log(tg+'errors',errs);await p.close()}
 await b.close()})();

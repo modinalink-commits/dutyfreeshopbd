@@ -280,7 +280,9 @@ class ChatController extends Controller {
   /** Open conversations nobody holds that the AI is answering (board column "AI উত্তর দিচ্ছে"). Display only: it changes nothing about who answers. */
   private static function aiScope($q) {
     return $q->where('status', '!=', 'resolved')->whereNull('assigned_to')->where(fn($w) => $w->whereNull('ai_paused')->orWhere('ai_paused', false))
-      ->where(fn($w) => $w->whereNull('needs_human')->orWhere('needs_human', false))->whereNull('handoff_at')->whereIn('channel', ['web', 'whatsapp', 'facebook']);
+      ->where(fn($w) => $w->whereNull('needs_human')->orWhere('needs_human', false))->whereNull('handoff_at')->whereIn('channel', ['web', 'whatsapp', 'facebook'])
+      // same list as Chat::humanScope: a waiting customer with one of these needs a person, so it is not counted as the AI's
+      ->where(fn($w) => $w->where('awaiting_reply', false)->orWhereNull('intent')->orWhereNotIn('intent', ['complaint', 'refund', 'cancel', 'change_order', 'human_request', 'payment', 'order_request']));
   }
   /**
    * Set or remove the follow-up time of a conversation. minutes = 0 removes it. Only the representative who holds the conversation (or a supervisor) may set it,

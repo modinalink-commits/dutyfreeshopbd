@@ -252,7 +252,7 @@ class Chat {
   public static function closeIdleTick(): void {
     if (Sms::secret('ai_auto_close') === '0' || !AiChat::chatOn()) return;
     $min = max(1, min(720, (int)(Sms::secret('ai_close_after_min') ?: 30)));
-    $rows = DB::table('chat_threads')->where('last_dir', 'out')->whereIn('status', ['new', 'open', 'waiting'])->where('awaiting_reply', false)
+    $rows = self::fuKeep(DB::table('chat_threads'))->where('last_dir', 'out')->whereIn('status', ['new', 'open', 'waiting'])->where('awaiting_reply', false)
       ->where('last_at', '<=', now()->subMinutes($min))->where('last_at', '>=', now()->subHours(20))->orderBy('last_at')->limit(15)->get();
     foreach ($rows as $t) {
       $k = 'ai.idleclose.'.$t->id.'.'.substr((string)$t->last_at, 0, 16);
@@ -436,7 +436,7 @@ class Chat {
     try { self::closeCompletedTick(); } catch (\Throwable $e) { report($e); }
     $min = max(1, min(720, (int)(Sms::secret('ai_close_after_min') ?: 30)));
     try { self::closeGreetingTick($min); } catch (\Throwable $e) { report($e); }
-    $rows = DB::table('chat_threads')->where('last_dir', 'out')->whereIn('status', ['new', 'open', 'waiting'])->where(fn($w) => $w->where('awaiting_reply', true)->orWhere('unread', '>', 0)->orWhereNull('last_customer_message_at')) // owner rule 14 Nov 2026: a chat where the customer never wrote and we only sent messages closes by itself too
+    $rows = self::fuKeep(DB::table('chat_threads'))->where('last_dir', 'out')->whereIn('status', ['new', 'open', 'waiting'])->where(fn($w) => $w->where('awaiting_reply', true)->orWhere('unread', '>', 0)->orWhereNull('last_customer_message_at')) // owner rule 14 Nov 2026: a chat where the customer never wrote and we only sent messages closes by itself too
       ->where('last_at', '<=', now()->subMinutes($min))->orderBy('last_at')->limit(15)->get();
     foreach ($rows as $t) {
       $k = 'ai.silentclose.'.$t->id.'.'.substr((string)$t->last_at, 0, 16);
@@ -446,7 +446,7 @@ class Chat {
   }
   /** Owner rule 14 Nov 2026: a customer who only said hello (every incoming message is a greeting), was answered, and then stayed silent for the close-after time goes to Closed. */
   public static function closeGreetingTick(int $min): void {
-    $rows = DB::table('chat_threads')->where('last_dir', 'out')->whereIn('status', ['new', 'open', 'waiting'])->whereNotNull('last_customer_message_at')
+    $rows = self::fuKeep(DB::table('chat_threads'))->where('last_dir', 'out')->whereIn('status', ['new', 'open', 'waiting'])->whereNotNull('last_customer_message_at')
       ->where('last_at', '<=', now()->subMinutes($min))->orderBy('last_at')->limit(30)->get();
     foreach ($rows as $t) {
       try {
@@ -804,6 +804,8 @@ class Chat {
   public static function fuReady(): bool { static $r = null; if ($r === null) { try { $r = \Illuminate\Support\Facades\Schema::hasColumn('chat_threads', 'follow_up_at'); } catch (\Throwable $e) { $r = false; } } return $r; }
   /** Columns that end a follow-up, for a conversation update (a new customer message, a sent staff reply, Close chat). Empty before the migration. */
   public static function fuClear(): array { return self::fuReady() ? ['follow_up_at'=>null, 'follow_up_note'=>null, 'follow_up_by'=>null, 'follow_up_set_at'=>null] : []; }
+  /** Automatic closing never touches a conversation that has a follow-up waiting (the representative promised to come back to it). No effect before the migration. */
+  public static function fuKeep($q) { return self::fuReady() ? $q->whereNull('follow_up_at') : $q; }
   public static function cards($rows): array {
     $rows = collect($rows); if ($rows->isEmpty()) return [];
     $objs = $rows->map(fn($t) => (object)['id'=>$t->id, 'phone'=>$t->phone ?: '-none-'.$t->id, 'total'=>0]);
