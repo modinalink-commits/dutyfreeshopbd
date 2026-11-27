@@ -316,6 +316,12 @@ main{padding-top:6px!important;padding-bottom:6px!important}
 .mbx .mc #mh>.hb,.mbx .mc #mh>.ob,.mbx .mc #mh>.sumb{min-height:28px}
 .mbx .mc #mh>.hb button,.mbx .mc #mh>.ob button{height:20px!important;min-height:0!important;line-height:18px!important;padding:0 8px!important;font-size:11.5px!important}
 .mbx .mc #mh>.hb button{top:3px}
+/* ownership notice: its buttons (Release, Take, History) stay in view at the right end of the line */
+.mbx .mc #mh>.ob{position:relative}
+.mbx .mc #mh>.ob button{position:absolute;top:3px;right:8px;margin:0!important}
+.mbx .mc #mh>.ob:has(button){padding-right:88px!important}
+.mbx .mc #mh>.ob:has(#hhist) button:not(#hhist){right:76px}
+.mbx .mc #mh>.ob:has(#hhist):has(button:not(#hhist)){padding-right:170px!important}
 .mbx .mc #mh>.ob{flex:1 1 300px;min-width:0;max-height:28px!important;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding-top:3px!important;padding-bottom:3px!important}
 .mbx .mc #mh>.ob:hover,.mbx .mc #mh>.ob:has(#hhistb[style*="block"]){flex-basis:100%;max-height:none!important;white-space:normal}
 .mbx .mc #mh>.sumb{flex:2 1 360px;min-width:0;padding-top:3px!important;padding-bottom:3px!important}
