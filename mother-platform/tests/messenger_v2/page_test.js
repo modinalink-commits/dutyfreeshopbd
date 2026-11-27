@@ -26,8 +26,8 @@ for(const vp of [{width:1366,height:768},{width:400,height:820}]){const tg=vp.wi
  A(await p.evaluate(()=>!document.getElementById('ibk').hidden&&getComputedStyle(document.getElementById('ibx')).display==='none'&&document.querySelectorAll('#ibk .kc').length>0),tg+'Messages opens on the board first');
  A(await p.locator('#ibsum button').count()===6,tg+'six summary cards');
  A((await p.locator('#ibsum button[data-f=followup] b').textContent())==='1',tg+'follow-up due count shown');
- A(await p.locator('#ibf1 a[data-f]').count()===8&&await p.locator('#ibf2').isHidden(),tg+'eight main filters, rest under More');await p.click('#ibmore');A(await p.locator('#ibf2 a[data-f=aih]').isVisible(),tg+'More opens the rest');
- A(await p.locator('#ibfb a[data-f]').count()===19,tg+'all 17 old filters kept (19 with the 2 new)');
+ A(await p.locator('#ibf1 a[data-f]').count()===4&&await p.locator('#ibf2').isHidden(),tg+'four main filters, rest under More');await p.click('#ibmore');A(await p.locator('#ibf2 a[data-f=facebook]').isVisible(),tg+'More opens the rest');A(await p.evaluate(()=>{const c=[...document.querySelectorAll('#ibsum button')].map(b=>b.dataset.f),f=[...document.querySelectorAll('#ibfb a[data-f]')].map(a=>a.dataset.f);return c.every(x=>!f.includes(x))}),tg+'no filter appears twice (card and pill)');
+ A(await p.locator('#ibfb a[data-f]').count()+await p.locator('#ibsum button').count()===19,tg+'all 17 old filters still reachable (19 with the 2 new), as a card or a pill');
  A(await p.evaluate(()=>document.querySelector('#ibl .th[data-id="5"]').textContent.includes('Follow-up overdue')),tg+'list row shows follow-up overdue text');
  A(await p.evaluate(()=>document.querySelector('#ibl .th[data-id="6"]').textContent.includes('Follow-up in')),tg+'list row shows upcoming follow-up');
  await p.screenshot({path:(vp.width<760?'m':'d')+'-inbox.png'});
@@ -43,7 +43,7 @@ for(const vp of [{width:1366,height:768},{width:400,height:820}]){const tg=vp.wi
  A(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),tg+'no sideways page scroll');
  if(vp.width<760){await p.click('#ibback')}
  await p.click('#ibsum button[data-f=followup]');await p.waitForTimeout(400);
- A(calls.includes('followup')&&await p.locator('#ibl .th').count()===2,tg+'summary card filters the list');
+ A(calls.includes('followup')&&await p.locator('#ibl .th').count()===2&&await p.locator('#ibsum button.on[data-f=followup]').count()===1,tg+'summary card filters the list and shows as selected');
  if(vp.width>900){A(await p.evaluate(()=>{const x=document.getElementById('ibx').getBoundingClientRect();return getComputedStyle(document.getElementById('ibk')).display==='none'&&innerHeight-x.bottom<40}),tg+'Inbox fills the screen down to the bottom (hidden board takes no space)');A(await p.evaluate(()=>document.documentElement.scrollHeight<=innerHeight+1),tg+'fixed screen: no page scroll in Inbox');await p.click('#ibmore');await p.waitForTimeout(150);A(await p.evaluate(()=>document.documentElement.scrollHeight<=innerHeight+1),tg+'fixed screen holds with More open');await p.click('#ibvw [data-v=board]');await p.waitForTimeout(400);A(await p.evaluate(()=>document.documentElement.scrollHeight<=innerHeight+1),tg+'fixed screen: no page scroll on the board')}
  // a saved board view must not hide a deep-linked chat, and the embedded inbox never shows the board
  await p.goto('http://stg.test/admin/chat?f=unread').catch(()=>{});await p.setContent(html,{waitUntil:'domcontentloaded'});await p.waitForTimeout(700);

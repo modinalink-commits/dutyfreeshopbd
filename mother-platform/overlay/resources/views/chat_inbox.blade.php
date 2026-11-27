@@ -186,7 +186,7 @@ main{padding-top:6px!important;padding-bottom:6px!important}
 .ibvw button.on{background:#fff;color:#0B1B33;box-shadow:0 1px 2px rgba(11,27,51,.12)}
 .ibsum{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;background:linear-gradient(100deg,#FFE9DC,#EEF2FF 55%,#E6F6EE);padding:10px;border-radius:14px;margin:0 0 12px}
 .ibsum button{all:unset;box-sizing:border-box;cursor:pointer;background:rgba(255,255,255,.62);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.9);border-radius:10px;padding:8px 12px;min-width:0;box-shadow:0 1px 3px rgba(11,27,51,.06);font-family:inherit}
-.ibsum button:hover{background:rgba(255,255,255,.85)}.ibsum button:focus-visible{outline:2px solid #F95505;outline-offset:1px}
+.ibsum button:hover{background:rgba(255,255,255,.85)}.ibsum button.on{background:#fff;border-color:#F95505;box-shadow:0 0 0 1px #F95505}.ibsum button:focus-visible{outline:2px solid #F95505;outline-offset:1px}
 .ibsum small{display:block;color:#4B5563;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ibsum b{font-size:21px;font-weight:700;line-height:1.2;color:#0B1B33}
 .ibsum .w b{color:#C2410C}.ibsum .r b{color:#B42318}.ibsum .b b{color:#1D4ED8}
@@ -266,11 +266,12 @@ function ago(iso){if(!iso)return '';var s=(Date.now()-new Date(iso).getTime())/1
 var CHL={facebook:'f',instagram:'IG',whatsapp:'W',web:'💬',sms:'SMS'};
 function pill(x){return '<a data-f="'+x[0]+'" class="'+(f===x[0]?'on':'')+'" role="button" tabindex="0">'+(I[x[0]]||I.assigned||'')+'<span>'+x[1]+'</span>'+(x[0]==='unread'&&waiting>0?'<span class="cn">'+waiting+'</span>':'')+(x[0]==='orders'&&orq>0?'<span class="cn">'+orq+'</span>':'')+(x[0]==='human'&&hum>0?'<span class="cn">'+hum+'</span>':'')+(x[0]==='report'&&rep>0?'<span class="cn">'+rep+'</span>':'')+(x[0]==='assigned'&&mine>0?'<span class="cn">'+mine+'</span>':'')+(x[0]==='queue'&&queue>0?'<span class="cn">'+queue+'</span>':'')+(x[0]==='followup'&&fuDue>0?'<span class="cn">'+fuDue+'</span>':'')+'</a>'}
 /* v2: the filters staff use all day sit in one row; the rest open under "More" (nothing removed). "More" stays open while one of its filters is selected. */
-var FP=['all','assigned','unread','late','human','report','upset','followup'],moreOpen=false;try{moreOpen=localStorage.getItem('ib_more')==='1'}catch(e){}
-function drawF(){var all=F1.concat(F2),by={};all.forEach(function(x){by[x[0]]=x});var inMore=FP.indexOf(f)<0,n=orq+queue;
+/* one button per job: the six summary cards are the buttons for Unread, My Conversations, Queue, Human Answer, AI handling and Follow-up, so those are not repeated as pills */
+var FP=['all','late','report','upset'],CF=['unread','assigned','queue','human','aih','followup'],moreOpen=false;try{moreOpen=localStorage.getItem('ib_more')==='1'}catch(e){}
+function drawF(){var all=F1.concat(F2),by={};all.forEach(function(x){by[x[0]]=x});var inMore=FP.indexOf(f)<0&&CF.indexOf(f)<0,n=orq;
   document.getElementById('ibf1').innerHTML=FP.map(function(k){return pill(by[k])}).join('')+'<button class="fa'+(moreOpen||inMore?' mo':'')+'" type="button" id="ibmore" aria-expanded="'+(moreOpen||inMore)+'">More ▾'+(n>0?'<span class="cn">'+n+'</span>':'')+'</button>';
   var f2=document.getElementById('ibf2');f2.hidden=!(moreOpen||inMore);
-  f2.innerHTML=all.filter(function(x){return FP.indexOf(x[0])<0}).map(pill).join('')+'<i class="vsep"></i><a href="/admin/chat/auto" title="Order confirmations, order updates and campaign messages the system sent by itself">📤 Auto Messages</a><a href="/admin/chat/memory">🧠 AI Memory</a><a href="/admin/chat-settings">Chat settings</a>';
+  f2.innerHTML=all.filter(function(x){return FP.indexOf(x[0])<0&&CF.indexOf(x[0])<0}).map(pill).join('')+'<i class="vsep"></i><a href="/admin/chat/auto" title="Order confirmations, order updates and campaign messages the system sent by itself">📤 Auto Messages</a><a href="/admin/chat/memory">🧠 AI Memory</a><a href="/admin/chat-settings">Chat settings</a>';
   document.getElementById('ibmore').onclick=function(){moreOpen=!(moreOpen||inMore);if(inMore&&!moreOpen){f='all';load()}try{localStorage.setItem('ib_more',moreOpen?'1':'0')}catch(e){}drawF()};
   document.querySelectorAll('#ibfb a[data-f]').forEach(function(a){a.onclick=function(){if(a.dataset.f==='comments'){location.href='/admin/chat/comments';return}f=a.dataset.f;setView('inbox');drawF();load()};a.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();a.click()}}});
   mm()}
@@ -292,9 +293,9 @@ function durBn(m){m=Math.max(0,Math.round(m));return m<60?m+'m':(m<1440?Math.flo
 function fuTag(t,cd,cu){if(!t.follow_at||t.status==='resolved')return '';var m=(new Date(t.follow_at).getTime()-Date.now())/60000;return '<span class="'+(m<=0?cd:cu)+'" title="'+esc(t.follow_note||'')+'">'+(m<=0?'Follow-up overdue · '+durBn(-m):'Follow-up in '+durBn(m))+'</span>'}
 function setView(v){if(EMB)v='inbox';view=v;bt=0;document.querySelectorAll('#ibvw button').forEach(function(b){b.classList.toggle('on',b.dataset.v===v)});var bd=v==='board';document.getElementById('ibk').hidden=!bd;document.getElementById('ibx').style.display=bd?'none':'';if(bd){document.getElementById('ibx').classList.remove('sel');document.body.classList.remove('ibsel')}}
 function openThread(id){sel=+id;setView('inbox');document.getElementById('ibx').classList.add('sel');document.body.classList.add('ibsel');MChat.mount(document.getElementById('ibc'),sel,{onchange:load,focus:true,next:goNext});document.getElementById('ibl').querySelectorAll('.th').forEach(function(x){x.classList.toggle('on',+x.dataset.id===sel)})}
-function drawSum(j){var c=[['unread','Awaiting reply',j.unread||0,'w'],['assigned','My conversations',j.mine||0,''],['queue','Queue (unassigned)',j.queue||0,''],['human','Need a person',j.human||0,'w'],['aih','AI handling',j.ai_now||0,'b'],['followup','Follow-up overdue',j.follow_due||0,'r']];
-  var el=document.getElementById('ibsum');el.innerHTML=c.map(function(x){return '<button type="button" class="'+x[3]+'" data-f="'+x[0]+'"><small>'+x[1]+'</small><b>'+x[2]+'</b></button>'}).join('');
-  el.querySelectorAll('button').forEach(function(b){b.onclick=function(){f=b.dataset.f;setView('inbox');drawF();load()}})}
+function drawSum(j){var c=[['unread','Unread',j.unread||0,'w'],['assigned','My conversations',j.mine||0,''],['queue','Queue (unassigned)',j.queue||0,''],['human','Human Answer',j.human||0,'w'],['aih','AI handling',j.ai_now||0,'b'],['followup','Follow-up overdue',j.follow_due||0,'r']];
+  var el=document.getElementById('ibsum');el.innerHTML=c.map(function(x){return '<button type="button" class="'+x[3]+(f===x[0]?' on':'')+'" data-f="'+x[0]+'" aria-pressed="'+(f===x[0])+'"><small>'+x[1]+'</small><b>'+x[2]+'</b></button>'}).join('');
+  el.querySelectorAll('button').forEach(function(b){b.onclick=function(){f=(f===b.dataset.f)?'all':b.dataset.f;setView('inbox');drawF();load()}})}
 var KC=[['new','New','Unassigned · needs a person'],['ai','AI Answering','Unassigned · handled by AI'],['work','Agent Working','Has an owner'],['wait','Waiting for Customer','Reply sent'],['follow','Follow-up','Follow-up time set'],['done','Closed','Latest 40']];
 function kcol(t){if(t.status==='resolved')return 'done';if(t.follow_at)return 'follow';
   if(t.assigned_to)return (!t.awaiting&&(t.status==='waiting'||t.replied))?'wait':'work';
@@ -338,7 +339,7 @@ var bt=0;function load(){if(view==='board'&&(bt++%3===0))loadBoard();if(f==='ord
   var sv=j.svc,sh='';if(sv&&(sv.staff+sv.ai)>0){sh='<span class="k" title="Replies sent today. By staff = sent from this inbox under a staff name. Automatic order messages and replies typed in the WhatsApp phone app ('+(sv.other||0)+' today) are not counted as staff. Customer messages received today: '+sv.in+'">Today <b>'+sv.staff+'</b>by staff · <b>'+sv.ai+'</b>by AI ('+Math.round(sv.ai*100/(sv.staff+sv.ai))+'%)</span>'}
   if(f==='late'){var lim=Date.now()-30*60000;j.threads=(j.threads||[]).filter(function(t){return t.awaiting&&t.waiting_since&&new Date(t.waiting_since).getTime()<lim})}
   shD=j.share||null;drawShare();
-  u.innerHTML=(j.unread?'<span class="k p"><b>'+(j.human||0)+'</b>need a person</span><span class="k a"><b>'+ah+'</b>answered by AI</span>'+oh:'')+sh;if(window.MChat)MChat.badge(j.unread);
+  u.innerHTML=(j.unread?'<span class="k a"><b>'+ah+'</b>answered by AI</span>'+oh:'')+sh;if(window.MChat)MChat.badge(j.unread);
   if(waiting!==j.unread){waiting=j.unread;var uf=document.querySelector('#ibfb a[data-f=unread]');if(uf){var cn=uf.querySelector('.cn');if(waiting>0){if(!cn){cn=document.createElement('span');cn.className='cn';uf.appendChild(cn)}cn.textContent=waiting}else if(cn)cn.remove()}}
   var l=document.getElementById('ibl');if(!j.threads.length){l.innerHTML='<div class="emp">No conversations here yet.</div>';return}
   var ur=j.threads.filter(function(t){return t.awaiting&&t.status!=='resolved'}),rd=j.threads.filter(function(t){return !(t.awaiting&&t.status!=='resolved')});
