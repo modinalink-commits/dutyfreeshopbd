@@ -27,6 +27,7 @@ class MotherPushWorker extends Command
     try { if (\App\Support\AutoHeal::begin('orders')) { $this->orders(); } } catch (\Throwable $e) { $this->error('orders: ' . $e->getMessage()); \App\Support\LiveBoard::fail('orders', $e); }
     try { if (\App\Support\AutoHeal::begin('chat')) { $this->chat(); } } catch (\Throwable $e) { $this->error('chat: ' . $e->getMessage()); \App\Support\LiveBoard::fail('chat', $e); }
     try { if (\App\Support\AutoHeal::begin('chatclose')) { \App\Support\Chat::closeIdleTick(); } } catch (\Throwable $e) { $this->error('chatclose: ' . $e->getMessage()); \App\Support\LiveBoard::fail('chatclose', $e); }
+    try { \App\Support\Chat::closeAnsweredTick(); } catch (\Throwable $e) { $this->error('chatclose2: ' . $e->getMessage()); }
     try { if (\App\Support\AutoHeal::begin('chatbacklog')) { \App\Support\Chat::backlogTick(); } } catch (\Throwable $e) { $this->error('chatbacklog: ' . $e->getMessage()); \App\Support\LiveBoard::fail('chatbacklog', $e); }
     try { if (\App\Support\AutoHeal::begin('pbxline')) { \App\Support\AdminAlerts::pbxLine(); } } catch (\Throwable $e) { $this->error('pbxline: ' . $e->getMessage()); \App\Support\LiveBoard::fail('pbxline', $e); }
     try { if (\App\Support\AutoHeal::begin('chatowner')) { \App\Support\ChatOwner::tick(); } } catch (\Throwable $e) { $this->error('chatowner: ' . $e->getMessage()); \App\Support\LiveBoard::fail('chatowner', $e); }

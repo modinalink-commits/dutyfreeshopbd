@@ -548,6 +548,14 @@ class Chat {
     }
     return [$n, $kept];
   }
+  /** Owner 27 Nov 2026 (option A): a chat we answered where the customer stays silent closes by itself after the set hours (setting ai_close_answered_hours; empty or 0 = off). Uses closeAnswered(), so complaints, refunds, order requests, hand-offs, follow-ups, "needs a person" and chats still Awaiting Reply are never closed. Nothing is sent to the customer; a new customer message reopens the chat. */
+  public static function closeAnsweredTick(): void {
+    $h = (int)(Sms::secret('ai_close_answered_hours') ?: 0);
+    if ($h < 1 || Sms::secret('ai_auto_close') === '0') return;
+    if (!\Illuminate\Support\Facades\Cache::add('chat.closeanswered.tick', 1, 600)) return; // at most every 10 minutes
+    [$n] = self::closeAnswered(min(72, $h), false, 'Automatic');
+    if ($n > 0) { try { \Illuminate\Support\Facades\Log::info('closeAnsweredTick closed '.$n.' chats'); } catch (\Throwable $e) {} }
+  }
   /** Why a never-answered WhatsApp chat can NOT be closed with a last courtesy message (null = it can). */
   /** Words that mean the customer is reporting a problem (complaint, bad / fake / damaged product, wrong item, refund or return wish). Display only: it files the chat under Report, nothing is promised or sent. */
   const REPORT_RX = '/অভিযোগ|কমপ্লেইন|কমপ্লেন|রিপোর্ট|নকল|ভেজাল|নষ্ট|ড্যাম|ড্যামেজ|ভাঙা|ভাঙ্গা|ছেঁড়া|মেয়াদ|বাজে|খারাপ|গন্ধ|গলা জ্ব|ভুল প্রোডাক্ট|ভুল পণ্য|ভুল জিনিস|ফেরত|রিফান্ড|রিটার্ন|ঠক|প্রতারণা|complain|complaint|report|fake|nokol|vejal|damage|damp|broken|expired|kharap|baje|gondho|wrong product|wrong item|vul product|refund|return korbo|ferot|ferat|cheat|protarona|scam/iu';
@@ -645,9 +653,9 @@ class Chat {
       // the customer's most recent photo (this message or one of the last few) goes to the model as an image, so a follow-up like "price?" still refers to what the photo shows
       try {
         for ($ix = $rows->count() - 1; $ix >= max(0, $rows->count() - 8); $ix--) {
-          $li = $rows[$ix];
-          if ($li->dir === 'in' && $li->attachment_type === 'image' && $li->attachment_url) {
-            $ip = public_path('uploads/chat/'.basename((string)parse_url((string)$li->attachment_url, PHP_URL_PATH)));
+          $im = $rows[$ix]; // 27 Nov 2026: was $li, which overwrote the customer's LAST message and made replied() clear only up to an older photo, leaving the chat "Awaiting" after a successful AI answer
+          if ($im->dir === 'in' && $im->attachment_type === 'image' && $im->attachment_url) {
+            $ip = public_path('uploads/chat/'.basename((string)parse_url((string)$im->attachment_url, PHP_URL_PATH)));
             if ($vd = self::visionData($ip)) $hist[$ix]['img'] = $vd;
             break;
           }
