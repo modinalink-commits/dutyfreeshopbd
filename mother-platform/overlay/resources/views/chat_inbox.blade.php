@@ -313,7 +313,9 @@ main{padding-top:6px!important;padding-bottom:6px!important}
 .mbx .mc #mh>.hb{max-height:28px!important;overflow:hidden!important;white-space:nowrap;text-overflow:ellipsis;padding-top:3px!important;padding-bottom:3px!important}
 .mbx .mc #mh>.hb:not(:hover) br{display:none}
 .mbx .mc #mh>.hb:hover{max-height:none!important;white-space:normal}
-.mbx .mc #mh>.hb button{top:1px}
+.mbx .mc #mh>.hb,.mbx .mc #mh>.ob,.mbx .mc #mh>.sumb{min-height:28px}
+.mbx .mc #mh>.hb button,.mbx .mc #mh>.ob button{height:20px!important;min-height:0!important;line-height:18px!important;padding:0 8px!important;font-size:11.5px!important}
+.mbx .mc #mh>.hb button{top:3px}
 .mbx .mc #mh>.ob{flex:1 1 300px;min-width:0;max-height:28px!important;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding-top:3px!important;padding-bottom:3px!important}
 .mbx .mc #mh>.ob:hover,.mbx .mc #mh>.ob:has(#hhistb[style*="block"]){flex-basis:100%;max-height:none!important;white-space:normal}
 .mbx .mc #mh>.sumb{flex:2 1 360px;min-width:0;padding-top:3px!important;padding-bottom:3px!important}
