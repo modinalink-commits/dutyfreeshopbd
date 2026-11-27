@@ -11,7 +11,7 @@ await p.route('**/admin/**',r=>{const u=r.request().url(),m=r.request().method()
  if(/\/chat\/thread\/5$/.test(u))return J({thread:th,messages:[{id:1,dir:'in',kind:'text',body:'hello',at:iso(-30)},{id:2,dir:'out',kind:'text',body:'hi',by:'Rafi',status:'sent',at:iso(-20)}],has_more:false,customer:null,orders:[],intel:null,agents:[{id:1,name:'Rafi'},{id:2,name:'Tania'}],statuses:{new:'New',open:'Open',waiting:'Waiting for customer',resolved:'Closed'},me:'Rafi',owner:{on:true,id:1,name:'Rafi',mine:true,supervisor:false},owner_events:[],hint:null,payhint:null,notes:[],calls:[],quick:[]});
  return J({ok:true,messages:[],staff:[],unread:0})});
 await p.goto('http://stg.test/admin/chat').catch(()=>{});await p.setContent(html,{waitUntil:'domcontentloaded'});await p.waitForTimeout(900);
-console.log('early errors',errs,await p.evaluate(()=>[typeof MChat,document.getElementById('ibl').innerHTML.length]));await p.click('#ibl .th[data-id="5"]',{timeout:4000});await p.waitForTimeout(900);
+console.log('early errors',errs,await p.evaluate(()=>[typeof MChat,document.getElementById('ibl').innerHTML.length]));await p.click('#ibvw [data-v=inbox]');await p.click('#ibl .th[data-id="5"]',{timeout:4000});await p.waitForTimeout(900);
 A(await p.locator('#hfu').count()===1,'real chat header has the Follow-up control');
 A(await p.locator('#hcls').count()===1&&await p.locator('#hs').count()===1&&await p.locator('#ha').count()===1,'Close chat, Status and Assigned-to still present');
 await p.selectOption('#hfu','120');await p.waitForTimeout(700);

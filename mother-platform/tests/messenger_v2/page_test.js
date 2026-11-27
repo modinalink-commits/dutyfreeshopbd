@@ -23,6 +23,7 @@ for(const vp of [{width:1366,height:768},{width:400,height:820}]){const tg=vp.wi
   r.fulfill({contentType:'application/json',body:JSON.stringify({follow:2,follow_due:1,ai_now:2,mine:3,queue:1,me_id:1,threads:th,unread:3,order_requests:0,human:2,reports:1,ai_handled:1,svc:null,share:null})})});
  await p.route('**/admin/**',r=>{if(r.request().url().includes('/chat/threads'))return r.fallback();r.fulfill({contentType:'application/json',body:'{}'})});
  await p.goto('http://stg.test/admin/chat').catch(()=>{});await p.setContent(html,{waitUntil:'domcontentloaded'});await p.waitForTimeout(700);
+ A(await p.evaluate(()=>!document.getElementById('ibk').hidden&&getComputedStyle(document.getElementById('ibx')).display==='none'&&document.querySelectorAll('#ibk .kc').length>0),tg+'Messages opens on the board first');
  A(await p.locator('#ibsum button').count()===6,tg+'six summary cards');
  A((await p.locator('#ibsum button[data-f=followup] b').textContent())==='1',tg+'follow-up due count shown');
  A(await p.locator('#ibf1 a[data-f]').count()===8&&await p.locator('#ibf2').isHidden(),tg+'eight main filters, rest under More');await p.click('#ibmore');A(await p.locator('#ibf2 a[data-f=aih]').isVisible(),tg+'More opens the rest');
@@ -45,9 +46,10 @@ for(const vp of [{width:1366,height:768},{width:400,height:820}]){const tg=vp.wi
  A(calls.includes('followup')&&await p.locator('#ibl .th').count()===2,tg+'summary card filters the list');
  if(vp.width>900){A(await p.evaluate(()=>{const x=document.getElementById('ibx').getBoundingClientRect();return getComputedStyle(document.getElementById('ibk')).display==='none'&&innerHeight-x.bottom<40}),tg+'Inbox fills the screen down to the bottom (hidden board takes no space)');A(await p.evaluate(()=>document.documentElement.scrollHeight<=innerHeight+1),tg+'fixed screen: no page scroll in Inbox');await p.click('#ibmore');await p.waitForTimeout(150);A(await p.evaluate(()=>document.documentElement.scrollHeight<=innerHeight+1),tg+'fixed screen holds with More open');await p.click('#ibvw [data-v=board]');await p.waitForTimeout(400);A(await p.evaluate(()=>document.documentElement.scrollHeight<=innerHeight+1),tg+'fixed screen: no page scroll on the board')}
  // a saved board view must not hide a deep-linked chat, and the embedded inbox never shows the board
- await p.evaluate(()=>localStorage.setItem('ib_view','board'));
+ await p.goto('http://stg.test/admin/chat?f=unread').catch(()=>{});await p.setContent(html,{waitUntil:'domcontentloaded'});await p.waitForTimeout(700);
+ A(await p.evaluate(()=>document.getElementById('ibk').hidden),tg+'a filter link (?f=) opens the list, not the board');
  await p.goto('http://stg.test/admin/chat?open=3').catch(()=>{});await p.setContent(html,{waitUntil:'domcontentloaded'});await p.waitForTimeout(900);
- A(await p.evaluate(()=>document.getElementById('ibk').hidden&&MChat.mounts.includes(3)&&getComputedStyle(document.getElementById('ibx')).display!=='none'),tg+'?open= link shows the chat even when Board was the saved view');
+ A(await p.evaluate(()=>document.getElementById('ibk').hidden&&MChat.mounts.includes(3)&&getComputedStyle(document.getElementById('ibx')).display!=='none'),tg+'?open= link shows the chat, not the board');
  await p.goto('http://stg.test/admin/chat?embed=1').catch(()=>{});await p.setContent(html,{waitUntil:'domcontentloaded'});await p.waitForTimeout(700);
  A(await p.evaluate(()=>document.getElementById('ibk').hidden&&document.querySelectorAll('#ibl .th').length>0),tg+'embedded inbox stays on the list');
  console.log(tg+'errors',errs);await p.close()}
