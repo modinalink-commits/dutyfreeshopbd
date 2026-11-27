@@ -369,6 +369,18 @@ class WaCalls {
   public static function missedOpen(): int {
     try { return self::ready() && Schema::hasColumn('wa_calls', 'handled_at') ? (int)DB::table('wa_calls')->where('status', 'missed')->whereNull('handled_at')->where('created_at', '>', now()->subDays(3))->count() : 0; } catch (\Throwable $e) { return 0; }
   }
+  /** Owner 27 Nov 2026: chats with a missed WhatsApp call nobody has dealt with (same 3-day window as missedOpen). Key = last 10 digits of the customer's number; value = ['n' => how many, 'id' => newest call id, 'at' => ISO time of the newest]. Read only. */
+  public static function missedByPhone(): array {
+    try {
+      if (!self::ready() || !Schema::hasColumn('wa_calls', 'handled_at')) return [];
+      $out = [];
+      foreach (DB::table('wa_calls')->where('status', 'missed')->whereNull('handled_at')->where('created_at', '>', now()->subDays(3))->whereNotNull('from_wa')->orderBy('id')->get(['id', 'from_wa', 'created_at']) as $c) {
+        $k = substr(preg_replace('/\D+/', '', (string)$c->from_wa), -10); if (strlen($k) < 7) continue;
+        $o = $out[$k] ?? ['n' => 0, 'id' => 0, 'at' => null]; $o['n']++; $o['id'] = (int)$c->id; $o['at'] = \Carbon\Carbon::parse($c->created_at)->toIso8601String(); $out[$k] = $o;
+      }
+      return $out;
+    } catch (\Throwable $e) { return []; }
+  }
   /** A representative called the customer back / dealt with the missed call. */
   public static function handle(int $id, int $uid, string $by): bool {
     try { $n = DB::table('wa_calls')->where('id', $id)->where('status', 'missed')->whereNull('handled_at')->update(['handled_at' => now(), 'handled_by' => mb_substr($by, 0, 120), 'updated_at' => now()]);

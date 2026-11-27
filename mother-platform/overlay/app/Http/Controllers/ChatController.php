@@ -27,10 +27,11 @@ class ChatController extends Controller {
     elseif ($f === 'human') Chat::humanScope($q);
     elseif ($f === 'followup') { if (Chat::fuReady()) $q->whereNotNull('follow_up_at'); else $q->whereRaw('1 = 0'); }
     elseif ($f === 'aih') self::aiScope($q);
+    elseif ($f === 'missed') { $mk = array_keys(\App\Support\WaCalls::missedByPhone()); if ($mk) $q->where(fn($w) => $w->whereIn(DB::raw("right(regexp_replace(coalesce(phone, ''), '[^0-9]', '', 'g'), 10)"), $mk)->orWhere(fn($x) => $x->where('channel', 'whatsapp')->whereIn(DB::raw("right(regexp_replace(coalesce(external_id, ''), '[^0-9]', '', 'g'), 10)"), $mk))); else $q->whereRaw('1 = 0'); } // missed WhatsApp calls nobody has handled yet
     elseif ($f === 'resolved') $q->where('status', 'resolved');
     elseif ($f === 'report') $q->whereNotNull('reported_at')->whereNull('report_solved_at'); // open complaints only: a solved one leaves the box (it keeps its Complaint Solved tag in All History and in search)
     // Closed chats leave the working lists (All included); they stay in Closed, Complaint, All History and in every search.
-    if ($f !== 'resolved' && $f !== 'report' && !$hist) $q->where('status', '!=', 'resolved');
+    if ($f !== 'resolved' && $f !== 'report' && $f !== 'missed' && !$hist) $q->where('status', '!=', 'resolved');
     if (in_array($r->query('s'), array_keys(self::STATUSES))) $q->where('status', $r->query('s'));
     if ($s = trim((string)$r->query('q'))) { $like = '%'.str_replace(['%', '_'], ['\%', '\_'], $s).'%'; $q->where(fn($w) => $w->where('name', 'ilike', $like)->orWhere('phone', 'ilike', $like)->orWhere('username', 'ilike', $like)->orWhere('last_message', 'ilike', $like)->orWhereIn('phone', fn($o) => $o->from('orders')->where('invoice', 'ilike', $like)->select('phone')->limit(50))); }
     // Unread first, then waiting for staff, then read/open, then resolved; newest message first inside each group.
@@ -60,7 +61,7 @@ class ChatController extends Controller {
     $fu = 0; $fuDue = 0; $aiNow = 0;
     try { if (Chat::fuReady()) { $fu = (int)DB::table('chat_threads')->whereNotNull('follow_up_at')->where('status', '!=', 'resolved')->count(); $fuDue = (int)DB::table('chat_threads')->whereNotNull('follow_up_at')->where('follow_up_at', '<=', now())->where('status', '!=', 'resolved')->count(); } } catch (\Throwable $e) {}
     try { $aiNow = (int)self::aiScope(DB::table('chat_threads'))->count(); } catch (\Throwable $e) {}
-    return response()->json(['follow'=>$fu, 'follow_due'=>$fuDue, 'ai_now'=>$aiNow, 'mine'=>$mine, 'queue'=>$queue, 'me_id'=>(int)auth()->id(), 'threads'=>$cards, 'unread'=>$unread, 'order_requests'=>$orq, 'human'=>$hum, 'reports'=>$rep, 'ai_handled'=>max(0, $unread - $hum), 'svc'=>$svc, 'share'=>$share]);
+    return response()->json(['missed_calls'=>count(\App\Support\WaCalls::missedByPhone()), 'follow'=>$fu, 'follow_due'=>$fuDue, 'ai_now'=>$aiNow, 'mine'=>$mine, 'queue'=>$queue, 'me_id'=>(int)auth()->id(), 'threads'=>$cards, 'unread'=>$unread, 'order_requests'=>$orq, 'human'=>$hum, 'reports'=>$rep, 'ai_handled'=>max(0, $unread - $hum), 'svc'=>$svc, 'share'=>$share]);
   }
 
   /** Light poll used on every admin page: unread total plus threads with new incoming messages since the last id. */

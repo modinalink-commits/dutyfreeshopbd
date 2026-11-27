@@ -825,7 +825,9 @@ class Chat {
     try { foreach (DB::table('chat_pages')->get(['page_id','name','ig_id','ig_username']) as $pg) { $srcPg[$pg->page_id] = $pg; if ($pg->ig_id) $srcIg[$pg->ig_id] = $pg; } } catch (\Throwable $e) {}
     $srcAcc = []; try { $j = json_decode((string)self::sec('chat_ig_accounts'), true); if (is_array($j)) $srcAcc = $j; } catch (\Throwable $e) {}
     $srcOne = $srcPg->count() === 1 ? $srcPg->first() : null;
-    return $rows->map(function ($t) use ($intel, $oc, $agents, $ws, $slaW, $slaR, $srcWa, $srcPg, $srcIg, $srcOne, $srcAcc) {
+    $mcl = \App\Support\WaCalls::missedByPhone();
+    return $rows->map(function ($t) use ($intel, $oc, $agents, $ws, $slaW, $slaR, $srcWa, $srcPg, $srcIg, $srcOne, $srcAcc, $mcl) {
+      $mk = $mcl ? substr(preg_replace('/\D+/', '', (string)($t->phone ?: ($t->channel === 'whatsapp' ? $t->external_id : ''))), -10) : ''; $mc = $mk !== '' ? ($mcl[$mk] ?? null) : null;
       $i = $intel[$t->id] ?? null; $ref = $t->page_ref ?? null; $src = null;
       if ($t->channel === 'whatsapp') { $w = $ref ? ($srcWa[$ref] ?? null) : null; if (!$w && !$ref) $w = $srcWa[(string)self::sec('chat_wa_phone_id')] ?? null; $src = $w ? trim(($w->display_phone ?: $w->phone_id).($w->verified_name ? ' · '.$w->verified_name : '')) : ($ref ? $ref : 'Main number'); }
       elseif ($t->channel === 'facebook') { $g = $ref ? ($srcPg[$ref] ?? null) : $srcOne; $src = $g ? $g->name : null; }
@@ -839,7 +841,7 @@ class Chat {
         'cat'=>$n > 0 && $i ? $i['cat'] : 'New', 'orders'=>$n, 'risk'=>$n > 0 && $i ? $i['risk'] : 'Low',
         'intent'=>$t->intent ?? null, 'mood'=>$t->mood ?? null, 'priority'=>$t->priority ?? 'normal', 'needs_human'=>(bool)($t->needs_human ?? false), 'reported'=>!empty($t->reported_at) && empty($t->report_solved_at), 'report_solved'=>!empty($t->reported_at) && !empty($t->report_solved_at), 'report_solved_by'=>$t->report_solved_by ?? null, 'report_reason'=>$t->report_reason ?? null,
         'waiting_since'=>isset($ws[$t->id]) ? \Carbon\Carbon::parse($ws[$t->id])->toIso8601String() : null, 'sla_w'=>$slaW, 'sla_r'=>$slaR, 'handoff_at'=>!empty($t->handoff_at) ? \Carbon\Carbon::parse($t->handoff_at)->toIso8601String() : null, 'handoff_reason'=>$t->handoff_reason ?? null, 'ai_summary'=>$t->ai_summary ?? null,
-        'follow_at'=>!empty($t->follow_up_at) && $t->status !== 'resolved' ? \Carbon\Carbon::parse($t->follow_up_at)->toIso8601String() : null, 'follow_note'=>$t->follow_up_note ?? null, 'follow_due'=>!empty($t->follow_up_at) && $t->status !== 'resolved' && \Carbon\Carbon::parse($t->follow_up_at)->lte(now())];
+        'follow_at'=>!empty($t->follow_up_at) && $t->status !== 'resolved' ? \Carbon\Carbon::parse($t->follow_up_at)->toIso8601String() : null, 'missed_call'=>$mc ? (int)$mc['n'] : 0, 'missed_call_id'=>$mc ? (int)$mc['id'] : null, 'missed_call_at'=>$mc ? $mc['at'] : null, 'follow_note'=>$t->follow_up_note ?? null, 'follow_due'=>!empty($t->follow_up_at) && $t->status !== 'resolved' && \Carbon\Carbon::parse($t->follow_up_at)->lte(now())];
     })->all();
   }
   /** Number of customers currently waiting for a staff reply (not a message count, and never reduced by opening a chat). */

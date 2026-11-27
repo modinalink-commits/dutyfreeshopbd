@@ -1,13 +1,13 @@
 <?php
 namespace App\Support;
 
-/** Hours when the AI answers customers by itself (Asia/Dhaka). Outside them the chat is left to staff. Default: 00:00-10:00 and 21:00-24:00. */
+/** Hours when the AI answers customers by itself (Asia/Dhaka). Outside them the chat is left to staff. Owner 27 Nov 2026: AI works 24 hours (default off). Tick the box on the AI settings page to restore working hours. */
 class AiSchedule
 {
-  const DEF = ['on'=>true, 'w'=>[['00:00', '10:00'], ['21:00', '24:00']]];
+  const DEF = ['on'=>false, 'w'=>[['00:00', '10:00'], ['21:00', '24:00']]];
   public static function get(): array {
     $j = json_decode((string)Sms::secret('ai_schedule'), true);
-    return is_array($j) && isset($j['w']) ? $j + ['on'=>true] : self::DEF;
+    return is_array($j) && isset($j['w']) ? $j + ['on'=>false] : self::DEF;
   }
   private static function mins(string $t): int { [$h, $m] = array_pad(explode(':', $t), 2, 0); return min(1440, max(0, (int)$h * 60 + (int)$m)); }
   public static function activeNow(): bool {

@@ -2,8 +2,8 @@
      a separate window. A light poll (answered from cache when nothing rang) shows who is calling and on which business number. While a call is active the browser
      warns before the page is left, because leaving the page ends the call. --}}
 <style>
-#waDock{position:fixed;right:16px;top:50%;width:420px;max-width:calc(100vw - 32px);height:min(720px,calc(100vh - 32px));z-index:80;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:14px;overflow:hidden;box-shadow:0 12px 36px rgba(15,31,61,.28);transform:translate(calc(100% + 40px),-50%);opacity:0;pointer-events:none;transition:transform .28s cubic-bezier(.22,.8,.3,1),opacity .2s ease;display:flex;flex-direction:column}
-#waDock.on{transform:translate(0,-50%);opacity:1;pointer-events:auto}
+#waDock{position:fixed;right:16px;bottom:16px;width:420px;max-width:calc(100vw - 32px);height:min(640px,calc(100vh - 32px));z-index:80;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:14px;overflow:hidden;box-shadow:0 12px 36px rgba(15,31,61,.28);transform:translate(calc(100% + 40px),0);opacity:0;pointer-events:none;transition:transform .28s cubic-bezier(.22,.8,.3,1),opacity .2s ease;display:flex;flex-direction:column}
+#waDock.on{transform:translate(0,0);opacity:1;pointer-events:auto}
 #waDock .h{display:flex;align-items:center;gap:8px;padding:9px 12px;background:#fff;border-bottom:1px solid #E5E7EB;font:700 13px/1 Inter,Bornomala,sans-serif;color:#0B1B33}
 #waDock .h i{width:9px;height:9px;border-radius:50%;background:#25D366;flex:none}
 #waDock .h button{margin-left:6px;border:1px solid #D0D5DD;background:#fff;border-radius:7px;height:28px;padding:0 10px;font:600 12px Inter,Bornomala,sans-serif;color:#344054;cursor:pointer}
@@ -19,8 +19,8 @@
 </style>
 <div id="waDock" aria-label="WhatsApp call"><div class="h" id="waDockH"><i></i><span id="waDockT">WhatsApp call</span><button type="button" id="waDockM" title="Minimise: the call keeps running">Minimise</button><button type="button" id="waDockX">Close</button></div></div>
 <style>
-#waBk{position:fixed;inset:0;z-index:89;background:rgba(11,27,51,.55);display:none}
-#waRing{display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:90;width:min(380px,calc(100vw - 24px));background:#fff;border-radius:20px;box-shadow:0 24px 60px rgba(0,0,0,.4);font:500 14px/1.4 Inter,Bornomala,sans-serif;color:#0B1B33;overflow:hidden;text-align:center}
+#waBk{display:none!important}
+#waRing{display:none;position:fixed;right:16px;bottom:16px;z-index:90;width:min(340px,calc(100vw - 24px));background:#fff;border-radius:20px;box-shadow:0 24px 60px rgba(0,0,0,.4);font:500 14px/1.4 Inter,Bornomala,sans-serif;color:#0B1B33;overflow:hidden;text-align:center}
 #waRing .bar{height:6px;background:#25D366}
 #waRing .av{width:84px;height:84px;border-radius:50%;margin:20px auto 8px;background:#E8F8EF;color:#15803D;display:grid;place-items:center;font-size:34px;font-weight:700;position:relative}
 #waRing .av:before,#waRing .av:after{content:"";position:absolute;inset:-8px;border-radius:50%;border:2px solid #25D366;opacity:.5;animation:waP 1.6s infinite}
@@ -36,7 +36,7 @@
 #waRing .ac{display:grid;grid-template-columns:1fr 1.4fr;gap:10px;padding:14px 20px 20px}
 #waRing .b{height:48px;border-radius:12px;border:0;font:700 15px Inter,Bornomala,sans-serif;cursor:pointer}
 #waRing .b.r{background:#fff;color:#D92D20;border:1px solid #F2C6C2}#waRing .b.a{background:#15803D;color:#fff}
-#waMiss{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:88;width:min(440px,calc(100vw - 24px));display:grid;gap:8px}
+#waMiss{position:fixed;right:16px;bottom:16px;z-index:88;width:min(440px,calc(100vw - 24px));display:grid;gap:8px}
 #waMiss .m{background:#fff;border-radius:14px;box-shadow:0 14px 36px rgba(0,0,0,.3);border-left:6px solid #D92D20;padding:12px 14px;display:grid;gap:8px;font:500 13px/1.35 Inter,Bornomala,sans-serif;color:#0B1B33}
 #waMiss .tg{font-size:11px;font-weight:700;color:#D92D20;letter-spacing:.06em;text-transform:uppercase}
 #waMiss .rw{display:flex;gap:8px;flex-wrap:wrap}
@@ -70,7 +70,7 @@ function show(c){var first=!cur||cur.id!==c.id;cur=c;var nm=c.name||c.from;docum
  document.getElementById('waLb').textContent=c.n>1?'Incoming WhatsApp call · 1 of '+c.n:'Incoming WhatsApp call';var w=Math.max(0,Math.min(100,100-(c.age||0)/(c.win||45)*100));document.getElementById('waCnI').style.width=w+'%';
  el.style.display='block';bk.style.display='block';beep();
  if(first){chips(null);fetch('/admin/call-center/lookup?phone='+encodeURIComponent(c.from),{credentials:'same-origin',headers:{'Accept':'application/json'}}).then(function(r){return r.ok?r.json():null}).then(function(d){if(cur&&cur.id===c.id)chips(d)}).catch(function(){})}}
-function missed(l){var h='';l.forEach(function(m){h+='<div class="m" data-id="'+m.id+'"><div style="display:flex;gap:8px;align-items:flex-start"><div><span class="tg">Missed WhatsApp call</span><br><b></b> <span style="color:#667085" class="mt"></span></div><button class="x" data-a="hide" title="Hide for me">×</button></div><div class="rw"><button class="p" data-a="cb">📞 Call back</button><button data-a="wcb" title="Call the customer back on WhatsApp">WhatsApp call back</button><button data-a="chat">Open chat</button><button data-a="done">Done</button></div></div>'});ms.innerHTML=h;
+function missed(l){var h='';l.forEach(function(m){h+='<div class="m" data-id="'+m.id+'"><div style="display:flex;gap:8px;align-items:flex-start"><div><span class="tg">Missed WhatsApp call</span><br><b></b> <span style="color:#667085" class="mt"></span></div><button class="x" data-a="hide" title="Hide for me">×</button></div><div class="rw"><button class="p" data-a="cb">📞 Call back</button><button data-a="chat">Open chat</button><button data-a="done">Done</button></div></div>'});ms.innerHTML=h;
  [].forEach.call(ms.querySelectorAll('.m'),function(n,i){var m=l[i];n.querySelector('b').textContent=m.name||m.from;n.querySelector('.mt').textContent=(m.name?m.from+' · ':'')+m.ago;n._m=m})}
 ms.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;var n=b.closest('.m'),m=n&&n._m;if(!m)return;var a=b.getAttribute('data-a');
  if(a==='cb'){post('/admin/call-center/whatsapp/'+m.id+'/handled');if(window.dfCall)window.dfCall(m.from.replace(/\D/g,''),{name:m.name});n.remove()}

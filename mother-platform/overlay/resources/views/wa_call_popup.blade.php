@@ -68,7 +68,7 @@ var WP=(function(){
     else if(mine&&(state==='active'||state==='answering'))h='<button class="wp-b" id="wpMute" onclick="WP.mute()">Mute</button><button class="wp-b no" onclick="WP.hang()">Hang up</button>';
     else if(state==='dialing'&&mine)h=pc?'<button class="wp-b" id="wpMute" onclick="WP.mute()">Mute</button><button class="wp-b no" onclick="WP.hang()">Hang up</button>':'<button class="wp-b go" onclick="WP.dial(this)">Call on WhatsApp</button><button class="wp-b" onclick="WP.hang()">Cancel</button>';
     else if(state==='active'||state==='answering'||state==='dialing')h='<button class="wp-b" disabled>Another representative is on this call</button>';
-    else h=(CANCB?'<button class="wp-b go" onclick="WP.callback(this)">Call back on WhatsApp</button>':'')+'<button class="wp-b" onclick="WP.close()">Close</button>';
+    else h='<button class="wp-b" onclick="WP.close()">Close</button>';
     $('wpAct').innerHTML=h}
   // ---- recording (never allowed to disturb the call: every step is wrapped, a failure only marks the recording) ----
   function recBadge(t,ok){var e=$('wpRec');if(!t){e.hidden=true;return}e.hidden=false;e.style.background=ok?'#FEF3F2':'#FFFAEB';e.style.color=ok?'#912018':'#93370D';e.innerHTML=t}
