@@ -180,6 +180,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   Route::get('/reports', [R::class,'reports']);
   Route::get('/chat', [\App\Http\Controllers\ChatController::class,'inbox']);
   Route::get('/chat/threads', [\App\Http\Controllers\ChatController::class,'threads']);
+  Route::get('/chat/thread/{id}/calls', [\App\Http\Controllers\ChatController::class,'calls'])->whereNumber('id');
   Route::get('/chat/poll', [\App\Http\Controllers\ChatController::class,'poll']);
   Route::get('/chat/memory', [\App\Http\Controllers\ChatController::class,'memory']);
   Route::get('/chat/auto', [\App\Http\Controllers\ChatController::class,'autoMessages']);

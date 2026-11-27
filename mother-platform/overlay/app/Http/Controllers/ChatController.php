@@ -44,6 +44,9 @@ class ChatController extends Controller {
     $cards = Chat::cards($rows); $pp = [];
     try { $ids = $rows->pluck('id')->all(); if ($ids) $pp = array_flip(Chat::humanScope(DB::table('chat_threads')->whereIn('id', $ids))->pluck('id')->all()); } catch (\Throwable $e) {}
     foreach ($cards as &$c) $c['person'] = isset($pp[$c['id']]); unset($c);
+    // Order by the latest real message or call time (a refresh never moves a card). Waiting chats keep their oldest-waiting-first order.
+    foreach ($cards as $i => &$c) { $b = $c['status'] === 'resolved' ? 4 : (!empty($c['awaiting']) ? 1 : (($c['status'] === 'waiting' || !empty($c['needs_human'])) ? 2 : 3)); $ac = max((int)strtotime((string)($c['last_at'] ?? '')), (int)strtotime((string)($c['last_call']['at'] ?? ''))); $c['_k'] = [$b, $b === 1 ? $i : -$ac, $i]; } unset($c);
+    usort($cards, fn($x, $y) => $x['_k'] <=> $y['_k']); foreach ($cards as &$c) unset($c['_k']); unset($c);
     $unread = Chat::unreadTotal();
     // today's service numbers (Dhaka day), cached for a minute
     $svc = \Illuminate\Support\Facades\Cache::remember('chat.svc', 60, function () { try { $d = now('Asia/Dhaka')->startOfDay()->utc(); $r = DB::table('chat_messages')->where('created_at', '>=', $d)->selectRaw("count(*) filter (where dir = 'in') inc, count(*) filter (where dir = 'out' and status <> 'failed' and coalesce(is_ai, false)) ai, count(*) filter (where dir = 'out' and status <> 'failed' and not coalesce(is_ai, false)) nonai")->first(); $nm = DB::table('users')->pluck('name')->filter()->map(fn ($n) => trim((string)$n))->unique()->values()->all(); $st = $nm ? (int)DB::table('chat_messages')->where('created_at', '>=', $d)->where('dir', 'out')->where('status', '<>', 'failed')->whereRaw('not coalesce(is_ai, false)')->whereIn('user_name', $nm)->count() : 0; return ['in'=>(int)$r->inc, 'ai'=>(int)$r->ai, 'staff'=>$st, 'other'=>max(0, (int)$r->nonai - $st)]; } catch (\Throwable $e) { return null; } });
@@ -326,6 +329,12 @@ class ChatController extends Controller {
     return response()->json(['ok'=>true, 'unread'=>Chat::unreadTotal()]);
   }
   /** Supervisor only: close every answered chat whose customer stayed silent (no message is sent). ?dry=1 only counts. */
+  /** Full call history (WhatsApp and phone calls kept apart, newest first) of one conversation's customer. Read only. */
+  public function calls(int $id) {
+    $t = DB::table('chat_threads')->find($id); if (!$t) return response()->json(['error' => 'Not found'], 404);
+    $n = $t->phone ?: ($t->channel === 'whatsapp' ? $t->external_id : null);
+    return response()->json(['thread_id' => (int)$t->id, 'has_number' => (bool)$n, 'calls' => $n ? \App\Support\WaCalls::history($n, 60) : []]);
+  }
   public function closeAnswered(Request $r) {
     abort_unless(\App\Support\ChatOwner::supervisor(auth()->user()), 403);
     $h = max(1, min(168, (int)$r->input('hours', 3)));

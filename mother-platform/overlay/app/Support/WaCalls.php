@@ -332,6 +332,35 @@ class WaCalls {
     $s = Cache::get('wa.out.sdp.' . $c->call_id); return $s ? (string)$s : null;
   }
   /** Last messages of the caller's WhatsApp conversation for the call dock. Read only: opening it here never marks the chat as seen or answered. */
+  /** One WhatsApp call as a plain row: only what the record holds (nothing is guessed). at = when the call started (UTC, ISO). */
+  private static function rowWa(object $c): array {
+    $out = (string)($c->direction ?? '') === 'BUSINESS_INITIATED'; $st = (string)$c->status;
+    $res = $st === 'ended' ? 'answered' : (in_array($st, ['missed', 'rejected', 'failed'], true) ? $st : 'ongoing');
+    if ($out && $st === 'failed' && (string)($c->note ?? '') === 'Customer did not answer') $res = 'no_answer';
+    return ['src' => 'wa', 'id' => (int)$c->id, 'dir' => $out ? 'out' : 'in', 'result' => $res, 'by' => (string)($c->user_name ?? ''), 'who' => (string)($c->from_name ?? ''),
+      'at' => \Carbon\Carbon::parse($c->created_at, 'UTC')->toIso8601String(), 'dur' => $c->duration !== null ? (int)$c->duration : null, 'note' => (string)($c->note ?? '')];
+  }
+  /** One phone (PBX / dialer) call as a plain row. It is never labelled WhatsApp. */
+  private static function rowIp(object $l): array {
+    $st = strtolower((string)($l->status ?? '')); $t = $l->started_at ?? $l->created_at;
+    return ['src' => 'ip', 'id' => (int)$l->id, 'dir' => ($l->direction ?? '') === 'in' ? 'in' : 'out', 'result' => $st !== '' ? $st : 'unknown', 'by' => (string)($l->user_name ?? ''), 'who' => (string)($l->customer_name ?? ''),
+      'at' => \Carbon\Carbon::parse($t, 'UTC')->toIso8601String(), 'dur' => isset($l->duration) ? (int)$l->duration : null, 'note' => ''];
+  }
+  /** Every recorded call of one customer number (WhatsApp and phone kept apart), newest first. */
+  public static function history(?string $phone, int $limit = 60): array {
+    $d = substr(preg_replace('/\D/', '', (string)$phone), -10); if (strlen($d) < 7) return []; $out = [];
+    try { if (self::ready()) foreach (DB::table('wa_calls')->whereRaw('right(from_wa, 10) = ?', [$d])->orderByDesc('id')->limit($limit)->get() as $c) $out[] = self::rowWa($c); } catch (\Throwable $e) { report($e); }
+    try { if (Schema::hasTable('call_logs')) foreach (DB::table('call_logs')->whereRaw('right(phone, 10) = ?', [$d])->orderByDesc('id')->limit($limit)->get() as $l) $out[] = self::rowIp($l); } catch (\Throwable $e) { report($e); }
+    usort($out, fn($a, $b) => strcmp($b['at'], $a['at']));
+    return array_slice($out, 0, $limit);
+  }
+  /** Latest call per customer for a page of chat cards: key = last 10 digits. WhatsApp and phone calls are both considered; each row says which. */
+  public static function lastByKeys(array $keys): array {
+    $keys = array_values(array_unique(array_filter($keys, fn($k) => strlen((string)$k) >= 7))); if (!$keys) return []; $out = []; $in = implode(',', array_fill(0, count($keys), '?'));
+    try { if (self::ready()) foreach (DB::select("select distinct on (right(from_wa, 10)) * from wa_calls where right(from_wa, 10) in ($in) order by right(from_wa, 10), id desc", $keys) as $c) $out[substr(preg_replace('/\D/', '', (string)$c->from_wa), -10)] = self::rowWa($c); } catch (\Throwable $e) { report($e); }
+    try { if (Schema::hasTable('call_logs')) foreach (DB::select("select distinct on (right(phone, 10)) * from call_logs where right(phone, 10) in ($in) order by right(phone, 10), id desc", $keys) as $l) { $r = self::rowIp($l); $k = substr(preg_replace('/\D/', '', (string)$l->phone), -10); if (!isset($out[$k]) || strcmp($r['at'], $out[$k]['at']) > 0) $out[$k] = $r; } } catch (\Throwable $e) { report($e); }
+    return $out;
+  }
   public static function chat(?string $wa, int $limit = 30): array {
     $out = ['thread_id' => null, 'messages' => []];
     try {
