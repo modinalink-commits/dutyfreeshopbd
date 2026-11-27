@@ -1957,3 +1957,4 @@ database/migrations/2026_11_26_235000_voice_bf_daily_limit.php
 database/migrations/2026_11_26_235500_voice_bf_daily_limit_max.php
 resources/views/store/bf_hero.blade.php
 database/migrations/2026_11_27_090000_chat_follow_up.php
+database/migrations/2026_11_27_100000_chat_quick_reply_title_english.php

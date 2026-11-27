@@ -84,13 +84,13 @@ class AiAgent {
     // server-side safety net: refund / cancel / complaint / angry / low confidence always reach a person, even if the model forgot to hand off
     if (!empty($st['force_handoff']) && empty($st['handed_off'])) {
       $last = '';  foreach (array_reverse($hist) as $m) if (($m['role'] ?? '') === 'user') { $last = (string)$m['content']; break; }
-      $r = AgentHandoff::create($ctx, $st, 'Auto: '.($st['meta']['intent'] ?? 'other').' / '.($st['meta']['mood'] ?? ''), 'গ্রাহকের শেষ বার্তা: '.mb_substr($last, 0, 400), in_array($st['meta']['mood'] ?? '', ['angry', 'upset'], true) ? 'high' : 'normal');
+      $r = AgentHandoff::create($ctx, $st, 'Auto: '.($st['meta']['intent'] ?? 'other').' / '.($st['meta']['mood'] ?? ''), 'Last customer message: '.mb_substr($last, 0, 400), in_array($st['meta']['mood'] ?? '', ['angry', 'upset'], true) ? 'high' : 'normal');
       $trace[] = ['tool'=>'handoff_to_human(auto)', 'input'=>[], 'result'=>$r]; if ($text === '') $text = (string)($r['tell_customer'] ?? '');
     }
     // safety net: when the AI tells the customer "I am sending this to the team" it must really become a hand-off (otherwise the chat sits with nobody and the AI keeps nudging)
     if (empty($st['handed_off']) && empty($ctx['sim']) && $text !== '' && preg_match('/(টিম(কে|ের)?\s*(কাছে\s*)?(পাঠিয়ে\s*দিচ্ছি|পাঠাচ্ছি|জানাচ্ছি|জানিয়ে\s*দিচ্ছি|জানিয়ে\s*দিলাম)|টিম[^।\n]{0,25}(জানাবে|যোগাযোগ করবে|রিপ্লাই দেবে|দেখবে)|প্রতিনিধি[^।\n]{0,25}(জানাবেন|যোগাযোগ করবেন|দেখছেন|দেখবেন)|টিম সদস্য[^।\n]{0,25}(রিপ্লাই|জানাবেন|যোগাযোগ))/u', $text)) {
       $last = ''; foreach (array_reverse($hist) as $m) if (($m['role'] ?? '') === 'user') { $last = (string)$m['content']; break; }
-      $r = AgentHandoff::create($ctx, $st, 'Auto: the AI told the customer the team will follow up', 'গ্রাহকের শেষ বার্তা: '.mb_substr($last, 0, 400), 'normal');
+      $r = AgentHandoff::create($ctx, $st, 'Auto: the AI told the customer the team will follow up', 'Last customer message: '.mb_substr($last, 0, 400), 'normal');
       $trace[] = ['tool'=>'handoff_to_human(auto, promised)', 'input'=>[], 'result'=>$r];
     }
     // safety net: items the AI put in the cart become an open Order Request lead even if the customer never confirms
