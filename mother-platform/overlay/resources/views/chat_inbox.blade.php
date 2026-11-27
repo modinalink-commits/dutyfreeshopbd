@@ -216,6 +216,8 @@ main{padding-top:6px!important;padding-bottom:6px!important}
 #ibtop{display:flex!important;flex-wrap:wrap!important;align-items:center!important;gap:8px 10px!important;margin-bottom:8px!important}
 #ibtop>div:first-child{display:flex;align-items:center;min-width:0}
 #ibtop h1{margin:0!important;display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;line-height:32px!important}
+/* the admin layout draws every page title as a grey bar; here the title sits in a toolbar with the status chips, so the bar is removed */
+#ibtop h1{background:transparent!important;border:0!important;padding:0!important;border-radius:0!important;box-shadow:none!important;height:32px}
 #ibu{margin-left:0!important;align-items:center}
 #ibu .k{height:28px;padding:0 10px!important;border-radius:8px;white-space:nowrap}
 .ibtl{display:flex;align-items:center;gap:6px}
