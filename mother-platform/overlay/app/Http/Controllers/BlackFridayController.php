@@ -9,7 +9,11 @@ class BlackFridayController extends Controller
 {
   public function index(Request $r) {
     if (!\App\Support\ProfitFloor::admin()) abort(403);
-    $d = BF::scoped(); $rows = $d['rows']; $s = BF::summary($rows);
+    // Slow page (about 4.5 s: every product is priced one by one): the plan is kept for 45 seconds; ?fresh=1 recalculates. Switching, applying and the CSV always use the live calculation.
+    $C = \Illuminate\Support\Facades\Cache::class; $d = null;
+    if (!$r->query('fresh')) { try { $raw = $C::get('bf.plan.view.v1'); if (is_string($raw)) { $x = @unserialize($raw); if (is_array($x) && isset($x['rows'])) $d = $x; } } catch (\Throwable $e) { $d = null; } }
+    if (!$d) { $d = BF::scoped(); try { $C::put('bf.plan.view.v1', serialize($d), 45); } catch (\Throwable $e) {} }
+    $rows = $d['rows']; $s = BF::summary($rows);
     $st = in_array($r->query('show'), ['in', 'check', 'normal', 'no_cost', 'at_floor', 'no_stock'], true) ? $r->query('show') : 'in'; $cat = mb_substr(trim((string)$r->query('cat')), 0, 120);
     $list = array_values(array_filter($rows, fn($x) => ($st === 'check' ? $x['check'] : $x['status'] === $st) && ($cat === '' || $x['cat'] === $cat)));
     usort($list, fn($a, $b) => [$b['off_pct'], $a['name']] <=> [$a['off_pct'], $b['name']]);
@@ -21,7 +25,7 @@ class BlackFridayController extends Controller
     if (!\App\Support\ProfitFloor::admin()) abort(403);
     $on = $r->input('on') === '1'; \App\Support\Procure::put('bf_on', $on ? '1' : '0'); if ($on) \App\Support\Procure::put('bf_applied_at', '');
     \App\Support\Procure::audit($on ? 'Black Friday switched on' : 'Black Friday switched off', 'Campaign', null, ['by' => auth()->user()->name ?? '']);
-    try { \Illuminate\Support\Facades\Cache::forget('bf.tick'); } catch (\Throwable $e) {}   // the background worker applies or puts back the prices (thousands of products: not inside a page request)
+    try { \Illuminate\Support\Facades\Cache::forget('bf.tick'); \Illuminate\Support\Facades\Cache::forget('bf.plan.view.v1'); } catch (\Throwable $e) {}   // the background worker applies or puts back the prices (thousands of products: not inside a page request)
     return back()->with('ok', $on ? 'Black Friday is on. Prices change by themselves at the start time and come back after the end time.' : 'Black Friday is off. Normal prices come back within a few minutes.');
   }
   public function csv() {
