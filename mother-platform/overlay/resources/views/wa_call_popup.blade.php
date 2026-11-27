@@ -121,7 +121,7 @@ var WP=(function(){
     if(!d.ok||!d.id){if(btn){btn.disabled=false;btn.textContent='Call back on WhatsApp'}msg(d.message||'Could not start the call back');return}
     location.href='/admin/call-center/whatsapp/call/'+d.id+'?'+(EMBED?'embed=1&':'')+'go=1'})}
   var TID=0,sending=false;
-  function cmpState(){var t=$('wpCmpT'),b=$('wpCmpB');if(!t)return;t.disabled=!TID||sending;b.disabled=!TID||sending||!t.value.trim();if(!TID&&$('wpCmpS')&&!$('wpCmpS').dataset.k)$('wpCmpS').textContent='This caller has no WhatsApp chat with us yet, so there is nothing to reply to.'}
+  function cmpState(){var t=$('wpCmpT'),b=$('wpCmpB');if(!t)return;t.disabled=!TID||sending;b.disabled=!TID||sending||!t.value.trim();if(TID&&$('wpCmpS')&&!$('wpCmpS').dataset.k)$('wpCmpS').textContent='Goes to this caller\'s WhatsApp chat. Sent only when you press Send.';if(!TID&&$('wpCmpS')&&!$('wpCmpS').dataset.k)$('wpCmpS').textContent='This caller has no WhatsApp chat with us yet, so there is nothing to reply to.'}
   function cmpMsg(t,c){var e=$('wpCmpS');e.dataset.k=t?'1':'';e.className=c||'';e.textContent=t||''}
   function openMsg(){var t=$('wpCmpT');if(!t)return;t.scrollIntoView({block:'nearest'});if(!t.disabled)t.focus()}
   function sendMsg(){var t=$('wpCmpT'),v=t.value.trim();if(!TID||sending||!v)return;sending=true;cmpState();cmpMsg('Sending…','');
