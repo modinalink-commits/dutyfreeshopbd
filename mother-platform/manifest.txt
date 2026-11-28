@@ -1964,6 +1964,7 @@ database/migrations/2026_11_27_190000_black_friday_profit_15.php
 database/migrations/2026_11_27_200000_chat_rules.php
 database/migrations/2026_11_27_210000_chat_late_incidents.php
 database/migrations/2026_11_27_220000_wa_calls_missed_notice.php
+app/Support/ChannelScope.php
 app/Http/Controllers/ChannelsController.php
 database/migrations/2026_11_28_110000_sales_channels_dubai.php
 resources/views/channels.blade.php

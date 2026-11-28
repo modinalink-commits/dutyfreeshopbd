@@ -1,6 +1,6 @@
 @extends('layout')@section('title', $c ? 'Edit Channel' : 'Add Channel')
 @section('body')
-@php $v = fn($k, $d = '') => old($k, $d); $b = $s['brand']; $h = $s['hero']; $sel = old('categories', $s['categories']); $st = $c->status ?? 'draft'; @endphp
+@php $v = fn($k, $d = '') => old($k, $d); $b = $s['brand']; $h = $s['hero']; $selAdj = []; $selMode = []; foreach ((array)($s['cats'] ?? []) as $x) { $selAdj[(int)$x['id']] = (float)($x['adj'] ?? 0); $selMode[(int)$x['id']] = ($x['mode'] ?? 'pct'); } $oc = old('cats'); if (is_array($oc)) { $selAdj = []; foreach ($oc as $cid) { $selAdj[(int)$cid] = (float)(old('adj.'.$cid, 0)); $selMode[(int)$cid] = old('mode.'.$cid, 'pct'); } } $st = $c->status ?? 'draft'; @endphp
 <style>
 .cf{max-width:1120px}.cf .grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:14px;align-items:start}@media(max-width:900px){.cf .grid{grid-template-columns:minmax(0,1fr)}}
 .cf .tc{background:#fff;border:1px solid #E3E6EC;border-radius:10px;padding:12px 14px;margin-bottom:12px;box-shadow:0 1px 2px rgba(15,27,51,.04)}
@@ -14,6 +14,11 @@
 .cf .pvn{display:flex;gap:6px;padding:6px 10px;color:#fff;font-size:11px;flex-wrap:wrap}.cf .pvn span{opacity:.92}
 .cf .hero{padding:22px 14px;background-size:cover;background-position:center;color:#fff;min-height:120px}.cf .hero b{font-size:17px;display:block}.cf .hero i{font-style:normal;font-size:12px;opacity:.9;display:block;margin:4px 0 10px}.cf .hero u{text-decoration:none;display:inline-block;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:700;color:#fff}
 .cf .pvg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:10px}.cf .pvg div{border:1px solid #E3E6EC;border-radius:8px;height:62px;background:#F7F8FA}
+.cf .cl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}@media(max-width:560px){.cf .cl{grid-template-columns:minmax(0,1fr)}}
+.cf .cr{display:flex;align-items:center;justify-content:space-between;gap:6px;border:1px solid #E3E6EC;border-radius:8px;padding:5px 8px;background:#fff}.cf .cr:has(input.f_cat:checked){border-color:#F95505;background:#FFF8F3}
+.cf .ck{margin:0;font-weight:600;display:flex;gap:6px;align-items:center;cursor:pointer;min-width:0}.cf .ad{display:flex;align-items:center;gap:3px;font-size:12px;color:#6B7280}.cf .ad input{width:64px;padding:3px 5px;text-align:right}
+.cf .cg{margin-bottom:8px}.cf .cgh{font-size:12px;margin-bottom:3px}.cf .pp{display:inline-block;border-radius:999px;padding:1px 7px;font-size:11px;font-weight:700;background:#F3F4F6;color:#4B5563}.cf .pp.up{background:#FEE2E2;color:#B91C1C}.cf .pp.dn{background:#DCFCE7;color:#166534}
+.cf .cp{display:flex;align-items:center;gap:7px;font-size:12px;padding:2px 0}.cf .cp .im{width:26px;height:26px;border:1px solid #E3E6EC;border-radius:5px;background:#fff;flex:none;overflow:hidden}.cf .cp .im img{width:100%;height:100%;object-fit:contain}.cf .cp .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cf .cp .pr{white-space:nowrap}.cf .cp s{color:#9CA3AF}
 .cf .hist{font-size:12px;color:#4B5563;max-height:150px;overflow:auto}.cf .hist div{padding:3px 0;border-bottom:1px solid #F0F1F4}
 </style>
 <div class="cf">
@@ -35,16 +40,26 @@
   <div><label>Banner image address <small style="font-weight:400;color:#6B7280">(wide, about 1600×600)</small></label><input name="hero_image_url" id="f_himg" value="{{ $v('hero_image_url', $h['image_url']) }}" maxlength="400"></div>
   <div class="r2" style="margin-top:10px"><div><label>Headline</label><input name="hero_title" id="f_ht" value="{{ $v('hero_title', $h['title']) }}" maxlength="120"></div><div><label>Sub-line</label><input name="hero_subtitle" id="f_hs" value="{{ $v('hero_subtitle', $h['subtitle']) }}" maxlength="200"></div></div>
   <div class="r2" style="margin-top:10px"><div><label>Button text</label><input name="hero_cta_text" id="f_hc" value="{{ $v('hero_cta_text', $h['cta_text']) }}" maxlength="40"></div><div><label>Button link</label><input name="hero_cta_url" value="{{ $v('hero_cta_url', $h['cta_url']) }}" maxlength="300" placeholder="/category/cigarettes"></div></div></div>
- <div class="tc"><h2>4 · Categories shown <small style="text-transform:none;letter-spacing:0">(from the main category list)</small></h2>
-  <div class="chips">@foreach($cats as $cn)<label><input type="checkbox" name="categories[]" value="{{ $cn }}" class="f_cat" {{ in_array($cn, (array)$sel, true) ? 'checked' : '' }}>{{ $cn }}</label>@endforeach</div>
-  <div class="hint">Only ticked categories appear on this storefront. Products, prices, stock and discounts are the same central ones.</div></div>
+ <div class="tc"><h2>4 · Allowed categories &amp; price rule <small style="text-transform:none;letter-spacing:0">(from the main catalogue)</small></h2>
+  <div class="cl">@foreach($cats as $cn)@php $on = array_key_exists((int)$cn->id, $selAdj); $av = $on ? $selAdj[(int)$cn->id] : 0; @endphp
+   <div class="cr"><label class="ck"><input type="checkbox" name="cats[]" value="{{ $cn->id }}" class="f_cat" data-n="{{ $cn->name }}" {{ $on ? 'checked' : '' }}> {{ $cn->name }}</label>
+    <span class="ad"><select name="mode[{{ $cn->id }}]" class="f_mode" data-c="{{ $cn->id }}" {{ $on ? '' : 'disabled' }}><option value="pct" {{ ($selMode[(int)$cn->id] ?? 'pct')==='pct'?'selected':'' }}>%</option><option value="tk" {{ ($selMode[(int)$cn->id] ?? 'pct')==='tk'?'selected':'' }}>৳ TK</option></select><input type="number" step="0.5" name="adj[{{ $cn->id }}]" value="{{ $av + 0 }}" class="f_adj" data-c="{{ $cn->id }}" {{ $on ? '' : 'disabled' }} title="0 = keep main price. + raises, − lowers"></span></div>@endforeach</div>
+  <div class="hint">Only ticked categories (published products) appear in this channel's menu, search, listings, product pages, API, cart and checkout, enforced on the server. If none is ticked, nothing is shown. The same category can be used in many channels. Price rule per category: 0 = keep the main price; + raises, − lowers it by a percent (−50% to +200%) or by a fixed TK amount, for this channel only (old price follows the same rule, whole TK). See main price vs channel price in "Price check" before saving. Products and stock always come from Main Admin.</div></div>
  <div style="display:flex;gap:8px;margin-bottom:14px"><button class="btn" type="submit">{{ $c ? 'Save Settings' : 'Add as Draft' }}</button><a class="btn g" href="/admin/channels">Cancel</a></div>
 </div><div class="sticky">
+ <div class="tc"><h2>Price check <small style="text-transform:none;letter-spacing:0">(main price → channel price, before saving)</small></h2><div id="pc" class="hint">Tick a category and type its rule to see products here.</div></div>
  <div class="tc"><h2>Storefront preview <small style="text-transform:none;letter-spacing:0">(updates as you type)</small></h2>
   <div class="pv" id="pv"><div class="pvh" id="pvh"><span class="pvl" id="pvl"></span><b id="pvn"></b></div><div class="pvn" id="pvnav"></div><div class="hero" id="hero"><b id="hb"></b><i id="hsb"></i><u id="hcta"></u></div><div class="pvg"><div></div><div></div><div></div><div></div><div></div><div></div></div></div>
   <div class="hint">Mobile and desktop use the same design; this is a quick look. The full page is opened from the Preview link once the storefront is built.</div></div>
- @if($c)<div class="tc"><h2>Change history</h2><div class="hist">@foreach(array_slice($s['history'] ?? [],0,12) as $x)<div>{{ $x['at'] }} · <b>{{ $x['by'] }}</b> — {{ $x['what'] }}</div>@endforeach</div></div>@endif
-</div></div></form></div>
+ @if($c)<div class="tc"><h2>Catalogue on this channel <small style="text-transform:none;letter-spacing:0">(saved settings, from the live catalogue)</small></h2>
+ @forelse($pv as $g)<div class="cg"><div class="cgh"><b>{{ $g['name'] }}</b> · {{ $g['n'] }} published @if($g['adj']!=0)<span class="pp {{ $g['adj']>0?'up':'dn' }}">{{ $g['adj']>0?'+':'' }}{{ $g['adj']+0 }}{{ ($g['mode']??'pct')==='tk'?' TK':'%' }}</span>@else<span class="pp">main price</span>@endif</div>
+  @foreach($g['rows'] as $r)<div class="cp"><span class="im">@if($r['img'])<img src="{{ $r['img'] }}" alt="" loading="lazy">@endif</span><span class="nm">{{ $r['name'] }}</span><span class="pr">@if($r['now']!=$r['base'])<s>{{ number_format($r['base']) }}</s> @endif<b>৳{{ number_format($r['now']) }}</b></span></div>@endforeach</div>
+ @empty<div class="hint" style="color:#B91C1C">No category allowed: this channel shows no products.</div>@endforelse
+ @if($link)<div class="hint" style="margin-top:8px">Private preview link (staff, any status): <a href="{{ $link }}" target="_blank" rel="noopener" style="overflow-wrap:anywhere">{{ $link }}</a><br>Staff logged in can also use <code>?channelpreview={{ $c->slug }}</code> on the domain.</div>@endif</div>
+ <div class="tc"><h2>Change history</h2><div class="hist">@foreach(array_slice($s['history'] ?? [],0,12) as $x)<div>{{ $x['at'] }} · <b>{{ $x['by'] }}</b> — {{ $x['what'] }}</div>@endforeach</div></div>@endif
+</div></div></form>
+@if($c && $c->status==='draft')<form method="post" action="/admin/channels/{{ $c->id }}/delete" onsubmit="return confirm('Delete this Draft channel?')" style="margin:0 0 20px">@csrf<button class="btn g" type="submit" style="color:#B91C1C">Delete Draft channel</button></form>@endif
+</div>
 @endsection
 @section('js')
 <script>
@@ -54,9 +69,12 @@ function up(){var p=$('f_pri').value,a=$('f_acc').value,t=$('f_theme').value,n=$
  $('pvh').style.background=t==='premium'?a:(t==='dark'?'#111827':'#fff');$('pvh').style.color=t==='premium'||t==='dark'?'#fff':a;
  var l=$('pvl');l.style.background=p;l.textContent='';if(lg){var im=document.createElement('img');im.src=lg;im.alt='';l.appendChild(im)}else l.textContent=n.charAt(0).toUpperCase();
  $('pvn').textContent=n;
- var cats=[].slice.call(document.querySelectorAll('.f_cat:checked')).map(function(x){return x.value});var nv=$('pvnav');nv.style.background=p;nv.textContent='';(cats.length?cats:['All categories']).forEach(function(c){var s=document.createElement('span');s.textContent=c;nv.appendChild(s)});
+ var cats=[].slice.call(document.querySelectorAll('.f_cat:checked')).map(function(x){return x.getAttribute('data-n')});document.querySelectorAll('.f_adj,.f_mode').forEach(function(i){var k=document.querySelector('.f_cat[value="'+i.getAttribute('data-c')+'"]');i.disabled=!(k&&k.checked)});var nv=$('pvnav');nv.style.background=p;nv.textContent='';(cats.length?cats:['No category allowed']).forEach(function(c){var s=document.createElement('span');s.textContent=c;nv.appendChild(s)});
  var h=$('hero'),im2=$('f_himg').value.trim();h.style.backgroundColor=a;h.style.backgroundImage=im2?'url("'+im2.replace(/"/g,'')+'")':'none';
  $('hb').textContent=$('f_ht').value||n;$('hsb').textContent=$('f_hs').value;var c=$('hcta');c.textContent=$('f_hc').value;c.style.background=p;c.style.display=$('f_hc').value?'inline-block':'none'}
-document.querySelectorAll('.cf input,.cf select').forEach(function(e){e.addEventListener('input',up);e.addEventListener('change',up)});up()})();
+var tm=null;function pc(){clearTimeout(tm);tm=setTimeout(function(){var box=$('pc');var ks=[].slice.call(document.querySelectorAll('.f_cat:checked'));if(!ks.length){box.textContent='No category ticked: this channel will show no products.';return}
+ box.textContent='';ks.slice(0,6).forEach(function(k){var cid=k.value,m=document.querySelector('.f_mode[data-c="'+cid+'"]').value,v=document.querySelector('.f_adj[data-c="'+cid+'"]').value||0;var g=document.createElement('div');g.className='cg';var h=document.createElement('div');h.className='cgh';h.textContent=k.getAttribute('data-n')+' · '+(Number(v)===0?'main price':(v>0?'+':'')+v+(m==='tk'?' TK':'%'));g.appendChild(h);box.appendChild(g);
+  fetch('/admin/channels/quote?cid='+encodeURIComponent(cid)+'&mode='+m+'&v='+encodeURIComponent(v),{headers:{'Accept':'application/json'},credentials:'same-origin'}).then(function(r){return r.json()}).then(function(j){(j.rows||[]).forEach(function(p){var d=document.createElement('div');d.className='cp';var n=document.createElement('span');n.className='nm';n.textContent=p.name;var pr=document.createElement('span');pr.className='pr';var a=document.createElement('s');a.textContent='৳'+Math.round(p.base).toLocaleString('en-US');var b=document.createElement('b');b.textContent='৳'+Math.round(p.now).toLocaleString('en-US');pr.appendChild(a);pr.appendChild(document.createTextNode(' → '));pr.appendChild(b);d.appendChild(n);d.appendChild(pr);g.appendChild(d)});if(!(j.rows||[]).length){var e=document.createElement('div');e.className='hint';e.textContent='No published products yet.';g.appendChild(e)}}).catch(function(){})})},300)}
+document.querySelectorAll('.cf input,.cf select').forEach(function(e){e.addEventListener('input',up);e.addEventListener('change',up);e.addEventListener('input',pc);e.addEventListener('change',pc)});up();pc()})();
 </script>
 @endsection

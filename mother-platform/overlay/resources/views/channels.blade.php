@@ -19,7 +19,7 @@
 <div class="row"><div style="display:flex;gap:10px;align-items:center;min-width:0"><span class="lg" style="background:{{ $s['brand']['primary'] }}">@if($s['brand']['logo_url'])<img src="{{ $s['brand']['logo_url'] }}" alt="">@else{{ mb_strtoupper(mb_substr($nm,0,1)) }}@endif</span><div style="min-width:0"><b>{{ $c->name }}</b><div style="font-size:11.5px;color:#6B7280"><span class="sw" style="background:{{ $s['brand']['primary'] }}"></span> <span class="sw" style="background:{{ $s['brand']['accent'] }}"></span> {{ ucfirst($s['brand']['theme']) }}</div></div></div>
 <div style="min-width:0;overflow-wrap:anywhere">{{ $c->domain ?: '—' }}</div>
 <div><span class="st {{ $c->status ?: 'draft' }}">{{ $statuses[$c->status ?: 'draft'] ?? 'Draft' }}</span></div>
-<div class="hm" style="color:#4B5563">{{ $s['categories'] ? implode(', ', $s['categories']) : 'All categories' }}</div>
+<div class="hm" style="color:#4B5563">@php $cl = []; foreach ($s['cats'] as $x) { $n = $catNames[(int)$x['id']] ?? null; if ($n) $cl[] = $n . ((float)($x['adj'] ?? 0) != 0 ? ' (' . ((float)$x['adj'] > 0 ? '+' : '') . ((float)$x['adj'] + 0) . '%)' : ''); } @endphp{{ $cl ? implode(', ', $cl) : 'None allowed' }}</div>
 <div style="text-align:right"><a class="btn g" href="/admin/channels/{{ $c->id }}/edit">Edit Settings</a></div></div>
 @empty<div style="padding:26px;text-align:center;color:#6B7280">No channels yet. Press "+ Add Channel".</div>@endforelse
 </div>

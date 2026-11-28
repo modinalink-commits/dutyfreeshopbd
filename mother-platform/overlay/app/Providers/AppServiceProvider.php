@@ -12,6 +12,7 @@ class AppServiceProvider extends ServiceProvider {
     if (!$this->app->runningInConsole()) $this->app->make(\Illuminate\Contracts\Http\Kernel::class)->pushMiddleware(\App\Http\Middleware\InvoiceDisplay::class);
     if (!$this->app->runningInConsole()) $this->app->make(\Illuminate\Contracts\Http\Kernel::class)->pushMiddleware(\App\Http\Middleware\MinifyHtml::class);
     if (!$this->app->runningInConsole()) $this->app->make(\Illuminate\Contracts\Http\Kernel::class)->pushMiddleware(\App\Http\Middleware\CanonicalHost::class);
+    if (!$this->app->runningInConsole()) \Illuminate\Support\Facades\View::composer('store.*', function ($v) { try { if (\App\Support\ChannelScope::cur()) \App\Support\ChannelScope::adjustData($v->getData()); } catch (\Throwable $e) {} }); // sales channel price rule on every product shown by a storefront page
     if (!$this->app->runningInConsole()) $this->app->make(\Illuminate\Contracts\Http\Kernel::class)->pushMiddleware(\App\Http\Middleware\BrandPrint::class);
     if (!$this->app->runningInConsole()) $this->app->make(\Illuminate\Contracts\Http\Kernel::class)->pushMiddleware(\App\Http\Middleware\SessionGuard::class);
     // Inside the web group (after StartSession): keeps the flashed form input small enough for the cookie session, so a failed save shows its error instead of a 502.

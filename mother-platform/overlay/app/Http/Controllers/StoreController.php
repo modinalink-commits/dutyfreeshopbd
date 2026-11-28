@@ -29,7 +29,7 @@ class StoreController extends Controller {
     return $o . '</nav>';
   }
   public static function rem(string $k, int $ttl, \Closure $fn) {
-    try { $k = 'v' . (Cache::get('store.ver') ?: 0) . '.' . (\App\Support\CleanSite::on() ? 'clean.' : '') . $k; } catch (\Throwable $e) {}
+    try { $k = 'v' . (Cache::get('store.ver') ?: 0) . '.' . (\App\Support\CleanSite::on() ? 'clean.' : '') . \App\Support\ChannelScope::key() . $k; } catch (\Throwable $e) {}
     $raw = Cache::get($k);
     if (is_string($raw) && ($v = @unserialize($raw)) !== false) return $v;
     $v = $fn(); Cache::put($k, serialize($v), $ttl); return $v;
@@ -143,7 +143,7 @@ class StoreController extends Controller {
   public static function off($p): int { return $p->compare_price && $p->compare_price > $p->price ? (int)round(($p->compare_price - $p->price) / $p->compare_price * 100) : 0; }
   public static function tk($v): string { return number_format((float)$v).' TK'; }
   private function cats() {
-    return self::rem('store.cats', 300, fn() => DB::table('categories')->whereNotNull('slug')->where('active',true)->orderBy('position')->get()->when(\App\Support\CleanSite::on(), fn($c) => $c->reject(fn($x) => in_array((int)$x->id, \App\Support\CleanSite::catIds(), true)))->keyBy('slug'));
+    return self::rem('store.cats', 300, fn() => DB::table('categories')->whereNotNull('slug')->where('active',true)->orderBy('position')->get()->when(\App\Support\CleanSite::on(), fn($c) => $c->reject(fn($x) => in_array((int)$x->id, \App\Support\CleanSite::catIds(), true)))->when(\App\Support\ChannelScope::cur(), fn($c) => $c->filter(fn($x) => \App\Support\ChannelScope::allows($x->id)))->keyBy('slug'));
   }
   /** Top brands (sub groups) per category, used by the menu dropdowns, brand tabs and brand chips. */
   private function subs() {
@@ -151,7 +151,7 @@ class StoreController extends Controller {
       $o = [];
       $nodes = \Illuminate\Support\Facades\Schema::hasTable('category_nodes') ? DB::table('category_nodes')->where('level', 2)->get()->keyBy(fn($n) => $n->category_id.'|'.$n->name) : collect();
       foreach (DB::table('products')->where('published',true)->whereNotNull('sub')->select('category_id','sub', DB::raw('count(*) n'))->groupBy('category_id','sub')->orderByDesc('n')->get() as $r) {
-        $nd = $nodes[$r->category_id.'|'.$r->sub] ?? null; if ($nd && !$nd->active) continue; if (\App\Support\CleanSite::on() && \App\Support\CleanSite::bad((string)$r->sub)) continue; $r->pos = $nd->position ?? 100000; $o[$r->category_id][] = $r;
+        $nd = $nodes[$r->category_id.'|'.$r->sub] ?? null; if ($nd && !$nd->active) continue; if (!\App\Support\ChannelScope::allows($r->category_id)) continue; if (\App\Support\CleanSite::on() && \App\Support\CleanSite::bad((string)$r->sub)) continue; $r->pos = $nd->position ?? 100000; $o[$r->category_id][] = $r;
       }
       foreach ($o as $k => $rows) { usort($rows, fn($x, $y) => [$x->pos, -$x->n] <=> [$y->pos, -$y->n]); $o[$k] = $rows; }
       return $o;
@@ -447,7 +447,7 @@ class StoreController extends Controller {
   /** Black Friday campaign page (owner plan 26 Nov 2026: 27 Nov launch, 28-29 deals by category, 30 Nov Cyber Monday = last day, closes 11:59 PM Dhaka).
    *  Shows only products that already carry a real discount (old price above the selling price); no price is changed here. Cigarette and vape products are never listed: the page is shared on Facebook. */
   public function blackFriday(Request $r) {
-    if (\App\Support\CleanSite::on()) return $this->notFound();   // tobacco-free domain: the campaign is cigarette and vape only
+    if (\App\Support\CleanSite::on() || \App\Support\ChannelScope::cur()) return $this->notFound();   // tobacco-free domain / sales channel: the campaign page is not part of it
     $BF = \App\Support\BlackFriday::class; [$from, $to] = $BF::window(); $now = now('Asia/Dhaka'); $over = $now->gt($to); $run = $BF::running(); $s = self::set(); $per = max(12, (int)$s['per_page']);
     $ids = $run ? array_keys($BF::ids()) : [];
     $base = \App\Support\StockGuard::listable(DB::table('products')->where('published', true))->whereIn('id', $ids ?: [0]);   // the campaign is Cigarette and Vape only (owner, 26 Nov 2026): this page is for the site, it is not advertised on Facebook
@@ -529,6 +529,7 @@ class StoreController extends Controller {
     return $this->renderProduct($p, true);
   }
   private function renderProduct($p, bool $preview = false) {
+    \App\Support\ChannelScope::adjust($p); // sales channel price rule (no-op on the main site)
     $c = DB::table('categories')->find($p->category_id);
     // Which products are "related" is remembered for 10 minutes per product (this sort over the whole category was the heaviest query on the server); the rows themselves are read fresh, so price and stock are always current.
     $relIds = self::rem('rel.' . $p->id, 600, fn() => $this->q()->where('category_id',$p->category_id)->where('id','!=',$p->id)->orderByRaw('(sub = ?) desc', [$p->sub ?? ''])->orderByDesc('id')->limit(11)->pluck('id')->map(fn($v) => (int)$v)->all());
@@ -574,7 +575,7 @@ class StoreController extends Controller {
     $out = self::rem('sg.' . md5(mb_strtolower($t)), 600, function () use ($t) {
     $like = '%'.str_replace(['%','_'], ['\\%','\\_'], $t).'%';
     $out = [];
-    foreach ($this->searchRank($this->searchWhere($this->q(), $t), $t)->orderByDesc('id')->limit(8)->get(['id','ext_id','sku','name','price','image','sub','stock','category_id']) as $p) $out[] = ['t'=>'p','n'=>$p->name,'u'=>self::url($p),'i'=>$p->image,'x'=>number_format($p->price).' TK','s'=>(string)($p->sku ?: '')];
+    foreach ($this->searchRank($this->searchWhere($this->q(), $t), $t)->orderByDesc('id')->limit(8)->get(['id','ext_id','sku','name','price','image','sub','stock','category_id']) as $p0) { $p = \App\Support\ChannelScope::adjust($p0); $out[] = ['t'=>'p','n'=>$p->name,'u'=>self::url($p),'i'=>$p->image,'x'=>number_format($p->price).' TK','s'=>(string)($p->sku ?: '')]; }
     foreach ($this->cats() as $c) if (stripos($c->name, $t) !== false) $out[] = ['t'=>'c','n'=>$c->name,'u'=>'/'.$c->slug.'/'];
     foreach (\App\Support\StockGuard::listable(DB::table('products')->where('published',true))->where('sub','ilike',$like)->select('category_id','sub')->distinct()->limit(3)->get() as $b) { $c = $this->cats()->firstWhere('id',$b->category_id); if ($c) $out[] = ['t'=>'b','n'=>$b->sub,'u'=>'/'.$c->slug.'/?sub='.rawurlencode($b->sub)]; }
     return $out; });
@@ -596,6 +597,7 @@ class StoreController extends Controller {
   /** Total for $n units of a product using the admin "Quantity prices" (Buy 2..5 = total price of the pack). Packs of 5 first, then the remainder; never more than unit price x qty. */
   public static function bundleLine(object $p, int $n): float {
     $u = (float)$p->price; $plain = $u * $n; if ($n < 2) return round($plain, 2);
+    if (\App\Support\ChannelScope::cur()) return round($plain, 2); // sales channel: its own category price rule replaces the quantity price
     try { if (\App\Support\BlackFriday::running()) return round($plain, 2); } catch (\Throwable $e) {} // Black Friday: no quantity price on any product (owner rule 27 Nov 2026)
     if (isset(\App\Support\PrepaidOnly::catSet()[(int)($p->category_id ?? 0)])) return round($plain, 2); // Watch: no bundle price
     $id = (int)($p->id ?? 0); // Global bundle pricing: always calculated live from the sale price and the FIFO cost (never a stale stored price)
@@ -643,6 +645,7 @@ class StoreController extends Controller {
     $b = $this->base(); $rules = $b['rules'];
     $rows = $want ? $this->q()->whereIn('id', array_keys($want))->get(['id','ext_id','name','price','compare_price','image','stock','category_id','buy2_price','buy3_price','buy4_price','buy5_price']) : collect();
     $items = []; $sub = 0; $qty = 0; $bsave = 0.0;
+    \App\Support\ChannelScope::adjustRows($rows); // sales channel price rule (no-op on the main site)
     foreach ($rows as $p) { $n = $want[$p->id]; $lst = (float)$p->price * $n; $ln = self::bundleLine($p, $n); $bs = round($lst - $ln, 2); $bsave += $bs; $items[] = ['id'=>$p->id, 'ext'=>(string)(($p->ext_id ?? null) ?: $p->id), 'name'=>$p->name, 'image'=>$p->image, 'url'=>self::url($p), 'price'=>(float)$p->price, 'compare'=>(float)$p->compare_price, 'qty'=>$n, 'line'=>$ln, 'list'=>$lst, 'bsave'=>$bs, 'oos'=>!\App\Support\StockGuard::sellable($p)]; $sub += $lst; $qty += $n; }
     $ndSet = \App\Support\PrepaidOnly::catSet(); $ndIds = []; $ndSub = 0.0; if ($ndSet) foreach ($rows as $p) if (isset($ndSet[(int)$p->category_id])) $ndIds[(int)$p->id] = true; foreach ($items as $i) if (isset($ndIds[(int)$i['id']])) $ndSub += (float)$i['line'];
     $dv = \App\Support\Delivery::compute((float)$sub, $area, $addr, '', array_column($items, 'id')); $ship = $dv['charge'];
@@ -706,6 +709,7 @@ class StoreController extends Controller {
     $want = $r->filled('product') ? [(int)$r->input('product') => max(1, min(50, (int)$r->input('qty', 1)))] : $this->parseItems($r->input('items', []));
     $back = fn($m) => redirect('/checkout?e='.rawurlencode($m));
     if (!$want) return $back('Your cart is empty');
+    if (!\App\Support\ChannelScope::ordersOpen()) return $back('Orders are not open on this store yet.'); // sales channel that is not Live: no order, no payment
     \App\Support\PhoneRule::trim($r);
     $v = \Illuminate\Support\Facades\Validator::make($r->all(), ['name'=>'required|string|max:120','phone'=>['required','string',new \App\Support\PhoneRule],'email'=>'nullable|email|max:120','address'=>'required|string|max:500','area'=>'nullable|integer','district'=>'nullable|string|max:60','note'=>'nullable|string|max:500','coupon'=>'nullable|string|max:40','website'=>'max:0','pay'=>'nullable|in:cod,bank,bkash,nagad,shurjopay','pay_account'=>'nullable|string|max:80','pay_txn'=>['nullable','string','max:60','regex:/^[A-Za-z0-9\-_\/ ]+$/'],'pay_proof'=>'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:3072'], ['phone.regex'=>'সঠিক মোবাইল নম্বর লিখুন (01XXXXXXXXX)','required'=>'মোবাইল নম্বর, নাম ও ঠিকানা লিখুন।','email'=>'সঠিক ইমেইল লিখুন অথবা খালি রাখুন।']);
     if ($v->fails()) return $back($v->errors()->first());
