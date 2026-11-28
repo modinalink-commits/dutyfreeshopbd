@@ -217,7 +217,7 @@ class AgentTools {
     if (!$ok) {
       $rid = self::saveRequest($p, $st, $ctx, $why); AiMemory::event((int)($ctx['thread_id'] ?? 0), null, 'ai', 'order_request', null, ['request'=>$rid, 'why'=>$why, 'total'=>$p['total'] ?? 0]);
       $h = AgentHandoff::create($ctx, $st, 'order_request', 'Order Request #'.$rid.' (not placed: '.$why.'): '.$p['name'].' '.$p['phone'].', total '.self::money($p['total'] ?? 0).'. Review it in Messages > Order Requests.', 'normal');
-      $st['cart'] = []; unset($st['pending']);
+      $st['cart'] = []; unset($st['pending']); $st['request_saved'] = ['at'=>time(), 'id'=>$rid];
       return ['request_saved'=>true, 'order_created'=>false, 'tell_customer'=>'আপনার অর্ডারটি আমি রেডি করে দিয়েছি। আমাদের প্রতিনিধি আপনার অর্ডারটি কমপ্লিট করে দেবেন। (Say this. Never say the order is placed or confirmed, and never give an invoice number.)'] + $h;
     }
     $r = self::make($p, (int)($ctx['thread_id'] ?? 0), 'ai-'.($ctx['thread_id'] ?? 0).'-'.md5(json_encode($p['cart']).$p['phone'].(int)$p['after_msg']), 'AI Order', 'Claude AI', '[AI Chat]');
