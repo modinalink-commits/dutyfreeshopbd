@@ -14,6 +14,9 @@ body.dfd .ts{background:var(--dfd-ink)}
 body.dfd .ts .dl svg,body.dfd .ts a.hl svg,body.dfd .ts .anp svg{color:#fff}
 body.dfd .ts .anp{background:rgba(201,0,11,.28);border-color:rgba(255,255,255,.45)}
 body.dfd .nv{background:var(--dfd-ink)}
+body.dfd .nv a{color:#E9E9E9}
+body.dfd .bfh-b,body.dfd .cs2-all,body.dfd .go,body.dfd button.sd,body.dfd .dfc-av{background:var(--dfd-red);border-color:var(--dfd-red)}
+body.dfd .bfh-b:hover,body.dfd .cs2-all:hover{background:var(--dfd-red-d)}
 body.dfd .nv a.on,body.dfd .nv a:hover{color:#fff;box-shadow:inset 0 -3px 0 var(--dfd-red)}
 body.dfd .pc .on,body.dfd .pc .cb1{background:var(--dfd-red);border-color:var(--dfd-red)}
 body.dfd .pc .on:hover,body.dfd .pc .cb1:hover{background:var(--dfd-red-d);border-color:var(--dfd-red-d)}
