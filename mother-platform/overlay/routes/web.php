@@ -561,6 +561,7 @@ Route::middleware(['auth', \App\Http\Middleware\ModulePermission::class, \App\Ht
   });
   Route::get('/inventory', [\App\Http\Controllers\InventoryController::class,'index']);
   Route::get('/inventory/export/{fmt}', [\App\Http\Controllers\InventoryController::class,'export']);
+  Route::get('/channels', [\App\Http\Controllers\ChannelsController::class,'index']); Route::get('/channels/new', [\App\Http\Controllers\ChannelsController::class,'create']); Route::post('/channels', [\App\Http\Controllers\ChannelsController::class,'store']); Route::get('/channels/{id}/edit', [\App\Http\Controllers\ChannelsController::class,'edit'])->whereNumber('id'); Route::post('/channels/{id}/update', [\App\Http\Controllers\ChannelsController::class,'update'])->whereNumber('id');
   Route::get('/stores', [\App\Http\Controllers\InventoryController::class,'stores']);
   Route::post('/stores/auto-scan', [\App\Http\Controllers\InventoryController::class,'autoScan']);
   Route::get('/traffic-today', function () { // visitors by source today (Asia/Dhaka), from product page views
