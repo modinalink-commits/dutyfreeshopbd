@@ -17,10 +17,9 @@
     // Owner, 28 Nov 2026: the home page shows only these five brands, in this order. Other brands stay in Store and category pages.
     var WANT = ['dunhill', 'benson', '555', 'marlboro', 'manchester'];
     function norm(x) { return String(x || '').toLowerCase().replace(/[^a-z0-9]+/g, ''); }
+    // Owner, 28 Nov 2026: each card shows the FIRST product of that category's list (same default order as the Store list: name A-Z), so the card and the list opened by the tap always agree.
     function repr(catId) {
-      var l = D.products.filter(function (p) { return p.category === catId; });
-      var ok = function (p) { return p.image && !/product-placeholder/.test(p.image); };
-      return l.filter(function (p) { return ok(p) && D.priced(p) && p.stock > 0; })[0] || l.filter(ok)[0] || l[0] || null;
+      return D.products.filter(function (p) { return p.category === catId; }).sort(function (x, y) { return x.name.localeCompare(y.name); })[0] || null;
     }
     var brands = '';
     WANT.forEach(function (w) {
@@ -29,7 +28,7 @@
       var n = count(c.id); if (!n) return;
       var rp = repr(c.id);
       brands += '<a class="bcard" href="#/store?cat=' + encodeURIComponent(c.id) + '" aria-label="' + D.esc(c.name) + ', ' + n + (n === 1 ? ' product' : ' products') + '"><span class="pic">' + (rp ? D.picHtml(rp) : '<span class="blob" style="--c:#c9000b">' + D.esc(c.glyph) + '</span>') + '</span>' +
-        '<span class="binfo"><h3>' + D.esc(c.name) + '</h3><small>' + n + (n === 1 ? ' product' : ' products') + '</small></span><span class="go" aria-hidden="true">\u2192</span></a>';
+        '<span class="binfo"><h3>' + D.esc(c.name) + '</h3><small>' + (rp ? D.esc(rp.name) + ' \u00b7 ' : '') + n + (n === 1 ? ' product' : ' products') + '</small></span><span class="go" aria-hidden="true">\u2192</span></a>';
     });
     var tiles = '';
     tiles += '<div class="t i-1"><span class="ico" aria-hidden="true">৳</span><div><h3 style="font-size:1.1rem">Cash on delivery</h3><small>Pay when it arrives</small></div></div>' +
