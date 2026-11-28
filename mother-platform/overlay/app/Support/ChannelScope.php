@@ -32,8 +32,8 @@ class ChannelScope {
     } catch (\Throwable $e) { return self::$ch = null; }
   }
   public static function load(int $id): ?object {
-    $c = Cache::remember('chan.row.' . $id, 60, fn() => DB::table('sales_channels')->where('id', $id)->first());
-    if (!$c) return null;
+    $a = Cache::remember('chan.row.' . $id, 60, fn() => (array)DB::table('sales_channels')->where('id', $id)->first()); // plain array: Laravel's cache does not unserialize objects
+    if (!$a) return null; $c = (object)$a;
     $s = json_decode((string)$c->settings, true) ?: [];
     $c->cfg = $s; $c->adj = []; $c->mode = []; foreach (($s['cats'] ?? []) as $x) { $c->adj[(int)$x['id']] = (float)($x['adj'] ?? 0); $c->mode[(int)$x['id']] = ($x['mode'] ?? 'pct') === 'tk' ? 'tk' : 'pct'; }
     return $c;
