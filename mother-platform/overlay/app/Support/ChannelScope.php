@@ -28,7 +28,8 @@ class ChannelScope {
       }
       if ($r->query('channelpreview') !== null) \Illuminate\Support\Facades\Cookie::queue('channelpreview', (string)$r->query('channelpreview'), 30);
       if (!$id) return self::$ch = null;
-      return self::$ch = self::load($id);
+      self::$ch = self::load($id); self::mountTheme(); // also when the channel is resolved late (staff ?channelpreview needs the session)
+      return self::$ch;
     } catch (\Throwable $e) { return self::$ch = null; }
   }
   public static function load(int $id): ?object {
@@ -50,8 +51,10 @@ class ChannelScope {
     return is_dir(resource_path('channels/' . $s . '/views')) ? $s : null;
   }
   /** Views found in the channel folder win (same names as store.*: store/home.blade.php, store/layout.blade.php ...); anything the channel does not override falls back to the default storefront view. */
+  private static $mounted = false;
   public static function mountTheme(): void {
-    try { if ($s = self::themeSlug()) app('view')->getFinder()->prependLocation(resource_path('channels/' . $s . '/views')); } catch (\Throwable $e) { report($e); }
+    if (self::$mounted) return;
+    try { if ($s = self::themeSlug()) { self::$mounted = true; app('view')->getFinder()->prependLocation(resource_path('channels/' . $s . '/views')); } } catch (\Throwable $e) { report($e); }
   }
   /** URL of a file in the current channel's public folder (cache-busted by file time), e.g. ChannelScope::asset('css/theme.css'). Empty on the main site. */
   public static function asset(string $file): string {
