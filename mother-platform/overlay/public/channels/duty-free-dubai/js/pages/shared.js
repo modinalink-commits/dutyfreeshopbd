@@ -16,7 +16,7 @@
     return '<article class="card"><a class="pic" href="' + href + '" tabindex="-1" aria-hidden="true">' + D.picHtml(p) + '</a>' +
       '<div class="info"><span class="kind">' + esc(D.catName(p.category)) + '</span>' +
       '<h3><a href="' + href + '">' + esc(p.name) + '</a></h3>' +
-      '<span class="stock ' + s.cls + '">' + s.label + '</span>' + D.priceHtml(p) + '</div>' +
+      '<span class="stock ' + s.cls + '">' + s.label + '</span><span class="fdel">Free Delivery</span>' + D.priceHtml(p) + '</div>' +
       '<div class="buy">' + btn + '</div></article>';
   };
   D.emptyCart = function () {

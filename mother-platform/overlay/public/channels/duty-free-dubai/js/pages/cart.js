@@ -14,7 +14,7 @@
     host.innerHTML = '<div class="cartpage"><div>' + items + '<p><a class="btn line" href="#/store">Continue shopping</a> <button class="rm" id="clear" type="button">Clear cart</button></p></div>' +
       '<aside class="sumbox glass" aria-label="Order summary"><h2>Order summary</h2><div class="r"><span>Items</span><span>' + n + '</span></div>' +
       '<div class="r"><span>Subtotal</span><span>' + D.money(D.cart.total()) + '</span></div><div class="r"><span>Delivery</span><span>Confirmed at checkout</span></div>' +
-      '<div class="r tot"><span>Total</span><span>' + D.money(D.cart.total()) + '</span></div><a class="btn" href="#/checkout">Checkout</a></aside></div>';
+      '<div class="r tot"><span>Total</span><span>' + D.money(D.cart.total()) + '</span></div><a class="btn" href="#/checkout">Order now</a></aside></div>';
     var c = document.getElementById('clear'); if (c) c.addEventListener('click', function () { D.cart.clear(); D.toast('Cart cleared'); });
   }
   D.cart.subscribe(function () { if (D.parseHash().path === '/cart') paint(); });

@@ -84,7 +84,7 @@
   <div class="c-body">
     <div id="lines"></div>
     <div class="sum"><span>Total</span><span id="total">BDT 0</span></div>
-    <div class="c-foot"><a class="btn" id="go-cart" href="#/cart" hidden>View cart</a><a class="btn navy" id="go-checkout" href="#/checkout" hidden>Checkout</a></div>
+    <div class="c-foot"><a class="btn" id="go-cart" href="#/cart" hidden>View cart</a><a class="btn navy" id="go-checkout" href="#/checkout" hidden>Order now</a></div>
   </div>
 </dialog>
 <script>

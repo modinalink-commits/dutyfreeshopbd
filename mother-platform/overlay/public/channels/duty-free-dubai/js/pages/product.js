@@ -8,10 +8,10 @@
     h += '<div class="pdp"><div class="gal"><div class="pic">' + D.picHtml(p, true) + '</div></div>';
     h += '<div class="buybox glass"><span class="kind">' + esc(D.catName(p.category)) + '</span><h1>' + esc(p.name) + '</h1>';
     h += '<div class="pp">' + (D.priced(p) ? D.money(p.price) + '<small>' + D.unitLabel(p) + '</small>' : 'Call for price') + '</div>';
-    h += '<span class="stock ' + s.cls + '">' + s.label + '</span><p class="desc">' + esc(p.description) + '</p>';
+    h += '<span class="badges"><span class="stock ' + s.cls + '">' + s.label + '</span><span class="fdel">Free Delivery</span></span><p class="desc">' + esc(p.description) + '</p>';
     if (can) {
       h += '<div class="qrow"><label for="q-val">Quantity</label><div class="step" role="group" aria-label="Quantity"><button type="button" id="q-dec" aria-label="Decrease quantity">−</button><span id="q-val" aria-live="polite">1</span><button type="button" id="q-inc" aria-label="Increase quantity">+</button></div><span class="subtotal">Subtotal <b id="sub">' + D.money(p.price) + '</b></span></div>';
-      h += '<div><button class="btn" id="add" type="button">Add to cart</button> <a class="btn line" href="#/cart" id="viewcart" style="display:none;margin:5px">View cart</a></div><p class="note" id="inc" hidden></p>';
+      h += '<div class="pbtns"><button class="btn line" id="add" type="button">Add to cart</button><button class="btn" id="order" type="button">Order now</button></div><p class="note" id="inc" hidden></p><a class="btn line" href="#/cart" id="viewcart" style="display:none">View cart</a>';
     } else if (!D.priced(p)) {
       h += '<div class="note">Price is confirmed by phone.</div><a class="btn" href="tel:+8801871600600">Call for price</a>';
     } else { h += '<button class="btn" type="button" disabled>Out of stock</button>'; }
@@ -25,6 +25,9 @@
       function paint() { v.textContent = qty; sub.textContent = D.money(p.price * qty); }
       document.getElementById('q-dec').addEventListener('click', function () { qty = Math.max(1, qty - 1); paint(); inc.hidden = true; });
       document.getElementById('q-inc').addEventListener('click', function () { if (qty >= p.stock) { inc.hidden = false; inc.textContent = 'Only ' + p.stock + ' in stock.'; return; } qty++; paint(); });
+      document.getElementById('order').addEventListener('click', function () {
+        if (D.cart.add(p.id, qty)) location.hash = '#/checkout';
+      });
       document.getElementById('add').addEventListener('click', function () {
         if (D.cart.add(p.id, qty)) { D.toast(p.name + ' · Added'); document.getElementById('viewcart').style.display = ''; inc.hidden = false; inc.className = 'note ok'; inc.textContent = D.cart.qty(p.id) + ' in your cart.'; }
       });

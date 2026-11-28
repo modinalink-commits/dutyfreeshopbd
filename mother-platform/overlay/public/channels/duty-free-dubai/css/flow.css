@@ -155,3 +155,11 @@
   .catrow .card .btn { padding: 9px 6px; font-size: .88rem; min-height: 40px; }
 }
 @media (prefers-reduced-motion: reduce) { .catrow .strack { scroll-behavior: auto; } }
+
+/* Free Delivery badge + product-page button pair */
+.fdel { display: inline-flex; align-items: center; gap: 5px; align-self: flex-start; width: fit-content; padding: 3px 10px; border-radius: 999px; background: #e9f6ee; color: #0d6b36; border: 1px solid #bfe3cd; font-size: .78rem; font-weight: 700; line-height: 1.3; white-space: nowrap; }
+.fdel::before { content: "\2713"; font-weight: 800; }
+.badges { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.pbtns { display: flex; gap: 10px; }
+.pbtns .btn { flex: 1 1 0; min-height: 48px; margin: 0; text-align: center; justify-content: center; }
+@media (max-width: 760px) { .fdel { font-size: .72rem; padding: 2px 8px; } .pbtns { gap: 8px; } .pbtns .btn { min-height: 46px; padding: 0 8px; } }
