@@ -14,24 +14,32 @@
   function count(cat) { return D.products.filter(function (p) { return p.category === cat; }).length; }
   D.route(/^\/$/, function (app) {
     var order = ['c-hard', 'c-slim', 'c-nano', 'c-cigar', 'c-vape'];
-    function isL(c) { return /lighter/.test(c.top || ''); }
-    var mainTop = ''; for (var ti in D.tops) { if (!/lighter/.test(ti)) { mainTop = ti; break; } }
-    var mainN = D.products.filter(function (p) { return !mainTop || p.top === mainTop; }).length;
-    var tiles = '<a class="t f-all" href="#/store' + (mainTop ? '?top=' + encodeURIComponent(mainTop) : '') + '"><svg viewBox="0 0 200 200" aria-hidden="true"><g fill="none" stroke="#fff" stroke-opacity=".18" stroke-width="6"><path d="M0 40h140"/><path d="M0 70h120"/><path d="M0 100h100"/><path d="M0 130h80"/><path d="M0 160h60"/></g></svg><span class="go" aria-hidden="true">\u2192</span><h3>' + D.esc(mainTop ? D.tops[mainTop] : 'All products') + '</h3><small>' + mainN + ' products</small></a>';
-    D.categories.filter(function (c) { return !isL(c); }).slice(0, 5).forEach(function (c, i) {
-      tiles += '<a class="t ' + order[i] + '" href="#/store?cat=' + c.id + '"><span class="ico" aria-hidden="true">' + c.glyph + '</span><span class="go" aria-hidden="true">\u2192</span><div><h3>' + D.esc(c.name) + '</h3><small>' + count(c.id) + (count(c.id) === 1 ? ' product' : ' products') + '</small></div></a>';
+    // Owner, 28 Nov 2026: the home page shows only these five brands, in this order. Other brands stay in Store and category pages.
+    var WANT = ['dunhill', 'benson', '555', 'marlboro', 'manchester'];
+    function norm(x) { return String(x || '').toLowerCase().replace(/[^a-z0-9]+/g, ''); }
+    function repr(catId) {
+      var l = D.products.filter(function (p) { return p.category === catId; });
+      var ok = function (p) { return p.image && !/product-placeholder/.test(p.image); };
+      return l.filter(function (p) { return ok(p) && D.priced(p) && p.stock > 0; })[0] || l.filter(ok)[0] || l[0] || null;
+    }
+    var brands = '';
+    WANT.forEach(function (w) {
+      var c = null; D.categories.forEach(function (x) { if (!c && (norm(x.name) === w || norm(x.id) === w)) c = x; });
+      if (!c) return;
+      var n = count(c.id); if (!n) return;
+      var rp = repr(c.id);
+      brands += '<a class="bcard" href="#/store?cat=' + encodeURIComponent(c.id) + '" aria-label="' + D.esc(c.name) + ', ' + n + (n === 1 ? ' product' : ' products') + '"><span class="pic">' + (rp ? D.picHtml(rp) : '<span class="blob" style="--c:#c9000b">' + D.esc(c.glyph) + '</span>') + '</span>' +
+        '<span class="binfo"><h3>' + D.esc(c.name) + '</h3><small>' + n + (n === 1 ? ' product' : ' products') + '</small></span><span class="go" aria-hidden="true">\u2192</span></a>';
     });
+    var tiles = '';
     tiles += '<div class="t i-1"><span class="ico" aria-hidden="true">৳</span><div><h3 style="font-size:1.1rem">Cash on delivery</h3><small>Pay when it arrives</small></div></div>' +
       '<div class="t i-2"><span class="ico" aria-hidden="true">→</span><div><h3 style="font-size:1.1rem">Nationwide delivery</h3><small>Across Bangladesh</small></div></div>' +
       '<div class="t i-3"><span class="ico" aria-hidden="true">✓</span><div><h3 style="font-size:1.1rem">' + (D.config.ageGate ? 'Age verification' : 'Easy ordering') + '</h3><small>' + (D.config.ageGate ? 'For adults 18 and over' : 'Confirmed by phone') + '</small></div></div>';
-    var rank = {}; D.categories.forEach(function (c, i) { rank[c.id] = isL(c) ? 1000 + i : i; });
-    var feat = D.products.filter(function (p) { return D.priced(p) && p.stock > 0 && !/lighter/.test(p.top || ''); }).sort(function (a, b) { return (rank[a.category] || 0) - (rank[b.category] || 0); }).slice(0, 4);
     app.innerHTML = (D.config.ageGate ? '<p class="notice">Smoking is harmful to health. Not sold to anyone under 18.</p>' : '') +
       '<section class="hero" aria-label="Hero"><div class="txt"><span class="crumb">Home</span><h1>Duty free, <em>delivered</em></h1><p>' + D.esc(D.config.heroText) + '</p><div class="acts"><a class="btn" href="#/store">Shop now</a>' + (D.config.cta2 ? '<a class="btn line" href="' + D.config.cta2.href + '">' + D.esc(D.config.cta2.label) + '</a>' : '') + '</div></div><div class="art" aria-hidden="true">' + heroArt() + '</div></section>' +
-      '<section class="bento" aria-label="Categories">' + tiles + '</section>' +
-      '<section class="related" aria-label="Featured"><h2>Featured products</h2><div class="grid" id="feat"></div><p style="margin-top:16px"><a class="btn line" href="#/store">View all products</a></p></section>';
-    document.getElementById('feat').innerHTML = feat.map(D.card).join('');
-    var g = document.getElementById('feat'); g.className = 'grid feat';
+      (brands ? '<section class="brands" aria-label="Brands"><h2>Shop by brand</h2><div class="bgrid">' + brands + '</div></section>' : '') +
+      '<section class="bento" aria-label="Delivery and payment">' + tiles + '</section>';
+
     return 'Home';
   });
 })();

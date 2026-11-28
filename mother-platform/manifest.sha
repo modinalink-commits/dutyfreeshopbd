@@ -2001,13 +2001,13 @@ f2ca28b52b26c6e169d1de710c53821aadc7b73d public/channels/duty-free-dubai/logo/he
 6997ca62ad56506f9013bd373808fd190a7315ff public/channels/duty-free-dubai/logo/pwa-512.png
 3569bf365d78a36d64cc447eba600f1da1c17eb6 resources/channels/duty-free-dubai/views/store/theme_foot.blade.php
 05ccbeb57f1d586e2801b793bc4daf95abdb17c5 database/migrations/2026_11_28_160000_dubai_channel_live_catalogue.php
-40b9d0920487110e678cc479951a5c27df15f4e1 public/channels/duty-free-dubai/css/base.css
-add61d8041520c682d3b85b6ef82e08e6b9f3024 public/channels/duty-free-dubai/css/flow.css
+e249ee931a99163db1f688f893f8b60821780ed4 public/channels/duty-free-dubai/css/base.css
+07f2fd7f0af35ae280255a86368d70f0608294d1 public/channels/duty-free-dubai/css/flow.css
 365a9cc3612fc86681e354511cd3e5ad6a8d283b public/channels/duty-free-dubai/js/app.js
 369706c0479ca1dbfea7abb4217eb13d12b07a96 public/channels/duty-free-dubai/js/core.js
 a3969a6445eea0febc903c19cd64c3e41c7a017a public/channels/duty-free-dubai/js/pages/cart.js
 9e194b9fc5915734f3087c683ec7ca3a6f73dad9 public/channels/duty-free-dubai/js/pages/checkout.js
-41a498b97a310c8d330c7c0dbcc0c855b1483807 public/channels/duty-free-dubai/js/pages/home.js
+73c609e7720a2a650a83576fc1218a87bd2f3e1a public/channels/duty-free-dubai/js/pages/home.js
 19e46a74f3a6f8d90ef6cc91920f211d8f08a91f public/channels/duty-free-dubai/js/pages/product.js
 99285ee37c2b27f81eb1c279db3c3313b197d096 public/channels/duty-free-dubai/js/pages/shared.js
 385bbb88a74076ff37a85a96326d796f6557d388 public/channels/duty-free-dubai/js/pages/store.js
