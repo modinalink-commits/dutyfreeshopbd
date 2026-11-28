@@ -26,7 +26,7 @@
       document.getElementById('q-dec').addEventListener('click', function () { qty = Math.max(1, qty - 1); paint(); inc.hidden = true; });
       document.getElementById('q-inc').addEventListener('click', function () { if (qty >= p.stock) { inc.hidden = false; inc.textContent = 'Only ' + p.stock + ' in stock.'; return; } qty++; paint(); });
       document.getElementById('order').addEventListener('click', function () {
-        location.hash = '#/checkout?buy=' + p.id + '&qty=' + qty;
+        D.cart.set(p.id, Math.max(D.cart.qty(p.id), qty)); location.hash = '#/checkout';
       });
       document.getElementById('add').addEventListener('click', function () {
         if (D.cart.add(p.id, qty)) { D.toast(p.name + ' · Added'); document.getElementById('viewcart').style.display = ''; inc.hidden = false; inc.className = 'note ok'; inc.textContent = D.cart.qty(p.id) + ' in your cart.'; }

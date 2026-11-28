@@ -167,3 +167,10 @@
 /* product cards: Order now over Add to cart, full width, same height on every card */
 .card .buy { flex-direction: column; align-items: stretch; gap: 6px; padding: 0 4px 4px; }
 .card .buy .btn { flex: none; width: 100%; margin: 0; min-height: 42px; display: inline-flex; align-items: center; justify-content: center; text-align: center; }
+
+.sumbox .cr { display: grid; grid-template-columns: 1fr auto auto auto; gap: 8px; align-items: center; font-size: .94rem; }
+.sumbox .cr .cq { display: inline-flex; align-items: center; gap: 6px; }
+.sumbox .cr .cq button, .sumbox .cr .cx { min-width: 30px; min-height: 30px; border: 1px solid var(--line); background: #fff; border-radius: 8px; cursor: pointer; }
+.sumbox .cpbox { display: flex; gap: 8px; } .sumbox .cpbox input { flex: 1; min-width: 0; min-height: 42px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; }
+.sumbox .cpbox .btn { min-height: 42px; }
+@media (max-width: 760px) { .co { display: flex; flex-direction: column; } .sumbox { position: static; } #c-go { position: sticky; bottom: 8px; } }
