@@ -14,21 +14,18 @@
   function count(cat) { return D.products.filter(function (p) { return p.category === cat; }).length; }
   D.route(/^\/$/, function (app) {
     var order = ['c-hard', 'c-slim', 'c-nano', 'c-cigar', 'c-vape'];
-    // Owner, 28 Nov 2026: the home page shows only these five brands, in this order. Other brands stay in Store and category pages.
-    var WANT = ['dunhill', 'benson', '555', 'marlboro', 'manchester'];
-    function norm(x) { return String(x || '').toLowerCase().replace(/[^a-z0-9]+/g, ''); }
-    // Owner, 28 Nov 2026: each card shows the FIRST product of that category's list (same default order as the Store list: name A-Z), so the card and the list opened by the tap always agree.
-    function repr(catId) {
-      return D.products.filter(function (p) { return p.category === catId; }).sort(function (x, y) { return x.name.localeCompare(y.name); })[0] || null;
-    }
+    // Owner, 28 Nov 2026: every category in the owner's screenshot order (D.categories is already sorted server-side). Under each title: a slider with the first five products of that category's list
+    // (same default order as the Store list: name A-Z; fewer than five = show what exists). View All opens the full category list. Lighters & accessories stay off the home page.
     var brands = '';
-    WANT.forEach(function (w) {
-      var c = null; D.categories.forEach(function (x) { if (!c && (norm(x.name) === w || norm(x.id) === w || norm(x.name).indexOf(w) === 0)) c = x; });
-      if (!c) return;
-      var n = count(c.id); if (!n) return;
-      var rp = repr(c.id);
-      brands += '<a class="bcard" href="#/store?cat=' + encodeURIComponent(c.id) + '" aria-label="' + D.esc(c.name) + ', ' + n + (n === 1 ? ' product' : ' products') + '"><span class="pic">' + (rp ? D.picHtml(rp, true) : '<span class="blob" style="--c:#c9000b">' + D.esc(c.glyph) + '</span>') + '</span>' +
-        '<span class="binfo"><h3>' + D.esc(c.name) + '</h3>' + (rp ? '<span class="pn">' + D.esc(rp.name) + '</span>' : '') + '<small>' + n + (n === 1 ? ' product' : ' products') + '</small></span><span class="go" aria-hidden="true">\u2192</span></a>';
+    D.categories.forEach(function (c) {
+      if (/lighter/i.test(c.top || '') || /^lighters?$/i.test(c.name)) return;
+      var l = D.products.filter(function (p) { return p.category === c.id; }).sort(function (x, y) { return x.name.localeCompare(y.name); });
+      if (!l.length) return;
+      var href = '#/store?cat=' + encodeURIComponent(c.id);
+      brands += '<section class="catrow" aria-label="' + D.esc(c.name) + '"><div class="crow-h"><h2>' + D.esc(c.name) + '</h2><a class="viewall" href="' + href + '">View All <span aria-hidden="true">\u2192</span><span class="vn">' + l.length + '</span></a></div>' +
+        '<div class="slider"><button class="sbtn prev" type="button" aria-label="Previous ' + D.esc(c.name) + '">\u2039</button><div class="strack" tabindex="-1">' +
+        l.slice(0, 5).map(function (p) { return D.card(p).replace('loading="lazy"', 'loading="eager"'); }).join('') +
+        '</div><button class="sbtn next" type="button" aria-label="Next ' + D.esc(c.name) + '">\u203a</button></div></section>';
     });
     var tiles = '';
     tiles += '<div class="t i-1"><span class="ico" aria-hidden="true">৳</span><div><h3 style="font-size:1.1rem">Cash on delivery</h3><small>Pay when it arrives</small></div></div>' +
@@ -36,25 +33,20 @@
       '<div class="t i-3"><span class="ico" aria-hidden="true">✓</span><div><h3 style="font-size:1.1rem">' + (D.config.ageGate ? 'Age verification' : 'Easy ordering') + '</h3><small>' + (D.config.ageGate ? 'For adults 18 and over' : 'Confirmed by phone') + '</small></div></div>';
     app.innerHTML = (D.config.ageGate ? '<p class="notice">Smoking is harmful to health. Not sold to anyone under 18.</p>' : '') +
       '<section class="hero" aria-label="Hero"><div class="txt"><span class="crumb">Home</span><h1>Duty free, <em>delivered</em></h1><p>' + D.esc(D.config.heroText) + '</p><div class="acts"><a class="btn" href="#/store">Shop now</a>' + (D.config.cta2 ? '<a class="btn line" href="' + D.config.cta2.href + '">' + D.esc(D.config.cta2.label) + '</a>' : '') + '</div></div><div class="art" aria-hidden="true">' + heroArt() + '</div></section>' +
-      (brands ? '<section class="brands" aria-label="Brands"><h2>Shop by brand</h2><div class="slider" id="bslider"><button class="sbtn prev" type="button" aria-label="Previous">\u2039</button><div class="strack" tabindex="-1">' + brands + '</div><button class="sbtn next" type="button" aria-label="Next">\u203a</button><div class="sdots" aria-hidden="true"></div></div></section>' : '') +
+      (brands ? '<div class="catrows">' + brands + '</div>' : '') +
       '<section class="bento" aria-label="Delivery and payment">' + tiles + '</section>';
 
-    (function () {
-      var root = document.getElementById('bslider'); if (!root) return;
-      var tr = root.querySelector('.strack'), sl = [].slice.call(tr.children), dots = root.querySelector('.sdots'), t = null, reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-      dots.innerHTML = sl.map(function () { return '<i></i>'; }).join('');
+    [].forEach.call(app.querySelectorAll('.slider'), function (root) {
+      var tr = root.querySelector('.strack'), sl = [].slice.call(tr.children), prev = root.querySelector('.prev'), next = root.querySelector('.next');
+      var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
       function idx() { var best = 0, bd = 1e9; sl.forEach(function (e, i) { var d = Math.abs(e.offsetLeft - tr.offsetLeft - tr.scrollLeft); if (d < bd) { bd = d; best = i; } }); return best; }
-      function mark() { var i = tr.scrollLeft + tr.clientWidth >= tr.scrollWidth - 2 ? sl.length - 1 : idx(); [].forEach.call(dots.children, function (d, k) { d.className = k === i ? 'on' : ''; }); root.querySelector('.prev').disabled = tr.scrollLeft <= 2; root.querySelector('.next').disabled = tr.scrollLeft + tr.clientWidth >= tr.scrollWidth - 2; }
+      function mark() { prev.disabled = tr.scrollLeft <= 2; next.disabled = tr.scrollLeft + tr.clientWidth >= tr.scrollWidth - 2; root.classList.toggle('nomore', prev.disabled && next.disabled); }
       function go(i) { i = Math.max(0, Math.min(sl.length - 1, i)); tr.scrollTo({ left: sl[i].offsetLeft - tr.offsetLeft, behavior: reduce ? 'auto' : 'smooth' }); }
-      root.querySelector('.prev').addEventListener('click', function () { go(idx() - 1); });
-      root.querySelector('.next').addEventListener('click', function () { go(idx() + 1); });
-      tr.addEventListener('scroll', function () { clearTimeout(tr._t); tr._t = setTimeout(mark, 60); }, { passive: true });
-      mark();
-      function stop() { if (t) { clearInterval(t); t = null; } }
-      function play() { if (reduce || t) return; t = setInterval(function () { if (!document.body.contains(root)) return stop(); var atEnd = tr.scrollLeft + tr.clientWidth >= tr.scrollWidth - 2; go(atEnd ? 0 : idx() + 1); }, 4500); }
-      ['pointerdown', 'focusin', 'mouseenter', 'touchstart'].forEach(function (ev) { root.addEventListener(ev, stop, { passive: true }); });
-      play();
-    })();
+      prev.addEventListener('click', function () { go(idx() - 1); });
+      next.addEventListener('click', function () { go(idx() + 1); });
+      tr.addEventListener('scroll', function () { clearTimeout(tr._t); tr._t = setTimeout(mark, 50); }, { passive: true });
+      mark(); window.addEventListener('resize', mark);
+    });
 
     return 'Home';
   });
