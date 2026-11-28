@@ -27,8 +27,8 @@
       if (!c) return;
       var n = count(c.id); if (!n) return;
       var rp = repr(c.id);
-      brands += '<a class="bcard" href="#/store?cat=' + encodeURIComponent(c.id) + '" aria-label="' + D.esc(c.name) + ', ' + n + (n === 1 ? ' product' : ' products') + '"><span class="pic">' + (rp ? D.picHtml(rp) : '<span class="blob" style="--c:#c9000b">' + D.esc(c.glyph) + '</span>') + '</span>' +
-        '<span class="binfo"><h3>' + D.esc(c.name) + '</h3><small>' + (rp ? D.esc(rp.name) + ' \u00b7 ' : '') + n + (n === 1 ? ' product' : ' products') + '</small></span><span class="go" aria-hidden="true">\u2192</span></a>';
+      brands += '<a class="bcard" href="#/store?cat=' + encodeURIComponent(c.id) + '" aria-label="' + D.esc(c.name) + ', ' + n + (n === 1 ? ' product' : ' products') + '"><span class="pic">' + (rp ? D.picHtml(rp, true) : '<span class="blob" style="--c:#c9000b">' + D.esc(c.glyph) + '</span>') + '</span>' +
+        '<span class="binfo"><h3>' + D.esc(c.name) + '</h3>' + (rp ? '<span class="pn">' + D.esc(rp.name) + '</span>' : '') + '<small>' + n + (n === 1 ? ' product' : ' products') + '</small></span><span class="go" aria-hidden="true">\u2192</span></a>';
     });
     var tiles = '';
     tiles += '<div class="t i-1"><span class="ico" aria-hidden="true">৳</span><div><h3 style="font-size:1.1rem">Cash on delivery</h3><small>Pay when it arrives</small></div></div>' +
@@ -36,8 +36,25 @@
       '<div class="t i-3"><span class="ico" aria-hidden="true">✓</span><div><h3 style="font-size:1.1rem">' + (D.config.ageGate ? 'Age verification' : 'Easy ordering') + '</h3><small>' + (D.config.ageGate ? 'For adults 18 and over' : 'Confirmed by phone') + '</small></div></div>';
     app.innerHTML = (D.config.ageGate ? '<p class="notice">Smoking is harmful to health. Not sold to anyone under 18.</p>' : '') +
       '<section class="hero" aria-label="Hero"><div class="txt"><span class="crumb">Home</span><h1>Duty free, <em>delivered</em></h1><p>' + D.esc(D.config.heroText) + '</p><div class="acts"><a class="btn" href="#/store">Shop now</a>' + (D.config.cta2 ? '<a class="btn line" href="' + D.config.cta2.href + '">' + D.esc(D.config.cta2.label) + '</a>' : '') + '</div></div><div class="art" aria-hidden="true">' + heroArt() + '</div></section>' +
-      (brands ? '<section class="brands" aria-label="Brands"><h2>Shop by brand</h2><div class="bgrid">' + brands + '</div></section>' : '') +
+      (brands ? '<section class="brands" aria-label="Brands"><h2>Shop by brand</h2><div class="slider" id="bslider"><button class="sbtn prev" type="button" aria-label="Previous">\u2039</button><div class="strack" tabindex="-1">' + brands + '</div><button class="sbtn next" type="button" aria-label="Next">\u203a</button><div class="sdots" aria-hidden="true"></div></div></section>' : '') +
       '<section class="bento" aria-label="Delivery and payment">' + tiles + '</section>';
+
+    (function () {
+      var root = document.getElementById('bslider'); if (!root) return;
+      var tr = root.querySelector('.strack'), sl = [].slice.call(tr.children), dots = root.querySelector('.sdots'), t = null, reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+      dots.innerHTML = sl.map(function () { return '<i></i>'; }).join('');
+      function idx() { var best = 0, bd = 1e9; sl.forEach(function (e, i) { var d = Math.abs(e.offsetLeft - tr.offsetLeft - tr.scrollLeft); if (d < bd) { bd = d; best = i; } }); return best; }
+      function mark() { var i = tr.scrollLeft + tr.clientWidth >= tr.scrollWidth - 2 ? sl.length - 1 : idx(); [].forEach.call(dots.children, function (d, k) { d.className = k === i ? 'on' : ''; }); root.querySelector('.prev').disabled = tr.scrollLeft <= 2; root.querySelector('.next').disabled = tr.scrollLeft + tr.clientWidth >= tr.scrollWidth - 2; }
+      function go(i) { i = Math.max(0, Math.min(sl.length - 1, i)); tr.scrollTo({ left: sl[i].offsetLeft - tr.offsetLeft, behavior: reduce ? 'auto' : 'smooth' }); }
+      root.querySelector('.prev').addEventListener('click', function () { go(idx() - 1); });
+      root.querySelector('.next').addEventListener('click', function () { go(idx() + 1); });
+      tr.addEventListener('scroll', function () { clearTimeout(tr._t); tr._t = setTimeout(mark, 60); }, { passive: true });
+      mark();
+      function stop() { if (t) { clearInterval(t); t = null; } }
+      function play() { if (reduce || t) return; t = setInterval(function () { if (!document.body.contains(root)) return stop(); var atEnd = tr.scrollLeft + tr.clientWidth >= tr.scrollWidth - 2; go(atEnd ? 0 : idx() + 1); }, 4500); }
+      ['pointerdown', 'focusin', 'mouseenter', 'touchstart'].forEach(function (ev) { root.addEventListener(ev, stop, { passive: true }); });
+      play();
+    })();
 
     return 'Home';
   });
