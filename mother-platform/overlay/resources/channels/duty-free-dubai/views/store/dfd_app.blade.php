@@ -2,7 +2,7 @@
 @php
   $A = fn($f) => \App\Support\ChannelScope::asset($f);
   $ch = \App\Support\ChannelScope::cur();
-  $json = \Illuminate\Support\Facades\Cache::remember('dfd.app.' . \App\Support\ChannelScope::key() . (\Illuminate\Support\Facades\Cache::get('store.ver') ?: 0), 300, function () {
+  $json = \Illuminate\Support\Facades\Cache::remember('dfd.app2.' . \App\Support\ChannelScope::key() . (\Illuminate\Support\Facades\Cache::get('store.ver') ?: 0), 300, function () {
     $SC = \App\Http\Controllers\StoreController::class;
     $cats = \Illuminate\Support\Facades\DB::table('categories')->whereNotNull('slug')->get(['id', 'slug', 'name'])->keyBy('id');
     $rows = \App\Support\StockGuard::listable(\Illuminate\Support\Facades\DB::table('products')->where('published', true))->orderBy('name')->limit(1500)->get();
@@ -12,7 +12,8 @@
       $sub = trim((string)($p->sub ?? ''));
       $cid = $sub !== '' ? (string)\App\Support\Slugs::subSlug($sub) : (string)$top->slug; if ($cid === '') $cid = (string)$top->slug;
       $cname = $sub !== '' ? $sub : (string)$top->name;
-      if (!isset($C[$cid])) $C[$cid] = ['id' => $cid, 'name' => $cname, 'glyph' => mb_strtoupper(mb_substr($cname, 0, 1)), 'sort' => count($C) + 1];
+      if (!isset($C[$cid])) $C[$cid] = ['id' => $cid, 'name' => $cname, 'glyph' => mb_strtoupper(mb_substr($cname, 0, 1)), 'sort' => count($C) + 1, 'top' => (string)$top->slug, 'sum' => 0, 'n' => 0];
+      if ((float)$p->price > 0) { $C[$cid]['sum'] += (float)$p->price; $C[$cid]['n']++; }
       $T[(string)$top->slug] = (string)$top->name;
       $ps = (string)($p->path_slug ?? '');
       $desc = trim(preg_replace('/\s+/u', ' ', strip_tags((string)($p->description ?? ''))));
@@ -21,7 +22,11 @@
         'price' => (float)$p->price > 0 ? (int)round((float)$p->price) : 0, 'currency' => 'BDT', 'unit' => '', 'stock' => \App\Support\StockGuard::sellable($p) ? 99 : 0,
         'description' => mb_substr($desc, 0, 320), 'specs' => $specs, 'image' => (string)($p->image ?: '/product-placeholder'), 'url' => $SC::url($p)];
     }
-    return json_encode(['c' => array_values($C), 'p' => $P, 't' => $T], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP);
+    // Order (owner, 28 Nov 2026): premium brands first (highest average price), lighters & accessories always last
+    $C = array_values($C);
+    usort($C, function ($a, $b) { $la = str_contains($a['top'], 'lighter') ? 1 : 0; $lb = str_contains($b['top'], 'lighter') ? 1 : 0; if ($la !== $lb) return $la <=> $lb; $aa = $a['n'] ? $a['sum'] / $a['n'] : 0; $ab = $b['n'] ? $b['sum'] / $b['n'] : 0; return $ab <=> $aa ?: strcmp($a['name'], $b['name']); });
+    foreach ($C as $i => &$c) { $c['sort'] = $i + 1; unset($c['sum'], $c['n']); } unset($c);
+    return json_encode(['c' => $C, 'p' => $P, 't' => $T], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP);
   });
   $homeTitle = trim((string)($ch->cfg['home_title'] ?? '')) ?: 'Duty Free Dubai';
 @endphp

@@ -14,14 +14,18 @@
   function count(cat) { return D.products.filter(function (p) { return p.category === cat; }).length; }
   D.route(/^\/$/, function (app) {
     var order = ['c-hard', 'c-slim', 'c-nano', 'c-cigar', 'c-vape'];
-    var tiles = '<a class="t f-all" href="#/store"><svg viewBox="0 0 200 200" aria-hidden="true"><g fill="none" stroke="#fff" stroke-opacity=".18" stroke-width="6"><path d="M0 40h140"/><path d="M0 70h120"/><path d="M0 100h100"/><path d="M0 130h80"/><path d="M0 160h60"/></g></svg><span class="go" aria-hidden="true">→</span><h3>All products</h3><small>' + D.products.length + ' products</small></a>';
-    D.categories.slice().sort(function (a, b) { return count(b.id) - count(a.id); }).slice(0, 5).forEach(function (c, i) {
-      tiles += '<a class="t ' + order[i] + '" href="#/store?cat=' + c.id + '"><span class="ico" aria-hidden="true">' + c.glyph + '</span><span class="go" aria-hidden="true">→</span><div><h3>' + D.esc(c.name) + '</h3><small>' + count(c.id) + (count(c.id) === 1 ? ' product' : ' products') + '</small></div></a>';
+    function isL(c) { return /lighter/.test(c.top || ''); }
+    var mainTop = ''; for (var ti in D.tops) { if (!/lighter/.test(ti)) { mainTop = ti; break; } }
+    var mainN = D.products.filter(function (p) { return !mainTop || p.top === mainTop; }).length;
+    var tiles = '<a class="t f-all" href="#/store' + (mainTop ? '?top=' + encodeURIComponent(mainTop) : '') + '"><svg viewBox="0 0 200 200" aria-hidden="true"><g fill="none" stroke="#fff" stroke-opacity=".18" stroke-width="6"><path d="M0 40h140"/><path d="M0 70h120"/><path d="M0 100h100"/><path d="M0 130h80"/><path d="M0 160h60"/></g></svg><span class="go" aria-hidden="true">\u2192</span><h3>' + D.esc(mainTop ? D.tops[mainTop] : 'All products') + '</h3><small>' + mainN + ' products</small></a>';
+    D.categories.filter(function (c) { return !isL(c); }).slice(0, 5).forEach(function (c, i) {
+      tiles += '<a class="t ' + order[i] + '" href="#/store?cat=' + c.id + '"><span class="ico" aria-hidden="true">' + c.glyph + '</span><span class="go" aria-hidden="true">\u2192</span><div><h3>' + D.esc(c.name) + '</h3><small>' + count(c.id) + (count(c.id) === 1 ? ' product' : ' products') + '</small></div></a>';
     });
     tiles += '<div class="t i-1"><span class="ico" aria-hidden="true">৳</span><div><h3 style="font-size:1.1rem">Cash on delivery</h3><small>Pay when it arrives</small></div></div>' +
       '<div class="t i-2"><span class="ico" aria-hidden="true">→</span><div><h3 style="font-size:1.1rem">Nationwide delivery</h3><small>Across Bangladesh</small></div></div>' +
       '<div class="t i-3"><span class="ico" aria-hidden="true">✓</span><div><h3 style="font-size:1.1rem">' + (D.config.ageGate ? 'Age verification' : 'Easy ordering') + '</h3><small>' + (D.config.ageGate ? 'For adults 18 and over' : 'Confirmed by phone') + '</small></div></div>';
-    var feat = D.products.filter(function (p) { return D.priced(p) && p.stock > 0; }).slice(0, 4);
+    var rank = {}; D.categories.forEach(function (c, i) { rank[c.id] = isL(c) ? 1000 + i : i; });
+    var feat = D.products.filter(function (p) { return D.priced(p) && p.stock > 0 && !/lighter/.test(p.top || ''); }).sort(function (a, b) { return (rank[a.category] || 0) - (rank[b.category] || 0); }).slice(0, 4);
     app.innerHTML = (D.config.ageGate ? '<p class="notice">Smoking is harmful to health. Not sold to anyone under 18.</p>' : '') +
       '<section class="hero" aria-label="Hero"><div class="txt"><span class="crumb">Home</span><h1>Duty free, <em>delivered</em></h1><p>' + D.esc(D.config.heroText) + '</p><div class="acts"><a class="btn" href="#/store">Shop now</a>' + (D.config.cta2 ? '<a class="btn line" href="' + D.config.cta2.href + '">' + D.esc(D.config.cta2.label) + '</a>' : '') + '</div></div><div class="art" aria-hidden="true">' + heroArt() + '</div></section>' +
       '<section class="bento" aria-label="Categories">' + tiles + '</section>' +
