@@ -903,13 +903,13 @@ class StoreController extends Controller {
   }
 
   public function sitemap(?string $part = null) {
-    $B = \App\Support\Domain::main(); $pre = 'smap24.' . (Cache::get('store.ver') ?: 0) . (\App\Support\CleanSite::on() ? '.c' : '') . '.';
+    $B = \App\Support\Domain::main(); $pre = 'smap24.' . \App\Support\ChannelScope::key() . (Cache::get('store.ver') ?: 0) . (\App\Support\CleanSite::on() ? '.c' : '') . '.';
     $idx = Cache::get($pre . 'idx');
     if (!is_array($idx) || ($part !== null && isset($idx[$part]) && !Cache::has($pre . 'p.' . $part))) {
       $parts = $this->sitemapParts(); $idx = [];
       foreach ($parts as $k => $body) { Cache::put($pre . 'p.' . $k, $body, 4200); $idx[$k] = substr_count($body, '<url>'); }
       Cache::put($pre . 'idx', $idx, 3600);
-      try { Cache::put('store.sitemap.total', array_sum($idx), 86400); } catch (\Throwable $e) {}
+      try { if (!\App\Support\ChannelScope::cur()) Cache::put('store.sitemap.total', array_sum($idx), 86400); } catch (\Throwable $e) {}
     }
     $h = ['Content-Type' => 'application/xml; charset=utf-8'];
     if ($part === null) {

@@ -124,6 +124,6 @@ class ChannelScope {
     $key = (string)($c->cfg['access_key'] ?? ''); if ($key === '' || !hash_equals($key, (string)request()->query('pv'))) return null;
     return cookie('chpv', hash('sha256', 'chpv' . $c->id . $key), 60 * 24 * 14, '/', null, true, true, false, 'lax');
   }
-  /** Orders open only on a Live channel. */
-  public static function ordersOpen(): bool { $c = self::cur(); return !$c || $c->status === 'live'; }
+  /** Orders open only on a Live channel whose settings also say orders_open = true (a Live channel can be a public catalogue with orders and payments still closed). The main site is never affected. */
+  public static function ordersOpen(): bool { $c = self::cur(); return !$c || ($c->status === 'live' && ($c->cfg['orders_open'] ?? false) === true); }
 }
