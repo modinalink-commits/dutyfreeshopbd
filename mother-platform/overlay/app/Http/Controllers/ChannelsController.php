@@ -45,6 +45,10 @@ class ChannelsController extends Controller {
     if (!in_array($status, ['draft', 'preview', 'paused'], true)) $status = $c->status === 'live' ? 'live' : 'draft'; // "live" can only be set by a separate approval, never from this form
     $s = $this->build($d, $old, 'Settings saved' . ($status !== $c->status ? ' · status ' . $c->status . ' → ' . $status : ''), $this->changed($old, $d));
     if (($s['access_key'] ?? '') === '') $s['access_key'] = Str::random(24);
+    if ($status === 'live' && $r->has('orders_open_present')) { // Cash-on-delivery orders on a Live channel: one switch, recorded in the history
+      $want = $r->boolean('orders_open');
+      if ((bool)($s['orders_open'] ?? false) !== $want) { $s['orders_open'] = $want; array_unshift($s['history'], ['at' => now()->toDateTimeString(), 'by' => Auth::user()->name ?? 'staff', 'what' => 'Orders (Cash on delivery) ' . ($want ? 'OPENED' : 'CLOSED')]); $s['history'] = array_slice($s['history'], 0, 40); }
+    }
     DB::table('sales_channels')->where('id', $id)->update(['name' => $d['name'], 'slug' => $c->slug ?: $this->slug($d['name']), 'domain' => $d['domain'], 'status' => $status, 'active' => $status === 'live', 'settings' => json_encode($s, JSON_UNESCAPED_UNICODE), 'updated_at' => now()]);
     ChannelScope::forget((int)$id);
     return back()->with('ok', 'Saved. The storefront of this channel now follows the ticked categories and price rules.');
