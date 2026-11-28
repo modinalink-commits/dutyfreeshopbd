@@ -27,6 +27,16 @@ class DupGuard {
   public static function block(object $o, string $to): ?string {
     if (!self::ready() || $o->status === $to || !in_array($to, self::GATED, true) || !empty($o->dup_allowed_at)) return null;
     $x = self::others($o); if (!$x) return null;
+    // Owner rule (28 Nov 2026): a manager/admin who moves a CANCELLED order back to a live status has already decided it is wanted, so no second "Allow" step.
+    // Only a logged-in manager/admin (never cron/queue/AI). The permission is recorded on the order and in its log so later steps (Packaging/Shipment) do not stop again.
+    if ($o->status === 'Cancel' && \Illuminate\Support\Facades\Auth::check() && \App\Http\Middleware\ModulePermission::canDupAllow(\Illuminate\Support\Facades\Auth::user())) {
+      try {
+        $u = \Illuminate\Support\Facades\Auth::user();
+        DB::table('orders')->where('id', $o->id)->update(['dup_allowed_at' => now(), 'dup_allowed_by' => $u->name, 'updated_at' => now()]);
+        DB::table('order_status_logs')->insert(['order_id' => $o->id, 'user_id' => $u->id, 'user_name' => $u->name, 'from_status' => $o->status, 'to_status' => $o->status, 'note' => 'Duplicate warning allowed automatically: cancelled order re-opened by ' . $u->name . ' (owner rule)', 'created_at' => now(), 'updated_at' => now()]);
+        return null;
+      } catch (\Throwable $e) { /* if the record fails, keep the guard */ }
+    }
     return 'Duplicate order: this customer has ' . (count($x) + 1) . ' orders today, or an earlier one still in Packaging/Shipment or returned/partly delivered (' . implode(', ', array_map(fn($y) => '#' . $y['invoice'], $x)) . '). Check with the customer, then press "Allow" on this order in the list. It cannot go to ' . $to . ' without that manual permission.';
   }
   /** For the order list: [orderId => ['n'=>count, 'inv'=>[...], 'ok'=>bool, 'by'=>name]] for a page of orders that are not yet past the gate. */
