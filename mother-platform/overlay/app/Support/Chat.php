@@ -812,7 +812,7 @@ class Chat {
     try {
       $tid = (int)$t->id; if (ChatOwner::ready() && $t->assigned_to !== null) return;
       if ($t->channel !== 'web' && !AiChat::chanOn()) return;
-      $txt = ChatRules::ACK; [$sent, $err] = self::aiDeliver($t, $txt, true);
+      $txt = ChatRules::ackText($t); [$sent, $err] = self::aiDeliver($t, $txt, true);
       if (!$sent && ChatOwner::$refused) return;
       DB::table('chat_messages')->insert(['thread_id'=>$tid, 'dir'=>'out', 'kind'=>'text', 'body'=>$txt, 'user_name'=>'Claude AI', 'is_ai'=>true, 'status'=>$sent ? 'sent' : 'failed', 'error'=>$err, 'created_at'=>now(), 'updated_at'=>now()]);
       if ($sent) DB::table('chat_threads')->where('id', $tid)->update(['last_message'=>mb_substr($txt, 0, 300), 'last_dir'=>'out', 'last_at'=>now(), 'updated_at'=>now()]);
