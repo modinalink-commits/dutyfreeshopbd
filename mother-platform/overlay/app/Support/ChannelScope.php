@@ -43,6 +43,21 @@ class ChannelScope {
   public static function ids(?object $c = null): array { $c = $c ?: self::cur(); return $c ? array_keys($c->adj) : []; }
   public static function allows($cid, ?object $c = null): bool { $c = $c ?: self::cur(); return !$c || isset($c->adj[(int)$cid]); }
   /** Cache-key part: a different channel, or a changed channel, never shares cached lists with the main site. */
+  /** Storefront folder of the current channel: resources/channels/<slug>/views (pages, layout, components) and public/channels/<slug>/ (css, js, logo, images).
+   *  Each channel owns its own folder; nothing is shared between channels, so changing one channel's design never touches another. Null on the main site. */
+  public static function themeSlug(): ?string {
+    $c = self::cur(); $s = $c ? (string)($c->slug ?? '') : ''; if (!preg_match('/^[a-z0-9][a-z0-9-]{0,60}$/', $s)) return null;
+    return is_dir(resource_path('channels/' . $s . '/views')) ? $s : null;
+  }
+  /** Views found in the channel folder win (same names as store.*: store/home.blade.php, store/layout.blade.php ...); anything the channel does not override falls back to the default storefront view. */
+  public static function mountTheme(): void {
+    try { if ($s = self::themeSlug()) app('view')->getFinder()->prependLocation(resource_path('channels/' . $s . '/views')); } catch (\Throwable $e) { report($e); }
+  }
+  /** URL of a file in the current channel's public folder (cache-busted by file time), e.g. ChannelScope::asset('css/theme.css'). Empty on the main site. */
+  public static function asset(string $file): string {
+    $c = self::cur(); $s = $c ? (string)($c->slug ?? '') : ''; if (!preg_match('/^[a-z0-9][a-z0-9-]{0,60}$/', $s) || str_contains($file, '..')) return '';
+    $f = public_path('channels/' . $s . '/' . ltrim($file, '/')); return '/channels/' . $s . '/' . ltrim($file, '/') . (is_file($f) ? '?v=' . filemtime($f) : '');
+  }
   public static function key(): string { $c = self::cur(); return $c ? 'ch' . $c->id . '.' . strtotime((string)$c->updated_at) . '.' : ''; }
   /** Only the ticked categories (products query; $a = alias prefix). No-op on the main site. */
   public static function apply($qb, string $a = 'products.') {

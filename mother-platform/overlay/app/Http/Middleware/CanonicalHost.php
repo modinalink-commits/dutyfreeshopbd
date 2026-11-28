@@ -11,6 +11,7 @@ class CanonicalHost {
     // Google was crawling store pages on mail.dutyfreebd.com (not a real storefront address; many returned 5xx) -> send them to the same path on the main domain.
     try { if ($r->isMethod('GET') && strtolower($r->getHost()) === 'mail.' . Domain::HOST && !$r->is('admin', 'admin/*', 'api/*')) return redirect()->to(Domain::main() . $r->getRequestUri(), 301); } catch (\Throwable $e) {}
     try { if ($g = \App\Support\ChannelScope::gate($r)) return $g; } catch (\Throwable $e) {} // sales channel that is not Live: private
+    \App\Support\ChannelScope::mountTheme(); // the channel's own storefront folder (no-op on the main site)
     $resp = $next($r);
     try { if (\App\Support\ChannelScope::cur()) { if ($ck = \App\Support\ChannelScope::pvCookie()) $resp->headers->setCookie($ck); if (\App\Support\ChannelScope::cur()->status !== 'live') $resp->headers->set('X-Robots-Tag', 'noindex, nofollow'); return $resp; } } catch (\Throwable $e) {}
     try {

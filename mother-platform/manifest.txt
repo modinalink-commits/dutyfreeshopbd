@@ -1969,3 +1969,14 @@ app/Http/Controllers/ChannelsController.php
 database/migrations/2026_11_28_110000_sales_channels_dubai.php
 resources/views/channels.blade.php
 resources/views/channel_form.blade.php
+resources/channels/duty-free-dubai/views/store/.gitkeep
+public/channels/duty-free-dubai/css/.gitkeep
+public/channels/duty-free-dubai/js/.gitkeep
+public/channels/duty-free-dubai/img/.gitkeep
+public/channels/duty-free-dubai/logo/.gitkeep
+resources/channels/childcity/views/store/.gitkeep
+public/channels/childcity/css/.gitkeep
+public/channels/childcity/js/.gitkeep
+public/channels/childcity/img/.gitkeep
+public/channels/childcity/logo/.gitkeep
+resources/channels/README.md
