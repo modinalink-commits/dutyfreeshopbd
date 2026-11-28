@@ -18,7 +18,7 @@ class SeoMgr
     return isset($all[$k]) && $all[$k] !== null ? (string)$all[$k] : $def;
   }
   public static function put(string $k, ?string $v): void { DB::table('settings')->updateOrInsert(['key' => $k], ['value' => (string)$v, 'updated_at' => now(), 'created_at' => now()]); Cache::forget('seo.settings'); }
-  public static function site(): string { return self::get('seo_site_name', 'DutyFree BD'); }
+  public static function site(): string { try { $c = ChannelScope::cur(); if ($c && trim((string)($c->name ?? '')) !== '') return trim((string)$c->name); } catch (\Throwable $e) {} return self::get('seo_site_name', 'DutyFree BD'); } // a sales channel shows its own name; the main site is unchanged
 
   public static function slug(string $s): string {
     $s = strtolower(trim($s)); $s = preg_replace('/[^a-z0-9\-\s_]+/', '', $s); $s = preg_replace('/[\s_]+/', '-', $s); return trim(preg_replace('/-+/', '-', $s), '-');

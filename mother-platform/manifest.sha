@@ -277,7 +277,7 @@ ecee6e2b1941abdeb0f16a8e877fe7b38d4250c7 public/apple-touch-icon.png
 c94a778fefb027fc04d7101883ca0bf17fd7a5ec public/android-chrome-512x512.png
 bcde0b74803c5e40b5f84c0569606e2ac90bd589 resources/views/favicon_head.blade.php
 c9dd79c6313174f1509a784dc3dd4a1ac46e47f4 database/migrations/2026_11_01_000007_pages_seo.php
-0ae50babfc91a36641e6c1ace35928aa829a62b5 app/Support/SeoMgr.php
+5cb3a5a024715e66abecfe578da08a727c56e917 app/Support/SeoMgr.php
 12adc114544c8fd13c2fc995d3579c485f12fadf app/Http/Controllers/SeoController.php
 4b5e69fc28ce8164cf7d8ef8ebcbba6dc8b20748 resources/views/seo.blade.php
 72087c82f891325b2c7a878f4be5007bb314e361 resources/views/seo_edit.blade.php
