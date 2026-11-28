@@ -76,7 +76,6 @@
     <nav class="mnav" aria-label="Main (mobile)"><a href="#/" data-nav="/">Home</a><a href="#/store" data-nav="/store">Store</a><a href="#/cart" data-nav="/cart">Cart</a></nav>
   </div>
 </header>
-<div class="awning" aria-hidden="true" style="position:sticky;top:0;margin-top:-1px"></div>
 <main class="wrap page" id="app" aria-live="off"></main>
 <footer class="wrap"><img class="flogo" src="{{ $A('logo/footer-light@2x.png') }}" alt="Duty Free Dubai" width="320" height="86"><p>&copy; {{ date('Y') }} Duty Free Dubai. Smoking is harmful to health. Not sold to anyone under 18.</p></footer>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>

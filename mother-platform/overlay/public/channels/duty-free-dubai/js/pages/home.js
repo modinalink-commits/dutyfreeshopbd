@@ -31,8 +31,7 @@
     tiles += '<div class="t i-1"><span class="ico" aria-hidden="true">৳</span><div><h3 style="font-size:1.1rem">Cash on delivery</h3><small>Pay when it arrives</small></div></div>' +
       '<div class="t i-2"><span class="ico" aria-hidden="true">→</span><div><h3 style="font-size:1.1rem">Nationwide delivery</h3><small>Across Bangladesh</small></div></div>' +
       '<div class="t i-3"><span class="ico" aria-hidden="true">✓</span><div><h3 style="font-size:1.1rem">' + (D.config.ageGate ? 'Age verification' : 'Easy ordering') + '</h3><small>' + (D.config.ageGate ? 'For adults 18 and over' : 'Confirmed by phone') + '</small></div></div>';
-    app.innerHTML = (D.config.ageGate ? '<p class="notice">Smoking is harmful to health. Not sold to anyone under 18.</p>' : '') +
-      '<section class="hero" aria-label="Hero"><div class="txt"><span class="crumb">Home</span><h1>Duty free, <em>delivered</em></h1><p>' + D.esc(D.config.heroText) + '</p><div class="acts"><a class="btn" href="#/store">Shop now</a>' + (D.config.cta2 ? '<a class="btn line" href="' + D.config.cta2.href + '">' + D.esc(D.config.cta2.label) + '</a>' : '') + '</div></div><div class="art" aria-hidden="true">' + heroArt() + '</div></section>' +
+    app.innerHTML = '<section class="hero" aria-label="Hero"><div class="txt"><span class="crumb">Home</span><h1>Duty free, <em>delivered</em></h1><p>' + D.esc(D.config.heroText) + '</p><div class="acts"><a class="btn" href="#/store">Shop now</a>' + (D.config.cta2 ? '<a class="btn line" href="' + D.config.cta2.href + '">' + D.esc(D.config.cta2.label) + '</a>' : '') + '</div></div><div class="art" aria-hidden="true">' + heroArt() + '</div></section>' +
       (brands ? '<div class="catrows">' + brands + '</div>' : '') +
       '<section class="bento" aria-label="Delivery and payment">' + tiles + '</section>';
 
