@@ -52,11 +52,11 @@ e92c5075c5266882f35b3a3e18bfe14f44d16178 resources/views/report_details.blade.ph
 2f840d53881d8aeaf0c5959161774787e5f540bc database/migrations/2026_10_31_000005_storefront.php
 03d797d8a164509d198bf294374b87f67071c968 app/Console/Commands/MotherSyncFeed.php
 69fea07d5dc90ef812b3d8f9d79c2109de84bdfd app/Console/Commands/MotherGuard.php
-21cbebaf512e41868d2f4b3d0219aca00a5e94cf app/Http/Controllers/StoreController.php
+c4e48ed8341409686776e194268231eadede06dc app/Http/Controllers/StoreController.php
 baaa965ef365c5d747fe7ce67005041fd669e98d resources/views/store/layout.blade.php
 80d4fbcccf85561a18b9ea7f3555139732832941 resources/views/store/card.blade.php
 4a5eb7ee8d7960886fcb97c690bbb604ec69eb1f resources/views/store/home_sec.blade.php
-f3f31bde1baae0e725661374e1ca58b48ded006f resources/views/store/home.blade.php
+b347b49acb15111b870698ac27cfe4de0b3eda52 resources/views/store/home.blade.php
 94f2cbd77b6dd59f371ed09133bfb9d25c1b53cb resources/views/store/category.blade.php
 d6d91112a993c4a13a31c4083964b25948710a3b resources/views/store/product.blade.php
 bb3768d278e3bf05865aa4877098a62d0d5039dc resources/views/store/search.blade.php
@@ -2000,3 +2000,4 @@ f2ca28b52b26c6e169d1de710c53821aadc7b73d public/channels/duty-free-dubai/logo/he
 171d4cf23f567951f3dda7748782e691ec217882 public/channels/duty-free-dubai/logo/pwa-192.png
 6997ca62ad56506f9013bd373808fd190a7315ff public/channels/duty-free-dubai/logo/pwa-512.png
 3569bf365d78a36d64cc447eba600f1da1c17eb6 resources/channels/duty-free-dubai/views/store/theme_foot.blade.php
+05ccbeb57f1d586e2801b793bc4daf95abdb17c5 database/migrations/2026_11_28_160000_dubai_channel_live_catalogue.php

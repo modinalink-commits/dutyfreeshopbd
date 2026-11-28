@@ -2000,3 +2000,4 @@ public/channels/duty-free-dubai/logo/header-light@2x.png
 public/channels/duty-free-dubai/logo/pwa-192.png
 public/channels/duty-free-dubai/logo/pwa-512.png
 resources/channels/duty-free-dubai/views/store/theme_foot.blade.php
+database/migrations/2026_11_28_160000_dubai_channel_live_catalogue.php
