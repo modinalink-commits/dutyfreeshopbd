@@ -40,6 +40,9 @@
         fetch('/cart-items?ids=' + encodeURIComponent(ids) + '&ph=' + (/^01\d{9}$/.test(ph) ? ph : '') + '&addr=' + encodeURIComponent(ad), { credentials: 'same-origin', headers: { Accept: 'application/json' } })
           .then(function (r) { return r.json(); }).then(function (j) {
             if (!$('s-tot') || j.total == null) return;
+            var go = $('c-go'), pn = $('co-note');
+            if (j.prepaid_only) { go.disabled = true; pn.hidden = false; pn.innerHTML = 'This product cannot be ordered with cash on delivery, and online payment is not open on this store yet. Please call <a href="tel:+8801871600600">01871600600</a> to order.'; }
+            else if (go.disabled && !go.getAttribute('data-busy')) { go.disabled = false; if (D.config.liveOrders) pn.hidden = true; }
             $('s-sub').textContent = D.money(j.sub); $('s-ship').textContent = j.ship > 0 ? D.money(j.ship) : 'Free';
             var dd = $('s-disc'); dd.style.display = j.disc > 0 ? '' : 'none'; dd.lastChild.textContent = '− ' + D.money(j.disc);
             $('s-tot').textContent = D.money(j.total);
@@ -80,7 +83,7 @@
       if (!ok) { var first = f.querySelector('.err:not(:empty)'); if (first && first.previousElementSibling) first.previousElementSibling.focus(); return; }
       var cn = $('co-note');
       if (!D.config.liveOrders) { cn.hidden = false; cn.textContent = 'Orders are not open on this store yet. Nothing was sent.'; cn.scrollIntoView({ block: 'center' }); return; }
-      var btn = $('c-go'); btn.disabled = true; btn.textContent = 'Placing order…'; cn.hidden = true;
+      var btn = $('c-go'); btn.disabled = true; btn.setAttribute('data-busy', '1'); btn.textContent = 'Placing order…'; cn.hidden = true;
       post('/order', { name: n, phone: ph, address: ad, pay: 'cod', age18: 1, items: ids, website: '' }).then(function (j) {
         if (!j || !j.ok) { btn.disabled = false; btn.textContent = 'Place order'; cn.hidden = false; cn.textContent = (j && j.error) || 'Could not place the order. Please try again.'; cn.scrollIntoView({ block: 'center' }); return; }
         ls('dfd-cust', { n: n, p: ph, a: ad });
