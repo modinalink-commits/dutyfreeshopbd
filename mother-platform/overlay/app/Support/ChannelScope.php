@@ -65,6 +65,23 @@ class ChannelScope {
     $p->_ch = 1; return $p;
   }
   public static function adjustRows($rows) { if (self::cur()) foreach ($rows as $r) self::adjust($r); return $rows; }
+  /** View data: product rows of categories this channel does not allow are removed from every list on the page (home sections, rankings, sliders, flash lists...). Returns the filtered value. */
+  public static function filterValue($d, int $depth = 0, int &$n = 0) {
+    if ($depth > 4 || $n > 3000) return $d;
+    $bad = fn($x) => is_object($x) && isset($x->category_id) && isset($x->price) && !self::allows($x->category_id);
+    if ($d instanceof \Illuminate\Pagination\AbstractPaginator) return $d;
+    if ($d instanceof \Illuminate\Support\Collection) {
+      $list = array_keys($d->all()) === range(0, max(0, $d->count() - 1)); $n += $d->count();
+      $o = $d->reject($bad)->map(fn($x) => (is_array($x) || $x instanceof \Illuminate\Support\Collection) ? self::filterValue($x, $depth + 1, $n) : $x);
+      return $list ? $o->values() : $o;
+    }
+    if (is_array($d)) {
+      $list = array_keys($d) === range(0, max(0, count($d) - 1)); $o = [];
+      foreach ($d as $k => $x) { $n++; if ($n > 3000) return $d; if ($bad($x)) continue; $o[$k] = (is_array($x) || $x instanceof \Illuminate\Support\Collection) ? self::filterValue($x, $depth + 1, $n) : $x; }
+      return $list ? array_values($o) : $o;
+    }
+    return $d;
+  }
   /** View data: every product row in the page data gets the price rule (depth and size limited). */
   public static function adjustData($d, int $depth = 0, int &$n = 0): void {
     if ($depth > 4 || $n > 3000) return;

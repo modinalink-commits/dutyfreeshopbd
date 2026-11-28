@@ -225,7 +225,7 @@ class StoreController extends Controller {
       } else { $data['new'] = $data['new']->take(12)->values(); $k = 0; $data['sec'] = array_map(function ($row) use (&$k) { $row[1] = $row[1]->take($k < 2 ? 8 : 6)->values(); $k++; return $row; }, $data['sec']); }
     } catch (\Throwable $e) { report($e); }
     if ($data['count'] === 0) return response()->view('coming', [], 503)->header('Retry-After','3600');
-    $live = $s['home_live_orders'] === '1' ? $this->liveOrders() : collect();
+    $live = ($s['home_live_orders'] === '1' && !\App\Support\ChannelScope::cur()) ? $this->liveOrders() : collect(); // other customers' orders never show on a channel
     return response()->view('store.home', $this->base($data + ['showcase'=>\App\Support\Showcase::slots(), 'live'=>$live, 'title'=>self::cleanSeo($s['site_title'] ?? '', self::HOME_TITLE), 'desc'=>self::cleanSeo($s['meta_description'] ?? '', self::HOME_DESC), 'canon'=>url('/').'/', 'home'=>true]))->header('Cache-Control','private, no-cache, max-age=0');
   }
   /** Category Slider (home): one banner per active category with up to 6 customer-visible products, best sellers (last 30 days) first, then newest. Cached 5 minutes; categories without products are skipped. */
