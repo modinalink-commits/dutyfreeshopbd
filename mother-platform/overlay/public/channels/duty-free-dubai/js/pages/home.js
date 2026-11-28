@@ -36,16 +36,50 @@
       (brands ? '<div class="catrows">' + brands + '</div>' : '') +
       '<section class="bento" aria-label="Delivery and payment">' + tiles + '</section>';
 
+    // Sliders (owner, 28 Nov 2026): slow smooth auto-advance with a pause on every view so each picture can be seen; swipe / arrows always work.
+    var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var DWELL = 4500, SLIDE_MS = 1100, RESUME = 7000;
+    function ease(t) { return t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
+    var rowIx = 0;
     [].forEach.call(app.querySelectorAll('.slider'), function (root) {
       var tr = root.querySelector('.strack'), sl = [].slice.call(tr.children), prev = root.querySelector('.prev'), next = root.querySelector('.next');
-      var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var raf = 0, timer = null, inView = false, held = false, resumeAt = 0, me = rowIx++;
+      function maxL() { return tr.scrollWidth - tr.clientWidth; }
+      function mark() { prev.disabled = tr.scrollLeft <= 2; next.disabled = tr.scrollLeft >= maxL() - 2; root.classList.toggle('nomore', maxL() <= 2); }
       function idx() { var best = 0, bd = 1e9; sl.forEach(function (e, i) { var d = Math.abs(e.offsetLeft - tr.offsetLeft - tr.scrollLeft); if (d < bd) { bd = d; best = i; } }); return best; }
-      function mark() { prev.disabled = tr.scrollLeft <= 2; next.disabled = tr.scrollLeft + tr.clientWidth >= tr.scrollWidth - 2; root.classList.toggle('nomore', prev.disabled && next.disabled); }
-      function go(i) { i = Math.max(0, Math.min(sl.length - 1, i)); tr.scrollTo({ left: sl[i].offsetLeft - tr.offsetLeft, behavior: reduce ? 'auto' : 'smooth' }); }
-      prev.addEventListener('click', function () { go(idx() - 1); });
-      next.addEventListener('click', function () { go(idx() + 1); });
+      function glide(to, ms) {
+        to = Math.max(0, Math.min(maxL(), to));
+        if (reduce) { tr.scrollLeft = to; mark(); return; }
+        cancelAnimationFrame(raf);
+        var from = tr.scrollLeft, t0 = performance.now(); if (Math.abs(to - from) < 2) return;
+        tr.style.scrollSnapType = 'none'; tr.style.scrollBehavior = 'auto';
+        (function step(now) {
+          var k = Math.min(1, (now - t0) / ms); tr.scrollLeft = from + (to - from) * ease(k);
+          if (k < 1) raf = requestAnimationFrame(step); else { tr.style.scrollSnapType = ''; tr.style.scrollBehavior = ''; mark(); }
+        })(t0);
+      }
+      function stopAnim() { cancelAnimationFrame(raf); tr.style.scrollSnapType = ''; tr.style.scrollBehavior = ''; }
+      function page(dir) { // one view forward/back, ends clamp to the last card
+        var i = idx(), perView = Math.max(1, Math.round(tr.clientWidth / sl[0].offsetWidth)), j = Math.max(0, Math.min(sl.length - 1, i + dir * perView));
+        glide(sl[j].offsetLeft - tr.offsetLeft, 800);
+      }
+      prev.addEventListener('click', function () { hold(); page(-1); });
+      next.addEventListener('click', function () { hold(); page(1); });
       tr.addEventListener('scroll', function () { clearTimeout(tr._t); tr._t = setTimeout(mark, 50); }, { passive: true });
       mark(); window.addEventListener('resize', mark);
+      // auto-advance
+      function hold() { resumeAt = Date.now() + RESUME; }
+      ['touchstart', 'pointerdown', 'wheel', 'focusin'].forEach(function (ev) { root.addEventListener(ev, function () { hold(); if (ev !== 'wheel') stopAnim(); }, { passive: true }); });
+      root.addEventListener('mouseenter', function () { held = true; }); root.addEventListener('mouseleave', function () { held = false; hold(); });
+      function tick() {
+        if (!document.body.contains(root)) { clearInterval(timer); return; }
+        if (!inView || held || document.hidden || Date.now() < resumeAt || maxL() <= 2) return;
+        if (tr.scrollLeft >= maxL() - 2) glide(0, SLIDE_MS + 400); else { var i = idx(), perView = Math.max(1, Math.round(tr.clientWidth / sl[0].offsetWidth)); glide(Math.min(maxL(), sl[Math.min(sl.length - 1, i + perView)].offsetLeft - tr.offsetLeft), SLIDE_MS); }
+      }
+      if (!reduce) {
+        if ('IntersectionObserver' in window) new IntersectionObserver(function (en) { inView = en[0].isIntersecting; }, { threshold: .5 }).observe(root); else inView = true;
+        setTimeout(function () { timer = setInterval(tick, DWELL); }, (me % 5) * 700); // stagger rows so they do not all move together
+      }
     });
 
     return 'Home';
