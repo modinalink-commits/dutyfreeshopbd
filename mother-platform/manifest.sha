@@ -2002,7 +2002,7 @@ f2ca28b52b26c6e169d1de710c53821aadc7b73d public/channels/duty-free-dubai/logo/he
 3569bf365d78a36d64cc447eba600f1da1c17eb6 resources/channels/duty-free-dubai/views/store/theme_foot.blade.php
 05ccbeb57f1d586e2801b793bc4daf95abdb17c5 database/migrations/2026_11_28_160000_dubai_channel_live_catalogue.php
 e249ee931a99163db1f688f893f8b60821780ed4 public/channels/duty-free-dubai/css/base.css
-c3f1747744cf6fc2db8f866bf20d77d259ea9c19 public/channels/duty-free-dubai/css/flow.css
+45d93f4f5361dd858368ffea909867cfe72b9d7e public/channels/duty-free-dubai/css/flow.css
 365a9cc3612fc86681e354511cd3e5ad6a8d283b public/channels/duty-free-dubai/js/app.js
 369706c0479ca1dbfea7abb4217eb13d12b07a96 public/channels/duty-free-dubai/js/core.js
 a3969a6445eea0febc903c19cd64c3e41c7a017a public/channels/duty-free-dubai/js/pages/cart.js

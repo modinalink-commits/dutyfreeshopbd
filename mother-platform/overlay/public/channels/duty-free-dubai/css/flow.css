@@ -139,6 +139,19 @@
 .catrow .card .kind { display: none; }
 .catrow .card .pic { aspect-ratio: 1; }
 .slider.nomore .sbtn { display: none; }
-@media (max-width: 980px) { .catrow .strack .card { flex-basis: calc((100% - 14px) / 2.2); } .catrow .sbtn { display: none; } }
-@media (max-width: 520px) { .catrow .strack .card { flex-basis: 72%; } }
+/* Cards per view (owner, 28 Nov 2026): desktop 4, mobile 2 full cards; tablet 3 between */
+@media (max-width: 1000px) { .catrow .strack .card { flex-basis: calc((100% - 28px) / 3); } }
+@media (min-width: 761px) { .catrow .sbtn { display: grid; } .catrow .slider.nomore .sbtn { display: none; } }
+@media (max-width: 760px) {
+  .catrow .strack { gap: 10px; scroll-padding-left: 0; }
+  .catrow .strack .card { flex-basis: calc((100% - 10px) / 2); padding: 8px; gap: 8px; border-radius: 20px 8px 20px 8px; }
+  .catrow .sbtn { display: none; }
+  .catrow .card .pic { border-radius: 14px 5px 14px 5px; }
+  .catrow .card h3 { font-size: .92rem; }
+  .catrow .card .info { gap: 4px; }
+  .catrow .card .stock { font-size: .78rem; }
+  .catrow .card .price { font-size: 1.05rem; }
+  .catrow .card .price small { font-size: .7rem; }
+  .catrow .card .btn { padding: 9px 6px; font-size: .88rem; min-height: 40px; }
+}
 @media (prefers-reduced-motion: reduce) { .catrow .strack { scroll-behavior: auto; } }
