@@ -27,3 +27,4 @@ body.dfd .fnb,body.dfd .fg{background:var(--dfd-ink)}
 body.dfd .fg .cols>div:first-child>img{background:#fff}
 body.dfd a:focus-visible,body.dfd button:focus-visible{outline:3px solid var(--dfd-ink);outline-offset:2px}
 @media(max-width:760px){body.dfd .hdw .lg img{height:38px;max-width:160px}}
+body.dfd .bfh{display:none}
