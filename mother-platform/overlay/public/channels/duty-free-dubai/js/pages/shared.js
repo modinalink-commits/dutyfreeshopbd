@@ -12,7 +12,7 @@
     var s = D.stockInfo(p), href = '#/product/' + p.slug, can = D.priced(p) && p.stock > 0;
     var btn = !D.priced(p) ? '<a class="btn line" href="' + href + '">Call for price</a>'
       : p.stock <= 0 ? '<button class="btn" type="button" disabled>Out of stock</button>'
-      : '<button class="btn" type="button" data-add="' + p.id + '" aria-label="Add ' + esc(p.name) + ' to cart">Add to cart</button>';
+      : '<a class="btn" href="#/checkout?buy=' + p.id + '&qty=1" aria-label="Order ' + esc(p.name) + ' now">Order now</a><button class="btn line" type="button" data-add="' + p.id + '" aria-label="Add ' + esc(p.name) + ' to cart">Add to cart</button>';
     return '<article class="card"><a class="pic" href="' + href + '" tabindex="-1" aria-hidden="true">' + D.picHtml(p) + '</a>' +
       '<div class="info"><span class="kind">' + esc(D.catName(p.category)) + '</span>' +
       '<h3><a href="' + href + '">' + esc(p.name) + '</a></h3>' +

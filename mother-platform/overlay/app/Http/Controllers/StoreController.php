@@ -675,6 +675,14 @@ class StoreController extends Controller {
     if (!empty($q['benefits']['items'])) foreach ($q['benefits']['items'] as $i => $it) $q['benefits']['items'][$i]['label'] = $np($it['label'] ?? '');
     return response()->json($q)->header('Cache-Control','no-store');
   }
+  /** Duty Free Dubai checkout: details of the customer who is signed in on THIS browser (verified session cookie), for autofill. Nothing is returned for anyone else. */
+  public function channelMe(Request $r) {
+    $sp = \App\Support\OrderDiscount::sessionPhone($r); if (!$sp) return response()->json(['verified'=>false])->header('Cache-Control','no-store');
+    $ph = substr(preg_replace('/\D/','',(string)$sp), -11);
+    $c = DB::table('customers')->where('phone',$ph)->first(['name','email']);
+    $o = DB::table('orders')->where('phone',$ph)->where('status','!=','Cancel')->orderByDesc('id')->first(['customer_name','address']);
+    return response()->json(['verified'=>true,'name'=>(string)($c->name ?? $o->customer_name ?? ''),'phone'=>$ph,'address'=>(string)($o->address ?? '')])->header('Cache-Control','no-store');
+  }
   /** Checkout progress tracking: one "incomplete order" per browser session, updated as the customer types. Never confirms, never sends SMS, never touches stock or courier. */
   public function trackEvent(Request $r) { \App\Support\ProductTrack::event($r); return response()->noContent(); }
   public function trackCheckout(Request $r) {
@@ -707,9 +715,13 @@ class StoreController extends Controller {
   public function order(Request $r) {
     $ip = $r->ip();
     $want = $r->filled('product') ? [(int)$r->input('product') => max(1, min(50, (int)$r->input('qty', 1)))] : $this->parseItems($r->input('items', []));
-    $back = fn($m) => redirect('/checkout?e='.rawurlencode($m));
+    $json = $r->expectsJson(); // storefront channels (Duty Free Dubai) send fetch() with Accept: application/json; the main site form still gets the redirect
+    $back = fn($m) => $json ? response()->json(['ok'=>false,'error'=>$m], 422) : redirect('/checkout?e='.rawurlencode($m));
+    $chan = \App\Support\ChannelScope::cur();
     if (!$want) return $back('Your cart is empty');
     if (!\App\Support\ChannelScope::ordersOpen()) return $back('Orders are not open on this store yet.'); // sales channel that is not Live: no order, no payment
+    if ($chan && !$r->boolean('age18')) return $back('Please confirm you are 18 or older.'); // sales channel: 18+ confirmation is required on the server too
+    if ($chan && $r->input('pay', 'cod') !== 'cod') return $back('Only Cash on Delivery is available on this store.'); // other payment methods stay closed on a channel until approved
     \App\Support\PhoneRule::trim($r);
     $v = \Illuminate\Support\Facades\Validator::make($r->all(), ['name'=>'required|string|max:120','phone'=>['required','string',new \App\Support\PhoneRule],'email'=>'nullable|email|max:120','address'=>'required|string|max:500','area'=>'nullable|integer','district'=>'nullable|string|max:60','note'=>'nullable|string|max:500','coupon'=>'nullable|string|max:40','website'=>'max:0','pay'=>'nullable|in:cod,bank,bkash,nagad,shurjopay','pay_account'=>'nullable|string|max:80','pay_txn'=>['nullable','string','max:60','regex:/^[A-Za-z0-9\-_\/ ]+$/'],'pay_proof'=>'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:3072'], ['phone.regex'=>'সঠিক মোবাইল নম্বর লিখুন (01XXXXXXXXX)','required'=>'মোবাইল নম্বর, নাম ও ঠিকানা লিখুন।','email'=>'সঠিক ইমেইল লিখুন অথবা খালি রাখুন।']);
     if ($v->fails()) return $back($v->errors()->first());
@@ -745,7 +757,7 @@ class StoreController extends Controller {
     // Duplicate protection: one checkout token = one order; identical content within 90s returns the order that already exists (no 2nd order, stock, SMS, courier or CAPI event).
     $fp = \App\Support\OrderDedupe::fingerprint($phone, $qt['items'], $qt['total'], (string)$d['address'], $pk); $dupId = null;
     try {
-    $id = DB::transaction(function () use ($d, $qt, $phone, $ip, $where, $note, $pm, $meta, $incTok, $fp, &$dupId) {
+    $id = DB::transaction(function () use ($d, $qt, $phone, $ip, $where, $note, $pm, $meta, $incTok, $fp, &$dupId, $chan) {
       \App\Support\OrderDedupe::lock($phone);
       [$exOrder, $idemKey] = \App\Support\OrderDedupe::resolve($incTok, $fp, \App\Support\OrderDedupe::WEB_WINDOW);
       if ($exOrder) { $dupId = (int)$exOrder->id; return $dupId; }
@@ -755,7 +767,7 @@ class StoreController extends Controller {
       }
       $cust = DB::table('customers')->where('phone',$phone)->value('id'); if ($cust) { DB::table('customers')->where('id',$cust)->update(array_filter(['email'=>$d['email'] ?? null],'strlen')+['updated_at'=>now()]); } else $cust = DB::table('customers')->insertGetId(['name'=>$d['name'],'phone'=>$phone,'email'=>($d['email'] ?? null) ?: null,'address'=>$d['address'],'ip'=>$ip,'created_at'=>now(),'updated_at'=>now()]); if (request()->boolean('offers') && !empty($d['email'])) \App\Support\Mailer::optIn($d['email'], $d['name'] ?? null, 'checkout');
       $invNo = \App\Support\InvoiceNumber::reserved($incTok, null, $phone) ?: \App\Support\InvoiceNumber::next();
-      $id = DB::table('orders')->insertGetId(['invoice'=>$invNo,'idempotency_key'=>$idemKey,'order_fingerprint'=>$fp,'store_id'=>(DB::table('stores')->whereNotIn('id', DB::table('watch_source')->whereNotNull('store_id')->select('store_id'))->orderBy('id')->value('id') ?: DB::table('stores')->orderBy('id')->value('id')),'customer_id'=>$cust,'customer_name'=>$d['name'],'phone'=>$phone,'email'=>($d['email'] ?? null) ?: null,'address'=>$d['address'],'district'=>$where,'source'=>'Web Site','shipping'=>$qt['ship'],'delivery_zone'=>mb_substr((string)$qt['zone'],0,160),'delivery_original'=>$qt['ship_orig'],'delivery_free_discount'=>$qt['dv']['free_discount'],'delivery_note'=>$qt['dv']['reason'] ? mb_substr($qt['dv']['reason'],0,200) : null,'discount'=>$qt['disc'],'coupon'=>$qt['coupon'],'total'=>$qt['total'],'status'=>'New','note'=>$note ?: null,'payment_method'=>$pm['label'],'pay_txn'=>$pm['txn'],'pay_account'=>$pm['acct'],'pay_proof'=>$pm['proof'],'pay_status'=>$pm['status'],'ip'=>$ip,'courier'=>\App\Support\CourierSync::defaultName(),'created_at'=>now(),'updated_at'=>now()] + $meta + ($qt['bsnap'] ?? []));
+      $id = DB::table('orders')->insertGetId(['invoice'=>$invNo,'idempotency_key'=>$idemKey,'order_fingerprint'=>$fp,'store_id'=>(DB::table('stores')->whereNotIn('id', DB::table('watch_source')->whereNotNull('store_id')->select('store_id'))->orderBy('id')->value('id') ?: DB::table('stores')->orderBy('id')->value('id')),'customer_id'=>$cust,'customer_name'=>$d['name'],'phone'=>$phone,'email'=>($d['email'] ?? null) ?: null,'address'=>$d['address'],'district'=>$where,'source'=>($chan->name ?? null) ?: 'Web Site','shipping'=>$qt['ship'],'delivery_zone'=>mb_substr((string)$qt['zone'],0,160),'delivery_original'=>$qt['ship_orig'],'delivery_free_discount'=>$qt['dv']['free_discount'],'delivery_note'=>$qt['dv']['reason'] ? mb_substr($qt['dv']['reason'],0,200) : null,'discount'=>$qt['disc'],'coupon'=>$qt['coupon'],'total'=>$qt['total'],'status'=>'New','note'=>$note ?: null,'payment_method'=>$pm['label'],'pay_txn'=>$pm['txn'],'pay_account'=>$pm['acct'],'pay_proof'=>$pm['proof'],'pay_status'=>$pm['status'],'ip'=>$ip,'courier'=>\App\Support\CourierSync::defaultName(),'created_at'=>now(),'updated_at'=>now()] + $meta + ($qt['bsnap'] ?? []));
       foreach ($qt['items'] as $it) DB::table('order_items')->insert(['order_id'=>$id,'product_id'=>$it['id'],'name'=>$it['name'],'qty'=>$it['qty'],'price'=>$it['price'],'created_at'=>now(),'updated_at'=>now()] + \App\Support\BundlePricing::snapshot((int)$it['id'], (int)$it['qty'], (float)$it['price'], (float)$it['line']));
       if ($qt['coupon'] && !DB::table('coupons')->where('code',$qt['coupon'])->where(fn($q) => $q->whereNull('usage_limit')->orWhere('usage_limit', 0)->orWhereColumn('used_count', '<', 'usage_limit'))->increment('used_count')) throw new \RuntimeException('coupon_used_up'); // atomic: the last use cannot be taken twice
       DB::table('order_status_logs')->insert(['order_id'=>$id,'user_id'=>null,'user_name'=>'Website','from_status'=>null,'to_status'=>'New','note'=>$pm['status'] === 'Awaiting Payment' ? 'Order placed on website. Awaiting online payment (ShurjoPay)' : ($pm['status'] ? 'Order placed on website. Payment Verification Pending ('.$pm['label'].', ref '.$pm['txn'].')' : 'Order placed on website'),'created_at'=>now(),'updated_at'=>now()]);
@@ -774,6 +786,7 @@ class StoreController extends Controller {
     if ($dupId) { // the same submit again (double click / refresh / retry): show the order that already exists
       $ex = DB::table('orders')->where('id', $dupId)->first(['invoice','pay_status','payment_method']);
       if ($pk === 'shurjopay' && $ex->pay_status === 'Awaiting Payment') return redirect(\Illuminate\Support\Facades\URL::temporarySignedRoute('pay.shurjopay.start', now()->addHours(2), ['invoice'=>$ex->invoice]));
+      if ($json) return response()->json(['ok'=>true,'invoice'=>$ex->invoice,'dup'=>true]);
       return redirect(\Illuminate\Support\Facades\URL::temporarySignedRoute('order.done', now()->addDays(3), ['invoice'=>$ex->invoice, 'dup'=>1]));
     }
     Cache::forget('store.live3'); Cache::forget('store.live4'); Cache::forget('store.live5');
@@ -786,6 +799,7 @@ class StoreController extends Controller {
     if ($pk !== 'shurjopay') { \App\Support\OrderSms::placed((int)$id); try { \App\Support\Capi::purchase((int)$id, $r); } catch (\Throwable $e) {} }
     try { DB::table('incomplete_orders')->where('status', 'open')->where(fn($q) => $q->where('token', (string)$r->input('inc'))->orWhere('phone', $phone))->update(['status'=>'converted', 'order_id'=>$id, 'updated_at'=>now()]); } catch (\Throwable $e) {}
     if ($pk === 'shurjopay') return redirect(\Illuminate\Support\Facades\URL::temporarySignedRoute('pay.shurjopay.start', now()->addHours(2), ['invoice'=>$inv]));
+    if ($json) return response()->json(['ok'=>true,'invoice'=>$inv]);
     return redirect(\Illuminate\Support\Facades\URL::temporarySignedRoute('order.done', now()->addDays(3), ['invoice'=>$inv]));
   }
   private function pack(string $invoice): array {

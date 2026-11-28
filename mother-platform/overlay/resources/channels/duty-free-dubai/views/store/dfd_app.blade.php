@@ -93,7 +93,7 @@ window.DFD = window.DFD || {};
   var d = {!! $json !!};
   DFD.categories = d.c; DFD.products = d.p; DFD.tops = d.t;
   var tk = Object.keys(d.t), vape = d.c.filter(function (c) { return /vape/i.test(c.name); })[0];
-  DFD.config = { brand: 'Duty Free Dubai', currency: 'BDT', ageGate: true, liveOrders: false, storageKey: 'dfd-cart-v1',
+  DFD.config = { brand: 'Duty Free Dubai', currency: 'BDT', ageGate: true, liveOrders: {{ \App\Support\ChannelScope::ordersOpen() ? 'true' : 'false' }}, storageKey: 'dfd-cart-v1',
     homeTitle: @json($homeTitle), heroText: 'Order by the carton. Cash on delivery across Bangladesh.',
     cta2: vape ? { label: vape.name, href: '#/store?cat=' + encodeURIComponent(vape.id) } : (tk[1] ? { label: d.t[tk[1]], href: '#/store?top=' + encodeURIComponent(tk[1]) } : null) };
   var boot = @json($boot ?? '');
