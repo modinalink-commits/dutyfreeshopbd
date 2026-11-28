@@ -22,10 +22,23 @@
         'price' => (float)$p->price > 0 ? (int)round((float)$p->price) : 0, 'currency' => 'BDT', 'unit' => '', 'stock' => \App\Support\StockGuard::sellable($p) ? 99 : 0,
         'description' => mb_substr($desc, 0, 320), 'specs' => $specs, 'image' => (string)($p->image ?: '/product-placeholder'), 'url' => $SC::url($p)];
     }
-    // Order (owner, 28 Nov 2026): premium brands first (highest average price), lighters & accessories always last
+    // Order (owner, 28 Nov 2026, from his screenshot): exact names and sequence below; anything not listed follows (lighters & accessories always last)
+    $ORDER = ['Dunhill','Benson','555 Express','Marlboro','Manchester','Mevius','Davidoff','Double Happiness','Camel','Winston','LM','Regular Cigarette Brand','Oris','Patron','Milano','Mond','Esse','XSO','Nano Cigarette Brands','Cigars','Rolling Papers','VOLTBAR Switch','Bangking 60k','Elfbar','Single Packet'];
+    $nz = function ($x) { return preg_replace('/[^a-z0-9]+/', '', mb_strtolower((string)$x)); };
+    $rank = []; foreach ($ORDER as $i => $n) $rank[$nz($n)] = $i;
     $C = array_values($C);
-    usort($C, function ($a, $b) { $la = str_contains($a['top'], 'lighter') ? 1 : 0; $lb = str_contains($b['top'], 'lighter') ? 1 : 0; if ($la !== $lb) return $la <=> $lb; $aa = $a['n'] ? $a['sum'] / $a['n'] : 0; $ab = $b['n'] ? $b['sum'] / $b['n'] : 0; return $ab <=> $aa ?: strcmp($a['name'], $b['name']); });
-    foreach ($C as $i => &$c) { $c['sort'] = $i + 1; unset($c['sum'], $c['n']); } unset($c);
+    foreach ($C as &$c) {
+      $k = $nz($c['name']); $hit = $rank[$k] ?? null;
+      if ($hit === null) foreach ($rank as $rk => $ri) { if (strlen($k) >= 4 && strlen($rk) >= 4 && (str_starts_with($k, $rk) || str_starts_with($rk, $k))) { $hit = $ri; break; } }
+      $c['rank'] = $hit === null ? 1000 : $hit;
+      if ($hit !== null) { $c['name'] = $ORDER[$hit]; $c['glyph'] = mb_strtoupper(mb_substr($ORDER[$hit], 0, 1)); }
+    } unset($c);
+    usort($C, function ($a, $b) {
+      if ($a['rank'] !== $b['rank']) return $a['rank'] <=> $b['rank'];
+      $la = str_contains($a['top'], 'lighter') ? 1 : 0; $lb = str_contains($b['top'], 'lighter') ? 1 : 0; if ($la !== $lb) return $la <=> $lb;
+      $aa = $a['n'] ? $a['sum'] / $a['n'] : 0; $ab = $b['n'] ? $b['sum'] / $b['n'] : 0; return $ab <=> $aa ?: strcmp($a['name'], $b['name']);
+    });
+    foreach ($C as $i => &$c) { $c['sort'] = $i + 1; unset($c['sum'], $c['n'], $c['rank']); } unset($c);
     return json_encode(['c' => $C, 'p' => $P, 't' => $T], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP);
   });
   $homeTitle = trim((string)($ch->cfg['home_title'] ?? '')) ?: 'Duty Free Dubai';

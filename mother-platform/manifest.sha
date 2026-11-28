@@ -2012,7 +2012,7 @@ a3969a6445eea0febc903c19cd64c3e41c7a017a public/channels/duty-free-dubai/js/page
 99285ee37c2b27f81eb1c279db3c3313b197d096 public/channels/duty-free-dubai/js/pages/shared.js
 385bbb88a74076ff37a85a96326d796f6557d388 public/channels/duty-free-dubai/js/pages/store.js
 a7562fad9df3785b432e6886a8bf6a4fc9a8ef18 resources/channels/duty-free-dubai/views/store/category.blade.php
-d41607c1d1c6f56a6996b0bdccd2263de25b4449 resources/channels/duty-free-dubai/views/store/dfd_app.blade.php
+7400f10b417585f05d9b07815c1729596fd49e4c resources/channels/duty-free-dubai/views/store/dfd_app.blade.php
 f876ab2d8fa2e0659b83251b02061eba086597e2 resources/channels/duty-free-dubai/views/store/home.blade.php
 868f4e8cee03fe5d48e1fa56129ce3ab58f5dc85 resources/channels/duty-free-dubai/views/store/product.blade.php
 4633a7fc0435853015b7d659c2c28adcdd62c5c9 resources/channels/duty-free-dubai/views/store/search.blade.php
