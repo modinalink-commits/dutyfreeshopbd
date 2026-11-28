@@ -24,7 +24,7 @@
     }
     var brands = '';
     WANT.forEach(function (w) {
-      var c = null; D.categories.forEach(function (x) { if (!c && (norm(x.name) === w || norm(x.id) === w)) c = x; });
+      var c = null; D.categories.forEach(function (x) { if (!c && (norm(x.name) === w || norm(x.id) === w || norm(x.name).indexOf(w) === 0)) c = x; });
       if (!c) return;
       var n = count(c.id); if (!n) return;
       var rp = repr(c.id);
